@@ -154,33 +154,23 @@ def are_joints_same(joints_a, joints_b):
 class TestConvertModelDirectiveToSDF(
     unittest.TestCase, metaclass=ValueParameterizedTest
 ):
-    files_to_test = [
-        "bindings/pydrake/multibody/test/model_directives_to_sdformat_files/"
-        "inject_frames.dmd.yaml",
-        "bindings/pydrake/multibody/test/model_directives_to_sdformat_files/"
-        "inject_frames.dmd.yaml",
-        "bindings/pydrake/multibody/test/model_directives_to_sdformat_files/"
-        "hidden_frame.dmd.yaml",
-        "bindings/pydrake/multibody/test/model_directives_to_sdformat_files/"
-        "frame_attached_to_frame.dmd.yaml",
-        "bindings/pydrake/multibody/test/model_directives_to_sdformat_files/"
-        "weld_frames_from_models.dmd.yaml",
-        "bindings/pydrake/multibody/test/model_directives_to_sdformat_files/"
-        "scoped_frame_name.dmd.yaml",
-        "bindings/pydrake/multibody/test/model_directives_to_sdformat_files/"
-        "deep_frame.dmd.yaml",
-        "bindings/pydrake/multibody/test/model_directives_to_sdformat_files/"
-        "deep_weld.dmd.yaml",
-    ]
-
     def setUp(self):
         self.parser = model_directives_to_sdformat._create_parser()
 
-    @run_with_multiple_values(
-        [dict(file_path=file_path) for file_path in files_to_test]
-    )
-    def test_through_plant_comparison(self, *, file_path):
+    @run_with_multiple_values([dict(name=name) for name in [
+        "inject_frames.dmd.yaml",
+        "inject_frames.dmd.yaml",
+        "hidden_frame.dmd.yaml",
+        "frame_attached_to_frame.dmd.yaml",
+        "weld_frames_from_models.dmd.yaml",
+        "scoped_frame_name.dmd.yaml",
+        "deep_frame.dmd.yaml",
+        "deep_weld.dmd.yaml",
+    ]])
+    def test_through_plant_comparison(self, *, name):
         # Convert
+        test_dir = "bindings/pydrake/multibody/test"
+        file_path = f"{test_dir}/model_directives_to_sdformat_files/{name}"
         args = self.parser.parse_args(["-m", file_path])
         sdformat_tree = convert_directives(args).getroot()
         sdformat_result = minidom.parseString(
