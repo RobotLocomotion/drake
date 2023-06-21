@@ -25,7 +25,8 @@ behavior. For a high-level overview, see [this blog post]
 Drake implements two models for resolving contact to forces: point contact and
 hydroelastic contact. See @ref hydro_appendix_a for a fuller discussion of the
 theory and practice of contact models. For notes on implementation status, see
-@ref hydro_appendix_b.
+@ref hydro_appendix_b. For the list of examples and tutorials, see
+@ref hydro_appendix_c.
 
 @subsection hug_working_with_hydro Working with Hydroelastic Contact
 
@@ -40,6 +41,29 @@ Using hydroelastic contact requires two things:
   contact.
 - Applying appropriate properties to the collision geometries to enable
   hydroelastic contact calculations.
+
+Collision geometries for hydroelastic contact can be either
+"compliant-hydroelastic" with tetrahedral meshes describing an
+internal pressure field or "rigid-hydroelastic" with triangle
+surface meshes and regarded as infinitely stiff.
+The figure below shows examples of a compliant hydroelastic box
+and a rigid hydroelastic box.
+<!-- N.B. This image is also used by hydroelastic_contact_basics.ipynb. -->
+@image html "multibody/hydroelastics/images/HydroelasticTutorialCompliantRigidOutsideInside800x669.jpg"
+
+The figure below shows contact surface between a compliant-hydroelastic cylinder
+and a compliant-hydroelastic sphere. The contact surface is internal to both
+solids and is defined as the surface where the two pressure fields are equal.
+<!-- N.B. This image is also used by hydroelastic_contact_basics.ipynb. -->
+@image html "multibody/hydroelastics/images/HydroelasticTutorialContactSurfaceCompliantCompliant.png"
+
+As pictured below, two hydroelastic-compliant ellipsoidal bubble fingers are in
+contact with a rigid-hydroelastic cylindrical spatula handle.
+The contact surface between a compliant-hydroelastic geometry and a
+rigid-hydroelastic geometry is on the surface of the rigid-hydroelastic
+geometry.
+<!-- N.B. This image is also used by hydroelastic_contact_basics.ipynb. -->
+@image html "multibody/hydroelastics/images/HydroelasticTutorialContactSurfaceRigidCompliantBubble.png"
 
 @subsubsection hug_enabling Enabling Hydroelastic contact in your simulation
 
@@ -621,10 +645,9 @@ indicate what can and cannot be done with hydroelastic contact.
 
 @subsection hug_dissipation_and_solver Current dissipation models
 
-<!-- TODO(DamrongGuoy) Refer to SAP Epic Issue when it's available. -->
-
 - SAP does not support Hunt-Crossley dissipation at this time for both
-  point and hydroelastic contact.
+  point and hydroelastic contact
+  (issue [19320](https://github.com/RobotLocomotion/drake/issues/19320)).
   See the documentation for that in the
   [MultibodyPlant documentation.]
   (https://drake.mit.edu/doxygen_cxx/classdrake_1_1multibody_1_1_multibody_plant.html#:~:text=%E2%81%B4%20We%20allow%20to,will%20be%20ignored.)
@@ -632,6 +655,43 @@ indicate what can and cannot be done with hydroelastic contact.
   continuous mode parameter) and relaxation_time (SAP specific parameter) on
   the model, but the parameter may be ignored depending on your plant
   configuration.
+
+@section hydro_appendix_c Appendix C: Examples and Tutorials
+- Example
+  [Rolling ball on a dinner plate on a floor]
+  (https://github.com/RobotLocomotion/drake/tree/master/examples/hydroelastic/ball_plate)
+  uses the hydroelastic contact model with a non-convex geometry loaded from
+  an SDFormat file of a dinner plate in C++.
+
+- Example
+  [Ball and Paddle in Python]
+  (https://github.com/RobotLocomotion/drake/tree/master/examples/hydroelastic/python_ball_paddle)
+  is a simple example of using the hydroelastic contact model in Python.
+
+- Example
+  [Drop a bell pepper]
+  (https://github.com/RobotLocomotion/drake/tree/master/examples/hydroelastic/python_nonconvex_mesh)
+  uses non-convex meshes with the hydroelastic contact model in Python.
+
+- Example
+  [Spatula Slip Control]
+  (https://github.com/RobotLocomotion/drake/tree/master/examples/hydroelastic/spatula_slip_control)
+  uses the hydroelastic contact model with a robot gripper with compliant
+  bubble fingers and a spatula handle in C++.
+
+- Tutorial
+  [Hydroelastic Contact: Basics]
+  (https://github.com/RobotLocomotion/drake/blob/master/tutorials/hydroelastic_contact_basics.ipynb)
+  shows you how to set up a simple simulation with hydroelastic contacts
+  in a Jupyter Python notebook.
+  It uses a compliant block dropped onto a rigid rectangular plate.
+  The below-left picture shows one frame of the block's contact with
+  the force as a red arrow and the torque as a blue arrow.
+  The below-right picture zooms into the hydroelastic contact surface showing
+  pressure distribution.
+  <!-- N.B. This image is also used by hydroelastic_contact_basics.ipynb. -->
+  @image html "multibody/hydroelastics/images/HydroelasticTutorialImage600x388.jpg"
+
 
 @section hydro_references Sources referenced within this documentation
 
