@@ -11,7 +11,7 @@ namespace systems {
 
 /// A zero order hold block with input u, which may be vector-valued (discrete
 /// or continuous) or abstract, and discrete output y, where the y is sampled
-/// from u with a fixed period.
+/// from u with a fixed period (and optional offset).
 ///
 /// @system
 /// name: ZeroOrderHold
@@ -34,11 +34,11 @@ namespace systems {
 /// discrete systems in Drake, including how they interact with continuous
 /// systems.
 ///
-/// @note This system uses a periodic update with zero offset, so the first
-///       update occurs at t=0. When used with a Simulator, the output port
-///       is equal to xᵢₙᵢₜ after simulator.Initialize(), but is immediately
-///       updated to u₀ at the start of the first step. If you want to force
-///       that initial update, use simulator.AdvanceTo(0.).
+/// @note This system defaults to a periodic update with zero offset, in which
+///       case the first update occurs at t=0. When used with a Simulator, the
+///       output port is equal to xᵢₙᵢₜ after simulator.Initialize(), but is
+///       immediately updated to u₀ at the start of the first step. If you want
+///       to force that initial update, use simulator.AdvanceTo(0.0).
 ///
 /// @note For an abstract-valued ZeroOrderHold, scalar-type conversion is not
 ///       supported since AbstractValue does not support it.
@@ -51,18 +51,20 @@ class ZeroOrderHold final : public LeafSystem<T> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ZeroOrderHold)
 
   /// Constructs a ZeroOrderHold system with the given `period_sec`, over a
-  /// vector-valued input of size `vector_size`. The default initial
-  /// value for this system will be zero. The offset is always zero, meaning
-  /// that the first update occurs at t=0.
-  ZeroOrderHold(double period_sec, int vector_size)
-      : ZeroOrderHold(period_sec, vector_size, nullptr) {}
+  /// vector-valued input of size `vector_size`. The default initial value for
+  /// this system will be zero. The first update occurs at t=offset_sec, which
+  /// must be >= 0.
+  ZeroOrderHold(double period_sec, int vector_size, double offset_sec = 0.0)
+      : ZeroOrderHold(period_sec, offset_sec, vector_size, nullptr) {}
 
   /// Constructs a ZeroOrderHold system with the given `period_sec`, over a
   /// abstract-valued input `abstract_model_value`. The default initial value
-  /// for this system will be `abstract_model_value`. The offset is always
-  /// zero, meaning that the first update occurs at t=0.
-  ZeroOrderHold(double period_sec, const AbstractValue& abstract_model_value)
-      : ZeroOrderHold(period_sec, -1, abstract_model_value.Clone()) {}
+  /// for this system will be `abstract_model_value`. The first update occurs
+  /// at t=offset_sec, which must be >= 0.
+  ZeroOrderHold(double period_sec, const AbstractValue& abstract_model_value,
+                double offset_sec = 0.0)
+      : ZeroOrderHold(period_sec, offset_sec, -1,
+                      abstract_model_value.Clone()) {}
 
   /// Scalar-type converting copy constructor.
   /// See @ref system_scalar_conversion.
@@ -73,6 +75,9 @@ class ZeroOrderHold final : public LeafSystem<T> {
 
   /// Reports the period of this hold (in seconds).
   double period() const { return period_sec_; }
+
+  /// Reports the first update time of this hold (in seconds).
+  double offset() const { return offset_sec_; }
 
   /// (Advanced) Manually sample the input port and copy ("latch") the value
   /// into the state. This emulates an update event and is mostly useful for
@@ -90,7 +95,7 @@ class ZeroOrderHold final : public LeafSystem<T> {
   template <typename U> friend class ZeroOrderHold;
 
   // All of the other constructors delegate here.
-  ZeroOrderHold(double period_sec, int vector_size,
+  ZeroOrderHold(double period_sec, double offset_sec, int vector_size,
                 std::unique_ptr<const AbstractValue> model_value);
 
   // Latches the input port into the discrete vector-valued state.
@@ -105,7 +110,8 @@ class ZeroOrderHold final : public LeafSystem<T> {
 
   bool is_abstract() const { return abstract_model_value_ != nullptr; }
 
-  double period_sec_{};
+  const double period_sec_;
+  const double offset_sec_;
   std::unique_ptr<const AbstractValue> abstract_model_value_;
 };
 
