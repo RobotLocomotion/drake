@@ -319,16 +319,15 @@ void DefineGeometryOptimization(py::module m) {
         .def_property(
             "configuration_obstacles",
             [](const IrisOptions& self) {
-              py::list out;
-              py::object self_py = py::cast(self, py_rvp::reference);
+              std::vector<ConvexSet*> convex_sets;
               for (const copyable_unique_ptr<ConvexSet>& convex_set :
                   self.configuration_obstacles) {
-                // Keep alive, ownership: `convex_set` keeps `self` alive.
-                py::object convex_set_py = py::cast(
-                    convex_set.get(), py_rvp::reference_internal, self_py);
-                out.append(convex_set_py);
+                convex_sets.push_back(convex_set.get());
               }
-              return out;
+              py::object self_py = py::cast(self, py_rvp::reference);
+              // Keep alive, ownership: items in `convex_sets` keeps `self`
+              // alive.
+              return py::cast(convex_sets, py_rvp::reference_internal, self_py);
             },
             [](IrisOptions& self, const std::vector<ConvexSet*>& sets) {
               self.configuration_obstacles = CloneConvexSets(sets);
