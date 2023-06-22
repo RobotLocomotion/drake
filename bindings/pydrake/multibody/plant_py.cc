@@ -794,14 +794,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
                 &Class::GetModelInstanceByName),
             py::arg("name"), py_rvp::reference_internal,
             cls_doc.GetModelInstanceByName.doc)
-        .def(
-            "GetBodiesWeldedTo",
-            [](const Class& self, const Body<T>& body) {
-              auto welded_bodies = self.GetBodiesWeldedTo(body);
-              return py_keep_alive_iterable<py::list>(
-                  welded_bodies, py::cast(&self));
-            },
-            py::arg("body"), cls_doc.GetBodiesWeldedTo.doc)
+        .def("GetBodiesWeldedTo", &Class::GetBodiesWeldedTo, py::arg("body"),
+            py_rvp::reference_internal, cls_doc.GetBodiesWeldedTo.doc)
         .def("GetBodiesKinematicallyAffectedBy",
             &Class::GetBodiesKinematicallyAffectedBy, py::arg("joint_indexes"),
             cls_doc.GetBodiesKinematicallyAffectedBy.doc)

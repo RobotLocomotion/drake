@@ -66,10 +66,7 @@ GTEST_TEST(PydrakePybindTest, PyKeepAlive) {
             [](const Class& self) {
               return py_keep_alive(py::cast(self.a()), py::cast(&self));
             })
-        .def("a_list", [](const Class& self) {
-          return py_keep_alive_iterable<py::list>(
-              self.a_list(), py::cast(&self));
-        });
+        .def("a_list", &Class::a_list, py_rvp::reference_internal);
   }
 
   PyExpectTrue(m, "isinstance(ExamplePyKeepAlive().a(), Item)");
@@ -81,7 +78,8 @@ GTEST_TEST(PydrakePybindTest, PyKeepAlive) {
   // Ensure we test the value to check for memory corruption.
   PyExpectEq(m, "ExamplePyKeepAlive().a_list()[0].value", 10);
   // Explicitly test keep alive behavior.
-  PyExpectTrue(m, "check_py_keep_alive_iterable(cls=ExamplePyKeepAlive)");
+  PyExpectTrue(
+      m, "check_py_rvp_reference_internal_list(cls=ExamplePyKeepAlive)");
 }
 
 // Class which has a copy constructor, for testing `DefCopyAndDeepCopy`.

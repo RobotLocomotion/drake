@@ -12,10 +12,10 @@ def check_copy(copy_function, obj):
     return obj == obj_copy and obj is not obj_copy
 
 
-def check_py_keep_alive_iterable(cls):
+def check_py_rvp_reference_internal_list(cls):
     """
-    Expicitly check behavior of `py_keep_alive_iterable()` given class
-    defitions used in `pydrake_pybind_test.cc`.
+    Expicitly check behavior of `py_rvp::refernce_internal` on a return list of
+    pointers given class defitions used in `pydrake_pybind_test.cc`.
     """
     container = cls()
     ref = weakref.ref(container)

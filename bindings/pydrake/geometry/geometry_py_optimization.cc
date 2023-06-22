@@ -639,21 +639,14 @@ void DefineGeometryOptimization(py::module m) {
             py::overload_cast<const GraphOfConvexSets::Edge&>(
                 &GraphOfConvexSets::RemoveEdge),
             py::arg("edge"), cls_doc.RemoveEdge.doc_by_reference)
-        .def(
-            "Vertices",
-            [](GraphOfConvexSets* self) {
-              py::object self_py = py::cast(self, py_rvp::reference);
-              return py_keep_alive_iterable<py::list>(
-                  self->Vertices(), self_py);
-            },
-            cls_doc.Vertices.doc)
-        .def(
-            "Edges",
-            [](GraphOfConvexSets* self) {
-              py::object self_py = py::cast(self, py_rvp::reference);
-              return py_keep_alive_iterable<py::list>(self->Edges(), self_py);
-            },
-            cls_doc.Edges.doc)
+        .def("Vertices",
+            overload_cast_explicit<std::vector<GraphOfConvexSets::Vertex*>>(
+                &GraphOfConvexSets::Vertices),
+            py_rvp::reference_internal, cls_doc.Vertices.doc)
+        .def("Edges",
+            overload_cast_explicit<std::vector<GraphOfConvexSets::Edge*>>(
+                &GraphOfConvexSets::Edges),
+            py_rvp::reference_internal, cls_doc.Edges.doc)
         .def("ClearAllPhiConstraints",
             &GraphOfConvexSets::ClearAllPhiConstraints,
             cls_doc.ClearAllPhiConstraints.doc)

@@ -1042,13 +1042,7 @@ Note: The above is for the C++ documentation. For Python, use
         .def("GetSubsystemByName", &Diagram<T>::GetSubsystemByName,
             py::arg("name"), py_rvp::reference_internal,
             doc.Diagram.GetSubsystemByName.doc)
-        .def(
-            "GetSystems",
-            [](Diagram<T>* self) {
-              py::object self_py = py::cast(self, py_rvp::reference);
-              return py_keep_alive_iterable<py::list>(
-                  self->GetSystems(), self_py);
-            },
+        .def("GetSystems", &Diagram<T>::GetSystems, py_rvp::reference_internal,
             doc.Diagram.GetSystems.doc);
 
     // N.B. This will effectively allow derived classes of `VectorSystem` to

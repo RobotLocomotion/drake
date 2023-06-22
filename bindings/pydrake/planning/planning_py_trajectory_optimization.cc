@@ -410,7 +410,7 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
                 regions.push_back(region.get());
               }
               py::object self_py = py::cast(self, py_rvp::reference);
-              return py_keep_alive_iterable<py::list>(regions, self_py);
+              return py::cast(regions, py_rvp::reference_internal, self_py);
             },
             subgraph_doc.regions.doc)
         .def("AddTimeCost", &Class::Subgraph::AddTimeCost,
