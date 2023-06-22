@@ -678,10 +678,11 @@ class TestGeneral(unittest.TestCase):
                 update_sec=0.1, delay_timesteps=5,
                 abstract_model_value=Value("Hello world"))
 
-        ZeroOrderHold(period_sec=0.1, vector_size=2)
-        ZeroOrderHold(
-            period_sec=0.1,
-            abstract_model_value=Value("Hello world"))
+        ZeroOrderHold(period_sec=0.1, offset_sec=0.0, vector_size=2)
+        dut = ZeroOrderHold(period_sec=1.0, offset_sec=0.25,
+                            abstract_model_value=Value("Hello world"))
+        self.assertEqual(dut.period(), 1.0)
+        self.assertEqual(dut.offset(), 0.25)
 
     def test_shared_pointer_system_ctor(self):
         dut = SharedPointerSystem(value_to_hold=[1, 2, 3])

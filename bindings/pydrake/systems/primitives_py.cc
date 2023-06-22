@@ -579,12 +579,16 @@ PYBIND11_MODULE(primitives, m) {
 
     DefineTemplateClassWithDefault<ZeroOrderHold<T>, LeafSystem<T>>(
         m, "ZeroOrderHold", GetPyParam<T>(), doc.ZeroOrderHold.doc)
-        .def(py::init<double, int>(), py::arg("period_sec"),
-            py::arg("vector_size"),
-            doc.ZeroOrderHold.ctor.doc_2args_period_sec_vector_size)
-        .def(py::init<double, const AbstractValue&>(), py::arg("period_sec"),
-            py::arg("abstract_model_value"),
-            doc.ZeroOrderHold.ctor.doc_2args_period_sec_abstract_model_value);
+        .def(py::init<double, int, double>(), py::arg("period_sec"),
+            py::arg("vector_size"), py::arg("offset_sec") = 0.0,
+            doc.ZeroOrderHold.ctor.doc_3args_period_sec_vector_size_offset_sec)
+        .def(py::init<double, const AbstractValue&, double>(),
+            py::arg("period_sec"), py::arg("abstract_model_value"),
+            py::arg("offset_sec") = 0.0,
+            doc.ZeroOrderHold.ctor
+                .doc_3args_period_sec_abstract_model_value_offset_sec)
+        .def("period", &ZeroOrderHold<T>::period, doc.ZeroOrderHold.period.doc)
+        .def("offset", &ZeroOrderHold<T>::offset, doc.ZeroOrderHold.offset.doc);
   };
   type_visit(bind_common_scalar_types, CommonScalarPack{});
 
