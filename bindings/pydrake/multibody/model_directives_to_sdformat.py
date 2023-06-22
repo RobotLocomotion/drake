@@ -1,11 +1,8 @@
 import argparse
 import copy
-import dataclasses as dc
 from xml.dom import minidom
 import xml.etree.ElementTree as ET
 import os
-import sys
-from typing import List
 
 from pydrake.common import schema
 from pydrake.common.yaml import yaml_load_typed
@@ -94,14 +91,14 @@ def _resolve_and_scope_frame(frame_name: str, directives) -> str:
     """None is returned if the scope could not be found."""
     deeply_nested = False
     frame = _find_frame(frame_name, directives)
-    # Frame with the same name as base frame are not supported
+    # Frame with the same name as base frame are not supported.
     if frame is not None and frame_name == frame.base_frame:
         raise ConversionError(
             f"Frame: [{frame_name}] has the same name as"
             " it's base frame. This case is not supported."
         )
 
-    # Traverse frame graph to see if this frame is transitively attached
+    # Traverse frame graph to see if this frame is transitively attached.
     final_frame = _get_most_distal_parent_frame_directive(frame, directives)
 
     if final_frame is None:
@@ -165,7 +162,7 @@ class AddFrame:
         else:
             self.resolved_base_frame = self.scoped_base_frame
 
-        # If name and base_frame are scoped both should have a common scope
+        # If name and base_frame are scoped both should have a common scope.
         if (
             self.resolved_base_frame.instance_name != ""
             and self.scoped_name.instance_name != ""
@@ -209,9 +206,9 @@ class AddFrame:
         pose_elem.text = f"{self.translation_str}   {self.rotation_str}"
 
 
-# For add_weld, we only support child frames that can be referred to
-# within the same sdformat file that are nested only once, as we would
-# require the placement_frame and pose combination for posturing.
+# For add_weld, we only support child frames that can be referred to within
+# the same sdformat file that are nested only once, as we would require the
+# placement_frame and pose combination for posturing.
 #
 # Supported example:
 # add_model:
@@ -392,7 +389,7 @@ class AddDirectives:
     def insert_into_root_sdformat_node(self, root, directives, args):
         if self.model_ns is not None:
             # Check that the model instance has been created by
-            # add_model_instance
+            # add_model_instance.
             if not any(
                 directive.name == self.model_ns
                 for directive in _filter_directives(
@@ -436,7 +433,7 @@ class AddDirectives:
                 "file.dmd.yaml]"
             )
 
-        # Update args with new target file
+        # Update args with new target file.
         expanded_file_args = copy.deepcopy(args)
         expanded_file_args.model_directives = resolved_file_path
         result_tree = convert_directives(expanded_file_args)
@@ -457,7 +454,6 @@ class AddDirectives:
             result_tree,
             resolved_file_path,
             expanded_included_path,
-            args.print_only,
             generate_world=False,
         )
 
@@ -478,7 +474,7 @@ def _create_object_from_directive(directive):
 
 
 def convert_directives(args):
-    # Check that the file is a .dmd.yaml file
+    # Check that the file is a .dmd.yaml file.
     if not args.model_directives.endswith('.dmd.yaml'):
         raise ConversionError(
             "Unable to determine file format. Make sure "
@@ -486,7 +482,7 @@ def convert_directives(args):
             " '.dmd.yaml' extension"
         )
 
-    # Read the directives file
+    # Read the directives file.
     directives_data = yaml_load_typed(
         schema=ModelDirectives, filename=args.model_directives
     )
@@ -499,7 +495,7 @@ def convert_directives(args):
     for dir_obj in _filter_directives(all_directives, (AddFrame, AddWeld)):
         dir_obj.resolve_names(all_directives)
 
-    # Initialize the sdformat XML root
+    # Initialize the sdformat XML root.
     root = ET.Element("sdf", version=_SDF_VERSION)
     root_name = os.path.basename(
         _remove_suffix(args.model_directives, ".dmd.yaml")
@@ -515,7 +511,7 @@ def convert_directives(args):
         elif not isinstance(dir_obj, AddModelInstance):
             dir_obj.insert_into_root_sdformat_node(root_elem, all_directives)
 
-    # Check model validity by loading it through the SDFormat parser
+    # Check model validity by loading it through the SDFormat parser.
     if args.check_sdf:
         try:
             directives_plant = MultibodyPlant(time_step=0.01)
@@ -530,10 +526,10 @@ def convert_directives(args):
     return ET.ElementTree(root)
 
 
-# Saves a world with a merge include to the model
-# TODO(marcoag): Add a validty check that ensures the model
-# is world-mergeable. The package name for the include
-# is inferred from the directory that contains the output file.
+# Saves a world with a merge include to the model.
+# TODO(marcoag): Add a validty check that ensures the model is
+# world-mergeable. The package name for the include is inferred
+# from the directory that contains the output file.
 def _save_world(root_world_name, world_output_path, output_filename):
     world_root = ET.Element("sdf", version=_SDF_VERSION)
     root_world_elem = ET.SubElement(world_root, "world", name=root_world_name)
@@ -561,22 +557,13 @@ def _generate_output(
     result_tree: ET.ElementTree,
     input_path: str = "",
     output_path: str = "",
-    print_only: bool = False,
     generate_world: bool = True,
 ):
-    if print_only:
-        result_tree = result_tree.getroot()
-        xmlstr = minidom.parseString(ET.tostring(result_tree)).toprettyxml(
-            indent="  "
-        )
-        print(xmlstr)
-        return
-
-    # if an output path was selected the files will be
-    # generated there, otherwise all '.sdf' will be generated
-    # along side the '.dmd.yaml' files with the same name
+    # If an output path was selected the files will be generated there,
+    # otherwise all '.sdf' will be generated along side the '.dmd.yaml'
+    # files with the same name.
     if output_path:
-        # Create path if it does not exist
+        # Create path if it does not exist.
         if not os.path.exists(output_path):
             os.makedirs(output_path)
 
@@ -596,11 +583,11 @@ def _generate_output(
         if generate_world:
             world_output_path = file_no_extension + "_world.sdf"
 
-    # Save sdf files
+    # Save sdf files.
     if generate_world:
         root_world_name = result_tree.find("model").get("name")
         _save_world(root_world_name, world_output_path, output_filename_path)
-    # Saving the converted model
+    # Save the converted model.
     result_tree = result_tree.getroot()
     xmlstr = minidom.parseString(ET.tostring(result_tree)).toprettyxml(
         indent="  "
@@ -636,12 +623,6 @@ def _create_parser():
         type=str,
         help="Output path of directory where SDFormat files will be written.",
     )
-    parser.add_argument(
-        "-p",
-        "--print-only",
-        action="store_true",
-        help="Print the result instead of saving it to a file.",
-    )
     return parser
 
 
@@ -655,7 +636,7 @@ def _main(argv=None) -> None:
         raise ConversionError("Failed to convert model directives.")
 
     _generate_output(
-        result_tree, args.model_directives, args.output_path, args.print_only
+        result_tree, args.model_directives, args.output_path
     )
 
     return 0
