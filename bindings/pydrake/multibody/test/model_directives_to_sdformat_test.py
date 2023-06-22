@@ -6,8 +6,6 @@ import unittest
 
 from pydrake.multibody.parsing import (
     Parser,
-    LoadModelDirectives,
-    ProcessModelDirectives,
 )
 from pydrake.multibody.plant import (
     MultibodyPlant,
@@ -190,10 +188,7 @@ class TestConvertModelDirectiveToSdformat(
         parser = Parser(plant=directives_plant)
         parser.package_map().PopulateFromFolder(model_dir_multibody)
         parser.package_map().PopulateFromFolder(model_dir_bindings)
-        directives = LoadModelDirectives(file_path)
-        ProcessModelDirectives(
-            directives=directives, plant=directives_plant, parser=parser
-        )
+        parser.AddModels(file_path)
         directives_plant.Finalize()
 
         # Load converted SDFormat.
