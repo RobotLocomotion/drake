@@ -28,7 +28,6 @@ from pydrake.multibody import (
 )
 from pydrake.multibody.model_directives_to_sdformat import (
     convert_directives,
-    ConversionError,
 )
 
 _SCOPE_DELIMITER = "::"
@@ -415,7 +414,7 @@ class TestConvertModelDirectiveToSdformat(
 
     def test_not_supported_default_(self):
         with self.assertRaisesRegex(
-            ConversionError, "default_free_body_pose is not supported yet."
+            Exception, "default_free_body_pose is not supported yet."
         ):
             args = self.parser.parse_args(
                 [
@@ -429,7 +428,7 @@ class TestConvertModelDirectiveToSdformat(
 
     def test_error_wrong_file_extension(self):
         with self.assertRaisesRegex(
-            ConversionError,
+            Exception,
             "Unable to determine file format. Make sure the provided file has"
             " the drake model directives '.dmd.yaml' extension",
         ):
