@@ -817,6 +817,20 @@ class SpatialInertia {
   [[nodiscard]] SpatialInertia<T> ShiftFromCenterOfMass(
       const Vector3<T>& p_ScmP_E) const;
 
+  // Shifts `this` spatial inertia for a body (or composite body) S from its
+  // about-point P to about-point Scm (S's center of mass). In other words,
+  // shifts `M_SP_E` to `M_SScm_E` (both are expressed-in frame E).
+  // @return A reference to M_SP_E, `this` spatial inertia that has been shifted
+  // from about-point P to about-point Scm, expressed in frame E.
+  SpatialInertia<T>& ShiftToCenterOfMassInPlace();
+
+  // Calculates the spatial inertia that results from shifting `this` spatial
+  // inertia for a body (or composite body) S from its about-point P to
+  // about-point Scm (S's center of mass). In other words, shifts
+  // `M_SScm_E` to `M_SP_E` (both are expressed-in frame E).
+  // @retval M_SP_E S's spatial inertia about-point P expressed-in frame E.
+  [[nodiscard]] SpatialInertia<T> ShiftToCenterOfMass() const;
+
   // Returns principal semi-diameters (half-lengths), associated principal axes
   // orientations, and the position of a simple uniform-density body D whose
   // shape is specified by @p inertia_shape_factor and whose spatial inertia is
