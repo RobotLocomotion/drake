@@ -50,15 +50,20 @@ inline py::object py_keep_alive(py::object nurse, py::object patient) {
   return nurse;
 }
 
+// TODO(#11046): Remove this function once nominal casting mechanisms work
+// properly.
 /// Use this to manually cast an iterable type (e.g. py::list, py::set). See
 /// pydrake_pybind_test for an example.
 /// N.B. This should *not* be used for `py::dict`.
-template <typename PyType>
-inline PyType py_keep_alive_iterable(PyType nurses, py::object patient) {
-  for (py::handle nurse : nurses) {
-    py_keep_alive(py::reinterpret_borrow<py::object>(nurse), patient);
+template <typename PyType, typename CppIterable>
+inline PyType py_keep_alive_iterable(
+    const CppIterable& nurses, py::object patient) {
+  py::list nurses_py;
+  for (auto& nurse : nurses) {
+    py::object nurse_py = py::cast(nurse, py_rvp::reference_internal, patient);
+    nurses_py.append(nurse_py);
   }
-  return nurses;
+  return PyType(nurses_py);
 }
 
 // Implementation for `overload_cast_explicit`. We must use this structure so

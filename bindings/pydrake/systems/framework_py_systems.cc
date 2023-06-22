@@ -1045,15 +1045,9 @@ Note: The above is for the C++ documentation. For Python, use
         .def(
             "GetSystems",
             [](Diagram<T>* self) {
-              py::list out;
               py::object self_py = py::cast(self, py_rvp::reference);
-              for (auto* system : self->GetSystems()) {
-                py::object system_py = py::cast(system, py_rvp::reference);
-                // Keep alive, ownership: `system` keeps `self` alive.
-                py_keep_alive(system_py, self_py);
-                out.append(system_py);
-              }
-              return out;
+              return py_keep_alive_iterable<py::list>(
+                  self->GetSystems(), self_py);
             },
             doc.Diagram.GetSystems.doc);
 

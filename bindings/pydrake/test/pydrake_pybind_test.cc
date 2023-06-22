@@ -25,28 +25,38 @@ GTEST_TEST(PydrakePybindTest, PyReturnValuePolicy) {
 // Expects that a given Python expression `expr` evaluates to true, using
 // globals and the variables available in `m`.
 void PyExpectTrue(py::module m, const char* expr) {
-  const bool value =
-      py::eval(expr, py::globals(), m.attr("__dict__")).cast<bool>();
+  py::object locals = m.attr("__dict__");
+  const bool value = py::eval(expr, py::globals(), locals).cast<bool>();
   EXPECT_TRUE(value) << expr;
 }
 
-class Nonce {};
+template <typename T>
+void PyExpectEq(py::module m, const std::string& expr, const T& expected) {
+  SCOPED_TRACE("Python expression:\n  " + expr);
+  py::object locals = m.attr("__dict__");
+  const T actual = py::eval(expr, py::globals(), locals).cast<T>();
+  EXPECT_EQ(actual, expected);
+}
+
+struct Item {
+  int value{};
+};
 
 class ExamplePyKeepAlive {
  public:
-  const Nonce* a() const { return &a_; }
-  std::vector<const Nonce*> a_list() const { return {&a_}; }
+  const Item* a() const { return &a_; }
+  std::vector<const Item*> a_list() const { return {&a_}; }
 
  private:
-  Nonce a_{};
+  Item a_{.value = 10};
 };
 
 GTEST_TEST(PydrakePybindTest, PyKeepAlive) {
   py::module m =
       py::module::create_extension_module("test", "", new PyModuleDef());
   {
-    using Class = Nonce;
-    py::class_<Class>(m, "Nonce");
+    using Class = Item;
+    py::class_<Class>(m, "Item").def_readonly("value", &Class::value);
   }
   {
     using Class = ExamplePyKeepAlive;
@@ -58,15 +68,20 @@ GTEST_TEST(PydrakePybindTest, PyKeepAlive) {
             })
         .def("a_list", [](const Class& self) {
           return py_keep_alive_iterable<py::list>(
-              py::cast(self.a_list()), py::cast(&self));
+              self.a_list(), py::cast(&self));
         });
   }
 
-  PyExpectTrue(m, "isinstance(ExamplePyKeepAlive().a(), Nonce)");
+  PyExpectTrue(m, "isinstance(ExamplePyKeepAlive().a(), Item)");
+  PyExpectEq(m, "ExamplePyKeepAlive().a().value", 10);
   PyExpectTrue(m,
       "isinstance(ExamplePyKeepAlive().a_list(), list) and "
       "len(ExamplePyKeepAlive().a_list()) == 1 and "
-      "isinstance(ExamplePyKeepAlive().a_list()[0], Nonce)");
+      "isinstance(ExamplePyKeepAlive().a_list()[0], Item)");
+  // Ensure we test the value to check for memory corruption.
+  PyExpectEq(m, "ExamplePyKeepAlive().a_list()[0].value", 10);
+  // Explicitly test keep alive behavior.
+  PyExpectTrue(m, "check_py_keep_alive_iterable(cls=ExamplePyKeepAlive)");
 }
 
 // Class which has a copy constructor, for testing `DefCopyAndDeepCopy`.

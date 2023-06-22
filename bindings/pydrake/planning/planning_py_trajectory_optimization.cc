@@ -405,17 +405,12 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
         .def(
             "regions",
             [](Class::Subgraph* self) {
-              py::list out;
-              py::object self_py = py::cast(self, py_rvp::reference);
+              std::vector<const geometry::optimization::ConvexSet*> regions;
               for (auto& region : self->regions()) {
-                const geometry::optimization::ConvexSet* region_raw =
-                    region.get();
-                py::object region_py = py::cast(region_raw, py_rvp::reference);
-                // Keep alive, ownership: `region` keeps `self` alive.
-                py_keep_alive(region_py, self_py);
-                out.append(region_py);
+                regions.push_back(region.get());
               }
-              return out;
+              py::object self_py = py::cast(self, py_rvp::reference);
+              return py_keep_alive_iterable<py::list>(regions, self_py);
             },
             subgraph_doc.regions.doc)
         .def("AddTimeCost", &Class::Subgraph::AddTimeCost,
