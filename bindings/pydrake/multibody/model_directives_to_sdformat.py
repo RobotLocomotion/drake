@@ -603,7 +603,8 @@ def _create_parser():
         "-o",
         "--output-path",
         type=str,
-        help="Output path of directory where SDFormat files will be written.",
+        help="Output path of directory where SDFormat files will be written. "
+        "When not provided, it will be the same directory as the input file.",
     )
     return parser
 
