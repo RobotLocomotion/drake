@@ -109,17 +109,17 @@ def assert_bodies_same(plant_a, context_a, body_a, plant_b, context_b, body_b):
     if body_a.name() != body_b.name():
         return False
 
-    # Check that positions in the world frame reference are also the same
+    # Check that positions in the world frame reference are also the same.
     directives_body_transform = plant_a.EvalBodyPoseInWorld(context_a, body_a)
     sdformat_body_transform = plant_b.EvalBodyPoseInWorld(context_b, body_b)
     directives_body_transform.IsNearlyEqualTo(sdformat_body_transform, 1e-10)
 
-    # Check frames attached to this body
+    # Check frames attached to this body.
     frames_b = get_frames_attached_to(plant_b, [body_b])
     frames_a = get_frames_attached_to(plant_a, [body_a])
 
     # All frames created through model directives would have
-    # been created when loading the SDFormat
+    # been created when loading the SDFormat.
     if not all(
         frame_a.name() in [frame_b.name() for frame_b in frames_b]
         for frame_a in frames_a
@@ -144,14 +144,14 @@ def are_joints_same(joints_a, joints_b):
                 joints_a.pop(i)
                 joints_b.pop(j)
 
-    # All joints should have been verified
+    # All joints should have been verified.
     if len(joints_a) == 0 and len(joints_b) == 0:
         return True
     else:
         return False
 
 
-class TestConvertModelDirectiveToSDF(
+class TestConvertModelDirectiveToSdformat(
     unittest.TestCase, metaclass=ValueParameterizedTest
 ):
     def setUp(self):
@@ -168,7 +168,7 @@ class TestConvertModelDirectiveToSDF(
         "deep_weld.dmd.yaml",
     ]])
     def test_through_plant_comparison(self, *, name):
-        # Convert
+        # Convert.
         test_dir = "bindings/pydrake/multibody/test"
         file_path = f"{test_dir}/model_directives_to_sdformat_files/{name}"
         args = self.parser.parse_args(["-m", file_path])
@@ -177,7 +177,7 @@ class TestConvertModelDirectiveToSDF(
             ET.tostring(sdformat_tree)
         ).toprettyxml(indent="  ")
 
-        # Load model directives
+        # Load model directives.
         directives_plant = MultibodyPlant(time_step=0.0)
         model_dir_multibody = os.path.dirname(
             os.path.join(GetDrakePath(), "multibody/parsing/test/")
@@ -194,7 +194,7 @@ class TestConvertModelDirectiveToSDF(
         )
         directives_plant.Finalize()
 
-        # Load converted SDFormat
+        # Load converted SDFormat.
         sdformat_plant = MultibodyPlant(time_step=0.0)
         sdformat_parser = Parser(sdformat_plant)
         sdformat_parser.package_map().PopulateFromFolder(model_dir_multibody)
@@ -202,7 +202,7 @@ class TestConvertModelDirectiveToSDF(
         sdformat_parser.AddModelsFromString(sdformat_result, "sdf")
         sdformat_plant.Finalize()
 
-        # Compare plants
+        # Compare plants.
         # The conversion process will create an extra top level
         # model instance. This can be avoided using the generated
         # world model with merge include.
@@ -237,7 +237,7 @@ class TestConvertModelDirectiveToSDF(
 
             self.assertTrue(model_found)
 
-            # Check Model Bodies and corresponding Frames
+            # Check Model Bodies and corresponding Frames.
             model_instance = ModelInstanceIndex(i)
             directives_bodies = get_bodies(directives_plant, [model_instance])
             directives_context = directives_plant.CreateDefaultContext()
@@ -261,7 +261,7 @@ class TestConvertModelDirectiveToSDF(
                     )
                 )
 
-            # Check Model Joints
+            # Check Model Joints.
             self.assertTrue(
                 are_joints_same(
                     get_joints(directives_plant, [model_instance]),
