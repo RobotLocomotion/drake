@@ -1,8 +1,8 @@
 import argparse
-import copy
+import os
+from pathlib import Path
 from xml.dom import minidom
 import xml.etree.ElementTree as ET
-import os
 
 from pydrake.common import schema
 from pydrake.common.yaml import yaml_load_typed
@@ -410,29 +410,23 @@ class AddDirectives:
         uri_elem.text = self.sdformat_uri
 
     def convert_nested_directive(self, *, output_path):
-        if self.file_path.startswith("package://"):
-            package_map = PackageMap()
-            package_map.PopulateFromRosPackagePath()
-            suffix = self.file_path[len("package://"):]
-            package_name, relative_path = suffix.split("/", maxsplit=1)
-            if package_map.Contains(package_name):
-                resolved_file_path = os.path.join(
-                    package_map.GetPath(package_name), relative_path
-                )
-            else:
-                raise ConversionError(
-                    f"Failed to find package [{package_name}] "
-                )
-        else:
+        if not self.file_path.startswith("package://"):
             raise ConversionError(
-                "The provided file path is invalid. It must"
-                " be of the form: [package://path_to_file/"
-                "file.dmd.yaml]"
+                "The provided file path is invalid. It must be of the form: "
+                "[package://path_to_file/file.dmd.yaml]"
             )
+        package_map = PackageMap()
+        package_map.PopulateFromRosPackagePath()
+        suffix = self.file_path[len("package://"):]
+        package_name, relative_path = suffix.split("/", maxsplit=1)
+        if not package_map.Contains(package_name):
+            raise ConversionError(f"Failed to find package [{package_name}]")
+        package_path = Path(package_map.GetPath(package_name))
+        resolved_file_path = package_path / relative_path
 
         # Update args with new target file.
         result_tree = convert_directives(
-            model_directives=resolved_file_path,
+            dmd_filename=resolved_file_path,
             output_path=output_path,
             expand_included=True,
         )
@@ -471,20 +465,19 @@ def _create_object_from_directive(directive):
 
 
 def convert_directives(*,
-                       model_directives: str,
+                       dmd_filename: Path,
                        output_path: str = None,
                        expand_included: bool = False):
     # Check that the file is a .dmd.yaml file.
-    if not model_directives.endswith('.dmd.yaml'):
+    if not dmd_filename.name.endswith('.dmd.yaml'):
         raise ConversionError(
-            "Unable to determine file format. Make sure "
-            "the provided file has the drake model directives"
-            " '.dmd.yaml' extension"
+            "Unable to determine file format. Make sure the provided file has "
+            "the drake model directives '.dmd.yaml' extension"
         )
 
     # Read the directives file.
     directives_data = yaml_load_typed(
-        schema=ModelDirectives, filename=model_directives
+        schema=ModelDirectives, filename=dmd_filename
     )
 
     all_directives = [
@@ -497,9 +490,7 @@ def convert_directives(*,
 
     # Initialize the sdformat XML root.
     root = ET.Element("sdf", version=_SDF_VERSION)
-    root_name = os.path.basename(
-        _remove_suffix(model_directives, ".dmd.yaml")
-    )
+    root_name = _remove_suffix(dmd_filename.name, ".dmd.yaml")
 
     root_elem = ET.SubElement(root, "model", name=root_name)
 
@@ -595,7 +586,7 @@ def _main(argv=None):
     parser.add_argument(
         "-m",
         "--model-directives",
-        type=str,
+        type=Path,
         required=True,
         help="Path to model directives file to be converted.",
     )
@@ -609,9 +600,9 @@ def _main(argv=None):
     args = parser.parse_args(argv)
 
     result_tree = convert_directives(
-        expand_included=args.expand_included,
-        model_directives=args.model_directives,
+        dmd_filename=args.model_directives,
         output_path=args.output_path,
+        expand_included=args.expand_included,
     )
 
     if result_tree is None:

@@ -1,8 +1,9 @@
 import argparse
+import os
+from pathlib import Path
+import unittest
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
-import os
-import unittest
 
 from pydrake.multibody.parsing import (
     Parser,
@@ -152,7 +153,7 @@ class TestConvertModelDirectiveToSdformat(
     unittest.TestCase, metaclass=ValueParameterizedTest
 ):
     def setUp(self):
-        self.dmd_test_path = (
+        self.dmd_test_path = Path(
             "bindings/pydrake/multibody/test/"
             "model_directives_to_sdformat_files"
         )
@@ -169,9 +170,9 @@ class TestConvertModelDirectiveToSdformat(
     ]])
     def test_through_plant_comparison(self, *, name):
         # Convert.
-        file_path = f"{self.dmd_test_path}/{name}.dmd.yaml"
+        dmd_filename = self.dmd_test_path / f"{name}.dmd.yaml"
         sdformat_tree = convert_directives(
-            model_directives=file_path).getroot()
+            dmd_filename=dmd_filename).getroot()
         sdformat_result = minidom.parseString(
             ET.tostring(sdformat_tree)
         ).toprettyxml(indent="  ")
@@ -187,7 +188,7 @@ class TestConvertModelDirectiveToSdformat(
         parser = Parser(plant=directives_plant)
         parser.package_map().PopulateFromFolder(model_dir_multibody)
         parser.package_map().PopulateFromFolder(model_dir_bindings)
-        parser.AddModels(file_path)
+        parser.AddModels(str(dmd_filename))
         directives_plant.Finalize()
 
         # Load converted SDFormat.
@@ -207,15 +208,9 @@ class TestConvertModelDirectiveToSdformat(
             directives_plant.num_model_instances(),
         )
 
-        file_name = os.path.basename(
-            model_directives_to_sdformat._remove_suffix(
-                file_path, ".dmd.yaml"
-            )
-        )
-
         for i in range(2, directives_plant.num_model_instances()):
             model_scoped_name = (
-                file_name
+                name
                 + _SCOPE_DELIMITER
                 + directives_plant.GetModelInstanceName(ModelInstanceIndex(i))
             )
@@ -280,11 +275,11 @@ class TestConvertModelDirectiveToSdformat(
         "world_base_frame",
     ]])
     def test_error(self, *, name):
-        file_path = f"{self.dmd_test_path}/errors/{name}.dmd.yaml"
-        with open(f"{self.dmd_test_path}/errors/{name}.error_regex") as f:
+        dmd_filename = self.dmd_test_path / f"errors/{name}.dmd.yaml"
+        with open(self.dmd_test_path / f"errors/{name}.error_regex") as f:
             expected_message_regex = f.read().strip()
         with self.assertRaisesRegex(Exception, expected_message_regex):
-            convert_directives(model_directives=file_path)
+            convert_directives(dmd_filename=dmd_filename)
 
     def test_add_model_instance_add_directives(self):
         os.environ["ROS_PACKAGE_PATH"] = "bindings/pydrake/multibody"
@@ -354,11 +349,11 @@ class TestConvertModelDirectiveToSdformat(
         )
 
     def test_resulting_xml(self):
-        file_path = f"{self.dmd_test_path}/inject_frames.dmd.yaml"
-        expected_path = f"{self.dmd_test_path}/inject_frames.expected-sdf"
+        dmd_filename = self.dmd_test_path / "inject_frames.dmd.yaml"
+        expected_path = self.dmd_test_path / "inject_frames.expected-sdf"
         with open(expected_path, encoding="utf-8") as f:
             expected_xml = f.read()
-        result = convert_directives(model_directives=file_path).getroot()
+        result = convert_directives(dmd_filename=dmd_filename).getroot()
         xmlstr = minidom.parseString(ET.tostring(result)).toprettyxml(
             indent="  "
         )
@@ -367,5 +362,5 @@ class TestConvertModelDirectiveToSdformat(
 
     def test_error_wrong_file_extension(self):
         with self.assertRaisesRegex(Exception, "determine file format"):
-            file_path = "frame_same_as_base_frame.not_valid"
-            convert_directives(model_directives=file_path)
+            dmd_filename = Path("frame_same_as_base_frame.not_valid")
+            convert_directives(dmd_filename=dmd_filename)
