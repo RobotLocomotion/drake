@@ -576,6 +576,7 @@ void DoScalarDependentDefinitions(py::module m) {
               py::object input_system_py = py::cast(
                   input_locator.first, py_rvp::reference_internal, self_py);
               py::object input_port_index_py = py::cast(input_locator.second);
+
               py::tuple input_locator_py(2);
               input_locator_py[0] = input_system_py;
               input_locator_py[1] = input_port_index_py;
@@ -584,6 +585,7 @@ void DoScalarDependentDefinitions(py::module m) {
               py::object output_system_py = py::cast(
                   output_locator.first, py_rvp::reference_internal, self_py);
               py::object output_port_index_py = py::cast(output_locator.second);
+
               py::tuple output_locator_py(2);
               output_locator_py[0] = output_system_py;
               output_locator_py[1] = output_port_index_py;

@@ -410,6 +410,7 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
                 regions.push_back(region.get());
               }
               py::object self_py = py::cast(self, py_rvp::reference);
+              // Keep alive, ownership: items in `regions` keeps `self` alive.
               return py::cast(regions, py_rvp::reference_internal, self_py);
             },
             subgraph_doc.regions.doc)
