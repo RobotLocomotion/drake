@@ -65,6 +65,11 @@ class BlockSparsityPattern {
    are nonzero. */
   const std::vector<std::vector<int>>& neighbors() const { return neighbors_; }
 
+  /* Returns the number of non-zero scalar values in `this` block sparisty
+   pattern. Note that only the nonzero entries in the lower triangular part of
+   the matrix are included. */
+  int CalcNumNonzeros() const;
+
  private:
   std::vector<int> block_sizes_;
   std::vector<std::vector<int>> neighbors_;
