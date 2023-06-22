@@ -110,6 +110,22 @@ BlockSparseSymmetricMatrix MakeSymmetricMatrix() {
   return A_blocks;
 }
 
+GTEST_TEST(BlockSparsityPatternTest, CalcNumNonzeros) {
+  std::vector<int> diag{2, 3, 4};
+  std::vector<std::vector<int>> sparsity;
+  sparsity.push_back(std::vector<int>{0});
+  sparsity.push_back(std::vector<int>{1, 2});
+  sparsity.push_back(std::vector<int>{2});
+  /* The sparsity pattern is
+         2x2 |  0  |  0
+        -----------------
+          0  | 3x3 |  0
+        -----------------
+          0  | 4x3 | 4x4  */
+  const BlockSparsityPattern pattern(diag, sparsity);
+  EXPECT_EQ(pattern.CalcNumNonzeros(), 41);
+}
+
 GTEST_TEST(TriangularBlockSparseMatrixTest, Construction) {
   const BlockSparseLowerTriangularMatrix A_triangular =
       MakeLowerTriangularMatrix();
