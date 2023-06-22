@@ -272,12 +272,16 @@ class TestConvertModelDirectiveToSdformat(
             )
 
     @run_with_multiple_values([dict(name=name) for name in [
+        "deep_child_frame_weld",
+        "deep_child_weld",
+        "default_joint_positions",
         "different_scopes_frame",
         "frame_same_as_base_frame",
         "frames_same_name",
         "implicit_hidden_base_frame",
         "not_directives_first",
         "something_not_directives",
+        "weld_same_parent_child",
         "world_base_frame",
     ]])
     def test_error(self, *, name):
@@ -286,57 +290,6 @@ class TestConvertModelDirectiveToSdformat(
             expected_message_regex = f.read().strip()
         with self.assertRaisesRegex(Exception, expected_message_regex):
             args = self.parser.parse_args(["-m", file_path])
-            convert_directives(args)
-
-    def test_error_add_weld_child_frame_too_deep(self):
-        with self.assertRaisesRegex(
-            ConversionError,
-            "Found weld with deeply nested child frame"
-            r" \[top_level_model::top_injected_frame\]. Welds with deeply"
-            " nested childs are not suported.",
-        ):
-            args = self.parser.parse_args(
-                [
-                    "-m",
-                    "bindings/pydrake/multibody/test/"
-                    "model_directives_to_sdformat_files/errors/"
-                    "deep_child_frame_weld.dmd.yaml",
-                ]
-            )
-            convert_directives(args)
-
-    def test_error_add_weld_child_too_deep(self):
-        with self.assertRaisesRegex(
-            ConversionError,
-            "Found weld with deeply nested child frame"
-            r" \[top_level_model::robot1::robot_base\]. Welds with deeply"
-            " nested childs are not suported.",
-        ):
-            args = self.parser.parse_args(
-                [
-                    "-m",
-                    "bindings/pydrake/multibody/test/"
-                    "model_directives_to_sdformat_files/errors/"
-                    "deep_child_weld.dmd.yaml",
-                ]
-            )
-            convert_directives(args)
-
-    def test_error_add_weld_same_parent_child(self):
-        with self.assertRaisesRegex(
-            ConversionError,
-            "Weld must specify different name for "
-            r"parent and child, while \[simple_model::base\] was "
-            "specified for both.",
-        ):
-            args = self.parser.parse_args(
-                [
-                    "-m",
-                    "bindings/pydrake/multibody/test/"
-                    "model_directives_to_sdformat_files/errors/"
-                    "weld_same_parent_child.dmd.yaml",
-                ]
-            )
             convert_directives(args)
 
     def test_add_model_instance_add_directives(self):
@@ -475,20 +428,6 @@ class TestConvertModelDirectiveToSdformat(
                     "multibody/parsing/test/"
                     "process_model_directives_test/"
                     "default_positions.dmd.yaml",
-                ]
-            )
-            convert_directives(args)
-
-    def test_not_supported_default_joint_position(self):
-        with self.assertRaisesRegex(
-            ConversionError, "default_joint_positions is not supported yet."
-        ):
-            args = self.parser.parse_args(
-                [
-                    "-m",
-                    "bindings/pydrake/multibody/test/"
-                    "model_directives_to_sdformat_files/errors/"
-                    "default_joint_positions.dmd.yaml",
                 ]
             )
             convert_directives(args)
