@@ -45,7 +45,7 @@ using py_rvp = py::return_value_policy;
 /// where the container may get discarded but the items kept. Prefer this over
 /// `py::cast(obj, reference_internal, parent)` (pending full resolution of
 /// #11046).
-inline py::object py_keep_alive(py::object nurse, py::object patient) {
+inline py::object py_keep_alive(py::object nurse, py::handle patient) {
   py::detail::keep_alive_impl(nurse, patient);
   return nurse;
 }

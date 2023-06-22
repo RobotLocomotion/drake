@@ -39,7 +39,7 @@ class TestContainer {
   TestContainer(int value)
       : item_(std::make_unique<TestClass>(value)) {}
 
-  const copyable_unique_ptr<TestClass>& item() const {
+  copyable_unique_ptr<TestClass>& item() {
     return item_;
   }
 
@@ -60,7 +60,7 @@ GTEST_TEST(TypeSafeIndexTest, CheckCasting) {
 
   SynchronizeGlobalsForPython3(m);
 
-  CheckValue("TestContainer(10).item().value()", 10);
+  CheckValue("x = TestContainer(10); x.item().value()", 10);
 }
 
 int main(int argc, char** argv) {

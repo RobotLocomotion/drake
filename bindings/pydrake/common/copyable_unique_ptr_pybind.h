@@ -26,9 +26,15 @@ struct type_caster<drake::copyable_unique_ptr<T>> {
 
   static handle cast(Type src, return_value_policy policy, handle parent) {
     switch (policy) {
-      case return_value_policy::reference:
+      // case return_value_policy::reference:
       case return_value_policy::reference_internal: {
-        return value_conv::cast(src.get(), policy, parent);
+        // handle out = value_conv::cast(src.get(), policy, parent);
+        object out = pybind11::cast(src.get(), policy, parent);
+        drake::pydrake::py_keep_alive(out, parent);
+        pybind11::print(out.attr("value")());
+        out.inc_ref();
+        // return out.inc_ref();
+        return out.release();
       }
       default:
         throw cast_error(
