@@ -354,55 +354,16 @@ class TestConvertModelDirectiveToSdformat(
         )
 
     def test_resulting_xml(self):
-        expected_xml = (
-            """<?xml version="1.0" ?>
-<sdf version="1.9">
-  <model name="inject_frames">
-    <model name="top_level_model">
-      <include merge="true">
-        <name>top_level_model</name>
-        <uri>package://process_model_directives_test/simple_model.sdf</uri>
-      </include>
-      <frame name="top_injected_frame" attached_to="base">
-        <pose degrees="true">1.0 2.0 3.0   10.0 20.0 30.0</pose>
-      </frame>
-    </model>
-    <model name="mid_level_model" placement_frame="base">
-      <pose relative_to="top_level_model::top_injected_frame"/>
-      <include merge="true">
-        <name>mid_level_model</name>
-        <uri>package://process_model_directives_test/simple_model.sdf</uri>
-      </include>
-      <frame name="mid_injected_frame" attached_to="base">
-        <pose degrees="true">1.0 2.0 3.0   0 0 0</pose>
-      </frame>
-    </model>
-    <joint name="top_level_model__top_injected_frame__to__mid_level_model__"""
-            """base__weld_joint" type="fixed">
-      <parent>top_level_model::top_injected_frame</parent>
-      <child>mid_level_model::base</child>
-    </joint>
-    <include>
-      <name>bottom_level_model</name>
-      <uri>package://process_model_directives_test/simple_model.sdf</uri>
-      <placement_frame>base</placement_frame>
-      <pose relative_to="mid_level_model::mid_injected_frame"/>
-    </include>
-    <joint name="mid_level_model__mid_injected_frame__to__bottom_level_"""
-            """model__base__weld_joint" type="fixed">
-      <parent>mid_level_model::mid_injected_frame</parent>
-      <child>bottom_level_model::base</child>
-    </joint>
-  </model>
-</sdf>
-"""
-        )
         file_path = f"{self.dmd_test_path}/inject_frames.dmd.yaml"
+        expected_path = f"{self.dmd_test_path}/inject_frames.expected-sdf"
+        with open(expected_path, encoding="utf-8") as f:
+            expected_xml = f.read()
         result = convert_directives(model_directives=file_path).getroot()
         xmlstr = minidom.parseString(ET.tostring(result)).toprettyxml(
             indent="  "
         )
-        self.assertEqual(expected_xml, xmlstr)
+        self.maxDiff = None
+        self.assertMultiLineEqual(expected_xml, xmlstr)
 
     def test_error_wrong_file_extension(self):
         with self.assertRaisesRegex(Exception, "determine file format"):
