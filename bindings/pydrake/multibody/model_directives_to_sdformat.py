@@ -511,18 +511,6 @@ def convert_directives(args):
         elif not isinstance(dir_obj, AddModelInstance):
             dir_obj.insert_into_root_sdformat_node(root_elem, all_directives)
 
-    # Check model validity by loading it through the SDFormat parser.
-    if args.check_sdf:
-        try:
-            directives_plant = MultibodyPlant(time_step=0.01)
-            parser = Parser(plant=directives_plant)
-            parser.package_map().PopulateFromRosPackagePath()
-            parser.AddModelsFromString(ET.tostring(root), "sdf")
-        except RuntimeError as e:
-            raise ConversionError(
-                "Failed to validate resulting SDFormat XML."
-            ) from e
-
     return ET.ElementTree(root)
 
 
@@ -598,12 +586,6 @@ def _generate_output(
 
 def _create_parser():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "-c",
-        "--check-sdf",
-        action="store_true",
-        help="Check and validate resulting SDFormat.",
-    )
     parser.add_argument(
         "-e",
         "--expand-included",
