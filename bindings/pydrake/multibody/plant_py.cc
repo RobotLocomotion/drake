@@ -1193,14 +1193,12 @@ void DoScalarDependentDefinitions(py::module m, T) {
               builder, std::move(plant), std::move(scene_graph));
           // Must do manual keep alive to dig into tuple.
           py::object builder_py = py::cast(builder, py_rvp::reference);
-          py::object plant_py = py::cast(pair.plant, py_rvp::reference);
-          py::object scene_graph_py =
-              py::cast(pair.scene_graph, py_rvp::reference);
           return py::make_tuple(
               // Keep alive, ownership: `plant` keeps `builder` alive.
-              py_keep_alive(plant_py, builder_py),
+              py::cast(pair.plant, py_rvp::reference_internal, builder_py),
               // Keep alive, ownership: `scene_graph` keeps `builder` alive.
-              py_keep_alive(scene_graph_py, builder_py));
+              py::cast(
+                  pair.scene_graph, py_rvp::reference_internal, builder_py));
         },
         py::arg("builder"), py::arg("plant"), py::arg("scene_graph") = nullptr,
         doc.AddMultibodyPlantSceneGraph
@@ -1214,14 +1212,12 @@ void DoScalarDependentDefinitions(py::module m, T) {
               builder, time_step, std::move(scene_graph));
           // Must do manual keep alive to dig into tuple.
           py::object builder_py = py::cast(builder, py_rvp::reference);
-          py::object plant_py = py::cast(pair.plant, py_rvp::reference);
-          py::object scene_graph_py =
-              py::cast(pair.scene_graph, py_rvp::reference);
           return py::make_tuple(
               // Keep alive, ownership: `plant` keeps `builder` alive.
-              py_keep_alive(plant_py, builder_py),
+              py::cast(pair.plant, py_rvp::reference_internal, builder_py),
               // Keep alive, ownership: `scene_graph` keeps `builder` alive.
-              py_keep_alive(scene_graph_py, builder_py));
+              py::cast(
+                  pair.scene_graph, py_rvp::reference_internal, builder_py));
         },
         py::arg("builder"), py::arg("time_step"),
         py::arg("scene_graph") = nullptr,
@@ -1237,14 +1233,12 @@ void DoScalarDependentDefinitions(py::module m, T) {
             auto pair = AddMultibodyPlant(config, builder);
             // Must do manual keep alive to dig into tuple.
             py::object builder_py = py::cast(builder, py_rvp::reference);
-            py::object plant_py = py::cast(pair.plant, py_rvp::reference);
-            py::object scene_graph_py =
-                py::cast(pair.scene_graph, py_rvp::reference);
             return py::make_tuple(
                 // Keep alive, ownership: `plant` keeps `builder` alive.
-                py_keep_alive(plant_py, builder_py),
+                py::cast(pair.plant, py_rvp::reference_internal, builder_py),
                 // Keep alive, ownership: `scene_graph` keeps `builder` alive.
-                py_keep_alive(scene_graph_py, builder_py));
+                py::cast(
+                    pair.scene_graph, py_rvp::reference_internal, builder_py));
           },
           py::arg("config"), py::arg("builder"), doc.AddMultibodyPlant.doc);
     }

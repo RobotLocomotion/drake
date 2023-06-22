@@ -129,15 +129,13 @@ PYBIND11_MODULE(sensors, m) {
             self->height(), self->width(), int{ImageTraitsT::kNumChannels});
       };
       auto get_data = [=](const ImageT* self) {
-        py::object array =
-            ToArray(self->at(0, 0), self->size(), get_shape(self));
-        py_keep_alive(array, py::cast(self));
+        py::object array = ToArray(self->at(0, 0), self->size(),
+            get_shape(self), py_rvp::reference_internal, py::cast(self));
         return array;
       };
       auto get_mutable_data = [=](ImageT* self) {
-        py::object array =
-            ToArray(self->at(0, 0), self->size(), get_shape(self));
-        py_keep_alive(array, py::cast(self));
+        py::object array = ToArray(self->at(0, 0), self->size(),
+            get_shape(self), py_rvp::reference_internal, py::cast(self));
         return array;
       };
 

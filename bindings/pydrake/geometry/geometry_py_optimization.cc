@@ -323,10 +323,9 @@ void DefineGeometryOptimization(py::module m) {
               py::object self_py = py::cast(self, py_rvp::reference);
               for (const copyable_unique_ptr<ConvexSet>& convex_set :
                   self.configuration_obstacles) {
-                py::object convex_set_py =
-                    py::cast(convex_set.get(), py_rvp::reference);
                 // Keep alive, ownership: `convex_set` keeps `self` alive.
-                py_keep_alive(convex_set_py, self_py);
+                py::object convex_set_py = py::cast(
+                    convex_set.get(), py_rvp::reference_internal, self_py);
                 out.append(convex_set_py);
               }
               return out;
