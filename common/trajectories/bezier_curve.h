@@ -44,7 +44,7 @@ class BezierCurve final : public trajectories::Trajectory<T> {
   virtual ~BezierCurve() = default;
 
   /** Returns the order of the curve (1 for linear, 2 for quadratic, etc.). */
-  int order() const { return order_; }
+  int order() const { return control_points_.cols() - 1; }
 
   /** Returns the value of the ith basis function of `order` (1 for linear, 2
    for quadratic, etc) evaluated at `time`. The default value for the optional
@@ -99,7 +99,6 @@ class BezierCurve final : public trajectories::Trajectory<T> {
   double start_time_{};
   double end_time_{};
   MatrixX<T> control_points_;
-  int order_{};
 };
 }  // namespace trajectories
 }  // namespace drake
