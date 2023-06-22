@@ -89,6 +89,15 @@ drake_py_library(
     ],
 )
 
+drake_py_binary(
+    name = "model_directives_to_sdformat",
+    srcs = ["model_directives_to_sdformat.py"],
+    visibility = ["//tools:__pkg__"],
+    deps = [
+        "model_directives_to_sdformat_py",
+    ],
+)
+
 drake_pybind_library(
     name = "math_py",
     cc_deps = [
@@ -303,9 +312,6 @@ cmake_configure_file(
     ],
 )
 
-# Workaround to shorten up rename line in install_files.
-bin_run_dmd_to_sdf = "bin/run_installed_model_directives_to_sdformat.py"
-
 install_files(
     name = "install_wrapper_scripts",
     dest = "bin",
@@ -315,7 +321,7 @@ install_files(
     ],
     rename = {
         "bin/run_installed_mesh_to_model.py": "mesh_to_model",
-        bin_run_dmd_to_sdf: "model_directives_to_sdformat",
+        "bin/run_installed_model_directives_to_sdformat.py": "model_directives_to_sdformat",  # noqa
     },
 )
 
@@ -334,9 +340,9 @@ PY_LIBRARIES_WITH_INSTALL = [
 
 PY_LIBRARIES = [
     ":jupyter_widgets_py",
-    ":module_py",
     ":mesh_model_maker_py",
     ":model_directives_to_sdformat_py",
+    ":module_py",
 ]
 
 # Symbol roll-up (for user ease).
@@ -370,15 +376,6 @@ filegroup(
         "**/*.sdf",
     ]),
     visibility = ["//:__pkg__"],
-)
-
-filegroup(
-    name = "model_directives_to_sdformat_files",
-    testonly = True,
-    data = glob(["test/model_directives_to_sdformat_files/**"]),
-    visibility = [
-        "//bindings/pydrake/multibody:__pkg__",
-    ],
 )
 
 drake_jupyter_py_binary(
@@ -528,12 +525,12 @@ drake_py_unittest(
 drake_py_unittest(
     name = "model_directives_to_sdformat_test",
     data = [
-        ":model_directives_to_sdformat_files",
-        ":model_directives_to_sdformat_py",
         "//multibody/parsing:process_model_directives_test_models",
-    ],
+    ] + glob([
+        "test/model_directives_to_sdformat_files/**",
+    ]),
     deps = [
-        "//bindings/pydrake",
+        ":model_directives_to_sdformat_py",
         "//bindings/pydrake/common/test_utilities:meta_py",
     ],
 )

@@ -6,8 +6,6 @@ import unittest
 
 from pydrake.multibody.parsing import (
     Parser,
-    LoadModelDirectives,
-    ProcessModelDirectives,
 )
 from pydrake.multibody.plant import (
     MultibodyPlant,
@@ -30,7 +28,6 @@ from pydrake.multibody import (
 )
 from pydrake.multibody.model_directives_to_sdformat import (
     convert_directives,
-    ConversionError,
 )
 
 _SCOPE_DELIMITER = "::"
@@ -109,17 +106,17 @@ def assert_bodies_same(plant_a, context_a, body_a, plant_b, context_b, body_b):
     if body_a.name() != body_b.name():
         return False
 
-    # Check that positions in the world frame reference are also the same
+    # Check that positions in the world frame reference are also the same.
     directives_body_transform = plant_a.EvalBodyPoseInWorld(context_a, body_a)
     sdformat_body_transform = plant_b.EvalBodyPoseInWorld(context_b, body_b)
     directives_body_transform.IsNearlyEqualTo(sdformat_body_transform, 1e-10)
 
-    # Check frames attached to this body
+    # Check frames attached to this body.
     frames_b = get_frames_attached_to(plant_b, [body_b])
     frames_a = get_frames_attached_to(plant_a, [body_a])
 
     # All frames created through model directives would have
-    # been created when loading the SDFormat
+    # been created when loading the SDFormat.
     if not all(
         frame_a.name() in [frame_b.name() for frame_b in frames_b]
         for frame_a in frames_a
@@ -144,50 +141,42 @@ def are_joints_same(joints_a, joints_b):
                 joints_a.pop(i)
                 joints_b.pop(j)
 
-    # All joints should have been verified
+    # All joints should have been verified.
     if len(joints_a) == 0 and len(joints_b) == 0:
         return True
     else:
         return False
 
 
-class TestConvertModelDirectiveToSDF(
+class TestConvertModelDirectiveToSdformat(
     unittest.TestCase, metaclass=ValueParameterizedTest
 ):
-    files_to_test = [
-        "bindings/pydrake/multibody/test/model_directives_to_sdformat_files/"
-        "inject_frames.dmd.yaml",
-        "bindings/pydrake/multibody/test/model_directives_to_sdformat_files/"
-        "inject_frames.dmd.yaml",
-        "bindings/pydrake/multibody/test/model_directives_to_sdformat_files/"
-        "hidden_frame.dmd.yaml",
-        "bindings/pydrake/multibody/test/model_directives_to_sdformat_files/"
-        "frame_attached_to_frame.dmd.yaml",
-        "bindings/pydrake/multibody/test/model_directives_to_sdformat_files/"
-        "weld_frames_from_models.dmd.yaml",
-        "bindings/pydrake/multibody/test/model_directives_to_sdformat_files/"
-        "scoped_frame_name.dmd.yaml",
-        "bindings/pydrake/multibody/test/model_directives_to_sdformat_files/"
-        "deep_frame.dmd.yaml",
-        "bindings/pydrake/multibody/test/model_directives_to_sdformat_files/"
-        "deep_weld.dmd.yaml",
-    ]
-
     def setUp(self):
         self.parser = model_directives_to_sdformat._create_parser()
+        self.dmd_test_path = (
+            "bindings/pydrake/multibody/test/"
+            "model_directives_to_sdformat_files"
+        )
 
-    @run_with_multiple_values(
-        [dict(file_path=file_path) for file_path in files_to_test]
-    )
-    def test_through_plant_comparison(self, *, file_path):
-        # Convert
+    @run_with_multiple_values([dict(name=name) for name in [
+        "deep_frame",
+        "deep_weld",
+        "frame_attached_to_frame",
+        "hidden_frame",
+        "inject_frames",
+        "scoped_frame_name",
+        "weld_frames_from_models",
+    ]])
+    def test_through_plant_comparison(self, *, name):
+        # Convert.
+        file_path = f"{self.dmd_test_path}/{name}.dmd.yaml"
         args = self.parser.parse_args(["-m", file_path])
         sdformat_tree = convert_directives(args).getroot()
         sdformat_result = minidom.parseString(
             ET.tostring(sdformat_tree)
         ).toprettyxml(indent="  ")
 
-        # Load model directives
+        # Load model directives.
         directives_plant = MultibodyPlant(time_step=0.0)
         model_dir_multibody = os.path.dirname(
             os.path.join(GetDrakePath(), "multibody/parsing/test/")
@@ -198,13 +187,10 @@ class TestConvertModelDirectiveToSDF(
         parser = Parser(plant=directives_plant)
         parser.package_map().PopulateFromFolder(model_dir_multibody)
         parser.package_map().PopulateFromFolder(model_dir_bindings)
-        directives = LoadModelDirectives(file_path)
-        ProcessModelDirectives(
-            directives=directives, plant=directives_plant, parser=parser
-        )
+        parser.AddModels(file_path)
         directives_plant.Finalize()
 
-        # Load converted SDFormat
+        # Load converted SDFormat.
         sdformat_plant = MultibodyPlant(time_step=0.0)
         sdformat_parser = Parser(sdformat_plant)
         sdformat_parser.package_map().PopulateFromFolder(model_dir_multibody)
@@ -212,7 +198,7 @@ class TestConvertModelDirectiveToSDF(
         sdformat_parser.AddModelsFromString(sdformat_result, "sdf")
         sdformat_plant.Finalize()
 
-        # Compare plants
+        # Compare plants.
         # The conversion process will create an extra top level
         # model instance. This can be avoided using the generated
         # world model with merge include.
@@ -247,7 +233,7 @@ class TestConvertModelDirectiveToSDF(
 
             self.assertTrue(model_found)
 
-            # Check Model Bodies and corresponding Frames
+            # Check Model Bodies and corresponding Frames.
             model_instance = ModelInstanceIndex(i)
             directives_bodies = get_bodies(directives_plant, [model_instance])
             directives_context = directives_plant.CreateDefaultContext()
@@ -271,7 +257,7 @@ class TestConvertModelDirectiveToSDF(
                     )
                 )
 
-            # Check Model Joints
+            # Check Model Joints.
             self.assertTrue(
                 are_joints_same(
                     get_joints(directives_plant, [model_instance]),
@@ -279,170 +265,26 @@ class TestConvertModelDirectiveToSDF(
                 )
             )
 
-    def test_error_no_directives(self):
-        with self.assertRaisesRegex(
-            RuntimeError,
-            r"The fields \[\'something_not_directives"
-            r"\'\] were unknown to the schema",
-        ):
-            args = self.parser.parse_args(
-                [
-                    "-m",
-                    "bindings/pydrake/multibody/test/"
-                    "model_directives_to_sdformat_files/"
-                    "something_not_directives.dmd.yaml",
-                ]
-            )
-            convert_directives(args)
-
-    def test_error_directives_not_first(self):
-        with self.assertRaisesRegex(
-            RuntimeError,
-            r"The fields \[\'something_not_directives_"
-            r"first\'\] were unknown to the schema",
-        ):
-            args = self.parser.parse_args(
-                [
-                    "-m",
-                    "bindings/pydrake/multibody/test/"
-                    "model_directives_to_sdformat_files/"
-                    "not_directives_first.dmd.yaml",
-                ]
-            )
-            convert_directives(args)
-
-    def test_error_implicit_hidden_base_frame(self):
-        with self.assertRaisesRegex(
-            ConversionError,
-            "Unable to find scope for frame: "
-            r"\[frame\] while adding frame: \[frame_name\].",
-        ):
-            args = self.parser.parse_args(
-                [
-                    "-m",
-                    "bindings/pydrake/multibody/test/"
-                    "model_directives_to_sdformat_files/"
-                    "implicit_hidden_base_frame.dmd.yaml",
-                ]
-            )
-            convert_directives(args)
-
-    def test_error_different_scopes_frame(self):
-        with self.assertRaisesRegex(
-            ConversionError,
-            "Frame named: "
-            r"\[extra_model::sub_added_frame\] has a "
-            "different scope in its name and its "
-            r"base_frame: \[simple_model::frame\].",
-        ):
-            args = self.parser.parse_args(
-                [
-                    "-m",
-                    "bindings/pydrake/multibody/test/"
-                    "model_directives_to_sdformat_files/"
-                    "different_scopes_frame.dmd.yaml",
-                ]
-            )
-            convert_directives(args)
-
-    def test_error_world_base(self):
-        with self.assertRaisesRegex(
-            ConversionError,
-            r"Adding a frame using base_frame=\[world\] is " "not supported.",
-        ):
-            args = self.parser.parse_args(
-                [
-                    "-m",
-                    "bindings/pydrake/multibody/test/"
-                    "model_directives_to_sdformat_files/"
-                    "world_base_frame.dmd.yaml",
-                ]
-            )
-            convert_directives(args)
-
-    def test_error_frame_name_same_base_name(self):
-        with self.assertRaisesRegex(
-            ConversionError,
-            r"Frame: \[frame\] has the same name as "
-            "it's base frame. This case is not "
-            "supported.",
-        ):
-            args = self.parser.parse_args(
-                [
-                    "-m",
-                    "bindings/pydrake/multibody/test/"
-                    "model_directives_to_sdformat_files/"
-                    "frame_same_as_base_frame.dmd.yaml",
-                ]
-            )
-            convert_directives(args)
-
-    def test_error_frames_same_name(self):
-        with self.assertRaisesRegex(
-            ConversionError,
-            "Found more than two frames with name: "
-            r"\[frame_name\], could not resolve the "
-            "scope.",
-        ):
-            args = self.parser.parse_args(
-                [
-                    "-m",
-                    "bindings/pydrake/multibody/test/"
-                    "model_directives_to_sdformat_files/"
-                    "frames_same_name.dmd.yaml",
-                ]
-            )
-            convert_directives(args)
-
-    def test_error_add_weld_child_frame_too_deep(self):
-        with self.assertRaisesRegex(
-            ConversionError,
-            "Found weld with deeply nested child frame"
-            r" \[top_level_model::top_injected_frame\]. Welds with deeply"
-            " nested childs are not suported.",
-        ):
-            args = self.parser.parse_args(
-                [
-                    "-m",
-                    "bindings/pydrake/multibody/test/"
-                    "model_directives_to_sdformat_files/"
-                    "deep_child_frame_weld.dmd.yaml",
-                ]
-            )
-            convert_directives(args)
-
-    def test_error_add_weld_child_too_deep(self):
-        with self.assertRaisesRegex(
-            ConversionError,
-            "Found weld with deeply nested child frame"
-            r" \[top_level_model::robot1::robot_base\]. Welds with deeply"
-            " nested childs are not suported.",
-        ):
-            args = self.parser.parse_args(
-                [
-                    "-m",
-                    "bindings/pydrake/multibody/test/"
-                    "model_directives_to_sdformat_files/"
-                    "deep_child_weld.dmd.yaml",
-                ]
-            )
-            convert_directives(args)
-
-    def test_error_add_weld_same_parent_child(self):
-        with self.assertRaisesRegex(
-            ConversionError,
-            "Weld must specify different name for "
-            r"parent and child, while \[simple_model::base\] was "
-            "specified for both.",
-        ):
-            args = self.parser.parse_args(
-                [
-                    "-m",
-                    "bindings/pydrake/multibody/test/"
-                    "model_directives_to_sdformat_files/"
-                    "weld_same_parent_child.dmd.yaml",
-                ]
-            )
+    @run_with_multiple_values([dict(name=name) for name in [
+        "deep_child_frame_weld",
+        "deep_child_weld",
+        "default_free_body_pose",
+        "default_joint_positions",
+        "different_scopes_frame",
+        "frame_same_as_base_frame",
+        "frames_same_name",
+        "implicit_hidden_base_frame",
+        "not_directives_first",
+        "something_not_directives",
+        "weld_same_parent_child",
+        "world_base_frame",
+    ]])
+    def test_error(self, *, name):
+        file_path = f"{self.dmd_test_path}/errors/{name}.dmd.yaml"
+        with open(f"{self.dmd_test_path}/errors/{name}.error_regex") as f:
+            expected_message_regex = f.read().strip()
+        with self.assertRaisesRegex(Exception, expected_message_regex):
+            args = self.parser.parse_args(["-m", file_path])
             convert_directives(args)
 
     def test_add_model_instance_add_directives(self):
@@ -508,7 +350,7 @@ class TestConvertModelDirectiveToSDF(
             open(
                 os.path.join(
                     tempdir,
-                    "model_directives_to_sdformat_files/" "hidden_frame.sdf",
+                    "model_directives_to_sdformat_files/hidden_frame.sdf",
                 )
             ).read(),
         )
@@ -571,45 +413,11 @@ class TestConvertModelDirectiveToSDF(
         )
         self.assertEqual(expected_xml, xmlstr)
 
-    def test_not_supported_default_(self):
-        with self.assertRaisesRegex(
-            ConversionError, "default_free_body_pose is not supported yet."
-        ):
-            args = self.parser.parse_args(
-                [
-                    "-m",
-                    "multibody/parsing/test/"
-                    "process_model_directives_test/"
-                    "default_positions.dmd.yaml",
-                ]
-            )
-            convert_directives(args)
-
-    def test_not_supported_default_joint_position(self):
-        with self.assertRaisesRegex(
-            ConversionError, "default_joint_positions is not supported yet."
-        ):
-            args = self.parser.parse_args(
-                [
-                    "-m",
-                    "bindings/pydrake/multibody/test/"
-                    "model_directives_to_sdformat_files/"
-                    "default_joint_positions.dmd.yaml",
-                ]
-            )
-            convert_directives(args)
-
     def test_error_wrong_file_extension(self):
-        with self.assertRaisesRegex(
-            ConversionError,
-            "Unable to determine file format. Make sure the provided file has"
-            " the drake model directives '.dmd.yaml' extension",
-        ):
+        with self.assertRaisesRegex(Exception, "determine file format"):
             args = self.parser.parse_args(
                 [
                     "-m",
-                    "bindings/pydrake/multibody/test/"
-                    "model_directives_to_sdformat_files/"
                     "frame_same_as_base_frame.not_valid",
                 ]
             )

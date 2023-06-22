@@ -61,6 +61,11 @@ alias(
     actual = "//bindings/pydrake/multibody:mesh_to_model",
 )
 
+alias(
+    name = "model_directives_to_sdformat",
+    actual = "//bindings/pydrake/multibody:model_directives_to_sdformat",
+)
+
 # === config_setting rules ===
 
 # When this is set, a Drake build will promote some warnings to errors.
