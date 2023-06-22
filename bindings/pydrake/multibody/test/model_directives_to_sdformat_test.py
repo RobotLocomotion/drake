@@ -268,6 +268,7 @@ class TestConvertModelDirectiveToSdformat(
     @run_with_multiple_values([dict(name=name) for name in [
         "deep_child_frame_weld",
         "deep_child_weld",
+        "default_free_body_pose",
         "default_joint_positions",
         "different_scopes_frame",
         "frame_same_as_base_frame",
@@ -412,26 +413,8 @@ class TestConvertModelDirectiveToSdformat(
         )
         self.assertEqual(expected_xml, xmlstr)
 
-    def test_not_supported_default_(self):
-        with self.assertRaisesRegex(
-            Exception, "default_free_body_pose is not supported yet."
-        ):
-            args = self.parser.parse_args(
-                [
-                    "-m",
-                    "multibody/parsing/test/"
-                    "process_model_directives_test/"
-                    "default_positions.dmd.yaml",
-                ]
-            )
-            convert_directives(args)
-
     def test_error_wrong_file_extension(self):
-        with self.assertRaisesRegex(
-            Exception,
-            "Unable to determine file format. Make sure the provided file has"
-            " the drake model directives '.dmd.yaml' extension",
-        ):
+        with self.assertRaisesRegex(Exception, "determine file format"):
             args = self.parser.parse_args(
                 [
                     "-m",
