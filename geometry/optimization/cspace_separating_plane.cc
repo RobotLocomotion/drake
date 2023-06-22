@@ -10,11 +10,11 @@ namespace optimization {
 
 namespace {
 template <typename T>
-typename std::enable_if<std::is_same_v<T, symbolic::Variable> ||
-                        std::is_same_v<T, double>>::type
-InitializeCoeffVects(const VectorX<T>& decision_variables,
-                     Eigen::Matrix<T, 3, Eigen::Dynamic>* a_coeff,
-                     VectorX<T>* b_coeff) {
+void InitializeCoeffVects(const VectorX<T>& decision_variables,
+                          Eigen::Matrix<T, 3, Eigen::Dynamic>* a_coeff,
+                          VectorX<T>* b_coeff) {
+  static_assert(std::is_same_v<T, symbolic::Variable> ||
+                std::is_same_v<T, double>);
   const int num_coeffs_per_poly = decision_variables.size() / 4;
   int var_count = 0;
   for (int i = 0; i < 3; ++i) {
@@ -28,11 +28,14 @@ InitializeCoeffVects(const VectorX<T>& decision_variables,
 }
 
 template <typename T>
-void MakeCalcPlanePolynomial(
-    const VectorX<symbolic::Variable>& vars_for_plane, const int plane_degree,
-    const Eigen::MatrixBase<Eigen::Matrix<T, 3, Eigen::Dynamic>>& a_coeff,
-    const Eigen::MatrixBase<VectorX<T>>& b_coeff,
-    Vector3<symbolic::Polynomial>* a_val, symbolic::Polynomial* b_val) {
+void MakeCalcPlanePolynomial(const VectorX<symbolic::Variable>& vars_for_plane,
+                             const int plane_degree,
+                             const Eigen::Matrix<T, 3, Eigen::Dynamic>& a_coeff,
+                             const Eigen::VectorX<T>& b_coeff,
+                             Vector3<symbolic::Polynomial>* a_val,
+                             symbolic::Polynomial* b_val) {
+  static_assert(std::is_same_v<T, symbolic::Variable> ||
+                std::is_same_v<T, double>);
   const Eigen::Matrix<symbolic::Monomial, Eigen::Dynamic, 1> basis =
       symbolic::MonomialBasis(symbolic::Variables{vars_for_plane},
                               plane_degree);
@@ -51,7 +54,7 @@ void MakeCalcPlanePolynomial(
 }
 
 Eigen::VectorXd ComputeGradedRevLexEvaluatedPowers(
-    const Eigen::Ref<const VectorX<double>>& values, const int degree) {
+    const VectorX<double>& values, const int degree) {
   const int num_vars = values.size();
   symbolic::Variables vars;
   symbolic::Environment evals;
@@ -70,53 +73,48 @@ Eigen::VectorXd ComputeGradedRevLexEvaluatedPowers(
   return ret;
 }
 
+template <typename T1, typename T2, typename T3>
+void CalcPlaneImpl(const VectorX<T1>& decision_variables,
+                   const VectorX<T2>& vars_for_plane, int plane_degree,
+                   Vector3<T3>* a_val, T3* b_val) {
+  const int num_vars = vars_for_plane.size();
+  const int num_coeffs_per_poly =
+      symbolic::NChooseK(num_vars + plane_degree, plane_degree);
+  DRAKE_DEMAND(decision_variables.size() == 4 * num_coeffs_per_poly);
+  Eigen::Matrix<T1, 3, Eigen::Dynamic> a_coeff(3, num_coeffs_per_poly);
+  VectorX<T1> b_coeff(num_coeffs_per_poly);
+  InitializeCoeffVects(decision_variables, &a_coeff, &b_coeff);
+  if constexpr (std::is_same_v<T3, symbolic::Polynomial>) {
+    MakeCalcPlanePolynomial(vars_for_plane, plane_degree, a_coeff, b_coeff,
+                            a_val, b_val);
+  } else {
+    const Eigen::VectorXd evaluated_powers =
+        ComputeGradedRevLexEvaluatedPowers(vars_for_plane, plane_degree);
+    (*a_val) = a_coeff * evaluated_powers;
+    (*b_val) = b_coeff.transpose() * evaluated_powers;
+  }
+}
+
 }  // namespace
 
 void CalcPlane(const VectorX<symbolic::Variable>& decision_variables,
                const VectorX<symbolic::Variable>& vars_for_plane,
                int plane_degree, Vector3<symbolic::Polynomial>* a_val,
                symbolic::Polynomial* b_val) {
-  const int num_vars = vars_for_plane.size();
-  const int num_coeffs_per_poly =
-      symbolic::NChooseK(num_vars + plane_degree, plane_degree);
-  DRAKE_DEMAND(decision_variables.size() == 4 * num_coeffs_per_poly);
-  Eigen::Matrix<symbolic::Variable, 3, Eigen::Dynamic> a_coeff(
-      3, num_coeffs_per_poly);
-  VectorX<symbolic::Variable> b_coeff(num_coeffs_per_poly);
-  InitializeCoeffVects(decision_variables, &a_coeff, &b_coeff);
-  MakeCalcPlanePolynomial(vars_for_plane, plane_degree, a_coeff, b_coeff, a_val,
-                          b_val);
+  CalcPlaneImpl(decision_variables, vars_for_plane, plane_degree, a_val, b_val);
 }
 
 void CalcPlane(const VectorX<double>& decision_variables,
                const VectorX<symbolic::Variable>& vars_for_plane,
                int plane_degree, Vector3<symbolic::Polynomial>* a_val,
                symbolic::Polynomial* b_val) {
-  const int num_vars = vars_for_plane.size();
-  const int num_coeffs_per_poly =
-      symbolic::NChooseK(num_vars + plane_degree, plane_degree);
-  DRAKE_DEMAND(decision_variables.size() == 4 * num_coeffs_per_poly);
-  Eigen::Matrix<double, 3, Eigen::Dynamic> a_coeff(3, num_coeffs_per_poly);
-  VectorX<double> b_coeff(num_coeffs_per_poly);
-  InitializeCoeffVects(decision_variables, &a_coeff, &b_coeff);
-  MakeCalcPlanePolynomial(vars_for_plane, plane_degree, a_coeff, b_coeff, a_val,
-                          b_val);
+  CalcPlaneImpl(decision_variables, vars_for_plane, plane_degree, a_val, b_val);
 }
 
 void CalcPlane(const VectorX<double>& decision_variables,
                const VectorX<double>& vars_for_plane, int plane_degree,
                Vector3<double>* a_val, double* b_val) {
-  const int num_vars = vars_for_plane.size();
-  const int num_coeffs_per_poly =
-      symbolic::NChooseK(num_vars + plane_degree, plane_degree);
-  DRAKE_DEMAND(decision_variables.size() == 4 * num_coeffs_per_poly);
-  Eigen::Matrix<double, 3, Eigen::Dynamic> a_coeff(3, num_coeffs_per_poly);
-  VectorX<double> b_coeff(num_coeffs_per_poly);
-  InitializeCoeffVects(decision_variables, &a_coeff, &b_coeff);
-  const Eigen::VectorXd evaluated_powers =
-      ComputeGradedRevLexEvaluatedPowers(vars_for_plane, plane_degree);
-  (*a_val) = a_coeff * evaluated_powers;
-  (*b_val) = b_coeff.transpose() * evaluated_powers;
+  CalcPlaneImpl(decision_variables, vars_for_plane, plane_degree, a_val, b_val);
 }
 
 }  // namespace optimization
