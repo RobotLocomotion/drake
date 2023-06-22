@@ -119,8 +119,9 @@ class RgbdSensorAsync final : public LeafSystem<double> {
       const geometry::SceneGraph<double>* scene_graph,
       geometry::FrameId parent_id, const math::RigidTransformd& X_PB,
       double fps, double capture_offset, double output_delay,
-      std::optional<geometry::render::ColorRenderCamera> color_camera,
-      std::optional<geometry::render::DepthRenderCamera> depth_camera = {},
+      const std::optional<geometry::render::ColorRenderCamera>& color_camera,
+      const std::optional<geometry::render::DepthRenderCamera>& depth_camera =
+          {},
       bool render_label_image = false);
 
   /** Returns the `parent_id` passed to the constructor. */

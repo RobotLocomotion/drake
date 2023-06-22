@@ -206,8 +206,9 @@ PYBIND11_MODULE(sensors, m) {
       m, "RgbdSensor", doc.RgbdSensor.doc);
 
   rgbd_sensor
-      .def(py::init<FrameId, const RigidTransformd&, ColorRenderCamera,
-               DepthRenderCamera>(),
+      .def(py::init<FrameId, const RigidTransformd&,
+               const std::optional<ColorRenderCamera>&,
+               const std::optional<DepthRenderCamera>&>(),
           py::arg("parent_id"), py::arg("X_PB"), py::arg("color_camera"),
           py::arg("depth_camera"),
           doc.RgbdSensor.ctor.doc_individual_intrinsics)
@@ -250,8 +251,8 @@ PYBIND11_MODULE(sensors, m) {
     py::class_<Class, LeafSystem<T>>(m, "RgbdSensorAsync", cls_doc.doc)
         .def(py::init<const geometry::SceneGraph<double>*, FrameId,
                  const math::RigidTransformd&, double, double, double,
-                 std::optional<ColorRenderCamera>,
-                 std::optional<DepthRenderCamera>, bool>(),
+                 const std::optional<ColorRenderCamera>&,
+                 const std::optional<DepthRenderCamera>&, bool>(),
             py::arg("scene_graph"), py::arg("parent_id"), py::arg("X_PB"),
             py::arg("fps"), py::arg("capture_offset"), py::arg("output_delay"),
             py::arg("color_camera"), py::arg("depth_camera") = std::nullopt,

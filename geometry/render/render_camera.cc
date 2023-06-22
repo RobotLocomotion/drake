@@ -1,9 +1,12 @@
 #include "drake/geometry/render/render_camera.h"
 
 #include <cmath>
+#include <limits>
 #include <utility>
 
 #include <fmt/format.h>
+
+#include "drake/common/text_logging.h"
 
 namespace drake {
 namespace geometry {
@@ -78,6 +81,33 @@ DepthRenderCamera::DepthRenderCamera(RenderCameraCore core,
         depth_range_.min_depth(), depth_range_.max_depth()));
   }
 }
+
+namespace {
+/* Returns a suitable DepthRange to assume for the given camera's clipping.  */
+DepthRange ChooseDepthRange(const RenderCameraCore& core) {
+  const ClippingRange& clip = core.clipping();
+  const double clip_span = clip.far() - clip.near();
+  DRAKE_DEMAND(clip_span > 0);
+
+  // Nominally let's use 10% margin on the near side and 1% on the far side.
+  double near = clip.near() + (0.1 * clip_span);
+  double far = clip.far() - (0.01 * clip_span);
+
+  // ImageDepth16U represents depth using *millimeters*. With 16 bits there is
+  // an absolute limit on the farthest distance it can register. Try to avoid
+  // values that are beyond what we can represent.
+  constexpr float kMaxValidDepth16UInMeters =
+      (std::numeric_limits<uint16_t>::max() - 1) / 1000.0;
+  log()->error("{} {} {}", near, far, kMaxValidDepth16UInMeters);
+  if ((far > kMaxValidDepth16UInMeters) && (near < kMaxValidDepth16UInMeters)) {
+    far = kMaxValidDepth16UInMeters;
+  }
+  return DepthRange(near, far);
+}
+}  // namespace
+
+DepthRenderCamera::DepthRenderCamera(const RenderCameraCore& core)
+    : DepthRenderCamera(core, ChooseDepthRange(core)) {}
 
 }  // namespace render
 }  // namespace geometry

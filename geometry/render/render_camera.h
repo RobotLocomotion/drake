@@ -207,6 +207,10 @@ class DepthRenderCamera {
                           the clipping range.  */
   DepthRenderCamera(RenderCameraCore core, DepthRange depth_range);
 
+  /** Constructs a depth camera with the given core render properties.
+   The DepthRange will be chosen by a heuristic based on the clipping range.  */
+  explicit DepthRenderCamera(const RenderCameraCore& core);
+
   /** This camera's core render properties.  */
   const RenderCameraCore& core() const { return core_; }
 

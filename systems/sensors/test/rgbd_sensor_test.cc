@@ -8,6 +8,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_state.h"
 #include "drake/geometry/scene_graph.h"
@@ -391,6 +392,12 @@ TEST_F(RgbdSensorTest, ConstructCameraWithNonTrivialOffsetsDeprecated) {
       CompareMatrices(sensor.X_BC().GetAsMatrix4(), X_BC.GetAsMatrix4()));
   EXPECT_TRUE(
       CompareMatrices(sensor.X_BD().GetAsMatrix4(), X_BD.GetAsMatrix4()));
+}
+
+TEST_F(RgbdSensorTest, ErrorMissingCameras) {
+  DRAKE_EXPECT_THROWS_MESSAGE(RgbdSensor(SceneGraph<double>::world_frame_id(),
+                                         {}, std::nullopt, std::nullopt),
+                              ".*color_camera.*depth_camera.*");
 }
 
 // We don't explicitly test any of the image outputs. The image outputs simply
