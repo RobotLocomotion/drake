@@ -152,11 +152,11 @@ class TestConvertModelDirectiveToSdformat(
     unittest.TestCase, metaclass=ValueParameterizedTest
 ):
     def setUp(self):
-        self.parser = model_directives_to_sdformat._create_parser()
         self.dmd_test_path = (
             "bindings/pydrake/multibody/test/"
             "model_directives_to_sdformat_files"
         )
+        self.temp_dir = temp_directory()
 
     @run_with_multiple_values([dict(name=name) for name in [
         "deep_frame",
@@ -170,8 +170,8 @@ class TestConvertModelDirectiveToSdformat(
     def test_through_plant_comparison(self, *, name):
         # Convert.
         file_path = f"{self.dmd_test_path}/{name}.dmd.yaml"
-        args = self.parser.parse_args(["-m", file_path])
-        sdformat_tree = convert_directives(args).getroot()
+        sdformat_tree = convert_directives(
+            model_directives=file_path).getroot()
         sdformat_result = minidom.parseString(
             ET.tostring(sdformat_tree)
         ).toprettyxml(indent="  ")
@@ -209,7 +209,7 @@ class TestConvertModelDirectiveToSdformat(
 
         file_name = os.path.basename(
             model_directives_to_sdformat._remove_suffix(
-                args.model_directives, ".dmd.yaml"
+                file_path, ".dmd.yaml"
             )
         )
 
@@ -284,12 +284,10 @@ class TestConvertModelDirectiveToSdformat(
         with open(f"{self.dmd_test_path}/errors/{name}.error_regex") as f:
             expected_message_regex = f.read().strip()
         with self.assertRaisesRegex(Exception, expected_message_regex):
-            args = self.parser.parse_args(["-m", file_path])
-            convert_directives(args)
+            convert_directives(model_directives=file_path)
 
     def test_add_model_instance_add_directives(self):
         os.environ["ROS_PACKAGE_PATH"] = "bindings/pydrake/multibody"
-        tempdir = temp_directory()
         expected_sdf = """<?xml version="1.0" ?>
 <sdf version="1.9">
   <model name="add_directives">
@@ -337,19 +335,19 @@ class TestConvertModelDirectiveToSdformat(
                 "add_directives.dmd.yaml",
                 "--expand-included",
                 "-o",
-                tempdir,
+                self.temp_dir,
             ]
         )
 
         self.assertEqual(
             expected_sdf,
-            open(os.path.join(tempdir, "add_directives.sdf")).read(),
+            open(os.path.join(self.temp_dir, "add_directives.sdf")).read(),
         )
         self.assertEqual(
             expected_expanded_sdf,
             open(
                 os.path.join(
-                    tempdir,
+                    self.temp_dir,
                     "model_directives_to_sdformat_files/hidden_frame.sdf",
                 )
             ).read(),
@@ -399,15 +397,8 @@ class TestConvertModelDirectiveToSdformat(
 </sdf>
 """
         )
-        args = self.parser.parse_args(
-            [
-                "-m",
-                "bindings/pydrake/multibody/test/"
-                "model_directives_to_sdformat_files/"
-                "inject_frames.dmd.yaml",
-            ]
-        )
-        result = convert_directives(args).getroot()
+        file_path = f"{self.dmd_test_path}/inject_frames.dmd.yaml"
+        result = convert_directives(model_directives=file_path).getroot()
         xmlstr = minidom.parseString(ET.tostring(result)).toprettyxml(
             indent="  "
         )
@@ -415,10 +406,5 @@ class TestConvertModelDirectiveToSdformat(
 
     def test_error_wrong_file_extension(self):
         with self.assertRaisesRegex(Exception, "determine file format"):
-            args = self.parser.parse_args(
-                [
-                    "-m",
-                    "frame_same_as_base_frame.not_valid",
-                ]
-            )
-            convert_directives(args)
+            file_path = "frame_same_as_base_frame.not_valid"
+            convert_directives(model_directives=file_path)

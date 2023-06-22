@@ -386,7 +386,7 @@ class AddDirectives:
                 f"for add_directives: {self.params}"
             )
 
-    def insert_into_root_sdformat_node(self, root, directives, args):
+    def insert_into_root_sdformat_node(self, root, directives):
         if self.model_ns is not None:
             # Check that the model instance has been created by
             # add_model_instance.
@@ -409,10 +409,7 @@ class AddDirectives:
         uri_elem = ET.SubElement(include_elem, "uri")
         uri_elem.text = self.sdformat_uri
 
-        if args.expand_included:
-            self._convert_nested_directive(args)
-
-    def _convert_nested_directive(self, args):
+    def convert_nested_directive(self, *, output_path):
         if self.file_path.startswith("package://"):
             package_map = PackageMap()
             package_map.PopulateFromRosPackagePath()
@@ -434,19 +431,19 @@ class AddDirectives:
             )
 
         # Update args with new target file.
-        expanded_file_args = copy.deepcopy(args)
-        expanded_file_args.model_directives = resolved_file_path
-        result_tree = convert_directives(expanded_file_args)
+        result_tree = convert_directives(
+            model_directives=resolved_file_path,
+            output_path=output_path,
+            expand_included=True,
+        )
         if result_tree is None:
             raise ConversionError(
                 "Failed converting the file included through "
                 f" add_directives: {self.params}"
             )
 
-        if args.output_path:
-            expanded_included_path = os.path.join(
-                expanded_file_args.output_path, package_name
-            )
+        if output_path is not None:
+            expanded_included_path = os.path.join(output_path, package_name)
         else:
             expanded_included_path = None
 
@@ -473,9 +470,12 @@ def _create_object_from_directive(directive):
         raise ConversionError(f"Unknown directive")
 
 
-def convert_directives(args):
+def convert_directives(*,
+                       model_directives: str,
+                       output_path: str = None,
+                       expand_included: bool = False):
     # Check that the file is a .dmd.yaml file.
-    if not args.model_directives.endswith('.dmd.yaml'):
+    if not model_directives.endswith('.dmd.yaml'):
         raise ConversionError(
             "Unable to determine file format. Make sure "
             "the provided file has the drake model directives"
@@ -484,7 +484,7 @@ def convert_directives(args):
 
     # Read the directives file.
     directives_data = yaml_load_typed(
-        schema=ModelDirectives, filename=args.model_directives
+        schema=ModelDirectives, filename=model_directives
     )
 
     all_directives = [
@@ -498,16 +498,16 @@ def convert_directives(args):
     # Initialize the sdformat XML root.
     root = ET.Element("sdf", version=_SDF_VERSION)
     root_name = os.path.basename(
-        _remove_suffix(args.model_directives, ".dmd.yaml")
+        _remove_suffix(model_directives, ".dmd.yaml")
     )
 
     root_elem = ET.SubElement(root, "model", name=root_name)
 
     for dir_obj in all_directives:
         if isinstance(dir_obj, AddDirectives):
-            dir_obj.insert_into_root_sdformat_node(
-                root_elem, all_directives, args
-            )
+            dir_obj.insert_into_root_sdformat_node(root_elem, all_directives)
+            if expand_included:
+                dir_obj.convert_nested_directive(output_path=output_path)
         elif not isinstance(dir_obj, AddModelInstance):
             dir_obj.insert_into_root_sdformat_node(root_elem, all_directives)
 
@@ -584,7 +584,7 @@ def _generate_output(
         f.write(xmlstr)
 
 
-def _create_parser():
+def _main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "-e",
@@ -606,20 +606,21 @@ def _create_parser():
         help="Output path of directory where SDFormat files will be written. "
         "When not provided, it will be the same directory as the input file.",
     )
-    return parser
-
-
-def _main(argv=None) -> None:
-    parser = _create_parser()
     args = parser.parse_args(argv)
 
-    result_tree = convert_directives(args)
+    result_tree = convert_directives(
+        expand_included=args.expand_included,
+        model_directives=args.model_directives,
+        output_path=args.output_path,
+    )
 
     if result_tree is None:
         raise ConversionError("Failed to convert model directives.")
 
     _generate_output(
-        result_tree, args.model_directives, args.output_path
+        result_tree,
+        input_path=args.model_directives,
+        output_path=args.output_path,
     )
 
     return 0
