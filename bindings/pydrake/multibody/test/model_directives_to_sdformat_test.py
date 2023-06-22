@@ -279,7 +279,7 @@ class TestConvertModelDirectiveToSdformat(
                 [
                     "-m",
                     "bindings/pydrake/multibody/test/"
-                    "model_directives_to_sdformat_files/"
+                    "model_directives_to_sdformat_files/errors/"
                     "something_not_directives.dmd.yaml",
                 ]
             )
@@ -295,7 +295,7 @@ class TestConvertModelDirectiveToSdformat(
                 [
                     "-m",
                     "bindings/pydrake/multibody/test/"
-                    "model_directives_to_sdformat_files/"
+                    "model_directives_to_sdformat_files/errors/"
                     "not_directives_first.dmd.yaml",
                 ]
             )
@@ -311,7 +311,7 @@ class TestConvertModelDirectiveToSdformat(
                 [
                     "-m",
                     "bindings/pydrake/multibody/test/"
-                    "model_directives_to_sdformat_files/"
+                    "model_directives_to_sdformat_files/errors/"
                     "implicit_hidden_base_frame.dmd.yaml",
                 ]
             )
@@ -329,7 +329,7 @@ class TestConvertModelDirectiveToSdformat(
                 [
                     "-m",
                     "bindings/pydrake/multibody/test/"
-                    "model_directives_to_sdformat_files/"
+                    "model_directives_to_sdformat_files/errors/"
                     "different_scopes_frame.dmd.yaml",
                 ]
             )
@@ -344,7 +344,7 @@ class TestConvertModelDirectiveToSdformat(
                 [
                     "-m",
                     "bindings/pydrake/multibody/test/"
-                    "model_directives_to_sdformat_files/"
+                    "model_directives_to_sdformat_files/errors/"
                     "world_base_frame.dmd.yaml",
                 ]
             )
@@ -361,7 +361,7 @@ class TestConvertModelDirectiveToSdformat(
                 [
                     "-m",
                     "bindings/pydrake/multibody/test/"
-                    "model_directives_to_sdformat_files/"
+                    "model_directives_to_sdformat_files/errors/"
                     "frame_same_as_base_frame.dmd.yaml",
                 ]
             )
@@ -378,7 +378,7 @@ class TestConvertModelDirectiveToSdformat(
                 [
                     "-m",
                     "bindings/pydrake/multibody/test/"
-                    "model_directives_to_sdformat_files/"
+                    "model_directives_to_sdformat_files/errors/"
                     "frames_same_name.dmd.yaml",
                 ]
             )
@@ -395,7 +395,7 @@ class TestConvertModelDirectiveToSdformat(
                 [
                     "-m",
                     "bindings/pydrake/multibody/test/"
-                    "model_directives_to_sdformat_files/"
+                    "model_directives_to_sdformat_files/errors/"
                     "deep_child_frame_weld.dmd.yaml",
                 ]
             )
@@ -412,7 +412,7 @@ class TestConvertModelDirectiveToSdformat(
                 [
                     "-m",
                     "bindings/pydrake/multibody/test/"
-                    "model_directives_to_sdformat_files/"
+                    "model_directives_to_sdformat_files/errors/"
                     "deep_child_weld.dmd.yaml",
                 ]
             )
@@ -429,7 +429,7 @@ class TestConvertModelDirectiveToSdformat(
                 [
                     "-m",
                     "bindings/pydrake/multibody/test/"
-                    "model_directives_to_sdformat_files/"
+                    "model_directives_to_sdformat_files/errors/"
                     "weld_same_parent_child.dmd.yaml",
                 ]
             )
@@ -498,7 +498,7 @@ class TestConvertModelDirectiveToSdformat(
             open(
                 os.path.join(
                     tempdir,
-                    "model_directives_to_sdformat_files/" "hidden_frame.sdf",
+                    "model_directives_to_sdformat_files/hidden_frame.sdf",
                 )
             ).read(),
         )
@@ -583,7 +583,7 @@ class TestConvertModelDirectiveToSdformat(
                 [
                     "-m",
                     "bindings/pydrake/multibody/test/"
-                    "model_directives_to_sdformat_files/"
+                    "model_directives_to_sdformat_files/errors/"
                     "default_joint_positions.dmd.yaml",
                 ]
             )
@@ -598,8 +598,6 @@ class TestConvertModelDirectiveToSdformat(
             args = self.parser.parse_args(
                 [
                     "-m",
-                    "bindings/pydrake/multibody/test/"
-                    "model_directives_to_sdformat_files/"
                     "frame_same_as_base_frame.not_valid",
                 ]
             )
