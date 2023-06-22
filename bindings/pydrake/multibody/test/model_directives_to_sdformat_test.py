@@ -272,113 +272,20 @@ class TestConvertModelDirectiveToSdformat(
             )
 
     @run_with_multiple_values([dict(name=name) for name in [
+        "different_scopes_frame",
+        "frame_same_as_base_frame",
+        "frames_same_name",
+        "implicit_hidden_base_frame",
+        "not_directives_first",
         "something_not_directives",
+        "world_base_frame",
     ]])
     def test_error(self, *, name):
         file_path = f"{self.dmd_test_path}/errors/{name}.dmd.yaml"
         with open(f"{self.dmd_test_path}/errors/{name}.error_regex") as f:
             expected_message_regex = f.read().strip()
-        with self.assertRaisesRegex(RuntimeError, expected_message_regex):
+        with self.assertRaisesRegex(Exception, expected_message_regex):
             args = self.parser.parse_args(["-m", file_path])
-            convert_directives(args)
-
-    def test_error_directives_not_first(self):
-        with self.assertRaisesRegex(
-            RuntimeError,
-            r"The fields \[\'something_not_directives_"
-            r"first\'\] were unknown to the schema",
-        ):
-            args = self.parser.parse_args(
-                [
-                    "-m",
-                    "bindings/pydrake/multibody/test/"
-                    "model_directives_to_sdformat_files/errors/"
-                    "not_directives_first.dmd.yaml",
-                ]
-            )
-            convert_directives(args)
-
-    def test_error_implicit_hidden_base_frame(self):
-        with self.assertRaisesRegex(
-            ConversionError,
-            "Unable to find scope for frame: "
-            r"\[frame\] while adding frame: \[frame_name\].",
-        ):
-            args = self.parser.parse_args(
-                [
-                    "-m",
-                    "bindings/pydrake/multibody/test/"
-                    "model_directives_to_sdformat_files/errors/"
-                    "implicit_hidden_base_frame.dmd.yaml",
-                ]
-            )
-            convert_directives(args)
-
-    def test_error_different_scopes_frame(self):
-        with self.assertRaisesRegex(
-            ConversionError,
-            "Frame named: "
-            r"\[extra_model::sub_added_frame\] has a "
-            "different scope in its name and its "
-            r"base_frame: \[simple_model::frame\].",
-        ):
-            args = self.parser.parse_args(
-                [
-                    "-m",
-                    "bindings/pydrake/multibody/test/"
-                    "model_directives_to_sdformat_files/errors/"
-                    "different_scopes_frame.dmd.yaml",
-                ]
-            )
-            convert_directives(args)
-
-    def test_error_world_base(self):
-        with self.assertRaisesRegex(
-            ConversionError,
-            r"Adding a frame using base_frame=\[world\] is " "not supported.",
-        ):
-            args = self.parser.parse_args(
-                [
-                    "-m",
-                    "bindings/pydrake/multibody/test/"
-                    "model_directives_to_sdformat_files/errors/"
-                    "world_base_frame.dmd.yaml",
-                ]
-            )
-            convert_directives(args)
-
-    def test_error_frame_name_same_base_name(self):
-        with self.assertRaisesRegex(
-            ConversionError,
-            r"Frame: \[frame\] has the same name as "
-            "it's base frame. This case is not "
-            "supported.",
-        ):
-            args = self.parser.parse_args(
-                [
-                    "-m",
-                    "bindings/pydrake/multibody/test/"
-                    "model_directives_to_sdformat_files/errors/"
-                    "frame_same_as_base_frame.dmd.yaml",
-                ]
-            )
-            convert_directives(args)
-
-    def test_error_frames_same_name(self):
-        with self.assertRaisesRegex(
-            ConversionError,
-            "Found more than two frames with name: "
-            r"\[frame_name\], could not resolve the "
-            "scope.",
-        ):
-            args = self.parser.parse_args(
-                [
-                    "-m",
-                    "bindings/pydrake/multibody/test/"
-                    "model_directives_to_sdformat_files/errors/"
-                    "frames_same_name.dmd.yaml",
-                ]
-            )
             convert_directives(args)
 
     def test_error_add_weld_child_frame_too_deep(self):
