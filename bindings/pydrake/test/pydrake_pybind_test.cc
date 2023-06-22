@@ -76,7 +76,7 @@ GTEST_TEST(PydrakePybindTest, PyKeepAlive) {
   PyExpectEq(m, "ExamplePyKeepAlive().a_list()[0].value", 10);
   // Explicitly test keep alive behavior.
   PyExpectTrue(
-      m, "check_py_rvp_reference_internal_list(cls=ExamplePyKeepAlive)");
+      m, "check_reference_internal_list(cls=ExamplePyKeepAlive)");
 }
 
 // Class which has a copy constructor, for testing `DefCopyAndDeepCopy`.
