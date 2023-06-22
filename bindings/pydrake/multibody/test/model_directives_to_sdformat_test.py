@@ -156,21 +156,23 @@ class TestConvertModelDirectiveToSdformat(
 ):
     def setUp(self):
         self.parser = model_directives_to_sdformat._create_parser()
+        self.dmd_test_path = (
+            "bindings/pydrake/multibody/test/"
+            "model_directives_to_sdformat_files"
+        )
 
     @run_with_multiple_values([dict(name=name) for name in [
-        "inject_frames.dmd.yaml",
-        "inject_frames.dmd.yaml",
-        "hidden_frame.dmd.yaml",
-        "frame_attached_to_frame.dmd.yaml",
-        "weld_frames_from_models.dmd.yaml",
-        "scoped_frame_name.dmd.yaml",
-        "deep_frame.dmd.yaml",
-        "deep_weld.dmd.yaml",
+        "deep_frame",
+        "deep_weld",
+        "frame_attached_to_frame",
+        "hidden_frame",
+        "inject_frames",
+        "scoped_frame_name",
+        "weld_frames_from_models",
     ]])
     def test_through_plant_comparison(self, *, name):
         # Convert.
-        test_dir = "bindings/pydrake/multibody/test"
-        file_path = f"{test_dir}/model_directives_to_sdformat_files/{name}"
+        file_path = f"{self.dmd_test_path}/{name}.dmd.yaml"
         args = self.parser.parse_args(["-m", file_path])
         sdformat_tree = convert_directives(args).getroot()
         sdformat_result = minidom.parseString(
@@ -269,20 +271,15 @@ class TestConvertModelDirectiveToSdformat(
                 )
             )
 
-    def test_error_no_directives(self):
-        with self.assertRaisesRegex(
-            RuntimeError,
-            r"The fields \[\'something_not_directives"
-            r"\'\] were unknown to the schema",
-        ):
-            args = self.parser.parse_args(
-                [
-                    "-m",
-                    "bindings/pydrake/multibody/test/"
-                    "model_directives_to_sdformat_files/errors/"
-                    "something_not_directives.dmd.yaml",
-                ]
-            )
+    @run_with_multiple_values([dict(name=name) for name in [
+        "something_not_directives",
+    ]])
+    def test_error(self, *, name):
+        file_path = f"{self.dmd_test_path}/errors/{name}.dmd.yaml"
+        with open(f"{self.dmd_test_path}/errors/{name}.error_regex") as f:
+            expected_message_regex = f.read().strip()
+        with self.assertRaisesRegex(RuntimeError, expected_message_regex):
+            args = self.parser.parse_args(["-m", file_path])
             convert_directives(args)
 
     def test_error_directives_not_first(self):
