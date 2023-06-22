@@ -24,9 +24,6 @@ from pydrake.common.test_utilities.meta import (
     run_with_multiple_values,
 )
 
-from pydrake.multibody import (
-    model_directives_to_sdformat
-)
 from pydrake.multibody.model_directives_to_sdformat import (
     convert_directives,
 )
@@ -171,11 +168,12 @@ class TestConvertModelDirectiveToSdformat(
     def test_through_plant_comparison(self, *, name):
         # Convert.
         dmd_filename = self.dmd_test_path / f"{name}.dmd.yaml"
-        sdformat_tree = convert_directives(
-            dmd_filename=dmd_filename).getroot()
-        sdformat_result = minidom.parseString(
-            ET.tostring(sdformat_tree)
-        ).toprettyxml(indent="  ")
+        files = convert_directives(
+            dmd_filename=dmd_filename,
+            generate_world=False,
+        )
+        self.assertEqual(len(files), 1)
+        _, sdformat_str = files.popitem()
 
         # Load model directives.
         directives_plant = MultibodyPlant(time_step=0.0)
@@ -196,7 +194,7 @@ class TestConvertModelDirectiveToSdformat(
         sdformat_parser = Parser(sdformat_plant)
         sdformat_parser.package_map().PopulateFromFolder(model_dir_multibody)
         sdformat_parser.package_map().PopulateFromFolder(model_dir_bindings)
-        sdformat_parser.AddModelsFromString(sdformat_result, "sdf")
+        sdformat_parser.AddModelsFromString(sdformat_str, "sdf")
         sdformat_plant.Finalize()
 
         # Compare plants.
@@ -282,6 +280,7 @@ class TestConvertModelDirectiveToSdformat(
             convert_directives(dmd_filename=dmd_filename)
 
     def test_add_model_instance_add_directives(self):
+        dmd_filename = self.dmd_test_path / "add_directives.dmd.yaml"
         os.environ["ROS_PACKAGE_PATH"] = "bindings/pydrake/multibody"
         expected_sdf = """<?xml version="1.0" ?>
 <sdf version="1.9">
@@ -322,43 +321,32 @@ class TestConvertModelDirectiveToSdformat(
 </sdf>
 """
         )
-        model_directives_to_sdformat._main(
-            [
-                "-m",
-                "bindings/pydrake/multibody/test/"
-                "model_directives_to_sdformat_files/"
-                "add_directives.dmd.yaml",
-                "--expand-included",
-                "-o",
-                self.temp_dir,
-            ]
+        files = convert_directives(
+            dmd_filename=dmd_filename,
+            expand_included=True,
+            generate_world=False,
         )
-
-        self.assertEqual(
-            expected_sdf,
-            open(os.path.join(self.temp_dir, "add_directives.sdf")).read(),
-        )
-        self.assertEqual(
-            expected_expanded_sdf,
-            open(
-                os.path.join(
-                    self.temp_dir,
-                    "model_directives_to_sdformat_files/hidden_frame.sdf",
-                )
-            ).read(),
-        )
+        self.assertEqual(len(files), 2)
+        path2, xml2 = files.popitem()
+        path1, xml1 = files.popitem()
+        self.assertEqual(path1.name, "add_directives.sdf")
+        self.assertMultiLineEqual(xml1, expected_sdf)
+        self.assertEqual(path2.name, "hidden_frame.sdf")
+        self.assertMultiLineEqual(xml2, expected_expanded_sdf)
 
     def test_resulting_xml(self):
         dmd_filename = self.dmd_test_path / "inject_frames.dmd.yaml"
         expected_path = self.dmd_test_path / "inject_frames.expected-sdf"
         with open(expected_path, encoding="utf-8") as f:
             expected_xml = f.read()
-        result = convert_directives(dmd_filename=dmd_filename).getroot()
-        xmlstr = minidom.parseString(ET.tostring(result)).toprettyxml(
-            indent="  "
+        files = convert_directives(
+            dmd_filename=dmd_filename,
+            generate_world=False,
         )
+        self.assertEqual(len(files), 1)
+        _, sdformat_str = files.popitem()
         self.maxDiff = None
-        self.assertMultiLineEqual(expected_xml, xmlstr)
+        self.assertMultiLineEqual(expected_xml, sdformat_str)
 
     def test_error_wrong_file_extension(self):
         with self.assertRaisesRegex(Exception, "determine file format"):
