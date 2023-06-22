@@ -192,6 +192,18 @@ GTEST_TEST(TriangularBlockSparseMatrixTest, ZeroRowsAndColumns) {
                               ".* out of range.*42 is given.*");
 }
 
+GTEST_TEST(TriangularBlockSparseMatrixTest, MakeDenseBottomRightCorner) {
+  BlockSparseLowerTriangularMatrix A_triangular = MakeLowerTriangularMatrix();
+  MatrixXd expected = MakeDenseMatrix(false).bottomRightCorner(7, 7);
+  EXPECT_EQ(expected, A_triangular.MakeDenseBottomRightCorner(2));
+  EXPECT_EQ(MatrixXd::Zero(0, 0), A_triangular.MakeDenseBottomRightCorner(0));
+
+  BlockSparseSymmetricMatrix A_symmetric = MakeSymmetricMatrix();
+  expected = MakeDenseMatrix(true).bottomRightCorner(7, 7);
+  EXPECT_EQ(expected, A_symmetric.MakeDenseBottomRightCorner(2));
+  EXPECT_EQ(MatrixXd::Zero(0, 0), A_symmetric.MakeDenseBottomRightCorner(0));
+}
+
 GTEST_TEST(TriangularBlockSparseMatrixTest, InvalidOperations) {
   if (kDrakeAssertIsArmed) {
     BlockSparseLowerTriangularMatrix A_triangular = MakeLowerTriangularMatrix();
