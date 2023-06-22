@@ -430,11 +430,6 @@ class AddDirectives:
             output_path=output_path,
             expand_included=True,
         )
-        if result_tree is None:
-            raise ConversionError(
-                "Failed converting the file included through "
-                f" add_directives: {self.params}"
-            )
 
         if output_path is not None:
             expanded_included_path = os.path.join(output_path, package_name)
@@ -604,9 +599,6 @@ def _main(argv=None):
         output_path=args.output_path,
         expand_included=args.expand_included,
     )
-
-    if result_tree is None:
-        raise ConversionError("Failed to convert model directives.")
 
     _generate_output(
         result_tree,
