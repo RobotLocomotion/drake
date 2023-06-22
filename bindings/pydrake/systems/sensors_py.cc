@@ -229,17 +229,28 @@ PYBIND11_MODULE(sensors, m) {
   py::class_<RgbdSensorDiscrete, Diagram<T>> rgbd_camera_discrete(
       m, "RgbdSensorDiscrete", doc.RgbdSensorDiscrete.doc);
   rgbd_camera_discrete
+      .def(py::init<FrameId, const RigidTransformd&, double, double,
+               const std::optional<ColorRenderCamera>&,
+               const std::optional<DepthRenderCamera>&, bool>(),
+          py::arg("parent_id"), py::arg("X_PB"), py::arg("fps"),
+          py::arg("capture_offset"), py::arg("color_camera"),
+          py::arg("depth_camera") = py::none(),
+          py::arg("render_label_image") = false,
+          doc.RgbdSensorDiscrete.ctor.doc_7args)
       .def(py::init<unique_ptr<RgbdSensor>, double, bool>(), py::arg("sensor"),
           py::arg("period") = double{RgbdSensorDiscrete::kDefaultPeriod},
           py::arg("render_label_image") = true,
           // Keep alive, ownership: `sensor` keeps `self` alive.
-          py::keep_alive<2, 1>(), doc.RgbdSensorDiscrete.ctor.doc)
+          py::keep_alive<2, 1>(), doc.RgbdSensorDiscrete.ctor.doc_3args)
       // N.B. Since `camera` is already connected, we do not need additional
       // `keep_alive`s.
       .def("sensor", &RgbdSensorDiscrete::sensor, py_rvp::reference_internal,
           doc.RgbdSensorDiscrete.sensor.doc)
       .def("period", &RgbdSensorDiscrete::period,
-          doc.RgbdSensorDiscrete.period.doc);
+          doc.RgbdSensorDiscrete.period.doc)
+      .def("fps", &RgbdSensorDiscrete::fps, doc.RgbdSensorDiscrete.fps.doc),
+      .def("capture_offset", &RgbdSensorDiscrete::capture_offset,
+          doc.RgbdSensorDiscrete.capture_offset.doc);
   def_camera_ports(&rgbd_camera_discrete, doc.RgbdSensorDiscrete);
   rgbd_camera_discrete.attr("kDefaultPeriod") =
       double{RgbdSensorDiscrete::kDefaultPeriod};

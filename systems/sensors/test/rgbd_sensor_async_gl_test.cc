@@ -171,23 +171,22 @@ GTEST_TEST(RgbdSensorAsyncGlTest, CompareAsyncToDiscrete) {
   const DepthRenderCamera depth_camera(
       {kRendererName, {160, 120, M_PI / 6}, {0.1, 10.0}, {}}, {0.1, 10});
   const double fps = 4.0;
+  const double capture_offset = 0.0;
   const bool render_label_image = true;
 
   // Add the async sensor (the device under test).
-  const double async_capture_offset = 0.0;
   const double async_output_delay = 0.125;
   const auto* sensor_async = builder.AddSystem<RgbdSensorAsync>(
-      &scene_graph, parent_id, X_PB, fps, async_capture_offset,
-      async_output_delay, color_camera, depth_camera, render_label_image);
+      &scene_graph, parent_id, X_PB, fps, capture_offset, async_output_delay,
+      color_camera, depth_camera, render_label_image);
   builder.Connect(scene_graph.get_query_output_port(),
                   sensor_async->get_input_port());
 
   // Add the non-async (discrete) sensor that will provide our reference images.
   // Refer to the file overview comment for details of image capture timings.
-  const double discrete_period = 1.0 / fps;
   const auto* sensor_discrete = builder.AddSystem<RgbdSensorDiscrete>(
-      std::make_unique<RgbdSensor>(parent_id, X_PB, color_camera, depth_camera),
-      discrete_period, render_label_image);
+      parent_id, X_PB, fps, capture_offset, color_camera, depth_camera,
+      render_label_image);
   builder.Connect(scene_graph.get_query_output_port(),
                   sensor_discrete->query_object_input_port());
 
