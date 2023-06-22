@@ -18,7 +18,6 @@ from pydrake.multibody.tree import (
     JointIndex,
 )
 from pydrake.common import GetDrakePath
-from pydrake.common import temp_directory
 from pydrake.common.test_utilities.meta import (
     ValueParameterizedTest,
     run_with_multiple_values,
@@ -150,11 +149,11 @@ class TestConvertModelDirectiveToSdformat(
     unittest.TestCase, metaclass=ValueParameterizedTest
 ):
     def setUp(self):
+        self.maxDiff = None
         self.dmd_test_path = Path(
             "bindings/pydrake/multibody/test/"
             "model_directives_to_sdformat_files"
         )
-        self.temp_dir = temp_directory()
 
     @run_with_multiple_values([dict(name=name) for name in [
         "deep_frame",
@@ -281,58 +280,24 @@ class TestConvertModelDirectiveToSdformat(
 
     def test_add_model_instance_add_directives(self):
         dmd_filename = self.dmd_test_path / "add_directives.dmd.yaml"
+        expected_filenames = [
+            self.dmd_test_path / "add_directives.expected-sdf",
+            self.dmd_test_path / "hidden_frame.expected-sdf",
+        ]
+        # TODO(jwnimmer-tri) Don't do this; changes to os.environ bleed into
+        # other test cases.
         os.environ["ROS_PACKAGE_PATH"] = "bindings/pydrake/multibody"
-        expected_sdf = """<?xml version="1.0" ?>
-<sdf version="1.9">
-  <model name="add_directives">
-    <model name="model_instance">
-      <include merge="true">
-        <uri>package://model_directives_to_sdformat_files/hidden_frame.sdf</uri>
-      </include>
-    </model>
-  </model>
-</sdf>
-"""
-        expected_expanded_sdf = (
-            """<?xml version="1.0" ?>
-<sdf version="1.9">
-  <model name="hidden_frame">
-    <include>
-      <name>simple_model</name>
-      <uri>package://process_model_directives_test/simple_model.sdf</uri>
-      <placement_frame>frame</placement_frame>
-      <pose relative_to="top_level_model::top_injected_frame"/>
-    </include>
-    <model name="top_level_model">
-      <include merge="true">
-        <name>top_level_model</name>
-        <uri>package://process_model_directives_test/simple_model.sdf</uri>
-      </include>
-      <frame name="top_injected_frame" attached_to="base">
-        <pose degrees="true">1.0 2.0 3.0   10.0 20.0 30.0</pose>
-      </frame>
-    </model>
-    <joint name="top_level_model__top_injected_frame__to__simple_model__"""
-            """frame__weld_joint" type="fixed">
-      <parent>top_level_model::top_injected_frame</parent>
-      <child>simple_model::frame</child>
-    </joint>
-  </model>
-</sdf>
-"""
-        )
         files = convert_directives(
             dmd_filename=dmd_filename,
             expand_included=True,
             generate_world=False,
         )
-        self.assertEqual(len(files), 2)
-        path2, xml2 = files.popitem()
-        path1, xml1 = files.popitem()
-        self.assertEqual(path1.name, "add_directives.sdf")
-        self.assertMultiLineEqual(xml1, expected_sdf)
-        self.assertEqual(path2.name, "hidden_frame.sdf")
-        self.assertMultiLineEqual(xml2, expected_expanded_sdf)
+        self.assertEqual(len(files), len(expected_filenames))
+        for (path, xml), expected in zip(files.items(), expected_filenames):
+            self.assertEqual(path.name, expected.name.replace("expected-", ""))
+            with open(expected, encoding="utf-8") as f:
+                expected_xml = f.read()
+            self.assertMultiLineEqual(xml, expected_xml)
 
     def test_resulting_xml(self):
         dmd_filename = self.dmd_test_path / "inject_frames.dmd.yaml"

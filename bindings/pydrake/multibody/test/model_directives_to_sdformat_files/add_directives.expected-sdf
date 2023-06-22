@@ -1,0 +1,10 @@
+<?xml version="1.0" ?>
+<sdf version="1.9">
+  <model name="add_directives">
+    <model name="model_instance">
+      <include merge="true">
+        <uri>package://model_directives_to_sdformat_files/hidden_frame.sdf</uri>
+      </include>
+    </model>
+  </model>
+</sdf>
