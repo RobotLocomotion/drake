@@ -5,6 +5,7 @@ import copy
 import itertools
 import pickle
 import unittest
+import weakref
 
 import numpy as np
 
@@ -260,6 +261,44 @@ class TestPlant(unittest.TestCase):
         plant, scene_graph = AddMultibodyPlant(config, builder)
         self.assertIsNotNone(plant)
         self.assertIsNotNone(scene_graph)
+
+    @numpy_compare.check_all_types
+    def test_get_bodies_welded_to_keep_alive(self, T):
+        """
+        Explicitly tests casting behavior for GetBodiesWeldedTo(). The model
+        has a link welded to the world.
+
+        Prior implementations would inadvertently attempt to copy Body
+        objects, leading to run-time errors.
+        We additionally check keep-alive behavior on constituent elemenets,
+        similar to the more generic form in `pydrake_pybind_test`.
+        """
+
+        def test_casting_and_get_weakref_and_last_body():
+            # Define scoped function so that we are confident on reference
+            # counting.
+            # TODO(eric.cousineau): Figure out why `plant_f` has to be garbage
+            # collected to allow `plant` to be freed.
+            plant_f = MultibodyPlant_[float](time_step=0.0)
+            Parser(plant_f).AddModels(
+                url='package://drake/examples/acrobot/Acrobot.urdf')
+            plant_f.Finalize()
+            plant = to_type(plant_f, T)
+            world_body = plant.world_body()
+            base_link = plant.GetBodyByName("base_link")
+            first_body, last_body = plant.GetBodiesWeldedTo(world_body)
+            self.assertIs(first_body, world_body)
+            self.assertIs(last_body, base_link)
+            ref = weakref.ref(plant)
+            return ref, last_body
+
+        ref, last_body = test_casting_and_get_weakref_and_last_body()
+        # Show that `last_body` keeps `plant` alive.
+        self.assertIsNot(ref(), None)
+        del last_body
+        # Show that deleting reference to `last_body` allows `plant` to be
+        # garbage collected.
+        self.assertIs(ref(), None)
 
     @numpy_compare.check_all_types
     def test_multibody_plant_api_via_parsing(self, T):
