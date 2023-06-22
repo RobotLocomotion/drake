@@ -313,11 +313,10 @@ boolean<T> SpatialInertia<T>::IsPhysicallyValid() const {
   // non-finite or the center of mass or unit inertia matrix have NaN elements.
   boolean<T> ret_value = is_nonnegative_finite(mass_);
   if (ret_value) {
-    // Form a rotational inertia about the body's center of mass and then use
+    // Form a spatial inertia about the body's center of mass and then use
     // the well-documented tests in RotationalInertia to test validity.
-    const UnitInertia<T> G_SScm_E = G_SP_E_.ShiftToCenterOfMass(p_PScm_E_);
-    const RotationalInertia<T> I_SScm_E =
-        G_SScm_E.MultiplyByScalarSkipValidityCheck(mass_);
+    const SpatialInertia<T> M_SScm_E = ShiftToCenterOfMass();
+    const RotationalInertia<T> I_SScm_E = M_SScm_E.CalcRotationalInertia();
     ret_value = I_SScm_E.CouldBePhysicallyValid();
   }
   return ret_value;
@@ -371,6 +370,18 @@ template <typename T>
 SpatialInertia<T> SpatialInertia<T>::ShiftFromCenterOfMass(
     const Vector3<T>& p_ScmP_E) const {
   return SpatialInertia(*this).ShiftFromCenterOfMassInPlace(p_ScmP_E);
+}
+
+template <typename T>
+SpatialInertia<T>& SpatialInertia<T>::ShiftToCenterOfMassInPlace() {
+  G_SP_E_.ShiftToCenterOfMassInPlace(p_PScm_E_);
+  p_PScm_E_ = Vector3<T>::Zero();
+  return *this;  // On entry, `this` is M_SP_E. On return, `this` is M_SScm_E.
+}
+
+template <typename T>
+SpatialInertia<T> SpatialInertia<T>::ShiftToCenterOfMass() const {
+  return SpatialInertia(*this).ShiftToCenterOfMassInPlace();
 }
 
 template <typename T>
