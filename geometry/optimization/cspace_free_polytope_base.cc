@@ -32,33 +32,19 @@ void FindMonomialBasisArray(
     const multibody::RationalForwardKinematics& rational_forward_kin,
     const Vector3<symbolic::Variable>& y_slack,
     const SortedPair<multibody::BodyIndex>& body_pair,
+    const std::unordered_map<SortedPair<multibody::BodyIndex>,
+                             std::vector<int>>& map_body_pair_to_s_on_chain,
     std::unordered_map<SortedPair<multibody::BodyIndex>,
                        std::array<VectorX<symbolic::Monomial>, 4>>*
         map_body_to_monomial_basis_array,
     std::array<VectorX<symbolic::Monomial>, 4>* monomial_basis_array) {
   auto body_pair_it = map_body_to_monomial_basis_array->find(body_pair);
   if (body_pair_it == map_body_to_monomial_basis_array->end()) {
-    const std::vector<multibody::internal::MobilizerIndex> mobilizer_indices =
-        multibody::internal::FindMobilizersOnPath(rational_forward_kin.plant(),
-                                                  body_pair.first(),
-                                                  body_pair.second());
-    const auto& tree =
-        multibody::internal::GetInternalTree(rational_forward_kin.plant());
     symbolic::Variables s_set;
-    for (const auto& mobilizer_index : mobilizer_indices) {
-      const auto& mobilizer = tree.get_mobilizer(mobilizer_index);
-      if ((mobilizer.can_rotate() && !mobilizer.can_translate()) ||
-          (mobilizer.can_translate() && !mobilizer.can_rotate())) {
-        // This is a revolute or prismatic joint.
-        s_set.insert(
-            rational_forward_kin
-                .s()[rational_forward_kin
-                         .map_mobilizer_to_s_index()[mobilizer_index]]);
-      } else if (mobilizer.num_velocities() > 0) {
-        throw std::runtime_error(
-            "FindMonomialBasis: we only support revolute, prismatic or weld "
-            "mobilizers.");
-      }
+    const std::vector<int>& s_indices =
+        map_body_pair_to_s_on_chain.at(body_pair);
+    for (const int s_index : s_indices) {
+      s_set.insert(rational_forward_kin.s()[s_index]);
     }
     if (s_set.empty()) {
       // No s variable. The monomial basis is just [1].
@@ -81,12 +67,13 @@ void FindMonomialBasisArray(
     *monomial_basis_array = body_pair_it->second;
   }
 }
-
 }  // namespace
+
 CspaceFreePolytopeBase::CspaceFreePolytopeBase(
     const multibody::MultibodyPlant<double>* plant,
     const geometry::SceneGraph<double>* scene_graph,
-    SeparatingPlaneOrder plane_order, const Options& options)
+    SeparatingPlaneOrder plane_order, SForPlane s_for_plane_enum,
+    const Options& options)
     : rational_forward_kin_(plant),
       scene_graph_{scene_graph},
       link_geometries_{internal::GetCollisionGeometries(*plant, *scene_graph)},
@@ -105,6 +92,11 @@ CspaceFreePolytopeBase::CspaceFreePolytopeBase(
       rational_forward_kin_.plant(), *scene_graph_, link_geometries_,
       &collision_pairs);
 
+  // Initialize map_body_pair_to_s_on_chain.
+  for (const auto& [body_pair, collisions] : collision_pairs) {
+    SetIndicesOfSOnChainForBodyPair(body_pair);
+  }
+
   separating_planes_.reserve(num_collision_pairs);
   const symbolic::Monomial monomial_one{};
   for (const auto& [link_pair, geometry_pairs] : collision_pairs) {
@@ -115,7 +107,7 @@ CspaceFreePolytopeBase::CspaceFreePolytopeBase(
       switch (plane_order) {
         case SeparatingPlaneOrder::kAffine: {
           const VectorX<symbolic::Variable> s_for_plane =
-              rational_forward_kin_.s();
+              GetSForPlane(link_pair, s_for_plane_enum);
           plane_decision_vars.resize(4 * s_for_plane.rows() + 4);
           for (int i = 0; i < plane_decision_vars.rows(); ++i) {
             plane_decision_vars(i) =
@@ -138,6 +130,14 @@ CspaceFreePolytopeBase::CspaceFreePolytopeBase(
           SortedPair<geometry::GeometryId>(geometry_pair.first->id(),
                                            geometry_pair.second->id()),
           static_cast<int>(separating_planes_.size()) - 1);
+
+      // Later we will also need the s variables on the kinematics chain from
+      // the expressed body to either ends of link_pair (for example, when we
+      // compute the monomial basis). Hence we compute it here.
+      SetIndicesOfSOnChainForBodyPair(
+          SortedPair<multibody::BodyIndex>(link_pair.first(), expressed_body));
+      SetIndicesOfSOnChainForBodyPair(
+          SortedPair<multibody::BodyIndex>(link_pair.second(), expressed_body));
     }
   }
 
@@ -161,6 +161,7 @@ void CspaceFreePolytopeBase::CalcMonomialBasis() {
           plane.expressed_body, collision_geometry->body_index());
       std::array<VectorX<symbolic::Monomial>, 4> monomial_basis_array;
       FindMonomialBasisArray(rational_forward_kin_, y_slack_, body_pair,
+                             map_body_pair_to_s_on_chain_,
                              &map_body_to_monomial_basis_array_,
                              &monomial_basis_array);
     }
@@ -182,6 +183,54 @@ void CspaceFreePolytopeBase::CalcSBoundsPolynomial(
     (*s_upper_minus_s)(i) = symbolic::Polynomial(symbolic::Polynomial::MapType(
         {{monomial_one, s_upper(i)}, {symbolic::Monomial(s(i)), -1}}));
   }
+}
+
+void CspaceFreePolytopeBase::SetIndicesOfSOnChainForBodyPair(
+    const SortedPair<multibody::BodyIndex>& body_pair) {
+  if (map_body_pair_to_s_on_chain_.count(body_pair) == 0) {
+    const std::vector<multibody::internal::MobilizerIndex> mobilizer_indices =
+        multibody::internal::FindMobilizersOnPath(rational_forward_kin_.plant(),
+                                                  body_pair.first(),
+                                                  body_pair.second());
+    const auto& tree =
+        multibody::internal::GetInternalTree(rational_forward_kin_.plant());
+    std::vector<int> s_indices;
+    for (const auto& mobilizer_index : mobilizer_indices) {
+      const auto& mobilizer = tree.get_mobilizer(mobilizer_index);
+      if ((mobilizer.num_positions() == 1 && mobilizer.num_velocities() == 1) &&
+          ((mobilizer.can_rotate() && !mobilizer.can_translate()) ||
+           (mobilizer.can_translate() && !mobilizer.can_rotate()))) {
+        // This is a revolute or prismatic joint.
+        s_indices.push_back(
+            rational_forward_kin_.map_mobilizer_to_s_index()[mobilizer_index]);
+      } else if (mobilizer.num_velocities() > 0) {
+        throw std::runtime_error(
+            "FindMonomialBasis: we only support revolute, prismatic or weld "
+            "mobilizers.");
+      }
+    }
+    map_body_pair_to_s_on_chain_.emplace(body_pair, s_indices);
+  }
+}
+
+VectorX<symbolic::Variable> CspaceFreePolytopeBase::GetSForPlane(
+    const SortedPair<multibody::BodyIndex>& body_pair,
+    SForPlane s_for_plane_enum) const {
+  switch (s_for_plane_enum) {
+    case SForPlane::kAll: {
+      return rational_forward_kin_.s();
+    }
+    case SForPlane::kOnChain: {
+      const std::vector<int>& s_indices =
+          map_body_pair_to_s_on_chain_.at(body_pair);
+      VectorX<symbolic::Variable> s_for_plane(s_indices.size());
+      for (int i = 0; i < s_for_plane.rows(); ++i) {
+        s_for_plane(i) = rational_forward_kin_.s()(s_indices[i]);
+      }
+      return s_for_plane;
+    }
+  }
+  DRAKE_UNREACHABLE();
 }
 }  // namespace optimization
 }  // namespace geometry

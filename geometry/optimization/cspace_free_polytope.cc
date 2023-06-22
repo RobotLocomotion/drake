@@ -243,7 +243,8 @@ CspaceFreePolytope::CspaceFreePolytope(
     SeparatingPlaneOrder plane_order,
     const Eigen::Ref<const Eigen::VectorXd>& q_star,
     const CspaceFreePolytope::Options& options)
-    : CspaceFreePolytopeBase(plant, scene_graph, plane_order, options),
+    : CspaceFreePolytopeBase(plant, scene_graph, plane_order,
+                             CspaceFreePolytopeBase::SForPlane::kAll, options),
       q_star_{q_star} {
   s_lower_ = rational_forward_kin().ComputeSValue(
       rational_forward_kin().plant().GetPositionLowerLimits(), q_star_);
