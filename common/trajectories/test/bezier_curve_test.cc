@@ -57,6 +57,38 @@ void CheckConvexHullProperty(const BezierCurve<double>& curve,
   }
 }
 
+// An empty curve.
+GTEST_TEST(BezierCurveTest, Default) {
+  BezierCurve<double> curve;
+  EXPECT_EQ(curve.order(), -1);
+  EXPECT_EQ(curve.control_points().rows(), 0);
+  EXPECT_EQ(curve.control_points().cols(), 0);
+  EXPECT_NO_THROW(curve.Clone());
+}
+
+// A moved-from curve.
+GTEST_TEST(BezierCurveTest, MoveConstructor) {
+  Eigen::Matrix2d points;
+  // clang-format off
+  points << 1, 2,
+            3, 7;
+  // clang-format on
+  BezierCurve<double> orig(2, 3, points);
+  EXPECT_EQ(orig.order(), 1);
+  EXPECT_EQ(orig.start_time(), 2.0);
+  EXPECT_EQ(orig.end_time(), 3.0);
+
+  // A moved-into trajectory retains the original information.
+  BezierCurve<double> dest(std::move(orig));
+  EXPECT_EQ(dest.order(), 1);
+  EXPECT_EQ(dest.start_time(), 2.0);
+  EXPECT_EQ(dest.end_time(), 3.0);
+
+  // The moved-from trajectory must still be in a valid state.
+  EXPECT_EQ(orig.order(), orig.control_points().cols() - 1);
+  EXPECT_GE(orig.end_time(), orig.start_time());
+}
+
 // Line segment from (1,3) to (2,7).
 GTEST_TEST(BezierCurveTest, Linear) {
   Eigen::Matrix2d points;
