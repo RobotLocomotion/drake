@@ -211,14 +211,6 @@ UnitInertia<T>::CalcPrincipalHalfLengthsAndAxesForEquivalentShape(
   const double lmax = std::sqrt(lmax_squared);
   const double lmed = std::sqrt(lmed_squared);
   const double lmin = std::sqrt(lmin_squared);
-  // If Gmax ≈ Gmed ≈ Gmin (moments of inertia are "triaxially symmetric"), then
-  // then lmax ≈ lmed ≈ lmin. The corresponds to an equivalent shape of a sphere
-  // whose orientation is irrelevant for moment of inertia calculations.
-  // Similarly, the orientation of a cube is irrelevant for purposes of inertia.
-  // As such, R_EA can be _any_ valid rotation matrix. In this situation, we
-  // choose a "canonical" identity rotation matrix for R_EA.
-  // const double tolerance = lmax * std::numeric_limits<double>::epsilon();
-  // if (lmax - lmin < tolerance) R_EA = math::RotationMatrix<double>::Identity();
   return std::pair(Vector3<double>(lmax, lmed, lmin), R_EA);
 }
 
