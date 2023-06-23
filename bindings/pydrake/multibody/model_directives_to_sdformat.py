@@ -527,11 +527,11 @@ def _convert_one_dmd(*, dmd_filename: Path):
     return (xml, includes)
 
 
-def convert_directives(*,
-                       dmd_filename: Path,
-                       output_path: Path = None,
-                       expand_included: bool = False,
-                       generate_world: bool = True) -> dict[Path, str]:
+def _convert_directives(*,
+                        dmd_filename: Path,
+                        output_path: Path = None,
+                        expand_included: bool = False,
+                        generate_world: bool = True) -> dict[Path, str]:
     """Given a foo.dmd.yaml filename, returns the semantically equivalent
     SDFormat content(s). The return value is dictionary of output filenames
     and their desired contents.
@@ -644,7 +644,7 @@ def _main(argv=None):
     args = parser.parse_args(argv)
 
     # Do the conversion in memory.
-    converted = convert_directives(
+    converted = _convert_directives(
         dmd_filename=args.model_directives,
         output_path=args.output_path,
         expand_included=args.expand_included,

@@ -24,7 +24,7 @@ from pydrake.common.test_utilities.meta import (
 )
 
 from pydrake.multibody.model_directives_to_sdformat import (
-    convert_directives,
+    _convert_directives,
 )
 
 _SCOPE_DELIMITER = "::"
@@ -167,7 +167,7 @@ class TestConvertModelDirectiveToSdformat(
     def test_through_plant_comparison(self, *, name):
         # Convert.
         dmd_filename = self.dmd_test_path / f"{name}.dmd.yaml"
-        files = convert_directives(
+        files = _convert_directives(
             dmd_filename=dmd_filename,
             generate_world=False,
         )
@@ -276,7 +276,7 @@ class TestConvertModelDirectiveToSdformat(
         with open(self.dmd_test_path / f"errors/{name}.error_regex") as f:
             expected_message_regex = f.read().strip()
         with self.assertRaisesRegex(Exception, expected_message_regex):
-            convert_directives(dmd_filename=dmd_filename)
+            _convert_directives(dmd_filename=dmd_filename)
 
     def test_add_model_instance_add_directives(self):
         dmd_filename = self.dmd_test_path / "add_directives.dmd.yaml"
@@ -287,7 +287,7 @@ class TestConvertModelDirectiveToSdformat(
         # TODO(jwnimmer-tri) Don't do this; changes to os.environ bleed into
         # other test cases.
         os.environ["ROS_PACKAGE_PATH"] = "bindings/pydrake/multibody"
-        files = convert_directives(
+        files = _convert_directives(
             dmd_filename=dmd_filename,
             expand_included=True,
             generate_world=False,
@@ -304,7 +304,7 @@ class TestConvertModelDirectiveToSdformat(
         expected_path = self.dmd_test_path / "inject_frames.expected-sdf"
         with open(expected_path, encoding="utf-8") as f:
             expected_xml = f.read()
-        files = convert_directives(
+        files = _convert_directives(
             dmd_filename=dmd_filename,
             generate_world=False,
         )
@@ -316,4 +316,4 @@ class TestConvertModelDirectiveToSdformat(
     def test_error_wrong_file_extension(self):
         with self.assertRaisesRegex(Exception, "determine file format"):
             dmd_filename = Path("frame_same_as_base_frame.not_valid")
-            convert_directives(dmd_filename=dmd_filename)
+            _convert_directives(dmd_filename=dmd_filename)
