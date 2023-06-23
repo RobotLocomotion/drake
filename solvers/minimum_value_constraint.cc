@@ -8,16 +8,25 @@
 
 namespace drake {
 namespace solvers {
+const double kInf = std::numeric_limits<double>::infinity();
 
 namespace {
 /** Computes a smooth over approximation of max(x). */
 template <typename T>
-T SmoothMax(const std::vector<T>& x) {
+T SmoothOverMax(const std::vector<T>& x) {
   // We compute the smooth max of x as smoothmax(x) = log(∑ᵢ exp(αxᵢ)) / α.
   // This smooth max approaches max(x) as α increases. We choose α = 100, as
   // that gives a qualitatively good fit for xᵢ ∈ [0, 1], which is the range of
   // potential penalty values when the MinimumValueConstraint is feasible.
   return math::SoftOverMax(x, 100 /* alpha */);
+}
+
+/** Computes a smooth over approximation of max(x). */
+template <typename T>
+T SmoothUnderMax(const std::vector<T>& x) {
+  // This SoftUnderMax approaches max(x) as α increases. We choose α = 100, as
+  // that gives a qualitatively good fit for xᵢ around 1.
+  return math::SoftUnderMax(x, 100 /* alpha */);
 }
 
 template <typename T>
@@ -26,14 +35,15 @@ T ScaleValue(T value, double minimum_value, double influence_value) {
 }
 
 void InitializeY(const Eigen::Ref<const Eigen::VectorXd>&, Eigen::VectorXd* y,
-                 double y_value) {
-  (*y)(0) = y_value;
+                 int y_index, double y_value) {
+  (*y)(y_index) = y_value;
 }
 
 void InitializeY(const Eigen::Ref<const AutoDiffVecXd>& x, AutoDiffVecXd* y,
-                 double y_value) {
-  (*y) = math::InitializeAutoDiff(
-      Vector1d(y_value), Eigen::RowVectorXd::Zero(x(0).derivatives().size()));
+                 int y_index, double y_value) {
+  (*y)(y_index).value() = y_value;
+  (*y)(y_index).derivatives() =
+      Eigen::RowVectorXd::Zero(x(0).derivatives().size());
 }
 
 void Penalty(const double& value, double minimum_value, double influence_value,
@@ -49,6 +59,7 @@ void Penalty(const AutoDiffXd& value, double minimum_value,
              MinimumValuePenaltyFunction penalty_function, AutoDiffXd* y) {
   const AutoDiffXd scaled_value_autodiff =
       ScaleValue(value, minimum_value, influence_value);
+
   double penalty, dpenalty_dscaled_value;
   penalty_function(scaled_value_autodiff.value(), &penalty,
                    &dpenalty_dscaled_value);
@@ -108,16 +119,72 @@ MinimumValueConstraint::MinimumValueConstraint(
     std::function<VectorX<double>(const Eigen::Ref<const VectorX<double>>&,
                                   double)>
         value_function_double)
-    : solvers::Constraint(1, num_vars,
-                          Vector1d(-std::numeric_limits<double>::infinity()),
-                          Vector1d(1)),
+    : MinimumValueConstraint(
+          num_vars, minimum_value, kInf, minimum_value + influence_value_offset,
+          max_num_values, value_function, value_function_double) {}
+
+namespace {
+int NumConstraints(double minimum_value_lower, double minimum_value_upper) {
+  return static_cast<int>(std::isfinite(minimum_value_lower)) +
+         static_cast<int>(std::isfinite(minimum_value_upper));
+}
+
+Eigen::VectorXd LowerBounds(double minimum_value_lower,
+                            double minimum_value_upper) {
+  if (std::isfinite(minimum_value_lower) &&
+      std::isfinite(minimum_value_upper)) {
+    return Eigen::Vector2d(-kInf, 1);
+  } else if (std::isfinite(minimum_value_lower)) {
+    return Vector1d(-kInf);
+  } else if (std::isfinite(minimum_value_upper)) {
+    return Vector1d(1);
+  } else {
+    throw std::runtime_error(
+        "MinimumValueConstraint: at least one of minimum_value_lower and "
+        "minimum_value_upper should be finite.");
+  }
+}
+
+Eigen::VectorXd UpperBounds(double minimum_value_lower,
+                            double minimum_value_upper) {
+  if (std::isfinite(minimum_value_lower) &&
+      std::isfinite(minimum_value_upper)) {
+    return Eigen::Vector2d(1, kInf);
+  } else if (std::isfinite(minimum_value_lower)) {
+    return Vector1d(1);
+  } else if (std::isfinite(minimum_value_upper)) {
+    return Vector1d(kInf);
+  } else {
+    throw std::runtime_error(
+        "MinimumValueConstraint: at least one of minimum_value_lower and "
+        "minimum_value_upper should be finite.");
+  }
+}
+}  // namespace
+
+MinimumValueConstraint::MinimumValueConstraint(
+    int num_vars, double minimum_value_lower, double minimum_value_upper,
+    double influence_value, int max_num_values,
+    std::function<AutoDiffVecXd(const Eigen::Ref<const AutoDiffVecXd>&, double)>
+        value_function,
+    std::function<VectorX<double>(const Eigen::Ref<const VectorX<double>>&,
+                                  double)>
+        value_function_double)
+    : Constraint(NumConstraints(minimum_value_lower, minimum_value_upper),
+                 num_vars,
+                 LowerBounds(minimum_value_lower, minimum_value_upper),
+                 UpperBounds(minimum_value_lower, minimum_value_upper)),
       value_function_{value_function},
       value_function_double_{value_function_double},
-      minimum_value_{minimum_value},
-      influence_value_{minimum_value + influence_value_offset},
+      minimum_value_lower_{minimum_value_lower},
+      minimum_value_upper_{minimum_value_upper},
+      influence_value_{influence_value},
       max_num_values_{max_num_values} {
-  DRAKE_DEMAND(influence_value_offset > 0);
-  DRAKE_DEMAND(std::isfinite(influence_value_offset));
+  DRAKE_DEMAND(influence_value_ > minimum_value_lower_);
+  if (std::isfinite(minimum_value_upper)) {
+    DRAKE_DEMAND(influence_value_ > minimum_value_upper_);
+  }
+  DRAKE_DEMAND(std::isfinite(influence_value_));
   set_penalty_function(QuadraticallySmoothedHingeLoss);
 }
 
@@ -125,9 +192,7 @@ void MinimumValueConstraint::set_penalty_function(
     MinimumValuePenaltyFunction new_penalty_function) {
   penalty_function_ = new_penalty_function;
   double unscaled_penalty_at_minimum_value{};
-  penalty_function_(
-      ScaleValue(minimum_value_, minimum_value_, influence_value_),
-      &unscaled_penalty_at_minimum_value, nullptr);
+  penalty_function_(-1, &unscaled_penalty_at_minimum_value, nullptr);
   penalty_output_scaling_ = 1 / unscaled_penalty_at_minimum_value;
 }
 
@@ -148,37 +213,82 @@ AutoDiffVecXd MinimumValueConstraint::Values(
 template <typename T>
 void MinimumValueConstraint::DoEvalGeneric(
     const Eigen::Ref<const VectorX<T>>& x, VectorX<T>* y) const {
-  y->resize(1);
+  y->resize(num_constraints());
+
+  // Index for the constraint
+  // SoftOverMax( φ((vᵢ - v_influence)/(v_influence - vₘᵢₙ_lower)) / φ(-1) ) ≤ 1
+  // Use -1 if minimum_value_lower_ is inf.
+  const int y_lower_index = std::isfinite(minimum_value_lower_) ? 0 : -1;
+  // Index for the constraint
+  // SoftUnderMax( φ((vᵢ - v_influence)/(v_influence - vₘᵢₙ_upper)) / φ(-1) ) ≥
+  // 1 Use -1 if minimum_value_upper_ is inf.
+  const int y_upper_index =
+      std::isfinite(minimum_value_upper_) ? y_lower_index + 1 : -1;
 
   // If we know that Values() will return at most zero values, then this
-  // is a non-constraint. Return zero in that case.
+  // is a non-constraint. Return zero for the lower bound constraint, and 2 for
+  // the upper bound constraint.
   if (max_num_values_ == 0) {
-    InitializeY(x, y, 0.0);
+    if (y_lower_index >= 0) {
+      InitializeY(x, y, y_lower_index, 0.0);
+    }
+    if (y_upper_index >= 0) {
+      InitializeY(x, y, y_upper_index, 2.0);
+    }
     return;
   }
 
-  // Initialize y to SmoothMax([0, 0, ..., 0]).
-  InitializeY(x, y, SmoothMax(std::vector<double>(max_num_values_, 0.0)));
+  // Initialize y(y_lower_index) and y(y_upper_index) to
+  // SmoothOverMax([0, 0, ..., 0]).
+  if (y_lower_index >= 0) {
+    InitializeY(x, y, y_lower_index,
+                SmoothOverMax(std::vector<double>(max_num_values_, 0.0)));
+  }
+  if (y_upper_index >= 0) {
+    InitializeY(x, y, y_upper_index,
+                SmoothUnderMax(std::vector<double>(max_num_values_, 0.0)));
+  }
 
   VectorX<T> values = Values(x);
-  std::vector<T> penalties{};
   const int num_values = static_cast<int>(values.size());
   DRAKE_ASSERT(num_values <= max_num_values_);
-  penalties.reserve(max_num_values_);
-  for (int i = 0; i < num_values; ++i) {
-    const T& value = values(i);
-    if (value < influence_value_) {
-      penalties.emplace_back();
-      Penalty(value, minimum_value_, influence_value_, penalty_function_,
-              &penalties.back());
-      penalties.back() *= penalty_output_scaling_;
+  if (y_lower_index >= 0) {
+    std::vector<T> penalties_lower{};
+    penalties_lower.reserve(max_num_values_);
+    for (int i = 0; i < num_values; ++i) {
+      const T& value = values(i);
+      if (value < influence_value_) {
+        penalties_lower.emplace_back();
+        Penalty(value, minimum_value_lower_, influence_value_,
+                penalty_function_, &penalties_lower.back());
+        penalties_lower.back() *= penalty_output_scaling_;
+      }
+    }
+    if (!penalties_lower.empty()) {
+      // Pad penalties up to max_num_values_ so that the constraint
+      // function is actually smooth.
+      penalties_lower.resize(max_num_values_, T{0.0});
+      (*y)(y_lower_index) = SmoothOverMax(penalties_lower);
     }
   }
-  if (!penalties.empty()) {
-    // Pad penalties up to max_num_values_ so that the constraint
-    // function is actually smooth.
-    penalties.resize(max_num_values_, T{0.0});
-    (*y)(0) = SmoothMax(penalties);
+  if (y_upper_index >= 0) {
+    std::vector<T> penalties_upper{};
+    penalties_upper.reserve(max_num_values_);
+    for (int i = 0; i < num_values; ++i) {
+      const T& value = values(i);
+      if (value < influence_value_) {
+        penalties_upper.emplace_back();
+        Penalty(value, minimum_value_upper_, influence_value_,
+                penalty_function_, &penalties_upper.back());
+        penalties_upper.back() *= penalty_output_scaling_;
+      }
+    }
+    if (!penalties_upper.empty()) {
+      // Pad penalties up to max_num_values_ so that the constraint
+      // function is actually smooth.
+      penalties_upper.resize(max_num_values_, T{0.0});
+      (*y)(y_upper_index) = SmoothUnderMax(penalties_upper);
+    }
   }
 }
 
