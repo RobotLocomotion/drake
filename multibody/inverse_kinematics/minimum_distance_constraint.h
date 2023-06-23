@@ -111,7 +111,7 @@ class MinimumDistanceConstraint final : public solvers::Constraint {
 
   /** Getter for the minimum distance. */
   double minimum_distance() const {
-    return minimum_value_constraint_->minimum_value();
+    return minimum_value_constraint_->minimum_value_lower();
   }
 
   /** Getter for the influence distance. */
