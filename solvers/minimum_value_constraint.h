@@ -2,6 +2,7 @@
 
 #include <functional>
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/solvers/constraint.h"
 
 namespace drake {
@@ -47,39 +48,50 @@ multidisciplinary workshop on Advances in Preference Handling. */
 void QuadraticallySmoothedHingeLoss(double x, double* penalty,
                                     double* dpenalty_dx);
 
-/** Constrain all elements of the vector returned by the user-provided function
-to be no smaller than a specified minimum value.
+/** Constrain lb <= min(v) <= ub. Namely all elements of the vector `v` returned
+by the user-provided function to be no smaller than a specified minimum value
+`lb`, and the minimal element of the vector is no larger than another specified
+value `ub`.
 
 The formulation of the constraint is
 
-SmoothMax( φ((vᵢ - v_influence)/(v_influence - vₘᵢₙ)) / φ(-1) ) ≤ 1
+<pre>
+SmoothOverMax( φ((vᵢ - v_influence)/(v_influence - lb)) / φ(-1) ) ≤ 1
+SmoothUnderMax( φ((vᵢ - v_influence)/(v_influence - ub)) / φ(-1) ) ≥ 1
+</pre>
 
-where vᵢ is the i-th value returned by the user-provided function, vₘᵢₙ is the
-minimum allowable value, v_influence is the "influence value" (the value below
-which an element influences the constraint or, conversely, the value above which
-an element is ignored), φ is a solvers::MinimumValuePenaltyFunction, and
-SmoothMax(v) is a smooth, conservative approximation of max(v) (i.e.
-SmoothMax(v) >= max(v), for all v). We require that vₘᵢₙ < v_influence. The
-input scaling (vᵢ - v_influence)/(v_influence - vₘᵢₙ) ensures that at the
-boundary of the feasible set (when vᵢ == vₘᵢₙ), we evaluate the penalty function
-at -1, where it is required to have a non-zero gradient. The user-provided
-function may return a vector with up to `max_num_values` elements. If it returns
-a vector with fewer than `max_num_values` elements, the remaining elements are
-assumed to be greater than the "influence value". */
+where vᵢ is the i-th value returned by the user-provided function, `lb` is
+the minimum allowable value, `ub` is the upper bound for the min(v). (Note that
+`ub` is NOT the upper bound of `v`). v_influence is the "influence value" (the
+value below which an element influences the constraint or, conversely, the value
+above which an element is ignored), φ is a solvers::MinimumValuePenaltyFunction,
+and SmoothOverMax(v) is a smooth, over approximation of max(v) (i.e.
+SmoothOverMax(v) >= max(v), for all v). SmoothUnderMax(x) is a smooth, under
+approximation of max(v) (i.e. SmoothUnderMax(v) <= max(v) for all v). We require
+that lb < ub < v_influence. The input scaling (vᵢ -
+v_influence)/(v_influence - lb) ensures that at the boundary of the
+feasible set (when vᵢ == lb), we evaluate the penalty function at -1, where it
+is required to have a non-zero gradient. The user-provided function may return a
+vector with up to `max_num_values` elements. If it returns a vector with fewer
+than `max_num_values` elements, the remaining elements are assumed to be greater
+than the "influence value". */
 class MinimumValueConstraint final : public solvers::Constraint {
  public:
   /** Constructs a MinimumValueConstraint.
+  min(v) >= lb
+  Note that we don't enforce the constraint min(v) <= ub in the class
+  documentation.
   @param num_vars The number of inputs to `value_function`
-  @param minimum_value The minimum allowed value, vₘᵢₙ, for all elements of the
-  vector returned by `value_function`.
+  @param minimum_value The minimum allowed value, lb, for all elements
+  of the vector returned by `value_function`.
   @param influence_value_offset The difference between the
-  influence value, v_influence, and the minimum value, vₘᵢₙ (see class
+  influence value, v_influence, and the minimum value, lb (see class
   documentation). This value must be finite and strictly positive, as it is used
   to scale the values returned by `value_function`. Smaller values may
   decrease the amount of computation required for each constraint evaluation if
   `value_function` can quickly determine that some elements will be
   larger than the influence value and skip the computation associated with those
-  elements. @default 1
+  elements.
   @param max_num_values The maximum number of elements in the vector returned by
   `value_function`.
   @param value_function User-provided function that takes a `num_vars`-element
@@ -106,10 +118,45 @@ class MinimumValueConstraint final : public solvers::Constraint {
                                     double)>
           value_function_double = {});
 
+  /**
+   Overloaded constructor.
+   This constructor allows to specify both the lower bound and upper bound of
+   the minimal element.
+   If you want to ignore the lower bound, then set `minimum_value_lower` to
+   -inf. Similary you can set `minimum_value_upper` to inf to ignore the upper
+   bound. But don't set both minimum_value_lower and minimum_value_upper to
+   infinity.
+   @param minimum_value_lower The minimum allowed value `lb`, for all
+   elements of the vector returned by `value_function`.
+   @param minimum_value_upper The upper bound on min(v), where `v` is the vector
+   returned by `value_function`.
+   @param influence_value This value must be finite and larger than both
+   `minimum_value_lower` and `minimum_value_upper`, as it is used to scale the
+   values returned by `value_function`. Smaller values may decrease the amount
+   of computation required for each constraint evaluation if `value_function`
+   can quickly determine that some elements will be larger than the influence
+   value and skip the computation associated with those elements.
+   */
+  MinimumValueConstraint(
+      int num_vars, double minimum_value_lower, double minimum_value_upper,
+      double influence_value, int max_num_values,
+      std::function<AutoDiffVecXd(const Eigen::Ref<const AutoDiffVecXd>&,
+                                  double)>
+          value_function,
+      std::function<VectorX<double>(const Eigen::Ref<const VectorX<double>>&,
+                                    double)>
+          value_function_double = {});
+
   ~MinimumValueConstraint() override {}
 
   /** Getter for the minimum value. */
-  double minimum_value() const { return minimum_value_; }
+  DRAKE_DEPRECATED("2023-11-01", "Use minimum_value_lower() instead.");
+  double minimum_value() const { return minimum_value_lower_; }
+
+  /** Getter for the minimum value. */
+  double minimum_value_lower() const { return minimum_value_lower_; }
+
+  double minimum_value_upper() const { return minimum_value_upper_; }
 
   /** Getter for the influence value. */
   double influence_value() const { return influence_value_; }
@@ -144,7 +191,8 @@ class MinimumValueConstraint final : public solvers::Constraint {
   std::function<AutoDiffVecXd(const AutoDiffVecXd&, double)> value_function_;
   std::function<VectorX<double>(const VectorX<double>&, double)>
       value_function_double_;
-  const double minimum_value_;
+  const double minimum_value_lower_;
+  const double minimum_value_upper_;
   const double influence_value_;
   /** Stores the value of
   1 / φ((vₘᵢₙ - v_influence)/(v_influence - vₘᵢₙ)) = 1 / φ(-1). This is
