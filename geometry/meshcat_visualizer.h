@@ -63,6 +63,10 @@ class MeshcatVisualizer final : public systems::LeafSystem<T> {
   explicit MeshcatVisualizer(std::shared_ptr<Meshcat> meshcat,
                              MeshcatVisualizerParams params = {});
 
+  /** Resets the realtime rate calculator so that realtime rate is accurate
+   * after simulator is resumed from a paused state. */
+  void ResetRealtimeRateCalculator() const { realtime_rate_calculator_.Reset(); }
+
   /** Scalar-converting copy constructor. See @ref system_scalar_conversion.
    It should only be used to convert _from_ double _to_ other scalar types.
    */

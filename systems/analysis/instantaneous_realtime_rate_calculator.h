@@ -24,6 +24,13 @@ class InstantaneousRealtimeRateCalculator {
    */
   std::optional<double> UpdateAndRecalculate(double current_sim_time);
 
+  /* If the simulator was paused, prev_sim_time_ should be set to nullopt
+   * so that the timer is not used in the calculation of realtime rate on
+   * the first call after the simulator is resumed. Otherwise the realtime
+   * rate value would be inaccurate since the timer was not paused.
+   */
+  void Reset() { prev_sim_time_ = std::nullopt; }
+
   /* (Internal use for unit testing only) Used to mock the monotonic wall time
      source to control time during unit testing.  */
 #ifndef DRAKE_DOXYGEN_CXX
