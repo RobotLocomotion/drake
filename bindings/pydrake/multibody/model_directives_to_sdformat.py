@@ -1,3 +1,66 @@
+r"""
+Utility for converting model directives files to SDFormat.
+
+Preconditions on the model directives file(s):
+
+  - No deep nested welds are present (see issue #19090).
+  - It is assumed that the model directives files are well formed.
+  - References to elements in subsecuently included files are correct (the
+    tool will not verify them).
+  - It does not contain the ``default_joint_positions`` or
+    the ``default_free_body_pose`` directive since they are stil not
+    supported.
+
+Properties of the resulting SDFormat file(s):
+
+  - The SDFormat files are generated alongside the original "dmd.yaml" files,
+    with the only difference of having an ``.sdf`` extension.
+  - An SDFormat file is created containing the conversion of the model
+    directives with the addition of a top level model using the name of
+    the file itself without the extension.
+  - An SDFormat file is created with the same file name but ending in
+    ``_world.sdf``. This file contains a top level ``<world>`` element that
+    merge includes the previous ``.sdf`` file.
+
+**Running**:
+
+    From a Drake source build, run this as::
+
+            bazel run //tools:model_directives_to_sdformat -- --help
+
+    From a Drake binary release (including pip releases), run this as::
+
+            python3 -m pydrake.multibody.model_directives_to_sfdormat \
+                    -m path/to/file.dmd.yaml
+
+    For binary releases (except for pip) there is also a shortcut available
+    as::
+            /opt/drake/bin/model_directives_to_sfdormat -m \
+            path/to/file.dmd.yaml
+
+**Expand Included**:
+
+    ``dmd.yaml`` included files will only be converted if the
+    ``--expand-included`` or ``-e`` flag is selected:
+
+            bazel run //tools:model_directives_to_sfdormat -- -m \
+                    path/to/file.dmd.yaml --expand-included
+
+    SDFormat resulting files from these included model directives will be
+    created alongside the original files.
+
+**Output Path**:
+
+    By default converted SDFormat files are created alongside original files
+    with the only difference of having the ``.sdf`` extension instead of the
+    ``dmd.yaml`` one. In order to generate them in a specific location the
+    `--output-path`` or ``-o`` option can be used, followed by the desired
+    output path:
+
+            bazel run //tools:model_directives_to_sfdormat -- -m \
+                    path/to/file.dmd.yaml --output-path path/to/output_dir/
+"""
+
 import argparse
 import os
 from pathlib import Path
@@ -9,9 +72,7 @@ from pydrake.common.yaml import yaml_load_typed
 from pydrake.multibody.parsing import (
     ModelDirectives,
     PackageMap,
-    Parser,
 )
-from pydrake.multibody.plant import MultibodyPlant
 
 _SDF_VERSION = "1.9"
 _SCOPE_DELIMITER = "::"
@@ -22,6 +83,7 @@ class ConversionError(Exception):
     pass
 
 
+# TODO(marcoag): Replace this with the newer pydrake.multibody.tree.ScopedName
 class ScopedName:
     def __init__(self, full_name: str):
         self.full_name = full_name
@@ -113,10 +175,6 @@ def _resolve_and_scope_frame(frame_name: str, directives) -> str:
     )
 
 
-def _levels_of_nesting(scope: str) -> int:
-    return len(scope.split(_SCOPE_DELIMITER))
-
-
 def _remove_suffix(input: str, suffix: str) -> str:
     if suffix and input.endswith(suffix):
         return input[: -len(suffix)]
@@ -178,7 +236,7 @@ class AddFrame:
                 )
 
     def _resolve(self, name, directives):
-        resolved_name, depely_nested = _resolve_and_scope_frame(
+        resolved_name, _ = _resolve_and_scope_frame(
             name, directives
         )
         if resolved_name is None:
