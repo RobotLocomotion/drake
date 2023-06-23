@@ -1,11 +1,8 @@
 import argparse
-import copy
-import dataclasses as dc
+import os
+from pathlib import Path
 from xml.dom import minidom
 import xml.etree.ElementTree as ET
-import os
-import sys
-from typing import List
 
 from pydrake.common import schema
 from pydrake.common.yaml import yaml_load_typed
@@ -94,14 +91,14 @@ def _resolve_and_scope_frame(frame_name: str, directives) -> str:
     """None is returned if the scope could not be found."""
     deeply_nested = False
     frame = _find_frame(frame_name, directives)
-    # Frame with the same name as base frame are not supported
+    # Frame with the same name as base frame are not supported.
     if frame is not None and frame_name == frame.base_frame:
         raise ConversionError(
             f"Frame: [{frame_name}] has the same name as"
             " it's base frame. This case is not supported."
         )
 
-    # Traverse frame graph to see if this frame is transitively attached
+    # Traverse frame graph to see if this frame is transitively attached.
     final_frame = _get_most_distal_parent_frame_directive(frame, directives)
 
     if final_frame is None:
@@ -165,7 +162,7 @@ class AddFrame:
         else:
             self.resolved_base_frame = self.scoped_base_frame
 
-        # If name and base_frame are scoped both should have a common scope
+        # If name and base_frame are scoped both should have a common scope.
         if (
             self.resolved_base_frame.instance_name != ""
             and self.scoped_name.instance_name != ""
@@ -209,9 +206,9 @@ class AddFrame:
         pose_elem.text = f"{self.translation_str}   {self.rotation_str}"
 
 
-# For add_weld, we only support child frames that can be referred to
-# within the same sdformat file that are nested only once, as we would
-# require the placement_frame and pose combination for posturing.
+# For add_weld, we only support child frames that can be referred to within
+# the same sdformat file that are nested only once, as we would require the
+# placement_frame and pose combination for posturing.
 #
 # Supported example:
 # add_model:
@@ -389,10 +386,10 @@ class AddDirectives:
                 f"for add_directives: {self.params}"
             )
 
-    def insert_into_root_sdformat_node(self, root, directives, args):
+    def insert_into_root_sdformat_node(self, root, directives):
         if self.model_ns is not None:
             # Check that the model instance has been created by
-            # add_model_instance
+            # add_model_instance.
             if not any(
                 directive.name == self.model_ns
                 for directive in _filter_directives(
@@ -412,55 +409,6 @@ class AddDirectives:
         uri_elem = ET.SubElement(include_elem, "uri")
         uri_elem.text = self.sdformat_uri
 
-        if args.expand_included:
-            self._convert_nested_directive(args)
-
-    def _convert_nested_directive(self, args):
-        if self.file_path.startswith("package://"):
-            package_map = PackageMap()
-            package_map.PopulateFromRosPackagePath()
-            suffix = self.file_path[len("package://"):]
-            package_name, relative_path = suffix.split("/", maxsplit=1)
-            if package_map.Contains(package_name):
-                resolved_file_path = os.path.join(
-                    package_map.GetPath(package_name), relative_path
-                )
-            else:
-                raise ConversionError(
-                    f"Failed to find package [{package_name}] "
-                )
-        else:
-            raise ConversionError(
-                "The provided file path is invalid. It must"
-                " be of the form: [package://path_to_file/"
-                "file.dmd.yaml]"
-            )
-
-        # Update args with new target file
-        expanded_file_args = copy.deepcopy(args)
-        expanded_file_args.model_directives = resolved_file_path
-        result_tree = convert_directives(expanded_file_args)
-        if result_tree is None:
-            raise ConversionError(
-                "Failed converting the file included through "
-                f" add_directives: {self.params}"
-            )
-
-        if args.output_path:
-            expanded_included_path = os.path.join(
-                expanded_file_args.output_path, package_name
-            )
-        else:
-            expanded_included_path = None
-
-        _generate_output(
-            result_tree,
-            resolved_file_path,
-            expanded_included_path,
-            args.print_only,
-            generate_world=False,
-        )
-
 
 def _create_object_from_directive(directive):
     if directive.add_model_instance:
@@ -477,65 +425,123 @@ def _create_object_from_directive(directive):
         raise ConversionError(f"Unknown directive")
 
 
-def convert_directives(args):
-    # Check that the file is a .dmd.yaml file
-    if not args.model_directives.endswith('.dmd.yaml'):
+def _convert_one_dmd(*, dmd_filename: Path):
+    """Given a foo.dmd.yaml filename, returns the semantically equivalent
+    SDFormat content as an XML string, plus the list of included dmd.yaml
+    filenames.
+    """
+    # Check that the file is a .dmd.yaml file.
+    if not dmd_filename.name.endswith('.dmd.yaml'):
         raise ConversionError(
-            "Unable to determine file format. Make sure "
-            "the provided file has the drake model directives"
-            " '.dmd.yaml' extension"
+            "Unable to determine file format. Make sure the provided file has "
+            "the drake model directives '.dmd.yaml' extension"
         )
+    root_name = _remove_suffix(dmd_filename.name, ".dmd.yaml")
 
-    # Read the directives file
-    directives_data = yaml_load_typed(
-        schema=ModelDirectives, filename=args.model_directives
-    )
-
-    all_directives = [
+    # Read the directives file.
+    dmd_data = yaml_load_typed(schema=ModelDirectives, filename=dmd_filename)
+    commands = [
         _create_object_from_directive(directive)
-        for directive in directives_data.directives
+        for directive in dmd_data.directives
     ]
 
-    for dir_obj in _filter_directives(all_directives, (AddFrame, AddWeld)):
-        dir_obj.resolve_names(all_directives)
+    # Resolve the names in `add_frame` and `add_weld` commands.
+    for command in _filter_directives(commands, (AddFrame, AddWeld)):
+        command.resolve_names(commands)
 
-    # Initialize the sdformat XML root
-    root = ET.Element("sdf", version=_SDF_VERSION)
-    root_name = os.path.basename(
-        _remove_suffix(args.model_directives, ".dmd.yaml")
-    )
+    # Populate the XML document.
+    sdf_root = ET.Element("sdf", version=_SDF_VERSION)
+    model_root = ET.SubElement(sdf_root, "model", name=root_name)
+    for command in commands:
+        if isinstance(command, AddModelInstance):
+            # TODO(jwnimmer-tri) It doesn't seem like this should be a no-op?
+            continue
+        command.insert_into_root_sdformat_node(model_root, commands)
 
-    root_elem = ET.SubElement(root, "model", name=root_name)
+    # Gather the list of includes.
+    includes = []
+    for command in commands:
+        if isinstance(command, AddDirectives):
+            includes.append(command.file_path)
 
-    for dir_obj in all_directives:
-        if isinstance(dir_obj, AddDirectives):
-            dir_obj.insert_into_root_sdformat_node(
-                root_elem, all_directives, args
-            )
-        elif not isinstance(dir_obj, AddModelInstance):
-            dir_obj.insert_into_root_sdformat_node(root_elem, all_directives)
-
-    # Check model validity by loading it through the SDFormat parser
-    if args.check_sdf:
-        try:
-            directives_plant = MultibodyPlant(time_step=0.01)
-            parser = Parser(plant=directives_plant)
-            parser.package_map().PopulateFromRosPackagePath()
-            parser.AddModelsFromString(ET.tostring(root), "sdf")
-        except RuntimeError as e:
-            raise ConversionError(
-                "Failed to validate resulting SDFormat XML."
-            ) from e
-
-    return ET.ElementTree(root)
+    # Return the document as a pretty string.
+    xml = minidom.parseString(ET.tostring(sdf_root)).toprettyxml(indent="  ")
+    return (xml, includes)
 
 
-# Saves a world with a merge include to the model
-# TODO(marcoag): Add a validty check that ensures the model
-# is world-mergeable. The package name for the include
-# is inferred from the directory that contains the output file.
-def _save_world(root_world_name, world_output_path, output_filename):
+def convert_directives(*,
+                       dmd_filename: Path,
+                       output_path: Path = None,
+                       expand_included: bool = False,
+                       generate_world: bool = True) -> dict[Path, str]:
+    """Given a foo.dmd.yaml filename, returns the semantically equivalent
+    SDFormat content(s). The return value is dictionary of output filenames
+    and their desired contents.
+
+    If an output_path is given, the filenames will be based on that path;
+    otherwise the filenames will be siblings to the the dmd_filename.
+    """
+    result = dict()
+
+    # Convert this file.
+    sdf_str, included_dmd_uris = _convert_one_dmd(dmd_filename=dmd_filename)
+    sdf_filename = Path(str(dmd_filename).replace(".dmd.yaml", ".sdf"))
+    if output_path is not None:
+        sdf_filename = output_path / sdf_filename.name
+    result[sdf_filename] = sdf_str
+
+    # Add a world file, if requested.
+    if generate_world:
+        world_filename = Path(str(sdf_filename).replace(".sdf", "_world.sdf"))
+        world_str = _generate_world(sdf_filename)
+        result[world_filename] = world_str
+
+    # Recurse, if requested.
+    if expand_included:
+        worklist = included_dmd_uris
+        finished = set()
+        while len(worklist) > 0:
+            # Grab the first uri and resolve it to a path.
+            uri = worklist.pop(0)
+            if not uri.startswith("package://"):
+                raise ConversionError(
+                    "The provided file path is invalid. It must be of the "
+                    "form: [package://path_to_file/file.dmd.yaml]"
+                )
+            suffix = uri[len("package://"):]
+            package_name, relative_path = suffix.split("/", maxsplit=1)
+            package_map = PackageMap()
+            package_map.PopulateFromRosPackagePath()
+            if not package_map.Contains(package_name):
+                raise ConversionError(
+                    f"Failed to find package [{package_name}]"
+                )
+            package_path = Path(package_map.GetPath(package_name))
+            sub_filename = package_path / relative_path
+
+            # Convert dmd -> sdf.
+            sub_str, sub_uris = _convert_one_dmd(dmd_filename=sub_filename)
+            sub_filename = Path(str(sub_filename).replace(".dmd.yaml", ".sdf"))
+            if output_path is not None:
+                sub_filename = output_path / sub_filename.name
+            result[sub_filename] = sub_str
+
+            # Recursively expand.
+            finished.add(uri)
+            for sub_uri in sub_uris:
+                if sub_uri not in finished:
+                    worklist.append(sub_uri)
+
+    return result
+
+
+# Returns the world file XML string with a merge include to the model.
+# TODO(marcoag): Add a validity check that ensures the model is
+# world-mergeable. The package name for the include is inferred
+# from the directory that contains the output file.
+def _generate_world(sdf_filename: Path):
     world_root = ET.Element("sdf", version=_SDF_VERSION)
+    root_world_name = sdf_filename.stem
     root_world_elem = ET.SubElement(world_root, "world", name=root_world_name)
     root_world_elem.append(
         ET.Comment(
@@ -544,79 +550,19 @@ def _save_world(root_world_name, world_output_path, output_filename):
     )
     include_elem = ET.SubElement(root_world_elem, "include", merge="true")
     uri_elem = ET.SubElement(include_elem, "uri")
-    package_name = os.path.basename(os.path.dirname(output_filename))
     uri_elem.text = (
-        "package://" + package_name + "/" + os.path.basename(output_filename)
+        "package://" + sdf_filename.parent.name + "/" + sdf_filename.name
     )
     world_tree = ET.ElementTree(world_root)
     world_tree = world_tree.getroot()
     xmlstr = minidom.parseString(ET.tostring(world_tree)).toprettyxml(
         indent="  "
     )
-    with open(world_output_path, "w") as f:
-        f.write(xmlstr)
+    return xmlstr
 
 
-def _generate_output(
-    result_tree: ET.ElementTree,
-    input_path: str = "",
-    output_path: str = "",
-    print_only: bool = False,
-    generate_world: bool = True,
-):
-    if print_only:
-        result_tree = result_tree.getroot()
-        xmlstr = minidom.parseString(ET.tostring(result_tree)).toprettyxml(
-            indent="  "
-        )
-        print(xmlstr)
-        return
-
-    # if an output path was selected the files will be
-    # generated there, otherwise all '.sdf' will be generated
-    # along side the '.dmd.yaml' files with the same name
-    if output_path:
-        # Create path if it does not exist
-        if not os.path.exists(output_path):
-            os.makedirs(output_path)
-
-        file_no_extension = _remove_suffix(
-            os.path.basename(input_path), ".dmd.yaml"
-        )
-        output_filename_path = os.path.join(
-            output_path, file_no_extension + ".sdf"
-        )
-        if generate_world:
-            world_output_path = os.path.join(
-                output_path, file_no_extension + "_world.sdf"
-            )
-    else:
-        file_no_extension = _remove_suffix(input_path, ".dmd.yaml")
-        output_filename_path = file_no_extension + ".sdf"
-        if generate_world:
-            world_output_path = file_no_extension + "_world.sdf"
-
-    # Save sdf files
-    if generate_world:
-        root_world_name = result_tree.find("model").get("name")
-        _save_world(root_world_name, world_output_path, output_filename_path)
-    # Saving the converted model
-    result_tree = result_tree.getroot()
-    xmlstr = minidom.parseString(ET.tostring(result_tree)).toprettyxml(
-        indent="  "
-    )
-    with open(output_filename_path, "w") as f:
-        f.write(xmlstr)
-
-
-def _create_parser():
+def _main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "-c",
-        "--check-sdf",
-        action="store_true",
-        help="Check and validate resulting SDFormat.",
-    )
     parser.add_argument(
         "-e",
         "--expand-included",
@@ -626,37 +572,32 @@ def _create_parser():
     parser.add_argument(
         "-m",
         "--model-directives",
-        type=str,
+        type=Path,
         required=True,
         help="Path to model directives file to be converted.",
     )
     parser.add_argument(
         "-o",
         "--output-path",
-        type=str,
-        help="Output path of directory where SDFormat files will be written.",
+        type=Path,
+        help="Output path of directory where SDFormat files will be written. "
+        "When not provided, it will be the same directory as the input file.",
     )
-    parser.add_argument(
-        "-p",
-        "--print-only",
-        action="store_true",
-        help="Print the result instead of saving it to a file.",
-    )
-    return parser
-
-
-def _main(argv=None) -> None:
-    parser = _create_parser()
     args = parser.parse_args(argv)
 
-    result_tree = convert_directives(args)
-
-    if result_tree is None:
-        raise ConversionError("Failed to convert model directives.")
-
-    _generate_output(
-        result_tree, args.model_directives, args.output_path, args.print_only
+    # Do the conversion in memory.
+    converted = convert_directives(
+        dmd_filename=args.model_directives,
+        output_path=args.output_path,
+        expand_included=args.expand_included,
     )
+
+    # Once that succeeds, write everything to disk.
+    if args.output_path is not None:
+        os.makedirs(args.output_path, exist_ok=True)
+    for out_path, out_string in converted.items():
+        with open(out_path, "w", encoding="utf-8") as f:
+            f.write(out_string)
 
     return 0
 

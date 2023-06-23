@@ -1,0 +1,38 @@
+<?xml version="1.0" ?>
+<sdf version="1.9">
+  <model name="inject_frames">
+    <model name="top_level_model">
+      <include merge="true">
+        <name>top_level_model</name>
+        <uri>package://process_model_directives_test/simple_model.sdf</uri>
+      </include>
+      <frame name="top_injected_frame" attached_to="base">
+        <pose degrees="true">1.0 2.0 3.0   10.0 20.0 30.0</pose>
+      </frame>
+    </model>
+    <model name="mid_level_model" placement_frame="base">
+      <pose relative_to="top_level_model::top_injected_frame"/>
+      <include merge="true">
+        <name>mid_level_model</name>
+        <uri>package://process_model_directives_test/simple_model.sdf</uri>
+      </include>
+      <frame name="mid_injected_frame" attached_to="base">
+        <pose degrees="true">1.0 2.0 3.0   0 0 0</pose>
+      </frame>
+    </model>
+    <joint name="top_level_model__top_injected_frame__to__mid_level_model__base__weld_joint" type="fixed">
+      <parent>top_level_model::top_injected_frame</parent>
+      <child>mid_level_model::base</child>
+    </joint>
+    <include>
+      <name>bottom_level_model</name>
+      <uri>package://process_model_directives_test/simple_model.sdf</uri>
+      <placement_frame>base</placement_frame>
+      <pose relative_to="mid_level_model::mid_injected_frame"/>
+    </include>
+    <joint name="mid_level_model__mid_injected_frame__to__bottom_level_model__base__weld_joint" type="fixed">
+      <parent>mid_level_model::mid_injected_frame</parent>
+      <child>bottom_level_model::base</child>
+    </joint>
+  </model>
+</sdf>

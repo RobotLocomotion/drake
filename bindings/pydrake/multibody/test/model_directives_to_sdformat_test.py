@@ -1,8 +1,9 @@
 import argparse
+import os
+from pathlib import Path
+import unittest
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
-import os
-import unittest
 
 from pydrake.multibody.parsing import (
     Parser,
@@ -17,15 +18,11 @@ from pydrake.multibody.tree import (
     JointIndex,
 )
 from pydrake.common import GetDrakePath
-from pydrake.common import temp_directory
 from pydrake.common.test_utilities.meta import (
     ValueParameterizedTest,
     run_with_multiple_values,
 )
 
-from pydrake.multibody import (
-    model_directives_to_sdformat
-)
 from pydrake.multibody.model_directives_to_sdformat import (
     convert_directives,
 )
@@ -152,8 +149,8 @@ class TestConvertModelDirectiveToSdformat(
     unittest.TestCase, metaclass=ValueParameterizedTest
 ):
     def setUp(self):
-        self.parser = model_directives_to_sdformat._create_parser()
-        self.dmd_test_path = (
+        self.maxDiff = None
+        self.dmd_test_path = Path(
             "bindings/pydrake/multibody/test/"
             "model_directives_to_sdformat_files"
         )
@@ -169,12 +166,13 @@ class TestConvertModelDirectiveToSdformat(
     ]])
     def test_through_plant_comparison(self, *, name):
         # Convert.
-        file_path = f"{self.dmd_test_path}/{name}.dmd.yaml"
-        args = self.parser.parse_args(["-m", file_path])
-        sdformat_tree = convert_directives(args).getroot()
-        sdformat_result = minidom.parseString(
-            ET.tostring(sdformat_tree)
-        ).toprettyxml(indent="  ")
+        dmd_filename = self.dmd_test_path / f"{name}.dmd.yaml"
+        files = convert_directives(
+            dmd_filename=dmd_filename,
+            generate_world=False,
+        )
+        self.assertEqual(len(files), 1)
+        _, sdformat_str = files.popitem()
 
         # Load model directives.
         directives_plant = MultibodyPlant(time_step=0.0)
@@ -187,7 +185,7 @@ class TestConvertModelDirectiveToSdformat(
         parser = Parser(plant=directives_plant)
         parser.package_map().PopulateFromFolder(model_dir_multibody)
         parser.package_map().PopulateFromFolder(model_dir_bindings)
-        parser.AddModels(file_path)
+        parser.AddModels(str(dmd_filename))
         directives_plant.Finalize()
 
         # Load converted SDFormat.
@@ -195,7 +193,7 @@ class TestConvertModelDirectiveToSdformat(
         sdformat_parser = Parser(sdformat_plant)
         sdformat_parser.package_map().PopulateFromFolder(model_dir_multibody)
         sdformat_parser.package_map().PopulateFromFolder(model_dir_bindings)
-        sdformat_parser.AddModelsFromString(sdformat_result, "sdf")
+        sdformat_parser.AddModelsFromString(sdformat_str, "sdf")
         sdformat_plant.Finalize()
 
         # Compare plants.
@@ -207,15 +205,9 @@ class TestConvertModelDirectiveToSdformat(
             directives_plant.num_model_instances(),
         )
 
-        file_name = os.path.basename(
-            model_directives_to_sdformat._remove_suffix(
-                args.model_directives, ".dmd.yaml"
-            )
-        )
-
         for i in range(2, directives_plant.num_model_instances()):
             model_scoped_name = (
-                file_name
+                name
                 + _SCOPE_DELIMITER
                 + directives_plant.GetModelInstanceName(ModelInstanceIndex(i))
             )
@@ -280,145 +272,48 @@ class TestConvertModelDirectiveToSdformat(
         "world_base_frame",
     ]])
     def test_error(self, *, name):
-        file_path = f"{self.dmd_test_path}/errors/{name}.dmd.yaml"
-        with open(f"{self.dmd_test_path}/errors/{name}.error_regex") as f:
+        dmd_filename = self.dmd_test_path / f"errors/{name}.dmd.yaml"
+        with open(self.dmd_test_path / f"errors/{name}.error_regex") as f:
             expected_message_regex = f.read().strip()
         with self.assertRaisesRegex(Exception, expected_message_regex):
-            args = self.parser.parse_args(["-m", file_path])
-            convert_directives(args)
+            convert_directives(dmd_filename=dmd_filename)
 
     def test_add_model_instance_add_directives(self):
+        dmd_filename = self.dmd_test_path / "add_directives.dmd.yaml"
+        expected_filenames = [
+            self.dmd_test_path / "add_directives.expected-sdf",
+            self.dmd_test_path / "hidden_frame.expected-sdf",
+        ]
+        # TODO(jwnimmer-tri) Don't do this; changes to os.environ bleed into
+        # other test cases.
         os.environ["ROS_PACKAGE_PATH"] = "bindings/pydrake/multibody"
-        tempdir = temp_directory()
-        expected_sdf = """<?xml version="1.0" ?>
-<sdf version="1.9">
-  <model name="add_directives">
-    <model name="model_instance">
-      <include merge="true">
-        <uri>package://model_directives_to_sdformat_files/hidden_frame.sdf</uri>
-      </include>
-    </model>
-  </model>
-</sdf>
-"""
-        expected_expanded_sdf = (
-            """<?xml version="1.0" ?>
-<sdf version="1.9">
-  <model name="hidden_frame">
-    <include>
-      <name>simple_model</name>
-      <uri>package://process_model_directives_test/simple_model.sdf</uri>
-      <placement_frame>frame</placement_frame>
-      <pose relative_to="top_level_model::top_injected_frame"/>
-    </include>
-    <model name="top_level_model">
-      <include merge="true">
-        <name>top_level_model</name>
-        <uri>package://process_model_directives_test/simple_model.sdf</uri>
-      </include>
-      <frame name="top_injected_frame" attached_to="base">
-        <pose degrees="true">1.0 2.0 3.0   10.0 20.0 30.0</pose>
-      </frame>
-    </model>
-    <joint name="top_level_model__top_injected_frame__to__simple_model__"""
-            """frame__weld_joint" type="fixed">
-      <parent>top_level_model::top_injected_frame</parent>
-      <child>simple_model::frame</child>
-    </joint>
-  </model>
-</sdf>
-"""
+        files = convert_directives(
+            dmd_filename=dmd_filename,
+            expand_included=True,
+            generate_world=False,
         )
-        model_directives_to_sdformat._main(
-            [
-                "-m",
-                "bindings/pydrake/multibody/test/"
-                "model_directives_to_sdformat_files/"
-                "add_directives.dmd.yaml",
-                "--expand-included",
-                "-o",
-                tempdir,
-            ]
-        )
-
-        self.assertEqual(
-            expected_sdf,
-            open(os.path.join(tempdir, "add_directives.sdf")).read(),
-        )
-        self.assertEqual(
-            expected_expanded_sdf,
-            open(
-                os.path.join(
-                    tempdir,
-                    "model_directives_to_sdformat_files/hidden_frame.sdf",
-                )
-            ).read(),
-        )
+        self.assertEqual(len(files), len(expected_filenames))
+        for (path, xml), expected in zip(files.items(), expected_filenames):
+            self.assertEqual(path.name, expected.name.replace("expected-", ""))
+            with open(expected, encoding="utf-8") as f:
+                expected_xml = f.read()
+            self.assertMultiLineEqual(xml, expected_xml)
 
     def test_resulting_xml(self):
-        expected_xml = (
-            """<?xml version="1.0" ?>
-<sdf version="1.9">
-  <model name="inject_frames">
-    <model name="top_level_model">
-      <include merge="true">
-        <name>top_level_model</name>
-        <uri>package://process_model_directives_test/simple_model.sdf</uri>
-      </include>
-      <frame name="top_injected_frame" attached_to="base">
-        <pose degrees="true">1.0 2.0 3.0   10.0 20.0 30.0</pose>
-      </frame>
-    </model>
-    <model name="mid_level_model" placement_frame="base">
-      <pose relative_to="top_level_model::top_injected_frame"/>
-      <include merge="true">
-        <name>mid_level_model</name>
-        <uri>package://process_model_directives_test/simple_model.sdf</uri>
-      </include>
-      <frame name="mid_injected_frame" attached_to="base">
-        <pose degrees="true">1.0 2.0 3.0   0 0 0</pose>
-      </frame>
-    </model>
-    <joint name="top_level_model__top_injected_frame__to__mid_level_model__"""
-            """base__weld_joint" type="fixed">
-      <parent>top_level_model::top_injected_frame</parent>
-      <child>mid_level_model::base</child>
-    </joint>
-    <include>
-      <name>bottom_level_model</name>
-      <uri>package://process_model_directives_test/simple_model.sdf</uri>
-      <placement_frame>base</placement_frame>
-      <pose relative_to="mid_level_model::mid_injected_frame"/>
-    </include>
-    <joint name="mid_level_model__mid_injected_frame__to__bottom_level_"""
-            """model__base__weld_joint" type="fixed">
-      <parent>mid_level_model::mid_injected_frame</parent>
-      <child>bottom_level_model::base</child>
-    </joint>
-  </model>
-</sdf>
-"""
+        dmd_filename = self.dmd_test_path / "inject_frames.dmd.yaml"
+        expected_path = self.dmd_test_path / "inject_frames.expected-sdf"
+        with open(expected_path, encoding="utf-8") as f:
+            expected_xml = f.read()
+        files = convert_directives(
+            dmd_filename=dmd_filename,
+            generate_world=False,
         )
-        args = self.parser.parse_args(
-            [
-                "-m",
-                "bindings/pydrake/multibody/test/"
-                "model_directives_to_sdformat_files/"
-                "inject_frames.dmd.yaml",
-            ]
-        )
-        result = convert_directives(args).getroot()
-        xmlstr = minidom.parseString(ET.tostring(result)).toprettyxml(
-            indent="  "
-        )
-        self.assertEqual(expected_xml, xmlstr)
+        self.assertEqual(len(files), 1)
+        _, sdformat_str = files.popitem()
+        self.maxDiff = None
+        self.assertMultiLineEqual(expected_xml, sdformat_str)
 
     def test_error_wrong_file_extension(self):
         with self.assertRaisesRegex(Exception, "determine file format"):
-            args = self.parser.parse_args(
-                [
-                    "-m",
-                    "frame_same_as_base_frame.not_valid",
-                ]
-            )
-            convert_directives(args)
+            dmd_filename = Path("frame_same_as_base_frame.not_valid")
+            convert_directives(dmd_filename=dmd_filename)
