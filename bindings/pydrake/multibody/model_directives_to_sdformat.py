@@ -79,12 +79,12 @@ _SCOPE_DELIMITER = "::"
 _WORLD_FRAME = "world"
 
 
-class ConversionError(Exception):
+class _ConversionError(Exception):
     pass
 
 
 # TODO(marcoag): Replace this with the newer pydrake.multibody.tree.ScopedName
-class ScopedName:
+class _ScopedName:
     def __init__(self, full_name: str):
         self.full_name = full_name
         pos = full_name.find(_SCOPE_DELIMITER)
@@ -118,9 +118,9 @@ def _filter_directives(directives, cls):
 
 def _find_frame(name: str, directives) -> str:
     """Finds and returns a frame if it exists in all directives,
-    if 0 or more than one are found it throws a ConversionError
+    if 0 or more than one are found it throws a _ConversionError
     exception."""
-    add_frame_gen = _filter_directives(directives, AddFrame)
+    add_frame_gen = _filter_directives(directives, _AddFrame)
     matching_frames = [
         dir_obj
         for dir_obj in add_frame_gen
@@ -128,7 +128,7 @@ def _find_frame(name: str, directives) -> str:
     ]
 
     if len(matching_frames) > 1:
-        raise ConversionError(
+        raise _ConversionError(
             "Found more than two frames with"
             f" name: [{name}], could not resolve the scope."
         )
@@ -155,7 +155,7 @@ def _resolve_and_scope_frame(frame_name: str, directives) -> str:
     frame = _find_frame(frame_name, directives)
     # Frame with the same name as base frame are not supported.
     if frame is not None and frame_name == frame.base_frame:
-        raise ConversionError(
+        raise _ConversionError(
             f"Frame: [{frame_name}] has the same name as"
             " it's base frame. This case is not supported."
         )
@@ -181,13 +181,13 @@ def _remove_suffix(input: str, suffix: str) -> str:
     return input
 
 
-class AddFrame:
+class _AddFrame:
     def __init__(self, directive):
         x_pf = directive.X_PF
         self.name = directive.name
         self.base_frame = x_pf.base_frame
-        self.scoped_name = ScopedName(self.name)
-        self.scoped_base_frame = ScopedName(self.base_frame)
+        self.scoped_name = _ScopedName(self.name)
+        self.scoped_base_frame = _ScopedName(self.base_frame)
 
         self.translation_str = "0 0 0"
         trans = x_pf.translation
@@ -200,7 +200,7 @@ class AddFrame:
         rot = x_pf.rotation.value
         if not isinstance(rot, schema.Rotation.Identity):
             if not isinstance(rot, schema.Rotation.Rpy):
-                raise ConversionError(
+                raise _ConversionError(
                     f"Rotation of type {type(rot).__name__} not suported."
                 )
             deg = rot.deg
@@ -208,7 +208,7 @@ class AddFrame:
 
     def resolve_names(self, directives):
         if self.base_frame == _WORLD_FRAME:
-            raise ConversionError(
+            raise _ConversionError(
                 f"Adding a frame using base_frame=[{_WORLD_FRAME}]"
                 " is not supported."
             )
@@ -229,7 +229,7 @@ class AddFrame:
                 self.scoped_name.instance_name
                 != self.resolved_base_frame.instance_name
             ):
-                raise ConversionError(
+                raise _ConversionError(
                     f"Frame named: [{self.name}] has a different "
                     "scope in its name and its base_frame: "
                     f"[{self.base_frame}]."
@@ -240,17 +240,17 @@ class AddFrame:
             name, directives
         )
         if resolved_name is None:
-            raise ConversionError(
+            raise _ConversionError(
                 f"Unable to find scope for frame: [{name}]"
                 f" while adding frame: [{self.name}]."
             )
-        return ScopedName(resolved_name)
+        return _ScopedName(resolved_name)
 
     def insert_into_root_sdformat_node(self, root, directives):
         model_name = self.resolved_base_frame.instance_name
         model_root = root.find(f'./model[@name="{model_name}"]')
         if model_root is None:
-            raise ConversionError(
+            raise _ConversionError(
                 f"Failed to find model: [{model_name}]"
                 f" while adding frame: [{self.name}]."
             )
@@ -300,7 +300,7 @@ class AddFrame:
 # directives. Maybe check implicit model instance scoping rules by
 # directly parsing each model directive individually, and checking
 # the resultant change against the MbP.
-class AddWeld:
+class _AddWeld:
     def __init__(self, directive):
         self.parent_name = directive.parent
         self.child_name = directive.child
@@ -313,7 +313,7 @@ class AddWeld:
             self.child_name, directives
         )
         if deeply_nested:
-            raise ConversionError(
+            raise _ConversionError(
                 "Found weld with deeply nested child frame"
                 f" [{self.resolved_child_name.full_name}]. "
                 "Welds with deeply nested childs are not "
@@ -324,7 +324,7 @@ class AddWeld:
             self.resolved_parent_name.full_name
             == self.resolved_child_name.full_name
         ):
-            raise ConversionError(
+            raise _ConversionError(
                 "Weld must specify different name for "
                 "parent and child, while "
                 f"[{self.resolved_child_name.full_name}] "
@@ -332,7 +332,7 @@ class AddWeld:
             )
 
     def _resolve(self, name, directives):
-        scoped_name = ScopedName(name)
+        scoped_name = _ScopedName(name)
         deeply_nested = False
         # Resolve scope if the frame is implicit
         if scoped_name.instance_name != "":
@@ -344,13 +344,13 @@ class AddWeld:
             name, directives
         )
         if resolved_name is None:
-            raise ConversionError(
+            raise _ConversionError(
                 "Unable to resolve scope for "
                 f"frame: [{self.parent_name}]. When tring to add "
                 f"weld between: [{self.parent_name}] and: "
                 f"[{self.child_name}]."
             )
-        return ScopedName(resolved_name), deeply_nested
+        return _ScopedName(resolved_name), deeply_nested
 
     def insert_into_root_sdformat_node(self, root, directives):
         tmp_parent_name = self.resolved_parent_name.full_name.replace(
@@ -372,23 +372,23 @@ class AddWeld:
         child_elem.text = self.resolved_child_name.full_name
 
 
-class AddModel:
+class _AddModel:
     def __init__(self, directive):
         self.name = directive.name
         self.file_name = directive.file
         if directive.default_free_body_pose:
-            raise ConversionError(
+            raise _ConversionError(
                 f"default_free_body_pose is not supported yet."
             )
         if directive.default_joint_positions:
-            raise ConversionError(
+            raise _ConversionError(
                 f"default_joint_positions is not supported yet."
             )
 
     def insert_into_root_sdformat_node(self, root, directives):
         merge_include = False
 
-        for dir_obj in _filter_directives(directives, AddFrame):
+        for dir_obj in _filter_directives(directives, _AddFrame):
             if dir_obj.resolved_base_frame.instance_name == self.name:
                 merge_include = True
 
@@ -406,7 +406,7 @@ class AddModel:
         uri_elem = ET.SubElement(include_elem, "uri")
         uri_elem.text = self.file_name
 
-        for dir_obj in _filter_directives(directives, AddWeld):
+        for dir_obj in _filter_directives(directives, _AddWeld):
             if dir_obj.resolved_child_name.instance_name == self.name:
                 placement_frame_value = _remove_root_scope(
                     dir_obj.resolved_child_name.full_name
@@ -428,18 +428,18 @@ class AddModel:
                     )
 
 
-class AddModelInstance:
+class _AddModelInstance:
     def __init__(self, directive):
         self.name = directive.name
 
 
-class AddDirectives:
+class _AddDirectives:
     def __init__(self, directive: bool):
         self.model_ns = directive.model_namespace
         self.file_path = directive.file
         self.sdformat_uri = self.file_path.replace(".dmd.yaml", ".sdf")
         if not self.sdformat_uri:
-            raise ConversionError(
+            raise _ConversionError(
                 "Unable to guess guess SDFormat file name "
                 f"for add_directives: {self.params}"
             )
@@ -451,10 +451,10 @@ class AddDirectives:
             if not any(
                 directive.name == self.model_ns
                 for directive in _filter_directives(
-                    directives, AddModelInstance
+                    directives, _AddModelInstance
                 )
             ):
-                raise ConversionError(
+                raise _ConversionError(
                     f"Requested model namespace {self.model_ns} "
                     "has not been constructed."
                 )
@@ -470,17 +470,17 @@ class AddDirectives:
 
 def _create_object_from_directive(directive):
     if directive.add_model_instance:
-        return AddModelInstance(directive.add_model_instance)
+        return _AddModelInstance(directive.add_model_instance)
     elif directive.add_weld:
-        return AddWeld(directive.add_weld)
+        return _AddWeld(directive.add_weld)
     elif directive.add_frame:
-        return AddFrame(directive.add_frame)
+        return _AddFrame(directive.add_frame)
     elif directive.add_model:
-        return AddModel(directive.add_model)
+        return _AddModel(directive.add_model)
     elif directive.add_directives:
-        return AddDirectives(directive.add_directives)
+        return _AddDirectives(directive.add_directives)
     else:
-        raise ConversionError(f"Unknown directive")
+        raise _ConversionError(f"Unknown directive")
 
 
 def _convert_one_dmd(*, dmd_filename: Path):
@@ -490,7 +490,7 @@ def _convert_one_dmd(*, dmd_filename: Path):
     """
     # Check that the file is a .dmd.yaml file.
     if not dmd_filename.name.endswith('.dmd.yaml'):
-        raise ConversionError(
+        raise _ConversionError(
             "Unable to determine file format. Make sure the provided file has "
             "the drake model directives '.dmd.yaml' extension"
         )
@@ -504,14 +504,14 @@ def _convert_one_dmd(*, dmd_filename: Path):
     ]
 
     # Resolve the names in `add_frame` and `add_weld` commands.
-    for command in _filter_directives(commands, (AddFrame, AddWeld)):
+    for command in _filter_directives(commands, (_AddFrame, _AddWeld)):
         command.resolve_names(commands)
 
     # Populate the XML document.
     sdf_root = ET.Element("sdf", version=_SDF_VERSION)
     model_root = ET.SubElement(sdf_root, "model", name=root_name)
     for command in commands:
-        if isinstance(command, AddModelInstance):
+        if isinstance(command, _AddModelInstance):
             # TODO(jwnimmer-tri) It doesn't seem like this should be a no-op?
             continue
         command.insert_into_root_sdformat_node(model_root, commands)
@@ -519,7 +519,7 @@ def _convert_one_dmd(*, dmd_filename: Path):
     # Gather the list of includes.
     includes = []
     for command in commands:
-        if isinstance(command, AddDirectives):
+        if isinstance(command, _AddDirectives):
             includes.append(command.file_path)
 
     # Return the document as a pretty string.
@@ -562,7 +562,7 @@ def _convert_directives(*,
             # Grab the first uri and resolve it to a path.
             uri = worklist.pop(0)
             if not uri.startswith("package://"):
-                raise ConversionError(
+                raise _ConversionError(
                     "The provided file path is invalid. It must be of the "
                     "form: [package://path_to_file/file.dmd.yaml]"
                 )
@@ -571,7 +571,7 @@ def _convert_directives(*,
             package_map = PackageMap()
             package_map.PopulateFromRosPackagePath()
             if not package_map.Contains(package_name):
-                raise ConversionError(
+                raise _ConversionError(
                     f"Failed to find package [{package_name}]"
                 )
             package_path = Path(package_map.GetPath(package_name))
