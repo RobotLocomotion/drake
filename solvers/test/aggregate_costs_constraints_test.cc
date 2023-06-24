@@ -369,6 +369,33 @@ GTEST_TEST(TestFindNonconvexQuadraticCost, Test) {
             nonconvex_cost1.evaluator().get());
 }
 
+GTEST_TEST(TestFindNonconvexQuadraticConstraint, Test) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  auto convex_constraint1 =
+      prog.AddQuadraticConstraint(x(0) * x(0) + 1, -kInf, 1);
+  auto convex_constraint2 =
+      prog.AddQuadraticConstraint(x(1) * x(1) + 2 * x(0) + 2, -kInf, 3);
+  auto nonconvex_constraint1 =
+      prog.AddQuadraticConstraint(-x(0) * x(0) + 2 * x(1), 0, 0);
+  auto nonconvex_constraint2 =
+      prog.AddQuadraticConstraint(-x(0) * x(0) + x(1) * x(1), 1, 2);
+  EXPECT_EQ(FindNonconvexQuadraticConstraint(
+                {convex_constraint1, convex_constraint2}),
+            nullptr);
+  EXPECT_EQ(FindNonconvexQuadraticConstraint(
+                {convex_constraint1, nonconvex_constraint1})
+                ->evaluator()
+                .get(),
+            nonconvex_constraint1.evaluator().get());
+  EXPECT_EQ(
+      FindNonconvexQuadraticConstraint(
+          {convex_constraint1, nonconvex_constraint1, nonconvex_constraint2})
+          ->evaluator()
+          .get(),
+      nonconvex_constraint1.evaluator().get());
+}
+
 namespace internal {
 GTEST_TEST(CheckConvexSolverAttributes, Test) {
   MathematicalProgram prog;
