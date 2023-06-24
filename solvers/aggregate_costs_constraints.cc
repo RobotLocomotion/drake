@@ -244,6 +244,16 @@ const Binding<QuadraticCost>* FindNonconvexQuadraticCost(
   return nullptr;
 }
 
+const Binding<QuadraticConstraint>* FindNonconvexQuadraticConstraint(
+    const std::vector<Binding<QuadraticConstraint>>& quadratic_constraints) {
+  for (const auto& constraint : quadratic_constraints) {
+    if (!constraint.evaluator()->is_convex()) {
+      return &constraint;
+    }
+  }
+  return nullptr;
+}
+
 namespace internal {
 bool CheckConvexSolverAttributes(const MathematicalProgram& prog,
                                  const ProgramAttributes& solver_capabilities,
@@ -273,6 +283,18 @@ bool CheckConvexSolverAttributes(const MathematicalProgram& prog,
   }
   if (explanation) {
     explanation->clear();
+  }
+  const Binding<QuadraticConstraint>* nonconvex_quadratic_constraint =
+      FindNonconvexQuadraticConstraint(prog.quadratic_constraints());
+  if (nonconvex_quadratic_constraint != nullptr) {
+    if (explanation) {
+      *explanation = fmt::format(
+          "{} is unable to solve because (at least) the quadratic constraint "
+          "{} is non-convex. Either change this constraint to a convex one, or "
+          "switch to a different solver like SNOPT/IPOPT/NLOPT.",
+          solver_name, nonconvex_quadratic_constraint->to_string());
+    }
+    return false;
   }
   return true;
 }

@@ -99,6 +99,15 @@ void AggregateDuplicateVariables(const Eigen::SparseMatrix<double>& A,
 [[nodiscard]] const Binding<QuadraticCost>* FindNonconvexQuadraticCost(
     const std::vector<Binding<QuadraticCost>>& quadratic_costs);
 
+/**
+ * Returns the first non-convex quadratic constraint among @p
+ * quadratic_constraints. If all quadratic constraints are convex, then returns
+ * a nullptr.
+ */
+[[nodiscard]] const Binding<QuadraticConstraint>*
+FindNonconvexQuadraticConstraint(
+    const std::vector<Binding<QuadraticConstraint>>& quadratic_constraints);
+
 namespace internal {
 // If the program is compatible with this solver (the solver meets the required
 // capabilities of the program, and the program is convex), returns true and
