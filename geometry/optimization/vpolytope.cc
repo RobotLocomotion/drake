@@ -79,6 +79,35 @@ MatrixXd OrderCounterClockwise(const MatrixXd& vertices) {
   return sorted_vertices;
 }
 
+MatrixXd GetVertices(const std::string& filename, double scale) {
+  const auto [tinyobj_vertices, faces, num_faces] =
+      internal::ReadObjFile(filename, scale, false /* triangulate */);
+  unused(faces);
+  unused(num_faces);
+  orgQhull::Qhull qhull;
+  const int dim = 3;
+  std::vector<double> tinyobj_vertices_flat(tinyobj_vertices->size() * dim);
+  for (int i = 0; i < ssize(*tinyobj_vertices); ++i) {
+    for (int j = 0; j < dim; ++j) {
+      tinyobj_vertices_flat[dim * i + j] = (*tinyobj_vertices)[i](j);
+    }
+  }
+  qhull.runQhull("", dim, tinyobj_vertices->size(),
+                 tinyobj_vertices_flat.data(), "");
+  if (qhull.qhullStatus() != 0) {
+    throw std::runtime_error(
+        fmt::format("Qhull terminated with status {} and  message:\n{}",
+                    qhull.qhullStatus(), qhull.qhullMessage()));
+  }
+  Matrix3Xd vertices(3, qhull.vertexCount());
+  int vertex_count = 0;
+  for (const auto& qhull_vertex : qhull.vertexList()) {
+    vertices.col(vertex_count++) =
+        Eigen::Map<Vector3d>(qhull_vertex.point().toStdVector().data());
+  }
+  return vertices;
+}
+
 }  // namespace
 
 VPolytope::VPolytope() : VPolytope(MatrixXd(0, 0)) {}
@@ -442,36 +471,17 @@ void VPolytope::ImplementGeometry(const Box& box, void* data) {
 void VPolytope::ImplementGeometry(const Convex& convex, void* data) {
   DRAKE_ASSERT(data != nullptr);
   Matrix3Xd* vertex_data = static_cast<Matrix3Xd*>(data);
-  *vertex_data = GetVertices(convex);
+  *vertex_data = GetVertices(convex.filename(), convex.scale());
+}
+
+void VPolytope::ImplementGeometry(const Mesh& mesh, void* data) {
+  DRAKE_ASSERT(data != nullptr);
+  Matrix3Xd* vertex_data = static_cast<Matrix3Xd*>(data);
+  *vertex_data = GetVertices(mesh.filename(), mesh.scale());
 }
 
 MatrixXd GetVertices(const Convex& convex) {
-  const auto [tinyobj_vertices, faces, num_faces] = internal::ReadObjFile(
-      convex.filename(), convex.scale(), false /* triangulate */);
-  unused(faces);
-  unused(num_faces);
-  orgQhull::Qhull qhull;
-  const int dim = 3;
-  std::vector<double> tinyobj_vertices_flat(tinyobj_vertices->size() * dim);
-  for (int i = 0; i < ssize(*tinyobj_vertices); ++i) {
-    for (int j = 0; j < dim; ++j) {
-      tinyobj_vertices_flat[dim * i + j] = (*tinyobj_vertices)[i](j);
-    }
-  }
-  qhull.runQhull("", dim, tinyobj_vertices->size(),
-                 tinyobj_vertices_flat.data(), "");
-  if (qhull.qhullStatus() != 0) {
-    throw std::runtime_error(
-        fmt::format("Qhull terminated with status {} and  message:\n{}",
-                    qhull.qhullStatus(), qhull.qhullMessage()));
-  }
-  Matrix3Xd vertices(3, qhull.vertexCount());
-  int vertex_count = 0;
-  for (const auto& qhull_vertex : qhull.vertexList()) {
-    vertices.col(vertex_count++) =
-        Eigen::Map<Vector3d>(qhull_vertex.point().toStdVector().data());
-  }
-  return vertices;
+  return GetVertices(convex.filename(), convex.scale());
 }
 
 }  // namespace optimization

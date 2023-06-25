@@ -191,6 +191,12 @@ class IrisConvexSetMaker final : public ShapeReifier {
     set = std::make_unique<VPolytope>(query_, geom_id_, reference_frame_);
   }
 
+  void ImplementGeometry(const Mesh&, void* data) {
+    DRAKE_DEMAND(geom_id_.is_valid());
+    auto& set = *static_cast<copyable_unique_ptr<ConvexSet>*>(data);
+    set = std::make_unique<VPolytope>(query_, geom_id_, reference_frame_);
+  }
+
  private:
   const QueryObject<double>& query_{};
   std::optional<FrameId> reference_frame_{};

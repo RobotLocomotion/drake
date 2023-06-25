@@ -132,8 +132,12 @@ const char boxes_with_mesh_urdf[] = R"""(
       <geometry><box size="1 1 1"/></geometry>
     </collision>
     <collision name="left">
-      <origin rpy="0 0 0" xyz="-2.5 0 0"/>
-      <geometry><box size="1 1 1"/></geometry>
+      <origin rpy="0 0 0" xyz="-3 0 0"/>
+      <!-- box size="2 2 2" -->
+      <geometry>
+        <!-- Note: not declared convex -->
+        <mesh filename="package://box_model/meshes/box.obj"/>
+      </geometry>
     </collision>
   </link>
   <joint name="fixed_link_weld" type="fixed">
@@ -161,6 +165,7 @@ const char boxes_with_mesh_urdf[] = R"""(
 
 // Three boxes.  Two on the outside are fixed.  One in the middle on a prismatic
 // joint.  The configuration space is a (convex) line segment q ∈ (−1,1).
+// This also tests mesh geometry (both Convex and Mesh).
 GTEST_TEST(IrisInConfigurationSpaceTest, BoxesWithMeshPrismatic) {
   const Vector1d sample = Vector1d::Zero();
   IrisOptions options;
