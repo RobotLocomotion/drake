@@ -102,12 +102,6 @@ std::pair<double, VectorXd> Hyperellipsoid::MinimumUniformScalingToTouch(
   auto x = prog.NewContinuousVariables(ambient_dimension());
   other.AddPointInSetConstraints(&prog, x);
 
-  // Specify a list of solvers by preference, to avoid IPOPT getting used for
-  // conic constraints.  See discussion at #15320.
-  // TODO(russt): Revisit this pending resolution of #15320.
-  std::vector<solvers::SolverId> preferred_solvers{solvers::MosekSolver::id(),
-                                                   solvers::GurobiSolver::id()};
-
   // If we have only linear constraints, then add a quadratic cost and solve the
   // QP.  Otherwise add a slack variable and solve the SOCP.
   bool has_only_linear_constraints = true;
@@ -119,7 +113,6 @@ std::pair<double, VectorXd> Hyperellipsoid::MinimumUniformScalingToTouch(
   }
   if (has_only_linear_constraints) {
     prog.AddQuadraticErrorCost(A_.transpose() * A_, center_, x);
-    preferred_solvers.emplace_back(solvers::IpoptSolver::id());
   } else {
     auto slack = prog.NewContinuousVariables<1>("slack");
     prog.AddLinearCost(slack[0]);
@@ -133,17 +126,23 @@ std::pair<double, VectorXd> Hyperellipsoid::MinimumUniformScalingToTouch(
     b[1] = 1;
     b.tail(A_.rows()) = -A_ * center_;
     prog.AddRotatedLorentzConeConstraint(A, b, {slack, x});
-    preferred_solvers.emplace_back(solvers::ScsSolver::id());
   }
-  auto solver = solvers::MakeFirstAvailableSolver(preferred_solvers);
-  solvers::MathematicalProgramResult result;
-  solver->Solve(prog, std::nullopt, std::nullopt, &result);
+  auto result = Solve(prog);
   if (!result.is_success()) {
-    throw std::runtime_error(fmt::format(
-        "Solver {} failed to solve the `minimum uniform scaling to touch' "
-        "problem; it terminated with SolutionResult {}). This should not "
-        "happen.",
-        result.get_solver_id().name(), result.get_solution_result()));
+    // Check if `other` is empty.
+    MathematicalProgram prog2;
+    auto x2 = prog2.NewContinuousVariables(ambient_dimension());
+    other.AddPointInSetConstraints(&prog2, x2);
+    auto result2 = Solve(prog2);
+    if (!result2.is_success()) {
+      throw std::runtime_error("The set `other` is empty.");
+    } else {
+      throw std::runtime_error(fmt::format(
+          "Solver {} failed to solve the `minimum uniform scaling to touch' "
+          "problem; it terminated with SolutionResult {}). The solver likely "
+          "ran into numerical issues.",
+          result.get_solver_id().name(), result.get_solution_result()));
+    }
   }
   return std::pair<double, VectorXd>(std::sqrt(result.get_optimal_cost()),
                                      result.GetSolution(x));
