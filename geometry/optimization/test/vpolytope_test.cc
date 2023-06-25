@@ -247,7 +247,7 @@ GTEST_TEST(VPolytopeTest, OctahedronTest) {
 
 GTEST_TEST(VPolytopeTest, NonconvexMesh) {
   auto [scene_graph, geom_id] = MakeSceneGraphWithShape(
-      Convex(FindResourceOrThrow("drake/geometry/test/non_convex_mesh.obj")),
+      Mesh(FindResourceOrThrow("drake/geometry/test/non_convex_mesh.obj")),
       RigidTransformd{});
   auto context = scene_graph->CreateDefaultContext();
   auto query =
