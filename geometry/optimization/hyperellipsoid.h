@@ -63,6 +63,7 @@ class Hyperellipsoid final : public ConvexSet {
   precision).
   @pre `other` must have the same ambient_dimension as this.
   @returns the minimal scaling and the witness point, x, on other.
+  @throws std::exception if `other` is empty.
   @throws std::exception if ambient_dimension() == 0 */
   std::pair<double, Eigen::VectorXd> MinimumUniformScalingToTouch(
       const ConvexSet& other) const;
