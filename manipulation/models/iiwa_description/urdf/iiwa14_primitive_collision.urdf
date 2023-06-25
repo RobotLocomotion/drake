@@ -366,6 +366,12 @@
   <link name="iiwa_link_ee">
     </link>
   <frame link="iiwa_link_ee" name="iiwa_frame_ee" rpy="3.141592653589793 0 1.570796326794897" xyz="0.09 0 0"/>
+  <drake:collision_filter_group name="iiwa_wrist">
+    <drake:member link="iiwa_link_5"/>
+    <drake:member link="iiwa_link_6"/>
+    <drake:member link="iiwa_link_7"/>
+    <drake:ignored_collision_filter_group name="iiwa_wrist"/>
+  </drake:collision_filter_group>
   <!-- Load Gazebo lib and set the robot namespace -->
   <gazebo>
     <plugin filename="libgazebo_ros_control.so" name="gazebo_ros_controller">
