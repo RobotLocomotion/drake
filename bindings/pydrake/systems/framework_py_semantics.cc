@@ -251,6 +251,19 @@ void DoScalarIndependentDefinitions(py::module m) {
               return abstract_value_ref.attr("get_value")();
             },
             py::arg("context"), cls_doc.Eval.doc)
+        .def("is_out_of_date", &Class::is_out_of_date, py::arg("context"),
+            cls_doc.is_out_of_date.doc)
+        .def("is_cache_entry_disabled", &Class::is_cache_entry_disabled,
+            py::arg("context"), cls_doc.is_cache_entry_disabled.doc)
+        .def("disable_caching", &Class::disable_caching, py::arg("context"),
+            cls_doc.disable_caching.doc)
+        .def("enable_caching", &Class::enable_caching, py::arg("context"),
+            cls_doc.enable_caching.doc)
+        .def("disable_caching_by_default", &Class::disable_caching_by_default,
+            cls_doc.disable_caching_by_default.doc)
+        .def("is_disabled_by_default", &Class::is_disabled_by_default,
+            cls_doc.is_disabled_by_default.doc)
+        .def("description", &Class::description, cls_doc.description.doc)
         .def("get_cache_entry_value", &Class::get_cache_entry_value,
             py::arg("context"),
             // Keep alive, ownership: `return` keeps `context` alive.
@@ -262,7 +275,9 @@ void DoScalarIndependentDefinitions(py::module m) {
             py::keep_alive<0, 2>(), py_rvp::reference,
             cls_doc.get_mutable_cache_entry_value.doc)
         .def("cache_index", &Class::cache_index, cls_doc.cache_index.doc)
-        .def("ticket", &Class::ticket, cls_doc.ticket.doc);
+        .def("ticket", &Class::ticket, cls_doc.ticket.doc)
+        .def("has_default_prerequisites", &Class::has_default_prerequisites,
+            cls_doc.has_default_prerequisites.doc);
   }
 }
 
@@ -695,6 +710,8 @@ void DoScalarDependentDefinitions(py::module m) {
 
   DefineTemplateClassWithDefault<LeafOutputPort<T>, OutputPort<T>>(
       m, "LeafOutputPort", GetPyParam<T>(), doc.LeafOutputPort.doc)
+      .def("cache_entry", &LeafOutputPort<T>::cache_entry,
+          py_rvp::reference_internal, doc.LeafOutputPort.cache_entry.doc)
       .def("disable_caching_by_default",
           &LeafOutputPort<T>::disable_caching_by_default,
           doc.LeafOutputPort.disable_caching_by_default.doc);

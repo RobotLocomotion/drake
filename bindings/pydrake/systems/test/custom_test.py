@@ -249,17 +249,29 @@ class TestCustom(unittest.TestCase):
             prerequisites_of_calc={dummy.nothing_ticket()})
         self.assertIsInstance(cache_entry, CacheEntry)
 
+        context = dummy.CreateDefaultContext()
+
         # Cover CacheEntry and get_cache_entry.
         self.assertIsInstance(cache_entry.prerequisites(), set)
+        self.assertTrue(cache_entry.is_out_of_date(context))
+        self.assertFalse(cache_entry.is_cache_entry_disabled(context))
+        cache_entry.disable_caching(context)
+        self.assertTrue(cache_entry.is_cache_entry_disabled(context))
+        cache_entry.enable_caching(context)
+        self.assertFalse(cache_entry.is_cache_entry_disabled(context))
+        self.assertFalse(cache_entry.is_disabled_by_default())
+        cache_entry.disable_caching_by_default()
+        self.assertTrue(cache_entry.is_disabled_by_default())
+        self.assertIsInstance(cache_entry.description(), str)
         cache_index = cache_entry.cache_index()
         self.assertIsInstance(cache_index, CacheIndex)
         self.assertIsInstance(cache_entry.ticket(), DependencyTicket)
         self.assertIs(dummy.get_cache_entry(cache_index), cache_entry)
+        self.assertFalse(cache_entry.has_default_prerequisites())
 
         # Cover CacheEntryValue.
         # WARNING: This is not the suggested workflow for proper bindings. See
         # below for proper workflow using .Eval().
-        context = dummy.CreateDefaultContext()
         cache_entry_value = cache_entry.get_mutable_cache_entry_value(context)
         self.assertIsInstance(cache_entry_value, CacheEntryValue)
         data = cache_entry_value.GetMutableValueOrThrow()
