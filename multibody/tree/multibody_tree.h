@@ -1703,6 +1703,14 @@ class MultibodyTree {
       const Eigen::Ref<const VectorX<T>>& qdot,
       EigenPtr<VectorX<T>> v) const;
 
+  // See MultibodyPlant method.
+  Eigen::SparseMatrix<T> MakeVelocityToQDotMap(
+      const systems::Context<T>& context) const;
+
+  // See MultibodyPlant method.
+  Eigen::SparseMatrix<T> MakeQDotToVelocityMap(
+      const systems::Context<T>& context) const;
+
   /**
   @anchor internal_forward_dynamics
   @name Articulated Body Algorithm Forward Dynamics.

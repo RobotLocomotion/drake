@@ -3376,6 +3376,36 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     DRAKE_DEMAND(v != nullptr);
     internal_tree().MapQDotToVelocity(context, qdot, v);
   }
+
+  /// Returns the matrix `N(q)`, which maps `q̇ = N(q)⋅v`, as described in
+  /// MapVelocityToQDot(). Prefer calling MapVelocityToQDot() directly; this
+  /// entry point is provided to support callers that require the explicit
+  /// linear form (once q is given) of the relationship.
+  ///
+  /// @param[in] context
+  ///   The context containing the state of the model.
+  ///
+  /// @see MapVelocityToQDot()
+  Eigen::SparseMatrix<T> MakeVelocityToQDotMap(
+      const systems::Context<T>& context) {
+    this->ValidateContext(context);
+    return internal_tree().MakeVelocityToQDotMap(context);
+  }
+
+  /// Returns the matrix `N⁺(q)`, which maps `v = N⁺(q)⋅q̇`, as described in
+  /// MapQDotToVelocity(). Prefer calling MapQDotToVelocity() directly; this
+  /// entry point is provided to support callers that require the explicit
+  /// linear form (once q is given) of the relationship.
+  ///
+  /// @param[in] context
+  ///   The context containing the state of the model.
+  ///
+  /// @see MapVelocityToQDot()
+  Eigen::SparseMatrix<T> MakeQDotToVelocityMap(
+      const systems::Context<T>& context) {
+    this->ValidateContext(context);
+    return internal_tree().MakeQDotToVelocityMap(context);
+  }
   /// @} <!-- Kinematic and dynamic computations -->
 
   /// @anchor mbp_system_matrix_computations
