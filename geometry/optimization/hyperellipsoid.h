@@ -5,6 +5,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/name_value.h"
 #include "drake/geometry/optimization/convex_set.h"
 
 namespace drake {
@@ -93,6 +94,16 @@ class Hyperellipsoid final : public ConvexSet {
   /** Constructs the L₂-norm unit ball in `dim` dimensions, {x | |x|₂ <= 1 }. */
   static Hyperellipsoid MakeUnitBall(int dim);
 
+  /** Passes this object to an Archive.
+  Refer to @ref yaml_serialization "YAML Serialization" for background. */
+  template <typename Archive>
+  void Serialize(Archive* a) {
+    ConvexSet::Serialize(a);
+    a->Visit(MakeNameValue("A", &A_));
+    a->Visit(MakeNameValue("center", &center_));
+    CheckInvariants();
+  }
+
  private:
   std::unique_ptr<ConvexSet> DoClone() const final;
 
@@ -127,6 +138,8 @@ class Hyperellipsoid final : public ConvexSet {
 
   std::pair<std::unique_ptr<Shape>, math::RigidTransformd> DoToShapeWithPose()
       const final;
+
+  void CheckInvariants() const;
 
   // Implement support shapes for the ShapeReifier interface.
   using ShapeReifier::ImplementGeometry;

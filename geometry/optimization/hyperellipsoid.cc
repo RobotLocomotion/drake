@@ -36,8 +36,7 @@ Hyperellipsoid::Hyperellipsoid()
 Hyperellipsoid::Hyperellipsoid(const Eigen::Ref<const MatrixXd>& A,
                                const Eigen::Ref<const VectorXd>& center)
     : ConvexSet(center.size()), A_(A), center_(center) {
-  DRAKE_THROW_UNLESS(A.cols() == center.size());
-  DRAKE_THROW_UNLESS(A.allFinite());  // to ensure the set is non-empty.
+  CheckInvariants();
 }
 
 Hyperellipsoid::Hyperellipsoid(const QueryObject<double>& query_object,
@@ -278,6 +277,12 @@ Hyperellipsoid::DoToShapeWithPose() const {
                                            1.0 / sqrt(solver.eigenvalues()[1]),
                                            1.0 / sqrt(solver.eigenvalues()[2]));
   return std::make_pair(std::move(shape), X_WG);
+}
+
+void Hyperellipsoid::CheckInvariants() const {
+  DRAKE_THROW_UNLESS(this->ambient_dimension() == A_.cols());
+  DRAKE_THROW_UNLESS(A_.cols() == center_.size());
+  DRAKE_THROW_UNLESS(A_.allFinite());  // to ensure the set is non-empty.
 }
 
 void Hyperellipsoid::ImplementGeometry(const Ellipsoid& ellipsoid, void* data) {

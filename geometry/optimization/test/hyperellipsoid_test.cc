@@ -6,6 +6,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/yaml/yaml_io.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
 #include "drake/geometry/optimization/test_utilities.h"
@@ -499,6 +500,15 @@ GTEST_TEST(HyperellipsoidTest, MinimumUniformScaling4) {
   auto [sigma, x] = E.MinimumUniformScalingToTouch(E2);
   EXPECT_NEAR(sigma, 3.0, kTol);
   EXPECT_TRUE(CompareMatrices(x, Vector2d{3.0, 0.0}, kTol));
+}
+
+GTEST_TEST(HyperellipsoidTest, Serialize) {
+  Hyperellipsoid E = Hyperellipsoid::MakeUnitBall(2);
+  const std::string yaml = yaml::SaveYamlString(E);
+  const auto E2 = yaml::LoadYamlString<Hyperellipsoid>(yaml);
+  EXPECT_EQ(E.ambient_dimension(), E2.ambient_dimension());
+  EXPECT_TRUE(CompareMatrices(E.A(), E2.A()));
+  EXPECT_TRUE(CompareMatrices(E.center(), E2.center()));
 }
 
 }  // namespace optimization
