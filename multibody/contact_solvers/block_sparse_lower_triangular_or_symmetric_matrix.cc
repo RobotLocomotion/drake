@@ -13,6 +13,19 @@ namespace multibody {
 namespace contact_solvers {
 namespace internal {
 
+int BlockSparsityPattern::CalcNumNonzeros() const {
+  int result = 0;
+  for (int i = 0; i < ssize(block_sizes_); ++i) {
+    const std::vector<int>& neighbors_i = neighbors_[i];
+    int row_count = 0;
+    for (int n : neighbors_i) {
+      row_count += block_sizes_[n];
+    }
+    result += row_count * block_sizes_[i];
+  }
+  return result;
+}
+
 template <typename MatrixType, bool is_symmetric>
 BlockSparseLowerTriangularOrSymmetricMatrix<MatrixType, is_symmetric>::
     BlockSparseLowerTriangularOrSymmetricMatrix(

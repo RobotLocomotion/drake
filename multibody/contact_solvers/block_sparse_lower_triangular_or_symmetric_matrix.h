@@ -65,6 +65,13 @@ class BlockSparsityPattern {
    are nonzero. */
   const std::vector<std::vector<int>>& neighbors() const { return neighbors_; }
 
+  /* Returns the number of "non-zero" (in the sense of eigen::SparseMatrix::nnz,
+   i.e., stored densely, not necessarily numerically zero
+   https://eigen.tuxfamily.org/dox/classEigen_1_1SparseMatrix.html#a03de8b3da2c142ce8698a76123b3e7d3)
+   scalar values in `this` block sparsity pattern. Note that only the non-zero
+   entries in the lower triangular part of the matrix are included. */
+  int CalcNumNonzeros() const;
+
  private:
   std::vector<int> block_sizes_;
   std::vector<std::vector<int>> neighbors_;
