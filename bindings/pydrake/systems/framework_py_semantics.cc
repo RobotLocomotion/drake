@@ -564,34 +564,10 @@ void DoScalarDependentDefinitions(py::module m) {
       .def("empty", &DiagramBuilder<T>::empty, doc.DiagramBuilder.empty.doc)
       .def("already_built", &DiagramBuilder<T>::already_built,
           doc.DiagramBuilder.already_built.doc)
-      .def(
-          "GetSystems",
-          [](DiagramBuilder<T>* self) {
-            py::list out;
-            py::object self_py = py::cast(self, py_rvp::reference);
-            for (const auto* system : self->GetSystems()) {
-              py::object system_py = py::cast(system, py_rvp::reference);
-              // Keep alive, ownership: `system` keeps `self` alive.
-              py_keep_alive(system_py, self_py);
-              out.append(system_py);
-            }
-            return out;
-          },
-          doc.DiagramBuilder.GetSystems.doc)
-      .def(
-          "GetMutableSystems",
-          [](DiagramBuilder<T>* self) {
-            py::list out;
-            py::object self_py = py::cast(self, py_rvp::reference);
-            for (auto* system : self->GetMutableSystems()) {
-              py::object system_py = py::cast(system, py_rvp::reference);
-              // Keep alive, ownership: `system` keeps `self` alive.
-              py_keep_alive(system_py, self_py);
-              out.append(system_py);
-            }
-            return out;
-          },
-          doc.DiagramBuilder.GetMutableSystems.doc)
+      .def("GetSystems", &DiagramBuilder<T>::GetSystems,
+          py_rvp::reference_internal, doc.DiagramBuilder.GetSystems.doc)
+      .def("GetMutableSystems", &DiagramBuilder<T>::GetMutableSystems,
+          py_rvp::reference_internal, doc.DiagramBuilder.GetMutableSystems.doc)
       .def("HasSubsystemNamed", &DiagramBuilder<T>::HasSubsystemNamed,
           py::arg("name"), doc.DiagramBuilder.HasSubsystemNamed.doc)
       .def("GetSubsystemByName", &DiagramBuilder<T>::GetSubsystemByName,
@@ -611,20 +587,20 @@ void DoScalarDependentDefinitions(py::module m) {
             py::object self_py = py::cast(self, py_rvp::reference);
             for (auto& [input_locator, output_locator] :
                 self->connection_map()) {
-              py::object input_system_py =
-                  py::cast(input_locator.first, py_rvp::reference);
-              py::object input_port_index_py = py::cast(input_locator.second);
               // Keep alive, ownership: `input_system_py` keeps `self` alive.
-              py_keep_alive(input_system_py, self_py);
+              py::object input_system_py = py::cast(
+                  input_locator.first, py_rvp::reference_internal, self_py);
+              py::object input_port_index_py = py::cast(input_locator.second);
+
               py::tuple input_locator_py(2);
               input_locator_py[0] = input_system_py;
               input_locator_py[1] = input_port_index_py;
 
-              py::object output_system_py =
-                  py::cast(output_locator.first, py_rvp::reference);
-              py::object output_port_index_py = py::cast(output_locator.second);
               // Keep alive, ownership: `output_system_py` keeps `self` alive.
-              py_keep_alive(output_system_py, self_py);
+              py::object output_system_py = py::cast(
+                  output_locator.first, py_rvp::reference_internal, self_py);
+              py::object output_port_index_py = py::cast(output_locator.second);
+
               py::tuple output_locator_py(2);
               output_locator_py[0] = output_system_py;
               output_locator_py[1] = output_port_index_py;

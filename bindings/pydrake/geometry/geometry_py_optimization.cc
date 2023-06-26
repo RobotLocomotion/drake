@@ -319,17 +319,15 @@ void DefineGeometryOptimization(py::module m) {
         .def_property(
             "configuration_obstacles",
             [](const IrisOptions& self) {
-              py::list out;
-              py::object self_py = py::cast(self, py_rvp::reference);
+              std::vector<const ConvexSet*> convex_sets;
               for (const copyable_unique_ptr<ConvexSet>& convex_set :
                   self.configuration_obstacles) {
-                py::object convex_set_py =
-                    py::cast(convex_set.get(), py_rvp::reference);
-                // Keep alive, ownership: `convex_set` keeps `self` alive.
-                py_keep_alive(convex_set_py, self_py);
-                out.append(convex_set_py);
+                convex_sets.push_back(convex_set.get());
               }
-              return out;
+              py::object self_py = py::cast(self, py_rvp::reference);
+              // Keep alive, ownership: each item in `convex_sets` keeps `self`
+              // alive.
+              return py::cast(convex_sets, py_rvp::reference_internal, self_py);
             },
             [](IrisOptions& self, const std::vector<ConvexSet*>& sets) {
               self.configuration_obstacles = CloneConvexSets(sets);
@@ -639,34 +637,14 @@ void DefineGeometryOptimization(py::module m) {
             py::overload_cast<const GraphOfConvexSets::Edge&>(
                 &GraphOfConvexSets::RemoveEdge),
             py::arg("edge"), cls_doc.RemoveEdge.doc_by_reference)
-        .def(
-            "Vertices",
-            [](GraphOfConvexSets* self) {
-              py::list out;
-              py::object self_py = py::cast(self, py_rvp::reference);
-              for (auto* vertex : self->Vertices()) {
-                py::object vertex_py = py::cast(vertex, py_rvp::reference);
-                // Keep alive, ownership: `vertex` keeps `self` alive.
-                py_keep_alive(vertex_py, self_py);
-                out.append(vertex_py);
-              }
-              return out;
-            },
-            cls_doc.Vertices.doc)
-        .def(
-            "Edges",
-            [](GraphOfConvexSets* self) {
-              py::list out;
-              py::object self_py = py::cast(self, py_rvp::reference);
-              for (auto* edge : self->Edges()) {
-                py::object edge_py = py::cast(edge, py_rvp::reference);
-                // Keep alive, ownership: `edge` keeps `self` alive.
-                py_keep_alive(edge_py, self_py);
-                out.append(edge_py);
-              }
-              return out;
-            },
-            cls_doc.Edges.doc)
+        .def("Vertices",
+            overload_cast_explicit<std::vector<GraphOfConvexSets::Vertex*>>(
+                &GraphOfConvexSets::Vertices),
+            py_rvp::reference_internal, cls_doc.Vertices.doc)
+        .def("Edges",
+            overload_cast_explicit<std::vector<GraphOfConvexSets::Edge*>>(
+                &GraphOfConvexSets::Edges),
+            py_rvp::reference_internal, cls_doc.Edges.doc)
         .def("ClearAllPhiConstraints",
             &GraphOfConvexSets::ClearAllPhiConstraints,
             cls_doc.ClearAllPhiConstraints.doc)
