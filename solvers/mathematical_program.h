@@ -1887,6 +1887,11 @@ class MathematicalProgram {
    lb ≤ .5 xᵀQx + bᵀx ≤ ub
    where `x` might be a subset of the decision variables in this
    MathematicalProgram.
+   Notice that if your quadratic constraint is convex, and you intend to solve
+   the problem with a convex solver (like Mosek), then it is better to
+   reformulate it with a second order cone constraint. See
+   https://docs.mosek.com/10.0/capi/prob-def-quadratic.html#a-recommendation for
+   an explanation.
    @exclude_from_pydrake_mkdoc{Not bound in pydrake.}
    */
   Binding<QuadraticConstraint> AddConstraint(
@@ -1894,6 +1899,11 @@ class MathematicalProgram {
 
   /** Adds quadratic constraint
    lb ≤ .5 xᵀQx + bᵀx ≤ ub
+   Notice that if your quadratic constraint is convex, and you intend to solve
+   the problem with a convex solver (like Mosek), then it is better to
+   reformulate it with a second order cone constraint. See
+   https://docs.mosek.com/10.0/capi/prob-def-quadratic.html#a-recommendation for
+   an explanation.
    @param vars x in the documentation above.
    @param hessian_type Whether the Hessian is positive semidefinite, negative
    semidefinite or indefinite. Drake will check the type if
@@ -1911,6 +1921,11 @@ class MathematicalProgram {
 
   /** Adds quadratic constraint
    lb ≤ .5 xᵀQx + bᵀx ≤ ub
+   Notice that if your quadratic constraint is convex, and you intend to solve
+   the problem with a convex solver (like Mosek), then it is better to
+   reformulate it with a second order cone constraint. See
+   https://docs.mosek.com/10.0/capi/prob-def-quadratic.html#a-recommendation for
+   an explanation.
    @param vars x in the documentation above.
    @param hessian_type Whether the Hessian is positive semidefinite, negative
    semidefinite or indefinite. Drake will check the type if
@@ -1928,6 +1943,11 @@ class MathematicalProgram {
 
   /** Overloads AddQuadraticConstraint, impose lb <= e <= ub where `e` is a
    quadratic expression.
+   Notice that if your quadratic constraint is convex, and you intend to solve
+   the problem with a convex solver (like Mosek), then it is better to
+   reformulate it with a second order cone constraint. See
+   https://docs.mosek.com/10.0/capi/prob-def-quadratic.html#a-recommendation for
+   an explanation.
    */
   Binding<QuadraticConstraint> AddQuadraticConstraint(
       const symbolic::Expression& e, double lb, double ub,

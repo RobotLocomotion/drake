@@ -39,6 +39,7 @@ bool CheckAttributes(const MathematicalProgram& prog,
       std::initializer_list<ProgramAttribute>{
           ProgramAttribute::kLinearEqualityConstraint,
           ProgramAttribute::kLinearConstraint,
+          ProgramAttribute::kQuadraticConstraint,
           ProgramAttribute::kLorentzConeConstraint,
           ProgramAttribute::kRotatedLorentzConeConstraint,
           ProgramAttribute::kPositiveSemidefiniteConstraint,
