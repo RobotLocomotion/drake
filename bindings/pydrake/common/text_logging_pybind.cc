@@ -24,6 +24,16 @@ namespace internal {
 
 #ifdef HAVE_SPDLOG
 namespace {
+
+bool& mutable_is_main_thread() {
+  thread_local static bool is_main{false};
+  return is_main;
+}
+
+bool is_main_thread() {
+  return mutable_is_main_thread();
+}
+
 class pylogging_sink final
     // We use null_mutex below because we'll use the GIL as our *only* mutex.
     // This is critically important to avoid deadlocks by lock order inversion.
@@ -44,10 +54,20 @@ class pylogging_sink final
     is_enabled_for_ = logger.attr("isEnabledFor");
     make_record_ = logger.attr("makeRecord");
     handle_ = logger.attr("handle");
+
+    // Denote this thread as main.
+    mutable_is_main_thread() = true;
   }
 
  protected:
   void sink_it_(const spdlog::details::log_msg& msg) final {
+    if (!is_main_thread()) {
+      if (should_log(msg.level)) {
+        non_main_sink_.log(msg);
+      }
+      return;
+    }
+
     py::gil_scoped_acquire acquire;
 
     // Bail out quickly in case this log level is disabled.
@@ -117,11 +137,24 @@ class pylogging_sink final
     DRAKE_UNREACHABLE();
   }
 
+  using Base = spdlog::sinks::base_sink<spdlog::details::null_mutex>;
+
+  void set_pattern_(const std::string& pattern) final {
+    set_formatter_(std::make_unique<spdlog::pattern_formatter>(pattern));
+  }
+
+  void set_formatter_(std::unique_ptr<spdlog::formatter> sink_formatter) final {
+    non_main_sink_.set_formatter(sink_formatter->clone());
+    Base::set_formatter(std::move(sink_formatter));
+  }
+
   std::atomic<bool> is_configured_{false};
   py::object name_{py::cast("drake")};
   py::object is_enabled_for_;
   py::object make_record_;
   py::object handle_;
+
+  spdlog::sinks::stderr_sink_mt non_main_sink_;
 };
 }  // namespace
 
