@@ -186,6 +186,14 @@ void MosekSolver::DoSolve(const MathematicalProgram& prog,
                                 &rotated_lorentz_cone_acc_indices);
   }
 
+  // Add quadratic constraints.
+  std::unordered_map<Binding<QuadraticConstraint>, MSKint64t>
+      quadratic_constraint_dual_indices;
+  if (rescode == MSK_RES_OK) {
+    rescode =
+        impl.AddQuadraticConstraints(prog, &quadratic_constraint_dual_indices);
+  }
+
   // Add linear matrix inequality constraints.
   if (rescode == MSK_RES_OK) {
     rescode = impl.AddLinearMatrixInequalityConstraint(prog);
@@ -204,6 +212,7 @@ void MosekSolver::DoSolve(const MathematicalProgram& prog,
   if (with_integer_or_binary_variable) {
     solution_type = MSK_SOL_ITG;
   } else if (prog.quadratic_costs().empty() &&
+             prog.quadratic_constraints().empty() &&
              prog.lorentz_cone_constraints().empty() &&
              prog.rotated_lorentz_cone_constraints().empty() &&
              prog.positive_semidefinite_constraints().empty() &&
@@ -332,9 +341,9 @@ void MosekSolver::DoSolve(const MathematicalProgram& prog,
     }
     rescode = impl.SetDualSolution(
         solution_type, prog, bb_con_dual_indices, linear_con_dual_indices,
-        lin_eq_con_dual_indices, lorentz_cone_acc_indices,
-        rotated_lorentz_cone_acc_indices, exp_cone_acc_indices,
-        psd_barvar_indices, result);
+        lin_eq_con_dual_indices, quadratic_constraint_dual_indices,
+        lorentz_cone_acc_indices, rotated_lorentz_cone_acc_indices,
+        exp_cone_acc_indices, psd_barvar_indices, result);
     DRAKE_ASSERT(rescode == MSK_RES_OK);
   }
 
