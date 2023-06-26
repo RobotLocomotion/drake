@@ -25,6 +25,7 @@ from pydrake.systems.analysis import (
     )
 from pydrake.systems.framework import (
     BasicVector, BasicVector_,
+    CacheEntry,
     ContextBase,
     Context, Context_,
     ContinuousState, ContinuousState_,
@@ -125,7 +126,10 @@ class TestGeneral(unittest.TestCase):
         self.assertEqual(y.get_index(), 0)
         self.assertIsInstance(y.Allocate(), Value[BasicVector])
         self.assertIs(y.get_system(), system)
+        cache_entry = y.cache_entry()
+        self.assertFalse(cache_entry.is_disabled_by_default())
         y.disable_caching_by_default()
+        self.assertTrue(cache_entry.is_disabled_by_default())
         self.assertEqual(y, system.get_output_port())
         # TODO(eric.cousineau): Consolidate the main API tests for `System`
         # to this test point.
