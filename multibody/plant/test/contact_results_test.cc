@@ -178,6 +178,10 @@ TEST_F(ContactResultsTest, ViewHydroelastic) {
   EXPECT_EQ(
       one_contact.hydroelastic_contact_info(0).contact_surface().id_M(),
       my_hydroelastic_contact_info_->contact_surface().id_M());
+  // Verify the deep copy by checking for different memory address.
+  EXPECT_NE(
+      &one_contact.hydroelastic_contact_info(0),
+      my_hydroelastic_contact_info_.get());
 }
 
 }  // namespace multibody
