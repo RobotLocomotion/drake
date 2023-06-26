@@ -36,8 +36,8 @@ class ChooseBestSolverTest : public ::testing::Test {
         snopt_solver_{std::make_unique<SnoptSolver>()},
         ipopt_solver_{std::make_unique<IpoptSolver>()},
         nlopt_solver_{std::make_unique<NloptSolver>()},
-        csdp_solver_{std::make_unique<CsdpSolver>()},
-        scs_solver_{std::make_unique<ScsSolver>()} {}
+        scs_solver_{std::make_unique<ScsSolver>()},
+        csdp_solver_{std::make_unique<CsdpSolver>()} {}
 
   ~ChooseBestSolverTest() {}
 
@@ -93,8 +93,8 @@ class ChooseBestSolverTest : public ::testing::Test {
   std::unique_ptr<SnoptSolver> snopt_solver_;
   std::unique_ptr<IpoptSolver> ipopt_solver_;
   std::unique_ptr<NloptSolver> nlopt_solver_;
-  std::unique_ptr<CsdpSolver> csdp_solver_;
   std::unique_ptr<ScsSolver> scs_solver_;
+  std::unique_ptr<CsdpSolver> csdp_solver_;
 };
 
 TEST_F(ChooseBestSolverTest, LinearSystemSolver) {
@@ -154,7 +154,7 @@ TEST_F(ChooseBestSolverTest, LPsolver) {
   prog_.AddLinearCost(x_(0) + x_(1));
   CheckBestSolver({gurobi_solver_.get(), mosek_solver_.get(), clp_solver_.get(),
                    snopt_solver_.get(), ipopt_solver_.get(),
-                   nlopt_solver_.get(), csdp_solver_.get(), scs_solver_.get()});
+                   nlopt_solver_.get(), scs_solver_.get(), csdp_solver_.get()});
   CheckGetAvailableSolvers(prog_);
 }
 
@@ -169,13 +169,13 @@ TEST_F(ChooseBestSolverTest, QPsolver) {
 
 TEST_F(ChooseBestSolverTest, LorentzCone) {
   prog_.AddLorentzConeConstraint(x_.cast<symbolic::Expression>());
-  CheckBestSolver({mosek_solver_.get(), gurobi_solver_.get(),
-                   csdp_solver_.get(), scs_solver_.get(), snopt_solver_.get(),
-                   ipopt_solver_.get(), nlopt_solver_.get()});
+  CheckBestSolver({mosek_solver_.get(), gurobi_solver_.get(), scs_solver_.get(),
+                   csdp_solver_.get(), snopt_solver_.get(), ipopt_solver_.get(),
+                   nlopt_solver_.get()});
   prog_.AddRotatedLorentzConeConstraint(x_.cast<symbolic::Expression>());
-  CheckBestSolver({mosek_solver_.get(), gurobi_solver_.get(),
-                   csdp_solver_.get(), scs_solver_.get(), snopt_solver_.get(),
-                   ipopt_solver_.get(), nlopt_solver_.get()});
+  CheckBestSolver({mosek_solver_.get(), gurobi_solver_.get(), scs_solver_.get(),
+                   csdp_solver_.get(), snopt_solver_.get(), ipopt_solver_.get(),
+                   nlopt_solver_.get()});
 
   prog_.AddPolynomialCost(pow(x_(0), 3));
   CheckBestSolver(
@@ -196,7 +196,7 @@ TEST_F(ChooseBestSolverTest, LinearComplementarityConstraint) {
 TEST_F(ChooseBestSolverTest, PositiveSemidefiniteConstraint) {
   prog_.AddPositiveSemidefiniteConstraint(
       (Matrix2<symbolic::Variable>() << x_(0), x_(1), x_(1), x_(2)).finished());
-  CheckBestSolver({mosek_solver_.get(), csdp_solver_.get(), scs_solver_.get()});
+  CheckBestSolver({mosek_solver_.get(), scs_solver_.get(), csdp_solver_.get()});
   CheckGetAvailableSolvers(prog_);
 }
 
