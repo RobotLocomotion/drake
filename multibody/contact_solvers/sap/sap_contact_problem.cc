@@ -30,7 +30,8 @@ SapContactProblem<T>::SapContactProblem(const T& time_step,
     const auto& Ac = A_[i];
     DRAKE_THROW_UNLESS(Ac.rows() == Ac.cols());
     const int clique_nv = Ac.rows();
-    if (i > 0) velocities_start_[i] = velocities_start_[i - 1] + clique_nv;
+    if (i < ssize(A_) - 1)
+      velocities_start_[i + 1] = velocities_start_[i] + clique_nv;
     nv_ += Ac.rows();
   }
   DRAKE_THROW_UNLESS(v_star_.size() == nv_);
