@@ -2449,7 +2449,8 @@ class TestPlant(unittest.TestCase):
 
         def myselector(hydroelastic_contact_info):
             return True
-        contact_results_view = contact_results.ViewHydroelastic(myselector)
+        contact_results_view = contact_results.ViewHydroelastic(
+                                                   selector=myselector)
         self.assertTrue(contact_results_view.num_point_pair_contacts() == 0)
 
     def test_contact_model(self):

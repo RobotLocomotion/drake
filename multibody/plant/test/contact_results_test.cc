@@ -58,7 +58,7 @@ TEST_F(ContactResultsTest, Default) {
 // Tests the set, access, and clear operations. For the access and clear
 // operations, the code has two branches that:
 //   1. use alias pointers for hydroealstic_contact_info_
-//   2. use unique pointers for hydroelastic_contact_info_ (happened after
+//   2. use unique pointers for hydroelastic_contact_info_ (happens after
 //      assignment or copy constructor).
 TEST_F(ContactResultsTest, SetAccessClear) {
   // Set
@@ -85,12 +85,12 @@ TEST_F(ContactResultsTest, SetAccessClear) {
       my_hydroelastic_contact_info_->contact_surface().id_M());
 
   // Clear
-  // Test the alias-pointer variance.
+  // Test the alias-pointer variant.
   contact_results.Clear();
   EXPECT_EQ(contact_results.plant(), nullptr);
   EXPECT_EQ(contact_results.num_point_pair_contacts(), 0);
   EXPECT_EQ(contact_results.num_hydroelastic_contacts(), 0);
-  // Test the unique-pointer variance.
+  // Test the unique-pointer variant.
   copy.Clear();
   EXPECT_EQ(copy.num_hydroelastic_contacts(), 0);
 }
@@ -99,9 +99,9 @@ TEST_F(ContactResultsTest, SetAccessClear) {
 // verify the results of assignment operator rigorously. It only checks that
 // the three member variables are valid without looking at their values.
 //
-// The operator manages two variances of hydroelastic_contact_info_, which
+// The operator manages two variants of hydroelastic_contact_info_, which
 // can be a vector of aliased pointers or a vector of unique pointers. Since
-// we can't check which variance the current hydroelastic_contact_info_ is,
+// we can't check which variant the current hydroelastic_contact_info_ is,
 // we only check the number of records.
 TEST_F(ContactResultsTest, AssignHydroelasticContactInfo) {
   // Assign empty RHS to non-empty LHS.
