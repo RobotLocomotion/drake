@@ -115,7 +115,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.num_hydroelastic_contacts.doc)
         .def("hydroelastic_contact_info", &Class::hydroelastic_contact_info,
             py::arg("i"), cls_doc.hydroelastic_contact_info.doc)
-        .def("plant", &Class::plant, py_rvp::reference, cls_doc.plant.doc);
+        .def("plant", &Class::plant, py_rvp::reference, cls_doc.plant.doc)
+        .def("SelectHydroelastic", &Class::SelectHydroelastic,
+            py::arg("selector"), cls_doc.SelectHydroelastic.doc);
     DefCopyAndDeepCopy(&cls);
     AddValueInstantiation<Class>(m);
   }

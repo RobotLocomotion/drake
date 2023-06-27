@@ -2485,6 +2485,7 @@ class TestPlant(unittest.TestCase):
         self.assertTrue(contact_results.num_point_pair_contacts() == 0)
         self.assertIsNone(contact_results.plant())
         copy.copy(contact_results)
+        contact_results.SelectHydroelastic(selector=lambda _: True)
 
     def test_contact_model(self):
         plant = MultibodyPlant_[float](0.1)
