@@ -374,18 +374,6 @@ SpatialInertia<T> SpatialInertia<T>::ShiftFromCenterOfMass(
 }
 
 template <typename T>
-SpatialInertia<T>& SpatialInertia<T>::ShiftToCenterOfMassInPlace() {
-  G_SP_E_.ShiftToCenterOfMassInPlace(p_PScm_E_);
-  p_PScm_E_ = Vector3<T>::Zero();
-  return *this;  // On entry, `this` is M_SP_E. On return, `this` is M_SScm_E.
-}
-
-template <typename T>
-SpatialInertia<T> SpatialInertia<T>::ShiftToCenterOfMass() const {
-  return SpatialInertia(*this).ShiftToCenterOfMassInPlace();
-}
-
-template <typename T>
 SpatialInertia<T>& SpatialInertia<T>::ShiftInPlace(const Vector3<T>& p_PQ_E) {
   const Vector3<T> p_QScm_E = p_PScm_E_ - p_PQ_E;
   // The following two lines apply the parallel axis theorem (in place) so that:
