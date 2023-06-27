@@ -3,6 +3,7 @@
 #include <filesystem>
 #include <fstream>
 #include <functional>
+#include <ostream>
 #include <string>
 #include <vector>
 
@@ -39,6 +40,12 @@ struct MergeCase {
   string description;
   /* The merge function that should be called. */
   std::function<void(json*, json&&)> merge{};
+
+  friend std::ostream& operator<<(std::ostream& out,
+                                  const MergeCase& merge_case) {
+    out << merge_case.description;
+    return out;
+  }
 };
 
 /* Evaluates a test case, confirming the merged result is as expected. */
@@ -47,7 +54,7 @@ void Evaluate(const MergeCase& test_case) {
   json source = json::parse(test_case.source);
   test_case.merge(&target, std::move(source));
   const json expected = json::parse(test_case.expected);
-  EXPECT_EQ(target[test_case.array_name], expected) << test_case.description;
+  EXPECT_EQ(target[test_case.array_name], expected) << test_case;
 }
 
 /* The test harness for the various merge functions. This includes families of
