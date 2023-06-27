@@ -513,10 +513,21 @@ drake_py_binary(
     ],
 )
 
+drake_py_binary(
+    name = "text_logging_example_toggle",
+    testonly = 1,
+    srcs = ["test/text_logging_example_toggle.py"],
+    deps = [
+        ":module_py",
+        ":text_logging_test_py",
+    ],
+)
+
 drake_py_unittest(
     name = "text_logging_test",
     data = [
         ":text_logging_example",
+        ":text_logging_example_toggle",
     ],
     shard_count = 8,
     deps = [

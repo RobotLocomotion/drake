@@ -144,3 +144,29 @@ class TestTextLoggingExample(unittest.TestCase,
 
         # Confirm that the correct levels came out.
         self.assertEqual(effective_level, expected_level)
+
+    def test_toggle(self):
+        try:
+            output = subprocess.check_output(
+                ["bindings/pydrake/common/text_logging_example_toggle"],
+                stderr=subprocess.STDOUT,
+                encoding="utf8")
+        except subprocess.CalledProcessError as e:
+            print(e.output, file=sys.stderr, flush=True)
+            raise
+        lines = output.splitlines()
+        # Check expected line endings so we can easily ignore the timestamps
+        # that spdlog introduces.
+        expected_endings = [
+            "INFO:drake:Redirected 0",
+            "[console] [info] Not redirected 0",
+            "INFO:drake:Redirected 1",
+            "[console] [info] Not redirected 1",
+            "INFO:drake:Redirected 2",
+            "[console] [info] Not redirected 2",
+        ]
+        self.assertEqual(len(lines), len(expected_endings))
+        for line, expected_ending in zip(lines, expected_endings):
+            self.assertTrue(
+                line.endswith(expected_ending), (line, expected_ending)
+            )

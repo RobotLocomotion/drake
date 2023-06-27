@@ -78,6 +78,7 @@ void def_testing(py::module m) {
     return std::unique_ptr<RegisteredType>(new UnregisteredDerivedType());
   });
 }
+
 }  // namespace testing
 
 PYBIND11_MODULE(_module_py, m) {
@@ -101,6 +102,10 @@ PYBIND11_MODULE(_module_py, m) {
       doc.logging.set_log_level.doc);
 
   internal::MaybeRedirectPythonLogging();
+
+  m.def("MaybeRedirectPythonLogging", &internal::MaybeRedirectPythonLogging);
+  m.def("MaybeUndoRedirectPythonLogging",
+      &internal::MaybeUndoRedirectPythonLogging);
 
   py::enum_<drake::ToleranceType>(m, "ToleranceType", doc.ToleranceType.doc)
       .value("kAbsolute", drake::ToleranceType::kAbsolute,
@@ -134,10 +139,10 @@ deterministic given the C++ random seed (see drake issue #12632 for the
 discussion), use e.g.
 
 .. code-block:: python
-    
+
    generator = pydrake.common.RandomGenerator()
    random_state = numpy.random.RandomState(generator())
-   
+
    my_random_value = random_state.uniform()
    ...
 
