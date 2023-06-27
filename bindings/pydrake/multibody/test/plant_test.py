@@ -8,6 +8,7 @@ import unittest
 import weakref
 
 import numpy as np
+import scipy.sparse
 
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.symbolic import Expression, Variable
@@ -1793,11 +1794,18 @@ class TestPlant(unittest.TestCase):
             [0.4, 0.5, 0.6])
         self.assertNotEqual(link0.floating_positions_start(), -1)
         self.assertNotEqual(link0.floating_velocities_start(), -1)
-        v_expected = np.linspace(start=-1.0, stop=-nv, num=nv)
         self.assertFalse(plant.IsVelocityEqualToQDot())
+        v_expected = np.linspace(start=-1.0, stop=-nv, num=nv)
         qdot = plant.MapVelocityToQDot(context, v_expected)
         v_remap = plant.MapQDotToVelocity(context, qdot)
         numpy_compare.assert_float_allclose(v_remap, v_expected)
+        # Bindings for Eigen::SparseMatrix only support T=float for now.
+        if T == float:
+            N = plant.MakeVelocityToQDotMap(context)
+            numpy_compare.assert_float_allclose(qdot, N.todense() @ v_expected)
+            Nplus = plant.MakeQDotToVelocityMap(context)
+            numpy_compare.assert_float_allclose(v_expected,
+                                                Nplus.todense() @ qdot)
 
     @numpy_compare.check_all_types
     def test_multibody_add_joint(self, T):

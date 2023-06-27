@@ -673,6 +673,13 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("CalcRelativeTransform", &Class::CalcRelativeTransform,
             py::arg("context"), py::arg("frame_A"), py::arg("frame_B"),
             cls_doc.CalcRelativeTransform.doc);
+    if constexpr (std::is_same_v<T, double>) {
+      cls  // BR
+          .def("MakeVelocityToQDotMap", &Class::MakeVelocityToQDotMap,
+              py::arg("context"), cls_doc.MakeVelocityToQDotMap.doc)
+          .def("MakeQDotToVelocityMap", &Class::MakeQDotToVelocityMap,
+              py::arg("context"), cls_doc.MakeQDotToVelocityMap.doc);
+    }
     // Topology queries.
     cls  // BR
         .def("num_frames", &Class::num_frames, cls_doc.num_frames.doc)
