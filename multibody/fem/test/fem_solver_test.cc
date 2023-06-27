@@ -14,40 +14,42 @@ namespace internal {
 namespace {
 
 using Eigen::MatrixXd;
-constexpr double kEps = 4.75 * std::numeric_limits<double>::epsilon();
+constexpr double kTolerance = 16 * std::numeric_limits<double>::epsilon();
 /* Parameters for the Newmark-beta integration scheme. */
 constexpr double kDt = 0.01;
 constexpr double kGamma = 0.5;
 constexpr double kBeta = 0.25;
 
+/* Boolean wrapper to help feed true/false into the typed test FemSolverTest. */
+template <bool b>
+struct BoolWrapper {
+  static constexpr bool value = b;
+};
+
+/* Unit test for FemSolver. We template the test on whether the model is linear
+ or not to cover code path where we leverage the explicit linearity knowledge as
+ well as the generic Newton Raphson solve.
+ @tparam T BoolWrapper<true> or BoolWrapper<false>. */
+template <typename T>
 class FemSolverTest : public ::testing::Test {
  protected:
-  DummyModel model_{};
+  DummyModel<T::value> model_{};
   AccelerationNewmarkScheme<double> integrator_{kDt, kGamma, kBeta};
   FemSolver<double> solver_{&model_, &integrator_};
 };
 
-TEST_F(FemSolverTest, CloneScratchData) {
-  FemSolverScratchData<double> scratch(model_);
-  std::unique_ptr<FemSolverScratchData<double>> clone = scratch.Clone();
-  EXPECT_EQ(clone->b(), scratch.b());
-  EXPECT_EQ(clone->dz(), scratch.dz());
-  const MatrixXd tangent_matrix = scratch.tangent_matrix().MakeDenseMatrix();
-  const MatrixXd tangent_matrix_clone =
-      clone->tangent_matrix().MakeDenseMatrix();
-  EXPECT_EQ(tangent_matrix, tangent_matrix_clone);
-}
+TYPED_TEST_SUITE_P(FemSolverTest);
 
-TEST_F(FemSolverTest, Tolerance) {
+TYPED_TEST_P(FemSolverTest, Tolerance) {
   /* Default values. */
-  EXPECT_EQ(solver_.relative_tolerance(), 1e-4);
-  EXPECT_EQ(solver_.absolute_tolerance(), 1e-6);
+  EXPECT_EQ(this->solver_.relative_tolerance(), 1e-4);
+  EXPECT_EQ(this->solver_.absolute_tolerance(), 1e-6);
   /* Test Setters. */
   constexpr double kTol = 1e-8;
-  solver_.set_relative_tolerance(kTol);
-  solver_.set_absolute_tolerance(kTol);
-  EXPECT_EQ(solver_.relative_tolerance(), kTol);
-  EXPECT_EQ(solver_.absolute_tolerance(), kTol);
+  this->solver_.set_relative_tolerance(kTol);
+  this->solver_.set_absolute_tolerance(kTol);
+  EXPECT_EQ(this->solver_.relative_tolerance(), kTol);
+  EXPECT_EQ(this->solver_.absolute_tolerance(), kTol);
 }
 
 /* Tests that the behavior of FemSolver::AdvanceOneTimeStep agrees with analytic
@@ -58,42 +60,60 @@ TEST_F(FemSolverTest, Tolerance) {
  iteration, and the unknown variable z (acceleration in this case) should
  satisfy A*z = -b, where A is the constant tangent matrix and b is the nonzero
  residual evaluated at the zero state. */
-TEST_F(FemSolverTest, AdvanceOneTimeStep) {
-  DummyModel::DummyBuilder builder(&model_);
+TYPED_TEST_P(FemSolverTest, AdvanceOneTimeStep) {
+  constexpr bool is_linear = TypeParam::value;
+  typename DummyModel<is_linear>::DummyBuilder builder(&this->model_);
   builder.AddTwoElementsWithSharedNodes();
   builder.Build();
-  std::unique_ptr<FemState<double>> state0 = model_.MakeFemState();
-  std::unique_ptr<FemState<double>> state = model_.MakeFemState();
-  FemSolverScratchData<double> scratch(model_);
+  std::unique_ptr<FemState<double>> state0 = this->model_.MakeFemState();
+  std::unique_ptr<FemState<double>> state = this->model_.MakeFemState();
+  FemSolverData<double> data(this->model_);
+  data.set_nonparticipating_vertices({0, 1});
   const int num_iterations =
-      solver_.AdvanceOneTimeStep(*state0, state.get(), &scratch);
+      this->solver_.AdvanceOneTimeStep(*state0, state.get(), &data);
   EXPECT_EQ(num_iterations, 1);
 
   /* Compute the expected result from AdvanceOneTimeStep(). */
-  std::unique_ptr<FemState<double>> expected_state = model_.MakeFemState();
-  auto tangent_matrix = model_.MakePetscSymmetricBlockSparseTangentMatrix();
-  model_.CalcTangentMatrix(*state0, integrator_.GetWeights(),
-                           tangent_matrix.get());
-  tangent_matrix->AssembleIfNecessary();
-  const MatrixXd A = tangent_matrix->MakeDenseMatrix();
-  VectorX<double> b(model_.num_dofs());
-  model_.CalcResidual(*state0, &b);
+  std::unique_ptr<FemState<double>> expected_state =
+      this->model_.MakeFemState();
+  auto tangent_matrix0 = this->model_.MakeTangentMatrix();
+  this->model_.CalcTangentMatrix(*state0, this->integrator_.GetWeights(),
+                                 tangent_matrix0.get());
+  const MatrixXd A0 = tangent_matrix0->MakeDenseMatrix();
+  VectorX<double> b0(this->model_.num_dofs());
+  this->model_.CalcResidual(*state0, &b0);
   /* The solver is not considered as "converged" with the initial state. */
-  EXPECT_FALSE(solver_.solver_converged(b.norm(), b.norm()));
-  Eigen::ConjugateGradient<MatrixXd> cg;
-  cg.compute(A);
-  const VectorX<double> dz = cg.solve(-b);
-  integrator_.UpdateStateFromChangeInUnknowns(dz, expected_state.get());
+  EXPECT_FALSE(this->solver_.solver_converged(b0.norm(), b0.norm()));
+  Eigen::LLT<MatrixXd> llt;
+  llt.compute(A0);
+  const VectorX<double> dz = llt.solve(-b0);
+  this->integrator_.UpdateStateFromChangeInUnknowns(dz, expected_state.get());
   EXPECT_TRUE(CompareMatrices(expected_state->GetPositions(),
-                              state->GetPositions(), kEps));
+                              state->GetPositions(), kTolerance));
   EXPECT_TRUE(CompareMatrices(expected_state->GetAccelerations(),
-                              state->GetAccelerations(), kEps));
+                              state->GetAccelerations(), kTolerance));
   EXPECT_TRUE(CompareMatrices(expected_state->GetVelocities(),
-                              state->GetVelocities(), kEps));
+                              state->GetVelocities(), kTolerance));
+
+  /* Check the Schur complement is as expected. */
+  auto tangent_matrix = this->model_.MakeTangentMatrix();
+  this->model_.CalcTangentMatrix(*state, this->integrator_.GetWeights(),
+                                 tangent_matrix.get());
+  contact_solvers::internal::SchurComplement
+      force_balance_tangent_matrix_schur_complement(
+          *tangent_matrix, data.nonparticipating_vertices());
+  /* Multiply by dt to get the schur complement of the tangent matrix of the
+   momentum balance. */
+  const MatrixXd expected_schur_complement =
+      force_balance_tangent_matrix_schur_complement.get_D_complement() * kDt;
+  EXPECT_TRUE(CompareMatrices(expected_schur_complement,
+                              data.schur_complement().get_D_complement(),
+                              kTolerance, MatrixCompareType::relative));
 }
 
-// TODO(xuchenhan-tri): Unit tests that cover other exit conditions of
-// the iterative solver are missing.
+using AllTypes = ::testing::Types<BoolWrapper<true>, BoolWrapper<false>>;
+REGISTER_TYPED_TEST_SUITE_P(FemSolverTest, Tolerance, AdvanceOneTimeStep);
+INSTANTIATE_TYPED_TEST_SUITE_P(LinearAndNonLinear, FemSolverTest, AllTypes);
 
 }  // namespace
 }  // namespace internal

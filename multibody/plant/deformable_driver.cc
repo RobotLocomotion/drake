@@ -30,7 +30,7 @@ using drake::multibody::fem::FemModel;
 using drake::multibody::fem::FemState;
 using drake::multibody::fem::internal::DirichletBoundaryCondition;
 using drake::multibody::fem::internal::FemSolver;
-using drake::multibody::fem::internal::FemSolverScratchData;
+using drake::multibody::fem::internal::FemSolverData;
 using drake::multibody::fem::internal::PetscSymmetricBlockSparseMatrix;
 using drake::multibody::fem::internal::SchurComplement;
 using drake::systems::Context;
@@ -140,14 +140,14 @@ void DeformableDriver<T>::DeclareCacheEntries(
     cache_indexes_.next_fem_states.emplace_back(
         next_fem_state_cache_entry.cache_index());
 
-    /* Scratch data for FEM solver. */
-    FemSolverScratchData scratch(fem_model);
-    const auto& scratch_entry = manager->DeclareCacheEntry(
-        fmt::format("FEM solver scratch workspace for body with index {}", i),
-        systems::ValueProducer(scratch, &systems::ValueProducer::NoopCalc),
+    /* Solver data for each FEM model. */
+    FemSolverData solver_data(fem_model);
+    const auto& solver_data_entry = manager->DeclareCacheEntry(
+        fmt::format("FEM solver data for body with index {}", i),
+        systems::ValueProducer(solver_data, &systems::ValueProducer::NoopCalc),
         {systems::SystemBase::nothing_ticket()});
-    cache_indexes_.fem_solver_scratches.emplace_back(
-        scratch_entry.cache_index());
+    cache_indexes_.fem_solver_data.emplace_back(
+        solver_data_entry.cache_index());
 
     /* Cache entry for the tangent matrix at free motion state. */
     std::unique_ptr<PetscSymmetricBlockSparseMatrix> model_tangent_matrix =
@@ -530,15 +530,13 @@ void DeformableDriver<T>::CalcFreeMotionFemState(
   const FemState<T>& fem_state = EvalFemState(context, index);
   const DeformableBodyId id = deformable_model_->GetBodyId(index);
   const FemModel<T>& model = deformable_model_->GetFemModel(id);
-  // TODO(xuchenhan-tri): We should expose an API to set the solver tolerance
-  // here.
   const FemSolver<T> solver(&model, integrator_.get());
-  FemSolverScratchData<T>& scratch =
+  FemSolverData<T>& solver_data =
       manager_->plant()
-          .get_cache_entry(cache_indexes_.fem_solver_scratches.at(index))
+          .get_cache_entry(cache_indexes_.fem_solver_data.at(index))
           .get_mutable_cache_entry_value(context)
-          .template GetMutableValueOrThrow<FemSolverScratchData<T>>();
-  solver.AdvanceOneTimeStep(fem_state, fem_state_star, &scratch);
+          .template GetMutableValueOrThrow<FemSolverData<T>>();
+  solver.AdvanceOneTimeStep(fem_state, fem_state_star, &solver_data);
 }
 
 template <typename T>

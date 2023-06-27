@@ -80,6 +80,7 @@ class FemElement {
   static constexpr int num_dofs = Traits::num_dofs;
   static constexpr int num_nodes = Traits::num_nodes;
   static constexpr int num_quadrature_points = Traits::num_quadrature_points;
+  static constexpr bool is_linear = ConstitutiveModel::is_linear;
 
   /* Indices of the nodes of this element within the model. */
   const std::array<FemNodeIndex, num_nodes>& node_indices() const {
