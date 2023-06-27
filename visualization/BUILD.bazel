@@ -12,8 +12,32 @@ drake_cc_package_library(
     name = "visualization",
     visibility = ["//visibility:public"],
     deps = [
+        ":inertia_visualizer",
+        ":meshcat_pose_sliders",
         ":visualization_config",
         ":visualization_config_functions",
+    ],
+)
+
+drake_cc_library(
+    name = "meshcat_pose_sliders",
+    srcs = ["meshcat_pose_sliders.cc"],
+    hdrs = ["meshcat_pose_sliders.h"],
+    deps = [
+        "//common:scope_exit",
+        "//geometry:meshcat",
+        "//systems/framework",
+    ],
+)
+
+drake_cc_library(
+    name = "inertia_visualizer",
+    srcs = ["inertia_visualizer.cc"],
+    hdrs = ["inertia_visualizer.h"],
+    deps = [
+        "//multibody/plant",
+        "//systems/framework:diagram_builder",
+        "//systems/framework:leaf_system",
     ],
 )
 
@@ -46,6 +70,7 @@ drake_cc_library(
         "//systems/lcm:lcm_buses",
     ],
     deps = [
+        ":inertia_visualizer",
         "//geometry:drake_visualizer",
         "//multibody/meshcat:contact_visualizer",
         "//multibody/plant:contact_results_to_lcm",
@@ -54,8 +79,21 @@ drake_cc_library(
 )
 
 drake_cc_googletest(
+    name = "meshcat_pose_sliders_test",
+    deps = [
+        ":meshcat_pose_sliders",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//geometry:meshcat_visualizer",
+        "//geometry/test_utilities:meshcat_environment",
+        "//systems/analysis:simulator",
+    ],
+)
+
+drake_cc_googletest(
     name = "visualization_config_functions_test",
     deps = [
+        ":inertia_visualizer",
         ":visualization_config_functions",
         "//common/test_utilities:expect_throws_message",
         "//lcm:drake_lcm",
@@ -63,4 +101,20 @@ drake_cc_googletest(
     ],
 )
 
-add_lint_tests(enable_clang_format_lint = True)
+drake_cc_googletest(
+    name = "inertia_visualizer_test",
+    data = [
+        "//geometry/render:test_models",
+        "//multibody/benchmarks/acrobot:models",
+    ],
+    deps = [
+        ":inertia_visualizer",
+        ":visualization_config_functions",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//geometry:meshcat",
+        "//geometry/test_utilities:meshcat_environment",
+        "//multibody/parsing",
+    ],
+)
+
+add_lint_tests()

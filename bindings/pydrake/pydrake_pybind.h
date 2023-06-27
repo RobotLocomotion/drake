@@ -2,11 +2,20 @@
 
 #include <utility>
 
+// Here we include a lot of the pybind11 API, to ensure that all code in pydrake
+// sees the same definitions ("One Definition Rule") for template types intended
+// for specialization. Any pybind11 headers with `type_caster<>` specializations
+// must be included here (e.g., eigen.h, functional.h, numpy.h, stl.h) as well
+// as ADL headers (e.g., operators.h). Headers that are unused by pydrake
+// (e.g., complex.h) are omitted, as are headers that do not specialize anything
+// (e.g., eval.h).
+#include "pybind11/eigen.h"
+#include "pybind11/functional.h"
+#include "pybind11/numpy.h"
+#include "pybind11/operators.h"
 #include "pybind11/pybind11.h"
-
-// N.B. Avoid including other headers, such as `pybind11/eigen.sh` or
-// `pybind11/functional.sh`, such that modules can opt-in to (and pay the cost
-// for) these binding capabilities.
+#include "pybind11/stl.h"
+#include "pybind11/stl/filesystem.h"
 
 namespace drake {
 
@@ -31,26 +40,6 @@ namespace py = pybind11;
 /// Shortened alias for py::return_value_policy. For more information, see
 /// the @ref PydrakeReturnValuePolicy "Return Value Policy" section.
 using py_rvp = py::return_value_policy;
-
-/// Use this when you must do manual casting - e.g. lists or tuples of nurses,
-/// where the container may get discarded but the items kept. Prefer this over
-/// `py::cast(obj, reference_internal, parent)` (pending full resolution of
-/// #11046).
-inline py::object py_keep_alive(py::object nurse, py::object patient) {
-  py::detail::keep_alive_impl(nurse, patient);
-  return nurse;
-}
-
-/// Use this to manually cast an iterable type (e.g. py::list, py::set). See
-/// pydrake_pybind_test for an example.
-/// N.B. This should *not* be used for `py::dict`.
-template <typename PyType>
-inline PyType py_keep_alive_iterable(PyType nurses, py::object patient) {
-  for (py::handle nurse : nurses) {
-    py_keep_alive(py::reinterpret_borrow<py::object>(nurse), patient);
-  }
-  return nurses;
-}
 
 // Implementation for `overload_cast_explicit`. We must use this structure so
 // that we can constrain what is inferred. Otherwise, the ambiguity confuses
@@ -158,3 +147,6 @@ inline void ExecuteExtraPythonCode(py::module m, bool use_subdir = false) {
 
 }  // namespace pydrake
 }  // namespace drake
+
+#define DRAKE_PYBIND11_NUMPY_OBJECT_DTYPE(Type) \
+  PYBIND11_NUMPY_OBJECT_DTYPE(Type)

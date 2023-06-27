@@ -31,7 +31,13 @@ bool ConvexSet::IntersectsWith(const ConvexSet& other) const {
   return result.is_success();
 }
 
-void ConvexSet::AddPointInSetConstraints(
+std::optional<Eigen::VectorXd> ConvexSet::DoMaybeGetPoint() const {
+  return std::nullopt;
+}
+
+std::pair<VectorX<symbolic::Variable>,
+          std::vector<solvers::Binding<solvers::Constraint>>>
+ConvexSet::AddPointInSetConstraints(
     solvers::MathematicalProgram* prog,
     const Eigen::Ref<const solvers::VectorXDecisionVariable>& vars) const {
   DRAKE_THROW_UNLESS(vars.size() == ambient_dimension());

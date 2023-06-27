@@ -47,8 +47,7 @@ class OptitrackLcmFrameSender : public systems::LeafSystem<double> {
   /// implemented).
   explicit OptitrackLcmFrameSender(
       const std::map<geometry::FrameId, std::pair<std::string, int>>&
-      frame_map);
-
+          frame_map);
 
   const systems::InputPort<double>& get_optitrack_input_port() const {
     return get_input_port(pose_input_port_index_);
@@ -59,13 +58,11 @@ class OptitrackLcmFrameSender : public systems::LeafSystem<double> {
   }
 
  private:
-  void PopulatePoseMessage(
-      const systems::Context<double>& context,
-      optitrack::optitrack_frame_t* output) const;
+  void PopulatePoseMessage(const systems::Context<double>& context,
+                           optitrack::optitrack_frame_t* output) const;
 
   const int num_rigid_bodies_;
-  const std::map<geometry::FrameId,
-                 std::pair<std::string, int>> frame_map_;
+  const std::map<geometry::FrameId, std::pair<std::string, int>> frame_map_;
   int pose_input_port_index_{-1};
 };
 

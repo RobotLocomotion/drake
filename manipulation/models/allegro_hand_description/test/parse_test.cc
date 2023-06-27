@@ -11,20 +11,22 @@ namespace drake {
 namespace manipulation {
 namespace {
 
-using multibody::MultibodyPlant;
 using multibody::ModelInstanceIndex;
+using multibody::MultibodyPlant;
 using multibody::Parser;
 
 class ParseTest : public testing::TestWithParam<std::string> {};
 
 TEST_P(ParseTest, Quantities) {
   const std::string file_extension = GetParam();
-  const std::string path_right = FindResourceOrThrow(fmt::format(
-      "drake/manipulation/models/allegro_hand_description/{}/"
-      "allegro_hand_description_right.{}", file_extension, file_extension));
-  const std::string path_left = FindResourceOrThrow(fmt::format(
-      "drake/manipulation/models/allegro_hand_description/{}/"
-      "allegro_hand_description_left.{}", file_extension, file_extension));
+  const std::string path_right = FindResourceOrThrow(
+      fmt::format("drake/manipulation/models/allegro_hand_description/{}/"
+                  "allegro_hand_description_right.{}",
+                  file_extension, file_extension));
+  const std::string path_left = FindResourceOrThrow(
+      fmt::format("drake/manipulation/models/allegro_hand_description/{}/"
+                  "allegro_hand_description_left.{}",
+                  file_extension, file_extension));
 
   MultibodyPlant<double> plant(0.0);
   Parser parser(&plant);

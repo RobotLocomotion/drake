@@ -6,11 +6,25 @@
 #include <fmt/format.h>
 
 #include "drake/common/drake_throw.h"
+#include "drake/common/fmt_eigen.h"
 
 namespace drake {
 namespace multibody {
 namespace contact_solvers {
 namespace internal {
+
+int BlockSparsityPattern::CalcNumNonzeros() const {
+  int result = 0;
+  for (int i = 0; i < ssize(block_sizes_); ++i) {
+    const std::vector<int>& neighbors_i = neighbors_[i];
+    int row_count = 0;
+    for (int n : neighbors_i) {
+      row_count += block_sizes_[n];
+    }
+    result += row_count * block_sizes_[i];
+  }
+  return result;
+}
 
 template <typename MatrixType, bool is_symmetric>
 BlockSparseLowerTriangularOrSymmetricMatrix<MatrixType, is_symmetric>::
@@ -56,17 +70,42 @@ void BlockSparseLowerTriangularOrSymmetricMatrix<MatrixType,
 template <typename MatrixType, bool is_symmetric>
 MatrixX<double> BlockSparseLowerTriangularOrSymmetricMatrix<
     MatrixType, is_symmetric>::MakeDenseMatrix() const {
-  MatrixX<double> result = MatrixX<double>::Zero(rows(), cols());
-  for (int j = 0; j < block_cols_; ++j) {
+  return MakeDenseBottomRightCorner(block_cols());
+}
+
+template <typename MatrixType, bool is_symmetric>
+MatrixX<double> BlockSparseLowerTriangularOrSymmetricMatrix<
+    MatrixType, is_symmetric>::MakeDenseBottomRightCorner(const int num_blocks)
+    const {
+  DRAKE_DEMAND(0 <= num_blocks && num_blocks <= block_cols());
+  if (num_blocks == 0) {
+    return MatrixX<double>::Zero(0, 0);
+  }
+  const int block_col_start = block_cols() - num_blocks;
+  /* The row/column in `this` matrix that corresponds to the 0,0-th entry in the
+   dense result. */
+  const int col_start = starting_cols_[block_col_start];
+  const int row_start = col_start;
+  MatrixX<double> result =
+      MatrixX<double>::Zero(rows() - row_start, cols() - col_start);
+  for (int j = block_col_start; j < block_cols(); ++j) {
     for (int flat = 0; flat < ssize(block_row_indices(j)); ++flat) {
       const int i = block_row_indices(j)[flat];
-      const int rows = sparsity_pattern_.block_sizes()[i];
-      const int cols = sparsity_pattern_.block_sizes()[j];
-      const int starting_row = starting_cols_[i];
-      const int starting_col = starting_cols_[j];
-      result.block(starting_row, starting_col, rows, cols) = blocks_[j][flat];
+      const int num_rows = sparsity_pattern_.block_sizes()[i];
+      const int num_cols = sparsity_pattern_.block_sizes()[j];
+      /* The starting row and column indices of the block being copied in `this`
+       matrix (the source). */
+      const int src_row = starting_cols_[i];
+      const int src_col = starting_cols_[j];
+      /* The starting row and column indices of the block being copied in the
+       resulting dense matrix (the destination). */
+      const int dest_row = src_row - row_start;
+      const int dest_col = src_col - col_start;
+      DRAKE_DEMAND(dest_row >= 0);
+      DRAKE_DEMAND(dest_col >= 0);
+      result.block(dest_row, dest_col, num_rows, num_cols) = blocks_[j][flat];
       if (i != j && is_symmetric) {
-        result.block(starting_col, starting_row, cols, rows) =
+        result.block(dest_col, dest_row, num_cols, num_rows) =
             blocks_[j][flat].transpose();
       }
     }
@@ -95,7 +134,8 @@ void BlockSparseLowerTriangularOrSymmetricMatrix<MatrixType, is_symmetric>::
        original values are the on order of millions is a bad idea), so we keep
        only the diagonal entries of the diagonal blocks and zero the
        off-diagonal entries. */
-      blocks_[j][0] = blocks_[j][0].diagonal().asDiagonal();
+      /* Calling eval() here is important to avoid aliasing. */
+      blocks_[j][0] = blocks_[j][0].diagonal().eval().asDiagonal();
       /* Zero all off diagonal blocks in the j-th column. */
       for (int flat = 1; flat < ssize(blocks_[j]); ++flat) {
         blocks_[j][flat].setZero();
@@ -127,12 +167,17 @@ void BlockSparseLowerTriangularOrSymmetricMatrix<
     throw std::runtime_error(fmt::format(
         "{}: The requested {},{}-th block doesn't exist.", source, i, j));
   }
-  if (is_symmetric && i == j && Aij.has_value() &&
-      !((*Aij - Aij->transpose()).norm() < 1e-12 * Aij->norm())) {
+
+  auto is_block_symmetric = [](const MatrixType& M) {
+    /* Note that "<=" is critical to allow zero matrices to pass. */
+    return (M - M.transpose()).norm() <= 1e-12 * M.norm();
+  };
+
+  if (is_symmetric && i == j && Aij.has_value() && !is_block_symmetric(*Aij)) {
     throw std::runtime_error(
         fmt::format("{}: The {}-th diagonal block must be symmetric for a "
-                    "symmetric matrix.",
-                    source, i));
+                    "symmetric matrix. Instead, the block is:\n {}",
+                    source, i, fmt_eigen(*Aij)));
   }
 }
 

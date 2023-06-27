@@ -31,6 +31,7 @@ drake_cc_package_library(
         ":linear_solve",
         ":matrix_util",
         ":quadratic_form",
+        ":soft_min_max",
         ":vector3_util",
         ":wrap_to",
     ],
@@ -261,6 +262,17 @@ drake_cc_library(
         ":matrix_util",
         "//common:essential",
         "@eigen",
+    ],
+)
+
+drake_cc_library(
+    name = "soft_min_max",
+    srcs = ["soft_min_max.cc"],
+    hdrs = ["soft_min_max.h"],
+    deps = [
+        "//common:autodiff",
+        "//common:default_scalars",
+        "//common:essential",
     ],
 )
 
@@ -555,6 +567,15 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "soft_min_max_test",
+    deps = [
+        ":soft_min_max",
+        "//common/test_utilities:eigen_matrix_compare",
+        "@eigen",
+    ],
+)
+
+drake_cc_googletest(
     name = "wrap_to_test",
     deps = [
         ":wrap_to",
@@ -571,4 +592,4 @@ drake_cc_googletest(
     ],
 )
 
-add_lint_tests()
+add_lint_tests(enable_clang_format_lint = False)

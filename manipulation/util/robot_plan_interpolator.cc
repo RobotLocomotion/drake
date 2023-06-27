@@ -35,11 +35,12 @@ struct RobotPlanInterpolator::PlanData {
   PiecewisePolynomial<double> pp_double_deriv;
 };
 
-RobotPlanInterpolator::RobotPlanInterpolator(
-    const std::string& model_path, const InterpolatorType interp_type,
-    double update_interval)
-    : plan_input_port_(this->DeclareAbstractInputPort(
-          "plan", Value<lcmt_robot_plan>()).get_index()),
+RobotPlanInterpolator::RobotPlanInterpolator(const std::string& model_path,
+                                             const InterpolatorType interp_type,
+                                             double update_interval)
+    : plan_input_port_(
+          this->DeclareAbstractInputPort("plan", Value<lcmt_robot_plan>())
+              .get_index()),
       interp_type_(interp_type) {
   multibody::Parser(&plant_).AddModels(model_path);
 
@@ -76,7 +77,7 @@ RobotPlanInterpolator::RobotPlanInterpolator(
   // TODO(sammy-tri) This implementation doesn't know how to
   // calculate velocities/accelerations for differing numbers of
   // positions and velocities.
-  DRAKE_DEMAND(plant_.num_positions() == plant_.num_velocities());
+  DRAKE_DEMAND(plant_.IsVelocityEqualToQDot());
   const int num_pv = plant_.num_positions() + plant_.num_velocities();
 
   state_output_port_ =
@@ -100,18 +101,17 @@ RobotPlanInterpolator::RobotPlanInterpolator(
 
 RobotPlanInterpolator::~RobotPlanInterpolator() {}
 
-void RobotPlanInterpolator::OutputState(const systems::Context<double>& context,
-                                  systems::BasicVector<double>* output) const {
+void RobotPlanInterpolator::OutputState(
+    const systems::Context<double>& context,
+    systems::BasicVector<double>* output) const {
   const PlanData& plan = context.get_abstract_state<PlanData>(plan_index_);
   const bool inited = context.get_abstract_state<bool>(init_flag_index_);
   DRAKE_DEMAND(inited);
 
-  Eigen::VectorBlock<VectorX<double>> output_vec =
-      output->get_mutable_value();
+  Eigen::VectorBlock<VectorX<double>> output_vec = output->get_mutable_value();
 
   const double current_plan_time = context.get_time() - plan.start_time;
-  output_vec.head(plant_.num_positions()) =
-      plan.pp.value(current_plan_time);
+  output_vec.head(plant_.num_positions()) = plan.pp.value(current_plan_time);
   output_vec.tail(plant_.num_velocities()) =
       plan.pp_deriv.value(current_plan_time);
 }
@@ -135,13 +135,12 @@ void RobotPlanInterpolator::OutputAccel(
   }
 }
 
-void RobotPlanInterpolator::MakeFixedPlan(
-    double plan_start_time, const VectorX<double>& q0,
-    systems::State<double>* state) const {
+void RobotPlanInterpolator::MakeFixedPlan(double plan_start_time,
+                                          const VectorX<double>& q0,
+                                          systems::State<double>* state) const {
   DRAKE_DEMAND(state != nullptr);
   DRAKE_DEMAND(q0.size() == plant_.num_positions());
-  PlanData& plan =
-      state->get_mutable_abstract_state<PlanData>(plan_index_);
+  PlanData& plan = state->get_mutable_abstract_state<PlanData>(plan_index_);
 
   std::vector<Eigen::MatrixXd> knots(2, q0);
   std::vector<double> times{0., 1.};
@@ -163,8 +162,7 @@ void RobotPlanInterpolator::Initialize(double plan_start_time,
 systems::EventStatus RobotPlanInterpolator::UpdatePlanOnNewMessage(
     const systems::Context<double>& context,
     systems::State<double>* state) const {
-  PlanData& plan =
-      state->get_mutable_abstract_state<PlanData>(plan_index_);
+  PlanData& plan = state->get_mutable_abstract_state<PlanData>(plan_index_);
   const lcmt_robot_plan& plan_input =
       get_plan_input_port().Eval<lcmt_robot_plan>(context);
 
@@ -181,9 +179,7 @@ systems::EventStatus RobotPlanInterpolator::UpdatePlanOnNewMessage(
   if (plan_input.num_states == 0) {
     // The plan is empty.  Encode a plan for the current planned position.
     const double current_plan_time = context.get_time() - plan.start_time;
-    MakeFixedPlan(context.get_time(),
-                  plan.pp.value(current_plan_time),
-                  state);
+    MakeFixedPlan(context.get_time(), plan.pp.value(current_plan_time), state);
   } else if (plan_input.num_states == 1) {
     drake::log()->info("Ignoring plan with only one knot point.");
   } else {
@@ -197,8 +193,8 @@ systems::EventStatus RobotPlanInterpolator::UpdatePlanOnNewMessage(
         if (!plant_.HasJointNamed(plan_state.joint_name[j])) {
           continue;
         }
-        const auto joint_index = plant_.GetJointByName(
-            plan_state.joint_name[j]).position_start();
+        const auto joint_index =
+            plant_.GetJointByName(plan_state.joint_name[j]).position_start();
         knots[i](joint_index, 0) = plan_state.joint_position[j];
       }
     }
@@ -211,19 +207,18 @@ systems::EventStatus RobotPlanInterpolator::UpdatePlanOnNewMessage(
     const Eigen::MatrixXd knot_dot =
         Eigen::MatrixXd::Zero(plant_.num_velocities(), 1);
     switch (interp_type_) {
-      case InterpolatorType::ZeroOrderHold :
-        plan.pp = PiecewisePolynomial<double>::ZeroOrderHold(
-            input_time, knots);
+      case InterpolatorType::ZeroOrderHold:
+        plan.pp = PiecewisePolynomial<double>::ZeroOrderHold(input_time, knots);
         break;
-      case InterpolatorType::FirstOrderHold :
-        plan.pp = PiecewisePolynomial<double>::FirstOrderHold(
-            input_time, knots);
+      case InterpolatorType::FirstOrderHold:
+        plan.pp =
+            PiecewisePolynomial<double>::FirstOrderHold(input_time, knots);
         break;
-      case InterpolatorType::Pchip :
+      case InterpolatorType::Pchip:
         plan.pp = PiecewisePolynomial<double>::CubicShapePreserving(
             input_time, knots, true);
         break;
-      case InterpolatorType::Cubic :
+      case InterpolatorType::Cubic:
         plan.pp =
             PiecewisePolynomial<double>::CubicWithContinuousSecondDerivatives(
                 input_time, knots, knot_dot, knot_dot);

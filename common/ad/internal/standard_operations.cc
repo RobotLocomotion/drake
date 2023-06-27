@@ -167,8 +167,8 @@ constexpr double kNaN = std::numeric_limits<double>::quiet_NaN();
 // Iterates over the partials of `input`. For any non-zero elements, sets the
 // corresponding partial in `output` to NaN.
 // @pre output->MatchSizeOf(input) has already been performed.
-void UndefineOutputGradWhereInputGradNonzero(
-    const AutoDiff& input, AutoDiff* output) {
+void UndefineOutputGradWhereInputGradNonzero(const AutoDiff& input,
+                                             AutoDiff* output) {
   DRAKE_DEMAND(output != nullptr);
 
   // If either input or output are empty, there's nothing to do.

@@ -77,11 +77,10 @@ class StandardOperationsTest : public ::testing::Test {
       value_and_der_x.tail(3) = Eigen::Vector3d::Constant(NAN);
     }
 
-    return CompareMatrices(
-        value_and_der_x, value_and_der_3,
-        10 * std::numeric_limits<double>::epsilon(),
-        MatrixCompareType::relative)
-      << "\n(where xd.size() = " << e_xd.derivatives().size() << ")";
+    return CompareMatrices(value_and_der_x, value_and_der_3,
+                           10 * std::numeric_limits<double>::epsilon(),
+                           MatrixCompareType::relative)
+           << "\n(where xd.size() = " << e_xd.derivatives().size() << ")";
   }
 };
 
@@ -95,6 +94,7 @@ class StandardOperationsTest : public ::testing::Test {
             }))                                                             \
       << #expr  // Print statement to locate it if it fails
 
+// clang-format off
 #define CHECK_BINARY_OP(bop, x, y, c) \
   CHECK_EXPR((x bop x)bop(y bop y));  \
   CHECK_EXPR((x bop y)bop(x bop y));  \
@@ -105,9 +105,11 @@ class StandardOperationsTest : public ::testing::Test {
   CHECK_EXPR(x bop(y bop c));         \
   CHECK_EXPR(x bop(c bop y));         \
   CHECK_EXPR(c bop(x bop y));
+// clang-format on
 
 // The multiplicative factor 0.9 < 1.0 let us call function such as asin, acos,
 // etc. whose arguments must be in [-1, 1].
+// clang-format off
 #define CHECK_UNARY_FUNCTION(f, x, y, c) \
   CHECK_EXPR(f(x + x) + (y + y));        \
   CHECK_EXPR(f(x + y) + (x + y));        \
@@ -126,7 +128,9 @@ class StandardOperationsTest : public ::testing::Test {
   CHECK_EXPR(f(c * x + 5.0) + y);        \
   CHECK_EXPR(f(c / x  + 5.0) + y);       \
   CHECK_EXPR(f(-x  + 5.0) + y);
+// clang-format on
 
+// clang-format off
 #define CHECK_BINARY_FUNCTION_ADS_ADS(f, x, y, c) \
   CHECK_EXPR(f(x + x, y + y) + x);                \
   CHECK_EXPR(f(x + x, y + y) + y);                \
@@ -149,7 +153,9 @@ class StandardOperationsTest : public ::testing::Test {
   CHECK_EXPR(f(x* c, y* c) + x);                  \
   CHECK_EXPR(f(c* x, c* x) + y);                  \
   CHECK_EXPR(f(-x, -y) + y)
+// clang-format on
 
+// clang-format off
 #define CHECK_BINARY_FUNCTION_ADS_SCALAR(f, x, y, c) \
   CHECK_EXPR(f(x, c) + y);                           \
   CHECK_EXPR(f(x + x, c) + y);                       \
@@ -162,7 +168,9 @@ class StandardOperationsTest : public ::testing::Test {
   CHECK_EXPR(f(x * c, c) + y);                       \
   CHECK_EXPR(f(c * x, c) + y);                       \
   CHECK_EXPR(f(-x, c) + y);
+// clang-format on
 
+// clang-format off
 #define CHECK_BINARY_FUNCTION_SCALAR_ADS(f, x, y, c) \
   CHECK_EXPR(f(c, x) + y);                           \
   CHECK_EXPR(f(c, x + x) + y);                       \
@@ -175,6 +183,7 @@ class StandardOperationsTest : public ::testing::Test {
   CHECK_EXPR(f(c, x * c) + y);                       \
   CHECK_EXPR(f(c, c * x) + y);                       \
   CHECK_EXPR(f(c, -x) + y);
+// clang-format on
 
 }  // namespace test
 }  // namespace drake

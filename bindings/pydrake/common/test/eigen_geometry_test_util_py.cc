@@ -1,4 +1,3 @@
-#include "pybind11/pybind11.h"
 #include <Eigen/Dense>
 
 #include "drake/bindings/pydrake/common/eigen_geometry_pybind.h"

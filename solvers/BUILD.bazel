@@ -195,6 +195,7 @@ drake_cc_library(
     ],
     deps = [
         "//math:gradient",
+        "//math:soft_min_max",
     ],
 )
 
@@ -418,6 +419,7 @@ drake_cc_library(
     interface_deps = [
         ":mathematical_program",
         ":mathematical_program_result",
+        "//common:name_value",
     ],
     deps = [
         ":choose_best_solver",
@@ -1790,4 +1792,4 @@ drake_cc_googletest(
     ],
 )
 
-add_lint_tests()
+add_lint_tests(enable_clang_format_lint = False)

@@ -67,10 +67,13 @@ GTEST_TEST(SpectrahedronTest, TrivialSdp1) {
   const double kTol{1e-6};
   EXPECT_TRUE(spect.PointInSet(x_star, kTol));
   EXPECT_FALSE(spect.PointInSet(x_bad, kTol));
+  EXPECT_FALSE(spect.MaybeGetPoint().has_value());
 
   MathematicalProgram prog2;
   auto x2 = prog2.NewContinuousVariables<6>("x");
-  spect.AddPointInSetConstraints(&prog2, x2);
+  const auto [new_vars, new_constraints] =
+      spect.AddPointInSetConstraints(&prog2, x2);
+  EXPECT_EQ(new_constraints.size(), prog.GetAllConstraints().size());
   EXPECT_EQ(prog2.positive_semidefinite_constraints().size(), 1);
   EXPECT_EQ(prog2.linear_equality_constraints().size(), 1);
   EXPECT_TRUE(CompareMatrices(
@@ -208,6 +211,34 @@ GTEST_TEST(SpectrahedronTest, TrivialSdp1) {
     EXPECT_TRUE(CompareMatrices(b3.evaluator()->lower_bound(),
                                 b5.evaluator()->lower_bound(), kCoeffTol));
   }
+}
+
+GTEST_TEST(SpectrahedronTest, Move) {
+  auto make_sdp = []() {
+    auto sdp = std::make_unique<MathematicalProgram>();
+    sdp->AddPositiveSemidefiniteConstraint(
+        sdp->NewSymmetricContinuousVariables<3>());
+    return sdp;
+  };
+  Spectrahedron orig(*make_sdp());
+  EXPECT_EQ(orig.ambient_dimension(), 6);
+
+  // A move-constructed Spectrahedron takes over the original data.
+  Spectrahedron dut(std::move(orig));
+  EXPECT_EQ(dut.ambient_dimension(), 6);
+  EXPECT_NO_THROW(dut.Clone());
+  // In particular, make sure that the SDP is still intact by checking how many
+  // constraints the spectrahedron emits.
+  MathematicalProgram constraints;
+  EXPECT_NO_THROW(dut.AddPointInSetConstraints(
+      &constraints, constraints.NewContinuousVariables<6>()));
+  EXPECT_EQ(constraints.positive_semidefinite_constraints().size(), 1);
+
+  // The old set is in a valid but unspecified state. For convenience we'll
+  // assert that it's empty, but that's not the only valid implementation,
+  // just the one we happen to currently use.
+  EXPECT_EQ(orig.ambient_dimension(), 0);
+  EXPECT_NO_THROW(orig.Clone());
 }
 
 }  // namespace

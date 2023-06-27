@@ -61,6 +61,8 @@ class WeldMobilizer final : public MobilizerImpl<T, 0, 0> {
       const SpatialForce<T>& F_Mo_F,
       Eigen::Ref<VectorX<T>> tau) const final;
 
+  bool is_velocity_equal_to_qdot() const override { return true; }
+
   // This override is a no-op since this mobilizer has no generalized
   // velocities associated with it.
   void MapVelocityToQDot(

@@ -45,47 +45,46 @@ GLuint CompileShader(GLuint shader_type, const std::string& shader_code) {
   return shader_gl_id;
 }
 
-}  // namespace
-
-void ShaderProgram::LoadFromSources(const std::string& vertex_shader_source,
-                                    const std::string& fragment_shader_source) {
-  // Compile.
-  GLuint vertex_shader_id =
-      CompileShader(GL_VERTEX_SHADER, vertex_shader_source);
-  GLuint fragment_shader_id =
-      CompileShader(GL_FRAGMENT_SHADER, fragment_shader_source);
-
+GLuint LinkProgram(GLuint vertex_id, GLuint fragment_id) {
   // Link.
-  gl_id_ = glCreateProgram();
-  glAttachShader(gl_id_, vertex_shader_id);
-  glAttachShader(gl_id_, fragment_shader_id);
-  glLinkProgram(gl_id_);
+  GLuint program_id = glCreateProgram();
+  glAttachShader(program_id, vertex_id);
+  glAttachShader(program_id, fragment_id);
+  glLinkProgram(program_id);
 
-  // Clean up.
-  glDetachShader(gl_id_, vertex_shader_id);
-  glDetachShader(gl_id_, fragment_shader_id);
-  glDeleteShader(vertex_shader_id);
-  glDeleteShader(fragment_shader_id);
+  // Partial clean up; we'll detach the shaders from the program, but we won't
+  // delete them so we can reuse them in cloning.
+  glDetachShader(program_id, vertex_id);
+  glDetachShader(program_id, fragment_id);
 
   // Check.
   GLint result{0};
-  glGetProgramiv(gl_id_, GL_LINK_STATUS, &result);
+  glGetProgramiv(program_id, GL_LINK_STATUS, &result);
   if (!result) {
     const std::string error_prefix = "Error linking shaders: ";
     std::string info("No further information available");
     int info_log_length;
-    glGetProgramiv(gl_id_, GL_INFO_LOG_LENGTH, &info_log_length);
+    glGetProgramiv(program_id, GL_INFO_LOG_LENGTH, &info_log_length);
     if (info_log_length > 0) {
       std::vector<char> error_message(info_log_length + 1);
-      glGetProgramInfoLog(gl_id_, info_log_length, NULL,
-                          &error_message[0]);
+      glGetProgramInfoLog(program_id, info_log_length, NULL, &error_message[0]);
       info = &error_message[0];
     }
     throw std::runtime_error(error_prefix + info);
   }
+  return program_id;
+}
 
-  projection_matrix_loc_ = GetUniformLocation("T_DC");
-  model_view_loc_ = GetUniformLocation("T_CM");
+}  // namespace
+
+void ShaderProgram::LoadFromSources(const std::string& vertex_shader_source,
+                                    const std::string& fragment_shader_source) {
+  vertex_id_ = CompileShader(GL_VERTEX_SHADER, vertex_shader_source);
+  fragment_id_ = CompileShader(GL_FRAGMENT_SHADER, fragment_shader_source);
+
+  gl_id_ = LinkProgram(vertex_id_, fragment_id_);
+
+  ConfigureUniforms();
 }
 
 namespace {
@@ -145,6 +144,23 @@ void ShaderProgram::Unuse() const {
   if (curr_program == static_cast<GLint>(gl_id_)) {
     glUseProgram(0);
   }
+}
+
+void ShaderProgram::Relink() {
+  DRAKE_ASSERT(glIsShader(vertex_id_));
+  gl_id_ = LinkProgram(vertex_id_, fragment_id_);
+  ConfigureUniforms();
+}
+
+void ShaderProgram::Free() {
+  DRAKE_ASSERT(glIsProgram(gl_id_));
+  glDeleteProgram(gl_id_);
+}
+
+void ShaderProgram::ConfigureUniforms() {
+  projection_matrix_loc_ = GetUniformLocation("T_DC");
+  model_view_loc_ = GetUniformLocation("T_CM");
+  DoConfigureUniforms();
 }
 
 }  // namespace internal

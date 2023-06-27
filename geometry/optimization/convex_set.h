@@ -7,6 +7,7 @@
 
 #include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/drake_assert.h"
+#include "drake/common/reset_after_move.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/query_object.h"
 #include "drake/geometry/shape_specification.h"
@@ -89,6 +90,19 @@ class ConvexSet : public ShapeReifier {
     return DoIsBounded();
   }
 
+  /** If this set trivially contains exactly one point, returns the value of
+  that point. Otherwise, returns nullopt. When ambient_dimension is zero,
+  returns nullopt. By "trivially", we mean that representation of the set
+  structurally maps to a single point; if checking for point-ness would require
+  solving an optimization program, returns nullopt. In other words, this is a
+  relatively cheap function to call. */
+  std::optional<Eigen::VectorXd> MaybeGetPoint() const {
+    if (ambient_dimension() == 0) {
+      return std::nullopt;
+    }
+    return DoMaybeGetPoint();
+  }
+
   /** Returns true iff the point x is contained in the set.  When
   ambient_dimension is zero, returns false. */
   bool PointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
@@ -100,12 +114,18 @@ class ConvexSet : public ShapeReifier {
     return DoPointInSet(x, tol);
   }
 
-  // Note: I would like to return the Binding, but the type is subclass
-  // dependent.
   /** Adds a constraint to an existing MathematicalProgram enforcing that the
   point defined by vars is inside the set.
+  @return (new_vars, new_constraints) Some of the derived class will add new
+  decision variables to enforce this constraint, we return all the newly added
+  decision variables as new_vars. The meaning of these new decision variables
+  differs in each subclass. If no new variables are added, then we return an
+  empty Eigen vector. Also we return all the newly added constraints to `prog`
+  through this function.
   @throws std::exception if ambient_dimension() == 0 */
-  void AddPointInSetConstraints(
+  std::pair<VectorX<symbolic::Variable>,
+            std::vector<solvers::Binding<solvers::Constraint>>>
+  AddPointInSetConstraints(
       solvers::MathematicalProgram* prog,
       const Eigen::Ref<const solvers::VectorXDecisionVariable>& vars) const;
 
@@ -123,6 +143,7 @@ class ConvexSet : public ShapeReifier {
   and ⊕ is the Minkowski sum.  For t > 0, this is equivalent to x ∈ t S, but for
   t = 0, we have only x ∈ rec(S).
   @throws std::exception if ambient_dimension() == 0 */
+  // TODO(hongkai.dai): return the new variables also.
   std::vector<solvers::Binding<solvers::Constraint>>
   AddPointInNonnegativeScalingConstraints(
       solvers::MathematicalProgram* prog,
@@ -180,7 +201,9 @@ class ConvexSet : public ShapeReifier {
   /** Implements non-virtual base class serialization. */
   template <typename Archive>
   void Serialize(Archive* a) {
-    a->Visit(MakeNameValue("ambient_dimension", &ambient_dimension_));
+    // Visit the mutable reference inside the reset_after_move wrapper.
+    int& ambient_dimension = ambient_dimension_;
+    a->Visit(DRAKE_NVP(ambient_dimension));
   }
 
   /** Non-virtual interface implementation for Clone(). */
@@ -189,6 +212,12 @@ class ConvexSet : public ShapeReifier {
   /** Non-virtual interface implementation for IsBounded().
   @pre ambient_dimension() > 0 */
   virtual bool DoIsBounded() const = 0;
+
+  /** Non-virtual interface implementation for MaybeGetPoint(). The default
+  implementation returns nullopt. Sets that can model a single point should
+  override with a custom implementation.
+  @pre ambient_dimension() > 0 */
+  virtual std::optional<Eigen::VectorXd> DoMaybeGetPoint() const;
 
   /** Non-virtual interface implementation for PointInSet().
   @pre x.size() == ambient_dimension()
@@ -199,7 +228,9 @@ class ConvexSet : public ShapeReifier {
   /** Non-virtual interface implementation for AddPointInSetConstraints().
   @pre vars.size() == ambient_dimension()
   @pre ambient_dimension() > 0 */
-  virtual void DoAddPointInSetConstraints(
+  virtual std::pair<VectorX<symbolic::Variable>,
+                    std::vector<solvers::Binding<solvers::Constraint>>>
+  DoAddPointInSetConstraints(
       solvers::MathematicalProgram* prog,
       const Eigen::Ref<const solvers::VectorXDecisionVariable>& vars) const = 0;
 
@@ -238,7 +269,21 @@ class ConvexSet : public ShapeReifier {
   DoToShapeWithPose() const = 0;
 
  private:
-  int ambient_dimension_{0};
+  // The reset_after_move wrapper adjusts ConvexSet's default move constructor
+  // and move assignment operator to set the ambient dimension of a moved-from
+  // object back to zero. This is essential to keep the ambient dimension in
+  // sync with any moved-from member fields in concrete ConvexSet subclasses.
+  //
+  // For example, the `Eigen::VectorXd x_` member field of `Point` will be moved
+  // out, ending up with `x_.size() == 0` on the moved-from Point. To maintain
+  // the invariant that `x_.size() == ambient_dimension_`, we need to zero the
+  // dimension when `x_` is moved-from.
+  //
+  // Similarly, for subclasses that are composite sets (e.g., CartesianProduct)
+  // the `ConvexSets sets_` vector becomes empty when moved-from. To maintain
+  // an invariant like `∑(set.size() for set in sets_) == ambient_dimension_`,
+  // we need to zero the dimension when `sets_` is moved-from.
+  reset_after_move<int> ambient_dimension_;
 };
 
 /** Provides the recommended container for passing a collection of ConvexSet

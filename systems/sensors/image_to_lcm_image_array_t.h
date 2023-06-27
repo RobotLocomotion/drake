@@ -76,8 +76,7 @@ class ImageToLcmImageArrayT : public systems::LeafSystem<double> {
   template <PixelType kPixelType>
   const InputPort<double>& DeclareImageInputPort(const std::string& name) {
     input_port_pixel_type_.push_back(kPixelType);
-    return this->DeclareAbstractInputPort(
-        name, Value<Image<kPixelType>>());
+    return this->DeclareAbstractInputPort(name, Value<Image<kPixelType>>());
   }
 
  private:

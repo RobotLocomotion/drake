@@ -2,6 +2,7 @@
 
 #include <map>
 #include <memory>
+#include <optional>
 #include <string>
 
 #include "drake/geometry/geometry_roles.h"
@@ -193,7 +194,7 @@ class MeshcatVisualizer final : public systems::LeafSystem<T> {
    before SetTransforms. This is intended to track the information in meshcat_,
    and is therefore also a mutable member variable (instead of declared state).
    */
-  mutable GeometryVersion version_;
+  mutable std::optional<GeometryVersion> version_;
 
   /* A store of the dynamic frames and their path. It is coupled with the
    version_.  This is only for efficiency; it does not represent undeclared

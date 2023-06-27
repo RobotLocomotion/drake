@@ -5,6 +5,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
+#include "drake/multibody/contact_solvers/contact_configuration.h"
 #include "drake/multibody/contact_solvers/sap/sap_constraint.h"
 #include "drake/multibody/contact_solvers/sap/sap_constraint_jacobian.h"
 
@@ -183,21 +184,30 @@ class SapFrictionConeConstraint final : public SapConstraint<T> {
     double sigma{1.0e-3};
   };
 
-  /* Constructs a contact constraint given its Jacobian and signed distance at
-   the current configuration.
-   @param[in] J The contact Jacobian, which defines the contact velocity `vc` as
-   vc = J⋅v.
-   @param[in] phi0 The value of the signed distance at the current
-   configuration.
+  /* Constructor for a SAP contact constraint between two objects A and B. The
+   contact occurs at point C, with positions relative to A and B specified in
+   `configuration`.
+
+   @param[in] configuration Specifies the position of the contact point C
+   relative to objects A and B in contact. Objects A and B are assigned indexes
+   0 and 1, respectively. See SapContraint::object().
+   @param[in] J The contact Jacobian that defines the relative velocity at point
+   C as v_AcBc_W = J⋅v, with v the generalized velocities.
    @param[in] parameters Constraint parameters. See Parameters for details.
    @pre J has three rows. */
-  SapFrictionConeConstraint(SapConstraintJacobian<T> J, const T& phi0,
-                            const Parameters& parameters);
+  SapFrictionConeConstraint(ContactConfiguration<T> configuration,
+                            SapConstraintJacobian<T> J, Parameters parameters);
 
   /* Returns the coefficient of friction for this constraint. */
   const T& mu() const { return parameters_.mu; }
 
+  /* Parameters provided at construction. */
   const Parameters& parameters() const { return parameters_; }
+
+  /* Configuration provided at construction. */
+  const ContactConfiguration<T>& configuration() const {
+    return configuration_;
+  }
 
  private:
   /* Private copy construction is enabled to use in the implementation of
@@ -219,6 +229,25 @@ class SapFrictionConeConstraint final : public SapConstraint<T> {
     return std::unique_ptr<SapFrictionConeConstraint<T>>(
         new SapFrictionConeConstraint<T>(*this));
   }
+
+  // no-op for this constraint.
+  void DoAccumulateGeneralizedImpulses(int, const Eigen::Ref<const VectorX<T>>&,
+                                       EigenPtr<VectorX<T>>) const final {}
+
+  /* Accumulates generalized forces applied by this constraint on the i-th
+   object.
+   @param[in] i Object index. As defined at construction i = 0 corresponds to
+   object A and i = 1 corresponds to object B.
+   @param[in] gamma Impulses for this constraint, of size
+   num_constraint_equations().
+   @param[out] F On output, the total spatial impulse applied by this constraint
+   on the i-th object.
+   @pre 0 ≤ i < 2.
+   @pre F is not nullptr.
+  */
+  void DoAccumulateSpatialImpulses(int i,
+                                   const Eigen::Ref<const VectorX<T>>& gamma,
+                                   SpatialForce<T>* F) const final;
 
   /* Computes the "soft norm" ‖x‖ₛ defined by ‖x‖ₛ² = ‖x‖² + ε², where ε =
    soft_tolerance. Using the soft norm we define the tangent vector as t̂ =
@@ -248,7 +277,7 @@ class SapFrictionConeConstraint final : public SapConstraint<T> {
                       Vector3<T>* gamma) const;
 
   Parameters parameters_;
-  T phi0_;
+  ContactConfiguration<T> configuration_;
 };
 
 }  // namespace internal

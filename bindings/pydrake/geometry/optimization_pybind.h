@@ -1,9 +1,6 @@
 #pragma once
 
-#include <utility>
 #include <vector>
-
-#include "pybind11/stl.h"
 
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/geometry/optimization/convex_set.h"

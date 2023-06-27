@@ -1,7 +1,9 @@
 #pragma once
 
+#include <map>
 #include <memory>
 #include <optional>
+#include <string>
 #include <vector>
 
 #include "drake/common/name_value.h"
@@ -193,6 +195,10 @@ HPolyhedron IrisInConfigurationSpace(
     const multibody::MultibodyPlant<double>& plant,
     const systems::Context<double>& context,
     const IrisOptions& options = IrisOptions());
+
+/** Defines a standardized representation for (named) IrisRegions, which can be
+serialized in both C++ and Python. */
+typedef std::map<std::string, HPolyhedron> IrisRegions;
 
 }  // namespace optimization
 }  // namespace geometry

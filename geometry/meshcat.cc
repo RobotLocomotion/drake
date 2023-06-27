@@ -83,6 +83,19 @@ const std::string& GetUrlContent(std::string_view url_path) {
   return empty.access();
 }
 
+template <typename Mapping>
+[[noreturn]] void ThrowThingNotFound(
+    std::string_view thing, std::string_view name, Mapping thing_map) {
+  std::vector<std::string> keys;
+  for (const auto& map_pair : thing_map) {
+    keys.push_back(map_pair.first);
+  }
+  throw std::logic_error(
+      fmt::format("Meshcat does not have any {} named {}.  The "
+                  "registered {} names are ({}).",
+                  thing, name, thing, fmt::join(keys, ", ")));
+}
+
 }  // namespace
 
 namespace drake {
@@ -1272,8 +1285,7 @@ class Meshcat::Impl {
     std::lock_guard<std::mutex> lock(controls_mutex_);
     auto iter = buttons_.find(name);
     if (iter == buttons_.end()) {
-      throw std::logic_error(
-          fmt::format("Meshcat does not have any button named {}.", name));
+      ThrowThingNotFound("button", name, buttons_);
     }
     return iter->second.num_clicks;
   }
@@ -1287,8 +1299,7 @@ class Meshcat::Impl {
       std::lock_guard<std::mutex> lock(controls_mutex_);
       auto iter = buttons_.find(name);
       if (iter == buttons_.end()) {
-        throw std::logic_error(
-            fmt::format("Meshcat does not have any button named {}.", name));
+        ThrowThingNotFound("button", name, buttons_);
       }
       buttons_.erase(iter);
       auto c_iter = std::find(controls_.begin(), controls_.end(), name);
@@ -1365,8 +1376,7 @@ class Meshcat::Impl {
       std::lock_guard<std::mutex> lock(controls_mutex_);
       auto iter = sliders_.find(name);
       if (iter == sliders_.end()) {
-        throw std::logic_error(
-            fmt::format("Meshcat does not have any slider named {}.", name));
+        ThrowThingNotFound("slider", name, sliders_);
       }
       internal::SetSliderControl& s = iter->second;
       // Match setValue in NumberController.js from dat.GUI.
@@ -1396,8 +1406,7 @@ class Meshcat::Impl {
     std::lock_guard<std::mutex> lock(controls_mutex_);
     auto iter = sliders_.find(name);
     if (iter == sliders_.end()) {
-      throw std::logic_error(
-          fmt::format("Meshcat does not have any slider named {}.", name));
+        ThrowThingNotFound("slider", name, sliders_);
     }
     return iter->second.value;
   }
@@ -1423,8 +1432,7 @@ class Meshcat::Impl {
       std::lock_guard<std::mutex> lock(controls_mutex_);
       auto iter = sliders_.find(name);
       if (iter == sliders_.end()) {
-        throw std::logic_error(
-            fmt::format("Meshcat does not have any slider named {}.", name));
+        ThrowThingNotFound("slider", name, sliders_);
       }
       sliders_.erase(iter);
       auto c_iter = std::find(controls_.begin(), controls_.end(), name);

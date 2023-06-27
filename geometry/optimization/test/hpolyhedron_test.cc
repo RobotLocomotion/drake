@@ -67,6 +67,9 @@ GTEST_TEST(HPolyhedronTest, UnitBoxTest) {
   EXPECT_TRUE(CompareMatrices(A, Hbox.A()));
   EXPECT_TRUE(CompareMatrices(b, Hbox.b()));
 
+  // Test MaybeGetPoint.
+  EXPECT_FALSE(H.MaybeGetPoint().has_value());
+
   // Test PointInSet.
   EXPECT_TRUE(H.PointInSet(Vector3d(.8, .3, -.9)));
   EXPECT_TRUE(H.PointInSet(Vector3d(-1.0, 1.0, 1.0)));
@@ -87,6 +90,24 @@ GTEST_TEST(HPolyhedronTest, UnitBoxTest) {
   HPolyhedron H_scene_graph(query, geom_id);
   EXPECT_TRUE(CompareMatrices(A, H_scene_graph.A()));
   EXPECT_TRUE(CompareMatrices(b, H_scene_graph.b()));
+}
+
+GTEST_TEST(HPolyhedronTest, Move) {
+  Matrix<double, 6, 3> A;
+  A << Matrix3d::Identity(), -Matrix3d::Identity();
+  Vector6d b = Vector6d::Ones();
+  HPolyhedron orig(A, b);
+
+  // A move-constructed HPolyhedron takes over the original data.
+  HPolyhedron dut(std::move(orig));
+  EXPECT_EQ(dut.ambient_dimension(), 3);
+  EXPECT_TRUE(CompareMatrices(dut.A(), A));
+  EXPECT_TRUE(CompareMatrices(dut.b(), b));
+
+  // The old HPolyhedron is in a valid but unspecified state.
+  EXPECT_EQ(orig.A().cols(), orig.ambient_dimension());
+  EXPECT_EQ(orig.b().size(), orig.ambient_dimension());
+  EXPECT_NO_THROW(orig.Clone());
 }
 
 GTEST_TEST(HPolyhedronTest, ConstructorFromVPolytope) {

@@ -11,6 +11,40 @@ namespace drake {
 namespace trajectories {
 namespace {
 
+// Tests the default constructor.
+GTEST_TEST(BezierCurveTest, DefaultConstructor) {
+  BezierCurve<double> curve;
+  EXPECT_EQ(curve.order(), -1);
+  EXPECT_EQ(curve.start_time(), 0);
+  EXPECT_EQ(curve.end_time(), 1);
+  EXPECT_EQ(curve.rows(), 0);
+  EXPECT_EQ(curve.cols(), 1);
+
+  EXPECT_EQ(curve.BernsteinBasis(0, 0), 0);
+  EXPECT_EQ(curve.control_points().size(), 0);
+  EXPECT_EQ(curve.Clone()->rows(), 0);
+  EXPECT_EQ(curve.value(0).size(), 0);
+  EXPECT_EQ(curve.GetExpression().size(), 0);
+  curve.ElevateOrder();
+  EXPECT_EQ(curve.order(), 0);
+  EXPECT_EQ(curve.control_points().size(), 0);
+}
+
+GTEST_TEST(BezierCurveTest, Constant) {
+  const Eigen::Vector2d kValue(1, 2);
+  BezierCurve<double> curve(0, 1, kValue);
+  EXPECT_EQ(curve.order(), 0);
+  EXPECT_EQ(curve.start_time(), 0);
+  EXPECT_EQ(curve.end_time(), 1);
+  EXPECT_EQ(curve.rows(), 2);
+  EXPECT_EQ(curve.cols(), 1);
+  EXPECT_TRUE(CompareMatrices(curve.value(0.5), kValue));
+
+  curve.ElevateOrder();
+  EXPECT_EQ(curve.order(), 1);
+  EXPECT_TRUE(CompareMatrices(curve.value(0.5), kValue));
+}
+
 using drake::geometry::optimization::VPolytope;
 void CheckConvexHullProperty(const BezierCurve<double>& curve,
                              int num_samples) {
@@ -21,6 +55,38 @@ void CheckConvexHullProperty(const BezierCurve<double>& curve,
   for (int i = 0; i < num_samples; ++i) {
     EXPECT_TRUE(control_polytope.PointInSet(curve.value(samples(i)), tol_sol));
   }
+}
+
+// An empty curve.
+GTEST_TEST(BezierCurveTest, Default) {
+  BezierCurve<double> curve;
+  EXPECT_EQ(curve.order(), -1);
+  EXPECT_EQ(curve.control_points().rows(), 0);
+  EXPECT_EQ(curve.control_points().cols(), 0);
+  EXPECT_NO_THROW(curve.Clone());
+}
+
+// A moved-from curve.
+GTEST_TEST(BezierCurveTest, MoveConstructor) {
+  Eigen::Matrix2d points;
+  // clang-format off
+  points << 1, 2,
+            3, 7;
+  // clang-format on
+  BezierCurve<double> orig(2, 3, points);
+  EXPECT_EQ(orig.order(), 1);
+  EXPECT_EQ(orig.start_time(), 2.0);
+  EXPECT_EQ(orig.end_time(), 3.0);
+
+  // A moved-into trajectory retains the original information.
+  BezierCurve<double> dest(std::move(orig));
+  EXPECT_EQ(dest.order(), 1);
+  EXPECT_EQ(dest.start_time(), 2.0);
+  EXPECT_EQ(dest.end_time(), 3.0);
+
+  // The moved-from trajectory must still be in a valid state.
+  EXPECT_EQ(orig.order(), orig.control_points().cols() - 1);
+  EXPECT_GE(orig.end_time(), orig.start_time());
 }
 
 // Line segment from (1,3) to (2,7).
@@ -54,6 +120,13 @@ GTEST_TEST(BezierCurveTest, Linear) {
   const int num_samples{100};
   CheckConvexHullProperty(curve, num_samples);
   CheckConvexHullProperty(deriv_bezier, num_samples);
+
+  curve.ElevateOrder();
+  EXPECT_EQ(curve.order(), 2);
+  EXPECT_TRUE(
+      CompareMatrices(curve.value(2.5), Eigen::Vector2d(1.5, 5), 1e-14));
+  EXPECT_TRUE(CompareMatrices(curve.value(0), Eigen::Vector2d(1, 3), 1e-14));
+  EXPECT_TRUE(CompareMatrices(curve.value(3.0), Eigen::Vector2d(2, 7), 1e-14));
 }
 
 // Quadratic curve: [ (1-t)²; t^2 ]
@@ -98,10 +171,6 @@ GTEST_TEST(BezierCurveTest, Quadratic) {
     EXPECT_TRUE(CompareMatrices(curve.value(sample_time),
                                 Eigen::Vector2d((1 - t) * (1 - t), t * t),
                                 1e-14));
-    EXPECT_TRUE(CompareMatrices(curve.value(sample_time),
-                                Eigen::Vector2d((1 - t) * (1 - t), t * t),
-                                1e-14));
-
     EXPECT_TRUE(CompareMatrices(deriv->value(sample_time),
                                 Eigen::Vector2d(-2 * (1 - t), 2 * t), 1e-14));
     EXPECT_TRUE(CompareMatrices(curve.EvalDerivative(sample_time),
@@ -123,6 +192,15 @@ GTEST_TEST(BezierCurveTest, Quadratic) {
   const int num_samples{100};
   CheckConvexHullProperty(curve, num_samples);
   CheckConvexHullProperty(deriv_bezier, num_samples);
+
+  curve.ElevateOrder();
+  EXPECT_EQ(curve.order(), 3);
+  for (double sample_time = -0.2; sample_time <= 1.2; sample_time += 0.1) {
+    const double t = std::clamp(sample_time, 0.0, 1.0);
+    EXPECT_TRUE(CompareMatrices(curve.value(sample_time),
+                                Eigen::Vector2d((1 - t) * (1 - t), t * t),
+                                1e-14));
+  }
 }
 
 GTEST_TEST(BezierCurve, Clone) {

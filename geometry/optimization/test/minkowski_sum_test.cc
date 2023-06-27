@@ -31,6 +31,10 @@ GTEST_TEST(MinkowskiSumTest, BasicTest) {
   EXPECT_EQ(S.num_terms(), 2);
   EXPECT_EQ(S.ambient_dimension(), 2);
 
+  // Test MaybeGetPoint.
+  ASSERT_TRUE(S.MaybeGetPoint().has_value());
+  EXPECT_TRUE(CompareMatrices(S.MaybeGetPoint().value(), P1.x() + P2.x()));
+
   // Test PointInSet.
   Vector2d in{P1.x() + P2.x()}, out{P1.x() + P2.x() + Vector2d::Constant(0.01)};
   EXPECT_TRUE(S.PointInSet(in));
@@ -38,6 +42,20 @@ GTEST_TEST(MinkowskiSumTest, BasicTest) {
 
   EXPECT_TRUE(internal::CheckAddPointInSetConstraints(S, in));
   EXPECT_FALSE(internal::CheckAddPointInSetConstraints(S, out));
+  {
+    // Check new variables in AddPointInSetConstraints;
+    solvers::MathematicalProgram prog;
+    auto x = prog.NewContinuousVariables<2>();
+    auto [new_vars, new_constraints] = S.AddPointInSetConstraints(&prog, x);
+    EXPECT_EQ(new_vars.rows(), 4);
+    // It has to contain at least 3 constraints, two constraints on y1 in set1
+    // and y2 in set 2, and the third constraint x = y1 + y2.
+    EXPECT_GE(new_constraints.size(), 3);
+    const auto result = solvers::Solve(prog);
+    const auto new_vars_val = result.GetSolution(new_vars);
+    EXPECT_TRUE(CompareMatrices(new_vars_val.head<2>(), P1.x(), 1E-10));
+    EXPECT_TRUE(CompareMatrices(new_vars_val.tail<2>(), P2.x(), 1E-10));
+  }
 
   // Test IsBounded.
   EXPECT_TRUE(S.IsBounded());
@@ -60,7 +78,25 @@ GTEST_TEST(MinkowskiSumTest, DefaultCtor) {
   EXPECT_EQ(dut.ambient_dimension(), 0);
   EXPECT_FALSE(dut.IntersectsWith(dut));
   EXPECT_TRUE(dut.IsBounded());
+  EXPECT_FALSE(dut.MaybeGetPoint().has_value());
   EXPECT_FALSE(dut.PointInSet(Eigen::VectorXd::Zero(0)));
+}
+
+GTEST_TEST(MinkowskiSumTest, Move) {
+  const Point P1(Vector2d{1.2, 3.4}), P2(Vector2d{5.6, 7.8});
+  MinkowskiSum orig(P1, P2);
+
+  // A move-constructed MinkowskiSum takes over the original data.
+  MinkowskiSum dut(std::move(orig));
+  EXPECT_EQ(dut.num_terms(), 2);
+  EXPECT_EQ(dut.ambient_dimension(), 2);
+
+  // The old set is in a valid but unspecified state. For convenience we'll
+  // assert that it's empty, but that's not the only valid implementation,
+  // just the one we happen to currently use.
+  EXPECT_EQ(orig.num_terms(), 0);
+  EXPECT_EQ(orig.ambient_dimension(), 0);
+  EXPECT_NO_THROW(orig.Clone());
 }
 
 GTEST_TEST(MinkowskiSumTest, FromSceneGraph) {
@@ -126,6 +162,7 @@ GTEST_TEST(MinkowskiSumTest, TwoBoxes) {
   EXPECT_TRUE(S.PointInSet(Vector2d{-1, 3}));
   EXPECT_FALSE(S.PointInSet(Vector2d{-1, 2.9}));
   EXPECT_FALSE(S.PointInSet(Vector2d{-1.01, 3}));
+  EXPECT_FALSE(S.MaybeGetPoint().has_value());
 }
 
 GTEST_TEST(MinkowskiSumTest, CloneTest) {

@@ -110,6 +110,22 @@ BlockSparseSymmetricMatrix MakeSymmetricMatrix() {
   return A_blocks;
 }
 
+GTEST_TEST(BlockSparsityPatternTest, CalcNumNonzeros) {
+  std::vector<int> diag{2, 3, 4};
+  std::vector<std::vector<int>> sparsity;
+  sparsity.push_back(std::vector<int>{0});
+  sparsity.push_back(std::vector<int>{1, 2});
+  sparsity.push_back(std::vector<int>{2});
+  /* The sparsity pattern is
+         2x2 |  0  |  0
+        -----------------
+          0  | 3x3 |  0
+        -----------------
+          0  | 4x3 | 4x4  */
+  const BlockSparsityPattern pattern(diag, sparsity);
+  EXPECT_EQ(pattern.CalcNumNonzeros(), 41);
+}
+
 GTEST_TEST(TriangularBlockSparseMatrixTest, Construction) {
   const BlockSparseLowerTriangularMatrix A_triangular =
       MakeLowerTriangularMatrix();
@@ -178,15 +194,30 @@ GTEST_TEST(TriangularBlockSparseMatrixTest, ZeroRowsAndColumns) {
   /* Keeps the diagonal entries for the diagonal blocks 0 and 1. Keeps the
    diagonal block 2 untouched. All off-diagonal blocks are zeroed out. */
   BlockSparseSymmetricMatrix A_symmetric = MakeSymmetricMatrix();
-  MatrixXd A_symmetric_dense = MakeDenseMatrix(true);
   A_symmetric.ZeroRowsAndColumns({0, 1});
-  A_symmetric_dense = A_symmetric_dense.diagonal().asDiagonal();
+
+  MatrixXd A_symmetric_dense = MatrixXd::Zero(9, 9);
+  A_symmetric_dense.topLeftCorner<2, 2>() = A00.diagonal().asDiagonal();
+  A_symmetric_dense.block<3, 3>(2, 2) = A11.diagonal().asDiagonal();
   A_symmetric_dense.bottomRightCorner<4, 4>() = A22;
+
   EXPECT_EQ(A_symmetric.MakeDenseMatrix(), A_symmetric_dense);
 
   /* Throws if input is out of range. */
   DRAKE_EXPECT_THROWS_MESSAGE(A_symmetric.ZeroRowsAndColumns({42}),
                               ".* out of range.*42 is given.*");
+}
+
+GTEST_TEST(TriangularBlockSparseMatrixTest, MakeDenseBottomRightCorner) {
+  BlockSparseLowerTriangularMatrix A_triangular = MakeLowerTriangularMatrix();
+  MatrixXd expected = MakeDenseMatrix(false).bottomRightCorner(7, 7);
+  EXPECT_EQ(expected, A_triangular.MakeDenseBottomRightCorner(2));
+  EXPECT_EQ(MatrixXd::Zero(0, 0), A_triangular.MakeDenseBottomRightCorner(0));
+
+  BlockSparseSymmetricMatrix A_symmetric = MakeSymmetricMatrix();
+  expected = MakeDenseMatrix(true).bottomRightCorner(7, 7);
+  EXPECT_EQ(expected, A_symmetric.MakeDenseBottomRightCorner(2));
+  EXPECT_EQ(MatrixXd::Zero(0, 0), A_symmetric.MakeDenseBottomRightCorner(0));
 }
 
 GTEST_TEST(TriangularBlockSparseMatrixTest, InvalidOperations) {
@@ -226,7 +257,9 @@ GTEST_TEST(TriangularBlockSparseMatrixTest, InvalidOperations) {
     /* Non-symmetric diagonal block. */
     DRAKE_ASSERT_THROWS_MESSAGE_IF_ARMED(
         A_symmetric.AddToBlock(2, 2, non_symmetric_matrix),
-        ".*must be symmetric.*");
+        ".*must be symmetric[^]*");
+    /* No false error when zero matrix is added to the diagonal block. */
+    EXPECT_NO_THROW(A_symmetric.AddToBlock(2, 2, MatrixXd::Zero(4, 4)));
 
     /* Evidence that other functions do the same checks. */
     ASSERT_THROW(A_triangular.block(0, 1), std::exception);

@@ -63,7 +63,8 @@ class RotaryEncoders final : public VectorSystem<T> {
 
  private:
   // Allow different specializations to access each other's private data.
-  template <typename> friend class RotaryEncoders;
+  template <typename>
+  friend class RotaryEncoders;
 
   // Outputs the transformed signal.
   void DoCalcVectorOutput(

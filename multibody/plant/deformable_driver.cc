@@ -8,6 +8,8 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/geometry_ids.h"
+#include "drake/math/rigid_transform.h"
+#include "drake/multibody/contact_solvers/contact_configuration.h"
 #include "drake/multibody/fem/dirichlet_boundary_condition.h"
 #include "drake/multibody/fem/fem_model.h"
 #include "drake/multibody/fem/fem_solver.h"
@@ -20,6 +22,7 @@ using drake::geometry::internal::ContactParticipation;
 using drake::geometry::internal::DeformableContact;
 using drake::geometry::internal::DeformableContactSurface;
 using drake::multibody::contact_solvers::internal::Block3x3SparseMatrix;
+using drake::multibody::contact_solvers::internal::ContactConfiguration;
 using drake::multibody::contact_solvers::internal::ContactSolverResults;
 using drake::multibody::contact_solvers::internal::MatrixBlock;
 using drake::multibody::contact_solvers::internal::PartialPermutation;
@@ -329,17 +332,10 @@ void DeformableDriver<T>::AppendContactKinematics(
     std::vector<int> num_bcs(fem_model.num_nodes(), 0);
     for (const auto& it : bc.index_to_boundary_state()) {
       /* Note that we currently only allow zero boundary conditions. */
-      DRAKE_DEMAND(it.second.y() == 0);
-      DRAKE_DEMAND(it.second.z() == 0);
-      const int dof_index = it.first;
-      const int vertex_index = dof_index / 3;
+      DRAKE_DEMAND(it.second.v == Vector3<T>::Zero());
+      DRAKE_DEMAND(it.second.a == Vector3<T>::Zero());
+      const int vertex_index = it.first;
       ++num_bcs[vertex_index];
-    }
-    /* Note that we currently do not allow partial boundary condition; i.e.,
-     if any dof of a vertex is under bc, then all three dofs associated with the
-     vertex are under bc. */
-    for (int n : num_bcs) {
-      DRAKE_ASSERT(n % 3 == 0);
     }
 
     for (int i = 0; i < surface.num_contact_points(); ++i) {
@@ -386,10 +382,10 @@ void DeformableDriver<T>::AppendContactKinematics(
        */
       const BodyIndex index_B = manager_->geometry_id_to_body_index().at(id_B);
       const TreeIndex tree_index = tree_topology.body_to_tree_index(index_B);
+      const Vector3<T>& p_WC = surface.contact_points_W()[i];
       if (tree_index.is_valid()) {
         const Body<T>& rigid_body = manager_->plant().get_body(index_B);
         const Frame<T>& frame_W = manager_->plant().world_frame();
-        const Vector3<T>& p_WC = surface.contact_points_W()[i];
         manager_->internal_tree().CalcJacobianTranslationalVelocity(
             context, JacobianWrtVariable::kV, rigid_body.body_frame(), frame_W,
             p_WC, frame_W, frame_W, &Jv_v_WBc_W);
@@ -399,8 +395,36 @@ void DeformableDriver<T>::AppendContactKinematics(
                                 tree_topology.num_tree_velocities(tree_index));
         jacobian_blocks.emplace_back(tree_index, MatrixBlock<T>(std::move(J)));
       }
-      result->emplace_back(surface.signed_distances()[i],
-                           std::move(jacobian_blocks), std::move(R_WC));
+
+      // Contact configuration between objects A and B.
+      // By convention, deformable bodies are assigned object indexes after all
+      // rigid bodies.
+      const int objectA =
+          index_A + manager_->plant().num_bodies();  // Deformable body.
+      const int objectB = index_B;                   // Rigid body.
+
+      // Contact point position relative to deformable object A. For deformable
+      // objects, we'll use the centroid of the contact surface as the
+      // relative-to point in the configuration.
+      const Vector3<T>& p_WCentroid = surface.contact_mesh_W().centroid();
+      const Vector3<T> p_ACentroidC_W = p_WC - p_WCentroid;
+
+      // Contact point position relative to rigid body B.
+      const math::RigidTransform<T>& X_WB =
+          manager_->plant().EvalBodyPoseInWorld(
+              context, manager_->plant().get_body(index_B));
+      const Vector3<T>& p_WB = X_WB.translation();
+      const Vector3<T> p_BC_W = p_WC - p_WB;
+
+      ContactConfiguration<T> configuration{
+          .objectA = objectA,
+          .p_ApC_W = p_ACentroidC_W,
+          .objectB = objectB,
+          .p_BqC_W = p_BC_W,
+          .phi = surface.signed_distances()[i],
+          .R_WC = R_WC};
+      result->emplace_back(std::move(jacobian_blocks),
+                           std::move(configuration));
     }
   }
 }

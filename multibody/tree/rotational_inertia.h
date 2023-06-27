@@ -590,17 +590,16 @@ class RotationalInertia {
   ///         calculated (eigenvalue solver) or if scalar type T cannot be
   ///         converted to a double.
   boolean<T> CouldBePhysicallyValid() const {
-    // To check the validity of rotational inertia use an epsilon value that is
-    // a number related to machine precision multiplied by the largest possible
-    // element that can appear in a valid `this` rotational inertia.  Note: The
+    // To check the validity of `this` rotational inertia, use an epsilon value
+    // related to machine precision multiplied by the largest possible element
+    // that can appear in a valid `this` rotational inertia.  Note: The
     // largest product of inertia is at most half the largest moment of inertia.
     using std::max;
-    const double precision = 10 * std::numeric_limits<double>::epsilon();
+    const double precision = 16 * std::numeric_limits<double>::epsilon();
     const T max_possible_inertia_moment = CalcMaximumPossibleMomentOfInertia();
 
-    // In order to avoid false negatives for inertias close to zero we use, in
-    // addition to a relative tolerance of "precision", an absolute tolerance
-    // equal to "precision" as well.
+    // To avoid false negatives for inertias close to zero, we also use
+    // an absolute tolerance equal to "1.0 * precision".
     const T epsilon = precision * max(1.0, max_possible_inertia_moment);
 
     // Calculate principal moments of inertia p and then test these principal
@@ -633,8 +632,8 @@ class RotationalInertia {
   /// @throws std::exception for Debug builds if the rotational inertia that
   /// is re-expressed-in frame A violates CouldBePhysicallyValid().
   /// @see ReExpressInPlace()
-  RotationalInertia<T> ReExpress(const math::RotationMatrix<T>& R_AE) const
-      __attribute__((warn_unused_result)) {
+  [[nodiscard]] RotationalInertia<T> ReExpress(
+      const math::RotationMatrix<T>& R_AE) const {
     return RotationalInertia(*this).ReExpressInPlace(R_AE);
   }
 
@@ -678,9 +677,8 @@ class RotationalInertia {
   /// @throws std::exception for Debug builds if the rotational inertia that
   /// is shifted to about-point Q violates CouldBePhysicallyValid().
   /// @remark Negating the position vector p_BcmQ_E has no affect on the result.
-  RotationalInertia<T> ShiftFromCenterOfMass(const T& mass,
-                                             const Vector3<T>& p_BcmQ_E) const
-                                           __attribute__((warn_unused_result)) {
+  [[nodiscard]] RotationalInertia<T> ShiftFromCenterOfMass(
+      const T& mass, const Vector3<T>& p_BcmQ_E) const {
     return RotationalInertia(*this).
            ShiftFromCenterOfMassInPlace(mass, p_BcmQ_E);
   }
@@ -716,9 +714,8 @@ class RotationalInertia {
   /// is shifted to about-point `Bcm` violates CouldBePhysicallyValid().
   /// @remark Negating the position vector `p_QBcm_E` has no affect on the
   /// result.
-  RotationalInertia<T> ShiftToCenterOfMass(const T& mass,
-                                           const Vector3<T>& p_QBcm_E) const
-                                           __attribute__((warn_unused_result)) {
+  [[nodiscard]] RotationalInertia<T> ShiftToCenterOfMass(
+      const T& mass, const Vector3<T>& p_QBcm_E) const {
     return RotationalInertia(*this).ShiftToCenterOfMassInPlace(mass, p_QBcm_E);
   }
 
@@ -760,12 +757,11 @@ class RotationalInertia {
   /// is shifted to about-point Q violates CouldBePhysicallyValid().
   /// @remark Negating either (or both) position vectors p_PBcm_E and p_QBcm_E
   ///         has no affect on the result.
-  RotationalInertia<T> ShiftToThenAwayFromCenterOfMass(
-      const T& mass,
-      const Vector3<T>& p_PBcm_E,
-      const Vector3<T>& p_QBcm_E) const __attribute__((warn_unused_result)) {
+  [[nodiscard]] RotationalInertia<T> ShiftToThenAwayFromCenterOfMass(
+      const T& mass, const Vector3<T>& p_PBcm_E,
+      const Vector3<T>& p_QBcm_E) const {
     return RotationalInertia(*this).ShiftToThenAwayFromCenterOfMassInPlace(
-                                    mass, p_PBcm_E, p_QBcm_E);
+        mass, p_PBcm_E, p_QBcm_E);
   }
   ///@}
 

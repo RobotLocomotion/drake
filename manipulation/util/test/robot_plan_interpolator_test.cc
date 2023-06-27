@@ -107,8 +107,7 @@ void DoTrajectoryTest(InterpolatorType interp_type) {
 
   std::unique_ptr<systems::Context<double>> context =
       dut.CreateDefaultContext();
-  std::unique_ptr<systems::SystemOutput<double>> output =
-      dut.AllocateOutput();
+  std::unique_ptr<systems::SystemOutput<double>> output = dut.AllocateOutput();
   dut.get_plan_input_port().FixValue(context.get(), plan);
   dut.Initialize(0, Eigen::VectorXd::Zero(kNumJoints),
                  &context->get_mutable_state());
@@ -120,28 +119,28 @@ void DoTrajectoryTest(InterpolatorType interp_type) {
   std::vector<TrajectoryTestCase> cases;
   std::string interp_str;
   switch (interp_type) {
-    case InterpolatorType::ZeroOrderHold :
+    case InterpolatorType::ZeroOrderHold:
       interp_str = "Zero Order Hold";
       cases.push_back(TrajectoryTestCase{0.5, 0, 0, 0});
       cases.push_back(TrajectoryTestCase{1.5, 1, 0, 0});
       cases.push_back(TrajectoryTestCase{2.7, 1.5, 0, 0});
       cases.push_back(TrajectoryTestCase{3.5, 1.5, 0, 0});
       break;
-    case InterpolatorType::FirstOrderHold :
+    case InterpolatorType::FirstOrderHold:
       interp_str = "First Order Hold";
       cases.push_back(TrajectoryTestCase{0.5, 0.5, 1, 0});
       cases.push_back(TrajectoryTestCase{1.5, 1.25, 0.5, 0});
       cases.push_back(TrajectoryTestCase{2.7, 1.5, 0, 0});
       cases.push_back(TrajectoryTestCase{3.5, 1.25, -0.5, 0});
       break;
-    case InterpolatorType::Pchip :
+    case InterpolatorType::Pchip:
       interp_str = "Pchip";
       cases.push_back(TrajectoryTestCase{0.5, 0.417, 1.333, 0.666});
       cases.push_back(TrajectoryTestCase{1.5, 1.333, 0.583, -0.666});
       cases.push_back(TrajectoryTestCase{2.7, 1.5, 0, 0});
       cases.push_back(TrajectoryTestCase{3.5, 1.250, -0.75, 0});
       break;
-    case InterpolatorType::Cubic :
+    case InterpolatorType::Cubic:
       interp_str = "Cubic";
       cases.push_back(TrajectoryTestCase{0.5, 0.3661, 1.232, 1.071});
       cases.push_back(TrajectoryTestCase{1.5, 1.357, 0.429, -0.857});
@@ -165,11 +164,11 @@ void DoTrajectoryTest(InterpolatorType interp_type) {
             ->GetAtIndex(0);
     const double err_tol = 1e-3;
     EXPECT_NEAR(position, kase.position, err_tol)
-              << "Failed at interpolator type: " << interp_str;
+        << "Failed at interpolator type: " << interp_str;
     EXPECT_NEAR(velocity, kase.velocity, err_tol)
-              << "Failed at interpolator type: " << interp_str;
+        << "Failed at interpolator type: " << interp_str;
     EXPECT_NEAR(accel, kase.accel, err_tol)
-              << "Failed at interpolator type: " << interp_str;
+        << "Failed at interpolator type: " << interp_str;
   }
 
   // Check that the final knot point has zero acceleration and
@@ -187,9 +186,8 @@ void DoTrajectoryTest(InterpolatorType interp_type) {
         output->get_vector_data(dut.get_acceleration_output_port().get_index())
             ->GetAtIndex(0);
     EXPECT_FLOAT_EQ(velocity, 0)
-              << "Failed at interpolator type: " << interp_str;
-    EXPECT_FLOAT_EQ(accel, 0)
-              << "Failed at interpolator type: " << interp_str;
+        << "Failed at interpolator type: " << interp_str;
+    EXPECT_FLOAT_EQ(accel, 0) << "Failed at interpolator type: " << interp_str;
   }
 
   // Check that sending an empty plan causes us to continue to output
@@ -201,19 +199,18 @@ void DoTrajectoryTest(InterpolatorType interp_type) {
       output->get_vector_data(dut.get_state_output_port().get_index())
           ->GetAtIndex(0);
   EXPECT_DOUBLE_EQ(1, position)
-            << "Failed at interpolator type: " << interp_str;
+      << "Failed at interpolator type: " << interp_str;
 
   plan.num_states = 0;
   plan.plan.clear();
   dut.get_plan_input_port().FixValue(context.get(), plan);
   dut.UpdatePlan(context.get());
   dut.CalcOutput(*context, output.get());
-  position = output->get_vector_data(
-      dut.get_state_output_port().get_index())->GetAtIndex(0);
+  position = output->get_vector_data(dut.get_state_output_port().get_index())
+                 ->GetAtIndex(0);
   EXPECT_DOUBLE_EQ(1, position)
-            << "Failed at interpolator type: " << interp_str;
+      << "Failed at interpolator type: " << interp_str;
 }
-
 
 class TrajectoryTestClass : public testing::TestWithParam<InterpolatorType> {
  public:
@@ -222,10 +219,10 @@ class TrajectoryTestClass : public testing::TestWithParam<InterpolatorType> {
 };
 
 INSTANTIATE_TEST_SUITE_P(InstantiationName, TrajectoryTestClass,
-                        ::testing::Values(InterpolatorType::ZeroOrderHold,
-                                          InterpolatorType::FirstOrderHold,
-                                          InterpolatorType::Pchip,
-                                          InterpolatorType::Cubic));
+                         ::testing::Values(InterpolatorType::ZeroOrderHold,
+                                           InterpolatorType::FirstOrderHold,
+                                           InterpolatorType::Pchip,
+                                           InterpolatorType::Cubic));
 
 TEST_P(TrajectoryTestClass, TrajectoryTest) {
   DoTrajectoryTest(GetParam());

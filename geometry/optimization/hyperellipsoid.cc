@@ -36,8 +36,7 @@ Hyperellipsoid::Hyperellipsoid()
 Hyperellipsoid::Hyperellipsoid(const Eigen::Ref<const MatrixXd>& A,
                                const Eigen::Ref<const VectorXd>& center)
     : ConvexSet(center.size()), A_(A), center_(center) {
-  DRAKE_THROW_UNLESS(A.cols() == center.size());
-  DRAKE_THROW_UNLESS(A.allFinite());  // to ensure the set is non-empty.
+  CheckInvariants();
 }
 
 Hyperellipsoid::Hyperellipsoid(const QueryObject<double>& query_object,
@@ -188,9 +187,12 @@ bool Hyperellipsoid::DoPointInSet(const Eigen::Ref<const VectorXd>& x,
   return v.dot(v) <= 1.0 + tol;
 }
 
-void Hyperellipsoid::DoAddPointInSetConstraints(
+std::pair<VectorX<Variable>, std::vector<Binding<Constraint>>>
+Hyperellipsoid::DoAddPointInSetConstraints(
     MathematicalProgram* prog,
     const Eigen::Ref<const VectorXDecisionVariable>& x) const {
+  VectorX<Variable> new_vars;
+  std::vector<Binding<Constraint>> new_constraints;
   // 1.0 ≥ |A * (x - center)|_2, written as
   // z₀ ≥ |z₁...ₘ|₂ with z = A_cone* x + b_cone.
   const int m = A_.rows();
@@ -199,7 +201,8 @@ void Hyperellipsoid::DoAddPointInSetConstraints(
   A_cone << Eigen::RowVectorXd::Zero(n), A_;
   VectorXd b_cone(m + 1);
   b_cone << 1.0, -A_ * center_;
-  prog->AddLorentzConeConstraint(A_cone, b_cone, x);
+  new_constraints.push_back(prog->AddLorentzConeConstraint(A_cone, b_cone, x));
+  return {std::move(new_vars), std::move(new_constraints)};
 }
 
 std::vector<Binding<Constraint>>
@@ -274,6 +277,12 @@ Hyperellipsoid::DoToShapeWithPose() const {
                                            1.0 / sqrt(solver.eigenvalues()[1]),
                                            1.0 / sqrt(solver.eigenvalues()[2]));
   return std::make_pair(std::move(shape), X_WG);
+}
+
+void Hyperellipsoid::CheckInvariants() const {
+  DRAKE_THROW_UNLESS(this->ambient_dimension() == A_.cols());
+  DRAKE_THROW_UNLESS(A_.cols() == center_.size());
+  DRAKE_THROW_UNLESS(A_.allFinite());  // to ensure the set is non-empty.
 }
 
 void Hyperellipsoid::ImplementGeometry(const Ellipsoid& ellipsoid, void* data) {

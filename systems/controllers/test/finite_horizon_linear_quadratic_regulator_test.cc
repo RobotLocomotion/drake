@@ -132,6 +132,7 @@ GTEST_TEST(FiniteHorizonLQRTest, NominalTrajectoryTest) {
     options.Qf = lqr_result.S;
     trajectories::PiecewisePolynomial<double> x0_traj(x0v);
     options.x0 = &x0_traj;
+    options.xd = &x0_traj;
     trajectories::PiecewisePolynomial<double> u0_traj(u0v);
     options.u0 = &u0_traj;
     FiniteHorizonLinearQuadraticRegulatorResult result =

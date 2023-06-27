@@ -56,8 +56,8 @@ struct PngDecodeData {
 
 void CopyNextPngBytes(png_structp png_ptr, png_bytep data, size_t length) {
   DRAKE_DEMAND(png_ptr != nullptr);
-  PngDecodeData* decode_data = reinterpret_cast<PngDecodeData*>(
-      png_get_io_ptr(png_ptr));
+  PngDecodeData* decode_data =
+      reinterpret_cast<PngDecodeData*>(png_get_io_ptr(png_ptr));
   DRAKE_DEMAND(decode_data != nullptr);
 
   if (decode_data->pos + static_cast<int>(length) > decode_data->size) {
@@ -74,8 +74,7 @@ bool DecompressPng(const lcmt_image* lcm_image, Image<kPixelType>* image) {
   decode_data.data = lcm_image->data.data();
   decode_data.size = lcm_image->size;
 
-  png_structp png_ptr = png_create_read_struct(
-      PNG_LIBPNG_VER_STRING, 0, 0, 0);
+  png_structp png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, 0, 0, 0);
   DRAKE_DEMAND(png_ptr != nullptr);
 
   png_infop info_ptr = png_create_info_struct(png_ptr);
@@ -126,7 +125,7 @@ bool DecompressPng(const lcmt_image* lcm_image, Image<kPixelType>* image) {
     drake::log()->error("Error during PNG decoding");
   }
 
- out:
+out:
   png_destroy_read_struct(&png_ptr, &info_ptr, 0);
   return false;
 }
@@ -156,11 +155,10 @@ bool DecompressJpeg(const lcmt_image* lcm_image, Image<kPixelType>* image) {
 template <PixelType kPixelType>
 bool DecompressZlib(const lcmt_image* lcm_image, Image<kPixelType>* image) {
   // NOLINTNEXTLINE(runtime/int)
-  unsigned long dest_len =
-      image->width() * image->height() * image->kPixelSize;
-  const int status = uncompress(
-      reinterpret_cast<Bytef*>(image->at(0, 0)), &dest_len,
-      lcm_image->data.data(), lcm_image->size);
+  unsigned long dest_len = image->width() * image->height() * image->kPixelSize;
+  const int status =
+      uncompress(reinterpret_cast<Bytef*>(image->at(0, 0)), &dest_len,
+                 lcm_image->data.data(), lcm_image->size);
   if (status != Z_OK) {
     drake::log()->error("zlib decompression failed on incoming LCM image: {}",
                         status);
@@ -208,22 +206,23 @@ bool UnpackLcmImage(const lcmt_image* lcm_image, Image<kPixelType>* image) {
 
 LcmImageArrayToImages::LcmImageArrayToImages()
     : image_array_t_input_port_index_(
-          this->DeclareAbstractInputPort(
-              "image_array_t", Value<lcmt_image_array>()).get_index()),
+          this->DeclareAbstractInputPort("image_array_t",
+                                         Value<lcmt_image_array>())
+              .get_index()),
       color_image_output_port_index_(
           this->DeclareAbstractOutputPort(
-              "color_image", &LcmImageArrayToImages::CalcColorImage)
-          .get_index()),
+                  "color_image", &LcmImageArrayToImages::CalcColorImage)
+              .get_index()),
       depth_image_output_port_index_(
           this->DeclareAbstractOutputPort(
-              "depth_image", &LcmImageArrayToImages::CalcDepthImage)
-          .get_index()) {
+                  "depth_image", &LcmImageArrayToImages::CalcDepthImage)
+              .get_index()) {
   // TODO(sammy-tri) Calculating our output ports can be kinda expensive.  We
   // should cache the images.
 }
 
-void LcmImageArrayToImages::CalcColorImage(
-    const Context<double>& context, ImageRgba8U* color_image) const {
+void LcmImageArrayToImages::CalcColorImage(const Context<double>& context,
+                                           ImageRgba8U* color_image) const {
   const auto& images =
       image_array_t_input_port().Eval<lcmt_image_array>(context);
 
@@ -263,8 +262,8 @@ void LcmImageArrayToImages::CalcColorImage(
   // TODO(sam.creasey) Handle BGR images, or at least error.
 }
 
-void LcmImageArrayToImages::CalcDepthImage(
-    const Context<double>& context, ImageDepth32F* depth_image) const {
+void LcmImageArrayToImages::CalcDepthImage(const Context<double>& context,
+                                           ImageDepth32F* depth_image) const {
   const auto& images =
       image_array_t_input_port().Eval<lcmt_image_array>(context);
 

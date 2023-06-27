@@ -1,3 +1,4 @@
+import copy
 import unittest
 
 import numpy as np
@@ -45,8 +46,13 @@ class TestMixedIntegerBranchAndBound(unittest.TestCase):
         self.assertAlmostEqual(x1_solutions[0], 0.0)
         self.assertAlmostEqual(x1_solutions[1], 0.5)
 
-        options = MixedIntegerBranchAndBound.Options()
+        MixedIntegerBranchAndBound.Options()
+        options = MixedIntegerBranchAndBound.Options(max_explored_nodes=22)
         options.max_explored_nodes = 1
+        self.assertEqual(options.max_explored_nodes, 1)
+        self.assertIn("max_explored_nodes=", repr(options))
+        copy.copy(options)
+
         dut2 = MixedIntegerBranchAndBound(
             prog=prog, solver_id=OsqpSolver().solver_id(), options=options)
         solution_result = dut2.Solve()

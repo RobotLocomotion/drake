@@ -177,3 +177,9 @@ class TestValue(unittest.TestCase):
         Value[object]
         Value[str]
         Value[bool]
+
+    def test_value_ctor(self):
+        self.assertIsInstance(Value("foo"), Value[str])
+        self.assertIsInstance(Value(True), Value[bool])
+        self.assertIsInstance(Value(1.0), Value[float])
+        self.assertIsInstance(Value(object()), Value[object])

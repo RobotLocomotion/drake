@@ -7,11 +7,13 @@ namespace systems {
 
 template <typename T>
 ZeroOrderHold<T>::ZeroOrderHold(
-    double period_sec, int vector_size,
+    double period_sec, double offset_sec, int vector_size,
     std::unique_ptr<const AbstractValue> abstract_model_value)
     : LeafSystem<T>(SystemTypeTag<ZeroOrderHold>()),
       period_sec_(period_sec),
+      offset_sec_(offset_sec),
       abstract_model_value_(std::move(abstract_model_value)) {
+  DRAKE_THROW_UNLESS(offset_sec >= 0.0);
   if (!is_abstract()) {
     DRAKE_DEMAND(vector_size != -1);
     // TODO(david-german-tri): remove the size parameter from the constructor
@@ -19,7 +21,7 @@ ZeroOrderHold<T>::ZeroOrderHold(
     BasicVector<T> model_value(vector_size);
     this->DeclareVectorInputPort("u", model_value);
     auto state_index = this->DeclareDiscreteState(vector_size);
-    this->DeclarePeriodicDiscreteUpdateEvent(period_sec_, 0.,
+    this->DeclarePeriodicDiscreteUpdateEvent(period_sec_, offset_sec_,
         &ZeroOrderHold::LatchInputVectorToState);
     this->DeclareStateOutputPort("y", state_index);
   } else {
@@ -28,7 +30,7 @@ ZeroOrderHold<T>::ZeroOrderHold(
     // the equivalent of #3109 for abstract values is also resolved.
     this->DeclareAbstractInputPort("u", *abstract_model_value_);
     auto state_index = this->DeclareAbstractState(*abstract_model_value_);
-    this->DeclarePeriodicUnrestrictedUpdateEvent(period_sec_, 0.,
+    this->DeclarePeriodicUnrestrictedUpdateEvent(period_sec_, offset_sec_,
         &ZeroOrderHold::LatchInputAbstractValueToState);
     this->DeclareStateOutputPort("y", state_index);
   }
@@ -37,7 +39,7 @@ ZeroOrderHold<T>::ZeroOrderHold(
 template <typename T>
 template <typename U>
 ZeroOrderHold<T>::ZeroOrderHold(const ZeroOrderHold<U>& other)
-    : ZeroOrderHold(other.period_sec_,
+    : ZeroOrderHold(other.period_sec_, other.offset_sec_,
                     other.is_abstract() ? -1 : other.get_input_port().size(),
                     other.is_abstract() ? other.abstract_model_value_->Clone()
                                         : nullptr) {}

@@ -14,7 +14,7 @@ from drake import lcmt_header, lcmt_quaternion
 import drake as drake_lcmtypes
 
 from pydrake.common.test_utilities.deprecation import catch_drake_warnings
-from pydrake.common.value import AbstractValue
+from pydrake.common.value import Value
 from pydrake.lcm import DrakeLcm, DrakeLcmParams, Subscriber
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import (
@@ -185,7 +185,7 @@ class TestSystemsLcm(unittest.TestCase):
         """Checks how `WaitForMessage` works without Python threads."""
         lcm = DrakeLcm()
         sub = mut.LcmSubscriberSystem.Make("TEST_LOOP", lcmt_header, lcm)
-        value = AbstractValue.Make(lcmt_header())
+        value = Value(lcmt_header())
         for old_message_count in range(3):
             message = lcmt_header()
             message.utime = old_message_count + 1
@@ -210,7 +210,7 @@ class TestSystemsLcm(unittest.TestCase):
             publish_period=0.1)
         subscriber = Subscriber(lcm, "TEST_CHANNEL", lcmt_quaternion)
         model_message = self._model_message()
-        self._fix_and_publish(dut, AbstractValue.Make(model_message))
+        self._fix_and_publish(dut, Value(model_message))
         lcm.HandleSubscriptions(0)
         self.assert_lcm_equal(subscriber.message, model_message)
         # Test `publish_triggers` overload.
@@ -222,7 +222,7 @@ class TestSystemsLcm(unittest.TestCase):
         dut = mut.LcmPublisherSystem.Make(
             channel="TEST_CHANNEL", lcm_type=lcmt_quaternion, lcm=lcm_system,
             publish_period=0.1)
-        self._fix_and_publish(dut, AbstractValue.Make(model_message))
+        self._fix_and_publish(dut, Value(model_message))
         lcm.HandleSubscriptions(0)
         self.assert_lcm_equal(subscriber.message, model_message)
         # Test `publish_triggers` overload.
@@ -251,7 +251,7 @@ class TestSystemsLcm(unittest.TestCase):
                 "output", self.AllocateOutput, self.CalcOutput)
 
         def AllocateOutput(self):
-            return AbstractValue.Make(lcmt_header())
+            return Value(lcmt_header())
 
         def CalcOutput(self, context, output):
             message = output.get_mutable_value()

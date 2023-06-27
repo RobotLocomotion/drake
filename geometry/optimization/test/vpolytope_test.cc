@@ -43,6 +43,7 @@ GTEST_TEST(VPolytopeTest, TriangleTest) {
   VPolytope V(triangle);
   EXPECT_EQ(V.ambient_dimension(), 2);
   EXPECT_TRUE(CompareMatrices(V.vertices(), triangle));
+  EXPECT_FALSE(V.MaybeGetPoint().has_value());
 
   // Check IsBounded (which is trivially true for V Polytopes).
   EXPECT_TRUE(V.IsBounded());
@@ -66,6 +67,13 @@ GTEST_TEST(VPolytopeTest, TriangleTest) {
   }
 }
 
+GTEST_TEST(VPolytopeTest, SinglePoint) {
+  Vector2d point(2, -1);
+  VPolytope V(point);
+  ASSERT_TRUE(V.MaybeGetPoint().has_value());
+  EXPECT_TRUE(CompareMatrices(V.MaybeGetPoint().value(), point));
+}
+
 GTEST_TEST(VPolytopeTest, DefaultCtor) {
   const VPolytope dut;
   EXPECT_NO_THROW(dut.GetMinimalRepresentation());
@@ -75,7 +83,26 @@ GTEST_TEST(VPolytopeTest, DefaultCtor) {
   EXPECT_EQ(dut.ambient_dimension(), 0);
   EXPECT_FALSE(dut.IntersectsWith(dut));
   EXPECT_TRUE(dut.IsBounded());
+  EXPECT_FALSE(dut.MaybeGetPoint().has_value());
   EXPECT_FALSE(dut.PointInSet(Eigen::VectorXd::Zero(0)));
+}
+
+GTEST_TEST(VPolytopeTest, Move) {
+  Eigen::Matrix<double, 2, 3> triangle;
+  // clang-format off
+  triangle <<  2, 4, 3,
+              -1, 2, 5;
+  // clang-format on
+  VPolytope orig(triangle);
+
+  // A move-constructed VPolytope takes over the original data.
+  VPolytope dut(std::move(orig));
+  EXPECT_EQ(dut.ambient_dimension(), 2);
+  EXPECT_TRUE(CompareMatrices(dut.vertices(), triangle));
+
+  // The old VPolytope is in a valid but unspecified state.
+  EXPECT_EQ(orig.vertices().rows(), orig.ambient_dimension());
+  EXPECT_NO_THROW(orig.Clone());
 }
 
 GTEST_TEST(VPolytopeTest, UnitBoxTest) {
@@ -96,6 +123,22 @@ GTEST_TEST(VPolytopeTest, UnitBoxTest) {
   EXPECT_TRUE(CheckAddPointInSetConstraints(V, in1_W));
   EXPECT_TRUE(CheckAddPointInSetConstraints(V, in2_W));
   EXPECT_FALSE(CheckAddPointInSetConstraints(V, out_W));
+  {
+    // Test the new variables in AddPointInSetConstraint
+    solvers::MathematicalProgram prog;
+    auto x = prog.NewContinuousVariables<3>();
+    auto [new_vars, new_constraints] = V.AddPointInSetConstraints(&prog, x);
+    EXPECT_EQ(new_vars.rows(), V.vertices().cols());
+    // It has to contain at least two constraints, one bounding box constraint
+    // on 0 <= new_vars <=1, and another linear equality constraint x = vertices
+    // * new_vars, sum(new_vars) = 1
+    EXPECT_GE(new_constraints.size(), 2);
+    auto result = solvers::Solve(prog);
+    EXPECT_TRUE(result.is_success());
+    const auto new_vars_val = result.GetSolution(new_vars);
+    const Eigen::Vector3d x_val = result.GetSolution(x);
+    EXPECT_TRUE(CompareMatrices(x_val, V.vertices() * new_vars_val, kTol));
+  }
 
   // Test SceneGraph constructor.
   auto [scene_graph, geom_id] =

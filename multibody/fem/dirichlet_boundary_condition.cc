@@ -7,25 +7,26 @@ namespace internal {
 
 template <typename T>
 void DirichletBoundaryCondition<T>::AddBoundaryCondition(
-    int dof_index, const Eigen::Ref<const Vector3<T>>& boundary_state) {
-  index_to_boundary_state_[dof_index] = boundary_state;
+    FemNodeIndex index, const NodeState<T>& boundary_state) {
+  node_to_boundary_state_[index] = boundary_state;
+  node_indices_.emplace_back(index);
 }
 
 template <typename T>
 void DirichletBoundaryCondition<T>::ApplyBoundaryConditionToState(
     FemState<T>* fem_state) const {
   DRAKE_DEMAND(fem_state != nullptr);
-  if (index_to_boundary_state_.empty()) return;
-  VerifyIndexes(fem_state->num_dofs());
+  if (node_to_boundary_state_.empty()) return;
+  VerifyIndices(fem_state->num_nodes());
 
   // TODO(xuchenhan-tri): Consider avoiding this copy.
   VectorX<T> q = fem_state->GetPositions();
   VectorX<T> v = fem_state->GetVelocities();
   VectorX<T> a = fem_state->GetAccelerations();
-  for (const auto& [dof_index, boundary_state] : index_to_boundary_state_) {
-    q(dof_index) = boundary_state(0);
-    v(dof_index) = boundary_state(1);
-    a(dof_index) = boundary_state(2);
+  for (const auto& [node_index, boundary_state] : node_to_boundary_state_) {
+    q.template segment<3>(3 * node_index) = boundary_state.q;
+    v.template segment<3>(3 * node_index) = boundary_state.v;
+    a.template segment<3>(3 * node_index) = boundary_state.a;
   }
   fem_state->SetPositions(q);
   fem_state->SetVelocities(v);
@@ -37,36 +38,52 @@ void DirichletBoundaryCondition<T>::ApplyBoundaryConditionToTangentMatrix(
     internal::PetscSymmetricBlockSparseMatrix* tangent_matrix) const {
   DRAKE_DEMAND(tangent_matrix != nullptr);
   DRAKE_DEMAND(tangent_matrix->rows() == tangent_matrix->cols());
-  if (index_to_boundary_state_.empty()) return;
-  VerifyIndexes(tangent_matrix->cols());
+  if (node_to_boundary_state_.empty()) return;
+  VerifyIndices(tangent_matrix->cols() / 3);
 
   /* Zero out all rows and columns of the tangent matrix corresponding to
-   dofs under the BC (except the diagonal entry which is set to 1). */
-  std::vector<int> indexes(index_to_boundary_state_.size());
+   DoFs under the BC (except the diagonal entry which is set to 1). */
+  std::vector<int> dof_indices(3 * node_to_boundary_state_.size());
   int i = 0;
-  for (const auto& it : index_to_boundary_state_) {
-    indexes[i++] = it.first;
+  for (const auto& it : node_to_boundary_state_) {
+    dof_indices[i++] = 3 * it.first;
+    dof_indices[i++] = 3 * it.first + 1;
+    dof_indices[i++] = 3 * it.first + 2;
   }
-  tangent_matrix->ZeroRowsAndColumns(indexes, /* diagonal entry */ 1.0);
+  tangent_matrix->ZeroRowsAndColumns(dof_indices, /* diagonal entry */ 1.0);
+}
+
+template <typename T>
+void DirichletBoundaryCondition<T>::ApplyBoundaryConditionToTangentMatrix(
+    contact_solvers::internal::Block3x3SparseSymmetricMatrix* tangent_matrix)
+    const {
+  DRAKE_DEMAND(tangent_matrix != nullptr);
+  if (node_to_boundary_state_.empty()) return;
+  VerifyIndices(tangent_matrix->cols() / 3);
+
+  /* Zero out all rows and columns of the tangent matrix corresponding to
+   DoFs under the BC (except the diagonal blocks which is set to be diagonal).
+  */
+  tangent_matrix->ZeroRowsAndColumns(node_indices_);
 }
 
 template <typename T>
 void DirichletBoundaryCondition<T>::ApplyHomogeneousBoundaryCondition(
     EigenPtr<VectorX<T>> v) const {
   DRAKE_DEMAND(v != nullptr);
-  if (index_to_boundary_state_.empty()) return;
-  VerifyIndexes(v->size());
+  if (node_to_boundary_state_.empty()) return;
+  VerifyIndices(v->size() / 3);
 
   /* Zero out all entries of `v` corresponding to dofs under the BC. */
-  for (const auto& it : index_to_boundary_state_) {
-    const int dof_index = it.first;
-    (*v)(dof_index) = 0.0;
+  for (const auto& it : node_to_boundary_state_) {
+    const int node_index = it.first;
+    v->template segment<3>(3 * node_index).setZero();
   }
 }
 
 template <typename T>
-void DirichletBoundaryCondition<T>::VerifyIndexes(int size) const {
-  const auto& last_bc = index_to_boundary_state_.crbegin();
+void DirichletBoundaryCondition<T>::VerifyIndices(int size) const {
+  const auto& last_bc = node_to_boundary_state_.crbegin();
   if (last_bc->first >= size) {
     throw std::out_of_range(
         "An index of the Dirichlet boundary condition is out of "

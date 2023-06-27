@@ -1689,6 +1689,9 @@ class MultibodyTree {
       const systems::Context<T>& context) const;
 
   // See MultibodyPlant method.
+  bool IsVelocityEqualToQDot() const;
+
+  // See MultibodyPlant method.
   void MapVelocityToQDot(
       const systems::Context<T>& context,
       const Eigen::Ref<const VectorX<T>>& v,

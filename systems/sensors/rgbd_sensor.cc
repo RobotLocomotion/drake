@@ -1,35 +1,21 @@
 #include "drake/systems/sensors/rgbd_sensor.h"
 
-#include <algorithm>
 #include <limits>
-#include <string>
 #include <utility>
-
-#include <Eigen/Dense>
 
 #include "drake/common/text_logging.h"
 #include "drake/geometry/scene_graph.h"
-#include "drake/math/rigid_transform.h"
-#include "drake/math/rotation_matrix.h"
-#include "drake/systems/framework/diagram_builder.h"
-#include "drake/systems/primitives/zero_order_hold.h"
-#include "drake/systems/sensors/camera_info.h"
-#include "drake/systems/sensors/image.h"
 
 namespace drake {
 namespace systems {
 namespace sensors {
 
-using Eigen::Translation3d;
 using geometry::FrameId;
 using geometry::QueryObject;
 using geometry::SceneGraph;
 using geometry::render::ColorRenderCamera;
-using geometry::render::DepthRange;
 using geometry::render::DepthRenderCamera;
 using math::RigidTransformd;
-using std::make_pair;
-using std::pair;
 
 RgbdSensor::RgbdSensor(FrameId parent_id, const RigidTransformd& X_PB,
                        const DepthRenderCamera& depth_camera,
@@ -150,65 +136,6 @@ void RgbdSensor::CalcX_WB(const Context<double>& context,
     const QueryObject<double>& query_object = get_query_object(context);
     *X_WB = query_object.GetPoseInWorld(parent_frame_id_) * X_PB_;
   }
-}
-
-RgbdSensorDiscrete::RgbdSensorDiscrete(std::unique_ptr<RgbdSensor> camera,
-                                       double period, bool render_label_image)
-    : camera_(camera.get()), period_(period) {
-  const auto& color_camera_info = camera->color_camera_info();
-  const auto& depth_camera_info = camera->depth_camera_info();
-
-  DiagramBuilder<double> builder;
-  builder.AddSystem(std::move(camera));
-  query_object_port_ =
-      builder.ExportInput(camera_->query_object_input_port(), "geometry_query");
-
-  // Color image.
-  const Value<ImageRgba8U> image_color(color_camera_info.width(),
-                                       color_camera_info.height());
-  const auto* const zoh_color =
-      builder.AddSystem<ZeroOrderHold>(period_, image_color);
-  builder.Connect(camera_->color_image_output_port(),
-                  zoh_color->get_input_port());
-  output_port_color_image_ =
-      builder.ExportOutput(zoh_color->get_output_port(), "color_image");
-
-  // Depth images.
-  const Value<ImageDepth32F> image_depth_32F(depth_camera_info.width(),
-                                             depth_camera_info.height());
-  const auto* const zoh_depth_32F =
-      builder.AddSystem<ZeroOrderHold>(period_, image_depth_32F);
-  builder.Connect(camera_->depth_image_32F_output_port(),
-                  zoh_depth_32F->get_input_port());
-  output_port_depth_image_32F_ =
-      builder.ExportOutput(zoh_depth_32F->get_output_port(), "depth_image_32f");
-
-  // Depth images.
-  const Value<ImageDepth16U> image_depth_16U(depth_camera_info.width(),
-                                             depth_camera_info.height());
-  const auto* const zoh_depth_16U =
-      builder.AddSystem<ZeroOrderHold>(period_, image_depth_16U);
-  builder.Connect(camera_->depth_image_16U_output_port(),
-                  zoh_depth_16U->get_input_port());
-  output_port_depth_image_16U_ =
-      builder.ExportOutput(zoh_depth_16U->get_output_port(), "depth_image_16u");
-
-  // Label image.
-  if (render_label_image) {
-    const Value<ImageLabel16I> image_label(color_camera_info.width(),
-                                           color_camera_info.height());
-    const auto* const zoh_label =
-        builder.AddSystem<ZeroOrderHold>(period_, image_label);
-    builder.Connect(camera_->label_image_output_port(),
-                    zoh_label->get_input_port());
-    output_port_label_image_ =
-        builder.ExportOutput(zoh_label->get_output_port(), "label_image");
-  }
-
-  body_pose_in_world_output_port_ = builder.ExportOutput(
-      camera_->body_pose_in_world_output_port(), "body_pose_in_world");
-
-  builder.BuildInto(this);
 }
 
 }  // namespace sensors

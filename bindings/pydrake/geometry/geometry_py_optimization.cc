@@ -2,14 +2,13 @@
  drake::geometry::optimization namespace. They can be found in the
  pydrake.geometry.optimization module. */
 
-#include "pybind11/stl/filesystem.h"
-
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/identifier_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/geometry/geometry_py.h"
 #include "drake/bindings/pydrake/geometry/optimization_pybind.h"
+#include "drake/common/yaml/yaml_io.h"
 #include "drake/geometry/optimization/cartesian_product.h"
 #include "drake/geometry/optimization/graph_of_convex_sets.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
@@ -46,6 +45,8 @@ void DefineGeometryOptimization(py::module m) {
         .def("IntersectsWith", &ConvexSet::IntersectsWith, py::arg("other"),
             cls_doc.IntersectsWith.doc)
         .def("IsBounded", &ConvexSet::IsBounded, cls_doc.IsBounded.doc)
+        .def("MaybeGetPoint", &ConvexSet::MaybeGetPoint,
+            cls_doc.MaybeGetPoint.doc)
         .def("PointInSet", &ConvexSet::PointInSet, py::arg("x"),
             py::arg("tol") = 1e-8, cls_doc.PointInSet.doc)
         .def("AddPointInSetConstraints", &ConvexSet::AddPointInSetConstraints,
@@ -318,17 +319,15 @@ void DefineGeometryOptimization(py::module m) {
         .def_property(
             "configuration_obstacles",
             [](const IrisOptions& self) {
-              py::list out;
-              py::object self_py = py::cast(self, py_rvp::reference);
+              std::vector<const ConvexSet*> convex_sets;
               for (const copyable_unique_ptr<ConvexSet>& convex_set :
                   self.configuration_obstacles) {
-                py::object convex_set_py =
-                    py::cast(convex_set.get(), py_rvp::reference);
-                // Keep alive, ownership: `convex_set` keeps `self` alive.
-                py_keep_alive(convex_set_py, self_py);
-                out.append(convex_set_py);
+                convex_sets.push_back(convex_set.get());
               }
-              return out;
+              py::object self_py = py::cast(self, py_rvp::reference);
+              // Keep alive, ownership: each item in `convex_sets` keeps `self`
+              // alive.
+              return py::cast(convex_sets, py_rvp::reference_internal, self_py);
             },
             [](IrisOptions& self, const std::vector<ConvexSet*>& sets) {
               self.configuration_obstacles = CloneConvexSets(sets);
@@ -402,6 +401,27 @@ void DefineGeometryOptimization(py::module m) {
           &IrisInConfigurationSpace),
       py::arg("plant"), py::arg("context"), py::arg("options") = IrisOptions(),
       doc.IrisInConfigurationSpace.doc);
+
+  // TODO(#19597) Deprecate and remove these functions once Python
+  // can natively handle the file I/O.
+  m.def(
+      "SaveIrisRegionsYamlFile",
+      [](const std::filesystem::path& filename, const IrisRegions& regions,
+          const std::optional<std::string>& child_name) {
+        yaml::SaveYamlFile(filename, regions, child_name);
+      },
+      py::arg("filename"), py::arg("regions"),
+      py::arg("child_name") = std::nullopt,
+      "Calls SaveYamlFile() to serialize an IrisRegions object.");
+
+  m.def(
+      "LoadIrisRegionsYamlFile",
+      [](const std::filesystem::path& filename,
+          const std::optional<std::string>& child_name) {
+        return yaml::LoadYamlFile<IrisRegions>(filename, child_name);
+      },
+      py::arg("filename"), py::arg("child_name") = std::nullopt,
+      "Calls LoadYamlFile() to deserialize an IrisRegions object.");
 
   // GraphOfConvexSetsOptions
   {
@@ -617,34 +637,14 @@ void DefineGeometryOptimization(py::module m) {
             py::overload_cast<const GraphOfConvexSets::Edge&>(
                 &GraphOfConvexSets::RemoveEdge),
             py::arg("edge"), cls_doc.RemoveEdge.doc_by_reference)
-        .def(
-            "Vertices",
-            [](GraphOfConvexSets* self) {
-              py::list out;
-              py::object self_py = py::cast(self, py_rvp::reference);
-              for (auto* vertex : self->Vertices()) {
-                py::object vertex_py = py::cast(vertex, py_rvp::reference);
-                // Keep alive, ownership: `vertex` keeps `self` alive.
-                py_keep_alive(vertex_py, self_py);
-                out.append(vertex_py);
-              }
-              return out;
-            },
-            cls_doc.Vertices.doc)
-        .def(
-            "Edges",
-            [](GraphOfConvexSets* self) {
-              py::list out;
-              py::object self_py = py::cast(self, py_rvp::reference);
-              for (auto* edge : self->Edges()) {
-                py::object edge_py = py::cast(edge, py_rvp::reference);
-                // Keep alive, ownership: `edge` keeps `self` alive.
-                py_keep_alive(edge_py, self_py);
-                out.append(edge_py);
-              }
-              return out;
-            },
-            cls_doc.Edges.doc)
+        .def("Vertices",
+            overload_cast_explicit<std::vector<GraphOfConvexSets::Vertex*>>(
+                &GraphOfConvexSets::Vertices),
+            py_rvp::reference_internal, cls_doc.Vertices.doc)
+        .def("Edges",
+            overload_cast_explicit<std::vector<GraphOfConvexSets::Edge*>>(
+                &GraphOfConvexSets::Edges),
+            py_rvp::reference_internal, cls_doc.Edges.doc)
         .def("ClearAllPhiConstraints",
             &GraphOfConvexSets::ClearAllPhiConstraints,
             cls_doc.ClearAllPhiConstraints.doc)

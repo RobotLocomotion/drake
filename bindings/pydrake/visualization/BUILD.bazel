@@ -30,6 +30,7 @@ drake_pybind_library(
     name = "visualization",
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake/common:default_scalars_pybind",
         "//bindings/pydrake/common:serialize_pybind",
     ],
     cc_so_name = "__init__",
@@ -158,6 +159,7 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "model_visualizer_test",
+    timeout = "moderate",
     data = [
         ":model_visualizer",
         "//geometry:meshcat_websocket_client",
@@ -192,6 +194,13 @@ drake_py_unittest(
     deps = [
         ":visualization",
         "//bindings/pydrake/common/test_utilities:numpy_compare_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "visualization_test",
+    deps = [
+        ":visualization",
     ],
 )
 

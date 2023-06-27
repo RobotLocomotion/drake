@@ -15,6 +15,10 @@ namespace drake {
 namespace solvers {
 namespace {
 
+using Eigen::Vector2d;
+
+const double kInf = std::numeric_limits<double>::infinity();
+
 void CheckParseQuadraticConstraint(
     const Expression& e, double lb, double ub,
     std::optional<QuadraticConstraint::HessianType> hessian_type,
@@ -58,7 +62,6 @@ class ParseQuadraticConstraintTest : public ::testing::Test {
 };
 
 TEST_F(ParseQuadraticConstraintTest, Test0) {
-  const double kInf = std::numeric_limits<double>::infinity();
   CheckParseQuadraticConstraint(
       x0_ * x0_, 1, 1, QuadraticConstraint::HessianType::kPositiveSemidefinite,
       QuadraticConstraint::HessianType::kPositiveSemidefinite);
@@ -508,6 +511,35 @@ GTEST_TEST(ParseConstraintTest, TrueFormula) {
       internal::ParseLinearEqualityConstraint(symbolic::Expression(1) == 1);
   EXPECT_EQ(binding6.evaluator()->num_constraints(), 0);
   EXPECT_EQ(binding6.variables().rows(), 0);
+}
+
+// Confirm that ParseConstraint also parses the quadratic constraint.
+GTEST_TEST(ParseConstraintTest, Quadratic) {
+  symbolic::Variable x0("x0"), x1("x1");
+  Binding<Constraint> binding =
+      internal::ParseConstraint(-x0 * x0 + 2 * x1, -kInf, 3);
+  EXPECT_NE(dynamic_cast<QuadraticConstraint*>(binding.evaluator().get()),
+            nullptr);
+
+  // A vector of quadratic constraints is an ExpressionConstraint (not
+  // quadratic).
+  binding = internal::ParseConstraint(
+      Vector2<Expression>(x0 * x0 + 2 * x1, x1 * x1), Vector2d::Constant(-kInf),
+      Vector2d::Constant(3));
+  EXPECT_NE(dynamic_cast<ExpressionConstraint*>(binding.evaluator().get()),
+            nullptr);
+
+  // A scalar non-polynomial constraint is an ExpressionConstraint (not
+  // quadratic).
+  binding = internal::ParseConstraint(x0 * x0 + 2 * x1 + sin(x1), -kInf, 3);
+  EXPECT_NE(dynamic_cast<ExpressionConstraint*>(binding.evaluator().get()),
+            nullptr);
+
+  // A polynomial constraint of degree > 2 is an ExpressionConstraint (not
+  // quadratic).
+  binding = internal::ParseConstraint(x0 * x0 * x1 + 2 * x1, -kInf, 3);
+  EXPECT_NE(dynamic_cast<ExpressionConstraint*>(binding.evaluator().get()),
+            nullptr);
 }
 
 std::shared_ptr<RotatedLorentzConeConstraint>

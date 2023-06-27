@@ -38,16 +38,15 @@ BeamModel<T>::BeamModel(int num_depth_readings, double max_range)
   // one.   Since probability_hit() is defined implicitly, this becomes the
   // inequality constraint:
   //   1 - probability_short() - probability_miss() - probability_uniform() ≥ 0.
-  ContextConstraintCalc<T>
-      calc_event_probabilities_constraint =
-          [](const Context<T>& context, VectorX<T>* value) {
-            const auto* params = dynamic_cast<const BeamModelParams<T>*>(
-                &context.get_numeric_parameter(0));
-            DRAKE_DEMAND(params != nullptr);
-            (*value)[0] = 1.0 - params->probability_short() -
-                          params->probability_miss() -
-                          params->probability_uniform();
-          };
+  ContextConstraintCalc<T> calc_event_probabilities_constraint =
+      [](const Context<T>& context, VectorX<T>* value) {
+        const auto* params = dynamic_cast<const BeamModelParams<T>*>(
+            &context.get_numeric_parameter(0));
+        DRAKE_DEMAND(params != nullptr);
+        (*value)[0] = 1.0 - params->probability_short() -
+                      params->probability_miss() -
+                      params->probability_uniform();
+      };
   this->DeclareInequalityConstraint(
       calc_event_probabilities_constraint,
       SystemConstraintBounds(Vector1d(0), std::nullopt),
@@ -92,7 +91,7 @@ void BeamModel<T>::CalcOutput(const systems::Context<T>& context,
     } else if (w_event[i] <= params->probability_uniform() +
                                  params->probability_miss() +
                                  params->probability_short() &&
-        (w_short[i] / params->lambda_short()) <= depth[i]) {
+               (w_short[i] / params->lambda_short()) <= depth[i]) {
       // Then "short".
       // Note: Returns that would have been greater than depth[i] are instead
       // evaluated as "hit".
