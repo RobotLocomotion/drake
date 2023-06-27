@@ -31,7 +31,7 @@ template <typename T>
 void MakeCalcPlanePolynomial(const VectorX<symbolic::Variable>& vars_for_plane,
                              const int plane_degree,
                              const Eigen::Matrix<T, 3, Eigen::Dynamic>& a_coeff,
-                             const Eigen::VectorX<T>& b_coeff,
+                             const VectorX<T>& b_coeff,
                              Vector3<symbolic::Polynomial>* a_val,
                              symbolic::Polynomial* b_val) {
   static_assert(std::is_same_v<T, symbolic::Variable> ||
