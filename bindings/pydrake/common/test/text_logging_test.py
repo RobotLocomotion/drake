@@ -147,19 +147,26 @@ class TestTextLoggingExample(unittest.TestCase,
         self.assertEqual(effective_level, expected_level)
 
     def test_disabled_via_env(self):
+        """When the magic environment variable is set, C++ logging is not
+        redirected to Python; it continues to write to stderr directly, using
+        its own independent formatter and log level threshold.
+        """
+        # Disable the code that injects the pylogging_sink.
         env = dict(os.environ)
-        env["_TEST_SPDLOG_LEVEL"] = "debug"
         env["DRAKE_PYTHON_LOGGING"] = "0"
+        # Configure the Python logging to not print anything.
+        python_level = CRITICAL + 1
         try:
             output = subprocess.check_output(
                 ["bindings/pydrake/common/text_logging_example",
-                    "--use_nice_format=0",
-                    "--root_level=-1",
-                    "--drake_level=-1"],
+                    "--use_nice_format=1",
+                    f"--root_level={python_level}",
+                    f"--drake_level={python_level}"],
                 stderr=subprocess.STDOUT,
                 encoding="utf8",
                 env=env)
         except subprocess.CalledProcessError as e:
             print(e.output, file=sys.stderr, flush=True)
             raise
-        self.assertIn("Will not redirect", output)
+        # The C++ logger should still have printed (INFO and higher)
+        self.assertIn("Test Info message", output)

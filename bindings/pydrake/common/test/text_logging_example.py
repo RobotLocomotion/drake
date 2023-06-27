@@ -1,14 +1,8 @@
 import argparse
 import logging
-import os
-
-from text_logging_test_helpers import do_log_test, set_log_level
-if "_TEST_SPDLOG_LEVEL" in os.environ:
-    # Configure logging before we import pydrake so that we can intercept debug
-    # messages while handling the redirect.
-    set_log_level(os.environ["_TEST_SPDLOG_LEVEL"])
 
 from pydrake.common import configure_logging
+from pydrake.common.test.text_logging_test_helpers import do_log_test
 
 
 def main():

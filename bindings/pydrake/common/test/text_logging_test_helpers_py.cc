@@ -65,8 +65,6 @@ class Worker {
 PYBIND11_MODULE(text_logging_test_helpers, m) {
   m.doc() = "Test text logging";
 
-  m.def("set_log_level", &logging::set_log_level, py::arg("level"));
-
   m.def("do_log_test", &do_log_test);
 
   {
