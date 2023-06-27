@@ -122,6 +122,7 @@ class VPolytope final : public ConvexSet {
   using ShapeReifier::ImplementGeometry;
   void ImplementGeometry(const Box& box, void* data) final;
   void ImplementGeometry(const Convex& convex, void* data) final;
+  void ImplementGeometry(const Mesh& mesh, void* data) final;
 
   Eigen::MatrixXd vertices_;
 };
