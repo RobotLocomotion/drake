@@ -222,6 +222,12 @@ class SapLimitConstraint final : public SapConstraint<T> {
     return std::unique_ptr<SapLimitConstraint<T>>(
         new SapLimitConstraint<T>(*this));
   }
+  void DoAccumulateGeneralizedImpulses(
+      int c, const Eigen::Ref<const VectorX<T>>& gamma,
+      EigenPtr<VectorX<T>> tau) const final;
+  // no-op for this constraint.
+  void DoAccumulateSpatialImpulses(int, const Eigen::Ref<const VectorX<T>>&,
+                                   SpatialForce<T>*) const final{};
 
   Parameters parameters_;
   int clique_dof_{-1};  // Initialized to an invalid value.
