@@ -32,18 +32,22 @@ class pylogging_sink final
   pylogging_sink() {
     // Add a Python logging.Logger to be used by Drake.
     py::object logging = py::module::import("logging");
-    py::object logger = logging.attr("getLogger")(name_);
+    logger_ = logging.attr("getLogger")(name_);
 
     // Annotate that the logger is alive (fed by spdlog).
-    py::setattr(logger, "_tied_to_spdlog", py::cast(true));
+    py::setattr(logger_, "_tied_to_spdlog", py::cast(true));
 
     // Match the C++ default level.
-    logger.attr("setLevel")(to_py_level(drake::log()->level()));
+    logger_.attr("setLevel")(to_py_level(drake::log()->level()));
 
     // Memoize the member functions we need to call.
-    is_enabled_for_ = logger.attr("isEnabledFor");
-    make_record_ = logger.attr("makeRecord");
-    handle_ = logger.attr("handle");
+    is_enabled_for_ = logger_.attr("isEnabledFor");
+    make_record_ = logger_.attr("makeRecord");
+    handle_ = logger_.attr("handle");
+  }
+
+  ~pylogging_sink() {
+    py::setattr(logger_, "_tied_to_spdlog", py::cast(false));
   }
 
  protected:
@@ -122,6 +126,7 @@ class pylogging_sink final
   py::object is_enabled_for_;
   py::object make_record_;
   py::object handle_;
+  py::object logger_;
 };
 }  // namespace
 
@@ -169,8 +174,33 @@ void MaybeRedirectPythonLogging() {
 
   drake::log()->trace("Successfully redirected C++ logs to Python");
 }
+
+bool MaybeUndoRedirectPythonLogging() {
+  // Remove the Python logging sink (if it exists).
+  drake::log()->trace("Removing pydrake spdlog sink");
+  auto& sinks = drake::log()->sinks();
+  if (sinks.size() != 2) {
+    drake::log()->debug("Will not undo redirect (num root sinks == 2)");
+    return false;
+  }
+  auto* dist_sink = dynamic_cast<spdlog::sinks::dist_sink_mt*>(
+      drake::logging::get_dist_sink());
+  if (dist_sink == nullptr) {
+    drake::log()->debug("Will not undo redirect (not a dist sink)");
+    return false;
+  }
+  // Use only the stderr sink.
+  sinks.resize(1);
+  auto new_stderr_sink = std::make_shared<spdlog::sinks::stderr_sink_mt>();
+  dist_sink->set_sinks({new_stderr_sink});
+  return true;
+}
+
 #else
 void MaybeRedirectPythonLogging() {}
+bool MaybeUndoRedirectPythonLogging() {
+  return false;
+}
 #endif
 
 }  // namespace internal
