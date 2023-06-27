@@ -20,23 +20,12 @@ constexpr double kDt = 0.01;
 constexpr double kGamma = 0.5;
 constexpr double kBeta = 0.25;
 
-class FemSolverTest : public ::testing::Test {
+class FemSolverTest : public ::testing::TestWithParam<bool> {
  protected:
   DummyModel model_{};
   AccelerationNewmarkScheme<double> integrator_{kDt, kGamma, kBeta};
   FemSolver<double> solver_{&model_, &integrator_};
 };
-
-TEST_F(FemSolverTest, CloneScratchData) {
-  FemSolverScratchData<double> scratch(model_);
-  std::unique_ptr<FemSolverScratchData<double>> clone = scratch.Clone();
-  EXPECT_EQ(clone->b(), scratch.b());
-  EXPECT_EQ(clone->dz(), scratch.dz());
-  const MatrixXd tangent_matrix = scratch.tangent_matrix().MakeDenseMatrix();
-  const MatrixXd tangent_matrix_clone =
-      clone->tangent_matrix().MakeDenseMatrix();
-  EXPECT_EQ(tangent_matrix, tangent_matrix_clone);
-}
 
 TEST_F(FemSolverTest, Tolerance) {
   /* Default values. */
@@ -58,31 +47,33 @@ TEST_F(FemSolverTest, Tolerance) {
  iteration, and the unknown variable z (acceleration in this case) should
  satisfy A*z = -b, where A is the constant tangent matrix and b is the nonzero
  residual evaluated at the zero state. */
-TEST_F(FemSolverTest, AdvanceOneTimeStep) {
+TEST_P(FemSolverTest, AdvanceOneTimeStep) {
+  bool is_linear = GetParam();
+  model_.set_linear(is_linear);
   DummyModel::DummyBuilder builder(&model_);
   builder.AddTwoElementsWithSharedNodes();
   builder.Build();
   std::unique_ptr<FemState<double>> state0 = model_.MakeFemState();
   std::unique_ptr<FemState<double>> state = model_.MakeFemState();
-  FemSolverScratchData<double> scratch(model_);
+  FemSolverData<double> data(model_);
+  data.nonparticipating_vertices = {0, 1};
   const int num_iterations =
-      solver_.AdvanceOneTimeStep(*state0, state.get(), &scratch);
+      solver_.AdvanceOneTimeStep(*state0, state.get(), &data);
   EXPECT_EQ(num_iterations, 1);
 
   /* Compute the expected result from AdvanceOneTimeStep(). */
   std::unique_ptr<FemState<double>> expected_state = model_.MakeFemState();
-  auto tangent_matrix = model_.MakePetscSymmetricBlockSparseTangentMatrix();
+  auto tangent_matrix = model_.MakeTangentMatrix();
   model_.CalcTangentMatrix(*state0, integrator_.GetWeights(),
                            tangent_matrix.get());
-  tangent_matrix->AssembleIfNecessary();
   const MatrixXd A = tangent_matrix->MakeDenseMatrix();
   VectorX<double> b(model_.num_dofs());
   model_.CalcResidual(*state0, &b);
   /* The solver is not considered as "converged" with the initial state. */
   EXPECT_FALSE(solver_.solver_converged(b.norm(), b.norm()));
-  Eigen::ConjugateGradient<MatrixXd> cg;
-  cg.compute(A);
-  const VectorX<double> dz = cg.solve(-b);
+  Eigen::LLT<MatrixXd> llt;
+  llt.compute(A);
+  const VectorX<double> dz = llt.solve(-b);
   integrator_.UpdateStateFromChangeInUnknowns(dz, expected_state.get());
   EXPECT_TRUE(CompareMatrices(expected_state->GetPositions(),
                               state->GetPositions(), kEps));
@@ -90,10 +81,22 @@ TEST_F(FemSolverTest, AdvanceOneTimeStep) {
                               state->GetAccelerations(), kEps));
   EXPECT_TRUE(CompareMatrices(expected_state->GetVelocities(),
                               state->GetVelocities(), kEps));
+
+  /* Check the Schur complement is as expected. */
+  contact_solvers::internal::SchurComplement
+      force_balance_tangent_matrix_schur_complement(
+          *tangent_matrix, data.nonparticipating_vertices);
+  /* Multiply by dt to get the schur complement of the tangent matrix of the
+   momentum balance. */
+  const MatrixXd expected_schur_complement =
+      force_balance_tangent_matrix_schur_complement.get_D_complement() * kDt;
+  EXPECT_TRUE(CompareMatrices(expected_schur_complement,
+                              data.schur_complement.get_D_complement(), 1e-12,
+                              MatrixCompareType::relative));
 }
 
-// TODO(xuchenhan-tri): Unit tests that cover other exit conditions of
-// the iterative solver are missing.
+INSTANTIATE_TEST_SUITE_P(AdvanceOneTimeStepLinear, FemSolverTest,
+                         ::testing::Values(true, false));
 
 }  // namespace
 }  // namespace internal

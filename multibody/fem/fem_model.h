@@ -237,6 +237,12 @@ class FemModel {
     return dirichlet_bc_;
   }
 
+  /* Declares this FemModel as linear. */
+  void set_linear(bool is_linear) { is_linear_ = is_linear; }
+
+  /* Returns true this FemModel has been declared to be linear */
+  bool is_linear() const { return is_linear_; }
+
   /** (Internal use only) Throws std::exception to report a mismatch between
   the FEM model and state that were passed to API method `func`. */
   void ThrowIfModelStateIncompatible(const char* func,
@@ -307,6 +313,7 @@ class FemModel {
   Vector3<T> gravity_{0, 0, -9.81};
   /* The Dirichlet boundary condition that the model is subject to. */
   internal::DirichletBoundaryCondition<T> dirichlet_bc_;
+  bool is_linear_{false};
 };
 
 }  // namespace fem

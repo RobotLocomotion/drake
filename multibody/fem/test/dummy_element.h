@@ -70,8 +70,8 @@ class DummyElement final : public FemElement<DummyElement> {
         A(i, j) = 2.7 * i + 3.1 * j;
       }
     }
-    // A + A^T is guaranteed PSD. Adding the identity matrix to it makes it SPD.
-    return (A + A.transpose()) +
+    // A * A^T is guaranteed PSD. Adding the identity matrix to it makes it SPD.
+    return (A * A.transpose()) +
            Eigen::Matrix<T, kNumDofs, kNumDofs>::Identity();
   }
 
