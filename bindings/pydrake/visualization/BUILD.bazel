@@ -173,6 +173,14 @@ drake_py_unittest(
 )
 
 drake_py_unittest(
+    name = "model_visualizer_camera_test",
+    flaky = True,
+    deps = [
+        ":model_visualizer",
+    ],
+)
+
+drake_py_unittest(
     name = "plotting_test",
     deps = [
         ":visualization",
