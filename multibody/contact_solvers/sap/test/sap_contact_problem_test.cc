@@ -120,6 +120,11 @@ GTEST_TEST(ContactProblem, Construction) {
   EXPECT_EQ(problem.num_velocities(3), 2);
   EXPECT_EQ(problem.dynamics_matrix(), A);
   EXPECT_EQ(problem.v_star(), v_star);
+
+  const std::vector<int> expected_velocities_start{0, 2, 5, 9};
+  for (int i = 0; i < problem.num_cliques(); ++i) {
+    EXPECT_EQ(problem.velocities_start(i), expected_velocities_start[i]);
+  }
 }
 
 // Unit test that AddConstraint() throws for the right reasons when arguments
