@@ -452,6 +452,21 @@ class ShapeToLcm : public ShapeReifier {
   }
 
  private:
+  // Tests the extension to see if the mesh type is unsupported; if so, it
+  // sets the bool* (referenced as data) to false and dispatches a one-time
+  // warning.
+  bool IsUnsupportedMesh(std::string_view extension, void* data) const {
+    if (extension != ".obj" || extension != ".gltf") {
+      static const logging::Warn one_time(
+          "DrakeVisualizer only supports Mesh/Convex specifications which use "
+          ".obj files. Mesh specifications using other mesh types (e.g., "
+          ".stl, .dae, etc.) will be ignored.");
+      *static_cast<bool*>(data) = false;
+      return true;
+    }
+    return false;
+  }
+
   lcmt_viewer_geometry_data geometry_data_{};
   // The transform from the geometry frame to its parent frame.
   RigidTransformd X_PG_;
