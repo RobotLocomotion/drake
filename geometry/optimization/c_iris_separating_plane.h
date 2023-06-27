@@ -22,10 +22,10 @@ namespace optimization {
  set of the configuration-space variable `s`, please refer
  to RationalForwardKinematics class or the paper above on the meaning of s.
  */
-// TODO(hongkai.dai): I might support kConstant in the future.
 // TODO(hongkai.dai): Deprecate this class.
 enum class SeparatingPlaneOrder {
   kAffine = 1,  ///< a and b are affine function of s.
+  // N.B. Never add new enum values here!
 };
 
 template <typename T>
@@ -41,8 +41,10 @@ struct CIrisSeparatingPlane : public CSpaceSeparatingPlane<T> {
                        const Eigen::Ref<const VectorX<T>>& m_decision_variables)
       : CSpaceSeparatingPlane<T>(m_a, m_b, m_positive_side_geometry,
                                  m_negative_side_geometry, m_expressed_body,
-                                 static_cast<int>(m_plane_order),
-                                 m_decision_variables) {}
+                                 1 /* plane_order */, m_decision_variables) {
+    // Cross-check the hard-coded plane_order for CSpaceSeparatingPlane.
+    DRAKE_DEMAND(m_plane_order == SeparatingPlaneOrder::kAffine);
+  }
 };
 
 /**
@@ -58,8 +60,10 @@ template <typename D, typename S, typename V>
 void CalcPlane(const VectorX<D>& decision_variables,
                const VectorX<S>& s_for_plane, SeparatingPlaneOrder order,
                Vector3<V>* a_val, V* b_val) {
-  CalcPlane(decision_variables, s_for_plane, static_cast<int>(order), a_val,
-            b_val);
+  // Cross-check the hard-coded plane order immediately below.
+  DRAKE_DEMAND(order == SeparatingPlaneOrder::kAffine);
+  const int plane_order = 1;
+  CalcPlane(decision_variables, s_for_plane, plane_order, a_val, b_val);
 }
 }  // namespace optimization
 }  // namespace geometry
