@@ -15,6 +15,7 @@ template <typename T, int num_locations>
 struct LinearConstitutiveModelTraits {
   using Scalar = T;
   using Data = LinearConstitutiveModelData<T, num_locations>;
+  static constexpr int is_linear = true;
 };
 
 /* Implements the infinitesimal-strain linear elasticity constitutive model as

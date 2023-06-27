@@ -13,7 +13,7 @@ namespace {
 using Eigen::Vector3d;
 using Eigen::VectorXd;
 
-using DummyElementTraits = FemElementTraits<DummyElement>;
+using DummyElementTraits = FemElementTraits<DummyElement<true>>;
 using T = DummyElementTraits::T;
 using Data = DummyElementTraits::Data;
 constexpr int kNumNodes = DummyElementTraits::num_nodes;
@@ -75,12 +75,13 @@ class FemElementTest : public ::testing::Test {
   std::unique_ptr<internal::FemStateSystem<T>> fem_state_system_;
   std::unique_ptr<FemState<T>> fem_state_;
   /* FemElement under test. */
-  DummyElement element_{kNodeIndices, kConstitutiveModel, kDampingModel};
+  DummyElement<true> element_{kNodeIndices, kConstitutiveModel, kDampingModel};
   systems::CacheIndex cache_index_;
 };
 
 TEST_F(FemElementTest, Constructor) {
   EXPECT_EQ(element_.node_indices(), kNodeIndices);
+  EXPECT_TRUE(element_.is_linear);
 }
 
 /* Tests that the element data logic is correctly executed through
@@ -98,7 +99,7 @@ TEST_F(FemElementTest, ExtractElementDofs) {
   for (int i = 0; i < kNumNodes; ++i) {
     expected_element_q.segment<3>(3 * i) = q().segment<3>(3 * kNodeIndices[i]);
   }
-  EXPECT_EQ(DummyElement::ExtractElementDofs(kNodeIndices, q()),
+  EXPECT_EQ(DummyElement<true>::ExtractElementDofs(kNodeIndices, q()),
             expected_element_q);
 }
 
@@ -168,7 +169,7 @@ TEST_F(FemElementTest, AddScaledGravityForce) {
   const Data& data = EvalElementData();
   /* We explicitly test the gravity force calculation implementation in
    FemElement (instead of the specific one in DummyElement). */
-  const FemElement<DummyElement>& base_fem_element = element_;
+  const FemElement<DummyElement<true>>& base_fem_element = element_;
   base_fem_element.AddScaledGravityForce(data, scale, gravity_vector,
                                          &scaled_gravity_force);
   const VectorXd expected_scaled_gravity_force =

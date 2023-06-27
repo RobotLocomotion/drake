@@ -15,6 +15,8 @@ constexpr int kNumLocations = 1;
 GTEST_TEST(LinearLinearCorotatedModelTest, Parameters) {
   TestParameters<LinearCorotatedModel<double, kNumLocations>>();
   TestParameters<LinearCorotatedModel<AutoDiffXd, kNumLocations>>();
+  LinearCorotatedModel<double, kNumLocations> model(100, 0.4);
+  EXPECT_TRUE(model.is_linear);
 }
 
 GTEST_TEST(LinearLinearCorotatedModelTest, UndeformedState) {

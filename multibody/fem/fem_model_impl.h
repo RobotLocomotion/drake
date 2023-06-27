@@ -285,6 +285,8 @@ class FemModelImpl : public FemModel<typename Element::T> {
             .cache_index();
   }
 
+  bool DoIsLinear() const final { return Element::is_linear; }
+
   /* Computes the element data for each element in this FEM model. */
   void CalcElementData(const systems::Context<T>& context,
                        std::vector<Data>* data) const {
