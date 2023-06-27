@@ -577,7 +577,6 @@ GTEST_TEST(RotationalInertia, PrincipalMomentsOfInertiaEtc) {
   Izz = Imax + kTolerance;        // Maximum moment of inertia.
   I_BBcm_W = RotationalInertia<double>(Ixx, Iyy, Izz);
   I_BBcm_Q = I_BBcm_W.ReExpress(R_WQ.inverse());
-  std::cout << "\n" << I_BBcm_Q.CopyToFullMatrix3() << "\n";
   I_BBcm_P = I_BBcm_Q.CalcPrincipalMomentsAndAxesOfInertia();
   principal_moments = I_BBcm_P.first;
   EXPECT_TRUE(CompareMatrices(Vector3<double>(Iyy, Ixx, Izz), principal_moments,
