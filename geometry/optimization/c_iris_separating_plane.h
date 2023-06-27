@@ -62,8 +62,8 @@ void CalcPlane(const VectorX<D>& decision_variables,
                Vector3<V>* a_val, V* b_val) {
   // Cross-check the hard-coded plane order immediately below.
   DRAKE_DEMAND(order == SeparatingPlaneOrder::kAffine);
-  const int plane_order = 1;
-  CalcPlane(decision_variables, s_for_plane, plane_order, a_val, b_val);
+  const int plane_degree = 1;
+  CalcPlane(decision_variables, s_for_plane, plane_degree, a_val, b_val);
 }
 }  // namespace optimization
 }  // namespace geometry

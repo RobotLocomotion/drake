@@ -74,11 +74,8 @@ struct CSpaceSeparatingPlane {
   VectorX<T> decision_variables;
 };
 
-/**
- Computes the parameters a, b in the plane { x | aᵀx+b=0 }.
- a and b are both polynomials of `vars_for_plane`. The coefficients of these
- polynomials are in `decision_variables` in graded reverse lexicographic order.
- */
+namespace internal {
+
 void CalcPlane(const VectorX<symbolic::Variable>& decision_variables,
                const VectorX<symbolic::Variable>& vars_for_plane,
                int plane_degree, Vector3<symbolic::Polynomial>* a_val,
@@ -92,6 +89,26 @@ void CalcPlane(const VectorX<double>& decision_variables,
 void CalcPlane(const VectorX<double>& decision_variables,
                const VectorX<double>& vars_for_plane, int plane_degree,
                Vector3<double>* a_val, double* b_val);
+
+}  // namespace internal
+
+/**
+ Computes the parameters a, b in the plane { x | aᵀx+b=0 }.
+ a and b are both polynomials of `vars_for_plane`. The coefficients of these
+ polynomials are in `decision_variables` in graded reverse lexicographic order.
+
+ @tparam D, S, V The valid combination of D, S, V are
+ 1. D=symbolic::Variable, S=symbolic::Variable, V=symbolic::Polynomial.
+ 2. D=double,             S=symbolic::Variable, V=symbolic::Polynomial
+ 3. D=double,             S=double,             V=double
+ */
+template <typename D, typename S, typename V>
+void CalcPlane(const VectorX<D>& decision_variables,
+               const VectorX<S>& s_for_plane, int plane_degree,
+               Vector3<V>* a_val, V* b_val) {
+  internal::CalcPlane(decision_variables, s_for_plane, plane_degree, a_val,
+                      b_val);
+}
 
 }  // namespace optimization
 }  // namespace geometry

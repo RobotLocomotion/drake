@@ -97,6 +97,8 @@ void CalcPlaneImpl(const VectorX<T1>& decision_variables,
 
 }  // namespace
 
+namespace internal {
+
 void CalcPlane(const VectorX<symbolic::Variable>& decision_variables,
                const VectorX<symbolic::Variable>& vars_for_plane,
                int plane_degree, Vector3<symbolic::Polynomial>* a_val,
@@ -117,6 +119,7 @@ void CalcPlane(const VectorX<double>& decision_variables,
   CalcPlaneImpl(decision_variables, vars_for_plane, plane_degree, a_val, b_val);
 }
 
+}  // namespace internal
 }  // namespace optimization
 }  // namespace geometry
 }  // namespace drake

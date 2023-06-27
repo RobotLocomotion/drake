@@ -106,8 +106,9 @@ CspaceFreePath::CspaceFreePath(const multibody::MultibodyPlant<double>* plant,
         plane_decision_vars(i) =
             symbolic::Variable(fmt::format("plane_var{}", i));
       }
-      CalcPlane(plane_decision_vars, Vector1<symbolic::Variable>(mu_),
-                plane_order, &a, &b);
+      CalcPlane<symbolic::Variable, symbolic::Variable, symbolic::Polynomial>(
+          plane_decision_vars, Vector1<symbolic::Variable>(mu_), plane_order,
+          &a, &b);
 
       // Compute the expressed body for this plane
       const multibody::BodyIndex expressed_body =
