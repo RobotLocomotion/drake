@@ -138,11 +138,11 @@ bool ShouldDisableRedirect() {
 
 }  // namespace
 
-void MaybeRedirectPythonLogging() {
+bool MaybeRedirectPythonLogging() {
   if (ShouldDisableRedirect()) {
     drake::log()->debug("Will not redirect C++ logging to Python ({}={})",
         kDisableEnv, kDisableValue);
-    return;
+    return false;
   }
   // Inspect the spdlog configuration to check that it exactly matches how
   // drake/common/text_logging.cc configures itself by default. If the spdlog
@@ -153,27 +153,27 @@ void MaybeRedirectPythonLogging() {
   if (root_sinks.size() != 1) {
     drake::log()->debug(
         "Will not redirect C++ logging to Python (num root sinks != 1)");
-    return;
+    return false;
   }
   spdlog::sinks::sink* const root_sink = root_sinks.front().get();
   auto* dist_sink = dynamic_cast<spdlog::sinks::dist_sink_mt*>(root_sink);
   if (dist_sink == nullptr) {
     drake::log()->debug(
         "Will not redirect C++ logging to Python (wrong root sink)");
-    return;
+    return false;
   }
   std::vector<std::shared_ptr<spdlog::sinks::sink> >& dist_sinks =
       dist_sink->sinks();
   if (dist_sinks.size() != 1) {
     drake::log()->debug(
         "Will not redirect C++ logging to Python (num sinks != 1)");
-    return;
+    return false;
   }
   spdlog::sinks::sink* const only_sink = dist_sinks.front().get();
   if (dynamic_cast<spdlog::sinks::stderr_sink_mt*>(only_sink) == nullptr) {
     drake::log()->debug(
         "Will not redirect C++ logging to Python (not a stderr sink)");
-    return;
+    return false;
   }
   // If we reach this point, then we've matched text_logging.cc exactly.
 
@@ -186,9 +186,36 @@ void MaybeRedirectPythonLogging() {
   dist_sink->set_sinks({});
 
   drake::log()->trace("Successfully redirected C++ logs to Python");
+
+  return true;
 }
+
+bool MaybeUndoRedirectPythonLogging() {
+  // Remove the Python logging sink (if it exists).
+  drake::log()->trace("Removing pydrake spdlog sink");
+  auto& sinks = drake::log()->sinks();
+  if (sinks.size() != 2) {
+    drake::log()->debug(
+        "Will not undo redirect (num root sinks == 2)");
+    return false;
+  }
+  auto* dist_sink =
+      dynamic_cast<spdlog::sinks::dist_sink_mt*>(
+          drake::logging::get_dist_sink());
+  if (dist_sink == nullptr) {
+    drake::log()->debug("Will not undo redirect (not a dist sink)");
+    return false;
+  }
+  // Use only the stderr sink.
+  sinks.resize(1);
+  auto new_stderr_sink = std::make_shared<spdlog::sinks::stderr_sink_mt>();
+  dist_sink->set_sinks({new_stderr_sink});
+  return true;
+}
+
 #else
-void MaybeRedirectPythonLogging() {}
+bool MaybeRedirectPythonLogging() { return false; }
+bool MaybeUndoRedirectPythonLogging() { return false; }
 #endif
 
 }  // namespace internal
