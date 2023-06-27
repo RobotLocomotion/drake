@@ -302,6 +302,22 @@ TEST_P(SapLimitConstraintTest, Clone) {
   EXPECT_EQ(clone->parameters().beta(), p.beta());
 }
 
+TEST_P(SapLimitConstraintTest, AccumulateGeneralizedImpulses) {
+  const MatrixXd J = dut_->first_clique_jacobian().MakeDenseMatrix();
+  const int nk = dut_->num_constraint_equations();
+  const int nv = dut_->num_velocities(0);
+  // Arbitrary vector of impulses.
+  const VectorXd gamma = VectorXd::LinSpaced(nk, 1.2, 2.5);
+  // Arbitrary initial value.
+  const VectorXd tau0 = VectorXd::LinSpaced(nv, -5.0, 3.7);
+  const VectorXd tau_expected = tau0 + J.transpose() * gamma;
+  VectorXd tau = tau0;
+  dut_->AccumulateGeneralizedImpulses(0 /* Only one clique */, gamma, &tau);
+  EXPECT_TRUE(CompareMatrices(tau, tau_expected,
+                              std::numeric_limits<double>::epsilon(),
+                              MatrixCompareType::relative));
+}
+
 // Generate cases with finite and infinite lower/upper bounds.
 std::vector<TestConfig> MakeTestCases() {
   return std::vector<TestConfig>{
