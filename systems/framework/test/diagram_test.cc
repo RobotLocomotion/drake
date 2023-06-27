@@ -15,6 +15,7 @@
 #include "drake/systems/framework/fixed_input_port_value.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/output_port.h"
+#include "drake/systems/framework/test_utilities/initialization_test_system.h"
 #include "drake/systems/framework/test_utilities/pack_value.h"
 #include "drake/systems/framework/test_utilities/scalar_conversion.h"
 #include "drake/systems/primitives/adder.h"
@@ -3691,59 +3692,6 @@ GTEST_TEST(RandomContextTest, SetRandomTest) {
 
 // Tests initialization works properly for all subsystems.
 GTEST_TEST(InitializationTest, InitializationTest) {
-  // Note: this class is duplicated in leaf_system_test.
-  class InitializationTestSystem : public LeafSystem<double> {
-   public:
-    InitializationTestSystem() {
-      PublishEvent<double> pub_event(
-          TriggerType::kInitialization,
-          std::bind(&InitializationTestSystem::InitPublish, this,
-                    std::placeholders::_1, std::placeholders::_2));
-      DeclareInitializationEvent(pub_event);
-
-      DeclareInitializationEvent(DiscreteUpdateEvent<double>(
-          TriggerType::kInitialization));
-      DeclareInitializationEvent(UnrestrictedUpdateEvent<double>(
-          TriggerType::kInitialization));
-    }
-
-    bool get_pub_init() const { return pub_init_; }
-    bool get_dis_update_init() const { return dis_update_init_; }
-    bool get_unres_update_init() const { return unres_update_init_; }
-
-   private:
-    void InitPublish(const Context<double>&,
-                     const PublishEvent<double>& event) const {
-      EXPECT_EQ(event.get_trigger_type(),
-                TriggerType::kInitialization);
-      pub_init_ = true;
-    }
-
-    void DoCalcDiscreteVariableUpdates(
-        const Context<double>&,
-        const std::vector<const DiscreteUpdateEvent<double>*>& events,
-        DiscreteValues<double>*) const final {
-      EXPECT_EQ(events.size(), 1);
-      EXPECT_EQ(events.front()->get_trigger_type(),
-                TriggerType::kInitialization);
-      dis_update_init_ = true;
-    }
-
-    void DoCalcUnrestrictedUpdate(
-        const Context<double>&,
-        const std::vector<const UnrestrictedUpdateEvent<double>*>& events,
-        State<double>*) const final {
-      EXPECT_EQ(events.size(), 1);
-      EXPECT_EQ(events.front()->get_trigger_type(),
-                TriggerType::kInitialization);
-      unres_update_init_ = true;
-    }
-
-    mutable bool pub_init_{false};
-    mutable bool dis_update_init_{false};
-    mutable bool unres_update_init_{false};
-  };
-
   DiagramBuilder<double> builder;
 
   auto sys0 = builder.AddSystem<InitializationTestSystem>();
@@ -3752,17 +3700,7 @@ GTEST_TEST(InitializationTest, InitializationTest) {
   auto dut = builder.Build();
 
   auto context = dut->CreateDefaultContext();
-  auto discrete_updates = dut->AllocateDiscreteVariables();
-  auto state = context->CloneState();
-  auto init_events = dut->AllocateCompositeEventCollection();
-  dut->GetInitializationEvents(*context, init_events.get());
-
-  dut->Publish(*context, init_events->get_publish_events());
-  dut->CalcDiscreteVariableUpdate(*context,
-                                  init_events->get_discrete_update_events(),
-                                  discrete_updates.get());
-  dut->CalcUnrestrictedUpdate(
-      *context, init_events->get_unrestricted_update_events(), state.get());
+  dut->ExecuteInitializationEvents(context.get());
 
   EXPECT_TRUE(sys0->get_pub_init());
   EXPECT_TRUE(sys0->get_dis_update_init());

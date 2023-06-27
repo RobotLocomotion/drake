@@ -727,6 +727,16 @@ class System : public SystemBase {
   void GetInitializationEvents(const Context<T>& context,
                                CompositeEventCollection<T>* events) const;
 
+  /** This method triggers all of the initialization events returned by
+  GetInitializationEvents(). The method allocates temporary storage to perform
+  the updates, and is intended only as a convenience method for callers who do
+  not want to use the full Simulator workflow.
+
+  Note that this is not fully equivalent to Simulator::Initialize() because
+  _only_ initialization events are handled here, while Simulator::Initialize()
+  also processes other events associated with time zero. */
+  void ExecuteInitializationEvents(Context<T>* context) const;
+
   /** Determines whether there exists a unique periodic timing (offset and
   period) that triggers one or more discrete update events (and, if so, returns
   that unique periodic timing). Thus, this method can be used (1) as a test to

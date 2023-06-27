@@ -120,9 +120,12 @@ class JointSliders final : public systems::LeafSystem<T> {
   value of the plant Context.
 
   @pre `diagram` must be a top-level (i.e., "root") diagram.
-  @pre `diagram` must contain this JointSliders system.
   @pre `diagram` must contain the `plant` that was passed into this
   JointSliders system's constructor.
+  @pre `diagram` must contain this JointSliders system, however the output of
+  these sliders need not be connected (even indirectly) to any `plant` input
+  port. The positions of the `plant` will be updated directly using a call to
+  `plant.SetPositions(...)` when the slider values change.
   */
   Eigen::VectorXd Run(const systems::Diagram<T>& diagram,
                       std::optional<double> timeout = std::nullopt,
