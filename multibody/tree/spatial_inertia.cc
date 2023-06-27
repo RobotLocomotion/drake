@@ -313,10 +313,11 @@ boolean<T> SpatialInertia<T>::IsPhysicallyValid() const {
   // non-finite or the center of mass or unit inertia matrix have NaN elements.
   boolean<T> ret_value = is_nonnegative_finite(mass_);
   if (ret_value) {
-    // Form a spatial inertia about the body's center of mass and then use
+    // Form a rotational inertia about the body's center of mass and then use
     // the well-documented tests in RotationalInertia to test validity.
-    const SpatialInertia<T> M_SScm_E = ShiftToCenterOfMass();
-    const RotationalInertia<T> I_SScm_E = M_SScm_E.CalcRotationalInertia();
+    const UnitInertia<T> G_SScm_E = G_SP_E_.ShiftToCenterOfMass(p_PScm_E_);
+    const RotationalInertia<T> I_SScm_E =
+        G_SScm_E.MultiplyByScalarSkipValidityCheck(mass_);
     ret_value = I_SScm_E.CouldBePhysicallyValid();
   }
   return ret_value;
