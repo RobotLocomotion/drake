@@ -41,6 +41,8 @@ class ConstitutiveModel {
   /* The number of locations at which the constitutive relationship is
    evaluated. */
   static constexpr int num_locations = Data::num_locations;
+  /* Is the constitutive model linear. */
+  static constexpr bool is_linear = Traits::is_linear;
 
   /* "Calc" Methods
    Methods for calculating the energy density and its derivatives given the

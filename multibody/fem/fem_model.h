@@ -237,6 +237,10 @@ class FemModel {
     return dirichlet_bc_;
   }
 
+  /** Returns true the equation G(x, v, a) = 0 (see class documentation)
+   corresponding to this %FemModel is linear. */
+  bool IsLinear() const { return DoIsLinear(); }
+
   /** (Internal use only) Throws std::exception to report a mismatch between
   the FEM model and state that were passed to API method `func`. */
   void ThrowIfModelStateIncompatible(const char* func,
@@ -294,6 +298,10 @@ class FemModel {
   virtual void DeclareCacheEntries(
       internal::FemStateSystem<T>* fem_state_system) = 0;
 
+  /** Derived classes should override this method to indicate if the model is
+   * linear. */
+  virtual bool DoIsLinear() const = 0;
+
   /** Returns the FemStateSystem that manages the states and cache entries in
    this %FemModel. */
   const internal::FemStateSystem<T>& fem_state_system() const {
@@ -307,6 +315,7 @@ class FemModel {
   Vector3<T> gravity_{0, 0, -9.81};
   /* The Dirichlet boundary condition that the model is subject to. */
   internal::DirichletBoundaryCondition<T> dirichlet_bc_;
+  bool is_linear_{false};
 };
 
 }  // namespace fem
