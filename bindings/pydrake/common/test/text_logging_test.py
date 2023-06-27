@@ -7,6 +7,7 @@ from logging import (
     NOTSET,
     WARNING,
 )
+import os
 import re
 import subprocess
 import sys
@@ -144,3 +145,21 @@ class TestTextLoggingExample(unittest.TestCase,
 
         # Confirm that the correct levels came out.
         self.assertEqual(effective_level, expected_level)
+
+    def test_disabled_via_env(self):
+        env = dict(os.environ)
+        env["_TEST_SPDLOG_LEVEL"] = "debug"
+        env["DRAKE_PYTHON_LOGGING"] = "0"
+        try:
+            output = subprocess.check_output(
+                ["bindings/pydrake/common/text_logging_example",
+                    "--use_nice_format=0",
+                    "--root_level=-1",
+                    "--drake_level=-1"],
+                stderr=subprocess.STDOUT,
+                encoding="utf8",
+                env=env)
+        except subprocess.CalledProcessError as e:
+            print(e.output, file=sys.stderr, flush=True)
+            raise
+        self.assertIn("Will not redirect", output)
