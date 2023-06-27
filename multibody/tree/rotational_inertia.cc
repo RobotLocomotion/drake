@@ -120,9 +120,13 @@ Vector3<double> RotationalInertia<T>::CalcPrincipalMomentsAndMaybeAxesOfInertia(
   if (principal_directions != nullptr) {
     const double &Imin = principal_moments(0);
     const double &Imax = principal_moments(2);
+    // Case: Triaxially symmetric moments of inertia (all 3 are ≈ equal).
     if (Imax - Imin <= kTolerance) {
       *principal_directions = math::RotationMatrix<double>::Identity();
     }
+    // TODO(Mitiguy) Return canonical principal directions for the other cases.
+    // Case: Axially symmetric moments of inertia (2 are equal, one differs).
+    // Case: Distinct principal moments of inertia (all 3 are different).
   }
   return principal_moments;
 }
