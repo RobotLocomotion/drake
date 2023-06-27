@@ -15,6 +15,8 @@ constexpr int kNumLocations = 1;
 GTEST_TEST(LinearConstitutiveModelTest, Parameters) {
   TestParameters<LinearConstitutiveModel<double, kNumLocations>>();
   TestParameters<LinearConstitutiveModel<AutoDiffXd, kNumLocations>>();
+  LinearConstitutiveModel<double, kNumLocations> model(100, 0.4);
+  EXPECT_TRUE(model.is_linear);
 }
 
 GTEST_TEST(LinearConstitutiveModelTest, UndeformedState) {

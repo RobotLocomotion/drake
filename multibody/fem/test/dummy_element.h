@@ -4,6 +4,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/multibody/fem/corotated_model.h"
 #include "drake/multibody/fem/damping_model.h"
 #include "drake/multibody/fem/fem_element.h"
 #include "drake/multibody/fem/linear_constitutive_model.h"
@@ -14,6 +15,7 @@ namespace fem {
 namespace internal {
 
 /* Forward declaration needed for defining the Traits below. */
+template <bool is_linear>
 class DummyElement;
 
 struct DummyData {
@@ -27,8 +29,8 @@ struct DummyData {
 
 /* The traits for the DummyElement. In this case, all of the traits are unique
  values so we can detect that each value is used in the expected context. */
-template <>
-struct FemElementTraits<DummyElement> {
+template <bool is_linear>
+struct FemElementTraits<DummyElement<is_linear>> {
   using T = double;
   static constexpr int num_quadrature_points = 1;
   static constexpr int num_natural_dimension = 2;
@@ -36,19 +38,27 @@ struct FemElementTraits<DummyElement> {
   /* See `DoComputeData` below on how this dummy data is updated. */
   using Data = DummyData;
   static constexpr int num_dofs = Data::num_dofs;
-  using ConstitutiveModel = LinearConstitutiveModel<T, num_quadrature_points>;
+
+  using ConstitutiveModel =
+      std::conditional_t<is_linear,
+                         LinearConstitutiveModel<T, num_quadrature_points>,
+                         CorotatedModel<T, num_quadrature_points>>;
 };
 
 /* A simple FemElement implementation. The calculation methods are implemented
  as returning a fixed value (which can independently be accessed by calling
  the corresponding dummy method -- e.g., CalcInverseDynamics() should return
- the value in inverse_dynamics_force(). */
-class DummyElement final : public FemElement<DummyElement> {
+ the value in inverse_dynamics_force().
+ @tparam is_linear If true, FemModels consisting of this element returns true
+ for is_linear(). */
+template <bool is_linear>
+class DummyElement final : public FemElement<DummyElement<is_linear>> {
  public:
   using Base = FemElement<DummyElement>;
   using Traits = FemElementTraits<DummyElement>;
   using ConstitutiveModel = typename Traits::ConstitutiveModel;
   using T = typename Base::T;
+  using Data = typename Traits::Data;
   static constexpr int kNumDofs = Traits::num_dofs;
 
   DummyElement(const std::array<FemNodeIndex, Traits::num_nodes>& node_indices,
@@ -70,8 +80,8 @@ class DummyElement final : public FemElement<DummyElement> {
         A(i, j) = 2.7 * i + 3.1 * j;
       }
     }
-    // A + A^T is guaranteed PSD. Adding the identity matrix to it makes it SPD.
-    return (A + A.transpose()) +
+    // A * A^T is guaranteed PSD. Adding the identity matrix to it makes it SPD.
+    return (A * A.transpose()) +
            Eigen::Matrix<T, kNumDofs, kNumDofs>::Identity();
   }
 
@@ -88,7 +98,7 @@ class DummyElement final : public FemElement<DummyElement> {
   /* Dummy element provides zero gravity force so that we have complete control
    over what the residual is. */
   void AddScaledGravityForce(const Data&, const T&, const Vector3<T>&,
-                             EigenPtr<Vector<T, num_dofs>>) const {}
+                             EigenPtr<Vector<T, kNumDofs>>) const {}
 
  private:
   /* Friend the base class so that the interface in the CRTP base class can
