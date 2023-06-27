@@ -77,20 +77,17 @@ Vector3<double> RotationalInertia<T>::CalcPrincipalMomentsAndMaybeAxesOfInertia(
     // Calculate eigenvalues, possibly with eigenvectors.
     // TODO(Mitiguy) Since this is 3x3 matrix, consider Eigen's specialized
     //  compute_direct() method instead of compute() which uses QR.
-    //  compute_direct() calculates eigenvalues with a closed-form algorithm
-    //  that is usually signficantly faster than the QR iterative algorithm but
-    //  may be less accurate (e.g., for 3x3 matrix of doubles, accuracy
-    //  ≈ 1.0E-8).
+    // compute_direct() calculates eigenvalues with a closed-form algorithm that
+    // is usually signficantly faster than the QR iterative algorithm but may
+    // be less accurate (e.g., for 3x3 matrix of doubles, accuracy ≈ 1.0E-8).
     Eigen::SelfAdjointEigenSolver<Matrix3<double>> eig_solve;
-    const int compute_eigenvectors = principal_directions != nullptr
-                                         ? Eigen::ComputeEigenvectors
-                                         : Eigen::EigenvaluesOnly;
+    const int compute_eigenvectors = principal_directions != nullptr ?
+        Eigen::ComputeEigenvectors : Eigen::EigenvaluesOnly;
     eig_solve.compute(I_double, compute_eigenvectors);
     if (eig_solve.info() != Eigen::Success) {
       const std::string error_message = fmt::format(
           "{}(): Unable to calculate the eigenvalues or eigenvectors of the "
-          "3x3 matrix associated with a RotationalInertia.",
-          __func__);
+          "3x3 matrix associated with a RotationalInertia.", __func__);
       throw std::logic_error(error_message);
     }
 
@@ -104,8 +101,7 @@ Vector3<double> RotationalInertia<T>::CalcPrincipalMomentsAndMaybeAxesOfInertia(
       // Bz are expressed in the same frame E as `this` UnitInertia.
       const Vector3<double>& Bx_E = eig_solve.eigenvectors().col(0);
       const Vector3<double>& By_E = eig_solve.eigenvectors().col(1);
-      const Vector3<double> Bz_E =
-          Bx_E.cross(By_E);  // Ensure right-handed set.
+      const Vector3<double> Bz_E = Bx_E.cross(By_E);  // Ensure right-handed set
       *principal_directions =
           math::RotationMatrix<double>::MakeFromOrthonormalColumns(Bx_E, By_E,
                                                                    Bz_E);
@@ -123,7 +119,6 @@ Vector3<double> RotationalInertia<T>::CalcPrincipalMomentsAndMaybeAxesOfInertia(
   // matrix works, so we pick a "canonical" one, namely the identity matrix.
   if (principal_directions != nullptr) {
     const double &Imin = principal_moments(0);
-    // const double &Imed = principal_moments(1);
     const double &Imax = principal_moments(2);
     if (Imax - Imin <= kTolerance) {
       *principal_directions = math::RotationMatrix<double>::Identity();

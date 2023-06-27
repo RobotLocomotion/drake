@@ -1234,29 +1234,6 @@ GTEST_TEST(SpatialInertia, CalcPrincipalHalfLengthsAndPoseForEquivalentShape) {
   EXPECT_TRUE(X_BA.rotation().IsExactlyEqualTo(R_identity));
   EXPECT_TRUE(X_BA.translation() == Vector3<double>::Zero());
 
-
-  // Form the spatial inertia M_BBcm_B for a spheroid B. Verify the
-  // function under test reproduces radii lmax = lmed = a and lmin = c.
-  // Verify principal directions Ax, Ay, Az in a canonical form as R_BA has
-  // simple rotation about z direction, even though M_BBcm_B is re-expressed in
-  // a rotated frame E.
-  // Verify p_BcmAo_B is zero (since Ao should be located at Bcm).
-  drake::math::RollPitchYaw<double> rpy(-0.7, 0.9, 1.3);
-  drake::math::RotationMatrix<double> R_BE(rpy);
-  M_BBcm_B =
-      SpatialInertia<double>::SolidEllipsoidWithDensity(density, a, a, c);
-  SpatialInertia<double> M_BBcm_E = M_BBcm_B.ReExpress(R_BE);
-  std::tie(abc, X_BA) =
-      M_BBcm_E.CalcPrincipalSemiDiametersAndPoseForSolidEllipsoid();
-  EXPECT_TRUE(CompareMatrices(Vector3<double>(a, a, c), abc, kTolerance));
-#if 0
-  // PAULFIX;
-  EXPECT_TRUE(CompareMatrices(X_BA.rotation().matrix(), R_identity.matrix(),
-                              kTolerance));
-#endif
-  EXPECT_TRUE(X_BA.translation() == Vector3<double>::Zero());
-
-
   // Form the spatial inertia M_BBcm_B for a solid box B. Verify the function
   // under test reproduces half-lengths lmax = a, lmed = b, lmin = c.
   // Verify principal directions Ax, Ay, Az (R_BA is an identity matrix).
@@ -1281,7 +1258,8 @@ GTEST_TEST(SpatialInertia, CalcPrincipalHalfLengthsAndPoseForEquivalentShape) {
   // are unchanged and principal axes directions Ax Ay Az are parallel to
   // Bx, By, Bz (although Bx ≠ Ex, By ≠ Ey).
   // Note: This tests a rotational inertia with non-zero products of inertia.
-  R_BE = drake::math::RotationMatrix<double>::MakeZRotation(M_PI / 6.0);
+  drake::math::RotationMatrix<double> R_BE =
+      drake::math::RotationMatrix<double>::MakeZRotation(M_PI / 6.0);
   SpatialInertia<double> M_BBo_E = M_BBo_B.ReExpress(R_BE);
   const Vector3<double> G_products = M_BBo_E.get_unit_inertia().get_products();
   EXPECT_GE(std::abs(G_products[1]), 0.1);  // Sufficiently non-zero.
