@@ -73,14 +73,14 @@ class CspaceFreePath {
    @param maximum_path_degree Paths will be univariate polynomials in a single
    indeterminate μ ∈ [0,1]. This is the maximum degree of the polynomial paths
    in  μ this CspaceFreePath will certify.
-   @param plane_order The certificate will be in terms of a polynomial,
+   @param plane_degree The certificate will be in terms of a polynomial,
    parametric hyperplane in the single indeterminate μ ∈ [0,1]. This is the
    degree of the planes used.
    */
   CspaceFreePath(const multibody::MultibodyPlant<double>* plant,
                  const geometry::SceneGraph<double>* scene_graph,
                  const Eigen::Ref<const Eigen::VectorXd>& q_star,
-                 int maximum_path_degree, int plane_order);
+                 int maximum_path_degree, int plane_degree);
 
   ~CspaceFreePath() {}
 
@@ -129,7 +129,7 @@ class CspaceFreePath {
 
   [[nodiscard]] int max_degree() const { return max_degree_; }
 
-  [[nodiscard]] int plane_order() const { return plane_order_; }
+  [[nodiscard]] int plane_degree() const { return plane_degree_; }
 
   /**
    separating_planes()[map_geometries_to_separating_planes.at(geometry1_id,
@@ -194,7 +194,7 @@ class CspaceFreePath {
       link_geometries_;
 
   // The degree of the separating planes.
-  const int plane_order_;
+  const int plane_degree_;
 
   // The path parametrization variable going between 0 and 1.
   const symbolic::Variable mu_;

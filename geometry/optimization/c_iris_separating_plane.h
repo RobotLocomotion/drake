@@ -41,8 +41,8 @@ struct CIrisSeparatingPlane : public CSpaceSeparatingPlane<T> {
                        const Eigen::Ref<const VectorX<T>>& m_decision_variables)
       : CSpaceSeparatingPlane<T>(m_a, m_b, m_positive_side_geometry,
                                  m_negative_side_geometry, m_expressed_body,
-                                 1 /* plane_order */, m_decision_variables) {
-    // Cross-check the hard-coded plane_order for CSpaceSeparatingPlane.
+                                 1 /* plane_degree */, m_decision_variables) {
+    // Cross-check the hard-coded plane_degree for CSpaceSeparatingPlane.
     DRAKE_DEMAND(m_plane_order == SeparatingPlaneOrder::kAffine);
   }
 };

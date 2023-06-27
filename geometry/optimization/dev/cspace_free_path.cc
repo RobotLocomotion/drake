@@ -74,12 +74,12 @@ PlaneSeparatesGeometriesOnPath::PlaneSeparatesGeometriesOnPath(
 CspaceFreePath::CspaceFreePath(const multibody::MultibodyPlant<double>* plant,
                                const geometry::SceneGraph<double>* scene_graph,
                                const Eigen::Ref<const Eigen::VectorXd>& q_star,
-                               int maximum_path_degree, int plane_order)
+                               int maximum_path_degree, int plane_degree)
     : rational_forward_kin_(plant),
       scene_graph_{*scene_graph},
       q_star_{q_star},
       link_geometries_{internal::GetCollisionGeometries(*plant, *scene_graph)},
-      plane_order_{plane_order},
+      plane_degree_{plane_degree},
       mu_(symbolic::Variable("mu")),
       max_degree_(maximum_path_degree),
       path_(initialize_path_map(this, maximum_path_degree,
@@ -94,7 +94,7 @@ CspaceFreePath::CspaceFreePath(const multibody::MultibodyPlant<double>* plant,
       rational_forward_kin_.plant(), scene_graph_, link_geometries_,
       &collision_pairs);
 
-  const int num_coeffs_per_poly = plane_order + 1;
+  const int num_coeffs_per_poly = plane_degree + 1;
   separating_planes_.reserve(num_collision_pairs);
   for (const auto& [link_pair, geometry_pairs] : collision_pairs) {
     for (const auto& geometry_pair : geometry_pairs) {
@@ -107,7 +107,7 @@ CspaceFreePath::CspaceFreePath(const multibody::MultibodyPlant<double>* plant,
             symbolic::Variable(fmt::format("plane_var{}", i));
       }
       CalcPlane<symbolic::Variable, symbolic::Variable, symbolic::Polynomial>(
-          plane_decision_vars, Vector1<symbolic::Variable>(mu_), plane_order,
+          plane_decision_vars, Vector1<symbolic::Variable>(mu_), plane_degree,
           &a, &b);
 
       // Compute the expressed body for this plane
@@ -117,7 +117,7 @@ CspaceFreePath::CspaceFreePath(const multibody::MultibodyPlant<double>* plant,
               link_pair.second());
       separating_planes_.emplace_back(a, b, geometry_pair.first,
                                       geometry_pair.second, expressed_body,
-                                      plane_order_, plane_decision_vars);
+                                      plane_degree_, plane_decision_vars);
 
       map_geometries_to_separating_planes_.emplace(
           SortedPair<geometry::GeometryId>(geometry_pair.first->id(),

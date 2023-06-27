@@ -35,18 +35,18 @@ struct CSpaceSeparatingPlane {
       Vector3<symbolic::Polynomial> m_a, symbolic::Polynomial m_b,
       const CIrisCollisionGeometry* m_positive_side_geometry,
       const CIrisCollisionGeometry* m_negative_side_geometry,
-      multibody::BodyIndex m_expressed_body, int m_plane_order,
+      multibody::BodyIndex m_expressed_body, int m_plane_degree,
       const Eigen::Ref<const VectorX<T>>& m_decision_variables)
       : a{std::move(m_a)},
         b{std::move(m_b)},
         positive_side_geometry{m_positive_side_geometry},
         negative_side_geometry{m_negative_side_geometry},
         expressed_body{m_expressed_body},
-        plane_order{m_plane_order},
+        plane_degree{m_plane_degree},
         decision_variables{m_decision_variables} {}
 
   DRAKE_DEPRECATED("2023-10-01",
-                   "The overload without plane_order will be removed.")
+                   "The overload without plane_degree will be removed.")
   CSpaceSeparatingPlane(
       Vector3<symbolic::Polynomial> m_a, symbolic::Polynomial m_b,
       const CIrisCollisionGeometry* m_positive_side_geometry,
@@ -56,7 +56,7 @@ struct CSpaceSeparatingPlane {
       : CSpaceSeparatingPlane(std::move(m_a), std::move(m_b),
                               m_positive_side_geometry,
                               m_negative_side_geometry, m_expressed_body,
-                              1 /* plane_order */, m_decision_variables) {}
+                              1 /* plane_degree */, m_decision_variables) {}
 
   /// Return the geometry on the specified side.
   [[nodiscard]] const CIrisCollisionGeometry* geometry(
@@ -70,7 +70,7 @@ struct CSpaceSeparatingPlane {
   const CIrisCollisionGeometry* positive_side_geometry;
   const CIrisCollisionGeometry* negative_side_geometry;
   multibody::BodyIndex expressed_body;
-  int plane_order{1};
+  int plane_degree{1};
   VectorX<T> decision_variables;
 };
 
