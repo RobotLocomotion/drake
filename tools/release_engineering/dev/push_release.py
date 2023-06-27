@@ -148,10 +148,14 @@ class _State:
         if self.options.dry_run:
             print(f'push {asset.name!r} to s3://{bucket}/{path}')
         else:
+            self._begin('downloading', asset.name)
             local_path = os.path.join(self._scratch.name, asset.name)
             assert asset.download(path=local_path) is not None
+            self._done()
 
+            self._begin('pushing', asset.name, f's3://{bucket}/{path}')
             self._s3.upload_file(local_path, bucket, path)
+            self._done()
 
     def _compute_hash(self, path: str, algorithm: str):
         """
@@ -197,12 +201,16 @@ class _State:
         prints what would be done.
         """
         local_path = os.path.join(self._scratch.name, name)
+        self._begin('downloading', name)
         assert self.release.archive(archive_format, local_path)
+        self._done()
 
         if self.options.dry_run:
             print(f'push {name!r} to s3://{bucket}/{path}/{name}')
         else:
-            self._s3.upload_file(local_path, bucket, path)
+            self._begin('pushing', name, f's3://{bucket}/{path}/{name}')
+            self._s3.upload_file(local_path, bucket, f'{path}/{name}')
+            self._done()
 
         # Calculate hashes and write hash files
         for algorithm in _ARCHIVE_HASHES:
@@ -210,16 +218,23 @@ class _State:
             hashfile_path = os.path.join(self._scratch.name, hashfile_name)
             remote_path = f'{path}/{hashfile_name}'
 
+            self._begin(f'computing {algorithm} for', name)
+
             digest = self._compute_hash(local_path, algorithm)
 
             with open(hashfile_path, 'wt') as f:
                 f.write(f'{digest.hexdigest()}  {name}\n')
 
+            self._done()
+
             if self.options.dry_run:
                 print(f'{name!r} {algorithm}: {digest.hexdigest()}')
                 print(f'push {hashfile_name!r} to s3://{bucket}/{remote_path}')
             else:
+                self._begin('pushing', hashfile_name,
+                            f's3://{bucket}/{remote_path}')
                 self._s3.upload_file(hashfile_path, bucket, remote_path)
+                self._done()
 
     def push_docker_tag(self, old_tag_name: str, new_tag_name: str,
                         repository: str = _DOCKER_REPOSITORY_NAME):
