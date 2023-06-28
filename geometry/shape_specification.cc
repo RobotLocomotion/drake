@@ -13,6 +13,18 @@
 
 namespace drake {
 namespace geometry {
+namespace {
+
+std::string GetExtensionLower(const std::string filename) {
+  std::filesystem::path file_path(filename);
+  std::string ext = file_path.extension();
+  std::transform(ext.begin(), ext.end(), ext.begin(), [](unsigned char c) {
+    return std::tolower(c);
+  });
+  return ext;
+}
+
+}  // namespace
 
 using math::RigidTransform;
 
@@ -79,6 +91,10 @@ Convex::Convex(const std::string& filename, double scale)
   if (std::abs(scale) < 1e-8) {
     throw std::logic_error("Convex |scale| cannot be < 1e-8.");
   }
+}
+
+std::string Convex::extension() const {
+  return GetExtensionLower(filename_);
 }
 
 Cylinder::Cylinder(double radius, double length)
@@ -149,6 +165,10 @@ Mesh::Mesh(const std::string& filename, double scale)
   if (std::abs(scale) < 1e-8) {
     throw std::logic_error("Mesh |scale| cannot be < 1e-8.");
   }
+}
+
+std::string Mesh::extension() const {
+  return GetExtensionLower(filename_);
 }
 
 MeshcatCone::MeshcatCone(double height, double a, double b)
