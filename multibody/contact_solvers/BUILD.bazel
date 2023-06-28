@@ -17,6 +17,7 @@ drake_cc_package_library(
         ":block_3x3_sparse_matrix",
         ":block_sparse_lower_triangular_or_symmetric_matrix",
         ":block_sparse_matrix",
+        ":conex_supernodal_solver",
         ":contact_configuration",
         ":contact_solver",
         ":contact_solver_results",
@@ -178,15 +179,25 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "supernodal_solver",
-    srcs = ["supernodal_solver.cc"],
-    hdrs = ["supernodal_solver.h"],
+    name = "conex_supernodal_solver",
+    srcs = ["conex_supernodal_solver.cc"],
+    hdrs = ["conex_supernodal_solver.h"],
     interface_deps = [
-        ":matrix_block",
+        ":supernodal_solver",
         "//common:essential",
     ],
     deps = [
         "@conex//conex:supernodal_solver",
+    ],
+)
+
+drake_cc_library(
+    name = "supernodal_solver",
+    srcs = ["supernodal_solver.cc"],
+    hdrs = ["supernodal_solver.h"],
+    deps = [
+        ":matrix_block",
+        "//common:essential",
     ],
 )
 
@@ -284,6 +295,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "supernodal_solver_test",
     deps = [
+        ":conex_supernodal_solver",
         ":supernodal_solver",
         "//common/test_utilities:expect_throws_message",
     ],
