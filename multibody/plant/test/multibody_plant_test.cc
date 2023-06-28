@@ -506,6 +506,9 @@ GTEST_TEST(MultibodyPlant, EmptyWorldElements) {
   EXPECT_EQ(plant.num_joints(), 0);
   EXPECT_EQ(plant.num_actuators(), 0);
   EXPECT_EQ(plant.num_constraints(), 0);
+  EXPECT_EQ(plant.num_coupler_constraints(), 0);
+  EXPECT_EQ(plant.num_distance_constraints(), 0);
+  EXPECT_EQ(plant.num_ball_constraints(), 0);
   EXPECT_EQ(plant.num_force_elements(), 1);
 }
 
