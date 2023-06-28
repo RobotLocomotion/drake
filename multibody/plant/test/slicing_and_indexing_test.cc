@@ -3,10 +3,10 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
-#include "drake/common/test_utilities/expect_throws_message.h"
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
+using Eigen::Vector3d;
 
 namespace drake {
 namespace multibody {
@@ -24,14 +24,14 @@ MatrixXd MakeMatrixWithLinSpacedValues(int rows, int cols) {
 GTEST_TEST(SlicingAndIndexing, SelectRows) {
   const VectorXd M = MakeMatrixWithLinSpacedValues(6, 1);
   const MatrixXd S = SelectRows(M, indices);
-  const VectorXd S_expected = (VectorXd(3, 1) << 2, 4, 5).finished();
+  const VectorXd S_expected = Vector3d(2, 4, 5);
   EXPECT_EQ(S, S_expected);
 }
 
 GTEST_TEST(SlicingAndIndexing, ExcludeRows) {
   const VectorXd M = MakeMatrixWithLinSpacedValues(6, 1);
   const MatrixXd S = ExcludeRows(M, indices);
-  const VectorXd S_expected = (VectorXd(3, 1) << 1, 3, 6).finished();
+  const VectorXd S_expected = Vector3d(1, 3, 6);
   EXPECT_EQ(S, S_expected);
 }
 
@@ -88,9 +88,7 @@ GTEST_TEST(SlicingAndIndexing, ExcludeCols) {
   {
     const contact_solvers::internal::MatrixBlock<double> M_block(
         contact_solvers::internal::Block3x3SparseMatrix<double>(0, 0));
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        ExcludeCols(M_block, indices),
-        ".*ExcludeCols only supports dense MatrixBlock arguments.*");
+    EXPECT_THROW(ExcludeCols(M_block, indices), std::runtime_error);
   }
 }
 
@@ -121,22 +119,10 @@ GTEST_TEST(SlicingAndIndexing, ExcludeRowsCols) {
 GTEST_TEST(SlicingAndIndexing, ExpandRows) {
   const VectorXd M = MakeMatrixWithLinSpacedValues(3, 1);
   const int expanded_size = 8;
-  // Test VectorX variant.
-  {
-    const VectorXd S = ExpandRows(M, expanded_size, indices);
-    const VectorXd S_expected =
-        (VectorXd(expanded_size) << 0, 1, 0, 2, 3, 0, 0, 0).finished();
-    EXPECT_EQ(S, S_expected);
-  }
-
-  // Test VectorBlock variant.
-  {
-    const Eigen::VectorBlock<const VectorXd>& M_block = M.head(3);
-    const VectorXd S = ExpandRows(M_block, expanded_size, indices);
-    const VectorXd S_expected =
-        (VectorXd(expanded_size) << 0, 1, 0, 2, 3, 0, 0, 0).finished();
-    EXPECT_EQ(S, S_expected);
-  }
+  const VectorXd S = ExpandRows(M, expanded_size, indices);
+  const VectorXd S_expected =
+      (VectorXd(expanded_size) << 0, 1, 0, 2, 3, 0, 0, 0).finished();
+  EXPECT_EQ(S, S_expected);
 }
 
 }  // namespace

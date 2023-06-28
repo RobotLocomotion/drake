@@ -46,10 +46,11 @@ MatrixX<T> SelectCols(const MatrixX<T>& M, const std::vector<int>& indices);
 template <typename T>
 MatrixX<T> ExcludeCols(const MatrixX<T>& M, const std::vector<int>& indices);
 
-// If M.is_dense() == true, returns a new possibly smaller matrix from M, by
-// excluding the columns indexed by @p indices. Does not handle non-dense
-// MatrixBlock.
-// @throws std::exception if !M.is_dense()
+// If indices.size() > 0 &&  M.is_dense() == true, returns a new possibly
+// smaller matrix from M, by excluding the columns indexed by @p indices.
+// Returns a copy of M if indices.size() == 0. Only supports non-dense
+// MatrixBlock arguments with indices.size() == 0.
+// @throws std::exception if indices.size() > 0 && !M.is_dense()
 // @pre indices.size() <= M.cols().
 // @pre indices argument is valid according to DemandIndicesValid().
 template <typename T>
@@ -80,11 +81,6 @@ VectorX<T> ExcludeRows(const VectorX<T>& v, const std::vector<int>& indices);
 template <typename T>
 VectorX<T> ExpandRows(const VectorX<T>& v, int rows_out,
                       const std::vector<int>& indices);
-
-template <typename T>
-VectorX<T> ExpandRows(const Eigen::VectorBlock<const VectorX<T>>& v,
-                      int rows_out, const std::vector<int>& indices);
-
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake

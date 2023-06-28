@@ -92,15 +92,10 @@ class MultibodyPlantDiscreteUpdateManagerAttorney {
     return plant.coupler_constraints_specs_;
   }
 
-  static const std::vector<int>& EvalUnlockedVelocityIndices(
-      const MultibodyPlant<T>& plant, const systems::Context<T>& context) {
-    return plant.EvalUnlockedVelocityIndices(context);
-  }
-
-  static const std::vector<std::vector<int>>&
-  EvalUnlockedVelocityIndicesPerTree(const MultibodyPlant<T>& plant,
-                                     const systems::Context<T>& context) {
-    return plant.EvalUnlockedVelocityIndicesPerTree(context);
+  static const internal::JointLockingCacheData<T>&
+  EvalJointLockingCache(const MultibodyPlant<T>& plant,
+                                       const systems::Context<T>& context) {
+    return plant.EvalJointLockingCache(context);
   }
 
   static const std::vector<internal::DistanceConstraintSpecs>&

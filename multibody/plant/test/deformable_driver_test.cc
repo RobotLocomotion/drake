@@ -36,6 +36,8 @@ class DeformableDriverTest : public ::testing::Test {
     body_id_ = RegisterSphere(deformable_model.get(), kRezHint);
     model_ = deformable_model.get();
     plant_->AddPhysicalModel(std::move(deformable_model));
+    const RigidBody<double>& body = plant_->AddRigidBody(
+        "rigid_body", SpatialInertia<double>::SolidSphereWithMass(1.0, 1.0));
     // N.B. Currently the manager only supports SAP.
     plant_->set_discrete_contact_solver(DiscreteContactSolver::kSap);
     plant_->Finalize();
@@ -51,6 +53,9 @@ class DeformableDriverTest : public ::testing::Test {
     diagram_context_ = diagram_->CreateDefaultContext();
     plant_context_ =
         &plant_->GetMyMutableContextFromRoot(diagram_context_.get());
+    // Lock the rigid body to test locking support in the presence of deformable
+    // DoFs.
+    body.Lock(plant_context_);
   }
 
   /* Forwarding calls to private member functions in DeformableDriver with the

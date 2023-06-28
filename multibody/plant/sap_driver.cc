@@ -18,6 +18,7 @@
 #include "drake/multibody/contact_solvers/sap/sap_solver_results.h"
 #include "drake/multibody/plant/compliant_contact_manager.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/plant/slicing_and_indexing.h"
 
 using drake::geometry::GeometryId;
 using drake::math::RotationMatrix;
@@ -624,6 +625,31 @@ void SapDriver<T>::CalcContactProblemCache(
   AddCouplerConstraints(context, &problem);
   AddDistanceConstraints(context, &problem);
   AddBallConstraints(context, &problem);
+
+  // Make a reduced version of the original contact problem using joint locking
+  // data.
+  const internal::JointLockingCacheData<T>& joint_locking_data =
+      manager().EvalJointLockingCache(context);
+  const std::vector<int>& locked_indices =
+      joint_locking_data.locked_velocity_indices;
+  const std::vector<std::vector<int>>& locked_indices_per_tree =
+      joint_locking_data.locked_velocity_indices_per_tree;
+
+  // If any tree has at least one known DoF, then we have to consider joint
+  // locking. Otherwise use nullptr semantics on the locked problem to indicate
+  // no joint locking is present.
+  bool has_locked_dofs =
+      std::any_of(locked_indices_per_tree.begin(),
+                  locked_indices_per_tree.end(), [](const std::vector<int>& v) {
+                    return v.size() > 0;
+                  });
+
+  if (has_locked_dofs) {
+    cache->sap_problem_locked = std::move(problem.MakeReduced(
+        locked_indices, locked_indices_per_tree, &cache->mapping));
+  } else {
+    cache->sap_problem_locked = nullptr;
+  }
 }
 
 template <typename T>
@@ -710,10 +736,20 @@ void SapDriver<T>::CalcContactSolverResults(
       EvalContactProblemCache(context);
   const SapContactProblem<T>& sap_problem = *contact_problem_cache.sap_problem;
 
+  bool has_locked_dofs = (contact_problem_cache.sap_problem_locked != nullptr);
+
   // We use the velocity stored in the current context as initial guess.
   const VectorX<T>& x0 =
       context.get_discrete_state(manager().multibody_state_index()).value();
   VectorX<T> v0 = x0.bottomRows(this->plant().num_velocities());
+
+  // Eliminate known DoFs.
+  if (has_locked_dofs) {
+    const auto& unlocked_indices =
+        manager().EvalJointLockingCache(context).unlocked_velocity_indices;
+    v0 = SelectRows(v0, unlocked_indices);
+  }
+
   if constexpr (std::is_same_v<T, double>) {
     if (manager().deformable_driver_ != nullptr) {
       const VectorX<double> deformable_v0 =
@@ -725,12 +761,18 @@ void SapDriver<T>::CalcContactSolverResults(
     }
   }
 
-  // Solve contact problem.
+  // Solve the reduced DOF locked problem.
   SapSolver<T> sap;
   sap.set_parameters(sap_parameters_);
   SapSolverResults<T> sap_results;
+
+  // Solve the locked problem only when joint locking is present.
   const SapSolverStatus status =
-      sap.SolveWithGuess(sap_problem, v0, &sap_results);
+      (has_locked_dofs
+           ? sap.SolveWithGuess(*contact_problem_cache.sap_problem_locked, v0,
+                                &sap_results)
+           : sap.SolveWithGuess(sap_problem, v0, &sap_results));
+
   if (status != SapSolverStatus::kSuccess) {
     const std::string msg = fmt::format(
         "The SAP solver failed to converge at simulation time = {}. "
@@ -759,8 +801,18 @@ void SapDriver<T>::CalcContactSolverResults(
       manager().EvalDiscreteContactPairs(context);
   const int num_contacts = discrete_pairs.size();
 
-  PackContactSolverResults(context, sap_problem, num_contacts, sap_results,
-                           results);
+  if (has_locked_dofs) {
+    SapSolverResults<T> expanded_sap_results;
+    sap_problem.ExpandContactSolverResults(contact_problem_cache.mapping,
+                                           sap_results, &expanded_sap_results);
+    // Pack the expanded solver results.
+    PackContactSolverResults(context, sap_problem, num_contacts,
+                             expanded_sap_results, results);
+  } else {
+    // Pack the solver results.
+    PackContactSolverResults(context, sap_problem, num_contacts, sap_results,
+                             results);
+  }
 }
 
 }  // namespace internal
