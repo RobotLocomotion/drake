@@ -1119,7 +1119,7 @@ GTEST_TEST(MeshcatTest, StaticHtml) {
   EXPECT_THAT(html, ::testing::Not(HasSubstr("CONNECTION BLOCK")));
 }
 
-// Check MeshcatParams.hide_stats_plot sends a hide_realtime_rate message
+// Check MeshcatParams.show_stats_plot sends a show_realtime_rate message
 GTEST_TEST(MeshcatTest, RealtimeRatePlot) {
   MeshcatParams params;
   params.show_stats_plot = true;

@@ -14,6 +14,19 @@
 
 namespace drake {
 namespace geometry {
+
+// Friend class for working ith MeshcatVisualizer in unit tests.
+class MeshcatVisualizerTester {
+ public:
+    MeshcatVisualizerTester() = delete;
+
+    template <typename T>
+    static systems::internal::InstantaneousRealtimeRateCalculator&
+    get_realtime_rate_calculator(const MeshcatVisualizer<T>* visualizer) {
+        return visualizer->realtime_rate_calculator_;
+    }
+};
+
 namespace {
 
 using multibody::AddMultibodyPlantSceneGraph;
@@ -106,6 +119,17 @@ TEST_F(MeshcatVisualizerWithIiwaTest, BasicTest) {
   simulator.AdvanceTo(0.1);
   EXPECT_NE(meshcat_->GetPackedTransform("visualizer/iiwa14/iiwa_link_7"),
             packed_X_W7);
+
+  // Confirm that realtime rate calculator is reset properly.
+  visualizer_->ResetRealtimeRateCalculator();
+  auto realtime_rate =
+      MeshcatVisualizerTester::get_realtime_rate_calculator(visualizer_)
+        .UpdateAndRecalculate(0.2);
+  EXPECT_EQ(realtime_rate, std::nullopt);
+  realtime_rate =
+      MeshcatVisualizerTester::get_realtime_rate_calculator(visualizer_)
+        .UpdateAndRecalculate(0.3);
+  EXPECT_TRUE(realtime_rate.has_value());
 }
 
 TEST_F(MeshcatVisualizerWithIiwaTest, PublishPeriod) {
