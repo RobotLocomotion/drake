@@ -155,9 +155,11 @@ void SolarSystem<T>::AllocateGeometry(SceneGraph<T>* scene_graph) {
   // Allocate the sun.
   // NOTE: we don't store the id of the sun geometry because we have no need
   // for subsequent access (the same is also true for dynamic geometries).
+  std::string sun_path =
+      FindResourceOrThrow("drake/examples/scene_graph/sun.gltf");
   scene_graph->RegisterAnchoredGeometry(
-      source_id_, MakeShape<Sphere>(RigidTransformd::Identity(), "Sun",
-                                    Vector4d(1, 1, 0, 1), 1.0 /* radius */));
+      source_id_, MakeShape<Mesh>(RigidTransformd::Identity(), "Sun",
+                                    Vector4d(1, 1, 0, 1), sun_path, 1.0));
 
   // The fixed post on which Sun sits and around which all planets rotate.
   const double post_height = 1;

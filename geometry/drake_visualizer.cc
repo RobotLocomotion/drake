@@ -468,11 +468,11 @@ class ShapeToLcm : public ShapeReifier {
   // sets the bool* (referenced as data) to false and dispatches a one-time
   // warning.
   bool IsUnsupportedMesh(std::string_view extension, void* data) const {
-    if (extension != ".obj") {
+    if (extension != ".obj" && extension != ".gltf") {
       static const logging::Warn one_time(
           "DrakeVisualizer only supports Mesh/Convex specifications which use "
           ".obj files. Mesh specifications using other mesh types (e.g., "
-          ".gltf, .stl, .dae, etc.) will be ignored.");
+          ".stl, .dae, etc.) will be ignored.");
       *static_cast<bool*>(data) = false;
       return true;
     }
