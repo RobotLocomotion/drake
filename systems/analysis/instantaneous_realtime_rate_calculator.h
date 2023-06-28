@@ -24,10 +24,9 @@ class InstantaneousRealtimeRateCalculator {
    */
   std::optional<double> UpdateAndRecalculate(double current_sim_time);
 
-  /* If the simulator was paused, prev_sim_time_ should be set to nullopt
-   * so that the timer is not used in the calculation of realtime rate on
-   * the first call after the simulator is resumed. Otherwise the realtime
-   * rate value would be inaccurate since the timer was not paused.
+  /* Resets the internal state of `this` rate calculator. After a call, the next
+   call to UpdateAndRecalculate() will re-seed the rate calculation as if it was
+   the first call.
    */
   void Reset() { prev_sim_time_ = std::nullopt; }
 
