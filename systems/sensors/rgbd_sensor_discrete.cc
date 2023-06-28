@@ -18,7 +18,7 @@ RgbdSensorDiscrete::RgbdSensorDiscrete(std::unique_ptr<RgbdSensor> camera,
 
   DiagramBuilder<double> builder;
   builder.AddSystem(std::move(camera));
-  query_object_port_ =
+  query_object_input_port_ =
       builder.ExportInput(camera_->query_object_input_port(), "geometry_query");
 
   // Color image.
@@ -28,7 +28,7 @@ RgbdSensorDiscrete::RgbdSensorDiscrete(std::unique_ptr<RgbdSensor> camera,
       builder.AddSystem<ZeroOrderHold>(period_, image_color);
   builder.Connect(camera_->color_image_output_port(),
                   zoh_color->get_input_port());
-  output_port_color_image_ =
+  color_image_output_port_ =
       builder.ExportOutput(zoh_color->get_output_port(), "color_image");
 
   // Depth images.
@@ -38,7 +38,7 @@ RgbdSensorDiscrete::RgbdSensorDiscrete(std::unique_ptr<RgbdSensor> camera,
       builder.AddSystem<ZeroOrderHold>(period_, image_depth_32F);
   builder.Connect(camera_->depth_image_32F_output_port(),
                   zoh_depth_32F->get_input_port());
-  output_port_depth_image_32F_ =
+  depth_image_32F_output_port_ =
       builder.ExportOutput(zoh_depth_32F->get_output_port(), "depth_image_32f");
 
   // Depth images.
@@ -48,7 +48,7 @@ RgbdSensorDiscrete::RgbdSensorDiscrete(std::unique_ptr<RgbdSensor> camera,
       builder.AddSystem<ZeroOrderHold>(period_, image_depth_16U);
   builder.Connect(camera_->depth_image_16U_output_port(),
                   zoh_depth_16U->get_input_port());
-  output_port_depth_image_16U_ =
+  depth_image_16U_output_port_ =
       builder.ExportOutput(zoh_depth_16U->get_output_port(), "depth_image_16u");
 
   // Label image.
@@ -59,12 +59,23 @@ RgbdSensorDiscrete::RgbdSensorDiscrete(std::unique_ptr<RgbdSensor> camera,
         builder.AddSystem<ZeroOrderHold>(period_, image_label);
     builder.Connect(camera_->label_image_output_port(),
                     zoh_label->get_input_port());
-    output_port_label_image_ =
+    label_image_output_port_ =
         builder.ExportOutput(zoh_label->get_output_port(), "label_image");
   }
 
+  const auto* const zoh_body_pose =
+      builder.AddSystem<ZeroOrderHold>(period_, Value<math::RigidTransformd>{});
+  builder.Connect(camera_->body_pose_in_world_output_port(),
+                  zoh_body_pose->get_input_port());
   body_pose_in_world_output_port_ = builder.ExportOutput(
-      camera_->body_pose_in_world_output_port(), "body_pose_in_world");
+      zoh_body_pose->get_output_port(), "body_pose_in_world");
+
+  const auto* const zoh_image_time =
+      builder.AddSystem<ZeroOrderHold>(period_, 1);
+  builder.Connect(camera_->image_time_output_port(),
+                  zoh_image_time->get_input_port());
+  image_time_output_port_ =
+      builder.ExportOutput(zoh_body_pose->get_output_port(), "image_time");
 
   builder.BuildInto(this);
 }
