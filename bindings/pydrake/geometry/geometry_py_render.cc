@@ -9,6 +9,7 @@
 #include "drake/geometry/render/render_engine.h"
 #include "drake/geometry/render/render_label.h"
 #include "drake/geometry/render_gl/factory.h"
+#include "drake/geometry/render_gl/light_parameter.h"
 #include "drake/geometry/render_gltf_client/factory.h"
 #include "drake/geometry/render_vtk/factory.h"
 
@@ -21,6 +22,8 @@ using geometry::PerceptionProperties;
 using geometry::Shape;
 using geometry::render::ColorRenderCamera;
 using geometry::render::DepthRenderCamera;
+using geometry::render::LightParameter;
+using geometry::render::LightType;
 using geometry::render::RenderEngine;
 using math::RigidTransformd;
 using systems::sensors::CameraInfo;
@@ -331,6 +334,31 @@ void DoScalarIndependentDefinitions(py::module m) {
     render_label.attr("kDontCare") = RenderLabel::kDontCare;
     render_label.attr("kUnspecified") = RenderLabel::kUnspecified;
     render_label.attr("kMaxUnreserved") = RenderLabel::kMaxUnreserved;
+  }
+
+  {
+    using Class = geometry::render::LightType;
+    constexpr auto& cls_doc = doc.LightType;
+    py::enum_<Class> cls(m, "LightType", cls_doc.doc);
+    cls  // BR
+        .value("POINT", LightType::POINT)
+        .value("SPOTLIGHT", LightType::SPOTLIGHT)
+        .value("DIRECTIONAL", LightType::DIRECTIONAL)
+        .export_values();
+  }
+
+  {
+    using Class = geometry::render::LightParameter;
+    constexpr auto& cls_doc = doc.LightParameter;
+    py::class_<Class> cls(m, "LightParameter", cls_doc.doc);
+    cls  // BR
+        .def_readwrite("type", &LightParameter::type)
+        .def_readwrite("cone_angle", &LightParameter::cone_angle)
+        .def_readwrite(
+            "attenuation_values", &LightParameter::attenuation_values)
+        .def_readwrite("position", &LightParameter::position)
+        .def_readwrite("intensity", &LightParameter::intensity)
+        .def_readwrite("light_direction", &LightParameter::light_direction);
   }
 
   {

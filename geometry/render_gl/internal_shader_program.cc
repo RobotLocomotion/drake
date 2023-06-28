@@ -127,6 +127,15 @@ void ShaderProgram::SetModelViewMatrix(const Eigen::Matrix4f& X_CM,
   DoModelViewMatrix(X_CglM, scale);
 }
 
+void ShaderProgram::SetGeometryToWorldMatrix(
+  const Eigen::Matrix4f& X_WG, const Eigen::Vector3f& scale) const {
+  const Eigen::DiagonalMatrix<float, 4, 4> scale_mat(Vector4<float>(
+          scale(0), scale(1), scale(2), 1.0));
+  Eigen::Matrix4f X_WG_scaled = X_WG * scale_mat;
+  DoGeometryToWorldMatrix(X_WG_scaled);
+}
+
+
 GLint ShaderProgram::GetUniformLocation(const std::string& uniform_name) const {
   GLint id = glGetUniformLocation(gl_id_, uniform_name.c_str());
   if (id < 0) {

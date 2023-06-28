@@ -76,6 +76,8 @@ using systems::sensors::ImageLabel16I;
 using systems::sensors::ImageRgba8U;
 using systems::sensors::ImageTraits;
 using systems::sensors::PixelType;
+using drake::geometry::render::LightParameter;
+using drake::geometry::render::LightType;
 
 // Default camera properties.
 const int kWidth = 640;
@@ -189,6 +191,16 @@ bool IsColorNear(
   return ::testing::AssertionFailure()
          << "At pixel " << p << "\n  Expected: " << expected
          << "\n  Found: " << tested << "\n  with tolerance: " << tolerance;
+}
+
+// Helper to construct a downward facing light for RenderEngineGlParams.
+LightParameter ConstructDownwardDirectionalLight() {
+  LightParameter directional_light;
+  directional_light.type = LightType::DIRECTIONAL;
+  directional_light.intensity = 1.0;
+  // Downard facing light.
+  directional_light.light_direction = {0, 0, -1};
+  return directional_light;
 }
 
 class RenderEngineGlTest : public ::testing::Test {
@@ -347,6 +359,7 @@ class RenderEngineGlTest : public ::testing::Test {
     //  const RenderEngineGlParams params{.default_clear_color = kBgColor};
     RenderEngineGlParams params;
     params.default_clear_color = kBgColor;
+    params.lights = {ConstructDownwardDirectionalLight()};
     renderer_ = make_unique<RenderEngineGl>(params);
     InitializeRenderer(X_WR, add_terrain, renderer_.get());
     // Ensure that we the test default visual color is different from the
@@ -733,7 +746,9 @@ TEST_F(RenderEngineGlTest, SphereTest) {
 
 // Performs the shape-centered-in-the-image test with a transparent sphere.
 TEST_F(RenderEngineGlTest, TransparentSphereTest) {
-  RenderEngineGl renderer;
+  RenderEngineGlParams params;
+  params.lights = {ConstructDownwardDirectionalLight()};
+  RenderEngineGl renderer{params};
   InitializeRenderer(X_WR_, true /* add terrain */, &renderer);
   const int int_alpha = 128;
   // Sets the color of the sphere that will be created in PopulateSphereTest.
@@ -1429,7 +1444,10 @@ TEST_F(RenderEngineGlTest, DefaultProperties_RenderLabel) {
   // report don't care.
   {
     ResetExpectations();
-    RenderEngineGl renderer{{.default_label = RenderLabel::kDontCare}};
+    RenderEngineGlParams params;
+    params.default_label = RenderLabel::kDontCare;
+    params.lights = {ConstructDownwardDirectionalLight()};
+    RenderEngineGl renderer{params};
     InitializeRenderer(X_WR_, true /* no terrain */, &renderer);
 
     DRAKE_EXPECT_NO_THROW(populate_default_sphere(&renderer));

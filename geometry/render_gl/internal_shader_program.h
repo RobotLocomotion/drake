@@ -3,6 +3,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <vector>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
@@ -10,6 +11,7 @@
 #include "drake/geometry/render/render_camera.h"
 #include "drake/geometry/render_gl/internal_opengl_includes.h"
 #include "drake/geometry/render_gl/internal_shader_program_data.h"
+#include "drake/geometry/render_gl/light_parameter.h"
 #include "drake/geometry/rgba.h"
 
 namespace drake {
@@ -134,6 +136,10 @@ class ShaderProgram {
   virtual void SetLightDirection(
       const Vector3<float>& /* light_dir_C */) const {}
 
+  /* Gives a hook to the inheriting class to set up the lighting values. */
+  virtual void SetAllLights(
+      const std::vector<render::LightParameter>& /* lights */) const {}
+
   /* Sets the OpenGl projection matrix state. The projection matrix transforms a
    vertex from the camera frame C to the OpenGl 2D device frame D -- it
    projects a point in 3D to a point on the image.  */
@@ -155,6 +161,14 @@ class ShaderProgram {
    @param scale  The per-axis scale of the geometry.  */
   void SetModelViewMatrix(const Eigen::Matrix4f& X_CM,
                           const Eigen::Vector3d& scale) const;
+
+  /* Sets the OpenGL geometry to world matrix (which is just the transformation
+   from the geometry to the world frame).
+
+   @param X_WG   The pose of the geometry in the world frame.
+   @param scale  The per-axis scale of the geometry. */
+  void SetGeometryToWorldMatrix(const Eigen::Matrix4f& X_WG,
+                                const Eigen::Vector3f& scale) const;
 
   /* Provides the location of the named shader uniform parameter.
    @throws std::exception if the named uniform isn't part of the program. */
@@ -239,6 +253,10 @@ class ShaderProgram {
    @param scale    The per-axis scale of the geometry.  */
   virtual void DoModelViewMatrix(const Eigen::Matrix4f& /* X_CglM */,
                                  const Eigen::Vector3d& /* scale */) const {}
+
+  /* Sets the pose of the model in the world frame with the given matrix.
+   @param X_WG   The pose of the model in the World frame. */
+  virtual void DoGeometryToWorldMatrix(const Eigen::Matrix4f&) const {}
 
  private:
   friend class ShaderProgramTest;

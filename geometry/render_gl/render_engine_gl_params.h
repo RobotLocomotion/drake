@@ -1,8 +1,11 @@
 #pragma once
 
+#include <vector>
+
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/name_value.h"
 #include "drake/geometry/render/render_label.h"
+#include "drake/geometry/render_gl/light_parameter.h"
 #include "drake/geometry/rgba.h"
 
 namespace drake {
@@ -29,6 +32,9 @@ struct RenderEngineGlParams {
 
   /** The default background color for color images.  */
   Rgba default_clear_color{204 / 255., 229 / 255., 255 / 255., 1.0};
+
+  /** Lights in the scene  */
+  std::vector<render::LightParameter> lights;
 };
 
 namespace render {
