@@ -345,8 +345,9 @@ void SapDriver<T>::AddCouplerConstraints(const systems::Context<T>& context,
   const Vector1<T> stiffness(kInfinity);
   const Vector1<T> relaxation_time(plant().time_step());
 
-  for (const CouplerConstraintSpec& info :
+  for (const std::pair<MultibodyConstraintId, CouplerConstraintSpec>& pair :
        manager().coupler_constraints_specs()) {
+    const CouplerConstraintSpec& info = pair.second;
     const Joint<T>& joint0 = plant().get_joint(info.joint0_index);
     const Joint<T>& joint1 = plant().get_joint(info.joint1_index);
     const int dof0 = joint0.velocity_start();
@@ -412,8 +413,10 @@ void SapDriver<T>::AddDistanceConstraints(const systems::Context<T>& context,
   MatrixX<T> Jdistance = MatrixX<T>::Zero(1, nv);
 
   const Frame<T>& frame_W = plant().world_frame();
-  for (const DistanceConstraintSpec& specs :
-       manager().distance_constraints_specs()) {
+
+  for (const std::pair<MultibodyConstraintId, internal::DistanceConstraintSpec>&
+           pair : manager().distance_constraints_specs()) {
+    const internal::DistanceConstraintSpec& specs = pair.second;
     const Body<T>& body_A = plant().get_body(specs.body_A);
     const Body<T>& body_B = plant().get_body(specs.body_B);
 
@@ -524,7 +527,9 @@ void SapDriver<T>::AddBallConstraints(
   MatrixX<T> Jv_ApBq_W = MatrixX<T>::Zero(3, nv);
 
   const Frame<T>& frame_W = plant().world_frame();
-  for (const BallConstraintSpec& specs : manager().ball_constraints_specs()) {
+  for (const std::pair<MultibodyConstraintId, internal::BallConstraintSpec>&
+           pair : manager().ball_constraints_specs()) {
+    const BallConstraintSpec& specs = pair.second;
     const Body<T>& body_A = plant().get_body(specs.body_A);
     const Body<T>& body_B = plant().get_body(specs.body_B);
 

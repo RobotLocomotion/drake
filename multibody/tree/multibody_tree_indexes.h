@@ -1,5 +1,6 @@
 #pragma once
 
+#include "drake/common/identifier.h"
 #include "drake/common/type_safe_index.h"
 
 namespace drake {
@@ -38,8 +39,8 @@ using JointIndex = TypeSafeIndex<class JointElementTag>;
 /// Type used to identify actuators by index within a multibody tree system.
 using JointActuatorIndex = TypeSafeIndex<class JointActuatorElementTag>;
 
-/// Type used to identify constraints by index within a multibody system.
-using ConstraintIndex = TypeSafeIndex<class ConstraintTag>;
+/// Type used to identify constraint by id within a multibody system.
+using MultibodyConstraintId = Identifier<class ConstraintTag>;
 
 /// Type used to identify model instances by index within a multibody
 /// tree system.
