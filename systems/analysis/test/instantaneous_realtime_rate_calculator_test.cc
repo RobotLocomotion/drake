@@ -32,11 +32,12 @@ GTEST_TEST(InstantaneousRealtimeRateCalculatorTest, BasicTest) {
   EXPECT_FALSE(calculator.UpdateAndRecalculate(0.0).has_value());
   EXPECT_DOUBLE_EQ(calculator.UpdateAndRecalculate(0.1).value(), 1.0);
 
-  // Pause simulator and RTR should be zero. Note that in practice meshcat
-  // still shows the RTR before pause since the simulation is paused and
-  // meshcat system is not publishing updated RTRs anymore.
+  // Calling UpdateAndRecalcuate() again with the same sim time will
+  // return 0.0 RTR.
   EXPECT_DOUBLE_EQ(calculator.UpdateAndRecalculate(0.1).value(), 0.0);
 
+  // InstantaneousRealtimeRatecalculator should reset properly on call
+  // to Reset().
   calculator.Reset();
 
   // First call to UpdateAndRecalculate() after Reset() returns nullopt
