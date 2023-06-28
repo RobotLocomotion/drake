@@ -195,13 +195,11 @@ bool MaybeUndoRedirectPythonLogging() {
   drake::log()->trace("Removing pydrake spdlog sink");
   auto& sinks = drake::log()->sinks();
   if (sinks.size() != 2) {
-    drake::log()->debug(
-        "Will not undo redirect (num root sinks == 2)");
+    drake::log()->debug("Will not undo redirect (num root sinks == 2)");
     return false;
   }
-  auto* dist_sink =
-      dynamic_cast<spdlog::sinks::dist_sink_mt*>(
-          drake::logging::get_dist_sink());
+  auto* dist_sink = dynamic_cast<spdlog::sinks::dist_sink_mt*>(
+      drake::logging::get_dist_sink());
   if (dist_sink == nullptr) {
     drake::log()->debug("Will not undo redirect (not a dist sink)");
     return false;
@@ -214,8 +212,12 @@ bool MaybeUndoRedirectPythonLogging() {
 }
 
 #else
-bool MaybeRedirectPythonLogging() { return false; }
-bool MaybeUndoRedirectPythonLogging() { return false; }
+bool MaybeRedirectPythonLogging() {
+  return false;
+}
+bool MaybeUndoRedirectPythonLogging() {
+  return false;
+}
 #endif
 
 }  // namespace internal

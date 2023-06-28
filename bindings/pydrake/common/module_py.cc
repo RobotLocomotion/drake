@@ -104,8 +104,7 @@ PYBIND11_MODULE(_module_py, m) {
   internal::MaybeRedirectPythonLogging();
 
   m.def("MaybeRedirectPythonLogging", &internal::MaybeRedirectPythonLogging);
-  m.def(
-      "MaybeUndoRedirectPythonLogging",
+  m.def("MaybeUndoRedirectPythonLogging",
       &internal::MaybeUndoRedirectPythonLogging);
 
   py::module::import("pydrake").attr("_spdlog_redirect") = true;

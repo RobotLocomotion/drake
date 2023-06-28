@@ -23,6 +23,11 @@ void do_log_test() {
   drake::log()->critical("Test Critical message");
 }
 
+// Logs on message at INFO level.
+void do_log_info(const std::string& message) {
+  drake::log()->info(message);
+}
+
 // Launches a C++ thread that logs periodically.
 class Worker {
  public:
@@ -66,6 +71,7 @@ PYBIND11_MODULE(text_logging_test_helpers, m) {
   m.doc() = "Test text logging";
 
   m.def("do_log_test", &do_log_test);
+  m.def("do_log_info", &do_log_info);
 
   {
     using Class = Worker;
