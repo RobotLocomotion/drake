@@ -35,6 +35,7 @@ drake_cc_library(
         "multibody_tree_indexes.h",
     ],
     deps = [
+        "//common:identifier",
         "//common:type_safe_index",
     ],
 )
