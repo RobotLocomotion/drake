@@ -420,7 +420,7 @@ MultibodyPlant<T>::MultibodyPlant(const MultibodyPlant<U>& other)
 }
 
 template <typename T>
-ConstraintIndex MultibodyPlant<T>::AddCouplerConstraint(const Joint<T>& joint0,
+ConstraintId MultibodyPlant<T>::AddCouplerConstraint(const Joint<T>& joint0,
                                                         const Joint<T>& joint1,
                                                         double gear_ratio,
                                                         double offset) {
@@ -453,16 +453,16 @@ ConstraintIndex MultibodyPlant<T>::AddCouplerConstraint(const Joint<T>& joint0,
     throw std::runtime_error(message);
   }
 
-  const ConstraintIndex constraint_index(num_constraints());
+  const ConstraintId constraint_id = ConstraintId::get_new_id();
 
-  coupler_constraints_specs_.push_back(internal::CouplerConstraintSpecs{
-      joint0.index(), joint1.index(), gear_ratio, offset});
+  coupler_constraints_specs_[constraint_id] = internal::CouplerConstraintSpecs{
+      joint0.index(), joint1.index(), gear_ratio, offset, constraint_id};
 
-  return constraint_index;
+  return constraint_id;
 }
 
 template <typename T>
-ConstraintIndex MultibodyPlant<T>::AddDistanceConstraint(
+ConstraintId MultibodyPlant<T>::AddDistanceConstraint(
     const Body<T>& body_A, const Vector3<double>& p_AP, const Body<T>& body_B,
     const Vector3<double>& p_BQ, double distance, double stiffness,
     double damping) {
@@ -487,10 +487,11 @@ ConstraintIndex MultibodyPlant<T>::AddDistanceConstraint(
         "DiscreteContactSolver.");
   }
 
-  DRAKE_THROW_UNLESS(body_A.index() != body_B.index());
+  const ConstraintId constraint_id = ConstraintId::get_new_id();
 
-  internal::DistanceConstraintSpecs spec{body_A.index(), p_AP, body_B.index(),
-                                         p_BQ, distance, stiffness, damping};
+  internal::DistanceConstraintSpecs spec{
+      body_A.index(), p_AP,      body_B.index(), p_BQ,
+      distance,       stiffness, damping,        constraint_id};
   if (!spec.IsValid()) {
     const std::string msg = fmt::format(
         "Invalid set of parameters for constraint between bodies '{}' and "
@@ -499,15 +500,15 @@ ConstraintIndex MultibodyPlant<T>::AddDistanceConstraint(
     throw std::runtime_error(msg);
   }
 
-  const ConstraintIndex constraint_index(num_constraints());
 
-  distance_constraints_specs_.push_back(spec);
 
-  return constraint_index;
+  distance_constraints_specs_[constraint_id] = spec;
+
+  return constraint_id;
 }
 
 template <typename T>
-ConstraintIndex MultibodyPlant<T>::AddBallConstraint(
+ConstraintId MultibodyPlant<T>::AddBallConstraint(
     const Body<T>& body_A, const Vector3<double>& p_AP, const Body<T>& body_B,
     const Vector3<double>& p_BQ) {
   // N.B. The manager is set up at Finalize() and therefore we must require
@@ -531,8 +532,10 @@ ConstraintIndex MultibodyPlant<T>::AddBallConstraint(
         "DiscreteContactSolver.");
   }
 
-  internal::BallConstraintSpecs spec{body_A.index(), p_AP, body_B.index(),
-                                     p_BQ};
+  const ConstraintId constraint_id = ConstraintId::get_new_id();
+
+  internal::BallConstraintSpecs spec{body_A.index(), p_AP, body_B.index(), p_BQ,
+                                     constraint_id};
   if (!spec.IsValid()) {
     const std::string msg = fmt::format(
         "Invalid set of parameters for constraint between bodies '{}' and "
@@ -542,11 +545,9 @@ ConstraintIndex MultibodyPlant<T>::AddBallConstraint(
     throw std::logic_error(msg);
   }
 
-  const ConstraintIndex constraint_index(num_constraints());
+  ball_constraints_specs_[constraint_id] = spec;
 
-  ball_constraints_specs_.push_back(spec);
-
-  return constraint_index;
+  return constraint_id;
 }
 
 template <typename T>

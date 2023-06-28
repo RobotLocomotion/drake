@@ -1,5 +1,6 @@
 #pragma once
 
+#include <map>
 #include <memory>
 #include <set>
 #include <string>
@@ -245,18 +246,18 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   void CalcForceElementsContribution(const drake::systems::Context<T>& context,
                                      MultibodyForces<T>* forces) const;
 
-  const std::vector<internal::CouplerConstraintSpecs>&
-  coupler_constraints_specs() const;
-
   const internal::JointLockingCacheData<T>&
   EvalJointLockingCache(
       const systems::Context<T>& context) const;
 
-  const std::vector<internal::DistanceConstraintSpecs>&
+  const std::map<ConstraintId, internal::CouplerConstraintSpecs>&
+  coupler_constraints_specs() const;
+
+  const std::map<ConstraintId, internal::DistanceConstraintSpecs>&
   distance_constraints_specs() const;
 
-  const std::vector<internal::BallConstraintSpecs>& ball_constraints_specs()
-      const;
+  const std::map<ConstraintId, internal::BallConstraintSpecs>&
+  ball_constraints_specs() const;
 
   BodyIndex FindBodyByGeometryId(geometry::GeometryId geometry_id) const;
   /* @} */

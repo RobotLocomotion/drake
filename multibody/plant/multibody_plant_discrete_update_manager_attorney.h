@@ -1,5 +1,6 @@
 #pragma once
 
+#include <map>
 #include <set>
 #include <string>
 #include <unordered_map>
@@ -87,23 +88,23 @@ class MultibodyPlantDiscreteUpdateManagerAttorney {
     return plant.geometry_id_to_body_index_;
   }
 
-  static const std::vector<internal::CouplerConstraintSpecs>&
-  coupler_constraints_specs(const MultibodyPlant<T>& plant) {
-    return plant.coupler_constraints_specs_;
-  }
-
   static const internal::JointLockingCacheData<T>&
   EvalJointLockingCache(const MultibodyPlant<T>& plant,
                                        const systems::Context<T>& context) {
     return plant.EvalJointLockingCache(context);
   }
 
-  static const std::vector<internal::DistanceConstraintSpecs>&
+  static const std::map<ConstraintId, internal::CouplerConstraintSpecs>&
+  coupler_constraints_specs(const MultibodyPlant<T>& plant) {
+    return plant.coupler_constraints_specs_;
+  }
+
+  static const std::map<ConstraintId, internal::DistanceConstraintSpecs>&
   distance_constraints_specs(const MultibodyPlant<T>& plant) {
     return plant.distance_constraints_specs_;
   }
 
-  static const std::vector<internal::BallConstraintSpecs>&
+  static const std::map<ConstraintId, internal::BallConstraintSpecs>&
   ball_constraints_specs(const MultibodyPlant<T>& plant) {
     return plant.ball_constraints_specs_;
   }

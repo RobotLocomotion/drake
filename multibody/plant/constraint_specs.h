@@ -27,6 +27,8 @@ struct CouplerConstraintSpecs {
   double gear_ratio{1.0};
   // Offset Δq.
   double offset{0.0};
+  // Id of this constraint in the plant.
+  ConstraintId id;
 };
 
 // Struct to store the specification for a distance constraint. A distance
@@ -46,13 +48,14 @@ struct CouplerConstraintSpecs {
 // is singular in this case. Therefore we require the distance parameter to
 // be strictly positive.
 //
-// @pre d₀ > 0, k >= 0, c >= 0. @see IsValid().
+// @pre body_A != body_B, d₀ > 0, k >= 0, c >= 0. @see IsValid().
 struct DistanceConstraintSpecs {
   // Returns `true` iff `this` specification is valid to define a distance
   // constraint. A distance constraint specification is considered to be valid
-  // iff distance > 0, stiffness >= 0 and damping >= 0.
+  // iff body_A != body_B, distance > 0, stiffness >= 0 and damping >= 0.
   bool IsValid() {
-    return distance > 0.0 && stiffness >= 0.0 && damping >= 0.0;
+    return body_A != body_B && distance > 0.0 && stiffness >= 0.0 &&
+           damping >= 0.0;
   }
 
   BodyIndex body_A;      // Index of body A.
@@ -63,7 +66,8 @@ struct DistanceConstraintSpecs {
   double stiffness{
       std::numeric_limits<double>::infinity()};  // Constraint stiffness
                                                  // k in N/m.
-  double damping{0.0};  // Constraint damping c in N⋅s/m.
+  double damping{0.0};   // Constraint damping c in N⋅s/m.
+  ConstraintId id;       // Id of this constraint in the plant.
 };
 
 // Struct to store the specification for a ball constraint. A ball
@@ -86,6 +90,7 @@ struct BallConstraintSpecs {
   Vector3<double> p_AP;  // Position of point P in body frame A.
   BodyIndex body_B;      // Index of body B.
   Vector3<double> p_BQ;  // Position of point Q in body frame B.
+  ConstraintId id;       // Id of this constraint in the plant.
 };
 
 }  // namespace internal

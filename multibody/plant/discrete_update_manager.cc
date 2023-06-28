@@ -195,13 +195,6 @@ void DiscreteUpdateManager<T>::CalcForceElementsContribution(
 }
 
 template <typename T>
-const std::vector<internal::CouplerConstraintSpecs>&
-DiscreteUpdateManager<T>::coupler_constraints_specs() const {
-  return MultibodyPlantDiscreteUpdateManagerAttorney<
-      T>::coupler_constraints_specs(*plant_);
-}
-
-template <typename T>
 const internal::JointLockingCacheData<T>&
 DiscreteUpdateManager<T>::EvalJointLockingCache(
     const systems::Context<T>& context) const {
@@ -210,14 +203,21 @@ DiscreteUpdateManager<T>::EvalJointLockingCache(
 }
 
 template <typename T>
-const std::vector<internal::DistanceConstraintSpecs>&
+const std::map<ConstraintId, internal::CouplerConstraintSpecs>&
+DiscreteUpdateManager<T>::coupler_constraints_specs() const {
+  return MultibodyPlantDiscreteUpdateManagerAttorney<
+      T>::coupler_constraints_specs(*plant_);
+}
+
+template <typename T>
+const std::map<ConstraintId, internal::DistanceConstraintSpecs>&
 DiscreteUpdateManager<T>::distance_constraints_specs() const {
   return MultibodyPlantDiscreteUpdateManagerAttorney<
       T>::distance_constraints_specs(*plant_);
 }
 
 template <typename T>
-const std::vector<internal::BallConstraintSpecs>&
+const std::map<ConstraintId, internal::BallConstraintSpecs>&
 DiscreteUpdateManager<T>::ball_constraints_specs() const {
   return MultibodyPlantDiscreteUpdateManagerAttorney<T>::ball_constraints_specs(
       *plant_);

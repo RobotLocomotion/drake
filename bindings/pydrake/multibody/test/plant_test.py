@@ -22,7 +22,7 @@ from pydrake.multibody.tree import (
     Body_,
     BodyIndex,
     CalcSpatialInertia,
-    ConstraintIndex,
+    ConstraintId,
     DoorHinge_,
     DoorHingeConfig,
     FixedOffsetFrame_,
@@ -2288,12 +2288,9 @@ class TestPlant(unittest.TestCase):
         # Add coupler constraint.
         left_slider = plant.GetJointByName("left_finger_sliding_joint")
         right_slider = plant.GetJointByName("right_finger_sliding_joint")
-        coupler_index = plant.AddCouplerConstraint(
+        plant.AddCouplerConstraint(
             joint0=left_slider, joint1=right_slider,
             gear_ratio=1.2, offset=3.4)
-
-        # Constraint indexes are assigned in increasing order starting at zero.
-        self.assertEqual(coupler_index, ConstraintIndex(0))
 
         # We are done creating the model.
         plant.Finalize()
@@ -2313,11 +2310,8 @@ class TestPlant(unittest.TestCase):
         body_B = plant.AddRigidBody(name="B", M_BBo_B=M_BBo_B)
         p_AP = [0.0, 0.0, 0.0]
         p_BQ = [0.0, 0.0, 0.0]
-        index = plant.AddDistanceConstraint(
+        plant.AddDistanceConstraint(
             body_A=body_A, p_AP=p_AP, body_B=body_B, p_BQ=p_BQ, distance=0.01)
-
-        # Constraint indexes are assigned in increasing order starting at zero.
-        self.assertEqual(index, ConstraintIndex(0))
 
         # We are done creating the model.
         plant.Finalize()
@@ -2337,11 +2331,8 @@ class TestPlant(unittest.TestCase):
         body_B = plant.AddRigidBody(name="B", M_BBo_B=M_BBo_B)
         p_AP = [0.0, 0.0, 0.0]
         p_BQ = [0.0, 0.0, 0.0]
-        index = plant.AddBallConstraint(
+        plant.AddBallConstraint(
             body_A=body_A, p_AP=p_AP, body_B=body_B, p_BQ=p_BQ)
-
-        # Constraint indexes are assigned in increasing order starting at zero.
-        self.assertEqual(index, ConstraintIndex(0))
 
         # We are done creating the model.
         plant.Finalize()

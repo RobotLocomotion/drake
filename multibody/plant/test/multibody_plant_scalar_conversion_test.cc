@@ -235,8 +235,8 @@ GTEST_TEST(ScalarConversionTest, ExternalComponent) {
 class MultibodyPlantTester {
  public:
   template <typename T>
-  static std::vector<internal::CouplerConstraintSpecs>& get_mutable_specs(
-      MultibodyPlant<T>* plant) {
+  static std::map<ConstraintId, internal::CouplerConstraintSpecs>&
+  get_mutable_specs(MultibodyPlant<T>* plant) {
     return plant->coupler_constraints_specs_;
   }
 };
@@ -259,8 +259,8 @@ GTEST_TEST(ScalarConversionTest, CouplerConstraintSpecs) {
 
   // Directly add dummy constraint specs through the tester so that we don't
   // need to actually add any joints.
-  MultibodyPlantTester::get_mutable_specs(&plant_double)
-      .emplace_back(reference_spec);
+  MultibodyPlantTester::get_mutable_specs(
+      &plant_double)[ConstraintId::get_new_id()] = reference_spec;
   plant_double.Finalize();
   // double -> AutoDiffXd.
   std::unique_ptr<MultibodyPlant<AutoDiffXd>> plant_double_to_autodiff =
