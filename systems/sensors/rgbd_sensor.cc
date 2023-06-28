@@ -57,6 +57,9 @@ RgbdSensor::RgbdSensor(FrameId parent_id, const RigidTransformd& X_PB,
   body_pose_in_world_output_port_ = &this->DeclareAbstractOutputPort(
       "body_pose_in_world", &RgbdSensor::CalcX_WB);
 
+  image_time_output_port_ = &this->DeclareVectorOutputPort(
+      "image_time", 1, &RgbdSensor::CalcImageTime, {this->time_ticket()});
+
   // The depth_16U represents depth in *millimeters*. With 16 bits there is
   // an absolute limit on the farthest distance it can register. This tests to
   // see if the user has specified a maximum depth value that exceeds that
@@ -94,6 +97,10 @@ const OutputPort<double>& RgbdSensor::label_image_output_port() const {
 
 const OutputPort<double>& RgbdSensor::body_pose_in_world_output_port() const {
   return *body_pose_in_world_output_port_;
+}
+
+const OutputPort<double>& RgbdSensor::image_time_output_port() const {
+  return *image_time_output_port_;
 }
 
 void RgbdSensor::CalcColorImage(const Context<double>& context,
@@ -136,6 +143,11 @@ void RgbdSensor::CalcX_WB(const Context<double>& context,
     const QueryObject<double>& query_object = get_query_object(context);
     *X_WB = query_object.GetPoseInWorld(parent_frame_id_) * X_PB_;
   }
+}
+
+void RgbdSensor::CalcImageTime(const Context<double>& context,
+                               BasicVector<double>* output) const {
+  output->SetFromVector(Vector1d{context.get_time()});
 }
 
 }  // namespace sensors
