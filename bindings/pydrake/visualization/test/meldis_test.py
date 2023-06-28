@@ -13,8 +13,11 @@ You can also visualize the LCM test data like so:
 import pydrake.visualization as mut
 
 import functools
-import numpy as np
+import sys
 import unittest
+
+import numpy as np
+import umsgpack
 
 from drake import (
     lcmt_point_cloud,
@@ -55,6 +58,19 @@ from pydrake.systems.framework import (
 from pydrake.systems.lcm import (
     LcmPublisherSystem,
 )
+
+
+# https://bugs.launchpad.net/ubuntu/+source/u-msgpack-python/+bug/1979549
+#
+# Jammy shipped with python3-u-msgpack 2.3.0, which tries to use
+# `collections.Hashable`, which was removed in Python 3.10. Work around this by
+# monkey-patching `Hashable` into `umsgpack.collections`.
+#
+# TODO(mwoehlke-kitware): Remove this when Jammy's python3-u-msgpack has been
+# updated to 2.5.2 or later.
+if sys.version_info[:2] >= (3, 10) and not hasattr(umsgpack, 'Hashable'):
+    import collections
+    setattr(umsgpack.collections, 'Hashable', collections.abc.Hashable)
 
 
 class TestMeldis(unittest.TestCase):
@@ -223,6 +239,60 @@ class TestMeldis(unittest.TestCase):
 
             # The link always exists after a DRAW.
             self.assertTrue(meshcat.HasPath(link_path))
+
+    def test_viewer_applet_alpha_slider(self):
+        # Create the device under test.
+        dut = mut.Meldis()
+        meshcat = dut.meshcat
+        lcm = dut._lcm
+
+        # Create a simple scene with an invisible geometry (alpha == 0.0).
+        rgb = [0.0, 0.0, 1.0]
+        builder = DiagramBuilder()
+        plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
+        parser = Parser(plant=plant)
+        parser.AddModelsFromString(f"""
+<?xml version="1.0"?>
+<sdf version="1.9">
+  <model name="box">
+    <link name="box">
+      <visual name="box">
+        <geometry>
+          <box>
+            <size>1 1 1</size>
+          </box>
+        </geometry>
+        <material>
+          <diffuse>{rgb[0]} {rgb[1]} {rgb[2]} 0.0</diffuse>
+        </material>
+      </visual>
+    </link>
+    <static>1</static>
+  </model>
+</sdf>
+""", "sdf")
+        plant.Finalize()
+        DrakeVisualizer.AddToBuilder(builder=builder, scene_graph=scene_graph,
+                                     params=DrakeVisualizerParams(), lcm=lcm)
+        diagram = builder.Build()
+
+        # Process the load + draw messages.
+        context = diagram.CreateDefaultContext()
+        diagram.ForcedPublish(context)
+        lcm.HandleSubscriptions(timeout_millis=0)
+        dut._invoke_subscriptions()
+
+        # Request a different alpha.
+        new_alpha = 0.5
+        meshcat.SetSliderValue("Viewer α", new_alpha)
+        dut._invoke_poll()
+
+        # Confirm the new color of the box.
+        path = "/DRAKE_VIEWER/2/plant/box/box/0"
+        self.assertEqual(meshcat.HasPath(path), True)
+        message = meshcat.GetPackedProperty(path, "color")
+        parsed = umsgpack.unpackb(message)
+        self.assertListEqual(parsed['value'], rgb + [new_alpha])
 
     def test_hydroelastic_geometry(self):
         """Checks that _ViewerApplet doesn't crash when receiving
