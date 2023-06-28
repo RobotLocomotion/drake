@@ -1211,9 +1211,42 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   /// Returns the total number of constraints specified by the user.
   int num_constraints() const {
-    return static_cast<int>(coupler_constraints_specs_.size() +
-                            distance_constraints_specs_.size() +
-                            ball_constraints_specs_.size());
+    return static_cast<int>(num_coupler_constraints() +
+                            num_distance_constraints() +
+                            num_ball_constraints());
+  }
+
+  /// Returns the total number of coupler constraints specified by the user.
+  int num_coupler_constraints() const {
+    return ssize(coupler_constraints_specs_);
+  }
+
+  /// Returns the total number of distance constraints specified by the user.
+  int num_distance_constraints() const {
+    return ssize(distance_constraints_specs_);
+  }
+
+  /// Returns the total number of ball constraints specified by the user.
+  int num_ball_constraints() const {
+    return ssize(ball_constraints_specs_);
+  }
+
+  const internal::CouplerConstraintSpecs get_coupler_constraint_specs(
+      MultibodyConstraintId id) const {
+    DRAKE_THROW_UNLESS(coupler_constraints_specs_.count(id) > 0);
+    return coupler_constraints_specs_.at(id);
+  }
+
+  const internal::DistanceConstraintSpecs get_distance_constraint_specs(
+      MultibodyConstraintId id) const {
+    DRAKE_THROW_UNLESS(distance_constraints_specs_.count(id) > 0);
+    return distance_constraints_specs_.at(id);
+  }
+
+  const internal::BallConstraintSpecs get_ball_constraint_specs(
+      MultibodyConstraintId id) const {
+    DRAKE_THROW_UNLESS(ball_constraints_specs_.count(id) > 0);
+    return ball_constraints_specs_.at(id);
   }
 
   /// Defines a holonomic constraint between two single-dof joints `joint0`
@@ -1234,7 +1267,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///
   /// @throws if joint0 and joint1 are not both single-dof joints.
   /// @throws std::exception if the %MultibodyPlant has already been finalized.
-  ConstraintIndex AddCouplerConstraint(const Joint<T>& joint0,
+  MultibodyConstraintId AddCouplerConstraint(const Joint<T>& joint0,
                                        const Joint<T>& joint1,
                                        double gear_ratio, double offset = 0.0);
 
@@ -1261,7 +1294,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @param[in] damping For modeling a spring with free length equal to
   /// `distance`, damping parameter in N⋅s/m. Optional, with its default value
   /// being zero for a non-dissipative constraint.
-  /// @returns the index to the newly added constraint.
+  /// @returns the id of the newly added constraint.
   ///
   /// @warning Currently, it is the user's responsibility to initialize the
   /// model's context in a configuration compatible with the newly added
@@ -1278,7 +1311,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if `stiffness` is not positive or zero.
   /// @throws std::exception if `damping` is not positive or zero.
   /// @throws std::exception if the %MultibodyPlant has already been finalized.
-  ConstraintIndex AddDistanceConstraint(
+  MultibodyConstraintId AddDistanceConstraint(
       const Body<T>& body_A, const Vector3<double>& p_AP, const Body<T>& body_B,
       const Vector3<double>& p_BQ, double distance,
       double stiffness = std::numeric_limits<double>::infinity(),
@@ -1292,11 +1325,11 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @param[in] p_AP Position of point P in body A's frame.
   /// @param[in] body_B Body to which point Q is rigidly attached.
   /// @param[in] p_BQ Position of point Q in body B's frame.
-  /// @returns the index to the newly added constraint.
+  /// @returns the id of the newly added constraint.
   ///
   /// @throws std::exception if bodies A and B are the same body.
   /// @throws std::exception if the %MultibodyPlant has already been finalized.
-  ConstraintIndex AddBallConstraint(const Body<T>& body_A,
+  MultibodyConstraintId AddBallConstraint(const Body<T>& body_A,
                                     const Vector3<double>& p_AP,
                                     const Body<T>& body_B,
                                     const Vector3<double>& p_BQ);
@@ -5384,14 +5417,17 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // (Experimental) The vector of physical models owned by MultibodyPlant.
   std::vector<std::unique_ptr<PhysicalModel<T>>> physical_models_;
 
-  // Vector of coupler constraints specifications.
-  std::vector<internal::CouplerConstraintSpec> coupler_constraints_specs_;
+  // Map of coupler constraints specifications.
+  std::map<MultibodyConstraintId, internal::CouplerConstraintSpec>
+      coupler_constraints_specs_;
 
-  // Vector of distance constraints specifications.
-  std::vector<internal::DistanceConstraintSpec> distance_constraints_specs_;
+  // Map of distance constraints specifications.
+  std::map<MultibodyConstraintId, internal::DistanceConstraintSpec>
+      distance_constraints_specs_;
 
-  // Vector of ball constraint specifications.
-  std::vector<internal::BallConstraintSpec> ball_constraints_specs_;
+  // Map of ball constraint specifications.
+  std::map<MultibodyConstraintId, internal::BallConstraintSpec>
+      ball_constraints_specs_;
 
   // All MultibodyPlant cache indexes are stored in cache_indexes_.
   CacheIndexes cache_indexes_;
