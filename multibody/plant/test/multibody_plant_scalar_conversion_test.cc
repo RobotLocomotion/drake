@@ -235,8 +235,8 @@ GTEST_TEST(ScalarConversionTest, ExternalComponent) {
 class MultibodyPlantTester {
  public:
   template <typename T>
-  static std::vector<internal::CouplerConstraintSpecs>& get_mutable_specs(
-      MultibodyPlant<T>* plant) {
+  static std::map<MultibodyConstraintId, internal::CouplerConstraintSpec>&
+  get_mutable_specs(MultibodyPlant<T>* plant) {
     return plant->coupler_constraints_specs_;
   }
 };
@@ -247,20 +247,20 @@ namespace {
 // that the number of constraints before and aftter scalar conversion are the
 // same. The correctness of the scalar copying semantics for the constraints are
 // tested in their own unit tests.
-GTEST_TEST(ScalarConversionTest, CouplerConstraintSpecs) {
+GTEST_TEST(ScalarConversionTest, CouplerConstraintSpec) {
   MultibodyPlant<double> plant_double(0.1);
 
   const JointIndex j0(3);
   const JointIndex j1(5);
   constexpr double kGearRatio = 1.2;
   constexpr double kOffset = 0.3;
-  const internal::CouplerConstraintSpecs reference_spec{j0, j1, kGearRatio,
+  const internal::CouplerConstraintSpec reference_spec{j0, j1, kGearRatio,
                                                         kOffset};
 
   // Directly add dummy constraint specs through the tester so that we don't
   // need to actually add any joints.
-  MultibodyPlantTester::get_mutable_specs(&plant_double)
-      .emplace_back(reference_spec);
+  MultibodyPlantTester::get_mutable_specs(
+      &plant_double)[MultibodyConstraintId::get_new_id()] = reference_spec;
   plant_double.Finalize();
   // double -> AutoDiffXd.
   std::unique_ptr<MultibodyPlant<AutoDiffXd>> plant_double_to_autodiff =

@@ -228,6 +228,30 @@ INSTANTIATE_TEST_SUITE_P(SapBallConstraintTests, TwoBodiesTest,
                          testing::ValuesIn(MakeTestCases()),
                          testing::PrintToStringParamName());
 
+GTEST_TEST(BallConstraintsTests, VerifyIdMapping) {
+  MultibodyPlant<double> plant{0.1};
+  plant.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  const RigidBody<double>& bodyA =
+      plant.AddRigidBody("A", SpatialInertia<double>{});
+  const RigidBody<double>& bodyB =
+      plant.AddRigidBody("B", SpatialInertia<double>{});
+  const Vector3d p_AP(1, 2, 3);
+  const Vector3d p_BQ(4, 5, 6);
+  MultibodyConstraintId ball_id =
+      plant.AddBallConstraint(bodyA, p_AP, bodyB, p_BQ);
+  const BallConstraintSpec& ball_spec =
+      plant.get_ball_constraint_specs(ball_id);
+  EXPECT_EQ(ball_spec.id, ball_id);
+  EXPECT_EQ(ball_spec.body_A, bodyA.index());
+  EXPECT_EQ(ball_spec.body_B, bodyB.index());
+  EXPECT_EQ(ball_spec.p_AP, p_AP);
+  EXPECT_EQ(ball_spec.p_BQ, p_BQ);
+
+  // Throw on id to wrong constraint specs type.
+  EXPECT_THROW(plant.get_coupler_constraint_specs(ball_id), std::exception);
+  EXPECT_THROW(plant.get_distance_constraint_specs(ball_id), std::exception);
+}
+
 GTEST_TEST(BallConstraintTests, FailOnTAMSI) {
   MultibodyPlant<double> plant{0.1};
   plant.set_discrete_contact_solver(DiscreteContactSolver::kTamsi);

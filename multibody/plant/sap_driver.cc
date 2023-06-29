@@ -8,6 +8,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/unused.h"
 #include "drake/multibody/contact_solvers/contact_configuration.h"
 #include "drake/multibody/contact_solvers/contact_solver_utils.h"
 #include "drake/multibody/contact_solvers/sap/sap_contact_problem.h"
@@ -345,8 +346,8 @@ void SapDriver<T>::AddCouplerConstraints(const systems::Context<T>& context,
   const Vector1<T> stiffness(kInfinity);
   const Vector1<T> relaxation_time(plant().time_step());
 
-  for (const CouplerConstraintSpecs& info :
-       manager().coupler_constraints_specs()) {
+  for (const auto& [id, info] : manager().coupler_constraints_specs()) {
+    unused(id);
     const Joint<T>& joint0 = plant().get_joint(info.joint0_index);
     const Joint<T>& joint1 = plant().get_joint(info.joint1_index);
     const int dof0 = joint0.velocity_start();
@@ -412,17 +413,18 @@ void SapDriver<T>::AddDistanceConstraints(const systems::Context<T>& context,
   MatrixX<T> Jdistance = MatrixX<T>::Zero(1, nv);
 
   const Frame<T>& frame_W = plant().world_frame();
-  for (const DistanceConstraintSpecs& specs :
-       manager().distance_constraints_specs()) {
-    const Body<T>& body_A = plant().get_body(specs.body_A);
-    const Body<T>& body_B = plant().get_body(specs.body_B);
+
+  for (const auto& [id, spec] : manager().distance_constraints_specs()) {
+    unused(id);
+    const Body<T>& body_A = plant().get_body(spec.body_A);
+    const Body<T>& body_B = plant().get_body(spec.body_B);
 
     const math::RigidTransform<T>& X_WA =
         plant().EvalBodyPoseInWorld(context, body_A);
     const math::RigidTransform<T>& X_WB =
         plant().EvalBodyPoseInWorld(context, body_B);
-    const Vector3<T>& p_WP = X_WA * specs.p_AP.cast<T>();
-    const Vector3<T>& p_WQ = X_WB * specs.p_BQ.cast<T>();
+    const Vector3<T>& p_WP = X_WA * spec.p_AP.template cast<T>();
+    const Vector3<T>& p_WQ = X_WB * spec.p_BQ.template cast<T>();
 
     // Distance as the norm of p_PQ_W = p_WQ - p_WP
     const Vector3<T> p_PQ_W = p_WQ - p_WP;
@@ -431,12 +433,12 @@ void SapDriver<T>::AddDistanceConstraints(const systems::Context<T>& context,
     // user-specified distance as a reference.
     constexpr double kMinimumDistance = 1.0e-7;
     constexpr double kRelativeDistance = 1.0e-2;
-    if (d0 < kMinimumDistance + kRelativeDistance * specs.distance) {
+    if (d0 < kMinimumDistance + kRelativeDistance * spec.distance) {
       const std::string msg = fmt::format(
           "The distance between bodies '{}' and '{}' is: {}. This is "
           "nonphysically small when compared to the free length of the "
           "constraint, {}. ",
-          body_A.name(), body_B.name(), d0, specs.distance);
+          body_A.name(), body_B.name(), d0, spec.distance);
       throw std::logic_error(msg);
     }
     const Vector3<T> p_hat_W = p_PQ_W / d0;
@@ -453,18 +455,18 @@ void SapDriver<T>::AddDistanceConstraints(const systems::Context<T>& context,
         frame_W, frame_W, &Jv_WBq_W);
     Jdistance = p_hat_W.transpose() * (Jv_WBq_W - Jv_WAp_W);
 
-    const T dissipation_time_scale = specs.damping / specs.stiffness;
+    const T dissipation_time_scale = spec.damping / spec.stiffness;
 
     // TODO(amcastro-tri): consider exposing this parameter.
     const double beta = 0.1;
     const typename SapHolonomicConstraint<T>::Parameters parameters{
-        gamma_lower, gamma_upper, Vector1<T>(specs.stiffness),
+        gamma_lower, gamma_upper, Vector1<T>(spec.stiffness),
         Vector1<T>(dissipation_time_scale), beta};
 
     const TreeIndex treeA_index =
-        tree_topology().body_to_tree_index(specs.body_A);
+        tree_topology().body_to_tree_index(spec.body_A);
     const TreeIndex treeB_index =
-        tree_topology().body_to_tree_index(specs.body_B);
+        tree_topology().body_to_tree_index(spec.body_B);
 
     // Sanity check at least one body is not the world.
     DRAKE_DEMAND(treeA_index.is_valid() || treeB_index.is_valid());
@@ -475,7 +477,7 @@ void SapDriver<T>::AddDistanceConstraints(const systems::Context<T>& context,
                              treeA_index == treeB_index;
 
     // Constraint function at current time step.
-    const Vector1<T> g0(d0 - specs.distance);
+    const Vector1<T> g0(d0 - spec.distance);
     if (single_tree) {
       const TreeIndex tree_index =
           treeA_index.is_valid() ? treeA_index : treeB_index;
@@ -524,16 +526,17 @@ void SapDriver<T>::AddBallConstraints(
   MatrixX<T> Jv_ApBq_W = MatrixX<T>::Zero(3, nv);
 
   const Frame<T>& frame_W = plant().world_frame();
-  for (const BallConstraintSpecs& specs : manager().ball_constraints_specs()) {
-    const Body<T>& body_A = plant().get_body(specs.body_A);
-    const Body<T>& body_B = plant().get_body(specs.body_B);
+  for (const auto& [id, spec] : manager().ball_constraints_specs()) {
+    unused(id);
+    const Body<T>& body_A = plant().get_body(spec.body_A);
+    const Body<T>& body_B = plant().get_body(spec.body_B);
 
     const math::RigidTransform<T>& X_WA =
         plant().EvalBodyPoseInWorld(context, body_A);
     const math::RigidTransform<T>& X_WB =
         plant().EvalBodyPoseInWorld(context, body_B);
-    const Vector3<T> p_WP = X_WA * specs.p_AP.cast<T>();
-    const Vector3<T> p_WQ = X_WB * specs.p_BQ.cast<T>();
+    const Vector3<T> p_WP = X_WA * spec.p_AP.template cast<T>();
+    const Vector3<T> p_WQ = X_WB * spec.p_BQ.template cast<T>();
 
     const Vector3<T> p_PQ_W = p_WQ - p_WP;
 
@@ -553,9 +556,9 @@ void SapDriver<T>::AddBallConstraints(
         gamma_lower, gamma_upper, stiffness, relaxation_time, beta};
 
     const TreeIndex treeA_index =
-        tree_topology().body_to_tree_index(specs.body_A);
+        tree_topology().body_to_tree_index(spec.body_A);
     const TreeIndex treeB_index =
-        tree_topology().body_to_tree_index(specs.body_B);
+        tree_topology().body_to_tree_index(spec.body_B);
 
     // TODO(joemasterjohn): Move this exception up to the plant level so that it
     // fails as fast as possible. Currently, the earliest this can happen is
