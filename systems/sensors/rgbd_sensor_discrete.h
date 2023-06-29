@@ -27,6 +27,7 @@ output_ports:
 - depth_image_16u
 - label_image
 - body_pose_in_world
+- image_time
 @endsystem
 
 See also RgbdSensorAsync for a slightly different discrete sensor model.
@@ -40,11 +41,11 @@ type, eschew this system in favor of adding your own zero-order hold on just
 the one RgbdSensor output port that you need.
 
 @ingroup sensor_systems  */
-class RgbdSensorDiscrete final : public systems::Diagram<double> {
+class RgbdSensorDiscrete final : public Diagram<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RgbdSensorDiscrete);
 
-  static constexpr double kDefaultPeriod = 1. / 30;
+  static constexpr double kDefaultPeriod = 1.0 / 30;
 
   /** Constructs a diagram containing a (non-registered) RgbdSensor that will
   update at a given rate.
@@ -59,35 +60,35 @@ class RgbdSensorDiscrete final : public systems::Diagram<double> {
                      double period = kDefaultPeriod,
                      bool render_label_image = true);
 
-  /** Returns reference to RgbdSensor instance. */
+  /** Returns a reference to the underlying RgbdSensor object. */
   const RgbdSensor& sensor() const { return *camera_; }
 
-  /** Returns update period for discrete camera. */
+  /** Returns the update period for the discrete camera. */
   double period() const { return period_; }
 
   /** @see RgbdSensor::query_object_input_port(). */
   const InputPort<double>& query_object_input_port() const {
-    return get_input_port(query_object_port_);
+    return get_input_port(query_object_input_port_);
   }
 
   /** @see RgbdSensor::color_image_output_port(). */
   const systems::OutputPort<double>& color_image_output_port() const {
-    return get_output_port(output_port_color_image_);
+    return get_output_port(color_image_output_port_);
   }
 
   /** @see RgbdSensor::depth_image_32F_output_port(). */
   const systems::OutputPort<double>& depth_image_32F_output_port() const {
-    return get_output_port(output_port_depth_image_32F_);
+    return get_output_port(depth_image_32F_output_port_);
   }
 
   /** @see RgbdSensor::depth_image_16U_output_port(). */
   const systems::OutputPort<double>& depth_image_16U_output_port() const {
-    return get_output_port(output_port_depth_image_16U_);
+    return get_output_port(depth_image_16U_output_port_);
   }
 
   /** @see RgbdSensor::label_image_output_port(). */
   const systems::OutputPort<double>& label_image_output_port() const {
-    return get_output_port(output_port_label_image_);
+    return get_output_port(label_image_output_port_);
   }
 
   /** @see RgbdSensor::body_pose_in_world_output_port(). */
@@ -95,16 +96,24 @@ class RgbdSensorDiscrete final : public systems::Diagram<double> {
     return get_output_port(body_pose_in_world_output_port_);
   }
 
+  /** Returns the vector-valued output port (with size == 1) which reports the
+  simulation time when the image outputs were captured, in seconds (i.e., the
+  time of the most recent zero-order hold discrete update). */
+  const OutputPort<double>& image_time_output_port() const {
+    return get_output_port(image_time_output_port_);
+  }
+
  private:
   RgbdSensor* const camera_{};
   const double period_{};
 
-  int query_object_port_{-1};
-  int output_port_color_image_{-1};
-  int output_port_depth_image_32F_{-1};
-  int output_port_depth_image_16U_{-1};
-  int output_port_label_image_{-1};
+  int query_object_input_port_{-1};
+  int color_image_output_port_{-1};
+  int depth_image_32F_output_port_{-1};
+  int depth_image_16U_output_port_{-1};
+  int label_image_output_port_{-1};
   int body_pose_in_world_output_port_{-1};
+  int image_time_output_port_{-1};
 };
 
 }  // namespace sensors

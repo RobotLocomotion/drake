@@ -197,7 +197,9 @@ PYBIND11_MODULE(sensors, m) {
             py_rvp::reference_internal, cls_doc.label_image_output_port.doc)
         .def("body_pose_in_world_output_port",
             &Class::body_pose_in_world_output_port, py_rvp::reference_internal,
-            cls_doc.body_pose_in_world_output_port.doc);
+            cls_doc.body_pose_in_world_output_port.doc)
+        .def("image_time_output_port", &Class::image_time_output_port,
+            py_rvp::reference_internal, cls_doc.image_time_output_port.doc);
   };
 
   py::class_<RgbdSensor, LeafSystem<T>> rgbd_sensor(
@@ -272,7 +274,9 @@ PYBIND11_MODULE(sensors, m) {
             py_rvp::reference_internal, cls_doc.label_image_output_port.doc)
         .def("body_pose_in_world_output_port",
             &Class::body_pose_in_world_output_port, py_rvp::reference_internal,
-            cls_doc.body_pose_in_world_output_port.doc);
+            cls_doc.body_pose_in_world_output_port.doc)
+        .def("image_time_output_port", &Class::image_time_output_port,
+            py_rvp::reference_internal, cls_doc.image_time_output_port.doc);
   }
 
   {
