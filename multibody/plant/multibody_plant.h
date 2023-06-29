@@ -5385,13 +5385,13 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   std::vector<std::unique_ptr<PhysicalModel<T>>> physical_models_;
 
   // Vector of coupler constraints specifications.
-  std::vector<internal::CouplerConstraintSpecs> coupler_constraints_specs_;
+  std::vector<internal::CouplerConstraintSpec> coupler_constraints_specs_;
 
   // Vector of distance constraints specifications.
-  std::vector<internal::DistanceConstraintSpecs> distance_constraints_specs_;
+  std::vector<internal::DistanceConstraintSpec> distance_constraints_specs_;
 
   // Vector of ball constraint specifications.
-  std::vector<internal::BallConstraintSpecs> ball_constraints_specs_;
+  std::vector<internal::BallConstraintSpec> ball_constraints_specs_;
 
   // All MultibodyPlant cache indexes are stored in cache_indexes_.
   CacheIndexes cache_indexes_;

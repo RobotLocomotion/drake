@@ -245,17 +245,17 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   void CalcForceElementsContribution(const drake::systems::Context<T>& context,
                                      MultibodyForces<T>* forces) const;
 
-  const std::vector<internal::CouplerConstraintSpecs>&
+  const std::vector<internal::CouplerConstraintSpec>&
   coupler_constraints_specs() const;
 
   const internal::JointLockingCacheData<T>&
   EvalJointLockingCache(
       const systems::Context<T>& context) const;
 
-  const std::vector<internal::DistanceConstraintSpecs>&
+  const std::vector<internal::DistanceConstraintSpec>&
   distance_constraints_specs() const;
 
-  const std::vector<internal::BallConstraintSpecs>& ball_constraints_specs()
+  const std::vector<internal::BallConstraintSpec>& ball_constraints_specs()
       const;
 
   BodyIndex FindBodyByGeometryId(geometry::GeometryId geometry_id) const;
