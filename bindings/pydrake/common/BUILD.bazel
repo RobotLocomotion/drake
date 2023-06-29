@@ -494,11 +494,11 @@ drake_py_unittest(
 )
 
 drake_pybind_library(
-    name = "text_logging_test_py",
+    name = "text_logging_test_helpers_py",
     testonly = 1,
     add_install = False,
-    cc_so_name = "test/text_logging_test",
-    cc_srcs = ["test/text_logging_test_py.cc"],
+    cc_so_name = "test/text_logging_test_helpers",
+    cc_srcs = ["test/text_logging_test_helpers_py.cc"],
     package_info = PACKAGE_INFO,
     visibility = ["//visibility:private"],
 )
@@ -509,7 +509,7 @@ drake_py_binary(
     srcs = ["test/text_logging_example.py"],
     deps = [
         ":module_py",
-        ":text_logging_test_py",
+        ":text_logging_test_helpers_py",
     ],
 )
 
@@ -531,7 +531,7 @@ drake_py_unittest(
     ],
     deps = [
         ":module_py",
-        ":text_logging_test_py",
+        ":text_logging_test_helpers_py",
     ],
 )
 

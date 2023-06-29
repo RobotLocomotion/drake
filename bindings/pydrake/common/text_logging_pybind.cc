@@ -2,6 +2,7 @@
 #include "drake/bindings/pydrake/common/text_logging_pybind.h"
 
 #include <atomic>
+#include <cstdlib>
 #include <memory>
 
 // clang-format off to disable clang-format-includes
@@ -123,9 +124,26 @@ class pylogging_sink final
   py::object make_record_;
   py::object handle_;
 };
+
+constexpr char kDisableEnv[] = "DRAKE_PYTHON_LOGGING";
+constexpr char kDisableValue[] = "0";
+
+bool ShouldDisableRedirect() {
+  const char* const value = std::getenv(kDisableEnv);
+  if (value != nullptr && std::string(value) == kDisableValue) {
+    return true;
+  }
+  return false;
+}
+
 }  // namespace
 
 void MaybeRedirectPythonLogging() {
+  if (ShouldDisableRedirect()) {
+    drake::log()->debug("Will not redirect C++ logging to Python ({}={})",
+        kDisableEnv, kDisableValue);
+    return;
+  }
   // Inspect the spdlog configuration to check that it exactly matches how
   // drake/common/text_logging.cc configures itself by default. If the spdlog
   // configuration we observe here differs in any way, then we'll assume that
