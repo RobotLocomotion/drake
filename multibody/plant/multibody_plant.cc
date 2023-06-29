@@ -455,7 +455,7 @@ ConstraintIndex MultibodyPlant<T>::AddCouplerConstraint(const Joint<T>& joint0,
 
   const ConstraintIndex constraint_index(num_constraints());
 
-  coupler_constraints_specs_.push_back(internal::CouplerConstraintSpecs{
+  coupler_constraints_specs_.push_back(internal::CouplerConstraintSpec{
       joint0.index(), joint1.index(), gear_ratio, offset});
 
   return constraint_index;
@@ -489,7 +489,7 @@ ConstraintIndex MultibodyPlant<T>::AddDistanceConstraint(
 
   DRAKE_THROW_UNLESS(body_A.index() != body_B.index());
 
-  internal::DistanceConstraintSpecs spec{body_A.index(), p_AP, body_B.index(),
+  internal::DistanceConstraintSpec spec{body_A.index(), p_AP, body_B.index(),
                                          p_BQ, distance, stiffness, damping};
   if (!spec.IsValid()) {
     const std::string msg = fmt::format(
@@ -531,7 +531,7 @@ ConstraintIndex MultibodyPlant<T>::AddBallConstraint(
         "DiscreteContactSolver.");
   }
 
-  internal::BallConstraintSpecs spec{body_A.index(), p_AP, body_B.index(),
+  internal::BallConstraintSpec spec{body_A.index(), p_AP, body_B.index(),
                                      p_BQ};
   if (!spec.IsValid()) {
     const std::string msg = fmt::format(

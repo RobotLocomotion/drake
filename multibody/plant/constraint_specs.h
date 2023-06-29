@@ -18,7 +18,7 @@ namespace internal {
 // ρ⋅q₁ + Δq, where q₀ and q₁ are the positions of two one-DOF joints, ρ the
 // gear ratio and Δq a fixed offset. Per equation above, ρ has units of q₀/q₁
 // and Δq has units of q₀.
-struct CouplerConstraintSpecs {
+struct CouplerConstraintSpec {
   // First joint with position q₀.
   JointIndex joint0_index;
   // Second joint with position q₁.
@@ -47,7 +47,7 @@ struct CouplerConstraintSpecs {
 // be strictly positive.
 //
 // @pre d₀ > 0, k >= 0, c >= 0. @see IsValid().
-struct DistanceConstraintSpecs {
+struct DistanceConstraintSpec {
   // Returns `true` iff `this` specification is valid to define a distance
   // constraint. A distance constraint specification is considered to be valid
   // iff distance > 0, stiffness >= 0 and damping >= 0.
@@ -76,7 +76,7 @@ struct DistanceConstraintSpecs {
 // does not restrict the rotational degrees of freedom.
 //
 // @pre body_A != body_B. @see IsValid().
-struct BallConstraintSpecs {
+struct BallConstraintSpec {
   // Returns `true` iff `this` specification is valid to define a ball
   // constraint. A ball constraint specification is considered to be valid iff:
   //   body_A != body_B.
