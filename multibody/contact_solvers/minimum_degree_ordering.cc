@@ -66,9 +66,9 @@ void Node::UpdateExternalDegree(const std::vector<Node>& nodes) {
   }
 }
 
-std::vector<int> CalcEliminationOrdering(
+std::vector<int> ComputeMinimumDegreeOrdering(
     const BlockSparsityPattern& block_sparsity_pattern) {
-  /* Intialize for Minimum Degree: Populate index, size, and A, the list of
+  /* Initialize for Minimum Degree: Populate index, size, and A, the list of
    adjacent variables. E, L are empty initially. */
   const std::vector<int>& block_sizes = block_sparsity_pattern.block_sizes();
   const int num_nodes = block_sizes.size();
@@ -85,9 +85,9 @@ std::vector<int> CalcEliminationOrdering(
         /* We modify both `node` and `neighbor` here because for each ij-pair
          only one of (i, j) and (j, i) is recorded in `sparsity pattern` but
          we want j be part of Ai and i to be part of Aj. */
-        node.A.emplace_back(nodes[neighbor].index);
+        node.A.push_back(nodes[neighbor].index);
         node.degree += nodes[neighbor].size;
-        nodes[neighbor].A.emplace_back(node.index);
+        nodes[neighbor].A.push_back(node.index);
         nodes[neighbor].degree += node.size;
       }
     }
@@ -140,23 +140,32 @@ std::vector<int> CalcEliminationOrdering(
     /* Update all neighboring variables of p. */
     for (int i : node_p.L) {
       Node& node_i = nodes[i];
-      /* Remove redundant entries. */
+      /* Pruning. */
       node_i.A = SetDifference(node_i.A, node_p.L);
-      RemoveValueFromSortedVector(p, &(node_i.A));
-      /* Element absorption. */
+      /* Convert p from a variable to an element in node i. Note that Lp was
+       already updated prior to the loop, and therefore we can now safely
+       remove the absorbed elements in node i */
       node_i.E = SetDifference(node_i.E, node_p.E);
+      RemoveValueFromSortedVector(p, &(node_i.A));
       InsertValueInSortedVector(p, &(node_i.E));
       /* Compute external degree. */
       node_i.UpdateExternalDegree(nodes);
-      /* Since we can't update the variable in the priority queue, we simply add
-       a new node in. Old nodes will be discarded when they are removed from the
-       priority queue as their external degree is out-of-date. */
+      /* Since we can't update the node in the priority queue, we simply add
+       a new node in. With multiple copies of the same node in the priority
+       queue, we may pop out a node with a stale degree. We detect the node is
+       stale by checking its degree (see above) when we pop the node from the
+       queue and simply skip the node if it's stale. */
       IndexDegree new_node = {.degree = node_i.degree, .index = node_i.index};
       queue.emplace(new_node);
     }
     /* Convert node p from a supervariable to an element. */
     node_p.A.clear();
     node_p.E.clear();
+    /* There's no easy way to remove node p from the priority queue (there might
+     be multiple copies; see above where we add new nodes to the priority
+     queue). So we set its degree to -1, so that any remaining copies of p, when
+     popped from the priority queue, will be skipped because a degree mismatch.
+    */
     node_p.degree = -1;
   }
   return result;
@@ -164,7 +173,7 @@ std::vector<int> CalcEliminationOrdering(
 
 /* The complexity of this symbolic factorization is O(|L|) where L is the
  factorized matrix. */
-BlockSparsityPattern SymbolicFactor(
+BlockSparsityPattern SymbolicCholeskyFactor(
     const BlockSparsityPattern& block_sparsity) {
   const std::vector<int>& block_sizes = block_sparsity.block_sizes();
   /* sparsity pattern of the original symmetric matrix. */
@@ -172,36 +181,41 @@ BlockSparsityPattern SymbolicFactor(
   const int N = block_sizes.size();
 
   /* children[p] stores the children of node p in the elimination tree, in
-   increasing order. See [Vandenberghe, 2015] Section 4.3 for the definition of
-   an elimination tree.
+   increasing order. See [Vandenberghe, 2015] Section 4.3 for the definition
+   of an elimination tree.
 
    [Vandenberghe, 2015] Vandenberghe, Lieven, and Martin S. Andersen. "Chordal
    graphs and semidefinite optimization." Foundations and Trends® in
    Optimization 1.4 (2015): 241-433. */
   std::vector<std::vector<int>> children(N);
+  /* L_sparsity[j] denotes the non-zero row blocks of column j. */
   std::vector<std::vector<int>> L_sparsity(N);
-  for (int i = 0; i < N; ++i) {
-    /* The sparsity pattern for the i-th node in L is the union of the neighbors
-     of the i-th node in A and all neighbors of children of the i-th node that
-     are larger than i. We first take the union of all neighbors of i and
-     children of i and then delete all neighbors that are smaller than i.*/
-    L_sparsity[i] = A_sparsity[i];
-    for (int c : children[i]) {
-      // TODO(xuchenhan-tri): Consider doing a k-way union instead of a loop for
-      // efficiency.
-      L_sparsity[i] = Union(L_sparsity[i], L_sparsity[c]);
+  for (int j = 0; j < N; ++j) {
+    /* The sparsity pattern for the j-th node in L is the union of the
+     neighbors of the j-th node in A and all neighbors of children of the j-th
+     node that are larger than j. We first take the union of all neighbors of
+     j and children of j and then delete all neighbors that are smaller than
+     j. This is the same as described in equation 4.3 in [Davis 2006].
+      Lⱼ = Aⱼ ∪ {j} ∪ ( ∪ Lₛ \ {s})
+     where the union over s is over all children of j. */
+    L_sparsity[j] = A_sparsity[j];
+    for (int c : children[j]) {
+      // TODO(xuchenhan-tri): Consider doing a k-way union instead of a loop
+      // for efficiency.
+      L_sparsity[j] = Union(L_sparsity[j], L_sparsity[c]);
     }
-    /* Remove entries smaller than i. */
-    L_sparsity[i] = std::vector<int>(
-        std::lower_bound(L_sparsity[i].begin(), L_sparsity[i].end(), i),
-        L_sparsity[i].end());
+    /* Instead of union over Lₛ \ {s}, we union over Lₛ and remove all entries
+     smaller than j here in a single pass. */
+    L_sparsity[j] = std::vector<int>(
+        std::lower_bound(L_sparsity[j].begin(), L_sparsity[j].end(), j),
+        L_sparsity[j].end());
 
-    /* Record the parent of i if i isn't already the root. */
-    if (L_sparsity[i].size() > 1) {
-      /* The 0-th entry is i itself and the 1st entry is i-th parent. See
+    /* Record the parent of j if j isn't already the root. */
+    if (L_sparsity[j].size() > 1) {
+      /* The 0-th entry is j itself and the 1st entry is j-th parent. See
        [Vandenberghe, 2015] Section 4.3. */
-      const int parent_of_i = L_sparsity[i][1];
-      children[parent_of_i].emplace_back(i);
+      const int parent_of_j = L_sparsity[j][1];
+      children[parent_of_j].emplace_back(j);
     }
   }
   return BlockSparsityPattern(block_sizes, L_sparsity);
