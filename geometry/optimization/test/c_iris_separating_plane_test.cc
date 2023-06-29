@@ -19,10 +19,10 @@ GTEST_TEST(CalcPlane, TestAllSymbolic) {
       decision_vars, Vector1<symbolic::Variable>(s),
       SeparatingPlaneOrder::kAffine, &a, &b);
   for (int i = 0; i < 3; ++i) {
-    EXPECT_PRED2(
-        symbolic::test::PolyEqual, a(i),
-        symbolic::Polynomial(decision_vars(i) * s + decision_vars(3 + i),
-                             symbolic::Variables({s})));
+    EXPECT_PRED2(symbolic::test::PolyEqual, a(i),
+                 symbolic::Polynomial(
+                     decision_vars(2 * i) * s + decision_vars(2 * i + 1),
+                     symbolic::Variables({s})));
   }
   EXPECT_PRED2(symbolic::test::PolyEqual, b,
                symbolic::Polynomial(decision_vars(6) * s + decision_vars(7),
@@ -43,8 +43,8 @@ GTEST_TEST(CalcPlane, TestDoubleDecisionVariableSymbolicS) {
       SeparatingPlaneOrder::kAffine, &a, &b);
   for (int i = 0; i < 3; ++i) {
     EXPECT_PRED2(symbolic::test::PolyEqual, a(i),
-                 symbolic::Polynomial(decision_var_vals(i) * s +
-                                      decision_var_vals(3 + i)));
+                 symbolic::Polynomial(decision_var_vals(2 * i) * s +
+                                      decision_var_vals(2 * i + 1)));
   }
   EXPECT_PRED2(
       symbolic::test::PolyEqual, b,
@@ -63,7 +63,8 @@ GTEST_TEST(CalcPlane, TestDoubleDecisionVariableDoubleS) {
   CalcPlane<double, double, double>(decision_var_vals, Vector1d(s),
                                     SeparatingPlaneOrder::kAffine, &a, &b);
   for (int i = 0; i < 3; ++i) {
-    EXPECT_EQ(a(i), decision_var_vals(i) * s + decision_var_vals(3 + i));
+    EXPECT_EQ(a(i),
+              decision_var_vals(2 * i) * s + decision_var_vals(2 * i + 1));
   }
   EXPECT_EQ(b, decision_var_vals(6) * s + decision_var_vals(7));
 }

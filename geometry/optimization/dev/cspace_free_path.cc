@@ -15,9 +15,8 @@ initialize_path_map(
     CspaceFreePath* cspace_free_path, int maximum_path_degree,
     const Eigen::Ref<const VectorX<symbolic::Variable>>& s_variables) {
   std::unordered_map<symbolic::Variable, symbolic::Polynomial> ret;
-  const VectorX<symbolic::Monomial> basis =
-      symbolic::MonomialBasis(symbolic::Variables{cspace_free_path->mu_},
-                              maximum_path_degree);
+  const VectorX<symbolic::Monomial> basis = symbolic::MonomialBasis(
+      symbolic::Variables{cspace_free_path->mu_}, maximum_path_degree);
 
   for (int i = 0; i < s_variables.size(); ++i) {
     const symbolic::Variable s{s_variables(i)};
@@ -75,12 +74,12 @@ PlaneSeparatesGeometriesOnPath::PlaneSeparatesGeometriesOnPath(
 CspaceFreePath::CspaceFreePath(const multibody::MultibodyPlant<double>* plant,
                                const geometry::SceneGraph<double>* scene_graph,
                                const Eigen::Ref<const Eigen::VectorXd>& q_star,
-                               int maximum_path_degree, int plane_order)
+                               int maximum_path_degree, int plane_degree)
     : rational_forward_kin_(plant),
       scene_graph_{*scene_graph},
       q_star_{q_star},
       link_geometries_{internal::GetCollisionGeometries(*plant, *scene_graph)},
-      plane_order_{plane_order},
+      plane_degree_{plane_degree},
       mu_(symbolic::Variable("mu")),
       max_degree_(maximum_path_degree),
       path_(initialize_path_map(this, maximum_path_degree,
@@ -95,7 +94,7 @@ CspaceFreePath::CspaceFreePath(const multibody::MultibodyPlant<double>* plant,
       rational_forward_kin_.plant(), scene_graph_, link_geometries_,
       &collision_pairs);
 
-  const int num_coeffs_per_poly = plane_order + 1;
+  const int num_coeffs_per_poly = plane_degree + 1;
   separating_planes_.reserve(num_collision_pairs);
   for (const auto& [link_pair, geometry_pairs] : collision_pairs) {
     for (const auto& geometry_pair : geometry_pairs) {
@@ -107,9 +106,9 @@ CspaceFreePath::CspaceFreePath(const multibody::MultibodyPlant<double>* plant,
         plane_decision_vars(i) =
             symbolic::Variable(fmt::format("plane_var{}", i));
       }
-      CalcPathPlane<symbolic::Variable, symbolic::Variable,
-                    symbolic::Polynomial>(plane_decision_vars, mu_, plane_order,
-                                          &a, &b);
+      CalcPlane<symbolic::Variable, symbolic::Variable, symbolic::Polynomial>(
+          plane_decision_vars, Vector1<symbolic::Variable>(mu_), plane_degree,
+          &a, &b);
 
       // Compute the expressed body for this plane
       const multibody::BodyIndex expressed_body =
@@ -118,7 +117,7 @@ CspaceFreePath::CspaceFreePath(const multibody::MultibodyPlant<double>* plant,
               link_pair.second());
       separating_planes_.emplace_back(a, b, geometry_pair.first,
                                       geometry_pair.second, expressed_body,
-                                      plane_order_, plane_decision_vars);
+                                      plane_degree_, plane_decision_vars);
 
       map_geometries_to_separating_planes_.emplace(
           SortedPair<geometry::GeometryId>(geometry_pair.first->id(),
@@ -136,7 +135,7 @@ CspaceFreePath::CspaceFreePath(const multibody::MultibodyPlant<double>* plant,
   separating_planes_ptrs.reserve(separating_planes_.size());
   for (const auto& plane : separating_planes_) {
     separating_planes_ptrs.push_back(
-        std::make_unique<CSpacePathSeparatingPlane<symbolic::Variable>>(plane));
+        std::make_unique<CSpaceSeparatingPlane<symbolic::Variable>>(plane));
   }
   // Generate the rationals for the separating planes. At this point, the plane
   // components are a function of mu, but the plane_geometries will still be in
