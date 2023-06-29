@@ -156,10 +156,10 @@ class TestTextLoggingExample(unittest.TestCase,
         (2) We do not specifically change anything about C++ logging level.
         (3) We set the Python logging level to "no logging at all".
         (4) The do_log_test function invokes a bunch of C++ log statements.
-        The test predicate is that the C++ log statements made it out to stderr.
-        If step (1) didn't happen, then step (3) would mean that no messages
-        would ever appear, so the test predicate would fail (the output would
-        be empty).
+        The test predicate is that the C++ log statements made it out to
+        stderr. If step (1) didn't happen, then step (3) would mean that no
+        messages would ever appear, so the test predicate would fail (the
+        output would be empty).
         """
         # Disable the code that injects the pylogging_sink.
         env = dict(os.environ)
