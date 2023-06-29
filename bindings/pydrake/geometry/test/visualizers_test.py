@@ -193,6 +193,7 @@ class TestGeometryVisualizers(unittest.TestCase):
         self.assertEqual(len(gamepad.button_values), 0)
         self.assertEqual(len(gamepad.axes), 0)
         meshcat.SetRealtimeRate(1.0)
+        meshcat.GetRealtimeRate()
         meshcat.Flush()
 
         meshcat.StartRecording(frames_per_second=64.0,
@@ -277,6 +278,7 @@ class TestGeometryVisualizers(unittest.TestCase):
         self.assertIn("publish_period", repr(params))
         copy.copy(params)
         vis = mut.MeshcatVisualizer_[T](meshcat=meshcat, params=params)
+        vis.ResetRealtimeRateCalculator()
         vis.Delete()
         self.assertIsInstance(vis.query_object_input_port(), InputPort_[T])
         animation = vis.StartRecording(set_transforms_while_recording=True)

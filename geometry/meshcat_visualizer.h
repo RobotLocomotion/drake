@@ -73,7 +73,7 @@ class MeshcatVisualizer final : public systems::LeafSystem<T> {
    periodic publish event. This is useful for correcting the realtime rate after
    simulation is resumed from a paused state, etc. */
   void ResetRealtimeRateCalculator() const {
-      realtime_rate_calculator_.Reset();
+    realtime_rate_calculator_.Reset();
   }
 
   /** Calls Meshcat::Delete(std::string path), with the path set to
@@ -165,10 +165,6 @@ class MeshcatVisualizer final : public systems::LeafSystem<T> {
    data. */
   template <typename>
   friend class MeshcatVisualizer;
-
-  /* Friend declaration so that internal states can be checked in unit
-  tests. */
-  friend class MeshcatVisualizerTester;
 
   /* The periodic event handler. It tests to see if the last scene description
    is valid (if not, sends the objects) and then sends the transforms.  */
