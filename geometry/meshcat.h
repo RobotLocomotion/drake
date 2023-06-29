@@ -484,6 +484,12 @@ class Meshcat {
   percentage (multiplied by 100) */
   void SetRealtimeRate(double rate);
 
+  /** Gets the realtime rate that is displayed in the meshcat visualizer stats
+   strip chart. See SetRealtimeRate(). Note that this value might be a smoothing
+   function across multiple calls to SetRealtimeRate() rather than the most
+   recent argument value, in case this class ever adds smoothing capability. */
+  double GetRealtimeRate() const;
+
   /** Sets a single named property of the object at the given path. For example,
   @verbatim
   meshcat.SetProperty("/Background", "visible", false);

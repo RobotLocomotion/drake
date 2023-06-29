@@ -109,6 +109,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("meshcat"), py::arg("params") = MeshcatVisualizerParams{},
             // `meshcat` is a shared_ptr, so does not need a keep_alive.
             cls_doc.ctor.doc)
+        .def("ResetRealtimeRateCalculator", &Class::ResetRealtimeRateCalculator,
+            cls_doc.ResetRealtimeRateCalculator.doc)
         .def("Delete", &Class::Delete, cls_doc.Delete.doc)
         .def("StartRecording", &Class::StartRecording,
             py::arg("set_transforms_while_recording") = true,
@@ -281,6 +283,8 @@ void DoScalarIndependentDefinitions(py::module m) {
         .def("Delete", &Class::Delete, py::arg("path") = "", cls_doc.Delete.doc)
         .def("SetRealtimeRate", &Class::SetRealtimeRate, py::arg("rate"),
             cls_doc.SetRealtimeRate.doc)
+        .def("GetRealtimeRate", &Class::GetRealtimeRate,
+            cls_doc.GetRealtimeRate.doc)
         .def("SetProperty",
             py::overload_cast<std::string_view, std::string, bool,
                 const std::optional<double>&>(&Class::SetProperty),

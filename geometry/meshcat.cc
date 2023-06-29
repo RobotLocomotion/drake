@@ -654,6 +654,7 @@ class Meshcat::Impl {
   // This function is public via the PIMPL.
   void SetRealtimeRate(double rate) {
     DRAKE_DEMAND(IsThread(main_thread_id_));
+    realtime_rate_ = rate;
     internal::RealtimeRateData data;
     data.rate = rate;
     Defer([this, data = std::move(data)]() {
@@ -664,6 +665,12 @@ class Meshcat::Impl {
       std::string message = message_stream.str();
       app_->publish("all", message, uWS::OpCode::BINARY, false);
     });
+  }
+
+  // This function is public via the PIMPL.
+  double GetRealtimeRate() const {
+    DRAKE_DEMAND(IsThread(main_thread_id_));
+    return realtime_rate_;
   }
 
   // This function is public via the PIMPL.
@@ -1937,6 +1944,7 @@ class Meshcat::Impl {
   const MeshcatParams params_;
   int port_{};
   std::mt19937 generator_{};
+  double realtime_rate_{0.0};
 
   // These variables should only be accessed in the websocket thread.
   std::thread::id websocket_thread_id_{};
@@ -2230,6 +2238,10 @@ void Meshcat::Delete(std::string_view path) {
 
 void Meshcat::SetRealtimeRate(double rate) {
   impl().SetRealtimeRate(rate);
+}
+
+double Meshcat::GetRealtimeRate() const {
+  return impl().GetRealtimeRate();
 }
 
 void Meshcat::SetProperty(std::string_view path, std::string property,
