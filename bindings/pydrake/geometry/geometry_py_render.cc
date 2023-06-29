@@ -163,7 +163,9 @@ void DoScalarIndependentDefinitions(py::module m) {
     cls  // BR
         .def(py::init<Class const&>(), py::arg("other"), "Copy constructor")
         .def(py::init<RenderCameraCore, DepthRange>(), py::arg("core"),
-            py::arg("depth_range"), cls_doc.ctor.doc)
+            py::arg("depth_range"), cls_doc.ctor.doc_2args)
+        .def(py::init<RenderCameraCore>(), py::arg("core"),
+            cls_doc.ctor.doc_1args)
         .def("core",
             static_cast<RenderCameraCore const& (Class::*)() const>(
                 &Class::core),

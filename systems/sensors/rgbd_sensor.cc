@@ -9,27 +9,57 @@
 namespace drake {
 namespace systems {
 namespace sensors {
+namespace {
 
 using geometry::FrameId;
 using geometry::QueryObject;
 using geometry::SceneGraph;
+using geometry::render::ClippingRange;
 using geometry::render::ColorRenderCamera;
 using geometry::render::DepthRenderCamera;
 using math::RigidTransformd;
 
+/* If `camera` has a value, then returns a copy of it. Otherwise, creates a
+ suitable value based on `other` and return that instead. If neither one
+ contained a value, then returns a dummy value not intended for use. */
+template <typename ColorOrDepthRenderCamera, typename OtherRenderCamera>
+ColorOrDepthRenderCamera GetOrMakeCamera(
+    const std::optional<ColorOrDepthRenderCamera>& camera,
+    const std::optional<OtherRenderCamera>& other) {
+  if (camera.has_value()) {
+    return *camera;
+  }
+  if (other.has_value()) {
+    return ColorOrDepthRenderCamera(other->core());
+  }
+  return ColorOrDepthRenderCamera({{}, {6, 4, M_PI}, {1, 2}, {}});
+}
+
+}  // namespace
+
+RgbdSensor::RgbdSensor(FrameId parent_id, const RigidTransformd& X_PB,
+                       const std::optional<ColorRenderCamera>& color_camera,
+                       const std::optional<DepthRenderCamera>& depth_camera)
+    : RgbdSensor(-1 /* ignored */, parent_id, X_PB,
+                 GetOrMakeCamera(color_camera, depth_camera),
+                 GetOrMakeCamera(depth_camera, color_camera)) {
+  DRAKE_THROW_UNLESS(color_camera.has_value() || depth_camera.has_value());
+}
+
 RgbdSensor::RgbdSensor(FrameId parent_id, const RigidTransformd& X_PB,
                        const DepthRenderCamera& depth_camera,
                        bool show_color_window)
-    : RgbdSensor(parent_id, X_PB,
+    : RgbdSensor(-1 /* ignored */, parent_id, X_PB,
                  ColorRenderCamera(depth_camera.core(), show_color_window),
                  depth_camera) {}
 
-RgbdSensor::RgbdSensor(FrameId parent_id, const RigidTransformd& X_PB,
-                       ColorRenderCamera color_camera,
-                       DepthRenderCamera depth_camera)
+RgbdSensor::RgbdSensor(int /* dummy value to disambiguate our overloads */,
+                       FrameId parent_id, const RigidTransformd& X_PB,
+                       const ColorRenderCamera& color_camera,
+                       const DepthRenderCamera& depth_camera)
     : parent_frame_id_(parent_id),
-      color_camera_(std::move(color_camera)),
-      depth_camera_(std::move(depth_camera)),
+      color_camera_(color_camera),
+      depth_camera_(depth_camera),
       X_PB_(X_PB) {
   const CameraInfo& color_intrinsics = color_camera_.core().intrinsics();
   const CameraInfo& depth_intrinsics = depth_camera_.core().intrinsics();
@@ -57,18 +87,18 @@ RgbdSensor::RgbdSensor(FrameId parent_id, const RigidTransformd& X_PB,
   body_pose_in_world_output_port_ = &this->DeclareAbstractOutputPort(
       "body_pose_in_world", &RgbdSensor::CalcX_WB);
 
-  // The depth_16U represents depth in *millimeters*. With 16 bits there is
-  // an absolute limit on the farthest distance it can register. This tests to
-  // see if the user has specified a maximum depth value that exceeds that
-  // value.
-  const float kMaxValidDepth16UInM =
-      (std::numeric_limits<uint16_t>::max() - 1) / 1000.;
+  // The depth_image_16u represents depth in *millimeters*. With 16 bits there
+  // is an absolute limit on the farthest distance it can register.
+  constexpr float kMaxValidDepth16UInMeters =
+      (std::numeric_limits<uint16_t>::max() - 1) / 1000.0;
+  // Check if the user has specified a maximum depth value that exceeds what we
+  // can represent on the depth_image_16u output port.
   const double max_depth = depth_camera_.depth_range().max_depth();
-  if (max_depth > kMaxValidDepth16UInM) {
+  if (max_depth > kMaxValidDepth16UInMeters) {
     drake::log()->warn(
         "Specified max depth is {} m > max valid depth for 16 bits {} m. "
         "depth_image_16u might not be able to capture the full depth range.",
-        max_depth, kMaxValidDepth16UInM);
+        max_depth, kMaxValidDepth16UInMeters);
   }
 }
 

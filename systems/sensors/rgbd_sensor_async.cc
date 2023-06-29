@@ -122,14 +122,15 @@ class SnapshotSensor final : public Diagram<double> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SnapshotSensor)
 
   SnapshotSensor(const SceneGraph<double>* scene_graph, FrameId parent_id,
-                 const RigidTransformd& X_PB, ColorRenderCamera color_camera,
-                 DepthRenderCamera depth_camera) {
+                 const RigidTransformd& X_PB,
+                 const std::optional<ColorRenderCamera>& color_camera,
+                 const std::optional<DepthRenderCamera>& depth_camera) {
     DRAKE_DEMAND(scene_graph != nullptr);
     geometry_version_ = scene_graph->model_inspector().geometry_version();
     DiagramBuilder<double> builder;
     auto* chef = builder.AddNamedSystem<QueryObjectChef>("chef", scene_graph);
-    auto* rgbd = builder.AddNamedSystem<RgbdSensor>("camera", parent_id, X_PB,
-                                                    color_camera, depth_camera);
+    RgbdSensor* rgbd = builder.AddNamedSystem<RgbdSensor>(
+        "camera", parent_id, X_PB, color_camera, depth_camera);
     builder.Connect(*chef, *rgbd);
     for (InputPortIndex i{0}; i < chef->num_input_ports(); ++i) {
       const auto& input_port = chef->get_input_port(i);
@@ -209,21 +210,20 @@ struct RgbdSensorAsync::TickTockState {
   RenderedImages output;
 };
 
-RgbdSensorAsync::RgbdSensorAsync(const SceneGraph<double>* scene_graph,
-                                 FrameId parent_id, const RigidTransformd& X_PB,
-                                 double fps, double capture_offset,
-                                 double output_delay,
-                                 std::optional<ColorRenderCamera> color_camera,
-                                 std::optional<DepthRenderCamera> depth_camera,
-                                 bool render_label_image)
+RgbdSensorAsync::RgbdSensorAsync(
+    const SceneGraph<double>* scene_graph, FrameId parent_id,
+    const RigidTransformd& X_PB, double fps, double capture_offset,
+    double output_delay, const std::optional<ColorRenderCamera>& color_camera,
+    const std::optional<DepthRenderCamera>& depth_camera,
+    bool render_label_image)
     : scene_graph_{scene_graph},
       parent_id_{parent_id},
       X_PB_{X_PB},
       fps_{fps},
       capture_offset_{capture_offset},
       output_delay_{output_delay},
-      color_camera_{std::move(color_camera)},
-      depth_camera_{std::move(depth_camera)},
+      color_camera_{color_camera},
+      depth_camera_{depth_camera},
       render_label_image_{render_label_image} {
   DRAKE_THROW_UNLESS(scene_graph != nullptr);
   DRAKE_THROW_UNLESS(std::isfinite(fps) && (fps > 0));
@@ -305,30 +305,12 @@ EventStatus RgbdSensorAsync::Initialize(const Context<double>& context,
   unused(context);
   TickTockState& next_state = get_mutable_state(state);
 
-  // If we are only going to render one of color or depth, invent dummy
-  // properties for the other one to simplify the SnapshotSensor code.
-  std::optional<ColorRenderCamera> color = color_camera_;
-  std::optional<DepthRenderCamera> depth = depth_camera_;
-  if (!color.has_value()) {
-    DRAKE_DEMAND(depth.has_value());
-    const RenderCameraCore& core = depth->core();
-    color.emplace(core);
-  }
-  if (!depth.has_value()) {
-    DRAKE_DEMAND(color.has_value());
-    const RenderCameraCore& core = color->core();
-    const ClippingRange& clip = core.clipping();
-    // N.B. Avoid using clip.far() here; it can trip the "16 bit mm depth"
-    // logger spam from RgbdSensor.
-    depth.emplace(core, DepthRange(clip.near(), clip.near() * 1.001));
-  }
-
   // The `sensor` is a separate, nested system that actually renders images.
   // The outer system (`this`) is just the event shims that will tick it. Our
   // job during initialization is to reset the nested system and any prior
   // output.
   auto sensor = std::make_shared<const SnapshotSensor>(
-      scene_graph_, parent_id_, X_PB_, std::move(*color), std::move(*depth));
+      scene_graph_, parent_id_, X_PB_, color_camera_, depth_camera_);
   next_state.worker =
       std::make_shared<Worker>(std::move(sensor), color_camera_.has_value(),
                                depth_camera_.has_value(), render_label_image_);

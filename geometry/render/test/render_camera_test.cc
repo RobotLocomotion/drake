@@ -289,6 +289,40 @@ GTEST_TEST(DepthRenderCameraTest, Constructor) {
       ".+, far = .+, min. depth = .+, max. depth = .+");
 }
 
+// The depth range has a default value that uses a heuristic.
+GTEST_TEST(DepthRenderCameraTest, NoRangeConstructor) {
+  const CameraInfo intrinsics{320, 240, M_PI};
+  const ClippingRange clip{0.25, 5.0};
+  const RenderCameraCore core{{}, intrinsics, clip, {}};
+  const DepthRenderCamera camera{core};
+  // Check that it's reasonably close to the clipping range [0.25, 5].
+  EXPECT_LT(camera.depth_range().min_depth(), 1.0);
+  EXPECT_GT(camera.depth_range().max_depth(), 4.0);
+}
+
+// When the clipping range is pretty far, we have a hard-coded upper bound on
+// the depth range (around 65 meters) that kicks in.
+GTEST_TEST(DepthRenderCameraTest, NoRangeConstructorBigClip) {
+  const CameraInfo intrinsics{320, 240, M_PI};
+  const ClippingRange big_clip{0.25, 100.0};
+  const RenderCameraCore big_core{{}, intrinsics, big_clip, {}};
+  const DepthRenderCamera big_camera{big_core};
+  EXPECT_LT(big_camera.depth_range().min_depth(), 20.0);
+  EXPECT_NEAR(big_camera.depth_range().max_depth(), 65.5, 0.1);
+}
+
+// When the clipping range is so ginormous that even the nominal min_depth
+// exceeds the 65 meter limit, we just give up and hope ImageDepth17U is not
+// being used.
+GTEST_TEST(DepthRenderCameraTest, NoRangeConstructorHugeClip) {
+  const CameraInfo intrinsics{320, 240, M_PI};
+  const ClippingRange huge_clip{0.25, 1000.0};
+  const RenderCameraCore huge_core{{}, intrinsics, huge_clip, {}};
+  const DepthRenderCamera huge_camera{huge_core};
+  EXPECT_LT(huge_camera.depth_range().min_depth(), 200.0);
+  EXPECT_GT(huge_camera.depth_range().max_depth(), 900.0);
+}
+
 }  // namespace
 }  // namespace render
 }  // namespace geometry

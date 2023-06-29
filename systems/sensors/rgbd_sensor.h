@@ -1,5 +1,7 @@
 #pragma once
 
+#include <optional>
+
 #include "drake/common/drake_copyable.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/query_object.h"
@@ -91,18 +93,19 @@ class RgbdSensor final : public LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RgbdSensor)
 
-  /** Constructs an %RgbdSensor with fully specified render camera models for
-   both color/label and depth cameras.
+  /** Constructs an %RgbdSensor using the given camera model(s). If one of the
+   two models is not provided, it is inferred from the other model.
+   @throws std::exception when neither model is provided.
    @pydrake_mkdoc_identifier{individual_intrinsics}  */
-  RgbdSensor(geometry::FrameId parent_id, const math::RigidTransformd& X_PB,
-             geometry::render::ColorRenderCamera color_camera,
-             geometry::render::DepthRenderCamera depth_camera);
+  RgbdSensor(
+      geometry::FrameId parent_id, const math::RigidTransformd& X_PB,
+      const std::optional<geometry::render::ColorRenderCamera>& color_camera,
+      const std::optional<geometry::render::DepthRenderCamera>& depth_camera);
 
-  /** Constructs an %RgbdSensor with fully specified render camera models for
-   both the depth camera. The color camera in inferred from the `depth_camera`;
-   it shares the same geometry::render::RenderCameraCore and is configured to
-   show the window based on the value of `show_color_window`.
-   @pydrake_mkdoc_identifier{combined_intrinsics}  */
+  /** Constructs an %RgbdSensor using the given depth camera model; the color
+   model is inferred from the depth model and is configured to show the window
+   based on the value of `show_color_window`.
+   @pydrake_mkdoc_identifier{combined_intrinsics} */
   RgbdSensor(geometry::FrameId parent_id, const math::RigidTransformd& X_PB,
              const geometry::render::DepthRenderCamera& depth_camera,
              bool show_color_window = false);
@@ -169,6 +172,11 @@ class RgbdSensor final : public LeafSystem<double> {
   const OutputPort<double>& body_pose_in_world_output_port() const;
 
  private:
+  RgbdSensor(int, geometry::FrameId parent_id,
+             const math::RigidTransformd& X_PB,
+             const geometry::render::ColorRenderCamera& color_camera,
+             const geometry::render::DepthRenderCamera& depth_camera);
+
   // The calculator methods for the four output ports.
   void CalcColorImage(const Context<double>& context,
                       ImageRgba8U* color_image) const;
