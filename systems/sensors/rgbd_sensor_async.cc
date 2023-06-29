@@ -1,6 +1,7 @@
 #include "drake/systems/sensors/rgbd_sensor_async.h"
 
 #include <future>
+#include <limits>
 #include <map>
 #include <memory>
 #include <set>
@@ -152,6 +153,7 @@ class SnapshotSensor final : public Diagram<double> {
 /* The results of camera rendering. */
 struct RenderedImages {
   RigidTransformd X_WB;
+  double time{std::numeric_limits<double>::quiet_NaN()};
   std::shared_ptr<const ImageRgba8U> color;
   std::shared_ptr<const ImageDepth32F> depth;
   std::shared_ptr<const ImageLabel16I> label;
@@ -178,7 +180,7 @@ class Worker {
   }
 
   /* Begins rendering the given geometry as an async task. */
-  void Start(const QueryObject<double>& query);
+  void Start(double context_time, const QueryObject<double>& query);
 
   /* Waits until image rendering for the most recent call to Start() is finished
   and then returns the result. When there is no async task (e.g., if Start has
@@ -227,7 +229,7 @@ RgbdSensorAsync::RgbdSensorAsync(const SceneGraph<double>* scene_graph,
       render_label_image_{render_label_image} {
   DRAKE_THROW_UNLESS(scene_graph != nullptr);
   DRAKE_THROW_UNLESS(std::isfinite(fps) && (fps > 0));
-  DRAKE_THROW_UNLESS(std::isfinite(capture_offset));
+  DRAKE_THROW_UNLESS(std::isfinite(capture_offset) && (capture_offset >= 0));
   DRAKE_THROW_UNLESS(std::isfinite(output_delay) && (output_delay > 0));
   DRAKE_THROW_UNLESS(output_delay < (1 / fps));
   DRAKE_THROW_UNLESS(color_camera_.has_value() || depth_camera_.has_value());
@@ -260,31 +262,37 @@ RgbdSensorAsync::RgbdSensorAsync(const SceneGraph<double>* scene_graph,
     DeclareAbstractOutputPort("label_image", &Self::CalcLabel, state);
   }
   DeclareAbstractOutputPort("body_pose_in_world", &Self::CalcX_WB, state);
+  DeclareVectorOutputPort("image_time", 1, &Self::CalcImageTime, state);
 }
 
-const OutputPort<double>* RgbdSensorAsync::color_image_output_port() const {
+const OutputPort<double>& RgbdSensorAsync::color_image_output_port() const {
   constexpr char name[] = "color_image";
-  return this->HasOutputPort(name) ? &(this->GetOutputPort(name)) : nullptr;
+  return this->GetOutputPort(name);
 }
 
-const OutputPort<double>* RgbdSensorAsync::depth_image_32F_output_port() const {
+const OutputPort<double>& RgbdSensorAsync::depth_image_32F_output_port() const {
   constexpr char name[] = "depth_image_32f";
-  return this->HasOutputPort(name) ? &(this->GetOutputPort(name)) : nullptr;
+  return this->GetOutputPort(name);
 }
 
-const OutputPort<double>* RgbdSensorAsync::depth_image_16U_output_port() const {
+const OutputPort<double>& RgbdSensorAsync::depth_image_16U_output_port() const {
   constexpr char name[] = "depth_image_16u";
-  return this->HasOutputPort(name) ? &(this->GetOutputPort(name)) : nullptr;
+  return this->GetOutputPort(name);
 }
 
-const OutputPort<double>* RgbdSensorAsync::label_image_output_port() const {
+const OutputPort<double>& RgbdSensorAsync::label_image_output_port() const {
   constexpr char name[] = "label_image";
-  return this->HasOutputPort(name) ? &(this->GetOutputPort(name)) : nullptr;
+  return this->GetOutputPort(name);
 }
 
 const OutputPort<double>& RgbdSensorAsync::body_pose_in_world_output_port()
     const {
   constexpr char name[] = "body_pose_in_world";
+  return this->GetOutputPort(name);
+}
+
+const OutputPort<double>& RgbdSensorAsync::image_time_output_port() const {
+  constexpr char name[] = "image_time";
   return this->GetOutputPort(name);
 }
 
@@ -357,7 +365,7 @@ void RgbdSensorAsync::CalcTick(const Context<double>& context,
   }
 
   // Start the worker on its next task.
-  next_state.worker->Start(query);
+  next_state.worker->Start(context.get_time(), query);
 }
 
 void RgbdSensorAsync::CalcTock(const Context<double>& context,
@@ -373,10 +381,9 @@ void RgbdSensorAsync::CalcTock(const Context<double>& context,
     return;
   }
 
-  // TODO(jwnimmer-tri) Once we start providing timestamps for our output images
-  // (and thus, the SnapshotSensor), consider adding a guard here so that
-  // out-of-sequence tocks due to the user manually screwing with the State
-  // result in empty images instead of stale images.
+  // TODO(jwnimmer-tri) Consider adding a guard here so that out-of-sequence
+  // tocks due to the user manually screwing with the State result in empty
+  // images instead of stale images.
 
   // Finish the worker task, and copy it to the output ports.
   next_state.worker = prior_state.worker;
@@ -430,9 +437,14 @@ void RgbdSensorAsync::CalcX_WB(const Context<double>& context,
   *output = get_state(context).output.X_WB;
 }
 
+void RgbdSensorAsync::CalcImageTime(const Context<double>& context,
+                                    BasicVector<double>* output) const {
+  output->SetFromVector(Vector1d{get_state(context).output.time});
+}
+
 namespace {
 
-void Worker::Start(const QueryObject<double>& query) {
+void Worker::Start(double context_time, const QueryObject<double>& query) {
   // Confirm that the geometry version number has not changed since Initialize.
   const GeometryVersion& initialize_version = sensor_->geometry_version();
   const GeometryVersion& current_version = query.inspector().geometry_version();
@@ -476,7 +488,8 @@ void Worker::Start(const QueryObject<double>& query) {
   }
 
   // Launch the rendering task.
-  auto task = [this, poses = std::move(poses)]() -> RenderedImages {
+  auto task = [this, context_time,
+               poses = std::move(poses)]() -> RenderedImages {
     for (const auto& [port_name, pose_vector] : poses) {
       const auto& input_port = sensor_->GetInputPort(port_name);
       input_port.FixValue(sensor_context_.get(), pose_vector);
@@ -503,6 +516,7 @@ void Worker::Start(const QueryObject<double>& query) {
     }
     result.X_WB = sensor_->GetOutputPort("body_pose_in_world")
                       .template Eval<RigidTransformd>(*sensor_context_);
+    result.time = context_time;
     return result;
   };
   future_ = std::async(std::launch::async, std::move(task));

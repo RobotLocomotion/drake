@@ -91,7 +91,7 @@ class RgbdSensorAsyncTest : public ::testing::Test {
                       {0.1, 10}) {}
 
   /* Checks that all four image output ports of the given system are producing a
-  "default" image (i.e., zero width and height). */
+  "default" image (i.e., zero width and height), and the output_time is NaN. */
   void ExpectDefaultImages(const System<double>& system,
                            const Context<double>& context) {
     SCOPED_TRACE(fmt::format("... at context.time = {}", context.get_time()));
@@ -103,6 +103,8 @@ class RgbdSensorAsyncTest : public ::testing::Test {
         system.GetOutputPort("depth_image_32f").Eval<ImageDepth32F>(context);
     const auto& depth16_image =
         system.GetOutputPort("depth_image_16u").Eval<ImageDepth16U>(context);
+    const Eigen::VectorXd& image_time =
+        system.GetOutputPort("image_time").Eval(context);
     ASSERT_EQ(color_image.width(), 0);
     ASSERT_EQ(color_image.height(), 0);
     ASSERT_EQ(label_image.width(), 0);
@@ -111,12 +113,14 @@ class RgbdSensorAsyncTest : public ::testing::Test {
     ASSERT_EQ(depth32_image.height(), 0);
     ASSERT_EQ(depth16_image.width(), 0);
     ASSERT_EQ(depth16_image.height(), 0);
+    ASSERT_EQ(image_time.size(), 1);
+    EXPECT_THAT(image_time(0), testing::IsNan());
   }
 
   /* Checks that all four image output ports of the given system are producing a
-  "clear" image of the correct size. */
+  "clear" image of the correct size, and the output_time is expected_time. */
   void ExpectClearImages(const System<double>& system,
-                         const Context<double>& context) {
+                         const Context<double>& context, double expected_time) {
     SCOPED_TRACE(fmt::format("... at context.time = {}", context.get_time()));
 
     const auto& color_image =
@@ -127,6 +131,8 @@ class RgbdSensorAsyncTest : public ::testing::Test {
         system.GetOutputPort("depth_image_32f").Eval<ImageDepth32F>(context);
     const auto& depth16_image =
         system.GetOutputPort("depth_image_16u").Eval<ImageDepth16U>(context);
+    const Eigen::VectorXd& image_time =
+        system.GetOutputPort("image_time").Eval(context);
 
     const auto& color_intrinsics = color_camera_.core().intrinsics();
     ASSERT_EQ(color_image.width(), color_intrinsics.width());
@@ -151,6 +157,9 @@ class RgbdSensorAsyncTest : public ::testing::Test {
                 ::testing::Each(SimpleRenderEngine::kClearDepth32));
     ASSERT_THAT(to_vector(depth16_image),
                 ::testing::Each(SimpleRenderEngine::kClearDepth16));
+
+    ASSERT_EQ(image_time.size(), 1);
+    EXPECT_EQ(image_time(0), expected_time);
   }
 
  protected:
@@ -179,14 +188,10 @@ TEST_F(RgbdSensorAsyncTest, ConstructorAndSimpleAccessors) {
   EXPECT_TRUE(dut.depth_camera().has_value());
 
   EXPECT_EQ(dut.get_input_port().get_name(), "geometry_query");
-  ASSERT_NE(dut.color_image_output_port(), nullptr);
-  EXPECT_EQ(dut.color_image_output_port()->get_name(), "color_image");
-  ASSERT_NE(dut.depth_image_32F_output_port(), nullptr);
-  EXPECT_EQ(dut.depth_image_32F_output_port()->get_name(), "depth_image_32f");
-  ASSERT_NE(dut.depth_image_16U_output_port(), nullptr);
-  EXPECT_EQ(dut.depth_image_16U_output_port()->get_name(), "depth_image_16u");
-  ASSERT_NE(dut.label_image_output_port(), nullptr);
-  EXPECT_EQ(dut.label_image_output_port()->get_name(), "label_image");
+  EXPECT_EQ(dut.color_image_output_port().get_name(), "color_image");
+  EXPECT_EQ(dut.depth_image_32F_output_port().get_name(), "depth_image_32f");
+  EXPECT_EQ(dut.depth_image_16U_output_port().get_name(), "depth_image_16u");
+  EXPECT_EQ(dut.label_image_output_port().get_name(), "label_image");
   EXPECT_EQ(dut.body_pose_in_world_output_port().get_name(),
             "body_pose_in_world");
 
@@ -247,12 +252,12 @@ TEST_F(RgbdSensorAsyncTest, ConstructorColorOnly) {
                             render_label_image);
 
   EXPECT_TRUE(dut.color_camera().has_value());
-  EXPECT_NE(dut.color_image_output_port(), nullptr);
+  EXPECT_NO_THROW(dut.color_image_output_port());
 
   EXPECT_FALSE(dut.depth_camera().has_value());
-  EXPECT_EQ(dut.depth_image_32F_output_port(), nullptr);
-  EXPECT_EQ(dut.depth_image_16U_output_port(), nullptr);
-  EXPECT_EQ(dut.label_image_output_port(), nullptr);
+  EXPECT_THROW(dut.depth_image_32F_output_port(), std::exception);
+  EXPECT_THROW(dut.depth_image_16U_output_port(), std::exception);
+  EXPECT_THROW(dut.label_image_output_port(), std::exception);
 
   Simulator<double> simulator(dut);
   simulator.Initialize();
@@ -271,12 +276,12 @@ TEST_F(RgbdSensorAsyncTest, ConstructorDepthOnly) {
                             render_label_image);
 
   EXPECT_TRUE(dut.depth_camera().has_value());
-  EXPECT_NE(dut.depth_image_32F_output_port(), nullptr);
-  EXPECT_NE(dut.depth_image_16U_output_port(), nullptr);
+  EXPECT_NO_THROW(dut.depth_image_32F_output_port());
+  EXPECT_NO_THROW(dut.depth_image_16U_output_port());
 
   EXPECT_FALSE(dut.color_camera().has_value());
-  EXPECT_EQ(dut.color_image_output_port(), nullptr);
-  EXPECT_EQ(dut.label_image_output_port(), nullptr);
+  EXPECT_THROW(dut.color_image_output_port(), std::exception);
+  EXPECT_THROW(dut.label_image_output_port(), std::exception);
 
   Simulator<double> simulator(dut);
   simulator.Initialize();
@@ -343,7 +348,7 @@ TEST_F(RgbdSensorAsyncTest, RenderBackgroundColor) {
 
   // After the second tock event, we see the engine's "clear" color.
   simulator.AdvanceTo(0.452);
-  ExpectClearImages(simulator.get_system(), simulator.get_context());
+  ExpectClearImages(simulator.get_system(), simulator.get_context(), 0.251);
 
   // Likewise, the pose port finally has the correct value.
   EXPECT_EQ(simulator.get_system()
@@ -363,7 +368,7 @@ TEST_F(RgbdSensorAsyncTest, RenderBackgroundColor) {
   simulator.AdvanceTo(0.502);
   ExpectDefaultImages(simulator.get_system(), simulator.get_context());
   simulator.AdvanceTo(0.702);
-  ExpectClearImages(simulator.get_system(), simulator.get_context());
+  ExpectClearImages(simulator.get_system(), simulator.get_context(), 0.501);
 
   // Nuke the state back to default so that we can test the recovery logic for a
   // missing initialization event during a *tock*.
@@ -380,7 +385,7 @@ TEST_F(RgbdSensorAsyncTest, RenderBackgroundColor) {
     ExpectDefaultImages(simulator.get_system(), simulator.get_context());
   }
   simulator.AdvanceTo(1.202);
-  ExpectClearImages(simulator.get_system(), simulator.get_context());
+  ExpectClearImages(simulator.get_system(), simulator.get_context(), 1.001);
 
   // Now the wheels really come off the cart. Advance time to fire a *tick*,
   // then fast forward over the matching tock, then manually fire the next tick
