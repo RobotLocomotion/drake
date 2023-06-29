@@ -37,6 +37,7 @@ output_ports:
 - depth_image_16u (optional)
 - label_image (optional)
 - body_pose_in_world
+- image_time
 @endsystem
 
 This sensor works by capturing the i'th state of the world at time
@@ -102,7 +103,7 @@ class RgbdSensorAsync final : public LeafSystem<double> {
   @param fps How often (frames per second) to sample the `geometry_query` input
     and render the associated images. Must be strictly positive and finite.
   @param capture_offset The time of the first sample of `geometry_query` input.
-    Typically zero. Must be finite.
+    Typically zero. Must be non-negative and finite.
   @param output_delay How long after the `geometry_query` input sample the
     output ports should change to reflect the new rendered image(s).
     Must be strictly positive and strictly less than 1/fps.
@@ -154,25 +155,31 @@ class RgbdSensorAsync final : public LeafSystem<double> {
   // the other output ports (images, etc.) to make it easier for the user to
   // know when any given image was captured.
 
-  /** Returns the abstract-valued output port that contains an ImageRgba8U
-  if such a port was requested in the constructor, otherwise null. */
-  const OutputPort<double>* color_image_output_port() const;
+  /** Returns the abstract-valued output port that contains an ImageRgba8U.
+  @throws std::exception when color output is not enabled. */
+  const OutputPort<double>& color_image_output_port() const;
 
-  /** Returns the abstract-valued output port that contains an ImageDepth32F
-  if such a port was requested in the constructor, otherwise null. */
-  const OutputPort<double>* depth_image_32F_output_port() const;
+  /** Returns the abstract-valued output port that contains an ImageDepth32F.
+  @throws std::exception when depth output is not enabled. */
+  const OutputPort<double>& depth_image_32F_output_port() const;
 
-  /** Returns the abstract-valued output port that contains an ImageDepth16U
-  if such a port was requested in the constructor, otherwise null. */
-  const OutputPort<double>* depth_image_16U_output_port() const;
+  /** Returns the abstract-valued output port that contains an ImageDepth16U.
+  @throws std::exception when depth output is not enabled. */
+  const OutputPort<double>& depth_image_16U_output_port() const;
 
-  /** Returns the abstract-valued output port that contains an ImageLabel16I
-  if such a port was requested in the constructor, otherwise null. */
-  const OutputPort<double>* label_image_output_port() const;
+  /** Returns the abstract-valued output port that contains an ImageLabel16I.
+  @throws std::exception when label output is not enabled. */
+  const OutputPort<double>& label_image_output_port() const;
 
   /** Returns the abstract-valued output port (containing a RigidTransform)
-   which reports the pose of the body in the world frame (X_WB).  */
+  which reports the pose of the body in the world frame (X_WB). */
   const OutputPort<double>& body_pose_in_world_output_port() const;
+
+  /** Returns the vector-valued output port (with size == 1) which reports the
+  simulation time when the image outputs were captured, in seconds. When there
+  are no images available on the output ports (e.g., at the beginning of a
+  simulation), the value will be NaN. */
+  const OutputPort<double>& image_time_output_port() const;
 
  private:
   struct TickTockState;
@@ -188,6 +195,7 @@ class RgbdSensorAsync final : public LeafSystem<double> {
   void CalcDepth32F(const Context<double>&, ImageDepth32F*) const;
   void CalcDepth16U(const Context<double>&, ImageDepth16U*) const;
   void CalcX_WB(const Context<double>&, math::RigidTransformd*) const;
+  void CalcImageTime(const Context<double>&, BasicVector<double>*) const;
 
   const geometry::SceneGraph<double>* const scene_graph_;
   const geometry::FrameId parent_id_;

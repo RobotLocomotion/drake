@@ -26,6 +26,7 @@ namespace sensors {
  - depth_image_16u
  - label_image
  - body_pose_in_world
+ - image_time
  @endsystem
 
  This system models a continuous sensor, where the output ports reflect the
@@ -168,6 +169,12 @@ class RgbdSensor final : public LeafSystem<double> {
    which reports the pose of the body in the world frame (X_WB).  */
   const OutputPort<double>& body_pose_in_world_output_port() const;
 
+  /** Returns the vector-valued output port (with size == 1) that reports the
+   current simulation time, in seconds. This is provided for consistency with
+   RgbdSensorDiscrete and RgbdSensorAsync (where the image time is not always
+   the current time). */
+  const OutputPort<double>& image_time_output_port() const;
+
  private:
   // The calculator methods for the four output ports.
   void CalcColorImage(const Context<double>& context,
@@ -180,6 +187,7 @@ class RgbdSensor final : public LeafSystem<double> {
                       ImageLabel16I* label_image) const;
   void CalcX_WB(const Context<double>& context,
                 math::RigidTransformd* X_WB) const;
+  void CalcImageTime(const Context<double>&, BasicVector<double>*) const;
 
   // Extract the query object from the given context (via the appropriate input
   // port.
@@ -195,6 +203,7 @@ class RgbdSensor final : public LeafSystem<double> {
   const OutputPort<double>* depth_image_16U_port_{};
   const OutputPort<double>* label_image_port_{};
   const OutputPort<double>* body_pose_in_world_output_port_{};
+  const OutputPort<double>* image_time_output_port_{};
 
   // The identifier for the parent frame `P`.
   const geometry::FrameId parent_frame_id_;

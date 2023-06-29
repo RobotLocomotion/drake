@@ -194,6 +194,7 @@ class RgbdSensorTest : public ::testing::Test {
                     sensor_->query_object_input_port());
     diagram_ = builder.Build();
     context_ = diagram_->CreateDefaultContext();
+    context_->SetTime(22.2);  // An arbitrary non-zero value.
     context_->DisableCaching();
     scene_graph_context_ =
         &diagram_->GetMutableSubsystemContext(*scene_graph_, context_.get());
@@ -279,6 +280,7 @@ TEST_F(RgbdSensorTest, PortNames) {
   EXPECT_EQ(sensor.label_image_output_port().get_name(), "label_image");
   EXPECT_EQ(sensor.body_pose_in_world_output_port().get_name(),
             "body_pose_in_world");
+  EXPECT_EQ(sensor.image_time_output_port().get_name(), "image_time");
 }
 
 // Tests that the anchored camera reports the correct parent frame and has the
@@ -298,6 +300,8 @@ TEST_F(RgbdSensorTest, ConstructAnchoredCamera) {
   const RigidTransformd X_WC_expected = X_WB * X_BC;
   EXPECT_TRUE(
       ValidateConstruction(scene_graph_->world_frame_id(), X_WC_expected));
+  EXPECT_EQ(sensor_->image_time_output_port().Eval(*sensor_context_),
+            Vector1d{22.2});
 }
 
 // Similar to the AnchoredCamera test -- but, in this case, the reported pose
