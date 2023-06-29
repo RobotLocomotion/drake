@@ -33,10 +33,10 @@ GTEST_TEST(InstantaneousRealtimeRateCalculatorTest, BasicTest) {
   EXPECT_DOUBLE_EQ(calculator.UpdateAndRecalculate(0.1).value(), 1.0);
 
   // Calling UpdateAndRecalcuate() again with the same sim time will
-  // return 0.0 RTR.
+  // return 0.0 realtime rate.
   EXPECT_DOUBLE_EQ(calculator.UpdateAndRecalculate(0.1).value(), 0.0);
 
-  // InstantaneousRealtimeRatecalculator should reset properly on call
+  // InstantaneousRealtimeRateCalculator should reset properly on call
   // to Reset().
   calculator.Reset();
 

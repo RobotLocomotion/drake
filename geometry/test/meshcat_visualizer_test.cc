@@ -1,5 +1,7 @@
 #include "drake/geometry/meshcat_visualizer.h"
 
+#include <thread>
+
 #include <drake_vendor/msgpack.hpp>
 #include <gtest/gtest.h>
 
@@ -14,19 +16,6 @@
 
 namespace drake {
 namespace geometry {
-
-// Friend class for working ith MeshcatVisualizer in unit tests.
-class MeshcatVisualizerTester {
- public:
-    MeshcatVisualizerTester() = delete;
-
-    template <typename T>
-    static systems::internal::InstantaneousRealtimeRateCalculator&
-    get_realtime_rate_calculator(const MeshcatVisualizer<T>* visualizer) {
-        return visualizer->realtime_rate_calculator_;
-    }
-};
-
 namespace {
 
 using multibody::AddMultibodyPlantSceneGraph;
@@ -119,17 +108,6 @@ TEST_F(MeshcatVisualizerWithIiwaTest, BasicTest) {
   simulator.AdvanceTo(0.1);
   EXPECT_NE(meshcat_->GetPackedTransform("visualizer/iiwa14/iiwa_link_7"),
             packed_X_W7);
-
-  // Confirm that realtime rate calculator is reset properly.
-  visualizer_->ResetRealtimeRateCalculator();
-  auto realtime_rate =
-      MeshcatVisualizerTester::get_realtime_rate_calculator(visualizer_)
-        .UpdateAndRecalculate(0.2);
-  EXPECT_EQ(realtime_rate, std::nullopt);
-  realtime_rate =
-      MeshcatVisualizerTester::get_realtime_rate_calculator(visualizer_)
-        .UpdateAndRecalculate(0.3);
-  EXPECT_TRUE(realtime_rate.has_value());
 }
 
 TEST_F(MeshcatVisualizerWithIiwaTest, PublishPeriod) {
@@ -601,6 +579,50 @@ GTEST_TEST(MeshcatVisualizerTest, AlphaSliderCheckResults) {
     ASSERT_EQ(data.value.size(), 4);
     EXPECT_EQ(data.value[3], scenario.expected_value);
   }
+}
+
+void Sleep(double seconds) {
+  auto millis = static_cast<int64_t>(seconds * 1000);
+  std::this_thread::sleep_for(std::chrono::milliseconds(millis));
+}
+
+GTEST_TEST(MeshcatVisualizerTest, RealtimeRate) {
+  // Set up a simulation with a visualizer. To avoid any potential ambiguity
+  // around publish event timing, we'll configure the visualizer to publish at
+  // 1024 Hz but we'll manually step time at 1000 Hz. This guarantees that
+  // exactly one publish event has been triggered after each one of our steps
+  // (as long as we don't advance past 42 ms).
+  systems::DiagramBuilder<double> builder;
+  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
+  plant.Finalize();
+  auto meshcat = std::make_shared<Meshcat>();
+  MeshcatVisualizerParams params;
+  params.publish_period = 1.0 / 1024;
+  auto* meshcat_visualizer = &MeshcatVisualizer<double>::AddToBuilder(
+      &builder, scene_graph, meshcat, params);
+  systems::Simulator<double> simulator(builder.Build());
+
+  // Bootstrap the realtime rate calculator.
+  simulator.AdvanceTo(0.002);
+  EXPECT_GT(meshcat->GetRealtimeRate(), 0.0);
+
+  // After sleeping for much more wall time (>= 0.500) than sim time (0.001) and
+  // then taking exactly one more step, the rate should be quite slow (< 1/500).
+  Sleep(0.5);
+  simulator.AdvanceTo(0.003);
+  const double slow_rate = meshcat->GetRealtimeRate();
+  EXPECT_LE(slow_rate, 0.002);
+
+  // When we reset the calculator before stepping, the rate does not update.
+  meshcat_visualizer->ResetRealtimeRateCalculator();
+  simulator.AdvanceTo(0.004);
+  EXPECT_EQ(meshcat->GetRealtimeRate(), slow_rate);
+
+  // One more step causes an update. (The new reported rate will almost
+  // certainly be faster than slow_rate, but we don't want to rely on the
+  // kernel's details of process scheduling, or else we could be flaky.)
+  simulator.AdvanceTo(0.005);
+  EXPECT_NE(meshcat->GetRealtimeRate(), slow_rate);
 }
 
 }  // namespace
