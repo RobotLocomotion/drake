@@ -34,11 +34,11 @@ Vector3<double> RotationalInertia<T>::CalcPrincipalMomentsAndMaybeAxesOfInertia(
   // Note: the largest product of inertia is at most half the largest moment of
   // inertia, so compare products of inertia to a tolerance (rather than 0.0)
   // informed by machine epsilon multiplied by largest moment of inertia.
-  const double kTolerance = 4 * std::numeric_limits<double>::epsilon() *
+  const double inertia_tolerance = 4 * std::numeric_limits<double>::epsilon() *
       ExtractDoubleOrThrow(CalcMaximumPossibleMomentOfInertia());
-  const bool is_diagonal = (std::abs(I_double(1, 0)) <= kTolerance &&
-                            std::abs(I_double(2, 0)) <= kTolerance &&
-                            std::abs(I_double(2, 1)) <= kTolerance);
+  const bool is_diagonal = (std::abs(I_double(1, 0)) <= inertia_tolerance &&
+                            std::abs(I_double(2, 0)) <= inertia_tolerance &&
+                            std::abs(I_double(2, 1)) <= inertia_tolerance);
   if (is_diagonal) {
     // Sort the principal moments of inertia (eigenvalues) and corresponding
     // principal directions (eigenvectors) in ascending order.
@@ -118,10 +118,21 @@ Vector3<double> RotationalInertia<T>::CalcPrincipalMomentsAndMaybeAxesOfInertia(
   // matrices conform). If three moments of inertia are equal, then any rotation
   // matrix works, so we pick a "canonical" one, namely the identity matrix.
   if (principal_directions != nullptr) {
-    const double &Imin = principal_moments(0);
-    const double &Imax = principal_moments(2);
-    // Case: Triaxially symmetric moments of inertia (all 3 are ≈ equal).
-    if (Imax - Imin <= kTolerance) {
+    const double& Imin = principal_moments(0);
+    const double& Imax = principal_moments(2);
+    // Case: Triaxially symmetric principal moments of inertia (all 3 ≈ equal).
+    // For this case, body B's inertia matrix about-point P expressed in the
+    // right-handed orthonormal basis A of principal directions is
+    //          ⎡Imin  0   0 ⎤     ⎡ 1  0  0 ⎤
+    // I_BP_A = | 0  Imed  0 | = J | 0  1  0 |  where J ≈ Imin ≈ Imed ≈ Imax.
+    //          ⎣ 0    0 Imax⎦     ⎣ 0  0  1 ⎦
+    // We show: I_BP_E = I_BP_A, where E is any right-handed orthonormal basis.
+    // Proof: To reexpress I_BP_A from basis A to basis E, use the rotation
+    // matrix R_AE and its inverse R_EA as I_BP_E = R_EA * I_BP_A * R_AE.
+    // Substitute for I_BP_A as I_BP_E = R_EA * J * IdentityMatrix * R_AE. Thus
+    // I_BP_E = R_EA * J * R_AE = J * R_EA * R_AE = J * IdentityMatrix = I_BP_A.
+    if (Imax - Imin <= inertia_tolerance) {
+      // Rotation matrix R_BA is not unique. We choose the identity matrix.
       *principal_directions = math::RotationMatrix<double>::Identity();
     }
     // TODO(Mitiguy) Return canonical principal directions for the other cases.
