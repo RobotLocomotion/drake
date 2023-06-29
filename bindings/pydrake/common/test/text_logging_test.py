@@ -150,6 +150,16 @@ class TestTextLoggingExample(unittest.TestCase,
         """When the magic environment variable is set, C++ logging is not
         redirected to Python; it continues to write to stderr directly, using
         its own independent formatter and log level threshold.
+
+        (1) We set the env var so that Python logging and C++ logging are
+        independent.
+        (2) We do not specifically change anything about C++ logging level.
+        (3) We set the Python logging level to "no logging at all".
+        (4) The do_log_test function invokes a bunch of C++ log statements.
+        The test predicate is that the C++ log statements made it out to stderr.
+        If step (1) didn't happen, then step (3) would mean that no messages
+        would ever appear, so the test predicate would fail (the output would
+        be empty).
         """
         # Disable the code that injects the pylogging_sink.
         env = dict(os.environ)
