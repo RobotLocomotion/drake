@@ -57,9 +57,12 @@ GTEST_TEST(MinimumDegreeOrderingTest, InsertValueInSortedVector) {
     |  \    \ /
    10---8----4
 
-  where nodes 4 and 5 are variables and all other nodes are variables. We call
- update external degree on all variables to verify the results are as expected.
- */
+  where nodes 4 and 5 are elements and all other nodes are variables. We call
+  update external degree on all variables to verify the results are as expected.
+
+  [Amestoy 1996] Amestoy, Patrick R., Timothy A. Davis, and Iain S. Duff. "An
+ approximate minimum degree ordering algorithm." SIAM Journal on Matrix Analysis
+ and Applications 17.4 (1996): 886-905. */
 GTEST_TEST(MinimumDegreeOrderingTest, UpdateExternalDegree) {
   Node n4{
       .degree = 0, .size = 40, .index = 4, .A = {}, .E = {}, .L = {6, 7, 8}};
@@ -110,7 +113,7 @@ GTEST_TEST(MinimumDegreeOrderingTest, IndexDegreeComparator) {
   EXPECT_GT(c, b);
 }
 
-GTEST_TEST(MinimumDegreeOrderingTest, CalcEliminationOrdering) {
+GTEST_TEST(MinimumDegreeOrderingTest, ComputeMinimumDegreeOrdering) {
   /* The block sparsity pattern is
     X X | O O O | O O O O | O O O
     X X | O O O | O O O O | O O O
@@ -138,12 +141,40 @@ GTEST_TEST(MinimumDegreeOrderingTest, CalcEliminationOrdering) {
   sparsity.emplace_back(std::vector<int>{3});
   std::vector<int> block_sizes = {2, 3, 4, 3};
   BlockSparsityPattern block_pattern(block_sizes, sparsity);
-  std::vector<int> result = CalcEliminationOrdering(block_pattern);
+  std::vector<int> result = ComputeMinimumDegreeOrdering(block_pattern);
   EXPECT_EQ(result, std::vector<int>({0, 3, 2, 1}));
 }
 
-GTEST_TEST(MinimumDegreeOrderingTest, SymbolicFactor) {
+/* Another test for minimum degree ordering. Here we take the example from
+Figure 1 and 2 in [Amestoy, 1996], where the minimum degree ordering is the
+natural ordering when the size of the blocks are the same for all nodes.
+
+[Amestoy 1996] Amestoy, Patrick R., Timothy A. Davis, and
+Iain S. Duff. "An approximate minimum degree ordering algorithm." SIAM Journal
+on Matrix Analysis and Applications 17.4 (1996): 886-905. */
+GTEST_TEST(MinimumDegreeOrderingTest, ComputeMinimumDegreeOrdering2) {
+  std::vector<std::vector<int>> sparsity;
+  sparsity.emplace_back(std::vector<int>{0, 3, 5});
+  sparsity.emplace_back(std::vector<int>{1, 4, 5, 8});
+  sparsity.emplace_back(std::vector<int>{2, 4, 5, 6});
+  sparsity.emplace_back(std::vector<int>{3, 6, 7});
+  sparsity.emplace_back(std::vector<int>{4, 6, 8});
+  sparsity.emplace_back(std::vector<int>{5});
+  sparsity.emplace_back(std::vector<int>{6, 7, 8, 9});
+  sparsity.emplace_back(std::vector<int>{7, 8, 9});
+  sparsity.emplace_back(std::vector<int>{8, 9});
+  sparsity.emplace_back(std::vector<int>{9});
+  std::vector<int> block_sizes(10, 2);
+  BlockSparsityPattern block_pattern(block_sizes, sparsity);
+  std::vector<int> result = ComputeMinimumDegreeOrdering(block_pattern);
+  EXPECT_EQ(result, std::vector<int>({0, 1, 2, 3, 4, 5, 6, 7, 8, 9}));
+}
+
+GTEST_TEST(MinimumDegreeOrderingTest, SymbolicCholeskyFactor) {
   /*
+  In this schematic (unlike the one in the previous test), an X corresponds to a
+  block with the sizes specified below.
+
     X X O O O O
     X X X X O X
     O X X O O O
@@ -151,8 +182,8 @@ GTEST_TEST(MinimumDegreeOrderingTest, SymbolicFactor) {
     O O O O X X
     O X O O X X
 
-    Symbolic factorization should produce the following lower triangular
-    sparsity pattern.
+    Symbolic Cholesky factorization should produce the following lower
+    triangular sparsity pattern.
 
     X O O O O O
     X X O O O O
@@ -171,7 +202,8 @@ GTEST_TEST(MinimumDegreeOrderingTest, SymbolicFactor) {
   std::vector<int> A_block_sizes = {8, 4, 7, 6, 4, 4};
   BlockSparsityPattern A_block_pattern(A_block_sizes, A_sparsity);
 
-  const BlockSparsityPattern L_block_pattern = SymbolicFactor(A_block_pattern);
+  const BlockSparsityPattern L_block_pattern =
+      SymbolicCholeskyFactor(A_block_pattern);
   const std::vector<int>& L_block_sizes = L_block_pattern.block_sizes();
   EXPECT_EQ(L_block_sizes, A_block_sizes);
 
