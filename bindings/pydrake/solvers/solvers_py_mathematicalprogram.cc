@@ -1923,9 +1923,11 @@ void BindEvaluatorsAndBindings(py::module m) {
           py::arg("v"), py::arg("lb"), py::arg("ub"),
           doc.ExpressionConstraint.ctor.doc)
       .def("expressions", &ExpressionConstraint::expressions,
-          doc.ExpressionConstraint.expressions.doc)
+          // dtype = object arrays must be copied, and cannot be referenced.
+          py_rvp::copy, doc.ExpressionConstraint.expressions.doc)
       .def("vars", &ExpressionConstraint::vars,
-          doc.ExpressionConstraint.vars.doc);
+          // dtype = object arrays must be copied, and cannot be referenced.
+          py_rvp::copy, doc.ExpressionConstraint.vars.doc);
 
   auto constraint_binding = RegisterBinding<Constraint>(&m);
   DefBindingCastConstructor<Constraint>(&constraint_binding);
@@ -2064,8 +2066,10 @@ void BindEvaluatorsAndBindings(py::module m) {
       .def(py::init<const symbolic::Expression&>(), py::arg("e"),
           doc.ExpressionCost.ctor.doc)
       .def("expression", &ExpressionCost::expression,
-          doc.ExpressionCost.expression.doc)
-      .def("vars", &ExpressionCost::vars, doc.ExpressionCost.vars.doc);
+          py_rvp::reference_internal, doc.ExpressionCost.expression.doc)
+      .def("vars", &ExpressionCost::vars,
+          // dtype = object arrays must be copied, and cannot be referenced.
+          py_rvp::copy, doc.ExpressionCost.vars.doc);
 
   auto cost_binding = RegisterBinding<Cost>(&m);
   DefBindingCastConstructor<Cost>(&cost_binding);
