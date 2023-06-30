@@ -113,7 +113,9 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   const OutputPortLocator& get_output_port_locator(
       OutputPortIndex port_index) const;
 
-  std::multimap<int, int> GetDirectFeedthroughs() const final;
+  std::multimap<int, int> GetDirectFeedthroughs() const;
+
+  using typename SystemBase::DirectFeedThroughMap;
 
   void SetDefaultState(const Context<T>& context,
                        State<T>* state) const override;
@@ -386,7 +388,14 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
 
   // Returns true if there might be direct feedthrough from the given
   // @p input_port of the Diagram to the given @p output_port of the Diagram.
-  bool DiagramHasDirectFeedthrough(int input_port, int output_port) const;
+  // An optional map @p directfeedthrough_map is used for caching previous
+  // direct feedthroughs results of systems. The map is updated in recursive
+  // calls to system->GetDirectFeedthroughs(). If the parameter @p
+  // directfeedthrough_map is not given or null, no cache will be used.
+  bool DiagramHasDirectFeedthrough(
+      int input_port,
+      int output_port,
+      DirectFeedThroughMap* directfeedthrough_map = nullptr) const;
 
   // Allocates a collection of homogeneous events (e.g., publish events) for
   // this Diagram.
@@ -563,6 +572,9 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   bool NamesAreUniqueAndNonEmpty() const;
 
   int num_subsystems() const;
+
+  std::multimap<int, int> GetDirectFeedthroughsImpl(DirectFeedThroughMap* map)
+      const final;
 
   // A map from the input ports of constituent systems, to the output ports of
   // the systems from which they get their values.

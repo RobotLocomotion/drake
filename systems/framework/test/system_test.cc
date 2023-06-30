@@ -25,6 +25,8 @@ namespace {
 
 const int kSize = 3;
 
+using DirectFeedThroughMap = SystemBase::DirectFeedThroughMap;
+
 // Note that Systems in this file are derived directly from drake::System for
 // testing purposes. User Systems should be derived only from LeafSystem which
 // handles much of the bookkeeping you'll see here, and won't need to call
@@ -77,6 +79,13 @@ class TestSystemBase : public System<T> {
     auto result = std::make_unique<DiscreteValues<T>>();
     result->set_system_id(this->get_system_id());
     return result;
+  }
+
+ protected:
+  std::multimap<int, int> GetDirectFeedthroughsImpl(DirectFeedThroughMap* map)
+      const override {
+    ADD_FAILURE() << "A test called a method that was expected to be unused.";
+    return {};
   }
 
  private:
@@ -153,7 +162,7 @@ class TestSystemBase : public System<T> {
     ADD_FAILURE() << "A test called a method that was expected to be unused.";
   }
 
-  std::multimap<int, int> GetDirectFeedthroughs() const override {
+  std::multimap<int, int> GetDirectFeedthroughs() const {
     ADD_FAILURE() << "A test called a method that was expected to be unused.";
     return {};
   }
@@ -201,7 +210,7 @@ class TestSystem : public TestSystemBase<double> {
     return *port_ptr;
   }
 
-  std::multimap<int, int> GetDirectFeedthroughs() const override {
+  std::multimap<int, int> GetDirectFeedthroughs() const {
     std::multimap<int, int> pairs;
     // Report *everything* as having direct feedthrough.
     for (int i = 0; i < num_input_ports(); ++i) {
@@ -228,6 +237,18 @@ class TestSystem : public TestSystemBase<double> {
   }
 
  protected:
+  std::multimap<int, int> GetDirectFeedthroughsImpl(DirectFeedThroughMap* map)
+      const override {
+    std::multimap<int, int> pairs;
+    // Report *everything* as having direct feedthrough.
+    for (int i = 0; i < num_input_ports(); ++i) {
+      for (int o = 0; o < num_output_ports(); ++o) {
+        pairs.emplace(i, o);
+      }
+    }
+    return pairs;
+  }
+
   void DispatchPublishHandler(
       const Context<double>& context,
       const EventCollection<PublishEvent<double>>& events) const final {
@@ -672,7 +693,7 @@ class ValueIOTestSystem : public TestSystemBase<T> {
     }
   }
 
-  std::multimap<int, int> GetDirectFeedthroughs() const override {
+  std::multimap<int, int> GetDirectFeedthroughs() const {
     std::multimap<int, int> pairs;
     // Report *everything* as having direct feedthrough.
     for (int i = 0; i < this->num_input_ports(); ++i) {
@@ -697,6 +718,19 @@ class ValueIOTestSystem : public TestSystemBase<T> {
     const Context<T>& context = dynamic_cast<const Context<T>&>(context_base);
     const BasicVector<T>* vec_in = this->EvalVectorInput(context, 1);
     output->get_mutable_value() = 2 * vec_in->get_value();
+  }
+
+ protected:
+  std::multimap<int, int> GetDirectFeedthroughsImpl(DirectFeedThroughMap* map)
+      const override {
+    std::multimap<int, int> pairs;
+    // Report *everything* as having direct feedthrough.
+    for (int i = 0; i < this->num_input_ports(); ++i) {
+      for (int o = 0; o < this->num_output_ports(); ++o) {
+        pairs.emplace(i, o);
+      }
+    }
+    return pairs;
   }
 };
 

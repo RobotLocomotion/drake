@@ -225,7 +225,8 @@ std::unique_ptr<SystemSymbolicInspector> MakeSystemSymbolicInspector(
 }  // namespace
 
 template <typename T>
-std::multimap<int, int> LeafSystem<T>::GetDirectFeedthroughs() const {
+std::multimap<int, int> LeafSystem<T>::GetDirectFeedthroughsImpl(
+        DirectFeedThroughMap* directfeedthrough_map) const {
   // The input -> output feedthrough result we'll return to the user.
   std::multimap<int, int> feedthrough;
 

@@ -7,6 +7,7 @@
 #include <set>
 #include <string>
 #include <typeinfo>
+#include <unordered_map>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -44,6 +45,9 @@ the numbering must be identical. */
 class SystemBase : public internal::SystemMessageInterface {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SystemBase)
+
+  using DirectFeedThroughMap = std::unordered_map<const SystemBase*,
+  std::multimap<int, int>>;
 
   ~SystemBase() override;
 
@@ -231,10 +235,22 @@ class SystemBase : public internal::SystemMessageInterface {
   - 0 ≤ v < n,
   - and there _might_ be a direct feedthrough from input iᵤ to each output oᵥ.
 
+  Optionally pass in a map which records the GetDirectFeedthroughs() results
+  for each system. Usually the default case with no arguments should be used.
+  The directfeedthrough_map argument is for special uses in the algebraic loop
+  check when building a diagram, where a map is passed along in recursive calls
+  GetDirectFeedthroughs() -> DiagramHasDirectFeedthrough()
+  -> GetDirectFeedthroughs() ..., so that we can reuse the recorded results for
+  previously visited systems. This avoids calling GetDirectFeedthroughs() for
+  the same system multiple times, which could be time consuming.
+
   See @ref DeclareLeafOutputPort_feedthrough "DeclareLeafOutputPort"
   documentation for how leaf systems can report their feedthrough.
   */
-  virtual std::multimap<int, int> GetDirectFeedthroughs() const = 0;
+  std::multimap<int, int> GetDirectFeedthroughs(DirectFeedThroughMap*
+          directfeedthrough_map = nullptr) const {
+      return (GetDirectFeedthroughsImpl(directfeedthrough_map));
+  }
 
   /** Returns the number nc of cache entries currently allocated in this System.
   These are indexed from 0 to nc-1. */
@@ -1175,6 +1191,12 @@ class SystemBase : public internal::SystemMessageInterface {
   /** (Internal) Assigns a new id used to tag context data as being created by
   this system. See @ref system_compatibility. */
   void ResetSystemId();
+
+  /** (Internal) Implementation of GetDirectFeedthroughs(). Each subclass must
+  implement this method.
+  @see GetDirectFeedthroughs() */
+  virtual std::multimap<int, int> GetDirectFeedthroughsImpl(
+          DirectFeedThroughMap*) const = 0;
 
  private:
   void CreateSourceTrackers(ContextBase*) const;

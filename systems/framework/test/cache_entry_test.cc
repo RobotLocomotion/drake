@@ -32,6 +32,8 @@ namespace drake {
 namespace systems {
 namespace {
 
+using DirectFeedThroughMap = drake::systems::SystemBase::DirectFeedThroughMap;
+
 // Free functions suitable for defining cache entries.
 auto Alloc1 = []() { return AbstractValue::Make<int>(1); };
 auto Alloc3 = []() { return AbstractValue::Make<int>(3); };
@@ -165,7 +167,8 @@ class MySystemBase final : public SystemBase {
     return {};
   }
 
-  std::multimap<int, int> GetDirectFeedthroughs() const final {
+  std::multimap<int, int> GetDirectFeedthroughsImpl(DirectFeedThroughMap* map)
+      const final {
     throw std::logic_error("GetDirectFeedthroughs is not implemented");
   }
 

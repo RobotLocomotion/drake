@@ -87,7 +87,7 @@ class LeafSystem : public System<T> {
 
   std::unique_ptr<DiscreteValues<T>> AllocateDiscreteVariables() const final;
 
-  std::multimap<int, int> GetDirectFeedthroughs() const final;
+  using typename SystemBase::DirectFeedThroughMap;
 
  protected:
   // Promote so we don't need "this->" in defaults which show up in Doxygen.
@@ -129,6 +129,9 @@ class LeafSystem : public System<T> {
       const LeafContext<T>& context) const {
     unused(context);
   }
+
+  std::multimap<int, int> GetDirectFeedthroughsImpl(
+    [[maybe_unused]] DirectFeedThroughMap*) const final;
 
   // =========================================================================
   // Implementations of System<T> methods.

@@ -15,6 +15,8 @@
 namespace drake {
 namespace systems {
 
+using DirectFeedThroughMap = drake::systems::SystemBase::DirectFeedThroughMap;
+
 // Don't want anonymous here because the type name test would then depend on
 // exactly how anonymous namespaces are rendered by NiceTypeName, which is
 // a "don't care" here.
@@ -50,8 +52,10 @@ class MySystemBase final : public SystemBase {
     return {};
   }
 
-  std::multimap<int, int> GetDirectFeedthroughs() const final {
-    throw std::logic_error("GetDirectFeedthroughs is not implemented");
+  std::multimap<int, int> GetDirectFeedthroughsImpl(DirectFeedThroughMap* map)
+      const final {
+    throw std::logic_error(
+        "GetDirectFeedthroughs is not implemented");
   }
 };
 

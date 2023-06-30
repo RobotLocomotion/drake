@@ -72,11 +72,12 @@ Diagram<T>::get_output_port_locator(OutputPortIndex port_index) const {
 }
 
 template <typename T>
-std::multimap<int, int> Diagram<T>::GetDirectFeedthroughs() const {
+std::multimap<int, int> Diagram<T>::GetDirectFeedthroughsImpl(
+        DirectFeedThroughMap* directfeedthrough_map) const {
   std::multimap<int, int> pairs;
   for (InputPortIndex u(0); u < this->num_input_ports(); ++u) {
     for (OutputPortIndex v(0); v < this->num_output_ports(); ++v) {
-      if (DiagramHasDirectFeedthrough(u, v)) {
+      if (DiagramHasDirectFeedthrough(u, v, directfeedthrough_map)) {
         pairs.emplace(u, v);
       }
     }
@@ -1090,7 +1091,9 @@ const SystemBase& Diagram<T>::GetRootSystemBase() const {
 }
 
 template <typename T>
-bool Diagram<T>::DiagramHasDirectFeedthrough(int input_port, int output_port)
+bool Diagram<T>::DiagramHasDirectFeedthrough(int input_port, int output_port,
+  DirectFeedThroughMap* directfeedthrough_map
+)
     const {
   DRAKE_ASSERT(input_port >= 0);
   DRAKE_ASSERT(input_port < this->num_input_ports());
@@ -1111,7 +1114,19 @@ bool Diagram<T>::DiagramHasDirectFeedthrough(int input_port, int output_port)
     size_t removed_count = active_set.erase(current_output_id);
     DRAKE_ASSERT(removed_count == 1);
     const System<T>* sys = current_output_id.first;
-    for (const auto& [sys_input, sys_output] : sys->GetDirectFeedthroughs()) {
+
+    std::multimap<int, int> system_directfeedthroughs{};
+    if (directfeedthrough_map != nullptr &&
+            directfeedthrough_map->count(sys) != 0) {
+      system_directfeedthroughs = directfeedthrough_map->at(sys);
+    } else {
+      system_directfeedthroughs = sys->GetDirectFeedthroughs(
+              directfeedthrough_map);
+      if (directfeedthrough_map != nullptr)
+          (*directfeedthrough_map)[sys] = system_directfeedthroughs;
+    }
+
+    for (const auto& [sys_input, sys_output] : system_directfeedthroughs) {
       if (sys_output == current_output_id.second) {
         const InputPortLocator curr_input_id(sys, sys_input);
         if (target_input_ids.count(curr_input_id)) {

@@ -560,6 +560,9 @@ void DiagramBuilder<T>::ThrowIfAlgebraicLoopsExist() const {
     edges[output].insert(input);
   }
 
+  using DirectFeedThroughMap = SystemBase::DirectFeedThroughMap;
+  DirectFeedThroughMap directfeedthrough_map{};
+
   // Add more edges (*not* nodes) based on each System's direct feedthrough.
   // An input port influences an output port iff there is direct feedthrough
   // from that input to that output.  If a feedthrough edge refers to a port
@@ -567,7 +570,8 @@ void DiagramBuilder<T>::ThrowIfAlgebraicLoopsExist() const {
   // diagram cannot participate in a cycle.
   for (const auto& system_ptr : registered_systems_) {
     const SystemBase* const system = system_ptr.get();
-    for (const auto& item : system->GetDirectFeedthroughs()) {
+    for (const auto& item : system->GetDirectFeedthroughs(
+                &directfeedthrough_map)) {
       const SubsystemIndex subsystem_index = system_to_index.at(system);
       const PortIdentifier input{
           subsystem_index, InputPortIndex{item.first}, system};
