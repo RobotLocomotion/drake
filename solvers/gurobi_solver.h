@@ -163,13 +163,15 @@ class GurobiSolver final : public SolverBase {
 
   /**
    * This acquires a Gurobi license environment shared among all GurobiSolver
-   * instances; the environment will stay valid as long as at least one
-   * shared_ptr returned by this function is alive.
-   * Call this ONLY if you must use different MathematicalProgram
-   * instances at different instances in time, and repeatedly acquiring the
-   * license is costly (e.g., requires contacting a license server).
-   * @return A shared pointer to a license environment that will stay valid
-   * as long as any shared_ptr returned by this function is alive. If Gurobi
+   * instances. The environment will stay valid as long as at least one
+   * shared_ptr returned by this function is alive or if the license can be
+   * confirmed to be a local license then it will never be destroyed; see
+   * has_acquired_local_license(). Call this ONLY if you must use different
+   * MathematicalProgram instances at different instances in time, and
+   * repeatedly acquiring the license is costly (e.g., requires contacting a
+   * license server).
+   * @return A shared pointer to a license environment that will stay valid as
+   * long as any shared_ptr returned by this function is alive. If Gurobi is
    * not available in your build, this will return a null (empty) shared_ptr.
    * @throws std::exception if Gurobi is available but a license cannot be
    * obtained.
