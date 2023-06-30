@@ -20,16 +20,16 @@ Vector3<double> RotationalInertia<T>::CalcPrincipalMomentsAndMaybeAxesOfInertia(
   const Matrix3<double> I_double = ExtractDoubleOrThrow(I_BP_E);
 
   // Many calls to this function originate with a primitive such as a sphere,
-  // ellipsoid, cube, box, cylinder, capsule that have zero products of inertia.
+  // ellipsoid, box, cylinder, or capsule that have zero products of inertia.
   // If all products of inertia are ≈ zero, no need to calculate eigenvalues or
   // eigenvectors as the principal moments of inertia are just the diagonal
   // elements and the principal directions are simple (e.g., [1, 0, 0]).
   // Note: the largest product of inertia is at most half the largest moment of
   // inertia, so compare products of inertia to a tolerance (rather than 0.0)
   // informed by machine epsilon multiplied by largest moment of inertia.
-  // Note: It seems reasonable to guess that an inertia tolerance based on known
-  // properties of moment and product of inertia are generally better than
-  // generic matrix tolerances used in Eigen's eigenvalue solver.
+  // Note: It seems reasonable to surmise that an inertia tolerance based on
+  // known properties of moments and products of inertia are generally better
+  // than generic matrix tolerances used in Eigen's eigenvalue solver.
   const double inertia_tolerance = 4 * std::numeric_limits<double>::epsilon() *
       ExtractDoubleOrThrow(CalcMaximumPossibleMomentOfInertia());
   const bool is_diagonal = (std::abs(I_double(1, 0)) <= inertia_tolerance &&
