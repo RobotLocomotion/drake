@@ -20,6 +20,7 @@ drake_cc_package_library(
         ":contact_surface_utility",
         ":deformable_contact_geometries",
         ":deformable_contact_internal",
+        ":deformable_field_intersection",
         ":deformable_mesh_intersection",
         ":deformable_volume_mesh",
         ":detect_zero_simplex",
@@ -190,6 +191,19 @@ drake_cc_library(
         "//common:essential",
         "//geometry:geometry_ids",
         "//geometry:shape_specification",
+        "//geometry/query_results:deformable_contact",
+    ],
+)
+
+drake_cc_library(
+    name = "deformable_field_intersection",
+    srcs = ["deformable_field_intersection.cc"],
+    hdrs = ["deformable_field_intersection.h"],
+    deps = [
+        ":deformable_contact_geometries",
+        ":field_intersection",
+        ":mesh_field",
+        "//geometry:geometry_ids",
         "//geometry/query_results:deformable_contact",
     ],
 )
@@ -980,6 +994,15 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "deformable_field_intersection_test",
+    deps = [
+        ":deformable_field_intersection",
+        ":make_box_mesh",
+        ":volume_mesh",
     ],
 )
 
