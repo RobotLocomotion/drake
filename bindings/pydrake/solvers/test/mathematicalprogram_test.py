@@ -98,6 +98,15 @@ class TestCost(unittest.TestCase):
         np.testing.assert_allclose(cost.A(), 2*A)
         np.testing.assert_allclose(cost.b(), 2*b)
 
+    def test_expression_cost(self):
+        x = sym.Variable("x")
+        y = sym.Variable("y")
+        e = np.sin(x) + y
+        cost = mp.ExpressionCost(e=e)
+        self.assertTrue(e.EqualTo(cost.expression()))
+        self.assertTrue(
+            sym.Variables(cost.vars()).IsSubsetOf(sym.Variables([x, y])))
+
 
 class TestQP:
     def __init__(self):
@@ -626,6 +635,20 @@ class TestMathematicalProgram(unittest.TestCase):
             F=[np.eye(3), 2 * np.eye(3), np.ones((3, 3))],
             symmetry_tolerance=1E-12)
         self.assertEqual(constraint.matrix_rows(), 3)
+
+    def test_expression_constraint(self):
+        x = sym.Variable("x")
+        y = sym.Variable("y")
+        v = [np.sin(x) + y, x + np.cos(y)]
+        lb = [-1.2, -2.4]
+        ub = [53.3, 2.35]
+        constraint = mp.ExpressionConstraint(v=v, lb=lb, ub=ub)
+        self.assertTrue(v[0].EqualTo(constraint.expressions()[0]))
+        self.assertTrue(v[1].EqualTo(constraint.expressions()[1]))
+        self.assertTrue(
+            sym.Variables(constraint.vars()).IsSubsetOf(sym.Variables([x, y])))
+        np.testing.assert_array_equal(lb, constraint.lower_bound())
+        np.testing.assert_array_equal(ub, constraint.upper_bound())
 
     def test_sdp(self):
         prog = mp.MathematicalProgram()
