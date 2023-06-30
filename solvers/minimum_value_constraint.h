@@ -165,7 +165,7 @@ class MinimumValueConstraint final : public solvers::Constraint {
   double influence_value() const { return influence_value_; }
 
   /** Getter for maximum number of values expected from value_function. */
-  double max_num_values() const { return max_num_values_; }
+  int max_num_values() const { return max_num_values_; }
 
   /** Setter for the penalty function. */
   void set_penalty_function(MinimumValuePenaltyFunction new_penalty_function);

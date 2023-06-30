@@ -449,7 +449,7 @@ PYBIND11_MODULE(inverse_kinematics, m) {
             // Keep alive, reference: `self` keeps `plant` alive.
             py::keep_alive<1, 2>(),
             // Keep alive, reference: `self` keeps `plant_context` alive.
-            py::keep_alive<1, 4>(), cls_doc.ctor.doc_double)
+            py::keep_alive<1, 4>(), cls_doc.ctor.doc_double_no_upper_bound)
         .def(py::init(
                  [](const multibody::MultibodyPlant<AutoDiffXd>* const plant,
                      double minimum_distance,
@@ -467,7 +467,7 @@ PYBIND11_MODULE(inverse_kinematics, m) {
             // Keep alive, reference: `self` keeps `plant` alive.
             py::keep_alive<1, 2>(),
             // Keep alive, reference: `self` keeps `plant_context` alive.
-            py::keep_alive<1, 4>(), cls_doc.ctor.doc_autodiff);
+            py::keep_alive<1, 4>(), cls_doc.ctor.doc_autodiff_no_upper_bound);
   }
 
   {
