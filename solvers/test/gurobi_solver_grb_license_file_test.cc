@@ -1,10 +1,12 @@
 #include <cstdlib>
+#include <fstream>
 #include <optional>
 #include <stdexcept>
 #include <string>
 
 #include <gtest/gtest.h>
 
+#include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/solvers/gurobi_solver.h"
@@ -39,6 +41,16 @@ class GrbLicenseFileTest : public ::testing::Test {
     prog_.NewContinuousVariables<1>();
   }
 
+  void WriteTempLicenseFile(std::string contents) {
+    std::string test_license = temp_directory() + "/test.lic";
+    std::ofstream file(test_license);
+    ASSERT_TRUE(file);
+    file << contents;
+    const int setenv_result =
+        ::setenv("GRB_LICENSE_FILE", test_license.c_str(), 1);
+    ASSERT_EQ(setenv_result, 0);
+  }
+
   void TearDown() override {
     if (orig_grb_license_file_) {
       const int setenv_result =
@@ -66,6 +78,24 @@ TEST_F(GrbLicenseFileTest, GrbLicenseFileUnset) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       solver_.Solve(prog_),
       ".*GurobiSolver has not been properly configured.*");
+}
+
+
+TEST_F(GrbLicenseFileTest, LocalLicenseFile) {
+  EXPECT_EQ(solver_.enabled(), true);
+  WriteTempLicenseFile(
+      "license file contents that contains the string HOSTID and perhaps some "
+      "other info.");
+  solver_.Solve(prog_);
+  EXPECT_TRUE(solver_.has_acquired_local_license());
+}
+
+TEST_F(GrbLicenseFileTest, ServerLicenseFile) {
+  EXPECT_EQ(solver_.enabled(), true);
+  WriteTempLicenseFile(
+      "license file contents without the magic keyword.");
+  solver_.Solve(prog_);
+  EXPECT_FALSE(solver_.has_acquired_local_license());
 }
 
 }  // namespace

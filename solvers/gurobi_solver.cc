@@ -3,9 +3,12 @@
 #include <algorithm>
 #include <charconv>
 #include <cmath>
+#include <fstream>
+#include <iostream>
 #include <limits>
 #include <optional>
 #include <stdexcept>
+#include <string>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -1039,6 +1042,7 @@ class GurobiSolver::License {
           "Could not locate Gurobi license key file because GRB_LICENSE_FILE "
           "environment variable was not set.");
     }
+
     const int num_tries = 3;
     int grb_load_env_error = 1;
     for (int i = 0; grb_load_env_error && i < num_tries; ++i) {
@@ -1053,6 +1057,21 @@ class GurobiSolver::License {
           "\".");
     }
     DRAKE_DEMAND(env_ != nullptr);
+
+    // We use the existence of the string HOSTID in the license file as
+    // confirmation that the license is associated with the local host.
+    const char* grb_license_filename = std::getenv("GRB_LICENSE_FILE");
+    std::ifstream grb_license_file(grb_license_filename);
+    if (!grb_license_file) {
+      throw std::runtime_error(
+          "Could not read Gurobi license file specified in the "
+          "GRB_LICENSE_FILE environment variable");
+    }
+    const std::string grb_license_file_contents(
+        (std::istreambuf_iterator<char>(grb_license_file)),
+        std::istreambuf_iterator<char>());
+    is_local_license_ =
+        grb_license_file_contents.find("HOSTID") != std::string::npos;
   }
 
   ~License() {
@@ -1060,14 +1079,37 @@ class GurobiSolver::License {
     env_ = nullptr;
   }
 
+  bool is_local_license() const { return is_local_license_; }
+
   GRBenv* GurobiEnv() { return env_; }
 
  private:
+  bool is_local_license_{false};
   GRBenv* env_ = nullptr;
 };
 
+/* Gurobi recommends acquiring the license only once per program to avoid
+overhead from acquiring the license (and console spew for academic license
+users; see #19657). However, if users are using a shared network license from a
+limited pool, then we risk them checking out the license and not giving it back
+(for instance, if they are working in a jupyter notebook). As a compromise, we
+hold on to the license beyond the lifetime of the GurobiSolver iff we can
+confirm that the license is associated with the local host. */
+std::shared_ptr<GurobiSolver::License> local_host_gurobi_license{};
+
 std::shared_ptr<GurobiSolver::License> GurobiSolver::AcquireLicense() {
-  return GetScopedSingleton<GurobiSolver::License>();
+  if (local_host_gurobi_license) {
+    return local_host_gurobi_license;
+  }
+  auto license = GetScopedSingleton<GurobiSolver::License>();
+  if (license->is_local_license()) {
+    local_host_gurobi_license = license;
+  }
+  return license;
+}
+
+bool GurobiSolver::has_acquired_local_license() const {
+  return license_ && license_->is_local_license();
 }
 
 // TODO(hongkai.dai@tri.global): break this large DoSolve function to smaller

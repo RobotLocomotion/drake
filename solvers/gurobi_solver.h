@@ -163,14 +163,16 @@ class GurobiSolver final : public SolverBase {
 
   /**
    * This acquires a Gurobi license environment shared among all GurobiSolver
-   * instances; the environment will stay valid as long as at least one
-   * shared_ptr returned by this function is alive.
-   * Call this ONLY if you must use different MathematicalProgram
-   * instances at different instances in time, and repeatedly acquiring the
-   * license is costly (e.g., requires contacting a license server).
-   * @return A shared pointer to a license environment that will stay valid
-   * as long as any shared_ptr returned by this function is alive. If Gurobi
-   * not available in your build, this will return a null (empty) shared_ptr.
+   * instances. The environment will stay valid as long as at least one
+   * shared_ptr returned by this function is alive or if the license can be
+   * confirmed to be a local license then it will never be destroyed; see
+   * has_acquired_local_license(). Call this ONLY if you must use different
+   * MathematicalProgram instances at different instances in time, and
+   * repeatedly acquiring the license is costly (e.g., requires contacting a
+   * license server).
+   * @return A shared pointer to a license environment that will stay valid as
+   * long as any shared_ptr returned by this function is alive. If Gurobi not
+   * available in your build, this will return a null (empty) shared_ptr.
    * @throws std::exception if Gurobi is available but a license cannot be
    * obtained.
    */
@@ -186,6 +188,13 @@ class GurobiSolver final : public SolverBase {
   static bool ProgramAttributesSatisfied(const MathematicalProgram&);
   static std::string UnsatisfiedProgramAttributes(const MathematicalProgram&);
   //@}
+
+  // Returns true if this solver has acquired a license during a Solve(), and
+  // this license was confirmed to be tied to the local host. If the license can
+  // be confirmed to be local, then it will never be destroyed. If the license
+  // cannot be confirmed to be local, then the license will stay valid as long
+  // as at least one shared_ptr returned by AcquireLicense() is alive.
+  bool has_acquired_local_license() const;
 
   // A using-declaration adds these methods into our class's Doxygen.
   using SolverBase::Solve;
