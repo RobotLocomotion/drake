@@ -44,9 +44,9 @@ TEST_F(ConstantVectorSourceTest, EigenModel) {
   ASSERT_EQ(source_->num_input_ports(), 0);
   ASSERT_EQ(source_->num_output_ports(), 1);
 
-  EXPECT_TRUE(kConstantVectorSource.isApprox(
-      source_->get_output_port().Eval(*context_),
-      Eigen::NumTraits<double>::epsilon()));
+  EXPECT_TRUE(
+      kConstantVectorSource.isApprox(source_->get_output_port().Eval(*context_),
+                                     Eigen::NumTraits<double>::epsilon()));
 
   // Tests that the output reflects changes to the parameter value in the
   // context.
@@ -74,8 +74,8 @@ TEST_F(ConstantVectorSourceTest, BasicVectorModel) {
       static_cast<ConstantVectorSource<double>*>(source_.get())
           ->get_mutable_source_value(context_.get());
   source_value.SetFromVector(2.0 * source_value.get_value());
-  EXPECT_EQ(
-      43.0, 0.5 * source_->get_output_port().Eval<MyVector3d>(*context_)[1]);
+  EXPECT_EQ(43.0,
+            0.5 * source_->get_output_port().Eval<MyVector3d>(*context_)[1]);
 }
 
 // Tests that ConstantVectorSource allocates no state variables in its context.
