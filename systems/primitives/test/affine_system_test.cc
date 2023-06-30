@@ -99,16 +99,35 @@ TEST_F(AffineSystemTest, Output) {
   Eigen::VectorXd expected_output(2);
   expected_output = C_ * x + D_ * u + y0_;
 
-  EXPECT_TRUE(CompareMatrices(
-      expected_output, dut_->get_output_port().Eval(*context_), 1e-10));
+  EXPECT_TRUE(CompareMatrices(expected_output,
+                              dut_->get_output_port().Eval(*context_), 1e-10));
+}
+
+// Tests that the coefficients are correctly updated.
+TEST_F(AffineSystemTest, UpdateCoefficients) {
+  const auto new_A = Eigen::Matrix2d::Zero();
+  const auto new_B = Eigen::Matrix2d::Zero();
+  const auto new_f0 = Eigen::Vector2d::Zero();
+  const auto new_C = Eigen::Matrix2d::Zero();
+  const auto new_D = Eigen::Matrix2d::Zero();
+  const auto new_y0 = Eigen::Vector2d::Zero();
+
+  dut_->UpdateCoefficients(new_A, new_B, new_f0, new_C, new_D, new_y0);
+
+  EXPECT_TRUE(CompareMatrices(dut_->A(), new_A));
+  EXPECT_TRUE(CompareMatrices(dut_->B(), new_B));
+  EXPECT_TRUE(CompareMatrices(dut_->f0(), new_f0));
+  EXPECT_TRUE(CompareMatrices(dut_->C(), new_C));
+  EXPECT_TRUE(CompareMatrices(dut_->D(), new_D));
+  EXPECT_TRUE(CompareMatrices(dut_->y0(), new_y0));
 }
 
 TEST_F(AffineSystemTest, DefaultAndRandomState) {
   EXPECT_TRUE(CompareMatrices(dut_->get_default_state(), x0_, 0.0));
   EXPECT_TRUE(CompareMatrices(
       context_->get_continuous_state_vector().CopyToVector(), x0_, 0.0));
-  EXPECT_TRUE(CompareMatrices(dut_->get_random_state_covariance(),
-      Sigma_x0_, 1e-16));
+  EXPECT_TRUE(
+      CompareMatrices(dut_->get_random_state_covariance(), Sigma_x0_, 1e-16));
 
   RandomGenerator generator;
   const int kNumSamples = 100000;
@@ -144,8 +163,8 @@ TEST_F(AffineSystemTest, ConvertScalarType) {
     EXPECT_EQ(converted.y0(), y0_);
     EXPECT_TRUE(CompareMatrices(
         math::ExtractValue(converted.get_default_state()), x0_, 0.0));
-    EXPECT_TRUE(CompareMatrices(
-        converted.get_random_state_covariance(), Sigma_x0_, 1e-16));
+    EXPECT_TRUE(CompareMatrices(converted.get_random_state_covariance(),
+                                Sigma_x0_, 1e-16));
   }));
   EXPECT_TRUE(is_symbolic_convertible(*dut_, [&](const auto& converted) {
     EXPECT_EQ(converted.A(), A_);
@@ -156,8 +175,8 @@ TEST_F(AffineSystemTest, ConvertScalarType) {
     EXPECT_EQ(converted.y0(), y0_);
     EXPECT_TRUE(CompareMatrices(
         symbolic::Evaluate(converted.get_default_state()), x0_, 0.0));
-    EXPECT_TRUE(CompareMatrices(
-        converted.get_random_state_covariance(), Sigma_x0_, 1e-16));
+    EXPECT_TRUE(CompareMatrices(converted.get_random_state_covariance(),
+                                Sigma_x0_, 1e-16));
   }));
 }
 
@@ -289,7 +308,7 @@ GTEST_TEST(StatelessAffineSystemTest, StatelessTest) {
   EXPECT_TRUE(context->is_stateless());
   ct_system.get_input_port().FixValue(context.get(), Eigen::Vector2d::Ones());
   EXPECT_TRUE(CompareMatrices(ct_system.get_output_port().Eval(*context),
-    2*Eigen::Vector2d::Ones(), 1e-16));
+                              2 * Eigen::Vector2d::Ones(), 1e-16));
 
   // Discrete time
   AffineSystem<double> dt_system(A, B, f0, C, D, y0, 1.0);
@@ -299,9 +318,10 @@ GTEST_TEST(StatelessAffineSystemTest, StatelessTest) {
   EXPECT_TRUE(context->is_stateless());
   dt_system.SetRandomContext(context.get(), &generator);
   EXPECT_TRUE(context->is_stateless());
-  dt_system.get_input_port().FixValue(context.get(), 2*Eigen::Vector2d::Ones());
+  dt_system.get_input_port().FixValue(context.get(),
+                                      2 * Eigen::Vector2d::Ones());
   EXPECT_TRUE(CompareMatrices(dt_system.get_output_port().Eval(*context),
-    3*Eigen::Vector2d::Ones(), 1e-16));
+                              3 * Eigen::Vector2d::Ones(), 1e-16));
 }
 
 // [ẋ₁, ẋ₂]ᵀ = rotmat(t)*[x₁, x₂]ᵀ + u*[1, 1]ᵀ,
@@ -313,9 +333,9 @@ class SimpleTimeVaryingAffineSystem : public TimeVaryingAffineSystem<double> {
   static constexpr int kNumOutputs = 2;
 
   explicit SimpleTimeVaryingAffineSystem(double time_period)
-      : TimeVaryingAffineSystem(
-            SystemScalarConverter{},  // BR
-            kNumStates, kNumInputs, kNumOutputs, time_period) {}
+      : TimeVaryingAffineSystem(SystemScalarConverter{},  // BR
+                                kNumStates, kNumInputs, kNumOutputs,
+                                time_period) {}
   ~SimpleTimeVaryingAffineSystem() override {}
 
   Eigen::MatrixXd A(const double& t) const override {
@@ -352,8 +372,8 @@ GTEST_TEST(SimpleTimeVaryingAffineSystemTest, EvalTest) {
 
   auto derivs = sys.AllocateTimeDerivatives();
   sys.CalcTimeDerivatives(*context, derivs.get());
-  EXPECT_TRUE(CompareMatrices(sys.A(t) * x + 42.0 * sys.B(t),
-                              derivs->CopyToVector()));
+  EXPECT_TRUE(
+      CompareMatrices(sys.A(t) * x + 42.0 * sys.B(t), derivs->CopyToVector()));
 
   EXPECT_TRUE(CompareMatrices(x + sys.y0(t) + 42.0 * sys.D(t),
                               sys.get_output_port().Eval(*context)));
@@ -426,8 +446,7 @@ GTEST_TEST(IllegalTimeVaryingAffineSystemTest, BadSizeTest) {
 
   auto derivatives = sys.AllocateTimeDerivatives();
   DRAKE_EXPECT_THROWS_MESSAGE(
-      sys.CalcTimeDerivatives(*context, derivatives.get()),
-      ".*rows.*");
+      sys.CalcTimeDerivatives(*context, derivatives.get()), ".*rows.*");
 }
 
 class AffineSystemSymbolicTest : public ::testing::Test {
