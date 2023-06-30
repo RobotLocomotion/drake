@@ -17,23 +17,19 @@ Vector3<double> RotationalInertia<T>::CalcPrincipalMomentsAndMaybeAxesOfInertia(
   // 2. Eigen's SelfAdjointEigenSolver only uses the lower-triangular part
   //    of this symmetric matrix.
   const Matrix3<T>& I_BP_E = get_matrix();
-  Matrix3<double> I_double = Matrix3<double>::Constant(NAN);
-  I_double(0, 0) = ExtractDoubleOrThrow(I_BP_E(0, 0));
-  I_double(1, 1) = ExtractDoubleOrThrow(I_BP_E(1, 1));
-  I_double(2, 2) = ExtractDoubleOrThrow(I_BP_E(2, 2));
+  const Matrix3<double> I_double = ExtractDoubleOrThrow(I_BP_E);
 
-  // Since the inertia matrix is symmetric, only the lower-triangular part of
-  // the matrix is used (its upper-triangular elements are NaN).
-  I_double(1, 0) = ExtractDoubleOrThrow(I_BP_E(1, 0));  // (1, 0) not (0, 1).
-  I_double(2, 0) = ExtractDoubleOrThrow(I_BP_E(2, 0));  // (2, 0) not (0, 2).
-  I_double(2, 1) = ExtractDoubleOrThrow(I_BP_E(2, 1));  // (2, 1) not (1, 2).
-
+  // Many calls to this function originate with a primitive such as a sphere,
+  // ellipsoid, cube, box, cylinder, capsule that have zero products of inertia.
   // If all products of inertia are ≈ zero, no need to calculate eigenvalues or
   // eigenvectors as the principal moments of inertia are just the diagonal
   // elements and the principal directions are simple (e.g., [1, 0, 0]).
   // Note: the largest product of inertia is at most half the largest moment of
   // inertia, so compare products of inertia to a tolerance (rather than 0.0)
   // informed by machine epsilon multiplied by largest moment of inertia.
+  // Note: It seems reasonable to guess that an inertia tolerance based on known
+  // properties of moment and product of inertia are generally better than
+  // generic matrix tolerances used in Eigen's eigenvalue solver.
   const double inertia_tolerance = 4 * std::numeric_limits<double>::epsilon() *
       ExtractDoubleOrThrow(CalcMaximumPossibleMomentOfInertia());
   const bool is_diagonal = (std::abs(I_double(1, 0)) <= inertia_tolerance &&
@@ -124,13 +120,17 @@ Vector3<double> RotationalInertia<T>::CalcPrincipalMomentsAndMaybeAxesOfInertia(
     // For this case, body B's inertia matrix about-point P expressed in the
     // right-handed orthonormal basis A of principal directions is
     //          ⎡Imin  0   0 ⎤     ⎡ 1  0  0 ⎤
-    // I_BP_A = | 0  Imed  0 | = J | 0  1  0 |  where J ≈ Imin ≈ Imed ≈ Imax.
+    // I_BP_A ≈ | 0  Imed  0 | ≈ J | 0  1  0 |  where J ≈ Imin ≈ Imed ≈ Imax.
     //          ⎣ 0    0 Imax⎦     ⎣ 0  0  1 ⎦
     // We show: I_BP_E = I_BP_A, where E is any right-handed orthonormal basis.
     // Proof: To reexpress I_BP_A from basis A to basis E, use the rotation
     // matrix R_AE and its inverse R_EA as I_BP_E = R_EA * I_BP_A * R_AE.
     // Substitute for I_BP_A as I_BP_E = R_EA * J * IdentityMatrix * R_AE. Thus
     // I_BP_E = R_EA * J * R_AE = J * R_EA * R_AE = J * IdentityMatrix = I_BP_A.
+    // Note: The previous sorting of principal_directions (above) can lead to
+    //                        ⎡ 0  1  0 ⎤                           ⎡ 1  0  0 ⎤
+    // principal_directions = | 1  0  0 | which is changed below to | 0  1  0 |
+    //                        ⎣ 0  0 -1 ⎦                           ⎣ 0  0  1 ⎦.
     if (Imax - Imin <= inertia_tolerance) {
       // Rotation matrix R_BA is not unique. We choose the identity matrix.
       *principal_directions = math::RotationMatrix<double>::Identity();
