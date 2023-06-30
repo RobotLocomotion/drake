@@ -339,9 +339,27 @@ void DoScalarIndependentDefinitions(py::module m) {
             cls_doc.DeleteRecording.doc)
         .def("get_mutable_recording", &Class::get_mutable_recording,
             py_rvp::reference_internal, cls_doc.get_mutable_recording.doc)
-        .def("HasPath", &Class::HasPath, py::arg("path"), cls_doc.HasPath.doc);
-    // Note: we intentionally do not bind the advanced methods (GetPacked...)
-    // which were intended primarily for testing in C++.
+        .def("HasPath", &Class::HasPath, py::arg("path"), cls_doc.HasPath.doc)
+        .def(
+            "GetPackedObject",
+            [](const Class& self, std::string_view path) {
+              return py::bytes(self.GetPackedObject(path));
+            },
+            py::arg("path"))
+        .def(
+            "GetPackedTransform",
+            [](const Class& self, std::string_view path) {
+              return py::bytes(self.GetPackedTransform(path));
+            },
+            py::arg("path"))
+        .def(
+            "GetPackedProperty",
+            [](const Class& self, std::string_view path,
+                std::string_view property) {
+              return py::bytes(
+                  self.GetPackedProperty(path, std::string{property}));
+            },
+            py::arg("path"), py::arg("property"));
 
     const auto& perspective_camera_doc = doc.Meshcat.PerspectiveCamera;
     py::class_<Meshcat::PerspectiveCamera> perspective_camera_cls(
