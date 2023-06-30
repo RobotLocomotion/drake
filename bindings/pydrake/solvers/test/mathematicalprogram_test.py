@@ -104,8 +104,7 @@ class TestCost(unittest.TestCase):
         e = np.sin(x) + y
         cost = mp.ExpressionCost(e=e)
         self.assertTrue(e.EqualTo(cost.expression()))
-        self.assertTrue(
-            sym.Variables(cost.vars()).IsSubsetOf(sym.Variables([x, y])))
+        self.assertEqual(sym.Variables(cost.vars()), sym.Variables([x, y]))
 
 
 class TestQP:
@@ -645,8 +644,8 @@ class TestMathematicalProgram(unittest.TestCase):
         constraint = mp.ExpressionConstraint(v=v, lb=lb, ub=ub)
         self.assertTrue(v[0].EqualTo(constraint.expressions()[0]))
         self.assertTrue(v[1].EqualTo(constraint.expressions()[1]))
-        self.assertTrue(
-            sym.Variables(constraint.vars()).IsSubsetOf(sym.Variables([x, y])))
+        self.assertEqual(
+            sym.Variables(constraint.vars()), sym.Variables([x, y]))
         np.testing.assert_array_equal(lb, constraint.lower_bound())
         np.testing.assert_array_equal(ub, constraint.upper_bound())
 
