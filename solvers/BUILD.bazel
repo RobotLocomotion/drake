@@ -7,6 +7,10 @@ load(
     "drake_cc_test",
 )
 load(
+    "@drake//tools/skylark:drake_py.bzl",
+    "drake_py_unittest",
+)
+load(
     ":defs.bzl",
     "drake_cc_optional_googletest",
     "drake_cc_optional_library",
@@ -1246,6 +1250,24 @@ drake_cc_googletest(
         ":mathematical_program",
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_py_unittest(
+    name = "gurobi_solver_license_retention_test",
+    data = [
+        ":gurobi_solver_license_retention_test_helper",
+    ],
+    tags = gurobi_test_tags(),
+)
+
+drake_cc_binary(
+    name = "gurobi_solver_license_retention_test_helper",
+    testonly = True,
+    srcs = ["test/gurobi_solver_license_retention_test_helper.cc"],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":gurobi_solver",
     ],
 )
 
