@@ -268,9 +268,13 @@ void MinimumValueConstraint::DoEvalGeneric(
   // the upper bound constraint.
   if (max_num_values_ == 0) {
     if (y_lower_index >= 0) {
+      // The upper bound is 1. Set the value to 0 to guarantee that the
+      // constraint is satisfied.
       InitializeY(x, y, y_lower_index, 0.0);
     }
     if (y_upper_index >= 0) {
+      // The lower bound is 1. Set the value to 2 to guarantee that the
+      // constraint is satisfied.
       InitializeY(x, y, y_upper_index, 2.0);
     }
     return;
