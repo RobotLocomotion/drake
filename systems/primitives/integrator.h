@@ -41,11 +41,10 @@ class Integrator final : public VectorSystem<T> {
 
  private:
   // VectorSystem<T> override.
-  void DoCalcVectorOutput(
-      const Context<T>& context,
-      const Eigen::VectorBlock<const VectorX<T>>& input,
-      const Eigen::VectorBlock<const VectorX<T>>& state,
-      Eigen::VectorBlock<VectorX<T>>* output) const final;
+  void DoCalcVectorOutput(const Context<T>& context,
+                          const Eigen::VectorBlock<const VectorX<T>>& input,
+                          const Eigen::VectorBlock<const VectorX<T>>& state,
+                          Eigen::VectorBlock<VectorX<T>>* output) const final;
 
   // VectorSystem<T> override.
   void DoCalcVectorTimeDerivatives(

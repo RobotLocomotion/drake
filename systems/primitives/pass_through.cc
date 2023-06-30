@@ -24,7 +24,10 @@ PassThrough<T>::PassThrough(
 
     namespace sp = std::placeholders;
     this->DeclareAbstractOutputPort(
-        "y", [this]() { return abstract_model_value_->Clone(); },
+        "y",
+        [this]() {
+          return abstract_model_value_->Clone();
+        },
         std::bind(&PassThrough::DoCalcAbstractOutput, this, sp::_1, sp::_2),
         {this->all_input_ports_ticket()});
   }
@@ -38,9 +41,8 @@ PassThrough<T>::PassThrough(const PassThrough<U>& other)
                                       : nullptr) {}
 
 template <typename T>
-void PassThrough<T>::DoCalcVectorOutput(
-      const Context<T>& context,
-      BasicVector<T>* output) const {
+void PassThrough<T>::DoCalcVectorOutput(const Context<T>& context,
+                                        BasicVector<T>* output) const {
   DRAKE_ASSERT(!is_abstract());
   if (this->get_input_port().HasValue(context)) {
     const auto& input = this->get_input_port().Eval(context);

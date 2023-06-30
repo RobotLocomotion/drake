@@ -92,8 +92,7 @@ class VectorLogSink final : public LeafSystem<T> {
   /// kPeriodic.
   /// @see LogVectorOutput() helper function for a convenient way to add
   /// %logging.
-  VectorLogSink(int input_size,
-                const TriggerTypeSet& publish_triggers,
+  VectorLogSink(int input_size, const TriggerTypeSet& publish_triggers,
                 double publish_period = 0.0);
 
   /// Scalar-converting copy constructor. See @ref system_scalar_conversion.
@@ -119,7 +118,8 @@ class VectorLogSink final : public LeafSystem<T> {
   VectorLog<T>& FindMutableLog(Context<T>* root_context) const;
 
  private:
-  template <typename> friend class VectorLogSink;
+  template <typename>
+  friend class VectorLogSink;
 
   // Access the mutable vector log stored in the given `context`'s cache entry.
   // @throws std::exception if context was not created for this system.
@@ -174,14 +174,12 @@ VectorLogSink<T>* LogVectorOutput(const OutputPort<T>& src,
 /// @pre publish_period is non-negative.
 /// @pre publish_period > 0 if and only if publish_triggers contains kPeriodic.
 template <typename T>
-VectorLogSink<T>* LogVectorOutput(
-    const OutputPort<T>& src,
-    DiagramBuilder<T>* builder,
-    const TriggerTypeSet& publish_triggers,
-    double publish_period = 0.0) {
-  VectorLogSink<T>* sink =
-      builder->template AddSystem<VectorLogSink<T>>(
-          src.size(), publish_triggers, publish_period);
+VectorLogSink<T>* LogVectorOutput(const OutputPort<T>& src,
+                                  DiagramBuilder<T>* builder,
+                                  const TriggerTypeSet& publish_triggers,
+                                  double publish_period = 0.0) {
+  VectorLogSink<T>* sink = builder->template AddSystem<VectorLogSink<T>>(
+      src.size(), publish_triggers, publish_period);
   builder->Connect(src, sink->get_input_port());
   return sink;
 }

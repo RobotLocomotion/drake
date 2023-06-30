@@ -8,8 +8,7 @@ namespace systems {
 
 template <typename T>
 VectorLog<T>::VectorLog(int input_size)
-    : sample_times_(kDefaultCapacity),
-      data_(input_size, kDefaultCapacity) {
+    : sample_times_(kDefaultCapacity), data_(input_size, kDefaultCapacity) {
   DRAKE_ASSERT_VOID(CheckInvariants());
 }
 

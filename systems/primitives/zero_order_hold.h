@@ -92,21 +92,20 @@ class ZeroOrderHold final : public LeafSystem<T> {
 
  private:
   // Allow different specializations to access each other's private data.
-  template <typename U> friend class ZeroOrderHold;
+  template <typename U>
+  friend class ZeroOrderHold;
 
   // All of the other constructors delegate here.
   ZeroOrderHold(double period_sec, double offset_sec, int vector_size,
                 std::unique_ptr<const AbstractValue> model_value);
 
   // Latches the input port into the discrete vector-valued state.
-  void LatchInputVectorToState(
-      const Context<T>& context,
-      DiscreteValues<T>* discrete_state) const;
+  void LatchInputVectorToState(const Context<T>& context,
+                               DiscreteValues<T>* discrete_state) const;
 
   // Latches the abstract input port into the abstract-valued state.
-  void LatchInputAbstractValueToState(
-      const Context<T>& context,
-      State<T>* state) const;
+  void LatchInputAbstractValueToState(const Context<T>& context,
+                                      State<T>* state) const;
 
   bool is_abstract() const { return abstract_model_value_ != nullptr; }
 
