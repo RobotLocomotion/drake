@@ -1917,11 +1917,9 @@ void BindEvaluatorsAndBindings(py::module m) {
   py::class_<ExpressionConstraint, Constraint,
       std::shared_ptr<ExpressionConstraint>>(
       m, "ExpressionConstraint", doc.ExpressionConstraint.doc)
-      .def(py::init([](const Eigen::Ref<const VectorX<symbolic::Expression>>& v,
-                        const Eigen::Ref<const Eigen::VectorXd>& lb,
-                        const Eigen::Ref<const Eigen::VectorXd>& ub) {
-        return std::make_unique<ExpressionConstraint>(v, lb, ub);
-      }),
+      .def(py::init<const Eigen::Ref<const VectorX<symbolic::Expression>>&,
+               const Eigen::Ref<const Eigen::VectorXd>&,
+               const Eigen::Ref<const Eigen::VectorXd>&>(),
           py::arg("v"), py::arg("lb"), py::arg("ub"),
           doc.ExpressionConstraint.ctor.doc)
       .def("expressions", &ExpressionConstraint::expressions,
@@ -2063,10 +2061,8 @@ void BindEvaluatorsAndBindings(py::module m) {
 
   py::class_<ExpressionCost, Cost, std::shared_ptr<ExpressionCost>>(
       m, "ExpressionCost", doc.ExpressionCost.doc)
-      .def(py::init([](const symbolic::Expression& e) {
-        return std::make_unique<ExpressionCost>(e);
-      }),
-          py::arg("e"), doc.ExpressionCost.ctor.doc)
+      .def(py::init<const symbolic::Expression&>(), py::arg("e"),
+          doc.ExpressionCost.ctor.doc)
       .def("expression", &ExpressionCost::expression,
           doc.ExpressionCost.expression.doc)
       .def("vars", &ExpressionCost::vars, doc.ExpressionCost.vars.doc);
