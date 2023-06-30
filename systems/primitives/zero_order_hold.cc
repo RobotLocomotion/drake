@@ -21,8 +21,8 @@ ZeroOrderHold<T>::ZeroOrderHold(
     BasicVector<T> model_value(vector_size);
     this->DeclareVectorInputPort("u", model_value);
     auto state_index = this->DeclareDiscreteState(vector_size);
-    this->DeclarePeriodicDiscreteUpdateEvent(period_sec_, offset_sec_,
-        &ZeroOrderHold::LatchInputVectorToState);
+    this->DeclarePeriodicDiscreteUpdateEvent(
+        period_sec_, offset_sec_, &ZeroOrderHold::LatchInputVectorToState);
     this->DeclareStateOutputPort("y", state_index);
   } else {
     DRAKE_DEMAND(vector_size == -1);
@@ -30,7 +30,8 @@ ZeroOrderHold<T>::ZeroOrderHold(
     // the equivalent of #3109 for abstract values is also resolved.
     this->DeclareAbstractInputPort("u", *abstract_model_value_);
     auto state_index = this->DeclareAbstractState(*abstract_model_value_);
-    this->DeclarePeriodicUnrestrictedUpdateEvent(period_sec_, offset_sec_,
+    this->DeclarePeriodicUnrestrictedUpdateEvent(
+        period_sec_, offset_sec_,
         &ZeroOrderHold::LatchInputAbstractValueToState);
     this->DeclareStateOutputPort("y", state_index);
   }
@@ -46,17 +47,15 @@ ZeroOrderHold<T>::ZeroOrderHold(const ZeroOrderHold<U>& other)
 
 template <typename T>
 void ZeroOrderHold<T>::LatchInputVectorToState(
-    const Context<T>& context,
-    DiscreteValues<T>* discrete_state) const {
+    const Context<T>& context, DiscreteValues<T>* discrete_state) const {
   DRAKE_ASSERT(!is_abstract());
   const auto& input = this->get_input_port().Eval(context);
   discrete_state->set_value(0, input);
 }
 
 template <typename T>
-void ZeroOrderHold<T>::LatchInputAbstractValueToState(
-    const Context<T>& context,
-    State<T>* state) const {
+void ZeroOrderHold<T>::LatchInputAbstractValueToState(const Context<T>& context,
+                                                      State<T>* state) const {
   DRAKE_ASSERT(is_abstract());
   const auto& input =
       this->get_input_port().template Eval<AbstractValue>(context);

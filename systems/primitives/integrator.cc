@@ -32,8 +32,7 @@ void Integrator<T>::set_integral_value(
 
 template <typename T>
 void Integrator<T>::DoCalcVectorTimeDerivatives(
-    const Context<T>&,
-    const Eigen::VectorBlock<const VectorX<T>>& input,
+    const Context<T>&, const Eigen::VectorBlock<const VectorX<T>>& input,
     const Eigen::VectorBlock<const VectorX<T>>& state,
     Eigen::VectorBlock<VectorX<T>>* derivatives) const {
   unused(state);
@@ -42,8 +41,7 @@ void Integrator<T>::DoCalcVectorTimeDerivatives(
 
 template <typename T>
 void Integrator<T>::DoCalcVectorOutput(
-    const Context<T>&,
-    const Eigen::VectorBlock<const VectorX<T>>& input,
+    const Context<T>&, const Eigen::VectorBlock<const VectorX<T>>& input,
     const Eigen::VectorBlock<const VectorX<T>>& state,
     Eigen::VectorBlock<VectorX<T>>* output) const {
   unused(input);

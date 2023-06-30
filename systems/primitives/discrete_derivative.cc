@@ -86,15 +86,15 @@ void DiscreteDerivative<T>::CalcOutput(
     output_vector->SetFromVector(derivative);
   } else {
     const boolean<T> is_active = (context.get_discrete_state(2)[0] >= 2.0);
-    output_vector->SetFromVector(if_then_else(
-        is_active, derivative, VectorX<T>::Zero(n_).eval()));
+    output_vector->SetFromVector(
+        if_then_else(is_active, derivative, VectorX<T>::Zero(n_).eval()));
   }
 }
 
 template <typename T>
-StateInterpolatorWithDiscreteDerivative<
-    T>::StateInterpolatorWithDiscreteDerivative(
-    int num_positions, double time_step, bool suppress_initial_transient) {
+StateInterpolatorWithDiscreteDerivative<T>::
+    StateInterpolatorWithDiscreteDerivative(int num_positions, double time_step,
+                                            bool suppress_initial_transient) {
   DiagramBuilder<T> builder;
 
   derivative_ = builder.template AddSystem<DiscreteDerivative>(
@@ -102,8 +102,8 @@ StateInterpolatorWithDiscreteDerivative<
   auto mux = builder.template AddSystem<Multiplexer>(
       std::vector<int>{num_positions, num_positions});
 
-  const auto port_index = builder.ExportInput(derivative_->get_input_port(),
-                                              "position");
+  const auto port_index =
+      builder.ExportInput(derivative_->get_input_port(), "position");
   builder.ConnectInput(port_index, mux->get_input_port(0));
   builder.Connect(derivative_->get_output_port(), mux->get_input_port(1));
   builder.ExportOutput(mux->get_output_port(0), "state");
@@ -112,8 +112,8 @@ StateInterpolatorWithDiscreteDerivative<
 }
 
 template <typename T>
-bool StateInterpolatorWithDiscreteDerivative<
-      T>::suppress_initial_transient() const {
+bool StateInterpolatorWithDiscreteDerivative<T>::suppress_initial_transient()
+    const {
   return derivative_->suppress_initial_transient();
 }
 

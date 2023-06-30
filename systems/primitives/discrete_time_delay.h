@@ -87,7 +87,8 @@ class DiscreteTimeDelay final : public LeafSystem<T> {
 
  private:
   // Allow different specializations to access each other's private data.
-  template <typename U> friend class DiscreteTimeDelay;
+  template <typename U>
+  friend class DiscreteTimeDelay;
 
   // All of the other constructors delegate here.
   DiscreteTimeDelay(double update_sec, int delay_time_steps, int vector_size,

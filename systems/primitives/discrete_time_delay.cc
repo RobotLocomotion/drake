@@ -35,8 +35,11 @@ DiscreteTimeDelay<T>::DiscreteTimeDelay(
     // TODO(mpetersen94): Remove value parameter from the constructor once
     // the equivalent of #3109 for abstract values is also resolved.
     this->DeclareAbstractInputPort("u", *abstract_model_value_);
-    this->DeclareAbstractOutputPort("delayed_u",
-        [this]() { return abstract_model_value_->Clone(); },
+    this->DeclareAbstractOutputPort(
+        "delayed_u",
+        [this]() {
+          return abstract_model_value_->Clone();
+        },
         [this](const Context<T>& context, AbstractValue* out) {
           this->CopyDelayedAbstractValue(context, out);
         },
@@ -61,8 +64,8 @@ DiscreteTimeDelay<T>::DiscreteTimeDelay(const DiscreteTimeDelay<U>& other)
                               : nullptr) {}
 
 template <typename T>
-void DiscreteTimeDelay<T>::CopyDelayedVector(
-    const Context<T>& context, BasicVector<T>* output) const {
+void DiscreteTimeDelay<T>::CopyDelayedVector(const Context<T>& context,
+                                             BasicVector<T>* output) const {
   DRAKE_ASSERT(!is_abstract());
   const BasicVector<T>& state_value = context.get_discrete_state(0);
   output->SetFromVector(state_value.get_value().head(vector_size_));

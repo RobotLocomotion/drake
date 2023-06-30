@@ -13,13 +13,11 @@ Gain<T>::Gain(double k, int size) : Gain(Eigen::VectorXd::Ones(size) * k) {}
 
 template <typename T>
 Gain<T>::Gain(const Eigen::VectorXd& k)
-    : VectorSystem<T>(SystemTypeTag<Gain>{}, k.size(), k.size()),
-      k_(k) {}
+    : VectorSystem<T>(SystemTypeTag<Gain>{}, k.size(), k.size()), k_(k) {}
 
 template <typename T>
 template <typename U>
-Gain<T>::Gain(const Gain<U>& other)
-    : Gain<T>(other.get_gain_vector()) {}
+Gain<T>::Gain(const Gain<U>& other) : Gain<T>(other.get_gain_vector()) {}
 
 template <typename T>
 double Gain<T>::get_gain() const {
@@ -39,8 +37,7 @@ const Eigen::VectorXd& Gain<T>::get_gain_vector() const {
 
 template <typename T>
 void Gain<T>::DoCalcVectorOutput(
-    const Context<T>&,
-    const Eigen::VectorBlock<const VectorX<T>>& input,
+    const Context<T>&, const Eigen::VectorBlock<const VectorX<T>>& input,
     const Eigen::VectorBlock<const VectorX<T>>& state,
     Eigen::VectorBlock<VectorX<T>>* output) const {
   unused(state);

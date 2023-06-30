@@ -32,7 +32,8 @@ class ConstantValueSource final : public LeafSystem<T> {
   explicit ConstantValueSource(const ConstantValueSource<U>&);
 
  private:
-  template <typename> friend class ConstantValueSource;
+  template <typename>
+  friend class ConstantValueSource;
 
   // TODO(david-german-tri): move source_value_ to the system's parameters.
   const std::unique_ptr<AbstractValue> source_value_;
