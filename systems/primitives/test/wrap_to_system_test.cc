@@ -24,7 +24,6 @@ void CheckOutput(const System<T>& dut,
                               expected_output, 1e-12));
 }
 
-
 template <typename T>
 void SecondElementOnlyTest() {
   WrapToSystem<T> dut(2);

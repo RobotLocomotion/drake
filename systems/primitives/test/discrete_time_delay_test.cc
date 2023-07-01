@@ -36,9 +36,9 @@ const int kLength = 3;  // Length of vector passing through the block.
 // DiscreteTimeDelay (`Value<SimpleAbstractType>`).
 class SimpleAbstractType {
  public:
-  explicit SimpleAbstractType(const Eigen::Vector3d& value)
-      : value_(value) {}
+  explicit SimpleAbstractType(const Eigen::Vector3d& value) : value_(value) {}
   const Eigen::Vector3d& value() const { return value_; }
+
  private:
   Eigen::Vector3d value_;
 };
@@ -67,8 +67,8 @@ class DiscreteTimeDelayTest : public ::testing::TestWithParam<bool> {
     input_value_ << 1.0, 1.0, 3.0;
 
     if (!is_abstract_) {
-      delay_ = std::make_unique<DiscreteTimeDelay<double>>(
-          kUpdatePeriod, kBuffer, kLength);
+      delay_ = std::make_unique<DiscreteTimeDelay<double>>(kUpdatePeriod,
+                                                           kBuffer, kLength);
     } else {
       delay_ = std::make_unique<DiscreteTimeDelay<double>>(
           kUpdatePeriod, kBuffer,
@@ -167,7 +167,7 @@ TEST_P(DiscreteTimeDelayTest, ToSymbolic) {
 
 // Instantiate parameterized test cases for is_abstract_ = {false, true}
 INSTANTIATE_TEST_SUITE_P(test, DiscreteTimeDelayTest,
-                        ::testing::Values(false, true));
+                         ::testing::Values(false, true));
 
 // Create a simple Diagram to simulate:
 //    +----------------------------------------------------------+
@@ -213,13 +213,15 @@ GTEST_TEST(DiscreteTimeDelayTest, DiscreteSimulation) {
     return std::floor(2 * (t + kMachineTol) / kUpdatePeriod) + 1;
   };
 
-  auto eval = [&]() { return diagram->get_output_port(0).Eval(context)[0]; };
+  auto eval = [&]() {
+    return diagram->get_output_port(0).Eval(context)[0];
+  };
 
   simulator.Initialize();
   EXPECT_EQ(0., eval());  // No update should have occurred yet.
 
   simulator.AdvancePendingEvents();  // Force an update at 0.
-  EXPECT_EQ(0, eval());  // Should output initial value.
+  EXPECT_EQ(0, eval());              // Should output initial value.
 
   // Should output initial value until delay has passed.
   simulator.AdvanceTo(0.49);
@@ -276,13 +278,15 @@ GTEST_TEST(DiscreteTimeDelayTest, ContinuousSimulation) {
     return sine_amplitude * std::sin(sine_frequency * t + sine_phase);
   };
 
-  auto eval = [&]() { return diagram->get_output_port(0).Eval(context)[0]; };
+  auto eval = [&]() {
+    return diagram->get_output_port(0).Eval(context)[0];
+  };
 
   simulator.Initialize();
   EXPECT_EQ(0., eval());  // No update should have occurred yet.
 
   simulator.AdvancePendingEvents();  // Force an update at 0.
-  EXPECT_EQ(0, eval());  // Should output initial value.
+  EXPECT_EQ(0, eval());              // Should output initial value.
 
   // Should output initial value until delay has passed.
   simulator.AdvanceTo(0.49);

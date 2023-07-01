@@ -132,12 +132,12 @@ void SaturationTest(bool run_constant_saturation_test) {
     }
 
     if (run_constant_saturation_test) {
-      TestConstantSaturation<T>(
-          *saturation_system, input_vector_range.col(i), expected);
+      TestConstantSaturation<T>(*saturation_system, input_vector_range.col(i),
+                                expected);
     } else {
       // Tests Saturation with variable max and min values.
       TestVariableSaturation<T>(*saturation_system, kUMin, kUMax,
-                                    input_vector_range.col(i), expected);
+                                input_vector_range.col(i), expected);
 
       VectorX<T> dummy_vector;
       // Tests Saturation with variable max and min values and neither supplied.

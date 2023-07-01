@@ -18,14 +18,14 @@ const int kSignalSize = 3;
 class FirstOrderLowPassFilterTest : public ::testing::Test {
  protected:
   void SetUpSingleTimeConstantFilter() {
-    filter_ = std::make_unique<FirstOrderLowPassFilter<double>>(
-        kTimeConstant, kSignalSize);
+    filter_ = std::make_unique<FirstOrderLowPassFilter<double>>(kTimeConstant,
+                                                                kSignalSize);
     context_ = filter_->CreateDefaultContext();
     derivatives_ = filter_->AllocateTimeDerivatives();
 
     // Sets the state to zero initially.
-    filter_->set_initial_output_value(
-        context_.get(), Eigen::VectorXd::Zero(kSignalSize));
+    filter_->set_initial_output_value(context_.get(),
+                                      Eigen::VectorXd::Zero(kSignalSize));
   }
 
   void SetUpMultipleTimeConstantsFilter() {
@@ -69,7 +69,7 @@ TEST_F(FirstOrderLowPassFilterTest, Output) {
   SetUpSingleTimeConstantFilter();
   ASSERT_EQ(1, context_->num_input_ports());
   filter_->get_input_port().FixValue(context_.get(),
-                                      Vector3<double>(1.0, 2.0, 3.0));
+                                     Vector3<double>(1.0, 2.0, 3.0));
 
   ASSERT_EQ(1, filter_->num_output_ports());
 
@@ -116,9 +116,8 @@ TEST_F(FirstOrderLowPassFilterTest, ToAutoDiff) {
   EXPECT_TRUE(is_autodiffxd_convertible(*filter_, [&](const auto& converted) {
     EXPECT_EQ(kSignalSize, converted.get_input_port().size());
     EXPECT_EQ(kSignalSize, converted.get_output_port().size());
-    EXPECT_EQ(
-        Vector3<double>(4.0, 3.5, 3.0),
-        converted.get_time_constants_vector());
+    EXPECT_EQ(Vector3<double>(4.0, 3.5, 3.0),
+              converted.get_time_constants_vector());
   }));
 }
 

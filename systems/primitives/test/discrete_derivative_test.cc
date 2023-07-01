@@ -45,13 +45,12 @@ void RunFirstOrderHold(const bool suppress_initial_transient) {
   const double time_step = 0.1;
   auto deriv = builder.AddSystem<DiscreteDerivative<double>>(
       kNumInputs, time_step, suppress_initial_transient);
-  EXPECT_EQ(deriv->suppress_initial_transient(),
-            suppress_initial_transient);
+  EXPECT_EQ(deriv->suppress_initial_transient(), suppress_initial_transient);
 
   builder.Connect(ppsource->get_output_port(), deriv->get_input_port());
   // Evaluate the outputs at a distinct sampling interval.
-  auto logger = LogVectorOutput(deriv->get_output_port(), &builder,
-                                time_step / 3.267);
+  auto logger =
+      LogVectorOutput(deriv->get_output_port(), &builder, time_step / 3.267);
 
   auto diagram = builder.Build();
   Simulator<double> simulator(*diagram);
@@ -68,9 +67,9 @@ void RunFirstOrderHold(const bool suppress_initial_transient) {
     } else if (log.sample_times()(i) <= time_step) {
       if (!suppress_initial_transient) {
         // The outputs should jump for one time step because u(0) is non-zero.
-        EXPECT_TRUE(CompareMatrices(
-            log.data().col(i), Vector2d(4. / time_step, 5. / time_step),
-            1e-12));
+        EXPECT_TRUE(CompareMatrices(log.data().col(i),
+                                    Vector2d(4.0 / time_step, 5.0 / time_step),
+                                    1e-12));
       } else {
         // The outputs should remain zero until there two input samples.
         EXPECT_TRUE(CompareMatrices(log.data().col(i), Vector2d(0., 0.)));
@@ -119,8 +118,8 @@ GTEST_TEST(DiscreteDerivativeTest, IsAffine) {
 void RunSetState(const bool suppress_initial_transient) {
   const int kNumInputs = 2;
   const double time_step = 0.1;
-  DiscreteDerivative<double> deriv(
-      kNumInputs, time_step, suppress_initial_transient);
+  DiscreteDerivative<double> deriv(kNumInputs, time_step,
+                                   suppress_initial_transient);
 
   // Setting the initial state to an arbitrary value results in the
   // derivative output being set to zero.
@@ -133,8 +132,8 @@ void RunSetState(const bool suppress_initial_transient) {
   // Setting the initial states to two different values results in the
   // derivative output being non-zero.
   context = deriv.CreateDefaultContext();
-  deriv.set_input_history(
-      context.get(), Eigen::Vector2d(2.0, 20.0), Eigen::Vector2d(1.0, 10.0));
+  deriv.set_input_history(context.get(), Eigen::Vector2d(2.0, 20.0),
+                          Eigen::Vector2d(1.0, 10.0));
   EXPECT_TRUE(CompareMatrices(
       deriv.get_output_port().Eval<BasicVector<double>>(*context).get_value(),
       Vector2d(10.0, 100.0)));
@@ -194,10 +193,10 @@ GTEST_TEST(StateInterpolatorWithDiscreteDerivativeTest, ScalarTypesTest) {
       kNumPositions, time_step);
 
   auto autodiff = position_to_state.ToAutoDiffXd();
-  EXPECT_EQ(autodiff->get_output_port(0).size(), 2*kNumPositions);
+  EXPECT_EQ(autodiff->get_output_port(0).size(), 2 * kNumPositions);
 
   auto symbolic = position_to_state.ToSymbolic();
-  EXPECT_EQ(symbolic->get_output_port(0).size(), 2*kNumPositions);
+  EXPECT_EQ(symbolic->get_output_port(0).size(), 2 * kNumPositions);
 }
 
 }  // namespace

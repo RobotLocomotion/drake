@@ -81,7 +81,9 @@ GTEST_TEST(RandomSourceTest, UniformWhiteNoise) {
   EXPECT_EQ(random_source->get_fixed_seed(), std::nullopt);
 
   // Cumulative distribution function of the uniform distribution.
-  auto Phi = [](double z) { return z; };
+  auto Phi = [](double z) {
+    return z;
+  };
 
   const double min_value = 0.0;
   const double max_value = 1.0;
@@ -128,7 +130,9 @@ GTEST_TEST(RandomSourceTest, GaussianWhiteNoise) {
   EXPECT_EQ(random_source->get_fixed_seed(), std::nullopt);
 
   // Cumulative distribution function of the standard normal distribution.
-  auto Phi = [](double z) { return 0.5 * std::erfc(-z / std::sqrt(2.0)); };
+  auto Phi = [](double z) {
+    return 0.5 * std::erfc(-z / std::sqrt(2.0));
+  };
 
   const double min_value = -2.0;
   const double max_value = 2.0;
@@ -147,7 +151,9 @@ GTEST_TEST(RandomSourceTest, ExponentialWhiteNoise) {
 
   // Cumulative distribution function of the exponential distribution with λ=1,
   // (note: only valid for z>=0).
-  auto Phi = [](double z) { return 1 - std::exp(-z); };
+  auto Phi = [](double z) {
+    return 1 - std::exp(-z);
+  };
 
   const double min_value = 0.0;
   const double max_value = 2.0;
@@ -302,14 +308,16 @@ GTEST_TEST(RandomSourceTest, SeedTest) {
 
   // When asked to create a random seed, a fresh seed and output appears.  (The
   // checks below have a small chance of ending up spuriously false.)
-  struct SeedAndOutput { Seed seed{}; double output{}; };
+  struct SeedAndOutput {
+    Seed seed{};
+    double output{};
+  };
   RandomGenerator new_seed_generator;
   auto make_new_seed_and_output = [&dut, &new_seed_generator]() {
     auto random_context = dut.CreateDefaultContext();
     dut.SetRandomContext(random_context.get(), &new_seed_generator);
-    return SeedAndOutput{
-        dut.get_seed(*random_context),
-        dut.get_output_port(0).Eval(*random_context)[0]};
+    return SeedAndOutput{dut.get_seed(*random_context),
+                         dut.get_output_port(0).Eval(*random_context)[0]};
   };
   const auto new1 = make_new_seed_and_output();
   const auto new2 = make_new_seed_and_output();
