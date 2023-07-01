@@ -521,7 +521,7 @@ void AffineSystem<T>::UpdateCoefficients(
   }
 
   if (new_y0.rows() != y0_.rows()) {
-    throw std::runtime_error("New and current f0 have different sizes.");
+    throw std::runtime_error("New and current y0 have different sizes.");
   }
 
   A_ = new_A;
