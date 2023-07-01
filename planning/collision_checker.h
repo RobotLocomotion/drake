@@ -9,7 +9,6 @@
 #include <utility>
 #include <vector>
 
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/drake_throw.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/planning/body_shape_description.h"
@@ -191,16 +190,6 @@ class CollisionChecker {
   const multibody::Body<double>& get_body(
       multibody::BodyIndex body_index) const {
     return plant().get_body(body_index);
-  }
-
-  DRAKE_DEPRECATED("2023-07-01", "Use frame.scoped_name() instead.")
-  std::string GetScopedName(const multibody::Frame<double>& frame) const {
-    return frame.scoped_name().to_string();
-  }
-
-  DRAKE_DEPRECATED("2023-07-01", "Use body.scoped_name() instead.")
-  std::string GetScopedName(const multibody::Body<double>& body) const {
-    return body.scoped_name().to_string();
   }
 
   /** Gets the set of model instances belonging to the robot. The returned

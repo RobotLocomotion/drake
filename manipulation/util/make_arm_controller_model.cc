@@ -20,7 +20,6 @@ using multibody::MultibodyPlant;
 using multibody::Parser;
 using multibody::RigidBody;
 using multibody::SpatialInertia;
-using multibody::parsing::GetScopedFrameName;
 using multibody::parsing::ModelInstanceInfo;
 using systems::Context;
 

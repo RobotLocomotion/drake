@@ -29,7 +29,6 @@ import argparse
 import webbrowser
 
 from pydrake.common import configure_logging as _configure_logging
-from pydrake.common.deprecation import _warn_deprecated
 from pydrake.visualization._meldis import Meldis as _Meldis
 
 
