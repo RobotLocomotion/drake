@@ -2,7 +2,6 @@
 
 #include <memory>
 
-#include "drake/common/drake_deprecated.h"
 #include "drake/geometry/render/render_engine.h"
 #include "drake/geometry/render_gl/render_engine_gl_params.h"
 
@@ -46,16 +45,6 @@ extern const bool kHasRenderEngineGl;
  @throws std::exception if kHasRenderEngineGl is false. */
 std::unique_ptr<render::RenderEngine> MakeRenderEngineGl(
     RenderEngineGlParams params = {});
-
-namespace render {
-
-DRAKE_DEPRECATED("2023-07-01", "Use the geometry namespace instead.")
-extern const bool kHasRenderEngineGl;
-
-DRAKE_DEPRECATED("2023-07-01", "Use the geometry namespace instead.")
-constexpr auto MakeRenderEngineGl = &geometry::MakeRenderEngineGl;
-
-}  // namespace render
 
 }  // namespace geometry
 }  // namespace drake

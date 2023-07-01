@@ -348,9 +348,7 @@ void DoScalarIndependentDefinitions(py::module m) {
       doc_geometry.MakeRenderEngineVtk.doc);
 
   {
-    // TODO(zachfang): During the 2023-07-01 deprecation removals also
-    // remove the spurious `geometry::` qualifier on this typename.
-    using Class = geometry::RenderEngineGlParams;
+    using Class = RenderEngineGlParams;
     constexpr auto& cls_doc = doc_geometry.RenderEngineGlParams;
     py::class_<Class> cls(m, "RenderEngineGlParams", cls_doc.doc);
     cls  // BR
@@ -360,10 +358,8 @@ void DoScalarIndependentDefinitions(py::module m) {
     DefCopyAndDeepCopy(&cls);
   }
 
-  // TODO(zachfang): During the 2023-07-01 deprecation removals also
-  // remove the spurious `geometry::` qualifier on this typename.
-  m.def("MakeRenderEngineGl", &geometry::MakeRenderEngineGl,
-      py::arg("params") = geometry::RenderEngineGlParams(),
+  m.def("MakeRenderEngineGl", &MakeRenderEngineGl,
+      py::arg("params") = RenderEngineGlParams(),
       doc_geometry.MakeRenderEngineGl.doc);
 
   {
