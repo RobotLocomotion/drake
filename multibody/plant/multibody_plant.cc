@@ -420,6 +420,29 @@ MultibodyPlant<T>::MultibodyPlant(const MultibodyPlant<U>& other)
 }
 
 template <typename T>
+bool MultibodyPlant<T>::GetConstraintActiveStatus(
+    const systems::Context<T>& context, MultibodyConstraintId id) const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  this->ValidateContext(context);
+  const std::map<MultibodyConstraintId, bool>& constraint_active_status =
+      this->GetConstraintActiveStatus(context);
+  DRAKE_THROW_UNLESS(constraint_active_status.count(id) > 0);
+  return constraint_active_status.at(id);
+}
+
+template <typename T>
+void MultibodyPlant<T>::SetConstraintActiveStatus(systems::Context<T>* context,
+                                                  MultibodyConstraintId id,
+                                                  bool status) const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  this->ValidateContext(context);
+  std::map<MultibodyConstraintId, bool>& constraint_active_status =
+      this->GetMutableConstraintActiveStatus(context);
+  DRAKE_THROW_UNLESS(constraint_active_status.count(id) > 0);
+  constraint_active_status[id] = status;
+}
+
+template <typename T>
 MultibodyConstraintId MultibodyPlant<T>::AddCouplerConstraint(
     const Joint<T>& joint0, const Joint<T>& joint1, double gear_ratio,
     double offset) {
@@ -2592,6 +2615,7 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
   }
 
   DeclareCacheEntries();
+  DeclareParameters();
 
   // Declare per model instance actuation ports.
   ModelInstanceIndex last_actuated_instance;
@@ -2904,6 +2928,30 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
       {this->all_parameters_ticket()});
   cache_indexes_.joint_locking_data =
       joint_locking_data_cache_entry.cache_index();
+}
+
+template <typename T>
+void MultibodyPlant<T>::DeclareParameters() {
+  DRAKE_DEMAND(this->is_finalized());
+
+  // Collect ids from all constraints known at finalize time and set their
+  // active status to true by default.
+  std::map<MultibodyConstraintId, bool> constraint_active_status_map;
+
+  for (const auto& [id, spec] : coupler_constraints_specs_) {
+    constraint_active_status_map[id] = true;
+  }
+  for (const auto& [id, spec] : distance_constraints_specs_) {
+    constraint_active_status_map[id] = true;
+  }
+  for (const auto& [id, spec] : ball_constraints_specs_) {
+    constraint_active_status_map[id] = true;
+  }
+
+  internal::ConstraintActiveStatusMap map_wrapper{constraint_active_status_map};
+
+  parameter_indices_.constraint_active_status = systems::AbstractParameterIndex{
+      this->DeclareAbstractParameter(drake::Value(map_wrapper))};
 }
 
 template <typename T>

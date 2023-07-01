@@ -92,6 +92,12 @@ struct JointLockingCacheData {
   // @}
 };
 
+// Wrapper struct for using std::map<MultibodyConstraintId, bool> as a Value
+// type for an abstract parameter.
+struct ConstraintActiveStatusMap {
+  std::map<MultibodyConstraintId, bool> map;
+};
+
 // This struct contains the parameters to compute forces to enforce
 // no-interpenetration between bodies by a penalty method.
 struct ContactByPenaltyMethodParameters {
@@ -1190,6 +1196,20 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// the contact solver with set_discrete_contact_solver() or in the
   /// MultibodyPlantConfig, or to re-define the model so that such a constraint
   /// is not needed.
+  ///
+  /// Each constraint is identified with a MultibodyConstraintId returned
+  /// by the function used to add it (e.g. AddCouplerConstraint()). It is
+  /// possible to recover constraint specification parameters for each
+  /// constraint with various introspection functions (e.g.
+  /// get_coupler_constraint_specs()). Each constraint has an "active" status
+  /// that is set to true by default. Query a constraint's active status with
+  /// GetConstraintActiveStatus() and set its active status with
+  /// SetConstraintActiveStatus().
+  ///
+  /// <!-- TODO(joemasterjohn): As different constraint types are added in a
+  /// piecemeal fashion, the burden of managing and maintaining these different
+  /// constraints becomes cumbersome for the plant. Consider a new
+  /// MultibodyConstraintManager class to consolidate constraint management. -->
   /// @{
 
   /// Returns the total number of constraints specified by the user.
@@ -1262,6 +1282,21 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   get_ball_constraint_specs() const {
     return ball_constraints_specs_;
   }
+
+  /// Returns the active status of the constraint given by `id` in `context`.
+  /// @throws std::exception if the %MultibodyPlant has not been finalized.
+  /// @throws std::exception if `id` does not belong to any multibody constraint
+  /// in `context`.
+  bool GetConstraintActiveStatus(const systems::Context<T>& context,
+                                 MultibodyConstraintId id) const;
+
+  /// Sets the active status of the constraint given by `id` in `context`.
+  /// @throws std::exception if the %MultibodyPlant has not been finalized.
+  /// @throws std::exception if `context` == nullptr
+  /// @throws std::exception if `id` does not belong to any multibody constraint
+  /// in `context`.
+  void SetConstraintActiveStatus(systems::Context<T>* context,
+                                 MultibodyConstraintId id, bool status) const;
 
   /// Defines a holonomic constraint between two single-dof joints `joint0`
   /// and `joint1` with positions q₀ and q₁, respectively, such that q₀ = ρ⋅q₁ +
@@ -4765,13 +4800,19 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     systems::CacheIndex joint_locking_data;
   };
 
+  // This struct stores in one single place all indices related to
+  // MultibodyPlant parameters. These are initialized at Finalize()
+  // when the plant declares parameters.
+  struct ParameterIndices {
+    systems::AbstractParameterIndex constraint_active_status;
+  };
+
   // Constructor to bridge testing from MultibodyTree to MultibodyPlant.
   // WARNING: This may *not* result in a plant with a valid state. Use
   // sparingly to test forwarding methods when the overhead is high to
   // reproduce the testing (e.g. benchmarks).
-  explicit MultibodyPlant(
-      std::unique_ptr<internal::MultibodyTree<T>> tree_in,
-      double time_step = 0);
+  explicit MultibodyPlant(std::unique_ptr<internal::MultibodyTree<T>> tree_in,
+                          double time_step = 0);
 
   // Helper method for throwing an exception within public methods that should
   // not be called post-finalize. The invoking method should pass its name so
@@ -4873,8 +4914,11 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // Helper method to declare state, cache entries, and ports after Finalize().
   void DeclareStateCacheAndPorts();
 
-  // Declare the system-level cache entries specific to MultibodyPlant.
+  // Declares the system-level cache entries specific to MultibodyPlant.
   void DeclareCacheEntries();
+
+  // Declares the system-level parameters specific to MultibodyPlant.
+  void DeclareParameters();
 
   // Estimates a global set of point contact parameters given a
   // `penetration_allowance`. See set_penetration_allowance()` for details.
@@ -5217,6 +5261,25 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
                               joint.child_body().index());
   }
 
+  // Gets the parameter corresponding to constraint active status.
+  const std::map<MultibodyConstraintId, bool>& GetConstraintActiveStatus(
+      const systems::Context<T>& context) const {
+    return context.get_parameters()
+        .template get_abstract_parameter<internal::ConstraintActiveStatusMap>(
+            parameter_indices_.constraint_active_status)
+        .map;
+  }
+
+  // Gets the mutable parameter corresponding to constraint active status.
+  std::map<MultibodyConstraintId, bool>& GetMutableConstraintActiveStatus(
+      systems::Context<T>* context) const {
+    return context->get_mutable_parameters()
+        .template get_mutable_abstract_parameter<
+            internal::ConstraintActiveStatusMap>(
+            parameter_indices_.constraint_active_status)
+        .map;
+  }
+
   // Removes `this` MultibodyPlant's ability to convert to the scalar types
   // unsupported by the given `component`.
   void RemoveUnsupportedScalars(
@@ -5446,9 +5509,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // All MultibodyPlant cache indexes are stored in cache_indexes_.
   CacheIndexes cache_indexes_;
 
+  // All MultibodyPlant parameter indices are stored in parameter_indices_.
+  ParameterIndices parameter_indices_;
+
   // Whether to apply collsion filters to adjacent bodies at Finalize().
   bool adjacent_bodies_collision_filters_{
-    MultibodyPlantConfig{}.adjacent_bodies_collision_filters};
+      MultibodyPlantConfig{}.adjacent_bodies_collision_filters};
 };
 
 /// @cond

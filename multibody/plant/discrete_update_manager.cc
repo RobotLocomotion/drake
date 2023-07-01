@@ -224,6 +224,14 @@ DiscreteUpdateManager<T>::ball_constraints_specs() const {
 }
 
 template <typename T>
+const std::map<MultibodyConstraintId, bool>&
+DiscreteUpdateManager<T>::GetConstraintActiveStatus(
+    const systems::Context<T>& context) const {
+  return MultibodyPlantDiscreteUpdateManagerAttorney<
+      T>::GetConstraintActiveStatus(context, *plant_);
+}
+
+template <typename T>
 BodyIndex DiscreteUpdateManager<T>::FindBodyByGeometryId(
     geometry::GeometryId geometry_id) const {
   return MultibodyPlantDiscreteUpdateManagerAttorney<T>::FindBodyByGeometryId(
