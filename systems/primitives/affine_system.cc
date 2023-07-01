@@ -495,27 +495,27 @@ void AffineSystem<T>::UpdateCoefficients(
     const Eigen::Ref<const Eigen::MatrixXd>& new_D,
     const Eigen::Ref<const Eigen::VectorXd>& new_y0) {
   if (new_A.rows() != A_.rows() || new_A.cols() != A_.cols()) {
-    throw std::runtime_error("New A matrix has invalid dimensions.");
+    throw std::runtime_error("New and current A have different sizes.");
   }
 
   if (new_B.rows() != B_.rows() || new_B.cols() != B_.cols()) {
-    throw std::runtime_error("New B matrix has invalid dimensions.");
+    throw std::runtime_error("New and current B have different sizes.");
   }
 
   if (new_f0.rows() != f0_.rows()) {
-    throw std::runtime_error("New f0 vector has invalid dimensions.");
+    throw std::runtime_error("New and current f0 have different sizes.");
   }
 
   if (new_C.rows() != C_.rows() || new_C.cols() != C_.cols()) {
-    throw std::runtime_error("New C matrix has invalid dimensions.");
+    throw std::runtime_error("New and current C have different sizes.");
   }
 
   if (new_D.rows() != D_.rows() || new_D.cols() != D_.cols()) {
-    throw std::runtime_error("New D matrix has invalid dimensions.");
+    throw std::runtime_error("New and current D have different sizes.");
   }
 
   if (new_y0.rows() != y0_.rows()) {
-    throw std::runtime_error("New f0 vector has invalid dimensions.");
+    throw std::runtime_error("New and current f0 have different sizes.");
   }
 
   A_ = new_A;

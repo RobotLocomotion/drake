@@ -105,12 +105,12 @@ TEST_F(AffineSystemTest, Output) {
 
 // Tests that the coefficients are correctly updated.
 TEST_F(AffineSystemTest, UpdateCoefficients) {
-  const auto new_A = Eigen::Matrix2d::Zero();
-  const auto new_B = Eigen::Matrix2d::Zero();
-  const auto new_f0 = Eigen::Vector2d::Zero();
-  const auto new_C = Eigen::Matrix2d::Zero();
-  const auto new_D = Eigen::Matrix2d::Zero();
-  const auto new_y0 = Eigen::Vector2d::Zero();
+  const Eigen::Matrix2d new_A = make_2x2_matrix(1, 2, 3, 4);
+  const Eigen::Matrix2d new_B = make_2x2_matrix(5, 6, 7, 8);
+  const Eigen::Vector2d new_f0 = make_2x1_vector(-1, -2);
+  const Eigen::Matrix2d new_C = make_2x2_matrix(9, 10, 11, 12);
+  const Eigen::Matrix2d new_D = make_2x2_matrix(13, 14, 15, 16);
+  const Eigen::Vector2d new_y0 = make_2x1_vector(-3, -4);
 
   dut_->UpdateCoefficients(new_A, new_B, new_f0, new_C, new_D, new_y0);
 

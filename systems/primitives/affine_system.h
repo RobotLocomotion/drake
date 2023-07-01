@@ -255,7 +255,8 @@ class AffineSystem : public TimeVaryingAffineSystem<T> {
   VectorX<T> y0(const T&) const final { return VectorX<T>(y0_); }
   /// @}
 
-  /// Updates the coefficients of the affine system.
+  /// Updates the coefficients of the affine system. The new coefficients must
+  /// have the same size as existing coefficients.
   void UpdateCoefficients(const Eigen::Ref<const Eigen::MatrixXd>& A,
                           const Eigen::Ref<const Eigen::MatrixXd>& B,
                           const Eigen::Ref<const Eigen::VectorXd>& f0,
