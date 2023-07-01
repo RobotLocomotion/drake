@@ -487,11 +487,6 @@ EventStatus AffineSystem<T>::CalcDiscreteUpdate(
   return EventStatus::Succeeded();
 }
 
-// clang-format off
-DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((
-    &TimeVaryingAffineSystem<T>::template ConfigureDefaultAndRandomStateFrom<U>
-))
-// clang-format on
 template <typename T>
 void AffineSystem<T>::UpdateCoefficients(
     const Eigen::Ref<const Eigen::MatrixXd>& new_A,
@@ -534,9 +529,11 @@ void AffineSystem<T>::UpdateCoefficients(
   has_meaningful_D_ = IsMeaningful(D_);
 }
 
-DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    (&TimeVaryingAffineSystem<T>::template ConfigureDefaultAndRandomStateFrom<
-        U>))
+// clang-format off
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((
+    &TimeVaryingAffineSystem<T>::template ConfigureDefaultAndRandomStateFrom<U>
+))
+// clang-format on
 
 }  // namespace systems
 }  // namespace drake
