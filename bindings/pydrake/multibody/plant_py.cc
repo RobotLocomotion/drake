@@ -258,6 +258,15 @@ void DoScalarDependentDefinitions(py::module m, T) {
             },
             py::arg("force_element"), py_rvp::reference_internal,
             cls_doc.AddForceElement.doc)
+        .def("set_constraint_active_status",
+            &Class::set_constraint_active_status, py::arg("context"),
+            py::arg("id"), py::arg("status"),
+            cls_doc.set_constraint_active_status.doc)
+        .def("get_constraint_active_status",
+            overload_cast_explicit<bool, const Context<T>&,
+                MultibodyConstraintId>(&Class::get_constraint_active_status),
+            py::arg("context"), py::arg("id"),
+            cls_doc.get_constraint_active_status.doc)
         .def("AddCouplerConstraint", &Class::AddCouplerConstraint,
             py::arg("joint0"), py::arg("joint1"), py::arg("gear_ratio"),
             py::arg("offset") = 0.0, py_rvp::reference_internal,

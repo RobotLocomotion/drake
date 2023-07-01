@@ -2592,6 +2592,7 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
   }
 
   DeclareCacheEntries();
+  DeclareParameters();
 
   // Declare per model instance actuation ports.
   ModelInstanceIndex last_actuated_instance;
@@ -2904,6 +2905,28 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
       {this->all_parameters_ticket()});
   cache_indexes_.joint_locking_data =
       joint_locking_data_cache_entry.cache_index();
+}
+
+template <typename T>
+void MultibodyPlant<T>::DeclareParameters() {
+  DRAKE_DEMAND(this->is_finalized());
+
+  // Collect ids from all constraints known at finalize time and set their
+  // active status to true by default.
+  std::map<MultibodyConstraintId, bool> constraint_active_status_map;
+  for (const auto& [id, spec] : coupler_constraints_specs_) {
+    constraint_active_status_map[id] = true;
+  }
+  for (const auto& [id, spec] : distance_constraints_specs_) {
+    constraint_active_status_map[id] = true;
+  }
+  for (const auto& [id, spec] : ball_constraints_specs_) {
+    constraint_active_status_map[id] = true;
+  }
+
+  parameter_indices_.constraint_active_status =
+      systems::AbstractParameterIndex{this->DeclareAbstractParameter(
+          drake::Value(constraint_active_status_map))};
 }
 
 template <typename T>

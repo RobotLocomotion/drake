@@ -68,6 +68,8 @@ class SpheresStack {
     double radius;
     // No contact geometry is registered if nullopt.
     std::optional<ContactParameters> contact_parameters;
+    double lower_limit{-std::numeric_limits<double>::infinity()};
+    double upper_limit{std::numeric_limits<double>::infinity()};
   };
 
   // Sets up this fixture to have:
@@ -86,7 +88,8 @@ class SpheresStack {
     const ContactParameters rigid_hydro_contact{
         std::nullopt, std::numeric_limits<double>::infinity(), 0.0, 1.0};
     const SphereParameters sphere1_params{"Sphere1", 10.0 /* mass */,
-                                          0.2 /* size */, compliant_contact};
+                                          0.2 /* size */, compliant_contact,
+                                          0.2 /* lower limit */};
     const SphereParameters sphere2_params{"Sphere2", 10.0 /* mass */,
                                           0.2 /* size */, non_hydro_contact};
     MakeModel(rigid_hydro_contact, sphere1_params, sphere2_params,
@@ -105,6 +108,21 @@ class SpheresStack {
               sphere1_on_prismatic_joint);
   }
 
+  void SetupSpheresWithConstraints() {
+    const bool sphere1_on_prismatic_joint = true;
+    const bool sphere2_on_prismatic_joint = true;
+    const bool add_constraints = true;
+    const SphereParameters sphere1_params{"Sphere1", 10.0 /* mass */,
+                                          0.2 /* size */,
+                                          std::nullopt /* no contact */};
+    const SphereParameters sphere2_params{"Sphere2", 10.0 /* mass */,
+                                          0.2 /* size */,
+                                          std::nullopt /* no contact */};
+    MakeModel(std::nullopt /* no ground */, sphere1_params, sphere2_params,
+              sphere1_on_prismatic_joint, sphere2_on_prismatic_joint,
+              add_constraints);
+  }
+
   // Sets up a model with two spheres and the ground.
   // Spheres are defined by their SphereParameters. Ground contact is defined by
   // `ground_params`, no ground is added if std::nullopt.
@@ -113,7 +131,9 @@ class SpheresStack {
   void MakeModel(const std::optional<ContactParameters>& ground_params,
                  const SphereParameters& sphere1_params,
                  const SphereParameters& sphere2_params,
-                 bool sphere1_on_prismatic_joint = false) {
+                 bool sphere1_on_prismatic_joint = false,
+                 bool sphere2_on_prismatic_joint = false,
+                 bool add_constraints = false) {
     systems::DiagramBuilder<double> builder;
     std::tie(plant_, scene_graph_) =
         AddMultibodyPlantSceneGraph(&builder, time_step_);
@@ -142,7 +162,18 @@ class SpheresStack {
       slider1_ = &plant_->AddJoint<PrismaticJoint>(
           "Sphere1Slider", plant_->world_body(), std::nullopt, *sphere1_,
           std::nullopt, Vector3<double>::UnitZ(),
-          sphere1_params.radius /* lower limit */);
+          sphere1_params.lower_limit, sphere1_params.upper_limit);
+    }
+
+    if (sphere2_on_prismatic_joint) {
+      slider2_ = &plant_->AddJoint<PrismaticJoint>(
+          "Sphere2Slider", plant_->world_body(), std::nullopt, *sphere2_,
+          std::nullopt, Vector3<double>::UnitZ(),
+          sphere2_params.lower_limit, sphere2_params.upper_limit);
+    }
+
+    if (add_constraints) {
+      AddConstraints(sphere1_params, sphere2_params);
     }
 
     plant_->mutable_gravity_field().set_gravity_vector(-gravity_ *
@@ -183,8 +214,12 @@ class SpheresStack {
     const double sphere2_com_z = 2.0 * sphere1_params.radius +
                                  sphere2_params.radius -
                                  2.0 * penetration_distance_;
-    const RigidTransformd X_WB2(Vector3d(0, 0, sphere2_com_z));
-    plant_->SetFreeBodyPose(plant_context_, *sphere2_, X_WB2);
+    if (slider2_ != nullptr) {
+      slider2_->set_translation(plant_context_, sphere2_com_z);
+    } else {
+      const RigidTransformd X_WB2(Vector3d(0, 0, sphere2_com_z));
+      plant_->SetFreeBodyPose(plant_context_, *sphere2_, X_WB2);
+    }
   }
 
   const MultibodyPlant<double>& plant() const { return *plant_; }
@@ -208,6 +243,10 @@ class SpheresStack {
   const RigidBody<double>* sphere1_{nullptr};
   const RigidBody<double>* sphere2_{nullptr};
   const PrismaticJoint<double>* slider1_{nullptr};
+  const PrismaticJoint<double>* slider2_{nullptr};
+  MultibodyConstraintId coupler_constraint_id_{};
+  MultibodyConstraintId distance_constraint_id_{};
+  MultibodyConstraintId ball_constraint_id_{};
   CompliantContactManager<double>* contact_manager_{nullptr};
   std::unique_ptr<Context<double>> diagram_context_;
   Context<double>* plant_context_{nullptr};
@@ -230,6 +269,24 @@ class SpheresStack {
     }
 
     return body;
+  }
+
+  // Add one of each SAP constraint, with arbitrary parameters.
+  void AddConstraints(const SphereParameters& sphere1_params,
+                      const SphereParameters& sphere2_params) {
+    if (slider1_ != nullptr && slider2_ != nullptr) {
+      coupler_constraint_id_ =
+          plant_->AddCouplerConstraint(*slider1_, *slider2_, 2.0);
+    }
+
+    distance_constraint_id_ = plant_->AddDistanceConstraint(
+        *sphere1_, Vector3d::Zero(), *sphere2_, Vector3d::Zero(),
+        sphere1_params.radius + sphere2_params.radius - penetration_distance_);
+
+    ball_constraint_id_ = plant_->AddBallConstraint(
+        plant_->world_body(),
+        Vector3d(0.0, 0.0, sphere1_params.radius - penetration_distance_),
+        *sphere1_, Vector3d::Zero());
   }
 
   // Utility to make ProximityProperties from ContactParameters.

@@ -352,6 +352,95 @@ TEST_F(SpheresStackTest, SapFailureException) {
                               "The SAP solver failed to converge(.|\n)*");
 }
 
+// Unit test that the manager is forwarded the active status of each constraint
+// and produces a SapContactProblem with only the active constraints and
+// recalculates the cached SapContactProblem with constraint parameters change.
+TEST_F(SpheresStackTest, ConstraintActiveStatus) {
+  SetupSpheresWithConstraints();
+
+  // All constraints active.
+  {
+    const ContactProblemCache<double>& problem_cache =
+        EvalContactProblemCache(*plant_context_);
+    const SapContactProblem<double>& problem = *problem_cache.sap_problem;
+
+    // Verify number of constraints when all are active. There is no contact
+    // so we expect one coupler constraint, one distance constraint and one
+    // ball constraint.
+    EXPECT_EQ(problem.num_constraints(), 3);
+    EXPECT_EQ(problem.num_constraint_equations(),
+              1 /* coupler constraint */ + 1 /* distance constraint */ +
+                  3 /* ball constraint */);
+    // TODO(joemasterjohn): When these constraints become first class citizens,
+    // verify the constraints via type casts rather than just looking at the
+    // number of constraint equations as a proxy.
+    EXPECT_EQ(problem.get_constraint(0).num_constraint_equations(), 1);
+    EXPECT_EQ(problem.get_constraint(1).num_constraint_equations(), 1);
+    EXPECT_EQ(problem.get_constraint(2).num_constraint_equations(), 3);
+  }
+
+  // Set the distance and ball constraint to inactive and verify that only the
+  // coupler constraint shows up in the problem.
+  {
+    plant_->set_constraint_active_status(plant_context_,
+                                         distance_constraint_id_, false);
+    plant_->set_constraint_active_status(plant_context_, ball_constraint_id_,
+                                         false);
+
+    const ContactProblemCache<double>& problem_cache =
+        EvalContactProblemCache(*plant_context_);
+    const SapContactProblem<double>& problem = *problem_cache.sap_problem;
+
+    // Verify number of constraints when only the coupler constraint is active.
+    EXPECT_EQ(problem.num_constraints(), 1);
+    EXPECT_EQ(problem.num_constraint_equations(), 1 /* coupler constraint */);
+    EXPECT_EQ(problem.get_constraint(0).num_constraint_equations(), 1);
+  }
+
+  // Now disable the coupler constraint and verify that the problem has 0
+  // constraints.
+  {
+    plant_->set_constraint_active_status(plant_context_, coupler_constraint_id_,
+                                         false);
+
+    const ContactProblemCache<double>& problem_cache =
+        EvalContactProblemCache(*plant_context_);
+    const SapContactProblem<double>& problem = *problem_cache.sap_problem;
+
+    // Verify number of constraints when all are inactive.
+    EXPECT_EQ(problem.num_constraints(), 0);
+    EXPECT_EQ(problem.num_constraint_equations(), 0);
+  }
+
+  // Reactivate all constraints and verify they show up in the problem.
+  {
+    plant_->set_constraint_active_status(plant_context_,
+                                         distance_constraint_id_, true);
+    plant_->set_constraint_active_status(plant_context_, ball_constraint_id_,
+                                         true);
+    plant_->set_constraint_active_status(plant_context_, coupler_constraint_id_,
+                                         true);
+
+    const ContactProblemCache<double>& problem_cache =
+        EvalContactProblemCache(*plant_context_);
+    const SapContactProblem<double>& problem = *problem_cache.sap_problem;
+
+    // Verify number of constraints when all are active. There is no contact
+    // so we expect one coupler constraint, one distance constraint and one
+    // ball constraint.
+    EXPECT_EQ(problem.num_constraints(), 3);
+    EXPECT_EQ(problem.num_constraint_equations(),
+              1 /* coupler constraint */ + 1 /* distance constraint */ +
+                  3 /* ball constraint */);
+    // TODO(joemasterjohn): When these constraints become first class citizens,
+    // verify the constraints via type casts rather than just looking at the
+    // number of constraint equations as a proxy.
+    EXPECT_EQ(problem.get_constraint(0).num_constraint_equations(), 1);
+    EXPECT_EQ(problem.get_constraint(1).num_constraint_equations(), 1);
+    EXPECT_EQ(problem.get_constraint(2).num_constraint_equations(), 3);
+  }
+}
+
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake

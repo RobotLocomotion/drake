@@ -259,6 +259,9 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   const std::map<MultibodyConstraintId, internal::BallConstraintSpec>&
   ball_constraints_specs() const;
 
+  const std::map<MultibodyConstraintId, bool>& get_constraint_active_status(
+      const systems::Context<T>& context) const;
+
   BodyIndex FindBodyByGeometryId(geometry::GeometryId geometry_id) const;
   /* @} */
 
