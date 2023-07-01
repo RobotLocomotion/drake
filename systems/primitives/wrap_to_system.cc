@@ -26,7 +26,7 @@ void WrapToSystem<T>::set_interval(int index, const T& low, const T& high) {
 
 template <typename T>
 void WrapToSystem<T>::CalcWrappedOutput(const Context<T>& context,
-                                  BasicVector<T>* output) const {
+                                        BasicVector<T>* output) const {
   const auto& input = this->get_input_port(0).Eval(context);
   output->SetFromVector(input);
 

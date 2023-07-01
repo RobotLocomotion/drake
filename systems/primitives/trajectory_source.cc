@@ -52,7 +52,7 @@ void TrajectorySource<T>::DoCalcVectorOutput(
 
   double time = context.get_time();
   bool set_zero = clamp_derivatives_ && (time > trajectory_->end_time() ||
-      time < trajectory_->start_time());
+                                         time < trajectory_->start_time());
 
   for (size_t i = 0; i < derivatives_.size(); ++i) {
     if (set_zero) {

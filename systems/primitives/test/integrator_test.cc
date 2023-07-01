@@ -57,7 +57,7 @@ TEST_F(IntegratorTest, Topology) {
 TEST_F(IntegratorTest, Output) {
   ASSERT_EQ(1, context_->num_input_ports());
   integrator_->get_input_port(0).FixValue(context_.get(),
-      Eigen::Vector3d{1.0, 2.0, 3.0});
+                                          Eigen::Vector3d{1.0, 2.0, 3.0});
 
   Eigen::Vector3d expected = Eigen::Vector3d::Zero();
   EXPECT_EQ(expected, integrator_->get_output_port(0).Eval(*context_));
@@ -92,7 +92,8 @@ class SymbolicIntegratorTest : public IntegratorTest {
     symbolic_derivatives_ = symbolic_integrator_->AllocateTimeDerivatives();
 
     ASSERT_EQ(1, symbolic_context_->num_input_ports());
-    symbolic_integrator_->get_input_port(0).FixValue(symbolic_context_.get(),
+    symbolic_integrator_->get_input_port(0).FixValue(
+        symbolic_context_.get(),
         Vector3<symbolic::Expression>{symbolic::Variable("u0"),
                                       symbolic::Variable("u1"),
                                       symbolic::Variable("u2")});

@@ -29,6 +29,8 @@ using solvers::Constraint;
 using solvers::Cost;
 using solvers::EvaluatorBase;
 using solvers::ExponentialConeConstraint;
+using solvers::ExpressionConstraint;
+using solvers::ExpressionCost;
 using solvers::L1NormCost;
 using solvers::L2NormCost;
 using solvers::LinearComplementarityConstraint;
@@ -1912,6 +1914,21 @@ void BindEvaluatorsAndBindings(py::module m) {
       .def("b", &ExponentialConeConstraint::b,
           doc.ExponentialConeConstraint.b.doc);
 
+  py::class_<ExpressionConstraint, Constraint,
+      std::shared_ptr<ExpressionConstraint>>(
+      m, "ExpressionConstraint", doc.ExpressionConstraint.doc)
+      .def(py::init<const Eigen::Ref<const VectorX<symbolic::Expression>>&,
+               const Eigen::Ref<const Eigen::VectorXd>&,
+               const Eigen::Ref<const Eigen::VectorXd>&>(),
+          py::arg("v"), py::arg("lb"), py::arg("ub"),
+          doc.ExpressionConstraint.ctor.doc)
+      .def("expressions", &ExpressionConstraint::expressions,
+          // dtype = object arrays must be copied, and cannot be referenced.
+          py_rvp::copy, doc.ExpressionConstraint.expressions.doc)
+      .def("vars", &ExpressionConstraint::vars,
+          // dtype = object arrays must be copied, and cannot be referenced.
+          py_rvp::copy, doc.ExpressionConstraint.vars.doc);
+
   auto constraint_binding = RegisterBinding<Constraint>(&m);
   DefBindingCastConstructor<Constraint>(&constraint_binding);
   RegisterBinding<LinearConstraint>(&m);
@@ -1924,6 +1941,10 @@ void BindEvaluatorsAndBindings(py::module m) {
   RegisterBinding<LinearMatrixInequalityConstraint>(&m);
   RegisterBinding<LinearComplementarityConstraint>(&m);
   RegisterBinding<ExponentialConeConstraint>(&m);
+  // TODO(russt): PolynomialConstraint currently uses common::Polynomial, not
+  // symbolic::Polynomial. Decide whether we want to bind the current c++
+  // implementation as is, or convert it to symbolic::Polynomial first.
+  RegisterBinding<ExpressionConstraint>(&m);
 
   // Mirror procedure for costs
   py::class_<Cost, EvaluatorBase, std::shared_ptr<Cost>> cost(
@@ -2040,6 +2061,16 @@ void BindEvaluatorsAndBindings(py::module m) {
           py::arg("new_A"), py::arg("new_b"),
           doc.PerspectiveQuadraticCost.UpdateCoefficients.doc);
 
+  py::class_<ExpressionCost, Cost, std::shared_ptr<ExpressionCost>>(
+      m, "ExpressionCost", doc.ExpressionCost.doc)
+      .def(py::init<const symbolic::Expression&>(), py::arg("e"),
+          doc.ExpressionCost.ctor.doc)
+      .def("expression", &ExpressionCost::expression,
+          py_rvp::reference_internal, doc.ExpressionCost.expression.doc)
+      .def("vars", &ExpressionCost::vars,
+          // dtype = object arrays must be copied, and cannot be referenced.
+          py_rvp::copy, doc.ExpressionCost.vars.doc);
+
   auto cost_binding = RegisterBinding<Cost>(&m);
   DefBindingCastConstructor<Cost>(&cost_binding);
   RegisterBinding<LinearCost>(&m);
@@ -2048,6 +2079,10 @@ void BindEvaluatorsAndBindings(py::module m) {
   RegisterBinding<L2NormCost>(&m);
   RegisterBinding<LInfNormCost>(&m);
   RegisterBinding<PerspectiveQuadraticCost>(&m);
+  // TODO(russt): PolynomialCost currently uses common::Polynomial, not
+  // symbolic::Polynomial. Decide whether we want to bind the current c++
+  // implementation as is, or convert it to symbolic::Polynomial first.
+  RegisterBinding<ExpressionCost>(&m);
 
   py::class_<VisualizationCallback, EvaluatorBase,
       std::shared_ptr<VisualizationCallback>>(

@@ -18,7 +18,7 @@ using test::TestSystemMatrixTrajectories;
 enum class ConstructorType { FromContinuous, FromDiscrete };
 
 class TrajectoryLinearSystemTest
-  : public ::testing::TestWithParam<ConstructorType> {
+    : public ::testing::TestWithParam<ConstructorType> {
  public:
   void SetUp() override {
     if (this->GetParam() == ConstructorType::FromContinuous) {
@@ -149,8 +149,8 @@ TEST_P(TrajectoryLinearSystemTest, ScalarTypeConversion) {
 }
 
 INSTANTIATE_TEST_SUITE_P(Constructor, TrajectoryLinearSystemTest,
-                        testing::Values(ConstructorType::FromContinuous,
-                                        ConstructorType::FromDiscrete));
+                         testing::Values(ConstructorType::FromContinuous,
+                                         ConstructorType::FromDiscrete));
 
 }  // namespace
 }  // namespace systems

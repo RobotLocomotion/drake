@@ -66,15 +66,15 @@ class ConstantVectorSource final : public SingleOutputVectorSource<T> {
 
  private:
   // Allow different specializations to access each other's private data.
-  template <typename U> friend class ConstantVectorSource;
+  template <typename U>
+  friend class ConstantVectorSource;
 
   // All other constructor overloads delegate to here.
   ConstantVectorSource(SystemScalarConverter, const BasicVector<T>&);
 
   // Outputs a signal with a fixed value as specified by the user.
-  void DoCalcVectorOutput(
-      const Context<T>& context,
-      Eigen::VectorBlock<VectorX<T>>* output) const final;
+  void DoCalcVectorOutput(const Context<T>& context,
+                          Eigen::VectorBlock<VectorX<T>>* output) const final;
 
   const int source_value_index_;
 };

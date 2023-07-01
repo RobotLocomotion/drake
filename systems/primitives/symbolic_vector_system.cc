@@ -34,7 +34,7 @@ Expression FirstOrderTaylorExpand(const Expression& f, const Substitution& a) {
 
 // Checks if @p v is in @p variables.
 bool Includes(const Ref<const VectorX<Variable>>& variables,
-                     const Variable& v) {
+              const Variable& v) {
   for (int i = 0; i < variables.size(); ++i) {
     if (variables[i].equal_to(v)) {
       return true;
@@ -217,8 +217,8 @@ void SymbolicVectorSystem<T>::PopulateFromContext(const Context<T>& context,
 template <>
 void SymbolicVectorSystem<double>::EvaluateWithContext(
     const Context<double>& context, const VectorX<Expression>& expr,
-    const MatrixX<symbolic::Expression>& jacobian,
-    bool needs_inputs, VectorBase<double>* out) const {
+    const MatrixX<symbolic::Expression>& jacobian, bool needs_inputs,
+    VectorBase<double>* out) const {
   unused(jacobian);
   Environment env = env_;
   PopulateFromContext(context, needs_inputs, &env);
@@ -230,8 +230,8 @@ void SymbolicVectorSystem<double>::EvaluateWithContext(
 template <>
 void SymbolicVectorSystem<AutoDiffXd>::EvaluateWithContext(
     const Context<AutoDiffXd>& context, const VectorX<Expression>& expr,
-    const MatrixX<symbolic::Expression>& jacobian,
-    bool needs_inputs, VectorBase<AutoDiffXd>* pout) const {
+    const MatrixX<symbolic::Expression>& jacobian, bool needs_inputs,
+    VectorBase<AutoDiffXd>* pout) const {
   VectorBase<AutoDiffXd>& out = *pout;
 
   const BasicVector<AutoDiffXd> empty(0);
@@ -247,9 +247,8 @@ void SymbolicVectorSystem<AutoDiffXd>::EvaluateWithContext(
   // is sufficient to know that there are input variables; we don't need to
   // test the size of input_vars_.
   const BasicVector<AutoDiffXd>& input =
-      needs_inputs
-          ? get_input_port().Eval<BasicVector<AutoDiffXd>>(context)
-          : empty;
+      needs_inputs ? get_input_port().Eval<BasicVector<AutoDiffXd>>(context)
+                   : empty;
 
   const BasicVector<AutoDiffXd>& parameter =
       (parameter_vars_.size() > 0) ? context.get_numeric_parameter(0) : empty;
@@ -257,19 +256,19 @@ void SymbolicVectorSystem<AutoDiffXd>::EvaluateWithContext(
   // Figure out the length of the derivative vector.  The derivatives must all
   // have size zero or the same non-zero size.
   int num_gradients = time.derivatives().size();
-  auto set_num_gradients = [&num_gradients](
-                               const VectorBase<AutoDiffXd>& vars) {
-    for (int i = 0; i < vars.size(); i++) {
-      if (vars[i].derivatives().size()) {
-        if (num_gradients == 0) {
-          num_gradients = static_cast<int>(vars[i].derivatives().size());
-        } else {
-          DRAKE_DEMAND(static_cast<int>(vars[i].derivatives().size()) ==
-                       num_gradients);
+  auto set_num_gradients =
+      [&num_gradients](const VectorBase<AutoDiffXd>& vars) {
+        for (int i = 0; i < vars.size(); i++) {
+          if (vars[i].derivatives().size()) {
+            if (num_gradients == 0) {
+              num_gradients = static_cast<int>(vars[i].derivatives().size());
+            } else {
+              DRAKE_DEMAND(static_cast<int>(vars[i].derivatives().size()) ==
+                           num_gradients);
+            }
+          }
         }
-      }
-    }
-  };
+      };
   set_num_gradients(state);
   if (needs_inputs) {
     set_num_gradients(input);
@@ -323,8 +322,8 @@ void SymbolicVectorSystem<AutoDiffXd>::EvaluateWithContext(
 template <>
 void SymbolicVectorSystem<Expression>::EvaluateWithContext(
     const Context<Expression>& context, const VectorX<Expression>& expr,
-    const MatrixX<symbolic::Expression>& jacobian,
-    bool needs_inputs, VectorBase<Expression>* out) const {
+    const MatrixX<symbolic::Expression>& jacobian, bool needs_inputs,
+    VectorBase<Expression>* out) const {
   unused(jacobian);
   Substitution s;
   PopulateFromContext(context, needs_inputs, &s);

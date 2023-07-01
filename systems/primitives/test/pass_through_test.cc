@@ -23,11 +23,10 @@ namespace {
 // through (`Value<SimpleAbstractType>`).
 class SimpleAbstractType {
  public:
-  explicit SimpleAbstractType(int size)
-      : value_(Eigen::VectorXd::Zero(size)) {}
-  explicit SimpleAbstractType(const Eigen::VectorXd& value)
-      : value_(value) {}
+  explicit SimpleAbstractType(int size) : value_(Eigen::VectorXd::Zero(size)) {}
+  explicit SimpleAbstractType(const Eigen::VectorXd& value) : value_(value) {}
   const Eigen::VectorXd& value() const { return value_; }
+
  private:
   Eigen::VectorXd value_;
 };
@@ -85,8 +84,9 @@ TEST_P(PassThroughTest, VectorThroughPassThroughSystem) {
   if (!is_abstract_) {
     output = pass_through_->get_output_port(0).Eval(*context_);
   } else {
-    output = pass_through_->get_output_port(0).
-          Eval<SimpleAbstractType>(*context_).value();
+    output = pass_through_->get_output_port(0)
+                 .Eval<SimpleAbstractType>(*context_)
+                 .value();
   }
   if (use_default_value_) {
     EXPECT_EQ(output, default_value_);
@@ -109,8 +109,9 @@ TEST_P(PassThroughTest, VectorThroughPassThroughSystem) {
   if (!is_abstract_) {
     output = pass_through_->get_output_port(0).Eval(*context_);
   } else {
-    output = pass_through_->get_output_port(0).
-        Eval<SimpleAbstractType>(*context_).value();
+    output = pass_through_->get_output_port(0)
+                 .Eval<SimpleAbstractType>(*context_)
+                 .value();
   }
   EXPECT_EQ(input_value_, output);
 }

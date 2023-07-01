@@ -26,8 +26,9 @@ GTEST_TEST(BarycentricSystemTest, MatrixGain) {
                                       {-1., 1.}});
 
   // Compute mesh values to match the desired output of the MatrixGain.
-  Eigen::MatrixXd values =
-      bary.MeshValuesFrom([A](const auto& x) { return A * x; });
+  Eigen::MatrixXd values = bary.MeshValuesFrom([A](const auto& x) {
+    return A * x;
+  });
 
   // Quick sanity check of the barycentric mesh.
   Vector2d test{-.5, .5}, test_output;

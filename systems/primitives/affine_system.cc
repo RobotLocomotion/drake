@@ -119,7 +119,7 @@ void TimeVaryingAffineSystem<T>::CalcOutputY(
     const MatrixX<T> Ct = C(t);
     DRAKE_DEMAND(Ct.rows() == num_outputs_ && Ct.cols() == num_states_);
     const VectorX<T>& x =
-        (this->time_period() == 0.)
+        (this->time_period() == 0.0)
             ? dynamic_cast<const BasicVector<T>&>(
                   context.get_continuous_state_vector())
                   .get_value()
@@ -168,7 +168,9 @@ void TimeVaryingAffineSystem<T>::DoCalcTimeDerivatives(
 template <typename T>
 EventStatus TimeVaryingAffineSystem<T>::CalcDiscreteUpdate(
     const Context<T>& context, DiscreteValues<T>* updates) const {
-  if (num_states_ == 0 || time_period_ == 0.0) return EventStatus::DidNothing();
+  if (num_states_ == 0 || time_period_ == 0.0) {
+    return EventStatus::DidNothing();
+  }
 
   const T t = context.get_time();
 
@@ -237,7 +239,6 @@ AffineSystem<T>::AffineSystem(const Eigen::Ref<const Eigen::MatrixXd>& A,
                               const Eigen::Ref<const Eigen::MatrixXd>& C,
                               const Eigen::Ref<const Eigen::MatrixXd>& D,
                               const Eigen::Ref<const Eigen::VectorXd>& y0,
-
                               double time_period)
     : AffineSystem<T>(SystemTypeTag<AffineSystem>{}, A, B, f0, C, D, y0,
                       time_period) {}
@@ -433,7 +434,7 @@ void AffineSystem<T>::CalcOutputY(const Context<T>& context,
 
   if (has_meaningful_C_) {
     const VectorX<T>& x =
-        (this->time_period() == 0.)
+        (this->time_period() == 0.0)
             ? dynamic_cast<const BasicVector<T>&>(
                   context.get_continuous_state_vector())
                   .get_value()
@@ -486,6 +487,11 @@ EventStatus AffineSystem<T>::CalcDiscreteUpdate(
   return EventStatus::Succeeded();
 }
 
+// clang-format off
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((
+    &TimeVaryingAffineSystem<T>::template ConfigureDefaultAndRandomStateFrom<U>
+))
+// clang-format on
 template <typename T>
 void AffineSystem<T>::UpdateCoefficients(
     const Eigen::Ref<const Eigen::MatrixXd>& new_A,

@@ -689,10 +689,8 @@ TEST_F(SymbolicVectorSystemAutoDiffXdTest, AutodiffXdFullGradient) {
   EXPECT_TRUE(
       CompareMatrices(math::ExtractValue(xdotval),
                       Vector1d{-xval_ * pval_[0] + xval_ * xval_ * xval_}));
-  EXPECT_TRUE(
-      CompareMatrices(xdotval[0].derivatives(),
-                      expected_xdotval0_deriv_,
-                      1.0e-15));
+  EXPECT_TRUE(CompareMatrices(xdotval[0].derivatives(),
+                              expected_xdotval0_deriv_, 1.0e-15));
 
   const auto& yval = autodiff_system_->get_output_port(0)
                          .template Eval<BasicVector<AutoDiffXd>>(*context_)
@@ -733,14 +731,13 @@ TEST_F(SymbolicVectorSystemAutoDiffXdTest, AutodiffXdGradientRelativeToState) {
   const auto xdotval =
       autodiff_system_->EvalTimeDerivatives(*context_).CopyToVector();
   EXPECT_TRUE(CompareMatrices(xdotval[0].derivatives(),
-                              expected_xdotval0_deriv_.head<2>(),
-                              1.0e-15));
+                              expected_xdotval0_deriv_.head<2>(), 1.0e-15));
 
   const auto& yval = autodiff_system_->get_output_port(0)
                          .template Eval<BasicVector<AutoDiffXd>>(*context_)
                          .get_value();
-  EXPECT_TRUE(CompareMatrices(yval[0].derivatives(),
-                              expected_yval0_deriv_.head<2>()));
+  EXPECT_TRUE(
+      CompareMatrices(yval[0].derivatives(), expected_yval0_deriv_.head<2>()));
 }
 
 TEST_F(SymbolicVectorSystemAutoDiffXdTest,
