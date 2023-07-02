@@ -120,7 +120,7 @@ class TestGeneral(unittest.TestCase):
         B = np.array([[0], [1]])
         f0 = np.array([[0], [0]])
         C = np.array([[0, 1]])
-        D = [0]
+        D = [1]
         y0 = [0]
         system = LinearSystem(A, B, C, D)
         context = system.CreateDefaultContext()

@@ -1,5 +1,6 @@
 #include "drake/systems/primitives/affine_system.h"
 
+#include <iostream>
 #include <set>
 #include <utility>
 
@@ -330,6 +331,18 @@ bool IsMeaningful(const Eigen::Ref<const Eigen::MatrixXd>& m) {
   return m.size() > 0 && (m.array() != 0).any();
 }
 
+void CompareMatrixSize(const Eigen::Ref<const Eigen::MatrixXd>& M1,
+                       const Eigen::Ref<const Eigen::MatrixXd>& M2,
+                       const std::string& matrix_name) {
+  if (M1.rows() != M2.rows() || M1.cols() != M2.cols()) {
+    std::stringstream msg;
+    msg << "New and current ";
+    msg << matrix_name;
+    msg << " D have different sizes.";
+    throw std::runtime_error(msg.str());
+  }
+}
+
 }  // namespace
 
 // Our protected constructor does all of the real work -- everything else
@@ -495,28 +508,21 @@ void AffineSystem<T>::UpdateCoefficients(
     const Eigen::Ref<const Eigen::MatrixXd>& new_C,
     const Eigen::Ref<const Eigen::MatrixXd>& new_D,
     const Eigen::Ref<const Eigen::VectorXd>& new_y0) {
-  if (new_A.rows() != A_.rows() || new_A.cols() != A_.cols()) {
-    throw std::runtime_error("New and current A have different sizes.");
+  CompareMatrixSize(new_A, A_, "A");
+  CompareMatrixSize(new_B, B_, "B");
+  CompareMatrixSize(new_f0, f0_, "f0");
+  CompareMatrixSize(new_C, C_, "C");
+  CompareMatrixSize(new_D, D_, "D");
+  CompareMatrixSize(new_y0, y0_, "y0");
+  const bool is_new_C_meaningful = IsMeaningful(new_C);
+  const bool is_new_D_meaningful = IsMeaningful(new_D);
+
+  if (!has_meaningful_C_ && is_new_C_meaningful) {
+    throw std::runtime_error("new_C makes the output dependent on state.");
   }
 
-  if (new_B.rows() != B_.rows() || new_B.cols() != B_.cols()) {
-    throw std::runtime_error("New and current B have different sizes.");
-  }
-
-  if (new_f0.rows() != f0_.rows()) {
-    throw std::runtime_error("New and current f0 have different sizes.");
-  }
-
-  if (new_C.rows() != C_.rows() || new_C.cols() != C_.cols()) {
-    throw std::runtime_error("New and current C have different sizes.");
-  }
-
-  if (new_D.rows() != D_.rows() || new_D.cols() != D_.cols()) {
-    throw std::runtime_error("New and current D have different sizes.");
-  }
-
-  if (new_y0.rows() != y0_.rows()) {
-    throw std::runtime_error("New and current y0 have different sizes.");
+  if (!has_meaningful_D_ && is_new_D_meaningful) {
+    throw std::runtime_error("new_D makes the output dependent on input.");
   }
 
   A_ = new_A;
@@ -525,8 +531,8 @@ void AffineSystem<T>::UpdateCoefficients(
   C_ = new_C;
   D_ = new_D;
   y0_ = new_y0;
-  has_meaningful_C_ = IsMeaningful(C_);
-  has_meaningful_D_ = IsMeaningful(D_);
+  has_meaningful_C_ = is_new_C_meaningful;
+  has_meaningful_D_ = is_new_D_meaningful;
 }
 
 // clang-format off
