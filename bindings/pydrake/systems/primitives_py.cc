@@ -99,6 +99,8 @@ PYBIND11_MODULE(primitives, m) {
         .def("y0",
             overload_cast_explicit<const VectorXd&>(&AffineSystem<T>::y0),
             doc.AffineSystem.y0.doc)
+        .def("UpdateCoefficients", &AffineSystem<T>::UpdateCoefficients,
+            doc.AffineSystem.UpdateCoefficients.doc)
         // Wrap a few methods from the TimeVaryingAffineSystem parent class.
         // TODO(russt): Move to TimeVaryingAffineSystem if/when that class is
         // wrapped.
