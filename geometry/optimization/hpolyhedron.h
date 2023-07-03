@@ -103,9 +103,6 @@ class HPolyhedron final : public ConvexSet {
   negative tol means it is less likely to remote a constraint.  */
   [[nodiscard]] HPolyhedron ReduceInequalities(double tol = 1E-9) const;
 
-  /** Checks if this HPolyhedron defines an empty set.  */
-  [[nodiscard]] bool IsEmpty() const;
-
   /** Solves a semi-definite program to compute the inscribed ellipsoid.
   From Section 8.4.2 in Boyd and Vandenberghe, 2004, we solve
   @verbatim
@@ -211,6 +208,8 @@ class HPolyhedron final : public ConvexSet {
   std::unique_ptr<ConvexSet> DoClone() const final;
 
   bool DoIsBounded() const final;
+
+  bool DoIsEmpty() const final;
 
   // N.B. No need to override DoMaybeGetPoint here.
 

@@ -31,6 +31,14 @@ bool ConvexSet::IntersectsWith(const ConvexSet& other) const {
   return result.is_success();
 }
 
+bool ConvexSet::DoIsEmpty() const {
+  solvers::MathematicalProgram prog;
+  auto pt = prog.NewContinuousVariables(ambient_dimension());
+  AddPointInSetConstraints(&prog, pt);
+  auto result = solvers::Solve(prog);
+  return !result.is_success();
+}
+
 std::optional<Eigen::VectorXd> ConvexSet::DoMaybeGetPoint() const {
   return std::nullopt;
 }

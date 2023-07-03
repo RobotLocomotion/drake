@@ -4,6 +4,8 @@
 
 #include <fmt/format.h>
 
+#include "drake/solvers/solve.h"
+
 namespace drake {
 namespace geometry {
 namespace optimization {
@@ -66,6 +68,19 @@ bool Intersection::DoIsBounded() const {
   throw std::runtime_error(
       "Determining the boundedness of an Intersection made up of unbounded "
       "elements is not currently supported.");
+}
+
+bool Intersection::DoIsEmpty() const {
+  if (sets_.size() == 0) {
+    // By convention, the empty intersection is nonempty
+    return false;
+  }
+  solvers::MathematicalProgram prog;
+  solvers::VectorXDecisionVariable x =
+      prog.NewContinuousVariables(ambient_dimension(), "x");
+  DoAddPointInSetConstraints(&prog, x);
+  auto result = solvers::Solve(prog);
+  return !result.is_success();
 }
 
 std::optional<VectorXd> Intersection::DoMaybeGetPoint() const {
