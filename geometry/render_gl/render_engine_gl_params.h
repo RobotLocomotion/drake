@@ -3,8 +3,8 @@
 #include <vector>
 
 #include "drake/common/name_value.h"
+#include "drake/geometry/render/light_parameter.h"
 #include "drake/geometry/render/render_label.h"
-#include "drake/geometry/render_gl/light_parameter.h"
 #include "drake/geometry/rgba.h"
 
 namespace drake {
@@ -19,6 +19,7 @@ struct RenderEngineGlParams {
     a->Visit(DRAKE_NVP(default_label));
     a->Visit(DRAKE_NVP(default_diffuse));
     a->Visit(DRAKE_NVP(default_clear_color));
+    a->Visit(DRAKE_NVP(lights));
   }
 
   /** Default render label to apply to a geometry when none is otherwise
@@ -32,7 +33,8 @@ struct RenderEngineGlParams {
   /** The default background color for color images.  */
   Rgba default_clear_color{204 / 255., 229 / 255., 255 / 255., 1.0};
 
-  /** Lights in the scene  */
+  /** Lights in the scene. More than five lights is an error. If no lights are
+   defined, a single directional light, fixed to the camera frame, is used. */
   std::vector<render::LightParameter> lights;
 };
 

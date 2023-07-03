@@ -7,6 +7,7 @@
 
 #include <fmt/format.h>
 
+#include "drake/common/pointer_cast.h"
 #include "drake/common/scope_exit.h"
 #include "drake/common/ssize.h"
 #include "drake/common/text_logging.h"
@@ -19,9 +20,15 @@ namespace internal {
 
 using Eigen::Vector2d;
 using Eigen::Vector3d;
-using geometry::internal::RenderMesh;
 using geometry::internal::LoadRenderMeshFromObj;
+using geometry::internal::RenderMesh;
 using math::RigidTransformd;
+using render::ColorRenderCamera;
+using render::DepthRenderCamera;
+using render::LightParameter;
+using render::RenderCameraCore;
+using render::RenderEngine;
+using render::RenderLabel;
 using std::make_shared;
 using std::make_unique;
 using std::shared_ptr;
@@ -29,11 +36,6 @@ using std::string;
 using std::unique_ptr;
 using std::unordered_map;
 using std::vector;
-using render::ColorRenderCamera;
-using render::DepthRenderCamera;
-using render::RenderCameraCore;
-using render::RenderEngine;
-using render::RenderLabel;
 using systems::sensors::ColorD;
 using systems::sensors::ColorI;
 using systems::sensors::ImageDepth32F;
@@ -48,7 +50,6 @@ namespace fs = std::filesystem;
 
 constexpr char kInternalGroup[] = "render_engine_gl_internal";
 constexpr char kHasTexCoordProperty[] = "has_tex_coord";
-constexpr int MAX_LIGHT_NUM = 5;
 
 // Data to pass through the reification process.
 struct RegistrationData {
@@ -57,50 +58,277 @@ struct RegistrationData {
   const PerceptionProperties& properties;
 };
 
+// A shader program that handles lighting computations. All shaders for color
+// images should derive from *this* class. Depth and label do not need lighting.
 class LightingShader : public ShaderProgram {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(LightingShader)
   LightingShader() : ShaderProgram() {}
 
+  void SetAllLights(const std::vector<LightParameter>& lights) const {
+    DRAKE_DEMAND(lights.size() <= kMaxNumLights);
+    for (int i = 0; i < ssize(lights); ++i) {
+      SetLightParameters(i, lights[i]);
+    }
+    // Set the remaining lights off (invalid light type 0).
+    for (int i = ssize(lights); i < kMaxNumLights; ++i) {
+      glUniform1i(GetLightFieldLocation(i, "type"), 0);
+    }
+  }
+
+  static constexpr int kMaxNumLights{5};
+
+ protected:
+  // Derived classes have the chance to configure additional uniforms.
+  virtual void DoConfigureMoreUniforms() {}
+
+  // This provides GLSL code necessary for performing lighting calculations:
+  //   - Transforms the vertex into device *and* world coordinates.
+  //   - Transforms the normal into world coordinates to be interpolated
+  //     across the triangle (for lighting calculations).
+  // Derived classes are responsible for introducing their own inputs, uniforms
+  // (etc.) and defining the main() function. That main function should do
+  // whatever work is unique to the shader and invoke PrepareLighting() so that
+  // the transformed vertex is evaluated.
+  static constexpr char kVertexShader[] = R"""(
+#version 330
+layout(location = 0) in vec3 p_MV;
+layout(location = 1) in vec3 n_M;
+uniform mat4 T_CM;  // The "model view matrix" (in OpenGl terms).
+uniform mat4 T_DC;  // The "projection matrix" (in OpenGl terms).
+uniform mat4 T_WM;  // The pose of the geometry (model) in the world.
+uniform mat3 T_WM_normals;  // Rotation * inverse_scale to transform normals.
+out vec3 n_W;
+out vec3 p_WV; // Vertex position in world space.
+
+void PrepareLighting() {
+  // gl_Position is p_DV; the vertex position in device coordinates.
+  gl_Position = T_DC * T_CM * vec4(p_MV, 1);
+
+  n_W = normalize(T_WM_normals * n_M);
+  p_WV = (T_WM * vec4(p_MV, 1)).xyz;
+}
+)""";
+
+  // This provides GLSL code necessary for performing lighting calculations.
+  // There is no main() method. Derived classes are responsible for introducing
+  // their own inputs, uniforms (etc.) and defining the main() function. The
+  // main function should compute the diffuse value at the fragment and call
+  // GetIlluminatedColor() to get the illuminated result.
+  static constexpr char kFragmentShader[] = R"""(
+#version 330
+uniform mat4 X_WC;  // Transform light position from camera to world.
+in vec3 n_W;
+in vec3 p_WV;
+
+const int MAX_LIGHT_NUM = 5;
+
+// TODO(SeanCurtis-TRI): We should packing these uniforms more tightly. vec3s
+//   are stored as vec4 anyways, so we might as well reduce the uniform calls
+//   and squeeze the size.
+//
+//   Type is the fourth field of light color.
+//   intensity is the fourth field of atten_coeff.
+//   cos_half_angle is the fourth field of direction.
+struct Light {
+    // 0 for no light
+    // 1 for Point Light
+    // 2 for Spot Light
+    // 3 for Directional Light
+    int type;
+    vec3 color;
+    // Only used for Point and Spot lights. position.xyz expresses the position
+    // of the light in *some* frame. The fourth value determines the frame:
+    // 0 := p_WL, 1 := p_CL.
+    vec4 position;
+    // Attenuation Coefficients (Constant, Linear, Quadratic),
+    // Only used for Point and Spot lights
+    vec3 atten_coeff;
+    float intensity;
+    // Ony used for Spot Lights
+    float cos_half_angle;
+    // Used for Spot lights and directional lights. dir expresses the
+    // direction the light is pointing in *some* frame. position.w determines
+    // the frame: 0 := dir_WL, 1 := dir_CL.
+    vec3 dir;
+};
+
+uniform Light lights[MAX_LIGHT_NUM];
+
+vec3 GetLightPositionInWorld(Light light, vec3 v) {
+  vec3 v_W = v;  // Interpreting v as v_W.
+  if (light.position.w == 1) {
+    v_W = (X_WC * vec4(v, 1.0)).xyz;  // Interpreting v as v_C.
+  }
+  return v_W;
+}
+
+vec3 GetLightDirectionInWorld(Light light, vec3 v) {
+  vec3 v_W = v;  // Interpreting v as v_W.
+  if (light.position.w == 1) {
+    v_W = mat3(X_WC) * v;  // Interpreting v as v_C.
+  }
+  return v_W;
+}
+
+float GetPointExposure(Light light, vec3 dir_FL_W, vec3 nhat_W) {
+  return max(dot(nhat_W, dir_FL_W), 0.0);
+}
+
+float GetSpotExposure(Light light, vec3 dir_FL_W, vec3 nhat_W) {
+  // TODO: Add a penumbra to the light.
+  vec3 dir_L_W = GetLightDirectionInWorld(light, light.dir);
+  // If the angle θ between the light vector and the direction from fragment
+  // to light is greater than the light's half cone angle θₗ it is not
+  // illuminated. Alternatively, no light if cos(θ) < cos(θₗ).
+  float cos_theta = max(dot(dir_FL_W, -dir_L_W), 0.0);
+  if (cos_theta < light.cos_half_angle) {
+      return 0;
+  }
+  return GetPointExposure(light, dir_FL_W, nhat_W);
+}
+
+float GetDirectionalExposure(Light light, vec3 nhat_W) {
+  vec3 dir_L_W = GetLightDirectionInWorld(light, light.dir);
+  return max(dot(nhat_W, normalize(-dir_L_W)), 0.0);
+}
+
+vec3 GetLightIllumination(Light light, vec3 nhat_W) {
+  // Position vector from fragment to light.
+  vec3 p_WL = GetLightPositionInWorld(light, light.position.xyz);
+  // p_WV is interpolated to be p_WF (position of the fragment).
+  vec3 p_FL_W = p_WL - p_WV;
+  float dist_FL = length(p_FL_W);
+  vec3 dir_FL_W = vec3(0, 0, 0);
+  if (dist_FL > 0) {
+    dir_FL_W = p_FL_W / dist_FL;
+  }
+
+  // "Exposure" is the fraction of the light's full luminance that shines on
+  // the given fragment.
+  float exposure;
+  if (light.type == 1) {
+    exposure = GetPointExposure(light, dir_FL_W, nhat_W);
+  } else if (light.type == 2) {
+    exposure = GetSpotExposure(light, dir_FL_W, nhat_W);
+  } else if (light.type == 3) {
+    exposure = GetDirectionalExposure(light, nhat_W);
+  } else {
+      // Invalid light; no exposure.
+      return vec3(0.0, 0.0, 0.0);
+  }
+
+  // Attenuation.
+  float attenuation = 1 / (light.atten_coeff[0] +
+                           light.atten_coeff[1] * dist_FL +
+                           light.atten_coeff[2] * (dist_FL * dist_FL));
+
+  return light.color * exposure * attenuation * light.intensity;
+}
+
+vec4 GetIlluminatedColor(vec4 diffuse) {
+  // NOTE: Depending on triangle size and variance of normal direction over
+  // that triangle, n_W may not be unit length; to play it safe, we blindly
+  // normalize it. Consider *not* normalizing it if it improves performance
+  // without degrading visual quality.
+  vec3 nhat_W = normalize(n_W);
+
+  vec3 illum = vec3(0.0, 0.0, 0.0);
+  for (int i = 0; i < MAX_LIGHT_NUM; i++) {
+    illum += GetLightIllumination(lights[i], nhat_W);
+  }
+  vec4 color = diffuse;
+  color.rgb = illum * diffuse.rgb;
+  color.a = diffuse.a;
+  return color;
+}
+
+)""";
+
+ private:
   GLint GetLightFieldLocation(int index, std::string field_name) const {
-    return GetUniformLocation("lights[" + std::to_string(index) + "]." +
-                              field_name);
+    DRAKE_ASSERT(index >= 0 && index < kMaxNumLights);
+    return GetUniformLocation(fmt::format("lights[{}].{}", index, field_name));
   }
 
-  void SetAllLights(
-    const std::vector<render::LightParameter>& lights) const final {
-    DRAKE_DEMAND(lights.size() <= 5);
-    // Initialize all lights in shader to 0 (the invalid light type, won't be
-    // used if not set later).
-    for (int i = 0; i < MAX_LIGHT_NUM; i++) {
-      glUniform1i(GetLightFieldLocation(i, "light_type"), 0);
-    }
-    for (size_t i = 0; i < lights.size(); i++) {
-      SetLightParameter(i, lights[i]);
-    }
+  void DoConfigureUniforms() final {
+    T_WM_normals_loc_ = GetUniformLocation("T_WM_normals");
+    T_WM_loc_ = GetUniformLocation("T_WM");
+    X_WC_loc_ = GetUniformLocation("X_WC");
+    DoConfigureMoreUniforms();
   }
 
-  void SetLightParameter(int index, const render::LightParameter& light) const {
-    glUniform1i(GetLightFieldLocation(index, "light_type"), light.type);
-    Eigen::Vector3f position = light.position.cast<float>();
-    glUniform3fv(GetLightFieldLocation(index, "position"), 1,
-                 position.data());
+  void DoModelViewMatrix(const Eigen::Matrix4f& X_CW,
+                         const Eigen::Matrix4f& T_WM,
+                         const Eigen::Matrix4f& X_WG,
+                         const Vector3d& scale) const override {
+    // For lighting, we need the normal and position of a fragment in the world
+    // frame. The pose of the fragment (from its corresponding vertices) comes
+    // simply from T_WM. But the normals require a different transform:
+    //
+    //   1. No translation.
+    //   2. Same rotation as vertex positions.
+    //   3. *Inverse* scale as vertex positions.
+    //
+    // If the scale isn't identity, the normal may not be unit length. We rely
+    // on the shader to normalize the scaled normals.
+    // This is the quantity historically referred to as gl_NormalMatrix
+    // (available to glsl in the "compatibility profile"). See
+    // https://www.cs.upc.edu/~robert/teaching/idi/GLSLangSpec.4.50.pdf.
+    const Eigen::DiagonalMatrix<float, 3, 3> S_GM_normal(
+        Vector3<float>(1.0 / scale(0), 1.0 / scale(1), 1.0 / scale(2)));
+    const Eigen::Matrix3f X_WM_Normal = X_WG.block<3, 3>(0, 0) * S_GM_normal;
+    glUniformMatrix3fv(T_WM_normals_loc_, 1, GL_FALSE, X_WM_Normal.data());
+    glUniformMatrix4fv(T_WM_loc_, 1, GL_FALSE, T_WM.data());
+
+    Eigen::Matrix4f X_WC = Eigen::Matrix4f::Identity();
+    X_WC.block<3, 3>(0, 0) = X_CW.block<3, 3>(0, 0).transpose();
+    X_WC.block<3, 1>(0, 3) = X_WC.block<3, 3>(0, 0) * (-X_CW.block<3, 1>(0, 3));
+    glUniformMatrix4fv(X_WC_loc_, 1, GL_FALSE, X_WC.data());
+  }
+
+  void SetLightParameters(int index, const LightParameter& light) const {
+    // TODO(SeanCurtis-TRI): Consider packing "type" in with "color" and
+    // cos_half_angle in with dir (as vec4). This would reduce the number of
+    // uniforms and OpenGL context changes.
+    glUniform1i(GetLightFieldLocation(index, "type"),
+                static_cast<int>(light.type));
+    Eigen::Vector3f color = light.color.rgba().head<3>().cast<float>();
+    glUniform3fv(GetLightFieldLocation(index, "color"), 1,
+                 color.data());
+    Eigen::Vector4f position;
+    position.head<3>() = light.position.cast<float>();
+    position(3) = light.frame == render::LightFrame::kWorld ? 0.0f : 1.0f;
+    glUniform4fv(GetLightFieldLocation(index, "position"), 1, position.data());
     Eigen::Vector3f atten_coeff = light.attenuation_values.cast<float>();
     glUniform3fv(GetLightFieldLocation(index, "atten_coeff"), 1,
                 atten_coeff.data());
     glUniform1f(GetLightFieldLocation(index, "intensity"),
                 static_cast<float>(light.intensity));
-    // Note: Using the cosine here to speed up the shader so it doesn't have to
-    // use cos or acos internally.
-    glUniform1f(GetLightFieldLocation(index, "cone_angle"),
-                static_cast<float>(cos(light.cone_angle * (M_PI / 180.0))));
-    Eigen::Vector3f light_direction = light.light_direction.cast<float>();
-    glUniform3fv(GetLightFieldLocation(index, "light_dir"), 1,
-                 light_direction.data());
+
+    if (light.type == render::LightType::kSpot) {
+      // Note: Using the cosine here to speed up the shader so it doesn't have
+      // to use cos or acos internally.
+      glUniform1f(GetLightFieldLocation(index, "cos_half_angle"),
+                  static_cast<float>(cos(light.cone_angle * (M_PI / 180.0))));
+    }
+
+    if (light.type != render::LightType::kPoint) {
+      Eigen::Vector3f direction = light.direction.cast<float>();
+      glUniform3fv(GetLightFieldLocation(index, "dir"), 1, direction.data());
+    }
   }
 
-  // Children of the Lighting Shader cannot use this function.
-  void SetLightDirection(const Vector3<float>&) const final {}
+  // The location of the "T_WM_normals" uniform in the shader. This transforms
+  // the *normals* to the world frame.
+  GLint T_WM_normals_loc_{};
+
+  // The location of the "T_WM" uniform in the shader.
+  GLint T_WM_loc_{};
+
+  // The transform between world and camera frame (used for transforming light
+  // positions defined in the camera frame).
+  GLint X_WC_loc_{};
 };
 
 /* The built-in shader for Rgba diffuse colored objects. This shader supports
@@ -111,7 +339,11 @@ class DefaultRgbaColorShader final : public LightingShader {
 
   explicit DefaultRgbaColorShader(const Rgba& default_diffuse)
       : LightingShader(), default_diffuse_(default_diffuse) {
-    LoadFromSources(kVertexShader, kFragmentShader);
+    // TODO(SeanCurtis-TRI): See if I can't come up with a more elegant way for
+    // derived classes to exercise LightShader's GLSL functionality.
+    LoadFromSources(
+        fmt::format("{}{}", LightingShader::kVertexShader, kVertexShader),
+        fmt::format("{}{}", LightingShader::kFragmentShader, kFragmentShader));
   }
 
   void SetInstanceParameters(const ShaderProgramData& data) const final {
@@ -120,10 +352,8 @@ class DefaultRgbaColorShader final : public LightingShader {
   }
 
  private:
-  void DoConfigureUniforms() final {
+  void DoConfigureMoreUniforms() final {
     diffuse_color_loc_ = GetUniformLocation("diffuse_color");
-    normal_mat_loc_ = GetUniformLocation("normal_mat");
-    geometry_world_loc_ = GetUniformLocation("T_WG");
   }
 
   std::unique_ptr<ShaderProgram> DoClone() const final {
@@ -138,27 +368,6 @@ class DefaultRgbaColorShader final : public LightingShader {
     return ShaderProgramData{shader_id(), AbstractValue::Make(v4)};
   }
 
-  void DoModelViewMatrix(const Eigen::Matrix4f& X_CglM,
-                         const Vector3d& scale) const override {
-    // When rendering *illuminated* objects, we have to account for the surface
-    // normals. In principle, we only need to *rotate* the normals from the
-    // model frame to the camera frame. However, if the geometry has undergone
-    // non-uniform scaling, we must *first* scale the normals by the inverse
-    // scale. So, the normal_mat below handles the scaling and the rotation. It
-    // relies on the shader to handle normalization of the scaled normals.
-    // This is the quantity historically referred to as gl_NormalMatrix
-    // (available to glsl in the "compatibility profile"). See
-    // https://www.cs.upc.edu/~robert/teaching/idi/GLSLangSpec.4.50.pdf.
-    const Eigen::DiagonalMatrix<float, 3, 3> inv_scale(
-        Vector3<float>(1.0 / scale(0), 1.0 / scale(1), 1.0 / scale(2)));
-    const Eigen::Matrix3f normal_mat = X_CglM.block<3, 3>(0, 0) * inv_scale;
-    glUniformMatrix3fv(normal_mat_loc_, 1, GL_FALSE, normal_mat.data());
-  }
-
-  void DoGeometryToWorldMatrix(const Eigen::Matrix4f& X_WG) const override {
-    glUniformMatrix4fv(geometry_world_loc_, 1, GL_FALSE, X_WG.data());
-  }
-
   // The default diffuse value to apply if missing the ("phong", "diffuse")
   // property.
   Rgba default_diffuse_;
@@ -166,115 +375,21 @@ class DefaultRgbaColorShader final : public LightingShader {
   // The location of the "diffuse_color" uniform in the shader.
   GLint diffuse_color_loc_{};
 
-  // The location of the "normal_mat" uniform in the shader.
-  GLint normal_mat_loc_{};
-
-  // The location of the "geometry to world" juniform in the shader.
-  GLint geometry_world_loc_{};
-
-  // The location of the "light_dir_C" uniform in the shader.
-  GLint light_dir_loc_{};
-
-  // The vertex shader:
-  //   - Transforms the vertex into device *and* camera coordinates.
-  //   - Transforms the normal into camera coordinates to be interpolated
-  //     across the triangle.
+  // For diffuse color, we only need to transform the vertex data and use the
+  // diffuse color in the fragment shader. So, we'll simply invoke the lighting
+  // function.
   static constexpr char kVertexShader[] = R"""(
-#version 330
-layout(location = 0) in vec3 p_MV;
-layout(location = 1) in vec3 n_M;
-uniform mat4 T_CM;  // The "model view matrix" (in OpenGl terms).
-uniform mat4 T_DC;  // The "projection matrix" (in OpenGl terms).
-uniform mat4 T_WG;  // The Geometry to World Matrix.
-uniform mat3 normal_mat;
-varying vec3 n_C;
-out vec3 frag_position; // Vertex position in world space
 void main() {
-  // p_DV; the vertex position in device coordinates.
-  gl_Position = T_DC * T_CM * vec4(p_MV, 1);
-
-  // R_CM = normal_mat (although R may also include scaling).
-  n_C = normal_mat * n_M;
-  frag_position = (T_WG * vec4(p_MV, 1)).xyz;
+  PrepareLighting();
 })""";
 
-  // For each fragment from a geometry, compute the per-fragment, illuminated
-  // color.
+  // Simply illuminate the diffuse color at the fragment and output it.
   static constexpr char kFragmentShader[] = R"""(
-#version 330
 uniform vec4 diffuse_color;
-varying vec3 n_C;
 out vec4 color;
-in vec3 frag_position;
-
-const int MAX_LIGHT_NUM = 5;
-
-struct Light {
-    // 0 for no light
-    // 1 for Point Light
-    // 2 for Spot Light
-    // 3 for Directional Light
-    int light_type;
-    // Only used for Point and Spot lights
-    vec3 position;
-    // Attenuation Coefficients (Constant, Linear, Quadratic),
-    // Only used for Point and Spot lights
-    vec3 atten_coeff;
-    float intensity;
-    // Ony used for Spot Lights
-    float cone_angle;
-    // Used for Spot lights and directional lights.
-    vec3 light_dir;
-};
-
-uniform Light lights[MAX_LIGHT_NUM];
-
-vec3 GetPointLightRGB(Light light, vec3 nhat_C, vec3 rgb) {
-    // The light direction in a point light is just the vector between the light and object.
-    vec3 light_dir = light.position - frag_position;
-    float distance = length(light_dir);
-    float attenuation = 1 / (light.atten_coeff[0] + light.atten_coeff[1] * distance +
-        light.atten_coeff[2] * (distance * distance));
-    return rgb * max(dot(nhat_C, normalize(light_dir)), 0.0) * light.intensity * attenuation;
-}
-
-vec3 GetSpotLightRGB(Light light, vec3 nhat_C, vec3 rgb) {
-    // The light direction in a spot light is just the vector between the light and object.
-    vec3 norm_light_to_obj = normalize(light.position - frag_position);
-    vec3 norm_light_dir = normalize(-light.light_dir);
-    float diff = max(dot(norm_light_to_obj, norm_light_dir), 0.0);
-    // Higher cosine value is closer to light dir
-    if (diff < light.cone_angle) {
-        return vec3(0.0, 0.0, 0.0);
-    }
-    return GetPointLightRGB(light, nhat_C, rgb);
-}
-
-vec3 GetLightRGB(Light light, vec3 nhat_C, vec3 rgb) {
-    if (light.light_type == 1) {
-        return GetPointLightRGB(light, nhat_C, rgb);
-    } else if (light.light_type == 2) {
-        return GetSpotLightRGB(light, nhat_C, rgb);
-    } else if (light.light_type == 3) {
-        // Directional light
-        return rgb * max(dot(nhat_C, normalize(-light.light_dir)), 0.0) * light.intensity;
-    } else {
-        // Invalid light
-        return vec3(0.0, 0.0, 0.0);
-    }
-}
 
 void main() {
-  // NOTE: Depending on triangle size and variance of normal direction over
-  // that triangle, n_C may not be unit length; to play it safe, we blindly
-  // normalize it. Consider *not* normalizing it if it improves performance
-  // without degrading visual quality.
-  vec3 nhat_C = normalize(n_C);
-  color.rgb = vec3(0.0, 0.0, 0.0);
-  for (int i = 0; i < MAX_LIGHT_NUM; i++) {
-    color.rgb += GetLightRGB(lights[i], nhat_C, diffuse_color.rgb);
-  }
-  color.a = diffuse_color.a;
+  color = GetIlluminatedColor(diffuse_color);
 })""";
 };
 
@@ -295,7 +410,9 @@ class DefaultTextureColorShader final : public LightingShader {
   explicit DefaultTextureColorShader(shared_ptr<TextureLibrary> library)
       : LightingShader(), library_(std::move(library)) {
     DRAKE_DEMAND(library_ != nullptr);
-    LoadFromSources(kVertexShader, kFragmentShader);
+    LoadFromSources(
+        fmt::format("{}{}", LightingShader::kVertexShader, kVertexShader),
+        fmt::format("{}{}", LightingShader::kFragmentShader, kFragmentShader));
   }
 
   void SetInstanceParameters(const ShaderProgramData& data) const final {
@@ -307,11 +424,9 @@ class DefaultTextureColorShader final : public LightingShader {
   }
 
  private:
-  void DoConfigureUniforms() final {
+  void DoConfigureMoreUniforms() final {
     diffuse_map_loc_ = GetUniformLocation("diffuse_map");
     diffuse_scale_loc_ = GetUniformLocation("diffuse_map_scale");
-    normal_mat_loc_ = GetUniformLocation("normal_mat");
-    geometry_world_loc_ = GetUniformLocation("T_WG");
   }
 
   std::unique_ptr<ShaderProgram> DoClone() const final {
@@ -350,27 +465,6 @@ class DefaultTextureColorShader final : public LightingShader {
       InstanceData{*texture_id, scale.cast<float>()})};
   }
 
-  void DoModelViewMatrix(const Eigen::Matrix4f& X_CglM,
-                         const Vector3d& scale) const override {
-    // TODO(SeanCurtis-TRI) Refactor the phong lighting intelligence across
-    //  the color shaders so I don't get code duplication.
-
-    // When rendering *illuminated* objects, we have to account for the surface
-    // normals. In principle, we only need to *rotate* the normals from the
-    // model frame to the camera frame. However, if the geometry has undergone
-    // non-uniform scaling, we must *first* scale the normals by the inverse
-    // scale. So, the normal_mat below handles the scaling and the rotation. It
-    // relies on the shader to handle normalization of the scaled normals.
-    const Eigen::DiagonalMatrix<float, 3, 3> inv_scale(
-        Vector3<float>(1.0 / scale(0), 1.0 / scale(1), 1.0 / scale(2)));
-    const Eigen::Matrix3f normal_mat = X_CglM.block<3, 3>(0, 0) * inv_scale;
-    glUniformMatrix3fv(normal_mat_loc_, 1, GL_FALSE, normal_mat.data());
-  }
-
-  void DoGeometryToWorldMatrix(const Eigen::Matrix4f& X_WG) const override {
-    glUniformMatrix4fv(geometry_world_loc_, 1, GL_FALSE, X_WG.data());
-  }
-
   std::shared_ptr<TextureLibrary> library_{};
 
   // The location of the "diffuse_map" uniform in the shader.
@@ -379,123 +473,34 @@ class DefaultTextureColorShader final : public LightingShader {
   // The location of the "diffuse_scale" uniform in the shader.
   GLint diffuse_scale_loc_{};
 
-  // The location of the "normal_mat" uniform in the shader.
-  GLint normal_mat_loc_{};
-
-  // The location of the "geometry to world" uniform in the shader.
-  GLint geometry_world_loc_{};
-
-  // The vertex shader:
-  //   - Transforms the vertex into device *and* camera coordinates.
-  //   - Transforms the normal into camera coordinates to be interpolated
-  //     across the triangle.
+  // For diffuse *map*, we need to propagate texture coordinates along with
+  // transforming the vertex data. So, invoke the lighting function and output
+  // texture coordinates.
   static constexpr char kVertexShader[] = R"""(
-#version 330
-layout(location = 0) in vec3 p_MV;
-layout(location = 1) in vec3 n_M;
 layout(location = 2) in vec2 tex_coord_in;
-uniform mat4 T_CM;  // The "model view matrix" (in OpenGl terms).
-uniform mat4 T_DC;  // The "projection matrix" (in OpenGl terms).
-uniform mat4 T_WG;  // The Geometry to World Matrix.
-uniform mat3 normal_mat;
-varying vec4 p_CV;
-varying vec3 n_C;
-varying vec2 tex_coord;
-out vec3 frag_position; // Vertex position in world space
+out vec2 tex_coord;
 void main() {
-  p_CV = T_CM * vec4(p_MV, 1);
-  gl_Position = T_DC * p_CV;
-
-  n_C = normal_mat * n_M;
+  PrepareLighting();
   // TODO(SeanCurtis-TRI): Support transforms for texture coordinates.
   tex_coord = tex_coord_in;
-  frag_position = (T_WG * vec4(p_MV, 1)).xyz;
 })""";
 
-  // For each fragment from a geometry, compute the per-fragment, illuminated
-  // color.
+  // We define the diffuse color by looking up the diffuse_map and then simply
+  // illuminate it.
   static constexpr char kFragmentShader[] = R"""(
-#version 330
 uniform sampler2D diffuse_map;
 uniform vec2 diffuse_map_scale;
-varying vec4 p_CV;
-varying vec3 n_C;
-varying vec2 tex_coord;
+in vec2 tex_coord;
 out vec4 color;
-in vec3 frag_position;
-
-const int MAX_LIGHT_NUM = 5;
-
-struct Light {
-    // 0 for no light
-    // 1 for Point Light
-    // 2 for Spot Light
-    // 3 for Directional Light
-    int light_type;
-    // Only used for Point and Spot lights
-    vec3 position;
-    // Attenuation Coefficients (Constant, Linear, Quadratic),
-    // Only used for Point and Spot lights
-    vec3 atten_coeff;
-    float intensity;
-    // Ony used for Spot Lights
-    float cone_angle;
-    // Used for Spot lights and directional lights.
-    vec3 light_dir;
-};
-
-uniform Light lights[MAX_LIGHT_NUM];
-
-vec3 GetPointLightRGB(Light light, vec3 nhat_C, vec3 rgb) {
-    // The light direction in a point light is just the vector between the light and object.
-    vec3 light_dir = light.position - frag_position;
-    float distance = length(light_dir);
-    float attenuation = 1 / (light.atten_coeff[0] + light.atten_coeff[1] * distance +
-        light.atten_coeff[2] * (distance * distance));
-    return rgb * max(dot(nhat_C, normalize(light_dir)), 0.0) * light.intensity * attenuation;
-}
-
-vec3 GetSpotLightRGB(Light light, vec3 nhat_C, vec3 rgb) {
-    // The light direction in a spot light is just the vector between the light and object.
-    vec3 norm_light_to_obj = normalize(light.position - frag_position);
-    vec3 norm_light_dir = normalize(-light.light_dir);
-    float diff = max(dot(norm_light_to_obj, norm_light_dir), 0.0);
-    // Higher cosine value is closer to light dir
-    if (diff < light.cone_angle) {
-        return vec3(0.0, 0.0, 0.0);
-    }
-    return GetPointLightRGB(light, nhat_C, rgb);
-}
-
-vec3 GetLightRGB(Light light, vec3 nhat_C, vec3 rgb) {
-    if (light.light_type == 1) {
-        return GetPointLightRGB(light, nhat_C, rgb);
-    } else if (light.light_type == 2) {
-        return GetSpotLightRGB(light, nhat_C, rgb);
-    } else if (light.light_type == 3) {
-        // Directional light
-        return rgb * max(dot(nhat_C, normalize(-light.light_dir)), 0.0) * light.intensity;
-    } else {
-        // Invalid light
-        return vec3(0.0, 0.0, 0.0);
-    }
-}
 
 void main() {
-  // NOTE: Depending on triangle size and variance of normal direction over
-  // that triangle, n_C may not be unit length; consider normalizing it.
-  vec3 nhat_C = normalize(n_C);
   // Note: We're clipping the texture coordinates *here* using fract() rather
   //  than setting the texture to GL_REPEAT. Setting it GL_REPEAT can lead to
   //  unsightly visual artifacts when a texture is supposed to exactly align
   //  with a triangle edge, but there are floating point errors in interpolation
   //  which cause the texture to be sampled on the other side.
   vec4 map_rgba = texture(diffuse_map, fract(tex_coord * diffuse_map_scale));
-  color.rgb = vec3(0.0, 0.0, 0.0);
-  for (int i = 0; i < MAX_LIGHT_NUM; i++) {
-    color.rgb += GetLightRGB(lights[i], nhat_C, map_rgba.rgb);
-  }
-  color.a = map_rgba.a;
+  color = GetIlluminatedColor(map_rgba);
 })""";
 };
 
@@ -657,13 +662,39 @@ void main() {
 })""";
 };
 
+// We want to make sure the lights are as clean as possible. So, we'll
+// re-normalize unit vectors (where possible). We're not testing for "bad"
+// values because those values which *might* be considered "bad" can be used
+// by users for debugging.
+RenderEngineGlParams CleanupLights(RenderEngineGlParams params) {
+  if (ssize(params.lights) > LightingShader::kMaxNumLights) {
+    throw std::runtime_error(
+        fmt::format("RenderEngineGl supports up to five lights; {} specified.",
+                    ssize(params.lights)));
+  }
+  for (auto& light : params.lights) {
+    if (light.type != render::LightType::kPoint) {
+      const double dir_magnitude = light.direction.norm();
+      if (dir_magnitude > 0) {
+        // Zero vectors will remain zero, blacking the light out. But we want
+        // all other vectors as close to unit length as possible.
+        light.direction /= dir_magnitude;
+      }
+    }
+  }
+  return params;
+}
+
 }  // namespace
 
 RenderEngineGl::RenderEngineGl(RenderEngineGlParams params)
     : RenderEngine(params.default_label),
       opengl_context_(make_unique<OpenGlContext>()),
       texture_library_(make_shared<TextureLibrary>()),
-      parameters_(std::move(params)) {
+      parameters_(CleanupLights(std::move(params))) {
+  // The default light parameters have been crafted to create the default
+  // "headlamp" camera.
+  fallback_lights_.push_back({.type = render::LightType::kDirectional});
   // Configuration of basic OpenGl state.
   opengl_context_->MakeCurrent();
 
@@ -900,8 +931,6 @@ unique_ptr<RenderEngine> RenderEngineGl::DoClone() const {
 
 void RenderEngineGl::RenderAt(const ShaderProgram& shader_program,
                               RenderType render_type) const {
-  // TODO(SeanCurtis-TRI) Consider storing a float-version of X_CW so it's only
-  //  created once per camera declaration (and not once per shader).
   const Eigen::Matrix4f& X_CW = X_CW_.GetAsMatrix4().matrix().cast<float>();
   // We rely on the calling method to clear all appropriate buffers; this method
   // may be called multiple times per image (based on the number of shaders
@@ -919,11 +948,7 @@ void RenderEngineGl::RenderAt(const ShaderProgram& shader_program,
     //  Generally, this wouldn't expect much savings; an instance is only
     //  rendered once per image type. So, for three image types, I'd cast three
     //  times. Stored, I'd cast once.
-    shader_program.SetModelViewMatrix(
-        X_CW * instance.X_WG.GetAsMatrix4().cast<float>(), instance.scale);
-
-    Eigen::Matrix4f X_WG = instance.X_WG.GetAsMatrix4().cast<float>();
-    shader_program.SetGeometryToWorldMatrix(X_WG, instance.scale.cast<float>());
+    shader_program.SetModelViewMatrix(X_CW, instance.X_WG, instance.scale);
 
     glDrawElements(GL_TRIANGLES, geometry.index_buffer_size,
                    GL_UNSIGNED_INT, 0);
@@ -958,16 +983,18 @@ void RenderEngineGl::DoRenderColorImage(const ColorRenderCamera& camera,
       camera.core().CalcProjectionMatrix().cast<float>();
 
   for (const auto& [_, shader_ptr] : shader_programs_[RenderType::kColor]) {
-    const ShaderProgram& shader_program = *shader_ptr;
-    shader_program.Use();
+    const auto* lighting_program =
+        dynamic_pointer_cast_or_throw<const LightingShader>(shader_ptr.get());
+    // All color image shaders should inherit form LightingShader.
+    DRAKE_DEMAND(lighting_program != nullptr);
+    lighting_program->Use();
 
-    shader_program.SetLightDirection(light_dir_C_);
-    shader_program.SetProjectionMatrix(T_DC);
-    shader_program.SetAllLights(parameters_.lights);
+    lighting_program->SetProjectionMatrix(T_DC);
+    lighting_program->SetAllLights(active_lights());
 
     // Now I need to render the geometries.
-    RenderAt(shader_program, RenderType::kColor);
-    shader_program.Unuse();
+    RenderAt(*lighting_program, RenderType::kColor);
+    lighting_program->Unuse();
   }
   glDisable(GL_BLEND);
 
@@ -1460,6 +1487,13 @@ ShaderProgramData RenderEngineGl::GetShaderProgram(
   // geometry.
   DRAKE_DEMAND(data.has_value());
   return *data;
+}
+
+void RenderEngineGl::SetDefaultLightPosition(const Vector3<double>& p_DL) {
+  DRAKE_DEMAND(fallback_lights_.size() == 1);
+  // This is a stopgap solution until we can completely eliminate this method.
+  // p_DC = (0, 0, 1). position = p_CL, so P_CL = p_DL - p_DC.
+  fallback_lights_[0].position = p_DL - Vector3<double>{0, 0, 1};
 }
 
 }  // namespace internal

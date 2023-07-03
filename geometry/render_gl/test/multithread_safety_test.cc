@@ -17,7 +17,6 @@
 #include "drake/geometry/render_gl/factory.h"
 #include "drake/geometry/render_gl/internal_opengl_context.h"
 #include "drake/geometry/render_gl/internal_texture_library.h"
-#include "drake/geometry/render_gl/light_parameter.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/systems/sensors/image.h"
 #include "drake/systems/sensors/image_writer.h"
@@ -49,8 +48,6 @@ using render::ClippingRange;
 using render::ColorRenderCamera;
 using render::RenderCameraCore;
 using render::RenderEngine;
-using render::LightParameter;
-using render::LightType;
 using render_gl::internal::OpenGlContext;
 using render_gl::internal::TextureLibrary;
 using render_gl::internal::TextureLibraryTester;
@@ -198,16 +195,6 @@ Vector4<int> RgbaVector(const ImageRgba8U::T* data) {
   return Vector4<int>(data[0], data[1], data[2], data[3]);
 }
 
-/* Helper to construct a downward facing light for RenderEngineGlParams. */
-LightParameter ConstructDownwardDirectionalLight() {
-  LightParameter directional_light;
-  directional_light.type = LightType::DIRECTIONAL;
-  directional_light.intensity = 1.0;
-  // Downard facing light.
-  directional_light.light_direction = {0, 0, -1};
-  return directional_light;
-}
-
 // TODO(SeanCurtis-TRI): This test subsumes the test in thread_test.cc (almost).
 // It should be expanded to include the AsyncMode features of that test and then
 // thread_test.cc can be removed.
@@ -257,9 +244,7 @@ LightParameter ConstructDownwardDirectionalLight() {
      the dynamic geometries doesn't depend on the OpenGlContext, so other tests
      on correct posing of dynamic geometries are sufficient. */
 GTEST_TEST(ThreadSafetyTest, RenderEngineGl) {
-  RenderEngineGlParams params;
-  params.lights = {ConstructDownwardDirectionalLight()};
-  std::unique_ptr<RenderEngine> source = MakeRenderEngineGl(params);
+  std::unique_ptr<RenderEngine> source = MakeRenderEngineGl();
 
   const Rgba red(1, 0, 0);
   const Rgba blue(0, 0, 1);

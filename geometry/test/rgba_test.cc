@@ -96,6 +96,19 @@ GTEST_TEST(RgbaTest, Errors) {
   expect_error(r, g, b, std::numeric_limits<double>::quiet_NaN());
 }
 
+GTEST_TEST(RgbaTest, Product) {
+  const Rgba a(0.25, 0.5, 0.75, 0.875);
+  const Rgba b(0.75, 0.5, 0.25, 0.875);
+  const Rgba c(a.r() * b.r(), a.g() * b.g(), a.b() * b.b(), a.a() * b.a());
+  EXPECT_EQ(a * b, c);
+
+  const Rgba a_color_scaled(a.r() * 1.1, a.g() * 1.1, a.b() * 1.1, a.a());
+  EXPECT_EQ(a.scale_rgb(1.1), a_color_scaled);
+
+  // Rgba channel values saturate at 1.
+  EXPECT_EQ(a.scale_rgb(10), Rgba(1, 1, 1, a.a()));
+}
+
 /** Confirm that this can be serialized appropriately. */
 GTEST_TEST(RgbaTest, Serialization) {
   {
