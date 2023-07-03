@@ -81,6 +81,10 @@ bool Spectrahedron::DoIsBounded() const {
       "Spectrahedron::IsBounded() is not implemented yet.");
 }
 
+bool Spectrahedron::DoIsEmpty() const {
+  throw std::runtime_error("Spectrahedron::IsEmpty() is not implemented yet.");
+}
+
 bool Spectrahedron::DoPointInSet(const Eigen::Ref<const VectorXd>& x,
                                  double tol) const {
   return sdp_->CheckSatisfied(sdp_->GetAllConstraints(), x, tol);

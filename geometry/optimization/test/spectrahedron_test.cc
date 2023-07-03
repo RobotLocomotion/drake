@@ -63,6 +63,7 @@ GTEST_TEST(SpectrahedronTest, TrivialSdp1) {
   Spectrahedron spect(prog);
   EXPECT_EQ(spect.ambient_dimension(), 3 * (3 + 1) / 2);
   DRAKE_EXPECT_THROWS_MESSAGE(spect.IsBounded(), ".*not implemented yet.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(spect.IsEmpty(), ".*not implemented yet.*");
 
   const double kTol{1e-6};
   EXPECT_TRUE(spect.PointInSet(x_star, kTol));
