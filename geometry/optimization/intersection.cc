@@ -4,6 +4,8 @@
 
 #include <fmt/format.h>
 
+#include "drake/solvers/solve.h"
+
 namespace drake {
 namespace geometry {
 namespace optimization {

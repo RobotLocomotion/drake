@@ -48,6 +48,9 @@ GTEST_TEST(VPolytopeTest, TriangleTest) {
   // Check IsBounded (which is trivially true for V Polytopes).
   EXPECT_TRUE(V.IsBounded());
 
+  // Test IsEmpty (which is trivially false for V Polytopes).
+  EXPECT_FALSE(V.IsEmpty());
+
   const Eigen::Vector2d center = triangle.rowwise().mean();
   // Mosek worked with 1e-15.
   // Gurobi worked with 1e-15 (see the note about alpha_sol in the method).
