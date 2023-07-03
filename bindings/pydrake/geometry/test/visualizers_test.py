@@ -238,6 +238,14 @@ class TestGeometryVisualizers(unittest.TestCase):
         copy.copy(camera)
         meshcat.SetCamera(camera=camera, path="mypath")
 
+        packed = meshcat._GetPackedObject(path="/test/box")
+        self.assertGreater(len(packed), 0)
+        packed = meshcat._GetPackedTransform(path="/test/box")
+        self.assertGreater(len(packed), 0)
+        packed = meshcat._GetPackedProperty(path="/Background",
+                                            property="visible")
+        self.assertGreater(len(packed), 0)
+
     def test_meshcat_animation(self):
         animation = mut.MeshcatAnimation(frames_per_second=64)
         self.assertEqual(animation.frames_per_second(), 64)
