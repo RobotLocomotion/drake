@@ -57,6 +57,9 @@ GTEST_TEST(HyperellipsoidTest, UnitSphereTest) {
   // Test MaybeGetPoint.
   EXPECT_FALSE(E.MaybeGetPoint().has_value());
 
+  // Test IsEmpty (which is trivially false for Hyperellipsoid).
+  EXPECT_FALSE(E.IsEmpty());
+
   // Test PointInSet.
   const Vector3d in1_W{.99, 0, 0}, in2_W{.5, .5, .5}, out1_W{1.01, 0, 0},
       out2_W{1.0, 1.0, 1.0};
@@ -99,6 +102,7 @@ GTEST_TEST(HyperellipsoidTest, DefaultCtor) {
   EXPECT_EQ(dut.ambient_dimension(), 0);
   EXPECT_FALSE(dut.IntersectsWith(dut));
   EXPECT_TRUE(dut.IsBounded());
+  EXPECT_THROW(dut.IsEmpty(), std::exception);
   EXPECT_FALSE(dut.PointInSet(Eigen::VectorXd::Zero(0)));
 }
 

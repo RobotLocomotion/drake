@@ -60,6 +60,9 @@ GTEST_TEST(MinkowskiSumTest, BasicTest) {
   // Test IsBounded.
   EXPECT_TRUE(S.IsBounded());
 
+  // Test IsEmpty.
+  EXPECT_FALSE(S.IsEmpty());
+
   // Test ConvexSets constructor.
   ConvexSets sets;
   sets.emplace_back(P1);
@@ -78,6 +81,7 @@ GTEST_TEST(MinkowskiSumTest, DefaultCtor) {
   EXPECT_EQ(dut.ambient_dimension(), 0);
   EXPECT_FALSE(dut.IntersectsWith(dut));
   EXPECT_TRUE(dut.IsBounded());
+  EXPECT_THROW(dut.IsEmpty(), std::exception);
   EXPECT_FALSE(dut.MaybeGetPoint().has_value());
   EXPECT_FALSE(dut.PointInSet(Eigen::VectorXd::Zero(0)));
 }
@@ -265,6 +269,26 @@ GTEST_TEST(MinkowskiSumTest, NonnegativeScalingTest2) {
       PointInScaledSet(x, t, x_solution, Eigen::Vector2d(0, 1), &prog));
   EXPECT_FALSE(
       PointInScaledSet(x, t, x_solution, Eigen::Vector2d(-1, 0), &prog));
+}
+
+GTEST_TEST(MinkowskiSumTest, EmptyMinkowskiSumTest) {
+  Eigen::MatrixXd A{5, 3};
+  Eigen::VectorXd b{5};
+  // Rows 1-3 define an infeasible set of inequalities.
+  // clang-format off
+  A << 1, 0, 0,
+       1, -1, 0,
+       -1, 0, 1,
+       0, 1, -1,
+       0, 0, -1;
+  b << 1, -1, -1, -1, 0;
+  // clang-format off
+
+  const HPolyhedron H1{A, b};
+  const Point P1(Vector3d{0.1, 1.2, 0.3});
+  const MinkowskiSum S(P1, H1);
+
+  EXPECT_TRUE(S.IsEmpty());
 }
 
 }  // namespace optimization

@@ -328,6 +328,14 @@ std::unique_ptr<ConvexSet> VPolytope::DoClone() const {
   return std::make_unique<VPolytope>(*this);
 }
 
+bool VPolytope::DoIsBounded() const {
+  return true;
+}
+
+bool VPolytope::DoIsEmpty() const {
+  return vertices_.size() == 0;
+}
+
 std::optional<VectorXd> VPolytope::DoMaybeGetPoint() const {
   if (vertices_.cols() == 1) {
     return vertices_.col(0);
