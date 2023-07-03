@@ -57,6 +57,9 @@ GTEST_TEST(HyperellipsoidTest, UnitSphereTest) {
   // Test MaybeGetPoint.
   EXPECT_FALSE(E.MaybeGetPoint().has_value());
 
+  // Test IsEmpty (which is trivially false for Hyperellipsoid).
+  EXPECT_FALSE(E.IsEmpty());
+
   // Test PointInSet.
   const Vector3d in1_W{.99, 0, 0}, in2_W{.5, .5, .5}, out1_W{1.01, 0, 0},
       out2_W{1.0, 1.0, 1.0};

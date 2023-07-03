@@ -56,6 +56,9 @@ GTEST_TEST(PointTest, BasicTest) {
   // Test IsBounded (which is trivially true for Point).
   EXPECT_TRUE(P.IsBounded());
 
+  // Test IsEmpty (which is trivially false for Point).
+  EXPECT_FALSE(P.IsEmpty());
+
   // Test set_x().
   const Vector3d p2_W{6.2, -.23, -8.2};
   P.set_x(p2_W);

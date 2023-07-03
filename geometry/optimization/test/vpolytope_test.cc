@@ -48,6 +48,9 @@ GTEST_TEST(VPolytopeTest, TriangleTest) {
   // Check IsBounded (which is trivially true for V Polytopes).
   EXPECT_TRUE(V.IsBounded());
 
+  // Test IsEmpty.
+  EXPECT_FALSE(V.IsEmpty());
+
   const Eigen::Vector2d center = triangle.rowwise().mean();
   // Mosek worked with 1e-15.
   // Gurobi worked with 1e-15 (see the note about alpha_sol in the method).
@@ -83,6 +86,7 @@ GTEST_TEST(VPolytopeTest, DefaultCtor) {
   EXPECT_EQ(dut.ambient_dimension(), 0);
   EXPECT_FALSE(dut.IntersectsWith(dut));
   EXPECT_TRUE(dut.IsBounded());
+  EXPECT_FALSE(dut.IsEmpty());
   EXPECT_FALSE(dut.MaybeGetPoint().has_value());
   EXPECT_FALSE(dut.PointInSet(Eigen::VectorXd::Zero(0)));
 }
@@ -637,6 +641,14 @@ GTEST_TEST(VPolytopeTest, WriteObjTest) {
 
   VPolytope V_scene_graph(query, geom_id);
   CheckVertices(V.vertices(), V_scene_graph.vertices(), 1e-6);
+}
+
+// If a VPolytope is constructed over an empty vertex list, it is considered
+// to be empty.
+GTEST_TEST(VPolytopeTest, EmptyTest) {
+  Eigen::Matrix<double, 3, 0> vertices;
+  auto V = VPolytope(vertices);
+  ASSERT_TRUE(V.IsEmpty());
 }
 
 }  // namespace optimization

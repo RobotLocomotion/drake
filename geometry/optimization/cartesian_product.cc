@@ -114,6 +114,18 @@ bool CartesianProduct::DoIsBounded() const {
   return true;
 }
 
+bool CartesianProduct::DoIsEmpty() const {
+  if (sets_.size() == 0) {
+    return true;
+  }
+  for (const auto& s : sets_) {
+    if (s->IsEmpty()) {
+      return true;
+    }
+  }
+  return false;
+}
+
 std::optional<VectorXd> CartesianProduct::DoMaybeGetPoint() const {
   // Check if all sets are points.
   std::vector<VectorXd> points;

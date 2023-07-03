@@ -180,6 +180,10 @@ bool Hyperellipsoid::DoIsBounded() const {
   return qr.dimensionOfKernel() == 0;
 }
 
+bool Hyperellipsoid::DoIsEmpty() const {
+  return false;
+}
+
 bool Hyperellipsoid::DoPointInSet(const Eigen::Ref<const VectorXd>& x,
                                   double tol) const {
   DRAKE_DEMAND(A_.cols() == x.size());
