@@ -1,7 +1,8 @@
 #include "drake/systems/primitives/affine_system.h"
 
-#include <iostream>
 #include <set>
+#include <sstream>
+#include <string>
 #include <utility>
 
 #include <Eigen/Eigenvalues>
