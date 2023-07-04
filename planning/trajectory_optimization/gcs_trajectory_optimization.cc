@@ -647,9 +647,21 @@ void GcsTrajectoryOptimization::AddVelocityBounds(
 }
 
 std::pair<CompositeTrajectory<double>, solvers::MathematicalProgramResult>
-GcsTrajectoryOptimization::SolvePath(const Subgraph& source,
-                                     const Subgraph& target,
-                                     const GraphOfConvexSetsOptions& options) {
+GcsTrajectoryOptimization::SolvePath(
+    const Subgraph& source, const Subgraph& target,
+    const GraphOfConvexSetsOptions& specified_options) {
+  // Fill in default options.
+  GraphOfConvexSetsOptions options = specified_options;
+  if (!options.convex_relaxation) {
+    options.convex_relaxation = true;
+  }
+  if (!options.preprocessing) {
+    options.preprocessing = true;
+  }
+  if (!options.max_rounded_paths) {
+    options.max_rounded_paths = 5;
+  }
+
   const VectorXd empty_vector;
 
   VertexId source_id = source.vertices_[0]->id();

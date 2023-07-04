@@ -29,19 +29,19 @@ struct GraphOfConvexSetsOptions {
   paper, we know that this relaxation cannot solve the original NP-hard problem
   for all instances, but there are also many instances for which the convex
   relaxation is tight. */
-  bool convex_relaxation{true};
+  std::optional<bool> convex_relaxation{std::nullopt};
+
+  /** Maximum number of distinct paths to compare during random rounding; only
+  the lowest cost path is returned. If convex_relaxation is false or this is
+  less than or equal to zero, rounding is not performed. */
+  std::optional<int> max_rounded_paths{std::nullopt};
 
   /** Performs a preprocessing step to remove edges that cannot lie on the
   path from source to target. In most cases, preprocessing causes a net
   reduction in computation by reducing the size of the optimization solved.
   Note that this preprocessing is not exact. There may be edges that cannot
   lie on the path from source to target that this does not detect. */
-  bool preprocessing{false};
-
-  /** Maximum number of distinct paths to compare during random rounding; only
-  the lowest cost path is returned. If convex_relaxation is false or this is
-  less than or equal to zero, rounding is not performed. */
-  int max_rounded_paths{0};
+  std::optional<bool> preprocessing{std::nullopt};
 
   /** Maximum number of trials to find a novel path during random rounding. If
   convex_relaxation is false or max_rounded_paths is less than or equal to zero,
@@ -64,7 +64,7 @@ struct GraphOfConvexSetsOptions {
   const solvers::SolverInterface* solver{nullptr};
 
   /** Options passed to the solver when solving the generated problem.*/
-  solvers::SolverOptions solver_options;
+  solvers::SolverOptions solver_options{};
 
   /** Optional solver options for the rounded problems.
   If not set, solver_options is used.
