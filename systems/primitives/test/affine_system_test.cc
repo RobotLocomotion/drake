@@ -112,6 +112,9 @@ TEST_F(AffineSystemTest, UpdateCoefficients) {
   const Eigen::Matrix2d new_D = make_2x2_matrix(13, 14, 15, 16);
   const Eigen::Vector2d new_y0 = make_2x1_vector(-3, -4);
 
+  const Eigen::Matrix2d C_zero = make_2x2_matrix(0, 0, 0, 0);
+  const Eigen::Matrix2d D_zero = make_2x2_matrix(0, 0, 0, 0);
+
   dut_->UpdateCoefficients(new_A, new_B, new_f0, new_C, new_D, new_y0);
 
   EXPECT_TRUE(CompareMatrices(dut_->A(), new_A));
@@ -120,6 +123,17 @@ TEST_F(AffineSystemTest, UpdateCoefficients) {
   EXPECT_TRUE(CompareMatrices(dut_->C(), new_C));
   EXPECT_TRUE(CompareMatrices(dut_->D(), new_D));
   EXPECT_TRUE(CompareMatrices(dut_->y0(), new_y0));
+
+  // Tests output dependency consistency.
+  auto dut_zero_C = AffineSystem<double>(A_, B_, f0_, C_zero, D_, y0_);
+  EXPECT_THROW(
+      dut_zero_C.UpdateCoefficients(new_A, new_B, new_f0, new_C, new_D, new_y0),
+      std::runtime_error);
+
+  auto dut_zero_D = AffineSystem<double>(A_, B_, f0_, C_, D_zero, y0_);
+  EXPECT_THROW(
+      dut_zero_D.UpdateCoefficients(new_A, new_B, new_f0, new_C, new_D, new_y0),
+      std::runtime_error);
 }
 
 TEST_F(AffineSystemTest, DefaultAndRandomState) {

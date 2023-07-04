@@ -343,6 +343,19 @@ void CompareMatrixSize(const Eigen::Ref<const Eigen::MatrixXd>& M1,
   }
 }
 
+void CheckOutputConsistency(const bool is_meanginful,
+                            const bool is_meaningful_new,
+                            const std::string& name) {
+  if (!is_meanginful && is_meaningful_new) {
+    std::stringstream msg;
+    msg << name
+        << " makes the output dependent on state,  when it was previously "
+           "independent. This would change the dependencies of the output "
+           "port, and it is currently unsupported.";
+    throw std::runtime_error(msg.str());
+  }
+}
+
 }  // namespace
 
 // Our protected constructor does all of the real work -- everything else
@@ -514,16 +527,11 @@ void AffineSystem<T>::UpdateCoefficients(
   CompareMatrixSize(new_C, C_, "C");
   CompareMatrixSize(new_D, D_, "D");
   CompareMatrixSize(new_y0, y0_, "y0");
+
   const bool is_new_C_meaningful = IsMeaningful(new_C);
   const bool is_new_D_meaningful = IsMeaningful(new_D);
-
-  if (!has_meaningful_C_ && is_new_C_meaningful) {
-    throw std::runtime_error("new_C makes the output dependent on state.");
-  }
-
-  if (!has_meaningful_D_ && is_new_D_meaningful) {
-    throw std::runtime_error("new_D makes the output dependent on input.");
-  }
+  CheckOutputConsistency(has_meaningful_C_, is_new_C_meaningful, "new_C");
+  CheckOutputConsistency(has_meaningful_D_, is_new_D_meaningful, "new_D");
 
   A_ = new_A;
   B_ = new_B;
