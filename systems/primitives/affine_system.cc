@@ -338,7 +338,7 @@ void CompareMatrixSize(const Eigen::Ref<const Eigen::MatrixXd>& M1,
     std::stringstream msg;
     msg << "New and current ";
     msg << matrix_name;
-    msg << " D have different sizes.";
+    msg << " have different sizes.";
     throw std::runtime_error(msg.str());
   }
 }
