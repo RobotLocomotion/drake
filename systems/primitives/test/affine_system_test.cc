@@ -126,14 +126,16 @@ TEST_F(AffineSystemTest, UpdateCoefficients) {
 
   // Tests output dependency consistency.
   auto dut_zero_C = AffineSystem<double>(A_, B_, f0_, C_zero, D_, y0_);
-  EXPECT_THROW(
+  const std::string error_msg_regex =
+      ".*This would change the dependencies of the output port.*";
+  DRAKE_EXPECT_THROWS_MESSAGE(
       dut_zero_C.UpdateCoefficients(new_A, new_B, new_f0, new_C, new_D, new_y0),
-      std::runtime_error);
+      error_msg_regex);
 
   auto dut_zero_D = AffineSystem<double>(A_, B_, f0_, C_, D_zero, y0_);
-  EXPECT_THROW(
+  DRAKE_EXPECT_THROWS_MESSAGE(
       dut_zero_D.UpdateCoefficients(new_A, new_B, new_f0, new_C, new_D, new_y0),
-      std::runtime_error);
+      error_msg_regex);
 }
 
 TEST_F(AffineSystemTest, DefaultAndRandomState) {

@@ -346,13 +346,13 @@ void CompareMatrixSize(const Eigen::Ref<const Eigen::MatrixXd>& M1,
 
 void CheckOutputConsistency(const bool is_meanginful,
                             const bool is_meaningful_new,
-                            const std::string& name) {
+                            const std::string& matrix_name,
+                            const std::string& dependency_name) {
   if (!is_meanginful && is_meaningful_new) {
     std::stringstream msg;
-    msg << name
-        << " makes the output dependent on state,  when it was previously "
-           "independent. This would change the dependencies of the output "
-           "port, and it is currently unsupported.";
+    msg << matrix_name << " makes the output dependent on " << dependency_name
+        << ", when it was previously independent. This would change the "
+           "dependencies of the output port, and it is currently unsupported.";
     throw std::runtime_error(msg.str());
   }
 }
@@ -531,8 +531,10 @@ void AffineSystem<T>::UpdateCoefficients(
 
   const bool is_new_C_meaningful = IsMeaningful(new_C);
   const bool is_new_D_meaningful = IsMeaningful(new_D);
-  CheckOutputConsistency(has_meaningful_C_, is_new_C_meaningful, "new_C");
-  CheckOutputConsistency(has_meaningful_D_, is_new_D_meaningful, "new_D");
+  CheckOutputConsistency(has_meaningful_C_, is_new_C_meaningful, "new_C",
+                         "state");
+  CheckOutputConsistency(has_meaningful_D_, is_new_D_meaningful, "new_D",
+                         "input");
 
   A_ = new_A;
   B_ = new_B;
