@@ -180,6 +180,9 @@ class Meshcat {
               See @ref meshcat_path "Meshcat paths" for the semantics.
   @param shape a Shape that specifies the geometry of the object.
   @param rgba an Rgba that specifies the (solid) color of the object.
+  @note If `shape` is a mesh, the file referred to can be either an .obj file
+  or an _embedded_ .gltf file (it has all geometry data and texture data
+  contained within the single .gltf file).
   @pydrake_mkdoc_identifier{shape}
   */
   void SetObject(std::string_view path, const Shape& shape,
