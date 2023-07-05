@@ -52,7 +52,7 @@ namespace render {
 
  Benchmarks for assessing rendering performance and comparing implementations.
 
- */
+ Next topic: @ref geometry_file_formats  */
 
 }  // namespace render
 }  // namespace geometry
