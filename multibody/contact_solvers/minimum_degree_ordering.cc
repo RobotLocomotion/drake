@@ -2,7 +2,7 @@
 
 #include <algorithm>
 #include <functional>
-#include <queue>
+#include <set>
 #include <utility>
 
 namespace drake {
@@ -99,30 +99,22 @@ std::vector<int> ComputeMinimumDegreeOrdering(
     std::sort(A.begin(), A.end());
   }
 
-  std::priority_queue<IndexDegree, std::vector<IndexDegree>,
-                      std::greater<IndexDegree>>
-      queue;
-  /* Put all nodes in the priority queue. We use a striped down version of the
-   node to keep only the necessary information. */
+  std::set<IndexDegree> sorted_nodes;
+  /* Keep the nodes sorted by degrees and break ties with indices. We use a
+   striped down version of the node to keep only the necessary information
+   (degree and index). */
   for (int n = 0; n < num_nodes; ++n) {
     IndexDegree node = {.degree = nodes[n].degree, .index = nodes[n].index};
-    queue.emplace(node);
+    sorted_nodes.insert(node);
   }
 
   /* The resulting elimination ordering. */
   std::vector<int> result(num_nodes);
   /* Begin elimination. */
   for (int k = 0; k < num_nodes; ++k) {
-    DRAKE_ASSERT(!queue.empty());
-    IndexDegree index_degree = queue.top();
-    /* Pop stale priority queue elements because std::priority_queue can't
-     replace nodes. */
-    while (index_degree.degree != nodes[index_degree.index].degree) {
-      queue.pop();
-      DRAKE_ASSERT(!queue.empty());
-      index_degree = queue.top();
-    }
-    queue.pop();
+    DRAKE_DEMAND(ssize(sorted_nodes) == num_nodes - k);
+    IndexDegree index_degree =
+        sorted_nodes.extract(sorted_nodes.begin()).value();
     /* p is the variable to be eliminated next. */
     const int p = index_degree.index;
     result[k] = p;
@@ -140,6 +132,8 @@ std::vector<int> ComputeMinimumDegreeOrdering(
     /* Update all neighboring variables of p. */
     for (int i : node_p.L) {
       Node& node_i = nodes[i];
+      const IndexDegree old_node = {.degree = node_i.degree,
+                                    .index = node_i.index};
       /* Pruning. */
       node_i.A = SetDifference(node_i.A, node_p.L);
       /* Convert p from a variable to an element in node i. Note that Lp was
@@ -150,23 +144,13 @@ std::vector<int> ComputeMinimumDegreeOrdering(
       InsertValueInSortedVector(p, &(node_i.E));
       /* Compute external degree. */
       node_i.UpdateExternalDegree(nodes);
-      /* Since we can't update the node in the priority queue, we simply add
-       a new node in. With multiple copies of the same node in the priority
-       queue, we may pop out a node with a stale degree. We detect the node is
-       stale by checking its degree (see above) when we pop the node from the
-       queue and simply skip the node if it's stale. */
       IndexDegree new_node = {.degree = node_i.degree, .index = node_i.index};
-      queue.emplace(new_node);
+      sorted_nodes.erase(old_node);
+      sorted_nodes.insert(new_node);
     }
     /* Convert node p from a supervariable to an element. */
     node_p.A.clear();
     node_p.E.clear();
-    /* There's no easy way to remove node p from the priority queue (there might
-     be multiple copies; see above where we add new nodes to the priority
-     queue). So we set its degree to -1, so that any remaining copies of p, when
-     popped from the priority queue, will be skipped because a degree mismatch.
-    */
-    node_p.degree = -1;
   }
   return result;
 }
