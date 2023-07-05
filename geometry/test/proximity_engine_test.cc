@@ -474,7 +474,7 @@ GTEST_TEST(ProximityEngineTests, VtkForPointContactThrow) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       engine.AddAnchoredGeometry(vtk_mesh, RigidTransformd::Identity(),
                                  GeometryId::get_new_id()),
-      "ProximityEngine: expect an Obj file for non-hydroelastics but get.*");
+      "ProximityEngine: expect an Obj file for non-hydroelastics but got.*");
 }
 
 // Tests simple addition of anchored geometry.

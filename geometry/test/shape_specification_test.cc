@@ -691,6 +691,23 @@ GTEST_TEST(ShapeTest, Pathname) {
             std::filesystem::current_path() / "relative_path.obj");
 }
 
+GTEST_TEST(ShapeTest, MeshExtensions) {
+  // Test for case.
+  EXPECT_EQ(Mesh("a/b.obj").extension(), ".obj");
+  EXPECT_EQ(Mesh("a/b.oBj").extension(), ".obj");
+  EXPECT_EQ(Mesh("a/b.ObJ").extension(), ".obj");
+  // Arbitrary extensions.
+  EXPECT_EQ(Mesh("a/b.extension").extension(), ".extension");
+
+  // Now repeat for Convex.
+
+  EXPECT_EQ(Convex("a/b.obj").extension(), ".obj");
+  EXPECT_EQ(Convex("a/b.oBj").extension(), ".obj");
+  EXPECT_EQ(Convex("a/b.ObJ").extension(), ".obj");
+  // Arbitrary extensions.
+  EXPECT_EQ(Convex("a/b.extension").extension(), ".extension");
+}
+
 }  // namespace
 }  // namespace geometry
 }  // namespace drake

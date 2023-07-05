@@ -76,6 +76,7 @@ filegroup(
         "**/*.sdf",
         "**/*.urdf",
         "**/*.xml",
+        "**/*.gltf",
     ]),
     visibility = ["//visibility:public"],
 )

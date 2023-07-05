@@ -202,6 +202,10 @@ class Convex final : public Shape {
   explicit Convex(const std::string& filename, double scale = 1.0);
 
   const std::string& filename() const { return filename_; }
+  /** Returns the extension of the mesh filename -- all lower case and including
+   the dot. In other words /foo/bar/mesh.obj and /foo/bar/mesh.OBJ would both
+   report the ".obj" extension. */
+  std::string extension() const;
   double scale() const { return scale_; }
 
  private:
@@ -321,6 +325,10 @@ class Mesh final : public Shape {
   explicit Mesh(const std::string& filename, double scale = 1.0);
 
   const std::string& filename() const { return filename_; }
+  /** Returns the extension of the mesh filename -- all lower case and including
+   the dot. In other words /foo/bar/mesh.obj and /foo/bar/mesh.OBJ would both
+   report the ".obj" extension. */
+  std::string extension() const;
   double scale() const { return scale_; }
 
  private:
