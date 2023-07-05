@@ -426,10 +426,11 @@ class TestGeometryCore(unittest.TestCase):
         assert_pickle(
             self, capsule, lambda shape: [shape.radius(), shape.length()])
 
-        junk_path = "arbitrary/path"
+        junk_path = "arbitrary/path.ext"
         convex = mut.Convex(filename=junk_path, scale=1.0)
         assert_shape_api(convex)
         self.assertIn(junk_path, convex.filename())
+        self.assertEqual(".ext", convex.extension())
         self.assertEqual(convex.scale(), 1.0)
         assert_pickle(
             self, convex, lambda shape: [shape.filename(), shape.scale()])
@@ -457,6 +458,7 @@ class TestGeometryCore(unittest.TestCase):
         mesh = mut.Mesh(filename=junk_path, scale=1.0)
         assert_shape_api(mesh)
         self.assertIn(junk_path, mesh.filename())
+        self.assertEqual(".ext", mesh.extension())
         self.assertEqual(mesh.scale(), 1.0)
         assert_pickle(
             self, mesh, lambda shape: [shape.filename(), shape.scale()])
