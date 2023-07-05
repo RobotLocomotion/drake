@@ -277,8 +277,9 @@ class MeshcatShapeReifier : public ShapeReifier {
 
   using ShapeReifier::ImplementGeometry;
 
-  template <typename T>
-  void ImplementMesh(const T& mesh, void* data) {
+  // @tparam MeshType is either Mesh or Convex.
+  template <typename MeshType>
+  void ImplementMesh(const MeshType& mesh, void* data) {
     DRAKE_DEMAND(data != nullptr);
     auto& lumped = *static_cast<internal::LumpedObjectData*>(data);
 
@@ -286,8 +287,7 @@ class MeshcatShapeReifier : public ShapeReifier {
     // meshes unless necessary.  Using the filename is tempting, but that leads
     // to problems when the file contents change on disk.
 
-    const std::filesystem::path filename(mesh.filename());
-    std::string format = filename.extension();
+    std::string format = mesh.extension();
     format.erase(0, 1);  // remove the . from the extension
     std::ifstream input(mesh.filename(), std::ios::binary | std::ios::ate);
     if (!input.is_open()) {
@@ -332,7 +332,8 @@ class MeshcatShapeReifier : public ShapeReifier {
       std::string mtllib = matches.str(1);
 
       // Use filename path as the base directory for textures.
-      const std::filesystem::path basedir = filename.parent_path();
+      const std::filesystem::path basedir =
+          std::filesystem::path(mesh.filename()).parent_path();
 
       // Read .mtl file into geometry.mtl_library.
       std::ifstream mtl_stream(basedir / mtllib, std::ios::ate);
@@ -402,7 +403,29 @@ class MeshcatShapeReifier : public ShapeReifier {
       matrix(1, 1) = mesh.scale();
       matrix(2, 2) = mesh.scale();
     } else {
-      // Neither obj with mtllib nor gltf. E.g., a Collada .dae file.
+      // Neither obj with mtllib nor gltf. E.g., a Collada .dae file, .stl, or
+      // geometry-only obj.
+
+      // TODO(SeanCurtis-TRI): This doesn't work for STL even though meshcat
+      // supports STL. Meshcat treats STL differently from obj or dae.
+      // https://github.com/rdeits/meshcat/blob/master/src/index.js#L130-L146.
+      // The "data" property of the _meshfile_geometry for obj and dae are
+      // simply passed along verbatim. But for STL it is interpreted as a
+      // buffer. However, we're not passing the data in a way that deserializes
+      // into a data array. So, either meshcat needs to change how it gets
+      // STL (being more permissive), or we need to change how we transmit STL
+      // data.
+
+      // TODO(SeanCurtis-TRI): Provide test showing that .dae works.
+
+      if (format != "obj" && format != "dae") {
+        // Note: We send the data along to meshcat regardless relying on meshcat
+        // to ignore the mesh and move on. The *path* will still exist.
+        static const logging::Warn one_time(
+            "Drake's Meshcat only supports Mesh/Convex specifications which "
+            "use .obj, .gltf, or .dae files. Mesh specifications using other "
+            "mesh types (e.g., .stl, etc.) will not be visualized.");
+      }
       auto geometry = std::make_unique<internal::MeshFileGeometryData>();
       geometry->uuid = uuids::to_string((*uuid_generator_)());
       geometry->format = std::move(format);

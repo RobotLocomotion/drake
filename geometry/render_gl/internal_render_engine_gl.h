@@ -131,6 +131,14 @@ class RenderEngineGl final : public render::RenderEngine {
   // @pre `this` engine's OpenGl context should be bound.
   void InitGlState();
 
+  // Data to pass through the reification process.
+  struct RegistrationData {
+    const GeometryId id;
+    const math::RigidTransformd& X_WG;
+    const PerceptionProperties& properties;
+    bool accepted{true};
+  };
+
   // Mangles the mesh data before adding it to the engine to support the
   // legacy behavior of mapping mesh.obj -> mesh.png, applying it as a diffuse
   // texture, if found. When we eliminate that behavior, we can eliminate this
@@ -208,7 +216,10 @@ class RenderEngineGl final : public render::RenderEngine {
   int GetCylinder();
   int GetHalfSpace();
   int GetBox();
-  int GetMesh(const std::string& filename);
+  // Returns the index of the OpenGlGeometry for a mesh with the given filename.
+  // If the filename represents an unsupported file type, no geometry is added,
+  // data->accepted is set to false, and the return value is a meaningless -1.
+  int GetMesh(const std::string& filename, RegistrationData* data);
 
   // Given the render type, returns the texture configuration for that render
   // type. These are the key arguments for glTexImage2D based on the render

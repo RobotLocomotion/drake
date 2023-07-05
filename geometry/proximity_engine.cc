@@ -464,6 +464,15 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   }
 
   void ImplementGeometry(const Convex& convex, void* user_data) override {
+    const ReifyData& data = *static_cast<ReifyData*>(user_data);
+    const HydroelasticType type = data.properties.GetPropertyOrDefault(
+        kHydroGroup, kComplianceType, HydroelasticType::kUndefined);
+    if (type == HydroelasticType::kUndefined && convex.extension() != ".obj") {
+      throw std::runtime_error(
+          fmt::format("ProximityEngine: Convex shapes for non-hydroelastic "
+                      "contact only support .obj files; got ({}) instead.",
+                      convex.filename()));
+    }
     // Don't bother triangulating; Convex supports polygons.
     const auto [vertices, faces, num_faces] =
         ReadObjFile(convex.filename(), convex.scale(), false /* triangulate */);
@@ -527,15 +536,11 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
       shared_verts = make_shared<const std::vector<Vector3d>>(
           hydroelastic_geometries_.rigid_geometry(data.id).mesh().vertices());
     } else {
-      std::string extension =
-          std::filesystem::path(mesh.filename()).extension();
-      std::transform(extension.begin(), extension.end(), extension.begin(),
-                     [](unsigned char c) { return std::tolower(c); });
-      if (extension != ".obj") {
+      if (mesh.extension() != ".obj") {
         throw std::runtime_error(
-            fmt::format("ProximityEngine: expect an Obj file for "
-                        "non-hydroelastics but get {} file ({}) instead.",
-                        extension, mesh.filename()));
+            fmt::format("ProximityEngine: Mesh shapes for non-hydroelastic "
+                        "contact only support .obj files; got ({}) instead.",
+                        mesh.filename()));
       }
       // TODO(SeanCurtis-TRI) Add a troubleshooting entry to give more helpful
       //  advice.
