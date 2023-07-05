@@ -1496,6 +1496,115 @@ GTEST_TEST(ShortestPathTest, RoundingBacktrack) {
   ASSERT_TRUE(result.is_success());
 }
 
+// Cover the case where there is no path from source to target.
+GTEST_TEST(ShortestPathTest, NoPath) {
+  GraphOfConvexSets spp;
+  auto source = spp.AddVertex(Point(Vector2d(0, 0)));
+  auto v1 = spp.AddVertex(Point(Vector2d(0, 1)));
+  auto v2 = spp.AddVertex(Point(Vector2d(1, 0)));
+  auto target = spp.AddVertex(Point(Vector2d(1, 1)));
+  spp.AddEdge(*source, *v1);
+  spp.AddEdge(*v2, *target);
+
+  GraphOfConvexSetsOptions options;
+  options.convex_relaxation = true;
+  options.preprocessing = false;
+  options.max_rounded_paths = 10;
+  auto result = spp.SolveShortestPath(*source, *target, options);
+  EXPECT_FALSE(result.is_success());
+  EXPECT_EQ(result.get_solution_result(),
+            SolutionResult::kInfeasibleConstraints);
+
+  options.preprocessing = true;
+  options.max_rounded_paths = 10;
+  result = spp.SolveShortestPath(*source, *target, options);
+  EXPECT_FALSE(result.is_success());
+  EXPECT_EQ(result.get_solution_result(),
+            SolutionResult::kInfeasibleConstraints);
+
+  if (!MixedIntegerSolverAvailable()) {
+    return;
+  }
+
+  options.convex_relaxation = false;
+  result = spp.SolveShortestPath(*source, *target, options);
+  EXPECT_FALSE(result.is_success());
+  EXPECT_EQ(result.get_solution_result(),
+            SolutionResult::kInfeasibleConstraints);
+}
+
+// Cover the special case of the source not having any outgoing edges.
+GTEST_TEST(ShortestPathTest, NoPathDetachedSource) {
+  GraphOfConvexSets spp;
+  auto source = spp.AddVertex(Point(Vector2d(0, 0)));
+  spp.AddVertex(Point(Vector2d(0, 1)));
+  auto v2 = spp.AddVertex(Point(Vector2d(1, 0)));
+  auto target = spp.AddVertex(Point(Vector2d(1, 1)));
+  spp.AddEdge(*v2, *target);
+
+  GraphOfConvexSetsOptions options;
+  options.convex_relaxation = true;
+  options.preprocessing = false;
+  options.max_rounded_paths = 10;
+  auto result = spp.SolveShortestPath(*source, *target, options);
+  EXPECT_FALSE(result.is_success());
+  EXPECT_EQ(result.get_solution_result(),
+            SolutionResult::kInfeasibleConstraints);
+
+  options.preprocessing = true;
+  options.max_rounded_paths = 10;
+  result = spp.SolveShortestPath(*source, *target, options);
+  EXPECT_FALSE(result.is_success());
+  EXPECT_EQ(result.get_solution_result(),
+            SolutionResult::kInfeasibleConstraints);
+
+  if (!MixedIntegerSolverAvailable()) {
+    return;
+  }
+
+  options.convex_relaxation = false;
+  result = spp.SolveShortestPath(*source, *target, options);
+  EXPECT_FALSE(result.is_success());
+  EXPECT_EQ(result.get_solution_result(),
+            SolutionResult::kInfeasibleConstraints);
+}
+
+// Cover the special case of the target not having any incoming edges.
+GTEST_TEST(ShortestPathTest, NoPathDetachedTarget) {
+  GraphOfConvexSets spp;
+  auto source = spp.AddVertex(Point(Vector2d(0, 0)));
+  auto v1 = spp.AddVertex(Point(Vector2d(0, 1)));
+  spp.AddVertex(Point(Vector2d(1, 0)));
+  auto target = spp.AddVertex(Point(Vector2d(1, 1)));
+  spp.AddEdge(*source, *v1);
+
+  GraphOfConvexSetsOptions options;
+  options.convex_relaxation = true;
+  options.preprocessing = false;
+  options.max_rounded_paths = 10;
+  auto result = spp.SolveShortestPath(*source, *target, options);
+  EXPECT_FALSE(result.is_success());
+  EXPECT_EQ(result.get_solution_result(),
+            SolutionResult::kInfeasibleConstraints);
+
+  options.preprocessing = true;
+  options.max_rounded_paths = 10;
+  result = spp.SolveShortestPath(*source, *target, options);
+  EXPECT_FALSE(result.is_success());
+  EXPECT_EQ(result.get_solution_result(),
+            SolutionResult::kInfeasibleConstraints);
+
+  if (!MixedIntegerSolverAvailable()) {
+    return;
+  }
+
+  options.convex_relaxation = false;
+  result = spp.SolveShortestPath(*source, *target, options);
+  EXPECT_FALSE(result.is_success());
+  EXPECT_EQ(result.get_solution_result(),
+            SolutionResult::kInfeasibleConstraints);
+}
+
 GTEST_TEST(ShortestPathTest, TobiasToyExample) {
   GraphOfConvexSets spp;
 
