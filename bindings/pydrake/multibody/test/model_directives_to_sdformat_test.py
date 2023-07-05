@@ -33,22 +33,6 @@ def _get_plant_aggregate(num_func, get_func, index_cls, model_instances=None):
     return items
 
 
-def get_model_instances(plant):
-    # TODO(eric.cousineau): Hoist this somewhere?
-    return _get_plant_aggregate(
-        plant.num_model_instances, lambda x: x, ModelInstanceIndex
-    )
-
-
-def get_model_instances_names(plant):
-    # TODO(eric.cousineau): Hoist this somewhere?
-    return _get_plant_aggregate(
-        plant.num_model_instances,
-        plant.GetModelInstanceName,
-        ModelInstanceIndex,
-    )
-
-
 def get_bodies(plant, model_instances=None):
     # TODO(eric.cousineau): Hoist this somewhere?
     return _get_plant_aggregate(
@@ -115,28 +99,6 @@ def assert_bodies_same(plant_a, context_a, body_a, plant_b, context_b, body_b):
         return False
 
     return True
-
-
-# Compares if two lists of joints are similar. If they have the same
-# child and parent, body name and the same type, we consider them the same.
-def are_joints_same(joints_a, joints_b):
-    for i in range(len(joints_a)):
-        for j in range(len(joints_b)):
-            if (
-                joints_a[i].parent_body().name()
-                == joints_b[j].parent_body().name()
-                and joints_a[i].child_body().name()
-                == joints_b[j].child_body().name()
-                and joints_a[i].type_name() == joints_b[j].type_name()
-            ):
-                joints_a.pop(i)
-                joints_b.pop(j)
-
-    # All joints should have been verified.
-    if len(joints_a) == 0 and len(joints_b) == 0:
-        return True
-    else:
-        return False
 
 
 class TestConvertModelDirectiveToSdformat(
@@ -223,9 +185,15 @@ class TestConvertModelDirectiveToSdformat(
                     sdf_plant, sdf_context, sdf_body))
 
             # Check joints.
-            self.assertTrue(are_joints_same(
-                get_joints(dmd_plant, [dmd_instance_index]),
-                get_joints(sdf_plant, [sdf_instance_index])))
+            dmd_joints = get_joints(dmd_plant, [dmd_instance_index])
+            sdf_joints = get_joints(sdf_plant, [sdf_instance_index])
+            for sdf_joint, dmd_joint in _strict_zip(sdf_joints, dmd_joints):
+                self.assertEqual(sdf_joint.type_name(),
+                                 dmd_joint.type_name())
+                self.assertEqual(sdf_joint.parent_body().name(),
+                                 dmd_joint.parent_body().name())
+                self.assertEqual(sdf_joint.child_body().name(),
+                                 dmd_joint.child_body().name())
 
     @run_with_multiple_values([dict(name=name) for name in [
         "deep_child_frame_weld",
