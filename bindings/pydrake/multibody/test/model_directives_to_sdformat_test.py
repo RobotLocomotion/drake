@@ -5,19 +5,15 @@ import unittest
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
 
-from pydrake.multibody.parsing import (
-    Parser,
-)
-from pydrake.multibody.plant import (
-    MultibodyPlant,
-)
+from pydrake.multibody.parsing import Parser
+from pydrake.multibody.plant import MultibodyPlant
 from pydrake.multibody.tree import (
     BodyIndex,
     FrameIndex,
     ModelInstanceIndex,
     JointIndex,
 )
-from pydrake.common import GetDrakePath
+from pydrake.common import FindResourceOrThrow
 from pydrake.common.test_utilities.meta import (
     ValueParameterizedTest,
     run_with_multiple_values,
@@ -26,8 +22,6 @@ from pydrake.common.test_utilities.meta import (
 from pydrake.multibody.model_directives_to_sdformat import (
     _convert_directives,
 )
-
-_SCOPE_DELIMITER = "::"
 
 
 def _get_plant_aggregate(num_func, get_func, index_cls, model_instances=None):
@@ -165,97 +159,73 @@ class TestConvertModelDirectiveToSdformat(
         "weld_frames_from_models",
     ]])
     def test_through_plant_comparison(self, *, name):
-        # Convert.
+        """Checks that a MultibodyPlant created from the conversion tool's
+        SDFormat output is identical to a MultibodyPlant created from the
+        original *.dmd.yaml file.
+        """
+        # Convert, expecting exactly one output file.
         dmd_filename = self.dmd_test_path / f"{name}.dmd.yaml"
-        files = _convert_directives(
+        output_files = _convert_directives(
             dmd_filename=dmd_filename,
             generate_world=False,
         )
-        self.assertEqual(len(files), 1)
-        _, sdformat_str = files.popitem()
+        self.assertEqual(len(output_files), 1)
+        _, sdf_str = output_files.popitem()
 
-        # Load model directives.
-        directives_plant = MultibodyPlant(time_step=0.0)
-        model_dir_multibody = os.path.dirname(
-            os.path.join(GetDrakePath(), "multibody/parsing/test/")
-        )
-        model_dir_bindings = os.path.dirname(
-            os.path.join(GetDrakePath(), "bindings/pydrake/multibody/test/")
-        )
-        parser = Parser(plant=directives_plant)
-        parser.package_map().PopulateFromFolder(model_dir_multibody)
-        parser.package_map().PopulateFromFolder(model_dir_bindings)
-        parser.AddModels(str(dmd_filename))
-        directives_plant.Finalize()
+        # Helper packages that used by some of the test case inputs.
+        package_xml_filenames = [
+            FindResourceOrThrow(
+                "drake/multibody/parsing/"
+                "test/process_model_directives_test/package.xml"),
+            FindResourceOrThrow(
+                "drake/bindings/pydrake/multibody/"
+                "test/model_directives_to_sdformat_files/package.xml"),
+        ]
 
-        # Load converted SDFormat.
-        sdformat_plant = MultibodyPlant(time_step=0.0)
-        sdformat_parser = Parser(sdformat_plant)
-        sdformat_parser.package_map().PopulateFromFolder(model_dir_multibody)
-        sdformat_parser.package_map().PopulateFromFolder(model_dir_bindings)
-        sdformat_parser.AddModelsFromString(sdformat_str, "sdf")
-        sdformat_plant.Finalize()
+        # Load the original model directive file.
+        dmd_plant = MultibodyPlant(time_step=0.0)
+        dmd_parser = Parser(plant=dmd_plant)
+        for package_xml_filename in package_xml_filenames:
+            dmd_parser.package_map().AddPackageXml(package_xml_filename)
+        dmd_parser.AddModels(str(dmd_filename))
+        dmd_plant.Finalize()
 
-        # Compare plants.
-        # The conversion process will create an extra top level
-        # model instance. This can be avoided using the generated
-        # world model with merge include.
+        # Load the converted SDFormat file.
+        sdf_plant = MultibodyPlant(time_step=0.0)
+        sdf_parser = Parser(sdf_plant)
+        for package_xml_filename in package_xml_filenames:
+            sdf_parser.package_map().AddPackageXml(package_xml_filename)
+        sdf_parser.AddModelsFromString(sdf_str, "sdf")
+        sdf_plant.Finalize()
+
+        # The conversion process creates an extra top level model instance.
+        # (This could be avoided using the generated world model with merge
+        # include.)
         self.assertEqual(
-            sdformat_plant.num_model_instances() - 1,
-            directives_plant.num_model_instances(),
-        )
+            dmd_plant.num_model_instances(),
+            sdf_plant.num_model_instances() - 1)
 
-        for i in range(2, directives_plant.num_model_instances()):
-            model_scoped_name = (
-                name
-                + _SCOPE_DELIMITER
-                + directives_plant.GetModelInstanceName(ModelInstanceIndex(i))
-            )
+        # Compare the two plants, one model instance at a time. (We don't
+        # compare the world model nor the default model.)
+        for i in range(2, dmd_plant.num_model_instances()):
+            dmd_instance_index = ModelInstanceIndex(i)
+            sdf_instance_index = sdf_plant.GetModelInstanceByName(
+                f"{name}::{dmd_plant.GetModelInstanceName(dmd_instance_index)}")
 
-            sdformat_model_instances = get_model_instances_names(
-                sdformat_plant
-            )
-            model_found = False
+            # Check bodies and corresponding frames.
+            dmd_bodies = get_bodies(dmd_plant, [dmd_instance_index])
+            sdf_bodies = get_bodies(sdf_plant, [sdf_instance_index])
+            dmd_context = dmd_plant.CreateDefaultContext()
+            sdf_context = sdf_plant.CreateDefaultContext()
+            for sdf_body, dmd_body in _strict_zip(sdf_bodies, dmd_bodies):
+                self.assertTrue(assert_bodies_same(
+                    dmd_plant, dmd_context, dmd_body,
+                    sdf_plant, sdf_context, sdf_body))
 
-            if model_scoped_name in sdformat_model_instances:
-                model_found = True
-                sdformat_model_index = sdformat_model_instances.index(
-                    model_scoped_name
-                )
-
-            self.assertTrue(model_found)
-
-            # Check Model Bodies and corresponding Frames.
-            model_instance = ModelInstanceIndex(i)
-            directives_bodies = get_bodies(directives_plant, [model_instance])
-            directives_context = directives_plant.CreateDefaultContext()
-            sdformat_intance_index = ModelInstanceIndex(sdformat_model_index)
-            sdformat_bodies = get_bodies(
-                sdformat_plant, [sdformat_intance_index]
-            )
-            sdformat_context = sdformat_plant.CreateDefaultContext()
-
-            for sdformat_body, directives_body in _strict_zip(
-                sdformat_bodies, directives_bodies
-            ):
-                self.assertTrue(
-                    assert_bodies_same(
-                        directives_plant,
-                        directives_context,
-                        directives_body,
-                        sdformat_plant,
-                        sdformat_context,
-                        sdformat_body,
-                    )
-                )
-
-            # Check Model Joints.
-            self.assertTrue(
-                are_joints_same(
-                    get_joints(directives_plant, [model_instance]),
-                    get_joints(sdformat_plant, [sdformat_intance_index]),
-                )
-            )
+            # Check joints.
+            self.assertTrue(are_joints_same(
+                get_joints(dmd_plant, [dmd_instance_index]),
+                get_joints(sdf_plant, [sdf_instance_index])))
 
     @run_with_multiple_values([dict(name=name) for name in [
         "deep_child_frame_weld",
