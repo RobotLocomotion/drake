@@ -77,14 +77,13 @@ struct IndexDegree {
   int index{};
 };
 
-/* Comparison function to facilitate a minimum priority queue. */
-inline bool operator>(const IndexDegree& a, const IndexDegree& b) {
+inline bool operator<(const IndexDegree& a, const IndexDegree& b) {
   if (a.degree != b.degree) {
-    return a.degree > b.degree;
+    return a.degree < b.degree;
   } else {
     /* Sort by node index when degrees are equal so that consecutive nodes with
      the same degree are not permuted. */
-    return a.index > b.index;
+    return a.index < b.index;
   }
 }
 

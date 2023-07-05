@@ -108,9 +108,9 @@ GTEST_TEST(MinimumDegreeOrderingTest, IndexDegreeComparator) {
   IndexDegree a = {.degree = 0, .index = 0};
   IndexDegree b = {.degree = 0, .index = 1};
   IndexDegree c = {.degree = 1, .index = 2};
-  EXPECT_GT(b, a);
-  EXPECT_GT(c, a);
-  EXPECT_GT(c, b);
+  EXPECT_LT(a, b);
+  EXPECT_LT(a, c);
+  EXPECT_LT(b, c);
 }
 
 GTEST_TEST(MinimumDegreeOrderingTest, ComputeMinimumDegreeOrdering) {
