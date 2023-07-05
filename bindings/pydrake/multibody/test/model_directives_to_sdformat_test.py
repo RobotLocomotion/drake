@@ -209,8 +209,8 @@ class TestConvertModelDirectiveToSdformat(
         # compare the world model nor the default model.)
         for i in range(2, dmd_plant.num_model_instances()):
             dmd_instance_index = ModelInstanceIndex(i)
-            sdf_instance_index = sdf_plant.GetModelInstanceByName(
-                f"{name}::{dmd_plant.GetModelInstanceName(dmd_instance_index)}")
+            sdf_instance_index = sdf_plant.GetModelInstanceByName("::".join([
+                name, dmd_plant.GetModelInstanceName(dmd_instance_index)]))
 
             # Check bodies and corresponding frames.
             dmd_bodies = get_bodies(dmd_plant, [dmd_instance_index])
@@ -242,6 +242,9 @@ class TestConvertModelDirectiveToSdformat(
         "world_base_frame",
     ]])
     def test_error(self, *, name):
+        """Checks that a broken or unsupported dmd input file raises a useful
+        error message.
+        """
         dmd_filename = self.dmd_test_path / f"errors/{name}.dmd.yaml"
         with open(self.dmd_test_path / f"errors/{name}.error_regex") as f:
             expected_message_regex = f.read().strip()
