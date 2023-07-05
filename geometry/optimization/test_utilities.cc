@@ -18,11 +18,14 @@ namespace internal {
 using math::RigidTransformd;
 
 std::tuple<std::unique_ptr<SceneGraph<double>>, GeometryId>
-MakeSceneGraphWithShape(const Shape& shape, const RigidTransformd& X_WG) {
+MakeSceneGraphWithShape(const Shape& shape, const RigidTransformd& X_WG,
+                        bool add_proximity_properties) {
   auto scene_graph = std::make_unique<SceneGraph<double>>();
   SourceId source_id = scene_graph->RegisterSource("test");
   auto instance = std::make_unique<GeometryInstance>(X_WG, shape.Clone(), "G");
-  instance->set_proximity_properties(ProximityProperties());
+  if (add_proximity_properties) {
+    instance->set_proximity_properties(ProximityProperties());
+  }
   GeometryId geom_id =
       scene_graph->RegisterAnchoredGeometry(source_id, std::move(instance));
   return std::tuple<std::unique_ptr<SceneGraph<double>>, GeometryId>(

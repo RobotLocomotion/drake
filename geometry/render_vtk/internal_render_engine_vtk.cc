@@ -378,6 +378,15 @@ void RenderEngineVtk::ImplementObj(const std::string& file_name, double scale,
                                    void* user_data) {
   auto* data = static_cast<RegistrationData*>(user_data);
 
+  if (Mesh(file_name).extension() != ".obj") {
+    static const logging::Warn one_time(
+        "RenderEngineVtk only supports Mesh/Convex specifications which use "
+        ".obj files. Mesh specifications using other mesh types (e.g., "
+        ".gltf, .stl, .dae, etc.) will be ignored.");
+    data->accepted = false;
+    return;
+  }
+
   RenderMesh mesh_data =
       LoadRenderMeshFromObj(file_name, data->properties, default_diffuse_,
                             drake::internal::DiagnosticPolicy());

@@ -8,6 +8,7 @@
 
 #include "drake/geometry/optimization/convex_set.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
+#include "drake/math/rigid_transform.h"
 
 namespace drake {
 namespace geometry {
