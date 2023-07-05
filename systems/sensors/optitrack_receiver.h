@@ -33,9 +33,8 @@ class OptitrackReceiver : public systems::LeafSystem<double> {
   @param X_WO Pose of the optitrack frame O in the world frame W.
     Defaults to the Identity transform.
   */
-  explicit OptitrackReceiver(
-      const std::map<int, std::string>& frame_map,
-      const math::RigidTransformd& X_WO = {});
+  explicit OptitrackReceiver(const std::map<int, std::string>& frame_map,
+                             const math::RigidTransformd& X_WO = {});
 
  private:
   void CalcOutput(const Context<double>&, int, math::RigidTransformd*) const;

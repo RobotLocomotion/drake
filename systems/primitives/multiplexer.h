@@ -72,7 +72,8 @@ class Multiplexer : public LeafSystem<T> {
   explicit Multiplexer(const Multiplexer<U>&);
 
  private:
-  template <typename> friend class Multiplexer;
+  template <typename>
+  friend class Multiplexer;
 
   // All other constructors delegate to here.
   Multiplexer(SystemScalarConverter converter, std::vector<int> input_sizes,

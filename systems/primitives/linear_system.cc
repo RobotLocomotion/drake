@@ -14,6 +14,7 @@
 #include "drake/math/autodiff_gradient.h"
 #include "drake/systems/framework/event.h"
 #include "drake/systems/framework/event_collection.h"
+#include "drake/systems/primitives/linear_system_internal.h"
 
 namespace drake {
 namespace systems {
@@ -22,12 +23,11 @@ using std::make_unique;
 using std::unique_ptr;
 
 template <typename T>
-LinearSystem<T>::LinearSystem(
-    const Eigen::Ref<const Eigen::MatrixXd>& A,
-    const Eigen::Ref<const Eigen::MatrixXd>& B,
-    const Eigen::Ref<const Eigen::MatrixXd>& C,
-    const Eigen::Ref<const Eigen::MatrixXd>& D,
-    double time_period)
+LinearSystem<T>::LinearSystem(const Eigen::Ref<const Eigen::MatrixXd>& A,
+                              const Eigen::Ref<const Eigen::MatrixXd>& B,
+                              const Eigen::Ref<const Eigen::MatrixXd>& C,
+                              const Eigen::Ref<const Eigen::MatrixXd>& D,
+                              double time_period)
     : LinearSystem<T>(SystemTypeTag<LinearSystem>{}, A, B, C, D, time_period) {}
 
 template <typename T>
@@ -37,13 +37,12 @@ LinearSystem<T>::LinearSystem(const LinearSystem<U>& other)
                       other.time_period()) {}
 
 template <typename T>
-LinearSystem<T>::LinearSystem(
-    SystemScalarConverter converter,
-    const Eigen::Ref<const Eigen::MatrixXd>& A,
-    const Eigen::Ref<const Eigen::MatrixXd>& B,
-    const Eigen::Ref<const Eigen::MatrixXd>& C,
-    const Eigen::Ref<const Eigen::MatrixXd>& D,
-    double time_period)
+LinearSystem<T>::LinearSystem(SystemScalarConverter converter,
+                              const Eigen::Ref<const Eigen::MatrixXd>& A,
+                              const Eigen::Ref<const Eigen::MatrixXd>& B,
+                              const Eigen::Ref<const Eigen::MatrixXd>& C,
+                              const Eigen::Ref<const Eigen::MatrixXd>& D,
+                              double time_period)
     : AffineSystem<T>(std::move(converter), A, B, Eigen::VectorXd(), C, D,
                       Eigen::VectorXd(), time_period) {}
 
@@ -115,11 +114,11 @@ std::unique_ptr<AffineSystem<double>> DoFirstOrderTaylorApproximation(
   // Verify that the input port is not abstract valued.
   if (input_port &&
       input_port->get_data_type() == PortDataType::kAbstractValued) {
-      throw std::logic_error(
-          "The specified input port is abstract-valued, but "
-          "FirstOrderTaylorApproximation only supports vector-valued "
-          "input ports.  Did you perhaps forget to pass a non-default "
-          "`input_port_index` argument?");
+    throw std::logic_error(
+        "The specified input port is abstract-valued, but "
+        "FirstOrderTaylorApproximation only supports vector-valued input "
+        "ports.  Did you perhaps forget to pass a non-default "
+        "`input_port_index` argument?");
   }
 
   const int num_inputs = input_port ? input_port->size() : 0;
@@ -253,99 +252,34 @@ std::unique_ptr<AffineSystem<double>> FirstOrderTaylorApproximation(
                                          std::move(output_port_index));
 }
 
-/// Returns the controllability matrix:  R = [B, AB, ..., A^{n-1}B].
 Eigen::MatrixXd ControllabilityMatrix(const LinearSystem<double>& sys) {
-  const int num_states = sys.B().rows(), num_inputs = sys.B().cols();
-  Eigen::MatrixXd R(num_states, num_states * num_inputs);
-  R.leftCols(num_inputs) = sys.B();
-  for (int i = 1; i < num_states; i++) {
-    R.middleCols(num_inputs * i, num_inputs) =
-        sys.A() * R.middleCols(num_inputs * (i - 1), num_inputs);
-  }
-  return R;
+  return internal::ControllabilityMatrix(sys.A(), sys.B());
 }
 
-/// Returns true iff the controllability matrix is full row rank.
 bool IsControllable(const LinearSystem<double>& sys,
                     std::optional<double> threshold) {
-  const auto R = ControllabilityMatrix(sys);
-  Eigen::ColPivHouseholderQR<Eigen::MatrixXd> lu_decomp(R);
-  if (threshold) {
-    lu_decomp.setThreshold(threshold.value());
-  }
-  return lu_decomp.rank() == sys.A().rows();
+  return internal::IsControllable(sys.A(), sys.B(), threshold);
 }
 
-/// Returns the observability matrix: O = [ C; CA; ...; CA^{n-1} ].
 Eigen::MatrixXd ObservabilityMatrix(const LinearSystem<double>& sys) {
-  const int num_states = sys.C().cols(), num_outputs = sys.C().rows();
-  Eigen::MatrixXd O(num_states * num_outputs, num_states);
-  O.topRows(num_outputs) = sys.C();
-  for (int i = 1; i < num_states; i++) {
-    O.middleRows(num_outputs * i, num_outputs) =
-        O.middleRows(num_outputs * (i - 1), num_outputs) * sys.A();
-  }
-  return O;
+  return internal::ObservabilityMatrix(sys.A(), sys.C());
 }
 
-/// Returns true iff the observability matrix is full column rank.
 bool IsObservable(const LinearSystem<double>& sys,
                   std::optional<double> threshold) {
-  const auto O = ObservabilityMatrix(sys);
-  Eigen::ColPivHouseholderQR<Eigen::MatrixXd> lu_decomp(O);
-  if (threshold) {
-    lu_decomp.setThreshold(threshold.value());
-  }
-  return lu_decomp.rank() == sys.A().rows();
+  return internal::IsObservable(sys.A(), sys.C(), threshold);
 }
-
-namespace {
-bool IsStabilizable(const Eigen::Ref<const Eigen::MatrixXd>& A,
-                    const Eigen::Ref<const Eigen::MatrixXd>& B,
-                    bool continuous_time, std::optional<double> threshold) {
-  // (A, B) is stabilizable if [(λI - A) B] is full rank for all unstable
-  // eigenvalues.
-  DRAKE_DEMAND(A.rows() == A.cols());
-  DRAKE_DEMAND(A.rows() == B.rows());
-  Eigen::EigenSolver<Eigen::MatrixXd> es(A);
-  DRAKE_DEMAND(es.info() == Eigen::Success);
-  for (int i = 0; i < es.eigenvalues().size(); ++i) {
-    bool stable_mode = false;
-    if (continuous_time) {
-      stable_mode = es.eigenvalues()(i).real() < 0;
-    } else {
-      stable_mode = std::norm(es.eigenvalues()(i)) < 1;
-    }
-    if (!stable_mode) {
-      Eigen::MatrixXcd mat(A.rows(), A.cols() + B.cols());
-      mat.leftCols(A.cols()) =
-          es.eigenvalues()(i) * Eigen::MatrixXd::Identity(A.rows(), A.cols()) -
-          A;
-      mat.rightCols(B.cols()) = B;
-      Eigen::ColPivHouseholderQR<Eigen::MatrixXcd> qr(mat);
-      if (threshold) {
-        qr.setThreshold(*threshold);
-      }
-      DRAKE_DEMAND(qr.info() == Eigen::Success);
-      if (qr.rank() < A.rows()) {
-        return false;
-      }
-    }
-  }
-  return true;
-}
-}  // namespace
 
 bool IsStabilizable(const LinearSystem<double>& sys,
                     std::optional<double> threshold) {
-  return IsStabilizable(sys.A(), sys.B(), sys.time_period() <= 0, threshold);
+  const bool continuous_time = sys.time_period() <= 0;
+  return internal::IsStabilizable(sys.A(), sys.B(), continuous_time, threshold);
 }
 
 bool IsDetectable(const LinearSystem<double>& sys,
                   std::optional<double> threshold) {
-  // The system (C, A) is detectable iff (A', C') is stabilizable.;
-  return IsStabilizable(sys.A().transpose(), sys.C().transpose(),
-                        sys.time_period() <= 0, threshold);
+  const bool continuous_time = sys.time_period() <= 0;
+  return internal::IsDetectable(sys.A(), sys.C(), continuous_time, threshold);
 }
 
 }  // namespace systems

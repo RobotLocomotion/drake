@@ -65,6 +65,13 @@ class BlockSparsityPattern {
    are nonzero. */
   const std::vector<std::vector<int>>& neighbors() const { return neighbors_; }
 
+  /* Returns the number of "non-zero" (in the sense of eigen::SparseMatrix::nnz,
+   i.e., stored densely, not necessarily numerically zero
+   https://eigen.tuxfamily.org/dox/classEigen_1_1SparseMatrix.html#a03de8b3da2c142ce8698a76123b3e7d3)
+   scalar values in `this` block sparsity pattern. Note that only the non-zero
+   entries in the lower triangular part of the matrix are included. */
+  int CalcNumNonzeros() const;
+
  private:
   std::vector<int> block_sizes_;
   std::vector<std::vector<int>> neighbors_;
@@ -174,6 +181,11 @@ class BlockSparseLowerTriangularOrSymmetricMatrix {
    */
   MatrixX<double> MakeDenseMatrix() const;
 
+  /* Makes a dense representation of the bottom right `num_blocks` blocks of the
+   matrix.
+   @pre 0 <= num_blocks <= block_cols(). */
+  MatrixX<double> MakeDenseBottomRightCorner(int num_blocks) const;
+
   /* Returns true if the ij-th block in this block sparse matrix is non-zero. In
    particular, this returns false if the indices provided are out of range. */
   bool HasBlock(int i, int j) const {
@@ -234,6 +246,15 @@ class BlockSparseLowerTriangularOrSymmetricMatrix {
    the block columns are of size 2, 3, 11, 5, then this function returns
    [0, 2, 5, 16]. */
   const std::vector<int>& starting_cols() const { return starting_cols_; }
+
+  /* If this matrix is symmetric, zeros out all row and column blocks whose
+   block indices are included in `indices` and then sets the off-diagonal
+   entries of the associated diagonal blocks to zero. This function doesn't
+   change the sparsity pattern as it's forbidden by this class (see class
+   documentation).
+   @pre All entries in `indices` are in [0, block_cols()).
+   @throws if `this` matrix is block lower triangular. */
+  void ZeroRowsAndColumns(const std::vector<int>& indices);
 
  private:
   /* Checks if the input block row and column indices and optionally the

@@ -13,9 +13,9 @@ namespace sensors {
 // TODO(SeanCurtis-TRI) Deprecate the name CameraInfo in favor of Intrinsics.
 /**
  Simple class for characterizing the Drake camera model. The camera model is
- based on the
- [pinhole _model_](http://docs.opencv.org/2.4/modules/calib3d/doc/camera_calibration_and_3d_reconstruction.html)
- , which is related to but distinct from an actual
+ based on the [pinhole
+ _model_](http://docs.opencv.org/2.4/modules/calib3d/doc/camera_calibration_and_3d_reconstruction.html),
+ which is related to but distinct from an actual
  [pinhole _camera_](https://en.wikipedia.org/wiki/Pinhole_camera). The former
  is a mathematical model for producing images, the latter is a physical object.
 
@@ -35,8 +35,8 @@ namespace sensors {
  appears. In essence, the parameters of the camera model define a mapping from
  points in 3D space to a point on the image (2D space).
 
- The full discussion of this mapping can be found in the
- [OpenCV documentation](https://docs.opencv.org/2.4/modules/calib3d/doc/camera_calibration_and_3d_reconstruction.html).
+ The full discussion of this mapping can be found in the [OpenCV
+ documentation](https://docs.opencv.org/2.4/modules/calib3d/doc/camera_calibration_and_3d_reconstruction.html).
  Here, we'll highlight one or two points as it relates to this struct.
 
  The mapping from 3D to 2D is decomposed into two sets of properties: extrinsic
@@ -223,9 +223,7 @@ class CameraInfo final {
   double center_y() const { return intrinsic_matrix_(1, 2); }
 
   /** Returns the camera intrinsic matrix, K. */
-  const Eigen::Matrix3d& intrinsic_matrix() const {
-    return intrinsic_matrix_;
-  }
+  const Eigen::Matrix3d& intrinsic_matrix() const { return intrinsic_matrix_; }
 
  private:
   int width_{};

@@ -87,11 +87,22 @@ class _ViewerApplet:
     """Displays lcmt_viewer_load_robot and lcmt_viewer_draw into MeshCat."""
 
     def __init__(self, *, meshcat, path, alpha_slider_name,
-                 start_visible=True):
+                 should_accept_link=None, start_visible=True):
+        """Constructs an applet.
+
+        If should_accept_link is given, only links where
+        `should_accept_link(link.name)` is true will be displayed. (N.B. This
+        predicate only applies to rigid bodies; it does not apply to deformable
+        geometries, which do not have a concept of a "link".)
+        """
         self._meshcat = meshcat
         self._path = path
         self._load_message = None
         self._alpha_slider = _Slider(meshcat, alpha_slider_name)
+        if should_accept_link is not None:
+            self._should_accept_link = should_accept_link
+        else:
+            self._should_accept_link = lambda _: True
         self._start_visible = start_visible
         self._geom_paths = []
         self._geom_colors = []
@@ -129,6 +140,8 @@ class _ViewerApplet:
         self._geom_paths = []
         self._geom_colors = []
         for link in message.link:
+            if not self._should_accept_link(link.name):
+                continue
             robot_num = link.robot_num
             link_name = link.name.replace("::", "/")
             link_path = f"{self._path}/{robot_num}/{link_name}"
@@ -146,6 +159,8 @@ class _ViewerApplet:
     def on_viewer_draw(self, message):
         """Handler for lcmt_viewer_draw."""
         for i in range(message.num_links):
+            if not self._should_accept_link(message.link_name[i]):
+                continue
             link_name = message.link_name[i].replace("::", "/")
             robot_num = message.robot_num[i]
             link_path = f"{self._path}/{robot_num}/{link_name}"
@@ -164,10 +179,14 @@ class _ViewerApplet:
             return
         value, value_changed = self._alpha_slider.read()
         if force or value_changed:
+            max_alpha = max([x.a() for x in self._geom_colors], default=1.0)
             for k in range(len(self._geom_paths)):
                 path = self._geom_paths[k]
                 new_color = copy.deepcopy(self._geom_colors[k])
-                new_color.update(a=value * new_color.a())
+                if max_alpha == 0:
+                    new_color.update(a=value)
+                else:
+                    new_color.update(a=value * new_color.a())
                 self._meshcat.SetProperty(path, "color", new_color.rgba)
 
     def on_viewer_draw_deformable(self, message):
@@ -504,9 +523,16 @@ class Meldis:
                                show_stats_plot=False)
         self.meshcat = Meshcat(params=params)
 
+        def is_inertia_link(link_name):
+            return "::InertiaVisualizer::" in link_name
+
+        def is_not_inertia_link(link_name):
+            return not is_inertia_link(link_name)
+
         default_viewer = _ViewerApplet(meshcat=self.meshcat,
                                        path="/DRAKE_VIEWER",
-                                       alpha_slider_name="Viewer α")
+                                       alpha_slider_name="Viewer α",
+                                       should_accept_link=is_not_inertia_link)
         self._subscribe(channel="DRAKE_VIEWER_LOAD_ROBOT",
                         message_type=lcmt_viewer_load_robot,
                         handler=default_viewer.on_viewer_load)
@@ -517,6 +543,20 @@ class Meldis:
                         message_type=lcmt_viewer_link_data,
                         handler=default_viewer.on_viewer_draw_deformable)
         self._poll(handler=default_viewer.on_poll)
+
+        inertia_viewer = _ViewerApplet(meshcat=self.meshcat,
+                                       path="/Inertia Visualizer",
+                                       alpha_slider_name="Inertia α",
+                                       should_accept_link=is_inertia_link,
+                                       start_visible=False)
+        inertia_viewer._alpha_slider._value = 0.5
+        self._subscribe(channel="DRAKE_VIEWER_LOAD_ROBOT",
+                        message_type=lcmt_viewer_load_robot,
+                        handler=inertia_viewer.on_viewer_load)
+        self._subscribe(channel="DRAKE_VIEWER_DRAW",
+                        message_type=lcmt_viewer_draw,
+                        handler=inertia_viewer.on_viewer_draw)
+        self._poll(handler=inertia_viewer.on_poll)
 
         illustration_viewer = _ViewerApplet(meshcat=self.meshcat,
                                             path="/Visual Geometry",

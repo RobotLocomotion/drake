@@ -41,8 +41,7 @@ The docker tags for Drake's stable releases are spelled like:
 
 * ``focal-X.Y.Z`` for the Ubuntu 20.04 image of Drake vX.Y.Z.
 * ``jammy-X.Y.Z`` for the Ubuntu 22.04 image of Drake vX.Y.Z.
-* ``X.Y.Z`` is a synonym for some arbitrary Ubuntu base version
-  (currently 20.04 "Focal").
+* ``X.Y.Z`` is a synonym for ``jammy-X.Y.Z``.
 
 Refer to [Quickstart](/installation.html#quickstart) for next steps.
 
@@ -62,7 +61,7 @@ The docker tags for Drake's nightly releases are spelled like:
 * ``jammy-YYYYMMDD`` for the Ubuntu 22.04 image of Drake as of date YYYY-MM-DD.
 * ``focal`` is a synonym for the most recent ``focal-YYYYMMDD``.
 * ``jammy`` is a synonym for the most recent ``jammy-YYYYMMDD``.
-* ``YYYYMMDD`` is a synonym for the most recent ``focal-YYYYMMDD``.
+* ``YYYYMMDD`` is a synonym for the most recent ``jammy-YYYYMMDD``.
 * ``latest`` is a synonym for the most recent ``YYYYMMDD``.
 
 Refer to [Quickstart](/installation.html#quickstart) for next steps.

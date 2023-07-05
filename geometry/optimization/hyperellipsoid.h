@@ -5,6 +5,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/name_value.h"
 #include "drake/geometry/optimization/convex_set.h"
 
 namespace drake {
@@ -27,6 +28,9 @@ geometry::Ellipsoid and to distinguish that this class supports N dimensions.
 class Hyperellipsoid final : public ConvexSet {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Hyperellipsoid)
+
+  /** Constructs a default (zero-dimensional) set. */
+  Hyperellipsoid();
 
   /** Constructs the ellipsoid.
   @pre A.cols() == center.size(). */
@@ -58,7 +62,8 @@ class Hyperellipsoid final : public ConvexSet {
   that if center ∈ other, then we expect scaling = 0 and x = center (up to
   precision).
   @pre `other` must have the same ambient_dimension as this.
-  @returns the minimal scaling and the witness point, x, on other. */
+  @returns the minimal scaling and the witness point, x, on other.
+  @throws std::exception if ambient_dimension() == 0 */
   std::pair<double, Eigen::VectorXd> MinimumUniformScalingToTouch(
       const ConvexSet& other) const;
 
@@ -89,15 +94,29 @@ class Hyperellipsoid final : public ConvexSet {
   /** Constructs the L₂-norm unit ball in `dim` dimensions, {x | |x|₂ <= 1 }. */
   static Hyperellipsoid MakeUnitBall(int dim);
 
+  /** Passes this object to an Archive.
+  Refer to @ref yaml_serialization "YAML Serialization" for background. */
+  template <typename Archive>
+  void Serialize(Archive* a) {
+    ConvexSet::Serialize(a);
+    a->Visit(MakeNameValue("A", &A_));
+    a->Visit(MakeNameValue("center", &center_));
+    CheckInvariants();
+  }
+
  private:
   std::unique_ptr<ConvexSet> DoClone() const final;
 
   bool DoIsBounded() const final;
 
+  // N.B. No need to override DoMaybeGetPoint here.
+
   bool DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
                     double tol) const final;
 
-  void DoAddPointInSetConstraints(
+  std::pair<VectorX<symbolic::Variable>,
+            std::vector<solvers::Binding<solvers::Constraint>>>
+  DoAddPointInSetConstraints(
       solvers::MathematicalProgram* prog,
       const Eigen::Ref<const solvers::VectorXDecisionVariable>& vars)
       const final;
@@ -119,6 +138,8 @@ class Hyperellipsoid final : public ConvexSet {
 
   std::pair<std::unique_ptr<Shape>, math::RigidTransformd> DoToShapeWithPose()
       const final;
+
+  void CheckInvariants() const;
 
   // Implement support shapes for the ShapeReifier interface.
   using ShapeReifier::ImplementGeometry;

@@ -8,7 +8,6 @@ from webbrowser import open as _webbrowser_open
 
 import numpy as np
 
-from pydrake.common.deprecation import deprecated
 from pydrake.geometry import (
     Box,
     Cylinder,
@@ -37,14 +36,6 @@ from pydrake.visualization import (
 from pydrake.visualization._triad import (
     AddFrameTriadIllustration,
 )
-
-
-class RunResult(Enum):
-    """This class is deprecated and will be removed on or after 2023-07-01."""
-    KEEP_GOING = 0  # Note that this is never returned but is used internally.
-    LOOP_ONCE = 1
-    STOPPED = 2
-    RELOAD = 3
 
 
 class ModelVisualizer:
@@ -543,15 +534,6 @@ class ModelVisualizer:
         if self._reload_button_name is not None:
             self._meshcat.DeleteButton(self._reload_button_name)
             self._reload_button_name = None
-
-        return RunResult.STOPPED
-
-    @deprecated("Use Run() instead.", date="2023-07-01")
-    def RunWithReload(self, *args, **kwargs):
-        """
-        (Deprecated.) The reload feature is enabled by default during Run().
-        """
-        return self.Run(*args, **kwargs)
 
     def _raise_if_invalid_positions(self, position):
         """

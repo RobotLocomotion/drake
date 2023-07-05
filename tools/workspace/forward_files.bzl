@@ -17,9 +17,14 @@ def forward_files(
         String to be stripped from source files. Should include trailing slash.
     @param dest_prefix
         String to be prepended to target.
+    @param tags
+        Must always include "manual" at a minimum.
+        Files should only be copied when needed, not as part of `:all`.
     """
     if strip_prefix == None or dest_prefix == None:
         fail("Must supply `strip_prefix` and `dest_prefix`.")
+    if "manual" not in (tags or []):
+        fail("Must set `tags = [\"manual\"]`")
     outs = []
     for src in srcs:
         if not src.startswith(strip_prefix):

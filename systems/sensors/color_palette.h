@@ -49,8 +49,7 @@ std::ostream& operator<<(std::ostream& out, const Color<T>& color) {
 
 namespace std {
 template <typename T>
-struct hash<drake::systems::sensors::Color<T>>
-    : public drake::DefaultHash {};
+struct hash<drake::systems::sensors::Color<T>> : public drake::DefaultHash {};
 }  // namespace std
 
 namespace drake {
@@ -164,22 +163,16 @@ class ColorPalette {
 
   /// Returns the color of type ColorI which corresponds to sky.
   /// The pixel range of returned color is [0, 255].
-  const ColorI& get_sky_color() const {
-    return kSkyColor;
-  }
+  const ColorI& get_sky_color() const { return kSkyColor; }
 
   /// Returns the color of type ColorI which corresponds to flat terrain.
   /// The pixel range of returned color is [0, 255].
-  const ColorI& get_terrain_color() const {
-    return kTerrainColor;
-  }
+  const ColorI& get_terrain_color() const { return kTerrainColor; }
 
   /// Looks up the ID which corresponds to the given color.
   ///
   /// @param color The color you want to know the corresponding ID.
-  IdType LookUpId(const ColorI& color) const {
-    return color_id_map_.at(color);
-  }
+  IdType LookUpId(const ColorI& color) const { return color_id_map_.at(color); }
 
  private:
   // These colors are chosen so as to be easily distinguished from the colors in
@@ -202,6 +195,6 @@ class ColorPalette {
 // TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
 namespace fmt {
 template <typename T>
-struct formatter<drake::systems::sensors::Color<T>>
-    : drake::ostream_formatter {};
+struct formatter<drake::systems::sensors::Color<T>> : drake::ostream_formatter {
+};
 }  // namespace fmt

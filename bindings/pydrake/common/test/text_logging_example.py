@@ -2,7 +2,7 @@ import argparse
 import logging
 
 from pydrake.common import configure_logging
-from pydrake.common.test.text_logging_test import do_log_test
+from pydrake.common.test.text_logging_test_helpers import do_log_test
 
 
 def main():

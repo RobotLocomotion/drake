@@ -121,8 +121,9 @@ GTEST_TEST(BeamModelTest, TestProbabilityDensity) {
     const double sigma_sq = params.sigma_hit() * params.sigma_hit();
     return params.probability_uniform() / kMaxRange +
            params.probability_short() * p_short +
-           probability_hit * std::exp(-0.5 * (z - kDepthInput) *
-                                      (z - kDepthInput) / sigma_sq) /
+           probability_hit *
+               std::exp(-0.5 * (z - kDepthInput) * (z - kDepthInput) /
+                        sigma_sq) /
                std::sqrt(2 * M_PI * sigma_sq);
   };
 
@@ -165,16 +166,17 @@ GTEST_TEST(BeamModelTest, TestProbabilityDensity) {
 
   // Check the max returns.
   // Cumulative distribution function of the standard normal distribution.
-  auto Phi = [](double z) { return 0.5 * std::erfc(-z / std::sqrt(2.0)); };
+  auto Phi = [](double z) {
+    return 0.5 * std::erfc(-z / std::sqrt(2.0));
+  };
   const double p_max =
       params.probability_miss() +
       probability_hit *
           Phi(-kDepthInput /
               params.sigma_hit())  // "hit" would have returned < 0.0.
-      +
-      probability_hit *
-          Phi((kDepthInput - kMaxRange) /
-              params.sigma_hit());  // "hit" would have returned > kMaxRange.
+      + probability_hit *
+            Phi((kDepthInput - kMaxRange) /
+                params.sigma_hit());  // "hit" would have returned > kMaxRange.
   EXPECT_NEAR(
       (x.array() == kMaxRange).template cast<double>().matrix().sum() / N,
       p_max, 3e-3);

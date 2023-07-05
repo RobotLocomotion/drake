@@ -30,11 +30,13 @@ using solvers::VectorXDecisionVariable;
 using std::sqrt;
 using symbolic::Variable;
 
+Hyperellipsoid::Hyperellipsoid()
+    : Hyperellipsoid(MatrixXd(0, 0), VectorXd(0)) {}
+
 Hyperellipsoid::Hyperellipsoid(const Eigen::Ref<const MatrixXd>& A,
                                const Eigen::Ref<const VectorXd>& center)
-    : ConvexSet(center.size()), A_{A}, center_{center} {
-  DRAKE_THROW_UNLESS(A.cols() == center.size());
-  DRAKE_THROW_UNLESS(A.allFinite());  // to ensure the set is non-empty.
+    : ConvexSet(center.size()), A_(A), center_(center) {
+  CheckInvariants();
 }
 
 Hyperellipsoid::Hyperellipsoid(const QueryObject<double>& query_object,
@@ -81,6 +83,9 @@ double volume_of_unit_sphere(int dim) {
 }  // namespace
 
 double Hyperellipsoid::Volume() const {
+  if (ambient_dimension() == 0) {
+    return 0.0;
+  }
   if (A_.rows() < A_.cols()) {
     return std::numeric_limits<double>::infinity();
   }
@@ -90,6 +95,7 @@ double Hyperellipsoid::Volume() const {
 
 std::pair<double, VectorXd> Hyperellipsoid::MinimumUniformScalingToTouch(
     const ConvexSet& other) const {
+  DRAKE_THROW_UNLESS(ambient_dimension() > 0);
   DRAKE_THROW_UNLESS(other.ambient_dimension() == ambient_dimension());
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables(ambient_dimension());
@@ -181,9 +187,12 @@ bool Hyperellipsoid::DoPointInSet(const Eigen::Ref<const VectorXd>& x,
   return v.dot(v) <= 1.0 + tol;
 }
 
-void Hyperellipsoid::DoAddPointInSetConstraints(
+std::pair<VectorX<Variable>, std::vector<Binding<Constraint>>>
+Hyperellipsoid::DoAddPointInSetConstraints(
     MathematicalProgram* prog,
     const Eigen::Ref<const VectorXDecisionVariable>& x) const {
+  VectorX<Variable> new_vars;
+  std::vector<Binding<Constraint>> new_constraints;
   // 1.0 ≥ |A * (x - center)|_2, written as
   // z₀ ≥ |z₁...ₘ|₂ with z = A_cone* x + b_cone.
   const int m = A_.rows();
@@ -192,7 +201,8 @@ void Hyperellipsoid::DoAddPointInSetConstraints(
   A_cone << Eigen::RowVectorXd::Zero(n), A_;
   VectorXd b_cone(m + 1);
   b_cone << 1.0, -A_ * center_;
-  prog->AddLorentzConeConstraint(A_cone, b_cone, x);
+  new_constraints.push_back(prog->AddLorentzConeConstraint(A_cone, b_cone, x));
+  return {std::move(new_vars), std::move(new_constraints)};
 }
 
 std::vector<Binding<Constraint>>
@@ -267,6 +277,12 @@ Hyperellipsoid::DoToShapeWithPose() const {
                                            1.0 / sqrt(solver.eigenvalues()[1]),
                                            1.0 / sqrt(solver.eigenvalues()[2]));
   return std::make_pair(std::move(shape), X_WG);
+}
+
+void Hyperellipsoid::CheckInvariants() const {
+  DRAKE_THROW_UNLESS(this->ambient_dimension() == A_.cols());
+  DRAKE_THROW_UNLESS(A_.cols() == center_.size());
+  DRAKE_THROW_UNLESS(A_.allFinite());  // to ensure the set is non-empty.
 }
 
 void Hyperellipsoid::ImplementGeometry(const Ellipsoid& ellipsoid, void* data) {

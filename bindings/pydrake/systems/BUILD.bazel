@@ -221,6 +221,8 @@ drake_pybind_library(
 
 drake_py_unittest(
     name = "lcm_test",
+    # See #19394, this test fails frequently on Mac ARM CI
+    flaky = True,
     deps = [
         ":analysis_py",
         ":lcm_py",

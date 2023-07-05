@@ -9,9 +9,6 @@
 #include <string>
 #include <utility>
 
-#include "pybind11/pybind11.h"
-#include "pybind11/stl.h"
-
 #include "drake/bindings/pydrake/common/wrap_function.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 

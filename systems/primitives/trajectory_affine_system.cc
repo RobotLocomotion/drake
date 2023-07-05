@@ -10,11 +10,9 @@ TrajectoryAffineSystem<T>::TrajectoryAffineSystem(
     const trajectories::Trajectory<double>& f0,
     const trajectories::Trajectory<double>& C,
     const trajectories::Trajectory<double>& D,
-    const trajectories::Trajectory<double>& y0,
-    double time_period)
-    : TimeVaryingAffineSystem<T>(
-          SystemTypeTag<TrajectoryAffineSystem>{},
-          A.rows(), B.cols(), C.rows(), time_period),
+    const trajectories::Trajectory<double>& y0, double time_period)
+    : TimeVaryingAffineSystem<T>(SystemTypeTag<TrajectoryAffineSystem>{},
+                                 A.rows(), B.cols(), C.rows(), time_period),
       A_(A.Clone()),
       B_(B.Clone()),
       f0_(f0.Clone()),

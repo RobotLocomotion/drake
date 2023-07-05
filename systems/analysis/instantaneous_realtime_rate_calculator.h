@@ -24,6 +24,12 @@ class InstantaneousRealtimeRateCalculator {
    */
   std::optional<double> UpdateAndRecalculate(double current_sim_time);
 
+  /* Resets the internal state of `this` rate calculator. After a call, the next
+   call to UpdateAndRecalculate() will re-seed the rate calculation as if it was
+   the first call.
+   */
+  void Reset() { prev_sim_time_ = std::nullopt; }
+
   /* (Internal use for unit testing only) Used to mock the monotonic wall time
      source to control time during unit testing.  */
 #ifndef DRAKE_DOXYGEN_CXX

@@ -12,10 +12,10 @@ def rules_python_repository(
         repository = "bazelbuild/rules_python",  # License: Apache-2.0,
         upgrade_advice = """
         The commit (version) and sha256 here should be identical to the
-        commit listed in
+        rules_python commit listed in
         drake/tools/install/bazel/test/drake_bazel_installed_test.py.
         """,
-        commit = "0.21.0",
-        sha256 = "94750828b18044533e98a129003b6a68001204038dc4749f40b195b24c38f49f",  # noqa
+        commit = "0.22.0",
+        sha256 = "863ba0fa944319f7e3d695711427d9ad80ba92c6edd0b7c7443b84e904689539",  # noqa
         mirrors = mirrors,
     )

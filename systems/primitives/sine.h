@@ -66,8 +66,7 @@ class Sine final : public LeafSystem<T> {
   ///            source, in which case an input port is created.
   explicit Sine(const Eigen::VectorXd& amplitudes,
                 const Eigen::VectorXd& frequencies,
-                const Eigen::VectorXd& phases,
-                bool is_time_based = true);
+                const Eigen::VectorXd& phases, bool is_time_based = true);
 
   /// Scalar-converting copy constructor. See @ref system_scalar_conversion.
   template <typename U>
@@ -106,15 +105,13 @@ class Sine final : public LeafSystem<T> {
   const Eigen::VectorXd& phase_vector() const;
 
  private:
-  void CalcValueOutput(const Context<T>& context,
-                       BasicVector<T>* output) const;
+  void CalcValueOutput(const Context<T>& context, BasicVector<T>* output) const;
   void CalcFirstDerivativeOutput(const Context<T>& context,
                                  BasicVector<T>* output) const;
   void CalcSecondDerivativeOutput(const Context<T>& context,
                                   BasicVector<T>* output) const;
 
   void CalcArg(const Context<T>& context, VectorX<T>* arg) const;
-
 
   const Eigen::VectorXd amplitude_;
   const Eigen::VectorXd frequency_;

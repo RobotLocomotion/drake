@@ -9,7 +9,7 @@ import numpy as np
 import os
 
 from pydrake.common.deprecation import _warn_deprecated
-from pydrake.common.value import AbstractValue
+from pydrake.common.value import Value
 from pydrake.geometry import (
     Box,
     Convex,
@@ -118,7 +118,7 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
         self._T_VW = T_VW
 
         self._geometry_query_input_port = self.DeclareAbstractInputPort(
-            "geometry_query", AbstractValue.Make(QueryObject()))
+            "geometry_query", Value(QueryObject()))
 
         self.ax.axis('equal')
         self.ax.axis('off')

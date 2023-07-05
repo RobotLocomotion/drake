@@ -7,6 +7,8 @@
 #include "drake/common/drake_throw.h"
 #include "drake/common/text_logging.h"
 
+namespace py = pybind11;
+
 namespace drake {
 namespace pydrake {
 namespace {
@@ -60,15 +62,15 @@ class Worker {
 
 }  // namespace
 
-PYBIND11_MODULE(text_logging_test, m) {
+PYBIND11_MODULE(text_logging_test_helpers, m) {
   m.doc() = "Test text logging";
 
   m.def("do_log_test", &do_log_test);
 
   {
     using Class = Worker;
-    pybind11::class_<Class>(m, "Worker")
-        .def(pybind11::init<>())
+    py::class_<Class>(m, "Worker")
+        .def(py::init<>())
         .def("Start", &Class::Start)
         .def("Stop", &Class::Stop);
   }

@@ -27,18 +27,21 @@ using symbolic::Variable;
 
 namespace {
 
-int sum_ambient_dimensions(const ConvexSets& sets) {
+int SumAmbientDimensions(const ConvexSets& sets) {
   int dim = 0;
-  for (const auto& s : sets) {
-    dim += s->ambient_dimension();
+  for (const copyable_unique_ptr<ConvexSet>& set : sets) {
+    DRAKE_THROW_UNLESS(set != nullptr);
+    dim += set->ambient_dimension();
   }
   return dim;
 }
 
 }  // namespace
 
+CartesianProduct::CartesianProduct() : CartesianProduct(ConvexSets{}) {}
+
 CartesianProduct::CartesianProduct(const ConvexSets& sets)
-    : ConvexSet(sum_ambient_dimensions(sets)), sets_{sets} {}
+    : ConvexSet(SumAmbientDimensions(sets)), sets_(sets) {}
 
 CartesianProduct::CartesianProduct(const ConvexSet& setA, const ConvexSet& setB)
     : ConvexSet(setA.ambient_dimension() + setB.ambient_dimension()) {
@@ -49,10 +52,18 @@ CartesianProduct::CartesianProduct(const ConvexSet& setA, const ConvexSet& setB)
 CartesianProduct::CartesianProduct(const ConvexSets& sets,
                                    const Eigen::Ref<const MatrixXd>& A,
                                    const Eigen::Ref<const VectorXd>& b)
-    : ConvexSet(A.cols()), sets_{sets}, A_{A}, b_{b} {
-  DRAKE_THROW_UNLESS(A_->rows() == b_->rows());
-  DRAKE_THROW_UNLESS(A_->rows() == sum_ambient_dimensions(sets));
-  DRAKE_THROW_UNLESS(A_->colPivHouseholderQr().rank() == A_->cols());
+    : ConvexSet(A.cols()),
+      sets_(sets),
+      A_(A),
+      b_(b),
+      A_decomp_(Eigen::ColPivHouseholderQR<Eigen::MatrixXd>(*A_)) {
+  const int y_ambient_dimension = SumAmbientDimensions(sets);
+  const int x_ambient_dimension = ambient_dimension();
+  DRAKE_THROW_UNLESS(A_->rows() == y_ambient_dimension);
+  DRAKE_THROW_UNLESS(b_->rows() == y_ambient_dimension);
+  DRAKE_THROW_UNLESS(A_->cols() == x_ambient_dimension);
+  // Ensure that A is injective.
+  DRAKE_THROW_UNLESS(A_decomp_->rank() == A_->cols());
 }
 
 CartesianProduct::CartesianProduct(const QueryObject<double>& query_object,
@@ -78,6 +89,8 @@ CartesianProduct::CartesianProduct(const QueryObject<double>& query_object,
 
   A_ = X_GF.rotation().matrix();
   b_ = X_GF.translation();
+  // N.B. We leave A_decomp_ unset here. It's only used by MaybeGetPoint and
+  // there it's irrelevant because a cylinder is never a point anyway.
 }
 
 CartesianProduct::~CartesianProduct() = default;
@@ -101,6 +114,43 @@ bool CartesianProduct::DoIsBounded() const {
   return true;
 }
 
+std::optional<VectorXd> CartesianProduct::DoMaybeGetPoint() const {
+  // Check if all sets are points.
+  std::vector<VectorXd> points;
+  for (const auto& s : sets_) {
+    if (std::optional<VectorXd> point = s->MaybeGetPoint()) {
+      points.push_back(std::move(*point));
+    } else {
+      return std::nullopt;
+    }
+  }
+
+  // Stack the points.
+  const int y_ambient_dimension = A_ ? A_->rows() : ambient_dimension();
+  int start = 0;
+  VectorXd y(y_ambient_dimension);
+  for (const VectorXd& point : points) {
+    const int point_size = point.size();
+    y.segment(start, point_size) = point;
+    start += point_size;
+  }
+  DRAKE_DEMAND(start == y.size());
+
+  // When A and b are NOT in use, x is just y.
+  if (!A_.has_value()) {
+    return y;
+  }
+
+  // When A_ is in use, either A was passed to the constructor or we denote a
+  // cylinder. In the former case, we have the QR decomp already (set in the
+  // constructor). In the latter case, we can't possibly have cleared the "all
+  // sets are points" checks earlier in this function.
+  DRAKE_DEMAND(A_decomp_.has_value());
+
+  // Solve for x.
+  return A_decomp_->solve(y - *b_);
+}
+
 bool CartesianProduct::DoPointInSet(const Eigen::Ref<const VectorXd>& x,
                                     double tol) const {
   int index = 0;
@@ -114,25 +164,42 @@ bool CartesianProduct::DoPointInSet(const Eigen::Ref<const VectorXd>& x,
   return true;
 }
 
-void CartesianProduct::DoAddPointInSetConstraints(
+std::pair<VectorX<symbolic::Variable>, std::vector<Binding<Constraint>>>
+CartesianProduct::DoAddPointInSetConstraints(
     MathematicalProgram* prog,
     const Eigen::Ref<const VectorXDecisionVariable>& x) const {
+  // Use std::vector which allocates heap memory logarithmically instead of
+  // linearly.
+  std::vector<Variable> new_vars;
   VectorXDecisionVariable y;
+  std::vector<Binding<Constraint>> new_constraints;
   if (A_) {
     // Note: The constructor enforces that A_ is full column rank.
     y = prog->NewContinuousVariables(A_->rows(), "y");
+    new_vars = std::vector<Variable>(y.data(), y.data() + y.rows() * y.cols());
     // y = Ax + b, or [I,-A]*[y;x] = b.
     MatrixXd Aeq = MatrixXd::Identity(A_->rows(), A_->rows() + A_->cols());
     Aeq.rightCols(A_->cols()) = -(*A_);
-    prog->AddLinearEqualityConstraint(Aeq, (*b_), {y, x});
+    new_constraints.push_back(
+        prog->AddLinearEqualityConstraint(Aeq, (*b_), {y, x}));
   } else {
     y = x;
   }
   int index = 0;
   for (const auto& s : sets_) {
-    s->AddPointInSetConstraints(prog, y.segment(index, s->ambient_dimension()));
+    const auto [new_var_in_s, new_constraints_in_s] =
+        s->AddPointInSetConstraints(prog,
+                                    y.segment(index, s->ambient_dimension()));
+    for (int i = 0; i < new_var_in_s.rows(); ++i) {
+      new_vars.push_back(new_var_in_s(i));
+    }
+    new_constraints.insert(new_constraints.end(), new_constraints_in_s.begin(),
+                           new_constraints_in_s.end());
     index += s->ambient_dimension();
   }
+  VectorX<Variable> new_vars_vec =
+      Eigen::Map<VectorX<Variable>>(new_vars.data(), new_vars.size());
+  return {std::move(new_vars_vec), std::move(new_constraints)};
 }
 
 std::vector<Binding<Constraint>>
@@ -165,7 +232,7 @@ CartesianProduct::DoAddPointInNonnegativeScalingConstraints(
   return constraints;
 }
 
-std::vector<solvers::Binding<solvers::Constraint>>
+std::vector<Binding<Constraint>>
 CartesianProduct::DoAddPointInNonnegativeScalingConstraints(
     solvers::MathematicalProgram* prog, const Eigen::Ref<const MatrixXd>& A_x,
     const Eigen::Ref<const VectorXd>& b_x, const Eigen::Ref<const VectorXd>& c,

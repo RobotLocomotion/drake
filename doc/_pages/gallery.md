@@ -162,3 +162,19 @@ and the team at TRI
 *Interactive visualization:* [https://mntan3.github.io/](https://mntan3.github.io/)
 
 *Source Code:* [https://github.com/RobotLocomotion/gym/tree/master/gym/envs/robot_locomotion_group/drake/shoe](https://github.com/RobotLocomotion/gym/tree/master/gym/envs/robot_locomotion_group/drake/shoe)
+
+## AcroMonk: An underactuated brachiation robot that uses Pydrake for trajectory optimization and stabilization
+AcroMonk is an underactuated brachiation robot that is able to brachiate over a horizontally laid ladder with a passive gripper on the real system. 
+Taking advantage of Pydrake, we have generated optimal trajectories and further stabilized them using Time-Varying Linear Quadratic Regulator (TVLQR). 
+The project is open-sourced to support education and research of brachiation with easy to implement hardware and the work is published in the journal of IEEE Robotics and Automation Letters 2023 ([IEEE](https://ieeexplore.ieee.org/document/10106397), [arXiv](https://arxiv.org/abs/2305.08373)). 
+
+
+<img width="400" src="https://github.com/dfki-ric-underactuated-lab/acromonk/blob/main/hardware/images/bf.gif?raw=true">
+
+
+![tvlqr](https://github.com/dfki-ric-underactuated-lab/acromonk/blob/main/hardware/images/5x-tvlqr.gif?raw=true)
+
+
+
+*Source Code:* [AcroMonk](https://github.com/dfki-ric-underactuated-lab/acromonk)
+

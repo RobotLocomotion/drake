@@ -2,7 +2,6 @@
 
 #include <utility>
 
-#include "pybind11/eigen.h"
 #include <Eigen/Dense>
 
 #include "drake/bindings/pydrake/pydrake_pybind.h"
@@ -24,21 +23,25 @@ auto ToEigenRef(Eigen::VectorBlock<Derived>* derived) {
 
 /** Converts a raw array to a numpy array. */
 template <typename T>
-py::object ToArray(T* ptr, int size, py::tuple shape) {
+py::object ToArray(T* ptr, int size, py::tuple shape,
+    py::return_value_policy policy = py_rvp::reference,
+    py::handle parent = py::handle()) {
   // Create flat array to be reshaped in numpy.
   using Vector = VectorX<T>;
   Eigen::Map<Vector> data(ptr, size);
-  return py::cast(Eigen::Ref<Vector>(data), py_rvp::reference)
+  return py::cast(Eigen::Ref<Vector>(data), policy, parent)
       .attr("reshape")(shape);
 }
 
 /** Converts a raw array to a numpy array (`const` variant). */
 template <typename T>
-py::object ToArray(const T* ptr, int size, py::tuple shape) {
+py::object ToArray(const T* ptr, int size, py::tuple shape,
+    py::return_value_policy policy = py_rvp::reference,
+    py::handle parent = py::handle()) {
   // Create flat array to be reshaped in numpy.
   using Vector = const VectorX<T>;
   Eigen::Map<Vector> data(ptr, size);
-  return py::cast(Eigen::Ref<Vector>(data), py_rvp::reference)
+  return py::cast(Eigen::Ref<Vector>(data), policy, parent)
       .attr("reshape")(shape);
 }
 

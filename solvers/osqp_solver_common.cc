@@ -60,7 +60,7 @@ bool CheckAttributes(const MathematicalProgram& prog,
     return false;
   }
   const Binding<QuadraticCost>* nonconvex_quadratic_cost =
-      FindNonconvexQuadraticCost(prog.quadratic_costs());
+      internal::FindNonconvexQuadraticCost(prog.quadratic_costs());
   if (nonconvex_quadratic_cost != nullptr) {
     if (explanation) {
       *explanation =

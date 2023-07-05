@@ -66,6 +66,7 @@ drake_cc_library(
     name = "sample_header",
     testonly = 1,
     hdrs = ["test/sample_header.h"],
+    tags = ["nolint"],
     deps = [
         "//common",
     ],

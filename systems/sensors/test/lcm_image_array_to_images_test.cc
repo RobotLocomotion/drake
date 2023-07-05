@@ -21,7 +21,9 @@ void LoadImageData(const std::string& filename, lcmt_image* image) {
   image->data.clear();
   while (true) {
     uint8_t c = is.get();
-    if (is.eof()) { break; }
+    if (is.eof()) {
+      break;
+    }
     image->data.push_back(c);
   }
 
@@ -30,9 +32,9 @@ void LoadImageData(const std::string& filename, lcmt_image* image) {
   image->size = image->data.size();
 }
 
-void DecodeImageArray(
-    LcmImageArrayToImages* dut, const lcmt_image_array& lcm_images,
-    ImageRgba8U* color_image, ImageDepth32F* depth_image) {
+void DecodeImageArray(LcmImageArrayToImages* dut,
+                      const lcmt_image_array& lcm_images,
+                      ImageRgba8U* color_image, ImageDepth32F* depth_image) {
   std::unique_ptr<Context<double>> context = dut->CreateDefaultContext();
   dut->image_array_t_input_port().FixValue(context.get(), lcm_images);
 
@@ -69,9 +71,8 @@ GTEST_TEST(LcmImageArrayToImagesTest, JpegTest) {
   jpeg_image.pixel_format = lcmt_image::PIXEL_FORMAT_RGB;
   jpeg_image.channel_type = lcmt_image::CHANNEL_TYPE_UINT8;
   jpeg_image.compression_method = lcmt_image::COMPRESSION_METHOD_JPEG;
-  LoadImageData(
-      FindResourceOrThrow("drake/systems/sensors/test/jpeg_test.jpg"),
-      &jpeg_image);
+  LoadImageData(FindResourceOrThrow("drake/systems/sensors/test/jpeg_test.jpg"),
+                &jpeg_image);
 
   lcmt_image_array lcm_images{};
   lcm_images.num_images = 1;

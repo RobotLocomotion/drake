@@ -31,6 +31,13 @@ std::optional<GLuint> TextureLibrary::GetTextureId(
   std::lock_guard<std::mutex> lock(mutex_);
   const auto iter = textures_.find(file_name);
   if (iter != textures_.end()) {
+    // This assertion attempts to validate the precondition. It will fail if an
+    // OpenGL context isn't bound, or if the "wrong" context is bound -- one
+    // that knows nothing of the texture recorded in the library. The test isn't
+    // perfect. Two different contexts can both use the same identifier but
+    // refer to different textures. However, this much test will be good to
+    // help CI detect if we've got systemic issues.
+    DRAKE_ASSERT(glIsTexture(iter->second));
     return iter->second;
   }
 

@@ -45,6 +45,7 @@ drake_pybind_library(
         "//bindings/pydrake/common:cpp_template_pybind",
         "//bindings/pydrake/common:deprecation_pybind",
         "//bindings/pydrake/common:eigen_pybind",
+        "//bindings/pydrake/common:serialize_pybind",
         "//bindings/pydrake/common:value_pybind",
     ],
     cc_so_name = "__init__",

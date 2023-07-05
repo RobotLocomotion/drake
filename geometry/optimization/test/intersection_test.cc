@@ -34,6 +34,11 @@ GTEST_TEST(IntersectionTest, BasicTest) {
   EXPECT_EQ(S.num_elements(), 2);
   EXPECT_EQ(S.ambient_dimension(), 2);
 
+  // Test MaybeGetPoint. Even though the logical intersection *does* represent a
+  // point, our implementation doesn't yet have any implementation tactic that
+  // would identify that condition quickly.
+  EXPECT_FALSE(S.MaybeGetPoint().has_value());
+
   // Test PointInSet.
   Vector2d in, out;
   in << P1.x();
@@ -43,6 +48,13 @@ GTEST_TEST(IntersectionTest, BasicTest) {
 
   EXPECT_TRUE(internal::CheckAddPointInSetConstraints(S, in));
   EXPECT_FALSE(internal::CheckAddPointInSetConstraints(S, out));
+  {
+    solvers::MathematicalProgram prog;
+    auto x = prog.NewContinuousVariables<2>();
+    const auto [new_vars, new_constraints] =
+        S.AddPointInSetConstraints(&prog, x);
+    EXPECT_GE(new_constraints.size(), 2);
+  }
 
   // Test IsBounded.
   EXPECT_TRUE(S.IsBounded());
@@ -58,6 +70,44 @@ GTEST_TEST(IntersectionTest, BasicTest) {
   EXPECT_FALSE(S2.PointInSet(out));
 }
 
+GTEST_TEST(IntersectionTest, TwoIdenticalPoints) {
+  const Point P1(Vector2d{0.1, 1.2});
+  Intersection S(P1, P1);
+  EXPECT_EQ(S.ambient_dimension(), 2);
+  ASSERT_TRUE(S.MaybeGetPoint().has_value());
+  EXPECT_TRUE(CompareMatrices(S.MaybeGetPoint().value(), P1.x()));
+  EXPECT_TRUE(S.PointInSet(P1.x()));
+}
+
+GTEST_TEST(IntersectionTest, DefaultCtor) {
+  const Intersection dut;
+  EXPECT_EQ(dut.num_elements(), 0);
+  EXPECT_NO_THROW(dut.Clone());
+  EXPECT_EQ(dut.ambient_dimension(), 0);
+  EXPECT_FALSE(dut.IntersectsWith(dut));
+  EXPECT_TRUE(dut.IsBounded());
+  EXPECT_FALSE(dut.MaybeGetPoint().has_value());
+  EXPECT_FALSE(dut.PointInSet(Eigen::VectorXd::Zero(0)));
+}
+
+GTEST_TEST(IntersectionTest, Move) {
+  const Point P1(Vector2d{0.1, 1.2});
+  HPolyhedron H1 = HPolyhedron::MakeBox(Vector2d{0, 0}, Vector2d{2, 2});
+  Intersection orig(P1, H1);
+
+  // A move-constructed Intersection takes over the original data.
+  Intersection dut(std::move(orig));
+  EXPECT_EQ(dut.num_elements(), 2);
+  EXPECT_EQ(dut.ambient_dimension(), 2);
+
+  // The old set is in a valid but unspecified state. For convenience we'll
+  // assert that it's empty, but that's not the only valid implementation,
+  // just the one we happen to currently use.
+  EXPECT_EQ(orig.num_elements(), 0);
+  EXPECT_EQ(orig.ambient_dimension(), 0);
+  EXPECT_NO_THROW(orig.Clone());
+}
+
 GTEST_TEST(IntersectionTest, TwoBoxes) {
   HPolyhedron H1 = HPolyhedron::MakeBox(Vector2d{0, 0}, Vector2d{2, 2});
   HPolyhedron H2 = HPolyhedron::MakeBox(Vector2d{1, -1}, Vector2d{3, 1});
@@ -65,6 +115,7 @@ GTEST_TEST(IntersectionTest, TwoBoxes) {
   EXPECT_TRUE(S.PointInSet(Vector2d{1.9, 0.9}));
   EXPECT_FALSE(S.PointInSet(Vector2d{1.9, 1.1}));
   EXPECT_FALSE(S.PointInSet(Vector2d{2.1, 0.9}));
+  EXPECT_FALSE(S.MaybeGetPoint().has_value());
 }
 
 GTEST_TEST(IntersectionTest, BoundedTest) {

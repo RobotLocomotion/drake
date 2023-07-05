@@ -236,6 +236,12 @@ void AggregateDuplicateVariables(const Eigen::SparseMatrix<double>& A,
 
 const Binding<QuadraticCost>* FindNonconvexQuadraticCost(
     const std::vector<Binding<QuadraticCost>>& quadratic_costs) {
+  return internal::FindNonconvexQuadraticCost(quadratic_costs);
+}
+
+namespace internal {
+const Binding<QuadraticCost>* FindNonconvexQuadraticCost(
+    const std::vector<Binding<QuadraticCost>>& quadratic_costs) {
   for (const auto& cost : quadratic_costs) {
     if (!cost.evaluator()->is_convex()) {
       return &cost;
@@ -244,7 +250,16 @@ const Binding<QuadraticCost>* FindNonconvexQuadraticCost(
   return nullptr;
 }
 
-namespace internal {
+const Binding<QuadraticConstraint>* FindNonconvexQuadraticConstraint(
+    const std::vector<Binding<QuadraticConstraint>>& quadratic_constraints) {
+  for (const auto& constraint : quadratic_constraints) {
+    if (!constraint.evaluator()->is_convex()) {
+      return &constraint;
+    }
+  }
+  return nullptr;
+}
+
 bool CheckConvexSolverAttributes(const MathematicalProgram& prog,
                                  const ProgramAttributes& solver_capabilities,
                                  std::string_view solver_name,
@@ -260,7 +275,7 @@ bool CheckConvexSolverAttributes(const MathematicalProgram& prog,
     return false;
   }
   const Binding<QuadraticCost>* nonconvex_quadratic_cost =
-      FindNonconvexQuadraticCost(prog.quadratic_costs());
+      internal::FindNonconvexQuadraticCost(prog.quadratic_costs());
   if (nonconvex_quadratic_cost != nullptr) {
     if (explanation) {
       *explanation = fmt::format(
@@ -273,6 +288,18 @@ bool CheckConvexSolverAttributes(const MathematicalProgram& prog,
   }
   if (explanation) {
     explanation->clear();
+  }
+  const Binding<QuadraticConstraint>* nonconvex_quadratic_constraint =
+      internal::FindNonconvexQuadraticConstraint(prog.quadratic_constraints());
+  if (nonconvex_quadratic_constraint != nullptr) {
+    if (explanation) {
+      *explanation = fmt::format(
+          "{} is unable to solve because (at least) the quadratic constraint "
+          "{} is non-convex. Either change this constraint to a convex one, or "
+          "switch to a different solver like SNOPT/IPOPT/NLOPT.",
+          solver_name, nonconvex_quadratic_constraint->to_string());
+    }
+    return false;
   }
   return true;
 }

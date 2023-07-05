@@ -157,6 +157,5 @@ struct ImageTraits<PixelType::kExpr> {
 // Enable the pixel type enumeration to be used as a map key.
 namespace std {
 template <>
-struct hash<drake::systems::sensors::PixelType>
-    : public drake::DefaultHash {};
+struct hash<drake::systems::sensors::PixelType> : public drake::DefaultHash {};
 }  // namespace std

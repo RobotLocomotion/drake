@@ -15,13 +15,10 @@ class which is exposed to C++ has been explicitly enumerated in one of the
 source files inside the ``bindings/pydrake`` folder. These bindings are
 installed as a single package called ``pydrake``.
 
-<div class="warning" markdown="1">
-Drake does not support the Python environment supplied by Anaconda. Before
-installing or using Drake, please `conda deactivate` (repeatedly, until even
-the conda base environment has been deactivated) such that none of the paths
-reported `which -a python python3 pip pip3` refer to conda.
-Note that Miniconda seems to work fine; it's only Anaconda that has caused
-problems for some users.
+<div class="note" markdown="1">
+Drake is not tested regularly with Anaconda, so if you are using Anaconda you
+may experience compatibility hiccups; when asking for help, be sure to mention
+that Conda is involved.
 </div>
 
 # Installation

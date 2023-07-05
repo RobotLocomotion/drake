@@ -1,10 +1,6 @@
 #include <map>
 #include <string>
 
-#include "pybind11/eigen.h"
-#include "pybind11/operators.h"
-#include "pybind11/pybind11.h"
-#include "pybind11/stl.h"
 #include <fmt/format.h>
 
 #include "drake/bindings/pydrake/common/eigen_pybind.h"

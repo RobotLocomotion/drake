@@ -24,6 +24,7 @@ namespace {
 
 // We need drake:: because there's also a systems::lcm namespace.
 using drake::lcm::DrakeLcm;
+using Eigen::Vector3d;
 using geometry::SceneGraph;
 using geometry::render::ClippingRange;
 using geometry::render::ColorRenderCamera;
@@ -38,7 +39,6 @@ using multibody::MultibodyPlant;
 using multibody::RigidBody;
 using multibody::SpatialInertia;
 using systems::lcm::LcmPublisherSystem;
-using Eigen::Vector3d;
 
 /* Returns a pointer to the named instance of TargetSystem (if it exists). */
 template <typename TargetSystem>
@@ -257,7 +257,7 @@ TEST_F(SimRgbdSensorTest, AddPublisherNoPortIsNoOp) {
   const size_t old_system_count = builder_.GetSystems().size();
   SimRgbdSensor sensor = MakeSensorSpec();
   AddSimRgbdSensorLcmPublisher(sensor, nullptr, nullptr, false, &builder_,
-                                &lcm_);
+                               &lcm_);
   EXPECT_EQ(old_system_count, builder_.GetSystems().size());
 }
 

@@ -66,4 +66,4 @@ drake_py_unittest(
     flaky = True,
 )
 
-add_lint_tests()
+add_lint_tests(enable_clang_format_lint = False)

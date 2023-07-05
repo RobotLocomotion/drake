@@ -320,6 +320,20 @@ GeometryState<T>::GetCollisionCandidates() const {
 }
 
 template <typename T>
+std::vector<SourceId> GeometryState<T>::GetAllSourceIds() const {
+  std::vector<SourceId> result;
+  result.reserve(source_frame_id_map_.size());
+  result.push_back(self_source_);
+  for (const auto& [source_id, _] : source_names_) {
+    if (source_id != self_source_) {
+      result.push_back(source_id);
+    }
+  }
+  std::sort(result.begin() + 1, result.end());
+  return result;
+}
+
+template <typename T>
 bool GeometryState<T>::SourceIsRegistered(SourceId source_id) const {
   return source_frame_id_map_.find(source_id) != source_frame_id_map_.end();
 }

@@ -34,8 +34,7 @@ GTEST_TEST(TestVectorLogSink, LogFinders) {
   auto& logger_context =
       dut->GetMyMutableContextFromRoot(diagram_context.get());
 
-  EXPECT_EQ(&(dut->GetLog(logger_context)),
-            &(dut->FindLog(*diagram_context)));
+  EXPECT_EQ(&(dut->GetLog(logger_context)), &(dut->FindLog(*diagram_context)));
   EXPECT_EQ(&(dut->FindLog(*diagram_context)),
             &(dut->FindMutableLog(diagram_context.get())));
 
@@ -191,8 +190,8 @@ GTEST_TEST(TestVectorLogSink, ScalarConversion) {
   VectorLogSink<double> dut_per_step_publish(2);
   VectorLogSink<double> dut_forced_publish(2, {TriggerType::kForced});
   VectorLogSink<double> dut_periodic_publish(2, 0.25);
-  for (const auto* dut : {
-      &dut_per_step_publish, &dut_forced_publish, &dut_periodic_publish}) {
+  for (const auto* dut :
+       {&dut_per_step_publish, &dut_forced_publish, &dut_periodic_publish}) {
     EXPECT_TRUE(is_autodiffxd_convertible(*dut, [&](const auto& converted) {
       ASSERT_EQ(converted.num_input_ports(), 1);
       EXPECT_EQ(converted.get_input_port().size(), 2);

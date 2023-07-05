@@ -248,6 +248,7 @@ class Simulator {
             std::unique_ptr<Context<T>> context = nullptr);
 
   // TODO(sherm1) Make Initialize() attempt to satisfy constraints.
+
   /// Prepares the %Simulator for a simulation. In order, the sequence of
   /// actions taken here are:
   /// - The active integrator's Initialize() method is invoked.
@@ -319,6 +320,9 @@ class Simulator {
   /// the Context or Simulator options between successive AdvanceTo() calls. See
   /// Initialize() for more information.
   ///
+  /// @note You can track simulation progress to terminate on arbitrary
+  /// conditions using a _monitor_ function; see set_monitor().
+  ///
   /// @param boundary_time The maximum time to which the trajectory will be
   ///     advanced by this call to %AdvanceTo(). The method may return earlier
   ///     if an event or the monitor function requests termination or reports
@@ -330,7 +334,7 @@ class Simulator {
   ///
   /// @pre The internal Context satisfies all System constraints or will after
   ///      pending Context updates are performed.
-  /// @see Initialize(), AdvancePendingEvents(), SimulatorStatus
+  /// @see Initialize(), AdvancePendingEvents(), SimulatorStatus, set_monitor()
   SimulatorStatus AdvanceTo(const T& boundary_time);
 
   /// (Advanced) Handles discrete and abstract state update events that are

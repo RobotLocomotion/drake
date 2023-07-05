@@ -21,6 +21,9 @@ class MinkowskiSum final : public ConvexSet {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MinkowskiSum)
 
+  /** Constructs a default (zero-dimensional) set. */
+  MinkowskiSum();
+
   /** Constructs the sum from a vector of convex sets. */
   explicit MinkowskiSum(const ConvexSets& sets);
 
@@ -61,10 +64,14 @@ class MinkowskiSum final : public ConvexSet {
 
   bool DoIsBounded() const final;
 
+  std::optional<Eigen::VectorXd> DoMaybeGetPoint() const final;
+
   bool DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
                     double tol) const final;
 
-  void DoAddPointInSetConstraints(
+  std::pair<VectorX<symbolic::Variable>,
+            std::vector<solvers::Binding<solvers::Constraint>>>
+  DoAddPointInSetConstraints(
       solvers::MathematicalProgram*,
       const Eigen::Ref<const solvers::VectorXDecisionVariable>&) const final;
 

@@ -47,24 +47,27 @@ Labels." by Jason Rennie and Nathan Srebro, Proceedings of IJCAI
 multidisciplinary workshop on Advances in Preference Handling. */
 using solvers::QuadraticallySmoothedHingeLoss;
 
-/** Constrain the signed distance between all candidate pairs of geometries
-(according to the logic of SceneGraphInspector::GetCollisionCandidates()) to be
-no smaller than a specified minimum distance.  This constraint should be bound
-to decision variables corresponding to the configuration vector, q, of the
-associate MultibodyPlant.
+/** Constrain lb <= min(d) <= ub, namely the signed distance between all
+candidate pairs of geometries (according to the logic of
+SceneGraphInspector::GetCollisionCandidates()) to be no smaller than a specified
+minimum distance lb, and the minimal distance is no larger than a specified ub.
+This constraint should be bound to decision variables corresponding to the
+configuration vector, q, of the associated MultibodyPlant.
 
 The formulation of the constraint is
 
-0 ≤ SmoothMax( φ((dᵢ(q) - d_influence)/(d_influence - dₘᵢₙ)) / φ(-1) ) ≤ 1
+SmoothOverMax( φ((dᵢ(q) - d_influence)/(d_influence - lb)) / φ(-1) ) ≤ 1
+SmoothUnderMax( φ((dᵢ(q) - d_influence)/(d_influence - ub)) / φ(-1) ) ≥ 1
 
-where dᵢ(q) is the signed distance of the i-th pair, dₘᵢₙ is the minimum
+where dᵢ(q) is the signed distance of the i-th pair, lb is the minimum
 allowable distance, d_influence is the "influence distance" (the distance below
 which a pair of geometries influences the constraint), φ is a
-multibody::MinimumDistancePenaltyFunction, and SmoothMax(d) is smooth
-approximation of max(d). We require that dₘᵢₙ < d_influence. The input scaling
-(dᵢ(q) - d_influence)/(d_influence - dₘᵢₙ) ensures that at the boundary of the
-feasible set (when dᵢ(q) == dₘᵢₙ), we evaluate the penalty function at -1,
-where it is required to have a non-zero gradient.
+multibody::MinimumDistancePenaltyFunction. SmoothOverMax(d) and
+SmoothUnderMax(d) is smooth over and under approximation of max(d). We require
+that lb < d_influence. The input scaling (dᵢ(q) - d_influence)/(d_influence -
+lb) ensures that at the boundary of the feasible set (when dᵢ(q) == lb), we
+evaluate the penalty function at -1, where it is required to have a non-zero
+gradient.
 
 @ingroup solver_evaluators
 */
@@ -74,21 +77,22 @@ class MinimumDistanceConstraint final : public solvers::Constraint {
 
   /** Constructs a MinimumDistanceConstraint.
   @param plant The multibody system on which the constraint will be evaluated.
-  @param minimum_distance The minimum allowed value, dₘᵢₙ, of the signed
+  @param minimum_distance The minimum allowed value, lb, of the signed
   distance between any candidate pair of geometries.
   @param penalty_function The penalty function formulation.
   @default QuadraticallySmoothedHinge
   @param influence_distance_offset The difference (in meters) between the
-  influence distance, d_influence, and the minimum distance, dₘᵢₙ (see class
-  documentation). This value must be finite and strictly positive, as it is used
-  to scale the signed distances between pairs of geometries. Smaller values may
-  improve performance, as fewer pairs of geometries need to be considered in
-  each constraint evaluation. @default 1 meter
+  influence distance, d_influence, and the minimum distance, lb (see class
+  documentation), namely influence_distance = minimum_distance_lower +
+  influence_distance_offset. This value must be finite and strictly positive, as
+  it is used to scale the signed distances between pairs of geometries. Smaller
+  values may improve performance, as fewer pairs of geometries need to be
+  considered in each constraint evaluation. @default 1 meter
   @throws std::exception if `plant` has not registered its geometry with
   a SceneGraph object.
   @throws std::exception if influence_distance_offset = ∞.
   @throws std::exception if influence_distance_offset ≤ 0.
-  @pydrake_mkdoc_identifier{double}
+  @pydrake_mkdoc_identifier{double_no_upper_bound}
   */
   MinimumDistanceConstraint(
       const multibody::MultibodyPlant<double>* const plant,
@@ -97,9 +101,25 @@ class MinimumDistanceConstraint final : public solvers::Constraint {
       double influence_distance_offset = 1);
 
   /**
+   Overloaded constructor. lower <= min(distance) <= upper.
+   @param minimum_distance_lower The lower bound of the minimum distance. lower
+   <= min(distance).
+   @param minimum_distance_upper The upper bound of the minimum distance.
+   min(distance) <= upper. If minimum_distance_upper is finite, then it must be
+   smaller than influence_distance_offset.
+   @pydrake_mkdoc_identifier{double_with_upper_bound}
+   */
+  MinimumDistanceConstraint(
+      const multibody::MultibodyPlant<double>* const plant,
+      double minimum_distance_lower, double minimum_distance_upper,
+      systems::Context<double>* plant_context,
+      MinimumDistancePenaltyFunction penalty_function,
+      double influence_distance);
+
+  /**
   Overloaded constructor.
   Constructs the constraint using MultibodyPlant<AutoDiffXd>.
-  @pydrake_mkdoc_identifier{autodiff}
+  @pydrake_mkdoc_identifier{autodiff_no_upper_bound}
   */
   MinimumDistanceConstraint(
       const multibody::MultibodyPlant<AutoDiffXd>* const plant,
@@ -107,11 +127,40 @@ class MinimumDistanceConstraint final : public solvers::Constraint {
       MinimumDistancePenaltyFunction penalty_function = {},
       double influence_distance_offset = 1);
 
+  /**
+  Overloaded constructor.
+  Constructs the constraint using MultibodyPlant<AutoDiffXd>. lower <=
+  min(distance) <= upper.
+  @param minimum_distance_lower The lower bound of the minimum distance. lower
+  <= min(distance). We must have minimum_distance_lower <= influence_distance.
+  @param minimum_distance_upper The upper bound of the minimum distance.
+  min(distance) <= upper. If minimum_distance_upper is finite, then it must be
+  smaller than influence_distance.
+  @pydrake_mkdoc_identifier{autodiff_with_upper_bound}
+  */
+  MinimumDistanceConstraint(
+      const multibody::MultibodyPlant<AutoDiffXd>* const plant,
+      double minimum_distance_lower, double minimum_distance_upper,
+      systems::Context<AutoDiffXd>* plant_context,
+      MinimumDistancePenaltyFunction penalty_function,
+      double influence_distance);
+
   ~MinimumDistanceConstraint() override {}
 
   /** Getter for the minimum distance. */
+  DRAKE_DEPRECATED("2023-11-01", "Use minimum_distance_lower() instead.")
   double minimum_distance() const {
-    return minimum_value_constraint_->minimum_value();
+    return minimum_value_constraint_->minimum_value_lower();
+  }
+
+  /** Getter for the lower bound of the minimum distance. */
+  double minimum_distance_lower() const {
+    return minimum_value_constraint_->minimum_value_lower();
+  }
+
+  /** Getter for the upper bound of the minimum distance. */
+  double minimum_distance_upper() const {
+    return minimum_value_constraint_->minimum_value_upper();
   }
 
   /** Getter for the influence distance. */
@@ -139,7 +188,8 @@ class MinimumDistanceConstraint final : public solvers::Constraint {
 
   template <typename T>
   void Initialize(const MultibodyPlant<T>& plant,
-                  systems::Context<T>* plant_context, double minimum_distance,
+                  systems::Context<T>* plant_context,
+                  double minimum_distance_lower, double minimum_distance_upper,
                   double influence_distance_offset,
                   MinimumDistancePenaltyFunction penalty_function);
 

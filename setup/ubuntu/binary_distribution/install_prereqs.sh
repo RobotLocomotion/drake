@@ -38,7 +38,7 @@ fi
 
 
 if command -v conda &>/dev/null; then
-  echo 'WARNING: Anaconda is NOT supported for building and using the Drake Python bindings' >&2
+  echo 'NOTE: Drake is not tested regularly with Anaconda, so you may experience compatibility hiccups; when asking for help, be sure to mention that Conda is involved.' >&2
 fi
 
 binary_distribution_called_update=0

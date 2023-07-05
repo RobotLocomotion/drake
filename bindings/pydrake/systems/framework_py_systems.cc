@@ -1,10 +1,6 @@
 #include "drake/bindings/pydrake/systems/framework_py_systems.h"
 
-#include "pybind11/eigen.h"
 #include "pybind11/eval.h"
-#include "pybind11/functional.h"
-#include "pybind11/pybind11.h"
-#include "pybind11/stl.h"
 
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
@@ -414,6 +410,9 @@ struct Impl {
         .def("CalcForcedUnrestrictedUpdate",
             &System<T>::CalcForcedUnrestrictedUpdate, py::arg("context"),
             py::arg("state"), doc.System.CalcForcedUnrestrictedUpdate.doc)
+        .def("ExecuteInitializationEvents",
+            &System<T>::ExecuteInitializationEvents, py::arg("context"),
+            doc.System.ExecuteInitializationEvents.doc)
         .def("GetUniquePeriodicDiscreteUpdateAttribute",
             &System<T>::GetUniquePeriodicDiscreteUpdateAttribute,
             doc.System.GetUniquePeriodicDiscreteUpdateAttribute.doc)
@@ -976,21 +975,21 @@ Note: The above is for the C++ documentation. For Python, use
               py::object self_py = py::cast(self, py_rvp::reference);
               for (auto& [input_locator, output_locator] :
                   self->connection_map()) {
-                py::object input_system_py =
-                    py::cast(input_locator.first, py_rvp::reference);
-                py::object input_port_index_py = py::cast(input_locator.second);
                 // Keep alive, ownership: `input_system_py` keeps `self` alive.
-                py_keep_alive(input_system_py, self_py);
+                py::object input_system_py = py::cast(
+                    input_locator.first, py_rvp::reference_internal, self_py);
+                py::object input_port_index_py = py::cast(input_locator.second);
+
                 py::tuple input_locator_py(2);
                 input_locator_py[0] = input_system_py;
                 input_locator_py[1] = input_port_index_py;
 
-                py::object output_system_py =
-                    py::cast(output_locator.first, py_rvp::reference);
+                // Keep alive, ownership: `output_system_py` keeps `self` alive.
+                py::object output_system_py = py::cast(
+                    output_locator.first, py_rvp::reference_internal, self_py);
                 py::object output_port_index_py =
                     py::cast(output_locator.second);
-                // Keep alive, ownership: `output_system_py` keeps `self` alive.
-                py_keep_alive(output_system_py, self_py);
+
                 py::tuple output_locator_py(2);
                 output_locator_py[0] = output_system_py;
                 output_locator_py[1] = output_port_index_py;
@@ -1006,11 +1005,11 @@ Note: The above is for the C++ documentation. For Python, use
               py::list out;
               py::object self_py = py::cast(self, py_rvp::reference);
               for (auto& locator : self->GetInputPortLocators(port_index)) {
-                py::object system_py =
-                    py::cast(locator.first, py_rvp::reference);
-                py::object port_index_py = py::cast(locator.second);
                 // Keep alive, ownership: `system_py` keeps `self` alive.
-                py_keep_alive(system_py, self_py);
+                py::object system_py = py::cast(
+                    locator.first, py_rvp::reference_internal, self_py);
+                py::object port_index_py = py::cast(locator.second);
+
                 py::tuple locator_py(2);
                 locator_py[0] = system_py;
                 locator_py[1] = port_index_py;
@@ -1024,10 +1023,11 @@ Note: The above is for the C++ documentation. For Python, use
             [](Diagram<T>* self, OutputPortIndex port_index) {
               py::object self_py = py::cast(self, py_rvp::reference);
               const auto& locator = self->get_output_port_locator(port_index);
-              py::object system_py = py::cast(locator.first, py_rvp::reference);
-              py::object port_index_py = py::cast(locator.second);
               // Keep alive, ownership: `system_py` keeps `self` alive.
-              py_keep_alive(system_py, self_py);
+              py::object system_py =
+                  py::cast(locator.first, py_rvp::reference_internal, self_py);
+              py::object port_index_py = py::cast(locator.second);
+
               py::tuple locator_py(2);
               locator_py[0] = system_py;
               locator_py[1] = port_index_py;
@@ -1046,19 +1046,7 @@ Note: The above is for the C++ documentation. For Python, use
         .def("GetSubsystemByName", &Diagram<T>::GetSubsystemByName,
             py::arg("name"), py_rvp::reference_internal,
             doc.Diagram.GetSubsystemByName.doc)
-        .def(
-            "GetSystems",
-            [](Diagram<T>* self) {
-              py::list out;
-              py::object self_py = py::cast(self, py_rvp::reference);
-              for (auto* system : self->GetSystems()) {
-                py::object system_py = py::cast(system, py_rvp::reference);
-                // Keep alive, ownership: `system` keeps `self` alive.
-                py_keep_alive(system_py, self_py);
-                out.append(system_py);
-              }
-              return out;
-            },
+        .def("GetSystems", &Diagram<T>::GetSystems, py_rvp::reference_internal,
             doc.Diagram.GetSystems.doc);
 
     // N.B. This will effectively allow derived classes of `VectorSystem` to

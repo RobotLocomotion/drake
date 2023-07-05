@@ -1,9 +1,5 @@
 #include "drake/bindings/pydrake/systems/framework_py_semantics.h"
 
-#include "pybind11/eigen.h"
-#include "pybind11/pybind11.h"
-#include "pybind11/stl.h"
-
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_pybind.h"
@@ -255,6 +251,19 @@ void DoScalarIndependentDefinitions(py::module m) {
               return abstract_value_ref.attr("get_value")();
             },
             py::arg("context"), cls_doc.Eval.doc)
+        .def("is_out_of_date", &Class::is_out_of_date, py::arg("context"),
+            cls_doc.is_out_of_date.doc)
+        .def("is_cache_entry_disabled", &Class::is_cache_entry_disabled,
+            py::arg("context"), cls_doc.is_cache_entry_disabled.doc)
+        .def("disable_caching", &Class::disable_caching, py::arg("context"),
+            cls_doc.disable_caching.doc)
+        .def("enable_caching", &Class::enable_caching, py::arg("context"),
+            cls_doc.enable_caching.doc)
+        .def("disable_caching_by_default", &Class::disable_caching_by_default,
+            cls_doc.disable_caching_by_default.doc)
+        .def("is_disabled_by_default", &Class::is_disabled_by_default,
+            cls_doc.is_disabled_by_default.doc)
+        .def("description", &Class::description, cls_doc.description.doc)
         .def("get_cache_entry_value", &Class::get_cache_entry_value,
             py::arg("context"),
             // Keep alive, ownership: `return` keeps `context` alive.
@@ -266,7 +275,9 @@ void DoScalarIndependentDefinitions(py::module m) {
             py::keep_alive<0, 2>(), py_rvp::reference,
             cls_doc.get_mutable_cache_entry_value.doc)
         .def("cache_index", &Class::cache_index, cls_doc.cache_index.doc)
-        .def("ticket", &Class::ticket, cls_doc.ticket.doc);
+        .def("ticket", &Class::ticket, cls_doc.ticket.doc)
+        .def("has_default_prerequisites", &Class::has_default_prerequisites,
+            cls_doc.has_default_prerequisites.doc);
   }
 }
 
@@ -553,34 +564,10 @@ void DoScalarDependentDefinitions(py::module m) {
       .def("empty", &DiagramBuilder<T>::empty, doc.DiagramBuilder.empty.doc)
       .def("already_built", &DiagramBuilder<T>::already_built,
           doc.DiagramBuilder.already_built.doc)
-      .def(
-          "GetSystems",
-          [](DiagramBuilder<T>* self) {
-            py::list out;
-            py::object self_py = py::cast(self, py_rvp::reference);
-            for (const auto* system : self->GetSystems()) {
-              py::object system_py = py::cast(system, py_rvp::reference);
-              // Keep alive, ownership: `system` keeps `self` alive.
-              py_keep_alive(system_py, self_py);
-              out.append(system_py);
-            }
-            return out;
-          },
-          doc.DiagramBuilder.GetSystems.doc)
-      .def(
-          "GetMutableSystems",
-          [](DiagramBuilder<T>* self) {
-            py::list out;
-            py::object self_py = py::cast(self, py_rvp::reference);
-            for (auto* system : self->GetMutableSystems()) {
-              py::object system_py = py::cast(system, py_rvp::reference);
-              // Keep alive, ownership: `system` keeps `self` alive.
-              py_keep_alive(system_py, self_py);
-              out.append(system_py);
-            }
-            return out;
-          },
-          doc.DiagramBuilder.GetMutableSystems.doc)
+      .def("GetSystems", &DiagramBuilder<T>::GetSystems,
+          py_rvp::reference_internal, doc.DiagramBuilder.GetSystems.doc)
+      .def("GetMutableSystems", &DiagramBuilder<T>::GetMutableSystems,
+          py_rvp::reference_internal, doc.DiagramBuilder.GetMutableSystems.doc)
       .def("HasSubsystemNamed", &DiagramBuilder<T>::HasSubsystemNamed,
           py::arg("name"), doc.DiagramBuilder.HasSubsystemNamed.doc)
       .def("GetSubsystemByName", &DiagramBuilder<T>::GetSubsystemByName,
@@ -600,20 +587,20 @@ void DoScalarDependentDefinitions(py::module m) {
             py::object self_py = py::cast(self, py_rvp::reference);
             for (auto& [input_locator, output_locator] :
                 self->connection_map()) {
-              py::object input_system_py =
-                  py::cast(input_locator.first, py_rvp::reference);
-              py::object input_port_index_py = py::cast(input_locator.second);
               // Keep alive, ownership: `input_system_py` keeps `self` alive.
-              py_keep_alive(input_system_py, self_py);
+              py::object input_system_py = py::cast(
+                  input_locator.first, py_rvp::reference_internal, self_py);
+              py::object input_port_index_py = py::cast(input_locator.second);
+
               py::tuple input_locator_py(2);
               input_locator_py[0] = input_system_py;
               input_locator_py[1] = input_port_index_py;
 
-              py::object output_system_py =
-                  py::cast(output_locator.first, py_rvp::reference);
-              py::object output_port_index_py = py::cast(output_locator.second);
               // Keep alive, ownership: `output_system_py` keeps `self` alive.
-              py_keep_alive(output_system_py, self_py);
+              py::object output_system_py = py::cast(
+                  output_locator.first, py_rvp::reference_internal, self_py);
+              py::object output_port_index_py = py::cast(output_locator.second);
+
               py::tuple output_locator_py(2);
               output_locator_py[0] = output_system_py;
               output_locator_py[1] = output_port_index_py;
@@ -699,6 +686,8 @@ void DoScalarDependentDefinitions(py::module m) {
 
   DefineTemplateClassWithDefault<LeafOutputPort<T>, OutputPort<T>>(
       m, "LeafOutputPort", GetPyParam<T>(), doc.LeafOutputPort.doc)
+      .def("cache_entry", &LeafOutputPort<T>::cache_entry,
+          py_rvp::reference_internal, doc.LeafOutputPort.cache_entry.doc)
       .def("disable_caching_by_default",
           &LeafOutputPort<T>::disable_caching_by_default,
           doc.LeafOutputPort.disable_caching_by_default.doc);

@@ -65,6 +65,7 @@ def _impl(repository_ctx):
         patches = [
             Label("@drake//tools/workspace/drake_visualizer:use_drake_lcmtypes.patch"),  # noqa
             Label("@drake//tools/workspace/drake_visualizer:draw_lcm_mesh.patch"),  # noqa
+            Label("@drake//tools/workspace/drake_visualizer:warn_gltf.patch"),
         ],
         patch_args = [
             "--directory=lib/python{}/site-packages/director".format(

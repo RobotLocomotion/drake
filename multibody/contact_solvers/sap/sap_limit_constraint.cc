@@ -37,7 +37,8 @@ SapLimitConstraint<T>::SapLimitConstraint(int clique, int clique_dof,
                                           Parameters parameters)
     : SapConstraint<T>(CalcConstraintJacobian(clique, clique_dof, clique_nv,
                                               parameters.lower_limit(),
-                                              parameters.upper_limit())),
+                                              parameters.upper_limit()),
+                       {}),
       parameters_(std::move(parameters)),
       clique_dof_(clique_dof),
       q0_{q0},
@@ -151,6 +152,26 @@ void SapLimitConstraint<T>::DoCalcCostHessian(
   if (qu < kInf) {
     if (y(i) > 0.0) (*G)(i, i) = R_inv(i);
   }
+}
+
+template <typename T>
+void SapLimitConstraint<T>::DoAccumulateGeneralizedImpulses(
+    int, const Eigen::Ref<const VectorX<T>>& gamma,
+    EigenPtr<VectorX<T>> tau) const {
+  constexpr double kInf = std::numeric_limits<double>::infinity();
+  const T& ql = parameters_.lower_limit();
+  const T& qu = parameters_.upper_limit();
+  // N.B. The NVI guarantees the clique index is correct, and since there is
+  // only one, we don't need to use it.
+  // For this case the generalized impulses are τ = Jᵀ⋅γ.
+  int i = 0;
+  // Since this constraint defines the constraint velocity (through its
+  // Jacobian) as positive when the state moves away from the limit, then
+  // impulses are positive only when the constraint pushes the state away from
+  // the limit. This leads to the different signs below for lower and upper
+  // limit.
+  if (ql > -kInf) (*tau)(clique_dof_) += gamma(i++);  // Lower.
+  if (qu < kInf) (*tau)(clique_dof_) -= gamma(i);     // Upper.
 }
 
 }  // namespace internal

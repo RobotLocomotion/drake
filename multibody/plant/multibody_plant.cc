@@ -420,10 +420,9 @@ MultibodyPlant<T>::MultibodyPlant(const MultibodyPlant<U>& other)
 }
 
 template <typename T>
-ConstraintIndex MultibodyPlant<T>::AddCouplerConstraint(const Joint<T>& joint0,
-                                                        const Joint<T>& joint1,
-                                                        double gear_ratio,
-                                                        double offset) {
+MultibodyConstraintId MultibodyPlant<T>::AddCouplerConstraint(
+    const Joint<T>& joint0, const Joint<T>& joint1, double gear_ratio,
+    double offset) {
   // N.B. The manager is setup at Finalize() and therefore we must require
   // constraints to be added pre-finalize.
   DRAKE_MBP_THROW_IF_FINALIZED();
@@ -453,16 +452,17 @@ ConstraintIndex MultibodyPlant<T>::AddCouplerConstraint(const Joint<T>& joint0,
     throw std::runtime_error(message);
   }
 
-  const ConstraintIndex constraint_index(num_constraints());
+  const MultibodyConstraintId constraint_id =
+      MultibodyConstraintId::get_new_id();
 
-  coupler_constraints_specs_.push_back(internal::CouplerConstraintSpecs{
-      joint0.index(), joint1.index(), gear_ratio, offset});
+  coupler_constraints_specs_[constraint_id] = internal::CouplerConstraintSpec{
+      joint0.index(), joint1.index(), gear_ratio, offset, constraint_id};
 
-  return constraint_index;
+  return constraint_id;
 }
 
 template <typename T>
-ConstraintIndex MultibodyPlant<T>::AddDistanceConstraint(
+MultibodyConstraintId MultibodyPlant<T>::AddDistanceConstraint(
     const Body<T>& body_A, const Vector3<double>& p_AP, const Body<T>& body_B,
     const Vector3<double>& p_BQ, double distance, double stiffness,
     double damping) {
@@ -487,10 +487,12 @@ ConstraintIndex MultibodyPlant<T>::AddDistanceConstraint(
         "DiscreteContactSolver.");
   }
 
-  DRAKE_THROW_UNLESS(body_A.index() != body_B.index());
+  const MultibodyConstraintId constraint_id =
+      MultibodyConstraintId::get_new_id();
 
-  internal::DistanceConstraintSpecs spec{body_A.index(), p_AP, body_B.index(),
-                                         p_BQ, distance, stiffness, damping};
+  internal::DistanceConstraintSpec spec{
+      body_A.index(), p_AP,      body_B.index(), p_BQ,
+      distance,       stiffness, damping,        constraint_id};
   if (!spec.IsValid()) {
     const std::string msg = fmt::format(
         "Invalid set of parameters for constraint between bodies '{}' and "
@@ -499,15 +501,15 @@ ConstraintIndex MultibodyPlant<T>::AddDistanceConstraint(
     throw std::runtime_error(msg);
   }
 
-  const ConstraintIndex constraint_index(num_constraints());
 
-  distance_constraints_specs_.push_back(spec);
 
-  return constraint_index;
+  distance_constraints_specs_[constraint_id] = spec;
+
+  return constraint_id;
 }
 
 template <typename T>
-ConstraintIndex MultibodyPlant<T>::AddBallConstraint(
+MultibodyConstraintId MultibodyPlant<T>::AddBallConstraint(
     const Body<T>& body_A, const Vector3<double>& p_AP, const Body<T>& body_B,
     const Vector3<double>& p_BQ) {
   // N.B. The manager is set up at Finalize() and therefore we must require
@@ -531,8 +533,11 @@ ConstraintIndex MultibodyPlant<T>::AddBallConstraint(
         "DiscreteContactSolver.");
   }
 
-  internal::BallConstraintSpecs spec{body_A.index(), p_AP, body_B.index(),
-                                     p_BQ};
+  const MultibodyConstraintId constraint_id =
+      MultibodyConstraintId::get_new_id();
+
+  internal::BallConstraintSpec spec{body_A.index(), p_AP, body_B.index(), p_BQ,
+                                     constraint_id};
   if (!spec.IsValid()) {
     const std::string msg = fmt::format(
         "Invalid set of parameters for constraint between bodies '{}' and "
@@ -542,11 +547,9 @@ ConstraintIndex MultibodyPlant<T>::AddBallConstraint(
     throw std::logic_error(msg);
   }
 
-  const ConstraintIndex constraint_index(num_constraints());
+  ball_constraints_specs_[constraint_id] = spec;
 
-  ball_constraints_specs_.push_back(spec);
-
-  return constraint_index;
+  return constraint_id;
 }
 
 template <typename T>
@@ -2306,51 +2309,65 @@ void MultibodyPlant<symbolic::Expression>::CalcHydroelasticWithFallback(
 }
 
 template <typename T>
-void MultibodyPlant<T>::CalcUnlockedVelocityIndices(
+void MultibodyPlant<T>::CalcJointLockingCache(
     const systems::Context<T>& context,
-    std::vector<int>* unlocked_velocity_indices) const {
-  DRAKE_DEMAND(unlocked_velocity_indices != nullptr);
-  auto& indices = *unlocked_velocity_indices;
-  indices.resize(num_velocities());
+    internal::JointLockingCacheData<T>* data) const {
+  DRAKE_DEMAND(data != nullptr);
+
+  const auto& topology = internal_tree().get_topology();
+
+  auto& unlocked = data->unlocked_velocity_indices;
+  auto& locked = data->locked_velocity_indices;
+  auto& unlocked_per_tree = data->unlocked_velocity_indices_per_tree;
+  auto& locked_per_tree = data->locked_velocity_indices_per_tree;
+
+  unlocked_per_tree.clear();
+  locked_per_tree.clear();
+  unlocked.resize(num_velocities());
+  locked.resize(num_velocities());
+  unlocked_per_tree.resize(topology.num_trees());
+  locked_per_tree.resize(topology.num_trees());
 
   int unlocked_cursor = 0;
+  int locked_cursor = 0;
   for (JointIndex joint_index(0); joint_index < num_joints(); ++joint_index) {
     const Joint<T>& joint = get_joint(joint_index);
-    if (!joint.is_locked(context)) {
+    if (joint.is_locked(context)) {
       for (int k = 0; k < joint.num_velocities(); ++k) {
-        indices[unlocked_cursor++] = joint.velocity_start() + k;
+        locked[locked_cursor++] = joint.velocity_start() + k;
+      }
+    } else {
+      for (int k = 0; k < joint.num_velocities(); ++k) {
+        unlocked[unlocked_cursor++] = joint.velocity_start() + k;
       }
     }
   }
 
   DRAKE_ASSERT(unlocked_cursor <= num_velocities());
+  DRAKE_ASSERT(locked_cursor <= num_velocities());
+  DRAKE_ASSERT(unlocked_cursor + locked_cursor == num_velocities());
 
-  // Use size to indicate exactly how many velocities are unlocked.
-  indices.resize(unlocked_cursor);
-  // Sort the unlocked indices to keep the original DOF ordering established by
-  // the plant stable.
-  std::sort(indices.begin(), indices.end());
-  internal::DemandIndicesValid(indices, num_velocities());
-  DRAKE_DEMAND(ssize(indices) == unlocked_cursor);
-}
+  // Use size to indicate exactly how many velocities are locked/unlocked.
+  unlocked.resize(unlocked_cursor);
+  locked.resize(locked_cursor);
 
-template <typename T>
-void MultibodyPlant<T>::CalcUnlockedVelocityIndicesPerTree(
-    const systems::Context<T>& context,
-    std::vector<std::vector<int>>* unlocked_velocity_indices_per_tree) const {
-  DRAKE_DEMAND(unlocked_velocity_indices_per_tree != nullptr);
+  // Sort the locked/unlocked indices to keep the original DOF ordering
+  // established by the plant stable.
+  std::sort(unlocked.begin(), unlocked.end());
+  internal::DemandIndicesValid(unlocked, num_velocities());
+  std::sort(locked.begin(), locked.end());
+  internal::DemandIndicesValid(locked, num_velocities());
 
-  const auto& unlocked_velocity_indices =
-      this->EvalUnlockedVelocityIndices(context);
-  const auto& topology = internal_tree().get_topology();
-  auto& indices = *unlocked_velocity_indices_per_tree;
-  indices.clear();
-  indices.resize(topology.num_trees());
-
-  for (int dof : unlocked_velocity_indices) {
+  for (int dof : unlocked) {
     const internal::TreeIndex tree = topology.velocity_to_tree_index(dof);
     const int tree_dof = dof - topology.tree_velocities_start(tree);
-    indices[tree].push_back(tree_dof);
+    unlocked_per_tree[tree].push_back(tree_dof);
+  }
+
+  for (int dof : locked) {
+    const internal::TreeIndex tree = topology.velocity_to_tree_index(dof);
+    const int tree_dof = dof - topology.tree_velocities_start(tree);
+    locked_per_tree[tree].push_back(tree_dof);
   }
 }
 
@@ -2880,21 +2897,13 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
 
   // Cache joint locking data. A joint's locked/unlocked state is stored as an
   // abstract parameter, so this is the only dependency needed.
-  const auto& joint_locking_data_cache_entry =
-      this->DeclareCacheEntry("Unlocked Velocity Indices.", std::vector<int>(),
-                              &MultibodyPlant::CalcUnlockedVelocityIndices,
-                              {this->all_parameters_ticket()});
+  const auto& joint_locking_data_cache_entry = this->DeclareCacheEntry(
+      "Joint locking indices.",
+      internal::JointLockingCacheData<T>{},
+      &MultibodyPlant::CalcJointLockingCache,
+      {this->all_parameters_ticket()});
   cache_indexes_.joint_locking_data =
       joint_locking_data_cache_entry.cache_index();
-
-  // Cache joint locking per tree data. A joint's locked/unlocked state is
-  // stored as an abstract parameter, so this is the only dependency needed.
-  const auto& joint_locking_data_per_tree_cache_entry = this->DeclareCacheEntry(
-      "Unlocked Velocity Indices Per Tree.", std::vector<std::vector<int>>(),
-      &MultibodyPlant::CalcUnlockedVelocityIndicesPerTree,
-      {this->all_parameters_ticket()});
-  cache_indexes_.joint_locking_data_per_tree =
-      joint_locking_data_per_tree_cache_entry.cache_index();
 }
 
 template <typename T>

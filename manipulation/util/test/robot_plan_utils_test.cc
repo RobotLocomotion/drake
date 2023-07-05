@@ -60,8 +60,7 @@ GTEST_TEST(RobotPlanUtilsTest, EncodeKeyFramesTest) {
   q << 8, 9, 10, 11, 12, 13, 14;
   keyframes.push_back(q);
 
-  lcmt_robot_plan plan =
-      EncodeKeyFrames(joint_names, times, keyframes);
+  lcmt_robot_plan plan = EncodeKeyFrames(joint_names, times, keyframes);
 
   ASSERT_EQ(plan.plan.size(), 2);
   EXPECT_EQ(plan.plan.size(), plan.num_states);

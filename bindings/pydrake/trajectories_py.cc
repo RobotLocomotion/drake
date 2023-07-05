@@ -1,9 +1,4 @@
-#include "pybind11/eigen.h"
 #include "pybind11/eval.h"
-#include "pybind11/numpy.h"
-#include "pybind11/operators.h"
-#include "pybind11/pybind11.h"
-#include "pybind11/stl.h"
 
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
@@ -274,7 +269,8 @@ struct Impl {
               cls_doc.control_points.doc)
           .def("GetExpression", &Class::GetExpression,
               py::arg("time") = symbolic::Variable("t"),
-              cls_doc.GetExpression.doc);
+              cls_doc.GetExpression.doc)
+          .def("ElevateOrder", &Class::ElevateOrder, cls_doc.ElevateOrder.doc);
       DefCopyAndDeepCopy(&cls);
     }
 

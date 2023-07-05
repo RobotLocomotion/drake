@@ -2,6 +2,7 @@
 
 #include <map>
 #include <memory>
+#include <optional>
 #include <string>
 
 #include "drake/geometry/geometry_roles.h"
@@ -67,6 +68,13 @@ class MeshcatVisualizer final : public systems::LeafSystem<T> {
    */
   template <typename U>
   explicit MeshcatVisualizer(const MeshcatVisualizer<U>& other);
+
+  /** Resets the realtime rate calculator. Calculation will resume on the next
+   periodic publish event. This is useful for correcting the realtime rate after
+   simulation is resumed from a paused state, etc. */
+  void ResetRealtimeRateCalculator() const {
+    realtime_rate_calculator_.Reset();
+  }
 
   /** Calls Meshcat::Delete(std::string path), with the path set to
    MeshcatVisualizerParams::prefix.  Since this visualizer will only ever add
@@ -193,7 +201,7 @@ class MeshcatVisualizer final : public systems::LeafSystem<T> {
    before SetTransforms. This is intended to track the information in meshcat_,
    and is therefore also a mutable member variable (instead of declared state).
    */
-  mutable GeometryVersion version_;
+  mutable std::optional<GeometryVersion> version_;
 
   /* A store of the dynamic frames and their path. It is coupled with the
    version_.  This is only for efficiency; it does not represent undeclared

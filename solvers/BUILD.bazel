@@ -7,6 +7,10 @@ load(
     "drake_cc_test",
 )
 load(
+    "@drake//tools/skylark:drake_py.bzl",
+    "drake_py_unittest",
+)
+load(
     ":defs.bzl",
     "drake_cc_optional_googletest",
     "drake_cc_optional_library",
@@ -195,6 +199,7 @@ drake_cc_library(
     ],
     deps = [
         "//math:gradient",
+        "//math:soft_min_max",
     ],
 )
 
@@ -418,6 +423,7 @@ drake_cc_library(
     interface_deps = [
         ":mathematical_program",
         ":mathematical_program_result",
+        "//common:name_value",
     ],
     deps = [
         ":choose_best_solver",
@@ -1247,6 +1253,24 @@ drake_cc_googletest(
     ],
 )
 
+drake_py_unittest(
+    name = "gurobi_solver_license_retention_test",
+    data = [
+        ":gurobi_solver_license_retention_test_helper",
+    ],
+    tags = gurobi_test_tags(),
+)
+
+drake_cc_binary(
+    name = "gurobi_solver_license_retention_test_helper",
+    testonly = True,
+    srcs = ["test/gurobi_solver_license_retention_test_helper.cc"],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":gurobi_solver",
+    ],
+)
+
 drake_cc_googletest(
     name = "integer_optimization_util_test",
     deps = [
@@ -1790,4 +1814,4 @@ drake_cc_googletest(
     ],
 )
 
-add_lint_tests()
+add_lint_tests(enable_clang_format_lint = False)

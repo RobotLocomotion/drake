@@ -442,7 +442,9 @@
         <collision>
           <origin xyz="0 0 0" rpy="0 0 0"/>
           <geometry>
-            <mesh filename="package://drake_models/iiwa_description/meshes/iiwa14/collision/link_7_polytope.obj"/>
+            <mesh filename="package://drake_models/iiwa_description/meshes/iiwa14/collision/link_7_polytope.obj">
+              <drake:declare_convex/>
+            </mesh>
           </geometry>
           <material name="Grey"/>
         </collision>
@@ -464,6 +466,12 @@
     <link name="${robot_name}_link_ee">
     </link>
     <frame name="${robot_name}_frame_ee" link="${robot_name}_link_ee" xyz="0.09 0 0" rpy="3.141592653589793 0 1.570796326794897"/>
+    <drake:collision_filter_group name="${robot_name}_wrist">
+      <drake:member link="${robot_name}_link_5"/>
+      <drake:member link="${robot_name}_link_6"/>
+      <drake:member link="${robot_name}_link_7"/>
+      <drake:ignored_collision_filter_group name="${robot_name}_wrist"/>
+    </drake:collision_filter_group>
     <!--Extensions -->
     <xacro:iiwa_gazebo robot_name="${robot_name}"/>
     <xacro:iiwa_transmission hardware_interface="${hardware_interface}" robot_name="${robot_name}"/>

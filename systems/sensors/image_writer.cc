@@ -250,8 +250,7 @@ std::string ImageWriter::DirectoryFromFormat(const std::string& format,
   // Extract the directory.  Note that in any error messages to the user, we'll
   // report using the argument name from the public method.
   if (format.empty()) {
-    throw std::logic_error(
-        "ImageWriter: The file_name_format cannot be empty");
+    throw std::logic_error("ImageWriter: The file_name_format cannot be empty");
   }
   if (format.back() == '/') {
     throw std::logic_error(fmt::format(

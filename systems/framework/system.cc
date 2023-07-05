@@ -479,6 +479,37 @@ void System<T>::GetInitializationEvents(
 }
 
 template <typename T>
+void System<T>::ExecuteInitializationEvents(Context<T>* context) const {
+  auto discrete_updates = AllocateDiscreteVariables();
+  auto state = context->CloneState();
+  auto init_events = AllocateCompositeEventCollection();
+
+  // NOTE: The execution order here must match the code in
+  // Simulator::Initialize().
+  GetInitializationEvents(*context, init_events.get());
+  // Do unrestricted updates first.
+  if (init_events->get_unrestricted_update_events().HasEvents()) {
+    CalcUnrestrictedUpdate(*context,
+                           init_events->get_unrestricted_update_events(),
+                           state.get());
+    ApplyUnrestrictedUpdate(init_events->get_unrestricted_update_events(),
+                            state.get(), context);
+  }
+  // Do restricted (discrete variable) updates next.
+  if (init_events->get_discrete_update_events().HasEvents()) {
+    CalcDiscreteVariableUpdate(*context,
+                               init_events->get_discrete_update_events(),
+                               discrete_updates.get());
+    ApplyDiscreteVariableUpdate(init_events->get_discrete_update_events(),
+                                discrete_updates.get(), context);
+  }
+  // Do any publishes last.
+  if (init_events->get_publish_events().HasEvents()) {
+    Publish(*context, init_events->get_publish_events());
+  }
+}
+
+template <typename T>
 std::optional<PeriodicEventData>
     System<T>::GetUniquePeriodicDiscreteUpdateAttribute() const {
   std::optional<PeriodicEventData> saved_attr;

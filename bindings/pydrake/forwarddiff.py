@@ -9,7 +9,7 @@ def derivative(function, x):
 
     The function should be scalar-input and scalar-output.
     """
-    x_ad = AutoDiffXd(x, np.ones(1))
+    x_ad = AutoDiffXd(value=x, size=1, offset=0)
     y_ad = function(x_ad)
     return y_ad.derivatives()[0]
 
@@ -25,9 +25,7 @@ def gradient(function, x):
     assert x.ndim == 1, "x must be a vector"
     x_ad = np.empty(x.shape, dtype=AutoDiffXd)
     for i in range(x.size):
-        der = np.zeros(x.size)
-        der[i] = 1
-        x_ad.flat[i] = AutoDiffXd(x.flat[i], der)
+        x_ad.flat[i] = AutoDiffXd(value=x.flat[i], size=x.size, offset=i)
     y_ad = np.asarray(function(x_ad))
     # TODO(eric.cousineau): Consider restricting this in the future to only be
     # a scalar.
@@ -49,12 +47,15 @@ def jacobian(function, x):
     assert x.ndim == 1, "x must be a vector"
     x_ad = np.empty(x.shape, dtype=object)
     for i in range(x.size):
-        der = np.zeros(x.size)
-        der[i] = 1
-        x_ad.flat[i] = AutoDiffXd(x.flat[i], der)
+        x_ad.flat[i] = AutoDiffXd(value=x.flat[i], size=x.size, offset=i)
     y_ad = np.asarray(function(x_ad))
+    # An AutoDiffXd variable with empty derivatives should be treated as
+    # having all zero derivatives. Checking the length of the derivatives
+    # vector, and replacing it with all zeros ensures np.vstack doesn't
+    # throw an error when the shapes don't line up.
     return np.vstack(
-        [y.derivatives() for y in y_ad.flat]).reshape(y_ad.shape + (-1,))
+        [y.derivatives() if len(y.derivatives()) > 0 else np.zeros(x.size)
+            for y in y_ad.flat]).reshape(y_ad.shape + (-1,))
 
 
 # Method overloads:

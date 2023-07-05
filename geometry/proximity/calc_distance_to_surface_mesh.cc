@@ -118,7 +118,7 @@ double CalcSquaredDistanceToTriangle(const Vector3<double>& p_WQ,
 // of "Real Time Collision Detection" (Christer Ericson) with fewer flops if
 // performance is an issue.
 double CalcDistanceToSurfaceMesh(const Vector3<double>& p_WQ,
-                                 const TriangleSurfaceMesh<double> mesh_W) {
+                                 const TriangleSurfaceMesh<double>& mesh_W) {
   double distance_squared = std::numeric_limits<double>::infinity();
   const std::vector<Vector3<double>>& vertices = mesh_W.vertices();
   for (const SurfaceTriangle& t : mesh_W.triangles()) {

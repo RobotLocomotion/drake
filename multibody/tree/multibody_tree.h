@@ -1689,6 +1689,9 @@ class MultibodyTree {
       const systems::Context<T>& context) const;
 
   // See MultibodyPlant method.
+  bool IsVelocityEqualToQDot() const;
+
+  // See MultibodyPlant method.
   void MapVelocityToQDot(
       const systems::Context<T>& context,
       const Eigen::Ref<const VectorX<T>>& v,
@@ -1699,6 +1702,14 @@ class MultibodyTree {
       const systems::Context<T>& context,
       const Eigen::Ref<const VectorX<T>>& qdot,
       EigenPtr<VectorX<T>> v) const;
+
+  // See MultibodyPlant method.
+  Eigen::SparseMatrix<T> MakeVelocityToQDotMap(
+      const systems::Context<T>& context) const;
+
+  // See MultibodyPlant method.
+  Eigen::SparseMatrix<T> MakeQDotToVelocityMap(
+      const systems::Context<T>& context) const;
 
   /**
   @anchor internal_forward_dynamics

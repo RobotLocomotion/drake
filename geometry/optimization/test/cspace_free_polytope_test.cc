@@ -11,72 +11,12 @@
 #include "drake/geometry/optimization/cspace_free_internal.h"
 #include "drake/geometry/optimization/test/c_iris_test_utilities.h"
 #include "drake/multibody/rational/rational_forward_kinematics.h"
-#include "drake/multibody/rational/rational_forward_kinematics_internal.h"
 #include "drake/solvers/solve.h"
 
 namespace drake {
 namespace geometry {
 namespace optimization {
 const double kInf = std::numeric_limits<double>::infinity();
-
-TEST_F(CIrisToyRobotTest, CspaceFreePolytopeConstructor) {
-  // Test CspaceFreePolytope constructor.
-  const Eigen::Vector3d q_star(0, 0, 0);
-  CspaceFreePolytopeTester tester(plant_, scene_graph_,
-                                  SeparatingPlaneOrder::kAffine, q_star);
-  const CspaceFreePolytope& dut = tester.cspace_free_polytope();
-  int num_planes_expected = 0;
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  // TODO(jwnimmer-tri) Once deprecation date 2023-09-01 is finished, adjust
-  // the namespace of the call here from `optimization::` to `internal::`.
-  const auto link_geometries =
-      optimization::GetCollisionGeometries(*plant_, *scene_graph_);
-#pragma GCC diagnostic pop
-  // Count the expected number of planes by hand.
-  num_planes_expected +=
-      link_geometries.at(plant_->world_body().index()).size() *
-      // Don't include world_body to body0 as there is only a weld joint between
-      // them.
-      (link_geometries.at(body_indices_[1]).size() +
-       link_geometries.at(body_indices_[2]).size() +
-       link_geometries.at(body_indices_[3]).size());
-  num_planes_expected += link_geometries.at(body_indices_[0]).size() *
-                         link_geometries.at(body_indices_[2]).size();
-  num_planes_expected += link_geometries.at(body_indices_[1]).size() *
-                         link_geometries.at(body_indices_[3]).size();
-  num_planes_expected += link_geometries.at(body_indices_[2]).size() *
-                         link_geometries.at(body_indices_[3]).size();
-  EXPECT_EQ(dut.separating_planes().size(), num_planes_expected);
-
-  const symbolic::Variables s_set{dut.rational_forward_kin().s()};
-
-  for (const auto& [geometry_pair, plane_index] :
-       dut.map_geometries_to_separating_planes()) {
-    // check plane
-    const auto& plane = dut.separating_planes()[plane_index];
-    if (plane.positive_side_geometry->id() <
-        plane.negative_side_geometry->id()) {
-      EXPECT_EQ(geometry_pair.first(), plane.positive_side_geometry->id());
-      EXPECT_EQ(geometry_pair.second(), plane.negative_side_geometry->id());
-    } else {
-      EXPECT_EQ(geometry_pair.first(), plane.negative_side_geometry->id());
-      EXPECT_EQ(geometry_pair.second(), plane.positive_side_geometry->id());
-    }
-    // Check the expressed body.
-    EXPECT_EQ(plane.expressed_body,
-              multibody::internal::FindBodyInTheMiddleOfChain(
-                  *plant_, plane.positive_side_geometry->body_index(),
-                  plane.negative_side_geometry->body_index()));
-    for (int i = 0; i < 3; ++i) {
-      EXPECT_EQ(plane.a(i).TotalDegree(), 1);
-      EXPECT_EQ(plane.a(i).indeterminates(), s_set);
-    }
-    EXPECT_EQ(plane.b.TotalDegree(), 1);
-    EXPECT_EQ(plane.b.indeterminates(), s_set);
-  }
-}
 
 TEST_F(CIrisToyRobotTest, CspaceFreePolytopeGenerateRationals) {
   const Eigen::Vector3d q_star(0, 0, 0);

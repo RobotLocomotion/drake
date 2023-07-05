@@ -26,6 +26,9 @@ class VPolytope final : public ConvexSet {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(VPolytope)
 
+  /** Constructs a default (zero-dimensional) set. */
+  VPolytope();
+
   /** Constructs the polytope from a d-by-n matrix, where d is the ambient
   dimension, and n is the number of vertices.  The vertices do not have to be
   ordered, nor minimal (they can contain points inside their convex hull).
@@ -86,10 +89,14 @@ class VPolytope final : public ConvexSet {
 
   bool DoIsBounded() const final { return true; }
 
+  std::optional<Eigen::VectorXd> DoMaybeGetPoint() const final;
+
   bool DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
                     double tol) const final;
 
-  void DoAddPointInSetConstraints(
+  std::pair<VectorX<symbolic::Variable>,
+            std::vector<solvers::Binding<solvers::Constraint>>>
+  DoAddPointInSetConstraints(
       solvers::MathematicalProgram*,
       const Eigen::Ref<const solvers::VectorXDecisionVariable>&) const final;
 
@@ -115,6 +122,7 @@ class VPolytope final : public ConvexSet {
   using ShapeReifier::ImplementGeometry;
   void ImplementGeometry(const Box& box, void* data) final;
   void ImplementGeometry(const Convex& convex, void* data) final;
+  void ImplementGeometry(const Mesh& mesh, void* data) final;
 
   Eigen::MatrixXd vertices_;
 };

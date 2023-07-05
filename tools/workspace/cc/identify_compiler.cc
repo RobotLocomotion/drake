@@ -5,15 +5,15 @@
 #include <stdio.h>
 
 int main() {
-// Order is significant since some compilers imitate Clang, GNU, and/or MSVC per
-// https://gitlab.kitware.com/cmake/cmake/blob/v3.12.1/Modules/CMakeCompilerIdDetection.cmake
-//
-// Identifying and version predefined macro names taken from
-// https://gitlab.kitware.com/cmake/cmake/blob/v3.12.1/Modules/Compiler/*-DetermineCompiler.cmake
-//
-// Compiler identifiers match those of CMake 3.12.1, modulo some old versions
-// of the unsupported Borland/Embarcadero, OpenWatcom/Watcom, and
-// VisualAge/XL/zOS compilers.
+  // Order is significant since some compilers imitate Clang, GNU, and/or MSVC:
+  // https://gitlab.kitware.com/cmake/cmake/blob/v3.12.1/Modules/CMakeCompilerIdDetection.cmake
+  //
+  // Identifying and version predefined macro names taken from
+  // https://gitlab.kitware.com/cmake/cmake/blob/v3.12.1/Modules/Compiler/*-DetermineCompiler.cmake
+  //
+  // Compiler identifiers match those of CMake 3.12.1, modulo some old versions
+  // of the unsupported Borland/Embarcadero, OpenWatcom/Watcom, and
+  // VisualAge/XL/zOS compilers.
 
 #if defined(__COMO__)
   const char compiler_id[] = "Comeau";
@@ -151,7 +151,8 @@ int main() {
   const int compiler_version_minor = _MSC_VER % 100;
 
 // NOLINTNEXTLINE(whitespace/line_length)
-#elif defined(__ADSP21000__) || defined(__ADSPBLACKFIN__) || defined(__ADSPTS__) || defined(__VISUALDSPVERSION__)
+#elif defined(__ADSP21000__) || defined(__ADSPBLACKFIN__) || \
+    defined(__ADSPTS__) || defined(__VISUALDSPVERSION__)
   const char compiler_id[] = "ADSP";
 
 #if defined(__VISUALDSPVERSION__)
@@ -201,6 +202,6 @@ int main() {
 #endif
 
   printf("%s %i %i\n", compiler_id, compiler_version_major,
-      compiler_version_minor);
+         compiler_version_minor);
   return 0;
 }

@@ -1,21 +1,10 @@
 #pragma once
 
-#include <map>
-#include <memory>
-#include <string>
-#include <utility>
-#include <vector>
-
-#include <Eigen/Dense>
-
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/query_object.h"
 #include "drake/geometry/render/render_camera.h"
 #include "drake/math/rigid_transform.h"
-#include "drake/math/roll_pitch_yaw.h"
-#include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/sensors/camera_info.h"
 #include "drake/systems/sensors/image.h"
@@ -37,7 +26,13 @@ namespace sensors {
  - depth_image_16u
  - label_image
  - body_pose_in_world
+ - image_time
  @endsystem
+
+ This system models a continuous sensor, where the output ports reflect the
+ instantaneous images observed by the sensor. In contrast, a discrete (sample
+ and hold) sensor model might be a more suitable match for a real-world camera;
+ for that case, see RgbdSensorDiscrete or RgbdSensorAsync.
 
  The following text uses terminology and conventions from CameraInfo. Please
  review its documentation.
@@ -149,7 +144,7 @@ class RgbdSensor final : public LeafSystem<double> {
     return depth_camera_.core().sensor_pose_in_camera_body();
   }
 
-  /** Returns the id of the frame to which the base is affixed.  */
+  /** Returns the id of the frame to which the body is affixed.  */
   geometry::FrameId parent_frame_id() const { return parent_frame_id_; }
 
   /** Returns the geometry::QueryObject<double>-valued input port.  */
@@ -174,6 +169,12 @@ class RgbdSensor final : public LeafSystem<double> {
    which reports the pose of the body in the world frame (X_WB).  */
   const OutputPort<double>& body_pose_in_world_output_port() const;
 
+  /** Returns the vector-valued output port (with size == 1) that reports the
+   current simulation time, in seconds. This is provided for consistency with
+   RgbdSensorDiscrete and RgbdSensorAsync (where the image time is not always
+   the current time). */
+  const OutputPort<double>& image_time_output_port() const;
+
  private:
   // The calculator methods for the four output ports.
   void CalcColorImage(const Context<double>& context,
@@ -186,6 +187,7 @@ class RgbdSensor final : public LeafSystem<double> {
                       ImageLabel16I* label_image) const;
   void CalcX_WB(const Context<double>& context,
                 math::RigidTransformd* X_WB) const;
+  void CalcImageTime(const Context<double>&, BasicVector<double>*) const;
 
   // Extract the query object from the given context (via the appropriate input
   // port.
@@ -201,6 +203,7 @@ class RgbdSensor final : public LeafSystem<double> {
   const OutputPort<double>* depth_image_16U_port_{};
   const OutputPort<double>* label_image_port_{};
   const OutputPort<double>* body_pose_in_world_output_port_{};
+  const OutputPort<double>* image_time_output_port_{};
 
   // The identifier for the parent frame `P`.
   const geometry::FrameId parent_frame_id_;
@@ -212,89 +215,10 @@ class RgbdSensor final : public LeafSystem<double> {
   const math::RigidTransformd X_PB_;
 };
 
-/**
- Wraps a continuous %RgbdSensor with a zero-order hold to create a discrete
- sensor.
-
- @system
- name: RgbdSensorDiscrete
- input_ports:
- - geometry_query
- output_ports:
- - color_image
- - depth_image_32f
- - depth_image_16u
- - label_image
- - body_pose_in_world
- @endsystem
- */
-class RgbdSensorDiscrete final : public systems::Diagram<double> {
- public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RgbdSensorDiscrete);
-
-  static constexpr double kDefaultPeriod = 1. / 30;
-
-  /** Constructs a diagram containing a (non-registered) RgbdSensor that will
-   update at a given rate.
-   @param sensor               The continuous sensor used to generate periodic
-                               images.
-   @param period               Update period (sec).
-   @param render_label_image   If true, renders label image (which requires
-                               additional overhead). If false,
-                               `label_image_output_port` will raise an error if
-                               called.  */
-  RgbdSensorDiscrete(std::unique_ptr<RgbdSensor> sensor,
-                     double period = kDefaultPeriod,
-                     bool render_label_image = true);
-
-  /** Returns reference to RgbdSensor instance.  */
-  const RgbdSensor& sensor() const { return *camera_; }
-
-  /** Returns update period for discrete camera.  */
-  double period() const { return period_; }
-
-  /** @see RgbdSensor::query_object_input_port().  */
-  const InputPort<double>& query_object_input_port() const {
-    return get_input_port(query_object_port_);
-  }
-
-  /** @see RgbdSensor::color_image_output_port().  */
-  const systems::OutputPort<double>& color_image_output_port() const {
-    return get_output_port(output_port_color_image_);
-  }
-
-  /** @see RgbdSensor::depth_image_32F_output_port().  */
-  const systems::OutputPort<double>& depth_image_32F_output_port() const {
-    return get_output_port(output_port_depth_image_32F_);
-  }
-
-  /** @see RgbdSensor::depth_image_16U_output_port().  */
-  const systems::OutputPort<double>& depth_image_16U_output_port() const {
-    return get_output_port(output_port_depth_image_16U_);
-  }
-
-  /** @see RgbdSensor::label_image_output_port().  */
-  const systems::OutputPort<double>& label_image_output_port() const {
-    return get_output_port(output_port_label_image_);
-  }
-
-  /** @see RgbdSensor::body_pose_in_world_output_port().  */
-  const OutputPort<double>& body_pose_in_world_output_port() const {
-    return get_output_port(body_pose_in_world_output_port_);
-  }
-
- private:
-  RgbdSensor* const camera_{};
-  const double period_{};
-
-  int query_object_port_{-1};
-  int output_port_color_image_{-1};
-  int output_port_depth_image_32F_{-1};
-  int output_port_depth_image_16U_{-1};
-  int output_port_label_image_{-1};
-  int body_pose_in_world_output_port_{-1};
-};
-
 }  // namespace sensors
 }  // namespace systems
 }  // namespace drake
+
+// This exists for backwards compatibility reasons. The discrete sensor class
+// was previously defined within this file.
+#include "drake/systems/sensors/rgbd_sensor_discrete.h"

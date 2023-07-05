@@ -1,8 +1,5 @@
 #include "drake/bindings/pydrake/multibody/inverse_kinematics_py.h"
 
-#include "pybind11/eigen.h"
-#include "pybind11/pybind11.h"
-
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/sorted_pair_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
@@ -452,7 +449,7 @@ PYBIND11_MODULE(inverse_kinematics, m) {
             // Keep alive, reference: `self` keeps `plant` alive.
             py::keep_alive<1, 2>(),
             // Keep alive, reference: `self` keeps `plant_context` alive.
-            py::keep_alive<1, 4>(), cls_doc.ctor.doc_double)
+            py::keep_alive<1, 4>(), cls_doc.ctor.doc_double_no_upper_bound)
         .def(py::init(
                  [](const multibody::MultibodyPlant<AutoDiffXd>* const plant,
                      double minimum_distance,
@@ -470,7 +467,7 @@ PYBIND11_MODULE(inverse_kinematics, m) {
             // Keep alive, reference: `self` keeps `plant` alive.
             py::keep_alive<1, 2>(),
             // Keep alive, reference: `self` keeps `plant_context` alive.
-            py::keep_alive<1, 4>(), cls_doc.ctor.doc_autodiff);
+            py::keep_alive<1, 4>(), cls_doc.ctor.doc_autodiff_no_upper_bound);
   }
 
   {

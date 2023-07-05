@@ -95,8 +95,10 @@ BENCHMARK_F(IiwaPositionConstraintFixture, EvalAutoDiffMbpDouble)
     VectorX<AutoDiffXd> q_autodiff = math::InitializeAutoDiff(q_);
     AutoDiffVecXd y_autodiff;
     constraint_->Eval(q_autodiff, &y_autodiff);
-    benchmark::DoNotOptimize(math::ExtractValue(y_autodiff));
-    benchmark::DoNotOptimize(math::ExtractGradient(y_autodiff));
+    VectorXd value;
+    benchmark::DoNotOptimize(value = math::ExtractValue(y_autodiff));
+    MatrixXd gradient;
+    benchmark::DoNotOptimize(gradient = math::ExtractGradient(y_autodiff));
   }
 }
 
@@ -110,8 +112,10 @@ BENCHMARK_F(IiwaPositionConstraintFixture, EvalAutoDiffMbpAutoDiff)
     VectorX<AutoDiffXd> q_autodiff = math::InitializeAutoDiff(q_);
     AutoDiffVecXd y_autodiff;
     ad_constraint_->Eval(q_autodiff, &y_autodiff);
-    benchmark::DoNotOptimize(math::ExtractValue(y_autodiff));
-    benchmark::DoNotOptimize(math::ExtractGradient(y_autodiff));
+    VectorXd value;
+    benchmark::DoNotOptimize(value = math::ExtractValue(y_autodiff));
+    MatrixXd gradient;
+    benchmark::DoNotOptimize(gradient = math::ExtractGradient(y_autodiff));
   }
 }
 

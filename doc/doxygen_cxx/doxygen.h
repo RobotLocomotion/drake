@@ -240,6 +240,7 @@ namespace solvers {
  - <b>USER</b>
  - <b>XDG_CACHE_HOME</b> (see
    <a href="https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html">upstream documentation</a>)
+ - <b>\ref pydrake_python_logging "DRAKE_PYTHON_LOGGING"</b>
 
  @}
 */

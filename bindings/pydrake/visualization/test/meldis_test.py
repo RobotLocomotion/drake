@@ -13,8 +13,11 @@ You can also visualize the LCM test data like so:
 import pydrake.visualization as mut
 
 import functools
-import numpy as np
+import sys
 import unittest
+
+import numpy as np
+import umsgpack
 
 from drake import (
     lcmt_point_cloud,
@@ -22,9 +25,6 @@ from drake import (
     lcmt_viewer_link_data,
 )
 
-from pydrake.common import (
-    FindResourceOrThrow,
-)
 from pydrake.geometry import (
     DrakeVisualizer,
     DrakeVisualizerParams,
@@ -49,6 +49,9 @@ from pydrake.perception import (
     PointCloud,
     PointCloudToLcm,
 )
+from pydrake.systems.analysis import (
+    Simulator,
+)
 from pydrake.systems.framework import (
     DiagramBuilder,
 )
@@ -57,13 +60,26 @@ from pydrake.systems.lcm import (
 )
 
 
+# https://bugs.launchpad.net/ubuntu/+source/u-msgpack-python/+bug/1979549
+#
+# Jammy shipped with python3-u-msgpack 2.3.0, which tries to use
+# `collections.Hashable`, which was removed in Python 3.10. Work around this by
+# monkey-patching `Hashable` into `umsgpack.collections`.
+#
+# TODO(mwoehlke-kitware): Remove this when Jammy's python3-u-msgpack has been
+# updated to 2.5.2 or later.
+if sys.version_info[:2] >= (3, 10) and not hasattr(umsgpack, 'Hashable'):
+    import collections
+    setattr(umsgpack.collections, 'Hashable', collections.abc.Hashable)
+
+
 class TestMeldis(unittest.TestCase):
 
     def _make_diagram(self, *, resource, visualizer_params, lcm):
         builder = DiagramBuilder()
         plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
         parser = Parser(plant=plant)
-        parser.AddModels(FindResourceOrThrow(resource))
+        parser.AddModels(url=f"package://{resource}")
         plant.Finalize()
         DrakeVisualizer.AddToBuilder(builder=builder, scene_graph=scene_graph,
                                      params=visualizer_params, lcm=lcm)
@@ -224,6 +240,80 @@ class TestMeldis(unittest.TestCase):
             # The link always exists after a DRAW.
             self.assertTrue(meshcat.HasPath(link_path))
 
+    def test_viewer_applet_alpha_slider(self):
+        # Create the device under test.
+        dut = mut.Meldis()
+        meshcat = dut.meshcat
+        lcm = dut._lcm
+
+        # Create a simple scene with an invisible geometry (alpha == 0.0).
+        rgb = [0.0, 0.0, 1.0]
+        builder = DiagramBuilder()
+        plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
+        parser = Parser(plant=plant)
+        parser.AddModelsFromString(f"""
+<?xml version="1.0"?>
+<sdf version="1.9">
+  <model name="box">
+    <link name="box">
+      <visual name="box">
+        <geometry>
+          <box>
+            <size>1 1 1</size>
+          </box>
+        </geometry>
+        <material>
+          <diffuse>{rgb[0]} {rgb[1]} {rgb[2]} 0.0</diffuse>
+        </material>
+      </visual>
+    </link>
+    <static>1</static>
+  </model>
+</sdf>
+""", "sdf")
+        plant.Finalize()
+        DrakeVisualizer.AddToBuilder(builder=builder, scene_graph=scene_graph,
+                                     params=DrakeVisualizerParams(), lcm=lcm)
+        diagram = builder.Build()
+
+        # Process the load + draw messages.
+        context = diagram.CreateDefaultContext()
+        diagram.ForcedPublish(context)
+        lcm.HandleSubscriptions(timeout_millis=0)
+        dut._invoke_subscriptions()
+
+        # Request a different alpha.
+        new_alpha = 0.5
+        meshcat.SetSliderValue("Viewer α", new_alpha)
+        dut._invoke_poll()
+
+        # Confirm the new color of the box.
+        path = "/DRAKE_VIEWER/2/plant/box/box/0"
+        self.assertEqual(meshcat.HasPath(path), True)
+        message = meshcat._GetPackedProperty(path, "color")
+        parsed = umsgpack.unpackb(message)
+        self.assertListEqual(parsed['value'], rgb + [new_alpha])
+
+    def test_inertia_geometry(self):
+        url = "package://drake/examples/manipulation_station/models/sphere.sdf"
+        dut = mut.Meldis()
+        lcm = dut._lcm
+        builder = DiagramBuilder()
+        plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
+        parser = Parser(plant=plant)
+        parser.AddModels(url=url)
+        plant.Finalize()
+        config = mut.VisualizationConfig(publish_inertia=True)
+        mut.ApplyVisualizationConfig(config=config, builder=builder, lcm=lcm)
+        diagram = builder.Build()
+        simulator = Simulator(diagram)
+        simulator.AdvanceTo(0.1)
+        with self.assertRaises(SystemExit):
+            dut.serve_forever(idle_timeout=0.001)
+        path = "/Inertia Visualizer/0/inertia_visualizer/InertiaVisualizer"
+        self.assertTrue(dut.meshcat.HasPath(path))
+        self.assertTrue(dut.meshcat.HasPath(f"{path}/sphere/base_link"))
+
     def test_hydroelastic_geometry(self):
         """Checks that _ViewerApplet doesn't crash when receiving
         hydroelastic geometry.
@@ -252,12 +342,11 @@ class TestMeldis(unittest.TestCase):
         lcm = dut._lcm
 
         # Enqueue a point contact result message.
-        sdf_file = FindResourceOrThrow(
-            "drake/examples/manipulation_station/models/sphere.sdf")
+        url = "package://drake/examples/manipulation_station/models/sphere.sdf"
         builder = DiagramBuilder()
         plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.001)
-        sphere1_model, = Parser(plant, "sphere1").AddModels(sdf_file)
-        sphere2_model, = Parser(plant, "sphere2").AddModels(sdf_file)
+        sphere1_model, = Parser(plant, "sphere1").AddModels(url=url)
+        sphere2_model, = Parser(plant, "sphere2").AddModels(url=url)
         body1 = plant.GetBodyByName("base_link", sphere1_model)
         body2 = plant.GetBodyByName("base_link", sphere2_model)
         plant.AddJoint(PrismaticJoint(
@@ -295,12 +384,11 @@ class TestMeldis(unittest.TestCase):
         lcm = dut._lcm
 
         # Enqueue a hydroelastic contact message.
-        sdf_file = FindResourceOrThrow(
-            "drake/multibody/meshcat/test/hydroelastic.sdf")
+        url = "package://drake/multibody/meshcat/test/hydroelastic.sdf"
         builder = DiagramBuilder()
         plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.001)
         parser = Parser(plant=plant)
-        parser.AddModels(sdf_file)
+        parser.AddModels(url=url)
         body1 = plant.GetBodyByName("body1")
         body2 = plant.GetBodyByName("body2")
         plant.AddJoint(PrismaticJoint(

@@ -104,6 +104,7 @@ drake_cc_googletest(
         "//geometry:meshcat_visualizer",
         "//geometry/test_utilities:meshcat_environment",
         "//multibody/parsing",
+        "//systems/framework/test_utilities",
     ],
 )
 
@@ -131,4 +132,4 @@ drake_cc_library(
     ],
 )
 
-add_lint_tests()
+add_lint_tests(enable_clang_format_lint = False)

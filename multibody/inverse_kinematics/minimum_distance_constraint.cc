@@ -12,6 +12,16 @@ namespace drake {
 namespace multibody {
 using internal::RefFromPtrOrThrow;
 
+namespace {
+const double kInf = std::numeric_limits<double>::infinity();
+
+int NumConstraints(double minimum_distance_lower,
+                   double minimum_distance_upper) {
+  return static_cast<int>(std::isfinite(minimum_distance_lower)) +
+         static_cast<int>(std::isfinite(minimum_distance_upper));
+}
+}  // namespace
+
 template <typename T, typename S>
 VectorX<S> Distances(const MultibodyPlant<T>& plant,
                      systems::Context<T>* context,
@@ -60,17 +70,29 @@ VectorX<S> Distances(const MultibodyPlant<T>& plant,
 template <typename T>
 void MinimumDistanceConstraint::Initialize(
     const MultibodyPlant<T>& plant, systems::Context<T>* plant_context,
-    double minimum_distance, double influence_distance_offset,
+    double minimum_distance_lower, double minimum_distance_upper,
+    double influence_distance,
     MinimumDistancePenaltyFunction penalty_function) {
   CheckPlantIsConnectedToSceneGraph(plant, *plant_context);
-  if (!std::isfinite(influence_distance_offset)) {
+  if (!std::isfinite(influence_distance)) {
     throw std::invalid_argument(
-        "MinimumDistanceConstraint: influence_distance_offset must be finite.");
+        "MinimumDistanceConstraint: influence_distance must be finite.");
   }
-  if (influence_distance_offset <= 0) {
-    throw std::invalid_argument(
-        "MinimumDistanceConstraint: influence_distance_offset must be "
-        "positive.");
+  if (std::isnan(minimum_distance_lower) ||
+      influence_distance <= minimum_distance_lower) {
+    throw std::invalid_argument(fmt::format(
+        "MinimumDistanceConstraint: influence_distance={}, must be "
+        "larger than minimum_distance_lower={}; equivalently, "
+        "influence_distance_offset={}, but it needs to be positive.",
+        influence_distance, minimum_distance_lower,
+        influence_distance - minimum_distance_lower));
+  }
+  if (std::isfinite(minimum_distance_upper) &&
+      influence_distance <= minimum_distance_upper) {
+    throw std::invalid_argument(fmt::format(
+        "MinimumDistanceConstraint: influence_distance={}, must be larger than "
+        "minimum_distance_upper={}.",
+        influence_distance, minimum_distance_upper));
   }
   const auto& query_port = plant.get_geometry_query_input_port();
   // Maximum number of SignedDistancePairs returned by calls to
@@ -81,15 +103,15 @@ void MinimumDistanceConstraint::Initialize(
           .GetCollisionCandidates()
           .size();
   minimum_value_constraint_ = std::make_unique<solvers::MinimumValueConstraint>(
-      this->num_vars(), minimum_distance, influence_distance_offset,
-      num_collision_candidates,
-      [&plant, plant_context](const auto& x, double influence_distance) {
+      this->num_vars(), minimum_distance_lower, minimum_distance_upper,
+      influence_distance, num_collision_candidates,
+      [&plant, plant_context](const auto& x, double influence_distance_val) {
         return Distances<T, AutoDiffXd>(plant, plant_context, x,
-                                        influence_distance);
+                                        influence_distance_val);
       },
-      [&plant, plant_context](const auto& x, double influence_distance) {
+      [&plant, plant_context](const auto& x, double influence_distance_val) {
         return Distances<T, double>(plant, plant_context, x,
-                                    influence_distance);
+                                    influence_distance_val);
       });
   this->set_bounds(minimum_value_constraint_->lower_bound(),
                    minimum_value_constraint_->upper_bound());
@@ -103,14 +125,33 @@ MinimumDistanceConstraint::MinimumDistanceConstraint(
     double minimum_distance, systems::Context<double>* plant_context,
     MinimumDistancePenaltyFunction penalty_function,
     double influence_distance_offset)
-    : solvers::Constraint(1, RefFromPtrOrThrow(plant).num_positions(),
-                          Vector1d(0), Vector1d(0)),
+    : MinimumDistanceConstraint(plant, minimum_distance,
+                                kInf /* minimum_distance_upper */,
+                                plant_context, penalty_function,
+                                influence_distance_offset + minimum_distance) {}
+
+MinimumDistanceConstraint::MinimumDistanceConstraint(
+    const multibody::MultibodyPlant<double>* const plant,
+    double minimum_distance_lower, double minimum_distance_upper,
+    systems::Context<double>* plant_context,
+    MinimumDistancePenaltyFunction penalty_function,
+    double influence_distance_offset)
+    : solvers::Constraint(
+          NumConstraints(minimum_distance_lower, minimum_distance_upper),
+          RefFromPtrOrThrow(plant).num_positions(),
+          Eigen::VectorXd::Zero(
+              NumConstraints(minimum_distance_lower, minimum_distance_upper)),
+          Eigen::VectorXd::Zero(
+              NumConstraints(minimum_distance_lower, minimum_distance_upper))),
+      /* The lower and upper bounds will be set to correct value later in
+         Initialize() function */
       plant_double_{plant},
       plant_context_double_{plant_context},
       plant_autodiff_{nullptr},
       plant_context_autodiff_{nullptr} {
-  Initialize(*plant_double_, plant_context_double_, minimum_distance,
-             influence_distance_offset, penalty_function);
+  Initialize(*plant_double_, plant_context_double_, minimum_distance_lower,
+             minimum_distance_upper, influence_distance_offset,
+             penalty_function);
 }
 
 MinimumDistanceConstraint::MinimumDistanceConstraint(
@@ -118,14 +159,29 @@ MinimumDistanceConstraint::MinimumDistanceConstraint(
     double minimum_distance, systems::Context<AutoDiffXd>* plant_context,
     MinimumDistancePenaltyFunction penalty_function,
     double influence_distance_offset)
-    : solvers::Constraint(1, RefFromPtrOrThrow(plant).num_positions(),
-                          Vector1d(0), Vector1d(0)),
+    : MinimumDistanceConstraint(plant, minimum_distance,
+                                kInf /* minimum_distance_upper */,
+                                plant_context, penalty_function,
+                                influence_distance_offset + minimum_distance) {}
+
+MinimumDistanceConstraint::MinimumDistanceConstraint(
+    const multibody::MultibodyPlant<AutoDiffXd>* const plant,
+    double minimum_distance_lower, double minimum_distance_upper,
+    systems::Context<AutoDiffXd>* plant_context,
+    MinimumDistancePenaltyFunction penalty_function, double influence_distance)
+    : solvers::Constraint(
+          NumConstraints(minimum_distance_lower, minimum_distance_upper),
+          RefFromPtrOrThrow(plant).num_positions(),
+          Eigen::VectorXd::Zero(
+              NumConstraints(minimum_distance_lower, minimum_distance_upper)),
+          Eigen::VectorXd::Zero(
+              NumConstraints(minimum_distance_lower, minimum_distance_upper))),
       plant_double_{nullptr},
       plant_context_double_{nullptr},
       plant_autodiff_{plant},
       plant_context_autodiff_{plant_context} {
-  Initialize(*plant_autodiff_, plant_context_autodiff_, minimum_distance,
-             influence_distance_offset, penalty_function);
+  Initialize(*plant_autodiff_, plant_context_autodiff_, minimum_distance_lower,
+             minimum_distance_upper, influence_distance, penalty_function);
 }
 
 template <typename T>

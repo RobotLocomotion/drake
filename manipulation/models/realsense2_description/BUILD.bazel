@@ -18,6 +18,7 @@ _REALSENSE2_DESCRIPTION_FILES = forward_files(
             x for x in realsense2_description_files()],
     dest_prefix = "",
     strip_prefix = "@intel_realsense_ros_internal//:realsense2_description/",
+    tags = ["manual"],
     visibility = ["//visibility:private"],
 )
 

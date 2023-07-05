@@ -22,9 +22,10 @@ namespace optimization {
  set of the configuration-space variable `s`, please refer
  to RationalForwardKinematics class or the paper above on the meaning of s.
  */
-// TODO(hongkai.dai): I might support kConstant in the future.
+// TODO(hongkai.dai): Deprecate this class.
 enum class SeparatingPlaneOrder {
-  kAffine,  ///< a and b are affine function of s.
+  kAffine = 1,  ///< a and b are affine function of s.
+  // N.B. Never add new enum values here!
 };
 
 template <typename T>
@@ -40,10 +41,10 @@ struct CIrisSeparatingPlane : public CSpaceSeparatingPlane<T> {
                        const Eigen::Ref<const VectorX<T>>& m_decision_variables)
       : CSpaceSeparatingPlane<T>(m_a, m_b, m_positive_side_geometry,
                                  m_negative_side_geometry, m_expressed_body,
-                                 m_decision_variables),
-        plane_order{m_plane_order} {}
-
-  SeparatingPlaneOrder plane_order{SeparatingPlaneOrder::kAffine};
+                                 1 /* plane_degree */, m_decision_variables) {
+    // Cross-check the hard-coded plane_degree for CSpaceSeparatingPlane.
+    DRAKE_DEMAND(m_plane_order == SeparatingPlaneOrder::kAffine);
+  }
 };
 
 /**
@@ -59,67 +60,10 @@ template <typename D, typename S, typename V>
 void CalcPlane(const VectorX<D>& decision_variables,
                const VectorX<S>& s_for_plane, SeparatingPlaneOrder order,
                Vector3<V>* a_val, V* b_val) {
-  static_assert(
-      (std::is_same_v<D, symbolic::Variable> &&
-       std::is_same_v<S, symbolic::Variable> &&
-       std::is_same_v<V, symbolic::Polynomial>) ||
-          (std::is_same_v<D, double> && std::is_same_v<S, symbolic::Variable> &&
-           std::is_same_v<V, symbolic::Polynomial>) ||
-          (std::is_same_v<D, double> && std::is_same_v<S, double> &&
-           std::is_same_v<V, double>),
-      "CalcPlane: unsupported scalar type."
-      "expected one of (symbolic::Variable, symbolic::Variable, "
-      "symbolic::Polynomial), (double, symbolic::Variable, "
-      "symbolic::Polynomial), or (double, double double)");
-
-  switch (order) {
-    case SeparatingPlaneOrder::kAffine: {
-      DRAKE_DEMAND(decision_variables.rows() == 4 * s_for_plane.rows() + 4);
-      Eigen::Matrix<D, 3, Eigen::Dynamic> a_coeff(3, s_for_plane.rows());
-      int var_count = 0;
-      for (int i = 0; i < 3; ++i) {
-        a_coeff.row(i) =
-            decision_variables.segment(var_count, s_for_plane.rows());
-        var_count += s_for_plane.rows();
-      }
-      const Vector3<D> a_constant =
-          decision_variables.template segment<3>(var_count);
-      var_count += 3;
-      const VectorX<D> b_coeff =
-          decision_variables.segment(var_count, s_for_plane.rows());
-      var_count += s_for_plane.rows();
-      const D& b_constant = decision_variables(var_count);
-      var_count++;
-      DRAKE_DEMAND(var_count == decision_variables.rows());
-      if constexpr (std::is_same_v<D, double> && std::is_same_v<S, double> &&
-                    std::is_same_v<V, double>) {
-        *a_val = a_coeff * s_for_plane + a_constant;
-        *b_val = b_coeff.dot(s_for_plane) + b_constant;
-        return;
-      }
-      if constexpr (std::is_same_v<S, symbolic::Variable> &&
-                    std::is_same_v<V, symbolic::Polynomial>) {
-        const symbolic::Monomial monomial_one{};
-        for (int i = 0; i < 3; ++i) {
-          symbolic::Polynomial::MapType monomial_to_coeff_map;
-          for (int j = 0; j < s_for_plane.rows(); ++j) {
-            monomial_to_coeff_map.emplace(symbolic::Monomial(s_for_plane(j)),
-                                          a_coeff(i, j));
-          }
-          monomial_to_coeff_map.emplace(monomial_one, a_constant(i));
-          (*a_val)(i) = symbolic::Polynomial(monomial_to_coeff_map);
-        }
-        symbolic::Polynomial::MapType monomial_to_coeff_map;
-        for (int j = 0; j < s_for_plane.rows(); ++j) {
-          monomial_to_coeff_map.emplace(symbolic::Monomial(s_for_plane(j)),
-                                        b_coeff(j));
-        }
-        monomial_to_coeff_map.emplace(monomial_one, b_constant);
-        *b_val = symbolic::Polynomial(monomial_to_coeff_map);
-        return;
-      }
-    }
-  }
+  // Cross-check the hard-coded plane_degree immediately below.
+  DRAKE_DEMAND(order == SeparatingPlaneOrder::kAffine);
+  const int plane_degree = 1;
+  CalcPlane(decision_variables, s_for_plane, plane_degree, a_val, b_val);
 }
 }  // namespace optimization
 }  // namespace geometry

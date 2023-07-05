@@ -2,6 +2,8 @@
 
 namespace dummy {
 
-int dummy_func() { return 0; }
+int dummy_func() {
+  return 0;
+}
 
 }  // namespace dummy

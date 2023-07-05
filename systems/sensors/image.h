@@ -149,8 +149,7 @@ class Image {
 
   /// Compares whether two images are exactly the same.
   bool operator==(const Image& other) const {
-    return width_ == other.width_ &&
-           height_ == other.height_ &&
+    return width_ == other.width_ && height_ == other.height_ &&
            data_ == other.data_;
   }
 

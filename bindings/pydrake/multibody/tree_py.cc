@@ -1,13 +1,10 @@
-#include "pybind11/eigen.h"
 #include "pybind11/eval.h"
-#include "pybind11/operators.h"
-#include "pybind11/pybind11.h"
-#include "pybind11/stl.h"
 
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_pybind.h"
+#include "drake/bindings/pydrake/common/identifier_pybind.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/common/type_safe_index_pybind.h"
@@ -108,8 +105,8 @@ void DoScalarIndependentDefinitions(py::module m) {
       m, "JointActuatorIndex", doc.JointActuatorIndex.doc);
   BindTypeSafeIndex<ModelInstanceIndex>(
       m, "ModelInstanceIndex", doc.ModelInstanceIndex.doc);
-  BindTypeSafeIndex<ConstraintIndex>(
-      m, "ConstraintIndex", doc.ConstraintIndex.doc);
+  BindIdentifier<MultibodyConstraintId>(
+      m, "MultibodyConstraintId", doc.MultibodyConstraintId.doc);
   m.def("world_index", &world_index, doc.world_index.doc);
   m.def("world_frame_index", &world_frame_index, doc.world_frame_index.doc);
   m.def("world_model_instance", &world_model_instance,

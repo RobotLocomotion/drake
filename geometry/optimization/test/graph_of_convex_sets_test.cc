@@ -224,7 +224,7 @@ TEST_F(TwoPoints, Basic) {
   EXPECT_EQ(g_.Edges().at(0), e_);
 }
 
-// Confirms that I can add costs (both ways) and get the solution.
+// Confirms that we can add costs (both ways) and get the solution.
 // The correctness of the added costs will be established by the solution tests.
 TEST_F(TwoPoints, AddCost) {
   auto [ell0, b0] = e_->AddCost((e_->xv().head<2>() - e_->xu()).squaredNorm());
@@ -269,7 +269,7 @@ TEST_F(TwoPoints, AddCost) {
   DRAKE_EXPECT_THROWS_MESSAGE(v_->AddCost(other_var), ".*IsSubsetOf.*");
 }
 
-// Confirms that I can add constraints (both ways).
+// Confirms that we can add constraints (both ways).
 // The correctness of the added constraints will be established by the solution
 // tests.
 TEST_F(TwoPoints, AddConstraint) {
@@ -307,9 +307,19 @@ TEST_F(TwoPoints, AddConstraint) {
                               ".*IsSubsetOf.*");
 }
 
-/*
-Let's me test with one edge defintely on the optimal path, and one definitely
-off it.
+GTEST_TEST(GraphOfConvexSetsTest, TwoNullPointsConstraint) {
+  GraphOfConvexSets g;
+  Point pu(Eigen::VectorXd::Zero(0));
+  Point pv(Eigen::VectorXd::Zero(0));
+  Vertex* u = g.AddVertex(pu, "u");
+  Vertex* v = g.AddVertex(pv, "v");
+  Edge* e = g.AddEdge(u->id(), v->id(), "e");
+  DRAKE_EXPECT_THROWS_MESSAGE(e->AddConstraint(symbolic::Formula::True()),
+                              ".*total.*ambient.*dimension.*");
+}
+
+/* A graph with one edge definitely on the optimal path, and one definitely off
+it.
 ┌──────┐         ┌──────┐
 │source├──e_on──►│target│
 └───┬──┘         └──────┘
@@ -1097,7 +1107,7 @@ GTEST_TEST(ShortestPathTest, TwoStepLoopConstraint) {
   EXPECT_EQ(non_zero_edges, 6);
 }
 
-// Test that all optimization variables are properly set, even when constrained
+// Tests that all optimization variables are properly set, even when constrained
 // to be on or off.
 GTEST_TEST(ShortestPathTest, PhiConstraint) {
   GraphOfConvexSets spp;
@@ -1484,6 +1494,115 @@ GTEST_TEST(ShortestPathTest, RoundingBacktrack) {
   options.max_rounded_paths = 10;
   auto result = spp.SolveShortestPath(source->id(), target->id(), options);
   ASSERT_TRUE(result.is_success());
+}
+
+// Cover the case where there is no path from source to target.
+GTEST_TEST(ShortestPathTest, NoPath) {
+  GraphOfConvexSets spp;
+  auto source = spp.AddVertex(Point(Vector2d(0, 0)));
+  auto v1 = spp.AddVertex(Point(Vector2d(0, 1)));
+  auto v2 = spp.AddVertex(Point(Vector2d(1, 0)));
+  auto target = spp.AddVertex(Point(Vector2d(1, 1)));
+  spp.AddEdge(*source, *v1);
+  spp.AddEdge(*v2, *target);
+
+  GraphOfConvexSetsOptions options;
+  options.convex_relaxation = true;
+  options.preprocessing = false;
+  options.max_rounded_paths = 10;
+  auto result = spp.SolveShortestPath(*source, *target, options);
+  EXPECT_FALSE(result.is_success());
+  EXPECT_EQ(result.get_solution_result(),
+            SolutionResult::kInfeasibleConstraints);
+
+  options.preprocessing = true;
+  options.max_rounded_paths = 10;
+  result = spp.SolveShortestPath(*source, *target, options);
+  EXPECT_FALSE(result.is_success());
+  EXPECT_EQ(result.get_solution_result(),
+            SolutionResult::kInfeasibleConstraints);
+
+  if (!MixedIntegerSolverAvailable()) {
+    return;
+  }
+
+  options.convex_relaxation = false;
+  result = spp.SolveShortestPath(*source, *target, options);
+  EXPECT_FALSE(result.is_success());
+  EXPECT_EQ(result.get_solution_result(),
+            SolutionResult::kInfeasibleConstraints);
+}
+
+// Cover the special case of the source not having any outgoing edges.
+GTEST_TEST(ShortestPathTest, NoPathDetachedSource) {
+  GraphOfConvexSets spp;
+  auto source = spp.AddVertex(Point(Vector2d(0, 0)));
+  spp.AddVertex(Point(Vector2d(0, 1)));
+  auto v2 = spp.AddVertex(Point(Vector2d(1, 0)));
+  auto target = spp.AddVertex(Point(Vector2d(1, 1)));
+  spp.AddEdge(*v2, *target);
+
+  GraphOfConvexSetsOptions options;
+  options.convex_relaxation = true;
+  options.preprocessing = false;
+  options.max_rounded_paths = 10;
+  auto result = spp.SolveShortestPath(*source, *target, options);
+  EXPECT_FALSE(result.is_success());
+  EXPECT_EQ(result.get_solution_result(),
+            SolutionResult::kInfeasibleConstraints);
+
+  options.preprocessing = true;
+  options.max_rounded_paths = 10;
+  result = spp.SolveShortestPath(*source, *target, options);
+  EXPECT_FALSE(result.is_success());
+  EXPECT_EQ(result.get_solution_result(),
+            SolutionResult::kInfeasibleConstraints);
+
+  if (!MixedIntegerSolverAvailable()) {
+    return;
+  }
+
+  options.convex_relaxation = false;
+  result = spp.SolveShortestPath(*source, *target, options);
+  EXPECT_FALSE(result.is_success());
+  EXPECT_EQ(result.get_solution_result(),
+            SolutionResult::kInfeasibleConstraints);
+}
+
+// Cover the special case of the target not having any incoming edges.
+GTEST_TEST(ShortestPathTest, NoPathDetachedTarget) {
+  GraphOfConvexSets spp;
+  auto source = spp.AddVertex(Point(Vector2d(0, 0)));
+  auto v1 = spp.AddVertex(Point(Vector2d(0, 1)));
+  spp.AddVertex(Point(Vector2d(1, 0)));
+  auto target = spp.AddVertex(Point(Vector2d(1, 1)));
+  spp.AddEdge(*source, *v1);
+
+  GraphOfConvexSetsOptions options;
+  options.convex_relaxation = true;
+  options.preprocessing = false;
+  options.max_rounded_paths = 10;
+  auto result = spp.SolveShortestPath(*source, *target, options);
+  EXPECT_FALSE(result.is_success());
+  EXPECT_EQ(result.get_solution_result(),
+            SolutionResult::kInfeasibleConstraints);
+
+  options.preprocessing = true;
+  options.max_rounded_paths = 10;
+  result = spp.SolveShortestPath(*source, *target, options);
+  EXPECT_FALSE(result.is_success());
+  EXPECT_EQ(result.get_solution_result(),
+            SolutionResult::kInfeasibleConstraints);
+
+  if (!MixedIntegerSolverAvailable()) {
+    return;
+  }
+
+  options.convex_relaxation = false;
+  result = spp.SolveShortestPath(*source, *target, options);
+  EXPECT_FALSE(result.is_success());
+  EXPECT_EQ(result.get_solution_result(),
+            SolutionResult::kInfeasibleConstraints);
 }
 
 GTEST_TEST(ShortestPathTest, TobiasToyExample) {

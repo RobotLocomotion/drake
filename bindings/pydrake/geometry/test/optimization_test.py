@@ -40,10 +40,12 @@ class TestGeometryOptimization(unittest.TestCase):
         self.z = self.prog.NewContinuousVariables(2, "z")
 
     def test_point_convex_set(self):
+        mut.Point()
         p = np.array([11.1, 12.2, 13.3])
         point = mut.Point(p)
         self.assertEqual(point.ambient_dimension(), 3)
         np.testing.assert_array_equal(point.x(), p)
+        np.testing.assert_array_equal(point.MaybeGetPoint(), p)
         point.set_x(x=2*p)
         np.testing.assert_array_equal(point.x(), 2*p)
         point.set_x(x=p)
@@ -53,13 +55,16 @@ class TestGeometryOptimization(unittest.TestCase):
         # builds from shape.
 
     def test_h_polyhedron(self):
+        mut.HPolyhedron()
         hpoly = mut.HPolyhedron(A=self.A, b=self.b)
         self.assertEqual(hpoly.ambient_dimension(), 3)
         np.testing.assert_array_equal(hpoly.A(), self.A)
         np.testing.assert_array_equal(hpoly.b(), self.b)
         self.assertTrue(hpoly.PointInSet(x=[0, 0, 0], tol=0.0))
         self.assertFalse(hpoly.IsBounded())
-        hpoly.AddPointInSetConstraints(self.prog, self.x)
+        new_vars, new_constraints = hpoly.AddPointInSetConstraints(
+            self.prog, self.x)
+        self.assertEqual(new_vars.size, 0)
         constraints = hpoly.AddPointInNonnegativeScalingConstraints(
             prog=self.prog, x=self.x, t=self.t)
         self.assertGreaterEqual(len(constraints), 2)
@@ -158,12 +163,16 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertEqual(hpoly.A().shape, (4, 3))
 
     def test_hyper_ellipsoid(self):
+        mut.Hyperellipsoid()
         ellipsoid = mut.Hyperellipsoid(A=self.A, center=self.b)
         self.assertEqual(ellipsoid.ambient_dimension(), 3)
         np.testing.assert_array_equal(ellipsoid.A(), self.A)
         np.testing.assert_array_equal(ellipsoid.center(), self.b)
         self.assertTrue(ellipsoid.PointInSet(x=self.b, tol=0.0))
-        ellipsoid.AddPointInSetConstraints(self.prog, self.x)
+        new_vars, new_constraints = ellipsoid.AddPointInSetConstraints(
+            self.prog, self.x)
+        self.assertEqual(new_vars.size, 0)
+        self.assertGreater(len(new_constraints), 0)
         constraints = ellipsoid.AddPointInNonnegativeScalingConstraints(
             prog=self.prog, x=self.x, t=self.t)
         self.assertGreaterEqual(len(constraints), 2)
@@ -196,6 +205,7 @@ class TestGeometryOptimization(unittest.TestCase):
         np.testing.assert_array_equal(e_ball3.center(), [0, 0, 0])
 
     def test_minkowski_sum(self):
+        mut.MinkowskiSum()
         point = mut.Point(np.array([11.1, 12.2, 13.3]))
         hpoly = mut.HPolyhedron(A=self.A, b=self.b)
         sum = mut.MinkowskiSum(setA=point, setB=hpoly)
@@ -216,12 +226,15 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertEqual(s.ambient_dimension(), 6)
 
     def test_v_polytope(self):
+        mut.VPolytope()
         vertices = np.array([[0.0, 1.0, 2.0], [3.0, 7.0, 5.0]])
         vpoly = mut.VPolytope(vertices=vertices)
         self.assertEqual(vpoly.ambient_dimension(), 2)
         np.testing.assert_array_equal(vpoly.vertices(), vertices)
         self.assertTrue(vpoly.PointInSet(x=[1.0, 5.0], tol=1e-8))
-        vpoly.AddPointInSetConstraints(self.prog, self.x[0:2])
+        new_vars, new_constraints = vpoly.AddPointInSetConstraints(
+            self.prog, self.x[0:2])
+        self.assertEqual(new_vars.size, vertices.shape[1])
         constraints = vpoly.AddPointInNonnegativeScalingConstraints(
             prog=self.prog, x=self.x[:2], t=self.t)
         self.assertGreaterEqual(len(constraints), 2)
@@ -289,6 +302,7 @@ class TestGeometryOptimization(unittest.TestCase):
         return length
 
     def test_cartesian_product(self):
+        mut.CartesianProduct()
         point = mut.Point(np.array([11.1, 12.2, 13.3]))
         h_box = mut.HPolyhedron.MakeBox(
             lb=[-1, -1, -1], ub=[1, 1, 1])
@@ -306,6 +320,7 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertIsInstance(sum2.factor(1), mut.HPolyhedron)
 
     def test_intersection(self):
+        mut.Intersection()
         point = mut.Point(np.array([0.1, 0.2, 0.3]))
         h_box = mut.HPolyhedron.MakeBox(
             lb=[-1, -1, -1], ub=[1, 1, 1])
@@ -459,6 +474,26 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertEqual(region.ambient_dimension(), 1)
         self.assertTrue(region.PointInSet([1.0]))
         self.assertFalse(region.PointInSet([-1.0]))
+
+    def test_serialize_iris_regions(self):
+        iris_regions = {
+            "box1":
+            mut.HPolyhedron.MakeBox(lb=[-1, -2, -3], ub=[1, 2, 3]),
+            "box2":
+            mut.HPolyhedron.MakeBox(lb=[-4.1, -5.2, -6.3], ub=[4.1, 4.2, 6.3])
+        }
+        temp_file_name = f"{temp_directory()}/iris.yaml"
+        mut.SaveIrisRegionsYamlFile(filename=temp_file_name,
+                                    regions=iris_regions,
+                                    child_name="test")
+        loaded_regions = mut.LoadIrisRegionsYamlFile(filename=temp_file_name,
+                                                     child_name="test")
+        self.assertEqual(iris_regions.keys(), loaded_regions.keys())
+        for k in iris_regions.keys():
+            np.testing.assert_array_equal(iris_regions[k].A(),
+                                          loaded_regions[k].A())
+            np.testing.assert_array_equal(iris_regions[k].b(),
+                                          loaded_regions[k].b())
 
     def test_graph_of_convex_sets(self):
         options = mut.GraphOfConvexSetsOptions()

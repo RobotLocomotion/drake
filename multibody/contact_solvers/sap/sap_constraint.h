@@ -2,13 +2,16 @@
 
 #include <memory>
 #include <utility>
+#include <vector>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/unused.h"
 #include "drake/common/value.h"
 #include "drake/multibody/contact_solvers/matrix_block.h"
+#include "drake/multibody/contact_solvers/sap/partial_permutation.h"
 #include "drake/multibody/contact_solvers/sap/sap_constraint_jacobian.h"
+#include "drake/multibody/math/spatial_algebra.h"
 
 namespace drake {
 namespace multibody {
@@ -51,14 +54,29 @@ class SapConstraint {
   SapConstraint& operator=(SapConstraint&&) = delete;
   //@}
 
-  /* Constructor for a SAP constraint given its Jacobian J.
-   SAP constraints are defined by their convex cost ℓ(vc) function of the
-   constraint velocity vc. The constraint velocity in turn is defined by the
-   constraint's Jacobian J such that vc = J⋅v, where v are the generalized
+  /* Constructor for a SAP constraint given its Jacobian J and the objects it
+   constraints, see @ref sap_physical_forces.
+
+   SAP constraints are defined by their convex cost ℓ(vc) function
+   of the constraint velocity vc. The constraint velocity in turn is defined by
+   the constraint's Jacobian J such that vc = J⋅v, where v are the generalized
    velocities of the contact problem.
 
+   Specific constraint types might lead to generalized forces on the cliques
+   participating in J, to spatial forces on the physical objects being
+   constrained, or both. See @ref sap_physical_forces for details. For
+   constraints among physical objects, object indices are provided in `objects`.
+
+   @param[in] J The contact Jacobian. This defines the cliques involved in the
+   constraint (see SapConstraintJacobian) and the constraint velocity as vc =
+   J⋅v.
+   @param[in] objects Indices to the physical objects involved in this
+   constraint. It can be empty for constraints that only lead to generalized
+   forces, see @ref sap_physical_forces. num_objects() will equal objects.size()
+   after construction.
+
    @throws if J.rows() equals zero. */
-  explicit SapConstraint(SapConstraintJacobian<T> J);
+  SapConstraint(SapConstraintJacobian<T> J, std::vector<int> objects);
 
   virtual ~SapConstraint() = default;
 
@@ -68,6 +86,14 @@ class SapConstraint {
   /* Number of participating cliques. It will always return either one (1) or
    two (2). */
   int num_cliques() const { return J_.num_cliques(); }
+
+  /* Returns the clique index for the first clique (c = 0) or for the
+   second clique (c = 1).
+   @throws if c < 0 or c >= num_cliques().*/
+  int clique(int c) const {
+    DRAKE_THROW_UNLESS(0 <= c && c < num_cliques());
+    return J_.clique(c);
+  }
 
   int num_velocities(int clique) const {
     DRAKE_THROW_UNLESS(0 <= clique && clique < num_cliques());
@@ -154,16 +180,117 @@ class SapConstraint {
   */
   void CalcCostHessian(const AbstractValue& abstract_data, MatrixX<T>* G) const;
 
+  /* @name Physical forces
+   @anchor sap_physical_forces
+   Each SAP constraint leads to a set of impulses in the solution of their
+   corresponding SapContactProblem. These impulses map to physical generalized
+   and/or spatial forces on the physical objects being constrained. As an
+   example, a distance constraint leads to a single scalar impulse value,
+   however the actual physical forces are vectors that act along the direction
+   of the two points being constrained. These forces are applied on the objects
+   being constrained, e.g. a rigid body, deformable body or particle. It is the
+   specific constraint type that knows how to map these impulses to physical
+   generalized and/or spatial forces. In the constraints framework to report
+   forces, client code (in Drake, most likely the SapDriver) will label these
+   physical objects with indices, arbitrarily defined to uniquely identify
+   distinct physical objects. With these labels defined, the constraint will be
+   able to report physical forces (or rather impulses) on these objects via
+   AccumulateSpatialImpulses().
+
+   Specific constraint types might require these object indices at construction
+   (e.g. the contact contraint between two objects). Object indices, if any, are
+   provided at construction. Refer to this class's constructor for details.
+
+   Generalized impulses are reported on a per-clique basis via
+   AccumulateGeneralizedImpulses(). */
+  //@{
+
+  /* Number of physical objects constrained by `this` constraint.
+   Number of objects and their indices are provided at construction. */
+  int num_objects() const { return objects_.size(); }
+
+  /* Returns the vector of object indices provided at construction. */
+  const std::vector<int>& objects() const { return objects_; }
+
+  /* Returns the index for the o-the object constrained by `this` constraint.
+   @throws if o < 0 > or if o >= num_objects(). */
+  int object(int o) const {
+    DRAKE_THROW_UNLESS(0 <= o && o < num_objects());
+    return objects_[o];
+  }
+  //@}
+
+  /* Accumulates generalized impulses applied by this constraint on the c-th
+   clique.
+   @param[in] c The c-th clique of index clique(c).
+   @param[in] gamma Impulses for this constraint, of size
+   num_constraint_equations().
+   @param[out] tau On output this function will accumulate the generalized
+   impulses applied by this constraint on the c-th clique.
+
+   @throws if c < 0 or if c >= num_cliques().
+   @throws if gamma.size() != num_constraint_equations().
+   @throws if tau is the nullptr.
+   @throws if tau.size() != num_velocities(c). */
+  void AccumulateGeneralizedImpulses(int c,
+                                     const Eigen::Ref<const VectorX<T>>& gamma,
+                                     EigenPtr<VectorX<T>> tau) const;
+
+  /* Accumulates spatial impulses applied by this constraint the o-th object.
+   @param[in] o The o-th object of index object(o).
+   @param[in] gamma Impulses for this constraint, of size
+   num_constraint_equations().
+   @param[out] F On output this function will accumulate the spatial
+   impulse applied by this constraint on the o-th object.
+
+   @throws if o < 0 or if o >= num_objects().
+   @throws if gamma.size() != num_constraint_equations().
+   @throws if F is the nullptr. */
+  void AccumulateSpatialImpulses(int o,
+                                 const Eigen::Ref<const VectorX<T>>& gamma,
+                                 SpatialForce<T>* F) const;
+
   /* Polymorphic deep-copy into a new instance. */
   std::unique_ptr<SapConstraint<T>> Clone() const { return DoClone(); }
+
+  /* Creates a "reduced" clone of this constraint by removing known DoFs from
+   the constraint's Jacobian. That is, the newly reduced constraint will have
+   this constraint's Jacobian excluding columns for known DoFs. The following
+   table breaks down how the returned constraint relates to this constraint
+   where:
+     participates(clique_index) = clique_permutation.participates(clique_index)
+     permuted(clique_index) = clique_permutation.permuted_index(clique_index)
+   For convenience: c.first_clique  = i   c.second_clique  = j
+                    cᵣ.first_clique = iᵣ  cᵣ.second_clique = jᵣ
+     ________________________________________________________________________
+    | participates(i) | participates(j) |        iᵣ       |         jᵣ       |
+    |------------------------------------------------------------------------|
+    |     FALSE       |     FALSE       |       N/A       |       N/A        |
+    |     TRUE        |     FALSE       |   permuted(i)   |       N/A        |
+    |     FALSE       |     TRUE        |   permuted(j)   |       N/A        |
+    |     TRUE        |     TRUE        |   permuted(i)   |    permuted(j)   |
+    |------------------------------------------------------------------------|
+    Note: if both cliques do not participate, this function returns `nullptr`.
+    Note: per_clique_known_dofs.size() can be smaller than
+    clique_permutation.domain_size() (i.e. the number of cliques in the problem)
+    for cases in which the last set of cliques have zero known DoFs and it is
+    therefore unnecessary to pad per_clique_known_dofs with empty vectors.
+    @pre per_clique_known_dofs.size() <= clique_permutation.domain_size() .
+    @pre first_clique() < clique_permutation.domain_size().
+    @pre if num_cliques() > 1,
+      second_clique() < clique_permutation.domain_size().
+  */
+  std::unique_ptr<SapConstraint<T>> MakeReduced(
+      const PartialPermutation& clique_permutation,
+      const std::vector<std::vector<int>>& per_clique_known_dofs) const;
 
  protected:
   /* Protected copy construction is enabled for sub-classes to use in their
    implementation of DoClone(). */
   SapConstraint(const SapConstraint&) = default;
 
-  /* Helper to pack `data` of type `U` into an AbstractValue.
-   Derived constraint classes can use this helper to implement DoMakeData(). */
+  /* Helper to pack `data` of type `U` into an AbstractValue. Derived constraint
+   classes can use this helper to implement DoMakeData(). */
   template <typename U>
   static std::unique_ptr<AbstractValue> MoveAndMakeAbstractValue(U&& data) {
     auto owned_data = std::make_unique<U>(std::move(data));
@@ -185,7 +312,23 @@ class SapConstraint {
                              EigenPtr<VectorX<T>> gamma) const = 0;
   virtual void DoCalcCostHessian(const AbstractValue& data,
                                  MatrixX<T>* G) const = 0;
-
+  virtual void DoAccumulateGeneralizedImpulses(
+      int, const Eigen::Ref<const VectorX<T>>&, EigenPtr<VectorX<T>>) const {
+    // TODO(amcastro-tri): Temporarily, the default implementation throws until
+    // the full resolution of #19435. Once all constraints report forces, this
+    // function will be pure virtual.
+    throw std::logic_error(
+        "Constraints must implement this function. See #19435. ");
+  }
+  virtual void DoAccumulateSpatialImpulses(int,
+                                           const Eigen::Ref<const VectorX<T>>&,
+                                           SpatialForce<T>*) const {
+    // TODO(amcastro-tri): Temporarily, the default implementation throws until
+    // the full resolution of #19435. Once all constraints report forces, this
+    // function will be pure virtual.
+    throw std::logic_error(
+        "Constraints must implement this function. See #19435. ");
+  }
   /* Clone() implementation. Derived classes must override to provide
    polymorphic deep-copy into a new instance. */
   virtual std::unique_ptr<SapConstraint<T>> DoClone() const = 0;
@@ -193,6 +336,7 @@ class SapConstraint {
 
  private:
   SapConstraintJacobian<T> J_;
+  std::vector<int> objects_;
 };
 
 }  // namespace internal

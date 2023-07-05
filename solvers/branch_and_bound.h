@@ -6,6 +6,7 @@
 #include <unordered_map>
 #include <utility>
 
+#include "drake/common/name_value.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/mathematical_program_result.h"
 
@@ -279,12 +280,21 @@ class MixedIntegerBranchAndBound {
     kMinLowerBound,  ///< Pick the node with the smallest optimal cost.
   };
 
+  /** Configuration settings for the MixedIntegerBranchAndBound constructor. */
   struct Options {
     Options() {}
-    // The maximal number of explored nodes in the tree. The branch and bound
-    // process will terminate if the tree has explored this number of nodes.
-    // max_explored_nodes <= 0 means that we don't put an upper bound on
-    // the number of explored nodes.
+
+    /** Passes this object to an Archive.
+    Refer to @ref yaml_serialization "YAML Serialization" for background. */
+    template <typename Archive>
+    void Serialize(Archive* a) {
+      a->Visit(DRAKE_NVP(max_explored_nodes));
+    }
+
+    /** The maximal number of explored nodes in the tree. The branch and bound
+     * process will terminate if the tree has explored this number of nodes.
+     * max_explored_nodes <= 0 means that we don't put an upper bound on the
+     * number of explored nodes. */
     int max_explored_nodes{-1};
   };
 
@@ -653,7 +663,7 @@ class MixedIntegerBranchAndBound {
   // The root node of the tree.
   std::unique_ptr<MixedIntegerBranchAndBoundNode> root_;
 
-  MixedIntegerBranchAndBound::Options options_;
+  Options options_;
 
   // We re-created the decision variables in the optimization program in the
   // branch-and-bound. All nodes uses the same new set of decision variables,

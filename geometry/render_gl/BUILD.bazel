@@ -245,21 +245,6 @@ drake_cc_googletest(
     ],
 )
 
-# TODO(zachfang): Remove this along with deprecation on 2023-07-01.
-drake_cc_googletest(
-    name = "deprecation_test",
-    copts = [
-        "-Wno-cpp",
-        "-Wno-deprecated-declarations",
-    ],
-    tags = vtk_test_tags(),
-    deps = [
-        ":factory",
-        ":render_engine_gl_params",
-        "//common/test_utilities:expect_throws_message",
-    ],
-)
-
 drake_cc_googletest_ubuntu_only(
     name = "internal_shape_meshes_test",
     data = [
@@ -311,10 +296,21 @@ drake_cc_googletest_ubuntu_only(
     data = [
         "//geometry/render:test_models",
     ],
-    tags = vtk_test_tags() + ["cpu:4"],
+    tags = vtk_test_tags() + [
+        # We launch up to 3 child tasks.
+        "cpu:4",
+        # Generally, GL driver shared libraries are not tsan-clean.
+        # Instead we rely on functional testing to detect threading errors.
+        "no_tsan",
+    ],
     deps = [
+        ":factory",
+        ":internal_render_engine_gl",
         ":internal_texture_library",
         "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//systems/sensors:image",
+        "//systems/sensors:image_writer",
     ],
 )
 
@@ -336,4 +332,5 @@ add_lint_tests(
         "no_factory.cc",
         "factory.cc",
     ],
+    enable_clang_format_lint = False,
 )

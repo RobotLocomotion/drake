@@ -100,6 +100,7 @@ Binding<Constraint> Vertex::AddConstraint(const symbolic::Formula& f) {
 }
 
 Binding<Constraint> Vertex::AddConstraint(const Binding<Constraint>& binding) {
+  DRAKE_THROW_UNLESS(ambient_dimension() > 0);
   DRAKE_THROW_UNLESS(
       Variables(binding.variables()).IsSubsetOf(Variables(placeholder_x_)));
   constraints_.emplace_back(binding);
@@ -156,6 +157,8 @@ Binding<Constraint> Edge::AddConstraint(const symbolic::Formula& f) {
 }
 
 Binding<Constraint> Edge::AddConstraint(const Binding<Constraint>& binding) {
+  const int total_ambient_dimension = allowed_vars_.size();
+  DRAKE_THROW_UNLESS(total_ambient_dimension > 0);
   DRAKE_THROW_UNLESS(Variables(binding.variables()).IsSubsetOf(allowed_vars_));
   constraints_.emplace_back(binding);
   return binding;
@@ -665,6 +668,10 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
   std::map<EdgeId, Variable> relaxed_phi;
   std::vector<Variable> excluded_phi;
 
+  // The flow constraints below assume that we have some edge out of the source
+  // and into the target, so we handle that case explicitly.
+  bool has_edges_out_of_source = false;
+  bool has_edges_into_target = false;
   for (const auto& [edge_id, e] : edges_) {
     // If an edge is turned off (ϕ = 0) or excluded by preprocessing, don't
     // include it in the optimization.
@@ -677,6 +684,12 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
         excluded_phi.push_back(phi);
       }
       continue;
+    }
+    if (e->u().id() == source_id) {
+      has_edges_out_of_source = true;
+    }
+    if (e->v().id() == target_id) {
+      has_edges_into_target = true;
     }
     outgoing_edges[e->u().id()].emplace_back(e.get());
     incoming_edges[e->v().id()].emplace_back(e.get());
@@ -701,8 +714,12 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
     prog.AddLinearCost(VectorXd::Ones(e->ell_.size()), e->ell_);
 
     // Spatial non-negativity: y ∈ ϕX, z ∈ ϕX.
-    e->u().set().AddPointInNonnegativeScalingConstraints(&prog, e->y_, phi);
-    e->v().set().AddPointInNonnegativeScalingConstraints(&prog, e->z_, phi);
+    if (e->u().ambient_dimension() > 0) {
+      e->u().set().AddPointInNonnegativeScalingConstraints(&prog, e->y_, phi);
+    }
+    if (e->v().ambient_dimension() > 0) {
+      e->v().set().AddPointInNonnegativeScalingConstraints(&prog, e->z_, phi);
+    }
 
     // Edge costs.
     for (int i = 0; i < e->ell_.size(); ++i) {
@@ -736,6 +753,18 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
       // (on the vertices).
       AddPerspectiveConstraint(&prog, b, vars);
     }
+  }
+  if (!has_edges_out_of_source) {
+    MathematicalProgramResult result;
+    log()->info("Source vertex {} has no outgoing edges.", source_id);
+    result.set_solution_result(SolutionResult::kInfeasibleConstraints);
+    return result;
+  }
+  if (!has_edges_into_target) {
+    MathematicalProgramResult result;
+    log()->info("Target vertex {} has no incoming edges.", target_id);
+    result.set_solution_result(SolutionResult::kInfeasibleConstraints);
+    return result;
   }
 
   for (const std::pair<const VertexId, std::unique_ptr<Vertex>>& vpair :
@@ -922,7 +951,7 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
       ++num_trials;
 
       // Find candidate path by traversing the graph with a depth first search
-      // where edges are taken with prbability proportional to their flow.
+      // where edges are taken with probability proportional to their flow.
       std::vector<VertexId> visited_vertex_ids{source_id};
       std::vector<VertexId> path_vertex_ids{source_id};
       std::vector<const Edge*> new_path;
@@ -941,6 +970,9 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
         if (candidate_edges.size() == 0) {
           path_vertex_ids.pop_back();
           new_path.pop_back();
+          // Since this code requires result.is_success() to be true, we should
+          // always have a path. We assert that..
+          DRAKE_ASSERT(path_vertex_ids.size() > 0);
           continue;
         }
         Eigen::VectorXd candidate_flows(candidate_edges.size());

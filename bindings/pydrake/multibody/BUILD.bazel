@@ -127,6 +127,7 @@ drake_pybind_library(
         "//bindings/pydrake/common:deprecation_pybind",
         "//bindings/pydrake/common:eigen_geometry_pybind",
         "//bindings/pydrake/common:eigen_pybind",
+        "//bindings/pydrake/common:identifier_pybind",
         "//bindings/pydrake/common:serialize_pybind",
         "//bindings/pydrake/common:type_pack",
         "//bindings/pydrake/common:type_safe_index_pybind",
@@ -177,7 +178,6 @@ drake_pybind_library(
     name = "parsing_py",
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
-        "//bindings/pydrake/common:deprecation_pybind",
         "//bindings/pydrake/common:serialize_pybind",
     ],
     cc_srcs = ["parsing_py.cc"],
@@ -429,6 +429,7 @@ drake_py_unittest(
     name = "plant_test",
     data = [
         ":models",
+        "//examples/acrobot:models",
         "//manipulation/models/iiwa_description:models",
         "//manipulation/models/wsg_50_description:models",
         "//multibody:models",
@@ -443,6 +444,7 @@ drake_py_unittest(
         ":tree_py",
         "//bindings/pydrake/common/test_utilities:numpy_compare_py",
         "//bindings/pydrake/common/test_utilities:pickle_compare_py",
+        "//bindings/pydrake/common/test_utilities:scipy_stub_py",
         "//bindings/pydrake/systems:analysis_py",
         "//bindings/pydrake/systems:scalar_conversion_py",
     ],

@@ -42,7 +42,7 @@ class CspaceFreePathTester {
   }
 
   [[nodiscard]] const std::vector<
-      CSpacePathSeparatingPlane<symbolic::Variable>>&
+      CSpaceSeparatingPlane<symbolic::Variable>>&
   get_separating_planes() const {
     return cspace_free_path_->separating_planes_;
   }

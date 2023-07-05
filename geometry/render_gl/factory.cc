@@ -17,10 +17,5 @@ std::unique_ptr<render::RenderEngine> MakeRenderEngineGl(
       std::move(params));
 }
 
-namespace render {
-  DRAKE_DEPRECATED("2023-07-01", "Use the geometry namespace instead.")
-  const bool kHasRenderEngineGl = true;
-}  // namespace render
-
 }  // namespace geometry
 }  // namespace drake

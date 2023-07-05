@@ -35,6 +35,7 @@ drake_cc_library(
         "multibody_tree_indexes.h",
     ],
     deps = [
+        "//common:identifier",
         "//common:type_safe_index",
     ],
 )
@@ -681,4 +682,4 @@ drake_cc_googletest(
     ],
 )
 
-add_lint_tests()
+add_lint_tests(enable_clang_format_lint = False)

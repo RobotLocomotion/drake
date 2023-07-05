@@ -195,6 +195,11 @@ class GeometryState {
   /** @name          Sources and source-related data  */
   //@{
 
+  /** Returns all of the source ids in the scene graph. The order is guaranteed
+   to be stable and consistent. The first element is the SceneGraph-internal
+   source.  */
+  std::vector<SourceId> GetAllSourceIds() const;
+
   /** Implementation of SceneGraphInspector::SourceIsRegistered().  */
   bool SourceIsRegistered(SourceId source_id) const;
 
@@ -852,7 +857,7 @@ class GeometryState {
   // sources (e.g., frames and geometries). This lives in the state to support
   // runtime topology changes. This data should only change at _discrete_
   // events where frames/geometries are introduced and removed. They do _not_
-  // depend on time-dependent input values (e.g., System::Context).
+  // depend on time-dependent input values (e.g., systems::Context).
 
   // The registered geometry sources and the frame ids that have been registered
   // on them.

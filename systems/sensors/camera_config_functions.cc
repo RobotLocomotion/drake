@@ -88,8 +88,7 @@ void ValidateEngineAndMaybeAdd(const CameraConfig& config,
           "is not supported in current build.");
     }
     RenderEngineGlParams params{.default_clear_color = config.background};
-    scene_graph->AddRenderer(config.renderer_name,
-                              MakeRenderEngineGl(params));
+    scene_graph->AddRenderer(config.renderer_name, MakeRenderEngineGl(params));
     return;
   }
   // Note: if we add *other* supported render engine implementations, add the
@@ -122,8 +121,8 @@ void ApplyCameraConfig(const CameraConfig& config,
     plant = &builder->GetDowncastSubsystemByName<MultibodyPlant>("plant");
   }
   if (scene_graph == nullptr) {
-    scene_graph = &builder->GetMutableDowncastSubsystemByName<SceneGraph>(
-        "scene_graph");
+    scene_graph =
+        &builder->GetMutableDowncastSubsystemByName<SceneGraph>("scene_graph");
   }
 
   config.ValidateOrThrow();
@@ -147,8 +146,8 @@ void ApplyCameraConfig(const CameraConfig& config,
       AddSimRgbdSensor(*scene_graph, *plant, sim_camera, builder);
 
   // Find the LCM bus.
-  lcm = FindOrCreateLcmBus(
-      lcm, lcm_buses, builder, "ApplyCameraConfig", config.lcm_bus);
+  lcm = FindOrCreateLcmBus(lcm, lcm_buses, builder, "ApplyCameraConfig",
+                           config.lcm_bus);
   DRAKE_DEMAND(lcm != nullptr);
 
   // Connect the sensor the the lcm system.

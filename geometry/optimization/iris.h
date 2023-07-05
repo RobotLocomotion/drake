@@ -1,9 +1,12 @@
 #pragma once
 
+#include <map>
 #include <memory>
 #include <optional>
+#include <string>
 #include <vector>
 
+#include "drake/common/name_value.h"
 #include "drake/geometry/optimization/convex_set.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
 #include "drake/multibody/plant/multibody_plant.h"
@@ -17,6 +20,21 @@ namespace optimization {
 @ingroup geometry_optimization
 */
 struct IrisOptions {
+  /** Passes this object to an Archive.
+  Refer to @ref yaml_serialization "YAML Serialization" for background.
+  Note: This only serializes options that are YAML built-in types. */
+  template <typename Archive>
+  void Serialize(Archive* a) {
+    a->Visit(DRAKE_NVP(require_sample_point_is_contained));
+    a->Visit(DRAKE_NVP(iteration_limit));
+    a->Visit(DRAKE_NVP(termination_threshold));
+    a->Visit(DRAKE_NVP(relative_termination_threshold));
+    a->Visit(DRAKE_NVP(configuration_space_margin));
+    a->Visit(DRAKE_NVP(num_collision_infeasible_samples));
+    a->Visit(DRAKE_NVP(num_additional_constraint_infeasible_samples));
+    a->Visit(DRAKE_NVP(random_seed));
+  }
+
   IrisOptions() = default;
 
   /** The initial polytope is guaranteed to contain the point if that point is
@@ -177,6 +195,10 @@ HPolyhedron IrisInConfigurationSpace(
     const multibody::MultibodyPlant<double>& plant,
     const systems::Context<double>& context,
     const IrisOptions& options = IrisOptions());
+
+/** Defines a standardized representation for (named) IrisRegions, which can be
+serialized in both C++ and Python. */
+typedef std::map<std::string, HPolyhedron> IrisRegions;
 
 }  // namespace optimization
 }  // namespace geometry

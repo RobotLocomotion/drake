@@ -79,10 +79,41 @@ MatrixXd OrderCounterClockwise(const MatrixXd& vertices) {
   return sorted_vertices;
 }
 
+MatrixXd GetConvexHullFromObjFile(const std::string& filename, double scale) {
+  const auto [tinyobj_vertices, faces, num_faces] =
+      internal::ReadObjFile(filename, scale, /* triangulate = */ false);
+  unused(faces);
+  unused(num_faces);
+  orgQhull::Qhull qhull;
+  const int dim = 3;
+  std::vector<double> tinyobj_vertices_flat(tinyobj_vertices->size() * dim);
+  for (int i = 0; i < ssize(*tinyobj_vertices); ++i) {
+    for (int j = 0; j < dim; ++j) {
+      tinyobj_vertices_flat[dim * i + j] = (*tinyobj_vertices)[i](j);
+    }
+  }
+  qhull.runQhull("", dim, tinyobj_vertices->size(),
+                 tinyobj_vertices_flat.data(), "");
+  if (qhull.qhullStatus() != 0) {
+    throw std::runtime_error(
+        fmt::format("Qhull terminated with status {} and  message:\n{}",
+                    qhull.qhullStatus(), qhull.qhullMessage()));
+  }
+  Matrix3Xd vertices(3, qhull.vertexCount());
+  int vertex_count = 0;
+  for (const auto& qhull_vertex : qhull.vertexList()) {
+    vertices.col(vertex_count++) =
+        Eigen::Map<Vector3d>(qhull_vertex.point().toStdVector().data());
+  }
+  return vertices;
+}
+
 }  // namespace
 
+VPolytope::VPolytope() : VPolytope(MatrixXd(0, 0)) {}
+
 VPolytope::VPolytope(const Eigen::Ref<const MatrixXd>& vertices)
-    : ConvexSet(vertices.rows()), vertices_{vertices} {}
+    : ConvexSet(vertices.rows()), vertices_(vertices) {}
 
 VPolytope::VPolytope(const QueryObject<double>& query_object,
                      GeometryId geometry_id,
@@ -188,6 +219,9 @@ VPolytope VPolytope::MakeUnitBox(int dim) {
 }
 
 VPolytope VPolytope::GetMinimalRepresentation() const {
+  if (ambient_dimension() == 0) {
+    return VPolytope();
+  }
   orgQhull::Qhull qhull;
   qhull.runQhull("", vertices_.rows(), vertices_.cols(), vertices_.data(), "");
   if (qhull.qhullStatus() != 0) {
@@ -218,6 +252,9 @@ VPolytope VPolytope::GetMinimalRepresentation() const {
 }
 
 double VPolytope::CalcVolume() const {
+  if (ambient_dimension() == 0) {
+    return 0.0;
+  }
   orgQhull::Qhull qhull;
   try {
     qhull.runQhull("", ambient_dimension(), vertices_.cols(), vertices_.data(),
@@ -291,6 +328,13 @@ std::unique_ptr<ConvexSet> VPolytope::DoClone() const {
   return std::make_unique<VPolytope>(*this);
 }
 
+std::optional<VectorXd> VPolytope::DoMaybeGetPoint() const {
+  if (vertices_.cols() == 1) {
+    return vertices_.col(0);
+  }
+  return std::nullopt;
+}
+
 bool VPolytope::DoPointInSet(const Eigen::Ref<const VectorXd>& x,
                              double tol) const {
   const int n = ambient_dimension();
@@ -325,30 +369,35 @@ bool VPolytope::DoPointInSet(const Eigen::Ref<const VectorXd>& x,
   return is_approx_equal_abstol(x, x_sol, tol);
 }
 
-void VPolytope::DoAddPointInSetConstraints(
+std::pair<VectorX<Variable>, std::vector<Binding<Constraint>>>
+VPolytope::DoAddPointInSetConstraints(
     solvers::MathematicalProgram* prog,
     const Eigen::Ref<const solvers::VectorXDecisionVariable>& x) const {
+  std::vector<Binding<Constraint>> new_constraints;
   const int n = ambient_dimension();
   const int m = vertices_.cols();
   VectorXDecisionVariable alpha = prog->NewContinuousVariables(m, "a");
   // 0 ≤ αᵢ ≤ 1.  The one is redundant, but may be better than inf for some
   // solvers.
-  prog->AddBoundingBoxConstraint(0, 1.0, alpha);
+  new_constraints.push_back(prog->AddBoundingBoxConstraint(0, 1.0, alpha));
   // v α - x = 0.
   MatrixXd A(n, m + n);
   A.leftCols(m) = vertices_;
   A.rightCols(n) = -MatrixXd::Identity(n, n);
-  prog->AddLinearEqualityConstraint(A, VectorXd::Zero(n), {alpha, x});
+  new_constraints.push_back(
+      prog->AddLinearEqualityConstraint(A, VectorXd::Zero(n), {alpha, x}));
   // ∑ αᵢ = 1.
-  prog->AddLinearEqualityConstraint(RowVectorXd::Ones(m), 1.0, alpha);
+  new_constraints.push_back(
+      prog->AddLinearEqualityConstraint(RowVectorXd::Ones(m), 1.0, alpha));
+  return {std::move(alpha), std::move(new_constraints)};
 }
 
-std::vector<solvers::Binding<solvers::Constraint>>
+std::vector<Binding<Constraint>>
 VPolytope::DoAddPointInNonnegativeScalingConstraints(
     solvers::MathematicalProgram* prog,
     const Eigen::Ref<const solvers::VectorXDecisionVariable>& x,
-    const symbolic::Variable& t) const {
-  std::vector<solvers::Binding<solvers::Constraint>> constraints;
+    const Variable& t) const {
+  std::vector<Binding<Constraint>> constraints;
   const int n = ambient_dimension();
   const int m = vertices_.cols();
   VectorXDecisionVariable alpha = prog->NewContinuousVariables(m, "a");
@@ -370,13 +419,13 @@ VPolytope::DoAddPointInNonnegativeScalingConstraints(
   return constraints;
 }
 
-std::vector<solvers::Binding<solvers::Constraint>>
+std::vector<Binding<Constraint>>
 VPolytope::DoAddPointInNonnegativeScalingConstraints(
     solvers::MathematicalProgram* prog, const Eigen::Ref<const MatrixXd>& A,
     const Eigen::Ref<const VectorXd>& b, const Eigen::Ref<const VectorXd>& c,
     double d, const Eigen::Ref<const VectorXDecisionVariable>& x,
     const Eigen::Ref<const VectorXDecisionVariable>& t) const {
-  std::vector<solvers::Binding<solvers::Constraint>> constraints;
+  std::vector<Binding<Constraint>> constraints;
   const int n = ambient_dimension();
   const int m = vertices_.cols();
   VectorXDecisionVariable alpha = prog->NewContinuousVariables(m, "a");
@@ -422,36 +471,17 @@ void VPolytope::ImplementGeometry(const Box& box, void* data) {
 void VPolytope::ImplementGeometry(const Convex& convex, void* data) {
   DRAKE_ASSERT(data != nullptr);
   Matrix3Xd* vertex_data = static_cast<Matrix3Xd*>(data);
-  *vertex_data = GetVertices(convex);
+  *vertex_data = GetConvexHullFromObjFile(convex.filename(), convex.scale());
+}
+
+void VPolytope::ImplementGeometry(const Mesh& mesh, void* data) {
+  DRAKE_ASSERT(data != nullptr);
+  Matrix3Xd* vertex_data = static_cast<Matrix3Xd*>(data);
+  *vertex_data = GetConvexHullFromObjFile(mesh.filename(), mesh.scale());
 }
 
 MatrixXd GetVertices(const Convex& convex) {
-  const auto [tinyobj_vertices, faces, num_faces] = internal::ReadObjFile(
-      convex.filename(), convex.scale(), false /* triangulate */);
-  unused(faces);
-  unused(num_faces);
-  orgQhull::Qhull qhull;
-  const int dim = 3;
-  std::vector<double> tinyobj_vertices_flat(tinyobj_vertices->size() * dim);
-  for (int i = 0; i < ssize(*tinyobj_vertices); ++i) {
-    for (int j = 0; j < dim; ++j) {
-      tinyobj_vertices_flat[dim * i + j] = (*tinyobj_vertices)[i](j);
-    }
-  }
-  qhull.runQhull("", dim, tinyobj_vertices->size(),
-                 tinyobj_vertices_flat.data(), "");
-  if (qhull.qhullStatus() != 0) {
-    throw std::runtime_error(
-        fmt::format("Qhull terminated with status {} and  message:\n{}",
-                    qhull.qhullStatus(), qhull.qhullMessage()));
-  }
-  Matrix3Xd vertices(3, qhull.vertexCount());
-  int vertex_count = 0;
-  for (const auto& qhull_vertex : qhull.vertexList()) {
-    vertices.col(vertex_count++) =
-        Eigen::Map<Vector3d>(qhull_vertex.point().toStdVector().data());
-  }
-  return vertices;
+  return GetConvexHullFromObjFile(convex.filename(), convex.scale());
 }
 
 }  // namespace optimization

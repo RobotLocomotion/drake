@@ -146,6 +146,8 @@ TEST_F(PrismaticMobilizerTest, ProjectSpatialForce) {
 }
 
 TEST_F(PrismaticMobilizerTest, MapVelocityToQDotAndBack) {
+  EXPECT_TRUE(slider_->is_velocity_equal_to_qdot());
+
   Vector1d v(1.5);
   Vector1d qdot;
   slider_->MapVelocityToQDot(*context_, v, &qdot);

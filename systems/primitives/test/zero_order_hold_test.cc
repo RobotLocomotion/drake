@@ -32,9 +32,9 @@ const double kMachineTol = 10 * std::numeric_limits<double>::epsilon();
 // (`Value<SimpleAbstractType>`).
 class SimpleAbstractType {
  public:
-  explicit SimpleAbstractType(const Eigen::Vector3d& value)
-      : value_(value) {}
+  explicit SimpleAbstractType(const Eigen::Vector3d& value) : value_(value) {}
   const Eigen::Vector3d& value() const { return value_; }
+
  private:
   Eigen::Vector3d value_;
 };
@@ -46,15 +46,13 @@ void CheckForSinglePeriodicEvent(const EventListType& events) {
   // ASSERT_EQ(...), to only run the following code if the prior expectation is
   // met.
   if (events.size() == 1) {
-    EXPECT_EQ(events.front()->get_trigger_type(),
-        TriggerType::kPeriodic);
+    EXPECT_EQ(events.front()->get_trigger_type(), TriggerType::kPeriodic);
   }
 }
 
 class ZeroOrderHoldTest : public ::testing::TestWithParam<bool> {
  protected:
-  ZeroOrderHoldTest()
-      : is_abstract_(GetParam()) {}
+  ZeroOrderHoldTest() : is_abstract_(GetParam()) {}
   void SetUp() override {
     DRAKE_DEMAND(kLength == 3);
     state_value_override_ << 1.0, 3.14, 2.18;
@@ -100,6 +98,35 @@ class ZeroOrderHoldTest : public ::testing::TestWithParam<bool> {
   Eigen::Vector3d input_value_;
 };
 
+// Tests that the vector constructor establishes the proper period and offset.
+GTEST_TEST(SimpleZeroOrderHoldTest, VectorPeriodAndOffset) {
+  const double offset = 0.02;
+  ZeroOrderHold<double> dut(kPeriod, kLength, offset);
+  EXPECT_EQ(dut.period(), kPeriod);
+  EXPECT_EQ(dut.offset(), offset);
+  const std::optional<PeriodicEventData> data =
+      dut.GetUniquePeriodicDiscreteUpdateAttribute();
+  ASSERT_TRUE(data.has_value());
+  EXPECT_EQ(data->period_sec(), kPeriod);
+  EXPECT_EQ(data->offset_sec(), offset);
+}
+
+// Tests that the abstract constructor establishes the proper period and offset.
+GTEST_TEST(SimpleZeroOrderHoldTest, AbstractPeriodAndOffset) {
+  const double offset = 0.02;
+  ZeroOrderHold<double> dut(kPeriod, Value<std::string>(), offset);
+  EXPECT_EQ(dut.period(), kPeriod);
+  EXPECT_EQ(dut.offset(), offset);
+  const auto events_by_period_map = dut.MapPeriodicEventsByTiming();
+  ASSERT_EQ(events_by_period_map.size(), 1);
+  const PeriodicEventData& schedule = events_by_period_map.begin()->first;
+  const std::vector<const Event<double>*>& events =
+      events_by_period_map.begin()->second;
+  EXPECT_EQ(schedule.period_sec(), kPeriod);
+  EXPECT_EQ(schedule.offset_sec(), offset);
+  EXPECT_EQ(events.size(), 1);
+}
+
 // Tests that the zero-order hold has one input and one output.
 TEST_P(ZeroOrderHoldTest, Topology) {
   EXPECT_EQ(1, hold_->num_input_ports());
@@ -139,8 +166,9 @@ TEST_P(ZeroOrderHoldTest, Output) {
     SimpleAbstractType& state_value =
         context_->get_mutable_abstract_state<SimpleAbstractType>(0);
     state_value = SimpleAbstractType(output_expected);
-    output = hold_->get_output_port().
-        template Eval<SimpleAbstractType>(*context_).value();
+    output = hold_->get_output_port()
+                 .template Eval<SimpleAbstractType>(*context_)
+                 .value();
   }
   EXPECT_EQ(output_expected, output);
 }
@@ -202,7 +230,7 @@ TEST_P(ZeroOrderHoldTest, ToSymbolic) {
 
 // Instantiate parameterized test cases for is_abstract_ = {false, true}
 INSTANTIATE_TEST_SUITE_P(test, ZeroOrderHoldTest,
-    ::testing::Values(false, true));
+                         ::testing::Values(false, true));
 
 // Create a simple Diagram like this:
 //    +-----------------------------------------------------+
@@ -234,9 +262,8 @@ GTEST_TEST(ZeroOrderHoldTest, UseInDiagram) {
       builder.AddSystem<Sine<double>>(amplitude, frequency, phase, size);
   sine->set_name("sine");
 
-  auto dut = builder.AddSystem<ZeroOrderHold<double>>(
-      kPeriod,  // period
-      1);       // size
+  auto dut = builder.AddSystem<ZeroOrderHold<double>>(kPeriod,  // period
+                                                      1);       // size
   dut->set_name("zoh");
 
   // Connect output of sine to input of zoh.
@@ -249,7 +276,9 @@ GTEST_TEST(ZeroOrderHoldTest, UseInDiagram) {
   const Context<double>& context = simulator.get_context();
   simulator.Initialize();
 
-  auto eval = [&]() { return diagram->get_output_port(0).Eval(context)[0]; };
+  auto eval = [&]() {
+    return diagram->get_output_port(0).Eval(context)[0];
+  };
 
   // No update should have occurred yet.
   EXPECT_EQ(0., eval());
@@ -280,8 +309,8 @@ class SymbolicZeroOrderHoldTest : public ::testing::Test {
 
     // Initialize the context with symbolic variables.
     context_ = hold_->CreateDefaultContext();
-    hold_->get_input_port().FixValue(context_.get(),
-        symbolic::Expression(symbolic::Variable("u0")));
+    hold_->get_input_port().FixValue(
+        context_.get(), symbolic::Expression(symbolic::Variable("u0")));
     auto& xd = context_->get_mutable_discrete_state(0);
     xd[0] = symbolic::Variable("x0");
 

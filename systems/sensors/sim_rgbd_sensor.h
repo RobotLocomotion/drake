@@ -70,8 +70,7 @@ class SimRgbdSensor {
     return color_properties_;
   }
 
-  const geometry::render::DepthRenderCamera& depth_properties()
-      const {
+  const geometry::render::DepthRenderCamera& depth_properties() const {
     return depth_properties_;
   }
 

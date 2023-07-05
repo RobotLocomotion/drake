@@ -251,7 +251,8 @@ class SpheresStackTest : public SpheresStack, public ::testing::Test {
       const ContactPairKinematics<double>& pair_kinematics =
           contact_kinematics[i];
       J_AcBc_W.middleRows<3>(3 * i) =
-          pair_kinematics.R_WC.matrix() * J_AcBc_C.middleRows<3>(3 * i);
+          pair_kinematics.configuration.R_WC.matrix() *
+          J_AcBc_C.middleRows<3>(3 * i);
     }
     return J_AcBc_W;
   }
@@ -333,8 +334,24 @@ TEST_F(SpheresStackTest, CalcContactKinematics) {
     EXPECT_TRUE(CompareMatrices(v_S1cS2c_W, expected_v_S1cS2c_W, kEps,
                                 MatrixCompareType::relative));
 
-    // Verify we loaded phi correctly.
-    EXPECT_EQ(pairs[0].phi0, contact_kinematics[0].phi);
+    // Verify configuration.
+    const contact_solvers::internal::ContactConfiguration<double>&
+        configuration = contact_kinematics[0].configuration;
+    const BodyIndex bodyA_index =
+        contact_manager_->geometry_id_to_body_index().at(pairs[0].id_A);
+    const BodyIndex bodyB_index =
+        contact_manager_->geometry_id_to_body_index().at(pairs[0].id_B);
+    EXPECT_EQ(BodyIndex(configuration.objectA), bodyA_index);
+    EXPECT_EQ(BodyIndex(configuration.objectB), bodyB_index);
+    EXPECT_EQ(pairs[0].phi0, configuration.phi);
+    const Vector3d p_AoC_W =
+        bodyA_index == sphere1_->index() ? p_S1C_W : p_S2C_W;
+    const Vector3d p_BoC_W =
+        bodyB_index == sphere1_->index() ? p_S1C_W : p_S2C_W;
+    EXPECT_TRUE(CompareMatrices(configuration.p_ApC_W, p_AoC_W, kEps,
+                                MatrixCompareType::relative));
+    EXPECT_TRUE(CompareMatrices(configuration.p_BqC_W, p_BoC_W, kEps,
+                                MatrixCompareType::relative));
   }
 
   // Verify contact Jacobian for hydroelastic pairs.
@@ -352,8 +369,24 @@ TEST_F(SpheresStackTest, CalcContactKinematics) {
       EXPECT_TRUE(CompareMatrices(v_WS1c_W, expected_v_WS1c, kEps,
                                   MatrixCompareType::relative));
 
-      // Verify we loaded phi correctly.
-      EXPECT_EQ(pairs[q].phi0, contact_kinematics[q].phi);
+      // Verify configuration.
+      const contact_solvers::internal::ContactConfiguration<double>&
+          configuration = contact_kinematics[q].configuration;
+      const BodyIndex bodyA_index =
+          contact_manager_->geometry_id_to_body_index().at(pairs[q].id_A);
+      const BodyIndex bodyB_index =
+          contact_manager_->geometry_id_to_body_index().at(pairs[q].id_B);
+      EXPECT_EQ(BodyIndex(configuration.objectA), bodyA_index);
+      EXPECT_EQ(BodyIndex(configuration.objectB), bodyB_index);
+      EXPECT_EQ(pairs[q].phi0, configuration.phi);
+      const Vector3d p_AoC_W =
+          bodyA_index == sphere1_->index() ? p_S1C_W : p_WC;
+      const Vector3d p_BoC_W =
+          bodyB_index == sphere1_->index() ? p_S1C_W : p_WC;
+      EXPECT_TRUE(CompareMatrices(configuration.p_ApC_W, p_AoC_W, kEps,
+                                  MatrixCompareType::relative));
+      EXPECT_TRUE(CompareMatrices(configuration.p_BqC_W, p_BoC_W, kEps,
+                                  MatrixCompareType::relative));
     }
   }
 }
