@@ -45,13 +45,14 @@ namespace render {
  terms. Instead, Drake includes a simple @ref render_engine_benchmarks
  "benchmark" which can be run locally to assess the actual performance the end
  user will experience on a fixed system.
+
+ Next topic: @ref geometry_file_formats
  */
 
 /** @defgroup render_benchmarks Render Benchmarks
  @ingroup render_engines
 
  Benchmarks for assessing rendering performance and comparing implementations.
-
  */
 
 }  // namespace render
