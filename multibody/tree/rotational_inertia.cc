@@ -10,27 +10,31 @@ namespace multibody {
 template <typename T>
 Vector3<double> RotationalInertia<T>::CalcPrincipalMomentsAndMaybeAxesOfInertia(
       math::RotationMatrix<double>* principal_directions) const {
+  Vector3<double> principal_moments;
+
   // 1. Eigen's SelfAdjointEigenSolver does not compile for AutoDiffXd.
   //    Therefore, convert `this` to a local copy of type Matrix3<double>.
   // 2. Eigen's SelfAdjointEigenSolver only uses the lower-triangular part
   //    of this symmetric matrix.
   const Matrix3<T>& I_BP_E = get_matrix();
-  Matrix3<double> I_double = Matrix3<double>::Constant(NAN);
-  I_double(0, 0) = ExtractDoubleOrThrow(I_BP_E(0, 0));
-  I_double(1, 1) = ExtractDoubleOrThrow(I_BP_E(1, 1));
-  I_double(2, 2) = ExtractDoubleOrThrow(I_BP_E(2, 2));
+  const Matrix3<double> I_double = ExtractDoubleOrThrow(I_BP_E);
 
-  // Since the inertia matrix is symmetric, only the lower-triangular part of
-  // the matrix is used (its upper-triangular elements are NaN).
-  I_double(1, 0) = ExtractDoubleOrThrow(I_BP_E(1, 0));  // (1, 0) not (0, 1).
-  I_double(2, 0) = ExtractDoubleOrThrow(I_BP_E(2, 0));  // (2, 0) not (0, 2).
-  I_double(2, 1) = ExtractDoubleOrThrow(I_BP_E(2, 1));  // (2, 1) not (1, 2).
-
-  // If all products of inertia are zero, no need to calculate eigenvalues or
+  // Many calls to this function originate with a primitive such as a sphere,
+  // ellipsoid, box, cylinder, or capsule that has zero products of inertia.
+  // If all products of inertia are ≈ zero, no need to calculate eigenvalues or
   // eigenvectors as the principal moments of inertia are just the diagonal
   // elements and the principal directions are simple (e.g., [1, 0, 0]).
-  const bool is_diagonal = (I_double(1, 0) == 0 && I_double(2, 0) == 0 &&
-                            I_double(2, 1) == 0);
+  // Note: the largest product of inertia is at most half the largest moment of
+  // inertia, so compare products of inertia to a tolerance (rather than 0.0)
+  // informed by machine epsilon multiplied by largest moment of inertia.
+  // Note: It seems reasonable to surmise that an inertia tolerance based on
+  // known properties of moments and products of inertia is generally better
+  // than generic matrix tolerances used in Eigen's eigenvalue solver.
+  const double inertia_tolerance = 4 * std::numeric_limits<double>::epsilon() *
+      ExtractDoubleOrThrow(CalcMaximumPossibleMomentOfInertia());
+  const bool is_diagonal = (std::abs(I_double(1, 0)) <= inertia_tolerance &&
+                            std::abs(I_double(2, 0)) <= inertia_tolerance &&
+                            std::abs(I_double(2, 1)) <= inertia_tolerance);
   if (is_diagonal) {
     // Sort the principal moments of inertia (eigenvalues) and corresponding
     // principal directions (eigenvectors) in ascending order.
@@ -45,6 +49,10 @@ Vector3<double> RotationalInertia<T>::CalcPrincipalMomentsAndMaybeAxesOfInertia(
     const double Imax = I[2].first;  // Maximum principal moment of inertia.
     DRAKE_ASSERT(Imin <= Imed && Imed <= Imax);
 
+    // If requested, also return the eigenvectors (principal directions).
+    // The algorithm below ensures the first two columns of the returned 3x3
+    // matrix are unit vectors with elements +1 or 0. The 3rd column is a unit
+    // vector with elements ±1 or 0.
     if (principal_directions != nullptr) {
       math::RotationMatrix<double> identity_matrix =
           math::RotationMatrix<double>::Identity();
@@ -59,43 +67,79 @@ Vector3<double> RotationalInertia<T>::CalcPrincipalMomentsAndMaybeAxesOfInertia(
           math::RotationMatrix<double>::MakeFromOrthonormalColumns(
               col_min, col_med, is_right_handed ? col_max : -col_max);
     }
+    principal_moments = Vector3<double>(Imin, Imed, Imax);
 
-    return Vector3<double>(Imin, Imed, Imax);
+  } else {
+    // Calculate eigenvalues, possibly with eigenvectors.
+    // TODO(Mitiguy) Since this is 3x3 matrix, consider Eigen's specialized
+    //  compute_direct() method instead of compute() which uses QR.
+    // compute_direct() calculates eigenvalues with a closed-form algorithm that
+    // is usually signficantly faster than the QR iterative algorithm but may
+    // be less accurate (e.g., for 3x3 matrix of doubles, accuracy ≈ 1.0E-8).
+    Eigen::SelfAdjointEigenSolver<Matrix3<double>> eig_solve;
+    const int compute_eigenvectors = principal_directions != nullptr ?
+        Eigen::ComputeEigenvectors : Eigen::EigenvaluesOnly;
+    eig_solve.compute(I_double, compute_eigenvectors);
+    if (eig_solve.info() != Eigen::Success) {
+      const std::string error_message = fmt::format(
+          "{}(): Unable to calculate the eigenvalues or eigenvectors of the "
+          "3x3 matrix associated with a RotationalInertia.", __func__);
+      throw std::logic_error(error_message);
+    }
+
+    // The eigen solver orders the storage of eigenvalues in increasing value
+    // and orders the storage of their corresponding eigenvectors similarly.
+    // Note: The rotational inertia's 3x3 matrix should be positive
+    // semi-definite, so all the eigenvalues should be non-negative.
+    if (principal_directions != nullptr) {
+      // Form a right-handed orthogonal set of unit vectors Bx, By, Bz with the
+      // 1st and 2nd eigenvectors and their cross-product. Unit vectors Bx, By,
+      // Bz are expressed in the same frame E as `this` UnitInertia.
+      const Vector3<double>& Bx_E = eig_solve.eigenvectors().col(0);
+      const Vector3<double>& By_E = eig_solve.eigenvectors().col(1);
+      const Vector3<double> Bz_E = Bx_E.cross(By_E);  // Ensure right-handed set
+      *principal_directions =
+          math::RotationMatrix<double>::MakeFromOrthonormalColumns(Bx_E, By_E,
+                                                                   Bz_E);
+    }
+    principal_moments = eig_solve.eigenvalues();
   }
 
-  // Calculate eigenvalues, possibly with eigenvectors.
-  // TODO(Mitiguy) Since this is 3x3 matrix, consider Eigen's specialized
-  //  compute_direct() method instead of compute() which uses QR.
-  //  compute_direct() calculates eigenvalues with a closed-form algorithm that
-  //  is usually signficantly faster than the QR iterative algorithm but may
-  //  be less accurate (e.g., for 3x3 matrix of doubles, accuracy ≈ 1.0E-8).
-  Eigen::SelfAdjointEigenSolver<Matrix3<double>> eig_solve;
-  const int compute_eigenvectors = principal_directions != nullptr ?
-      Eigen::ComputeEigenvectors : Eigen::EigenvaluesOnly;
-  eig_solve.compute(I_double, compute_eigenvectors);
-  if (eig_solve.info() != Eigen::Success) {
-    const std::string error_message = fmt::format(
-        "{}(): Unable to calculate the eigenvalues or eigenvectors of the "
-        "3x3 matrix associated with a RotationalInertia.", __func__);
-    throw std::logic_error(error_message);
-  }
-
-  // The eigen solver orders the storage of eigenvalues in increasing value and
-  // orders the storage of their corresponding eigenvectors similarly.
-  // Note: The rotational inertia's 3x3 matrix should be positive semi-definite,
-  // so all the eigenvalues should be non-negative.
+  // The rotation matrix stored in principal_directions is not unique. Moments
+  // of inertia are associated with lines (not unit vectors), so it possible to
+  // reorient the principal directions in various ways. If all the moments of
+  // inertia are unique, there are 4 distinct possibilities for the rotation
+  // matrix that represents the principal directions. If two moments of inertia
+  // are equal there is an infinite number of possibilties (but not all rotation
+  // matrices conform). If three moments of inertia are equal, then any rotation
+  // matrix works, so we pick a "canonical" one, namely the identity matrix.
   if (principal_directions != nullptr) {
-    // Form a right-handed orthogonal set of unit vectors Bx, By, Bz with the
-    // 1st and 2nd eigenvectors and their cross-product. Unit vectors Bx, By, Bz
-    // are expressed in the same frame E as `this` UnitInertia.
-    const Vector3<double>& Bx_E = eig_solve.eigenvectors().col(0);
-    const Vector3<double>& By_E = eig_solve.eigenvectors().col(1);
-    const Vector3<double> Bz_E = Bx_E.cross(By_E);  // Ensure right-handed set.
-    *principal_directions =
-        math::RotationMatrix<double>::MakeFromOrthonormalColumns(Bx_E, By_E,
-                                                                 Bz_E);
+    const double& Imin = principal_moments(0);
+    const double& Imax = principal_moments(2);
+    // Case: Triaxially symmetric principal moments of inertia (all 3 ≈ equal).
+    // For this case, body B's inertia matrix about-point P expressed in the
+    // right-handed orthonormal basis A of principal directions is
+    //          ⎡Imin  0   0 ⎤     ⎡ 1  0  0 ⎤
+    // I_BP_A ≈ | 0  Imed  0 | ≈ J | 0  1  0 |  where J ≈ Imin ≈ Imed ≈ Imax.
+    //          ⎣ 0    0 Imax⎦     ⎣ 0  0  1 ⎦
+    // We show: I_BP_E = I_BP_A, where E is any right-handed orthonormal basis.
+    // Proof: To reexpress I_BP_A from basis A to basis E, use the rotation
+    // matrix R_AE and its inverse R_EA as I_BP_E = R_EA * I_BP_A * R_AE.
+    // Substitute for I_BP_A as I_BP_E = R_EA * J * IdentityMatrix * R_AE. Thus
+    // I_BP_E = R_EA * J * R_AE = J * R_EA * R_AE = J * IdentityMatrix = I_BP_A.
+    // Note: The previous sorting of principal_directions (above) can lead to
+    //                        ⎡ 0  1  0 ⎤                           ⎡ 1  0  0 ⎤
+    // principal_directions = | 1  0  0 | which is changed below to | 0  1  0 |
+    //                        ⎣ 0  0 -1 ⎦                           ⎣ 0  0  1 ⎦.
+    if (Imax - Imin <= inertia_tolerance) {
+      // Rotation matrix R_BA is not unique. We choose the identity matrix.
+      *principal_directions = math::RotationMatrix<double>::Identity();
+    }
+    // TODO(Mitiguy) Return canonical principal directions for the other cases.
+    // Case: Axially symmetric moments of inertia (2 are equal, one differs).
+    // Case: Distinct principal moments of inertia (all 3 are different).
   }
-  return eig_solve.eigenvalues();
+  return principal_moments;
 }
 
 template <typename T>
