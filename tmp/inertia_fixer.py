@@ -138,7 +138,6 @@ def maybe_synthesize_children(parent: ElementFacts, names: list[str]):
             0, make_synth_element(parent, needed_name))
 
 
-
 def adjusted_element_end_index(input_text: str, facts: ElementFacts) -> int:
     """Returns the index of the end of all of the text (including the element
     closure), when given an ElementFacts produced by the expat parse.
@@ -179,7 +178,6 @@ def make_format_helpers(facts: ElementFacts) -> (
     return (d, coda)
 
 
-
 class UrdfDriver(FormatDriver):
     """Format driver for URDF files."""
 
@@ -202,7 +200,7 @@ class UrdfDriver(FormatDriver):
         serial_number = 0
         for link in links:
             serial_number += 1
-            # XXX some files have empty links, not named 'world.' Understand why.
+            # XXX some files have empty links, not named 'world.' Why?
             if self._is_element_ignored(link) or not link.children:
                 continue
             link_name = link.attributes.get("name")
@@ -265,7 +263,7 @@ class SdformatDriver(FormatDriver):
         # strings.
         mapping = {}
         for link in links:
-            # XXX some files have empty links, not named 'world.' Understand why.
+            # XXX some files have empty links, not named 'world.' Why?
             if not link.children:
                 continue
             model = link.parent
