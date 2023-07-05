@@ -49,13 +49,6 @@ namespace fs = std::filesystem;
 constexpr char kInternalGroup[] = "render_engine_gl_internal";
 constexpr char kHasTexCoordProperty[] = "has_tex_coord";
 
-// Data to pass through the reification process.
-struct RegistrationData {
-  const GeometryId id;
-  const RigidTransformd& X_WG;
-  const PerceptionProperties& properties;
-};
-
 /* The built-in shader for Rgba diffuse colored objects. This shader supports
  all geometries because it provides a default diffuse color if none is given. */
 class DefaultRgbaColorShader final : public ShaderProgram {
@@ -560,9 +553,12 @@ void RenderEngineGl::ImplementGeometry(const Capsule& capsule,
 }
 
 void RenderEngineGl::ImplementGeometry(const Convex& convex, void* user_data) {
-  const int geometry = GetMesh(convex.filename());
-  ImplementMesh(geometry, user_data, Vector3d(1, 1, 1) * convex.scale(),
-                convex.filename());
+  RegistrationData* data = static_cast<RegistrationData*>(user_data);
+  const int geometry = GetMesh(convex.filename(), data);
+  if (data->accepted) {
+    ImplementMesh(geometry, user_data, Vector3d(1, 1, 1) * convex.scale(),
+                  convex.filename());
+  }
 }
 
 void RenderEngineGl::ImplementGeometry(const Cylinder& cylinder,
@@ -586,9 +582,12 @@ void RenderEngineGl::ImplementGeometry(const HalfSpace&, void* user_data) {
 }
 
 void RenderEngineGl::ImplementGeometry(const Mesh& mesh, void* user_data) {
-  const int geometry = GetMesh(mesh.filename());
-  ImplementMesh(geometry, user_data, Vector3d(1, 1, 1) * mesh.scale(),
-                mesh.filename());
+  RegistrationData* data = static_cast<RegistrationData*>(user_data);
+  const int geometry = GetMesh(mesh.filename(), data);
+  if (data->accepted) {
+    ImplementMesh(geometry, user_data, Vector3d(1, 1, 1) * mesh.scale(),
+                  mesh.filename());
+  }
 }
 
 void RenderEngineGl::ImplementGeometry(const Sphere& sphere, void* user_data) {
@@ -648,7 +647,7 @@ bool RenderEngineGl::DoRegisterVisual(GeometryId id, const Shape& shape,
   opengl_context_->MakeCurrent();
   RegistrationData data{id, RigidTransformd{X_WG}, properties};
   shape.Reify(this, &data);
-  return true;
+  return data.accepted;
 }
 
 void RenderEngineGl::DoUpdateVisualPose(GeometryId id,
@@ -957,13 +956,27 @@ int RenderEngineGl::GetBox() {
   return box_;
 }
 
-int RenderEngineGl::GetMesh(const string& filename_in) {
+int RenderEngineGl::GetMesh(const string& filename_in, RegistrationData* data) {
   int mesh = -1;
-  // Handle the case where filename_in is a symlink.
-  const fs::path path_in(filename_in);
-  const fs::path file_path =
-      fs::is_symlink(path_in) ? fs::read_symlink(path_in) : path_in;
-  const std::string filename = file_path.string();
+  // Resolve to a canonical path.
+  std::error_code valid_path;
+  const std::string filename = fs::canonical(filename_in, valid_path).string();
+  if (!valid_path) {
+    throw std::runtime_error(fmt::format(
+        "RenderEngineGl: unable to access the requested mesh file '{}'; {}.",
+        filename_in, valid_path.message()));
+  }
+
+  // We're checking the input filename in case the user specified name has the
+  // desired extension but is a symlink to some arbitrarily named cached file.
+  if (Mesh(filename_in).extension() != ".obj") {
+    static const logging::Warn one_time(
+        "RenderEngineGl only supports Mesh/Convex specifications which use "
+        ".obj files. Mesh specifications using other mesh types (e.g., "
+        ".gltf, .stl, .dae, etc.) will be ignored.");
+    data->accepted = false;
+    return -1;
+  }
 
   if (meshes_.count(filename) == 0) {
     // TODO(SeanCurtis-TRI): We're ignoring the declared perception properties

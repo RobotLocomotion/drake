@@ -274,6 +274,17 @@ GTEST_TEST(VPolytopeTest, NonconvexMesh) {
   CheckVertices(V.vertices(), vertices_expected.transpose(), tol);
 }
 
+GTEST_TEST(VPolytopeTest, UnsupportedMeshTypes) {
+  // We don't test the correctness of the geometry pose or reference frame
+  // because those are implicitly tested in the query-object-based constructor.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      VPolytope(Mesh("bad_extension.stl"), {}, {}),
+      "VPolytope can only use mesh shapes .* '.*bad_extension.stl'.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      VPolytope(Convex("bad_extension.stl"), {}, {}),
+      "VPolytope can only use mesh shapes .* '.*bad_extension.stl'.");
+}
+
 GTEST_TEST(VPolytopeTest, UnitBox6DTest) {
   VPolytope V = VPolytope::MakeUnitBox(6);
   EXPECT_EQ(V.ambient_dimension(), 6);

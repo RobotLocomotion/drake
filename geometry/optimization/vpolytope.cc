@@ -79,7 +79,14 @@ MatrixXd OrderCounterClockwise(const MatrixXd& vertices) {
   return sorted_vertices;
 }
 
-MatrixXd GetConvexHullFromObjFile(const std::string& filename, double scale) {
+MatrixXd GetConvexHullFromObjFile(const std::string& filename,
+                                  const std::string& extension, double scale) {
+  if (extension != ".obj") {
+    throw std::runtime_error(
+        fmt::format("VPolytope can only use mesh shapes (Convex/Mesh) with a "
+                    ".obj file type; given '{}'.",
+                    filename));
+  }
   const auto [tinyobj_vertices, faces, num_faces] =
       internal::ReadObjFile(filename, scale, /* triangulate = */ false);
   unused(faces);
@@ -118,16 +125,21 @@ VPolytope::VPolytope(const Eigen::Ref<const MatrixXd>& vertices)
 VPolytope::VPolytope(const QueryObject<double>& query_object,
                      GeometryId geometry_id,
                      std::optional<FrameId> reference_frame)
+    : VPolytope(query_object.inspector().GetShape(geometry_id),
+                query_object.GetPoseInWorld(geometry_id),
+                reference_frame ? query_object.GetPoseInWorld(*reference_frame)
+                                : RigidTransformd::Identity()) {}
+
+VPolytope::VPolytope(const Shape& shape,
+                     const RigidTransformd& shape_pose_in_world,
+                     const RigidTransformd& reference_frame_pose_in_world)
     : ConvexSet(3) {
   Matrix3Xd vertices;
-  query_object.inspector().GetShape(geometry_id).Reify(this, &vertices);
-
-  const RigidTransformd X_WE =
-      reference_frame ? query_object.GetPoseInWorld(*reference_frame)
-                      : RigidTransformd::Identity();
-  const RigidTransformd& X_WG = query_object.GetPoseInWorld(geometry_id);
-  const RigidTransformd X_EG = X_WE.InvertAndCompose(X_WG);
-  vertices_ = X_EG * vertices;
+  shape.Reify(this, &vertices);
+  const RigidTransformd& X_WS = shape_pose_in_world;
+  const RigidTransformd& X_WE = reference_frame_pose_in_world;
+  const RigidTransformd X_ES = X_WE.InvertAndCompose(X_WS);
+  vertices_ = X_ES * vertices;
 }
 
 VPolytope::VPolytope(const HPolyhedron& hpoly)
@@ -479,17 +491,20 @@ void VPolytope::ImplementGeometry(const Box& box, void* data) {
 void VPolytope::ImplementGeometry(const Convex& convex, void* data) {
   DRAKE_ASSERT(data != nullptr);
   Matrix3Xd* vertex_data = static_cast<Matrix3Xd*>(data);
-  *vertex_data = GetConvexHullFromObjFile(convex.filename(), convex.scale());
+  *vertex_data = GetConvexHullFromObjFile(convex.filename(), convex.extension(),
+                                          convex.scale());
 }
 
 void VPolytope::ImplementGeometry(const Mesh& mesh, void* data) {
   DRAKE_ASSERT(data != nullptr);
   Matrix3Xd* vertex_data = static_cast<Matrix3Xd*>(data);
-  *vertex_data = GetConvexHullFromObjFile(mesh.filename(), mesh.scale());
+  *vertex_data =
+      GetConvexHullFromObjFile(mesh.filename(), mesh.extension(), mesh.scale());
 }
 
 MatrixXd GetVertices(const Convex& convex) {
-  return GetConvexHullFromObjFile(convex.filename(), convex.scale());
+  return GetConvexHullFromObjFile(convex.filename(), convex.extension(),
+                                  convex.scale());
 }
 
 }  // namespace optimization

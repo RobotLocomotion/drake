@@ -253,11 +253,7 @@ std::optional<RigidGeometry> MakeRigidRepresentation(
   // Mesh does not use any properties.
   std::unique_ptr<TriangleSurfaceMesh<double>> mesh;
 
-  std::string extension =
-      std::filesystem::path(mesh_spec.filename()).extension();
-  std::transform(extension.begin(), extension.end(), extension.begin(),
-                 [](unsigned char c) { return std::tolower(c); });
-
+  const std::string extension = mesh_spec.extension();
   if (extension == ".obj") {
     mesh = make_unique<TriangleSurfaceMesh<double>>(
         ReadObjToTriangleSurfaceMesh(mesh_spec.filename(), mesh_spec.scale()));
@@ -275,6 +271,11 @@ std::optional<RigidGeometry> MakeRigidRepresentation(
 
 std::optional<RigidGeometry> MakeRigidRepresentation(
     const Convex& convex_spec, const ProximityProperties&) {
+  if (convex_spec.extension() != ".obj") {
+    throw std::runtime_error(fmt::format(
+        "hydroelastic::MakeRigidRepresentation(): unsupported mesh file: {}",
+        convex_spec.filename()));
+  }
   // Convex does not use any properties.
   auto mesh =
       make_unique<TriangleSurfaceMesh<double>>(ReadObjToTriangleSurfaceMesh(

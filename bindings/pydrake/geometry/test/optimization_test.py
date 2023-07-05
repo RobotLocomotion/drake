@@ -295,6 +295,13 @@ class TestGeometryOptimization(unittest.TestCase):
         vpoly.WriteObj(filename=temp_file_name)
         self.assertTrue(os.path.isfile(temp_file_name))
 
+        # Just checking the bindings of the constructor. The validity of the
+        # result is implicitly tested in the constructor that consumes a
+        # QueryObject (see below); that constructor delegates to this one.
+        mut.VPolytope(shape=Box(1., 1., 1.),
+                      shape_pose_in_world=RigidTransform(),
+                      reference_frame_pose_in_world=RigidTransform())
+
     def _calculate_path_length(self, vertices):
         n = vertices.shape[1]
         length = 0

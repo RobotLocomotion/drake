@@ -8,6 +8,7 @@
 
 #include "drake/geometry/optimization/convex_set.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
+#include "drake/math/rigid_transform.h"
 
 namespace drake {
 namespace geometry {
@@ -45,6 +46,13 @@ class VPolytope final : public ConvexSet {
   @pydrake_mkdoc_identifier{scenegraph} */
   VPolytope(const QueryObject<double>& query_object, GeometryId geometry_id,
             std::optional<FrameId> reference_frame = std::nullopt);
+
+  /** Constructs the polytope from a Shape specification and its pose in the
+  world and a reference frame posed in the world.
+  @pydrake_mkdoc_identifier{shape} */
+  VPolytope(const Shape& shape,
+            const math::RigidTransformd& shape_pose_in_world,
+            const math::RigidTransformd& reference_frame_pose_in_world);
 
   ~VPolytope() final;
 

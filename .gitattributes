@@ -4,6 +4,8 @@ WORKSPACE diff=bazel
 **/site.webmanifest diff=json
 
 # These lines tell git diff viewers to ignore data objects.
+# glTF.
+*.gltf -diff
 # Wavefront geometry definition
 *.obj -diff
 # VTK polygon data

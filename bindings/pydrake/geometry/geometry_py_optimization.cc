@@ -281,6 +281,10 @@ void DefineGeometryOptimization(py::module m) {
             py::arg("query_object"), py::arg("geometry_id"),
             py::arg("reference_frame") = std::nullopt,
             cls_doc.ctor.doc_scenegraph)
+        .def(py::init<const Shape&, const math::RigidTransformd&,
+                 const math::RigidTransformd&>(),
+            py::arg("shape"), py::arg("shape_pose_in_world"),
+            py::arg("reference_frame_pose_in_world"), cls_doc.ctor.doc_shape)
         .def("GetMinimalRepresentation", &VPolytope::GetMinimalRepresentation,
             cls_doc.GetMinimalRepresentation.doc)
         .def("vertices", &VPolytope::vertices, cls_doc.vertices.doc)
