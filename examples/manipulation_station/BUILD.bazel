@@ -17,6 +17,17 @@ load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
 
 models_filegroup(
     name = "models",
+    extra_srcs = [
+        "@drake_models//:manipulation_station/bin.mtl",
+        "@drake_models//:manipulation_station/bin.obj",
+        "@drake_models//:manipulation_station/bin.png",
+        "@drake_models//:manipulation_station/table_wide.mtl",
+        "@drake_models//:manipulation_station/table_wide.obj",
+        "@drake_models//:manipulation_station/table_wide.png",
+        "@drake_models//:manipulation_station/shelves.mtl",
+        "@drake_models//:manipulation_station/shelves.obj",
+        "@drake_models//:manipulation_station/shelves.png",
+    ],
     visibility = ["//visibility:public"],
 )
 

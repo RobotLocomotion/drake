@@ -69,7 +69,7 @@ drake_cc_library(
     srcs = ["package_map.cc"],
     hdrs = ["package_map.h"],
     data = [
-        ":drake_models.json",
+#        ":drake_models.json",
         ":package_downloader.py",
         "//:package.xml",
         "@drake_models//:package.xml",
