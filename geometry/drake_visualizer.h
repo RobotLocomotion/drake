@@ -143,6 +143,13 @@ std::string MakeLcmChannelNameForRole(const std::string& channel,
    - Evaluating multiple instances of %DrakeVisualizer in a single thread that
      share the same lcm::DrakeLcmInterface.
 
+ <h3>Mesh support</h3>
+
+ %DrakeVisualizer is mesh file format agnostic. A Mesh or Convex shape that
+ references arbitrary mesh files will simply be packaged in the broadcast LCM
+ message. It defers to the message *receiver* on whether that particular file
+ format is supported.
+
  <h3>Scalar support and conversion</h3>
 
  %DrakeVisualizer is templated on `T` and can be used in a `double`- or
