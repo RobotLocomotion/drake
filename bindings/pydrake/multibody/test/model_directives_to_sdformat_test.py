@@ -257,14 +257,15 @@ class TestConvertModelDirectiveToSdformat(
             self.dmd_test_path / "add_directives.expected-sdf",
             self.dmd_test_path / "hidden_frame.expected-sdf",
         ]
-        # TODO(jwnimmer-tri) Don't do this; changes to os.environ bleed into
-        # other test cases.
-        os.environ["ROS_PACKAGE_PATH"] = "bindings/pydrake/multibody"
-        files = _convert_directives(
-            dmd_filename=dmd_filename,
-            expand_included=True,
-            generate_world=False,
-        )
+        try:
+            os.environ["ROS_PACKAGE_PATH"] = str(self.dmd_test_path)
+            files = _convert_directives(
+                dmd_filename=dmd_filename,
+                expand_included=True,
+                generate_world=False,
+            )
+        finally:
+            del os.environ["ROS_PACKAGE_PATH"]
         self.assertEqual(len(files), len(expected_filenames))
         for (path, xml), expected in zip(files.items(), expected_filenames):
             self.assertEqual(path.name, expected.name.replace("expected-", ""))
@@ -273,6 +274,9 @@ class TestConvertModelDirectiveToSdformat(
             self.assertMultiLineEqual(xml, expected_xml)
 
     def test_resulting_xml(self):
+        """Checks the literal xml output of a dmd conversion (instead of merely
+        checking for MultibodyPlant equivalence).
+        """
         dmd_filename = self.dmd_test_path / "inject_frames.dmd.yaml"
         expected_path = self.dmd_test_path / "inject_frames.expected-sdf"
         with open(expected_path, encoding="utf-8") as f:
