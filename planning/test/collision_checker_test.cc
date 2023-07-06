@@ -610,6 +610,80 @@ TEST_F(TrivialCollisionCheckerTest, ClonesAndContexts) {
             dut_->num_allocated_contexts() + 1 /* prototype context */);
 }
 
+// We want to confirm that when setting distance/interpolation functions, they
+// are validated using *default* configuration and *not* zero configuration.
+// So, we'll create functions that have two properties:
+//
+//   1. They report they've been called.
+//   2. They get angry if they're not provided the default configuration as
+//      parameter values.
+//
+TEST_F(TrivialCollisionCheckerTest, NonZeroDefaultConfiguration) {
+  // We need a plant that has a non-zero default configuration, so we can't
+  // use dut_.
+  auto [robot, robot_index] =
+      MakeModel({.weld_robot = false, .on_env_base = true});
+
+  // Get a copy of the non-zero default configuration.
+  auto context = robot->plant().CreateDefaultContext();
+  const VectorXd default_config =
+      robot->plant().GetPositions(*robot->plant().CreateDefaultContext());
+  // Confirm the default configuration has non-zero values so it can't be
+  // accidentally represented by the zero vector.
+  ASSERT_TRUE((default_config.array() != 0).any());
+
+  // Make some arbitrary non-default config so we confirm that the distance
+  // and interpolation function candidates can distinguish between default and
+  // non-default configurations.
+  const VectorXd non_default_config = -default_config;
+
+  std::unique_ptr<CollisionChecker> dut =
+      MakeUnallocatedChecker(std::move(robot), {robot_index});
+
+  bool distance_called = false;
+  // Create distance function that hates all zeros -- and confirm that.
+  auto angry_distance = [&distance_called, &default_config](
+                            const VectorXd& q0, const VectorXd& q1) -> double {
+    distance_called = true;
+    if (((q0 - default_config).array() != 0).any() ||
+        ((q1 - default_config).array() != 0).any()) {
+      throw std::runtime_error("All zeros is bad!");
+    }
+    return (q1 - q0).norm();
+  };
+  // Confirm properties on the distance function.
+  ASSERT_THROW(angry_distance(non_default_config, non_default_config),
+               std::exception);
+  ASSERT_TRUE(distance_called);
+  ASSERT_NO_THROW(angry_distance(default_config, default_config));
+  // Now confirm it gets exercised with the default config.
+  distance_called = false;
+  EXPECT_NO_THROW(dut->SetConfigurationDistanceFunction(angry_distance));
+  EXPECT_TRUE(distance_called);
+
+  // Create interpolation function that hates all zeros -- and confirm that.
+  bool interp_called = false;
+  auto angry_interp = [&interp_called, &default_config](const VectorXd& q0,
+                                                        const VectorXd& q1,
+                                                        double r) -> VectorXd {
+    interp_called = true;
+    if (((q0 - default_config).array() != 0).any() ||
+        ((q1 - default_config).array() != 0).any()) {
+      throw std::runtime_error("All zeros is bad!");
+    }
+    return (1 - r) * q0 + r * q1;
+  };
+  // Confirm properties on the interpolation function.
+  ASSERT_THROW(angry_interp(non_default_config, non_default_config, 0),
+               std::exception);
+  ASSERT_TRUE(interp_called);
+  ASSERT_NO_THROW(angry_interp(default_config, default_config, 0));
+  // Now confirm it gets exercised with the default config.
+  interp_called = false;
+  EXPECT_NO_THROW(dut->SetConfigurationInterpolationFunction(angry_interp));
+  EXPECT_TRUE(interp_called);
+}
+
 TEST_F(TrivialCollisionCheckerTest, Padding) {
   const int nbodies = dut_->plant().num_bodies();
   ASSERT_EQ(nbodies, 6);
