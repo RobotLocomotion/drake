@@ -504,6 +504,9 @@ class TestGeometryOptimization(unittest.TestCase):
 
     def test_graph_of_convex_sets(self):
         options = mut.GraphOfConvexSetsOptions()
+        self.assertIsNone(options.convex_relaxation)
+        self.assertIsNone(options.preprocessing)
+        self.assertIsNone(options.max_rounded_paths)
         options.convex_relaxation = True
         options.preprocessing = False
         options.max_rounded_paths = 2
@@ -529,14 +532,8 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertEqual(len(spp.Vertices()), 2)
         self.assertEqual(len(spp.Edges()), 2)
         result = spp.SolveShortestPath(
-            source_id=source.id(), target_id=target.id())
+            source_id=source.id(), target_id=target.id(), options=options)
         self.assertIsInstance(result, MathematicalProgramResult)
-        self.assertIsInstance(
-            spp.SolveShortestPath(source=source, target=target),
-            MathematicalProgramResult)
-        self.assertIsInstance(spp.SolveShortestPath(
-            source_id=source.id(), target_id=target.id(), options=options),
-            MathematicalProgramResult)
         self.assertIsInstance(spp.SolveShortestPath(
             source=source, target=target, options=options),
             MathematicalProgramResult)

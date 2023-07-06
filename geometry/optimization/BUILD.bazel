@@ -177,9 +177,9 @@ drake_cc_library(
     deps = [
         ":convex_set",
         "//common/symbolic:expression",
+        "//solvers:choose_best_solver",
         "//solvers:create_cost",
         "//solvers:mathematical_program_result",
-        "//solvers:solve",
         "//solvers:solver_interface",
     ],
 )

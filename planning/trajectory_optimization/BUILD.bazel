@@ -110,6 +110,7 @@ drake_cc_library(
         "//common/trajectories:bezier_curve",
         "//common/trajectories:composite_trajectory",
         "//geometry/optimization:graph_of_convex_sets",
+        "//solvers:solve",
     ],
 )
 
