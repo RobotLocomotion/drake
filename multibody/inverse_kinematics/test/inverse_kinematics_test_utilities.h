@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <limits>
 #include <memory>
 #include <string>
@@ -14,6 +15,7 @@
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/multibody_tree.h"
+#include "drake/planning/robot_diagram_builder.h"
 #include "drake/systems/framework/diagram.h"
 
 namespace drake {
@@ -48,10 +50,10 @@ typename std::enable_if_t<
     std::is_same_v<typename DerivedA::Scalar, AutoDiffXd>>
 CompareAutoDiffVectors(const Eigen::MatrixBase<DerivedA>& a,
                        const Eigen::MatrixBase<DerivedB>& b, double tol) {
-  EXPECT_TRUE(CompareMatrices(math::ExtractValue(a),
-                              math::ExtractValue(b), tol));
-  EXPECT_TRUE(CompareMatrices(math::ExtractGradient(a),
-                              math::ExtractGradient(b), tol));
+  EXPECT_TRUE(
+      CompareMatrices(math::ExtractValue(a), math::ExtractValue(b), tol));
+  EXPECT_TRUE(
+      CompareMatrices(math::ExtractGradient(a), math::ExtractGradient(b), tol));
 }
 
 /**
@@ -137,6 +139,24 @@ class TwoFreeSpheresTest : public ::testing::Test {
   systems::Context<AutoDiffXd>* plant_context_autodiff_{nullptr};
 };
 
+// We put 4 walls (each with length 1 meter) to form a square around the origin.
+// We put spheres in this environment.
+class SpheresAndWallsTest : public ::testing::Test {
+ public:
+  SpheresAndWallsTest();
+
+ protected:
+  double radius_{0.05};
+  double wall_length_{1};
+  planning::RobotDiagramBuilder<double> builder_;
+  std::array<multibody::BodyIndex, 2> body_indices_;
+  geometry::GeometryId left_wall_;
+  geometry::GeometryId right_wall_;
+  geometry::GeometryId top_wall_;
+  geometry::GeometryId bottom_wall_;
+  std::array<geometry::GeometryId, 2> spheres_;
+};
+
 /**
  * Compute the signed distance between a box and a sphere.
  * @param box_size The size of the box.
@@ -214,8 +234,7 @@ void TestKinematicConstraintEval(
   EXPECT_TRUE(CompareMatrices(y1_left, y1_right, tol));
 
   // condition 2
-  const auto x_autodiff =
-      math::InitializeAutoDiff(x_double, dx);
+  const auto x_autodiff = math::InitializeAutoDiff(x_double, dx);
   AutoDiffVecXd y2_left, y2_right;
   constraint_from_double.Eval(x_autodiff, &y2_left);
   constraint_from_autodiff.Eval(x_autodiff, &y2_right);
@@ -234,9 +253,11 @@ void TestKinematicConstraintEval(
   // condition 4
   std::function<void(const Eigen::Ref<const Eigen::VectorXd>&,
                      Eigen::VectorXd*)>
-      eval_fun = [&constraint_from_double](
-                     const Eigen::Ref<const Eigen::VectorXd>& x,
-                     Eigen::VectorXd* y) { constraint_from_double.Eval(x, y); };
+      eval_fun =
+          [&constraint_from_double](const Eigen::Ref<const Eigen::VectorXd>& x,
+                                    Eigen::VectorXd* y) {
+            constraint_from_double.Eval(x, y);
+          };
   const auto dy_dx_numeric = math::ComputeNumericalGradient(eval_fun, x_double);
   const Eigen::MatrixXd y_grad_numeric = dy_dx_numeric * dx;
   EXPECT_TRUE(CompareMatrices(y_grad_numeric, math::ExtractGradient(y2_right),
