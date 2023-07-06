@@ -16,12 +16,16 @@ namespace optimization {
 S = X₁ ⨁ X₂ ⨁ ... ⨁ Xₙ =
     {x₁ + x₂ + ... + xₙ | x₁ ∈ X₁, x₂ ∈ X₂, ..., xₙ ∈ Xₙ}
 
+Special behavior for IsEmpty: The Minkowski sum of zero sets (i.e. when we
+have sets_.size() == 0) is treated as the singleton {0}, which is nonempty.
+This includes the zero-dimensional case.
+
 @ingroup geometry_optimization */
 class MinkowskiSum final : public ConvexSet {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MinkowskiSum)
 
-  /** Constructs a default (zero-dimensional) set. */
+  /** Constructs a default (zero-dimensional, nonempty) set. */
   MinkowskiSum();
 
   /** Constructs the sum from a vector of convex sets. */
@@ -64,6 +68,8 @@ class MinkowskiSum final : public ConvexSet {
 
   bool DoIsBounded() const final;
 
+  /** When we have sets_.size() == 0, we treat the Minkowski sum as being
+  {0}, the unique zero-dimensional vector space, which is nonempty. */
   bool DoIsEmpty() const final;
 
   std::optional<Eigen::VectorXd> DoMaybeGetPoint() const final;

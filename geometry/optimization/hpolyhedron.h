@@ -18,12 +18,15 @@ class VPolytope;
 
 /** Implements a polyhedral convex set using the half-space representation:
 `{x| A x ≤ b}`.  Note: This set may be unbounded.
+
+By convention, we treat a zero-dimensional HPolyhedron as nonempty.
+
 @ingroup geometry_optimization */
 class HPolyhedron final : public ConvexSet {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(HPolyhedron)
 
-  /** Constructs a default (zero-dimensional) polyhedron. */
+  /** Constructs a default (zero-dimensional, nonempty) polyhedron. */
   HPolyhedron();
 
   /** Constructs the polyhedron.
