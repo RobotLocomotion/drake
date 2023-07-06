@@ -144,6 +144,24 @@ class HPolyhedron final : public ConvexSet {
   @throws std::exception if the solver fails to solve the problem. */
   Eigen::VectorXd ChebyshevCenter() const;
 
+  /** Results a new HPolyhedron that is a scaled version of `this`, with the
+  scaling taken to be around `center`, with units of volume:
+    - `scale = 0` will result in a point,
+    - `0 < scale < 1` shrinks the region,
+    - `scale = 1` returns a copy of the `this`, and
+    - `1 < scale` grows the region.
+  If `center` is not provided (or empty), then the value returned by
+  ChebyshevCenter() will be used.
+
+  `this` does not need to be bounded, nor have volume. `center` does not need to
+  be in the set.
+  @pre `scale` >= 0.
+  @pre `center` is empty or has size equal to the ambient dimension.
+  */
+  HPolyhedron Scale(double scale,
+                          const Eigen::Ref<const Eigen::VectorXd>& center =
+                              Eigen::VectorXd()) const;
+
   /** Returns the Cartesian product of `this` and `other`. */
   HPolyhedron CartesianProduct(const HPolyhedron& other) const;
 
