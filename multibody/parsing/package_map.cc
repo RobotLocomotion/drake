@@ -7,6 +7,7 @@
 #include <cctype>
 #include <cstdlib>
 #include <filesystem>
+#include <fstream>
 #include <initializer_list>
 #include <map>
 #include <optional>
@@ -16,6 +17,7 @@
 #include <utility>
 
 #include <drake_vendor/tinyxml2.h>
+#include <picosha2.h>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_throw.h"
@@ -188,13 +190,17 @@ class PackageData {
   /* Returns true iff `other` specifies a suitably identical package to `this`
   such that we can fold the two together: the path specification (whether local
   or remote) must match, but the deprecation or fetch status can differ. In case
-  they do not match, the error (if provided) will be reset to describe the
-  incompatibility. */
-  bool CanMerge(const PackageData& other, std::string* error = nullptr) const;
+  they do not match, the error will be reset to describe the incompatibility. */
+  bool CanMerge(const PackageData& other, std::string* error) const;
 
   /* Merges `other` into `this`. Throws an exception if CanMerge() is false.
   The `package_name` is non-functional (only used when reporting errors). */
   void Merge(std::string_view package_name, const PackageData& other);
+
+  /* Returns the path relative to our cache dir where the package will live once
+  it is fetched (or lives already, if it's already fetched).
+  @pre is_remote() is true. */
+  fs::path GetCacheRelativePath() const;
 
   /* Checks whether a remote package is already in the cache and if so updates
   this object so that GetPathWithAutomaticFetching() will return the already-
@@ -246,6 +252,13 @@ std::vector<std::string> GetAllowedUrls(const std::vector<std::string>& urls) {
   return result;
 }
 
+fs::path PackageData::GetCacheRelativePath() const {
+  DRAKE_DEMAND(is_remote());
+  const std::string hashed_strip_prefix =
+      picosha2::hash256_hex_string(remote_params_->strip_prefix.value_or(""));
+  return fmt::format("{}-{}", remote_params_->sha256, hashed_strip_prefix);
+}
+
 /* A little helper struct that gathers the args for package_downloader into a
 single place to make it easy to convert to JSON. */
 struct DownloaderArgs {
@@ -265,11 +278,11 @@ bool PackageData::FindInCache() {
   if (!path_.needs_fetch()) {
     return true;
   }
-  internal::PathOrError cache = internal::FindOrCreateCache("package_map");
-  if (!cache.error.empty()) {
+  internal::PathOrError try_cache = internal::FindOrCreateCache("package_map");
+  if (!try_cache.error.empty()) {
     return false;
   }
-  const fs::path package_dir = cache.abspath / remote_params_->sha256;
+  const fs::path package_dir = try_cache.abspath / GetCacheRelativePath();
   std::error_code ec;
   if (!fs::is_directory(package_dir, ec)) {
     return false;
@@ -309,7 +322,7 @@ const std::string& PackageData::GetPathWithAutomaticFetching(
   const fs::path cache_dir = std::move(try_cache.abspath);
 
   // See if the package has already been fetched.
-  const fs::path package_dir = cache_dir / remote_params().sha256;
+  const fs::path package_dir = cache_dir / GetCacheRelativePath();
   std::error_code ec;
   if (fs::is_directory(package_dir, ec)) {
     mutable_path->set_fetched_path(package_dir.string());
@@ -324,25 +337,45 @@ const std::string& PackageData::GetPathWithAutomaticFetching(
                       .output_dir = package_dir.string()};
   args.remote_params.urls = GetAllowedUrls(args.remote_params.urls);
   std::string json_filename = fs::path(cache_dir / ".fetch_XXXXXX").string();
-  const int temp_fd = ::mkstemp(json_filename.data());
-  ::close(temp_fd);
-  ScopeExit remove_yaml([&json_filename]() {
+  {
+    const int temp_fd = ::mkstemp(json_filename.data());
+    ::close(temp_fd);
+  }
+  ScopeExit remove_json_file([&json_filename]() {
     fs::remove(json_filename);
   });
   yaml::SaveJsonFile(json_filename, args);
+
+  // Prepare an output file for the download to write error messages into.
+  std::string error_filename = fs::path(cache_dir / ".error_XXXXXX").string();
+  {
+    const int temp_fd = ::mkstemp(error_filename.data());
+    ::close(temp_fd);
+  }
+  ScopeExit remove_error_file([&error_filename]() {
+    fs::remove(error_filename);
+  });
 
   // Shell out to the downloader to fetch the package.
   const std::string downloader =
       FindResourceOrThrow("drake/multibody/parsing/package_downloader.py");
   const std::string command =
-      fmt::format("/usr/bin/python3 {} {} {}", downloader, json_filename,
-                  "--disable-drake-valgrind-tracing");
+      fmt::format("/usr/bin/python3 {} {} {} {}", downloader, json_filename,
+                  error_filename, "--disable-drake-valgrind-tracing");
   const int returncode = std::system(command.c_str());
   if (returncode != 0) {
+    // Try to read the error message text from the downloader.
+    std::ifstream error_file(error_filename);
+    std::stringstream error_stream;
+    error_stream << error_file.rdbuf();
+    std::string error = error_stream.str();
+    if (error.empty()) {
+      error = fmt::format("returncode == {}", returncode);
+    }
     throw std::runtime_error(fmt::format(
         "PackageMap: when downloading '{}', the downloader experienced an "
-        "error",
-        package_name));
+        "error: {}",
+        package_name, error));
   }
 
   // Confirm that it actually fetched.
@@ -507,7 +540,7 @@ PackageMap::PackageMap() : PackageMap{std::nullopt} {
   // an appropriately-declared external, we'll use that. Otherwise, we'll fetch
   // the data on demand from the internet.
   const RlocationOrError maybe_models_package_xml =
-      FindRunfile("models_internal/package.xml");
+      FindRunfile("drake_models/package.xml");
   if (maybe_models_package_xml.error.empty()) {
     AddPackageXml(maybe_models_package_xml.abspath);
   } else {
@@ -536,15 +569,37 @@ void PackageMap::Add(const std::string& package_name,
   impl_->Emplace(package_name, PackageData::MakeLocal(package_path));
 }
 
+namespace {
+// Returns true iff the two paths exist and their fs::canonical respellings
+// are fs::equivalent. Returns false if there are any filesystem errors.
+bool is_equivalent_canonical(const fs::path& first, const fs::path& second) {
+  std::error_code ec;
+  const fs::path first_canonical = fs::canonical(first, ec);
+  if (ec) {
+    return false;
+  }
+  const fs::path second_canonical = fs::canonical(second, ec);
+  if (ec) {
+    return false;
+  }
+  return fs::equivalent(first_canonical, second_canonical, ec);
+}
+}  // namespace
+
 bool PackageData::CanMerge(const PackageData& other, std::string* error) const {
-  // When both packages are local, the paths must resolve to the same dir.
+  DRAKE_DEMAND(error != nullptr);
+  // When both packages are local, the paths must either resolve to the same dir
+  // or else (in support of Bazel runfiles) the package.xml files must resolve
+  // to the same file.
   if (this->is_local() && other.is_local()) {
-    if (!fs::equivalent(this->local_path(), other.local_path())) {
-      if (error != nullptr) {
-        *error = fmt::format(
-            "because the local paths are not equivalent ('{}' vs '{}')",
-            this->display_path(), other.display_path());
-      }
+    const fs::path this_path = fs::path(this->local_path());
+    const fs::path other_path = fs::path(other.local_path());
+    if (!is_equivalent_canonical(this_path, other_path) &&
+        !is_equivalent_canonical(this_path / "package.xml",
+                                 other_path / "package.xml")) {
+      *error = fmt::format(
+          "because the local paths are not equivalent ('{}' vs '{}')",
+          this->display_path(), other.display_path());
       return false;
     }
     return true;
@@ -553,24 +608,20 @@ bool PackageData::CanMerge(const PackageData& other, std::string* error) const {
   // When both packages are remote, the specification must match exactly.
   if (this->is_remote() && other.is_remote()) {
     if (!(this->remote_params() == other.remote_params())) {
-      if (error != nullptr) {
-        *error = fmt::format(
-            "because the remote package parameters differ ({} vs {})",
-            this->remote_params().ToJson(), other.remote_params().ToJson());
-      }
+      *error = fmt::format(
+          "because the remote package parameters differ ({} vs {})",
+          this->remote_params().ToJson(), other.remote_params().ToJson());
       return false;
     }
     return true;
   }
 
   // Cannot merge local paths with remote params.
-  if (error != nullptr) {
-    *error = fmt::format(
-        "because the existing path is {} ('{}') "
-        "but the the new path is {} ('{}')",
-        this->is_local() ? "local" : "remote", this->display_path(),
-        other.is_local() ? "local" : "remote", other.display_path());
-  }
+  *error = fmt::format(
+      "because the existing path is {} ('{}') "
+      "but the the new path is {} ('{}')",
+      this->is_local() ? "local" : "remote", this->display_path(),
+      other.is_local() ? "local" : "remote", other.display_path());
   return false;
 }
 
@@ -851,11 +902,12 @@ void PackageMap::CrawlForPackages(
     } else {
       // Warn if we've found the same path with a different spelling.
       const PackageData& existing_data = impl_->map().at(package_name);
-      if (!existing_data.CanMerge(PackageData::MakeLocal(package_path))) {
+      auto local = PackageData::MakeLocal(package_path);
+      std::string error;
+      if (!existing_data.CanMerge(local, &error)) {
         drake::log()->warn(
-            "PackageMap is ignoring newly-found path '{}' for package '{}'"
-            " and will continue using the previously-known path at '{}'.",
-            path, package_name, existing_data.display_path());
+            "PackageMap is ignoring newly-found path for package '{}' {}",
+            package_name, error);
       }
     }
     if (stop_at_package) {

@@ -33,6 +33,10 @@ class CompositeParse;
 /// The output of parsing is one or more model instances added to the
 /// MultibodyPlant provided to the parser at construction.
 ///
+/// For an introductory tutorial about parsing, see the
+/// <a href="https://deepnote.com/workspace/Drake-0b3b2c53-a7ad-441b-80f8-bf8350752305/project/Tutorials-2b4fc509-aef2-417d-a40d-6071dfed9199/notebook/authoring_multibody_simulation-3c9697070d3541ee82c0bfe4054ada2d">Authoring
+/// a Multibody Simulation</a> page.
+///
 /// SDFormat files may contain multiple `<model>` elements.  New model
 /// instances will be added to @p plant for each `<model>` tag in the file.
 ///
@@ -242,23 +246,6 @@ class Parser final {
   /// nesting in SDFormat.
   ModelInstanceIndex AddModelFromFile(
       const std::string& file_name,
-      const std::string& model_name = {});
-
-  /// Provides same functionality as AddModelFromFile, but instead parses the
-  /// model description text data via @p file_contents with format dictated by
-  /// @p file_type.
-  ///
-  /// @param file_contents The model data to be parsed.
-  /// @param file_type The data format; must be one of the filename suffixes
-  /// listed above, *without* the leading dot (.) .
-  /// @param model_name The name given to the newly created instance of this
-  /// model. If empty, the model name provided by the input text will be used.
-  /// @returns The instance index for the newly added model.
-  /// @throws std::exception in case of errors.
-  DRAKE_DEPRECATED("2023-04-01", "Use AddModelsFromString() instead.")
-  ModelInstanceIndex AddModelFromString(
-      const std::string& file_contents,
-      const std::string& file_type,
       const std::string& model_name = {});
 
  private:

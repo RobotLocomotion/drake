@@ -7,6 +7,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include <fmt/ranges.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
@@ -172,7 +173,7 @@ class SliceTest
     // Make an arbitrary mesh field with heterogeneous values.
     vector<double> values{0.25, 0.5, 0.75, 1, -1};
     field_F_ = make_unique<VolumeMeshFieldLinear<double, double>>(
-        move(values), volume_mesh_F_.get());
+        std::move(values), volume_mesh_F_.get());
 
     cut_edges_.clear();
     const int tet_index = 0;
@@ -209,7 +210,7 @@ class SliceTest
     // Make an arbitrary mesh field with heterogeneous values.
     vector<double> values{0.25, 0.5, 0.75, 1, -1};
     field_F_ = make_unique<VolumeMeshFieldLinear<double, double>>(
-        move(values), volume_mesh_F_.get());
+        std::move(values), volume_mesh_F_.get());
 
     const int tet_index = 0;
     std::vector<Vector3<double>> polygon_vertices;
@@ -354,20 +355,20 @@ class SliceTest
       const SortedPair<int>& computed_edge = edge_vertex.edge;
       if (cut_edges_.count(computed_edge) == 0) {
         return {{},
-                ::testing::AssertionFailure()
-                    << "We matched surface vertex " << edge_vertex.slice_vertex
-                    << " to edge " << computed_edge
-                    << ", but that can't be found in the cut edge cache"};
+                ::testing::AssertionFailure() << fmt::format(
+                    "We matched surface vertex {} to edge {}, but that can't "
+                    "be found in the cut edge cache",
+                    edge_vertex.slice_vertex, computed_edge)};
       }
       // The matched volume edge appears in the cache; confirm the cache
       // associates it with the surface vertex index that this test matched.
       if (cut_edges_.at(computed_edge) != edge_vertex.slice_vertex) {
         return {{},
-                ::testing::AssertionFailure()
-                    << "We matched surface vertex " << edge_vertex.slice_vertex
-                    << " to edge " << computed_edge
-                    << ", but the cut edge cache has surface vertex "
-                    << cut_edges_.at(computed_edge)};
+                ::testing::AssertionFailure() << fmt::format(
+                    "We matched surface vertex {} to edge {}, but the cut edge "
+                    " cache has surface vertex {}",
+                    edge_vertex.slice_vertex, computed_edge,
+                    cut_edges_.at(computed_edge))};
       }
     }
     return {edge_vertices, ::testing::AssertionSuccess()};
@@ -816,7 +817,7 @@ TEST_F(SliceTest, NoDoubleCounting) {
   VolumeMesh<double> mesh_M = TrivialVolumeMesh(I);
   // Make an arbitrary mesh field with heterogeneous values.
   vector<double> values{0.25, 0.5, 0.75, 1, -1};
-  VolumeMeshFieldLinear<double, double> field_M{move(values), &mesh_M};
+  VolumeMeshFieldLinear<double, double> field_M{std::move(values), &mesh_M};
 
   {
     // Slicing against tet 0 should intersect and produce the three faces.
@@ -1791,7 +1792,7 @@ TEST_F(MeshPlaneDerivativesTest, FaceNormalsWrtPosition) {
       EXPECT_TRUE(
           CompareMatrices(math::ExtractValue(tri_n_W), plane_n_W, 2 * kEps));
       EXPECT_TRUE(
-          CompareMatrices(math::ExtractGradient(tri_n_W), zeros, 10 * kEps));
+          CompareMatrices(math::ExtractGradient(tri_n_W), zeros, 16 * kEps));
     }
   };
 

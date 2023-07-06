@@ -1,7 +1,8 @@
 # See `ExecuteExtraPythonCode` in `pydrake_pybind.h` for usage details and
 # rationale.
 
-from pydrake.common.value import AbstractValue
+from pydrake.common.value import AbstractValue as _AbstractValue
+from pydrake.common.deprecation import deprecated as _deprecated
 
 
 class PySerializer(SerializerInterface):
@@ -13,18 +14,25 @@ class PySerializer(SerializerInterface):
         SerializerInterface.__init__(self)
         self._lcm_type = lcm_type
 
+    def __repr__(self):
+        return f"PySerializer({self._lcm_type.__name__})"
+
+    @_deprecated(
+        "PySerializer objects are immutable, there is no need to copy nor "
+        "clone them.", date="2023-09-01")
     def Clone(self):
+        """(Deprecated.)"""
         return PySerializer(self._lcm_type)
 
     def CreateDefaultValue(self):
-        return AbstractValue.Make(self._lcm_type())
+        return _AbstractValue.Make(self._lcm_type())
 
     def Deserialize(self, buffer, abstract_value):
         message = self._lcm_type.decode(buffer)
         abstract_value.set_value(message)
 
     def Serialize(self, abstract_value):
-        assert isinstance(abstract_value, AbstractValue)
+        assert isinstance(abstract_value, _AbstractValue)
         message = abstract_value.get_value()
         assert isinstance(message, self._lcm_type)
         return message.encode()
@@ -74,9 +82,12 @@ def _make_lcm_publisher(
         serializer = _Serializer_[lcm_type]()
     if publish_triggers is not None:
         return LcmPublisherSystem(
-            channel, serializer, lcm, publish_triggers, publish_period)
+            channel=channel, serializer=serializer, lcm=lcm,
+            publish_triggers=publish_triggers, publish_period=publish_period)
     else:
-        return LcmPublisherSystem(channel, serializer, lcm, publish_period)
+        return LcmPublisherSystem(
+            channel=channel, serializer=serializer, lcm=lcm,
+            publish_period=publish_period)
 
 
 LcmSubscriberSystem.Make = _make_lcm_subscriber

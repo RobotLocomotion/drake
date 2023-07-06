@@ -1,4 +1,4 @@
-?xml version="1.0" ?>
+<?xml version="1.0" ?>
 <sdf version="1.9">
   <world name="table_world">
     <model name="table">

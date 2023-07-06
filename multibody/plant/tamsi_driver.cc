@@ -44,7 +44,7 @@ internal::ContactJacobians<T> TamsiDriver<T>::CalcContactJacobians(
       const int col_offset = topology.tree_velocities_start(tree_jacobian.tree);
       const int tree_nv = topology.num_tree_velocities(tree_jacobian.tree);
       contact_jacobians.Jc.block(row_offset, col_offset, 3, tree_nv) =
-          tree_jacobian.J;
+          tree_jacobian.J.MakeDenseMatrix();
     }
     contact_jacobians.Jt.middleRows(2 * i, 2) =
         contact_jacobians.Jc.middleRows(3 * i, 2);
@@ -63,6 +63,14 @@ void TamsiDriver<T>::CalcContactSolverResults(
   // Only discrete state updates for rigid bodies is supported.
   DRAKE_ASSERT(context.num_discrete_state_groups() == 1);
 
+  // Compute non-contact forces at the previous time step. This also checks
+  // whether an algebra loop exists but isn't detected when building the diagram
+  // due to #12786. Therefore, we choose to do this before the quick exit when
+  // there's no moving objects.
+  MultibodyForces<T> forces0(plant());
+  manager().CalcNonContactForces(
+      context, /* include joint limit penalty forces */ true, &forces0);
+
   const int nq = plant().num_positions();
   const int nv = plant().num_velocities();
 
@@ -78,11 +86,6 @@ void TamsiDriver<T>::CalcContactSolverResults(
   // Mass matrix.
   MatrixX<T> M0(nv, nv);
   plant().CalcMassMatrix(context, &M0);
-
-  // Forces at the previous time step.
-  MultibodyForces<T> forces0(plant());
-
-  manager().CalcNonContactForces(context, &forces0);
 
   // Workspace for inverse dynamics:
   // Bodies' accelerations, ordered by BodyNodeIndex.
@@ -130,7 +133,9 @@ void TamsiDriver<T>::CalcContactSolverResults(
   }
 
   // Joint locking: quick exit if everything is locked.
-  const auto& indices = manager().EvalJointLockingIndices(context);
+  const auto& indices = manager()
+                            .EvalJointLockingCache(context)
+                            .unlocked_velocity_indices;
   if (indices.empty()) {
     // Everything is locked! Return a result that indicates no velocity, but
     // reports normal forces.

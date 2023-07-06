@@ -10,16 +10,16 @@ MathematicalProgramResult RunSolver(
     const std::optional<Eigen::VectorXd>& initial_guess,
     const std::optional<SolverOptions>& solver_options) {
   if (!solver.available()) {
-    throw std::runtime_error(
-        "Solver " + solver.solver_id().name() + " is not available");
+    throw std::runtime_error("Solver " + solver.solver_id().name() +
+                             " is not available");
   }
 
   MathematicalProgramResult result{};
   solver.Solve(prog, initial_guess, solver_options, &result);
   EXPECT_TRUE(result.is_success());
   if (!result.is_success()) {
-    throw std::runtime_error(
-        "Solver " + solver.solver_id().name() + " fails to find the solution");
+    throw std::runtime_error("Solver " + solver.solver_id().name() +
+                             " fails to find the solution");
   }
   return result;
 }

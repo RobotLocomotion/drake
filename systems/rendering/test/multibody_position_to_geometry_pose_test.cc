@@ -18,7 +18,6 @@ using multibody::BodyIndex;
 using multibody::MultibodyPlant;
 using multibody::Parser;
 using std::make_unique;
-using std::move;
 
 GTEST_TEST(MultibodyPositionToGeometryPoseTest, BadConstruction) {
   {
@@ -54,7 +53,7 @@ GTEST_TEST(MultibodyPositionToGeometryPoseTest, Ownership) {
                           "/iiwa7_no_collision.sdf"));
   mbp->Finalize();
 
-  const MultibodyPositionToGeometryPose<double> dut(move(mbp));
+  const MultibodyPositionToGeometryPose<double> dut(std::move(mbp));
   EXPECT_EQ(dut.get_input_port().size(),
             dut.multibody_plant().num_positions());
 
@@ -157,7 +156,7 @@ GTEST_TEST(MultibodyPositionToGeometryPoseTest, FullStateInput) {
   }
 
   // Test the ownership constructor also has the right size.
-  const MultibodyPositionToGeometryPose<double> owned_sys(move(mbp), true);
+  const MultibodyPositionToGeometryPose<double> owned_sys(std::move(mbp), true);
   EXPECT_EQ(owned_sys.get_input_port().size(),
             owned_sys.multibody_plant().num_multibody_states());
 }

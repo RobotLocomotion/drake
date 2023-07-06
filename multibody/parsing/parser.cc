@@ -105,23 +105,5 @@ ModelInstanceIndex Parser::AddModelFromFile(
   return *maybe_model;
 }
 
-ModelInstanceIndex Parser::AddModelFromString(
-    const std::string& file_contents,
-    const std::string& file_type,
-    const std::string& model_name) {
-  DataSource data_source(DataSource::kContents, &file_contents);
-  const std::string pseudo_name(data_source.GetStem() + "." + file_type);
-  ParserInterface& parser = SelectParser(diagnostic_policy_, pseudo_name);
-  auto composite = internal::CompositeParse::MakeCompositeParse(this);
-  std::optional<ModelInstanceIndex> maybe_model;
-  maybe_model = parser.AddModel(data_source, model_name, model_name_prefix_,
-                                composite->workspace());
-  if (!maybe_model.has_value()) {
-    throw std::runtime_error(
-        fmt::format("{}: parsing failed", pseudo_name));
-  }
-  return *maybe_model;
-}
-
 }  // namespace multibody
 }  // namespace drake

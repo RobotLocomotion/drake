@@ -14,7 +14,6 @@ namespace util {
 template <typename T>
 std::vector<std::string> GetJointNames(
     const multibody::MultibodyPlant<T>& plant) {
-
   std::map<int, std::string> position_names;
   const int num_positions = plant.num_positions();
   for (int i = 0; i < plant.num_joints(); ++i) {
@@ -37,24 +36,22 @@ std::vector<std::string> GetJointNames(
   return joint_names;
 }
 
-void ApplyJointVelocityLimits(
-    const std::vector<Eigen::VectorXd>& keyframes,
-    const Eigen::VectorXd& limits,
-    std::vector<double>* times) {
+void ApplyJointVelocityLimits(const std::vector<Eigen::VectorXd>& keyframes,
+                              const Eigen::VectorXd& limits,
+                              std::vector<double>* times) {
   DRAKE_DEMAND(keyframes.size() == times->size());
-  DRAKE_DEMAND(times->front() ==0);
+  DRAKE_DEMAND(times->front() == 0);
   const int num_time_steps = keyframes.size();
 
-  // Calculate a matrix of velocities between each timestep.  We'll
+  // Calculate a matrix of velocities between each time step.  We'll
   // use this later to determine by how much the plan exceeds the
   // joint velocity limits.
   Eigen::MatrixXd velocities(limits.size(), num_time_steps - 1);
   for (int i = 0; i < velocities.rows(); i++) {
     for (int j = 0; j < velocities.cols(); j++) {
       DRAKE_ASSERT((*times)[j + 1] > (*times)[j]);
-      velocities(i, j) =
-          std::abs((keyframes[j + 1](i) - keyframes[j](i)) /
-                   ((*times)[j + 1] - (*times)[j]));
+      velocities(i, j) = std::abs((keyframes[j + 1](i) - keyframes[j](i)) /
+                                  ((*times)[j + 1] - (*times)[j]));
     }
   }
 
@@ -77,10 +74,9 @@ void ApplyJointVelocityLimits(
   }
 }
 
-lcmt_robot_plan EncodeKeyFrames(
-    const std::vector<std::string>& joint_names,
-    const std::vector<double>& times,
-    const std::vector<Eigen::VectorXd>& keyframes) {
+lcmt_robot_plan EncodeKeyFrames(const std::vector<std::string>& joint_names,
+                                const std::vector<double>& times,
+                                const std::vector<Eigen::VectorXd>& keyframes) {
   DRAKE_DEMAND(keyframes.size() == times.size());
 
   const int num_time_steps = keyframes.size();
@@ -90,7 +86,7 @@ lcmt_robot_plan EncodeKeyFrames(
   plan.num_states = num_time_steps;
   const lcmt_robot_state default_robot_state{};
   plan.plan.resize(num_time_steps, default_robot_state);
-  /// Encode the q_sol returned for each timestep into the vector of
+  /// Encode the q_sol returned for each time step into the vector of
   /// robot states.
   for (int i = 0; i < num_time_steps; i++) {
     DRAKE_DEMAND(keyframes[i].size() == static_cast<int>(joint_names.size()));
@@ -108,9 +104,11 @@ lcmt_robot_plan EncodeKeyFrames(
   return plan;
 }
 
+// clang-format off
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((
     &GetJointNames<T>
 ))
+// clang-format on
 
 }  // namespace util
 }  // namespace manipulation

@@ -5,7 +5,7 @@ import webbrowser
 
 import numpy as np
 
-from pydrake.common.value import AbstractValue
+from pydrake.common.value import Value
 from pydrake.examples import (
     ManipulationStation, ManipulationStationHardwareInterface,
     CreateClutterClearingYcbObjectList, SchunkCollisionModel)
@@ -249,7 +249,7 @@ class ToPose(LeafSystem):
         LeafSystem.__init__(self)
         self.DeclareVectorInputPort("rpy_xyz", 6)
         self.DeclareAbstractOutputPort(
-            "pose", lambda: AbstractValue.Make(RigidTransform()),
+            "pose", lambda: Value(RigidTransform()),
             self.DoCalcOutput)
 
     def DoCalcOutput(self, context, output):

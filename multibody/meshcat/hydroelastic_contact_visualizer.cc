@@ -70,7 +70,8 @@ void HydroelasticContactVisualizer::Update(
     if (force_norm >= params_.force_threshold) {
       meshcat_->SetTransform(path + "/force_C_W",
                              RigidTransformd(RotationMatrixd::MakeFromOneVector(
-                                 item.force_C_W, 2)), time);
+                                 item.force_C_W, 2)),
+                             time);
 
       // Stretch the cylinder in z.
       const double height = force_norm / params_.newtons_per_meter;
@@ -88,6 +89,9 @@ void HydroelasticContactVisualizer::Update(
           RigidTransformd(RotationMatrixd::MakeXRotation(M_PI),
                           Vector3d{0, 0, height + arrowhead_height}),
           time);
+      meshcat_->SetProperty(path + "/force_C_W", "visible", true, time);
+    } else {
+      meshcat_->SetProperty(path + "/force_C_W", "visible", false, time);
     }
     // Moment vector.
     if (moment_norm >= params_.moment_threshold) {
@@ -112,6 +116,9 @@ void HydroelasticContactVisualizer::Update(
           RigidTransformd(RotationMatrixd::MakeXRotation(M_PI),
                           Vector3d{0, 0, height + arrowhead_height}),
           time);
+      meshcat_->SetProperty(path + "/moment_C_W", "visible", true, time);
+    } else {
+      meshcat_->SetProperty(path + "/moment_C_W", "visible", false, time);
     }
 
     // Contact surface

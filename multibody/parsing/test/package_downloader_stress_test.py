@@ -52,9 +52,10 @@ class StressTestDownloader(unittest.TestCase):
             # errors in the downloader show up very quickly, usually within the
             # first handful.
             while (len(children) + 1 < cpus) and (launch_count < N):
+                error_filename = scratch_dir / f"error-{launch_count:03}.txt"
                 children.append(subprocess.Popen([
                     sys.executable, "multibody/parsing/package_downloader.py",
-                    kwargs, "UNUSED_ARGUMENT"]))
+                    kwargs, error_filename, "UNUSED_ARGUMENT"]))
                 launch_count += 1
             # Reap completed processes.
             for i in reversed(range(len(children))):

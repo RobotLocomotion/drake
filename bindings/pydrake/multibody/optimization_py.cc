@@ -1,6 +1,3 @@
-#include "pybind11/eigen.h"
-#include "pybind11/pybind11.h"
-
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/common/sorted_pair_pybind.h"
@@ -94,7 +91,18 @@ PYBIND11_MODULE(optimization, m) {
     py::class_<Class, solvers::Constraint, Ptr>(
         m, "QuaternionEulerIntegrationConstraint", cls_doc.doc)
         .def(py::init<bool>(), py::arg("allow_quaternion_negation"),
-            cls_doc.ctor.doc);
+            cls_doc.ctor.doc)
+        .def("allow_quaternion_negation", &Class::allow_quaternion_negation,
+            cls_doc.allow_quaternion_negation.doc)
+        .def("ComposeVariable", &Class::ComposeVariable<double>,
+            py::arg("quat1"), py::arg("quat2"), py::arg("angular_vel"),
+            py::arg("h"), cls_doc.ComposeVariable.doc)
+        .def("ComposeVariable", &Class::ComposeVariable<symbolic::Variable>,
+            py::arg("quat1"), py::arg("quat2"), py::arg("angular_vel"),
+            py::arg("h"), cls_doc.ComposeVariable.doc)
+        .def("ComposeVariable", &Class::ComposeVariable<symbolic::Expression>,
+            py::arg("quat1"), py::arg("quat2"), py::arg("angular_vel"),
+            py::arg("h"), cls_doc.ComposeVariable.doc);
   }
 
   {

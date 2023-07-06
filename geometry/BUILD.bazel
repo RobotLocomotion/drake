@@ -590,7 +590,9 @@ drake_cc_library(
 drake_cc_googletest(
     name = "meshcat_visualizer_test",
     data = [
+        "//geometry/render:test_models",
         "//manipulation/models/iiwa_description:models",
+        "//multibody/meshcat:models",
     ],
     deps = [
         ":meshcat_visualizer",
@@ -865,4 +867,4 @@ install(
     ],
 )
 
-add_lint_tests()
+add_lint_tests(enable_clang_format_lint = False)

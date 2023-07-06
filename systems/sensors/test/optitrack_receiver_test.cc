@@ -27,7 +27,7 @@ GTEST_TEST(OptitrackPoseTest, InputOutputTest) {
   // Use an arbitrarily chosen pose for body 1.
   const math::RigidTransform<double> X_OB1(
       Eigen::AngleAxisd(0.75 * M_PI, Eigen::Vector3d::UnitX()) *
-      Eigen::AngleAxisd(-0.75 * M_PI, Eigen::Vector3d::UnitY()),
+          Eigen::AngleAxisd(-0.75 * M_PI, Eigen::Vector3d::UnitY()),
       Vector3<double>(0.01, -5.0, 10.10));
   const Eigen::Quaterniond R_OB1_quat = X_OB1.rotation().ToQuaternion();
 
@@ -59,12 +59,11 @@ GTEST_TEST(OptitrackPoseTest, InputOutputTest) {
   constexpr double kTolerance = 1e-6;
   const auto& out_1 = dut.GetOutputPort("one").Eval<RigidTransformd>(*context);
   const auto& out_2 = dut.GetOutputPort("two").Eval<RigidTransformd>(*context);
-  EXPECT_TRUE(CompareMatrices(
-      out_1.GetAsMatrix34(), (X_WO * X_OB1).GetAsMatrix34(),
-      kTolerance, MatrixCompareType::absolute));
-  EXPECT_TRUE(CompareMatrices(
-      out_2.GetAsMatrix34(), X_WO.GetAsMatrix34(),
-      kTolerance, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(out_1.GetAsMatrix34(),
+                              (X_WO * X_OB1).GetAsMatrix34(), kTolerance,
+                              MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(out_2.GetAsMatrix34(), X_WO.GetAsMatrix34(),
+                              kTolerance, MatrixCompareType::absolute));
 
   // If a body is missing from the message, that is an error.
   frame.rigid_bodies.clear();

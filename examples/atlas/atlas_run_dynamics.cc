@@ -52,7 +52,7 @@ int do_main() {
       multibody::AddMultibodyPlant(plant_config, &builder);
 
   multibody::Parser(&plant).AddModelsFromUrl(
-      "package://drake/examples/atlas/urdf/atlas_convex_hull.urdf");
+      "package://drake_models/atlas/atlas_convex_hull.urdf");
 
   // Add model of the ground.
   const double static_friction = 1.0;

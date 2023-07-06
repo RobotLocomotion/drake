@@ -7,6 +7,7 @@
 #include "drake/multibody/fem/corotated_model.h"
 #include "drake/multibody/fem/fem_state.h"
 #include "drake/multibody/fem/linear_constitutive_model.h"
+#include "drake/multibody/fem/linear_corotated_model.h"
 #include "drake/multibody/fem/linear_simplex_element.h"
 #include "drake/multibody/fem/simplex_gaussian_quadrature.h"
 #include "drake/multibody/fem/volumetric_model.h"
@@ -86,11 +87,9 @@ void DeformableModel<T>::SetWallBoundaryCondition(DeformableBodyId id,
     const int dof_index = kDim * n;
     const auto p_WV = p_WVs.template segment<kDim>(dof_index);
     if (is_inside_wall(p_WV)) {
-      /* Set all kDim dofs associated with this node to be subject to zero
-       Dirichlet BC. */
-      for (int d = 0; d < kDim; ++d) {
-        bc.AddBoundaryCondition(dof_index + d, Vector3<T>(p_WV(d), 0, 0));
-      }
+      /* Set this node to be subject to zero Dirichlet BC. */
+      bc.AddBoundaryCondition(fem::FemNodeIndex(n),
+                              {p_WV, Vector3<T>::Zero(), Vector3<T>::Zero()});
     }
   }
   fem_model.SetDirichletBoundaryCondition(std::move(bc));
@@ -168,6 +167,10 @@ void DeformableModel<T>::BuildLinearVolumetricModel(
     case MaterialModel::kCorotated:
       BuildLinearVolumetricModelHelper<fem::internal::CorotatedModel>(id, mesh,
                                                                       config);
+      break;
+    case MaterialModel::kLinearCorotated:
+      BuildLinearVolumetricModelHelper<fem::internal::LinearCorotatedModel>(
+          id, mesh, config);
       break;
   }
 }

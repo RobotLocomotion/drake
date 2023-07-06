@@ -42,7 +42,9 @@ typename Derived::Scalar all(const Eigen::DenseBase<Derived>& m) {
     // `all` holds vacuously when there is nothing to check.
     return Boolish{true};
   }
-  return m.redux([](const Boolish& v1, const Boolish& v2) { return v1 && v2; });
+  return m.redux([](const Boolish& v1, const Boolish& v2) {
+    return v1 && v2;
+  });
 }
 
 /// Checks if unary predicate @p pred holds for all elements in the matrix @p m.
@@ -66,7 +68,9 @@ typename Derived::Scalar any(const Eigen::DenseBase<Derived>& m) {
     // `any` is vacuously false when there is nothing to check.
     return Boolish{false};
   }
-  return m.redux([](const Boolish& v1, const Boolish& v2) { return v1 || v2; });
+  return m.redux([](const Boolish& v1, const Boolish& v2) {
+    return v1 || v2;
+  });
 }
 
 /// Checks if unary predicate @p pred holds for at least one element in the
@@ -83,7 +87,9 @@ boolean<typename Derived::Scalar> any_of(
 template <typename Derived>
 typename Derived::Scalar none(const Eigen::MatrixBase<Derived>& m) {
   using Boolish = typename Derived::Scalar;
-  const auto negate = [](const Boolish& v) -> Boolish { return !v; };
+  const auto negate = [](const Boolish& v) -> Boolish {
+    return !v;
+  };
   return drake::all(m.unaryExpr(negate));
 }
 
@@ -100,10 +106,9 @@ boolean<typename Derived::Scalar> none_of(
 /// Overloads if_then_else for Eigen vectors of `m_then` and `m_else` values
 /// with with a single `f_cond` condition to toggle them all at once.
 template <typename T, int Rows>
-auto if_then_else(
-    const boolean<T>& f_cond,
-    const Eigen::Matrix<T, Rows, 1>& m_then,
-    const Eigen::Matrix<T, Rows, 1>& m_else) {
+auto if_then_else(const boolean<T>& f_cond,
+                  const Eigen::Matrix<T, Rows, 1>& m_then,
+                  const Eigen::Matrix<T, Rows, 1>& m_else) {
   DRAKE_THROW_UNLESS(m_then.rows() == m_else.rows());
   const int rows = m_then.rows();
   Eigen::Matrix<T, Rows, 1> result(rows);

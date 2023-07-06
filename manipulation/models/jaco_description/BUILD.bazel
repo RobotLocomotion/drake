@@ -5,10 +5,6 @@ load(
 load("//tools/skylark:drake_data.bzl", "models_filegroup")
 load("//tools/install:install_data.bzl", "install_data")
 load("//tools/lint:lint.bzl", "add_lint_tests")
-load(
-    "//tools/workspace/models_internal:files.bzl",
-    "jaco_description_mesh_files",
-)
 
 package(default_visibility = [":__subpackages__"])
 
@@ -31,9 +27,23 @@ filegroup(
     name = "models",
     srcs = [
         ":glob_models",
-    ] + [
-        "@models_internal//:" + x
-        for x in jaco_description_mesh_files()
+        "@drake_models//:jaco_description/meshes/arm.obj",
+        "@drake_models//:jaco_description/meshes/arm_half_1.obj",
+        "@drake_models//:jaco_description/meshes/arm_half_2.obj",
+        "@drake_models//:jaco_description/meshes/arm_mico.obj",
+        "@drake_models//:jaco_description/meshes/base.obj",
+        "@drake_models//:jaco_description/meshes/finger_distal.obj",
+        "@drake_models//:jaco_description/meshes/finger_proximal.obj",
+        "@drake_models//:jaco_description/meshes/forearm.obj",
+        "@drake_models//:jaco_description/meshes/forearm_mico.obj",
+        "@drake_models//:jaco_description/meshes/hand_2finger.obj",
+        "@drake_models//:jaco_description/meshes/hand_3finger.obj",
+        "@drake_models//:jaco_description/meshes/ring_big.obj",
+        "@drake_models//:jaco_description/meshes/ring_small.obj",
+        "@drake_models//:jaco_description/meshes/shoulder.obj",
+        "@drake_models//:jaco_description/meshes/wrist.obj",
+        "@drake_models//:jaco_description/meshes/wrist_spherical_1.obj",
+        "@drake_models//:jaco_description/meshes/wrist_spherical_2.obj",
     ],
     visibility = ["//visibility:public"],
 )

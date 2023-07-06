@@ -7,11 +7,13 @@
 #include <vtkTransformPolyDataFilter.h>
 
 #include "drake/geometry/geometry_roles.h"
+#include "drake/geometry/render/render_mesh.h"
 #include "drake/geometry/shape_specification.h"
 
 namespace drake {
 namespace geometry {
-namespace render {
+namespace render_vtk {
+namespace internal {
 
 // Creates a z-axis aligned VTK capsule.
 vtkSmartPointer<vtkPolyDataAlgorithm> CreateVtkCapsule(const Capsule& capsule);
@@ -26,6 +28,10 @@ vtkSmartPointer<vtkPolyDataAlgorithm> CreateVtkBox(
 vtkSmartPointer<vtkPolyDataAlgorithm> CreateVtkEllipsoid(
     const Ellipsoid& ellipsoid);
 
+// Creates a VTK mesh from the given mesh data.
+vtkSmartPointer<vtkPolyDataAlgorithm> CreateVtkMesh(
+    geometry::internal::RenderMesh mesh_data);
+
 // Sets common sphere options such as its dimensions and resolution.
 void SetSphereOptions(vtkTexturedSphereSource* vtk_sphere, double radius);
 
@@ -39,6 +45,7 @@ void TransformToDrakeCylinder(vtkTransform* transform,
                               vtkTransformPolyDataFilter* transform_filter,
                               vtkCylinderSource* vtk_cylinder);
 
-}  // namespace render
+}  // namespace internal
+}  // namespace render_vtk
 }  // namespace geometry
 }  // namespace drake

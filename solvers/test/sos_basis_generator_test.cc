@@ -10,9 +10,9 @@ namespace solvers {
 namespace {
 
 using drake::symbolic::Expression;
+using drake::symbolic::Monomial;
 using drake::symbolic::Variable;
 using drake::symbolic::Variables;
-using drake::symbolic::Monomial;
 
 typedef std::set<Monomial,
                  drake::symbolic::GradedReverseLexOrder<std::less<Variable>>>
@@ -86,6 +86,24 @@ TEST_F(SosBasisGeneratorTest, Singleton) {
   MonomialSet basis_ref;
   basis_ref.insert(Monomial());
   EXPECT_EQ(basis_ref, GetMonomialBasis(poly));
+}
+
+TEST_F(SosBasisGeneratorTest, Constant) {
+  {
+    // Generate the monomial basis for a constant polynomial
+    const symbolic::Polynomial poly{1};
+    MonomialSet basis_ref;
+    basis_ref.insert(Monomial());
+    EXPECT_EQ(basis_ref, GetMonomialBasis(poly));
+  }
+
+  {
+    // The polynomial p is constant after expansion.
+    const symbolic::Polynomial poly{{{Monomial(), 1}, {Monomial(x_(0), 2), 0}}};
+    MonomialSet basis_ref;
+    basis_ref.insert(Monomial());
+    EXPECT_EQ(basis_ref, GetMonomialBasis(poly));
+  }
 }
 
 }  // namespace

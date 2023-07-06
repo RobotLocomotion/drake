@@ -11,7 +11,9 @@ using drake::symbolic::test::ExprEqual;
 
 namespace drake {
 namespace solvers {
-bool is_zero(const symbolic::Variable& v) { return v.is_dummy(); }
+bool is_zero(const symbolic::Variable& v) {
+  return v.is_dummy();
+}
 
 template <typename T>
 void CheckOffDiagonalTerms(int nx) {

@@ -43,7 +43,6 @@ using math::RigidTransform;
 using math::RigidTransformd;
 using std::make_shared;
 using std::make_unique;
-using std::move;
 using std::shared_ptr;
 using std::unique_ptr;
 using std::unordered_map;
@@ -603,8 +602,8 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     std::vector<SignedDistancePair<T>> witness_pairs;
     double max_distance = std::numeric_limits<double>::infinity();
     // All these quantities are aliased in the callback data.
-    shape_distance::CallbackData<T> data{&collision_filter_, &X_WGs,
-                                         max_distance, &witness_pairs};
+    shape_distance::CallbackData<T> data{nullptr, &X_WGs, max_distance,
+                                         &witness_pairs};
     data.request.enable_nearest_points = true;
     data.request.enable_signed_distance = true;
     data.request.gjk_solver_type = fcl::GJKSolverType::GST_LIBCCD;
@@ -628,11 +627,9 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     CollisionObjectd* object_B = find_geometry(id_B);
     shape_distance::Callback<T>(object_A, object_B, &data, max_distance);
 
-    if (witness_pairs.size() == 0) {
-      throw std::runtime_error(fmt::format(
-          "The geometry pair ({}, {}) does not support a signed distance query",
-          id_A, id_B));
-    }
+    // If the callback didn't throw, it returned an actual value.
+    DRAKE_DEMAND(witness_pairs.size() > 0);
+
     return witness_pairs[0];
   }
 

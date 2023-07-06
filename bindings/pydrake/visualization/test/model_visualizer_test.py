@@ -1,10 +1,10 @@
 import copy
+import inspect
 import subprocess
 import textwrap
 import unittest
 
 from pydrake.common import FindResourceOrThrow
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.geometry import Meshcat
 import pydrake.visualization as mut
 import pydrake.visualization._model_visualizer as mut_private
@@ -71,7 +71,11 @@ class TestModelVisualizerSubprocess(unittest.TestCase):
 
 
 class TestModelVisualizer(unittest.TestCase):
-    """Tests the ModelVisualizer class."""
+    """
+    Tests the ModelVisualizer class.
+
+    Note that camera tests are split into the model_visualizer_camera_test.
+    """
 
     SAMPLE_OBJ = textwrap.dedent("""<?xml version="1.0"?>
     <sdf version="1.7">
@@ -152,6 +156,19 @@ class TestModelVisualizer(unittest.TestCase):
                 dut.AddModels(FindResourceOrThrow(model_runpath))
                 dut.Run(loop_once=True)
 
+    def test_model_from_url(self):
+        url = "package://drake/multibody/benchmarks/acrobot/acrobot.sdf"
+        dut = mut.ModelVisualizer()
+        dut.AddModels(url=url)
+        dut.Run(loop_once=True)
+
+    def test_add_model_args_error(self):
+        filename = "drake/multibody/benchmarks/acrobot/acrobot.sdf"
+        url = f"package://{filename}"
+        dut = mut.ModelVisualizer()
+        with self.assertRaisesRegex(ValueError, "either filename.*url"):
+            dut.AddModels(filename, url=url)
+
     def test_methods_and_multiple_models(self):
         """
         Tests main class methods individually as well as adding models twice.
@@ -225,6 +242,24 @@ class TestModelVisualizer(unittest.TestCase):
             dut._diagram.plant().GetMyContextFromRoot(dut._context))
         self.assertListEqual(list(original_q), list(joint_q))
 
+    def test_traffic_cone(self):
+        """
+        Checks that the traffic cone helpers don't crash.
+        """
+        meshcat = Meshcat()
+        dut = mut.ModelVisualizer(meshcat=meshcat)
+        path = "/PARSE_ERROR"
+        # The add & removes functions must work even when called too many, too
+        # few, or an unmatched number of times. It's not practical to have the
+        # calling code keep track of how often things are called, so the code
+        # must be robust to any ordering.
+        for _ in range(2):
+            dut._add_traffic_cone()
+        self.assertTrue(dut._meshcat.HasPath(path))
+        for _ in range(3):
+            dut._remove_traffic_cone()
+        self.assertFalse(dut._meshcat.HasPath(path))
+
     def test_webbrowser(self):
         """
         Checks that the webbrowser launch command is properly invoked.
@@ -245,8 +280,9 @@ class TestModelVisualizer(unittest.TestCase):
         self.assertIn("localhost", kwargs["url"])
         self.assertEqual(len(kwargs), 2)
 
-    def test_deprecated_run_with_reload(self):
-        dut = mut.ModelVisualizer()
-        dut.parser().AddModelsFromString(self.SAMPLE_OBJ, "sdf")
-        with catch_drake_warnings(expected_count=1):
-            dut.RunWithReload(loop_once=True)
+    def test_triad_defaults(self):
+        # Cross-check the default triad parameters.
+        expected = inspect.signature(mut.AddFrameTriadIllustration).parameters
+        actual = mut.ModelVisualizer._get_constructor_defaults()
+        for name in ("length", "radius", "opacity"):
+            self.assertEqual(actual[f"triad_{name}"], expected[name].default)

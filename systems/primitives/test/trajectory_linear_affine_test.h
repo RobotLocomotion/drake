@@ -10,7 +10,6 @@ namespace drake {
 namespace systems {
 namespace test {
 
-
 // Provides sample trajectories (and the corresponding data) to support
 // testing TrajectoryAffineSystem and TrajectoryLinearSystem.
 struct TestSystemMatrixTrajectories {

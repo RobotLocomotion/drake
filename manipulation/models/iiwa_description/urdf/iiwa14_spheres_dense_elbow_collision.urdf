@@ -57,7 +57,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://drake/manipulation/models/iiwa_description/meshes/visual/link_0.obj"/>
+        <mesh filename="package://drake_models/iiwa_description/meshes/iiwa14/visual/link_0.obj"/>
       </geometry>
       <material name="Grey"/>
     </visual>
@@ -93,7 +93,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://drake/manipulation/models/iiwa_description/meshes/visual/link_1.obj"/>
+        <mesh filename="package://drake_models/iiwa_description/meshes/iiwa14/visual/link_1.obj"/>
       </geometry>
       <material name="Grey"/>
     </visual>
@@ -125,14 +125,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://drake/manipulation/models/iiwa_description/meshes/visual/link_2_orange.obj"/>
+        <mesh filename="package://drake_models/iiwa_description/meshes/iiwa14/visual/link_2_orange.obj"/>
       </geometry>
       <material name="Orange"/>
     </visual>
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://drake/manipulation/models/iiwa_description/meshes/visual/link_2_grey.obj"/>
+        <mesh filename="package://drake_models/iiwa_description/meshes/iiwa14/visual/link_2_grey.obj"/>
       </geometry>
       <material name="Grey"/>
     </visual>
@@ -171,21 +171,21 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://drake/manipulation/models/iiwa_description/meshes/visual/link_3.obj"/>
+        <mesh filename="package://drake_models/iiwa_description/meshes/iiwa14/visual/link_3.obj"/>
       </geometry>
       <material name="Grey"/>
     </visual>
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://drake/manipulation/models/iiwa_description/meshes/visual/band.obj"/>
+        <mesh filename="package://drake_models/iiwa_description/meshes/iiwa14/visual/band.obj"/>
       </geometry>
       <material name="Silver"/>
     </visual>
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://drake/manipulation/models/iiwa_description/meshes/visual/kuka.obj"/>
+        <mesh filename="package://drake_models/iiwa_description/meshes/iiwa14/visual/kuka.obj"/>
       </geometry>
       <material name="Black"/>
     </visual>
@@ -273,14 +273,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://drake/manipulation/models/iiwa_description/meshes/visual/link_4_orange.obj"/>
+        <mesh filename="package://drake_models/iiwa_description/meshes/iiwa14/visual/link_4_orange.obj"/>
       </geometry>
       <material name="Orange"/>
     </visual>
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://drake/manipulation/models/iiwa_description/meshes/visual/link_4_grey.obj"/>
+        <mesh filename="package://drake_models/iiwa_description/meshes/iiwa14/visual/link_4_grey.obj"/>
       </geometry>
       <material name="Grey"/>
     </visual>
@@ -347,21 +347,21 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://drake/manipulation/models/iiwa_description/meshes/visual/link_5.obj"/>
+        <mesh filename="package://drake_models/iiwa_description/meshes/iiwa14/visual/link_5.obj"/>
       </geometry>
       <material name="Grey"/>
     </visual>
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://drake/manipulation/models/iiwa_description/meshes/visual/band.obj"/>
+        <mesh filename="package://drake_models/iiwa_description/meshes/iiwa14/visual/band.obj"/>
       </geometry>
       <material name="Silver"/>
     </visual>
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://drake/manipulation/models/iiwa_description/meshes/visual/kuka.obj"/>
+        <mesh filename="package://drake_models/iiwa_description/meshes/iiwa14/visual/kuka.obj"/>
       </geometry>
       <material name="Black"/>
     </visual>
@@ -386,14 +386,14 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://drake/manipulation/models/iiwa_description/meshes/visual/link_6_orange.obj"/>
+        <mesh filename="package://drake_models/iiwa_description/meshes/iiwa14/visual/link_6_orange.obj"/>
       </geometry>
       <material name="Orange"/>
     </visual>
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://drake/manipulation/models/iiwa_description/meshes/visual/link_6_grey.obj"/>
+        <mesh filename="package://drake_models/iiwa_description/meshes/iiwa14/visual/link_6_grey.obj"/>
       </geometry>
       <material name="Grey"/>
     </visual>
@@ -432,7 +432,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://drake/manipulation/models/iiwa_description/meshes/visual/link_7.obj"/>
+        <mesh filename="package://drake_models/iiwa_description/meshes/iiwa14/visual/link_7.obj"/>
       </geometry>
       <material name="Grey"/>
     </visual>
@@ -523,6 +523,8 @@
     <actuator name="iiwa_motor_1">
       <hardwareInterface>PositionJointInterface</hardwareInterface>
       <mechanicalReduction>1</mechanicalReduction>
+      <drake:gear_ratio value="160.0" />
+      <drake:rotor_inertia value="0.0001321" />
     </actuator>
   </transmission>
   <transmission name="iiwa_tran_2">
@@ -534,6 +536,8 @@
     <actuator name="iiwa_motor_2">
       <hardwareInterface>PositionJointInterface</hardwareInterface>
       <mechanicalReduction>1</mechanicalReduction>
+      <drake:gear_ratio value="160.0" />
+      <drake:rotor_inertia value="0.0001321" />
     </actuator>
   </transmission>
   <transmission name="iiwa_tran_3">
@@ -545,6 +549,8 @@
     <actuator name="iiwa_motor_3">
       <hardwareInterface>PositionJointInterface</hardwareInterface>
       <mechanicalReduction>1</mechanicalReduction>
+      <drake:gear_ratio value="160.0" />
+      <drake:rotor_inertia value="0.0001321" />
     </actuator>
   </transmission>
   <transmission name="iiwa_tran_4">
@@ -556,6 +562,8 @@
     <actuator name="iiwa_motor_4">
       <hardwareInterface>PositionJointInterface</hardwareInterface>
       <mechanicalReduction>1</mechanicalReduction>
+      <drake:gear_ratio value="160.0" />
+      <drake:rotor_inertia value="0.0001321" />
     </actuator>
   </transmission>
   <transmission name="iiwa_tran_5">
@@ -567,6 +575,8 @@
     <actuator name="iiwa_motor_5">
       <hardwareInterface>PositionJointInterface</hardwareInterface>
       <mechanicalReduction>1</mechanicalReduction>
+      <drake:gear_ratio value="100.0" />
+      <drake:rotor_inertia value="0.0001321" />
     </actuator>
   </transmission>
   <transmission name="iiwa_tran_6">
@@ -578,6 +588,8 @@
     <actuator name="iiwa_motor_6">
       <hardwareInterface>PositionJointInterface</hardwareInterface>
       <mechanicalReduction>1</mechanicalReduction>
+      <drake:gear_ratio value="160.0" />
+      <drake:rotor_inertia value="0.0000454" />
     </actuator>
   </transmission>
   <transmission name="iiwa_tran_7">
@@ -589,6 +601,8 @@
     <actuator name="iiwa_motor_7">
       <hardwareInterface>PositionJointInterface</hardwareInterface>
       <mechanicalReduction>1</mechanicalReduction>
+      <drake:gear_ratio value="160.0" />
+      <drake:rotor_inertia value="0.0000454" />
     </actuator>
   </transmission>
   <drake:collision_filter_group name="wrist">

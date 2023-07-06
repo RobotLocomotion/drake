@@ -12,7 +12,7 @@ namespace internal {
  on the surface mesh `mesh_W`. The returned valued is non-negative.
  @pre Each element in `mesh_W` has non-zero area. */
 double CalcDistanceToSurfaceMesh(const Vector3<double>& p_WQ,
-                                 const TriangleSurfaceMesh<double> mesh_W);
+                                 const TriangleSurfaceMesh<double>& mesh_W);
 
 }  // namespace internal
 }  // namespace geometry

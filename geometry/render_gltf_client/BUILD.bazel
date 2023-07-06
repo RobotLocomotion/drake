@@ -122,6 +122,18 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "internal_merge_gltf",
+    srcs = ["internal_merge_gltf.cc"],
+    hdrs = ["internal_merge_gltf.h"],
+    internal = True,
+    visibility = ["//visibility:private"],
+    deps = [
+        "//common:essential",
+        "@nlohmann_internal//:nlohmann",
+    ],
+)
+
 # === test/ ===
 
 drake_cc_googletest(
@@ -188,6 +200,7 @@ drake_cc_library(
     srcs = ["test/internal_sample_image_data.cc"],
     hdrs = ["test/internal_sample_image_data.h"],
     deps = [
+        "//geometry/render:render_label",
         "//systems/sensors:image",
     ],
 )
@@ -235,7 +248,6 @@ drake_cc_binary(
     testonly = True,
     srcs = ["test/server_vtk_backend.cc"],
     deps = [
-        "//geometry/render:render_label",
         "//geometry/render/shaders:depth_shaders",
         "//geometry/render_vtk:factory",
         "//geometry/render_vtk:internal_render_engine_vtk",
@@ -312,4 +324,24 @@ drake_py_unittest(
     ],
 )
 
-add_lint_tests()
+filegroup(
+    name = "merge_resources",
+    srcs = [
+        "test/red_box.gltf",
+        "test/textured_green_box.gltf",
+    ],
+)
+
+drake_cc_googletest(
+    name = "internal_merge_gltf_test",
+    data = [
+        ":merge_resources",
+    ],
+    deps = [
+        ":internal_merge_gltf",
+        "//common:find_resource",
+        "@nlohmann_internal//:nlohmann",
+    ],
+)
+
+add_lint_tests(enable_clang_format_lint = False)

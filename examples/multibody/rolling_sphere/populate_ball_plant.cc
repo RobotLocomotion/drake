@@ -28,10 +28,9 @@ void PopulateBallPlant(
     double dissipation, const CoulombFriction<double>& surface_friction,
     const Vector3<double>& gravity_W, bool rigid_sphere, bool compliant_ground,
     MultibodyPlant<double>* plant) {
-  UnitInertia<double> G_Bcm = UnitInertia<double>::SolidSphere(radius);
-  SpatialInertia<double> M_Bcm(mass, Vector3<double>::Zero(), G_Bcm);
-
-  const RigidBody<double>& ball = plant->AddRigidBody("Ball", M_Bcm);
+  SpatialInertia<double> M_BBcm =
+      SpatialInertia<double>::SolidSphereWithMass(mass, radius);
+  const RigidBody<double>& ball = plant->AddRigidBody("Ball", M_BBcm);
 
   const RigidTransformd X_WG;  // identity.
   ProximityProperties ground_props;

@@ -61,9 +61,7 @@ class SparseLinearOperator final : public LinearOperator<T> {
   // overrides here do not hide the other overloads.
   using LinearOperator<T>::DoAssembleMatrix;
 
-  void DoAssembleMatrix(Eigen::SparseMatrix<T>* A) const final {
-    *A = *A_;
-  }
+  void DoAssembleMatrix(Eigen::SparseMatrix<T>* A) const final { *A = *A_; }
 
  private:
   const Eigen::SparseMatrix<T>* A_{nullptr};

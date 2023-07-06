@@ -58,7 +58,8 @@ namespace render {
  The benchmark can be executed as:
 
  ```
- bazel run //geometry/benchmarking:render_benchmark
+ bazel run //geometry/benchmarking:render_experiment -- \
+    --output_dir=trial1
  ```
 
  The output will be something akin to the following (although not identical;
@@ -116,8 +117,8 @@ namespace render {
 
  For example:
  ```
- bazel run //geometry/benchmarking:render_benchmark -- \
-    --save_image_path="/tmp" --show_window=true
+ bazel run //geometry/benchmarking:render_experiment -- \
+    --output_dir=trial2 --save_image_path="/tmp" --show_window=true
  ```
 
  <h4>Interpreting the benchmark</h4>

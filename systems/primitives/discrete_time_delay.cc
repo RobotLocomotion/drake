@@ -10,12 +10,12 @@ namespace systems {
 
 template <typename T>
 DiscreteTimeDelay<T>::DiscreteTimeDelay(
-    double update_sec, int delay_timesteps, int vector_size,
+    double update_sec, int delay_time_steps, int vector_size,
     std::unique_ptr<const AbstractValue> abstract_model_value)
     : LeafSystem<T>(SystemTypeTag<DiscreteTimeDelay>()),
       update_sec_(update_sec),
       // Delay buffer must be one element longer to properly delay signal
-      delay_buffer_size_(delay_timesteps + 1),
+      delay_buffer_size_(delay_time_steps + 1),
       vector_size_(vector_size),
       abstract_model_value_(std::move(abstract_model_value)) {
   if (!is_abstract()) {
@@ -35,8 +35,11 @@ DiscreteTimeDelay<T>::DiscreteTimeDelay(
     // TODO(mpetersen94): Remove value parameter from the constructor once
     // the equivalent of #3109 for abstract values is also resolved.
     this->DeclareAbstractInputPort("u", *abstract_model_value_);
-    this->DeclareAbstractOutputPort("delayed_u",
-        [this]() { return abstract_model_value_->Clone(); },
+    this->DeclareAbstractOutputPort(
+        "delayed_u",
+        [this]() {
+          return abstract_model_value_->Clone();
+        },
         [this](const Context<T>& context, AbstractValue* out) {
           this->CopyDelayedAbstractValue(context, out);
         },
@@ -61,8 +64,8 @@ DiscreteTimeDelay<T>::DiscreteTimeDelay(const DiscreteTimeDelay<U>& other)
                               : nullptr) {}
 
 template <typename T>
-void DiscreteTimeDelay<T>::CopyDelayedVector(
-    const Context<T>& context, BasicVector<T>* output) const {
+void DiscreteTimeDelay<T>::CopyDelayedVector(const Context<T>& context,
+                                             BasicVector<T>* output) const {
   DRAKE_ASSERT(!is_abstract());
   const BasicVector<T>& state_value = context.get_discrete_state(0);
   output->SetFromVector(state_value.get_value().head(vector_size_));

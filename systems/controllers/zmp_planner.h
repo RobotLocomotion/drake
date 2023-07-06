@@ -2,7 +2,6 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/trajectories/exponential_plus_piecewise_polynomial.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
 
@@ -95,7 +94,7 @@ class ZmpPlanner {
   void Plan(const trajectories::PiecewisePolynomial<double>& zmp_d,
             const Eigen::Vector4d& x0, double height, double gravity = 9.81,
             const Eigen::Matrix2d& Qy = Eigen::Matrix2d::Identity(),
-            const Eigen::Matrix2d& R = Eigen::Matrix2d::Zero());
+            const Eigen::Matrix2d& R = 0.1 * Eigen::Matrix2d::Identity());
 
   /**
    Returns true if Plan() has been called.
@@ -351,9 +350,6 @@ class ZmpPlanner {
 
   bool planned_{false};
 };
-
-using ZMPPlanner DRAKE_DEPRECATED("2023-06-01",
-                                  "Use ZmpPlanner instead") = ZmpPlanner;
 
 }  // namespace controllers
 }  // namespace systems

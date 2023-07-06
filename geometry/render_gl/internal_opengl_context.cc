@@ -19,7 +19,7 @@
 
 namespace drake {
 namespace geometry {
-namespace render {
+namespace render_gl {
 namespace internal {
 
 namespace {
@@ -72,13 +72,29 @@ void GlDebugCallback(GLenum, GLenum type, GLuint, GLenum severity, GLsizei,
   }
 }
 
+static Display* display() {
+  // Turn Display into a singleton to make CI happy, since when we close and
+  // reopen the display on CI, we can't request a new OpenGL context.
+  // This pattern won't call the corresponding `XCloseDisplay()` when the
+  // program exits, but it seems not so evil to skip that.
+  // (https://linux.die.net/man/3/xclosedisplay)
+  // If problems crop up in the future, this can/should be investigated.
+  static Display* g_display = []() {
+    XInitThreads();
+    Display* display = XOpenDisplay(0);
+    DRAKE_THROW_UNLESS(display != nullptr);
+    return display;
+  }();
+  return g_display;
+}
+
 }  // namespace
 
 class OpenGlContext::Impl {
  public:
   // Open an X display and initialize an OpenGL context. The display will be
   // open and ready for offscreen rendering, but no window is visible.
-  explicit Impl(bool debug) {
+  explicit Impl(bool debug, GLXContext source_context = NULL) : debug_(debug) {
     // See Offscreen Rendering section here:
     // https://sidvind.com/index.php?title=Opengl/windowless
 
@@ -102,6 +118,13 @@ class OpenGlContext::Impl {
                                   None};
     int fb_count = 0;
     const int screen_id = DefaultScreen(display());
+
+    // No matter what, we want to make sure that the context is not current
+    // at the conclusion of construction.
+    ScopeExit unbind([]() {
+      OpenGlContext::ClearCurrent();
+    });
+
     GLXFBConfig* fb_configs =
         glXChooseFBConfig(display(), screen_id, kVisualAttribs, &fb_count);
     ScopeExit guard([fb_configs]() { XFree(fb_configs); });
@@ -157,8 +180,8 @@ class OpenGlContext::Impl {
     // NOTE: The consts True and False come from gl/glx.h (indirectly), but
     // ultimately from X11/Xlib.h.
     // This requires a call to glXDestroyContext in the destructor.
-    context_ = glXCreateContextAttribsARB(display(), fb_configs[0], 0, True,
-                                          kContextAttribs);
+    context_ = glXCreateContextAttribsARB(
+        display(), fb_configs[0], source_context, True, kContextAttribs);
     if (context_ == nullptr) {
       throw std::runtime_error(
           "Error initializing OpenGL Context for RenderEngineGL; failed to "
@@ -171,17 +194,20 @@ class OpenGlContext::Impl {
 
     XSync(display(), False);
 
-    // Make it the current context.
-    MakeCurrent();
-
     // Enable debug.
     if (debug) {
+      MakeCurrent();
       drake::log()->info("Vendor: {}", GetGlVendor());
       glEnable(GL_DEBUG_OUTPUT);
+      glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
       glDebugMessageCallback(GlDebugCallback, 0);
     }
     is_complete = true;
   }
+
+  // Constructs a copy which shares the OpenGl objects stored on the GPU with
+  // `other`.
+  Impl(const Impl& other) : Impl(other.debug_, other.context_) {}
 
   ~Impl() {
     glXDestroyContext(display(), context_);
@@ -196,6 +222,10 @@ class OpenGlContext::Impl {
         !glXMakeCurrent(display(), window_, context_)) {
       throw std::runtime_error("Error making an OpenGL context current");
     }
+  }
+
+  bool IsCurrent() const {
+    return glXGetCurrentContext() == context_;
   }
 
   void DisplayWindow(const int width, const int height) {
@@ -268,19 +298,6 @@ class OpenGlContext::Impl {
   }
 
  private:
-  static Display* display() {
-    // Turn Display into a singleton to make CI happy, since when we close and
-    // reopen the display on CI, we can't request a new OpenGL context.
-    // This pattern won't call the corresponding `XCloseDisplay()` when the
-    // program exits, but it seems not so evil to skip that.
-    // (https://linux.die.net/man/3/xclosedisplay)
-    // TODO(duy): If problems crop up in the future, this can/should be
-    // investigated.
-    static Display* g_display = XOpenDisplay(0);
-    DRAKE_THROW_UNLESS(g_display != nullptr);
-    return g_display;
-  }
-
   GLXContext context_{nullptr};
 
   // The associated window to support display of rendering results.
@@ -292,14 +309,23 @@ class OpenGlContext::Impl {
   // not yet understood.
   int window_width_{640};
   int window_height_{480};
+
+  const bool debug_{};
 };
 
 OpenGlContext::OpenGlContext(bool debug)
     : impl_(new OpenGlContext::Impl(debug)) {}
 
+OpenGlContext::OpenGlContext(const OpenGlContext& other)
+    : impl_(std::make_unique<OpenGlContext::Impl>(*other.impl_)) {}
+
 OpenGlContext::~OpenGlContext() = default;
 
 void OpenGlContext::MakeCurrent() const { impl_->MakeCurrent(); }
+
+void OpenGlContext::ClearCurrent() { glXMakeCurrent(display(), None, NULL); }
+
+bool OpenGlContext::IsCurrent() const { return impl_->IsCurrent(); }
 
 void OpenGlContext::DisplayWindow(const int width, const int height) {
   impl_->DisplayWindow(width, height);
@@ -326,6 +352,6 @@ GLint OpenGlContext::max_allowable_texture_size() {
 }
 
 }  // namespace internal
-}  // namespace render
+}  // namespace render_gl
 }  // namespace geometry
 }  // namespace drake

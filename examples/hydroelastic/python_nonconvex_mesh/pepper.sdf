@@ -19,7 +19,7 @@
         <pose>0 0 0 0 0 0</pose>
         <geometry>
           <mesh>
-            <uri>yellow_bell_pepper_no_stem_low.obj</uri>
+            <uri>package://drake_models/veggies/yellow_bell_pepper_no_stem_low.obj</uri>
             <scale>1 1 1</scale>
           </mesh>
         </geometry>
@@ -28,7 +28,7 @@
         <pose>0 0 0 0 0 0</pose>
         <geometry>
           <mesh>
-            <uri>yellow_bell_pepper_no_stem_low.vtk</uri>
+            <uri>package://drake_models/veggies/yellow_bell_pepper_no_stem_low.vtk</uri>
             <scale>1 1 1</scale>
           </mesh>
         </geometry>

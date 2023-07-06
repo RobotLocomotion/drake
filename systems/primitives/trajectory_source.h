@@ -56,9 +56,8 @@ class TrajectorySource final : public SingleOutputVectorSource<T> {
   // the constructor. The size of the vector is:
   // (1 + output_derivative_order) * rows of the trajectory passed to the
   // constructor.
-  void DoCalcVectorOutput(
-      const Context<T>& context,
-      Eigen::VectorBlock<VectorX<T>>* output) const final;
+  void DoCalcVectorOutput(const Context<T>& context,
+                          Eigen::VectorBlock<VectorX<T>>* output) const final;
 
   std::unique_ptr<trajectories::Trajectory<T>> trajectory_;
   const bool clamp_derivatives_;

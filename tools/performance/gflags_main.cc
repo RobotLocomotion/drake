@@ -4,6 +4,10 @@
 #include <benchmark/benchmark.h>
 #include <gflags/gflags.h>
 
+#include "drake/tools/performance/fixture_memory.h"
+
+DEFINE_bool(memory_manager, true, "Enable memory reporting");
+
 int main(int argc, char** argv) {
   gflags::SetUsageMessage("see drake/tools/performance/README.md");
   for (int i = 1; i < argc; ++i) {
@@ -18,6 +22,9 @@ int main(int argc, char** argv) {
   benchmark::Initialize(&argc, argv);
   gflags::ParseCommandLineNonHelpFlags(&argc, &argv, true);
   if (::benchmark::ReportUnrecognizedArguments(argc, argv)) return 1;
+  if (FLAGS_memory_manager) {
+    drake::tools::performance::EnableMemoryManager();
+  }
   benchmark::RunSpecifiedBenchmarks();
   benchmark::Shutdown();
   return 0;

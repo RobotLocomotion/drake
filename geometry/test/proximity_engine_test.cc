@@ -115,7 +115,6 @@ using Eigen::Vector3d;
 
 using std::make_shared;
 using std::make_unique;
-using std::move;
 using std::shared_ptr;
 using std::unordered_map;
 using std::vector;
@@ -747,7 +746,7 @@ GTEST_TEST(ProximityEngineTests, MoveSemantics) {
   engine.AddAnchoredGeometry(sphere, pose, GeometryId::get_new_id());
   engine.AddDynamicGeometry(sphere, pose, GeometryId::get_new_id());
 
-  ProximityEngine<double> move_construct(move(engine));
+  ProximityEngine<double> move_construct(std::move(engine));
   EXPECT_EQ(move_construct.num_geometries(), 2);
   EXPECT_EQ(move_construct.num_anchored(), 1);
   EXPECT_EQ(move_construct.num_dynamic(), 1);
@@ -756,7 +755,7 @@ GTEST_TEST(ProximityEngineTests, MoveSemantics) {
   EXPECT_EQ(engine.num_dynamic(), 0);
 
   ProximityEngine<double> move_assign;
-  move_assign = move(move_construct);
+  move_assign = std::move(move_construct);
   EXPECT_EQ(move_assign.num_geometries(), 2);
   EXPECT_EQ(move_assign.num_anchored(), 1);
   EXPECT_EQ(move_assign.num_dynamic(), 1);
@@ -906,7 +905,7 @@ GTEST_TEST(ProximityEngineTests, SignedDistancePairClosestPoint) {
                     "a signed distance query", bad_id));
   }
 
-  // Case: the pair is filtered.
+  // Case: the distance is evaluated even though the pair is filtered.
   {
     // I know the GeometrySet only has id_A and id_B, so I'll construct the
     // extracted set by hand.
@@ -916,10 +915,8 @@ GTEST_TEST(ProximityEngineTests, SignedDistancePairClosestPoint) {
     engine.collision_filter().Apply(
         CollisionFilterDeclaration().ExcludeWithin(GeometrySet{id_A, id_B}),
         extract_ids, false /* is_invariant */);
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        engine.ComputeSignedDistancePairClosestPoints(id_A, id_B, X_WGs),
-        fmt::format("The geometry pair \\({}, {}\\) does not support a signed "
-                    "distance query", id_A, id_B));
+    EXPECT_NO_THROW(
+        engine.ComputeSignedDistancePairClosestPoints(id_A, id_B, X_WGs));
   }
 }
 
@@ -4336,7 +4333,7 @@ GTEST_TEST(ProximityEngineTests,
   DRAKE_EXPECT_THROWS_MESSAGE(
       engine.ComputeSignedDistancePairwiseClosestPoints(X_WGs, kInf),
       "Signed distance queries between shapes 'Box' and 'Box' are not "
-      "supported for scalar type drake::AutoDiffXd");
+      "supported for scalar type drake::AutoDiffXd.*");
 }
 
 // Tests that an unsupported geometry causes the engine to throw.
@@ -4355,15 +4352,15 @@ GTEST_TEST(ProximityEngineTests, ExpressionUnsupported) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       engine.ComputeSignedDistancePairwiseClosestPoints(X_WGs, kInf),
       "Signed distance queries between shapes 'Box' and 'Box' are not "
-      "supported for scalar type drake::symbolic::Expression");
+      "supported for scalar type drake::symbolic::Expression.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
       engine.ComputeSignedDistancePairClosestPoints(id1, id2, X_WGs),
       "Signed distance queries between shapes 'Box' and 'Box' are not "
-      "supported for scalar type drake::symbolic::Expression");
+      "supported for scalar type drake::symbolic::Expression.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
       engine.ComputePointPairPenetration(X_WGs),
       "Penetration queries between shapes 'Box' and 'Box' are not supported "
-      "for scalar type drake::symbolic::Expression");
+      "for scalar type drake::symbolic::Expression.*");
 }
 
 // Test fixture for deformable contact.

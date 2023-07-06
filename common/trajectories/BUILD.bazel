@@ -14,6 +14,7 @@ drake_cc_package_library(
     deps = [
         ":bezier_curve",
         ":bspline_trajectory",
+        ":composite_trajectory",
         ":discrete_time_trajectory",
         ":path_parameterized_trajectory",
         ":piecewise_polynomial",
@@ -152,7 +153,22 @@ drake_cc_library(
     ],
     deps = [
         ":trajectory",
+        "//common:drake_bool",
+        "//common/symbolic:polynomial",
         "//math:binomial_coefficient",
+    ],
+)
+
+drake_cc_library(
+    name = "composite_trajectory",
+    srcs = [
+        "composite_trajectory.cc",
+    ],
+    hdrs = [
+        "composite_trajectory.h",
+    ],
+    deps = [
+        ":piecewise_trajectory",
     ],
 )
 
@@ -279,8 +295,19 @@ drake_cc_googletest(
     name = "bezier_curve_test",
     deps = [
         ":bezier_curve",
+        "//common/symbolic:polynomial",
+        "//common/test_utilities",
+        "//geometry/optimization:convex_set",
+    ],
+)
+
+drake_cc_googletest(
+    name = "composite_trajectory_test",
+    deps = [
+        ":bezier_curve",
+        ":composite_trajectory",
         "//common/test_utilities",
     ],
 )
 
-add_lint_tests(enable_clang_format_lint = True)
+add_lint_tests()

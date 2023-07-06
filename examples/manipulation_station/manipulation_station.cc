@@ -59,7 +59,7 @@ namespace internal {
 namespace {
 
 // This system computes the generalized forces on the IIWA arm of the
-// manipulation resulting from externally applied spatial forces.
+// manipulation station resulting from externally applied spatial forces.
 //
 // @system
 // name: ExternalGeneralizedForcesComputer
@@ -165,7 +165,7 @@ class ExternalGeneralizedForcesComputer : public systems::LeafSystem<double> {
 // @retval M_SGo_G spatial inertia of set S about Go, expressed in frame G.
 SpatialInertia<double> CalcGripperSpatialInertia(
     const std::string& wsg_sdf_path) {
-  // Set timestep to 1.0 since it is arbitrary, to quiet joint limit warnings.
+  // Set time_step to 1.0 since it is arbitrary, to quiet joint limit warnings.
   MultibodyPlant<double> plant(1.0);
   multibody::Parser parser(&plant);
   parser.AddModels(wsg_sdf_path);
@@ -796,6 +796,10 @@ void ManipulationStation<T>::Finalize(
                   computer->GetInputPort("multibody_state"));
   builder.ExportInput(computer->GetInputPort("applied_spatial_force"),
                       "applied_spatial_force");
+  // Connect the exported input to the plant's applied spatial force input as
+  // well.
+  builder.ConnectToSame(computer->GetInputPort("applied_spatial_force"),
+                        plant_->get_applied_spatial_force_input_port());
 
   // Adder to compute τ_external = τ_applied_spatial_force + τ_contact
   systems::Adder<double>* external_forces_adder =

@@ -36,7 +36,7 @@ ScalarType cond(const ScalarType& e) {
   return e;
 }
 template <typename ScalarType, typename... Rest>
-ScalarType cond(const decltype(ScalarType() < ScalarType()) & f_cond,
+ScalarType cond(const decltype(ScalarType() < ScalarType())& f_cond,
                 const ScalarType& e_then, Rest... rest) {
   return if_then_else(f_cond, e_then, cond(rest...));
 }

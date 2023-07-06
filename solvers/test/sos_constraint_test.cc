@@ -211,7 +211,7 @@ TEST_F(SosConstraintTest, NewSosPolynomialMultivariate2) {
 TEST_F(SosConstraintTest, NewSosPolynomialViaMonomialBasis) {
   const auto& x0 = x_(0);
   const auto& x1 = x_(1);
-  Vector2<Monomial> basis{ x0, x1 };
+  Vector2<Monomial> basis{x0, x1};
   const auto p = prog_.NewSosPolynomial(basis);
   const symbolic::Polynomial& poly{p.first};
   const MatrixXDecisionVariable& Q = p.second;
@@ -268,10 +268,9 @@ TEST_F(SosConstraintTest, AddSosConstraintMultivariate1) {
   CheckPositiveDefiniteMatrix(Q, m, e);
 }
 
-
 TEST_F(SosConstraintTest, AddSosPolynomialViaMonomialBasis) {
   const auto& x = x_(0);
-  Vector2<Monomial> basis{ 1, x };
+  Vector2<Monomial> basis{1, x};
   const symbolic::Expression e = 2 * pow(x, 2) + 2 * x + 1;
   const auto Q = prog_.AddSosConstraint(e, basis);
   result_ = Solve(prog_);

@@ -5,7 +5,6 @@ load(
 load("//tools/install:install_data.bzl", "install_data")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load("@drake//tools/workspace/ros_xacro_internal:defs.bzl", "xacro_file")
-load("//tools/workspace/models_internal:files.bzl", "ur3e_mesh_files")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -45,9 +44,23 @@ filegroup(
     name = "models",
     srcs = [
         ":glob_models",
-    ] + [
-        "@models_internal//:" + x
-        for x in ur3e_mesh_files()
+        "@drake_models//:ur3e/base.mtl",
+        "@drake_models//:ur3e/base.obj",
+        "@drake_models//:ur3e/forearm.mtl",
+        "@drake_models//:ur3e/forearm.obj",
+        "@drake_models//:ur3e/shoulder.mtl",
+        "@drake_models//:ur3e/shoulder.obj",
+        "@drake_models//:ur3e/upperarm.mtl",
+        "@drake_models//:ur3e/upperarm.obj",
+        "@drake_models//:ur3e/ur3e_color.png",
+        "@drake_models//:ur3e/ur3e_normal.png",
+        "@drake_models//:ur3e/ur3e_occlusion_roughness_metallic.png",
+        "@drake_models//:ur3e/wrist1.mtl",
+        "@drake_models//:ur3e/wrist1.obj",
+        "@drake_models//:ur3e/wrist2.mtl",
+        "@drake_models//:ur3e/wrist2.obj",
+        "@drake_models//:ur3e/wrist3.mtl",
+        "@drake_models//:ur3e/wrist3.obj",
     ],
 )
 

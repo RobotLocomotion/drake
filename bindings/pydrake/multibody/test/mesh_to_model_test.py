@@ -224,7 +224,7 @@ class TestModelMaker(unittest.TestCase):
         rho = 1.5
         density_mass = V * rho
         expected_mass = density_mass + 1
-        G_GGo_G = UnitInertia.SolidBox(2, 2, 2)
+        G_GGo_G = UnitInertia.SolidCube(2)
         I_GGo_G_density = G_GGo_G * density_mass
         I_GGo_G_mass = G_GGo_G * expected_mass
 

@@ -6,6 +6,8 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/common/yaml/yaml_io.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
 #include "drake/geometry/optimization/test_utilities.h"
@@ -18,6 +20,7 @@ namespace drake {
 namespace geometry {
 namespace optimization {
 
+using Eigen::Matrix2d;
 using Eigen::Matrix3d;
 using Eigen::MatrixXd;
 using Eigen::RowVector2d;
@@ -53,6 +56,12 @@ GTEST_TEST(HyperellipsoidTest, UnitSphereTest) {
   EXPECT_TRUE(CompareMatrices(A, E_scene_graph.A()));
   EXPECT_TRUE(CompareMatrices(center, E_scene_graph.center()));
 
+  // Test MaybeGetPoint.
+  EXPECT_FALSE(E.MaybeGetPoint().has_value());
+
+  // Test IsEmpty (which is trivially false for Hyperellipsoid).
+  EXPECT_FALSE(E.IsEmpty());
+
   // Test PointInSet.
   const Vector3d in1_W{.99, 0, 0}, in2_W{.5, .5, .5}, out1_W{1.01, 0, 0},
       out2_W{1.0, 1.0, 1.0};
@@ -82,6 +91,38 @@ GTEST_TEST(HyperellipsoidTest, UnitSphereTest) {
   EXPECT_TRUE(CompareMatrices(X_WG.translation(), center, 1e-16));
   // Note: Any rotation in X_WG yields a correct solution; since the unit
   // sphere is rotationally symmetric.
+}
+
+GTEST_TEST(HyperellipsoidTest, DefaultCtor) {
+  const Hyperellipsoid dut;
+  EXPECT_EQ(dut.A().rows(), 0);
+  EXPECT_EQ(dut.A().cols(), 0);
+  EXPECT_EQ(dut.center().size(), 0);
+  EXPECT_EQ(dut.Volume(), 0.0);
+  EXPECT_THROW(dut.MinimumUniformScalingToTouch(dut), std::exception);
+  EXPECT_NO_THROW(dut.Clone());
+  EXPECT_EQ(dut.ambient_dimension(), 0);
+  EXPECT_FALSE(dut.IntersectsWith(dut));
+  EXPECT_TRUE(dut.IsBounded());
+  EXPECT_THROW(dut.IsEmpty(), std::exception);
+  EXPECT_FALSE(dut.PointInSet(Eigen::VectorXd::Zero(0)));
+}
+
+GTEST_TEST(HyperellipsoidTest, Move) {
+  const Eigen::Matrix3d A = Eigen::Matrix3d::Identity();
+  const Vector3d center = Vector3d::Zero();
+  Hyperellipsoid orig(A, center);
+
+  // A move-constructed Hyperellipsoid takes over the original data.
+  Hyperellipsoid dut(std::move(orig));
+  EXPECT_EQ(dut.ambient_dimension(), 3);
+  EXPECT_TRUE(CompareMatrices(dut.A(), A));
+  EXPECT_TRUE(CompareMatrices(dut.center(), center));
+
+  // The old Hyperellipsoid is in a valid but unspecified state.
+  EXPECT_EQ(orig.A().cols(), orig.ambient_dimension());
+  EXPECT_EQ(orig.center().size(), orig.ambient_dimension());
+  EXPECT_NO_THROW(orig.Clone());
 }
 
 GTEST_TEST(HyperellipsoidTest, ScaledSphereTest) {
@@ -467,6 +508,28 @@ GTEST_TEST(HyperellipsoidTest, MinimumUniformScaling4) {
   EXPECT_TRUE(CompareMatrices(x, Vector2d{3.0, 0.0}, kTol));
 }
 
+// Check the case when `other` has no interior.
+GTEST_TEST(HyperellipsoidTest, MinimumUniformScaling5) {
+  const Hyperellipsoid E = Hyperellipsoid::MakeUnitBall(2);
+  // x₀ ≤ -1, x₀ ≥ 1.
+  Matrix2d A;
+  // clang-format off
+  A <<  1, 0,
+       -1, 0;
+  // clang-format on
+  const HPolyhedron H(A, Vector2d(-1, -1));
+  DRAKE_EXPECT_THROWS_MESSAGE(E.MinimumUniformScalingToTouch(H),
+                              ".*is empty.*");
+}
+
+GTEST_TEST(HyperellipsoidTest, Serialize) {
+  Hyperellipsoid E = Hyperellipsoid::MakeUnitBall(2);
+  const std::string yaml = yaml::SaveYamlString(E);
+  const auto E2 = yaml::LoadYamlString<Hyperellipsoid>(yaml);
+  EXPECT_EQ(E.ambient_dimension(), E2.ambient_dimension());
+  EXPECT_TRUE(CompareMatrices(E.A(), E2.A()));
+  EXPECT_TRUE(CompareMatrices(E.center(), E2.center()));
+}
 
 }  // namespace optimization
 }  // namespace geometry

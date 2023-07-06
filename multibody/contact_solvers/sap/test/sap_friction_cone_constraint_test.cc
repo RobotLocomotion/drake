@@ -6,10 +6,13 @@
 #include "drake/common/pointer_cast.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/autodiff_gradient.h"
+#include "drake/math/rotation_matrix.h"
+#include "drake/multibody/contact_solvers/sap/validate_constraint_gradients.h"
 #include "drake/solvers/constraint.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/scs_solver.h"
 
+using drake::math::RotationMatrix;
 using drake::solvers::Binding;
 using drake::solvers::LorentzConeConstraint;
 using drake::solvers::MathematicalProgram;
@@ -19,6 +22,7 @@ using drake::solvers::SolverOptions;
 using Eigen::Matrix3d;
 using Eigen::MatrixXd;
 using Eigen::Vector3d;
+using Eigen::VectorXd;
 
 namespace drake {
 namespace multibody {
@@ -41,58 +45,82 @@ const MatrixXd J34 =
                        2, 4, 9, 6).finished();
 // clang-format on
 
-GTEST_TEST(SapFrictionConeConstraint, SingleCliqueConstraint) {
-  const double mu = 0.5;
-  const double stiffness = 1.0e5;
-  const double dissipation_time_scale = 0.01;
-  const double beta = 0.1;
+template <typename T = double>
+ContactConfiguration<T> MakeArbitraryConfiguration() {
+  const int objectA = 12;
+  Vector3<T> p_AoC_W(1., 2., 3.);
+  const int objectB = 5;
+  Vector3<T> p_BoC_W(4., 5., 6.);
+  const T phi0 = -2.5e-3;
+  RotationMatrix<T> R_WC;
+  return ContactConfiguration<T>{
+      objectA, std::move(p_AoC_W), objectB, std::move(p_BoC_W), phi0, R_WC};
+}
+
+template <typename T = double>
+typename SapFrictionConeConstraint<T>::Parameters MakeArbitraryParameters() {
+  const T mu = 0.5;
+  const T stiffness = 1.0e5;
+  const T dissipation_time_scale = 0.01;
+  const double beta = 0.0;
   const double sigma = 1.0e-4;
-  const int clique = 12;
-  const double phi0 = -2.5e-3;
-  SapFrictionConeConstraint<double>::Parameters parameters{
+  return typename SapFrictionConeConstraint<T>::Parameters{
       mu, stiffness, dissipation_time_scale, beta, sigma};
-  SapFrictionConeConstraint<double> c(clique, J32, phi0, parameters);
+}
+
+GTEST_TEST(SapFrictionConeConstraint, SingleCliqueConstraint) {
+  const int clique = 12;
+  SapConstraintJacobian<double> J(clique, J32);
+  const ContactConfiguration<double> configuration =
+      MakeArbitraryConfiguration();
+  const SapFrictionConeConstraint<double>::Parameters parameters =
+      MakeArbitraryParameters();
+  SapFrictionConeConstraint<double> c(configuration, std::move(J), parameters);
+
+  EXPECT_EQ(c.num_objects(), 2);
+  EXPECT_EQ(c.object(0), configuration.objectA);
+  EXPECT_EQ(c.object(1), configuration.objectB);
   EXPECT_EQ(c.num_constraint_equations(), 3);
   EXPECT_EQ(c.num_cliques(), 1);
   EXPECT_EQ(c.first_clique(), clique);
   EXPECT_THROW(c.second_clique(), std::exception);
-  EXPECT_EQ(c.constraint_function(), Vector3d(0., 0., phi0));
-  EXPECT_EQ(c.first_clique_jacobian(), J32);
+  EXPECT_EQ(c.first_clique_jacobian().MakeDenseMatrix(), J32);
   EXPECT_THROW(c.second_clique_jacobian(), std::exception);
-  EXPECT_EQ(c.mu(), mu);
-  EXPECT_EQ(c.parameters().mu, mu);
-  EXPECT_EQ(c.parameters().stiffness, stiffness);
-  EXPECT_EQ(c.parameters().dissipation_time_scale, dissipation_time_scale);
-  EXPECT_EQ(c.parameters().beta, beta);
-  EXPECT_EQ(c.parameters().sigma, sigma);
+  EXPECT_EQ(c.mu(), parameters.mu);
+  EXPECT_EQ(c.parameters().mu, parameters.mu);
+  EXPECT_EQ(c.parameters().stiffness, parameters.stiffness);
+  EXPECT_EQ(c.parameters().dissipation_time_scale,
+            parameters.dissipation_time_scale);
+  EXPECT_EQ(c.parameters().beta, parameters.beta);
+  EXPECT_EQ(c.parameters().sigma, parameters.sigma);
 }
 
 GTEST_TEST(SapFrictionConeConstraint, TwoCliquesConstraint) {
-  const double mu = 0.5;
-  const double stiffness = 1.0e5;
-  const double dissipation_time_scale = 0.01;
-  const double beta = 0.1;
-  const double sigma = 1.0e-4;
   const int clique0 = 12;
   const int clique1 = 13;
-  const double phi0 = -2.5e-3;
-  SapFrictionConeConstraint<double>::Parameters parameters{
-      mu, stiffness, dissipation_time_scale, beta, sigma};
-  SapFrictionConeConstraint<double> c(clique0, clique1, J32, J34, phi0,
-                                      parameters);
+  SapConstraintJacobian<double> J(clique0, J32, clique1, J34);
+  const ContactConfiguration<double> configuration =
+      MakeArbitraryConfiguration();
+  const SapFrictionConeConstraint<double>::Parameters parameters =
+      MakeArbitraryParameters();
+  SapFrictionConeConstraint<double> c(configuration, std::move(J), parameters);
+
+  EXPECT_EQ(c.num_objects(), 2);
+  EXPECT_EQ(c.object(0), configuration.objectA);
+  EXPECT_EQ(c.object(1), configuration.objectB);
   EXPECT_EQ(c.num_constraint_equations(), 3);
   EXPECT_EQ(c.num_cliques(), 2);
   EXPECT_EQ(c.first_clique(), clique0);
   EXPECT_EQ(c.second_clique(), clique1);
-  EXPECT_EQ(c.constraint_function(), Vector3d(0., 0., phi0));
-  EXPECT_EQ(c.first_clique_jacobian(), J32);
-  EXPECT_EQ(c.second_clique_jacobian(), J34);
-  EXPECT_EQ(c.mu(), mu);
-  EXPECT_EQ(c.parameters().mu, mu);
-  EXPECT_EQ(c.parameters().stiffness, stiffness);
-  EXPECT_EQ(c.parameters().dissipation_time_scale, dissipation_time_scale);
-  EXPECT_EQ(c.parameters().beta, beta);
-  EXPECT_EQ(c.parameters().sigma, sigma);
+  EXPECT_EQ(c.first_clique_jacobian().MakeDenseMatrix(), J32);
+  EXPECT_EQ(c.second_clique_jacobian().MakeDenseMatrix(), J34);
+  EXPECT_EQ(c.mu(), parameters.mu);
+  EXPECT_EQ(c.parameters().mu, parameters.mu);
+  EXPECT_EQ(c.parameters().stiffness, parameters.stiffness);
+  EXPECT_EQ(c.parameters().dissipation_time_scale,
+            parameters.dissipation_time_scale);
+  EXPECT_EQ(c.parameters().beta, parameters.beta);
+  EXPECT_EQ(c.parameters().sigma, parameters.sigma);
 }
 
 GTEST_TEST(SapFrictionConeConstraint, CalcBias) {
@@ -100,23 +128,30 @@ GTEST_TEST(SapFrictionConeConstraint, CalcBias) {
   // bad number. If they somehow participate in the computation we'd find out
   // quickly.
   const double bad_number = std::numeric_limits<double>::infinity();
-  const double mu = bad_number;
-  const double stiffness = bad_number;
-  const double dissipation_time_scale = 0.01;
-  const double beta = bad_number;
-  const double sigma = bad_number;
   const int clique = 12;
-  const double phi0 = -2.5e-3;
-  const Matrix3d J = Matrix3d::Constant(bad_number);
-  SapFrictionConeConstraint<double>::Parameters parameters{
-      mu, stiffness, dissipation_time_scale, beta, sigma};
-  SapFrictionConeConstraint<double> c(clique, J, phi0, parameters);
+  SapConstraintJacobian<double> J(clique, Matrix3d::Constant(bad_number));
+  const ContactConfiguration<double> configuration =
+      MakeArbitraryConfiguration();
+  SapFrictionConeConstraint<double>::Parameters parameters =
+      MakeArbitraryParameters();
+  parameters.mu = bad_number;
+  parameters.stiffness = bad_number;
+  parameters.beta = bad_number;
+  parameters.sigma = bad_number;
+  parameters.mu = bad_number;
+  SapFrictionConeConstraint<double> c(configuration, std::move(J), parameters);
 
   const double time_step = 5e-3;
-  const double delassus_approximation = NAN;  // Does not participate.
-  const Vector3d vhat = c.CalcBiasTerm(time_step, delassus_approximation);
-  const Vector3d vhat_expected =
-      -c.constraint_function() / (time_step + dissipation_time_scale);
+  const Vector3d delassus_approximation =
+      Vector3d::Constant(bad_number);  // Does not participate.
+  std::unique_ptr<AbstractValue> abstract_data =
+      c.MakeData(time_step, delassus_approximation);
+  const auto& data =
+      abstract_data->get_value<SapFrictionConeConstraintData<double>>();
+  const Vector3d& vhat = data.v_hat();
+  const double vn_hat =
+      -configuration.phi / (time_step + parameters.dissipation_time_scale);
+  const Vector3d vhat_expected(0., 0., vn_hat);
   EXPECT_TRUE(CompareMatrices(vhat, vhat_expected,
                               std::numeric_limits<double>::epsilon(),
                               MatrixCompareType::relative));
@@ -127,27 +162,29 @@ GTEST_TEST(SapFrictionConeConstraint, CalcRegularization) {
   // bad number. If they somehow participate in the computation we'd find out
   // quickly.
   const double bad_number = std::numeric_limits<double>::infinity();
-  const double mu = 0.5;
-  const double stiffness = 1.0e5;
-  const double dissipation_time_scale = 0.01;
-  const double beta = 0.1;
-  const double sigma = 1.0e-4;
   const int clique = 12;
-  const double phi0 = -2.5e-3;
-  const Matrix3d J = Matrix3d::Constant(bad_number);
-  SapFrictionConeConstraint<double>::Parameters parameters{
-      mu, stiffness, dissipation_time_scale, beta, sigma};
-  SapFrictionConeConstraint<double> c(clique, J, phi0, parameters);
+  SapConstraintJacobian<double> J(clique, Matrix3d::Constant(bad_number));
+  const ContactConfiguration<double> configuration =
+      MakeArbitraryConfiguration();
+  const SapFrictionConeConstraint<double>::Parameters parameters =
+      MakeArbitraryParameters();
+  SapFrictionConeConstraint<double> c(configuration, std::move(J), parameters);
 
   const double time_step = 5e-3;
-  const double delassus_approximation = NAN;  // Does not participate.
-  const Vector3d R =
-      c.CalcDiagonalRegularization(time_step, delassus_approximation);
+  const Vector3d delassus_approximation =
+      Vector3d::Constant(3.0);  // Does not participate.
+  std::unique_ptr<AbstractValue> abstract_data =
+      c.MakeData(time_step, delassus_approximation);
+  const auto& data =
+      abstract_data->get_value<SapFrictionConeConstraintData<double>>();
+  const Vector3d& R = data.R();
 
-  const double Rt = sigma * delassus_approximation;
+  const double Rt = parameters.sigma * delassus_approximation(0);
   const double Rn = std::max(
-      beta * beta / (4 * M_PI * M_PI) * delassus_approximation,
-      1. / (time_step * (time_step + dissipation_time_scale) * stiffness));
+      parameters.beta * parameters.beta / (4 * M_PI * M_PI) *
+          delassus_approximation(2),
+      1. / (time_step * (time_step + parameters.dissipation_time_scale) *
+            parameters.stiffness));
 
   const Vector3d R_expected(Rt, Rt, Rn);
   EXPECT_TRUE(CompareMatrices(R, R_expected,
@@ -205,135 +242,151 @@ Vector3d SolveProjectionWithScs(double mu, const Vector3d& R,
   return result.GetSolution();
 }
 
-// This method is used to validate SapFrictionConeConstraint::Project().
-// We use MathematicalProgram to obtain numerical values that we use to compare
-// against the analytical projection implemented by SapFrictionConeConstraint.
-// To validate the analytical gradients of the projection, we use automatic
-// differentiation.
-void ValidateProjection(double mu, const Vector3d& R, const Vector3d& y) {
-  // We set parameters that we expect do not participate in the computation to a
-  // bad number. If they somehow participate in the computation we'd find out
-  // quickly.
-  const double bad_number = std::numeric_limits<double>::infinity();
-  SapFrictionConeConstraint<AutoDiffXd>::Parameters p{
-      mu, bad_number, bad_number, bad_number, bad_number};
-  const int clique = 0;
-  const AutoDiffXd phi0 = bad_number;
-  const Matrix3<AutoDiffXd> J = Matrix3<AutoDiffXd>::Constant(bad_number);
-  SapFrictionConeConstraint<AutoDiffXd> c(clique, J, phi0, p);
-  Vector3<AutoDiffXd> y_ad = drake::math::InitializeAutoDiff(y);
-  Vector3<AutoDiffXd> R_ad(R);
-  Vector3<AutoDiffXd> gamma_ad;
-  MatrixX<AutoDiffXd> dPdy_ad;
-  c.Project(y_ad, R_ad, &gamma_ad, &dPdy_ad);
-  const Vector3d gamma = math::ExtractValue(gamma_ad);
+// This function uses MathematicalProgram to obtain reference numerical values
+// to compare against the analytical projection implemented by
+// SapFrictionConeConstraint.
+void ValidateAgainstNumericalReference(
+    const SapFrictionConeConstraint<double>::Parameters& p,
+    const Vector3d& vc) {
+  // Arbitrary values of time step and Delassus operator estimation.
+  const double time_step = 0.01;
+  const Vector3d delassus_estimation = Vector3d::Constant(1.0);
 
-  // We first validate the result of the projection γ = P(y).
-  const Vector3d gamma_numerical = SolveProjectionWithScs(mu, R, y);
+  // Make constraint for the set of input parameters.
+  // N.B. These tests are independent J and therefore can be set to garbage.
+  const int clique = 0;
+  const double infty = std::numeric_limits<double>::infinity();
+  SapConstraintJacobian<double> J(clique, Matrix3<double>::Constant(infty));
+  ContactConfiguration<double> configuration = MakeArbitraryConfiguration();
+  SapFrictionConeConstraint<double> c(configuration, std::move(J), p);
+
+  std::unique_ptr<AbstractValue> data =
+      c.MakeData(time_step, delassus_estimation);
+  c.CalcData(vc, data.get());
+
+  // Analytical computation under test.
+  Vector3d gamma;
+  c.CalcImpulse(*data, &gamma);
+
+  // Validate numerically the result of the analytical projection γ = P(y).
+  const auto& cone_constraint_data =
+      data->get_value<SapFrictionConeConstraintData<double>>();
+  const Vector3d R = cone_constraint_data.R();
+  const Vector3d v_hat = cone_constraint_data.v_hat();
+  const Vector3d y = R.cwiseInverse().asDiagonal() * (v_hat - vc);
+  const Vector3d gamma_numerical = SolveProjectionWithScs(p.mu, R, y);
   EXPECT_TRUE(CompareMatrices(gamma, gamma_numerical, 10.0 * kTolerance,
                               MatrixCompareType::relative));
+}
 
-  // We now verify gradients using automatic differentiation.
-  const Matrix3d dPdy = math::ExtractValue(dPdy_ad);
-  // N.B. We supply num_derivatives so that when the gradient is zero,
-  // ExtractGradient() does not return a zero sized matrix but Matrix3d::Zero().
-  const int num_derivatives = 3;
-  const Matrix3d gamma_ad_gradient =
-      math::ExtractGradient(gamma_ad, num_derivatives);
-  EXPECT_TRUE(CompareMatrices(dPdy, gamma_ad_gradient,
-                              std::numeric_limits<double>::epsilon(),
-                              MatrixCompareType::relative));
+// This method validates numerical computations performed by
+// SapFrictionConeConstraint. It performs two family of tests:
+//  1. Tests in ValidateConstraintGradients()
+//  2. Tests in ValidateAgainstNumericalReference().
+void ValidateProjection(const SapFrictionConeConstraint<double>::Parameters& p,
+                        const Vector3d& vc) {
+  // Instantiate constraint on AutoDiffXd for automatic differentiation.
+  SapFrictionConeConstraint<AutoDiffXd>::Parameters p_ad{
+      p.mu, p.stiffness, p.dissipation_time_scale, p.beta, p.sigma};
+
+  // Arbitrary set of parameters.
+  const int clique = 0;
+  const AutoDiffXd phi0 = -1e-4;
+  const double infty = std::numeric_limits<double>::infinity();
+  SapConstraintJacobian<AutoDiffXd> J(clique, Matrix3<double>::Constant(infty));
+  ContactConfiguration<AutoDiffXd> configuration =
+      MakeArbitraryConfiguration<AutoDiffXd>();
+  SapFrictionConeConstraint<AutoDiffXd> c(configuration, std::move(J), p_ad);
+
+  // Verify cost gradients using AutoDiffXd.
+  ValidateConstraintGradients(c, vc);
+
+  // Perform additional tests on the impulses using numerical reference
+  // solutions.
+  ValidateAgainstNumericalReference(p, vc);
 }
 
 // Region I corresponds to the friction cone, see [Castro et al., 2021].
 // Physically this is the stiction region.
 GTEST_TEST(SapFrictionConeConstraint, RegionI) {
-  // Below we use an arbitrary set of values so that y is in Region I
-  // (stiction).
+  // An arbitrary set of parameters.
+  SapFrictionConeConstraint<double>::Parameters p;
+  p.mu = 0.5;
+  p.stiffness = 3.0e5;
+  p.dissipation_time_scale = 0.02;
+
+  // Below we use an arbitrary set of values so that vc leads to stiction.
   {
-    const double mu = 0.5;
-    const Vector3d R(0.1, 0.1, 1.5);
-    const Vector3d y(0.4, 0, 1.0);
-    ValidateProjection(mu, R, y);
+    const Vector3d vc(1e-4, 0, -0.1);
+    ValidateProjection(p, vc);
   }
   {
-    const double mu = 1.5;
-    const Vector3d R(0.01, 0.01, 2.0);
-    const Vector3d y(1.0, -1.0, 2.0);
-    ValidateProjection(mu, R, y);
+    const Vector3d vc(1e-4, 1e-4, -0.1);
+    ValidateProjection(p, vc);
   }
   {
-    const double mu = 0.3;
-    const Vector3d R(0.2, 0.2, 1.2);
-    const Vector3d y(-0.1, 0.01, 1.0);
-    ValidateProjection(mu, R, y);
+    const Vector3d vc(-1e-5, 1e-4, -0.05);
+    ValidateProjection(p, vc);
   }
 }
 
 // Region II corresponds to ℝ³ minus Regions I and II, see [Castro et al.,
 // 2021]. Physically this is the sliding region.
 GTEST_TEST(SapFrictionConeConstraint, RegionII) {
-  // Below we use an arbitrary set of values so that y is in Region II
-  // (sliding).
+  // An arbitrary set of parameters.
+  SapFrictionConeConstraint<double>::Parameters p;
+  p.mu = 0.5;
+  p.stiffness = 3.0e5;
+  p.dissipation_time_scale = 0.02;
+
+  // Below we use an arbitrary set of values so that vc leads to sliding.
   {
-    const double mu = 0.5;
-    const Vector3d R(0.1, 0.1, 1.5);
-    const Vector3d y(1.0, 0, 1.0);
-    ValidateProjection(mu, R, y);
+    const Vector3d vc(0.1, 0, -0.1);
+    ValidateProjection(p, vc);
   }
   {
-    const double mu = 1.5;
-    const Vector3d R(0.01, 0.01, 2.0);
-    const Vector3d y(4.0, 2.5, 2.0);
-    ValidateProjection(mu, R, y);
+    const Vector3d vc(0.1, -0.2, -0.1);
+    ValidateProjection(p, vc);
   }
   {
-    const double mu = 0.3;
-    const Vector3d R(0.2, 0.2, 1.2);
-    // N.B. This is an interesting case. Since the projection is convex, not all
-    // negative values of y(2) lead to gamma = 0. However, gamma(2) is always
-    // positive.
-    const Vector3d y(-0.5, 1.8, -0.01);
-    ValidateProjection(mu, R, y);
+    const Vector3d vc(0.1, 0.05, 0.0);
+    ValidateProjection(p, vc);
   }
 }
 
 // Region III corresponds to the polar cone, see [Castro et al., 2021].
 // Physically this is the no contact region, i.e. gamma = 0.
 GTEST_TEST(SapFrictionConeConstraint, RegionIII) {
-  // Below we use an arbitrary set of values so that y is in Region III (no
-  // contact).
+  // An arbitrary set of parameters.
+  SapFrictionConeConstraint<double>::Parameters p;
+  p.mu = 0.5;
+  p.stiffness = 3.0e5;
+  p.dissipation_time_scale = 0.02;
+
+  // Below we use an arbitrary set of values so that vc leads to no-contact.
   {
-    const double mu = 0.5;
-    const Vector3d R(0.1, 0.1, 1.5);
-    const Vector3d y(0.5, 0, -0.2);
-    ValidateProjection(mu, R, y);
+    const Vector3d vc(0.1, 0, 0.1);
+    ValidateProjection(p, vc);
   }
   {
-    const double mu = 1.5;
-    const Vector3d R(0.01, 0.01, 2.0);
-    const Vector3d y(4.0, 2.5, -1.3);
-    ValidateProjection(mu, R, y);
+    const Vector3d vc(1.0e-4, -2.0e-3, 0.01);
+    ValidateProjection(p, vc);
   }
   {
-    const double mu = 0.3;
-    const Vector3d R(0.2, 0.2, 1.2);
-    const Vector3d y(-0.5, 1.8, -5.0);
-    ValidateProjection(mu, R, y);
+    const Vector3d vc(-0.1, 0.1, 0.2);
+    ValidateProjection(p, vc);
   }
 }
 
 GTEST_TEST(SapFrictionConeConstraint, SingleCliqueConstraintClone) {
-  const double mu = 0.5;
-  const double stiffness = 1.0e5;
-  const double dissipation_time_scale = 0.01;
-  const double beta = 0.1;
-  const double sigma = 1.0e-4;
   const int clique = 12;
-  const double phi0 = -2.5e-3;
-  SapFrictionConeConstraint<double>::Parameters parameters{
-      mu, stiffness, dissipation_time_scale, beta, sigma};
-  SapFrictionConeConstraint<double> c(clique, J32, phi0, parameters);
+  SapConstraintJacobian<double> J(clique, J32);
+  const ContactConfiguration<double> configuration =
+      MakeArbitraryConfiguration();
+  const SapFrictionConeConstraint<double>::Parameters parameters =
+      MakeArbitraryParameters();
+  SapFrictionConeConstraint<double> c(configuration, std::move(J), parameters);
+
   // N.B. Here we dynamic cast to the derived type so that we can test that the
   // clone is a deep-copy of the original constraint.
   auto clone =
@@ -343,45 +396,87 @@ GTEST_TEST(SapFrictionConeConstraint, SingleCliqueConstraintClone) {
   EXPECT_EQ(clone->num_cliques(), 1);
   EXPECT_EQ(clone->first_clique(), clique);
   EXPECT_THROW(clone->second_clique(), std::exception);
-  EXPECT_EQ(clone->constraint_function(), Vector3d(0., 0., phi0));
-  EXPECT_EQ(clone->first_clique_jacobian(), J32);
+  EXPECT_EQ(clone->first_clique_jacobian().MakeDenseMatrix(), J32);
   EXPECT_THROW(clone->second_clique_jacobian(), std::exception);
-  EXPECT_EQ(clone->mu(), mu);
-  EXPECT_EQ(clone->parameters().mu, mu);
-  EXPECT_EQ(clone->parameters().stiffness, stiffness);
-  EXPECT_EQ(clone->parameters().dissipation_time_scale, dissipation_time_scale);
-  EXPECT_EQ(clone->parameters().beta, beta);
-  EXPECT_EQ(clone->parameters().sigma, sigma);
+  EXPECT_EQ(clone->mu(), parameters.mu);
+  EXPECT_EQ(clone->parameters().mu, parameters.mu);
+  EXPECT_EQ(clone->parameters().stiffness, parameters.stiffness);
+  EXPECT_EQ(clone->parameters().dissipation_time_scale,
+            parameters.dissipation_time_scale);
+  EXPECT_EQ(clone->parameters().beta, parameters.beta);
+  EXPECT_EQ(clone->parameters().sigma, parameters.sigma);
 }
 
 GTEST_TEST(SapFrictionConeConstraint, TwoCliquesConstraintClone) {
-  const double mu = 0.5;
-  const double stiffness = 1.0e5;
-  const double dissipation_time_scale = 0.01;
-  const double beta = 0.1;
-  const double sigma = 1.0e-4;
   const int clique0 = 12;
   const int clique1 = 13;
-  const double phi0 = -2.5e-3;
-  SapFrictionConeConstraint<double>::Parameters parameters{
-      mu, stiffness, dissipation_time_scale, beta, sigma};
-  SapFrictionConeConstraint<double> c(clique0, clique1, J32, J34, phi0,
-                                      parameters);
+  SapConstraintJacobian<double> J(clique0, J32, clique1, J34);
+  const ContactConfiguration<double> configuration =
+      MakeArbitraryConfiguration();
+  const SapFrictionConeConstraint<double>::Parameters parameters =
+      MakeArbitraryParameters();
+  SapFrictionConeConstraint<double> c(configuration, std::move(J), parameters);
+
   auto clone =
       dynamic_pointer_cast<SapFrictionConeConstraint<double>>(c.Clone());
   EXPECT_EQ(clone->num_constraint_equations(), 3);
   EXPECT_EQ(clone->num_cliques(), 2);
   EXPECT_EQ(clone->first_clique(), clique0);
   EXPECT_EQ(clone->second_clique(), clique1);
-  EXPECT_EQ(clone->constraint_function(), Vector3d(0., 0., phi0));
-  EXPECT_EQ(clone->first_clique_jacobian(), J32);
-  EXPECT_EQ(clone->second_clique_jacobian(), J34);
-  EXPECT_EQ(clone->mu(), mu);
-  EXPECT_EQ(clone->parameters().mu, mu);
-  EXPECT_EQ(clone->parameters().stiffness, stiffness);
-  EXPECT_EQ(clone->parameters().dissipation_time_scale, dissipation_time_scale);
-  EXPECT_EQ(clone->parameters().beta, beta);
-  EXPECT_EQ(clone->parameters().sigma, sigma);
+  EXPECT_EQ(clone->first_clique_jacobian().MakeDenseMatrix(), J32);
+  EXPECT_EQ(clone->second_clique_jacobian().MakeDenseMatrix(), J34);
+  EXPECT_EQ(clone->mu(), parameters.mu);
+  EXPECT_EQ(clone->parameters().mu, parameters.mu);
+  EXPECT_EQ(clone->parameters().stiffness, parameters.stiffness);
+  EXPECT_EQ(clone->parameters().dissipation_time_scale,
+            parameters.dissipation_time_scale);
+  EXPECT_EQ(clone->parameters().beta, parameters.beta);
+  EXPECT_EQ(clone->parameters().sigma, parameters.sigma);
+}
+
+GTEST_TEST(SapFrictionConeConstraint, AccumulateSpatialImpulses) {
+  const int clique = 12;
+  // Arbitrary orientation of the contact frame C.
+  Vector3d axis = Vector3d(1., 1., 1.).normalized();
+  math::RotationMatrixd R_WC(AngleAxis<double>(M_PI / 4.0, axis));
+  SapConstraintJacobian<double> J(clique, J32);
+  ContactConfiguration<double> configuration = MakeArbitraryConfiguration();
+  configuration.R_WC = R_WC;
+  const SapFrictionConeConstraint<double>::Parameters parameters =
+      MakeArbitraryParameters();
+  SapFrictionConeConstraint<double> c(configuration, std::move(J), parameters);
+
+  EXPECT_EQ(c.num_objects(), 2);
+  EXPECT_EQ(c.object(0), configuration.objectA);
+  EXPECT_EQ(c.object(1), configuration.objectB);
+
+  // Arbitrary impulse values.
+  Vector3d gamma(0., 0., 1.);
+
+  // Expected spatial impulse on B.
+  const Vector3d f_B_W = R_WC * gamma;
+  const Vector3d t_Bq_W = configuration.p_BqC_W.cross(f_B_W);
+  const SpatialForce<double> F_Bq_W(t_Bq_W, f_B_W);
+
+  // Expected spatial impulse on A.
+  const Vector3d f_A_W = -f_B_W;
+  const Vector3d t_Ap_W = configuration.p_ApC_W.cross(f_A_W);
+  const SpatialForce<double> F_Ap_W(t_Ap_W, f_A_W);
+
+  const SpatialForce<double> F0(Vector3d(1., 2., 3), Vector3d(4., 5., 6));
+  SpatialForce<double> Faccumulated = F0;  // Initialize to non-zero value.
+  SpatialForce<double> F_Bq_W_expected = F0 + F_Bq_W;
+  c.AccumulateSpatialImpulses(1, gamma, &Faccumulated);
+  EXPECT_TRUE(CompareMatrices(
+      Faccumulated.get_coeffs(), F_Bq_W_expected.get_coeffs(),
+      std::numeric_limits<double>::epsilon(), MatrixCompareType::relative));
+
+  Faccumulated = F0;  // Initialize to non-zero value.
+  SpatialForce<double> F_Ap_W_expected = F0 + F_Ap_W;
+  c.AccumulateSpatialImpulses(0, gamma, &Faccumulated);
+  EXPECT_TRUE(CompareMatrices(
+      Faccumulated.get_coeffs(), F_Ap_W_expected.get_coeffs(),
+      std::numeric_limits<double>::epsilon(), MatrixCompareType::relative));
 }
 
 }  // namespace

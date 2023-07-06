@@ -6,9 +6,8 @@ namespace {
 
 // Mostly, this just checks for compilation failures.
 GTEST_TEST(TestHeaderDocumentation, ExistenceTest) {
-  EXPECT_EQ(
-      sample_header_doc.drake.mkdoc_test.Class.ctor.doc_0args,
-      "Custom constructor 1.");
+  EXPECT_EQ(sample_header_doc.drake.mkdoc_test.Class.ctor.doc_0args,
+            "Custom constructor 1.");
 }
 
 }  // namespace

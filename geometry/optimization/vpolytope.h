@@ -1,5 +1,6 @@
 #pragma once
 
+#include <filesystem>
 #include <memory>
 #include <optional>
 #include <utility>
@@ -13,19 +14,20 @@ namespace geometry {
 namespace optimization {
 
 /** A polytope described using the vertex representation.  The set is defined as
- the convex hull of the vertices.  The vertices are not guaranteed to be in any
- particular order, nor to be minimal (some vertices could be strictly in the
- interior of the set).
+the convex hull of the vertices.  The vertices are not guaranteed to be in any
+particular order, nor to be minimal (some vertices could be strictly in the
+interior of the set).
 
- Note: Unlike the half-space representation, this
- definition means the set is always bounded (hence the name polytope, instead of
- polyhedron).
+Note: Unlike the half-space representation, this definition means the set is
+always bounded (hence the name polytope, instead of polyhedron).
 
-@ingroup geometry_optimization
-*/
+@ingroup geometry_optimization */
 class VPolytope final : public ConvexSet {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(VPolytope)
+
+  /** Constructs a default (zero-dimensional) set. */
+  VPolytope();
 
   /** Constructs the polytope from a d-by-n matrix, where d is the ambient
   dimension, and n is the number of vertices.  The vertices do not have to be
@@ -46,19 +48,17 @@ class VPolytope final : public ConvexSet {
 
   ~VPolytope() final;
 
-  /** Creates a new VPolytope whose vertices are guaranteed to be minimal,
-  i.e. if we remove any point from its vertices, then the convex hull of the
-  remaining vertices is a strict subset of the polytope. In the 2D case
-  the vertices of the new VPolytope are ordered counter-clockwise from
-  the negative X axis. For all other cases an order is not guaranteed.
-  */
+  /** Creates a new VPolytope whose vertices are guaranteed to be minimal, i.e.,
+  if we remove any point from its vertices, then the convex hull of the
+  remaining vertices is a strict subset of the polytope. In the 2D case the
+  vertices of the new VPolytope are ordered counter-clockwise from the negative
+  X axis. For all other cases an order is not guaranteed. */
   VPolytope GetMinimalRepresentation() const;
 
-  /** Returns true if the point is within @p tol of the set under the L∞-norm.
-   Note: This requires the solution of a linear program; the achievable
-   tolerance may be dependent on your specific solver and solver parameters.
-   @see ConvexSet::set_solver
-   */
+  /** Returns true if the point is within `tol` of the set under the L∞-norm.
+  Note: This requires the solution of a linear program; the achievable tolerance
+  may be dependent on your specific solver and solver parameters.
+  @see ConvexSet::set_solver */
   using ConvexSet::PointInSet;
 
   /** Returns the vertices in a d-by-n matrix, where d is the ambient dimension,
@@ -66,27 +66,39 @@ class VPolytope final : public ConvexSet {
   const Eigen::MatrixXd& vertices() const { return vertices_; }
 
   /** Constructs a polyhedron as an axis-aligned box from the lower and upper
-   * corners. */
+  corners. */
   static VPolytope MakeBox(const Eigen::Ref<const Eigen::VectorXd>& lb,
                            const Eigen::Ref<const Eigen::VectorXd>& ub);
 
-  /** Constructs the L∞-norm unit box in @p dim dimensions, {x | |x|∞ <= 1 }.
+  /** Constructs the L∞-norm unit box in `dim` dimensions, {x | |x|∞ <= 1 }.
   This is an axis-aligned box, centered at the origin, with edge length 2. */
   static VPolytope MakeUnitBox(int dim);
 
-  /**
-   * Computes the volume of this V-Polytope.
-   * @note this function calls qhull to compute the volume.
-   */
+  /** Computes the volume of this V-Polytope.
+  @note this function calls qhull to compute the volume. */
   [[nodiscard]] double CalcVolume() const;
 
+  /** Uses qhull to compute the Delaunay triangulation and then writes the
+  vertices and faces to `filename` in the Wavefront Obj format. Note that the
+  extension `.obj` is not automatically added to the `filename`.
+  @pre ambient_dimension() == 3. */
+  void WriteObj(const std::filesystem::path& filename) const;
+
  private:
-  bool DoIsBounded() const { return true; }
+  std::unique_ptr<ConvexSet> DoClone() const final;
+
+  bool DoIsBounded() const final;
+
+  bool DoIsEmpty() const final;
+
+  std::optional<Eigen::VectorXd> DoMaybeGetPoint() const final;
 
   bool DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
                     double tol) const final;
 
-  void DoAddPointInSetConstraints(
+  std::pair<VectorX<symbolic::Variable>,
+            std::vector<solvers::Binding<solvers::Constraint>>>
+  DoAddPointInSetConstraints(
       solvers::MathematicalProgram*,
       const Eigen::Ref<const solvers::VectorXDecisionVariable>&) const final;
 
@@ -112,15 +124,15 @@ class VPolytope final : public ConvexSet {
   using ShapeReifier::ImplementGeometry;
   void ImplementGeometry(const Box& box, void* data) final;
   void ImplementGeometry(const Convex& convex, void* data) final;
+  void ImplementGeometry(const Mesh& mesh, void* data) final;
 
   Eigen::MatrixXd vertices_;
 };
 
-/** Obtain all the vertices stored in the convex object.
- * @retval vertices. Each column of `vertices` is a vertex. We don't impose any
- * specific order on the vertices. The vertices are expressed in the convex
- * shape's own frame.
- */
+/** Obtains all the vertices stored in the convex object.
+@retval vertices. Each column of `vertices` is a vertex. We don't impose any
+specific order on the vertices. The vertices are expressed in the convex shape's
+own frame. */
 [[nodiscard]] Eigen::MatrixXd GetVertices(const Convex& convex);
 
 }  // namespace optimization

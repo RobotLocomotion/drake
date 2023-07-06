@@ -29,7 +29,6 @@ using math::RigidTransformd;
 using math::RotationMatrix;
 using math::RotationMatrixd;
 using std::make_unique;
-using std::move;
 using std::pair;
 using std::unique_ptr;
 using std::vector;
@@ -81,7 +80,7 @@ TriangleSurfaceMesh<double> CreateBoxMesh(const RigidTransform<double>& X_FB) {
   faces.emplace_back(2, 6, 4);  // -Z face
 
   // Construct the mesh.
-  return {move(faces), move(vertices_F)};
+  return {std::move(faces), std::move(vertices_F)};
 }
 
 // Given a triangle mesh expressed in frame F, creates a "contact surface mesh"
@@ -112,7 +111,7 @@ MeshType RexpressAsContactMesh(
           X_WF.rotation() * mesh_F.face_normal(t_index).cast<T>();
       AddPolygonToTriangleMeshData(polygon, nhat_W, &triangles, &vertices_W);
     }
-    return {move(triangles), move(vertices_W)};
+    return {std::move(triangles), std::move(vertices_W)};
   } else {
     vector<int> face_data;
     face_data.reserve(mesh_F.num_triangles() * 4);
@@ -122,7 +121,7 @@ MeshType RexpressAsContactMesh(
         face_data.push_back(tri.vertex(i));
       }
     }
-    return {move(face_data), move(vertices_W)};
+    return {std::move(face_data), std::move(vertices_W)};
   }
 }
 
@@ -141,7 +140,7 @@ TriangleSurfaceMesh<double> CreateOneTriangleMesh(const Vector3d& v0,
                                                   const Vector3d& v2) {
   std::vector<Vector3d> vertices{{v0, v1, v2}};
   std::vector<SurfaceTriangle> faces{{0, 1, 2}};
-  return TriangleSurfaceMesh<double>(move(faces), move(vertices));
+  return TriangleSurfaceMesh<double>(std::move(faces), std::move(vertices));
 }
 
 // Helper for getting the appropriate mesh builder from an expected mesh type.
@@ -484,7 +483,8 @@ TYPED_TEST_P(MeshHalfSpaceValueTest, InsideOrOnIntersection) {
     std::vector<Vector3d> vertices = {Vector3d(4, 5, 2), Vector3d(3, 5, 2),
                                       Vector3d(3, 5, 1), Vector3d(2, 5, 2)};
     std::vector<SurfaceTriangle> faces{{0, 1, 2}, {2, 1, 3}};
-    const TriangleSurfaceMesh<double> tri_mesh_F(move(faces), move(vertices));
+    const TriangleSurfaceMesh<double> tri_mesh_F(std::move(faces),
+                                                 std::move(vertices));
 
     // Verify the intersection.
     this->CallConstructTriangleHalfspaceIntersectionPolygon(tri_mesh_F, X_WF);
@@ -712,13 +712,13 @@ TYPED_TEST_P(MeshHalfSpaceValueTest, QuadrilateralResults) {
       std::vector<SurfaceTriangle> expected_faces;
       AddPolygonToTriangleMeshData(polygon, nhat_W, &expected_faces,
                                    &expected_vertices_W);
-      expected_mesh_W = make_unique<MeshType>(move(expected_faces),
-                                              move(expected_vertices_W));
+      expected_mesh_W = make_unique<MeshType>(std::move(expected_faces),
+                                              std::move(expected_vertices_W));
     } else {
       std::vector<int> face_data;
       AddPolygonToPolygonMeshData(polygon, &face_data);
-      expected_mesh_W =
-          make_unique<MeshType>(move(face_data), move(expected_vertices_W));
+      expected_mesh_W = make_unique<MeshType>(std::move(face_data),
+                                              std::move(expected_vertices_W));
     }
 
     EXPECT_TRUE(this->MeshesEquivalent(*mesh_W, *expected_mesh_W));
@@ -794,13 +794,13 @@ TYPED_TEST_P(MeshHalfSpaceValueTest, OutsideInsideOn) {
     std::vector<SurfaceTriangle> expected_faces;
     AddPolygonToTriangleMeshData(polygon, nhat_W, &expected_faces,
                                  &expected_vertices_W);
-    expected_mesh_W =
-        make_unique<MeshType>(move(expected_faces), move(expected_vertices_W));
+    expected_mesh_W = make_unique<MeshType>(std::move(expected_faces),
+                                            std::move(expected_vertices_W));
   } else {
     std::vector<int> face_data;
     AddPolygonToPolygonMeshData(polygon, &face_data);
-    expected_mesh_W =
-        make_unique<MeshType>(move(face_data), move(expected_vertices_W));
+    expected_mesh_W = make_unique<MeshType>(std::move(face_data),
+                                            std::move(expected_vertices_W));
   }
 
   EXPECT_TRUE(this->MeshesEquivalent(*mesh_W, *expected_mesh_W));
@@ -863,13 +863,13 @@ TYPED_TEST_P(MeshHalfSpaceValueTest, OneInsideTwoOutside) {
     std::vector<SurfaceTriangle> expected_faces;
     AddPolygonToTriangleMeshData(polygon, nhat_W, &expected_faces,
                                  &expected_vertices_W);
-    expected_mesh_W =
-        make_unique<MeshType>(move(expected_faces), move(expected_vertices_W));
+    expected_mesh_W = make_unique<MeshType>(std::move(expected_faces),
+                                            std::move(expected_vertices_W));
   } else {
     std::vector<int> face_data;
     AddPolygonToPolygonMeshData(polygon, &face_data);
-    expected_mesh_W =
-        make_unique<MeshType>(move(face_data), move(expected_vertices_W));
+    expected_mesh_W = make_unique<MeshType>(std::move(face_data),
+                                            std::move(expected_vertices_W));
   }
 
   EXPECT_TRUE(this->MeshesEquivalent(*mesh_W, *expected_mesh_W));
@@ -1257,8 +1257,8 @@ class MeshHalfSpaceDerivativesTest : public ::testing::Test {
     using Face = SurfaceTriangle;
     vector<Face> faces{{Face{0, 1, 2}}};
     id_R_ = GeometryId::get_new_id();
-    mesh_R_ =
-        make_unique<TriangleSurfaceMesh<double>>(move(faces), move(vertices));
+    mesh_R_ = make_unique<TriangleSurfaceMesh<double>>(std::move(faces),
+                                                       std::move(vertices));
     bvh_R_ = make_unique<Bvh<Obb, TriangleSurfaceMesh<double>>>(*mesh_R_);
   }
 

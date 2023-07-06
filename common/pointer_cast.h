@@ -37,7 +37,9 @@ std::unique_ptr<T> static_pointer_cast(std::unique_ptr<U>&& other) noexcept {
 template <class T, class U>
 std::unique_ptr<T> dynamic_pointer_cast(std::unique_ptr<U>&& other) noexcept {
   T* result = dynamic_cast<T*>(other.get());
-  if (!result) { return nullptr; }
+  if (!result) {
+    return nullptr;
+  }
   other.release();
   return std::unique_ptr<T>(result);
 }
@@ -57,16 +59,14 @@ std::unique_ptr<T> dynamic_pointer_cast_or_throw(std::unique_ptr<U>&& other) {
   if (!other) {
     throw std::logic_error(fmt::format(
         "Cannot cast a unique_ptr<{}> containing nullptr to unique_ptr<{}>.",
-        NiceTypeName::Get<U>(),
-        NiceTypeName::Get<T>()));
+        NiceTypeName::Get<U>(), NiceTypeName::Get<T>()));
   }
   T* result = dynamic_cast<T*>(other.get());
   if (!result) {
     throw std::logic_error(fmt::format(
         "Cannot cast a unique_ptr<{}> containing an object of type {} to "
         "unique_ptr<{}>.",
-        NiceTypeName::Get<U>(),
-        NiceTypeName::Get(*other),
+        NiceTypeName::Get<U>(), NiceTypeName::Get(*other),
         NiceTypeName::Get<T>()));
   }
   other.release();
@@ -83,17 +83,15 @@ std::unique_ptr<T> dynamic_pointer_cast_or_throw(std::unique_ptr<U>&& other) {
 template <class T, class U>
 T* dynamic_pointer_cast_or_throw(U* other) {
   if (!other) {
-    throw std::logic_error(fmt::format(
-        "Cannot cast a nullptr {}* to {}*.",
-        NiceTypeName::Get<U>(),
-        NiceTypeName::Get<T>()));
+    throw std::logic_error(fmt::format("Cannot cast a nullptr {}* to {}*.",
+                                       NiceTypeName::Get<U>(),
+                                       NiceTypeName::Get<T>()));
   }
   T* result = dynamic_cast<T*>(other);
   if (!result) {
     throw std::logic_error(fmt::format(
         "Cannot cast a {}* pointing to an object of type {} to {}*.",
-        NiceTypeName::Get<U>(),
-        NiceTypeName::Get(*other),
+        NiceTypeName::Get<U>(), NiceTypeName::Get(*other),
         NiceTypeName::Get<T>()));
   }
   return result;

@@ -29,12 +29,12 @@ using Eigen::Matrix4d;
 using Eigen::Vector3d;
 using Eigen::Vector4d;
 
-using geometry::render::ColorRenderCamera;
-using geometry::render::DepthRenderCamera;
-using geometry::render::RenderEngine;
-using geometry::render::internal::ImageType;
 using math::RigidTransformd;
 using math::RollPitchYawd;
+using render::ColorRenderCamera;
+using render::DepthRenderCamera;
+using render::RenderEngine;
+using render_vtk::internal::ImageType;
 using systems::sensors::ImageDepth32F;
 using systems::sensors::ImageLabel16I;
 using systems::sensors::ImageRgba8U;
@@ -281,7 +281,9 @@ TEST_F(RenderEngineGltfClientTest, DoRenderLabelImage) {
     // Make sure the temporary directory is / is not being cleaned up.
     CheckExpectedFiles(engine.temp_directory(), cleanup, ".png");
 
-    // Make sure the image got loaded as expected.
+    // Make sure the image got loaded as expected. Note that it also tests
+    // whether a server-returned white pixel is properly converted to
+    // render::RenderLabel::kDontCare.
     EXPECT_EQ(label_image, CreateTestLabelImage());
   }
 }

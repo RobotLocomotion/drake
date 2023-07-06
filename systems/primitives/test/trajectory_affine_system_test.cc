@@ -22,8 +22,8 @@ class TrajectoryAffineSystemTest
  public:
   void SetUp() override {
     if (this->GetParam() == ConstructorType::FromContinuous) {
-      dut_ = make_unique<TrajectoryAffineSystem<double>>(data_.A, data_.B,
-          data_.f0, data_.C, data_.D, data_.y0);
+      dut_ = make_unique<TrajectoryAffineSystem<double>>(
+          data_.A, data_.B, data_.f0, data_.C, data_.D, data_.y0);
     } else if (this->GetParam() == ConstructorType::FromDiscrete) {
       time_period_ = data_.kDiscreteTimeStep;
       dut_ = make_unique<TrajectoryAffineSystem<double>>(
@@ -66,18 +66,12 @@ TEST_P(TrajectoryAffineSystemTest, Constructor) {
 
 TEST_P(TrajectoryAffineSystemTest, KnotPointConsistency) {
   for (int i{0}; i < static_cast<int>(data_.times.size()); ++i) {
-    EXPECT_TRUE(
-        CompareMatrices(dut_->A(data_.times[i]), data_.Avec[i]));
-    EXPECT_TRUE(
-        CompareMatrices(dut_->B(data_.times[i]), data_.Bvec[i]));
-    EXPECT_TRUE(
-        CompareMatrices(dut_->C(data_.times[i]), data_.Cvec[i]));
-    EXPECT_TRUE(
-        CompareMatrices(dut_->D(data_.times[i]), data_.Dvec[i]));
-    EXPECT_TRUE(
-        CompareMatrices(dut_->f0(data_.times[i]), data_.f0vec[i]));
-    EXPECT_TRUE(
-        CompareMatrices(dut_->y0(data_.times[i]), data_.y0vec[i]));
+    EXPECT_TRUE(CompareMatrices(dut_->A(data_.times[i]), data_.Avec[i]));
+    EXPECT_TRUE(CompareMatrices(dut_->B(data_.times[i]), data_.Bvec[i]));
+    EXPECT_TRUE(CompareMatrices(dut_->C(data_.times[i]), data_.Cvec[i]));
+    EXPECT_TRUE(CompareMatrices(dut_->D(data_.times[i]), data_.Dvec[i]));
+    EXPECT_TRUE(CompareMatrices(dut_->f0(data_.times[i]), data_.f0vec[i]));
+    EXPECT_TRUE(CompareMatrices(dut_->y0(data_.times[i]), data_.y0vec[i]));
   }
 }
 
@@ -110,8 +104,8 @@ TEST_P(TrajectoryAffineSystemTest, DiscreteUpdates) {
           A * x + B * u + f0, derivatives_->get_vector().CopyToVector(), tol));
     } else {
       updates_->SetFrom(dut_->EvalUniquePeriodicDiscreteUpdate(*context_));
-      EXPECT_TRUE(CompareMatrices(
-          A * x + B * u + f0, updates_->get_vector(0).CopyToVector(), tol));
+      EXPECT_TRUE(CompareMatrices(A * x + B * u + f0,
+                                  updates_->get_vector(0).CopyToVector(), tol));
     }
   }
 }
@@ -138,8 +132,7 @@ TEST_P(TrajectoryAffineSystemTest, Output) {
     const Eigen::Matrix2d D = data_.D.value(t);
     const Eigen::Vector2d y0 = data_.y0.value(t);
     EXPECT_TRUE(CompareMatrices(C * x + D * u + y0,
-                                dut_->get_output_port().Eval(*context_),
-                                tol));
+                                dut_->get_output_port().Eval(*context_), tol));
   }
 }
 
@@ -156,8 +149,8 @@ TEST_P(TrajectoryAffineSystemTest, ScalarTypeConversion) {
 }
 
 INSTANTIATE_TEST_SUITE_P(Constructor, TrajectoryAffineSystemTest,
-                        testing::Values(ConstructorType::FromContinuous,
-                                        ConstructorType::FromDiscrete));
+                         testing::Values(ConstructorType::FromContinuous,
+                                         ConstructorType::FromDiscrete));
 
 }  // namespace
 }  // namespace systems

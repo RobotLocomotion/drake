@@ -14,7 +14,6 @@
 #include "drake/geometry/test_utilities/dummy_render_engine.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram_builder.h"
-#include "drake/systems/primitives/zero_order_hold.h"
 
 namespace drake {
 namespace systems {
@@ -39,7 +38,6 @@ using math::RigidTransformd;
 using math::RollPitchYawd;
 using std::make_pair;
 using std::make_unique;
-using std::move;
 using std::unique_ptr;
 using std::vector;
 using systems::Context;
@@ -47,10 +45,8 @@ using systems::Diagram;
 using systems::DiagramBuilder;
 
 std::ostream& operator<<(std::ostream& out, const CameraInfo& info) {
-  out << "\n  width: " << info.width()
-      << "\n  height: " << info.height()
-      << "\n  focal_x: " << info.focal_x()
-      << "\n  focal_y: " << info.focal_y()
+  out << "\n  width: " << info.width() << "\n  height: " << info.height()
+      << "\n  focal_x: " << info.focal_x() << "\n  focal_y: " << info.focal_y()
       << "\n  center_x: " << info.center_x()
       << "\n  center_y: " << info.center_y();
   return out;
@@ -63,20 +59,12 @@ std::ostream& operator<<(std::ostream& out, const ColorRenderCamera& camera) {
 }
 
 std::ostream& operator<<(std::ostream& out, const DepthRenderCamera& camera) {
-  out << "DepthRenderCamera\n" << camera.core().intrinsics()
+  out << "DepthRenderCamera\n"
+      << camera.core().intrinsics()
       << "\n  min_depth: " << camera.depth_range().min_depth()
       << "\n  max_depth: " << camera.depth_range().max_depth();
   return out;
 }
-
-// Helper class for exercising private methods in RgbdSensor.
-class RgbdSensorTester {
- public:
-  static void ConvertDepth32FTo16U(const ImageDepth32F& d32,
-                                   ImageDepth16U* d16) {
-    RgbdSensor::ConvertDepth32FTo16U(d32, d16);
-  }
-};
 
 namespace {
 
@@ -206,14 +194,14 @@ class RgbdSensorTest : public ::testing::Test {
                     sensor_->query_object_input_port());
     diagram_ = builder.Build();
     context_ = diagram_->CreateDefaultContext();
+    context_->SetTime(22.2);  // An arbitrary non-zero value.
     context_->DisableCaching();
     scene_graph_context_ =
         &diagram_->GetMutableSubsystemContext(*scene_graph_, context_.get());
     sensor_context_ =
         &diagram_->GetMutableSubsystemContext(*sensor_, context_.get());
     // Must get the render engine instance from the context itself.
-    render_engine_ = GetDummyRenderEngine(
-        *scene_graph_context_, kRendererName);
+    render_engine_ = GetDummyRenderEngine(*scene_graph_context_, kRendererName);
   }
 
   // Confirms that the member sensor_ matches the expected properties. Part
@@ -229,15 +217,15 @@ class RgbdSensorTest : public ::testing::Test {
              << ") does not match the expected id (" << parent_id << ")";
     }
     ::testing::AssertionResult result = ::testing::AssertionSuccess();
-    result = CompareCameraInfo(
-        sensor_->color_camera_info(), color_camera_.core().intrinsics());
+    result = CompareCameraInfo(sensor_->color_camera_info(),
+                               color_camera_.core().intrinsics());
     if (!result) return result;
 
     result = Compare(sensor_->color_render_camera(), color_camera_);
     if (!result) return result;
 
-    result = CompareCameraInfo(
-        sensor_->depth_camera_info(), depth_camera_.core().intrinsics());
+    result = CompareCameraInfo(sensor_->depth_camera_info(),
+                               depth_camera_.core().intrinsics());
     if (!result) return result;
 
     result = Compare(sensor_->depth_render_camera(), depth_camera_);
@@ -254,9 +242,9 @@ class RgbdSensorTest : public ::testing::Test {
     // call to UpdateViewpoint()).
     if (pre_render_callback) pre_render_callback();
     sensor_->color_image_output_port().Eval<ImageRgba8U>(*sensor_context_);
-    EXPECT_TRUE(CompareMatrices(
-        render_engine_->last_updated_X_WC().GetAsMatrix4(),
-        X_WC_expected.GetAsMatrix4()));
+    EXPECT_TRUE(
+        CompareMatrices(render_engine_->last_updated_X_WC().GetAsMatrix4(),
+                        X_WC_expected.GetAsMatrix4()));
 
     return result;
   }
@@ -292,6 +280,7 @@ TEST_F(RgbdSensorTest, PortNames) {
   EXPECT_EQ(sensor.label_image_output_port().get_name(), "label_image");
   EXPECT_EQ(sensor.body_pose_in_world_output_port().get_name(),
             "body_pose_in_world");
+  EXPECT_EQ(sensor.image_time_output_port().get_name(), "image_time");
 }
 
 // Tests that the anchored camera reports the correct parent frame and has the
@@ -311,6 +300,8 @@ TEST_F(RgbdSensorTest, ConstructAnchoredCamera) {
   const RigidTransformd X_WC_expected = X_WB * X_BC;
   EXPECT_TRUE(
       ValidateConstruction(scene_graph_->world_frame_id(), X_WC_expected));
+  EXPECT_EQ(sensor_->image_time_output_port().Eval(*sensor_context_),
+            Vector1d{22.2});
 }
 
 // Similar to the AnchoredCamera test -- but, in this case, the reported pose
@@ -318,9 +309,9 @@ TEST_F(RgbdSensorTest, ConstructAnchoredCamera) {
 TEST_F(RgbdSensorTest, ConstructFrameFixedCamera) {
   SourceId source_id;
   const GeometryFrame frame("camera_frame");
-  const RigidTransformd X_PB(AngleAxisd(M_PI/6, Vector3d(1, 1, 1)),
+  const RigidTransformd X_PB(AngleAxisd(M_PI / 6, Vector3d(1, 1, 1)),
                              Vector3d(1, 2, 3));
-  const RigidTransformd X_WP(AngleAxisd(M_PI/7, Vector3d(-1, 0, 1)),
+  const RigidTransformd X_WP(AngleAxisd(M_PI / 7, Vector3d(-1, 0, 1)),
                              Vector3d(-2, -1, -3));
   const FramePoseVector<double> X_WPs{{frame.id(), X_WP}};
 
@@ -350,11 +341,10 @@ TEST_F(RgbdSensorTest, ConstructFrameFixedCamera) {
 
 TEST_F(RgbdSensorTest, ConstructCameraWithNonTrivialOffsets) {
   const RigidTransformd X_BC{
-        math::RotationMatrixd::MakeFromOrthonormalRows(
-            Eigen::Vector3d(0, 0, 1),
-            Eigen::Vector3d(-1, 0, 0),
-            Eigen::Vector3d(0, -1, 0)),
-        Eigen::Vector3d(0, 0.02, 0)};
+      math::RotationMatrixd::MakeFromOrthonormalRows(Eigen::Vector3d(0, 0, 1),
+                                                     Eigen::Vector3d(-1, 0, 0),
+                                                     Eigen::Vector3d(0, -1, 0)),
+      Eigen::Vector3d(0, 0.02, 0)};
   // For uniqueness, simply invert X_BC.
   const RigidTransformd X_BD{X_BC.inverse()};
   const ColorRenderCamera color_camera{
@@ -362,25 +352,24 @@ TEST_F(RgbdSensorTest, ConstructCameraWithNonTrivialOffsets) {
        color_camera_.core().clipping(), X_BC},
       color_camera_.show_window()};
   const DepthRenderCamera depth_camera{
-    {depth_camera_.core().renderer_name(), depth_camera_.core().intrinsics(),
+      {depth_camera_.core().renderer_name(), depth_camera_.core().intrinsics(),
        depth_camera_.core().clipping(), X_BD},
       depth_camera_.depth_range()};
   const RigidTransformd X_WB;
   const RgbdSensor sensor(scene_graph_->world_frame_id(), X_WB, color_camera,
                           depth_camera);
-  EXPECT_TRUE(CompareMatrices(
-      sensor.X_BC().GetAsMatrix4(), X_BC.GetAsMatrix4()));
-  EXPECT_TRUE(CompareMatrices(
-      sensor.X_BD().GetAsMatrix4(), X_BD.GetAsMatrix4()));
+  EXPECT_TRUE(
+      CompareMatrices(sensor.X_BC().GetAsMatrix4(), X_BC.GetAsMatrix4()));
+  EXPECT_TRUE(
+      CompareMatrices(sensor.X_BD().GetAsMatrix4(), X_BD.GetAsMatrix4()));
 }
 
 TEST_F(RgbdSensorTest, ConstructCameraWithNonTrivialOffsetsDeprecated) {
   const RigidTransformd X_BC{
-        math::RotationMatrixd::MakeFromOrthonormalRows(
-            Eigen::Vector3d(0, 0, 1),
-            Eigen::Vector3d(-1, 0, 0),
-            Eigen::Vector3d(0, -1, 0)),
-        Eigen::Vector3d(0, 0.02, 0)};
+      math::RotationMatrixd::MakeFromOrthonormalRows(Eigen::Vector3d(0, 0, 1),
+                                                     Eigen::Vector3d(-1, 0, 0),
+                                                     Eigen::Vector3d(0, -1, 0)),
+      Eigen::Vector3d(0, 0.02, 0)};
   // For uniqueness, simply invert X_BC.
   const RigidTransformd X_BD{X_BC.inverse()};
   const RigidTransformd X_WB;
@@ -402,122 +391,21 @@ TEST_F(RgbdSensorTest, ConstructCameraWithNonTrivialOffsetsDeprecated) {
       depth_camera_.depth_range());
   const RgbdSensor sensor(scene_graph_->world_frame_id(), X_WB, color_camera,
                           depth_camera);
-  EXPECT_TRUE(CompareMatrices(
-      sensor.X_BC().GetAsMatrix4(), X_BC.GetAsMatrix4()));
-  EXPECT_TRUE(CompareMatrices(
-      sensor.X_BD().GetAsMatrix4(), X_BD.GetAsMatrix4()));
+  EXPECT_TRUE(
+      CompareMatrices(sensor.X_BC().GetAsMatrix4(), X_BC.GetAsMatrix4()));
+  EXPECT_TRUE(
+      CompareMatrices(sensor.X_BD().GetAsMatrix4(), X_BD.GetAsMatrix4()));
 }
 
-// We don't explicitly test any of the image outputs. Most of the image outputs
-// simple wrap the corresponding QueryObject call; the only calculations they
-// do is to produce the X_PC matrix (which is implicitly tested in the
-// construction tests above). The *one* exception is the 16U depth image which
-// converts 32F to 16U. In this case, we test the conversion method directly.
-TEST_F(RgbdSensorTest, DepthImage32FTo16U) {
-  // The largest uint16_t value (unitless). Period.
-  const uint16_t kMax16 = std::numeric_limits<uint16_t>::max();
-  // The saturation depth (in mm) that will be reported.
-  const double kDepth16Saturation = kMax16 / 1000.0;
+// We don't explicitly test any of the image outputs. The image outputs simply
+// wrap the corresponding QueryObject call; the only calculations they do is to
+// produce the X_PC matrix (which is implicitly tested in the construction tests
+// above).
 
-  // Create a simple depth image with some representative values and their
-  // corresponding uint16 values.
-  std::array<uint16_t, 4> expected_depths;
-  ImageDepth32F depth32(1, 4);
-  // Too near.
-  *depth32.at(0, 0) = 0.0;
-  expected_depths[0] = 0;
-  // Valid and representable.
-  *depth32.at(0, 1) = kDepth16Saturation / 2;
-  expected_depths[1] = kMax16 / 2;
-  // Valid but not representable.
-  *depth32.at(0, 2) = kDepth16Saturation * 1.1;
-  expected_depths[2] = kMax16;
-  // Too far.
-  *depth32.at(0, 3) = std::numeric_limits<float>::infinity();
-  expected_depths[3] = kMax16;
-
-  // Perform conversion.
-  ImageDepth16U depth16(1, 4);
-  RgbdSensorTester::ConvertDepth32FTo16U(depth32, &depth16);
-
-  for (int c = 0; c < 4; ++c) {
-    EXPECT_EQ(*depth16.at(0, c), expected_depths[c]);
-  }
-}
-
-// Tests that the discrete sensor is properly constructed.
-GTEST_TEST(RgbdSensorDiscrete, Construction) {
-  const DepthRenderCamera depth_camera(
-      {"render", {640, 480, M_PI / 4}, {0.1, 10.0}, {}}, {0.1, 10});
-  const double kPeriod = 0.1;
-
-  const bool include_render_port = true;
-  // N.B. In addition to testing a discrete sensor, this also tests
-  // the `RgbdSensor` constructor which takes only `DepthRenderCamera`.
-  RgbdSensorDiscrete sensor(
-      make_unique<RgbdSensor>(SceneGraph<double>::world_frame_id(),
-                              RigidTransformd::Identity(), depth_camera),
-      kPeriod, include_render_port);
-  EXPECT_EQ(sensor.query_object_input_port().get_name(), "geometry_query");
-  EXPECT_EQ(sensor.color_image_output_port().get_name(), "color_image");
-  EXPECT_EQ(sensor.depth_image_32F_output_port().get_name(), "depth_image_32f");
-  EXPECT_EQ(sensor.depth_image_16U_output_port().get_name(), "depth_image_16u");
-  EXPECT_EQ(sensor.label_image_output_port().get_name(), "label_image");
-  EXPECT_EQ(sensor.body_pose_in_world_output_port().get_name(),
-            "body_pose_in_world");
-
-  // Confirm that the period was passed into the ZOH correctly. If the ZOH
-  // reports the expected period, we rely on it to do the right thing.
-  EXPECT_EQ(sensor.period(), kPeriod);
-}
-
-// Test that the diagram's internal architecture is correct and, likewise,
-// wired correctly.
-GTEST_TEST(RgbdSensorDiscrete, ImageHold) {
-  const DepthRenderCamera depth_camera(
-      {"render", {640, 480, M_PI / 4}, {0.1, 10.0}, {}}, {0.1, 10});
-  // N.B. In addition to testing a discrete sensor, this also tests
-  // the `RgbdSensor` constructor which takes only `DepthRenderCamera`.
-  auto sensor =
-      make_unique<RgbdSensor>(SceneGraph<double>::world_frame_id(),
-                              RigidTransformd::Identity(), depth_camera);
-  RgbdSensor* sensor_raw = sensor.get();
-  const double kPeriod = 0.1;
-  const bool include_render_port = true;
-  RgbdSensorDiscrete discrete_sensor(move(sensor), kPeriod,
-                                     include_render_port);
-
-  // This tests very *explicit* knowledge of what the wiring should be. As such,
-  // it's a bit brittle, but this is the most efficient way to affect this test.
-  // We assume these systems are reported in the order they were added.
-  vector<const System<double>*> sub_systems = discrete_sensor.GetSystems();
-
-  // Five sub-systems: the sensor and one hold per image type.
-  ASSERT_EQ(sub_systems.size(), 5);
-  ASSERT_EQ(sub_systems[0], sensor_raw);
-
-  // For each image output port, we want to make sure it's connected to the
-  // expected ZOH and that the hold's period is kPeriod. This proves that
-  // RgbdSensorDiscrete has wired things up properly.
-  auto confirm_hold = [&sub_systems, &kPeriod, &discrete_sensor](
-                          int hold_index,
-                          const OutputPort<double>& image_port) {
-    const ZeroOrderHold<double>* zoh =
-        dynamic_cast<const ZeroOrderHold<double>*>(sub_systems[hold_index]);
-    ASSERT_NE(zoh, nullptr);
-    EXPECT_EQ(zoh->period(), kPeriod);
-    EXPECT_TRUE(
-        discrete_sensor.AreConnected(image_port, zoh->get_input_port()));
-  };
-
-  confirm_hold(1, sensor_raw->color_image_output_port());
-  confirm_hold(2, sensor_raw->depth_image_32F_output_port());
-  confirm_hold(3, sensor_raw->depth_image_16U_output_port());
-  confirm_hold(4, sensor_raw->label_image_output_port());
-
-  // TODO(SeanCurtis-TRI): Consider confirming that the exported ports map to
-  //  the expected sub-system ports.
-}
+// TODO(jwnimmer-tri) The body_pose_in_world_output_port should have unit test
+// coverage of its output value, not just its name. It ends up being indirectly
+// tested in sim_rgbd_sensor_test.cc but it would be better to identify bugs in
+// the RgbdSensor directly instead of intermingled with the wrapper code.
 
 }  // namespace
 }  // namespace sensors

@@ -6,8 +6,10 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include "drake/geometry/proximity_properties.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/plant/multibody_plant_config_functions.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/rigid_body.h"
 #include "drake/multibody/tree/spatial_inertia.h"
@@ -29,9 +31,9 @@ class MultibodyPlantTester {
  public:
   MultibodyPlantTester() = delete;
 
-  static const std::vector<int>& EvalJointLockingIndices(
+  static const internal::JointLockingCacheData<double>& EvalJointLockingCache(
       const MultibodyPlant<double>& plant, const Context<double>& context) {
-    return plant.EvalJointLockingIndices(context);
+    return plant.EvalJointLockingCache(context);
   }
 };
 
@@ -122,38 +124,111 @@ TEST_P(JointLockingTest, JointLockingIndicesTest) {
 
   // No joints/bodies are locked, all joint/body velocity indices should exist.
   {
-    const std::vector<int>& unlocked_indices =
-        MultibodyPlantTester::EvalJointLockingIndices(*plant_, *context_);
+    const internal::JointLockingCacheData<double>& cache =
+        MultibodyPlantTester::EvalJointLockingCache(*plant_, *context_);
+    const std::vector<int>& unlocked_velocity_indices =
+        cache.unlocked_velocity_indices;
+    const std::vector<int>& locked_velocity_indices =
+        cache.locked_velocity_indices;
+    const std::vector<std::vector<int>>& unlocked_velocity_indices_per_tree =
+        cache.unlocked_velocity_indices_per_tree;
+    const std::vector<std::vector<int>>& locked_velocity_indices_per_tree =
+        cache.locked_velocity_indices_per_tree;
 
-    EXPECT_EQ(unlocked_indices.size(), 9);
+    EXPECT_EQ(unlocked_velocity_indices.size(), 9);
+    EXPECT_EQ(locked_velocity_indices.size(), 0);
 
-    const std::vector<int>& expected_unlocked_indices = {
+    EXPECT_EQ(unlocked_velocity_indices_per_tree.size(), 2);
+    EXPECT_EQ(locked_velocity_indices_per_tree.size(), 2);
+    EXPECT_EQ(unlocked_velocity_indices_per_tree[0].size(), 2);
+    EXPECT_EQ(unlocked_velocity_indices_per_tree[1].size(), 7);
+    EXPECT_EQ(locked_velocity_indices_per_tree[0].size(), 0);
+    EXPECT_EQ(locked_velocity_indices_per_tree[1].size(), 0);
+
+    const std::vector<int> expected_unlocked_velocity_indices = {
         body1_velocity_start,         body1_velocity_start + 1,
         body1_velocity_start + 2,     body1_velocity_start + 3,
         body1_velocity_start + 4,     body1_velocity_start + 5,
         body1_body2.velocity_start(), world_body3.velocity_start(),
         body3_body4.velocity_start()};
+    const std::vector<int> expected_locked_velocity_indices = {};
 
-    EXPECT_THAT(unlocked_indices,
-                testing::UnorderedElementsAreArray(expected_unlocked_indices));
+    EXPECT_THAT(
+        unlocked_velocity_indices,
+        testing::UnorderedElementsAreArray(expected_unlocked_velocity_indices));
+    EXPECT_THAT(locked_velocity_indices, testing::UnorderedElementsAreArray(
+                                             expected_locked_velocity_indices));
+
+    const std::vector<std::vector<int>>
+        expected_unlocked_velocity_indices_per_tree = {
+            {0, 1},
+            {0, 1, 2, 3, 4, 5, 6},
+        };
+    const std::vector<std::vector<int>>
+        expected_locked_velocity_indices_per_tree = {{}, {}};
+
+    for (int i = 0; i < 2; ++i) {
+      EXPECT_THAT(unlocked_velocity_indices_per_tree[i],
+                  testing::UnorderedElementsAreArray(
+                      expected_unlocked_velocity_indices_per_tree[i]));
+      EXPECT_THAT(locked_velocity_indices_per_tree[i],
+                  testing::UnorderedElementsAreArray(
+                      expected_locked_velocity_indices_per_tree[i]));
+    }
   }
 
   // Lock body3_body4 and re-evaluate joint locking indices
   {
     body3_body4.Lock(context_.get());
-    const std::vector<int>& unlocked_indices =
-        MultibodyPlantTester::EvalJointLockingIndices(*plant_, *context_);
+    const internal::JointLockingCacheData<double>& cache =
+        MultibodyPlantTester::EvalJointLockingCache(*plant_, *context_);
+    const std::vector<int>& unlocked_velocity_indices =
+        cache.unlocked_velocity_indices;
+    const std::vector<int>& locked_velocity_indices =
+        cache.locked_velocity_indices;
+    const std::vector<std::vector<int>>& unlocked_velocity_indices_per_tree =
+        cache.unlocked_velocity_indices_per_tree;
+    const std::vector<std::vector<int>>& locked_velocity_indices_per_tree =
+        cache.locked_velocity_indices_per_tree;
 
-    EXPECT_EQ(unlocked_indices.size(), 8);
+    EXPECT_EQ(unlocked_velocity_indices.size(), 8);
+    EXPECT_EQ(locked_velocity_indices.size(), 1);
 
-    const std::vector<int>& expected_unlocked_indices = {
+    EXPECT_EQ(unlocked_velocity_indices_per_tree.size(), 2);
+    EXPECT_EQ(locked_velocity_indices_per_tree.size(), 2);
+    EXPECT_EQ(unlocked_velocity_indices_per_tree[0].size(), 1);
+    EXPECT_EQ(unlocked_velocity_indices_per_tree[1].size(), 7);
+    EXPECT_EQ(locked_velocity_indices_per_tree[0].size(), 1);
+    EXPECT_EQ(locked_velocity_indices_per_tree[1].size(), 0);
+
+    const std::vector<int>& expected_unlocked_velocity_indices = {
         body1_velocity_start,         body1_velocity_start + 1,
         body1_velocity_start + 2,     body1_velocity_start + 3,
         body1_velocity_start + 4,     body1_velocity_start + 5,
         body1_body2.velocity_start(), world_body3.velocity_start()};
+    const std::vector<int>& expected_locked_velocity_indices = {
+        body3_body4.velocity_start()};
 
-    EXPECT_THAT(unlocked_indices,
-                testing::UnorderedElementsAreArray(expected_unlocked_indices));
+    EXPECT_THAT(
+        unlocked_velocity_indices,
+        testing::UnorderedElementsAreArray(expected_unlocked_velocity_indices));
+    EXPECT_THAT(locked_velocity_indices, testing::UnorderedElementsAreArray(
+                                             expected_locked_velocity_indices));
+
+    const std::vector<std::vector<int>>
+        expected_unlocked_velocity_indices_per_tree = {{0},
+                                                       {0, 1, 2, 3, 4, 5, 6}};
+    const std::vector<std::vector<int>>
+        expected_locked_velocity_indices_per_tree = {{1}, {}};
+
+    for (int i = 0; i < 2; ++i) {
+      EXPECT_THAT(unlocked_velocity_indices_per_tree[i],
+                  testing::UnorderedElementsAreArray(
+                      expected_unlocked_velocity_indices_per_tree[i]));
+      EXPECT_THAT(locked_velocity_indices_per_tree[i],
+                  testing::UnorderedElementsAreArray(
+                      expected_locked_velocity_indices_per_tree[i]));
+    }
   }
 
   // Unlock body3_body4 and lock body1 and re-evaluate joint locking indices.
@@ -161,94 +236,157 @@ TEST_P(JointLockingTest, JointLockingIndicesTest) {
     body3_body4.Unlock(context_.get());
     body1.Lock(context_.get());
 
-    const std::vector<int>& unlocked_indices =
-        MultibodyPlantTester::EvalJointLockingIndices(*plant_, *context_);
+    const internal::JointLockingCacheData<double>& cache =
+        MultibodyPlantTester::EvalJointLockingCache(*plant_, *context_);
+    const std::vector<int>& unlocked_velocity_indices =
+        cache.unlocked_velocity_indices;
+    const std::vector<int>& locked_velocity_indices =
+        cache.locked_velocity_indices;
+    const std::vector<std::vector<int>>& unlocked_velocity_indices_per_tree =
+        cache.unlocked_velocity_indices_per_tree;
+    const std::vector<std::vector<int>>& locked_velocity_indices_per_tree =
+        cache.locked_velocity_indices_per_tree;
 
-    EXPECT_EQ(unlocked_indices.size(), 3);
+    EXPECT_EQ(unlocked_velocity_indices.size(), 3);
+    EXPECT_EQ(locked_velocity_indices.size(), 6);
 
-    const std::vector<int>& expected_unlocked_indices = {
+    EXPECT_EQ(unlocked_velocity_indices_per_tree.size(), 2);
+    EXPECT_EQ(locked_velocity_indices_per_tree.size(), 2);
+    EXPECT_EQ(unlocked_velocity_indices_per_tree[0].size(), 2);
+    EXPECT_EQ(unlocked_velocity_indices_per_tree[1].size(), 1);
+    EXPECT_EQ(locked_velocity_indices_per_tree[0].size(), 0);
+    EXPECT_EQ(locked_velocity_indices_per_tree[1].size(), 6);
+
+    const std::vector<int>& expected_unlocked_velocity_indices = {
         body1_body2.velocity_start(), world_body3.velocity_start(),
         body3_body4.velocity_start()};
+    const std::vector<int>& expected_locked_velocity_indices = {
+        body1_velocity_start,     body1_velocity_start + 1,
+        body1_velocity_start + 2, body1_velocity_start + 3,
+        body1_velocity_start + 4, body1_velocity_start + 5};
 
-    EXPECT_THAT(unlocked_indices,
-                testing::UnorderedElementsAreArray(expected_unlocked_indices));
+    EXPECT_THAT(
+        unlocked_velocity_indices,
+        testing::UnorderedElementsAreArray(expected_unlocked_velocity_indices));
+    EXPECT_THAT(
+        locked_velocity_indices,
+        testing::UnorderedElementsAreArray(expected_locked_velocity_indices));
+
+    const std::vector<std::vector<int>>
+        expected_unlocked_velocity_indices_per_tree = {{0, 1}, {6}};
+    const std::vector<std::vector<int>>
+        expected_locked_velocity_indices_per_tree = {{}, {0, 1, 2, 3, 4, 5}};
+
+    for (int i = 0; i < 2; ++i) {
+      EXPECT_THAT(unlocked_velocity_indices_per_tree[i],
+                  testing::UnorderedElementsAreArray(
+                      expected_unlocked_velocity_indices_per_tree[i]));
+      EXPECT_THAT(locked_velocity_indices_per_tree[i],
+                  testing::UnorderedElementsAreArray(
+                      expected_locked_velocity_indices_per_tree[i]));
+    }
   }
 }
 
 INSTANTIATE_TEST_SUITE_P(IndexPermutations, JointLockingTest,
                          ::testing::Values(0, 1));
 
-// Create a plant with a XZ-planar double pendulum where the masses are
-// concentrated at the lower ends of the two links. The 0-configuration has the
-// upper arm sticking out horizontally at (-kArmLength, 0, 0) and the lower
-// arm placed at (-kArmLength, 0, 0.0) relative to the upper arm's frame. If the
-// `weld_elbow` parameter is true, then the revolute joint between bodies
-// `upper_arm` and `lower_arm` is replaced with a fixed weld corresponding to
-// the configuration (0, kElbowPosition) in the model with two joints.
-std::unique_ptr<MultibodyPlant<double>> MakeDoublePendulumPlant(
-    bool weld_elbow) {
-  std::unique_ptr<MultibodyPlant<double>> plant;
-  plant = std::make_unique<MultibodyPlant<double>>(kTimestep);
+struct TrajectoryTestConfig {
+  DiscreteContactSolver solver{DiscreteContactSolver::kTamsi};
+};
 
-  const RigidBody<double>& body1 =
-      plant->AddRigidBody("upper_arm", SpatialInertia<double>::MakeUnitary());
-  const RigidBody<double>& body2 =
-      plant->AddRigidBody("lower_arm", SpatialInertia<double>::MakeUnitary());
-
-  plant->AddJoint<RevoluteJoint>("shoulder", plant->world_body(), {}, body1,
-                                 RigidTransformd(Vector3d(kArmLength, 0, 0)),
-                                 Vector3d::UnitY());
-
-  if (weld_elbow) {
-    plant->WeldFrames(
-        body1.body_frame(), body2.body_frame(),
-        RigidTransformd(Vector3d(-kArmLength * cos(kElbowPosition), 0.0,
-                                  kArmLength * sin(kElbowPosition))));
-  } else {
-    plant->AddJoint<RevoluteJoint>(
-        "elbow", body1, {}, body2,
-        RigidTransformd(Vector3d(kArmLength, 0, 0.0)), Vector3d::UnitY());
-  }
-  plant->Finalize();
-  return plant;
+std::ostream& operator<<(std::ostream& out, const TrajectoryTestConfig& c) {
+  return out << internal::GetStringFromDiscreteContactSolver(c.solver);
 }
+
+// Fixture to construct two plants. Each containing a single double pendulum.
+// One of the plants will have a weld joint at the elbow joint to lock its
+// position, while the other will have a revolute joint, locked using the joint
+// locking APIs.
+class TrajectoryTest : public ::testing::TestWithParam<TrajectoryTestConfig> {
+ public:
+  void SetUp() {
+    TrajectoryTestConfig config = GetParam();
+    plant_welded_ = MakeDoublePendulumPlant(true, config.solver);
+    plant_locked_ = MakeDoublePendulumPlant(false, config.solver);
+  }
+
+  // Create a plant with a XZ-planar double pendulum where the masses are
+  // concentrated at the lower ends of the two links. The 0-configuration has
+  // the upper arm sticking out horizontally at (-kArmLength, 0, 0) and the
+  // lower arm placed at (-kArmLength, 0, 0.0) relative to the upper arm's
+  // frame. If the `weld_elbow` parameter is true, then the revolute joint
+  // between bodies `upper_arm` and `lower_arm` is replaced with a fixed weld
+  // corresponding to the configuration (0, kElbowPosition) in the model with
+  // two joints.
+  std::unique_ptr<MultibodyPlant<double>> MakeDoublePendulumPlant(
+      bool weld_elbow, DiscreteContactSolver solver) {
+    std::unique_ptr<MultibodyPlant<double>> plant;
+    plant = std::make_unique<MultibodyPlant<double>>(kTimestep);
+    plant->set_discrete_contact_solver(solver);
+
+    const RigidBody<double>& body1 =
+        plant->AddRigidBody("upper_arm", SpatialInertia<double>::MakeUnitary());
+    const RigidBody<double>& body2 =
+        plant->AddRigidBody("lower_arm", SpatialInertia<double>::MakeUnitary());
+
+    plant->AddJoint<RevoluteJoint>("shoulder", plant->world_body(), {}, body1,
+                                   RigidTransformd(Vector3d(kArmLength, 0, 0)),
+                                   Vector3d::UnitY());
+
+    if (weld_elbow) {
+      plant->WeldFrames(
+          body1.body_frame(), body2.body_frame(),
+          RigidTransformd(Vector3d(-kArmLength * cos(kElbowPosition), 0.0,
+                                   kArmLength * sin(kElbowPosition))));
+    } else {
+      plant->AddJoint<RevoluteJoint>(
+          "elbow", body1, {}, body2,
+          RigidTransformd(Vector3d(kArmLength, 0, 0.0)), Vector3d::UnitY());
+    }
+    plant->Finalize();
+    return plant;
+  }
+
+ protected:
+  std::unique_ptr<MultibodyPlant<double>> plant_welded_{nullptr};
+  std::unique_ptr<MultibodyPlant<double>> plant_locked_{nullptr};
+};
 
 // To verify that the physical behavior of a locked joint is identical to a weld
 // joint, we construct two plants. Each plant consists of a double pendulum with
-// the shoulder welded to the world. The elbow joint of `plant_welded` is
+// the shoulder welded to the world. The elbow joint of `plant_welded_` is
 // replaced with a WeldJoint fixed at configuration (0, kElbowPosition). The
-// elbow joint of `plant_locked` is a revolute joint that has been locked at the
-// configuration (0, kElbowPosition). We verify that the generalized
+// elbow joint of `plant_locked_` is a revolute joint that has been locked at
+// the configuration (0, kElbowPosition). We verify that the generalized
 // accelerations, velocities and positions match to a given accuracy at each
-// timestep.
-GTEST_TEST(JointLockingTest, TrajectoryTest) {
+// time step.
+TEST_P(TrajectoryTest, CompareWeldAndLocked) {
   // Allow 2 digits of precision loss to account for roundoff differences
   // between the two code paths. This value was determined empircally by
   // observing the maximum error between the two trajectories.
   const double kEps = 1e2 * std::numeric_limits<double>::epsilon();
-  const int kNumTimesteps = 100;
-  auto plant_welded = MakeDoublePendulumPlant(true);
-  auto plant_locked = MakeDoublePendulumPlant(false);
+  const int kNumTimesteps = 10;
 
   std::unique_ptr<systems::Context<double>> context_welded =
-      plant_welded->CreateDefaultContext();
+      plant_welded_->CreateDefaultContext();
   std::unique_ptr<systems::Context<double>> context_locked =
-      plant_locked->CreateDefaultContext();
+      plant_locked_->CreateDefaultContext();
 
   // Lock the elbow in the unwelded plant.
   const RevoluteJoint<double>& elbow =
-      plant_locked->GetJointByName<RevoluteJoint>("elbow");
+      plant_locked_->GetJointByName<RevoluteJoint>("elbow");
   elbow.set_angle(context_locked.get(), kElbowPosition);
   elbow.Lock(context_locked.get());
 
   // Sanity check.
-  ASSERT_EQ(plant_welded->num_velocities(), 1);
-  ASSERT_EQ(plant_locked->num_velocities(), 2);
+  ASSERT_EQ(plant_welded_->num_velocities(), 1);
+  ASSERT_EQ(plant_locked_->num_velocities(), 2);
 
   auto simulator_welded = std::make_unique<Simulator<double>>(
-      *plant_welded, std::move(context_welded));
+      *plant_welded_, std::move(context_welded));
   auto simulator_locked = std::make_unique<Simulator<double>>(
-      *plant_locked, std::move(context_locked));
+      *plant_locked_, std::move(context_locked));
   simulator_welded->Initialize();
   simulator_locked->Initialize();
 
@@ -259,43 +397,43 @@ GTEST_TEST(JointLockingTest, TrajectoryTest) {
     simulator_locked->AdvanceTo(i * kTimestep);
 
     const auto& welded_context =
-        plant_welded->GetMyContextFromRoot(simulator_welded->get_context());
+        plant_welded_->GetMyContextFromRoot(simulator_welded->get_context());
     const auto& locked_context =
-        plant_locked->GetMyContextFromRoot(simulator_locked->get_context());
+        plant_locked_->GetMyContextFromRoot(simulator_locked->get_context());
 
     int shoulder_index_welded =
-        plant_welded->GetJointByName<RevoluteJoint>("shoulder")
+        plant_welded_->GetJointByName<RevoluteJoint>("shoulder")
             .velocity_start();
     int shoulder_index_locked =
-        plant_locked->GetJointByName<RevoluteJoint>("shoulder")
+        plant_locked_->GetJointByName<RevoluteJoint>("shoulder")
             .velocity_start();
 
     // The welded plant has only one dof, shoulder. The acceleration of each
     // plant at the corresponding dof should match.
     const auto welded_accelerations =
-        plant_welded->get_generalized_acceleration_output_port().Eval(
+        plant_welded_->get_generalized_acceleration_output_port().Eval(
             welded_context);
     const auto locked_accelerations =
-        plant_locked->get_generalized_acceleration_output_port().Eval(
+        plant_locked_->get_generalized_acceleration_output_port().Eval(
             locked_context);
     EXPECT_NEAR(welded_accelerations[shoulder_index_welded],
                 locked_accelerations[shoulder_index_locked], kEps);
     // The locked elbow dof should have 0 acceleration.
     int elbow_index_locked =
-        plant_locked->GetJointByName<RevoluteJoint>("elbow").velocity_start();
+        plant_locked_->GetJointByName<RevoluteJoint>("elbow").velocity_start();
     EXPECT_EQ(locked_accelerations[elbow_index_locked], 0);
 
     // Check that the velocities and positions of corresponding dofs match.
     Eigen::VectorBlock<const VectorX<double>> welded_positions_and_velocities =
-        plant_welded->GetPositionsAndVelocities(welded_context);
+        plant_welded_->GetPositionsAndVelocities(welded_context);
     Eigen::VectorBlock<const VectorX<double>> locked_positions_and_velocities =
-        plant_locked->GetPositionsAndVelocities(locked_context);
+        plant_locked_->GetPositionsAndVelocities(locked_context);
 
     EXPECT_NEAR(welded_positions_and_velocities[shoulder_index_welded],
                 locked_positions_and_velocities[shoulder_index_locked], kEps);
-    EXPECT_NEAR(welded_positions_and_velocities[plant_welded->num_positions() +
+    EXPECT_NEAR(welded_positions_and_velocities[plant_welded_->num_positions() +
                                                 shoulder_index_welded],
-                locked_positions_and_velocities[plant_locked->num_positions() +
+                locked_positions_and_velocities[plant_locked_->num_positions() +
                                                 shoulder_index_locked],
                 kEps);
 
@@ -303,11 +441,181 @@ GTEST_TEST(JointLockingTest, TrajectoryTest) {
     // Velocity of the locked joint should be identically 0.
     EXPECT_EQ(locked_positions_and_velocities[elbow_index_locked],
               kElbowPosition);
-    EXPECT_EQ(locked_positions_and_velocities[plant_locked->num_positions() +
+    EXPECT_EQ(locked_positions_and_velocities[plant_locked_->num_positions() +
                                               elbow_index_locked],
               0);
   }
 }
+
+// Test joint locking with TAMSI and SAP.
+std::vector<TrajectoryTestConfig> MakeTrajectoryTestCases() {
+  return std::vector<TrajectoryTestConfig>{
+      {.solver = DiscreteContactSolver::kTamsi},
+      {.solver = DiscreteContactSolver::kSap},
+  };
+}
+
+INSTANTIATE_TEST_SUITE_P(JointLockingTests, TrajectoryTest,
+                         testing::ValuesIn(MakeTrajectoryTestCases()),
+                         testing::PrintToStringParamName());
+
+struct FilteredContactResultsConfig {
+  ContactModel contact_model{ContactModel::kPoint};
+  DiscreteContactSolver solver{DiscreteContactSolver::kTamsi};
+};
+
+std::ostream& operator<<(std::ostream& out,
+                         const FilteredContactResultsConfig& c) {
+  return out << internal::GetStringFromContactModel(c.contact_model) << "_"
+             << internal::GetStringFromDiscreteContactSolver(c.solver);
+}
+
+// Utility testing class to construct a plant with two stacked spheres in
+// contact with the contact model specified in the parameter.
+class FilteredContactResultsTest
+    : public ::testing::TestWithParam<FilteredContactResultsConfig> {
+ public:
+  void SetUp() {
+    FilteredContactResultsConfig config = GetParam();
+
+    systems::DiagramBuilder<double> builder;
+    plant_ = &AddMultibodyPlantSceneGraph(&builder, 0.01 /* time_step */).plant;
+    plant_->set_contact_model(config.contact_model);
+    plant_->set_discrete_contact_solver(config.solver);
+
+    const RigidBody<double>& ball_A = AddBall("ball_A");
+    const RigidBody<double>& ball_B = AddBall("ball_B");
+
+    // Position ball B above ball A in z such that they are in contact.
+    const math::RigidTransformd X_WA{};
+    const math::RigidTransformd X_WB{Vector3d{0, 0, radius_}};
+
+    plant_->SetDefaultFreeBodyPose(ball_A, X_WA);
+    plant_->SetDefaultFreeBodyPose(ball_B, X_WB);
+
+    plant_->Finalize();
+    diagram_ = builder.Build();
+  }
+
+  const RigidBody<double>& AddBall(const std::string& name) {
+    SpatialInertia<double> M_BBcm =
+        SpatialInertia<double>::SolidSphereWithMass(mass_, radius_);
+    const RigidBody<double>& ball = plant_->AddRigidBody(name, M_BBcm);
+
+    // Add sphere geometry for the ball.
+    // Pose of sphere geometry S in body frame B.
+    const RigidTransformd X_BS = RigidTransformd::Identity();
+    // Set material properties.
+    geometry::ProximityProperties ball_props;
+    geometry::AddContactMaterial(
+        1e-4 /* dissipation */, {} /* point stiffness */,
+        CoulombFriction<double>{1.0, 1.0} /* friction */, &ball_props);
+
+    // N.B. these properties go unused if the contact model is kPoint.
+    geometry::AddCompliantHydroelasticProperties(
+        0.5 * radius_, hydroelastic_modulus_, &ball_props);
+
+    plant_->RegisterCollisionGeometry(ball, X_BS, geometry::Sphere(radius_),
+                                      "collision", std::move(ball_props));
+
+    // Add visual for the ball.
+    const Vector4<double> red(1.0, 0.0, 0.0, 1.0);
+    plant_->RegisterVisualGeometry(ball, X_BS, geometry::Sphere(radius_),
+                                   "visual", red);
+    return ball;
+  }
+
+ protected:
+  const double mass_{1.0};
+  const double radius_{1.0};
+  const double hydroelastic_modulus_{1e5};
+  MultibodyPlant<double>* plant_;
+  std::unique_ptr<systems::Diagram<double>> diagram_{};
+};
+
+// Test that contact results are properly reported. MultibodyPlant will not
+// report contact results between bodies that are either anchored or with all of
+// their dofs locked.
+TEST_P(FilteredContactResultsTest, VerifyLockedResults) {
+  // Create a context for this system:
+  std::unique_ptr<systems::Context<double>> diagram_context =
+      diagram_->CreateDefaultContext();
+  systems::Context<double>& context =
+      diagram_->GetMutableSubsystemContext(*plant_, diagram_context.get());
+
+  FilteredContactResultsConfig config = GetParam();
+
+  // Both spheres unlocked, expect a single contact result.
+  {
+    const ContactResults<double>& results =
+        plant_->get_contact_results_output_port().Eval<ContactResults<double>>(
+            context);
+
+    if (config.contact_model == ContactModel::kPoint) {
+      EXPECT_EQ(results.num_point_pair_contacts(), 1);
+      EXPECT_EQ(results.num_hydroelastic_contacts(), 0);
+    } else {
+      EXPECT_EQ(results.num_point_pair_contacts(), 0);
+      EXPECT_GT(results.num_hydroelastic_contacts(), 0);
+    }
+  }
+
+  // One body of the pair is locked, expect a single contact result.
+  {
+    plant_->GetBodyByName("ball_A").Lock(&context);
+    // Both spheres unlocked, should expect a single contact result.
+    const ContactResults<double>& results =
+        plant_->get_contact_results_output_port().Eval<ContactResults<double>>(
+            context);
+
+    if (config.contact_model == ContactModel::kPoint) {
+      EXPECT_EQ(results.num_point_pair_contacts(), 1);
+      EXPECT_EQ(results.num_hydroelastic_contacts(), 0);
+    } else {
+      EXPECT_EQ(results.num_point_pair_contacts(), 0);
+      EXPECT_GT(results.num_hydroelastic_contacts(), 0);
+    }
+  }
+
+  // Both spheres locked, expect no contact result for the pair.
+  {
+    plant_->GetBodyByName("ball_A").Lock(&context);
+    plant_->GetBodyByName("ball_B").Lock(&context);
+
+    // Both spheres unlocked, should expect a single contact result.
+    const ContactResults<double>& results =
+        plant_->get_contact_results_output_port().Eval<ContactResults<double>>(
+            context);
+
+    if (config.contact_model == ContactModel::kPoint) {
+      EXPECT_EQ(results.num_point_pair_contacts(), 0);
+      EXPECT_EQ(results.num_hydroelastic_contacts(), 0);
+    } else {
+      EXPECT_EQ(results.num_point_pair_contacts(), 0);
+      EXPECT_EQ(results.num_hydroelastic_contacts(), 0);
+    }
+  }
+}
+
+// Test filtering with both point and hydroelastic geometries.
+std::vector<FilteredContactResultsConfig>
+MakeFilteredContactResultsTestCases() {
+  return std::vector<FilteredContactResultsConfig>{
+      {.contact_model = ContactModel::kPoint,
+       .solver = DiscreteContactSolver::kTamsi},
+      {.contact_model = ContactModel::kHydroelastic,
+       .solver = DiscreteContactSolver::kTamsi},
+      {.contact_model = ContactModel::kPoint,
+       .solver = DiscreteContactSolver::kSap},
+      {.contact_model = ContactModel::kHydroelastic,
+       .solver = DiscreteContactSolver::kSap},
+  };
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    JointLockingTests, FilteredContactResultsTest,
+    testing::ValuesIn(MakeFilteredContactResultsTestCases()),
+    testing::PrintToStringParamName());
 }  // namespace
 }  // namespace multibody
 }  // namespace drake

@@ -3,7 +3,6 @@
 #include <functional>
 #include <vector>
 
-#include "drake/common/drake_deprecated.h"
 #include "drake/systems/controllers/zmp_planner.h"
 
 namespace drake {
@@ -31,9 +30,6 @@ struct ZmpTestTraj {
   Eigen::Matrix<double, 2, Eigen::Dynamic> cop;
 };
 
-using ZMPTestTraj DRAKE_DEPRECATED("2023-06-01",
-                                   "Use ZmpTestTraj instead") = ZmpTestTraj;
-
 /**
  * Forward simulation using the linear policy from `zmp_planner` starting from
  * the initial condition `x0` using explicit Euler integration.
@@ -48,11 +44,6 @@ using ZMPTestTraj DRAKE_DEPRECATED("2023-06-01",
 ZmpTestTraj SimulateZmpPolicy(const ZmpPlanner& zmp_planner,
                               const Eigen::Vector4d& x0, double dt,
                               double extra_time_at_the_end);
-
-DRAKE_DEPRECATED("2023-06-01", "Use SimulateZmpPolicy instead")
-extern const std::function<ZmpTestTraj(const ZmpPlanner&,
-                                       const Eigen::Vector4d&, double, double)>
-    SimulateZMPPolicy;
 
 /**
  * Generates desired ZMP trajectories as piecewise polynomials given the
@@ -76,12 +67,6 @@ extern const std::function<ZmpTestTraj(const ZmpPlanner&,
 std::vector<trajectories::PiecewisePolynomial<double>> GenerateDesiredZmpTrajs(
     const std::vector<Eigen::Vector2d>& footsteps,
     double double_support_duration, double single_support_duration);
-
-DRAKE_DEPRECATED("2023-06-01", "Use GenerateDesiredZmpTrajs instead")
-extern const std::function<
-    std::vector<trajectories::PiecewisePolynomial<double>>(
-        const std::vector<Eigen::Vector2d>&, double, double)>
-    GenerateDesiredZMPTrajs;
 
 }  // namespace controllers
 }  // namespace systems

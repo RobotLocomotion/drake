@@ -297,6 +297,11 @@ GTEST_TEST(PackageMapTest, TestPopulateFromXml) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       package_map.AddPackageXml(conflicting_xml_filename),
       ".*paths are not eq.*");
+
+  // Adding the same filesystem-canonical package.xml twice is not an error.
+  fs::create_directory("alternative_package_a");
+  fs::create_symlink(xml_filename, "alternative_package_a/package.xml");
+  package_map.Add("package_map_test_package_a", "alternative_package_a");
 }
 
 // Tests that PackageMap can be populated by crawling down a directory tree.

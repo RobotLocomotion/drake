@@ -4,6 +4,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/contact_solvers/sap/sap_contact_problem.h"
 #include "drake/multibody/contact_solvers/sap/sap_holonomic_constraint.h"
@@ -69,13 +70,11 @@ class TwoBodiesTest : public ::testing::TestWithParam<TestConfig> {
     // problem.
     const double mass = 1.5;
     const double radius = 0.1;
-    const SpatialInertia<double> M_Bo =
-        SpatialInertia<double>::MakeFromCentralInertia(
-            mass, Vector3d::Zero(),
-            UnitInertia<double>::SolidSphere(radius) * mass);
+    const SpatialInertia<double> M_BBcm =
+        SpatialInertia<double>::SolidSphereWithMass(mass, radius);
 
-    bodyA_ = &plant_.AddRigidBody("A", M_Bo);
-    bodyB_ = &plant_.AddRigidBody("B", M_Bo);
+    bodyA_ = &plant_.AddRigidBody("A", M_BBcm);
+    bodyB_ = &plant_.AddRigidBody("B", M_BBcm);
     if (anchor_bodyA) {
       plant_.WeldFrames(plant_.world_frame(), bodyA_->body_frame());
     }
@@ -197,17 +196,19 @@ TEST_P(TwoBodiesTest, ConfirmConstraintProperties) {
     // velocities first, followed by translational velocities (and the
     // relative positions of the bodies).
     if (expected_num_cliques == 1) {
-      const MatrixXd& J = constraint->first_clique_jacobian();
+      const MatrixXd& J = constraint->first_clique_jacobian().MakeDenseMatrix();
       const MatrixXd J_expected =
           (MatrixXd(1, 6) << 0, 0, 0, 1, 0, 0).finished();
       EXPECT_TRUE(CompareMatrices(J, J_expected));
     } else {
-      const MatrixXd& Ja = constraint->first_clique_jacobian();
+      const MatrixXd& Ja =
+          constraint->first_clique_jacobian().MakeDenseMatrix();
       const MatrixXd Ja_expected =
           (MatrixXd(1, 6) << 0, 0, 0, -1, 0, 0).finished();
       EXPECT_TRUE(CompareMatrices(Ja, Ja_expected));
 
-      const MatrixXd& Jb = constraint->second_clique_jacobian();
+      const MatrixXd& Jb =
+          constraint->second_clique_jacobian().MakeDenseMatrix();
       const MatrixXd Jb_expected =
           (MatrixXd(1, 6) << 0, 0, 0, 1, 0, 0).finished();
       EXPECT_TRUE(CompareMatrices(Jb, Jb_expected));
@@ -236,10 +237,110 @@ INSTANTIATE_TEST_SUITE_P(
     testing::ValuesIn(MakeTestCases()),
     testing::PrintToStringParamName());
 
+GTEST_TEST(DistanceConstraintsTests, VerifyIdMapping) {
+  MultibodyPlant<double> plant{0.1};
+  plant.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  const RigidBody<double>& bodyA =
+      plant.AddRigidBody("A", SpatialInertia<double>{});
+  const RigidBody<double>& bodyB =
+      plant.AddRigidBody("B", SpatialInertia<double>{});
+  const Vector3d p_AP(1, 2, 3);
+  const Vector3d p_BQ(4, 5, 6);
+  const double distance = 1.2;
+  MultibodyConstraintId distance_id =
+      plant.AddDistanceConstraint(bodyA, p_AP, bodyB, p_BQ, distance);
+  const DistanceConstraintSpec& distance_spec =
+      plant.get_distance_constraint_specs(distance_id);
+  EXPECT_EQ(distance_spec.id, distance_id);
+  EXPECT_EQ(distance_spec.body_A, bodyA.index());
+  EXPECT_EQ(distance_spec.body_B, bodyB.index());
+  EXPECT_EQ(distance_spec.p_AP, p_AP);
+  EXPECT_EQ(distance_spec.p_BQ, p_BQ);
+  EXPECT_EQ(distance_spec.distance, distance);
+
+  // Throw on id to wrong constraint specs type.
+  EXPECT_THROW(plant.get_coupler_constraint_specs(distance_id), std::exception);
+  EXPECT_THROW(plant.get_ball_constraint_specs(distance_id), std::exception);
+}
+
+GTEST_TEST(DistanceConstraintTests, FailOnTAMSI) {
+  MultibodyPlant<double> plant{0.1};
+  plant.set_discrete_contact_solver(DiscreteContactSolver::kTamsi);
+  const RigidBody<double>& bodyA =
+      plant.AddRigidBody("A", SpatialInertia<double>{});
+  const RigidBody<double>& bodyB =
+      plant.AddRigidBody("B", SpatialInertia<double>{});
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.AddDistanceConstraint(bodyA, Vector3d{0, 0, 0}, bodyB,
+                                  Vector3d{0, 0, 0}, 1 /* distance */),
+      ".*TAMSI does not support distance constraints.*");
+}
+
+GTEST_TEST(DistanceConstraintTests, FailOnContinuous) {
+  MultibodyPlant<double> plant{0.0};
+  const RigidBody<double>& bodyA =
+      plant.AddRigidBody("A", SpatialInertia<double>{});
+  const RigidBody<double>& bodyB =
+      plant.AddRigidBody("B", SpatialInertia<double>{});
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.AddDistanceConstraint(bodyA, Vector3d{0, 0, 0}, bodyB,
+                                  Vector3d{0, 0, 0}, 1 /* distance */),
+      ".*Currently distance constraints are only supported for discrete "
+      "MultibodyPlant models.*");
+}
+
+GTEST_TEST(DistanceConstraintTests, FailOnFinalized) {
+  MultibodyPlant<double> plant{0.1};
+  plant.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  const RigidBody<double>& bodyA =
+      plant.AddRigidBody("A", SpatialInertia<double>{});
+  const RigidBody<double>& bodyB =
+      plant.AddRigidBody("B", SpatialInertia<double>{});
+  plant.Finalize();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.AddDistanceConstraint(bodyA, Vector3d{0, 0, 0}, bodyB,
+                                  Vector3d{0, 0, 0}, 1 /* distance */),
+      ".*Post-finalize calls to 'AddDistanceConstraint\\(\\)' are not "
+      "allowed.*");
+}
+
+GTEST_TEST(DistanceConstraintTests, FailOnInvalidSpecs) {
+  MultibodyPlant<double> plant{0.1};
+  plant.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  const RigidBody<double>& bodyA =
+      plant.AddRigidBody("A", SpatialInertia<double>{});
+  const RigidBody<double>& bodyB =
+      plant.AddRigidBody("B", SpatialInertia<double>{});
+  // Fail on same body.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.AddDistanceConstraint(bodyA, Vector3d{0, 0, 0}, bodyA,
+                                  Vector3d{0, 0, 0}, 1 /* distance */),
+      ".*Invalid set of parameters for constraint between bodies 'A' and "
+      "'A'.*");
+  // Fail on distance <= 0.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.AddDistanceConstraint(bodyA, Vector3d{0, 0, 0}, bodyB,
+                                  Vector3d{0, 0, 0}, 0 /* distance */),
+      ".*Invalid set of parameters for constraint between bodies 'A' and "
+      "'B'.*");
+  // Fail on negative stiffness.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.AddDistanceConstraint(bodyA, Vector3d{0, 0, 0}, bodyB,
+                                  Vector3d{0, 0, 0}, 1 /* distance */,
+                                  -1 /* stiffness */),
+      ".*Invalid set of parameters for constraint between bodies 'A' and "
+      "'B'.*");
+  // Fail on negative damping.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.AddDistanceConstraint(bodyA, Vector3d{0, 0, 0}, bodyB,
+                                  Vector3d{0, 0, 0}, 1 /* distance */,
+                                  0 /* stiffness */, -1 /* damping */),
+      ".*Invalid set of parameters for constraint between bodies 'A' and "
+      "'B'.*");
+}
+
 // TODO(amcastro-tri): implement unit tests verifying:
 //  - unreasonably small distance between the points
-//  - attempt to use distance constraint with continuous system or TAMSI
-//  - illegal values for distance, stiffness, or damping
 
 }  // namespace internal
 }  // namespace multibody

@@ -27,6 +27,9 @@ class FemStateSystem : public systems::LeafSystem<T> {
 
   /* Returns the discrete state index. */
   systems::DiscreteStateIndex fem_position_index() const { return q_index_; }
+  systems::DiscreteStateIndex fem_previous_step_position_index() const {
+    return q0_index_;
+  }
   systems::DiscreteStateIndex fem_velocity_index() const { return v_index_; }
   systems::DiscreteStateIndex fem_acceleration_index() const {
     return a_index_;
@@ -37,6 +40,7 @@ class FemStateSystem : public systems::LeafSystem<T> {
 
  private:
   systems::DiscreteStateIndex q_index_;
+  systems::DiscreteStateIndex q0_index_;
   systems::DiscreteStateIndex v_index_;
   systems::DiscreteStateIndex a_index_;
   int num_dofs_{0};

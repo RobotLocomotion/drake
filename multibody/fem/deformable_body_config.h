@@ -11,12 +11,20 @@ namespace fem {
 
 /** Types of material models for the deformable body. */
 enum class MaterialModel {
-  /** Corotational model. Recommended for modeling large deformations. More
-   computationally expensive than the linear elasticity model. */
+  /** Linear corotational model as described in [Han et al., 2023]. It provides
+   a combination of accuracy, robustness, and speed. Recommended in most
+   scenarios.
+   [Han et al., 2023] Han, Xuchen, Joseph Masterjohn, and Alejandro Castro. "A
+   Convex Formulation of Frictional Contact between Rigid and Deformable
+   Bodies." arXiv preprint arXiv:2303.08912 (2023). */
+  kLinearCorotated,
+  /** Corotational model. More computationally expensive and less robust than
+   the linear corotational model. May require smaller time steps. Recommended
+   when capturing large rotation velocity is important. */
   kCorotated,
-  /** Linear elasticity model. Recommended for modeling small deformations.
-   Less computationally expensive than non-linear models but is inaccurate
-   for large deformations. */
+  /** Linear elasticity model (rarely used).
+   Less computationally expensive than other models but leads to artifacts
+   when large rotational deformations occur. */
   kLinear,
 };
 
@@ -108,7 +116,7 @@ class DeformableBodyConfig {
   T mass_damping_coefficient_{0};
   T stiffness_damping_coefficient_{0};
   T mass_density_{1.5e3};
-  MaterialModel material_model_{MaterialModel::kCorotated};
+  MaterialModel material_model_{MaterialModel::kLinearCorotated};
 };
 
 }  // namespace fem

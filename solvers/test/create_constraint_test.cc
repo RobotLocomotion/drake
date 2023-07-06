@@ -15,6 +15,10 @@ namespace drake {
 namespace solvers {
 namespace {
 
+using Eigen::Vector2d;
+
+const double kInf = std::numeric_limits<double>::infinity();
+
 void CheckParseQuadraticConstraint(
     const Expression& e, double lb, double ub,
     std::optional<QuadraticConstraint::HessianType> hessian_type,
@@ -23,9 +27,8 @@ void CheckParseQuadraticConstraint(
       internal::ParseQuadraticConstraint(e, lb, ub, hessian_type);
 
   const Expression binding_expression{
-      0.5 *
-          binding.variables().dot(binding.evaluator()->Q() *
-                                  binding.variables()) +
+      0.5 * binding.variables().dot(binding.evaluator()->Q() *
+                                    binding.variables()) +
       binding.evaluator()->b().dot(binding.variables())};
   if (!std::isinf(lb)) {
     EXPECT_TRUE(symbolic::test::PolynomialEqual(
@@ -50,9 +53,7 @@ void CheckParseQuadraticConstraint(
 
 class ParseQuadraticConstraintTest : public ::testing::Test {
  public:
-  ParseQuadraticConstraintTest() {
-    x_ << x0_, x1_;
-  }
+  ParseQuadraticConstraintTest() { x_ << x0_, x1_; }
 
  protected:
   symbolic::Variable x0_{"x0"};
@@ -61,7 +62,6 @@ class ParseQuadraticConstraintTest : public ::testing::Test {
 };
 
 TEST_F(ParseQuadraticConstraintTest, Test0) {
-  const double kInf = std::numeric_limits<double>::infinity();
   CheckParseQuadraticConstraint(
       x0_ * x0_, 1, 1, QuadraticConstraint::HessianType::kPositiveSemidefinite,
       QuadraticConstraint::HessianType::kPositiveSemidefinite);
@@ -118,27 +118,27 @@ void CheckParseRotatedLorentzConeConstraint(
   const Eigen::VectorXd b = binding.evaluator()->b();
   const VectorX<Expression> z = A * binding.variables() + b;
   for (int i = 0; i < z.rows(); ++i) {
-    EXPECT_TRUE(symbolic::test::PolynomialEqual(symbolic::Polynomial(z(i)),
-                                    symbolic::Polynomial(v(i)), 1E-10));
+    EXPECT_TRUE(symbolic::test::PolynomialEqual(
+        symbolic::Polynomial(z(i)), symbolic::Polynomial(v(i)), 1E-10));
   }
 }
 
 void CheckParseRotatedLorentzConeConstraint(
     const Expression& linear_expression1, const Expression& linear_expression2,
-    const Expression& quadratic_expression) {
+    const Expression& quadratic_expression, const double tol = 0) {
   Binding<RotatedLorentzConeConstraint> binding =
       internal::ParseRotatedLorentzConeConstraint(
-          linear_expression1, linear_expression2, quadratic_expression);
+          linear_expression1, linear_expression2, quadratic_expression, tol);
   const Eigen::MatrixXd A = binding.evaluator()->A();
   const Eigen::VectorXd b = binding.evaluator()->b();
   const VectorX<Expression> z = A * binding.variables() + b;
   const double tol_check{1E-10};
-  EXPECT_TRUE(symbolic::test::PolynomialEqual(symbolic::Polynomial(z(0)),
-                                  symbolic::Polynomial(linear_expression1),
-                                  tol_check));
-  EXPECT_TRUE(symbolic::test::PolynomialEqual(symbolic::Polynomial(z(1)),
-                                  symbolic::Polynomial(linear_expression2),
-                                  tol_check));
+  EXPECT_TRUE(symbolic::test::PolynomialEqual(
+      symbolic::Polynomial(z(0)), symbolic::Polynomial(linear_expression1),
+      tol_check));
+  EXPECT_TRUE(symbolic::test::PolynomialEqual(
+      symbolic::Polynomial(z(1)), symbolic::Polynomial(linear_expression2),
+      tol_check));
   EXPECT_TRUE(symbolic::test::PolynomialEqual(
       symbolic::Polynomial(
           z.tail(z.rows() - 2).cast<Expression>().squaredNorm()),
@@ -277,7 +277,8 @@ TEST_F(ParseRotatedLorentzConeConstraintTest, Test2) {
   CheckParseRotatedLorentzConeConstraint(expression);
   CheckParseRotatedLorentzConeConstraint(
       expression(0), expression(1),
-      pow(x_(1) + x_(2), 2) + pow(x_(2) + 2 * x_(3) + 2, 2) + 5);
+      pow(x_(1) + x_(2), 2) + pow(x_(2) + 2 * x_(3) + 2, 2) + 5,
+      4 * std::numeric_limits<double>::epsilon());
 }
 
 TEST_F(ParseRotatedLorentzConeConstraintTest, Test3) {
@@ -310,19 +311,19 @@ class MaybeParseLinearConstraintTest : public ::testing::Test {
 
 TEST_F(MaybeParseLinearConstraintTest, TestBoundingBoxConstraint) {
   // Parse a bounding box constraint
-  auto check_bounding_box_constraint = [](
-      const Binding<Constraint>& constraint, double lower_expected,
-      double upper_expected, const symbolic::Variable& var) {
-    const Binding<BoundingBoxConstraint> bounding_box_constraint =
-        internal::BindingDynamicCast<BoundingBoxConstraint>(constraint);
-    EXPECT_EQ(bounding_box_constraint.variables().size(), 1);
-    EXPECT_EQ(bounding_box_constraint.variables()(0), var);
-    EXPECT_EQ(bounding_box_constraint.evaluator()->num_constraints(), 1);
-    EXPECT_EQ(bounding_box_constraint.evaluator()->lower_bound()(0),
-              lower_expected);
-    EXPECT_EQ(bounding_box_constraint.evaluator()->upper_bound()(0),
-              upper_expected);
-  };
+  auto check_bounding_box_constraint =
+      [](const Binding<Constraint>& constraint, double lower_expected,
+         double upper_expected, const symbolic::Variable& var) {
+        const Binding<BoundingBoxConstraint> bounding_box_constraint =
+            internal::BindingDynamicCast<BoundingBoxConstraint>(constraint);
+        EXPECT_EQ(bounding_box_constraint.variables().size(), 1);
+        EXPECT_EQ(bounding_box_constraint.variables()(0), var);
+        EXPECT_EQ(bounding_box_constraint.evaluator()->num_constraints(), 1);
+        EXPECT_EQ(bounding_box_constraint.evaluator()->lower_bound()(0),
+                  lower_expected);
+        EXPECT_EQ(bounding_box_constraint.evaluator()->upper_bound()(0),
+                  upper_expected);
+      };
 
   check_bounding_box_constraint(
       *(internal::MaybeParseLinearConstraint(x0_, 1, 2)), 1, 2, x0_);
@@ -346,23 +347,24 @@ TEST_F(MaybeParseLinearConstraintTest, TestBoundingBoxConstraint) {
 
 TEST_F(MaybeParseLinearConstraintTest, TestLinearEqualityConstraint) {
   // Parse linear equality constraint.
-  auto check_linear_equality_constraint = [](
-      const Binding<Constraint>& constraint,
-      const Eigen::Ref<const Eigen::RowVectorXd>& a,
-      const Eigen::Ref<const VectorX<symbolic::Variable>>& vars, double bound,
-      double tol = 1E-14) {
-    const Binding<LinearEqualityConstraint> linear_eq_constraint =
-        internal::BindingDynamicCast<LinearEqualityConstraint>(constraint);
-    if (vars.size() != 0) {
-      EXPECT_EQ(linear_eq_constraint.variables(), vars);
-    } else {
-      EXPECT_EQ(linear_eq_constraint.variables().size(), 0);
-    }
-    EXPECT_EQ(linear_eq_constraint.evaluator()->num_constraints(), 1);
-    EXPECT_TRUE(
-        CompareMatrices(linear_eq_constraint.evaluator()->GetDenseA(), a, tol));
-    EXPECT_NEAR(linear_eq_constraint.evaluator()->lower_bound()(0), bound, tol);
-  };
+  auto check_linear_equality_constraint =
+      [](const Binding<Constraint>& constraint,
+         const Eigen::Ref<const Eigen::RowVectorXd>& a,
+         const Eigen::Ref<const VectorX<symbolic::Variable>>& vars,
+         double bound, double tol = 1E-14) {
+        const Binding<LinearEqualityConstraint> linear_eq_constraint =
+            internal::BindingDynamicCast<LinearEqualityConstraint>(constraint);
+        if (vars.size() != 0) {
+          EXPECT_EQ(linear_eq_constraint.variables(), vars);
+        } else {
+          EXPECT_EQ(linear_eq_constraint.variables().size(), 0);
+        }
+        EXPECT_EQ(linear_eq_constraint.evaluator()->num_constraints(), 1);
+        EXPECT_TRUE(CompareMatrices(
+            linear_eq_constraint.evaluator()->GetDenseA(), a, tol));
+        EXPECT_NEAR(linear_eq_constraint.evaluator()->lower_bound()(0), bound,
+                    tol);
+      };
 
   // without a constant term in the expression.
   check_linear_equality_constraint(
@@ -382,24 +384,24 @@ TEST_F(MaybeParseLinearConstraintTest, TestLinearEqualityConstraint) {
 
 TEST_F(MaybeParseLinearConstraintTest, TestLinearConstraint) {
   // Parse linear inequality constraint.
-  auto check_linear_constraint = [](
-      const Binding<Constraint>& constraint,
-      const Eigen::Ref<const Eigen::RowVectorXd>& a,
-      const Eigen::Ref<const VectorX<symbolic::Variable>>& vars, double lb,
-      double ub, double tol = 1E-14) {
-    const Binding<LinearConstraint> linear_constraint =
-        internal::BindingDynamicCast<LinearConstraint>(constraint);
-    if (vars.size() != 0) {
-      EXPECT_EQ(linear_constraint.variables(), vars);
-    } else {
-      EXPECT_EQ(linear_constraint.variables().size(), 0);
-    }
-    EXPECT_EQ(linear_constraint.evaluator()->num_constraints(), 1);
-    EXPECT_TRUE(
-        CompareMatrices(linear_constraint.evaluator()->GetDenseA(), a, tol));
-    EXPECT_NEAR(linear_constraint.evaluator()->lower_bound()(0), lb, tol);
-    EXPECT_NEAR(linear_constraint.evaluator()->upper_bound()(0), ub, tol);
-  };
+  auto check_linear_constraint =
+      [](const Binding<Constraint>& constraint,
+         const Eigen::Ref<const Eigen::RowVectorXd>& a,
+         const Eigen::Ref<const VectorX<symbolic::Variable>>& vars, double lb,
+         double ub, double tol = 1E-14) {
+        const Binding<LinearConstraint> linear_constraint =
+            internal::BindingDynamicCast<LinearConstraint>(constraint);
+        if (vars.size() != 0) {
+          EXPECT_EQ(linear_constraint.variables(), vars);
+        } else {
+          EXPECT_EQ(linear_constraint.variables().size(), 0);
+        }
+        EXPECT_EQ(linear_constraint.evaluator()->num_constraints(), 1);
+        EXPECT_TRUE(CompareMatrices(linear_constraint.evaluator()->GetDenseA(),
+                                    a, tol));
+        EXPECT_NEAR(linear_constraint.evaluator()->lower_bound()(0), lb, tol);
+        EXPECT_NEAR(linear_constraint.evaluator()->upper_bound()(0), ub, tol);
+      };
 
   // without a constant term in the expression.
   check_linear_constraint(
@@ -511,6 +513,35 @@ GTEST_TEST(ParseConstraintTest, TrueFormula) {
   EXPECT_EQ(binding6.variables().rows(), 0);
 }
 
+// Confirm that ParseConstraint also parses the quadratic constraint.
+GTEST_TEST(ParseConstraintTest, Quadratic) {
+  symbolic::Variable x0("x0"), x1("x1");
+  Binding<Constraint> binding =
+      internal::ParseConstraint(-x0 * x0 + 2 * x1, -kInf, 3);
+  EXPECT_NE(dynamic_cast<QuadraticConstraint*>(binding.evaluator().get()),
+            nullptr);
+
+  // A vector of quadratic constraints is an ExpressionConstraint (not
+  // quadratic).
+  binding = internal::ParseConstraint(
+      Vector2<Expression>(x0 * x0 + 2 * x1, x1 * x1), Vector2d::Constant(-kInf),
+      Vector2d::Constant(3));
+  EXPECT_NE(dynamic_cast<ExpressionConstraint*>(binding.evaluator().get()),
+            nullptr);
+
+  // A scalar non-polynomial constraint is an ExpressionConstraint (not
+  // quadratic).
+  binding = internal::ParseConstraint(x0 * x0 + 2 * x1 + sin(x1), -kInf, 3);
+  EXPECT_NE(dynamic_cast<ExpressionConstraint*>(binding.evaluator().get()),
+            nullptr);
+
+  // A polynomial constraint of degree > 2 is an ExpressionConstraint (not
+  // quadratic).
+  binding = internal::ParseConstraint(x0 * x0 * x1 + 2 * x1, -kInf, 3);
+  EXPECT_NE(dynamic_cast<ExpressionConstraint*>(binding.evaluator().get()),
+            nullptr);
+}
+
 std::shared_ptr<RotatedLorentzConeConstraint>
 CheckParseQuadraticAsRotatedLorentzConeConstraint(
     const Eigen::Ref<const Eigen::MatrixXd>& Q,
@@ -528,13 +559,13 @@ CheckParseQuadraticAsRotatedLorentzConeConstraint(
   // Check the Hessian.
   EXPECT_TRUE(
       CompareMatrices(A_dense.bottomRows(A_dense.rows() - 2).transpose() *
-                      A_dense.bottomRows(A_dense.rows() - 2),
+                          A_dense.bottomRows(A_dense.rows() - 2),
                       0.25 * (Q + Q.transpose()), tol));
   // Check the linear coefficient.
   EXPECT_TRUE(
       CompareMatrices(2 * A_dense.bottomRows(A_dense.rows() - 2).transpose() *
-                      dut->b().tail(dut->b().rows() - 2) -
-                      A_dense.row(0).transpose(),
+                              dut->b().tail(dut->b().rows() - 2) -
+                          A_dense.row(0).transpose(),
                       b, tol));
   EXPECT_NEAR(dut->b().tail(dut->b().rows() - 2).squaredNorm() - dut->b()(0), c,
               tol);

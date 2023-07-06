@@ -5,7 +5,6 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/is_cloneable.h"
 #include "drake/lcm/lcmt_drake_signal_utils.h"
 #include "drake/lcmt_drake_signal.hpp"
 
@@ -43,13 +42,6 @@ GTEST_TEST(SerializerTest, BasicTest) {
                    abstract_value.get());
   EXPECT_TRUE(CompareLcmtDrakeSignalMessages(
       abstract_value->get_value<lcmt_drake_signal>(), sample_data));
-
-  // Cloning works.
-  EXPECT_TRUE(is_cloneable<SerializerInterface>::value);
-  auto fresh = dut->Clone();
-  ASSERT_NE(fresh, nullptr);
-  auto fresh_value = fresh->CreateDefaultValue();
-  EXPECT_EQ(fresh_value->get_value<lcmt_drake_signal>().dim, 0);
 }
 
 }  // namespace

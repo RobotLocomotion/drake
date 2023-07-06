@@ -18,6 +18,7 @@ drake_cc_package_library(
         ":partial_permutation",
         ":sap_constraint",
         ":sap_constraint_bundle",
+        ":sap_constraint_jacobian",
         ":sap_contact_problem",
         ":sap_friction_cone_constraint",
         ":sap_holonomic_constraint",
@@ -53,8 +54,15 @@ drake_cc_library(
     srcs = ["sap_constraint.cc"],
     hdrs = ["sap_constraint.h"],
     deps = [
+        ":sap_constraint_jacobian",
         "//common:default_scalars",
         "//common:essential",
+        "//common:unused",
+        "//common:value",
+        "//multibody/contact_solvers:matrix_block",
+        "//multibody/contact_solvers/sap:partial_permutation",
+        "//multibody/math:spatial_algebra",
+        "//multibody/plant:slicing_and_indexing",
     ],
 )
 
@@ -72,14 +80,28 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "sap_constraint_jacobian",
+    srcs = ["sap_constraint_jacobian.cc"],
+    hdrs = ["sap_constraint_jacobian.h"],
+    deps = [
+        "//common:default_scalars",
+        "//common:essential",
+        "//multibody/contact_solvers:matrix_block",
+    ],
+)
+
+drake_cc_library(
     name = "sap_contact_problem",
     srcs = ["sap_contact_problem.cc"],
     hdrs = ["sap_contact_problem.h"],
     deps = [
         ":contact_problem_graph",
         ":sap_constraint",
+        ":sap_solver_results",
         "//common:default_scalars",
         "//common:essential",
+        "//multibody/contact_solvers:block_sparse_matrix",
+        "//multibody/plant:slicing_and_indexing",
     ],
 )
 
@@ -89,6 +111,7 @@ drake_cc_library(
     hdrs = ["sap_holonomic_constraint.h"],
     deps = [
         ":sap_constraint",
+        ":sap_constraint_jacobian",
         "//common:default_scalars",
         "//common:essential",
     ],
@@ -100,6 +123,7 @@ drake_cc_library(
     hdrs = ["sap_limit_constraint.h"],
     deps = [
         ":sap_constraint",
+        ":sap_constraint_jacobian",
         "//common:default_scalars",
         "//common:essential",
     ],
@@ -111,8 +135,10 @@ drake_cc_library(
     hdrs = ["sap_friction_cone_constraint.h"],
     deps = [
         ":sap_constraint",
+        ":sap_constraint_jacobian",
         "//common:default_scalars",
         "//common:essential",
+        "//multibody/contact_solvers:contact_configuration",
     ],
 )
 
@@ -145,6 +171,7 @@ drake_cc_library(
         "//common:essential",
         "//math:linear_solve",
         "//multibody/contact_solvers:block_sparse_matrix",
+        "//multibody/contact_solvers:conex_supernodal_solver",
         "//multibody/contact_solvers:newton_with_bisection",
         "//multibody/contact_solvers:point_contact_data",
         "//multibody/contact_solvers:supernodal_solver",
@@ -157,6 +184,19 @@ drake_cc_library(
     srcs = ["sap_solver_results.cc"],
     hdrs = ["sap_solver_results.h"],
     deps = ["//common:default_scalars"],
+)
+
+drake_cc_library(
+    name = "validate_constraint_gradients",
+    testonly = 1,
+    srcs = ["validate_constraint_gradients.cc"],
+    hdrs = ["validate_constraint_gradients.h"],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":sap_constraint",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:gradient",
+    ],
 )
 
 drake_cc_googletest(
@@ -181,6 +221,7 @@ drake_cc_googletest(
         ":sap_constraint_bundle",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
+        "//math:gradient",
         "//multibody/contact_solvers:block_sparse_matrix",
     ],
 )
@@ -190,6 +231,7 @@ drake_cc_googletest(
     deps = [
         ":sap_constraint",
         ":sap_contact_problem",
+        "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
     ],
 )
@@ -198,6 +240,7 @@ drake_cc_googletest(
     name = "sap_holonomic_constraint_test",
     deps = [
         ":sap_holonomic_constraint",
+        ":validate_constraint_gradients",
         "//common:pointer_cast",
         "//common/test_utilities:eigen_matrix_compare",
     ],
@@ -207,6 +250,7 @@ drake_cc_googletest(
     name = "sap_limit_constraint_test",
     deps = [
         ":sap_limit_constraint",
+        ":validate_constraint_gradients",
         "//common:pointer_cast",
         "//common/test_utilities:eigen_matrix_compare",
     ],
@@ -216,6 +260,7 @@ drake_cc_googletest(
     name = "sap_friction_cone_constraint_test",
     deps = [
         ":sap_friction_cone_constraint",
+        ":validate_constraint_gradients",
         "//common:pointer_cast",
         "//common/test_utilities:eigen_matrix_compare",
         "//math:gradient",

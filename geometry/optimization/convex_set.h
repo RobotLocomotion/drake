@@ -7,6 +7,7 @@
 
 #include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/drake_assert.h"
+#include "drake/common/reset_after_move.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/query_object.h"
 #include "drake/geometry/shape_specification.h"
@@ -35,7 +36,7 @@ SceneGraph also provides a lot of valuable tools for content management,
 including parsing geometries from file (via multibody::Parser) and Role.
 
 MathematicalProgram has many relevant solvers::Cost / solvers::Constraint for
-reasoning about geometry (e.g. the LorentzCone or even LinearConstraint). The
+reasoning about geometry (e.g., the LorentzCone or even LinearConstraint). The
 class and methods in this group add a level of modeling power above these
 individual constraints (there are many different types of constraints one would
 write given various optimization on these sets).
@@ -53,58 +54,89 @@ The geometry::optimization tools support:
   3D.
 
 @ingroup geometry
-@ingroup solvers
-*/
+@ingroup solvers */
 
 /** Abstract base class for defining a convex set.
-@ingroup geometry_optimization
-*/
+@ingroup geometry_optimization */
 class ConvexSet : public ShapeReifier {
  public:
   virtual ~ConvexSet();
 
   /** Creates a unique deep copy of this set. */
-  std::unique_ptr<ConvexSet> Clone() const;
+  std::unique_ptr<ConvexSet> Clone() const { return DoClone(); }
 
   /** Returns the dimension of the vector space in which the elements of this
-  set are evaluated.  Contrast this with the `affine dimension`: the
-  dimension of the smallest affine subset of the ambient space that contains
-  our set.  For example, if we define a set using `A*x = b`, where `A` has
-  linearly independent rows, then the ambient dimension is the dimension of
-  `x`, but the affine dimension of the set is `ambient_dimension() -
-  rank(A)`. */
+  set are evaluated.  Contrast this with the `affine dimension`: the dimension
+  of the smallest affine subset of the ambient space that contains our set.
+  For example, if we define a set using `A*x = b`, where `A` has linearly
+  independent rows, then the ambient dimension is the dimension of `x`, but the
+  affine dimension of the set is `ambient_dimension() - rank(A)`. */
   int ambient_dimension() const { return ambient_dimension_; }
 
   /** Returns true iff the intersection between `this` and `other` is non-empty.
   @throws std::exception if the ambient dimension of `other` is not the same as
-  that of `this`.
-   */
+  that of `this`. */
   bool IntersectsWith(const ConvexSet& other) const;
 
-  /** Returns true iff the set is bounded, e.g. there exists an element-wise
-   * finite lower and upper bound for the set.  Note: for some derived classes,
-   * this check is trivial, but for others it can require solving an (typically
-   * small) optimization problem.  Check the derived class documentation for any
-   * notes. */
-  bool IsBounded() const { return DoIsBounded(); }
+  /** Returns true iff the set is bounded, e.g., there exists an element-wise
+  finite lower and upper bound for the set.  Note: for some derived classes,
+  this check is trivial, but for others it can require solving an (typically
+  small) optimization problem.  Check the derived class documentation for any
+  notes. When ambient_dimension is zero, always returns true. */
+  bool IsBounded() const {
+    if (ambient_dimension() == 0) {
+      return true;
+    }
+    return DoIsBounded();
+  }
 
-  /** Returns true iff the point x is contained in the set. */
+  /** Returns true iff the set is empty. Note: for some derived classes, this
+  check is trivial, but for others, it can require solving a (typically small)
+  optimization problem. Check the derived class documentation for any notes.
+  @throws std::exception if ambient_dimension() == 0 */
+  bool IsEmpty() const {
+    DRAKE_THROW_UNLESS(ambient_dimension() > 0);
+    return DoIsEmpty();
+  }
+
+  /** If this set trivially contains exactly one point, returns the value of
+  that point. Otherwise, returns nullopt. When ambient_dimension is zero,
+  returns nullopt. By "trivially", we mean that representation of the set
+  structurally maps to a single point; if checking for point-ness would require
+  solving an optimization program, returns nullopt. In other words, this is a
+  relatively cheap function to call. */
+  std::optional<Eigen::VectorXd> MaybeGetPoint() const {
+    if (ambient_dimension() == 0) {
+      return std::nullopt;
+    }
+    return DoMaybeGetPoint();
+  }
+
+  /** Returns true iff the point x is contained in the set.  When
+  ambient_dimension is zero, returns false. */
   bool PointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
                   double tol = 0) const {
-    DRAKE_DEMAND(x.size() == ambient_dimension());
+    DRAKE_THROW_UNLESS(x.size() == ambient_dimension());
+    if (ambient_dimension() == 0) {
+      return false;
+    }
     return DoPointInSet(x, tol);
   }
 
-  // Note: I would like to return the Binding, but the type is subclass
-  // dependent.
   /** Adds a constraint to an existing MathematicalProgram enforcing that the
-  point defined by vars is inside the set. */
-  void AddPointInSetConstraints(
+  point defined by vars is inside the set.
+  @return (new_vars, new_constraints) Some of the derived class will add new
+  decision variables to enforce this constraint, we return all the newly added
+  decision variables as new_vars. The meaning of these new decision variables
+  differs in each subclass. If no new variables are added, then we return an
+  empty Eigen vector. Also we return all the newly added constraints to `prog`
+  through this function.
+  @throws std::exception if ambient_dimension() == 0 */
+  std::pair<VectorX<symbolic::Variable>,
+            std::vector<solvers::Binding<solvers::Constraint>>>
+  AddPointInSetConstraints(
       solvers::MathematicalProgram* prog,
-      const Eigen::Ref<const solvers::VectorXDecisionVariable>& vars) const {
-    DRAKE_DEMAND(vars.size() == ambient_dimension());
-    return DoAddPointInSetConstraints(prog, vars);
-  }
+      const Eigen::Ref<const solvers::VectorXDecisionVariable>& vars) const;
 
   /** Let S be this convex set.  When S is bounded, this method adds the convex
   constraints to imply
@@ -118,7 +150,9 @@ class ConvexSet : public ShapeReifier {
   In this case, the constraints imply t ≥ 0, x ∈ t S ⊕ rec(S), where rec(S) is
   the recession cone of S (the asymptotic directions in which S is not bounded)
   and ⊕ is the Minkowski sum.  For t > 0, this is equivalent to x ∈ t S, but for
-  t = 0, we have only x ∈ rec(S). */
+  t = 0, we have only x ∈ rec(S).
+  @throws std::exception if ambient_dimension() == 0 */
+  // TODO(hongkai.dai): return the new variables also.
   std::vector<solvers::Binding<solvers::Constraint>>
   AddPointInNonnegativeScalingConstraints(
       solvers::MathematicalProgram* prog,
@@ -129,7 +163,7 @@ class ConvexSet : public ShapeReifier {
   constraints to imply
   @verbatim
   A * x + b ∈ (c' * t + d) S,
-  c * t + d ≥ 0,
+  c' * t + d ≥ 0,
   @endverbatim
   where A is an n-by-m matrix (with n the ambient_dimension), b is a vector of
   size n, c is a vector of size p, x is a point in ℜᵐ, and t is a point in ℜᵖ.
@@ -143,7 +177,8 @@ class ConvexSet : public ShapeReifier {
   where rec(S) is the recession cone of S (the asymptotic directions in which S
   is not bounded) and ⊕ is the Minkowski sum.  For c' * t + d > 0, this is
   equivalent to A * x + b ∈ (c' * t + d) S, but for c' * t + d = 0, we have
-  only A * x + b ∈ rec(S). */
+  only A * x + b ∈ rec(S).
+  @throws std::exception if ambient_dimension() == 0 */
   std::vector<solvers::Binding<solvers::Constraint>>
   AddPointInNonnegativeScalingConstraints(
       solvers::MathematicalProgram* prog,
@@ -155,12 +190,11 @@ class ConvexSet : public ShapeReifier {
 
   /** Constructs a Shape and a pose of the set in the world frame for use in
   the SceneGraph geometry ecosystem.
-
   @throws std::exception if ambient_dimension() != 3 or if the functionality for
   a particular set has not been implemented yet. */
   std::pair<std::unique_ptr<Shape>, math::RigidTransformd> ToShapeWithPose()
       const {
-    DRAKE_DEMAND(ambient_dimension_ == 3);
+    DRAKE_THROW_UNLESS(ambient_dimension() == 3);
     return DoToShapeWithPose();
   }
 
@@ -170,49 +204,70 @@ class ConvexSet : public ShapeReifier {
  protected:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ConvexSet)
 
-  /** For use by derived classes to construct a %ConvexSet.
+  /** For use by derived classes to construct a %ConvexSet. */
+  explicit ConvexSet(int ambient_dimension);
 
-  @param cloner Function pointer to implement Clone(), typically of the form
-  `&ConvexSetCloner<Derived>`.
-
-  Here is a typical example:
-  @code
-   class MyConvexSet final : public ConvexSet {
-    public:
-     MyConvexSet() : ConvexSet(&ConvexSetCloner<MyConvexSet>, 3) {}
-     ...
-   };
-  @endcode */
-  ConvexSet(std::function<std::unique_ptr<ConvexSet>(const ConvexSet&)> cloner,
-            int ambient_dimension);
-
-  // Implements non-virtual base class serialization.
+  /** Implements non-virtual base class serialization. */
   template <typename Archive>
   void Serialize(Archive* a) {
-    a->Visit(DRAKE_NVP(ambient_dimension_));
+    // Visit the mutable reference inside the reset_after_move wrapper.
+    int& ambient_dimension = ambient_dimension_;
+    a->Visit(DRAKE_NVP(ambient_dimension));
   }
 
-  // Non-virtual interface implementations.
+  /** Non-virtual interface implementation for Clone(). */
+  virtual std::unique_ptr<ConvexSet> DoClone() const = 0;
+
+  /** Non-virtual interface implementation for IsBounded().
+  @pre ambient_dimension() > 0 */
   virtual bool DoIsBounded() const = 0;
 
+  /** Non-virtual interface implementation for IsEmpty(). The default
+  implementation solves a feasibility optimization problem, but derived
+  classes can override with a custom (more efficient) implementation. */
+  virtual bool DoIsEmpty() const;
+
+  /** Non-virtual interface implementation for MaybeGetPoint(). The default
+  implementation returns nullopt. Sets that can model a single point should
+  override with a custom implementation.
+  @pre ambient_dimension() > 0 */
+  virtual std::optional<Eigen::VectorXd> DoMaybeGetPoint() const;
+
+  /** Non-virtual interface implementation for PointInSet().
+  @pre x.size() == ambient_dimension()
+  @pre ambient_dimension() > 0 */
   virtual bool DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
                             double tol) const = 0;
 
-  virtual void DoAddPointInSetConstraints(
+  /** Non-virtual interface implementation for AddPointInSetConstraints().
+  @pre vars.size() == ambient_dimension()
+  @pre ambient_dimension() > 0 */
+  virtual std::pair<VectorX<symbolic::Variable>,
+                    std::vector<solvers::Binding<solvers::Constraint>>>
+  DoAddPointInSetConstraints(
       solvers::MathematicalProgram* prog,
       const Eigen::Ref<const solvers::VectorXDecisionVariable>& vars) const = 0;
 
+  /** Non-virtual interface implementation for
+  AddPointInNonnegativeScalingConstraints().
+  @pre x.size() == ambient_dimension()
+  @pre ambient_dimension() > 0 */
   virtual std::vector<solvers::Binding<solvers::Constraint>>
   DoAddPointInNonnegativeScalingConstraints(
       solvers::MathematicalProgram* prog,
       const Eigen::Ref<const solvers::VectorXDecisionVariable>& x,
       const symbolic::Variable& t) const = 0;
 
-  /** An NVI method that subclasses must overwrite to add the constraints
-  needed to keep the point A * x + b in the non-negative scaling of the set.
-  Note that subclasses do not need to add the constraint c * t + d ≥ 0 as it is
-  already added.
-  */
+  /** Non-virtual interface implementation for
+  AddPointInNonnegativeScalingConstraints(). Subclasses must override to add the
+  constraints needed to keep the point A * x + b in the non-negative scaling of
+  the set. Note that subclasses do not need to add the constraint c * t + d ≥ 0
+  as it is already added.
+  @pre ambient_dimension() > 0
+  @pre A.rows() == ambient_dimension()
+  @pre A.rows() == b.rows()
+  @pre A.cols() == x.size()
+  @pre c.rows() == t.size() */
   virtual std::vector<solvers::Binding<solvers::Constraint>>
   DoAddPointInNonnegativeScalingConstraints(
       solvers::MathematicalProgram* prog,
@@ -222,27 +277,50 @@ class ConvexSet : public ShapeReifier {
       const Eigen::Ref<const solvers::VectorXDecisionVariable>& x,
       const Eigen::Ref<const solvers::VectorXDecisionVariable>& t) const = 0;
 
+  /** Non-virtual interface implementation for ToShapeWithPose().
+  @pre ambient_dimension() == 3 */
   virtual std::pair<std::unique_ptr<Shape>, math::RigidTransformd>
   DoToShapeWithPose() const = 0;
 
-  std::function<std::unique_ptr<ConvexSet>(const ConvexSet&)> cloner_;
-  int ambient_dimension_{0};
+ private:
+  // The reset_after_move wrapper adjusts ConvexSet's default move constructor
+  // and move assignment operator to set the ambient dimension of a moved-from
+  // object back to zero. This is essential to keep the ambient dimension in
+  // sync with any moved-from member fields in concrete ConvexSet subclasses.
+  //
+  // For example, the `Eigen::VectorXd x_` member field of `Point` will be moved
+  // out, ending up with `x_.size() == 0` on the moved-from Point. To maintain
+  // the invariant that `x_.size() == ambient_dimension_`, we need to zero the
+  // dimension when `x_` is moved-from.
+  //
+  // Similarly, for subclasses that are composite sets (e.g., CartesianProduct)
+  // the `ConvexSets sets_` vector becomes empty when moved-from. To maintain
+  // an invariant like `∑(set.size() for set in sets_) == ambient_dimension_`,
+  // we need to zero the dimension when `sets_` is moved-from.
+  reset_after_move<int> ambient_dimension_;
 };
-
-/** (Advanced) Implementation helper for ConvexSet::Clone. Refer to the
-ConvexSet::ConvexSet() constructor documentation for an example. */
-template <typename Derived>
-std::unique_ptr<ConvexSet> ConvexSetCloner(const ConvexSet& other) {
-  static_assert(std::is_base_of_v<ConvexSet, Derived>,
-                "Concrete sets *must* be derived from the ConvexSet class");
-  DRAKE_DEMAND(typeid(other) == typeid(Derived));
-  const auto& typed_other = static_cast<const Derived&>(other);
-  return std::make_unique<Derived>(typed_other);
-}
 
 /** Provides the recommended container for passing a collection of ConvexSet
 instances. */
 typedef std::vector<copyable_unique_ptr<ConvexSet>> ConvexSets;
+
+/** Helper function that allows the ConvexSets to be initialized from arguments
+containing ConvexSet references, or unique_ptr<ConvexSet> instances, or any
+object that can be assigned to ConvexSets::value_type. */
+template <typename... Args>
+ConvexSets MakeConvexSets(Args&&... args) {
+  ConvexSets sets;
+  constexpr size_t N = sizeof...(args);
+  sets.resize(N);
+  // This is a "constexpr for" loop for 0 <= I < N.
+  auto args_tuple = std::forward_as_tuple(std::forward<Args>(args)...);
+  auto seq_into_sets = [&]<size_t... I>(
+      std::integer_sequence<size_t, I...> &&) {
+    ((sets[I] = std::get<I>(std::move(args_tuple))), ...);
+  };  // NOLINT
+  seq_into_sets(std::make_index_sequence<N>{});
+  return sets;
+}
 
 }  // namespace optimization
 }  // namespace geometry

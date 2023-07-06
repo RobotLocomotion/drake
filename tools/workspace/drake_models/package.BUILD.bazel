@@ -1,0 +1,12 @@
+# -*- bazel -*-
+
+package(default_visibility = ["//visibility:public"])
+
+_SRCS = glob(["**/*"])
+
+exports_files(_SRCS)
+
+filegroup(
+    name = "drake_models",
+    srcs = _SRCS,
+)

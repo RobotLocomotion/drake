@@ -95,7 +95,7 @@ TEST_F(DirectionLimiter, ZeroVandZeroDv) {
   const Vector2<double> vt = Vector2<double>::Zero();
   const Vector2<double> dvt = Vector2<double>::Zero();
   const double alpha = internal::TalsLimiter<double>::CalcAlpha(
-      vt, dvt, cos_min, v_stiction, tolerance);
+      vt, dvt, cos_min, v_stiction, tolerance).value();
   EXPECT_NEAR(alpha, 1.0, kTolerance);
 }
 
@@ -105,7 +105,7 @@ TEST_F(DirectionLimiter, ZeroVtoWithinStictionRegion) {
   const Vector2<double> vt = Vector2<double>::Zero();
   const Vector2<double> dvt = Vector2<double>(-0.5, 0.7) * v_stiction;
   const double alpha = internal::TalsLimiter<double>::CalcAlpha(
-      vt, dvt, cos_min, v_stiction, tolerance);
+      vt, dvt, cos_min, v_stiction, tolerance).value();
   EXPECT_NEAR(alpha, 1.0, kTolerance);
 }
 
@@ -114,7 +114,7 @@ TEST_F(DirectionLimiter, ZeroVtoSlidingRegion) {
   const Vector2<double> vt = Vector2<double>::Zero();
   const Vector2<double> dvt = Vector2<double>(0.3, -0.1);
   const double alpha = internal::TalsLimiter<double>::CalcAlpha(
-      vt, dvt, cos_min, v_stiction, tolerance);
+      vt, dvt, cos_min, v_stiction, tolerance).value();
   const Vector2<double> vt_alpha_expected = dvt.normalized() * v_stiction / 2.0;
   const Vector2<double> vt_alpha = vt + alpha * dvt;
   EXPECT_TRUE(CompareMatrices(
@@ -126,7 +126,7 @@ TEST_F(DirectionLimiter, SlidingRegiontoZero) {
   const Vector2<double> vt = Vector2<double>(0.3, -0.1);
   const Vector2<double> dvt = -vt;
   const double alpha = internal::TalsLimiter<double>::CalcAlpha(
-      vt, dvt, cos_min, v_stiction, tolerance);
+      vt, dvt, cos_min, v_stiction, tolerance).value();
   // TalsLimiter does not allow changes from outside the stiction region
   // (where friction is constant) to exactly zero velocity, since this
   // would imply leaving the solver in a state where gradients are negligible
@@ -148,7 +148,7 @@ TEST_F(DirectionLimiter, SlidingRegionToStictionRegion) {
       Vector2<double>(-0.3, 0.45) * v_stiction;
   const Vector2<double> dvt = vt_alpha_expected - vt;
   const double alpha = internal::TalsLimiter<double>::CalcAlpha(
-      vt, dvt, cos_min, v_stiction, tolerance);
+      vt, dvt, cos_min, v_stiction, tolerance).value();
   EXPECT_NEAR(alpha, 1.0, kTolerance);
 }
 
@@ -159,7 +159,7 @@ TEST_F(DirectionLimiter, WithinStictionRegionToSlidingRegion) {
   const Vector2<double> vt = Vector2<double>(-0.5, 0.7) * v_stiction;
   const Vector2<double> dvt = Vector2<double>(0.9, -0.3);
   const double alpha = internal::TalsLimiter<double>::CalcAlpha(
-      vt, dvt, cos_min, v_stiction, tolerance);
+      vt, dvt, cos_min, v_stiction, tolerance).value();
   EXPECT_NEAR(alpha, 1.0, kTolerance);
 }
 
@@ -171,7 +171,7 @@ TEST_F(DirectionLimiter, StictionToSliding) {
   const Vector2<double> dvt(0.3, 0.15);
 
   const double alpha = internal::TalsLimiter<double>::CalcAlpha(
-      vt, dvt, cos_min, v_stiction, tolerance);
+      vt, dvt, cos_min, v_stiction, tolerance).value();
 
   // For this case TalsLimiter neglects the very small initial vt
   // (since we always have tolerance << 1.0) so that:
@@ -188,7 +188,7 @@ TEST_F(DirectionLimiter, VerySmallDeltaV) {
   const Vector2<double> dvt =
       Vector2<double>(-0.5, 0.3) * v_stiction * tolerance;
   const double alpha = internal::TalsLimiter<double>::CalcAlpha(
-      vt, dvt, cos_min, v_stiction, tolerance);
+      vt, dvt, cos_min, v_stiction, tolerance).value();
   EXPECT_NEAR(alpha, 1.0, kTolerance);
 }
 
@@ -200,7 +200,7 @@ TEST_F(DirectionLimiter, StraightCrossThroughZero) {
   const Vector2<double> dvt(-0.3, -0.15);  // dvt = -3 * vt.
 
   const double alpha = internal::TalsLimiter<double>::CalcAlpha(
-      vt, dvt, cos_min, v_stiction, tolerance);
+      vt, dvt, cos_min, v_stiction, tolerance).value();
 
   // Since the change crosses zero exactly, we expect
   // v_alpha = v + alpha * dv = v/‖v‖⋅vₛ/2.
@@ -238,7 +238,7 @@ TEST_F(DirectionLimiter, CrossStictionRegionFromTheOutside) {
   const Vector2<double> dvt = v1 - vt;
 
   const double alpha = internal::TalsLimiter<double>::CalcAlpha(
-      vt, dvt, cos_min, v_stiction, tolerance);
+      vt, dvt, cos_min, v_stiction, tolerance).value();
 
   // Verify the result from the limiter.
   const Vector2<double> vt_alpha = vt + alpha * dvt;
@@ -263,7 +263,7 @@ TEST_F(DirectionLimiter, ChangesWithinTheSlidingRegion) {
   const Vector2<double> dvt = v1 - vt;
 
   const double alpha = internal::TalsLimiter<double>::CalcAlpha(
-      vt, dvt, cos_min, v_stiction, tolerance);
+      vt, dvt, cos_min, v_stiction, tolerance).value();
 
   EXPECT_NEAR(alpha, 1.0, kTolerance);
 }
@@ -289,7 +289,7 @@ TEST_F(DirectionLimiter, ChangesWithinTheSlidingRegion_LargeTheta) {
   const Vector2<double> dvt = v1 - vt;
 
   const double alpha = internal::TalsLimiter<double>::CalcAlpha(
-      vt, dvt, cos_min, v_stiction, tolerance);
+      vt, dvt, cos_min, v_stiction, tolerance).value();
 
   const Vector2<double> vt_alpha = vt + alpha * dvt;
 
@@ -322,7 +322,7 @@ TEST_F(DirectionLimiter, ChangesWithinTheSlidingRegion_VeryLargeTheta) {
   const Vector2<double> dvt = v1 - vt;
 
   const double alpha = internal::TalsLimiter<double>::CalcAlpha(
-      vt, dvt, cos_min, v_stiction, tolerance);
+      vt, dvt, cos_min, v_stiction, tolerance).value();
 
   const Vector2<double> vt_alpha = vt + alpha * dvt;
 
@@ -355,7 +355,7 @@ TEST_F(DirectionLimiter, ChangesWithinTheSlidingRegion_SingleSolution) {
   ASSERT_GT(theta1, theta_max);
 
   const double alpha = internal::TalsLimiter<double>::CalcAlpha(
-      vt, dvt, cos_min, v_stiction, tolerance);
+      vt, dvt, cos_min, v_stiction, tolerance).value();
 
   const Vector2<double> vt_alpha = vt + alpha * dvt;
 
@@ -365,6 +365,28 @@ TEST_F(DirectionLimiter, ChangesWithinTheSlidingRegion_SingleSolution) {
 
   // Verify the result was limited to form an angle theta_max.
   EXPECT_NEAR(theta, theta_max, kTolerance);
+}
+
+TEST_F(DirectionLimiter, ChangesWithinTheSlidingRegion_QuadraticNonPositive1) {
+  // Use the same input as SingleSolution, but corrupt one value to be infinity.
+  // That should trigger the nullopt code paths.
+  Vector2<double> vt = Vector2<double>(-0.5, 0.7);
+  Vector2<double> dvt = -3.0 * Rotation(theta_max) * vt;
+  dvt[1] = std::numeric_limits<double>::infinity();
+  const std::optional<double> alpha = internal::TalsLimiter<double>::CalcAlpha(
+      vt, dvt, cos_min, v_stiction, tolerance);
+  EXPECT_EQ(alpha, std::nullopt);
+}
+
+TEST_F(DirectionLimiter, ChangesWithinTheSlidingRegion_QuadraticNonPositive2) {
+  // Use the same input as SingleSolution, but corrupt one value to be NaN.
+  // That should also trigger the nullopt code paths.
+  Vector2<double> vt = Vector2<double>(-0.5, 0.7);
+  Vector2<double> dvt = -3.0 * Rotation(theta_max) * vt;
+  vt[1] = std::numeric_limits<double>::quiet_NaN();
+  const std::optional<double> alpha = internal::TalsLimiter<double>::CalcAlpha(
+      vt, dvt, cos_min, v_stiction, tolerance);
+  EXPECT_EQ(alpha, std::nullopt);
 }
 
 /* Top view of the pizza saver:

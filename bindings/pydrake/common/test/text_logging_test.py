@@ -7,6 +7,7 @@ from logging import (
     NOTSET,
     WARNING,
 )
+import os
 import re
 import subprocess
 import sys
@@ -144,3 +145,38 @@ class TestTextLoggingExample(unittest.TestCase,
 
         # Confirm that the correct levels came out.
         self.assertEqual(effective_level, expected_level)
+
+    def test_disabled_via_env(self):
+        """When the magic environment variable is set, C++ logging is not
+        redirected to Python; it continues to write to stderr directly, using
+        its own independent formatter and log level threshold.
+
+        (1) We set the env var so that Python logging and C++ logging are
+        independent.
+        (2) We do not specifically change anything about C++ logging level.
+        (3) We set the Python logging level to "no logging at all".
+        (4) The do_log_test function invokes a bunch of C++ log statements.
+        The test predicate is that the C++ log statements made it out to
+        stderr. If step (1) didn't happen, then step (3) would mean that no
+        messages would ever appear, so the test predicate would fail (the
+        output would be empty).
+        """
+        # Disable the code that injects the pylogging_sink.
+        env = dict(os.environ)
+        env["DRAKE_PYTHON_LOGGING"] = "0"
+        # Configure the Python logging to not print anything.
+        python_level = CRITICAL + 1
+        try:
+            output = subprocess.check_output(
+                ["bindings/pydrake/common/text_logging_example",
+                    "--use_nice_format=1",
+                    f"--root_level={python_level}",
+                    f"--drake_level={python_level}"],
+                stderr=subprocess.STDOUT,
+                encoding="utf8",
+                env=env)
+        except subprocess.CalledProcessError as e:
+            print(e.output, file=sys.stderr, flush=True)
+            raise
+        # The C++ logger should still have printed (INFO and higher)
+        self.assertIn("Test Info message", output)

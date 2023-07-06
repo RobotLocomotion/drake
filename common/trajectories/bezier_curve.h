@@ -44,7 +44,7 @@ class BezierCurve final : public trajectories::Trajectory<T> {
   virtual ~BezierCurve() = default;
 
   /** Returns the order of the curve (1 for linear, 2 for quadratic, etc.). */
-  int order() const { return order_; }
+  int order() const { return control_points_.cols() - 1; }
 
   /** Returns the value of the ith basis function of `order` (1 for linear, 2
    for quadratic, etc) evaluated at `time`. The default value for the optional
@@ -52,6 +52,7 @@ class BezierCurve final : public trajectories::Trajectory<T> {
   T BernsteinBasis(int i, const T& time,
                    std::optional<int> order = std::nullopt) const;
 
+  /** Returns a reference to the control points which define the curve. */
   const MatrixX<T>& control_points() const { return control_points_; }
 
   // Required methods for trajectories::Trajectory interface.
@@ -64,6 +65,16 @@ class BezierCurve final : public trajectories::Trajectory<T> {
            time to `time`. For example, `value(-1)` will return `value(0)` for
            a trajectory defined over [0, 1]. */
   MatrixX<T> value(const T& time) const override;
+
+  /** Extracts the expanded underlying polynomial expression of this curve in
+   terms of variable `time`. */
+  VectorX<symbolic::Expression> GetExpression(
+      symbolic::Variable time = symbolic::Variable("t")) const;
+
+  /** Increases the order of the curve by 1. A Bézier curve of order n can be
+   converted into a Bézier curve of order n + 1 with the same shape. The
+   control points of `this` are modified to obtain the equivalent curve. */
+  void ElevateOrder();
 
   Eigen::Index rows() const override { return control_points_.rows(); }
 
@@ -83,10 +94,11 @@ class BezierCurve final : public trajectories::Trajectory<T> {
   std::unique_ptr<trajectories::Trajectory<T>> DoMakeDerivative(
       int derivative_order) const override;
 
+  VectorX<T> EvaluateT(const T& time) const;
+
   double start_time_{};
   double end_time_{};
   MatrixX<T> control_points_;
-  int order_{};
 };
 }  // namespace trajectories
 }  // namespace drake

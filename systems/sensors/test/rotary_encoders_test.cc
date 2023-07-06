@@ -105,8 +105,8 @@ GTEST_TEST(TestEncoders, QuantizationAndSelector) {
     angle = Eigen::Vector4d::Random();
     encoders.get_input_port().FixValue(context.get(), angle);
 
-    using std::floor;
     using std::ceil;
+    using std::floor;
     for (int j = 0; j < 2; j++) {
       desired_measurement(j) =
           floor(angle(indices[j]) * ticks_per_radian(j)) / ticks_per_radian(j);
@@ -149,8 +149,8 @@ GTEST_TEST(TestEncoders, CalibrationOffsets) {
     encoders.get_input_port().FixValue(context.get(), angle);
 
     angle -= offsets;
-    using std::floor;
     using std::ceil;
+    using std::floor;
     for (int j = 0; j < 2; j++) {
       desired_measurement(j) =
           floor(angle(j) * ticks_per_radian(j)) / ticks_per_radian(j);
@@ -176,31 +176,28 @@ GTEST_TEST(TestEncoders, ScalarConversion) {
   EXPECT_TRUE(is_autodiffxd_convertible(encoders));
 
   // Check that both the indices and tick_counts made it into symbolic form.
-  EXPECT_TRUE(is_symbolic_convertible(encoders, [&](
-      const systems::sensors::RotaryEncoders<Expression>& dut) {
-    auto context = dut.CreateDefaultContext();
+  EXPECT_TRUE(is_symbolic_convertible(
+      encoders, [&](const systems::sensors::RotaryEncoders<Expression>& dut) {
+        auto context = dut.CreateDefaultContext();
 
-    // Set input to be symbolic variables.
-    const Vector4<Expression> input{
-      symbolic::Variable("u0"),
-      symbolic::Variable("u1"),
-      symbolic::Variable("u2"),
-      symbolic::Variable("u3")
-    };
-    dut.get_input_port().FixValue(context.get(), input);
+        // Set input to be symbolic variables.
+        const Vector4<Expression> input{
+            symbolic::Variable("u0"), symbolic::Variable("u1"),
+            symbolic::Variable("u2"), symbolic::Variable("u3")};
+        dut.get_input_port().FixValue(context.get(), input);
 
-    // Obtain the symbolic outputs.
-    auto outputs = dut.AllocateOutput();
-    dut.CalcOutput(*context, outputs.get());
-    const systems::BasicVector<Expression>& output =
-        *(outputs->get_vector_data(0));
-    ASSERT_EQ(output.size(), 2);
+        // Obtain the symbolic outputs.
+        auto outputs = dut.AllocateOutput();
+        dut.CalcOutput(*context, outputs.get());
+        const systems::BasicVector<Expression>& output =
+            *(outputs->get_vector_data(0));
+        ASSERT_EQ(output.size(), 2);
 
-    // Symbolic form should be as expected.
-    using symbolic::test::ExprEqual;
-    EXPECT_PRED2(ExprEqual, output[0], floor((M_1_PI * input[1])) / M_1_PI);
-    EXPECT_PRED2(ExprEqual, output[1], floor((M_2_PI * input[2])) / M_2_PI);
-  }));
+        // Symbolic form should be as expected.
+        using symbolic::test::ExprEqual;
+        EXPECT_PRED2(ExprEqual, output[0], floor((M_1_PI * input[1])) / M_1_PI);
+        EXPECT_PRED2(ExprEqual, output[1], floor((M_2_PI * input[2])) / M_2_PI);
+      }));
 }
 
 }  // namespace

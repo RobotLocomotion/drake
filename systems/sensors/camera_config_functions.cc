@@ -26,9 +26,9 @@ namespace sensors {
 using drake::lcm::DrakeLcmInterface;
 using drake::systems::lcm::LcmBuses;
 using Eigen::Vector3d;
-using geometry::render::MakeRenderEngineGl;
-using geometry::render::RenderEngineGlParams;
+using geometry::MakeRenderEngineGl;
 using geometry::MakeRenderEngineVtk;
+using geometry::RenderEngineGlParams;
 using geometry::RenderEngineVtkParams;
 using geometry::SceneGraph;
 using geometry::render::ColorRenderCamera;
@@ -53,9 +53,10 @@ void ValidateEngineAndMaybeAdd(const CameraConfig& config,
   using Dict = std::map<std::string, std::string>;
   static const never_destroyed<Dict> type_lookup(
       std::initializer_list<Dict::value_type>{
-          {"RenderEngineVtk", "drake::geometry::render::RenderEngineVtk"},
+          {"RenderEngineVtk",
+           "drake::geometry::render_vtk::internal::RenderEngineVtk"},
           {"RenderEngineGl",
-           "drake::geometry::render::internal::RenderEngineGl"}});
+           "drake::geometry::render_gl::internal::RenderEngineGl"}});
 
   DRAKE_DEMAND(scene_graph != nullptr);
 
@@ -81,14 +82,13 @@ void ValidateEngineAndMaybeAdd(const CameraConfig& config,
 
   // Now we know we need to add one. Confirm we can add the specified class.
   if (config.renderer_class == "RenderEngineGl") {
-    if (!geometry::render::kHasRenderEngineGl) {
+    if (!geometry::kHasRenderEngineGl) {
       throw std::logic_error(
           "Invalid camera configuration; renderer_class = 'RenderEngineGl' "
           "is not supported in current build.");
     }
     RenderEngineGlParams params{.default_clear_color = config.background};
-    scene_graph->AddRenderer(config.renderer_name,
-                              MakeRenderEngineGl(params));
+    scene_graph->AddRenderer(config.renderer_name, MakeRenderEngineGl(params));
     return;
   }
   // Note: if we add *other* supported render engine implementations, add the
@@ -121,8 +121,8 @@ void ApplyCameraConfig(const CameraConfig& config,
     plant = &builder->GetDowncastSubsystemByName<MultibodyPlant>("plant");
   }
   if (scene_graph == nullptr) {
-    scene_graph = &builder->GetMutableDowncastSubsystemByName<SceneGraph>(
-        "scene_graph");
+    scene_graph =
+        &builder->GetMutableDowncastSubsystemByName<SceneGraph>("scene_graph");
   }
 
   config.ValidateOrThrow();
@@ -146,8 +146,8 @@ void ApplyCameraConfig(const CameraConfig& config,
       AddSimRgbdSensor(*scene_graph, *plant, sim_camera, builder);
 
   // Find the LCM bus.
-  lcm = FindOrCreateLcmBus(
-      lcm, lcm_buses, builder, "ApplyCameraConfig", config.lcm_bus);
+  lcm = FindOrCreateLcmBus(lcm, lcm_buses, builder, "ApplyCameraConfig",
+                           config.lcm_bus);
   DRAKE_DEMAND(lcm != nullptr);
 
   // Connect the sensor the the lcm system.

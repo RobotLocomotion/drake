@@ -561,6 +561,7 @@ template <typename T>
 T PiecewisePolynomial<T>::EvaluateSegmentAbsoluteTime(
     int segment_index, const T& t, Eigen::Index row, Eigen::Index col,
     int derivative_order) const {
+  DRAKE_DEMAND(static_cast<int>(polynomials_.size()) > segment_index);
   return polynomials_[segment_index](row, col).EvaluateUnivariate(
       t - this->start_time(segment_index), derivative_order);
 }
@@ -762,7 +763,7 @@ MatrixX<T> ComputePchipEndSlope(const T& dt0, const T& dt1,
   return deriv;
 }
 
-}  // end namespace
+}  // namespace
 
 // Makes a cubic piecewise polynomial.
 // It first computes the first derivatives at each break, and solves for each

@@ -24,15 +24,18 @@ top-level documentation for :py:mod:`pydrake.math`.
   internal::DefineSolversMixedIntegerOptimizationUtil(m);
   internal::DefineSolversMixedIntegerRotationConstraint(m);
   internal::DefineSolversSdpaFreeFormat(m);
+  internal::DefineSolversSemidefiniteRelaxation(m);
   internal::DefineSolversClp(m);
   internal::DefineSolversCsdp(m);
   internal::DefineSolversGurobi(m);
   internal::DefineSolversIpopt(m);
+  internal::DefineSolversMobyLCP(m);
   internal::DefineSolversMosek(m);
   internal::DefineSolversNlopt(m);
   internal::DefineSolversOsqp(m);
   internal::DefineSolversScs(m);
   internal::DefineSolversSnopt(m);
+  internal::DefineSolversUnrevisedLemke(m);
 }
 
 }  // namespace pydrake

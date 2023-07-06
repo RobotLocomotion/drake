@@ -29,8 +29,8 @@ namespace {
 // The mathematical model of this system, after Finalize(), should contain
 // three floating bodies, one for each Atlas robot and one for the mug.
 GTEST_TEST(MultibodyPlantIntrospection, FloatingBodies) {
-  const std::string atlas_path =
-      FindResourceOrThrow("drake/examples/atlas/urdf/atlas_convex_hull.urdf");
+  const std::string atlas_url =
+      "package://drake_models/atlas/atlas_convex_hull.urdf";
 
   const std::string table_sdf_path = FindResourceOrThrow(
       "drake/examples/kuka_iiwa_arm/models/table/"
@@ -50,9 +50,9 @@ GTEST_TEST(MultibodyPlantIntrospection, FloatingBodies) {
 
   // Load two Atlas robots.
   const ModelInstanceIndex atlas_model1 =
-      Parser(&plant, "atlas1").AddModels(atlas_path).at(0);
+      Parser(&plant, "atlas1").AddModelsFromUrl(atlas_url).at(0);
   const ModelInstanceIndex atlas_model2 =
-      Parser(&plant, "atlas2").AddModels(atlas_path).at(0);
+      Parser(&plant, "atlas2").AddModelsFromUrl(atlas_url).at(0);
   const Body<double>& pelvis1 = plant.GetBodyByName("pelvis", atlas_model1);
   const Body<double>& pelvis2 = plant.GetBodyByName("pelvis", atlas_model2);
 

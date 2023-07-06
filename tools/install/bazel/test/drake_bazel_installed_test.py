@@ -17,13 +17,22 @@ def main():
     scratch_dir = install_test_helper.create_temporary_dir("scratch")
 
     # The commit (version) here should be identical to the commit listed in
+    # drake/tools/workspace/bazel_skylib/repository.bzl.
+    bazel_skylib_commit = "1.4.2"
+    bazel_skylib_urls = [
+        f"https://github.com/bazelbuild/bazel-skylib/archive/{bazel_skylib_commit}.tar.gz",  # noqa
+        f"https://drake-mirror.csail.mit.edu/github/bazelbuild/bazel-skylib/{bazel_skylib_commit}.tar.gz",  # noqa
+    ]
+    bazel_skylib_sha256 = "de9d2cedea7103d20c93a5cc7763099728206bd5088342d0009315913a592cc0"  # noqa
+
+    # The commit (version) here should be identical to the commit listed in
     # drake/tools/workspace/rules_python/repository.bzl.
-    rules_python_commit = "0.19.0"
+    rules_python_commit = "0.22.0"
     rules_python_urls = [
         f"https://github.com/bazelbuild/rules_python/archive/{rules_python_commit}.tar.gz",  # noqa
         f"https://drake-mirror.csail.mit.edu/github/bazelbuild/rules_python/{rules_python_commit}.tar.gz",  # noqa
     ]
-    rules_python_sha256 = "ffc7b877c95413c82bfd5482c017edcf759a6250d8b24e82f41f3c8b8d9e287e"  # noqa
+    rules_python_sha256 = "863ba0fa944319f7e3d695711427d9ad80ba92c6edd0b7c7443b84e904689539"  # noqa
 
     with open(join(scratch_dir, "WORKSPACE"), "w") as f:
         f.write(f"""
@@ -32,6 +41,12 @@ workspace(name = "scratch")
 load(
     "@bazel_tools//tools/build_defs/repo:http.bzl",
     "http_archive",
+)
+http_archive(
+    name = "bazel_skylib",
+    sha256 = "{bazel_skylib_sha256}",
+    strip_prefix = "bazel-skylib-{bazel_skylib_commit}",
+    urls = {bazel_skylib_urls!r},
 )
 http_archive(
     name = "rules_python",
@@ -111,15 +126,6 @@ FindResourceOrThrow("drake/examples/pendulum/Pendulum.urdf")
     # This test case confirms that package://drake_models still works.
     with open(join(scratch_dir, "package_map_test.py"), "w") as f:
         f.write("""
-# The install_test runner provides a pre-populated XDG_CACHE_HOME.
-# Use it for our package_map cache to prevent hitting the internet.
-import os
-from pathlib import Path
-test_tmpdir = Path(os.environ["TEST_TMPDIR"])
-xdg_cache_home = Path(os.environ["XDG_CACHE_HOME"])
-(test_tmpdir / ".cache").symlink_to(xdg_cache_home)
-
-# Now we can check that drake_models works.
 from pydrake.common import _set_log_level
 from pydrake.multibody.parsing import PackageMap
 _set_log_level("trace")
@@ -147,8 +153,6 @@ import pydrake.all
         "--max_idle_secs=1",
         # Run all of the tests from the BUILD.bazel generated above.
         command, "//...", "--jobs=1",
-        # Allow reuse of the install_test's pre-populated cache.
-        "--test_env=XDG_CACHE_HOME",
         # Deny networking.
         "--test_env=DRAKE_ALLOW_NETWORK=none",
         # Enable verbosity.

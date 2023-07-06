@@ -86,10 +86,8 @@ void AddInclinedPlaneWithBlockToPlant(
   DRAKE_THROW_UNLESS(LBx > 0 && LBy > 0 && LBz > 0 && massB > 0);
 
   // Describe body B's mass, center of mass, and inertia properties.
-  const Vector3<double> p_BoBcm_B = Vector3<double>::Zero();
-  const UnitInertia<double> G_BBcm_B =
-      UnitInertia<double>::SolidBox(LBx, LBy, LBz);
-  const SpatialInertia<double> M_BBcm_B(massB, p_BoBcm_B, G_BBcm_B);
+  const SpatialInertia<double> M_BBcm_B =
+      SpatialInertia<double>::SolidBoxWithMass(massB, LBx, LBy, LBz);
 
   // Create a rigid body B with the mass properties of a uniform solid block.
   const RigidBody<double>& blockB = plant->AddRigidBody("BodyB", M_BBcm_B);
@@ -150,12 +148,11 @@ void AddInclinedPlaneWithSphereToPlant(
       coefficient_friction_inclined_plane, plant);
 
   // Describe body B's mass, center of mass, and inertia properties.
-  const Vector3<double> p_BoBcm_B = Vector3<double>::Zero();
-  const UnitInertia<double> G_BBcm = UnitInertia<double>::SolidSphere(radiusB);
-  const SpatialInertia<double> M_BBcm_B(massB, p_BoBcm_B, G_BBcm);
+  const SpatialInertia<double> M_BBcm =
+      SpatialInertia<double>::SolidSphereWithMass(massB, radiusB);
 
   // Create a rigid body B with the mass properties of a uniform sphere.
-  const RigidBody<double>& sphereB = plant->AddRigidBody("BodyB", M_BBcm_B);
+  const RigidBody<double>& sphereB = plant->AddRigidBody("BodyB", M_BBcm);
 
   // Body B's visual geometry and collision geometry are a sphere.
   // The pose X_BG of block B's geometry frame G is an identity transform.

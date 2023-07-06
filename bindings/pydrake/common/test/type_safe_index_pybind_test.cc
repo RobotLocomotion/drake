@@ -8,7 +8,6 @@
 
 #include "pybind11/embed.h"
 #include "pybind11/eval.h"
-#include "pybind11/pybind11.h"
 #include <gtest/gtest.h>
 
 #include "drake/bindings/pydrake/test/test_util_pybind.h"
@@ -90,9 +89,8 @@ GTEST_TEST(TypeSafeIndexTest, CheckCasting) {
   CheckValue("repr(Index(10)) == 'Index(10)'", true);
 
   // Check value instantiation.
-  py::exec("from pydrake.common.value import AbstractValue");
-  CheckValue(
-      "isinstance(AbstractValue.Make(Index(11)).get_value(), Index)", true);
+  py::exec("from pydrake.common.value import Value");
+  CheckValue("isinstance(Value(Index(11)).get_value(), Index)", true);
 }
 
 int main(int argc, char** argv) {

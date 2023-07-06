@@ -188,7 +188,7 @@ GTEST_TEST(TestSos2, Test8Lambda) {
 }
 
 void LogarithmicSos1Test(int num_lambda,
-                         const Eigen::Ref<const Eigen::MatrixXi> &codes) {
+                         const Eigen::Ref<const Eigen::MatrixXi>& codes) {
   // Check if we impose the constraint
   // λ is in sos1
   // and assign values to the binary variables,
@@ -312,9 +312,8 @@ GTEST_TEST(TestBilinearProductMcCormickEnvelopeSos2, AddConstraint) {
   auto lambda1 = AddBilinearProductMcCormickEnvelopeSos2(
       &prog, x, y, w, phi_x_static, phi_y_static, Bx, By,
       IntervalBinning::kLogarithmic);
-  static_assert(
-      std::is_same_v<decltype(lambda1), MatrixDecisionVariable<3, 4>>,
-      "lambda should be a static matrix");
+  static_assert(std::is_same_v<decltype(lambda1), MatrixDecisionVariable<3, 4>>,
+                "lambda should be a static matrix");
 
   auto lambda2 = AddBilinearProductMcCormickEnvelopeSos2(
       &prog, x, y, w, phi_x_dynamic, phi_y_static, Bx, By,
@@ -334,9 +333,8 @@ GTEST_TEST(TestBilinearProductMcCormickEnvelopeSos2, AddConstraint) {
       &prog, x, y, w, phi_x_dynamic, phi_y_dynamic, Bx, By,
       IntervalBinning::kLogarithmic);
   static_assert(
-      std::is_same_v<
-          decltype(lambda4),
-          MatrixDecisionVariable<Eigen::Dynamic, Eigen::Dynamic>>,
+      std::is_same_v<decltype(lambda4),
+                     MatrixDecisionVariable<Eigen::Dynamic, Eigen::Dynamic>>,
       "lambda's type is incorrect");
 }
 
@@ -373,8 +371,8 @@ class BilinearProductMcCormickEnvelopeTest {
     auto w_constraint = prog_.AddBoundingBoxConstraint(0, 0, w_);
 
     auto CheckFeasibility = [&x_constraint, &y_constraint, &w_constraint](
-        MathematicalProgram* prog, double x_val, double y_val, double w_val,
-        bool is_feasible) {
+                                MathematicalProgram* prog, double x_val,
+                                double y_val, double w_val, bool is_feasible) {
       auto UpdateBound = [](Binding<BoundingBoxConstraint>* constraint,
                             double val) {
         constraint->evaluator()->UpdateLowerBound(Vector1d(val));

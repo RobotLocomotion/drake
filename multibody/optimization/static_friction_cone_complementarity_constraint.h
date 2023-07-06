@@ -82,7 +82,7 @@ class StaticFrictionConeComplementarityNonlinearConstraint
 
   symbolic::Variable beta_var_;
 };
-};  // namespace internal
+}  // namespace internal
 
 /**
  * Adds the complementarity constraint on the static friction force

@@ -25,6 +25,7 @@ _PYTHON_SITE_PACKAGES_RELPATH = MANIFEST["python_site_packages_relpath"]
 _DRAKE_ROOT_PACKAGE_RUNFILES = [x for x in _DRAKE_RUNFILES if "/" not in x]
 
 _EXPECTED_DRAKE_RUNFILES_PACKAGES = [
+    "bindings/pydrake",
     "common",
     "examples",
     "geometry",
@@ -57,6 +58,7 @@ filegroup(
     name = ".all_runfiles",
     data = [
         "//:.installed_runfiles",
+        "@drake_models",
     ] + [
         "//{}:.installed_runfiles".format(x)
         for x in _EXPECTED_DRAKE_RUNFILES_PACKAGES
@@ -100,6 +102,9 @@ cc_library(
 
 cc_library(
     name = "drake_shared_library",
+    data = [
+        ":.all_runfiles",
+    ],
     deps = [
         ":.drake_headers",
         "@eigen",

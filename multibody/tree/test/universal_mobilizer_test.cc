@@ -225,6 +225,8 @@ TEST_F(UniversalMobilizerTest, ProjectSpatialForce) {
 }
 
 TEST_F(UniversalMobilizerTest, MapVelocityToQDotAndBack) {
+  EXPECT_TRUE(mobilizer_->is_velocity_equal_to_qdot());
+
   Vector2d v(1.5, 2.5);
   Vector2d qdot;
   mobilizer_->MapVelocityToQDot(*context_, v, &qdot);

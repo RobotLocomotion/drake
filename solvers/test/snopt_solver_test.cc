@@ -117,8 +117,7 @@ GTEST_TEST(SnoptTest, TestSetOption) {
   // Make sure the default setting can solve the problem.
   auto result = solver.Solve(prog, x_init, {});
   EXPECT_TRUE(result.is_success());
-  SnoptSolverDetails solver_details =
-      result.get_solver_details<SnoptSolver>();
+  SnoptSolverDetails solver_details = result.get_solver_details<SnoptSolver>();
   EXPECT_TRUE(CompareMatrices(solver_details.F,
                               Eigen::Vector2d(-std::sqrt(3), 1), 1E-6));
 
@@ -198,7 +197,6 @@ GTEST_TEST(SnoptTest, TestStringOption) {
   prog_minimize.AddLinearConstraint(x_minimize(0) >= -1);
   prog_minimize.AddLinearCost(x_minimize(0));
 
-
   prog_minimize.SetSolverOption(SnoptSolver::id(), "Minimize", "");
   auto result_minimize = solver.Solve(prog_minimize, {}, {});
   EXPECT_EQ(result_minimize.get_optimal_cost(), -1);
@@ -208,7 +206,6 @@ GTEST_TEST(SnoptTest, TestStringOption) {
   prog_maximize.AddLinearConstraint(x_maximize(0) <= 1);
   prog_maximize.AddLinearConstraint(x_maximize(0) >= -1);
   prog_maximize.AddLinearCost(x_maximize(0));
-
 
   prog_maximize.SetSolverOption(SnoptSolver::id(), "Maximize", "");
   auto result_maximize = solver.Solve(prog_maximize, {}, {});
@@ -320,10 +317,10 @@ GTEST_TEST(SnoptTest, MultiThreadTest) {
     const Eigen::Vector2d guess_i(i + 1, (i - 2.0) / 10);
     single_threaded[i].x_init = guess_i;
     multi_threaded[i].x_init = guess_i;
-    single_threaded[i].print_file = fmt::format(
-        "{}/snopt_single_thread_{}.out", temp_dir, i);
-    multi_threaded[i].print_file =  fmt::format(
-        "{}/snopt_multi_thread_{}.out", temp_dir, i);
+    single_threaded[i].print_file =
+        fmt::format("{}/snopt_single_thread_{}.out", temp_dir, i);
+    multi_threaded[i].print_file =
+        fmt::format("{}/snopt_multi_thread_{}.out", temp_dir, i);
   }
 
   if (kUsingAsan) {
@@ -335,8 +332,8 @@ GTEST_TEST(SnoptTest, MultiThreadTest) {
   auto run_solver = [&snopt_solver, &const_prog](PerThreadData* thread_data) {
     SolverOptions options;
     if (!kUsingAsan) {
-      options.SetOption(
-          SnoptSolver::id(), "Print file", thread_data->print_file);
+      options.SetOption(SnoptSolver::id(), "Print file",
+                        thread_data->print_file);
     }
     snopt_solver.Solve(const_prog, {thread_data->x_init}, options,
                        &thread_data->result);
@@ -362,11 +359,10 @@ GTEST_TEST(SnoptTest, MultiThreadTest) {
     for (const auto& per_thread_data_vec : {single_threaded, multi_threaded}) {
       const auto& result = per_thread_data_vec[i].result;
       EXPECT_TRUE(result.is_success());
-      EXPECT_TRUE(CompareMatrices(
-          result.get_x_val(), Eigen::Vector2d(0, 1), 1E-6));
+      EXPECT_TRUE(
+          CompareMatrices(result.get_x_val(), Eigen::Vector2d(0, 1), 1E-6));
       EXPECT_NEAR(result.get_optimal_cost(), 2, 1E-6);
-      EXPECT_EQ(result.get_solver_details<SnoptSolver>().info,
-                1);
+      EXPECT_EQ(result.get_solver_details<SnoptSolver>().info, 1);
     }
 
     if (!kUsingAsan) {
@@ -389,8 +385,8 @@ GTEST_TEST(SnoptTest, MultiThreadTest) {
       }
       for (auto* contents : {&contents_single, &contents_multi}) {
         // Scrub some volatile text output.
-        *contents = std::regex_replace(
-            *contents, std::regex("..... seconds"), "##### seconds");
+        *contents = std::regex_replace(*contents, std::regex("..... seconds"),
+                                       "##### seconds");
         *contents = std::regex_replace(
             *contents, std::regex(".Printer........................\\d"),
             "(Printer)..............      ####");
@@ -442,8 +438,8 @@ GTEST_TEST(SnoptTest, AutoDiffOnlyCost) {
     EXPECT_TRUE(result.is_success());
     const double tol = 1E-6;
     EXPECT_NEAR(result.get_optimal_cost(), 2, tol);
-    EXPECT_TRUE(CompareMatrices(result.GetSolution(x), drake::Vector1d(1),
-                                tol));
+    EXPECT_TRUE(
+        CompareMatrices(result.GetSolution(x), drake::Vector1d(1), tol));
   }
 }
 
@@ -540,7 +536,8 @@ GTEST_TEST(SnoptSolverTest, BadIntegerParameter) {
   SnoptSolver solver;
   MathematicalProgram prog;
   prog.SetSolverOption(solver.solver_id(), "not an option", 15);
-  DRAKE_EXPECT_THROWS_MESSAGE(solver.Solve(prog),
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      solver.Solve(prog),
       "Error setting Snopt integer parameter not an option");
 }
 
@@ -548,18 +545,17 @@ GTEST_TEST(SnoptSolverTest, BadDoubleParameter) {
   SnoptSolver solver;
   MathematicalProgram prog;
   prog.SetSolverOption(solver.solver_id(), "not an option", 15.0);
-  DRAKE_EXPECT_THROWS_MESSAGE(solver.Solve(prog),
-      "Error setting Snopt double parameter not an option");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      solver.Solve(prog), "Error setting Snopt double parameter not an option");
 }
 
 GTEST_TEST(SnoptSolverTest, BadStringParameter) {
   SnoptSolver solver;
   MathematicalProgram prog;
   prog.SetSolverOption(solver.solver_id(), "not an option", "test");
-  DRAKE_EXPECT_THROWS_MESSAGE(solver.Solve(prog),
-      "Error setting Snopt string parameter not an option");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      solver.Solve(prog), "Error setting Snopt string parameter not an option");
 }
-
 
 GTEST_TEST(SnoptSolverTest, TestNonconvexQP) {
   SnoptSolver solver;
@@ -645,9 +641,8 @@ GTEST_TEST(SnoptTest, TestCostExceptionHandling) {
   prog.AddCost(std::make_shared<ThrowCost>(), x);
   SnoptSolver solver;
   if (solver.available()) {
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        solver.Solve(prog),
-        "Exception.*SNOPT.*ThrowCost.*");
+    DRAKE_EXPECT_THROWS_MESSAGE(solver.Solve(prog),
+                                "Exception.*SNOPT.*ThrowCost.*");
   }
 }
 

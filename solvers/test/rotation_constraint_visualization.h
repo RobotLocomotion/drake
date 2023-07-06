@@ -32,8 +32,7 @@ void DrawBox(const Eigen::Vector3d& bmin, const Eigen::Vector3d& bmax,
  * @param color The rgb color of the boundary to be plotted. @default is red.
  */
 void DrawBoxSphereIntersection(
-    const Eigen::Vector3d &bmin,
-    const Eigen::Vector3d &bmax,
+    const Eigen::Vector3d& bmin, const Eigen::Vector3d& bmax,
     const Eigen::RowVector3d& color = Eigen::RowVector3d(1, 0, 0));
 }  // namespace solvers
 }  // namespace drake

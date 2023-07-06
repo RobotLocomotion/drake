@@ -9,8 +9,8 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/extract_double.h"
 #include "drake/math/linear_solve.h"
+#include "drake/multibody/contact_solvers/conex_supernodal_solver.h"
 #include "drake/multibody/contact_solvers/newton_with_bisection.h"
-#include "drake/multibody/contact_solvers/supernodal_solver.h"
 
 namespace drake {
 namespace multibody {
@@ -257,7 +257,6 @@ T SapSolver<T>::CalcCostAlongLine(
   if (d2ell_dalpha2 != nullptr) DRAKE_DEMAND(d2ell_dalpha2_scratch != nullptr);
 
   // Data.
-  const VectorX<T>& R = model_->constraints_bundle().R();
   const VectorX<T>& v_star = model_->v_star();
 
   // Search direction quantities at state v.
@@ -284,7 +283,7 @@ T SapSolver<T>::CalcCostAlongLine(
   const VectorX<T>& gamma = model_->EvalImpulses(context_alpha);
 
   // Regularizer cost.
-  const T ellR = 0.5 * gamma.dot(R.asDiagonal() * gamma);
+  const T ellR = model_->EvalConstraintsCost(context_alpha);
 
   // Momentum cost. We use the O(n) strategy described in [Castro et al., 2021].
   // The momentum cost is: ellA(α) = 0.5‖v(α)−v*‖², where ‖⋅‖ is the norm
@@ -542,8 +541,8 @@ std::pair<double, int> SapSolver<double>::PerformExactLineSearch(
     double dell_dalpha;
     double d2ell_dalpha2;
     data.solver.CalcCostAlongLine(data.context0, data.search_direction_data, x,
-                                   &data.scratch, &dell_dalpha, &d2ell_dalpha2,
-                                   &data.vec_scratch);
+                                  &data.scratch, &dell_dalpha, &d2ell_dalpha2,
+                                  &data.vec_scratch);
     return std::make_pair(dell_dalpha / data.dell_scale,
                           d2ell_dalpha2 / data.dell_scale);
   };
@@ -612,8 +611,8 @@ template <typename T>
 std::unique_ptr<SuperNodalSolver> SapSolver<T>::MakeSuperNodalSolver() const {
   if constexpr (std::is_same_v<T, double>) {
     const BlockSparseMatrix<T>& J = model_->constraints_bundle().J();
-    return std::make_unique<SuperNodalSolver>(J.block_rows(), J.get_blocks(),
-                                              model_->dynamics_matrix());
+    return std::make_unique<ConexSuperNodalSolver>(
+        J.block_rows(), J.get_blocks(), model_->dynamics_matrix());
   } else {
     throw std::logic_error(
         "SapSolver::MakeSuperNodalSolver(): SuperNodalSolver only supports T "

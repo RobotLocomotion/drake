@@ -22,15 +22,15 @@ using std::shared_ptr;
 using std::unique_ptr;
 using std::vector;
 
-using Eigen::Ref;
 using drake::Vector1d;
+using Eigen::MatrixXd;
+using Eigen::Ref;
 using Eigen::Vector2d;
 using Eigen::VectorXd;
-using Eigen::MatrixXd;
 
+using ::testing::AssertionFailure;
 using ::testing::AssertionResult;
 using ::testing::AssertionSuccess;
-using ::testing::AssertionFailure;
 
 namespace drake {
 namespace solvers {
@@ -275,6 +275,6 @@ GTEST_TEST(EvaluatorBaseTest, DynamicSizedEvaluatorTest) {
             "DynamicSizedEvaluator with 1 decision variables "
             "dynamic_sized_variable\n");
 }
-}  // anonymous namespace
+}  // namespace
 }  // namespace solvers
 }  // namespace drake

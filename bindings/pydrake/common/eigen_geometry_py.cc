@@ -1,8 +1,6 @@
 #include <cmath>
 #include <stdexcept>
 
-#include "pybind11/pybind11.h"
-
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_geometry_pybind.h"
@@ -86,8 +84,6 @@ void CheckSe3(const Isometry3<Expression>&) {}
 void CheckQuaternion(const Eigen::Quaternion<Expression>&) {}
 
 void CheckAngleAxis(const Eigen::AngleAxis<Expression>&) {}
-
-}  // namespace
 
 template <typename T>
 void DoScalarDependentDefinitions(py::module m, T) {
@@ -411,6 +407,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
     DefCast<T>(&cls, kCastDoc);
   }
 }
+
+}  // namespace
 
 PYBIND11_MODULE(eigen_geometry, m) {
   m.doc() = "Bindings for Eigen geometric types.";

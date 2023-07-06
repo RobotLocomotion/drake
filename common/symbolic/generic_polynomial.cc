@@ -353,7 +353,7 @@ Variables GetDecisionVariables(
 
 template <typename BasisElement>
 GenericPolynomial<BasisElement>::GenericPolynomial(MapType init)
-    : basis_element_to_coefficient_map_{move(init)},
+    : basis_element_to_coefficient_map_{std::move(init)},
       indeterminates_{
           GetIndeterminates<BasisElement>(basis_element_to_coefficient_map_)},
       decision_variables_{GetDecisionVariables<BasisElement>(

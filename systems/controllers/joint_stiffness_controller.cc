@@ -31,6 +31,7 @@ JointStiffnessController<T>::JointStiffnessController(
   const int num_q = plant_->num_positions();
   DRAKE_DEMAND(num_q == plant_->num_velocities());
   DRAKE_DEMAND(num_q == plant_->num_actuated_dofs());
+  DRAKE_DEMAND(plant_->IsVelocityEqualToQDot());
 
   DRAKE_DEMAND(kp.size() == num_q);
   DRAKE_DEMAND(kd.size() == num_q);

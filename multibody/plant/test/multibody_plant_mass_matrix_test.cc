@@ -36,6 +36,12 @@ class MultibodyPlantMassMatrixTests : public ::testing::Test {
     plant_.Finalize();
   }
 
+  void LoadUrl(const std::string& url) {
+    Parser parser(&plant_);
+    parser.AddModelsFromUrl(url);
+    plant_.Finalize();
+  }
+
   void LoadIiwaWithGripper() {
     const char kArmSdfPath[] =
         "drake/manipulation/models/iiwa_description/sdf/"
@@ -108,7 +114,7 @@ TEST_F(MultibodyPlantMassMatrixTests, IiwaRobot) {
 // This Atlas model contains a number of kinematics chains of massless bodies.
 // Therefore this test verifies our implementation can handle this situation.
 TEST_F(MultibodyPlantMassMatrixTests, AtlasRobot) {
-  LoadModel("drake/examples/atlas/urdf/atlas_convex_hull.urdf");
+  LoadUrl("package://drake_models/atlas/atlas_convex_hull.urdf");
 
   // Create a context and store an arbitrary configuration.
   std::unique_ptr<Context<double>> context = plant_.CreateDefaultContext();

@@ -19,24 +19,35 @@ files and also calling C++ APIs.
 ![spatula_1](images/spatula_1.jpg)
 ![spatula_2](images/spatula_2.jpg)
 
-## Run DrakeVisualizer
-
-```
-bazel run //tools:drake_visualizer &
-```
-
-In `Plugins > Contacts > Configure Hydroelastic Contact Visualization` you
-might want to set these:
-
-* Maximum pressure = 1.5e4
-* Vector scaling mode = Scaled
-* Global scale of all vectors = 0.05
-
 ## Run the example
 
 ```
 bazel run //examples/hydroelastic/spatula_slip_control:spatula_slip_control
 ```
+
+You should see the printout of Meshcat URL like this:
+
+```
+[console] [info] Meshcat listening for connections at http://localhost:7000
+```
+
+Click on the Meshcat link (for example, http://localhost:7000)
+to visualize.
+
+## Illustration and Collision geometries
+
+In Meshcat, you can view illustration geometries or 
+collision (aka, proximity) geometries or both as shown
+in the following picture.
+Click on `illustration` or `proximity` as you wish.
+
+![spatula_3](images/spatula3.jpg)
+
+## Playback simulation
+
+After the simulation ends, it will publish the result for playback to Meshcat.
+In Meshcat, you can use `Animations/play` or `pause` or `reset` to control 
+the playback.
 
 ## Use polygon or triangle contact surfaces
 
@@ -66,6 +77,15 @@ convergence failures. Using a smaller step size can help in convergence:
 bazel run //examples/hydroelastic/spatula_slip_control:spatula_slip_control \
 -- --contact_surface_representation=triangle --mbp_discrete_update_period=5e-3
 ```
+
+**WARNING**: According to issue
+[17681](https://github.com/RobotLocomotion/drake/issues/17681),
+only `//tools:drake_visualizer`, not MeshCat, not meldis,
+can draw wireframe of the contact surfaces.
+As a result, you will need `//tools:drake_visualizer` to visualize the 
+difference between the `triangle` option and the default `polygon` option.
+However, `//tools:drake_visualizer` is only available in the older
+Ubuntu Focal, not Jammy.
 
 ## Other Options
 

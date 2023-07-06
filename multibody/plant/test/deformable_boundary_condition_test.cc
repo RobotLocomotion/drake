@@ -23,7 +23,6 @@ using Eigen::Vector3d;
 using Eigen::Vector4d;
 using Eigen::VectorXd;
 using std::make_unique;
-using std::move;
 using std::unique_ptr;
 
 namespace drake {
@@ -70,7 +69,7 @@ class DeformableIntegrationTest : public ::testing::Test {
     deformable_model->SetWallBoundaryCondition(
         body_id_, p_WQ_, n_W_);
     model_ = deformable_model.get();
-    plant_->AddPhysicalModel(move(deformable_model));
+    plant_->AddPhysicalModel(std::move(deformable_model));
     plant_->set_discrete_contact_solver(DiscreteContactSolver::kSap);
 
     /* Register a visual geometry for the "wall". */
@@ -86,7 +85,7 @@ class DeformableIntegrationTest : public ::testing::Test {
 
     auto contact_manager = make_unique<CompliantContactManager<double>>();
     manager_ = contact_manager.get();
-    plant_->SetDiscreteUpdateManager(move(contact_manager));
+    plant_->SetDiscreteUpdateManager(std::move(contact_manager));
     driver_ = CompliantContactManagerTester::deformable_driver(*manager_);
     /* Connect visualizer. Useful for when this test is used for debugging. */
     geometry::DrakeVisualizerd::AddToBuilder(&builder, *scene_graph_);
@@ -120,19 +119,19 @@ class DeformableIntegrationTest : public ::testing::Test {
   DeformableBodyId RegisterDeformableBall(DeformableModel<double>* model,
                                           std::string name) {
     auto geometry = make_unique<GeometryInstance>(
-        RigidTransformd(), make_unique<Sphere>(kRadius), move(name));
+        RigidTransformd(), make_unique<Sphere>(kRadius), std::move(name));
     ProximityProperties props;
     const CoulombFriction<double> kFriction{0.4, 0.4};
     geometry::AddContactMaterial({}, {}, kFriction, &props);
-    geometry->set_proximity_properties(move(props));
+    geometry->set_proximity_properties(std::move(props));
     fem::DeformableBodyConfig<double> body_config;
     body_config.set_youngs_modulus(kYoungsModulus);
     body_config.set_poissons_ratio(kPoissonsRatio);
     body_config.set_mass_density(kMassDensity);
     body_config.set_stiffness_damping_coefficient(kStiffnessDamping);
     constexpr double kRezHint = kRadius;
-    DeformableBodyId id =
-        model->RegisterDeformableBody(move(geometry), body_config, kRezHint);
+    DeformableBodyId id = model->RegisterDeformableBody(std::move(geometry),
+                                                        body_config, kRezHint);
     return id;
   }
 };

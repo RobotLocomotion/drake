@@ -58,7 +58,7 @@ struct Scenario {
     .target_realtime_rate = 1.0,
   };
 
-  /* Plant configuration (timestep and contact parameters). */
+  /* Plant configuration (time step and contact parameters). */
   multibody::MultibodyPlantConfig plant_config;
 
   /* All of the fully deterministic elements of the simulation. */

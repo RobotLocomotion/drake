@@ -20,12 +20,11 @@ Begin this process around 1 week prior to the intended release date.
 2. Create a local Drake branch named ``release_notes-v1.N.0`` (so that others
    can easily find and push to it after the PR is opened).
 3. As the first commit on the branch, mimic the commit
-   ([link](https://github.com/RobotLocomotion/drake/pull/14208/commits/674b84877bc08448b59a2243f3b910a7b6dbab43)
-   from [PR 14208](https://github.com/RobotLocomotion/drake/pull/14208)
+   [`drake@65adb4dd`](https://github.com/RobotLocomotion/drake/commit/65adb4dd1f89835ad482d6a9a437cb899c05b779)
    in order to disable CI.  A quick way to do this might be:
    ```
-   git fetch upstream pull/14208/head
-   git cherry-pick 674b84877bc08448b59a2243f3b910a7b6dbab43
+   git fetch upstream 65adb4dd1f89835ad482d6a9a437cb899c05b779
+   git cherry-pick FETCH_HEAD
    ```
 4. Push that branch and then open a new pull request titled:
    ```
@@ -220,11 +219,14 @@ the email address associated with your github account.
    1. Edit the first line to refer to the YYYYMMDD for this release.
       1. For reference, the typical content is thus:
          ```
-         FROM robotlocomotion/drake:jammy-20220929
+         FROM robotlocomotion/drake:jammy-20230518
 
          RUN apt-get -q update && apt-get -q install -y --no-install-recommends nginx-light xvfb && apt-get -q clean
 
          ENV DISPLAY=:1
+
+         ENV PATH="/opt/drake/bin:${PATH}" \
+           PYTHONPATH="/opt/drake/lib/python3.10/site-packages:${PYTHONPATH}"
          ```
       2. If the current content differs by more than just the date from the
          above template, ask for help on slack in the ``#releases`` channel.
@@ -270,7 +272,7 @@ the email address associated with your github account.
          the option vanishes and the notebook completes.
       4. The ``rendering_multibody_plant`` sometimes crashes with an interrupted
          error. In that case, click through to the "Environment" gear in the
-         right-hand panel, then into the ``init.ipynb`` notbook and re-run the
+         right-hand panel, then into the ``init.ipynb`` notebook and re-run the
          initialization. Then go back to  ``rendering_multibody_plant`` and try
          again.
    2. To deploy run each of the ~2 dozen notebooks (i.e., do this step for
@@ -278,13 +280,15 @@ the email address associated with your github account.
       ... etc.):
       1. In the right-hand panel of your screen, take note that each notebook
          appears in two places -- in "NOTEBOOKS" near the top and in "FILES"
-         near the bottom. The "NOTBOOKS" is the old copy; the "FILES" is the new
-         copy. Our goal is to replace the old copy with the new.
+         near the bottom. The "NOTEBOOKS" is the old copy; the "FILES" is the
+         new copy. Our goal is to replace the old copy with the new.
       2. Scroll down to the "FILES" and choose the top-most name. Right click on
          it and select "Move to notebooks".
+         Be patient because the web interface could be slow, and there might be
+         delay between copying and deleting the file.
       3. Because a notebook of that name already existed in "NOTEBOOKS" (the old
          copy), the moved notebook will be renamed with a ``-2`` suffix.
-      4. Scroll up to "NOTEBOOKS". Right click on the old copy (without ``-2`)
+      4. Scroll up to "NOTEBOOKS". Right click on the old copy (without ``-2``)
          and select "Delete" and confirm. Right click on the new notebook (with
          ``-2``) and select "Rename" and remove the ``-2`` suffix.
       5. Open the (new) notebook and click "Run notebook". It should succeed.

@@ -83,6 +83,19 @@ const std::string& GetUrlContent(std::string_view url_path) {
   return empty.access();
 }
 
+template <typename Mapping>
+[[noreturn]] void ThrowThingNotFound(
+    std::string_view thing, std::string_view name, Mapping thing_map) {
+  std::vector<std::string> keys;
+  for (const auto& map_pair : thing_map) {
+    keys.push_back(map_pair.first);
+  }
+  throw std::logic_error(
+      fmt::format("Meshcat does not have any {} named {}.  The "
+                  "registered {} names are ({}).",
+                  thing, name, thing, fmt::join(keys, ", ")));
+}
+
 }  // namespace
 
 namespace drake {
@@ -342,7 +355,7 @@ class MeshcatShapeReifier : public ShapeReifier {
         //  - "[^\s]+" matches the filename, and
         //  - "[$\r\n]" matches the end of string or end of line.
         // TODO(russt): This parsing could still be more robust.
-        std::regex map_regex(R"""(map_.+\s([^\s]+)[$\r\n])""");
+        std::regex map_regex(R"""(map_.+\s([^\s]+)\s*[$\r\n])""");
         for (std::sregex_iterator iter(meshfile_object.mtl_library.begin(),
                                        meshfile_object.mtl_library.end(),
                                        map_regex);
@@ -359,8 +372,8 @@ class MeshcatShapeReifier : public ShapeReifier {
                             std::istreambuf_iterator<char>());
             meshfile_object.resources.try_emplace(
                 map, std::string("data:image/png;base64,") +
-                          common_robotics_utilities::base64_helpers::Encode(
-                              map_data));
+                         common_robotics_utilities::base64_helpers::Encode(
+                             map_data));
           } else {
             drake::log()->warn(
                 "Meshcat: Failed to load texture. \"{}\" references {}, but "
@@ -378,7 +391,18 @@ class MeshcatShapeReifier : public ShapeReifier {
       matrix(0, 0) = mesh.scale();
       matrix(1, 1) = mesh.scale();
       matrix(2, 2) = mesh.scale();
-    } else {  // not obj or no mtllib.
+    } else if (format == "gltf") {
+      auto& meshfile_object =
+          lumped.object.emplace<internal::MeshFileObjectData>();
+      meshfile_object.uuid = uuids::to_string((*uuid_generator_)());
+      meshfile_object.format = std::move(format);
+      meshfile_object.data = std::move(mesh_data);
+      Eigen::Map<Eigen::Matrix4d> matrix(meshfile_object.matrix);
+      matrix(0, 0) = mesh.scale();
+      matrix(1, 1) = mesh.scale();
+      matrix(2, 2) = mesh.scale();
+    } else {
+      // Neither obj with mtllib nor gltf. E.g., a Collada .dae file.
       auto geometry = std::make_unique<internal::MeshFileGeometryData>();
       geometry->uuid = uuids::to_string((*uuid_generator_)());
       geometry->format = std::move(format);
@@ -391,7 +415,7 @@ class MeshcatShapeReifier : public ShapeReifier {
       matrix(1, 1) = mesh.scale();
       matrix(2, 2) = mesh.scale();
     }
-    }
+  }
 
   void ImplementGeometry(const Box& box, void* data) override {
     DRAKE_DEMAND(data != nullptr);
@@ -641,6 +665,7 @@ class Meshcat::Impl {
   // This function is public via the PIMPL.
   void SetRealtimeRate(double rate) {
     DRAKE_DEMAND(IsThread(main_thread_id_));
+    realtime_rate_ = rate;
     internal::RealtimeRateData data;
     data.rate = rate;
     Defer([this, data = std::move(data)]() {
@@ -651,6 +676,12 @@ class Meshcat::Impl {
       std::string message = message_stream.str();
       app_->publish("all", message, uWS::OpCode::BINARY, false);
     });
+  }
+
+  // This function is public via the PIMPL.
+  double GetRealtimeRate() const {
+    DRAKE_DEMAND(IsThread(main_thread_id_));
+    return realtime_rate_;
   }
 
   // This function is public via the PIMPL.
@@ -1272,8 +1303,7 @@ class Meshcat::Impl {
     std::lock_guard<std::mutex> lock(controls_mutex_);
     auto iter = buttons_.find(name);
     if (iter == buttons_.end()) {
-      throw std::logic_error(
-          fmt::format("Meshcat does not have any button named {}.", name));
+      ThrowThingNotFound("button", name, buttons_);
     }
     return iter->second.num_clicks;
   }
@@ -1287,8 +1317,7 @@ class Meshcat::Impl {
       std::lock_guard<std::mutex> lock(controls_mutex_);
       auto iter = buttons_.find(name);
       if (iter == buttons_.end()) {
-        throw std::logic_error(
-            fmt::format("Meshcat does not have any button named {}.", name));
+        ThrowThingNotFound("button", name, buttons_);
       }
       buttons_.erase(iter);
       auto c_iter = std::find(controls_.begin(), controls_.end(), name);
@@ -1365,8 +1394,7 @@ class Meshcat::Impl {
       std::lock_guard<std::mutex> lock(controls_mutex_);
       auto iter = sliders_.find(name);
       if (iter == sliders_.end()) {
-        throw std::logic_error(
-            fmt::format("Meshcat does not have any slider named {}.", name));
+        ThrowThingNotFound("slider", name, sliders_);
       }
       internal::SetSliderControl& s = iter->second;
       // Match setValue in NumberController.js from dat.GUI.
@@ -1396,8 +1424,7 @@ class Meshcat::Impl {
     std::lock_guard<std::mutex> lock(controls_mutex_);
     auto iter = sliders_.find(name);
     if (iter == sliders_.end()) {
-      throw std::logic_error(
-          fmt::format("Meshcat does not have any slider named {}.", name));
+        ThrowThingNotFound("slider", name, sliders_);
     }
     return iter->second.value;
   }
@@ -1423,8 +1450,7 @@ class Meshcat::Impl {
       std::lock_guard<std::mutex> lock(controls_mutex_);
       auto iter = sliders_.find(name);
       if (iter == sliders_.end()) {
-        throw std::logic_error(
-            fmt::format("Meshcat does not have any slider named {}.", name));
+        ThrowThingNotFound("slider", name, sliders_);
       }
       sliders_.erase(iter);
       auto c_iter = std::find(controls_.begin(), controls_.end(), name);
@@ -1929,6 +1955,7 @@ class Meshcat::Impl {
   const MeshcatParams params_;
   int port_{};
   std::mt19937 generator_{};
+  double realtime_rate_{0.0};
 
   // These variables should only be accessed in the websocket thread.
   std::thread::id websocket_thread_id_{};
@@ -2222,6 +2249,10 @@ void Meshcat::Delete(std::string_view path) {
 
 void Meshcat::SetRealtimeRate(double rate) {
   impl().SetRealtimeRate(rate);
+}
+
+double Meshcat::GetRealtimeRate() const {
+  return impl().GetRealtimeRate();
 }
 
 void Meshcat::SetProperty(std::string_view path, std::string property,

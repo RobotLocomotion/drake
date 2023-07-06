@@ -14,7 +14,6 @@ namespace {
 
 using math::RigidTransformd;
 using std::make_unique;
-using std::move;
 
 // Confirms that the instance is copyable.
 GTEST_TEST(GeometryInstanceTest, IsCopyable) {
@@ -28,14 +27,12 @@ GTEST_TEST(GeometryInstanceTest, IsCopyable) {
 
 GTEST_TEST(GeometryInstanceTest, IdCopies) {
   RigidTransformd pose = RigidTransformd::Identity();
-  auto shape = make_unique<Sphere>(1.0);
-  GeometryInstance geometry_a{pose, move(shape), "geometry_a"};
+  GeometryInstance geometry_a{pose, Sphere(1.0), "geometry_a"};
   GeometryInstance geometry_b(geometry_a);
   EXPECT_EQ(geometry_a.id(), geometry_b.id());
   EXPECT_EQ(geometry_a.name(), geometry_b.name());
 
-  shape = make_unique<Sphere>(2.0);
-  GeometryInstance geometry_c{pose, move(shape), "geometry_c"};
+  GeometryInstance geometry_c{pose, Sphere(2.0), "geometry_c"};
   EXPECT_NE(geometry_a.id(), geometry_c.id());
   EXPECT_NE(geometry_a.name(), geometry_c.name());
   geometry_c = geometry_a;
@@ -50,8 +47,7 @@ GTEST_TEST(GeometryInstanceTest, CanonicalName) {
   RigidTransformd pose = RigidTransformd::Identity();
 
   auto make_instance = [&pose](const std::string& name) {
-    auto shape = make_unique<Sphere>(1.0);
-    return GeometryInstance{pose, move(shape), name};
+    return GeometryInstance{pose, Sphere(1.0), name};
   };
 
   const std::string canonical = "name";

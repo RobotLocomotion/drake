@@ -91,8 +91,7 @@ class TestQPasSOCP : public ::testing::TestWithParam<QPasSOCPProblem> {
  public:
   TestQPasSOCP();
 
-  void SolveAndCheckSolution(const SolverInterface& solver,
-                             double tol = 1E-6);
+  void SolveAndCheckSolution(const SolverInterface& solver, double tol = 1E-6);
 
  private:
   Eigen::MatrixXd Q_;

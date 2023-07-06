@@ -7,6 +7,10 @@ load(
     "drake_cc_test",
 )
 load(
+    "@drake//tools/skylark:drake_py.bzl",
+    "drake_py_unittest",
+)
+load(
     ":defs.bzl",
     "drake_cc_optional_googletest",
     "drake_cc_optional_library",
@@ -61,6 +65,7 @@ drake_cc_package_library(
         ":rotation_constraint",
         ":scs_solver",
         ":sdpa_free_format",
+        ":semidefinite_relaxation",
         ":snopt_solver",
         ":solution_result",
         ":solve",
@@ -195,6 +200,7 @@ drake_cc_library(
     ],
     deps = [
         "//math:gradient",
+        "//math:soft_min_max",
     ],
 )
 
@@ -203,9 +209,11 @@ drake_cc_library(
     srcs = ["cost.cc"],
     hdrs = ["cost.h"],
     interface_deps = [
+        ":decision_variable",
         ":evaluator_base",
     ],
     deps = [
+        ":constraint",
         "//math:gradient",
     ],
 )
@@ -416,6 +424,7 @@ drake_cc_library(
     interface_deps = [
         ":mathematical_program",
         ":mathematical_program_result",
+        "//common:name_value",
     ],
     deps = [
         ":choose_best_solver",
@@ -957,6 +966,16 @@ drake_cc_library(
     deps = [],
 )
 
+drake_cc_library(
+    name = "semidefinite_relaxation",
+    srcs = ["semidefinite_relaxation.cc"],
+    hdrs = ["semidefinite_relaxation.h"],
+    interface_deps = [
+        ":mathematical_program",
+    ],
+    deps = [],
+)
+
 drake_cc_optional_library(
     name = "csdp_solver_error_handling",
     opt_out_condition = "//tools:no_csdp",
@@ -1139,6 +1158,15 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "semidefinite_relaxation_test",
+    deps = [
+        ":semidefinite_relaxation",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
     name = "clp_solver_test",
     deps = [
         ":clp_solver",
@@ -1242,6 +1270,24 @@ drake_cc_googletest(
         ":mathematical_program",
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_py_unittest(
+    name = "gurobi_solver_license_retention_test",
+    data = [
+        ":gurobi_solver_license_retention_test_helper",
+    ],
+    tags = gurobi_test_tags(),
+)
+
+drake_cc_binary(
+    name = "gurobi_solver_license_retention_test_helper",
+    testonly = True,
+    srcs = ["test/gurobi_solver_license_retention_test_helper.cc"],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":gurobi_solver",
     ],
 )
 
@@ -1788,4 +1834,4 @@ drake_cc_googletest(
     ],
 )
 
-add_lint_tests()
+add_lint_tests(enable_clang_format_lint = False)

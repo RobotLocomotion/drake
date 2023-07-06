@@ -40,7 +40,8 @@ struct CallbackData {
    all aliased in the data and require the aliased parameters to remain valid at
    least as long as the CallbackData instance.
 
-   @param collision_filter_in     The collision filter system. Aliased.
+   @param collision_filter_in     The collision filter system. Aliased. If null,
+                                  collision filters will not be considered.
    @param X_WGs_in                The T-valued poses. Aliased.
    @param max_distance_in         The maximum distance at which a pair is
                                   reported.
@@ -50,23 +51,22 @@ struct CallbackData {
       const std::unordered_map<GeometryId, math::RigidTransform<T>>* X_WGs_in,
       double max_distance_in,
       std::vector<SignedDistancePair<T>>* nearest_pairs_in)
-      : collision_filter(*collision_filter_in),
+      : collision_filter(collision_filter_in),
         X_WGs(*X_WGs_in),
         max_distance(max_distance_in),
         nearest_pairs(*nearest_pairs_in) {
-    DRAKE_DEMAND(collision_filter_in != nullptr);
     DRAKE_DEMAND(X_WGs_in != nullptr);
     DRAKE_DEMAND(nearest_pairs_in != nullptr);
   }
 
   /* The collision filter system.  */
-  const CollisionFilter& collision_filter;
+  const CollisionFilter* collision_filter{};
 
   /* The T-valued poses of all geometries.  */
   const std::unordered_map<GeometryId, math::RigidTransform<T>>& X_WGs;
 
   /* The maximum distance at which a pair's distance will be reported.  */
-  const double max_distance;
+  const double max_distance{};
 
   /* The distance query parameters.  */
   fcl::DistanceRequestd request;
@@ -180,7 +180,9 @@ void CalcDistanceFallback(const fcl::CollisionObjectd& a,
   // actually exists, it should be specialized below.
   throw std::logic_error(fmt::format(
       "Signed distance queries between shapes '{}' and '{}' "
-      "are not supported for scalar type {}",
+      "are not supported for scalar type {}. See the documentation for "
+      "QueryObject::ComputeSignedDistancePairwiseClosestPoints() for the "
+      "full status of supported geometries.",
       GetGeometryName(a), GetGeometryName(b), NiceTypeName::Get<T>()));
 }
 

@@ -9,10 +9,10 @@
 #include "drake/solvers/test/mathematical_program_test_util.h"
 #include "drake/solvers/test/quadratic_program_examples.h"
 
-using Eigen::MatrixXd;
-using Eigen::VectorXd;
-using Eigen::Vector2d;
 using Eigen::Matrix2d;
+using Eigen::MatrixXd;
+using Eigen::Vector2d;
+using Eigen::VectorXd;
 
 namespace drake {
 namespace solvers {
@@ -404,6 +404,11 @@ TEST_F(EqualityConstrainedQPSolverTest, WrongSolverOptions2) {
       "FeasibilityTol should be a non-negative number.");
 }
 
+GTEST_TEST(TestEqualityConstrainedQP1, Test) {
+  EqualityConstrainedQPSolver solver;
+  TestEqualityConstrainedQP1(solver);
+}
+
 GTEST_TEST(EqualityConstrainedQPSolverDualSolutionTest, DualSolution1) {
   EqualityConstrainedQPSolver solver;
   TestEqualityConstrainedQPDualSolution1(solver);
@@ -413,7 +418,6 @@ GTEST_TEST(EqualityConstrainedQPSolverDualSolutionTest, DualSolution2) {
   EqualityConstrainedQPSolver solver;
   TestEqualityConstrainedQPDualSolution2(solver);
 }
-
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

@@ -25,7 +25,7 @@ class DeformableModelTest : public ::testing::Test {
         AddMultibodyPlantSceneGraph(&builder_, kDt);
     auto deformable_model = make_unique<DeformableModel<double>>(plant_);
     deformable_model_ptr_ = deformable_model.get();
-    plant_->AddPhysicalModel(move(deformable_model));
+    plant_->AddPhysicalModel(std::move(deformable_model));
   }
 
   systems::DiagramBuilder<double> builder_;

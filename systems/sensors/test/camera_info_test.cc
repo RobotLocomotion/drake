@@ -149,7 +149,7 @@ GTEST_TEST(TestCameraInfo, BadConstructionThrows) {
     Matrix3d K = K_valid;
     K(i, j) = -1;
     DRAKE_EXPECT_THROWS_MESSAGE(CameraInfo(kW, kH, K),
-                              "[^]*intrinsic matrix is malformed[^]*");
+                                "[^]*intrinsic matrix is malformed[^]*");
   }
 }
 

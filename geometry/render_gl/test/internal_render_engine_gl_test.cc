@@ -23,8 +23,14 @@
 
 namespace drake {
 namespace geometry {
-namespace render {
+namespace render_gl {
 namespace internal {
+
+using render::ColorRenderCamera;
+using render::DepthRenderCamera;
+using render::RenderCameraCore;
+using render::RenderEngine;
+using render::RenderLabel;
 
 // Friend class that gives the tests access to a RenderEngineGl's OpenGlContext.
 class RenderEngineGlTester {
@@ -42,7 +48,8 @@ class RenderEngineGlTester {
   }
 
   const internal::OpenGlGeometry GetMesh(const std::string& filename) const {
-    return const_cast<RenderEngineGl&>(engine_).GetMesh(filename);
+    const int index = const_cast<RenderEngineGl&>(engine_).GetMesh(filename);
+    return engine_.geometries_[index];
   }
 
  private:
@@ -1260,7 +1267,7 @@ TEST_F(RenderEngineGlTest, DifferentCameras) {
   const auto& ref_core = depth_camera_.core();
   const std::string& ref_name = ref_core.renderer_name();
   const RigidTransformd ref_X_BS = ref_core.sensor_pose_in_camera_body();
-  const ClippingRange& ref_clipping = ref_core.clipping();
+  const render::ClippingRange& ref_clipping = ref_core.clipping();
   const auto& ref_intrinsics = ref_core.intrinsics();
   const int ref_w = ref_intrinsics.width();
   const int ref_h = ref_intrinsics.height();
@@ -1898,6 +1905,6 @@ TEST_F(RenderEngineGlTest, IntrinsicsAndRenderProperties) {
 
 }  // namespace
 }  // namespace internal
-}  // namespace render
+}  // namespace render_gl
 }  // namespace geometry
 }  // namespace drake

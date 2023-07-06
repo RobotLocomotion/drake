@@ -22,7 +22,9 @@ void CheckConstraintEvalNonsymbolic(
                      Eigen::VectorXd*)>
       constraint_eval =
           [&constraint](const Eigen::Ref<const Eigen::VectorXd>& x,
-                        Eigen::VectorXd* y) { return constraint.Eval(x, y); };
+                        Eigen::VectorXd* y) {
+            return constraint.Eval(x, y);
+          };
   const auto J = math::ComputeNumericalGradient(
       constraint_eval, x_double,
       math::NumericalGradientOption{math::NumericalGradientMethod::kCentral});

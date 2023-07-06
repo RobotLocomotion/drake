@@ -9,7 +9,6 @@
 #include <vtkCamera.h>
 #include <vtkCylinderSource.h>
 #include <vtkImageCast.h>
-#include <vtkOBJReader.h>
 #include <vtkOpenGLPolyDataMapper.h>
 #include <vtkOpenGLShaderProperty.h>
 #include <vtkOpenGLTexture.h>
@@ -21,6 +20,7 @@
 #include <vtkTransformPolyDataFilter.h>
 
 #include "drake/common/text_logging.h"
+#include "drake/geometry/render/render_mesh.h"
 #include "drake/geometry/render/shaders/depth_shaders.h"
 #include "drake/geometry/render_vtk/internal_render_engine_vtk_base.h"
 #include "drake/geometry/render_vtk/internal_vtk_util.h"
@@ -28,13 +28,22 @@
 
 namespace drake {
 namespace geometry {
-namespace render {
+namespace render_vtk {
+namespace internal {
 
 using Eigen::Vector2d;
 using Eigen::Vector4d;
+using geometry::internal::DefineMaterial;
+using geometry::internal::LoadRenderMeshFromObj;
+using geometry::internal::RenderMaterial;
+using geometry::internal::RenderMesh;
 using math::RigidTransformd;
+using render::ColorRenderCamera;
+using render::DepthRenderCamera;
+using render::RenderCameraCore;
+using render::RenderEngine;
+using render::RenderLabel;
 using std::make_unique;
-using internal::ImageType;
 using systems::sensors::CameraInfo;
 using systems::sensors::ColorD;
 using systems::sensors::ColorI;
@@ -43,9 +52,6 @@ using systems::sensors::ImageLabel16I;
 using systems::sensors::ImageRgba8U;
 using systems::sensors::ImageTraits;
 using systems::sensors::PixelType;
-using vtk_util::ConvertToVtkTransform;
-using vtk_util::CreateSquarePlane;
-using vtk_util::MakeVtkPointerArray;
 
 namespace {
 
@@ -81,21 +87,9 @@ struct RegistrationData {
   const PerceptionProperties& properties;
   const RigidTransformd& X_WG;
   const GeometryId id;
-  // The file name if the shape being registered is a mesh.
-  std::optional<std::string> mesh_filename;
 };
 
-std::string RemoveFileExtension(const std::string& filepath) {
-  const size_t last_dot = filepath.find_last_of(".");
-  if (last_dot == std::string::npos) {
-    throw std::logic_error("File has no extension.");
-  }
-  return filepath.substr(0, last_dot);
-}
-
 }  // namespace
-
-namespace internal {
 
 ShaderCallback::ShaderCallback() :
     // These values are arbitrary "reasonable" values, but we expect them to
@@ -103,19 +97,16 @@ ShaderCallback::ShaderCallback() :
     z_near_(0.01),
     z_far_(100.0) {}
 
-}  // namespace internal
+vtkNew<ShaderCallback> RenderEngineVtk::uniform_setting_callback_;
 
-vtkNew<internal::ShaderCallback> RenderEngineVtk::uniform_setting_callback_;
-
-RenderEngineVtk::RenderEngineVtk(
-    const geometry::RenderEngineVtkParams& parameters)
+RenderEngineVtk::RenderEngineVtk(const RenderEngineVtkParams& parameters)
     : RenderEngine(parameters.default_label ? *parameters.default_label
                                             : RenderLabel::kUnspecified),
       pipelines_{{make_unique<RenderingPipeline>(),
                   make_unique<RenderingPipeline>(),
                   make_unique<RenderingPipeline>()}} {
   if (parameters.default_diffuse) {
-    default_diffuse_ = *parameters.default_diffuse;
+    default_diffuse_.set(*parameters.default_diffuse);
   }
 
   const auto& c = parameters.default_clear_color;
@@ -136,12 +127,16 @@ void RenderEngineVtk::UpdateViewpoint(const RigidTransformd& X_WC) {
 void RenderEngineVtk::ImplementGeometry(const Box& box, void* user_data) {
   const RegistrationData* data = static_cast<RegistrationData*>(user_data);
   ImplementGeometry(CreateVtkBox(box, data->properties).GetPointer(),
+                    DefineMaterial(data->properties, default_diffuse_),
                     user_data);
 }
 
 void RenderEngineVtk::ImplementGeometry(const Capsule& capsule,
                                         void* user_data) {
-  ImplementGeometry(CreateVtkCapsule(capsule).GetPointer(), user_data);
+  const RegistrationData* data = static_cast<RegistrationData*>(user_data);
+  ImplementGeometry(CreateVtkCapsule(capsule).GetPointer(),
+                    DefineMaterial(data->properties, default_diffuse_),
+                    user_data);
 }
 
 void RenderEngineVtk::ImplementGeometry(const Convex& convex, void* user_data) {
@@ -159,19 +154,28 @@ void RenderEngineVtk::ImplementGeometry(const Cylinder& cylinder,
   vtkNew<vtkTransformPolyDataFilter> transform_filter;
   TransformToDrakeCylinder(transform, transform_filter, vtk_cylinder);
 
-  ImplementGeometry(transform_filter.GetPointer(), user_data);
+  const RegistrationData* data = static_cast<RegistrationData*>(user_data);
+  ImplementGeometry(transform_filter.GetPointer(),
+                    DefineMaterial(data->properties, default_diffuse_),
+                    user_data);
 }
 
 void RenderEngineVtk::ImplementGeometry(const Ellipsoid& ellipsoid,
                                         void* user_data) {
-  ImplementGeometry(CreateVtkEllipsoid(ellipsoid).GetPointer(), user_data);
+  const RegistrationData* data = static_cast<RegistrationData*>(user_data);
+  ImplementGeometry(CreateVtkEllipsoid(ellipsoid).GetPointer(),
+                    DefineMaterial(data->properties, default_diffuse_),
+                    user_data);
 }
 
 void RenderEngineVtk::ImplementGeometry(const HalfSpace&,
                                         void* user_data) {
   vtkSmartPointer<vtkPlaneSource> vtk_plane = CreateSquarePlane(kTerrainSize);
 
-  ImplementGeometry(vtk_plane.GetPointer(), user_data);
+  const RegistrationData* data = static_cast<RegistrationData*>(user_data);
+  ImplementGeometry(vtk_plane.GetPointer(),
+                    DefineMaterial(data->properties, default_diffuse_),
+                    user_data);
 }
 
 void RenderEngineVtk::ImplementGeometry(const Mesh& mesh, void* user_data) {
@@ -181,7 +185,10 @@ void RenderEngineVtk::ImplementGeometry(const Mesh& mesh, void* user_data) {
 void RenderEngineVtk::ImplementGeometry(const Sphere& sphere, void* user_data) {
   vtkNew<vtkTexturedSphereSource> vtk_sphere;
   SetSphereOptions(vtk_sphere.GetPointer(), sphere.radius());
-  ImplementGeometry(vtk_sphere.GetPointer(), user_data);
+  const RegistrationData* data = static_cast<RegistrationData*>(user_data);
+  ImplementGeometry(vtk_sphere.GetPointer(),
+                    DefineMaterial(data->properties, default_diffuse_),
+                    user_data);
 }
 
 bool RenderEngineVtk::DoRegisterVisual(
@@ -362,7 +369,7 @@ RenderEngineVtk::RenderEngineVtk(const RenderEngineVtk& other)
         vtkSmartPointer<vtkActor>::New()};
     clone_actor_array(other_id_actor_pair.second, &actors);
     const GeometryId id = other_id_actor_pair.first;
-    actors_.insert({id, move(actors)});
+    actors_.insert({id, std::move(actors)});
   }
 
   // Copy camera properties
@@ -446,24 +453,34 @@ void RenderEngineVtk::InitializePipelines() {
 
 void RenderEngineVtk::ImplementObj(const std::string& file_name, double scale,
                                    void* user_data) {
-  static_cast<RegistrationData*>(user_data)->mesh_filename = file_name;
-  vtkNew<vtkOBJReader> mesh_reader;
-  mesh_reader->SetFileName(file_name.c_str());
-  mesh_reader->Update();
+  auto* data = static_cast<RegistrationData*>(user_data);
+
+  RenderMesh mesh_data =
+      LoadRenderMeshFromObj(file_name, data->properties, default_diffuse_,
+                            drake::internal::DiagnosticPolicy());
+  const RenderMaterial material = mesh_data.material;
+
+  vtkSmartPointer<vtkPolyDataAlgorithm> mesh_source =
+      CreateVtkMesh(std::move(mesh_data));
+
+  if (scale == 1) {
+    ImplementGeometry(mesh_source.GetPointer(), material, user_data);
+    return;
+  }
 
   vtkNew<vtkTransform> transform;
   // TODO(SeanCurtis-TRI): Should I be allowing only isotropic scale.
-  // TODO(SeanCurtis-TRI): Only add the transform filter if scale is not all 1.
   transform->Scale(scale, scale, scale);
   vtkNew<vtkTransformPolyDataFilter> transform_filter;
-  transform_filter->SetInputConnection(mesh_reader->GetOutputPort());
+  transform_filter->SetInputConnection(mesh_source->GetOutputPort());
   transform_filter->SetTransform(transform.GetPointer());
   transform_filter->Update();
 
-  ImplementGeometry(transform_filter.GetPointer(), user_data);
+  ImplementGeometry(transform_filter.GetPointer(), material, user_data);
 }
 
 void RenderEngineVtk::ImplementGeometry(vtkPolyDataAlgorithm* source,
+                                        const RenderMaterial& material,
                                         void* user_data) {
   DRAKE_DEMAND(user_data != nullptr);
 
@@ -478,8 +495,8 @@ void RenderEngineVtk::ImplementGeometry(vtkPolyDataAlgorithm* source,
   vtkOpenGLShaderProperty* shader_prop = vtkOpenGLShaderProperty::SafeDownCast(
       actors[ImageType::kDepth]->GetShaderProperty());
   DRAKE_DEMAND(shader_prop != nullptr);
-  shader_prop->SetVertexShaderCode(shaders::kDepthVS);
-  shader_prop->SetFragmentShaderCode(shaders::kDepthFS);
+  shader_prop->SetVertexShaderCode(render::shaders::kDepthVS);
+  shader_prop->SetFragmentShaderCode(render::shaders::kDepthFS);
   mappers[ImageType::kDepth]->AddObserver(
       vtkCommand::UpdateShaderEvent, uniform_setting_callback_.Get());
 
@@ -516,41 +533,16 @@ void RenderEngineVtk::ImplementGeometry(vtkPolyDataAlgorithm* source,
 
   // Color actor.
   auto& color_actor = actors[ImageType::kColor];
-  const std::string& diffuse_map_name =
-      data.properties.GetPropertyOrDefault<std::string>("phong", "diffuse_map",
-                                                        "");
-  // Legacy support for *implied* texture maps. If we have mesh.obj, we look for
-  // mesh.png (unless one has been specifically called out in the properties).
-  // TODO(SeanCurtis-TRI): Remove this legacy texture when objects and materials
-  //  are coherently specified by SDF/URDF/obj/mtl, etc.
-  std::string texture_name;
-  std::ifstream file_exist(diffuse_map_name);
-  if (file_exist) {
-    texture_name = diffuse_map_name;
-  } else {
-    if (!diffuse_map_name.empty()) {
-      log()->warn("Requested diffuse map could not be found: {}",
-                  diffuse_map_name);
-    }
-    if (diffuse_map_name.empty() && data.mesh_filename) {
-      // This is the hack to search for mesh.png as a possible texture.
-      const std::string alt_texture_name(
-          RemoveFileExtension(*data.mesh_filename) + ".png");
-      std::ifstream alt_file_exist(alt_texture_name);
-      if (alt_file_exist) texture_name = alt_texture_name;
-    }
-  }
-  if (!texture_name.empty()) {
-    const Vector2d& uv_scale = data.properties.GetPropertyOrDefault(
-        "phong", "diffuse_scale", Vector2d{1, 1});
+
+  if (!material.diffuse_map.empty()) {
     vtkNew<vtkPNGReader> texture_reader;
-    texture_reader->SetFileName(texture_name.c_str());
+    texture_reader->SetFileName(material.diffuse_map.c_str());
     texture_reader->Update();
     if (texture_reader->GetOutput()->GetScalarType() != VTK_UNSIGNED_CHAR) {
       log()->warn(
           "Texture map '{}' has an unsupported bit depth, casting it to uchar "
           "channels.",
-          texture_name);
+          material.diffuse_map.string());
     }
 
     vtkNew<vtkImageCast> caster;
@@ -561,21 +553,21 @@ void RenderEngineVtk::ImplementGeometry(vtkPolyDataAlgorithm* source,
 
     vtkNew<vtkOpenGLTexture> texture;
     texture->SetInputConnection(caster->GetOutputPort());
+    // TODO(SeanCurtis-TRI): It doesn't seem like the scale is used to actually
+    // *scale* the image.
+    const Vector2d uv_scale = data.properties.GetPropertyOrDefault(
+        "phong", "diffuse_scale", Vector2d{1, 1});
     const bool need_repeat = uv_scale[0] > 1 || uv_scale[1] > 1;
     texture->SetRepeat(need_repeat);
     texture->InterpolateOn();
     color_actor->SetTexture(texture.Get());
-  } else {
-    const Vector4d& diffuse =
-        data.properties.GetPropertyOrDefault("phong", "diffuse",
-                                             default_diffuse_);
-    color_actor->GetProperty()->SetColor(diffuse(0), diffuse(1), diffuse(2));
-    color_actor->GetProperty()->SetOpacity(diffuse(3));
   }
-  // TODO(SeanCurtis-TRI): Determine if this precludes modulating the texture
-  //  with arbitrary rgba values (e.g., tinting red or making everything
-  //  slightly transparent). In other words, should opacity be set regardless
-  //  of whether a texture exists?
+
+  // Note: This allows the color map to be modulated by an arbitrary diffuse
+  // color and opacity.
+  const auto& diffuse = material.diffuse;
+  color_actor->GetProperty()->SetColor(diffuse.r(), diffuse.g(), diffuse.b());
+  color_actor->GetProperty()->SetOpacity(diffuse.a());
 
   connect_actor(ImageType::kColor);
 
@@ -640,6 +632,7 @@ void RenderEngineVtk::UpdateWindow(const DepthRenderCamera& camera,
   UpdateWindow(camera.core(), false, p, "");
 }
 
-}  // namespace render
+}  // namespace internal
+}  // namespace render_vtk
 }  // namespace geometry
 }  // namespace drake

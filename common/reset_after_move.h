@@ -66,14 +66,14 @@ class reset_after_move {
   reset_after_move(const reset_after_move&) = default;
   reset_after_move& operator=(const reset_after_move&) = default;
   reset_after_move(reset_after_move&& other) noexcept(
-      std::is_nothrow_default_constructible_v<T> &&
-      std::is_nothrow_move_assignable_v<T>) {
+      std::is_nothrow_default_constructible_v<T>&&
+          std::is_nothrow_move_assignable_v<T>) {
     value_ = std::move(other.value_);
     other.value_ = T{};
   }
   reset_after_move& operator=(reset_after_move&& other) noexcept(
-      std::is_nothrow_default_constructible_v<T> &&
-      std::is_nothrow_move_assignable_v<T>) {
+      std::is_nothrow_default_constructible_v<T>&&
+          std::is_nothrow_move_assignable_v<T>) {
     if (this != &other) {
       value_ = std::move(other.value_);
       other.value_ = T{};

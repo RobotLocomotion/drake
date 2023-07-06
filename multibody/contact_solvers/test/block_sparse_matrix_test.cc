@@ -80,7 +80,8 @@ TEST_F(BlockSparseMatrixTest, AccessBlocks) {
   // entry of get_blocks().
   EXPECT_EQ(Jblk_.get_blocks().size(), 5u);
   for (int b = 0; b < Jblk_.num_blocks(); ++b) {
-    EXPECT_EQ(Jblk_.get_block(b), std::get<2>(Jblk_.get_blocks()[b]));
+    EXPECT_EQ(Jblk_.get_block(b).MakeDenseMatrix(),
+              std::get<2>(Jblk_.get_blocks()[b]).MakeDenseMatrix());
   }
 }
 

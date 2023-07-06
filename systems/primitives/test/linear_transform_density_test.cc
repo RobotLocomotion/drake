@@ -368,8 +368,8 @@ void CheckDensityGradient(RandomDistribution distribution,
       dA_dAij[i][j](i, j) = 1.;
     }
   }
-  Eigen::Vector2d w_out_val = math::ExtractValue(
-      dut.get_output_port_w_out().Eval(*context));
+  Eigen::Vector2d w_out_val =
+      math::ExtractValue(dut.get_output_port_w_out().Eval(*context));
   Eigen::Vector2d b_val = math::ExtractValue(b);
   const double A_det_abs = std::abs(A_val.determinant());
   for (int i = 0; i < 2; ++i) {
@@ -381,8 +381,8 @@ void CheckDensityGradient(RandomDistribution distribution,
           CalcProbabilityDensity<double>(distribution, w_in_val) *
               std::pow(A_det_abs, -2) * dA_abs_det_dAij[i][j];
       const double density_derivative_actual =
-        density.derivatives().rows() == 0 ? 0.0 :
-        density.derivatives()(i + 2 * j);
+          density.derivatives().rows() == 0 ? 0.0
+                                            : density.derivatives()(i + 2 * j);
       EXPECT_NEAR(density_derivative_actual, dp_dAij, 10 * kEps);
     }
   }

@@ -1,15 +1,21 @@
 import copy
 from enum import Enum
+import logging
+import os
+from pathlib import Path
 import time
 from webbrowser import open as _webbrowser_open
 
 import numpy as np
 
-from pydrake.common.deprecation import deprecated
 from pydrake.geometry import (
+    Box,
     Cylinder,
     GeometryInstance,
     MakePhongIllustrationProperties,
+    MeshcatCone,
+    Role,
+    Rgba,
     StartMeshcat,
 )
 from pydrake.math import RigidTransform, RotationMatrix
@@ -19,18 +25,17 @@ from pydrake.systems.analysis import Simulator
 from pydrake.systems.planar_scenegraph_visualizer import (
     ConnectPlanarSceneGraphVisualizer,
 )
+from pydrake.systems.sensors import (
+    ApplyCameraConfig,
+    CameraConfig,
+)
 from pydrake.visualization import (
     VisualizationConfig,
     ApplyVisualizationConfig,
 )
-
-
-class RunResult(Enum):
-    """This class is deprecated and will be removed on or after 2023-07-01."""
-    KEEP_GOING = 0  # Note that this is never returned but is used internally.
-    LOOP_ONCE = 1
-    STOPPED = 2
-    RELOAD = 3
+from pydrake.visualization._triad import (
+    AddFrameTriadIllustration,
+)
 
 
 class ModelVisualizer:
@@ -58,10 +63,11 @@ class ModelVisualizer:
 
     def __init__(self, *,
                  visualize_frames=False,
-                 triad_length=0.5,
-                 triad_radius=0.01,
-                 triad_opacity=1,
+                 triad_length=0.3,
+                 triad_radius=0.005,
+                 triad_opacity=0.9,
                  publish_contacts=True,
+                 show_rgbd_sensor=False,
                  browser_new=False,
                  pyplot=False,
                  meshcat=None):
@@ -75,6 +81,10 @@ class ModelVisualizer:
           triad_radius: the radius of visualization triads.
           triad_opacity: the opacity of visualization triads.
           publish_contacts: a flag for VisualizationConfig.
+          show_rgbd_sensor: when True, adds an RgbdSensor to the scene and pops
+             up a local preview window of the rgb image. At the moment, the
+             image display uses a native window so will not work in a remote or
+             cloud runtime environment.
 
           browser_new: a flag that will open the MeshCat display in a new
             browser window during Run().
@@ -89,14 +99,16 @@ class ModelVisualizer:
         self._triad_radius = triad_radius
         self._triad_opacity = triad_opacity
         self._publish_contacts = publish_contacts
+        self._show_rgbd_sensor = show_rgbd_sensor
         self._browser_new = browser_new
         self._pyplot = pyplot
         self._meshcat = meshcat
 
         # This is the list of loaded models, to enable the Reload button.
         # If set to None, it means that we won't support reloading because
-        # the user might have added models outside of our purview.
-        self._model_filenames = list()
+        # the user might have added models outside of our purview. Each item
+        # in the list contains whatever kwargs we passed to AddModels().
+        self._added_models = list()
 
         # This is set to a non-None value iff our Meshcat has a reload button.
         self._reload_button_name = None
@@ -104,6 +116,7 @@ class ModelVisualizer:
         # The builder is set to None during Finalize(), though during a Reload
         # it will be temporarily resurrected.
         self._builder = RobotDiagramBuilder()
+        self._builder.parser().SetAutoRenaming(True)
 
         # The following fields are set non-None during Finalize().
         self._original_package_map = None
@@ -150,6 +163,7 @@ class ModelVisualizer:
                 "triad_radius",
                 "triad_opacity",
                 "publish_contacts",
+                "show_rgbd_sensor",
                 "browser_new",
                 "pyplot"]:
             value = getattr(prototype, f"_{name}")
@@ -188,7 +202,7 @@ class ModelVisualizer:
         self._check_rep(finalized=False)
         # We can't easily know what the user is going to do with the parser,
         # so we need to disable model reloading once they access it.
-        self._model_filenames = None
+        self._added_models = None
         return self._builder.parser()
 
     def meshcat(self):
@@ -200,21 +214,31 @@ class ModelVisualizer:
             self._meshcat = StartMeshcat()
         return self._meshcat
 
-    def AddModels(self, filename):
+    def AddModels(self, filename: Path = None, *, url: str = None):
         """
-        Adds all models found in an input file.
+        Adds all models found in an input file (or url).
 
         This can be called multiple times, until the object is finalized.
 
         Args:
           filename: the name of a file containing one or more models.
+          url: the package:// URL containing one or more models.
+
+        Exactly one of filename or url must be non-None.
         """
         if self._builder is None:
             raise ValueError("Finalize has already been called.")
+        if sum([filename is not None, url is not None]) != 1:
+            raise ValueError("Must provide either filename= or url=")
         self._check_rep(finalized=False)
-        self._builder.parser().AddModels(filename)
-        if self._model_filenames is not None:
-            self._model_filenames.append(filename)
+        if filename is not None:
+            kwargs = dict(file_name=filename)
+        else:
+            assert url is not None
+            kwargs = dict(url=url)
+        self._builder.parser().AddModels(**kwargs)
+        if self._added_models is not None:
+            self._added_models.append(kwargs)
 
     def Finalize(self, position=None):
         """
@@ -231,7 +255,7 @@ class ModelVisualizer:
             raise RuntimeError("Finalize has already been called.")
 
         if self._visualize_frames:
-            # Find all the frames and draw them using _add_triad().
+            # Find all the frames and draw them.
             # The frames are drawn using the parsed length.
             # The world frame is drawn thicker than the rest.
             inspector = self._builder.scene_graph().model_inspector()
@@ -240,12 +264,30 @@ class ModelVisualizer:
                 radius = self._triad_radius * (
                     3 if frame_id == world_id else 1
                     )
-                self._add_triad(
-                    frame_id,
+                AddFrameTriadIllustration(
+                    plant=self._builder.plant(),
+                    scene_graph=self._builder.scene_graph(),
+                    frame_id=frame_id,
                     length=self._triad_length,
                     radius=radius,
                     opacity=self._triad_opacity,
                 )
+
+        # Add a model that will provide rgbd pose sliders automatically when we
+        # add JointSliders later on.
+        if self._show_rgbd_sensor:
+            camera_sliders, = self._builder.parser().AddModels(url=(
+                "package://drake/bindings/pydrake/visualization/"
+                "_rgbd_camera_sliders.dmd.yaml"))
+            # Remove the perception role from the new geometry; we don't want
+            # the RgbdSensor to render it. TODO(#13689) The file should itself
+            # opt-out of the perception role, so we don't need to mop up here.
+            inspect = self._builder.scene_graph().model_inspector()
+            for frame_id in inspect.GetAllFrameIds():
+                if inspect.GetFrameGroup(frame_id) == camera_sliders:
+                    self._builder.scene_graph().RemoveRole(
+                        role=Role.kPerception, frame_id=frame_id,
+                        source_id=self._builder.plant().get_source_id())
 
         self._builder.plant().Finalize()
 
@@ -256,7 +298,7 @@ class ModelVisualizer:
 
         # We want to place the Reload Model Files button far away from the
         # Stop Running button, hence the work to do this here.
-        if self._model_filenames:
+        if self._added_models:
             self._reload_button_name = "Reload Model Files"
             self._meshcat.AddButton(self._reload_button_name)
 
@@ -271,6 +313,29 @@ class ModelVisualizer:
             scene_graph=self._builder.scene_graph(),
             builder=self._builder.builder(),
             meshcat=self._meshcat)
+
+        # Add a render camera so we can show role=perception images.
+        if self._show_rgbd_sensor:
+            camera_config = CameraConfig(width=1440, height=1080)
+            camera_config.name = "preview"
+            camera_config.X_PB.base_frame = "_rgbd_camera_sliders::pinhole"
+            camera_config.z_far = 3  # Show 3m of frustum.
+            camera_config.fps = 1.0  # Ignored -- we're not simulating.
+            is_unit_test = "TEST_SRCDIR" in os.environ
+            camera_config.show_rgb = not is_unit_test  # Pop up a local window.
+            ApplyCameraConfig(
+                config=camera_config,
+                builder=self._builder.builder())
+            camera_sensor = self._builder.builder().GetSubsystemByName(
+                "rgbd_sensor_preview")
+            camera_publisher = self._builder.builder().GetSubsystemByName(
+                "LcmPublisherSystem(DRAKE_RGBD_CAMERA_IMAGES_preview)")
+            # Export the preview camera image output port for later use.
+            self._builder.builder().ExportOutput(
+                camera_sensor.GetOutputPort("color_image"), "preview_image")
+            # Disable LCM image transmission. It has a non-trivial cost, and
+            # at the moment Meldis can't display LCM images anyway.
+            self._builder.builder().RemoveSystem(camera_publisher)
 
         # Add joint sliders to meshcat.
         # TODO(trowell-tri) Restoring slider values depends on the slider
@@ -313,7 +378,43 @@ class ModelVisualizer:
         # Publish draw messages with current state.
         self._diagram.ForcedPublish(self._context)
 
+        # Visualize the camera frustum.
+        if self._show_rgbd_sensor:
+            camera_path = "/drake/illustration/_rgbd_camera_sliders/pinhole"
+            frustum_path = f"{camera_path}/frustum"
+            (vertices, faces) = self._camera_config_to_frustum(camera_config)
+            self._meshcat.SetTriangleMesh(
+                path=frustum_path, vertices=vertices, faces=faces,
+                rgba=Rgba(1.0, 0.33, 0, 0.2))
+            self._meshcat.SetTriangleMesh(
+                path=f"{frustum_path}/wire", vertices=vertices, faces=faces,
+                rgba=Rgba(0.5, 0.5, 0.5), wireframe=True)
+
         self._check_rep(finalized=True)
+
+    @staticmethod
+    def _camera_config_to_frustum(camera: CameraConfig):
+        """
+        Returns a mesh as (vertices, faces) to visualize the given camera's
+        frustum.
+        """
+        distance = camera.z_far
+        width = 0.5 * camera.width * distance / camera.focal_x()
+        height = 0.5 * camera.height * distance / camera.focal_y()
+        vertices = np.array([
+            [0.0, 0.0, 0.0],
+            [+width, +height, distance],
+            [+width, -height, distance],
+            [-width, -height, distance],
+            [-width, +height, distance],
+        ]).T
+        faces = np.array([
+            [0, 1, 2],
+            [0, 2, 3],
+            [0, 3, 4],
+            [0, 4, 1],
+        ]).T
+        return (vertices, faces)
 
     def _reload(self):
         """
@@ -322,19 +423,33 @@ class ModelVisualizer:
         show any changes the user made on disk to their models.
         """
         self._check_rep(finalized=True)
-        assert self._model_filenames is not None
+        assert self._added_models is not None
 
         # Clear out the old diagram.
         self._diagram = None
         self._sliders = None
         self._context = None
+        self._remove_traffic_cone()
 
         # Populate the diagram builder again with the same packages and models.
         self._builder = RobotDiagramBuilder()
+        self._builder.parser().SetAutoRenaming(True)
         self._builder.parser().package_map().AddMap(self._original_package_map)
+        try:
+            for kwargs in self._added_models:
+                self._builder.parser().AddModels(**kwargs)
+            logging.getLogger("drake").info(f"Reload was successful")
+        except BaseException as e:
+            # If there's a parsing error, show it; don't crash.
+            logging.getLogger("drake").error(e)
+            logging.getLogger("drake").warning(
+                f"Click '{self._reload_button_name}' to try again")
+            # Clear the display to help indicate the failure to the user.
+            self._builder = RobotDiagramBuilder()
+            self._builder.parser().package_map().AddMap(
+                self._original_package_map)
+            self._add_traffic_cone()
         self._original_package_map = None
-        for filename in self._model_filenames:
-            self._builder.parser().AddModels(filename)
 
         # Finalize the rest of the systems and widgets.
         self.Finalize()
@@ -377,8 +492,10 @@ class ModelVisualizer:
         # Wait for the user to cancel us.
         stop_button_name = "Stop Running"
         if not loop_once:
-            print(f"Click '{stop_button_name}' or press Esc to quit")
+            logging.getLogger("drake").info(
+                f"Click '{stop_button_name}' or press Esc to quit")
 
+        last_camera_time = 0
         try:
             self._meshcat.AddButton(stop_button_name, "Escape")
 
@@ -388,6 +505,13 @@ class ModelVisualizer:
                 return self._meshcat.GetButtonClicks(button_name) > 0
 
             while True:
+                # Refresh the relatively expensive preview camera at a slower
+                # rate (2 Hz) than everything else (32 Hz).
+                if self._show_rgbd_sensor:
+                    if time.time() > (last_camera_time + 0.5):
+                        last_camera_time = time.time()
+                        self._diagram.GetOutputPort("preview_image").Eval(
+                            self._context)
                 time.sleep(1 / 32.0)
                 if has_clicks(self._reload_button_name):
                     self._meshcat.DeleteButton(stop_button_name)
@@ -410,15 +534,6 @@ class ModelVisualizer:
         if self._reload_button_name is not None:
             self._meshcat.DeleteButton(self._reload_button_name)
             self._reload_button_name = None
-
-        return RunResult.STOPPED
-
-    @deprecated("Use Run() instead.", date="2023-07-01")
-    def RunWithReload(self, *args, **kwargs):
-        """
-        (Deprecated.) The reload feature is enabled by default during Run().
-        """
-        return self.Run(*args, **kwargs)
 
     def _raise_if_invalid_positions(self, position):
         """
@@ -453,64 +568,25 @@ class ModelVisualizer:
             if old_name in current_names:
                 self._meshcat.SetSliderValue(old_name, old_value)
 
-    def _add_triad(
-        self,
-        frame_id,
-        *,
-        length,
-        radius,
-        opacity,
-        X_FT=RigidTransform(),
-        name="frame",
-    ):
-        """
-        Adds illustration geometry representing the coordinate frame, with
-        the x-axis drawn in red, the y-axis in green and the z-axis in blue.
-        The axes point in +x, +y and +z directions, respectively.
-        Based on [code permalink](https://github.com/RussTedrake/manipulation/blob/5e59811/manipulation/scenarios.py#L367-L414).# noqa
-        Args:
-          frame_id: a geometry::frame_id registered with scene_graph.
-          length: the length of each axis in meters.
-          radius: the radius of each axis in meters.
-          opacity: the opacity of the coordinate axes, between 0 and 1.
-          X_FT: a RigidTransform from the triad frame T to the frame_id frame F
-          name: the added geometry will have names name + " x-axis", etc.
-        """
-        # x-axis
-        X_TG = RigidTransform(
-            RotationMatrix.MakeYRotation(np.pi / 2),
-            [length / 2.0, 0, 0],
-        )
-        geom = GeometryInstance(
-            X_FT.multiply(X_TG), Cylinder(radius, length), name + " x-axis"
-        )
-        geom.set_illustration_properties(
-            MakePhongIllustrationProperties([1, 0, 0, opacity])
-        )
-        self._builder.scene_graph().RegisterGeometry(
-            self._builder.plant().get_source_id(), frame_id, geom)
+    def _add_traffic_cone(self):
+        """Adds a traffic cone to the scene, indicating a parsing error."""
+        base_width = 0.4
+        base_thickness = 0.01
+        base = Box(base_width, base_width, base_thickness)
+        cone_height = 0.6
+        cone_radius = 0.75 * (base_width / 2)
+        cone = MeshcatCone(cone_height, cone_radius, cone_radius)
 
-        # y-axis
-        X_TG = RigidTransform(
-            RotationMatrix.MakeXRotation(np.pi / 2),
-            [0, length / 2.0, 0],
-        )
-        geom = GeometryInstance(
-            X_FT.multiply(X_TG), Cylinder(radius, length), name + " y-axis"
-        )
-        geom.set_illustration_properties(
-            MakePhongIllustrationProperties([0, 1, 0, opacity])
-        )
-        self._builder.scene_graph().RegisterGeometry(
-            self._builder.plant().get_source_id(), frame_id, geom)
+        path = "/PARSE_ERROR"
+        orange = Rgba(1.0, 0.33, 0)
+        self._meshcat.SetObject(path=f"{path}/base", shape=base, rgba=orange)
+        self._meshcat.SetObject(path=f"{path}/cone", shape=cone, rgba=orange)
+        self._meshcat.SetTransform(f"{path}/base", RigidTransform(
+            [0, 0, base_thickness * 0.5]))
+        self._meshcat.SetTransform(f"{path}/cone", RigidTransform(
+            RotationMatrix.MakeYRotation(np.pi),
+            [0, 0, base_thickness + cone_height]))
 
-        # z-axis
-        X_TG = RigidTransform([0, 0, length / 2.0])
-        geom = GeometryInstance(
-            X_FT.multiply(X_TG), Cylinder(radius, length), name + " z-axis"
-        )
-        geom.set_illustration_properties(
-            MakePhongIllustrationProperties([0, 0, 1, opacity])
-        )
-        self._builder.scene_graph().RegisterGeometry(
-            self._builder.plant().get_source_id(), frame_id, geom)
+    def _remove_traffic_cone(self):
+        """Removes the traffic cone from the scene."""
+        self._meshcat.Delete("/PARSE_ERROR")

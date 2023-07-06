@@ -40,7 +40,7 @@
 import numpy as np
 
 
-def _resample_interp1d(t, x, timestep):
+def _resample_interp1d(t, x, time_step):
     """
     A linear interpolation only version of scipy.interpolate.interp1d.
 
@@ -50,9 +50,9 @@ def _resample_interp1d(t, x, timestep):
         x : (...,N,...) array_like
             A N-D array of real values. The length of `y` along the
             interpolation axis must be equal to the length of `x`.
-        timestep: The simulation timestep, used to resample t
-            evenly between min(t) and the last time with a distance of timestep
-            between each unit.
+        time_step: The simulation time_step, used to resample t
+            evenly between min(t) and the last time with a distance of
+            time_step between each unit.
 
     Note:
         In order to correctly interpolate values, the time sequence described
@@ -78,7 +78,7 @@ def _resample_interp1d(t, x, timestep):
     x_copy = np.take(x_copy, sort_indices, axis=axis)
 
     # Now that we are sorted, resample the times and data.
-    t_resample = np.arange(t_copy[0], t_copy[-1], timestep)
+    t_resample = np.arange(t_copy[0], t_copy[-1], time_step)
     t_new_indices = np.searchsorted(t_copy, t_resample)
     t_new_indices = t_new_indices.clip(1, len(t_copy) - 1).astype(int)
     lo_indices = t_new_indices - 1

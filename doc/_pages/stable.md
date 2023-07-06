@@ -188,6 +188,12 @@ to obtain the stability guarantee:
 * In C++, do not depend on the exact signature of Drake functions, as we may
   add new, defaulted arguments without prior notice (i.e., do not take the
   address of any Drake function, or assign it to a `std::function`).
+* In C++, do not depend on the exact order of ``struct`` fields.
+  While the _relative_ order of struct fields is guaranteed, new member fields
+  might be inserted between existing fields. Consequently, when using
+  [aggregate initialization](https://en.cppreference.com/w/cpp/language/aggregate_initialization)
+  always use designated initializers (i.e., field names) when referring to
+  struct fields.
 
 ### Model files
 

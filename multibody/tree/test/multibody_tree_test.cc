@@ -237,9 +237,17 @@ GTEST_TEST(MultibodyTree, VerifyModelBasics) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       model->AddRigidBody("iiwa_link_5", default_model_instance(),
                           SpatialInertia<double>()),
-      /* Verify this method is throwing for the right reasons. */
       ".* already contains a body named 'iiwa_link_5'. "
       "Body names must be unique within a given model.");
+
+  // Attempt to add a frame having the same name as a frame already part of the
+  // model. This is not allowed and an exception should be thrown.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      model->AddFrame<FixedOffsetFrame>("iiwa_link_5",
+                                        model->GetBodyByName("iiwa_link_1"),
+                                        RigidTransform<double>()),
+      ".* already contains a frame named 'iiwa_link_5'. "
+      "Frame names must be unique within a given model.");
 
   // Attempt to add a joint having the same name as a joint already part of the
   // model. This is not allowed and an exception should be thrown.
@@ -249,17 +257,15 @@ GTEST_TEST(MultibodyTree, VerifyModelBasics) {
           model->world_body(), std::nullopt,
           model->GetBodyByName("iiwa_link_5"), std::nullopt,
           Vector3<double>::UnitZ()),
-      /* Verify this method is throwing for the right reasons. */
       ".* already contains a joint named 'iiwa_joint_4'. "
       "Joint names must be unique within a given model.");
 
-  // Attempt to add a joint having the same name as a joint already part of the
-  // model. This is not allowed and an exception should be thrown.
+  // Attempt to add an actuator having the same name as an actuator already part
+  // of the model. This is not allowed and an exception should be thrown.
   DRAKE_EXPECT_THROWS_MESSAGE(
       model->AddJointActuator(
           "iiwa_actuator_4",
           model->GetJointByName("iiwa_joint_4")),
-      /* Verify this method is throwing for the right reasons. */
       ".* already contains a joint actuator named 'iiwa_actuator_4'. "
           "Joint actuator names must be unique within a given model.");
 

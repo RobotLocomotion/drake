@@ -63,7 +63,9 @@ class DiscreteTimeIntegratorTest : public ::testing::Test {
   DummyScheme scheme_{kDt};
 };
 
-TEST_F(DiscreteTimeIntegratorTest, Dt) { EXPECT_EQ(scheme_.dt(), kDt); }
+TEST_F(DiscreteTimeIntegratorTest, Dt) {
+  EXPECT_EQ(scheme_.dt(), kDt);
+}
 
 TEST_F(DiscreteTimeIntegratorTest, Weights) {
   EXPECT_EQ(scheme_.GetWeights(), Vector3d(1, 2, 3));

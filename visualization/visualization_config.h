@@ -12,8 +12,8 @@ namespace visualization {
 
 // TODO(jwnimmer-tri or trowell-tri) Add an option to disable LCM entirely.
 
-/** Settings for what MultibodyPlant and SceneGraph should send to meldis
-and/or drake_visualizer.
+/** Settings for what MultibodyPlant and SceneGraph should send to meldis,
+Meshcat, and/or drake_visualizer.
 
 @experimental The exact configuration details (names and types) are subject to
 change as we polish this new feature.
@@ -29,6 +29,7 @@ struct VisualizationConfig {
     a->Visit(DRAKE_NVP(publish_proximity));
     a->Visit(DRAKE_NVP(default_proximity_color));
     a->Visit(DRAKE_NVP(publish_contacts));
+    a->Visit(DRAKE_NVP(publish_inertia));
     a->Visit(DRAKE_NVP(enable_meshcat_creation));
     a->Visit(DRAKE_NVP(delete_on_initialization_event));
     a->Visit(DRAKE_NVP(enable_alpha_sliders));
@@ -39,7 +40,7 @@ struct VisualizationConfig {
   std::string lcm_bus{"default"};
 
   /** The duration (in seconds) between published LCM messages that update
-  visualization. (To help avoid small simulation timesteps, we use a default
+  visualization. (To help avoid small simulation time steps, we use a default
   period that has an exact representation in binary floating point;
   see drake#15021 for details.) */
   double publish_period{1 / 64.0};
@@ -49,7 +50,7 @@ struct VisualizationConfig {
 
   /** The color to apply to any illustration geometry that hasn't defined one.
   The vector must be of size three (rgb) or four (rgba). */
-  geometry::Rgba default_illustration_color{0.9, 0.9, 0.9};
+  geometry::Rgba default_illustration_color{0.9, 0.9, 0.9, 1.0};
 
   /** Whether to show proximity geometry. */
   bool publish_proximity{true};
@@ -57,6 +58,10 @@ struct VisualizationConfig {
   /** The color to apply to any proximity geometry that hasn't defined one.
   The vector must be of size three (rgb) or four (rgba). */
   geometry::Rgba default_proximity_color{1, 0, 0, 0.5};
+
+  /** Whether to show body inertia. */
+  // TODO(trowell-tri) Enable this when we handle off-axis inertia moments.
+  bool publish_inertia{false};
 
   /** Whether to show contact forces. */
   bool publish_contacts{true};

@@ -7,6 +7,8 @@
 #include <ios>
 #include <stdexcept>
 
+#include "absl/container/flat_hash_set.h"
+#include "absl/container/inlined_vector.h"
 #include <fmt/format.h>
 
 #include "drake/common/drake_assert.h"
@@ -1025,4 +1027,220 @@ double ExtractDoubleOrThrow(const symbolic::Expression& e) {
   return e.Evaluate();
 }
 
+namespace symbolic {
+namespace internal {
+
+template <bool reverse>
+void Gemm<reverse>::CalcDV(const MatrixRef<double>& D,
+                           const MatrixRef<Variable>& V,
+                           EigenPtr<MatrixX<Expression>> result) {
+  // These checks are guaranteed by our header file functions that call us.
+  DRAKE_ASSERT(result != nullptr);
+  if constexpr (!reverse) {
+    // Calculating D * V.
+    DRAKE_ASSERT(result->rows() == D.rows());
+    DRAKE_ASSERT(result->cols() == V.cols());
+    DRAKE_ASSERT(D.cols() == V.rows());
+  } else {
+    // Calculating V * D.
+    DRAKE_ASSERT(result->rows() == V.rows());
+    DRAKE_ASSERT(result->cols() == D.cols());
+    DRAKE_ASSERT(V.cols() == D.rows());
+  }
+
+  // Our temporary vectors will use the stack for this number of items or fewer.
+  constexpr size_t kSmallSize = 8;
+
+  // In the below, we'll use index `i` to refer to a column of the V matrix
+  // (or row, when in reverse mode) and index `j` to refer to a row of the
+  // D matrix (or column, when in reverse mode).
+  const int max_i = !reverse ? V.cols() : V.rows();
+  const int max_j = !reverse ? D.rows() : D.cols();
+
+  // We'll use index `k` to index over the inner dot product.
+  const int max_k = !reverse ? D.cols() : V.cols();
+
+  // The four containers below are reused across the outer loop. Each one is
+  // either cleared or fully overwritten at the start of each outer loop.
+  //
+  // We'll use `t` to index over a sorted and unique vector of the variables in
+  // each inner product. When there are no duplicates, `t`'s range will be the
+  // same as `k` but in a different order. With duplicates, `t` will be shorter.
+  //
+  // Each inner product is calculated as Σ inner_coeffs(t) * inner_var(t). In
+  // other words, we directly compute the canonical form of ExpressionAdd for
+  // each inner product, without going through the ExpressionAddFactory.
+  absl::InlinedVector<double, kSmallSize> inner_coeffs;
+  inner_coeffs.reserve(max_k);
+  absl::InlinedVector<Variable, kSmallSize> inner_vars;
+  inner_vars.reserve(max_k);
+  absl::InlinedVector<Expression, kSmallSize> inner_vars_as_expr;
+  inner_vars_as_expr.reserve(max_k);
+  // The unique_ids is used to efficiently de-duplicate vars.
+  absl::flat_hash_set<Variable::Id> unique_ids;
+  unique_ids.reserve(max_k);
+  // The var_index[k] refers to the index in inner_vars[] for that variable.
+  // We have inner_vars[var_index[k]] == V(k, j) during the j'th row loop,
+  // or V(j, k) when in reverse mode.
+  absl::InlinedVector<int, kSmallSize> var_index;
+  var_index.resize(max_k);
+
+  // The outer loop over `i` steps through each column (or row) of V, so that we
+  // can share the variable de-duplication and sorting needed by the for-j loop.
+  for (int i = 0; i < max_i; ++i) {
+    // Convert each Variable to an Expression, consolidating duplicates.
+    // Sort the variables so that map insertion later will be linear time.
+    inner_vars.clear();
+    unique_ids.clear();
+    for (int k = 0; k < max_k; ++k) {
+      const Variable& var = !reverse ? V(k, i) : V(i, k);
+      const Variable::Id var_id = var.get_id();
+      const bool inserted = unique_ids.insert(var_id).second;
+      if (inserted) {
+        inner_vars.emplace_back(var);
+      }
+    }
+    std::sort(inner_vars.begin(), inner_vars.end(), std::less<Variable>{});
+
+    // Compute the var_index that projects this V block into inner_vars.
+    for (int k = 0; k < max_k; ++k) {
+      const Variable& var = !reverse ? V(k, i) : V(i, k);
+      auto iter = std::lower_bound(inner_vars.begin(), inner_vars.end(), var,
+                                   std::less<Variable>{});
+      DRAKE_ASSERT(iter != inner_vars.end());
+      DRAKE_ASSERT(iter->get_id() == var.get_id());
+      const int index = std::distance(inner_vars.begin(), iter);
+      var_index[k] = index;
+    }
+
+    // Convert the vars to expression cells. We want these to all be shared for
+    // faster comparisons downtream after the Gemm.
+    inner_vars_as_expr.clear();
+    for (size_t t = 0; t < inner_vars.size(); ++t) {
+      inner_vars_as_expr.push_back(inner_vars[t]);
+    }
+
+    // Now that the V block is precomputed in a useful format, we can quickly
+    // loop through each block of double coeffs in turn.
+    for (int j = 0; j < max_j; ++j) {
+      // Prepare storage for the summed-up coeffs.
+      inner_coeffs.clear();
+      inner_coeffs.resize(inner_vars.size(), 0.0);
+
+      // Sum up D(j, k) * V(k, i) or in reverse mode V(j, i) * D(k, j).
+      for (int k = 0; k < max_k; ++k) {
+        inner_coeffs[var_index[k]] += !reverse ? D(j, k) : D(k, j);
+      }
+
+      // Convert the sum to the ExpressionAdd representation, skipping zeros,
+      // but for now in vector-pair form instead of map form.
+      using TermsMap = map<Expression, double>;
+      using TermsVec = absl::InlinedVector<TermsMap::value_type, kSmallSize>;
+      TermsVec terms_vec;
+      for (size_t t = 0; t < inner_coeffs.size(); ++t) {
+        const double coeff = inner_coeffs[t];
+        if (coeff == 0.0) {
+          continue;
+        }
+        terms_vec.emplace_back(inner_vars_as_expr[t], coeff);
+      }
+
+      // Convert the ExpressionAdd representation to an Expression cell.
+      Expression inner_product;
+      if (!terms_vec.empty()) {
+        if ((terms_vec.size() == 1) && (terms_vec.front().second == 1.0)) {
+          // Special case for `1.0 * v`, use a Var cell (not an Add cell).
+          inner_product = std::move(terms_vec.front().first);
+        } else {
+          // This is carefully crafted to be a linear time insertion because the
+          // vector is already sorted, and to avoid unnecessary copying because
+          // both collections have the same value_type.
+          TermsMap terms_map(std::make_move_iterator(terms_vec.begin()),
+                             std::make_move_iterator(terms_vec.end()));
+          auto cell = make_unique<ExpressionAdd>(0.0, std::move(terms_map));
+          cell->set_expanded();
+          inner_product = Expression{std::move(cell)};
+        }
+      }
+      if constexpr (!reverse) {
+        (*result)(j, i) = std::move(inner_product);
+      } else {
+        (*result)(i, j) = std::move(inner_product);
+      }
+    }
+  }
+}
+
+namespace {
+
+template <typename T1, typename T2>
+Expression GenericGevv(const Eigen::Ref<const VectorX<T1>, 0, StrideX>& a,
+                       const Eigen::Ref<const VectorX<T2>, 0, StrideX>& b) {
+  DRAKE_ASSERT(a.size() == b.size());
+  ExpressionAddFactory fac;
+  for (int k = 0; k < a.size(); ++k) {
+    fac.AddExpression(a[k] * b[k]);
+  }
+  return std::move(fac).GetExpression();
+}
+
+template <typename T1, typename T2>
+void GenericGemm(const Eigen::Ref<const MatrixX<T1>, 0, StrideX>& left,
+                 const Eigen::Ref<const MatrixX<T2>, 0, StrideX>& right,
+                 EigenPtr<MatrixX<Expression>> result) {
+  // These checks are guaranteed by our header file functions that call us.
+  DRAKE_ASSERT(result != nullptr);
+  DRAKE_ASSERT(result->rows() == left.rows());
+  DRAKE_ASSERT(result->cols() == right.cols());
+  DRAKE_ASSERT(left.cols() == right.rows());
+
+  // Delegate to Gevv.
+  for (int i = 0; i < result->rows(); ++i) {
+    for (int j = 0; j < result->cols(); ++j) {
+      (*result)(i, j) = GenericGevv<T1, T2>(left.row(i), right.col(j));
+    }
+  }
+}
+
+}  // namespace
+
+template <bool reverse>
+void Gemm<reverse>::CalcDE(const MatrixRef<double>& D,
+                           const MatrixRef<Expression>& E,
+                           EigenPtr<MatrixX<Expression>> result) {
+  if constexpr (!reverse) {
+    GenericGemm<double, Expression>(D, E, result);
+  } else {
+    GenericGemm<Expression, double>(E, D, result);
+  }
+}
+
+template <bool reverse>
+void Gemm<reverse>::CalcVE(const MatrixRef<Variable>& V,
+                           const MatrixRef<Expression>& E,
+                           EigenPtr<MatrixX<Expression>> result) {
+  // We convert Variable => Expression up front, so the ExpressionVar cells get
+  // reused during the computation instead of creating lots of duplicates.
+  // TODO(jwnimmer-tri) If V contains duplicate variables (e.g., symmetric),
+  // it's possible that interning the duplicates would improve performance of
+  // subsequent operations.
+  CalcEE(V.template cast<Expression>(), E, result);
+}
+
+template <bool reverse>
+void Gemm<reverse>::CalcEE(const MatrixRef<Expression>& A,
+                           const MatrixRef<Expression>& B,
+                           EigenPtr<MatrixX<Expression>> result) {
+  if constexpr (!reverse) {
+    GenericGemm<Expression, Expression>(A, B, result);
+  } else {
+    GenericGemm<Expression, Expression>(B, A, result);
+  }
+}
+
+template struct Gemm<false>;
+template struct Gemm<true>;
+
+}  // namespace internal
+}  // namespace symbolic
 }  // namespace drake

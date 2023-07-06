@@ -17,7 +17,7 @@ cc_library(
         allow_empty = False,
     ),
     hdrs = glob(
-        ["include/**"],
+        ["include/spdlog/**"],
         allow_empty = False,
     ),
     defines = _DEFINES + ["HAVE_SPDLOG"],

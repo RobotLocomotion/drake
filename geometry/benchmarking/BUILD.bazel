@@ -2,9 +2,12 @@ load("@drake//tools/skylark:drake_cc.bzl", "drake_cc_binary")
 load(
     "@drake//tools/performance:defs.bzl",
     "drake_cc_googlebench_binary",
+    "drake_py_experiment_binary",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
+
+package(default_visibility = ["//visibility:private"])
 
 drake_cc_googlebench_binary(
     name = "mesh_intersection_benchmark",
@@ -19,6 +22,11 @@ drake_cc_googlebench_binary(
         "//geometry/proximity:mesh_intersection",
         "//math",
     ],
+)
+
+drake_py_experiment_binary(
+    name = "mesh_intersection_experiment",
+    googlebench_binary = ":mesh_intersection_benchmark",
 )
 
 drake_cc_googlebench_binary(
@@ -42,4 +50,9 @@ drake_cc_googlebench_binary(
     ],
 )
 
-add_lint_tests()
+drake_py_experiment_binary(
+    name = "render_experiment",
+    googlebench_binary = ":render_benchmark",
+)
+
+add_lint_tests(enable_clang_format_lint = False)

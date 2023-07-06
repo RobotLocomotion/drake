@@ -1,6 +1,3 @@
-#include "pybind11/eigen.h"
-#include "pybind11/pybind11.h"
-
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
@@ -28,7 +25,14 @@ void DefineVisualizationConfig(py::module m) {
   }
 
   m  // BR
-      .def("ApplyVisualizationConfig", &ApplyVisualizationConfig,
+      .def("ApplyVisualizationConfig",
+          // TODO(jwnimmer-tri) On 2023-09-01 upon completion of deprecation,
+          // we can get rid of the overload_cast here.
+          py::overload_cast<const VisualizationConfig&,
+              systems::DiagramBuilder<double>*, const systems::lcm::LcmBuses*,
+              const multibody::MultibodyPlant<double>*,
+              geometry::SceneGraph<double>*, std::shared_ptr<geometry::Meshcat>,
+              lcm::DrakeLcmInterface*>(&ApplyVisualizationConfig),
           py::arg("config"), py::arg("builder"), py::arg("lcm_buses") = nullptr,
           py::arg("plant") = nullptr, py::arg("scene_graph") = nullptr,
           py::arg("meshcat") = nullptr, py::arg("lcm") = nullptr,

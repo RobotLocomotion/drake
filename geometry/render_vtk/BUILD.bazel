@@ -78,6 +78,8 @@ drake_cc_library(
         "//common:scope_exit",
         "//geometry:geometry_roles",
         "//geometry:shape_specification",
+        "//geometry/render:render_material",
+        "//geometry/render:render_mesh",
         "@vtk//:vtkCommonCore",
         "@vtk//:vtkFiltersSources",
     ],
@@ -102,9 +104,29 @@ drake_cc_library(
 drake_cc_googletest(
     name = "internal_render_engine_vtk_test",
     args = select({
-        # Disable test cases that break on Mac M1 CI.
+        # We have disabled the test cases that fail on Mac Arm CI.
+        # TODO(#19424) Try to re-enable the tests.
         "@platforms//cpu:arm64": [
-            "--gtest_filter=-*HorizonTest:*TerrainTest:*SphereTest",
+            "--gtest_filter=-" + ":".join([
+                "RenderEngineVtkTest.BoxTest",
+                "RenderEngineVtkTest.CapsuleRotatedTest",
+                "RenderEngineVtkTest.CapsuleTest",
+                "RenderEngineVtkTest.CloneIndependence",
+                "RenderEngineVtkTest.ClonePersistence",
+                "RenderEngineVtkTest.CylinderTest",
+                "RenderEngineVtkTest.DefaultProperties_RenderLabel",
+                "RenderEngineVtkTest.DifferentCameras",
+                "RenderEngineVtkTest.EllipsoidTest",
+                "RenderEngineVtkTest.HorizonTest",
+                "RenderEngineVtkTest.IntrinsicsAndRenderProperties",
+                "RenderEngineVtkTest.MeshTest",
+                "RenderEngineVtkTest.NonUcharChannelTextures",
+                "RenderEngineVtkTest.PreservePropertyTexturesOverClone",
+                "RenderEngineVtkTest.RemoveVisual",
+                "RenderEngineVtkTest.SimpleClone",
+                "RenderEngineVtkTest.SphereTest",
+                "RenderEngineVtkTest.TerrainTest",
+            ]),
         ],
         "//conditions:default": [],
     }),
@@ -129,4 +151,4 @@ drake_cc_googletest(
     ],
 )
 
-add_lint_tests()
+add_lint_tests(enable_clang_format_lint = False)

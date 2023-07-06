@@ -46,14 +46,14 @@ class PyPlotVisualizer(LeafSystem):
                 " obtain Tk support. Alternatively, you may set MPLBACKEND to"
                 " something else (e.g., Qt5Agg).")
 
-        # To help avoid small simulation timesteps, we use a default period
+        # To help avoid small simulation time steps, we use a default period
         # that has an exact representation in binary floating point; see
         # drake#15021 for details.
         default_draw_period = 1./32
 
         self.set_name('pyplot_visualization')
-        self.timestep = draw_period or default_draw_period
-        self.DeclarePeriodicPublishNoHandler(self.timestep, 0.0)
+        self.time_step = draw_period or default_draw_period
+        self.DeclarePeriodicPublishNoHandler(self.time_step, 0.0)
 
         if ax is None:
             self.fig = self._plt.figure(facecolor=facecolor, figsize=figsize)
@@ -134,7 +134,7 @@ class PyPlotVisualizer(LeafSystem):
         ani = animation.FuncAnimation(fig=self.fig,
                                       func=self._draw_recorded_frame,
                                       frames=len(self._recorded_contexts),
-                                      interval=1000*self.timestep,
+                                      interval=1000*self.time_step,
                                       **kwargs)
         return ani
 
@@ -147,7 +147,7 @@ class PyPlotVisualizer(LeafSystem):
             resample: Whether we should do a resampling operation to make the
                 samples more consistent in time. This can be disabled if you
                 know the draw_period passed into the constructor exactly
-                matches the sample timestep of the log.
+                matches the sample time step of the log.
             Additional kwargs are passed through to FuncAnimation.
         """
         if isinstance(log, VectorLog):
@@ -155,9 +155,9 @@ class PyPlotVisualizer(LeafSystem):
             x = log.data()
 
             if resample:
-                t, x = _resample_interp1d(t, x, self.timestep)
+                t, x = _resample_interp1d(t, x, self.time_step)
         elif isinstance(log, Trajectory):
-            t = np.arange(log.start_time(), log.end_time(), self.timestep)
+            t = np.arange(log.start_time(), log.end_time(), self.time_step)
             x = np.hstack([log.value(time) for time in t])
 
         def animate_update(i):
@@ -170,6 +170,6 @@ class PyPlotVisualizer(LeafSystem):
                                       func=animate_update,
                                       frames=t.shape[0],
                                       # Convert from s to ms.
-                                      interval=1000*self.timestep,
+                                      interval=1000*self.time_step,
                                       **kwargs)
         return ani

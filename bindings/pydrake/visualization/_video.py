@@ -2,12 +2,8 @@ import copy
 import matplotlib as mpl
 import numpy as np
 
-from pydrake.common.value import AbstractValue
+from pydrake.common.value import Value
 from pydrake.geometry import (
-    Rgba,
-    SceneGraph,
-)
-from pydrake.geometry.render import (
     ClippingRange,
     DepthRange,
     DepthRenderCamera,
@@ -15,6 +11,8 @@ from pydrake.geometry.render import (
     RenderCameraCore,
     RenderEngineVtkParams,
     RenderLabel,
+    Rgba,
+    SceneGraph,
 )
 from pydrake.math import RigidTransform
 from pydrake.systems.framework import LeafSystem
@@ -59,10 +57,10 @@ class ColorizeDepthImage(LeafSystem):
         LeafSystem.__init__(self)
         self._depth32_input = self.DeclareAbstractInputPort(
             name="depth_image_32f",
-            model_value=AbstractValue.Make(ImageDepth32F()))
+            model_value=Value(ImageDepth32F()))
         self._color_output = self.DeclareAbstractOutputPort(
             "color_image",
-            alloc=lambda: AbstractValue.Make(ImageRgba8U()),
+            alloc=lambda: Value(ImageRgba8U()),
             calc=self._calc_output)
         self.invalid_color = Rgba(100/255, 0, 0, 1)
 
@@ -137,10 +135,10 @@ class ColorizeLabelImage(LeafSystem):
         LeafSystem.__init__(self)
         self._label_input = self.DeclareAbstractInputPort(
             name="label_image",
-            model_value=AbstractValue.Make(ImageLabel16I()))
+            model_value=Value(ImageLabel16I()))
         self._color_output = self.DeclareAbstractOutputPort(
             "color_image",
-            alloc=lambda: AbstractValue.Make(ImageRgba8U()),
+            alloc=lambda: Value(ImageRgba8U()),
             calc=self._calc_output)
         self._palette = self._make_palette()
         self.background_color = Rgba(0, 0, 0, 0)
@@ -239,10 +237,10 @@ class ConcatenateImages(LeafSystem):
                 key = (row, col)
                 self._inputs[key] = self.DeclareAbstractInputPort(
                     name=f"color_image_r{row}_c{col}",
-                    model_value=AbstractValue.Make(ImageRgba8U()))
+                    model_value=Value(ImageRgba8U()))
         self._output = self.DeclareAbstractOutputPort(
             "color_image",
-            alloc=lambda: AbstractValue.Make(ImageRgba8U()),
+            alloc=lambda: Value(ImageRgba8U()),
             calc=self._calc_output)
 
     def get_input_port(self, *, row, col):
@@ -303,7 +301,7 @@ class VideoWriter(LeafSystem):
         depends on either one.
     """
 
-    def __init__(self, *, filename, fps=16.0, backend="PIL"):
+    def __init__(self, *, filename, fps=16.0, backend="PIL", fourcc=None):
         """Constructs a VideoWriter system.
 
         In many cases, the AddToBuilder() or ConnectRgbdSensor() methods might
@@ -314,13 +312,16 @@ class VideoWriter(LeafSystem):
                 ``"output.mp4"``
             fps: the output video's frame rate (in frames per second)
             backend: which backend to use: "PIL" or "cv2"
+            fourcc: when using the cv2 backend, which encoder to use;
+                good choices are "mp4v" or "avc1"; defaults to "mp4v";
+                refer to the OpenCV documentation for details.
         """
         LeafSystem.__init__(self)
         self._filename = filename
         self._fps = fps
         self._input = self.DeclareAbstractInputPort(
             name="color_image",
-            model_value=AbstractValue.Make(ImageRgba8U()))
+            model_value=Value(ImageRgba8U()))
         # TODO(jwnimmer-tri) Support forced triggers as well (so users can
         # manually record videos of prescribed motion).
         self.DeclarePeriodicPublishEvent(1.0 / fps, 0.0, self._publish)
@@ -334,13 +335,16 @@ class VideoWriter(LeafSystem):
             import cv2
             self._backend = cv2
             self._write = self._write_cv2
+            self._fourcc = fourcc or "mp4v"
+            if len(self._fourcc) != 4:
+                raise ValueError(f"The fourcc={fourcc!r} must be 4 characters")
         else:
             raise RuntimeError(f"Invalid backend={backend!r}")
 
     @staticmethod
     def AddToBuilder(*, filename, builder, sensor_pose, fps=16.0,
-                     width=320, height=240, fov_y=np.pi/6,
-                     near=0.01, far=10.0, kinds=None, backend="PIL"):
+                     width=320, height=240, fov_y=np.pi/6, near=0.01, far=10.0,
+                     kinds=None, backend="PIL", fourcc=None):
         """Adds a RgbdSensor and VideoWriter system to the given builder, using
         a world-fixed pose. Returns the VideoWriter system.
 
@@ -361,6 +365,9 @@ class VideoWriter(LeafSystem):
             kinds: which image kind(s) to include in the video; valid
                 options are ``"color"``, ``"label"``, and/or ``"depth"``
             backend: which backend to use: "PIL" or "cv2".
+            fourcc: when using the cv2 backend, which encoder to use;
+                good choices are "mp4v" or "avc1"; defaults to "mp4v"
+                refer to the OpenCV documentation for details.
 
         Warning:
             Once all images have been published, you must call
@@ -369,7 +376,8 @@ class VideoWriter(LeafSystem):
         sensor = VideoWriter._AddRgbdSensor(
             builder=builder, pose=sensor_pose,
             width=width, height=height, fov_y=fov_y, near=near, far=far)
-        writer = VideoWriter(filename=filename, fps=fps, backend=backend)
+        writer = VideoWriter(filename=filename, fps=fps, backend=backend,
+                             fourcc=fourcc)
         builder.AddSystem(writer)
         writer.ConnectRgbdSensor(builder=builder, sensor=sensor, kinds=kinds)
         return writer
@@ -484,7 +492,7 @@ class VideoWriter(LeafSystem):
         cv2 = self._backend
         # Open the output file upon the first publish event.
         if self._cv2_writer is None:
-            fourcc = cv2.VideoWriter.fourcc("a", "v", "c", "1")
+            fourcc = cv2.VideoWriter.fourcc(*self._fourcc)
             (height, width, _) = rgba.shape
             self._cv2_writer = cv2.VideoWriter(
                 self._filename, fourcc, self._fps, (width, height))

@@ -28,6 +28,13 @@ const VectorX<T>& FemState<T>::GetPositions() const {
 }
 
 template <typename T>
+const VectorX<T>& FemState<T>::GetPreviousStepPositions() const {
+  return get_context()
+      .get_discrete_state(system_->fem_previous_step_position_index())
+      .value();
+}
+
+template <typename T>
 const VectorX<T>& FemState<T>::GetVelocities() const {
   return get_context()
       .get_discrete_state(system_->fem_velocity_index())
@@ -44,6 +51,12 @@ const VectorX<T>& FemState<T>::GetAccelerations() const {
 template <typename T>
 void FemState<T>::SetPositions(const Eigen::Ref<const VectorX<T>>& q) {
   get_mutable_context().SetDiscreteState(system_->fem_position_index(), q);
+}
+
+template <typename T>
+void FemState<T>::SetTimeStepPositions(const Eigen::Ref<const VectorX<T>>& q0) {
+  get_mutable_context().SetDiscreteState(
+      system_->fem_previous_step_position_index(), q0);
 }
 
 template <typename T>

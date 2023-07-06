@@ -935,7 +935,7 @@ class BodyNode : public MultibodyElement<T> {
   // - Prismatic: [0 0 0 x y z]
   // - Ball: 3x3 blocks of zeroes.
   void CalcArticulatedBodyInertiaCache_TipToBase(
-      const systems::Context<T>&,
+      const systems::Context<T>& context,
       const PositionKinematicsCache<T>& pc,
       const Eigen::Ref<const MatrixUpTo6<T>>& H_PB_W,
       const SpatialInertia<T>& M_B_W,
@@ -1048,9 +1048,10 @@ class BodyNode : public MultibodyElement<T> {
 
     // We now proceed to compute Pplus_PB_W using Eq. (7):
     //   Pplus_PB_W = P_B_W - g_PB_W * U_B_W
-    // For weld joints, with nv = 0, terms involving the hinge matrix H_PB_W
-    // go away and therefore Pplus_PB_W = P_B_W. We check this below.
-    if (nv != 0) {
+    // For weld joints (with nv = 0) or locked joints, terms involving the hinge
+    // matrix H_PB_W go away and therefore Pplus_PB_W = P_B_W. We check this
+    // below.
+    if (nv != 0 && !this->mobilizer_->is_locked(context)) {
       // Compute common term U_B_W.
       const MatrixUpTo6<T> U_B_W = H_PB_W.transpose() * P_B_W;
 
@@ -1127,7 +1128,7 @@ class BodyNode : public MultibodyElement<T> {
   // @throws when called on the _root_ node or `aba_force_cache` is
   // nullptr.
   void CalcArticulatedBodyForceCache_TipToBase(
-      const systems::Context<T>&,
+      const systems::Context<T>& context,
       const PositionKinematicsCache<T>& pc,
       const VelocityKinematicsCache<T>*,
       const SpatialForce<T>& Fb_Bo_W,
@@ -1168,8 +1169,8 @@ class BodyNode : public MultibodyElement<T> {
 
     const int nv = get_num_mobilizer_velocities();
 
-    // These terms do not show up for zero mobilities (weld).
-    if (nv != 0) {
+    // These terms do not show up for zero mobilities (weld or locked).
+    if (nv != 0 && !this->mobilizer_->is_locked(context)) {
       // Compute the articulated body inertia innovations generalized force,
       // e_B, according to (4).
       VectorUpTo6<T>& e_B = get_mutable_e_B(aba_force_cache);
@@ -1219,7 +1220,7 @@ class BodyNode : public MultibodyElement<T> {
   // predecessor nodes in the tree.)
   // @throws when called on the _root_ node of `ac` or `vdot` is nullptr.
   void CalcArticulatedBodyAccelerations_BaseToTip(
-      const systems::Context<T>& /* context */,
+      const systems::Context<T>& context,
       const PositionKinematicsCache<T>& pc,
       const ArticulatedBodyInertiaCache<T>& abic,
       const ArticulatedBodyForceCache<T>& aba_force_cache,
@@ -1248,9 +1249,13 @@ class BodyNode : public MultibodyElement<T> {
     SpatialAcceleration<T>& A_WB = get_mutable_A_WB(ac);
     A_WB = Aplus_WB + Ab_WB;
 
-    // These quantities do not contribute when nv = 0. We skip them since Eigen
-    // does not allow certain operations on zero-sized objects.
-    if (nv != 0) {
+    // These quantities do not contribute when nv = 0 (weld or locked joint). We
+    // skip them since Eigen does not allow certain operations on zero-sized
+    // objects. It is important to set the generalized accelerations to zero for
+    // locked mobilizers.
+    if (this->mobilizer_->is_locked(context)) {
+      get_mutable_accelerations(ac).setZero();
+    } else if (nv != 0) {
       // Compute nu_B, the articulated body inertia innovations generalized
       // acceleration.
       const VectorUpTo6<T> nu_B =

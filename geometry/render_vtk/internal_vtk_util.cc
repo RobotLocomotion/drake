@@ -10,8 +10,8 @@
 
 namespace drake {
 namespace geometry {
-namespace render {
-namespace vtk_util {
+namespace render_vtk {
+namespace internal {
 
 vtkSmartPointer<vtkPlaneSource> CreateSquarePlane(double size) {
   vtkSmartPointer<vtkPlaneSource> plane =
@@ -48,7 +48,7 @@ vtkSmartPointer<vtkTransform> ConvertToVtkTransform(
   return vtk_transform;
 }
 
-}  // namespace vtk_util
-}  // namespace render
+}  // namespace internal
+}  // namespace render_vtk
 }  // namespace geometry
 }  // namespace drake

@@ -152,7 +152,9 @@ void CalcDistanceFallback(const fcl::CollisionObjectd& a,
   // actually exists, it should be specialized below.
   throw std::logic_error(fmt::format(
       "PenetrationAsPointPair() cannot be evaluated for shapes '{}' and '{}' "
-      "for scalar type {}",
+      "for scalar type {}. See the documentation for "
+      "QueryObject::ComputePointPairPenetration() for the full status of "
+      "supported geometries.",
       GetGeometryName(a), GetGeometryName(b), NiceTypeName::Get<T>()));
 }
 
@@ -416,7 +418,9 @@ bool Callback(fcl::CollisionObjectd* fcl_object_A_ptr,
   } else {
     throw std::logic_error(fmt::format(
         "Penetration queries between shapes '{}' and '{}' "
-        "are not supported for scalar type {}",
+        "are not supported for scalar type {}. See the documentation for "
+        "QueryObject::ComputePointPairPenetration() for the full status of "
+        "supported geometries.",
         GetGeometryName(*fcl_object_A_ptr), GetGeometryName(*fcl_object_B_ptr),
         NiceTypeName::Get<T>()));
   }

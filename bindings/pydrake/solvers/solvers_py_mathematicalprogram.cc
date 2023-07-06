@@ -1,12 +1,6 @@
 #include <cstddef>
 #include <memory>
 
-#include "pybind11/eigen.h"
-#include "pybind11/functional.h"
-#include "pybind11/operators.h"
-#include "pybind11/pybind11.h"
-#include "pybind11/stl.h"
-
 #include "drake/bindings/pydrake/autodiff_types_pybind.h"
 #include "drake/bindings/pydrake/common/cpp_param_pybind.h"
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
@@ -35,6 +29,8 @@ using solvers::Constraint;
 using solvers::Cost;
 using solvers::EvaluatorBase;
 using solvers::ExponentialConeConstraint;
+using solvers::ExpressionConstraint;
+using solvers::ExpressionCost;
 using solvers::L1NormCost;
 using solvers::L2NormCost;
 using solvers::LinearComplementarityConstraint;
@@ -473,7 +469,9 @@ void BindSolverInterfaceAndFlags(py::module m) {
       .value("kNlopt", SolverType::kNlopt, doc.SolverType.kNlopt.doc)
       .value("kOsqp", SolverType::kOsqp, doc.SolverType.kOsqp.doc)
       .value("kScs", SolverType::kScs, doc.SolverType.kScs.doc)
-      .value("kSnopt", SolverType::kSnopt, doc.SolverType.kSnopt.doc);
+      .value("kSnopt", SolverType::kSnopt, doc.SolverType.kSnopt.doc)
+      .value("kUnrevisedLemke", SolverType::kUnrevisedLemke,
+          doc.SolverType.kUnrevisedLemke.doc);
 
   // TODO(jwnimmer-tri) Bind the accessors for SolverOptions.
   py::class_<SolverOptions>(m, "SolverOptions", doc.SolverOptions.doc)
@@ -822,9 +820,7 @@ void BindMathematicalProgram(py::module m) {
       .def("AddCost",
           static_cast<Binding<Cost> (MathematicalProgram::*)(
               const Expression&)>(&MathematicalProgram::AddCost),
-          // N.B. There is no corresponding C++ method, so the docstring here
-          // is a literal, not a reference to documentation_pybind.h
-          "Adds a cost expression.")
+          py::arg("e"), doc.MathematicalProgram.AddCost.doc_1args_e)
       .def(
           "AddCost",
           [](MathematicalProgram* self, const std::shared_ptr<Cost>& obj,
@@ -1155,6 +1151,7 @@ void BindMathematicalProgram(py::module m) {
               const Eigen::Ref<const Eigen::VectorXd>&,
               const Eigen::Ref<const VectorXDecisionVariable>&)>(
               &MathematicalProgram::AddLinearComplementarityConstraint),
+          py::arg("M"), py::arg("q"), py::arg("vars"),
           doc.MathematicalProgram.AddLinearComplementarityConstraint.doc)
       .def(
           "AddPositiveSemidefiniteConstraint",
@@ -1474,6 +1471,14 @@ for every column of ``prog_var_vals``. )""")
           py::arg("binding"), py::arg("prog_var_vals"),
           doc.MathematicalProgram.EvalBinding.doc)
       .def(
+          "EvalBindingAtInitialGuess",
+          [](const MathematicalProgram& prog,
+              const Binding<EvaluatorBase>& binding) {
+            return prog.EvalBindingAtInitialGuess(binding);
+          },
+          py::arg("binding"),
+          doc.MathematicalProgram.EvalBindingAtInitialGuess.doc)
+      .def(
           "EvalBindings",
           [](const MathematicalProgram& prog,
               const std::vector<Binding<EvaluatorBase>>& binding,
@@ -1566,14 +1571,24 @@ for every column of ``prog_var_vals``. )""")
           doc.SolutionResult.kInfeasibleConstraints.doc)
       .value("kUnbounded", SolutionResult::kUnbounded,
           doc.SolutionResult.kUnbounded.doc)
-      .value("kUnknownError", SolutionResult::kUnknownError,
-          doc.SolutionResult.kUnknownError.doc)
+      .value("kSolverSpecificError", SolutionResult::kSolverSpecificError,
+          doc.SolutionResult.kSolverSpecificError.doc)
       .value("kInfeasibleOrUnbounded", SolutionResult::kInfeasibleOrUnbounded,
           doc.SolutionResult.kInfeasibleOrUnbounded.doc)
       .value("kIterationLimit", SolutionResult::kIterationLimit,
           doc.SolutionResult.kIterationLimit.doc)
       .value("kDualInfeasible", SolutionResult::kDualInfeasible,
-          doc.SolutionResult.kDualInfeasible.doc);
+          doc.SolutionResult.kDualInfeasible.doc)
+      .value("kSolutionResultNotSet", SolutionResult::kSolutionResultNotSet,
+          doc.SolutionResult.kSolutionResultNotSet.doc);
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  solution_result_enum.value("kUnknownError", SolutionResult::kUnknownError,
+      "Deprecated. This has been renamed to kSolverSpecificError; for details, "
+      "see https://github.com/RobotLocomotion/drake/pull/19450. The deprecated "
+      "code will be removed from Drake on or after 2023-09-01.");
+#pragma GCC diagnostic pop
 }  // NOLINT(readability/fn_size)
 
 void BindEvaluatorsAndBindings(py::module m) {
@@ -1884,7 +1899,11 @@ void BindEvaluatorsAndBindings(py::module m) {
   py::class_<LinearComplementarityConstraint, Constraint,
       std::shared_ptr<LinearComplementarityConstraint>>(m,
       "LinearComplementarityConstraint",
-      doc.LinearComplementarityConstraint.doc);
+      doc.LinearComplementarityConstraint.doc)
+      .def("M", &LinearComplementarityConstraint::M,
+          doc.LinearComplementarityConstraint.M.doc)
+      .def("q", &LinearComplementarityConstraint::q,
+          doc.LinearComplementarityConstraint.q.doc);
 
   py::class_<ExponentialConeConstraint, Constraint,
       std::shared_ptr<ExponentialConeConstraint>>(
@@ -1903,6 +1922,21 @@ void BindEvaluatorsAndBindings(py::module m) {
       .def("b", &ExponentialConeConstraint::b,
           doc.ExponentialConeConstraint.b.doc);
 
+  py::class_<ExpressionConstraint, Constraint,
+      std::shared_ptr<ExpressionConstraint>>(
+      m, "ExpressionConstraint", doc.ExpressionConstraint.doc)
+      .def(py::init<const Eigen::Ref<const VectorX<symbolic::Expression>>&,
+               const Eigen::Ref<const Eigen::VectorXd>&,
+               const Eigen::Ref<const Eigen::VectorXd>&>(),
+          py::arg("v"), py::arg("lb"), py::arg("ub"),
+          doc.ExpressionConstraint.ctor.doc)
+      .def("expressions", &ExpressionConstraint::expressions,
+          // dtype = object arrays must be copied, and cannot be referenced.
+          py_rvp::copy, doc.ExpressionConstraint.expressions.doc)
+      .def("vars", &ExpressionConstraint::vars,
+          // dtype = object arrays must be copied, and cannot be referenced.
+          py_rvp::copy, doc.ExpressionConstraint.vars.doc);
+
   auto constraint_binding = RegisterBinding<Constraint>(&m);
   DefBindingCastConstructor<Constraint>(&constraint_binding);
   RegisterBinding<LinearConstraint>(&m);
@@ -1915,6 +1949,10 @@ void BindEvaluatorsAndBindings(py::module m) {
   RegisterBinding<LinearMatrixInequalityConstraint>(&m);
   RegisterBinding<LinearComplementarityConstraint>(&m);
   RegisterBinding<ExponentialConeConstraint>(&m);
+  // TODO(russt): PolynomialConstraint currently uses common::Polynomial, not
+  // symbolic::Polynomial. Decide whether we want to bind the current c++
+  // implementation as is, or convert it to symbolic::Polynomial first.
+  RegisterBinding<ExpressionConstraint>(&m);
 
   // Mirror procedure for costs
   py::class_<Cost, EvaluatorBase, std::shared_ptr<Cost>> cost(
@@ -2031,6 +2069,16 @@ void BindEvaluatorsAndBindings(py::module m) {
           py::arg("new_A"), py::arg("new_b"),
           doc.PerspectiveQuadraticCost.UpdateCoefficients.doc);
 
+  py::class_<ExpressionCost, Cost, std::shared_ptr<ExpressionCost>>(
+      m, "ExpressionCost", doc.ExpressionCost.doc)
+      .def(py::init<const symbolic::Expression&>(), py::arg("e"),
+          doc.ExpressionCost.ctor.doc)
+      .def("expression", &ExpressionCost::expression,
+          py_rvp::reference_internal, doc.ExpressionCost.expression.doc)
+      .def("vars", &ExpressionCost::vars,
+          // dtype = object arrays must be copied, and cannot be referenced.
+          py_rvp::copy, doc.ExpressionCost.vars.doc);
+
   auto cost_binding = RegisterBinding<Cost>(&m);
   DefBindingCastConstructor<Cost>(&cost_binding);
   RegisterBinding<LinearCost>(&m);
@@ -2039,6 +2087,10 @@ void BindEvaluatorsAndBindings(py::module m) {
   RegisterBinding<L2NormCost>(&m);
   RegisterBinding<LInfNormCost>(&m);
   RegisterBinding<PerspectiveQuadraticCost>(&m);
+  // TODO(russt): PolynomialCost currently uses common::Polynomial, not
+  // symbolic::Polynomial. Decide whether we want to bind the current c++
+  // implementation as is, or convert it to symbolic::Polynomial first.
+  RegisterBinding<ExpressionCost>(&m);
 
   py::class_<VisualizationCallback, EvaluatorBase,
       std::shared_ptr<VisualizationCallback>>(

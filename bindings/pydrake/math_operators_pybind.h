@@ -4,9 +4,6 @@
 #include <cmath>
 #include <type_traits>
 
-#include "pybind11/eigen.h"
-#include "pybind11/numpy.h"
-
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/common/drake_bool.h"
 

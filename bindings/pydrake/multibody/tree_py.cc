@@ -1,13 +1,10 @@
-#include "pybind11/eigen.h"
 #include "pybind11/eval.h"
-#include "pybind11/operators.h"
-#include "pybind11/pybind11.h"
-#include "pybind11/stl.h"
 
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_pybind.h"
+#include "drake/bindings/pydrake/common/identifier_pybind.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/common/type_safe_index_pybind.h"
@@ -108,8 +105,8 @@ void DoScalarIndependentDefinitions(py::module m) {
       m, "JointActuatorIndex", doc.JointActuatorIndex.doc);
   BindTypeSafeIndex<ModelInstanceIndex>(
       m, "ModelInstanceIndex", doc.ModelInstanceIndex.doc);
-  BindTypeSafeIndex<ConstraintIndex>(
-      m, "ConstraintIndex", doc.ConstraintIndex.doc);
+  BindIdentifier<MultibodyConstraintId>(
+      m, "MultibodyConstraintId", doc.MultibodyConstraintId.doc);
   m.def("world_index", &world_index, doc.world_index.doc);
   m.def("world_frame_index", &world_frame_index, doc.world_frame_index.doc);
   m.def("world_model_instance", &world_model_instance,
@@ -820,7 +817,27 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.set_actuation_vector.doc)
         .def("input_start", &Class::input_start, cls_doc.input_start.doc)
         .def("num_inputs", &Class::num_inputs, cls_doc.num_inputs.doc)
-        .def("effort_limit", &Class::effort_limit, cls_doc.effort_limit.doc);
+        .def("effort_limit", &Class::effort_limit, cls_doc.effort_limit.doc)
+        .def("default_rotor_inertia", &Class::default_rotor_inertia,
+            cls_doc.default_rotor_inertia.doc)
+        .def("default_gear_ratio", &Class::default_gear_ratio,
+            cls_doc.default_gear_ratio.doc)
+        .def("set_default_rotor_inertia", &Class::set_default_rotor_inertia,
+            py::arg("rotor_inertia"), cls_doc.set_default_rotor_inertia.doc)
+        .def("set_default_gear_ratio", &Class::set_default_gear_ratio,
+            py::arg("gear_ratio"), cls_doc.set_default_gear_ratio.doc)
+        .def("default_reflected_inertia", &Class::default_reflected_inertia,
+            cls_doc.default_reflected_inertia.doc)
+        .def("rotor_inertia", &Class::rotor_inertia, py::arg("context"),
+            cls_doc.rotor_inertia.doc)
+        .def("gear_ratio", &Class::gear_ratio, py::arg("context"),
+            cls_doc.gear_ratio.doc)
+        .def("SetRotorInertia", &Class::SetRotorInertia, py::arg("context"),
+            py::arg("rotor_inertia"), cls_doc.SetRotorInertia.doc)
+        .def("SetGearRatio", &Class::SetGearRatio, py::arg("context"),
+            py::arg("gear_ratio"), cls_doc.SetGearRatio.doc)
+        .def("calc_reflected_inertia", &Class::calc_reflected_inertia,
+            py::arg("context"), cls_doc.calc_reflected_inertia.doc);
   }
 
   // Force Elements.
@@ -1072,6 +1089,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("CalcPrincipalMomentsOfInertia",
             &Class::CalcPrincipalMomentsOfInertia,
             cls_doc.CalcPrincipalMomentsOfInertia.doc)
+        .def("CalcPrincipalMomentsAndAxesOfInertia",
+            &Class::CalcPrincipalMomentsAndAxesOfInertia,
+            cls_doc.CalcPrincipalMomentsAndAxesOfInertia.doc)
         .def("CouldBePhysicallyValid", &Class::CouldBePhysicallyValid,
             cls_doc.CouldBePhysicallyValid.doc)
         .def("ReExpress", &Class::ReExpress, py::arg("R_AE"),
@@ -1169,6 +1189,46 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def_static("MakeFromCentralInertia", &Class::MakeFromCentralInertia,
             py::arg("mass"), py::arg("p_PScm_E"), py::arg("I_SScm_E"),
             cls_doc.MakeFromCentralInertia.doc)
+        .def_static("SolidBoxWithDensity", &Class::SolidBoxWithDensity,
+            py::arg("density"), py::arg("lx"), py::arg("ly"), py::arg("lz"),
+            cls_doc.SolidBoxWithDensity.doc)
+        .def_static("SolidBoxWithMass", &Class::SolidBoxWithMass,
+            py::arg("mass"), py::arg("lx"), py::arg("ly"), py::arg("lz"),
+            cls_doc.SolidBoxWithMass.doc)
+        .def_static("SolidCubeWithDensity", &Class::SolidCubeWithDensity,
+            py::arg("density"), py::arg("length"),
+            cls_doc.SolidCubeWithDensity.doc)
+        .def_static("SolidCapsuleWithDensity", &Class::SolidCapsuleWithDensity,
+            py::arg("density"), py::arg("radius"), py::arg("length"),
+            py::arg("unit_vector"), cls_doc.SolidCapsuleWithDensity.doc)
+        .def_static("SolidCylinderWithDensity",
+            &Class::SolidCylinderWithDensity, py::arg("density"),
+            py::arg("radius"), py::arg("length"), py::arg("unit_vector"),
+            cls_doc.SolidCylinderWithDensity.doc)
+        .def_static("SolidCylinderWithDensityAboutEnd",
+            &Class::SolidCylinderWithDensityAboutEnd, py::arg("density"),
+            py::arg("radius"), py::arg("length"), py::arg("unit_vector"),
+            cls_doc.SolidCylinderWithDensityAboutEnd.doc)
+        .def_static("ThinRodWithMass", &Class::ThinRodWithMass, py::arg("mass"),
+            py::arg("length"), py::arg("unit_vector"),
+            cls_doc.ThinRodWithMass.doc)
+        .def_static("ThinRodWithMassAboutEnd", &Class::ThinRodWithMassAboutEnd,
+            py::arg("mass"), py::arg("length"), py::arg("unit_vector"),
+            cls_doc.ThinRodWithMassAboutEnd.doc)
+        .def_static("SolidEllipsoidWithDensity",
+            &Class::SolidEllipsoidWithDensity, py::arg("density"), py::arg("a"),
+            py::arg("b"), py::arg("c"), cls_doc.SolidEllipsoidWithDensity.doc)
+        .def_static("SolidSphereWithDensity", &Class::SolidSphereWithDensity,
+            py::arg("density"), py::arg("radius"),
+            cls_doc.SolidSphereWithDensity.doc)
+        .def_static("SolidSphereWithMass", &Class::SolidSphereWithMass,
+            py::arg("mass"), py::arg("radius"), cls_doc.SolidSphereWithMass.doc)
+        .def_static("HollowSphereWithDensity", &Class::HollowSphereWithDensity,
+            py::arg("area_density"), py::arg("radius"),
+            cls_doc.HollowSphereWithDensity.doc)
+        .def_static("HollowSphereWithMass", &Class::HollowSphereWithMass,
+            py::arg("mass"), py::arg("radius"),
+            cls_doc.HollowSphereWithMass.doc)
         .def(py::init(), cls_doc.ctor.doc_0args)
         .def(py::init<const T&, const Eigen::Ref<const Vector3<T>>&,
                  const UnitInertia<T>&, const bool>(),

@@ -14,7 +14,6 @@ namespace drake {
 namespace  {
 
 using std::make_unique;
-using std::move;
 using std::regex;
 using std::regex_match;
 using std::stringstream;
@@ -1066,32 +1065,6 @@ GTEST_TEST(CopyableUniquePtrTest, FormatterTest) {
   raw = ptr.get();
   EXPECT_EQ(fmt::to_string(ptr), fmt::to_string(raw));
 }
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-// Tests the stream value.
-GTEST_TEST(CopyableUniquePtrTest, DeprecatedStreamTest) {
-  stringstream ss;
-  CloneOnly* raw = nullptr;
-  ss << raw;
-  std::string null_str = ss.str();
-  ss.str(std::string());
-
-  // Stream null pointer value.
-  cup<CloneOnly> ptr;
-  ss << ptr;
-  EXPECT_EQ(ss.str(), null_str);
-  ss.str(std::string());
-
-  // Stream non-null value.
-  ptr.reset(raw = new CloneOnly(1));
-  ss << raw;
-  std::string raw_str = ss.str();
-  ss.str(std::string());
-  ss << ptr;
-  EXPECT_EQ(ss.str(), raw_str);
-}
-#pragma GCC diagnostic pop
 
 // Tests the == tests between copyable_unique_ptr and other entities.
 GTEST_TEST(CopyableUniquePtrTest, EqualityTest) {

@@ -1,7 +1,3 @@
-#include "pybind11/pybind11.h"
-#include "pybind11/stl.h"
-
-#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
@@ -128,17 +124,6 @@ PYBIND11_MODULE(parsing, m) {
             cls_doc.SetAutoRenaming.doc)
         .def("GetAutoRenaming", &Class::GetAutoRenaming,
             cls_doc.GetAutoRenaming.doc);
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    cls  // BR
-        .def("AddModelFromString",
-            WrapDeprecated(cls_doc.AddModelFromString.doc_deprecated,
-                &Class::AddModelFromString),
-            py::arg("file_contents"), py::arg("file_type"),
-            py::arg("model_name") = "",
-            cls_doc.AddModelFromString.doc_deprecated);
-#pragma GCC diagnostic pop
   }
 
   // Model Directives
@@ -268,15 +253,6 @@ PYBIND11_MODULE(parsing, m) {
       py::return_value_policy::reference,
       py::keep_alive<0, 1>(),  // `return` keeps `plant` alive.
       doc.parsing.GetScopedFrameByName.doc);
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  m.def("GetScopedFrameName",
-      WrapDeprecated(doc.parsing.GetScopedFrameName.doc_deprecated,
-          &parsing::GetScopedFrameName),
-      py::arg("plant"), py::arg("frame"),
-      doc.parsing.GetScopedFrameName.doc_deprecated);
-#pragma GCC diagnostic push
 }
 
 }  // namespace pydrake

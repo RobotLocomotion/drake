@@ -32,9 +32,7 @@ class Bracket {
   }
 
   // Returns `true` if x is inside the bracket.
-  bool inside(double x) {
-    return x_lower_ <= x && x <= x_upper_;
-  }
+  bool inside(double x) { return x_lower_ <= x && x <= x_upper_; }
 
   // Updates `this` bracket to [x, x_upper()] if sign(f) == sign(f_lower) or to
   // [x_lower(), x] if sign(f) == sign(f_upper)

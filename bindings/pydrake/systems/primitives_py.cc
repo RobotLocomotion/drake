@@ -1,9 +1,6 @@
-#include "pybind11/eigen.h"
-#include "pybind11/pybind11.h"
-#include "pybind11/stl.h"
-
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
@@ -151,19 +148,36 @@ PYBIND11_MODULE(primitives, m) {
     DefineTemplateClassWithDefault<DiscreteTimeDelay<T>, LeafSystem<T>>(
         m, "DiscreteTimeDelay", GetPyParam<T>(), doc.DiscreteTimeDelay.doc)
         .def(py::init<double, int, int>(), py::arg("update_sec"),
-            py::arg("delay_timesteps"), py::arg("vector_size"),
+            py::arg("delay_time_steps"), py::arg("vector_size"),
             doc.DiscreteTimeDelay.ctor
-                .doc_3args_update_sec_delay_timesteps_vector_size)
+                .doc_3args_update_sec_delay_time_steps_vector_size)
         .def(py::init<double, int, const AbstractValue&>(),
+            py::arg("update_sec"), py::arg("delay_time_steps"),
+            py::arg("abstract_model_value"),
+            doc.DiscreteTimeDelay.ctor
+                .doc_3args_update_sec_delay_time_steps_abstract_model_value)
+        .def(py_init_deprecated<DiscreteTimeDelay<T>, double, int, int>(
+                 "Argument delay_timesteps has been renamed to "
+                 "delay_time_steps. This version will be removed on or after "
+                 "2023-09-01."),
+            py::arg("update_sec"), py::arg("delay_timesteps"),
+            py::arg("vector_size"),
+            doc.DiscreteTimeDelay.ctor
+                .doc_3args_update_sec_delay_time_steps_vector_size)
+        .def(py_init_deprecated<DiscreteTimeDelay<T>, double, int,
+                 const AbstractValue&>(
+                 "Argument delay_timesteps has been renamed to "
+                 "delay_time_steps. This version will be removed on or after "
+                 "2023-09-01."),
             py::arg("update_sec"), py::arg("delay_timesteps"),
             py::arg("abstract_model_value"),
             doc.DiscreteTimeDelay.ctor
-                .doc_3args_update_sec_delay_timesteps_abstract_model_value);
+                .doc_3args_update_sec_delay_time_steps_abstract_model_value);
 
     DefineTemplateClassWithDefault<DiscreteDerivative<T>, LeafSystem<T>>(
         m, "DiscreteDerivative", GetPyParam<T>(), doc.DiscreteDerivative.doc)
         .def(py::init<int, double, bool>(), py::arg("num_inputs"),
-            py::arg("time_step"), py::arg("suppress_initial_transient") = false,
+            py::arg("time_step"), py::arg("suppress_initial_transient") = true,
             doc.DiscreteDerivative.ctor.doc)
         .def("time_step", &DiscreteDerivative<T>::time_step,
             doc.DiscreteDerivative.time_step.doc)
@@ -386,7 +400,7 @@ PYBIND11_MODULE(primitives, m) {
         Diagram<T>>(m, "StateInterpolatorWithDiscreteDerivative",
         GetPyParam<T>(), doc.StateInterpolatorWithDiscreteDerivative.doc)
         .def(py::init<int, double, bool>(), py::arg("num_positions"),
-            py::arg("time_step"), py::arg("suppress_initial_transient") = false,
+            py::arg("time_step"), py::arg("suppress_initial_transient") = true,
             doc.StateInterpolatorWithDiscreteDerivative.ctor.doc)
         .def("suppress_initial_transient",
             &StateInterpolatorWithDiscreteDerivative<
@@ -565,12 +579,16 @@ PYBIND11_MODULE(primitives, m) {
 
     DefineTemplateClassWithDefault<ZeroOrderHold<T>, LeafSystem<T>>(
         m, "ZeroOrderHold", GetPyParam<T>(), doc.ZeroOrderHold.doc)
-        .def(py::init<double, int>(), py::arg("period_sec"),
-            py::arg("vector_size"),
-            doc.ZeroOrderHold.ctor.doc_2args_period_sec_vector_size)
-        .def(py::init<double, const AbstractValue&>(), py::arg("period_sec"),
-            py::arg("abstract_model_value"),
-            doc.ZeroOrderHold.ctor.doc_2args_period_sec_abstract_model_value);
+        .def(py::init<double, int, double>(), py::arg("period_sec"),
+            py::arg("vector_size"), py::arg("offset_sec") = 0.0,
+            doc.ZeroOrderHold.ctor.doc_3args_period_sec_vector_size_offset_sec)
+        .def(py::init<double, const AbstractValue&, double>(),
+            py::arg("period_sec"), py::arg("abstract_model_value"),
+            py::arg("offset_sec") = 0.0,
+            doc.ZeroOrderHold.ctor
+                .doc_3args_period_sec_abstract_model_value_offset_sec)
+        .def("period", &ZeroOrderHold<T>::period, doc.ZeroOrderHold.period.doc)
+        .def("offset", &ZeroOrderHold<T>::offset, doc.ZeroOrderHold.offset.doc);
   };
   type_visit(bind_common_scalar_types, CommonScalarPack{});
 
@@ -762,6 +780,12 @@ PYBIND11_MODULE(primitives, m) {
 
   m.def("IsObservable", &IsObservable, py::arg("sys"),
       py::arg("threshold") = std::nullopt, doc.IsObservable.doc);
+
+  m.def("IsStabilizable", &IsStabilizable, py::arg("sys"),
+      py::arg("threshold") = std::nullopt, doc.IsStabilizable.doc);
+
+  m.def("IsDetectable", &IsDetectable, py::arg("sys"),
+      py::arg("threshold") = std::nullopt, doc.IsDetectable.doc);
 }  // NOLINT(readability/fn_size)
 
 }  // namespace pydrake

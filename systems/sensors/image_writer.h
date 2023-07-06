@@ -36,16 +36,19 @@ namespace sensors {
 /** Writes the color (8-bit, RGBA) image data to disk.  */
 void SaveToPng(const ImageRgba8U& image, const std::string& file_path);
 
-/** Writes the depth (32-bit) image data to disk. Png files do not support
- channels larger than 16-bits and its support for floating point values is
- also limited at best. So, depth images can only be written as tiffs.  */
+/** Writes the depth (32-bit) image data to disk. A 32-bit depth image can only
+ be saved as TIFF (not PNG) because PNG files do not support channels larger
+ than 16-bits and its support for floating point values is also limited at
+ best. See ConvertDepth32FTo16U() for converting 32-bit to 16-bit to enable
+ saving as PNG.  */
 void SaveToTiff(const ImageDepth32F& image, const std::string& file_path);
+
+/** Writes the depth (16-bit) image data to disk. See ConvertDepth16UTo32F() for
+ converting 16-bit to 32-bit to enable saving as TIFF.  */
+void SaveToPng(const ImageDepth16U& image, const std::string& file_path);
 
 /** Writes the label (16-bit) image data to disk.  */
 void SaveToPng(const ImageLabel16I& image, const std::string& file_path);
-
-/** Writes the depth (16-bit) image data to disk.  */
-void SaveToPng(const ImageDepth16U& image, const std::string& file_path);
 
 /** Writes the grey scale (8-bit) image data to disk.  */
 void SaveToPng(const ImageGrey8U& image, const std::string& file_path);
@@ -184,16 +187,26 @@ class ImageWriter : public LeafSystem<double> {
                             are written in calls to Publish().
    @param start_time        The minimum value for the context's time at which
                             images will be written in calls to Publish().
-   @tparam kPixelType       The representation of the per-pixel data (see
+   @param pixel_type        The representation of the per-pixel data (see
                             PixelType). Must be one of {PixelType::kRgba8U,
                             PixelType::kDepth32F, PixelType::kLabel16I,
                             PixelType::kDepth16U, or PixelType::kGrey8U}.
    @throws std::exception   if (1) the directory encoded in the
                             `file_name_format` is not "valid" (see
                             documentation above for definition),
-                            (2) `publish_period` is not positive, or
-                            (3) `port_name` is used by a previous input port.
+                            (2) `publish_period` is not positive,
+                            (3) `port_name` is used by a previous input port, or
+                            (4) `pixel_type` is not supported.
   */
+  const InputPort<double>& DeclareImageInputPort(PixelType pixel_type,
+                                                 std::string port_name,
+                                                 std::string file_name_format,
+                                                 double publish_period,
+                                                 double start_time);
+
+  /** (Advanced) An overload where PixelType is a template parameter instead of
+   a runtime parameter.
+   @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.} */
   template <PixelType kPixelType>
   const InputPort<double>& DeclareImageInputPort(std::string port_name,
                                                  std::string file_name_format,
@@ -226,15 +239,10 @@ class ImageWriter : public LeafSystem<double> {
   //  "a/{time_usec}/c" --> thrown exception.
   //  "a/{port_name}/c" --> "a/my_port"  (assuming port_name = "my_port").
   std::string DirectoryFromFormat(const std::string& format,
-                                   const std::string& port_name,
-                                   PixelType pixel_type) const;
+                                  const std::string& port_name,
+                                  PixelType pixel_type) const;
 
-  enum class FolderState {
-    kValid,
-    kMissing,
-    kIsFile,
-    kUnwritable
-  };
+  enum class FolderState { kValid, kMissing, kIsFile, kUnwritable };
 
   // Returns true if the directory path provided is valid: it exists, it's a
   // directory, and it's writable.

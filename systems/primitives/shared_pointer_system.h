@@ -63,12 +63,11 @@ class SharedPointerSystem final : public LeafSystem<T> {
     Calls to get<>() must provide the same type for retrieval.
   @pre builder is non-null */
   template <typename Held>
-  static Held* AddToBuilder(
-      DiagramBuilder<T>* builder,
-      std::shared_ptr<Held> value_to_hold) {
+  static Held* AddToBuilder(DiagramBuilder<T>* builder,
+                            std::shared_ptr<Held> value_to_hold) {
     DRAKE_THROW_UNLESS(builder != nullptr);
-    auto holder = std::make_unique<SharedPointerSystem<T>>(
-        std::move(value_to_hold));
+    auto holder =
+        std::make_unique<SharedPointerSystem<T>>(std::move(value_to_hold));
     auto* result = holder->template get<Held>();
     builder->AddSystem(std::move(holder));
     return result;
@@ -83,9 +82,8 @@ class SharedPointerSystem final : public LeafSystem<T> {
   @pre builder is non-null
   @exclude_from_pydrake_mkdoc{A unique_ptr input is unworkable in Python} */
   template <typename Held>
-  static Held* AddToBuilder(
-      DiagramBuilder<T>* builder,
-      std::unique_ptr<Held> value_to_hold) {
+  static Held* AddToBuilder(DiagramBuilder<T>* builder,
+                            std::unique_ptr<Held> value_to_hold) {
     return SharedPointerSystem::AddToBuilder(
         builder, std::shared_ptr<Held>(std::move(value_to_hold)));
   }
@@ -103,7 +101,8 @@ class SharedPointerSystem final : public LeafSystem<T> {
   }
 
  private:
-  template <typename> friend class SharedPointerSystem;
+  template <typename>
+  friend class SharedPointerSystem;
 
   SharedPointerSystem(std::shared_ptr<void> held, std::type_index held_type);
 

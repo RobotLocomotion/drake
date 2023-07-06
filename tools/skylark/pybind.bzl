@@ -417,14 +417,8 @@ def _generate_pybind_documentation_header_impl(ctx):
     )
     outputs = [ctx.outputs.out]
     args.add("-output=" + ctx.outputs.out.path)
-    out_xml = getattr(ctx.outputs, "out_xml", None)
-    if out_xml != None:
-        outputs.append(out_xml)
-        args.add("-output_xml=" + out_xml.path)
     args.add("-quiet")
     args.add("-root-name=" + ctx.attr.root_name)
-    args.add("-ignore-dirs-for-coverage=" +
-             ",".join(ctx.attr.ignore_dirs_for_coverage))
     for p in ctx.attr.exclude_hdr_patterns:
         args.add("-exclude-hdr-patterns=" + p)
     args.add("-std=c++17")
@@ -466,86 +460,9 @@ generate_pybind_documentation_header = rule(
             executable = True,
         ),
         "out": attr.output(mandatory = True),
-        "out_xml": attr.output(mandatory = False),
         "root_name": attr.string(default = "pydrake_doc"),
         "exclude_hdr_patterns": attr.string_list(),
-        "ignore_dirs_for_coverage": attr.string_list(
-            mandatory = False,
-            default = [],
-        ),
     },
     implementation = _generate_pybind_documentation_header_impl,
     output_to_genfiles = True,
-)
-
-def add_pybind_coverage_data(
-        name = "pybind_coverage_data",
-        subpackages = []):
-    """Gathers necessary source files so that we can have access to them for
-    coverage analysis (Bazel does not like inter-package globs). This should be
-    added to each package where coverage is desired."""
-    native.filegroup(
-        name = name,
-        srcs = native.glob(["*_py*.cc"], allow_empty = False) + [
-            subpackage + ":pybind_coverage_data"
-            for subpackage in subpackages
-        ],
-        # N.B. Without this, we will duplicate error messages between
-        # *cc_libraries and this rule.
-        tags = ["nolint"],
-        visibility = ["//bindings/pydrake:__pkg__"],
-    )
-
-def _generate_pybind_coverage_impl(ctx):
-    source_files = depset(
-        transitive = [x.files for x in ctx.attr.pybind_coverage_data],
-    )
-    (xml_file,) = ctx.attr.xml_docstrings.files.to_list()
-    args = ctx.actions.args()
-    args.add("--file_coverage=" + ctx.outputs.file_coverage.path)
-    args.add("--class_coverage=" + ctx.outputs.class_coverage.path)
-    args.add("--xml_docstrings=" + xml_file.path)
-    args.add("--pybind_doc_variable=" + ctx.attr.doc_variable_name)
-    args.add_all(source_files)
-    ctx.actions.run(
-        outputs = [ctx.outputs.file_coverage, ctx.outputs.class_coverage],
-        inputs = depset(transitive = [
-            source_files,
-            ctx.attr.xml_docstrings.files,
-        ]),
-        arguments = [args],
-        executable = ctx.executable._script,
-    )
-
-"""
-Generates coverage for a given set of pybind coverage data. Outputs file-wise
-and class-wise coverage data.
-
-@param pybind_coverage_data Source files (declared using
-    add_pybind_coverage_data()).
-@param xml_docstrings Input XML docstrings emitted by mkdoc.
-@param file_coverage Output file coverage *.csv file.
-@param class_coverage Output class coverage *.csv file.
-"""
-
-generate_pybind_coverage = rule(
-    implementation = _generate_pybind_coverage_impl,
-    attrs = {
-        "pybind_coverage_data": attr.label_list(allow_files = True),
-        "_script": attr.label(
-            default = Label(
-                "//tools/workspace/pybind11:generate_pybind_coverage",
-            ),
-            allow_files = True,
-            executable = True,
-            cfg = "host",
-        ),
-        "file_coverage": attr.output(mandatory = True),
-        "class_coverage": attr.output(mandatory = True),
-        "xml_docstrings": attr.label(allow_single_file = True),
-        "doc_variable_name": attr.string(
-            mandatory = False,
-            default = "pydrake_doc",
-        ),
-    },
 )

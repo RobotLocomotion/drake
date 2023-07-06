@@ -46,17 +46,17 @@ class ImageWriterTester {
 
   static bool DirectoryIsMissing(const std::string& file_path) {
     return ImageWriter::ValidateDirectory(file_path) ==
-        ImageWriter::FolderState::kMissing;
+           ImageWriter::FolderState::kMissing;
   }
 
   static bool DirectoryIsFile(const std::string& file_path) {
     return ImageWriter::ValidateDirectory(file_path) ==
-        ImageWriter::FolderState::kIsFile;
+           ImageWriter::FolderState::kIsFile;
   }
 
   static bool DirectoryIsUnwritable(const std::string& file_path) {
     return ImageWriter::ValidateDirectory(file_path) ==
-        ImageWriter::FolderState::kUnwritable;
+           ImageWriter::FolderState::kUnwritable;
   }
 
   std::string MakeFileName(const std::string& format, PixelType pixel_type,
@@ -353,26 +353,21 @@ TEST_F(ImageWriterTest, DirectoryFromFormat) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       tester.DirectoryFromFormat("", "port_name", PixelType::kRgba8U),
       ".*empty.*");
-  EXPECT_EQ("",
-            tester.DirectoryFromFormat("/root", "port_name",
-                                       PixelType::kRgba8U));
+  EXPECT_EQ(
+      "", tester.DirectoryFromFormat("/root", "port_name", PixelType::kRgba8U));
   DRAKE_EXPECT_THROWS_MESSAGE(
       tester.DirectoryFromFormat("/root/", "port_name", PixelType::kRgba8U),
       ".*cannot end with a '/'");
-  EXPECT_EQ(
-      "/root",
-      tester.DirectoryFromFormat("/root/file", "port_name",
-                                 PixelType::kRgba8U));
+  EXPECT_EQ("/root", tester.DirectoryFromFormat("/root/file", "port_name",
+                                                PixelType::kRgba8U));
   // Don't use all three image types; the FileNameFormatting test already
   // tests those permutations. We just want to make sure it's engaged here.
   EXPECT_EQ("/root/color",
-            tester
-                .DirectoryFromFormat("/root/{image_type}/file", "port_name",
-                                     PixelType::kRgba8U));
+            tester.DirectoryFromFormat("/root/{image_type}/file", "port_name",
+                                       PixelType::kRgba8U));
   EXPECT_EQ("/root/my_port",
-            tester
-                .DirectoryFromFormat("/root/{port_name}/file", "my_port",
-                                     PixelType::kRgba8U));
+            tester.DirectoryFromFormat("/root/{port_name}/file", "my_port",
+                                       PixelType::kRgba8U));
 
   // Test against invalid formatting arguments.
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -394,21 +389,17 @@ TEST_F(ImageWriterTest, DirectoryFromFormat) {
 
   // Make sure it's not fooled by strings that are *almost* format arguments.
   EXPECT_EQ("/root/time_double",
-            tester
-                .DirectoryFromFormat("/root/time_double/file", "my_port",
-                                     PixelType::kRgba8U));
+            tester.DirectoryFromFormat("/root/time_double/file", "my_port",
+                                       PixelType::kRgba8U));
   EXPECT_EQ("/root/time_usec",
-            tester
-                .DirectoryFromFormat("/root/time_usec/file", "my_port",
-                                     PixelType::kRgba8U));
+            tester.DirectoryFromFormat("/root/time_usec/file", "my_port",
+                                       PixelType::kRgba8U));
   EXPECT_EQ("/root/time_msec",
-            tester
-                .DirectoryFromFormat("/root/time_msec/file", "my_port",
-                                     PixelType::kRgba8U));
+            tester.DirectoryFromFormat("/root/time_msec/file", "my_port",
+                                       PixelType::kRgba8U));
   EXPECT_EQ("/root/count",
-            tester
-                .DirectoryFromFormat("/root/count/file", "my_port",
-                                     PixelType::kRgba8U));
+            tester.DirectoryFromFormat("/root/count/file", "my_port",
+                                       PixelType::kRgba8U));
 }
 
 // Tests the logic for formatting images.
@@ -529,6 +520,24 @@ TEST_F(ImageWriterTest, ConfigureInputPortErrors) {
                               "System .* already has an input port named .*");
 }
 
+// Helper function for testing port declaration with a runtime pixel type.
+template <PixelType kPixelType>
+void TestRuntimePixelType() {
+  ImageWriter writer;
+  const auto& port =
+      writer.DeclareImageInputPort(kPixelType, "in", "/tmp/{time_usec}", 1, 1);
+  EXPECT_EQ(port.Allocate()->static_type_info(), typeid(Image<kPixelType>));
+}
+
+// This tests that the runtime pixel types are passed through correctly.
+TEST_F(ImageWriterTest, RuntimePixelType) {
+  TestRuntimePixelType<PixelType::kRgba8U>();
+  TestRuntimePixelType<PixelType::kLabel16I>();
+  TestRuntimePixelType<PixelType::kDepth32F>();
+  TestRuntimePixelType<PixelType::kDepth16U>();
+  TestRuntimePixelType<PixelType::kGrey8U>();
+}
+
 // Helper function for testing the extension produced for a given pixel type.
 template <PixelType kPixelType>
 void TestPixelExtension(const std::string& folder, ImageWriter* writer,
@@ -635,8 +644,7 @@ TEST_F(ImageWriterTest, SingleConfiguredPort) {
               .get_events();
       ASSERT_EQ(1u, publish_events.size());
       const auto& event = publish_events.front();
-      EXPECT_EQ(TriggerType::kPeriodic,
-                event->get_trigger_type());
+      EXPECT_EQ(TriggerType::kPeriodic, event->get_trigger_type());
 
       // With no connection on the input port, publishing this event will result
       // in an error.

@@ -1,10 +1,6 @@
 #include <map>
 #include <string>
 
-#include "pybind11/eigen.h"
-#include "pybind11/operators.h"
-#include "pybind11/pybind11.h"
-#include "pybind11/stl.h"
 #include <fmt/format.h>
 
 #include "drake/bindings/pydrake/common/eigen_pybind.h"
@@ -690,6 +686,14 @@ PYBIND11_MODULE(symbolic, m) {
       .def(py::self *= py::self)
       .def(py::self * double{})
       .def(double{} * py::self)
+      .def(py::self * Expression())
+      .def(Expression() * py::self)
+      .def(py::self + Expression())
+      .def(Expression() + py::self)
+      .def(py::self - Expression())
+      .def(Expression() - py::self)
+      .def(py::self / Expression())
+      .def(Expression() / py::self)
       .def(py::self == py::self)
       .def(py::self != py::self)
       .def("__hash__",
@@ -832,6 +836,8 @@ PYBIND11_MODULE(symbolic, m) {
       .def(double() + py::self)
       .def(py::self + Variable())
       .def(Variable() + py::self)
+      .def(py::self + Expression())
+      .def(Expression() + py::self)
       .def(py::self - py::self)
       .def(py::self - Monomial())
       .def(Monomial() - py::self)
@@ -839,6 +845,8 @@ PYBIND11_MODULE(symbolic, m) {
       .def(double() - py::self)
       .def(py::self - Variable())
       .def(Variable() - py::self)
+      .def(py::self - Expression())
+      .def(Expression() - py::self)
       .def(py::self * py::self)
       .def(py::self * Monomial())
       .def(Monomial() * py::self)
@@ -846,8 +854,13 @@ PYBIND11_MODULE(symbolic, m) {
       .def(double() * py::self)
       .def(py::self * Variable())
       .def(Variable() * py::self)
+      .def(py::self * Expression())
+      .def(Expression() * py::self)
       .def(-py::self)
       .def(py::self / double())
+      .def(double() / py::self)
+      .def(py::self / Expression())
+      .def(Expression() / py::self)
       .def("EqualTo", &Polynomial::EqualTo, doc.Polynomial.EqualTo.doc)
       .def(py::self == py::self)
       .def(py::self != py::self)

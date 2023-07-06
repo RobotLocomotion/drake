@@ -78,10 +78,10 @@ class RenderClient {
      `depth_range` was not provided for a depth render, or `depth_range` was
      provided but `image_type` is color or label. */
   std::string RenderOnServer(
-      const drake::geometry::render::RenderCameraCore& camera_core,
-      RenderImageType image_type, const std::string& scene_path,
+      const render::RenderCameraCore& camera_core, RenderImageType image_type,
+      const std::string& scene_path,
       const std::optional<std::string>& mime_type = std::nullopt,
-      const std::optional<drake::geometry::render::DepthRange>& depth_range =
+      const std::optional<render::DepthRange>& depth_range =
           std::nullopt) const;
 
   //@}
@@ -152,9 +152,8 @@ class RenderClient {
      If the specified `path` cannot be loaded as an unsigned char RGB or RGBA
      PNG file, or the image denoted by `path` does not have the same width and
      height as the specified `color_image_out`. */
-  static void LoadColorImage(
-      const std::string& path,
-      drake::systems::sensors::ImageRgba8U* color_image_out);
+  static void LoadColorImage(const std::string& path,
+                             systems::sensors::ImageRgba8U* color_image_out);
 
   /* Loads the specified image file to a drake output buffer.
 
@@ -174,9 +173,8 @@ class RenderClient {
      If the specified `path` has an unsupported extension or channel type, or
      the image denoted by `path` does not have the same width and height as the
      specified `depth_image_out`. */
-  static void LoadDepthImage(
-      const std::string& path,
-      drake::systems::sensors::ImageDepth32F* depth_image_out);
+  static void LoadDepthImage(const std::string& path,
+                             systems::sensors::ImageDepth32F* depth_image_out);
 
   //@}
 

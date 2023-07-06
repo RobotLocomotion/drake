@@ -19,7 +19,6 @@ namespace symbolic {
 
 using std::endl;
 using std::initializer_list;
-using std::move;
 using std::ostream;
 using std::ostringstream;
 using std::runtime_error;
@@ -53,7 +52,7 @@ Environment::map BuildMap(const initializer_list<Environment::key_type> vars) {
   return m;
 }
 
-}  // anonymous namespace
+}  // namespace
 
 Environment::Environment(const std::initializer_list<value_type> init)
     : Environment{map(init)} {}
@@ -61,7 +60,7 @@ Environment::Environment(const std::initializer_list<value_type> init)
 Environment::Environment(const std::initializer_list<key_type> vars)
     : Environment{BuildMap(vars)} {}
 
-Environment::Environment(map m) : map_{move(m)} {
+Environment::Environment(map m) : map_{std::move(m)} {
   for (const auto& p : map_) {
     throw_if_dummy(p.first);
     throw_if_nan(p.second);

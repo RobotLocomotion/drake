@@ -94,7 +94,7 @@ TEST_F(LinearProgramBoundingBox1, Solve) {
       solver.Solve(*prog_, {}, solver_options, &result);
       EXPECT_TRUE(result.is_success());
       const double tol = 2E-7;
-      EXPECT_NEAR(result.get_optimal_cost(), -43, 2*tol);
+      EXPECT_NEAR(result.get_optimal_cost(), -43, 2 * tol);
       Eigen::Matrix<double, 7, 1> x_expected;
       x_expected << 0, 5, -1, 10, 5, 0, 1;
       EXPECT_TRUE(
@@ -332,8 +332,9 @@ TEST_P(TestEllipsoidsSeparation, TestSOCP) {
   }
 }
 
-INSTANTIATE_TEST_SUITE_P(CsdpTest, TestEllipsoidsSeparation,
-                        ::testing::ValuesIn(GetEllipsoidsSeparationProblems()));
+INSTANTIATE_TEST_SUITE_P(
+    CsdpTest, TestEllipsoidsSeparation,
+    ::testing::ValuesIn(GetEllipsoidsSeparationProblems()));
 
 TEST_P(TestFindSpringEquilibrium, TestSOCP) {
   for (auto method : GetRemoveFreeVariableMethods()) {

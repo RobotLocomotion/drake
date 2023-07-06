@@ -1,10 +1,5 @@
 #include <cmath>
 
-#include "pybind11/eigen.h"
-#include "pybind11/functional.h"
-#include "pybind11/pybind11.h"
-#include "pybind11/stl.h"
-
 #include "drake/bindings/pydrake/autodiff_types_pybind.h"
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
@@ -26,6 +21,7 @@
 #include "drake/math/discrete_lyapunov_equation.h"
 #include "drake/math/matrix_util.h"
 #include "drake/math/quadratic_form.h"
+#include "drake/math/quaternion.h"
 #include "drake/math/random_rotation.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/roll_pitch_yaw.h"
@@ -362,6 +358,43 @@ void DoScalarDependentDefinitions(py::module m, T) {
         return VectorToSkewSymmetric(p);
       },
       py::arg("p"), doc.VectorToSkewSymmetric.doc);
+
+  // Quaternion.
+  m  // BR
+      .def("ClosestQuaternion", &ClosestQuaternion<T>, py::arg("quat1"),
+          py::arg("quat2"), doc.ClosestQuaternion.doc)
+      // TODO(russt): Bind quatConjugate, quatProduct, quatRotateVec, quatDiff,
+      // quatDiffAxisInvar once they've been switched to Eigen::Quaternion<T>.
+      .def("is_quaternion_in_canonical_form",
+          &is_quaternion_in_canonical_form<T>, py::arg("quat"),
+          doc.is_quaternion_in_canonical_form.doc)
+      .def("QuaternionToCanonicalForm", &QuaternionToCanonicalForm<T>,
+          py::arg("quat"), doc.QuaternionToCanonicalForm.doc)
+      .def("AreQuaternionsEqualForOrientation",
+          &AreQuaternionsEqualForOrientation<T>, py::arg("quat1"),
+          py::arg("quat2"), py::arg("tolerance"),
+          doc.AreQuaternionsEqualForOrientation.doc)
+      .def("CalculateQuaternionDtFromAngularVelocityExpressedInB",
+          &CalculateQuaternionDtFromAngularVelocityExpressedInB<T>,
+          py::arg("quat_AB"), py::arg("w_AB_B"),
+          doc.CalculateQuaternionDtFromAngularVelocityExpressedInB.doc)
+      .def("CalculateAngularVelocityExpressedInBFromQuaternionDt",
+          &CalculateAngularVelocityExpressedInBFromQuaternionDt<T>,
+          py::arg("quat_AB"), py::arg("quatDt"),
+          doc.CalculateAngularVelocityExpressedInBFromQuaternionDt.doc)
+      .def("CalculateQuaternionDtConstraintViolation",
+          &CalculateQuaternionDtConstraintViolation<T>, py::arg("quat"),
+          py::arg("quatDt"), doc.CalculateQuaternionDtConstraintViolation.doc)
+      .def("IsQuaternionValid", &IsQuaternionValid<T>, py::arg("quat"),
+          py::arg("tolerance"), doc.IsQuaternionValid.doc)
+      .def("IsBothQuaternionAndQuaternionDtOK",
+          &IsBothQuaternionAndQuaternionDtOK<T>, py::arg("quat"),
+          py::arg("quatDt"), py::arg("tolerance"),
+          doc.IsBothQuaternionAndQuaternionDtOK.doc);
+  // TODO(russt): Bind
+  // IsQuaternionAndQuaternionDtEqualAngularVelocityExpressedInB, but this
+  // requires additional support for T=Expression (e.g. if_then_else(Formula,
+  // Formula, Formula)) or an exclusion.
 }
 
 void DoScalarIndependentDefinitions(py::module m) {
@@ -557,6 +590,79 @@ void DoScalarIndependentDefinitions(py::module m) {
           NumericalGradientOption(NumericalGradientMethod::kForward),
       doc.ComputeNumericalGradient.doc);
 }
+
+template <typename T>
+std::string_view GetDtypeName() {
+  if constexpr (std::is_same_v<T, double>) {
+    return "float";
+  }
+  if constexpr (std::is_same_v<T, AutoDiffXd>) {
+    return "AutoDiffXd";
+  }
+  if constexpr (std::is_same_v<T, Variable>) {
+    return "Variable";
+  }
+  if constexpr (std::is_same_v<T, Expression>) {
+    return "Expression";
+  }
+}
+
+/* Binds a native C++ matmul(A, B) for wide variety of scalar types. This is
+important for performance until numpy allows us to define dtype-specific
+implementations. Doing a matmul elementwise with a C++ <=> Python call for every
+flop is extraordinarily slow.*/
+void DefineHeterogeneousMatmul(py::module m) {
+  const auto bind = [&m]<typename T1, typename T2>() {
+    using T3 = decltype(std::declval<T1>() * std::declval<T2>());
+    // To avoid too much doc spam, we'll use a more descriptive docstring for
+    // the first overload only.
+    const std::string_view extra_doc =
+        (std::is_same_v<T1, double> && std::is_same_v<T2, double>)
+            ? " The numpy matmul ``A @ B`` is typically slow when multiplying "
+              "user-defined dtypes such as AutoDiffXd or Expression. Use this "
+              "function for better performance, e.g., ``matmul(A, B)``. For a "
+              "dtype=float @ dtype=float, this might be a little slower than "
+              "numpy, but is provided here for convenience so that the user "
+              "doesn't need to be overly careful about the dtype of arguments."
+            : "";
+    const std::string doc = fmt::format(
+        "Matrix product for dtype={} @ dtype={} -> dtype={}.{}",
+        GetDtypeName<T1>(), GetDtypeName<T2>(), GetDtypeName<T3>(), extra_doc);
+    m.def(
+        "matmul",
+        [](const Eigen::Ref<const MatrixX<T1>, 0, StrideX>& A,
+            const Eigen::Ref<const MatrixX<T2>, 0, StrideX>& B) -> MatrixX<T3> {
+          if constexpr (std::is_same_v<T3, AutoDiffXd>) {
+            return A.template cast<AutoDiffXd>() *
+                   B.template cast<AutoDiffXd>();
+          } else {
+            return A * B;
+          }
+        },
+        doc.c_str());
+  };  // NOLINT(readability/braces)
+
+  // The ordering of the calls to `bind` here are sorted fastest-to-slowest to
+  // ensure that overload resolution chooses the fastest one.
+
+  // Bind a double-only overload for convenience.
+  bind.operator()<double, double>();
+
+  // Bind the AutoDiff-related overloads.
+  bind.operator()<double, AutoDiffXd>();
+  bind.operator()<AutoDiffXd, double>();
+  bind.operator()<AutoDiffXd, AutoDiffXd>();
+
+  // Bind the Expression-related overloads.
+  bind.operator()<double, Variable>();
+  bind.operator()<Variable, double>();
+  bind.operator()<double, Expression>();
+  bind.operator()<Expression, double>();
+  bind.operator()<Variable, Expression>();
+  bind.operator()<Expression, Variable>();
+  bind.operator()<Expression, Expression>();
+}
+
 }  // namespace
 
 PYBIND11_MODULE(math, m) {
@@ -572,6 +678,7 @@ PYBIND11_MODULE(math, m) {
   pydrake::internal::BindMathOperators<double>(&m);
   pydrake::internal::BindMathOperators<AutoDiffXd>(&m);
   pydrake::internal::BindMathOperators<Expression>(&m);
+  DefineHeterogeneousMatmul(m);
 
   DoScalarIndependentDefinitions(m);
   type_visit([m](auto dummy) { DoScalarDependentDefinitions(m, dummy); },

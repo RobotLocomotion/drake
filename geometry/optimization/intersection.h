@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 #include <utility>
 #include <vector>
 
@@ -14,11 +15,13 @@ namespace optimization {
 S = X₁ ∩ X₂ ∩ ... ∩ Xₙ =
     {x | x ∈ X₁, x ∈ X₂, ..., x ∈ Xₙ}
 
-@ingroup geometry_optimization
-*/
+@ingroup geometry_optimization */
 class Intersection final : public ConvexSet {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Intersection)
+
+  /** Constructs a default (zero-dimensional) set. */
+  Intersection();
 
   /** Constructs the intersection from a vector of convex sets. */
   explicit Intersection(const ConvexSets& sets);
@@ -31,17 +34,23 @@ class Intersection final : public ConvexSet {
   /** The number of elements (or sets) used in the intersection. */
   int num_elements() const { return sets_.size(); }
 
-  /** Returns a reference to the ConvexSet defining the @p index element in the
+  /** Returns a reference to the ConvexSet defining the `index` element in the
   intersection. */
   const ConvexSet& element(int i) const;
 
  private:
+  std::unique_ptr<ConvexSet> DoClone() const final;
+
   bool DoIsBounded() const final;
+
+  std::optional<Eigen::VectorXd> DoMaybeGetPoint() const final;
 
   bool DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
                     double tol) const final;
 
-  void DoAddPointInSetConstraints(
+  std::pair<VectorX<symbolic::Variable>,
+            std::vector<solvers::Binding<solvers::Constraint>>>
+  DoAddPointInSetConstraints(
       solvers::MathematicalProgram* prog,
       const Eigen::Ref<const solvers::VectorXDecisionVariable>& vars)
       const final;

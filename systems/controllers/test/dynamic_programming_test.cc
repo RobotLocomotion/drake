@@ -21,7 +21,7 @@ namespace controllers {
 namespace {
 
 // Minimum-time problem for the single integrator (which has a trivial solution,
-// that can be achieved exactly on a mesh when timestep=1).
+// that can be achieved exactly on a mesh when time_step=1).
 // ẋ = u,  u ∈ {-1,0,1}.
 // g(x,u) = 0 if x == 0, 1 otherwise.
 // The optimal solution is: J(x) = |x|.
@@ -41,12 +41,12 @@ GTEST_TEST(FittedValueIterationTest, SingleIntegrator) {
       {{-4., -3., -2., -1., 0., 1., 2., 3., 4.}});
   const math::BarycentricMesh<double>::MeshGrid input_grid({{-1., 0., 1.}});
 
-  const double timestep = 1.0;
+  const double time_step = 1.0;
 
   std::unique_ptr<BarycentricMeshSystem<double>> policy;
   Eigen::RowVectorXd cost_to_go_values;
   std::tie(policy, cost_to_go_values) = FittedValueIteration(
-      &simulator, cost_function, state_grid, input_grid, timestep);
+      &simulator, cost_function, state_grid, input_grid, time_step);
 
   // Optimal cost-to-go is |x|.
   Eigen::RowVectorXd J_expected(static_cast<int>(state_grid[0].size()));
@@ -83,7 +83,7 @@ GTEST_TEST(FittedValueIterationTest, PeriodicBoundary) {
       {{-4., -3., -2., -1., 0., 1., 2., 3., 4.}});
   const math::BarycentricMesh<double>::MeshGrid input_grid({{-1., 0., 1.}});
 
-  const double timestep = 1.0;
+  const double time_step = 1.0;
 
   DynamicProgrammingOptions options;
   options.periodic_boundary_conditions.push_back(
@@ -92,7 +92,7 @@ GTEST_TEST(FittedValueIterationTest, PeriodicBoundary) {
   std::unique_ptr<BarycentricMeshSystem<double>> policy;
   Eigen::RowVectorXd cost_to_go_values;
   std::tie(policy, cost_to_go_values) = FittedValueIteration(
-      &simulator, cost_function, state_grid, input_grid, timestep, options);
+      &simulator, cost_function, state_grid, input_grid, time_step, options);
 
   // Optimal cost-to-go is |x|.
   Eigen::RowVectorXd J_expected(static_cast<int>(state_grid[0].size()));
@@ -165,7 +165,7 @@ GTEST_TEST(FittedValueIteration, DoubleIntegrator) {
     input_grid[0].insert(u);
   }
 
-  const double timestep = .01;
+  const double time_step = .01;
 
   DynamicProgrammingOptions options;
   options.visualization_callback = VisualizationCallback;
@@ -174,7 +174,7 @@ GTEST_TEST(FittedValueIteration, DoubleIntegrator) {
   std::unique_ptr<BarycentricMeshSystem<double>> policy;
   Eigen::MatrixXd cost_to_go_values;
   std::tie(policy, cost_to_go_values) = FittedValueIteration(
-      &simulator, cost_function, state_grid, input_grid, timestep, options);
+      &simulator, cost_function, state_grid, input_grid, time_step, options);
 
   // Note: Compare against continuous time solution, even though we are solving
   // a discretized version.  Confirmed in MATLAB (due to #8034) that cost-to-go
@@ -225,7 +225,7 @@ GTEST_TEST(FittedValueIteration, MultibodyPlant) {
 
   auto diagram = builder.Build();
   Simulator<double> simulator(*diagram);
-  const double timestep = 0.1;
+  const double time_step = 0.1;
 
   math::BarycentricMesh<double>::MeshGrid state_grid(2);
   math::BarycentricMesh<double>::MeshGrid input_grid(1);
@@ -255,11 +255,11 @@ GTEST_TEST(FittedValueIteration, MultibodyPlant) {
   options.discount_factor = 1.;
   options.convergence_tol = 1e4;
   FittedValueIteration(&simulator, cost_function, state_grid, input_grid,
-                       timestep, options);
+                       time_step, options);
 }
 
 // Minimum-time problem for the single integrator (which has a trivial solution,
-// that can be achieved exactly on a mesh when timestep=1).
+// that can be achieved exactly on a mesh when time_step=1).
 // ẋ = u,  u ∈ {-1,0,1}.
 // g(x,u) = 0 if x == 0, 1 otherwise.
 // The optimal solution is: J(x) = |x|.
@@ -287,13 +287,13 @@ GTEST_TEST(LinearProgrammingTest, SingleIntegrator) {
   state_samples << -4., -3., -2., -1., 0., 1., 2., 3., 4.;
   const Eigen::RowVector3d input_samples{-1., 0., 1.};
 
-  const double timestep = 1.0;
+  const double time_step = 1.0;
   DynamicProgrammingOptions options;
   options.discount_factor = 1.;
 
   Eigen::VectorXd J = LinearProgrammingApproximateDynamicProgramming(
       &simulator, cost_function, cost_to_go_function, kNumParameters,
-      state_samples, input_samples, timestep, options);
+      state_samples, input_samples, time_step, options);
 
   // Optimal cost-to-go is |x|.
   EXPECT_NEAR(J[0], 1., 1e-6);

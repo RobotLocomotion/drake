@@ -330,10 +330,11 @@ Matrix3<T> RollPitchYaw<T>::CalcMatrixRelatingRpyDtToAngularVelocityInParent(
   const T& y = yaw_angle();
   const T sp = sin(p), cp = cos(p);
   // TODO(Mitiguy) Improve accuracy when `cos(p) ≈ 0`.
-  if (DoesCosPitchAngleViolateGimbalLockTolerance(cp)) {
+  if (scalar_predicate<T>::is_bool &&
+      DoesCosPitchAngleViolateGimbalLockTolerance(cp)) {
     ThrowPitchAngleViolatesGimbalLockTolerance(function_name, p);
   }
-  const T one_over_cp = T(1)/cp;
+  const T one_over_cp = T(1) / cp;
   const T sy = sin(y), cy = cos(y);
   const T cy_over_cp = cy * one_over_cp;
   const T sy_over_cp = sy * one_over_cp;

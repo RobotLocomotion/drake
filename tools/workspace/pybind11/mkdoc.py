@@ -46,8 +46,6 @@ import shutil
 import subprocess
 import sys
 
-from xml.dom import minidom
-import xml.etree.ElementTree as ET
 from clang import cindex
 from clang.cindex import AccessSpecifier, CursorKind, TypeKind
 
@@ -529,9 +527,7 @@ def choose_doc_var_names(symbols):
     return failure_result
 
 
-# TODO(m-chaturvedi): Refactor this to not use stack
-def print_symbols(f, name, node, level=0, *, tree_parser_doc,
-                  tree_parser_xpath, ignore_dirs_for_coverage):
+def print_symbols(f, name, node, level=0):
     """
     Prints C++ code for relevant documentation.
     """
@@ -566,17 +562,9 @@ def print_symbols(f, name, node, level=0, *, tree_parser_doc,
         modifier = "constexpr "
     iprint('{}struct /* {} */ {{'.format(modifier, name_var))
 
-    root = tree_parser_xpath[-1]
-    kind = node.first_symbol.cursor.kind if node.first_symbol else None
-
-    tree_parser_doc.append(name_var)
-
-    new_ele = None
     # Print documentation items.
     symbol_iter = sorted(node.doc_symbols, key=Symbol.sorting_key)
     doc_vars = choose_doc_var_names(symbol_iter)
-    #  New element in the XML tree.
-    new_ele = None
 
     for symbol, doc_var in zip(symbol_iter, doc_vars):
         if doc_var is None:
@@ -592,42 +580,11 @@ def print_symbols(f, name, node, level=0, *, tree_parser_doc,
         iprint('  const char* {} ={}R"""({})""";'.format(
             doc_var, delim, comment.strip()))
 
-        tree_doc_var = ".".join(tree_parser_doc + [doc_var])
-
-        ignore_xpath = False
-        if ignore_dirs_for_coverage:
-            ignore_xpath = symbol.include.startswith(ignore_dirs_for_coverage)
-
-        new_ele = ET.SubElement(root, "Node", {
-            "kind": str(kind),
-            "name": name_var,
-            "full_name": full_name,
-            "ignore": str(int(ignore_xpath)),
-            "doc_var": tree_doc_var,
-            "file_name": symbol.include,
-            })
-    # If the node has no doc_var's
-    if new_ele is None:
-        new_ele = ET.SubElement(root, "Node", {
-            "kind": str(kind),
-            "name": name_var,
-            "full_name": full_name,
-            "ignore": "",
-            "doc_var": "",
-            "file_name": "",
-            })
-
-    tree_parser_xpath.append(new_ele)
     # Recurse into child elements.
     keys = sorted(node.children_map.keys())
     for key in keys:
         child = node.children_map[key]
-        tree_parser_args = {
-                "tree_parser_doc": tree_parser_doc,
-                "tree_parser_xpath": tree_parser_xpath,
-                "ignore_dirs_for_coverage": ignore_dirs_for_coverage
-            }
-        print_symbols(f, key, child, level=level + 1, **tree_parser_args)
+        print_symbols(f, key, child, level=level + 1)
     if "Serialize" in keys:
         # For classes with a Serialize function, also generate an list of the
         # docstrings for all fields for use by DefAttributesUsingSerialize.
@@ -650,9 +607,6 @@ def print_symbols(f, name, node, level=0, *, tree_parser_doc,
             iprint(f'    }};')
             iprint(f'  }}')
     iprint('}} {};'.format(name_var))
-
-    tree_parser_doc.pop()
-    tree_parser_xpath.pop()
 
 
 class FileDict:
@@ -681,14 +635,6 @@ class FileDict:
         self._d[key] = value
 
 
-def prettify(elem):
-    """Return a pretty-printed XML string for the Element.
-    """
-    rough_string = ET.tostring(elem, 'utf-8')
-    reparsed = minidom.parseString(rough_string)
-    return reparsed.toprettyxml(indent="  ")
-
-
 def main():
     parameters = ['-x', 'c++', '-D__MKDOC_PY__']
     add_library_paths(parameters)
@@ -699,7 +645,6 @@ def main():
     root_name = 'mkdoc_doc'
     ignore_patterns = []
     output_filename = None
-    output_filename_xml = None
 
     # TODO(m-chaturvedi): Consider using argparse.
     for item in sys.argv[1:]:
@@ -707,15 +652,8 @@ def main():
             quiet = True
         elif item.startswith('-output='):
             output_filename = item[len('-output='):]
-        elif item.startswith('-output_xml='):
-            output_filename_xml = item[len('-output_xml='):]
         elif item.startswith('-std='):
             std = item
-        elif item.startswith('-ignore-dirs-for-coverage='):
-            ignore_dir_str = item[len('-ignore-dirs-for-coverage='):]
-            ignore_dirs_for_coverage = None
-            if ignore_dir_str:
-                ignore_dirs_for_coverage = tuple(ignore_dir_str.split(','))
         elif item.startswith('-root-name='):
             root_name = item[len('-root-name='):]
         elif item.startswith('-exclude-hdr-patterns='):
@@ -733,9 +671,6 @@ def main():
         sys.exit(1)
 
     f = open(output_filename, 'w', encoding='utf-8')
-    f_xml = None
-    if output_filename_xml is not None:
-        f_xml = open(output_filename_xml, 'w')
 
     # N.B. We substitute the `GENERATED FILE...` bits in this fashion because
     # otherwise Reviewable gets confused.
@@ -855,11 +790,7 @@ def main():
     if not quiet:
         eprint("Writing header file...")
     try:
-        tree_parser = {"tree_parser_doc": [],
-                       "tree_parser_xpath": [ET.Element("Root")],
-                       "ignore_dirs_for_coverage": ignore_dirs_for_coverage}
-
-        print_symbols(f, root_name, symbol_tree.root, **tree_parser)
+        print_symbols(f, root_name, symbol_tree.root)
     except UnicodeEncodeError as e:
         # User-friendly error for #9903.
         print("""
@@ -875,8 +806,6 @@ If you are on Ubuntu, please ensure you have en_US.UTF-8 locales generated:
 #pragma GCC diagnostic pop
 #endif
 ''')
-    if f_xml is not None:
-        f_xml.write(prettify(tree_parser["tree_parser_xpath"][0]))
 
 
 if __name__ == '__main__':

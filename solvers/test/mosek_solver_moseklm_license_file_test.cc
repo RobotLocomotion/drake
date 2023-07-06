@@ -64,8 +64,7 @@ TEST_F(MoseklmLicenseFileTest, MoseklmLicenseFileUnset) {
   EXPECT_EQ(solver_.enabled(), false);
 
   DRAKE_EXPECT_THROWS_MESSAGE(
-      solver_.Solve(prog_),
-      ".*MosekSolver has not been properly configured.*");
+      solver_.Solve(prog_), ".*MosekSolver has not been properly configured.*");
 }
 
 }  // namespace

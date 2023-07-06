@@ -10,12 +10,12 @@ from pydrake.common import FindResourceOrThrow
 from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.test_utilities.pickle_compare import assert_pickle
 from pydrake.common.value import AbstractValue, Value
-from pydrake.geometry import FrameId
-from pydrake.geometry.render import (
+from pydrake.geometry import (
     ClippingRange,
     ColorRenderCamera,
     DepthRange,
     DepthRenderCamera,
+    FrameId,
     RenderCameraCore,
 )
 from pydrake.lcm import DrakeLcm
@@ -185,6 +185,19 @@ class TestSensors(unittest.TestCase):
             np.testing.assert_array_equal(data, channel_default)
             np.testing.assert_array_equal(mutable_data, channel_default)
 
+    def test_depth_image_conversion(self):
+        foo = mut.ImageDepth32F(width=3, height=4)
+        bar = mut.ImageDepth16U()
+        mut.ConvertDepth32FTo16U(input=foo, output=bar)
+        self.assertEqual(bar.width(), 3)
+        self.assertEqual(bar.height(), 4)
+
+        foo = mut.ImageDepth16U(width=3, height=4)
+        bar = mut.ImageDepth32F()
+        mut.ConvertDepth16UTo32F(input=foo, output=bar)
+        self.assertEqual(bar.width(), 3)
+        self.assertEqual(bar.height(), 4)
+
     def test_camera_config(self):
         mut.CameraConfig()
         config = mut.CameraConfig(
@@ -195,6 +208,9 @@ class TestSensors(unittest.TestCase):
         self.assertEqual(config.focal_x(), 10)
         self.assertEqual(config.focal_y(), 20)
         config.principal_point()
+        (color, depth) = config.MakeCameras()
+        self.assertIsInstance(color, ColorRenderCamera)
+        self.assertIsInstance(depth, DepthRenderCamera)
 
         fov = mut.CameraConfig.FovDegrees(x=10, y=20)
         self.assertIn("x=10", repr(fov))
@@ -365,6 +381,14 @@ class TestSensors(unittest.TestCase):
         self.assertEqual(image.width(), 1)
         self.assertEqual(image.height(), 1)
 
+    @staticmethod
+    def _make_render_camera_core(*, width=640, height=480):
+        return RenderCameraCore(
+            "renderer",
+            mut.CameraInfo(width, height, np.pi/6),
+            ClippingRange(0.1, 6.0),
+            RigidTransform())
+
     def test_rgbd_sensor(self):
         def check_ports(system):
             self.assertIsInstance(system.query_object_input_port(), InputPort)
@@ -376,6 +400,7 @@ class TestSensors(unittest.TestCase):
             self.assertIsInstance(system.label_image_output_port(), OutputPort)
             self.assertIsInstance(system.body_pose_in_world_output_port(),
                                   OutputPort)
+            self.assertIsInstance(system.image_time_output_port(), OutputPort)
 
         # Use HDTV size.
         width = 1280
@@ -387,12 +412,8 @@ class TestSensors(unittest.TestCase):
 
         def construct(parent_id, X_PB):
             color_camera = ColorRenderCamera(
-                RenderCameraCore(
-                    "renderer",
-                    mut.CameraInfo(width, height, np.pi/6),
-                    ClippingRange(0.1, 6.0),
-                    RigidTransform()
-                ), False)
+                self._make_render_camera_core(width=width, height=height),
+                False)
             depth_camera = DepthRenderCamera(color_camera.core(),
                                              DepthRange(0.1, 5.5))
             return mut.RgbdSensor(parent_id=parent_id, X_PB=X_PB,
@@ -401,12 +422,7 @@ class TestSensors(unittest.TestCase):
 
         def construct_single(parent_id, X_PB):
             depth_camera = DepthRenderCamera(
-                RenderCameraCore(
-                    "renderer",
-                    mut.CameraInfo(width, height, np.pi/6),
-                    ClippingRange(0.1, 6.0),
-                    RigidTransform()
-                ),
+                self._make_render_camera_core(width=width, height=height),
                 DepthRange(0.1, 5.5))
             return mut.RgbdSensor(parent_id=parent_id, X_PB=X_PB,
                                   depth_camera=depth_camera)
@@ -452,3 +468,41 @@ class TestSensors(unittest.TestCase):
                               Value[mut.ImageDepth16U])
         self.assertIsInstance(values.get_value(3),
                               Value[mut.ImageLabel16I])
+
+    def test_rgbd_sensor_async(self):
+        builder = DiagramBuilder()
+        plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
+        camera_core = self._make_render_camera_core()
+        color_camera = ColorRenderCamera(camera_core)
+        depth_camera = DepthRenderCamera(camera_core, DepthRange(0.1, 5.5))
+        dut = mut.RgbdSensorAsync(scene_graph=scene_graph,
+                                  parent_id=FrameId.get_new_id(),
+                                  X_PB=RigidTransform(),
+                                  fps=1.0,
+                                  capture_offset=0.1,
+                                  output_delay=0.01,
+                                  color_camera=color_camera,
+                                  depth_camera=depth_camera,
+                                  render_label_image=True)
+        dut.parent_id()
+        dut.X_PB()
+        dut.fps()
+        dut.capture_offset()
+        dut.output_delay()
+        dut.color_camera()
+        dut.depth_camera()
+        dut.color_image_output_port()
+        dut.depth_image_32F_output_port()
+        dut.depth_image_16U_output_port()
+        dut.label_image_output_port()
+        dut.body_pose_in_world_output_port()
+        dut.image_time_output_port()
+
+    def test_image_writer(self):
+        writer = mut.ImageWriter()
+        writer.DeclareImageInputPort(
+            pixel_type=mut.PixelType.kRgba8U,
+            port_name="color",
+            file_name_format="/tmp/{port_name}-{time_usec}",
+            publish_period=0.125,
+            start_time=0.0)

@@ -87,6 +87,11 @@ class SceneGraphInspector {
    (including the world frame).  */
   int num_frames() const;
 
+  /** Returns all of the source ids in the scene graph. The order is guaranteed
+   to be stable and consistent. The first element is the SceneGraph-internal
+   source.  */
+  std::vector<SourceId> GetAllSourceIds() const;
+
   /** Returns all of the frame ids in the scene graph. The order is guaranteed
    to be stable and consistent. The ids include the world frame's id.  */
   std::vector<FrameId> GetAllFrameIds() const;
@@ -293,26 +298,7 @@ class SceneGraphInspector {
   const Shape& GetShape(GeometryId geometry_id) const;
 
   /** Reports the pose of the geometry G with the given `geometry_id` in its
-   registered _topological parent_ P, `X_PG`. That topological parent may be a
-   frame F or another geometry. If the geometry was registered directly to F,
-   then `X_PG = X_FG`.
-   @sa GetPoseInFrame()
-   @note For deformable geometries, this returns the pose of the reference mesh.
-   @throws std::exception if `geometry_id` does not map to a registered
-   geometry. */
-  DRAKE_DEPRECATED("2023-04-01",
-                   "Geometries are no longer posed with respect to other "
-                   "geometries -- only frames; use GetPoseInFrame().")
-  const math::RigidTransform<double>& GetPoseInParent(
-      GeometryId geometry_id) const;
-
-  /** Reports the pose of the geometry G with the given `geometry_id` in its
-   registered frame F (regardless of whether its _topological parent_ is another
-   geometry P or not). If the geometry was registered directly to the frame F,
-   then `X_PG = X_FG`.
-   <!-- 2023-04-01 When deprecation is complete, remove references to other
-    geometries. -->
-   @sa GetPoseInParent()
+   registered frame F.
    @note For deformable geometries, this returns the pose of the reference mesh.
    @throws std::exception if `geometry_id` does not map to a registered
    geometry. */

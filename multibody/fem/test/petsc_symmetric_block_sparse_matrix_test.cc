@@ -104,7 +104,9 @@ unique_ptr<PetscSymmetricBlockSparseMatrix> MakeSpdBlockSparseMatrix() {
   return A;
 }
 
-VectorXd MakeVector3d() { return Eigen::Vector3d(1, 2, 3); }
+VectorXd MakeVector3d() {
+  return Eigen::Vector3d(1, 2, 3);
+}
 
 VectorXd MakeVector9d() {
   return (Eigen::VectorXd(9) << 1, 1, 2, 3, 5, 8, 13, 21, 34).finished();
@@ -235,8 +237,7 @@ GTEST_TEST(PetscSymmetricBlockSparseMatrixTest, FailedSolve) {
   VectorXd x(b.size());
   PetscSolverStatus status = A->Solve(
       PetscSymmetricBlockSparseMatrix::SolverType::kConjugateGradient,
-      PetscSymmetricBlockSparseMatrix::PreconditionerType::kNone,
-      b, &x);
+      PetscSymmetricBlockSparseMatrix::PreconditionerType::kNone, b, &x);
   /* We expect CG to fail to converge on a non-spd matrix. */
   EXPECT_EQ(status, PetscSolverStatus::kFailure);
 }

@@ -1,9 +1,12 @@
 #pragma once
 
+#include <map>
 #include <memory>
 #include <optional>
+#include <string>
 #include <vector>
 
+#include "drake/common/name_value.h"
 #include "drake/geometry/optimization/convex_set.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
 #include "drake/multibody/plant/multibody_plant.h"
@@ -17,6 +20,21 @@ namespace optimization {
 @ingroup geometry_optimization
 */
 struct IrisOptions {
+  /** Passes this object to an Archive.
+  Refer to @ref yaml_serialization "YAML Serialization" for background.
+  Note: This only serializes options that are YAML built-in types. */
+  template <typename Archive>
+  void Serialize(Archive* a) {
+    a->Visit(DRAKE_NVP(require_sample_point_is_contained));
+    a->Visit(DRAKE_NVP(iteration_limit));
+    a->Visit(DRAKE_NVP(termination_threshold));
+    a->Visit(DRAKE_NVP(relative_termination_threshold));
+    a->Visit(DRAKE_NVP(configuration_space_margin));
+    a->Visit(DRAKE_NVP(num_collision_infeasible_samples));
+    a->Visit(DRAKE_NVP(num_additional_constraint_infeasible_samples));
+    a->Visit(DRAKE_NVP(random_seed));
+  }
+
   IrisOptions() = default;
 
   /** The initial polytope is guaranteed to contain the point if that point is
@@ -61,6 +79,11 @@ struct IrisOptions {
   defined by convex sets in the configuration space. This option can be used to
   pass in such configuration space obstacles. */
   ConvexSets configuration_obstacles{};
+
+  /** The initial hyperepllipsoid that IRIS will use for calculating hyperplanes
+  in the first iteration. If no hyperellipsoid is provided, a small hypershpere
+  centered at the given sample will be used. */
+  std::optional<Hyperellipsoid> starting_ellipse{};
 
   /** By default, IRIS in configuration space certifies regions for collision
   avoidance constraints and joint limits. This option can be used to pass
@@ -172,6 +195,10 @@ HPolyhedron IrisInConfigurationSpace(
     const multibody::MultibodyPlant<double>& plant,
     const systems::Context<double>& context,
     const IrisOptions& options = IrisOptions());
+
+/** Defines a standardized representation for (named) IrisRegions, which can be
+serialized in both C++ and Python. */
+typedef std::map<std::string, HPolyhedron> IrisRegions;
 
 }  // namespace optimization
 }  // namespace geometry

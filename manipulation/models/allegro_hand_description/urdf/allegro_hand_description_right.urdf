@@ -39,7 +39,7 @@
   <link name="palm_link">
     <visual>
       <geometry>
-        <mesh filename="package://drake/manipulation/models/allegro_hand_description/meshes/base_link.obj"/>
+        <mesh filename="package://drake_models/allegro_hand_description/meshes/base_link.obj"/>
       </geometry>
       <origin rpy="0 0 0" xyz="0 0 0 "/>
       <material name="black">
@@ -62,7 +62,7 @@
   <link name="link_0">
     <visual>
       <geometry>
-        <mesh filename="package://drake/manipulation/models/allegro_hand_description/meshes/link_0.0.obj"/>
+        <mesh filename="package://drake_models/allegro_hand_description/meshes/link_0.0.obj"/>
       </geometry>
       <material name="black"/>
     </visual>
@@ -96,7 +96,7 @@
   <link name="link_1">
     <visual>
       <geometry>
-        <mesh filename="package://drake/manipulation/models/allegro_hand_description/meshes/link_1.0.obj"/>
+        <mesh filename="package://drake_models/allegro_hand_description/meshes/link_1.0.obj"/>
       </geometry>
       <material name="black"/>
     </visual>
@@ -130,7 +130,7 @@
   <link name="link_2">
     <visual>
       <geometry>
-        <mesh filename="package://drake/manipulation/models/allegro_hand_description/meshes/link_2.0.obj"/>
+        <mesh filename="package://drake_models/allegro_hand_description/meshes/link_2.0.obj"/>
       </geometry>
       <material name="black"/>
     </visual>
@@ -164,7 +164,7 @@
   <link name="link_3">
     <visual>
       <geometry>
-        <mesh filename="package://drake/manipulation/models/allegro_hand_description/meshes/link_3.0.obj"/>
+        <mesh filename="package://drake_models/allegro_hand_description/meshes/link_3.0.obj"/>
       </geometry>
       <material name="black"/>
     </visual>
@@ -198,7 +198,7 @@
   <link name="link_3_tip">
     <visual>
       <geometry>
-        <mesh filename="package://drake/manipulation/models/allegro_hand_description/meshes/link_3.0_tip.obj"/>
+        <mesh filename="package://drake_models/allegro_hand_description/meshes/link_3.0_tip.obj"/>
       </geometry>
       <material name="white">
         <color rgba=".9 .9 .9 1"/>
@@ -224,7 +224,7 @@
   <link name="link_4">
     <visual>
       <geometry>
-        <mesh filename="package://drake/manipulation/models/allegro_hand_description/meshes/link_0.0.obj"/>
+        <mesh filename="package://drake_models/allegro_hand_description/meshes/link_0.0.obj"/>
       </geometry>
       <material name="black"/>
     </visual>
@@ -258,7 +258,7 @@
   <link name="link_5">
     <visual>
       <geometry>
-        <mesh filename="package://drake/manipulation/models/allegro_hand_description/meshes/link_1.0.obj"/>
+        <mesh filename="package://drake_models/allegro_hand_description/meshes/link_1.0.obj"/>
       </geometry>
       <material name="black"/>
     </visual>
@@ -292,7 +292,7 @@
   <link name="link_6">
     <visual>
       <geometry>
-        <mesh filename="package://drake/manipulation/models/allegro_hand_description/meshes/link_2.0.obj"/>
+        <mesh filename="package://drake_models/allegro_hand_description/meshes/link_2.0.obj"/>
       </geometry>
       <material name="black"/>
     </visual>
@@ -326,7 +326,7 @@
   <link name="link_7">
     <visual>
       <geometry>
-        <mesh filename="package://drake/manipulation/models/allegro_hand_description/meshes/link_3.0.obj"/>
+        <mesh filename="package://drake_models/allegro_hand_description/meshes/link_3.0.obj"/>
       </geometry>
       <material name="black"/>
     </visual>
@@ -360,7 +360,7 @@
   <link name="link_7_tip">
     <visual>
       <geometry>
-        <mesh filename="package://drake/manipulation/models/allegro_hand_description/meshes/link_3.0_tip.obj"/>
+        <mesh filename="package://drake_models/allegro_hand_description/meshes/link_3.0_tip.obj"/>
       </geometry>
       <material name="white">
         <color rgba=".9 .9 .9 1"/>
@@ -386,7 +386,7 @@
   <link name="link_8">
     <visual>
       <geometry>
-        <mesh filename="package://drake/manipulation/models/allegro_hand_description/meshes/link_0.0.obj"/>
+        <mesh filename="package://drake_models/allegro_hand_description/meshes/link_0.0.obj"/>
       </geometry>
       <material name="black"/>
     </visual>
@@ -420,7 +420,7 @@
   <link name="link_9">
     <visual>
       <geometry>
-        <mesh filename="package://drake/manipulation/models/allegro_hand_description/meshes/link_1.0.obj"/>
+        <mesh filename="package://drake_models/allegro_hand_description/meshes/link_1.0.obj"/>
       </geometry>
       <material name="black"/>
     </visual>
@@ -454,7 +454,7 @@
   <link name="link_10">
     <visual>
       <geometry>
-        <mesh filename="package://drake/manipulation/models/allegro_hand_description/meshes/link_2.0.obj"/>
+        <mesh filename="package://drake_models/allegro_hand_description/meshes/link_2.0.obj"/>
       </geometry>
       <material name="black"/>
     </visual>
@@ -488,7 +488,7 @@
   <link name="link_11">
     <visual>
       <geometry>
-        <mesh filename="package://drake/manipulation/models/allegro_hand_description/meshes/link_3.0.obj"/>
+        <mesh filename="package://drake_models/allegro_hand_description/meshes/link_3.0.obj"/>
       </geometry>
       <material name="black"/>
     </visual>
@@ -522,7 +522,7 @@
   <link name="link_11_tip">
     <visual>
       <geometry>
-        <mesh filename="package://drake/manipulation/models/allegro_hand_description/meshes/link_3.0_tip.obj"/>
+        <mesh filename="package://drake_models/allegro_hand_description/meshes/link_3.0_tip.obj"/>
       </geometry>
       <material name="white">
         <color rgba=".9 .9 .9 1"/>
@@ -548,7 +548,7 @@
   <link name="link_12">
     <visual>
       <geometry>
-        <mesh filename="package://drake/manipulation/models/allegro_hand_description/meshes/link_12.0_right.obj"/>
+        <mesh filename="package://drake_models/allegro_hand_description/meshes/link_12.0_right.obj"/>
       </geometry>
       <material name="black">
         <color rgba=".2 .2 .2 1"/>
@@ -585,7 +585,7 @@
   <link name="link_13">
     <visual>
       <geometry>
-        <mesh filename="package://drake/manipulation/models/allegro_hand_description/meshes/link_13.0.obj"/>
+        <mesh filename="package://drake_models/allegro_hand_description/meshes/link_13.0.obj"/>
       </geometry>
       <material name="black">
         <color rgba=".2 .2 .2 1"/>
@@ -621,7 +621,7 @@
   <link name="link_14">
     <visual>
       <geometry>
-        <mesh filename="package://drake/manipulation/models/allegro_hand_description/meshes/link_14.0.obj"/>
+        <mesh filename="package://drake_models/allegro_hand_description/meshes/link_14.0.obj"/>
       </geometry>
       <material name="black">
                 </material>
@@ -656,7 +656,7 @@
   <link name="link_15">
     <visual>
       <geometry>
-        <mesh filename="package://drake/manipulation/models/allegro_hand_description/meshes/link_15.0.obj"/>
+        <mesh filename="package://drake_models/allegro_hand_description/meshes/link_15.0.obj"/>
       </geometry>
       <material name="black">
                 </material>
@@ -691,7 +691,7 @@
   <link name="link_15_tip">
     <visual>
       <geometry>
-        <mesh filename="package://drake/manipulation/models/allegro_hand_description/meshes/link_15.0_tip.obj"/>
+        <mesh filename="package://drake_models/allegro_hand_description/meshes/link_15.0_tip.obj"/>
       </geometry>
       <material name="white">
         <color rgba=".9 .9 .9 1"/>

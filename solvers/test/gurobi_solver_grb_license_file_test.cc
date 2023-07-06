@@ -41,8 +41,8 @@ class GrbLicenseFileTest : public ::testing::Test {
 
   void TearDown() override {
     if (orig_grb_license_file_) {
-      const int setenv_result = ::setenv(
-          "GRB_LICENSE_FILE", orig_grb_license_file_->c_str(), 1);
+      const int setenv_result =
+          ::setenv("GRB_LICENSE_FILE", orig_grb_license_file_->c_str(), 1);
       EXPECT_EQ(setenv_result, 0);
     }
   }

@@ -5,7 +5,8 @@
 
 def drake_repository(name, *, excludes = [], **kwargs):
     """Declares the @drake repository based on an installed Drake binary image,
-    along with repositories for its dependencies @eigen and @fmt.
+    along with repositories for its dependencies @eigen, @fmt, and
+    @drake_models.
 
     This enables downstream BUILD files to refer to certain Drake targets when
     using precompiled Drake releases.
@@ -29,6 +30,8 @@ def drake_repository(name, *, excludes = [], **kwargs):
         _eigen_repository(name = "eigen")
     if "fmt" not in excludes:
         _fmt_repository(name = "fmt", drake_name = name)
+    if "drake_models" not in excludes:
+        _drake_models_repository(name = "drake_models")
 
 def _drake_impl(repo_ctx):
     # Obtain the root of the @drake_loader repository (i.e., wherever this
@@ -136,6 +139,21 @@ _fmt_repository = repository_rule(
     attrs = {
         "drake_name": attr.string(mandatory = True),
     },
+)
+
+def _drake_models_impl(repo_ctx):
+    repo_ctx.file(
+        "BUILD.bazel",
+        _BUILD_FILE_CONTENTS["external-drake_models-BUILD.bazel"],
+    )
+    repo_ctx.download_and_extract(
+        url = ["@@MODELS_URLS@@"],
+        sha256 = "@@MODELS_SHA256@@",
+        stripPrefix = "@@MODELS_STRIP_PREFIX@@",
+    )
+
+_drake_models_repository = repository_rule(
+    implementation = _drake_models_impl,
 )
 
 # * # This placeholder definition in repo_template.bzl is rewritten by repo_gen

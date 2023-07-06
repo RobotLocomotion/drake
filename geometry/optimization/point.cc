@@ -20,13 +20,15 @@ using solvers::VectorXDecisionVariable;
 using std::sqrt;
 using symbolic::Variable;
 
-Point::Point(const Eigen::Ref<const Eigen::VectorXd>& x)
-    : ConvexSet(&ConvexSetCloner<Point>, x.size()), x_{x} {}
+Point::Point() : Point(VectorXd(0)) {}
+
+Point::Point(const Eigen::Ref<const VectorXd>& x)
+    : ConvexSet(x.size()), x_(x) {}
 
 Point::Point(const QueryObject<double>& query_object, GeometryId geometry_id,
              std::optional<FrameId> reference_frame,
              double maximum_allowable_radius)
-    : ConvexSet(&ConvexSetCloner<Point>, 3) {
+    : ConvexSet(3) {
   double radius = -1.0;
   query_object.inspector().GetShape(geometry_id).Reify(this, &radius);
   if (radius > maximum_allowable_radius) {
@@ -46,27 +48,47 @@ Point::Point(const QueryObject<double>& query_object, GeometryId geometry_id,
 
 Point::~Point() = default;
 
-void Point::set_x(const Eigen::Ref<const Eigen::VectorXd>& x) {
-  DRAKE_DEMAND(x.size() == x_.size());
+void Point::set_x(const Eigen::Ref<const VectorXd>& x) {
+  DRAKE_THROW_UNLESS(x.size() == x_.size());
   x_ = x;
 }
 
-bool Point::DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
+std::unique_ptr<ConvexSet> Point::DoClone() const {
+  return std::make_unique<Point>(*this);
+}
+
+bool Point::DoIsBounded() const {
+  return true;
+}
+
+bool Point::DoIsEmpty() const {
+  return false;
+}
+
+std::optional<VectorXd> Point::DoMaybeGetPoint() const {
+  return x_;
+}
+
+bool Point::DoPointInSet(const Eigen::Ref<const VectorXd>& x,
                          double tol) const {
   return is_approx_equal_abstol(x, x_, tol);
 }
 
-void Point::DoAddPointInSetConstraints(
+std::pair<VectorX<Variable>, std::vector<Binding<Constraint>>>
+Point::DoAddPointInSetConstraints(
     MathematicalProgram* prog,
     const Eigen::Ref<const VectorXDecisionVariable>& x) const {
-  prog->AddBoundingBoxConstraint(x_, x_, x);
+  VectorX<Variable> new_vars;
+  std::vector<Binding<Constraint>> new_constraints;
+  new_constraints.push_back(prog->AddBoundingBoxConstraint(x_, x_, x));
+  return {std::move(new_vars), std::move(new_constraints)};
 }
 
 std::vector<Binding<Constraint>>
 Point::DoAddPointInNonnegativeScalingConstraints(
     MathematicalProgram* prog,
     const Eigen::Ref<const VectorXDecisionVariable>& x,
-    const symbolic::Variable& t) const {
+    const Variable& t) const {
   std::vector<Binding<Constraint>> constraints;
   // x == t*x_.
   const int n = ambient_dimension();

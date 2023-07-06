@@ -7,12 +7,14 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/fmt_eigen.h"
+#include "drake/common/test_utilities/limit_malloc.h"
 
 namespace drake {
 namespace symbolic {
 namespace {
 
 using std::string;
+using test::LimitMalloc;
 
 class SymbolicMixingScalarTypesTest : public ::testing::Test {
   template <typename Scalar>
@@ -464,6 +466,17 @@ TEST_F(SymbolicMixingScalarTypesTest, MatrixMatrixMultiplicationVarDouble) {
       "    (z + 3 * w) (2 * z + 4 * w)"};
 }
 
+TEST_F(SymbolicMixingScalarTypesTest, MatrixMatrixMultiplicationVarDoubleHeap) {
+  M_double_fixed_ = Eigen::Matrix2d::Identity();
+  const int expected_alloc =
+      // The temporary flat_hash_set.
+      1
+      // One expression cell for each variable.
+      + 4;
+  LimitMalloc guard({.max_num_allocations = expected_alloc});
+  auto result = (M_var_fixed_ * M_double_fixed_).eval();
+}
+
 TEST_F(SymbolicMixingScalarTypesTest, MatrixVectorMultiplicationVarDouble) {
   const MatrixX<Expression> M1{M_var_fixed_ * V_double_fixed_};
   const MatrixX<Expression> M2{M_var_fixed_ * V_double_dyn_};
@@ -514,6 +527,17 @@ TEST_F(SymbolicMixingScalarTypesTest, MatrixMatrixMultiplicationDoubleVar) {
   EXPECT_EQ(to_string(M2), expected);
   EXPECT_EQ(to_string(M3), expected);
   EXPECT_EQ(to_string(M4), expected);
+}
+
+TEST_F(SymbolicMixingScalarTypesTest, MatrixMatrixMultiplicationDoubleVarHeap) {
+  M_double_fixed_ = Eigen::Matrix2d::Identity();
+  const int expected_alloc =
+      // The temporary flat_hash_set.
+      1
+      // One expression cell for each variable.
+      + 4;
+  LimitMalloc guard({.max_num_allocations = expected_alloc});
+  auto result = (M_double_fixed_ * M_var_fixed_).eval();
 }
 
 TEST_F(SymbolicMixingScalarTypesTest, MatrixVectorMultiplicationDoubleVar) {

@@ -1,7 +1,9 @@
 #pragma once
 
+#include <algorithm>
 #include <limits>
 #include <string>
+#include <utility>
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
@@ -34,6 +36,13 @@ namespace multibody {
 /// unit-mass invariant.
 /// Also notice that once a unit inertia is created, it _is_ the unit inertia
 /// of _some_ body, perhaps with scaled geometry from the user's intention.
+///
+/// @note The methods of this class satisfy the "basic exception guarantee": if
+/// an exception is thrown, the program will still be in a valid
+/// state. Specifically, no resources are leaked, and all objects' invariants
+/// are intact. Be aware that UnitInertia objects may contain invalid inertia
+/// data in cases where input checking is skipped.
+/// @see https://en.cppreference.com/w/cpp/language/exceptions
 ///
 /// @tparam_default_scalar
 template <typename T>
@@ -124,8 +133,8 @@ class UnitInertia : public RotationalInertia<T> {
   ///                     inertia is expressed.
   /// @returns A reference to `this` unit inertia, which has now been taken
   ///          about point Q so can be written as `G_BQ_E`.
-  UnitInertia<T>& ShiftFromCenterOfMassInPlace(const Vector3<T>& p_BcQ_E) {
-    RotationalInertia<T>::operator+=(PointMass(p_BcQ_E));
+  UnitInertia<T>& ShiftFromCenterOfMassInPlace(const Vector3<T>& p_BcmQ_E) {
+    RotationalInertia<T>::operator+=(PointMass(p_BcmQ_E));
     return *this;
   }
 
@@ -136,9 +145,9 @@ class UnitInertia : public RotationalInertia<T> {
   ///                     inertia is expressed.
   /// @retval G_BQ_E This same unit inertia taken about a point Q instead of
   ///                the centroid `Bcm`.
-  UnitInertia<T> ShiftFromCenterOfMass(
-      const Vector3<T>& p_BcQ_E) const __attribute__((warn_unused_result)) {
-    return UnitInertia<T>(*this).ShiftFromCenterOfMassInPlace(p_BcQ_E);
+  [[nodiscard]] UnitInertia<T> ShiftFromCenterOfMass(
+      const Vector3<T>& p_BcmQ_E) const {
+    return UnitInertia<T>(*this).ShiftFromCenterOfMassInPlace(p_BcmQ_E);
   }
 
   /// For the unit inertia `G_BQ_E` of a body or composite body B computed about
@@ -178,8 +187,8 @@ class UnitInertia : public RotationalInertia<T> {
   ///
   /// @warning This operation could result in a non-physical rotational inertia.
   /// Use with care. See ShiftToCenterOfMassInPlace() for details.
-  UnitInertia<T> ShiftToCenterOfMass(
-      const Vector3<T>& p_QBcm_E) const __attribute__((warn_unused_result)) {
+  [[nodiscard]] UnitInertia<T> ShiftToCenterOfMass(
+      const Vector3<T>& p_QBcm_E) const {
     return UnitInertia<T>(*this).ShiftToCenterOfMassInPlace(p_QBcm_E);
   }
 
@@ -468,6 +477,24 @@ class UnitInertia : public RotationalInertia<T> {
   }
   // End of Doxygen group
   //@}
+
+#ifndef DRAKE_DOXYGEN_CXX
+  // (Internal use only)
+  // @see SpatialInertia::CalcPrincipalHalfLengthsAndPoseForEquivalentShape()
+  // for documentation, formulas, and details on @p inertia_shape_factor.
+  // @returns 3 principal ½-lengths [lmax lmed lmin] sorted in descending order
+  // (lmax ≥ lmed ≥ lmin) and their associated principal directions [Ax Ay Az]
+  // stored in columns of the returned rotation matrix R_EA.
+  // @throws std::exception if the elements of `this` unit inertia cannot
+  // be converted to a real finite double. For example, an exception is thrown
+  // if `this` contains an erroneous NaN or if scalar type T is symbolic.
+  // @throws std::exception if inertia_shape_factor ≤ 0 or > 1.
+  // See @ref spatial_inertia_equivalent_shapes
+  // "Spatial inertia equivalent shapes" for more details.
+  std::pair<Vector3<double>, math::RotationMatrix<double>>
+  CalcPrincipalHalfLengthsAndAxesForEquivalentShape(
+      double inertia_shape_factor) const;
+#endif
 
   // Disable operators that may result in non-unit inertias
   // (these operators *are* defined in the RotationalInertia class).

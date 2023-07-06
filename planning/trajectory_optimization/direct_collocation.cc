@@ -12,7 +12,13 @@ namespace drake {
 namespace planning {
 namespace trajectory_optimization {
 
+using Eigen::MatrixXd;
+using Eigen::VectorXd;
 using math::AreAutoDiffVecXdEqual;
+using math::ExtractGradient;
+using math::ExtractValue;
+using math::InitializeAutoDiff;
+using math::InitializeAutoDiffTuple;
 using solvers::Binding;
 using solvers::Constraint;
 using solvers::MathematicalProgram;
@@ -125,31 +131,54 @@ DirectCollocationConstraint::DirectCollocationConstraint(
   }
 }
 
-void DirectCollocationConstraint::dynamics(const AutoDiffVecXd& state,
-                                           const AutoDiffVecXd& input,
-                                           Context<AutoDiffXd>* context,
-                                           AutoDiffVecXd* xdot) const {
+void DirectCollocationConstraint::CalcDynamics(
+    const AutoDiffVecXd& x_with_dvars, const AutoDiffVecXd& u_with_dvars,
+    Context<AutoDiffXd>* context, AutoDiffVecXd* xdot_with_dvars) const {
+  // To have cache hits, we must match not only the x and u values, but also
+  // the derivatives. To get cache hits even when dvars are different, we use
+  // the chain rule locally in this method, so that the gradients in the cache
+  // are always with respect to exactly the current x and u.
+  AutoDiffVecXd x_with_dxu, u_with_dxu;
+  std::tie(x_with_dxu, u_with_dxu) = InitializeAutoDiffTuple(
+      ExtractValue(x_with_dvars), ExtractValue(u_with_dvars));
+
   if (input_port_ &&
       (!input_port_->HasValue(*context) ||
-       !AreAutoDiffVecXdEqual(input, input_port_->Eval(*context)))) {
-    input_port_->FixValue(context, input);
+       !AreAutoDiffVecXdEqual(u_with_dxu, input_port_->Eval(*context)))) {
+    input_port_->FixValue(context, u_with_dxu);
   }
   if (!AreAutoDiffVecXdEqual(
-          state, context->get_continuous_state_vector().CopyToVector())) {
-    context->SetContinuousState(state);
+          x_with_dxu, context->get_continuous_state_vector().CopyToVector())) {
+    context->SetContinuousState(x_with_dxu);
   }
-  *xdot = system_.EvalTimeDerivatives(*context).CopyToVector();
+
+  AutoDiffVecXd xdot_with_dxu =
+      system_.EvalTimeDerivatives(*context).CopyToVector();
+
+  const VectorXd xdot = ExtractValue(xdot_with_dxu);
+  const MatrixXd dxdot_dxu = ExtractGradient(xdot_with_dxu);
+
+  xdot_with_dvars->resize(num_states_);
+  // dxdot_dvars = dxdot_dx * dx_dvars + dxdot_du * du_dvars.
+  InitializeAutoDiff(
+      xdot,
+      dxdot_dxu.leftCols(num_states_) * ExtractGradient(x_with_dvars) +
+          dxdot_dxu.rightCols(num_inputs_) *
+              ExtractGradient(u_with_dvars,
+                              // pass in num_derivatives in case u is empty.
+                              x_with_dvars[0].derivatives().size()),
+      xdot_with_dvars);
 }
 
 void DirectCollocationConstraint::DoEval(
     const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd* y) const {
   AutoDiffVecXd y_t;
   Eval(x.cast<AutoDiffXd>(), &y_t);
-  *y = math::ExtractValue(y_t);
+  *y = ExtractValue(y_t);
 }
 
 // The format of the input to the eval() function is the
-// tuple { timestep, state 0, state 1, input 0, input 1 },
+// tuple { time step, state 0, state 1, input 0, input 1 },
 // which has a total length of 1 + 2*num_states + 2*num_inputs.
 void DirectCollocationConstraint::DoEval(
     const Eigen::Ref<const AutoDiffVecXd>& x, AutoDiffVecXd* y) const {
@@ -166,17 +195,17 @@ void DirectCollocationConstraint::DoEval(
   const auto u1 = x.segment(1 + (2 * num_states_) + num_inputs_, num_inputs_);
 
   AutoDiffVecXd xdot0;
-  dynamics(x0, u0, context_sample_, &xdot0);
+  CalcDynamics(x0, u0, context_sample_, &xdot0);
 
   AutoDiffVecXd xdot1;
-  dynamics(x1, u1, context_next_sample_, &xdot1);
+  CalcDynamics(x1, u1, context_next_sample_, &xdot1);
 
   // Cubic interpolation to get xcol and xdotcol.
   const AutoDiffVecXd xcol = 0.5 * (x0 + x1) + h / 8 * (xdot0 - xdot1);
   const AutoDiffVecXd xdotcol = -1.5 * (x0 - x1) / h - .25 * (xdot0 + xdot1);
 
   AutoDiffVecXd g;
-  dynamics(xcol, 0.5 * (u0 + u1), context_collocation_, &g);
+  CalcDynamics(xcol, 0.5 * (u0 + u1), context_collocation_, &g);
   *y = xdotcol - g;
 }
 
@@ -189,35 +218,37 @@ void DirectCollocationConstraint::DoEval(
 
 Binding<Constraint> AddDirectCollocationConstraint(
     std::shared_ptr<DirectCollocationConstraint> constraint,
-    const Eigen::Ref<const VectorXDecisionVariable>& timestep,
+    const Eigen::Ref<const VectorXDecisionVariable>& time_step,
     const Eigen::Ref<const VectorXDecisionVariable>& state,
     const Eigen::Ref<const VectorXDecisionVariable>& next_state,
     const Eigen::Ref<const VectorXDecisionVariable>& input,
     const Eigen::Ref<const VectorXDecisionVariable>& next_input,
     MathematicalProgram* prog) {
-  DRAKE_DEMAND(timestep.size() == 1);
+  DRAKE_DEMAND(time_step.size() == 1);
   DRAKE_DEMAND(state.size() == constraint->num_states());
   DRAKE_DEMAND(next_state.size() == constraint->num_states());
   DRAKE_DEMAND(input.size() == constraint->num_inputs());
   DRAKE_DEMAND(next_input.size() == constraint->num_inputs());
   return prog->AddConstraint(constraint,
-                             {timestep, state, next_state, input, next_input});
+                             {time_step, state, next_state, input, next_input});
 }
 
 DirectCollocation::DirectCollocation(
     const System<double>* system, const Context<double>& context,
-    int num_time_samples, double minimum_timestep, double maximum_timestep,
+    int num_time_samples, double minimum_time_step, double maximum_time_step,
     std::variant<InputPortSelection, InputPortIndex> input_port_index,
-    bool assume_non_continuous_states_are_fixed)
+    bool assume_non_continuous_states_are_fixed,
+    solvers::MathematicalProgram* prog)
     : MultipleShooting(
           system->get_input_port_selection(input_port_index)
               ? system->get_input_port_selection(input_port_index)->size()
               : 0,
           CheckAndReturnStates(context.num_continuous_states()),
-          num_time_samples, minimum_timestep, maximum_timestep),
+          num_time_samples, minimum_time_step, maximum_time_step, prog),
       system_(system),
       context_(context.Clone()),
-      input_port_index_(input_port_index), sample_contexts_(num_time_samples) {
+      input_port_index_(input_port_index),
+      sample_contexts_(num_time_samples) {
   system->ValidateContext(context);
   if (!assume_non_continuous_states_are_fixed) {
     DRAKE_DEMAND(context.has_only_continuous_state());
@@ -238,7 +269,7 @@ DirectCollocation::DirectCollocation(
   // just use the one context_ad.
 
   // Add the dynamic constraints.
-  // For N-1 timesteps, add a constraint which depends on the breakpoint
+  // For N-1 time steps, add a constraint which depends on the breakpoint
   // along with the state and input vectors at that breakpoint and the
   // next.
   for (int i = 0; i < N() - 1; ++i) {
@@ -246,7 +277,7 @@ DirectCollocation::DirectCollocation(
         *system_ad_, sample_contexts_[i].get(), sample_contexts_[i + 1].get(),
         context_ad_.get(), input_port_index,
         assume_non_continuous_states_are_fixed);
-    prog()
+    this->prog()
         .AddConstraint(constraint,
                        {h_vars().segment<1>(i),
                         x_vars().segment(i * num_states(), num_states() * 2),
@@ -268,8 +299,8 @@ void DirectCollocation::DoAddRunningCost(const symbolic::Expression& g) {
     prog().AddCost(SubstitutePlaceholderVariables(
         g * (h_vars()(i - 1) + h_vars()(i)) / 2, i));
   }
-  prog().AddCost(SubstitutePlaceholderVariables(
-      g * h_vars()(N() - 2) / 2, N() - 1));
+  prog().AddCost(
+      SubstitutePlaceholderVariables(g * h_vars()(N() - 2) / 2, N() - 1));
 }
 
 PiecewisePolynomial<double> DirectCollocation::ReconstructInputTrajectory(
@@ -304,8 +335,7 @@ PiecewisePolynomial<double> DirectCollocation::ReconstructStateTrajectory(
   FixedInputPortValue* input_port_value{nullptr};
   if (input_port) {
     input_port_value = &input_port->FixValue(
-      context_.get(),
-      system_->AllocateInputVector(*input_port)->get_value());
+        context_.get(), system_->AllocateInputVector(*input_port)->get_value());
   }
 
   for (int i = 0; i < N(); i++) {

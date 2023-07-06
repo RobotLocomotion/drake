@@ -126,11 +126,9 @@ class KukaIiwaArmTests : public ::testing::Test {
     // offset is zero, here we use an arbitrary set of values to verify later on
     // in the test that the manager created a constraint consistent with these
     // numbers.
-    const ConstraintIndex next_constraint_index(plant->num_constraints());
-    ConstraintIndex constraint_index =
-        plant->AddCouplerConstraint(left_finger_slider, right_finger_slider,
-                                    kCouplerGearRatio, kCouplerOffset);
-    EXPECT_EQ(constraint_index, next_constraint_index);
+    plant->AddCouplerConstraint(left_finger_slider, right_finger_slider,
+                                kCouplerGearRatio, kCouplerOffset);
+
     return models;
   }
 
@@ -372,7 +370,7 @@ TEST_F(KukaIiwaArmTests, CalcFreeMotionVelocities) {
 
   MultibodyForces<double> forces(plant_);
   CompliantContactManagerTester::CalcNonContactForces(*manager_, *context_,
-                                                      &forces);
+                                                      false, &forces);
   const VectorXd zero_vdot = VectorXd::Zero(plant_.num_velocities());
   const VectorXd k0 = -plant_.CalcInverseDynamics(*context_, zero_vdot, forces);
 
@@ -547,9 +545,8 @@ TEST_F(KukaIiwaArmTests, CouplerConstraints) {
       plant_.GetJointByName("iiwa_joint_3", arm_gripper1[0]);
   const Joint<double>& arm2_joint6 =
       plant_.GetJointByName("iiwa_joint_6", arm_gripper2[0]);
-  ConstraintIndex constraint_index = plant_.AddCouplerConstraint(
-      arm1_joint3, arm2_joint6, kCouplerGearRatio, kCouplerOffset);
-  EXPECT_EQ(constraint_index, ConstraintIndex(2));
+  plant_.AddCouplerConstraint(arm1_joint3, arm2_joint6, kCouplerGearRatio,
+                              kCouplerOffset);
 
   plant_.Finalize();
 
@@ -653,7 +650,8 @@ TEST_F(KukaIiwaArmTests, CouplerConstraints) {
           (VectorXd::Unit(kNumJoints, left_index) -
            kCouplerGearRatio * VectorXd::Unit(kNumJoints, right_index))
               .transpose();
-      EXPECT_EQ(constraint->first_clique_jacobian(), J_expected);
+      EXPECT_EQ(constraint->first_clique_jacobian().MakeDenseMatrix(),
+                J_expected);
     } else {
       // The third constraint couples the two robot arms.
       const MatrixXd J0_expected =
@@ -661,8 +659,10 @@ TEST_F(KukaIiwaArmTests, CouplerConstraints) {
       const MatrixXd J1_expected =
           -kCouplerGearRatio *
           VectorXd::Unit(kNumJoints, 5 /* sixth joint. */).transpose();
-      EXPECT_EQ(constraint->first_clique_jacobian(), J0_expected);
-      EXPECT_EQ(constraint->second_clique_jacobian(), J1_expected);
+      EXPECT_EQ(constraint->first_clique_jacobian().MakeDenseMatrix(),
+                J0_expected);
+      EXPECT_EQ(constraint->second_clique_jacobian().MakeDenseMatrix(),
+                J1_expected);
     }
 
     // N.B. Default values implemented in

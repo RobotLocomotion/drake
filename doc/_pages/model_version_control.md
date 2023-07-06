@@ -27,22 +27,19 @@ See below for the suggested workflow.
 1. Clone ``RobotLocomotion/models`` locally
 2. Create a Git branch in your local checkouts of *both* ``models`` and
    ``drake``.
-3. Update ``drake/tools/workspace/models_internal/repository.bzl`` to point to your
+3. Update ``drake/tools/workspace/drake_models/repository.bzl`` to point to your
    ``models`` checkout using
    ``github_archive(..., local_repository_override = <path>)``.
-4. Update ``drake/tools/workspace/models_internal/files.bzl`` to incorporate the models
+4. Update ``drake/tools/workspace/drake_models/files.bzl`` to incorporate the models
    you want.
-5. Update ``drake/tools/workspace/models_internal/package.BUILD.bazel`` to export the
+5. Update ``drake/tools/workspace/drake_models/package.BUILD.bazel`` to export the
    models.
-6. Ensure that you use ``forward_files`` to make the files available inside
-   the Drake bazel workspace. For an example, see
-   [drake/manipulation/models/ycb/BUILD.bazel](https://github.com/RobotLocomotion/drake/blob/master/manipulation/models/ycb/BUILD.bazel).
-7. Ensure your tests pass under ``bazel test``.
+6. Ensure your tests pass under ``bazel test``.
 
 ## Submit Changes in a Pull Request
 
 1. Push your changes to your fork of ``RobotLocomotion/models``. Make a PR.
-2. Update ``drake/tools/workspace/models_internal/repository.bzl`` to use the
+2. Update ``drake/tools/workspace/drake_models/repository.bzl`` to use the
    commit you pushed.
 3. Submit a PR to Drake, and add a self-blocking discussion thread, such as
    ``"Working temporary SHA1 until the models PR <LINK> is merged."``,
@@ -51,6 +48,6 @@ See below for the suggested workflow.
    request review for your ``models`` PR.
 5. Once both PRs are approved:
    1. Merge your ``models`` PR.
-   2. Update ``drake/tools/workspace/models_internal/repository.bzl`` to the latest
+   2. Update ``drake/tools/workspace/drake_models/repository.bzl`` to the latest
       merge commit on ``master`` for ``RobotLocomotion/models``.
    3. Merge your ``drake`` PR.

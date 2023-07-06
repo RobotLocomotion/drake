@@ -372,7 +372,9 @@ FiniteHorizonLinearQuadraticRegulator(
       Eigen::VectorBlock<Eigen::VectorXd> sx =
           S_vectorized.segment(num_states * num_states, num_states);
       double& s0 = S_vectorized[S_vectorized.size() - 1];
-      const Eigen::VectorXd xd0 = options.xd->value(tf) - x0->value(tf);
+      const Eigen::VectorXd xd0 =
+          options.xd->value(tf) -
+          (options.x0 ? options.x0->value(tf) : x0->value(tf));
       sx = -(*options.Qf) * xd0;
       s0 = xd0.dot((*options.Qf) * xd0);
     }

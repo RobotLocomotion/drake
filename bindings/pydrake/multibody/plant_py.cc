@@ -1,10 +1,5 @@
-#include "pybind11/eigen.h"
-#include "pybind11/pybind11.h"
-#include "pybind11/stl.h"
-
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
-#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_geometry_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_pybind.h"
 #include "drake/bindings/pydrake/common/identifier_pybind.h"
@@ -120,7 +115,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.num_hydroelastic_contacts.doc)
         .def("hydroelastic_contact_info", &Class::hydroelastic_contact_info,
             py::arg("i"), cls_doc.hydroelastic_contact_info.doc)
-        .def("plant", &Class::plant, py_rvp::reference, cls_doc.plant.doc);
+        .def("plant", &Class::plant, py_rvp::reference, cls_doc.plant.doc)
+        .def("SelectHydroelastic", &Class::SelectHydroelastic,
+            py::arg("selector"), cls_doc.SelectHydroelastic.doc);
     DefCopyAndDeepCopy(&cls);
     AddValueInstantiation<Class>(m);
   }
@@ -480,7 +477,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
             },
             py::arg("context"), py::arg("body"),
             cls_doc.EvalBodySpatialVelocityInWorld.doc);
-
     auto CalcJacobianSpatialVelocity =
         [](const Class* self, const systems::Context<T>& context,
             JacobianWrtVariable with_respect_to, const Frame<T>& frame_B,
@@ -495,19 +491,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("CalcJacobianSpatialVelocity", CalcJacobianSpatialVelocity,
             py::arg("context"), py::arg("with_respect_to"), py::arg("frame_B"),
             py::arg("p_BoBp_B"), py::arg("frame_A"), py::arg("frame_E"),
-            cls_doc.CalcJacobianSpatialVelocity.doc);
-    constexpr char doc_CalcJacobianSpatialVelocity_deprecated[] =
-        "CalcJacobianSpatialVelocity(*, p_BP) is deprecated, and will "
-        "be removed on or around 2023-06-01. Please use the variant with "
-        "the argument named `p_BoBp_B` instead.";
-    cls  // BR
-        .def("CalcJacobianSpatialVelocity",
-            WrapDeprecated(doc_CalcJacobianSpatialVelocity_deprecated,
-                CalcJacobianSpatialVelocity),
-            py::arg("context"), py::arg("with_respect_to"), py::arg("frame_B"),
-            py::arg("p_BP"), py::arg("frame_A"), py::arg("frame_E"),
-            doc_CalcJacobianSpatialVelocity_deprecated);
-    cls  // BR
+            cls_doc.CalcJacobianSpatialVelocity.doc)
         .def(
             "CalcJacobianAngularVelocity",
             [](const Class* self, const Context<T>& context,
@@ -666,6 +650,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("MakeStateSelectorMatrix", &Class::MakeStateSelectorMatrix,
             py::arg("user_to_joint_index_map"),
             cls_doc.MakeStateSelectorMatrix.doc)
+        .def("IsVelocityEqualToQDot", &Class::IsVelocityEqualToQDot,
+            cls_doc.IsVelocityEqualToQDot.doc)
         .def(
             "MapVelocityToQDot",
             [](const Class* self, const Context<T>& context,
@@ -687,6 +673,13 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("CalcRelativeTransform", &Class::CalcRelativeTransform,
             py::arg("context"), py::arg("frame_A"), py::arg("frame_B"),
             cls_doc.CalcRelativeTransform.doc);
+    if constexpr (std::is_same_v<T, double>) {
+      cls  // BR
+          .def("MakeVelocityToQDotMap", &Class::MakeVelocityToQDotMap,
+              py::arg("context"), cls_doc.MakeVelocityToQDotMap.doc)
+          .def("MakeQDotToVelocityMap", &Class::MakeQDotToVelocityMap,
+              py::arg("context"), cls_doc.MakeQDotToVelocityMap.doc);
+    }
     // Topology queries.
     cls  // BR
         .def("num_frames", &Class::num_frames, cls_doc.num_frames.doc)
@@ -810,14 +803,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
                 &Class::GetModelInstanceByName),
             py::arg("name"), py_rvp::reference_internal,
             cls_doc.GetModelInstanceByName.doc)
-        .def(
-            "GetBodiesWeldedTo",
-            [](const Class& self, const Body<T>& body) {
-              auto welded_bodies = self.GetBodiesWeldedTo(body);
-              return py_keep_alive_iterable<py::list>(
-                  py::cast(welded_bodies), py::cast(&self));
-            },
-            py::arg("body"), cls_doc.GetBodiesWeldedTo.doc)
+        .def("GetBodiesWeldedTo", &Class::GetBodiesWeldedTo, py::arg("body"),
+            py_rvp::reference_internal, cls_doc.GetBodiesWeldedTo.doc)
         .def("GetBodiesKinematicallyAffectedBy",
             &Class::GetBodiesKinematicallyAffectedBy, py::arg("joint_indexes"),
             cls_doc.GetBodiesKinematicallyAffectedBy.doc)
@@ -972,6 +959,14 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("contact_solver"), cls_doc.set_discrete_contact_solver.doc)
         .def("get_discrete_contact_solver", &Class::get_discrete_contact_solver,
             cls_doc.get_discrete_contact_solver.doc)
+        .def("set_sap_near_rigid_threshold",
+            &Class::set_sap_near_rigid_threshold,
+            py::arg("near_rigid_threshold") =
+                MultibodyPlantConfig{}.sap_near_rigid_threshold,
+            cls_doc.set_sap_near_rigid_threshold.doc)
+        .def("get_sap_near_rigid_threshold",
+            &Class::get_sap_near_rigid_threshold,
+            cls_doc.get_sap_near_rigid_threshold.doc)
         .def_static("GetDefaultContactSurfaceRepresentation",
             &Class::GetDefaultContactSurfaceRepresentation,
             py::arg("time_step"),
@@ -1146,27 +1141,91 @@ void DoScalarDependentDefinitions(py::module m, T) {
             [](const Class* self, const Context<T>& context, State<T>* state) {
               self->SetDefaultState(context, state);
             },
-            py::arg("context"), py::arg("state"), cls_doc.SetDefaultState.doc);
+            py::arg("context"), py::arg("state"), cls_doc.SetDefaultState.doc)
+        .def("GetPositionNames",
+            overload_cast_explicit<std::vector<std::string>, bool, bool>(
+                &Class::GetPositionNames),
+            py::arg("add_model_instance_prefix") = true,
+            py::arg("always_add_suffix") = true,
+            cls_doc.GetPositionNames.doc_2args)
+        .def("GetPositionNames",
+            overload_cast_explicit<std::vector<std::string>, ModelInstanceIndex,
+                bool, bool>(&Class::GetPositionNames),
+            py::arg("model_instance"),
+            py::arg("add_model_instance_prefix") = false,
+            py::arg("always_add_suffix") = true,
+            cls_doc.GetPositionNames.doc_3args)
+        .def("GetVelocityNames",
+            overload_cast_explicit<std::vector<std::string>, bool, bool>(
+                &Class::GetVelocityNames),
+            py::arg("add_model_instance_prefix") = true,
+            py::arg("always_add_suffix") = true,
+            cls_doc.GetVelocityNames.doc_2args)
+        .def("GetVelocityNames",
+            overload_cast_explicit<std::vector<std::string>, ModelInstanceIndex,
+                bool, bool>(&Class::GetVelocityNames),
+            py::arg("model_instance"),
+            py::arg("add_model_instance_prefix") = false,
+            py::arg("always_add_suffix") = true,
+            cls_doc.GetVelocityNames.doc_3args)
+        .def("GetStateNames",
+            overload_cast_explicit<std::vector<std::string>, bool>(
+                &Class::GetStateNames),
+            py::arg("add_model_instance_prefix") = true,
+            cls_doc.GetStateNames.doc_1args)
+        .def("GetStateNames",
+            overload_cast_explicit<std::vector<std::string>, ModelInstanceIndex,
+                bool>(&Class::GetStateNames),
+            py::arg("model_instance"),
+            py::arg("add_model_instance_prefix") = false,
+            cls_doc.GetStateNames.doc_2args)
+        .def("GetActuatorNames",
+            overload_cast_explicit<std::vector<std::string>, bool>(
+                &Class::GetActuatorNames),
+            py::arg("add_model_instance_prefix") = true,
+            cls_doc.GetActuatorNames.doc_1args)
+        .def("GetActuatorNames",
+            overload_cast_explicit<std::vector<std::string>, ModelInstanceIndex,
+                bool>(&Class::GetActuatorNames),
+            py::arg("model_instance"),
+            py::arg("add_model_instance_prefix") = false,
+            cls_doc.GetActuatorNames.doc_2args);
   }
 
   {
+    // TODO(eric.cousineau): Figure out why we need to use this to explicit
+    // keep-alive vs. annotating the return tuple with `py::keep_alive()`.
+    // Most likely due to a bug in our fork of pybind11 for handling of
+    // unique_ptr<> arguments and keep_alive<> behavior for objects that are
+    // not yet registered with pybind11 (#11046).
+    auto cast_workaround = [](auto&& nurse, py::object patient_py) {
+      // Cast to ensure we have the object registered.
+      py::object nurse_py = py::cast(nurse, py_rvp::reference);
+      // Directly leverage pybind11's keep alive mechanism.
+      py::detail::keep_alive_impl(nurse_py, patient_py);
+      return nurse_py;
+    };
+
+    auto result_to_tuple =
+        [cast_workaround](systems::DiagramBuilder<T>* builder,
+            const AddMultibodyPlantSceneGraphResult<T>& pair) {
+          py::object builder_py = py::cast(builder, py_rvp::reference);
+          // Keep alive, ownership: `plant` keeps `builder` alive.
+          py::object plant_py = cast_workaround(pair.plant, builder_py);
+          // Keep alive, ownership: `scene_graph` keeps `builder` alive.
+          py::object scene_graph_py =
+              cast_workaround(pair.scene_graph, builder_py);
+          return py::make_tuple(plant_py, scene_graph_py);
+        };
+
     m.def(
         "AddMultibodyPlantSceneGraph",
-        [](systems::DiagramBuilder<T>* builder,
+        [result_to_tuple](systems::DiagramBuilder<T>* builder,
             std::unique_ptr<MultibodyPlant<T>> plant,
             std::unique_ptr<SceneGraph<T>> scene_graph) {
           auto pair = AddMultibodyPlantSceneGraph<T>(
               builder, std::move(plant), std::move(scene_graph));
-          // Must do manual keep alive to dig into tuple.
-          py::object builder_py = py::cast(builder, py_rvp::reference);
-          py::object plant_py = py::cast(pair.plant, py_rvp::reference);
-          py::object scene_graph_py =
-              py::cast(pair.scene_graph, py_rvp::reference);
-          return py::make_tuple(
-              // Keep alive, ownership: `plant` keeps `builder` alive.
-              py_keep_alive(plant_py, builder_py),
-              // Keep alive, ownership: `scene_graph` keeps `builder` alive.
-              py_keep_alive(scene_graph_py, builder_py));
+          return result_to_tuple(builder, pair);
         },
         py::arg("builder"), py::arg("plant"), py::arg("scene_graph") = nullptr,
         doc.AddMultibodyPlantSceneGraph
@@ -1174,20 +1233,11 @@ void DoScalarDependentDefinitions(py::module m, T) {
 
     m.def(
         "AddMultibodyPlantSceneGraph",
-        [](systems::DiagramBuilder<T>* builder, double time_step,
+        [result_to_tuple](systems::DiagramBuilder<T>* builder, double time_step,
             std::unique_ptr<SceneGraph<T>> scene_graph) {
           auto pair = AddMultibodyPlantSceneGraph<T>(
               builder, time_step, std::move(scene_graph));
-          // Must do manual keep alive to dig into tuple.
-          py::object builder_py = py::cast(builder, py_rvp::reference);
-          py::object plant_py = py::cast(pair.plant, py_rvp::reference);
-          py::object scene_graph_py =
-              py::cast(pair.scene_graph, py_rvp::reference);
-          return py::make_tuple(
-              // Keep alive, ownership: `plant` keeps `builder` alive.
-              py_keep_alive(plant_py, builder_py),
-              // Keep alive, ownership: `scene_graph` keeps `builder` alive.
-              py_keep_alive(scene_graph_py, builder_py));
+          return result_to_tuple(builder, pair);
         },
         py::arg("builder"), py::arg("time_step"),
         py::arg("scene_graph") = nullptr,
@@ -1198,19 +1248,10 @@ void DoScalarDependentDefinitions(py::module m, T) {
     if constexpr (std::is_same_v<T, double>) {
       m.def(
           "AddMultibodyPlant",
-          [](const MultibodyPlantConfig& config,
+          [result_to_tuple](const MultibodyPlantConfig& config,
               systems::DiagramBuilder<T>* builder) {
             auto pair = AddMultibodyPlant(config, builder);
-            // Must do manual keep alive to dig into tuple.
-            py::object builder_py = py::cast(builder, py_rvp::reference);
-            py::object plant_py = py::cast(pair.plant, py_rvp::reference);
-            py::object scene_graph_py =
-                py::cast(pair.scene_graph, py_rvp::reference);
-            return py::make_tuple(
-                // Keep alive, ownership: `plant` keeps `builder` alive.
-                py_keep_alive(plant_py, builder_py),
-                // Keep alive, ownership: `scene_graph` keeps `builder` alive.
-                py_keep_alive(scene_graph_py, builder_py));
+            return result_to_tuple(builder, pair);
           },
           py::arg("config"), py::arg("builder"), doc.AddMultibodyPlant.doc);
     }
@@ -1442,6 +1483,9 @@ PYBIND11_MODULE(plant, m) {
         .def("RegisterDeformableBody", &Class::RegisterDeformableBody,
             py::arg("geometry_instance"), py::arg("config"),
             py::arg("resolution_hint"), cls_doc.RegisterDeformableBody.doc)
+        .def("SetWallBoundaryCondition", &Class::SetWallBoundaryCondition,
+            py::arg("id"), py::arg("p_WQ"), py::arg("n_W"),
+            cls_doc.SetWallBoundaryCondition.doc)
         .def("GetDiscreteStateIndex", &Class::GetDiscreteStateIndex,
             py::arg("id"), cls_doc.GetDiscreteStateIndex.doc)
         .def("GetReferencePositions", &Class::GetReferencePositions,

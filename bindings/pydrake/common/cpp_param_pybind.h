@@ -7,9 +7,6 @@
 #include <typeinfo>
 #include <vector>
 
-#include "pybind11/pybind11.h"
-#include "pybind11/stl.h"
-
 #include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/common/wrap_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"

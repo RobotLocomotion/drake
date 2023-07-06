@@ -1,5 +1,6 @@
 #pragma once
 
+#include <map>
 #include <set>
 #include <string>
 #include <unordered_map>
@@ -47,22 +48,16 @@ class MultibodyPlantDiscreteUpdateManagerAttorney {
     return plant.EvalContactSurfaces(context);
   }
 
-  static void AddInForcesFromInputPorts(const MultibodyPlant<T>& plant,
-                                        const systems::Context<T>& context,
-                                        MultibodyForces<T>* forces) {
+  static void AddJointLimitsPenaltyForces(const MultibodyPlant<T>& plant,
+                                          const systems::Context<T>& context,
+                                          MultibodyForces<T>* forces) {
+    plant.AddJointLimitsPenaltyForces(context, forces);
+  }
+
+  static void AddInForcesFromInputPorts(
+      const MultibodyPlant<T>& plant, const drake::systems::Context<T>& context,
+      MultibodyForces<T>* forces) {
     plant.AddInForcesFromInputPorts(context, forces);
-  }
-
-  static void CalcNonContactForces(const MultibodyPlant<T>& plant,
-                            const drake::systems::Context<T>& context,
-                            MultibodyForces<T>* forces) {
-    return plant.CalcNonContactForces(context, true /* is discrete */, forces);
-  }
-
-  [[nodiscard]] static ScopeExit ThrowIfNonContactForceInProgress(
-      const MultibodyPlant<T>& plant,
-      const drake::systems::Context<T>& context) {
-    return plant.ThrowIfNonContactForceInProgress(context);
   }
 
   static void CalcForceElementsContribution(
@@ -93,22 +88,24 @@ class MultibodyPlantDiscreteUpdateManagerAttorney {
     return plant.geometry_id_to_body_index_;
   }
 
-  static const std::vector<internal::CouplerConstraintSpecs>&
+  static const internal::JointLockingCacheData<T>&
+  EvalJointLockingCache(const MultibodyPlant<T>& plant,
+                                       const systems::Context<T>& context) {
+    return plant.EvalJointLockingCache(context);
+  }
+
+  static const std::map<MultibodyConstraintId, internal::CouplerConstraintSpec>&
   coupler_constraints_specs(const MultibodyPlant<T>& plant) {
     return plant.coupler_constraints_specs_;
   }
 
-  static const std::vector<int>& EvalJointLockingIndices(
-      const MultibodyPlant<T>& plant, const systems::Context<T>& context) {
-    return plant.EvalJointLockingIndices(context);
-  }
-
-  static const std::vector<internal::DistanceConstraintSpecs>&
+  static const std::map<MultibodyConstraintId,
+                        internal::DistanceConstraintSpec>&
   distance_constraints_specs(const MultibodyPlant<T>& plant) {
     return plant.distance_constraints_specs_;
   }
 
-  static const std::vector<internal::BallConstraintSpecs>&
+  static const std::map<MultibodyConstraintId, internal::BallConstraintSpec>&
   ball_constraints_specs(const MultibodyPlant<T>& plant) {
     return plant.ball_constraints_specs_;
   }

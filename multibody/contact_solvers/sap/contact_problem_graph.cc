@@ -42,8 +42,8 @@ int ContactProblemGraph::AddConstraint(SortedPair<int> cliques,
                                        int num_constraint_equations) {
   participating_cliques_.push(cliques.first());
   participating_cliques_.push(cliques.second());
-  auto [iterator, new_cluster] = pair_to_cluster_index_.insert(
-      std::make_pair(cliques, clusters_.size()));
+  auto [iterator, new_cluster] =
+      pair_to_cluster_index_.insert(std::make_pair(cliques, clusters_.size()));
   if (new_cluster) clusters_.emplace_back(std::move(cliques));
   const int cluster_index = iterator->second;
   const int constraint_index = num_constraints_++;

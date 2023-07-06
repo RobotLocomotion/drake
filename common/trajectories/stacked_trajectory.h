@@ -17,7 +17,7 @@ namespace trajectories {
 Trajectory objects into a single %Trajectory, without changing the
 `%start_time()` or `%end_time()`.
 
-For sequencing trajectories in time instead, see PiecewiseTrajectory.
+For sequencing trajectories in time instead, see CompositeTrajectory.
 
 All of the underlying %Trajectory objects must have the same `%start_time()`
 and `%end_time()`.

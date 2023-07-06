@@ -20,6 +20,7 @@ officially supports:
 | Ubuntu 22.04 LTS (Jammy Jellyfish) | x86_64       | 3.10 ⁽³⁾   |
 | macOS Monterey (12)                | x86_64       | 3.11       |
 | macOS Monterey (12)                | arm64        | 3.11       |
+| macOS Ventura (13)                 | arm64        | 3.11       |
 
 "Official support" means that we have Continuous Integration test coverage to
 notice regressions, so if it doesn't work for you then please file a bug report.
@@ -34,12 +35,10 @@ require a working display server.  Most personal computers will have this
 already built in, but some cloud or docker environments may require extra
 setup steps.
 
-⁽²⁾ CPython is the only Python implementation supported. Drake does not support
-the Python environment supplied by Anaconda. Before installing or using Drake,
-please `conda deactivate` (repeatedly, until even the conda base environment has
-been deactivated) such that none of the paths reported `which -a python python3`
-refer to conda. Note that Miniconda seems to work fine; it's only Anaconda that
-has caused problems for some users.
+⁽²⁾ CPython is the only Python implementation supported.
+Drake is not tested regularly with Anaconda, so if you are using Anaconda you
+may experience compatibility hiccups; when asking for help, be sure to mention
+that Conda is involved.
 
 ⁽³⁾ The Python version shown in the table is supported for all installation
 channels. Additionally, on Ubuntu when installing via ``pip`` Python versions
@@ -54,6 +53,7 @@ compiler as our releases:
 | Ubuntu 20.04 LTS (Focal Fossa)     | GCC 9                    | C++17 |
 | Ubuntu 22.04 LTS (Jammy Jellyfish) | GCC 11                   | C++20 |
 | macOS Monterey (12)                | Apple LLVM 14 (Xcode 14) | C++20 |
+| macOS Ventura (13)                 | Apple LLVM 14 (Xcode 14) | C++20 |
 
 ## Available Versions
 

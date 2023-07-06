@@ -19,7 +19,6 @@ using drake::math::RigidTransformd;
 using drake::multibody::fem::FemState;
 using drake::systems::Context;
 using std::make_unique;
-using std::move;
 
 namespace drake {
 namespace multibody {
@@ -36,13 +35,15 @@ class DeformableDriverTest : public ::testing::Test {
     constexpr double kRezHint = 0.5;
     body_id_ = RegisterSphere(deformable_model.get(), kRezHint);
     model_ = deformable_model.get();
-    plant_->AddPhysicalModel(move(deformable_model));
+    plant_->AddPhysicalModel(std::move(deformable_model));
+    const RigidBody<double>& body = plant_->AddRigidBody(
+        "rigid_body", SpatialInertia<double>::SolidSphereWithMass(1.0, 1.0));
     // N.B. Currently the manager only supports SAP.
     plant_->set_discrete_contact_solver(DiscreteContactSolver::kSap);
     plant_->Finalize();
     auto contact_manager = make_unique<CompliantContactManager<double>>();
     manager_ = contact_manager.get();
-    plant_->SetDiscreteUpdateManager(move(contact_manager));
+    plant_->SetDiscreteUpdateManager(std::move(contact_manager));
     driver_ = CompliantContactManagerTester::deformable_driver(*manager_);
 
     builder.Connect(model_->vertex_positions_port(),
@@ -52,6 +53,9 @@ class DeformableDriverTest : public ::testing::Test {
     diagram_context_ = diagram_->CreateDefaultContext();
     plant_context_ =
         &plant_->GetMyMutableContextFromRoot(diagram_context_.get());
+    // Lock the rigid body to test locking support in the presence of deformable
+    // DoFs.
+    body.Lock(plant_context_);
   }
 
   /* Forwarding calls to private member functions in DeformableDriver with the
@@ -93,11 +97,11 @@ class DeformableDriverTest : public ::testing::Test {
     geometry::ProximityProperties props;
     geometry::AddContactMaterial({}, {}, CoulombFriction<double>(1.0, 1.0),
                                  &props);
-    geometry->set_proximity_properties(move(props));
+    geometry->set_proximity_properties(std::move(props));
     fem::DeformableBodyConfig<double> body_config;
     body_config.set_youngs_modulus(1e6);
     DeformableBodyId body_id = model->RegisterDeformableBody(
-        move(geometry), body_config, resolution_hint);
+        std::move(geometry), body_config, resolution_hint);
     return body_id;
   }
 };
@@ -173,7 +177,7 @@ TEST_F(DeformableDriverTest, NextFemState) {
 
 /* Verifies that the discrete states are updated to match the FEM states. */
 TEST_F(DeformableDriverTest, CalcDiscreteStates) {
-  systems::Simulator<double> simulator(*diagram_, move(diagram_context_));
+  systems::Simulator<double> simulator(*diagram_, std::move(diagram_context_));
   simulator.Initialize();
   simulator.AdvanceTo(3 * kDt);
   const systems::DiscreteStateIndex state_index =

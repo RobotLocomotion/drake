@@ -26,10 +26,12 @@ GTEST_TEST(ModelInstance, ModelInstanceTest) {
   const RigidBody<double>& body3 =
       tree.AddRigidBody("Body3", instance1, SpatialInertia<double>());
 
-  tree.AddJoint<WeldJoint>(
+  const auto& weld1 = tree.AddJoint<WeldJoint>(
       "weld1", tree.world_body(), math::RigidTransformd::Identity(),
       body1, math::RigidTransformd::Identity(),
       math::RigidTransformd::Identity());
+  EXPECT_EQ(weld1.frame_on_parent().model_instance(), instance1);
+  EXPECT_EQ(weld1.frame_on_child().model_instance(), instance1);
   // Test minimal `AddJoint` overload.
   const Joint<double>& body1_body2 =
       tree.AddJoint(

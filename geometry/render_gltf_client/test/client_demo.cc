@@ -189,15 +189,14 @@ int DoMain() {
 
   const std::string renderer_name("renderer");
   if (FLAGS_render_engine == "vtk") {
-    scene_graph.AddRenderer(renderer_name, geometry::MakeRenderEngineVtk({}));
+    scene_graph.AddRenderer(renderer_name, MakeRenderEngineVtk({}));
   } else {  // FLAGS_render_engine == "client"
     RenderEngineGltfClientParams params;
     params.base_url = FLAGS_server_base_url;
     params.render_endpoint = FLAGS_server_render_endpoint;
     params.cleanup = FLAGS_cleanup;
     params.verbose = !FLAGS_cleanup;
-    scene_graph.AddRenderer(renderer_name,
-                            geometry::MakeRenderEngineGltfClient(params));
+    scene_graph.AddRenderer(renderer_name, MakeRenderEngineGltfClient(params));
   }
 
   // We assume the example sdf contains a body called "base_link_mustard".  We

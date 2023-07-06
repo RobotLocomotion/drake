@@ -82,6 +82,6 @@ void AssertionFailed(const char* condition, const char* func, const char* file,
 // This method is intended ONLY for use by pydrake bindings, and thus is not
 // declared in any header file, to discourage anyone from using it.
 extern "C" void drake_set_assertion_failure_to_throw_exception() {
-  drake::internal::AssertionConfig::singleton().
-      assertion_failures_are_exceptions = true;
+  drake::internal::AssertionConfig::singleton()
+      .assertion_failures_are_exceptions = true;
 }

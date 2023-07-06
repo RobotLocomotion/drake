@@ -18,7 +18,7 @@ using systems::TriggerTypeSet;
 
 LcmPublisherSystem::LcmPublisherSystem(
     const std::string& channel,
-    std::unique_ptr<SerializerInterface> serializer,
+    std::shared_ptr<const SerializerInterface> serializer,
     DrakeLcmInterface* lcm,
     const TriggerTypeSet& publish_triggers,
     double publish_period)
@@ -27,10 +27,10 @@ LcmPublisherSystem::LcmPublisherSystem(
       owned_lcm_(lcm ? nullptr : new DrakeLcm()),
       lcm_(lcm ? lcm : owned_lcm_.get()),
       publish_period_(publish_period) {
-  DRAKE_DEMAND(serializer_ != nullptr);
-  DRAKE_DEMAND(lcm_ != nullptr);
-  DRAKE_DEMAND(publish_period >= 0.0);
-  DRAKE_DEMAND(!publish_triggers.empty());
+  DRAKE_THROW_UNLESS(serializer_ != nullptr);
+  DRAKE_THROW_UNLESS(lcm_ != nullptr);
+  DRAKE_THROW_UNLESS(publish_period >= 0.0);
+  DRAKE_THROW_UNLESS(!publish_triggers.empty());
 
   // Check that publish_triggers does not contain an unsupported trigger.
   for (const auto& trigger : publish_triggers) {
@@ -73,7 +73,7 @@ LcmPublisherSystem::LcmPublisherSystem(
 
 LcmPublisherSystem::LcmPublisherSystem(
     const std::string& channel,
-    std::unique_ptr<SerializerInterface> serializer,
+    std::shared_ptr<const SerializerInterface> serializer,
     DrakeLcmInterface* lcm, double publish_period)
     : LcmPublisherSystem(channel, std::move(serializer), lcm,
       (publish_period > 0.0) ?
@@ -85,7 +85,7 @@ LcmPublisherSystem::~LcmPublisherSystem() {}
 
 void LcmPublisherSystem::AddInitializationMessage(
     InitializationPublisher initialization_publisher) {
-  DRAKE_DEMAND(initialization_publisher != nullptr);
+  DRAKE_THROW_UNLESS(initialization_publisher != nullptr);
 
   initialization_publisher_ = std::move(initialization_publisher);
 

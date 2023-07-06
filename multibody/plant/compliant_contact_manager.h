@@ -30,13 +30,14 @@ class SapDriver;
 template <typename>
 class TamsiDriver;
 
-// To compute accelerations due to external forces (in particular non-contact
-// forces), we pack forces, ABA cache and accelerations into a single struct
-// to confine memory allocations into a single cache entry.
+// To compute accelerations due to non-constraint forces (i.e. forces excluding
+// contact and joint limit forces), we pack forces, ABA cache and accelerations
+// into a single struct to confine memory allocations into a single cache entry.
 template <typename T>
-struct AccelerationsDueToExternalForcesCache {
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(AccelerationsDueToExternalForcesCache)
-  explicit AccelerationsDueToExternalForcesCache(
+struct AccelerationsDueNonConstraintForcesCache {
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(
+      AccelerationsDueNonConstraintForcesCache)
+  explicit AccelerationsDueNonConstraintForcesCache(
       const MultibodyTreeTopology& topology);
   MultibodyForces<T> forces;  // The external forces causing accelerations.
   ArticulatedBodyInertiaCache<T> abic;   // Articulated body inertia cache.
@@ -123,7 +124,7 @@ class CompliantContactManager final
     systems::CacheIndex contact_kinematics;
     systems::CacheIndex discrete_contact_pairs;
     systems::CacheIndex hydroelastic_contact_info;
-    systems::CacheIndex non_contact_forces_accelerations;
+    systems::CacheIndex non_constraint_forces_accelerations;
   };
 
   // Allow different specializations to access each other's private data for
@@ -227,23 +228,15 @@ class CompliantContactManager final
   const std::vector<HydroelasticContactInfo<T>>& EvalHydroelasticContactInfo(
       const systems::Context<T>& context) const;
 
-  // Computes all continuous forces in the MultibodyPlant model. Joint limits
-  // are not included as continuous compliant forces but rather as constraints
-  // in the solver, and therefore must be excluded.
-  // Values in `forces` will be overwritten.
-  // @pre forces != nullptr and is consistent with plant().
-  void CalcNonContactForcesExcludingJointLimits(
-      const systems::Context<T>& context, MultibodyForces<T>* forces) const;
-
-  // Calc non-contact forces and the accelerations they induce.
-  void CalcAccelerationsDueToNonContactForcesCache(
+  // Computes non-constraint forces and the accelerations they induce.
+  void CalcAccelerationsDueToNonConstraintForcesCache(
       const systems::Context<T>& context,
-      AccelerationsDueToExternalForcesCache<T>* no_contact_accelerations_cache)
-      const;
+      AccelerationsDueNonConstraintForcesCache<T>*
+          non_constraint_accelerations_cache) const;
 
-  // Eval version of CalcAccelerationsDueToNonContactForcesCache().
+  // Eval version of CalcAccelerationsDueToNonConstraintForcesCache().
   const multibody::internal::AccelerationKinematicsCache<T>&
-  EvalAccelerationsDueToNonContactForcesCache(
+  EvalAccelerationsDueToNonConstraintForcesCache(
       const systems::Context<T>& context) const;
 
   // Helper method to fill in contact_results with point contact information

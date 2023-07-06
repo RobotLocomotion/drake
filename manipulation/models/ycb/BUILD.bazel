@@ -5,7 +5,6 @@ load(
 load("//tools/skylark:drake_data.bzl", "models_filegroup")
 load("@drake//tools/install:install_data.bzl", "install_data")
 load("//tools/lint:lint.bzl", "add_lint_tests")
-load("//tools/workspace/models_internal:files.bzl", "ycb_mesh_files")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -23,9 +22,24 @@ filegroup(
     name = "models",
     srcs = [
         ":glob_models",
-    ] + [
-        "@models_internal//:" + x
-        for x in ycb_mesh_files()
+        "@drake_models//:ycb/meshes/003_cracker_box_textured.mtl",
+        "@drake_models//:ycb/meshes/003_cracker_box_textured.obj",
+        "@drake_models//:ycb/meshes/003_cracker_box_textured.png",
+        "@drake_models//:ycb/meshes/004_sugar_box_textured.mtl",
+        "@drake_models//:ycb/meshes/004_sugar_box_textured.obj",
+        "@drake_models//:ycb/meshes/004_sugar_box_textured.png",
+        "@drake_models//:ycb/meshes/005_tomato_soup_can_textured.mtl",
+        "@drake_models//:ycb/meshes/005_tomato_soup_can_textured.obj",
+        "@drake_models//:ycb/meshes/005_tomato_soup_can_textured.png",
+        "@drake_models//:ycb/meshes/006_mustard_bottle_textured.mtl",
+        "@drake_models//:ycb/meshes/006_mustard_bottle_textured.obj",
+        "@drake_models//:ycb/meshes/006_mustard_bottle_textured.png",
+        "@drake_models//:ycb/meshes/009_gelatin_box_textured.mtl",
+        "@drake_models//:ycb/meshes/009_gelatin_box_textured.obj",
+        "@drake_models//:ycb/meshes/009_gelatin_box_textured.png",
+        "@drake_models//:ycb/meshes/010_potted_meat_can_textured.mtl",
+        "@drake_models//:ycb/meshes/010_potted_meat_can_textured.obj",
+        "@drake_models//:ycb/meshes/010_potted_meat_can_textured.png",
     ],
 )
 

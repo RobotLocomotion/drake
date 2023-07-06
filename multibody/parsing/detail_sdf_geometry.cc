@@ -29,7 +29,6 @@ namespace internal {
 
 using Eigen::Vector3d;
 using std::make_unique;
-using std::move;
 using std::set;
 using std::string;
 
@@ -287,7 +286,7 @@ std::optional<std::unique_ptr<GeometryInstance>>
     return nullptr;
   }
   auto instance =
-      make_unique<GeometryInstance>(X_LC, move(*shape), sdf_visual.Name());
+      make_unique<GeometryInstance>(X_LC, std::move(*shape), sdf_visual.Name());
   std::optional<IllustrationProperties> illustration_properties =
       MakeVisualPropertiesFromSdfVisual(
           diagnostic, sdf_visual, resolve_filename);
@@ -388,7 +387,7 @@ std::optional<IllustrationProperties> MakeVisualPropertiesFromSdfVisual(
       accepting = accepting->GetNextElement(kAcceptingTag);
     }
     DRAKE_DEMAND(accepting_names.size() > 0);
-    properties.AddProperty("renderer", "accepting", move(accepting_names));
+    properties.AddProperty("renderer", "accepting", std::move(accepting_names));
   }
 
   return properties;

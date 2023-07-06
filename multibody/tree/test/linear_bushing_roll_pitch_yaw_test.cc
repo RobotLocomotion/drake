@@ -710,17 +710,12 @@ GTEST_TEST(LinearBushingRollPitchYawTest, BushingParameters) {
 
   const double sphere_radius = 1.0;
   const double sphere_mass = 2.5;
-  const Vector3<double> sphere_com(0, 0, 0);
-  const UnitInertia<double> sphere_unit_inertia =
-      UnitInertia<double>::SolidSphere(sphere_radius);
 
-  const RigidBody<double>& sphere1 = plant.AddRigidBody(
-      "sphere1",
-      SpatialInertia<double>(sphere_mass, sphere_com, sphere_unit_inertia));
+  const RigidBody<double>& sphere1 = plant.AddRigidBody("sphere1",
+      SpatialInertia<double>::SolidSphereWithMass(sphere_mass, sphere_radius));
 
-  const RigidBody<double>& sphere2 = plant.AddRigidBody(
-      "sphere2",
-      SpatialInertia<double>(sphere_mass, sphere_com, sphere_unit_inertia));
+  const RigidBody<double>& sphere2 = plant.AddRigidBody("sphere2",
+      SpatialInertia<double>::SolidSphereWithMass(sphere_mass, sphere_radius));
 
   const Vector3<double> torque_stiffness(100, 100, 100);
   const Vector3<double> torque_damping(5, 5, 5);

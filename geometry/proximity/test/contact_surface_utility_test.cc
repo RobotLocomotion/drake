@@ -23,7 +23,6 @@ using Eigen::AngleAxisd;
 using Eigen::Vector3d;
 using math::RigidTransformd;
 using math::RotationMatrixd;
-using std::move;
 using std::unique_ptr;
 using std::vector;
 
@@ -259,7 +258,7 @@ class Polygon {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Polygon)
 
   Polygon(vector<Vector3d> vertices_P, const LinearFunction& func_P)
-      : vertices_P_(move(vertices_P)), func_P_(func_P) {}
+      : vertices_P_(std::move(vertices_P)), func_P_(func_P) {}
 
   const vector<Vector3d> vertices() const { return vertices_P_; }
   double EvalPressure(const Vector3d& p_PV) const { return func_P_(p_PV); }

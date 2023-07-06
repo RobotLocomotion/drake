@@ -418,13 +418,11 @@ class MathematicalProgram {
 
   /** Appends new variables to the end of the existing variables.
    * @param decision_variables The newly added decision_variables.
-   * @pre `decision_variables` should not intersect with the existing variables
-   * or indeterminates in the optimization program.
+   * @pre `decision_variables` should not intersect with the existing
+   * indeterminates in the optimization program.
    * @pre Each entry in `decision_variables` should not be a dummy variable.
    * @throws std::exception if the preconditions are not satisfied.
    */
-  // TODO(hongkai.dai): also check if decision_variables contain duplicate
-  // entries.
   void AddDecisionVariables(
       const Eigen::Ref<const MatrixXDecisionVariable>& decision_variables);
 
@@ -814,16 +812,19 @@ class MathematicalProgram {
 
   /** Adds indeterminate.
    * This method appends an indeterminate to the end of the program's old
+   * indeterminates, if `new_indeterminate` is not already in the program's old
    * indeterminates.
    * @param new_indeterminate The indeterminate to be appended to the
    * program's old indeterminates.
-   * @pre `new_indeterminate` should not intersect with the program's old
-   * indeterminates or decision variables.
+   * @return indeterminate_index The index of the added indeterminate in the
+   * program's indeterminates. i.e. prog.indeterminates()(indeterminate_index) =
+   * new_indeterminate.
+   * @pre `new_indeterminate` should not intersect with the program's
+   * decision variables.
    * @pre new_indeterminate should not be dummy.
    * @pre new_indeterminate should be of CONTINUOUS type.
    */
-  void AddIndeterminate(
-      const symbolic::Variable& new_indeterminate);
+  int AddIndeterminate(const symbolic::Variable& new_indeterminate);
 
   /** Adds indeterminates.
    * This method appends some indeterminates to the end of the program's old
@@ -831,11 +832,10 @@ class MathematicalProgram {
    * @param new_indeterminates The indeterminates to be appended to the
    * program's old indeterminates.
    * @pre `new_indeterminates` should not intersect with the program's old
-   * indeterminates or decision variables.
+   * decision variables.
    * @pre Each entry in new_indeterminates should not be dummy.
    * @pre Each entry in new_indeterminates should be of CONTINUOUS type.
    */
-  // TODO(hongkai.dai): check if new_indeterminates contain duplicate entries.
   void AddIndeterminates(
       const Eigen::Ref<const MatrixXIndeterminate>& new_indeterminates);
 
@@ -845,7 +845,7 @@ class MathematicalProgram {
    * @param new_indeterminates The indeterminates to be appended to the
    * program's old indeterminates.
    * @pre `new_indeterminates` should not intersect with the program's old
-   * indeterminates or decision variables.
+   * decision variables.
    * @pre Each entry in new_indeterminates should not be dummy.
    * @pre Each entry in new_indeterminates should be of CONTINUOUS type.
    */
@@ -1040,8 +1040,6 @@ class MathematicalProgram {
 
   /**
    * Add a quadratic cost term of the form 0.5*x'*Q*x + b'*x + c.
-   * Notice that in the optimization program, the constant term `c` in the cost
-   * is ignored.
    * @param e A quadratic symbolic expression.
    * @param is_convex Whether the cost is already known to be convex. If
    * is_convex=nullopt (the default), then Drake will determine if `e` is a
@@ -1195,14 +1193,7 @@ class MathematicalProgram {
 
   /**
    * Adds a cost in the symbolic form.
-   * Note that the constant part of the cost is ignored. So if you set
-   * `e = x + 2`, then only the cost on `x` is added, the constant term 2 is
-   * ignored.
-   * @param e The linear or quadratic expression of the cost.
-   * @pre `e` is linear or `e` is quadratic. Otherwise throws a runtime error.
    * @return The newly created cost, together with the bound variables.
-   *
-   * @exclude_from_pydrake_mkdoc{Not bound in pydrake.}
    */
   Binding<Cost> AddCost(const symbolic::Expression& e);
 
@@ -1314,9 +1305,9 @@ class MathematicalProgram {
    * @param ub A scalar, the upper bound.
    *
    * The resulting constraint may be a BoundingBoxConstraint, LinearConstraint,
-   * LinearEqualityConstraint, or ExpressionConstraint, depending on the
-   * arguments.  Constraints of the form x == 1 (which could be created as a
-   * BoundingBoxConstraint or LinearEqualityConstraint) will be
+   * LinearEqualityConstraint, QuadraticConstraint, or ExpressionConstraint,
+   * depending on the arguments.  Constraints of the form x == 1 (which could
+   * be created as a BoundingBoxConstraint or LinearEqualityConstraint) will be
    * constructed as a LinearEqualityConstraint.
    */
   Binding<Constraint> AddConstraint(const symbolic::Expression& e, double lb,
@@ -2900,7 +2891,11 @@ class MathematicalProgram {
   }  // e.g. for snopt_user_fun
 
   /**
-   * Getter for linear equality constraints.
+   * Getter for linear equality constraints. Note that this only includes
+   * constraints that were added explicitly as LinearEqualityConstraint or
+   * which were added symbolically (and their equality constraint nature was
+   * uncovered). There may be bounding_box_constraints() and
+   * linear_constraints() whose lower bounds also equal their upper bounds.
    */
   const std::vector<Binding<LinearEqualityConstraint>>&
   linear_equality_constraints() const {
@@ -2922,7 +2917,9 @@ class MathematicalProgram {
     return l2norm_costs_;
   }
 
-  /** Getter for linear constraints. */
+  /** Getter for linear *inequality* constraints. Note that this does not
+   * include linear_equality_constraints() nor bounding_box_constraints(). See
+   * also GetAllLinearConstraints(). */
   const std::vector<Binding<LinearConstraint>>& linear_constraints() const {
     return linear_constraints_;
   }
@@ -2984,7 +2981,8 @@ class MathematicalProgram {
 
   /**
    * Getter returning all linear constraints (both linear equality and
-   * inequality constraints).
+   * inequality constraints). Note that this does *not* include bounding box
+   * constraints, which are technically also linear.
    * @returns Vector of all linear constraint bindings.
    */
   [[nodiscard]] std::vector<Binding<LinearConstraint>> GetAllLinearConstraints()

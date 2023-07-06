@@ -27,6 +27,7 @@ _BUILD_FILES_DATA = [
     ":drake__geometry.BUILD.bazel",
     ":drake__manipulation.BUILD.bazel",
     ":drake__multibody.BUILD.bazel",
+    "@drake_models//:BUILD.bazel",
 ]
 
 # Create repo.bzl by combining repo_template.bzl and its data dependencies.
@@ -35,6 +36,7 @@ drake_py_binary(
     srcs = ["repo_gen.py"],
     data = [
         "repo_template.bzl",
+        "//multibody/parsing:drake_models.json",
     ],
     deps = [
         "@bazel_tools//tools/python/runfiles",

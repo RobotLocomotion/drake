@@ -1,5 +1,6 @@
 #include "drake/multibody/plant/deformable_driver.h"
 
+#include <limits>
 #include <memory>
 #include <string>
 #include <unordered_set>
@@ -7,6 +8,8 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/geometry_ids.h"
+#include "drake/math/rigid_transform.h"
+#include "drake/multibody/contact_solvers/contact_configuration.h"
 #include "drake/multibody/fem/dirichlet_boundary_condition.h"
 #include "drake/multibody/fem/fem_model.h"
 #include "drake/multibody/fem/fem_solver.h"
@@ -18,7 +21,10 @@ using drake::geometry::GeometryId;
 using drake::geometry::internal::ContactParticipation;
 using drake::geometry::internal::DeformableContact;
 using drake::geometry::internal::DeformableContactSurface;
+using drake::multibody::contact_solvers::internal::Block3x3SparseMatrix;
+using drake::multibody::contact_solvers::internal::ContactConfiguration;
 using drake::multibody::contact_solvers::internal::ContactSolverResults;
+using drake::multibody::contact_solvers::internal::MatrixBlock;
 using drake::multibody::contact_solvers::internal::PartialPermutation;
 using drake::multibody::fem::FemModel;
 using drake::multibody::fem::FemState;
@@ -242,12 +248,12 @@ void DeformableDriver<T>::AppendDiscreteContactPairs(
 
   for (const DeformableContactSurface<double>& surface :
        deformable_contact.contact_surfaces()) {
-    /* We use an arbitrarily large stiffness as the default stiffness so that
-     the contact is in near-rigid regime and the compliance is only used as
-     stabilization. */
-    const double default_contact_stiffness = 1.0e12;
-    const T k = GetCombinedPointContactStiffness(
-        surface.id_A(), surface.id_B(), default_contact_stiffness, inspector);
+    /* While our discrete solvers might model constraints as compliant, an
+    infinite stiffness indicates to use the stiffest approximation possible
+    without sacrifycing numerical conditioning. SAP will use the "near rigid"
+    regime approximation in this case. */
+    const T k = std::numeric_limits<double>::infinity();
+
     // TODO(xuchenhan-tri): Currently, body_B is guaranteed to be
     // non-deformable. When we support deformable vs. deformable contact, we
     // need to update this logic for retrieving body names.
@@ -312,8 +318,6 @@ void DeformableDriver<T>::AppendContactKinematics(
     const TreeIndex clique_index_A(tree_topology.num_trees() + index_A);
     const ContactParticipation& participation =
         deformable_contact.contact_participation(id_A);
-    Matrix3X<T> Jv_v_WAc_W =
-        Matrix3X<T>::Zero(3, participation.num_vertices_in_contact() * 3);
     const PartialPermutation& vertex_permutation =
         EvalVertexPermutation(context, id_A);
     /* For now, body B is guaranteed to be rigid. */
@@ -328,17 +332,10 @@ void DeformableDriver<T>::AppendContactKinematics(
     std::vector<int> num_bcs(fem_model.num_nodes(), 0);
     for (const auto& it : bc.index_to_boundary_state()) {
       /* Note that we currently only allow zero boundary conditions. */
-      DRAKE_DEMAND(it.second.y() == 0);
-      DRAKE_DEMAND(it.second.z() == 0);
-      const int dof_index = it.first;
-      const int vertex_index = dof_index / 3;
+      DRAKE_DEMAND(it.second.v == Vector3<T>::Zero());
+      DRAKE_DEMAND(it.second.a == Vector3<T>::Zero());
+      const int vertex_index = it.first;
       ++num_bcs[vertex_index];
-    }
-    /* Note that we currently do not allow partial boundary condition; i.e.,
-     if any dof of a vertex is under bc, then all three dofs associated with the
-     vertex are under bc. */
-    for (int n : num_bcs) {
-      DRAKE_ASSERT(n % 3 == 0);
     }
 
     for (int i = 0; i < surface.num_contact_points(); ++i) {
@@ -354,10 +351,13 @@ void DeformableDriver<T>::AppendContactKinematics(
           math::RotationMatrix<T>::MakeFromOneUnitVector(nhat_W, kZAxis);
       const math::RotationMatrix<T> R_CW = R_WC.transpose();
       /* Calculate the jacobian block for the body A. */
-      Jv_v_WAc_W.setZero();
+      Block3x3SparseMatrix<T> negative_Jv_v_WAc_C(
+          1, participation.num_vertices_in_contact());
       Vector4<int> participating_vertices =
           surface.contact_vertex_indexes_A()[i];
       const Vector4<T>& b = surface.barycentric_coordinates_A()[i];
+      std::vector<typename Block3x3SparseMatrix<T>::Triplet> triplets;
+      triplets.reserve(4);
       for (int v = 0; v < 4; ++v) {
         const bool vertex_under_bc = num_bcs[participating_vertices(v)] > 0;
         /* Map indexes to the permuted domain. */
@@ -368,22 +368,24 @@ void DeformableDriver<T>::AppendContactKinematics(
            v₃ are the velocities of the vertices forming the tetrahedron
            containing the contact point and the b's are their corresponding
            barycentric weights. */
-          Jv_v_WAc_W.template middleCols<3>(3 * participating_vertices(v)) =
-              b(v) * Matrix3<T>::Identity();
+          triplets.emplace_back(0, participating_vertices(v),
+                                -b(v) * R_CW.matrix());
         }
+        negative_Jv_v_WAc_C.SetFromTriplets(triplets);
         /* If the vertex is under bc, the corresponding jacobain block is zero
          because the vertex doesn't contribute to the contact velocity. */
       }
-      jacobian_blocks.emplace_back(clique_index_A, -R_CW.matrix() * Jv_v_WAc_W);
+      jacobian_blocks.emplace_back(
+          clique_index_A, MatrixBlock<T>(std::move(negative_Jv_v_WAc_C)));
 
       /* Calculate the jacobian block for the rigid body B if it's not static.
        */
       const BodyIndex index_B = manager_->geometry_id_to_body_index().at(id_B);
       const TreeIndex tree_index = tree_topology.body_to_tree_index(index_B);
+      const Vector3<T>& p_WC = surface.contact_points_W()[i];
       if (tree_index.is_valid()) {
         const Body<T>& rigid_body = manager_->plant().get_body(index_B);
         const Frame<T>& frame_W = manager_->plant().world_frame();
-        const Vector3<T>& p_WC = surface.contact_points_W()[i];
         manager_->internal_tree().CalcJacobianTranslationalVelocity(
             context, JacobianWrtVariable::kV, rigid_body.body_frame(), frame_W,
             p_WC, frame_W, frame_W, &Jv_v_WBc_W);
@@ -391,10 +393,38 @@ void DeformableDriver<T>::AppendContactKinematics(
             R_CW.matrix() * Jv_v_WBc_W.middleCols(
                                 tree_topology.tree_velocities_start(tree_index),
                                 tree_topology.num_tree_velocities(tree_index));
-        jacobian_blocks.emplace_back(tree_index, std::move(J));
+        jacobian_blocks.emplace_back(tree_index, MatrixBlock<T>(std::move(J)));
       }
-      result->emplace_back(surface.signed_distances()[i],
-                           std::move(jacobian_blocks), std::move(R_WC));
+
+      // Contact configuration between objects A and B.
+      // By convention, deformable bodies are assigned object indexes after all
+      // rigid bodies.
+      const int objectA =
+          index_A + manager_->plant().num_bodies();  // Deformable body.
+      const int objectB = index_B;                   // Rigid body.
+
+      // Contact point position relative to deformable object A. For deformable
+      // objects, we'll use the centroid of the contact surface as the
+      // relative-to point in the configuration.
+      const Vector3<T>& p_WCentroid = surface.contact_mesh_W().centroid();
+      const Vector3<T> p_ACentroidC_W = p_WC - p_WCentroid;
+
+      // Contact point position relative to rigid body B.
+      const math::RigidTransform<T>& X_WB =
+          manager_->plant().EvalBodyPoseInWorld(
+              context, manager_->plant().get_body(index_B));
+      const Vector3<T>& p_WB = X_WB.translation();
+      const Vector3<T> p_BC_W = p_WC - p_WB;
+
+      ContactConfiguration<T> configuration{
+          .objectA = objectA,
+          .p_ApC_W = p_ACentroidC_W,
+          .objectB = objectB,
+          .p_BqC_W = p_BC_W,
+          .phi = surface.signed_distances()[i],
+          .R_WC = R_WC};
+      result->emplace_back(std::move(jacobian_blocks),
+                           std::move(configuration));
     }
   }
 }

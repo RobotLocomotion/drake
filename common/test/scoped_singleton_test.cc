@@ -111,5 +111,5 @@ GTEST_TEST(ScopedSingletonTest, ThreadedTest) {
   EXPECT_EQ(InstanceCountedDummy::instance_count(), 0);
 }
 
-}  // anonymous namespace
+}  // namespace
 }  // namespace drake

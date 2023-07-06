@@ -34,6 +34,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_throw.h"
+#include "drake/common/ssize.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
 
 namespace drake {
@@ -410,7 +411,7 @@ struct BodyNodeTopology {
   std::vector<BodyNodeIndex> child_nodes;
 
   // Returns the number of children to this node.
-  int get_num_children() const { return static_cast<int>(child_nodes.size());}
+  int get_num_children() const { return ssize(child_nodes);}
 
 
   // Start and number of dofs for this node's mobilizer.
@@ -467,33 +468,33 @@ class MultibodyTreeTopology {
   // Returns the number of bodies in the multibody tree. This includes the
   // "world" body and therefore the minimum number of bodies after
   // MultibodyTree::Finalize() will always be one, not zero.
-  int num_bodies() const { return static_cast<int>(bodies_.size()); }
+  int num_bodies() const { return ssize(bodies_); }
 
   // Returns the number of physical frames in the multibody tree.
   int num_frames() const {
-    return static_cast<int>(frames_.size());
+    return ssize(frames_);
   }
 
   // Returns the number of mobilizers in the multibody tree. Since the "world"
   // body does not have a mobilizer, the number of mobilizers will always equal
   // the number of bodies minus one.
   int num_mobilizers() const {
-    return static_cast<int>(mobilizers_.size());
+    return ssize(mobilizers_);
   }
 
   // Returns the number of tree nodes. This must equal the number of bodies.
   int get_num_body_nodes() const {
-    return static_cast<int>(body_nodes_.size());
+    return ssize(body_nodes_);
   }
 
   // Returns the number of force elements in the topology.
   int num_force_elements() const {
-    return static_cast<int>(force_elements_.size());
+    return ssize(force_elements_);
   }
 
   // Returns the number of joint actuators in the topology.
   int num_joint_actuators() const {
-    return static_cast<int>(joint_actuators_.size());
+    return ssize(joint_actuators_);
   }
 
   // Returns the number of tree levels in the topology.
@@ -549,7 +550,7 @@ class MultibodyTreeTopology {
   // tree. In other words, the number of trees in the topology corresponds to
   // the number of children of the world body node (also called "base nodes").
   int num_trees() const {
-    return static_cast<int>(num_tree_velocities_.size());
+    return ssize(num_tree_velocities_);
   }
 
   // Returns the number of generalized velocities for the t-th tree.

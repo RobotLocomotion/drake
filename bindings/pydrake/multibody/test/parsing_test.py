@@ -8,7 +8,6 @@ from pydrake.multibody.parsing import (
     AddModelInstance,
     AddWeld,
     GetScopedFrameByName,
-    GetScopedFrameName,
     LoadModelDirectives,
     LoadModelDirectivesFromString,
     ModelDirective,
@@ -25,7 +24,6 @@ import re
 import unittest
 
 from pydrake.common import FindResourceOrThrow
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.geometry import SceneGraph
 from pydrake.multibody.tree import (
     ModelInstanceIndex,
@@ -47,8 +45,6 @@ class TestParsing(unittest.TestCase):
         dut = PackageMap.MakeEmpty()
         dut2 = PackageMap.MakeEmpty()
         tmpdir = os.environ.get('TEST_TMPDIR')
-        model = FindResourceOrThrow(
-            "drake/examples/atlas/urdf/atlas_minimal_contact.urdf")
 
         # Simple coverage test for Add, AddMap, Contains, size,
         # GetPackageNames, GetPath, AddPackageXml, Remove.
@@ -136,13 +132,6 @@ class TestParsing(unittest.TestCase):
             "drake/multibody/benchmarks/acrobot/acrobot.sdf")
         with open(sdf_file, "r") as f:
             sdf_contents = f.read()
-        plant = MultibodyPlant(time_step=0.01)
-        parser = Parser(plant=plant)
-        self.assertEqual(parser.plant(), plant)
-        with catch_drake_warnings(expected_count=1):
-            result = parser.AddModelFromString(
-                file_contents=sdf_contents, file_type="sdf")
-        self.assertIsInstance(result, ModelInstanceIndex)
 
         plant = MultibodyPlant(time_step=0.01)
         parser = Parser(plant=plant)
@@ -236,9 +225,7 @@ class TestParsing(unittest.TestCase):
 
     def test_scoped_frame_names(self):
         plant = MultibodyPlant(time_step=0.01)
-        frame = GetScopedFrameByName(plant, "world")
-        with catch_drake_warnings(expected_count=1):
-            self.assertIsNotNone(GetScopedFrameName(plant, frame))
+        GetScopedFrameByName(plant, "world")
 
     def _make_plant_parser_directives(self):
         """Returns a tuple (plant, parser, directives) for later testing."""

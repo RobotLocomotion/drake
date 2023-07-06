@@ -26,7 +26,6 @@ using drake::systems::DiscreteStateIndex;
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
 using std::make_unique;
-using std::move;
 
 namespace drake {
 namespace multibody {
@@ -52,7 +51,6 @@ class CompliantContactManagerTester {
 class DeformableDriverContactTest : public ::testing::Test {
  protected:
   static constexpr double kDt = 0.001;
-  static constexpr double kPointContactStiffness = 1e6;
   static constexpr double kDissipationTimeScale = 0.1;
 
   void SetUp() override {
@@ -64,13 +62,12 @@ class DeformableDriverContactTest : public ::testing::Test {
     body_id1_ =
         RegisterDeformableOctahedron(deformable_model.get(), "deformable1");
     model_ = deformable_model.get();
-    plant_->AddPhysicalModel(move(deformable_model));
+    plant_->AddPhysicalModel(std::move(deformable_model));
     plant_->set_discrete_contact_solver(DiscreteContactSolver::kSap);
     /* Register a rigid collision geometry intersecting with the bottom half of
      the deformable octahedrons. */
     geometry::ProximityProperties proximity_prop;
-    geometry::AddContactMaterial({}, kPointContactStiffness,
-                                 CoulombFriction<double>(1.0, 1.0),
+    geometry::AddContactMaterial({}, {}, CoulombFriction<double>(1.0, 1.0),
                                  &proximity_prop);
     // TODO(xuchenhan-tri): Modify this when resolution hint is no longer used
     //  as the trigger for contact with deformable bodies.
@@ -84,7 +81,7 @@ class DeformableDriverContactTest : public ::testing::Test {
 
     auto contact_manager = make_unique<CompliantContactManager<double>>();
     manager_ = contact_manager.get();
-    plant_->SetDiscreteUpdateManager(move(contact_manager));
+    plant_->SetDiscreteUpdateManager(std::move(contact_manager));
     driver_ = CompliantContactManagerTester::deformable_driver(*manager_);
 
     builder.Connect(model_->vertex_positions_port(),
@@ -182,21 +179,21 @@ class DeformableDriverContactTest : public ::testing::Test {
   DeformableBodyId RegisterDeformableOctahedron(DeformableModel<double>* model,
                                                 std::string name) {
     auto geometry = make_unique<GeometryInstance>(
-        RigidTransformd(), make_unique<Sphere>(1.0), move(name));
+        RigidTransformd(), make_unique<Sphere>(1.0), std::move(name));
     geometry::ProximityProperties props;
-    geometry::AddContactMaterial({}, kPointContactStiffness,
-                                 CoulombFriction<double>(1.0, 1.0), &props);
+    geometry::AddContactMaterial({}, {}, CoulombFriction<double>(1.0, 1.0),
+                                 &props);
     props.AddProperty(geometry::internal::kMaterialGroup,
                       geometry::internal::kRelaxationTime,
                       kDissipationTimeScale);
-    geometry->set_proximity_properties(move(props));
+    geometry->set_proximity_properties(std::move(props));
     fem::DeformableBodyConfig<double> body_config;
     body_config.set_youngs_modulus(1e6);
     body_config.set_poissons_ratio(0.4);
     /* Make the resolution hint large enough so that we get an octahedron. */
     constexpr double kRezHint = 10.0;
-    DeformableBodyId body_id =
-        model->RegisterDeformableBody(move(geometry), body_config, kRezHint);
+    DeformableBodyId body_id = model->RegisterDeformableBody(
+        std::move(geometry), body_config, kRezHint);
     return body_id;
   }
 };
@@ -407,7 +404,8 @@ TEST_F(DeformableDriverContactTest, AppendDiscreteContactPairs) {
   /* tau for deformable body is set to kDissipationTimeScale and is unset for
    rigid body (which then assumes the default value, dt). */
   constexpr double expected_tau = kDissipationTimeScale + kDt;
-  constexpr double expected_k = kPointContactStiffness / 2.0;
+  // Stiffness is set to infinity for deformable contact pairs.
+  constexpr double expected_k = std::numeric_limits<double>::infinity();
   GeometryId id0 = model_->GetGeometryId(body_id0_);
   GeometryId id1 = model_->GetGeometryId(body_id1_);
 

@@ -27,7 +27,7 @@ namespace quadrotor {
 /// Note: If the propeller_force input port is not connected, then the force is
 /// taken to be zero.
 ///
-/// @tparam_nonsymbolic_scalar
+/// @tparam_default_scalar
 template <typename T>
 class QuadrotorPlant final : public systems::LeafSystem<T> {
  public:
@@ -75,17 +75,8 @@ std::unique_ptr<systems::AffineSystem<double>> StabilizingLQRController(
 
 }  // namespace quadrotor
 }  // namespace examples
-
-// The following code was added to prevent scalar conversion to symbolic scalar
-// types. The QuadrotorPlant makes use of classes that are not compatible with
-// the symbolic scalar. This NonSymbolicTraits is explained in
-// drake/systems/framework/system_scalar_converter.h.
-namespace systems {
-namespace scalar_conversion {
-template <>
-struct Traits<examples::quadrotor::QuadrotorPlant> : public NonSymbolicTraits {
-};
-}  // namespace scalar_conversion
-}  // namespace systems
-
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::examples::quadrotor::QuadrotorPlant)
+

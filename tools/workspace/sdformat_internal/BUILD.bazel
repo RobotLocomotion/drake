@@ -22,4 +22,6 @@ drake_py_unittest(
     data = [":gz_sdf"],
 )
 
-add_lint_tests(python_lint_extra_srcs = ["embed_sdf.py"])
+add_lint_tests(
+    python_lint_extra_srcs = ["embed_sdf.py"],
+)

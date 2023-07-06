@@ -21,13 +21,13 @@ BarycentricMeshSystem<T>::BarycentricMeshSystem(
 
 template <typename T>
 void BarycentricMeshSystem<T>::DoCalcVectorOutput(
-      const Context<T>& context,
-      const Eigen::VectorBlock<const VectorX<T>>& input,
-      const Eigen::VectorBlock<const VectorX<T>>& state,
-      Eigen::VectorBlock<VectorX<T>>* output) const {
-    unused(context, state);
-    mesh_.Eval(output_values_, input, output);
-  }
+    const Context<T>& context,
+    const Eigen::VectorBlock<const VectorX<T>>& input,
+    const Eigen::VectorBlock<const VectorX<T>>& state,
+    Eigen::VectorBlock<VectorX<T>>* output) const {
+  unused(context, state);
+  mesh_.Eval(output_values_, input, output);
+}
 
 }  // namespace systems
 }  // namespace drake

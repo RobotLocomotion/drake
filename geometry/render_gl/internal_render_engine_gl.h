@@ -8,9 +8,11 @@
 #include <unordered_map>
 #include <vector>
 
+#include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/render/render_engine.h"
+#include "drake/geometry/render/render_mesh.h"
 #include "drake/geometry/render_gl/internal_buffer_dim.h"
 #include "drake/geometry/render_gl/internal_opengl_context.h"
 #include "drake/geometry/render_gl/internal_opengl_geometry.h"
@@ -23,11 +25,68 @@
 
 namespace drake {
 namespace geometry {
-namespace render {
+namespace render_gl {
 namespace internal {
 
-/** See documentation of MakeRenderEngineGl().  */
-class RenderEngineGl final : public RenderEngine {
+/* See documentation of MakeRenderEngineGl().
+
+ A discussion on using RenderEngineGl in multiple threads.
+ --------------------------------------------------------
+
+ Most importantly, a single %RenderEngineGl should *not* be exercised in
+ multiple threads. One thread, one %RenderEngineGl instance.
+
+ A %RenderEngineGl instance and its *clone* can be used in different threads
+ simultaneously, but *only* the rendering APIs are threadsafe. Do not mutate the
+ contents of the engine (e.g., adding/removing geometries, etc.) in parallel.
+
+ Two independently constructed %RenderEngineGl instances can be freely used in
+ different threads -- all APIs are available.
+
+ Implementation of thread safety
+ -------------------------------
+
+ We expect the following common case:
+
+   - A SceneGraph gets populated with some model.
+   - We want to render multiple images of the contents of that world, perhaps
+     from different views or even different configurations - one rendering per
+     thread.
+
+ %RenderEngineGl relies on some basic assumptions to *efficiently* achieve this:
+
+   - The %RenderEngineGl will typically be part of a systems::Context (cloned
+     from SceneGraph's model engine) and each context will be used in a single
+     thread.
+   - OpenGl allows for multiple OpenGl "contexts" (not the same as
+     systems::Context) to share objects stored on the GPU. We use this to share
+     various rendering data like textures, meshes, etc., reducing memory
+     overhead and %RenderEngineGl cloning time.
+   - Each RenderEngineGl has its own OpenGlContext (which corresponds to an
+     "OpenGl context"). A cloned %RenderEngineGl instance gets a clone of the
+     source engine's OpenGlContext. When an OpenGlContext is cloned, the clone
+     shares the shareable objects of the source.
+
+ However, in sharing data across multiple OpenGl contexts not all data is
+ shareable, nor necessarily *should* be.
+
+   - OpenGl doesn't share "container" objects. This includes the Vertex Array
+     Objects (referenced in OpenGlGeometry) that stitch vertex and triangle data
+     into coherent meshes.
+   - OpenGl context state (such is which features are enabled/disabled, etc.)
+     are unique in each context. Each OpenGlContext needs to be configured
+     explicitly to have matching state.
+   - If a single OpenGl shader program is used across multiple threads, they
+     will conflict when setting the "uniform" parameters. For example, one
+     rendering thread, in setting the color of the object it will draw, can
+     change the color of an object being drawn in another thread. For now, we
+     avoid this by making sure each RenderEngineGl instance has its own
+     shader programs with their own uniform namespaces.
+
+ These exceptions to the "shared" data have to be explicitly managed for each
+ clone. Furthermore, the work has to be done with the engine's OpenGl context
+ bound. Currently, all of this "clean up" work is done in DoClone(). */
+class RenderEngineGl final : public render::RenderEngine {
  public:
   /** @name Does not allow public copy, move, or assignment  */
   //@{
@@ -53,7 +112,7 @@ class RenderEngineGl final : public RenderEngine {
 
   /** @name    Shape reification  */
   //@{
-  using RenderEngine::ImplementGeometry;
+  using render::RenderEngine::ImplementGeometry;
   void ImplementGeometry(const Box& box, void* user_data) final;
   void ImplementGeometry(const Capsule& capsule, void* user_data) final;
   void ImplementGeometry(const Convex& convex, void* user_data) final;
@@ -67,11 +126,19 @@ class RenderEngineGl final : public RenderEngine {
  private:
   friend class RenderEngineGlTester;
 
+  // Initializes the OpenGl state (e.g., enabling back face culling, etc.) This
+  // should be called upon construction and cloning.
+  // @pre `this` engine's OpenGl context should be bound.
+  void InitGlState();
+
   // Mangles the mesh data before adding it to the engine to support the
   // legacy behavior of mapping mesh.obj -> mesh.png, applying it as a diffuse
   // texture, if found. When we eliminate that behavior, we can eliminate this
   // method.
-  void ImplementMesh(const OpenGlGeometry& geometry, void* user_data,
+  //
+  // @param geometry_index   The index into geometries_ of the mesh's
+  //                         OpenGlGeometry.
+  void ImplementMesh(int geometry_index, void* user_data,
                      const Vector3<double>& scale,
                      const std::string& file_name);
 
@@ -92,20 +159,23 @@ class RenderEngineGl final : public RenderEngine {
 
   // @see RenderEngine::DoRenderColorImage().
   void DoRenderColorImage(
-      const ColorRenderCamera& camera,
+      const render::ColorRenderCamera& camera,
       systems::sensors::ImageRgba8U* color_image_out) const final;
 
   // @see RenderEngine::DoRenderDepthImage().
   void DoRenderDepthImage(
-      const DepthRenderCamera& render_camera,
+      const render::DepthRenderCamera& render_camera,
       systems::sensors::ImageDepth32F* depth_image_out) const final;
 
   // @see RenderEngine::DoRenderLabelImage().
   void DoRenderLabelImage(
-      const ColorRenderCamera& camera,
+      const render::ColorRenderCamera& camera,
       systems::sensors::ImageLabel16I* label_image_out) const final;
 
   // Copy constructor used for cloning.
+  // Do *not* call this copy constructor directly. The resulting RenderEngineGl
+  // is not complete -- it will render nothing except the background color.
+  // Only call Clone() to get a copy.
   RenderEngineGl(const RenderEngineGl& other) = default;
 
   // Renders all geometries which use the given shader program for the given
@@ -113,19 +183,32 @@ class RenderEngineGl final : public RenderEngine {
   void RenderAt(const ShaderProgram& shader_program,
                 RenderType render_type) const;
 
-  // Performs the common setup for all shape types.
-  void ImplementGeometry(const OpenGlGeometry& geometry,
-                         void* user_data, const Vector3<double>& scale);
+  // Creates a geometry instance from the referenced geometry data, scale, and
+  // user data (e.g., GeometryId, perception properties). The instance is added
+  // to visuals_.
+  //
+  // @param geometry_index   The index into geometries_ of the geometry used by
+  //                         this instance.
+  void AddGeometryInstance(int geometry_index, void* user_data,
+                           const Vector3<double>& scale);
 
+  // The set of all geometries. These are the geometries that have the
+  // identifiers for the OpenGl geometries on the GPU.
+  std::vector<OpenGlGeometry> geometries_;
+
+  // TODO(SeanCurtis-TRI): Make these threadsafe. Particularly, w.r.t. the
+  // underlying OpenGl context where multiple RenderEngineGl clones share the
+  // same GPU memory objects.
   // Provides triangle mesh definitions of the various canonical geometries
   // supported by this renderer: sphere, cylinder, half space, box, and mesh.
-  // These update the stored OpenGlGeometry members of this class. They are
-  // *not* threadsafe.
-  OpenGlGeometry GetSphere();
-  OpenGlGeometry GetCylinder();
-  OpenGlGeometry GetHalfSpace();
-  OpenGlGeometry GetBox();
-  OpenGlGeometry GetMesh(const std::string& filename);
+  // The returned value is an index into geometries_.
+  // If the canonical mesh has not been defined yet, it will be defined.
+  // These are *not* threadsafe.
+  int GetSphere();
+  int GetCylinder();
+  int GetHalfSpace();
+  int GetBox();
+  int GetMesh(const std::string& filename);
 
   // Given the render type, returns the texture configuration for that render
   // type. These are the key arguments for glTexImage2D based on the render
@@ -143,7 +226,7 @@ class RenderEngineGl final : public RenderEngine {
   // called if there is not already a cached render target for the camera's
   // reported image size (w, h) in render_targets_.
   static RenderTarget CreateRenderTarget(
-      const RenderCameraCore& camera, RenderType render_type);
+      const render::RenderCameraCore& camera, RenderType render_type);
 
   // Obtains the label image rendered from a specific object pose. This is
   // slower than it has to be because it does per-pixel processing on the CPU.
@@ -154,12 +237,23 @@ class RenderEngineGl final : public RenderEngine {
   // Acquires the render target for the given camera. "Acquiring" the render
   // target guarantees that the target will be ready for receiving OpenGL
   // draw commands.
-  RenderTarget GetRenderTarget(
-      const RenderCameraCore& camera, RenderType render_type) const;
+  RenderTarget GetRenderTarget(const render::RenderCameraCore& camera,
+                               RenderType render_type) const;
 
   // Creates an OpenGlGeometry from the mesh defined by the given `mesh_data`.
-  static OpenGlGeometry CreateGlGeometry(
-      const MeshData& mesh_data);
+  // The geometry is added to geometries_ and its index is returned.
+  // This is *not* threadsafe.
+  int CreateGlGeometry(
+      const geometry::internal::RenderMesh& mesh_data);
+
+  // Given a geometry that has its buffers (and vertex counts assigned), ties
+  // all of the buffer data into the vertex array attributes.
+  void CreateVertexArray(OpenGlGeometry* geometry) const;
+
+  // Updates the vertex arrays in all of the OpenGlGeometry instances owned by
+  // this render engine.
+  // @pre opengl_context_ has been bound.
+  void UpdateVertexArrays();
 
   // Sets the display window visibility and populates it with the _last_ image
   // rendered, if visible.
@@ -170,8 +264,8 @@ class RenderEngineGl final : public RenderEngine {
   //  - the window is made hidden (or remains hidden).
   // @pre RenderTarget's frame buffer has the same dimensions as reported by the
   // camera.
-  void SetWindowVisibility(const RenderCameraCore& camera, bool show_window,
-                           const RenderTarget& target) const;
+  void SetWindowVisibility(const render::RenderCameraCore& camera,
+                           bool show_window, const RenderTarget& target) const;
 
   // Adds a shader program to the set of candidate shaders for the given render
   // type.
@@ -183,9 +277,8 @@ class RenderEngineGl final : public RenderEngine {
   // we exploit the behind-the-scenes knowledge that Identifiers are
   // monotonically increasing. So, the shader that is added last implicitly is
   // more preferred than the earlier shader.
-  ShaderProgramData GetShaderProgram(
-      const PerceptionProperties& properties,
-      RenderType render_type) const;
+  ShaderProgramData GetShaderProgram(const PerceptionProperties& properties,
+                                     RenderType render_type) const;
 
   void SetDefaultLightPosition(const Vector3<double>& light_dir_C) override {
     light_dir_C_ = light_dir_C.normalized().cast<float>();
@@ -194,18 +287,26 @@ class RenderEngineGl final : public RenderEngine {
   // The cached value transformation between camera and world frames.
   math::RigidTransformd X_CW_;
 
-  // All clones of this context share the same underlying OpenGlContext. They
-  // also share the C++ abstractions of objects that *live* in the context:
+  // When the OpenGlContext gets copied, the copy shares the OpenGl objects
+  // created in GPU memory.
+  copyable_unique_ptr<OpenGlContext> opengl_context_;
+
+  // Various C++ classes store identifiers of objects in the OpenGl context.
+  // This includes:
   //
   //   OpenGlGeometry - the geometry buffers (copy safe)
   //   RenderTarget - frame buffer objects (copy safe)
   //   TextureLibrary - the textures (shared)
   //   ShaderProgram - the compiled shader programs (copy safe)
   //
-  // So, all of these quantities are simple copy-safe POD (e.g., OpenGlGeometry)
-  // or are stashed in a shared pointer.
-  std::shared_ptr<OpenGlContext> opengl_context_;
+  // So, all of these quantities can be safely copied verbatim.
 
+  // OpenGl texture objects are shared across OpenGl contexts. The
+  // TextureLibrary simply stores the *identifiers* to those texture objects. A
+  // RenderEngineGl instance and its clones share the same TextureLibrary, so
+  // that if one instance loads a new texture into the GPU, they all have
+  // equal access to it (rather than blindly adding the same texture
+  // redundantly).
   std::shared_ptr<TextureLibrary> texture_library_;
 
   // The engine's configuration parameters.
@@ -225,22 +326,28 @@ class RenderEngineGl final : public RenderEngine {
              RenderType::kTypeCount>
       shader_programs_;
 
-  // One OpenGlGeometry per primitive type. They represent a canonical, "unit"
-  // version of the primitive type. Each instance scales and poses the
-  // corresponding primitive to create arbitrarily sized geometries.
-  OpenGlGeometry sphere_;
-  OpenGlGeometry cylinder_;
-  OpenGlGeometry half_space_;
-  OpenGlGeometry box_;
+  // For each primitive type, we create a single OpenGlGeometry. Each represents
+  // a canonical, "unit" version of the primitive type. Each OpenGlInstance
+  // scales and poses the corresponding primitive to create arbitrarily sized
+  // geometries. These members are the indices into geometries_ of the primitive
+  // geometry. A negative value means the primitive shape hasn't been created
+  // in the OpenGlContext yet.
+  //
+  // There is no capsule_ because each capsule is unique. Generally, one capsule
+  // cannot be realized from another capsule via a linear transformation (i.e.,
+  // translation, rotation, and non-uniform scale).
+  int sphere_{-1};
+  int cylinder_{-1};
+  int half_space_{-1};
+  int box_{-1};
   // TODO(SeanCurtis-TRI): Figure out how to re-use capsules - if two capsules
   // have the same dimensions (or are related by a *uniform* scale*), we can
-  // re-use the same geometry.
-  // Each capsule is unique; they cannot generally be related by a linear
-  // transform (i.e., translation, rotation, and non-uniform scale).
-  std::vector<OpenGlGeometry> capsules_;
+  // re-use the same geometry. For example, if we tracked them by "aspect ratio"
+  // and allowed deviation within a small tolerance, then we could reuse them.
 
-  // Mapping from obj filename to the mesh loaded into an OpenGlGeometry.
-  std::unordered_map<std::string, OpenGlGeometry> meshes_;
+  // Mapping from obj filename to the index into geometries_ containing the
+  // OpenGlGeometry representation of the mesh.
+  std::unordered_map<std::string, int> meshes_;
 
   // These are caches of reusable RenderTargets. There is a unique render target
   // for each unique image size (BufferDim) and output image type. The
@@ -271,6 +378,6 @@ class RenderEngineGl final : public RenderEngine {
 };
 
 }  // namespace internal
-}  // namespace render
+}  // namespace render_gl
 }  // namespace geometry
 }  // namespace drake

@@ -19,6 +19,7 @@ namespace drake {
 namespace planning {
 namespace trajectory_optimization {
 
+using Eigen::VectorXd;
 using solvers::Solve;
 using systems::Context;
 using systems::InputPortSelection;
@@ -75,6 +76,29 @@ GTEST_TEST(DirectCollocationConstraint, AutoDiffXdConstructor) {
   constraint.Eval(x, &y);
 }
 
+GTEST_TEST(DirectCollocation, PassProgToConstructor) {
+  const std::unique_ptr<LinearSystem<double>> system = MakeSimpleLinearSystem();
+  const std::unique_ptr<Context<double>> context =
+      system->CreateDefaultContext();
+
+  const int kNumSampleTimes = 4;
+  const double kTimeStep = .1;
+  solvers::MathematicalProgram prog;
+  DirectCollocation dircol(
+      system.get(), *context, kNumSampleTimes, kTimeStep, kTimeStep,
+      systems::InputPortSelection::kUseFirstInputIfItExists, false, &prog);
+
+  EXPECT_EQ(&prog, &dircol.prog());
+  const int num_vars = prog.num_vars();
+
+  // Add a second direct collocation problem to the same prog.
+  DirectCollocation dircol2(
+      system.get(), *context, kNumSampleTimes, kTimeStep, kTimeStep,
+      systems::InputPortSelection::kUseFirstInputIfItExists, false, &prog);
+  EXPECT_EQ(&prog, &dircol2.prog());
+  EXPECT_EQ(prog.num_vars(), num_vars * 2);
+}
+
 GTEST_TEST(DirectCollocation, TestAddRunningCost) {
   const std::unique_ptr<LinearSystem<double>> system = MakeSimpleLinearSystem();
   const std::unique_ptr<Context<double>> context =
@@ -93,7 +117,7 @@ GTEST_TEST(DirectCollocation, TestAddRunningCost) {
   Eigen::Matrix<double, 2, kNumSampleTimes> u;
   Eigen::Matrix<double, 2, kNumSampleTimes> x;
   for (int i = 0; i < kNumSampleTimes - 1; ++i) {
-    prog.SetInitialGuess(dircol.timestep(i), Vector1d(kTimeStep));
+    prog.SetInitialGuess(dircol.time_step(i), Vector1d(kTimeStep));
   }
   for (int i = 0; i < kNumSampleTimes; ++i) {
     x.col(i) << 0.2 * i - 1, 0.1 + i;
@@ -149,7 +173,7 @@ GTEST_TEST(DirectCollocation, TestCollocationConstraint) {
   for (int i = 0; i < (kNumSampleTimes - 1); i++) {
     const auto& binding = collocation_constraints[i];
 
-    prog.SetInitialGuess(dircol.timestep(i), Vector1d(kTimeStep));
+    prog.SetInitialGuess(dircol.time_step(i), Vector1d(kTimeStep));
     prog.SetInitialGuess(dircol.input(i), u0);
     prog.SetInitialGuess(dircol.input(i + 1), u1);
     prog.SetInitialGuess(dircol.state(i), x0);
@@ -199,13 +223,14 @@ GTEST_TEST(DirectCollocation, TestCollocationConstraintCaching) {
                                          sample_context[1].get(),
                                          collocation_context.get());
 
-  VectorX<AutoDiffXd> x(5), y(1);
+  VectorXd x(5);
   x << 0.1, 1.2, 2.3, 3.4, 4.56;
+  VectorX<AutoDiffXd> x_ad = math::InitializeAutoDiff(x), y_ad(1);
   EXPECT_EQ(system.evaluation_count(), 0);
-  constraint.Eval(x, &y);
+  constraint.Eval(x_ad, &y_ad);
   EXPECT_EQ(system.evaluation_count(), 3);
   // Same x, so this should not evaluate the dynamics.
-  constraint.Eval(x, &y);
+  constraint.Eval(x_ad, &y_ad);
   EXPECT_EQ(system.evaluation_count(), 3);
 
   // A second constraint using shifted contexts
@@ -213,9 +238,18 @@ GTEST_TEST(DirectCollocation, TestCollocationConstraintCaching) {
                                               sample_context[2].get(),
                                               collocation_context.get());
   x << 0.1, x[2], 0.52, x[4], 0.25;
+  x_ad = math::InitializeAutoDiff(x);
   // This should have a cache hit on sample_context[1], and so will evaluate
   // the dynamics 2 times instead of 3.
-  next_constraint.Eval(x, &y);
+  next_constraint.Eval(x_ad, &y_ad);
+  EXPECT_EQ(system.evaluation_count(), 5);
+
+  // Changing the derivatives, but not the values, still hits the cache (zero
+  // new dynamics evaluations).
+  Eigen::MatrixXd derivatives(5, 2);
+  derivatives << 1, 2, 3, 4, 5, 6, 7, 8, 9, 10;
+  x_ad = math::InitializeAutoDiff(x, derivatives);
+  next_constraint.Eval(x_ad, &y_ad);
   EXPECT_EQ(system.evaluation_count(), 5);
 }
 
@@ -260,7 +294,7 @@ GTEST_TEST(DirectCollocation, TestReconstruction) {
                         derivative_spline.value(time), 1e-6));
 
     if (i < (kNumSampleTimes - 1)) {
-      time += result.GetSolution(dircol.timestep(i).coeff(0));
+      time += result.GetSolution(dircol.time_step(i).coeff(0));
     }
   }
 
@@ -269,8 +303,8 @@ GTEST_TEST(DirectCollocation, TestReconstruction) {
   EXPECT_EQ(collocation_constraints.size(), kNumSampleTimes - 1);
   time = 0.0;
   for (int i = 0; i < (kNumSampleTimes - 1); i++) {
-    const double timestep = result.GetSolution(dircol.timestep(i).coeff(0));
-    const double collocation_time = time + timestep / 2.0;
+    const double time_step = result.GetSolution(dircol.time_step(i).coeff(0));
+    const double collocation_time = time + time_step / 2.0;
 
     const auto& binding = collocation_constraints[i];
     Eigen::Vector2d defect =
@@ -279,7 +313,7 @@ GTEST_TEST(DirectCollocation, TestReconstruction) {
         system->B() * input_spline.value(collocation_time);
     EXPECT_TRUE(CompareMatrices(
         defect, prog.EvalBinding(binding, result.get_x_val()), 1e-6));
-    time += timestep;
+    time += time_step;
   }
 }
 
@@ -351,7 +385,7 @@ GTEST_TEST(DirectCollocation, MinimumTimeTest) {
   // Solution should have total time equal to 0.5.
   double total_time = 0;
   for (int i = 0; i < kNumSampleTimes - 1; i++)
-    total_time += result.GetSolution(dircol.timestep(i))(0);
+    total_time += result.GetSolution(dircol.time_step(i))(0);
   EXPECT_NEAR(total_time, kMinTimeStep * (kNumSampleTimes - 1), 1e-5);
 }
 
@@ -506,7 +540,7 @@ GTEST_TEST(DirectCollocation, DiscreteTimeSystemThrows) {
       ".*doesn't have any continuous states.*");
 }
 
-}  // anonymous namespace
+}  // namespace
 }  // namespace trajectory_optimization
 }  // namespace planning
 }  // namespace drake

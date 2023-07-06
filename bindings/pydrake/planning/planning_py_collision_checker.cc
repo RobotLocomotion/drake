@@ -1,9 +1,3 @@
-#include "pybind11/eigen.h"
-#include "pybind11/functional.h"
-#include "pybind11/pybind11.h"
-#include "pybind11/stl.h"
-
-#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/wrap_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/planning/planning_py.h"
@@ -172,8 +166,15 @@ void DefinePlanningCollisionChecker(py::module m) {
             cls_doc.SetCollisionFilteredBetween
                 .doc_3args_bodyA_bodyB_filter_collision)
         .def("SetCollisionFilteredWithAllBodies",
-            &Class::SetCollisionFilteredWithAllBodies, py::arg("body_index"),
-            cls_doc.SetCollisionFilteredWithAllBodies.doc)
+            py::overload_cast<BodyIndex>(
+                &Class::SetCollisionFilteredWithAllBodies),
+            py::arg("body_index"),
+            cls_doc.SetCollisionFilteredWithAllBodies.doc_1args_body_index)
+        .def("SetCollisionFilteredWithAllBodies",
+            py::overload_cast<const Body<double>&>(
+                &Class::SetCollisionFilteredWithAllBodies),
+            py::arg("body"),
+            cls_doc.SetCollisionFilteredWithAllBodies.doc_1args_body)
         .def("CheckConfigCollisionFree", &Class::CheckConfigCollisionFree,
             py::arg("q"), cls_doc.CheckConfigCollisionFree.doc)
         .def("CheckContextConfigCollisionFree",
@@ -248,25 +249,6 @@ void DefinePlanningCollisionChecker(py::module m) {
         .def("SupportsParallelChecking", &Class::SupportsParallelChecking,
             cls_doc.SupportsParallelChecking.doc);
     DefClone(&cls);
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    cls  // BR
-        .def("GetScopedName",
-            WrapDeprecated(
-                cls_doc.GetScopedName.doc_deprecated_deprecated_1args_frame,
-                overload_cast_explicit<std::string, const Frame<double>&>(
-                    &Class::GetScopedName)),
-            py::arg("frame"),
-            cls_doc.GetScopedName.doc_deprecated_deprecated_1args_frame)
-        .def("GetScopedName",
-            WrapDeprecated(
-                cls_doc.GetScopedName.doc_deprecated_deprecated_1args_body,
-                overload_cast_explicit<std::string, const Body<double>&>(
-                    &Class::GetScopedName)),
-            py::arg("body"),
-            cls_doc.GetScopedName.doc_deprecated_deprecated_1args_body);
-#pragma GCC diagnostic pop
   }
 
   {

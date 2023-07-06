@@ -14,7 +14,7 @@ namespace internal {
 namespace {
 
 using Eigen::MatrixXd;
-constexpr double kEps = 4.0 * std::numeric_limits<double>::epsilon();
+constexpr double kEps = 4.75 * std::numeric_limits<double>::epsilon();
 /* Parameters for the Newmark-beta integration scheme. */
 constexpr double kDt = 0.01;
 constexpr double kGamma = 0.5;

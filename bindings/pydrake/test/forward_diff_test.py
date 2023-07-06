@@ -2,6 +2,7 @@ import unittest
 import numpy as np
 from pydrake.forwarddiff import sin, cos, derivative, gradient, jacobian
 from pydrake.common.test_utilities import numpy_compare
+import pydrake.math as drake_math
 
 
 class TestForwardDiff(unittest.TestCase):
@@ -83,6 +84,21 @@ class TestForwardDiff(unittest.TestCase):
         numpy_compare.assert_equal(jacobian(f, x), df(x))
         numpy_compare.assert_equal(jacobian(g_vector, x), dg_vector(x))
         numpy_compare.assert_equal(jacobian(g_matrix, x), dg_matrix(x))
+
+    def test_jacobian_derivative_shape(self):
+        # Test that jacobian can handle AutoDiffXd entries with
+        # empty derivative vectors.
+
+        x = [0., 2.]
+
+        def f(q):
+            # The math.min function will have empty derivatives when
+            # it promotes the constant.
+            return np.array([q[0], drake_math.min(q[1], 1), q[1]])
+
+        expected_jacobian = np.array([[1., 0.], [0., 0.], [0., 1.]])
+
+        numpy_compare.assert_equal(jacobian(f, x), expected_jacobian)
 
     def test_gradient_api_negative(self):
         def f_good(x):

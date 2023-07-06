@@ -285,8 +285,9 @@ TEST_F(TestAggregateCostsAndConstraints, AggregateBoundingBoxConstraints1) {
   // -inf <= x1 <= 2. The returned bounds for x1 should be 4 <= x1 <= 2. This
   // test that we can return the bounds even if the lower bound is higher than
   // the upper bound.
-  bounding_box_constraints.emplace_back(std::make_shared<BoundingBoxConstraint>(
-      Vector1d(-kInf), Vector1d(2)), Vector1<symbolic::Variable>(x_[1]));
+  bounding_box_constraints.emplace_back(
+      std::make_shared<BoundingBoxConstraint>(Vector1d(-kInf), Vector1d(2)),
+      Vector1<symbolic::Variable>(x_[1]));
   result = AggregateBoundingBoxConstraints(bounding_box_constraints);
   EXPECT_EQ(result.size(), 3);
   // Only the bound of x_[1] should change, the rest should be the same.
@@ -356,16 +357,45 @@ GTEST_TEST(TestFindNonconvexQuadraticCost, Test) {
   auto convex_cost2 = prog.AddQuadraticCost(x(1) * x(1) + 2 * x(0) + 2);
   auto nonconvex_cost1 = prog.AddQuadraticCost(-x(0) * x(0) + 2 * x(1));
   auto nonconvex_cost2 = prog.AddQuadraticCost(-x(0) * x(0) + x(1) * x(1));
-  EXPECT_EQ(FindNonconvexQuadraticCost({convex_cost1, convex_cost2}), nullptr);
-  EXPECT_EQ(FindNonconvexQuadraticCost({convex_cost1, nonconvex_cost1})
-                ->evaluator()
-                .get(),
-            nonconvex_cost1.evaluator().get());
-  EXPECT_EQ(FindNonconvexQuadraticCost(
+  EXPECT_EQ(internal::FindNonconvexQuadraticCost({convex_cost1, convex_cost2}),
+            nullptr);
+  EXPECT_EQ(
+      internal::FindNonconvexQuadraticCost({convex_cost1, nonconvex_cost1})
+          ->evaluator()
+          .get(),
+      nonconvex_cost1.evaluator().get());
+  EXPECT_EQ(internal::FindNonconvexQuadraticCost(
                 {convex_cost1, nonconvex_cost1, nonconvex_cost2})
                 ->evaluator()
                 .get(),
             nonconvex_cost1.evaluator().get());
+}
+
+GTEST_TEST(TestFindNonconvexQuadraticConstraint, Test) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  auto convex_constraint1 =
+      prog.AddQuadraticConstraint(x(0) * x(0) + 1, -kInf, 1);
+  auto convex_constraint2 =
+      prog.AddQuadraticConstraint(x(1) * x(1) + 2 * x(0) + 2, -kInf, 3);
+  auto nonconvex_constraint1 =
+      prog.AddQuadraticConstraint(-x(0) * x(0) + 2 * x(1), 0, 0);
+  auto nonconvex_constraint2 =
+      prog.AddQuadraticConstraint(-x(0) * x(0) + x(1) * x(1), 1, 2);
+  EXPECT_EQ(internal::FindNonconvexQuadraticConstraint(
+                {convex_constraint1, convex_constraint2}),
+            nullptr);
+  EXPECT_EQ(internal::FindNonconvexQuadraticConstraint(
+                {convex_constraint1, nonconvex_constraint1})
+                ->evaluator()
+                .get(),
+            nonconvex_constraint1.evaluator().get());
+  EXPECT_EQ(
+      internal::FindNonconvexQuadraticConstraint(
+          {convex_constraint1, nonconvex_constraint1, nonconvex_constraint2})
+          ->evaluator()
+          .get(),
+      nonconvex_constraint1.evaluator().get());
 }
 
 namespace internal {
@@ -405,6 +435,25 @@ GTEST_TEST(CheckConvexSolverAttributes, Test) {
   EXPECT_THAT(explanation, HasSubstr("is non-convex"));
   EXPECT_THAT(explanation, HasSubstr("foo"));
   EXPECT_THAT(explanation, HasSubstr(description));
+
+  // program has a non-convex quadratic constraint.
+  prog.RemoveCost(convex_cost);
+  prog.RemoveCost(nonconvex_cost);
+  auto nonconvex_constraint = prog.AddQuadraticConstraint(x(1) * x(1), 1, kInf);
+  // Use a description that would never be mistaken as any other part of the
+  // error message.
+  const std::string nonconvex_quadratic_constraint_description{"alibaba ipsum"};
+  nonconvex_constraint.evaluator()->set_description(
+      nonconvex_quadratic_constraint_description);
+  required_capabilities = {ProgramAttribute::kQuadraticConstraint};
+  EXPECT_FALSE(
+      CheckConvexSolverAttributes(prog, required_capabilities, "foo", nullptr));
+  EXPECT_FALSE(CheckConvexSolverAttributes(prog, required_capabilities, "foo",
+                                           &explanation));
+  EXPECT_THAT(explanation, HasSubstr("is non-convex"));
+  EXPECT_THAT(explanation, HasSubstr("foo"));
+  EXPECT_THAT(explanation,
+              HasSubstr(nonconvex_quadratic_constraint_description));
 }
 }  // namespace internal
 }  // namespace solvers

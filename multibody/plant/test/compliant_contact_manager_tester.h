@@ -41,8 +41,10 @@ class CompliantContactManagerTester {
   static void CalcNonContactForces(
       const CompliantContactManager<double>& manager,
       const drake::systems::Context<double>& context,
+      bool include_joint_limit_penalty_forces,
       MultibodyForces<double>* forces) {
-    manager.CalcNonContactForces(context, forces);
+    manager.CalcNonContactForces(context, include_joint_limit_penalty_forces,
+                                 forces);
   }
 
   static std::vector<ContactPairKinematics<double>> CalcContactKinematics(
@@ -96,7 +98,8 @@ class CompliantContactManagerTester {
         const int col_offset =
             topology.tree_velocities_start(tree_jacobian.tree);
         const int tree_nv = topology.num_tree_velocities(tree_jacobian.tree);
-        J_AcBc_C.block(row_offset, col_offset, 3, tree_nv) = tree_jacobian.J;
+        J_AcBc_C.block(row_offset, col_offset, 3, tree_nv) =
+            tree_jacobian.J.MakeDenseMatrix();
       }
     }
     return J_AcBc_C;

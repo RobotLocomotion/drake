@@ -24,9 +24,13 @@ namespace internal {
 // The parser reports unsupported elements and attributes from the XML
 // specification using drake::log() warnings.
 //
-// @throws std::exception if the file is not in accordance with the MuJoCo XML
+// Emits an error if the file is not in accordance with the MuJoCo XML
 // specification: https://mujoco.readthedocs.io/en/latest/XMLreference.html, or
 // if an unsupported element/tag would cause obviously erroneous behavior.
+//
+// If an error is emitted (and errors are not configured to throw), the
+// function may (but does not always) return std::nullopt. Any returned model
+// from an erroneous parse will likely be incomplete.
 //
 // @param data_source The XML data to be parsed.
 // @param model_name The name given to the newly created instance of this
@@ -39,7 +43,7 @@ namespace internal {
 // @param plant A pointer to a mutable MultibodyPlant object to which the model
 //   will be added.
 // @returns The model instance index for the newly added model.
-ModelInstanceIndex AddModelFromMujocoXml(
+std::optional<ModelInstanceIndex> AddModelFromMujocoXml(
     const DataSource& data_source, const std::string& model_name,
     const std::optional<std::string>& parent_model_name,
     const ParsingWorkspace& workspace);

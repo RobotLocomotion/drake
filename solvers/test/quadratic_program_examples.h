@@ -22,11 +22,11 @@ std::ostream& operator<<(std::ostream& os, QuadraticProblems value);
 
 class QuadraticProgramTest
     : public ::testing::TestWithParam<
-        std::tuple<CostForm, ConstraintForm, QuadraticProblems>> {
+          std::tuple<CostForm, ConstraintForm, QuadraticProblems>> {
  public:
   QuadraticProgramTest();
 
-  OptimizationProgram* prob() const {return prob_.get();}
+  OptimizationProgram* prob() const { return prob_.get(); }
 
  private:
   std::unique_ptr<OptimizationProgram> prob_;
@@ -47,7 +47,7 @@ class QuadraticProgram0 : public OptimizationProgram {
 
   QuadraticProgram0(CostForm cost_form, ConstraintForm constraint_form);
 
-  ~QuadraticProgram0() override {};
+  ~QuadraticProgram0() override = default;
 
   void CheckSolution(const MathematicalProgramResult& result) const override;
 
@@ -71,7 +71,7 @@ class QuadraticProgram1 : public OptimizationProgram {
 
   QuadraticProgram1(CostForm cost_form, ConstraintForm constraint_form);
 
-  ~QuadraticProgram1() override {};
+  ~QuadraticProgram1() override = default;
 
   void CheckSolution(const MathematicalProgramResult& result) const override;
 
@@ -93,7 +93,7 @@ class QuadraticProgram2 : public OptimizationProgram {
 
   QuadraticProgram2(CostForm cost_form, ConstraintForm constraint_form);
 
-  ~QuadraticProgram2() override {};
+  ~QuadraticProgram2() override = default;
 
   void CheckSolution(const MathematicalProgramResult& result) const override;
 
@@ -119,7 +119,7 @@ class QuadraticProgram3 : public OptimizationProgram {
 
   QuadraticProgram3(CostForm cost_form, ConstraintForm constraint_form);
 
-  ~QuadraticProgram3() override {};
+  ~QuadraticProgram3() override = default;
 
   void CheckSolution(const MathematicalProgramResult& result) const override;
 
@@ -140,7 +140,7 @@ class QuadraticProgram4 : public OptimizationProgram {
 
   QuadraticProgram4(CostForm cost_form, ConstraintForm constraint_form);
 
-  ~QuadraticProgram4() override {};
+  ~QuadraticProgram4() override = default;
 
   void CheckSolution(const MathematicalProgramResult& result) const override;
 
@@ -200,6 +200,14 @@ will have repeated entries for given variables.
  */
 void TestDuplicatedVariableQuadraticProgram(const SolverInterface& solver,
                                             double tol = 1E-7);
+
+/**
+ This program is reported in
+ https://github.com/RobotLocomotion/drake/issues/19524
+ This program has infinitely many equally good optimal solution.
+ */
+void TestEqualityConstrainedQP1(const SolverInterface& solver,
+                                double tol = 1E-7);
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

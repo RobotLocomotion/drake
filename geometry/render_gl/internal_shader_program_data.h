@@ -9,7 +9,7 @@
 
 namespace drake {
 namespace geometry {
-namespace render {
+namespace render_gl {
 namespace internal {
 
 /* Type used to identify unique shader programs in RenderEngineGl. */
@@ -42,6 +42,6 @@ class ShaderProgramData {
 };
 }  // namespace internal
 
-}  // namespace render
+}  // namespace render_gl
 }  // namespace geometry
 }  // namespace drake

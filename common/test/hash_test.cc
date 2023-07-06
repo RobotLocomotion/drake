@@ -22,7 +22,6 @@ class MockHasher {
   std::vector<std::vector<uint8_t>> record_;
 };
 
-
 GTEST_TEST(HashTest, HashAppendOptional) {
   // Test basic functionality:  ensure two equal values get hashed the same way,
   // and that an empty value and non-empty value are hashed differently
@@ -50,6 +49,27 @@ GTEST_TEST(HashTest, HashAppendOptional) {
   // `int` and `bool` each invoke the hasher once, the following expectation
   // on total invocation counts reliably tests this:
   EXPECT_NE(hash_empty1.record().size(), hash_nonempty1.record().size());
+}
+
+// This is mostly just a compilation test. If the declarations vs definitions
+// in the header file are incorrectly ordered, this would fail to compile.
+GTEST_TEST(HashTest, HashAppendPairOptionals) {
+  const std::pair<std::optional<int>, std::optional<int>> foo{1, 2};
+  MockHasher foo_hash;
+  hash_append(foo_hash, foo);
+  EXPECT_EQ(foo_hash.record().size(), 4);
+}
+
+GTEST_TEST(HashTest, HashAppendPointer) {
+  const std::pair<int, const int*> foo{22, nullptr};
+  MockHasher foo_hash;
+  hash_append(foo_hash, foo);
+
+  MockHasher expected;
+  hash_append(expected, 22);
+  hash_append(expected, std::uintptr_t{});
+
+  EXPECT_EQ(foo_hash.record(), expected.record());
 }
 
 }  // namespace

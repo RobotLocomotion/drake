@@ -16,8 +16,8 @@
 #include "drake/solvers/rotation_constraint.h"
 #include "drake/solvers/solve.h"
 
-using Eigen::Vector3d;
 using Eigen::Matrix3d;
+using Eigen::Vector3d;
 
 using drake::math::RotationMatrixd;
 using drake::symbolic::Expression;
@@ -93,8 +93,8 @@ class TestMixedIntegerRotationConstraint {
     // constraint for a given region) during random testing.
     Matrix3d R_check;
     R_check << 0.17082017792981191, 0.65144498431260445, -0.73921573253413542,
-              -0.82327804434149443, -0.31781600529013027, -0.47032568342231595,
-              -0.54132589862048197, 0.68892119955432829, 0.48203096610835455;
+        -0.82327804434149443, -0.31781600529013027, -0.47032568342231595,
+        -0.54132589862048197, 0.68892119955432829, 0.48203096610835455;
     EXPECT_TRUE(IsFeasible(R_check));
 
     std::mt19937 generator(41);
@@ -301,7 +301,7 @@ TEST_P(TestRotationMatrixBoxSphereIntersection, InexactRotationMatrix) {
 }
 
 INSTANTIATE_TEST_SUITE_P(RotationTest, TestRotationMatrixBoxSphereIntersection,
-                        ::testing::ValuesIn<std::vector<int>>({1, 2}));
+                         ::testing::ValuesIn<std::vector<int>>({1, 2}));
 
 // Make sure that no two row or column vectors in R, which satisfies the
 // mixed-integer relaxation, can lie in either the same or the opposite orthant.

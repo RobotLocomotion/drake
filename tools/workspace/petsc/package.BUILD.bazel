@@ -74,6 +74,7 @@ _SRCS = glob([
     "src/dm/impls/plex/adaptors/**",
     "src/dm/impls/plex/cgns/**",
     "src/dm/impls/plex/generators/**",
+    "src/dm/impls/network/**",
     "src/ksp/ksp/impls/gmres/agmres/**",
     "src/ksp/ksp/interface/saws/**",
     "src/ksp/pc/impls/h2opus/**",

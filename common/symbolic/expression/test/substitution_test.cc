@@ -4,7 +4,6 @@
 
 #include <functional>
 #include <stdexcept>
-#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -14,9 +13,7 @@
 
 using std::exception;
 using std::function;
-using std::is_same;
 using std::pair;
-using std::result_of;
 using std::vector;
 
 namespace drake {

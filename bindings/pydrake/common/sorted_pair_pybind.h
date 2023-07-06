@@ -1,7 +1,5 @@
 #pragma once
 
-#include "pybind11/pybind11.h"
-
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/common/sorted_pair.h"
 

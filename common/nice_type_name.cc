@@ -118,8 +118,8 @@ string NiceTypeName::RemoveNamespaces(const string& canonical) {
   return no_namespace.empty() ? canonical : no_namespace;
 }
 
-std::string NiceTypeName::GetWithPossibleOverride(
-      const void* ptr, const std::type_info& info) {
+std::string NiceTypeName::GetWithPossibleOverride(const void* ptr,
+                                                  const std::type_info& info) {
   internal::NiceTypeNamePtrOverride ptr_override =
       internal::GetNiceTypeNamePtrOverride();
   if (ptr_override) {

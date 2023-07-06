@@ -195,6 +195,11 @@ class GeometryState {
   /** @name          Sources and source-related data  */
   //@{
 
+  /** Returns all of the source ids in the scene graph. The order is guaranteed
+   to be stable and consistent. The first element is the SceneGraph-internal
+   source.  */
+  std::vector<SourceId> GetAllSourceIds() const;
+
   /** Implementation of SceneGraphInspector::SourceIsRegistered().  */
   bool SourceIsRegistered(SourceId source_id) const;
 
@@ -277,13 +282,6 @@ class GeometryState {
   const math::RigidTransform<double>& GetPoseInFrame(
       GeometryId geometry_id) const;
 
-  /** Implementation of SceneGraphInspector::X_PG().  */
-  DRAKE_DEPRECATED("2023-04-01",
-                   "Geometries are no longer posed with respect to other "
-                   "geometries -- only frames; use GetPoseInFrame().")
-  const math::RigidTransform<double>& GetPoseInParent(
-      GeometryId geometry_id) const;
-
   /** Implementation of
    SceneGraphInspector::maybe_get_hydroelastic_mesh().  */
   std::variant<std::monostate, const TriangleSurfaceMesh<double>*,
@@ -360,17 +358,6 @@ class GeometryState {
    parent FrameId.  */
   GeometryId RegisterGeometry(SourceId source_id, FrameId frame_id,
                               std::unique_ptr<GeometryInstance> geometry);
-
-  /** Implementation of
-   @ref SceneGraph::RegisterGeometry(SourceId,GeometryId,
-   std::unique_ptr<GeometryInstance>) "SceneGraph::RegisterGeometry()" with
-   parent GeometryId.  */
-  DRAKE_DEPRECATED("2023-04-01",
-                   "Geometries are no longer posed with respect to other "
-                   "geometries -- only frames.")
-  GeometryId RegisterGeometryWithParent(
-      SourceId source_id, GeometryId parent_id,
-      std::unique_ptr<GeometryInstance> geometry);
 
   // TODO(SeanCurtis-TRI): Consider deprecating this; it's now strictly a
   // wrapper for the more general `RegisterGeometry()`.
@@ -709,29 +696,6 @@ class GeometryState {
   // geometry belongs to no registered source.
   SourceId get_source_id(GeometryId frame_id) const;
 
-  // The origin from where an invocation of RemoveGeometryUnchecked was called.
-  // The origin changes the work that is required.
-  // TODO(SeanCurtis-TRI): Add `kFrame` when this can be invoked by removing
-  // a frame.
-  enum class RemoveGeometryOrigin {
-    kGeometry,  // Invoked by RemoveGeometry().
-    kRecurse    // Invoked by recursive call in RemoveGeometryUnchecked.
-  };
-
-  // Performs the work necessary to remove the identified geometry from
-  // the world. The amount of work depends on the context from which this
-  // method is invoked:
-  //
-  //  - RemoveGeometry(): A specific geometry (and its corresponding
-  //    hierarchy) is being removed. In addition to recursively removing all
-  //    child geometries, it must also remove this geometry id from its parent
-  //    frame and, if it exists, its parent geometry.
-  //   - RemoveGeometryUnchecked(): This is the recursive call; it's parent
-  //    is already slated for removal, so parent references can be left alone.
-  // @throws std::exception if `geometry_id` is not in `geometries_`.
-  void RemoveGeometryUnchecked(GeometryId geometry_id,
-                               RemoveGeometryOrigin caller);
-
   // Recursively updates the frame and geometry _pose_ information for the tree
   // rooted at the given frame, whose parent's pose in the world frame is given
   // as `X_WP`.
@@ -833,6 +797,12 @@ class GeometryState {
   const render::RenderEngine& GetRenderEngineOrThrow(
       const std::string& renderer_name) const;
 
+  // Returns the world pose of the camera *sensor* based on camera properties,
+  // parent frame, and pose in parent.
+  math::RigidTransformd CalcCameraWorldPose(
+      const render::RenderCameraCore& core, FrameId parent_frame,
+      const math::RigidTransformd& X_PC) const;
+
   // Utility function to facilitate getting a double-valued pose for a frame,
   // regardless of T's actual type.
   math::RigidTransformd GetDoubleWorldPose(FrameId frame_id) const;
@@ -887,7 +857,7 @@ class GeometryState {
   // sources (e.g., frames and geometries). This lives in the state to support
   // runtime topology changes. This data should only change at _discrete_
   // events where frames/geometries are introduced and removed. They do _not_
-  // depend on time-dependent input values (e.g., System::Context).
+  // depend on time-dependent input values (e.g., systems::Context).
 
   // The registered geometry sources and the frame ids that have been registered
   // on them.

@@ -52,9 +52,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
     cls  // BR
          // Scene-graph wide data.
         .def("num_sources", &Class::num_sources, cls_doc.num_sources.doc)
-        .def("num_frames", &Class::num_frames, cls_doc.num_frames.doc);
-
-    cls  // BR
+        .def("num_frames", &Class::num_frames, cls_doc.num_frames.doc)
+        .def("GetAllSourceIds", &Class::GetAllSourceIds,
+            cls_doc.GetAllSourceIds.doc)
         .def("GetAllFrameIds", &Class::GetAllFrameIds,
             cls_doc.GetAllFrameIds.doc)
         .def("world_frame_id", &Class::world_frame_id,
@@ -132,20 +132,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py_rvp::reference_internal, py::arg("geometry_id"),
             cls_doc.GetName.doc_1args_geometry_id)
         .def("GetShape", &Class::GetShape, py_rvp::reference_internal,
-            py::arg("geometry_id"), cls_doc.GetShape.doc);
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    // 2023-04-01 Deprecation removal.
-    cls  // BR
-        .def("GetPoseInParent",
-            WrapDeprecated(cls_doc.GetPoseInParent.doc_deprecated,
-                &Class::GetPoseInParent),
-            py_rvp::reference_internal, py::arg("geometry_id"),
-            cls_doc.GetPoseInParent.doc_deprecated);
-#pragma GCC diagnostic pop
-
-    cls  // BR
+            py::arg("geometry_id"), cls_doc.GetShape.doc)
         .def("GetPoseInFrame", &Class::GetPoseInFrame,
             py_rvp::reference_internal, py::arg("geometry_id"),
             cls_doc.GetPoseInFrame.doc)
@@ -209,28 +196,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::overload_cast<SourceId, FrameId,
                 std::unique_ptr<GeometryInstance>>(&Class::RegisterGeometry),
             py::arg("source_id"), py::arg("frame_id"), py::arg("geometry"),
-            cls_doc.RegisterGeometry.doc_3args);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    // 2023-04-01 Deprecation removal.
-    cls  // BR
-        .def("RegisterGeometry",
-            WrapDeprecated(cls_doc.RegisterGeometry.doc_deprecated_3args,
-                py::overload_cast<SourceId, GeometryId,
-                    std::unique_ptr<GeometryInstance>>(
-                    &Class::RegisterGeometry)),
-            py::arg("source_id"), py::arg("geometry_id"), py::arg("geometry"),
-            cls_doc.RegisterGeometry.doc_deprecated_3args)
-        .def("RegisterGeometry",
-            overload_cast_explicit<GeometryId, systems::Context<T>*, SourceId,
-                GeometryId, std::unique_ptr<GeometryInstance>>(
-                &Class::RegisterGeometry),
-            py::arg("context"), py::arg("source_id"), py::arg("geometry_id"),
-            py::arg("geometry"),
-            cls_doc.RegisterGeometry
-                .doc_4args_context_source_id_geometry_id_geometry);
-#pragma GCC diagnostic pop
-    cls  // BR
+            cls_doc.RegisterGeometry.doc_3args)
         .def("RegisterGeometry",
             overload_cast_explicit<GeometryId, systems::Context<T>*, SourceId,
                 FrameId, std::unique_ptr<GeometryInstance>>(
@@ -242,6 +208,20 @@ void DoScalarDependentDefinitions(py::module m, T) {
                 &Class::RegisterAnchoredGeometry),
             py::arg("source_id"), py::arg("geometry"),
             cls_doc.RegisterAnchoredGeometry.doc)
+        .def("ChangeShape",
+            py::overload_cast<SourceId, GeometryId, const Shape&,
+                std::optional<math::RigidTransform<double>>>(
+                &Class::ChangeShape),
+            py::arg("source_id"), py::arg("geometry_id"), py::arg("shape"),
+            py::arg("X_FG") = std::nullopt, cls_doc.ChangeShape.doc_model)
+        .def("ChangeShape",
+            overload_cast_explicit<void, systems::Context<T>*, SourceId,
+                GeometryId, const Shape&,
+                std::optional<math::RigidTransform<double>>>(
+                &Class::ChangeShape),
+            py::arg("context"), py::arg("source_id"), py::arg("geometry_id"),
+            py::arg("shape"), py::arg("X_FG") = std::nullopt,
+            cls_doc.ChangeShape.doc_context)
         .def("RemoveGeometry",
             py::overload_cast<SourceId, GeometryId>(&Class::RemoveGeometry),
             py::arg("source_id"), py::arg("geometry_id"),

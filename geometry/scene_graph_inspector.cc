@@ -21,6 +21,12 @@ int SceneGraphInspector<T>::num_frames() const {
 }
 
 template <typename T>
+std::vector<SourceId> SceneGraphInspector<T>::GetAllSourceIds() const {
+  DRAKE_DEMAND(state_ != nullptr);
+  return state_->GetAllSourceIds();
+}
+
+template <typename T>
 std::vector<FrameId> SceneGraphInspector<T>::GetAllFrameIds() const {
   DRAKE_DEMAND(state_ != nullptr);
   typename GeometryState<T>::FrameIdRange range = state_->get_frame_ids();
@@ -196,16 +202,6 @@ const Shape& SceneGraphInspector<T>::GetShape(GeometryId geometry_id) const {
 }
 
 template <typename T>
-const math::RigidTransform<double>& SceneGraphInspector<T>::GetPoseInParent(
-    GeometryId geometry_id) const {
-  DRAKE_DEMAND(state_ != nullptr);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  return state_->GetPoseInParent(geometry_id);
-#pragma GCC diagnostic pop
-}
-
-template <typename T>
 const math::RigidTransform<double>& SceneGraphInspector<T>::GetPoseInFrame(
     GeometryId geometry_id) const {
   DRAKE_DEMAND(state_ != nullptr);
@@ -294,11 +290,8 @@ void SceneGraphInspector<T>::Reify(GeometryId geometry_id,
 template <typename T>
 std::unique_ptr<GeometryInstance> SceneGraphInspector<T>::CloneGeometryInstance(
     GeometryId id) const {
-  const std::string name = GetName(id);
-  const math::RigidTransformd X_PG = GetPoseInFrame(id);
-  std::unique_ptr<Shape> shape = GetShape(id).Clone();
-  auto geometry_instance =
-      std::make_unique<GeometryInstance>(X_PG, std::move(shape), name);
+  auto geometry_instance = std::make_unique<GeometryInstance>(
+      GetPoseInFrame(id), GetShape(id), GetName(id));
   if (const auto* props = GetProximityProperties(id)) {
     geometry_instance->set_proximity_properties(*props);
   }

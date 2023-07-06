@@ -370,7 +370,7 @@ Variables GetDecisionVariables(const Polynomial::MapType& m) {
 }  // namespace
 
 Polynomial::Polynomial(MapType map)
-    : monomial_to_coefficient_map_{move(map)},
+    : monomial_to_coefficient_map_{std::move(map)},
       indeterminates_{GetIndeterminates(monomial_to_coefficient_map_)},
       decision_variables_{GetDecisionVariables(monomial_to_coefficient_map_)} {
   // Remove all [monomial, coeff] pair in monomial_to_coefficient_map_ if
@@ -840,7 +840,7 @@ Polynomial Polynomial::SubstituteAndExpand(
     const Monomial cur_monomial{var};
     if (substitutions->find(cur_monomial) != substitutions->cend()) {
       if (!substitutions->at(cur_monomial).EqualTo(cur_sub)) {
-        drake::log()->warn(fmt::format(
+        drake::log()->warn(
             "SubstituteAndExpand(): the passed substitutions_cached_data "
             "contains a different expansion for {} than is contained in "
             "indeterminate_substitutions. Substitutions_cached_data contains "
@@ -848,7 +848,7 @@ Polynomial Polynomial::SubstituteAndExpand(
             "likely that substitutions_cached_data is storing expansions which "
             "are inconsistent and so you should not trust the output of this "
             "method.",
-            cur_monomial, substitutions->at(cur_monomial), cur_sub));
+            cur_monomial, substitutions->at(cur_monomial), cur_sub);
       }
     } else {
       substitutions->emplace(cur_monomial, cur_sub);
@@ -1092,6 +1092,12 @@ Polynomial operator+(const double c, const Monomial& m) {
 }
 Polynomial operator+(Polynomial p, const Variable& v) { return p += v; }
 Polynomial operator+(const Variable& v, Polynomial p) { return p += v; }
+Expression operator+(const Expression& e, const Polynomial& p) {
+  return e + p.ToExpression();
+}
+Expression operator+(const Polynomial& p, const Expression& e) {
+  return p.ToExpression() + e;
+}
 
 Polynomial operator-(Polynomial p1, const Polynomial& p2) { return p1 -= p2; }
 Polynomial operator-(Polynomial p, const Monomial& m) { return p -= m; }
@@ -1113,6 +1119,12 @@ Polynomial operator-(Polynomial p, const Variable& v) { return p -= v; }
 Polynomial operator-(const Variable& v, const Polynomial& p) {
   return Polynomial(v, p.indeterminates()) - p;
 }
+Expression operator-(const Expression& e, const Polynomial& p) {
+  return e - p.ToExpression();
+}
+Expression operator-(const Polynomial& p, const Expression& e) {
+  return p.ToExpression() - e;
+}
 
 Polynomial operator*(Polynomial p1, const Polynomial& p2) { return p1 *= p2; }
 Polynomial operator*(Polynomial p, const Monomial& m) { return p *= m; }
@@ -1123,12 +1135,27 @@ Polynomial operator*(const Monomial& m, double c) { return Polynomial(m) * c; }
 Polynomial operator*(double c, const Monomial& m) { return c * Polynomial(m); }
 Polynomial operator*(Polynomial p, const Variable& v) { return p *= v; }
 Polynomial operator*(const Variable& v, Polynomial p) { return p *= v; }
+Expression operator*(const Expression& e, const Polynomial& p) {
+  return e * p.ToExpression();
+}
+Expression operator*(const Polynomial& p, const Expression& e) {
+  return p.ToExpression() * e;
+}
 
 Polynomial operator/(Polynomial p, const double v) {
   for (auto& item : p.monomial_to_coefficient_map_) {
     item.second /= v;
   }
   return p;
+}
+Expression operator/(const double v, const Polynomial& p) {
+  return v / p.ToExpression();
+}
+Expression operator/(const Expression& e, const Polynomial& p) {
+  return e / p.ToExpression();
+}
+Expression operator/(const Polynomial& p, const Expression& e) {
+  return p.ToExpression() / e;
 }
 
 Polynomial pow(const Polynomial& p, int n) {

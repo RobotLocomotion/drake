@@ -16,10 +16,9 @@ using Seed = RandomSource<double>::Seed;
 // Stores exactly one of the three supported distribution objects.  Note that
 // the distribution objects hold computational state; they are not just pure
 // mathematical functions.
-using DistributionVariant = std::variant<
-    std::uniform_real_distribution<double>,
-    std::normal_distribution<double>,
-    std::exponential_distribution<double>>;
+using DistributionVariant = std::variant<std::uniform_real_distribution<double>,
+                                         std::normal_distribution<double>,
+                                         std::exponential_distribution<double>>;
 
 // Creates a distribution object from the distribution enumeration.
 DistributionVariant MakeDistributionVariant(RandomDistribution which) {
@@ -44,16 +43,20 @@ class SampleGenerator {
 
   SampleGenerator() = default;
   SampleGenerator(Seed seed, RandomDistribution which)
-      : seed_(seed), generator_(seed),
+      : seed_(seed),
+        generator_(seed),
         distribution_(MakeDistributionVariant(which)) {}
 
   Seed seed() const { return seed_; }
 
   double GenerateNext() {
     switch (distribution_.index()) {
-      case 0: return std::get<0>(distribution_)(generator_);
-      case 1: return std::get<1>(distribution_)(generator_);
-      case 2: return std::get<2>(distribution_)(generator_);
+      case 0:
+        return std::get<0>(distribution_)(generator_);
+      case 1:
+        return std::get<1>(distribution_)(generator_);
+      case 2:
+        return std::get<2>(distribution_)(generator_);
     }
     DRAKE_UNREACHABLE();
   }
@@ -66,24 +69,23 @@ class SampleGenerator {
 
 // Returns a monotonically increasing integer on each call.
 Seed get_next_seed() {
-  static never_destroyed<std::atomic<Seed>> seed(
-      RandomGenerator::default_seed);
+  static never_destroyed<std::atomic<Seed>> seed(RandomGenerator::default_seed);
   return seed.access()++;
 }
 
 }  // namespace
 
 template <typename T>
-RandomSource<T>::RandomSource(RandomDistribution distribution,
-                              int num_outputs, double sampling_interval_sec)
+RandomSource<T>::RandomSource(RandomDistribution distribution, int num_outputs,
+                              double sampling_interval_sec)
     : LeafSystem<T>(SystemTypeTag<RandomSource>()),
       distribution_(distribution),
       sampling_interval_sec_{sampling_interval_sec},
       instance_seed_{get_next_seed()} {
   auto discrete_state_index = this->DeclareDiscreteState(num_outputs);
   this->DeclareAbstractState(Value<SampleGenerator>());
-  this->DeclarePeriodicUnrestrictedUpdateEvent(
-      sampling_interval_sec, 0., &RandomSource<T>::UpdateSamples);
+  this->DeclarePeriodicUnrestrictedUpdateEvent(sampling_interval_sec, 0.,
+                                               &RandomSource<T>::UpdateSamples);
   this->DeclareStateOutputPort("output", discrete_state_index);
 }
 
@@ -93,8 +95,7 @@ RandomSource<T>::~RandomSource() {}
 template <typename T>
 template <typename U>
 RandomSource<T>::RandomSource(const RandomSource<U>& other)
-    : RandomSource<T>(other.get_distribution(),
-                      other.get_output_port(0).size(),
+    : RandomSource<T>(other.get_distribution(), other.get_output_port(0).size(),
                       other.sampling_interval_sec_) {}
 
 template <typename T>
@@ -111,8 +112,7 @@ void RandomSource<T>::SetDefaultState(const Context<T>& context,
 }
 
 template <typename T>
-void RandomSource<T>::SetRandomState(const Context<T>& context,
-                                     State<T>* state,
+void RandomSource<T>::SetRandomState(const Context<T>& context, State<T>* state,
                                      RandomGenerator* seed_generator) const {
   const Seed fresh_seed = (*seed_generator)();
   const Seed seed = fixed_seed_.value_or(fresh_seed);
@@ -167,9 +167,11 @@ int AddRandomInputs(double sampling_interval_sec, DiagramBuilder<T>* builder) {
   return count;
 }
 
+// clang-format off
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS((
     &AddRandomInputs<T>
 ))
+// clang-format on
 
 }  // namespace systems
 }  // namespace drake

@@ -1,8 +1,6 @@
-/* This contains the bindings for the public entities in the
- drake::geometry::render namespace. They can be found in the
- pydrake.geometry.render module. */
-
-#include "pybind11/operators.h"
+/* This contains the bindings for the public API in the drake/geometry/render
+ and drake/geometry/render* directories. They can be found in the
+ pydrake.geometry module. */
 
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
@@ -336,7 +334,7 @@ void DoScalarIndependentDefinitions(py::module m) {
   }
 
   {
-    using Class = geometry::RenderEngineVtkParams;
+    using Class = RenderEngineVtkParams;
     constexpr auto& cls_doc = doc_geometry.RenderEngineVtkParams;
     py::class_<Class> cls(m, "RenderEngineVtkParams", cls_doc.doc);
     cls  // BR
@@ -346,12 +344,12 @@ void DoScalarIndependentDefinitions(py::module m) {
     DefCopyAndDeepCopy(&cls);
   }
 
-  m.def("MakeRenderEngineVtk", &geometry::MakeRenderEngineVtk,
-      py::arg("params"), doc_geometry.MakeRenderEngineVtk.doc);
+  m.def("MakeRenderEngineVtk", &MakeRenderEngineVtk, py::arg("params"),
+      doc_geometry.MakeRenderEngineVtk.doc);
 
   {
     using Class = RenderEngineGlParams;
-    constexpr auto& cls_doc = doc.RenderEngineGlParams;
+    constexpr auto& cls_doc = doc_geometry.RenderEngineGlParams;
     py::class_<Class> cls(m, "RenderEngineGlParams", cls_doc.doc);
     cls  // BR
         .def(ParamInit<Class>());
@@ -361,10 +359,11 @@ void DoScalarIndependentDefinitions(py::module m) {
   }
 
   m.def("MakeRenderEngineGl", &MakeRenderEngineGl,
-      py::arg("params") = RenderEngineGlParams(), doc.MakeRenderEngineGl.doc);
+      py::arg("params") = RenderEngineGlParams(),
+      doc_geometry.MakeRenderEngineGl.doc);
 
   {
-    using Class = geometry::RenderEngineGltfClientParams;
+    using Class = RenderEngineGltfClientParams;
     constexpr auto& cls_doc = doc_geometry.RenderEngineGltfClientParams;
     py::class_<Class> cls(m, "RenderEngineGltfClientParams", cls_doc.doc);
     cls  // BR
@@ -374,7 +373,7 @@ void DoScalarIndependentDefinitions(py::module m) {
     DefCopyAndDeepCopy(&cls);
   }
 
-  m.def("MakeRenderEngineGltfClient", &geometry::MakeRenderEngineGltfClient,
+  m.def("MakeRenderEngineGltfClient", &MakeRenderEngineGltfClient,
       py::arg("params") = RenderEngineGltfClientParams(),
       doc_geometry.MakeRenderEngineGltfClient.doc);
 
@@ -383,7 +382,9 @@ void DoScalarIndependentDefinitions(py::module m) {
 }  // namespace
 
 void DefineGeometryRender(py::module m) {
-  m.doc() = "Local bindings for `drake::geometry::render`";
+  m.doc() =
+      "Local bindings for render artifacts found in `drake::geometry` and "
+      "`drake::geometry::render`";
   DoScalarIndependentDefinitions(m);
 }
 

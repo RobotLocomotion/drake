@@ -42,9 +42,7 @@ class Partials {
   ~Partials() = default;
 
   /* Returns the size of this vector. */
-  int size() const {
-    return derivatives_.size();
-  }
+  int size() const { return derivatives_.size(); }
 
   /* Updates `this` to be the same size as `other`.
   If `this` and `other` are already the same size then does nothing.
@@ -55,19 +53,13 @@ class Partials {
   void MatchSizeOf(const Partials& other);
 
   /* Set this to zero. */
-  void SetZero() {
-    derivatives_.setZero();
-  }
+  void SetZero() { derivatives_.setZero(); }
 
   /* Scales this vector by the given amount. */
-  void Mul(double factor) {
-    derivatives_ *= factor;
-  }
+  void Mul(double factor) { derivatives_ *= factor; }
 
   /* Scales this vector by the reciprocal of the given amount. */
-  void Div(double factor) {
-    derivatives_ /= factor;
-  }
+  void Div(double factor) { derivatives_ /= factor; }
 
   /* Adds `other` into `this`. */
   void Add(const Partials& other);
@@ -78,14 +70,10 @@ class Partials {
   /* Returns the underlying storage vector (readonly).
   TODO(jwnimmer-tri) Use a more Xpr-like return type. By "Xpr", we mean what
   Eigen calls an XprType, e.g., something like Eigen::CwiseBinaryOp. */
-  const Eigen::VectorXd& make_const_xpr() const {
-    return derivatives_;
-  }
+  const Eigen::VectorXd& make_const_xpr() const { return derivatives_; }
 
   /* Returns the underlying storage vector (mutable). */
-  Eigen::VectorXd& get_raw_storage_mutable() {
-    return derivatives_;
-  }
+  Eigen::VectorXd& get_raw_storage_mutable() { return derivatives_; }
 
  private:
   void ThrowIfDifferentSize(const Partials& other);

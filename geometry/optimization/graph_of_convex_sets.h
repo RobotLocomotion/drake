@@ -29,19 +29,19 @@ struct GraphOfConvexSetsOptions {
   paper, we know that this relaxation cannot solve the original NP-hard problem
   for all instances, but there are also many instances for which the convex
   relaxation is tight. */
-  bool convex_relaxation{true};
+  std::optional<bool> convex_relaxation{std::nullopt};
+
+  /** Maximum number of distinct paths to compare during random rounding; only
+  the lowest cost path is returned. If convex_relaxation is false or this is
+  less than or equal to zero, rounding is not performed. */
+  std::optional<int> max_rounded_paths{std::nullopt};
 
   /** Performs a preprocessing step to remove edges that cannot lie on the
   path from source to target. In most cases, preprocessing causes a net
   reduction in computation by reducing the size of the optimization solved.
   Note that this preprocessing is not exact. There may be edges that cannot
   lie on the path from source to target that this does not detect. */
-  bool preprocessing{false};
-
-  /** Maximum number of distinct paths to compare during random rounding; only
-  the lowest cost path is returned. If convex_relaxation is false or this is
-  less than or equal to zero, rounding is not performed. */
-  int max_rounded_paths{0};
+  std::optional<bool> preprocessing{std::nullopt};
 
   /** Maximum number of trials to find a novel path during random rounding. If
   convex_relaxation is false or max_rounded_paths is less than or equal to zero,
@@ -64,7 +64,14 @@ struct GraphOfConvexSetsOptions {
   const solvers::SolverInterface* solver{nullptr};
 
   /** Options passed to the solver when solving the generated problem.*/
-  solvers::SolverOptions solver_options;
+  solvers::SolverOptions solver_options{};
+
+  /** Optional solver options for the rounded problems.
+  If not set, solver_options is used.
+  For instance, one might want to set tighter (i.e., lower) tolerances for
+  running the relaxed problem and looser (i.e., higher) tolerances for final
+  solves during rounding. */
+  std::optional<solvers::SolverOptions> rounding_solver_options{std::nullopt};
 };
 
 /**
@@ -168,6 +175,7 @@ class GraphOfConvexSets {
     /** Adds a constraint to this vertex, described by a symbolic::Formula @p f
     containing *only* elements of x() as variables.
     @throws std::exception if f.GetFreeVariables() is not a subset of x().
+    @throws std::exception if ambient_dimension() == 0.
     @pydrake_mkdoc_identifier{formula}
     */
     solvers::Binding<solvers::Constraint> AddConstraint(
@@ -176,6 +184,7 @@ class GraphOfConvexSets {
     /** Adds a constraint to this vertex.  @p binding must contain *only*
     elements of x() as variables.
     @throws std::exception if binding.variables() is not a subset of x().
+    @throws std::exception if ambient_dimension() == 0.
     @pydrake_mkdoc_identifier{binding}
     */
     solvers::Binding<solvers::Constraint> AddConstraint(
@@ -205,8 +214,6 @@ class GraphOfConvexSets {
     */
     Eigen::VectorXd GetSolution(
         const solvers::MathematicalProgramResult& result) const;
-
-    // TODO(russt): Support AddCost/AddConstraint directly on the vertices.
 
    private:
     // Constructs a new vertex.
@@ -304,6 +311,8 @@ class GraphOfConvexSets {
     containing *only* elements of xu() and xv() as variables.
     @throws std::exception if f.GetFreeVariables() is not a subset of xu() ∪
     xv().
+    @throws std::exception if xu() ∪ xv() is empty, i.e., when both vertices
+    have an ambient dimension of zero.
     @pydrake_mkdoc_identifier{formula}
     */
     solvers::Binding<solvers::Constraint> AddConstraint(
@@ -313,6 +322,8 @@ class GraphOfConvexSets {
     elements of xu() and xv() as variables.
     @throws std::exception if binding.variables() is not a subset of xu() ∪
     xv().
+    @throws std::exception if xu() ∪ xv() is empty, i.e., when both vertices
+    have an ambient dimension of zero.
     @pydrake_mkdoc_identifier{binding}
     */
     solvers::Binding<solvers::Constraint> AddConstraint(
@@ -463,20 +474,24 @@ class GraphOfConvexSets {
   /** Formulates and solves the mixed-integer convex formulation of the
   shortest path problem on the graph, as discussed in detail in
 
-  "Shortest Paths in Graphs of Convex Sets" by Tobia Marcucci, Jack
-  Umenberger, Pablo A. Parrilo, Russ Tedrake. https://arxiv.org/abs/2101.11565
+  "Shortest Paths in Graphs of Convex Sets" by Tobia Marcucci, Jack Umenberger,
+  Pablo A. Parrilo, Russ Tedrake. https://arxiv.org/abs/2101.11565
 
   @param source specifies the source set.  The solver will choose any point in
   that set; to start at a particular continuous state consider adding a Point
   set to the graph and using that as the source.
   @param target specifies the target set.  The solver will choose any point in
   that set.
-  @param options include all settings for solving the shortest path problem. See
-  `GraphOfConvexSetsOptions` for further details.
+  @param options include all settings for solving the shortest path problem.
+  See `GraphOfConvexSetsOptions` for further details. The following default
+  options will be used if they are not provided in `options`:
+  - `options.convex_relaxation = false`,
+  - `options.max_rounded_paths = 0`,
+  - `options.preprocessing = false`.
 
   @throws std::exception if any of the costs or constraints in the graph are
-  incompatible with the shortest path formulation or otherwise unsupported.
-  All costs must be non-negative for all values of the continuous variables.
+  incompatible with the shortest path formulation or otherwise unsupported. All
+  costs must be non-negative for all values of the continuous variables.
 
   @pydrake_mkdoc_identifier{by_id}
   */
@@ -498,8 +513,9 @@ class GraphOfConvexSets {
   /* Facilitates testing. */
   friend class PreprocessShortestPathTest;
 
-  std::set<EdgeId> PreprocessShortestPath(VertexId source_id,
-                                          VertexId target_id) const;
+  std::set<EdgeId> PreprocessShortestPath(
+      VertexId source_id, VertexId target_id,
+      const GraphOfConvexSetsOptions& options) const;
 
   // Adds a perspective constraint to the mathematical program to upper bound
   // the cost below a slack variable, ℓ. Specifically given a cost g(x) to

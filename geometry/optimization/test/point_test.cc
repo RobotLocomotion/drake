@@ -33,6 +33,10 @@ GTEST_TEST(PointTest, BasicTest) {
   EXPECT_EQ(P.ambient_dimension(), 3);
   EXPECT_TRUE(CompareMatrices(p_W, P.x()));
 
+  // Test MaybeGetPoint.
+  ASSERT_TRUE(P.MaybeGetPoint().has_value());
+  EXPECT_TRUE(CompareMatrices(P.MaybeGetPoint().value(), p_W));
+
   // Test PointInSet.
   EXPECT_TRUE(P.PointInSet(p_W));
   EXPECT_FALSE(P.PointInSet(p_W + Vector3d::Constant(0.01)));
@@ -52,10 +56,43 @@ GTEST_TEST(PointTest, BasicTest) {
   // Test IsBounded (which is trivially true for Point).
   EXPECT_TRUE(P.IsBounded());
 
+  // Test IsEmpty (which is trivially false for Point).
+  EXPECT_FALSE(P.IsEmpty());
+
   // Test set_x().
   const Vector3d p2_W{6.2, -.23, -8.2};
   P.set_x(p2_W);
   EXPECT_TRUE(CompareMatrices(p2_W, P.x()));
+  EXPECT_TRUE(CompareMatrices(P.MaybeGetPoint().value(), p2_W));
+}
+
+GTEST_TEST(PointTest, DefaultCtor) {
+  const Point dut;
+  EXPECT_EQ(dut.x().size(), 0);
+  EXPECT_NO_THROW(dut.Clone());
+  EXPECT_EQ(dut.ambient_dimension(), 0);
+  EXPECT_FALSE(dut.IntersectsWith(dut));
+  EXPECT_TRUE(dut.IsBounded());
+  EXPECT_THROW(dut.IsEmpty(), std::exception);
+  EXPECT_FALSE(dut.MaybeGetPoint().has_value());
+  EXPECT_FALSE(dut.PointInSet(Eigen::VectorXd::Zero(0)));
+
+  Point P;
+  EXPECT_NO_THROW(P.set_x(Eigen::VectorXd::Zero(0)));
+}
+
+GTEST_TEST(PointTest, Move) {
+  const Vector3d p_W{1.2, 4.5, -2.8};
+  Point orig(p_W);
+
+  // A move-constructed Point takes over the original data.
+  Point dut(std::move(orig));
+  EXPECT_EQ(dut.ambient_dimension(), 3);
+  EXPECT_TRUE(CompareMatrices(dut.x(), p_W));
+
+  // The old Point is in a valid but unspecified state.
+  EXPECT_EQ(orig.x().size(), orig.ambient_dimension());
+  EXPECT_NO_THROW(orig.Clone());
 }
 
 GTEST_TEST(PointTest, FromSceneGraphTest) {

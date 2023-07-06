@@ -7,10 +7,10 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/multibody/contact_solvers/block_sparse_matrix.h"
+#include "drake/multibody/contact_solvers/conex_supernodal_solver.h"
 #include "drake/multibody/contact_solvers/contact_solver_utils.h"
 #include "drake/multibody/contact_solvers/sap/sap_friction_cone_constraint.h"
 #include "drake/multibody/contact_solvers/sap/sap_solver_results.h"
-#include "drake/multibody/contact_solvers/supernodal_solver.h"
 #include "drake/systems/framework/context.h"
 
 using drake::systems::Context;
@@ -181,19 +181,34 @@ class PizzaSaverProblem {
       double sigma) const {
     std::unique_ptr<SapContactProblem<double>> problem =
         MakeContactProblemWithoutConstraints(q0, v0, tau);
+    // Since contact constraints are involved, there must be at least one object
+    // with a valid index, equal to zero.
+    problem->set_num_objects(1);
 
     // Add contact constraints.
     const double phi0 = q0(2);
     const SapFrictionConeConstraint<double>::Parameters parameters{
         mu_, stiffness_, taud_, beta, 1.0e-3};
+
+    // For these tests, only the signed distance phi is relevant.
+    // Object indices must be valid, even though not used in these tests. Every
+    // other configuration will be left uninitialized.
+    const ContactConfiguration<double> configuration{
+        .objectA = 0 /* valid, though not used */,
+        .objectB = 0 /* valid, though not used */,
+        .phi = phi0};
+
     MatrixXd J;  // Full system Jacobian for the three contacts.
     CalcContactJacobian(q0(3), &J);
     problem->AddConstraint(std::make_unique<SapFrictionConeConstraint<double>>(
-        0, J.middleRows(0, 3), phi0, parameters));
+        configuration, SapConstraintJacobian<double>{0, J.middleRows(0, 3)},
+        parameters));
     problem->AddConstraint(std::make_unique<SapFrictionConeConstraint<double>>(
-        0, J.middleRows(3, 3), phi0, parameters));
+        configuration, SapConstraintJacobian<double>{0, J.middleRows(3, 3)},
+        parameters));
     problem->AddConstraint(std::make_unique<SapFrictionConeConstraint<double>>(
-        0, J.middleRows(6, 3), phi0, parameters));
+        configuration, SapConstraintJacobian<double>{0, J.middleRows(6, 3)},
+        parameters));
 
     return problem;
   }
@@ -544,8 +559,7 @@ TEST_P(PizzaSaverTest, Sliding) {
   }
 
   // ls_max_iterations only pertains to backtracking line search.
-  if (params.line_search_type !=
-      SapSolverParameters::LineSearchType::kExact) {
+  if (params.line_search_type != SapSolverParameters::LineSearchType::kExact) {
     // To verify the line search throws when it doesn't converge, we set a low
     // maximum number of iterations and verify the solver fails for the right
     // reasons.
@@ -676,16 +690,11 @@ INSTANTIATE_TEST_SUITE_P(
 template <typename T>
 class LimitConstraint final : public SapConstraint<T> {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(LimitConstraint);
-
   // Constructs a limit constraint on `clique` with lower limit vl, upper
   // limit vu and regularization R.
   LimitConstraint(int clique, const VectorX<T>& vl, const VectorX<T>& vu,
                   VectorX<T> R)
-      : SapConstraint<T>(
-            clique,
-            ConcatenateVectors(vl, vu) /* Dummy vector of the right size. */,
-            CalcConstraintJacobian(vl.size())),
+      : SapConstraint<T>({clique, CalcConstraintJacobian(vl.size())}, {}),
         R_(std::move(R)),
         vhat_(ConcatenateVectors(vl, -vu)) {
     DRAKE_DEMAND(vl.size() == vu.size());
@@ -693,16 +702,10 @@ class LimitConstraint final : public SapConstraint<T> {
     DRAKE_DEMAND((vl.array() <= vu.array()).all());
   }
 
-  VectorX<T> CalcBiasTerm(const T&, const T&) const final { return vhat_; }
-  VectorX<T> CalcDiagonalRegularization(const T&, const T&) const final {
-    return R_;
-  }
-
   // For this constraint the projection is γ = P(y) = max(0, y), componentwise.
   void Project(const Eigen::Ref<const VectorX<double>>& y,
-               const Eigen::Ref<const VectorX<double>>& R,
                EigenPtr<VectorX<double>> gamma,
-               MatrixX<double>* dPdy) const final {
+               MatrixX<double>* dPdy = nullptr) const {
     // For this constraint the number of equations equals the number of
     // velocities in the constrained clique.
     const int nv = this->num_constraint_equations();
@@ -720,10 +723,6 @@ class LimitConstraint final : public SapConstraint<T> {
         (*gamma)(i) = 0.0;
       }
     }
-  };
-
-  std::unique_ptr<SapConstraint<T>> Clone() const final {
-    return std::make_unique<LimitConstraint<T>>(*this);
   }
 
  private:
@@ -751,6 +750,42 @@ class LimitConstraint final : public SapConstraint<T> {
     return J;
   }
 
+  LimitConstraint(const LimitConstraint&) = default;
+
+  std::unique_ptr<AbstractValue> DoMakeData(
+      const T&, const Eigen::Ref<const VectorX<T>>&) const final {
+    // We'll store the constraint velocity in our data.
+    VectorX<T> vc(this->num_constraint_equations());
+    return SapConstraint<T>::MoveAndMakeAbstractValue(std::move(vc));
+  }
+  void DoCalcData(const Eigen::Ref<const VectorX<T>>& vc,
+                  AbstractValue* abstract_data) const final {
+    abstract_data->get_mutable_value<VectorX<T>>() = vc;
+  }
+  T DoCalcCost(const AbstractValue& abstract_data) const final {
+    // SAP regularizer cost, the R-norm of the impulse.
+    VectorX<T> gamma(this->num_constraint_equations());
+    this->CalcImpulse(abstract_data, &gamma);
+    return 0.5 * gamma.dot(R_.asDiagonal() * gamma);
+  }
+  void DoCalcImpulse(const AbstractValue& abstract_data,
+                     EigenPtr<VectorX<T>> gamma) const final {
+    const auto& vc = abstract_data.get_value<VectorX<T>>();
+    const VectorX<T> y = R_.asDiagonal() * (vhat_ - vc);
+    Project(y, gamma);
+  }
+  void DoCalcCostHessian(const AbstractValue& abstract_data,
+                         MatrixX<T>* G) const final {
+    const auto& vc = abstract_data.get_value<VectorX<T>>();
+    const VectorX<T> y = R_.asDiagonal() * (vhat_ - vc);
+    VectorX<T> gamma(vc.size());
+    Project(y, &gamma, G);
+    (*G) *= R_.cwiseSqrt().asDiagonal();
+  }
+  std::unique_ptr<SapConstraint<T>> DoClone() const final {
+    return std::unique_ptr<LimitConstraint<T>>(new LimitConstraint<T>(*this));
+  }
+
   VectorX<T> R_;     // Regularization.
   VectorX<T> vhat_;  // Bias.
 };
@@ -767,7 +802,6 @@ class SapNewtonIterationTest
  public:
   void SetUp() override {
     const double time_step = 0.01;
-    sap_problem_ = std::make_unique<SapContactProblem<double>>(time_step);
 
     // Arbitrary non-identity SPD matrices to build the dynamics matrix A.
     // clang-format off
@@ -805,7 +839,8 @@ class SapNewtonIterationTest
     v_star_ = v_star;
 
     std::vector<MatrixXd> A = {S22, S33, S44};
-    sap_problem_->Reset(std::move(A), std::move(v_star));
+    sap_problem_ = std::make_unique<SapContactProblem<double>>(
+        time_step, std::move(A), std::move(v_star));
 
     constexpr int num_limit_constraint_equations = 2 * clique1_nv;
     VectorXd R = VectorXd::Constant(num_limit_constraint_equations, 1.0e-3);

@@ -8,13 +8,11 @@ two ways to do this:
 
 (1) Type in your password each time you run this program:
 
-  bazel build //tools/workspace:new_release
-  bazel-bin/tools/workspace/new_release --use_password
+  bazel run //tools/workspace:new_release -- --use_password
 
 (2) Use a GitHub API token:
 
-  bazel build //tools/workspace:new_release
-  bazel-bin/tools/workspace/new_release
+  bazel run //tools/workspace:new_release
 
 To create the ~/.config/readonly_github_api_token.txt file used by (2), open a
 browser to https://github.com/settings/tokens and create a new token (it does
@@ -24,8 +22,7 @@ and save the plaintext hexadecimal token to that file.
 This program can also automatically prepare upgrades for our GitHub externals
 by passing the name(s) of package(s) to upgrade as additional arguments:
 
-  bazel build //tools/workspace:new_release
-  bazel-bin/tools/workspace/new_release --lint --commit rules_python
+  bazel run //tools/workspace:new_release -- --lint --commit rules_python
 
 Note that this program runs `bazel` as a subprocess, without any special
 command line flags.  If you do need to use any flags when you run bazel,

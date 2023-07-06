@@ -10,7 +10,6 @@ load(
 )
 load(
     "@drake//tools/skylark:pybind.bzl",
-    "add_pybind_coverage_data",
     "drake_pybind_library",
     "get_drake_py_installs",
     "get_pybind_package_info",
@@ -46,6 +45,7 @@ drake_pybind_library(
         "//bindings/pydrake/common:cpp_template_pybind",
         "//bindings/pydrake/common:deprecation_pybind",
         "//bindings/pydrake/common:eigen_pybind",
+        "//bindings/pydrake/common:serialize_pybind",
         "//bindings/pydrake/common:value_pybind",
     ],
     cc_so_name = "__init__",
@@ -62,12 +62,15 @@ drake_pybind_library(
         "solvers_py_mathematicalprogram.cc",
         "solvers_py_mixed_integer_optimization_util.cc",
         "solvers_py_mixed_integer_rotation_constraint.cc",
+        "solvers_py_mobylcp.cc",
         "solvers_py_mosek.cc",
         "solvers_py_nlopt.cc",
         "solvers_py_osqp.cc",
         "solvers_py_scs.cc",
         "solvers_py_sdpa_free_format.cc",
+        "solvers_py_semidefinite_relaxation.cc",
         "solvers_py_snopt.cc",
+        "solvers_py_unrevised_lemke.cc",
     ],
     package_info = PACKAGE_INFO,
     py_deps = [
@@ -79,21 +82,6 @@ drake_pybind_library(
     ],
     py_srcs = [
         "_extra.py",
-        "augmented_lagrangian.py",
-        "branch_and_bound.py",
-        "clp.py",
-        "csdp.py",
-        "gurobi.py",
-        "ipopt.py",
-        "mathematicalprogram.py",
-        "mixed_integer_optimization_util.py",
-        "mixed_integer_rotation_constraint.py",
-        "mosek.py",
-        "nlopt.py",
-        "osqp.py",
-        "scs.py",
-        "sdpa_free_format.py",
-        "snopt.py",
     ],
 )
 
@@ -159,6 +147,14 @@ drake_py_unittest(
 )
 
 drake_py_unittest(
+    name = "mobylcp_solver_test",
+    deps = [
+        ":solvers",
+        "//bindings/pydrake/common/test_utilities:numpy_compare_py",
+    ],
+)
+
+drake_py_unittest(
     name = "mosek_solver_test",
     tags = mosek_test_tags(),
     deps = [
@@ -219,6 +215,14 @@ drake_py_unittest(
 )
 
 drake_py_unittest(
+    name = "unrevised_lemke_solver_test",
+    deps = [
+        ":solvers",
+        "//bindings/pydrake/common/test_utilities:numpy_compare_py",
+    ],
+)
+
+drake_py_unittest(
     name = "mathematicalprogram_test",
     tags = gurobi_test_tags(gurobi_required = False),
     deps = [
@@ -264,6 +268,12 @@ drake_py_unittest(
     ],
 )
 
-add_pybind_coverage_data()
+drake_py_unittest(
+    name = "semidefinite_relaxation_test",
+    deps = [
+        ":solvers",
+        "//bindings/pydrake/common/test_utilities",
+    ],
+)
 
 add_lint_tests_pydrake()

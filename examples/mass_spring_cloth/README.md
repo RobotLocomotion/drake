@@ -12,8 +12,8 @@ tuned to exhibit cloth-like behaviors without considerations of environmental
 forces or collisions and contact. In particular, it does not indicate that Drake
 supports cloth simulation at this point.
 
-The system runs in discrete mode when the timestep `dt` is set to be positive,
-and it runs in continuous mode when the timestep `dt` is set to be zero or
+The system runs in discrete mode when the time step `dt` is set to be positive,
+and it runs in continuous mode when the time step `dt` is set to be zero or
 negative. As the discrete and the continuous mode share many common features, we
 implement them in a single system to minimize code duplication. Alternatively,
 one could implement them as two separate systems.

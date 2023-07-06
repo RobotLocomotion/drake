@@ -62,5 +62,6 @@ this is modeled directly, and shamelessly, on: http://eigen.tuxfamily.org/index.
 * [Russ Tedrake](http://people.csail.mit.edu/russt/)
 * Belinda Teh
 * Andres Valenzuela
+* [David von Wrangel](https://www.davidvonwrangel.com/)
 * Matthew Woehlke
 * Huihua Zhao

@@ -98,6 +98,14 @@ class TestCost(unittest.TestCase):
         np.testing.assert_allclose(cost.A(), 2*A)
         np.testing.assert_allclose(cost.b(), 2*b)
 
+    def test_expression_cost(self):
+        x = sym.Variable("x")
+        y = sym.Variable("y")
+        e = np.sin(x) + y
+        cost = mp.ExpressionCost(e=e)
+        self.assertTrue(e.EqualTo(cost.expression()))
+        self.assertEqual(sym.Variables(cost.vars()), sym.Variables([x, y]))
+
 
 class TestQP:
     def __init__(self):
@@ -627,6 +635,20 @@ class TestMathematicalProgram(unittest.TestCase):
             symmetry_tolerance=1E-12)
         self.assertEqual(constraint.matrix_rows(), 3)
 
+    def test_expression_constraint(self):
+        x = sym.Variable("x")
+        y = sym.Variable("y")
+        v = [np.sin(x) + y, x + np.cos(y)]
+        lb = [-1.2, -2.4]
+        ub = [53.3, 2.35]
+        constraint = mp.ExpressionConstraint(v=v, lb=lb, ub=ub)
+        self.assertTrue(v[0].EqualTo(constraint.expressions()[0]))
+        self.assertTrue(v[1].EqualTo(constraint.expressions()[1]))
+        self.assertEqual(
+            sym.Variables(constraint.vars()), sym.Variables([x, y]))
+        np.testing.assert_array_equal(lb, constraint.lower_bound())
+        np.testing.assert_array_equal(ub, constraint.upper_bound())
+
     def test_sdp(self):
         prog = mp.MathematicalProgram()
         S = prog.NewSymmetricContinuousVariables(3, "S")
@@ -834,6 +856,8 @@ class TestMathematicalProgram(unittest.TestCase):
         M = np.array([[1, 3], [4, 1]])
         q = np.array([-16, -15])
         binding = prog.AddLinearComplementarityConstraint(M, q, x)
+        np.testing.assert_equal(binding.evaluator().M(), M)
+        np.testing.assert_equal(binding.evaluator().q(), q)
         self.assertEqual(len(prog.linear_complementarity_constraints()), 1)
         result = mp.Solve(prog)
         self.assertTrue(result.is_success())
@@ -1543,6 +1567,15 @@ class TestMathematicalProgram(unittest.TestCase):
         prog.AddLinearConstraint(x[0] + x[1] == 2)
         prog.AddQuadraticCost(x[0] ** 2, is_convex=True)
         self.assertEqual(mp.GetProgramType(prog), mp.ProgramType.kQP)
+
+    def test_mathematical_program_result(self):
+        result = MathematicalProgramResult()
+        self.assertEqual(result.get_solution_result(),
+                         mp.SolutionResult.kSolutionResultNotSet)
+
+    def test_solution_result_deprecation(self):
+        self.assertEqual(mp.SolutionResult.kUnknownError,
+                         mp.SolutionResult.kSolverSpecificError)
 
 
 class DummySolverInterface(SolverInterface):

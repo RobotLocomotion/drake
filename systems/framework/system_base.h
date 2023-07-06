@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "drake/common/drake_throw.h"
+#include "drake/common/ssize.h"
 #include "drake/common/unused.h"
 #include "drake/systems/framework/abstract_value_cloner.h"
 #include "drake/systems/framework/cache_entry.h"
@@ -183,13 +184,13 @@ class SystemBase : public internal::SystemMessageInterface {
   /** Returns the number of input ports currently allocated in this System.
   These are indexed from 0 to %num_input_ports()-1. */
   int num_input_ports() const {
-    return static_cast<int>(input_ports_.size());
+    return ssize(input_ports_);
   }
 
   /** Returns the number of output ports currently allocated in this System.
   These are indexed from 0 to %num_output_ports()-1. */
   int num_output_ports() const {
-    return static_cast<int>(output_ports_.size());
+    return ssize(output_ports_);
   }
 
   /** Returns a reference to an InputPort given its `port_index`.
@@ -238,7 +239,7 @@ class SystemBase : public internal::SystemMessageInterface {
   /** Returns the number nc of cache entries currently allocated in this System.
   These are indexed from 0 to nc-1. */
   int num_cache_entries() const {
-    return static_cast<int>(cache_entries_.size());
+    return ssize(cache_entries_);
   }
 
   /** Returns a reference to a CacheEntry given its `index`. */

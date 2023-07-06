@@ -43,4 +43,3 @@ template double CalcProbabilityDensity<double>(
 template AutoDiffXd CalcProbabilityDensity<AutoDiffXd>(
     RandomDistribution, const Eigen::Ref<const VectorX<AutoDiffXd>>&);
 }  // namespace drake
-

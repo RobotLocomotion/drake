@@ -158,6 +158,13 @@ namespace multibody {
 /// which drake::scalar_predicate<T>::is_bool is `true`. For instance, validity
 /// checks are not performed when T is symbolic::Expression.
 ///
+/// @note The methods of this class satisfy the "basic exception guarantee": if
+/// an exception is thrown, the program will still be in a valid
+/// state. Specifically, no resources are leaked, and all objects' invariants
+/// are intact. Be aware that RotationalInertia objects may contain invalid
+/// inertia data in cases where input checking is skipped.
+/// @see https://en.cppreference.com/w/cpp/language/exceptions
+///
 /// Various methods in this class require numerical (not symbolic) data types.
 ///
 /// @tparam_default_scalar
@@ -521,53 +528,42 @@ class RotationalInertia {
     return RotationalInertia<Scalar>(I_SP_E_.template cast<Scalar>(), true);
   }
 
-  /// This method takes `this` rotational inertia about-point P, expressed-in
-  /// frame E, and computes its principal moments of inertia about-point P, but
-  /// expressed-in a frame aligned with the principal axes.
-  ///
-  /// @note: This method only works for a rotational inertia with scalar type T
-  ///        that can be converted to a double (discarding any supplemental
-  ///        scalar data such as derivatives of an AutoDiffXd).
-  ///
-  /// @retval principal_moments The vector of principal moments of inertia
-  ///                           `[Ixx Iyy Izz]` sorted in ascending order.
-  /// @throws std::exception if eigenvalue solver fails or if scalar type T
-  ///         cannot be converted to a double.
+  /// Forms the 3 principal moments of inertia for `this` rotational inertia.
+  /// @retval The 3 principal moments of inertia [Imin Imed Imax], sorted in
+  /// ascending order (Imin ≤ Imed ≤ Imax).
+  /// @throws std::exception if the elements of `this` rotational inertia cannot
+  /// be converted to a real finite double. For example, an exception is thrown
+  /// if `this` contains an erroneous NaN or if scalar type T is symbolic.
+  /// @see CalcPrincipalMomentsAndAxesOfInertia() to also calculate principal
+  /// moment of inertia directions associated with `this` rotational inertia.
   Vector3<double> CalcPrincipalMomentsOfInertia() const {
-    // Notes:
-    //   1. Eigen's SelfAdjointEigenSolver does not compile for AutoDiffXd.
-    //      Therefore, convert `this` to a local copy of type Matrix3<double>.
-    //   2. Eigen's SelfAdjointEigenSolver only uses the lower-triangular part
-    //      of this symmetric matrix.
-    static_assert(is_lower_triangular_order(1, 0), "Invalid indices");
-    static_assert(is_lower_triangular_order(2, 0), "Invalid indices");
-    static_assert(is_lower_triangular_order(2, 1), "Invalid indices");
-    Matrix3<double> I_double = Matrix3<double>::Constant(NAN);
-    I_double(0, 0) = ExtractDoubleOrThrow(I_SP_E_(0, 0));
-    I_double(1, 1) = ExtractDoubleOrThrow(I_SP_E_(1, 1));
-    I_double(2, 2) = ExtractDoubleOrThrow(I_SP_E_(2, 2));
-    I_double(1, 0) = ExtractDoubleOrThrow(I_SP_E_(1, 0));
-    I_double(2, 0) = ExtractDoubleOrThrow(I_SP_E_(2, 0));
-    I_double(2, 1) = ExtractDoubleOrThrow(I_SP_E_(2, 1));
+    return CalcPrincipalMomentsAndMaybeAxesOfInertia(nullptr);
+  }
 
-    // If all products of inertia are zero, no need to calculate eigenvalues.
-    // The eigenvalues are the diagonal elements.  Sort them in ascending order.
-    const bool is_diagonal = (I_double(1, 0) == 0 && I_double(2, 0) == 0 &&
-                              I_double(2, 1) == 0);
-    if (is_diagonal) {
-      Vector3<double> moments(I_double(0, 0), I_double(1, 1), I_double(2, 2));
-      std::sort(moments.data(), moments.data() + moments.size());
-      return moments;
-    }
-
-    Eigen::SelfAdjointEigenSolver<Matrix3<double>> solver(
-        I_double, Eigen::EigenvaluesOnly);
-    if (solver.info() != Eigen::Success) {
-      throw std::runtime_error(
-          "Error: In RotationalInertia::CalcPrincipalMomentsOfInertia()."
-          " Solver failed while computing eigenvalues of the inertia matrix.");
-    }
-    return solver.eigenvalues();
+  /// Forms the 3 principal moments of inertia and their 3 associated principal
+  /// directions for `this` rotational inertia.
+  /// @returns 3 principal moments of inertia [Ixx Iyy Izz], sorted in ascending
+  /// order (Ixx ≤ Iyy ≤ Izz) and a rotation matrix R_EP whose columns are the 3
+  /// associated principal directions that relate the expressed-in frame E to a
+  /// frame P, where frame E is the expressed-in frame for `this` rotational
+  /// inertia I_BPo_E (body B's rotational inertia about-point Po) and frame P
+  /// contains right-handed orthonormal vectors Px, Py, Pz. The 1ˢᵗ column of
+  /// R_EP is Px_E (Px expressed in frame E) which is parallel to the principal
+  /// axis associated with Ixx (the smallest principal moment of inertia).
+  /// Similarly, the 2ⁿᵈ and 3ʳᵈ columns of R_EP are Py_E and Pz_E, which are
+  /// parallel to principal axes associated with Iyy and Izz (the intermediate
+  /// and largest principal moments of inertia). If all principal moments of
+  /// inertia are equal (i.e., Ixx = Iyy = Izz), R_EP is the identity matrix.
+  /// @throws std::exception if the elements of `this` rotational inertia cannot
+  /// be converted to a real finite double. For example, an exception is thrown
+  /// if `this` contains an erroneous NaN or if scalar type T is symbolic.
+  /// @see CalcPrincipalMomentsOfInertia() to calculate the principal moments
+  /// of inertia [Ixx Iyy Izz], without calculating the principal directions.
+  std::pair<Vector3<double>, math::RotationMatrix<double>>
+  CalcPrincipalMomentsAndAxesOfInertia() const {
+    math::RotationMatrix<double> R_EP;
+    Vector3<double> Imoment = CalcPrincipalMomentsAndMaybeAxesOfInertia(&R_EP);
+    return std::pair(Imoment, R_EP);
   }
 
   /// Performs several necessary checks to verify whether `this` rotational
@@ -594,17 +590,16 @@ class RotationalInertia {
   ///         calculated (eigenvalue solver) or if scalar type T cannot be
   ///         converted to a double.
   boolean<T> CouldBePhysicallyValid() const {
-    // To check the validity of rotational inertia use an epsilon value that is
-    // a number related to machine precision multiplied by the largest possible
-    // element that can appear in a valid `this` rotational inertia.  Note: The
+    // To check the validity of `this` rotational inertia, use an epsilon value
+    // related to machine precision multiplied by the largest possible element
+    // that can appear in a valid `this` rotational inertia.  Note: The
     // largest product of inertia is at most half the largest moment of inertia.
     using std::max;
-    const double precision = 10 * std::numeric_limits<double>::epsilon();
+    const double precision = 16 * std::numeric_limits<double>::epsilon();
     const T max_possible_inertia_moment = CalcMaximumPossibleMomentOfInertia();
 
-    // In order to avoid false negatives for inertias close to zero we use, in
-    // addition to a relative tolerance of "precision", an absolute tolerance
-    // equal to "precision" as well.
+    // To avoid false negatives for inertias close to zero, we also use
+    // an absolute tolerance equal to "1.0 * precision".
     const T epsilon = precision * max(1.0, max_possible_inertia_moment);
 
     // Calculate principal moments of inertia p and then test these principal
@@ -637,8 +632,8 @@ class RotationalInertia {
   /// @throws std::exception for Debug builds if the rotational inertia that
   /// is re-expressed-in frame A violates CouldBePhysicallyValid().
   /// @see ReExpressInPlace()
-  RotationalInertia<T> ReExpress(const math::RotationMatrix<T>& R_AE) const
-      __attribute__((warn_unused_result)) {
+  [[nodiscard]] RotationalInertia<T> ReExpress(
+      const math::RotationMatrix<T>& R_AE) const {
     return RotationalInertia(*this).ReExpressInPlace(R_AE);
   }
 
@@ -682,9 +677,8 @@ class RotationalInertia {
   /// @throws std::exception for Debug builds if the rotational inertia that
   /// is shifted to about-point Q violates CouldBePhysicallyValid().
   /// @remark Negating the position vector p_BcmQ_E has no affect on the result.
-  RotationalInertia<T> ShiftFromCenterOfMass(const T& mass,
-                                             const Vector3<T>& p_BcmQ_E) const
-                                           __attribute__((warn_unused_result)) {
+  [[nodiscard]] RotationalInertia<T> ShiftFromCenterOfMass(
+      const T& mass, const Vector3<T>& p_BcmQ_E) const {
     return RotationalInertia(*this).
            ShiftFromCenterOfMassInPlace(mass, p_BcmQ_E);
   }
@@ -720,9 +714,8 @@ class RotationalInertia {
   /// is shifted to about-point `Bcm` violates CouldBePhysicallyValid().
   /// @remark Negating the position vector `p_QBcm_E` has no affect on the
   /// result.
-  RotationalInertia<T> ShiftToCenterOfMass(const T& mass,
-                                           const Vector3<T>& p_QBcm_E) const
-                                           __attribute__((warn_unused_result)) {
+  [[nodiscard]] RotationalInertia<T> ShiftToCenterOfMass(
+      const T& mass, const Vector3<T>& p_QBcm_E) const {
     return RotationalInertia(*this).ShiftToCenterOfMassInPlace(mass, p_QBcm_E);
   }
 
@@ -764,12 +757,11 @@ class RotationalInertia {
   /// is shifted to about-point Q violates CouldBePhysicallyValid().
   /// @remark Negating either (or both) position vectors p_PBcm_E and p_QBcm_E
   ///         has no affect on the result.
-  RotationalInertia<T> ShiftToThenAwayFromCenterOfMass(
-      const T& mass,
-      const Vector3<T>& p_PBcm_E,
-      const Vector3<T>& p_QBcm_E) const __attribute__((warn_unused_result)) {
+  [[nodiscard]] RotationalInertia<T> ShiftToThenAwayFromCenterOfMass(
+      const T& mass, const Vector3<T>& p_PBcm_E,
+      const Vector3<T>& p_QBcm_E) const {
     return RotationalInertia(*this).ShiftToThenAwayFromCenterOfMassInPlace(
-                                    mass, p_PBcm_E, p_QBcm_E);
+        mass, p_PBcm_E, p_QBcm_E);
   }
   ///@}
 
@@ -889,6 +881,29 @@ class RotationalInertia {
     RotationalInertia<T> shift_towards(p_PBcm_E, p_PBcm_E);
     return shift_away.MinusEqualsUnchecked(shift_towards);
   }
+
+  // Forms the 3 principal moments of inertia and optionally their 3 associated
+  // principal directions for `this` rotational inertia.
+  // @param[out] R_EP Optional 3x3 right-handed orthonormal matrix that happens
+  // to be the rotation matrix relating the expressed-in frame E to a frame P,
+  // where frame E is the expressed-in frame for `this` rotational inertia
+  // I_BPo_E (body B's rotational inertia about-point Po) and frame P contains
+  // right-handed orthogonal unit vectors Px, Py, Pz. The 1ˢᵗ column of R_EP is
+  // Px_E (Px expressed in frame E) which is parallel to the principal axis
+  // associated with Ixx (the smallest principal moment of inertia). Similarly,
+  // the 2ⁿᵈ and 3ʳᵈ columns of R_EP are Py_E and Pz_E, which are parallel to
+  // principal axes associated with Iyy and Izz (the intermediate and largest
+  // principal moments of inertia).
+  // @returns 3 principal moments of inertia [Ixx Iyy Izz], sorted in ascending
+  // order (Ixx ≤ Iyy ≤ Izz). If R_EP ≠ nullptr, also returns the 3 associated
+  // principal directions via the argument R_EP.
+  // @throws std::exception if the elements of `this` rotational inertia cannot
+  // be converted to a real finite double. For example, an exception is thrown
+  // if `this` contains an erroneous NaN or if scalar type T is symbolic.
+  // @see CalcPrincipalMomentsOfInertia() and
+  // CalcPrincipalMomentsAndAxesOfInertia().
+  Vector3<double> CalcPrincipalMomentsAndMaybeAxesOfInertia(
+      math::RotationMatrix<double>* R_EP) const;
 
   // This function returns true if arguments `i` and `j` access the lower-
   // triangular portion of the rotational matrix, otherwise false.

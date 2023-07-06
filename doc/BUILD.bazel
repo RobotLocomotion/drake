@@ -82,12 +82,13 @@ filegroup(
     name = "pages_input",
     srcs = [
         "_config.yml",
-        "index.md",
-        "sample_vimrc",
+        "_release-notes/index.html",
         "images/drake-dragon.png",
         "images/drake-logo.svg",
         "images/drake-logo-white.svg",
         "images/jenkins_bot_reviewable_comment.png",
+        "index.md",
+        "sample_vimrc",
     ] + glob([
         "_includes/*.html",
         "_includes/*.md",

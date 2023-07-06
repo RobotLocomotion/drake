@@ -15,10 +15,14 @@
 
 namespace drake {
 namespace geometry {
-namespace render {
+namespace render_gl {
 namespace internal {
 class ShaderProgramTest;
 namespace {
+
+using render::DepthRange;
+using render::DepthRenderCamera;
+using render::RenderCameraCore;
 
 /* A simple shader implementation that exercises all of the virtual API and
  reports if it has been called.  */
@@ -37,6 +41,10 @@ class TestShader final : public ShaderProgram {
   // Collection of flags which report if certain virtual methods have been
   // invoked.
   bool DoModelViewMatrixCalled() const { return do_mv_matrix_called_; }
+
+  bool CalledDoConfigureUniforms() const {
+    return do_configure_uniforms_called_;
+  }
 
   bool CalledSetInstanceParameters() const {
     return set_instance_params_called_;
@@ -57,7 +65,11 @@ class TestShader final : public ShaderProgram {
   }
 
  private:
-  friend class drake::geometry::render::internal::ShaderProgramTest;
+  friend class drake::geometry::render_gl::internal::ShaderProgramTest;
+
+  void DoConfigureUniforms() final {
+    do_configure_uniforms_called_ = true;
+  }
 
   std::unique_ptr<ShaderProgram> DoClone() const final {
     return std::make_unique<TestShader>(*this);
@@ -78,6 +90,7 @@ class TestShader final : public ShaderProgram {
     do_mv_matrix_called_ = true;
   }
 
+  bool do_configure_uniforms_called_{false};
   mutable bool do_mv_matrix_called_{false};
   mutable bool set_instance_params_called_{false};
   mutable bool set_depth_camera_called_{false};
@@ -118,6 +131,7 @@ class ShaderProgramTest : public ::testing::Test {
   void SetUp() override {
     // ShaderProgram requires an active OpenGL context to perform.
     opengl_context_ = std::make_shared<OpenGlContext>();
+    opengl_context_->MakeCurrent();
   }
 
   // Reports the program id of the given program.
@@ -342,6 +356,15 @@ TEST_F(ShaderProgramTest, CreateProgramData) {
   EXPECT_EQ(data->shader_id(), shader.shader_id());
 }
 
+// Confirms that DoConfigureUniforms() gets called as part of the process of
+// loading shaders.
+TEST_F(ShaderProgramTest, DoConfigureUniforms) {
+  TestShader shader;
+  ASSERT_FALSE(shader.CalledDoConfigureUniforms());
+  shader.LoadFromSources(kVertexSource, kFragmentSource);
+  ASSERT_TRUE(shader.CalledDoConfigureUniforms());
+}
+
 // Confirms that the SetInstanceParameters virtual API is respected in derived
 // classes.
 TEST_F(ShaderProgramTest, SetInstanceParameters) {
@@ -429,6 +452,6 @@ TEST_F(ShaderProgramTest, Cloning) {
 }
 
 }  // namespace internal
-}  // namespace render
+}  // namespace render_gl
 }  // namespace geometry
 }  // namespace drake

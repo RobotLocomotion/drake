@@ -10,8 +10,8 @@ def meshcat_repository(
         Updating this commit requires local testing; see
         drake/tools/workspace/meshcat/README.md for details.
         """,
-        commit = "ea474eb1e7b595b45145c8104fc9684d49f15231",
-        sha256 = "609988dcb6ca3090121ae0b0a149e0c1fab9656a8f2e867786e666264a1d42ca",  # noqa
+        commit = "4b4f8ffbaa5f609352ea6227bd5ae8207b579c70",
+        sha256 = "2f7131aa47c38d21f7904ecc07344bb12538d495668682117e0e7fbd28ad893b",  # noqa
         build_file = ":package.BUILD.bazel",
         mirrors = mirrors,
     )

@@ -5,6 +5,7 @@
 #include <limits>
 #include <optional>
 #include <stdexcept>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -37,7 +38,7 @@ using trajectories::PiecewisePolynomial;
 namespace {
 
 // Implements a constraint on the defect between the state variables
-// advanced for one discrete step or one integration for a fixed timestep,
+// advanced for one discrete step or one integration for a fixed time step,
 // and the decision variable representing the next state.
 class DirectTranscriptionConstraint : public solvers::Constraint {
  public:
@@ -56,12 +57,13 @@ class DirectTranscriptionConstraint : public solvers::Constraint {
   // @param num_inputs the integer size of the input vector being optimized.
   // @param evaluation_time  The time along the trajectory at which this
   // constraint is evaluated.
-  // @param fixed_timestep Defines the explicit Euler integration
-  // timestep for systems with continuous state variables.
+  // @param fixed_time_step Defines the explicit Euler integration
+  // time step for systems with continuous state variables.
   DirectTranscriptionConstraint(IntegratorBase<AutoDiffXd>* integrator,
                                 FixedInputPortValue* input_port_value,
                                 int num_states, int num_inputs,
-                                double evaluation_time, TimeStep fixed_timestep)
+                                double evaluation_time,
+                                TimeStep fixed_time_step)
       : Constraint(num_states, num_inputs + 2 * num_states,
                    Eigen::VectorXd::Zero(num_states),
                    Eigen::VectorXd::Zero(num_states)),
@@ -70,7 +72,7 @@ class DirectTranscriptionConstraint : public solvers::Constraint {
         num_states_(num_states),
         num_inputs_(num_inputs),
         evaluation_time_(evaluation_time),
-        fixed_timestep_(fixed_timestep.value) {
+        fixed_time_step_(fixed_time_step.value) {
     DRAKE_DEMAND(evaluation_time >= 0.0);
     const Context<AutoDiffXd>& context = integrator->get_context();
     DRAKE_DEMAND(context.has_only_discrete_state() ||
@@ -81,7 +83,7 @@ class DirectTranscriptionConstraint : public solvers::Constraint {
     if (context.has_only_discrete_state()) {
       discrete_state_ = integrator_->get_system().AllocateDiscreteVariables();
     } else {
-      DRAKE_DEMAND(fixed_timestep_ > 0.0);
+      DRAKE_DEMAND(fixed_time_step_ > 0.0);
     }
 
     // Makes sure the autodiff vector is properly initialized.
@@ -122,7 +124,7 @@ class DirectTranscriptionConstraint : public solvers::Constraint {
       // integration.
       context->SetContinuousState(state);
       DRAKE_THROW_UNLESS(integrator_->IntegrateWithSingleFixedStepToTime(
-          evaluation_time_ + fixed_timestep_));
+          evaluation_time_ + fixed_time_step_));
       *y = next_state - context->get_continuous_state_vector().CopyToVector();
     } else {
       context->SetDiscreteState(0, state);
@@ -146,13 +148,15 @@ class DirectTranscriptionConstraint : public solvers::Constraint {
   const int num_states_{0};
   const int num_inputs_{0};
   AutoDiffXd evaluation_time_{0};
-  const double fixed_timestep_{0};
+  const double fixed_time_step_{0};
 };
 
-double get_period(const System<double>* system) {
+double get_period(const System<double>* system, std::string message) {
   std::optional<PeriodicEventData> periodic_data =
       system->GetUniquePeriodicDiscreteUpdateAttribute();
-  DRAKE_DEMAND(periodic_data.has_value());
+  if (!periodic_data.has_value()) {
+    throw std::invalid_argument(message);
+  }
   DRAKE_DEMAND(periodic_data->offset_sec() == 0.0);
   return periodic_data->period_sec();
 }
@@ -167,7 +171,7 @@ int get_input_port_size(
   }
 }
 
-}  // end namespace
+}  // namespace
 
 DirectTranscription::DirectTranscription(
     const System<double>* system, const Context<double>& context,
@@ -175,10 +179,13 @@ DirectTranscription::DirectTranscription(
     const std::variant<InputPortSelection, InputPortIndex>& input_port_index)
     : MultipleShooting(get_input_port_size(system, input_port_index),
                        context.num_total_states(), num_time_samples,
-                       get_period(system)),
+                       get_period(system,
+                                  "This constructor is for discrete-time "
+                                  "systems.  For continuous-time "
+                                  "systems, you must use a different "
+                                  "constructor that specifies the "
+                                  "time steps.")),
       discrete_time_system_(true) {
-  // Note: this constructor is for discrete-time systems.  For continuous-time
-  // systems, you must use a different constructor that specifies the timesteps.
   ValidateSystem(*system, context, input_port_index);
 
   // First try symbolic dynamics.
@@ -193,35 +200,44 @@ DirectTranscription::DirectTranscription(
     const Context<double>& context, int num_time_samples,
     const std::variant<InputPortSelection, InputPortIndex>& input_port_index)
     : MultipleShooting(get_input_port_size(system, input_port_index),
-          context.num_total_states(), num_time_samples,
-          std::max(system->time_period(),
-                   std::numeric_limits<double>::epsilon())
-          /* N.B. Ensures that MultipleShooting is well-formed */),
+                       context.num_total_states(), num_time_samples,
+                       std::max(system->time_period(),
+                                std::numeric_limits<double>::epsilon())
+                       /* N.B. Ensures that MultipleShooting is well-formed */),
       discrete_time_system_(true) {
-  // Note: this constructor is for discrete-time systems.  For continuous-time
-  // systems, you must use a different constructor that specifies the timesteps.
+  if (!context.has_only_discrete_state()) {
+    throw std::invalid_argument(
+        "This constructor is for discrete-time systems.  For continuous-time "
+        "systems, you must use a different constructor that specifies the "
+        "time steps.");
+  }
   ValidateSystem(*system, context, input_port_index);
 
   for (int i = 0; i < N() - 1; i++) {
     const double t = system->time_period() * i;
     prog().AddLinearEqualityConstraint(
-        state(i+1).cast<symbolic::Expression>() ==
+        state(i + 1).cast<symbolic::Expression>() ==
         system->A(t) * state(i).cast<symbolic::Expression>() +
-        system->B(t) * input(i).cast<symbolic::Expression>());
+            system->B(t) * input(i).cast<symbolic::Expression>());
   }
   ConstrainEqualInputAtFinalTwoTimesteps();
 }
 
 DirectTranscription::DirectTranscription(
     const System<double>* system, const Context<double>& context,
-    int num_time_samples, TimeStep fixed_timestep,
+    int num_time_samples, TimeStep fixed_time_step,
     const std::variant<InputPortSelection, InputPortIndex>& input_port_index)
     : MultipleShooting(get_input_port_size(system, input_port_index),
                        context.num_total_states(), num_time_samples,
-                       fixed_timestep.value),
+                       fixed_time_step.value),
       discrete_time_system_(false) {
-  DRAKE_DEMAND(context.has_only_continuous_state());
-  DRAKE_DEMAND(fixed_timestep.value > 0.0);
+  if (!context.has_only_continuous_state()) {
+    throw std::invalid_argument(
+        "This constructor is for continuous-time systems.  For discrete-time "
+        "systems, you must use a different constructor that doesn't specify "
+        "the time step.");
+  }
+  DRAKE_DEMAND(fixed_time_step.value > 0.0);
   if (context.num_input_ports() > 0) {
     DRAKE_DEMAND(num_inputs() == get_input_port_size(system, input_port_index));
   }
@@ -233,11 +249,10 @@ DirectTranscription::DirectTranscription(
   ConstrainEqualInputAtFinalTwoTimesteps();
 }
 
-
 void DirectTranscription::DoAddRunningCost(const symbolic::Expression& g) {
   // Cost = \sum_n g(n,x[n],u[n]) dt
   for (int i = 0; i < N() - 1; i++) {
-    prog().AddCost(SubstitutePlaceholderVariables(g * fixed_timestep(), i));
+    prog().AddCost(SubstitutePlaceholderVariables(g * fixed_time_step(), i));
   }
 }
 
@@ -289,12 +304,12 @@ bool DirectTranscription::AddSymbolicDynamicConstraints(
       symbolic_system->get_input_port_selection(input_port_index);
 
   ExplicitEulerIntegrator<Expression> integrator(
-      *symbolic_system, fixed_timestep(), symbolic_context.get());
+      *symbolic_system, fixed_time_step(), symbolic_context.get());
   integrator.Initialize();
   VectorX<Expression> next_state(num_states());
 
   for (int i = 0; i < N() - 1; i++) {
-    symbolic_context->SetTime(i*fixed_timestep());
+    symbolic_context->SetTime(i * fixed_time_step());
 
     if (input_port) {
       input_port->FixValue(symbolic_context.get(), input(i).cast<Expression>());
@@ -308,12 +323,12 @@ bool DirectTranscription::AddSymbolicDynamicConstraints(
     } else {
       symbolic_context->SetContinuousState(state(i).cast<Expression>());
       DRAKE_THROW_UNLESS(integrator.IntegrateWithSingleFixedStepToTime(
-          (i + 1) * fixed_timestep()));
+          (i + 1) * fixed_time_step()));
       next_state =
           symbolic_context->get_continuous_state_vector().CopyToVector();
     }
     if (i == 0 && !IsAffine(next_state,
-            symbolic::Variables(prog().decision_variables()))) {
+                            symbolic::Variables(prog().decision_variables()))) {
       // Note: only check on the first iteration, where we can return false
       // before adding any constraints to the program.  For i>0, the
       // AddLinearEqualityConstraint call with throw.
@@ -351,10 +366,10 @@ void DirectTranscription::AddAutodiffDynamicConstraints(
   }
 
   integrator_ = std::make_unique<ExplicitEulerIntegrator<AutoDiffXd>>(
-      *system_, fixed_timestep(), context_.get());
+      *system_, fixed_time_step(), context_.get());
   integrator_->Initialize();
 
-  // For N-1 timesteps, add a constraint which depends on the breakpoint
+  // For N-1 time steps, add a constraint which depends on the breakpoint
   // along with the state and input vectors at that breakpoint and the
   // next.
   for (int i = 0; i < N() - 1; i++) {
@@ -363,7 +378,7 @@ void DirectTranscription::AddAutodiffDynamicConstraints(
     // so should not be evaluated in parallel.
     auto constraint = std::make_shared<DirectTranscriptionConstraint>(
         integrator_.get(), input_port_value_, num_states(), num_inputs(),
-        i * fixed_timestep(), TimeStep{fixed_timestep()});
+        i * fixed_time_step(), TimeStep{fixed_time_step()});
 
     prog().AddConstraint(constraint, {input(i), state(i), state(i + 1)});
   }

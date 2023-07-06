@@ -1,16 +1,13 @@
-#include "pybind11/eigen.h"
 #include "pybind11/eval.h"
-#include "pybind11/numpy.h"
-#include "pybind11/operators.h"
-#include "pybind11/pybind11.h"
-#include "pybind11/stl.h"
 
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/polynomial_types_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/common/polynomial.h"
+#include "drake/common/trajectories/bezier_curve.h"
 #include "drake/common/trajectories/bspline_trajectory.h"
+#include "drake/common/trajectories/composite_trajectory.h"
 #include "drake/common/trajectories/path_parameterized_trajectory.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/common/trajectories/piecewise_pose.h"
@@ -238,8 +235,10 @@ struct Impl {
       cls  // BR
           .def(py::init<>())
           .def("value", &Class::value, py::arg("t"), cls_doc.value.doc)
-          .def(
-              "vector_values", &Class::vector_values, cls_doc.vector_values.doc)
+          .def("vector_values",
+              overload_cast_explicit<MatrixX<T>, const std::vector<T>&>(
+                  &Class::vector_values),
+              py::arg("t"), cls_doc.vector_values.doc)
           .def("has_derivative", &Class::has_derivative,
               cls_doc.has_derivative.doc)
           .def("EvalDerivative", &Class::EvalDerivative, py::arg("t"),
@@ -250,6 +249,29 @@ struct Impl {
           .def("end_time", &Class::end_time, cls_doc.end_time.doc)
           .def("rows", &Class::rows, cls_doc.rows.doc)
           .def("cols", &Class::cols, cls_doc.cols.doc);
+    }
+
+    {
+      using Class = BezierCurve<T>;
+      constexpr auto& cls_doc = doc.BezierCurve;
+      auto cls = DefineTemplateClassWithDefault<Class, Trajectory<T>>(
+          m, "BezierCurve", param, cls_doc.doc);
+      cls  // BR
+          .def(py::init<>(), cls_doc.ctor.doc_0args)
+          .def(py::init<double, double, const Eigen::Ref<const MatrixX<T>>&>(),
+              py::arg("start_time"), py::arg("end_time"),
+              py::arg("control_points"), cls_doc.ctor.doc_3args)
+          .def("order", &Class::order, cls_doc.order.doc)
+          .def("BernsteinBasis", &Class::BernsteinBasis, py::arg("i"),
+              py::arg("time"), py::arg("order") = std::nullopt,
+              cls_doc.BernsteinBasis.doc)
+          .def("control_points", &Class::control_points,
+              cls_doc.control_points.doc)
+          .def("GetExpression", &Class::GetExpression,
+              py::arg("time") = symbolic::Variable("t"),
+              cls_doc.GetExpression.doc)
+          .def("ElevateOrder", &Class::ElevateOrder, cls_doc.ElevateOrder.doc);
+      DefCopyAndDeepCopy(&cls);
     }
 
     {
@@ -524,6 +546,27 @@ struct Impl {
       if constexpr (std::is_same_v<T, double>) {
         BindPiecewisePolynomialSerialize(&cls);
       }
+    }
+
+    {
+      using Class = CompositeTrajectory<T>;
+      constexpr auto& cls_doc = doc.CompositeTrajectory;
+      auto cls = DefineTemplateClassWithDefault<Class, Trajectory<T>>(
+          m, "CompositeTrajectory", param, cls_doc.doc);
+      cls  // BR
+          .def(py::init([](std::vector<const Trajectory<T>*> py_segments) {
+            std::vector<copyable_unique_ptr<Trajectory<T>>> segments;
+            segments.reserve(py_segments.size());
+            for (const Trajectory<T>* py_segment : py_segments) {
+              segments.emplace_back(py_segment ? py_segment->Clone() : nullptr);
+            }
+            return std::make_unique<CompositeTrajectory<T>>(
+                std::move(segments));
+          }),
+              py::arg("segments"), cls_doc.ctor.doc)
+          .def("segment", &Class::segment, py::arg("segment_index"),
+              py_rvp::reference_internal, cls_doc.segment.doc);
+      DefCopyAndDeepCopy(&cls);
     }
 
     {

@@ -29,14 +29,14 @@ namespace {
 
 namespace fs = std::filesystem;
 
-using drake::geometry::render::ClippingRange;
-using drake::geometry::render::DepthRange;
-using drake::geometry::render::RenderCameraCore;
-using drake::systems::sensors::CameraInfo;
-using drake::systems::sensors::ImageDepth16U;
-using drake::systems::sensors::ImageDepth32F;
-using drake::systems::sensors::ImageLabel16I;
-using drake::systems::sensors::ImageRgba8U;
+using render::ClippingRange;
+using render::DepthRange;
+using render::RenderCameraCore;
+using systems::sensors::CameraInfo;
+using systems::sensors::ImageDepth16U;
+using systems::sensors::ImageDepth32F;
+using systems::sensors::ImageLabel16I;
+using systems::sensors::ImageRgba8U;
 
 /* Adds field_name = field_data to the map, assumes data_map does **not**
  already have the key `field_name`. */
@@ -167,14 +167,13 @@ RenderClient::~RenderClient() {
     } catch (const std::exception& e) {
       // Note: Catching an exception is generally verboten.  However, since
       // exceptions can't be thrown in a destructor, doing so is allowed here.
-      drake::log()->debug("RenderClient: could not delete '{}'. {}",
-                          temp_directory_, e.what());
+      log()->debug("RenderClient: could not delete '{}'. {}", temp_directory_,
+                   e.what());
     }
   } else if (params_.verbose) {
     // NOTE: This gets printed twice because of cloning, cannot be avoided.
-    drake::log()->debug(
-        "RenderClient: temporary directory '{}' was *NOT* deleted.",
-        temp_directory_);
+    log()->debug("RenderClient: temporary directory '{}' was *NOT* deleted.",
+                 temp_directory_);
   }
 }
 
@@ -420,16 +419,7 @@ void RenderClient::LoadDepthImage(const std::string& path,
   } else if (image_data->GetScalarType() == VTK_TYPE_UINT16) {
     ImageDepth16U u16(width, height);
     image_exporter->Export(u16.at(0, 0));
-    // Convert from millimeters to meters.
-    for (int y = 0; y < height; ++y) {
-      for (int x = 0; x < width; ++x) {
-        const std::uint16_t millimeters = u16.at(x, y)[0];
-        const float meters = (millimeters == ImageDepth16U::Traits::kTooFar)
-                                 ? ImageDepth32F::Traits::kTooFar
-                                 : millimeters * 1e-3;
-        *depth_image_out->at(x, y) = meters;
-      }
-    }
+    ConvertDepth16UTo32F(u16, depth_image_out);
   } else {
     /* no cover */
     throw std::runtime_error("RenderClient: unsupported channel type");

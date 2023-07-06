@@ -1,10 +1,7 @@
 #include <memory>
 #include <vector>
 
-#include "pybind11/eigen.h"
 #include "pybind11/eval.h"
-#include "pybind11/pybind11.h"
-#include "pybind11/stl.h"
 
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"

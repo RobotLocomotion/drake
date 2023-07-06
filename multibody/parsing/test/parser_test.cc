@@ -213,27 +213,6 @@ GTEST_TEST(FileParserTest, BasicStringTest) {
   }
 }
 
-GTEST_TEST(FileParserTest, LegacyStringMethodTest) {
-  // Just make sure the legacy method "AddModelFromString" still works. This
-  // test can go away when the method is removed.
-  //
-  // Note that extensive per-format testing is not required, since
-  // AddModelFromString is implemented as a thin wrapper around
-  // ParserInterface::AddModel. It shares the underlying implementation in
-  // common with AddModelFromFile.
-  const std::string sdf_name = FindResourceOrThrow(
-      "drake/multibody/benchmarks/acrobot/acrobot.sdf");
-  const std::string sdf_contents = ReadEntireFile(sdf_name);
-  MultibodyPlant<double> plant(0.0);
-  Parser dut(&plant);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  const ModelInstanceIndex id = dut.AddModelFromString(sdf_contents, "sdf",
-                                                       "foo");
-#pragma GCC diagnostic pop
-  EXPECT_EQ(plant.GetModelInstanceName(id), "foo");
-}
-
 // Try loading a file with two <model> elements, but without a <world>.
 // This should always result in an error. For an example of a valid <world>
 // with two <model> elements, refer to MultiModelViaWorldIncludesTest.
@@ -344,7 +323,7 @@ GTEST_TEST(FileParserTest, BadStringTest) {
   // error message matching here will be less than convincing.
   DRAKE_EXPECT_THROWS_MESSAGE(
       Parser(&plant).AddModelsFromString("bad", "xml"),
-      "Failed to parse XML string: XML_ERROR_PARSING_TEXT");
+      ".*Failed to parse XML string: XML_ERROR_PARSING_TEXT");
 
   // Malformed DMD string is an error.
   // TODO(#18052): Until the underlying parser supports diagnostic policy, the
@@ -352,6 +331,17 @@ GTEST_TEST(FileParserTest, BadStringTest) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       Parser(&plant).AddModelsFromString("bad:", "dmd.yaml"),
       ".*YAML.*bad.*");
+
+  // Syntactically well-formed DMD data, but semantically invalid.
+  {
+    // N.B. This directive is missing the required `name` attribute.
+    constexpr char yaml[] =
+        "directives:\n"
+        "- add_model_instance:\n";
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        Parser(&plant).AddModelsFromString(yaml, "dmd.yaml"),
+        ".*IsValid.*failed.*");
+  }
 
   // Unknown extension is an error.
   DRAKE_EXPECT_THROWS_MESSAGE(

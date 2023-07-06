@@ -22,11 +22,13 @@ with the default values set to the identity map.  This concept is required for
 reasoning about cylinders in arbitrary poses as cartesian products, and more
 generally for describing any affine transform of a CartesianProduct.
 
-@ingroup geometry_optimization
-*/
+@ingroup geometry_optimization */
 class CartesianProduct final : public ConvexSet {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CartesianProduct)
+
+  /** Constructs a default (zero-dimensional) set. */
+  CartesianProduct();
 
   /** Constructs the product from a vector of convex sets. */
   explicit CartesianProduct(const ConvexSets& sets);
@@ -35,15 +37,15 @@ class CartesianProduct final : public ConvexSet {
   CartesianProduct(const ConvexSet& setA, const ConvexSet& setB);
 
   /** Constructs the product of convex sets in the transformed coordinates:
-  {x | y = Ax + b, y ∈ Y₁ × Y₂ × ⋯ × Yₙ}. `A` must be full column rank. */
+  {x | y = Ax + b, y ∈ Y₁ × Y₂ × ⋯ × Yₙ}.
+  @throws std::exception when `A` is not full column rank. */
   CartesianProduct(const ConvexSets& sets,
                    const Eigen::Ref<const Eigen::MatrixXd>& A,
                    const Eigen::Ref<const Eigen::VectorXd>& b);
 
-  /** Constructs a CartesianProduct from a SceneGraph geometry and pose in
-  the @p reference_frame frame, obtained via the QueryObject. If @p
-  reference_frame frame is std::nullopt, then it will be expressed in the world
-  frame.
+  /** Constructs a CartesianProduct from a SceneGraph geometry and pose in the
+  `reference_frame` frame, obtained via the QueryObject. If `reference_frame`
+  frame is std::nullopt, then it will be expressed in the world frame.
 
   Although any geometry that can be used as a ConvexSet could also be a
   (trivial) CartesianProduct, we restrict this constructor to handling Cylinder
@@ -61,22 +63,30 @@ class CartesianProduct final : public ConvexSet {
   /** The number of factors (or sets) used in the product. */
   int num_factors() const { return sets_.size(); }
 
-  /** Returns a reference to the ConvexSet defining the @p index factor in the
+  /** Returns a reference to the ConvexSet defining the `index` factor in the
   product. */
   const ConvexSet& factor(int i) const;
 
   /** Returns true if each subvector is in its corresponding set with tolerance
-  @p tol.  Note: Tolerance support for this query varies in the different
-  convex set implementations. */
+  `tol`.  Note: Tolerance support for this query varies in the different convex
+  set implementations. */
   using ConvexSet::PointInSet;
 
  private:
+  std::unique_ptr<ConvexSet> DoClone() const final;
+
   bool DoIsBounded() const final;
+
+  bool DoIsEmpty() const final;
+
+  std::optional<Eigen::VectorXd> DoMaybeGetPoint() const final;
 
   bool DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
                     double tol) const final;
 
-  void DoAddPointInSetConstraints(
+  std::pair<VectorX<symbolic::Variable>,
+            std::vector<solvers::Binding<solvers::Constraint>>>
+  DoAddPointInSetConstraints(
       solvers::MathematicalProgram*,
       const Eigen::Ref<const solvers::VectorXDecisionVariable>&) const final;
 
@@ -110,6 +120,12 @@ class CartesianProduct final : public ConvexSet {
   // in the implementation.
   std::optional<Eigen::MatrixXd> A_{std::nullopt};
   std::optional<Eigen::VectorXd> b_{std::nullopt};
+
+  // When an `A` is passed to the constructor, we'll compute its decomposition
+  // and store it here for later use. Note that even though the constructor for
+  // a scene graph cylinder sets A_, it does not set A_decomp_.
+  std::optional<Eigen::ColPivHouseholderQR<Eigen::MatrixXd>> A_decomp_{
+      std::nullopt};
 };
 
 }  // namespace optimization

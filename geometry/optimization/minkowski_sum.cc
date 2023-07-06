@@ -26,19 +26,30 @@ using solvers::Solve;
 using solvers::VectorXDecisionVariable;
 using symbolic::Variable;
 
-MinkowskiSum::MinkowskiSum(const ConvexSets& sets)
-    : ConvexSet(&ConvexSetCloner<MinkowskiSum>,
-                sets.size() > 0 ? sets[0]->ambient_dimension() : 0),
-      sets_(sets) {
-  for (int i = 1; i < static_cast<int>(sets_.size()); ++i) {
-    DRAKE_DEMAND(sets_[i]->ambient_dimension() ==
-                 sets_[0]->ambient_dimension());
+namespace {
+
+int GetAmbientDimension(const ConvexSets& sets) {
+  if (sets.empty()) {
+    return 0;
   }
+  const int ambient_dimension = sets[0]->ambient_dimension();
+  for (const copyable_unique_ptr<ConvexSet>& set : sets) {
+    DRAKE_THROW_UNLESS(set != nullptr);
+    DRAKE_THROW_UNLESS(set->ambient_dimension() == ambient_dimension);
+  }
+  return ambient_dimension;
 }
 
+}  // namespace
+
+MinkowskiSum::MinkowskiSum() : MinkowskiSum(ConvexSets{}) {}
+
+MinkowskiSum::MinkowskiSum(const ConvexSets& sets)
+    : ConvexSet(GetAmbientDimension(sets)), sets_(sets) {}
+
 MinkowskiSum::MinkowskiSum(const ConvexSet& setA, const ConvexSet& setB)
-    : ConvexSet(&ConvexSetCloner<MinkowskiSum>, setA.ambient_dimension()) {
-  DRAKE_DEMAND(setB.ambient_dimension() == setA.ambient_dimension());
+    : ConvexSet(setA.ambient_dimension()) {
+  DRAKE_THROW_UNLESS(setB.ambient_dimension() == setA.ambient_dimension());
   sets_.emplace_back(setA.Clone());
   sets_.emplace_back(setB.Clone());
 }
@@ -46,7 +57,7 @@ MinkowskiSum::MinkowskiSum(const ConvexSet& setA, const ConvexSet& setB)
 MinkowskiSum::MinkowskiSum(const QueryObject<double>& query_object,
                            GeometryId geometry_id,
                            std::optional<FrameId> reference_frame)
-    : ConvexSet(&ConvexSetCloner<MinkowskiSum>, 3) {
+    : ConvexSet(3) {
   Capsule capsule(1., 1.);
   query_object.inspector().GetShape(geometry_id).Reify(this, &capsule);
 
@@ -75,8 +86,12 @@ MinkowskiSum::MinkowskiSum(const QueryObject<double>& query_object,
 MinkowskiSum::~MinkowskiSum() = default;
 
 const ConvexSet& MinkowskiSum::term(int index) const {
-  DRAKE_DEMAND(0 <= index && index < static_cast<int>(sets_.size()));
+  DRAKE_THROW_UNLESS(0 <= index && index < ssize(sets_));
   return *sets_[index];
+}
+
+std::unique_ptr<ConvexSet> MinkowskiSum::DoClone() const {
+  return std::make_unique<MinkowskiSum>(*this);
 }
 
 bool MinkowskiSum::DoIsBounded() const {
@@ -88,7 +103,36 @@ bool MinkowskiSum::DoIsBounded() const {
   return true;
 }
 
-bool MinkowskiSum::DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
+bool MinkowskiSum::DoIsEmpty() const {
+  if (sets_.size() == 0) {
+    return true;
+  }
+  // The empty set is annihilatory in Minkowski addition.
+  for (const auto& s : sets_) {
+    if (s->IsEmpty()) {
+      return true;
+    }
+  }
+  return false;
+}
+
+std::optional<VectorXd> MinkowskiSum::DoMaybeGetPoint() const {
+  std::optional<VectorXd> result;
+  for (const auto& s : sets_) {
+    if (std::optional<VectorXd> point = s->MaybeGetPoint()) {
+      if (result.has_value()) {
+        *result += *point;
+      } else {
+        result = std::move(point);
+      }
+    } else {
+      return std::nullopt;
+    }
+  }
+  return result;
+}
+
+bool MinkowskiSum::DoPointInSet(const Eigen::Ref<const VectorXd>& x,
                                 double) const {
   // TODO(russt): Figure out if there is a general way to communicate tol
   // to/through the solver.
@@ -106,27 +150,46 @@ bool MinkowskiSum::DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
   return result.is_success();
 }
 
-void MinkowskiSum::DoAddPointInSetConstraints(
+std::pair<VectorX<Variable>, std::vector<Binding<Constraint>>>
+MinkowskiSum::DoAddPointInSetConstraints(
     MathematicalProgram* prog,
     const Eigen::Ref<const VectorXDecisionVariable>& x) const {
+  std::vector<Variable> new_vars;
+  std::vector<Binding<Constraint>> new_constraints;
   auto X = prog->NewContinuousVariables(ambient_dimension(), num_terms(), "x");
+  new_vars.reserve(X.size());
+  for (int j = 0; j < X.cols(); ++j) {
+    for (int i = 0; i < X.rows(); ++i) {
+      new_vars.push_back(X(i, j));
+    }
+  }
   RowVectorXd a = RowVectorXd::Ones(num_terms() + 1);
   a[0] = -1;
   for (int i = 0; i < ambient_dimension(); ++i) {
     // ∑ⱼ xⱼ[i] = x[i]
-    prog->AddLinearEqualityConstraint(
-        a, 0.0, {Vector1<Variable>(x[i]), X.row(i).transpose()});
+    new_constraints.push_back(prog->AddLinearEqualityConstraint(
+        a, 0.0, {Vector1<Variable>(x[i]), X.row(i).transpose()}));
   }
   for (int j = 0; j < num_terms(); ++j) {
-    sets_[j]->AddPointInSetConstraints(prog, X.col(j));
+    const auto [new_vars_in_sets_j, new_constraints_in_sets_j] =
+        sets_[j]->AddPointInSetConstraints(prog, X.col(j));
+    for (int k = 0; k < new_vars_in_sets_j.rows(); ++k) {
+      new_vars.push_back(new_vars_in_sets_j(k));
+    }
+    new_constraints.insert(new_constraints.end(),
+                           new_constraints_in_sets_j.begin(),
+                           new_constraints_in_sets_j.end());
   }
+  VectorX<Variable> new_vars_vec =
+      Eigen::Map<VectorX<Variable>>(new_vars.data(), new_vars.size());
+  return {std::move(new_vars_vec), std::move(new_constraints)};
 }
 
 std::vector<Binding<Constraint>>
 MinkowskiSum::DoAddPointInNonnegativeScalingConstraints(
     MathematicalProgram* prog,
     const Eigen::Ref<const VectorXDecisionVariable>& x,
-    const symbolic::Variable& t) const {
+    const Variable& t) const {
   // We add the constraint
   //   x in t (S1 ⨁ ... ⨁ Sn)
   // by enforcing

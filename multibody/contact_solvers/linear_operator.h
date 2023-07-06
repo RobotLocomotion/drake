@@ -160,8 +160,8 @@ class LinearOperator {
   // implemented.
   void ThrowIfNotImplemented(const char* source_method) const {
     throw std::runtime_error(std::string(source_method) + "(): Instance '" +
-                           name_ + "' of type '" + NiceTypeName::Get(*this) +
-                           "' must provide an implementation.");
+                             name_ + "' of type '" + NiceTypeName::Get(*this) +
+                             "' must provide an implementation.");
   }
 };
 

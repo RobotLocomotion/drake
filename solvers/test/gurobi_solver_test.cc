@@ -249,8 +249,9 @@ TEST_P(TestEllipsoidsSeparation, TestSOCP) {
   }
 }
 
-INSTANTIATE_TEST_SUITE_P(GurobiTest, TestEllipsoidsSeparation,
-                        ::testing::ValuesIn(GetEllipsoidsSeparationProblems()));
+INSTANTIATE_TEST_SUITE_P(
+    GurobiTest, TestEllipsoidsSeparation,
+    ::testing::ValuesIn(GetEllipsoidsSeparationProblems()));
 
 TEST_P(TestQPasSOCP, TestSOCP) {
   GurobiSolver gurobi_solver;
@@ -260,7 +261,7 @@ TEST_P(TestQPasSOCP, TestSOCP) {
 }
 
 INSTANTIATE_TEST_SUITE_P(GurobiTest, TestQPasSOCP,
-                        ::testing::ValuesIn(GetQPasSOCPProblems()));
+                         ::testing::ValuesIn(GetQPasSOCPProblems()));
 
 TEST_P(TestFindSpringEquilibrium, TestSOCP) {
   GurobiSolver gurobi_solver;
@@ -572,6 +573,11 @@ GTEST_TEST(GurobiTest, QPDualSolution2) {
 GTEST_TEST(GurobiTest, QPDualSolution3) {
   GurobiSolver solver;
   TestQPDualSolution3(solver);
+}
+
+GTEST_TEST(GurobiTest, TestEqualityConstrainedQP1) {
+  GurobiSolver solver;
+  TestEqualityConstrainedQP1(solver);
 }
 
 GTEST_TEST(GurobiTest, EqualityConstrainedQPDualSolution1) {

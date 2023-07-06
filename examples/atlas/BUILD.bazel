@@ -3,18 +3,274 @@ load(
     "drake_cc_binary",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
-load("//tools/skylark:drake_data.bzl", "models_filegroup")
-load("//tools/install:install_data.bzl", "install_data")
 
 package(default_visibility = ["//visibility:public"])
 
-models_filegroup(
+filegroup(
     name = "models",
-)
-
-install_data(
-    name = "install_data",
-    data = [":models"],
+    srcs = [
+        "@drake_models//:atlas/LICENSE.TXT",
+        "@drake_models//:atlas/atlas_convex_hull.urdf",
+        "@drake_models//:atlas/atlas_minimal_contact.urdf",
+        "@drake_models//:atlas/materials/textures/atlas_DRC_1.png",
+        "@drake_models//:atlas/materials/textures/atlas_DRC_carbon_fiber.png",
+        "@drake_models//:atlas/materials/textures/atlas_DRC_dark_1.png",
+        "@drake_models//:atlas/materials/textures/atlas_cage_and_camera_diffuse_flat.jpg",  # noqa
+        "@drake_models//:atlas/materials/textures/drc_extremities_diffuse.jpg",
+        "@drake_models//:atlas/materials/textures/drc_head_diffuse.png",
+        "@drake_models//:atlas/materials/textures/drc_labels_1.jpg",
+        "@drake_models//:atlas/materials/textures/drc_torso_head_diffuse.jpg",
+        "@drake_models//:atlas/materials/textures/extremities_diffuse.png",
+        "@drake_models//:atlas/materials/textures/extremities_diffuse_unplugged.jpg",  # noqa
+        "@drake_models//:atlas/materials/textures/extremities_diffuse_unplugged_mit.jpg",  # noqa
+        "@drake_models//:atlas/materials/textures/right_leg_diffuse_unplugged.jpg",  # noqa
+        "@drake_models//:atlas/materials/textures/torso_diffuse.png",
+        "@drake_models//:atlas/materials/textures/torso_diffuse_unplugged.jpg",
+        "@drake_models//:atlas/materials/textures/torso_diffuse_unplugged_mit.jpg",  # noqa
+        "@drake_models//:atlas/meshes/GRIPPER_OPEN_chull.obj",
+        "@drake_models//:atlas/meshes/GRIPPER_OPEN_chull.wrl",
+        "@drake_models//:atlas/meshes/chull.mlx",
+        "@drake_models//:atlas/meshes/head.obj",
+        "@drake_models//:atlas/meshes/head.wrl",
+        "@drake_models//:atlas/meshes/head_camera.obj",
+        "@drake_models//:atlas/meshes/head_camera.wrl",
+        "@drake_models//:atlas/meshes/head_camera_chull.obj",
+        "@drake_models//:atlas/meshes/head_chull.obj",
+        "@drake_models//:atlas/meshes/l_clav.vtm",
+        "@drake_models//:atlas/meshes/l_clav/l_clav_0.vtp",
+        "@drake_models//:atlas/meshes/l_farm.vtm",
+        "@drake_models//:atlas/meshes/l_farm/l_farm_0.vtp",
+        "@drake_models//:atlas/meshes/l_foot.obj",
+        "@drake_models//:atlas/meshes/l_foot.vtm",
+        "@drake_models//:atlas/meshes/l_foot.wrl",
+        "@drake_models//:atlas/meshes/l_foot/l_foot_0.vtp",
+        "@drake_models//:atlas/meshes/l_foot_chull.obj",
+        "@drake_models//:atlas/meshes/l_foot_chull.wrl",
+        "@drake_models//:atlas/meshes/l_hand.vtm",
+        "@drake_models//:atlas/meshes/l_hand/l_hand_0.vtp",
+        "@drake_models//:atlas/meshes/l_larm.vtm",
+        "@drake_models//:atlas/meshes/l_larm/l_larm_0.vtp",
+        "@drake_models//:atlas/meshes/l_lglut.obj",
+        "@drake_models//:atlas/meshes/l_lglut.vtm",
+        "@drake_models//:atlas/meshes/l_lglut.wrl",
+        "@drake_models//:atlas/meshes/l_lglut/l_lglut_0.vtp",
+        "@drake_models//:atlas/meshes/l_lglut_chull.obj",
+        "@drake_models//:atlas/meshes/l_lglut_chull.wrl",
+        "@drake_models//:atlas/meshes/l_lleg.obj",
+        "@drake_models//:atlas/meshes/l_lleg.vtm",
+        "@drake_models//:atlas/meshes/l_lleg.wrl",
+        "@drake_models//:atlas/meshes/l_lleg/l_lleg_0.vtp",
+        "@drake_models//:atlas/meshes/l_lleg_chull.obj",
+        "@drake_models//:atlas/meshes/l_lleg_chull.wrl",
+        "@drake_models//:atlas/meshes/l_scap.vtm",
+        "@drake_models//:atlas/meshes/l_scap/l_scap_0.vtp",
+        "@drake_models//:atlas/meshes/l_talus.obj",
+        "@drake_models//:atlas/meshes/l_talus.vtm",
+        "@drake_models//:atlas/meshes/l_talus.wrl",
+        "@drake_models//:atlas/meshes/l_talus/l_talus_0.vtp",
+        "@drake_models//:atlas/meshes/l_uarm.vtm",
+        "@drake_models//:atlas/meshes/l_uarm/l_uarm_0.vtp",
+        "@drake_models//:atlas/meshes/l_uglut.obj",
+        "@drake_models//:atlas/meshes/l_uglut.vtm",
+        "@drake_models//:atlas/meshes/l_uglut.wrl",
+        "@drake_models//:atlas/meshes/l_uglut/l_uglut_0.vtp",
+        "@drake_models//:atlas/meshes/l_uglut_chull.obj",
+        "@drake_models//:atlas/meshes/l_uglut_chull.wrl",
+        "@drake_models//:atlas/meshes/l_uleg.obj",
+        "@drake_models//:atlas/meshes/l_uleg.vtm",
+        "@drake_models//:atlas/meshes/l_uleg.wrl",
+        "@drake_models//:atlas/meshes/l_uleg/l_uleg_0.vtp",
+        "@drake_models//:atlas/meshes/l_uleg_chull.obj",
+        "@drake_models//:atlas/meshes/l_uleg_chull.wrl",
+        "@drake_models//:atlas/meshes/ltorso.obj",
+        "@drake_models//:atlas/meshes/ltorso.vtm",
+        "@drake_models//:atlas/meshes/ltorso.wrl",
+        "@drake_models//:atlas/meshes/ltorso/ltorso_0.vtp",
+        "@drake_models//:atlas/meshes/mtorso.obj",
+        "@drake_models//:atlas/meshes/mtorso.vtm",
+        "@drake_models//:atlas/meshes/mtorso.wrl",
+        "@drake_models//:atlas/meshes/mtorso/mtorso_0.vtp",
+        "@drake_models//:atlas/meshes/pelvis.obj",
+        "@drake_models//:atlas/meshes/pelvis.vtm",
+        "@drake_models//:atlas/meshes/pelvis.wrl",
+        "@drake_models//:atlas/meshes/pelvis/pelvis_0.vtp",
+        "@drake_models//:atlas/meshes/pelvis_chull.obj",
+        "@drake_models//:atlas/meshes/pelvis_chull.wrl",
+        "@drake_models//:atlas/meshes/r_clav.obj",
+        "@drake_models//:atlas/meshes/r_clav.vtm",
+        "@drake_models//:atlas/meshes/r_clav.wrl",
+        "@drake_models//:atlas/meshes/r_clav/r_clav_0.vtp",
+        "@drake_models//:atlas/meshes/r_clav_chull.obj",
+        "@drake_models//:atlas/meshes/r_clav_chull.wrl",
+        "@drake_models//:atlas/meshes/r_farm.obj",
+        "@drake_models//:atlas/meshes/r_farm.vtm",
+        "@drake_models//:atlas/meshes/r_farm.wrl",
+        "@drake_models//:atlas/meshes/r_farm/r_farm_0.vtp",
+        "@drake_models//:atlas/meshes/r_farm_chull.obj",
+        "@drake_models//:atlas/meshes/r_farm_chull.wrl",
+        "@drake_models//:atlas/meshes/r_foot.obj",
+        "@drake_models//:atlas/meshes/r_foot.vtm",
+        "@drake_models//:atlas/meshes/r_foot.wrl",
+        "@drake_models//:atlas/meshes/r_foot/r_foot_0.vtp",
+        "@drake_models//:atlas/meshes/r_foot_chull.obj",
+        "@drake_models//:atlas/meshes/r_foot_chull.wrl",
+        "@drake_models//:atlas/meshes/r_hand.obj",
+        "@drake_models//:atlas/meshes/r_hand.vtm",
+        "@drake_models//:atlas/meshes/r_hand.wrl",
+        "@drake_models//:atlas/meshes/r_hand/r_hand_0.vtp",
+        "@drake_models//:atlas/meshes/r_hand_chull.obj",
+        "@drake_models//:atlas/meshes/r_hand_chull.wrl",
+        "@drake_models//:atlas/meshes/r_larm.obj",
+        "@drake_models//:atlas/meshes/r_larm.vtm",
+        "@drake_models//:atlas/meshes/r_larm.wrl",
+        "@drake_models//:atlas/meshes/r_larm/r_larm_0.vtp",
+        "@drake_models//:atlas/meshes/r_larm_chull.obj",
+        "@drake_models//:atlas/meshes/r_larm_chull.wrl",
+        "@drake_models//:atlas/meshes/r_lglut.obj",
+        "@drake_models//:atlas/meshes/r_lglut.vtm",
+        "@drake_models//:atlas/meshes/r_lglut.wrl",
+        "@drake_models//:atlas/meshes/r_lglut/r_lglut_0.vtp",
+        "@drake_models//:atlas/meshes/r_lglut_chull.obj",
+        "@drake_models//:atlas/meshes/r_lglut_chull.wrl",
+        "@drake_models//:atlas/meshes/r_lleg.obj",
+        "@drake_models//:atlas/meshes/r_lleg.vtm",
+        "@drake_models//:atlas/meshes/r_lleg.wrl",
+        "@drake_models//:atlas/meshes/r_lleg/r_lleg_0.vtp",
+        "@drake_models//:atlas/meshes/r_lleg_chull.obj",
+        "@drake_models//:atlas/meshes/r_lleg_chull.wrl",
+        "@drake_models//:atlas/meshes/r_scap.obj",
+        "@drake_models//:atlas/meshes/r_scap.vtm",
+        "@drake_models//:atlas/meshes/r_scap.wrl",
+        "@drake_models//:atlas/meshes/r_scap/r_scap_0.vtp",
+        "@drake_models//:atlas/meshes/r_scap_chull.obj",
+        "@drake_models//:atlas/meshes/r_scap_chull.wrl",
+        "@drake_models//:atlas/meshes/r_talus.obj",
+        "@drake_models//:atlas/meshes/r_talus.vtm",
+        "@drake_models//:atlas/meshes/r_talus.wrl",
+        "@drake_models//:atlas/meshes/r_talus/r_talus_0.vtp",
+        "@drake_models//:atlas/meshes/r_uarm.obj",
+        "@drake_models//:atlas/meshes/r_uarm.vtm",
+        "@drake_models//:atlas/meshes/r_uarm.wrl",
+        "@drake_models//:atlas/meshes/r_uarm/r_uarm_0.vtp",
+        "@drake_models//:atlas/meshes/r_uarm_chull.obj",
+        "@drake_models//:atlas/meshes/r_uarm_chull.wrl",
+        "@drake_models//:atlas/meshes/r_uglut.obj",
+        "@drake_models//:atlas/meshes/r_uglut.vtm",
+        "@drake_models//:atlas/meshes/r_uglut.wrl",
+        "@drake_models//:atlas/meshes/r_uglut/r_uglut_0.vtp",
+        "@drake_models//:atlas/meshes/r_uglut_chull.obj",
+        "@drake_models//:atlas/meshes/r_uglut_chull.wrl",
+        "@drake_models//:atlas/meshes/r_uleg.obj",
+        "@drake_models//:atlas/meshes/r_uleg.vtm",
+        "@drake_models//:atlas/meshes/r_uleg.wrl",
+        "@drake_models//:atlas/meshes/r_uleg/r_uleg_0.vtp",
+        "@drake_models//:atlas/meshes/r_uleg_chull.obj",
+        "@drake_models//:atlas/meshes/r_uleg_chull.wrl",
+        "@drake_models//:atlas/meshes/s-model_articulated/collision/chull.mlx",
+        "@drake_models//:atlas/meshes/s-model_articulated/collision/link_0.STL",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/collision/link_0.obj",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/collision/link_0.wrl",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/collision/link_0_1.obj",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/collision/link_0_1_1.obj",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/collision/link_0_chull.obj",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/collision/link_0_chull.wrl",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/collision/link_0_chull_1.obj",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/collision/link_0_chull_1_1.obj",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/collision/link_1.STL",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/collision/link_1.obj",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/collision/link_1.wrl",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/collision/link_1_1.obj",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/collision/link_1_1_1.obj",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/collision/link_1_chull.obj",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/collision/link_1_chull.wrl",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/collision/link_1_chull_1.obj",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/collision/link_1_chull_1_1.obj",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/collision/link_2.STL",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/collision/link_2.obj",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/collision/link_2.wrl",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/collision/link_2_1.obj",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/collision/link_2_1_1.obj",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/collision/link_2_chull.obj",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/collision/link_2_chull.wrl",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/collision/link_2_chull_1.obj",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/collision/link_2_chull_1_1.obj",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/collision/link_3.STL",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/collision/link_3.obj",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/collision/link_3.wrl",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/collision/link_3_1.obj",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/collision/link_3_1_1.obj",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/collision/link_3_chull.obj",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/collision/link_3_chull.wrl",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/collision/link_3_chull_1.obj",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/collision/link_3_chull_1_1.obj",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/collision/palm.STL",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/collision/palm.obj",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/collision/palm.wrl",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/collision/palm_1.obj",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/collision/palm_1_1.obj",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/collision/palm_chull.obj",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/collision/palm_chull.wrl",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/collision/palm_chull_1.obj",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/collision/palm_chull_1_1.obj",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/collision/simplify.mlx",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/visual/chull.mlx",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/visual/link_0.STL",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/visual/link_0.obj",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/visual/link_0.wrl",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/visual/link_0_1.obj",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/visual/link_0_1_1.obj",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/visual/link_0_chull.obj",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/visual/link_0_chull.wrl",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/visual/link_0_chull_1.obj",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/visual/link_0_chull_1_1.obj",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/visual/link_1.STL",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/visual/link_1.obj",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/visual/link_1.wrl",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/visual/link_1_1.obj",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/visual/link_1_1_1.obj",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/visual/link_1_chull.obj",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/visual/link_1_chull.wrl",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/visual/link_1_chull_1.obj",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/visual/link_1_chull_1_1.obj",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/visual/link_2.STL",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/visual/link_2.obj",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/visual/link_2.wrl",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/visual/link_2_1.obj",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/visual/link_2_1_1.obj",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/visual/link_2_chull.obj",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/visual/link_2_chull.wrl",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/visual/link_2_chull_1.obj",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/visual/link_2_chull_1_1.obj",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/visual/link_3.STL",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/visual/link_3.obj",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/visual/link_3.wrl",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/visual/link_3_1.obj",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/visual/link_3_1_1.obj",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/visual/link_3_chull.obj",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/visual/link_3_chull.wrl",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/visual/link_3_chull_1.obj",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/visual/link_3_chull_1_1.obj",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/visual/palm.STL",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/visual/palm.obj",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/visual/palm.wrl",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/visual/palm_1.obj",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/visual/palm_1_1.obj",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/visual/palm_chull.obj",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/visual/palm_chull.wrl",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/visual/palm_chull_1.obj",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/visual/palm_chull_1_1.obj",  # noqa
+        "@drake_models//:atlas/meshes/s-model_articulated/visual/simplify.mlx",  # noqa
+        "@drake_models//:atlas/meshes/utorso.obj",
+        "@drake_models//:atlas/meshes/utorso.vtm",
+        "@drake_models//:atlas/meshes/utorso.wrl",
+        "@drake_models//:atlas/meshes/utorso/utorso_0.vtp",
+        "@drake_models//:atlas/meshes/utorso_chull.obj",
+        "@drake_models//:atlas/meshes/utorso_chull.wrl",
+        "@drake_models//:atlas/robotiq.urdf",
+        "@drake_models//:atlas/robotiq_box.urdf",
+        "@drake_models//:atlas/robotiq_simple.urdf",
+        "@drake_models//:atlas/robotiq_tendons.urdf",
+    ],
 )
 
 drake_cc_binary(

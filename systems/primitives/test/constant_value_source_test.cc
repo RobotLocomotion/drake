@@ -19,8 +19,8 @@ namespace {
 class ConstantValueSourceTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    source_ = make_unique<ConstantValueSource<double>>(
-        Value<std::string>("foo"));
+    source_ =
+        make_unique<ConstantValueSource<double>>(Value<std::string>("foo"));
     context_ = source_->CreateDefaultContext();
     input_ = make_unique<BasicVector<double>>(3 /* size */);
   }

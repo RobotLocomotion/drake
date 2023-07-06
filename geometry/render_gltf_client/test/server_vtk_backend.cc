@@ -108,11 +108,11 @@ namespace render_gltf_client {
 namespace internal {
 namespace {
 
-using drake::geometry::render::internal::ShaderCallback;
-using drake::systems::sensors::ImageDepth32F;
-using drake::systems::sensors::ImageRgba8U;
-using drake::systems::sensors::ImageTraits;
-using drake::systems::sensors::PixelType;
+using render_vtk::internal::ShaderCallback;
+using systems::sensors::ImageDepth32F;
+using systems::sensors::ImageRgba8U;
+using systems::sensors::ImageTraits;
+using systems::sensors::PixelType;
 
 // Imported from internal_render_engine_vtk.cc, for converting the depth image.
 float CheckRangeAndConvertToMeters(float z_buffer_value, double z_near,
@@ -130,13 +130,13 @@ float CheckRangeAndConvertToMeters(float z_buffer_value, double z_near,
 bool ValidateOutputExtension() {
   if (FLAGS_image_type == "depth") {
     if (std::filesystem::path(FLAGS_output_path).extension() == ".png") {
-      drake::log()->debug("Depth images must have a .tiff extension.");
+      log()->debug("Depth images must have a .tiff extension.");
       return false;
     }
   } else {
     const std::filesystem::path output_path{FLAGS_output_path};
     if (output_path.extension() != ".png") {
-      drake::log()->debug("Color and label images must have a .png extension.");
+      log()->debug("Color and label images must have a .png extension.");
       return false;
     }
   }
@@ -274,12 +274,9 @@ int DoMain() {
       }
     }
   } else {  // FLAGS_image_type == "label"
-    // TODO(zachfang): We need to find a workaround and document it, so that no
-    // server implementations need to hard-code these magic numbers.
-    /* NOTE: This is hard-coded to be the value that
-     RenderEngine::GetColorDFromLabel(RenderLabel::kEmpty) would produce.  If
-     that value changes, this should change to match. */
-    renderer->SetBackground(254.0 / 255.0, 127.0 / 255.0, 0.0);
+    // Following the client-server API (see render_gltf_client_doxygen.h), the
+    // background of a label image should be set to white.
+    renderer->SetBackground(1.0, 1.0, 1.0);
 
     // Same as RenderEngineVtk, label actors have lighting disabled.  Labels
     // have already been encoded as geometry materials in the glTF.  By

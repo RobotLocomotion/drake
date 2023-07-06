@@ -24,16 +24,16 @@ RigidTransformd Decode_X_OB(const optitrack::optitrack_rigid_body_t& body) {
 }  // namespace
 
 OptitrackReceiver::OptitrackReceiver(
-    const std::map<int, std::string>& frame_map,
-    const RigidTransformd& X_WO)
+    const std::map<int, std::string>& frame_map, const RigidTransformd& X_WO)
     : X_WO_(X_WO) {
-  this->DeclareAbstractInputPort(
-      "optitrack_frame_t",
-      Value<optitrack::optitrack_frame_t>());
+  this->DeclareAbstractInputPort("optitrack_frame_t",
+                                 Value<optitrack::optitrack_frame_t>());
   for (const auto& [body_id, body_name] : frame_map) {
     this->DeclareAbstractOutputPort(
         body_name,
-        []() { return AbstractValue::Make<RigidTransformd>(); },
+        []() {
+          return AbstractValue::Make<RigidTransformd>();
+        },
         [this, body_id = body_id](const Context<double>& context,
                                   AbstractValue* output_abstract) {
           auto& output = output_abstract->get_mutable_value<RigidTransformd>();
@@ -42,9 +42,8 @@ OptitrackReceiver::OptitrackReceiver(
   }
 }
 
-void OptitrackReceiver::CalcOutput(
-    const Context<double>& context, int body_id,
-    RigidTransformd* output) const {
+void OptitrackReceiver::CalcOutput(const Context<double>& context, int body_id,
+                                   RigidTransformd* output) const {
   const auto& input_port = this->get_input_port();
   const auto& message = input_port.Eval<optitrack::optitrack_frame_t>(context);
   for (const auto& body : message.rigid_bodies) {

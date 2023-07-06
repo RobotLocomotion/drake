@@ -34,6 +34,9 @@ namespace systems {
 ///   x₀[0], x₁[0], x₂[0] are initialized in the Context (default is zeros).
 /// </pre>
 ///
+/// @note Calling set_input_history() effectively disables the transient
+/// suppression by setting x_2 = 2.
+///
 /// @note For dynamical systems, a derivative should not be computed in
 /// continuous-time, i.e. `y(t) = (u(t) - u[n])/(t-n*h)`. This is numerically
 /// unstable since the time interval `t-n*h` could be arbitrarily close to
@@ -55,15 +58,17 @@ class DiscreteDerivative final : public LeafSystem<T> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiscreteDerivative)
 
   /// Constructor taking @p num_inputs, the size of the vector to be
-  /// differentiated, and @p time_step, the sampling interval.
+  /// differentiated, and @p time_step, the sampling interval. If @p
+  /// suppress_initial_transient is true (the default), then the output will be
+  /// zero for the first two time steps (see the class documentation for
+  /// details and exceptions).
   DiscreteDerivative(int num_inputs, double time_step,
-                     bool suppress_initial_transient = false);
+                     bool suppress_initial_transient = true);
 
   /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
   template <typename U>
   explicit DiscreteDerivative(const DiscreteDerivative<U>& other)
-      : DiscreteDerivative<T>(other.get_input_port().size(),
-                              other.time_step(),
+      : DiscreteDerivative<T>(other.get_input_port().size(), other.time_step(),
                               other.suppress_initial_transient()) {}
 
   /// Sets the input history so that the initial output is fully specified.
@@ -80,10 +85,9 @@ class DiscreteDerivative final : public LeafSystem<T> {
   /// u[0] ≠ 0.  @p u_n and @ u_n_minus_1 must be the same size as the
   /// input/output ports.  If suppress_initial_transient() is true, then also
   /// sets x₂ to be >= 2 to disable the suppression for this `context`.
-  void set_input_history(systems::Context<T>* context,
-                         const Eigen::Ref<const VectorX<T>>& u_n,
-                         const Eigen::Ref<const VectorX<T>>& u_n_minus_1)
-                         const {
+  void set_input_history(
+      systems::Context<T>* context, const Eigen::Ref<const VectorX<T>>& u_n,
+      const Eigen::Ref<const VectorX<T>>& u_n_minus_1) const {
     set_input_history(&context->get_mutable_state(), u_n, u_n_minus_1);
   }
 
@@ -120,7 +124,7 @@ class DiscreteDerivative final : public LeafSystem<T> {
 /// Supports the common pattern of combining a (feed-through) position with
 /// a velocity estimated with the DiscreteDerivative into a single output
 /// vector with positions and velocities stacked.  This assumes that the
-/// number of positions == the number of velocities.
+/// velocities are equal to the time derivative of the positions.
 ///
 /// ```
 ///                                  ┌─────┐
@@ -147,11 +151,14 @@ class StateInterpolatorWithDiscreteDerivative final : public Diagram<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(StateInterpolatorWithDiscreteDerivative)
 
-  /// Constructor taking @p num_positions, the size of the position vector
-  /// to be differentiated, and @p time_step, the sampling interval.
+  /// Constructor taking @p num_positions, the size of the position vector to
+  /// be differentiated, and @p time_step, the sampling interval. If @p
+  /// suppress_initial_transient is true (the default), then the velocity
+  /// output will be zero for the first two time steps (see the
+  /// DiscreteDerivative class documentation for details and exceptions).
   StateInterpolatorWithDiscreteDerivative(
       int num_positions, double time_step,
-      bool suppress_initial_transient = false);
+      bool suppress_initial_transient = true);
 
   /// Returns the `suppress_initial_transient` passed to the constructor.
   bool suppress_initial_transient() const;
@@ -187,9 +194,9 @@ class StateInterpolatorWithDiscreteDerivative final : public Diagram<T> {
   /// true, then also disables the suppression for this `context`.
   /// @warning This only changes the position history used for the velocity
   /// half of the output port; it has no effect on the feedthrough position.
-  void set_initial_position(systems::Context<T>* context,
-                            const Eigen::Ref<const VectorX<T>>& position)
-                            const {
+  void set_initial_position(
+      systems::Context<T>* context,
+      const Eigen::Ref<const VectorX<T>>& position) const {
     set_initial_position(&context->get_mutable_state(), position);
   }
 

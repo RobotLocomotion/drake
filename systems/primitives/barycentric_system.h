@@ -51,11 +51,10 @@ class BarycentricMeshSystem final : public VectorSystem<T> {
 
  private:
   // Evaluates the BarycentricMesh at the input and writes it to the output.
-  void DoCalcVectorOutput(
-      const Context<T>& context,
-      const Eigen::VectorBlock<const VectorX<T>>& input,
-      const Eigen::VectorBlock<const VectorX<T>>& state,
-      Eigen::VectorBlock<VectorX<T>>* output) const final;
+  void DoCalcVectorOutput(const Context<T>& context,
+                          const Eigen::VectorBlock<const VectorX<T>>& input,
+                          const Eigen::VectorBlock<const VectorX<T>>& state,
+                          Eigen::VectorBlock<VectorX<T>>* output) const final;
 
   const math::BarycentricMesh<T> mesh_;
   const MatrixX<T> output_values_;

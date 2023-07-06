@@ -23,7 +23,6 @@ using Eigen::MatrixXd;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
 using std::make_unique;
-using std::move;
 
 namespace drake {
 namespace multibody {
@@ -58,17 +57,17 @@ class CompliantContactManagerTester {
 DeformableBodyId RegisterDeformableOctahedron(DeformableModel<double>* model,
                                               std::string name,
                                               const RigidTransformd& X_WF) {
-  auto geometry =
-      make_unique<GeometryInstance>(X_WF, make_unique<Sphere>(1.0), move(name));
+  auto geometry = make_unique<GeometryInstance>(X_WF, make_unique<Sphere>(1.0),
+                                                std::move(name));
   geometry::ProximityProperties props;
   geometry::AddContactMaterial({}, {}, CoulombFriction<double>(1.0, 1.0),
                                &props);
-  geometry->set_proximity_properties(move(props));
+  geometry->set_proximity_properties(std::move(props));
   fem::DeformableBodyConfig<double> body_config;
   /* Make the resolution hint large enough so that we get an octahedron. */
   constexpr double kRezHint = 10.0;
   DeformableBodyId body_id =
-      model->RegisterDeformableBody(move(geometry), body_config, kRezHint);
+      model->RegisterDeformableBody(std::move(geometry), body_config, kRezHint);
   return body_id;
 }
 
@@ -97,7 +96,7 @@ class DeformableDriverContactKinematicsTest : public ::testing::Test {
     deformable_body_id_ = RegisterDeformableOctahedron(deformable_model.get(),
                                                        "deformable", X_WF_);
     model_ = deformable_model.get();
-    plant_->AddPhysicalModel(move(deformable_model));
+    plant_->AddPhysicalModel(std::move(deformable_model));
 
     /* Define proximity properties for all rigid geometries. */
     geometry::ProximityProperties rigid_proximity_props;
@@ -128,13 +127,14 @@ class DeformableDriverContactKinematicsTest : public ::testing::Test {
       rigid_geometry_id_ = plant_->RegisterCollisionGeometry(
           plant_->world_body(), X_WR, geometry::Box(10, 10, 1),
           "static_collision_geometry", rigid_proximity_props);
+      rigid_body_index_ = plant_->world_body().index();
     }
 
     plant_->set_discrete_contact_solver(DiscreteContactSolver::kSap);
     plant_->Finalize();
     auto contact_manager = make_unique<CompliantContactManager<double>>();
     manager_ = contact_manager.get();
-    plant_->SetDiscreteUpdateManager(move(contact_manager));
+    plant_->SetDiscreteUpdateManager(std::move(contact_manager));
     driver_ = CompliantContactManagerTester::deformable_driver(*manager_);
 
     builder.Connect(model_->vertex_positions_port(),
@@ -199,13 +199,17 @@ class DeformableDriverContactKinematicsTest : public ::testing::Test {
     for (int i = 0; i < num_contact_points; ++i) {
       const ContactPairKinematics<double>& contact_kinematic =
           contact_kinematics[i];
-      EXPECT_LT(contact_kinematic.phi, 0.0);
-      EXPECT_TRUE(contact_kinematic.R_WC.IsNearlyEqualTo(expected_R_WC, 1e-12));
+      const contact_solvers::internal::ContactConfiguration<double>&
+          configuration = contact_kinematic.configuration;
+      EXPECT_LT(configuration.phi, 0.0);
+      EXPECT_TRUE(configuration.R_WC.IsNearlyEqualTo(expected_R_WC, 1e-12));
       if (dynamic_rigid_body) {
         ASSERT_EQ(contact_kinematic.jacobian.size(), 2);
-        const Matrix3X<double> J0 = contact_kinematic.jacobian[0].J;
+        const Matrix3X<double> J0 =
+            contact_kinematic.jacobian[0].J.MakeDenseMatrix();
         ASSERT_EQ(v0.size(), J0.cols());
-        const Matrix3X<double> J1 = contact_kinematic.jacobian[1].J;
+        const Matrix3X<double> J1 =
+            contact_kinematic.jacobian[1].J.MakeDenseMatrix();
         const Vector3d v_WR_F(0, 0, 0.5);
         const Vector3d v_WR = X_WF_.rotation() * v_WR_F;
         const Vector3d w_WR(0, 0, 0);
@@ -216,10 +220,19 @@ class DeformableDriverContactKinematicsTest : public ::testing::Test {
             CompareMatrices(J0 * v0 + J1 * v1, expected_v_DpRp_C, 1e-14));
       } else {
         ASSERT_EQ(contact_kinematic.jacobian.size(), 1);
-        const Matrix3X<double> J0 = contact_kinematic.jacobian[0].J;
+        const Matrix3X<double> J0 =
+            contact_kinematic.jacobian[0].J.MakeDenseMatrix();
         ASSERT_EQ(v0.size(), J0.cols());
         EXPECT_TRUE(CompareMatrices(J0 * v0, expected_v_DpRp_C, 1e-14));
       }
+
+      // Object A is always the deformable body and B is the rigid body.
+      EXPECT_EQ(BodyIndex(configuration.objectB), rigid_body_index_);
+      const DeformableBodyIndex body_index =
+          model_->GetBodyIndex(deformable_body_id_);
+      // We expect deformable bodies to follow after rigid bodies.
+      const int objectA = body_index + plant_->num_bodies();
+      EXPECT_EQ(configuration.objectA, objectA);
     }
   }
 
@@ -309,7 +322,7 @@ GTEST_TEST(DeformableDriverContactKinematicsWithBcTest,
   /* Put the bottom vertex under bc. */
   model->SetWallBoundaryCondition(body_id, Vector3d(0, 0, -0.5),
                                   Vector3d(0, 0, 1));
-  plant.AddPhysicalModel(move(deformable_model));
+  plant.AddPhysicalModel(std::move(deformable_model));
 
   /* Define proximity properties for all rigid geometries. */
   geometry::ProximityProperties rigid_proximity_props;
@@ -332,7 +345,7 @@ GTEST_TEST(DeformableDriverContactKinematicsWithBcTest,
   plant.Finalize();
   auto contact_manager = make_unique<CompliantContactManager<double>>();
   const CompliantContactManager<double>* manager = contact_manager.get();
-  plant.SetDiscreteUpdateManager(move(contact_manager));
+  plant.SetDiscreteUpdateManager(std::move(contact_manager));
   const DeformableDriver<double>* driver =
       CompliantContactManagerTester::deformable_driver(*manager);
 
@@ -358,7 +371,8 @@ GTEST_TEST(DeformableDriverContactKinematicsWithBcTest,
         contact_kinematics[i];
     /* The first jacobian entry corresponds to the contribution of the
      deformable clique. */
-    const Matrix3X<double>& J = contact_kinematic.jacobian[0].J;
+    const Matrix3X<double>& J =
+        contact_kinematic.jacobian[0].J.MakeDenseMatrix();
     /* The jacobian isn't completely zero. */
     EXPECT_GT(J.norm(), 0.01);
     /* But the columns corresponding to the vertex under bc are set to zero. */

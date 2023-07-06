@@ -239,8 +239,8 @@ TEST_F(SDPwithOverlappingVariables1, Solve) {
 
   struct csdp::blockmatrix X, Z;
   double* y;
-  csdp::cpp_initsoln(dut.num_X_rows(), dut.g().rows(), C, rhs, constraints,
-                     &X, &y, &Z);
+  csdp::cpp_initsoln(dut.num_X_rows(), dut.g().rows(), C, rhs, constraints, &X,
+                     &y, &Z);
   double pobj, dobj;
   const int ret = csdp::cpp_easy_sdp(
       nullptr, dut.num_X_rows(), dut.g().rows(), C, rhs, constraints,
@@ -268,8 +268,8 @@ TEST_F(SDPwithOverlappingVariables2, Solve) {
 
   struct csdp::blockmatrix X, Z;
   double* y;
-  csdp::cpp_initsoln(dut.num_X_rows(), dut.g().rows(), C, rhs, constraints,
-                     &X, &y, &Z);
+  csdp::cpp_initsoln(dut.num_X_rows(), dut.g().rows(), C, rhs, constraints, &X,
+                     &y, &Z);
   double pobj, dobj;
   const int ret = csdp::cpp_easy_sdp(
       nullptr, dut.num_X_rows(), dut.g().rows(), C, rhs, constraints,
@@ -296,8 +296,8 @@ TEST_F(CsdpDocExample, Solve) {
 
   struct csdp::blockmatrix X, Z;
   double* y;
-  csdp::cpp_initsoln(dut.num_X_rows(), dut.g().rows(), C, rhs, constraints,
-                     &X, &y, &Z);
+  csdp::cpp_initsoln(dut.num_X_rows(), dut.g().rows(), C, rhs, constraints, &X,
+                     &y, &Z);
   double pobj, dobj;
   const int ret = csdp::cpp_easy_sdp(
       nullptr, dut.num_X_rows(), dut.g().rows(), C, rhs, constraints,
@@ -336,8 +336,8 @@ TEST_F(TrivialSDP1, Solve) {
 
   struct csdp::blockmatrix X, Z;
   double* y;
-  csdp::cpp_initsoln(dut.num_X_rows(), dut.g().rows(), C, rhs, constraints,
-                     &X, &y, &Z);
+  csdp::cpp_initsoln(dut.num_X_rows(), dut.g().rows(), C, rhs, constraints, &X,
+                     &y, &Z);
   double pobj, dobj;
   const int ret = csdp::cpp_easy_sdp(
       nullptr, dut.num_X_rows(), dut.g().rows(), C, rhs, constraints,

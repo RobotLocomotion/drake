@@ -59,6 +59,7 @@ build:asan --test_lang_filters=-sh,-py
 # Typical slowdown introduced by AddressSanitizer is 2x.
 # See https://clang.llvm.org/docs/AddressSanitizer.html
 build:asan --test_timeout=150,750,2250,9000  # 2.5x
+build:asan --define=USING_SANITIZER=ON
 
 ### ASan everything build. Clang only. ###
 build:asan_everything --build_tests_only
@@ -91,6 +92,7 @@ build:asan_everything --test_lang_filters=-sh,-py
 # Typical slowdown introduced by AddressSanitizer is 2x.
 # See https://clang.llvm.org/docs/AddressSanitizer.html
 build:asan_everything --test_timeout=150,750,2250,9000  # 2.5x
+build:asan_everything --define=USING_SANITIZER=ON
 
 ### LSan build. Clang only. ###
 build:lsan --build_tests_only
@@ -106,6 +108,7 @@ build:lsan --test_env=LSAN_OPTIONS
 build:lsan --test_env=LSAN_SYMBOLIZER_PATH
 build:lsan --test_tag_filters=-gurobi,-mosek,-snopt,-no_lsan
 build:lsan --test_lang_filters=-sh,-py
+build:lsan --define=USING_SANITIZER=ON
 
 ### LSan everything build. Clang only. ###
 build:lsan_everything --build_tests_only
@@ -124,6 +127,7 @@ build:lsan_everything --run_under=//tools/dynamic_analysis:lsan
 build:lsan_everything --test_env=LSAN_OPTIONS
 build:lsan_everything --test_env=LSAN_SYMBOLIZER_PATH
 build:lsan_everything --test_lang_filters=-sh,-py
+build:lsan_everything --define=USING_SANITIZER=ON
 
 ### TSan build. ###
 build:tsan --build_tests_only
@@ -145,6 +149,7 @@ build:tsan --test_lang_filters=-sh,-py
 # Typical slowdown introduced by ThreadSanitizer is about 5x-15x
 # See https://clang.llvm.org/docs/ThreadSanitizer.html
 build:tsan --test_timeout=300,1500,5400,18000
+build:tsan --define=USING_SANITIZER=ON
 
 ### TSan everything build. ###
 build:tsan_everything --build_tests_only
@@ -169,6 +174,7 @@ build:tsan_everything --test_lang_filters=-sh,-py
 # Typical slowdown introduced by ThreadSanitizer is about 5x-15x
 # See https://clang.llvm.org/docs/ThreadSanitizer.html
 build:tsan_everything --test_timeout=300,1500,5400,18000
+build:tsan_everything --define=USING_SANITIZER=ON
 
 ### UBSan build. ###
 build:ubsan --build_tests_only
@@ -190,6 +196,7 @@ build:ubsan --test_lang_filters=-sh,-py
 # Typical slowdown introduced by UBSan is 1.2x, increasing timeouts to 2x.
 # See https://developer.apple.com/documentation/code_diagnostics/undefined_behavior_sanitizer
 build:ubsan --test_timeout=120,600,1800,7200
+build:ubsan --define=USING_SANITIZER=ON
 
 ### UBSan everything build. ###
 build:ubsan_everything --build_tests_only
@@ -214,6 +221,7 @@ build:ubsan_everything --test_lang_filters=-sh,-py
 # Typical slowdown introduced by UBSan is 1.2x, increasing timeouts to 2x.
 # See https://developer.apple.com/documentation/code_diagnostics/undefined_behavior_sanitizer
 build:ubsan_everything --test_timeout=120,600,1800,7200
+build:ubsan_everything --define=USING_SANITIZER=ON
 
 ### Memcheck build. ###
 build:memcheck --build_tests_only
@@ -232,6 +240,7 @@ build:memcheck --test_tag_filters=-gurobi,-mosek,-snopt,-lint,-no_memcheck,-no_v
 # See http://valgrind.org/info/about.html
 build:memcheck --test_timeout=1500,7500,22500,90000  # 25x
 build:memcheck --test_env=VALGRIND_OPTS
+build:memcheck --define=USING_MEMCHECK=ON
 
 ### Memcheck everything build. ###
 build:memcheck_everything --build_tests_only
@@ -249,6 +258,7 @@ build:memcheck_everything --test_lang_filters=-sh,-py
 # Slowdown factor can range from 5-100.
 # See http://valgrind.org/info/about.html
 build:memcheck_everything --test_timeout=1500,7500,22500,90000  # 25x
+build:memcheck_everything --define=USING_MEMCHECK=ON
 
 # Fast memcheck.
 #
@@ -264,6 +274,7 @@ build:fastmemcheck --test_lang_filters=-sh,-py
 # Slowdown factor can range from 5-100.
 # See http://valgrind.org/info/about.html
 build:fastmemcheck --test_timeout=1500,7500,22500,90000  # 25x
+build:fastmemcheck --define=USING_MEMCHECK=ON
 
 ### DRD: A Valgrind thread error detector ###
 # Not tested in continuous integration so may fail, even on master.

@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
 #include <functional>
 #include <map>
 #include <optional>
@@ -80,6 +81,12 @@ hash_append(
   hasher(std::addressof(item), sizeof(item));
 }
 
+/// Provides @ref hash_append for bare pointers.
+template <class HashAlgorithm, class T>
+void hash_append(HashAlgorithm& hasher, const T* item) noexcept {
+  hash_append(hasher, reinterpret_cast<std::uintptr_t>(item));
+};
+
 /// Provides @ref hash_append for enumerations.
 template <class HashAlgorithm, class T>
 std::enable_if_t<std::is_enum_v<T>>
@@ -117,14 +124,16 @@ void hash_append(
   hash_append(hasher, item.size());
 }
 
+// Prior to this point, we've defined hashers for primitive types and similar
+// kinds of "singular" types, where the template arguments form a bounded set.
+//
+// Following this point, we'll define hashers for types where the template
+// argument can be anything (e.g., collections). That means for proper namespace
+// lookups we need to declare them all first, and then define them all second.
+
 /// Provides @ref hash_append for std::pair.
 template <class HashAlgorithm, class T1, class T2>
-void hash_append(
-    HashAlgorithm& hasher, const std::pair<T1, T2>& item) noexcept {
-  using drake::hash_append;
-  hash_append(hasher, item.first);
-  hash_append(hasher, item.second);
-}
+void hash_append(HashAlgorithm& hasher, const std::pair<T1, T2>& item) noexcept;
 
 /// Provides @ref hash_append for std::optional.
 ///
@@ -133,8 +142,39 @@ void hash_append(
 /// same hash as that of the value `v` itself.  Hash operations implemented
 /// with this `hash_append` do *not* provide that invariant.
 template <class HashAlgorithm, class T>
-void hash_append(
-    HashAlgorithm& hasher, const std::optional<T>& item) noexcept {
+void hash_append(HashAlgorithm& hasher, const std::optional<T>& item) noexcept;
+
+/// Provides @ref hash_append for std::map.
+///
+/// Note that there is no `hash_append` overload for `std::unordered_map`. See
+/// [N3980](http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2014/n3980.html#unordered)
+/// for details.
+template <class HashAlgorithm, class T1, class T2, class Compare,
+          class Allocator>
+void hash_append(HashAlgorithm& hasher,
+                 const std::map<T1, T2, Compare, Allocator>& item) noexcept;
+
+/// Provides @ref hash_append for std::set.
+///
+/// Note that there is no `hash_append` overload for `std::unordered_set. See
+/// [N3980](http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2014/n3980.html#unordered)
+/// for details.
+template <class HashAlgorithm, class Key, class Compare, class Allocator>
+void hash_append(HashAlgorithm& hasher,
+                 const std::set<Key, Compare, Allocator>& item) noexcept;
+
+// Now that all of the templated hashers are declared, we can define them.
+
+template <class HashAlgorithm, class T1, class T2>
+void hash_append(HashAlgorithm& hasher,
+                 const std::pair<T1, T2>& item) noexcept {
+  using drake::hash_append;
+  hash_append(hasher, item.first);
+  hash_append(hasher, item.second);
+}
+
+template <class HashAlgorithm, class T>
+void hash_append(HashAlgorithm& hasher, const std::optional<T>& item) noexcept {
   if (item) {
     hash_append(hasher, *item);
   }
@@ -156,34 +196,16 @@ void hash_append_range(
   hash_append(hasher, count);
 }
 
-/// Provides @ref hash_append for std::map.
-///
-/// Note that there is no `hash_append` overload for `std::unordered_map`, and
-/// such an overload must never appear.  See n3980.html#unordered for details.
-template <
-  class HashAlgorithm,
-  class T1,
-  class T2,
-  class Compare,
-  class Allocator>
-void hash_append(
-    HashAlgorithm& hasher,
-    const std::map<T1, T2, Compare, Allocator>& item) noexcept {
+template <class HashAlgorithm, class T1, class T2, class Compare,
+          class Allocator>
+void hash_append(HashAlgorithm& hasher,
+                 const std::map<T1, T2, Compare, Allocator>& item) noexcept {
   return hash_append_range(hasher, item.begin(), item.end());
 };
 
-/// Provides @ref hash_append for std::set.
-///
-/// Note that there is no `hash_append` overload for `std::unordered_set`, and
-/// such an overload must never appear.  See n3980.html#unordered for details.
-template <
-  class HashAlgorithm,
-  class Key,
-  class Compare,
-  class Allocator>
-void hash_append(
-    HashAlgorithm& hasher,
-    const std::set<Key, Compare, Allocator>& item) noexcept {
+template <class HashAlgorithm, class Key, class Compare, class Allocator>
+void hash_append(HashAlgorithm& hasher,
+                 const std::set<Key, Compare, Allocator>& item) noexcept {
   return hash_append_range(hasher, item.begin(), item.end());
 };
 
@@ -225,9 +247,7 @@ class FNV1aHasher {
   }
 
   /// Returns the hash.
-  explicit constexpr operator size_t() noexcept {
-    return hash_;
-  }
+  explicit constexpr operator size_t() noexcept { return hash_; }
 
  private:
   static_assert(sizeof(result_type) == (64 / 8), "We require a 64-bit size_t");

@@ -12,7 +12,6 @@ void def_geometry_all(py::module m) {
   py::dict vars = m.attr("__dict__");
   py::exec(
       "from pydrake.geometry import *\n"
-      "from pydrake.geometry.render import *\n"
       "from pydrake.geometry.optimization import *\n",
       py::globals(), vars);
 }
@@ -26,7 +25,7 @@ PYBIND11_MODULE(geometry, m) {
    of bindings executed prior to it. */
   DefineGeometryCommon(m);
   DefineGeometryHydro(m);
-  DefineGeometryRender(m.def_submodule("render"));
+  DefineGeometryRender(m);
   DefineGeometrySceneGraph(m);
   DefineGeometryOptimization(m.def_submodule("optimization"));
   DefineGeometryVisualizers(m);

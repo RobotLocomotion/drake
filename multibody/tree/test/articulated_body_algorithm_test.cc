@@ -91,6 +91,8 @@ class FeatherstoneMobilizer final : public MobilizerImpl<T, 2, 2> {
     tau = H_FM_.transpose() * F_Mo_F.get_coeffs();
   }
 
+  bool is_velocity_equal_to_qdot() const override { return true; }
+
   void MapVelocityToQDot(
       const systems::Context<T>& context,
       const Eigen::Ref<const VectorX<T>>& v,
@@ -191,9 +193,9 @@ class FeatherstoneMobilizer final : public MobilizerImpl<T, 2, 2> {
 GTEST_TEST(ArticulatedBodyInertiaAlgorithm, FeatherstoneExample) {
   // Create box (B).
   const double Lx = 0.4, Ly = 1.0, Lz = 1.0;
-  const UnitInertia<double> G_Bcm = UnitInertia<double>::SolidBox(Lx, Ly, Lz);
   const double mass_box = 2.0;
-  const SpatialInertia<double> M_Bcm(mass_box, Vector3d::Zero(), G_Bcm);
+  const SpatialInertia<double> M_Bcm =
+      SpatialInertia<double>::SolidBoxWithMass(mass_box, Lx, Ly, Lz);
 
   // Create cylinder (C) in box.
   // Note that the unit inertia of the cylinder is taken about the x-axis.
@@ -268,9 +270,9 @@ GTEST_TEST(ArticulatedBodyInertiaAlgorithm, FeatherstoneExample) {
 GTEST_TEST(ArticulatedBodyInertiaAlgorithm, ModifiedFeatherstoneExample) {
   // Create box (B).
   const double Lx = 0.5, Ly = 1.2, Lz = 1.6;
-  const UnitInertia<double> G_Bcm = UnitInertia<double>::SolidBox(Lx, Ly, Lz);
   const double mass_box = 2.4;
-  const SpatialInertia<double> M_Bcm(mass_box, Vector3d::Zero(), G_Bcm);
+  const SpatialInertia<double> M_Bcm =
+      SpatialInertia<double>::SolidBoxWithMass(mass_box, Lx, Ly, Lz);
 
   // Create cylinder (C) in box.
   // Note that the unit inertia of the cylinder is taken about the x-axis.

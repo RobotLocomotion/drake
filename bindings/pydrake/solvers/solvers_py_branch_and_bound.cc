@@ -1,6 +1,4 @@
-#include "pybind11/eigen.h"
-#include "pybind11/pybind11.h"
-
+#include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
@@ -18,9 +16,24 @@ void DefineSolversBranchAndBound(py::module m) {
   {
     using Class = MixedIntegerBranchAndBound;
     constexpr auto& cls_doc = doc.MixedIntegerBranchAndBound;
-    py::class_<Class>(m, "MixedIntegerBranchAndBound", cls_doc.doc)
-        .def(py::init<const MathematicalProgram&, const SolverId&>(),
-            py::arg("prog"), py::arg("solver_id"), cls_doc.ctor.doc)
+    py::class_<Class> bnb_cls(m, "MixedIntegerBranchAndBound", cls_doc.doc);
+
+    {
+      using Nested = MixedIntegerBranchAndBound::Options;
+      constexpr auto& options_doc = cls_doc.Options;
+      py::class_<Nested> options_cls(bnb_cls, "Options", options_doc.doc);
+      options_cls.def(ParamInit<Nested>());
+      DefAttributesUsingSerialize(&options_cls, options_doc);
+      DefReprUsingSerialize(&options_cls);
+      DefCopyAndDeepCopy(&options_cls);
+    }
+
+    bnb_cls
+        .def(py::init<const MathematicalProgram&, const SolverId&,
+                 MixedIntegerBranchAndBound::Options>(),
+            py::arg("prog"), py::arg("solver_id"),
+            py::arg("options") = MixedIntegerBranchAndBound::Options{},
+            cls_doc.ctor.doc)
         .def("Solve", &Class::Solve, cls_doc.Solve.doc)
         .def("GetOptimalCost", &Class::GetOptimalCost,
             cls_doc.GetOptimalCost.doc)

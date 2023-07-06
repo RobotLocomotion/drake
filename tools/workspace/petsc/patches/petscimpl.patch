@@ -8,7 +8,7 @@
 
  /* SUBMANSEC = Sys */
 
-@@ -1161,9 +1162,9 @@ struct PetscCommStash {
+@@ -1317,9 +1318,9 @@ struct PetscCommStash {
    PetscCommDuplicate(), PetscCommDestroy(), PetscCommGetNewTag(), PetscObjectGetName()
  */
  typedef struct {
@@ -21,12 +21,14 @@
    PetscMPIInt           *iflags;    /* length of comm size, shared by all calls to PetscCommBuildTwoSided_Allreduce/RedScatter on this comm */
    struct PetscCommStash *comms;     /* communicators available for PETSc to pass off to other packages */
  } PetscCommCounter;
-@@ -1259,7 +1260,7 @@ static inline PetscErrorCode PetscSpinlockDestroy(PetscSpinlock *omp_lock)
-   return 0;
+@@ -1456,9 +1457,9 @@ static inline PetscErrorCode PetscSpinlockDestroy(PetscSpinlock *omp_lock)
  }
+   #else
+     #if defined(__cplusplus)
+-      #error "Thread safety requires either --download-concurrencykit, std::atomic, or --with-openmp"
++      #include <petsc_drake_pthread.h>
      #else
--      #error "Thread safety requires either --with-openmp or --download-concurrencykit"
+-      #error "Thread safety requires either --download-concurrencykit, stdatomic.h, or --with-openmp"
 +      #include <petsc_drake_pthread.h>
      #endif
-
-   #else
+   #endif

@@ -29,9 +29,7 @@ class TestCommon(unittest.TestCase):
                 ]))
 
     def test_find_resource_or_throw(self):
-        mut.FindResourceOrThrow(
-            'drake/examples/atlas/urdf/atlas_convex_hull.urdf'
-            )
+        mut.FindResourceOrThrow("drake/examples/acrobot/Acrobot.urdf")
 
     def test_test_temp_directory(self):
         temp_dir = mut.temp_directory()

@@ -195,16 +195,6 @@ class CollisionChecker {
     return plant().get_body(body_index);
   }
 
-  DRAKE_DEPRECATED("2023-07-01", "Use frame.scoped_name() instead.")
-  std::string GetScopedName(const multibody::Frame<double>& frame) const {
-    return frame.scoped_name().to_string();
-  }
-
-  DRAKE_DEPRECATED("2023-07-01", "Use body.scoped_name() instead.")
-  std::string GetScopedName(const multibody::Body<double>& body) const {
-    return body.scoped_name().to_string();
-  }
-
   /** Gets the set of model instances belonging to the robot. The returned
    vector has no duplicates and is in sorted order. */
   const std::vector<multibody::ModelInstanceIndex>& robot_model_instances()
@@ -665,6 +655,11 @@ class CollisionChecker {
    @throws std::exception if `body_index` is out of range.
    @throws std::exception if `body_index` refers to an environment body. */
   void SetCollisionFilteredWithAllBodies(multibody::BodyIndex body_index);
+
+  /** Overload that uses body references. */
+  void SetCollisionFilteredWithAllBodies(const multibody::Body<double>& body) {
+    SetCollisionFilteredWithAllBodies(body.index());
+  }
 
   //@}
 
@@ -1146,8 +1141,12 @@ class CollisionChecker {
   };
 
   /** Removes all of the given added shapes (if they exist) from the checker. */
-  virtual void DoRemoveAddedGeometries(
-      const std::vector<AddedShape>& shapes) = 0;
+  virtual void RemoveAddedGeometries(const std::vector<AddedShape>& shapes) = 0;
+
+  /** Derived collision checkers can do further work in this function in
+   response to changes in collision filters. This is called after any changes
+   are made to the collision filter matrix. */
+  virtual void UpdateCollisionFilters() = 0;
 
   /** Derived collision checkers are responsible for defining the reported
    measurements. But they must adhere to the characteristics documented on

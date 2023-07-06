@@ -29,17 +29,17 @@ using std::shared_ptr;
 using std::unique_ptr;
 using std::vector;
 
+using drake::Vector1d;
+using drake::solvers::test::GenericTrivialCost2;
 using Eigen::Matrix;
 using Eigen::Matrix2d;
 using Eigen::Matrix3d;
 using Eigen::Ref;
 using Eigen::RowVector2d;
-using drake::Vector1d;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
 using Eigen::Vector4d;
 using Eigen::VectorXd;
-using drake::solvers::test::GenericTrivialCost2;
 
 namespace drake {
 
@@ -94,8 +94,7 @@ GTEST_TEST(testCost, testLinearCost) {
   // Test Eval with AutoDiff scalar.
   Eigen::Matrix2Xd x_grad(2, 1);
   x_grad << 5, 6;
-  const AutoDiffVecXd x_autodiff =
-      math::InitializeAutoDiff(x0, x_grad);
+  const AutoDiffVecXd x_autodiff = math::InitializeAutoDiff(x0, x_grad);
   AutoDiffVecXd y_autodiff;
   cost->Eval(x_autodiff, &y_autodiff);
   EXPECT_TRUE(CompareMatrices(math::ExtractValue(y_autodiff),
@@ -169,8 +168,7 @@ GTEST_TEST(TestQuadraticCost, NonconvexCost) {
   // Test Eval with AutoDiff scalar.
   Eigen::Matrix2Xd x_grad(2, 1);
   x_grad << 5, 6;
-  const AutoDiffVecXd x_autodiff =
-      math::InitializeAutoDiff(x0, x_grad);
+  const AutoDiffVecXd x_autodiff = math::InitializeAutoDiff(x0, x_grad);
   AutoDiffVecXd y_autodiff;
   cost->Eval(x_autodiff, &y_autodiff);
   const AutoDiffXd y_autodiff_expected =
@@ -450,7 +448,7 @@ GTEST_TEST(TestL2NormCost, Eval) {
   EXPECT_TRUE(CompareMatrices(b, cost.b()));
 
   const Vector4d x0{5.2, 3.4, -1.3, 2.1};
-  const Vector2d z = A*x0 + b;
+  const Vector2d z = A * x0 + b;
 
   // Test double.
   {
@@ -467,8 +465,8 @@ GTEST_TEST(TestL2NormCost, Eval) {
     EXPECT_NEAR(z.norm(), math::ExtractValue(y)[0], 1e-15);
     const Matrix<double, 1, 4> grad_expected =
         (x0.transpose() * A.transpose() * A + b.transpose() * A) / (z.norm());
-    EXPECT_TRUE(CompareMatrices(math::ExtractGradient(y),
-                                grad_expected, 1e-15));
+    EXPECT_TRUE(
+        CompareMatrices(math::ExtractGradient(y), grad_expected, 1e-15));
   }
 
   // Test Symbolic.
@@ -490,14 +488,12 @@ GTEST_TEST(TestL2NormCost, UpdateCoefficients) {
   EXPECT_EQ(cost.b().rows(), 4);
 
   // Can't change the number of variables.
-  EXPECT_THROW(
-      cost.UpdateCoefficients(Matrix3d::Identity(), Vector3d::Zero()),
-      std::exception);
+  EXPECT_THROW(cost.UpdateCoefficients(Matrix3d::Identity(), Vector3d::Zero()),
+               std::exception);
 
   // A and b must have the same number of rows.
-  EXPECT_THROW(
-      cost.UpdateCoefficients(Matrix3d::Identity(), Vector4d::Zero()),
-      std::exception);
+  EXPECT_THROW(cost.UpdateCoefficients(Matrix3d::Identity(), Vector4d::Zero()),
+               std::exception);
 }
 
 GTEST_TEST(TestL2NormCost, Display) {
@@ -737,6 +733,45 @@ GTEST_TEST(EvaluatorCost, Eval) {
   EXPECT_NEAR(y2(0), a.dot(evaluator2_y) + b, 1E-12);
 }
 
-}  // anonymous namespace
+GTEST_TEST(ExpressionCost, Basic) {
+  using std::sin;
+  using std::cos;
+  Variable x("x"), y("y");
+  symbolic::Expression e = x * sin(y);
+  ExpressionCost cost(e);
+
+  EXPECT_TRUE(e.EqualTo(cost.expression()));
+  EXPECT_EQ(cost.vars().size(), 2);
+  EXPECT_EQ(cost.vars()[0], x);
+  EXPECT_EQ(cost.vars()[1], y);
+
+  EXPECT_EQ(cost.num_vars(), 2);
+  Vector2d x_d(1.2, 3.5);
+  VectorXd y_d;
+  Vector1d y_expected(1.2 * sin(3.5));
+  cost.Eval(x_d, &y_d);
+  EXPECT_TRUE(CompareMatrices(y_d, y_expected));
+
+  AutoDiffVecXd x_ad = math::InitializeAutoDiff(x_d);
+  AutoDiffVecXd y_ad;
+  RowVector2d y_deriv_expected(sin(3.5), 1.2*cos(3.5));
+  cost.Eval(x_ad, &y_ad);
+  EXPECT_TRUE(CompareMatrices(math::ExtractValue(y_ad), y_expected));
+  EXPECT_TRUE(CompareMatrices(math::ExtractGradient(y_ad), y_deriv_expected));
+
+  Variable x_test("x"), y_test("y");
+  Vector2<Variable> x_e(x_test, y_test);
+  VectorX<Expression> y_e;
+  Expression e_expected = x_test * sin(y_test);
+  cost.Eval(x_e, &y_e);
+  EXPECT_EQ(y_e.size(), 1);
+  EXPECT_TRUE(y_e[0].EqualTo(e_expected));
+
+  std::ostringstream os;
+  cost.Display(os, x_e);
+  EXPECT_EQ(os.str(), "ExpressionCost (x * sin(y))");
+}
+
+}  // namespace
 }  // namespace solvers
 }  // namespace drake

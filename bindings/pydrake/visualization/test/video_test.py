@@ -6,7 +6,7 @@ import textwrap
 import unittest
 
 from pydrake.common.test_utilities import numpy_compare
-from pydrake.geometry.render import RenderLabel
+from pydrake.geometry import RenderLabel
 from pydrake.math import RollPitchYaw, RigidTransform
 from pydrake.multibody.plant import AddMultibodyPlantSceneGraph
 from pydrake.multibody.parsing import Parser
@@ -160,13 +160,13 @@ class TestVideoWriter(unittest.TestCase):
             filename=filename, builder=builder, sensor_pose=sensor_pose,
             fps=fps, kinds=kinds, backend=backend)
 
-        # Simulate for one second.
+        # Simulate for one second (add torque to the plant to make it move).
         diagram = builder.Build()
         simulator = Simulator(diagram)
         diagram_context = simulator.get_mutable_context()
         plant_context = plant.GetMyMutableContextFromRoot(diagram_context)
         plant.get_actuation_input_port().FixValue(
-            plant_context, [0] * plant.num_positions())
+            plant_context, [10] * plant.num_positions())
         simulator.AdvanceTo(1.0)
         writer.Save()
 
@@ -202,6 +202,18 @@ class TestVideoWriter(unittest.TestCase):
         """Tests cv2 (mp4) output of a color+depth+label."""
         filename = os.environ["TEST_UNDECLARED_OUTPUTS_DIR"] + "/multi.mp4"
         self._test_usage(filename, "cv2", ("color", "depth", "label"))
+
+    @unittest.skipUnless(_PLATFORM_SUPPORTS_CV2, "Not tested on this platform")
+    def test_cv2_bad_fourcc(self):
+        """Tests cv2 sanity checking of fourcc."""
+        builder = DiagramBuilder()
+        AddMultibodyPlantSceneGraph(builder, time_step=0.0)
+        filename = os.environ["TEST_UNDECLARED_OUTPUTS_DIR"] + "/bad.mp4"
+        with self.assertRaisesRegex(ValueError, "wrong.*must be"):
+            VideoWriter.AddToBuilder(
+                filename=filename, builder=builder,
+                sensor_pose=RigidTransform(), fps=16, backend="cv2",
+                fourcc="wrong")
 
     def test_bad_backend(self):
         """Tests detection of a malformed backend setting."""
