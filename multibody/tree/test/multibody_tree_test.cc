@@ -241,6 +241,16 @@ GTEST_TEST(MultibodyTree, VerifyModelBasics) {
       ".* already contains a body named 'iiwa_link_5'. "
       "Body names must be unique within a given model.");
 
+  // Attempt to add a frame having the same name as a frame already part of the
+  // model. This is not allowed and an exception should be thrown.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      model->AddFrame<FixedOffsetFrame>("iiwa_link_5",
+                                        model->GetBodyByName("iiwa_link_1"),
+                                        RigidTransform<double>()),
+      /* Verify this method is throwing for the right reasons. */
+      ".* already contains a frame named 'iiwa_link_5'. "
+      "Frame names must be unique within a given model.");
+
   // Attempt to add a joint having the same name as a joint already part of the
   // model. This is not allowed and an exception should be thrown.
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -253,8 +263,8 @@ GTEST_TEST(MultibodyTree, VerifyModelBasics) {
       ".* already contains a joint named 'iiwa_joint_4'. "
       "Joint names must be unique within a given model.");
 
-  // Attempt to add a joint having the same name as a joint already part of the
-  // model. This is not allowed and an exception should be thrown.
+  // Attempt to add an actuator having the same name as an actuator already part
+  // of the model. This is not allowed and an exception should be thrown.
   DRAKE_EXPECT_THROWS_MESSAGE(
       model->AddJointActuator(
           "iiwa_actuator_4",

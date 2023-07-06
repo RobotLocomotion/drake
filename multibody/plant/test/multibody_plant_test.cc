@@ -392,8 +392,8 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
   EXPECT_EQ(pendulum_frame_indices[1], lower.body_frame().index());
   EXPECT_EQ(pendulum_frame_indices[2], model_frame.index());
   EXPECT_EQ(pendulum_frame_indices[3], pin_joint.frame_on_child().index());
-  EXPECT_EQ(pendulum_frame_indices[4], weld_joint.frame_on_parent().index());
-  EXPECT_EQ(pendulum_frame_indices[5], weld_joint.frame_on_child().index());
+  EXPECT_EQ(pendulum_frame_indices[4], weld_joint.frame_on_child().index());
+  EXPECT_EQ(pendulum_frame_indices[5], weld_joint.frame_on_parent().index());
 }
 
 GTEST_TEST(MultibodyPlantTest, AddJointActuator) {
