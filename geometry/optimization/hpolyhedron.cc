@@ -232,6 +232,19 @@ VectorXd HPolyhedron::ChebyshevCenter() const {
   return result.GetSolution(x);
 }
 
+HPolyhedron HPolyhedron::Scale(
+    double scale, const Eigen::Ref<const Eigen::VectorXd>& center) const {
+  DRAKE_DEMAND(scale >= 0.0);
+  VectorXd c = center;
+  if (center.size() == 0) {
+    c = ChebyshevCenter();
+  } else {
+    DRAKE_DEMAND(center.size() == ambient_dimension());
+  }
+  return HPolyhedron(
+      A_, std::pow(scale, 1.0 / ambient_dimension()) * (b_ - A_ * c) + A_ * c);
+}
+
 HPolyhedron HPolyhedron::CartesianProduct(const HPolyhedron& other) const {
   MatrixXd A_product = MatrixXd::Zero(A_.rows() + other.A().rows(),
                                       A_.cols() + other.A().cols());
