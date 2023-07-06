@@ -23,7 +23,7 @@ using solvers::Solve;
 GTEST_TEST(SpectrahedronTest, DefaultCtor) {
   Spectrahedron spect;
   EXPECT_EQ(spect.ambient_dimension(), 0);
-  EXPECT_THROW(spect.IsEmpty(), std::exception);
+  EXPECT_FALSE(spect.IsEmpty());
 }
 
 GTEST_TEST(SpectrahedronTest, Attributes) {

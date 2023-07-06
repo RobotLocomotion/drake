@@ -23,7 +23,7 @@ class HPolyhedron final : public ConvexSet {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(HPolyhedron)
 
-  /** Constructs a default (zero-dimensional) polyhedron. */
+  /** Constructs a default (zero-dimensional, nonempty) polyhedron. */
   HPolyhedron();
 
   /** Constructs the polyhedron.
@@ -209,6 +209,7 @@ class HPolyhedron final : public ConvexSet {
 
   bool DoIsBounded() const final;
 
+  /** By convention, we treat a zero-dimensional HPolyhedron as nonempty. */
   bool DoIsEmpty() const final;
 
   // N.B. No need to override DoMaybeGetPoint here.

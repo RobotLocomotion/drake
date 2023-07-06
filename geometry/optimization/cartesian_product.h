@@ -27,7 +27,7 @@ class CartesianProduct final : public ConvexSet {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CartesianProduct)
 
-  /** Constructs a default (zero-dimensional) set. */
+  /** Constructs a default (zero-dimensional, nonempty) set. */
   CartesianProduct();
 
   /** Constructs the product from a vector of convex sets. */
@@ -77,6 +77,10 @@ class CartesianProduct final : public ConvexSet {
 
   bool DoIsBounded() const final;
 
+  /** If there are no sets in the product, returns nonempty by convention.
+  See: https://en.wikipedia.org/wiki/Empty_product#Nullary_Cartesian_product
+  Otherwise, if any set in the cartesian product is empty, the whole product
+  is empty. */
   bool DoIsEmpty() const final;
 
   std::optional<Eigen::VectorXd> DoMaybeGetPoint() const final;

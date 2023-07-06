@@ -68,6 +68,20 @@ bool Intersection::DoIsBounded() const {
       "elements is not currently supported.");
 }
 
+bool Intersection::DoIsEmpty() const {
+  if (sets_.size() == 0) {
+    return false;
+  }
+  // The empty set is annihilatory in intersection.
+  for (const auto& s : sets_) {
+    if (s->IsEmpty()) {
+      return true;
+    }
+  }
+  // Now actually see if the intersection is nonempty.
+  return ConvexSet::DoIsEmpty();
+}
+
 std::optional<VectorXd> Intersection::DoMaybeGetPoint() const {
   std::optional<VectorXd> result;
   for (const auto& s : sets_) {

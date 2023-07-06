@@ -116,7 +116,7 @@ bool CartesianProduct::DoIsBounded() const {
 
 bool CartesianProduct::DoIsEmpty() const {
   if (sets_.size() == 0) {
-    return true;
+    return false;
   }
   for (const auto& s : sets_) {
     if (s->IsEmpty()) {
@@ -199,6 +199,15 @@ CartesianProduct::DoAddPointInSetConstraints(
   }
   int index = 0;
   for (const auto& s : sets_) {
+    if (s->ambient_dimension() == 0) {
+      std::optional<Variable> new_var =
+          ConvexSet::HandleZeroAmbientDimensionConstraints(prog, *s,
+                                                           &new_constraints);
+      if (new_var.has_value()) {
+        new_vars.push_back(new_var.value());
+      }
+      continue;
+    }
     const auto [new_var_in_s, new_constraints_in_s] =
         s->AddPointInSetConstraints(prog,
                                     y.segment(index, s->ambient_dimension()));
@@ -234,6 +243,10 @@ CartesianProduct::DoAddPointInNonnegativeScalingConstraints(
   }
   int index = 0;
   for (const auto& s : sets_) {
+    if (s->ambient_dimension() == 0) {
+      ConvexSet::HandleZeroAmbientDimensionConstraints(prog, *s, &constraints);
+      continue;
+    }
     auto new_constraints = s->AddPointInNonnegativeScalingConstraints(
         prog, y.segment(index, s->ambient_dimension()), t);
     index += s->ambient_dimension();
@@ -264,6 +277,11 @@ CartesianProduct::DoAddPointInNonnegativeScalingConstraints(
         prog->AddLinearEqualityConstraint(Aeq, beq, {y, x, t}));
     int index = 0;
     for (const auto& s : sets_) {
+      if (s->ambient_dimension() == 0) {
+        ConvexSet::HandleZeroAmbientDimensionConstraints(prog, *s,
+                                                         &constraints);
+        continue;
+      }
       int set_dim = s->ambient_dimension();
       auto new_constraints = s->AddPointInNonnegativeScalingConstraints(
           prog, MatrixXd::Identity(set_dim, set_dim), VectorXd::Zero(set_dim),
@@ -276,6 +294,11 @@ CartesianProduct::DoAddPointInNonnegativeScalingConstraints(
   } else {
     int index = 0;
     for (const auto& s : sets_) {
+      if (s->ambient_dimension() == 0) {
+        ConvexSet::HandleZeroAmbientDimensionConstraints(prog, *s,
+                                                         &constraints);
+        continue;
+      }
       auto new_constraints = s->AddPointInNonnegativeScalingConstraints(
           prog, A_x.middleRows(index, s->ambient_dimension()),
           b_x.segment(index, s->ambient_dimension()), c, d, x, t);

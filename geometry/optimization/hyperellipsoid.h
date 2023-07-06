@@ -29,7 +29,7 @@ class Hyperellipsoid final : public ConvexSet {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Hyperellipsoid)
 
-  /** Constructs a default (zero-dimensional) set. */
+  /** Constructs a default (zero-dimensional, nonempty) set. */
   Hyperellipsoid();
 
   /** Constructs the ellipsoid.
@@ -110,6 +110,8 @@ class Hyperellipsoid final : public ConvexSet {
 
   bool DoIsBounded() const final;
 
+  /** A hyperellipsoid can never be empty -- it always contains its center. This
+  includes the zero-dimensional case. */
   bool DoIsEmpty() const final;
 
   // N.B. No need to override DoMaybeGetPoint here.
