@@ -200,10 +200,10 @@ GTEST_TEST(ArticulatedBodyInertiaAlgorithm, FeatherstoneExample) {
   // Create cylinder (C) in box.
   // Note that the unit inertia of the cylinder is taken about the x-axis.
   const double r = 0.2, L = 0.3;
-  const UnitInertia<double> G_Ccm =
-      UnitInertia<double>::SolidCylinder(r, L, Vector3d::UnitX());
   const double mass_cylinder = 0.8;
-  const SpatialInertia<double> M_Ccm(mass_cylinder, Vector3d::Zero(), G_Ccm);
+  const SpatialInertia<double> M_Ccm =
+      SpatialInertia<double>::SolidCylinderWithMass(
+          mass_cylinder, r, L, Vector3d::UnitX());
 
   // Create an empty model.
   auto tree_owned = std::make_unique<MultibodyTree<double>>();
@@ -277,10 +277,10 @@ GTEST_TEST(ArticulatedBodyInertiaAlgorithm, ModifiedFeatherstoneExample) {
   // Create cylinder (C) in box.
   // Note that the unit inertia of the cylinder is taken about the x-axis.
   const double r = 0.3, L = 0.3;
-  const UnitInertia<double> G_Ccm =
-      UnitInertia<double>::SolidCylinder(r, L, Vector3d::UnitX());
   const double mass_cylinder = 0.6;
-  const SpatialInertia<double> M_Ccm(mass_cylinder, Vector3d::Zero(), G_Ccm);
+  const SpatialInertia<double> M_Ccm =
+      SpatialInertia<double>::SolidCylinderWithMass(
+          mass_cylinder, r, L, Vector3d::UnitX());
 
   // Create an empty model.
   auto tree_owned = std::make_unique<MultibodyTree<double>>();
