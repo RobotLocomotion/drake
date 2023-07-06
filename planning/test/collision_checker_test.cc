@@ -610,6 +610,52 @@ TEST_F(TrivialCollisionCheckerTest, ClonesAndContexts) {
             dut_->num_allocated_contexts() + 1 /* prototype context */);
 }
 
+// We want to confirm that a distance/interpolation function that can't operate
+// on a plant's zero configuration, but *can* operate on a non-zero default
+// configuration, will still be considered valid.
+TEST_F(TrivialCollisionCheckerTest, NonZeroDefaultConfiguration) {
+  // We need to customize the plant before creating the checker, so we can't
+  // use dut_.
+  auto [robot, robot_index] =
+      MakeModel({.weld_robot = false, .on_env_base = true});
+
+  // Well get the default and zero configurations.
+  auto context = robot->plant().CreateDefaultContext();
+  const VectorXd default_config =
+      context->get_continuous_state_vector().CopyToVector().head(
+          robot->plant().num_positions());
+  const VectorXd zero_config = VectorXd::Zero(default_config.size());
+
+  // Make sure the default configuration isn't all zeros.
+  EXPECT_TRUE((default_config.array() != 0).any());
+
+  std::unique_ptr<CollisionChecker> dut =
+      MakeUnallocatedChecker(std::move(robot), {robot_index});
+
+  // Create distance function that hates all zeros -- and confirm that.
+  auto angry_distance = [](const VectorXd& q0, const VectorXd& q1) -> double {
+    if ((q0.array() == 0).all() || (q1.array() == 0).all()) {
+      throw std::runtime_error("All zeros is bad!");
+    }
+    return (q1 - q0).norm();
+  };
+  EXPECT_NO_THROW(angry_distance(default_config, default_config));
+  EXPECT_THROW(angry_distance(zero_config, zero_config), std::exception);
+  EXPECT_NO_THROW(dut->SetConfigurationDistanceFunction(angry_distance));
+
+  // Create interpolation function that hates all zeros -- and confirm that.
+  auto angry_interp = [](const VectorXd& q0, const VectorXd& q1,
+                         double r) -> VectorXd {
+    if ((q0.array() == 0).all() || (q1.array() == 0).all()) {
+      throw std::runtime_error("All zeros is bad!");
+    }
+    return (1 - r) * q0 + r * q1;
+  };
+  EXPECT_NO_THROW(angry_interp(default_config, default_config, 0));
+  EXPECT_THROW(angry_interp(zero_config, zero_config, 0), std::exception);
+  EXPECT_NO_THROW(dut->SetConfigurationInterpolationFunction(angry_interp));
+}
+
 TEST_F(TrivialCollisionCheckerTest, Padding) {
   const int nbodies = dut_->plant().num_bodies();
   ASSERT_EQ(nbodies, 6);
