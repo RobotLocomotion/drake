@@ -116,7 +116,9 @@ bool CartesianProduct::DoIsBounded() const {
 
 bool CartesianProduct::DoIsEmpty() const {
   if (sets_.size() == 0) {
-    return true;
+    // By convention, the empty cartesian product is considered nonempty.
+    // See https://en.wikipedia.org/wiki/Empty_product#Nullary_Cartesian_product
+    return false;
   }
   for (const auto& s : sets_) {
     if (s->IsEmpty()) {
@@ -199,6 +201,23 @@ CartesianProduct::DoAddPointInSetConstraints(
   }
   int index = 0;
   for (const auto& s : sets_) {
+    if (s->ambient_dimension() == 0) {
+      // Special logic is required if the ambient dimension is zero. The set may
+      // either be {} (empty) or {0} (nonempty). In the former case, we add a
+      // trivially infeasible constraint, and also warn the user (since they
+      // probably didn't intend to do this). In the latter case, the condition
+      // is trivially satisfied, so no further action is needed for this set.
+      if (s->IsEmpty()) {
+        drake::log()->warn(
+            "A set in this cartesian product is empty, making"
+            " the MathematicalProgram trivially infeasible.");
+        VectorXDecisionVariable vars = prog->NewContinuousVariables(1);
+        new_vars.push_back(vars[0]);
+        new_constraints.push_back(
+            prog->AddBoundingBoxConstraint(1, -1, vars[0]));
+      }
+      continue;
+    }
     const auto [new_var_in_s, new_constraints_in_s] =
         s->AddPointInSetConstraints(prog,
                                     y.segment(index, s->ambient_dimension()));
@@ -234,6 +253,21 @@ CartesianProduct::DoAddPointInNonnegativeScalingConstraints(
   }
   int index = 0;
   for (const auto& s : sets_) {
+    if (s->ambient_dimension() == 0) {
+      // Special logic is required if the ambient dimension is zero. The set may
+      // either be {} (empty) or {0} (nonempty). In the former case, we add a
+      // trivially infeasible constraint, and also warn the user (since they
+      // probably didn't intend to do this). In the latter case, the condition
+      // is trivially satisfied, so no further action is needed for this set.
+      if (s->IsEmpty()) {
+        drake::log()->warn(
+            "A set in this cartesian product is empty, making"
+            " the MathematicalProgram trivially infeasible.");
+        VectorXDecisionVariable vars = prog->NewContinuousVariables(1);
+        constraints.push_back(prog->AddBoundingBoxConstraint(1, -1, vars[0]));
+      }
+      continue;
+    }
     auto new_constraints = s->AddPointInNonnegativeScalingConstraints(
         prog, y.segment(index, s->ambient_dimension()), t);
     index += s->ambient_dimension();
@@ -264,6 +298,22 @@ CartesianProduct::DoAddPointInNonnegativeScalingConstraints(
         prog->AddLinearEqualityConstraint(Aeq, beq, {y, x, t}));
     int index = 0;
     for (const auto& s : sets_) {
+      if (s->ambient_dimension() == 0) {
+        // Special logic is required if the ambient dimension is zero. The set
+        // may either be {} (empty) or {0} (nonempty). In the former case, we
+        // add a trivially infeasible constraint, and also warn the user (since
+        // they probably didn't intend to do this). In the latter case, the
+        // condition is trivially satisfied, so no further action is needed for
+        // this set.
+        if (s->IsEmpty()) {
+          drake::log()->warn(
+              "A set in this cartesian product is empty, making"
+              " the MathematicalProgram trivially infeasible.");
+          VectorXDecisionVariable vars = prog->NewContinuousVariables(1);
+          constraints.push_back(prog->AddBoundingBoxConstraint(1, -1, vars[0]));
+        }
+        continue;
+      }
       int set_dim = s->ambient_dimension();
       auto new_constraints = s->AddPointInNonnegativeScalingConstraints(
           prog, MatrixXd::Identity(set_dim, set_dim), VectorXd::Zero(set_dim),
@@ -276,6 +326,22 @@ CartesianProduct::DoAddPointInNonnegativeScalingConstraints(
   } else {
     int index = 0;
     for (const auto& s : sets_) {
+      if (s->ambient_dimension() == 0) {
+        // Special logic is required if the ambient dimension is zero. The set
+        // may either be {} (empty) or {0} (nonempty). In the former case, we
+        // add a trivially infeasible constraint, and also warn the user (since
+        // they probably didn't intend to do this). In the latter case, the
+        // condition is trivially satisfied, so no further action is needed for
+        // this set.
+        if (s->IsEmpty()) {
+          drake::log()->warn(
+              "A set in this cartesian product is empty, making"
+              " the MathematicalProgram trivially infeasible.");
+          VectorXDecisionVariable vars = prog->NewContinuousVariables(1);
+          constraints.push_back(prog->AddBoundingBoxConstraint(1, -1, vars[0]));
+        }
+        continue;
+      }
       auto new_constraints = s->AddPointInNonnegativeScalingConstraints(
           prog, A_x.middleRows(index, s->ambient_dimension()),
           b_x.segment(index, s->ambient_dimension()), c, d, x, t);

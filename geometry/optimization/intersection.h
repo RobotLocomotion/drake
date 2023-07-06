@@ -20,13 +20,15 @@ class Intersection final : public ConvexSet {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Intersection)
 
-  /** Constructs a default (zero-dimensional) set. */
+  /** Constructs a default (zero-dimensional, nonempty) set. */
   Intersection();
 
-  /** Constructs the intersection from a vector of convex sets. */
+  /** Constructs the intersection from a vector of convex sets. Each set must
+  have ambient_dimension greater than 0 and be nonempty. */
   explicit Intersection(const ConvexSets& sets);
 
-  /** Constructs the intersection from a pair of convex sets. */
+  /** Constructs the intersection from a pair of convex sets. Each set must have
+  ambient_dimension greater than 0 and be nonempty. */
   Intersection(const ConvexSet& setA, const ConvexSet& setB);
 
   ~Intersection() final;
@@ -42,6 +44,8 @@ class Intersection final : public ConvexSet {
   std::unique_ptr<ConvexSet> DoClone() const final;
 
   bool DoIsBounded() const final;
+
+  bool DoIsEmpty() const final;
 
   std::optional<Eigen::VectorXd> DoMaybeGetPoint() const final;
 

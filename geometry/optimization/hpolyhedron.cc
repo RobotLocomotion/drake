@@ -354,6 +354,10 @@ bool HPolyhedron::DoIsBounded() const {
 }
 
 bool HPolyhedron::DoIsEmpty() const {
+  if (ambient_dimension() == 0) {
+    // By convention, a zero-dimensional HPolyhedron is considered nonempty.
+    return false;
+  }
   solvers::MathematicalProgram prog;
   solvers::VectorXDecisionVariable x =
       prog.NewContinuousVariables(A_.cols(), "x");
