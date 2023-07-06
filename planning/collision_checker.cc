@@ -503,7 +503,9 @@ std::vector<uint8_t> CollisionChecker::CheckConfigsCollisionFree(
 
   // TODO(calderpg-tri) Expose more control over degree of parallelism.
   const bool check_in_parallel = CanEvaluateInParallel() && parallelize;
-  const DegreeOfParallelism parallelism(check_in_parallel);
+  const DegreeOfParallelism parallelism =
+      check_in_parallel ? DegreeOfParallelism(num_allocated_contexts())
+                        : DegreeOfParallelism(false);
   CRU_OMP_PARALLEL_FOR_DEGREE(parallelism)
   for (size_t idx = 0; idx < configs.size(); ++idx) {
     if (CheckConfigCollisionFree(configs.at(idx))) {
@@ -646,7 +648,9 @@ std::vector<uint8_t> CollisionChecker::CheckEdgesCollisionFree(
 
   // TODO(calderpg-tri) Expose more control over degree of parallelism.
   const bool check_in_parallel = CanEvaluateInParallel() && parallelize;
-  const DegreeOfParallelism parallelism(check_in_parallel);
+  const DegreeOfParallelism parallelism =
+      check_in_parallel ? DegreeOfParallelism(num_allocated_contexts())
+                        : DegreeOfParallelism(false);
   CRU_OMP_PARALLEL_FOR_DEGREE(parallelism)
   for (size_t idx = 0; idx < edges.size(); ++idx) {
     const std::pair<Eigen::VectorXd, Eigen::VectorXd>& edge = edges.at(idx);
@@ -735,7 +739,9 @@ std::vector<EdgeMeasure> CollisionChecker::MeasureEdgesCollisionFree(
 
   // TODO(calderpg-tri) Expose more control over degree of parallelism.
   const bool check_in_parallel = CanEvaluateInParallel() && parallelize;
-  const DegreeOfParallelism parallelism(check_in_parallel);
+  const DegreeOfParallelism parallelism =
+      check_in_parallel ? DegreeOfParallelism(num_allocated_contexts())
+                        : DegreeOfParallelism(false);
   CRU_OMP_PARALLEL_FOR_DEGREE(parallelism)
   for (size_t idx = 0; idx < edges.size(); ++idx) {
     const std::pair<Eigen::VectorXd, Eigen::VectorXd>& edge = edges.at(idx);
