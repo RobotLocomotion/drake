@@ -139,6 +139,8 @@ void DefineGeometryOptimization(py::module m) {
             cls_doc.MaximumVolumeInscribedEllipsoid.doc)
         .def("ChebyshevCenter", &HPolyhedron::ChebyshevCenter,
             cls_doc.ChebyshevCenter.doc)
+        .def("Scale", &HPolyhedron::Scale, py::arg("scale"),
+            py::arg("center") = Eigen::VectorXd(), cls_doc.Scale.doc)
         .def("CartesianProduct", &HPolyhedron::CartesianProduct,
             py::arg("other"), cls_doc.CartesianProduct.doc)
         .def("CartesianPower", &HPolyhedron::CartesianPower, py::arg("n"),
