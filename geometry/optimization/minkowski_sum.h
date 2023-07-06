@@ -21,13 +21,15 @@ class MinkowskiSum final : public ConvexSet {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MinkowskiSum)
 
-  /** Constructs a default (zero-dimensional) set. */
+  /** Constructs a default (zero-dimensional, nonempty) set. */
   MinkowskiSum();
 
-  /** Constructs the sum from a vector of convex sets. */
+  /** Constructs the sum from a vector of convex sets. Each set must have
+  ambient_dimension greater than 0 and be nonempty.*/
   explicit MinkowskiSum(const ConvexSets& sets);
 
-  /** Constructs the sum from a pair of convex sets. */
+  /** Constructs the sum from a pair of convex sets. Each set must have
+  ambient_dimension greater than 0 and be nonempty. */
   MinkowskiSum(const ConvexSet& setA, const ConvexSet& setB);
 
   /** Constructs a MinkowskiSum from a SceneGraph geometry and pose in the

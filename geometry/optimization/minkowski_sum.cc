@@ -105,7 +105,9 @@ bool MinkowskiSum::DoIsBounded() const {
 
 bool MinkowskiSum::DoIsEmpty() const {
   if (sets_.size() == 0) {
-    return true;
+    // When we have sets_.size() == 0, we treat the Minkowski sum as being
+    // {0}, the unique zero-dimensional vector space, which is nonempty.
+    return false;
   }
   // The empty set is annihilatory in Minkowski addition.
   for (const auto& s : sets_) {
@@ -171,6 +173,23 @@ MinkowskiSum::DoAddPointInSetConstraints(
         a, 0.0, {Vector1<Variable>(x[i]), X.row(i).transpose()}));
   }
   for (int j = 0; j < num_terms(); ++j) {
+    if (sets_[j]->ambient_dimension() == 0) {
+      // Special logic is required if the ambient dimension is zero. The set may
+      // either be {} (empty) or {0} (nonempty). In the former case, we add a
+      // trivially infeasible constraint, and also warn the user (since they
+      // probably didn't intend to do this). In the latter case, the condition
+      // is trivially satisfied, so no further action is needed for this set.
+      if (sets_[j]->IsEmpty()) {
+        drake::log()->warn(
+            "A set in this cartesian product is empty, making"
+            " the MathematicalProgram trivially infeasible.");
+        VectorXDecisionVariable vars = prog->NewContinuousVariables(1);
+        new_vars.push_back(vars[0]);
+        new_constraints.push_back(
+            prog->AddBoundingBoxConstraint(1, -1, vars[0]));
+      }
+      continue;
+    }
     const auto [new_vars_in_sets_j, new_constraints_in_sets_j] =
         sets_[j]->AddPointInSetConstraints(prog, X.col(j));
     for (int k = 0; k < new_vars_in_sets_j.rows(); ++k) {
@@ -205,6 +224,21 @@ MinkowskiSum::DoAddPointInNonnegativeScalingConstraints(
         a, 0.0, {Vector1<Variable>(x[i]), X.row(i).transpose()}));
   }
   for (int j = 0; j < num_terms(); ++j) {
+    if (sets_[j]->ambient_dimension() == 0) {
+      // Special logic is required if the ambient dimension is zero. The set may
+      // either be {} (empty) or {0} (nonempty). In the former case, we add a
+      // trivially infeasible constraint, and also warn the user (since they
+      // probably didn't intend to do this). In the latter case, the condition
+      // is trivially satisfied, so no further action is needed for this set.
+      if (sets_[j]->IsEmpty()) {
+        drake::log()->warn(
+            "A set in this cartesian product is empty, making"
+            " the MathematicalProgram trivially infeasible.");
+        VectorXDecisionVariable vars = prog->NewContinuousVariables(1);
+        constraints.push_back(prog->AddBoundingBoxConstraint(1, -1, vars[0]));
+      }
+      continue;
+    }
     auto new_constraints =
         sets_[j]->AddPointInNonnegativeScalingConstraints(prog, X.col(j), t);
     constraints.insert(constraints.end(),
@@ -235,6 +269,21 @@ MinkowskiSum::DoAddPointInNonnegativeScalingConstraints(
         a, 0.0, {Vector1<Variable>(x[i]), X.row(i).transpose()}));
   }
   for (int j = 0; j < num_terms(); ++j) {
+    if (sets_[j]->ambient_dimension() == 0) {
+      // Special logic is required if the ambient dimension is zero. The set may
+      // either be {} (empty) or {0} (nonempty). In the former case, we add a
+      // trivially infeasible constraint, and also warn the user (since they
+      // probably didn't intend to do this). In the latter case, the condition
+      // is trivially satisfied, so no further action is needed for this set.
+      if (sets_[j]->IsEmpty()) {
+        drake::log()->warn(
+            "A set in this cartesian product is empty, making"
+            " the MathematicalProgram trivially infeasible.");
+        VectorXDecisionVariable vars = prog->NewContinuousVariables(1);
+        constraints.push_back(prog->AddBoundingBoxConstraint(1, -1, vars[0]));
+      }
+      continue;
+    }
     auto new_constraints = sets_[j]->AddPointInNonnegativeScalingConstraints(
         prog, A, b, c, d, X.col(j), t);
     constraints.insert(constraints.end(),

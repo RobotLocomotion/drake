@@ -21,7 +21,7 @@ ConvexSet::~ConvexSet() = default;
 bool ConvexSet::IntersectsWith(const ConvexSet& other) const {
   DRAKE_THROW_UNLESS(other.ambient_dimension() == this->ambient_dimension());
   if (ambient_dimension() == 0) {
-    return false;
+    return !other.IsEmpty() && !this->IsEmpty();
   }
   solvers::MathematicalProgram prog{};
   const auto& x = prog.NewContinuousVariables(this->ambient_dimension(), "x");
@@ -32,6 +32,14 @@ bool ConvexSet::IntersectsWith(const ConvexSet& other) const {
 }
 
 bool ConvexSet::DoIsEmpty() const {
+  if (ambient_dimension() == 0) {
+    return false;
+    // Zero-dimensional sets are considered to be nonempty by default. Sets
+    // which can be zero-dimensional and empty must handle this behavior in
+    // their derived implementation of DoIsEmpty. Note that the check here is
+    // required, to ensure AddPointInSetConstraints is not called for a zero
+    // dimensional set -- this would throw an error.
+  }
   solvers::MathematicalProgram prog;
   auto point = prog.NewContinuousVariables(ambient_dimension());
   AddPointInSetConstraints(&prog, point);

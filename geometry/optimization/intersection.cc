@@ -4,6 +4,8 @@
 
 #include <fmt/format.h>
 
+#include "drake/solvers/solve.h"
+
 namespace drake {
 namespace geometry {
 namespace optimization {
@@ -66,6 +68,22 @@ bool Intersection::DoIsBounded() const {
   throw std::runtime_error(
       "Determining the boundedness of an Intersection made up of unbounded "
       "elements is not currently supported.");
+}
+
+bool Intersection::DoIsEmpty() const {
+  if (sets_.size() == 0) {
+    // When we have sets_.size() == 0, we treat the intersection as being
+    // {0}, the unique zero-dimensional vector space, which is nonempty.
+    return false;
+  }
+  // The empty set is annihilatory in intersection.
+  for (const auto& s : sets_) {
+    if (s->IsEmpty()) {
+      return true;
+    }
+  }
+  // Now actually see if the intersection is nonempty.
+  return ConvexSet::DoIsEmpty();
 }
 
 std::optional<VectorXd> Intersection::DoMaybeGetPoint() const {
