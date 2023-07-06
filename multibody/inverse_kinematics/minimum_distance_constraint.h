@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/planning/collision_checker.h"
 #include "drake/solvers/constraint.h"
 #include "drake/solvers/minimum_value_constraint.h"
 #include "drake/systems/framework/context.h"
@@ -145,6 +146,12 @@ class MinimumDistanceConstraint final : public solvers::Constraint {
       MinimumDistancePenaltyFunction penalty_function,
       double influence_distance);
 
+  MinimumDistanceConstraint(const planning::CollisionChecker* collision_checker,
+                            double minimum_distance_lower,
+                            double minimum_distance_upper,
+                            MinimumDistancePenaltyFunction penalty_function,
+                            double influence_distance);
+
   ~MinimumDistanceConstraint() override {}
 
   /** Getter for the minimum distance. */
@@ -190,14 +197,26 @@ class MinimumDistanceConstraint final : public solvers::Constraint {
   void Initialize(const MultibodyPlant<T>& plant,
                   systems::Context<T>* plant_context,
                   double minimum_distance_lower, double minimum_distance_upper,
-                  double influence_distance_offset,
+                  double influence_distance,
                   MinimumDistancePenaltyFunction penalty_function);
+
+  // Overload Initialize with CollisionChecker instead of MultibodyPlant.
+  void Initialize(const planning::CollisionChecker& collision_checker,
+                  double minimum_distance_lower, double minimum_distance_upper,
+                  double influence_distance,
+                  MinimumDistancePenaltyFunction penalty_function);
+
+  void CheckMinimumDistanceBounds(double minimum_distance_lower,
+                                  double minimum_distance_upper,
+                                  double influence_distance) const;
 
   const multibody::MultibodyPlant<double>* const plant_double_;
   systems::Context<double>* const plant_context_double_;
   std::unique_ptr<solvers::MinimumValueConstraint> minimum_value_constraint_;
   const multibody::MultibodyPlant<AutoDiffXd>* const plant_autodiff_;
   systems::Context<AutoDiffXd>* const plant_context_autodiff_;
+
+  const planning::CollisionChecker* collision_checker_;
 };
 }  // namespace multibody
 }  // namespace drake

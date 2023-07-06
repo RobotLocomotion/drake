@@ -67,13 +67,27 @@ VectorX<S> Distances(const MultibodyPlant<T>& plant,
   return distances;
 }
 
-template <typename T>
-void MinimumDistanceConstraint::Initialize(
-    const MultibodyPlant<T>& plant, systems::Context<T>* plant_context,
+Eigen::VectorXd Distances(const planning::CollisionChecker& collision_checker,
+                          const Eigen::Ref<const Eigen::VectorXd>& x,
+                          double influence_distance_val) {
+  return collision_checker.CalcRobotClearance(x, influence_distance_val)
+      .distances();
+}
+
+AutoDiffVecXd Distances(const planning::CollisionChecker& collision_checker,
+                        const Eigen::Ref<const AutoDiffVecXd>& x,
+                        double influence_distance_val) {
+  const planning::RobotClearance robot_clearance =
+      collision_checker.CalcRobotClearance(math::ExtractValue(x),
+                                           influence_distance_val);
+  return math::InitializeAutoDiff(
+      robot_clearance.distances(),
+      robot_clearance.jacobians() * math::ExtractGradient(x));
+}
+
+void MinimumDistanceConstraint::CheckMinimumDistanceBounds(
     double minimum_distance_lower, double minimum_distance_upper,
-    double influence_distance,
-    MinimumDistancePenaltyFunction penalty_function) {
-  CheckPlantIsConnectedToSceneGraph(plant, *plant_context);
+    double influence_distance) const {
   if (!std::isfinite(influence_distance)) {
     throw std::invalid_argument(
         "MinimumDistanceConstraint: influence_distance must be finite.");
@@ -94,6 +108,17 @@ void MinimumDistanceConstraint::Initialize(
         "minimum_distance_upper={}.",
         influence_distance, minimum_distance_upper));
   }
+}
+
+template <typename T>
+void MinimumDistanceConstraint::Initialize(
+    const MultibodyPlant<T>& plant, systems::Context<T>* plant_context,
+    double minimum_distance_lower, double minimum_distance_upper,
+    double influence_distance,
+    MinimumDistancePenaltyFunction penalty_function) {
+  CheckPlantIsConnectedToSceneGraph(plant, *plant_context);
+  CheckMinimumDistanceBounds(minimum_distance_lower, minimum_distance_upper,
+                             influence_distance);
   const auto& query_port = plant.get_geometry_query_input_port();
   // Maximum number of SignedDistancePairs returned by calls to
   // ComputeSignedDistancePairwiseClosestPoints().
@@ -112,6 +137,34 @@ void MinimumDistanceConstraint::Initialize(
       [&plant, plant_context](const auto& x, double influence_distance_val) {
         return Distances<T, double>(plant, plant_context, x,
                                     influence_distance_val);
+      });
+  this->set_bounds(minimum_value_constraint_->lower_bound(),
+                   minimum_value_constraint_->upper_bound());
+  if (penalty_function) {
+    minimum_value_constraint_->set_penalty_function(penalty_function);
+  }
+}
+
+void MinimumDistanceConstraint::Initialize(
+    const planning::CollisionChecker& collision_checker,
+    double minimum_distance_lower, double minimum_distance_upper,
+    double influence_distance,
+    MinimumDistancePenaltyFunction penalty_function) {
+  CheckMinimumDistanceBounds(minimum_distance_lower, minimum_distance_upper,
+                             influence_distance);
+  minimum_value_constraint_ = std::make_unique<solvers::MinimumValueConstraint>(
+      collision_checker.plant().num_positions(), minimum_distance_lower,
+      minimum_distance_upper, influence_distance,
+      collision_checker.MaxNumDistances(),
+      [this](const Eigen::Ref<const AutoDiffVecXd>& x,
+             double influence_distance_val) {
+        return Distances(*(this->collision_checker_), x,
+                         influence_distance_val);
+      },
+      [this](const Eigen::Ref<const Eigen::VectorXd>& x,
+             double influence_distance_val) {
+        return Distances(*(this->collision_checker_), x,
+                         influence_distance_val);
       });
   this->set_bounds(minimum_value_constraint_->lower_bound(),
                    minimum_value_constraint_->upper_bound());
@@ -148,7 +201,8 @@ MinimumDistanceConstraint::MinimumDistanceConstraint(
       plant_double_{plant},
       plant_context_double_{plant_context},
       plant_autodiff_{nullptr},
-      plant_context_autodiff_{nullptr} {
+      plant_context_autodiff_{nullptr},
+      collision_checker_{nullptr} {
   Initialize(*plant_double_, plant_context_double_, minimum_distance_lower,
              minimum_distance_upper, influence_distance_offset,
              penalty_function);
@@ -179,8 +233,33 @@ MinimumDistanceConstraint::MinimumDistanceConstraint(
       plant_double_{nullptr},
       plant_context_double_{nullptr},
       plant_autodiff_{plant},
-      plant_context_autodiff_{plant_context} {
+      plant_context_autodiff_{plant_context},
+      collision_checker_{nullptr} {
   Initialize(*plant_autodiff_, plant_context_autodiff_, minimum_distance_lower,
+             minimum_distance_upper, influence_distance, penalty_function);
+}
+
+MinimumDistanceConstraint::MinimumDistanceConstraint(
+    const planning::CollisionChecker* collision_checker,
+    double minimum_distance_lower, double minimum_distance_upper,
+    MinimumDistancePenaltyFunction penalty_function, double influence_distance)
+    : solvers::Constraint(
+          NumConstraints(minimum_distance_lower, minimum_distance_upper),
+          internal::PtrOrThrow(
+              collision_checker,
+              "MinimumDistanceConstraint: collision_checker is nullptr")
+              ->plant()
+              .num_positions(),
+          Eigen::VectorXd::Zero(
+              NumConstraints(minimum_distance_lower, minimum_distance_upper)),
+          Eigen::VectorXd::Zero(
+              NumConstraints(minimum_distance_lower, minimum_distance_upper))),
+      plant_double_{nullptr},
+      plant_context_double_{nullptr},
+      plant_autodiff_{nullptr},
+      plant_context_autodiff_{nullptr},
+      collision_checker_{collision_checker} {
+  Initialize(*collision_checker_, minimum_distance_lower,
              minimum_distance_upper, influence_distance, penalty_function);
 }
 
