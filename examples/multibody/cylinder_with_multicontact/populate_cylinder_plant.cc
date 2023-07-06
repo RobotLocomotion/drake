@@ -61,8 +61,6 @@ void PopulateCylinderPlant(double radius, double length, double mass,
                            MultibodyPlant<double>* plant) {
   const SpatialInertia<double> M_Bcm =
       SpatialInertia<double>::SolidCylinderWithMass(mass, radius, length);
-
-  SpatialInertia<double> M_Bcm(mass, Vector3<double>::Zero(), G_Bcm);
   const RigidBody<double>& cylinder = plant->AddRigidBody("Cylinder", M_Bcm);
 
   // The radius of the small spheres used to emulate multicontact.
