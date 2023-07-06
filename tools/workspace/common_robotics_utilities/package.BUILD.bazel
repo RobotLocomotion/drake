@@ -54,6 +54,16 @@ cc_library(
 )
 
 cc_test(
+    name = "hausdorff_distance_test",
+    srcs = ["test/hausdorff_distance_test.cpp"],
+    deps = [
+        ":common_robotics_utilities",
+        "@eigen",
+        "@gtest//:without_main",
+    ],
+)
+
+cc_test(
     name = "maybe_test",
     srcs = ["test/maybe_test.cpp"],
     deps = [
