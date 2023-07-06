@@ -47,6 +47,7 @@ GTEST_TEST(HPolyhedronTest, DefaultConstructor) {
   EXPECT_NO_THROW(H.Clone());
   EXPECT_FALSE(H.IntersectsWith(H));
   EXPECT_TRUE(H.IsBounded());
+  EXPECT_THROW(H.IsEmpty(), std::exception);
   EXPECT_FALSE(H.PointInSet(Eigen::VectorXd::Zero(0)));
 }
 

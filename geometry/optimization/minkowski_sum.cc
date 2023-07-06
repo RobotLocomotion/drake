@@ -103,6 +103,19 @@ bool MinkowskiSum::DoIsBounded() const {
   return true;
 }
 
+bool MinkowskiSum::DoIsEmpty() const {
+  if (sets_.size() == 0) {
+    return true;
+  }
+  // The empty set is annihilatory in Minkowski addition.
+  for (const auto& s : sets_) {
+    if (s->IsEmpty()) {
+      return true;
+    }
+  }
+  return false;
+}
+
 std::optional<VectorXd> MinkowskiSum::DoMaybeGetPoint() const {
   std::optional<VectorXd> result;
   for (const auto& s : sets_) {
