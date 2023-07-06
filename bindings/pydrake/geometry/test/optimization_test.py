@@ -102,6 +102,10 @@ class TestGeometryOptimization(unittest.TestCase):
             mut.Hyperellipsoid)
         np.testing.assert_array_almost_equal(
             h_box.ChebyshevCenter(), [0, 0, 0])
+        h_scaled = h_box.Scale(scale=2.0, center=[1, 2, 3])
+        self.assertIsInstance(h_scaled, mut.HPolyhedron)
+        h_scaled = h_box.Scale(scale=2.0)
+        self.assertIsInstance(h_scaled, mut.HPolyhedron)
         h2 = h_box.CartesianProduct(other=h_unit_box)
         self.assertIsInstance(h2, mut.HPolyhedron)
         self.assertEqual(h2.ambient_dimension(), 6)
