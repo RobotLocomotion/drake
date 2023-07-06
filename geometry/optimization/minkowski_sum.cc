@@ -45,11 +45,16 @@ int GetAmbientDimension(const ConvexSets& sets) {
 MinkowskiSum::MinkowskiSum() : MinkowskiSum(ConvexSets{}) {}
 
 MinkowskiSum::MinkowskiSum(const ConvexSets& sets)
-    : ConvexSet(GetAmbientDimension(sets)), sets_(sets) {}
+    : ConvexSet(GetAmbientDimension(sets)), sets_(sets) {
+  for (const auto& s : sets_) {
+    DRAKE_THROW_UNLESS(s->ambient_dimension() > 0);
+  }
+}
 
 MinkowskiSum::MinkowskiSum(const ConvexSet& setA, const ConvexSet& setB)
     : ConvexSet(setA.ambient_dimension()) {
   DRAKE_THROW_UNLESS(setB.ambient_dimension() == setA.ambient_dimension());
+  DRAKE_THROW_UNLESS(setB.ambient_dimension() > 0);
   sets_.emplace_back(setA.Clone());
   sets_.emplace_back(setB.Clone());
 }
@@ -105,7 +110,9 @@ bool MinkowskiSum::DoIsBounded() const {
 
 bool MinkowskiSum::DoIsEmpty() const {
   if (sets_.size() == 0) {
-    return true;
+    // When we have sets_.size() == 0, we treat the Minkowski sum as being
+    // {0}, the unique zero-dimensional vector space, which is nonempty.
+    return false;
   }
   // The empty set is annihilatory in Minkowski addition.
   for (const auto& s : sets_) {

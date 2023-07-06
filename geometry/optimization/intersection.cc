@@ -4,6 +4,8 @@
 
 #include <fmt/format.h>
 
+#include "drake/solvers/solve.h"
+
 namespace drake {
 namespace geometry {
 namespace optimization {
@@ -35,11 +37,16 @@ int GetAmbientDimension(const ConvexSets& sets) {
 Intersection::Intersection() : Intersection(ConvexSets{}) {}
 
 Intersection::Intersection(const ConvexSets& sets)
-    : ConvexSet(GetAmbientDimension(sets)), sets_(sets) {}
+    : ConvexSet(GetAmbientDimension(sets)), sets_(sets) {
+  for (const auto& s : sets_) {
+    DRAKE_THROW_UNLESS(s->ambient_dimension() > 0);
+  }
+}
 
 Intersection::Intersection(const ConvexSet& setA, const ConvexSet& setB)
     : ConvexSet(setA.ambient_dimension()) {
   DRAKE_THROW_UNLESS(setB.ambient_dimension() == setA.ambient_dimension());
+  DRAKE_THROW_UNLESS(setB.ambient_dimension() > 0);
   sets_.emplace_back(setA.Clone());
   sets_.emplace_back(setB.Clone());
 }
@@ -66,6 +73,22 @@ bool Intersection::DoIsBounded() const {
   throw std::runtime_error(
       "Determining the boundedness of an Intersection made up of unbounded "
       "elements is not currently supported.");
+}
+
+bool Intersection::DoIsEmpty() const {
+  if (sets_.size() == 0) {
+    // When we have sets_.size() == 0, we treat the intersection as being
+    // {0}, the unique zero-dimensional vector space, which is nonempty.
+    return false;
+  }
+  // The empty set is annihilatory in intersection.
+  for (const auto& s : sets_) {
+    if (s->IsEmpty()) {
+      return true;
+    }
+  }
+  // Now actually see if the intersection is nonempty.
+  return ConvexSet::DoIsEmpty();
 }
 
 std::optional<VectorXd> Intersection::DoMaybeGetPoint() const {

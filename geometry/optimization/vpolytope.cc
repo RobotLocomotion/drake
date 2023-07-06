@@ -345,6 +345,11 @@ std::optional<VectorXd> VPolytope::DoMaybeGetPoint() const {
 
 bool VPolytope::DoPointInSet(const Eigen::Ref<const VectorXd>& x,
                              double tol) const {
+  if (vertices_.size() == 0) {
+    return false;
+  } else if (ambient_dimension() == 0) {
+    return true;
+  }
   const int n = ambient_dimension();
   const int m = vertices_.cols();
   const double inf = std::numeric_limits<double>::infinity();

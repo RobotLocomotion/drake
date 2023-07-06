@@ -77,11 +77,11 @@ GTEST_TEST(CartesianProductTest, DefaultCtor) {
   EXPECT_EQ(dut.num_factors(), 0);
   EXPECT_NO_THROW(dut.Clone());
   EXPECT_EQ(dut.ambient_dimension(), 0);
-  EXPECT_FALSE(dut.IntersectsWith(dut));
+  EXPECT_TRUE(dut.IntersectsWith(dut));
   EXPECT_TRUE(dut.IsBounded());
-  EXPECT_THROW(dut.IsEmpty(), std::exception);
-  EXPECT_FALSE(dut.MaybeGetPoint().has_value());
-  EXPECT_FALSE(dut.PointInSet(Eigen::VectorXd::Zero(0)));
+  EXPECT_FALSE(dut.IsEmpty());
+  EXPECT_TRUE(dut.MaybeGetPoint().has_value());
+  EXPECT_TRUE(dut.PointInSet(Eigen::VectorXd::Zero(0)));
 }
 
 GTEST_TEST(CartesianProductTest, Move) {
@@ -417,23 +417,24 @@ GTEST_TEST(CartesianProductTest, Rotated) {
   EXPECT_FALSE(Solve(prog).is_success());
 }
 
-GTEST_TEST(CartesianProductTest, EmptyCartesianProductTest) {
-  Eigen::MatrixXd A{5, 3};
-  Eigen::VectorXd b{5};
-  // Rows 1-3 define an infeasible set of inequalities.
-  // clang-format off
-  A << 1, 0, 0,
-       1, -1, 0,
-       -1, 0, 1,
-       0, 1, -1,
-       0, 0, -1;
-  b << 1, -1, -1, -1, 0;
-  // clang-format off
+GTEST_TEST(CartesianProductTest, ZeroDimensionalInput) {
+  // If any of the inputs are zero dimensional, it should throw an error.
+  const Point P1(Vector2d{1.2, 3.4});
+  const Point P2(Eigen::VectorXd::Zero(0));
+  EXPECT_THROW(CartesianProduct(P1, P2), std::exception);
 
-  const HPolyhedron H1{A, b};
-  const Point P1(Vector3d{0.1, 1.2, 0.3});
-  const CartesianProduct S(P1, H1);
+  ConvexSets sets;
+  sets.emplace_back(P1);
+  sets.emplace_back(P2);
+  EXPECT_THROW((CartesianProduct(sets)), std::exception);
+}
 
+GTEST_TEST(CartesianProductTest, EmptyInput) {
+  const Point P(Vector2d{1.2, 3.4});
+  // A VPolytope constructed from an empty list of vertices is empty.
+  Eigen::Matrix<double, 2, 0> vertices;
+  const VPolytope V = VPolytope(vertices);
+  CartesianProduct S(P, V);
   EXPECT_TRUE(S.IsEmpty());
 }
 

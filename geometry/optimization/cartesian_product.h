@@ -27,13 +27,15 @@ class CartesianProduct final : public ConvexSet {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CartesianProduct)
 
-  /** Constructs a default (zero-dimensional) set. */
+  /** Constructs a default (zero-dimensional, nonempty) set. */
   CartesianProduct();
 
-  /** Constructs the product from a vector of convex sets. */
+  /** Constructs the product from a vector of convex sets. Each set must have
+  ambient_dimension greater than 0 and be nonempty.*/
   explicit CartesianProduct(const ConvexSets& sets);
 
-  /** Constructs the product from a pair of convex sets. */
+  /** Constructs the product from a pair of convex sets. Each set must have
+  ambient_dimension greater than 0 and be nonempty.*/
   CartesianProduct(const ConvexSet& setA, const ConvexSet& setB);
 
   /** Constructs the product of convex sets in the transformed coordinates:

@@ -41,10 +41,16 @@ int SumAmbientDimensions(const ConvexSets& sets) {
 CartesianProduct::CartesianProduct() : CartesianProduct(ConvexSets{}) {}
 
 CartesianProduct::CartesianProduct(const ConvexSets& sets)
-    : ConvexSet(SumAmbientDimensions(sets)), sets_(sets) {}
+    : ConvexSet(SumAmbientDimensions(sets)), sets_(sets) {
+  for (const auto& s : sets_) {
+    DRAKE_THROW_UNLESS(s->ambient_dimension() > 0);
+  }
+}
 
 CartesianProduct::CartesianProduct(const ConvexSet& setA, const ConvexSet& setB)
     : ConvexSet(setA.ambient_dimension() + setB.ambient_dimension()) {
+  DRAKE_THROW_UNLESS(setA.ambient_dimension() > 0);
+  DRAKE_THROW_UNLESS(setB.ambient_dimension() > 0);
   sets_.emplace_back(setA.Clone());
   sets_.emplace_back(setB.Clone());
 }
@@ -116,7 +122,9 @@ bool CartesianProduct::DoIsBounded() const {
 
 bool CartesianProduct::DoIsEmpty() const {
   if (sets_.size() == 0) {
-    return true;
+    // By convention, the empty cartesian product is considered nonempty.
+    // See https://en.wikipedia.org/wiki/Empty_product#Nullary_Cartesian_product
+    return false;
   }
   for (const auto& s : sets_) {
     if (s->IsEmpty()) {

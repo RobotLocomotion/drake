@@ -21,7 +21,7 @@ class Spectrahedron final : public ConvexSet {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Spectrahedron)
 
-  /** Default constructor (which constructs the empty set). */
+  /** Default constructor (yields the zero-dimensional nonempty set). */
   Spectrahedron();
 
   /** Constructs the spectrahedron from a MathematicalProgram.

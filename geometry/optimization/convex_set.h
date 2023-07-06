@@ -93,33 +93,32 @@ class ConvexSet : public ShapeReifier {
   /** Returns true iff the set is empty. Note: for some derived classes, this
   check is trivial, but for others, it can require solving a (typically small)
   optimization problem. Check the derived class documentation for any notes.
-  @throws std::exception if ambient_dimension() == 0 */
-  bool IsEmpty() const {
-    DRAKE_THROW_UNLESS(ambient_dimension() > 0);
-    return DoIsEmpty();
-  }
+  Zero-dimensional sets are considered to be nonempty by default. Sets which
+  can be zero-dimensional and empty must handle this behavior in their
+  derived implementation of DoIsEmpty. An example of such a subclass is
+  VPolytope. */
+  bool IsEmpty() const { return DoIsEmpty(); }
 
   /** If this set trivially contains exactly one point, returns the value of
-  that point. Otherwise, returns nullopt. When ambient_dimension is zero,
-  returns nullopt. By "trivially", we mean that representation of the set
-  structurally maps to a single point; if checking for point-ness would require
-  solving an optimization program, returns nullopt. In other words, this is a
-  relatively cheap function to call. */
+  that point. Otherwise, returns nullopt. By "trivially", we mean that
+  representation of the set structurally maps to a single point; if checking
+  for point-ness would require solving an optimization program, returns nullopt.
+  In other words, this is a relatively cheap function to call. */
   std::optional<Eigen::VectorXd> MaybeGetPoint() const {
     if (ambient_dimension() == 0) {
-      return std::nullopt;
+      if (IsEmpty()) {
+        return std::nullopt;
+      } else {
+        return Eigen::VectorXd::Zero(0);
+      }
     }
     return DoMaybeGetPoint();
   }
 
-  /** Returns true iff the point x is contained in the set.  When
-  ambient_dimension is zero, returns false. */
+  /** Returns true iff the point x is contained in the set. */
   bool PointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
                   double tol = 0) const {
     DRAKE_THROW_UNLESS(x.size() == ambient_dimension());
-    if (ambient_dimension() == 0) {
-      return false;
-    }
     return DoPointInSet(x, tol);
   }
 
@@ -219,23 +218,26 @@ class ConvexSet : public ShapeReifier {
   virtual std::unique_ptr<ConvexSet> DoClone() const = 0;
 
   /** Non-virtual interface implementation for IsBounded().
-  @pre ambient_dimension() > 0 */
+  @pre ambient_dimension() >= 0 */
   virtual bool DoIsBounded() const = 0;
 
   /** Non-virtual interface implementation for IsEmpty(). The default
   implementation solves a feasibility optimization problem, but derived
-  classes can override with a custom (more efficient) implementation. */
+  classes can override with a custom (more efficient) implementation.
+  Zero-dimensional sets are considered to be nonempty by default. Sets which
+  can be zero-dimensional and empty must handle this behavior in their
+  derived implementation of DoIsEmpty. */
   virtual bool DoIsEmpty() const;
 
   /** Non-virtual interface implementation for MaybeGetPoint(). The default
   implementation returns nullopt. Sets that can model a single point should
   override with a custom implementation.
-  @pre ambient_dimension() > 0 */
+  @pre ambient_dimension() >= 0 */
   virtual std::optional<Eigen::VectorXd> DoMaybeGetPoint() const;
 
   /** Non-virtual interface implementation for PointInSet().
   @pre x.size() == ambient_dimension()
-  @pre ambient_dimension() > 0 */
+  @pre ambient_dimension() >= 0 */
   virtual bool DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
                             double tol) const = 0;
 

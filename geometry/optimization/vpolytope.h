@@ -26,7 +26,7 @@ class VPolytope final : public ConvexSet {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(VPolytope)
 
-  /** Constructs a default (zero-dimensional) set. */
+  /** Constructs a default (zero-dimensional, empty) set. */
   VPolytope();
 
   /** Constructs the polytope from a d-by-n matrix, where d is the ambient
