@@ -1092,6 +1092,19 @@ doc:
       " [^ ]*InnerStruct inner_struct\\.");
 }
 
+// The user input a top-level array instead of a mapping.
+TEST_P(YamlReadArchiveTest, VisitRootStructFoundArray) {
+  const std::string doc = R"""(
+- foo
+- bar
+)""";
+  const internal::Node root =
+      YamlReadArchive::LoadStringAsNode(doc, std::nullopt);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      AcceptIntoDummy<OuterStruct>(root),
+      ".*top level element should be a Mapping.*not a Sequence.*");
+}
+
 std::vector<LoadYamlOptions> MakeAllPossibleOptions() {
   std::vector<LoadYamlOptions> all;
   for (const bool i : {false, true}) {
