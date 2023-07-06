@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/planning/collision_checker.h"
 #include "drake/solvers/constraint.h"
 #include "drake/solvers/minimum_value_constraint.h"
 #include "drake/systems/framework/context.h"
@@ -56,8 +57,8 @@ configuration vector, q, of the associated MultibodyPlant.
 
 The formulation of the constraint is
 
-SmoothOverMax( φ((dᵢ(q) - d_influence)/(d_influence - lb)) / φ(-1) ) ≤ 1
-SmoothUnderMax( φ((dᵢ(q) - d_influence)/(d_influence - ub)) / φ(-1) ) ≥ 1
+    SmoothOverMax( φ((dᵢ(q) - d_influence)/(d_influence - lb)) / φ(-1) ) ≤ 1
+    SmoothUnderMax( φ((dᵢ(q) - d_influence)/(d_influence - ub)) / φ(-1) ) ≥ 1
 
 where dᵢ(q) is the signed distance of the i-th pair, lb is the minimum
 allowable distance, d_influence is the "influence distance" (the distance below
@@ -87,7 +88,14 @@ class MinimumDistanceConstraint final : public solvers::Constraint {
   influence_distance_offset. This value must be finite and strictly positive, as
   it is used to scale the signed distances between pairs of geometries. Smaller
   values may improve performance, as fewer pairs of geometries need to be
-  considered in each constraint evaluation. @default 1 meter
+  considered in each constraint evaluation. @default 1 meter.
+  The chosen influence_distance_offset can significantly affect the runtime and
+  optimization performance of using this constraint. Larger values result in
+  more expensive collision checks (since more potential collision candidates
+  must be considered) and may result in worse optimization performance (the
+  optimizer may not be able to find a configuration that satisfies the
+  constraint). In work at TRI, we have used much lower values (e.g. 1e-6) for
+  influence_distance_offset with good results.
   @throws std::exception if `plant` has not registered its geometry with
   a SceneGraph object.
   @throws std::exception if influence_distance_offset = ∞.
@@ -136,12 +144,41 @@ class MinimumDistanceConstraint final : public solvers::Constraint {
   @param minimum_distance_upper The upper bound of the minimum distance.
   min(distance) <= upper. If minimum_distance_upper is finite, then it must be
   smaller than influence_distance.
+  @param collision_checker_context The context for the collision checker.
   @pydrake_mkdoc_identifier{autodiff_with_upper_bound}
   */
   MinimumDistanceConstraint(
       const multibody::MultibodyPlant<AutoDiffXd>* const plant,
       double minimum_distance_lower, double minimum_distance_upper,
       systems::Context<AutoDiffXd>* plant_context,
+      MinimumDistancePenaltyFunction penalty_function,
+      double influence_distance);
+
+  /** Overloaded constructor.
+  Constructs the constraint with CollisionChecker instead of MultibodyPlant.
+  @param collision_checker collision_checker must outlive this constraint.
+  @param collision_checker_context The context for the collision checker. See
+  CollisionChecker class for more details.
+  @pydrake_mkdoc_identifier{collision_checker_no_upper_bound}
+  */
+  MinimumDistanceConstraint(
+      const planning::CollisionChecker* collision_checker,
+      double minimum_distance,
+      planning::CollisionCheckerContext* collision_checker_context,
+      MinimumDistancePenaltyFunction penalty_function = {},
+      double influence_distance_offset = 1);
+
+  /** Overloaded constructor.
+  Constructs the constraint with CollisionChecker instead of MultibodyPlant.
+  @param collision_checker collision_checker must outlive this constraint.
+  @param collision_checker_context The context for the collision checker. See
+  CollisionChecker class for more details.
+  @pydrake_mkdoc_identifier{collision_checker_with_upper_bound}
+  */
+  MinimumDistanceConstraint(
+      const planning::CollisionChecker* collision_checker,
+      double minimum_distance_lower, double minimum_distance_upper,
+      planning::CollisionCheckerContext* collision_checker_context,
       MinimumDistancePenaltyFunction penalty_function,
       double influence_distance);
 
@@ -190,14 +227,28 @@ class MinimumDistanceConstraint final : public solvers::Constraint {
   void Initialize(const MultibodyPlant<T>& plant,
                   systems::Context<T>* plant_context,
                   double minimum_distance_lower, double minimum_distance_upper,
-                  double influence_distance_offset,
+                  double influence_distance,
                   MinimumDistancePenaltyFunction penalty_function);
+
+  // Overload Initialize with CollisionChecker instead of MultibodyPlant.
+  void Initialize(const planning::CollisionChecker& collision_checker,
+                  planning::CollisionCheckerContext* collision_checker_context,
+                  double minimum_distance_lower, double minimum_distance_upper,
+                  double influence_distance,
+                  MinimumDistancePenaltyFunction penalty_function);
+
+  void CheckMinimumDistanceBounds(double minimum_distance_lower,
+                                  double minimum_distance_upper,
+                                  double influence_distance) const;
 
   const multibody::MultibodyPlant<double>* const plant_double_;
   systems::Context<double>* const plant_context_double_;
   std::unique_ptr<solvers::MinimumValueConstraint> minimum_value_constraint_;
   const multibody::MultibodyPlant<AutoDiffXd>* const plant_autodiff_;
   systems::Context<AutoDiffXd>* const plant_context_autodiff_;
+
+  const planning::CollisionChecker* collision_checker_;
+  planning::CollisionCheckerContext* collision_checker_context_;
 };
 }  // namespace multibody
 }  // namespace drake
