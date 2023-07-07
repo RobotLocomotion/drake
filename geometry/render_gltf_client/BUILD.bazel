@@ -114,10 +114,13 @@ drake_cc_library(
     internal = True,
     visibility = ["//visibility:private"],
     deps = [
+        ":internal_merge_gltf",
         ":internal_render_client",
+        "//common:essential",
         "//geometry/render:render_camera",
         "//geometry/render_vtk:internal_render_engine_vtk",
         "//systems/sensors:image",
+        "@nlohmann_internal//:nlohmann",
         "@vtk//:vtkIOExport",
     ],
 )
@@ -191,6 +194,8 @@ filegroup(
         "test/test_depth_32F.tiff",
         "test/test_rgb_8U.png",
         "test/test_rgba_8U.png",
+        "test/tri.obj",
+        "test/tri_tree.gltf",
     ],
 )
 
@@ -228,8 +233,10 @@ drake_cc_googletest(
     deps = [
         ":internal_render_engine_gltf_client",
         ":internal_sample_image_data",
+        "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
+        "@nlohmann_internal//:nlohmann",
     ],
 )
 
@@ -340,6 +347,7 @@ drake_cc_googletest(
     deps = [
         ":internal_merge_gltf",
         "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
         "@nlohmann_internal//:nlohmann",
     ],
 )

@@ -79,6 +79,29 @@ json ReadJsonFile(const std::filesystem::path& json_path) {
   return json::parse(f);
 }
 
+json GltfMatrixFromEigenMatrix(const Matrix4<double>& matrix) {
+  json result;
+  // For glTF, transform matrix is a *column-major* matrix.
+  for (int c = 0; c < 4; ++c) {
+    for (int r = 0; r < 4; ++r) {
+      result.push_back(matrix(r, c));
+    }
+  }
+  return result;
+}
+
+Matrix4<double> EigenMatrixFromGltfMatrix(const json& matrix_json) {
+  Matrix4<double> T;
+  // For glTF, transform matrix is a *column-major* matrix.
+  int i = -1;
+  for (int c = 0; c < 4; ++c) {
+    for (int r = 0; r < 4; ++r) {
+      T(r, c) = matrix_json[++i].get<double>();
+    }
+  }
+  return T;
+}
+
 void MergeScenes(json* j1, json&& j2) {
   std::map<string, int> names_in_1;
   json& j1_scenes = (*j1)["scenes"];
