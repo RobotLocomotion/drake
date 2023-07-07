@@ -27,6 +27,7 @@ namespace drake {
 namespace planning {
 
 using common_robotics_utilities::openmp_helpers::DegreeOfParallelism;
+using common_robotics_utilities::openmp_helpers::GetNumOmpThreads;
 using geometry::GeometryId;
 using geometry::QueryObject;
 using geometry::SceneGraphInspector;
@@ -502,10 +503,8 @@ std::vector<uint8_t> CollisionChecker::CheckConfigsCollisionFree(
   std::vector<uint8_t> collision_checks(configs.size(), 0);
 
   // TODO(calderpg-tri) Expose more control over degree of parallelism.
-  const bool check_in_parallel = CanEvaluateInParallel() && parallelize;
-  const DegreeOfParallelism parallelism =
-      check_in_parallel ? DegreeOfParallelism(num_allocated_contexts())
-                        : DegreeOfParallelism(false);
+  const DegreeOfParallelism parallelism(GetNumberOfThreads(parallelize));
+
   CRU_OMP_PARALLEL_FOR_DEGREE(parallelism)
   for (size_t idx = 0; idx < configs.size(); ++idx) {
     if (CheckConfigCollisionFree(configs.at(idx))) {
@@ -647,10 +646,8 @@ std::vector<uint8_t> CollisionChecker::CheckEdgesCollisionFree(
   std::vector<uint8_t> collision_checks(edges.size(), 0);
 
   // TODO(calderpg-tri) Expose more control over degree of parallelism.
-  const bool check_in_parallel = CanEvaluateInParallel() && parallelize;
-  const DegreeOfParallelism parallelism =
-      check_in_parallel ? DegreeOfParallelism(num_allocated_contexts())
-                        : DegreeOfParallelism(false);
+  const DegreeOfParallelism parallelism(GetNumberOfThreads(parallelize));
+
   CRU_OMP_PARALLEL_FOR_DEGREE(parallelism)
   for (size_t idx = 0; idx < edges.size(); ++idx) {
     const std::pair<Eigen::VectorXd, Eigen::VectorXd>& edge = edges.at(idx);
@@ -738,10 +735,8 @@ std::vector<EdgeMeasure> CollisionChecker::MeasureEdgesCollisionFree(
                                             EdgeMeasure(0.0, -1.0));
 
   // TODO(calderpg-tri) Expose more control over degree of parallelism.
-  const bool check_in_parallel = CanEvaluateInParallel() && parallelize;
-  const DegreeOfParallelism parallelism =
-      check_in_parallel ? DegreeOfParallelism(num_allocated_contexts())
-                        : DegreeOfParallelism(false);
+  const DegreeOfParallelism parallelism(GetNumberOfThreads(parallelize));
+
   CRU_OMP_PARALLEL_FOR_DEGREE(parallelism)
   for (size_t idx = 0; idx < edges.size(); ++idx) {
     const std::pair<Eigen::VectorXd, Eigen::VectorXd>& edge = edges.at(idx);
@@ -1135,6 +1130,15 @@ std::string CollisionChecker::CriticizePaddingMatrix(
     }
   }
   return {};
+}
+
+int CollisionChecker::GetNumberOfThreads(const bool parallelize) const {
+  const bool check_in_parallel = CanEvaluateInParallel() && parallelize;
+  if (check_in_parallel) {
+    return std::min(num_allocated_contexts(), GetNumOmpThreads());
+  } else {
+    return 1;
+  }
 }
 
 CollisionChecker::OwnedContextKeeper::~OwnedContextKeeper() = default;

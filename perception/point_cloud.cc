@@ -625,7 +625,10 @@ bool PointCloud::EstimateNormals(
   std::atomic<bool> all_points_have_at_least_three_neighbors(true);
 
   // TODO(calderpg-tri) Expose more control over degree of parallelism.
-  const DegreeOfParallelism parallelism(parallelize);
+  const auto parallelism =
+      parallelize ? DegreeOfParallelism::FromOmp()
+                  : DegreeOfParallelism::None();
+
   CRU_OMP_PARALLEL_FOR_DEGREE(parallelism)
   for (int i = 0; i < size(); ++i) {
     VectorX<Eigen::Index> indices(num_closest);

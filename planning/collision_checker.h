@@ -1216,6 +1216,8 @@ class CollisionChecker {
   std::string CriticizePaddingMatrix(const Eigen::MatrixXd& padding,
                                      const char* func) const;
 
+  int GetNumberOfThreads(bool parallelize) const;
+
   /* This class allocates and maintains the contexts associated with OpenMP
    threads. When the CollisionChecker is evaluated in its implicit mode, the
    contexts used are drawn from this collection and each context is associated
