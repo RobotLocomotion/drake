@@ -138,6 +138,12 @@ const FrameType<T>& MultibodyTree<T>::AddFrame(
   if (frame == nullptr) {
     throw std::logic_error("Input frame is a nullptr.");
   }
+  if (HasFrameNamed(frame->name(), frame->model_instance())) {
+    throw std::logic_error(fmt::format(
+        "Model instance '{}' already contains a frame named '{}'. "
+        "Frame names must be unique within a given model.",
+        instance_index_to_name_.at(frame->model_instance()), frame->name()));
+  }
   FrameIndex frame_index = topology_.add_frame(frame->body().index());
   // This test MUST be performed BEFORE frames_.push_back() and
   // owned_frames_.push_back() below. Do not move it around!
@@ -324,29 +330,19 @@ const JointType<T>& MultibodyTree<T>::AddJoint(
     Args&&... args) {
   static_assert(std::is_base_of_v<Joint<T>, JointType<T>>,
                 "JointType<T> must be a sub-class of Joint<T>.");
-
-  const Frame<T>* frame_on_parent{nullptr};
-  if (X_PF) {
-    frame_on_parent = &this->AddFrame<FixedOffsetFrame>(
-       name + "_parent", parent, *X_PF);
-  } else {
-    frame_on_parent = &parent.body_frame();
-  }
-
-  const Frame<T>* frame_on_child{nullptr};
-  if (X_BM) {
-    frame_on_child = &this->AddFrame<FixedOffsetFrame>(
-        name + "_child", child, *X_BM);
-  } else {
-    frame_on_child = &child.body_frame();
-  }
-
-  const JointType<T>& joint = AddJoint(
-      std::make_unique<JointType<T>>(
-          name,
-          *frame_on_parent, *frame_on_child,
-          std::forward<Args>(args)...));
-  return joint;
+  // The Joint constructor promises that the Joint's model instance will be the
+  // same as the child body's model instance. We'll assume that for now, and
+  // then cross-check it at the bottom of this function. We need to use the same
+  // model instance when creating any offset frames needed for the joint.
+  const ModelInstanceIndex joint_instance = child.model_instance();
+  const Frame<T>& frame_on_parent =
+      this->AddOrGetJointFrame(parent, X_PF, joint_instance, name, "parent");
+  const Frame<T>& frame_on_child =
+      this->AddOrGetJointFrame(child, X_BM, joint_instance, name, "child");
+  const JointType<T>& result = AddJoint(std::make_unique<JointType<T>>(
+      name, frame_on_parent, frame_on_child, std::forward<Args>(args)...));
+  DRAKE_DEMAND(result.model_instance() == joint_instance);
+  return result;
 }
 
 template <typename T>

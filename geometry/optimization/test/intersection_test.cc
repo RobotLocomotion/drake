@@ -59,6 +59,9 @@ GTEST_TEST(IntersectionTest, BasicTest) {
   // Test IsBounded.
   EXPECT_TRUE(S.IsBounded());
 
+  // Test IsEmpty
+  EXPECT_FALSE(S.IsEmpty());
+
   // Test ConvexSets constructor.
   ConvexSets sets;
   sets.emplace_back(P1);
@@ -77,6 +80,7 @@ GTEST_TEST(IntersectionTest, TwoIdenticalPoints) {
   ASSERT_TRUE(S.MaybeGetPoint().has_value());
   EXPECT_TRUE(CompareMatrices(S.MaybeGetPoint().value(), P1.x()));
   EXPECT_TRUE(S.PointInSet(P1.x()));
+  EXPECT_FALSE(S.IsEmpty());
 }
 
 GTEST_TEST(IntersectionTest, DefaultCtor) {
@@ -86,6 +90,7 @@ GTEST_TEST(IntersectionTest, DefaultCtor) {
   EXPECT_EQ(dut.ambient_dimension(), 0);
   EXPECT_FALSE(dut.IntersectsWith(dut));
   EXPECT_TRUE(dut.IsBounded());
+  EXPECT_THROW(dut.IsEmpty(), std::exception);
   EXPECT_FALSE(dut.MaybeGetPoint().has_value());
   EXPECT_FALSE(dut.PointInSet(Eigen::VectorXd::Zero(0)));
 }
@@ -116,6 +121,7 @@ GTEST_TEST(IntersectionTest, TwoBoxes) {
   EXPECT_FALSE(S.PointInSet(Vector2d{1.9, 1.1}));
   EXPECT_FALSE(S.PointInSet(Vector2d{2.1, 0.9}));
   EXPECT_FALSE(S.MaybeGetPoint().has_value());
+  EXPECT_FALSE(S.IsEmpty());
 }
 
 GTEST_TEST(IntersectionTest, BoundedTest) {
@@ -227,6 +233,34 @@ GTEST_TEST(IntersectionTest, NonnegativeScalingTest2) {
       PointInScaledSet(x, t, x_solution, Eigen::Vector2d(0, 1), &prog));
   EXPECT_FALSE(
       PointInScaledSet(x, t, x_solution, Eigen::Vector2d(-1, 0), &prog));
+}
+
+GTEST_TEST(IntersectionTest, EmptyIntersectionTest1) {
+  Eigen::MatrixXd A{5, 3};
+  Eigen::VectorXd b{5};
+  // Rows 1-3 define an infeasible set of inequalities.
+  // clang-format off
+  A << 1, 0, 0,
+       1, -1, 0,
+       -1, 0, 1,
+       0, 1, -1,
+       0, 0, -1;
+  b << 1, -1, -1, -1, 0;
+  // clang-format off
+
+  HPolyhedron H1{A, b};
+  const Point P1(Vector3d{0.1, 1.2, 0.3});
+  Intersection S(P1, H1);
+
+  EXPECT_TRUE(S.IsEmpty());
+}
+
+GTEST_TEST(IntersectionTest, EmptyIntersectionTest2) {
+  const Point P1(Vector2d{0.1, 1.2});
+  const Point P2(Vector2d{0.1, 4.3});
+  Intersection S(P1, P2);
+
+  EXPECT_TRUE(S.IsEmpty());
 }
 
 }  // namespace optimization

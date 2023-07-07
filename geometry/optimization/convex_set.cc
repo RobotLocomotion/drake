@@ -31,6 +31,27 @@ bool ConvexSet::IntersectsWith(const ConvexSet& other) const {
   return result.is_success();
 }
 
+bool ConvexSet::DoIsEmpty() const {
+  solvers::MathematicalProgram prog;
+  auto point = prog.NewContinuousVariables(ambient_dimension());
+  AddPointInSetConstraints(&prog, point);
+  auto result = solvers::Solve(prog);
+  auto status = result.get_solution_result();
+  switch (status) {
+    case solvers::SolutionResult::kSolutionFound:
+      return false;
+    case solvers::SolutionResult::kInfeasibleConstraints:
+    case solvers::SolutionResult::kInfeasibleOrUnbounded:
+      return true;
+    default:
+      throw std::runtime_error(
+          fmt::format("ConvexSet::IsEmpty() has solution result {}. "
+                      "We are uncertain if the set if empty or not.",
+                      status));
+      return true;
+  }
+}
+
 std::optional<Eigen::VectorXd> ConvexSet::DoMaybeGetPoint() const {
   return std::nullopt;
 }

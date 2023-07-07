@@ -164,7 +164,14 @@ YamlReadArchive::YamlReadArchive(internal::Node root,
       mapish_item_key_(nullptr),
       mapish_item_value_(nullptr),
       options_(options),
-      parent_(nullptr) {}
+      parent_(nullptr) {
+  if (!root_->IsMapping()) {
+    throw std::runtime_error(fmt::format(
+        "{}: invalid document: the top level element should be a Mapping "
+        "(not a {})",
+        root_->GetFilename().value_or("<string>"), root_->GetTypeString()));
+  }
+}
 
 // N.B. This is unit tested via yaml_io_test with calls to LoadYamlFile (and
 // not as part of yaml_read_archive_test as would be typical).  In the future,
@@ -391,13 +398,9 @@ void YamlReadArchive::PrintNodeSummary(std::ostream& s) const {
 
   DRAKE_DEMAND(root_ != nullptr);
   fmt::print(s, "YAML node of type {}", root_->GetTypeString());
-  if (!root_->IsMapping()) {
-    // Don't log any additional details for non-Mappings.
-    return;
-  }
-
   // Grab the mapping's keys.  (It's a std::map, so the ordering here is
   // fully deterministic.)
+  DRAKE_DEMAND(root_->IsMapping());
   std::vector<std::string_view> keys;
   for (const auto& [key, value] : root_->GetMapping()) {
     unused(value);

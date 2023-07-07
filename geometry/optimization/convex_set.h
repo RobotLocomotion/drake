@@ -90,6 +90,15 @@ class ConvexSet : public ShapeReifier {
     return DoIsBounded();
   }
 
+  /** Returns true iff the set is empty. Note: for some derived classes, this
+  check is trivial, but for others, it can require solving a (typically small)
+  optimization problem. Check the derived class documentation for any notes.
+  @throws std::exception if ambient_dimension() == 0 */
+  bool IsEmpty() const {
+    DRAKE_THROW_UNLESS(ambient_dimension() > 0);
+    return DoIsEmpty();
+  }
+
   /** If this set trivially contains exactly one point, returns the value of
   that point. Otherwise, returns nullopt. When ambient_dimension is zero,
   returns nullopt. By "trivially", we mean that representation of the set
@@ -212,6 +221,11 @@ class ConvexSet : public ShapeReifier {
   /** Non-virtual interface implementation for IsBounded().
   @pre ambient_dimension() > 0 */
   virtual bool DoIsBounded() const = 0;
+
+  /** Non-virtual interface implementation for IsEmpty(). The default
+  implementation solves a feasibility optimization problem, but derived
+  classes can override with a custom (more efficient) implementation. */
+  virtual bool DoIsEmpty() const;
 
   /** Non-virtual interface implementation for MaybeGetPoint(). The default
   implementation returns nullopt. Sets that can model a single point should

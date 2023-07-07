@@ -334,9 +334,9 @@ SolverId ChooseBestSolver(const MathematicalProgram& prog) {
     }
     case ProgramType::kMISDP: {
       throw std::runtime_error(
-          "ChooseBestSolver():The MISDP problem is not well-supported yet. You "
+          "ChooseBestSolver():MISDP problems are not well-supported yet. You "
           "can try Drake's implementation MixedIntegerBranchAndBound for small "
-          "sized MISDP.");
+          "sized MISDPs.");
     }
   }
   DRAKE_UNREACHABLE();

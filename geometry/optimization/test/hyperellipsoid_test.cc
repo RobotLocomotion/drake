@@ -6,6 +6,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/yaml/yaml_io.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
@@ -19,6 +20,7 @@ namespace drake {
 namespace geometry {
 namespace optimization {
 
+using Eigen::Matrix2d;
 using Eigen::Matrix3d;
 using Eigen::MatrixXd;
 using Eigen::RowVector2d;
@@ -56,6 +58,9 @@ GTEST_TEST(HyperellipsoidTest, UnitSphereTest) {
 
   // Test MaybeGetPoint.
   EXPECT_FALSE(E.MaybeGetPoint().has_value());
+
+  // Test IsEmpty (which is trivially false for Hyperellipsoid).
+  EXPECT_FALSE(E.IsEmpty());
 
   // Test PointInSet.
   const Vector3d in1_W{.99, 0, 0}, in2_W{.5, .5, .5}, out1_W{1.01, 0, 0},
@@ -99,6 +104,7 @@ GTEST_TEST(HyperellipsoidTest, DefaultCtor) {
   EXPECT_EQ(dut.ambient_dimension(), 0);
   EXPECT_FALSE(dut.IntersectsWith(dut));
   EXPECT_TRUE(dut.IsBounded());
+  EXPECT_THROW(dut.IsEmpty(), std::exception);
   EXPECT_FALSE(dut.PointInSet(Eigen::VectorXd::Zero(0)));
 }
 
@@ -500,6 +506,20 @@ GTEST_TEST(HyperellipsoidTest, MinimumUniformScaling4) {
   auto [sigma, x] = E.MinimumUniformScalingToTouch(E2);
   EXPECT_NEAR(sigma, 3.0, kTol);
   EXPECT_TRUE(CompareMatrices(x, Vector2d{3.0, 0.0}, kTol));
+}
+
+// Check the case when `other` has no interior.
+GTEST_TEST(HyperellipsoidTest, MinimumUniformScaling5) {
+  const Hyperellipsoid E = Hyperellipsoid::MakeUnitBall(2);
+  // x₀ ≤ -1, x₀ ≥ 1.
+  Matrix2d A;
+  // clang-format off
+  A <<  1, 0,
+       -1, 0;
+  // clang-format on
+  const HPolyhedron H(A, Vector2d(-1, -1));
+  DRAKE_EXPECT_THROWS_MESSAGE(E.MinimumUniformScalingToTouch(H),
+                              ".*is empty.*");
 }
 
 GTEST_TEST(HyperellipsoidTest, Serialize) {

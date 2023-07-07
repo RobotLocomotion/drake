@@ -43,6 +43,7 @@ class TestGeometryOptimization(unittest.TestCase):
         mut.Point()
         p = np.array([11.1, 12.2, 13.3])
         point = mut.Point(p)
+        self.assertFalse(point.IsEmpty())
         self.assertEqual(point.ambient_dimension(), 3)
         np.testing.assert_array_equal(point.x(), p)
         np.testing.assert_array_equal(point.MaybeGetPoint(), p)
@@ -61,6 +62,7 @@ class TestGeometryOptimization(unittest.TestCase):
         np.testing.assert_array_equal(hpoly.A(), self.A)
         np.testing.assert_array_equal(hpoly.b(), self.b)
         self.assertTrue(hpoly.PointInSet(x=[0, 0, 0], tol=0.0))
+        self.assertFalse(hpoly.IsEmpty())
         self.assertFalse(hpoly.IsBounded())
         new_vars, new_constraints = hpoly.AddPointInSetConstraints(
             self.prog, self.x)
@@ -166,6 +168,7 @@ class TestGeometryOptimization(unittest.TestCase):
         mut.Hyperellipsoid()
         ellipsoid = mut.Hyperellipsoid(A=self.A, center=self.b)
         self.assertEqual(ellipsoid.ambient_dimension(), 3)
+        self.assertFalse(ellipsoid.IsEmpty())
         np.testing.assert_array_equal(ellipsoid.A(), self.A)
         np.testing.assert_array_equal(ellipsoid.center(), self.b)
         self.assertTrue(ellipsoid.PointInSet(x=self.b, tol=0.0))
@@ -215,6 +218,7 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertEqual(sum2.ambient_dimension(), 3)
         self.assertEqual(sum2.num_terms(), 2)
         self.assertIsInstance(sum2.term(0), mut.Point)
+        self.assertFalse(sum.IsEmpty())
 
     def test_spectrahedron(self):
         s = mut.Spectrahedron()
@@ -229,6 +233,7 @@ class TestGeometryOptimization(unittest.TestCase):
         mut.VPolytope()
         vertices = np.array([[0.0, 1.0, 2.0], [3.0, 7.0, 5.0]])
         vpoly = mut.VPolytope(vertices=vertices)
+        self.assertFalse(vpoly.IsEmpty())
         self.assertEqual(vpoly.ambient_dimension(), 2)
         np.testing.assert_array_equal(vpoly.vertices(), vertices)
         self.assertTrue(vpoly.PointInSet(x=[1.0, 5.0], tol=1e-8))
@@ -307,6 +312,7 @@ class TestGeometryOptimization(unittest.TestCase):
         h_box = mut.HPolyhedron.MakeBox(
             lb=[-1, -1, -1], ub=[1, 1, 1])
         sum = mut.CartesianProduct(setA=point, setB=h_box)
+        self.assertFalse(sum.IsEmpty())
         self.assertEqual(sum.ambient_dimension(), 6)
         self.assertEqual(sum.num_factors(), 2)
         sum2 = mut.CartesianProduct(sets=[point, h_box])
@@ -325,6 +331,7 @@ class TestGeometryOptimization(unittest.TestCase):
         h_box = mut.HPolyhedron.MakeBox(
             lb=[-1, -1, -1], ub=[1, 1, 1])
         intersect = mut.Intersection(setA=point, setB=h_box)
+        self.assertFalse(intersect.IsEmpty())
         self.assertEqual(intersect.ambient_dimension(), 3)
         self.assertEqual(intersect.num_elements(), 2)
         intersect2 = mut.Intersection(sets=[point, h_box])
@@ -497,6 +504,9 @@ class TestGeometryOptimization(unittest.TestCase):
 
     def test_graph_of_convex_sets(self):
         options = mut.GraphOfConvexSetsOptions()
+        self.assertIsNone(options.convex_relaxation)
+        self.assertIsNone(options.preprocessing)
+        self.assertIsNone(options.max_rounded_paths)
         options.convex_relaxation = True
         options.preprocessing = False
         options.max_rounded_paths = 2
@@ -522,14 +532,8 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertEqual(len(spp.Vertices()), 2)
         self.assertEqual(len(spp.Edges()), 2)
         result = spp.SolveShortestPath(
-            source_id=source.id(), target_id=target.id())
+            source_id=source.id(), target_id=target.id(), options=options)
         self.assertIsInstance(result, MathematicalProgramResult)
-        self.assertIsInstance(
-            spp.SolveShortestPath(source=source, target=target),
-            MathematicalProgramResult)
-        self.assertIsInstance(spp.SolveShortestPath(
-            source_id=source.id(), target_id=target.id(), options=options),
-            MathematicalProgramResult)
         self.assertIsInstance(spp.SolveShortestPath(
             source=source, target=target, options=options),
             MathematicalProgramResult)
