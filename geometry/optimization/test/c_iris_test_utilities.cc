@@ -10,6 +10,8 @@
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/weld_joint.h"
+#include "drake/solvers/solve.h"
+#include "drake/solvers/sos_basis_generator.h"
 #include "drake/systems/framework/diagram_builder.h"
 
 namespace drake {
@@ -317,6 +319,68 @@ CspaceFreePolytopeTester::FindPolytopeGivenLagrangian(
 HPolyhedron CspaceFreePolytopeTester::GetPolyhedronWithJointLimits(
     const Eigen::MatrixXd& C, const Eigen::VectorXd& d) const {
   return cspace_free_polytope_->GetPolyhedronWithJointLimits(C, d);
+}
+
+bool InCollision(const multibody::MultibodyPlant<double>& plant,
+                 const systems::Context<double>& plant_context) {
+  const auto& query_port = plant.get_geometry_query_input_port();
+  const auto& query_object =
+      query_port.Eval<geometry::QueryObject<double>>(plant_context);
+  const std::vector<geometry::SignedDistancePair<double>>
+      signed_distance_pairs =
+          query_object.ComputeSignedDistancePairwiseClosestPoints(
+              0.5 /* max_distance */);
+  for (const auto& signed_distance_pair : signed_distance_pairs) {
+    if (signed_distance_pair.distance <= 0) {
+      return true;
+    }
+  }
+  return false;
+}
+
+// Evaluate the polynomial at a batch of samples, check if all evaluated results
+// are positive.
+// @param x_samples Each column is a sample of indeterminates.
+void CheckPositivePolynomialBySamples(
+    const symbolic::Polynomial& poly,
+    const Eigen::Ref<const VectorX<symbolic::Variable>>& indeterminates,
+    const Eigen::Ref<const Eigen::MatrixXd>& x_samples) {
+  EXPECT_TRUE(
+      (poly.EvaluateIndeterminates(indeterminates, x_samples).array() >= 0)
+          .all());
+}
+
+bool IsPolynomialSos(const symbolic::Polynomial& p, double tol) {
+  DRAKE_DEMAND(p.decision_variables().empty());
+  if (p.monomial_to_coefficient_map().empty()) {
+    // p = 0.
+    return true;
+  } else if (p.monomial_to_coefficient_map().size() == 1 &&
+             p.monomial_to_coefficient_map().count(symbolic::Monomial()) > 0) {
+    // p is a constant
+    symbolic::Environment env;
+    const double constant =
+        p.monomial_to_coefficient_map().at(symbolic::Monomial()).Evaluate(env);
+    return constant >= -tol;
+  }
+  solvers::MathematicalProgram prog;
+  VectorX<symbolic::Variable> indeterminates_vec(p.indeterminates().size());
+  prog.AddIndeterminates(p.indeterminates());
+  if (tol == 0) {
+    prog.AddSosConstraint(p);
+  } else {
+    const VectorX<symbolic::Monomial> monomial_basis =
+        solvers::ConstructMonomialBasis(p);
+    const auto pair = prog.NewSosPolynomial(
+        monomial_basis,
+        solvers::MathematicalProgram::NonnegativePolynomial::kSos);
+    const symbolic::Polynomial poly_diff = pair.first - p;
+    for (const auto& term : poly_diff.monomial_to_coefficient_map()) {
+      prog.AddLinearConstraint(term.second, -tol, tol);
+    }
+  }
+  const auto result = solvers::Solve(prog);
+  return result.is_success();
 }
 
 }  // namespace optimization
