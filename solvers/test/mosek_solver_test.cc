@@ -10,6 +10,7 @@
 #include "drake/solvers/mixed_integer_optimization_util.h"
 #include "drake/solvers/test/exponential_cone_program_examples.h"
 #include "drake/solvers/test/linear_program_examples.h"
+#include "drake/solvers/test/quadratic_constrained_program_examples.h"
 #include "drake/solvers/test/quadratic_program_examples.h"
 #include "drake/solvers/test/second_order_cone_program_examples.h"
 #include "drake/solvers/test/semidefinite_program_examples.h"
@@ -552,6 +553,22 @@ GTEST_TEST(MosekTest, SDPDualSolution1) {
   MosekSolver solver;
   if (solver.available()) {
     TestSDPDualSolution1(solver, 3E-6);
+  }
+}
+
+GTEST_TEST(MosekTest, TestEllipsoid1) {
+  // Test quadratically constrained program.
+  MosekSolver solver;
+  if (solver.available()) {
+    TestEllipsoid1(solver, std::nullopt, 1E-6);
+  }
+}
+
+GTEST_TEST(MosekTest, TestEllipsoid2) {
+  // Test quadratically constrained program.
+  MosekSolver solver;
+  if (solver.available()) {
+    TestEllipsoid2(solver, std::nullopt, 1E-5);
   }
 }
 
