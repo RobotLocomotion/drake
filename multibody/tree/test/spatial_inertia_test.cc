@@ -227,7 +227,7 @@ GTEST_TEST(SpatialInertia, SolidCapsuleWithDensityOrMass) {
   EXPECT_TRUE(CompareMatrices(M_expected.CopyToFullMatrix6(),
                               M_with_density.CopyToFullMatrix6()));
 
-  // Ensure SolidCubeWithDensity() matches SolidCubeWithMass().
+  // Ensure SolidCapsuleWithDensity() matches SolidCapsuleWithMass().
   const SpatialInertia<double> M_with_mass =
       SpatialInertia<double>::SolidCapsuleWithMass(mass, r, l, unit_vec);
   EXPECT_TRUE(CompareMatrices(M_with_mass.CopyToFullMatrix6(),
@@ -278,6 +278,12 @@ GTEST_TEST(SpatialInertia, SolidCylinderWithDensityOrMass) {
   EXPECT_TRUE(CompareMatrices(M_expected.CopyToFullMatrix6(),
                               M_with_density.CopyToFullMatrix6()));
 
+  // Ensure SolidCylinderWithDensity() matches SolidCylinderWithMass().
+  SpatialInertia<double> M_with_mass =
+      SpatialInertia<double>::SolidCylinderWithMass(mass, r, l, unit_vec);
+  EXPECT_TRUE(CompareMatrices(M_with_mass.CopyToFullMatrix6(),
+      M_with_density.CopyToFullMatrix6()));
+
   // Test a solid cylinder B about Bp, where Bp is at the center of a circular
   // end of the cylinder. The position from Bp to Bcm p_BpBcm_B = 0.5*l*Bz.
   const Vector3<double> p_BpBcm_B(0, 0, 0.5*l);
@@ -297,6 +303,12 @@ GTEST_TEST(SpatialInertia, SolidCylinderWithDensityOrMass) {
       SpatialInertia<double>::SolidCylinderWithDensity(density, r, l, unit_vec);
   EXPECT_TRUE(CompareMatrices(M_expected.CopyToFullMatrix6(),
                               M_with_density.CopyToFullMatrix6()));
+
+  // Ensure SolidCylinderWithDensity() matches SolidCylinderWithMass().
+  M_with_mass =
+      SpatialInertia<double>::SolidCylinderWithMass(mass, r, l, unit_vec);
+  EXPECT_TRUE(CompareMatrices(M_with_mass.CopyToFullMatrix6(),
+      M_with_density.CopyToFullMatrix6()));
 
   // Test a solid cylinder B about Bp with a different unit vector direction.
   const Vector3<double> p_BcmBp_B = -0.5 * l * unit_vec;

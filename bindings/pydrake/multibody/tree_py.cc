@@ -1207,10 +1207,10 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def_static("SolidCylinderWithDensity",
             &Class::SolidCylinderWithDensity, py::arg("density"),
             py::arg("radius"), py::arg("length"), py::arg("unit_vector"),
-        .def_static("SolidCylinderWithMass",
-            &Class::SolidCylinderWithMass, py::arg("mass"),
-            py::arg("radius"), py::arg("length"), py::arg("unit_vector"),
-            cls_doc.SolidCylinderWithMass.doc)
+            cls_doc.SolidCylinderWithDensity.doc)
+        .def_static("SolidCylinderWithMass", &Class::SolidCylinderWithMass,
+            py::arg("mass"), py::arg("radius"), py::arg("length"),
+            py::arg("unit_vector"), cls_doc.SolidCylinderWithMass.doc)
         .def_static("SolidCylinderWithDensityAboutEnd",
             &Class::SolidCylinderWithDensityAboutEnd, py::arg("density"),
             py::arg("radius"), py::arg("length"), py::arg("unit_vector"),
@@ -1265,13 +1265,13 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def(py::self * SpatialVelocity<T>())
         .def(py::pickle(
             [](const Class& self) {
-      return py::make_tuple(
-          self.get_mass(), self.get_com(), self.get_unit_inertia());
+              return py::make_tuple(
+                  self.get_mass(), self.get_com(), self.get_unit_inertia());
             },
             [](py::tuple t) {
-      DRAKE_THROW_UNLESS(t.size() == 3);
-      return Class(
-          t[0].cast<T>(), t[1].cast<Vector3<T>>(), t[2].cast<UnitInertia<T>>());
+              DRAKE_THROW_UNLESS(t.size() == 3);
+              return Class(t[0].cast<T>(), t[1].cast<Vector3<T>>(),
+                  t[2].cast<UnitInertia<T>>());
             }));
     DefCopyAndDeepCopy(&cls);
   }
