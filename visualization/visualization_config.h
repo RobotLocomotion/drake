@@ -60,8 +60,7 @@ struct VisualizationConfig {
   geometry::Rgba default_proximity_color{1, 0, 0, 0.5};
 
   /** Whether to show body inertia. */
-  // TODO(trowell-tri) Enable this when we handle off-axis inertia moments.
-  bool publish_inertia{false};
+  bool publish_inertia{true};
 
   /** Whether to show contact forces. */
   bool publish_contacts{true};

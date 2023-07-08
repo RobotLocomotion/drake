@@ -25,6 +25,11 @@ AddDefaultVisualization() which automatically uses this system.
  - geometry_pose
  @endsystem
 
+@warning The visualized inertia shows the inertia of the `plant` bodies when
+this system was constructed. If you edit the plant's inertia values after
+construction (e.g., by changing a body's mass), the visualization will not be
+updated.
+
 @tparam_default_scalar
 @ingroup visualization */
 template <typename T>

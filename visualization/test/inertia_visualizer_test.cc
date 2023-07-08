@@ -77,8 +77,6 @@ class InertiaVisualizerConfigTest : public ::testing::Test {
 // default.
 TEST_F(InertiaVisualizerConfigTest, TestDefaultVisualizationConfig) {
   VisualizationConfig config;
-  // TODO(trowell-tri) Remove the next line when inertia defaults to published.
-  config.publish_inertia = true;
   SetUpDiagramWithConfig(config);
 
   EXPECT_TRUE(meshcat_->HasPath("/drake/illustration/acrobot"));
@@ -99,8 +97,6 @@ TEST_F(InertiaVisualizerConfigTest, IllustrationButNoInertiaConfig) {
 TEST_F(InertiaVisualizerConfigTest, InertiaButNoIllustrationConfig) {
   VisualizationConfig config;
   config.publish_illustration = false;
-  // TODO(trowell-tri) Remove the next line when inertia defaults to published.
-  config.publish_inertia = true;
   SetUpDiagramWithConfig(config);
 
   EXPECT_FALSE(meshcat_->HasPath("/drake/illustration/acrobot"));
