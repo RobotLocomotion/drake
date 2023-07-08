@@ -138,6 +138,31 @@ TEST_F(AffineSystemTest, UpdateCoefficients) {
       error_msg_regex);
 }
 
+TEST_F(AffineSystemTest, UpdateCoefficientsButWrongSize) {
+  const Eigen::Matrix<double, 2, 3> new_A;
+  const Eigen::Matrix<double, 3, 2> new_B;
+  const Eigen::Vector3d new_f0;
+  const Eigen::Matrix3d new_C;
+  const Eigen::Matrix4d new_D;
+  const Eigen::Vector4d new_y0;
+
+  const std::string error_msg_regrex =
+      "^New and current .* have different sizes\\.$";
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      dut_->UpdateCoefficients(new_A, B_, f0_, C_, D_, y0_), error_msg_regrex);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      dut_->UpdateCoefficients(A_, new_B, f0_, C_, D_, y0_), error_msg_regrex);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      dut_->UpdateCoefficients(A_, B_, new_f0, C_, D_, y0_), error_msg_regrex);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      dut_->UpdateCoefficients(A_, B_, f0_, new_C, D_, y0_), error_msg_regrex);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      dut_->UpdateCoefficients(A_, B_, f0_, C_, new_D, y0_), error_msg_regrex);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      dut_->UpdateCoefficients(A_, B_, f0_, C_, D_, new_y0), error_msg_regrex);
+}
+
 TEST_F(AffineSystemTest, DefaultAndRandomState) {
   EXPECT_TRUE(CompareMatrices(dut_->get_default_state(), x0_, 0.0));
   EXPECT_TRUE(CompareMatrices(

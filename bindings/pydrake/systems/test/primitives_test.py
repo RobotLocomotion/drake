@@ -189,7 +189,9 @@ class TestGeneral(unittest.TestCase):
         new_C = np.array([[9, 10]])
         new_D = np.array([[11]])
         new_y0 = np.array([12])
-        system.UpdateCoefficients(new_A, new_B, new_f0, new_C, new_D, new_y0)
+        system.UpdateCoefficients(
+            A=new_A, B=new_B, f0=new_f0, C=new_C, D=new_D, y0=new_y0
+        )
         np.testing.assert_equal(new_A, system.A())
         np.testing.assert_equal(new_B, system.B())
         np.testing.assert_equal(new_f0.flatten(), system.f0())

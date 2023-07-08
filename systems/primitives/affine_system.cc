@@ -1,7 +1,6 @@
 #include "drake/systems/primitives/affine_system.h"
 
 #include <set>
-#include <sstream>
 #include <string>
 #include <utility>
 
@@ -336,24 +335,21 @@ void CompareMatrixSize(const Eigen::Ref<const Eigen::MatrixXd>& M1,
                        const Eigen::Ref<const Eigen::MatrixXd>& M2,
                        const std::string& matrix_name) {
   if (M1.rows() != M2.rows() || M1.cols() != M2.cols()) {
-    std::stringstream msg;
-    msg << "New and current ";
-    msg << matrix_name;
-    msg << " have different sizes.";
-    throw std::runtime_error(msg.str());
+    throw std::runtime_error(
+        fmt::format("New and current {} have different sizes.", matrix_name));
   }
 }
 
-void CheckOutputConsistency(const bool is_meanginful,
+void CheckOutputConsistency(const bool is_meaningful,
                             const bool is_meaningful_new,
                             const std::string& matrix_name,
                             const std::string& dependency_name) {
-  if (!is_meanginful && is_meaningful_new) {
-    std::stringstream msg;
-    msg << matrix_name << " makes the output dependent on " << dependency_name
-        << ", when it was previously independent. This would change the "
-           "dependencies of the output port, and it is currently unsupported.";
-    throw std::runtime_error(msg.str());
+  if (!is_meaningful && is_meaningful_new) {
+    throw std::runtime_error(fmt::format(
+        "{} makes the output dependent on {}, when it was "
+        "previously independent. This would change the dependencies "
+        "of the output port, and it is currently unsupported.",
+        matrix_name, dependency_name));
   }
 }
 
