@@ -120,7 +120,7 @@ class TestGeneral(unittest.TestCase):
         B = np.array([[0], [1]])
         f0 = np.array([[0], [0]])
         C = np.array([[0, 1]])
-        D = [0]
+        D = [1]
         y0 = [0]
         system = LinearSystem(A, B, C, D)
         context = system.CreateDefaultContext()
@@ -182,6 +182,22 @@ class TestGeneral(unittest.TestCase):
         self.assertTrue((linearized.A() == A).all())
         taylor = FirstOrderTaylorApproximation(system, context)
         self.assertTrue((taylor.y0() == y0).all())
+
+        new_A = np.array([[1, 2], [3, 4]])
+        new_B = np.array([[5], [6]])
+        new_f0 = np.array([[7], [8]])
+        new_C = np.array([[9, 10]])
+        new_D = np.array([[11]])
+        new_y0 = np.array([12])
+        system.UpdateCoefficients(
+            A=new_A, B=new_B, f0=new_f0, C=new_C, D=new_D, y0=new_y0
+        )
+        np.testing.assert_equal(new_A, system.A())
+        np.testing.assert_equal(new_B, system.B())
+        np.testing.assert_equal(new_f0.flatten(), system.f0())
+        np.testing.assert_equal(new_C, system.C())
+        np.testing.assert_equal(new_D, system.D())
+        np.testing.assert_equal(new_y0, system.y0())
 
         system = MatrixGain(D=A)
         self.assertTrue((system.D() == A).all())
