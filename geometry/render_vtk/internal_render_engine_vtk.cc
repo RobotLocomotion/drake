@@ -387,9 +387,8 @@ void RenderEngineVtk::ImplementObj(const std::string& file_name, double scale,
     return;
   }
 
-  RenderMesh mesh_data =
-      LoadRenderMeshFromObj(file_name, data->properties, default_diffuse_,
-                            drake::internal::DiagnosticPolicy());
+  RenderMesh mesh_data = LoadRenderMeshFromObj(
+      file_name, data->properties, default_diffuse_, diagnostic_policy_);
   const RenderMaterial material = mesh_data.material;
 
   vtkSmartPointer<vtkPolyDataAlgorithm> mesh_source =

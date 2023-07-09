@@ -19,9 +19,16 @@ namespace internal {
 
 using Eigen::Vector2d;
 using Eigen::Vector3d;
-using geometry::internal::RenderMesh;
 using geometry::internal::LoadRenderMeshFromObj;
+using geometry::internal::MakeMeshFallbackMaterial;
+using geometry::internal::RenderMaterial;
+using geometry::internal::RenderMesh;
 using math::RigidTransformd;
+using render::ColorRenderCamera;
+using render::DepthRenderCamera;
+using render::RenderCameraCore;
+using render::RenderEngine;
+using render::RenderLabel;
 using std::make_shared;
 using std::make_unique;
 using std::shared_ptr;
@@ -29,11 +36,6 @@ using std::string;
 using std::unique_ptr;
 using std::unordered_map;
 using std::vector;
-using render::ColorRenderCamera;
-using render::DepthRenderCamera;
-using render::RenderCameraCore;
-using render::RenderEngine;
-using render::RenderLabel;
 using systems::sensors::ColorD;
 using systems::sensors::ColorI;
 using systems::sensors::ImageDepth32F;
@@ -473,6 +475,19 @@ void main() {
 })""";
 };
 
+// Given a filename (e.g., of a mesh), this produces a string that we use in
+// our maps to guarantee we only load the file once.
+std::string GetPathKey(const std::string& filename) {
+  std::error_code path_error;
+  const fs::path path = fs::canonical(filename, path_error);
+  if (path_error) {
+    throw std::runtime_error(
+        fmt::format("RenderEngineGl: unable to access the file {}; {}",
+                    filename, path_error.message()));
+  }
+  return path.string();
+}
+
 }  // namespace
 
 RenderEngineGl::RenderEngineGl(RenderEngineGlParams params)
@@ -615,7 +630,7 @@ void RenderEngineGl::InitGlState() {
 void RenderEngineGl::ImplementMesh(int geometry_index,
                                    void* user_data,
                                    const Vector3<double>& scale,
-                                   const std::string& file_name) {
+                                   const std::string& filename_in) {
   const RegistrationData& data = *static_cast<RegistrationData*>(user_data);
   PerceptionProperties temp_props(data.properties);
 
@@ -623,20 +638,20 @@ void RenderEngineGl::ImplementMesh(int geometry_index,
   temp_props.AddProperty(
       kInternalGroup, kHasTexCoordProperty, geometry.has_tex_coord);
 
-  // In order to maintain compatibility with RenderEngineVtk, we need to provide
-  // functionality in which a mesh of the name foo.obj can be matched to a
-  // potential png called foo.png. We rely on the fact that passing in a diffuse
-  // map that doesn't refer to a real file will silently fall back to rgba
-  // diffuse. So, we'll create a copy of the user data, set the diffuse_map
-  // property to appropriately named image and let it percolate through. We
-  // can't and don't want to change the underlying properties because they are
-  // visible to the user.
-  if (!temp_props.HasProperty("phong", "diffuse_map")) {
-    std::filesystem::path file_path(file_name);
-    const string png_name = file_path.replace_extension(".png").string();
-    temp_props.AddProperty("phong", "diffuse_map", png_name);
+  const std::string file_key = GetPathKey(filename_in);
+  RenderMaterial material;
+  // If there is a material associated with the mesh, we will use it. Otherwise,
+  // we recreate the fallback material based on user data and defaults.
+  if (meshes_[file_key].mesh_material.has_value()) {
+    material = meshes_[file_key].mesh_material.value();
+  } else {
+    material = MakeMeshFallbackMaterial(data.properties, filename_in,
+                                        parameters_.default_diffuse,
+                                        diagnostic_policy_);
   }
-
+  temp_props.UpdateProperty("phong", "diffuse_map",
+                            material.diffuse_map.string());
+  temp_props.UpdateProperty("phong", "diffuse", material.diffuse);
   RegistrationData temp_data{data.id, data.X_WG, temp_props};
   AddGeometryInstance(geometry_index, &temp_data, scale);
 }
@@ -957,7 +972,7 @@ int RenderEngineGl::GetBox() {
 }
 
 int RenderEngineGl::GetMesh(const string& filename_in, RegistrationData* data) {
-  int mesh = -1;
+  int mesh_index = -1;
 
   // We're checking the input filename in case the user specified name has the
   // desired extension but is a symlink to some arbitrarily named cached file.
@@ -970,31 +985,29 @@ int RenderEngineGl::GetMesh(const string& filename_in, RegistrationData* data) {
     return -1;
   }
 
-  // Resolve to a canonical path.
-  std::error_code bad_path;
-  const std::string file_key = fs::canonical(filename_in, bad_path).string();
-  if (bad_path) {
-    throw std::runtime_error(fmt::format(
-        "RenderEngineGl: unable to access the requested mesh file '{}'; {}.",
-        filename_in, bad_path.message()));
-  }
-
+  const std::string file_key = GetPathKey(filename_in);
   if (meshes_.count(file_key) == 0) {
-    // TODO(SeanCurtis-TRI): We're ignoring the declared perception properties
-    //  for the mesh. We need to pass it in and return a mesh *and* the
-    //  resulting material properties.
-    RenderMesh mesh_data = LoadRenderMeshFromObj(
-        filename_in, PerceptionProperties(), parameters_.default_diffuse);
-    mesh = CreateGlGeometry(mesh_data);
-    meshes_.insert({file_key, mesh});
+    const RenderMesh mesh_data =
+        LoadRenderMeshFromObj(filename_in, PerceptionProperties(),
+                              parameters_.default_diffuse, diagnostic_policy_);
+    mesh_index = CreateGlGeometry(mesh_data);
+    const RenderMaterial material = mesh_data.material;
+
+    meshes_.insert({file_key, {.mesh_index = mesh_index}});
+    // We will also update RenderGlMesh's `mesh_material` if the material is
+    // defined by the mesh itself. By that, the material will be used every time
+    // the mesh is instantiated.
+    if (material.from_mesh_file) {
+      meshes_[file_key].mesh_material = material;
+    }
   } else {
-    mesh = meshes_[file_key];
+    mesh_index = meshes_[file_key].mesh_index;
   }
 
-  geometries_[mesh].throw_if_undefined(
+  geometries_[mesh_index].throw_if_undefined(
       fmt::format("Error creating object for mesh {}", filename_in).c_str());
 
-  return mesh;
+  return mesh_index;
 }
 
 std::tuple<GLint, GLenum, GLenum> RenderEngineGl::get_texture_format(

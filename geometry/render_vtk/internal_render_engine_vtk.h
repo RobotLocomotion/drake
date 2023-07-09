@@ -19,6 +19,7 @@
 #include <vtkSmartPointer.h>
 #include <vtkWindowToImageFilter.h>
 
+#include "drake/common/diagnostic_policy.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/geometry/render/render_engine.h"
 #include "drake/geometry/render/render_label.h"
@@ -268,6 +269,9 @@ class RenderEngineVtk : public render::RenderEngine,
   // depth, and label) keyed by the geometry's GeometryId.
   std::unordered_map<GeometryId, std::array<vtkSmartPointer<vtkActor>, 3>>
       actors_;
+
+  // The policy for handling warnings and errors.
+  drake::internal::DiagnosticPolicy diagnostic_policy_;
 };
 
 }  // namespace internal
