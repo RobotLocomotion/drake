@@ -1,9 +1,11 @@
 #include "drake/geometry/optimization/cspace_free_box.h"
 
 #include <array>
+#include <limits>
 #include <map>
 #include <memory>
 #include <unordered_set>
+#include <utility>
 
 #include "drake/common/fmt_eigen.h"
 #include "drake/geometry/optimization/cspace_free_internal.h"
@@ -11,6 +13,9 @@
 namespace drake {
 namespace geometry {
 namespace optimization {
+namespace {
+const double kInf = std::numeric_limits<double>::infinity();
+}  // namespace
 
 CspaceFreeBox::SeparationCertificateResult
 CspaceFreeBox::SeparationCertificate::GetSolution(
@@ -51,6 +56,33 @@ CspaceFreeBox::CspaceFreeBox(const multibody::MultibodyPlant<double>* plant,
     : CspaceFreePolytopeBase(plant, scene_graph, plane_order,
                              CspaceFreePolytopeBase::SForPlane::kOnChain,
                              options) {}
+
+bool CspaceFreeBox::FindSeparationCertificateGivenBox(
+    const Eigen::Ref<const Eigen::VectorXd>& q_box_lower,
+    const Eigen::Ref<const Eigen::VectorXd>& q_box_upper,
+    const IgnoredCollisionPairs& ignored_collision_pairs,
+    const FindSeparationCertificateOptions& options,
+    std::unordered_map<SortedPair<geometry::GeometryId>,
+                       SeparationCertificateResult>* certificates) const {
+  std::vector<std::optional<SeparationCertificateResult>> certificates_vec =
+      this->FindSeparationCertificateGivenBox(
+          ignored_collision_pairs, q_box_lower, q_box_upper, options);
+
+  certificates->clear();
+  bool is_success = true;
+  for (const auto& certificate : certificates_vec) {
+    if (certificate.has_value()) {
+      const auto& plane = separating_planes()[certificate->plane_index];
+      certificates->emplace(
+          SortedPair<geometry::GeometryId>(plane.positive_side_geometry->id(),
+                                           plane.negative_side_geometry->id()),
+          std::move(certificate.value()));
+    } else {
+      is_success = false;
+    }
+  }
+  return is_success;
+}
 
 CspaceFreeBox::~CspaceFreeBox() {}
 
@@ -244,6 +276,59 @@ CspaceFreeBox::ConstructPlaneSearchProgram(
 
   DRAKE_DEMAND(gram_var_count == gram_vars.rows());
   return ret;
+}
+
+std::vector<std::optional<CspaceFreeBox::SeparationCertificateResult>>
+CspaceFreeBox::FindSeparationCertificateGivenBox(
+    const IgnoredCollisionPairs& ignored_collision_pairs,
+    const Eigen::Ref<const Eigen::VectorXd>& q_box_lower,
+    const Eigen::Ref<const Eigen::VectorXd>& q_box_upper,
+    const FindSeparationCertificateOptions& options) const {
+  Eigen::VectorXd s_box_lower;
+  Eigen::VectorXd s_box_upper;
+  Eigen::VectorXd q_star;
+  this->ComputeSBox(q_box_lower, q_box_upper, &s_box_lower, &s_box_upper,
+                    &q_star);
+  PolynomialsToCertify polynomials_to_certify;
+  this->GeneratePolynomialsToCertify(
+      s_box_lower, s_box_upper, q_star,
+      {}  // ignored_collision_pairs={}. FindSeparationCertificateGivenPolytope
+          //  expects plane_geometries to contain every possible pair of
+          //  geometries, not considering ignored_collision_pairs
+      ,
+      &polynomials_to_certify);
+
+  std::vector<std::optional<CspaceFreeBox::SeparationCertificateResult>>
+      separation_results;
+  CspaceFreePolytopeBase::FindSeparationCertificateGivenPolytope<
+      PolynomialsToCertify, SeparationCertificateProgram>(
+      polynomials_to_certify.plane_geometries, ignored_collision_pairs,
+      polynomials_to_certify, options,
+      [this](const PlaneSeparatesGeometries& plane_geometries,
+             const PolynomialsToCertify& m_polynomials_to_certify) {
+        return this->ConstructPlaneSearchProgram(
+            plane_geometries, m_polynomials_to_certify.s_minus_s_box_lower,
+            m_polynomials_to_certify.s_box_upper_minus_s);
+      },
+      &separation_results);
+  return separation_results;
+}
+
+void CspaceFreeBox::AddCspaceBoxContainment(
+    solvers::MathematicalProgram* prog,
+    const VectorX<symbolic::Variable>& s_box_lower,
+    const VectorX<symbolic::Variable>& s_box_upper,
+    const Eigen::MatrixXd& s_inner_pts) const {
+  const int s_size = this->rational_forward_kin().s().rows();
+  DRAKE_THROW_UNLESS(s_inner_pts.rows() == s_size);
+  DRAKE_THROW_UNLESS(s_box_lower.rows() == s_size);
+  DRAKE_THROW_UNLESS(s_box_upper.rows() == s_size);
+  // We have the constraint s_box_lower <= s <= s_box_upper.
+  prog->AddBoundingBoxConstraint(Eigen::VectorXd::Constant(s_size, -kInf),
+                                 s_inner_pts.rowwise().minCoeff(), s_box_lower);
+  prog->AddBoundingBoxConstraint(s_inner_pts.rowwise().maxCoeff(),
+                                 Eigen::VectorXd::Constant(s_size, kInf),
+                                 s_box_upper);
 }
 }  // namespace optimization
 }  // namespace geometry
