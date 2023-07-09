@@ -3,6 +3,7 @@
 #include <array>
 #include <map>
 #include <memory>
+#include <optional>
 #include <string>
 #include <tuple>
 #include <unordered_map>
@@ -12,6 +13,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/render/render_engine.h"
+#include "drake/geometry/render/render_material.h"
 #include "drake/geometry/render/render_mesh.h"
 #include "drake/geometry/render_gl/internal_buffer_dim.h"
 #include "drake/geometry/render_gl/internal_opengl_context.h"
@@ -146,7 +148,7 @@ class RenderEngineGl final : public render::RenderEngine {
   //                         OpenGlGeometry.
   void ImplementMesh(int geometry_index, void* user_data,
                      const Vector3<double>& scale,
-                     const std::string& file_name);
+                     const std::string& filename_in);
 
   // @see RenderEngine::DoRegisterVisual().
   bool DoRegisterVisual(GeometryId id, const Shape& shape,
@@ -354,9 +356,16 @@ class RenderEngineGl final : public render::RenderEngine {
   // re-use the same geometry. For example, if we tracked them by "aspect ratio"
   // and allowed deviation within a small tolerance, then we could reuse them.
 
-  // Mapping from obj filename to the index into geometries_ containing the
-  // OpenGlGeometry representation of the mesh.
-  std::unordered_map<std::string, int> meshes_;
+  struct RenderGlMesh {
+    int mesh_index;
+    std::optional<geometry::internal::RenderMaterial> mesh_material{
+        std::nullopt};
+  };
+
+  // Mapping from the obj filename to the index into geometries_ containing the
+  // OpenGlGeometry representation and an optional material definition of the
+  // mesh.
+  std::unordered_map<std::string, RenderGlMesh> meshes_;
 
   // These are caches of reusable RenderTargets. There is a unique render target
   // for each unique image size (BufferDim) and output image type. The
