@@ -1,15 +1,20 @@
 #pragma once
 
 #include <array>
+#include <future>
 #include <map>
 #include <memory>
+#include <optional>
+#include <thread>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
 #include "drake/geometry/optimization/c_iris_collision_geometry.h"
+#include "drake/geometry/optimization/cspace_free_structs.h"
 #include "drake/geometry/optimization/cspace_separating_plane.h"
 #include "drake/multibody/rational/rational_forward_kinematics.h"
+#include "drake/solvers/choose_best_solver.h"
 #include "drake/solvers/mathematical_program.h"
 
 namespace drake {
@@ -191,6 +196,23 @@ class CspaceFreePolytopeBase {
   [[nodiscard]] VectorX<symbolic::Variable> GetSForPlane(
       const SortedPair<multibody::BodyIndex>& body_pair,
       SForPlane s_for_plane_enum) const;
+
+  /** For each pair of geometries, solve the certification problem to find their
+   separation plane in parallel.
+   @param active_plane_indices We will search for the plane in
+   this->separating_planes()[active_plane_indices[i]].
+   @param solve_plane_sos The solve_plane_sos(plane_count) returns the whether
+   the solve for this->separating_planes()[active_plane_indices[plane_count]] is
+   successful or not.
+   @param num_threads The number of threads in the parallel solve.
+   @param verbose Whether to print out some messages during the parallel solve.
+   @param terminate_at_failure If set to true, then terminate this function when
+   we failed to find a separating plane.
+   */
+  void SolveCertificationForEachPlaneInParallel(
+      const std::vector<int>& active_plane_indices,
+      const std::function<bool(int)>& solve_plane_sos, int num_threads,
+      bool verbose, bool terminate_at_failure) const;
 
  private:
   // Forward declare the tester class to test the private members.
