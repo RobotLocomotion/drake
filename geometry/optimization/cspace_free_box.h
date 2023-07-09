@@ -1,5 +1,6 @@
 #pragma once
 
+#include <optional>
 #include <vector>
 
 #include "drake/geometry/optimization/cspace_free_polytope_base.h"
@@ -211,6 +212,25 @@ class CspaceFreeBox : public CspaceFreePolytopeBase {
       const PlaneSeparatesGeometries& plane_geometries,
       const VectorX<symbolic::Polynomial>& s_minus_s_lower,
       const VectorX<symbolic::Polynomial>& s_upper_minus_s) const;
+
+  /* Finds the certificates that the C-space box {q | q_box_lower <= q <=
+   q_box_upper} is collision free.
+   @retval certificates certificates[i] is the separation certificate for a pair
+   of geometries. If we cannot certify or haven't certified the separation for
+   this pair, then certificates[i] contains std::nullopt. Note that when we run
+   this function in parallel and options.terminate_at_failure=true, we will
+   terminate all the remaining certification programs that have been launched,
+   so certificates[i] = std::nullopt could be either because that we have
+   attempted to find the certificate for this pair of geometry but failed, or it
+   could be that we fail to find the certificate for another pair and haven't
+   attempted to find the certificate for this pair.
+   */
+  [[nodiscard]] std::vector<std::optional<SeparationCertificateResult>>
+  FindSeparationCertificateGivenBox(
+      const IgnoredCollisionPairs& ignored_collision_pairs,
+      const Eigen::Ref<const Eigen::VectorXd>& q_box_lower,
+      const Eigen::Ref<const Eigen::VectorXd>& q_box_upper,
+      const FindSeparationCertificateOptions& options) const;
 };
 }  // namespace optimization
 }  // namespace geometry
