@@ -245,6 +245,42 @@ CspaceFreeBox::ConstructPlaneSearchProgram(
   DRAKE_DEMAND(gram_var_count == gram_vars.rows());
   return ret;
 }
+
+std::vector<std::optional<CspaceFreeBox::SeparationCertificateResult>>
+CspaceFreeBox::FindSeparationCertificateGivenBox(
+    const IgnoredCollisionPairs& ignored_collision_pairs,
+    const Eigen::Ref<const Eigen::VectorXd>& q_box_lower,
+    const Eigen::Ref<const Eigen::VectorXd>& q_box_upper,
+    const FindSeparationCertificateOptions& options) const {
+  Eigen::VectorXd s_box_lower;
+  Eigen::VectorXd s_box_upper;
+  Eigen::VectorXd q_star;
+  this->ComputeSBox(q_box_lower, q_box_upper, &s_box_lower, &s_box_upper,
+                    &q_star);
+  PolynomialsToCertify polynomials_to_certify;
+  this->GeneratePolynomialsToCertify(
+      s_box_lower, s_box_upper, q_star,
+      {}  // ignored_collision_pairs={}. FindSeparationCertificateGivenPolytope
+          //  expects plane_geometries to contain every possible pair of
+          //  geometries, not considering ignored_collision_pairs
+      ,
+      &polynomials_to_certify);
+
+  std::vector<std::optional<CspaceFreeBox::SeparationCertificateResult>>
+      separation_results;
+  CspaceFreePolytopeBase::FindSeparationCertificateGivenPolytope<
+      PolynomialsToCertify, SeparationCertificateProgram>(
+      polynomials_to_certify.plane_geometries, ignored_collision_pairs,
+      polynomials_to_certify, options,
+      [this](const PlaneSeparatesGeometries& plane_geometries,
+             const PolynomialsToCertify& m_polynomials_to_certify) {
+        return this->ConstructPlaneSearchProgram(
+            plane_geometries, m_polynomials_to_certify.s_minus_s_box_lower,
+            m_polynomials_to_certify.s_box_upper_minus_s);
+      },
+      &separation_results);
+  return separation_results;
+}
 }  // namespace optimization
 }  // namespace geometry
 }  // namespace drake

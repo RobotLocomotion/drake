@@ -18,18 +18,6 @@ namespace optimization {
 namespace {
 const double kInf = std::numeric_limits<double>::infinity();
 
-// Checks if a future has completed execution.
-// This function is taken from monte_carlo.cc. It will be used in the "thread
-// pool" implementation (which doesn't use the openMP).
-template <typename T>
-bool IsFutureReady(const std::future<T>& future) {
-  // future.wait_for() is the only method to check the status of a future
-  // without waiting for it to complete.
-  const std::future_status status =
-      future.wait_for(std::chrono::milliseconds(1));
-  return (status == std::future_status::ready);
-}
-
 // Solves an optimization problem. If the optimization problem has a cost, then
 // after we find the optimal solution for that cost (where the optimal solution
 // would be on the boundary of the feasible set), we back-off a little bit and
@@ -272,12 +260,40 @@ CspaceFreePolytope::SeparationCertificate::GetSolution(
   return ret;
 }
 
+namespace {
+// The data used to construct the sos program that searches the separation
+// certificates.
+struct CspacePolytopeDescription {
+  CspacePolytopeDescription(VectorX<symbolic::Polynomial> m_d_minus_Cs,
+                            std::unordered_set<int> m_C_redundant_indices,
+                            std::unordered_set<int> m_s_lower_redundant_indices,
+                            std::unordered_set<int> m_s_upper_redundant_indices)
+      : d_minus_Cs{std::move(m_d_minus_Cs)},
+        C_redundant_indices{std::move(m_C_redundant_indices)},
+        s_lower_redundant_indices{std::move(m_s_lower_redundant_indices)},
+        s_upper_redundant_indices{std::move(m_s_upper_redundant_indices)} {}
+  VectorX<symbolic::Polynomial> d_minus_Cs;
+  // C_redundant_indices In the polyhedron C*s <= d, s_lower <= s <=
+  // s_upper, some rows of C*s<=d might be redundant. We store the indices
+  // of the
+  // redundant rows in C_redundant_indices.
+  std::unordered_set<int> C_redundant_indices;
+  // Store the indices of the redundant rows in s >= s_lower.
+  std::unordered_set<int> s_lower_redundant_indices;
+  // Store the indices of the redundant rows in s <= s_upper.
+  std::unordered_set<int> s_upper_redundant_indices;
+};
+
+}  // namespace
+
 std::vector<std::optional<CspaceFreePolytope::SeparationCertificateResult>>
 CspaceFreePolytope::FindSeparationCertificateGivenPolytope(
     const IgnoredCollisionPairs& ignored_collision_pairs,
     const Eigen::Ref<const Eigen::MatrixXd>& C,
     const Eigen::Ref<const Eigen::VectorXd>& d,
     const FindSeparationCertificateGivenPolytopeOptions& options) const {
+  std::vector<std::optional<CspaceFreePolytope::SeparationCertificateResult>>
+      separation_results;
   const VectorX<symbolic::Polynomial> d_minus_Cs = this->CalcDminusCs(C, d);
   std::unordered_set<int> C_redundant_indices;
   std::unordered_set<int> s_lower_redundant_indices;
@@ -288,140 +304,23 @@ CspaceFreePolytope::FindSeparationCertificateGivenPolytope(
   if (!options.ignore_redundant_C) {
     C_redundant_indices.clear();
   }
-
-  // Stores the indices in separating_planes() that don't appear in
-  // ignored_collision_pairs.
-  std::vector<int> active_plane_indices;
-  active_plane_indices.reserve(separating_planes().size());
-  for (int i = 0; i < static_cast<int>(separating_planes().size()); ++i) {
-    if (ignored_collision_pairs.count(SortedPair<geometry::GeometryId>(
-            separating_planes()[i].positive_side_geometry->id(),
-            separating_planes()[i].negative_side_geometry->id())) == 0) {
-      active_plane_indices.push_back(i);
-    }
-  }
-
-  std::vector<std::optional<bool>> is_success(active_plane_indices.size(),
-                                              std::nullopt);
-  std::vector<std::optional<SeparationCertificateResult>> ret(
-      active_plane_indices.size(), std::nullopt);
-
-  // This lambda function formulates and solves a small SOS program for each
-  // pair of geometries.
-  auto solve_small_sos = [this, &d_minus_Cs, &C_redundant_indices,
-                          &s_lower_redundant_indices,
-                          &s_upper_redundant_indices, &active_plane_indices,
-                          &options, &is_success, &ret](int plane_count) {
-    const int plane_index = active_plane_indices[plane_count];
-    auto certificate_program = this->ConstructPlaneSearchProgram(
-        this->plane_geometries_[plane_index], d_minus_Cs, C_redundant_indices,
-        s_lower_redundant_indices, s_upper_redundant_indices);
-    solvers::MathematicalProgramResult result;
-    solvers::MakeSolver(options.solver_id)
-        ->Solve(*certificate_program.prog, std::nullopt, options.solver_options,
-                &result);
-    if (result.is_success()) {
-      ret[plane_count].emplace(certificate_program.certificate.GetSolution(
-          plane_index, separating_planes()[plane_index].a,
-          separating_planes()[plane_index].b,
-          separating_planes()[plane_index].decision_variables, result));
-      is_success[plane_count].emplace(true);
-    } else {
-      ret[plane_count].reset();
-      is_success[plane_count].emplace(false);
-    }
-    return plane_count;
-  };
-
-  const int num_threads =
-      options.num_threads > 0
-          ? options.num_threads
-          : static_cast<int>(std::thread::hardware_concurrency());
-  // We implement the "thread pool" idea here, by following
-  // MonteCarloSimulationParallel class. This implementation doesn't use openMP
-  // library.
-  std::list<std::future<int>> active_operations;
-  // Keep track of how many SOS have been dispatched already.
-  int sos_dispatched = 0;
-  // If any SOS is infeasible, then we don't dispatch any more SOS and report
-  // failure.
-  bool stop_dispatching = false;
-  while ((active_operations.size() > 0 ||
-          (sos_dispatched < static_cast<int>(active_plane_indices.size()) &&
-           !stop_dispatching))) {
-    // Check for completed operations.
-    for (auto operation = active_operations.begin();
-         operation != active_operations.end();) {
-      if (IsFutureReady(*operation)) {
-        // This call to future.get() is necessary to propagate any exception
-        // thrown during SOS setup/solve.
-        const int plane_count = operation->get();
-        if (options.verbose) {
-          drake::log()->debug("SOS {}/{} completed, is_success {}", plane_count,
-                              active_plane_indices.size(),
-                              is_success[plane_count].value());
-        }
-        if (!(is_success[plane_count].value()) &&
-            options.terminate_at_failure) {
-          stop_dispatching = true;
-        }
-        // Erase returned iterator to the next node in the list.
-        operation = active_operations.erase(operation);
-      } else {
-        // Advance to next node in the list.
-        ++operation;
-      }
-    }
-
-    // Dispatch new SOS.
-    while (static_cast<int>(active_operations.size()) < num_threads &&
-           sos_dispatched < static_cast<int>(active_plane_indices.size()) &&
-           !stop_dispatching) {
-      active_operations.emplace_back(std::async(
-          std::launch::async, std::move(solve_small_sos), sos_dispatched));
-      if (options.verbose) {
-        drake::log()->debug("SOS {}/{} dispatched", sos_dispatched,
-                            active_plane_indices.size());
-      }
-      ++sos_dispatched;
-    }
-
-    // Wait a bit before checking for completion.
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
-  }
-
-  if (std::all_of(is_success.begin(), is_success.end(),
-                  [](std::optional<bool> flag) {
-                    return flag.has_value() && flag.value();
-                  })) {
-    if (options.verbose) {
-      drake::log()->debug("Found Lagrangian multipliers and separating planes");
-    }
-  } else {
-    if (options.verbose) {
-      std::string bad_pairs;
-      const auto& inspector = scene_graph().model_inspector();
-      for (int plane_count = 0;
-           plane_count < static_cast<int>(active_plane_indices.size());
-           ++plane_count) {
-        const int plane_index = active_plane_indices[plane_count];
-        if (is_success[plane_count].has_value() &&
-            !(is_success[plane_count].value())) {
-          bad_pairs.append(fmt::format(
-              "({}, {})\n",
-              inspector.GetName(separating_planes()[plane_index]
-                                    .positive_side_geometry->id()),
-              inspector.GetName(separating_planes()[plane_index]
-                                    .negative_side_geometry->id())));
-        }
-      }
-
-      drake::log()->warn(
-          "Cannot find Lagrangian multipliers and separating planes for \n{}",
-          bad_pairs);
-    }
-  }
-  return ret;
+  CspaceFreePolytopeBase::FindSeparationCertificateGivenPolytope<
+      CspacePolytopeDescription, SeparationCertificateProgram>(
+      plane_geometries_, ignored_collision_pairs,
+      CspacePolytopeDescription(d_minus_Cs, C_redundant_indices,
+                                s_lower_redundant_indices,
+                                s_upper_redundant_indices),
+      options,
+      [this](const PlaneSeparatesGeometries& plane_geometries,
+             const CspacePolytopeDescription& cspace_polytope_description) {
+        return this->ConstructPlaneSearchProgram(
+            plane_geometries, cspace_polytope_description.d_minus_Cs,
+            cspace_polytope_description.C_redundant_indices,
+            cspace_polytope_description.s_lower_redundant_indices,
+            cspace_polytope_description.s_upper_redundant_indices);
+      },
+      &separation_results);
+  return separation_results;
 }
 
 bool CspaceFreePolytope::FindSeparationCertificateGivenPolytope(

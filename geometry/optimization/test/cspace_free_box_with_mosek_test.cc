@@ -9,6 +9,10 @@ namespace drake {
 namespace geometry {
 namespace optimization {
 namespace {
+// Only use two threads during testing. This value should match the "cpu" tag
+// in BUILD.bazel defining this test.
+constexpr int kTestConcurrency = 2;
+
 // @param q_samples Each row of s_samples is a sampled configuration q.
 // @param a Maps the plane index to the separating plane parameter `a` in {x|
 // aᵀx+b=0}
@@ -228,6 +232,73 @@ TEST_F(CIrisToyRobotTest, ConstructPlaneSearchProgram) {
         q_samples.rows(), q_box_lower(1), q_box_upper(1));
 
     check_certificate(separation_certificate_program, result, q_samples);
+  }
+}
+
+TEST_F(CIrisToyRobotTest, FindSeparationCertificateGivenBox) {
+  CspaceFreeBoxTester tester(plant_, scene_graph_,
+                             SeparatingPlaneOrder::kAffine);
+  const Eigen::VectorXd q_position_lower = plant_->GetPositionLowerLimits();
+  const Eigen::VectorXd q_position_upper = plant_->GetPositionUpperLimits();
+  const Eigen::VectorXd q_box_lower =
+      0.8 * q_position_lower + 0.2 * q_position_upper;
+  const Eigen::VectorXd q_box_upper =
+      0.7 * q_position_lower + 0.3 * q_position_upper;
+  FindSeparationCertificateOptions options;
+  const CspaceFreeBox::IgnoredCollisionPairs ignored_collision_pairs{
+      SortedPair<geometry::GeometryId>(world_box_, body2_sphere_)};
+  Eigen::VectorXd s_box_lower;
+  Eigen::VectorXd s_box_upper;
+  Eigen::VectorXd q_star;
+  tester.ComputeSBox(q_box_lower, q_box_upper, &s_box_lower, &s_box_upper,
+                     &q_star);
+  for (int num_threads : {1, kTestConcurrency}) {
+    options.num_threads = num_threads;
+    options.terminate_at_failure = false;
+    const auto certificates_result = tester.FindSeparationCertificateGivenBox(
+        ignored_collision_pairs, q_box_lower, q_box_upper, options);
+    EXPECT_EQ(certificates_result.size(),
+              tester.cspace_free_box().separating_planes().size() -
+                  ignored_collision_pairs.size());
+    // The C-space box is collision free.
+    EXPECT_TRUE(std::all_of(
+        certificates_result.begin(), certificates_result.end(),
+        [](const std::optional<CspaceFreeBox::SeparationCertificateResult>&
+               result) {
+          return result.has_value();
+        }));
+    // Make sure we really find the separation plane.
+    std::array<Eigen::VectorXd, 3> qi_samples;
+    for (int i = 0; i < 3; ++i) {
+      qi_samples[i] =
+          Eigen::VectorXd::LinSpaced(10, q_box_lower(i), q_box_upper(i));
+    }
+    Eigen::MatrixXd q_samples(
+        qi_samples[0].rows() * qi_samples[1].rows() * qi_samples[2].rows(), 3);
+    int q_sample_count = 0;
+    for (int i = 0; i < qi_samples[0].rows(); ++i) {
+      for (int j = 0; j < qi_samples[1].rows(); ++j) {
+        for (int k = 0; k < qi_samples[2].rows(); ++k) {
+          q_samples.row(q_sample_count++) << qi_samples[0](i), qi_samples[1](j),
+              qi_samples[2](k);
+        }
+      }
+    }
+    for (const auto& certificate_result : certificates_result) {
+      const CIrisSeparatingPlane<symbolic::Variable>& separating_plane =
+          tester.cspace_free_box()
+              .separating_planes()[certificate_result->plane_index];
+      CheckSeparationBySamples(
+          tester, *(this->diagram_), q_samples, certificate_result->a,
+          certificate_result->b, q_star,
+          SortedPair<geometry::GeometryId>(
+              separating_plane.positive_side_geometry->id(),
+              separating_plane.negative_side_geometry->id()));
+      CheckSosLagrangians(
+          certificate_result->positive_side_rational_lagrangians);
+      CheckSosLagrangians(
+          certificate_result->negative_side_rational_lagrangians);
+    }
   }
 }
 }  // namespace
