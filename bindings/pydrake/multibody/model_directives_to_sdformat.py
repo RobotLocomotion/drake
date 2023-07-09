@@ -64,6 +64,7 @@ Properties of the resulting SDFormat file(s):
 import argparse
 import os
 from pathlib import Path
+import sys
 from xml.dom import minidom
 import xml.etree.ElementTree as ET
 
@@ -73,6 +74,14 @@ from pydrake.multibody.parsing import (
     ModelDirectives,
     PackageMap,
 )
+
+# TODO(jwnimmer-tri) Once we drop support for Python 3.8 (and thus can rely
+# on PEP-585), switch to using `dict` throughout instead of `Dict`.
+if sys.version_info[:2] >= (3, 9):
+    Dict = dict
+else:
+    from typing import Dict
+
 
 _SDF_VERSION = "1.9"
 _SCOPE_DELIMITER = "::"
