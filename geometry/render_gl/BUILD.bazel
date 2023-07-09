@@ -78,6 +78,7 @@ drake_cc_library_ubuntu_only(
         ":internal_shape_meshes",
         ":internal_texture_library",
         ":render_engine_gl_params",
+        "//common:diagnostic_policy",
         "//geometry/render:render_engine",
         "//geometry/render:render_mesh",
         "//systems/sensors:image",
