@@ -167,9 +167,6 @@ class TestConvertModelDirectiveToSdformat(
                     if not x.name().startswith("_merged__")
                 ]
                 dmd_frames = get_frames_attached_to(dmd_plant, [dmd_body])
-                # TODO(jwnimmer-tri) Gllrgh. There are duplicated frames.
-                # For now, nerf this test case.
-                continue
                 for sdf_frame, dmd_frame in _strict_zip(
                         sdf_frames,
                         dmd_frames):
