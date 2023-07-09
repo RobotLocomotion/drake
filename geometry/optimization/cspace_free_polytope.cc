@@ -18,73 +18,6 @@ namespace optimization {
 namespace {
 const double kInf = std::numeric_limits<double>::infinity();
 
-// Return the total size of the lower triangular variables in the Gram
-// matrices.
-int GetGramVarSize(
-    const std::array<VectorX<symbolic::Monomial>, 4>& monomial_basis_array,
-    bool with_cross_y, int num_y) {
-  auto gram_lower_size = [](int gram_rows) {
-    return gram_rows * (gram_rows + 1) / 2;
-  };
-  if (num_y == 0) {
-    // We only need to use monomial_basis_array[0].
-    return gram_lower_size(monomial_basis_array[0].rows());
-  } else {
-    // We will use the monomials that contain y for the psd_mat.
-    // We will denote monomial_basis_array[0] as m(s), and
-    // monomial_basis_array[i+1] as  yᵢ * m(s).
-    if (with_cross_y) {
-      // The monomials basis we use are [m(s); y₀*m(s), ..., yₙ * m(s)] where n
-      // = num_y - 1.
-      int gram_rows = monomial_basis_array[0].rows();
-      for (int i = 0; i < num_y; ++i) {
-        gram_rows += monomial_basis_array[i + 1].rows();
-      }
-      return gram_lower_size(gram_rows);
-    } else {
-      // Use multiple monomial basis, each monomials basis is [m(s); yᵢ*m(s)].
-      int ret = 0;
-      for (int i = 0; i < num_y; ++i) {
-        ret += gram_lower_size(monomial_basis_array[0].rows() +
-                               monomial_basis_array[i + 1].rows());
-      }
-      return ret;
-    }
-  }
-}
-
-// TODO(hongkai.dai): move this function to a header file for general usage.
-template <typename T>
-void SymmetricMatrixFromLowerTriangularPart(
-    int rows, const Eigen::Ref<const VectorX<T>>& lower_triangle,
-    MatrixX<T>* mat) {
-  mat->resize(rows, rows);
-  DRAKE_THROW_UNLESS(lower_triangle.rows() == rows * (rows + 1) / 2);
-  int count = 0;
-  for (int j = 0; j < rows; ++j) {
-    (*mat)(j, j) = lower_triangle(count++);
-    for (int i = j + 1; i < rows; ++i) {
-      (*mat)(i, j) = lower_triangle(count);
-      (*mat)(j, i) = lower_triangle(count);
-      count++;
-    }
-  }
-}
-
-// TODO(hongkai.dai): move this change to MathematicalProgram.
-void AddPsdConstraint(solvers::MathematicalProgram* prog,
-                      const MatrixX<symbolic::Variable>& X) {
-  DRAKE_THROW_UNLESS(X.rows() == X.cols());
-  if (X.rows() == 1) {
-    prog->AddBoundingBoxConstraint(0, kInf, X(0, 0));
-  } else if (X.rows() == 2) {
-    prog->AddRotatedLorentzConeConstraint(
-        Vector3<symbolic::Variable>(X(0, 0), X(1, 1), X(0, 1)));
-  } else {
-    prog->AddPositiveSemidefiniteConstraint(X);
-  }
-}
-
 // Checks if a future has completed execution.
 // This function is taken from monte_carlo.cc. It will be used in the "thread
 // pool" implementation (which doesn't use the openMP).
@@ -132,108 +65,6 @@ solvers::MathematicalProgramResult SolveWithBackoff(
   }
   return result;
 }
-
-// Given the monomial_basis_array, compute the sos polynomial.
-// monomial_basis_array contains [m(s), y₀*m(s), y₁*m(s), y₂*m(s)].
-//
-// If num_y == 0, then the sos polynomial is just
-// m(s)ᵀ * X * m(s)
-// where X is a Gram matrix, `grams` is a length-1 vector containing X.
-//
-// If num_y != 0 and with_cross_y = true, then the sos polynomial is
-// ⌈    m(s)⌉ᵀ * Y * ⌈    m(s)⌉
-// | y₀*m(s)|        | y₀*m(s)|
-// |   ...  |        |   ...  |
-// ⌊ yₙ*m(s)⌋        ⌊ yₙ*m(s)⌋
-// where n = num_y-1. Y is a Gram matrix, `grams` is a length-1 vector
-// containing Y.
-//
-// if num_y != 0 and with_cross_y = false, then the sos polynomial is
-// ∑ᵢ ⌈    m(s)⌉ᵀ * Zᵢ * ⌈    m(s)⌉
-//    ⌊ yᵢ*m(s)⌋         ⌊ yᵢ*m(s)⌋
-// where Zᵢ is a Gram matrix, i = 0, ..., num_y-1.  `grams` is a vector of
-// length `num_y`, and grams[i] = Zᵢ
-struct GramAndMonomialBasis {
-  GramAndMonomialBasis(
-      const std::array<VectorX<symbolic::Monomial>, 4>& monomial_basis_array,
-      bool with_cross_y, int num_y) {
-    this->gram_var_size =
-        GetGramVarSize(monomial_basis_array, with_cross_y, num_y);
-    if (num_y == 0) {
-      // We only need to use monomial_basis_array[0].
-      this->grams.emplace_back(monomial_basis_array[0].rows(),
-                               monomial_basis_array[0].rows());
-      this->monomial_basis.push_back(monomial_basis_array[0]);
-    } else {
-      // We will use the monomials that contain y for the psd_mat.
-      // We will denote monomial_basis_array[0] as m(s), and
-      // monomial_basis_array[i+1] as  yᵢ * m(s).
-      if (with_cross_y) {
-        // The monomials basis we use is [m(s); y₀*m(s), ..., yₙ * m(s)] where
-        // n = num_y - 1.
-        int gram_rows = monomial_basis_array[0].rows();
-        for (int i = 0; i < num_y; ++i) {
-          gram_rows += monomial_basis_array[i + 1].rows();
-        }
-        this->grams.emplace_back(gram_rows, gram_rows);
-        this->monomial_basis.emplace_back(gram_rows);
-        this->monomial_basis[0].topRows(monomial_basis_array[0].rows()) =
-            monomial_basis_array[0];
-        gram_rows = monomial_basis_array[0].rows();
-        for (int i = 0; i < num_y; ++i) {
-          this->monomial_basis[0].segment(gram_rows,
-                                          monomial_basis_array[i + 1].rows()) =
-              monomial_basis_array[i + 1];
-          gram_rows += monomial_basis_array[i + 1].rows();
-        }
-      } else {
-        // Use multiple monomial bases, each monomial basis is [m(s); yᵢ*m(s)].
-        for (int i = 0; i < num_y; ++i) {
-          const int gram_rows = monomial_basis_array[0].rows() +
-                                monomial_basis_array[i + 1].rows();
-          this->grams.emplace_back(gram_rows, gram_rows);
-          this->monomial_basis.emplace_back(gram_rows);
-          this->monomial_basis.back().topRows(monomial_basis_array[0].rows()) =
-              monomial_basis_array[0];
-          this->monomial_basis.back().bottomRows(
-              monomial_basis_array[i + 1].rows()) = monomial_basis_array[i + 1];
-        }
-      }
-    }
-  }
-
-  // Add the constraint that the polynomial represented by this Gram and
-  // monomial basis is sos.
-  // @param is_zero_poly If true, then constrain all the Gram matrices to be
-  // zero.
-  void AddSos(solvers::MathematicalProgram* prog,
-              const Eigen::Ref<const VectorX<symbolic::Variable>>& gram_lower,
-              symbolic::Polynomial* poly) {
-    int gram_var_count = 0;
-    for (auto& gram : this->grams) {
-      const int gram_lower_size = gram.rows() * (gram.rows() + 1) / 2;
-      SymmetricMatrixFromLowerTriangularPart<symbolic::Variable>(
-          gram.rows(), gram_lower.segment(gram_var_count, gram_lower_size),
-          &gram);
-      gram_var_count += gram_lower_size;
-    }
-    *poly = symbolic::Polynomial();
-    gram_var_count = 0;
-    for (int i = 0; i < static_cast<int>(this->grams.size()); ++i) {
-      AddPsdConstraint(prog, this->grams[i]);
-      const int gram_lower_size =
-          this->grams[i].rows() * (this->grams[i].rows() + 1) / 2;
-      *poly += symbolic::CalcPolynomialWLowerTriangularPart(
-          this->monomial_basis[i],
-          gram_lower.segment(gram_var_count, gram_lower_size));
-      gram_var_count += gram_lower_size;
-    }
-  }
-
-  int gram_var_size;
-  std::vector<MatrixX<symbolic::Variable>> grams;
-  std::vector<VectorX<symbolic::Monomial>> monomial_basis;
-};
 
 }  // namespace
 
@@ -307,25 +138,21 @@ CspaceFreePolytope::ConstructPlaneSearchProgram(
         1 + d_minus_Cs.rows() + 2 * s_size - C_redundant_indices.size() -
         s_lower_redundant_indices.size() - s_upper_redundant_indices.size();
     const int y_size = internal::GetNumYInRational(rational, this->y_slack());
-    const int num_gram_vars_per_sos =
-        GetGramVarSize(monomial_basis_array, this->with_cross_y(), y_size);
+    const int num_gram_vars_per_sos = internal::GetGramVarSize(
+        monomial_basis_array, this->with_cross_y(), y_size);
     return num_gram_vars_per_sos * num_sos;
   };
-  const SortedPair<multibody::BodyIndex> positive_body_pair(
-      plane.expressed_body, plane.positive_side_geometry->body_index());
-  const std::array<VectorX<symbolic::Monomial>, 4>&
-      monomial_basis_array_positive_side =
-          this->map_body_to_monomial_basis_array().at(positive_body_pair);
-  for (const auto& rational : plane_geometries.positive_side_rationals) {
-    gram_var_count += count_gram(rational, monomial_basis_array_positive_side);
+
+  for (PlaneSide plane_side : {PlaneSide::kPositive, PlaneSide::kNegative}) {
+    const SortedPair<multibody::BodyIndex> one_side_body_pair(
+        plane.expressed_body, plane.geometry(plane_side)->body_index());
+    const std::array<VectorX<symbolic::Monomial>, 4>& monomial_basis_array =
+        this->map_body_to_monomial_basis_array().at(one_side_body_pair);
+    for (const auto& rational : plane_geometries.rationals(plane_side)) {
+      gram_var_count += count_gram(rational, monomial_basis_array);
+    }
   }
-  const SortedPair<multibody::BodyIndex> negative_body_pair(
-      plane.expressed_body, plane.negative_side_geometry->body_index());
-  const auto& monomial_basis_array_negative_side =
-      this->map_body_to_monomial_basis_array().at(negative_body_pair);
-  for (const auto& rational : plane_geometries.negative_side_rationals) {
-    gram_var_count += count_gram(rational, monomial_basis_array_negative_side);
-  }
+
   const auto gram_vars =
       ret.prog->NewContinuousVariables(gram_var_count, "Gram");
 
@@ -338,8 +165,8 @@ CspaceFreePolytope::ConstructPlaneSearchProgram(
           const std::array<VectorX<symbolic::Monomial>, 4>&
               monomial_basis_array) -> SeparatingPlaneLagrangians {
     const int y_size = internal::GetNumYInRational(rational, this->y_slack());
-    GramAndMonomialBasis gram_and_monomial_basis(monomial_basis_array,
-                                                 this->with_cross_y(), y_size);
+    internal::GramAndMonomialBasis gram_and_monomial_basis(
+        monomial_basis_array, this->with_cross_y(), y_size);
     const int num_gram_vars_per_sos = gram_and_monomial_basis.gram_var_size;
     const int s_size = this->rational_forward_kin().s().rows();
     SeparatingPlaneLagrangians lagrangians(d_minus_Cs.rows(), s_size);
@@ -393,21 +220,20 @@ CspaceFreePolytope::ConstructPlaneSearchProgram(
     ret.prog->AddIndeterminates(y_slack());
   }
 
-  ret.certificate.positive_side_rational_lagrangians.reserve(
-      plane_geometries.positive_side_rationals.size());
-  for (const auto& rational : plane_geometries.positive_side_rationals) {
-    ret.certificate.positive_side_rational_lagrangians.push_back(
-        add_rational_nonnegative(ret.prog.get_mutable(), rational,
-                                 monomial_basis_array_positive_side));
+  for (PlaneSide plane_side : {PlaneSide::kPositive, PlaneSide::kNegative}) {
+    ret.certificate.mutable_lagrangians(plane_side)
+        .reserve(plane_geometries.rationals(plane_side).size());
+    const SortedPair<multibody::BodyIndex> one_side_body_pair(
+        plane.expressed_body, plane.geometry(plane_side)->body_index());
+    const std::array<VectorX<symbolic::Monomial>, 4>& monomial_basis_array =
+        this->map_body_to_monomial_basis_array().at(one_side_body_pair);
+    for (const auto& rational : plane_geometries.rationals(plane_side)) {
+      ret.certificate.mutable_lagrangians(plane_side)
+          .push_back(add_rational_nonnegative(ret.prog.get_mutable(), rational,
+                                              monomial_basis_array));
+    }
   }
 
-  ret.certificate.negative_side_rational_lagrangians.reserve(
-      plane_geometries.negative_side_rationals.size());
-  for (const auto& rational : plane_geometries.negative_side_rationals) {
-    ret.certificate.negative_side_rational_lagrangians.push_back(
-        add_rational_nonnegative(ret.prog.get_mutable(), rational,
-                                 monomial_basis_array_negative_side));
-  }
   DRAKE_DEMAND(gram_var_count == gram_vars.rows());
 
   return ret;
@@ -654,8 +480,8 @@ int CspaceFreePolytope::GetGramVarSizeForPolytopeSearchProgram(
             (1 + (search_s_bounds_lagrangians ? 2 * s_size : 0));
         const int num_y =
             internal::GetNumYInRational(rational, this->y_slack());
-        ret += num_sos * GetGramVarSize(monomial_basis_array,
-                                        this->with_cross_y(), num_y);
+        ret += num_sos * internal::GetGramVarSize(monomial_basis_array,
+                                                  this->with_cross_y(), num_y);
       };
 
   for (const auto& plane_geometries : plane_geometries_) {
@@ -759,9 +585,9 @@ CspaceFreePolytope::InitializePolytopeSearchProgram(
             for (int i = 0; i < static_cast<int>(rationals.size()); ++i) {
               const int num_y =
                   internal::GetNumYInRational(rationals[i], this->y_slack());
-              const int num_gram_vars_per_sos = GetGramVarSize(
+              const int num_gram_vars_per_sos = internal::GetGramVarSize(
                   monomial_basis_array, this->with_cross_y(), num_y);
-              GramAndMonomialBasis gram_and_monomial_basis(
+              internal::GramAndMonomialBasis gram_and_monomial_basis(
                   monomial_basis_array, this->with_cross_y(), num_y);
               // Add Lagrangian multipliers for joint limits.
               if (search_s_bounds_lagrangians) {
@@ -1500,13 +1326,6 @@ std::map<multibody::BodyIndex,
 GetCollisionGeometries(const multibody::MultibodyPlant<double>& plant,
                        const geometry::SceneGraph<double>& scene_graph) {
   return internal::GetCollisionGeometries(plant, scene_graph);
-}
-
-int CspaceFreePolytope::GetSeparatingPlaneIndex(
-    const SortedPair<geometry::GeometryId>& pair) const {
-  return (map_geometries_to_separating_planes().count(pair) == 0)
-             ? -1
-             : map_geometries_to_separating_planes().at(pair);
 }
 
 HPolyhedron CspaceFreePolytope::GetPolyhedronWithJointLimits(

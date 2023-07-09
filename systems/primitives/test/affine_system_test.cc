@@ -103,6 +103,66 @@ TEST_F(AffineSystemTest, Output) {
                               dut_->get_output_port().Eval(*context_), 1e-10));
 }
 
+// Tests that the coefficients are correctly updated.
+TEST_F(AffineSystemTest, UpdateCoefficients) {
+  const Eigen::Matrix2d new_A = make_2x2_matrix(1, 2, 3, 4);
+  const Eigen::Matrix2d new_B = make_2x2_matrix(5, 6, 7, 8);
+  const Eigen::Vector2d new_f0 = make_2x1_vector(-1, -2);
+  const Eigen::Matrix2d new_C = make_2x2_matrix(9, 10, 11, 12);
+  const Eigen::Matrix2d new_D = make_2x2_matrix(13, 14, 15, 16);
+  const Eigen::Vector2d new_y0 = make_2x1_vector(-3, -4);
+
+  const Eigen::Matrix2d C_zero = make_2x2_matrix(0, 0, 0, 0);
+  const Eigen::Matrix2d D_zero = make_2x2_matrix(0, 0, 0, 0);
+
+  dut_->UpdateCoefficients(new_A, new_B, new_f0, new_C, new_D, new_y0);
+
+  EXPECT_TRUE(CompareMatrices(dut_->A(), new_A));
+  EXPECT_TRUE(CompareMatrices(dut_->B(), new_B));
+  EXPECT_TRUE(CompareMatrices(dut_->f0(), new_f0));
+  EXPECT_TRUE(CompareMatrices(dut_->C(), new_C));
+  EXPECT_TRUE(CompareMatrices(dut_->D(), new_D));
+  EXPECT_TRUE(CompareMatrices(dut_->y0(), new_y0));
+
+  // Tests output dependency consistency.
+  auto dut_zero_C = AffineSystem<double>(A_, B_, f0_, C_zero, D_, y0_);
+  const std::string error_msg_regex =
+      ".*This would change the dependencies of the output port.*";
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      dut_zero_C.UpdateCoefficients(new_A, new_B, new_f0, new_C, new_D, new_y0),
+      error_msg_regex);
+
+  auto dut_zero_D = AffineSystem<double>(A_, B_, f0_, C_, D_zero, y0_);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      dut_zero_D.UpdateCoefficients(new_A, new_B, new_f0, new_C, new_D, new_y0),
+      error_msg_regex);
+}
+
+TEST_F(AffineSystemTest, UpdateCoefficientsButWrongSize) {
+  const Eigen::Matrix<double, 2, 3> new_A;
+  const Eigen::Matrix<double, 3, 2> new_B;
+  const Eigen::Vector3d new_f0;
+  const Eigen::Matrix3d new_C;
+  const Eigen::Matrix4d new_D;
+  const Eigen::Vector4d new_y0;
+
+  const std::string error_msg_regrex =
+      "^New and current .* have different sizes\\.$";
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      dut_->UpdateCoefficients(new_A, B_, f0_, C_, D_, y0_), error_msg_regrex);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      dut_->UpdateCoefficients(A_, new_B, f0_, C_, D_, y0_), error_msg_regrex);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      dut_->UpdateCoefficients(A_, B_, new_f0, C_, D_, y0_), error_msg_regrex);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      dut_->UpdateCoefficients(A_, B_, f0_, new_C, D_, y0_), error_msg_regrex);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      dut_->UpdateCoefficients(A_, B_, f0_, C_, new_D, y0_), error_msg_regrex);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      dut_->UpdateCoefficients(A_, B_, f0_, C_, D_, new_y0), error_msg_regrex);
+}
+
 TEST_F(AffineSystemTest, DefaultAndRandomState) {
   EXPECT_TRUE(CompareMatrices(dut_->get_default_state(), x0_, 0.0));
   EXPECT_TRUE(CompareMatrices(

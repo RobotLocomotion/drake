@@ -74,6 +74,71 @@ class CspaceFreeBox : public CspaceFreePolytopeBase {
   };
 
   /**
+   We certify that a pair of geometries is collision free in the C-space box
+   {q | q_box_lower<=q<=q_box_upper} by finding the separating plane and the
+   Lagrangian multipliers. This struct contains the certificate, that the
+   separating plane {x | aᵀx+b=0 } separates the two geometries in
+   separating_planes()[plane_index] in the C-space box.
+   */
+  struct SeparationCertificateResult final : SeparationCertificateResultBase {
+    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SeparationCertificateResult)
+    SeparationCertificateResult() {}
+    ~SeparationCertificateResult() override = default;
+
+    const std::vector<SeparatingPlaneLagrangians>& lagrangians(
+        PlaneSide plane_side) const {
+      return plane_side == PlaneSide::kPositive
+                 ? positive_side_rational_lagrangians
+                 : negative_side_rational_lagrangians;
+    }
+
+    std::vector<SeparatingPlaneLagrangians> positive_side_rational_lagrangians;
+    std::vector<SeparatingPlaneLagrangians> negative_side_rational_lagrangians;
+  };
+
+  /**
+   This struct stores the necessary information to search for the separating
+   plane for the polytopic C-space box q_box_lower <= q <= q_box_upper.
+   We need to impose that N rationals are non-negative in this C-space box.
+   The denominator of each rational is always positive hence we need to impose
+   the N numerators are non-negative in this C-space box.
+   We impose the condition
+   numerator_i(s) - λ_lower(s)ᵀ * (s - s_lower)
+         -λ_upper(s)ᵀ * (s_upper - s) is sos
+   λ_lower(s) are sos, λ_upper(s) are sos.
+   */
+  struct SeparationCertificate {
+    SeparationCertificate() {}
+
+    [[nodiscard]] SeparationCertificateResult GetSolution(
+        int plane_index, const Vector3<symbolic::Polynomial>& a,
+        const symbolic::Polynomial& b,
+        const VectorX<symbolic::Variable>& plane_decision_vars,
+        const solvers::MathematicalProgramResult& result) const;
+
+    std::vector<SeparatingPlaneLagrangians>& mutable_lagrangians(
+        PlaneSide plane_side) {
+      return plane_side == PlaneSide::kPositive
+                 ? positive_side_rational_lagrangians
+                 : negative_side_rational_lagrangians;
+    }
+    // positive_side_rational_lagrangians[i] is the Lagrangian multipliers for
+    // PlaneSeparatesGeometries::positive_side_rationals[i].
+    std::vector<SeparatingPlaneLagrangians> positive_side_rational_lagrangians;
+    // negative_side_rational_lagrangians[i] is the Lagrangian multipliers for
+    // PlaneSeparatesGeometries::negative_side_rationals[i].
+    std::vector<SeparatingPlaneLagrangians> negative_side_rational_lagrangians;
+  };
+
+  struct SeparationCertificateProgram final : SeparationCertificateProgramBase {
+    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SeparationCertificateProgram)
+    SeparationCertificateProgram() = default;
+    ~SeparationCertificateProgram() = default;
+
+    SeparationCertificate certificate;
+  };
+
+  /**
    @param plant The plant for which we compute the C-space free boxes. It
    must outlive this CspaceFreeBox object.
    @param scene_graph The scene graph that has been connected with `plant`. It
@@ -132,6 +197,20 @@ class CspaceFreeBox : public CspaceFreePolytopeBase {
       const Eigen::Ref<const Eigen::VectorXd>& q_star,
       const IgnoredCollisionPairs& ignored_collision_pairs,
       PolynomialsToCertify* certify_polynomials) const;
+
+  /*
+   Constructs the program which searches for the plane separating a pair of
+   geometries, for all configuration in the box {q | q_box_lower <= q <=
+   q_box_upper}.
+   @param[in] plane_geometries Contain the conditions that need to be
+   non-negative in the box q_box_lower <= q <= q_box_upper.
+   @param[in] s_minus_s_lower s - s_lower.
+   @param[in] s_upper_minus_s s_upper - s.
+   */
+  [[nodiscard]] SeparationCertificateProgram ConstructPlaneSearchProgram(
+      const PlaneSeparatesGeometries& plane_geometries,
+      const VectorX<symbolic::Polynomial>& s_minus_s_lower,
+      const VectorX<symbolic::Polynomial>& s_upper_minus_s) const;
 };
 }  // namespace optimization
 }  // namespace geometry

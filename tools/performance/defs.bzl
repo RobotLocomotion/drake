@@ -53,7 +53,7 @@ def drake_cc_googlebench_binary(
                 # When running as a unit test, run each function only once to
                 # save time. (Once should be sufficient to prove the lack of
                 # runtime errors.)
-                "--benchmark_min_time=0",
+                "--benchmark_min_time=0s",
             ] + (test_args or []),
             tags = test_tags,
         )

@@ -625,6 +625,20 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "quadratic_constrained_program_examples",
+    testonly = 1,
+    srcs = ["test/quadratic_constrained_program_examples.cc"],
+    hdrs = ["test/quadratic_constrained_program_examples.h"],
+    deps = [
+        ":mathematical_program",
+        ":mosek_solver",
+        ":solve",
+        "//common/test_utilities:eigen_matrix_compare",
+        "@gtest//:without_main",
+    ],
+)
+
+drake_cc_library(
     name = "second_order_cone_program_examples",
     testonly = 1,
     srcs = ["test/second_order_cone_program_examples.cc"],
@@ -1424,6 +1438,7 @@ drake_cc_googletest(
         ":mathematical_program_test_util",
         ":mixed_integer_optimization_util",
         ":mosek_solver",
+        ":quadratic_constrained_program_examples",
         ":quadratic_program_examples",
         ":second_order_cone_program_examples",
         ":semidefinite_program_examples",
