@@ -64,6 +64,7 @@ RenderMaterial MakeMeshFallbackMaterial(
   RenderMaterial material;
 
   // This is the fall-through condition; the final priority in the protocol.
+  material.from_mtl = false;
   material.diffuse = default_diffuse;
 
   if (!mesh_path.empty()) {
@@ -85,6 +86,7 @@ RenderMaterial DefineMaterial(
     const DiagnosticPolicy& policy) {
   RenderMaterial material;
 
+  material.from_mtl = false;
   material.diffuse_map =
       props.GetPropertyOrDefault<std::string>("phong", "diffuse_map", "");
   const bool has_texture = !material.diffuse_map.empty();

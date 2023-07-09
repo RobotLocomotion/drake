@@ -19,6 +19,9 @@ struct RenderMaterial {
    `diffuse_map` is empty, it acts as the multiplicative identity. */
   Rgba diffuse;
   std::filesystem::path diffuse_map;
+
+  /* Whether the material definition is loaded from an .mtl file. */
+  bool from_mtl;
 };
 
 /* Dispatches a warning to the given diagnostic policy if the props contain a

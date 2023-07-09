@@ -12,6 +12,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/render/render_engine.h"
+#include "drake/geometry/render/render_material.h"
 #include "drake/geometry/render/render_mesh.h"
 #include "drake/geometry/render_gl/internal_buffer_dim.h"
 #include "drake/geometry/render_gl/internal_opengl_context.h"
@@ -140,7 +141,7 @@ class RenderEngineGl final : public render::RenderEngine {
   //                         OpenGlGeometry.
   void ImplementMesh(int geometry_index, void* user_data,
                      const Vector3<double>& scale,
-                     const std::string& file_name);
+                     const std::string& filename_in);
 
   // @see RenderEngine::DoRegisterVisual().
   bool DoRegisterVisual(GeometryId id, const Shape& shape,
@@ -348,6 +349,11 @@ class RenderEngineGl final : public render::RenderEngine {
   // Mapping from obj filename to the index into geometries_ containing the
   // OpenGlGeometry representation of the mesh.
   std::unordered_map<std::string, int> meshes_;
+
+  // Mapping from obj filename to its material iff the material definition is
+  // from the mesh itself, i.e., an .mtl file.
+  std::unordered_map<std::string,
+                     geometry::internal::RenderMaterial> materials_;
 
   // These are caches of reusable RenderTargets. There is a unique render target
   // for each unique image size (BufferDim) and output image type. The

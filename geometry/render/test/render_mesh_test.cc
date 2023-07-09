@@ -748,6 +748,24 @@ TEST_F(LoadRenderMeshFromObjTest, RedundantMaterialWarnings) {
       testing::MatchesRegex(".*has its own materials.*'phong', 'diffuse'.*"));
 }
 
+/* Tests if the `from_mtl` flag is correctly propagated. */
+TEST_F(LoadRenderMeshFromObjTest, PropagateFromMtlFlag) {
+  for (const bool has_mtl : {false, true}) {
+    // N.B. box_no_mtl.obj doesn't exist in the repo. It is generated from
+    // box.obj by stripping out material data.
+    const std::string filename =
+        has_mtl
+            ? FindResourceOrThrow("drake/geometry/render/test/meshes/box.obj")
+            : FindResourceOrThrow(
+                  "drake/geometry/render/test/meshes/box_no_mtl.obj");
+
+    const RenderMesh mesh_data = LoadRenderMeshFromObj(
+        filename, empty_props(), kDefaultDiffuse, diagnostic_policy_);
+    const RenderMaterial material = mesh_data.material;
+    EXPECT_EQ(has_mtl, material.from_mtl);
+  }
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace geometry
