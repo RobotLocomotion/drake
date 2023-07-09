@@ -40,8 +40,7 @@ struct RenderMesh {
   // texture material to a RenderMesh that didn't originally parse into having
   // a texture material. It may or may not work. It also means that this
   // cannot be a struct; structs don't get to maintain invariants.
-  /* This flag indicates that this mesh has texture coordinates to support
-   maps.
+  /* This flag indicates that this mesh has texture coordinates to support maps.
    If True, the values of `uvs` will be nontrivial.
    If False, the values of `uvs` will be all zeros, but will still have the
    correct size.  */
@@ -59,9 +58,9 @@ struct RenderMesh {
 /* Returns a single instance of RenderMesh from the indicated obj file.
 
  The material definition will come from the obj's mtl file iff a single material
- is applied to all faces in the obj. Otherwise, it applies the fallback
- material protocol documented in MakeMeshFallbackMaterial() (the only time in
- which the `properties` and `default_diffuse` parameters are used).
+ is applied to all faces in the obj. Otherwise, it applies the fallback material
+ protocol documented in MakeMeshFallbackMaterial() (the only time in which the
+ `properties` and `default_diffuse` parameters are used).
 
  As long as there is a single material applied to all faces in the obj file,
  the material will be derived from the material library, even if the material
