@@ -56,6 +56,7 @@ cc_library(
 cc_test(
     name = "hausdorff_distance_test",
     srcs = ["test/hausdorff_distance_test.cpp"],
+    env = {"OMP_NUM_THREADS": "2"},
     deps = [
         ":common_robotics_utilities",
         "@eigen",
@@ -76,6 +77,7 @@ cc_test(
 cc_test(
     name = "planning_test",
     srcs = ["test/planning_test.cpp"],
+    env = {"OMP_NUM_THREADS": "2"},
     deps = [
         ":common_robotics_utilities",
         "@eigen",
