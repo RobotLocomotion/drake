@@ -73,10 +73,11 @@ Diagram<T>::get_output_port_locator(OutputPortIndex port_index) const {
 
 template <typename T>
 std::multimap<int, int> Diagram<T>::GetDirectFeedthroughs() const {
+  std::unordered_map<const System<T>*, std::multimap<int, int>> memoize;
   std::multimap<int, int> pairs;
   for (InputPortIndex u(0); u < this->num_input_ports(); ++u) {
     for (OutputPortIndex v(0); v < this->num_output_ports(); ++v) {
-      if (DiagramHasDirectFeedthrough(u, v)) {
+      if (DiagramHasDirectFeedthrough(u, v, &memoize)) {
         pairs.emplace(u, v);
       }
     }
@@ -1090,12 +1091,15 @@ const SystemBase& Diagram<T>::GetRootSystemBase() const {
 }
 
 template <typename T>
-bool Diagram<T>::DiagramHasDirectFeedthrough(int input_port, int output_port)
+bool Diagram<T>::DiagramHasDirectFeedthrough(
+    int input_port, int output_port,
+    std::unordered_map<const System<T>*, std::multimap<int, int>>* memoize)
     const {
   DRAKE_ASSERT(input_port >= 0);
   DRAKE_ASSERT(input_port < this->num_input_ports());
   DRAKE_ASSERT(output_port >= 0);
   DRAKE_ASSERT(output_port < this->num_output_ports());
+  DRAKE_ASSERT(memoize != nullptr);
 
   const auto input_ids = GetInputPortLocators(InputPortIndex(input_port));
   std::set<InputPortLocator> target_input_ids(input_ids.begin(),
@@ -1111,7 +1115,20 @@ bool Diagram<T>::DiagramHasDirectFeedthrough(int input_port, int output_port)
     size_t removed_count = active_set.erase(current_output_id);
     DRAKE_ASSERT(removed_count == 1);
     const System<T>* sys = current_output_id.first;
-    for (const auto& [sys_input, sys_output] : sys->GetDirectFeedthroughs()) {
+#if 1  // This is the fast version.
+    auto sys_feedthroughs = memoize->find(sys);
+    if (sys_feedthroughs == memoize->end()) {
+      bool inserted{};
+      std::tie(sys_feedthroughs, inserted) =
+          memoize->emplace(sys, sys->GetDirectFeedthroughs());
+      DRAKE_ASSERT(inserted);
+    }
+#else  // This is the original (slow) version.
+    auto sys_feedthroughs = std::make_unique<
+        std::pair<const System<T>*, std::multimap<int, int>>>(
+        sys, sys->GetDirectFeedthroughs());
+#endif
+    for (const auto& [sys_input, sys_output] : sys_feedthroughs->second) {
       if (sys_output == current_output_id.second) {
         const InputPortLocator curr_input_id(sys, sys_input);
         if (target_input_ids.count(curr_input_id)) {
