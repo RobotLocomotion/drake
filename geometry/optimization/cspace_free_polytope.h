@@ -183,9 +183,6 @@ class CspaceFreePolytope : public CspaceFreePolytopeBase {
 
   struct FindSeparationCertificateGivenPolytopeOptions final
       : FindSeparationCertificateOptions {
-    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(
-        FindSeparationCertificateGivenPolytopeOptions)
-    FindSeparationCertificateGivenPolytopeOptions()  = default;
     ~FindSeparationCertificateGivenPolytopeOptions() override = default;
     // If a row in C*s<=d is redundant (this row is implied by other rows in
     // C*s<=d, s_lower<=s<=s_upper), then we don't search for the Lagrangian

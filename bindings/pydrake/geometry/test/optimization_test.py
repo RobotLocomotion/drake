@@ -671,36 +671,6 @@ class TestCspaceFreePolytope(unittest.TestCase):
             q_star=np.zeros(self.plant.num_positions()),
             options=options)
 
-    # def test_CollisionGeometry(self):
-    #     # Check that the plane sides are properly enumerated.
-    #     plane_side_possible_values = [mut.PlaneSide.kPositive,
-    #                                   mut.PlaneSide.kNegative]
-    #
-    #     # Check that the CIrisCollisionGeometry types are properly enumerated.
-    #     collision_geometries = mut.GetCollisionGeometries(
-    #         plant=self.plant, scene_graph=self.scene_graph)
-    #
-    #     geom_type_possible_values = [
-    #         mut.GeometryType.kPolytope,
-    #         mut.GeometryType.kSphere,
-    #         mut.GeometryType.kCylinder,
-    #         mut.GeometryType.kCapsule]
-    #     geom_shape_possible_values = [
-    #         Capsule, Sphere, Cylinder, Box, Convex
-    #     ]
-    #
-    #     for geom_lst in collision_geometries.values():
-    #         for geom in geom_lst:
-    #             self.assertIn(geom.type(), geom_type_possible_values)
-    #             self.assertIn(
-    #                 type(
-    #                     geom.geometry()),
-    #                 geom_shape_possible_values)
-    #             self.assertIn(geom.body_index(), collision_geometries.keys())
-    #             self.assertGreater(geom.num_rationals(), 0)
-    #             self.assertIsInstance(geom.X_BG(), RigidTransform)
-    #             self.assertIsInstance(geom.id(), GeometryId)
-
     def test_CspaceFreePolytope_Options(self):
         dut = mut.CspaceFreePolytope
 
@@ -848,12 +818,15 @@ class TestCspaceFreePolytope(unittest.TestCase):
 
     def test_CspaceFreePolytope_constructor_and_getters(self):
         dut = self.cspace_free_polytope
+
+        # TODO(Alexandre.Amice): uncomment once rational_forward_kin is bound.
         # rat_forward = dut.rational_forward_kin()
         # self.assertEqual(
         #     rat_forward.ComputeSValue(
         #         np.zeros(self.plant.num_positions()),
         #         np.zeros(self.plant.num_positions())),
         #     np.zeros(self.plant.num_positions()))
+
         self.assertGreaterEqual(
             len(dut.map_geometries_to_separating_planes().keys()), 1)
         self.assertGreaterEqual(
@@ -871,13 +844,12 @@ class TestCspaceFreePolytope(unittest.TestCase):
         geom_shape_possible_values = [
             Capsule, Sphere, Cylinder, Box, Convex
         ]
-        possible_orders = [mut.SeparatingPlaneOrder.kAffine]
         for plane_idx in dut.map_geometries_to_separating_planes().values():
             plane = dut.separating_planes()[plane_idx]
             self.assertIsInstance(plane.a[0], Polynomial)
             self.assertIsInstance(plane.b, Polynomial)
             self.assertIsInstance(plane.expressed_body, BodyIndex)
-            self.assertIn(plane.plane_order, possible_orders)
+            self.assertEqual(plane.plane_degree, 1)
             self.assertIsInstance(plane.decision_variables[0], Variable)
             for geom in [plane.positive_side_geometry,
                          plane.negative_side_geometry]:
@@ -961,11 +933,12 @@ class TestCspaceFreePolytope(unittest.TestCase):
             self.cspace_free_polytope.SolveSeparationCertificateProgram(
                 certificate_program=cert_prog, options=lagrangian_options)
 
-        # Call all CspaceFreePolytope.SeparationCertificateProgramResult
+        # Call all CspaceFreePolytope.SeparationCertificateResult
         # methods
-        self.assertIsInstance(cert_prog_sol.a(), Polynomial)
-        self.assertIsInstance(cert_prog_sol.b(), Polynomial)
+        self.assertEqual(cert_prog_sol.a.shape, (3,))
+        self.assertIsInstance(cert_prog_sol.a[0], Polynomial)
+        self.assertIsInstance(cert_prog_sol.b, Polynomial)
         self.assertIsInstance(
-            cert_prog_sol.plane_decision_var_vals()[0], float)
+            cert_prog_sol.plane_decision_var_vals[0], float)
         self.assertIsInstance(
-            cert_prog_sol.result(), MathematicalProgramResult)
+            cert_prog_sol.result, MathematicalProgramResult)
