@@ -128,7 +128,6 @@ BENCHMARK_REGISTER_F(Mlp, OutputGradient)
     ->Args({128, 4, 64, 256})
     ->Args({128, 8, 64, 256});
 
-
 }  // namespace
 }  // namespace systems
 }  // namespace drake
