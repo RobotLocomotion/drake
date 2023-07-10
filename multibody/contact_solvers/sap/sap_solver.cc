@@ -9,6 +9,7 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/extract_double.h"
 #include "drake/math/linear_solve.h"
+#include "drake/multibody/contact_solvers/block_sparse_supernodal_solver.h"
 #include "drake/multibody/contact_solvers/conex_supernodal_solver.h"
 #include "drake/multibody/contact_solvers/newton_with_bisection.h"
 
@@ -611,8 +612,15 @@ template <typename T>
 std::unique_ptr<SuperNodalSolver> SapSolver<T>::MakeSuperNodalSolver() const {
   if constexpr (std::is_same_v<T, double>) {
     const BlockSparseMatrix<T>& J = model_->constraints_bundle().J();
-    return std::make_unique<ConexSuperNodalSolver>(
-        J.block_rows(), J.get_blocks(), model_->dynamics_matrix());
+    switch (parameters_.sparse_linear_solver_type) {
+      case SapSolverParameters::SparseLinearSolverType::kConex:
+        return std::make_unique<ConexSuperNodalSolver>(
+            J.block_rows(), J.get_blocks(), model_->dynamics_matrix());
+      case SapSolverParameters::SparseLinearSolverType::kBlockSparseCholesky:
+        return std::make_unique<BlockSparseSuperNodalSolver>(
+            J.block_rows(), J.get_blocks(), model_->dynamics_matrix());
+    }
+    DRAKE_UNREACHABLE();
   } else {
     throw std::logic_error(
         "SapSolver::MakeSuperNodalSolver(): SuperNodalSolver only supports T "

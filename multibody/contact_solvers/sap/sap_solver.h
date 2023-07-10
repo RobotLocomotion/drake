@@ -62,6 +62,18 @@ struct SapSolverParameters {
     double alpha_max{1.5};
   };
 
+  // The type of sparse solver used for solving linear systems.
+  enum class SparseLinearSolverType {
+    // Supernodal KKT solver as implemented in conex [Permenter, 2020].
+    //
+    // [Permenter, 2020] Permenter, Frank. "A geodesic interior-point method for
+    // linear optimization over symmetric cones." SIAM Journal on
+    // Optimization 33.2 (2023): 1006-1034.
+    kConex,
+    // Block sparse supernodal solver implemented by BlockSparseCholeskySolver.
+    kBlockSparseCholesky,
+  };
+
   // Stopping Criteria:
   //   SAP uses two stopping criteria, one on the optimality condition and a
   // second one on the cost, see specifics below for each criteria. SAP
@@ -166,6 +178,9 @@ struct SapSolverParameters {
   // to trigger an exception if the cost increases. For details, see
   // documentation on `relative_slop`.
   bool nonmonotonic_convergence_is_error{false};
+
+  SparseLinearSolverType sparse_linear_solver_type{
+      SparseLinearSolverType::kBlockSparseCholesky};
 };
 
 // This class implements the Semi-Analytic Primal (SAP) solver described in
