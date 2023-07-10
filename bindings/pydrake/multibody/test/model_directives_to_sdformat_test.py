@@ -1,9 +1,6 @@
-import argparse
 import os
 from pathlib import Path
 import unittest
-import xml.etree.ElementTree as ET
-from xml.dom import minidom
 
 from pydrake.multibody.parsing import Parser
 from pydrake.multibody.plant import MultibodyPlant
