@@ -87,11 +87,11 @@ enum ImageType {
 
 #endif  // !DRAKE_DOXYGEN_CXX
 
-/** See documentation of MakeRenderEngineVtk().  */
+/* See documentation of MakeRenderEngineVtk().  */
 class RenderEngineVtk : public render::RenderEngine,
                         private ModuleInitVtkRenderingOpenGL2 {
  public:
-  /** @name Does not allow copy, move, or assignment  */
+  /* @name Does not allow copy, move, or assignment  */
   //@{
 #ifdef DRAKE_DOXYGEN_CXX
   // Note: the copy constructor operator is actually protected to serve as the
@@ -103,7 +103,7 @@ class RenderEngineVtk : public render::RenderEngine,
   RenderEngineVtk& operator=(RenderEngineVtk&&) = delete;
   //@}}
 
-  /** Constructs the render engine from the given `parameters`.
+  /* Constructs the render engine from the given `parameters`.
 
    When one of the optional parameters is omitted, the constructed value will be
    as documented elsewhere in @ref render_engine_vtk_properties "this class".
@@ -111,10 +111,10 @@ class RenderEngineVtk : public render::RenderEngine,
   explicit RenderEngineVtk(
       const RenderEngineVtkParams& parameters = RenderEngineVtkParams());
 
-  /** @see RenderEngine::UpdateViewpoint().  */
+  /* @see RenderEngine::UpdateViewpoint().  */
   void UpdateViewpoint(const math::RigidTransformd& X_WR) override;
 
-  /** @name    Shape reification  */
+  /* @name    Shape reification  */
   //@{
   using RenderEngine::ImplementGeometry;
   void ImplementGeometry(const Box& box, void* user_data) override;
@@ -127,7 +127,7 @@ class RenderEngineVtk : public render::RenderEngine,
   void ImplementGeometry(const Sphere& sphere, void* user_data) override;
   //@}
 
-  /** @name    Access the default properties
+  /* @name    Access the default properties
 
    Provides access to the default values this instance of the render engine is
    using. These values must be set at construction.  */
@@ -141,7 +141,7 @@ class RenderEngineVtk : public render::RenderEngine,
   //@}
 
  protected:
-  /** Returns all actors registered with the engine, keyed by the SceneGraph
+  /* Returns all actors registered with the engine, keyed by the SceneGraph
    GeometryId. Each GeometryId maps to a triple of actors: color, depth, and
    label. */
   const std::unordered_map<GeometryId,
@@ -150,11 +150,10 @@ class RenderEngineVtk : public render::RenderEngine,
     return actors_;
   }
 
-  /** Copy constructor for the purpose of cloning. */
+  /* Copy constructor for the purpose of cloning. */
   RenderEngineVtk(const RenderEngineVtk& other);
 
-  /** The rendering pipeline for a single image type (color, depth, or label).
-   */
+  /* The rendering pipeline for a single image type (color, depth, or label). */
   struct RenderingPipeline {
     vtkNew<vtkRenderer> renderer;
     vtkNew<vtkRenderWindow> window;
@@ -162,23 +161,23 @@ class RenderEngineVtk : public render::RenderEngine,
     vtkNew<vtkImageExport> exporter;
   };
 
-  /** Configures the VTK model to reflect the given `camera`, this includes
+  /* Configures the VTK model to reflect the given `camera`, this includes
    render size camera intrinsics, visible windows, etc. If `show_window` is set
    to true, a named VTK window will be displayed. */
   void UpdateWindow(const render::RenderCameraCore& camera, bool show_window,
                     const RenderingPipeline& p, const char* name) const;
 
-  /** Variant of configuring the VTK model (see previous function) that *also*
+  /* Variant of configuring the VTK model (see previous function) that *also*
    configures the depth range. */
   void UpdateWindow(const render::DepthRenderCamera& camera,
                     const RenderingPipeline& p) const;
 
-  /** Updates VTK rendering related objects including vtkRenderWindow,
+  /* Updates VTK rendering related objects including vtkRenderWindow,
    vtkWindowToImageFilter and vtkImageExporter, so that VTK reflects
    vtkActors' pose update for rendering. */
   static void PerformVtkUpdate(const RenderingPipeline& p);
 
-  /** Provides access to the private data member pipelines_ by returning a
+  /* Provides access to the private data member pipelines_ by returning a
    mutable RenderingPipeline reference. Only image types in ImageType enum are
    valid. */
   RenderingPipeline& get_mutable_pipeline(ImageType image_type) const;
