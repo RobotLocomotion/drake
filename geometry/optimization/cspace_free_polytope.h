@@ -288,16 +288,19 @@ class CspaceFreePolytope : public CspaceFreePolytopeBase {
       return certified_polytope_;
     }
 
+    /** Each plane index is mapped to a vector of polynomials. */
     [[nodiscard]] const std::unordered_map<int, Vector3<symbolic::Polynomial>>&
     a() const {
       return a_;
     }
 
+    /** Each plane index is mapped to a vector of polynomial, */
     [[nodiscard]] const std::unordered_map<int, symbolic::Polynomial>& b()
         const {
       return b_;
     }
 
+    /** The number of iterations taken to search for the result. */
     [[nodiscard]] int num_iter() const { return num_iter_; }
 
    private:
