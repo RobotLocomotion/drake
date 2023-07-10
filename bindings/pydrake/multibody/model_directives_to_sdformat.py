@@ -547,7 +547,7 @@ def _convert_directives(*,
     and their desired contents.
 
     If an output_path is given, the filenames will be based on that path;
-    otherwise the filenames will be siblings to the the dmd_filename.
+    otherwise the filenames will be siblings to the dmd_filename.
     """
     result = dict()
 
