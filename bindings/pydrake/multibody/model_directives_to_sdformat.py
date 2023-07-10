@@ -1,20 +1,21 @@
 r"""
-Utility for converting model directives files to SDFormat.
+Utility for converting Drake Model Directives files (*.dmd.yaml) to SDFormat.
 
 Preconditions on the model directives file(s):
 
   - No deep nested welds are present (see issue #19090).
   - It is assumed that the model directives files are well formed.
-  - References to elements in subsecuently included files are correct (the
+  - References to elements in subsequently included files are correct (the
     tool will not verify them).
   - It does not contain the ``default_joint_positions`` or
-    the ``default_free_body_pose`` directive since they are stil not
+    the ``default_free_body_pose`` directive since they are still not
     supported.
 
 Properties of the resulting SDFormat file(s):
 
   - The SDFormat files are generated alongside the original "dmd.yaml" files,
-    with the only difference of having an ``.sdf`` extension.
+    with the only difference of having an ``.sdf`` extension (unless the
+    option --output-path is provided).
   - An SDFormat file is created containing the conversion of the model
     directives with the addition of a top level model using the name of
     the file itself without the extension.
@@ -30,21 +31,21 @@ Properties of the resulting SDFormat file(s):
 
     From a Drake binary release (including pip releases), run this as::
 
-            python3 -m pydrake.multibody.model_directives_to_sfdormat \
+            python3 -m pydrake.multibody.model_directives_to_sdformat \
                     -m path/to/file.dmd.yaml
 
     For binary releases (except for pip) there is also a shortcut available
     as::
-            /opt/drake/bin/model_directives_to_sfdormat -m \
-            path/to/file.dmd.yaml
+            /opt/drake/bin/model_directives_to_sdformat -m \
+                    path/to/file.dmd.yaml
 
 **Expand Included**:
 
     ``dmd.yaml`` included files will only be converted if the
     ``--expand-included`` or ``-e`` flag is selected:
 
-            bazel run //tools:model_directives_to_sfdormat -- -m \
-                    path/to/file.dmd.yaml --expand-included
+            bazel run //tools:model_directives_to_sdformat -- \
+                    -m path/to/file.dmd.yaml --expand-included
 
     SDFormat resulting files from these included model directives will be
     created alongside the original files.
@@ -57,8 +58,8 @@ Properties of the resulting SDFormat file(s):
     `--output-path`` or ``-o`` option can be used, followed by the desired
     output path:
 
-            bazel run //tools:model_directives_to_sfdormat -- -m \
-                    path/to/file.dmd.yaml --output-path path/to/output_dir/
+            bazel run //tools:model_directives_to_sdformat -- \
+                    -m path/to/file.dmd.yaml --output-path path/to/output_dir/
 """
 
 import argparse
