@@ -41,7 +41,6 @@ void DoSeparatingPlaneDeclaration(py::module m, T) {
   py::tuple param = GetPyParam<T>();
   using BaseClass = geometry::optimization::CSpaceSeparatingPlane<T>;
   constexpr auto& base_cls_doc = doc.CSpaceSeparatingPlane;
-  constexpr auto& ciris_cls_doc = doc.CSpaceSeparatingPlane;
   {
     auto cls =
         DefineTemplateClassWithDefault<BaseClass>(
@@ -745,13 +744,20 @@ void DefineGeometryOptimization(py::module m) {
             doc.CIrisCollisionGeometry.num_rationals.doc);
   }
   {
+    py::enum_<SeparatingPlaneOrder>(
+        m, "SeparatingPlaneOrder", doc.SeparatingPlaneOrder.doc)
+        .value("kAffine", SeparatingPlaneOrder::kAffine,
+            doc.SeparatingPlaneOrder.kAffine.doc);
+    type_visit([m](auto dummy) { DoSeparatingPlaneDeclaration(m, dummy); },
+        type_pack<double, symbolic::Variable>());
+  }
+  {
     // Definitions for cpsace_free_structs.h/cc
     constexpr auto& prog_doc = doc.SeparationCertificateProgramBase;
     auto prog_cls =
         py::class_<SeparationCertificateProgramBase>(
             m, "SeparationCertificateProgramBase", prog_doc.doc)
-            //                        .def_readonly("prog",
-            //                                    &SeparationCertificateProgramBase::prog)
+            .def_readonly("prog", &SeparationCertificateProgramBase::prog)
             .def_readonly(
                 "plane_index", &SeparationCertificateProgramBase::plane_index);
 
@@ -846,7 +852,24 @@ void DefineGeometryOptimization(py::module m) {
             cls_doc.SearchWithBilinearAlternation.doc)
         .def("BinarySearch", &Class::BinarySearch,
             py::arg("ignored_collision_pairs"), py::arg("C"), py::arg("d"),
-            py::arg("s_center"), py::arg("options"), cls_doc.BinarySearch.doc);
+            py::arg("s_center"), py::arg("options"), cls_doc.BinarySearch.doc)
+        .def(
+            "MakeIsGeometrySeparableProgram",
+            [](const CspaceFreePolytope* self,
+                const std::tuple<geometry::GeometryId, geometry::GeometryId>&
+                    geometry_pair,
+                const Eigen::Ref<const Eigen::MatrixXd>& C,
+                const Eigen::Ref<const Eigen::VectorXd>& d) {
+              const SortedPair<geometry::GeometryId> geom_pair{
+                  std::get<0>(geometry_pair), std::get<1>(geometry_pair)};
+              return self->MakeIsGeometrySeparableProgram(geom_pair, C, d);
+            },
+            py::arg("geometry_pair"), py::arg("C"), py::arg("d"),
+            cls_doc.MakeIsGeometrySeparableProgram.doc)
+        .def("SolveSeparationCertificateProgram",
+            &Class::SolveSeparationCertificateProgram,
+            py::arg("certificate_program"), py::arg("options"),
+            cls_doc.SolveSeparationCertificateProgram.doc);
     {
       using BaseClass = geometry::optimization::SeparationCertificateResultBase;
       py::class_<Class::SeparationCertificateResult,
@@ -933,8 +956,7 @@ void DefineGeometryOptimization(py::module m) {
         .def("a", &Class::SearchResult::a, py_rvp::copy)
         .def("b", &Class::SearchResult::b, py_rvp::copy)
         .def("num_iter", &Class::SearchResult::num_iter)
-        .def(
-            "certified_polytope", &Class::SearchResult::certified_polytope);
+        .def("certified_polytope", &Class::SearchResult::certified_polytope);
 
     py::class_<Class::BilinearAlternationOptions>(cspace_free_polytope_cls,
         "BilinearAlternationOptions", cls_doc.BilinearAlternationOptions.doc)

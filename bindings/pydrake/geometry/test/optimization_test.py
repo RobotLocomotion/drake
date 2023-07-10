@@ -669,7 +669,7 @@ class TestCspaceFreePolytope(unittest.TestCase):
             scene_graph=self.scene_graph,
             plane_order=mut.SeparatingPlaneOrder.kAffine,
             q_star=np.zeros(self.plant.num_positions()),
-            options = options)
+            options=options)
 
     # def test_CollisionGeometry(self):
     #     # Check that the plane sides are properly enumerated.
@@ -709,8 +709,7 @@ class TestCspaceFreePolytope(unittest.TestCase):
 
         # FindSeparationCertificateGivenPolytopeOptions
         lagrangian_options = \
-            dut.\
-                FindSeparationCertificateGivenPolytopeOptions()
+            dut.FindSeparationCertificateGivenPolytopeOptions()
         self.assertEqual(
             lagrangian_options.num_threads, -1)
         self.assertFalse(
@@ -880,7 +879,8 @@ class TestCspaceFreePolytope(unittest.TestCase):
             self.assertIsInstance(plane.expressed_body, BodyIndex)
             self.assertIn(plane.plane_order, possible_orders)
             self.assertIsInstance(plane.decision_variables[0], Variable)
-            for geom in [plane.positive_side_geometry, plane.negative_side_geometry]:
+            for geom in [plane.positive_side_geometry,
+                         plane.negative_side_geometry]:
                 self.assertIn(geom.type(), geom_type_possible_values)
                 self.assertIn(
                     type(
@@ -897,7 +897,8 @@ class TestCspaceFreePolytope(unittest.TestCase):
         ))), -np.atleast_2d(np.eye(self.plant.num_positions()))])
         d_init = 3 * np.ones((C_init.shape[0], 1))
 
-        bilinear_alternation_options = mut.CspaceFreePolytope.BilinearAlternationOptions()
+        bilinear_alternation_options = \
+            mut.CspaceFreePolytope.BilinearAlternationOptions()
         binary_search_options = mut.CspaceFreePolytope.BinarySearchOptions()
         binary_search_options.scale_min = 1e-4
         bilinear_alternation_options.find_lagrangian_options.verbose = False
@@ -930,35 +931,41 @@ class TestCspaceFreePolytope(unittest.TestCase):
         C_init = np.vstack([np.atleast_2d(np.eye(self.plant.num_positions(
         ))), -np.atleast_2d(np.eye(self.plant.num_positions()))])
         d_init = 1e-10 * np.ones((C_init.shape[0], 1))
-        pair = list(self.cspace_free_polytope.map_geometries_to_separating_planes().keys())[0]
+        pair = list(self.cspace_free_polytope.
+                    map_geometries_to_separating_planes().keys())[0]
         lagrangian_options = \
             mut.CspaceFreePolytope. \
-                FindSeparationCertificateGivenPolytopeOptions()
+            FindSeparationCertificateGivenPolytopeOptions()
         num_threads = 1
         lagrangian_options.num_threads = num_threads
         lagrangian_options.solver_id = ScsSolver.id()
-
 
         cert_prog = self.cspace_free_polytope.MakeIsGeometrySeparableProgram(
             geometry_pair=pair, C=C_init, d=d_init
         )
         # Call all CspaceFreePolytope.SeparationCertificateProgram methods
         certificates = cert_prog.certificate
-        self.assertIsInstance(certificates, mut.CspaceFreePolytope.SeparationCertificate)
+        self.assertIsInstance(certificates,
+                              mut.CspaceFreePolytope.SeparationCertificate)
         self.assertIsInstance(cert_prog.prog(), MathematicalProgram)
         self.assertGreaterEqual(cert_prog.plane_index, 0)
 
-        self.assertIsInstance(certificates.positive_side_rational_lagrangians[0],
-                              mut.CspaceFreePolytope.SeparatingPlaneLagrangians)
-        self.assertIsInstance(certificates.negative_side_rational_lagrangians[0],
-                              mut.CspaceFreePolytope.SeparatingPlaneLagrangians)
+        self.assertIsInstance(
+            certificates.positive_side_rational_lagrangians[0],
+            mut.CspaceFreePolytope.SeparatingPlaneLagrangians)
+        self.assertIsInstance(
+            certificates.negative_side_rational_lagrangians[0],
+            mut.CspaceFreePolytope.SeparatingPlaneLagrangians)
 
-        cert_prog_sol = self.cspace_free_polytope.SolveSeparationCertificateProgram(
-            certificate_program=cert_prog, options=lagrangian_options
-        )
+        cert_prog_sol = \
+            self.cspace_free_polytope.SolveSeparationCertificateProgram(
+                certificate_program=cert_prog, options=lagrangian_options)
 
-        # Call all CspaceFreePolytope.SeparationCertificateProgramResult methods
-        self.assertIsInstance(cert_prog_sol.a[0], Polynomial)
-        self.assertIsInstance(cert_prog_sol.b, Polynomial)
-        self.assertIsInstance(cert_prog_sol.plane_decision_var_vals[0], float)
-        self.assertIsInstance(cert_prog_sol.result, MathematicalProgramResult)
+        # Call all CspaceFreePolytope.SeparationCertificateProgramResult
+        # methods
+        self.assertIsInstance(cert_prog_sol.a(), Polynomial)
+        self.assertIsInstance(cert_prog_sol.b(), Polynomial)
+        self.assertIsInstance(
+            cert_prog_sol.plane_decision_var_vals()[0], float)
+        self.assertIsInstance(
+            cert_prog_sol.result(), MathematicalProgramResult)
