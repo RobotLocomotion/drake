@@ -22,6 +22,14 @@ from pydrake.multibody.model_directives_to_sdformat import (
 
 
 def _get_plant_aggregate(num_func, get_func, index_cls, model_instances=None):
+    """Returns a list of multibody elements, as found by the given `get_func`.
+
+    For example, to find all Body objects, use `num_func=plant.num_bodies` with
+    `get_func=plant.get_body` and `index_cls=BodyIndex`.
+
+    If the `model_instances` collection is given, only elements assigned one of
+    those model instances are returned.
+    """
     items = []
     for i in range(num_func()):
         item = get_func(index_cls(i))
@@ -31,21 +39,31 @@ def _get_plant_aggregate(num_func, get_func, index_cls, model_instances=None):
 
 
 def get_bodies(plant, model_instances=None):
-    # TODO(eric.cousineau): Hoist this somewhere?
+    """Returns all Body elements in the given plant.
+
+    If the `model_instances` collection is given, only bodies assigned one of
+    those model instances are returned.
+    """
     return _get_plant_aggregate(
         plant.num_bodies, plant.get_body, BodyIndex, model_instances
     )
 
 
 def get_frames(plant, model_instances=None):
-    # TODO(eric.cousineau): Hoist this somewhere?
+    """Returns all Frame elements in the given plant.
+
+    If the `model_instances` collection is given, only bodies assigned one of
+    those model instances are returned.
+    """
     return _get_plant_aggregate(
         plant.num_frames, plant.get_frame, FrameIndex, model_instances
     )
 
 
 def get_frames_attached_to(plant, bodies):
-    # TODO(eric.cousineau): Hoist this somewhere?
+    """Returns all Frame elements in the given plant that are attached to the
+    one of the given bodies.
+    """
     frames = []
     for frame in get_frames(plant):
         if frame.body() in bodies:
@@ -54,7 +72,11 @@ def get_frames_attached_to(plant, bodies):
 
 
 def get_joints(plant, model_instances=None):
-    # TODO(eric.cousineau): Hoist this somewhere?
+    """Returns all Joint elements in the given plant.
+
+    If the `model_instances` collection is given, only bodies assigned one of
+    those model instances are returned.
+    """
     return _get_plant_aggregate(
         plant.num_joints, plant.get_joint, JointIndex, model_instances
     )
