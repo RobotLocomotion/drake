@@ -71,7 +71,7 @@ struct VisualizationConfig {
 
   /** Determines whether to send a Meshcat::Delete() messages to the Meshcat
    object (if any) on an initialization event to remove any visualizations,
-   e.g., from a previous simulation, to . */
+   e.g., from a previous simulation. */
   bool delete_on_initialization_event{true};
 
   /** Determines whether to enable alpha sliders for geometry display. */
