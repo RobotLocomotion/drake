@@ -137,6 +137,9 @@ struct wrap_function_impl {
         std::function<wrap_type_t<Return>(wrap_type_t<Args>...)>;
 
     static WrappedFunc wrap(const Func& func) {
+      if (!func) {
+        return {};
+      }
       return wrap_function_impl::run(infer_function_info(func));
     }
 
@@ -146,6 +149,9 @@ struct wrap_function_impl {
     static Func unwrap(  // BR
         const WrappedFunc& func_wrapped,
         std::enable_if_t<enable_wrap_output<Defer>, void*> = {}) {
+      if (!func_wrapped) {
+        return {};
+      }
       return [func_wrapped](Args... args) -> Return {
         return wrap_arg_functions<Return>::unwrap(func_wrapped(
             wrap_arg_functions<Args>::wrap(std::forward<Args>(args))...));
@@ -156,6 +162,9 @@ struct wrap_function_impl {
     template <typename Defer = Return>
     static Func unwrap(const WrappedFunc& func_wrapped,
         std::enable_if_t<!enable_wrap_output<Defer>, void*> = {}) {
+      if (!func_wrapped) {
+        return {};
+      }
       return [func_wrapped](Args... args) {
         func_wrapped(
             wrap_arg_functions<Args>::wrap(std::forward<Args>(args))...);

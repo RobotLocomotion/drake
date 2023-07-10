@@ -3,12 +3,15 @@ import gc
 import unittest
 
 from pydrake.common.test.wrap_test_util import (
+    CheckTypeConversionExample,
+    FunctionNeedsWrapCallbacks_Bad,
+    FunctionNeedsWrapCallbacks,
+    MakeTypeConversionExample,
+    MakeTypeConversionExampleBadRvp,
     MyContainerRawPtr,
     MyContainerUniquePtr,
     MyValue,
-    MakeTypeConversionExample,
-    MakeTypeConversionExampleBadRvp,
-    CheckTypeConversionExample,
+    NotCopyable,
 )
 
 
@@ -57,3 +60,32 @@ class TestWrapPybind(unittest.TestCase):
             str(cm.exception),
             "Can only pass TypeConversionExample by value.")
         self.assertTrue(CheckTypeConversionExample(obj=value))
+
+    def test_wrap_callbacks(self):
+        call_count = 0
+
+        def callback(value):
+            nonlocal call_count
+            call_count += 1
+            self.assertIsInstance(value, NotCopyable)
+
+        # If we call our test function via a binding that does not
+        # use WrapCallbacks(), we get an error about non-copyable types.
+        with self.assertRaises(RuntimeError) as cm:
+            FunctionNeedsWrapCallbacks_Bad(callback)
+        self.assertIn("non-copyable", str(cm.exception))
+
+        # Using the function with WrapCallbacks() should function as intended.
+        loopback = FunctionNeedsWrapCallbacks(callback)
+        self.assertEqual(call_count, 1)
+
+        # When the function is looped back, it is not the same object (due to
+        # extra std::function<> shims), but still ultimately calls `callback`.
+        self.assertIsNot(loopback, callback)
+        loopback(NotCopyable())
+        self.assertEqual(call_count, 2)
+
+        # Ensure that effectively passing an empty std::function<> does not
+        # cause a bad_function exception.
+        should_be_none = FunctionNeedsWrapCallbacks(None)
+        self.assertIs(should_be_none, None)

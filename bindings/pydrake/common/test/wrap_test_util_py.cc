@@ -1,6 +1,7 @@
 #include "drake/bindings/pydrake/common/wrap_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/common/copyable_unique_ptr.h"
+#include "drake/common/drake_copyable.h"
 
 namespace drake {
 namespace pydrake {
@@ -52,6 +53,25 @@ bool CheckTypeConversionExample(const TypeConversionExample& obj) {
   return obj.value == "hello";
 }
 
+class NotCopyable {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(NotCopyable)
+  NotCopyable() {}
+};
+
+using CallbackNeedsWrapping = std::function<void(const NotCopyable&)>;
+
+CallbackNeedsWrapping FunctionNeedsWrapCallbacks(
+    CallbackNeedsWrapping callback) {
+  NotCopyable value;
+  // Invoke the callback if it's defined.
+  if (callback) {
+    callback(value);
+  }
+  // Return original callback.
+  return callback;
+}
+
 }  // namespace
 }  // namespace pydrake
 }  // namespace drake
@@ -91,6 +111,15 @@ PYBIND11_MODULE(wrap_test_util, m) {
       py_rvp::reference);
   m.def("CheckTypeConversionExample", &CheckTypeConversionExample,
       py::arg("obj"));
+
+  py::class_<NotCopyable>(m, "NotCopyable")  // BR
+      .def(py::init());
+
+  // Using WrapCallbacks() -> Good.
+  m.def(
+      "FunctionNeedsWrapCallbacks", WrapCallbacks(&FunctionNeedsWrapCallbacks));
+  // No use of WrapCallbacks() -> Bad.
+  m.def("FunctionNeedsWrapCallbacks_Bad", &FunctionNeedsWrapCallbacks);
 }
 }  // namespace pydrake
 }  // namespace drake
