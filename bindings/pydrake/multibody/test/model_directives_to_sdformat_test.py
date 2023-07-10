@@ -138,6 +138,7 @@ class TestConvertModelDirectiveToSdformat(
         # The conversion process creates an extra top level model instance.
         # (This could be avoided using the generated world model with merge
         # include.)
+        sdf_extra_instance = ModelInstanceIndex(2)
         self.assertEqual(
             dmd_plant.num_model_instances(),
             sdf_plant.num_model_instances() - 1)
@@ -160,11 +161,15 @@ class TestConvertModelDirectiveToSdformat(
                 dmd_X_WB = dmd_plant.EvalBodyPoseInWorld(dmd_context, dmd_body)
                 self.assertTrue(sdf_X_WB.IsNearlyEqualTo(dmd_X_WB, 1e-10))
 
-                # Check frames attached to this body. The converted file ends
-                # up with some spurious extra frames that we'll ignore.
+                # Check frames attached to this body. The converted file has
+                # some spurious extra frames that we'll ignore:
+                # - Frames named` _merged_**`.
+                # - The `__model__` frame on the spurious model instance.
                 sdf_frames = [
                     x for x in get_frames_attached_to(sdf_plant, [sdf_body])
-                    if not x.name().startswith("_merged__")
+                    if not (x.name().startswith("_merged__")
+                            or (x.name() == "__model__"
+                                and x.model_instance() == sdf_extra_instance))
                 ]
                 dmd_frames = get_frames_attached_to(dmd_plant, [dmd_body])
                 for sdf_frame, dmd_frame in _strict_zip(
