@@ -1,7 +1,6 @@
 #pragma once
 
 #include <memory>
-#include <unordered_set>
 #include <vector>
 
 #include "drake/common/copyable_unique_ptr.h"
@@ -50,20 +49,32 @@ class BlockSparseCholeskySolver {
   using SymmetricMatrix =
       BlockSparseLowerTriangularOrSymmetricMatrix<BlockType, true>;
 
-  /* Constructs a BlockSparseCholeskySovler. */
+  /* Constructs a BlockSparseCholeskySolver. */
   BlockSparseCholeskySolver() = default;
 
   /* Sets the matrix to be factored and analyzes its sparsity pattern to find an
    efficient elimination ordering. Factor() may be called after call to
-   SetMatrix().
+   SetMatrix(). SetMatrix() can be called repeatedly in a row, but prefer the
+   following pattern when the sparsity patterns don't change.
+
+     solver.SetMatrix(A0);
+     ...
+     solver.UpdateMatrix(A1);
+     ...
+     solver.UpdateMatrix(A2);
+     ...
+     solver.UpdateMatrix(A3);
+     ...
+   See UpdateMatrix().
+
    @pre A is positive definite.
    @post matrix_set() == true and is_factored() == false. */
   void SetMatrix(const SymmetricMatrix& A);
 
   /* Updates the matrix to be factored. This is useful for solving a series of
    matrices with the same sparsity pattern using the same elimination ordering.
-   For example, with matrices A, B, and C with the same sparisty pattern. It's
-   more efficient to call
+   For example, with matrices A and B with the same sparisty pattern. It's more
+   efficient to call
      solver.SetMatrix(A);
      solver.Factor();
      solver.Solve(...)
@@ -78,9 +89,8 @@ class BlockSparseCholeskySolver {
      solver.Factor();
      solver.Solve(...)
    Factor() may be called after call to UpdateMatrix().
-   @pre A has the same elimination ordering as the input of the last invocation
-   of SetMatrix(). UpdateMatrix() must not be called before any invocation of
-   SetMatrix().
+   @pre SetMatrix() has been invoked and the argument to the last call of
+   SetMatrix() has the same sparsity pattern of A.
    @pre A is positive definite.
    @post matrix_set() == true and is_factored() == false. */
   void UpdateMatrix(const SymmetricMatrix& A);
@@ -92,28 +102,53 @@ class BlockSparseCholeskySolver {
    failure is encountered, the user should verify that the specified matrix is
    positive definite and not poorly conditioned.
    @throws std::exception if matrix_set() returns false.
-   @post matrix_set() == false and is_factored() == true. */
+   @post matrix_set() == false
+   @post is_factored() == true iff the factorization is successful and `true` is
+   returned. */
   bool Factor();
 
   /* Solves the system A⋅x = b and returns x.
-   @pre b.size() is compatible with the size of the matrix set by SetMatrix().
+   @throws std::exception if b.size() is incompatible with the size of the
+   matrix set by SetMatrix().
    @throws std::exception if is_factored() returns false. */
   VectorX<double> Solve(const Eigen::Ref<const VectorX<double>>& b) const;
 
   /* Solves the system A⋅x = b and writes the result in b.
-   @pre y != nullptr and y->size() is compatible with the size of the matrix set
-   by SetMatrix().
+   @throws std::exception if y == nullptr or y->size() is incompatible with the
+   size of the matrix set by SetMatrix().
    @throws std::exception if is_factored() returns false. */
   void SolveInPlace(VectorX<double>* y) const;
 
   /* Returns true iff the matrix is set via SetMatrix() or UpdateMatrix() but
-   the matrix hasn't been factorized yet (via Factor() or
-   CalcSchurComplementAndFactor()) since the matrix is set. */
+   the matrix hasn't been factorized yet since the matrix is set. */
   bool matrix_set() const { return matrix_set_; }
 
-  /* Returns true iff the matrix has been factorized (via Factor() or
-   CalcSchurComplementAndFactor()) and is ready for back solve. */
+  /* Returns true iff the matrix has been factorized and is ready for back
+   solve. */
   bool is_factored() const { return is_factored_; }
+
+  /* Returns (the lower triangular) Cholesky factorization matrix L as a
+   dense matrix. L is defined by L⋅Lᵀ = P⋅A⋅Pᵀ, where A is the matrix set via
+   SetMatrix() or UpdateMatrix() and P is the permutation matrix induced by the
+   elimination ordering (see CalcPermutationMatrix()).
+   @throws std::exception unless is_factored() == true. */
+  MatrixX<double> L() const {
+    DRAKE_THROW_UNLESS(is_factored_);
+    return L_->MakeDenseMatrix();
+  }
+
+  /* Returns the permutation matrix induced by the elimination ordering.
+   The permutation matrix is defined through L⋅Lᵀ = P⋅A⋅Pᵀ, where A is the
+   matrix set via SetMatrix() or UpdateMatrix() and L is the lower triangular
+   Cholesky factorization of the permuted A.
+   @throws std::exception unless is_factored() == true or matrix_set() == true.
+  */
+  Eigen::PermutationMatrix<Eigen::Dynamic> CalcPermutationMatrix() const {
+    DRAKE_THROW_UNLESS(is_factored_ || matrix_set_);
+    const std::vector<int>& p = scalar_permutation_.permutation();
+    return Eigen::PermutationMatrix<Eigen::Dynamic>(
+        Eigen::Map<const VectorX<int>>(p.data(), p.size()));
+  }
 
  private:
   using LowerTriangularMatrix =
@@ -164,14 +199,22 @@ class BlockSparseCholeskySolver {
    @pre SetMarix() has been called. */
   void PermuteAndCopyToL(const SymmetricMatrix& A);
 
+  /* The cholesky factorization of the permuted matrix, i.e. L⋅Lᵀ = P⋅A⋅Pᵀ,
+   where P is the permutation matrix induced by the `scalar_permutation_`. */
   copyable_unique_ptr<LowerTriangularMatrix> L_;
   std::vector<Eigen::LLT<BlockType>> L_diag_;
-  /* The mapping from the internal indices (i.e, the indices for L_) to
-   the indices of the original matrix supplied in SetMatrix(). */
-  PartialPermutation block_permutation_;  // permutation for block indices, same
-                                          // size as A.block_cols().
-  PartialPermutation scalar_permutation_;  // permutation for scalar indices,
-                                           // same size as A.cols().
+
+  /* Block and scalar representations of the permutation matrix P (see
+   CalcPermutationMatrix()). */
+  /* Permutation for block indices, same size as A.block_cols(). For a given
+   block index i into A, `block_permutation_[i]` gives the permuted block index
+   into L_. */
+  PartialPermutation block_permutation_;
+  /* Permutation for scarlar indices, same size as A.cols(). For a given
+   scalar index i into A, `scalar_permutation_[i]` gives the permuted scalar
+   index into L_. */
+  PartialPermutation scalar_permutation_;
+
   bool is_factored_{false};
   bool matrix_set_{false};
 };

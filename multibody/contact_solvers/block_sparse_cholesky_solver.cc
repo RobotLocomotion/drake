@@ -43,12 +43,8 @@ bool BlockSparseCholeskySolver<BlockType>::Factor() {
       is_factored_ = false;
       return false;
     }
-    /* Technically, we should have
-      L_->SetBlockFlat(0, j, L_diag_[j].matrixL());
-    for a complete L_ matrix, but we omit it here since we don't ever touch the
-    diagonal block of L_. Instead, we directly invoke L_diag_. */
-
-    /* Update column.
+    L_->SetBlockFlat(0, j, L_diag_[j].matrixL());
+    /* Update L₂₁ column.
      | a₁₁  *  | = | λ₁₁  0 | * | λ₁₁ᵀ L₂₁ᵀ |
      | a₂₁ a₂₂ |   | L₂₁ L₂₂|   |  0   L₂₂ᵀ |
      So we have
@@ -62,6 +58,7 @@ bool BlockSparseCholeskySolver<BlockType>::Factor() {
       BlockType Lij = Ljj.solve(Aij.transpose()).transpose();
       L_->SetBlockFlat(flat, j, std::move(Lij));
     }
+    /* Update L₂₂ according to L₂₂ = a₂₂ - L₂₁⋅L₂₁ᵀ. */
     RightLookingSymmetricRank1Update(j);
   }
   is_factored_ = true;
@@ -80,8 +77,8 @@ template <typename BlockType>
 void BlockSparseCholeskySolver<BlockType>::SolveInPlace(
     VectorX<double>* y) const {
   DRAKE_THROW_UNLESS(is_factored_);
-  DRAKE_DEMAND(y != nullptr);
-  DRAKE_DEMAND(y->size() == L_->cols());
+  DRAKE_THROW_UNLESS(y != nullptr);
+  DRAKE_THROW_UNLESS(y->size() == L_->cols());
   VectorX<double> permuted_y(*y);
   scalar_permutation_.Apply(*y, &permuted_y);
 
@@ -151,26 +148,29 @@ void BlockSparseCholeskySolver<BlockType>::SetScalarPermutation(
     const SymmetricMatrix& A, const std::vector<int>& elimination_ordering) {
   /* It's easier to build the scalar elimination ordering first from block
    elimination ordering and then convert it to the scalar permutation (the
-   inverse of the scalar elimination ordering). The scalar permutation maps the
-   right hand side of A * x = b to the right handside of
-   L * L^T * x_permuted = b_permuted. */
+   inverse of the scalar elimination ordering) that induces the permutation P
+   such that L⋅Lᵀ = P⋅A⋅Pᵀ. See CalcPermutationMatrix(). */
   std::vector<int> scalar_elimination_ordering(A.cols());
-  const BlockSparsityPattern& A_block_pattern = A.sparsity_pattern();
-  const std::vector<int>& A_block_sizes = A_block_pattern.block_sizes();
-  const std::vector<int>& starting_indices = A.starting_cols();
-  int scalar_order = 0;
-  for (int i = 0; i < ssize(elimination_ordering); ++i) {
-    const int block = elimination_ordering[i];
-    const int start = starting_indices[block];
-    const int size = A_block_sizes[block];
-    for (int s = start; s < start + size; ++s) {
-      scalar_elimination_ordering[scalar_order++] = s;
+  {
+    const BlockSparsityPattern& A_block_pattern = A.sparsity_pattern();
+    const std::vector<int>& A_block_sizes = A_block_pattern.block_sizes();
+    const std::vector<int>& starting_indices = A.starting_cols();
+    int i_permuted = 0;
+    for (int block_permuted = 0; block_permuted < ssize(elimination_ordering);
+         ++block_permuted) {
+      const int block = elimination_ordering[block_permuted];
+      const int start = starting_indices[block];
+      const int size = A_block_sizes[block];
+      for (int i = start; i < start + size; ++i) {
+        scalar_elimination_ordering[i_permuted++] = i;
+      }
     }
   }
   /* Invert the elimination ordering to get the permutation. */
   std::vector<int> scalar_permutation(scalar_elimination_ordering.size());
-  for (int i = 0; i < ssize(scalar_permutation); ++i) {
-    scalar_permutation[scalar_elimination_ordering[i]] = i;
+  for (int i_permuted = 0; i_permuted < ssize(scalar_permutation);
+       ++i_permuted) {
+    scalar_permutation[scalar_elimination_ordering[i_permuted]] = i_permuted;
   }
   scalar_permutation_ = PartialPermutation(std::move(scalar_permutation));
 }
@@ -186,7 +186,7 @@ BlockSparsityPattern BlockSparseCholeskySolver<BlockType>::SymbolicFactor(
   for (int i = 0; i < N; ++i) {
     permutation[elimination_ordering[i]] = i;
   }
-  PartialPermutation block_permutation(std::move(permutation));
+  const PartialPermutation block_permutation(std::move(permutation));
 
   /* Find the sparsity pattern of the permuted A (under the permutation induced
    by the elimination ordering). */
@@ -197,9 +197,9 @@ BlockSparsityPattern BlockSparseCholeskySolver<BlockType>::SymbolicFactor(
   std::vector<std::vector<int>> permuted_sparsity_pattern(
       sparsity_pattern.size());
   for (int i = 0; i < ssize(sparsity_pattern); ++i) {
-    const int pi = block_permutation.push(i);
+    const int pi = block_permutation.permuted_index(i);
     for (int j : sparsity_pattern[i]) {
-      const int pj = block_permutation.push(j);
+      const int pj = block_permutation.permuted_index(j);
       permuted_sparsity_pattern[std::min(pi, pj)].emplace_back(
           std::max(pi, pj));
     }
