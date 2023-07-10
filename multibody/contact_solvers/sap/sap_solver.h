@@ -62,6 +62,21 @@ struct SapSolverParameters {
     double alpha_max{1.5};
   };
 
+  // The type of linear solver used for solving linear systems from the Newton
+  // iterations.
+  enum class LinearSolverType {
+    // Supernodal KKT solver as implemented in conex [Permenter, 2020].
+    //
+    // [Permenter, 2020] Permenter, Frank. "A geodesic interior-point method for
+    // linear optimization over symmetric cones." SIAM Journal on
+    // Optimization 33.2 (2023): 1006-1034.
+    kConex,
+    // Block sparse supernodal solver implemented by BlockSparseCholeskySolver.
+    kBlockSparseCholesky,
+    // Dense algebra. Typically used for testing.
+    kDense,
+  };
+
   // Stopping Criteria:
   //   SAP uses two stopping criteria, one on the optimality condition and a
   // second one on the cost, see specifics below for each criteria. SAP
@@ -145,10 +160,6 @@ struct SapSolverParameters {
   // Tolerance used in impulse soft norms. In Ns.
   double soft_tolerance{1.0e-7};
 
-  // SAP uses sparse supernodal algebra by default. Set this to true to use
-  // dense algebra instead. Typically used for testing.
-  bool use_dense_algebra{false};
-
   // Dimensionless number used to allow some slop on the check near zero for
   // certain quantities such as the gradient of the cost.
   // It is also used to check for monotonic convergence. In particular, we allow
@@ -166,6 +177,8 @@ struct SapSolverParameters {
   // to trigger an exception if the cost increases. For details, see
   // documentation on `relative_slop`.
   bool nonmonotonic_convergence_is_error{false};
+
+  LinearSolverType linear_solver_type{LinearSolverType::kBlockSparseCholesky};
 };
 
 // This class implements the Semi-Analytic Primal (SAP) solver described in
@@ -406,7 +419,8 @@ class SapSolver {
   // supernodal solver provided.
   // @pre context was created by the underlying SapModel.
   // @pre supernodal_solver must be a valid supernodal solver created with
-  // MakeSuperNodalSolver() when parameters_.use_dense_algebra = false.
+  // MakeSuperNodalSolver() when
+  // parameters_.linear_solver_type != LinearSolverType::kDense.
   void CalcSearchDirectionData(const systems::Context<T>& context,
                                SuperNodalSolver* supernodal_solver,
                                SearchDirectionData* data) const;
