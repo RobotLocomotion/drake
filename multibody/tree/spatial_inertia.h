@@ -196,8 +196,8 @@ class SpatialInertia {
   /// Creates a spatial inertia for a uniform density solid capsule B about
   /// its geometric center Bo (which is coincident with B's center of mass Bcm).
   /// @param[in] density mass per volume (kg/m³).
-  /// @param[in] radius radius of the cylinder/half-sphere part of the capsule.
-  /// @param[in] length length of the cylindrical part of the capsule (meters).
+  /// @param[in] radius radius of the cylinder/half-sphere parts of the capsule.
+  /// @param[in] length length of the cylindrical part of the capsule.
   /// @param[in] unit_vector unit vector defining the axial direction of the
   /// cylindrical part of the capsule, expressed in B.
   /// @retval M_BBo_B B's spatial inertia about Bo, expressed in B.
@@ -205,8 +205,7 @@ class SpatialInertia {
   /// an equal moment of inertia about any line that both passes through Bo
   /// and is perpendicular to unit_vector.
   /// @throws std::exception if density, radius, or length is not positive and
-  /// finite.
-  /// @pre ‖unit_vector‖ = 1; see UnitInertia::SolidCapsule() for details.
+  /// finite or if ‖unit_vector‖ is not within 1.0E-14 of 1.0.
   static SpatialInertia<T> SolidCapsuleWithDensity(
       const T& density, const T& radius, const T& length,
       const Vector3<T>& unit_vector);
@@ -214,8 +213,8 @@ class SpatialInertia {
   /// Creates a spatial inertia for a uniform density solid capsule B about
   /// its geometric center Bo (which is coincident with B's center of mass Bcm).
   /// @param[in] mass mass of the solid capsule (kg).
-  /// @param[in] radius radius of the cylinder/half-sphere part of the capsule.
-  /// @param[in] length length of the cylindrical part of the capsule (meters).
+  /// @param[in] radius radius of the cylinder/half-sphere parts of the capsule.
+  /// @param[in] length length of the cylindrical part of the capsule.
   /// @param[in] unit_vector unit vector defining the axial direction of the
   /// cylindrical part of the capsule, expressed in B.
   /// @retval M_BBo_B B's spatial inertia about Bo, expressed in B.
@@ -223,8 +222,7 @@ class SpatialInertia {
   /// an equal moment of inertia about any line that both passes through Bo
   /// and is perpendicular to unit_vector.
   /// @throws std::exception if mass, radius, or length is not positive and
-  /// finite.
-  /// @pre ‖unit_vector‖ = 1; see UnitInertia::SolidCapsule() for details.
+  /// finite or if ‖unit_vector‖ is not within 1.0E-14 of 1.0.
   static SpatialInertia<T> SolidCapsuleWithMass(
       const T& mass, const T& radius, const T& length,
       const Vector3<T>& unit_vector);
@@ -241,8 +239,7 @@ class SpatialInertia {
   /// an equal moment of inertia about any line that both passes through Bo
   /// and is perpendicular to unit_vector.
   /// @throws std::exception if density, radius, or length is not positive and
-  /// finite.
-  /// @pre ‖unit_vector‖ = 1.
+  /// finite or if ‖unit_vector‖ is not within 1.0E-14 of 1.0.
   /// @see SolidCylinderWithDensityAboutEnd() to calculate M_BBp_B, B's spatial
   /// inertia about Bp (at the center of one of the cylinder's circular ends).
   static SpatialInertia<T> SolidCylinderWithDensity(
@@ -261,10 +258,8 @@ class SpatialInertia {
   /// an equal moment of inertia about any line that both passes through Bo
   /// and is perpendicular to unit_vector.
   /// @throws std::exception if mass, radius, or length is not positive and
-  /// finite.
-  /// @pre ‖unit_vector‖ = 1.
-  /// @see SolidCylinderWithMassAboutEnd() to calculate M_BBp_B, B's spatial
-  /// inertia about Bp (at the center of one of the cylinder's circular ends).
+  /// finite or if ‖unit_vector‖ is not within 1.0E-14 of 1.0.
+  //  TODO(Mitiguy) Create SolidCylinderWithMassAboutEnd().
   static SpatialInertia<T> SolidCylinderWithMass(
       const T& mass, const T& radius, const T& length,
       const Vector3<T>& unit_vector);
@@ -282,8 +277,7 @@ class SpatialInertia {
   /// an equal moment of inertia about any line that both passes through Bp
   /// and is perpendicular to unit_vector.
   /// @throws std::exception if density, radius, or length is not positive and
-  /// finite.
-  /// @pre ‖unit_vector‖ = 1.
+  /// finite or if ‖unit_vector‖ is not within 1.0E-14 of 1.0.
   /// @see SolidCylinderWithDensity() to calculate M_BBcm_B, B's spatial
   /// inertia about Bcm (B's center of mass).
   static SpatialInertia<T> SolidCylinderWithDensityAboutEnd(
@@ -301,8 +295,8 @@ class SpatialInertia {
   /// an equal moment of inertia about any line that both passes through Bcm and
   /// is perpendicular to unit_vector. B has no (zero) rotational inertia about
   /// the line that passes through Bcm and is parallel to unit_vector.
-  /// @throws std::exception if mass or length is not positive and finite.
-  /// @pre ‖unit_vector‖ = 1.
+  /// @throws std::exception if mass or length is not positive and finite or
+  /// if ‖unit_vector‖ is not within 1.0E-14 of 1.0.
   /// @see ThinRodWithMassAboutEnd() to calculate M_BBp_B, B's spatial inertia
   /// about Bp (one of the ends of rod B).
   static SpatialInertia<T> ThinRodWithMass(
@@ -320,8 +314,8 @@ class SpatialInertia {
   /// an equal moment of inertia about any line that both passes through Bp and
   /// is perpendicular to unit_vector. B has no (zero) rotational inertia about
   /// the line that passes through Bp and is parallel to unit_vector.
-  /// @throws std::exception if mass or length is not positive and finite.
-  /// @pre ‖unit_vector‖ = 1.
+  /// @throws std::exception if mass or length is not positive and finite or
+  /// if ‖unit_vector‖ is not within 1.0E-14 of 1.0.
   /// @see ThinRodWithMass() to calculate M_BBcm_B, B's spatial inertia about
   /// Bcm (B's center of mass).
   static SpatialInertia<T> ThinRodWithMassAboutEnd(

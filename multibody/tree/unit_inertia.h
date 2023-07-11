@@ -312,7 +312,7 @@ class UnitInertia : public RotationalInertia<T> {
 
   /// Computes the unit inertia for a uniform density unit-mass capsule C
   /// whose axis of revolution is along the z-axis.
-  /// @param[in] r radius of the cylinder/half-sphere part of the capsule.
+  /// @param[in] r radius of the cylinder/half-sphere parts of the capsule.
   /// @param[in] L length of the cylindrical part of the capsule.
   /// @param[in] unit_vector direction of the cylindrical part of the capsule.
   ///   It defaults to `Vector3<T>::UnitZ()`.
