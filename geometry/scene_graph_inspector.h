@@ -202,10 +202,20 @@ class SceneGraphInspector {
    */
   const std::string& GetOwningSourceName(FrameId frame_id) const;
 
-  /** Reports the name of the frame with the given `frame_id`.
+  /** Reports the name of the frame, qualified by frame group name, for the
+   given `frame_id`.
+
    @throws std::exception if `frame_id` does not map to a registered frame.
+   @internal This method formerly returned a reference, rather than a newly
+   constructed string.
+   @warning Callers that store the return value to a reference-typed variable
+   risk undefined behavior.
    */
   std::string GetName(FrameId frame_id) const;
+
+  /** Reports the unqalified name of the frame with the given `frame_id`.
+   @throws std::exception if `frame_id` does not map to a registered frame.
+   */
   const std::string& GetUnqualifiedName(FrameId frame_id) const;
 
   /** Reports the FrameId of the parent of `frame_id`.
@@ -218,16 +228,40 @@ class SceneGraphInspector {
    @internal This value is equivalent to the old "model instance id".  */
   int GetFrameGroup(FrameId frame_id) const;
 
-  /** XXX */
+  /** Reports the name of the frame group for the given source and group. */
   const std::string& GetFrameGroupName(
       SourceId Source_id, int frame_group) const;
+
+  /** Reports the name of the frame group for the given `frame_id`. */
   const std::string& GetFrameGroupName(FrameId frame_id) const;
 
-  /** XXX */
+  /** Reports the name of the geometry, qualified by any requested qualifiers,
+   for the given id.
+
+   @param id A geometry id.
+   @param qualifiers A bit-field of qualifier requests. Defaults to
+                     `kQualifierFrameGroup`.
+   @param delimiter The delimiter string used between qualifiers. Default value
+                    is "::".
+
+   @throws std::exception if `id` does not map to a registered geometry.
+   */
   std::string GetQualifiedName(
       GeometryId id,
       NameQualifiers qualifiers = kQualifierFrameGroup,
       std::string_view delimiter = "::") const;
+
+  /** Reports the name of the frame, qualified by any requested qualifiers, for
+   the given id.
+
+   @param id A frame id.
+   @param qualifiers A bit-field of qualifier requests. Defaults to
+                     `kQualifierFrameGroup`.
+   @param delimiter The delimiter string used between qualifiers. Default value
+                    is "::".
+
+   @throws std::exception if `id` does not map to a registered frame.
+   */
   std::string GetQualifiedName(
       FrameId id,
       NameQualifiers qualifiers = kQualifierFrameGroup,
@@ -302,12 +336,24 @@ class SceneGraphInspector {
    geometry.  */
   FrameId GetFrameId(GeometryId geometry_id) const;
 
+  /** Reports the stored, canonical name of the geometry, qualified by frame
+   group name, for the given `geometry_id` (see @ref
+   canonicalized_geometry_names "GeometryInstance" for details).
+
+   @throws std::exception if `geometry_id` does not map to a registered
+   geometry.
+   @internal This method formerly returned a reference, rather than a newly
+   constructed string.
+   @warning Callers that store the return value to a reference-typed variable
+   risk undefined behavior.
+  */
+  std::string GetName(GeometryId geometry_id) const;
+
   /** Reports the stored, canonical name of the geometry with the given
    `geometry_id` (see  @ref canonicalized_geometry_names "GeometryInstance" for
    details).
    @throws std::exception if `geometry_id` does not map to a registered
    geometry.  */
-  std::string GetName(GeometryId geometry_id) const;
   const std::string& GetUnqualifiedName(GeometryId geometry_id) const;
 
   /** Returns the shape specified for the geometry with the given `geometry_id`.

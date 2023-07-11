@@ -344,7 +344,15 @@ class SceneGraph final : public systems::LeafSystem<T> {
   SourceId RegisterSource(const std::string& name = "");
 
 
-  // XXX
+  /** Sets the name of a frame group. This may be called multiple times,
+   effectively replacing previous names. The resulting name will be used in
+   constructing qualified names of frames and geometries via
+   SceneGraphInspector.
+
+   @param source_id    The "owning" source of the frame group.
+   @param frame_group  The integer identifier of the frame group.
+   @param name         The new name of the frame group.
+   */
   void NameFrameGroup(SourceId source_id, int frame_group,
                       std::string_view name);
 
