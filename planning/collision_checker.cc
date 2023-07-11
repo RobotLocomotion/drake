@@ -804,7 +804,6 @@ CollisionChecker::CollisionChecker(CollisionCheckerParams params,
   // Initialize the zero configuration.
   zero_configuration_ = Eigen::VectorXd::Zero(plant().num_positions());
   // Initialize the default configuration.
-  auto plant_context = plant().CreateDefaultContext();
   default_configuration_ =
       plant().GetPositions(*plant().CreateDefaultContext());
 
