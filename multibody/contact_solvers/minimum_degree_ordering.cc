@@ -211,6 +211,80 @@ BlockSparsityPattern SymbolicCholeskyFactor(
   return BlockSparsityPattern(block_sizes, L_sparsity);
 }
 
+std::vector<int> CalcAndConcatenateMdOrderingWithinGroup(
+    const BlockSparsityPattern& global_pattern,
+    const std::unordered_set<int>& v1) {
+  /* Sizes of v, v1, and v2. */
+  const int n = global_pattern.block_sizes().size();
+  const int n1 = v1.size();
+  const int n2 = n - n1;
+  /* Mapping from v to v1 and v2 and the inverse mappings. */
+  std::vector<int> global_to_local(n);
+  std::vector<int> v1_to_global(n1);
+  std::vector<int> v2_to_global(n2);
+  /* The number of scalar variables in each block (as needed for the block
+   sparsity pattern for G1 and G2). */
+  std::vector<int> v1_block_sizes(n1);
+  std::vector<int> v2_block_sizes(n2);
+  int v1_index = 0;
+  int v2_index = 0;
+  const std::vector<int>& global_block_sizes = global_pattern.block_sizes();
+  for (int i = 0; i < n; ++i) {
+    if (v1.count(i) > 0) {
+      global_to_local[i] = v1_index;
+      v1_block_sizes[v1_index] = global_block_sizes[i];
+      v1_to_global[v1_index] = i;
+      ++v1_index;
+    } else {
+      global_to_local[i] = v2_index;
+      v2_block_sizes[v2_index] = global_block_sizes[i];
+      v2_to_global[v2_index] = i;
+      ++v2_index;
+    }
+  }
+
+  auto in_v1 = [&](int b) -> bool {
+    return v1.count(b) > 0;
+  };
+  /* Build the induced graphs G1 and G2 from the global graph G. */
+  const std::vector<std::vector<int>>& G = global_pattern.neighbors();
+  std::vector<std::vector<int>> G1(n1);
+  std::vector<std::vector<int>> G2(n2);
+  for (int a = 0; a < n; ++a) {
+    for (int b : G[a]) {
+      if (in_v1(a) != in_v1(b)) {
+        // One of a and b is in v1 and the other is in v2, so the edge ab is not
+        // in either of the induced graph.
+        continue;
+      }
+      const int j = std::min(global_to_local[a], global_to_local[b]);
+      const int i = std::max(global_to_local[a], global_to_local[b]);
+      if (in_v1(b)) {
+        G1[j].emplace_back(i);
+      } else {
+        G2[j].emplace_back(i);
+      }
+    }
+  }
+
+  const std::vector<int> v1_ordering = ComputeMinimumDegreeOrdering(
+      BlockSparsityPattern(std::move(v1_block_sizes), std::move(G1)));
+  const std::vector<int> v2_ordering = ComputeMinimumDegreeOrdering(
+      BlockSparsityPattern(std::move(v2_block_sizes), std::move(G2)));
+
+  std::vector<int> result;
+  result.reserve(n);
+  /* The v1 vertices come first. */
+  for (int v : v1_ordering) {
+    result.emplace_back(v1_to_global[v]);
+  }
+  /* The v2 vertices follow. */
+  for (int v : v2_ordering) {
+    result.emplace_back(v2_to_global[v]);
+  }
+  return result;
+}
+
 }  // namespace internal
 }  // namespace contact_solvers
 }  // namespace multibody
