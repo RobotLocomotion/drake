@@ -81,6 +81,7 @@ cc_test(
     srcs = ["test/planning_test.cpp"],
     env = {"OMP_NUM_THREADS": "2"},
     tags = ["cpu:2"],
+    timeout = "moderate",
     deps = [
         ":common_robotics_utilities",
         "@eigen",
