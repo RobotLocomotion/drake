@@ -303,7 +303,7 @@ class TestMeldis(unittest.TestCase):
         parser = Parser(plant=plant)
         parser.AddModels(url=url)
         plant.Finalize()
-        config = mut.VisualizationConfig(publish_inertia=True)
+        config = mut.VisualizationConfig()
         mut.ApplyVisualizationConfig(config=config, builder=builder, lcm=lcm)
         diagram = builder.Build()
         simulator = Simulator(diagram)

@@ -45,8 +45,6 @@ GTEST_TEST(VisualizationConfigTest, Defaults) {
 // Tests the mapping from default schema data to geometry params.
 GTEST_TEST(VisualizationConfigFunctionsTest, ParamConversionDefault) {
   VisualizationConfig config;
-  // TODO(trowell-tri) Remove the next line when inertia defaults to published.
-  config.publish_inertia = true;
 
   const std::vector<DrakeVisualizerParams> drake_params =
       ConvertVisualizationConfigToDrakeParams(config);
@@ -121,8 +119,6 @@ GTEST_TEST(VisualizationConfigFunctionsTest, ParamConversionSpecial) {
   config.publish_proximity = false;
   config.default_illustration_color = Rgba(0.25, 0.25, 0.25, 0.25);
   config.enable_alpha_sliders = true;
-  // TODO(trowell-tri) Remove the next line when inertia defaults to published.
-  config.publish_inertia = true;
 
   const std::vector<DrakeVisualizerParams> drake_params =
       ConvertVisualizationConfigToDrakeParams(config);
@@ -178,8 +174,6 @@ GTEST_TEST(VisualizationConfigFunctionsTest, ApplyDefault) {
   plant.Finalize();
   std::shared_ptr<Meshcat> meshcat = std::make_shared<Meshcat>();
   VisualizationConfig config;
-  // TODO(trowell-tri) Remove the next line when inertia defaults to published.
-  config.publish_inertia = true;
   ApplyVisualizationConfig(config, &builder, &lcm_buses, &plant, &scene_graph,
                            meshcat);
 
@@ -301,8 +295,6 @@ GTEST_TEST(VisualizationConfigFunctionsTest, NoMeshcat) {
   auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
   plant.Finalize();
   VisualizationConfig config;
-  // TODO(trowell-tri) Remove the next line when inertia defaults to published.
-  config.publish_inertia = true;
   ApplyVisualizationConfig(config, &builder, &lcm_buses, &plant, &scene_graph);
 
   int meshcat_count = 0;
@@ -328,8 +320,6 @@ GTEST_TEST(VisualizationConfigFunctionsTest, AlphaSliders) {
   std::shared_ptr<Meshcat> meshcat = std::make_shared<Meshcat>();
   VisualizationConfig config;
   config.enable_alpha_sliders = true;
-  // TODO(trowell-tri) Remove the next line when inertia defaults to published.
-  config.publish_inertia = true;
   ApplyVisualizationConfig(config, &builder, &lcm_buses, &plant, &scene_graph,
                            meshcat);
 
