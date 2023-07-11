@@ -217,6 +217,53 @@ GTEST_TEST(MinimumDegreeOrderingTest, SymbolicCholeskyFactor) {
   EXPECT_EQ(L_sparsity[5], std::vector<int>({5}));
 }
 
+/* In this test, we make a graph with 8 vertices, {0, 1, ..., 7}, such that
+ odd indexed vertices belong to v₁ and even indexed vertices belong to v₂.
+ Within v₁ and v₂, the block sparsity pattern looks like
+    X X | O O O | O O O O | O O O
+    X X | O O O | O O O O | O O O
+    --- | ----- |---------| -----
+    O O | X X X | X X X X | O O O
+    O O | X X X | X X X X | O O O
+    O O | X X X | X X X X | O O O
+    --- | ----- |---------| -----
+    O O | X X X | X X X X | O O O
+    O O | X X X | X X X X | O O O
+    O O | X X X | X X X X | O O O
+    O O | X X X | X X X X | O O O
+    --- | ----- |---------| -----
+    O O | O O O | O O O O | X X X
+    O O | O O O | O O O O | X X X
+    O O | O O O | O O O O | X X X
+ The expected elimination ordering for this block sparsity pattern is
+ [0, 3, 2, 1] from pen and paper calculation. 2 is eliminated before 1 because
+ when 0 and 3 are eliminated, the degree of 2 is 3 and the degree of 1 is 4.
+
+ The global to local index mapping looks like
+  0->0, 2->1, 4->2, 6->3
+  1->0, 3->1, 5->2, 7->3.
+ Because vertices in v₁ appear first in the resulting ordering, the final result
+ should be [1, 7, 5, 3, 0, 6, 4, 2].
+ We arbitrarily add edges across v₁ and v₂ (4-5, 4-7, 0-7, 0-5, 2-1) but they do
+ not affect the result. */
+GTEST_TEST(BlockSparseCholeskySolverTest, ConcatenateMdOrderingWithinGroup) {
+  std::vector<std::vector<int>> sparsity;
+  sparsity.emplace_back(std::vector<int>{0, 5, 7});
+  sparsity.emplace_back(std::vector<int>{1, 2});
+  sparsity.emplace_back(std::vector<int>{2, 4});
+  sparsity.emplace_back(std::vector<int>{3, 5});
+  sparsity.emplace_back(std::vector<int>{4, 5, 7});
+  sparsity.emplace_back(std::vector<int>{5});
+  sparsity.emplace_back(std::vector<int>{6});
+  sparsity.emplace_back(std::vector<int>{7});
+  std::vector<int> block_sizes = {2, 2, 3, 3, 4, 4, 3, 3};
+  BlockSparsityPattern block_pattern(block_sizes, sparsity);
+  const std::unordered_set<int> v1 = {1, 3, 5, 7};
+  const std::vector<int> result =
+      CalcAndConcatenateMdOrderingWithinGroup(block_pattern, v1);
+  EXPECT_EQ(result, std::vector<int>({1, 7, 5, 3, 0, 6, 4, 2}));
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace contact_solvers

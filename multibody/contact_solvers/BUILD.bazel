@@ -157,6 +157,7 @@ drake_cc_library(
     deps = [
         ":block_sparse_lower_triangular_or_symmetric_matrix",
         "//common:essential",
+        "//multibody/contact_solvers/sap:partial_permutation",
     ],
 )
 

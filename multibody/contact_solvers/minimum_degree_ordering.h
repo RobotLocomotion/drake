@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <unordered_set>
 #include <vector>
 
 #include "drake/multibody/contact_solvers/block_sparse_lower_triangular_or_symmetric_matrix.h"
@@ -109,6 +110,21 @@ std::vector<int> ComputeMinimumDegreeOrdering(
  matrix. */
 BlockSparsityPattern SymbolicCholeskyFactor(
     const BlockSparsityPattern& block_sparsity);
+
+/* Given a block sparsity pattern G on vertices v = {0, 1, ..., n-1} and a
+ partition on v = v₁ ∪ v₂ (such that v₁ ∩ v₂ = ∅), computes an elimination
+ ordering on v in the following way:
+  1. Generate the v₁-induced subgraph G₁ and the v₂-induced subgraph G₂.
+  2. Compute the Minimum Degree ordering on G₁ and G₂ respectively.
+  3. Concatenate the orderings so that all vertices in v₁ come before vertices
+     in v₂.
+ @param[in] global_pattern  The block sparsity pattern G.
+ @param[in] v1              The vertices in the set v₁.
+ @returns  The elimination ordering obtained by following the algorithm
+ described above. */
+std::vector<int> CalcAndConcatenateMdOrderingWithinGroup(
+    const BlockSparsityPattern& global_pattern,
+    const std::unordered_set<int>& v1);
 
 }  // namespace internal
 }  // namespace contact_solvers

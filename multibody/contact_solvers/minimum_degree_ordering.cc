@@ -5,6 +5,8 @@
 #include <set>
 #include <utility>
 
+#include "drake/multibody/contact_solvers/sap/partial_permutation.h"
+
 namespace drake {
 namespace multibody {
 namespace contact_solvers {
@@ -209,6 +211,80 @@ BlockSparsityPattern SymbolicCholeskyFactor(
     }
   }
   return BlockSparsityPattern(block_sizes, L_sparsity);
+}
+
+std::vector<int> CalcAndConcatenateMdOrderingWithinGroup(
+    const BlockSparsityPattern& global_pattern,
+    const std::unordered_set<int>& v1) {
+  /* Sizes of v, v1, and v2. */
+  const int n = global_pattern.block_sizes().size();
+  const int n1 = v1.size();
+  const int n2 = n - n1;
+
+  /* Mapping from v to v1 and v2 and the inverse mappings. */
+  PartialPermutation v1_permutation(n);
+  PartialPermutation v2_permutation(n);
+  std::vector<int> global_to_local(n);
+
+  auto in_v1 = [&](int b) {
+    return v1.count(b) > 0;
+  };
+
+  for (int i = 0; i < n; ++i) {
+    if (in_v1(i)) {
+      v1_permutation.push(i);
+      global_to_local[i] = v1_permutation.permuted_index(i);
+    } else {
+      v2_permutation.push(i);
+      global_to_local[i] = v2_permutation.permuted_index(i);
+    }
+  }
+
+  /* The number of scalar variables in each block (as needed for the block
+   sparsity pattern for G1 and G2). */
+  std::vector<int> v1_block_sizes(n1);
+  std::vector<int> v2_block_sizes(n2);
+  const std::vector<int>& global_block_sizes = global_pattern.block_sizes();
+  v1_permutation.Apply(global_block_sizes, &v1_block_sizes);
+  v2_permutation.Apply(global_block_sizes, &v2_block_sizes);
+
+  /* Build the induced graphs G1 and G2 from the global graph G. */
+  const std::vector<std::vector<int>>& G = global_pattern.neighbors();
+  std::vector<std::vector<int>> G1(n1);
+  std::vector<std::vector<int>> G2(n2);
+  for (int a = 0; a < n; ++a) {
+    for (int b : G[a]) {
+      if (in_v1(a) != in_v1(b)) {
+        /* One of a and b is in v1 and the other is in v2, so the edge ab is not
+         in either of the induced graph. */
+        continue;
+      }
+      const int j = std::min(global_to_local[a], global_to_local[b]);
+      const int i = std::max(global_to_local[a], global_to_local[b]);
+      if (in_v1(b)) {
+        G1[j].emplace_back(i);
+      } else {
+        G2[j].emplace_back(i);
+      }
+    }
+  }
+
+  const std::vector<int> v1_ordering = ComputeMinimumDegreeOrdering(
+      BlockSparsityPattern(std::move(v1_block_sizes), std::move(G1)));
+  const std::vector<int> v2_ordering = ComputeMinimumDegreeOrdering(
+      BlockSparsityPattern(std::move(v2_block_sizes), std::move(G2)));
+
+  std::vector<int> result;
+  result.reserve(n);
+  /* The v1 vertices come first. */
+  for (int v : v1_ordering) {
+    result.emplace_back(v1_permutation.domain_index(v));
+  }
+  /* The v2 vertices follow. */
+  for (int v : v2_ordering) {
+    result.emplace_back(v2_permutation.domain_index(v));
+  }
+  return result;
 }
 
 }  // namespace internal
