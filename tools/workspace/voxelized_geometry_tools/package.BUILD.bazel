@@ -132,3 +132,11 @@ cc_test(
         "@gtest//:without_main",
     ],
 )
+
+test_suite(
+    name = "test_suite",
+    tests = [
+        ":mesh_rasterization_test",
+        ":pointcloud_voxelization_test",
+    ],
+)

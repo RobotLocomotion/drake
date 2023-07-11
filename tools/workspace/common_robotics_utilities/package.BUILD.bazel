@@ -119,6 +119,18 @@ cc_test(
     ],
 )
 
+test_suite(
+    name = "test_suite",
+    tests = [
+        "hausdorff_distance_test",
+        "maybe_test",
+        "planning_test",
+        "task_planning_test",
+        "utility_test",
+        "voxel_grid_test",
+    ],
+)
+
 install(
     name = "install",
     docs = ["LICENSE"],
