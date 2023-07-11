@@ -834,15 +834,7 @@ void DefineGeometryOptimization(py::module m) {
         //            base_cls_doc.rational_forward_kin.doc)
         .def(
             "map_geometries_to_separating_planes",
-            [](const CspaceFreePolytope* self) {
-              // Template deduction for drake::SortedPair<GeometryId> does not
-              // work. Here we manually make a map of tuples instead.
-              py::dict ret;
-              for (auto [k, v] : self->map_geometries_to_separating_planes()) {
-                ret[py::make_tuple(k.first(), k.second())] = v;
-              }
-              return ret;
-            },
+            &PolytopeBaseClass::map_geometries_to_separating_planes,
             base_cls_doc.map_geometries_to_separating_planes.doc)
         .def("separating_planes", &PolytopeBaseClass::separating_planes,
             base_cls_doc.separating_planes.doc)
