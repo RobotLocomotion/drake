@@ -234,7 +234,7 @@ struct SparsityData {
 
 SparsityData GetEliminationOrdering(
     int num_jacobian_row_blocks,
-    const std::vector<BlockMatrixTriplet>& jacobian_blocks) {
+    const std::vector<BlockTriplet>& jacobian_blocks) {
   SparsityData clique_data;
   SolverData& data = clique_data.data;
 
@@ -249,9 +249,9 @@ SparsityData GetEliminationOrdering(
 
   int num_column_blocks = 0;
   for (const auto& b : jacobian_blocks) {
-    int i = std::get<0>(b);
-    int j = std::get<1>(b);
-    column_block_sizes[j] = std::get<2>(b).cols();
+    int i = b.row;
+    int j = b.col;
+    column_block_sizes[j] = b.value.cols();
     cliques[i].push_back(j);
     if (j >= num_column_blocks) {
       num_column_blocks = j + 1;
@@ -328,7 +328,7 @@ SparsityData GetEliminationOrdering(
 
 void ConexSuperNodalSolver::Initialize(
     const vector<vector<int>>& cliques, int num_jacobian_row_blocks,
-    const std::vector<BlockMatrixTriplet>& jacobian_blocks,
+    const std::vector<BlockTriplet>& jacobian_blocks,
     const std::vector<Eigen::MatrixXd>& mass_matrices) {
   std::vector<int> jacobian_column_block_size =
       GetJacobianBlockSizesVerifyTriplets(jacobian_blocks);
@@ -345,7 +345,7 @@ void ConexSuperNodalSolver::Initialize(
     std::vector<MatrixBlock<double>> jacobian_blocks_of_row;
     jacobian_blocks_of_row.reserve(row_to_triplet_list[i].size());
     for (const auto& j : row_to_triplet_list[i]) {
-      jacobian_blocks_of_row.push_back(std::get<2>(jacobian_blocks[j]));
+      jacobian_blocks_of_row.push_back(jacobian_blocks[j].value);
     }
     owned_clique_assemblers_[i]->Initialize(std::move(jacobian_blocks_of_row));
     clique_assemblers_ptrs_[i] = owned_clique_assemblers_[i].get();
@@ -368,7 +368,7 @@ void ConexSuperNodalSolver::Initialize(
 
 ConexSuperNodalSolver::ConexSuperNodalSolver(
     int num_jacobian_row_blocks,
-    const std::vector<BlockMatrixTriplet>& jacobian_blocks,
+    const std::vector<BlockTriplet>& jacobian_blocks,
     const std::vector<Eigen::MatrixXd>& mass_matrices)
     : owned_clique_assemblers_(num_jacobian_row_blocks) {
   SparsityData clique_data =
