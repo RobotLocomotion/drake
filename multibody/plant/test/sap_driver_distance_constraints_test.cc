@@ -258,6 +258,25 @@ GTEST_TEST(DistanceConstraintsTests, VerifyIdMapping) {
   EXPECT_EQ(distance_spec.p_BQ, p_BQ);
   EXPECT_EQ(distance_spec.distance, distance);
 
+  const std::map<MultibodyConstraintId, DistanceConstraintSpec>&
+      distance_specs = plant.get_distance_constraint_specs();
+  ASSERT_EQ(ssize(distance_specs), 1);
+
+  const MultibodyConstraintId distance_id_from_map =
+      distance_specs.begin()->first;
+  const DistanceConstraintSpec& distance_spec_from_map =
+      distance_specs.begin()->second;
+
+  // Check the id in the map matches the one returned.
+  EXPECT_EQ(distance_id, distance_id_from_map);
+
+  // Check that the one spec in the map is equal to `distance_spec`.
+  EXPECT_EQ(distance_spec.id, distance_spec_from_map.id);
+  EXPECT_EQ(distance_spec.body_A, distance_spec_from_map.body_A);
+  EXPECT_EQ(distance_spec.body_B, distance_spec_from_map.body_B);
+  EXPECT_EQ(distance_spec.p_AP, distance_spec_from_map.p_AP);
+  EXPECT_EQ(distance_spec.p_BQ, distance_spec_from_map.p_BQ);
+
   // Throw on id to wrong constraint specs type.
   EXPECT_THROW(plant.get_coupler_constraint_specs(distance_id), std::exception);
   EXPECT_THROW(plant.get_ball_constraint_specs(distance_id), std::exception);

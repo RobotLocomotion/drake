@@ -155,6 +155,21 @@ const LinearBushingRollPitchYaw<double>* ParseLinearBushingRollPitchYaw(
       bushing_force_stiffness, bushing_force_damping);
 }
 
+std::optional<MultibodyConstraintId> ParseBallConstraint(
+    const std::function<Eigen::Vector3d(const char*)>& read_vector,
+    const std::function<const Body<double>*(const char*)>& read_body,
+    MultibodyPlant<double>* plant) {
+  const Body<double>* body_A = read_body("drake:ball_constraint_body_A");
+  if (!body_A) { return {}; }
+  const Body<double>* body_B = read_body("drake:ball_constraint_body_B");
+  if (!body_B) { return {}; }
+
+  const Eigen::Vector3d p_AP = read_vector("drake:ball_constraint_p_AP");
+  const Eigen::Vector3d p_BQ = read_vector("drake:ball_constraint_p_BQ");
+
+  return plant->AddBallConstraint(*body_A, p_AP, *body_B, p_BQ);
+}
+
 // See ParseCollisionFilterGroupCommon at header for documentation
 void CollectCollisionFilterGroup(
     const DiagnosticPolicy& diagnostic,

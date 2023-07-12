@@ -53,7 +53,7 @@ struct DistanceConstraintSpec {
   // Returns `true` iff `this` specification is valid to define a distance
   // constraint. A distance constraint specification is considered to be valid
   // iff body_A != body_B, distance > 0, stiffness >= 0 and damping >= 0.
-  bool IsValid() {
+  bool IsValid() const {
     return body_A != body_B && distance > 0.0 && stiffness >= 0.0 &&
            damping >= 0.0;
   }
@@ -84,7 +84,7 @@ struct BallConstraintSpec {
   // Returns `true` iff `this` specification is valid to define a ball
   // constraint. A ball constraint specification is considered to be valid iff:
   //   body_A != body_B.
-  bool IsValid() { return body_A != body_B; }
+  bool IsValid() const { return body_A != body_B; }
 
   BodyIndex body_A;      // Index of body A.
   Vector3<double> p_AP;  // Position of point P in body frame A.
