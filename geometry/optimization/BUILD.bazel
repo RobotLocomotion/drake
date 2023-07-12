@@ -372,6 +372,14 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "cspace_separating_plane_test",
+    deps = [
+        ":cspace_separating_plane",
+        "//common/test_utilities:symbolic_test_util",
+    ],
+)
+
+drake_cc_googletest(
     name = "graph_of_convex_sets_test",
     timeout = "moderate",
     shard_count = 8,
