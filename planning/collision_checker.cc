@@ -517,7 +517,7 @@ void CollisionChecker::SetConfigurationDistanceFunction(
     const ConfigurationDistanceFunction& distance_function) {
   DRAKE_THROW_UNLESS(distance_function != nullptr);
   const double test_distance =
-      distance_function(GetZeroConfiguration(), GetZeroConfiguration());
+      distance_function(GetDefaultConfiguration(), GetDefaultConfiguration());
   DRAKE_THROW_UNLESS(test_distance == 0.0);
   configuration_distance_function_ = distance_function;
 }
@@ -538,12 +538,12 @@ void CollisionChecker::SetConfigurationInterpolationFunction(
     return;
   }
   const Eigen::VectorXd test_interpolated_q = interpolation_function(
-      GetZeroConfiguration(), GetZeroConfiguration(), 0.0);
+      GetDefaultConfiguration(), GetDefaultConfiguration(), 0.0);
   DRAKE_THROW_UNLESS(test_interpolated_q.size() ==
-                     GetZeroConfiguration().size());
+                     GetDefaultConfiguration().size());
   for (int index = 0; index < test_interpolated_q.size(); ++index) {
     DRAKE_THROW_UNLESS(test_interpolated_q(index) ==
-                       GetZeroConfiguration()(index));
+                       GetDefaultConfiguration()(index));
   }
   configuration_interpolation_function_ = interpolation_function;
 }
@@ -803,6 +803,10 @@ CollisionChecker::CollisionChecker(CollisionCheckerParams params,
       supports_parallel_checking_(supports_parallel_checking) {
   // Initialize the zero configuration.
   zero_configuration_ = Eigen::VectorXd::Zero(plant().num_positions());
+  // Initialize the default configuration.
+  default_configuration_ =
+      plant().GetPositions(*plant().CreateDefaultContext());
+
   // Initialize the collision padding matrix.
   collision_padding_ =
       Eigen::MatrixXd::Zero(plant().num_bodies(), plant().num_bodies());
