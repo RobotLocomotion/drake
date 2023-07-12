@@ -170,6 +170,29 @@ GTEST_TEST(MinimumDegreeOrderingTest, ComputeMinimumDegreeOrdering2) {
   EXPECT_EQ(result, std::vector<int>({0, 1, 2, 3, 4, 5, 6, 7, 8, 9}));
 }
 
+/* Here we use the same initial sparsity pattern as the example from Figure 1 in
+ [Amestoy, 1996], but run Minimum Degree ordering with even nodes as priority
+ nodes. We compare the computed results with pen-and-paper results from
+ actually performing the chordle completion of the graph. */
+GTEST_TEST(MinimumDegreeOrderingTest, ComputeMinimumDegreeOrdering3) {
+  std::vector<std::vector<int>> sparsity;
+  sparsity.emplace_back(std::vector<int>{0, 3, 5});
+  sparsity.emplace_back(std::vector<int>{1, 4, 5, 8});
+  sparsity.emplace_back(std::vector<int>{2, 4, 5, 6});
+  sparsity.emplace_back(std::vector<int>{3, 6, 7});
+  sparsity.emplace_back(std::vector<int>{4, 6, 8});
+  sparsity.emplace_back(std::vector<int>{5});
+  sparsity.emplace_back(std::vector<int>{6, 7, 8, 9});
+  sparsity.emplace_back(std::vector<int>{7, 8, 9});
+  sparsity.emplace_back(std::vector<int>{8, 9});
+  sparsity.emplace_back(std::vector<int>{9});
+  std::vector<int> block_sizes(10, 2);
+  BlockSparsityPattern block_pattern(block_sizes, sparsity);
+  std::vector<int> result =
+      ComputeMinimumDegreeOrdering(block_pattern, {0, 2, 4, 6, 8});
+  EXPECT_EQ(result, std::vector<int>({0, 2, 4, 8, 6, 1, 3, 5, 7, 9}));
+}
+
 GTEST_TEST(MinimumDegreeOrderingTest, SymbolicCholeskyFactor) {
   /*
   In this schematic (unlike the one in the previous test), an X corresponds to a

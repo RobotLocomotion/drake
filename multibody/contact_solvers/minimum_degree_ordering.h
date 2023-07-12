@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <unordered_set>
 #include <vector>
 
 #include "drake/multibody/contact_solvers/block_sparse_lower_triangular_or_symmetric_matrix.h"
@@ -94,6 +95,17 @@ inline bool operator<(const IndexDegree& a, const IndexDegree& b) {
  to original block indices. */
 std::vector<int> ComputeMinimumDegreeOrdering(
     const BlockSparsityPattern& block_sparsity_pattern);
+
+/* Similar to the one argument overload but eliminates elements in
+`priority_elements` first.
+ Suppose the sparsity pattern has n nodes (which we denote as V) and m of those
+ are in `priority_elements` (which we denote as P). Let D(v) be the degree of
+ the node v. For k ∈ [0, m), the k-th eliminated node is argmin(D(v)) s.t.
+ v ∈ P. For k ∈ [m, n), the k-th eliminated node is argmin(D(v)) s.t. v ∈ V\P.
+ @pre all entries in `priority_elements` are in {0, 1, ..., n-1}. */
+std::vector<int> ComputeMinimumDegreeOrdering(
+    const BlockSparsityPattern& block_sparsity_pattern,
+    const std::unordered_set<int>& priority_elements);
 
 /* Given the block sparsity pattern of a symmetric block sparse matrix, computes
  the block sparsity pattern of the lower triangular matrix resulting from a

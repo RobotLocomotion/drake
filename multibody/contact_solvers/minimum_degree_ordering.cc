@@ -68,6 +68,12 @@ void Node::UpdateExternalDegree(const std::vector<Node>& nodes) {
 
 std::vector<int> ComputeMinimumDegreeOrdering(
     const BlockSparsityPattern& block_sparsity_pattern) {
+  return ComputeMinimumDegreeOrdering(block_sparsity_pattern, {});
+}
+
+std::vector<int> ComputeMinimumDegreeOrdering(
+    const BlockSparsityPattern& block_sparsity_pattern,
+    const std::unordered_set<int>& priority_elements) {
   /* Initialize for Minimum Degree: Populate index, size, and A, the list of
    adjacent variables. E, L are empty initially. */
   const std::vector<int>& block_sizes = block_sparsity_pattern.block_sizes();
@@ -99,28 +105,41 @@ std::vector<int> ComputeMinimumDegreeOrdering(
     std::sort(A.begin(), A.end());
   }
 
-  /* The ideal data structure to use here is a priority queue implemeneted by a
+  /* The ideal data structure to use here is a priority queue implemented by a
    heap. However, the Minimum Degree algorithm requires updating neighboring
    nodes when a node is eliminated and std::priority_queue doesn't support
    modifying existing elements. There are ways to get around it by duplicating
    nodes and ignoring out-of-date nodes, but for simplicity and readability, we
    use an std::set here instead. */
-  std::set<IndexDegree> sorted_nodes;
+  std::set<IndexDegree>
+      priority_nodes;  // The priority elements sorted by degree.
+  std::set<IndexDegree>
+      nonpriority_nodes;  // The remaining elements sorted by degree.
   /* Keep the nodes sorted by degrees and break ties with indices. We use a
    striped down version of the node to keep only the necessary information
    (degree and index). */
   for (int n = 0; n < num_nodes; ++n) {
     IndexDegree node = {.degree = nodes[n].degree, .index = nodes[n].index};
-    sorted_nodes.insert(node);
+    if (priority_elements.count(node.index) > 0) {
+      priority_nodes.insert(node);
+    } else {
+      nonpriority_nodes.insert(node);
+    }
   }
 
   /* The resulting elimination ordering. */
   std::vector<int> result(num_nodes);
   /* Begin elimination. */
   for (int k = 0; k < num_nodes; ++k) {
-    DRAKE_DEMAND(ssize(sorted_nodes) == num_nodes - k);
+    DRAKE_DEMAND(ssize(priority_nodes) + ssize(nonpriority_nodes) ==
+                 num_nodes - k);
+    /* Eliminate the node in the priority group with the minimum degree. If all
+     nodes in the priority group has been eliminated, eliminate the node in
+     the non-priority group with the minimum degree. */
     const IndexDegree min_node =
-        sorted_nodes.extract(sorted_nodes.begin()).value();
+        priority_nodes.empty()
+            ? nonpriority_nodes.extract(nonpriority_nodes.begin()).value()
+            : priority_nodes.extract(priority_nodes.begin()).value();
     /* p is the variable to be eliminated next. */
     const int p = min_node.index;
     result[k] = p;
@@ -151,8 +170,13 @@ std::vector<int> ComputeMinimumDegreeOrdering(
       /* Compute external degree. */
       node_i.UpdateExternalDegree(nodes);
       IndexDegree new_node = {.degree = node_i.degree, .index = node_i.index};
-      sorted_nodes.erase(old_node);
-      sorted_nodes.insert(new_node);
+      if (priority_elements.count(node_i.index) > 0) {
+        priority_nodes.erase(old_node);
+        priority_nodes.insert(new_node);
+      } else {
+        nonpriority_nodes.erase(old_node);
+        nonpriority_nodes.insert(new_node);
+      }
     }
     /* Convert node p from a supervariable to an element. */
     node_p.A.clear();
