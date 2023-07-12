@@ -202,10 +202,16 @@ class Convex final : public Shape {
   explicit Convex(const std::string& filename, double scale = 1.0);
 
   const std::string& filename() const { return filename_; }
+  /** Returns the extension of the mesh filename -- all lower case and including
+   the dot. In other words /foo/bar/mesh.obj and /foo/bar/mesh.OBJ would both
+   report the ".obj" extension. The "extension" portion of the filename is
+   defined as in std::filesystem::path::extension(). */
+  const std::string& extension() const { return extension_; }
   double scale() const { return scale_; }
 
  private:
   std::string filename_;
+  std::string extension_;
   double scale_{};
 };
 
@@ -321,11 +327,17 @@ class Mesh final : public Shape {
   explicit Mesh(const std::string& filename, double scale = 1.0);
 
   const std::string& filename() const { return filename_; }
+  /** Returns the extension of the mesh filename -- all lower case and including
+   the dot. In other words /foo/bar/mesh.obj and /foo/bar/mesh.OBJ would both
+   report the ".obj" extension. The "extension" portion of the filename is
+   defined as in std::filesystem::path::extension(). */
+  const std::string& extension() const { return extension_; }
   double scale() const { return scale_; }
 
  private:
   // NOTE: Cannot be const to support default copy/move semantics.
   std::string filename_;
+  std::string extension_;
   double scale_{};
 };
 

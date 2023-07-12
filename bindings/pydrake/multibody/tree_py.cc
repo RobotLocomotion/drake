@@ -1201,10 +1201,16 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def_static("SolidCapsuleWithDensity", &Class::SolidCapsuleWithDensity,
             py::arg("density"), py::arg("radius"), py::arg("length"),
             py::arg("unit_vector"), cls_doc.SolidCapsuleWithDensity.doc)
+        .def_static("SolidCapsuleWithMass", &Class::SolidCapsuleWithMass,
+            py::arg("mass"), py::arg("radius"), py::arg("length"),
+            py::arg("unit_vector"), cls_doc.SolidCapsuleWithMass.doc)
         .def_static("SolidCylinderWithDensity",
             &Class::SolidCylinderWithDensity, py::arg("density"),
             py::arg("radius"), py::arg("length"), py::arg("unit_vector"),
             cls_doc.SolidCylinderWithDensity.doc)
+        .def_static("SolidCylinderWithMass", &Class::SolidCylinderWithMass,
+            py::arg("mass"), py::arg("radius"), py::arg("length"),
+            py::arg("unit_vector"), cls_doc.SolidCylinderWithMass.doc)
         .def_static("SolidCylinderWithDensityAboutEnd",
             &Class::SolidCylinderWithDensityAboutEnd, py::arg("density"),
             py::arg("radius"), py::arg("length"), py::arg("unit_vector"),
@@ -1218,6 +1224,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def_static("SolidEllipsoidWithDensity",
             &Class::SolidEllipsoidWithDensity, py::arg("density"), py::arg("a"),
             py::arg("b"), py::arg("c"), cls_doc.SolidEllipsoidWithDensity.doc)
+        .def_static("SolidEllipsoidWithMass", &Class::SolidEllipsoidWithMass,
+            py::arg("mass"), py::arg("a"), py::arg("b"), py::arg("c"),
+            cls_doc.SolidEllipsoidWithMass.doc)
         .def_static("SolidSphereWithDensity", &Class::SolidSphereWithDensity,
             py::arg("density"), py::arg("radius"),
             cls_doc.SolidSphereWithDensity.doc)

@@ -10,6 +10,7 @@
 #include "drake/geometry/optimization/c_iris_collision_geometry.h"
 #include "drake/geometry/optimization/c_iris_separating_plane.h"
 #include "drake/multibody/rational/rational_forward_kinematics.h"
+#include "drake/solvers/mathematical_program.h"
 
 namespace drake {
 namespace geometry {
@@ -131,6 +132,12 @@ class CspaceFreePolytopeBase {
       VectorX<symbolic::Polynomial>* s_minus_s_lower,
       VectorX<symbolic::Polynomial>* s_upper_minus_s) const;
 
+  /** Returns the index of the plane which will separate the geometry pair.
+  Returns -1 if the pair is not in map_geometries_to_separating_planes_.
+  */
+  int GetSeparatingPlaneIndex(
+      const SortedPair<geometry::GeometryId>& pair) const;
+
   [[nodiscard]] const symbolic::Variables& get_s_set() const { return s_set_; }
 
   [[nodiscard]] const geometry::SceneGraph<double>& scene_graph() const {
@@ -245,6 +252,59 @@ class CspaceFreePolytopeBase {
   std::unordered_map<SortedPair<multibody::BodyIndex>, std::vector<int>>
       map_body_pair_to_s_on_chain_;
 };
+
+namespace internal {
+// Return the total size of the lower triangular variables in the Gram
+// matrices. Each Gram matrix should match with the monomial basis in
+// `monomial_basis_array`. Depending on whether we include y in the
+// indeterminates (see Options::with_cross_y for more details) and the size of
+// y, the number of Gram matrices will change.
+// @param monomial_basis The candidate monomial_basis for all gram matricies.
+// @param with_cross_y See Options::with_cross_y
+// @param num_y The size of y indterminates.
+int GetGramVarSize(
+    const std::array<VectorX<symbolic::Monomial>, 4>& monomial_basis_array,
+    bool with_cross_y, int num_y);
+
+// Given the monomial_basis_array, compute the sos polynomial.
+// monomial_basis_array contains [m(s), y₀*m(s), y₁*m(s), y₂*m(s)].
+//
+// If num_y == 0, then the sos polynomial is just
+// m(s)ᵀ * X * m(s)
+// where X is a Gram matrix, `grams` is a length-1 vector containing X.
+//
+// If num_y != 0 and with_cross_y = true, then the sos polynomial is
+// ⌈    m(s)⌉ᵀ * Y * ⌈    m(s)⌉
+// | y₀*m(s)|        | y₀*m(s)|
+// |   ...  |        |   ...  |
+// ⌊ yₙ*m(s)⌋        ⌊ yₙ*m(s)⌋
+// where n = num_y-1. Y is a Gram matrix, `grams` is a length-1 vector
+// containing Y.
+//
+// if num_y != 0 and with_cross_y = false, then the sos polynomial is
+// ∑ᵢ ⌈    m(s)⌉ᵀ * Zᵢ * ⌈    m(s)⌉
+//    ⌊ yᵢ*m(s)⌋         ⌊ yᵢ*m(s)⌋
+// where Zᵢ is a Gram matrix, i = 0, ..., num_y-1.  `grams` is a vector of
+// length `num_y`, and grams[i] = Zᵢ
+struct GramAndMonomialBasis {
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(GramAndMonomialBasis)
+
+  GramAndMonomialBasis(
+      const std::array<VectorX<symbolic::Monomial>, 4>& monomial_basis_array,
+      bool with_cross_y, int num_y);
+
+  // Adds the constraint that the polynomial represented by this Gram and
+  // monomial basis is sos.
+  void AddSos(solvers::MathematicalProgram* prog,
+              const Eigen::Ref<const VectorX<symbolic::Variable>>& gram_lower,
+              symbolic::Polynomial* poly);
+
+  int gram_var_size;
+  std::vector<MatrixX<symbolic::Variable>> grams;
+  std::vector<VectorX<symbolic::Monomial>> monomial_basis;
+};
+
+}  // namespace internal
 }  // namespace optimization
 }  // namespace geometry
 }  // namespace drake

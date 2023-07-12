@@ -20,9 +20,10 @@ using Eigen::VectorXd;
 using solvers::MathematicalProgram;
 using solvers::Solve;
 
-GTEST_TEST(SpectrahedronTest, Empty) {
+GTEST_TEST(SpectrahedronTest, DefaultCtor) {
   Spectrahedron spect;
   EXPECT_EQ(spect.ambient_dimension(), 0);
+  EXPECT_THROW(spect.IsEmpty(), std::exception);
 }
 
 GTEST_TEST(SpectrahedronTest, Attributes) {
@@ -63,6 +64,7 @@ GTEST_TEST(SpectrahedronTest, TrivialSdp1) {
   Spectrahedron spect(prog);
   EXPECT_EQ(spect.ambient_dimension(), 3 * (3 + 1) / 2);
   DRAKE_EXPECT_THROWS_MESSAGE(spect.IsBounded(), ".*not implemented yet.*");
+  EXPECT_FALSE(spect.IsEmpty());
 
   const double kTol{1e-6};
   EXPECT_TRUE(spect.PointInSet(x_star, kTol));
@@ -239,6 +241,22 @@ GTEST_TEST(SpectrahedronTest, Move) {
   // just the one we happen to currently use.
   EXPECT_EQ(orig.ambient_dimension(), 0);
   EXPECT_NO_THROW(orig.Clone());
+}
+
+GTEST_TEST(SpectrahedronTest, NontriviallyEmpty) {
+  // Construct an infeasible SDP, and check that its spectrahedron
+  // ConvexSet is empty.
+  MathematicalProgram prog;
+  auto X1 = prog.NewSymmetricContinuousVariables<2>();
+  prog.AddPositiveSemidefiniteConstraint(X1);
+
+  // Enforce that X1 is diagonal, and that at least one of the
+  // diagonal entries is negative, so X1 cannot be PSD.
+  prog.AddLinearEqualityConstraint(X1(0, 0) + X1(1, 1), -1);
+  prog.AddLinearEqualityConstraint(X1(0, 1), 0);
+
+  Spectrahedron spect(prog);
+  EXPECT_TRUE(spect.IsEmpty());
 }
 
 }  // namespace

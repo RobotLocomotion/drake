@@ -11,6 +11,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 
 namespace drake {
 namespace geometry {
@@ -21,6 +22,16 @@ namespace {
 using nlohmann::json;
 using std::string;
 using std::vector;
+
+// Test the conversion between Eigen and glTF json. We'll simply create a weird
+// 4x4 matrix and make sure that translating in and out of json is idempotent.
+GTEST_TEST(GltfMergeTest, JsonEigenConversion) {
+  Matrix4<double> M;
+  M << 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16;
+  const json M_json = GltfMatrixFromEigenMatrix(M);
+  const Matrix4<double> M_return = EigenMatrixFromGltfMatrix(M_json);
+  EXPECT_TRUE(CompareMatrices(M_return, M));
+}
 
 /* Specification of a test case. Because each function under test is responsible
  for merging a particular array, each test case examines only the targeted

@@ -124,6 +124,17 @@ GTEST_TEST(IrisInConfigurationSpaceTest, BoxesPrismatic) {
                               "The seed point is in collision.*");
 }
 
+// Three boxes again, but the configuration-space margin is larger than 1/2 the
+// gap.
+GTEST_TEST(IrisInConfigurationSpaceTest, ConfigurationSpaceMargin) {
+  const Vector1d sample = Vector1d::Zero();
+  IrisOptions options;
+  options.configuration_space_margin = 1.5;
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      IrisFromUrdf(boxes_urdf, sample, options),
+      ".*is within options.configuration_space_margin of being infeasible.*");
+}
+
 const char boxes_with_mesh_urdf[] = R"""(
 <robot name="boxes">
   <link name="fixed">
@@ -249,6 +260,115 @@ GTEST_TEST(IrisInConfigurationSpaceTest, ConfigurationObstacles) {
         IrisFromUrdf(boxes_urdf, Vector1d(0.7), options),
         "The seed point is in configuration obstacle.*");
   }
+}
+
+/* Box obstacles in all corners.
+┌─────┬─┬─────┐
+│     │ │     │
+│     │ │     │
+├─────┘ └─────┤
+│             │
+├─────┐ ┌─────┤
+│     │ │     │
+│     │ │     │
+└─────┴─┴─────┘ */
+const char boxes_in_2d_urdf[] = R"""(
+<robot name="boxes">
+  <link name="fixed">
+    <collision name="right">
+      <origin rpy="0 0 0" xyz="2 0 0"/>
+      <geometry><box size="1 1 1"/></geometry>
+    </collision>
+    <collision name="left">
+      <origin rpy="0 0 0" xyz="-2 0 0"/>
+      <geometry><box size="1 1 1"/></geometry>
+    </collision>
+  </link>
+  <joint name="fixed_link_weld" type="fixed">
+    <parent link="world"/>
+    <child link="fixed"/>
+  </joint>
+  <link name="movable">
+    <collision name="center">
+      <geometry><box size="1 1 1"/></geometry>
+    </collision>
+  </link>
+  <link name="for_joint"/>
+  <joint name="x" type="prismatic">
+    <axis xyz="1 0 0"/>
+    <limit lower="-2" upper="2"/>
+    <parent link="world"/>
+    <child link="for_joint"/>
+  </joint>
+  <joint name="y" type="prismatic">
+    <axis xyz="0 1 0"/>
+    <limit lower="-1" upper="1"/>
+    <parent link="for_joint"/>
+    <child link="movable"/>
+  </joint>
+</robot>
+)""";
+
+GTEST_TEST(IrisInConfigurationSpaceTest, ConfigurationObstaclesMultipleBoxes) {
+  IrisOptions options;
+  ConvexSets obstacles;
+  obstacles.emplace_back(VPolytope::MakeBox(Vector2d(.1, .5), Vector2d(1, 1)));
+  obstacles.emplace_back(
+      VPolytope::MakeBox(Vector2d(-1, -1), Vector2d(-.1, -.5)));
+  obstacles.emplace_back(
+      HPolyhedron::MakeBox(Vector2d(.1, -1), Vector2d(1, -.5)));
+  obstacles.emplace_back(
+      HPolyhedron::MakeBox(Vector2d(-1, .5), Vector2d(-.1, 1)));
+  options.configuration_obstacles = obstacles;
+
+  const Vector2d sample{0.8, 0};  // right corridor.
+  HPolyhedron region = IrisFromUrdf(boxes_in_2d_urdf, sample, options);
+
+  // The region will stretch in x.
+  EXPECT_TRUE(region.PointInSet(Vector2d(.9, 0.0)));
+  EXPECT_TRUE(region.PointInSet(Vector2d(-.9, 0.0)));
+  EXPECT_FALSE(region.PointInSet(Vector2d(0.0, .9)));
+  EXPECT_FALSE(region.PointInSet(Vector2d(0.0, -.9)));
+}
+
+/* Box obstacles in one corner.
+┌───────┬─────┐
+│       │     │
+│       │     │
+│       └─────┤
+│      *      │
+│             │
+│             │
+│             │
+└─────────────┘
+We use only a single configuration obstacle, and verify the the computed
+halfspace changes.
+*/
+GTEST_TEST(IrisInConfigurationSpaceTest, StartingEllipse) {
+  const Vector2d sample{0.0, 0.0};
+  IrisOptions options;
+  options.iteration_limit = 1;
+  options.num_collision_infeasible_samples = 0;
+  ConvexSets obstacles;
+  obstacles.emplace_back(VPolytope::MakeBox(Vector2d(.2, .2), Vector2d(1, 1)));
+  options.configuration_obstacles = obstacles;
+  HPolyhedron region = IrisFromUrdf(boxes_in_2d_urdf, sample, options);
+
+  Eigen::Matrix2d A;
+  A << 10, 0, 0, 1;
+  options.starting_ellipse = Hyperellipsoid(A, sample);
+  HPolyhedron region_w_ellipse =
+      IrisFromUrdf(boxes_in_2d_urdf, sample, options);
+
+  // Regions should have only one additional half space beyond the joint limits.
+  EXPECT_EQ(region.b().size(), 5);
+  EXPECT_EQ(region_w_ellipse.b().size(), 5);
+
+  // last row of A is a scaling of [1, 1].
+  EXPECT_NEAR(region.A()(4, 0), region.A()(4, 1), 1e-6);
+  // last row of A is a scaling of [100, 1].
+  EXPECT_NEAR(region_w_ellipse.A()(4, 0), 100 * region_w_ellipse.A()(4, 1),
+              1e-6);
 }
 
 // Three spheres.  Two on the outside are fixed.  One in the middle on a
@@ -488,22 +608,6 @@ GTEST_TEST(IrisInConfigurationSpaceTest, BlockOnGround) {
   EXPECT_GE(region.MaximumVolumeInscribedEllipsoid().Volume(), 2.0);
 }
 
-GTEST_TEST(IrisInConfigurationSpaceTest, StartingEllipse) {
-  const Vector2d sample{1.0, 0.0};
-  IrisOptions options;
-  options.iteration_limit = 2;
-  HPolyhedron region = IrisFromUrdf(block_urdf, sample, options);
-
-  options.iteration_limit = 1;
-  HPolyhedron iterative_region = IrisFromUrdf(block_urdf, sample, options);
-  options.starting_ellipse = iterative_region.MaximumVolumeInscribedEllipsoid();
-  iterative_region = IrisFromUrdf(block_urdf, sample, options);
-
-  EXPECT_NEAR(region.MaximumVolumeInscribedEllipsoid().Volume(),
-              iterative_region.MaximumVolumeInscribedEllipsoid().Volume(),
-              1e-6);
-}
-
 // A (somewhat contrived) example of a concave configuration-space obstacle
 // (resulting in a convex configuration-space, which we approximate with
 // polytopes):  A simple pendulum of length `l` with a sphere at the tip of
@@ -565,7 +669,7 @@ GTEST_TEST(IrisInConfigurationSpaceTest, ConvexConfigurationSpace) {
   // With num_collision_infeasible_samples == 1, we found that SNOPT misses this
   // point (on some platforms with some random seeds).
 
-  options.num_collision_infeasible_samples = 5;
+  options.num_collision_infeasible_samples = 15;
   HPolyhedron region = IrisFromUrdf(convex_urdf, sample, options);
   EXPECT_FALSE(region.PointInSet(Vector2d{z_test, theta_test}));
 
@@ -676,7 +780,8 @@ GTEST_TEST(IrisInConfigurationSpaceTest, DoublePendulumEndEffectorConstraints) {
 
   IrisOptions options;
   options.prog_with_additional_constraints = &ik.prog();
-  options.num_additional_constraint_infeasible_samples = 10;
+  // We required > 10 samples to pass the test on mac CI with ipopt.
+  options.num_additional_constraint_infeasible_samples = 15;
 
   HPolyhedron region = IrisInConfigurationSpace(
       plant, plant.GetMyContextFromRoot(*context), options);

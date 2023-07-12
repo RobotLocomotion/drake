@@ -77,6 +77,8 @@ class CartesianProduct final : public ConvexSet {
 
   bool DoIsBounded() const final;
 
+  bool DoIsEmpty() const final;
+
   std::optional<Eigen::VectorXd> DoMaybeGetPoint() const final;
 
   bool DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,

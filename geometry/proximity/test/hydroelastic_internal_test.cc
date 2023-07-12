@@ -650,14 +650,27 @@ TEST_F(HydroelasticRigidGeometryTest, Mesh) {
     std::filesystem::copy(file_lower_case, file_upper_case);
     TestRigidMeshTypeFromObj<Mesh>(file_upper_case);
   }
+  {
+    SCOPED_TRACE("Rigid Mesh, unsupported extension");
+    DRAKE_EXPECT_THROWS_MESSAGE(TestRigidMeshTypeFromObj<Mesh>("invalid.stl"),
+                                ".*Mesh shapes can only use .*invalid.stl");
+  }
 }
 
 // Confirm support for a rigid Convex. Tests that a hydroelastic representation
 // is made.
 TEST_F(HydroelasticRigidGeometryTest, Convex) {
-  SCOPED_TRACE("Rigid Convex");
-  std::string file = FindResourceOrThrow("drake/geometry/test/quad_cube.obj");
-  TestRigidMeshTypeFromObj<Convex>(file);
+  {
+    SCOPED_TRACE("Rigid Convex");
+    std::string file = FindResourceOrThrow("drake/geometry/test/quad_cube.obj");
+    TestRigidMeshTypeFromObj<Convex>(file);
+  }
+
+  {
+    SCOPED_TRACE("Rigid Convex, unsupported extension");
+    DRAKE_EXPECT_THROWS_MESSAGE(TestRigidMeshTypeFromObj<Convex>("invalid.stl"),
+                                ".*Convex shapes can only use .*invalid.stl");
+  }
 }
 
 TEST_F(HydroelasticRigidGeometryTest, MeshFromVtk) {

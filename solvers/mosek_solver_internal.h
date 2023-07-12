@@ -238,6 +238,14 @@ class MosekSolverProgram {
                          std::pair<ConstraintDualIndices,
                                    ConstraintDualIndices>>* dual_indices);
 
+  // Add the quadratic constraints in @p prog.
+  // @param[out] dual_indices Map each quadratic constraint to its dual variable
+  // index.
+  MSKrescodee AddQuadraticConstraints(
+      const MathematicalProgram& prog,
+      std::unordered_map<Binding<QuadraticConstraint>, MSKint64t>*
+          dual_indices);
+
   /**
    Adds the constraint that A * decision_vars + B * slack_vars + c is in an
    affine cone.
@@ -325,6 +333,8 @@ class MosekSolverProgram {
           bb_con_dual_indices,
       const DualMap<LinearConstraint>& linear_con_dual_indices,
       const DualMap<LinearEqualityConstraint>& lin_eq_con_dual_indices,
+      const std::unordered_map<Binding<QuadraticConstraint>, MSKint64t>&
+          quadratic_constraint_dual_indices,
       const std::unordered_map<Binding<LorentzConeConstraint>, MSKint64t>&
           lorentz_cone_acc_indices,
       const std::unordered_map<Binding<RotatedLorentzConeConstraint>,
@@ -529,6 +539,19 @@ void SetLinearConstraintDualSolution(
     result->set_dual_solution(binding, dual_sol);
   }
 }
+
+// @param slc Mosek dual variables for linear and quadratic constraint lower
+// bound. See
+// https://docs.mosek.com/10.0/capi/alphabetic-functionalities.html#mosek.task.getslc
+// @param suc Mosek dual variables for linear and quadratic constraint upper
+// bound. See
+// https://docs.mosek.com/10.0/capi/alphabetic-functionalities.html#mosek.task.getsuc
+void SetQuadraticConstraintDualSolution(
+    const std::vector<Binding<QuadraticConstraint>>& constraints,
+    const std::vector<MSKrealt>& slc, const std::vector<MSKrealt>& suc,
+    const std::unordered_map<Binding<QuadraticConstraint>, MSKint64t>&
+        quadratic_constraint_dual_indices,
+    MathematicalProgramResult* result);
 
 /*
  * Sets the dual solution for the affine cone constraints.

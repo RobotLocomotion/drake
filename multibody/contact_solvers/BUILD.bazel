@@ -15,8 +15,10 @@ drake_cc_package_library(
     visibility = ["//visibility:public"],
     deps = [
         ":block_3x3_sparse_matrix",
+        ":block_sparse_cholesky_solver",
         ":block_sparse_lower_triangular_or_symmetric_matrix",
         ":block_sparse_matrix",
+        ":block_sparse_supernodal_solver",
         ":conex_supernodal_solver",
         ":contact_configuration",
         ":contact_solver",
@@ -24,6 +26,7 @@ drake_cc_package_library(
         ":contact_solver_utils",
         ":linear_operator",
         ":matrix_block",
+        ":minimum_degree_ordering",
         ":newton_with_bisection",
         ":pgs_solver",
         ":point_contact_data",
@@ -52,6 +55,20 @@ drake_cc_library(
         "//common:default_scalars",
         "//common:essential",
         "//common:unused",
+    ],
+)
+
+drake_cc_library(
+    name = "block_sparse_cholesky_solver",
+    srcs = ["block_sparse_cholesky_solver.cc"],
+    hdrs = ["block_sparse_cholesky_solver.h"],
+    deps = [
+        ":block_sparse_lower_triangular_or_symmetric_matrix",
+        ":minimum_degree_ordering",
+        "//common:copyable_unique_ptr",
+        "//common:essential",
+        "//common:reset_after_move",
+        "//multibody/contact_solvers/sap:partial_permutation",
     ],
 )
 
@@ -134,6 +151,16 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "minimum_degree_ordering",
+    srcs = ["minimum_degree_ordering.cc"],
+    hdrs = ["minimum_degree_ordering.h"],
+    deps = [
+        ":block_sparse_lower_triangular_or_symmetric_matrix",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
     name = "newton_with_bisection",
     srcs = ["newton_with_bisection.cc"],
     hdrs = ["newton_with_bisection.h"],
@@ -179,6 +206,17 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "block_sparse_supernodal_solver",
+    srcs = ["block_sparse_supernodal_solver.cc"],
+    hdrs = ["block_sparse_supernodal_solver.h"],
+    deps = [
+        ":block_sparse_cholesky_solver",
+        ":supernodal_solver",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
     name = "conex_supernodal_solver",
     srcs = ["conex_supernodal_solver.cc"],
     hdrs = ["conex_supernodal_solver.h"],
@@ -196,6 +234,7 @@ drake_cc_library(
     srcs = ["supernodal_solver.cc"],
     hdrs = ["supernodal_solver.h"],
     deps = [
+        ":block_sparse_matrix",
         ":matrix_block",
         "//common:essential",
     ],
@@ -228,6 +267,14 @@ drake_cc_googletest(
     name = "block_3x3_sparse_matrix_test",
     deps = [
         ":block_3x3_sparse_matrix",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "block_sparse_cholesky_solver_test",
+    deps = [
+        ":block_sparse_cholesky_solver",
         "//common/test_utilities:eigen_matrix_compare",
     ],
 )
@@ -268,6 +315,13 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "minimum_degree_ordering_test",
+    deps = [
+        ":minimum_degree_ordering",
+    ],
+)
+
+drake_cc_googletest(
     name = "newton_with_bisection_test",
     deps = [
         ":newton_with_bisection",
@@ -295,6 +349,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "supernodal_solver_test",
     deps = [
+        ":block_sparse_supernodal_solver",
         ":conex_supernodal_solver",
         ":supernodal_solver",
         "//common/test_utilities:expect_throws_message",

@@ -48,6 +48,9 @@ GTEST_TEST(VPolytopeTest, TriangleTest) {
   // Check IsBounded (which is trivially true for V Polytopes).
   EXPECT_TRUE(V.IsBounded());
 
+  // Test IsEmpty.
+  EXPECT_FALSE(V.IsEmpty());
+
   const Eigen::Vector2d center = triangle.rowwise().mean();
   // Mosek worked with 1e-15.
   // Gurobi worked with 1e-15 (see the note about alpha_sol in the method).
@@ -83,6 +86,7 @@ GTEST_TEST(VPolytopeTest, DefaultCtor) {
   EXPECT_EQ(dut.ambient_dimension(), 0);
   EXPECT_FALSE(dut.IntersectsWith(dut));
   EXPECT_TRUE(dut.IsBounded());
+  EXPECT_THROW(dut.IsEmpty(), std::exception);
   EXPECT_FALSE(dut.MaybeGetPoint().has_value());
   EXPECT_FALSE(dut.PointInSet(Eigen::VectorXd::Zero(0)));
 }
@@ -268,6 +272,31 @@ GTEST_TEST(VPolytopeTest, NonconvexMesh) {
   // clang-format on
   const double tol = 1E-12;
   CheckVertices(V.vertices(), vertices_expected.transpose(), tol);
+}
+
+// Confirm that VPolytope will complain about non-obj mesh/convex shapes even
+// if SceneGraph stops complaining. Likewise confirm that GetVertices complains.
+GTEST_TEST(VPolytopeTest, UnsupportedMeshTypes) {
+  const Convex convex("bad_extension.stl");
+  const Mesh mesh("bad_extension.stl");
+
+  for (const auto* shape : std::vector<const Shape*>{&convex, &mesh}) {
+    const RigidTransformd X_WG;
+    // We can't add proximity properties; ProximityEngine would reject it.
+    const bool add_proximity_properties = false;
+    auto [scene_graph, geom_id] =
+        MakeSceneGraphWithShape(*shape, X_WG, add_proximity_properties);
+    auto context = scene_graph->CreateDefaultContext();
+    auto query = scene_graph->get_query_output_port().Eval<QueryObject<double>>(
+        *context);
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        VPolytope(query, geom_id),
+        "VPolytope can only use mesh shapes .* '.*bad_extension.stl'.");
+  }
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      GetVertices(convex),
+      "GetVertices\\(\\) can only use mesh shapes .* '.*bad_extension.stl'.");
 }
 
 GTEST_TEST(VPolytopeTest, UnitBox6DTest) {
@@ -637,6 +666,15 @@ GTEST_TEST(VPolytopeTest, WriteObjTest) {
 
   VPolytope V_scene_graph(query, geom_id);
   CheckVertices(V.vertices(), V_scene_graph.vertices(), 1e-6);
+}
+
+// If a VPolytope is constructed over an empty vertex list, it is considered
+// to be empty.
+GTEST_TEST(VPolytopeTest, EmptyTest) {
+  Eigen::Matrix<double, 3, 0> vertices;
+  auto V = VPolytope(vertices);
+  EXPECT_EQ(V.ambient_dimension(), 3);
+  ASSERT_TRUE(V.IsEmpty());
 }
 
 }  // namespace optimization

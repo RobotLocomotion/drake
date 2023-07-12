@@ -91,6 +91,7 @@ GTEST_TEST(SpatialInertia, PointMass) {
   EXPECT_TRUE(CompareMatrices(
       M_BBcm_B_expected.CopyToFullMatrix6(), M_BBcm_B.CopyToFullMatrix6()));
 
+  // Ensure a negative mass throws an exception.
   DRAKE_EXPECT_THROWS_MESSAGE(
       SpatialInertia<double>::PointMass(-1, p_BpBcm_B),
       "[^]* mass is not positive and finite: .*");
@@ -118,6 +119,7 @@ GTEST_TEST(SpatialInertia, SolidBoxWithDensityOrMass) {
   EXPECT_TRUE(CompareMatrices(M_with_mass.CopyToFullMatrix6(),
                               M_with_density.CopyToFullMatrix6()));
 
+  // Ensure a negative density or mass throws an exception.
   DRAKE_EXPECT_THROWS_MESSAGE(
       SpatialInertia<double>::SolidBoxWithMass(-0.1, lx, ly, lz),
       "[^]* mass is not positive and finite: .*.");
@@ -176,12 +178,13 @@ GTEST_TEST(SpatialInertia, SolidCubeWithDensity) {
   EXPECT_TRUE(CompareMatrices(M_with_mass.CopyToFullMatrix6(),
       M_with_density.CopyToFullMatrix6()));
 
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      SpatialInertia<double>::SolidCubeWithMass(-0.1, length),
-      "[^]* mass is not positive and finite: .*.");
+  // Ensure a negative density or mass throws an exception.
   DRAKE_EXPECT_THROWS_MESSAGE(
       SpatialInertia<double>::SolidCubeWithDensity(-9.3, length),
       "[^]* density is not positive and finite: .*.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      SpatialInertia<double>::SolidCubeWithMass(-0.1, length),
+      "[^]* mass is not positive and finite: .*.");
 
   // Ensure a negative or zero length throws an exception.
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -198,9 +201,8 @@ GTEST_TEST(SpatialInertia, SolidCubeWithDensity) {
       "[^]* length is not positive and finite: .*.");
 }
 
-
 // Tests the static method for the spatial inertia of a solid capsule.
-GTEST_TEST(SpatialInertia, SolidCapsuleWithDensity) {
+GTEST_TEST(SpatialInertia, SolidCapsuleWithDensityOrMass) {
   const double density = 1000;  // Water is 1 g/ml = 1000 kg/m³.
   const double r = 1.0;
   const double l = 2.0;
@@ -213,22 +215,33 @@ GTEST_TEST(SpatialInertia, SolidCapsuleWithDensity) {
   UnitInertia<double>G_BBo_B =
       UnitInertia<double>::SolidCapsule(r, l, unit_vec);
   SpatialInertia<double> M_expected(mass, p_BoBcm_B, G_BBo_B);
-  SpatialInertia<double> M =
+  SpatialInertia<double> M_with_density =
       SpatialInertia<double>::SolidCapsuleWithDensity(density, r, l, unit_vec);
-  EXPECT_TRUE(
-      CompareMatrices(M_expected.CopyToFullMatrix6(), M.CopyToFullMatrix6()));
+  EXPECT_TRUE(CompareMatrices(M_expected.CopyToFullMatrix6(),
+                              M_with_density.CopyToFullMatrix6()));
 
   // Test a solid capsule B with a different unit vector direction.
   unit_vec = Vector3<double>(0.5, -0.5, 1.0 / std::sqrt(2));
   G_BBo_B = UnitInertia<double>::SolidCapsule(r, l, unit_vec);
   M_expected = SpatialInertia<double>(mass, p_BoBcm_B, G_BBo_B);
-  M = SpatialInertia<double>::SolidCapsuleWithDensity(density, r, l, unit_vec);
-  EXPECT_TRUE(
-      CompareMatrices(M_expected.CopyToFullMatrix6(), M.CopyToFullMatrix6()));
+  M_with_density =
+      SpatialInertia<double>::SolidCapsuleWithDensity(density, r, l, unit_vec);
+  EXPECT_TRUE(CompareMatrices(M_expected.CopyToFullMatrix6(),
+                              M_with_density.CopyToFullMatrix6()));
 
+  // Ensure SolidCapsuleWithDensity() matches SolidCapsuleWithMass().
+  const SpatialInertia<double> M_with_mass =
+      SpatialInertia<double>::SolidCapsuleWithMass(mass, r, l, unit_vec);
+  EXPECT_TRUE(CompareMatrices(M_with_mass.CopyToFullMatrix6(),
+      M_with_density.CopyToFullMatrix6()));
+
+  // Ensure a negative density or mass throws an exception.
   DRAKE_EXPECT_THROWS_MESSAGE(
       SpatialInertia<double>::SolidCapsuleWithDensity(-9.3, r, l, unit_vec),
       "[^]* density is not positive and finite: .*.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      SpatialInertia<double>::SolidCapsuleWithMass(-9.3, r, l, unit_vec),
+      "[^]* mass is not positive and finite: .*.");
 
   // Ensure a negative or zero radius or length throws an exception.
   // There is not an exhaustive test of each parameter being zero or negative.
@@ -238,12 +251,18 @@ GTEST_TEST(SpatialInertia, SolidCapsuleWithDensity) {
       SpatialInertia<double>::SolidCapsuleWithDensity(density, 0, l, unit_vec),
       "[^]* radius is not positive and finite: .*.");
   DRAKE_EXPECT_THROWS_MESSAGE(
+      SpatialInertia<double>::SolidCapsuleWithMass(mass, 0, l, unit_vec),
+      "[^]* radius is not positive and finite: .*.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
       SpatialInertia<double>::SolidCapsuleWithDensity(density, r, -2, unit_vec),
+      "[^]* length is not positive and finite: .*.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      SpatialInertia<double>::SolidCapsuleWithMass(mass, r, -2, unit_vec),
       "[^]* length is not positive and finite: .*.");
 }
 
 // Tests the static method for the spatial inertia of a solid cylinder.
-GTEST_TEST(SpatialInertia, SolidCylinderWithDensity) {
+GTEST_TEST(SpatialInertia, SolidCylinderWithDensityOrMass) {
   const double density = 1000;  // Water is 1 g/ml = 1000 kg/m³.
   const double r = 1.0;  // radius
   const double l = 2.0;  // length
@@ -256,10 +275,16 @@ GTEST_TEST(SpatialInertia, SolidCylinderWithDensity) {
   UnitInertia<double>G_BBo_B =
       UnitInertia<double>::SolidCylinder(r, l, unit_vec);
   SpatialInertia<double> M_expected(mass, p_BoBcm_B, G_BBo_B);
-  SpatialInertia<double> M =
+  SpatialInertia<double> M_with_density =
       SpatialInertia<double>::SolidCylinderWithDensity(density, r, l, unit_vec);
-  EXPECT_TRUE(
-      CompareMatrices(M_expected.CopyToFullMatrix6(), M.CopyToFullMatrix6()));
+  EXPECT_TRUE(CompareMatrices(M_expected.CopyToFullMatrix6(),
+                              M_with_density.CopyToFullMatrix6()));
+
+  // Ensure SolidCylinderWithDensity() matches SolidCylinderWithMass().
+  SpatialInertia<double> M_with_mass =
+      SpatialInertia<double>::SolidCylinderWithMass(mass, r, l, unit_vec);
+  EXPECT_TRUE(CompareMatrices(M_with_mass.CopyToFullMatrix6(),
+      M_with_density.CopyToFullMatrix6()));
 
   // Test a solid cylinder B about Bp, where Bp is at the center of a circular
   // end of the cylinder. The position from Bp to Bcm p_BpBcm_B = 0.5*l*Bz.
@@ -267,31 +292,42 @@ GTEST_TEST(SpatialInertia, SolidCylinderWithDensity) {
   const UnitInertia<double>G_BBp_B =
       UnitInertia<double>::SolidCylinderAboutEnd(r, l);
   M_expected = SpatialInertia<double>(mass, p_BpBcm_B, G_BBp_B);
-  M = SpatialInertia<double>::SolidCylinderWithDensityAboutEnd(
+  M_with_density = SpatialInertia<double>::SolidCylinderWithDensityAboutEnd(
       density, r, l, unit_vec);
-  EXPECT_TRUE(
-      CompareMatrices(M_expected.CopyToFullMatrix6(), M.CopyToFullMatrix6()));
+  EXPECT_TRUE(CompareMatrices(M_expected.CopyToFullMatrix6(),
+                              M_with_density.CopyToFullMatrix6()));
 
   // Test a solid cylinder B about Bcm with a different unit vector direction.
   unit_vec = Vector3<double>(0.5, -0.5, 1.0 / std::sqrt(2));
   G_BBo_B = UnitInertia<double>::SolidCylinder(r, l, unit_vec);
   M_expected = SpatialInertia<double>(mass, p_BoBcm_B, G_BBo_B);
-  M = SpatialInertia<double>::SolidCylinderWithDensity(density, r, l, unit_vec);
-  EXPECT_TRUE(
-      CompareMatrices(M_expected.CopyToFullMatrix6(), M.CopyToFullMatrix6()));
+  M_with_density =
+      SpatialInertia<double>::SolidCylinderWithDensity(density, r, l, unit_vec);
+  EXPECT_TRUE(CompareMatrices(M_expected.CopyToFullMatrix6(),
+                              M_with_density.CopyToFullMatrix6()));
+
+  // Ensure SolidCylinderWithDensity() matches SolidCylinderWithMass().
+  M_with_mass =
+      SpatialInertia<double>::SolidCylinderWithMass(mass, r, l, unit_vec);
+  EXPECT_TRUE(CompareMatrices(M_with_mass.CopyToFullMatrix6(),
+      M_with_density.CopyToFullMatrix6()));
 
   // Test a solid cylinder B about Bp with a different unit vector direction.
   const Vector3<double> p_BcmBp_B = -0.5 * l * unit_vec;
-  const SpatialInertia<double> M_BBcm_B = M;
+  const SpatialInertia<double> M_BBcm_B = M_with_density;
   M_expected = M_BBcm_B.Shift(p_BcmBp_B);
-  M = SpatialInertia<double>::SolidCylinderWithDensityAboutEnd(
+  M_with_density = SpatialInertia<double>::SolidCylinderWithDensityAboutEnd(
       density, r, l, unit_vec);
-  EXPECT_TRUE(
-      CompareMatrices(M_expected.CopyToFullMatrix6(), M.CopyToFullMatrix6()));
+  EXPECT_TRUE(CompareMatrices(M_expected.CopyToFullMatrix6(),
+                              M_with_density.CopyToFullMatrix6()));
 
+  // Ensure a negative density or mass throws an exception.
   DRAKE_EXPECT_THROWS_MESSAGE(
       SpatialInertia<double>::SolidCylinderWithDensity(-9.3, r, l, unit_vec),
       "[^]* density is not positive and finite: .*.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      SpatialInertia<double>::SolidCylinderWithMass(-9.3, r, l, unit_vec),
+      "[^]* mass is not positive and finite: .*.");
   DRAKE_EXPECT_THROWS_MESSAGE(
       SpatialInertia<double>::SolidCylinderWithDensityAboutEnd(
           -9.3, r, l, unit_vec),
@@ -300,6 +336,9 @@ GTEST_TEST(SpatialInertia, SolidCylinderWithDensity) {
   // Ensure a negative or zero radius throws an exception.
   DRAKE_EXPECT_THROWS_MESSAGE(
       SpatialInertia<double>::SolidCylinderWithDensity(density, 0, l, unit_vec),
+      "[^]* radius is not positive and finite: .*.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      SpatialInertia<double>::SolidCylinderWithMass(mass, 0, l, unit_vec),
       "[^]* radius is not positive and finite: .*.");
   DRAKE_EXPECT_THROWS_MESSAGE(
       SpatialInertia<double>::SolidCylinderWithDensityAboutEnd(density,
@@ -311,6 +350,9 @@ GTEST_TEST(SpatialInertia, SolidCylinderWithDensity) {
       SpatialInertia<double>::SolidCylinderWithDensity(density, r, 0, unit_vec),
       "[^]* length is not positive and finite: .*.");
   DRAKE_EXPECT_THROWS_MESSAGE(
+      SpatialInertia<double>::SolidCylinderWithMass(mass, r, 0, unit_vec),
+      "[^]* length is not positive and finite: .*.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
       SpatialInertia<double>::SolidCylinderWithDensityAboutEnd(density,
           r, -0.1, unit_vec),
       "[^]* length is not positive and finite: .*.");
@@ -319,6 +361,9 @@ GTEST_TEST(SpatialInertia, SolidCylinderWithDensity) {
   const Vector3<double> bad_vec(1, 0.1, 0);
   DRAKE_EXPECT_THROWS_MESSAGE(
       SpatialInertia<double>::SolidCylinderWithDensity(density, r, l, bad_vec),
+      "[^]* The unit_vector argument .* is not a unit vector.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      SpatialInertia<double>::SolidCylinderWithMass(mass, r, l, bad_vec),
       "[^]* The unit_vector argument .* is not a unit vector.");
 }
 
@@ -362,6 +407,7 @@ GTEST_TEST(SpatialInertia, ThinRodWithMass) {
   EXPECT_TRUE(CompareMatrices(
       M_BBp_B.CopyToFullMatrix6(), M.CopyToFullMatrix6(), kTolerance));
 
+  // Ensure a negative or zero mass throws an exception.
   DRAKE_EXPECT_THROWS_MESSAGE(
       SpatialInertia<double>::ThinRodWithMass(-1.23, length, unit_vec),
       "[^]* mass is not positive and finite: .*.");
@@ -385,7 +431,7 @@ GTEST_TEST(SpatialInertia, ThinRodWithMass) {
 }
 
 // Tests the static method for the spatial inertia of a solid ellipsoid.
-GTEST_TEST(SpatialInertia, SolidEllipsoidWithDensity) {
+GTEST_TEST(SpatialInertia, SolidEllipsoidWithDensityOrMass) {
   const double density = 1000;  // Water is 1 g/ml = 1000 kg/m³.
   const double a = 0.2;
   const double b = 0.3;
@@ -395,14 +441,24 @@ GTEST_TEST(SpatialInertia, SolidEllipsoidWithDensity) {
   const Vector3<double> p_BoBcm_B = Vector3<double>::Zero();
   UnitInertia<double>G_BBo_B = UnitInertia<double>::SolidEllipsoid(a, b, c);
   SpatialInertia<double> M_expected(mass, p_BoBcm_B, G_BBo_B);
-  SpatialInertia<double> M =
+  SpatialInertia<double> M_with_density =
       SpatialInertia<double>::SolidEllipsoidWithDensity(density, a, b, c);
-  EXPECT_TRUE(
-      CompareMatrices(M_expected.CopyToFullMatrix6(), M.CopyToFullMatrix6()));
+  EXPECT_TRUE(CompareMatrices(M_expected.CopyToFullMatrix6(),
+                              M_with_density.CopyToFullMatrix6()));
 
+  // Ensure SolidEllipsoidWithDensity() matches SolidEllipsoidWithMass().
+  const SpatialInertia<double> M_with_mass =
+      SpatialInertia<double>::SolidEllipsoidWithMass(mass, a, b, c);
+  EXPECT_TRUE(CompareMatrices(M_with_mass.CopyToFullMatrix6(),
+                              M_with_density.CopyToFullMatrix6()));
+
+  // Ensure a negative density or mass throws an exception.
   DRAKE_EXPECT_THROWS_MESSAGE(
       SpatialInertia<double>::SolidEllipsoidWithDensity(-9.3, a, b, c),
       "[^]* density is not positive and finite: .*.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      SpatialInertia<double>::SolidEllipsoidWithMass(-9.3, a, b, c),
+      "[^]* mass is not positive and finite: .*.");
 
   // Ensure a negative or zero semi-axis length throws an exception.
   // There is not an exhaustive test of each parameter being zero or negative.
@@ -412,10 +468,19 @@ GTEST_TEST(SpatialInertia, SolidEllipsoidWithDensity) {
       SpatialInertia<double>::SolidEllipsoidWithDensity(density, 0, b, c),
       "[^]* semi-axis a is not positive and finite: .*.");
   DRAKE_EXPECT_THROWS_MESSAGE(
+      SpatialInertia<double>::SolidEllipsoidWithMass(mass, 0, b, c),
+      "[^]* semi-axis a is not positive and finite: .*.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
       SpatialInertia<double>::SolidEllipsoidWithDensity(density, a, -2, c),
       "[^]* semi-axis b is not positive and finite: .*.");
   DRAKE_EXPECT_THROWS_MESSAGE(
+      SpatialInertia<double>::SolidEllipsoidWithMass(mass, a, -2, c),
+      "[^]* semi-axis b is not positive and finite: .*.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
       SpatialInertia<double>::SolidEllipsoidWithDensity(density, a, b, -0.01),
+      "[^]* semi-axis c is not positive and finite: .*.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      SpatialInertia<double>::SolidEllipsoidWithMass(mass, a, b, -0.01),
       "[^]* semi-axis c is not positive and finite: .*.");
 }
 
@@ -439,6 +504,7 @@ GTEST_TEST(SpatialInertia, SolidSphereWithDensityOrMass) {
   EXPECT_TRUE(CompareMatrices(M_with_mass.CopyToFullMatrix6(),
                               M_with_density.CopyToFullMatrix6()));
 
+  // Ensure a negative mass or density throws an exception.
   DRAKE_EXPECT_THROWS_MESSAGE(
       SpatialInertia<double>::SolidSphereWithMass(-9.3, radius),
       "[^]* mass is not positive and finite: .*.");
@@ -481,6 +547,7 @@ GTEST_TEST(SpatialInertia, HollowSphereWithDensityOrMass) {
   EXPECT_TRUE(CompareMatrices(M_with_mass.CopyToFullMatrix6(),
                               M_with_density.CopyToFullMatrix6()));
 
+  // Ensure a negative density or mass throws an exception.
   DRAKE_EXPECT_THROWS_MESSAGE(
       SpatialInertia<double>::HollowSphereWithMass(-9.3, radius),
       "[^]* mass is not positive and finite: .*.");
@@ -531,6 +598,7 @@ GTEST_TEST(SpatialInertia, SolidTetrahedronAboutVertex) {
   EXPECT_TRUE(CompareMatrices(M_BB0_expected.CopyToFullMatrix6(),
                               M_BB0.CopyToFullMatrix6(), kTolerance));
 
+  // Ensure a negative density throws an exception.
   DRAKE_EXPECT_THROWS_MESSAGE(
       SpatialInertia<double>::SolidTetrahedronAboutVertexWithDensity(
           -9.3, p1, p2, p3),
@@ -576,6 +644,7 @@ GTEST_TEST(SpatialInertia, SolidTetrahedronAboutPoint) {
   EXPECT_TRUE(CompareMatrices(M_BA_expected.CopyToFullMatrix6(),
                               M_BA.CopyToFullMatrix6(), kTolerance));
 
+  // Ensure a negative density throws an exception.
   DRAKE_EXPECT_THROWS_MESSAGE(
       SpatialInertia<double>::SolidTetrahedronAboutPointWithDensity(
           -9.3, p_AB0, p_AB1, p_AB3, p_AB2),

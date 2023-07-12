@@ -8,6 +8,7 @@
 
 #include "drake/geometry/optimization/convex_set.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
+#include "drake/math/rigid_transform.h"
 
 namespace drake {
 namespace geometry {
@@ -87,7 +88,9 @@ class VPolytope final : public ConvexSet {
  private:
   std::unique_ptr<ConvexSet> DoClone() const final;
 
-  bool DoIsBounded() const final { return true; }
+  bool DoIsBounded() const final;
+
+  bool DoIsEmpty() const final;
 
   std::optional<Eigen::VectorXd> DoMaybeGetPoint() const final;
 

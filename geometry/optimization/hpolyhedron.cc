@@ -54,16 +54,6 @@ std::tuple<bool, solvers::MathematicalProgramResult> IsInfeasible(
           result};
 }
 
-// Checks if Ax ≤ b defines an empty set.
-bool DoIsEmpty(const Eigen::Ref<const MatrixXd>& A,
-               const Eigen::Ref<const VectorXd>& b) {
-  solvers::MathematicalProgram prog;
-  solvers::VectorXDecisionVariable x =
-      prog.NewContinuousVariables(A.cols(), "x");
-  prog.AddLinearConstraint(A, VectorXd::Constant(b.rows(), -kInf), b, x);
-  return std::get<0>(IsInfeasible(prog));
-}
-
 /* Checks whether the constraint cᵀ x ≤ d is already implied by the linear
  constraints in prog. This is done by solving a small linear program
  and modifying the coefficients of  `new_constraint` binding. This method may
@@ -232,6 +222,19 @@ VectorXd HPolyhedron::ChebyshevCenter() const {
   return result.GetSolution(x);
 }
 
+HPolyhedron HPolyhedron::Scale(double scale,
+                               std::optional<Eigen::VectorXd> center) const {
+  DRAKE_THROW_UNLESS(scale >= 0.0);
+  if (center) {
+    DRAKE_THROW_UNLESS(center->size() == ambient_dimension());
+  } else {
+    center = ChebyshevCenter();
+  }
+  return HPolyhedron(
+      A_, std::pow(scale, 1.0 / ambient_dimension()) * (b_ - A_ * *center) +
+              A_ * *center);
+}
+
 HPolyhedron HPolyhedron::CartesianProduct(const HPolyhedron& other) const {
   MatrixXd A_product = MatrixXd::Zero(A_.rows() + other.A().rows(),
                                       A_.cols() + other.A().cols());
@@ -363,11 +366,19 @@ bool HPolyhedron::DoIsBounded() const {
   return result.is_success();
 }
 
+bool HPolyhedron::DoIsEmpty() const {
+  solvers::MathematicalProgram prog;
+  solvers::VectorXDecisionVariable x =
+      prog.NewContinuousVariables(A_.cols(), "x");
+  prog.AddLinearConstraint(A_, VectorXd::Constant(b_.rows(), -kInf), b_, x);
+  return std::get<0>(IsInfeasible(prog));
+}
+
 bool HPolyhedron::ContainedIn(const HPolyhedron& other, double tol) const {
   DRAKE_THROW_UNLESS(other.A().cols() == A_.cols());
   // `this` defines an empty set and therefore is contained in any `other`
   // HPolyhedron.
-  if (DoIsEmpty(A_, b_)) {
+  if (DoIsEmpty()) {
     return true;
   }
 
@@ -439,8 +450,9 @@ HPolyhedron HPolyhedron::DoIntersectionWithChecks(const HPolyhedron& other,
       A.row(num_kept) = other.A().row(i);
       b.row(num_kept) = other.b().row(i);
       ++num_kept;
-      if (DoIsEmpty(A.topRows(num_kept), b.topRows(num_kept))) {
-        return {A.topRows(num_kept), b.topRows(num_kept)};
+      HPolyhedron maybe_empty(A.topRows(num_kept), b.topRows(num_kept));
+      if (maybe_empty.IsEmpty()) {
+        return maybe_empty;
       }
     }
   }
@@ -520,10 +532,6 @@ std::set<int> HPolyhedron::FindRedundant(double tol) const {
     }
   }
   return redundant_indices;
-}
-
-bool HPolyhedron::IsEmpty() const {
-  return DoIsEmpty(A_, b_);
 }
 
 std::unique_ptr<ConvexSet> HPolyhedron::DoClone() const {

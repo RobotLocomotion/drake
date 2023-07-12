@@ -103,9 +103,6 @@ class HPolyhedron final : public ConvexSet {
   negative tol means it is less likely to remote a constraint.  */
   [[nodiscard]] HPolyhedron ReduceInequalities(double tol = 1E-9) const;
 
-  /** Checks if this HPolyhedron defines an empty set.  */
-  [[nodiscard]] bool IsEmpty() const;
-
   /** Solves a semi-definite program to compute the inscribed ellipsoid.
   From Section 8.4.2 in Boyd and Vandenberghe, 2004, we solve
   @verbatim
@@ -119,7 +116,7 @@ class HPolyhedron final : public ConvexSet {
   @pre the HPolyhedron is bounded.
   @throws std::exception if the solver fails to solve the problem.
   */
-  Hyperellipsoid MaximumVolumeInscribedEllipsoid() const;
+  [[nodiscard]] Hyperellipsoid MaximumVolumeInscribedEllipsoid() const;
 
   /** Solves a linear program to compute the center of the largest inscribed
   ball in the polyhedron.  This is often the recommended way to find some
@@ -142,21 +139,41 @@ class HPolyhedron final : public ConvexSet {
   MaximumVolumeInscribedEllipsoid() method, and then taking the center of the
   returned Hyperellipsoid.
   @throws std::exception if the solver fails to solve the problem. */
-  Eigen::VectorXd ChebyshevCenter() const;
+  [[nodiscard]] Eigen::VectorXd ChebyshevCenter() const;
+
+  /** Results a new HPolyhedron that is a scaled version of `this`, by scaling
+  the distance from each face to the `center` by a factor of
+  `pow(scale, 1/ambient_dimension())`, to have units of volume:
+    - `scale = 0` will result in a point,
+    - `0 < scale < 1` shrinks the region,
+    - `scale = 1` returns a copy of the `this`, and
+    - `1 < scale` grows the region.
+
+  If `center` is not provided, then the value returned by ChebyshevCenter()
+  will be used.
+
+  `this` does not need to be bounded, nor have volume. `center` does not need
+  to be in the set.
+  @pre `scale` >= 0.
+  @pre `center` has size equal to the ambient dimension.
+  */
+  [[nodiscard]] HPolyhedron Scale(
+      double scale, std::optional<Eigen::VectorXd> center = std::nullopt) const;
 
   /** Returns the Cartesian product of `this` and `other`. */
-  HPolyhedron CartesianProduct(const HPolyhedron& other) const;
+  [[nodiscard]] HPolyhedron CartesianProduct(const HPolyhedron& other) const;
 
   /** Returns the `n`-ary Cartesian power of `this`. The n-ary Cartesian power
   of a set H is the set H ⨉ H ⨉ ... ⨉ H, where H is repeated n times. */
-  HPolyhedron CartesianPower(int n) const;
+  [[nodiscard]] HPolyhedron CartesianPower(int n) const;
 
   /** Returns the Pontryagin (Minkowski) Difference of `this` and `other`.
   This is the set A ⊖ B = { a|a+ B ⊆ A }. The result is an HPolyhedron with the
   same number of inequalities as A. Requires that `this` and `other` both
   be bounded and have the same ambient dimension. This method may throw a
   runtime error if `this` or `other` are ill-conditioned. */
-  HPolyhedron PontryaginDifference(const HPolyhedron& other) const;
+  [[nodiscard]] HPolyhedron PontryaginDifference(
+      const HPolyhedron& other) const;
 
   /** Draw an (approximately) uniform sample from the set using the hit and run
   Markov-chain Monte-Carlo strategy described at
@@ -211,6 +228,8 @@ class HPolyhedron final : public ConvexSet {
   std::unique_ptr<ConvexSet> DoClone() const final;
 
   bool DoIsBounded() const final;
+
+  bool DoIsEmpty() const final;
 
   // N.B. No need to override DoMaybeGetPoint here.
 

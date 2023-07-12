@@ -46,7 +46,16 @@ class BlockSparseMatrix {
   // A non-zero block entry is specified with the triplet {i, j, Bij}, where
   // (i,j) are the i-th and j-th block row and column respectively and Bij is
   // the dense block entry.
-  typedef std::tuple<int, int, MatrixBlock<T>> BlockTriplet;
+  struct BlockTriplet {
+    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(BlockTriplet);
+
+    BlockTriplet(int row_in, int col_in, MatrixBlock<T> value_in)
+        : row(row_in), col(col_in), value(std::move(value_in)) {}
+
+    int row{-1};           // Block row index.
+    int col{-1};           // Block column index.
+    MatrixBlock<T> value;  // The ij-th block value in the sparse matrix.
+  };
 
   // Constructs a zero sized matrix.
   // While non-empty matrices must be built with BlockSparseMatrixBuilder to
@@ -73,7 +82,7 @@ class BlockSparseMatrix {
   // BlockSparseMatrixBuilder::PushBlock().
   const MatrixBlock<T>& get_block(int b) const {
     DRAKE_DEMAND(b < num_blocks());
-    return std::get<2>(blocks_[b]);
+    return blocks_[b].value;
   }
 
   // Access to the vector of all triplets stored by this class.
