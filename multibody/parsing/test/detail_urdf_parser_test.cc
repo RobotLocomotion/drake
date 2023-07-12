@@ -1399,6 +1399,115 @@ TEST_F(UrdfParserTest, BushingMissingValueAttribute) {
                   " <drake:bushing_torque_stiffness> tag"));
 }
 
+class BallConstraintTest : public UrdfParserTest {
+ public:
+  BallConstraintTest() {
+    // TODO(joemasterjohn): Currently ball constraints are only supported in
+    // SAP.
+    // Add coverage for other solvers and continuous mode when available.
+    plant_.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  }
+
+  void VerifyParameters(const std::string& body_A, const std::string& body_B,
+                        const Vector3d& p_AP, const Vector3d& p_BQ) {
+    std::string text = fmt::format(
+        kTestString,
+        fmt::format("<drake:ball_constraint_body_A name=\"{}\"/>", body_A),
+        fmt::format("<drake:ball_constraint_body_B name=\"{}\"/>", body_B),
+        fmt::format("<drake:ball_constraint_p_AP value=\"{} {} {}\"/>",
+                    p_AP.x(), p_AP.y(), p_AP.z()),
+        fmt::format("<drake:ball_constraint_p_BQ value=\"{} {} {}\"/>",
+                    p_BQ.x(), p_BQ.y(), p_BQ.z()));
+    EXPECT_NE(AddModelFromUrdfString(text, ""), std::nullopt);
+
+    const std::map<MultibodyConstraintId, BallConstraintSpec>&
+        ball_constraints = plant_.get_ball_constraint_specs();
+    ASSERT_EQ(ssize(ball_constraints), 1);
+
+    const MultibodyConstraintId ball_id = ball_constraints.begin()->first;
+    const BallConstraintSpec& ball_spec = ball_constraints.begin()->second;
+
+    EXPECT_EQ(ball_id, ball_spec.id);
+    EXPECT_EQ(ball_spec.body_A, plant_.GetBodyByName(body_A).index());
+    EXPECT_EQ(ball_spec.body_B, plant_.GetBodyByName(body_B).index());
+    EXPECT_EQ(ball_spec.p_AP, p_AP);
+    EXPECT_EQ(ball_spec.p_BQ, p_BQ);
+  }
+
+  void ProvokeError(const std::optional<const std::string>& body_A,
+                    const std::optional<const std::string>& body_B,
+                    const std::optional<const Vector3d>& p_AP,
+                    const std::optional<const Vector3d>& p_BQ,
+                    const std::string& error_pattern) {
+    std::string text = fmt::format(
+        kTestString,
+        body_A.has_value()
+            ? fmt::format("<drake:ball_constraint_body_A name=\"{}\"/>",
+                          body_A.value())
+            : "",
+        body_B.has_value()
+            ? fmt::format("<drake:ball_constraint_body_B name=\"{}\"/>",
+                          body_B.value())
+            : "",
+        p_AP.has_value()
+            ? fmt::format("<drake:ball_constraint_p_AP value=\"{} {} {}\"/>",
+                          p_AP.value().x(), p_AP.value().y(), p_AP.value().z())
+            : "",
+        p_BQ.has_value()
+            ? fmt::format("<drake:ball_constraint_p_BQ value=\"{} {} {}\"/>",
+                          p_BQ.value().x(), p_BQ.value().y(), p_BQ.value().z())
+            : "");
+    EXPECT_NE(AddModelFromUrdfString(text, ""), std::nullopt);
+    EXPECT_THAT(TakeError(), MatchesRegex(error_pattern));
+  }
+
+ protected:
+  // Common URDF string with format options for the two custom tags.
+  static constexpr const char* kTestString = R"""(
+    <robot name='ball_constraint_test'>
+      <link name='A'/>
+      <link name='B'/>
+      <drake:ball_constraint>
+        {0}
+        {1}
+        {2}
+        {3}
+      </drake:ball_constraint>
+    </robot>)""";
+};
+
+TEST_F(BallConstraintTest, AllParameters) {
+  // Test successful parsing of all parameters.
+  VerifyParameters("A", "B", Vector3d(1, 2, 3), Vector3d(4, 5, 6));
+}
+
+TEST_F(BallConstraintTest, MissingBodyA) {
+  ProvokeError({}, "B", Vector3d(1, 2, 3), Vector3d(4, 5, 6),
+               ".*Unable to find the <drake:ball_constraint_body_A> tag");
+}
+
+TEST_F(BallConstraintTest, MissingBodyB) {
+  ProvokeError("A", {}, Vector3d(1, 2, 3), Vector3d(4, 5, 6),
+               ".*Unable to find the <drake:ball_constraint_body_B> tag");
+}
+
+TEST_F(BallConstraintTest, Missing_p_AP) {
+  ProvokeError("A", "B", {}, Vector3d(4, 5, 6),
+               ".*Unable to find the <drake:ball_constraint_p_AP> tag");
+}
+
+TEST_F(BallConstraintTest, Missing_p_BQ) {
+  ProvokeError("A", "B", Vector3d(1, 2, 3), {},
+               ".*Unable to find the <drake:ball_constraint_p_BQ> tag");
+}
+
+TEST_F(BallConstraintTest, InvalidBody) {
+  ProvokeError(
+      "INVALID", "B", Vector3d(1, 2, 3), Vector3d(4, 5, 6),
+      ".*Body: INVALID specified for <drake:ball_constraint_body_A> does not"
+      " exist in the model.");
+}
+
 class ReflectedInertiaTest : public UrdfParserTest {
  public:
   void VerifyParameters(const std::string& rotor_inertia_text,
