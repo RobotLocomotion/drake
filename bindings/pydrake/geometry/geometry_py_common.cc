@@ -422,6 +422,7 @@ void DoScalarIndependentDefinitions(py::module m) {
         .def(py::init<std::string, double>(), py::arg("filename"),
             py::arg("scale") = 1.0, doc.Convex.ctor.doc)
         .def("filename", &Convex::filename, doc.Convex.filename.doc)
+        .def("extension", &Convex::extension, doc.Convex.extension.doc)
         .def("scale", &Convex::scale, doc.Convex.scale.doc)
         .def(py::pickle(
             [](const Convex& self) {
@@ -473,6 +474,7 @@ void DoScalarIndependentDefinitions(py::module m) {
         .def(py::init<std::string, double>(), py::arg("filename"),
             py::arg("scale") = 1.0, doc.Mesh.ctor.doc)
         .def("filename", &Mesh::filename, doc.Mesh.filename.doc)
+        .def("extension", &Mesh::extension, doc.Mesh.extension.doc)
         .def("scale", &Mesh::scale, doc.Mesh.scale.doc)
         .def(py::pickle(
             [](const Mesh& self) {

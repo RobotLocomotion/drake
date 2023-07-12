@@ -219,7 +219,8 @@ class RenderEngineVtk : public render::RenderEngine,
       systems::sensors::ImageLabel16I* label_image_out) const override;
 
   // Common interface for loading an obj file -- used for both mesh and convex
-  // shapes.
+  // shapes. If `file_name` is of an unsupported type, no geometry will be
+  // added.
   void ImplementObj(const std::string& file_name, double scale,
                     void* user_data);
 
