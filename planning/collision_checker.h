@@ -1217,7 +1217,7 @@ class CollisionChecker {
                                      const char* func) const;
 
   /* Gets the number of threads that may be used in an OpenMP-parallelized loop,
-    if parallelize=true, or 1 if parallelize=false. */
+   if parallelize=true, or 1 if parallelize=false. */
   int GetNumberOfThreads(bool parallelize) const;
 
   /* This class allocates and maintains the contexts associated with OpenMP
