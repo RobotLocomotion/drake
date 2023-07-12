@@ -640,10 +640,9 @@ class SatelliteTrackerTest : public ::testing::Test {
     // because this fixture is only used for kinematic tests.
     const double mA = 4;              // mass of cylinder A (kg).
     const double rA = 0.2, LA = 0.5;  // cylinder A's radius and length (meter).
-    const UnitInertia<double> G_Acm =
-        UnitInertia<double>::SolidCylinder(rA, LA);
-    const Vector3d p_AoAcm_A = Vector3d::Zero();
-    const SpatialInertia<double> M_Acm(mA, p_AoAcm_A, G_Acm);
+    const SpatialInertia<double> M_Acm =
+        SpatialInertia<double>::SolidCylinderWithMass(
+            mA, rA, LA, Vector3<double>::UnitZ());
 
     // Create an empty MultibodyPlant and then add the two bodies.
     plant_ = std::make_unique<MultibodyPlant<double>>(0.0);
