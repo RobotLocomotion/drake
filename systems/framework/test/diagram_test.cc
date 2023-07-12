@@ -999,6 +999,17 @@ TEST_F(DiagramTest, GetDowncastSubsystemByName) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       diagram_->GetDowncastSubsystemByName<StatelessSystem>("not_a_subsystem"),
       "System .* does not have a subsystem named not_a_subsystem");
+
+  // Now downcast a non-templatized system (invokes a different overload).
+  // This will only compile if the subsystem's scalar type matches the
+  // Diagram's scalar type.
+  const StatelessSystem<double>& also_stateless =
+      diagram_->GetDowncastSubsystemByName<StatelessSystem<double>>
+          ("stateless");
+  EXPECT_EQ(also_stateless.get_name(), "stateless");
+
+  // Both overloads use the same implementation and depend on
+  // GetSubsystemByName() for the error checking tested above.
 }
 
 // Tests that ContextBase methods for affecting cache behavior propagate
