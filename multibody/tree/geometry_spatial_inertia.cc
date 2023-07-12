@@ -75,11 +75,8 @@ class SpatialInertiaCalculator final : public ShapeReifier {
 
   template <typename MeshType>
   void ImplementMesh(const MeshType& mesh) {
-    std::string extension = std::filesystem::path(mesh.filename()).extension();
-    std::transform(extension.begin(), extension.end(), extension.begin(),
-                   [](unsigned char c) { return std::tolower(c); });
     // TODO(russt): Support .vtk files.
-    if (extension != ".obj") {
+    if (mesh.extension() != ".obj") {
       throw std::runtime_error(fmt::format(
           "CalcMassProperties currently only supports .obj files for mesh "
           "geometries but was given '{}'.",

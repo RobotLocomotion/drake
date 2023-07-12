@@ -19,7 +19,8 @@ as a double. The returned distance will be strictly non-negative.
 To be valid, the function must satisfy the following condition:
 
  - dist(q, q) ≡ 0
-*/
+
+for values of q that are valid for the CollisionChecker's plant. */
 using ConfigurationDistanceFunction =
     std::function<double(const Eigen::VectorXd&, const Eigen::VectorXd&)>;
 
@@ -34,7 +35,8 @@ To be valid, the function must satisfy the following conditions:
  - interpolate(q1, q2, 0) ≡ q1
  - interpolate(q1, q2, 1) ≡ q2
  - interpolate(q, q, r) ≡ q, for all r in [0, 1]
-*/
+
+for values of q, q1, and q2 that are valid for the CollisionChecker's plant. */
 using ConfigurationInterpolationFunction = std::function<Eigen::VectorXd(
     const Eigen::VectorXd&, const Eigen::VectorXd&, double)>;
 

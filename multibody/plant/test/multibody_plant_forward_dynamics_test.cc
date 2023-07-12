@@ -679,10 +679,8 @@ GTEST_TEST(JointLocking, FreebodyAccelerationTest) {
 
   const double mB = 1.0;  // Mass of body B.   [kg]
   const double rB = 0.5;  // Radius of body B. [m]
-
-  const Vector3<double> p_BoBcm_B(0, 0, 0);
-  const UnitInertia<double> G_BBo_B = UnitInertia<double>::SolidSphere(rB);
-  const SpatialInertia<double> M_BBo_B(mB, p_BoBcm_B, G_BBo_B);
+  const SpatialInertia<double> M_BBo_B =
+      SpatialInertia<double>::SolidSphereWithMass(mB, rB);
   const RigidBody<double>& bodyB = plant.AddRigidBody("B", M_BBo_B);
 
   // Set the gravity vector to something non-zero.

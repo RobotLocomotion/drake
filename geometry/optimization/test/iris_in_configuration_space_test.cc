@@ -669,7 +669,7 @@ GTEST_TEST(IrisInConfigurationSpaceTest, ConvexConfigurationSpace) {
   // With num_collision_infeasible_samples == 1, we found that SNOPT misses this
   // point (on some platforms with some random seeds).
 
-  options.num_collision_infeasible_samples = 5;
+  options.num_collision_infeasible_samples = 15;
   HPolyhedron region = IrisFromUrdf(convex_urdf, sample, options);
   EXPECT_FALSE(region.PointInSet(Vector2d{z_test, theta_test}));
 

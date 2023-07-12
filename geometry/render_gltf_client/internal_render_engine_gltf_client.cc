@@ -597,11 +597,7 @@ void RenderEngineGltfClient::ImplementGeometry(const Mesh& mesh,
 
 void RenderEngineGltfClient::ImplementMesh(
     const std::filesystem::path& mesh_path, double scale, void* user_data) {
-  std::string extension = mesh_path.extension();
-  std::transform(extension.begin(), extension.end(), extension.begin(),
-                 [](unsigned char c) {
-                   return std::tolower(c);
-                 });
+  const std::string extension = Mesh(mesh_path.string()).extension();
   if (extension == ".obj") {
     ImplementObj(mesh_path.string(), scale, user_data);
   } else if (extension == ".gltf") {
