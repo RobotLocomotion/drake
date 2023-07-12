@@ -58,8 +58,7 @@ void SuperNodalSolver::SolveInPlace(Eigen::VectorXd* b) const {
 }
 
 std::vector<std::vector<int>> GetRowToTripletMapping(
-    int num_row_blocks,
-    const std::vector<BlockMatrixTriplet>& jacobian_blocks) {
+    int num_row_blocks, const std::vector<BlockTriplet>& jacobian_blocks) {
   DRAKE_THROW_UNLESS(num_row_blocks >= 0);
   std::vector<std::vector<int>> y(num_row_blocks);
   std::vector<std::vector<int>> column(num_row_blocks);
@@ -76,7 +75,7 @@ std::vector<std::vector<int>> GetRowToTripletMapping(
 
   int cnt = 0;
   for (const auto& j : jacobian_blocks) {
-    int index = std::get<0>(j);
+    int index = j.row;
     if (index >= num_row_blocks) {
       throw std::runtime_error(fmt::format(
           "Jacobian block with block row index {} is greater than or equal to "
@@ -84,7 +83,7 @@ std::vector<std::vector<int>> GetRowToTripletMapping(
           index, num_row_blocks));
     }
     y[index].emplace_back(cnt);
-    column[index].emplace_back(std::get<1>(j));
+    column[index].emplace_back(j.col);
     if (column[index].size() == 2) {
       sort_row_data_by_column(&column[index], &y[index]);
     }
@@ -104,10 +103,10 @@ std::vector<std::vector<int>> GetRowToTripletMapping(
 }
 
 std::vector<int> GetJacobianBlockSizesVerifyTriplets(
-    const std::vector<BlockMatrixTriplet>& jacobian_blocks) {
+    const std::vector<BlockTriplet>& jacobian_blocks) {
   int max_index = -1;
   for (const auto& j : jacobian_blocks) {
-    int col_index = std::get<1>(j);
+    int col_index = j.col;
     if (col_index > max_index) {
       max_index = col_index;
     }
@@ -116,17 +115,17 @@ std::vector<int> GetJacobianBlockSizesVerifyTriplets(
   std::vector<int> block_column_size(max_index + 1, -1);
 
   for (const auto& j : jacobian_blocks) {
-    int col_index = std::get<1>(j);
+    int col_index = j.col;
 
-    if ((std::get<2>(j).cols() == 0) || (std::get<2>(j).rows() == 0)) {
+    if ((j.value.cols() == 0) || (j.value.rows() == 0)) {
       throw std::runtime_error(
           "Invalid Jacobian triplets: a triplet contains an empty matrix");
     }
 
     if (block_column_size[col_index] == -1) {
-      block_column_size[col_index] = std::get<2>(j).cols();
+      block_column_size[col_index] = j.value.cols();
     } else {
-      if (block_column_size[col_index] != std::get<2>(j).cols()) {
+      if (block_column_size[col_index] != j.value.cols()) {
         throw std::runtime_error(fmt::format(
             "Invalid Jacobian triplets: conflicting block sizes specified "
             "for column {}.",
