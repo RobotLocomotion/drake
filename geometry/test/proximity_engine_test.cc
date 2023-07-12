@@ -474,7 +474,7 @@ GTEST_TEST(ProximityEngineTests, VtkForPointContactThrow) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       engine.AddAnchoredGeometry(vtk_mesh, RigidTransformd::Identity(),
                                  GeometryId::get_new_id()),
-      "ProximityEngine: expect an Obj file for non-hydroelastics but get.*");
+      ".*only support .obj files.*");
 }
 
 // Tests simple addition of anchored geometry.
@@ -684,8 +684,8 @@ GTEST_TEST(ProximityEngineTests, FailedParsing) {
         "The file parsed contains no objects;.+");
   }
 
-  // The file is not an OBJ.
-  { const std::filesystem::path file = temp_dir / "not_an_obj.txt";
+  // The file does not have OBJ contents..
+  { const std::filesystem::path file = temp_dir / "not_really_an_obj.obj";
     std::ofstream f(file.string());
     f << "I'm not a valid obj\n";
     f.close();

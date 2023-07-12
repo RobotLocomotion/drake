@@ -72,6 +72,7 @@ drake_cc_binary(
 filegroup(
     name = "models",
     srcs = glob([
+        "**/*.gltf",
         "**/*.obj",
         "**/*.sdf",
         "**/*.urdf",

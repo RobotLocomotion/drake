@@ -765,8 +765,12 @@ class TestPlant(unittest.TestCase):
             density=1000, length=0.4)
         SpatialInertia.SolidCapsuleWithDensity(
             density=1000, radius=0.1, length=0.4, unit_vector=[0, 0, 1])
+        SpatialInertia.SolidCapsuleWithMass(
+            mass=0.123, radius=0.1, length=0.4, unit_vector=[0, 0, 1])
         SpatialInertia.SolidCylinderWithDensity(
             density=1000, radius=0.1, length=0.4, unit_vector=[0, 0, 1])
+        SpatialInertia.SolidCylinderWithMass(
+            mass=0.123, radius=0.1, length=0.4, unit_vector=[0, 0, 1])
         SpatialInertia.SolidCylinderWithDensityAboutEnd(
             density=1000, radius=0.1, length=0.4, unit_vector=[0, 0, 1])
         SpatialInertia.ThinRodWithMass(
@@ -775,6 +779,8 @@ class TestPlant(unittest.TestCase):
             mass=2, length=0.3, unit_vector=[0, 0, 1])
         SpatialInertia.SolidEllipsoidWithDensity(
             density=1000, a=0.2, b=0.3, c=0.4)
+        SpatialInertia.SolidEllipsoidWithMass(
+            mass=0.123, a=0.2, b=0.3, c=0.4)
         SpatialInertia.SolidSphereWithDensity(
             density=1000, radius=0.5)
         SpatialInertia.SolidSphereWithMass(
