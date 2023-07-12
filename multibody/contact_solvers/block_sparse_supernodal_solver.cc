@@ -34,8 +34,7 @@ bool MassMatrixPartitionEqualsJacobianPartition(
 }  // namespace
 
 BlockSparseSuperNodalSolver::BlockSparseSuperNodalSolver(
-    int num_jacobian_row_blocks,
-    std::vector<BlockMatrixTriplet> jacobian_blocks,
+    int num_jacobian_row_blocks, std::vector<BlockTriplet> jacobian_blocks,
     std::vector<Eigen::MatrixXd> mass_matrices)
     : jacobian_blocks_(std::move(jacobian_blocks)),
       mass_matrices_(std::move(mass_matrices)) {
@@ -66,16 +65,14 @@ BlockSparseSuperNodalSolver::BlockSparseSuperNodalSolver(
     const std::vector<int>& triplets = row_to_triplet_index_[r];
     DRAKE_DEMAND(triplets.size() <= 2);
     if (triplets.size() == 2) {
-      const int j = std::get<1>(jacobian_blocks_[triplets[0]]);
-      const int i = std::get<1>(jacobian_blocks_[triplets[1]]);
+      const int j = jacobian_blocks_[triplets[0]].col;
+      const int i = jacobian_blocks_[triplets[1]].col;
       DRAKE_DEMAND(j < i);
       sparsity[j].emplace_back(i);
     }
   }
-  BlockSparsityPattern block_sparsity_pattern(std::move(block_sizes),
-                                              std::move(sparsity));
   H_ = std::make_unique<BlockSparseSymmetricMatrix>(
-      std::move(block_sparsity_pattern));
+      BlockSparsityPattern(std::move(block_sizes), std::move(sparsity)));
   /* The solver analyzes the sparsity pattern of the H_ (currently a zero
    matrix) so that subsequent updates to the matrix can use UpdateMatrix()
    that doesn't perform symbolic factorization and allocation. */
@@ -107,7 +104,7 @@ bool BlockSparseSuperNodalSolver::DoSetWeightMatrix(
   for (int k = 0; k < num_constraints; ++k) {
     const std::vector<int>& triplets = row_to_triplet_index_[k];
     const int num_constraint_equations =
-        std::get<2>(jacobian_blocks_[triplets[0]]).rows();
+        jacobian_blocks_[triplets[0]].value.rows();
     int G_rows = 0;
     while (G_rows < num_constraint_equations &&
            weight_end < ssize(weight_matrix)) {
@@ -118,24 +115,22 @@ bool BlockSparseSuperNodalSolver::DoSetWeightMatrix(
     }
 
     if (triplets.size() == 1) {
-      const MatrixBlock<double>& J = std::get<2>(jacobian_blocks_[triplets[0]]);
+      const MatrixBlock<double>& J = jacobian_blocks_[triplets[0]].value;
       const MatrixBlock<double> GJ = J.LeftMultiplyByBlockDiagonal(
           weight_matrix, weight_start, weight_end - 1);
       MatrixXd JTGJ = MatrixXd::Zero(J.cols(), J.cols());
       // TODO(xuchenhan-tri): Consider adding a more specialized routine for
       // computing JᵢᵀGJⱼ to further exploit sparsity. */
       J.TransposeAndMultiplyAndAddTo(GJ, &JTGJ);
-      const int c = std::get<1>(jacobian_blocks_[triplets[0]]);
+      const int c = jacobian_blocks_[triplets[0]].col;
       H_->AddToBlock(c, c, std::move(JTGJ));
     } else {
       DRAKE_DEMAND(triplets.size() == 2);
-      const int j = std::get<1>(jacobian_blocks_[triplets[0]]);
-      const int i = std::get<1>(jacobian_blocks_[triplets[1]]);
+      const int j = jacobian_blocks_[triplets[0]].col;
+      const int i = jacobian_blocks_[triplets[1]].col;
       DRAKE_DEMAND(j < i);
-      const MatrixBlock<double>& Jj =
-          std::get<2>(jacobian_blocks_[triplets[0]]);
-      const MatrixBlock<double>& Ji =
-          std::get<2>(jacobian_blocks_[triplets[1]]);
+      const MatrixBlock<double>& Jj = jacobian_blocks_[triplets[0]].value;
+      const MatrixBlock<double>& Ji = jacobian_blocks_[triplets[1]].value;
 
       // TODO(xuchenhan-tri): Consider adding a more specialized routine for
       // computing JᵀGJ to further exploit sparsity. */

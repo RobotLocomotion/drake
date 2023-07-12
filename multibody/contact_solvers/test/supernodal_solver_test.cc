@@ -95,20 +95,20 @@ DenseBlockDiagonalPair Make12x12SpdBlockDiagonalMatrixOf3x3SpdMatrices() {
 // of the b-th block in the dense matrix A.
 // block_sizes[b] corresponds to the number of rows (first) and columns (second)
 // for the b-th block.
-std::vector<BlockMatrixTriplet> MakeBlockTriplets(
+std::vector<BlockTriplet> MakeBlockTriplets(
     const MatrixXd& A, const std::vector<std::pair<int, int>>& block_positions,
     const std::vector<std::pair<int, int>>& dense_positions,
     const std::vector<std::pair<int, int>>& block_sizes) {
   DRAKE_DEMAND(block_positions.size() == dense_positions.size());
   DRAKE_DEMAND(block_positions.size() == block_sizes.size());
   const int num_blocks = block_positions.size();
-  std::vector<BlockMatrixTriplet> triplets(num_blocks);
+  std::vector<BlockTriplet> triplets;
   for (int b = 0; b < num_blocks; ++b) {
-    get<0>(triplets[b]) = block_positions[b].first;
-    get<1>(triplets[b]) = block_positions[b].second;
-    get<2>(triplets[b]) = MatrixBlock<double>(
-        A.block(dense_positions[b].first, dense_positions[b].second,
-                block_sizes[b].first, block_sizes[b].second));
+    triplets.emplace_back(
+        block_positions[b].first, block_positions[b].second,
+        MatrixBlock<double>(
+            A.block(dense_positions[b].first, dense_positions[b].second,
+                    block_sizes[b].first, block_sizes[b].second)));
   }
   return triplets;
 }
@@ -140,7 +140,7 @@ TYPED_TEST(SuperNodalSolverTest, IncompatibleJacobianAndMass) {
        0, 0, 0, 0, 0, 1,
        0, 0, 0, 0, 0, 1,
        0, 0, 0, 0, 0, 3;
-  const std::vector<BlockMatrixTriplet> Jtriplets = MakeBlockTriplets(J,
+  const std::vector<BlockTriplet> Jtriplets = MakeBlockTriplets(J,
       {{0, 0}, {1, 1}, {2, 2}},
       {{0, 0}, {3, 4}, {6, 5}},
       {{3, 4}, {3, 1}, {3, 1}});
@@ -179,7 +179,7 @@ TYPED_TEST(SuperNodalSolverTest, InterfaceTest) {
        0, 0, 1, 1, 0, 0,
        0, 0, 2, 1, 0, 0,
        0, 0, 3, 3, 0, 0;
-  const std::vector<BlockMatrixTriplet> Jtriplets = MakeBlockTriplets(J,
+  const std::vector<BlockTriplet> Jtriplets = MakeBlockTriplets(J,
       {{0, 2}, {1, 0}, {1, 2}, {2, 1}},
       {{0, 4}, {3, 0}, {3, 4}, {6, 2}},
       {{3, 2}, {3, 2}, {3, 2}, {3, 2}});
@@ -220,7 +220,7 @@ TYPED_TEST(SuperNodalSolverTest, EmptyJacobianColumn) {
        1, 1, 0, 0, 0, 0,
        2, 1, 0, 0, 0, 0,
        3, 3, 0, 0, 0, 0;
-  const std::vector<BlockMatrixTriplet> Jtriplets = MakeBlockTriplets(J,
+  const std::vector<BlockTriplet> Jtriplets = MakeBlockTriplets(J,
       {{0, 0}, {0, 2}, {1, 2}, {2, 0}},
       {{0, 0}, {0, 4}, {3, 4}, {6, 0}},
       {{3, 2}, {3, 2}, {3, 2}, {3, 2}});
@@ -251,7 +251,7 @@ TYPED_TEST(SuperNodalSolverTest, MoreThanTwoBlocksPerRowInTheJacobian) {
        0, 0, 1, 1, 0, 0,
        0, 0, 2, 1, 0, 0,
        0, 0, 3, 3, 0, 0;
-  const std::vector<BlockMatrixTriplet> Jtriplets = MakeBlockTriplets(J,
+  const std::vector<BlockTriplet> Jtriplets = MakeBlockTriplets(J,
       {{0, 0}, {0, 1}, {0, 2}, {1, 2}, {2, 1}},
       {{0, 0}, {0, 2}, {0, 4}, {3, 4}, {6, 2}},
       {{3, 2}, {3, 2}, {3, 2}, {3, 2}, {3, 2}});
@@ -284,7 +284,7 @@ TYPED_TEST(SuperNodalSolverTest,
        0, 0, 1, 1, 0, 0,
        0, 0, 2, 1, 0, 0,
        0, 0, 3, 3, 0, 0;
-  const std::vector<BlockMatrixTriplet> Jtriplets = MakeBlockTriplets(J,
+  const std::vector<BlockTriplet> Jtriplets = MakeBlockTriplets(J,
       {{0, 0}, {0, 3}, {1, 2}, {1, 3}, {2, 1}},
       {{0, 0}, {0, 5}, {3, 4}, {3, 5}, {6, 2}},
       {{3, 2}, {3, 1}, {3, 1}, {3, 1}, {3, 2}});
@@ -340,7 +340,7 @@ TYPED_TEST(SuperNodalSolverTest,
        0, 0, 1, 1, 0, 0,
        0, 0, 2, 1, 0, 0,
        0, 0, 3, 3, 0, 0;
-  const std::vector<BlockMatrixTriplet> Jtriplets = MakeBlockTriplets(J,
+  const std::vector<BlockTriplet> Jtriplets = MakeBlockTriplets(J,
       {{0, 0}, {0, 2}, {1, 2}, {2, 1}},
       {{0, 0}, {0, 4}, {3, 4}, {6, 2}},
       {{3, 2}, {3, 2}, {3, 2}, {3, 2}});
@@ -389,7 +389,7 @@ TYPED_TEST(SuperNodalSolverTest, SeveralPointsPerPatch) {
        0, 0, 1, 1, 0, 0,
        0, 0, 2, 1, 0, 0,
        0, 0, 3, 3, 0, 0;
-  const std::vector<BlockMatrixTriplet> Jtriplets = MakeBlockTriplets(J,
+  const std::vector<BlockTriplet> Jtriplets = MakeBlockTriplets(J,
       {{0, 0}, {0, 2}, {1, 2}, {2, 1}},
       {{0, 0}, {0, 4}, {6, 4}, {9, 2}},
       {{6, 2}, {6, 2}, {3, 2}, {3, 2}});
@@ -425,7 +425,7 @@ TYPED_TEST(SuperNodalSolverTest, JacobianTripletsNotSortedByColumn) {
        0, 0, 2, 1, 0, 0,
        0, 0, 3, 3, 0, 0;
   // We place unsorted inputs: column 2 appears before column 0.
-  const std::vector<BlockMatrixTriplet> Jtriplets = MakeBlockTriplets(J,
+  const std::vector<BlockTriplet> Jtriplets = MakeBlockTriplets(J,
       {{0, 0}, {0, 2}, {1, 0}, {1, 2}, {2, 1}},
       {{0, 0}, {0, 4}, {6, 0}, {6, 4}, {9, 2}},
       {{6, 2}, {6, 2}, {3, 2}, {3, 2}, {3, 2}});
@@ -461,7 +461,7 @@ TYPED_TEST(SuperNodalSolverTest, DifferentTreeSizes) {
        0, 0, 1, 1, 0, 0, 0,
        0, 0, 2, 1, 0, 0, 0,
        0, 0, 3, 3, 0, 0, 0;
-  const std::vector<BlockMatrixTriplet> Jtriplets = MakeBlockTriplets(J,
+  const std::vector<BlockTriplet> Jtriplets = MakeBlockTriplets(J,
       {{0, 0}, {0, 2}, {1, 2}, {2, 1}},
       {{0, 0}, {0, 4}, {3, 4}, {6, 2}},
       {{3, 2}, {3, 3}, {3, 3}, {3, 2}});
@@ -533,7 +533,7 @@ TYPED_TEST(SuperNodalSolverTest, FourStacks) {
        J3x6, J3x6, Z3x6, Z3x6, Z3x6, Z3x6, Z3x6, Z3x6,
        Z3x6, Z3x6, J3x6, J3x6, Z3x6, Z3x6, Z3x6, Z3x6;
   // clang-format on
-  std::vector<BlockMatrixTriplet> Jtriplets;
+  std::vector<BlockTriplet> Jtriplets;
   // Patch 0:
   Jtriplets.push_back({0, 6, MatrixBlock<double>(J3x6)});
   Jtriplets.push_back({0, 7, MatrixBlock<double>(J3x6)});
@@ -615,7 +615,7 @@ TYPED_TEST(SuperNodalSolverTest, ColumnSizesDifferent) {
        0, 0, 3,  0, 0, 0,
 
        1, 1, 0,  0, 0, 1;
-  const std::vector<BlockMatrixTriplet> Jtriplets = MakeBlockTriplets(J,
+  const std::vector<BlockTriplet> Jtriplets = MakeBlockTriplets(J,
       {{0, 0}, {0, 2}, {1, 0}, {1, 2}, {2, 1}, {3, 3}, {3, 0}},
       {{0, 0}, {0, 3}, {6, 0}, {6, 3}, {9, 2}, {12, 5}, {12, 0}},
       {{6, 2}, {6, 2}, {3, 2}, {3, 2}, {3, 1}, {1, 1}, {1, 2}});

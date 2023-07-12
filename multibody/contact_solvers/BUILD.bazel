@@ -234,6 +234,7 @@ drake_cc_library(
     srcs = ["supernodal_solver.cc"],
     hdrs = ["supernodal_solver.h"],
     deps = [
+        ":block_sparse_matrix",
         ":matrix_block",
         "//common:essential",
     ],

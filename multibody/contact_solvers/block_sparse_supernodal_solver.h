@@ -38,10 +38,10 @@ class BlockSparseSuperNodalSolver : public SuperNodalSolver {
      number of scalar variables. These two partitions must be the same,
      otherwise an exception is thrown. */
   BlockSparseSuperNodalSolver(int num_jacobian_row_blocks,
-                              std::vector<BlockMatrixTriplet> jacobian_blocks,
+                              std::vector<BlockTriplet> jacobian_blocks,
                               std::vector<Eigen::MatrixXd> mass_matrices);
 
-  ~BlockSparseSuperNodalSolver();
+  ~BlockSparseSuperNodalSolver() final;
 
  private:
   /* NVI implementations. */
@@ -63,7 +63,7 @@ class BlockSparseSuperNodalSolver : public SuperNodalSolver {
    matrix. Each entry contains at least one and at most two entries. */
   std::vector<std::vector<int>> row_to_triplet_index_;
   /* Block indices and non-zero entries of the block sparse matrix J. */
-  std::vector<BlockMatrixTriplet> jacobian_blocks_;
+  std::vector<BlockTriplet> jacobian_blocks_;
   /* Diagonal blocks of the block diagonal matrix M. */
   std::vector<Eigen::MatrixXd> mass_matrices_;
 
