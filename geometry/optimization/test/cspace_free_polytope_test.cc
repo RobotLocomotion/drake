@@ -20,8 +20,8 @@ const double kInf = std::numeric_limits<double>::infinity();
 
 TEST_F(CIrisToyRobotTest, CspaceFreePolytopeGenerateRationals) {
   const Eigen::Vector3d q_star(0, 0, 0);
-  CspaceFreePolytopeTester tester(plant_, scene_graph_,
-                                  SeparatingPlaneOrder::kAffine, q_star);
+  const int plane_degree = 1;
+  CspaceFreePolytopeTester tester(plant_, scene_graph_, plane_degree, q_star);
   EXPECT_EQ(tester.plane_geometries().size(),
             tester.cspace_free_polytope().separating_planes().size());
   for (const auto& plane_geometries : tester.plane_geometries()) {
@@ -61,8 +61,8 @@ TEST_F(CIrisToyRobotTest, CspaceFreePolytopeGenerateRationals) {
 TEST_F(CIrisToyRobotTest, FindRedundantInequalities) {
   // Test CspaceFreePolytope::FindRedundantInequalities.
   const Eigen::Vector3d q_star(0, 0, 0);
-  CspaceFreePolytopeTester tester(plant_, scene_graph_,
-                                  SeparatingPlaneOrder::kAffine, q_star);
+  const int plane_degree = 1;
+  CspaceFreePolytopeTester tester(plant_, scene_graph_, plane_degree, q_star);
   Eigen::Matrix<double, 5, 3> C;
   // clang-format off
   C << 1, 1, 0,
@@ -96,8 +96,8 @@ TEST_F(CIrisToyRobotTest, CalcDminusCs) {
     }
   }
   const Eigen::Vector3d q_star(0, 0, 0);
-  CspaceFreePolytopeTester tester(plant_, scene_graph_,
-                                  SeparatingPlaneOrder::kAffine, q_star);
+  const int plane_degree = 1;
+  CspaceFreePolytopeTester tester(plant_, scene_graph_, plane_degree, q_star);
   const auto& s = tester.cspace_free_polytope().rational_forward_kin().s();
 
   const auto ret = tester.CalcDminusCs<symbolic::Variable>(C, d);
@@ -112,8 +112,8 @@ TEST_F(CIrisToyRobotTest, CalcDminusCs) {
 
 TEST_F(CIrisToyRobotTest, CalcSBoundsPolynomial) {
   const Eigen::Vector3d q_star(0, 0, 0);
-  CspaceFreePolytopeTester tester(plant_, scene_graph_,
-                                  SeparatingPlaneOrder::kAffine, q_star);
+  const int plane_degree = 1;
+  CspaceFreePolytopeTester tester(plant_, scene_graph_, plane_degree, q_star);
   VectorX<symbolic::Polynomial> s_minus_s_lower;
   VectorX<symbolic::Polynomial> s_upper_minus_s;
   EXPECT_EQ(tester.s_minus_s_lower().rows(), 3);
@@ -137,11 +137,12 @@ TEST_F(CIrisToyRobotTest, CalcSBoundsPolynomial) {
 TEST_F(CIrisToyRobotTest, CalcMonomialBasis) {
   // Test CalcMonomialBasis
   const Eigen::Vector3d q_star(0, 0, 0);
+  const int plane_degree = 1;
   CspaceFreePolytope::Options options;
   for (bool with_cross_y : {false, true}) {
     options.with_cross_y = with_cross_y;
-    CspaceFreePolytopeTester tester(
-        plant_, scene_graph_, SeparatingPlaneOrder::kAffine, q_star, options);
+    CspaceFreePolytopeTester tester(plant_, scene_graph_, plane_degree, q_star,
+                                    options);
 
     const auto& map_body_to_monomial_basis_array =
         tester.map_body_to_monomial_basis_array();
@@ -180,8 +181,8 @@ TEST_F(CIrisToyRobotTest, CalcMonomialBasis) {
 
 TEST_F(CIrisToyRobotTest, AddEllipsoidContainmentConstraint) {
   const Eigen::Vector3d q_star(0, 0, 0);
-  CspaceFreePolytopeTester tester(plant_, scene_graph_,
-                                  SeparatingPlaneOrder::kAffine, q_star);
+  const int plane_degree = 1;
+  CspaceFreePolytopeTester tester(plant_, scene_graph_, plane_degree, q_star);
 
   solvers::MathematicalProgram prog;
   auto C = prog.NewContinuousVariables(8, 3);
@@ -213,8 +214,8 @@ TEST_F(CIrisToyRobotTest, AddEllipsoidContainmentConstraint) {
 
 TEST_F(CIrisToyRobotTest, AddCspacePolytopeContainment) {
   const Eigen::Vector3d q_star(0, 0, 0);
-  CspaceFreePolytopeTester tester(plant_, scene_graph_,
-                                  SeparatingPlaneOrder::kAffine, q_star);
+  const int plane_degree = 1;
+  CspaceFreePolytopeTester tester(plant_, scene_graph_, plane_degree, q_star);
 
   Eigen::Matrix<double, 3, 4> s_inner_pts;
   // clang-format off
@@ -254,8 +255,8 @@ TEST_F(CIrisToyRobotTest, AddCspacePolytopeContainment) {
 
 TEST_F(CIrisToyRobotTest, GetPolyhedronWithJointLimits) {
   const Eigen::Vector3d q_star(0, 0, 0);
-  CspaceFreePolytopeTester tester(plant_, scene_graph_,
-                                  SeparatingPlaneOrder::kAffine, q_star);
+  const int plane_degree = 1;
+  CspaceFreePolytopeTester tester(plant_, scene_graph_, plane_degree, q_star);
   Eigen::MatrixXd C(4, 3);
   // clang-format off
   C << 0.5, 1, 2,

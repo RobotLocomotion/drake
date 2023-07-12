@@ -101,17 +101,18 @@ void AddPsdConstraint(solvers::MathematicalProgram* prog,
     prog->AddPositiveSemidefiniteConstraint(X);
   }
 }
+
 }  // namespace
 
 CspaceFreePolytopeBase::CspaceFreePolytopeBase(
     const multibody::MultibodyPlant<double>* plant,
-    const geometry::SceneGraph<double>* scene_graph,
-    SeparatingPlaneOrder plane_order, SForPlane s_for_plane_enum,
-    const Options& options)
+    const geometry::SceneGraph<double>* scene_graph, int plane_degree,
+    SForPlane s_for_plane_enum, const Options& options)
     : rational_forward_kin_(plant),
       scene_graph_{scene_graph},
       link_geometries_{internal::GetCollisionGeometries(*plant, *scene_graph)},
-      plane_order_{plane_order},
+      plane_order_{ToPlaneOrder(plane_degree)},
+      plane_degree_{plane_degree},
       s_set_{rational_forward_kin_.s()},
       with_cross_y_{options.with_cross_y} {
   DRAKE_DEMAND(scene_graph_ != nullptr);
@@ -138,8 +139,8 @@ CspaceFreePolytopeBase::CspaceFreePolytopeBase(
       Vector3<symbolic::Polynomial> a;
       symbolic::Polynomial b;
       VectorX<symbolic::Variable> plane_decision_vars;
-      switch (plane_order) {
-        case SeparatingPlaneOrder::kAffine: {
+      switch (plane_degree_) {
+        case 1: {
           const VectorX<symbolic::Variable> s_for_plane =
               GetSForPlane(link_pair, s_for_plane_enum);
           plane_decision_vars.resize(4 * s_for_plane.rows() + 4);
@@ -149,7 +150,14 @@ CspaceFreePolytopeBase::CspaceFreePolytopeBase(
           }
           CalcPlane<symbolic::Variable, symbolic::Variable,
                     symbolic::Polynomial>(plane_decision_vars, s_for_plane,
-                                          plane_order_, &a, &b);
+                                          plane_degree_, &a, &b);
+          break;
+        }
+        default: {
+          throw std::runtime_error(
+              fmt::format("CspaceFreePolytopeBase: plane_degree={}, only "
+                          "support plane_degree=1.",
+                          plane_degree_));
         }
       }
       const multibody::BodyIndex expressed_body =
@@ -158,7 +166,7 @@ CspaceFreePolytopeBase::CspaceFreePolytopeBase(
               link_pair.second());
       separating_planes_.emplace_back(a, b, geometry_pair.first,
                                       geometry_pair.second, expressed_body,
-                                      plane_order_, plane_decision_vars);
+                                      plane_degree_, plane_decision_vars);
 
       map_geometries_to_separating_planes_.emplace(
           SortedPair<geometry::GeometryId>(geometry_pair.first->id(),
@@ -181,6 +189,17 @@ CspaceFreePolytopeBase::CspaceFreePolytopeBase(
 
   this->CalcMonomialBasis();
 }
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+CspaceFreePolytopeBase::CspaceFreePolytopeBase(
+    const multibody::MultibodyPlant<double>* plant,
+    const geometry::SceneGraph<double>* scene_graph,
+    SeparatingPlaneOrder plane_order, SForPlane s_for_plane_enum,
+    const Options& options)
+    : CspaceFreePolytopeBase(plant, scene_graph, ToPlaneDegree(plane_order),
+                             s_for_plane_enum, options) {}
+#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
 
 CspaceFreePolytopeBase::~CspaceFreePolytopeBase() {}
 

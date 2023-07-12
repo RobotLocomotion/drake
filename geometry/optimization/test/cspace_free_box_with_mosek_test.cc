@@ -66,8 +66,8 @@ void CheckSosLagrangians(
 }
 
 TEST_F(CIrisToyRobotTest, ConstructPlaneSearchProgram) {
-  CspaceFreeBoxTester tester(plant_, scene_graph_,
-                             SeparatingPlaneOrder::kAffine);
+  const int plane_degree = 1;
+  CspaceFreeBoxTester tester(plant_, scene_graph_, plane_degree);
   const Eigen::VectorXd q_position_lower = plant_->GetPositionLowerLimits();
   const Eigen::VectorXd q_position_upper = plant_->GetPositionUpperLimits();
   const Eigen::VectorXd q_box_lower =

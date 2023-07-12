@@ -143,6 +143,23 @@ class CspaceFreeBox : public CspaceFreePolytopeBase {
    must outlive this CspaceFreeBox object.
    @param scene_graph The scene graph that has been connected with `plant`. It
    must outlive this CspaceFreeBox object.
+   @param plane_degree The degree of the polynomials in the plane to separate a
+   pair of collision geometries.
+
+   @note CspaceFreeBox knows nothing about contexts. The plant and
+   scene_graph must be fully configured before instantiating this class.
+   */
+  CspaceFreeBox(const multibody::MultibodyPlant<double>* plant,
+                const geometry::SceneGraph<double>* scene_graph,
+                int plane_degree, const Options& options = Options{});
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  /**
+   @param plant The plant for which we compute the C-space free boxes. It
+   must outlive this CspaceFreeBox object.
+   @param scene_graph The scene graph that has been connected with `plant`. It
+   must outlive this CspaceFreeBox object.
    @param plane_order The order of the polynomials in the plane to separate a
    pair of collision geometries.
 
@@ -153,6 +170,7 @@ class CspaceFreeBox : public CspaceFreePolytopeBase {
                 const geometry::SceneGraph<double>* scene_graph,
                 SeparatingPlaneOrder plane_order,
                 const Options& options = Options{});
+#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
 
  private:
   // Forward declare the tester class that will test the private members.

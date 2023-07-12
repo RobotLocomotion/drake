@@ -9,6 +9,7 @@
 
 #include "drake/geometry/optimization/c_iris_collision_geometry.h"
 #include "drake/geometry/optimization/c_iris_separating_plane.h"
+#include "drake/geometry/optimization/cspace_separating_plane.h"
 #include "drake/multibody/rational/rational_forward_kinematics.h"
 #include "drake/solvers/mathematical_program.h"
 
@@ -93,7 +94,7 @@ class CspaceFreePolytopeBase {
   }
 
   /** All the separating planes between each pair of geometries. */
-  [[nodiscard]] const std::vector<CIrisSeparatingPlane<symbolic::Variable>>&
+  [[nodiscard]] const std::vector<CSpaceSeparatingPlane<symbolic::Variable>>&
   separating_planes() const {
     return separating_planes_;
   }
@@ -115,6 +116,8 @@ class CspaceFreePolytopeBase {
                ///< geometries.
   };
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   /** Constructor.
    We put the constructor in protected method to make sure that the user
    cannot instantiate a CspaceFreePolytopeBase instance.
@@ -124,6 +127,17 @@ class CspaceFreePolytopeBase {
                          const geometry::SceneGraph<double>* scene_graph,
                          SeparatingPlaneOrder plane_order,
                          SForPlane s_for_plane_enum,
+                         const Options& options = Options{});
+#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
+
+  /** Constructor.
+   We put the constructor in protected method to make sure that the user
+   cannot instantiate a CspaceFreePolytopeBase instance.
+   @pre plant and scene_graph should be non-null pointers.
+   */
+  CspaceFreePolytopeBase(const multibody::MultibodyPlant<double>* plant,
+                         const geometry::SceneGraph<double>* scene_graph,
+                         int plane_degree, SForPlane s_for_plane_enum,
                          const Options& options = Options{});
 
   /** Computes s-s_lower and s_upper - s as polynomials of s. */
@@ -151,9 +165,14 @@ class CspaceFreePolytopeBase {
     return link_geometries_;
   }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   [[nodiscard]] SeparatingPlaneOrder plane_order() const {
     return plane_order_;
   }
+#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
+
+  [[nodiscard]] int plane_degree() const { return plane_degree_; }
 
   /** Maps a pair of body (body1, body2) to an array of monomial basis
    `monomial_basis_array`. monomial_basis_array[0] contains all the monomials
@@ -218,8 +237,12 @@ class CspaceFreePolytopeBase {
            std::vector<std::unique_ptr<CIrisCollisionGeometry>>>
       link_geometries_;
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   SeparatingPlaneOrder plane_order_;
-  std::vector<CIrisSeparatingPlane<symbolic::Variable>> separating_planes_;
+#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
+  int plane_degree_;
+  std::vector<CSpaceSeparatingPlane<symbolic::Variable>> separating_planes_;
   std::unordered_map<SortedPair<geometry::GeometryId>, int>
       map_geometries_to_separating_planes_;
 

@@ -16,11 +16,10 @@ class CspaceFreePolytopeDummy : public CspaceFreePolytopeBase {
 
   CspaceFreePolytopeDummy(const multibody::MultibodyPlant<double>* plant,
                           const geometry::SceneGraph<double>* scene_graph,
-                          SeparatingPlaneOrder plane_order,
-                          SForPlane s_for_plane_enum,
+                          int plane_degree, SForPlane s_for_plane_enum,
                           const CspaceFreePolytopeBase::Options& options =
                               CspaceFreePolytopeBase::Options{})
-      : CspaceFreePolytopeBase(plant, scene_graph, plane_order,
+      : CspaceFreePolytopeBase(plant, scene_graph, plane_degree,
                                s_for_plane_enum, options) {}
 };
 
@@ -28,12 +27,11 @@ class CspaceFreePolytopeBaseTester {
  public:
   CspaceFreePolytopeBaseTester(
       const multibody::MultibodyPlant<double>* plant,
-      const geometry::SceneGraph<double>* scene_graph,
-      SeparatingPlaneOrder plane_order,
+      const geometry::SceneGraph<double>* scene_graph, int plane_degree,
       CspaceFreePolytopeDummy::SForPlane s_for_plane_enum,
       const CspaceFreePolytopeBase::Options& options =
           CspaceFreePolytopeBase::Options())
-      : cspace_free_polytope_base_{plant, scene_graph, plane_order,
+      : cspace_free_polytope_base_{plant, scene_graph, plane_degree,
                                    s_for_plane_enum, options} {}
 
   const CspaceFreePolytopeBase& cspace_free_polytope_base() const {
@@ -51,8 +49,8 @@ class CspaceFreePolytopeBaseTester {
 
 TEST_F(CIrisToyRobotTest, CspaceFreePolytopeBaseConstructor1) {
   // Test with SForPlane::kAll.
-  CspaceFreePolytopeBaseTester tester(plant_, scene_graph_,
-                                      SeparatingPlaneOrder::kAffine,
+  const int plane_degree = 1;
+  CspaceFreePolytopeBaseTester tester(plant_, scene_graph_, plane_degree,
                                       CspaceFreePolytopeDummy::SForPlane::kAll);
 
   const CspaceFreePolytopeBase& dut = tester.cspace_free_polytope_base();
@@ -140,8 +138,9 @@ TEST_F(CIrisToyRobotTest, CspaceFreePolytopeBaseConstructor1) {
 
 TEST_F(CIrisToyRobotTest, CspaceFreePolytopeBaseConstructor2) {
   // Test with SForPlane::kOnChain.
+  const int plane_degree = 1;
   CspaceFreePolytopeBaseTester tester(
-      plant_, scene_graph_, SeparatingPlaneOrder::kAffine,
+      plant_, scene_graph_, plane_degree,
       CspaceFreePolytopeDummy::SForPlane::kOnChain);
 
   const CspaceFreePolytopeBase& dut = tester.cspace_free_polytope_base();

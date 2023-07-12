@@ -191,11 +191,12 @@ void TestConstructPlaneSearchProgram(
     const multibody::MultibodyPlant<double>& plant,
     const SceneGraph<double>& scene_graph,
     const SortedPair<geometry::GeometryId>& geometry_pair, bool with_cross_y) {
+  const int plane_degree = 1;
   const Eigen::Vector3d q_star(0, 0, 0);
   CspaceFreePolytope::Options options;
   options.with_cross_y = with_cross_y;
-  CspaceFreePolytopeTester tester(
-      &plant, &scene_graph, SeparatingPlaneOrder::kAffine, q_star, options);
+  CspaceFreePolytopeTester tester(&plant, &scene_graph, plane_degree, q_star,
+                                  options);
   Eigen::Matrix<double, 9, 3> C;
   // clang-format off
   C <<  1,  1,  0,
@@ -335,11 +336,12 @@ TEST_F(CIrisToyRobotTest, ConstructPlaneSearchProgram3) {
 }
 
 TEST_F(CIrisToyRobotTest, MakeAndSolveIsGeometrySeparableProgram) {
+  const int plane_degree = 1;
   const Eigen::Vector3d q_star(0, 0, 0);
   CspaceFreePolytope::Options options;
   options.with_cross_y = false;
-  CspaceFreePolytopeTester tester(
-      plant_, scene_graph_, SeparatingPlaneOrder::kAffine, q_star, options);
+  CspaceFreePolytopeTester tester(plant_, scene_graph_, plane_degree, q_star,
+                                  options);
   Eigen::Matrix<double, 9, 3> C_good;
   // clang-format off
   C_good << 1, 1, 0,
@@ -450,9 +452,9 @@ TEST_F(CIrisToyRobotTest, MakeAndSolveIsGeometrySeparableProgram) {
 TEST_F(CIrisToyRobotTest, FindSeparationCertificateGivenPolytopeSuccess) {
   // Test CspaceFreePolytope::FindSeparationCertificateGivenPolytope for a
   // collision-free C-space polytope.
+  const int plane_degree = 1;
   const Eigen::Vector3d q_star(0, 0, 0);
-  CspaceFreePolytopeTester tester(plant_, scene_graph_,
-                                  SeparatingPlaneOrder::kAffine, q_star);
+  CspaceFreePolytopeTester tester(plant_, scene_graph_, plane_degree, q_star);
   // This C-space polytope is collision free.
   Eigen::Matrix<double, 9, 3> C;
   // clang-format off
@@ -554,9 +556,9 @@ TEST_F(CIrisToyRobotTest, FindSeparationCertificateGivenPolytopeSuccess) {
 TEST_F(CIrisToyRobotTest, FindSeparationCertificateGivenPolytopeFailure) {
   // Test CspaceFreePolytope::FindSeparationCertificateGivenPolytope. The
   // C-space polytope is NOT collision free.
+  const int plane_degree = 1;
   const Eigen::Vector3d q_star(0, 0, 0);
-  CspaceFreePolytopeTester tester(plant_, scene_graph_,
-                                  SeparatingPlaneOrder::kAffine, q_star);
+  CspaceFreePolytopeTester tester(plant_, scene_graph_, plane_degree, q_star);
 
   // This C-space polytope is NOT collision free.
   Eigen::Matrix<double, 4, 3> C;
@@ -711,9 +713,9 @@ void CheckPolytopeSearchResult(
 
 // Test the private InitializePolytopeSearchProgram function
 TEST_F(CIrisRobotPolytopicGeometryTest, InitializePolytopeSearchProgram) {
+  const int plane_degree = 1;
   const Eigen::Vector4d q_star(0, 0, 0, 0);
-  CspaceFreePolytopeTester tester(plant_, scene_graph_,
-                                  SeparatingPlaneOrder::kAffine, q_star);
+  CspaceFreePolytopeTester tester(plant_, scene_graph_, plane_degree, q_star);
   Eigen::Matrix<double, 12, 4> C;
   // clang-format off
   C << 1, 1, 0, 0,
@@ -818,11 +820,11 @@ class CIrisToyRobotInitializePolytopeSearchProgramTest
  public:
   void Test(bool with_cross_y,
             const std::vector<bool>& search_s_bounds_lagrangians_options) {
+    const int plane_degree = 1;
     const Eigen::Vector3d q_star(0, 0, 0);
     CspaceFreePolytope::Options cspace_free_polytope_options;
     cspace_free_polytope_options.with_cross_y = with_cross_y;
-    CspaceFreePolytopeTester tester(plant_, scene_graph_,
-                                    SeparatingPlaneOrder::kAffine, q_star,
+    CspaceFreePolytopeTester tester(plant_, scene_graph_, plane_degree, q_star,
                                     cspace_free_polytope_options);
     Eigen::Matrix<double, 9, 3> C;
     // clang-format off
@@ -911,9 +913,9 @@ TEST_F(CIrisToyRobotInitializePolytopeSearchProgramTest, WithCrossY) {
 }
 
 TEST_F(CIrisToyRobotTest, FindPolytopeGivenLagrangian) {
+  const int plane_degree = 1;
   const Eigen::Vector3d q_star(0, 0, 0);
-  CspaceFreePolytopeTester tester(plant_, scene_graph_,
-                                  SeparatingPlaneOrder::kAffine, q_star);
+  CspaceFreePolytopeTester tester(plant_, scene_graph_, plane_degree, q_star);
   Eigen::Matrix<double, 9, 3> C;
   // clang-format off
   C << 1, 1, 0,
@@ -1084,9 +1086,9 @@ TEST_F(CIrisToyRobotTest, FindPolytopeGivenLagrangian) {
 }
 
 TEST_F(CIrisToyRobotTest, SearchWithBilinearAlternation) {
+  const int plane_degree = 1;
   const Eigen::Vector3d q_star(0, 0, 0);
-  CspaceFreePolytopeTester tester(plant_, scene_graph_,
-                                  SeparatingPlaneOrder::kAffine, q_star);
+  CspaceFreePolytopeTester tester(plant_, scene_graph_, plane_degree, q_star);
   // Test with initial C and d that is collision-free.
   Eigen::Matrix<double, 9, 3> C;
   // clang-format off
@@ -1169,9 +1171,9 @@ TEST_F(CIrisToyRobotTest, SearchWithBilinearAlternation) {
 }
 
 TEST_F(CIrisToyRobotTest, BinarySearch) {
+  const int plane_degree = 1;
   const Eigen::Vector3d q_star(0, 0, 0);
-  CspaceFreePolytopeTester tester(plant_, scene_graph_,
-                                  SeparatingPlaneOrder::kAffine, q_star);
+  CspaceFreePolytopeTester tester(plant_, scene_graph_, plane_degree, q_star);
   // Test with initial C and d that is collision-free.
   Eigen::Matrix<double, 9, 3> C;
   // clang-format off

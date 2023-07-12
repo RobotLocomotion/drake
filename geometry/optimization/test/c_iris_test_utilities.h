@@ -73,12 +73,12 @@ class CspaceFreePolytopeTester {
 
   CspaceFreePolytopeTester(const multibody::MultibodyPlant<double>* plant,
                            const geometry::SceneGraph<double>* scene_graph,
-                           SeparatingPlaneOrder plane_order,
+                           int plane_degree,
                            const Eigen::Ref<const Eigen::VectorXd>& q_star,
                            const CspaceFreePolytope::Options& options =
                                CspaceFreePolytope::Options())
       : cspace_free_polytope_{new CspaceFreePolytope(
-            plant, scene_graph, plane_order, q_star, options)} {}
+            plant, scene_graph, plane_degree, q_star, options)} {}
 
   const CspaceFreePolytope& cspace_free_polytope() const {
     return *cspace_free_polytope_;
@@ -201,10 +201,9 @@ class CspaceFreeBoxTester {
  public:
   CspaceFreeBoxTester(
       const multibody::MultibodyPlant<double>* plant,
-      const geometry::SceneGraph<double>* scene_graph,
-      SeparatingPlaneOrder plane_order,
+      const geometry::SceneGraph<double>* scene_graph, int plane_degree,
       const CspaceFreeBox::Options& options = CspaceFreeBox::Options{})
-      : cspace_free_box_(plant, scene_graph, plane_order, options) {}
+      : cspace_free_box_(plant, scene_graph, plane_degree, options) {}
 
   const CspaceFreeBox& cspace_free_box() const { return cspace_free_box_; }
 

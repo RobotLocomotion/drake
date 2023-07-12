@@ -52,6 +52,8 @@ class CspaceFreePolytope : public CspaceFreePolytopeBase {
 
   using CspaceFreePolytopeBase::Options;
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   /**
    @param plant The plant for which we compute the C-space free polytopes. It
    must outlive this CspaceFreePolytope object.
@@ -64,9 +66,31 @@ class CspaceFreePolytope : public CspaceFreePolytopeBase {
    @note CspaceFreePolytope knows nothing about contexts. The plant and
    scene_graph must be fully configured before instantiating this class.
    */
+  DRAKE_DEPRECATED("2023-12-01",
+                   "Use the constructor that passes an integer as the plane "
+                   "degree instead of SeparatingPlaneOrder enum")
   CspaceFreePolytope(const multibody::MultibodyPlant<double>* plant,
                      const geometry::SceneGraph<double>* scene_graph,
                      SeparatingPlaneOrder plane_order,
+                     const Eigen::Ref<const Eigen::VectorXd>& q_star,
+                     const Options& options = Options{});
+#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
+                            //
+  /**
+   @param plant The plant for which we compute the C-space free polytopes. It
+   must outlive this CspaceFreePolytope object.
+   @param scene_graph The scene graph that has been connected with `plant`. It
+   must outlive this CspaceFreePolytope object.
+   @param plane_degree The degree of the polynomials in the plane to separate a
+   pair of collision geometries.
+   @param q_star Refer to RationalForwardKinematics for its meaning.
+
+   @note CspaceFreePolytope knows nothing about contexts. The plant and
+   scene_graph must be fully configured before instantiating this class.
+   */
+  CspaceFreePolytope(const multibody::MultibodyPlant<double>* plant,
+                     const geometry::SceneGraph<double>* scene_graph,
+                     int plane_degree,
                      const Eigen::Ref<const Eigen::VectorXd>& q_star,
                      const Options& options = Options{});
 

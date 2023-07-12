@@ -46,11 +46,19 @@ CspaceFreeBox::SeparationCertificate::GetSolution(
 
 CspaceFreeBox::CspaceFreeBox(const multibody::MultibodyPlant<double>* plant,
                              const geometry::SceneGraph<double>* scene_graph,
-                             SeparatingPlaneOrder plane_order,
-                             const Options& options)
-    : CspaceFreePolytopeBase(plant, scene_graph, plane_order,
+                             int plane_degree, const Options& options)
+    : CspaceFreePolytopeBase(plant, scene_graph, plane_degree,
                              CspaceFreePolytopeBase::SForPlane::kOnChain,
                              options) {}
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+CspaceFreeBox::CspaceFreeBox(const multibody::MultibodyPlant<double>* plant,
+                             const geometry::SceneGraph<double>* scene_graph,
+                             SeparatingPlaneOrder plane_order,
+                             const Options& options)
+    : CspaceFreeBox(plant, scene_graph, ToPlaneDegree(plane_order), options) {}
+#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
 
 CspaceFreeBox::~CspaceFreeBox() {}
 

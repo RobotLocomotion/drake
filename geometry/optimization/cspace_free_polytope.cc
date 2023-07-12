@@ -70,11 +70,10 @@ solvers::MathematicalProgramResult SolveWithBackoff(
 
 CspaceFreePolytope::CspaceFreePolytope(
     const multibody::MultibodyPlant<double>* plant,
-    const geometry::SceneGraph<double>* scene_graph,
-    SeparatingPlaneOrder plane_order,
+    const geometry::SceneGraph<double>* scene_graph, int plane_degree,
     const Eigen::Ref<const Eigen::VectorXd>& q_star,
     const CspaceFreePolytope::Options& options)
-    : CspaceFreePolytopeBase(plant, scene_graph, plane_order,
+    : CspaceFreePolytopeBase(plant, scene_graph, plane_degree,
                              CspaceFreePolytopeBase::SForPlane::kAll, options),
       q_star_{q_star} {
   s_lower_ = rational_forward_kin().ComputeSValue(
@@ -89,7 +88,7 @@ CspaceFreePolytope::CspaceFreePolytope(
   separating_planes_ptrs.reserve(separating_planes().size());
   for (const auto& plane : separating_planes()) {
     separating_planes_ptrs.push_back(
-        std::make_unique<CIrisSeparatingPlane<symbolic::Variable>>(plane));
+        std::make_unique<CSpaceSeparatingPlane<symbolic::Variable>>(plane));
   }
 
   internal::GenerateRationals(separating_planes_ptrs, y_slack(), q_star_,
@@ -110,6 +109,18 @@ CspaceFreePolytope::SeparatingPlaneLagrangians::GetSolution(
   }
   return ret;
 }
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+CspaceFreePolytope::CspaceFreePolytope(
+    const multibody::MultibodyPlant<double>* plant,
+    const geometry::SceneGraph<double>* scene_graph,
+    SeparatingPlaneOrder plane_order,
+    const Eigen::Ref<const Eigen::VectorXd>& q_star,
+    const CspaceFreePolytope::Options& options)
+    : CspaceFreePolytope(plant, scene_graph, ToPlaneDegree(plane_order), q_star,
+                         options) {}
+#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
 
 CspaceFreePolytope::SeparationCertificateProgram
 CspaceFreePolytope::ConstructPlaneSearchProgram(
