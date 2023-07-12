@@ -1237,6 +1237,27 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return ball_constraints_specs_.at(id);
   }
 
+  /// Returns a reference to the all of the coupler constraints in this plant
+  /// as a map from MultibodyConstraintId to CouplerConstraintSpec.
+  const std::map<MultibodyConstraintId, internal::CouplerConstraintSpec>&
+  get_coupler_constraint_specs() const {
+    return coupler_constraints_specs_;
+  }
+
+  /// Returns a reference to the all of the distance constraints in this plant
+  /// as a map from MultibodyConstraintId to DistanceConstraintSpec.
+  const std::map<MultibodyConstraintId, internal::DistanceConstraintSpec>&
+  get_distance_constraint_specs() const {
+    return distance_constraints_specs_;
+  }
+
+  /// Returns a reference to the all of the ball constraints in this plant
+  /// as a map from MultibodyConstraintId to BallConstraintSpec.
+  const std::map<MultibodyConstraintId, internal::BallConstraintSpec>&
+  get_ball_constraint_specs() const {
+    return ball_constraints_specs_;
+  }
+
   /// Defines a holonomic constraint between two single-dof joints `joint0`
   /// and `joint1` with positions q₀ and q₁, respectively, such that q₀ = ρ⋅q₁ +
   /// Δq, where ρ is the gear ratio and Δq is a fixed offset. The gear ratio

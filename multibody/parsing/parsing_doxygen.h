@@ -53,7 +53,9 @@ supports both SDFormat files and URDF files. Note that included URDF files pass
 through the Drake URDF parser, with all of it's extensions and limitations.
 
 For full details, see the
-<a href='http://sdformat.org/tutorials?tut=composition_proposal#model-composition-proposed-behavior'>SDFormat documentation of model composition.</a>
+<a
+href='http://sdformat.org/tutorials?tut=composition_proposal#model-composition-proposed-behavior'>SDFormat
+documentation of model composition.</a>
 
 An important feature of SDFormat model composition is the ability to
 cross-reference features of other models. Cross-references are denoted by using
@@ -84,7 +86,9 @@ only refer to the current or a nested model. In particular, names must not
 start with `::`; there is no way to denote any "outer" or "outermost" scope.
 
 For a detailed design discussion with examples, see the
-<a href='http://sdformat.org/tutorials?tut=composition_proposal#1-3-name-scoping-and-cross-referencing'>SDFormat documentation of name scoping.</a>
+<a
+href='http://sdformat.org/tutorials?tut=composition_proposal#1-3-name-scoping-and-cross-referencing'>SDFormat
+documentation of name scoping.</a>
 
 @section multibody_parsing_urdf URDF Support
 Drake supports URDF files as described here: http://wiki.ros.org/urdf/XML.
@@ -151,6 +155,11 @@ For URDF, declare the namespace prefix like this:
 Here is the full list of custom elements:
 - @ref tag_drake_acceleration
 - @ref tag_drake_accepting_renderer
+- @ref tag_drake_ball_constraint
+- @ref tag_drake_ball_constraint_bodyA
+- @ref tag_drake_ball_constraint_bodyB
+- @ref tag_drake_ball_constraint_p_AP
+- @ref tag_drake_ball_constraint_p_BQ
 - @ref tag_drake_bushing_force_damping
 - @ref tag_drake_bushing_force_stiffness
 - @ref tag_drake_bushing_frameA
@@ -215,10 +224,84 @@ The tag serves as a list of renderers for which this visual is targeted.
 
 This feature is one way to provide multiple visual representations of a body.
 
+@subsection tag_drake_ball_constraint drake:ball_constraint
+
+- SDFormat path: `//model/drake:ball_constraint`
+- URDF path: `/robot/drake:ball_constraint`
+- Syntax: Nested elements @ref tag_drake_ball_constraint_bodyA, @ref
+tag_drake_ball_constraint_bodyB, @ref tag_drake_ball_constraint_p_AP, and @ref
+tag_drake_ball_constraint_p_BQ
+
+@subsection tag_drake_ball_constraint_semantics Semantics
+
+The element adds a ball constraint to the model via
+drake::multibody::MultibodyPlant::AddBallConstraint().
+
+@subsection tag_drake_ball_constraint_bodyA drake:ball_constraint_bodyA
+
+- SDFormat path: `//model/drake:ball_constraint/drake:ball_constraint_bodyA`
+- URDF path: `/robot/drake:ball_constraint/drake:ball_constraint_bodyA/@value`
+- Syntax: String.
+
+@subsection tag_drake_ball_constraint_bodyA_semantics Semantics
+
+The string names a body (expected to already be defined by this model) that
+will be passed to drake::multibody::MultibodyPlant::AddBallConstraint()
+as the `bodyA` parameter.
+
+@see @ref tag_drake_ball_constraint,
+drake::multibody::MultibodyPlant::AddBallConstraint()
+
+@subsection tag_drake_ball_constraint_bodyB drake:ball_constraint_bodyB
+
+- SDFormat path: `//model/drake:ball_constraint/drake:ball_constraint_bodyB`
+- URDF path: `/robot/drake:ball_constraint/drake:ball_constraint_bodyB/@value`
+- Syntax: String.
+
+@subsection tag_drake_ball_constraint_bodyB_semantics Semantics
+
+The string names a body (expected to already be defined by this model) that
+will be passed to drake::multibody::MultibodyPlant::AddBallConstraint()
+as the `bodyB` parameter.
+
+@see @ref tag_drake_ball_constraint,
+drake::multibody::MultibodyPlant::AddBallConstraint()
+
+@subsection tag_drake_ball_constraint_p_AP drake:ball_constraint_p_AP
+
+- SDFormat path: `//model/drake:ball_constraint/drake:ball_constraint_p_AP`
+- URDF path: `/robot/drake:ball_constraint/drake:ball_constraint_p_AP/@value`
+- Syntax: Three floating point values.
+
+@subsection tag_drake_ball_constraint_p_AP_semantics Semantics
+
+The three floating point values (units of meters) are formed into a
+vector and passed into drake::multibody::MultibodyPlant::AddBallConstraint() as
+the `p_AP` parameter.
+
+@see @ref tag_drake_ball_constraint,
+drake::multibody::MultibodyPlant::AddBallConstraint()
+
+@subsection tag_drake_ball_constraint_p_BQ drake:ball_constraint_p_BQ
+
+- SDFormat path: `//model/drake:ball_constraint/drake:ball_constraint_p_BQ`
+- URDF path: `/robot/drake:ball_constraint/drake:ball_constraint_p_BQ/@value`
+- Syntax: Three floating point values.
+
+@subsection tag_drake_ball_constraint_p_BQ_semantics Semantics
+
+The three floating point values (units of meters) are formed into a
+vector and passed into drake::multibody::MultibodyPlant::AddBallConstraint() as
+the `p_BQ` parameter.
+
+@see @ref tag_drake_ball_constraint,
+drake::multibody::MultibodyPlant::AddBallConstraint()
+
 @subsection tag_drake_bushing_force_damping drake:bushing_force_damping
 
 - SDFormat path: `//model/drake:linear_bushing_rpy/drake:bushing_force_damping`
-- URDF path: `/robot/drake:linear_bushing_rpy/drake:bushing_force_damping/@value`
+- URDF path:
+`/robot/drake:linear_bushing_rpy/drake:bushing_force_damping/@value`
 - Syntax: Three floating point values.
 
 @subsubsection tag_drake_bushing_force_damping_semantics Semantics
@@ -229,12 +312,15 @@ passed to the constructor of drake::multibody::LinearBushingRollPitchYaw as the
 
 @see @ref tag_drake_linear_bushing_rpy,
 drake::multibody::LinearBushingRollPitchYaw,
-@ref Basic_bushing_force_stiffness_and_damping "How to choose force stiffness and damping constants"
+@ref Basic_bushing_force_stiffness_and_damping "How to choose force stiffness
+and damping constants"
 
 @subsection tag_drake_bushing_force_stiffness drake:bushing_force_stiffness
 
-- SDFormat path: `//model/drake:linear_bushing_rpy/drake:bushing_force_stiffness`
-- URDF path: `/robot/drake:linear_bushing_rpy/drake:bushing_force_stiffness/@value`
+- SDFormat path:
+`//model/drake:linear_bushing_rpy/drake:bushing_force_stiffness`
+- URDF path:
+`/robot/drake:linear_bushing_rpy/drake:bushing_force_stiffness/@value`
 - Syntax: Three floating point values.
 
 @subsubsection tag_drake_bushing_force_stiffness_semantics Semantics
@@ -245,7 +331,8 @@ passed to the constructor of drake::multibody::LinearBushingRollPitchYaw as the
 
 @see @ref tag_drake_linear_bushing_rpy,
 drake::multibody::LinearBushingRollPitchYaw,
-@ref Basic_bushing_force_stiffness_and_damping "How to choose force stiffness and damping constants"
+@ref Basic_bushing_force_stiffness_and_damping "How to choose force stiffness
+and damping constants"
 
 @subsection tag_drake_bushing_frameA drake:bushing_frameA
 
@@ -259,7 +346,8 @@ The string names a frame (expected to already be defined by this model) that
 will be passed to the constructor of
 drake::multibody::LinearBushingRollPitchYaw as the `frameA` parameter.
 
-@see @ref tag_drake_linear_bushing_rpy, drake::multibody::LinearBushingRollPitchYaw
+@see @ref tag_drake_linear_bushing_rpy,
+drake::multibody::LinearBushingRollPitchYaw
 
 @subsection tag_drake_bushing_frameC drake:bushing_frameC
 
@@ -273,12 +361,14 @@ The string names a frame (expected to already be defined by this model) that
 will be passed to the constructor of
 drake::multibody::LinearBushingRollPitchYaw as the `frameC` parameter.
 
-@see @ref tag_drake_linear_bushing_rpy, drake::multibody::LinearBushingRollPitchYaw
+@see @ref tag_drake_linear_bushing_rpy,
+drake::multibody::LinearBushingRollPitchYaw
 
 @subsection tag_drake_bushing_torque_damping drake:bushing_torque_damping
 
 - SDFormat path: `//model/drake:linear_bushing_rpy/drake:bushing_torque_damping`
-- URDF path: `/robot/drake:linear_bushing_rpy/drake:bushing_torque_damping/@value`
+- URDF path:
+`/robot/drake:linear_bushing_rpy/drake:bushing_torque_damping/@value`
 - Syntax: Three floating point values.
 
 @subsubsection tag_drake_bushing_torque_damping_semantics Semantics
@@ -289,12 +379,15 @@ the `torque_damping_constants` parameter.
 
 @see @ref tag_drake_linear_bushing_rpy,
 drake::multibody::LinearBushingRollPitchYaw,
-@ref Basic_bushing_torque_stiffness_and_damping "How to choose torque stiffness and damping constants"
+@ref Basic_bushing_torque_stiffness_and_damping "How to choose torque stiffness
+and damping constants"
 
 @subsection tag_drake_bushing_torque_stiffness drake:bushing_torque_stiffness
 
-- SDFormat path: `//model/drake:linear_bushing_rpy/drake:bushing_torque_stiffness`
-- URDF path: `/robot/drake:linear_bushing_rpy/drake:bushing_torque_stiffness/@value`
+- SDFormat path:
+`//model/drake:linear_bushing_rpy/drake:bushing_torque_stiffness`
+- URDF path:
+`/robot/drake:linear_bushing_rpy/drake:bushing_torque_stiffness/@value`
 - Syntax: Three floating point values.
 
 @subsubsection tag_drake_bushing_torque_stiffness_semantics Semantics
@@ -305,7 +398,8 @@ passed to the constructor of drake::multibody::LinearBushingRollPitchYaw as the
 
 @see @ref tag_drake_linear_bushing_rpy,
 drake::multibody::LinearBushingRollPitchYaw,
-@ref Basic_bushing_torque_stiffness_and_damping "How to choose torque stiffness and damping constants"
+@ref Basic_bushing_torque_stiffness_and_damping "How to choose torque stiffness
+and damping constants"
 
 @subsection tag_drake_capsule drake:capsule
 
@@ -365,12 +459,15 @@ different collision groups excludes collisions between members of those groups
 naming the same group twice excludes collisions within the group (see
 drake::geometry::CollisionFilterDeclaration::ExcludeWithin()).
 
-@see @ref tag_drake_member, @ref tag_drake_ignored_collision_filter_group, @ref scoped_names
+@see @ref tag_drake_member, @ref tag_drake_ignored_collision_filter_group, @ref
+scoped_names
 
 @subsection tag_drake_compliant_hydroelastic drake:compliant_hydroelastic
 
-- SDFormat path: `//model/link/collision/drake:proximity_properties/drake:compliant_hydroelastic`
-- URDF path: `/robot/link/collision/drake:proximity_properties/drake:compliant_hydroelastic`
+- SDFormat path:
+`//model/link/collision/drake:proximity_properties/drake:compliant_hydroelastic`
+- URDF path:
+`/robot/link/collision/drake:proximity_properties/drake:compliant_hydroelastic`
 - Syntax: Empty element.
 
 @subsubsection tag_drake_compliant_hydroelastic_semantics Semantics
@@ -399,8 +496,10 @@ URDF Note: The comparable feature in URDF is the standard
 
 @subsection tag_drake_declare_convex drake:declare_convex
 
-- SDFormat path: `//geometry[parent::visual|parent::collision]/mesh/drake:declare_convex`
-- URDF path: `//geometry[parent::visual|parent::collision]/mesh/drake:declare_convex`
+- SDFormat path:
+`//geometry[parent::visual|parent::collision]/mesh/drake:declare_convex`
+- URDF path:
+`//geometry[parent::visual|parent::collision]/mesh/drake:declare_convex`
 - Syntax: Empty element.
 
 @subsubsection tag_drake_declare_convex_semantics Semantics
@@ -460,8 +559,10 @@ units of 1/m for prismatic joints.
 
 @subsection tag_drake_hunt_crossley_dissipation drake:hunt_crossley_dissipation
 
-- SDFormat path: `//model/link/collision/drake:proximity_properies/drake:hunt_crossley_dissipation`
-- URDF path: `/robot/link/collision/drake:proximity_properties/drake:hunt_crossley_dissipation/@value`
+- SDFormat path:
+`//model/link/collision/drake:proximity_properies/drake:hunt_crossley_dissipation`
+- URDF path:
+`/robot/link/collision/drake:proximity_properties/drake:hunt_crossley_dissipation/@value`
 - Syntax: Non-negative floating point value.
 
 @subsubsection tag_drake_hunt_crossley_dissipation_semantics Semantics
@@ -476,8 +577,10 @@ ProximityProperties object under `(material, hunt_crossley_dissipation)`.
 
 @subsection tag_drake_hydroelastic_modulus drake:hydroelastic_modulus
 
-- SDFormat path: `//model/link/collision/drake:proximity_properties/drake:hydroelastic_modulus`
-- URDF path: `/robot/link/collision/drake:proximity_properties/drake:hydroelastic_modulus/@value`
+- SDFormat path:
+`//model/link/collision/drake:proximity_properties/drake:hydroelastic_modulus`
+- URDF path:
+`/robot/link/collision/drake:proximity_properties/drake:hydroelastic_modulus/@value`
 - Syntax: Positive floating point value.
 
 @subsubsection tag_drake_hydroelastic_modulus_semantics Semantics
@@ -490,10 +593,13 @@ under `(hydroelastic, hydroelastic_modulus)`.
 @ref mbp_hydroelastic_materials_properties "Hydroelastic contact",
 @ref hug_properties
 
-@subsection tag_drake_ignored_collision_filter_group drake:ignored_collision_filter_group
+@subsection tag_drake_ignored_collision_filter_group
+drake:ignored_collision_filter_group
 
-- SDFormat path: `//model/drake:collision_filter_group/drake:ignored_collision_filter_group`
-- URDF path: `/robot/drake:collision_filter_group/drake:ignored_collision_filter_group/@name`
+- SDFormat path:
+`//model/drake:collision_filter_group/drake:ignored_collision_filter_group`
+- URDF path:
+`/robot/drake:collision_filter_group/drake:ignored_collision_filter_group/@name`
 - Syntax: String.
 
 @subsubsection tag_drake_ignored_collision_filter_group_semantics Semantics
@@ -566,8 +672,10 @@ In SDFormat files only, the name may refer to a link within a nested model
 
 @subsection tag_drake_mesh_resolution_hint drake:mesh_resolution_hint
 
-- SDFormat path: `//model/link/collision/drake:proximity_properties/drake:mesh_resolution_hint`
-- URDF path: `/robot/link/collision/drake:proximity_properties/drake:mesh_resolution_hint/@value`
+- SDFormat path:
+`//model/link/collision/drake:proximity_properties/drake:mesh_resolution_hint`
+- URDF path:
+`/robot/link/collision/drake:proximity_properties/drake:mesh_resolution_hint/@value`
 - Syntax: A positive floating point value.
 
 @subsubsection tag_drake_mesh_resolution_hint_semantics Semantics
@@ -582,8 +690,10 @@ values will select longer edge lengths and a coarser mesh.
 
 @subsection tag_drake_mu_dynamic drake:mu_dynamic
 
-- SDFormat path: `//model/link/collision/drake:proximity_properties/drake:mu_dynamic`
-- URDF path: `/robot/link/collision/drake:proximity_properties/drake:mu_dynamic/@value`
+- SDFormat path:
+`//model/link/collision/drake:proximity_properties/drake:mu_dynamic`
+- URDF path:
+`/robot/link/collision/drake:proximity_properties/drake:mu_dynamic/@value`
 - Syntax: A non-negative floating-point value.
 
 @subsubsection tag_drake_mu_dynamic_semantics Semantics
@@ -597,8 +707,10 @@ friction model.
 
 @subsection tag_drake_mu_static drake:mu_static
 
-- SDFormat path: `//model/link/collision/drake:proximity_properties/drake:mu_static`
-- URDF path: `/robot/link/collision/drake:proximity_properties/drake:mu_static/@value`
+- SDFormat path:
+`//model/link/collision/drake:proximity_properties/drake:mu_static`
+- URDF path:
+`/robot/link/collision/drake:proximity_properties/drake:mu_static/@value`
 - Syntax: A non-negative floating-point value.
 
 @subsubsection tag_drake_mu_static_semantics Semantics
@@ -629,8 +741,10 @@ with the parent link of the joint being defined.
 
 @subsection tag_drake_point_contact_stiffness drake:point_contact_stiffness
 
-- SDFormat path: `//model/link/collision/drake:proximity_properties/drake:point_contact_stiffness`
-- URDF path: `/robot/link/collision/drake:proximity_properties/drake:point_contact_stiffness/@value`
+- SDFormat path:
+`//model/link/collision/drake:proximity_properties/drake:point_contact_stiffness`
+- URDF path:
+`/robot/link/collision/drake:proximity_properties/drake:point_contact_stiffness/@value`
 - Syntax: Positive floating point value.
 
 @subsubsection tag_drake_point_contact_stiffness_semantics Semantics
@@ -673,8 +787,10 @@ drake::geometry::ProximityProperties
 
 @subsection tag_drake_relaxation_time drake:relaxation_time
 
-- SDFormat path: `//model/link/collision/drake:proximity_properies/drake:relaxation_time`
-- URDF path: `/robot/link/collision/drake:proximity_properties/drake:relaxation_time/@value`
+- SDFormat path:
+`//model/link/collision/drake:proximity_properies/drake:relaxation_time`
+- URDF path:
+`/robot/link/collision/drake:proximity_properties/drake:relaxation_time/@value`
 - Syntax: Non-negative floating point value.
 
 @subsubsection tag_drake_relaxation_time_semantics Semantics
@@ -688,8 +804,10 @@ object under `(material, relaxation_time)`.
 
 @subsection tag_drake_rigid_hydroelastic drake:rigid_hydroelastic
 
-- SDFormat path: `//model/link/collision/drake:proximity_properties/drake:rigid_hydroelastic`
-- URDF path: `/robot/link/collision/drake:proximity_properties/drake:rigid_hydroelastic`
+- SDFormat path:
+`//model/link/collision/drake:proximity_properties/drake:rigid_hydroelastic`
+- URDF path:
+`/robot/link/collision/drake:proximity_properties/drake:rigid_hydroelastic`
 - Syntax: Empty element.
 
 @subsubsection tag_drake_rigid_hydroelastic_semantics Semantics
