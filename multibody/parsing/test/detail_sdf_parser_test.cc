@@ -155,7 +155,7 @@ class SdfParserTest : public test::DiagnosticPolicyTestBase{
   ParsingOptions options_;
   PackageMap package_map_;
   DiagnosticPolicy diagnostic_;
-  MultibodyPlant<double> plant_{0.0};
+  MultibodyPlant<double> plant_{0.01};
   SceneGraph<double> scene_graph_;
 };
 
@@ -1842,6 +1842,128 @@ TEST_F(GeometrySdfParserTest, VisualGeometryParsing) {
       "drake/multibody/parsing/test/sdf_parser_test/"
       "all_geometries_as_visual.sdf",
       geometry::Role::kPerception);
+}
+
+TEST_F(SdfParserTest, BallConstraint) {
+  AddSceneGraph();
+
+  // TODO(joemasterjohn): Currently ball constraints are only supported in SAP.
+  // Add coverage for other solvers and continuous mode when available.
+  plant_.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+
+  // Test successful parsing.
+  ParseTestString(R"""(
+    <world name='World'>
+      <model name='Model'>
+        <link name='A'/>
+        <link name='B'/>
+        <drake:ball_constraint>
+          <drake:ball_constraint_body_A>A</drake:ball_constraint_body_A>
+          <drake:ball_constraint_body_B>B</drake:ball_constraint_body_B>
+          <drake:ball_constraint_p_AP>1 2 3</drake:ball_constraint_p_AP>
+          <drake:ball_constraint_p_BQ>4 5 6</drake:ball_constraint_p_BQ>
+        </drake:ball_constraint>
+      </model>
+    </world>)""");
+
+  EXPECT_EQ(plant_.num_constraints(), 1);
+  EXPECT_EQ(plant_.num_ball_constraints(), 1);
+
+  const std::map<MultibodyConstraintId, BallConstraintSpec>& ball_constraints =
+      plant_.get_ball_constraint_specs();
+
+  ASSERT_EQ(ssize(ball_constraints), 1);
+
+  const MultibodyConstraintId id = ball_constraints.begin()->first;
+  const BallConstraintSpec& ball_constraint = ball_constraints.begin()->second;
+
+  EXPECT_TRUE(ball_constraint.IsValid());
+  EXPECT_EQ(ball_constraint.body_A, plant_.GetBodyByName("A").index());
+  EXPECT_EQ(ball_constraint.body_B, plant_.GetBodyByName("B").index());
+  EXPECT_EQ(ball_constraint.p_AP, Vector3d(1, 2, 3));
+  EXPECT_EQ(ball_constraint.p_BQ, Vector3d(4, 5, 6));
+  EXPECT_EQ(ball_constraint.id, id);
+}
+
+// Test missing body
+TEST_F(SdfParserTest, BallConstraintMissingBody) {
+  AddSceneGraph();
+
+  // TODO(joemasterjohn): Currently ball constraints are only supported in SAP.
+  // Add coverage for other solvers and continuous mode when available.
+  plant_.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+
+  ParseTestString(R"""(
+    <world name='World'>
+      <model name='Model'>
+        <link name='A'/>
+        <link name='B'/>
+        <drake:ball_constraint>
+          <drake:ball_constraint_body_A>A</drake:ball_constraint_body_A>
+          <!-- Omit body B -->
+          <drake:ball_constraint_p_AP>1 2 3</drake:ball_constraint_p_AP>
+          <drake:ball_constraint_p_BQ>4 5 6</drake:ball_constraint_p_BQ>
+        </drake:ball_constraint>
+      </model>
+    </world>)""");
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+                               ".*<drake:ball_constraint>: Unable to find the "
+                               "<drake:ball_constraint_body_B> child tag."));
+}
+
+// Test missing point
+TEST_F(SdfParserTest, BallConstraintMissingPoint) {
+  AddSceneGraph();
+
+  // TODO(joemasterjohn): Currently ball constraints are only supported in SAP.
+  // Add coverage for other solvers and continuous mode when available.
+  plant_.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+
+  ParseTestString(R"""(
+    <world name='World'>
+      <model name='Model'>
+        <link name='A'/>
+        <link name='B'/>
+        <drake:ball_constraint>
+          <drake:ball_constraint_body_A>A</drake:ball_constraint_body_A>
+          <drake:ball_constraint_body_B>B</drake:ball_constraint_body_B>
+          <!-- Omit p_AP -->
+          <drake:ball_constraint_p_BQ>4 5 6</drake:ball_constraint_p_BQ>
+        </drake:ball_constraint>
+      </model>
+    </world>)""");
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+                               ".*<drake:ball_constraint>: Unable to find the "
+                               "<drake:ball_constraint_p_AP> child tag."));
+}
+
+// Test non-existent body
+TEST_F(SdfParserTest, BallConstraintNonExistentBody) {
+  AddSceneGraph();
+
+  // TODO(joemasterjohn): Currently ball constraints are only supported in SAP.
+  // Add coverage for other solvers and continuous mode when available.
+  plant_.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+
+  ParseTestString(R"""(
+    <world name='World'>
+      <model name='Model'>
+        <link name='A'/>
+        <link name='B'/>
+        <drake:ball_constraint>
+          <drake:ball_constraint_body_A>A</drake:ball_constraint_body_A>
+          <!-- Body doesn't exist in the model -->
+          <drake:ball_constraint_body_B>C</drake:ball_constraint_body_B>
+          <drake:ball_constraint_p_AP>1 2 3</drake:ball_constraint_p_AP>
+          <drake:ball_constraint_p_BQ>4 5 6</drake:ball_constraint_p_BQ>
+        </drake:ball_constraint>
+      </model>
+    </world>)""");
+  EXPECT_THAT(
+      TakeError(),
+      ::testing::MatchesRegex(
+          ".*<drake:ball_constraint>: Body 'C' specified for "
+          "<drake:ball_constraint_body_B> does not exist in the model."));
 }
 
 TEST_F(SdfParserTest, BushingParsingGood) {
