@@ -11,25 +11,17 @@
 #pragma once
 #include <utility>
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/geometry/optimization/cspace_separating_plane.h"
 
 namespace drake {
 namespace geometry {
 namespace optimization {
-/** The separating plane aᵀx + b ≥ δ, aᵀx+b ≤ −δ has parameters a and b. These
- parameters a polynomial function of `s_for_plane` with the specified degree.
- `s_for_plane` is a sub
- set of the configuration-space variable `s`, please refer
- to RationalForwardKinematics class or the paper above on the meaning of s.
- */
-// TODO(hongkai.dai): Deprecate this class.
-enum class SeparatingPlaneOrder {
-  kAffine = 1,  ///< a and b are affine function of s.
-  // N.B. Never add new enum values here!
-};
-
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 template <typename T>
-struct CIrisSeparatingPlane : public CSpaceSeparatingPlane<T> {
+struct DRAKE_DEPRECATED("2023-12-01", "Use CSpaceSeparatingPlane instead.")
+    CIrisSeparatingPlane : public CSpaceSeparatingPlane<T> {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CIrisSeparatingPlane)
 
   CIrisSeparatingPlane(Vector3<symbolic::Polynomial> m_a,
@@ -57,6 +49,9 @@ struct CIrisSeparatingPlane : public CSpaceSeparatingPlane<T> {
  3. D=double,             S=double,             V=double
  */
 template <typename D, typename S, typename V>
+DRAKE_DEPRECATED("2023-12-01",
+                 "Use CalcPlane with plane degree being an integer instead of "
+                 "SeparatingPlaneOrder enum.")
 void CalcPlane(const VectorX<D>& decision_variables,
                const VectorX<S>& s_for_plane, SeparatingPlaneOrder order,
                Vector3<V>* a_val, V* b_val) {
@@ -65,6 +60,8 @@ void CalcPlane(const VectorX<D>& decision_variables,
   const int plane_degree = 1;
   CalcPlane(decision_variables, s_for_plane, plane_degree, a_val, b_val);
 }
+#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
+
 }  // namespace optimization
 }  // namespace geometry
 }  // namespace drake
