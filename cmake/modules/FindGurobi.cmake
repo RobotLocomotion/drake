@@ -2,9 +2,9 @@
 # vi: set ft=cmake :
 
 file(GLOB _GUROBI_SEARCH_PATHS
-    /Library/gurobi95*/macos_universal2
-    /opt/gurobi95*/linux64
-    /opt/gurobi95*/power64
+    /Library/gurobi100*/macos_universal2
+    /opt/gurobi100*/linux64
+    /opt/gurobi100*/power64
 )
 
 find_path(Gurobi_INCLUDE_DIR NAMES gurobi_c.h
