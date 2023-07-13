@@ -936,8 +936,7 @@ class TestCspaceFreePolytope(unittest.TestCase):
         ))), -np.atleast_2d(np.eye(self.plant.num_positions()))])
         d_init = 3 * np.ones((C_init.shape[0], 1))
 
-        bilinear_alternation_options = \
-            mut.CspaceFreePolytope.BilinearAlternationOptions()
+
         binary_search_options = mut.CspaceFreePolytope.BinarySearchOptions()
         binary_search_options.scale_min = 1e-4
         bilinear_alternation_options.find_lagrangian_options.verbose = False
@@ -959,12 +958,16 @@ class TestCspaceFreePolytope(unittest.TestCase):
         self.assertEqual(len(result.b()), 1)
         self.assertIsInstance(result.a()[0][0], Polynomial)
 
+
+        bilinear_alternation_options = \
+            mut.CspaceFreePolytope.BilinearAlternationOptions()
         result = self.cspace_free_polytope.SearchWithBilinearAlternation(
             ignored_collision_pairs=set(),
             C_init=C_init,
             d_init=d_init,
             options=bilinear_alternation_options)
         self.assertIsNotNone(result)
+        # TODO parse the bilinear alternation result and access the bilinear alternation options
 
     def testSeparationCertificateMethods(self):
         C_init = np.vstack([np.atleast_2d(np.eye(self.plant.num_positions(
@@ -972,6 +975,7 @@ class TestCspaceFreePolytope(unittest.TestCase):
         d_init = 1e-10 * np.ones((C_init.shape[0], 1))
         pair = list(self.cspace_free_polytope.
                     map_geometries_to_separating_planes().keys())[0]
+
         lagrangian_options = \
             mut.CspaceFreePolytope. \
             FindSeparationCertificateGivenPolytopeOptions()

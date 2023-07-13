@@ -848,18 +848,33 @@ void DefineGeometryOptimization(py::module m) {
                 "plane_index", &PlaneSeparatesGeometries::plane_index);
   }
   {
-    using PolytopeBaseClass = CspaceFreePolytopeBase;
+    using BaseClass = CspaceFreePolytopeBase;
+    const auto& base_cls_doc = doc.CspaceFreePolytopeBase;
+    py::class_<BaseClass> cspace_free_polytope_base_cls(
+        m, "CspaceFreePolytopeBase", base_cls_doc.doc);
+    cspace_free_polytope_base_cls
+        // TODO(Alexandre.Amice): Figure out how to bind rational_forward_kin.
+        // The naive method returns an "Unable to convert to Python type" error.
+        .def("rational_forward_kin",
+                &BaseClass::rational_forward_kin,
+                    py_rvp::reference_internal,
+                    base_cls_doc.rational_forward_kin.doc)
+        .def("map_geometries_to_separating_planes",
+            &BaseClass::map_geometries_to_separating_planes,
+            base_cls_doc.map_geometries_to_separating_planes.doc)
+        .def("separating_planes", &BaseClass::separating_planes,
+            base_cls_doc.separating_planes.doc)
+        .def("y_slack", &BaseClass::y_slack, base_cls_doc.y_slack.doc);
+
+    py::class_<BaseClass::Options>(
+        cspace_free_polytope_base_cls, "Options", base_cls_doc.Options.doc)
+        .def(py::init<>())
+        .def_readwrite("with_cross_y", &BaseClass::Options::with_cross_y);
+
     using Class = CspaceFreePolytope;
     const auto& cls_doc = doc.CspaceFreePolytope;
-    const auto& base_cls_doc = doc.CspaceFreePolytopeBase;
-    py::class_<Class> cspace_free_polytope_cls(
+    py::class_<Class, BaseClass> cspace_free_polytope_cls(
         m, "CspaceFreePolytope", cls_doc.doc);
-
-    py::class_<PolytopeBaseClass::Options>(
-        cspace_free_polytope_cls, "Options", base_cls_doc.Options.doc)
-        .def(py::init<>())
-        .def_readwrite("with_cross_y", &Class::Options::with_cross_y);
-
     cspace_free_polytope_cls
         .def(py::init<const multibody::MultibodyPlant<double>*,
                  const geometry::SceneGraph<double>*, SeparatingPlaneOrder,
@@ -867,21 +882,11 @@ void DefineGeometryOptimization(py::module m) {
                  const Class::Options&>(),
             py::arg("plant"), py::arg("scene_graph"), py::arg("plane_order"),
             py::arg("q_star"), py::arg("options") = Class::Options(),
+            // Keep alive, reference: `self` keeps `plant` alive.
+            py::keep_alive<1, 2>(),
             // Keep alive, reference: `self` keeps `scene_graph` alive.
             py::keep_alive<1, 3>(), cls_doc.ctor.doc)
-        // TODO(Alexandre.Amice): Figure out how to bind rational_forward_kin.
-        // The naive method returns an "Unable to convert to Python type" error.
-        //        .def("rational_forward_kin",
-        //        &PolytopeBaseClass::rational_forward_kin,
-        //            py_rvp::reference_internal,
-        //            base_cls_doc.rational_forward_kin.doc)
-        .def(
-            "map_geometries_to_separating_planes",
-            &PolytopeBaseClass::map_geometries_to_separating_planes,
-            base_cls_doc.map_geometries_to_separating_planes.doc)
-        .def("separating_planes", &PolytopeBaseClass::separating_planes,
-            base_cls_doc.separating_planes.doc)
-        .def("y_slack", &PolytopeBaseClass::y_slack, base_cls_doc.y_slack.doc)
+
         .def(
             "FindSeparationCertificateGivenPolytope",
             [](const CspaceFreePolytope* self,
@@ -1053,34 +1058,34 @@ void DefineGeometryOptimization(py::module m) {
         .def("num_iter", &Class::SearchResult::num_iter)
         .def("certified_polytope", &Class::SearchResult::certified_polytope);
 
-    py::class_<Class::BilinearAlternationOptions>(cspace_free_polytope_cls,
-        "BilinearAlternationOptions", cls_doc.BilinearAlternationOptions.doc)
-        .def(py::init<>())
-        .def_readwrite("max_iter", &Class::BilinearAlternationOptions::max_iter,
-            cls_doc.BilinearAlternationOptions.max_iter.doc)
-        .def_readwrite("convergence_tol",
-            &Class::BilinearAlternationOptions::convergence_tol,
-            cls_doc.BilinearAlternationOptions.convergence_tol.doc)
-        .def_readwrite("find_polytope_options",
-            &Class::BilinearAlternationOptions::find_polytope_options,
-            cls_doc.BilinearAlternationOptions.find_polytope_options.doc)
-        .def_readwrite("find_lagrangian_options",
-            &Class::BilinearAlternationOptions::find_lagrangian_options,
-            cls_doc.BilinearAlternationOptions.find_lagrangian_options.doc)
-        .def_readwrite("ellipsoid_scaling",
-            &Class::BilinearAlternationOptions::ellipsoid_scaling,
-            cls_doc.BilinearAlternationOptions.ellipsoid_scaling.doc);
+//    py::class_<Class::BilinearAlternationOptions>(cspace_free_polytope_cls,
+//        "BilinearAlternationOptions", cls_doc.BilinearAlternationOptions.doc)
+//        .def(py::init<>())
+//        .def_readwrite("max_iter", &Class::BilinearAlternationOptions::max_iter,
+//            cls_doc.BilinearAlternationOptions.max_iter.doc)
+//        .def_readwrite("convergence_tol",
+//            &Class::BilinearAlternationOptions::convergence_tol,
+//            cls_doc.BilinearAlternationOptions.convergence_tol.doc)
+//        .def_readwrite("find_polytope_options",
+//            &Class::BilinearAlternationOptions::find_polytope_options,
+//            cls_doc.BilinearAlternationOptions.find_polytope_options.doc)
+//        .def_readwrite("find_lagrangian_options",
+//            &Class::BilinearAlternationOptions::find_lagrangian_options,
+//            cls_doc.BilinearAlternationOptions.find_lagrangian_options.doc)
+//        .def_readwrite("ellipsoid_scaling",
+//            &Class::BilinearAlternationOptions::ellipsoid_scaling,
+//            cls_doc.BilinearAlternationOptions.ellipsoid_scaling.doc);
 
-    py::class_<Class::BinarySearchOptions>(cspace_free_polytope_cls,
-        "BinarySearchOptions", cls_doc.BinarySearchOptions.doc)
-        .def(py::init<>())
-        .def_readwrite("scale_max", &Class::BinarySearchOptions::scale_max)
-        .def_readwrite("scale_min", &Class::BinarySearchOptions::scale_min)
-        .def_readwrite("max_iter", &Class::BinarySearchOptions::max_iter)
-        .def_readwrite(
-            "convergence_tol", &Class::BinarySearchOptions::convergence_tol)
-        .def_readwrite("find_lagrangian_options",
-            &Class::BinarySearchOptions::find_lagrangian_options);
+//    py::class_<Class::BinarySearchOptions>(cspace_free_polytope_cls,
+//        "BinarySearchOptions", cls_doc.BinarySearchOptions.doc)
+//        .def(py::init<>())
+//        .def_readwrite("scale_max", &Class::BinarySearchOptions::scale_max)
+//        .def_readwrite("scale_min", &Class::BinarySearchOptions::scale_min)
+//        .def_readwrite("max_iter", &Class::BinarySearchOptions::max_iter)
+//        .def_readwrite(
+//            "convergence_tol", &Class::BinarySearchOptions::convergence_tol)
+//        .def_readwrite("find_lagrangian_options",
+//            &Class::BinarySearchOptions::find_lagrangian_options);
   }
   // NOLINTNEXTLINE(readability/fn_size)
 }
