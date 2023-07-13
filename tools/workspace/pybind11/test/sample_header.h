@@ -24,15 +24,18 @@
 /// @def PREPROCESSOR_DEFINITION
 /// Preprocessor definitions are ignored. In nibh mauris cursus mattis
 /// molestie a. Non arcu risus quis varius quam quisque id.
+// N.B. See if comment break ruins docstring.
 #define PREPROCESSOR_DEFINITION "Nisl purus in mollis nunc sed id."
 
 /// Root-level symbol. Magna fermentum iaculis eu non diam phasellus
 /// vestibulum.
+// N.B. See if comment break ruins docstring.
 struct RootLevelSymbol {};
 
 /// @namespace drake
 /// Namespaces are ignored. Enim blandit volutpat maecenas volutpat blandit. Eu
 /// feugiat pretium nibh ipsum consequat.
+// N.B. See if comment break ruins docstring.
 namespace drake {
 
 /**
@@ -48,6 +51,7 @@ namespace drake {
  * Senectus et netus et malesuada fames ac. Tincidunt lobortis feugiat vivamus
  * at augue eget arcu dictum varius.
  */
+ // N.B. See if comment break ruins docstring.
 struct MidLevelSymbol {};
 
 namespace mkdoc_test {
@@ -56,12 +60,15 @@ namespace mkdoc_test {
 class Class;
 
 /** Function. Mi sit amet mauris commodo quis. */
+// N.B. See if comment break ruins docstring.
 void func();
 /// Function, overload 1. Velit ut tortor pretium viverra suspendisse potenti
 /// nullam ac tortor.
+// N.B. See if comment break ruins docstring.
 void func(int* param);
 /// Function, template overload. Pellentesque diam volutpat commodo sed egestas
 /// egestas fringilla phasellus faucibus.
+// N.B. See if comment break ruins docstring.
 template <typename T>
 void func(T tee);
 
@@ -72,6 +79,7 @@ void func(T tee);
 ///   element.
 /// * Begin third unordered list element. Hac habitasse platea dictumst quisque
 ///   sagittis purus sit. End third unordered list element.
+// N.B. See if comment break ruins docstring.
 class Class {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Class)
@@ -81,11 +89,13 @@ class Class {
 
   /// Using alias. Sit amet nisl purus in mollis nunc sed id
   /// semper.
+  // N.B. See if comment break ruins docstring.
   using UsingAlias = std::vector<Class>;
 
   /// @typedef std::vector<Class> TypedefAlias
   /// Typedef alias. Risus nec feugiat in fermentum posuere urna nec
   /// tincidunt praesent.
+  // N.B. See if comment break ruins docstring.
   typedef std::vector<Class> TypedefAlias;
 
   /// @}
@@ -94,6 +104,7 @@ class Class {
   /// @{
 
   /// Custom constructor 1.
+  // N.B. See if comment break ruins docstring.
   Class() {}
 
   /// Custom constructor 2. Ut tristique et egestas quis ipsum
@@ -101,6 +112,7 @@ class Class {
   /// diam. Maecenas accumsan lacus vel facilisis volutpat est.
   ///
   /// Ut consequat semper viverra nam libero.
+  // N.B. See if comment break ruins docstring.
   explicit Class(int param) {
     unused(param);
   }
@@ -109,6 +121,7 @@ class Class {
 
   /// Custom constructor 3. Integer quis auctor elit sed vulputate
   /// mi sit.
+  // N.B. See if comment break ruins docstring.
   explicit Class(int param1, std::vector<int> param2) {
     unused(param1);
     unused(param2);
@@ -125,53 +138,67 @@ class Class {
   /// Ornare suspendisse sed nisi lacus sed viverra tellus. End precondition.
   /// @post Begin postcondition. Tortor id aliquet lectus proin nibh nisl
   /// condimentum id. End postcondition.
+  // N.B. See if comment break ruins docstring.
   static void PublicStatic() {}
 
   /// This one takes an int.
+  // N.B. See if comment break ruins docstring.
   void overloaded_method(int alpha);
 
   /// This one takes a double.
+  // N.B. See if comment break ruins docstring.
   void overloaded_method(double bravo);
 
   /// This one takes an int and a double.
+  // N.B. See if comment break ruins docstring.
   void overloaded_method(int charlie, double delta);
 
   /// This one takes the road less traveled.
+  // N.B. See if comment break ruins docstring.
   void overloaded_method(double, int);
 
   /// This one takes a non-primitive type.
+  // N.B. See if comment break ruins docstring.
   void overloaded_method(const std::string&);
 
   /// Different overload with same doc.
+  // N.B. See if comment break ruins docstring.
   void overloaded_with_same_doc();
 
   /// Different overload with same doc.
+  // N.B. See if comment break ruins docstring.
   void overloaded_with_same_doc(int);
 
   /// Overloaded only by its const-ness.
+  // N.B. See if comment break ruins docstring.
   void get_foo();
 
   /// The const one.
+  // N.B. See if comment break ruins docstring.
   void get_foo() const;
 
   /// Docstring 1.
   /// @pydrake_mkdoc_identifier{stuff_1}
+  // N.B. See if comment break ruins docstring.
   void do_stuff(double);
 
   /// Docstring 2.
   /// @pydrake_mkdoc_identifier{stuff_2}
+  // N.B. See if comment break ruins docstring.
   template <typename T>
   void do_stuff(T);
 
  protected:
   /// Protected method. Nibh sed pulvinar proin gravida hendrerit.
   /// Orci phasellus egestas tellus rutrum tellus pellentesque eu.
+  // N.B. See if comment break ruins docstring.
   int ProtectedMethod() {
     return 0;
   }
 
   /// Protected nested class. Sed turpis tincidunt id aliquet.
   /// Egestas sed sed risus pretium.
+  // N.B. See if comment break ruins docstring.
   class Nested {};
 
   int protected_member_{};
@@ -179,6 +206,7 @@ class Class {
  private:
   /// Private method, public documentation. Senectus et netus et malesuada
   /// fames ac.
+  // N.B. See if comment break ruins docstring.
   void PrivateMethod() {}
 
   // Private member, private documentation.
@@ -189,20 +217,25 @@ class Class {
 /// vel turpis nunc.
 /// @deprecated Begin deprecated. Est pellentesque elit ullamcorper dignissim
 /// cras tincidunt lobortis. End deprecated.
+// N.B. See if comment break ruins docstring.
 struct Struct {
   /// See @ref implementing_serialize "Implementing Serialize".
+  // N.B. See if comment break ruins docstring.
   template <typename Archive>
   void Serialize(Archive* a);
   /// Field 1. Sit amet cursus sit amet dictum sit amet. Id leo in vitae turpis
   /// massa sed elementum tempus.
+  // N.B. See if comment break ruins docstring.
   int field_1;
   /// Field 2. Consectetur libero id faucibus nisl tincidunt eget nullam non
   /// nisi.
+  // N.B. See if comment break ruins docstring.
   std::vector<int> field_2;
 };
 
 /// Template class. Mauris pharetra et ultrices neque ornare aenean euismod
 /// elementum.
+// N.B. See if comment break ruins docstring.
 template <typename T>
 class TemplateClass {
  public:
@@ -210,12 +243,15 @@ class TemplateClass {
 
   /// Default constructor. Condimentum mattis pellentesque id nibh tortor id.
   /// Nisl rhoncus mattis rhoncus urna neque.
+  // N.B. See if comment break ruins docstring.
   TemplateClass();
 
   /// Single argument int constructor.
+  // N.B. See if comment break ruins docstring.
   explicit TemplateClass(int i);
 
   /// Scalar-converting copy constructor.
+  // N.B. See if comment break ruins docstring.
   template <typename U>
   explicit TemplateClass(const TemplateClass<U>&);
 };
@@ -236,12 +272,14 @@ TemplateClass<T>::TemplateClass(const TemplateClass<U>&)
 
 /// Specialize. Nisl pretium fusce id velit ut tortor pretium viverra. Quis
 /// ipsum suspendisse ultrices gravida dictum fusce ut.
+// N.B. See if comment break ruins docstring.
 template <>
 class TemplateClass<int> {
 };
 
 /// Enumeration. Feugiat scelerisque varius morbi enim.  Facilisis leo vel
 /// fringilla est ullamcorper eget nulla facilisi.
+// N.B. See if comment break ruins docstring.
 enum Enum {
   /// Enumeration constant.
   EnumConstant,
@@ -249,17 +287,21 @@ enum Enum {
 
 /// Enumeration class. Malesuada fames ac turpis egestas integer eget aliquet
 /// nibh praesent.
+// N.B. See if comment break ruins docstring.
 enum EnumClass {
   EnumClassConstant,  ///< Enumeration class constant. Vestibulum mattis.
 };
 
 /// Anonymous values are ignored.
+// N.B. See if comment break ruins docstring.
 enum {
   /// Anonymous enum's constant.
+  // N.B. See if comment break ruins docstring.
   AnonymousConstant,
 };
 
 /// I am measurably old.
+// N.B. See if comment break ruins docstring.
 class DRAKE_DEPRECATED("2038-01-19", "Use MyNewClass instead.")
 DrakeDeprecatedClass {
  public:
@@ -278,6 +320,7 @@ DrakeDeprecatedClass {
 };
 
 /// I am symbolically old.
+// N.B. See if comment break ruins docstring.
 template <typename T>
 class DRAKE_DEPRECATED("2038-01-19", "Templates rule!")
 DrakeDeprecatedTemplateClass {};
@@ -300,23 +343,32 @@ namespace namespace_2 {
  * tellus. Cras elit nisi, ornare a, condimentum vitae, rutrum sit amet, tellus.
  * Maecenas
  */
+// N.B. See if comment break ruins docstring.
 
 struct Struct1 {
   /// Et, ornare sagittis, tellus. Fusce felis.
+  // N.B. See if comment break ruins docstring.
   int var_1{};
   /// Nulla a augue. Pellentesque sed est.
+  // N.B. See if comment break ruins docstring.
   int var_2{};
   /// Imperdiet tristique, interdum a, dolor.
+  // N.B. See if comment break ruins docstring.
   double var_3{};
   /// Tempor lobortis turpis. Sed tellus velit, ullamcorper.
+  // N.B. See if comment break ruins docstring.
   double var_4{};
   /// Id, rutrum auctor, ullamcorper sed, orci. In.
+  // N.B. See if comment break ruins docstring.
   double var_5{};
   /// Fames ac turpis egestas. Sed vitae eros. Nulla.
+  // N.B. See if comment break ruins docstring.
   double var_6{};
   /// Condimentum. Donec arcu quam, dictum accumsan, convallis.
+  // N.B. See if comment break ruins docstring.
   double var_7{};
   /// Volutpat. Donec non tortor. Vivamus posuere nisi mollis.
+  // N.B. See if comment break ruins docstring.
   double var_8{};
 };
 
@@ -331,6 +383,7 @@ class DummyClass {
   DRAKE_NO_COPY_NO_MOVE(DummyClass)
 
   /// Ligula. Nunc turpis. Mauris vitae sapien. Nunc.
+  // N.B. See if comment break ruins docstring.
   using Details = Struct1;
 
   DummyClass();
@@ -375,6 +428,7 @@ struct IgnoredStruct {
 /// output_ports:
 /// - y
 /// @endsystem
+// N.B. See if comment break ruins docstring.
 class MySimpleSystem {};
 
 }  // namespace namespace_1
