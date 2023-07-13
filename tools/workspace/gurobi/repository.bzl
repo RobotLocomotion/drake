@@ -20,7 +20,7 @@ def _find_latest(repo_ctx, path, prefix, subdir):
 
     return best_dir or (path + "/" + prefix + "-notfound/" + subdir)
 
-# Ubuntu only: GUROBI_HOME should be the linux64 directory in the Gurobi 9.5
+# Ubuntu only: GUROBI_HOME should be the linux64 directory in the Gurobi 10.0
 # release.
 #
 def _gurobi_impl(repo_ctx):
@@ -33,14 +33,14 @@ def _gurobi_impl(repo_ctx):
         gurobi_home = _find_latest(
             repo_ctx,
             "/Library",
-            "gurobi95",
+            "gurobi100",
             "macos_universal2",
         )
         repo_ctx.symlink(gurobi_home, "gurobi-distro")
         build_flavor = "macos"
     else:
         # The default directory for the downloaded gurobi is
-        # /opt/gurobi95*/linux64. If the user does not use the default
+        # /opt/gurobi100*/linux64. If the user does not use the default
         # directory, the he/she should set GUROBI_HOME environment variable to
         # the gurobi file location.
         gurobi_home = repo_ctx.os.environ.get("GUROBI_HOME", "")
@@ -48,7 +48,7 @@ def _gurobi_impl(repo_ctx):
             gurobi_home or _find_latest(
                 repo_ctx,
                 "/opt",
-                "gurobi95",
+                "gurobi100",
                 "linux64",
             ),
             "gurobi-distro",
