@@ -10,7 +10,6 @@
 #include <vector>
 
 #include "drake/common/copyable_unique_ptr.h"
-#include "drake/common/diagnostic_policy.h"
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/render/render_engine.h"
@@ -394,9 +393,6 @@ class RenderEngineGl final : public render::RenderEngine {
   // context. However, each independent copy is allowed to independently
   // modify their copy of visuals_ (adding and removing geometries).
   std::unordered_map<GeometryId, OpenGlInstance> visuals_;
-
-  // The policy for handling warnings and errors.
-  drake::internal::DiagnosticPolicy diagnostic_policy_;
 
   // The direction *to* the light expressed in the camera frame.
   Vector3<float> light_dir_C_{0.0f, 0.0f, 1.0f};
