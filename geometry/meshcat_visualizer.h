@@ -222,16 +222,6 @@ class MeshcatVisualizer final : public systems::LeafSystem<T> {
   /* The parameters for the visualizer.  */
   MeshcatVisualizerParams params_;
 
-  /* TODO(russt): Consider moving the MeshcatAnimation into the Context.
-  Full-fledged support for multi-threaded recording requires some additional
-  design thinking and may require either moving the prefix into the Context as
-  well (e.g. multiple copies of the MeshcatVisualizer publish to the same
-  Meshcat, but on different prefixes) or support for SetObject in
-  MeshcatAnimation (each animation keeps track of the objects, instead of the
-  shared Meshcat instance keeping track).  We may also want to allow users to
-  disable the default publishing behavior (to record without visualizing
-  immediately). */
-
   /* TODO(#16486): ideally this mutable state will go away once it is safe to
   run Meshcat multithreaded */
   mutable systems::internal::InstantaneousRealtimeRateCalculator
