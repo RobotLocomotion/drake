@@ -103,7 +103,7 @@ class AccelerationKinematicsCache {
 
   // Allocates resources for this acceleration kinematics cache.
   void Allocate(const MultibodyTreeTopology& topology) {
-    const int num_nodes = topology.num_bodies();
+    const int num_nodes = topology.num_body_nodes();
     A_WB_pool_.resize(num_nodes);
     const int num_velocities = topology.num_velocities();
     vdot_.resize(num_velocities);

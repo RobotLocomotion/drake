@@ -2,14 +2,12 @@
 
 #include <algorithm>
 #include <iostream>
-#include <limits>
 #include <queue>
 #include <stack>
 #include <utility>
 #include <vector>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/drake_throw.h"
 
 namespace drake {
 namespace multibody {

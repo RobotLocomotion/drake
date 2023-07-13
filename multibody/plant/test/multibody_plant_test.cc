@@ -1703,15 +1703,16 @@ GTEST_TEST(MultibodyPlantTest, ReversedWeldError) {
       "extra", default_model_instance(), SpatialInertia<double>());
   plant.WeldFrames(extra.body_frame(), plant.world_frame());
 
+  /* TODO(sherm1) This shouldn't throw at all. */
+
   // The important property of this message is that it reports some identifier
   // for the involved objects, so at least the developer can map those back to
   // objects and deduce what API call was in error. If the details of the
   // message change, update this check to match. If in future the error can be
   // caught at the WeldFrames() step, so much the better. Modify this test to
   // reflect that.
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      plant.Finalize(),
-      ".*already has a joint.*extra_welds_to_world.*joint.*not allowed.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(plant.Finalize(),
+                              ".*Link.*not assigned a mobilizer.*");
 }
 
 // Utility to verify the subset of output ports we expect to be direct a
@@ -3508,7 +3509,7 @@ GTEST_TEST(SetRandomTest, SetDefaultWhenNoDistributionSpecified) {
   // explicitly added).
   const Body<double>& body1 =
       plant.AddRigidBody("free body 1", SpatialInertia<double>::MakeUnitary());
-  plant.AddJoint<QuaternionFloatingJoint>("" + body1.name(),
+  plant.AddJoint<QuaternionFloatingJoint>(body1.name(),
                                           plant.world_body(), {}, body1, {});
   const std::string acrobot_file_name =
       "drake/multibody/benchmarks/acrobot/acrobot.sdf";
@@ -4421,16 +4422,16 @@ GTEST_TEST(MultibodyPlantTest, GetNames) {
   names = plant->GetPositionNames(false /* add_model_instance_prefix */,
                                   false /* always_add_suffix */);
   EXPECT_THAT(names, testing::ElementsAreArray(
-                         {"iiwa_joint_1",          "iiwa_joint_2",
-                          "iiwa_joint_3",          "iiwa_joint_4",
-                          "iiwa_joint_5",          "iiwa_joint_6",
-                          "iiwa_joint_7",          "iiwa_link_0_qw",
+                         {"iiwa_joint_1",   "iiwa_joint_2",
+                          "iiwa_joint_3",   "iiwa_joint_4",
+                          "iiwa_joint_5",   "iiwa_joint_6",
+                          "iiwa_joint_7",   "iiwa_link_0_qw",
                           "iiwa_link_0_qx", "iiwa_link_0_qy",
                           "iiwa_link_0_qz", "iiwa_link_0_x",
                           "iiwa_link_0_y",  "iiwa_link_0_z",
-                          "iiwa_joint_1",          "iiwa_joint_2",
-                          "iiwa_joint_3",          "iiwa_joint_4",
-                          "iiwa_joint_5",          "iiwa_joint_6",
+                          "iiwa_joint_1",   "iiwa_joint_2",
+                          "iiwa_joint_3",   "iiwa_joint_4",
+                          "iiwa_joint_5",   "iiwa_joint_6",
                           "iiwa_joint_7"}));
 
   names = plant->GetVelocityNames(iiwa0_instance);
@@ -4511,16 +4512,16 @@ GTEST_TEST(MultibodyPlantTest, GetNames) {
   names = plant->GetVelocityNames(false /* add_model_instance_prefix */,
                                   false /* always_add_suffix */);
   EXPECT_THAT(names, testing::ElementsAreArray(
-                         {"iiwa_joint_1",          "iiwa_joint_2",
-                          "iiwa_joint_3",          "iiwa_joint_4",
-                          "iiwa_joint_5",          "iiwa_joint_6",
-                          "iiwa_joint_7",          "iiwa_link_0_wx",
+                         {"iiwa_joint_1",   "iiwa_joint_2",
+                          "iiwa_joint_3",   "iiwa_joint_4",
+                          "iiwa_joint_5",   "iiwa_joint_6",
+                          "iiwa_joint_7",   "iiwa_link_0_wx",
                           "iiwa_link_0_wy", "iiwa_link_0_wz",
                           "iiwa_link_0_vx", "iiwa_link_0_vy",
                           "iiwa_link_0_vz", "iiwa_joint_1",
-                          "iiwa_joint_2",          "iiwa_joint_3",
-                          "iiwa_joint_4",          "iiwa_joint_5",
-                          "iiwa_joint_6",          "iiwa_joint_7"}));
+                          "iiwa_joint_2",   "iiwa_joint_3",
+                          "iiwa_joint_4",   "iiwa_joint_5",
+                          "iiwa_joint_6",   "iiwa_joint_7"}));
 
   names = plant->GetStateNames(iiwa0_instance);
   EXPECT_THAT(names, testing::ElementsAreArray(
@@ -4590,26 +4591,26 @@ GTEST_TEST(MultibodyPlantTest, GetNames) {
   names =
       plant->GetStateNames(false /* add_model_instance_prefix */);
   EXPECT_THAT(names, testing::ElementsAreArray(
-                         {"iiwa_joint_1_q",        "iiwa_joint_2_q",
-                          "iiwa_joint_3_q",        "iiwa_joint_4_q",
-                          "iiwa_joint_5_q",        "iiwa_joint_6_q",
-                          "iiwa_joint_7_q",        "iiwa_link_0_qw",
+                         {"iiwa_joint_1_q", "iiwa_joint_2_q",
+                          "iiwa_joint_3_q", "iiwa_joint_4_q",
+                          "iiwa_joint_5_q", "iiwa_joint_6_q",
+                          "iiwa_joint_7_q", "iiwa_link_0_qw",
                           "iiwa_link_0_qx", "iiwa_link_0_qy",
                           "iiwa_link_0_qz", "iiwa_link_0_x",
                           "iiwa_link_0_y",  "iiwa_link_0_z",
-                          "iiwa_joint_1_q",        "iiwa_joint_2_q",
-                          "iiwa_joint_3_q",        "iiwa_joint_4_q",
-                          "iiwa_joint_5_q",        "iiwa_joint_6_q",
-                          "iiwa_joint_7_q",        "iiwa_joint_1_w",
-                          "iiwa_joint_2_w",        "iiwa_joint_3_w",
-                          "iiwa_joint_4_w",        "iiwa_joint_5_w",
-                          "iiwa_joint_6_w",        "iiwa_joint_7_w",
+                          "iiwa_joint_1_q", "iiwa_joint_2_q",
+                          "iiwa_joint_3_q", "iiwa_joint_4_q",
+                          "iiwa_joint_5_q", "iiwa_joint_6_q",
+                          "iiwa_joint_7_q", "iiwa_joint_1_w",
+                          "iiwa_joint_2_w", "iiwa_joint_3_w",
+                          "iiwa_joint_4_w", "iiwa_joint_5_w",
+                          "iiwa_joint_6_w", "iiwa_joint_7_w",
                           "iiwa_link_0_wx", "iiwa_link_0_wy",
                           "iiwa_link_0_wz", "iiwa_link_0_vx",
                           "iiwa_link_0_vy", "iiwa_link_0_vz",
-                          "iiwa_joint_1_w",        "iiwa_joint_2_w",
-                          "iiwa_joint_3_w",        "iiwa_joint_4_w",
-                          "iiwa_joint_5_w",        "iiwa_joint_6_w",
+                          "iiwa_joint_1_w", "iiwa_joint_2_w",
+                          "iiwa_joint_3_w", "iiwa_joint_4_w",
+                          "iiwa_joint_5_w", "iiwa_joint_6_w",
                           "iiwa_joint_7_w"}));
 
   names = plant->GetActuatorNames(iiwa0_instance);

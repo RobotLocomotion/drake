@@ -55,21 +55,20 @@ const BodyType<T>& MultibodyTree<T>::AddBody(
     throw std::logic_error("Input body is a nullptr.");
   }
 
-  DRAKE_DEMAND(body->model_instance().is_valid());
-
-  // Make note in the graph.
-  multibody_graph_.AddBody(body->name(), body->model_instance());
-
   BodyIndex body_index(0);
   FrameIndex body_frame_index(0);
   std::tie(body_index, body_frame_index) = topology_.add_body();
   // These tests MUST be performed BEFORE frames_.push_back() and
-  // owned_bodies_.push_back() below. Do not move them around!
+  // owned_links_.push_back() below. Do not move them around!
   DRAKE_DEMAND(body_index == num_bodies());
   DRAKE_DEMAND(body_frame_index == num_frames());
+  DRAKE_DEMAND(body->model_instance().is_valid());
+
+  // Make note in the graph of the new link.
+  link_joint_graph_.AddLink(body->name(), body->model_instance());
 
   // TODO(amcastro-tri): consider not depending on setting this pointer at
-  // all. Consider also removing MultibodyElement altogether.
+  //  all. Consider also removing MultibodyElement altogether.
   body->set_parent_tree(this, body_index);
   // MultibodyTree can access selected private methods in Body through its
   // BodyAttorney.
@@ -84,7 +83,8 @@ const BodyType<T>& MultibodyTree<T>::AddBody(
   // - Register body.
   BodyType<T>* raw_body_ptr = body.get();
   this->SetElementIndex(body->name(), body->index(), &body_name_to_index_);
-  owned_bodies_.push_back(std::move(body));
+  owned_links_.push_back(std::move(body));
+
   return *raw_body_ptr;
 }
 
@@ -110,8 +110,7 @@ const RigidBody<T>& MultibodyTree<T>::AddRigidBody(
             "' already contains a body named '" + name + "'. " +
             "Body names must be unique within a given model.");
   }
-  // Make note in the graph.
-  link_joint_graph_.AddLink(name, model_instance);
+
   const RigidBody<T>& body =
       this->template AddBody<RigidBody>(name, model_instance, M_BBo_B);
   return body;
@@ -224,9 +223,9 @@ const MobilizerType<T>& MultibodyTree<T>::AddMobilizer(
       mobilizer->is_floating() &&
       mobilizer->inboard_frame().body().index() == world_body().index();
 
-  topology_.get_mutable_body(outboard_body_index).is_floating =
+  topology_.get_mutable_link(outboard_body_index).is_floating =
       is_body_floating;
-  topology_.get_mutable_body(outboard_body_index).has_quaternion_dofs =
+  topology_.get_mutable_link(outboard_body_index).has_quaternion_dofs =
       mobilizer->has_quaternion_dofs();
 
   MobilizerType<T>* raw_mobilizer_ptr = mobilizer.get();
@@ -297,7 +296,7 @@ MultibodyTree<T>::AddForceElement(Args&&... args) {
 template <typename T>
 template <template<typename Scalar> class JointType>
 const JointType<T>& MultibodyTree<T>::AddJoint(
-    std::unique_ptr<JointType<T>> joint) {
+    std::unique_ptr<JointType<T>> joint, bool is_modeling_joint) {
   static_assert(std::is_convertible_v<JointType<T>*, Joint<T>*>,
                 "JointType must be a sub-class of Joint<T>.");
 
@@ -333,14 +332,17 @@ const JointType<T>& MultibodyTree<T>::AddJoint(
                     joint->child_body().name()));
   }
 
-  // This will check some additional error conditions.
-  RegisterJointInGraph(*joint);
+  // User joints need to be registered with the LinkJointGraph but joints added
+  // during modeling are already in the graph.
+  if (!is_modeling_joint)
+    RegisterJointInGraph(*joint.get());
 
   const JointIndex joint_index(owned_joints_.size());
   joint->set_parent_tree(this, joint_index);
   JointType<T>* raw_joint_ptr = joint.get();
   this->SetElementIndex(joint->name(), joint->index(), &joint_name_to_index_);
   owned_joints_.push_back(std::move(joint));
+
   return *raw_joint_ptr;
 }
 
@@ -355,6 +357,15 @@ const JointType<T>& MultibodyTree<T>::AddJoint(
     Args&&... args) {
   static_assert(std::is_base_of_v<Joint<T>, JointType<T>>,
                 "JointType<T> must be a sub-class of Joint<T>.");
+
+  if (&parent.get_parent_tree() != this || &child.get_parent_tree() != this) {
+    throw std::logic_error(
+        fmt::format("AddJoint(): can't add joint {} between {} and {} "
+                    "because one or both belong to a different "
+                    "MultibodyPlant.",
+                    name, parent.name(), child.name()));
+  }
+
   // The Joint constructor promises that the Joint's model instance will be the
   // same as the child body's model instance. We'll assume that for now, and
   // then cross-check it at the bottom of this function. We need to use the same
@@ -367,6 +378,22 @@ const JointType<T>& MultibodyTree<T>::AddJoint(
   const JointType<T>& result = AddJoint(std::make_unique<JointType<T>>(
       name, frame_on_parent, frame_on_child, std::forward<Args>(args)...));
   DRAKE_DEMAND(result.model_instance() == joint_instance);
+  return result;
+}
+
+// This is internal use only so doesn't need the error checking provided
+// by the AddJoint() signature.
+template <typename T>
+template<template<typename> class JointType, typename... Args>
+const JointType<T>& MultibodyTree<T>::AddModelingJoint(
+    const std::string& name,
+    const Body<T>& parent,
+    const Body<T>& child,
+    Args&&... args) {
+
+  const JointType<T>& result = AddJoint(std::make_unique<JointType<T>>(
+  name, parent.body_frame(), child.body_frame(), std::forward<Args>(args)...),
+                                        true /*modeling joint*/);
   return result;
 }
 
@@ -479,11 +506,11 @@ Body<T>* MultibodyTree<T>::CloneBodyAndAdd(const Body<FromScalar>& body) {
   // original body_frame_index.
   frames_[body_frame_index] = body_frame_clone;
   Body<T>* raw_body_clone_ptr = body_clone.get();
-  // The order in which bodies are added into owned_bodies_ is important to
+  // The order in which bodies are added into owned_links_ is important to
   // keep the topology invariant. Therefore this method is called from
   // MultibodyTree::CloneToScalar() within a loop by original body_index.
-  DRAKE_DEMAND(static_cast<int>(owned_bodies_.size()) == body_index);
-  owned_bodies_.push_back(std::move(body_clone));
+  DRAKE_DEMAND(static_cast<int>(owned_links_.size()) == body_index);
+  owned_links_.push_back(std::move(body_clone));
   return raw_body_clone_ptr;
 }
 

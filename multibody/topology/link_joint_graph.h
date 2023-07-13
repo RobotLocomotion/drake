@@ -33,7 +33,6 @@ inboard/outboard directed edges of the generated forest. */
 
 using JointTypeIndex = TypeSafeIndex<class JointTypeTag>;
 using ConstraintTypeIndex = TypeSafeIndex<class ConstraintTypeTag>;
-using LinkIndex = BodyIndex;  // These are interchangeable.
 using ConstraintIndex = TypeSafeIndex<class ConstraintTag>;
 using CompositeLinkIndex = TypeSafeIndex<class CompositeLinkTag>;
 using MobodIndex = TypeSafeIndex<class MobodTag>;
@@ -103,7 +102,7 @@ In general during modeling:
 //  of MBP, towards #11307.
 class LinkJointGraph {
  public:
-  // The classes are defined later on in this header file.
+  // These classes are defined later on in this header file.
   class Link;
   class Joint;
   class Constraint;

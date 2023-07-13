@@ -25,7 +25,7 @@
 #include "drake/multibody/plant/hydroelastic_traction_calculator.h"
 #include "drake/multibody/plant/make_discrete_update_manager.h"
 #include "drake/multibody/plant/slicing_and_indexing.h"
-#include "drake/multibody/topology/spanning_forest_model.h"
+#include "drake/multibody/topology/link_joint_graph.h"
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/quaternion_floating_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
@@ -992,7 +992,7 @@ void MultibodyPlant<T>::SetFreeBodyPoseInAnchoredFrame(
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   this->ValidateContext(context);
 
-  if (!internal_tree().get_topology().IsBodyAnchored(frame_F.body().index())) {
+  if (!internal_tree().get_topology().IsLinkAnchored(frame_F.body().index())) {
     throw std::logic_error(
         "Frame '" + frame_F.name() + "' must be anchored to the world frame.");
   }
@@ -1016,7 +1016,7 @@ void MultibodyPlant<T>::CalcSpatialAccelerationsFromVdot(
   internal_tree().CalcSpatialAccelerationsFromVdot(
       context, internal_tree().EvalPositionKinematics(context),
       internal_tree().EvalVelocityKinematics(context), known_vdot, A_WB_array);
-  // Permute BodyNodeIndex -> BodyIndex.
+  // Permute BodyNodeIndex -> LinkIndex.
   // TODO(eric.cousineau): Remove dynamic allocations. Making this in-place
   // still required dynamic allocation for recording permutation indices.
   // Can change implementation once MultibodyTree becomes fully internal.
@@ -1024,9 +1024,9 @@ void MultibodyPlant<T>::CalcSpatialAccelerationsFromVdot(
   const internal::MultibodyTreeTopology& topology =
       internal_tree().get_topology();
   for (internal::BodyNodeIndex node_index(1);
-       node_index < topology.get_num_body_nodes(); ++node_index) {
-    const BodyIndex body_index = topology.get_body_node(node_index).body;
-    (*A_WB_array)[body_index] = A_WB_array_node[node_index];
+       node_index < topology.num_body_nodes(); ++node_index) {
+    const LinkIndex link_index = topology.get_body_node(node_index).link;
+    (*A_WB_array)[link_index] = A_WB_array_node[node_index];
   }
 }
 
@@ -1097,65 +1097,13 @@ void MultibodyPlant<T>::RenameModelInstance(ModelInstanceIndex model_instance,
 
 template<typename T>
 void MultibodyPlant<T>::Finalize() {
-  /* Given the user-defined directed graph of Links and Joints, decide how we're
-  going to model this using a spanning forest comprised of
-    - bodies and their mobilizers, paired as "mobilized bodies" (mobods) and
-      directed by inboard/outboard edges, and
-    - added constraints where needed to close kinematic loops in the graph.
-  The modeler sorts the mobilized bodies into depth-first order.
-
-  Every Link will be modeled with one "primary" body and possibly several
-  "shadow" bodies. Every Joint will be modeled with a mobilizer, with the
-  Joint's parent/child connections mapped to the mobilizer's inboard/outboard
-  connection or to the reverse, as necessary for the mobilizers to form a
-  properly-directed tree. Every body in the tree must have a path in the
-  inboard direction connecting it to World. If necessary, additional "floating"
-  (6 dof) or "weld" (0 dof) mobilizers are added to make the final connection
-  to World.
-
-  During the modeling process, the LinkJointGraph is augmented to have
-  additional elements to provide an interface to the additional elements that
-  were required to build the model. Below, we will augment the MultibodyPlant
-  elements to match, so that advanced users can use the familiar Plant API to
-  access and control these elements. */
-  this->mutable_tree().BuildSpanningForest();
-
-  /* Add Links, Joints, and Constraints that were created during the modeling
-  process. */
-
-  const internal::LinkJointGraph& graph = internal_tree().link_joint_graph();
-  unused(graph);
-
-  /* TODO(sherm1) why not use MbP as the LinkJointGraph and do away with
-      the extra class? Then we wouldn't have to repeat these additions.
-  // Added floating mobods are in the order the new joints were added so
-  // the index we get in the plant should match the one stored with the mobod.
-  for (auto index : graph.added_floating_mobods()) {
-      const internal::SpanningForestModel::Mobod& floating_mobod =
-              model.mobods()[index];
-      const JointIndex floating = AddFloatingJointToWorld(floating_mobod);
-      DRAKE_DEMAND(floating == floating_mobod.joint_index);
-  }
-
-  // Shadow mobods are in the order the new bodies were added so the body
-  // index should match.
-  for (auto index : model.shadow_mobods()) {
-    const internal::SpanningForestModel::Mobod shadow_mobod = model.mobods()[index];
-    const BodyIndex shadow = AddShadowBody(shadow_mobod);
-    DRAKE_DEMAND(shadow == shadow_mobod.link_index_);
-  }
-
-  // The modeler only knows about constraints it adds so there is no
-  // indexing correspondence.
-  for (auto& loop_constraint : model.added_constraints()) {
-    const ConstraintIndex constraint =
-        AddLoopClosingConstraint(loop_constraint);
-  }
-  */
+  // After finalizing the base class, tree is read-only.
+  internal::MultibodyTreeSystem<T>::Finalize();
 
   if (geometry_source_is_registered()) {
     ApplyDefaultCollisionFilters();
   }
+
   FinalizePlantOnly();
 
   // Make the manager of discrete updates.
@@ -1173,12 +1121,6 @@ void MultibodyPlant<T>::Finalize() {
         "only supported for discrete models. Refer to MultibodyPlant's "
         "documentation for further details.");
   }
-
-  /* The Plant is complete now. Next, build an efficient computational
-  representation structured in accordance with `model`. */
-
-  // After finalizing the base class, tree is read-only.
-  internal::MultibodyTreeSystem<T>::Finalize();
 }
 
 template<typename T>

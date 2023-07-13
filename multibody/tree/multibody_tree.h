@@ -417,10 +417,12 @@ class MultibodyTree {
   template<template<typename Scalar> class ForceElementType, typename... Args>
   const ForceElementType<T>& AddForceElement(Args&&... args);
 
-  // See MultibodyPlant documentation.
+  // See MultibodyPlant documentation. In addition internally we distinguish
+  // user Joints from Joints added during modeling.
   template <template<typename Scalar> class JointType>
   const JointType<T>& AddJoint(
-      std::unique_ptr<JointType<T>> joint);
+      std::unique_ptr<JointType<T>> joint,
+      bool is_modeling_joint = false);
 
   // This method adds a Joint of type `JointType` between two bodies.
   // The two bodies connected by this Joint object are referred to as _parent_
@@ -561,9 +563,13 @@ class MultibodyTree {
     return static_cast<int>(frames_.size());
   }
 
-  // Returns the number of bodies in the %MultibodyTree including the *world*
-  // body. Therefore the minimum number of bodies in a MultibodyTree is one.
-  int num_bodies() const { return static_cast<int>(owned_bodies_.size()); }
+  // Returns the number of Links in the %MultibodyPlant including World.
+  // Therefore the minimum number of bodies in a MultibodyTree is one.
+  int num_links() const { return static_cast<int>(owned_links_.size()); }
+
+  // Alternate spelling for num_links() for historical reasons.
+  // TODO(sherm1) Get rid of this.
+  int num_bodies() const { return num_links(); }
 
   // Returns the number of joints added with AddJoint() to the %MultibodyTree.
   int num_joints() const { return static_cast<int>(owned_joints_.size()); }
@@ -643,15 +649,15 @@ class MultibodyTree {
     return model_instances_.at(model_instance)->num_actuated_dofs();
   }
 
-  // Returns the height of the tree data structure of `this` %MultibodyTree.
+  // Returns the height of the Forest data structure of `this` %MultibodyTree.
   // That is, the number of bodies in the longest kinematic path between the
-  // world and any other leaf body. For a model that only contains the _world_
-  // body, the height of the tree is one.
+  // world and any leaf body. For a model that only contains World, the height
+  // of the forest is one.
   // Kinematic paths are created by Mobilizer objects connecting a chain of
   // frames. Therefore, this method does not count kinematic cycles, which
   // could only be considered in the model using constraints.
-  int tree_height() const {
-    return topology_.tree_height();
+  int forest_height() const {
+    return topology_.forest_height();
   }
 
   // Returns a constant reference to the *world* body.
@@ -664,18 +670,18 @@ class MultibodyTree {
 
   // Returns a constant reference to the *world* frame.
   const BodyFrame<T>& world_frame() const {
-    return owned_bodies_[world_index()]->body_frame();
+    return owned_links_[world_index()]->body_frame();
   }
 
   // See MultibodyPlant method.
   const Body<T>& get_body(BodyIndex body_index) const {
     DRAKE_THROW_UNLESS(body_index < num_bodies());
-    return *owned_bodies_[body_index];
+    return *owned_links_[body_index];
   }
 
   Body<T>& get_mutable_body(BodyIndex body_index) {
     DRAKE_THROW_UNLESS(body_index < num_bodies());
-    return *owned_bodies_[body_index];
+    return *owned_links_[body_index];
   }
 
   // See MultibodyPlant method.
@@ -1018,7 +1024,10 @@ class MultibodyTree {
   // MultibodyPlant invokes this to construct a spanning forest/loop constraint
   // model we want to use to simulate the user's Link and Joint structure.
   const SpanningForestModel& BuildSpanningForest() {
-    return link_joint_graph_.BuildModel();
+    link_joint_graph_.BuildModel();
+    // link_joint_graph_.DumpGraph("after modeling");
+    // link_joint_graph_.model().DumpModel("forest model");
+    return link_joint_graph_.model();
   }
 
   // Returns a reference to LinkJointGraph. That contains the
@@ -2357,6 +2366,9 @@ class MultibodyTree {
       tree_clone->CloneActuatorAndAdd(*actuator);
     }
 
+    // The graph and its forest model are scalar type-independent.
+    tree_clone->link_joint_graph_ = this->link_joint_graph_;
+
     // We can safely make a deep copy here since the original multibody tree is
     // required to be finalized.
     tree_clone->topology_ = this->topology_;
@@ -2602,6 +2614,16 @@ class MultibodyTree {
 
   // Friend class to facilitate testing.
   friend class MultibodyTreeTester;
+
+  // (Internal use only) Adds a Joint to the MultibodyPlant corresponding to
+  // joints that were added to the LinkJointGraph during modeling. The joint
+  // connects the body frames.
+  template<template<typename> class JointType, typename... Args>
+  const JointType<T>& AddModelingJoint(
+      const std::string& name,
+      const Body<T>& parent,
+      const Body<T>& child,
+      Args&&... args);
 
   // Helpers for getting the full qv discrete state once we know we are using
   // discrete state.
@@ -2945,7 +2967,7 @@ class MultibodyTree {
   // Helper method to create a clone of `body` and add it to `this` tree.
   // Because this method is only invoked in a controlled manner from within
   // CloneToScalar(), it is guaranteed that the cloned body in this variant's
-  // `owned_bodies_` will occupy the same position as its corresponding Body
+  // `owned_links_` will occupy the same position as its corresponding Body
   // in the source variant `body`.
   template <typename FromScalar>
   Body<T>* CloneBodyAndAdd(const Body<FromScalar>& body);
@@ -2999,7 +3021,7 @@ class MultibodyTree {
     BodyIndex body_index = body.index();
     DRAKE_DEMAND(body_index < num_bodies());
     const BodyType<T>* body_variant =
-        dynamic_cast<const BodyType<T>*>(owned_bodies_[body_index].get());
+        dynamic_cast<const BodyType<T>*>(owned_links_[body_index].get());
     DRAKE_DEMAND(body_variant != nullptr);
     return *body_variant;
   }
@@ -3068,12 +3090,12 @@ class MultibodyTree {
     name_to_index->emplace(std::move(key), index);
   }
 
-  // If there exists a unique base body (a body whose parent is the world body)
-  // in the model given by `model_instance`, return the index of that body.
+  // If there exists a unique base Link (a Link whose parent is the world Link)
+  // in the model given by `model_instance`, return the index of that Link.
   // Otherwise return std::nullopt. In particular, if the given `model_instance`
   // is the world model instance, return `std::nullopt`.
   // @throws std::exception if `model_instance` is not valid.
-  std::optional<BodyIndex> MaybeGetUniqueBaseBodyIndex(
+  std::optional<LinkIndex> MaybeGetUniqueBaseLinkIndex(
       ModelInstanceIndex model_instance) const;
 
   // Helper function for GetDefaultFreeBodyPose().
@@ -3086,7 +3108,7 @@ class MultibodyTree {
 
   // These objects are defined via MultibodyPlant and are thus user-visible.
   const RigidBody<T>* world_body_{nullptr};
-  std::vector<std::unique_ptr<Body<T>>> owned_bodies_;  // TODO(sherm1) Links
+  std::vector<std::unique_ptr<Body<T>>> owned_links_;  // TODO(sherm1) Links
   std::vector<std::unique_ptr<Frame<T>>> owned_frames_;
   std::vector<std::unique_ptr<Joint<T>>> owned_joints_;
   std::vector<std::unique_ptr<ForceElement<T>>> owned_force_elements_;

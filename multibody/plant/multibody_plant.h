@@ -4348,9 +4348,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// Returns the number of bodies in the model, including the "world" body,
   /// which is always part of the model.
   /// @see AddRigidBody().
-  int num_bodies() const {
-    return internal_tree().num_bodies();
-  }
+  int num_links() const { return internal_tree().num_links(); }
+
+  /// Alternate spelling for num_links(). Prefer num_links().
+  int num_bodies() const { return num_links(); }
 
   /// Returns a constant reference to the body with unique index `body_index`.
   /// @throws std::exception if `body_index` does not correspond to a body in
@@ -4364,7 +4365,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if called pre-finalize.
   bool IsAnchored(const Body<T>& body) const {
     DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-    return internal_tree().get_topology().IsBodyAnchored(body.index());
+    return internal_tree().get_topology().IsLinkAnchored(body.index());
   }
 
   /// @returns `true` if a body named `name` was added to the %MultibodyPlant.

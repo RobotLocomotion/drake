@@ -31,7 +31,7 @@ class ArticulatedBodyForceCache {
   // store the force bias terms for a model with the given `topology`.
   explicit ArticulatedBodyForceCache(
       const MultibodyTreeTopology& topology) :
-      num_nodes_(topology.num_bodies()) {
+      num_nodes_(topology.num_body_nodes()) {
     Allocate();
   }
 
