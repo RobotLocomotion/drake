@@ -99,8 +99,8 @@ class DirectTranscription : public MultipleShooting {
           input_port_index =
               systems::InputPortSelection::kUseFirstInputIfItExists);
 
-  // TODO(russt): Support more than just forward Euler integration
-  //  (perhaps by taking IntegratorBase as an optional parameter?).
+  // TODO(russt): Support more than just forward Euler integration (by
+  // accepting a SimulatorConfig.)
   /// Constructs the MathematicalProgram and adds the dynamic constraints.
   /// This version of the constructor is only for continuous-time systems;
   /// the dynamics constraints use explicit forward Euler integration.
