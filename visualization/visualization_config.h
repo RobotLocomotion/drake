@@ -15,9 +15,6 @@ namespace visualization {
 /** Settings for what MultibodyPlant and SceneGraph should send to meldis,
 Meshcat, and/or drake_visualizer.
 
-@experimental The exact configuration details (names and types) are subject to
-change as we polish this new feature.
-
 See ApplyVisualizationConfig() for how to enact this configuration. */
 struct VisualizationConfig {
   template <typename Archive>
