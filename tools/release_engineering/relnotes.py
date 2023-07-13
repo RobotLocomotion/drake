@@ -67,6 +67,8 @@ def _filename_to_primary_package(filename):
     """
     if filename.startswith("tools/workspace/"):
         return "workspace"
+    if filename.startswith("geometry/optimization/"):
+        return "solvers"
     segments = filename.split("/")
     if len(segments) > 1:
         return segments[0]
