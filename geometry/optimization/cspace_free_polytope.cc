@@ -8,6 +8,7 @@
 #include <thread>
 
 #include "drake/geometry/optimization/cspace_free_internal.h"
+#include "drake/geometry/optimization/cspace_free_polytope_base_internal.h"
 #include "drake/multibody/rational/rational_forward_kinematics.h"
 #include "drake/multibody/rational/rational_forward_kinematics_internal.h"
 #include "drake/solvers/choose_best_solver.h"
@@ -304,9 +305,9 @@ CspaceFreePolytope::FindSeparationCertificateGivenPolytope(
   if (!options.ignore_redundant_C) {
     C_redundant_indices.clear();
   }
-  CspaceFreePolytopeBase::FindSeparationCertificateGivenPolytope<
-      CspacePolytopeDescription, SeparationCertificateProgram>(
-      plane_geometries_, ignored_collision_pairs,
+  FindSeparationCertificateGivenCspacePolytope<CspacePolytopeDescription,
+                                               SeparationCertificateProgram>(
+      *this, plane_geometries_, ignored_collision_pairs,
       CspacePolytopeDescription(d_minus_Cs, C_redundant_indices,
                                 s_lower_redundant_indices,
                                 s_upper_redundant_indices),

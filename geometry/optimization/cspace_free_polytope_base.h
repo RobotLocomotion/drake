@@ -14,7 +14,6 @@
 #include "drake/geometry/optimization/cspace_free_structs.h"
 #include "drake/geometry/optimization/cspace_separating_plane.h"
 #include "drake/multibody/rational/rational_forward_kinematics.h"
-#include "drake/solvers/choose_best_solver.h"
 #include "drake/solvers/mathematical_program.h"
 
 namespace drake {
@@ -197,67 +196,24 @@ class CspaceFreePolytopeBase {
       const SortedPair<multibody::BodyIndex>& body_pair,
       SForPlane s_for_plane_enum) const;
 
+ private:
+  // Forward declare the tester class to test the private members.
+  friend class CspaceFreePolytopeBaseTester;
+
   template <typename CspacePolytopeType, typename CertificateProgramType,
             typename SeparationCertificateResultType>
-  void FindSeparationCertificateGivenPolytope(
+  friend void FindSeparationCertificateGivenCspacePolytope(
+      const CspaceFreePolytopeBase& cspace_free_polytope,
       const std::vector<PlaneSeparatesGeometries>& plane_geometries,
-      const IgnoredCollisionPairs& ignored_collision_pairs,
+      const CspaceFreePolytopeBase::IgnoredCollisionPairs&
+          ignored_collision_pairs,
       const CspacePolytopeType& cspace_polytope,
       const FindSeparationCertificateOptions& options,
       const std::function<CertificateProgramType(
           const PlaneSeparatesGeometries&, const CspacePolytopeType&)>&
           construct_plane_search_program_fun,
       std::vector<std::optional<SeparationCertificateResultType>>*
-          separation_results) const {
-    DRAKE_DEMAND(plane_geometries.size() == separating_planes().size());
-    // Stores the indices in separating_planes() that don't appear in
-    // ignored_collision_pairs.
-    std::vector<int> active_plane_indices;
-    active_plane_indices.reserve(separating_planes().size());
-    for (int i = 0; i < static_cast<int>(separating_planes().size()); ++i) {
-      if (ignored_collision_pairs.count(SortedPair<geometry::GeometryId>(
-              separating_planes()[i].positive_side_geometry->id(),
-              separating_planes()[i].negative_side_geometry->id())) == 0) {
-        active_plane_indices.push_back(i);
-      }
-    }
-    *separation_results =
-        std::vector<std::optional<SeparationCertificateResultType>>(
-            active_plane_indices.size(), std::nullopt);
-    // This lambda function formulates and solves a small SOS program for each
-    // pair of geometries.
-    auto solve_small_sos = [this, &plane_geometries, &cspace_polytope,
-                            &construct_plane_search_program_fun,
-                            &active_plane_indices, &options,
-                            &separation_results](int plane_count) {
-      const int plane_index = active_plane_indices[plane_count];
-      auto certificate_program = construct_plane_search_program_fun(
-          plane_geometries[plane_index], cspace_polytope);
-      solvers::MathematicalProgramResult result;
-      solvers::MakeSolver(options.solver_id)
-          ->Solve(*certificate_program.prog, std::nullopt,
-                  options.solver_options, &result);
-      if (result.is_success()) {
-        (*separation_results)[plane_count].emplace(
-            certificate_program.certificate.GetSolution(
-                plane_index, separating_planes()[plane_index].a,
-                separating_planes()[plane_index].b,
-                separating_planes()[plane_index].decision_variables, result));
-        return true;
-      } else {
-        (*separation_results)[plane_count].reset();
-        return false;
-      }
-    };
-
-    this->SolveCertificationForEachPlaneInParallel(
-        active_plane_indices, solve_small_sos, options.num_threads,
-        options.verbose, options.terminate_at_failure);
-  }
-
- private:
-  // Forward declare the tester class to test the private members.
-  friend class CspaceFreePolytopeBaseTester;
+          separation_results);
   /*
    Computes the monomial basis for each pair of bodies.
 

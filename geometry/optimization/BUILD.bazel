@@ -118,7 +118,10 @@ drake_cc_library(
 drake_cc_library(
     name = "cspace_free_polytope_base",
     srcs = ["cspace_free_polytope_base.cc"],
-    hdrs = ["cspace_free_polytope_base.h"],
+    hdrs = [
+        "cspace_free_polytope_base.h",
+        "cspace_free_polytope_base_internal.h",
+    ],
     deps = [
         "//common/symbolic:monomial_util",
         "//geometry/optimization:c_iris_collision_geometry",

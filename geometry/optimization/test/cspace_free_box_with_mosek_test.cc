@@ -285,7 +285,7 @@ TEST_F(CIrisToyRobotTest, FindSeparationCertificateGivenBox) {
       }
     }
     for (const auto& certificate_result : certificates_result) {
-      const CIrisSeparatingPlane<symbolic::Variable>& separating_plane =
+      const auto& separating_plane =
           tester.cspace_free_box()
               .separating_planes()[certificate_result->plane_index];
       CheckSeparationBySamples(
