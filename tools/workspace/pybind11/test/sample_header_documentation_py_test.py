@@ -1,3 +1,16 @@
+r"""
+Regression test for generated C++ docstring and symbol association via mkdoc.
+
+To replace the expected header file with the most recent build's generated
+header file, use this command ...
+
+cp \
+   bazel-bin/tools/workspace/pybind11/test/sample_header_documentation.h \
+   tools/workspace/pybind11/test/sample_header_documentation.expected.h
+
+... and then manually put back the "SCRUBBED" change.
+"""
+
 from os.path import join, realpath
 import unittest
 import subprocess
@@ -6,15 +19,6 @@ import subprocess
 def _read(filename):
     with open(filename) as f:
         return f.read()
-
-# To replace the expected header file with the most recent build's generated
-# header file, use this command ...
-#
-# cp \
-#  bazel-bin/tools/workspace/pybind11/test/sample_header_documentation.h \
-#  tools/workspace/pybind11/test/sample_header_documentation.expected.h
-#
-# ... and then manually put back the "SCRUBBED" change.
 
 
 class TestDocumentation(unittest.TestCase):
