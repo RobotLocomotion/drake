@@ -80,8 +80,7 @@ struct FiniteHorizonLinearQuadraticRegulatorOptions {
   /**
   For continuous-time dynamical systems, the Riccati equation is solved by the
   Simulator (running backwards in time). Use this parameter to configure the
-  simulator (e.g. choose non-default @ref Integrators or integrator
-  parameters). */
+  simulator (e.g. choose non-default integrator or integrator parameters). */
   SimulatorConfig simulator_config{};
 };
 
