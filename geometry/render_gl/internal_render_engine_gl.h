@@ -3,15 +3,18 @@
 #include <array>
 #include <map>
 #include <memory>
+#include <optional>
 #include <string>
 #include <tuple>
 #include <unordered_map>
 #include <vector>
 
 #include "drake/common/copyable_unique_ptr.h"
+#include "drake/common/diagnostic_policy.h"
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/render/render_engine.h"
+#include "drake/geometry/render/render_material.h"
 #include "drake/geometry/render/render_mesh.h"
 #include "drake/geometry/render_gl/internal_buffer_dim.h"
 #include "drake/geometry/render_gl/internal_opengl_context.h"
@@ -146,7 +149,7 @@ class RenderEngineGl final : public render::RenderEngine {
   //                         OpenGlGeometry.
   void ImplementMesh(int geometry_index, void* user_data,
                      const Vector3<double>& scale,
-                     const std::string& file_name);
+                     const std::string& filename_in);
 
   // @see RenderEngine::DoRegisterVisual().
   bool DoRegisterVisual(GeometryId id, const Shape& shape,
@@ -354,9 +357,19 @@ class RenderEngineGl final : public render::RenderEngine {
   // re-use the same geometry. For example, if we tracked them by "aspect ratio"
   // and allowed deviation within a small tolerance, then we could reuse them.
 
-  // Mapping from obj filename to the index into geometries_ containing the
-  // OpenGlGeometry representation of the mesh.
-  std::unordered_map<std::string, int> meshes_;
+  // A data struct that includes the index into geometries_ containing the
+  // OpenGlGeometry representation and an optional material definition of the
+  // mesh. `mesh_material` will have a value *only* when the mesh provides its
+  // own material definition; otherwise, it will remain std::nullopt and the
+  // material will be determined during mesh instantiation.
+  struct RenderGlMesh {
+    int mesh_index{};
+    std::optional<geometry::internal::RenderMaterial> mesh_material{
+        std::nullopt};
+  };
+
+  // Mapping from the obj's canonical filename to RenderGlMesh.
+  std::unordered_map<std::string, RenderGlMesh> meshes_;
 
   // These are caches of reusable RenderTargets. There is a unique render target
   // for each unique image size (BufferDim) and output image type. The
@@ -381,6 +394,9 @@ class RenderEngineGl final : public render::RenderEngine {
   // context. However, each independent copy is allowed to independently
   // modify their copy of visuals_ (adding and removing geometries).
   std::unordered_map<GeometryId, OpenGlInstance> visuals_;
+
+  // The policy for handling warnings and errors.
+  drake::internal::DiagnosticPolicy diagnostic_policy_;
 
   // The direction *to* the light expressed in the camera frame.
   Vector3<float> light_dir_C_{0.0f, 0.0f, 1.0f};
