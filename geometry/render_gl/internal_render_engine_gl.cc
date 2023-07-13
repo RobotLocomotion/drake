@@ -7,6 +7,7 @@
 
 #include <fmt/format.h>
 
+#include "drake/common/diagnostic_policy.h"
 #include "drake/common/scope_exit.h"
 #include "drake/common/ssize.h"
 #include "drake/common/text_logging.h"
@@ -647,7 +648,7 @@ void RenderEngineGl::ImplementMesh(int geometry_index,
   } else {
     material = MakeMeshFallbackMaterial(data.properties, filename_in,
                                         parameters_.default_diffuse,
-                                        diagnostic_policy_);
+                                        drake::internal::DiagnosticPolicy());
   }
   temp_props.UpdateProperty("phong", "diffuse_map",
                             material.diffuse_map.string());
@@ -987,9 +988,9 @@ int RenderEngineGl::GetMesh(const string& filename_in, RegistrationData* data) {
 
   const std::string file_key = GetPathKey(filename_in);
   if (meshes_.count(file_key) == 0) {
-    const RenderMesh mesh_data =
-        LoadRenderMeshFromObj(filename_in, PerceptionProperties(),
-                              parameters_.default_diffuse, diagnostic_policy_);
+    const RenderMesh mesh_data = LoadRenderMeshFromObj(
+        filename_in, PerceptionProperties(), parameters_.default_diffuse,
+        drake::internal::DiagnosticPolicy());
     mesh_index = CreateGlGeometry(mesh_data);
     const RenderMaterial material = mesh_data.material;
 

@@ -19,6 +19,7 @@
 #include <vtkTransform.h>
 #include <vtkTransformPolyDataFilter.h>
 
+#include "drake/common/diagnostic_policy.h"
 #include "drake/common/text_logging.h"
 #include "drake/geometry/render/render_mesh.h"
 #include "drake/geometry/render/shaders/depth_shaders.h"
@@ -387,8 +388,9 @@ void RenderEngineVtk::ImplementObj(const std::string& file_name, double scale,
     return;
   }
 
-  RenderMesh mesh_data = LoadRenderMeshFromObj(
-      file_name, data->properties, default_diffuse_, diagnostic_policy_);
+  RenderMesh mesh_data =
+      LoadRenderMeshFromObj(file_name, data->properties, default_diffuse_,
+                            drake::internal::DiagnosticPolicy());
   const RenderMaterial material = mesh_data.material;
 
   vtkSmartPointer<vtkPolyDataAlgorithm> mesh_source =
