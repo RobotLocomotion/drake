@@ -9,6 +9,7 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/extract_double.h"
 #include "drake/math/linear_solve.h"
+#include "drake/multibody/contact_solvers/block_sparse_supernodal_solver.h"
 #include "drake/multibody/contact_solvers/conex_supernodal_solver.h"
 #include "drake/multibody/contact_solvers/newton_with_bisection.h"
 
@@ -180,7 +181,9 @@ SapSolverStatus SapSolver<double>::SolveWithGuess(
               "SapSolver: Non-monotonic convergence detected.");
         }
       }
-      if (!parameters_.use_dense_algebra && supernodal_solver == nullptr) {
+      if (parameters_.linear_solver_type !=
+              SapSolverParameters::LinearSolverType::kDense &&
+          supernodal_solver == nullptr) {
         // Instantiate supernodal solver on the first iteration when needed. If
         // the stopping criteria is satisfied at k = 0 (good guess), then we
         // skip the expensive instantiation of the solver.
@@ -611,8 +614,19 @@ template <typename T>
 std::unique_ptr<SuperNodalSolver> SapSolver<T>::MakeSuperNodalSolver() const {
   if constexpr (std::is_same_v<T, double>) {
     const BlockSparseMatrix<T>& J = model_->constraints_bundle().J();
-    return std::make_unique<ConexSuperNodalSolver>(
-        J.block_rows(), J.get_blocks(), model_->dynamics_matrix());
+    switch (parameters_.linear_solver_type) {
+      case SapSolverParameters::LinearSolverType::kConex:
+        return std::make_unique<ConexSuperNodalSolver>(
+            J.block_rows(), J.get_blocks(), model_->dynamics_matrix());
+      case SapSolverParameters::LinearSolverType::kBlockSparseCholesky:
+        return std::make_unique<BlockSparseSuperNodalSolver>(
+            J.block_rows(), J.get_blocks(), model_->dynamics_matrix());
+      case SapSolverParameters::LinearSolverType::kDense:
+        throw std::logic_error(
+            "Supernodal solver should only be constructed when the linear "
+            "solver type is not dense.");
+    }
+    DRAKE_UNREACHABLE();
   } else {
     throw std::logic_error(
         "SapSolver::MakeSuperNodalSolver(): SuperNodalSolver only supports T "
@@ -687,9 +701,11 @@ template <typename T>
 void SapSolver<T>::CalcSearchDirectionData(
     const systems::Context<T>& context, SuperNodalSolver* supernodal_solver,
     SapSolver<T>::SearchDirectionData* data) const {
-  DRAKE_DEMAND(parameters_.use_dense_algebra || (supernodal_solver != nullptr));
+  const bool use_dense_algebra = parameters_.linear_solver_type ==
+                                 SapSolverParameters::LinearSolverType::kDense;
+  DRAKE_DEMAND(use_dense_algebra || (supernodal_solver != nullptr));
   // Update search direction dv.
-  if (!parameters_.use_dense_algebra) {
+  if (!use_dense_algebra) {
     CallSuperNodalSolver(context, supernodal_solver, &data->dv);
   } else {
     CallDenseSolver(context, &data->dv);
