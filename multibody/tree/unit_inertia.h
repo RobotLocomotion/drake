@@ -282,7 +282,6 @@ class UnitInertia : public RotationalInertia<T> {
   ///   - Length L is negative.
   ///   - `b_E` is the zero vector. That is if `‖b_E‖₂ ≤ ε`, where ε is the
   ///     machine epsilon.
-  // TODO(Mitiguy) Throw if |b_E| is not within 1.0E-14 of 1 (breaking change).
   static UnitInertia<T> SolidCylinder(
       const T& r, const T& L, const Vector3<T>& b_E = Vector3<T>::UnitZ());
 
@@ -303,7 +302,6 @@ class UnitInertia : public RotationalInertia<T> {
   /// @param[in] r The radius of the cylinder.
   /// @param[in] L The length of the cylinder.
   /// @throws std::exception if r or L is negative.
-  // TODO(Mitiguy) add @param[in] unit_vector as with SolidCapsule.
   static UnitInertia<T> SolidCylinderAboutEnd(const T& r, const T& L);
 
   /// Creates a unit inertia for a unit-mass uniform density solid tetrahedron B
@@ -375,7 +373,6 @@ class UnitInertia : public RotationalInertia<T> {
   /// @retval G_Bcm_E
   ///   An axially symmetric unit inertia about body B's center of mass,
   ///   expressed in the same frame E as the input unit vector `b_E`.
-  // TODO(Mitiguy) Throw if |b_E| is not within 1.0E-14 of 1 (breaking change).
   static UnitInertia<T> AxiallySymmetric(
       const T& J, const T& K, const Vector3<T>& b_E);
 
@@ -403,7 +400,6 @@ class UnitInertia : public RotationalInertia<T> {
   ///   straight line L, about its center of mass `Bcm` which is located at the
   ///   center of the line, expressed in the same frame E as the input unit
   ///   vector `b_E`.
-  // TODO(Mitiguy) Throw if |b_E| is not within 1.0E-14 of 1 (breaking change).
   static UnitInertia<T> StraightLine(const T& K, const Vector3 <T>& b_E);
 
   /// Computes the unit inertia for a unit mass rod B of length L, about its
@@ -421,7 +417,6 @@ class UnitInertia : public RotationalInertia<T> {
   /// @retval G_Bcm_E
   ///   The unit inertia of the rod B about its center of mass `Bcm`,
   ///   expressed in the same frame E as the input unit vector `b_E`.
-  // TODO(Mitiguy) Throw if |b_E| is not within 1.0E-14 of 1 (breaking change).
   static UnitInertia<T> ThinRod(const T& L, const Vector3<T>& b_E);
 
   /// Constructs a unit inertia with equal moments of inertia along its

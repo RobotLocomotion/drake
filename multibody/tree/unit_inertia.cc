@@ -40,6 +40,7 @@ UnitInertia<T> UnitInertia<T>::SolidCylinder(
     const T& r, const T& L, const Vector3<T>& b_E) {
   DRAKE_THROW_UNLESS(r >= 0);
   DRAKE_THROW_UNLESS(L >= 0);
+  // TODO(Mitiguy) Throw if |b_E| is not within 1.0E-14 of 1 (breaking change).
   DRAKE_THROW_UNLESS(b_E.norm() > std::numeric_limits<double>::epsilon());
   const T J = r * r / T(2);
   const T K = (T(3) * r * r + L * L) / T(12);
@@ -48,6 +49,7 @@ UnitInertia<T> UnitInertia<T>::SolidCylinder(
 
 template <typename T>
 UnitInertia<T> UnitInertia<T>::SolidCylinderAboutEnd(const T& r, const T& L) {
+  // TODO(Mitiguy) add @param[in] unit_vector as with SolidCapsule.
   DRAKE_THROW_UNLESS(r >= 0);
   DRAKE_THROW_UNLESS(L >= 0);
   const T Iz = r * r / T(2);
@@ -62,6 +64,7 @@ UnitInertia<T> UnitInertia<T>::AxiallySymmetric(const T& J, const T& K,
   DRAKE_THROW_UNLESS(K >= 0.0);
   // The triangle inequalities for this case reduce to J <= 2*K:
   DRAKE_THROW_UNLESS(J <= 2.0 * K);
+  // TODO(Mitiguy) Throw if |b_E| is not within 1.0E-14 of 1 (breaking change).
   DRAKE_THROW_UNLESS(b_E.norm() > std::numeric_limits<double>::epsilon());
   // Normalize b_E before using it. Only direction matters:
   Vector3<T> bhat_E = b_E.normalized();
@@ -73,12 +76,14 @@ UnitInertia<T> UnitInertia<T>::AxiallySymmetric(const T& J, const T& K,
 
 template <typename T>
 UnitInertia<T> UnitInertia<T>::StraightLine(const T& K, const Vector3<T>& b_E) {
+  // TODO(Mitiguy) Throw if |b_E| is not within 1.0E-14 of 1 (breaking change).
   DRAKE_DEMAND(K > 0.0);
   return AxiallySymmetric(0.0, K, b_E);
 }
 
 template <typename T>
 UnitInertia<T> UnitInertia<T>::ThinRod(const T& L, const Vector3<T>& b_E) {
+  // TODO(Mitiguy) Throw if |b_E| is not within 1.0E-14 of 1 (breaking change).
   DRAKE_DEMAND(L > 0.0);
   return StraightLine(L * L / 12.0, b_E);
 }
