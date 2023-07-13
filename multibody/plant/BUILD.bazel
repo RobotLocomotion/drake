@@ -124,6 +124,7 @@ drake_cc_library(
         ":tamsi_solver",
         "//common:default_scalars",
         "//common:essential",
+        "//common:unused",
         "//geometry:geometry_ids",
         "//geometry:geometry_roles",
         "//geometry:scene_graph",
@@ -466,6 +467,7 @@ drake_cc_googletest(
         ":compliant_contact_manager_tester",
         ":plant",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
@@ -540,7 +542,6 @@ drake_cc_googletest(
     deps = [
         ":slicing_and_indexing",
         "//common:essential",
-        "//common/test_utilities:expect_throws_message",
     ],
 )
 
@@ -846,6 +847,14 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "contact_results_test",
+    deps = [
+        ":contact_results",
+        ":multibody_plant_core",
+    ],
+)
+
+drake_cc_googletest(
     name = "contact_results_to_lcm_test",
     deps = [
         ":contact_results_to_lcm",
@@ -987,6 +996,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "joint_locking_test",
     deps = [
+        ":multibody_plant_config_functions",
         ":plant",
         "//systems/analysis:simulator",
     ],

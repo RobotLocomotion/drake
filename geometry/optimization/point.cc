@@ -57,6 +57,14 @@ std::unique_ptr<ConvexSet> Point::DoClone() const {
   return std::make_unique<Point>(*this);
 }
 
+bool Point::DoIsBounded() const {
+  return true;
+}
+
+bool Point::DoIsEmpty() const {
+  return false;
+}
+
 std::optional<VectorXd> Point::DoMaybeGetPoint() const {
   return x_;
 }

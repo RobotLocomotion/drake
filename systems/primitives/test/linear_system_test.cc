@@ -13,10 +13,10 @@
 #include "drake/systems/framework/test_utilities/scalar_conversion.h"
 #include "drake/systems/primitives/test/affine_linear_test.h"
 
-using std::make_unique;
-using std::unique_ptr;
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
+using std::make_unique;
+using std::unique_ptr;
 
 namespace drake {
 namespace systems {
@@ -24,11 +24,10 @@ namespace {
 
 class LinearSystemPlusEmptyVectorPort final : public LinearSystem<double> {
  public:
-  LinearSystemPlusEmptyVectorPort(
-        const Eigen::Ref<const Eigen::MatrixXd>& A,
-        const Eigen::Ref<const Eigen::MatrixXd>& B,
-        const Eigen::Ref<const Eigen::MatrixXd>& C,
-        const Eigen::Ref<const Eigen::MatrixXd>& D)
+  LinearSystemPlusEmptyVectorPort(const Eigen::Ref<const Eigen::MatrixXd>& A,
+                                  const Eigen::Ref<const Eigen::MatrixXd>& B,
+                                  const Eigen::Ref<const Eigen::MatrixXd>& C,
+                                  const Eigen::Ref<const Eigen::MatrixXd>& D)
       : LinearSystem(SystemScalarConverter{}, A, B, C, D, 0.0) {
     this->DeclareInputPort(kUseDefaultName, kVectorValued, 0);
   }
@@ -393,8 +392,7 @@ class EmptyStateSystemWithMixedInputs final : public LeafSystem<T> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(EmptyStateSystemWithMixedInputs);
   EmptyStateSystemWithMixedInputs()
       : LeafSystem<T>(SystemTypeTag<EmptyStateSystemWithMixedInputs>{}) {
-    this->DeclareVectorInputPort(
-        kUseDefaultName, 1 /* scalar input */);
+    this->DeclareVectorInputPort(kUseDefaultName, 1 /* scalar input */);
     this->DeclareAbstractInputPort(
         "dummy", Value<std::vector<double>>() /* Arbitrary data type */);
   }
@@ -447,7 +445,7 @@ GTEST_TEST(TestLinearize, LinearizingOnAbstractPortThrows) {
   EmptyStateSystemWithAbstractInput<double> system;
   auto context = system.CreateDefaultContext();
   DRAKE_EXPECT_THROWS_MESSAGE(Linearize(system, *context),
-      ".*only supports vector-valued.*");
+                              ".*only supports vector-valued.*");
 }
 
 // Test linearizing a system with mixed (vector and abstract) inputs.
@@ -799,8 +797,7 @@ class MimoSystem final : public LeafSystem<T> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MimoSystem);
 
   explicit MimoSystem(bool is_discrete)
-      : LeafSystem<T>(SystemTypeTag<MimoSystem>{}),
-        is_discrete_(is_discrete) {
+      : LeafSystem<T>(SystemTypeTag<MimoSystem>{}), is_discrete_(is_discrete) {
     this->DeclareInputPort(kUseDefaultName, kVectorValued, 1);
     this->DeclareInputPort(kUseDefaultName, kVectorValued, 3);
 
@@ -938,8 +935,8 @@ GTEST_TEST(LinearSystemBespokeTest, InfiniteRecursionDuringCalc) {
   Bp << 0, 1;
   MatrixXd Cp = MatrixXd::Identity(2, 2);
   MatrixXd Dp = MatrixXd::Zero(2, 1);
-  auto* plant = builder.AddSystem(
-      std::make_unique<LinearSystem<double>>(Ap, Bp, Cp, Dp));
+  auto* plant =
+      builder.AddSystem(std::make_unique<LinearSystem<double>>(Ap, Bp, Cp, Dp));
 
   // Create a simple PD-controller.
   MatrixXd Ac(0, 0);
@@ -947,8 +944,8 @@ GTEST_TEST(LinearSystemBespokeTest, InfiniteRecursionDuringCalc) {
   MatrixXd Cc(1, 0);
   MatrixXd Dc(1, 2);
   Dc << -1, -1;
-  auto* controller = builder.AddSystem(
-      std::make_unique<LinearSystem<double>>(Ac, Bc, Cc, Dc));
+  auto* controller =
+      builder.AddSystem(std::make_unique<LinearSystem<double>>(Ac, Bc, Cc, Dc));
 
   // Connect, build, and allocate a context.
   builder.Connect(controller->get_output_port(), plant->get_input_port());
@@ -969,11 +966,10 @@ GTEST_TEST(LinearSystemBespokeTest, InfiniteRecursionDuringCalc) {
 
 class DoubleOnlyLinearSystem final : public LinearSystem<double> {
  public:
-  DoubleOnlyLinearSystem(
-      const Eigen::Ref<const Eigen::MatrixXd>& A,
-      const Eigen::Ref<const Eigen::MatrixXd>& B,
-      const Eigen::Ref<const Eigen::MatrixXd>& C,
-      const Eigen::Ref<const Eigen::MatrixXd>& D)
+  DoubleOnlyLinearSystem(const Eigen::Ref<const Eigen::MatrixXd>& A,
+                         const Eigen::Ref<const Eigen::MatrixXd>& B,
+                         const Eigen::Ref<const Eigen::MatrixXd>& C,
+                         const Eigen::Ref<const Eigen::MatrixXd>& D)
       : LinearSystem(SystemScalarConverter{}, A, B, C, D, 0.0) {}
 };
 

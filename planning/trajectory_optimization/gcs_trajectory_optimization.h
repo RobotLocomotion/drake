@@ -365,17 +365,23 @@ class GcsTrajectoryOptimization final {
 
   @param source specifies the source subgraph. Must have been created from a
   call to AddRegions() on this object, not some other optimization program. If
-  the source is a subgraph with more than one region, an empty set will be added
-  and optimizer will choose the best region to start in. To start in a
+  the source is a subgraph with more than one region, an empty set will be
+  added and optimizer will choose the best region to start in. To start in a
   particular point, consider adding a subgraph of order zero with a single
   region of type Point.
   @param target specifies the target subgraph. Must have been created from a
   call to AddRegions() on this object, not some other optimization program. If
-  the target is a subgraph with more than one region, an empty set will be added
-  and optimizer will choose the best region to end in. To end in a particular
-  point, consider adding a subgraph of order zero with a single region of type
-  Point.
+  the target is a subgraph with more than one region, an empty set will be
+  added and optimizer will choose the best region to end in. To end in a
+  particular point, consider adding a subgraph of order zero with a single
+  region of type Point.
   @param options include all settings for solving the shortest path problem.
+  The following default options will be used if they are not provided in
+  `options`:
+  - `options.convex_relaxation = true`,
+  - `options.max_rounded_paths = 5`,
+  - `options.preprocessing = true`.
+
   @see `geometry::optimization::GraphOfConvexSetsOptions` for further details.
   */
   std::pair<trajectories::CompositeTrajectory<double>,

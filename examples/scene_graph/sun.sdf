@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<sdf xmlns:drake="http://drake.mit.edu" version="1.8">
+  <!-- Test to load a single body with a .glTF used as visual. -->
+  <model name="sun_model">
+    <!-- Add box primitives. -->
+    <link name="sun">
+      <pose>0 0 0 0 0 0</pose>
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>package://drake/examples/scene_graph/sun.gltf</uri>
+            <scale>1.0 1.0 1.0</scale>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+  </model>
+</sdf>

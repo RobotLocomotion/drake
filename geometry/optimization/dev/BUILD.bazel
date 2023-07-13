@@ -19,7 +19,7 @@ drake_cc_library(
         "//common/symbolic:monomial_util",
         "//geometry/optimization:c_iris_collision_geometry",
         "//geometry/optimization:cspace_free_internal",
-        "//geometry/optimization/dev:cspace_free_path_separating_plane",
+        "//geometry/optimization:cspace_separating_plane",
         "//geometry/optimization/dev:polynomial_positive_on_path",
         "//solvers:choose_best_solver",
         "//solvers:mathematical_program",
@@ -35,16 +35,6 @@ drake_cc_library(
     deps = [
         "//common/symbolic:monomial_util",
         "//solvers:mathematical_program",
-    ],
-)
-
-drake_cc_library(
-    name = "cspace_free_path_separating_plane",
-    srcs = ["cspace_free_path_separating_plane.cc"],
-    hdrs = ["cspace_free_path_separating_plane.h"],
-    deps = [
-        "//common/symbolic:monomial_util",
-        "//geometry/optimization:cspace_separating_plane",
     ],
 )
 
@@ -88,14 +78,6 @@ drake_cc_googletest(
         "//common/test_utilities:symbolic_test_util",
         "//geometry/optimization/dev:polynomial_positive_on_path",
         "//solvers:solve",
-    ],
-)
-
-drake_cc_googletest(
-    name = "cspace_free_path_separating_plane_test",
-    deps = [
-        "//common/test_utilities:symbolic_test_util",
-        "//geometry/optimization/dev:cspace_free_path_separating_plane",
     ],
 )
 

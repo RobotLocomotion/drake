@@ -400,6 +400,7 @@ class TestSensors(unittest.TestCase):
             self.assertIsInstance(system.label_image_output_port(), OutputPort)
             self.assertIsInstance(system.body_pose_in_world_output_port(),
                                   OutputPort)
+            self.assertIsInstance(system.image_time_output_port(), OutputPort)
 
         # Use HDTV size.
         width = 1280
@@ -495,6 +496,7 @@ class TestSensors(unittest.TestCase):
         dut.depth_image_16U_output_port()
         dut.label_image_output_port()
         dut.body_pose_in_world_output_port()
+        dut.image_time_output_port()
 
     def test_image_writer(self):
         writer = mut.ImageWriter()

@@ -737,9 +737,12 @@ void RenderEngineGl::ImplementGeometry(const Capsule& capsule,
 }
 
 void RenderEngineGl::ImplementGeometry(const Convex& convex, void* user_data) {
-  const int geometry = GetMesh(convex.filename());
-  ImplementMesh(geometry, user_data, Vector3d(1, 1, 1) * convex.scale(),
-                convex.filename());
+  RegistrationData* data = static_cast<RegistrationData*>(user_data);
+  const int geometry = GetMesh(convex.filename(), data);
+  if (data->accepted) {
+    ImplementMesh(geometry, user_data, Vector3d(1, 1, 1) * convex.scale(),
+                  convex.filename());
+  }
 }
 
 void RenderEngineGl::ImplementGeometry(const Cylinder& cylinder,
@@ -763,9 +766,12 @@ void RenderEngineGl::ImplementGeometry(const HalfSpace&, void* user_data) {
 }
 
 void RenderEngineGl::ImplementGeometry(const Mesh& mesh, void* user_data) {
-  const int geometry = GetMesh(mesh.filename());
-  ImplementMesh(geometry, user_data, Vector3d(1, 1, 1) * mesh.scale(),
-                mesh.filename());
+  RegistrationData* data = static_cast<RegistrationData*>(user_data);
+  const int geometry = GetMesh(mesh.filename(), data);
+  if (data->accepted) {
+    ImplementMesh(geometry, user_data, Vector3d(1, 1, 1) * mesh.scale(),
+                  mesh.filename());
+  }
 }
 
 void RenderEngineGl::ImplementGeometry(const Sphere& sphere, void* user_data) {
@@ -825,7 +831,7 @@ bool RenderEngineGl::DoRegisterVisual(GeometryId id, const Shape& shape,
   opengl_context_->MakeCurrent();
   RegistrationData data{id, RigidTransformd{X_WG}, properties};
   shape.Reify(this, &data);
-  return true;
+  return data.accepted;
 }
 
 void RenderEngineGl::DoUpdateVisualPose(GeometryId id,
@@ -1138,24 +1144,39 @@ int RenderEngineGl::GetBox() {
   return box_;
 }
 
-int RenderEngineGl::GetMesh(const string& filename_in) {
+int RenderEngineGl::GetMesh(const string& filename_in, RegistrationData* data) {
   int mesh = -1;
-  // Handle the case where filename_in is a symlink.
-  const fs::path path_in(filename_in);
-  const fs::path file_path =
-      fs::is_symlink(path_in) ? fs::read_symlink(path_in) : path_in;
-  const std::string filename = file_path.string();
 
-  if (meshes_.count(filename) == 0) {
+  // We're checking the input filename in case the user specified name has the
+  // desired extension but is a symlink to some arbitrarily named cached file.
+  if (Mesh(filename_in).extension() != ".obj") {
+    static const logging::Warn one_time(
+        "RenderEngineGl only supports Mesh/Convex specifications which use "
+        ".obj files. Mesh specifications using other mesh types (e.g., "
+        ".gltf, .stl, .dae, etc.) will be ignored.");
+    data->accepted = false;
+    return -1;
+  }
+
+  // Resolve to a canonical path.
+  std::error_code bad_path;
+  const std::string file_key = fs::canonical(filename_in, bad_path).string();
+  if (bad_path) {
+    throw std::runtime_error(fmt::format(
+        "RenderEngineGl: unable to access the requested mesh file '{}'; {}.",
+        filename_in, bad_path.message()));
+  }
+
+  if (meshes_.count(file_key) == 0) {
     // TODO(SeanCurtis-TRI): We're ignoring the declared perception properties
     //  for the mesh. We need to pass it in and return a mesh *and* the
     //  resulting material properties.
     RenderMesh mesh_data = LoadRenderMeshFromObj(
         filename_in, PerceptionProperties(), parameters_.default_diffuse);
     mesh = CreateGlGeometry(mesh_data);
-    meshes_.insert({filename, mesh});
+    meshes_.insert({file_key, mesh});
   } else {
-    mesh = meshes_[filename];
+    mesh = meshes_[file_key];
   }
 
   geometries_[mesh].throw_if_undefined(

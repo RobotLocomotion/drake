@@ -3,6 +3,7 @@
 #include <filesystem>
 #include <fstream>
 #include <functional>
+#include <ostream>
 #include <string>
 #include <vector>
 
@@ -10,6 +11,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 
 namespace drake {
 namespace geometry {
@@ -20,6 +22,16 @@ namespace {
 using nlohmann::json;
 using std::string;
 using std::vector;
+
+// Test the conversion between Eigen and glTF json. We'll simply create a weird
+// 4x4 matrix and make sure that translating in and out of json is idempotent.
+GTEST_TEST(GltfMergeTest, JsonEigenConversion) {
+  Matrix4<double> M;
+  M << 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16;
+  const json M_json = GltfMatrixFromEigenMatrix(M);
+  const Matrix4<double> M_return = EigenMatrixFromGltfMatrix(M_json);
+  EXPECT_TRUE(CompareMatrices(M_return, M));
+}
 
 /* Specification of a test case. Because each function under test is responsible
  for merging a particular array, each test case examines only the targeted
@@ -39,6 +51,12 @@ struct MergeCase {
   string description;
   /* The merge function that should be called. */
   std::function<void(json*, json&&)> merge{};
+
+  friend std::ostream& operator<<(std::ostream& out,
+                                  const MergeCase& merge_case) {
+    out << merge_case.description;
+    return out;
+  }
 };
 
 /* Evaluates a test case, confirming the merged result is as expected. */
@@ -47,7 +65,7 @@ void Evaluate(const MergeCase& test_case) {
   json source = json::parse(test_case.source);
   test_case.merge(&target, std::move(source));
   const json expected = json::parse(test_case.expected);
-  EXPECT_EQ(target[test_case.array_name], expected) << test_case.description;
+  EXPECT_EQ(target[test_case.array_name], expected) << test_case;
 }
 
 /* The test harness for the various merge functions. This includes families of

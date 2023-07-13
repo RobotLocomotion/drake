@@ -177,9 +177,9 @@ drake_cc_library(
     deps = [
         ":convex_set",
         "//common/symbolic:expression",
+        "//solvers:choose_best_solver",
         "//solvers:create_cost",
         "//solvers:mathematical_program_result",
-        "//solvers:solve",
         "//solvers:solver_interface",
     ],
 )
@@ -275,6 +275,26 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "cspace_free_box_with_mosek_test",
+    timeout = "long",
+    # Some of these test cases take a very long time to run. Run each test case
+    # in its own process (in parallel) to improve test latency.
+    shard_count = 12,
+    # This test launches 2 threads to test both serial and parallel code paths
+    # in CspaceFreePolytope.
+    tags = mosek_test_tags() + ["cpu:2"] + ["no_memcheck"],
+    use_default_main = False,
+    deps = [
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//common/test_utilities:symbolic_test_util",
+        "//geometry/optimization:c_iris_test_utilities",
+        "//geometry/optimization:cspace_free_box",
+        "//solvers:mosek_solver",
+    ],
+)
+
+drake_cc_googletest(
     name = "cspace_free_polytope_test",
     deps = [
         ":c_iris_test_utilities",
@@ -328,6 +348,7 @@ drake_cc_library(
         ":cspace_free_polytope",
         "//geometry:scene_graph",
         "//multibody/plant",
+        "//solvers:sos_basis_generator",
         "//systems/framework:diagram_builder",
         "@gtest//:without_main",
     ],
@@ -387,6 +408,7 @@ drake_cc_googletest(
         ":convex_set",
         ":test_utilities",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
         "//common/yaml",
     ],
 )

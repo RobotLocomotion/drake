@@ -3,7 +3,7 @@ import time
 import unittest
 
 from pydrake.common import configure_logging
-from pydrake.common.test.text_logging_test import (
+from pydrake.common.test.text_logging_test_helpers import (
     Worker,
     do_log_test,
 )

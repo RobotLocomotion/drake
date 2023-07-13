@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
 
@@ -63,15 +64,33 @@ GTEST_TEST(FrankaArmTest, TestLoadCombined) {
   EXPECT_EQ(plant.num_bodies(), 13);
 }
 
+// Compares velocity, acceleration, effort and position limits of two given
+// actuators.
+void CompareActuatorLimits(const multibody::JointActuator<double>& joint_a,
+                           const multibody::JointActuator<double>& joint_b) {
+  EXPECT_NE(&joint_a, &joint_b);  // Different instance.
+  EXPECT_TRUE(CompareMatrices(joint_a.joint().velocity_lower_limits(),
+                              joint_b.joint().velocity_lower_limits()));
+  EXPECT_TRUE(CompareMatrices(joint_a.joint().velocity_upper_limits(),
+                              joint_b.joint().velocity_upper_limits()));
+  EXPECT_TRUE(CompareMatrices(joint_a.joint().position_lower_limits(),
+                              joint_b.joint().position_lower_limits()));
+  EXPECT_TRUE(CompareMatrices(joint_a.joint().position_upper_limits(),
+                              joint_b.joint().position_upper_limits()));
+  EXPECT_EQ(joint_a.effort_limit(), joint_b.effort_limit());
+  EXPECT_TRUE(CompareMatrices(joint_a.joint().acceleration_lower_limits(),
+                              joint_b.joint().acceleration_lower_limits()));
+  EXPECT_TRUE(CompareMatrices(joint_a.joint().acceleration_upper_limits(),
+                              joint_b.joint().acceleration_upper_limits()));
+  EXPECT_EQ(joint_a.default_gear_ratio(), joint_b.default_gear_ratio());
+  EXPECT_EQ(joint_a.default_rotor_inertia(), joint_b.default_rotor_inertia());
+}
+
 // Tests that the reflected interia values are consistent between the URDFs
 GTEST_TEST(FrankaArmTest, TestReflectedInertia) {
   multibody::MultibodyPlant<double> canonical_plant(0.0);
-  multibody::ModelInstanceIndex canonical_model_instance =
-      LoadFrankaCanonicalModel(&canonical_plant);
+  LoadFrankaCanonicalModel(&canonical_plant);
   canonical_plant.Finalize();
-
-  const std::vector<multibody::JointIndex> joint_canonical_indices =
-      canonical_plant.GetJointIndices(canonical_model_instance);
 
   const std::string kPath(
       FindResourceOrThrow("drake/manipulation/models/franka_description/urdf/"
@@ -89,10 +108,7 @@ GTEST_TEST(FrankaArmTest, TestReflectedInertia) {
     const multibody::JointActuator<double>& joint_actuator =
         plant.get_joint_actuator(drake::multibody::JointActuatorIndex(i));
 
-    EXPECT_EQ(canonical_joint_actuator.default_gear_ratio(),
-              joint_actuator.default_gear_ratio());
-    EXPECT_EQ(canonical_joint_actuator.default_rotor_inertia(),
-              joint_actuator.default_rotor_inertia());
+    CompareActuatorLimits(canonical_joint_actuator, joint_actuator);
   }
 }
 

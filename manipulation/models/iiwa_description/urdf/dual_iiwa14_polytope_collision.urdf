@@ -295,7 +295,9 @@
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://drake_models/iiwa_description/meshes/iiwa14/collision/link_7_polytope.obj"/>
+        <mesh filename="package://drake_models/iiwa_description/meshes/iiwa14/collision/link_7_polytope.obj">
+          <drake:declare_convex/>
+        </mesh>
       </geometry>
       <material name="Grey"/>
     </collision>
@@ -316,6 +318,12 @@
   <link name="left_iiwa_link_ee">
     </link>
   <frame link="left_iiwa_link_ee" name="left_iiwa_frame_ee" rpy="3.141592653589793 0 1.570796326794897" xyz="0.09 0 0"/>
+  <drake:collision_filter_group name="left_iiwa_wrist">
+    <drake:member link="left_iiwa_link_5"/>
+    <drake:member link="left_iiwa_link_6"/>
+    <drake:member link="left_iiwa_link_7"/>
+    <drake:ignored_collision_filter_group name="left_iiwa_wrist"/>
+  </drake:collision_filter_group>
   <!-- Load Gazebo lib and set the robot namespace -->
   <gazebo>
     <plugin filename="libgazebo_ros_control.so" name="gazebo_ros_controller">
@@ -711,7 +719,9 @@
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://drake_models/iiwa_description/meshes/iiwa14/collision/link_7_polytope.obj"/>
+        <mesh filename="package://drake_models/iiwa_description/meshes/iiwa14/collision/link_7_polytope.obj">
+          <drake:declare_convex/>
+        </mesh>
       </geometry>
       <material name="Grey"/>
     </collision>
@@ -732,6 +742,12 @@
   <link name="right_iiwa_link_ee">
     </link>
   <frame link="right_iiwa_link_ee" name="right_iiwa_frame_ee" rpy="3.141592653589793 0 1.570796326794897" xyz="0.09 0 0"/>
+  <drake:collision_filter_group name="right_iiwa_wrist">
+    <drake:member link="right_iiwa_link_5"/>
+    <drake:member link="right_iiwa_link_6"/>
+    <drake:member link="right_iiwa_link_7"/>
+    <drake:ignored_collision_filter_group name="right_iiwa_wrist"/>
+  </drake:collision_filter_group>
   <!-- Load Gazebo lib and set the robot namespace -->
   <gazebo>
     <plugin filename="libgazebo_ros_control.so" name="gazebo_ros_controller">

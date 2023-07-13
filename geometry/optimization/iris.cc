@@ -191,6 +191,12 @@ class IrisConvexSetMaker final : public ShapeReifier {
     set = std::make_unique<VPolytope>(query_, geom_id_, reference_frame_);
   }
 
+  void ImplementGeometry(const Mesh&, void* data) {
+    DRAKE_DEMAND(geom_id_.is_valid());
+    auto& set = *static_cast<copyable_unique_ptr<ConvexSet>*>(data);
+    set = std::make_unique<VPolytope>(query_, geom_id_, reference_frame_);
+  }
+
  private:
   const QueryObject<double>& query_{};
   std::optional<FrameId> reference_frame_{};
@@ -389,21 +395,27 @@ void AddTangentToPolytope(
   *num_constraints += 1;
 }
 
-void MakeGuessFeasible(const HPolyhedron& P, const IrisOptions& options,
-                       const VectorXd& closest, Eigen::VectorXd* guess) {
+void MakeGuessFeasible(const HPolyhedron& P, Eigen::VectorXd* guess) {
   const auto& A = P.A();
   const auto& b = P.b();
-  const int N = A.rows();
-  if (A.row(N - 1) * *guess - b[N - 1] > 0) {
-    // The HPolyhedron uniform sampler wants feasible points.  First
-    // try projecting the closest point back into the set.
-    *guess = closest - options.configuration_space_margin *
-                           A.row(N - 1).normalized().transpose();
-    // If this causes a different constraint to be violated, then just
-    // go back to the "center" of the set.
-    if (!P.PointInSet(*guess)) {
-      *guess = P.ChebyshevCenter();
+  const int M = A.rows();
+  // Add kEps below because we want to be strictly on the correct side of the
+  // inequality (and robust to floating point errors).
+  const double kEps = 1e-14;
+  // Try projecting the guess onto any violated constraints, one-by-one.
+  for (int i = M - 1; i >= 0; --i) {
+    if (A.row(i) * *guess - b[i] > 0) {
+      // guess = argmin_x ||x - guess||^2 s.t. A.row(i) * x = b(i).
+      *guess -=
+          A.row(i).normalized().transpose() * (A.row(i) * *guess - b[i] + kEps);
     }
+  }
+  // If this causes a different constraint to be violated, then just return the
+  // Chebyshev center.
+  if (!P.PointInSet(*guess)) {
+    // Note: This can throw if the set becomes empty. But it should not happen;
+    // we check that the seed is feasible in AddTangentToPolytope.
+    *guess = P.ChebyshevCenter();
   }
 }
 
@@ -428,7 +440,7 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
   // Check the inputs.
   plant.ValidateContext(context);
   const int nq = plant.num_positions();
-  const Eigen::VectorXd sample = plant.GetPositions(context);
+  const Eigen::VectorXd seed = plant.GetPositions(context);
   const int nc = static_cast<int>(options.configuration_obstacles.size());
   // Note: We require finite joint limits to define the bounding box for the
   // IRIS algorithm.
@@ -437,7 +449,7 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
   DRAKE_DEMAND(options.num_collision_infeasible_samples >= 0);
   for (int i = 0; i < nc; ++i) {
     DRAKE_DEMAND(options.configuration_obstacles[i]->ambient_dimension() == nq);
-    if (options.configuration_obstacles[i]->PointInSet(sample)) {
+    if (options.configuration_obstacles[i]->PointInSet(seed)) {
       throw std::runtime_error(
           fmt::format("The seed point is in configuration obstacle {}", i));
     }
@@ -454,7 +466,7 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
   DRAKE_DEMAND(P.A().rows() == 2 * nq);
   const double kEpsilonEllipsoid = 1e-2;
   Hyperellipsoid E = options.starting_ellipse.value_or(
-      Hyperellipsoid::MakeHypersphere(kEpsilonEllipsoid, sample));
+      Hyperellipsoid::MakeHypersphere(kEpsilonEllipsoid, seed));
 
   // Make all of the convex sets and supporting quantities.
   auto query_object =
@@ -482,7 +494,7 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
       std::make_shared<internal::SamePointConstraint>(&plant, context);
 
   // As a surrogate for the true objective, the pairs are sorted by the distance
-  // between each collision pair from the sample point configuration. This could
+  // between each collision pair from the seed point configuration. This could
   // improve computation times and produce regions with fewer faces.
   std::vector<GeometryPairWithDistance> sorted_pairs;
   for (const auto& [geomA, geomB] : pairs) {
@@ -520,10 +532,10 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
     // Fail fast if the seed point is infeasible.
     {
       if (!options.prog_with_additional_constraints->CheckSatisfied(
-              additional_constraint_bindings, sample)) {
+              additional_constraint_bindings, seed)) {
         throw std::runtime_error(
             "options.prog_with_additional_constraints is infeasible at the "
-            "sample point. The seed point must be feasible.");
+            "seed point. The seed point must be feasible.");
       }
     }
     // Handle bounding box and linear constraints as a special case (extracting
@@ -572,7 +584,7 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
                     b.head(num_initial_constraints));
   }
 
-  DRAKE_THROW_UNLESS(P.PointInSet(sample, 1e-12));
+  DRAKE_THROW_UNLESS(P.PointInSet(seed, 1e-12));
 
   double best_volume = E.Volume();
   int iteration = 0;
@@ -584,10 +596,12 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
   auto solver = solvers::MakeFirstAvailableSolver(
       {solvers::SnoptSolver::id(), solvers::IpoptSolver::id()});
 
+  VectorXd guess = seed;
+
   while (true) {
+    log()->info("IrisInConfigurationSpace iteration {}", iteration);
     int num_constraints = num_initial_constraints;
-    bool sample_point_requirement = true;
-    VectorXd guess = sample;
+    bool seed_point_requirement = true;
     HPolyhedron P_candidate = P;
     DRAKE_ASSERT(best_volume > 0);
     // Find separating hyperplanes
@@ -611,18 +625,22 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
                 .IntersectsWith(*obstacles[scaling[i].second])) {
           const VectorXd point = closest_points.col(scaling[i].second);
           AddTangentToPolytope(E, point, 0.0, &A, &b, &num_constraints);
+          if (options.require_sample_point_is_contained) {
+            seed_point_requirement =
+                A.row(num_constraints - 1) * seed <= b(num_constraints - 1);
+            if (!seed_point_requirement) break;
+          }
         }
       }
 
-      if (options.require_sample_point_is_contained) {
-        sample_point_requirement =
-            ((A.topRows(num_constraints) * sample).array() <=
-             b.head(num_constraints).array())
-                .any();
-      }
+      if (!seed_point_requirement) break;
+
+      P_candidate =
+          HPolyhedron(A.topRows(num_constraints), b.head(num_constraints));
+      MakeGuessFeasible(P_candidate, &guess);
     }
 
-    if (!sample_point_requirement) break;
+    if (!seed_point_requirement) break;
 
     // Use the fast nonlinear optimizer until it fails
     // num_collision_infeasible_samples consecutive times.
@@ -632,19 +650,20 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
           same_point_constraint, *frames.at(pair.geomA), *frames.at(pair.geomB),
           *sets.at(pair.geomA), *sets.at(pair.geomB), E,
           A.topRows(num_constraints), b.head(num_constraints));
-      while (sample_point_requirement &&
-             consecutive_failures < options.num_collision_infeasible_samples) {
+      int counter_example_searches_for_this_pair = 0;
+      bool warned_many_searches = false;
+      while (consecutive_failures < options.num_collision_infeasible_samples) {
         if (prog.Solve(*solver, guess, &closest)) {
           consecutive_failures = 0;
           AddTangentToPolytope(E, closest, options.configuration_space_margin,
                                &A, &b, &num_constraints);
           P_candidate =
               HPolyhedron(A.topRows(num_constraints), b.head(num_constraints));
-          MakeGuessFeasible(P_candidate, options, closest, &guess);
+          MakeGuessFeasible(P_candidate, &guess);
           if (options.require_sample_point_is_contained) {
-            sample_point_requirement =
-                A.row(num_constraints - 1) * sample <= b(num_constraints - 1);
-            if (!sample_point_requirement) break;
+            seed_point_requirement =
+                A.row(num_constraints - 1) * seed <= b(num_constraints - 1);
+            if (!seed_point_requirement) break;
           }
           prog.UpdatePolytope(A.topRows(num_constraints),
                               b.head(num_constraints));
@@ -652,10 +671,28 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
           ++consecutive_failures;
         }
         guess = P_candidate.UniformSample(&generator, guess);
+        if (!warned_many_searches &&
+            counter_example_searches_for_this_pair >=
+                10 * options.num_collision_infeasible_samples) {
+          warned_many_searches = true;
+          log()->info(
+              " Checking {} against {} has already required {} counter-example "
+              "searches; still searching...",
+              inspector.GetName(pair.geomA), inspector.GetName(pair.geomB),
+              counter_example_searches_for_this_pair);
+        }
       }
+      if (warned_many_searches) {
+        log()->info(
+            " Finished checking {} against {} after {} counter-example "
+            "searches.",
+            inspector.GetName(pair.geomA), inspector.GetName(pair.geomB),
+            counter_example_searches_for_this_pair);
+      }
+      if (!seed_point_requirement) break;
     }
 
-    if (!sample_point_requirement) break;
+    if (!seed_point_requirement) break;
 
     if (options.prog_with_additional_constraints) {
       counter_example_prog->UpdatePolytope(A.topRows(num_constraints),
@@ -684,26 +721,26 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
                                      &num_constraints);
                 P_candidate = HPolyhedron(A.topRows(num_constraints),
                                           b.head(num_constraints));
-                MakeGuessFeasible(P_candidate, options, closest, &guess);
+                MakeGuessFeasible(P_candidate, &guess);
                 if (options.require_sample_point_is_contained) {
-                  sample_point_requirement =
-                      A.row(num_constraints - 1) * sample <=
-                      b(num_constraints - 1);
-                  if (!sample_point_requirement) break;
+                  seed_point_requirement = A.row(num_constraints - 1) * seed <=
+                                           b(num_constraints - 1);
+                  if (!seed_point_requirement) break;
                 }
                 counter_example_prog->UpdatePolytope(A.topRows(num_constraints),
                                                      b.head(num_constraints));
               } else {
                 ++consecutive_failures;
               }
-              guess = P.UniformSample(&generator, guess);
+              guess = P_candidate.UniformSample(&generator, guess);
             }
           }
         }
+        if (!seed_point_requirement) break;
       }
     }
 
-    if (!sample_point_requirement) break;
+    if (!seed_point_requirement) break;
 
     P = HPolyhedron(A.topRows(num_constraints), b.head(num_constraints));
 

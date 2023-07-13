@@ -5,7 +5,6 @@ import textwrap
 import unittest
 
 from pydrake.common import FindResourceOrThrow
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.geometry import Meshcat
 import pydrake.visualization as mut
 import pydrake.visualization._model_visualizer as mut_private
@@ -72,7 +71,11 @@ class TestModelVisualizerSubprocess(unittest.TestCase):
 
 
 class TestModelVisualizer(unittest.TestCase):
-    """Tests the ModelVisualizer class."""
+    """
+    Tests the ModelVisualizer class.
+
+    Note that camera tests are split into the model_visualizer_camera_test.
+    """
 
     SAMPLE_OBJ = textwrap.dedent("""<?xml version="1.0"?>
     <sdf version="1.7">
@@ -194,14 +197,6 @@ class TestModelVisualizer(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "already been"):
             dut.AddModels("ignored.urdf")
 
-    def test_camera(self):
-        """
-        Checks that the rgbd sensor code does not crash.
-        """
-        dut = mut.ModelVisualizer(show_rgbd_sensor=True)
-        dut.parser().AddModelsFromString(self.SAMPLE_OBJ, "sdf")
-        dut.Run(loop_once=True)
-
     def test_reload(self):
         """
         Checks that the _reload() function does not crash.
@@ -284,12 +279,6 @@ class TestModelVisualizer(unittest.TestCase):
         self.assertEqual(kwargs["new"], True)
         self.assertIn("localhost", kwargs["url"])
         self.assertEqual(len(kwargs), 2)
-
-    def test_deprecated_run_with_reload(self):
-        dut = mut.ModelVisualizer()
-        dut.parser().AddModelsFromString(self.SAMPLE_OBJ, "sdf")
-        with catch_drake_warnings(expected_count=1):
-            dut.RunWithReload(loop_once=True)
 
     def test_triad_defaults(self):
         # Cross-check the default triad parameters.

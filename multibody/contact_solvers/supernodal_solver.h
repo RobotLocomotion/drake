@@ -8,22 +8,15 @@
 #include <Eigen/Dense>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/multibody/contact_solvers/block_sparse_matrix.h"
 #include "drake/multibody/contact_solvers/matrix_block.h"
-
-#ifndef DRAKE_DOXYGEN_CXX
-// Forward declaration to avoid the inclusion of conex's headers within a Drake
-// header.
-namespace conex {
-class SupernodalKKTSolver;
-}
-#endif
 
 namespace drake {
 namespace multibody {
 namespace contact_solvers {
 namespace internal {
 
-using BlockMatrixTriplet = std::tuple<int, int, MatrixBlock<double>>;
+using BlockTriplet = BlockSparseMatrix<double>::BlockTriplet;
 
 // A supernodal Cholesky solver for solving the symmetric positive definite
 // system
@@ -34,54 +27,25 @@ using BlockMatrixTriplet = std::tuple<int, int, MatrixBlock<double>>;
 //
 // Example use case:
 //
-//  SuperNodalSolver solver( ... );
-//  solver.SetWeightMatrix( ... );
-//  solver.Factor();
+//  auto solver = std::make_unique<ConcreteSolverType>( ... );
+//  solver->SetWeightMatrix( ... );
+//  solver->Factor();
 //
 //  // Solve H⋅x1 = b1.
-//  x1 = solver.Solve(b1);
+//  x1 = solver->Solve(b1);
 //  // Solve H⋅x2 = b2. This reuses the factorization (important for speed!).
-//  x2 = solver.Solve(b2);
+//  x2 = solver->Solve(b2);
 //
 //  // Update weight matrix and refactor.
-//  solver.SetWeightMatrix( ... );
-//  solver.Factor();
+//  solver->SetWeightMatrix( ... );
+//  solver->Factor();
 //  // Solve H⋅x = b using updated factorization.
-//  x = solver.Solve(b);
+//  x = solver->Solve(b);
 class SuperNodalSolver {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SuperNodalSolver)
 
-  // @param num_jacobian_row_blocks
-  //   Number of row blocks in the matrix J.
-  // @param jacobian_blocks
-  //   A vector of triplets (p, t, Jₚₜ) specifying the non-zero blocks of the
-  //   Jacobian matrix.  The number of block columns nₜ is inferred
-  //   from the largest column index t in the vector of triplets (p, t, Jₚₜ).
-  //   An exception is thrown if any of the following conditions fail:
-  //     1) There is at least one triplet  (p, t, Jₚₜ) with column index t for
-  //     each t ∈ {1,nₜ}.
-  //     2) There is at most two triplets (p, t, Jₚₜ) with the same row
-  //     index p.
-  // @param mass_matrices
-  //   Specifies a block-diagonal mass matrix M of size nᵥ x nᵥ.  The block
-  //   columns of the mass matrix and the block columns of the Jacobian J both
-  //   induce a partition of the set {0, 1, ..., nᵥ}, where nᵥ denotes the
-  //   number of scalar decision variables. The partition induced by M must
-  //   refine the partition induced by J, otherwise an exception is thrown. (See
-  //   https://en.wikipedia.org/wiki/Partition_of_a_set for definition of
-  //   refinement.)  For instance, if J has block structure
-  //     J = |J₁  0|
-  //         |J₂ J₃|
-  //   Then we require existence of n such that
-  //     num_cols(J₁) =  ∑num_cols(Mₜ), t = 1…n
-  //     num_cols(J₃) =  ∑num_cols(Mₜ), t = n+1…nᵥ
-  //   If this condition fails, an exception is thrown.
-  SuperNodalSolver(int num_jacobian_row_blocks,
-                   const std::vector<BlockMatrixTriplet>& jacobian_blocks,
-                   const std::vector<Eigen::MatrixXd>& mass_matrices);
-
-  ~SuperNodalSolver();
+  virtual ~SuperNodalSolver() = default;
 
   // Sets the block-diagonal weight matrix G.  The block rows of J and G both
   // partition the set {1, 2, ..., num_rows(J)}. Similar to the mass_matrix,
@@ -111,28 +75,70 @@ class SuperNodalSolver {
   // Throws if Factor() has not been called.
   void SolveInPlace(Eigen::VectorXd* b) const;
 
+  // Returns the size of the system being solved.
+  int GetSize() const { return DoGetSize(); }
+
+ protected:
+  SuperNodalSolver() = default;
+
+  // @group NVI implementations. Specific solvers must implement these
+  // methods. Refer to the specific NVI documentation for details.
+  // @{
+
+  // Returns true iff the weight matrix is compatible with the Jacobian matrix
+  // and the weight matrix is successfully set.
+  virtual bool DoSetWeightMatrix(
+      const std::vector<Eigen::MatrixXd>& block_diagonal_G) = 0;
+
+  // @see MakeFullMatrix()
+  virtual Eigen::MatrixXd DoMakeFullMatrix() const = 0;
+
+  // Returns true iff the factorization is successful. See associated NVI
+  // documentation for possible cause of failure for the factorization.
+  virtual bool DoFactor() = 0;
+
+  // `b` is guaranteed to be non-null and of correct size.
+  virtual void DoSolveInPlace(Eigen::VectorXd* b) const = 0;
+
+  // @see GetSize()
+  virtual int DoGetSize() const = 0;
+
+  // @}
+
  private:
-  // This class is responsible for filling a dense matrix of the form
-  // sub_matrix(M) +  Jᵀₚ Gₚ Jₚ where Jₚ is a block row of the Jacobian. Each
-  // row of the Jacobian can have at most two blocks, i.e. Jₚ = [Jₚ,ₜ₁ Jₚ,ₜ₂],
-  // where blocks t₁ and t₂ correspond to block-diagonal entries in M. That is,
-  // sub_matrix(M) = diag(Mₜ₁ Mₜ₂).
-  class CliqueAssembler;
-
-  void Initialize(const std::vector<std::vector<int>>& cliques,
-                  int num_jacobian_row_blocks,
-                  const std::vector<BlockMatrixTriplet>& jacobian_blocks,
-                  const std::vector<Eigen::MatrixXd>& mass_matrices);
-
   bool factorization_ready_ = false;
   bool matrix_ready_ = false;
-
-  std::unique_ptr<::conex::SupernodalKKTSolver> solver_;
-  // N.B. This array stores pointers to clique assemblers owned by
-  // owned_clique_assemblers_.
-  std::vector<CliqueAssembler*> clique_assemblers_ptrs_;
-  std::vector<std::unique_ptr<CliqueAssembler>> owned_clique_assemblers_;
 };
+
+// Returns a row to triplet index mapping as std::vector<std::vector<int>> and
+// perform a validation check on the input `jacobian_blocks`.
+//
+// Each entry in `jacobian_blocks` is a triplet of the form (i, j, J), where J
+// is the Jacobian block and i and j are its block row/column indices in the
+// sparse Jacobian. The entries in `jacobian_blocks` must satisfy the
+// following property:
+//  1. {T.i | T ∈ `jacobian_blocks`} = {0, 1, ..., num_row_blocks-1} and
+//  2. For each k in {0, 1, ..., num_row_blocks - 1}, 1 <= |{T|T.i==k}| <= 2.
+// where we use T.i to denote the block row index of a triplet.
+// Otherwise, throws an exception.
+//
+// The k-th entry in the result stores a vector of indices into
+// `jacobian_blocks` that correspond to entries that has k as the block row
+// index in the triplet. Each entry in the resulting vector contains at least
+// one and at most two entries due to the precondtion on `jacobian_blocks`. */
+std::vector<std::vector<int>> GetRowToTripletMapping(
+    int num_row_blocks, const std::vector<BlockTriplet>& jacobian_blocks);
+
+// Verifies the entries in `jacobian_blocks` are valid in the sense that they
+// satisfy:
+//  1. {T.j | T ∈ `jacobian_blocks`} = {0, 1, ..., max T.j}, and
+//  2. if jacobian_blocks[a].j == jacobian_blocks[b].j, then
+//  jacobian_blocks[a].J.cols() == jacobian_blocks[b].J.cols(), and
+//  3. for each triplet T, T.J.rows() > 0 && T.J.cols() > 0.
+// If not, throws an exception.
+// Returns the number of columns in each column block of the Jacobian matrix.
+std::vector<int> GetJacobianBlockSizesVerifyTriplets(
+    const std::vector<BlockTriplet>& jacobian_blocks);
 
 }  // namespace internal
 }  // namespace contact_solvers

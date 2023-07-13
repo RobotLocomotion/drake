@@ -2,7 +2,6 @@
 
 #include <vector>
 
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/name_value.h"
 #include "drake/geometry/render/render_label.h"
 #include "drake/geometry/render_gl/light_parameter.h"
@@ -36,14 +35,6 @@ struct RenderEngineGlParams {
   /** Lights in the scene  */
   std::vector<render::LightParameter> lights;
 };
-
-namespace render {
-
-using RenderEngineGlParams
-    DRAKE_DEPRECATED("2023-07-01", "Use the geometry namespace instead.")
-    = geometry::RenderEngineGlParams;
-
-}  // namespace render
 
 }  // namespace geometry
 }  // namespace drake

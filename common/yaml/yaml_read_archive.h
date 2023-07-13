@@ -65,6 +65,7 @@ class YamlReadArchive final {
 
   // Internal-use constructor during recursion.  This constructor aliases all
   // of its arguments, so all must outlive this object.
+  // @pre root is a Mapping node
   YamlReadArchive(const internal::Node* root, const YamlReadArchive* parent)
       : owned_root_(),
         root_(root),
@@ -73,6 +74,7 @@ class YamlReadArchive final {
         options_(parent->options_),
         parent_(parent) {
     DRAKE_DEMAND(root != nullptr);
+    DRAKE_DEMAND(root->IsMapping());
     DRAKE_DEMAND(parent != nullptr);
   }
 
@@ -127,8 +129,6 @@ class YamlReadArchive final {
   // Serialize function required for the map itself.
   template <typename Serializable>
   void DoAccept(std::map<std::string, Serializable>* value, int32_t) {
-    DRAKE_THROW_UNLESS(root_ != nullptr);
-    DRAKE_THROW_UNLESS(root_->IsMapping());
     VisitMapDirectly<Serializable>(*root_, value);
     for (const auto& [name, ignored] : *value) {
       unused(ignored);
@@ -513,8 +513,8 @@ class YamlReadArchive final {
   // --------------------------------------------------------------------------
   // @name Helpers, utilities, and member variables.
 
-  // If our root is a Mapping and has child with the given name and type,
-  // return the child.  Otherwise, report an error and return nullptr.
+  // If our root has a child with the given name and type, returns the child.
+  // Otherwise, reports an error and returns nullptr.
   //
   // Currently, errors are always reported via an exception, which means that
   // the nullptr return is irrelevant in practice.  However, in the future we
@@ -527,8 +527,8 @@ class YamlReadArchive final {
   // Helper for the prior three functions.
   const internal::Node* GetSubNodeAny(const char*, internal::NodeType) const;
 
-  // If our root is a Mapping and has child with the given name, return the
-  // child.  Otherwise, return nullptr.
+  // If our root has child with the given name, returns the child.  Otherwise,
+  // returns nullptr.
   const internal::Node* MaybeGetSubNode(const char*) const;
 
   // To be called after Accept-ing a Serializable to cross-check that all keys
@@ -552,7 +552,7 @@ class YamlReadArchive final {
   // this will alias owned_root_ when using the public constructor, or else a
   // temporary root when using the private recursion constructor.  Only ever
   // unset during internal recursion when mapish_item_{key,value}_ are being
-  // used instead.
+  // used instead.  When non-nullptr, it is always a Mapping node.
   const internal::Node* const root_;
   // During certain cases of internal recursion, instead of creating a Mapping
   // node with only a single key-value pair as the root_ pointer, instead we'll

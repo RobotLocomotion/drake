@@ -14,7 +14,6 @@
 #include "drake/solvers/common_solver_option.h"
 #include "drake/solvers/mosek_solver.h"
 #include "drake/solvers/solve.h"
-#include "drake/solvers/sos_basis_generator.h"
 
 namespace drake {
 namespace geometry {
@@ -48,58 +47,6 @@ const double kInf = std::numeric_limits<double>::infinity();
     DRAKE_DEMAND(result.is_success());
     return result.GetSolution(s);
   }
-}
-
-// Evaluate the polynomial at a batch of samples, check if all evaluated results
-// are positive.
-// @param x_samples Each column is a sample of indeterminates.
-void CheckPositivePolynomialBySamples(
-    const symbolic::Polynomial& poly,
-    const Eigen::Ref<const VectorX<symbolic::Variable>>& indeterminates,
-    const Eigen::Ref<const Eigen::MatrixXd>& x_samples) {
-  EXPECT_TRUE(
-      (poly.EvaluateIndeterminates(indeterminates, x_samples).array() >= 0)
-          .all());
-}
-
-// Solve an sos program to check if a polynomial is sos.
-// @param tol We seek another polynomial p2 being sos, and the difference
-// between p1's coefficient and p2's coefficient is less than tol.
-bool IsPolynomialSos(const symbolic::Polynomial& p, double tol) {
-  DRAKE_DEMAND(p.decision_variables().empty());
-  if (p.monomial_to_coefficient_map().empty()) {
-    // p = 0.
-    return true;
-  } else if (p.monomial_to_coefficient_map().size() == 1 &&
-             p.monomial_to_coefficient_map().count(symbolic::Monomial()) > 0) {
-    // p is a constant
-    symbolic::Environment env;
-    const double constant =
-        p.monomial_to_coefficient_map().at(symbolic::Monomial()).Evaluate(env);
-    return constant >= -tol;
-  }
-  solvers::MathematicalProgram prog;
-  VectorX<symbolic::Variable> indeterminates_vec(p.indeterminates().size());
-  int indeterminate_count = 0;
-  for (const auto& v : p.indeterminates()) {
-    indeterminates_vec(indeterminate_count++) = v;
-  }
-  prog.AddIndeterminates(indeterminates_vec);
-  if (tol == 0) {
-    prog.AddSosConstraint(p);
-  } else {
-    const VectorX<symbolic::Monomial> monomial_basis =
-        solvers::ConstructMonomialBasis(p);
-    const auto pair = prog.NewSosPolynomial(
-        monomial_basis,
-        solvers::MathematicalProgram::NonnegativePolynomial::kSos);
-    const symbolic::Polynomial poly_diff = pair.first - p;
-    for (const auto& term : poly_diff.monomial_to_coefficient_map()) {
-      prog.AddLinearConstraint(term.second, -tol, tol);
-    }
-  }
-  const auto result = solvers::Solve(prog);
-  return result.is_success();
 }
 
 void SetupPolytope(const CspaceFreePolytopeTester& tester,

@@ -68,8 +68,7 @@ class DiscreteDerivative final : public LeafSystem<T> {
   /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
   template <typename U>
   explicit DiscreteDerivative(const DiscreteDerivative<U>& other)
-      : DiscreteDerivative<T>(other.get_input_port().size(),
-                              other.time_step(),
+      : DiscreteDerivative<T>(other.get_input_port().size(), other.time_step(),
                               other.suppress_initial_transient()) {}
 
   /// Sets the input history so that the initial output is fully specified.
@@ -86,10 +85,9 @@ class DiscreteDerivative final : public LeafSystem<T> {
   /// u[0] ≠ 0.  @p u_n and @ u_n_minus_1 must be the same size as the
   /// input/output ports.  If suppress_initial_transient() is true, then also
   /// sets x₂ to be >= 2 to disable the suppression for this `context`.
-  void set_input_history(systems::Context<T>* context,
-                         const Eigen::Ref<const VectorX<T>>& u_n,
-                         const Eigen::Ref<const VectorX<T>>& u_n_minus_1)
-                         const {
+  void set_input_history(
+      systems::Context<T>* context, const Eigen::Ref<const VectorX<T>>& u_n,
+      const Eigen::Ref<const VectorX<T>>& u_n_minus_1) const {
     set_input_history(&context->get_mutable_state(), u_n, u_n_minus_1);
   }
 
@@ -196,9 +194,9 @@ class StateInterpolatorWithDiscreteDerivative final : public Diagram<T> {
   /// true, then also disables the suppression for this `context`.
   /// @warning This only changes the position history used for the velocity
   /// half of the output port; it has no effect on the feedthrough position.
-  void set_initial_position(systems::Context<T>* context,
-                            const Eigen::Ref<const VectorX<T>>& position)
-                            const {
+  void set_initial_position(
+      systems::Context<T>* context,
+      const Eigen::Ref<const VectorX<T>>& position) const {
     set_initial_position(&context->get_mutable_state(), position);
   }
 

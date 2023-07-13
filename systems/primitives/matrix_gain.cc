@@ -15,13 +15,11 @@ MatrixGain<T>::MatrixGain(int size)
 
 template <typename T>
 MatrixGain<T>::MatrixGain(const Eigen::MatrixXd& D)
-    : LinearSystem<T>(
-          SystemTypeTag<MatrixGain>{},
-          Eigen::MatrixXd::Zero(kNumStates, kNumStates),  // A
-          Eigen::MatrixXd::Zero(kNumStates, D.cols()),    // B
-          Eigen::MatrixXd::Zero(D.rows(), kNumStates),    // C
-          D,
-          0.0 /* time_period */) {}
+    : LinearSystem<T>(SystemTypeTag<MatrixGain>{},
+                      Eigen::MatrixXd::Zero(kNumStates, kNumStates),  // A
+                      Eigen::MatrixXd::Zero(kNumStates, D.cols()),    // B
+                      Eigen::MatrixXd::Zero(D.rows(), kNumStates),    // C
+                      D, 0.0 /* time_period */) {}
 
 template <typename T>
 template <typename U>

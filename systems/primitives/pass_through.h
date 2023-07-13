@@ -79,21 +79,20 @@ class PassThrough final : public LeafSystem<T> {
 
  private:
   // Allow different specializations to access each other's private data.
-  template <typename U> friend class PassThrough;
+  template <typename U>
+  friend class PassThrough;
 
   // All of the other constructors delegate here.
   PassThrough(const Eigen::Ref<const Eigen::VectorXd>& model_vector,
               std::unique_ptr<const AbstractValue> abstract_model_value);
 
   /// Sets the output port to equal the input port.
-  void DoCalcVectorOutput(
-      const Context<T>& context,
-      BasicVector<T>* output) const;
+  void DoCalcVectorOutput(const Context<T>& context,
+                          BasicVector<T>* output) const;
 
   // Same as `DoCalcVectorOutput`, but for abstract values.
-  void DoCalcAbstractOutput(
-      const Context<T>& context,
-      AbstractValue* output) const;
+  void DoCalcAbstractOutput(const Context<T>& context,
+                            AbstractValue* output) const;
 
   bool is_abstract() const { return abstract_model_value_ != nullptr; }
 

@@ -18,12 +18,12 @@ TEST_F(CIrisToyRobotTest, CspaceFreePathConstructor) {
   const Eigen::Vector3d q_star(0, 0, 0);
   for (int maximum_path_degree = 1; maximum_path_degree < 3;
        ++maximum_path_degree) {
-    for (int plane_order = 1; plane_order < 3; ++plane_order) {
+    for (int plane_degree = 1; plane_degree < 3; ++plane_degree) {
       CspaceFreePathTester tester(plant_, scene_graph_, q_star,
-                                  maximum_path_degree, plane_order);
+                                  maximum_path_degree, plane_degree);
       const CspaceFreePath& dut = tester.cspace_free_path();
       EXPECT_EQ(dut.max_degree(), maximum_path_degree);
-      EXPECT_EQ(dut.plane_order(), plane_order);
+      EXPECT_EQ(dut.plane_degree(), plane_degree);
       // check that the path map is properly instantiated
       VectorX<symbolic::Variable> s_vars{
           tester.get_rational_forward_kin()->s()};
@@ -59,12 +59,12 @@ TEST_F(CIrisToyRobotTest, CspaceFreePathConstructor) {
       num_planes_expected += link_geometries.at(body_indices_[2]).size() *
                              link_geometries.at(body_indices_[3]).size();
       EXPECT_EQ(tester.get_separating_planes().size(), num_planes_expected);
-      EXPECT_EQ(dut.plane_order(), plane_order);
+      EXPECT_EQ(dut.plane_degree(), plane_degree);
       for (const auto& [geometry_pair, plane_index] :
            dut.map_geometries_to_separating_planes()) {
         // check plane
         const auto& plane = dut.separating_planes()[plane_index];
-        EXPECT_EQ(plane.plane_degree, plane_order);
+        EXPECT_EQ(plane.plane_degree, plane_degree);
         if (plane.positive_side_geometry->id() <
             plane.negative_side_geometry->id()) {
           EXPECT_EQ(geometry_pair.first(), plane.positive_side_geometry->id());
@@ -79,11 +79,11 @@ TEST_F(CIrisToyRobotTest, CspaceFreePathConstructor) {
                       *plant_, plane.positive_side_geometry->body_index(),
                       plane.negative_side_geometry->body_index()));
         for (int i = 0; i < 3; ++i) {
-          EXPECT_EQ(plane.a(i).TotalDegree(), plane_order);
+          EXPECT_EQ(plane.a(i).TotalDegree(), plane_degree);
           EXPECT_EQ(plane.a(i).indeterminates(),
                     symbolic::Variables({dut.mu()}));
         }
-        EXPECT_EQ(plane.b.TotalDegree(), plane_order);
+        EXPECT_EQ(plane.b.TotalDegree(), plane_degree);
         EXPECT_EQ(plane.b.indeterminates(), symbolic::Variables({dut.mu()}));
       }
       EXPECT_EQ(dut.y_slack().size(), 3);
@@ -123,10 +123,10 @@ TEST_F(CIrisToyRobotTest, CspaceFreePathGeneratePathRationalsTest) {
   std::uniform_real_distribution<> val_generator(-1.5, 1.5);
   const Eigen::Vector4d mu_test_values{0, 0.25, 0.77, 1};
   const int maximum_path_degree = 3;
-  const int plane_order = 2;
+  const int plane_degree = 2;
 
   CspaceFreePathTester tester(plant_, scene_graph_, q_star, maximum_path_degree,
-                              plane_order);
+                              plane_degree);
 
   const CspaceFreePath& dut = tester.cspace_free_path();
   EXPECT_EQ(tester.get_path_plane_geometries().size(),
@@ -140,7 +140,7 @@ TEST_F(CIrisToyRobotTest, CspaceFreePathGeneratePathRationalsTest) {
   separating_planes_ptrs.reserve(dut.separating_planes().size());
   for (const auto& plane : dut.separating_planes()) {
     separating_planes_ptrs.push_back(
-        std::make_unique<CSpacePathSeparatingPlane<symbolic::Variable>>(plane));
+        std::make_unique<CSpaceSeparatingPlane<symbolic::Variable>>(plane));
   }
 
   // We should have the same number of path_plane_geometries as
@@ -245,11 +245,11 @@ TEST_F(CIrisToyRobotTest, CspaceFreePathGeneratePathRationalsTest) {
             };
         // The degree in terms of the path variable should be the total
         // degree of the original rational with respect to the variables
-        // s_set_ plus the path degree times the plane_order
+        // s_set_ plus the path degree times the plane_degree
         EXPECT_EQ(
             static_cast<unsigned int>(path_condition.Degree(tester.get_mu())),
             maximum_path_degree * compute_total_s_degree(polytope_condition) +
-                plane_order);
+                plane_degree);
 
         // Now check that the path_conditions are actually properly
         // substituted.

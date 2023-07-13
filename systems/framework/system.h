@@ -46,6 +46,9 @@ class System : public SystemBase {
   // System objects are neither copyable nor moveable.
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(System)
 
+  /// The scalar type with which this %System was instantiated.
+  using Scalar = T;
+
   ~System() override;
 
   /// Implements a visitor pattern.  @see SystemVisitor<T>.
@@ -726,6 +729,16 @@ class System : public SystemBase {
   @see GetPeriodicEvents(), GetPerStepEvents() */
   void GetInitializationEvents(const Context<T>& context,
                                CompositeEventCollection<T>* events) const;
+
+  /** This method triggers all of the initialization events returned by
+  GetInitializationEvents(). The method allocates temporary storage to perform
+  the updates, and is intended only as a convenience method for callers who do
+  not want to use the full Simulator workflow.
+
+  Note that this is not fully equivalent to Simulator::Initialize() because
+  _only_ initialization events are handled here, while Simulator::Initialize()
+  also processes other events associated with time zero. */
+  void ExecuteInitializationEvents(Context<T>* context) const;
 
   /** Determines whether there exists a unique periodic timing (offset and
   period) that triggers one or more discrete update events (and, if so, returns

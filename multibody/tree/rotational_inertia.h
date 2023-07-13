@@ -543,17 +543,17 @@ class RotationalInertia {
   /// Forms the 3 principal moments of inertia and their 3 associated principal
   /// directions for `this` rotational inertia.
   /// @returns 3 principal moments of inertia [Ixx Iyy Izz], sorted in ascending
-  /// order (Ixx ≤ Iyy ≤ Izz) and a rotation matrix R_EP whose columns are the 3
+  /// order (Ixx ≤ Iyy ≤ Izz) and a rotation matrix R_EA whose columns are the 3
   /// associated principal directions that relate the expressed-in frame E to a
-  /// frame P, where frame E is the expressed-in frame for `this` rotational
-  /// inertia I_BPo_E (body B's rotational inertia about-point Po) and frame P
-  /// contains right-handed orthonormal vectors Px, Py, Pz. The 1ˢᵗ column of
-  /// R_EP is Px_E (Px expressed in frame E) which is parallel to the principal
+  /// frame A, where frame E is the expressed-in frame for `this` rotational
+  /// inertia I_BP_E (body B's rotational inertia about-point P) and frame A
+  /// contains right-handed orthonormal vectors Ax, Ay, Az. The 1ˢᵗ column of
+  /// R_EA is Ax_E (Ax expressed in frame E) which is parallel to the principal
   /// axis associated with Ixx (the smallest principal moment of inertia).
-  /// Similarly, the 2ⁿᵈ and 3ʳᵈ columns of R_EP are Py_E and Pz_E, which are
+  /// Similarly, the 2ⁿᵈ and 3ʳᵈ columns of R_EA are Ay_E and Az_E, which are
   /// parallel to principal axes associated with Iyy and Izz (the intermediate
   /// and largest principal moments of inertia). If all principal moments of
-  /// inertia are equal (i.e., Ixx = Iyy = Izz), R_EP is the identity matrix.
+  /// inertia are equal (i.e., Ixx = Iyy = Izz), R_EA is the identity matrix.
   /// @throws std::exception if the elements of `this` rotational inertia cannot
   /// be converted to a real finite double. For example, an exception is thrown
   /// if `this` contains an erroneous NaN or if scalar type T is symbolic.
@@ -561,9 +561,9 @@ class RotationalInertia {
   /// of inertia [Ixx Iyy Izz], without calculating the principal directions.
   std::pair<Vector3<double>, math::RotationMatrix<double>>
   CalcPrincipalMomentsAndAxesOfInertia() const {
-    math::RotationMatrix<double> R_EP;
-    Vector3<double> Imoment = CalcPrincipalMomentsAndMaybeAxesOfInertia(&R_EP);
-    return std::pair(Imoment, R_EP);
+    math::RotationMatrix<double> R_EA;
+    Vector3<double> Imoment = CalcPrincipalMomentsAndMaybeAxesOfInertia(&R_EA);
+    return std::pair(Imoment, R_EA);
   }
 
   /// Performs several necessary checks to verify whether `this` rotational
@@ -884,26 +884,26 @@ class RotationalInertia {
 
   // Forms the 3 principal moments of inertia and optionally their 3 associated
   // principal directions for `this` rotational inertia.
-  // @param[out] R_EP Optional 3x3 right-handed orthonormal matrix that happens
-  // to be the rotation matrix relating the expressed-in frame E to a frame P,
+  // @param[out] R_EA Optional 3x3 right-handed orthonormal matrix that happens
+  // to be the rotation matrix relating the expressed-in frame E to a frame A,
   // where frame E is the expressed-in frame for `this` rotational inertia
-  // I_BPo_E (body B's rotational inertia about-point Po) and frame P contains
-  // right-handed orthogonal unit vectors Px, Py, Pz. The 1ˢᵗ column of R_EP is
-  // Px_E (Px expressed in frame E) which is parallel to the principal axis
+  // I_BP_E (body B's rotational inertia about-point P) and frame A contains
+  // right-handed orthogonal unit vectors Ax, Ay, Az. The 1ˢᵗ column of R_EA is
+  // Ax_E (Ax expressed in frame E) which is parallel to the principal axis
   // associated with Ixx (the smallest principal moment of inertia). Similarly,
-  // the 2ⁿᵈ and 3ʳᵈ columns of R_EP are Py_E and Pz_E, which are parallel to
+  // the 2ⁿᵈ and 3ʳᵈ columns of R_EA are Ay_E and Az_E, which are parallel to
   // principal axes associated with Iyy and Izz (the intermediate and largest
   // principal moments of inertia).
   // @returns 3 principal moments of inertia [Ixx Iyy Izz], sorted in ascending
-  // order (Ixx ≤ Iyy ≤ Izz). If R_EP ≠ nullptr, also returns the 3 associated
-  // principal directions via the argument R_EP.
+  // order (Ixx ≤ Iyy ≤ Izz). If R_EA ≠ nullptr, also returns the 3 associated
+  // principal directions via the argument R_EA.
   // @throws std::exception if the elements of `this` rotational inertia cannot
   // be converted to a real finite double. For example, an exception is thrown
   // if `this` contains an erroneous NaN or if scalar type T is symbolic.
   // @see CalcPrincipalMomentsOfInertia() and
   // CalcPrincipalMomentsAndAxesOfInertia().
   Vector3<double> CalcPrincipalMomentsAndMaybeAxesOfInertia(
-      math::RotationMatrix<double>* R_EP) const;
+      math::RotationMatrix<double>* R_EA) const;
 
   // This function returns true if arguments `i` and `j` access the lower-
   // triangular portion of the rotational matrix, otherwise false.

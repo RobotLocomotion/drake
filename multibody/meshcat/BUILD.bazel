@@ -104,6 +104,7 @@ drake_cc_googletest(
         "//geometry:meshcat_visualizer",
         "//geometry/test_utilities:meshcat_environment",
         "//multibody/parsing",
+        "//systems/framework/test_utilities",
     ],
 )
 

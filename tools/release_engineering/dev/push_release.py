@@ -7,6 +7,7 @@ This program is only supported on Ubuntu Jammy 22.04.
 
 import argparse
 import hashlib
+import json
 import os
 import re
 import shutil
@@ -14,10 +15,13 @@ import subprocess
 import sys
 import tempfile
 import textwrap
+import urllib.request
 from dataclasses import dataclass, field
 from typing import Any, Dict, List
 
 import boto3
+
+import docker
 
 import github3
 from github3.repos.release import Asset, Release
@@ -29,7 +33,8 @@ _GITHUB_REPO_NAME = 'drake'
 
 _ARCHIVE_HASHES = {'sha256', 'sha512'}
 
-_DOCKER_PLATFORMS = {'focal', 'jammy'}
+_DOCKER_REGISTRY_API_URI = 'https://registry.hub.docker.com/v2/repositories'
+_DOCKER_REPOSITORY_NAME = 'robotlocomotion/drake'
 
 _AWS_BUCKET = 'drake-packages'
 
@@ -115,8 +120,23 @@ class _State:
         self.manifest = _Manifest(release)
         self._scratch = tempfile.TemporaryDirectory()
         self._s3 = boto3.client('s3')
+        self._docker = docker.APIClient()
 
         self.find_artifacts = self.manifest.find_artifacts
+
+    def _begin(self, action: str, src: str, dst: str = None):
+        """
+        Report the start of an action.
+        """
+        if dst is not None:
+            print(f'{action} {src!r} to {dst!r} ...', flush=True, end='')
+        else:
+            print(f'{action} {src!r} ...', flush=True, end='')
+
+    def _done(self):
+        """
+        Report the completion of an action.
+        """
 
     def _push_asset(self, asset: Asset, bucket: str, path: str):
         """
@@ -128,10 +148,14 @@ class _State:
         if self.options.dry_run:
             print(f'push {asset.name!r} to s3://{bucket}/{path}')
         else:
+            self._begin('downloading', asset.name)
             local_path = os.path.join(self._scratch.name, asset.name)
             assert asset.download(path=local_path) is not None
+            self._done()
 
+            self._begin('pushing', asset.name, f's3://{bucket}/{path}')
             self._s3.upload_file(local_path, bucket, path)
+            self._done()
 
     def _compute_hash(self, path: str, algorithm: str):
         """
@@ -177,12 +201,16 @@ class _State:
         prints what would be done.
         """
         local_path = os.path.join(self._scratch.name, name)
+        self._begin('downloading', name)
         assert self.release.archive(archive_format, local_path)
+        self._done()
 
         if self.options.dry_run:
             print(f'push {name!r} to s3://{bucket}/{path}/{name}')
         else:
-            self._s3.upload_file(local_path, bucket, path)
+            self._begin('pushing', name, f's3://{bucket}/{path}/{name}')
+            self._s3.upload_file(local_path, bucket, f'{path}/{name}')
+            self._done()
 
         # Calculate hashes and write hash files
         for algorithm in _ARCHIVE_HASHES:
@@ -190,16 +218,41 @@ class _State:
             hashfile_path = os.path.join(self._scratch.name, hashfile_name)
             remote_path = f'{path}/{hashfile_name}'
 
+            self._begin(f'computing {algorithm} for', name)
+
             digest = self._compute_hash(local_path, algorithm)
 
             with open(hashfile_path, 'wt') as f:
                 f.write(f'{digest.hexdigest()}  {name}\n')
 
+            self._done()
+
             if self.options.dry_run:
                 print(f'{name!r} {algorithm}: {digest.hexdigest()}')
                 print(f'push {hashfile_name!r} to s3://{bucket}/{remote_path}')
             else:
+                self._begin('pushing', hashfile_name,
+                            f's3://{bucket}/{remote_path}')
                 self._s3.upload_file(hashfile_path, bucket, remote_path)
+                self._done()
+
+    def push_docker_tag(self, old_tag_name: str, new_tag_name: str,
+                        repository: str = _DOCKER_REPOSITORY_NAME):
+        image = f'{repository}:{old_tag_name}'
+        if self.options.dry_run:
+            print(f'push {image!r} to {repository!r} as {new_tag_name!r}')
+        else:
+            self._begin('pulling', f'{repository}:{old_tag_name}')
+            self._docker.pull(repository, old_tag_name)
+            self._done()
+
+            self._docker.tag(image, repository, new_tag_name)
+
+            self._begin('pushing', f'{repository}:{new_tag_name}')
+            self._docker.push(repository, new_tag_name)
+            self._done()
+
+            self._docker.remove_image(image)
 
 
 def _fatal(msg: str, result: int = 1):
@@ -264,6 +317,22 @@ def _find_tag(repo: Repository, tag: str):
     return None
 
 
+def _list_docker_tags(repository=_DOCKER_REPOSITORY_NAME):
+    tags = []
+    uri = f'{_DOCKER_REGISTRY_API_URI}/{repository}/tags?page_size=1000'
+
+    while uri is not None:
+        with urllib.request.urlopen(uri) as response:
+            reply = json.load(response)
+
+        for t in reply['results']:
+            tags.append(t['name'])
+
+        uri = reply.get('next')
+
+    return tags
+
+
 def _push_tar(state: _State):
     """
     Downloads .tar artifacts and push them to S3.
@@ -300,6 +369,17 @@ def _push_deb(state: _State):
         state.push_artifact(deb, _AWS_BUCKET, dest_path)
 
 
+def _push_docker(state: _State):
+    """
+    Re-tags Docker staging images as release images.
+    """
+    tail = f'{state.options.source_version}-staging'
+    for tag_name in _list_docker_tags():
+        if tag_name.endswith(tail):
+            release_tag_name = tag_name.rsplit('-', 1)[0]
+            state.push_docker_tag(tag_name, release_tag_name)
+
+
 def main(args: List[str]):
     parser = argparse.ArgumentParser(
         prog='push_release', description=__doc__)
@@ -307,6 +387,10 @@ def main(args: List[str]):
         '--deb', dest='push_deb', default=True,
         action=argparse.BooleanOptionalAction,
         help='Mirror .deb packages to S3.')
+    parser.add_argument(
+        '--docker', dest='push_docker', default=True,
+        action=argparse.BooleanOptionalAction,
+        help='Publish docker images from staging images.')
     parser.add_argument(
         '--tar', dest='push_tar', default=True,
         action=argparse.BooleanOptionalAction,
@@ -367,6 +451,8 @@ def main(args: List[str]):
         _push_tar(state)
     if options.push_deb:
         _push_deb(state)
+    if options.push_docker:
+        _push_docker(state)
 
 
 if __name__ == '__main__':

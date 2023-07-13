@@ -8,11 +8,9 @@ TrajectoryLinearSystem<T>::TrajectoryLinearSystem(
     const trajectories::Trajectory<double>& A,
     const trajectories::Trajectory<double>& B,
     const trajectories::Trajectory<double>& C,
-    const trajectories::Trajectory<double>& D,
-    double time_period)
-    : TimeVaryingLinearSystem<T>(
-          SystemTypeTag<TrajectoryLinearSystem>{}, A.rows(),
-          B.cols(), C.rows(), time_period),
+    const trajectories::Trajectory<double>& D, double time_period)
+    : TimeVaryingLinearSystem<T>(SystemTypeTag<TrajectoryLinearSystem>{},
+                                 A.rows(), B.cols(), C.rows(), time_period),
       A_(A.Clone()),
       B_(B.Clone()),
       C_(C.Clone()),

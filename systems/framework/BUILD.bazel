@@ -734,7 +734,8 @@ drake_cc_googletest(
         "//common:essential",
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
-        "//systems/framework/test_utilities",
+        "//systems/framework/test_utilities:my_vector",
+        "//systems/framework/test_utilities:pack_value",
     ],
 )
 
@@ -746,7 +747,8 @@ drake_cc_googletest(
         "//common:essential",
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
-        "//systems/framework/test_utilities",
+        "//systems/framework/test_utilities:my_vector",
+        "//systems/framework/test_utilities:pack_value",
     ],
 )
 
@@ -803,7 +805,9 @@ drake_cc_googletest(
         "//common/test_utilities:is_dynamic_castable",
         "//examples/pendulum:pendulum_plant",
         "//systems/analysis/test_utilities:stateless_system",
-        "//systems/framework/test_utilities",
+        "//systems/framework/test_utilities:initialization_test_system",
+        "//systems/framework/test_utilities:pack_value",
+        "//systems/framework/test_utilities:scalar_conversion",
         "//systems/primitives:adder",
         "//systems/primitives:constant_value_source",
         "//systems/primitives:constant_vector_source",
@@ -822,7 +826,7 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "//common/test_utilities:is_dynamic_castable",
-        "//systems/framework/test_utilities",
+        "//systems/framework/test_utilities:my_vector",
     ],
 )
 
@@ -863,7 +867,7 @@ drake_cc_googletest(
         ":leaf_context",
         "//common:essential",
         "//common/test_utilities",
-        "//systems/framework/test_utilities",
+        "//systems/framework/test_utilities:pack_value",
     ],
 )
 
@@ -874,7 +878,9 @@ drake_cc_googletest(
         "//common:essential",
         "//common/test_utilities",
         "//common/test_utilities:limit_malloc",
-        "//systems/framework/test_utilities",
+        "//systems/framework/test_utilities:initialization_test_system",
+        "//systems/framework/test_utilities:my_vector",
+        "//systems/framework/test_utilities:pack_value",
     ],
 )
 
@@ -889,7 +895,7 @@ drake_cc_googletest(
     name = "model_values_test",
     deps = [
         ":model_values",
-        "//systems/framework/test_utilities",
+        "//systems/framework/test_utilities:my_vector",
     ],
 )
 
@@ -898,7 +904,7 @@ drake_cc_googletest(
     deps = [
         ":abstract_values",
         "//common:essential",
-        "//systems/framework/test_utilities",
+        "//systems/framework/test_utilities:pack_value",
     ],
 )
 
@@ -907,7 +913,7 @@ drake_cc_googletest(
     deps = [
         ":parameters",
         "//common:essential",
-        "//systems/framework/test_utilities",
+        "//systems/framework/test_utilities:pack_value",
     ],
 )
 
@@ -941,7 +947,8 @@ drake_cc_googletest(
     deps = [
         ":system_output",
         "//common:essential",
-        "//systems/framework/test_utilities",
+        "//common/test_utilities:is_dynamic_castable",
+        "//systems/framework/test_utilities:my_vector",
     ],
 )
 
@@ -972,7 +979,7 @@ drake_cc_googletest(
         ":input_port",
         ":leaf_system",
         "//common/test_utilities:expect_throws_message",
-        "//systems/framework/test_utilities",
+        "//systems/framework/test_utilities:my_vector",
     ],
 )
 
@@ -984,7 +991,7 @@ drake_cc_googletest(
         "//common:essential",
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
-        "//systems/framework/test_utilities",
+        "//systems/framework/test_utilities:my_vector",
         "//systems/primitives:constant_vector_source",
     ],
 )
@@ -1011,7 +1018,7 @@ drake_cc_googletest(
         "//common:unused",
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
-        "//systems/framework/test_utilities",
+        "//systems/framework/test_utilities:my_vector",
     ],
 )
 
@@ -1030,7 +1037,7 @@ drake_cc_googletest(
         "//common:essential",
         "//common:unused",
         "//common/test_utilities:expect_throws_message",
-        "//systems/framework/test_utilities",
+        "//systems/framework/test_utilities:my_vector",
     ],
 )
 
@@ -1048,7 +1055,7 @@ drake_cc_googletest(
     name = "single_output_vector_source_test",
     deps = [
         ":single_output_vector_source",
-        "//systems/framework/test_utilities",
+        "//systems/framework/test_utilities:scalar_conversion",
     ],
 )
 
@@ -1058,7 +1065,7 @@ drake_cc_googletest(
         ":vector_system",
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
-        "//systems/framework/test_utilities",
+        "//systems/framework/test_utilities:scalar_conversion",
         "//systems/primitives:integrator",
     ],
 )

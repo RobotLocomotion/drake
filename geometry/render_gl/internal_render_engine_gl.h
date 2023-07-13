@@ -88,29 +88,27 @@ namespace internal {
  bound. Currently, all of this "clean up" work is done in DoClone(). */
 class RenderEngineGl final : public render::RenderEngine {
  public:
-  /** @name Does not allow public copy, move, or assignment  */
+  /* @name Does not allow public copy, move, or assignment  */
   //@{
-#ifdef DRAKE_DOXYGEN_CXX
+
   // Note: the copy constructor is actually protected to serve as the basis for
   // implementing the DoClone() method.
-  RenderEngineGl(const RenderEngineGl&) = delete;
-#endif
   RenderEngineGl& operator=(const RenderEngineGl&) = delete;
   RenderEngineGl(RenderEngineGl&&) = delete;
   RenderEngineGl& operator=(RenderEngineGl&&) = delete;
   //@}}
 
-  /** Construct an instance of the render engine with the given `params`.  */
+  /* Constructs an instance of the render engine with the given `params`.  */
   explicit RenderEngineGl(RenderEngineGlParams params = {});
 
   ~RenderEngineGl() final;
 
-  /** @see RenderEngine::UpdateViewpoint().  */
+  /* @see RenderEngine::UpdateViewpoint().  */
   void UpdateViewpoint(const math::RigidTransformd& X_WR) final;
 
   const RenderEngineGlParams& parameters() const { return parameters_; }
 
-  /** @name    Shape reification  */
+  /* @name    Shape reification  */
   //@{
   using render::RenderEngine::ImplementGeometry;
   void ImplementGeometry(const Box& box, void* user_data) final;
@@ -130,6 +128,14 @@ class RenderEngineGl final : public render::RenderEngine {
   // should be called upon construction and cloning.
   // @pre `this` engine's OpenGl context should be bound.
   void InitGlState();
+
+  // Data to pass through the reification process.
+  struct RegistrationData {
+    const GeometryId id;
+    const math::RigidTransformd& X_WG;
+    const PerceptionProperties& properties;
+    bool accepted{true};
+  };
 
   // Mangles the mesh data before adding it to the engine to support the
   // legacy behavior of mapping mesh.obj -> mesh.png, applying it as a diffuse
@@ -208,7 +214,10 @@ class RenderEngineGl final : public render::RenderEngine {
   int GetCylinder();
   int GetHalfSpace();
   int GetBox();
-  int GetMesh(const std::string& filename);
+  // Returns the index of the OpenGlGeometry for a mesh with the given filename.
+  // If the filename represents an unsupported file type, no geometry is added,
+  // data->accepted is set to false, and the return value is a meaningless -1.
+  int GetMesh(const std::string& filename, RegistrationData* data);
 
   // Given the render type, returns the texture configuration for that render
   // type. These are the key arguments for glTexImage2D based on the render

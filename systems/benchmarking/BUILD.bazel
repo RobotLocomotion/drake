@@ -42,4 +42,4 @@ drake_py_experiment_binary(
     googlebench_binary = ":multilayer_perceptron_benchmark",
 )
 
-add_lint_tests(enable_clang_format_lint = False)
+add_lint_tests()

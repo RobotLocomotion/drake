@@ -15,11 +15,12 @@ Sine<T>::Sine(double amplitude, double frequency, double phase, int size,
 
 template <typename T>
 Sine<T>::Sine(const Eigen::VectorXd& amplitudes,
-              const Eigen::VectorXd& frequencies,
-              const Eigen::VectorXd& phases,
+              const Eigen::VectorXd& frequencies, const Eigen::VectorXd& phases,
               bool is_time_based)
-      : LeafSystem<T>(SystemTypeTag<Sine>{}),
-      amplitude_(amplitudes), frequency_(frequencies), phase_(phases),
+    : LeafSystem<T>(SystemTypeTag<Sine>{}),
+      amplitude_(amplitudes),
+      frequency_(frequencies),
+      phase_(phases),
       is_time_based_(is_time_based) {
   // Ensure the incoming vectors are all the same size
   DRAKE_THROW_UNLESS(amplitudes.size() == frequencies.size());
@@ -122,9 +123,8 @@ void Sine<T>::CalcValueOutput(const Context<T>& context,
 }
 
 template <typename T>
-void Sine<T>::CalcFirstDerivativeOutput(
-    const Context<T>& context, BasicVector<T>* output) const {
-
+void Sine<T>::CalcFirstDerivativeOutput(const Context<T>& context,
+                                        BasicVector<T>* output) const {
   VectorX<T> cos_arg;
   Sine::CalcArg(context, &cos_arg);
 
@@ -134,21 +134,18 @@ void Sine<T>::CalcFirstDerivativeOutput(
 }
 
 template <typename T>
-void Sine<T>::CalcSecondDerivativeOutput(
-    const Context<T>& context, BasicVector<T>* output) const {
-
+void Sine<T>::CalcSecondDerivativeOutput(const Context<T>& context,
+                                         BasicVector<T>* output) const {
   VectorX<T> sine_arg;
   Sine::CalcArg(context, &sine_arg);
 
   Eigen::VectorBlock<VectorX<T>> output_block = output->get_mutable_value();
   output_block =
-      - amplitude_.array() * frequency_.array().pow(2) * sine_arg.array().sin();
+      -amplitude_.array() * frequency_.array().pow(2) * sine_arg.array().sin();
 }
 
 template <typename T>
-void Sine<T>::CalcArg(
-    const Context<T>& context, VectorX<T>* arg) const {
-
+void Sine<T>::CalcArg(const Context<T>& context, VectorX<T>* arg) const {
   if (is_time_based_) {
     VectorX<T> time_vec(amplitude_.size());
     time_vec.fill(context.get_time());

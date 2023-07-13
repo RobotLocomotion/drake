@@ -1703,6 +1703,14 @@ class MultibodyTree {
       const Eigen::Ref<const VectorX<T>>& qdot,
       EigenPtr<VectorX<T>> v) const;
 
+  // See MultibodyPlant method.
+  Eigen::SparseMatrix<T> MakeVelocityToQDotMap(
+      const systems::Context<T>& context) const;
+
+  // See MultibodyPlant method.
+  Eigen::SparseMatrix<T> MakeQDotToVelocityMap(
+      const systems::Context<T>& context) const;
+
   /**
   @anchor internal_forward_dynamics
   @name Articulated Body Algorithm Forward Dynamics.
@@ -2623,6 +2631,15 @@ class MultibodyTree {
 
   [[noreturn]] void ThrowJointSubtypeMismatch(
       const Joint<T>&, std::string_view) const;
+
+  // If X_BF is nullopt, returns the body frame of `body`. Otherwise, adds a
+  // FixedOffsetFrame (named based on the joint_name and frame_suffix) to `body`
+  // and returns it.
+  const Frame<T>& AddOrGetJointFrame(
+      const Body<T>& body,
+      const std::optional<math::RigidTransform<double>>& X_BF,
+      ModelInstanceIndex joint_instance, std::string_view joint_name,
+      std::string_view frame_suffix);
 
   // Finalizes the MultibodyTreeTopology of this tree.
   void FinalizeTopology();

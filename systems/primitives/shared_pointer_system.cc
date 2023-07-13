@@ -4,8 +4,8 @@ namespace drake {
 namespace systems {
 
 template <typename T>
-SharedPointerSystem<T>::SharedPointerSystem(
-    std::shared_ptr<void> held, std::type_index held_type)
+SharedPointerSystem<T>::SharedPointerSystem(std::shared_ptr<void> held,
+                                            std::type_index held_type)
     : LeafSystem<T>(SystemTypeTag<SharedPointerSystem>{}),
       held_(std::move(held)),
       held_type_(held_type) {}

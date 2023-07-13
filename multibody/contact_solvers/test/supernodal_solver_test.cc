@@ -1,11 +1,11 @@
-#include "drake/multibody/contact_solvers/supernodal_solver.h"
-
 #include <tuple>
 
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/unused.h"
+#include "drake/multibody/contact_solvers/block_sparse_supernodal_solver.h"
+#include "drake/multibody/contact_solvers/conex_supernodal_solver.h"
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
@@ -95,28 +95,34 @@ DenseBlockDiagonalPair Make12x12SpdBlockDiagonalMatrixOf3x3SpdMatrices() {
 // of the b-th block in the dense matrix A.
 // block_sizes[b] corresponds to the number of rows (first) and columns (second)
 // for the b-th block.
-std::vector<BlockMatrixTriplet> MakeBlockTriplets(
+std::vector<BlockTriplet> MakeBlockTriplets(
     const MatrixXd& A, const std::vector<std::pair<int, int>>& block_positions,
     const std::vector<std::pair<int, int>>& dense_positions,
     const std::vector<std::pair<int, int>>& block_sizes) {
   DRAKE_DEMAND(block_positions.size() == dense_positions.size());
   DRAKE_DEMAND(block_positions.size() == block_sizes.size());
   const int num_blocks = block_positions.size();
-  std::vector<BlockMatrixTriplet> triplets(num_blocks);
+  std::vector<BlockTriplet> triplets;
   for (int b = 0; b < num_blocks; ++b) {
-    get<0>(triplets[b]) = block_positions[b].first;
-    get<1>(triplets[b]) = block_positions[b].second;
-    get<2>(triplets[b]) = MatrixBlock<double>(
-        A.block(dense_positions[b].first, dense_positions[b].second,
-                block_sizes[b].first, block_sizes[b].second));
+    triplets.emplace_back(
+        block_positions[b].first, block_positions[b].second,
+        MatrixBlock<double>(
+            A.block(dense_positions[b].first, dense_positions[b].second,
+                    block_sizes[b].first, block_sizes[b].second)));
   }
   return triplets;
 }
 
+template <typename ConcreteSolver>
+class SuperNodalSolverTest : public ::testing::Test {};
+using Implementations =
+    ::testing::Types<ConexSuperNodalSolver, BlockSparseSuperNodalSolver>;
+TYPED_TEST_SUITE(SuperNodalSolverTest, Implementations);
+
 // In this test the partition of the columns of J doesn't refine the partition
 // induced by M, nor the other way around. We partition the columns of J as {{0,
 // 1, 2, 3}, {4}, {5}}. However, we partition M as {{0, 1}, {2, 3}, {4, 5}}.
-GTEST_TEST(SupernodalSolver, IncompatibleJacobianAndMass) {
+TYPED_TEST(SuperNodalSolverTest, IncompatibleJacobianAndMass) {
   const auto [M, blocks_of_M] = Make6x6SpdBlockDiagonalMatrixOf2x2SpdMatrices();
   unused(M);
 
@@ -134,22 +140,30 @@ GTEST_TEST(SupernodalSolver, IncompatibleJacobianAndMass) {
        0, 0, 0, 0, 0, 1,
        0, 0, 0, 0, 0, 1,
        0, 0, 0, 0, 0, 3;
-  const std::vector<BlockMatrixTriplet> Jtriplets = MakeBlockTriplets(J,
+  const std::vector<BlockTriplet> Jtriplets = MakeBlockTriplets(J,
       {{0, 0}, {1, 1}, {2, 2}},
       {{0, 0}, {3, 4}, {6, 5}},
       {{3, 4}, {3, 1}, {3, 1}});
   // clang-format on
 
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      (SuperNodalSolver{num_row_blocks_of_J, Jtriplets, blocks_of_M}),
-      "Column partition induced by mass matrix must refine the partition "
-      "induced by the Jacobian.");
+  if (std::is_same_v<TypeParam, ConexSuperNodalSolver>) {
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        (TypeParam{num_row_blocks_of_J, Jtriplets, blocks_of_M}),
+        "Column partition induced by mass matrix must refine the partition "
+        "induced by the Jacobian.");
+  } else if (std::is_same_v<TypeParam, BlockSparseSuperNodalSolver>) {
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        TypeParam(num_row_blocks_of_J, Jtriplets, blocks_of_M),
+        ".*Mass.*Jacobians.*incompatible.*");
+  } else {
+    DRAKE_UNREACHABLE();
+  }
 }
 
-// Basic test of SupernodalSolver's public APIs.
+// Basic test of SuperNodalSolver's public APIs.
 // In this case the columns's partition of J exactly matches the partition
 // induced by M.
-GTEST_TEST(SupernodalSolver, InterfaceTest) {
+TYPED_TEST(SuperNodalSolverTest, InterfaceTest) {
   const auto [M, blocks_of_M] = Make6x6SpdBlockDiagonalMatrixOf2x2SpdMatrices();
 
   const int num_row_blocks_of_J = 3;
@@ -165,7 +179,7 @@ GTEST_TEST(SupernodalSolver, InterfaceTest) {
        0, 0, 1, 1, 0, 0,
        0, 0, 2, 1, 0, 0,
        0, 0, 3, 3, 0, 0;
-  const std::vector<BlockMatrixTriplet> Jtriplets = MakeBlockTriplets(J,
+  const std::vector<BlockTriplet> Jtriplets = MakeBlockTriplets(J,
       {{0, 2}, {1, 0}, {1, 2}, {2, 1}},
       {{0, 4}, {3, 0}, {3, 4}, {6, 2}},
       {{3, 2}, {3, 2}, {3, 2}, {3, 2}});
@@ -173,7 +187,7 @@ GTEST_TEST(SupernodalSolver, InterfaceTest) {
 
   auto [G, blocks_of_G] = Make9x9SpdBlockDiagonalMatrixOf3x3SpdMatrices();
 
-  SuperNodalSolver solver(num_row_blocks_of_J, Jtriplets, blocks_of_M);
+  TypeParam solver(num_row_blocks_of_J, Jtriplets, blocks_of_M);
   solver.SetWeightMatrix(blocks_of_G);
   const MatrixXd full_matrix_ref = M + J.transpose() * G * J;
   EXPECT_NEAR((solver.MakeFullMatrix() - full_matrix_ref).norm(), 0, 1e-15);
@@ -188,7 +202,7 @@ GTEST_TEST(SupernodalSolver, InterfaceTest) {
 // In this test we are providing a Jacobian with an empty column block. The
 // result is that the solver cannot match the columns partition of J to the
 // partition of M. We expect an exception at construction.
-GTEST_TEST(SupernodalSolver, EmptyJacobianColumn) {
+TYPED_TEST(SuperNodalSolverTest, EmptyJacobianColumn) {
   const auto [M, blocks_of_M] = Make6x6SpdBlockDiagonalMatrixOf2x2SpdMatrices();
   unused(M);
 
@@ -206,20 +220,20 @@ GTEST_TEST(SupernodalSolver, EmptyJacobianColumn) {
        1, 1, 0, 0, 0, 0,
        2, 1, 0, 0, 0, 0,
        3, 3, 0, 0, 0, 0;
-  const std::vector<BlockMatrixTriplet> Jtriplets = MakeBlockTriplets(J,
+  const std::vector<BlockTriplet> Jtriplets = MakeBlockTriplets(J,
       {{0, 0}, {0, 2}, {1, 2}, {2, 0}},
       {{0, 0}, {0, 4}, {3, 4}, {6, 0}},
       {{3, 2}, {3, 2}, {3, 2}, {3, 2}});
   // clang-format on
 
   DRAKE_EXPECT_THROWS_MESSAGE(
-      SuperNodalSolver(num_row_blocks_of_J, Jtriplets, blocks_of_M),
+      TypeParam(num_row_blocks_of_J, Jtriplets, blocks_of_M),
       "Invalid Jacobian triplets: no triplet provided for column 1.");
 }
 
-// SupernodalSolver assumes at most two blocks per row. We verify the solver
+// SuperNodalSolver assumes at most two blocks per row. We verify the solver
 // throws an exception if more than two blocks per row are supplied.
-GTEST_TEST(SupernodalSolver, MoreThanTwoBlocksPerRowInTheJacobian) {
+TYPED_TEST(SuperNodalSolverTest, MoreThanTwoBlocksPerRowInTheJacobian) {
   const auto [M, blocks_of_M] = Make6x6SpdBlockDiagonalMatrixOf2x2SpdMatrices();
   unused(M);
 
@@ -237,21 +251,21 @@ GTEST_TEST(SupernodalSolver, MoreThanTwoBlocksPerRowInTheJacobian) {
        0, 0, 1, 1, 0, 0,
        0, 0, 2, 1, 0, 0,
        0, 0, 3, 3, 0, 0;
-  const std::vector<BlockMatrixTriplet> Jtriplets = MakeBlockTriplets(J,
+  const std::vector<BlockTriplet> Jtriplets = MakeBlockTriplets(J,
       {{0, 0}, {0, 1}, {0, 2}, {1, 2}, {2, 1}},
       {{0, 0}, {0, 2}, {0, 4}, {3, 4}, {6, 2}},
       {{3, 2}, {3, 2}, {3, 2}, {3, 2}, {3, 2}});
   // clang-format on
 
   DRAKE_EXPECT_THROWS_MESSAGE(
-      SuperNodalSolver(num_row_blocks_of_J, Jtriplets, blocks_of_M),
+      TypeParam(num_row_blocks_of_J, Jtriplets, blocks_of_M),
       "Jacobian can only be nonzero on at most two column blocks.");
 }
 
 // In this test the partition of the columns of J refines the partition induced
 // by M. We partition the columns of J as {{0, 1}, {2, 3}, {4}, {5}}. However,
 // we partition M as {{0, 1}, {2, 3}, {4, 5}}.
-GTEST_TEST(SupernodalSolver,
+TYPED_TEST(SuperNodalSolverTest,
            ColumnPartitionOfJacobianRefinesMassMatrixPartition) {
   const auto [M, blocks_of_M] = Make6x6SpdBlockDiagonalMatrixOf2x2SpdMatrices();
   unused(M);
@@ -270,23 +284,31 @@ GTEST_TEST(SupernodalSolver,
        0, 0, 1, 1, 0, 0,
        0, 0, 2, 1, 0, 0,
        0, 0, 3, 3, 0, 0;
-  const std::vector<BlockMatrixTriplet> Jtriplets = MakeBlockTriplets(J,
+  const std::vector<BlockTriplet> Jtriplets = MakeBlockTriplets(J,
       {{0, 0}, {0, 3}, {1, 2}, {1, 3}, {2, 1}},
       {{0, 0}, {0, 5}, {3, 4}, {3, 5}, {6, 2}},
       {{3, 2}, {3, 1}, {3, 1}, {3, 1}, {3, 2}});
   // clang-format on
 
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      (SuperNodalSolver{num_row_blocks_of_J, Jtriplets, blocks_of_M}),
-      "Column partition induced by mass matrix must refine the partition "
-      "induced by the Jacobian.");
+  if (std::is_same_v<TypeParam, ConexSuperNodalSolver>) {
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        (TypeParam{num_row_blocks_of_J, Jtriplets, blocks_of_M}),
+        "Column partition induced by mass matrix must refine the partition "
+        "induced by the Jacobian.");
+  } else if (std::is_same_v<TypeParam, BlockSparseSuperNodalSolver>) {
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        TypeParam(num_row_blocks_of_J, Jtriplets, blocks_of_M),
+        ".*Mass.*Jacobians.*incompatible.*");
+  } else {
+    DRAKE_UNREACHABLE();
+  }
 }
 
 // In this test the partition induced by M refines the partition of the columns
 // of J.
 // We partition the columns of J as {{0, 1}, {2, 3}, {4, 5}}.
 // However, we partition M as {{0, 1}, {2, 3}, {4}, {5}}.
-GTEST_TEST(SupernodalSolver,
+TYPED_TEST(SuperNodalSolverTest,
            PartitionOfMassMatrixRefinesJacobianColumnsPartition) {
   // Build mass matrix M.
   MatrixXd M(6, 6);
@@ -318,7 +340,7 @@ GTEST_TEST(SupernodalSolver,
        0, 0, 1, 1, 0, 0,
        0, 0, 2, 1, 0, 0,
        0, 0, 3, 3, 0, 0;
-  const std::vector<BlockMatrixTriplet> Jtriplets = MakeBlockTriplets(J,
+  const std::vector<BlockTriplet> Jtriplets = MakeBlockTriplets(J,
       {{0, 0}, {0, 2}, {1, 2}, {2, 1}},
       {{0, 0}, {0, 4}, {3, 4}, {6, 2}},
       {{3, 2}, {3, 2}, {3, 2}, {3, 2}});
@@ -326,10 +348,18 @@ GTEST_TEST(SupernodalSolver,
 
   const auto [G, blocks_of_G] = Make9x9SpdBlockDiagonalMatrixOf3x3SpdMatrices();
 
-  SuperNodalSolver solver(num_row_blocks_of_J, Jtriplets, blocks_of_M);
-  solver.SetWeightMatrix(blocks_of_G);
-  const MatrixXd full_matrix_ref = M + J.transpose() * G * J;
-  EXPECT_NEAR((solver.MakeFullMatrix() - full_matrix_ref).norm(), 0, 1e-15);
+  if (std::is_same_v<TypeParam, ConexSuperNodalSolver>) {
+    TypeParam solver(num_row_blocks_of_J, Jtriplets, blocks_of_M);
+    solver.SetWeightMatrix(blocks_of_G);
+    const MatrixXd full_matrix_ref = M + J.transpose() * G * J;
+    EXPECT_NEAR((solver.MakeFullMatrix() - full_matrix_ref).norm(), 0, 1e-15);
+  } else if (std::is_same_v<TypeParam, BlockSparseSuperNodalSolver>) {
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        TypeParam(num_row_blocks_of_J, Jtriplets, blocks_of_M),
+        ".*Mass.*Jacobians.*incompatible.*");
+  } else {
+    DRAKE_UNREACHABLE();
+  }
 }
 
 // Test the condition when J blocks might have different number of rows. Of
@@ -340,7 +370,7 @@ GTEST_TEST(SupernodalSolver,
 //   - J21 is a 3x2 matrix. NOTE: In this test J00 and J02 happen to have the
 //     same number of columns, but it is not a requirement and in general will
 //     not be true.
-GTEST_TEST(SupernodalSolver, SeveralPointsPerPatch) {
+TYPED_TEST(SuperNodalSolverTest, SeveralPointsPerPatch) {
   int num_row_blocks_of_J = 3;
   MatrixXd J(12, 6);
 
@@ -359,7 +389,7 @@ GTEST_TEST(SupernodalSolver, SeveralPointsPerPatch) {
        0, 0, 1, 1, 0, 0,
        0, 0, 2, 1, 0, 0,
        0, 0, 3, 3, 0, 0;
-  const std::vector<BlockMatrixTriplet> Jtriplets = MakeBlockTriplets(J,
+  const std::vector<BlockTriplet> Jtriplets = MakeBlockTriplets(J,
       {{0, 0}, {0, 2}, {1, 2}, {2, 1}},
       {{0, 0}, {0, 4}, {6, 4}, {9, 2}},
       {{6, 2}, {6, 2}, {3, 2}, {3, 2}});
@@ -369,7 +399,7 @@ GTEST_TEST(SupernodalSolver, SeveralPointsPerPatch) {
       Make12x12SpdBlockDiagonalMatrixOf3x3SpdMatrices();
   const auto [M, blocks_of_M] = Make6x6SpdBlockDiagonalMatrixOf2x2SpdMatrices();
 
-  SuperNodalSolver solver(num_row_blocks_of_J, Jtriplets, blocks_of_M);
+  TypeParam solver(num_row_blocks_of_J, Jtriplets, blocks_of_M);
   solver.SetWeightMatrix(blocks_of_G);
   MatrixXd full_matrix_ref = M + J.transpose() * G * J;
   EXPECT_NEAR((solver.MakeFullMatrix() - full_matrix_ref).norm(), 0, 1e-15);
@@ -377,7 +407,7 @@ GTEST_TEST(SupernodalSolver, SeveralPointsPerPatch) {
 
 // In this test we provided Jacobian triplets in arbitrary order. This verifies
 // there are no implicit sorting assumptions on the input.
-GTEST_TEST(SupernodalSolver, JacobianTripletsNotSortedByColumn) {
+TYPED_TEST(SuperNodalSolverTest, JacobianTripletsNotSortedByColumn) {
   int num_row_blocks_of_J = 3;
   MatrixXd J(12, 6);
 
@@ -395,7 +425,7 @@ GTEST_TEST(SupernodalSolver, JacobianTripletsNotSortedByColumn) {
        0, 0, 2, 1, 0, 0,
        0, 0, 3, 3, 0, 0;
   // We place unsorted inputs: column 2 appears before column 0.
-  const std::vector<BlockMatrixTriplet> Jtriplets = MakeBlockTriplets(J,
+  const std::vector<BlockTriplet> Jtriplets = MakeBlockTriplets(J,
       {{0, 0}, {0, 2}, {1, 0}, {1, 2}, {2, 1}},
       {{0, 0}, {0, 4}, {6, 0}, {6, 4}, {9, 2}},
       {{6, 2}, {6, 2}, {3, 2}, {3, 2}, {3, 2}});
@@ -405,7 +435,7 @@ GTEST_TEST(SupernodalSolver, JacobianTripletsNotSortedByColumn) {
   const auto [G, blocks_of_G] =
       Make12x12SpdBlockDiagonalMatrixOf3x3SpdMatrices();
 
-  SuperNodalSolver solver(num_row_blocks_of_J, Jtriplets, blocks_of_M);
+  TypeParam solver(num_row_blocks_of_J, Jtriplets, blocks_of_M);
   solver.SetWeightMatrix(blocks_of_G);
   MatrixXd full_matrix_ref = M + J.transpose() * G * J;
   EXPECT_NEAR((solver.MakeFullMatrix() - full_matrix_ref).norm(), 0, 1e-15);
@@ -415,7 +445,7 @@ GTEST_TEST(SupernodalSolver, JacobianTripletsNotSortedByColumn) {
 // There are three trees. The first two have two dofs and the third one has
 // three dofs. The purpose of this test is to verify correctness when trees
 // might have different number of dofs.
-GTEST_TEST(SupernodalSolver, DifferentTreeSizes) {
+TYPED_TEST(SuperNodalSolverTest, DifferentTreeSizes) {
   // number of patches. In this example, it happens to equal the number of
   // contact points since each patch has only a single point.
   int num_row_blocks_of_J = 3;
@@ -431,7 +461,7 @@ GTEST_TEST(SupernodalSolver, DifferentTreeSizes) {
        0, 0, 1, 1, 0, 0, 0,
        0, 0, 2, 1, 0, 0, 0,
        0, 0, 3, 3, 0, 0, 0;
-  const std::vector<BlockMatrixTriplet> Jtriplets = MakeBlockTriplets(J,
+  const std::vector<BlockTriplet> Jtriplets = MakeBlockTriplets(J,
       {{0, 0}, {0, 2}, {1, 2}, {2, 1}},
       {{0, 0}, {0, 4}, {3, 4}, {6, 2}},
       {{3, 2}, {3, 3}, {3, 3}, {3, 2}});
@@ -455,7 +485,7 @@ GTEST_TEST(SupernodalSolver, DifferentTreeSizes) {
   blocks_of_M.at(1) = M.block(2, 2, 2, 2);
   blocks_of_M.at(2) = M.block(4, 4, 3, 3);
 
-  SuperNodalSolver solver(num_row_blocks_of_J, Jtriplets, blocks_of_M);
+  TypeParam solver(num_row_blocks_of_J, Jtriplets, blocks_of_M);
   solver.SetWeightMatrix(blocks_of_G);
   MatrixXd full_matrix_ref = M + J.transpose() * G * J;
   EXPECT_NEAR((solver.MakeFullMatrix() - full_matrix_ref).norm(), 0, 1e-15);
@@ -464,7 +494,7 @@ GTEST_TEST(SupernodalSolver, DifferentTreeSizes) {
 // Unit test for the sparsity pattern occurring on a problem with four stacks of
 // two objects each. Patches and trees are provided in some arbitrary
 // permutation.
-GTEST_TEST(SupernodalSolver, FourStacks) {
+TYPED_TEST(SuperNodalSolverTest, FourStacks) {
   // For this problem each patch has a single contact point. Therefore there'll
   // be num_patches blocks of W.
   const int num_patches = 8;
@@ -503,7 +533,7 @@ GTEST_TEST(SupernodalSolver, FourStacks) {
        J3x6, J3x6, Z3x6, Z3x6, Z3x6, Z3x6, Z3x6, Z3x6,
        Z3x6, Z3x6, J3x6, J3x6, Z3x6, Z3x6, Z3x6, Z3x6;
   // clang-format on
-  std::vector<BlockMatrixTriplet> Jtriplets;
+  std::vector<BlockTriplet> Jtriplets;
   // Patch 0:
   Jtriplets.push_back({0, 6, MatrixBlock<double>(J3x6)});
   Jtriplets.push_back({0, 7, MatrixBlock<double>(J3x6)});
@@ -543,7 +573,7 @@ GTEST_TEST(SupernodalSolver, FourStacks) {
     M.block(6 * i, 6 * i, 6, 6) = Mt;
     blocks_of_M.at(i) = Mt;
   }
-  SuperNodalSolver solver(num_row_blocks_of_J, Jtriplets, blocks_of_M);
+  TypeParam solver(num_row_blocks_of_J, Jtriplets, blocks_of_M);
   solver.SetWeightMatrix(blocks_of_G);
   MatrixXd full_matrix_ref = M + J.transpose() * G * J;
   EXPECT_NEAR((solver.MakeFullMatrix() - full_matrix_ref).norm(), 0, 1e-12);
@@ -562,7 +592,7 @@ GTEST_TEST(SupernodalSolver, FourStacks) {
 // Provide input with varying column sizes.  Verifies there
 // are no implicit assumptions about a constant Jacobian
 // block-size.
-GTEST_TEST(SupernodalSolver, ColumnSizesDifferent) {
+TYPED_TEST(SuperNodalSolverTest, ColumnSizesDifferent) {
   int num_row_blocks_of_J = 4;
   MatrixXd J(13, 6);
 
@@ -585,7 +615,7 @@ GTEST_TEST(SupernodalSolver, ColumnSizesDifferent) {
        0, 0, 3,  0, 0, 0,
 
        1, 1, 0,  0, 0, 1;
-  const std::vector<BlockMatrixTriplet> Jtriplets = MakeBlockTriplets(J,
+  const std::vector<BlockTriplet> Jtriplets = MakeBlockTriplets(J,
       {{0, 0}, {0, 2}, {1, 0}, {1, 2}, {2, 1}, {3, 3}, {3, 0}},
       {{0, 0}, {0, 3}, {6, 0}, {6, 3}, {9, 2}, {12, 5}, {12, 0}},
       {{6, 2}, {6, 2}, {3, 2}, {3, 2}, {3, 1}, {1, 1}, {1, 2}});
@@ -632,7 +662,7 @@ GTEST_TEST(SupernodalSolver, ColumnSizesDifferent) {
   blocks_of_M.at(2) = M.block<2, 2>(3, 3);
   blocks_of_M.at(3) = M.block<1, 1>(5, 5);
 
-  SuperNodalSolver solver(num_row_blocks_of_J, Jtriplets, blocks_of_M);
+  TypeParam solver(num_row_blocks_of_J, Jtriplets, blocks_of_M);
   solver.SetWeightMatrix(blocks_of_G);
   MatrixXd full_matrix_ref = M + J.transpose() * G * J;
   EXPECT_NEAR((solver.MakeFullMatrix() - full_matrix_ref).norm(), 0, 1e-15);

@@ -69,6 +69,13 @@ class MeshcatVisualizer final : public systems::LeafSystem<T> {
   template <typename U>
   explicit MeshcatVisualizer(const MeshcatVisualizer<U>& other);
 
+  /** Resets the realtime rate calculator. Calculation will resume on the next
+   periodic publish event. This is useful for correcting the realtime rate after
+   simulation is resumed from a paused state, etc. */
+  void ResetRealtimeRateCalculator() const {
+    realtime_rate_calculator_.Reset();
+  }
+
   /** Calls Meshcat::Delete(std::string path), with the path set to
    MeshcatVisualizerParams::prefix.  Since this visualizer will only ever add
    geometry under this prefix, this will remove all geometry/transforms added

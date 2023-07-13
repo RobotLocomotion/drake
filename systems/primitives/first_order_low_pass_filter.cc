@@ -11,16 +11,15 @@ namespace drake {
 namespace systems {
 
 template <typename T>
-FirstOrderLowPassFilter<T>::FirstOrderLowPassFilter(
-    double time_constant, int size)
+FirstOrderLowPassFilter<T>::FirstOrderLowPassFilter(double time_constant,
+                                                    int size)
     : FirstOrderLowPassFilter(VectorX<double>::Ones(size) * time_constant) {}
 
 template <typename T>
 FirstOrderLowPassFilter<T>::FirstOrderLowPassFilter(
     const VectorX<double>& time_constants)
-    : VectorSystem<T>(
-          SystemTypeTag<FirstOrderLowPassFilter>{},
-          time_constants.size(), time_constants.size()),
+    : VectorSystem<T>(SystemTypeTag<FirstOrderLowPassFilter>{},
+                      time_constants.size(), time_constants.size()),
       time_constants_(time_constants) {
   DRAKE_DEMAND(time_constants.size() > 0);
   DRAKE_DEMAND((time_constants.array() > 0).all());
@@ -46,8 +45,8 @@ double FirstOrderLowPassFilter<T>::get_time_constant() const {
 }
 
 template <typename T>
-const VectorX<double>&
-FirstOrderLowPassFilter<T>::get_time_constants_vector() const {
+const VectorX<double>& FirstOrderLowPassFilter<T>::get_time_constants_vector()
+    const {
   return time_constants_;
 }
 
@@ -62,8 +61,7 @@ void FirstOrderLowPassFilter<T>::set_initial_output_value(
 
 template <typename T>
 void FirstOrderLowPassFilter<T>::DoCalcVectorTimeDerivatives(
-    const Context<T>&,
-    const Eigen::VectorBlock<const VectorX<T>>& input,
+    const Context<T>&, const Eigen::VectorBlock<const VectorX<T>>& input,
     const Eigen::VectorBlock<const VectorX<T>>& state,
     Eigen::VectorBlock<VectorX<T>>* derivatives) const {
   derivatives->array() = (input - state).array() / time_constants_.array();
@@ -71,8 +69,7 @@ void FirstOrderLowPassFilter<T>::DoCalcVectorTimeDerivatives(
 
 template <typename T>
 void FirstOrderLowPassFilter<T>::DoCalcVectorOutput(
-    const Context<T>&,
-    const Eigen::VectorBlock<const VectorX<T>>& input,
+    const Context<T>&, const Eigen::VectorBlock<const VectorX<T>>& input,
     const Eigen::VectorBlock<const VectorX<T>>& state,
     Eigen::VectorBlock<VectorX<T>>* output) const {
   unused(input);

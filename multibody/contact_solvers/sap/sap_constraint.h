@@ -271,7 +271,11 @@ class SapConstraint {
     |     TRUE        |     TRUE        |   permuted(i)   |    permuted(j)   |
     |------------------------------------------------------------------------|
     Note: if both cliques do not participate, this function returns `nullptr`.
-    @pre clique_permutation.domain_size() == per_clique_known_dofs.size().
+    Note: per_clique_known_dofs.size() can be smaller than
+    clique_permutation.domain_size() (i.e. the number of cliques in the problem)
+    for cases in which the last set of cliques have zero known DoFs and it is
+    therefore unnecessary to pad per_clique_known_dofs with empty vectors.
+    @pre per_clique_known_dofs.size() <= clique_permutation.domain_size() .
     @pre first_clique() < clique_permutation.domain_size().
     @pre if num_cliques() > 1,
       second_clique() < clique_permutation.domain_size().

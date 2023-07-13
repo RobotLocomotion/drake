@@ -7,10 +7,10 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/multibody/contact_solvers/block_sparse_matrix.h"
+#include "drake/multibody/contact_solvers/conex_supernodal_solver.h"
 #include "drake/multibody/contact_solvers/contact_solver_utils.h"
 #include "drake/multibody/contact_solvers/sap/sap_friction_cone_constraint.h"
 #include "drake/multibody/contact_solvers/sap/sap_solver_results.h"
-#include "drake/multibody/contact_solvers/supernodal_solver.h"
 #include "drake/systems/framework/context.h"
 
 using drake::systems::Context;
@@ -887,7 +887,6 @@ class SapNewtonIterationTest
 
     // Perform computation with supernodal algebra.
     SapSolverParameters params_supernodal;  // Default set of parameters.
-    params_supernodal.use_dense_algebra = false;
     params_supernodal.abs_tolerance = 0;
     params_supernodal.rel_tolerance = relative_tolerance;
     params_supernodal.line_search_type = GetParam();
@@ -895,7 +894,8 @@ class SapNewtonIterationTest
 
     // Perform computation with dense algebra.
     SapSolverParameters params_dense;  // Default set of parameters.
-    params_dense.use_dense_algebra = true;
+    params_dense.linear_solver_type =
+        SapSolverParameters::LinearSolverType::kDense;
     params_dense.abs_tolerance = 0;
     params_dense.rel_tolerance = relative_tolerance;
     params_dense.line_search_type = GetParam();

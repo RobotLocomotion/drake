@@ -47,6 +47,7 @@ GTEST_TEST(HPolyhedronTest, DefaultConstructor) {
   EXPECT_NO_THROW(H.Clone());
   EXPECT_FALSE(H.IntersectsWith(H));
   EXPECT_TRUE(H.IsBounded());
+  EXPECT_THROW(H.IsEmpty(), std::exception);
   EXPECT_FALSE(H.PointInSet(Eigen::VectorXd::Zero(0)));
 }
 
@@ -323,6 +324,97 @@ GTEST_TEST(HPolyhedronTest, ChebyshevCenter2) {
   EXPECT_NEAR(distance[1], 1.0, 1e-6);
   EXPECT_GE(distance[2], 1.0 - 1e-6);
   EXPECT_GE(distance[3], 1.0 - 1e-6);
+}
+
+GTEST_TEST(HpolyhedronTest, Scale) {
+  const double kTol = 1e-12;
+  const HPolyhedron H = HPolyhedron::MakeUnitBox(3);
+  const double kScale = 2.0;
+
+  // The original volume is 2x2x2 = 8.
+  // The new volume should be 16.
+  HPolyhedron H_scaled = H.Scale(kScale);
+  VPolytope V(H_scaled);
+  EXPECT_NEAR(V.CalcVolume(), 16.0, kTol);
+  // The vertices should be pow(16,1/3)/2.
+  const double kVertexValue = std::pow(16.0, 1.0 / 3.0) / 2.0;
+  for (int i = 0; i < V.vertices().rows(); ++i) {
+    for (int j = 0; j < V.vertices().cols(); ++j) {
+      EXPECT_NEAR(std::abs(V.vertices()(i, j)), kVertexValue, kTol);
+    }
+  }
+
+  // Again with the center specified explicitly.
+  H_scaled = H.Scale(kScale, Vector3d::Zero());
+  V = VPolytope(H_scaled);
+  EXPECT_NEAR(V.CalcVolume(), 16.0, kTol);
+
+  // Again with the center in the bottom corner.
+  H_scaled = H.Scale(1.0 / 8.0, Vector3d::Constant(-1.0));
+  V = VPolytope(H_scaled);
+  EXPECT_NEAR(V.CalcVolume(), 1.0, kTol);
+  EXPECT_TRUE(H_scaled.PointInSet(Vector3d::Constant(-0.01)));
+  EXPECT_FALSE(H_scaled.PointInSet(Vector3d::Constant(0.01)));
+  EXPECT_TRUE(H_scaled.PointInSet(Vector3d::Constant(-0.99)));
+  EXPECT_FALSE(H_scaled.PointInSet(Vector3d::Constant(-1.01)));
+
+  // Shrink to a point.
+  const Vector3d kPoint = Vector3d::Constant(-1.0);
+  H_scaled = H.Scale(0, kPoint);
+  // A*point == b.
+  EXPECT_TRUE(CompareMatrices(H_scaled.A() * kPoint, H_scaled.b(), kTol));
+}
+
+// Scale supports unbounded sets.
+GTEST_TEST(HPolyhedronTest, Scale2) {
+  const double kTol = 1e-14;
+  // The ice cream cone in 2d. y>=x, y>=-x.
+  Eigen::Matrix2d A;
+  A << 1, -1, 1, 1;
+  HPolyhedron H(A, Vector2d::Zero());
+
+  const double kScale = 0.25;
+  // Scaling about the origin should have no effect.
+  HPolyhedron H_scaled = H.Scale(kScale, Vector2d::Zero());
+  EXPECT_TRUE(CompareMatrices(H.A(), H_scaled.A(), kTol));
+  EXPECT_TRUE(CompareMatrices(H.b(), H_scaled.b(), kTol));
+
+  // Scaling about the point (0,1) will move the cone up, to
+  // y >= x + 0.5, y >= -x - 0.5.
+  H_scaled = H.Scale(kScale, Vector2d{0, 1});
+  EXPECT_TRUE(CompareMatrices(H_scaled.A(), H.A(), kTol));
+  EXPECT_TRUE(CompareMatrices(H_scaled.b(), Vector2d{-0.5, 0.5}, kTol));
+}
+
+// The original set has no volume.
+GTEST_TEST(HPolyhedronTest, Scale3) {
+  // Make a square in the xz plane, with y=0.
+  Eigen::MatrixXd A(6, 3);
+  // clang-format off
+  A <<  1,  0,  0,  // x <= 1
+       -1,  0,  0,  // x >= -1
+        0,  1,  0,  // y <= 0
+        0, -1,  0,  // y >= 0
+        0,  0,  1,  // z <= 1
+        0,  0, -1;  // z >= -1
+  // clang-format on
+  VectorXd b(6);
+  b << 1, 1, 0, 0, 1, 1;
+  HPolyhedron H(A, b);
+
+  const double kScale = 2.0;
+  const double kOffset = 1e-6;
+  HPolyhedron H_scaled = H.Scale(kScale, Vector3d::Zero());
+  const double kVertexValue = std::pow(16.0, 1.0 / 3.0) / 2.0;
+  EXPECT_TRUE(H_scaled.PointInSet(
+      Vector3d{kVertexValue - kOffset, 0, kVertexValue - kOffset}));
+  EXPECT_FALSE(H_scaled.PointInSet(
+      Vector3d{kVertexValue + kOffset, 0, kVertexValue + kOffset}));
+
+  // center does not need to be in the set.
+  H_scaled = H.Scale(kScale, Vector3d{2, 0, 0});
+  EXPECT_FALSE(H_scaled.PointInSet(Vector3d{1, 0, 0}));
+  EXPECT_TRUE(H_scaled.PointInSet(Vector3d{-1, 0, 0}));
 }
 
 GTEST_TEST(HPolyhedronTest, CloneTest) {

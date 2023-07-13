@@ -64,6 +64,34 @@ struct HydroelasticContactInfoAndBodySpatialForces {
   std::vector<HydroelasticContactInfo<T>> contact_info;
 };
 
+// Data stored in the cache entry for joint locking.
+template <typename T>
+struct JointLockingCacheData {
+  // @name Dense joint locking indices.
+  // Values of each will be a sorted subset of [0, num_velocities()].
+  // `unlocked_velocity_indices` and `locked_velocity_indices` are disjoint and
+  // their union is [0, num_velocities()].
+  // @{
+  // Stores indices of unlocked DoFs in the context.
+  std::vector<int> unlocked_velocity_indices;
+  // Stores indices of locked DoFs in the context.
+  std::vector<int> locked_velocity_indices;
+  // @}
+
+  // @name Per-tree joint locking indices.
+  // Each has the same size as the number of trees in the plant's topology and
+  // is resized accordingly on output. For both unlocked and locked, element i
+  // is a sorted subset of [0, tree_i.num_velocities()] where tree_i is the i-th
+  // tree in this plant's topology. They are likewise disjoint and their union
+  // is [0, tree_i.num_velocities()].
+  // @{
+  // Stores indices of unlocked DoFs per tree in the plant's topology.
+  std::vector<std::vector<int>> unlocked_velocity_indices_per_tree;
+  // Stores indices of locked DoFs per tree in the plant's topology.
+  std::vector<std::vector<int>> locked_velocity_indices_per_tree;
+  // @}
+};
+
 // This struct contains the parameters to compute forces to enforce
 // no-interpenetration between bodies by a penalty method.
 struct ContactByPenaltyMethodParameters {
@@ -937,13 +965,15 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   /// This method adds a Joint of type `JointType` between two bodies.
   /// For more information, see the below overload of `AddJoint<>`.
-  template <template<typename Scalar> class JointType>
+  template <template <typename Scalar> class JointType>
   const JointType<T>& AddJoint(std::unique_ptr<JointType<T>> joint) {
-    DRAKE_MBP_THROW_IF_FINALIZED();
     static_assert(std::is_convertible_v<JointType<T>*, Joint<T>*>,
                   "JointType must be a sub-class of Joint<T>.");
-    RegisterJointInGraph(*joint);
-    return this->mutable_tree().AddJoint(std::move(joint));
+    DRAKE_MBP_THROW_IF_FINALIZED();
+    const JointType<T>& result =
+        this->mutable_tree().AddJoint(std::move(joint));
+    RegisterJointInGraph(result);
+    return result;
   }
 
   /// This method adds a Joint of type `JointType` between two bodies.
@@ -1031,31 +1061,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     //  consider changing frame F to frame Jp and changing frame M to frame Jc.
     static_assert(std::is_base_of_v<Joint<T>, JointType<T>>,
                   "JointType<T> must be a sub-class of Joint<T>.");
-
-    const Frame<T>* frame_on_parent{nullptr};
-    if (X_PF) {
-      frame_on_parent = &this->AddFrame(
-          std::make_unique<FixedOffsetFrame<T>>(
-              name + "_parent", parent, *X_PF));
-    } else {
-      frame_on_parent = &parent.body_frame();
-    }
-
-    const Frame<T>* frame_on_child{nullptr};
-    if (X_BM) {
-      frame_on_child = &this->AddFrame(
-          std::make_unique<FixedOffsetFrame<T>>(
-              name + "_child", child, *X_BM));
-    } else {
-      frame_on_child = &child.body_frame();
-    }
-
-    const JointType<T>& joint = AddJoint(
-        std::make_unique<JointType<T>>(
-            name,
-            *frame_on_parent, *frame_on_child,
-            std::forward<Args>(args)...));
-    return joint;
+    DRAKE_MBP_THROW_IF_FINALIZED();
+    const JointType<T>& result =
+        this->mutable_tree().template AddJoint<JointType>(
+            name, parent, X_PF, child, X_BM, std::forward<Args>(args)...);
+    RegisterJointInGraph(result);
+    return result;
   }
 
   /// Welds `frame_on_parent_F` and `frame_on_child_M` with relative pose
@@ -1183,9 +1194,47 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   /// Returns the total number of constraints specified by the user.
   int num_constraints() const {
-    return static_cast<int>(coupler_constraints_specs_.size() +
-                            distance_constraints_specs_.size() +
-                            ball_constraints_specs_.size());
+    return num_coupler_constraints() + num_distance_constraints() +
+           num_ball_constraints();
+  }
+
+  /// Returns the total number of coupler constraints specified by the user.
+  int num_coupler_constraints() const {
+    return ssize(coupler_constraints_specs_);
+  }
+
+  /// Returns the total number of distance constraints specified by the user.
+  int num_distance_constraints() const {
+    return ssize(distance_constraints_specs_);
+  }
+
+  /// Returns the total number of ball constraints specified by the user.
+  int num_ball_constraints() const {
+    return ssize(ball_constraints_specs_);
+  }
+
+  /// Returns the coupler constraint specification corresponding to `id`
+  /// @throws if `id` is not a valid identifier for a coupler constraint.
+  const internal::CouplerConstraintSpec& get_coupler_constraint_specs(
+      MultibodyConstraintId id) const {
+    DRAKE_THROW_UNLESS(coupler_constraints_specs_.count(id) > 0);
+    return coupler_constraints_specs_.at(id);
+  }
+
+  /// Returns the distance constraint specification corresponding to `id`
+  /// @throws if `id` is not a valid identifier for a distance constraint.
+  const internal::DistanceConstraintSpec& get_distance_constraint_specs(
+      MultibodyConstraintId id) const {
+    DRAKE_THROW_UNLESS(distance_constraints_specs_.count(id) > 0);
+    return distance_constraints_specs_.at(id);
+  }
+
+  /// Returns the ball constraint specification corresponding to `id`
+  /// @throws if `id` is not a valid identifier for a ball constraint.
+  const internal::BallConstraintSpec& get_ball_constraint_specs(
+      MultibodyConstraintId id) const {
+    DRAKE_THROW_UNLESS(ball_constraints_specs_.count(id) > 0);
+    return ball_constraints_specs_.at(id);
   }
 
   /// Defines a holonomic constraint between two single-dof joints `joint0`
@@ -1206,7 +1255,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///
   /// @throws if joint0 and joint1 are not both single-dof joints.
   /// @throws std::exception if the %MultibodyPlant has already been finalized.
-  ConstraintIndex AddCouplerConstraint(const Joint<T>& joint0,
+  MultibodyConstraintId AddCouplerConstraint(const Joint<T>& joint0,
                                        const Joint<T>& joint1,
                                        double gear_ratio, double offset = 0.0);
 
@@ -1233,7 +1282,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @param[in] damping For modeling a spring with free length equal to
   /// `distance`, damping parameter in N⋅s/m. Optional, with its default value
   /// being zero for a non-dissipative constraint.
-  /// @returns the index to the newly added constraint.
+  /// @returns the id of the newly added constraint.
   ///
   /// @warning Currently, it is the user's responsibility to initialize the
   /// model's context in a configuration compatible with the newly added
@@ -1250,7 +1299,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if `stiffness` is not positive or zero.
   /// @throws std::exception if `damping` is not positive or zero.
   /// @throws std::exception if the %MultibodyPlant has already been finalized.
-  ConstraintIndex AddDistanceConstraint(
+  MultibodyConstraintId AddDistanceConstraint(
       const Body<T>& body_A, const Vector3<double>& p_AP, const Body<T>& body_B,
       const Vector3<double>& p_BQ, double distance,
       double stiffness = std::numeric_limits<double>::infinity(),
@@ -1264,11 +1313,11 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @param[in] p_AP Position of point P in body A's frame.
   /// @param[in] body_B Body to which point Q is rigidly attached.
   /// @param[in] p_BQ Position of point Q in body B's frame.
-  /// @returns the index to the newly added constraint.
+  /// @returns the id of the newly added constraint.
   ///
   /// @throws std::exception if bodies A and B are the same body.
   /// @throws std::exception if the %MultibodyPlant has already been finalized.
-  ConstraintIndex AddBallConstraint(const Body<T>& body_A,
+  MultibodyConstraintId AddBallConstraint(const Body<T>& body_A,
                                     const Vector3<double>& p_AP,
                                     const Body<T>& body_B,
                                     const Vector3<double>& p_BQ);
@@ -3376,6 +3425,39 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     DRAKE_DEMAND(v != nullptr);
     internal_tree().MapQDotToVelocity(context, qdot, v);
   }
+
+  /// Returns the matrix `N(q)`, which maps `q̇ = N(q)⋅v`, as described in
+  /// MapVelocityToQDot(). Prefer calling MapVelocityToQDot() directly; this
+  /// entry point is provided to support callers that require the explicit
+  /// linear form (once q is given) of the relationship. Do not take the
+  /// (pseudo-)inverse of `N(q)`; call MakeQDotToVelocityMap instead. This
+  /// method is, in the worst case, O(n), where n is the number of joints.
+  ///
+  /// @param[in] context
+  ///   The context containing the state of the model.
+  ///
+  /// @see MapVelocityToQDot()
+  Eigen::SparseMatrix<T> MakeVelocityToQDotMap(
+      const systems::Context<T>& context) const {
+    this->ValidateContext(context);
+    return internal_tree().MakeVelocityToQDotMap(context);
+  }
+
+  /// Returns the matrix `N⁺(q)`, which maps `v = N⁺(q)⋅q̇`, as described in
+  /// MapQDotToVelocity(). Prefer calling MapQDotToVelocity() directly; this
+  /// entry point is provided to support callers that require the explicit
+  /// linear form (once q is given) of the relationship. This method is, in the
+  /// worst case, O(n), where n is the number of joints.
+  ///
+  /// @param[in] context
+  ///   The context containing the state of the model.
+  ///
+  /// @see MapVelocityToQDot()
+  Eigen::SparseMatrix<T> MakeQDotToVelocityMap(
+      const systems::Context<T>& context) const {
+    this->ValidateContext(context);
+    return internal_tree().MakeQDotToVelocityMap(context);
+  }
   /// @} <!-- Kinematic and dynamic computations -->
 
   /// @anchor mbp_system_matrix_computations
@@ -4655,7 +4737,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     systems::CacheIndex spatial_contact_forces_continuous;
     systems::CacheIndex discrete_contact_pairs;
     systems::CacheIndex joint_locking_data;
-    systems::CacheIndex joint_locking_data_per_tree;
   };
 
   // Constructor to bridge testing from MultibodyTree to MultibodyPlant.
@@ -4826,37 +4907,16 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const systems::Context<T>& context0,
       systems::DiscreteValues<T>* updates) const;
 
-  // Computes the array of indices of velocities that are not locked in the
-  // current configuration. The resulting index values in @p
-  // unlocked_velocity_indices will be in ascending order, in the range [0,
-  // num_velocities()), with the indices of the locked velocities removed.
-  void CalcUnlockedVelocityIndices(
-      const systems::Context<T>& context,
-      std::vector<int>* unlocked_velocity_indices) const;
+  // Data will be resized on output according to the documentation for
+  // JointLockingCacheData.
+  void CalcJointLockingCache(const systems::Context<T>& context,
+                             internal::JointLockingCacheData<T>* data) const;
 
-  // Eval version of the method CalcUnlockedVelocityIndices().
-  const std::vector<int>& EvalUnlockedVelocityIndices(
+  // Eval version of the method CalcJointLockingCache().
+  const internal::JointLockingCacheData<T>& EvalJointLockingCache(
       const systems::Context<T>& context) const {
     return this->get_cache_entry(cache_indexes_.joint_locking_data)
-        .template Eval<std::vector<int>>(context);
-  }
-
-  // Computes the array of indices of velocities that are not locked in the
-  // current configuration for each tree in the plant's topology. The resulting
-  // index values in each element of @p unlocked_velocity_indices will be in
-  // ascending order, in the range [0, tree_M.num_velocities()), with the
-  // indices of the locked velocities removed. `unlocked_velocity_indices` has
-  // the same size as the number of trees in the plant's topology and is resized
-  // accordingly on output.
-  void CalcUnlockedVelocityIndicesPerTree(
-      const systems::Context<T>& context,
-      std::vector<std::vector<int>>* unlocked_velocity_indices) const;
-
-  // Eval version of the method CalcUnlockedVelocityIndices().
-  const std::vector<std::vector<int>>& EvalUnlockedVelocityIndicesPerTree(
-      const systems::Context<T>& context) const {
-    return this->get_cache_entry(cache_indexes_.joint_locking_data_per_tree)
-        .template Eval<std::vector<std::vector<int>>>(context);
+        .template Eval<internal::JointLockingCacheData<T>>(context);
   }
 
   // Computes the vector of ContactSurfaces for hydroelastic contact.
@@ -5345,14 +5405,17 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // (Experimental) The vector of physical models owned by MultibodyPlant.
   std::vector<std::unique_ptr<PhysicalModel<T>>> physical_models_;
 
-  // Vector of coupler constraints specifications.
-  std::vector<internal::CouplerConstraintSpecs> coupler_constraints_specs_;
+  // Map of coupler constraints specifications.
+  std::map<MultibodyConstraintId, internal::CouplerConstraintSpec>
+      coupler_constraints_specs_;
 
-  // Vector of distance constraints specifications.
-  std::vector<internal::DistanceConstraintSpecs> distance_constraints_specs_;
+  // Map of distance constraints specifications.
+  std::map<MultibodyConstraintId, internal::DistanceConstraintSpec>
+      distance_constraints_specs_;
 
-  // Vector of ball constraint specifications.
-  std::vector<internal::BallConstraintSpecs> ball_constraints_specs_;
+  // Map of ball constraint specifications.
+  std::map<MultibodyConstraintId, internal::BallConstraintSpec>
+      ball_constraints_specs_;
 
   // All MultibodyPlant cache indexes are stored in cache_indexes_.
   CacheIndexes cache_indexes_;

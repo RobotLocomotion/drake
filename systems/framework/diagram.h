@@ -163,8 +163,23 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   /// @see System<T>::get_name()
   template <template <typename> class MySystem>
   const MySystem<T>& GetDowncastSubsystemByName(std::string_view name) const {
+    return GetDowncastSubsystemByName<MySystem<T>>(name);
+  }
+
+  /// Alternate signature for a subsystem that has the Diagram's scalar type T
+  /// but is not explicitly templatized on T. This can happen if the
+  /// subsystem class declaration inherits, for example, from a `LeafSystem<T>`.
+  /// @pre The Scalar type of MyUntemplatizedSystem matches the %Diagram
+  ///      Scalar type T (will fail to compile if not).
+  template <class MyUntemplatizedSystem>
+  const MyUntemplatizedSystem& GetDowncastSubsystemByName(std::string_view name)
+      const {
+    static_assert(std::is_same_v<
+        typename MyUntemplatizedSystem::Scalar, T>,
+        "Scalar type of untemplatized System doesn't match the Diagram's.");
     const System<T>& subsystem = this->GetSubsystemByName(name);
-    return *dynamic_pointer_cast_or_throw<const MySystem<T>>(&subsystem);
+    return *dynamic_pointer_cast_or_throw<const MyUntemplatizedSystem>
+        (&subsystem);
   }
 
   /// Retrieves the state derivatives for a particular subsystem from the

@@ -45,6 +45,7 @@ void DefineGeometryOptimization(py::module m) {
         .def("IntersectsWith", &ConvexSet::IntersectsWith, py::arg("other"),
             cls_doc.IntersectsWith.doc)
         .def("IsBounded", &ConvexSet::IsBounded, cls_doc.IsBounded.doc)
+        .def("IsEmpty", &ConvexSet::IsEmpty, cls_doc.IsEmpty.doc)
         .def("MaybeGetPoint", &ConvexSet::MaybeGetPoint,
             cls_doc.MaybeGetPoint.doc)
         .def("PointInSet", &ConvexSet::PointInSet, py::arg("x"),
@@ -133,12 +134,13 @@ void DefineGeometryOptimization(py::module m) {
             py::arg("tol") = 1E-9, cls_doc.ReduceInequalities.doc)
         .def("FindRedundant", &HPolyhedron::FindRedundant,
             py::arg("tol") = 1E-9, cls_doc.FindRedundant.doc)
-        .def("IsEmpty", &HPolyhedron::IsEmpty, cls_doc.IsEmpty.doc)
         .def("MaximumVolumeInscribedEllipsoid",
             &HPolyhedron::MaximumVolumeInscribedEllipsoid,
             cls_doc.MaximumVolumeInscribedEllipsoid.doc)
         .def("ChebyshevCenter", &HPolyhedron::ChebyshevCenter,
             cls_doc.ChebyshevCenter.doc)
+        .def("Scale", &HPolyhedron::Scale, py::arg("scale"),
+            py::arg("center") = std::nullopt, cls_doc.Scale.doc)
         .def("CartesianProduct", &HPolyhedron::CartesianProduct,
             py::arg("other"), cls_doc.CartesianProduct.doc)
         .def("CartesianPower", &HPolyhedron::CartesianPower, py::arg("n"),

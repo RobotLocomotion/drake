@@ -8,6 +8,7 @@ import unittest
 import weakref
 
 import numpy as np
+import scipy.sparse
 
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.symbolic import Expression, Variable
@@ -21,7 +22,7 @@ from pydrake.multibody.tree import (
     Body_,
     BodyIndex,
     CalcSpatialInertia,
-    ConstraintIndex,
+    MultibodyConstraintId,
     DoorHinge_,
     DoorHingeConfig,
     FixedOffsetFrame_,
@@ -764,8 +765,12 @@ class TestPlant(unittest.TestCase):
             density=1000, length=0.4)
         SpatialInertia.SolidCapsuleWithDensity(
             density=1000, radius=0.1, length=0.4, unit_vector=[0, 0, 1])
+        SpatialInertia.SolidCapsuleWithMass(
+            mass=0.123, radius=0.1, length=0.4, unit_vector=[0, 0, 1])
         SpatialInertia.SolidCylinderWithDensity(
             density=1000, radius=0.1, length=0.4, unit_vector=[0, 0, 1])
+        SpatialInertia.SolidCylinderWithMass(
+            mass=0.123, radius=0.1, length=0.4, unit_vector=[0, 0, 1])
         SpatialInertia.SolidCylinderWithDensityAboutEnd(
             density=1000, radius=0.1, length=0.4, unit_vector=[0, 0, 1])
         SpatialInertia.ThinRodWithMass(
@@ -774,6 +779,8 @@ class TestPlant(unittest.TestCase):
             mass=2, length=0.3, unit_vector=[0, 0, 1])
         SpatialInertia.SolidEllipsoidWithDensity(
             density=1000, a=0.2, b=0.3, c=0.4)
+        SpatialInertia.SolidEllipsoidWithMass(
+            mass=0.123, a=0.2, b=0.3, c=0.4)
         SpatialInertia.SolidSphereWithDensity(
             density=1000, radius=0.5)
         SpatialInertia.SolidSphereWithMass(
@@ -1793,11 +1800,18 @@ class TestPlant(unittest.TestCase):
             [0.4, 0.5, 0.6])
         self.assertNotEqual(link0.floating_positions_start(), -1)
         self.assertNotEqual(link0.floating_velocities_start(), -1)
-        v_expected = np.linspace(start=-1.0, stop=-nv, num=nv)
         self.assertFalse(plant.IsVelocityEqualToQDot())
+        v_expected = np.linspace(start=-1.0, stop=-nv, num=nv)
         qdot = plant.MapVelocityToQDot(context, v_expected)
         v_remap = plant.MapQDotToVelocity(context, qdot)
         numpy_compare.assert_float_allclose(v_remap, v_expected)
+        # Bindings for Eigen::SparseMatrix only support T=float for now.
+        if T == float:
+            N = plant.MakeVelocityToQDotMap(context)
+            numpy_compare.assert_float_allclose(qdot, N.todense() @ v_expected)
+            Nplus = plant.MakeQDotToVelocityMap(context)
+            numpy_compare.assert_float_allclose(v_expected,
+                                                Nplus.todense() @ qdot)
 
     @numpy_compare.check_all_types
     def test_multibody_add_joint(self, T):
@@ -2280,12 +2294,9 @@ class TestPlant(unittest.TestCase):
         # Add coupler constraint.
         left_slider = plant.GetJointByName("left_finger_sliding_joint")
         right_slider = plant.GetJointByName("right_finger_sliding_joint")
-        coupler_index = plant.AddCouplerConstraint(
+        plant.AddCouplerConstraint(
             joint0=left_slider, joint1=right_slider,
             gear_ratio=1.2, offset=3.4)
-
-        # Constraint indexes are assigned in increasing order starting at zero.
-        self.assertEqual(coupler_index, ConstraintIndex(0))
 
         # We are done creating the model.
         plant.Finalize()
@@ -2305,11 +2316,8 @@ class TestPlant(unittest.TestCase):
         body_B = plant.AddRigidBody(name="B", M_BBo_B=M_BBo_B)
         p_AP = [0.0, 0.0, 0.0]
         p_BQ = [0.0, 0.0, 0.0]
-        index = plant.AddDistanceConstraint(
+        plant.AddDistanceConstraint(
             body_A=body_A, p_AP=p_AP, body_B=body_B, p_BQ=p_BQ, distance=0.01)
-
-        # Constraint indexes are assigned in increasing order starting at zero.
-        self.assertEqual(index, ConstraintIndex(0))
 
         # We are done creating the model.
         plant.Finalize()
@@ -2329,11 +2337,8 @@ class TestPlant(unittest.TestCase):
         body_B = plant.AddRigidBody(name="B", M_BBo_B=M_BBo_B)
         p_AP = [0.0, 0.0, 0.0]
         p_BQ = [0.0, 0.0, 0.0]
-        index = plant.AddBallConstraint(
+        plant.AddBallConstraint(
             body_A=body_A, p_AP=p_AP, body_B=body_B, p_BQ=p_BQ)
-
-        # Constraint indexes are assigned in increasing order starting at zero.
-        self.assertEqual(index, ConstraintIndex(0))
 
         # We are done creating the model.
         plant.Finalize()
@@ -2485,6 +2490,7 @@ class TestPlant(unittest.TestCase):
         self.assertTrue(contact_results.num_point_pair_contacts() == 0)
         self.assertIsNone(contact_results.plant())
         copy.copy(contact_results)
+        contact_results.SelectHydroelastic(selector=lambda _: True)
 
     def test_contact_model(self):
         plant = MultibodyPlant_[float](0.1)

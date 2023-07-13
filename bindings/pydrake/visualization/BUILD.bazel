@@ -168,7 +168,14 @@ drake_py_unittest(
     ],
     deps = [
         ":model_visualizer",
-        "//bindings/pydrake/common/test_utilities:deprecation_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "model_visualizer_camera_test",
+    flaky = True,
+    deps = [
+        ":model_visualizer",
     ],
 )
 

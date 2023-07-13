@@ -180,6 +180,9 @@ class Meshcat {
               See @ref meshcat_path "Meshcat paths" for the semantics.
   @param shape a Shape that specifies the geometry of the object.
   @param rgba an Rgba that specifies the (solid) color of the object.
+  @note If `shape` is a mesh, the file referred to can be either an .obj file
+  or an _embedded_ .gltf file (it has all geometry data and texture data
+  contained within the single .gltf file).
   @pydrake_mkdoc_identifier{shape}
   */
   void SetObject(std::string_view path, const Shape& shape,
@@ -483,6 +486,12 @@ class Meshcat {
   @param rate the realtime rate value to be displayed, will be converted to a
   percentage (multiplied by 100) */
   void SetRealtimeRate(double rate);
+
+  /** Gets the realtime rate that is displayed in the meshcat visualizer stats
+   strip chart. See SetRealtimeRate(). Note that this value might be a smoothing
+   function across multiple calls to SetRealtimeRate() rather than the most
+   recent argument value, in case this class ever adds smoothing capability. */
+  double GetRealtimeRate() const;
 
   /** Sets a single named property of the object at the given path. For example,
   @verbatim

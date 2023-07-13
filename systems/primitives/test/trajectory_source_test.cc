@@ -42,7 +42,7 @@ class TrajectorySourceTest : public ::testing::Test {
 TEST_F(TrajectorySourceTest, OutputTest) {
   const Polynomiald y = Polynomiald("y");
   const Polynomiald yyyy = (y * y * y * y);
-  const std::vector<Polynomiald> p_vec {yyyy};
+  const std::vector<Polynomiald> p_vec{yyyy};
   BuildSource(PiecewisePolynomial<double>(p_vec, {0.0, 3}));
 
   ASSERT_EQ(0, context_->num_input_ports());
@@ -56,10 +56,9 @@ TEST_F(TrajectorySourceTest, OutputTest) {
   EXPECT_EQ(kppTraj_->value(kTestTime), output.segment(0, len));
 
   for (size_t i = 1; i <= kDerivativeOrder; ++i) {
-    EXPECT_TRUE(
-        CompareMatrices(kppTraj_->derivative(i).value(kTestTime),
-                        output.segment(len * i, len), 1e-10,
-                        MatrixCompareType::absolute));
+    EXPECT_TRUE(CompareMatrices(kppTraj_->derivative(i).value(kTestTime),
+                                output.segment(len * i, len), 1e-10,
+                                MatrixCompareType::absolute));
   }
 
   // Test first derivative (which is in second segment):
@@ -76,10 +75,9 @@ TEST_F(TrajectorySourceTest, OutputTest) {
   const auto& output2 = source_->get_output_port().Eval(*context_);
   EXPECT_EQ(pp.value(kTestTime), output2.segment(0, len));
   for (size_t i = 1; i <= kDerivativeOrder; ++i) {
-    EXPECT_TRUE(
-        CompareMatrices(pp.derivative(i).value(kTestTime),
-                        output2.segment(len * i, len), 1e-10,
-                        MatrixCompareType::absolute));
+    EXPECT_TRUE(CompareMatrices(pp.derivative(i).value(kTestTime),
+                                output2.segment(len * i, len), 1e-10,
+                                MatrixCompareType::absolute));
   }
 }
 

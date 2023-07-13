@@ -60,8 +60,7 @@ struct VisualizationConfig {
   geometry::Rgba default_proximity_color{1, 0, 0, 0.5};
 
   /** Whether to show body inertia. */
-  // TODO(trowell-tri) Enable this when we handle off-axis inertia moments.
-  bool publish_inertia{false};
+  bool publish_inertia{true};
 
   /** Whether to show contact forces. */
   bool publish_contacts{true};
@@ -71,7 +70,7 @@ struct VisualizationConfig {
 
   /** Determines whether to send a Meshcat::Delete() messages to the Meshcat
    object (if any) on an initialization event to remove any visualizations,
-   e.g., from a previous simulation, to . */
+   e.g., from a previous simulation. */
   bool delete_on_initialization_event{true};
 
   /** Determines whether to enable alpha sliders for geometry display. */

@@ -168,6 +168,7 @@ drake_cc_googletest(
     deps = [
         ":differential_inverse_kinematics",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
         "//manipulation/kuka_iiwa:iiwa_constants",
         "//multibody/parsing",
     ],

@@ -4,6 +4,7 @@
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_pybind.h"
+#include "drake/bindings/pydrake/common/identifier_pybind.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/common/type_safe_index_pybind.h"
@@ -104,8 +105,8 @@ void DoScalarIndependentDefinitions(py::module m) {
       m, "JointActuatorIndex", doc.JointActuatorIndex.doc);
   BindTypeSafeIndex<ModelInstanceIndex>(
       m, "ModelInstanceIndex", doc.ModelInstanceIndex.doc);
-  BindTypeSafeIndex<ConstraintIndex>(
-      m, "ConstraintIndex", doc.ConstraintIndex.doc);
+  BindIdentifier<MultibodyConstraintId>(
+      m, "MultibodyConstraintId", doc.MultibodyConstraintId.doc);
   m.def("world_index", &world_index, doc.world_index.doc);
   m.def("world_frame_index", &world_frame_index, doc.world_frame_index.doc);
   m.def("world_model_instance", &world_model_instance,
@@ -1200,10 +1201,16 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def_static("SolidCapsuleWithDensity", &Class::SolidCapsuleWithDensity,
             py::arg("density"), py::arg("radius"), py::arg("length"),
             py::arg("unit_vector"), cls_doc.SolidCapsuleWithDensity.doc)
+        .def_static("SolidCapsuleWithMass", &Class::SolidCapsuleWithMass,
+            py::arg("mass"), py::arg("radius"), py::arg("length"),
+            py::arg("unit_vector"), cls_doc.SolidCapsuleWithMass.doc)
         .def_static("SolidCylinderWithDensity",
             &Class::SolidCylinderWithDensity, py::arg("density"),
             py::arg("radius"), py::arg("length"), py::arg("unit_vector"),
             cls_doc.SolidCylinderWithDensity.doc)
+        .def_static("SolidCylinderWithMass", &Class::SolidCylinderWithMass,
+            py::arg("mass"), py::arg("radius"), py::arg("length"),
+            py::arg("unit_vector"), cls_doc.SolidCylinderWithMass.doc)
         .def_static("SolidCylinderWithDensityAboutEnd",
             &Class::SolidCylinderWithDensityAboutEnd, py::arg("density"),
             py::arg("radius"), py::arg("length"), py::arg("unit_vector"),
@@ -1217,6 +1224,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def_static("SolidEllipsoidWithDensity",
             &Class::SolidEllipsoidWithDensity, py::arg("density"), py::arg("a"),
             py::arg("b"), py::arg("c"), cls_doc.SolidEllipsoidWithDensity.doc)
+        .def_static("SolidEllipsoidWithMass", &Class::SolidEllipsoidWithMass,
+            py::arg("mass"), py::arg("a"), py::arg("b"), py::arg("c"),
+            cls_doc.SolidEllipsoidWithMass.doc)
         .def_static("SolidSphereWithDensity", &Class::SolidSphereWithDensity,
             py::arg("density"), py::arg("radius"),
             cls_doc.SolidSphereWithDensity.doc)

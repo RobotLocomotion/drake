@@ -81,8 +81,8 @@ template <typename T>
 std::unique_ptr<SapConstraint<T>> SapConstraint<T>::MakeReduced(
     const PartialPermutation& clique_permutation,
     const std::vector<std::vector<int>>& per_clique_known_dofs) const {
-  DRAKE_DEMAND(clique_permutation.domain_size() ==
-               ssize(per_clique_known_dofs));
+  DRAKE_DEMAND(ssize(per_clique_known_dofs) <=
+               clique_permutation.domain_size());
   DRAKE_DEMAND(first_clique() < clique_permutation.domain_size());
   DRAKE_DEMAND(num_cliques() <= 1 ||
                second_clique() < clique_permutation.domain_size());
@@ -99,25 +99,41 @@ std::unique_ptr<SapConstraint<T>> SapConstraint<T>::MakeReduced(
 
   if (first_participates && second_participates) {
     // Permute both cliques.
+    MatrixBlock<T> J_A =
+        (first_clique() < ssize(per_clique_known_dofs)
+             ? std::move(drake::multibody::internal::ExcludeCols(
+                   first_clique_jacobian(),
+                   per_clique_known_dofs[first_clique()]))
+             : first_clique_jacobian());
+    MatrixBlock<T> J_B =
+        (second_clique() < ssize(per_clique_known_dofs)
+             ? std::move(drake::multibody::internal::ExcludeCols(
+                   second_clique_jacobian(),
+                   per_clique_known_dofs[second_clique()]))
+             : second_clique_jacobian());
     c->J_ = SapConstraintJacobian<T>(
-        clique_permutation.permuted_index(first_clique()),
-        drake::multibody::internal::ExcludeCols(
-            first_clique_jacobian(), per_clique_known_dofs[first_clique()]),
-        clique_permutation.permuted_index(second_clique()),
-        drake::multibody::internal::ExcludeCols(
-            second_clique_jacobian(), per_clique_known_dofs[second_clique()]));
+        clique_permutation.permuted_index(first_clique()), std::move(J_A),
+        clique_permutation.permuted_index(second_clique()), std::move(J_B));
   } else if (first_participates) {
     // Single clique, permute the first clique.
+    MatrixBlock<T> J_A =
+        (first_clique() < ssize(per_clique_known_dofs)
+             ? std::move(drake::multibody::internal::ExcludeCols(
+                   first_clique_jacobian(),
+                   per_clique_known_dofs[first_clique()]))
+             : first_clique_jacobian());
     c->J_ = SapConstraintJacobian<T>(
-        clique_permutation.permuted_index(first_clique()),
-        drake::multibody::internal::ExcludeCols(
-            first_clique_jacobian(), per_clique_known_dofs[first_clique()]));
+        clique_permutation.permuted_index(first_clique()), std::move(J_A));
   } else {
     // Single clique, permute the second clique.
+    MatrixBlock<T> J_B =
+        (second_clique() < ssize(per_clique_known_dofs)
+             ? std::move(drake::multibody::internal::ExcludeCols(
+                   second_clique_jacobian(),
+                   per_clique_known_dofs[second_clique()]))
+             : second_clique_jacobian());
     c->J_ = SapConstraintJacobian<T>(
-        clique_permutation.permuted_index(second_clique()),
-        drake::multibody::internal::ExcludeCols(
-            second_clique_jacobian(), per_clique_known_dofs[second_clique()]));
+        clique_permutation.permuted_index(second_clique()), std::move(J_B));
   }
 
   return c;

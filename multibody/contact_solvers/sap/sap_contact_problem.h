@@ -102,7 +102,10 @@ class SapContactProblem {
     then its local velocity indices are {0, 1, 2}. If `known_free_motion_dofs` =
     {6}, i.e. we know v₆ = v₆*, then `per_clique_known_free_motion_dofs[0] =
     {1}` containing the known clique local index 1, corresponding to the known
-    global velocity index 6.
+    global velocity index 6. `per_clique_known_free_motion_dofs` need not
+    specify indices for every clique in the problem, it may only specify known
+    DoFs for the first n cliques where n < num_cliques(). All other cliques are
+    assumed to not have any known DoFs.
 
     @param[in] known_free_motion_dofs Specifies known DOFs to be eliminated.
     i ∈ known_free_motion_dofs specifies the i-th DOF.
@@ -117,7 +120,7 @@ class SapContactProblem {
 
     @pre known_free_motion_dofs is a strict ordered subset of
          [0, ..., num_velocities()-1].
-    @pre per_clique_known_free_motion_dofs.size() == num_cliques().
+    @pre per_clique_known_free_motion_dofs.size() <= num_cliques().
     @pre per_clique_known_free_motion_dofs[c] is a strict ordered subset of
          [0, ..., num_velocities(c)-1].
     @pre mapping != nullptr.

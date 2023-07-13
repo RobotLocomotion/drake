@@ -472,12 +472,6 @@ GTEST_TEST(CollisionCheckerTest, ModelIntrospection) {
   EXPECT_THAT(checker->robot_model_instances(),
               testing::ElementsAre(robot_index));
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  EXPECT_EQ(checker->GetScopedName(b1), "m3::b0");
-  EXPECT_EQ(checker->GetScopedName(b1.body_frame()), "m3::b0");
-#pragma GCC diagnostic pop
-
   const auto q = checker->GetZeroConfiguration();
   EXPECT_EQ(q.size(), checker->plant().num_positions());
   EXPECT_EQ(q.norm(), 0.0);
@@ -614,6 +608,57 @@ TEST_F(TrivialCollisionCheckerTest, ClonesAndContexts) {
   context.reset();  // Give up our standalone context.
   EXPECT_EQ(count_contexts(dut_.get()),
             dut_->num_allocated_contexts() + 1 /* prototype context */);
+}
+
+// We want to confirm that when setting distance/interpolation functions, they
+// are validated using *default* configuration and *not* zero configuration.
+// So, we'll create functions that have two properties:
+//
+//   1. They report they've been called.
+//   2. They get angry if they're not provided the default configuration as
+//      parameter values.
+//
+TEST_F(TrivialCollisionCheckerTest, NonZeroDefaultConfiguration) {
+  // We need a plant that has a non-zero default configuration, so we can't
+  // use dut_.
+  auto [robot, robot_index] =
+      MakeModel({.weld_robot = false, .on_env_base = true});
+
+  // Retrieve the default configuration, and cross-check that it's non-zero.
+  const VectorXd default_q =
+      robot->plant().GetPositions(*robot->plant().CreateDefaultContext());
+  ASSERT_TRUE((default_q.array() != 0).any());
+
+  std::unique_ptr<CollisionChecker> dut =
+      MakeUnallocatedChecker(std::move(robot), {robot_index});
+
+  // Create distance function that rejects all configs except the default. This
+  // will prove that the dut only probes the default config when validating the
+  // distance function during SetConfigurationDistanceFunction.
+  bool distance_called = false;
+  auto distance = [&distance_called, &default_q](const VectorXd& q0,
+                                                 const VectorXd& q1) {
+    distance_called = true;
+    EXPECT_EQ(q0, default_q);
+    EXPECT_EQ(q1, default_q);
+    return 0.0;
+  };
+  EXPECT_NO_THROW(dut->SetConfigurationDistanceFunction(distance));
+  EXPECT_TRUE(distance_called);
+
+  // Create interpolation function that rejects all configs except the default.
+  // This will prove that the dut only probes the default config when validating
+  // the interpolation function during SetConfigurationInterpolationFunction.
+  bool interp_called = false;
+  auto interp = [&interp_called, &default_q](const VectorXd& q0,
+                                             const VectorXd& q1, double) {
+    interp_called = true;
+    EXPECT_EQ(q0, default_q);
+    EXPECT_EQ(q1, default_q);
+    return default_q;
+  };
+  EXPECT_NO_THROW(dut->SetConfigurationInterpolationFunction(interp));
+  EXPECT_TRUE(interp_called);
 }
 
 TEST_F(TrivialCollisionCheckerTest, Padding) {

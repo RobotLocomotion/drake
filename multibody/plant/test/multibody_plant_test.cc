@@ -506,6 +506,9 @@ GTEST_TEST(MultibodyPlant, EmptyWorldElements) {
   EXPECT_EQ(plant.num_joints(), 0);
   EXPECT_EQ(plant.num_actuators(), 0);
   EXPECT_EQ(plant.num_constraints(), 0);
+  EXPECT_EQ(plant.num_coupler_constraints(), 0);
+  EXPECT_EQ(plant.num_distance_constraints(), 0);
+  EXPECT_EQ(plant.num_ball_constraints(), 0);
   EXPECT_EQ(plant.num_force_elements(), 1);
 }
 
@@ -2181,6 +2184,8 @@ GTEST_TEST(MultibodyPlantTest, MapVelocityToQDotAndBackFixedWorld) {
   BasicVector<double> qdot(0), v(0);
   ASSERT_NO_THROW(plant.MapVelocityToQDot(*context, v, &qdot));
   ASSERT_NO_THROW(plant.MapQDotToVelocity(*context, qdot, &v));
+  ASSERT_NO_THROW(plant.MakeVelocityToQDotMap(*context));
+  ASSERT_NO_THROW(plant.MakeQDotToVelocityMap(*context));
 }
 
 GTEST_TEST(MultibodyPlantTest, MapVelocityToQDotAndBackContinuous) {
@@ -2207,6 +2212,11 @@ GTEST_TEST(MultibodyPlantTest, MapVelocityToQDotAndBackContinuous) {
   const double kTolerance = 5 * std::numeric_limits<double>::epsilon();
   EXPECT_TRUE(
       CompareMatrices(v_back.CopyToVector(), v.CopyToVector(), kTolerance));
+
+  Eigen::SparseMatrix<double> N = plant.MakeVelocityToQDotMap(*context);
+  EXPECT_TRUE(CompareMatrices(qdot.value(), N * v.value(), kTolerance));
+  Eigen::SparseMatrix<double> Nplus = plant.MakeQDotToVelocityMap(*context);
+  EXPECT_TRUE(CompareMatrices(v.value(), Nplus * qdot.value(), kTolerance));
 }
 
 GTEST_TEST(MultibodyPlantTest, MapVelocityToQDotAndBackDiscrete) {
@@ -3403,6 +3413,21 @@ GTEST_TEST(StateSelection, FloatingBodies) {
       plant.SetFreeBodyPoseInAnchoredFrame(
           context.get(), end_effector_frame, mug, X_OM),
       "Frame 'iiwa_link_7' must be anchored to the world frame.");
+
+  // Check qdot to v mappings.
+  VectorXd q = Eigen::VectorXd::LinSpaced(plant.num_positions(), -1, 1);
+  VectorXd v = Eigen::VectorXd::LinSpaced(plant.num_velocities(), -2, 2);
+  VectorXd qdot(plant.num_positions());
+  VectorXd v_back(plant.num_velocities());
+  plant.SetPositions(context.get(), q);
+  plant.MapVelocityToQDot(*context, v, &qdot);
+  plant.MapQDotToVelocity(*context, qdot, &v_back);
+  EXPECT_TRUE(CompareMatrices(v, v_back, kTolerance));
+  const Eigen::SparseMatrix<double> N = plant.MakeVelocityToQDotMap(*context);
+  const Eigen::SparseMatrix<double> Nplus =
+      plant.MakeQDotToVelocityMap(*context);
+  EXPECT_TRUE(CompareMatrices(qdot, N*v, kTolerance));
+  EXPECT_TRUE(CompareMatrices(v, Nplus*qdot, kTolerance));
 }
 
 GTEST_TEST(SetRandomTest, FloatingBodies) {

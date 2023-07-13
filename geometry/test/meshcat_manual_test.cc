@@ -61,12 +61,12 @@ int do_main() {
   meshcat->SetObject("cone", MeshcatCone(0.5, 0.25, 0.5), Rgba(1, 0, 0, 1));
   meshcat->SetTransform("cone", RigidTransformd(Vector3d{++x, 0, 0}));
 
-  // The green color of this cube comes from the texture map.
+  // The color and shininess properties come from PBR materials.
   meshcat->SetObject(
-      "obj", Mesh(FindResourceOrThrow(
-                      "drake/geometry/render/test/meshes/box.obj"),
-                  0.25));
-  meshcat->SetTransform("obj", RigidTransformd(Vector3d{++x, 0, 0}));
+      "gltf",
+      Mesh(FindResourceOrThrow("drake/geometry/render/test/meshes/cube.gltf"),
+           0.25));
+  meshcat->SetTransform("gltf", RigidTransformd(Vector3d{++x, 0, 0}));
 
   auto mustard_obj =
       FindRunfile("drake_models/ycb/meshes/006_mustard_bottle_textured.obj")
@@ -180,7 +180,7 @@ Open up your browser to the URL above.
   - a blue box (long axis in z)
   - a teal capsule (long axis in z)
   - a red cone (expanding in +z, twice as wide in y than in x)
-  - a bright green cube (the green comes from a texture map)
+  - a shiny, green, dented cube (created with a PBR material)
   - a yellow mustard bottle w/ label
   - a dense rainbow point cloud in a box (long axis in z)
   - a blue line coiling up (in z).

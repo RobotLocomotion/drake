@@ -11,6 +11,7 @@
 
 #include <utility>
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/symbolic/polynomial.h"
 #include "drake/geometry/optimization/c_iris_collision_geometry.h"
 
@@ -34,14 +35,28 @@ struct CSpaceSeparatingPlane {
       Vector3<symbolic::Polynomial> m_a, symbolic::Polynomial m_b,
       const CIrisCollisionGeometry* m_positive_side_geometry,
       const CIrisCollisionGeometry* m_negative_side_geometry,
-      multibody::BodyIndex m_expressed_body,
+      multibody::BodyIndex m_expressed_body, int m_plane_degree,
       const Eigen::Ref<const VectorX<T>>& m_decision_variables)
       : a{std::move(m_a)},
         b{std::move(m_b)},
         positive_side_geometry{m_positive_side_geometry},
         negative_side_geometry{m_negative_side_geometry},
         expressed_body{m_expressed_body},
+        plane_degree{m_plane_degree},
         decision_variables{m_decision_variables} {}
+
+  DRAKE_DEPRECATED("2023-10-01",
+                   "The overload without plane_degree will be removed.")
+  CSpaceSeparatingPlane(
+      Vector3<symbolic::Polynomial> m_a, symbolic::Polynomial m_b,
+      const CIrisCollisionGeometry* m_positive_side_geometry,
+      const CIrisCollisionGeometry* m_negative_side_geometry,
+      multibody::BodyIndex m_expressed_body,
+      const Eigen::Ref<const VectorX<T>>& m_decision_variables)
+      : CSpaceSeparatingPlane(std::move(m_a), std::move(m_b),
+                              m_positive_side_geometry,
+                              m_negative_side_geometry, m_expressed_body,
+                              1 /* plane_degree */, m_decision_variables) {}
 
   /// Return the geometry on the specified side.
   [[nodiscard]] const CIrisCollisionGeometry* geometry(
@@ -55,8 +70,45 @@ struct CSpaceSeparatingPlane {
   const CIrisCollisionGeometry* positive_side_geometry;
   const CIrisCollisionGeometry* negative_side_geometry;
   multibody::BodyIndex expressed_body;
+  int plane_degree{1};
   VectorX<T> decision_variables;
 };
+
+namespace internal {
+
+void CalcPlane(const VectorX<symbolic::Variable>& decision_variables,
+               const VectorX<symbolic::Variable>& vars_for_plane,
+               int plane_degree, Vector3<symbolic::Polynomial>* a_val,
+               symbolic::Polynomial* b_val);
+
+void CalcPlane(const VectorX<double>& decision_variables,
+               const VectorX<symbolic::Variable>& vars_for_plane,
+               int plane_degree, Vector3<symbolic::Polynomial>* a_val,
+               symbolic::Polynomial* b_val);
+
+void CalcPlane(const VectorX<double>& decision_variables,
+               const VectorX<double>& vars_for_plane, int plane_degree,
+               Vector3<double>* a_val, double* b_val);
+
+}  // namespace internal
+
+/**
+ Computes the parameters a, b in the plane { x | aᵀx+b=0 }.
+ a and b are both polynomials of `vars_for_plane`. The coefficients of these
+ polynomials are in `decision_variables` in graded reverse lexicographic order.
+
+ @tparam D, S, V The valid combination of D, S, V are
+ 1. D=symbolic::Variable, S=symbolic::Variable, V=symbolic::Polynomial.
+ 2. D=double,             S=symbolic::Variable, V=symbolic::Polynomial
+ 3. D=double,             S=double,             V=double
+ */
+template <typename D, typename S, typename V>
+void CalcPlane(const VectorX<D>& decision_variables,
+               const VectorX<S>& s_for_plane, int plane_degree,
+               Vector3<V>* a_val, V* b_val) {
+  internal::CalcPlane(decision_variables, s_for_plane, plane_degree, a_val,
+                      b_val);
+}
 
 }  // namespace optimization
 }  // namespace geometry

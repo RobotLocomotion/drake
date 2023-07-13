@@ -23,12 +23,11 @@ using std::make_unique;
 using std::unique_ptr;
 
 template <typename T>
-LinearSystem<T>::LinearSystem(
-    const Eigen::Ref<const Eigen::MatrixXd>& A,
-    const Eigen::Ref<const Eigen::MatrixXd>& B,
-    const Eigen::Ref<const Eigen::MatrixXd>& C,
-    const Eigen::Ref<const Eigen::MatrixXd>& D,
-    double time_period)
+LinearSystem<T>::LinearSystem(const Eigen::Ref<const Eigen::MatrixXd>& A,
+                              const Eigen::Ref<const Eigen::MatrixXd>& B,
+                              const Eigen::Ref<const Eigen::MatrixXd>& C,
+                              const Eigen::Ref<const Eigen::MatrixXd>& D,
+                              double time_period)
     : LinearSystem<T>(SystemTypeTag<LinearSystem>{}, A, B, C, D, time_period) {}
 
 template <typename T>
@@ -38,13 +37,12 @@ LinearSystem<T>::LinearSystem(const LinearSystem<U>& other)
                       other.time_period()) {}
 
 template <typename T>
-LinearSystem<T>::LinearSystem(
-    SystemScalarConverter converter,
-    const Eigen::Ref<const Eigen::MatrixXd>& A,
-    const Eigen::Ref<const Eigen::MatrixXd>& B,
-    const Eigen::Ref<const Eigen::MatrixXd>& C,
-    const Eigen::Ref<const Eigen::MatrixXd>& D,
-    double time_period)
+LinearSystem<T>::LinearSystem(SystemScalarConverter converter,
+                              const Eigen::Ref<const Eigen::MatrixXd>& A,
+                              const Eigen::Ref<const Eigen::MatrixXd>& B,
+                              const Eigen::Ref<const Eigen::MatrixXd>& C,
+                              const Eigen::Ref<const Eigen::MatrixXd>& D,
+                              double time_period)
     : AffineSystem<T>(std::move(converter), A, B, Eigen::VectorXd(), C, D,
                       Eigen::VectorXd(), time_period) {}
 
@@ -116,11 +114,11 @@ std::unique_ptr<AffineSystem<double>> DoFirstOrderTaylorApproximation(
   // Verify that the input port is not abstract valued.
   if (input_port &&
       input_port->get_data_type() == PortDataType::kAbstractValued) {
-      throw std::logic_error(
-          "The specified input port is abstract-valued, but "
-          "FirstOrderTaylorApproximation only supports vector-valued "
-          "input ports.  Did you perhaps forget to pass a non-default "
-          "`input_port_index` argument?");
+    throw std::logic_error(
+        "The specified input port is abstract-valued, but "
+        "FirstOrderTaylorApproximation only supports vector-valued input "
+        "ports.  Did you perhaps forget to pass a non-default "
+        "`input_port_index` argument?");
   }
 
   const int num_inputs = input_port ? input_port->size() : 0;

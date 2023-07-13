@@ -38,9 +38,8 @@ VectorX<T> ConvertDefaultValue(const ConstantVectorSource<U>& other) {
 template <typename T>
 ConstantVectorSource<T>::ConstantVectorSource(
     const Eigen::Ref<const VectorX<T>>& source_value)
-    : ConstantVectorSource(
-          SystemTypeTag<ConstantVectorSource>{},
-          BasicVector<T>(source_value)) {}
+    : ConstantVectorSource(SystemTypeTag<ConstantVectorSource>{},
+                           BasicVector<T>(source_value)) {}
 
 // (N.B. This overload also indirectly supports scalar conversion.)
 template <typename T>

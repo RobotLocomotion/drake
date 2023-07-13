@@ -279,6 +279,8 @@ Eigen::VectorXd JointSliders<T>::Run(const Diagram<T>& diagram,
   using Duration = std::chrono::duration<double>;
   const auto start_time = Clock::now();
 
+  diagram.ExecuteInitializationEvents(root_context.get());
+
   // Set the context to the initial slider values.
   plant_->SetPositions(&plant_context,
                        this->get_output_port().Eval(sliders_context));

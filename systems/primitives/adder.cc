@@ -22,8 +22,7 @@ Adder<T>::Adder(const Adder<U>& other)
     : Adder<T>(other.num_input_ports(), other.get_input_port(0).size()) {}
 
 template <typename T>
-void Adder<T>::CalcSum(const Context<T>& context,
-                       BasicVector<T>* sum) const {
+void Adder<T>::CalcSum(const Context<T>& context, BasicVector<T>* sum) const {
   Eigen::VectorBlock<VectorX<T>> sum_vector = sum->get_mutable_value();
 
   // Zeroes the output.

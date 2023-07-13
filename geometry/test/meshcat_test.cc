@@ -296,6 +296,11 @@ GTEST_TEST(MeshcatTest, SetObjectWithShape) {
                    0.25));
   EXPECT_FALSE(meshcat.GetPackedObject("mesh").empty());
   meshcat.SetObject(
+      "gltf", Mesh(FindResourceOrThrow(
+                       "drake/geometry/render/test/meshes/cube.gltf"),
+                   0.25));
+  EXPECT_FALSE(meshcat.GetPackedObject("gltf").empty());
+  meshcat.SetObject(
       "convex", Convex(FindResourceOrThrow(
                            "drake/geometry/render/test/meshes/box.obj"),
                        0.25));
@@ -1119,8 +1124,8 @@ GTEST_TEST(MeshcatTest, StaticHtml) {
   EXPECT_THAT(html, ::testing::Not(HasSubstr("CONNECTION BLOCK")));
 }
 
-// Check MeshcatParams.hide_stats_plot sends a hide_realtime_rate message
-GTEST_TEST(MeshcatTest, RealtimeRatePlot) {
+// Check that MeshcatParams.show_stats_plot sends a show_realtime_rate message.
+GTEST_TEST(MeshcatTest, ShowStatsPlot) {
   MeshcatParams params;
   params.show_stats_plot = true;
   Meshcat meshcat(params);
@@ -1128,6 +1133,12 @@ GTEST_TEST(MeshcatTest, RealtimeRatePlot) {
       "type": "show_realtime_rate",
       "show": true
     })""");
+}
+
+GTEST_TEST(MeshcatTest, RealtimeRate) {
+  Meshcat meshcat;
+  meshcat.SetRealtimeRate(2.2);
+  EXPECT_EQ(meshcat.GetRealtimeRate(), 2.2);
 }
 
 }  // namespace

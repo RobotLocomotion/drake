@@ -475,24 +475,26 @@ GTEST_TEST(RotationalInertia, CouldBePhysicallyValidE) {
 
 // Test the method RotationalInertia::CalcPrincipalMomentsOfInertia() that
 // computes a rotational inertia's principal moments of inertia via eigenvalues.
-GTEST_TEST(RotationalInertia, PrincipalMomentsOfInertia) {
+// Also test CalcPrincipalMomentsAndAxesOfInertia().
+GTEST_TEST(RotationalInertia, PrincipalMomentsOfInertiaEtc) {
   const double mass = 1.0;
   const double Lx = 3.0;
   const double Ly = 1.0;
   const double Lz = 5.0;
 
   // Rotational inertia of a box B computed about Bcm (B's center of mass).
-  const double Lx2 = Lx * Lx, Ly2 = Ly * Ly, Lz2 = Lz * Lz;
-  RotationalInertia<double> I_BBcm_Q(
-      mass * (Ly2 + Lz2) / 12.0,
-      mass * (Lx2 + Lz2) / 12.0,
-      mass * (Lx2 + Ly2) / 12.0);
+  const double Imed = mass * (Ly*Ly + Lz*Lz) / 12.0;  // Ixx is medium.
+  const double Imax = mass * (Lx*Lx + Lz*Lz) / 12.0;  // Iyy is largest.
+  const double Imin = mass * (Lx*Lx + Ly*Ly) / 12.0;  // Izz is smallest.
+  double Ixx = Imed, Iyy = Imax, Izz = Imin;
+  RotationalInertia<double> I_BBcm_Q(Ixx, Iyy, Izz);
 
-  // Orient a frame Q relative to a frame W by subjecting frame Q to successive
-  // body-fixed rotations of +20 degrees about x and +20 degrees about z.
-  const double angle = 20 * M_PI / 180.0;
-  const RotationMatrixd R_WQ = RotationMatrixd::MakeZRotation(angle) *
-                               RotationMatrixd::MakeXRotation(angle);
+  // Orient a frame Q relative to a frame W by subjecting frame Q to a SpaceXYZ
+  // rotation sequence of 20, 25, 30 degrees (i.e., BodyZYX by 30, 25, 20).
+  const double deg_to_rad = M_PI / 180.0;
+  const drake::math::RollPitchYaw<double>
+      rpy(20 * deg_to_rad, 25 * deg_to_rad, 30 * deg_to_rad);
+  const drake::math::RotationMatrix<double> R_WQ(rpy);
 
   // Compute B's rotational inertia about-point Bcm, expressed-in frame W.
   // This rotational inertia has all non-zero entries (not diagonal).
@@ -502,7 +504,7 @@ GTEST_TEST(RotationalInertia, PrincipalMomentsOfInertia) {
   EXPECT_TRUE((I_BBcm_W.CopyToFullMatrix3().array().abs() > 0.1).all());
 
   // Compute the principal moments of I_BBcm_W.
-  const Vector3d principal_moments = I_BBcm_W.CalcPrincipalMomentsOfInertia();
+  Vector3d principal_moments = I_BBcm_W.CalcPrincipalMomentsOfInertia();
 
   // The expected moments are those originally computed in I_BBcm_Q, though the
   // return from RotationalInertia::CalcPrincipalMomentsOfInertia() is sorted
@@ -512,12 +514,81 @@ GTEST_TEST(RotationalInertia, PrincipalMomentsOfInertia) {
             expected_principal_moments.data() +
                 expected_principal_moments.size());
 
-  // Verify against the expected value.
-  const double max_inertia = I_BBcm_W.CalcMaximumPossibleMomentOfInertia();
-  const double kTolerance = 2 * max_inertia * NumTraits<double>::epsilon();
-  EXPECT_TRUE(CompareMatrices(expected_principal_moments,
-                              principal_moments,
-                              kTolerance, MatrixCompareType::absolute));
+  // Verify principal moments against their expected value.
+  const double inertia_tolerance = 4 * std::numeric_limits<double>::epsilon() *
+      I_BBcm_W.CalcMaximumPossibleMomentOfInertia();
+  EXPECT_TRUE(CompareMatrices(expected_principal_moments, principal_moments,
+                              inertia_tolerance, MatrixCompareType::absolute));
+
+  // Reform I_BBcm_Q by re-expressing, i.e., I_BBcm_Q = R_QW * I_BBcm_W * R_WQ,
+  // Due to round-off, it is not expected that I_BBcm_Q is perfectly reformed.
+  I_BBcm_Q = I_BBcm_W.ReExpress(R_WQ.inverse());
+
+  // Verify products of inertia (due to express and reexpress) are nearly zero.
+  // Note: In CI machines June 2023, products of inertia != 0 due to round-off.
+  const Vector3d products_of_inertia = I_BBcm_Q.get_products();
+  EXPECT_TRUE(CompareMatrices(products_of_inertia, Vector3<double>::Zero(),
+                              inertia_tolerance, MatrixCompareType::absolute));
+
+  // Show principal moments of inertia are ≈ unchanged to multiple rotations.
+  // Note: It is reasonable to expect a slight difference due to round-off.
+  std::pair<Vector3<double>, drake::math::RotationMatrix<double>> I_BBcm_P =
+      I_BBcm_Q.CalcPrincipalMomentsAndAxesOfInertia();
+  principal_moments = I_BBcm_P.first;
+  EXPECT_TRUE(CompareMatrices(expected_principal_moments, principal_moments,
+                              inertia_tolerance, MatrixCompareType::absolute));
+
+  // Show rotation matrix R_QP relating principal frame P to frame Q is exactly
+  // the rotation matrix whose columns are determined by the smallest,
+  // intermediate, and largest moments of inertia (commented above).
+  // Note: Before July 2023, CalcPrincipalMomentsAndAxesOfInertia() did not use
+  // a "tolerance", so the general eigenvalue/eigenvector routine was called if
+  // any product of inertia ≠ 0. Hence, the test below failed before July 2023
+  // due to tiny numbers instead of zeroes and reordering of columns.
+  drake::math::RotationMatrix<double> R_QP = I_BBcm_P.second;
+  Matrix3<double> m_expected;
+  m_expected << 0, 1, 0,  // Izz is smallest moment of inertia (1st column).
+                0, 0, 1,  // Ixx is intermediate moment of inertia (2nd column).
+                1, 0, 0;  // Iyy is largest moment of inertia (3rd column).
+  EXPECT_TRUE(CompareMatrices(R_QP.matrix(), m_expected,
+                              0.0, MatrixCompareType::absolute));
+
+  // Create a test that makes a rotation matrix whose 3rd column is [0 0 -1].
+  Ixx = Imed, Iyy = Imin, Izz = Imax;
+  I_BBcm_Q = RotationalInertia<double>(Ixx, Iyy, Izz);
+  I_BBcm_W = I_BBcm_Q.ReExpress(R_WQ);
+  I_BBcm_Q = I_BBcm_W.ReExpress(R_WQ.inverse());
+  I_BBcm_P = I_BBcm_Q.CalcPrincipalMomentsAndAxesOfInertia();
+  principal_moments = I_BBcm_P.first;
+  EXPECT_TRUE(CompareMatrices(expected_principal_moments, principal_moments,
+                              inertia_tolerance, MatrixCompareType::absolute));
+  R_QP = I_BBcm_P.second;
+  m_expected << 0, 1,  0,  // Iyy is smallest moment of inertia (1st column).
+                1, 0,  0,  // Ixx is intermediate moment of inertia (2nd column)
+                0, 0, -1;  // Izz is largest moment of inertia (3rd column).
+  EXPECT_TRUE(CompareMatrices(R_QP.matrix(), m_expected,
+                              0.0, MatrixCompareType::absolute));
+
+  // Create a test that ideally makes an identity rotation matrix.
+  Ixx = Imax + 0.5 * inertia_tolerance;  // Intermediate moment of inertia.
+  Iyy = Imax;                            // Minimum moment of inertia.
+  Izz = Imax + inertia_tolerance;        // Maximum moment of inertia.
+  I_BBcm_W = RotationalInertia<double>(Ixx, Iyy, Izz);
+  I_BBcm_Q = I_BBcm_W.ReExpress(R_WQ.inverse());
+  I_BBcm_P = I_BBcm_Q.CalcPrincipalMomentsAndAxesOfInertia();
+  principal_moments = I_BBcm_P.first;
+  EXPECT_TRUE(CompareMatrices(Vector3<double>(Iyy, Ixx, Izz), principal_moments,
+                              inertia_tolerance, MatrixCompareType::absolute));
+  R_QP = I_BBcm_P.second;
+  m_expected << 1, 0, 0,  // Since Ixx ≈ Iyy ≈ Izz (triaxially symmetric), it is
+                0, 1, 0,  // ideal ("canonical") if the rotation matrix for
+                0, 0, 1;  // principal axes is the identity matrix..
+  EXPECT_TRUE(CompareMatrices(R_QP.matrix(), m_expected,
+                              0.0, MatrixCompareType::absolute));
+
+  // TODO(Mitiguy) Add more tests after adding canonical calculations for
+  //  principal directions associated with axially symmetric shapes and shapes
+  //  with three distinct principal moments of inertia.
 }
 
 // Tests the method to obtain the principal moments of inertia and axes.

@@ -650,6 +650,27 @@ class TestCustom(unittest.TestCase):
         self.assertTrue(system.called_reset)
         self.assertTrue(system.called_system_reset)
 
+        # Test ExecuteInitializationEvents.
+        system = TrivialSystem()
+        context = system.CreateDefaultContext()
+        system.ExecuteInitializationEvents(context=context)
+        self.assertFalse(system.called_per_step)
+        self.assertFalse(system.called_periodic)
+        self.assertTrue(system.called_initialize_publish)
+        self.assertTrue(system.called_initialize_discrete)
+        self.assertTrue(system.called_initialize_unrestricted)
+        self.assertFalse(system.called_periodic_publish)
+        self.assertFalse(system.called_periodic_discrete)
+        self.assertFalse(system.called_periodic_unrestricted)
+        self.assertFalse(system.called_per_step_publish)
+        self.assertFalse(system.called_per_step_discrete)
+        self.assertFalse(system.called_per_step_unrestricted)
+        self.assertFalse(system.called_getwitness)
+        self.assertFalse(system.called_witness)
+        self.assertFalse(system.called_guard)
+        self.assertFalse(system.called_reset)
+        self.assertFalse(system.called_system_reset)
+
     def test_event_handler_returns_none(self):
         """Checks that a Python event handler callback function is allowed to
         (implicitly) return None, instead of an EventStatus. Because of all the

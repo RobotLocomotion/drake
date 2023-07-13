@@ -277,8 +277,9 @@ class MeshcatShapeReifier : public ShapeReifier {
 
   using ShapeReifier::ImplementGeometry;
 
-  template <typename T>
-  void ImplementMesh(const T& mesh, void* data) {
+  // @tparam MeshType is either Mesh or Convex.
+  template <typename MeshType>
+  void ImplementMesh(const MeshType& mesh, void* data) {
     DRAKE_DEMAND(data != nullptr);
     auto& lumped = *static_cast<internal::LumpedObjectData*>(data);
 
@@ -286,8 +287,7 @@ class MeshcatShapeReifier : public ShapeReifier {
     // meshes unless necessary.  Using the filename is tempting, but that leads
     // to problems when the file contents change on disk.
 
-    const std::filesystem::path filename(mesh.filename());
-    std::string format = filename.extension();
+    std::string format = mesh.extension();
     format.erase(0, 1);  // remove the . from the extension
     std::ifstream input(mesh.filename(), std::ios::binary | std::ios::ate);
     if (!input.is_open()) {
@@ -332,7 +332,8 @@ class MeshcatShapeReifier : public ShapeReifier {
       std::string mtllib = matches.str(1);
 
       // Use filename path as the base directory for textures.
-      const std::filesystem::path basedir = filename.parent_path();
+      const std::filesystem::path basedir =
+          std::filesystem::path(mesh.filename()).parent_path();
 
       // Read .mtl file into geometry.mtl_library.
       std::ifstream mtl_stream(basedir / mtllib, std::ios::ate);
@@ -372,8 +373,8 @@ class MeshcatShapeReifier : public ShapeReifier {
                             std::istreambuf_iterator<char>());
             meshfile_object.resources.try_emplace(
                 map, std::string("data:image/png;base64,") +
-                          common_robotics_utilities::base64_helpers::Encode(
-                              map_data));
+                         common_robotics_utilities::base64_helpers::Encode(
+                             map_data));
           } else {
             drake::log()->warn(
                 "Meshcat: Failed to load texture. \"{}\" references {}, but "
@@ -391,7 +392,42 @@ class MeshcatShapeReifier : public ShapeReifier {
       matrix(0, 0) = mesh.scale();
       matrix(1, 1) = mesh.scale();
       matrix(2, 2) = mesh.scale();
-    } else {  // not obj or no mtllib.
+    } else if (format == "gltf") {
+      auto& meshfile_object =
+          lumped.object.emplace<internal::MeshFileObjectData>();
+      meshfile_object.uuid = uuids::to_string((*uuid_generator_)());
+      meshfile_object.format = std::move(format);
+      meshfile_object.data = std::move(mesh_data);
+      Eigen::Map<Eigen::Matrix4d> matrix(meshfile_object.matrix);
+      matrix(0, 0) = mesh.scale();
+      matrix(1, 1) = mesh.scale();
+      matrix(2, 2) = mesh.scale();
+    } else {
+      // We have a mesh that isn't a .gltf nor an obj with mtl. So, we'll make
+      // mesh file *geometry* instead of mesh file *object*. This will most
+      // typically be a Collada .dae file, an .stl, or simply an .obj that
+      // doesn't reference an .mtl.
+
+      // TODO(SeanCurtis-TRI): This doesn't work for STL even though meshcat
+      // supports STL. Meshcat treats STL differently from obj or dae.
+      // https://github.com/rdeits/meshcat/blob/4b4f8ffbaa5f609352ea6227bd5ae8207b579c70/src/index.js#L130-L146.
+      // The "data" property of the _meshfile_geometry for obj and dae are
+      // simply passed along verbatim. But for STL it is interpreted as a
+      // buffer. However, we're not passing the data in a way that deserializes
+      // into a data array. So, either meshcat needs to change how it gets
+      // STL (being more permissive), or we need to change how we transmit STL
+      // data.
+
+      // TODO(SeanCurtis-TRI): Provide test showing that .dae works.
+
+      if (format != "obj" && format != "dae") {
+        // Note: We send the data along to meshcat regardless relying on meshcat
+        // to ignore the mesh and move on. The *path* will still exist.
+        static const logging::Warn one_time(
+            "Drake's Meshcat only supports Mesh/Convex specifications which "
+            "use .obj, .gltf, or .dae files. Mesh specifications using other "
+            "mesh types (e.g., .stl, etc.) will not be visualized.");
+      }
       auto geometry = std::make_unique<internal::MeshFileGeometryData>();
       geometry->uuid = uuids::to_string((*uuid_generator_)());
       geometry->format = std::move(format);
@@ -404,7 +440,7 @@ class MeshcatShapeReifier : public ShapeReifier {
       matrix(1, 1) = mesh.scale();
       matrix(2, 2) = mesh.scale();
     }
-    }
+  }
 
   void ImplementGeometry(const Box& box, void* data) override {
     DRAKE_DEMAND(data != nullptr);
@@ -654,6 +690,7 @@ class Meshcat::Impl {
   // This function is public via the PIMPL.
   void SetRealtimeRate(double rate) {
     DRAKE_DEMAND(IsThread(main_thread_id_));
+    realtime_rate_ = rate;
     internal::RealtimeRateData data;
     data.rate = rate;
     Defer([this, data = std::move(data)]() {
@@ -664,6 +701,12 @@ class Meshcat::Impl {
       std::string message = message_stream.str();
       app_->publish("all", message, uWS::OpCode::BINARY, false);
     });
+  }
+
+  // This function is public via the PIMPL.
+  double GetRealtimeRate() const {
+    DRAKE_DEMAND(IsThread(main_thread_id_));
+    return realtime_rate_;
   }
 
   // This function is public via the PIMPL.
@@ -1937,6 +1980,7 @@ class Meshcat::Impl {
   const MeshcatParams params_;
   int port_{};
   std::mt19937 generator_{};
+  double realtime_rate_{0.0};
 
   // These variables should only be accessed in the websocket thread.
   std::thread::id websocket_thread_id_{};
@@ -2230,6 +2274,10 @@ void Meshcat::Delete(std::string_view path) {
 
 void Meshcat::SetRealtimeRate(double rate) {
   impl().SetRealtimeRate(rate);
+}
+
+double Meshcat::GetRealtimeRate() const {
+  return impl().GetRealtimeRate();
 }
 
 void Meshcat::SetProperty(std::string_view path, std::string property,

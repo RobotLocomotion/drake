@@ -138,11 +138,20 @@ std::pair<double, VectorXd> Hyperellipsoid::MinimumUniformScalingToTouch(
   solvers::MathematicalProgramResult result;
   solver->Solve(prog, std::nullopt, std::nullopt, &result);
   if (!result.is_success()) {
-    throw std::runtime_error(fmt::format(
-        "Solver {} failed to solve the `minimum uniform scaling to touch' "
-        "problem; it terminated with SolutionResult {}). This should not "
-        "happen.",
-        result.get_solver_id().name(), result.get_solution_result()));
+    // Check if `other` is empty.
+    MathematicalProgram prog2;
+    auto x2 = prog2.NewContinuousVariables(ambient_dimension());
+    other.AddPointInSetConstraints(&prog2, x2);
+    auto result2 = Solve(prog2);
+    if (!result2.is_success()) {
+      throw std::runtime_error("The set `other` is empty.");
+    } else {
+      throw std::runtime_error(fmt::format(
+          "Solver {} failed to solve the `minimum uniform scaling to touch' "
+          "problem; it terminated with SolutionResult {}). The solver likely "
+          "ran into numerical issues.",
+          result.get_solver_id().name(), result.get_solution_result()));
+    }
   }
   return std::pair<double, VectorXd>(std::sqrt(result.get_optimal_cost()),
                                      result.GetSolution(x));
@@ -178,6 +187,10 @@ bool Hyperellipsoid::DoIsBounded() const {
   }
   Eigen::ColPivHouseholderQR<MatrixXd> qr(A_);
   return qr.dimensionOfKernel() == 0;
+}
+
+bool Hyperellipsoid::DoIsEmpty() const {
+  return false;
 }
 
 bool Hyperellipsoid::DoPointInSet(const Eigen::Ref<const VectorXd>& x,

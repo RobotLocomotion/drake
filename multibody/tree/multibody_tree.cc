@@ -677,6 +677,21 @@ MultibodyTree<T>::GetFreeBodyMobilizerOrThrow(
 }
 
 template <typename T>
+const Frame<T>& MultibodyTree<T>::AddOrGetJointFrame(
+    const Body<T>& body,
+    const std::optional<math::RigidTransform<double>>& X_BF,
+    ModelInstanceIndex joint_instance, std::string_view joint_name,
+    std::string_view frame_suffix) {
+  if (X_BF.has_value()) {
+    return this->AddFrame<FixedOffsetFrame>(
+        fmt::format("{}_{}", joint_name, frame_suffix), body.body_frame(),
+        *X_BF, joint_instance);
+  } else {
+    return body.body_frame();
+  }
+}
+
+template <typename T>
 void MultibodyTree<T>::FinalizeTopology() {
   // If the topology is valid it means that this MultibodyTree was already
   // finalized. Re-compilation is not allowed.
@@ -1569,6 +1584,70 @@ void MultibodyTree<T>::MapVelocityToQDot(
     mobilizer->MapVelocityToQDot(context, v_mobilizer, &qdot_mobilizer);
     mobilizer->get_mutable_positions_from_array(qdot) = qdot_mobilizer;
   }
+}
+
+template <typename T>
+Eigen::SparseMatrix<T> MultibodyTree<T>::MakeVelocityToQDotMap(
+    const systems::Context<T>& context) const {
+  Eigen::SparseMatrix<T> N(num_positions(), num_velocities());
+  if (IsVelocityEqualToQDot()) {
+    N.setIdentity();
+    return N;
+  }
+
+  // TODO(russt): Consider updating Mobilizer::CalcNMatrix to populate the
+  // SparseMatrix directly. But SparseMatrix does not support block writing
+  // operations, so we will likely need to pass the entire matrix, and each
+  // mobilizer will need to populate according to position_start_in_q() and
+  // velocity_start_in_v().
+  std::vector<Eigen::Triplet<T>> triplet_list;
+  // Note: We don't reserve storage for the triplet_list, because we don't have
+  // a useful estimate of the size in general.
+  Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, 0, 7, 6> N_mobilizer;
+  for (const auto& mobilizer : owned_mobilizers_) {
+    N_mobilizer.resize(mobilizer->num_positions(), mobilizer->num_velocities());
+    mobilizer->CalcNMatrix(context, &N_mobilizer);
+    for (int i = 0; i < mobilizer->num_positions(); ++i) {
+      for (int j = 0; j < mobilizer->num_velocities(); ++j) {
+        if (N_mobilizer(i, j) != 0) {
+          triplet_list.push_back(Eigen::Triplet<T>(
+              mobilizer->position_start_in_q() + i,
+              mobilizer->velocity_start_in_v() + j, N_mobilizer(i, j)));
+        }
+      }
+    }
+  }
+  N.setFromTriplets(triplet_list.begin(), triplet_list.end());
+  return N;
+}
+
+template <typename T>
+Eigen::SparseMatrix<T> MultibodyTree<T>::MakeQDotToVelocityMap(
+      const systems::Context<T>& context) const {
+  Eigen::SparseMatrix<T> Nplus(num_velocities(), num_positions());
+  if (IsVelocityEqualToQDot()) {
+    Nplus.setIdentity();
+    return Nplus;
+  }
+
+  std::vector<Eigen::Triplet<T>> triplet_list;
+  Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, 0, 6, 7> Nplus_mobilizer;
+  for (const auto& mobilizer : owned_mobilizers_) {
+    Nplus_mobilizer.resize(mobilizer->num_velocities(),
+                           mobilizer->num_positions());
+    mobilizer->CalcNplusMatrix(context, &Nplus_mobilizer);
+    for (int i = 0; i < mobilizer->num_velocities(); ++i) {
+      for (int j = 0; j < mobilizer->num_positions(); ++j) {
+        if (Nplus_mobilizer(i, j) != 0) {
+          triplet_list.push_back(Eigen::Triplet<T>(
+              mobilizer->velocity_start_in_v() + i,
+              mobilizer->position_start_in_q() + j, Nplus_mobilizer(i, j)));
+        }
+      }
+    }
+  }
+  Nplus.setFromTriplets(triplet_list.begin(), triplet_list.end());
+  return Nplus;
 }
 
 template <typename T>
