@@ -385,6 +385,7 @@ class TestControllers(unittest.TestCase):
         options = FiniteHorizonLinearQuadraticRegulatorOptions()
         options.Qf = Q
         options.use_square_root_method = False
+        options.simulator_config.max_step_size = 0.2
         self.assertIsNone(options.N)
         self.assertIsNone(options.x0)
         self.assertIsNone(options.u0)
@@ -399,7 +400,8 @@ class TestControllers(unittest.TestCase):
             r"N=None, ",
             r"input_port_index=",
             r"InputPortSelection.kUseFirstInputIfItExists, ",
-            r"use_square_root_method=False\)"]))
+            r"use_square_root_method=False, ",
+            r"simulator_config=SimulatorConfig\(.*\)\)"]))
 
         context = double_integrator.CreateDefaultContext()
         double_integrator.get_input_port(0).FixValue(context, 0.0)
