@@ -7,6 +7,7 @@
 
 #include "drake/common/fmt_eigen.h"
 #include "drake/geometry/optimization/cspace_free_internal.h"
+#include "drake/geometry/optimization/cspace_free_polytope_base_internal.h"
 
 namespace drake {
 namespace geometry {
@@ -268,9 +269,9 @@ CspaceFreeBox::FindSeparationCertificateGivenBox(
 
   std::vector<std::optional<CspaceFreeBox::SeparationCertificateResult>>
       separation_results;
-  CspaceFreePolytopeBase::FindSeparationCertificateGivenPolytope<
-      PolynomialsToCertify, SeparationCertificateProgram>(
-      polynomials_to_certify.plane_geometries, ignored_collision_pairs,
+  FindSeparationCertificateGivenCspacePolytope<PolynomialsToCertify,
+                                               SeparationCertificateProgram>(
+      *this, polynomials_to_certify.plane_geometries, ignored_collision_pairs,
       polynomials_to_certify, options,
       [this](const PlaneSeparatesGeometries& plane_geometries,
              const PolynomialsToCertify& m_polynomials_to_certify) {
