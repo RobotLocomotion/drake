@@ -75,8 +75,8 @@ struct GraphOfConvexSetsOptions {
 };
 
 /**
-GraphOfConvexSets implements the design pattern and optimization problems first
-introduced in the paper "Shortest Paths in Graphs of Convex Sets".
+GraphOfConvexSets (GCS) implements the design pattern and optimization problems
+first introduced in the paper "Shortest Paths in Graphs of Convex Sets".
 
 "Shortest Paths in Graphs of Convex Sets" by Tobia Marcucci, Jack Umenberger,
 Pablo A. Parrilo, Russ Tedrake. https://arxiv.org/abs/2101.11565
@@ -87,9 +87,9 @@ Each vertex in the graph is associated with a convex set over continuous
 variables, edges in the graph contain convex costs and constraints on these
 continuous variables.  We can then formulate optimization problems over this
 graph, such as the shortest path problem where each visit to a vertex also
-corresponds to selecting an element from the convex set subject to the costs and
-constraints.  Behind the scenes, we construct efficient mixed-integer convex
-transcriptions of the graph problem using MathematicalProgram.
+corresponds to selecting an element from the convex set subject to the costs
+and constraints.  Behind the scenes, we construct efficient mixed-integer
+convex transcriptions of the graph problem using MathematicalProgram.
 
 Design note: This class avoids providing any direct access to the
 MathematicalProgram that it constructs nor to the decision variables /
@@ -506,6 +506,21 @@ class GraphOfConvexSets {
   */
   solvers::MathematicalProgramResult SolveShortestPath(
       const Vertex& source, const Vertex& target,
+      const GraphOfConvexSetsOptions& options =
+          GraphOfConvexSetsOptions()) const;
+
+  /** The non-convexity in a GCS problem comes from the binary variables (phi)
+  associated with the edges being active or inactive in the solution. If those
+  binary variables are fixed, then the problem is convex -- this is a so-called
+  "convex restriction" of the original problem.
+
+  The convex restriction can often be solved much more efficiently than solving
+  the full GCS problem with additional constraints to fix the binaries; it can
+  be written using less decision variables, and needs only to include the
+  vertices associated with at least one of the active edges. Decision variables
+  for all other convex sets will be set to NaN. */
+  solvers::MathematicalProgramResult SolveConvexRestriction(
+      const std::set<EdgeId>& active_edge_ids,
       const GraphOfConvexSetsOptions& options =
           GraphOfConvexSetsOptions()) const;
 
