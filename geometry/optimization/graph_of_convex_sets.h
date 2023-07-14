@@ -509,6 +509,14 @@ class GraphOfConvexSets {
       const GraphOfConvexSetsOptions& options =
           GraphOfConvexSetsOptions()) const;
 
+  /** Solves a convex version of the GCS problem which includes only the
+  vertices associated with at least one of the active edges. Decision variables
+  for all other convex sets will be set to NaN. */
+  solvers::MathematicalProgramResult SolveWithActiveEdges(
+      const std::set<EdgeId>& active_edge_ids,
+      const GraphOfConvexSetsOptions& options =
+          GraphOfConvexSetsOptions()) const;
+
  private:
   /* Facilitates testing. */
   friend class PreprocessShortestPathTest;
