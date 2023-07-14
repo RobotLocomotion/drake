@@ -8,6 +8,41 @@ The `repository.bzl` file is the core file that enumerates all of the VTK header
 files and libraries that are in use by drake's codebase.  It does **not**
 enumerate all possible files or libraries available in VTK.
 
+## TODO(svenevs) rewrite this document
+
+All of the builds (linux, linux_wheel, mac, mac_wheel) are expected to be
+**sourcing** the following common files (symlinked to `tools/wheel/image` where
+applicable) in this exact order:
+
+- `image/common-definitions.sh` (defines `os_name`, `codename`, `architecture`)
+- `image/clone-vtk.sh` (clones do `src` in the current working directory,
+  defines the final output `vtk_archive_name` for `.tar.gz` output using
+  `codename` and `architecture`)
+- `image/vtk-cmake-args.sh` (defines `vtk_cmake_args` array with all of the
+  VTK CMake configure arguments)
+    - Assumes that `image/vtk-common-cmake-args` is in the same directory,
+      docker based builds must make sure to create this.
+
+To determine the `vtk_version` and subsequent `vtk_archive_name`, the VTK source
+tree must be cloned in order to run `git describe`.
+
+The consuming build (`.tar.gz` packaging or wheel) is responsible for wrapping
+these scripts as appropriate.
+
+`vtk-cmake-args.sh` is responsible for controlling all of the CMake configure
+arguments for every single build flavor **except**:
+
+- The generator (e.g., `-G Ninja`),
+- The `CMAKE_BUILD_TYPE`,
+- The `CMAKE_PREFIX_PATH` (where applicable, e.g., wheel builds),
+- The `CMAKE_INSTALL_PREFIX`.
+
+Wrapping build scripts per build flavor:
+
+- Linux: `tools/workspace/vtk/image/build-and-package-vtk.sh`
+- mac: `tools/workspace/vtk/build_mac_binary`
+- Wheel (Linux and mac): `tools/wheel/image/build-vtk.sh`
+
 ## Distributions
 
 ### Ubuntu

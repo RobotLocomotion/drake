@@ -1,6 +1,45 @@
-# This file exists to make our directory into a Bazel package, so that our
-# neighboring *.bzl file can be loaded elsewhere.
-
+load("//tools/skylark:drake_py.bzl", "drake_py_binary")
 load("//tools/lint:lint.bzl", "add_lint_tests")
+
+# filegroup()
+
+drake_py_binary(
+    name = "package",
+    srcs = [
+        "package.py",
+    ],
+    data = [
+        "Dockerfile",
+    ] + glob(["image/**"]),
+    deps = [
+        "@bazel_tools//tools/python/runfiles"
+    ],
+)
+
+# # exports_files(["builder/**"])
+# py_library(
+#     name = "builder",
+#     srcs = [
+#         "builder/common.py",
+#         "builder/linux.py",
+#         "builder/macos.py",
+#     ],
+#     srcs_version = "PY3",
+# )
+
+# # TODO(jwnimmer-tri): I could not figure out how to make "builder/main.py" work
+# # with bazel run, repeated "not able to find file".  Moving it to here worked.
+# # Ideally ./package.py moves to builder/main.py to match wheel structure.
+# py_binary(
+#     name = "package",
+#     srcs = [
+#         "package.py",
+#     ],
+#     deps =[
+#         ":builder"
+#     ],
+#     python_version = "PY3",
+#     srcs_version = "PY3",
+# )
 
 add_lint_tests(python_lint_extra_srcs = ["find_vtk_headers.py"])
