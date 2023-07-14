@@ -1003,6 +1003,38 @@ TEST_F(ThreeBoxes, LinearConstraint2) {
       CompareMatrices(target_->GetSolution(result), Vector2d::Zero(), 1e-6));
 }
 
+TEST_F(ThreeBoxes, SolveWithActiveEdges) {
+  const Vector2d b{.5, .3};
+
+  // Vertex cost.
+  source_->AddCost(
+      static_cast<const VectorX<Expression>>(source_->x()).squaredNorm());
+  // Vertex constraint.
+  source_->AddConstraint(source_->x() <= -b);
+
+  // Edge costs.
+  e_on_->AddCost((e_on_->xu() - e_on_->xv()).squaredNorm());
+  e_off_->AddCost((e_off_->xu() - e_off_->xv()).squaredNorm());
+
+  // Edge constraints.
+  e_on_->AddConstraint(e_on_->xv() >= b);
+  e_off_->AddConstraint(e_off_->xv() >= b);
+
+  auto result = g_.SolveShortestPath(*source_, *target_, options_);
+  ASSERT_TRUE(result.is_success());
+
+  auto active_edges_result =
+      g_.SolveWithActiveEdges(std::set<EdgeId>{e_on_->id()}, options_);
+  ASSERT_TRUE(active_edges_result.is_success());
+
+  EXPECT_NEAR(result.get_optimal_cost(), active_edges_result.get_optimal_cost(),
+              1e-6);
+  for (const auto* v : g_.Vertices()) {
+    EXPECT_TRUE(CompareMatrices(result.GetSolution(v->x()),
+                                active_edges_result.GetSolution(v->x()), 1e-6));
+  }
+}
+
 // A simple shortest-path problem where the continuous variables do not effect
 // the problem (they are all equality constrained).  The GraphOfConvexSets class
 // should still solve the problem, and the convex relaxation should be optimal.
@@ -1688,7 +1720,7 @@ GTEST_TEST(ShortestPathTest, TobiasToyExample) {
   Edge* source_to_p1 = spp.AddEdge(*source, *p1);
   Edge* source_to_p2 = spp.AddEdge(*source, *p2);
   spp.AddEdge(*source, *p3);
-  spp.AddEdge(*p1, *e2);
+  Edge* p1_to_e2 = spp.AddEdge(*p1, *e2);
   spp.AddEdge(*p2, *p3);
   spp.AddEdge(*p2, *e1);
   spp.AddEdge(*p2, *e2);
@@ -1700,7 +1732,7 @@ GTEST_TEST(ShortestPathTest, TobiasToyExample) {
   spp.AddEdge(*e1, *p5);
   spp.AddEdge(*e2, *e1);
   spp.AddEdge(*e2, *p5);
-  spp.AddEdge(*e2, *target);
+  Edge* e2_to_target = spp.AddEdge(*e2, *target);
   spp.AddEdge(*p4, *p3);
   spp.AddEdge(*p4, *e2);
   spp.AddEdge(*p4, *p5);
@@ -1735,6 +1767,31 @@ GTEST_TEST(ShortestPathTest, TobiasToyExample) {
       EXPECT_GE(e->GetSolutionCost(result), 1.0);
     } else {
       EXPECT_NEAR(e->GetSolutionCost(result), 0.0, 1e-5);
+    }
+  }
+
+  // Test that solving with the known shortest path returns consistent results.
+  // The solution to this problem is not actually unique, so we cannot demand
+  // that they return exactly the same results.
+  auto active_edges_result = spp.SolveWithActiveEdges(
+      std::set<EdgeId>{source_to_p1->id(), p1_to_e2->id(), e2_to_target->id()},
+      options);
+  ASSERT_TRUE(active_edges_result.is_success());
+  // The optimal costs should match.
+  EXPECT_NEAR(result.get_optimal_cost(), active_edges_result.get_optimal_cost(),
+              1e-5);
+  // The active edges results must be contained in the sets.
+  EXPECT_TRUE(
+      p1->set().PointInSet(active_edges_result.GetSolution(p1->x()), 1e-6));
+  EXPECT_TRUE(
+      e2->set().PointInSet(active_edges_result.GetSolution(e2->x()), 1e-6));
+  // For inactive vertices, both results should report NaN.
+  for (const auto* v : spp.Vertices()) {
+    const std::set<const Vertex*> active_vertices{source, p1, e2, target};
+    if (active_vertices.count(v) == 0) {
+      EXPECT_TRUE(CompareMatrices(result.GetSolution(v->x()),
+                                  active_edges_result.GetSolution(v->x()),
+                                  1e-6));
     }
   }
 

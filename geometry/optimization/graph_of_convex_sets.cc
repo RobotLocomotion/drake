@@ -1197,6 +1197,80 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
   return SolveShortestPath(source.id(), target.id(), options);
 }
 
+MathematicalProgramResult GraphOfConvexSets::SolveWithActiveEdges(
+    const std::set<EdgeId>& active_edge_ids,
+    const GraphOfConvexSetsOptions& options) const {
+  MathematicalProgram prog;
+
+  std::set<VertexId> vertices;
+  for (const auto& edge_id : active_edge_ids) {
+    if (edges_.count(edge_id) == 0) {
+      throw std::runtime_error(
+          fmt::format("EdgeID {} is not in the graph.", edge_id));
+    }
+    const Edge* e = edges_.at(edge_id).get();
+    vertices.emplace(e->u().id());
+    vertices.emplace(e->v().id());
+  }
+
+  for (const auto& vertex_id : vertices) {
+    const Vertex* v = vertices_.at(vertex_id).get();
+    prog.AddDecisionVariables(v->x());
+    v->set().AddPointInSetConstraints(&prog, v->x());
+
+    // Vertex costs.
+    for (const Binding<Cost>& b : v->costs_) {
+      prog.AddCost(b);
+    }
+    // Vertex constraints.
+    for (const Binding<Constraint>& b : v->constraints_) {
+      prog.AddConstraint(b);
+    }
+  }
+
+  for (const auto& edge_id : active_edge_ids) {
+    const Edge* e = edges_.at(edge_id).get();
+
+    // Edge costs.
+    for (const Binding<Cost>& b : e->costs_) {
+      prog.AddCost(b);
+    }
+    // Edge constraints.
+    for (const Binding<Constraint>& b : e->constraints_) {
+      prog.AddConstraint(b);
+    }
+  }
+
+  MathematicalProgramResult result = Solve(prog, options, false);
+
+  // Add any excluded vertices to the result.
+  int num_excluded_vars = 0;
+  std::vector<const Vertex*> excluded_vertices;
+  for (const auto& pair : vertices_) {
+    const VertexId v_id = pair.first;
+    if (vertices.count(v_id) == 0) {
+      const Vertex* v = pair.second.get();
+      num_excluded_vars += v->x().size();
+      excluded_vertices.emplace_back(v);
+    }
+  }
+  int count = result.get_x_val().size();
+  Eigen::VectorXd x_val(count + num_excluded_vars);
+  x_val.head(count) = result.get_x_val();
+  std::unordered_map<symbolic::Variable::Id, int> decision_variable_index =
+      prog.decision_variable_index();
+  for (const Vertex* v : excluded_vertices) {
+    for (int i = 0; i < v->x().size(); ++i) {
+      decision_variable_index.emplace(v->x()[i].get_id(), count);
+      x_val[count++] = std::numeric_limits<double>::quiet_NaN();
+    }
+  }
+  result.set_decision_variable_index(decision_variable_index);
+  result.set_x_val(x_val);
+
+  return result;
+}
+
 }  // namespace optimization
 }  // namespace geometry
 }  // namespace drake
