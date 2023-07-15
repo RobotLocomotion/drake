@@ -7,6 +7,7 @@
 #include <limits>
 #include <memory>
 #include <string>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -92,6 +93,19 @@ MathematicalProgramResult Solve(const MathematicalProgram& prog,
   }
   return result;
 }
+
+struct VertexIdComparator {
+  bool operator()(const Vertex* lhs, const Vertex* rhs) const {
+    return lhs->id() < rhs->id();
+  }
+};
+
+struct EdgeIdComparator {
+  bool operator()(const Edge* lhs, const Edge* rhs) const {
+    return lhs->id() < rhs->id();
+  }
+};
+
 }  // namespace
 
 GraphOfConvexSets::~GraphOfConvexSets() = default;
@@ -141,7 +155,27 @@ VectorXd Vertex::GetSolution(const MathematicalProgramResult& result) const {
   return result.GetSolution(placeholder_x_);
 }
 
-Edge::Edge(const EdgeId& id, const Vertex* u, const Vertex* v, std::string name)
+void Vertex::AddIncomingEdge(Edge* e) {
+  incoming_edges_.push_back(e);
+}
+
+void Vertex::AddOutgoingEdge(Edge* e) {
+  outgoing_edges_.push_back(e);
+}
+
+void Vertex::RemoveIncomingEdge(Edge* e) {
+  incoming_edges_.erase(
+      std::remove(incoming_edges_.begin(), incoming_edges_.end(), e),
+      incoming_edges_.end());
+}
+
+void Vertex::RemoveOutgoingEdge(Edge* e) {
+  outgoing_edges_.erase(
+      std::remove(outgoing_edges_.begin(), outgoing_edges_.end(), e),
+      outgoing_edges_.end());
+}
+
+Edge::Edge(const EdgeId& id, Vertex* u, Vertex* v, std::string name)
     : id_{id},
       u_{u},
       v_{v},
@@ -236,7 +270,10 @@ Edge* GraphOfConvexSets::AddEdge(VertexId u_id, VertexId v_id,
   auto [iter, success] = edges_.try_emplace(
       id, new Edge(id, u_iter->second.get(), v_iter->second.get(), name));
   DRAKE_DEMAND(success);
-  return iter->second.get();
+  Edge* e = iter->second.get();
+  u_iter->second->AddOutgoingEdge(e);
+  v_iter->second->AddIncomingEdge(e);
+  return e;
 }
 
 Edge* GraphOfConvexSets::AddEdge(const Vertex& u, const Vertex& v,
@@ -246,12 +283,12 @@ Edge* GraphOfConvexSets::AddEdge(const Vertex& u, const Vertex& v,
 
 void GraphOfConvexSets::RemoveVertex(VertexId vertex_id) {
   DRAKE_DEMAND(vertices_.find(vertex_id) != vertices_.end());
-  const auto& last_edge = edges_.end();
-  for (auto e = edges_.begin(); e != last_edge;) {
-    if (e->second->u().id() == vertex_id || e->second->v().id() == vertex_id) {
-      e = edges_.erase(e);
+  for (auto it = edges_.begin(); it != edges_.end();) {
+    if (it->second->u().id() == vertex_id ||
+        it->second->v().id() == vertex_id) {
+      it = edges_.erase(it);
     } else {
-      ++e;
+      ++it;
     }
   }
   vertices_.erase(vertex_id);
@@ -263,6 +300,9 @@ void GraphOfConvexSets::RemoveVertex(const Vertex& vertex) {
 
 void GraphOfConvexSets::RemoveEdge(EdgeId edge_id) {
   DRAKE_DEMAND(edges_.find(edge_id) != edges_.end());
+  Edge* e = edges_.at(edge_id).get();
+  e->u().RemoveOutgoingEdge(e);
+  e->v().RemoveIncomingEdge(e);
   edges_.erase(edge_id);
 }
 
@@ -1197,24 +1237,83 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
   return SolveShortestPath(source.id(), target.id(), options);
 }
 
+std::vector<const Edge*> GraphOfConvexSets::GetSolutionPath(
+    const Vertex& source, const Vertex& target,
+    const solvers::MathematicalProgramResult& result, double tolerance) const {
+  if (!result.is_success()) {
+    throw std::runtime_error(
+        "Cannot extract a solution path when result.is_success() is false.");
+  }
+  if (vertices_.count(source.id()) == 0) {
+    throw std::invalid_argument(fmt::format(
+        "Source vertex {} is not a vertex in this GraphOfConvexSets.",
+        source.name()));
+  }
+  if (vertices_.count(target.id()) == 0) {
+    throw std::invalid_argument(fmt::format(
+        "Target vertex {} is not a vertex in this GraphOfConvexSets.",
+        target.name()));
+  }
+  DRAKE_THROW_UNLESS(tolerance >= 0);
+  std::vector<const Edge*> path_edges;
+
+  // Extract the path by traversing the graph with a depth first search.
+  std::unordered_set<const Vertex*> visited_vertices{&source};
+  std::vector<const Vertex*> path_vertices{&source};
+  while (path_vertices.back() != &target) {
+    // Find the edge with the maximum flow from the current node.
+    double maximum_flow = 0;
+    const Vertex* max_flow_vertex{nullptr};
+    const Edge* max_flow_edge = nullptr;
+    for (const Edge* e : path_vertices.back()->outgoing_edges()) {
+      const double flow = result.GetSolution(e->phi());
+      // If the edge has not been visited and has a flow greater than the
+      // current maximum, then this is our new maximum.
+      if (flow >= 1 - tolerance && flow > maximum_flow &&
+          visited_vertices.count(&e->v()) == 0) {
+        maximum_flow = flow;
+        max_flow_vertex = &e->v();
+        max_flow_edge = e;
+      }
+    }
+
+    if (max_flow_edge == nullptr) {
+      // If no candidate edges are found, backtrack to the previous node and
+      // continue the search.
+      path_vertices.pop_back();
+      path_edges.pop_back();
+      if (path_vertices.empty()) {
+        throw std::runtime_error(fmt::format("No path found from {} to {}.",
+                                             source.name(), target.name()));
+      }
+      continue;
+    } else {
+      // If we have a maximum flow, then add the vertex/edge to the path and
+      // continue the search.
+      visited_vertices.insert(max_flow_vertex);
+      path_vertices.push_back(max_flow_vertex);
+      path_edges.push_back(max_flow_edge);
+    }
+  }
+  return path_edges;
+}
+
 MathematicalProgramResult GraphOfConvexSets::SolveConvexRestriction(
-    const std::set<EdgeId>& active_edge_ids,
+    const std::vector<const Edge*>& active_edges,
     const GraphOfConvexSetsOptions& options) const {
   MathematicalProgram prog;
 
-  std::set<VertexId> vertices;
-  for (const auto& edge_id : active_edge_ids) {
-    if (edges_.count(edge_id) == 0) {
+  std::set<const Vertex*, VertexIdComparator> vertices;
+  for (const auto* e : active_edges) {
+    if (edges_.count(e->id()) == 0) {
       throw std::runtime_error(
-          fmt::format("EdgeID {} is not in the graph.", edge_id));
+          fmt::format("Edge {} is not in the graph.", e->name()));
     }
-    const Edge* e = edges_.at(edge_id).get();
-    vertices.emplace(e->u().id());
-    vertices.emplace(e->v().id());
+    vertices.emplace(&e->u());
+    vertices.emplace(&e->v());
   }
 
-  for (const auto& vertex_id : vertices) {
-    const Vertex* v = vertices_.at(vertex_id).get();
+  for (const auto* v : vertices) {
     prog.AddDecisionVariables(v->x());
     v->set().AddPointInSetConstraints(&prog, v->x());
 
@@ -1228,9 +1327,7 @@ MathematicalProgramResult GraphOfConvexSets::SolveConvexRestriction(
     }
   }
 
-  for (const auto& edge_id : active_edge_ids) {
-    const Edge* e = edges_.at(edge_id).get();
-
+  for (const auto* e : active_edges) {
     // Edge costs.
     for (const Binding<Cost>& b : e->costs_) {
       prog.AddCost(b);
@@ -1247,9 +1344,8 @@ MathematicalProgramResult GraphOfConvexSets::SolveConvexRestriction(
   int num_excluded_vars = 0;
   std::vector<const Vertex*> excluded_vertices;
   for (const auto& pair : vertices_) {
-    const VertexId v_id = pair.first;
-    if (vertices.count(v_id) == 0) {
-      const Vertex* v = pair.second.get();
+    const Vertex* v = pair.second.get();
+    if (vertices.count(v) == 0) {
       num_excluded_vars += v->x().size();
       excluded_vertices.emplace_back(v);
     }
