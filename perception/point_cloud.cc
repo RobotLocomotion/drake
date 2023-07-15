@@ -633,7 +633,7 @@ bool PointCloud::EstimateNormals(
     // 2. search for points within radius, and then keep the num_closest
     // for dense clouds where the number of points within radius would be high,
     // approach (1) is considerably faster.
-    const int num_neighbors = kd_tree.index->knnSearch(
+    const int num_neighbors = kd_tree.index_->knnSearch(
         xyz(i).data(), num_closest, indices.data(), distances.data());
 
     if (num_neighbors < 3) {
