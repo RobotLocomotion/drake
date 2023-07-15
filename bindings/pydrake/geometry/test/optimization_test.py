@@ -798,8 +798,8 @@ class TestCspaceFreePolytope(unittest.TestCase):
         bilinear_alternation_options.convergence_tol = 1e-2
         bilinear_alternation_options.find_polytope_options = polytope_options
         # TODO(Alexandre.Amice) uncommment when bound
-        # bilinear_alternation_options.find_lagrangian_options = \
-        #     lagrangian_options
+        bilinear_alternation_options.find_lagrangian_options.verbose = \
+            True
         bilinear_alternation_options.ellipsoid_scaling = 0.5
         self.assertEqual(bilinear_alternation_options.max_iter, 4)
         self.assertAlmostEqual(bilinear_alternation_options.convergence_tol,
@@ -808,9 +808,8 @@ class TestCspaceFreePolytope(unittest.TestCase):
                                0.5)
         self.assertFalse(bilinear_alternation_options.
                          find_polytope_options.search_s_bounds_lagrangians)
-        # TODO(Alexandre.Amice) uncommment when bound
-        # self.assertTrue(bilinear_alternation_options.
-        #                 find_lagrangian_options.verbose)
+        self.assertTrue(bilinear_alternation_options.
+                        find_lagrangian_options.verbose)
 
         # BinarySearchOptions
         binary_search_options = dut.BinarySearchOptions()
@@ -819,24 +818,21 @@ class TestCspaceFreePolytope(unittest.TestCase):
         self.assertEqual(binary_search_options.max_iter, 10)
         self.assertAlmostEqual(
             binary_search_options.convergence_tol, 1e-3)
-        # TODO(Alexandre.Amice) uncommment when bound
-        # self.assertFalse(
-        #     binary_search_options.find_lagrangian_options.verbose)
+        self.assertFalse(
+            binary_search_options.find_lagrangian_options.verbose)
 
         binary_search_options.scale_max = 2
         binary_search_options.scale_min = 1
         binary_search_options.max_iter = 2
         binary_search_options.convergence_tol = 1e-5
-        # TODO(Alexandre.Amice) uncommment when bound
-        # binary_search_options.find_lagrangian_options = lagrangian_options
+        binary_search_options.find_lagrangian_options.verbose = True
         self.assertAlmostEqual(binary_search_options.scale_max, 2)
         self.assertAlmostEqual(binary_search_options.scale_min, 1)
         self.assertEqual(binary_search_options.max_iter, 2)
         self.assertAlmostEqual(
             binary_search_options.convergence_tol, 1e-5)
-        # TODO(Alexandre.Amice) uncommment when bound
-        # self.assertTrue(
-        #     binary_search_options.find_lagrangian_options.verbose)
+        self.assertTrue(
+            binary_search_options.find_lagrangian_options.verbose)
 
         options = dut.Options()
         self.assertFalse(options.with_cross_y)

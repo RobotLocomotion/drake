@@ -1024,11 +1024,9 @@ void DefineGeometryOptimization(py::module m) {
         .def_readwrite("find_polytope_options",
             &Class::BilinearAlternationOptions::find_polytope_options,
             cls_doc.BilinearAlternationOptions.find_polytope_options.doc)
-        // TODO(Alexandre.Amice) Bind once the conversation about the copy
-        // slicing of this object is resolved
-        //        .def_readwrite("find_lagrangian_options",
-        //            &Class::BilinearAlternationOptions::find_lagrangian_options,
-        //            cls_doc.BilinearAlternationOptions.find_lagrangian_options.doc)
+                .def_readonly("find_lagrangian_options",
+                    &Class::BilinearAlternationOptions::find_lagrangian_options,
+                    cls_doc.BilinearAlternationOptions.find_lagrangian_options.doc)
         .def_readwrite("ellipsoid_scaling",
             &Class::BilinearAlternationOptions::ellipsoid_scaling,
             cls_doc.BilinearAlternationOptions.ellipsoid_scaling.doc);
@@ -1040,11 +1038,9 @@ void DefineGeometryOptimization(py::module m) {
         .def_readwrite("scale_min", &Class::BinarySearchOptions::scale_min)
         .def_readwrite("max_iter", &Class::BinarySearchOptions::max_iter)
         .def_readwrite(
-            "convergence_tol", &Class::BinarySearchOptions::convergence_tol);
-    // TODO(Alexandre.Amice) Bind once the conversation about the copy slicing
-    // of this object is resolved
-    //        .def_readwrite("find_lagrangian_options",
-    //            &Class::BinarySearchOptions::find_lagrangian_options);
+            "convergence_tol", &Class::BinarySearchOptions::convergence_tol)
+        .def_readonly("find_lagrangian_options",
+                &Class::BinarySearchOptions::find_lagrangian_options);
   }
   // NOLINTNEXTLINE(readability/fn_size)
 }
