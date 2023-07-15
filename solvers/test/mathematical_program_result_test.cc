@@ -64,6 +64,11 @@ TEST_F(MathematicalProgramResultTest, Setters) {
   EXPECT_EQ(result.get_optimal_cost(), cost);
   EXPECT_EQ(result.get_solver_id().name(), "foo");
   EXPECT_TRUE(CompareMatrices(result.GetSolution(), x_val));
+
+  result.SetSolution(x0_, 0.123);
+  EXPECT_EQ(result.GetSolution(x0_), 0.123);
+  symbolic::Variable unregistered("unregistered");
+  EXPECT_THROW(result.SetSolution(unregistered, 0.456), std::exception);
 }
 
 TEST_F(MathematicalProgramResultTest, GetSolution) {

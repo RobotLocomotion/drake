@@ -227,6 +227,9 @@ class TestMathematicalProgram(unittest.TestCase):
         result.set_x_val(x_val_new)
         np.testing.assert_array_equal(x_val_new, result.get_x_val())
 
+        result.SetSolution(var=qp.x[0], value=1.5)
+        self.assertEqual(result.GetSolution(qp.x[0]), 1.5)
+
     def test_str(self):
         qp = TestQP()
         s = str(qp.prog)
