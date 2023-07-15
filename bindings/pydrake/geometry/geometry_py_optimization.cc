@@ -793,7 +793,7 @@ void DefineGeometryOptimization(py::module m) {
                 &SeparationCertificateResultBase::plane_decision_var_vals)
             .def_readonly("result", &SeparationCertificateResultBase::result);
 
-    // TODO (Alexandre.Amice) decide whether to bind this based on a discussion
+    // TODO(Alexandre.Amice) decide whether to bind this based on a discussion
     // that users should never have access to a PlaneSeparatesGeometry object.
     //    constexpr auto& separates_doc = doc.PlaneSeparatesGeometries;
     //    auto separates_cls =
@@ -1024,9 +1024,9 @@ void DefineGeometryOptimization(py::module m) {
         .def_readwrite("find_polytope_options",
             &Class::BilinearAlternationOptions::find_polytope_options,
             cls_doc.BilinearAlternationOptions.find_polytope_options.doc)
-                .def_readonly("find_lagrangian_options",
-                    &Class::BilinearAlternationOptions::find_lagrangian_options,
-                    cls_doc.BilinearAlternationOptions.find_lagrangian_options.doc)
+        .def_readonly("find_lagrangian_options",
+            &Class::BilinearAlternationOptions::find_lagrangian_options,
+            cls_doc.BilinearAlternationOptions.find_lagrangian_options.doc)
         .def_readwrite("ellipsoid_scaling",
             &Class::BilinearAlternationOptions::ellipsoid_scaling,
             cls_doc.BilinearAlternationOptions.ellipsoid_scaling.doc);
@@ -1040,7 +1040,7 @@ void DefineGeometryOptimization(py::module m) {
         .def_readwrite(
             "convergence_tol", &Class::BinarySearchOptions::convergence_tol)
         .def_readonly("find_lagrangian_options",
-                &Class::BinarySearchOptions::find_lagrangian_options);
+            &Class::BinarySearchOptions::find_lagrangian_options);
   }
   // NOLINTNEXTLINE(readability/fn_size)
 }
