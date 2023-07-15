@@ -548,7 +548,11 @@ void DefineGeometryOptimization(py::module m) {
         .def("GetSolutionCost", &GraphOfConvexSets::Vertex::GetSolutionCost,
             py::arg("result"), vertex_doc.GetSolutionCost.doc)
         .def("GetSolution", &GraphOfConvexSets::Vertex::GetSolution,
-            py::arg("result"), vertex_doc.GetSolution.doc);
+            py::arg("result"), vertex_doc.GetSolution.doc)
+        .def("incoming_edges", &GraphOfConvexSets::Vertex::incoming_edges,
+            py_rvp::reference_internal, vertex_doc.incoming_edges.doc)
+        .def("outgoing_edges", &GraphOfConvexSets::Vertex::outgoing_edges,
+            py_rvp::reference_internal, vertex_doc.outgoing_edges.doc);
 
     // Edge
     const auto& edge_doc = doc.GraphOfConvexSets.Edge;
@@ -556,10 +560,14 @@ void DefineGeometryOptimization(py::module m) {
         graph_of_convex_sets, "Edge", edge_doc.doc)
         .def("id", &GraphOfConvexSets::Edge::id, edge_doc.id.doc)
         .def("name", &GraphOfConvexSets::Edge::name, edge_doc.name.doc)
-        .def("u", &GraphOfConvexSets::Edge::u, py_rvp::reference_internal,
-            edge_doc.u.doc)
-        .def("v", &GraphOfConvexSets::Edge::v, py_rvp::reference_internal,
-            edge_doc.v.doc)
+        .def("u",
+            overload_cast_explicit<GraphOfConvexSets::Vertex&>(
+                &GraphOfConvexSets::Edge::u),
+            py_rvp::reference_internal, edge_doc.u.doc_0args_nonconst)
+        .def("v",
+            overload_cast_explicit<GraphOfConvexSets::Vertex&>(
+                &GraphOfConvexSets::Edge::v),
+            py_rvp::reference_internal, edge_doc.v.doc_0args_nonconst)
         .def("phi", &GraphOfConvexSets::Edge::phi, py_rvp::reference_internal,
             edge_doc.phi.doc)
         .def(
@@ -671,10 +679,24 @@ void DefineGeometryOptimization(py::module m) {
             py::arg("source"), py::arg("target"),
             py::arg("options") = GraphOfConvexSetsOptions(),
             cls_doc.SolveShortestPath.doc_by_reference)
+        .def("GetSolutionPath", &GraphOfConvexSets::GetSolutionPath,
+            py::arg("source"), py::arg("target"), py::arg("result"),
+            py::arg("tolerance") = 1e-3, cls_doc.GetSolutionPath.doc)
         .def("SolveConvexRestriction",
-            &GraphOfConvexSets::SolveConvexRestriction, py::arg("active_edges"),
+            overload_cast_explicit<solvers::MathematicalProgramResult,
+                const std::set<const GraphOfConvexSets::Edge*>&,
+                const GraphOfConvexSetsOptions&>(
+                &GraphOfConvexSets::SolveConvexRestriction),
+            py::arg("active_edges"),
             py::arg("options") = GraphOfConvexSetsOptions(),
-            cls_doc.SolveConvexRestriction.doc);
+            cls_doc.SolveConvexRestriction.doc_set)
+        .def("SolveConvexRestriction",
+            overload_cast_explicit<solvers::MathematicalProgramResult,
+                const std::vector<const GraphOfConvexSets::Edge*>&,
+                const GraphOfConvexSetsOptions&>(
+                &GraphOfConvexSets::SolveConvexRestriction),
+            py::arg("path"), py::arg("options") = GraphOfConvexSetsOptions(),
+            cls_doc.SolveConvexRestriction.doc_path);
   }
 
   // NOLINTNEXTLINE(readability/fn_size)
