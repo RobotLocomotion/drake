@@ -21,7 +21,7 @@ from pydrake.systems.framework import DiagramBuilder
 from pydrake.solvers import (
     Binding, ClpSolver, Constraint, Cost, MathematicalProgram,
     MathematicalProgramResult, SolverOptions, CommonSolverOption,
-    ScsSolver, MosekSolver
+    ScsSolver, MosekSolver, CsdpSolver
 )
 from pydrake.symbolic import Variable, Polynomial
 
@@ -858,13 +858,11 @@ class TestCspaceFreePolytope(unittest.TestCase):
                                0.99)
         self.assertTrue(bilinear_alternation_options.
                         find_polytope_options.search_s_bounds_lagrangians)
-        # TODO(Alexandre.Amice) uncommment when bound
-        # self.assertFalse(
-        #     bilinear_alternation_options.find_lagrangian_options.verbose)
+        self.assertFalse(
+            bilinear_alternation_options.find_lagrangian_options.verbose)
         bilinear_alternation_options.max_iter = 4
         bilinear_alternation_options.convergence_tol = 1e-2
         bilinear_alternation_options.find_polytope_options = polytope_options
-        # TODO(Alexandre.Amice) uncommment when bound
         bilinear_alternation_options.find_lagrangian_options.verbose = \
             True
         bilinear_alternation_options.ellipsoid_scaling = 0.5
@@ -906,7 +904,7 @@ class TestCspaceFreePolytope(unittest.TestCase):
         options.with_cross_y = True
         self.assertTrue(options.with_cross_y)
 
-    def test_CspaceFreePolytope_constructor_getters_and_auxillary_structs(self):
+    def test_CspaceFreePolytope_getters_and_auxillary_structs(self):
         dut = self.cspace_free_polytope
 
         # TODO(Alexandre.Amice): uncomment once rational_forward_kin is bound.
@@ -957,10 +955,11 @@ class TestCspaceFreePolytope(unittest.TestCase):
                 self.assertGreater(geom.num_rationals(), 0)
                 self.assertIsInstance(geom.X_BG(), RigidTransform)
                 self.assertIsInstance(geom.id(), GeometryId)
-        # SeparationCertificateProgramBase, SeparationCertificateResultBase are not tested as they cannot be
-        # instantiated. They are bound only to provide subclassing to other bindings. The class
-        # FindSeparationCertificateOptions is tested in test_CspaceFreePolytope_Options(self) along with all the
-        # other options
+        # SeparationCertificateProgramBase, SeparationCertificateResultBase are
+        # not tested as they cannot be instantiated. They are bound only to
+        # provide subclassing to other bindings. The class
+        # FindSeparationCertificateOptions is tested in
+        # test_CspaceFreePolytope_Options along with all the other options
 
     def test_CspaceFreePolytopeMethods(self):
         C_init = np.vstack([np.atleast_2d(np.eye(self.plant.num_positions(
@@ -970,25 +969,35 @@ class TestCspaceFreePolytope(unittest.TestCase):
         lagrangian_options = \
             mut.CspaceFreePolytope.\
                 FindSeparationCertificateGivenPolytopeOptions()
+        lagrangian_options.solver_id = CsdpSolver.id()
 
         binary_search_options = mut.CspaceFreePolytope.BinarySearchOptions()
-        binary_search_options.scale_min = 1e-4
-        # TODO(Alexandre.Amice) uncommment when bound
-        # binary_search_options.find_lagrangian_options.verbose = False
+        binary_search_options.scale_min = 1e-2
+        binary_search_options.scale_max = 1e7
+        binary_search_options.max_iter = 2
+        # Default is Mosek. This allows the test to run without
+        # special installation.
+        binary_search_options.find_lagrangian_options.solver_id = \
+            CsdpSolver.id()
 
         bilinear_alternation_options = \
             mut.CspaceFreePolytope.BilinearAlternationOptions()
-        # TODO(Alexandre.Amice) uncommment when bound
-        # bilinear_alternation_options.find_lagrangian_options.verbose = False
+        # Default is Mosek. This allows the test to run without special
+        # installation.
+        bilinear_alternation_options.find_lagrangian_options.solver_id = \
+            CsdpSolver.id()
+        bilinear_alternation_options.max_iter = 2
 
-        (success, certificates) = self.cspace_free_polytope.FindSeparationCertificateGivenPolytope(C = C_init, d=d_init,
-                                                                                                   ignored_collision_pairs=set(), options=lagrangian_options)
+        (success, certificates) = self.cspace_free_polytope.\
+            FindSeparationCertificateGivenPolytope(
+            C=C_init, d=d_init, ignored_collision_pairs=set(),
+            options=lagrangian_options)
         self.assertTrue(success)
-        geom_pair = next(iter(self.cspace_free_polytope.map_geometries_to_separating_planes()))
+        geom_pair = list(self.cspace_free_polytope.
+                    map_geometries_to_separating_planes().keys())[0]
         self.assertIn(geom_pair, certificates.keys())
         self.assertIsInstance(certificates[geom_pair],
                               mut.CspaceFreePolytope.SeparationCertificateResult)
-
 
         result = self.cspace_free_polytope.BinarySearch(
             ignored_collision_pairs=set(),
@@ -1052,15 +1061,21 @@ class TestCspaceFreePolytope(unittest.TestCase):
             cert_prog_sol.result, MathematicalProgramResult)
 
         # Bindings for SeparatingPlaneLagrangians
-        positivie_side_lagrangians = cert_prog_sol.positive_side_rational_lagrangians
-        negative_side_lagrangians = cert_prog_sol.negative_side_rational_lagrangians
+        positive_side_lagrangians = \
+            cert_prog_sol.positive_side_rational_lagrangians
+        positive_test_lagrangian = positive_side_lagrangians[0]
+        negative_side_lagrangians = \
+            cert_prog_sol.negative_side_rational_lagrangians
+        negative_test_lagrangian = negative_side_lagrangians[0]
 
-        positivie_side_lagrangians.GetSolution(cert_prog_sol.result)
-        negative_side_lagrangians.GetSolution(cert_prog_sol.result)
+        positive_test_lagrangian.GetSolution(cert_prog_sol.result)
+        negative_test_lagrangian.GetSolution(cert_prog_sol.result)
 
-        self.assertEqual(len(positivie_side_lagrangians.polytope), C_init.shape[0])
-        self.assertEqual(len(positivie_side_lagrangians.s_lower), C_init.shape[0])
-        self.assertEqual(len(positivie_side_lagrangians.s_lower), C_init.shape[0])
-        self.assertEqual(len(negative_side_lagrangians.polytope), C_init.shape[0])
-        self.assertEqual(len(negative_side_lagrangians.s_lower), C_init.shape[0])
-        self.assertEqual(len(negative_side_lagrangians.s_lower), C_init.shape[0])
+        self.assertEqual(len(positive_test_lagrangian.polytope()),
+                         C_init.shape[0])
+        self.assertEqual(len(positive_test_lagrangian.s_lower()), 1)
+        self.assertEqual(len(positive_test_lagrangian.s_upper()), 1)
+        self.assertEqual(len(negative_test_lagrangian.polytope()),
+                         C_init.shape[0])
+        self.assertEqual(len(negative_test_lagrangian.s_lower()), 1)
+        self.assertEqual(len(negative_test_lagrangian.s_upper()), 1)
