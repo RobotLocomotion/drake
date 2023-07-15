@@ -676,11 +676,32 @@ class TestCspaceFreePolytope(unittest.TestCase):
             q_star=np.zeros(self.plant.num_positions()),
             options=options)
 
+    def test_CspaceFreePolytope_SeparatingPlaneOrder(self):
+        # access the separating plane orders
+        possible_orders = [mut.SeparatingPlaneOrder.kAffine]
+        self.assertEqual(len(possible_orders), 1)
+
     def test_CspaceFreePolytope_Options(self):
         dut = mut.CspaceFreePolytope
 
         solver_options = SolverOptions()
         solver_options.SetOption(CommonSolverOption.kPrintToConsole, 1)
+
+        # FindSeparationCertificateOptions
+        find_separation_options = mut.FindSeparationCertificateOptions()
+        find_separation_options.num_threads = 1
+        find_separation_options.verbose = True
+        find_separation_options.solver_id = ScsSolver.id()
+        find_separation_options.terminate_at_failure = False
+        find_separation_options.solver_options = solver_options
+
+        self.assertEqual(find_separation_options.num_threads, 1)
+        self.assertTrue(find_separation_options.verbose)
+        self.assertEqual(find_separation_options.solver_id, ScsSolver.id())
+        self.assertFalse(find_separation_options.terminate_at_failure)
+        self.assertEqual(
+            find_separation_options.solver_options.common_solver_options()[
+                CommonSolverOption.kPrintToConsole], 1)
 
         # FindSeparationCertificateGivenPolytopeOptions
         lagrangian_options = \
@@ -775,13 +796,15 @@ class TestCspaceFreePolytope(unittest.TestCase):
                                0.99)
         self.assertTrue(bilinear_alternation_options.
                         find_polytope_options.search_s_bounds_lagrangians)
-        self.assertFalse(
-            bilinear_alternation_options.find_lagrangian_options.verbose)
+        # TODO(Alexandre.Amice) uncommment when bound
+        # self.assertFalse(
+        #     bilinear_alternation_options.find_lagrangian_options.verbose)
         bilinear_alternation_options.max_iter = 4
         bilinear_alternation_options.convergence_tol = 1e-2
         bilinear_alternation_options.find_polytope_options = polytope_options
-        bilinear_alternation_options.find_lagrangian_options = \
-            lagrangian_options
+        # TODO(Alexandre.Amice) uncommment when bound
+        # bilinear_alternation_options.find_lagrangian_options = \
+        #     lagrangian_options
         bilinear_alternation_options.ellipsoid_scaling = 0.5
         self.assertEqual(bilinear_alternation_options.max_iter, 4)
         self.assertAlmostEqual(bilinear_alternation_options.convergence_tol,
@@ -790,8 +813,9 @@ class TestCspaceFreePolytope(unittest.TestCase):
                                0.5)
         self.assertFalse(bilinear_alternation_options.
                          find_polytope_options.search_s_bounds_lagrangians)
-        self.assertTrue(bilinear_alternation_options.
-                        find_lagrangian_options.verbose)
+        # TODO(Alexandre.Amice) uncommment when bound
+        # self.assertTrue(bilinear_alternation_options.
+        #                 find_lagrangian_options.verbose)
 
         # BinarySearchOptions
         binary_search_options = dut.BinarySearchOptions()
@@ -800,28 +824,31 @@ class TestCspaceFreePolytope(unittest.TestCase):
         self.assertEqual(binary_search_options.max_iter, 10)
         self.assertAlmostEqual(
             binary_search_options.convergence_tol, 1e-3)
-        self.assertFalse(
-            binary_search_options.find_lagrangian_options.verbose)
+        # TODO(Alexandre.Amice) uncommment when bound
+        # self.assertFalse(
+        #     binary_search_options.find_lagrangian_options.verbose)
 
         binary_search_options.scale_max = 2
         binary_search_options.scale_min = 1
         binary_search_options.max_iter = 2
         binary_search_options.convergence_tol = 1e-5
-        binary_search_options.find_lagrangian_options = lagrangian_options
+        # TODO(Alexandre.Amice) uncommment when bound
+        # binary_search_options.find_lagrangian_options = lagrangian_options
         self.assertAlmostEqual(binary_search_options.scale_max, 2)
         self.assertAlmostEqual(binary_search_options.scale_min, 1)
         self.assertEqual(binary_search_options.max_iter, 2)
         self.assertAlmostEqual(
             binary_search_options.convergence_tol, 1e-5)
-        self.assertTrue(
-            binary_search_options.find_lagrangian_options.verbose)
+        # TODO(Alexandre.Amice) uncommment when bound
+        # self.assertTrue(
+        #     binary_search_options.find_lagrangian_options.verbose)
 
         options = dut.Options()
         self.assertFalse(options.with_cross_y)
         options.with_cross_y = True
         self.assertTrue(options.with_cross_y)
 
-    def test_CspaceFreePolytope_constructor_and_getters(self):
+    def test_CspaceFreePolytope_constructor_getters_and_auxillary_structs(self):
         dut = self.cspace_free_polytope
 
         # TODO(Alexandre.Amice): uncomment once rational_forward_kin is bound.
@@ -838,9 +865,13 @@ class TestCspaceFreePolytope(unittest.TestCase):
             len(dut.separating_planes()), 1)
         self.assertEqual(len(dut.y_slack()), 3)
 
-        # Test SeparatingPlane and CIrisCollisionGeometry
-        plane_side_possible_values = [mut.PlaneSide.kPositive,
-                                      mut.PlaneSide.kNegative]
+        # Test all bindings of objects in c_iris_collision_geometry.h/cc,
+        # cspace_separating_plane.h/cc, cspace_free_structs.h/cc.
+        # Many of these objects require an instantiation of
+        # CspaceFreePolytopeBase (either CspaceFreePolytope or CspaceFreeBox)
+        # to access which is why they are tested here.
+
+        # Test CSpaceSeparatingPlane and CIrisCollisionGeometry
         geom_type_possible_values = [
             mut.CIrisGeometryType.kPolytope,
             mut.CIrisGeometryType.kSphere,
@@ -868,17 +899,47 @@ class TestCspaceFreePolytope(unittest.TestCase):
                 self.assertGreater(geom.num_rationals(), 0)
                 self.assertIsInstance(geom.X_BG(), RigidTransform)
                 self.assertIsInstance(geom.id(), GeometryId)
+        # SeparationCertificateProgramBase, SeparationCertificateResultBase are not tested as they cannot be
+        # instantiated. They are bound only to provide subclassing to other bindings. The class
+        # FindSeparationCertificateOptions is tested in test_CspaceFreePolytope_Options(self) along with all the
+        # other options
 
     def test_CspaceFreePolytopeMethods(self):
         C_init = np.vstack([np.atleast_2d(np.eye(self.plant.num_positions(
         ))), -np.atleast_2d(np.eye(self.plant.num_positions()))])
-        d_init = 3 * np.ones((C_init.shape[0], 1))
+        d_init = 1e-7 * np.ones((C_init.shape[0], 1))
 
+        lagrangian_options = \
+            mut.CspaceFreePolytope.\
+                FindSeparationCertificateGivenPolytopeOptions()
 
         binary_search_options = mut.CspaceFreePolytope.BinarySearchOptions()
         binary_search_options.scale_min = 1e-4
-        bilinear_alternation_options.find_lagrangian_options.verbose = False
-        binary_search_options.find_lagrangian_options.verbose = False
+        # TODO(Alexandre.Amice) uncommment when bound
+        # binary_search_options.find_lagrangian_options.verbose = False
+
+        bilinear_alternation_options = \
+            mut.CspaceFreePolytope.BilinearAlternationOptions()
+        # TODO(Alexandre.Amice) uncommment when bound
+        # bilinear_alternation_options.find_lagrangian_options.verbose = False
+
+        (success, certificates) = self.cspace_free_polytope.FindSeparationCertificateGivenPolytope(C = C_init, d=d_init,
+                                                                                                   ignored_collision_pairs=set(), options=lagrangian_options)
+        self.assertTrue(success)
+        geom_pair = next(iter(self.cspace_free_polytope.map_geometries_to_separating_planes()))
+        self.assertIn(geom_pair, certificates.keys())
+        self.assertIsInstance(certificates[geom_pair],
+                              mut.CspaceFreePolytope.SeparationCertificateResult)
+
+        result = self.cspace_free_polytope.SearchWithBilinearAlternation(
+            ignored_collision_pairs=set(),
+            C_init=C_init,
+            d_init=d_init,
+            options=bilinear_alternation_options)
+        self.assertIsNotNone(result)
+        self.assertGreaterEqual(len(result), 1)
+        self.assertIsInstance(result[0], mut.CspaceFreePolytope.SearchResult)
+
 
         result = self.cspace_free_polytope.BinarySearch(
             ignored_collision_pairs=set(),
@@ -887,6 +948,7 @@ class TestCspaceFreePolytope(unittest.TestCase):
             s_center=np.zeros(self.plant.num_positions()),
             options=binary_search_options
         )
+
         # Accesses all members of SearchResult
         self.assertGreaterEqual(result.num_iter(), 1)
         self.assertGreaterEqual(len(result.C()), 1)
@@ -896,31 +958,8 @@ class TestCspaceFreePolytope(unittest.TestCase):
         self.assertEqual(len(result.b()), 1)
         self.assertIsInstance(result.a()[0][0], Polynomial)
 
-
-        bilinear_alternation_options = \
-            mut.CspaceFreePolytope.BilinearAlternationOptions()
-        result = self.cspace_free_polytope.SearchWithBilinearAlternation(
-            ignored_collision_pairs=set(),
-            C_init=C_init,
-            d_init=d_init,
-            options=bilinear_alternation_options)
-        self.assertIsNotNone(result)
-        # TODO parse the bilinear alternation result and access the bilinear alternation options
-
-    def testSeparationCertificateMethods(self):
-        C_init = np.vstack([np.atleast_2d(np.eye(self.plant.num_positions(
-        ))), -np.atleast_2d(np.eye(self.plant.num_positions()))])
-        d_init = 1e-10 * np.ones((C_init.shape[0], 1))
         pair = list(self.cspace_free_polytope.
                     map_geometries_to_separating_planes().keys())[0]
-
-        lagrangian_options = \
-            mut.CspaceFreePolytope. \
-            FindSeparationCertificateGivenPolytopeOptions()
-        num_threads = 1
-        lagrangian_options.num_threads = num_threads
-        lagrangian_options.solver_id = ScsSolver.id()
-
         cert_prog = self.cspace_free_polytope.MakeIsGeometrySeparableProgram(
             geometry_pair=pair, C=C_init, d=d_init
         )
@@ -951,3 +990,17 @@ class TestCspaceFreePolytope(unittest.TestCase):
             cert_prog_sol.plane_decision_var_vals[0], float)
         self.assertIsInstance(
             cert_prog_sol.result, MathematicalProgramResult)
+
+        # Bindings for SeparatingPlaneLagrangians
+        positivie_side_lagrangians = cert_prog_sol.positive_side_rational_lagrangians
+        negative_side_lagrangians = cert_prog_sol.negative_side_rational_lagrangians
+
+        positivie_side_lagrangians.GetSolution(cert_prog_sol.result)
+        negative_side_lagrangians.GetSolution(cert_prog_sol.result)
+
+        self.assertEqual(len(positivie_side_lagrangians.polytope), C_init.shape[0])
+        self.assertEqual(len(positivie_side_lagrangians.s_lower), C_init.shape[0])
+        self.assertEqual(len(positivie_side_lagrangians.s_lower), C_init.shape[0])
+        self.assertEqual(len(negative_side_lagrangians.polytope), C_init.shape[0])
+        self.assertEqual(len(negative_side_lagrangians.s_lower), C_init.shape[0])
+        self.assertEqual(len(negative_side_lagrangians.s_lower), C_init.shape[0])

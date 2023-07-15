@@ -797,16 +797,34 @@ void DefineGeometryOptimization(py::module m) {
                 &SeparationCertificateResultBase::plane_decision_var_vals)
             .def_readonly("result", &SeparationCertificateResultBase::result);
 
-    constexpr auto& separates_doc = doc.PlaneSeparatesGeometries;
-    auto separates_cls =
-        py::class_<PlaneSeparatesGeometries>(
-            m, "PlaneSeparatesGeometries", separates_doc.doc)
-            .def_readonly("positive_side_rationals",
-                &PlaneSeparatesGeometries::positive_side_rationals)
-            .def_readonly("negative_side_rationals",
-                &PlaneSeparatesGeometries::negative_side_rationals)
-            .def_readonly(
-                "plane_index", &PlaneSeparatesGeometries::plane_index);
+    // TODO (Alexandre.Amice) decide whether to bind this based on a discussion
+    // that users should never have access to a PlaneSeparatesGeometry object.
+    //    constexpr auto& separates_doc = doc.PlaneSeparatesGeometries;
+    //    auto separates_cls =
+    //        py::class_<PlaneSeparatesGeometries>(
+    //            m, "PlaneSeparatesGeometries", separates_doc.doc)
+    //            .def_readonly("positive_side_rationals",
+    //                &PlaneSeparatesGeometries::positive_side_rationals)
+    //            .def_readonly("negative_side_rationals",
+    //                &PlaneSeparatesGeometries::negative_side_rationals)
+    //            .def_readonly(
+    //                "plane_index", &PlaneSeparatesGeometries::plane_index);
+
+    constexpr auto& find_options_doc = doc.FindSeparationCertificateOptions;
+    auto find_options_cls =
+        py::class_<FindSeparationCertificateOptions>(
+            m, "FindSeparationCertificateOptions", find_options_doc.doc)
+            .def(py::init<>())
+            .def_readwrite(
+                "num_threads", &FindSeparationCertificateOptions::num_threads)
+            .def_readwrite(
+                "verbose", &FindSeparationCertificateOptions::verbose)
+            .def_readwrite(
+                "solver_id", &FindSeparationCertificateOptions::solver_id)
+            .def_readwrite("terminate_at_failure",
+                &FindSeparationCertificateOptions::terminate_at_failure)
+            .def_readwrite("solver_options",
+                &FindSeparationCertificateOptions::solver_options);
   }
   {
     using BaseClass = CspaceFreePolytopeBase;
@@ -816,10 +834,10 @@ void DefineGeometryOptimization(py::module m) {
     cspace_free_polytope_base_cls
         // TODO(Alexandre.Amice): Figure out how to bind rational_forward_kin.
         // The naive method returns an "Unable to convert to Python type" error.
-        .def("rational_forward_kin",
-                &BaseClass::rational_forward_kin,
-                    py_rvp::reference_internal,
-                    base_cls_doc.rational_forward_kin.doc)
+        //        .def("rational_forward_kin",
+        //                &BaseClass::rational_forward_kin,
+        //                    py_rvp::reference_internal,
+        //                    base_cls_doc.rational_forward_kin.doc)
         .def("map_geometries_to_separating_planes",
             &BaseClass::map_geometries_to_separating_planes,
             base_cls_doc.map_geometries_to_separating_planes.doc)
@@ -847,7 +865,6 @@ void DefineGeometryOptimization(py::module m) {
             py::keep_alive<1, 2>(),
             // Keep alive, reference: `self` keeps `scene_graph` alive.
             py::keep_alive<1, 3>(), cls_doc.ctor.doc)
-
         .def(
             "FindSeparationCertificateGivenPolytope",
             [](const CspaceFreePolytope* self,
@@ -862,13 +879,7 @@ void DefineGeometryOptimization(py::module m) {
                   certificates;
               bool success = self->FindSeparationCertificateGivenPolytope(
                   C, d, ignored_collision_pairs, options, &certificates);
-              // Template deduction for drake::SortedPair<GeometryId> does not
-              // work. Here we manually make a map of tuples instead.
-              py::dict ret;
-              for (const auto& [k, v] : certificates) {
-                ret[py::make_tuple(k.first(), k.second())] = v;
-              }
-              return std::pair(success, ret);
+              return std::pair(success, certificates);
             },
             py::arg("C"), py::arg("d"), py::arg("ignored_collision_pairs"),
             py::arg("options"))
@@ -961,24 +972,11 @@ void DefineGeometryOptimization(py::module m) {
               "certificate", &Class::SeparationCertificateProgram::certificate);
     }
     {
-      py::class_<Class::FindSeparationCertificateGivenPolytopeOptions>(
-          cspace_free_polytope_cls,
+      py::class_<Class::FindSeparationCertificateGivenPolytopeOptions,
+          FindSeparationCertificateOptions>(cspace_free_polytope_cls,
           "FindSeparationCertificateGivenPolytopeOptions",
           cls_doc.FindSeparationCertificateGivenPolytopeOptions.doc)
           .def(py::init<>())
-          .def_readwrite("num_threads",
-              &Class::FindSeparationCertificateGivenPolytopeOptions::
-                  num_threads)
-          .def_readwrite("verbose",
-              &Class::FindSeparationCertificateGivenPolytopeOptions::verbose)
-          .def_readwrite("solver_id",
-              &Class::FindSeparationCertificateGivenPolytopeOptions::solver_id)
-          .def_readwrite("terminate_at_failure",
-              &Class::FindSeparationCertificateGivenPolytopeOptions::
-                  terminate_at_failure)
-          .def_readwrite("solver_options",
-              &Class::FindSeparationCertificateGivenPolytopeOptions::
-                  solver_options)
           .def_readwrite("ignore_redundant_C",
               &Class::FindSeparationCertificateGivenPolytopeOptions::
                   ignore_redundant_C);
@@ -1019,34 +1017,38 @@ void DefineGeometryOptimization(py::module m) {
         .def("num_iter", &Class::SearchResult::num_iter)
         .def("certified_polytope", &Class::SearchResult::certified_polytope);
 
-//    py::class_<Class::BilinearAlternationOptions>(cspace_free_polytope_cls,
-//        "BilinearAlternationOptions", cls_doc.BilinearAlternationOptions.doc)
-//        .def(py::init<>())
-//        .def_readwrite("max_iter", &Class::BilinearAlternationOptions::max_iter,
-//            cls_doc.BilinearAlternationOptions.max_iter.doc)
-//        .def_readwrite("convergence_tol",
-//            &Class::BilinearAlternationOptions::convergence_tol,
-//            cls_doc.BilinearAlternationOptions.convergence_tol.doc)
-//        .def_readwrite("find_polytope_options",
-//            &Class::BilinearAlternationOptions::find_polytope_options,
-//            cls_doc.BilinearAlternationOptions.find_polytope_options.doc)
-//        .def_readwrite("find_lagrangian_options",
-//            &Class::BilinearAlternationOptions::find_lagrangian_options,
-//            cls_doc.BilinearAlternationOptions.find_lagrangian_options.doc)
-//        .def_readwrite("ellipsoid_scaling",
-//            &Class::BilinearAlternationOptions::ellipsoid_scaling,
-//            cls_doc.BilinearAlternationOptions.ellipsoid_scaling.doc);
+    py::class_<Class::BilinearAlternationOptions>(cspace_free_polytope_cls,
+        "BilinearAlternationOptions", cls_doc.BilinearAlternationOptions.doc)
+        .def(py::init<>())
+        .def_readwrite("max_iter", &Class::BilinearAlternationOptions::max_iter,
+            cls_doc.BilinearAlternationOptions.max_iter.doc)
+        .def_readwrite("convergence_tol",
+            &Class::BilinearAlternationOptions::convergence_tol,
+            cls_doc.BilinearAlternationOptions.convergence_tol.doc)
+        .def_readwrite("find_polytope_options",
+            &Class::BilinearAlternationOptions::find_polytope_options,
+            cls_doc.BilinearAlternationOptions.find_polytope_options.doc)
+        // TODO(Alexandre.Amice) Bind once the conversation about the copy
+        // slicing of this object is resolved
+        //        .def_readwrite("find_lagrangian_options",
+        //            &Class::BilinearAlternationOptions::find_lagrangian_options,
+        //            cls_doc.BilinearAlternationOptions.find_lagrangian_options.doc)
+        .def_readwrite("ellipsoid_scaling",
+            &Class::BilinearAlternationOptions::ellipsoid_scaling,
+            cls_doc.BilinearAlternationOptions.ellipsoid_scaling.doc);
 
-//    py::class_<Class::BinarySearchOptions>(cspace_free_polytope_cls,
-//        "BinarySearchOptions", cls_doc.BinarySearchOptions.doc)
-//        .def(py::init<>())
-//        .def_readwrite("scale_max", &Class::BinarySearchOptions::scale_max)
-//        .def_readwrite("scale_min", &Class::BinarySearchOptions::scale_min)
-//        .def_readwrite("max_iter", &Class::BinarySearchOptions::max_iter)
-//        .def_readwrite(
-//            "convergence_tol", &Class::BinarySearchOptions::convergence_tol)
-//        .def_readwrite("find_lagrangian_options",
-//            &Class::BinarySearchOptions::find_lagrangian_options);
+    py::class_<Class::BinarySearchOptions>(cspace_free_polytope_cls,
+        "BinarySearchOptions", cls_doc.BinarySearchOptions.doc)
+        .def(py::init<>())
+        .def_readwrite("scale_max", &Class::BinarySearchOptions::scale_max)
+        .def_readwrite("scale_min", &Class::BinarySearchOptions::scale_min)
+        .def_readwrite("max_iter", &Class::BinarySearchOptions::max_iter)
+        .def_readwrite(
+            "convergence_tol", &Class::BinarySearchOptions::convergence_tol);
+    // TODO(Alexandre.Amice) Bind once the conversation about the copy slicing
+    // of this object is resolved
+    //        .def_readwrite("find_lagrangian_options",
+    //            &Class::BinarySearchOptions::find_lagrangian_options);
   }
   // NOLINTNEXTLINE(readability/fn_size)
 }
