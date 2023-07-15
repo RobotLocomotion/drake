@@ -112,6 +112,7 @@ class GraphOfConvexSets {
 
   using VertexId = Identifier<class VertexTag>;
   using EdgeId = Identifier<class EdgeTag>;
+  using Path = std::vector<EdgeId>;
 
   /** Each vertex in the graph has a corresponding ConvexSet, and a std::string
   name. */
@@ -215,9 +216,17 @@ class GraphOfConvexSets {
     Eigen::VectorXd GetSolution(
         const solvers::MathematicalProgramResult& result) const;
 
+    const std::vector<Edge*>& incoming_edges() const { return incoming_edges_; }
+    const std::vector<Edge*>& outgoing_edges() const { return outgoing_edges_; }
+
    private:
     // Constructs a new vertex.
     Vertex(VertexId id, const ConvexSet& set, std::string name);
+
+    void AddIncomingEdge(Edge* e);
+    void AddOutgoingEdge(Edge* e);
+    void RemoveIncomingEdge(Edge* e);
+    void RemoveOutgoingEdge(Edge* e);
 
     const VertexId id_{};
     const std::unique_ptr<const ConvexSet> set_;
@@ -227,6 +236,9 @@ class GraphOfConvexSets {
     solvers::VectorXDecisionVariable ell_{};
     std::vector<solvers::Binding<solvers::Cost>> costs_{};
     std::vector<solvers::Binding<solvers::Constraint>> constraints_{};
+
+    std::vector<Edge*> incoming_edges_{};
+    std::vector<Edge*> outgoing_edges_{};
 
     friend class GraphOfConvexSets;
   };
@@ -445,12 +457,32 @@ class GraphOfConvexSets {
   @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.} */
   std::vector<const Vertex*> Vertices() const;
 
+  /** Returns a mutable reference to a vertex.
+  @throws std::exception if `id` is not a valid vertex in `this`.
+  */
+  Vertex& mutable_vertex(VertexId id) { return *vertices_.at(id); }
+
+  /** Returns a const reference to a vertex.
+  @throws std::exception if `id` is not a valid vertex in `this`.
+  */
+  const Vertex& vertex(VertexId id) const { return *vertices_.at(id); }
+
   /** Returns mutable pointers to the edges stored in the graph. */
   std::vector<Edge*> Edges();
 
   /** Returns pointers to the edges stored in the graph.
   @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.} */
   std::vector<const Edge*> Edges() const;
+
+  /** Returns a mutable reference to an edge.
+  @throws std::exception if `id` is not an edge in `this`.
+  */
+  Edge& mutable_edge(EdgeId id) { return *edges_.at(id); }
+
+  /** Returns a const reference to an edge.
+  @throws std::exception if `id` is not an edge in `this`.
+  */
+  const Edge& edge(EdgeId id) const { return *edges_.at(id); }
 
   /** Removes all constraints added to any edge with AddPhiConstraint. */
   void ClearAllPhiConstraints();
@@ -509,6 +541,21 @@ class GraphOfConvexSets {
       const GraphOfConvexSetsOptions& options =
           GraphOfConvexSetsOptions()) const;
 
+  /** Extracts a path from `source` to `target` described by the `result`
+  returned by SolveShortestPath(), via depth-first search following the largest
+  values of the edge binary variables.
+  @param tolerance defines the threshold for checking the integrality
+  conditions of the binary variables for each edge. `tolerance` = 0 would
+  demand that the binary variables are exactly 1 for the edges on the path.
+  `tolerance` = 1 would allow the binary variables to be any value in [0, 1].
+  The default value is 1e-3.
+  @throws std::exception if !result.is_success() or no path from `source` to
+  `target` can be found in the solution.
+  */
+  Path GetSolutionPath(VertexId source_id, VertexId target_id,
+                       const solvers::MathematicalProgramResult& result,
+                       double tolerance = 1e-3) const;
+
   /** The non-convexity in a GCS problem comes from the binary variables (phi)
   associated with the edges being active or inactive in the solution. If those
   binary variables are fixed, then the problem is convex -- this is a so-called
@@ -518,11 +565,22 @@ class GraphOfConvexSets {
   the full GCS problem with additional constraints to fix the binaries; it can
   be written using less decision variables, and needs only to include the
   vertices associated with at least one of the active edges. Decision variables
-  for all other convex sets will be set to NaN. */
+  for all other convex sets will be set to NaN.
+  @pydrake_mkdoc_identifier{set}
+  */
   solvers::MathematicalProgramResult SolveConvexRestriction(
       const std::set<EdgeId>& active_edge_ids,
       const GraphOfConvexSetsOptions& options =
           GraphOfConvexSetsOptions()) const;
+
+  /** Convenience overload to take a Path instead of a std::set. 
+  @pydrake_mkdoc_identifier{path} */
+  solvers::MathematicalProgramResult SolveConvexRestriction(
+      const Path& path, const GraphOfConvexSetsOptions& options =
+                            GraphOfConvexSetsOptions()) const {
+    return SolveConvexRestriction(std::set<EdgeId>(path.begin(), path.end()),
+                                  options);
+  }
 
  private:
   /* Facilitates testing. */

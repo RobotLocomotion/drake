@@ -7,6 +7,7 @@
 #include <limits>
 #include <memory>
 #include <string>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -141,6 +142,26 @@ VectorXd Vertex::GetSolution(const MathematicalProgramResult& result) const {
   return result.GetSolution(placeholder_x_);
 }
 
+void Vertex::AddIncomingEdge(Edge* e) {
+  incoming_edges_.push_back(e);
+}
+
+void Vertex::AddOutgoingEdge(Edge* e) {
+  outgoing_edges_.push_back(e);
+}
+
+void Vertex::RemoveIncomingEdge(Edge* e) {
+  incoming_edges_.erase(
+      std::remove(incoming_edges_.begin(), incoming_edges_.end(), e),
+      incoming_edges_.end());
+}
+
+void Vertex::RemoveOutgoingEdge(Edge* e) {
+  outgoing_edges_.erase(
+      std::remove(outgoing_edges_.begin(), outgoing_edges_.end(), e),
+      outgoing_edges_.end());
+}
+
 Edge::Edge(const EdgeId& id, const Vertex* u, const Vertex* v, std::string name)
     : id_{id},
       u_{u},
@@ -236,7 +257,10 @@ Edge* GraphOfConvexSets::AddEdge(VertexId u_id, VertexId v_id,
   auto [iter, success] = edges_.try_emplace(
       id, new Edge(id, u_iter->second.get(), v_iter->second.get(), name));
   DRAKE_DEMAND(success);
-  return iter->second.get();
+  Edge* e = iter->second.get();
+  u_iter->second->AddOutgoingEdge(e);
+  v_iter->second->AddIncomingEdge(e);
+  return e;
 }
 
 Edge* GraphOfConvexSets::AddEdge(const Vertex& u, const Vertex& v,
@@ -263,6 +287,9 @@ void GraphOfConvexSets::RemoveVertex(const Vertex& vertex) {
 
 void GraphOfConvexSets::RemoveEdge(EdgeId edge_id) {
   DRAKE_DEMAND(edges_.find(edge_id) != edges_.end());
+  Edge* e = edges_.at(edge_id).get();
+  mutable_vertex(e->u().id()).RemoveOutgoingEdge(e);
+  mutable_vertex(e->v().id()).RemoveIncomingEdge(e);
   edges_.erase(edge_id);
 }
 
@@ -1195,6 +1222,69 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
     const Vertex& source, const Vertex& target,
     const GraphOfConvexSetsOptions& options) const {
   return SolveShortestPath(source.id(), target.id(), options);
+}
+
+GraphOfConvexSets::Path GraphOfConvexSets::GetSolutionPath(
+    VertexId source_id, VertexId target_id,
+    const solvers::MathematicalProgramResult& result, double tolerance) const {
+  if (!result.is_success()) {
+    throw std::runtime_error(
+        "Cannot extract a solution path when result.is_success() is false.");
+  }
+  if (vertices_.count(source_id) == 0) {
+    throw std::invalid_argument(fmt::format(
+        "Source vertex {} is not a vertex in this GraphOfConvexSets.",
+        source_id));
+  }
+  if (vertices_.count(target_id) == 0) {
+    throw std::invalid_argument(fmt::format(
+        "Target vertex {} is not a vertex in this GraphOfConvexSets.",
+        target_id));
+  }
+  DRAKE_THROW_UNLESS(tolerance >= 0);
+  const Vertex* source = vertices_.at(source_id).get();
+  const Vertex* target = vertices_.at(target_id).get();
+  std::vector<EdgeId> path_edges;
+
+  // Extract the path by traversing the graph with a depth first search.
+  std::unordered_set<const Vertex*> visited_vertices{source};
+  std::vector<const Vertex*> path_vertices{source};
+  while (path_vertices.back() != target) {
+    // Find the edge with the maximum flow from the current node.
+    double maximum_flow = 0;
+    const Vertex* max_flow_vertex{nullptr};
+    const Edge* max_flow_edge = nullptr;
+    for (const Edge* e : path_vertices.back()->outgoing_edges()) {
+      const double flow = result.GetSolution(e->phi());
+      // If the edge has not been visited and has a flow greater than the
+      // current maximum, then this is our new maximum.
+      if (flow >= 1 - tolerance && flow > maximum_flow &&
+          visited_vertices.count(&e->v()) == 0) {
+        maximum_flow = flow;
+        max_flow_vertex = &e->v();
+        max_flow_edge = e;
+      }
+    }
+
+    if (max_flow_edge == nullptr) {
+      // If no candidate edges are found, backtrack to the previous node and
+      // continue the search.
+      path_vertices.pop_back();
+      path_edges.pop_back();
+      if (path_vertices.empty()) {
+        throw std::runtime_error(fmt::format("No path found from {} to {}.",
+                                             source->name(), target->name()));
+      }
+      continue;
+    } else {
+      // If we have a maximum flow, then add the vertex/edge to the path and
+      // continue the search.
+      visited_vertices.insert(max_flow_vertex);
+      path_vertices.push_back(max_flow_vertex);
+      path_edges.push_back(max_flow_edge->id());
+    }
+  }
+  return path_edges;
 }
 
 MathematicalProgramResult GraphOfConvexSets::SolveConvexRestriction(
