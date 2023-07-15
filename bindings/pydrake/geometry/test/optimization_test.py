@@ -902,7 +902,7 @@ class TestCspaceFreePolytope(unittest.TestCase):
     def test_CspaceFreePolytopeMethods(self):
         C_init = np.vstack([np.atleast_2d(np.eye(self.plant.num_positions(
         ))), -np.atleast_2d(np.eye(self.plant.num_positions()))])
-        d_init = 1e-7 * np.ones((C_init.shape[0], 1))
+        d_init = 1e-3 * np.ones((C_init.shape[0], 1))
 
         lagrangian_options = \
             mut.CspaceFreePolytope.\
@@ -926,15 +926,6 @@ class TestCspaceFreePolytope(unittest.TestCase):
         self.assertIsInstance(certificates[geom_pair],
                               mut.CspaceFreePolytope.SeparationCertificateResult)
 
-        result = self.cspace_free_polytope.SearchWithBilinearAlternation(
-            ignored_collision_pairs=set(),
-            C_init=C_init,
-            d_init=d_init,
-            options=bilinear_alternation_options)
-        self.assertIsNotNone(result)
-        self.assertGreaterEqual(len(result), 1)
-        self.assertIsInstance(result[0], mut.CspaceFreePolytope.SearchResult)
-
 
         result = self.cspace_free_polytope.BinarySearch(
             ignored_collision_pairs=set(),
@@ -953,6 +944,17 @@ class TestCspaceFreePolytope(unittest.TestCase):
         self.assertEqual(len(result.b()), 1)
         self.assertIsInstance(result.a()[0][0], Polynomial)
 
+
+        result = self.cspace_free_polytope.SearchWithBilinearAlternation(
+            ignored_collision_pairs=set(),
+            C_init=C_init,
+            d_init=d_init,
+            options=bilinear_alternation_options)
+        self.assertIsNotNone(result)
+        self.assertGreaterEqual(len(result), 1)
+        self.assertIsInstance(result[0], mut.CspaceFreePolytope.SearchResult)
+
+        # Make and Solve GeometrySeparableProgram
         pair = list(self.cspace_free_polytope.
                     map_geometries_to_separating_planes().keys())[0]
         cert_prog = self.cspace_free_polytope.MakeIsGeometrySeparableProgram(
