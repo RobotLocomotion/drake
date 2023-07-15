@@ -534,6 +534,10 @@ class TestGeometryOptimization(unittest.TestCase):
         edge0 = spp.AddEdge(u=source, v=target, name="edge0")
         edge1 = spp.AddEdge(u_id=source.id(), v_id=target.id(), name="edge1")
         self.assertEqual(len(spp.Vertices()), 2)
+        self.assertEqual(spp.mutable_vertex(source.id()), source)
+        self.assertEqual(spp.vertex(source.id()), source)
+        self.assertEqual(spp.mutable_edge(edge0.id()), edge0)
+        self.assertEqual(spp.edge(edge0.id()), edge0)
         self.assertEqual(len(spp.Edges()), 2)
         result = spp.SolveShortestPath(
             source_id=source.id(), target_id=target.id(), options=options)
@@ -542,10 +546,20 @@ class TestGeometryOptimization(unittest.TestCase):
             source=source, target=target, options=options),
             MathematicalProgramResult)
         self.assertIsInstance(
-            spp.SolveConvexRestriction(active_edges={edge0.id(),
-                                                     edge1.id()},
+            spp.SolveConvexRestriction(
+                active_edge_ids={edge0.id(), edge1.id()}, options=options),
+            MathematicalProgramResult)
+        self.assertIsInstance(
+            spp.SolveConvexRestriction(path=[edge0.id(),
+                                             edge1.id()],
                                        options=options),
             MathematicalProgramResult)
+        self.assertEqual(
+            len(
+                spp.GetSolutionPath(source_id=source.id(),
+                                    target_id=target.id(),
+                                    result=result,
+                                    tolerance=0.1)), 1)
 
         self.assertIn("source", spp.GetGraphvizString(
             result=result, show_slacks=True, precision=2, scientific=False))
@@ -572,6 +586,10 @@ class TestGeometryOptimization(unittest.TestCase):
         binding = source.AddConstraint(binding=binding)
         self.assertIsInstance(binding, Binding[Constraint])
         self.assertEqual(len(source.GetConstraints()), 2)
+        self.assertEqual(len(source.incoming_edges()), 0)
+        self.assertEqual(len(source.outgoing_edges()), 2)
+        self.assertEqual(len(target.incoming_edges()), 2)
+        self.assertEqual(len(target.outgoing_edges()), 0)
 
         # Edge
         self.assertAlmostEqual(edge0.GetSolutionCost(result=result), 0.0, 1e-6)

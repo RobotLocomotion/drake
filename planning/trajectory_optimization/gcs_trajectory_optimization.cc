@@ -705,51 +705,9 @@ GcsTrajectoryOptimization::SolvePath(
     return {CompositeTrajectory<double>({}), result};
   }
 
-  // Extract the flow from the solution.
-  std::unordered_map<VertexId, std::vector<Edge*>> outgoing_edges;
-  std::unordered_map<EdgeId, double> flows;
-  for (Edge* edge : gcs_.Edges()) {
-    outgoing_edges[edge->u().id()].push_back(edge);
-    flows[edge->id()] = result.GetSolution(edge->phi());
-  }
-
-  // Extract the path by traversing the graph with a depth first search.
-  std::unordered_set<VertexId> visited_vertex_ids{source_id};
-  std::vector<VertexId> path_vertex_ids{source_id};
-  std::vector<Edge*> path_edges;
-  while (path_vertex_ids.back() != target_id) {
-    // Find the edge with the maximum flow from the current node.
-    double maximum_flow = 0;
-    VertexId max_flow_vertex_id;
-    Edge* max_flow_edge = nullptr;
-    for (Edge* e : outgoing_edges[path_vertex_ids.back()]) {
-      const double next_flow = flows[e->id()];
-      const VertexId next_vertex_id = e->v().id();
-
-      // If the edge has not been visited and has a flow greater than the
-      // current maximum, update the maximum flow and the vertex id.
-      if (visited_vertex_ids.count(e->v().id()) == 0 &&
-          next_flow > maximum_flow && next_flow > options.flow_tolerance) {
-        maximum_flow = next_flow;
-        max_flow_vertex_id = next_vertex_id;
-        max_flow_edge = e;
-      }
-    }
-
-    if (max_flow_edge == nullptr) {
-      // If no candidate edges are found, backtrack to the previous node and
-      // continue the search.
-      path_vertex_ids.pop_back();
-      DRAKE_DEMAND(!path_vertex_ids.empty());
-      continue;
-    } else {
-      // If the maximum flow is non-zero, add the vertex to the path and
-      // continue the search.
-      visited_vertex_ids.insert(max_flow_vertex_id);
-      path_vertex_ids.push_back(max_flow_vertex_id);
-      path_edges.push_back(max_flow_edge);
-    }
-  }
+  const double kTolerance = 1.0; // take any path we can get.
+  std::vector<EdgeId> path_edges =
+      gcs_.GetSolutionPath(source_id, target_id, result, kTolerance);
 
   // Remove the dummy edges from the path.
   if (dummy_source != nullptr) {
@@ -763,19 +721,20 @@ GcsTrajectoryOptimization::SolvePath(
 
   // Extract the path from the edges.
   std::vector<copyable_unique_ptr<Trajectory<double>>> bezier_curves;
-  for (Edge* edge : path_edges) {
+  for (EdgeId edge_id : path_edges) {
+    const Edge& edge = gcs_.edge(edge_id);
     // Extract phi from the solution to rescale the control points and duration
     // in case we get the relaxed solution.
-    const double phi_inv = 1 / result.GetSolution(edge->phi());
+    const double phi_inv = 1 / result.GetSolution(edge.phi());
     // Extract the control points from the solution.
-    const int num_control_points = vertex_to_subgraph_[&edge->u()]->order() + 1;
+    const int num_control_points = vertex_to_subgraph_[&edge.u()]->order() + 1;
     const MatrixX<double> edge_path_points =
         phi_inv *
-        Eigen::Map<MatrixX<double>>(result.GetSolution(edge->xu()).data(),
+        Eigen::Map<MatrixX<double>>(result.GetSolution(edge.xu()).data(),
                                     num_positions(), num_control_points);
 
     // Extract the duration from the solution.
-    double h = phi_inv * result.GetSolution(edge->xu()).tail<1>().value();
+    double h = phi_inv * result.GetSolution(edge.xu()).tail<1>().value();
     const double start_time =
         bezier_curves.empty() ? 0 : bezier_curves.back()->end_time();
 
@@ -784,30 +743,30 @@ GcsTrajectoryOptimization::SolvePath(
     // would result in a discontinuous trajectory for velocities and higher
     // derivatives.
     if (!(num_control_points == 1 &&
-          vertex_to_subgraph_[&edge->u()]->h_min_ == 0)) {
+          vertex_to_subgraph_[&edge.u()]->h_min_ == 0)) {
       bezier_curves.emplace_back(std::make_unique<BezierCurve<double>>(
           start_time, start_time + h, edge_path_points));
     }
   }
 
   // Get the final control points from the solution.
-  const double phi_inv = 1 / result.GetSolution(path_edges.back()->phi());
+  const Edge& last_edge = gcs_.edge(path_edges.back());
+  const double phi_inv = 1 / result.GetSolution(last_edge.phi());
   const int num_control_points =
-      vertex_to_subgraph_[&path_edges.back()->v()]->order() + 1;
+      vertex_to_subgraph_[&last_edge.v()]->order() + 1;
   const MatrixX<double> edge_path_points =
-      phi_inv * Eigen::Map<MatrixX<double>>(
-                    result.GetSolution(path_edges.back()->xv()).data(),
-                    num_positions(), num_control_points);
+      phi_inv *
+      Eigen::Map<MatrixX<double>>(result.GetSolution(last_edge.xv()).data(),
+                                  num_positions(), num_control_points);
 
-  double h =
-      phi_inv * result.GetSolution(path_edges.back()->xv()).tail<1>().value();
+  double h = phi_inv * result.GetSolution(last_edge.xv()).tail<1>().value();
   const double start_time =
       bezier_curves.empty() ? 0 : bezier_curves.back()->end_time();
 
   // Skip edges with a single control point that spend near zero time in the
   // region, since zero order continuity constraint is sufficient.
   if (!(num_control_points == 1 &&
-        vertex_to_subgraph_[&path_edges.back()->v()]->h_min_ == 0)) {
+        vertex_to_subgraph_[&last_edge.v()]->h_min_ == 0)) {
     bezier_curves.emplace_back(std::make_unique<BezierCurve<double>>(
         start_time, start_time + h, edge_path_points));
   }
