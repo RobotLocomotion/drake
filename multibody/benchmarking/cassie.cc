@@ -44,10 +44,6 @@ class Cassie : public benchmark::Fixture {
     tools::performance::AddMinMaxStatistics(this);
   }
 
-  // This apparently futile using statement works around "overloaded virtual"
-  // errors in g++. All of this is a consequence of the weird deprecation of
-  // const-ref State versions of SetUp() and TearDown() in benchmark.h.
-  using benchmark::Fixture::SetUp;
   void SetUp(BenchmarkStateRef state) override {
     SetUpNonZeroState();
     SetUpGradientsOrVariables(state);
