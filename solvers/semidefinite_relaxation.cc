@@ -108,6 +108,13 @@ std::unique_ptr<MathematicalProgram> MakeSemidefiniteRelaxation(
     relaxation->AddLinearCost(a, binding.evaluator()->c(), vars);
   }
 
+  {  // Bounding Box constraints
+    // lb ≤ y ≤ ub => lb ≤ y ≤ ub
+    for (const auto& binding : prog.bounding_box_constraints()) {
+      relaxation->AddConstraint(binding);
+    }
+  }
+
   {  // Linear constraints.
     // lb ≤ Ay ≤ ub => lb ≤ Ay ≤ ub
     for (const auto& binding : prog.linear_constraints()) {
