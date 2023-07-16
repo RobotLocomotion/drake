@@ -21,6 +21,12 @@ namespace solvers {
  See https://underactuated.mit.edu/optimization.html#sdp_relaxation for
  references and examples.
 
+ Note: Currently, linear equality constraints that are added as linear
+ constraints with `lb == ub` will be handled as linear equality constraints. To
+ obtain the strongest possible SDP relaxation, linear equality constraints
+ should be added to the original program explicitly as linear equality
+ constraints.
+
  @throws std::exception if `prog` has costs and constraints which are not
  linear nor quadratic.
  */

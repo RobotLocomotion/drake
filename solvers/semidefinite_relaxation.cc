@@ -122,6 +122,8 @@ std::unique_ptr<MathematicalProgram> MakeSemidefiniteRelaxation(
 
   {  // Now assemble one big Ay <= b matrix from all bounding box constraints
     // and linear constraints
+    // TODO(bernhardpg): Consider special-casing linear equality constraints
+    // that are added as bounding box or linear constraints with lb == ub
     int num_constraints = 0;
     int nnz = 0;
     for (const auto& binding : prog.bounding_box_constraints()) {
