@@ -367,6 +367,27 @@ class ThreePoints : public ::testing::Test {
     options_.convex_relaxation = true;
   }
 
+  void CheckConvexRestriction(const MathematicalProgramResult& result) {
+    MathematicalProgramResult restriction_result =
+        g_.SolveConvexRestriction(std::vector<const Edge*>({e_on_}), options_);
+    log()->info("Solved convex restriction with {}",
+                restriction_result.get_solver_id().name());
+    // Confirm that we get a convex solver (not an NLP solver).
+    if (MixedIntegerSolverAvailable()) {
+      EXPECT_TRUE(
+          restriction_result.get_solver_id() == solvers::MosekSolver::id() ||
+          restriction_result.get_solver_id() == solvers::GurobiSolver::id());
+    }
+    EXPECT_TRUE(restriction_result.is_success());
+    EXPECT_NEAR(result.get_optimal_cost(),
+                restriction_result.get_optimal_cost(), 1e-4);
+    for (const auto* v : {source_, target_, sink_}) {
+      EXPECT_TRUE(CompareMatrices(result.GetSolution(v->x()),
+                                  restriction_result.GetSolution(v->x()),
+                                  1e-6));
+    }
+  }
+
   GraphOfConvexSets g_;
   Point p_source_;
   Point p_target_;
@@ -426,6 +447,7 @@ TEST_F(ThreePoints, LinearCost1) {
                               0 * p_source_.x(), 1e-6));
   EXPECT_TRUE(
       CompareMatrices(e_off_->GetSolutionPhiXv(result), 0 * p_sink_.x(), 1e-6));
+  CheckConvexRestriction(result);
 
   // Alternative signatures.
   auto result2 = g_.SolveShortestPath(*source_, *target_, options_);
@@ -511,6 +533,7 @@ TEST_F(ThreePoints, LinearCost2) {
   EXPECT_NEAR(source_->GetSolutionCost(result), b, 1e-6);
   EXPECT_NEAR(target_->GetSolutionCost(result), 0.0, 1e-6);
   EXPECT_NEAR(sink_->GetSolutionCost(result), 0.0, 1e-6);
+  CheckConvexRestriction(result);
 }
 
 TEST_F(ThreePoints, LinearCost3) {
@@ -526,6 +549,7 @@ TEST_F(ThreePoints, LinearCost3) {
   EXPECT_NEAR(source_->GetSolutionCost(result), a.dot(p_source_.x()) + b, 1e-6);
   EXPECT_NEAR(target_->GetSolutionCost(result), 0.0, 1e-6);
   EXPECT_NEAR(sink_->GetSolutionCost(result), 0.0, 1e-6);
+  CheckConvexRestriction(result);
 }
 
 TEST_F(ThreePoints, LinearCost4) {
@@ -568,6 +592,7 @@ TEST_F(ThreePoints, QuadraticCost) {
               1e-6);
   EXPECT_NEAR(target_->GetSolutionCost(result), 0.0, 1e-6);
   EXPECT_NEAR(sink_->GetSolutionCost(result), 0.0, 1e-6);
+  CheckConvexRestriction(result);
 }
 
 TEST_F(ThreePoints, QuadraticCost2) {
@@ -597,6 +622,7 @@ TEST_F(ThreePoints, QuadraticCost2) {
               1e-6);
   EXPECT_NEAR(target_->GetSolutionCost(result), 0.0, 1e-6);
   EXPECT_NEAR(sink_->GetSolutionCost(result), 0.0, 1e-6);
+  CheckConvexRestriction(result);
 }
 
 TEST_F(ThreePoints, QuadraticCost3) {
@@ -623,6 +649,7 @@ TEST_F(ThreePoints, QuadraticCost3) {
               1e-6);
   EXPECT_NEAR(target_->GetSolutionCost(result), 0.0, 1e-6);
   EXPECT_NEAR(sink_->GetSolutionCost(result), 0.0, 1e-6);
+  CheckConvexRestriction(result);
 }
 
 TEST_F(ThreePoints, QuadraticCost4) {
@@ -650,6 +677,7 @@ TEST_F(ThreePoints, QuadraticCost4) {
               (R_v * p_source_.x() + d_v).squaredNorm(), 1e-5);
   EXPECT_NEAR(target_->GetSolutionCost(result), 0.0, 1e-6);
   EXPECT_NEAR(sink_->GetSolutionCost(result), 0.0, 1e-6);
+  CheckConvexRestriction(result);
 }
 
 // Costs must be strictly positive.
@@ -695,6 +723,7 @@ TEST_F(ThreePoints, L1NormCost) {
   EXPECT_NEAR(source_->GetSolutionCost(result), abs(A_v * p_source_.x()), 1e-6);
   EXPECT_NEAR(target_->GetSolutionCost(result), 0.0, 1e-6);
   EXPECT_NEAR(sink_->GetSolutionCost(result), 0.0, 1e-6);
+  CheckConvexRestriction(result);
 }
 
 TEST_F(ThreePoints, L1NormCost2) {
@@ -727,6 +756,7 @@ TEST_F(ThreePoints, L1NormCost2) {
   EXPECT_NEAR(source_->GetSolutionCost(result), abs(A_v * p_source_.x()), 1e-6);
   EXPECT_NEAR(target_->GetSolutionCost(result), 0.0, 1e-6);
   EXPECT_NEAR(sink_->GetSolutionCost(result), 0.0, 1e-6);
+  CheckConvexRestriction(result);
 }
 
 TEST_F(ThreePoints, L2NormCost) {
@@ -753,6 +783,7 @@ TEST_F(ThreePoints, L2NormCost) {
               1e-6);
   EXPECT_NEAR(target_->GetSolutionCost(result), 0.0, 1e-6);
   EXPECT_NEAR(sink_->GetSolutionCost(result), 0.0, 1e-6);
+  CheckConvexRestriction(result);
 }
 
 TEST_F(ThreePoints, L2NormCost2) {
@@ -785,6 +816,7 @@ TEST_F(ThreePoints, L2NormCost2) {
               1e-6);
   EXPECT_NEAR(target_->GetSolutionCost(result), 0.0, 1e-6);
   EXPECT_NEAR(sink_->GetSolutionCost(result), 0.0, 1e-6);
+  CheckConvexRestriction(result);
 }
 
 TEST_F(ThreePoints, LInfNormCost) {
@@ -810,6 +842,7 @@ TEST_F(ThreePoints, LInfNormCost) {
   EXPECT_NEAR(source_->GetSolutionCost(result), abs(A_v * p_source_.x()), 1e-6);
   EXPECT_NEAR(target_->GetSolutionCost(result), 0.0, 1e-6);
   EXPECT_NEAR(sink_->GetSolutionCost(result), 0.0, 1e-6);
+  CheckConvexRestriction(result);
 }
 
 TEST_F(ThreePoints, LInfNormCost2) {
@@ -842,9 +875,11 @@ TEST_F(ThreePoints, LInfNormCost2) {
   EXPECT_NEAR(source_->GetSolutionCost(result), abs(A_v * p_source_.x()), 1e-6);
   EXPECT_NEAR(target_->GetSolutionCost(result), 0.0, 1e-6);
   EXPECT_NEAR(sink_->GetSolutionCost(result), 0.0, 1e-6);
+  CheckConvexRestriction(result);
 }
 
 TEST_F(ThreePoints, PerspectiveQuadraticCost) {
+  // (xv[0] + xv[1])^2 / (xu[1] - xu[0])
   Matrix<double, 2, 4> A;
   // clang-format off
   A << -1, 1, 0, 0,
@@ -875,6 +910,7 @@ TEST_F(ThreePoints, PerspectiveQuadraticCost) {
   EXPECT_NEAR(source_->GetSolutionCost(result), vertex_expected_cost, 1e-6);
   EXPECT_NEAR(target_->GetSolutionCost(result), 0.0, 1e-6);
   EXPECT_NEAR(sink_->GetSolutionCost(result), 0.0, 1e-6);
+  CheckConvexRestriction(result);
 }
 
 TEST_F(ThreePoints, GetSolutionPath) {
@@ -916,6 +952,25 @@ class ThreeBoxes : public ::testing::Test {
 
     options_.preprocessing = true;
     options_.convex_relaxation = true;
+  }
+
+  void CheckConvexRestriction(const MathematicalProgramResult& result) {
+    MathematicalProgramResult restriction_result =
+        g_.SolveConvexRestriction(std::vector<const Edge*>({e_on_}), options_);
+    // Confirm that we get a convex solver (not an NLP solver).
+    if (MixedIntegerSolverAvailable()) {
+      EXPECT_TRUE(
+          restriction_result.get_solver_id() == solvers::MosekSolver::id() ||
+          restriction_result.get_solver_id() == solvers::GurobiSolver::id());
+    }
+    EXPECT_TRUE(restriction_result.is_success());
+    EXPECT_NEAR(result.get_optimal_cost(),
+                restriction_result.get_optimal_cost(), 1e-6);
+    for (const auto* v : {source_, target_, sink_}) {
+      EXPECT_TRUE(CompareMatrices(result.GetSolution(v->x()),
+                                  restriction_result.GetSolution(v->x()),
+                                  1e-6));
+    }
   }
 
   GraphOfConvexSets g_;
@@ -961,6 +1016,7 @@ TEST_F(ThreeBoxes, LinearEqualityConstraint) {
   EXPECT_TRUE(CompareMatrices(source_->GetSolution(result), -b, 1e-6));
   EXPECT_TRUE(CompareMatrices(target_->GetSolution(result), b, 1e-6));
   EXPECT_TRUE(sink_->GetSolution(result).hasNaN());
+  CheckConvexRestriction(result);
 }
 
 TEST_F(ThreeBoxes, LinearEqualityConstraint2) {
@@ -989,6 +1045,7 @@ TEST_F(ThreeBoxes, LinearEqualityConstraint2) {
                           Aeq.rightCols(2) * target_->GetSolution(result),
                       beq, 1e-6));
   EXPECT_TRUE(sink_->GetSolution(result).hasNaN());
+  CheckConvexRestriction(result);
 }
 
 TEST_F(ThreeBoxes, LinearConstraint) {
@@ -1001,6 +1058,7 @@ TEST_F(ThreeBoxes, LinearConstraint) {
   EXPECT_TRUE((source_->GetSolution(result).array() <= b.array() - 1e-6).all());
   EXPECT_TRUE((target_->GetSolution(result).array() >= b.array() - 1e-6).all());
   EXPECT_TRUE(sink_->GetSolution(result).hasNaN());
+  CheckConvexRestriction(result);
 }
 
 TEST_F(ThreeBoxes, LinearConstraint2) {
@@ -1043,6 +1101,7 @@ TEST_F(ThreeBoxes, LinearConstraint2) {
       CompareMatrices(source_->GetSolution(result), Vector2d::Zero(), 1e-6));
   EXPECT_FALSE(
       CompareMatrices(target_->GetSolution(result), Vector2d::Zero(), 1e-6));
+  CheckConvexRestriction(result);
 }
 
 TEST_F(ThreeBoxes, SolveConvexRestriction) {
@@ -2002,6 +2061,13 @@ GTEST_TEST(ShortestPathTest, Graphviz) {
   EXPECT_THAT(g.GetGraphvizString(result),
               AllOf(HasSubstr("x ="), HasSubstr("cost ="), HasSubstr("ϕ ="),
                     HasSubstr("ϕ xᵤ ="), HasSubstr("ϕ xᵥ =")));
+
+  // With a rounded result.
+  options.max_rounded_paths = 1;
+  result = g.SolveShortestPath(*source, *target, options);
+  EXPECT_THAT(g.GetGraphvizString(result),
+              AllOf(HasSubstr("x ="), HasSubstr("cost ="), HasSubstr("ϕ =")));
+
   // No slack variables.
   EXPECT_THAT(
       g.GetGraphvizString(result, false),
