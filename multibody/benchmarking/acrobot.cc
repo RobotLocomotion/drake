@@ -49,7 +49,6 @@ class FixtureBase : public benchmark::Fixture {
 template <typename T>
 class AcrobotFixture : public FixtureBase<T> {
  public:
-  using benchmark::Fixture::SetUp;
   void SetUp(benchmark::State&) override {
     plant_ = std::make_unique<AcrobotPlant<T>>();
     this->Populate(*plant_);
@@ -81,7 +80,6 @@ BENCHMARK_F(AcrobotFixtureAdx, AcrobotAdxMassMatrix)(benchmark::State& state) {
 template <typename T>
 class MultibodyFixture : public FixtureBase<T> {
  public:
-  using benchmark::Fixture::SetUp;
   void SetUp(benchmark::State&) override {
     auto double_plant = multibody::benchmarks::acrobot::MakeAcrobotPlant(
             multibody::benchmarks::acrobot::AcrobotParameters(), true);
