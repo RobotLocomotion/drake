@@ -198,6 +198,13 @@ class MathematicalProgramResult final {
    */
   [[nodiscard]] double GetSolution(const symbolic::Variable& var) const;
 
+  /** Resets the solution of a single decision variable that is already
+  registered with this result.
+  @throws std::exception if `var` is not captured in the mapping @p
+  decision_variable_index, as the input argument of
+  set_decision_variable_index(). */
+  void SetSolution(const symbolic::Variable& var, double value);
+
   /**
    * Substitutes the value of all decision variables into the Expression.
    * @param e The decision variable.

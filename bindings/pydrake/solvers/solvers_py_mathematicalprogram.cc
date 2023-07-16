@@ -572,6 +572,9 @@ void BindMathematicalProgram(py::module m) {
             return self.GetSolution(var);
           },
           doc.MathematicalProgramResult.GetSolution.doc_1args_var)
+      .def("SetSolution", &MathematicalProgramResult::SetSolution,
+          py::arg("var"), py::arg("value"),
+          doc.MathematicalProgramResult.SetSolution.doc)
       .def(
           "GetSolution",
           [](const MathematicalProgramResult& self,
