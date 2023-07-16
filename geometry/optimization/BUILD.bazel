@@ -167,7 +167,9 @@ drake_cc_library(
         "//common/symbolic:expression",
         "//solvers:choose_best_solver",
         "//solvers:create_cost",
+        "//solvers:get_program_type",
         "//solvers:mathematical_program_result",
+        "//solvers:mosek_solver",
         "//solvers:solver_interface",
     ],
 )

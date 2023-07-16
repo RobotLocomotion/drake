@@ -554,14 +554,15 @@ class GraphOfConvexSets {
   be written using less decision variables, and needs only to include the
   vertices associated with at least one of the active edges. Decision variables
   for all other convex sets will be set to NaN.
-  */
+
+  @throws std::exception if the program cannot be written as a convex
+  optimization consumable by one of the standard solvers. */
   solvers::MathematicalProgramResult SolveConvexRestriction(
       const std::vector<const Edge*>& active_edges,
       const GraphOfConvexSetsOptions& options =
           GraphOfConvexSetsOptions()) const;
 
- private:
-  /* Facilitates testing. */
+ private: /* Facilitates testing. */
   friend class PreprocessShortestPathTest;
 
   std::set<EdgeId> PreprocessShortestPath(
