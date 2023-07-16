@@ -670,11 +670,7 @@ void DefineGeometryOptimization(py::module m) {
                 &GraphOfConvexSets::SolveShortestPath),
             py::arg("source"), py::arg("target"),
             py::arg("options") = GraphOfConvexSetsOptions(),
-            cls_doc.SolveShortestPath.doc_by_reference)
-        .def("SolveConvexRestriction",
-            &GraphOfConvexSets::SolveConvexRestriction, py::arg("active_edges"),
-            py::arg("options") = GraphOfConvexSetsOptions(),
-            cls_doc.SolveConvexRestriction.doc);
+            cls_doc.SolveShortestPath.doc_by_reference);
   }
 
   // NOLINTNEXTLINE(readability/fn_size)
