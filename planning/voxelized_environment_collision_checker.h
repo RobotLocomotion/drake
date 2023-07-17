@@ -15,10 +15,10 @@
 
 #include "drake/planning/collision_checker.h"
 #include "drake/planning/collision_checker_params.h"
-#include "planning/robot_diagram.h"
-#include "planning/sphere_robot_model_collision_checker.h"
+#include "drake/planning/robot_diagram.h"
+#include "drake/planning/sphere_robot_model_collision_checker.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
 using EnvironmentSDF = voxelized_geometry_tools::SignedDistanceField<float>;
 
@@ -198,4 +198,4 @@ class VoxelizedEnvironmentCollisionChecker final
   std::map<std::string, drake::multibody::BodyIndex> environment_sdf_bodies_;
 };
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake

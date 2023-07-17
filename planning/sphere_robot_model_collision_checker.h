@@ -18,9 +18,9 @@
 #include "drake/multibody/tree/body.h"
 #include "drake/planning/collision_checker.h"
 #include "drake/planning/collision_checker_params.h"
-#include "planning/robot_diagram.h"
+#include "drake/planning/robot_diagram.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
 
 /// Class modelling collision spheres used for collision checking.
@@ -434,4 +434,4 @@ class SphereRobotModelCollisionChecker
       robot_sphere_model_;
 };
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake

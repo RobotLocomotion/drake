@@ -13,10 +13,11 @@
 
 #include "drake/common/text_logging.h"
 #include "drake/geometry/scene_graph.h"
-#include "planning/test/planning_test_helpers.h"
+#include "drake/planning/test/planning_test_helpers.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
+namespace test {
 namespace {
 GTEST_TEST(VoxelizedEnvironmentBuilderTest, Test) {
   // Assemble model directives.
@@ -140,5 +141,6 @@ GTEST_TEST(VoxelizedEnvironmentBuilderTest, Test) {
   }
 }
 }  // namespace
+}  // namespace test
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake

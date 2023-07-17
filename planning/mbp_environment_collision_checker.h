@@ -17,10 +17,10 @@
 #include "drake/multibody/tree/body.h"
 #include "drake/planning/collision_checker.h"
 #include "drake/planning/collision_checker_params.h"
-#include "planning/robot_diagram.h"
-#include "planning/sphere_robot_model_collision_checker.h"
+#include "drake/planning/robot_diagram.h"
+#include "drake/planning/sphere_robot_model_collision_checker.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
 
 /// Sphere-model robot collision checker using MbP/SG to model environment
@@ -79,4 +79,4 @@ class MbpEnvironmentCollisionChecker final
       override;
 };
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake

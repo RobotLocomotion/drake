@@ -1,4 +1,4 @@
-#include "planning/sphere_robot_model_collision_checker.h"
+#include "drake/planning/sphere_robot_model_collision_checker.h"
 
 #include <algorithm>
 #include <functional>
@@ -32,7 +32,7 @@ using drake::planning::RobotClearance;
 using drake::planning::RobotCollisionType;
 using std::optional;
 
-namespace anzu {
+namespace drake {
 namespace planning {
 namespace {
 std::vector<Eigen::Isometry3d> InvertPoses(
@@ -784,4 +784,4 @@ std::string SphereRobotModelCollisionChecker
   return urdf_collision_elements;
 }
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake

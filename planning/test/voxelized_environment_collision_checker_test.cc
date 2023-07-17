@@ -1,16 +1,16 @@
-#include "planning/voxelized_environment_collision_checker.h"
+#include "drake/planning/voxelized_environment_collision_checker.h"
 
 #include <common_robotics_utilities/voxel_grid.hpp>
 #include <gtest/gtest.h>
 #include <voxelized_geometry_tools/collision_map.hpp>
 
+#include "drake/planning/sphere_robot_model_collision_checker.h"
+#include "drake/planning/test/planning_test_helpers.h"
 #include "drake/planning/test_utilities/collision_checker_abstract_test_suite.h"
-#include "planning/sphere_robot_model_collision_checker.h"
-#include "planning/test/planning_test_helpers.h"
-#include "planning/test/sphere_robot_model_collision_checker_abstract_test_suite.h"
-#include "planning/voxelized_environment_builder.h"
+#include "drake/planning/test_utilities/sphere_robot_model_collision_checker_abstract_test_suite.h"
+#include "drake/planning/voxelized_environment_builder.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
 namespace test {
 namespace {
@@ -89,4 +89,4 @@ INSTANTIATE_TEST_SUITE_P(
 
 }  // namespace test
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake

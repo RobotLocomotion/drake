@@ -1,20 +1,15 @@
-#include "planning/mbp_environment_collision_checker.h"
+#include "drake/planning/mbp_environment_collision_checker.h"
 
 #include <gtest/gtest.h>
 
+#include "drake/planning/test/planning_test_helpers.h"
 #include "drake/planning/test_utilities/collision_checker_abstract_test_suite.h"
-#include "planning/test/planning_test_helpers.h"
-#include "planning/test/sphere_robot_model_collision_checker_abstract_test_suite.h"
+#include "drake/planning/test_utilities/sphere_robot_model_collision_checker_abstract_test_suite.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
 namespace test {
 namespace {
-
-using drake::planning::test::CollisionCheckerAbstractTestSuite;
-using drake::planning::test::CollisionCheckerConstructionParams;
-using drake::planning::test::CollisionCheckerTestParams;
-using drake::planning::test::MakeCollisionCheckerTestScene;
 
 CollisionCheckerTestParams MakeMbpEnvironmentCollisionCheckerParams() {
   CollisionCheckerTestParams result;
@@ -45,4 +40,4 @@ INSTANTIATE_TEST_SUITE_P(
 
 }  // namespace test
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake

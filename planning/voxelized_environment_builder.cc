@@ -15,7 +15,7 @@
 #include "drake/geometry/scene_graph.h"
 #include "drake/multibody/plant/multibody_plant.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
 voxelized_geometry_tools::CollisionMap BuildCollisionMap(
     const drake::multibody::MultibodyPlant<double>& plant,
@@ -126,4 +126,4 @@ TaggedObjectCollisionCellFill(const DistanceQueryResult& distances) {
   }
 }
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake

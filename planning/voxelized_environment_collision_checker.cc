@@ -1,4 +1,4 @@
-#include "planning/voxelized_environment_collision_checker.h"
+#include "drake/planning/voxelized_environment_collision_checker.h"
 
 #include <algorithm>
 #include <functional>
@@ -16,11 +16,8 @@
 #include <voxelized_geometry_tools/signed_distance_field.hpp>
 #include <voxelized_geometry_tools/tagged_object_collision_map.hpp>
 
-namespace anzu {
+namespace drake {
 namespace planning {
-
-using drake::planning::CollisionChecker;
-using drake::planning::CollisionCheckerParams;
 
 VoxelizedEnvironmentCollisionChecker::VoxelizedEnvironmentCollisionChecker(
     CollisionCheckerParams params)
@@ -224,4 +221,4 @@ void VoxelizedEnvironmentCollisionChecker::RemoveAllAddedEnvironment(
 }
 
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake

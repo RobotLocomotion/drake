@@ -17,12 +17,16 @@ drake_cc_package_library(
         ":collision_checker",
         ":collision_checker_context",
         ":collision_checker_params",
+        ":mbp_environment_collision_checker",
         ":robot_clearance",
         ":robot_collision_type",
         ":robot_diagram",
         ":robot_diagram_builder",
         ":scene_graph_collision_checker",
+        ":sphere_robot_model_collision_checker",
         ":unimplemented_collision_checker",
+        ":voxelized_environment_builder",
+        ":voxelized_environment_collision_checker",
     ],
 )
 
@@ -85,6 +89,25 @@ drake_cc_library(
     deps = [
         ":robot_diagram",
         "//multibody/tree:multibody_tree_indexes",
+    ],
+)
+
+drake_cc_library(
+    name = "mbp_environment_collision_checker",
+    srcs = ["mbp_environment_collision_checker.cc"],
+    hdrs = ["mbp_environment_collision_checker.h"],
+    interface_deps = [
+        # XXX ":robot_diagram_builder",
+        # XXX ":body_shape_description",
+        ":sphere_robot_model_collision_checker",
+        ":collision_checker",
+        ":collision_checker_params",
+        "//common:essential",
+        "//geometry",
+        "//multibody/plant",
+    ],
+    deps = [
+        "@common_robotics_utilities",
     ],
 )
 
@@ -157,6 +180,44 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "voxelized_environment_builder",
+    srcs = ["voxelized_environment_builder.cc"],
+    hdrs = ["voxelized_environment_builder.h"],
+    interface_deps = [
+        ":body_shape_description",
+        "//common:essential",
+        "//geometry",
+        "//multibody/plant",
+        # XXX TODO(jwnimmer-tri) This cannot be interface_deps.
+        "@voxelized_geometry_tools",
+        # XXX TODO(jwnimmer-tri) This cannot be interface_deps.
+        "@common_robotics_utilities",
+    ],
+    deps = [],
+)
+
+drake_cc_library(
+    name = "voxelized_environment_collision_checker",
+    srcs = ["voxelized_environment_collision_checker.cc"],
+    hdrs = ["voxelized_environment_collision_checker.h"],
+    interface_deps = [
+        ":body_shape_description",
+        ":collision_checker",
+        ":collision_checker_params",
+        ":robot_diagram_builder",
+        ":sphere_robot_model_collision_checker",
+        "//common:essential",
+        "//geometry",
+        "//multibody/plant",
+        # XXX TODO(jwnimmer-tri) This cannot be interface_deps.
+        "@voxelized_geometry_tools",
+    ],
+    deps = [
+        "@common_robotics_utilities",
+    ],
+)
+
+drake_cc_library(
     name = "planning_test_helpers",
     testonly = True,
     srcs = ["test/planning_test_helpers.cc"],
@@ -212,6 +273,19 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "mbp_environment_collision_checker_test",
+    timeout = "moderate",
+    # Be sure to exercise OpenMP-related features.
+    num_threads = 2,
+    deps = [
+        ":mbp_environment_collision_checker",
+        ":planning_test_helpers",
+        "//planning/test_utilities:collision_checker_abstract_test_suite",
+        "//planning/test_utilities:sphere_robot_model_collision_checker_abstract_test_suite",  # noqa
+    ],
+)
+
+drake_cc_googletest(
     name = "robot_clearance_test",
     deps = [
         ":robot_clearance",
@@ -255,6 +329,24 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_library(
+    name = "sphere_robot_model_collision_checker",
+    srcs = ["sphere_robot_model_collision_checker.cc"],
+    hdrs = ["sphere_robot_model_collision_checker.h"],
+    interface_deps = [
+        ":collision_checker",
+        ":collision_checker_params",
+        "//common:essential",
+        "//geometry",
+        "//multibody/plant",
+    ],
+    deps = [
+        # ":body_shape_description",
+        # ":robot_diagram_builder",
+        "@common_robotics_utilities",
+    ],
+)
+
 drake_cc_googletest(
     name = "unimplemented_collision_checker_test",
     deps = [
@@ -263,4 +355,37 @@ drake_cc_googletest(
     ],
 )
 
-add_lint_tests()
+drake_cc_googletest(
+    name = "voxelized_environment_builder_test",
+    data = [
+        # XXX "//models:test",
+    ],
+    # Be sure to exercise OpenMP-related features.
+    num_threads = 2,
+    deps = [
+        ":planning_test_helpers",
+        ":voxelized_environment_builder",
+        "//common:essential",
+        "//geometry",
+        "//multibody/plant",
+        "//systems/framework:diagram",
+        "@common_robotics_utilities",
+        "@voxelized_geometry_tools",
+    ],
+)
+
+drake_cc_googletest(
+    name = "voxelized_environment_collision_checker_test",
+    timeout = "moderate",
+    # Be sure to exercise OpenMP-related features.
+    num_threads = 2,
+    deps = [
+        ":planning_test_helpers",
+        ":voxelized_environment_builder",
+        ":voxelized_environment_collision_checker",
+        "//planning/test_utilities:collision_checker_abstract_test_suite",  # noqa
+        "//planning/test_utilities:sphere_robot_model_collision_checker_abstract_test_suite",  # noqa
+    ],
+)
+
+add_lint_tests(enable_clang_format_lint = False)

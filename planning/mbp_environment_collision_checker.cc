@@ -1,4 +1,4 @@
-#include "planning/mbp_environment_collision_checker.h"
+#include "drake/planning/mbp_environment_collision_checker.h"
 
 #include <algorithm>
 #include <functional>
@@ -29,11 +29,9 @@ using drake::geometry::SceneGraph;
 using drake::math::RigidTransform;
 using drake::multibody::Body;
 using drake::multibody::MultibodyPlant;
-using drake::planning::CollisionChecker;
-using drake::planning::CollisionCheckerContext;
 using std::optional;
 
-namespace anzu {
+namespace drake {
 namespace planning {
 
 MbpEnvironmentCollisionChecker::MbpEnvironmentCollisionChecker(
@@ -55,7 +53,7 @@ MbpEnvironmentCollisionChecker::DoClone() const {
 PointSignedDistanceAndGradientResult
 MbpEnvironmentCollisionChecker::
     ComputePointToEnvironmentSignedDistanceAndGradient(
-        const drake::systems::Context<double>& context,
+        const drake::systems::Context<double>&,
         const drake::geometry::QueryObject<double>& query_object,
         const Eigen::Vector4d& p_WQ, const double query_radius,
         const std::vector<Eigen::Isometry3d>&,
@@ -105,7 +103,7 @@ MbpEnvironmentCollisionChecker::AddEnvironmentCollisionShapeToBody(
   drake::log()->debug(
       "Adding shape (group: [{}]) to {} (FrameID {}) at X_AG =\n{}",
       group_name, bodyA.scoped_name(), body_frame_id.value(),
-      X_AG.GetAsMatrix4());
+      fmt_eigen(X_AG.GetAsMatrix4()));
 
   // The geometry instance template which will be copied into each per-thread
   // SceneGraph Context; the GeometryId will match across each thread this way.
@@ -152,4 +150,4 @@ void MbpEnvironmentCollisionChecker::RemoveAllAddedEnvironment(
 }
 
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake

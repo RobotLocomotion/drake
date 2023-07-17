@@ -1,9 +1,9 @@
-#include "planning/test/sphere_robot_model_collision_checker_abstract_test_suite.h"
+#include "planning/test_utilities/sphere_robot_model_collision_checker_abstract_test_suite.h"
 
 #include <unordered_map>
 #include <vector>
 
-namespace anzu {
+namespace drake {
 namespace planning {
 namespace test {
 
@@ -39,4 +39,4 @@ TEST_P(SphereRobotModelCollisionCheckerAbstractTestSuite, SphereChecker) {
 
 }  // namespace test
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake

@@ -26,12 +26,12 @@ inline std::ostream& operator<<(
     std::ostream& strm,
     const drake::geometry::SignedDistanceToPoint<double>& distance) {
   strm << "SDP query " << distance.distance << " distance "
-        << distance.grad_W.transpose() << " gradient "
-        << distance.id_G << " geometry";
+        << fmt::to_string(drake::fmt_eigen(distance.grad_W.transpose()))
+        << " gradient " << distance.id_G << " geometry";
   return strm;
 }
 
-namespace anzu {
+namespace drake {
 namespace planning {
 /// The return value from a SignedDistanceToPoint collision query.
 using DistanceQueryResult =
@@ -279,4 +279,4 @@ voxelized_geometry_tools::CollisionCell CollisionCellFill(
 voxelized_geometry_tools::TaggedObjectCollisionCell
 TaggedObjectCollisionCellFill(const DistanceQueryResult& distances);
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake

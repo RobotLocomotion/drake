@@ -13,6 +13,7 @@ drake_cc_package_library(
     visibility = ["//visibility:public"],
     deps = [
         ":collision_checker_abstract_test_suite",
+        ":sphere_robot_model_collision_checker_abstract_test_suite",
     ],
 )
 
@@ -31,6 +32,20 @@ drake_cc_library(
         "@common_robotics_utilities",
         "@gtest//:without_main",
     ],
+    alwayslink = True,
 )
 
-add_lint_tests()
+drake_cc_library(
+    name = "sphere_robot_model_collision_checker_abstract_test_suite",
+    testonly = True,
+    srcs = ["sphere_robot_model_collision_checker_abstract_test_suite.cc"],
+    hdrs = ["sphere_robot_model_collision_checker_abstract_test_suite.h"],
+    deps = [
+        "//planning:collision_checker",
+        "//planning:sphere_robot_model_collision_checker",
+        "@gtest//:without_main",
+    ],
+    alwayslink = True,
+)
+
+add_lint_tests(enable_clang_format_lint = False)
