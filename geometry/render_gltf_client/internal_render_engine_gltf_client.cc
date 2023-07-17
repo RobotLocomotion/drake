@@ -325,6 +325,9 @@ std::unique_ptr<RenderEngine> RenderEngineGltfClient::DoClone() const {
 
 void RenderEngineGltfClient::UpdateViewpoint(
     const math::RigidTransformd& X_WC) {
+#if VTK_VERSION_NUMBER > VTK_VERSION_CHECK(9, 1, 0)
+  RenderEngineVtk::UpdateViewpoint(X_WC);
+#else
   /* The vtkGLTFExporter populates the camera matrix in "nodes" incorrectly in
    VTK 9.1.0.  It should be providing the inverted modelview transformation
    matrix since the "nodes" array is to contain global transformations.  See:
@@ -333,11 +336,9 @@ void RenderEngineGltfClient::UpdateViewpoint(
 
    When VTK is updated, RenderEngineGltfClient::UpdateViewpoint can be deleted
    as RenderEngineVtk::UpdateViewpoint will correctly update the transforms on
-   the cameras. */
-#if VTK_VERSION_NUMBER > VTK_VERSION_CHECK(9, 1, 0)
-#error "UpdateViewpoint can be removed, modified transform no longer needed."
-#endif
-  /* Build the alternate transform, which consists of both an inversion of the
+   the cameras.
+
+   Build the alternate transform, which consists of both an inversion of the
    input transformation as well as a coordinate system inversion.  For the
    coordinate inversion, we must account for:
 
@@ -378,6 +379,7 @@ void RenderEngineGltfClient::UpdateViewpoint(
   hacked_matrix(2, 3) *= -1.0;  // -l
   math::RigidTransformd X_WC_hacked{hacked_matrix};
   RenderEngineVtk::UpdateViewpoint(X_WC_hacked);
+#endif
 }
 
 void RenderEngineGltfClient::DoRenderColorImage(

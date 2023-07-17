@@ -168,8 +168,11 @@ TEST_F(RenderEngineGltfClientTest, UpdateViewpoint) {
    via transpose, and using this inverted rotation to rotate the negated
    translation.  We do not need to be concerned about non-uniform scaling on the
    diagonal or the bottom row. */
-  auto transform_inverse = [](const Eigen::Matrix4d& mat) {
+  auto maybe_transform_inverse = [](const Eigen::Matrix4d& mat) {
     Matrix4d inverse{mat};
+  #if VTK_VERSION_NUMBER > VTK_VERSION_CHECK(9, 1, 0)
+      return inverse;  // The bug (vtk#8883) was fixed in 9.1.0.
+  #else
     // Invert the rotation via transpose.
     inverse.topLeftCorner<3, 3>().transposeInPlace();
     // Rotate the inverted translation.
@@ -177,6 +180,7 @@ TEST_F(RenderEngineGltfClientTest, UpdateViewpoint) {
     const Vector3d t_inv = inverse.topLeftCorner<3, 3>() * (-t);
     inverse.topRightCorner<3, 1>() = t_inv;
     return inverse;
+  #endif
   };
   auto compare = [&](const Matrix4d& vtk, const Matrix4d& gltf) {
     constexpr double tolerance = 1e-9;
@@ -191,7 +195,7 @@ TEST_F(RenderEngineGltfClientTest, UpdateViewpoint) {
      of this matrix is what was supposed to be exported, since the "nodes" array
      in glTF is for world coordinate transforms. */
     // Compare the rotations.
-    const Matrix4d vtk_inv = transform_inverse(vtk);
+    const Matrix4d vtk_inv = maybe_transform_inverse(vtk);
     const Matrix3d R_vtk_inv = vtk_inv.topLeftCorner<3, 3>();
     const Matrix3d R_gltf = gltf.topLeftCorner<3, 3>();
     EXPECT_TRUE(R_vtk_inv.isApprox(R_gltf, tolerance)) << fmt::format(
