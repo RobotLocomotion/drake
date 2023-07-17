@@ -1104,6 +1104,32 @@ const Frame<double>* ParseFrame(const SDFormatDiagnostic& diagnostic,
   return &plant->GetFrameByName(frame_name, model_instance);
 }
 
+const Body<double>* ParseBody(const SDFormatDiagnostic& diagnostic,
+                              const sdf::ElementPtr node,
+                              ModelInstanceIndex model_instance,
+                              MultibodyPlant<double>* plant,
+                              const char* element_name) {
+  if (!node->HasElement(element_name)) {
+    std::string message =
+        fmt::format("<{}>: Unable to find the <{}> child tag.", node->GetName(),
+                    element_name);
+    diagnostic.Error(node, std::move(message));
+    return nullptr;
+  }
+
+  const std::string body_name = node->Get<std::string>(element_name);
+
+  if (!plant->HasBodyNamed(body_name, model_instance)) {
+    std::string message = fmt::format(
+        "<{}>: Body '{}' specified for <{}> does not exist in the model.",
+        node->GetName(), body_name, element_name);
+    diagnostic.Error(node, std::move(message));
+    return nullptr;
+  }
+
+  return &plant->GetBodyByName(body_name, model_instance);
+}
+
 // TODO(eric.cousineau): Update parsing pending resolution of
 // https://github.com/osrf/sdformat/issues/288
 // When diagnostic policy is not set to throw it returns false on errors.
@@ -1196,6 +1222,37 @@ const LinearBushingRollPitchYaw<double>* AddBushingFromSpecification(
   return ParseLinearBushingRollPitchYaw(read_vector, read_frame, plant);
 }
 
+std::optional<MultibodyConstraintId> AddBallConstraintFromSpecification(
+    const SDFormatDiagnostic& diagnostic, const sdf::ElementPtr node,
+    ModelInstanceIndex model_instance, MultibodyPlant<double>* plant) {
+  const std::set<std::string> supported_ball_constraint_elements{
+      "drake:ball_constraint_body_A",
+      "drake:ball_constraint_p_AP",
+      "drake:ball_constraint_body_B",
+      "drake:ball_constraint_p_BQ",
+  };
+  CheckSupportedElements(diagnostic, node, supported_ball_constraint_elements);
+
+  // Functor to read a vector valued child tag with tag name: `element_name`
+  // e.g. <element_name>0 0 0</element_name>
+  // Throws an error if the tag does not exist.
+  auto read_vector = [&diagnostic,
+                      node](const char* element_name) -> Eigen::Vector3d {
+    return ParseVector3(diagnostic, node, element_name);
+  };
+
+  // Functor to read a child tag with tag name: `element_name` that specifies a
+  // body name, e.g. <element_name>body_name</element_name>
+  // Throws an error if the tag does not exist or if the body does not exist in
+  // the plant.
+  auto read_body = [&diagnostic, node, model_instance, plant](
+                       const char* element_name) -> const Body<double>* {
+    return ParseBody(diagnostic, node, model_instance, plant, element_name);
+  };
+
+  return ParseBallConstraint(read_vector, read_body, plant);
+}
+
 // Helper to determine if two links are welded together.
 bool AreWelded(
     const MultibodyPlant<double>& plant, const Body<double>& a,
@@ -1282,6 +1339,7 @@ std::vector<ModelInstanceIndex> AddModelsFromSpecification(
   const std::set<std::string> supported_model_elements{
     "drake:joint",
     "drake:linear_bushing_rpy",
+    "drake:ball_constraint",
     "drake:collision_filter_group",
     "frame",
     "include",
@@ -1401,6 +1459,18 @@ std::vector<ModelInstanceIndex> AddModelsFromSpecification(
           diagnostic, bushing_node, model_instance, plant) == nullptr) {
         return {};
       }
+    }
+  }
+
+  drake::log()->trace("sdf_parser: Add BallConstraint");
+  if (model.Element()->HasElement("drake:ball_constraint")) {
+    for (sdf::ElementPtr constraint_node =
+             model.Element()->GetElement("drake:ball_constraint");
+         constraint_node;
+         constraint_node = constraint_node->GetNextElement(
+             "drake:ball_constraint")) {
+      AddBallConstraintFromSpecification(diagnostic, constraint_node,
+                                         model_instance, plant);
     }
   }
 

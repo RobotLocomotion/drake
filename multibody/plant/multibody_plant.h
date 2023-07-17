@@ -1213,7 +1213,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return ssize(ball_constraints_specs_);
   }
 
-  /// Returns the coupler constraint specification corresponding to `id`
+  /// (Internal use only) Returns the coupler constraint specification
+  /// corresponding to `id`
   /// @throws if `id` is not a valid identifier for a coupler constraint.
   const internal::CouplerConstraintSpec& get_coupler_constraint_specs(
       MultibodyConstraintId id) const {
@@ -1221,7 +1222,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return coupler_constraints_specs_.at(id);
   }
 
-  /// Returns the distance constraint specification corresponding to `id`
+  /// (Internal use only) Returns the distance constraint specification
+  /// corresponding to `id`
   /// @throws if `id` is not a valid identifier for a distance constraint.
   const internal::DistanceConstraintSpec& get_distance_constraint_specs(
       MultibodyConstraintId id) const {
@@ -1229,12 +1231,36 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return distance_constraints_specs_.at(id);
   }
 
-  /// Returns the ball constraint specification corresponding to `id`
+  /// (Internal use only)  Returns the ball constraint specification
+  /// corresponding to `id`
   /// @throws if `id` is not a valid identifier for a ball constraint.
   const internal::BallConstraintSpec& get_ball_constraint_specs(
       MultibodyConstraintId id) const {
     DRAKE_THROW_UNLESS(ball_constraints_specs_.count(id) > 0);
     return ball_constraints_specs_.at(id);
+  }
+
+  /// (Internal use only)  Returns a reference to the all of the coupler
+  /// constraints in this plant as a map from MultibodyConstraintId to
+  /// CouplerConstraintSpec.
+  const std::map<MultibodyConstraintId, internal::CouplerConstraintSpec>&
+  get_coupler_constraint_specs() const {
+    return coupler_constraints_specs_;
+  }
+
+  /// (Internal use only) Returns a reference to the all of the distance
+  /// constraints in this plant as a map from MultibodyConstraintId to
+  /// DistanceConstraintSpec.
+  const std::map<MultibodyConstraintId, internal::DistanceConstraintSpec>&
+  get_distance_constraint_specs() const {
+    return distance_constraints_specs_;
+  }
+
+  /// (Internal use only) Returns a reference to the all of the ball constraints
+  /// in this plant as a map from MultibodyConstraintId to BallConstraintSpec.
+  const std::map<MultibodyConstraintId, internal::BallConstraintSpec>&
+  get_ball_constraint_specs() const {
+    return ball_constraints_specs_;
   }
 
   /// Defines a holonomic constraint between two single-dof joints `joint0`
