@@ -29,19 +29,19 @@ def _impl(repository_ctx):
     #     https://docs.mosek.com/latest/licensing/license-agreement-info.html
     mosek_major_version = 10
     mosek_minor_version = 0
-    mosek_patch_version = 18
+    mosek_patch_version = 46 
 
     os_result = determine_os(repository_ctx)
     if os_result.is_macos or os_result.is_macos_wheel:
         if os_result.macos_arch_result == "arm64":
             mosek_platform = "osxaarch64"
-            sha256 = "99518b88c3bfc27edc92775eada349f7dd232c7bf7aa1cb7a8620603e05a6a6d"  # noqa
+            sha256 = "a557297820fe2618880bcf59a9c2c9072f81ae67"  # noqa
         else:
             mosek_platform = "osx64x86"
-            sha256 = "e3de2b99e5ab27a7c37356a7fe88f0a42c53ec04aeaba70abe8b5971fbcfc150"  # noqa
+            sha256 = "c026c150a1675000d15d2f96a8d703ef11cb6204"  # noqa
     elif os_result.is_ubuntu or os_result.is_manylinux:
         mosek_platform = "linux64x86"
-        sha256 = "f778f6e5560cdb8a3b5001cb51f40ccba9b3ef73da09406dcd3c1a870433eb34"  # noqa
+        sha256 = "5fc9c9d75c61aaa14e0851620bb64d50d117c715"  # noqa
     else:
         fail(
             "Operating system is NOT supported",
