@@ -20,7 +20,7 @@ from pydrake.systems.framework import DiagramBuilder
 from pydrake.solvers import (
     Binding, ClpSolver, Constraint, Cost, MathematicalProgram,
     MathematicalProgramResult, SolverOptions, CommonSolverOption,
-    ScsSolver, MosekSolver, CsdpSolver
+    ScsSolver, MosekSolver
 )
 from pydrake.symbolic import Variable, Polynomial
 
@@ -902,7 +902,7 @@ class TestCspaceFreePolytope(unittest.TestCase):
         lagrangian_options = \
             mut.CspaceFreePolytope.\
             FindSeparationCertificateGivenPolytopeOptions()
-        # lagrangian_options.solver_id = CsdpSolver.id()
+        lagrangian_options.solver_id = ScsSolver.id()
 
         binary_search_options = mut.CspaceFreePolytope.BinarySearchOptions()
         binary_search_options.scale_min = 1e-2
@@ -910,16 +910,16 @@ class TestCspaceFreePolytope(unittest.TestCase):
         binary_search_options.max_iter = 2
         # Default is Mosek. This allows the test to run without
         # special installation.
-        # binary_search_options.find_lagrangian_options.solver_id = \
-        #     CsdpSolver.id()
+        binary_search_options.find_lagrangian_options.solver_id = \
+            ScsSolver.id()
 
         bilinear_alternation_options = \
             mut.CspaceFreePolytope.BilinearAlternationOptions()
+        bilinear_alternation_options.max_iter = 2
         # Default is Mosek. This allows the test to run without special
         # installation.
-        # bilinear_alternation_options.find_lagrangian_options.solver_id = \
-        #     CsdpSolver.id()
-        bilinear_alternation_options.max_iter = 2
+        bilinear_alternation_options.find_lagrangian_options.solver_id = \
+            ScsSolver.id()
 
         (success, certificates) = self.cspace_free_polytope.\
             FindSeparationCertificateGivenPolytope(

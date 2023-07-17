@@ -47,8 +47,7 @@ void DoSeparatingPlaneDeclaration(py::module m, T) {
     auto cls =
         DefineTemplateClassWithDefault<BaseClass>(
             m, "CSpaceSeparatingPlane", param, base_cls_doc.doc)
-            .def_readonly("a", &BaseClass::a, py_rvp::reference_internal,
-                base_cls_doc.a.doc)
+            .def_readonly("a", &BaseClass::a, py_rvp::copy, base_cls_doc.a.doc)
             .def_readonly("b", &BaseClass::b, base_cls_doc.b.doc)
             .def_readonly("positive_side_geometry",
                 &BaseClass::positive_side_geometry,
@@ -924,7 +923,7 @@ void DefineGeometryOptimization(py::module m) {
           .def_readonly("a", &SepCertClass::a, py_rvp::copy,
               doc.SeparationCertificateResultBase.a.doc)
           .def_readonly(
-              "b", &SepCertClass::b, doc.SeparationCertificateResultBase.a.doc)
+              "b", &SepCertClass::b, doc.SeparationCertificateResultBase.b.doc)
           .def_readonly("result", &SepCertClass::result)
           .def_readonly("plane_decision_var_vals",
               &SepCertClass::plane_decision_var_vals, py_rvp::copy);
