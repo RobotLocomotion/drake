@@ -901,8 +901,8 @@ class TestCspaceFreePolytope(unittest.TestCase):
 
         lagrangian_options = \
             mut.CspaceFreePolytope.\
-                FindSeparationCertificateGivenPolytopeOptions()
-        lagrangian_options.solver_id = CsdpSolver.id()
+            FindSeparationCertificateGivenPolytopeOptions()
+        # lagrangian_options.solver_id = CsdpSolver.id()
 
         binary_search_options = mut.CspaceFreePolytope.BinarySearchOptions()
         binary_search_options.scale_min = 1e-2
@@ -910,15 +910,15 @@ class TestCspaceFreePolytope(unittest.TestCase):
         binary_search_options.max_iter = 2
         # Default is Mosek. This allows the test to run without
         # special installation.
-        binary_search_options.find_lagrangian_options.solver_id = \
-            CsdpSolver.id()
+        # binary_search_options.find_lagrangian_options.solver_id = \
+        #     CsdpSolver.id()
 
         bilinear_alternation_options = \
             mut.CspaceFreePolytope.BilinearAlternationOptions()
         # Default is Mosek. This allows the test to run without special
         # installation.
-        bilinear_alternation_options.find_lagrangian_options.solver_id = \
-            CsdpSolver.id()
+        # bilinear_alternation_options.find_lagrangian_options.solver_id = \
+        #     CsdpSolver.id()
         bilinear_alternation_options.max_iter = 2
 
         (success, certificates) = self.cspace_free_polytope.\
@@ -927,10 +927,11 @@ class TestCspaceFreePolytope(unittest.TestCase):
             options=lagrangian_options)
         self.assertTrue(success)
         geom_pair = list(self.cspace_free_polytope.
-                    map_geometries_to_separating_planes().keys())[0]
+                         map_geometries_to_separating_planes().keys())[0]
         self.assertIn(geom_pair, certificates.keys())
-        self.assertIsInstance(certificates[geom_pair],
-                              mut.CspaceFreePolytope.SeparationCertificateResult)
+        self.assertIsInstance(
+            certificates[geom_pair],
+            mut.CspaceFreePolytope.SeparationCertificateResult)
 
         result = self.cspace_free_polytope.BinarySearch(
             ignored_collision_pairs=set(),
@@ -948,7 +949,6 @@ class TestCspaceFreePolytope(unittest.TestCase):
         self.assertEqual(len(result.a()), 1)
         self.assertEqual(len(result.b()), 1)
         self.assertIsInstance(result.a()[0][0], Polynomial)
-
 
         result = self.cspace_free_polytope.SearchWithBilinearAlternation(
             ignored_collision_pairs=set(),

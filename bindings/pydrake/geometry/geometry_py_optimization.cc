@@ -47,7 +47,8 @@ void DoSeparatingPlaneDeclaration(py::module m, T) {
     auto cls =
         DefineTemplateClassWithDefault<BaseClass>(
             m, "CSpaceSeparatingPlane", param, base_cls_doc.doc)
-            .def_readonly("a", &BaseClass::a, py_rvp::copy, base_cls_doc.a.doc)
+            .def_readonly("a", &BaseClass::a, py_rvp::reference_internal,
+                base_cls_doc.a.doc)
             .def_readonly("b", &BaseClass::b, base_cls_doc.b.doc)
             .def_readonly("positive_side_geometry",
                 &BaseClass::positive_side_geometry,
@@ -792,19 +793,6 @@ void DefineGeometryOptimization(py::module m) {
             .def_readonly("plane_decision_var_vals",
                 &SeparationCertificateResultBase::plane_decision_var_vals)
             .def_readonly("result", &SeparationCertificateResultBase::result);
-
-    // TODO(Alexandre.Amice) decide whether to bind this based on a discussion
-    // that users should never have access to a PlaneSeparatesGeometry object.
-    //    constexpr auto& separates_doc = doc.PlaneSeparatesGeometries;
-    //    auto separates_cls =
-    //        py::class_<PlaneSeparatesGeometries>(
-    //            m, "PlaneSeparatesGeometries", separates_doc.doc)
-    //            .def_readonly("positive_side_rationals",
-    //                &PlaneSeparatesGeometries::positive_side_rationals)
-    //            .def_readonly("negative_side_rationals",
-    //                &PlaneSeparatesGeometries::negative_side_rationals)
-    //            .def_readonly(
-    //                "plane_index", &PlaneSeparatesGeometries::plane_index);
 
     constexpr auto& find_options_doc = doc.FindSeparationCertificateOptions;
     auto find_options_cls =
