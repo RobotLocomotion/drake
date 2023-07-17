@@ -335,8 +335,8 @@ void RenderEngineGltfClient::UpdateViewpoint(
    as RenderEngineVtk::UpdateViewpoint will correctly update the transforms on
    the cameras. */
 #if VTK_VERSION_NUMBER > VTK_VERSION_CHECK(9, 1, 0)
-#error "UpdateViewpoint can be removed, modified transform no longer needed."
-#endif
+  RenderEngineVtk::UpdateViewpoint(X_WC);
+#else
   /* Build the alternate transform, which consists of both an inversion of the
    input transformation as well as a coordinate system inversion.  For the
    coordinate inversion, we must account for:
@@ -378,6 +378,7 @@ void RenderEngineGltfClient::UpdateViewpoint(
   hacked_matrix(2, 3) *= -1.0;  // -l
   math::RigidTransformd X_WC_hacked{hacked_matrix};
   RenderEngineVtk::UpdateViewpoint(X_WC_hacked);
+#endif
 }
 
 void RenderEngineGltfClient::DoRenderColorImage(
