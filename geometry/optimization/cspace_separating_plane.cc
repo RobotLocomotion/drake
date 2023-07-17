@@ -97,6 +97,25 @@ void CalcPlaneImpl(const VectorX<T1>& decision_variables,
 
 }  // namespace
 
+SeparatingPlaneOrder ToPlaneOrder(int plane_degree) {
+  if (plane_degree == 1) {
+    return SeparatingPlaneOrder::kAffine;
+  } else {
+    throw std::runtime_error(fmt::format(
+        "ToPlaneOrder: plane_degree={}, only supports plane_degree = 1.",
+        plane_degree));
+  }
+}
+
+int ToPlaneDegree(SeparatingPlaneOrder plane_order) {
+  switch (plane_order) {
+    case SeparatingPlaneOrder::kAffine: {
+      return 1;
+    }
+  }
+  DRAKE_UNREACHABLE();
+}
+
 namespace internal {
 
 void CalcPlane(const VectorX<symbolic::Variable>& decision_variables,
