@@ -1,6 +1,8 @@
 #pragma once
 
 #include <memory>
+#include <optional>
+#include <unordered_set>
 #include <vector>
 
 #include "drake/common/copyable_unique_ptr.h"
@@ -120,6 +122,47 @@ class BlockSparseCholeskySolver {
    and is SolverMode::kEmpty otherwise. */
   [[nodiscard]] bool Factor();
 
+  /* Computes the block sparse Cholesky factorization of the given matrix `A`.
+   Returns std::nullopt if the factorization fails. Failure is triggered by an
+   internal failure of Eigen::LLT. This can fail if, for instance, the input
+   matrix `A` is not positive definite. If failure is encountered, the user
+   should verify that the specified matrix is positive definite and not poorly
+   conditioned.
+
+   In addition, this function computes the Schur complement matrix of the input
+   matrix A in the following sense:
+
+   Let E be the set of `eliminated_blocks`. We define permutation p on the block
+   indices of `A` such that p(i) < p(j) iff
+
+    (1) i ∈ E and j ∉ E or
+    (2) i ∈ E and j ∈ E and i < j or
+    (3) i ∉ E and j ∉ E and i < j.
+
+   For example, if A has 7 block rows/columns and E = {2, 5, 6}, then
+
+    [p(0), p(1), p(2), p(3), p(4), p(5), p(6)] =
+    [3,    4,    0,    5,    6,    1,    2]
+
+   We then define Â = P⋅A⋅Pᵀ, where P is the permutation matrix representation
+   of p (i.e. Pᵢⱼ = 1 if i = p(j) and Pᵢⱼ = 0 otherwise). In other words, Â is
+   permuted from A so that blocks with indices in `eliminated_blocks` appear on
+   the top left corner of the matrix Â and all other blocks appear on the bottom
+   right corner of the matrix. The matrix Â can be written in block form as Â =
+   [D, B; Bᵀ, C] where D corresponds to the blocks with indices in E, C
+   corresponds to the blocks with indices outside of E, and B is the resulting
+   off-diagonal block from the permutation.
+
+   If the fatorization of A is successful, returns the Schur complement
+   S = C - BᵀD⁻¹B.
+
+   @pre `eliminated_blocks` has all its entries in [0, A.block_cols()).
+   @post solver_mode() is SolverMode::kFactored if factorization is successful
+   and is SolverMode::kEmpty otherwise. */
+  [[nodiscard]] std::optional<MatrixX<double>> FactorAndCalcSchurComplement(
+      const SymmetricMatrix& A,
+      const std::unordered_set<int>& eliminated_blocks);
+
   /* Solves the system A⋅x = b and returns x.
    @throws std::exception if b.size() is incompatible with the size of the
    matrix set by SetMatrix().
@@ -185,6 +228,16 @@ class BlockSparseCholeskySolver {
                                     A.block_cols() - 1}. */
   BlockSparsityPattern SymbolicFactor(
       const SymmetricMatrix& A, const std::vector<int>& elimination_ordering);
+
+  /* Factorizes matrix A but in particular only processes a range of columns.
+   If the range of columns is [0, L_.block_cols()), then this method performs a
+   full factorization of A. Otherwise, this leaves the underlying factorization
+   in an intermediate state and therefore successive calls to this method
+   must be performed with care.
+   @note this function does not modify solver mode.
+   @pre solver_mode() == kAnalyzed.
+   @pre 0 <= starting_col_block <= ending_col_block <= L.block_cols(). */
+  bool CalcPartialFactorization(int starting_col_block, int ending_col_block);
 
   /* Performs L(j+1:, j+1:) -= L(j+1:, j) * L(j+1:, j).transpose().
    @pre 0 <= j < L.block_cols(). */

@@ -1,6 +1,7 @@
 #include "drake/multibody/contact_solvers/block_sparse_cholesky_solver.h"
 
 #include <memory>
+#include <numeric>
 #include <utility>
 
 #include <gtest/gtest.h>
@@ -14,6 +15,7 @@ namespace contact_solvers {
 namespace internal {
 namespace {
 
+using Eigen::Matrix3d;
 using Eigen::Matrix4d;
 using Eigen::MatrixXd;
 using Eigen::MatrixXi;
@@ -125,22 +127,40 @@ GTEST_TEST(BlockSparseCholeskySolverTest, Solve) {
   EXPECT_TRUE(CompareMatrices(x4, expected_x4, 1e-13));
 }
 
-GTEST_TEST(BlockSparseCholeskySolverTest, SolveFailureDueToNonSpdness) {
+GTEST_TEST(BlockSparseCholeskySolverTest, FailureDueToNonSpdness) {
   std::vector<std::vector<int>> sparsity;
-  sparsity.emplace_back(std::vector<int>{0});
-  std::vector<int> block_sizes = {4};
+  sparsity.emplace_back(std::vector<int>{0, 1});
+  sparsity.emplace_back(std::vector<int>{1});
+  std::vector<int> block_sizes = {4, 3};
   BlockSparsityPattern block_pattern(block_sizes, sparsity);
   BlockSparseSymmetricMatrix A(std::move(block_pattern));
   A.AddToBlock(0, 0, -Matrix4d::Identity());
+  A.AddToBlock(1, 1, -Matrix3d::Identity());
 
   BlockSparseCholeskySolver<MatrixXd> solver;
   solver.SetMatrix(A);
   EXPECT_EQ(solver.solver_mode(),
             BlockSparseCholeskySolver<MatrixXd>::SolverMode::kAnalyzed);
-  const bool success = solver.Factor();
-  EXPECT_FALSE(success);
-  EXPECT_EQ(solver.solver_mode(),
-            BlockSparseCholeskySolver<MatrixXd>::SolverMode::kEmpty);
+  /* Calling Factor() fails. */
+  {
+    const bool success = solver.Factor();
+    EXPECT_FALSE(success);
+    EXPECT_EQ(solver.solver_mode(),
+              BlockSparseCholeskySolver<MatrixXd>::SolverMode::kEmpty);
+  }
+  /* Calling FactorAndCalcSchurComplement() also fails. */
+  {
+    for (const std::unordered_set<int>& eliminated_blocks :
+         std::vector<std::unordered_set<int>>{std::unordered_set<int>{},
+                                              std::unordered_set<int>{0},
+                                              std::unordered_set<int>{0, 1}}) {
+      const std::optional<MatrixXd> schur_complement =
+          solver.FactorAndCalcSchurComplement(A, eliminated_blocks);
+      EXPECT_FALSE(schur_complement.has_value());
+      EXPECT_EQ(solver.solver_mode(),
+                BlockSparseCholeskySolver<MatrixXd>::SolverMode::kEmpty);
+    }
+  }
 }
 
 GTEST_TEST(BlockSparseCholeskySolverTest, FactorBeforeSetMatrixThrows) {
@@ -203,6 +223,56 @@ GTEST_TEST(BlockSparseCholeskySolverTest, SolverModeAfterMove) {
   /* The mode of the old solver resets to kEmpty. */
   EXPECT_EQ(solver.solver_mode(),
             BlockSparseCholeskySolver<MatrixXd>::SolverMode::kEmpty);
+}
+
+GTEST_TEST(BlockSparseCholeskySolverTest, FactorAndCalcSchurComplement) {
+  BlockSparseCholeskySolver<MatrixXd> solver;
+  BlockSparseSymmetricMatrix M = MakeSparseSpdMatrix();
+  const int kNumBlocks = 4;
+  /* All blocks are eliminated. */
+  {
+    std::vector<int> eliminated_blocks(kNumBlocks);
+    std::iota(eliminated_blocks.begin(), eliminated_blocks.end(), 0);
+    const std::optional<MatrixXd> schur_complement =
+        solver.FactorAndCalcSchurComplement(
+            M, std::unordered_set<int>(eliminated_blocks.begin(),
+                                       eliminated_blocks.end()));
+    EXPECT_TRUE(schur_complement.has_value());
+    EXPECT_EQ(schur_complement.value(), MatrixXd::Zero(0, 0));
+    EXPECT_EQ(solver.solver_mode(),
+              BlockSparseCholeskySolver<MatrixXd>::SolverMode::kFactored);
+  }
+  /* None of the blocks is eliminated. */
+  {
+    const std::optional<MatrixXd> schur_complement =
+        solver.FactorAndCalcSchurComplement(M, std::unordered_set<int>());
+    EXPECT_TRUE(schur_complement.has_value());
+    EXPECT_TRUE(CompareMatrices(schur_complement.value(), M.MakeDenseMatrix()));
+    EXPECT_EQ(solver.solver_mode(),
+              BlockSparseCholeskySolver<MatrixXd>::SolverMode::kFactored);
+  }
+  /* Some of the blocks are eliminated. */
+  {
+    std::unordered_set<int> eliminated_blocks = {0, 1, 3};
+    const std::optional<MatrixXd> schur_complement =
+        solver.FactorAndCalcSchurComplement(M, eliminated_blocks);
+    EXPECT_TRUE(schur_complement.has_value());
+    const MatrixXd dense = M.MakeDenseMatrix();
+    MatrixXd A = dense.block<4, 4>(5, 5);
+    MatrixXd D = MatrixXd::Zero(8, 8);
+    D.topLeftCorner(2, 2) = dense.topLeftCorner(2, 2);
+    D.block<3, 3>(2, 2) = dense.block<3, 3>(2, 2);
+    D.block<3, 3>(2, 5) = dense.block<3, 3>(2, 9);
+    D.block<3, 3>(5, 2) = dense.block<3, 3>(9, 2);
+    D.bottomRightCorner(3, 3) = dense.bottomRightCorner(3, 3);
+    MatrixXd B = MatrixXd::Zero(8, 4);
+    B.block<3, 4>(2, 0) = dense.block<3, 4>(2, 5);
+    MatrixXd expected_schur_complement = A - B.transpose() * D.llt().solve(B);
+    EXPECT_TRUE(CompareMatrices(schur_complement.value(),
+                                expected_schur_complement, 1e-14));
+    EXPECT_EQ(solver.solver_mode(),
+              BlockSparseCholeskySolver<MatrixXd>::SolverMode::kFactored);
+  }
 }
 
 }  // namespace
