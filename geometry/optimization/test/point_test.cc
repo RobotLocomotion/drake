@@ -59,6 +59,10 @@ GTEST_TEST(PointTest, BasicTest) {
   // Test IsEmpty (which is trivially false for Point).
   EXPECT_FALSE(P.IsEmpty());
 
+  // Test MaybeGetFeasiblePoint.
+  ASSERT_TRUE(P.MaybeGetFeasiblePoint().has_value());
+  EXPECT_TRUE(P.PointInSet(P.MaybeGetFeasiblePoint().value()));
+
   // Test set_x().
   const Vector3d p2_W{6.2, -.23, -8.2};
   P.set_x(p2_W);
@@ -75,6 +79,7 @@ GTEST_TEST(PointTest, DefaultCtor) {
   EXPECT_TRUE(dut.IsBounded());
   EXPECT_THROW(dut.IsEmpty(), std::exception);
   EXPECT_FALSE(dut.MaybeGetPoint().has_value());
+  EXPECT_FALSE(dut.MaybeGetFeasiblePoint().has_value());
   EXPECT_FALSE(dut.PointInSet(Eigen::VectorXd::Zero(0)));
 
   Point P;

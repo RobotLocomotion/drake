@@ -56,6 +56,20 @@ std::optional<Eigen::VectorXd> ConvexSet::DoMaybeGetPoint() const {
   return std::nullopt;
 }
 
+std::optional<Eigen::VectorXd> ConvexSet::DoMaybeGetFeasiblePoint() const {
+  DRAKE_DEMAND(ambient_dimension() > 0);
+  solvers::MathematicalProgram prog;
+  auto point = prog.NewContinuousVariables(ambient_dimension());
+  AddPointInSetConstraints(&prog, point);
+  auto result = solvers::Solve(prog);
+  auto status = result.get_solution_result();
+  if (status == solvers::SolutionResult::kSolutionFound) {
+    return result.GetSolution(point);
+  } else {
+    return std::nullopt;
+  }
+}
+
 std::pair<VectorX<symbolic::Variable>,
           std::vector<solvers::Binding<solvers::Constraint>>>
 ConvexSet::AddPointInSetConstraints(
