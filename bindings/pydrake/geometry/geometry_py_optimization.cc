@@ -48,6 +48,7 @@ void DefineGeometryOptimization(py::module m) {
         .def("IsEmpty", &ConvexSet::IsEmpty, cls_doc.IsEmpty.doc)
         .def("MaybeGetPoint", &ConvexSet::MaybeGetPoint,
             cls_doc.MaybeGetPoint.doc)
+        .def("MaybeGetFeasiblePoint", &ConvexSet::MaybeGetFeasiblePoint)
         .def("PointInSet", &ConvexSet::PointInSet, py::arg("x"),
             py::arg("tol") = 1e-8, cls_doc.PointInSet.doc)
         .def("AddPointInSetConstraints", &ConvexSet::AddPointInSetConstraints,
