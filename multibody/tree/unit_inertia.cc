@@ -5,6 +5,25 @@
 namespace drake {
 namespace multibody {
 
+namespace {
+
+// Throw unless ‖unit_vector‖ is within ≈ 5.5 bits of 1.0.
+// Note: 1E-14 ≈ 2^5.5 * std::numeric_limits<double>::epsilon();
+template<typename T>
+void ThrowUnlessUnitVectorIsMagnitudeOne(const T& unit_vector,
+    const std::string& function_name) {
+  using std::abs;
+  constexpr double kTolerance = 1E-14;
+  if (abs(unit_vector.norm() - 1) > kTolerance) {
+    DRAKE_DEMAND(!function_name.empty());
+    const std::string error_message = fmt::format(
+        "{}(): The unit_vector argument {} is not a unit vector.",
+        function_name, fmt_eigen(unit_vector.transpose()));
+    throw std::logic_error(error_message);
+  }
+}
+}  // namespace
+
 template <typename T>
 UnitInertia<T>& UnitInertia<T>::SetFromRotationalInertia(
     const RotationalInertia<T>& I, const T& mass) {
@@ -40,6 +59,7 @@ UnitInertia<T> UnitInertia<T>::SolidCylinder(
     const T& r, const T& L, const Vector3<T>& b_E) {
   DRAKE_THROW_UNLESS(r >= 0);
   DRAKE_THROW_UNLESS(L >= 0);
+  // UnitInertia::SolidCylinder() allows for a near zero-vector due to code in
   // TODO(Mitiguy) Throw if |b_E| is not within 1.0E-14 of 1 (breaking change).
   DRAKE_THROW_UNLESS(b_E.norm() > std::numeric_limits<double>::epsilon());
   const T J = r * r / T(2);
@@ -48,13 +68,16 @@ UnitInertia<T> UnitInertia<T>::SolidCylinder(
 }
 
 template <typename T>
-UnitInertia<T> UnitInertia<T>::SolidCylinderAboutEnd(const T& r, const T& L) {
-  // TODO(Mitiguy) add @param[in] unit_vector as with SolidCapsule.
-  DRAKE_THROW_UNLESS(r >= 0);
-  DRAKE_THROW_UNLESS(L >= 0);
-  const T Iz = r * r / T(2);
-  const T Ix = (T(3) * r * r + L * L) / T(12) + L * L / T(4);
-  return UnitInertia(Ix, Ix, Iz);
+UnitInertia<T> UnitInertia<T>::SolidCylinderAboutEnd(
+    const T& radius, const T& length, const Vector3<T>& unit_vector) {
+  DRAKE_THROW_UNLESS(radius >= 0);
+  DRAKE_THROW_UNLESS(length >= 0);
+  ThrowUnlessUnitVectorIsMagnitudeOne(unit_vector, __func__);
+  const T r2 = radius * radius;
+  const T l2 = length * length;
+  const T J = T(0.5) * r2;  // Axial moment of inertia J = ½ r².
+  const T K = T(0.25) * r2  + l2 / T(3);  // Transverse moment K = ¼ r² + ⅓ L².
+  return AxiallySymmetric(J, K, unit_vector);
 }
 
 template <typename T>
