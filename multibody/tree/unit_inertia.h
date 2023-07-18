@@ -291,18 +291,21 @@ class UnitInertia : public RotationalInertia<T> {
   /// @param[in] L length of the cylindrical part of the capsule.
   /// @param[in] unit_vector direction of the cylindrical part of the capsule.
   ///   It defaults to `Vector3<T>::UnitZ()`.
-  /// @throws std::exception if r or L is negative or if ‖unit_vector‖ ≉ 1,
-  ///   (the magnitude of unit_vector is not within 1E-14 of 1.0).
+  /// @throws std::exception if r or L is negative or if ‖unit_vector‖ is not
+  /// within 1.0E-14 of 1.0.
   static UnitInertia<T> SolidCapsule(const T& r, const T& L,
       const Vector3<T>& unit_vector = Vector3<T>::UnitZ());
 
-  /// Computes the unit inertia for a unit-mass cylinder of uniform density
-  /// oriented along the z-axis computed about a point at the center of
-  /// its base.
-  /// @param[in] r The radius of the cylinder.
-  /// @param[in] L The length of the cylinder.
-  /// @throws std::exception if r or L is negative.
-  static UnitInertia<T> SolidCylinderAboutEnd(const T& r, const T& L);
+  /// Creates a unit inertia for a uniform-density solid cylinder B about an
+  /// end-point Bp (Bp is at the center of one of the cylinder's circular ends).
+  /// @param[in] radius radius of cylinder (meters).
+  /// @param[in] length length of cylinder in unit_vector direction (meters).
+  /// @param[in] unit_vector unit vector defining the axial direction of the
+  /// cylinder, expressed in B.
+  /// @throws std::exception if radius or length is negative or if
+  /// ‖unit_vector‖ is not within 1.0E-14 of 1.0.
+  static UnitInertia<T> SolidCylinderAboutEnd(
+      const T& radius, const T& length, const Vector3<T>& unit_vector);
 
   /// Creates a unit inertia for a unit-mass uniform density solid tetrahedron B
   /// about a point A, from which position vectors to B's 4 vertices B0, B1, B2,
