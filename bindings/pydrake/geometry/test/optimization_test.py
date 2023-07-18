@@ -900,120 +900,117 @@ class TestCspaceFreePolytope(unittest.TestCase):
         # test_CspaceFreePolytope_Options along with all the other options
 
     def test_CspaceFreePolytopeMethods(self):
-        C_init = np.vstack([np.atleast_2d(np.eye(self.plant.num_positions(
-        ))), -np.atleast_2d(np.eye(self.plant.num_positions()))])
-        d_init = 1e-3 * np.ones((C_init.shape[0], 1))
+        # These tests take very long using any solver besides Mosek so only run
+        # them if Mosek is available.
+        mosek_solver = MosekSolver()
+        if mosek_solver.available():
+            C_init = np.vstack([np.atleast_2d(np.eye(self.plant.num_positions(
+            ))), -np.atleast_2d(np.eye(self.plant.num_positions()))])
+            d_init = 1e-3 * np.ones((C_init.shape[0], 1))
 
-        lagrangian_options = \
-            mut.CspaceFreePolytope.\
-            FindSeparationCertificateGivenPolytopeOptions()
-        lagrangian_options.solver_id = ScsSolver.id()
+            lagrangian_options = \
+                mut.CspaceFreePolytope.\
+                FindSeparationCertificateGivenPolytopeOptions()
 
-        binary_search_options = mut.CspaceFreePolytope.BinarySearchOptions()
-        binary_search_options.scale_min = 1e-2
-        binary_search_options.scale_max = 1e7
-        binary_search_options.max_iter = 2
-        # Default is Mosek. This allows the test to run without
-        # special installation.
-        binary_search_options.find_lagrangian_options.solver_id = \
-            ScsSolver.id()
+            binary_search_options = \
+                mut.CspaceFreePolytope.BinarySearchOptions()
+            binary_search_options.scale_min = 1e-2
+            binary_search_options.scale_max = 1e7
+            binary_search_options.max_iter = 2
 
-        bilinear_alternation_options = \
-            mut.CspaceFreePolytope.BilinearAlternationOptions()
-        bilinear_alternation_options.max_iter = 2
-        # Default is Mosek. This allows the test to run without special
-        # installation.
-        bilinear_alternation_options.find_lagrangian_options.solver_id = \
-            ScsSolver.id()
+            bilinear_alternation_options = \
+                mut.CspaceFreePolytope.BilinearAlternationOptions()
+            bilinear_alternation_options.max_iter = 2
 
-        (success, certificates) = self.cspace_free_polytope.\
-            FindSeparationCertificateGivenPolytope(
-            C=C_init, d=d_init, ignored_collision_pairs=set(),
-            options=lagrangian_options)
-        self.assertTrue(success)
-        geom_pair = list(self.cspace_free_polytope.
-                         map_geometries_to_separating_planes().keys())[0]
-        self.assertIn(geom_pair, certificates.keys())
-        self.assertIsInstance(
-            certificates[geom_pair],
-            mut.CspaceFreePolytope.SeparationCertificateResult)
+            (success, certificates) = self.cspace_free_polytope.\
+                FindSeparationCertificateGivenPolytope(
+                C=C_init, d=d_init, ignored_collision_pairs=set(),
+                options=lagrangian_options)
+            self.assertTrue(success)
+            geom_pair = list(self.cspace_free_polytope.
+                             map_geometries_to_separating_planes().keys())[0]
+            self.assertIn(geom_pair, certificates.keys())
+            self.assertIsInstance(
+                certificates[geom_pair],
+                mut.CspaceFreePolytope.SeparationCertificateResult)
 
-        result = self.cspace_free_polytope.BinarySearch(
-            ignored_collision_pairs=set(),
-            C=C_init,
-            d=d_init,
-            s_center=np.zeros(self.plant.num_positions()),
-            options=binary_search_options
-        )
+            result = self.cspace_free_polytope.BinarySearch(
+                ignored_collision_pairs=set(),
+                C=C_init,
+                d=d_init,
+                s_center=np.zeros(self.plant.num_positions()),
+                options=binary_search_options
+            )
 
-        # Accesses all members of SearchResult
-        self.assertGreaterEqual(result.num_iter(), 1)
-        self.assertGreaterEqual(len(result.C()), 1)
-        self.assertGreaterEqual(len(result.d()), 1)
-        self.assertIsInstance(result.certified_polytope(), mut.HPolyhedron)
-        self.assertEqual(len(result.a()), 1)
-        self.assertEqual(len(result.b()), 1)
-        self.assertIsInstance(result.a()[0][0], Polynomial)
+            # Accesses all members of SearchResult
+            self.assertGreaterEqual(result.num_iter(), 1)
+            self.assertGreaterEqual(len(result.C()), 1)
+            self.assertGreaterEqual(len(result.d()), 1)
+            self.assertIsInstance(result.certified_polytope(), mut.HPolyhedron)
+            self.assertEqual(len(result.a()), 1)
+            self.assertEqual(len(result.b()), 1)
+            self.assertIsInstance(result.a()[0][0], Polynomial)
 
-        result = self.cspace_free_polytope.SearchWithBilinearAlternation(
-            ignored_collision_pairs=set(),
-            C_init=C_init,
-            d_init=d_init,
-            options=bilinear_alternation_options)
-        self.assertIsNotNone(result)
-        self.assertGreaterEqual(len(result), 1)
-        self.assertIsInstance(result[0], mut.CspaceFreePolytope.SearchResult)
+            result = self.cspace_free_polytope.SearchWithBilinearAlternation(
+                ignored_collision_pairs=set(),
+                C_init=C_init,
+                d_init=d_init,
+                options=bilinear_alternation_options)
+            self.assertIsNotNone(result)
+            self.assertGreaterEqual(len(result), 1)
+            self.assertIsInstance(result[0],
+                                  mut.CspaceFreePolytope.SearchResult)
 
-        # Make and Solve GeometrySeparableProgram
-        pair = list(self.cspace_free_polytope.
-                    map_geometries_to_separating_planes().keys())[0]
-        cert_prog = self.cspace_free_polytope.MakeIsGeometrySeparableProgram(
-            geometry_pair=pair, C=C_init, d=d_init
-        )
-        # Call all CspaceFreePolytope.SeparationCertificateProgram methods
-        certificates = cert_prog.certificate
-        self.assertIsInstance(certificates,
-                              mut.CspaceFreePolytope.SeparationCertificate)
-        self.assertIsInstance(cert_prog.prog(), MathematicalProgram)
-        self.assertGreaterEqual(cert_prog.plane_index, 0)
+            # Make and Solve GeometrySeparableProgram
+            pair = list(self.cspace_free_polytope.
+                        map_geometries_to_separating_planes().keys())[0]
+            cert_prog = \
+                self.cspace_free_polytope.MakeIsGeometrySeparableProgram(
+                    geometry_pair=pair, C=C_init, d=d_init)
+            # Call all CspaceFreePolytope.SeparationCertificateProgram methods
+            certificates = cert_prog.certificate
+            self.assertIsInstance(certificates,
+                                  mut.CspaceFreePolytope.SeparationCertificate)
+            self.assertIsInstance(cert_prog.prog(), MathematicalProgram)
+            self.assertGreaterEqual(cert_prog.plane_index, 0)
 
-        self.assertIsInstance(
-            certificates.positive_side_rational_lagrangians[0],
-            mut.CspaceFreePolytope.SeparatingPlaneLagrangians)
-        self.assertIsInstance(
-            certificates.negative_side_rational_lagrangians[0],
-            mut.CspaceFreePolytope.SeparatingPlaneLagrangians)
+            self.assertIsInstance(
+                certificates.positive_side_rational_lagrangians[0],
+                mut.CspaceFreePolytope.SeparatingPlaneLagrangians)
+            self.assertIsInstance(
+                certificates.negative_side_rational_lagrangians[0],
+                mut.CspaceFreePolytope.SeparatingPlaneLagrangians)
 
-        cert_prog_sol = \
-            self.cspace_free_polytope.SolveSeparationCertificateProgram(
-                certificate_program=cert_prog, options=lagrangian_options)
+            cert_prog_sol = \
+                self.cspace_free_polytope.SolveSeparationCertificateProgram(
+                    certificate_program=cert_prog, options=lagrangian_options)
 
-        # Call all CspaceFreePolytope.SeparationCertificateResult
-        # methods
-        self.assertEqual(cert_prog_sol.a.shape, (3,))
-        self.assertIsInstance(cert_prog_sol.a[0], Polynomial)
-        self.assertIsInstance(cert_prog_sol.b, Polynomial)
-        self.assertIsInstance(
-            cert_prog_sol.plane_decision_var_vals[0], float)
-        self.assertIsInstance(
-            cert_prog_sol.result, MathematicalProgramResult)
+            # Call all CspaceFreePolytope.SeparationCertificateResult
+            # methods
+            self.assertEqual(cert_prog_sol.a.shape, (3,))
+            self.assertIsInstance(cert_prog_sol.a[0], Polynomial)
+            self.assertIsInstance(cert_prog_sol.b, Polynomial)
+            self.assertIsInstance(
+                cert_prog_sol.plane_decision_var_vals[0], float)
+            self.assertIsInstance(
+                cert_prog_sol.result, MathematicalProgramResult)
 
-        # Bindings for SeparatingPlaneLagrangians
-        positive_side_lagrangians = \
-            cert_prog_sol.positive_side_rational_lagrangians
-        positive_test_lagrangian = positive_side_lagrangians[0]
-        negative_side_lagrangians = \
-            cert_prog_sol.negative_side_rational_lagrangians
-        negative_test_lagrangian = negative_side_lagrangians[0]
+            # Bindings for SeparatingPlaneLagrangians
+            positive_side_lagrangians = \
+                cert_prog_sol.positive_side_rational_lagrangians
+            positive_test_lagrangian = positive_side_lagrangians[0]
+            negative_side_lagrangians = \
+                cert_prog_sol.negative_side_rational_lagrangians
+            negative_test_lagrangian = negative_side_lagrangians[0]
 
-        positive_test_lagrangian.GetSolution(cert_prog_sol.result)
-        negative_test_lagrangian.GetSolution(cert_prog_sol.result)
+            positive_test_lagrangian.GetSolution(cert_prog_sol.result)
+            negative_test_lagrangian.GetSolution(cert_prog_sol.result)
 
-        self.assertEqual(len(positive_test_lagrangian.polytope()),
-                         C_init.shape[0])
-        self.assertEqual(len(positive_test_lagrangian.s_lower()), 1)
-        self.assertEqual(len(positive_test_lagrangian.s_upper()), 1)
-        self.assertEqual(len(negative_test_lagrangian.polytope()),
-                         C_init.shape[0])
-        self.assertEqual(len(negative_test_lagrangian.s_lower()), 1)
-        self.assertEqual(len(negative_test_lagrangian.s_upper()), 1)
+            self.assertEqual(len(positive_test_lagrangian.polytope()),
+                             C_init.shape[0])
+            self.assertEqual(len(positive_test_lagrangian.s_lower()), 1)
+            self.assertEqual(len(positive_test_lagrangian.s_upper()), 1)
+            self.assertEqual(len(negative_test_lagrangian.polytope()),
+                             C_init.shape[0])
+            self.assertEqual(len(negative_test_lagrangian.s_lower()), 1)
+            self.assertEqual(len(negative_test_lagrangian.s_upper()), 1)
