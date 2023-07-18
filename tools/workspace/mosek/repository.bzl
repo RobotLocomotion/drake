@@ -29,7 +29,7 @@ def _impl(repository_ctx):
     #     https://docs.mosek.com/latest/licensing/license-agreement-info.html
     mosek_major_version = 10
     mosek_minor_version = 0
-    mosek_patch_version = 46 
+    mosek_patch_version = 46
 
     os_result = determine_os(repository_ctx)
     if os_result.is_macos or os_result.is_macos_wheel:
