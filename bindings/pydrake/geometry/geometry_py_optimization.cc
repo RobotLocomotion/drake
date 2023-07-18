@@ -16,7 +16,6 @@
 #include "drake/common/yaml/yaml_io.h"
 #include "drake/geometry/optimization/affine_subspace.h"
 #include "drake/geometry/optimization/c_iris_collision_geometry.h"
-#include "drake/geometry/optimization/c_iris_separating_plane.h"
 #include "drake/geometry/optimization/cartesian_product.h"
 #include "drake/geometry/optimization/cspace_free_polytope.h"
 #include "drake/geometry/optimization/cspace_free_polytope_base.h"
@@ -40,48 +39,31 @@ template <typename T>
 void DoSeparatingPlaneDeclaration(py::module m, T) {
   constexpr auto& doc = pydrake_doc.drake.geometry.optimization;
   py::tuple param = GetPyParam<T>();
-  using BaseClass = geometry::optimization::CSpaceSeparatingPlane<T>;
+  using Class = geometry::optimization::CSpaceSeparatingPlane<T>;
   constexpr auto& base_cls_doc = doc.CSpaceSeparatingPlane;
-  using CIrisClass = geometry::optimization::CIrisSeparatingPlane<T>;
-  constexpr auto& ciris_cls_doc = doc.CSpaceSeparatingPlane;
   {
     auto cls =
-        DefineTemplateClassWithDefault<BaseClass>(
+        DefineTemplateClassWithDefault<Class>(
             m, "CSpaceSeparatingPlane", param, base_cls_doc.doc)
-            .def_readonly("a", &BaseClass::a, py_rvp::copy, base_cls_doc.a.doc)
-            .def_readonly("b", &BaseClass::b, base_cls_doc.b.doc)
+            // use py_rvp::copy here because numpy.ndarray with dtype=object
+            // arrays must be copied, and cannot be referenced.
+            .def_readonly("a", &Class::a, py_rvp::copy, base_cls_doc.a.doc)
+            .def_readonly("b", &Class::b, base_cls_doc.b.doc)
             .def_readonly("positive_side_geometry",
-                &BaseClass::positive_side_geometry,
+                &Class::positive_side_geometry,
                 base_cls_doc.positive_side_geometry.doc)
             .def_readonly("negative_side_geometry",
-                &BaseClass::negative_side_geometry,
+                &Class::negative_side_geometry,
                 base_cls_doc.negative_side_geometry.doc)
-            .def_readonly("expressed_body", &BaseClass::expressed_body,
+            .def_readonly("expressed_body", &Class::expressed_body,
                 base_cls_doc.expressed_body.doc)
-            .def_readonly("decision_variables", &BaseClass::decision_variables,
+            .def_readonly("plane_degree", &Class::plane_degree)
+            // use py_rvp::copy here because numpy.ndarray with dtype=object
+            // arrays must be copied, and cannot be referenced.
+            .def_readonly("decision_variables", &Class::decision_variables,
                 py_rvp::copy, base_cls_doc.a.doc);
     DefCopyAndDeepCopy(&cls);
-    AddValueInstantiation<BaseClass>(m);
-  }
-  {
-    auto cls =
-        DefineTemplateClassWithDefault<CIrisClass>(
-            m, "CIrisSeparatingPlane", param, ciris_cls_doc.doc)
-            .def_readonly("a", &CIrisClass::a, py_rvp::copy, base_cls_doc.a.doc)
-            .def_readonly("b", &CIrisClass::b, base_cls_doc.b.doc)
-            .def_readonly("positive_side_geometry",
-                &BaseClass::positive_side_geometry,
-                base_cls_doc.positive_side_geometry.doc)
-            .def_readonly("negative_side_geometry",
-                &BaseClass::negative_side_geometry,
-                base_cls_doc.negative_side_geometry.doc)
-            .def_readonly("expressed_body", &BaseClass::expressed_body,
-                base_cls_doc.expressed_body.doc)
-            .def_readonly("plane_degree", &BaseClass::plane_degree)
-            .def_readonly("decision_variables", &BaseClass::decision_variables,
-                py_rvp::copy, base_cls_doc.a.doc);
-    DefCopyAndDeepCopy(&cls);
-    AddValueInstantiation<CIrisClass>(m);
+    AddValueInstantiation<Class>(m);
   }
 }
 
@@ -819,12 +801,16 @@ void DefineGeometryOptimization(py::module m) {
   {
     // Definitions for cpsace_free_structs.h/cc
     constexpr auto& prog_doc = doc.SeparationCertificateProgramBase;
-    auto prog_cls =
-        py::class_<SeparationCertificateProgramBase>(
-            m, "SeparationCertificateProgramBase", prog_doc.doc)
-            .def_readonly("prog", &SeparationCertificateProgramBase::prog)
-            .def_readonly(
-                "plane_index", &SeparationCertificateProgramBase::plane_index);
+    auto prog_cls = py::class_<SeparationCertificateProgramBase>(
+        m, "SeparationCertificateProgramBase", prog_doc.doc)
+                        .def(
+                            "prog",
+                            [](const SeparationCertificateProgramBase* self) {
+                              return self->prog.get();
+                            },
+                            py_rvp::reference_internal)
+                        .def_readonly("plane_index",
+                            &SeparationCertificateProgramBase::plane_index);
 
     constexpr auto& result_doc = doc.SeparationCertificateResultBase;
     auto result_cls =
@@ -917,18 +903,25 @@ void DefineGeometryOptimization(py::module m) {
         .def("BinarySearch", &Class::BinarySearch,
             py::arg("ignored_collision_pairs"), py::arg("C"), py::arg("d"),
             py::arg("s_center"), py::arg("options"), cls_doc.BinarySearch.doc)
-        .def(
-            "MakeIsGeometrySeparableProgram",
-            [](const CspaceFreePolytope* self,
-                const std::tuple<geometry::GeometryId, geometry::GeometryId>&
-                    geometry_pair,
-                const Eigen::Ref<const Eigen::MatrixXd>& C,
-                const Eigen::Ref<const Eigen::VectorXd>& d) {
-              const SortedPair<geometry::GeometryId> geom_pair{
-                  std::get<0>(geometry_pair), std::get<1>(geometry_pair)};
-              return self->MakeIsGeometrySeparableProgram(geom_pair, C, d);
-            },
-            py::arg("geometry_pair"), py::arg("C"), py::arg("d"),
+        //        .def(
+        //            "MakeIsGeometrySeparableProgram",
+        //            [](const CspaceFreePolytope* self,
+        //                const std::tuple<geometry::GeometryId,
+        //                geometry::GeometryId>&
+        //                    geometry_pair,
+        //                const Eigen::Ref<const Eigen::MatrixXd>& C,
+        //                const Eigen::Ref<const Eigen::VectorXd>& d) {
+        //              const SortedPair<geometry::GeometryId> geom_pair{
+        //                  std::get<0>(geometry_pair),
+        //                  std::get<1>(geometry_pair)};
+        //              return self->MakeIsGeometrySeparableProgram(geom_pair,
+        //              C, d);
+        //            },
+        //            py::arg("geometry_pair"), py::arg("C"), py::arg("d"),
+        //            cls_doc.MakeIsGeometrySeparableProgram.doc)
+        .def("MakeIsGeometrySeparableProgram",
+            &Class::MakeIsGeometrySeparableProgram, py::arg("geometry_pair"),
+            py::arg("C"), py::arg("d"),
             cls_doc.MakeIsGeometrySeparableProgram.doc)
         .def("SolveSeparationCertificateProgram",
             &Class::SolveSeparationCertificateProgram,
@@ -941,12 +934,12 @@ void DefineGeometryOptimization(py::module m) {
         .def("GetSolution", &Class::SeparatingPlaneLagrangians::GetSolution,
             py::arg("result"),
             cls_doc.SeparatingPlaneLagrangians.GetSolution.doc)
+        // use py_rvp::copy here because numpy.ndarray with dtype=object arrays
+        // must be copied, and cannot be referenced.
         .def("polytope", &Class::SeparatingPlaneLagrangians::mutable_polytope,
             py_rvp::copy)
-        .def("s_lower", &Class::SeparatingPlaneLagrangians::mutable_s_lower,
-            py_rvp::copy)
-        .def("s_upper", &Class::SeparatingPlaneLagrangians::mutable_s_upper,
-            py_rvp::copy);
+        .def("s_lower", &Class::SeparatingPlaneLagrangians::mutable_s_lower)
+        .def("s_upper", &Class::SeparatingPlaneLagrangians::mutable_s_upper);
     {
       using SepCertClass = Class::SeparationCertificateResult;
       py::class_<SepCertClass>(cspace_free_polytope_cls,
@@ -963,11 +956,15 @@ void DefineGeometryOptimization(py::module m) {
                   negative_side_rational_lagrangians,
               cls_doc.SeparationCertificateResult
                   .negative_side_rational_lagrangians.doc)
+          // use py_rvp::copy here because numpy.ndarray with dtype=object
+          // arrays must be copied, and cannot be referenced.
           .def_readonly("a", &SepCertClass::a, py_rvp::copy,
               doc.SeparationCertificateResultBase.a.doc)
           .def_readonly(
               "b", &SepCertClass::b, doc.SeparationCertificateResultBase.b.doc)
           .def_readonly("result", &SepCertClass::result)
+          // use py_rvp::copy here because numpy.ndarray with dtype=object
+          // arrays must be copied, and cannot be referenced.
           .def_readonly("plane_decision_var_vals",
               &SepCertClass::plane_decision_var_vals, py_rvp::copy);
     }
@@ -982,16 +979,11 @@ void DefineGeometryOptimization(py::module m) {
         .def_readwrite("negative_side_rational_lagrangians",
             &Class::SeparationCertificate::negative_side_rational_lagrangians);
     {
-      py::class_<Class::SeparationCertificateProgram>(cspace_free_polytope_cls,
+      py::class_<Class::SeparationCertificateProgram,
+          SeparationCertificateProgramBase>(cspace_free_polytope_cls,
           "SeparationCertificateProgram",
           cls_doc.SeparationCertificateProgram.doc)
           .def(py::init<>())
-          .def(
-              "prog",
-              [](const Class::SeparationCertificateProgram* self) {
-                return self->prog.get();
-              },
-              py_rvp::reference_internal)
           .def_readonly(
               "plane_index", &Class::SeparationCertificateProgram::plane_index)
           .def_readonly(
@@ -1038,8 +1030,10 @@ void DefineGeometryOptimization(py::module m) {
         .def(py::init<>())
         .def("C", &Class::SearchResult::C)
         .def("d", &Class::SearchResult::d)
+        // use py_rvp::copy here because numpy.ndarray with dtype=object arrays
+        // must be copied, and cannot be referenced.
         .def("a", &Class::SearchResult::a, py_rvp::copy)
-        .def("b", &Class::SearchResult::b, py_rvp::copy)
+        .def("b", &Class::SearchResult::b)
         .def("num_iter", &Class::SearchResult::num_iter)
         .def("certified_polytope", &Class::SearchResult::certified_polytope);
 
