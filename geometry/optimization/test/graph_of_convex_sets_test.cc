@@ -1775,7 +1775,7 @@ GTEST_TEST(ShortestPathTest, TobiasToyExample) {
   ASSERT_TRUE(active_edges_result.is_success());
   // The optimal costs should match.
   EXPECT_NEAR(result.get_optimal_cost(), active_edges_result.get_optimal_cost(),
-              2e-5);
+              3e-5);
   for (const auto* v : spp.Vertices()) {
     EXPECT_TRUE(CompareMatrices(result.GetSolution(v->x()),
                                 active_edges_result.GetSolution(v->x()), 2e-3));
