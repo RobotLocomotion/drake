@@ -68,6 +68,12 @@ void Node::UpdateExternalDegree(const std::vector<Node>& nodes) {
 
 std::vector<int> ComputeMinimumDegreeOrdering(
     const BlockSparsityPattern& block_sparsity_pattern) {
+  return ComputeMinimumDegreeOrdering(block_sparsity_pattern, {});
+}
+
+std::vector<int> ComputeMinimumDegreeOrdering(
+    const BlockSparsityPattern& block_sparsity_pattern,
+    const std::unordered_set<int>& priority_elements) {
   /* Initialize for Minimum Degree: Populate index, size, and A, the list of
    adjacent variables. E, L are empty initially. */
   const std::vector<int>& block_sizes = block_sparsity_pattern.block_sizes();
@@ -105,12 +111,15 @@ std::vector<int> ComputeMinimumDegreeOrdering(
    modifying existing elements. There are ways to get around it by duplicating
    nodes and ignoring out-of-date nodes, but for simplicity and readability, we
    use an std::set here instead. */
-  std::set<IndexDegree> sorted_nodes;
+  std::set<SimplifiedNode> sorted_nodes;
   /* Keep the nodes sorted by degrees and break ties with indices. We use a
    striped down version of the node to keep only the necessary information
    (degree and index). */
   for (int n = 0; n < num_nodes; ++n) {
-    IndexDegree node = {.degree = nodes[n].degree, .index = nodes[n].index};
+    SimplifiedNode node = {
+        .degree = nodes[n].degree,
+        .index = nodes[n].index,
+        .priority = priority_elements.count(nodes[n].index) > 0 ? 0 : 1};
     sorted_nodes.insert(node);
   }
 
@@ -119,7 +128,7 @@ std::vector<int> ComputeMinimumDegreeOrdering(
   /* Begin elimination. */
   for (int k = 0; k < num_nodes; ++k) {
     DRAKE_DEMAND(ssize(sorted_nodes) == num_nodes - k);
-    const IndexDegree min_node =
+    const SimplifiedNode min_node =
         sorted_nodes.extract(sorted_nodes.begin()).value();
     /* p is the variable to be eliminated next. */
     const int p = min_node.index;
@@ -138,8 +147,10 @@ std::vector<int> ComputeMinimumDegreeOrdering(
     /* Update all neighboring variables of p. */
     for (int i : node_p.L) {
       Node& node_i = nodes[i];
-      const IndexDegree old_node = {.degree = node_i.degree,
-                                    .index = node_i.index};
+      const SimplifiedNode old_node = {
+          .degree = node_i.degree,
+          .index = node_i.index,
+          .priority = priority_elements.count(node_i.index) > 0 ? 0 : 1};
       /* Pruning. */
       node_i.A = SetDifference(node_i.A, node_p.L);
       /* Convert p from a variable to an element in node i. Note that Lp was
@@ -150,7 +161,9 @@ std::vector<int> ComputeMinimumDegreeOrdering(
       InsertValueInSortedVector(p, &(node_i.E));
       /* Compute external degree. */
       node_i.UpdateExternalDegree(nodes);
-      IndexDegree new_node = {.degree = node_i.degree, .index = node_i.index};
+      SimplifiedNode new_node = {.degree = node_i.degree,
+                                 .index = node_i.index,
+                                 .priority = old_node.priority};
       sorted_nodes.erase(old_node);
       sorted_nodes.insert(new_node);
     }
