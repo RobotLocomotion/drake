@@ -249,17 +249,24 @@ GTEST_TEST(UnitInertia, SolidCylinder) {
       Gv_expected.CopyToFullMatrix3(), kEpsilon));
 }
 
-// Tests the static method to obtain the unit inertia of a solid cylinder
-// computed about a point at the center of its base.
+// Tests the static method to obtain the unit inertia of a solid cylinder B
+// computed about a point Bp at the center of its base.
 GTEST_TEST(UnitInertia, SolidCylinderAboutEnd) {
   const double r = 2.5;
   const double L = 1.5;
   const double I_perp = (3.0 * r * r + L * L) / 12.0 + L * L /4.0;
   const double I_axial = r * r / 2.0;
   const UnitInertia<double> G_expected(I_perp, I_perp, I_axial);
-  UnitInertia<double> G = UnitInertia<double>::SolidCylinderAboutEnd(r, L);
-  EXPECT_TRUE(G.CopyToFullMatrix3().isApprox(
+  UnitInertia<double> G_BBp_B = UnitInertia<double>::SolidCylinderAboutEnd(
+      r, L, Vector3<double>::UnitZ());
+  EXPECT_TRUE(G_BBp_B.CopyToFullMatrix3().isApprox(
       G_expected.CopyToFullMatrix3(), kEpsilon));
+
+  // Ensure a bad unit vector throws an exception.
+  const Vector3<double> bad_vec(1, 0.1, 0);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      UnitInertia<double>::SolidCylinderAboutEnd(r, L, bad_vec),
+      "[^]* The unit_vector argument .* is not a unit vector.");
 }
 
 // Tests the static method to obtain the unit inertia of a solid capsule
@@ -594,8 +601,10 @@ GTEST_TEST(UnitInertia, ShiftFromCenterOfMassInPlace) {
   const double r = 2.5;
   const double L = 1.5;
   const UnitInertia<double> G_expected =
-      UnitInertia<double>::SolidCylinderAboutEnd(r, L);
-  UnitInertia<double> G = UnitInertia<double>::SolidCylinder(r, L);
+      UnitInertia<double>::SolidCylinderAboutEnd(
+          r, L, Vector3<double>::UnitZ());
+  UnitInertia<double> G =
+      UnitInertia<double>::SolidCylinder(r, L, Vector3<double>::UnitZ());
   EXPECT_FALSE(G.CopyToFullMatrix3().isApprox(
       G_expected.CopyToFullMatrix3(), kEpsilon));  // Not equal yet.
   G.ShiftFromCenterOfMassInPlace({0.0, 0.0, L / 2.0});

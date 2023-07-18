@@ -1159,7 +1159,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("L"), py::arg("unit_vector") = Vector3<T>::UnitZ().eval(),
             cls_doc.SolidCapsule.doc)
         .def_static("SolidCylinderAboutEnd", &Class::SolidCylinderAboutEnd,
-            py::arg("r"), py::arg("L"), cls_doc.SolidCylinderAboutEnd.doc)
+            py::arg("radius"), py::arg("length"), py::arg("unit_vector"),
+            cls_doc.SolidCylinderAboutEnd.doc)
         .def_static("AxiallySymmetric", &Class::AxiallySymmetric, py::arg("J"),
             py::arg("K"), py::arg("b_E"), cls_doc.AxiallySymmetric.doc)
         .def_static("StraightLine", &Class::StraightLine, py::arg("K"),
@@ -1215,6 +1216,10 @@ void DoScalarDependentDefinitions(py::module m, T) {
             &Class::SolidCylinderWithDensityAboutEnd, py::arg("density"),
             py::arg("radius"), py::arg("length"), py::arg("unit_vector"),
             cls_doc.SolidCylinderWithDensityAboutEnd.doc)
+        .def_static("SolidCylinderWithMassAboutEnd",
+            &Class::SolidCylinderWithMassAboutEnd, py::arg("mass"),
+            py::arg("radius"), py::arg("length"), py::arg("unit_vector"),
+            cls_doc.SolidCylinderWithMassAboutEnd.doc)
         .def_static("ThinRodWithMass", &Class::ThinRodWithMass, py::arg("mass"),
             py::arg("length"), py::arg("unit_vector"),
             cls_doc.ThinRodWithMass.doc)

@@ -181,11 +181,6 @@ SpatialInertia<T> SpatialInertia<T>::SolidCylinderWithMass(
   ThrowUnlessValueIsPositiveFinite(length, "length", __func__);
   ThrowUnlessUnitVectorIsMagnitudeOne(unit_vector, __func__);
   const Vector3<T> p_BoBcm_B = Vector3<T>::Zero();
-
-  // Note: Although a check is made that ‖unit_vector‖ ≈ 1, even if imperfect,
-  // UnitInertia::SolidCylinder() allows for a near zero-vector due to code in
-  // UnitInertia::AxiallySymmetric() which normalizes unit_vector before use.
-  // TODO(Mitiguy) remove normalization in UnitInertia::AxiallySymmetric().
   const UnitInertia<T> G_BBo_B =
       UnitInertia<T>::SolidCylinder(radius, length, unit_vector);
   return SpatialInertia<T>(mass, p_BoBcm_B, G_BBo_B);
@@ -199,12 +194,23 @@ SpatialInertia<T> SpatialInertia<T>::SolidCylinderWithDensityAboutEnd(
   ThrowUnlessValueIsPositiveFinite(radius, "radius", __func__);
   ThrowUnlessValueIsPositiveFinite(length, "length", __func__);
   ThrowUnlessUnitVectorIsMagnitudeOne(unit_vector, __func__);
-  SpatialInertia<T> M_BBcm_B =
-      SpatialInertia<T>::SolidCylinderWithDensity(
-          density, radius, length, unit_vector);
-  const Vector3<T> p_BcmBp_B = -0.5 * length * unit_vector;
-  M_BBcm_B.ShiftFromCenterOfMassInPlace(p_BcmBp_B);
-  return M_BBcm_B;  // Due to shift, this actually returns M_BBp_B.
+  const T volume = M_PI * radius * radius * length;  // π r² l
+  const T mass = density * volume;
+  return SolidCylinderWithMassAboutEnd(mass, radius, length, unit_vector);
+}
+
+template <typename T>
+SpatialInertia<T> SpatialInertia<T>::SolidCylinderWithMassAboutEnd(
+    const T& mass, const T& radius, const T& length,
+    const Vector3<T>& unit_vector) {
+  ThrowUnlessValueIsPositiveFinite(mass, "mass", __func__);
+  ThrowUnlessValueIsPositiveFinite(radius, "radius", __func__);
+  ThrowUnlessValueIsPositiveFinite(length, "length", __func__);
+  ThrowUnlessUnitVectorIsMagnitudeOne(unit_vector, __func__);
+  const Vector3<T> p_BpBcm_B = 0.5 * length * unit_vector;
+  const UnitInertia<T> G_BBp_B =
+      UnitInertia<T>::SolidCylinderAboutEnd(radius, length, unit_vector);
+  return SpatialInertia(mass, p_BpBcm_B, G_BBp_B);  // Returns M_BBp_B.
 }
 
 template <typename T>
