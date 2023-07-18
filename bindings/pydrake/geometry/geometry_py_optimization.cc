@@ -864,22 +864,6 @@ void DefineGeometryOptimization(py::module m) {
         .def("BinarySearch", &Class::BinarySearch,
             py::arg("ignored_collision_pairs"), py::arg("C"), py::arg("d"),
             py::arg("s_center"), py::arg("options"), cls_doc.BinarySearch.doc)
-        //        .def(
-        //            "MakeIsGeometrySeparableProgram",
-        //            [](const CspaceFreePolytope* self,
-        //                const std::tuple<geometry::GeometryId,
-        //                geometry::GeometryId>&
-        //                    geometry_pair,
-        //                const Eigen::Ref<const Eigen::MatrixXd>& C,
-        //                const Eigen::Ref<const Eigen::VectorXd>& d) {
-        //              const SortedPair<geometry::GeometryId> geom_pair{
-        //                  std::get<0>(geometry_pair),
-        //                  std::get<1>(geometry_pair)};
-        //              return self->MakeIsGeometrySeparableProgram(geom_pair,
-        //              C, d);
-        //            },
-        //            py::arg("geometry_pair"), py::arg("C"), py::arg("d"),
-        //            cls_doc.MakeIsGeometrySeparableProgram.doc)
         .def("MakeIsGeometrySeparableProgram",
             &Class::MakeIsGeometrySeparableProgram, py::arg("geometry_pair"),
             py::arg("C"), py::arg("d"),
