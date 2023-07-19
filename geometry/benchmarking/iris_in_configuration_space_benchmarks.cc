@@ -103,7 +103,7 @@ directives:
 # Add Bins
 - add_model:
     name: binR
-    file: package://drake/examples/manipulation_station/models/bin.sdf
+    file: package://drake/geometry/models/bin/bin.sdf
 
 - add_weld:
     parent: world
@@ -114,7 +114,7 @@ directives:
 
 - add_model:
     name: binL
-    file: package://drake/examples/manipulation_station/models/bin.sdf
+    file: package://drake/geometry/models/bin/bin.sdf
 
 - add_weld:
     parent: world
@@ -122,29 +122,10 @@ directives:
     X_PC:
       translation: [0, 0.6, 0]
       rotation: !Rpy { deg: [0.0, 0.0, 90.0 ]}
-)""";
-
-    parser.AddModelsFromString(model_directives, ".dmd.yaml");
-
-    // Don't add remote resources if we're in test mode.
-    if (!FLAGS_test) {
-      // We'll use some tables, shelves, and bins from a remote resource.
-      multibody::PackageMap::RemoteParams params;
-      params.urls.push_back(
-          "https://github.com/mpetersen94/gcs/archive/refs/tags/"
-          "arxiv_paper_version.tar.gz");
-      params.sha256 =
-          "6dd5e841c8228561b6d622f592359c36517cd3c3d5e1d3e04df74b2f5435680c";
-      params.strip_prefix = "gcs-arxiv_paper_version";
-      parser.package_map().AddRemote("gcs", params);
-
-      model_directives = R"""( 
-directives:
-
 # Add shelves
 - add_model:
     name: shelves
-    file: package://gcs/models/shelves/shelves.sdf
+    file: package://drake/geometry/models/shelves/shelves.sdf
 
 - add_weld:
     parent: world
@@ -155,7 +136,7 @@ directives:
 # Add table
 - add_model:
     name: table
-    file: package://gcs/models/table/table_wide.sdf
+    file: package://drake/geometry/models/table/table_wide.sdf
 
 - add_weld:
     parent: world
@@ -165,8 +146,7 @@ directives:
       rotation: !Rpy { deg: [0., 0., 00]}
 )""";
 
-      parser.AddModelsFromString(model_directives, ".dmd.yaml");
-    }
+    parser.AddModelsFromString(model_directives, ".dmd.yaml");
   }
 
   VectorXd MyInverseKinematics(const RigidTransformd& X_WE) {

@@ -532,8 +532,9 @@ PackageMap::PackageMap() : PackageMap{std::nullopt} {
   // Prepare the params for fetching remote drake_models. We do this outside of
   // the if-else to ensure it receives test coverage under bazel (i.e., even if
   // we're never going to download anything).
-  static const never_destroyed<RemoteParams> memoized_params(
-      GetDrakeModelsRemoteParams());
+  static const never_destroyed<RemoteParams> memoized_params;
+  unused(GetDrakeModelsRemoteParams);
+//      GetDrakeModelsRemoteParams());
 
   // For drake_models (i.e., https://github.com/RobotLocomotion/models), the
   // location where we find the data will vary. If we have Bazel runfiles with

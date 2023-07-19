@@ -15,6 +15,7 @@ drake_cc_googlebench_binary(
     add_test_rule = True,
     data = [
         "//examples/manipulation_station:models",
+        "//geometry:models",
         "//manipulation/models/iiwa_description:models",
         "//manipulation/models/wsg_50_description:models",
     ],
