@@ -21,6 +21,7 @@ import umsgpack
 
 from drake import (
     lcmt_point_cloud,
+    lcmt_viewer_draw,
     lcmt_viewer_geometry_data,
     lcmt_viewer_link_data,
 )
@@ -495,3 +496,32 @@ class TestMeldis(unittest.TestCase):
                 dut._lcm.HandleSubscriptions(timeout_millis=1)
                 dut._invoke_subscriptions()
                 self.assertEqual(dut.meshcat.HasPath(meshcat_path), True)
+
+    def test_draw_frame_applet(self):
+        """Checks that _DrawFrameApplet doesn't crash when frames are sent
+        in DRAKE_DRAW_FRAMES channel.
+        """
+
+        # Create the device under test.
+        dut = mut.Meldis()
+
+        # Prepare a frame message
+        message = lcmt_viewer_draw()
+        message.position = [[0.0, 0.0, 0.1]]
+        message.quaternion = [[1.0, 0.0, 0.0, 0.0]]
+        message.num_links = 1
+        message.link_name = ['0']
+        message.robot_num = [1]
+
+        dut._lcm.Publish(channel="DRAKE_DRAW_FRAMES",
+                         buffer=message.encode())
+
+        meshcat_path = f"/DRAKE_DRAW_FRAMES/default/{message.link_name[0]}"
+        # Before the subscribed handlers are called, there is no meshcat path
+        # from the published lcm message.
+        self.assertEqual(dut.meshcat.HasPath(meshcat_path), False)
+
+        dut._lcm.HandleSubscriptions(timeout_millis=1)
+        dut._invoke_subscriptions()
+        # After the handlers are called, we have the expected meshcat path.
+        self.assertEqual(dut.meshcat.HasPath(meshcat_path), True)
