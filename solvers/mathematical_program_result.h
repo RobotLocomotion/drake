@@ -101,6 +101,12 @@ class MathematicalProgramResult final {
                                   std::numeric_limits<double>::quiet_NaN());
   }
 
+  /** Gets decision_variable_index. */
+  const std::optional<std::unordered_map<symbolic::Variable::Id, int>>&
+  get_decision_variable_index() const {
+    return decision_variable_index_;
+  }
+
   /** Sets SolutionResult. */
   void set_solution_result(SolutionResult solution_result) {
     solution_result_ = solution_result;
