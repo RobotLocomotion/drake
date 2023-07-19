@@ -11,24 +11,26 @@ the prerequisite for running this file is that you have:
    install this build tree, but the CMake configure step will produce
    additional header files for a given VTK module.  You should use the same
    CMake arguments as specified in /tools/workspace/vtk/image/vtk-args.
-3. A drake vtk-*.tar.gz tarball, as produced by ``build_binaries_with_docker``.
-   This will be parsed as the "install reference", not all VTK headers get
-   installed and we only want to enumerate headers that can actually be
-   consumed.  VTK installs to a flat tree, meaning the install tree does not
-   provide us with the ability to recover which VTK module a given header file
-   came from.
+3. A drake vtk-*.tar.gz tarball, as produced by
+   ``bazel run //tools/workspace/vtk:package``.  This will be parsed as the
+   "install reference", not all VTK headers get installed and we only want to
+   enumerate headers that can actually be consumed.  VTK installs to a flat
+   tree, meaning the install tree does not provide us with the ability to
+   recover which VTK module a given header file came from.
 
-The final argument to the script is the name of the VTK module to parse, e.g.,
-``vtkCommonCore``.  This module will then compare all headers found in (1) and
-(2) with headers found in (3).  There is a --debug option enabled to enumerate
-everything that was found and skipped, but it is disabled by default to enable
-piping this script to e.g., ``xclip -i -selection clipboard`` to paste into
-``repository.bzl``.
+The script has two modes: print and search.  The print mode is useful for
+dumping what should go in drake's bazel code.  When updating to a newer VTK,
+the search module can help identify what new vtk library should be getting
+added to drake's bazel code.  Note that during these updates, even if the
+modules drake requests are the same, their internal dependencies may change
+(which is why search was implemented in the first place).
 """
+from __future__ import annotations
+
 import argparse
-from pathlib import Path
-import tarfile
 import sys
+import tarfile
+from pathlib import Path
 
 this_file_dir = Path(__file__).parent.absolute()
 
@@ -62,6 +64,7 @@ VTK_MODULES = [
     "vtkRenderingCore",
     "vtkRenderingContext2D",
     "vtkRenderingFreeType",
+    "vtkRenderingHyperTreeGrid",
     "vtkRenderingOpenGL2",
     "vtkRenderingSceneGraph",
     "vtkRenderingUI",
@@ -103,6 +106,7 @@ VTK_SOURCE_MAP = {
     "vtkRenderingCore": Path("Rendering") / "Core",
     "vtkRenderingContext2D": Path("Rendering") / "Context2D",
     "vtkRenderingFreeType": Path("Rendering") / "FreeType",
+    "vtkRenderingHyperTreeGrid": Path("Rendering") / "HyperTreeGrid",
     "vtkRenderingOpenGL2": Path("Rendering") / "OpenGL2",
     "vtkRenderingSceneGraph": Path("Rendering") / "SceneGraph",
     "vtkRenderingUI": Path("Rendering") / "UI",
@@ -111,6 +115,36 @@ VTK_SOURCE_MAP = {
 """
 Map of vtk library name to path under the source tree that the library lives.
 """
+
+assert (
+    list(VTK_SOURCE_MAP.keys()) == VTK_MODULES
+), "ERROR: any entry in VTK_MODULES must also be a key in VTK_SOURCE_MAP."
+
+
+HEADER_EXTS = [".h", ".hpp", ".hxx", ".txx"]
+"""Header file extensions globbed for."""
+
+
+def sources_for_module(
+    source_tree: Path, build_tree: Path, module: str
+) -> list[str]:
+    """Return the set of names found in both the source and build trees.
+
+    When VTK is configured, it generates a number of header files that drake
+    needs to include in addition to what is checked into the source tree.
+    """
+    sources = []
+    mod = VTK_SOURCE_MAP[module]
+    for ext in HEADER_EXTS:
+        for tree in [source_tree / mod, build_tree / mod]:
+            tree_glob = tree.glob(f"**/*{ext}")
+            for tg in tree_glob:
+                sources.append(tg.name)
+
+    sources = list(set(sources))
+    sources.sort()
+
+    return sources
 
 
 def main():
@@ -145,13 +179,26 @@ def main():
         required=True,
     )
     parser.add_argument("--debug", action="store_true")
-    parser.add_argument(
+
+    subparsers = parser.add_subparsers(help="Mode to use.", dest="mode")
+
+    parser_print = subparsers.add_parser(
+        "print", help="Print the header files for the provided module."
+    )
+    parser_print.add_argument(
         "module", type=str, help="VTK module to parse.", choices=VTK_MODULES
     )
 
-    args = parser.parse_args()
+    parser_search = subparsers.add_parser(
+        "search", help="Try and find the module for the provided header file."
+    )
+    parser_search.add_argument(
+        "header_file",
+        type=str,
+        help="File to find its owning module, e.g., vtkColorSeries.h.",
+    )
 
-    module = args.module
+    args = parser.parse_args()
 
     source_root = Path(args.source_tree).absolute()
     if not source_root.is_dir():
@@ -195,7 +242,6 @@ def main():
 
     # First gather all of the installed files from the tarball.
     installed_headers = []
-    HEADER_EXTS = [".h", ".hpp", ".hxx", ".txx"]
     try:
         with tarfile.open(install_tarball, "r") as vtk_tar_f:
             for name in vtk_tar_f.getnames():
@@ -213,45 +259,83 @@ def main():
         sys.stderr.write(f"Error parsing '{str(install_tarball)}': {e}\n")
         sys.exit(1)
 
-    # Gather all headers available in the source and build trees.
-    source_module = source_root / VTK_SOURCE_MAP[module]
-    sources = []
-    mod = VTK_SOURCE_MAP[module]
-    for ext in HEADER_EXTS:
-        for tree in [source_root / mod, build_root / mod]:
-            tree_glob = tree.glob(f"**/*{ext}")
-            for tg in tree_glob:
-                sources.append(tg.name)
-    sources = list(set(sources))
-    sources.sort()
+    if args.mode == "print":
+        module = args.module
 
-    # End goal is the intersection of installed and source tree headers.
-    found = list(set(installed_headers) & set(sources))
-    found.sort()
+        # Gather all headers available in the source and build trees.
+        sources = sources_for_module(source_root, build_root, module)
 
-    # NOTE: depending on CMake configure, you may get many more skipped headers
-    # than if you were to run this within the docker build somehow.  This can
-    # generally be ignored, the out-of-docker build will be a superset.
-    if args.debug:
-        vsep = "*" * 88
-        print(f"{vsep}\n* Sources found:\n{vsep}")
-        for s in sources:
-            print(s)
+        # End goal is the intersection of installed and source tree headers.
+        found = list(set(installed_headers) & set(sources))
+        found.sort()
 
-        skipped = list(set(sources) - set(found))
-        skipped.sort()
-
-        print(f"\n{vsep}\n* Skipped:\n{vsep}")
-        if skipped:
-            for s in skipped:
+        # NOTE: depending on CMake configure, you may get many more skipped
+        # headers than if you were to run this within the docker build somehow.
+        # This can generally be ignored, the out-of-docker build will be a
+        # superset.
+        if args.debug:
+            vsep = "*" * 88
+            print(f"{vsep}\n* Sources found:\n{vsep}")
+            for s in sources:
                 print(s)
-        else:
-            print("NONE")
 
-        print(f"\n{vsep}\n* Install found:\n{vsep}")
+            skipped = list(set(sources) - set(found))
+            skipped.sort()
 
-    for f in found:
-        print(f)
+            print(f"\n{vsep}\n* Skipped:\n{vsep}")
+            if skipped:
+                for s in skipped:
+                    print(s)
+            else:
+                print("NONE")
+
+            print(f"\n{vsep}\n* Install found:\n{vsep}")
+
+        for f in found:
+            print(f)
+    elif args.mode == "search":
+        header_file = args.header_file
+        found_header_file = False
+        for module in VTK_MODULES:
+            sources = sources_for_module(source_root, build_root, module)
+            if args.debug:
+                print(f"Searching module: {module}")
+                print("\n- ".join(sources))
+            if header_file in sources:
+                print(f"Found {header_file} in {module} module.")
+                # NOTE: do not `continue`, if it is found in more than one
+                # module this is a problem.
+                if found_header_file:
+                    print("WARNING: header file was found more than once!")
+                found_header_file = True
+
+        if not found_header_file:
+            # If not found, this is something that is going to need to get
+            # added to the VTK_SOURCE_MAP and added to repository.bzl.
+            source_glob = [f for f in source_root.glob(f"**/{header_file}")]
+            if source_glob:
+                found_header_file = True
+                print(f"Found candidate(s) in source tree {source_root}:")
+                for candidate in source_glob:
+                    rel_path = candidate.relative_to(source_root)
+                    print(f"- Path: {rel_path}")
+                    print(
+                        f"  Module Guess: vtk{''.join(rel_path.parent.parts)}"
+                    )
+
+            build_glob = [f for f in build_root.glob(f"**/{header_file}")]
+            if build_glob:
+                found_header_file = True
+                print(f"Found candidate(s) in build tree {build_root}:")
+                for candidate in build_glob:
+                    rel_path = candidate.relative_to(build_root)
+                    print(f"- Path: {rel_path}")
+                    print(
+                        f"  Module Guess: vtk{''.join(rel_path.parent.parts)}"
+                    )
+
+        if not found_header_file:
+            print(f"Could not find {header_file} :(")
 
 
 if __name__ == "__main__":
