@@ -28,7 +28,7 @@ class TestGeometryRender(unittest.TestCase):
 
         # The kwarg constructor also works.
         light = mut.LightParameter(type=mut.LightType.kSpot,
-                                   color = mut.Rgba(0.1, 0.2, 0.3),
+                                   color=mut.Rgba(0.1, 0.2, 0.3),
                                    attenuation_values=(1, 2, 3),
                                    position=(-1, -2, -3),
                                    frame=mut.LightFrame.kCamera,
