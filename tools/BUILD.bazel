@@ -11,6 +11,11 @@ load(
 
 package(default_visibility = ["//visibility:public"])
 
+filegroup(
+    name = "drake_bazelrc",
+    srcs = glob(["*.bazelrc"]),
+)
+
 py_library(
     name = "module_py",
     srcs = ["__init__.py"],
