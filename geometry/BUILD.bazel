@@ -608,6 +608,24 @@ drake_cc_googletest(
 # -----------------------------------------------------
 
 filegroup(
+    name = "models",
+    srcs = [
+        "models/bin/bin.sdf",
+        "@drake_models//:geometry/bin/bin.mtl",
+        "@drake_models//:geometry/bin/bin.obj",
+        "@drake_models//:geometry/bin/bin.png",
+        "models/table/table_wide.sdf",
+        "@drake_models//:geometry/table/table_wide.mtl",
+        "@drake_models//:geometry/table/table_wide.obj",
+        "@drake_models//:geometry/table/table_wide.png",
+        "models/shelves/shelves.sdf",
+        "@drake_models//:geometry/shelves/shelves.mtl",
+        "@drake_models//:geometry/shelves/shelves.obj",
+        "@drake_models//:geometry/shelves/shelves.png",
+    ],
+)
+
+filegroup(
     name = "test_obj_files",
     testonly = 1,
     srcs = [
