@@ -480,6 +480,8 @@ Note: The above is for the C++ documentation. For Python, use
         .def("GetInputPort", &System<T>::GetInputPort,
             py_rvp::reference_internal, py::arg("port_name"),
             doc.System.GetInputPort.doc)
+        .def("HasInputPort", &System<T>::HasInputPort, py::arg("port_name"),
+            doc.System.HasInputPort.doc)
         .def("get_output_port",
             overload_cast_explicit<const OutputPort<T>&, int>(
                 &System<T>::get_output_port),
@@ -492,6 +494,8 @@ Note: The above is for the C++ documentation. For Python, use
         .def("GetOutputPort", &System<T>::GetOutputPort,
             py_rvp::reference_internal, py::arg("port_name"),
             doc.System.GetOutputPort.doc)
+        .def("HasOutputPort", &System<T>::HasOutputPort, py::arg("port_name"),
+            doc.System.HasOutputPort.doc)
         // Graphviz methods.
         .def(
             "GetGraphvizString",
