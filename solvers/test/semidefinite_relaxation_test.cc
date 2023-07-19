@@ -103,6 +103,61 @@ GTEST_TEST(MakeSemidefiniteRelaxationTest, QuadraticCost) {
       0, 1e-12);
 }
 
+GTEST_TEST(MakeSemidefiniteRelaxationTest, BoundingBoxConstraint) {
+  MathematicalProgram prog;
+  const int N_VARS = 2;
+  const auto y = prog.NewContinuousVariables<2>("y");
+
+  VectorXd lb(N_VARS);
+  lb << -1.5, -2.0;
+
+  const double kInf = std::numeric_limits<double>::infinity();
+  VectorXd ub(N_VARS);
+  ub << kInf, 2.3;
+
+  prog.AddBoundingBoxConstraint(lb, ub, y);
+
+  auto relaxation = MakeSemidefiniteRelaxation(prog);
+
+  // First bounding box constraint is X(-1,-1) = 1, and we add one
+  // constraint, so we expect there to be two bounding box constraints
+  EXPECT_EQ(relaxation->bounding_box_constraints().size(), 2);
+
+  auto bbox_evaluator = relaxation->bounding_box_constraints()[1].evaluator();
+
+  EXPECT_TRUE(CompareMatrices(lb, bbox_evaluator->lower_bound()));
+  EXPECT_TRUE(CompareMatrices(ub, bbox_evaluator->upper_bound()));
+
+  const int N_CONSTRAINTS = 3;
+  VectorXd b(N_CONSTRAINTS);
+  b << -lb[0], -lb[1], ub[1];  // all of the finite lower/upper bounds.
+
+  MatrixXd A(N_CONSTRAINTS, 2);
+  // Rows of A:
+  // 1. Lower bound y[0]
+  // 2. Lower bound y[1]
+  // 3. Upper bound y[1]
+  A << -1, 0, 0, -1, 0, 1;
+
+  const Vector2d y_test(1.3, 0.24);
+  SetRelaxationInitialGuess(y_test, relaxation.get());
+
+  // First linear constraint (in the new decision variables) is 0 ≤
+  // (Ay-b)(Ay-b)ᵀ, where A and b represent all of the constraints stacked.
+  auto linear_constraint = relaxation->linear_constraints()[0];
+  VectorXd value = relaxation->EvalBindingAtInitialGuess(linear_constraint);
+  MatrixXd expected =
+      (A * y_test - b) * (A * y_test - b).transpose() - b * b.transpose();
+  EXPECT_TRUE(CompareMatrices(
+      Eigen::Map<MatrixXd>(value.data(), N_CONSTRAINTS, N_CONSTRAINTS),
+      expected, 1e-12));
+  value = linear_constraint.evaluator()->lower_bound();
+  expected = -b * b.transpose();
+  EXPECT_TRUE(CompareMatrices(
+      Eigen::Map<MatrixXd>(value.data(), N_CONSTRAINTS, N_CONSTRAINTS),
+      expected, 1e-12));
+}
+
 GTEST_TEST(MakeSemidefiniteRelaxationTest, LinearConstraint) {
   MathematicalProgram prog;
   const auto y = prog.NewContinuousVariables<2>("y");
@@ -158,8 +213,8 @@ GTEST_TEST(MakeSemidefiniteRelaxationTest, LinearConstraint) {
             b.size() * b.size());
   VectorXd value = relaxation->EvalBindingAtInitialGuess(
       relaxation->linear_constraints()[2]);
-  MatrixXd expected = (A * y_test - b) * (A * y_test - b).transpose() -
-                      b * b.transpose();
+  MatrixXd expected =
+      (A * y_test - b) * (A * y_test - b).transpose() - b * b.transpose();
   EXPECT_TRUE(CompareMatrices(Eigen::Map<MatrixXd>(value.data(), 8, 8),
                               expected, 1e-12));
   value = relaxation->linear_constraints()[2].evaluator()->lower_bound();

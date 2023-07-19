@@ -15,10 +15,6 @@ class BasicFixture : public benchmark::Fixture {
  public:
   BasicFixture() { tools::performance::AddMinMaxStatistics(this); }
 
-  // This apparently futile using statement works around "overloaded virtual"
-  // errors in g++. All of this is a consequence of the weird deprecation of
-  // const-ref State versions of SetUp() and TearDown() in benchmark.h.
-  using benchmark::Fixture::SetUp;
   void SetUp(benchmark::State&) override {
     builder_ = std::make_unique<DiagramBuilder<double>>();
   }

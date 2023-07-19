@@ -19,6 +19,7 @@
 #include <vtkTransform.h>
 #include <vtkTransformPolyDataFilter.h>
 
+#include "drake/common/diagnostic_policy.h"
 #include "drake/common/text_logging.h"
 #include "drake/geometry/render/render_mesh.h"
 #include "drake/geometry/render/shaders/depth_shaders.h"

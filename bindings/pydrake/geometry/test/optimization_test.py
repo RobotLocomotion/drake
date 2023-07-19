@@ -541,6 +541,11 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertIsInstance(spp.SolveShortestPath(
             source=source, target=target, options=options),
             MathematicalProgramResult)
+        self.assertIsInstance(
+            spp.SolveConvexRestriction(active_edges={edge0.id(),
+                                                     edge1.id()},
+                                       options=options),
+            MathematicalProgramResult)
 
         self.assertIn("source", spp.GetGraphvizString(
             result=result, show_slacks=True, precision=2, scientific=False))

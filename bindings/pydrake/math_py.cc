@@ -26,6 +26,7 @@
 #include "drake/math/rigid_transform.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/math/rotation_matrix.h"
+#include "drake/math/soft_min_max.h"
 #include "drake/math/wrap_to.h"
 
 namespace drake {
@@ -592,6 +593,23 @@ void DoScalarIndependentDefinitions(py::module m) {
 }
 
 template <typename T>
+void DoNonsymbolicScalarDefinitions(py::module m, T) {
+  // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
+  using namespace drake::math;
+  constexpr auto& doc = pydrake_doc.drake.math;
+
+  // Soft min and max
+  m.def("SoftOverMax", &SoftOverMax<T>, py::arg("x"), py::arg("alpha") = 1.0,
+       doc.SoftOverMax.doc)
+      .def("SoftUnderMax", &SoftUnderMax<T>, py::arg("x"),
+          py::arg("alpha") = 1.0, doc.SoftUnderMax.doc)
+      .def("SoftOverMin", &SoftOverMin<T>, py::arg("x"), py::arg("alpha") = 1.0,
+          doc.SoftOverMin.doc)
+      .def("SoftUnderMin", &SoftUnderMin<T>, py::arg("x"),
+          py::arg("alpha") = 1.0, doc.SoftUnderMin.doc);
+}
+
+template <typename T>
 std::string_view GetDtypeName() {
   if constexpr (std::is_same_v<T, double>) {
     return "float";
@@ -683,6 +701,9 @@ PYBIND11_MODULE(math, m) {
   DoScalarIndependentDefinitions(m);
   type_visit([m](auto dummy) { DoScalarDependentDefinitions(m, dummy); },
       CommonScalarPack{});
+
+  type_visit([m](auto dummy) { DoNonsymbolicScalarDefinitions(m, dummy); },
+      NonSymbolicScalarPack{});
 
   ExecuteExtraPythonCode(m);
 }

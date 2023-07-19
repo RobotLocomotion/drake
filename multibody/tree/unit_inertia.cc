@@ -6,6 +6,89 @@ namespace drake {
 namespace multibody {
 
 template <typename T>
+UnitInertia<T>& UnitInertia<T>::SetFromRotationalInertia(
+    const RotationalInertia<T>& I, const T& mass) {
+  DRAKE_THROW_UNLESS(mass > 0);
+  RotationalInertia<T>::operator=(I / mass);
+  return *this;
+}
+
+template <typename T>
+UnitInertia<T> UnitInertia<T>::PointMass(const Vector3<T>& p_FQ) {
+  // Square each coefficient in p_FQ, perhaps better with p_FQ.array().square()?
+  const Vector3<T> p2m = p_FQ.cwiseAbs2();  // [x²  y²  z²].
+  const T mp0 = -p_FQ(0);  // -x
+  const T mp1 = -p_FQ(1);  // -y
+  return UnitInertia<T>(
+      // Gxx = y² + z²,  Gyy = x² + z²,  Gzz = x² + y²
+      p2m[1] + p2m[2], p2m[0] + p2m[2], p2m[0] + p2m[1],
+      // Gxy = -x y,  Gxz = -x z,   Gyz = -y z
+      mp0 * p_FQ[1], mp0 * p_FQ[2], mp1 * p_FQ[2]);
+}
+
+template <typename T>
+UnitInertia<T> UnitInertia<T>::SolidEllipsoid(
+    const T& a, const T& b, const T& c) {
+  const T a2 = a * a;
+  const T b2 = b * b;
+  const T c2 = c * c;
+  return UnitInertia<T>(0.2 * (b2 + c2), 0.2 * (a2 + c2), 0.2 * (a2 + b2));
+}
+
+template <typename T>
+UnitInertia<T> UnitInertia<T>::SolidCylinder(
+    const T& r, const T& L, const Vector3<T>& b_E) {
+  DRAKE_THROW_UNLESS(r >= 0);
+  DRAKE_THROW_UNLESS(L >= 0);
+  // TODO(Mitiguy) Throw if |b_E| is not within 1.0E-14 of 1 (breaking change).
+  DRAKE_THROW_UNLESS(b_E.norm() > std::numeric_limits<double>::epsilon());
+  const T J = r * r / T(2);
+  const T K = (T(3) * r * r + L * L) / T(12);
+  return AxiallySymmetric(J, K, b_E);
+}
+
+template <typename T>
+UnitInertia<T> UnitInertia<T>::SolidCylinderAboutEnd(const T& r, const T& L) {
+  // TODO(Mitiguy) add @param[in] unit_vector as with SolidCapsule.
+  DRAKE_THROW_UNLESS(r >= 0);
+  DRAKE_THROW_UNLESS(L >= 0);
+  const T Iz = r * r / T(2);
+  const T Ix = (T(3) * r * r + L * L) / T(12) + L * L / T(4);
+  return UnitInertia(Ix, Ix, Iz);
+}
+
+template <typename T>
+UnitInertia<T> UnitInertia<T>::AxiallySymmetric(const T& J, const T& K,
+                                                const Vector3<T>& b_E) {
+  DRAKE_THROW_UNLESS(J >= 0.0);
+  DRAKE_THROW_UNLESS(K >= 0.0);
+  // The triangle inequalities for this case reduce to J <= 2*K:
+  DRAKE_THROW_UNLESS(J <= 2.0 * K);
+  // TODO(Mitiguy) Throw if |b_E| is not within 1.0E-14 of 1 (breaking change).
+  DRAKE_THROW_UNLESS(b_E.norm() > std::numeric_limits<double>::epsilon());
+  // Normalize b_E before using it. Only direction matters:
+  Vector3<T> bhat_E = b_E.normalized();
+  Matrix3<T> G_matrix =
+      K * Matrix3<T>::Identity() + (J - K) * bhat_E * bhat_E.transpose();
+  return UnitInertia<T>(G_matrix(0, 0), G_matrix(1, 1), G_matrix(2, 2),
+                        G_matrix(0, 1), G_matrix(0, 2), G_matrix(1, 2));
+}
+
+template <typename T>
+UnitInertia<T> UnitInertia<T>::StraightLine(const T& K, const Vector3<T>& b_E) {
+  // TODO(Mitiguy) Throw if |b_E| is not within 1.0E-14 of 1 (breaking change).
+  DRAKE_DEMAND(K > 0.0);
+  return AxiallySymmetric(0.0, K, b_E);
+}
+
+template <typename T>
+UnitInertia<T> UnitInertia<T>::ThinRod(const T& L, const Vector3<T>& b_E) {
+  // TODO(Mitiguy) Throw if |b_E| is not within 1.0E-14 of 1 (breaking change).
+  DRAKE_DEMAND(L > 0.0);
+  return StraightLine(L * L / 12.0, b_E);
+}
+
+template <typename T>
 UnitInertia<T> UnitInertia<T>::SolidBox(const T& Lx, const T& Ly, const T& Lz) {
   if (Lx < T(0) || Ly < T(0) || Lz < T(0)) {
     const std::string msg =

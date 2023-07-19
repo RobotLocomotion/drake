@@ -108,15 +108,35 @@ std::unique_ptr<MathematicalProgram> MakeSemidefiniteRelaxation(
     relaxation->AddLinearCost(a, binding.evaluator()->c(), vars);
   }
 
-  {  // Linear constraints.
-    // lb ≤ Ay ≤ ub => lb ≤ Ay ≤ ub
-    for (const auto& binding : prog.linear_constraints()) {
-      relaxation->AddConstraint(binding);
-    }
+  // Bounding Box constraints
+  // lb ≤ y ≤ ub => lb ≤ y ≤ ub
+  for (const auto& binding : prog.bounding_box_constraints()) {
+    relaxation->AddConstraint(binding);
+  }
 
-    // Now assemble one big Ay <= b matrix.
+  // Linear constraints
+  // lb ≤ Ay ≤ ub => lb ≤ Ay ≤ ub
+  for (const auto& binding : prog.linear_constraints()) {
+    relaxation->AddConstraint(binding);
+  }
+
+  {  // Now assemble one big Ay <= b matrix from all bounding box constraints
+    // and linear constraints
+    // TODO(bernhardpg): Consider special-casing linear equality constraints
+    // that are added as bounding box or linear constraints with lb == ub
     int num_constraints = 0;
     int nnz = 0;
+    for (const auto& binding : prog.bounding_box_constraints()) {
+      for (int i = 0; i < binding.evaluator()->num_constraints(); ++i) {
+        if (std::isfinite(binding.evaluator()->lower_bound()[i])) {
+          ++num_constraints;
+        }
+        if (std::isfinite(binding.evaluator()->upper_bound()[i])) {
+          ++num_constraints;
+        }
+      }
+      nnz += binding.evaluator()->get_sparse_A().nonZeros();
+    }
     for (const auto& binding : prog.linear_constraints()) {
       for (int i = 0; i < binding.evaluator()->num_constraints(); ++i) {
         if (std::isfinite(binding.evaluator()->lower_bound()[i])) {
@@ -128,11 +148,30 @@ std::unique_ptr<MathematicalProgram> MakeSemidefiniteRelaxation(
       }
       nnz += binding.evaluator()->get_sparse_A().nonZeros();
     }
+
     std::vector<Triplet<double>> triplet_list;
     triplet_list.reserve(nnz);
     SparseMatrix<double> A(num_constraints, prog.num_vars());
     VectorXd b(num_constraints);
-    int constraint = 0;
+
+    int constraint_idx = 0;
+    for (const auto& binding : prog.bounding_box_constraints()) {
+      const std::vector<int> indices =
+          prog.FindDecisionVariableIndices(binding.variables());
+      for (int i = 0; i < binding.evaluator()->num_constraints(); ++i) {
+        if (std::isfinite(binding.evaluator()->lower_bound()[i])) {
+          triplet_list.push_back(
+              Triplet<double>(constraint_idx, indices[i], -1.0));
+          b(constraint_idx++) = -binding.evaluator()->lower_bound()[i];
+        }
+        if (std::isfinite(binding.evaluator()->upper_bound()[i])) {
+          triplet_list.push_back(
+              Triplet<double>(constraint_idx, indices[i], 1.0));
+          b(constraint_idx++) = binding.evaluator()->upper_bound()[i];
+        }
+      }
+    }
+
     for (const auto& binding : prog.linear_constraints()) {
       const std::vector<int> indices =
           prog.FindDecisionVariableIndices(binding.variables());
@@ -142,21 +181,21 @@ std::unique_ptr<MathematicalProgram> MakeSemidefiniteRelaxation(
           for (int j = 0; j < binding.evaluator()->num_vars(); ++j) {
             if (binding.evaluator()->get_sparse_A().coeff(i, j) != 0) {
               triplet_list.push_back(Triplet<double>(
-                  constraint, indices[j],
+                  constraint_idx, indices[j],
                   -binding.evaluator()->get_sparse_A().coeff(i, j)));
             }
           }
-          b(constraint++) = -binding.evaluator()->lower_bound()[i];
+          b(constraint_idx++) = -binding.evaluator()->lower_bound()[i];
         }
         if (std::isfinite(binding.evaluator()->upper_bound()[i])) {
           for (int j = 0; j < binding.evaluator()->num_vars(); ++j) {
             if (binding.evaluator()->get_sparse_A().coeff(i, j) != 0) {
               triplet_list.push_back(Triplet<double>(
-                  constraint, indices[j],
+                  constraint_idx, indices[j],
                   binding.evaluator()->get_sparse_A().coeff(i, j)));
             }
           }
-          b(constraint++) = binding.evaluator()->upper_bound()[i];
+          b(constraint_idx++) = binding.evaluator()->upper_bound()[i];
         }
       }
     }

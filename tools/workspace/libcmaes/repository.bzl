@@ -12,8 +12,8 @@ def libcmaes_repository(
         should check if there is an official version number yet that we
         could use (i.e., newer than v0.10).
         """,
-        commit = "17cbf58aec13c1d494fa0fed826f78560b817de1",
-        sha256 = "759ab2d70d6d86d7d8fce6d80863a6368d7d245c96116c0f70cbc7c144873d51",  # noqa
+        commit = "3b171566b1f3803afe1f0f117a98cc14f4d6d331",
+        sha256 = "c02a9eaac1537f00ad81a80fd7d0d87a24f831cf20a8449cd6caac794d173682",  # noqa
         build_file = ":package.BUILD.bazel",
         mirrors = mirrors,
     )

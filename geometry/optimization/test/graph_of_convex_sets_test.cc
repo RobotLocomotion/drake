@@ -1003,6 +1003,38 @@ TEST_F(ThreeBoxes, LinearConstraint2) {
       CompareMatrices(target_->GetSolution(result), Vector2d::Zero(), 1e-6));
 }
 
+TEST_F(ThreeBoxes, SolveConvexRestriction) {
+  const Vector2d b{.5, .3};
+
+  // Vertex cost.
+  source_->AddCost(
+      static_cast<const VectorX<Expression>>(source_->x()).squaredNorm());
+  // Vertex constraint.
+  source_->AddConstraint(source_->x() <= -b);
+
+  // Edge costs.
+  e_on_->AddCost((e_on_->xu() - e_on_->xv()).squaredNorm());
+  e_off_->AddCost((e_off_->xu() - e_off_->xv()).squaredNorm());
+
+  // Edge constraints.
+  e_on_->AddConstraint(e_on_->xv() >= b);
+  e_off_->AddConstraint(e_off_->xv() >= b);
+
+  auto result = g_.SolveShortestPath(*source_, *target_, options_);
+  ASSERT_TRUE(result.is_success());
+
+  auto active_edges_result =
+      g_.SolveConvexRestriction(std::set<EdgeId>{e_on_->id()}, options_);
+  ASSERT_TRUE(active_edges_result.is_success());
+
+  EXPECT_NEAR(result.get_optimal_cost(), active_edges_result.get_optimal_cost(),
+              1e-6);
+  for (const auto* v : g_.Vertices()) {
+    EXPECT_TRUE(CompareMatrices(result.GetSolution(v->x()),
+                                active_edges_result.GetSolution(v->x()), 1e-6));
+  }
+}
+
 // A simple shortest-path problem where the continuous variables do not effect
 // the problem (they are all equality constrained).  The GraphOfConvexSets class
 // should still solve the problem, and the convex relaxation should be optimal.
@@ -1685,36 +1717,32 @@ GTEST_TEST(ShortestPathTest, TobiasToyExample) {
   Vertex* p5 = spp.AddVertex(VPolytope(vertices), "p5");
   Vertex* target = spp.AddVertex(Point(Vector2d(9, 0)), "target");
 
-  Edge* source_to_p1 = spp.AddEdge(*source, *p1);
+  spp.AddEdge(*source, *p1);
   Edge* source_to_p2 = spp.AddEdge(*source, *p2);
-  spp.AddEdge(*source, *p3);
+  Edge* source_to_p3 = spp.AddEdge(*source, *p3);
   spp.AddEdge(*p1, *e2);
   spp.AddEdge(*p2, *p3);
   spp.AddEdge(*p2, *e1);
   spp.AddEdge(*p2, *e2);
   spp.AddEdge(*p3, *p2);  // removing this changes the asymptotic behavior.
-  spp.AddEdge(*p3, *e1);
+  Edge* p3_to_e1 = spp.AddEdge(*p3, *e1);
   spp.AddEdge(*p3, *p4);
   spp.AddEdge(*e1, *e2);
-  spp.AddEdge(*e1, *p4);
+  Edge* e1_to_p4 = spp.AddEdge(*e1, *p4);
   spp.AddEdge(*e1, *p5);
   spp.AddEdge(*e2, *e1);
   spp.AddEdge(*e2, *p5);
   spp.AddEdge(*e2, *target);
   spp.AddEdge(*p4, *p3);
   spp.AddEdge(*p4, *e2);
-  spp.AddEdge(*p4, *p5);
+  Edge* p4_to_p5 = spp.AddEdge(*p4, *p5);
   spp.AddEdge(*p4, *target);
   spp.AddEdge(*p5, *e1);
-  spp.AddEdge(*p5, *target);
+  Edge* p5_to_target = spp.AddEdge(*p5, *target);
 
-  // |xu - xv|₂
-  Matrix<double, 2, 4> A;
-  A.leftCols(2) = Matrix2d::Identity();
-  A.rightCols(2) = -Matrix2d::Identity();
-  auto cost = std::make_shared<solvers::L2NormCost>(A, Vector2d::Zero());
+  // |xu - xv|₂²
   for (const auto& e : spp.Edges()) {
-    e->AddCost(solvers::Binding(cost, {e->xu(), e->xv()}));
+    e->AddCost((e->xu() - e->xv()).squaredNorm());
   }
 
   if (!MixedIntegerSolverAvailable()) {
@@ -1727,7 +1755,8 @@ GTEST_TEST(ShortestPathTest, TobiasToyExample) {
   auto result = spp.SolveShortestPath(source->id(), target->id(), options);
   ASSERT_TRUE(result.is_success());
 
-  const std::forward_list<Vertex*> shortest_path{source, p1, e2, target};
+  const std::forward_list<Vertex*> shortest_path{source, p3, e1,
+                                                 p4,     p5, target};
   for (const auto& e : spp.Edges()) {
     auto iter = std::find(shortest_path.begin(), shortest_path.end(), &e->u());
     if (iter != shortest_path.end() && &e->v() == *(++iter)) {
@@ -1736,6 +1765,20 @@ GTEST_TEST(ShortestPathTest, TobiasToyExample) {
     } else {
       EXPECT_NEAR(e->GetSolutionCost(result), 0.0, 1e-5);
     }
+  }
+
+  // Test that solving with the known shortest path returns the same results.
+  auto active_edges_result = spp.SolveConvexRestriction(
+      std::set<EdgeId>{source_to_p3->id(), p3_to_e1->id(), e1_to_p4->id(),
+                       p4_to_p5->id(), p5_to_target->id()},
+      options);
+  ASSERT_TRUE(active_edges_result.is_success());
+  // The optimal costs should match.
+  EXPECT_NEAR(result.get_optimal_cost(), active_edges_result.get_optimal_cost(),
+              3e-5);
+  for (const auto* v : spp.Vertices()) {
+    EXPECT_TRUE(CompareMatrices(result.GetSolution(v->x()),
+                                active_edges_result.GetSolution(v->x()), 2e-3));
   }
 
   // Test that forcing an edge not on the shortest path to be active yields a
@@ -1765,13 +1808,14 @@ GTEST_TEST(ShortestPathTest, TobiasToyExample) {
 
   // Test that forcing an edge on the shortest path to be in-active yields a
   // higher cost.
-  source_to_p1->AddPhiConstraint(false);
+  source_to_p3->AddPhiConstraint(false);
   {
     auto new_result =
         spp.SolveShortestPath(source->id(), target->id(), options);
     ASSERT_TRUE(new_result.is_success());
 
-    const std::forward_list<Vertex*> new_shortest_path{source, p2, e2, target};
+    const std::forward_list<Vertex*> new_shortest_path{source, p1, e2,
+                                                       e1,     p5, target};
     for (const auto& e : spp.Edges()) {
       auto iter = std::find(new_shortest_path.begin(), new_shortest_path.end(),
                             &e->u());

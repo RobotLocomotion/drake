@@ -35,6 +35,8 @@ RenderMaterial MakeMaterialFromMtl(const tinyobj::material_t& mat,
                                    bool has_tex_coord,
                                    const DiagnosticPolicy& policy) {
   RenderMaterial result;
+
+  result.from_mesh_file = true;
   result.diffuse.set(mat.diffuse[0], mat.diffuse[1], mat.diffuse[2],
                      mat.dissolve);
   result.diffuse_map = [&mat, &obj_path]() -> std::string {

@@ -13,7 +13,6 @@
 
 #include "drake/common/drake_deprecated.h"
 #include "drake/geometry/optimization/c_iris_collision_geometry.h"
-#include "drake/geometry/optimization/c_iris_separating_plane.h"
 #include "drake/geometry/optimization/cspace_free_polytope_base.h"
 #include "drake/geometry/optimization/cspace_free_structs.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
