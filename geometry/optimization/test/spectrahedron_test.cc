@@ -219,6 +219,64 @@ GTEST_TEST(SpectrahedronTest, TrivialSdp1) {
   }
 }
 
+GTEST_TEST(SpectrahedronTest, AddPointInNonnegativeScalingConstraintsLinEqs) {
+  MathematicalProgram prog;
+  auto X1 = prog.NewSymmetricContinuousVariables<2>();
+  prog.AddPositiveSemidefiniteConstraint(X1);
+
+  const int N_VARS = 3;     // 3 free vars with SDP matrix of size 2x2
+  const int N_CONSTRS = 2;  // Test 2 constraints
+  MatrixXd A(N_CONSTRS, N_VARS);
+  A << 0.2, 0.0, 1.7, -2.0, 2.3, 1.9;
+  VectorXd b(N_CONSTRS);
+  b << 2.0, 1.0;
+
+  prog.AddLinearEqualityConstraint(A, b, prog.decision_variables());
+
+  auto result = Solve(prog);
+  ASSERT_TRUE(result.is_success());
+
+  auto spect = Spectrahedron(prog);
+
+  MathematicalProgram prog2;
+  auto x = prog2.NewContinuousVariables<N_VARS>("x");
+  auto t = prog2.NewContinuousVariables<1>("t");
+  spect.AddPointInNonnegativeScalingConstraints(&prog2, x, t[0]);
+
+  EXPECT_EQ(prog2.positive_semidefinite_constraints().size(), 1);
+  EXPECT_EQ(prog2.linear_equality_constraints().size(), 1);
+  EXPECT_EQ(prog2.bounding_box_constraints().size(), 1);  // t >= 0
+}
+
+GTEST_TEST(SpectrahedronTest, AddPointInNonnegativeScalingConstraintsBBox) {
+  MathematicalProgram prog;
+  auto X1 = prog.NewSymmetricContinuousVariables<2>();
+  prog.AddPositiveSemidefiniteConstraint(X1);
+
+  const int N_VARS = 3;  // 3 free vars with SDP matrix of size 2x2
+  VectorXd lb(N_VARS);
+  lb << -0.1, -2.0, 2.0;
+  VectorXd ub(N_VARS);
+  ub << 1.0, 0.0, 4.0;
+
+  prog.AddBoundingBoxConstraint(lb, ub, prog.decision_variables());
+
+  auto result = Solve(prog);
+  ASSERT_TRUE(result.is_success());
+
+  auto spect = Spectrahedron(prog);
+
+  MathematicalProgram prog2;
+  auto x = prog2.NewContinuousVariables<N_VARS>("x");
+  auto t = prog2.NewContinuousVariables<1>("t");
+  spect.AddPointInNonnegativeScalingConstraints(&prog2, x, t[0]);
+
+  EXPECT_EQ(prog2.positive_semidefinite_constraints().size(), 1);
+  // bounding box constraints become two constraints, upper and lower bound
+  EXPECT_EQ(prog2.linear_constraints().size(), 2);
+  EXPECT_EQ(prog2.bounding_box_constraints().size(), 1);  // t >= 0
+}
+
 GTEST_TEST(SpectrahedronTest, Move) {
   auto make_sdp = []() {
     auto sdp = std::make_unique<MathematicalProgram>();
