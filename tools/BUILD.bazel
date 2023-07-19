@@ -11,6 +11,10 @@ load(
 
 package(default_visibility = ["//visibility:public"])
 
+# Enable other directories access to the drake bazelrc configuration files via
+# e.g., data = ["//tools:macos.bazelrc"].
+exports_files(glob(["*.bazelrc"]))
+
 py_library(
     name = "module_py",
     srcs = ["__init__.py"],
