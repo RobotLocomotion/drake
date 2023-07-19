@@ -1,6 +1,43 @@
-# This file exists to make our directory into a Bazel package, so that our
-# neighboring *.bzl file can be loaded elsewhere.
-
+load("//tools/skylark:drake_py.bzl", "drake_py_binary", "drake_py_test")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
-add_lint_tests(python_lint_extra_srcs = ["find_vtk_headers.py"])
+drake_py_binary(
+    name = "package",
+    srcs = [
+        "package.py",
+    ],
+    data = [
+        "Dockerfile",
+    ] + glob(["image/**"]),
+    deps = [
+        "@bazel_tools//tools/python/runfiles",
+    ],
+)
+
+add_lint_tests(
+    python_lint_extra_srcs = [
+        "find_vtk_headers.py",
+        "package.py",
+    ] + glob(["image/*.py"]) + glob(["test/*.py"]),
+)
+
+drake_py_test(
+    name = "vtk_cxx_std_matches_drake_test",
+    data = [
+        "image/vtk_cmake_configure_args.py",
+        "image/vtk_common.py",
+    ],
+    deps = [
+        "@bazel_tools//tools/python/runfiles",
+    ],
+)
+
+# TODO(svenevs): delete this and add an issue to hook mypy up to here.
+drake_py_test(
+    name = "lint_python",
+    allow_import_unittest = True,
+    tags = ["manual"],
+    deps = [
+        "@bazel_tools//tools/python/runfiles",
+    ],
+)
