@@ -557,27 +557,36 @@ GTEST_TEST(MeshcatVisualizerTest, AlphaSliderCheckResults) {
     auto diagram = builder.Build();
     auto context = diagram->CreateDefaultContext();
 
-    // Publish geometry and check the results of various slider settings.
+    // Publish the initial geometry. The alpha slider remains at its default
+    // value of 100%.
     const std::string geom_path =
         fmt::format("visualizer/box/box/{}", geom_id.get_value());
-    if (scenario.slider_value == 1.0) {
-      // We can't get the color property until it is explicitly set, and
-      // setting the slider to its initial value of 1.0 gets ignored.
-      // If a test scenario tries this, set to another value first.
-      meshcat->SetSliderValue("visualizer α", 0.9);
-    }
-    diagram->ForcedPublish(*context);
-    meshcat->SetSliderValue("visualizer α", scenario.slider_value);
     diagram->ForcedPublish(*context);
 
-    const std::string property = meshcat->GetPackedProperty(geom_path,
-                                                            "color");
-    msgpack::object_handle oh = msgpack::unpack(property.data(),
-                                                property.size());
-    auto data = oh.get().as<internal::SetPropertyData<std::vector<double>>>();
-    EXPECT_EQ(data.property, "color");
-    ASSERT_EQ(data.value.size(), 4);
-    EXPECT_EQ(data.value[3], scenario.expected_value);
+    // If the test case specifies a <100% alpha, move the slider and republish.
+    if (scenario.slider_value != 1.0) {
+      meshcat->SetSliderValue("visualizer α", scenario.slider_value);
+      diagram->ForcedPublish(*context);
+    }
+
+    // Check to see whether the visualizer adjusted the alpha value with a
+    // SetProperty call subsequent to the original SetObject call.
+    const bool requires_alpha_update =
+        scenario.geometry_alpha != scenario.expected_value;
+    const std::string property = meshcat->GetPackedProperty(geom_path, "color");
+    const bool alpha_was_updated = property.size() > 0;
+    EXPECT_EQ(alpha_was_updated, requires_alpha_update);
+    if (alpha_was_updated) {
+      msgpack::object_handle oh =
+          msgpack::unpack(property.data(), property.size());
+      auto data = oh.get().as<internal::SetPropertyData<std::vector<double>>>();
+      EXPECT_EQ(data.property, "color");
+      ASSERT_EQ(data.value.size(), 4);
+      EXPECT_EQ(data.value[0], 1.0);
+      EXPECT_EQ(data.value[1], 1.0);
+      EXPECT_EQ(data.value[2], 1.0);
+      EXPECT_EQ(data.value[3], scenario.expected_value);
+    }
   }
 }
 
