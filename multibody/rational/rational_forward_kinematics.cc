@@ -1,5 +1,6 @@
 #include "drake/multibody/rational/rational_forward_kinematics.h"
 
+#include <limits>
 #include <utility>
 
 #include "drake/common/drake_assert.h"
@@ -13,6 +14,7 @@
 namespace drake {
 namespace multibody {
 namespace {
+const double kInf = std::numeric_limits<double>::infinity();
 
 RationalForwardKinematics::Pose<symbolic::Polynomial> GetIdentityPose() {
   RationalForwardKinematics::Pose<symbolic::Polynomial> pose;
@@ -75,10 +77,8 @@ RationalForwardKinematics::RationalForwardKinematics(
       const symbolic::Variable s_angle(fmt::format("s[{}]", s_.size()));
       s_.push_back(s_angle);
       s_angles_.push_back(s_angle);
-      cos_delta_.emplace_back(
-          fmt::format("cos_delta[{}]", cos_delta_.size()));
-      sin_delta_.emplace_back(
-          fmt::format("sin_delta[{}]", sin_delta_.size()));
+      cos_delta_.emplace_back(fmt::format("cos_delta[{}]", cos_delta_.size()));
+      sin_delta_.emplace_back(fmt::format("sin_delta[{}]", sin_delta_.size()));
       sin_cos_.emplace_back(sin_delta_.back(), cos_delta_.back());
       sin_cos_set_.insert(sin_delta_.back());
       sin_cos_set_.insert(cos_delta_.back());
@@ -115,6 +115,38 @@ RationalForwardKinematics::RationalForwardKinematics(
           s_angles_.data(), s_angles_.size()));
   s_variables_ = symbolic::Variables(
       Eigen::Map<const VectorX<symbolic::Variable>>(s_.data(), s_.size()));
+}
+
+Eigen::VectorXd RationalForwardKinematics::ComputeSValueInfAbovePiOver2(
+    const Eigen::Ref<const Eigen::VectorXd>& q_val,
+    const Eigen::Ref<const Eigen::VectorXd>& q_star_val) const {
+  Eigen::VectorXd s_val(s_.size());
+  for (int i = 0; i < s_val.size(); ++i) {
+    const internal::Mobilizer<double>& mobilizer =
+        GetInternalTree(plant_).get_mobilizer(
+            map_s_to_mobilizer_.at(s_[i].get_id()));
+    // the mobilizer cannot be a weld joint since weld joint doesn't introduce
+    // a variable into s_.
+    if (IsRevolute(mobilizer)) {
+      const int q_index = mobilizer.position_start_in_q();
+      const double delta = (q_val(q_index) - q_star_val(q_index)) / 2;
+      if (delta >= M_PI / 2) {
+        s_val(i) = kInf;
+      } else if (delta <= -M_PI / 2) {
+        s_val(i) = -kInf;
+      } else {
+        s_val(i) = tan(delta);
+      }
+    } else if (IsPrismatic(mobilizer)) {
+      const int q_index = mobilizer.position_start_in_q();
+      s_val(i) = q_val(q_index) - q_star_val(q_index);
+    } else {
+      // Successful construction guarantees nothing but supported mobilizer
+      // types.
+      DRAKE_UNREACHABLE();
+    }
+  }
+  return s_val;
 }
 
 RationalForwardKinematics::Pose<symbolic::Polynomial>
