@@ -53,6 +53,12 @@ from pydrake.perception import (
 _logger = logging.getLogger("drake")
 
 
+def _to_pose(position, quaternion):
+    """Given pose parts, parses it into a RigidTransform.
+    """
+    return RigidTransform(Quaternion(wxyz=quaternion), p=position)
+
+
 class _Slider:
     """A slider with range [small-positive-value to 1.0]."""
 
@@ -164,7 +170,7 @@ class _ViewerApplet:
             link_name = message.link_name[i].replace("::", "/")
             robot_num = message.robot_num[i]
             link_path = f"{self._path}/{robot_num}/{link_name}"
-            pose = self._to_pose(message.position[i], message.quaternion[i])
+            pose = _to_pose(message.position[i], message.quaternion[i])
             self._meshcat.SetTransform(path=link_path, X_ParentPath=pose)
         if self._waiting_for_first_draw_message:
             self._waiting_for_first_draw_message = False
@@ -225,7 +231,7 @@ class _ViewerApplet:
         vertices = np.reshape(vertices, (3, num_verts), order='F')
         faces = np.reshape(faces, (3, num_faces), order='F')
         rgba = Rgba(*geom.color)
-        pose = self._to_pose(geom.position, geom.quaternion)
+        pose = _to_pose(geom.position, geom.quaternion)
         return (vertices, faces, rgba, pose)
 
     def _convert_geom(self, geom):
@@ -269,26 +275,8 @@ class _ViewerApplet:
             _logger.warning(f"Unknown geom.type of {geom.type}")
             return (None, None, None)
         rgba = Rgba(*geom.color)
-        pose = self._to_pose(geom.position, geom.quaternion)
+        pose = _to_pose(geom.position, geom.quaternion)
         return (shape, rgba, pose)
-
-    @staticmethod
-    def _to_pose(position, quaternion):
-        """Given pose parts of an lcmt_viewer_geometry_data, parses it into a
-        RigidTransform.
-        """
-        (p_x, p_y, p_z) = position
-        (q_w, q_x, q_y, q_z) = quaternion
-        return RigidTransform(
-            R=RotationMatrix(
-                quaternion=Quaternion(
-                    w=q_w,
-                    x=q_x,
-                    y=q_y,
-                    z=q_z,
-                ),
-            ),
-            p=(p_x, p_y, p_z))
 
 
 class _ContactApplet:
@@ -490,6 +478,70 @@ class _PointCloudApplet:
         )
 
 
+class _DrawFrameApplet:
+    """Applet to visualize triads in meshcat"""
+    def __init__(self, *, meshcat):
+        """Constructs an applet."""
+        self._meshcat = meshcat
+        # previously published link names
+        self._channel_link_map = {}
+
+    def _channel_to_meshcat_path(self, channel):
+        assert channel.startswith("DRAKE_DRAW_FRAMES")
+        if channel == "DRAKE_DRAW_FRAMES":
+            return "/DRAKE_DRAW_FRAMES/default"
+        else:
+            # E.g., `DRAKE_DRAW_FRAMES_FOO` => `/DRAKE_DRAW_FRAMES/FOO`.
+            suffix = channel[len("DRAKE_DRAW_FRAMES_"):]
+            return f"/DRAKE_DRAW_FRAMES/{suffix}"
+
+    def _add_meshcat_triad(self, path, X_PT):
+        length = 0.25
+        radius = 0.01
+        opacity = 1.0
+        self._meshcat.SetTransform(path, X_PT)
+        # x-axis
+        X_TG = RigidTransform(
+            RotationMatrix.MakeYRotation(np.pi / 2), [length / 2.0, 0, 0]
+        )
+        self._meshcat.SetTransform(path + "/x-axis", X_TG)
+        self._meshcat.SetObject(
+            path + "/x-axis", Cylinder(radius, length), Rgba(1, 0, 0, opacity)
+        )
+        # y-axis
+        X_TG = RigidTransform(
+            RotationMatrix.MakeXRotation(np.pi / 2), [0, length / 2.0, 0]
+        )
+        self._meshcat.SetTransform(path + "/y-axis", X_TG)
+        self._meshcat.SetObject(
+            path + "/y-axis", Cylinder(radius, length), Rgba(0, 1, 0, opacity)
+        )
+        # z-axis
+        X_TG = RigidTransform([0, 0, length / 2.0])
+        self._meshcat.SetTransform(path + "/z-axis", X_TG)
+        self._meshcat.SetObject(
+            path + "/z-axis", Cylinder(radius, length), Rgba(0, 0, 1, opacity)
+        )
+
+    def on_frame_update(self, channel, message):
+        """Handler to update triads in meshcat. It updates poses sent using
+        the lcmt_viewer_draw message."""
+        channel_path = self._channel_to_meshcat_path(channel)
+
+        # delete old frames if the link names have changed
+        link_names = set(message.link_name)
+        if self._channel_link_map.get(channel) != link_names:
+            self._meshcat.Delete(path=channel_path)
+        self._channel_link_map[channel] = link_names
+
+        for i in range(message.num_links):
+            link_name = message.link_name[i].replace("::", "/")
+            link_path = f"{channel_path}/{link_name}"
+            self._add_meshcat_triad(path=link_path,
+                                    X_PT=_to_pose(message.position[i],
+                                                  message.quaternion[i]))
+
+
 class Meldis:
     """
     MeshCat LCM Display Server (MeLDiS)
@@ -591,6 +643,12 @@ class Meldis:
         self._subscribe_multichannel(regex="DRAKE_POINT_CLOUD.*",
                                      message_type=lcmt_point_cloud,
                                      handler=point_cloud.on_point_cloud)
+
+        # Subscribe to all the frame display channels.
+        draw_frame = _DrawFrameApplet(meshcat=self.meshcat)
+        self._subscribe_multichannel(regex="DRAKE_DRAW_FRAMES.*",
+                                     message_type=lcmt_viewer_draw,
+                                     handler=draw_frame.on_frame_update)
 
         # Bookkeeping for automatic shutdown.
         self._last_poll = None
