@@ -21,6 +21,7 @@ drake_cc_package_library(
         ":contact_properties",
         ":contact_results",
         ":coulomb_friction",
+        ":deformable_indexes",
         ":discrete_contact_pair",
         ":externally_applied_spatial_force",
         ":externally_applied_spatial_force_multiplexer",
@@ -45,7 +46,19 @@ drake_cc_library(
         "constraint_specs.h",
     ],
     deps = [
+        ":deformable_indexes",
         "//multibody/tree:multibody_tree_indexes",
+    ],
+)
+
+drake_cc_library(
+    name = "deformable_indexes",
+    hdrs = [
+        "deformable_indexes.h",
+    ],
+    deps = [
+        "//common:identifier",
+        "//common:type_safe_index",
     ],
 )
 
@@ -97,6 +110,7 @@ drake_cc_library(
     hdrs = [
         "compliant_contact_manager.h",
         "deformable_driver.h",
+        "deformable_indexes.h",
         "deformable_model.h",
         "discrete_update_manager.h",
         "make_discrete_update_manager.h",
