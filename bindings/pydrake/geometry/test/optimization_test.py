@@ -6,6 +6,7 @@ import unittest
 import numpy as np
 
 from pydrake.common import RandomGenerator, temp_directory
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.test_utilities.pickle_compare import assert_pickle
 from pydrake.geometry import (
     Box, Capsule, Cylinder, Ellipsoid, FramePoseVector, GeometryFrame,
@@ -550,12 +551,16 @@ class TestGeometryOptimization(unittest.TestCase):
         source = spp.AddVertex(set=mut.Point([0.1]), name="source")
         target = spp.AddVertex(set=mut.Point([0.2]), name="target")
         edge0 = spp.AddEdge(u=source, v=target, name="edge0")
-        edge1 = spp.AddEdge(u_id=source.id(), v_id=target.id(), name="edge1")
+        with catch_drake_warnings(expected_count=1) as w:
+            edge1 = spp.AddEdge(u_id=source.id(),
+                                v_id=target.id(),
+                                name="edge1")
         self.assertEqual(len(spp.Vertices()), 2)
         self.assertEqual(len(spp.Edges()), 2)
-        result = spp.SolveShortestPath(
-            source_id=source.id(), target_id=target.id(), options=options)
-        self.assertIsInstance(result, MathematicalProgramResult)
+        with catch_drake_warnings(expected_count=1) as w:
+            result = spp.SolveShortestPath(
+                source_id=source.id(), target_id=target.id(), options=options)
+            self.assertIsInstance(result, MathematicalProgramResult)
         self.assertIsInstance(spp.SolveShortestPath(
             source=source, target=target, options=options),
             MathematicalProgramResult)
@@ -632,14 +637,16 @@ class TestGeometryOptimization(unittest.TestCase):
 
         # Remove Edges
         self.assertEqual(len(spp.Edges()), 2)
-        spp.RemoveEdge(edge1.id())
-        self.assertEqual(len(spp.Edges()), 1)
         spp.RemoveEdge(edge0)
-        self.assertEqual(len(spp.Edges()), 0)
+        self.assertEqual(len(spp.Edges()), 1)
+        with catch_drake_warnings(expected_count=1) as w:
+            spp.RemoveEdge(edge1.id())
+            self.assertEqual(len(spp.Edges()), 0)
 
         # Remove Vertices
         self.assertEqual(len(spp.Vertices()), 2)
-        spp.RemoveVertex(source.id())
+        spp.RemoveVertex(source)
         self.assertEqual(len(spp.Vertices()), 1)
-        spp.RemoveVertex(target)
-        self.assertEqual(len(spp.Vertices()), 0)
+        with catch_drake_warnings(expected_count=1) as w:
+            spp.RemoveVertex(target.id())
+            self.assertEqual(len(spp.Vertices()), 0)
