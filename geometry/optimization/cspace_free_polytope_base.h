@@ -8,7 +8,7 @@
 #include <vector>
 
 #include "drake/geometry/optimization/c_iris_collision_geometry.h"
-#include "drake/geometry/optimization/c_iris_separating_plane.h"
+#include "drake/geometry/optimization/cspace_separating_plane.h"
 #include "drake/multibody/rational/rational_forward_kinematics.h"
 #include "drake/solvers/mathematical_program.h"
 
@@ -93,7 +93,7 @@ class CspaceFreePolytopeBase {
   }
 
   /** All the separating planes between each pair of geometries. */
-  [[nodiscard]] const std::vector<CIrisSeparatingPlane<symbolic::Variable>>&
+  [[nodiscard]] const std::vector<CSpaceSeparatingPlane<symbolic::Variable>>&
   separating_planes() const {
     return separating_planes_;
   }
@@ -219,7 +219,7 @@ class CspaceFreePolytopeBase {
       link_geometries_;
 
   SeparatingPlaneOrder plane_order_;
-  std::vector<CIrisSeparatingPlane<symbolic::Variable>> separating_planes_;
+  std::vector<CSpaceSeparatingPlane<symbolic::Variable>> separating_planes_;
   std::unordered_map<SortedPair<geometry::GeometryId>, int>
       map_geometries_to_separating_planes_;
 

@@ -458,6 +458,14 @@ class TestMath(unittest.TestCase):
         if T != Expression:
             self.assertEqual(value, T(.5))
 
+    @numpy_compare.check_nonsymbolic_types
+    def test_soft_min_max(self, T):
+        x = [T(1), T(2), T(3)]
+        self.assertLess(mut.SoftUnderMax(x=x, alpha=1), T(3))
+        self.assertGreater(mut.SoftOverMax(x=x, alpha=1), T(3))
+        self.assertLess(mut.SoftUnderMin(x=x, alpha=1), T(1))
+        self.assertGreater(mut.SoftOverMin(x=x, alpha=1), T(1))
+
     @numpy_compare.check_all_types
     def test_cross_product(self, T):
         p = np.array([T(1), T(2), T(3)])

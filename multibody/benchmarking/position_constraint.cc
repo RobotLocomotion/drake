@@ -23,8 +23,7 @@ using systems::Context;
 
 class IiwaPositionConstraintFixture : public benchmark::Fixture {
  public:
-  using benchmark::Fixture::SetUp;
-  void SetUp(const ::benchmark::State&) override {
+  void SetUp(::benchmark::State&) override {
     tools::performance::AddMinMaxStatistics(this);
 
     const int kNumIiwas = 10;

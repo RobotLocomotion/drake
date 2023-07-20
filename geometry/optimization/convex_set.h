@@ -112,6 +112,18 @@ class ConvexSet : public ShapeReifier {
     return DoMaybeGetPoint();
   }
 
+  /** Returns a feasible point within this convex set if it is nonempty,
+  and nullopt otherwise. When ambient_dimension is zero, returns nullopt. */
+  std::optional<Eigen::VectorXd> MaybeGetFeasiblePoint() const {
+    if (ambient_dimension() == 0) {
+      return std::nullopt;
+    } else if (MaybeGetPoint().has_value()) {
+      return MaybeGetPoint();
+    } else {
+      return DoMaybeGetFeasiblePoint();
+    }
+  }
+
   /** Returns true iff the point x is contained in the set.  When
   ambient_dimension is zero, returns false. */
   bool PointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
@@ -232,6 +244,11 @@ class ConvexSet : public ShapeReifier {
   override with a custom implementation.
   @pre ambient_dimension() > 0 */
   virtual std::optional<Eigen::VectorXd> DoMaybeGetPoint() const;
+
+  /** Non-virtual interface implementation for MaybeGetFeasiblePoint(). The
+  default implementation solves a feasibility optimization problem, but
+  derived classes can override with a custom (more efficient) implementation. */
+  virtual std::optional<Eigen::VectorXd> DoMaybeGetFeasiblePoint() const;
 
   /** Non-virtual interface implementation for PointInSet().
   @pre x.size() == ambient_dimension()

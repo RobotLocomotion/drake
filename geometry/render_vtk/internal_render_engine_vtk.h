@@ -20,6 +20,7 @@
 #include <vtkWindowToImageFilter.h>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_export.h"
 #include "drake/geometry/render/render_engine.h"
 #include "drake/geometry/render/render_label.h"
 #include "drake/geometry/render/render_material.h"
@@ -49,7 +50,7 @@ struct ModuleInitVtkRenderingOpenGL2 {
 // See also shaders::kDepthFS, this is where the variables are used.
 // For the detail of VTK's callback mechanism, please refer to:
 // https://www.vtk.org/doc/nightly/html/classvtkCommand.html#details
-class ShaderCallback : public vtkCommand {
+class DRAKE_NO_EXPORT ShaderCallback : public vtkCommand {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ShaderCallback);
 
@@ -87,8 +88,8 @@ enum ImageType {
 };
 
 /* See documentation of MakeRenderEngineVtk().  */
-class RenderEngineVtk : public render::RenderEngine,
-                        private ModuleInitVtkRenderingOpenGL2 {
+class DRAKE_NO_EXPORT RenderEngineVtk : public render::RenderEngine,
+                                        private ModuleInitVtkRenderingOpenGL2 {
  public:
   /* @name Does not allow copy, move, or assignment  */
   //@{

@@ -101,6 +101,7 @@ void AddPsdConstraint(solvers::MathematicalProgram* prog,
     prog->AddPositiveSemidefiniteConstraint(X);
   }
 }
+
 }  // namespace
 
 CspaceFreePolytopeBase::CspaceFreePolytopeBase(
@@ -138,7 +139,7 @@ CspaceFreePolytopeBase::CspaceFreePolytopeBase(
       Vector3<symbolic::Polynomial> a;
       symbolic::Polynomial b;
       VectorX<symbolic::Variable> plane_decision_vars;
-      switch (plane_order) {
+      switch (plane_order_) {
         case SeparatingPlaneOrder::kAffine: {
           const VectorX<symbolic::Variable> s_for_plane =
               GetSForPlane(link_pair, s_for_plane_enum);
@@ -149,16 +150,17 @@ CspaceFreePolytopeBase::CspaceFreePolytopeBase(
           }
           CalcPlane<symbolic::Variable, symbolic::Variable,
                     symbolic::Polynomial>(plane_decision_vars, s_for_plane,
-                                          plane_order_, &a, &b);
+                                          ToPlaneDegree(plane_order_), &a, &b);
+          break;
         }
       }
       const multibody::BodyIndex expressed_body =
           multibody::internal::FindBodyInTheMiddleOfChain(
               rational_forward_kin_.plant(), link_pair.first(),
               link_pair.second());
-      separating_planes_.emplace_back(a, b, geometry_pair.first,
-                                      geometry_pair.second, expressed_body,
-                                      plane_order_, plane_decision_vars);
+      separating_planes_.emplace_back(
+          a, b, geometry_pair.first, geometry_pair.second, expressed_body,
+          ToPlaneDegree(plane_order_), plane_decision_vars);
 
       map_geometries_to_separating_planes_.emplace(
           SortedPair<geometry::GeometryId>(geometry_pair.first->id(),

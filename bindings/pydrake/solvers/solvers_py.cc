@@ -18,6 +18,7 @@ top-level documentation for :py:mod:`pydrake.math`.
   py::module::import("pydrake.symbolic");
 
   // The order of these calls matters. Some modules rely on prior definitions.
+  internal::DefineSolversEvaluators(m);
   internal::DefineSolversMathematicalProgram(m);
   internal::DefineSolversAugmentedLagrangian(m);
   internal::DefineSolversBranchAndBound(m);

@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <unordered_set>
 #include <vector>
 
 #include "drake/multibody/contact_solvers/block_sparse_lower_triangular_or_symmetric_matrix.h"
@@ -71,20 +72,20 @@ struct Node {
 };
 
 /* A simplified version of Node used in a minimum priority queue of that only
- contains index of the node and the degree. */
-struct IndexDegree {
+ contains the node's index, degree, and priority (see the 2-arg
+ ComputeMinimumDegreeOrdering). */
+struct SimplifiedNode {
   int degree{};
   int index{};
+  int priority{};  // smaller number means higher priority
 };
 
-inline bool operator<(const IndexDegree& a, const IndexDegree& b) {
-  if (a.degree != b.degree) {
-    return a.degree < b.degree;
-  } else {
-    /* Sort by node index when degrees are equal so that consecutive nodes with
-     the same degree are not permuted. */
-    return a.index < b.index;
-  }
+inline bool operator<(const SimplifiedNode& a, const SimplifiedNode& b) {
+  /* Sort by priority first, then by degree, then by index. When all else are
+   equal we sort by index so that consecutive nodes with the same degree are not
+   permuted. */
+  return std::make_tuple(a.priority, a.degree, a.index) <
+         std::make_tuple(b.priority, b.degree, b.index);
 }
 
 /* Computes the preferred elimination ordering of the matrix with the given
@@ -94,6 +95,17 @@ inline bool operator<(const IndexDegree& a, const IndexDegree& b) {
  to original block indices. */
 std::vector<int> ComputeMinimumDegreeOrdering(
     const BlockSparsityPattern& block_sparsity_pattern);
+
+/* Similar to the one argument overload but eliminates elements in
+`priority_elements` first.
+ Suppose the sparsity pattern has n nodes (which we denote as V) and m of those
+ are in `priority_elements` (which we denote as P). Let D(v) be the degree of
+ the node v. For k ∈ [0, m), the k-th eliminated node is argmin(D(v)) s.t.
+ v ∈ P. For k ∈ [m, n), the k-th eliminated node is argmin(D(v)) s.t. v ∈ V\P.
+ @pre all entries in `priority_elements` are in {0, 1, ..., n-1}. */
+std::vector<int> ComputeMinimumDegreeOrdering(
+    const BlockSparsityPattern& block_sparsity_pattern,
+    const std::unordered_set<int>& priority_elements);
 
 /* Given the block sparsity pattern of a symmetric block sparse matrix, computes
  the block sparsity pattern of the lower triangular matrix resulting from a
@@ -109,6 +121,21 @@ std::vector<int> ComputeMinimumDegreeOrdering(
  matrix. */
 BlockSparsityPattern SymbolicCholeskyFactor(
     const BlockSparsityPattern& block_sparsity);
+
+/* Given a block sparsity pattern G on vertices v = {0, 1, ..., n-1} and a
+ partition on v = v₁ ∪ v₂ (such that v₁ ∩ v₂ = ∅), computes an elimination
+ ordering on v in the following way:
+  1. Generate the v₁-induced subgraph G₁ and the v₂-induced subgraph G₂.
+  2. Compute the Minimum Degree ordering on G₁ and G₂ respectively.
+  3. Concatenate the orderings so that all vertices in v₁ come before vertices
+     in v₂.
+ @param[in] global_pattern  The block sparsity pattern G.
+ @param[in] v1              The vertices in the set v₁.
+ @returns  The elimination ordering obtained by following the algorithm
+ described above. */
+std::vector<int> CalcAndConcatenateMdOrderingWithinGroup(
+    const BlockSparsityPattern& global_pattern,
+    const std::unordered_set<int>& v1);
 
 }  // namespace internal
 }  // namespace contact_solvers

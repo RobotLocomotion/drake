@@ -21,9 +21,6 @@ namespace visualization {
 /** Adds LCM visualization publishers to communicate to drake_visualizer
 and/or meldis.
 
-@experimental The exact function signature is subject to change as we polish
-this new feature.
-
 <dl><dt>Example</dt><dd>
 @code
 // Create a builder.

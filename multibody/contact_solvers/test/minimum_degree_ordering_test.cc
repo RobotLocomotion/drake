@@ -104,13 +104,20 @@ GTEST_TEST(MinimumDegreeOrderingTest, UpdateExternalDegree) {
   EXPECT_EQ(n10.degree, 240);
 }
 
-GTEST_TEST(MinimumDegreeOrderingTest, IndexDegreeComparator) {
-  IndexDegree a = {.degree = 0, .index = 0};
-  IndexDegree b = {.degree = 0, .index = 1};
-  IndexDegree c = {.degree = 1, .index = 2};
+GTEST_TEST(MinimumDegreeOrderingTest, SimplifiedNodeComparator) {
+  const SimplifiedNode a = {.degree = 0, .index = 0, .priority = 1};
+  const SimplifiedNode b = {.degree = 0, .index = 1, .priority = 1};
+  const SimplifiedNode c = {.degree = 1, .index = 2, .priority = 1};
   EXPECT_LT(a, b);
   EXPECT_LT(a, c);
   EXPECT_LT(b, c);
+
+  /* Priority trumps everything else. */
+  const SimplifiedNode priority_c = {.degree = 1, .index = 2, .priority = 0};
+
+  EXPECT_LT(priority_c, a);
+  EXPECT_LT(priority_c, b);
+  EXPECT_LT(priority_c, c);
 }
 
 GTEST_TEST(MinimumDegreeOrderingTest, ComputeMinimumDegreeOrdering) {
@@ -170,6 +177,30 @@ GTEST_TEST(MinimumDegreeOrderingTest, ComputeMinimumDegreeOrdering2) {
   EXPECT_EQ(result, std::vector<int>({0, 1, 2, 3, 4, 5, 6, 7, 8, 9}));
 }
 
+/* Here we use the same initial sparsity pattern as the example from Figure 1 in
+ [Amestoy, 1996], but run Minimum Degree ordering with even nodes as priority
+ nodes. We compare the computed results with pen-and-paper results from
+ actually performing the chordal completion of the graph. */
+GTEST_TEST(MinimumDegreeOrderingTest,
+           ComputeMinimumDegreeOrderingWithPriority) {
+  std::vector<std::vector<int>> sparsity;
+  sparsity.emplace_back(std::vector<int>{0, 3, 5});
+  sparsity.emplace_back(std::vector<int>{1, 4, 5, 8});
+  sparsity.emplace_back(std::vector<int>{2, 4, 5, 6});
+  sparsity.emplace_back(std::vector<int>{3, 6, 7});
+  sparsity.emplace_back(std::vector<int>{4, 6, 8});
+  sparsity.emplace_back(std::vector<int>{5});
+  sparsity.emplace_back(std::vector<int>{6, 7, 8, 9});
+  sparsity.emplace_back(std::vector<int>{7, 8, 9});
+  sparsity.emplace_back(std::vector<int>{8, 9});
+  sparsity.emplace_back(std::vector<int>{9});
+  std::vector<int> block_sizes(10, 2);
+  BlockSparsityPattern block_pattern(block_sizes, sparsity);
+  const std::vector<int> result =
+      ComputeMinimumDegreeOrdering(block_pattern, {0, 2, 4, 6, 8});
+  EXPECT_EQ(result, std::vector<int>({0, 2, 4, 8, 6, 1, 3, 5, 7, 9}));
+}
+
 GTEST_TEST(MinimumDegreeOrderingTest, SymbolicCholeskyFactor) {
   /*
   In this schematic (unlike the one in the previous test), an X corresponds to a
@@ -215,6 +246,53 @@ GTEST_TEST(MinimumDegreeOrderingTest, SymbolicCholeskyFactor) {
   EXPECT_EQ(L_sparsity[3], std::vector<int>({3, 5}));
   EXPECT_EQ(L_sparsity[4], std::vector<int>({4, 5}));
   EXPECT_EQ(L_sparsity[5], std::vector<int>({5}));
+}
+
+/* In this test, we make a graph with 8 vertices, {0, 1, ..., 7}, such that
+ odd indexed vertices belong to v₁ and even indexed vertices belong to v₂.
+ Within v₁ and v₂, the block sparsity pattern looks like
+    X X | O O O | O O O O | O O O
+    X X | O O O | O O O O | O O O
+    --- | ----- |---------| -----
+    O O | X X X | X X X X | O O O
+    O O | X X X | X X X X | O O O
+    O O | X X X | X X X X | O O O
+    --- | ----- |---------| -----
+    O O | X X X | X X X X | O O O
+    O O | X X X | X X X X | O O O
+    O O | X X X | X X X X | O O O
+    O O | X X X | X X X X | O O O
+    --- | ----- |---------| -----
+    O O | O O O | O O O O | X X X
+    O O | O O O | O O O O | X X X
+    O O | O O O | O O O O | X X X
+ The expected elimination ordering for this block sparsity pattern is
+ [0, 3, 2, 1] from pen and paper calculation. 2 is eliminated before 1 because
+ when 0 and 3 are eliminated, the degree of 2 is 3 and the degree of 1 is 4.
+
+ The global to local index mapping looks like
+  0->0, 2->1, 4->2, 6->3
+  1->0, 3->1, 5->2, 7->3.
+ Because vertices in v₁ appear first in the resulting ordering, the final result
+ should be [1, 7, 5, 3, 0, 6, 4, 2].
+ We arbitrarily add edges across v₁ and v₂ (4-5, 4-7, 0-7, 0-5, 2-1) but they do
+ not affect the result. */
+GTEST_TEST(BlockSparseCholeskySolverTest, ConcatenateMdOrderingWithinGroup) {
+  std::vector<std::vector<int>> sparsity;
+  sparsity.emplace_back(std::vector<int>{0, 5, 7});
+  sparsity.emplace_back(std::vector<int>{1, 2});
+  sparsity.emplace_back(std::vector<int>{2, 4});
+  sparsity.emplace_back(std::vector<int>{3, 5});
+  sparsity.emplace_back(std::vector<int>{4, 5, 7});
+  sparsity.emplace_back(std::vector<int>{5});
+  sparsity.emplace_back(std::vector<int>{6});
+  sparsity.emplace_back(std::vector<int>{7});
+  std::vector<int> block_sizes = {2, 2, 3, 3, 4, 4, 3, 3};
+  BlockSparsityPattern block_pattern(block_sizes, sparsity);
+  const std::unordered_set<int> v1 = {1, 3, 5, 7};
+  const std::vector<int> result =
+      CalcAndConcatenateMdOrderingWithinGroup(block_pattern, v1);
+  EXPECT_EQ(result, std::vector<int>({1, 7, 5, 3, 0, 6, 4, 2}));
 }
 
 }  // namespace

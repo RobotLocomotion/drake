@@ -18,6 +18,22 @@
 namespace drake {
 namespace geometry {
 namespace optimization {
+/** The separating plane aᵀx + b ≥ δ, aᵀx + b ≤ −δ has parameters a and b.
+ These parameterize a polynomial function of `s_for_plane` with the
+ specified order.  `s_for_plane` is a sub set of the configuration-space
+ variable `s`, please refer to the RationalForwardKinematics class or
+ the paper above on the meaning of s.
+ */
+enum class SeparatingPlaneOrder {
+  kAffine = 1,  ///< a and b are affine functions of s.
+};
+
+/** Convert an integer degree to the SeparatingPlaneOrder */
+[[nodiscard]] SeparatingPlaneOrder ToPlaneOrder(int plane_degree);
+
+/** Convert SeparatingPlaneOrder to an integer degree. */
+[[nodiscard]] int ToPlaneDegree(SeparatingPlaneOrder plane_order);
+
 /**
  Wraps the information that a pair of collision geometries are separated by a
  plane.

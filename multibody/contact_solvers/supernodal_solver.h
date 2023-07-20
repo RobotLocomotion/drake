@@ -8,6 +8,7 @@
 #include <Eigen/Dense>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/multibody/contact_solvers/block_sparse_matrix.h"
 #include "drake/multibody/contact_solvers/matrix_block.h"
 
 namespace drake {
@@ -15,7 +16,7 @@ namespace multibody {
 namespace contact_solvers {
 namespace internal {
 
-using BlockMatrixTriplet = std::tuple<int, int, MatrixBlock<double>>;
+using BlockTriplet = BlockSparseMatrix<double>::BlockTriplet;
 
 // A supernodal Cholesky solver for solving the symmetric positive definite
 // system
@@ -126,7 +127,7 @@ class SuperNodalSolver {
 // index in the triplet. Each entry in the resulting vector contains at least
 // one and at most two entries due to the precondtion on `jacobian_blocks`. */
 std::vector<std::vector<int>> GetRowToTripletMapping(
-    int num_row_blocks, const std::vector<BlockMatrixTriplet>& jacobian_blocks);
+    int num_row_blocks, const std::vector<BlockTriplet>& jacobian_blocks);
 
 // Verifies the entries in `jacobian_blocks` are valid in the sense that they
 // satisfy:
@@ -137,7 +138,7 @@ std::vector<std::vector<int>> GetRowToTripletMapping(
 // If not, throws an exception.
 // Returns the number of columns in each column block of the Jacobian matrix.
 std::vector<int> GetJacobianBlockSizesVerifyTriplets(
-    const std::vector<BlockMatrixTriplet>& jacobian_blocks);
+    const std::vector<BlockTriplet>& jacobian_blocks);
 
 }  // namespace internal
 }  // namespace contact_solvers

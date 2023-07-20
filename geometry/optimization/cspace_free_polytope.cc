@@ -89,7 +89,7 @@ CspaceFreePolytope::CspaceFreePolytope(
   separating_planes_ptrs.reserve(separating_planes().size());
   for (const auto& plane : separating_planes()) {
     separating_planes_ptrs.push_back(
-        std::make_unique<CIrisSeparatingPlane<symbolic::Variable>>(plane));
+        std::make_unique<CSpaceSeparatingPlane<symbolic::Variable>>(plane));
   }
 
   internal::GenerateRationals(separating_planes_ptrs, y_slack(), q_star_,

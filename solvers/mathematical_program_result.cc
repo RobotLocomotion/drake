@@ -66,6 +66,11 @@ double MathematicalProgramResult::GetSolution(
   return GetVariableValue(var, decision_variable_index_, x_val_);
 }
 
+void MathematicalProgramResult::SetSolution(const symbolic::Variable& var,
+                                            double value) {
+  x_val_(decision_variable_index_->at(var.get_id())) = value;
+}
+
 symbolic::Expression MathematicalProgramResult::GetSolution(
     const symbolic::Expression& e) const {
   DRAKE_ASSERT(decision_variable_index_.has_value());

@@ -81,6 +81,7 @@ class UrdfParser {
   // reporting, and return values.
   std::optional<ModelInstanceIndex> Parse();
   void ParseBushing(XMLElement* node);
+  void ParseBallConstraint(XMLElement* node);
   void ParseFrame(XMLElement* node);
   void ParseTransmission(const JointEffortLimits& joint_effort_limits,
                          XMLElement* node);
@@ -910,6 +911,63 @@ void UrdfParser::ParseBushing(XMLElement* node) {
   ParseLinearBushingRollPitchYaw(read_vector, read_frame, w_.plant);
 }
 
+void UrdfParser::ParseBallConstraint(XMLElement* node) {
+  // Functor to read a child element with a vector valued `value` attribute.
+  // Returns a zero vector if unable to find the tag or if the value attribute
+  // is improperly formed.
+  auto read_vector = [node, this](const char* element_name) -> Eigen::Vector3d {
+    const XMLElement* value_node = node->FirstChildElement(element_name);
+    if (value_node != nullptr) {
+      Eigen::Vector3d value;
+      if (ParseVectorAttribute(value_node, "value", &value)) {
+        return value;
+      } else {
+        Error(*node, fmt::format("Unable to read the 'value' attribute for the"
+                                 " <{}> tag",
+                                 element_name));
+        return Eigen::Vector3d::Zero();
+      }
+    } else {
+      Error(*node, fmt::format("Unable to find the <{}> tag", element_name));
+      return Eigen::Vector3d::Zero();
+    }
+  };
+
+  // Functor to read a child element with a string-valued `name` attribute.
+  // Returns nullptr if unable to find the tag, if the name attribute is
+  // improperly formed, or if it does not refer to a frame already in the
+  // model.
+  auto read_body =
+      [node, this](const char* element_name) -> const Body<double>* {
+    XMLElement* value_node = node->FirstChildElement(element_name);
+
+    if (value_node != nullptr) {
+      std::string body_name;
+      auto plant = w_.plant;
+      if (ParseStringAttribute(value_node, "name", &body_name)) {
+        if (!plant->HasBodyNamed(body_name, model_instance_)) {
+          Error(*value_node, fmt::format("Body: {} specified for <{}> does not"
+                                         " exist in the model.",
+                                         body_name, element_name));
+          return {};
+        }
+        return &plant->GetBodyByName(body_name, model_instance_);
+      } else {
+        Error(*value_node, fmt::format("Unable to read the 'name' attribute for"
+                                       " the <{}> tag",
+                                       element_name));
+        return {};
+      }
+
+    } else {
+      Error(*node, fmt::format("Unable to find the <{}> tag", element_name));
+      return {};
+    }
+  };
+
+  internal::ParseBallConstraint(read_vector, read_body, w_.plant);
+}
+
 std::optional<ModelInstanceIndex> UrdfParser::Parse() {
   XMLElement* node = xml_doc_->FirstChildElement("robot");
   if (!node) {
@@ -996,6 +1054,15 @@ std::optional<ModelInstanceIndex> UrdfParser::Parse() {
        bushing_node; bushing_node = bushing_node->NextSiblingElement(
                          "drake:linear_bushing_rpy")) {
     ParseBushing(bushing_node);
+  }
+
+  // Parses the model's custom Drake ball constraint tags.
+  for (XMLElement* ball_constraint_node =
+           node->FirstChildElement("drake:ball_constraint");
+       ball_constraint_node;
+       ball_constraint_node =
+           ball_constraint_node->NextSiblingElement("drake:ball_constraint")) {
+    ParseBallConstraint(ball_constraint_node);
   }
 
   return model_instance_;

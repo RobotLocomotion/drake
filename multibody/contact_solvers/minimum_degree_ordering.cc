@@ -5,6 +5,8 @@
 #include <set>
 #include <utility>
 
+#include "drake/multibody/contact_solvers/sap/partial_permutation.h"
+
 namespace drake {
 namespace multibody {
 namespace contact_solvers {
@@ -68,6 +70,12 @@ void Node::UpdateExternalDegree(const std::vector<Node>& nodes) {
 
 std::vector<int> ComputeMinimumDegreeOrdering(
     const BlockSparsityPattern& block_sparsity_pattern) {
+  return ComputeMinimumDegreeOrdering(block_sparsity_pattern, {});
+}
+
+std::vector<int> ComputeMinimumDegreeOrdering(
+    const BlockSparsityPattern& block_sparsity_pattern,
+    const std::unordered_set<int>& priority_elements) {
   /* Initialize for Minimum Degree: Populate index, size, and A, the list of
    adjacent variables. E, L are empty initially. */
   const std::vector<int>& block_sizes = block_sparsity_pattern.block_sizes();
@@ -105,12 +113,15 @@ std::vector<int> ComputeMinimumDegreeOrdering(
    modifying existing elements. There are ways to get around it by duplicating
    nodes and ignoring out-of-date nodes, but for simplicity and readability, we
    use an std::set here instead. */
-  std::set<IndexDegree> sorted_nodes;
+  std::set<SimplifiedNode> sorted_nodes;
   /* Keep the nodes sorted by degrees and break ties with indices. We use a
    striped down version of the node to keep only the necessary information
    (degree and index). */
   for (int n = 0; n < num_nodes; ++n) {
-    IndexDegree node = {.degree = nodes[n].degree, .index = nodes[n].index};
+    SimplifiedNode node = {
+        .degree = nodes[n].degree,
+        .index = nodes[n].index,
+        .priority = priority_elements.count(nodes[n].index) > 0 ? 0 : 1};
     sorted_nodes.insert(node);
   }
 
@@ -119,7 +130,7 @@ std::vector<int> ComputeMinimumDegreeOrdering(
   /* Begin elimination. */
   for (int k = 0; k < num_nodes; ++k) {
     DRAKE_DEMAND(ssize(sorted_nodes) == num_nodes - k);
-    const IndexDegree min_node =
+    const SimplifiedNode min_node =
         sorted_nodes.extract(sorted_nodes.begin()).value();
     /* p is the variable to be eliminated next. */
     const int p = min_node.index;
@@ -138,8 +149,10 @@ std::vector<int> ComputeMinimumDegreeOrdering(
     /* Update all neighboring variables of p. */
     for (int i : node_p.L) {
       Node& node_i = nodes[i];
-      const IndexDegree old_node = {.degree = node_i.degree,
-                                    .index = node_i.index};
+      const SimplifiedNode old_node = {
+          .degree = node_i.degree,
+          .index = node_i.index,
+          .priority = priority_elements.count(node_i.index) > 0 ? 0 : 1};
       /* Pruning. */
       node_i.A = SetDifference(node_i.A, node_p.L);
       /* Convert p from a variable to an element in node i. Note that Lp was
@@ -150,7 +163,9 @@ std::vector<int> ComputeMinimumDegreeOrdering(
       InsertValueInSortedVector(p, &(node_i.E));
       /* Compute external degree. */
       node_i.UpdateExternalDegree(nodes);
-      IndexDegree new_node = {.degree = node_i.degree, .index = node_i.index};
+      SimplifiedNode new_node = {.degree = node_i.degree,
+                                 .index = node_i.index,
+                                 .priority = old_node.priority};
       sorted_nodes.erase(old_node);
       sorted_nodes.insert(new_node);
     }
@@ -209,6 +224,80 @@ BlockSparsityPattern SymbolicCholeskyFactor(
     }
   }
   return BlockSparsityPattern(block_sizes, L_sparsity);
+}
+
+std::vector<int> CalcAndConcatenateMdOrderingWithinGroup(
+    const BlockSparsityPattern& global_pattern,
+    const std::unordered_set<int>& v1) {
+  /* Sizes of v, v1, and v2. */
+  const int n = global_pattern.block_sizes().size();
+  const int n1 = v1.size();
+  const int n2 = n - n1;
+
+  /* Mapping from v to v1 and v2 and the inverse mappings. */
+  PartialPermutation v1_permutation(n);
+  PartialPermutation v2_permutation(n);
+  std::vector<int> global_to_local(n);
+
+  auto in_v1 = [&](int b) {
+    return v1.count(b) > 0;
+  };
+
+  for (int i = 0; i < n; ++i) {
+    if (in_v1(i)) {
+      v1_permutation.push(i);
+      global_to_local[i] = v1_permutation.permuted_index(i);
+    } else {
+      v2_permutation.push(i);
+      global_to_local[i] = v2_permutation.permuted_index(i);
+    }
+  }
+
+  /* The number of scalar variables in each block (as needed for the block
+   sparsity pattern for G1 and G2). */
+  std::vector<int> v1_block_sizes(n1);
+  std::vector<int> v2_block_sizes(n2);
+  const std::vector<int>& global_block_sizes = global_pattern.block_sizes();
+  v1_permutation.Apply(global_block_sizes, &v1_block_sizes);
+  v2_permutation.Apply(global_block_sizes, &v2_block_sizes);
+
+  /* Build the induced graphs G1 and G2 from the global graph G. */
+  const std::vector<std::vector<int>>& G = global_pattern.neighbors();
+  std::vector<std::vector<int>> G1(n1);
+  std::vector<std::vector<int>> G2(n2);
+  for (int a = 0; a < n; ++a) {
+    for (int b : G[a]) {
+      if (in_v1(a) != in_v1(b)) {
+        /* One of a and b is in v1 and the other is in v2, so the edge ab is not
+         in either of the induced graph. */
+        continue;
+      }
+      const int j = std::min(global_to_local[a], global_to_local[b]);
+      const int i = std::max(global_to_local[a], global_to_local[b]);
+      if (in_v1(b)) {
+        G1[j].emplace_back(i);
+      } else {
+        G2[j].emplace_back(i);
+      }
+    }
+  }
+
+  const std::vector<int> v1_ordering = ComputeMinimumDegreeOrdering(
+      BlockSparsityPattern(std::move(v1_block_sizes), std::move(G1)));
+  const std::vector<int> v2_ordering = ComputeMinimumDegreeOrdering(
+      BlockSparsityPattern(std::move(v2_block_sizes), std::move(G2)));
+
+  std::vector<int> result;
+  result.reserve(n);
+  /* The v1 vertices come first. */
+  for (int v : v1_ordering) {
+    result.emplace_back(v1_permutation.domain_index(v));
+  }
+  /* The v2 vertices follow. */
+  for (int v : v2_ordering) {
+    result.emplace_back(v2_permutation.domain_index(v));
+  }
+  return result;
 }
 
 }  // namespace internal
