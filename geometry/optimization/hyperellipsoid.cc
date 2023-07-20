@@ -193,6 +193,10 @@ bool Hyperellipsoid::DoIsEmpty() const {
   return false;
 }
 
+std::optional<Eigen::VectorXd> Hyperellipsoid::DoMaybeGetFeasiblePoint() const {
+  return center_;
+}
+
 bool Hyperellipsoid::DoPointInSet(const Eigen::Ref<const VectorXd>& x,
                                   double tol) const {
   DRAKE_DEMAND(A_.cols() == x.size());
