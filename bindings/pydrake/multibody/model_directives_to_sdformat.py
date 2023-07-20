@@ -444,7 +444,7 @@ class _AddModelInstance:
 
 class _AddDirectives:
     def __init__(self, directive: bool):
-        self.model_ns = directive.model_namespace
+        self.model_namespace = directive.model_namespace
         self.file_path = directive.file
         self.sdformat_uri = self.file_path.replace(".dmd.yaml", ".sdf")
         if not self.sdformat_uri:
@@ -454,21 +454,22 @@ class _AddDirectives:
             )
 
     def insert_into_root_sdformat_node(self, root, directives):
-        if self.model_ns is not None:
+        if self.model_namespace is not None:
             # Check that the model instance has been created by
             # add_model_instance.
             if not any(
-                directive.name == self.model_ns
+                directive.name == self.model_namespace
                 for directive in _filter_directives(
                     directives, _AddModelInstance
                 )
             ):
                 raise _ConversionError(
-                    f"Requested model namespace {self.model_ns} "
+                    f"Requested model namespace {self.model_namespace} "
                     "has not been constructed."
                 )
 
-            model_elem = ET.SubElement(root, "model", name=self.model_ns)
+            model_elem = ET.SubElement(root, "model",
+                                       name=self.model_namespace)
             include_elem = ET.SubElement(model_elem, "include", merge="true")
         else:
             include_elem = ET.SubElement(root, "include", merge="true")
