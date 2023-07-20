@@ -135,7 +135,24 @@ std::optional<VectorXd> CartesianProduct::DoMaybeGetPoint() const {
       return std::nullopt;
     }
   }
+  return CartesianProduct::StackAndMaybeTransform(points);
+}
 
+std::optional<Eigen::VectorXd> CartesianProduct::DoMaybeGetFeasiblePoint()
+    const {
+  std::vector<VectorXd> points;
+  for (const auto& s : sets_) {
+    if (std::optional<VectorXd> point = s->MaybeGetFeasiblePoint()) {
+      points.push_back(std::move(*point));
+    } else {
+      return std::nullopt;
+    }
+  }
+  return CartesianProduct::StackAndMaybeTransform(points);
+}
+
+VectorXd CartesianProduct::StackAndMaybeTransform(
+    std::vector<VectorXd> points) const {
   // Stack the points.
   const int y_ambient_dimension = A_ ? A_->rows() : ambient_dimension();
   int start = 0;
