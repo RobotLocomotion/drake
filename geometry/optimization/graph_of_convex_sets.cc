@@ -259,31 +259,33 @@ Vertex* GraphOfConvexSets::AddVertex(const ConvexSet& set, std::string name) {
 
 Edge* GraphOfConvexSets::AddEdge(VertexId u_id, VertexId v_id,
                                  std::string name) {
-  auto u_iter = vertices_.find(u_id);
-  DRAKE_DEMAND(u_iter != vertices_.end());
-  auto v_iter = vertices_.find(v_id);
-  DRAKE_DEMAND(v_iter != vertices_.end());
+  return AddEdge(vertices_.at(u_id).get(), vertices_.at(v_id).get(),
+                 std::move(name));
+}
 
+Edge* GraphOfConvexSets::AddEdge(Vertex* u, Vertex* v, std::string name) {
+  DRAKE_DEMAND(u != nullptr);
+  DRAKE_DEMAND(v != nullptr);
   if (name.empty()) {
     name = fmt::format("e{}", edges_.size());
   }
   EdgeId id = EdgeId::get_new_id();
-  auto [iter, success] = edges_.try_emplace(
-      id, new Edge(id, u_iter->second.get(), v_iter->second.get(), name));
+  auto [iter, success] = edges_.try_emplace(id, new Edge(id, u, v, name));
   DRAKE_DEMAND(success);
   Edge* e = iter->second.get();
-  u_iter->second->AddOutgoingEdge(e);
-  v_iter->second->AddIncomingEdge(e);
+  u->AddOutgoingEdge(e);
+  v->AddIncomingEdge(e);
   return e;
 }
 
-Edge* GraphOfConvexSets::AddEdge(const Vertex& u, const Vertex& v,
-                                 std::string name) {
-  return AddEdge(u.id(), v.id(), std::move(name));
+void GraphOfConvexSets::RemoveVertex(VertexId vertex_id) {
+  RemoveVertex(vertices_.at(vertex_id).get());
 }
 
-void GraphOfConvexSets::RemoveVertex(VertexId vertex_id) {
-  DRAKE_DEMAND(vertices_.find(vertex_id) != vertices_.end());
+void GraphOfConvexSets::RemoveVertex(Vertex* vertex) {
+  DRAKE_DEMAND(vertex != nullptr);
+  VertexId vertex_id = vertex->id();
+  DRAKE_DEMAND(vertices_.count(vertex_id) > 0);
   for (auto it = edges_.begin(); it != edges_.end();) {
     if (it->second->u().id() == vertex_id ||
         it->second->v().id() == vertex_id) {
@@ -293,22 +295,20 @@ void GraphOfConvexSets::RemoveVertex(VertexId vertex_id) {
     }
   }
   vertices_.erase(vertex_id);
-}
-
-void GraphOfConvexSets::RemoveVertex(const Vertex& vertex) {
-  RemoveVertex(vertex.id());
+  vertex = nullptr;
 }
 
 void GraphOfConvexSets::RemoveEdge(EdgeId edge_id) {
-  DRAKE_DEMAND(edges_.find(edge_id) != edges_.end());
-  Edge* e = edges_.at(edge_id).get();
-  e->u().RemoveOutgoingEdge(e);
-  e->v().RemoveIncomingEdge(e);
-  edges_.erase(edge_id);
+  RemoveEdge(edges_.at(edge_id).get());
 }
 
-void GraphOfConvexSets::RemoveEdge(const Edge& edge) {
-  RemoveEdge(edge.id());
+void GraphOfConvexSets::RemoveEdge(Edge* edge) {
+  DRAKE_DEMAND(edge != nullptr);
+  DRAKE_DEMAND(edges_.count(edge->id()) > 0);
+  edge->u().RemoveOutgoingEdge(edge);
+  edge->v().RemoveIncomingEdge(edge);
+  edges_.erase(edge->id());
+  edge = nullptr;
 }
 
 std::vector<Vertex*> GraphOfConvexSets::Vertices() {
@@ -727,7 +727,16 @@ void GraphOfConvexSets::AddPerspectiveConstraint(
 
 MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
     VertexId source_id, VertexId target_id,
+    const GraphOfConvexSetsOptions& options) const {
+  return SolveShortestPath(*vertices_.at(source_id), *vertices_.at(target_id),
+                           options);
+}
+
+MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
+    const Vertex& source, const Vertex& target,
     const GraphOfConvexSetsOptions& specified_options) const {
+  VertexId source_id = source.id();
+  VertexId target_id = target.id();
   if (vertices_.find(source_id) == vertices_.end()) {
     throw std::runtime_error(fmt::format(
         "Source vertex {} is not a vertex in this GraphOfConvexSets.",
@@ -1219,12 +1228,6 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
   }
 
   return result;
-}
-
-MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
-    const Vertex& source, const Vertex& target,
-    const GraphOfConvexSetsOptions& options) const {
-  return SolveShortestPath(source.id(), target.id(), options);
 }
 
 std::vector<const Edge*> GraphOfConvexSets::GetSolutionPath(
