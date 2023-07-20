@@ -24,8 +24,7 @@ class Mlp : public benchmark::Fixture {
     this->Unit(benchmark::kMicrosecond);
   }
 
-  using benchmark::Fixture::SetUp;
-  void SetUp(const benchmark::State& state) {
+  void SetUp(benchmark::State& state) {  // NOLINT(runtime/references)
     // Number of inputs.
     const int num_inputs = state.range(0);
     DRAKE_DEMAND(num_inputs >= 1);
@@ -127,7 +126,6 @@ BENCHMARK_REGISTER_F(Mlp, OutputGradient)
     ->Args({10, 4, 256, 256})
     ->Args({128, 4, 64, 256})
     ->Args({128, 8, 64, 256});
-
 
 }  // namespace
 }  // namespace systems

@@ -95,10 +95,12 @@ class ConvexSet : public ShapeReifier {
   optimization problem. Check the derived class documentation for any notes.
   Zero-dimensional sets must be handled specially. There are two possible sets
   in a zero-dimensional space -- the empty set, and the whole set (which is
-  simply the "zero vector space", {0}.) Zero-dimensional sets are considered
-  to be nonempty by default. Sets which can be zero-dimensional and empty must
-  handle this behavior in their derived implementation of DoIsEmpty. An example
-  of such a subclass is VPolytope. */
+  simply the "zero vector space", {0}.) For more details, see:
+  https://en.wikipedia.org/wiki/Examples_of_vector_spaces#Trivial_or_zero_vector_space
+  Zero-dimensional sets are considered to be nonempty by default. Sets
+  which can be zero-dimensional and empty must handle this behavior in their
+  derived implementation of DoIsEmpty. An example of such a subclass is
+  VPolytope. */
   bool IsEmpty() const { return DoIsEmpty(); }
 
   /** If this set trivially contains exactly one point, returns the value of
@@ -115,6 +117,23 @@ class ConvexSet : public ShapeReifier {
       }
     }
     return DoMaybeGetPoint();
+  }
+
+  /** Returns a feasible point within this convex set if it is nonempty,
+  and nullopt otherwise. */
+  std::optional<Eigen::VectorXd> MaybeGetFeasiblePoint() const {
+    if (ambient_dimension() == 0) {
+      if (IsEmpty()) {
+        return std::nullopt;
+      } else {
+        return Eigen::VectorXd::Zero(0);
+      }
+    }
+    if (MaybeGetPoint().has_value()) {
+      return MaybeGetPoint();
+    } else {
+      return DoMaybeGetFeasiblePoint();
+    }
   }
 
   /** Returns true iff the point x is contained in the set. If the ambient
@@ -241,6 +260,11 @@ class ConvexSet : public ShapeReifier {
   override with a custom implementation.
   @pre ambient_dimension() >= 0 */
   virtual std::optional<Eigen::VectorXd> DoMaybeGetPoint() const;
+
+  /** Non-virtual interface implementation for MaybeGetFeasiblePoint(). The
+  default implementation solves a feasibility optimization problem, but
+  derived classes can override with a custom (more efficient) implementation. */
+  virtual std::optional<Eigen::VectorXd> DoMaybeGetFeasiblePoint() const;
 
   /** Non-virtual interface implementation for PointInSet().
   @pre x.size() == ambient_dimension()

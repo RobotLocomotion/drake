@@ -385,9 +385,10 @@ class RenderEngineVtkTest : public ::testing::Test {
           "phong", "diffuse_map",
           FindResourceOrThrow("drake/geometry/render/test/meshes/box.png"));
     } else {
-      const Rgba color_n(default_color_.r / 255.0, default_color_.g / 255.0,
-                         default_color_.b / 255.0, default_color_.a / 255.0);
-      material.AddProperty("phong", "diffuse", color_n);
+      const Rgba default_color(
+          default_color_.r / 255.0, default_color_.g / 255.0,
+          default_color_.b / 255.0, default_color_.a / 255.0);
+      material.AddProperty("phong", "diffuse", default_color);
     }
     return material;
   }
@@ -640,12 +641,12 @@ TEST_F(RenderEngineVtkTest, BoxTest) {
       // tiling. The default VTK cube source tiles the texture based on the
       // size of the box. We confirm that doesn't actually happen. We test both
       // the untiled default behavior and the ability to scale the texture.
-      PerceptionProperties props = simple_material(use_texture);
+      PerceptionProperties props = simple_material();
       if (use_texture) {
-        props.UpdateProperty(
-            "phong", "diffuse_map",
-            FindResourceOrThrow(
-                "drake/geometry/render/test/diag_gradient.png"));
+        props.AddProperty("phong", "diffuse_map",
+                          FindResourceOrThrow(
+                              "drake/geometry/render/test/diag_gradient.png"));
+        props.UpdateProperty("phong", "diffuse", Rgba(1, 1, 1));
         if (texture_scaled) {
           props.AddProperty("phong", "diffuse_scale",
                             Vector2d{texture_scale, texture_scale});
@@ -909,17 +910,17 @@ TEST_F(RenderEngineVtkTest, EllipsoidTest) {
 }
 
 // Performs the shape-centered-in-the-image test with a mesh (which happens to
-// be a box). The textured box will be one that is textured via its mtl
-// library. We use it to confirm that VTK is properly _invoking_ the obj
+// be a box). The textured box will be one that is textured via its mtl library.
+// We use it to confirm that the render engine is properly _invoking_ the obj
 // material handling; the _correctness_ of the material handling is tested in
-// render_mesh_test.cc. For the non-textured, we make sure we use a mesh
-// without material file or matching foo.png to preclude it being textured.
+// render_mesh_test.cc. For the non-textured, we make sure we use a mesh without
+// material file or matching foo.png to preclude it being textured.
 TEST_F(RenderEngineVtkTest, MeshTest) {
   for (const bool use_texture : {false, true}) {
     Init(X_WC_, true);
 
-    // N.B. box_no_mtl.obj doesn't exist in the repo. It is generated from
-    // box.obj by stripping out material data.
+    // N.B. box_no_mtl.obj doesn't exist in the source tree and is generated
+    // from box.obj by stripping out material data by the build system.
     auto filename =
         use_texture
             ? FindResourceOrThrow("drake/geometry/render/test/meshes/box.obj")
@@ -948,6 +949,24 @@ TEST_F(RenderEngineVtkTest, MeshTest) {
         renderer_.get(),
         fmt::format("Mesh test {}", use_texture ? "textured" : "rgba").c_str());
   }
+}
+
+// Confirms that meshes/convex referencing a file with an unsupported extension
+// are ignored. (There's also an untested one-time warning.)
+TEST_F(RenderEngineVtkTest, UnsupportedMeshConvex) {
+  Init(X_WC_, false);
+  const PerceptionProperties material = simple_material();
+  const GeometryId id = GeometryId::get_new_id();
+
+  const Mesh mesh("invalid.fbx");
+  EXPECT_FALSE(renderer_->RegisterVisual(id, mesh, material,
+                                         RigidTransformd::Identity(),
+                                         false /* needs update */));
+
+  const Convex convex("invalid.fbx");
+  EXPECT_FALSE(renderer_->RegisterVisual(id, convex, material,
+                                         RigidTransformd::Identity(),
+                                         false /* needs update */));
 }
 
 // Performs the test to cast textures to uchar channels. It depends on the image

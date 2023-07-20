@@ -47,6 +47,7 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertEqual(point.ambient_dimension(), 3)
         np.testing.assert_array_equal(point.x(), p)
         np.testing.assert_array_equal(point.MaybeGetPoint(), p)
+        np.testing.assert_array_equal(point.MaybeGetFeasiblePoint(), p)
         point.set_x(x=2*p)
         np.testing.assert_array_equal(point.x(), 2*p)
         point.set_x(x=p)
@@ -63,6 +64,8 @@ class TestGeometryOptimization(unittest.TestCase):
         np.testing.assert_array_equal(hpoly.b(), self.b)
         self.assertTrue(hpoly.PointInSet(x=[0, 0, 0], tol=0.0))
         self.assertFalse(hpoly.IsEmpty())
+        self.assertFalse(hpoly.MaybeGetFeasiblePoint() is None)
+        self.assertTrue(hpoly.PointInSet(hpoly.MaybeGetFeasiblePoint()))
         self.assertFalse(hpoly.IsBounded())
         new_vars, new_constraints = hpoly.AddPointInSetConstraints(
             self.prog, self.x)
@@ -104,6 +107,10 @@ class TestGeometryOptimization(unittest.TestCase):
             mut.Hyperellipsoid)
         np.testing.assert_array_almost_equal(
             h_box.ChebyshevCenter(), [0, 0, 0])
+        h_scaled = h_box.Scale(scale=2.0, center=[1, 2, 3])
+        self.assertIsInstance(h_scaled, mut.HPolyhedron)
+        h_scaled = h_box.Scale(scale=2.0)
+        self.assertIsInstance(h_scaled, mut.HPolyhedron)
         h2 = h_box.CartesianProduct(other=h_unit_box)
         self.assertIsInstance(h2, mut.HPolyhedron)
         self.assertEqual(h2.ambient_dimension(), 6)
@@ -169,6 +176,9 @@ class TestGeometryOptimization(unittest.TestCase):
         ellipsoid = mut.Hyperellipsoid(A=self.A, center=self.b)
         self.assertEqual(ellipsoid.ambient_dimension(), 3)
         self.assertFalse(ellipsoid.IsEmpty())
+        self.assertFalse(ellipsoid.MaybeGetFeasiblePoint() is None)
+        self.assertTrue(ellipsoid.PointInSet(
+            ellipsoid.MaybeGetFeasiblePoint()))
         np.testing.assert_array_equal(ellipsoid.A(), self.A)
         np.testing.assert_array_equal(ellipsoid.center(), self.b)
         self.assertTrue(ellipsoid.PointInSet(x=self.b, tol=0.0))
@@ -219,6 +229,8 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertEqual(sum2.num_terms(), 2)
         self.assertIsInstance(sum2.term(0), mut.Point)
         self.assertFalse(sum.IsEmpty())
+        self.assertFalse(sum.MaybeGetFeasiblePoint() is None)
+        self.assertTrue(sum.PointInSet(sum.MaybeGetFeasiblePoint()))
 
     def test_spectrahedron(self):
         s = mut.Spectrahedron()
@@ -228,12 +240,17 @@ class TestGeometryOptimization(unittest.TestCase):
         prog.AddLinearEqualityConstraint(X[0, 0] + X[1, 1] + X[2, 2], 1)
         s = mut.Spectrahedron(prog=prog)
         self.assertEqual(s.ambient_dimension(), 6)
+        self.assertFalse(s.IsEmpty())
+        self.assertFalse(s.MaybeGetFeasiblePoint() is None)
+        self.assertTrue(s.PointInSet(s.MaybeGetFeasiblePoint()))
 
     def test_v_polytope(self):
         mut.VPolytope()
         vertices = np.array([[0.0, 1.0, 2.0], [3.0, 7.0, 5.0]])
         vpoly = mut.VPolytope(vertices=vertices)
         self.assertFalse(vpoly.IsEmpty())
+        self.assertFalse(vpoly.MaybeGetFeasiblePoint() is None)
+        self.assertTrue(vpoly.PointInSet(vpoly.MaybeGetFeasiblePoint()))
         self.assertEqual(vpoly.ambient_dimension(), 2)
         np.testing.assert_array_equal(vpoly.vertices(), vertices)
         self.assertTrue(vpoly.PointInSet(x=[1.0, 5.0], tol=1e-8))
@@ -313,6 +330,8 @@ class TestGeometryOptimization(unittest.TestCase):
             lb=[-1, -1, -1], ub=[1, 1, 1])
         sum = mut.CartesianProduct(setA=point, setB=h_box)
         self.assertFalse(sum.IsEmpty())
+        self.assertFalse(sum.MaybeGetFeasiblePoint() is None)
+        self.assertTrue(sum.PointInSet(sum.MaybeGetFeasiblePoint()))
         self.assertEqual(sum.ambient_dimension(), 6)
         self.assertEqual(sum.num_factors(), 2)
         sum2 = mut.CartesianProduct(sets=[point, h_box])
@@ -332,6 +351,9 @@ class TestGeometryOptimization(unittest.TestCase):
             lb=[-1, -1, -1], ub=[1, 1, 1])
         intersect = mut.Intersection(setA=point, setB=h_box)
         self.assertFalse(intersect.IsEmpty())
+        self.assertFalse(intersect.MaybeGetFeasiblePoint() is None)
+        self.assertTrue(intersect.PointInSet(
+            intersect.MaybeGetFeasiblePoint()))
         self.assertEqual(intersect.ambient_dimension(), 3)
         self.assertEqual(intersect.num_elements(), 2)
         intersect2 = mut.Intersection(sets=[point, h_box])
@@ -504,6 +526,9 @@ class TestGeometryOptimization(unittest.TestCase):
 
     def test_graph_of_convex_sets(self):
         options = mut.GraphOfConvexSetsOptions()
+        self.assertIsNone(options.convex_relaxation)
+        self.assertIsNone(options.preprocessing)
+        self.assertIsNone(options.max_rounded_paths)
         options.convex_relaxation = True
         options.preprocessing = False
         options.max_rounded_paths = 2
@@ -529,17 +554,21 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertEqual(len(spp.Vertices()), 2)
         self.assertEqual(len(spp.Edges()), 2)
         result = spp.SolveShortestPath(
-            source_id=source.id(), target_id=target.id())
+            source_id=source.id(), target_id=target.id(), options=options)
         self.assertIsInstance(result, MathematicalProgramResult)
-        self.assertIsInstance(
-            spp.SolveShortestPath(source=source, target=target),
-            MathematicalProgramResult)
-        self.assertIsInstance(spp.SolveShortestPath(
-            source_id=source.id(), target_id=target.id(), options=options),
-            MathematicalProgramResult)
         self.assertIsInstance(spp.SolveShortestPath(
             source=source, target=target, options=options),
             MathematicalProgramResult)
+        self.assertIsInstance(
+            spp.SolveConvexRestriction(active_edges=[edge0, edge1],
+                                       options=options),
+            MathematicalProgramResult)
+        self.assertEqual(
+            len(
+                spp.GetSolutionPath(source=source,
+                                    target=target,
+                                    result=result,
+                                    tolerance=0.1)), 1)
 
         self.assertIn("source", spp.GetGraphvizString(
             result=result, show_slacks=True, precision=2, scientific=False))
@@ -566,6 +595,10 @@ class TestGeometryOptimization(unittest.TestCase):
         binding = source.AddConstraint(binding=binding)
         self.assertIsInstance(binding, Binding[Constraint])
         self.assertEqual(len(source.GetConstraints()), 2)
+        self.assertEqual(len(source.incoming_edges()), 0)
+        self.assertEqual(len(source.outgoing_edges()), 2)
+        self.assertEqual(len(target.incoming_edges()), 2)
+        self.assertEqual(len(target.outgoing_edges()), 0)
 
         # Edge
         self.assertAlmostEqual(edge0.GetSolutionCost(result=result), 0.0, 1e-6)

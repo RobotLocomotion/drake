@@ -146,6 +146,7 @@ TEST_F(CIrisToyRobotTest, GeneratePolynomialsToCertify) {
     }
   }
 }
+
 }  // namespace optimization
 }  // namespace geometry
 }  // namespace drake

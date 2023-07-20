@@ -24,6 +24,8 @@ GTEST_TEST(SpectrahedronTest, DefaultCtor) {
   Spectrahedron spect;
   EXPECT_EQ(spect.ambient_dimension(), 0);
   EXPECT_FALSE(spect.IsEmpty());
+  ASSERT_TRUE(spect.MaybeGetFeasiblePoint().has_value());
+  EXPECT_TRUE(spect.PointInSet(spect.MaybeGetFeasiblePoint().value()));
 }
 
 GTEST_TEST(SpectrahedronTest, Attributes) {
@@ -70,6 +72,8 @@ GTEST_TEST(SpectrahedronTest, TrivialSdp1) {
   EXPECT_TRUE(spect.PointInSet(x_star, kTol));
   EXPECT_FALSE(spect.PointInSet(x_bad, kTol));
   EXPECT_FALSE(spect.MaybeGetPoint().has_value());
+  ASSERT_TRUE(spect.MaybeGetFeasiblePoint().has_value());
+  EXPECT_TRUE(spect.PointInSet(spect.MaybeGetFeasiblePoint().value(), kTol));
 
   MathematicalProgram prog2;
   auto x2 = prog2.NewContinuousVariables<6>("x");
@@ -257,6 +261,7 @@ GTEST_TEST(SpectrahedronTest, NontriviallyEmpty) {
 
   Spectrahedron spect(prog);
   EXPECT_TRUE(spect.IsEmpty());
+  EXPECT_FALSE(spect.MaybeGetFeasiblePoint().has_value());
 }
 
 }  // namespace

@@ -163,6 +163,40 @@ const LinearBushingRollPitchYaw<double>* ParseLinearBushingRollPitchYaw(
     const std::function<const Frame<double>*(const char*)>& read_frame,
     MultibodyPlant<double>* plant);
 
+// Adds a ball constraint to `plant` from a reading interface in a URDF/SDF
+// agnostic manner. This function does no semantic parsing and leaves the
+// responsibility of handling errors or missing values to the individual
+// parsers. All values are expected to exist and be well formed. Through this,
+// the API to specify the ball_constraint tag in both SDF and URDF can be
+// controlled/modified in a single function.
+//
+// __SDF__:
+//
+// <drake:ball_constraint>
+//   <drake:ball_constraint_body_A>body_A</drake:ball_constraint_body_A>
+//   <drake:ball_constraint_body_B>body_B</drake:ball_constraint_body_B>
+//   <drake:ball_constraint_p_AP>0 0 0</drake:ball_constraint_p_AP>
+//   <drake:ball_constraint_p_BQ>0 0 0</drake:ball_constraint_p_BQ>
+// </drake:ball_constraint>
+//
+// __URDF__:
+//
+// <drake:ball_constraint>
+//   <drake:ball_constraint_body_A name="body_A"/>
+//   <drake:ball_constraint_body_B name="body_B"/>
+//   <drake:ball_constraint_p_AP value="0 0 0"/>
+//   <drake:ball_constraint_p_BQ value="0 0 0"/>
+// </drake:ball_constraint>
+//
+// The @p read_body functor may (at its option) throw std:exception, or return
+// nullptr when body parsing fails. Similarly,
+// ParseBallConstraint() may return nullopt when read_body has
+// returned nullptr.
+std::optional<MultibodyConstraintId> ParseBallConstraint(
+    const std::function<Eigen::Vector3d(const char*)>& read_vector,
+    const std::function<const Body<double>*(const char*)>& read_body,
+    MultibodyPlant<double>* plant);
+
 // TODO(@SeanCurtis-TRI): The real solution here is to create a wrapper
 // class that provides a consistent interface to either representation.
 // Then instantiate on the caller side and express the code here in terms of

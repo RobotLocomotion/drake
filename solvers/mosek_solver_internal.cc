@@ -554,6 +554,183 @@ MSKrescodee MosekSolverProgram::AddBoundingBoxConstraints(
   return rescode;
 }
 
+MSKrescodee MosekSolverProgram::AddQuadraticConstraints(
+    const MathematicalProgram& prog,
+    std::unordered_map<Binding<QuadraticConstraint>, MSKint64t>* dual_indices) {
+  MSKrescodee rescode = MSK_RES_OK;
+
+  int num_existing_constraints = 0;
+  rescode = MSK_getnumcon(task_, &num_existing_constraints);
+  if (rescode != MSK_RES_OK) {
+    return rescode;
+  }
+  rescode = MSK_appendcons(task_, prog.quadratic_constraints().size());
+  if (rescode != MSK_RES_OK) {
+    return rescode;
+  }
+  // We count the total number of non-zero entries in all Hessian matrices
+  // of the quadratic constraint.
+  int nnz_hessian = 0;
+  // We also count the total number of non-zero entries in all the linear
+  // coefficients of the quadratic constraint.
+  int nnz_linear = 0;
+  for (const auto& constraint : prog.quadratic_constraints()) {
+    for (int i = 0; i < constraint.variables().rows(); ++i) {
+      for (int j = 0; j <= i; ++j) {
+        if (constraint.evaluator()->Q()(i, j) != 0) {
+          ++nnz_hessian;
+        }
+      }
+      if (constraint.evaluator()->b()(i) != 0) {
+        ++nnz_linear;
+      }
+    }
+  }
+  // Mosek represents the Hessian matrix using the tuple (qcsubk, qcsubi,
+  // qcsubj, qcval). Where qcsubk is the index of the constraint, (qcsubi[i],
+  // qcsubj[i], qcval[i]) is the (row_index, column_index, value) of the
+  // lower-diagonal entries of the Hessian matrices.
+  std::vector<MSKint32t> qcsubk, qcsubi, qcsubj;
+  std::vector<MSKrealt> qcval;
+  qcsubk.reserve(nnz_hessian);
+  qcsubi.reserve(nnz_hessian);
+  qcsubj.reserve(nnz_hessian);
+  qcval.reserve(nnz_hessian);
+
+  // Store all the linear entries in all quadratic constraints into
+  // A * decision_vars, where A is a sparse matrix, whose non-zero entries is
+  // recorded by A_triplets;
+  std::vector<Eigen::Triplet<double>> A_triplets;
+  A_triplets.reserve(nnz_linear);
+
+  for (int constraint_count = 0;
+       constraint_count < static_cast<int>(prog.quadratic_constraints().size());
+       ++constraint_count) {
+    const Binding<QuadraticConstraint>& constraint =
+        prog.quadratic_constraints()[constraint_count];
+    // Find the variable index in mosek
+    std::vector<int> decision_variable_in_mosek_index(
+        constraint.variables().rows());
+    // If any decision variable is a Mosek matrix variable, then we throw an
+    // error. Mosek doesn't support a matrix variable in quadratic constraint
+    // yet.
+    for (int i = 0; i < constraint.variables().rows(); ++i) {
+      const int decision_var_index =
+          prog.FindDecisionVariableIndex(constraint.variables()(i));
+      if (decision_variable_to_mosek_matrix_variable().count(
+              decision_var_index) > 0) {
+        throw std::runtime_error(fmt::format(
+            "MosekSolverProgram::AddQuaraticConstraint(): variable {} shows up "
+            "in the quadratic constraint {}, but this "
+            "variable also shows up in the matrix PSD constraint. Mosek "
+            "doesn't support a matrix variable in the quadratic constraint yet",
+            prog.decision_variable(decision_var_index).get_name(), constraint));
+      } else {
+        decision_variable_in_mosek_index[i] =
+            decision_variable_to_mosek_nonmatrix_variable().at(
+                decision_var_index);
+      }
+    }
+    for (int j = 0; j < constraint.variables().rows(); ++j) {
+      for (int i = j; i < constraint.variables().rows(); ++i) {
+        if (constraint.evaluator()->Q()(i, j) != 0) {
+          qcsubk.push_back(num_existing_constraints + constraint_count);
+          qcsubi.push_back(decision_variable_in_mosek_index[i]);
+          qcsubj.push_back(decision_variable_in_mosek_index[j]);
+          if (i == j) {
+            qcval.push_back(constraint.evaluator()->Q()(i, j));
+          } else {
+            if (decision_variable_in_mosek_index[i] !=
+                decision_variable_in_mosek_index[j]) {
+              qcval.push_back(constraint.evaluator()->Q()(i, j));
+            } else {
+              // decision_var[i] and decision_var[j] are the same variable. This
+              // should not be added as an off-diagonal term, but a diagonal
+              // term in the Hessian matrix in Mosek. Namely we add (Q()(i, j) +
+              // Q()(j, i)) * decision_var[i] * decision_var[j] = (Q()(i, j) +
+              // Q()(j, i)) * decision_var[i] * decision_var[i], namely the
+              // coefficient is for the diagonal term is 2 * Q()(i, j).
+              // Consider an example:
+              // x' * Q * x with x = [var[0], var[0]]. This is equivalent to
+              // (Q(0, 0) + Q(1, 1) + Q(0, 1) + Q(1, 0)) * var[0] * var[0].
+              // Notice that both Q(0, 1) and Q(1, 0) appear in the coefficients
+              // of the square term var[0] * var[0].
+              qcval.push_back(2 * constraint.evaluator()->Q()(i, j));
+            }
+          }
+        }
+      }
+    }
+    // Set the linear terms.
+    for (int i = 0; i < constraint.variables().rows(); ++i) {
+      if (constraint.evaluator()->b()(i) != 0) {
+        A_triplets.emplace_back(constraint_count,
+                                decision_variable_in_mosek_index[i],
+                                constraint.evaluator()->b()(i));
+      }
+    }
+
+    // Set dual variable index.
+    dual_indices->emplace(constraint,
+                          num_existing_constraints + constraint_count);
+    // Set constraint bounds.
+    MSKboundkeye bound_key{MSK_BK_FR};
+    const double& lb = constraint.evaluator()->lower_bound()(0);
+    const double& ub = constraint.evaluator()->upper_bound()(0);
+    if (std::isfinite(lb) && std::isfinite(ub)) {
+      if (lb == ub) {
+        bound_key = MSK_BK_FX;
+      } else {
+        bound_key = MSK_BK_RA;
+      }
+    } else if (std::isfinite(lb)) {
+      bound_key = MSK_BK_LO;
+    } else if (std::isfinite(ub)) {
+      bound_key = MSK_BK_UP;
+    } else {
+      bound_key = MSK_BK_FR;
+    }
+
+    // Pre-allocate the size for the Q matrix according to
+    // https://docs.mosek.com/10.0/capi/alphabetic-functionalities.html#mosek.task.putqcon
+    rescode = MSK_putmaxnumqnz(task_, qcsubi.size());
+    if (rescode != MSK_RES_OK) {
+      return rescode;
+    }
+
+    rescode = MSK_putconbound(
+        task_, num_existing_constraints + constraint_count, bound_key, lb, ub);
+    if (rescode != MSK_RES_OK) {
+      return rescode;
+    }
+  }
+
+  // Set the Hessian of all the quadratic constraints.
+  // Note that MSK_putqcon will handle duplicated entries automatically.
+  rescode = MSK_putqcon(task_, qcsubi.size(), qcsubk.data(), qcsubi.data(),
+                        qcsubj.data(), qcval.data());
+  // Set the linear coefficients of all the quadratic constraints.
+  int num_mosek_vars;
+  rescode = MSK_getnumvar(task_, &num_mosek_vars);
+  if (rescode != MSK_RES_OK) {
+    return rescode;
+  }
+  Eigen::SparseMatrix<double, Eigen::ColMajor> A(
+      prog.quadratic_constraints().size(), num_mosek_vars);
+  A.setFromTriplets(A_triplets.begin(), A_triplets.end());
+  for (int i = 0; i < A.cols(); ++i) {
+    for (Eigen::SparseMatrix<double, Eigen::ColMajor>::InnerIterator it(A, i);
+         it; ++it) {
+      rescode = MSK_putaij(task_, num_existing_constraints + it.row(), it.col(),
+                           it.value());
+      if (rescode != MSK_RES_OK) {
+        return rescode;
+      }
+    }
+  }
+  return rescode;
+}
+
 MSKrescodee MosekSolverProgram::AddAffineConeConstraint(
     const MathematicalProgram& prog, const Eigen::SparseMatrix<double>& A,
     const Eigen::SparseMatrix<double>& B,
@@ -964,17 +1141,21 @@ MSKrescodee MosekSolverProgram::AddCosts(const MathematicalProgram& prog) {
     return rescode;
   }
   if (!prog.quadratic_costs().empty()) {
-    if (prog.lorentz_cone_constraints().empty() &&
+    if (prog.quadratic_constraints().empty() &&
+        prog.lorentz_cone_constraints().empty() &&
         prog.rotated_lorentz_cone_constraints().empty() &&
         prog.linear_matrix_inequality_constraints().empty() &&
         prog.positive_semidefinite_constraints().empty() &&
         prog.exponential_cone_constraints().empty()) {
+      // This is a QP, add the quadratic cost.
       rescode = AddQuadraticCost(Q_lower, quadratic_vars, prog);
 
       if (rescode != MSK_RES_OK) {
         return rescode;
       }
     } else {
+      // Not a QP, now convert the quadratic cost to a linear cost with a
+      // second-order cone constraint.
       rescode = AddQuadraticCostAsLinearCost(Q_lower, quadratic_vars, prog);
       if (rescode != MSK_RES_OK) {
         return rescode;
@@ -1336,6 +1517,8 @@ MSKrescodee MosekSolverProgram::SetDualSolution(
         bb_con_dual_indices,
     const DualMap<LinearConstraint>& linear_con_dual_indices,
     const DualMap<LinearEqualityConstraint>& lin_eq_con_dual_indices,
+    const std::unordered_map<Binding<QuadraticConstraint>, MSKint64t>&
+        quadratic_constraint_dual_indices,
     const std::unordered_map<Binding<LorentzConeConstraint>, MSKint64t>&
         lorentz_cone_acc_indices,
     const std::unordered_map<Binding<RotatedLorentzConeConstraint>, MSKint64t>&
@@ -1401,6 +1584,8 @@ MSKrescodee MosekSolverProgram::SetDualSolution(
   // Set the duals for the linear equality constraint.
   SetLinearConstraintDualSolution(prog.linear_equality_constraints(), slc, suc,
                                   lin_eq_con_dual_indices, result);
+  SetQuadraticConstraintDualSolution(prog.quadratic_constraints(), slc, suc,
+                                     quadratic_constraint_dual_indices, result);
   // Set the duals for the nonlinear conic constraint.
   // Mosek provides the dual solution for nonlinear conic constraints only if
   // the program is solved through interior point approach.
@@ -1493,6 +1678,36 @@ void SetBoundingBoxDualSolution(
       }
     }
     result->set_dual_solution(binding, dual_sol);
+  }
+}
+
+void SetQuadraticConstraintDualSolution(
+    const std::vector<Binding<QuadraticConstraint>>& constraints,
+    const std::vector<MSKrealt>& slc, const std::vector<MSKrealt>& suc,
+    const std::unordered_map<Binding<QuadraticConstraint>, MSKint64t>&
+        quadratic_constraint_dual_indices,
+    MathematicalProgramResult* result) {
+  for (const auto& constraint : constraints) {
+    const double& lb = constraint.evaluator()->lower_bound()(0);
+    const double& ub = constraint.evaluator()->upper_bound()(0);
+    double dual_val{0};
+    const int dual_index = quadratic_constraint_dual_indices.at(constraint);
+    if (std::isfinite(lb) && std::isfinite(ub)) {
+      throw std::runtime_error(
+          "Cannot set the dual variable for this quadratic constraint in "
+          "Mosek. The quadratic constraint has finite lower and upper bound, "
+          "hence it cannot be convex.");
+    } else if (std::isfinite(lb)) {
+      dual_val = slc[dual_index];
+    } else if (std::isfinite(ub)) {
+      // Mosek defines all dual solutions as non-negative. However we use
+      // "reduced cost" as the dual solution, so the dual solution for a
+      // lower bound should be non-negative, while the dual solution for
+      // an upper bound should be non-positive. Hence we flip the sign of the
+      // dual solution when the quadratic constraint has an upper bound.
+      dual_val = -suc[dual_index];
+    }
+    result->set_dual_solution(constraint, Vector1d(dual_val));
   }
 }
 

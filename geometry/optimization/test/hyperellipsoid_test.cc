@@ -62,6 +62,10 @@ GTEST_TEST(HyperellipsoidTest, UnitSphereTest) {
   // Test IsEmpty (which is trivially false for Hyperellipsoid).
   EXPECT_FALSE(E.IsEmpty());
 
+  // Test MaybeGetFeasiblePoint
+  ASSERT_TRUE(E.MaybeGetFeasiblePoint().has_value());
+  EXPECT_TRUE(E.PointInSet(E.MaybeGetFeasiblePoint().value()));
+
   // Test PointInSet.
   const Vector3d in1_W{.99, 0, 0}, in2_W{.5, .5, .5}, out1_W{1.01, 0, 0},
       out2_W{1.0, 1.0, 1.0};
@@ -106,6 +110,8 @@ GTEST_TEST(HyperellipsoidTest, DefaultCtor) {
   EXPECT_TRUE(dut.IsBounded());
   EXPECT_FALSE(dut.IsEmpty());
   EXPECT_TRUE(dut.PointInSet(Eigen::VectorXd::Zero(0)));
+  ASSERT_TRUE(dut.MaybeGetFeasiblePoint().has_value());
+  EXPECT_TRUE(dut.PointInSet(dut.MaybeGetFeasiblePoint().value()));
 }
 
 GTEST_TEST(HyperellipsoidTest, Move) {
@@ -196,6 +202,9 @@ GTEST_TEST(HyperellipsoidTest, ArbitraryEllipsoidTest) {
   EXPECT_FALSE(CheckAddPointInSetConstraints(E, out1_W));
   EXPECT_FALSE(CheckAddPointInSetConstraints(E, out2_W));
 
+  ASSERT_TRUE(E.MaybeGetFeasiblePoint().has_value());
+  EXPECT_TRUE(E.PointInSet(E.MaybeGetFeasiblePoint().value()));
+
   // Test reference_frame frame.
   SourceId source_id = scene_graph->RegisterSource("F");
   FrameId frame_id = scene_graph->RegisterFrame(source_id, GeometryFrame("F"));
@@ -214,6 +223,9 @@ GTEST_TEST(HyperellipsoidTest, ArbitraryEllipsoidTest) {
   EXPECT_TRUE(E_F.PointInSet(X_FW * in2_W));
   EXPECT_FALSE(E_F.PointInSet(X_FW * out1_W));
   EXPECT_FALSE(E_F.PointInSet(X_FW * out2_W));
+
+  ASSERT_TRUE(E_F.MaybeGetFeasiblePoint().has_value());
+  EXPECT_TRUE(E_F.PointInSet(E_F.MaybeGetFeasiblePoint().value()));
 
   // Test ToShapeWithPose.
   auto [shape, X_WG] = E.ToShapeWithPose();
@@ -250,6 +262,9 @@ GTEST_TEST(HyperellipsoidTest, UnitBall6DTest) {
   EXPECT_TRUE(E.PointInSet(in2_W));
   EXPECT_FALSE(E.PointInSet(out1_W));
   EXPECT_FALSE(E.PointInSet(out2_W));
+
+  ASSERT_TRUE(E.MaybeGetFeasiblePoint().has_value());
+  EXPECT_TRUE(E.PointInSet(E.MaybeGetFeasiblePoint().value()));
 }
 
 GTEST_TEST(HyperellipsoidTest, CloneTest) {

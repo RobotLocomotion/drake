@@ -1,0 +1,21 @@
+Avoid GCC warnings about overloaded virtuals
+
+We only need the mutable spelling for Drake code.
+
+--- include/benchmark/benchmark.h
++++ include/benchmark/benchmark.h
+@@ -1425,12 +1425,8 @@
+     this->TearDown(st);
+   }
+ 
+-  // These will be deprecated ...
+-  virtual void SetUp(const State&) {}
+-  virtual void TearDown(const State&) {}
+-  // ... In favor of these.
+-  virtual void SetUp(State& st) { SetUp(const_cast<const State&>(st)); }
+-  virtual void TearDown(State& st) { TearDown(const_cast<const State&>(st)); }
++  virtual void SetUp(State&) {}
++  virtual void TearDown(State&) {}
+ 
+  protected:
+   virtual void BenchmarkCase(State&) = 0;

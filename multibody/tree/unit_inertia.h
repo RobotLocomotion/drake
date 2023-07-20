@@ -100,11 +100,7 @@ class UnitInertia : public RotationalInertia<T> {
   /// @note In Debug builds, this operation aborts if the provided `mass` is
   ///       not strictly positive.
   UnitInertia<T>& SetFromRotationalInertia(
-      const RotationalInertia<T>& I, const T& mass) {
-    DRAKE_THROW_UNLESS(mass > 0);
-    RotationalInertia<T>::operator=(I / mass);
-    return *this;
-  }
+      const RotationalInertia<T>& I, const T& mass);
 
   /// Re-express a unit inertia in a different frame, performing the operation
   /// in place and modifying the original object. @see ReExpress() for details.
@@ -226,26 +222,12 @@ class UnitInertia : public RotationalInertia<T> {
   /// symmetric matrix with non-negative diagonals and obeys the triangle
   /// inequality. Matrix `px²` can be used to compute the triple vector product
   /// as `-p x (p x a) = -p.cross(p.cross(a)) = px² * a`.
-  static UnitInertia<T> PointMass(const Vector3<T>& p_FQ) {
-    const Vector3<T> p2m = p_FQ.cwiseAbs2();
-    const T mp0 = -p_FQ(0);
-    const T mp1 = -p_FQ(1);
-    return UnitInertia<T>(
-        /*          Ixx,             Iyy,             Izz */
-        p2m[1] + p2m[2], p2m[0] + p2m[2], p2m[0] + p2m[1],
-        /*       Ixy,          Ixz,          Iyz */
-        mp0 * p_FQ[1], mp0 * p_FQ[2], mp1 * p_FQ[2]);
-  }
+  static UnitInertia<T> PointMass(const Vector3<T>& p_FQ);
 
   /// Computes the unit inertia for a unit-mass solid ellipsoid of uniform
   /// density taken about its center. The lengths of the semi-axes of the
   /// ellipsoid in the principal x,y,z-axes are `a`, `b`, and `c` respectively.
-  static UnitInertia<T> SolidEllipsoid(const T& a, const T& b, const T& c) {
-    const T a2 = a * a;
-    const T b2 = b * b;
-    const T c2 = c * c;
-    return UnitInertia<T>(0.2 * (b2 + c2), 0.2 * (a2 + c2), 0.2 * (a2 + b2));
-  }
+  static UnitInertia<T> SolidEllipsoid(const T& a, const T& b, const T& c);
 
   /// Computes the unit inertia for a unit-mass solid sphere of uniform density
   /// and radius `r` taken about its center.
@@ -301,18 +283,11 @@ class UnitInertia : public RotationalInertia<T> {
   ///   - `b_E` is the zero vector. That is if `‖b_E‖₂ ≤ ε`, where ε is the
   ///     machine epsilon.
   static UnitInertia<T> SolidCylinder(
-      const T& r, const T& L, const Vector3<T>& b_E = Vector3<T>::UnitZ()) {
-    DRAKE_THROW_UNLESS(r >= 0);
-    DRAKE_THROW_UNLESS(L >= 0);
-    DRAKE_THROW_UNLESS(b_E.norm() > std::numeric_limits<double>::epsilon());
-    const T J = r * r / T(2);
-    const T K = (T(3) * r * r + L * L) / T(12);
-    return AxiallySymmetric(J, K, b_E);
-  }
+      const T& r, const T& L, const Vector3<T>& b_E = Vector3<T>::UnitZ());
 
   /// Computes the unit inertia for a uniform density unit-mass capsule C
   /// whose axis of revolution is along the z-axis.
-  /// @param[in] r radius of the cylinder/half-sphere part of the capsule.
+  /// @param[in] r radius of the cylinder/half-sphere parts of the capsule.
   /// @param[in] L length of the cylindrical part of the capsule.
   /// @param[in] unit_vector direction of the cylindrical part of the capsule.
   ///   It defaults to `Vector3<T>::UnitZ()`.
@@ -326,11 +301,8 @@ class UnitInertia : public RotationalInertia<T> {
   /// its base.
   /// @param[in] r The radius of the cylinder.
   /// @param[in] L The length of the cylinder.
-  static UnitInertia<T> SolidCylinderAboutEnd(const T& r, const T& L) {
-    const T Iz = r * r / T(2);
-    const T Ix = (T(3) * r * r + L * L) / T(12) + L * L / T(4);
-    return UnitInertia(Ix, Ix, Iz);
-  }
+  /// @throws std::exception if r or L is negative.
+  static UnitInertia<T> SolidCylinderAboutEnd(const T& r, const T& L);
 
   /// Creates a unit inertia for a unit-mass uniform density solid tetrahedron B
   /// about a point A, from which position vectors to B's 4 vertices B0, B1, B2,
@@ -402,19 +374,7 @@ class UnitInertia : public RotationalInertia<T> {
   ///   An axially symmetric unit inertia about body B's center of mass,
   ///   expressed in the same frame E as the input unit vector `b_E`.
   static UnitInertia<T> AxiallySymmetric(
-      const T& J, const T& K, const Vector3<T>& b_E) {
-    DRAKE_THROW_UNLESS(J >= 0.0);
-    DRAKE_THROW_UNLESS(K >= 0.0);
-    // The triangle inequalities for this case reduce to J <= 2*K:
-    DRAKE_THROW_UNLESS(J <= 2.0 * K);
-    DRAKE_THROW_UNLESS(b_E.norm() > std::numeric_limits<double>::epsilon());
-    // Normalize b_E before using it. Only direction matters:
-    Vector3<T> bhat_E = b_E.normalized();
-    Matrix3<T> G_matrix =
-        K * Matrix3<T>::Identity() + (J - K) * bhat_E * bhat_E.transpose();
-    return UnitInertia<T>(G_matrix(0, 0), G_matrix(1, 1), G_matrix(2, 2),
-                          G_matrix(0, 1), G_matrix(0, 2), G_matrix(1, 2));
-  }
+      const T& J, const T& K, const Vector3<T>& b_E);
 
   /// Computes the unit inertia for a body B of unit-mass uniformly distributed
   /// along a straight, finite, line L with direction `b_E` and with moment of
@@ -440,10 +400,7 @@ class UnitInertia : public RotationalInertia<T> {
   ///   straight line L, about its center of mass `Bcm` which is located at the
   ///   center of the line, expressed in the same frame E as the input unit
   ///   vector `b_E`.
-  static UnitInertia<T> StraightLine(const T& K, const Vector3 <T>& b_E) {
-    DRAKE_DEMAND(K > 0.0);
-    return AxiallySymmetric(0.0, K, b_E);
-  }
+  static UnitInertia<T> StraightLine(const T& K, const Vector3 <T>& b_E);
 
   /// Computes the unit inertia for a unit mass rod B of length L, about its
   /// center of mass, with its mass uniformly distributed along a line parallel
@@ -460,10 +417,7 @@ class UnitInertia : public RotationalInertia<T> {
   /// @retval G_Bcm_E
   ///   The unit inertia of the rod B about its center of mass `Bcm`,
   ///   expressed in the same frame E as the input unit vector `b_E`.
-  static UnitInertia<T> ThinRod(const T& L, const Vector3<T>& b_E) {
-    DRAKE_DEMAND(L > 0.0);
-    return StraightLine(L * L / 12.0, b_E);
-  }
+  static UnitInertia<T> ThinRod(const T& L, const Vector3<T>& b_E);
 
   /// Constructs a unit inertia with equal moments of inertia along its
   /// diagonal and with each product of inertia set to zero. This factory

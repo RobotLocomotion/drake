@@ -322,6 +322,44 @@ GTEST_TEST(FiniteHorizonLQRTest, ResultSystemIsScalarConvertible) {
   EXPECT_TRUE(is_symbolic_convertible(*regulator));
 }
 
+GTEST_TEST(FiniteHorizonLQRTest, SimulatorConfig) {
+  // Double integrator dynamics: qddot = u, where q is the position coordinate.
+  Eigen::Matrix2d A;
+  Eigen::Vector2d B;
+  A << 0, 1, 0, 0;
+  B << 0, 1;
+  LinearSystem<double> sys(A, B, Eigen::Matrix<double, 0, 2>::Zero(),
+                           Eigen::Matrix<double, 0, 1>::Zero());
+
+  Eigen::Matrix2d Q = Eigen::Matrix2d::Identity();
+  Vector1d R = Vector1d(4.12);
+
+  const double t0 = 0;
+  const double tf = 3.0;
+  FiniteHorizonLinearQuadraticRegulatorOptions options;
+  options.simulator_config.use_error_control = false;
+  options.simulator_config.max_step_size = 0.1;
+  auto context = sys.CreateDefaultContext();
+  sys.get_input_port().FixValue(context.get(), 0.0);
+
+  FiniteHorizonLinearQuadraticRegulatorResult result =
+      FiniteHorizonLinearQuadraticRegulator(sys, *context, t0, tf, Q, R,
+                                            options);
+  const trajectories::PiecewisePolynomial<double>* S =
+      dynamic_cast<const trajectories::PiecewisePolynomial<double>*>(
+          result.S.get());
+  ASSERT_NE(S, nullptr);
+  EXPECT_EQ(S->get_number_of_segments(), 30);
+
+  options.simulator_config.max_step_size = 0.2;
+  result = FiniteHorizonLinearQuadraticRegulator(sys, *context, t0, tf, Q, R,
+                                                 options);
+  S = dynamic_cast<const trajectories::PiecewisePolynomial<double>*>(
+      result.S.get());
+  ASSERT_NE(S, nullptr);
+  EXPECT_EQ(S->get_number_of_segments(), 15);
+}
+
 }  // namespace
 }  // namespace controllers
 }  // namespace systems

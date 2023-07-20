@@ -62,6 +62,10 @@ GTEST_TEST(IntersectionTest, BasicTest) {
   // Test IsEmpty
   EXPECT_FALSE(S.IsEmpty());
 
+  // Test MaybeGetFeasiblePoint.
+  ASSERT_TRUE(S.MaybeGetFeasiblePoint().has_value());
+  EXPECT_TRUE(S.PointInSet(S.MaybeGetFeasiblePoint().value()));
+
   // Test ConvexSets constructor.
   ConvexSets sets;
   sets.emplace_back(P1);
@@ -81,6 +85,8 @@ GTEST_TEST(IntersectionTest, TwoIdenticalPoints) {
   EXPECT_TRUE(CompareMatrices(S.MaybeGetPoint().value(), P1.x()));
   EXPECT_TRUE(S.PointInSet(P1.x()));
   EXPECT_FALSE(S.IsEmpty());
+  ASSERT_TRUE(S.MaybeGetFeasiblePoint().has_value());
+  EXPECT_TRUE(S.PointInSet(S.MaybeGetFeasiblePoint().value()));
 }
 
 GTEST_TEST(IntersectionTest, DefaultCtor) {
@@ -93,6 +99,8 @@ GTEST_TEST(IntersectionTest, DefaultCtor) {
   EXPECT_FALSE(dut.IsEmpty());
   EXPECT_TRUE(dut.MaybeGetPoint().has_value());
   EXPECT_TRUE(dut.PointInSet(Eigen::VectorXd::Zero(0)));
+  ASSERT_TRUE(dut.MaybeGetFeasiblePoint().has_value());
+  EXPECT_TRUE(dut.PointInSet(dut.MaybeGetFeasiblePoint().value()));
 }
 
 GTEST_TEST(IntersectionTest, Move) {
@@ -122,6 +130,8 @@ GTEST_TEST(IntersectionTest, TwoBoxes) {
   EXPECT_FALSE(S.PointInSet(Vector2d{2.1, 0.9}));
   EXPECT_FALSE(S.MaybeGetPoint().has_value());
   EXPECT_FALSE(S.IsEmpty());
+  ASSERT_TRUE(S.MaybeGetFeasiblePoint().has_value());
+  EXPECT_TRUE(S.PointInSet(S.MaybeGetFeasiblePoint().value()));
 }
 
 GTEST_TEST(IntersectionTest, BoundedTest) {
@@ -261,6 +271,7 @@ GTEST_TEST(IntersectionTest, EmptyIntersectionTest2) {
   Intersection S(P1, P2);
 
   EXPECT_TRUE(S.IsEmpty());
+  EXPECT_FALSE(S.MaybeGetFeasiblePoint().has_value());
 }
 
 GTEST_TEST(IntersectionTest, EmptyInput) {

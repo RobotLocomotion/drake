@@ -63,6 +63,10 @@ GTEST_TEST(MinkowskiSumTest, BasicTest) {
   // Test IsEmpty.
   EXPECT_FALSE(S.IsEmpty());
 
+  // Test MaybeGetFeasiblePoint.
+  ASSERT_TRUE(S.MaybeGetFeasiblePoint().has_value());
+  EXPECT_TRUE(S.PointInSet(S.MaybeGetFeasiblePoint().value()));
+
   // Test ConvexSets constructor.
   ConvexSets sets;
   sets.emplace_back(P1);
@@ -72,6 +76,8 @@ GTEST_TEST(MinkowskiSumTest, BasicTest) {
   EXPECT_EQ(S2.ambient_dimension(), 2);
   EXPECT_TRUE(S2.PointInSet(in));
   EXPECT_FALSE(S2.PointInSet(out));
+  ASSERT_TRUE(S2.MaybeGetFeasiblePoint().has_value());
+  EXPECT_TRUE(S2.PointInSet(S2.MaybeGetFeasiblePoint().value()));
 }
 
 GTEST_TEST(MinkowskiSumTest, DefaultCtor) {
@@ -84,6 +90,8 @@ GTEST_TEST(MinkowskiSumTest, DefaultCtor) {
   EXPECT_FALSE(dut.IsEmpty());
   EXPECT_TRUE(dut.MaybeGetPoint().has_value());
   EXPECT_TRUE(dut.PointInSet(Eigen::VectorXd::Zero(0)));
+  ASSERT_TRUE(dut.MaybeGetFeasiblePoint().has_value());
+  EXPECT_TRUE(dut.PointInSet(dut.MaybeGetFeasiblePoint().value()));
 }
 
 GTEST_TEST(MinkowskiSumTest, Move) {
@@ -137,6 +145,8 @@ GTEST_TEST(MinkowskiSumTest, FromSceneGraph) {
     EXPECT_TRUE(S.PointInSet(in_W.col(i)));
     EXPECT_FALSE(S.PointInSet(out_W.col(i)));
   }
+  ASSERT_TRUE(S.MaybeGetFeasiblePoint().has_value());
+  EXPECT_TRUE(S.PointInSet(S.MaybeGetFeasiblePoint().value()));
 
   // Test reference_frame frame.
   SourceId source_id = scene_graph->RegisterSource("F");
@@ -157,6 +167,8 @@ GTEST_TEST(MinkowskiSumTest, FromSceneGraph) {
     EXPECT_TRUE(S2.PointInSet(in_F.col(i)));
     EXPECT_FALSE(S2.PointInSet(out_F.col(i)));
   }
+  ASSERT_TRUE(S2.MaybeGetFeasiblePoint().has_value());
+  EXPECT_TRUE(S2.PointInSet(S2.MaybeGetFeasiblePoint().value()));
 }
 
 GTEST_TEST(MinkowskiSumTest, TwoBoxes) {
@@ -167,6 +179,8 @@ GTEST_TEST(MinkowskiSumTest, TwoBoxes) {
   EXPECT_FALSE(S.PointInSet(Vector2d{-1, 2.9}));
   EXPECT_FALSE(S.PointInSet(Vector2d{-1.01, 3}));
   EXPECT_FALSE(S.MaybeGetPoint().has_value());
+  ASSERT_TRUE(S.MaybeGetFeasiblePoint().has_value());
+  EXPECT_TRUE(S.PointInSet(S.MaybeGetFeasiblePoint().value()));
 }
 
 GTEST_TEST(MinkowskiSumTest, CloneTest) {
@@ -278,6 +292,7 @@ GTEST_TEST(MinkowskiSumTest, EmptyInput) {
   const VPolytope V = VPolytope(vertices);
   MinkowskiSum S(P, V);
   EXPECT_TRUE(S.IsEmpty());
+  EXPECT_FALSE(S.MaybeGetFeasiblePoint().has_value());
 }
 
 }  // namespace optimization

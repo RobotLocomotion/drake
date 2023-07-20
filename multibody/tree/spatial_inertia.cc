@@ -142,6 +142,17 @@ SpatialInertia<T> SpatialInertia<T>::SolidCapsuleWithDensity(
   const T pi_r_squared = M_PI * radius * radius;
   const T volume = pi_r_squared * length + (4.0 / 3.0) * pi_r_squared * radius;
   const T mass = density * volume;
+  return SolidCapsuleWithMass(mass, radius, length, unit_vector);
+}
+
+template <typename T>
+SpatialInertia<T> SpatialInertia<T>::SolidCapsuleWithMass(
+    const T& mass, const T& radius, const T& length,
+    const Vector3<T>& unit_vector) {
+  ThrowUnlessValueIsPositiveFinite(mass, "mass", __func__);
+  ThrowUnlessValueIsPositiveFinite(radius, "radius", __func__);
+  ThrowUnlessValueIsPositiveFinite(length, "length", __func__);
+  ThrowUnlessUnitVectorIsMagnitudeOne(unit_vector, __func__);
   const Vector3<T> p_BoBcm_B = Vector3<T>::Zero();
   const UnitInertia<T> G_BBo_B =
       UnitInertia<T>::SolidCapsule(radius, length, unit_vector);
@@ -158,6 +169,17 @@ SpatialInertia<T> SpatialInertia<T>::SolidCylinderWithDensity(
   ThrowUnlessUnitVectorIsMagnitudeOne(unit_vector, __func__);
   const T volume = M_PI * radius * radius * length;  // π r² l
   const T mass = density * volume;
+  return SolidCylinderWithMass(mass, radius, length, unit_vector);
+}
+
+template <typename T>
+SpatialInertia<T> SpatialInertia<T>::SolidCylinderWithMass(
+    const T& mass, const T& radius, const T& length,
+    const Vector3<T>& unit_vector) {
+  ThrowUnlessValueIsPositiveFinite(mass, "mass", __func__);
+  ThrowUnlessValueIsPositiveFinite(radius, "radius", __func__);
+  ThrowUnlessValueIsPositiveFinite(length, "length", __func__);
+  ThrowUnlessUnitVectorIsMagnitudeOne(unit_vector, __func__);
   const Vector3<T> p_BoBcm_B = Vector3<T>::Zero();
 
   // Note: Although a check is made that ‖unit_vector‖ ≈ 1, even if imperfect,
@@ -224,6 +246,16 @@ SpatialInertia<T> SpatialInertia<T>::SolidEllipsoidWithDensity(
   ThrowUnlessValueIsPositiveFinite(c, "semi-axis c", __func__);
   const T volume = (4.0 / 3.0) * M_PI * a * b * c;  // 4/3 π a b c
   const T mass = density * volume;
+  return SolidEllipsoidWithMass(mass, a, b, c);
+}
+
+template <typename T>
+SpatialInertia<T> SpatialInertia<T>::SolidEllipsoidWithMass(
+    const T& mass, const T& a, const T& b, const T& c) {
+  ThrowUnlessValueIsPositiveFinite(mass, "mass", __func__);
+  ThrowUnlessValueIsPositiveFinite(a, "semi-axis a", __func__);
+  ThrowUnlessValueIsPositiveFinite(b, "semi-axis b", __func__);
+  ThrowUnlessValueIsPositiveFinite(c, "semi-axis c", __func__);
   const Vector3<T> p_BoBcm_B = Vector3<T>::Zero();
   const UnitInertia<T> G_BBo_B = UnitInertia<T>::SolidEllipsoid(a, b, c);
   return SpatialInertia<T>(mass, p_BoBcm_B, G_BBo_B);

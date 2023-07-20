@@ -68,6 +68,10 @@ GTEST_TEST(VPolytopeTest, TriangleTest) {
     EXPECT_TRUE(V.PointInSet(at_tol, 2.0 * kTol));
     EXPECT_FALSE(V.PointInSet(at_tol, 0.5 * kTol));
   }
+
+  // Test MaybeGetFeasiblePoint.
+  ASSERT_TRUE(V.MaybeGetFeasiblePoint().has_value());
+  EXPECT_TRUE(V.PointInSet(V.MaybeGetFeasiblePoint().value(), kTol));
 }
 
 GTEST_TEST(VPolytopeTest, SinglePoint) {
@@ -75,6 +79,8 @@ GTEST_TEST(VPolytopeTest, SinglePoint) {
   VPolytope V(point);
   ASSERT_TRUE(V.MaybeGetPoint().has_value());
   EXPECT_TRUE(CompareMatrices(V.MaybeGetPoint().value(), point));
+  ASSERT_TRUE(V.MaybeGetFeasiblePoint().has_value());
+  EXPECT_TRUE(V.PointInSet(V.MaybeGetFeasiblePoint().value()));
 }
 
 GTEST_TEST(VPolytopeTest, DefaultCtor) {
@@ -87,6 +93,7 @@ GTEST_TEST(VPolytopeTest, DefaultCtor) {
   EXPECT_TRUE(dut.IsBounded());
   EXPECT_TRUE(dut.IsEmpty());
   EXPECT_FALSE(dut.MaybeGetPoint().has_value());
+  EXPECT_FALSE(dut.MaybeGetFeasiblePoint().has_value());
   EXPECT_FALSE(dut.PointInSet(Eigen::VectorXd::Zero(0)));
 
   // The intersection of {} and {} is {}, so this should be false
@@ -124,6 +131,9 @@ GTEST_TEST(VPolytopeTest, UnitBoxTest) {
   EXPECT_TRUE(V.PointInSet(in1_W, kTol));
   EXPECT_TRUE(V.PointInSet(in2_W, kTol));
   EXPECT_FALSE(V.PointInSet(out_W, kTol));
+
+  ASSERT_TRUE(V.MaybeGetFeasiblePoint().has_value());
+  EXPECT_TRUE(V.PointInSet(V.MaybeGetFeasiblePoint().value(), kTol));
 
   // Test AddPointInSetConstraints.
   EXPECT_TRUE(CheckAddPointInSetConstraints(V, in1_W));
@@ -180,10 +190,13 @@ GTEST_TEST(VPolytopeTest, ArbitraryBoxTest) {
   EXPECT_LE(query.ComputeSignedDistanceToPoint(in2_W)[0].distance, 0.0);
   EXPECT_GE(query.ComputeSignedDistanceToPoint(out_W)[0].distance, 0.0);
 
-  const double kTol = 1e-14;
+  const double kTol = 1e-11;
   EXPECT_TRUE(V.PointInSet(in1_W, kTol));
   EXPECT_TRUE(V.PointInSet(in2_W, kTol));
   EXPECT_FALSE(V.PointInSet(out_W, kTol));
+
+  ASSERT_TRUE(V.MaybeGetFeasiblePoint().has_value());
+  EXPECT_TRUE(V.PointInSet(V.MaybeGetFeasiblePoint().value(), kTol));
 
   EXPECT_TRUE(CheckAddPointInSetConstraints(V, in1_W));
   EXPECT_TRUE(CheckAddPointInSetConstraints(V, in2_W));
@@ -206,6 +219,9 @@ GTEST_TEST(VPolytopeTest, ArbitraryBoxTest) {
   EXPECT_TRUE(V_F.PointInSet(X_FW * in1_W, kTol));
   EXPECT_TRUE(V_F.PointInSet(X_FW * in2_W, kTol));
   EXPECT_FALSE(V_F.PointInSet(X_FW * out_W, kTol));
+
+  ASSERT_TRUE(V_F.MaybeGetFeasiblePoint().has_value());
+  EXPECT_TRUE(V_F.PointInSet(V_F.MaybeGetFeasiblePoint().value(), kTol));
 }
 
 // Check if the set of vertices equals to the set of vertices_expected.
@@ -274,6 +290,34 @@ GTEST_TEST(VPolytopeTest, NonconvexMesh) {
   // clang-format on
   const double tol = 1E-12;
   CheckVertices(V.vertices(), vertices_expected.transpose(), tol);
+
+  ASSERT_TRUE(V.MaybeGetFeasiblePoint().has_value());
+  EXPECT_TRUE(V.PointInSet(V.MaybeGetFeasiblePoint().value()));
+}
+
+// Confirm that VPolytope will complain about non-obj mesh/convex shapes even
+// if SceneGraph stops complaining. Likewise confirm that GetVertices complains.
+GTEST_TEST(VPolytopeTest, UnsupportedMeshTypes) {
+  const Convex convex("bad_extension.stl");
+  const Mesh mesh("bad_extension.stl");
+
+  for (const auto* shape : std::vector<const Shape*>{&convex, &mesh}) {
+    const RigidTransformd X_WG;
+    // We can't add proximity properties; ProximityEngine would reject it.
+    const bool add_proximity_properties = false;
+    auto [scene_graph, geom_id] =
+        MakeSceneGraphWithShape(*shape, X_WG, add_proximity_properties);
+    auto context = scene_graph->CreateDefaultContext();
+    auto query = scene_graph->get_query_output_port().Eval<QueryObject<double>>(
+        *context);
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        VPolytope(query, geom_id),
+        "VPolytope can only use mesh shapes .* '.*bad_extension.stl'.");
+  }
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      GetVertices(convex),
+      "GetVertices\\(\\) can only use mesh shapes .* '.*bad_extension.stl'.");
 }
 
 GTEST_TEST(VPolytopeTest, UnitBox6DTest) {
@@ -571,6 +615,8 @@ GTEST_TEST(VPolytopeTest, GetMinimalRepresentationTest) {
     auto vpoly = VPolytope(vertices).GetMinimalRepresentation();
     EXPECT_EQ(vpoly.vertices().cols(), 4);
     EXPECT_NEAR(vpoly.CalcVolume(), l * l, tol);
+    ASSERT_TRUE(vpoly.MaybeGetFeasiblePoint().has_value());
+    EXPECT_TRUE(vpoly.PointInSet(vpoly.MaybeGetFeasiblePoint().value(), tol));
     // Calculate the length of the path that visits all the vertices
     // sequentially.
     // If the vertices are in clockwise/counter-clockwise order,
@@ -607,6 +653,8 @@ GTEST_TEST(VPolytopeTest, GetMinimalRepresentationTest) {
     auto vpoly = VPolytope(vertices).GetMinimalRepresentation();
     EXPECT_EQ(vpoly.vertices().cols(), 8);
     EXPECT_NEAR(vpoly.CalcVolume(), l * l * l, tol);
+    ASSERT_TRUE(vpoly.MaybeGetFeasiblePoint().has_value());
+    EXPECT_TRUE(vpoly.PointInSet(vpoly.MaybeGetFeasiblePoint().value(), tol));
 
     // Test PointInSet with points nearby the six faces.
     const double d = 10 * tol;

@@ -154,13 +154,32 @@ GTEST_TEST(GraphOfConvexSetsTest, RemoveEdge) {
 
   EXPECT_EQ(g.Edges().size(), 2);
 
+  EXPECT_EQ(u->incoming_edges().size(), 1);
+  EXPECT_EQ(u->incoming_edges()[0], e2);
+  EXPECT_EQ(u->outgoing_edges().size(), 1);
+  EXPECT_EQ(u->outgoing_edges()[0], e1);
+  EXPECT_EQ(v->incoming_edges().size(), 1);
+  EXPECT_EQ(v->incoming_edges()[0], e1);
+  EXPECT_EQ(v->outgoing_edges().size(), 1);
+  EXPECT_EQ(v->outgoing_edges()[0], e2);
+
   g.RemoveEdge(e1->id());
   auto edges = g.Edges();
   EXPECT_EQ(edges.size(), 1);
   EXPECT_EQ(edges.at(0), e2);
+  EXPECT_EQ(u->incoming_edges().size(), 1);
+  EXPECT_EQ(u->incoming_edges()[0], e2);
+  EXPECT_EQ(u->outgoing_edges().size(), 0);
+  EXPECT_EQ(v->incoming_edges().size(), 0);
+  EXPECT_EQ(v->outgoing_edges().size(), 1);
+  EXPECT_EQ(v->outgoing_edges()[0], e2);
 
   g.RemoveEdge(*e2);
   EXPECT_EQ(g.Edges().size(), 0);
+  EXPECT_EQ(u->incoming_edges().size(), 0);
+  EXPECT_EQ(u->outgoing_edges().size(), 0);
+  EXPECT_EQ(v->incoming_edges().size(), 0);
+  EXPECT_EQ(v->outgoing_edges().size(), 0);
 }
 
 GTEST_TEST(GraphOfConvexSetsTest, RemoveVertex) {
@@ -344,7 +363,8 @@ class ThreePoints : public ::testing::Test {
     subs_on_off_.emplace(e_on_->xv()[0], e_off_->xv()[0]);
     subs_on_off_.emplace(e_on_->xv()[1], e_off_->xv()[1]);
 
-    options.preprocessing = false;
+    options_.preprocessing = false;
+    options_.convex_relaxation = true;
   }
 
   GraphOfConvexSets g_;
@@ -357,14 +377,40 @@ class ThreePoints : public ::testing::Test {
   Edge* e_on_{nullptr};
   Edge* e_off_{nullptr};
   Substitution subs_on_off_{};
-  GraphOfConvexSetsOptions options;
+  GraphOfConvexSetsOptions options_;
 };
+
+// Confirms that we get a helpful error message when we try to solve a problem
+// and no MIP solver is available.
+TEST_F(ThreePoints, NoMixedIntegerSolverAvailable) {
+  if (MixedIntegerSolverAvailable()) {
+    return;
+  }
+
+  options_.convex_relaxation = false;
+
+  // Note: DRAKE_EXPECT_THROWS_MESSAGE fails to match the error message even
+  // when the regex is ".*". So we implement a simpler a regex-free version
+  // here.
+  try {
+    g_.SolveShortestPath(*source_, *target_, options_);
+    GTEST_NONFATAL_FAILURE_("Should have thrown.");
+  } catch (const std::exception& err) {
+    EXPECT_NE(
+        std::string(err.what())
+            .find(
+                "no solver available that can solve the mixed-integer version"),
+        std::string::npos);
+  } catch (...) {
+    GTEST_NONFATAL_FAILURE_("Should have thrown std::exception.");
+  }
+}
 
 TEST_F(ThreePoints, LinearCost1) {
   e_on_->AddCost(1.0);
   e_off_->AddCost(1.0);
   source_->AddCost(1.0);
-  auto result = g_.SolveShortestPath(source_->id(), target_->id(), options);
+  auto result = g_.SolveShortestPath(source_->id(), target_->id(), options_);
   ASSERT_TRUE(result.is_success());
   EXPECT_NEAR(e_on_->GetSolutionCost(result), 1.0, 1e-6);
   EXPECT_NEAR(e_off_->GetSolutionCost(result), 0.0, 1e-6);
@@ -382,7 +428,7 @@ TEST_F(ThreePoints, LinearCost1) {
       CompareMatrices(e_off_->GetSolutionPhiXv(result), 0 * p_sink_.x(), 1e-6));
 
   // Alternative signatures.
-  auto result2 = g_.SolveShortestPath(*source_, *target_, options);
+  auto result2 = g_.SolveShortestPath(*source_, *target_, options_);
   ASSERT_TRUE(result2.is_success());
   EXPECT_NEAR(e_on_->GetSolutionCost(result2), 1.0, 1e-6);
   EXPECT_NEAR(e_off_->GetSolutionCost(result2), 0.0, 1e-6);
@@ -390,8 +436,8 @@ TEST_F(ThreePoints, LinearCost1) {
   EXPECT_NEAR(target_->GetSolutionCost(result2), 0.0, 1e-6);
   EXPECT_NEAR(sink_->GetSolutionCost(result2), 0.0, 1e-6);
 
-  options.solver_options = SolverOptions();
-  auto result4 = g_.SolveShortestPath(*source_, *target_, options);
+  options_.solver_options = SolverOptions();
+  auto result4 = g_.SolveShortestPath(*source_, *target_, options_);
   ASSERT_TRUE(result4.is_success());
   EXPECT_NEAR(e_on_->GetSolutionCost(result4), 1.0, 1e-6);
   EXPECT_NEAR(e_off_->GetSolutionCost(result4), 0.0, 1e-6);
@@ -407,8 +453,8 @@ TEST_F(ThreePoints, LinearCost1) {
 
   if (solvers::ClpSolver::is_available()) {
     solvers::ClpSolver clp;
-    options.solver = &clp;
-    auto result3 = g_.SolveShortestPath(*source_, *target_, options);
+    options_.solver = &clp;
+    auto result3 = g_.SolveShortestPath(*source_, *target_, options_);
     ASSERT_TRUE(result3.is_success());
     EXPECT_NEAR(e_on_->GetSolutionCost(result3), 1.0, 1e-6);
     EXPECT_NEAR(e_off_->GetSolutionCost(result3), 0.0, 1e-6);
@@ -424,7 +470,7 @@ TEST_F(ThreePoints, ConvexRelaxation) {
   source_->AddCost(1.0);
   e_on_->AddConstraint(e_on_->xv()[0] <= 0.0);
   source_->AddConstraint(source_->x()[0] >= 1.0);
-  auto result = g_.SolveShortestPath(*source_, *target_, options);
+  auto result = g_.SolveShortestPath(*source_, *target_, options_);
   ASSERT_TRUE(result.is_success());
   EXPECT_NEAR(result.GetSolution(e_on_->phi()), 1.0, 1e-6);
   EXPECT_NEAR(result.GetSolution(e_off_->phi()), 0.0, 1e-6);
@@ -433,8 +479,8 @@ TEST_F(ThreePoints, ConvexRelaxation) {
     return;
   }
 
-  options.convex_relaxation = false;
-  auto result2 = g_.SolveShortestPath(*source_, *target_, options);
+  options_.convex_relaxation = false;
+  auto result2 = g_.SolveShortestPath(*source_, *target_, options_);
   ASSERT_TRUE(result2.is_success());
   EXPECT_NEAR(result2.GetSolution(e_on_->phi()), 1.0, 1e-6);
   EXPECT_NEAR(result2.GetSolution(e_off_->phi()), 0.0, 1e-6);
@@ -458,7 +504,7 @@ TEST_F(ThreePoints, LinearCost2) {
   e_on_->AddCost(solvers::Binding(cost, {}));
   e_off_->AddCost(solvers::Binding(cost, {}));
   source_->AddCost(solvers::Binding(cost, {}));
-  auto result = g_.SolveShortestPath(*source_, *target_, options);
+  auto result = g_.SolveShortestPath(*source_, *target_, options_);
   ASSERT_TRUE(result.is_success());
   EXPECT_NEAR(e_on_->GetSolutionCost(result), b, 1e-6);
   EXPECT_NEAR(e_off_->GetSolutionCost(result), 0.0, 1e-6);
@@ -473,7 +519,7 @@ TEST_F(ThreePoints, LinearCost3) {
   e_on_->AddCost(a.dot(e_on_->xu()) + b);
   e_off_->AddCost(a.dot(e_off_->xu()) + b);
   source_->AddCost(a.dot(source_->x()) + b);
-  auto result = g_.SolveShortestPath(*source_, *target_, options);
+  auto result = g_.SolveShortestPath(*source_, *target_, options_);
   ASSERT_TRUE(result.is_success());
   EXPECT_NEAR(e_on_->GetSolutionCost(result), a.dot(p_source_.x()) + b, 1e-6);
   EXPECT_NEAR(e_off_->GetSolutionCost(result), 0.0, 1e-6);
@@ -485,21 +531,23 @@ TEST_F(ThreePoints, LinearCost3) {
 TEST_F(ThreePoints, LinearCost4) {
   const double b = -1.23;
   e_on_->AddCost(b);
-  DRAKE_EXPECT_THROWS_MESSAGE(g_.SolveShortestPath(*source_, *target_, options),
-                              "Constant costs must be non-negative.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      g_.SolveShortestPath(*source_, *target_, options_),
+      "Constant costs must be non-negative.*");
 }
 
 TEST_F(ThreePoints, LinearCost5) {
   const double b = -1.23;
   source_->AddCost(b);
-  DRAKE_EXPECT_THROWS_MESSAGE(g_.SolveShortestPath(*source_, *target_, options),
-                              "Constant costs must be non-negative.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      g_.SolveShortestPath(*source_, *target_, options_),
+      "Constant costs must be non-negative.*");
 }
 
 TEST_F(ThreePoints, MultipleVertexCosts) {
   source_->AddCost(1.0);
   source_->AddCost(1.0);
-  DRAKE_EXPECT_NO_THROW(g_.SolveShortestPath(*source_, *target_, options));
+  DRAKE_EXPECT_NO_THROW(g_.SolveShortestPath(*source_, *target_, options_));
 }
 
 TEST_F(ThreePoints, QuadraticCost) {
@@ -508,7 +556,7 @@ TEST_F(ThreePoints, QuadraticCost) {
   source_->AddCost(
       static_cast<const VectorX<Expression>>(source_->x()).squaredNorm());
 
-  auto result = g_.SolveShortestPath(*source_, *target_, options);
+  auto result = g_.SolveShortestPath(*source_, *target_, options_);
   if (result.get_solver_id() == solvers::IpoptSolver::id()) {
     return;  // See IpoptTest for details.
   }
@@ -535,7 +583,7 @@ TEST_F(ThreePoints, QuadraticCost2) {
   Expression vertex_cost =
       (A * (source_->x() - Vector2d{.54, -.23})).squaredNorm();
   source_->AddCost(vertex_cost);
-  auto result = g_.SolveShortestPath(*source_, *target_, options);
+  auto result = g_.SolveShortestPath(*source_, *target_, options_);
   if (result.get_solver_id() == solvers::IpoptSolver::id()) {
     return;  // See IpoptTest for details.
   }
@@ -564,7 +612,7 @@ TEST_F(ThreePoints, QuadraticCost3) {
   Expression vertex_cost =
       (A * (source_->x() - Vector2d{.54, -.23})).squaredNorm() + 4.2;
   source_->AddCost(vertex_cost);
-  auto result = g_.SolveShortestPath(*source_, *target_, options);
+  auto result = g_.SolveShortestPath(*source_, *target_, options_);
   ASSERT_TRUE(result.is_success());
   Environment env{};
   env.insert(e_on_->xu(), p_source_.x());
@@ -589,7 +637,7 @@ TEST_F(ThreePoints, QuadraticCost4) {
   auto vertex_cost = std::make_shared<solvers::QuadraticCost>(
       2.0 * R_v.transpose() * R_v, 2.0 * R_v.transpose() * d_v, d_v.dot(d_v));
   source_->AddCost(solvers::Binding(vertex_cost, source_->x()));
-  auto result = g_.SolveShortestPath(*source_, *target_, options);
+  auto result = g_.SolveShortestPath(*source_, *target_, options_);
   if (result.get_solver_id() == solvers::IpoptSolver::id()) {
     return;  // See IpoptTest for details.
   }
@@ -609,8 +657,9 @@ TEST_F(ThreePoints, QuadraticCost5) {
   e_on_->AddCost((e_on_->xu() - e_on_->xv()).squaredNorm() - 2.0);
   e_off_->AddCost((e_off_->xu() - e_off_->xv()).squaredNorm() - 2.0);
 
-  DRAKE_EXPECT_THROWS_MESSAGE(g_.SolveShortestPath(*source_, *target_, options),
-                              ".* must be strictly non-negative.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      g_.SolveShortestPath(*source_, *target_, options_),
+      ".* must be strictly non-negative.*");
 }
 
 // Costs must be strictly positive.
@@ -618,8 +667,9 @@ TEST_F(ThreePoints, QuadraticCost6) {
   source_->AddCost(
       static_cast<const VectorX<Expression>>(source_->x()).squaredNorm() - 2.0);
 
-  DRAKE_EXPECT_THROWS_MESSAGE(g_.SolveShortestPath(*source_, *target_, options),
-                              ".* must be strictly non-negative.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      g_.SolveShortestPath(*source_, *target_, options_),
+      ".* must be strictly non-negative.*");
 }
 
 TEST_F(ThreePoints, L1NormCost) {
@@ -634,7 +684,7 @@ TEST_F(ThreePoints, L1NormCost) {
   auto vertex_cost =
       std::make_shared<solvers::L1NormCost>(A_v, Vector1d::Zero());
   source_->AddCost(solvers::Binding(vertex_cost, source_->x()));
-  auto result = g_.SolveShortestPath(*source_, *target_, options);
+  auto result = g_.SolveShortestPath(*source_, *target_, options_);
   if (result.get_solver_id() == solvers::IpoptSolver::id()) {
     return;  // See IpoptTest for details.
   }
@@ -662,7 +712,7 @@ TEST_F(ThreePoints, L1NormCost2) {
   auto vertex_cost =
       std::make_shared<solvers::L1NormCost>(A_v, Vector1d::Zero());
   source_->AddCost(solvers::Binding(vertex_cost, source_->x()));
-  auto result = g_.SolveShortestPath(*source_, *target_, options);
+  auto result = g_.SolveShortestPath(*source_, *target_, options_);
   if (result.get_solver_id() == solvers::IpoptSolver::id()) {
     return;  // See IpoptTest for details.
   }
@@ -691,7 +741,7 @@ TEST_F(ThreePoints, L2NormCost) {
   auto vertex_cost =
       std::make_shared<solvers::L2NormCost>(A_v, Vector1d::Zero());
   source_->AddCost(solvers::Binding(vertex_cost, source_->x()));
-  auto result = g_.SolveShortestPath(*source_, *target_, options);
+  auto result = g_.SolveShortestPath(*source_, *target_, options_);
   if (result.get_solver_id() == solvers::IpoptSolver::id()) {
     return;  // See IpoptTest for details.
   }
@@ -720,7 +770,7 @@ TEST_F(ThreePoints, L2NormCost2) {
   auto vertex_cost =
       std::make_shared<solvers::L2NormCost>(A_v, Vector1d::Zero());
   source_->AddCost(solvers::Binding(vertex_cost, source_->x()));
-  auto result = g_.SolveShortestPath(*source_, *target_, options);
+  auto result = g_.SolveShortestPath(*source_, *target_, options_);
   if (result.get_solver_id() == solvers::IpoptSolver::id()) {
     return;  // See IpoptTest for details.
   }
@@ -749,7 +799,7 @@ TEST_F(ThreePoints, LInfNormCost) {
   auto vertex_cost =
       std::make_shared<solvers::LInfNormCost>(A_v, Vector1d::Zero());
   source_->AddCost(solvers::Binding(vertex_cost, source_->x()));
-  auto result = g_.SolveShortestPath(*source_, *target_, options);
+  auto result = g_.SolveShortestPath(*source_, *target_, options_);
   if (result.get_solver_id() == solvers::IpoptSolver::id()) {
     return;  // See IpoptTest for details.
   }
@@ -777,7 +827,7 @@ TEST_F(ThreePoints, LInfNormCost2) {
   auto vertex_cost =
       std::make_shared<solvers::LInfNormCost>(A_v, Vector1d::Zero());
   source_->AddCost(solvers::Binding(vertex_cost, source_->x()));
-  auto result = g_.SolveShortestPath(*source_, *target_, options);
+  auto result = g_.SolveShortestPath(*source_, *target_, options_);
   if (result.get_solver_id() == solvers::IpoptSolver::id()) {
     return;  // See IpoptTest for details.
   }
@@ -809,7 +859,7 @@ TEST_F(ThreePoints, PerspectiveQuadraticCost) {
   auto vertex_cost =
       std::make_shared<solvers::PerspectiveQuadraticCost>(A_v, b);
   source_->AddCost(solvers::Binding(vertex_cost, source_->x()));
-  auto result = g_.SolveShortestPath(*source_, *target_, options);
+  auto result = g_.SolveShortestPath(*source_, *target_, options_);
   if (result.get_solver_id() == solvers::IpoptSolver::id()) {
     return;  // See IpoptTest for details.
   }
@@ -827,6 +877,29 @@ TEST_F(ThreePoints, PerspectiveQuadraticCost) {
   EXPECT_NEAR(sink_->GetSolutionCost(result), 0.0, 1e-6);
 }
 
+TEST_F(ThreePoints, GetSolutionPath) {
+  auto result = g_.SolveShortestPath(*source_, *target_, options_);
+  ASSERT_TRUE(result.is_success());
+  const auto path = g_.GetSolutionPath(*source_, *target_, result);
+  ASSERT_EQ(path.size(), 1);
+  EXPECT_EQ(path[0], e_on_);
+
+  GraphOfConvexSets other;
+  Vertex* v = other.AddVertex(HPolyhedron::MakeUnitBox(2), "other");
+
+  // Bad source.
+  DRAKE_EXPECT_THROWS_MESSAGE(g_.GetSolutionPath(*v, *target_, result),
+                              ".*Source.*is not a vertex.*");
+  // Bad target.
+  DRAKE_EXPECT_THROWS_MESSAGE(g_.GetSolutionPath(*source_, *v, result),
+                              ".*Target.*is not a vertex.*");
+
+  // is_success is false.
+  result.set_solution_result(solvers::SolutionResult::kInfeasibleConstraints);
+  DRAKE_EXPECT_THROWS_MESSAGE(g_.GetSolutionPath(*source_, *target_, result),
+                              ".*Cannot extract a solution.*");
+}
+
 // Like the ThreePoints, but with boxes for each vertex instead of points.
 class ThreeBoxes : public ::testing::Test {
  protected:
@@ -841,7 +914,8 @@ class ThreeBoxes : public ::testing::Test {
     subs_on_off_.emplace(e_on_->xv()[0], e_off_->xv()[0]);
     subs_on_off_.emplace(e_on_->xv()[1], e_off_->xv()[1]);
 
-    options.preprocessing = true;
+    options_.preprocessing = true;
+    options_.convex_relaxation = true;
   }
 
   GraphOfConvexSets g_;
@@ -851,7 +925,7 @@ class ThreeBoxes : public ::testing::Test {
   Vertex* target_{nullptr};
   Vertex* sink_{nullptr};
   Substitution subs_on_off_{};
-  GraphOfConvexSetsOptions options;
+  GraphOfConvexSetsOptions options_;
 };
 
 // Ipopt fails to solve the QuadraticCost and L2NormCost tests above (both of
@@ -871,8 +945,9 @@ TEST_F(ThreeBoxes, IpoptTest) {
   e_off_->AddCost((e_off_->xu() - e_off_->xv()).squaredNorm());
 
   solvers::IpoptSolver ipopt;
-  options.solver = &ipopt;
-  auto result = g_.SolveShortestPath(*source_, *target_, options);
+  options_.solver = &ipopt;
+  options_.convex_relaxation = true;
+  auto result = g_.SolveShortestPath(*source_, *target_, options_);
   ASSERT_TRUE(result.is_success());
 }
 
@@ -881,7 +956,7 @@ TEST_F(ThreeBoxes, LinearEqualityConstraint) {
   e_on_->AddConstraint(e_on_->xv() == b);
   e_off_->AddConstraint(e_off_->xv() == b);
   source_->AddConstraint(source_->x() == -b);
-  auto result = g_.SolveShortestPath(*source_, *target_, options);
+  auto result = g_.SolveShortestPath(*source_, *target_, options_);
   ASSERT_TRUE(result.is_success());
   EXPECT_TRUE(CompareMatrices(source_->GetSolution(result), -b, 1e-6));
   EXPECT_TRUE(CompareMatrices(target_->GetSolution(result), b, 1e-6));
@@ -906,7 +981,7 @@ TEST_F(ThreeBoxes, LinearEqualityConstraint2) {
   auto vertex_constraint =
       std::make_shared<solvers::LinearEqualityConstraint>(Aeq_v, beq);
   source_->AddConstraint(solvers::Binding(vertex_constraint, source_->x()));
-  auto result = g_.SolveShortestPath(*source_, *target_, options);
+  auto result = g_.SolveShortestPath(*source_, *target_, options_);
   ASSERT_TRUE(result.is_success());
   EXPECT_TRUE(CompareMatrices(Aeq_v * source_->GetSolution(result), beq, 1e-6));
   EXPECT_TRUE(
@@ -921,7 +996,7 @@ TEST_F(ThreeBoxes, LinearConstraint) {
   e_on_->AddConstraint(e_on_->xv() >= b);
   e_off_->AddConstraint(e_off_->xv() >= b);
   source_->AddConstraint(source_->x() <= -b);
-  auto result = g_.SolveShortestPath(*source_, *target_, options);
+  auto result = g_.SolveShortestPath(*source_, *target_, options_);
   ASSERT_TRUE(result.is_success());
   EXPECT_TRUE((source_->GetSolution(result).array() <= b.array() - 1e-6).all());
   EXPECT_TRUE((target_->GetSolution(result).array() >= b.array() - 1e-6).all());
@@ -945,7 +1020,7 @@ TEST_F(ThreeBoxes, LinearConstraint2) {
   auto vertex_constraint =
       std::make_shared<solvers::LinearConstraint>(A_v, lb, ub);
   source_->AddConstraint(solvers::Binding(vertex_constraint, source_->x()));
-  auto result = g_.SolveShortestPath(*source_, *target_, options);
+  auto result = g_.SolveShortestPath(*source_, *target_, options_);
   ASSERT_TRUE(result.is_success());
   EXPECT_TRUE(
       ((A_v * source_->GetSolution(result)).array() <= ub.array() + 1e-6)
@@ -970,46 +1045,92 @@ TEST_F(ThreeBoxes, LinearConstraint2) {
       CompareMatrices(target_->GetSolution(result), Vector2d::Zero(), 1e-6));
 }
 
-// A simple shortest-path problem where the continuous variables do not effect
+TEST_F(ThreeBoxes, SolveConvexRestriction) {
+  const Vector2d b{.5, .3};
+
+  // Vertex cost.
+  source_->AddCost(
+      static_cast<const VectorX<Expression>>(source_->x()).squaredNorm());
+  // Vertex constraint.
+  source_->AddConstraint(source_->x() <= -b);
+
+  // Edge costs.
+  e_on_->AddCost((e_on_->xu() - e_on_->xv()).squaredNorm());
+  e_off_->AddCost((e_off_->xu() - e_off_->xv()).squaredNorm());
+
+  // Edge constraints.
+  e_on_->AddConstraint(e_on_->xv() >= b);
+  e_off_->AddConstraint(e_off_->xv() >= b);
+
+  auto result = g_.SolveShortestPath(*source_, *target_, options_);
+  ASSERT_TRUE(result.is_success());
+
+  auto restriction_result =
+      g_.SolveConvexRestriction(std::vector<const Edge*>{e_on_}, options_);
+  ASSERT_TRUE(restriction_result.is_success());
+
+  EXPECT_NEAR(result.get_optimal_cost(), restriction_result.get_optimal_cost(),
+              1e-6);
+  for (const auto* v : g_.Vertices()) {
+    EXPECT_TRUE(CompareMatrices(result.GetSolution(v->x()),
+                                restriction_result.GetSolution(v->x()), 1e-6));
+  }
+}
+
+// A simple shortest-path problem where the continuous variables do not affect
 // the problem (they are all equality constrained).  The GraphOfConvexSets class
 // should still solve the problem, and the convex relaxation should be optimal.
 GTEST_TEST(ShortestPathTest, ClassicalShortestPath) {
   GraphOfConvexSets spp;
 
-  std::vector<VertexId> vid(5);
+  std::vector<Vertex*> v(5);
   for (int i = 0; i < 5; ++i) {
-    vid[i] = spp.AddVertex(Point(Vector1d{0.0}))->id();
+    v[i] = spp.AddVertex(Point(Vector1d{0.0}));
   }
 
-  spp.AddEdge(vid[0], vid[1])->AddCost(3.0);
-  spp.AddEdge(vid[1], vid[0])->AddCost(1.0);
-  spp.AddEdge(vid[0], vid[2])->AddCost(4.0);
-  spp.AddEdge(vid[1], vid[2])->AddCost(1.0);
-  spp.AddEdge(vid[0], vid[3])->AddCost(1.0);
-  spp.AddEdge(vid[3], vid[2])->AddCost(1.0);
-  spp.AddEdge(vid[1], vid[4])
+  Edge* v0_to_v1 = spp.AddEdge(*v[0], *v[1]);
+  v0_to_v1->AddCost(3.0);
+  spp.AddEdge(*v[1], *v[0])->AddCost(1.0);
+  spp.AddEdge(*v[0], *v[2])->AddCost(4.0);
+  spp.AddEdge(*v[1], *v[2])->AddCost(1.0);
+  Edge* v0_to_v3 = spp.AddEdge(*v[0], *v[3]);
+  v0_to_v3->AddCost(1.0);
+  Edge* v3_to_v2 = spp.AddEdge(*v[3], *v[2]);
+  v3_to_v2->AddCost(1.0);
+  spp.AddEdge(*v[1], *v[4])
       ->AddCost(2.5);  // Updated from original to break symmetry.
-  spp.AddEdge(vid[2], vid[4])->AddCost(3.0);
-  spp.AddEdge(vid[0], vid[4])->AddCost(6.0);
+  Edge* v2_to_v4 = spp.AddEdge(*v[2], *v[4]);
+  v2_to_v4->AddCost(3.0);
+  spp.AddEdge(*v[0], *v[4])->AddCost(6.0);
 
   GraphOfConvexSetsOptions options;
+  options.convex_relaxation = true;
   options.preprocessing = false;
 
-  auto result = spp.SolveShortestPath(vid[0], vid[4], options);
+  auto result = spp.SolveShortestPath(*v[0], *v[4], options);
   ASSERT_TRUE(result.is_success());
 
-  for (const auto& e : spp.Edges()) {
+  EXPECT_EQ(spp.GetSolutionPath(*v[0], *v[4], result),
+            std::vector<const Edge*>({v0_to_v3, v3_to_v2, v2_to_v4}));
+  for (const auto* e : spp.Edges()) {
     double expected_cost = 0.0;
     // Only expect non-zero costs on the shortest path.
-    if (e->u().id() == vid[0] && e->v().id() == vid[3]) {
+    if (e == v0_to_v3) {
       expected_cost = 1.0;
-    } else if (e->u().id() == vid[3] && e->v().id() == vid[2]) {
+    } else if (e == v3_to_v2) {
       expected_cost = 1.0;
-    } else if (e->u().id() == vid[2] && e->v().id() == vid[4]) {
+    } else if (e == v2_to_v4) {
       expected_cost = 3.0;
     }
     EXPECT_NEAR(e->GetSolutionCost(result), expected_cost, 1e-6);
   }
+
+  // Now we artificially change the binaries in the result to cause
+  // GetSolutionPath to backtrack.
+  result.SetSolution(v0_to_v3->phi(), 0.8);
+  result.SetSolution(v0_to_v1->phi(), 1.0);
+  EXPECT_EQ(spp.GetSolutionPath(*v[0], *v[4], result, 0.2 /* tolerance */),
+            std::vector<const Edge*>({v0_to_v3, v3_to_v2, v2_to_v4}));
 }
 
 GTEST_TEST(ShortestPathTest, InfeasibleProblem) {
@@ -1023,12 +1144,13 @@ GTEST_TEST(ShortestPathTest, InfeasibleProblem) {
   spp.AddEdge(*source, *v1);
   spp.AddEdge(*v2, *target);
 
-  auto result = spp.SolveShortestPath(*source, *target);
+  GraphOfConvexSetsOptions options;
+  options.convex_relaxation = true;
+  auto result = spp.SolveShortestPath(*source, *target, options);
   ASSERT_FALSE(result.is_success());
   EXPECT_EQ(result.get_solution_result(),
             SolutionResult::kInfeasibleConstraints);
 
-  GraphOfConvexSetsOptions options;
   options.max_rounded_paths = 1;
   result = spp.SolveShortestPath(*source, *target, options);
   ASSERT_FALSE(result.is_success());
@@ -1042,6 +1164,9 @@ GTEST_TEST(ShortestPathTest, InfeasibleProblem) {
   options.convex_relaxation = false;
   result = spp.SolveShortestPath(*source, *target, options);
   ASSERT_FALSE(result.is_success());
+
+  DRAKE_EXPECT_THROWS_MESSAGE(spp.GetSolutionPath(*source, *target, result),
+                              ".*is_success.*");
 }
 
 GTEST_TEST(ShortestPathTest, TwoStepLoopConstraint) {
@@ -1090,6 +1215,7 @@ GTEST_TEST(ShortestPathTest, TwoStepLoopConstraint) {
 
   GraphOfConvexSetsOptions options;
   options.preprocessing = false;
+  options.convex_relaxation = true;
 
   auto result = spp.SolveShortestPath(*v[0], *v[5], options);
   if (result.get_solver_id() == solvers::IpoptSolver::id()) {
@@ -1137,6 +1263,7 @@ GTEST_TEST(ShortestPathTest, PhiConstraint) {
 
   GraphOfConvexSetsOptions options;
   options.preprocessing = false;
+  options.convex_relaxation = true;
 
   // Confirm that variables for edges are set when no on/off constraint is
   // imposed.
@@ -1221,7 +1348,10 @@ class PreprocessShortestPathTest : public ::testing::Test {
 
     // Break symmetry of graph.
     edges_[2]->AddCost(0.1);
+
+    options_.convex_relaxation = true;
   }
+
   std::set<EdgeId> PreprocessShortestPath(VertexId source_id,
                                           VertexId target_id) {
     return g_.PreprocessShortestPath(source_id, target_id, options_);
@@ -1352,6 +1482,14 @@ GTEST_TEST(ShortestPathTest, RoundedSolution) {
   auto relaxed_result =
       spp.SolveShortestPath(source->id(), target->id(), options);
   ASSERT_TRUE(relaxed_result.is_success());
+
+  // We do not expect to find a path in the solution with zero tolerance.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      spp.GetSolutionPath(*source, *target, relaxed_result, 0 /* tolerance*/),
+      ".*No path.*");
+  // However, relaxing the tolerance (significantly) will find a path.
+  EXPECT_NO_THROW(spp.GetSolutionPath(*source, *target, relaxed_result,
+                                      0.9 /* tolerance*/));
 
   options.preprocessing = true;
   options.max_rounded_paths = 10;
@@ -1522,6 +1660,9 @@ GTEST_TEST(ShortestPathTest, NoPath) {
   EXPECT_EQ(result.get_solution_result(),
             SolutionResult::kInfeasibleConstraints);
 
+  DRAKE_EXPECT_THROWS_MESSAGE(spp.GetSolutionPath(*source, *target, result),
+                              ".*is_success.*");
+
   if (!MixedIntegerSolverAvailable()) {
     return;
   }
@@ -1645,36 +1786,32 @@ GTEST_TEST(ShortestPathTest, TobiasToyExample) {
   Vertex* p5 = spp.AddVertex(VPolytope(vertices), "p5");
   Vertex* target = spp.AddVertex(Point(Vector2d(9, 0)), "target");
 
-  Edge* source_to_p1 = spp.AddEdge(*source, *p1);
+  spp.AddEdge(*source, *p1);
   Edge* source_to_p2 = spp.AddEdge(*source, *p2);
-  spp.AddEdge(*source, *p3);
+  Edge* source_to_p3 = spp.AddEdge(*source, *p3);
   spp.AddEdge(*p1, *e2);
   spp.AddEdge(*p2, *p3);
   spp.AddEdge(*p2, *e1);
   spp.AddEdge(*p2, *e2);
   spp.AddEdge(*p3, *p2);  // removing this changes the asymptotic behavior.
-  spp.AddEdge(*p3, *e1);
+  Edge* p3_to_e1 = spp.AddEdge(*p3, *e1);
   spp.AddEdge(*p3, *p4);
   spp.AddEdge(*e1, *e2);
-  spp.AddEdge(*e1, *p4);
+  Edge* e1_to_p4 = spp.AddEdge(*e1, *p4);
   spp.AddEdge(*e1, *p5);
   spp.AddEdge(*e2, *e1);
   spp.AddEdge(*e2, *p5);
   spp.AddEdge(*e2, *target);
   spp.AddEdge(*p4, *p3);
   spp.AddEdge(*p4, *e2);
-  spp.AddEdge(*p4, *p5);
+  Edge* p4_to_p5 = spp.AddEdge(*p4, *p5);
   spp.AddEdge(*p4, *target);
   spp.AddEdge(*p5, *e1);
-  spp.AddEdge(*p5, *target);
+  Edge* p5_to_target = spp.AddEdge(*p5, *target);
 
-  // |xu - xv|₂
-  Matrix<double, 2, 4> A;
-  A.leftCols(2) = Matrix2d::Identity();
-  A.rightCols(2) = -Matrix2d::Identity();
-  auto cost = std::make_shared<solvers::L2NormCost>(A, Vector2d::Zero());
+  // |xu - xv|₂²
   for (const auto& e : spp.Edges()) {
-    e->AddCost(solvers::Binding(cost, {e->xu(), e->xv()}));
+    e->AddCost((e->xu() - e->xv()).squaredNorm());
   }
 
   if (!MixedIntegerSolverAvailable()) {
@@ -1686,8 +1823,12 @@ GTEST_TEST(ShortestPathTest, TobiasToyExample) {
   options.preprocessing = false;
   auto result = spp.SolveShortestPath(source->id(), target->id(), options);
   ASSERT_TRUE(result.is_success());
+  EXPECT_EQ(spp.GetSolutionPath(*source, *target, result),
+            std::vector<const Edge*>(
+                {source_to_p3, p3_to_e1, e1_to_p4, p4_to_p5, p5_to_target}));
 
-  const std::forward_list<Vertex*> shortest_path{source, p1, e2, target};
+  const std::forward_list<Vertex*> shortest_path{source, p3, e1,
+                                                 p4,     p5, target};
   for (const auto& e : spp.Edges()) {
     auto iter = std::find(shortest_path.begin(), shortest_path.end(), &e->u());
     if (iter != shortest_path.end() && &e->v() == *(++iter)) {
@@ -1696,6 +1837,18 @@ GTEST_TEST(ShortestPathTest, TobiasToyExample) {
     } else {
       EXPECT_NEAR(e->GetSolutionCost(result), 0.0, 1e-5);
     }
+  }
+
+  // Test that solving with the known shortest path returns the same results.
+  auto active_edges_result = spp.SolveConvexRestriction(
+      spp.GetSolutionPath(*source, *target, result), options);
+  ASSERT_TRUE(active_edges_result.is_success());
+  // The optimal costs should match.
+  EXPECT_NEAR(result.get_optimal_cost(), active_edges_result.get_optimal_cost(),
+              3e-5);
+  for (const auto* v : spp.Vertices()) {
+    EXPECT_TRUE(CompareMatrices(result.GetSolution(v->x()),
+                                active_edges_result.GetSolution(v->x()), 2e-3));
   }
 
   // Test that forcing an edge not on the shortest path to be active yields a
@@ -1725,13 +1878,14 @@ GTEST_TEST(ShortestPathTest, TobiasToyExample) {
 
   // Test that forcing an edge on the shortest path to be in-active yields a
   // higher cost.
-  source_to_p1->AddPhiConstraint(false);
+  source_to_p3->AddPhiConstraint(false);
   {
     auto new_result =
         spp.SolveShortestPath(source->id(), target->id(), options);
     ASSERT_TRUE(new_result.is_success());
 
-    const std::forward_list<Vertex*> new_shortest_path{source, p2, e2, target};
+    const std::forward_list<Vertex*> new_shortest_path{source, p1, e2,
+                                                       e1,     p5, target};
     for (const auto& e : spp.Edges()) {
       auto iter = std::find(new_shortest_path.begin(), new_shortest_path.end(),
                             &e->u());
@@ -1777,7 +1931,9 @@ GTEST_TEST(ShortestPathTest, Figure9) {
     e->AddCost(solvers::Binding(cost, {e->xu(), e->xv()}));
   }
 
-  auto result = spp.SolveShortestPath(source->id(), target->id());
+  GraphOfConvexSetsOptions options;
+  options.convex_relaxation = true;
+  auto result = spp.SolveShortestPath(source->id(), target->id(), options);
   ASSERT_TRUE(result.is_success());
 
   const double kTol = 2e-4;  // Gurobi required this large tolerance.
@@ -1806,8 +1962,8 @@ GTEST_TEST(ShortestPathTest, Figure9) {
   e23->AddConstraint(e23->xu()[1] == e23->xv()[1]);
   e34->AddConstraint(e34->xu()[1] == e34->xv()[1]);
 
-  auto relaxed_result = spp.SolveShortestPath(source->id(), target->id());
-  GraphOfConvexSetsOptions options;
+  auto relaxed_result =
+      spp.SolveShortestPath(source->id(), target->id(), options);
   options.max_rounded_paths = 1;
   auto rounded_result =
       spp.SolveShortestPath(source->id(), target->id(), options);
@@ -1835,6 +1991,7 @@ GTEST_TEST(ShortestPathTest, Graphviz) {
 
   GraphOfConvexSetsOptions options;
   options.preprocessing = true;
+  options.convex_relaxation = true;
 
   // Note: Testing the entire string against a const string is too fragile,
   // since the VertexIds are Identifier<> and increment on a global counter.

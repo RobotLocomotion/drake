@@ -84,8 +84,7 @@ class RenderBenchmark : public benchmark::Fixture {
     material_.AddProperty("label", "id", RenderLabel::kDontCare);
   }
 
-  using benchmark::Fixture::SetUp;
-  void SetUp(const ::benchmark::State&) { depth_cameras_.clear(); }
+  void SetUp(::benchmark::State&) { depth_cameras_.clear(); }
 
   template <EngineType engine_type>
   // NOLINTNEXTLINE(runtime/references)

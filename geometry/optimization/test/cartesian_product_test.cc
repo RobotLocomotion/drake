@@ -61,6 +61,10 @@ GTEST_TEST(CartesianProductTest, BasicTest) {
   // Test IsEmpty
   EXPECT_FALSE(S.IsEmpty());
 
+  // Test MaybeGetFeasiblePoint.
+  ASSERT_TRUE(S.MaybeGetFeasiblePoint().has_value());
+  EXPECT_TRUE(S.PointInSet(S.MaybeGetFeasiblePoint().value()));
+
   // Test ConvexSets constructor.
   ConvexSets sets;
   sets.emplace_back(P1);
@@ -70,6 +74,10 @@ GTEST_TEST(CartesianProductTest, BasicTest) {
   EXPECT_EQ(S2.ambient_dimension(), 4);
   EXPECT_TRUE(S2.PointInSet(in));
   EXPECT_FALSE(S2.PointInSet(out));
+
+  // Test MaybeGetFeasiblePoint.
+  ASSERT_TRUE(S2.MaybeGetFeasiblePoint().has_value());
+  EXPECT_TRUE(S2.PointInSet(S2.MaybeGetFeasiblePoint().value()));
 }
 
 GTEST_TEST(CartesianProductTest, DefaultCtor) {
@@ -81,6 +89,8 @@ GTEST_TEST(CartesianProductTest, DefaultCtor) {
   EXPECT_TRUE(dut.IsBounded());
   EXPECT_FALSE(dut.IsEmpty());
   EXPECT_TRUE(dut.MaybeGetPoint().has_value());
+  ASSERT_TRUE(dut.MaybeGetFeasiblePoint().has_value());
+  EXPECT_TRUE(dut.PointInSet(dut.MaybeGetFeasiblePoint().value()));
   EXPECT_TRUE(dut.PointInSet(Eigen::VectorXd::Zero(0)));
 }
 
@@ -137,6 +147,9 @@ GTEST_TEST(CartesianProductTest, FromSceneGraph) {
   }
   EXPECT_FALSE(S.MaybeGetPoint().has_value());
 
+  ASSERT_TRUE(S.MaybeGetFeasiblePoint().has_value());
+  EXPECT_TRUE(S.PointInSet(S.MaybeGetFeasiblePoint().value(), kTol));
+
   // Test reference_frame frame.
   SourceId source_id = scene_graph->RegisterSource("F");
   FrameId frame_id = scene_graph->RegisterFrame(source_id, GeometryFrame("F"));
@@ -156,6 +169,9 @@ GTEST_TEST(CartesianProductTest, FromSceneGraph) {
     EXPECT_TRUE(S2.PointInSet(in_F.col(i), kTol));
     EXPECT_FALSE(S2.PointInSet(out_F.col(i), kTol));
   }
+
+  ASSERT_TRUE(S2.MaybeGetFeasiblePoint().has_value());
+  EXPECT_TRUE(S2.PointInSet(S2.MaybeGetFeasiblePoint().value(), kTol));
 }
 
 GTEST_TEST(CartesianProductTest, TwoBoxes) {
@@ -167,6 +183,9 @@ GTEST_TEST(CartesianProductTest, TwoBoxes) {
   EXPECT_TRUE(S.PointInSet(Vector4d{1.9, 1.9, -.1, 3.9}));
   EXPECT_FALSE(S.PointInSet(Vector4d{1.9, 1.9, -.1, 4.1}));
   EXPECT_FALSE(S.PointInSet(Vector4d{2.1, 1.9, -.1, 3.9}));
+
+  ASSERT_TRUE(S.MaybeGetFeasiblePoint().has_value());
+  EXPECT_TRUE(S.PointInSet(S.MaybeGetFeasiblePoint().value()));
 }
 
 GTEST_TEST(CartesianProductTest, UnboundedSets) {
@@ -211,6 +230,9 @@ GTEST_TEST(CartesianProductTest, ScaledPoints) {
   EXPECT_TRUE(S.PointInSet(in, kTol));
   ASSERT_TRUE(S.MaybeGetPoint().has_value());
   EXPECT_TRUE(CompareMatrices(S.MaybeGetPoint().value(), in, kTol));
+
+  ASSERT_TRUE(S.MaybeGetFeasiblePoint().has_value());
+  EXPECT_TRUE(S.PointInSet(S.MaybeGetFeasiblePoint().value(), kTol));
 }
 
 GTEST_TEST(CartesianProductTest, ScaledPointAddPointInSet) {
@@ -223,6 +245,9 @@ GTEST_TEST(CartesianProductTest, ScaledPointAddPointInSet) {
   // clang-format on
   Vector2d b{0, 3};
   const CartesianProduct S(MakeConvexSets(P1, P2), A, b);
+
+  ASSERT_TRUE(S.MaybeGetFeasiblePoint().has_value());
+  EXPECT_TRUE(S.PointInSet(S.MaybeGetFeasiblePoint().value()));
 
   solvers::MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>();
@@ -252,6 +277,9 @@ GTEST_TEST(CartesianProductTest, ScaledPointInjective) {
   EXPECT_TRUE(S.PointInSet(in, kTol));
   ASSERT_TRUE(S.MaybeGetPoint().has_value());
   EXPECT_TRUE(CompareMatrices(S.MaybeGetPoint().value(), in, kTol));
+
+  ASSERT_TRUE(S.MaybeGetFeasiblePoint().has_value());
+  EXPECT_TRUE(S.PointInSet(S.MaybeGetFeasiblePoint().value(), kTol));
 }
 
 GTEST_TEST(CartesianProductTest, ScaledPointNotInjectiveFail) {
@@ -360,6 +388,9 @@ GTEST_TEST(CartesianProductTest, NonnegativeScalingTest2) {
       PointInScaledSet(x, t, x_solution, Eigen::Vector2d(0, 1), &prog));
   EXPECT_FALSE(
       PointInScaledSet(x, t, x_solution, Eigen::Vector2d(-1, 0), &prog));
+
+  ASSERT_TRUE(S.MaybeGetFeasiblePoint().has_value());
+  EXPECT_TRUE(S.PointInSet(S.MaybeGetFeasiblePoint().value()));
 }
 
 // Test the case where A and b are set via the constructor.  Note that the
@@ -392,6 +423,9 @@ GTEST_TEST(CartesianProductTest, Rotated) {
   EXPECT_TRUE(S.PointInSet(in_S, kTol));
   EXPECT_FALSE(S.PointInSet(out_S, kTol));
 
+  ASSERT_TRUE(S.MaybeGetFeasiblePoint().has_value());
+  EXPECT_TRUE(S.PointInSet(S.MaybeGetFeasiblePoint().value(), kTol));
+
   EXPECT_TRUE(internal::CheckAddPointInSetConstraints(S, in_S));
   EXPECT_FALSE(internal::CheckAddPointInSetConstraints(S, out_S));
 
@@ -418,17 +452,24 @@ GTEST_TEST(CartesianProductTest, Rotated) {
 }
 
 GTEST_TEST(CartesianProductTest, ZeroDimensionalInputNonempty) {
-  // If any of the inputs are zero dimensional, special logic is used in several
-  // of the methods. This checks them.
+  // If any of the sets put into a CartesianProduct are zero-dimensional,
+  // special logic is required in several methods. This handles the case
+  // where the zero-dimensional set is *nonempty*.
   const Point P1(Vector2d{1.2, 3.4});
   const Point P2(Eigen::VectorXd::Zero(0));
   const CartesianProduct S(P1, P2);
 
+  EXPECT_EQ(P1.ambient_dimension(), 2);
+  EXPECT_EQ(P2.ambient_dimension(), 0);
   EXPECT_EQ(S.ambient_dimension(), 2);
-  EXPECT_TRUE(S.IntersectsWith(S));
-  EXPECT_TRUE(S.IsBounded());
+
+  EXPECT_FALSE(P1.IsEmpty());
+  EXPECT_FALSE(P2.IsEmpty());
   EXPECT_FALSE(S.IsEmpty());
   EXPECT_TRUE(S.PointInSet(Vector2d{1.2, 3.4}));
+
+  EXPECT_TRUE(S.IntersectsWith(S));
+  EXPECT_TRUE(S.IsBounded());
 
   solvers::MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>();
@@ -450,17 +491,24 @@ GTEST_TEST(CartesianProductTest, ZeroDimensionalInputNonempty) {
 }
 
 GTEST_TEST(CartesianProductTest, ZeroDimensionalInputEmpty) {
-  // If any of the inputs are zero dimensional, special logic is used in several
-  // of the methods. This checks them.
+  // If any of the sets put into a CartesianProduct are zero-dimensional,
+  // special logic is required in several methods. This handles the case
+  // where the zero-dimensional set is *empty*.
   const Point P(Vector2d{1.2, 3.4});
   // The default VPolytope is empty and zero-dimensional.
   const VPolytope V;
   const CartesianProduct S(P, V);
 
+  EXPECT_EQ(P.ambient_dimension(), 2);
+  EXPECT_EQ(V.ambient_dimension(), 0);
   EXPECT_EQ(S.ambient_dimension(), 2);
+
+  EXPECT_FALSE(P.IsEmpty());
+  EXPECT_TRUE(V.IsEmpty());
+  EXPECT_TRUE(S.IsEmpty());
+
   EXPECT_FALSE(S.IntersectsWith(S));
   EXPECT_TRUE(S.IsBounded());
-  EXPECT_TRUE(S.IsEmpty());
 
   solvers::MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>();
@@ -490,6 +538,7 @@ GTEST_TEST(CartesianProductTest, EmptyInput) {
   const VPolytope V = VPolytope(vertices);
   CartesianProduct S(P, V);
   EXPECT_TRUE(S.IsEmpty());
+  EXPECT_FALSE(S.MaybeGetFeasiblePoint().has_value());
 }
 
 }  // namespace optimization

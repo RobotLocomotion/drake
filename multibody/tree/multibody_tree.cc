@@ -677,6 +677,21 @@ MultibodyTree<T>::GetFreeBodyMobilizerOrThrow(
 }
 
 template <typename T>
+const Frame<T>& MultibodyTree<T>::AddOrGetJointFrame(
+    const Body<T>& body,
+    const std::optional<math::RigidTransform<double>>& X_BF,
+    ModelInstanceIndex joint_instance, std::string_view joint_name,
+    std::string_view frame_suffix) {
+  if (X_BF.has_value()) {
+    return this->AddFrame<FixedOffsetFrame>(
+        fmt::format("{}_{}", joint_name, frame_suffix), body.body_frame(),
+        *X_BF, joint_instance);
+  } else {
+    return body.body_frame();
+  }
+}
+
+template <typename T>
 void MultibodyTree<T>::FinalizeTopology() {
   // If the topology is valid it means that this MultibodyTree was already
   // finalized. Re-compilation is not allowed.

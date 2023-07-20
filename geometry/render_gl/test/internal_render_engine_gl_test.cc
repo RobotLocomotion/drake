@@ -48,7 +48,16 @@ class RenderEngineGlTester {
   }
 
   const internal::OpenGlGeometry GetMesh(const std::string& filename) const {
-    const int index = const_cast<RenderEngineGl&>(engine_).GetMesh(filename);
+    // A dummy registration data; we'll learn if the filename was accepted
+    // by examining the data.
+    RenderEngineGl::RegistrationData data{GeometryId::get_new_id(), {}, {}};
+    const int index =
+        const_cast<RenderEngineGl&>(engine_).GetMesh(filename, &data);
+    // We should have non-negative and accepted or negative and not accepted.
+    if (!((index >= 0) == data.accepted)) {
+      throw std::runtime_error(
+          "Mesh acceptance state doesn't match the returned geometry index.");
+    }
     return engine_.geometries_[index];
   }
 
@@ -342,11 +351,7 @@ class RenderEngineGlTest : public ::testing::Test {
 
   // Tests that don't instantiate their own renderers should invoke this.
   void Init(const RigidTransformd& X_WR, bool add_terrain = false) {
-    // TODO(SeanCurtis-TRI): When GCC supports non-trivial designated
-    //  initialization turn this back into:
-    //  const RenderEngineGlParams params{.default_clear_color = kBgColor};
-    RenderEngineGlParams params;
-    params.default_clear_color = kBgColor;
+    const RenderEngineGlParams params{.default_clear_color = kBgColor};
     renderer_ = make_unique<RenderEngineGl>(params);
     InitializeRenderer(X_WR, add_terrain, renderer_.get());
     // Ensure that we the test default visual color is different from the
@@ -376,13 +381,20 @@ class RenderEngineGlTest : public ::testing::Test {
   // this method.
   PerceptionProperties simple_material(bool use_texture = false) const {
     PerceptionProperties material;
-    material.AddProperty("phong", "diffuse", default_color_);
     material.AddProperty("label", "id", expected_label_);
     if (use_texture) {
+      // The simple material's texture should always reproduce the texture
+      // perfectly -- so the diffuse color must be opaque white.
+      material.AddProperty("phong", "diffuse", Rgba(1, 1, 1));
+
       material.AddProperty(
           "phong", "diffuse_map",
-          FindResourceOrThrow(
-              "drake/geometry/render/test/meshes/box.png"));
+          FindResourceOrThrow("drake/geometry/render/test/meshes/box.png"));
+    } else {
+      const Rgba default_color(
+          default_color_.r / 255.0, default_color_.g / 255.0,
+          default_color_.b / 255.0, default_color_.a / 255.0);
+      material.AddProperty("phong", "diffuse", default_color);
     }
     return material;
   }
@@ -477,7 +489,7 @@ class RenderEngineGlTest : public ::testing::Test {
   float expected_object_depth_{2.f};
   RenderLabel expected_label_;
   RenderLabel expected_outlier_label_{RenderLabel::kDontCare};
-  Rgba default_color_{kDefaultVisualColor};
+  RgbaColor default_color_{kDefaultVisualColor};
 
   // We store a reference depth camera; we can always derive a color camera
   // from it; they have the same intrinsics and we grab the global kShowWindow.
@@ -515,11 +527,7 @@ TEST_F(RenderEngineGlTest, ControlBackgroundColor) {
                                 Rgba{0.5, 0.6, 0.7, 1.0},
                                 Rgba{1.0, 0.1, 0.4, 0.5}};
   for (const auto& bg : backgrounds) {
-    // TODO(SeanCurtis-TRI): When GCC supports non-trivial designated
-    //  initialization turn this back into:
-    //  const RenderEngineGlParams params{.default_clear_color = bg};
-    RenderEngineGlParams params;
-    params.default_clear_color = bg;
+    const RenderEngineGlParams params{.default_clear_color = bg};
     RenderEngineGl engine(params);
     Render(&engine);
     VerifyUniformColor(bg, 0u);
@@ -646,12 +654,12 @@ TEST_F(RenderEngineGlTest, BoxTest) {
       // tiling. The default VTK cube source tiles the texture based on the
       // size of the box. We confirm that doesn't actually happen. We test both
       // the un-tiled default behavior and the ability to scale the texture.
-      PerceptionProperties props = simple_material(false);
+      PerceptionProperties props = simple_material();
       if (use_texture) {
-        props.AddProperty(
-            "phong", "diffuse_map",
-            FindResourceOrThrow(
-                "drake/geometry/render/test/diag_gradient.png"));
+        props.AddProperty("phong", "diffuse_map",
+                          FindResourceOrThrow(
+                              "drake/geometry/render/test/diag_gradient.png"));
+        props.UpdateProperty("phong", "diffuse", Rgba(1, 1, 1));
         if (texture_scaled) {
           props.AddProperty(
               "phong", "diffuse_scale", Vector2d{texture_scale, texture_scale});
@@ -940,116 +948,99 @@ TEST_F(RenderEngineGlTest, EllipsoidTest) {
 }
 
 // Performs the shape centered in the image with a mesh (which happens to be a
-// box). This simultaneously confirms that if a diffuse_map is specified but it
-// doesn't refer to a file that can be read, that the appearance defaults to
-// the diffuse rgba value.
+// box). The textured box will be one that is textured via its mtl library. We
+// use it to confirm that the render engine is properly _invoking_ the obj
+// material handling; the _correctness_ of the material handling is tested in
+// render_mesh_test.cc. For the non-textured, we make sure we use a mesh without
+// material file or matching foo.png to preclude it being textured.
 TEST_F(RenderEngineGlTest, MeshTest) {
-  Init(X_WR_, true);
+  for (const bool use_texture : {false, true}) {
+    Init(X_WR_, true);
 
-  auto filename =
-      FindResourceOrThrow("drake/geometry/render/test/meshes/box.obj");
-  Mesh mesh(filename);
-  expected_label_ = RenderLabel(3);
-  PerceptionProperties material = simple_material();
-  // NOTE: Specifying a diffuse map with a known bad path, will force the box
-  // to get the diffuse RGBA value (otherwise it would pick up the `box.png`
-  // texture).
-  material.AddProperty("phong", "diffuse_map", "bad_path");
-  const GeometryId id = GeometryId::get_new_id();
-  renderer_->RegisterVisual(id, mesh, material, RigidTransformd::Identity(),
-                            true /* needs update */);
-  renderer_->UpdatePoses(unordered_map<GeometryId, RigidTransformd>{
-      {id, RigidTransformd::Identity()}});
+    // N.B. box_no_mtl.obj doesn't exist in the source tree and is generated
+    // from box.obj by stripping out material data by the build system.
+    auto filename =
+        use_texture
+            ? FindResourceOrThrow("drake/geometry/render/test/meshes/box.obj")
+            : FindResourceOrThrow(
+                  "drake/geometry/render/test/meshes/box_no_mtl.obj");
 
-  SCOPED_TRACE("Mesh test");
-  PerformCenterShapeTest(renderer_.get());
+    Mesh mesh(filename);
+    expected_label_ = RenderLabel(3);
+
+    // We do *not* pass use_texture = true to simple_material(), because we want
+    // to see that the texture comes through the natural processing.
+    PerceptionProperties material = simple_material();
+    const GeometryId id = GeometryId::get_new_id();
+    renderer_->RegisterVisual(id, mesh, material, RigidTransformd::Identity(),
+                              true /* needs update */);
+    renderer_->UpdatePoses(unordered_map<GeometryId, RigidTransformd>{
+        {id, RigidTransformd::Identity()}});
+
+    expected_color_ =
+        use_texture ? RgbaColor(kTextureColor) : default_color_;
+    SCOPED_TRACE("Mesh test");
+    PerformCenterShapeTest(renderer_.get());
+
+    // For the textured mesh, we also confirm that the texture survives cloning.
+    if (use_texture) {
+      SCOPED_TRACE("Clone textured mesh test");
+      unique_ptr<RenderEngine> clone = renderer_->Clone();
+      RenderEngineGl* gl_engine = dynamic_cast<RenderEngineGl*>(clone.get());
+      EXPECT_NE(gl_engine, nullptr);
+      PerformCenterShapeTest(gl_engine);
+    }
+  }
 }
 
-// Performs the shape-centered-in-the-image test with a *textured* mesh (which
-// happens to be a box).
-TEST_F(RenderEngineGlTest, TextureMeshTest) {
-  Init(X_WR_, true);
+// Mostly identical as `MeshTest` except for the geometry type being Convex.
+TEST_F(RenderEngineGlTest, ConvexTest) {
+  for (const bool use_texture : {false, true}) {
+    Init(X_WR_, true);
 
-  auto filename =
-      FindResourceOrThrow("drake/geometry/render/test/meshes/box.obj");
-  Mesh mesh(filename);
-  expected_label_ = RenderLabel(4);
-  PerceptionProperties material = simple_material();
-  material.AddProperty(
-      "phong", "diffuse_map",
-      FindResourceOrThrow("drake/geometry/render/test/meshes/box.png"));
-  const GeometryId id = GeometryId::get_new_id();
-  renderer_->RegisterVisual(id, mesh, material, RigidTransformd::Identity(),
-                            true /* needs update */);
-  renderer_->UpdatePoses(unordered_map<GeometryId, RigidTransformd>{
-      {id, RigidTransformd::Identity()}});
+    // N.B. box_no_mtl.obj doesn't exist in the source tree and is generated
+    // from box.obj by stripping out material data by the build system.
+    auto filename =
+        use_texture
+            ? FindResourceOrThrow("drake/geometry/render/test/meshes/box.obj")
+            : FindResourceOrThrow(
+                  "drake/geometry/render/test/meshes/box_no_mtl.obj");
 
-  {
-    SCOPED_TRACE("Textured mesh test");
-    expected_color_ = RgbaColor(kTextureColor);
+    Convex convex(filename);
+    expected_label_ = RenderLabel(4);
+
+    // We do *not* pass use_texture = true to simple_material(), because we want
+    // to see that the texture comes through the natural processing.
+    PerceptionProperties material = simple_material();
+    const GeometryId id = GeometryId::get_new_id();
+    renderer_->RegisterVisual(id, convex, material, RigidTransformd::Identity(),
+                              true /* needs update */);
+    renderer_->UpdatePoses(unordered_map<GeometryId, RigidTransformd>{
+        {id, RigidTransformd::Identity()}});
+
+    expected_color_ =
+        use_texture ? RgbaColor(kTextureColor) : default_color_;
+    SCOPED_TRACE("Convex test");
     PerformCenterShapeTest(renderer_.get());
   }
-
-  {
-    SCOPED_TRACE("Clone textured mesh test");
-    // Now confirm that the texture survives cloning.
-    unique_ptr<RenderEngine> clone = renderer_->Clone();
-    RenderEngineGl* gl_engine = dynamic_cast<RenderEngineGl*>(clone.get());
-    EXPECT_NE(gl_engine, nullptr);
-    PerformCenterShapeTest(gl_engine);
-  }
 }
 
-// TODO(SeanCurtis-TRI) Enable this test when I support the default logic for
-//  mapping mesh.obj --> mesh.png.
-
-// Repeat the texture test but with an *implied* texture map. In other words,
-// registering a mesh "foo.obj" will look for a "foo.png" in the same folder as
-// a fall back and use it if found. But *only* as a back up. This is a
-// SHORT TERM hack to get textures in.
-TEST_F(RenderEngineGlTest, ImpliedTextureMeshTest) {
-  Init(X_WR_, true);
-
-  auto filename =
-      FindResourceOrThrow("drake/geometry/render/test/meshes/box.obj");
-  Mesh mesh(filename);
-  expected_label_ = RenderLabel(4);
-  PerceptionProperties material = simple_material();
+// Confirms that meshes/convex referencing a file with an unsupported extension
+// are ignored. (There's also an untested one-time warning.)
+TEST_F(RenderEngineGlTest, UnsupportedMeshConvex) {
+  Init(X_WR_, false);
+  const PerceptionProperties material = simple_material();
   const GeometryId id = GeometryId::get_new_id();
-  renderer_->RegisterVisual(id, mesh, material, RigidTransformd::Identity(),
-                            true /* needs update */);
-  renderer_->UpdatePoses(unordered_map<GeometryId, RigidTransformd>{
-      {id, RigidTransformd::Identity()}});
 
-  expected_color_ = RgbaColor(kTextureColor);
-  SCOPED_TRACE("Implied textured mesh test");
-  PerformCenterShapeTest(renderer_.get());
-}
+  const Mesh mesh("invalid.fbx");
+  EXPECT_FALSE(renderer_->RegisterVisual(id, mesh, material,
+                                         RigidTransformd::Identity(),
+                                         false /* needs update */));
 
-// Performs the shape centered in the image with a convex mesh (which happens to
-// be a  box). This simultaneously confirms that if a diffuse_map is specified
-// but it doesn't refer to a file that can be read, that the appearance defaults
-// to the diffuse rgba value.
-TEST_F(RenderEngineGlTest, ConvexTest) {
-  Init(X_WR_, true);
-
-  auto filename = FindResourceOrThrow(
-      "drake/geometry/render/test/meshes/box.obj");
-  Convex convex(filename);
-  expected_label_ = RenderLabel(4);
-  PerceptionProperties material = simple_material();
-  // NOTE: Specifying a diffuse map with a known bad path, will force the box
-  // to get the diffuse RGBA value (otherwise it would pick up the `box.png`
-  // texture.
-  material.AddProperty("phong", "diffuse_map", "bad_path");
-  const GeometryId id = GeometryId::get_new_id();
-  renderer_->RegisterVisual(id, convex, material, RigidTransformd::Identity(),
-                            true /* needs update */);
-  renderer_->UpdatePoses(unordered_map<GeometryId, RigidTransformd>{
-      {id, RigidTransformd::Identity()}});
-
-  SCOPED_TRACE("Mesh test");
-  PerformCenterShapeTest(renderer_.get());
+  const Convex convex("invalid.fbx");
+  EXPECT_FALSE(renderer_->RegisterVisual(id, convex, material,
+                                         RigidTransformd::Identity(),
+                                         false /* needs update */));
 }
 
 // Performs the test to cast textures to uchar channels. It depends on the image
@@ -1089,8 +1080,8 @@ TEST_F(RenderEngineGlTest, NonUcharChannelTextures) {
     InitializeRenderer(X_WR_, false /* add terrain */, &renderer);
 
     const GeometryId id = GeometryId::get_new_id();
-    PerceptionProperties props = simple_material(false);
-    props.AddProperty("phong", "diffuse_map", file_path);
+    PerceptionProperties props = simple_material(true);
+    props.UpdateProperty("phong", "diffuse_map", file_path);
     renderer.RegisterVisual(id, box, props, RigidTransformd::Identity(), true);
     renderer.RenderColorImage(camera, &color_uint16_texture);
   }

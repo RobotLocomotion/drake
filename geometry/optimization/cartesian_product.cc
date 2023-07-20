@@ -89,8 +89,7 @@ CartesianProduct::CartesianProduct(const QueryObject<double>& query_object,
 
   A_ = X_GF.rotation().matrix();
   b_ = X_GF.translation();
-  // N.B. We leave A_decomp_ unset here. It's only used by MaybeGetPoint and
-  // there it's irrelevant because a cylinder is never a point anyway.
+  A_decomp_ = Eigen::ColPivHouseholderQR<Eigen::MatrixXd>(*A_);
 }
 
 CartesianProduct::~CartesianProduct() = default;

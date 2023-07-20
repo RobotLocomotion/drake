@@ -13,7 +13,6 @@
 
 #include "drake/common/drake_deprecated.h"
 #include "drake/geometry/optimization/c_iris_collision_geometry.h"
-#include "drake/geometry/optimization/c_iris_separating_plane.h"
 #include "drake/geometry/optimization/cspace_free_polytope_base.h"
 #include "drake/geometry/optimization/cspace_free_structs.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
@@ -126,6 +125,14 @@ class CspaceFreePolytope : public CspaceFreePolytopeBase {
     DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SeparationCertificateResult)
     SeparationCertificateResult() {}
     ~SeparationCertificateResult() override = default;
+
+    const std::vector<SeparatingPlaneLagrangians>& lagrangians(
+        PlaneSide plane_side) const {
+      return plane_side == PlaneSide::kPositive
+                 ? positive_side_rational_lagrangians
+                 : negative_side_rational_lagrangians;
+    }
+
     std::vector<SeparatingPlaneLagrangians> positive_side_rational_lagrangians;
     std::vector<SeparatingPlaneLagrangians> negative_side_rational_lagrangians;
   };
@@ -149,6 +156,13 @@ class CspaceFreePolytope : public CspaceFreePolytopeBase {
         const symbolic::Polynomial& b,
         const VectorX<symbolic::Variable>& plane_decision_vars,
         const solvers::MathematicalProgramResult& result) const;
+
+    std::vector<SeparatingPlaneLagrangians>& mutable_lagrangians(
+        PlaneSide plane_side) {
+      return plane_side == PlaneSide::kPositive
+                 ? positive_side_rational_lagrangians
+                 : negative_side_rational_lagrangians;
+    }
 
     // positive_side_rational_lagrangians[i] is the Lagrangian multipliers for
     // PlaneSeparatesGeometries::positive_side_rationals[i].
@@ -452,11 +466,6 @@ class CspaceFreePolytope : public CspaceFreePolytopeBase {
     return plane_geometries_;
   }
 
-  // Returns the index of the plane which will separate the geometry pair.
-  // Returns -1 if the pair is not in map_geometries_to_separating_planes_.
-  int GetSeparatingPlaneIndex(
-      const SortedPair<geometry::GeometryId>& pair) const;
-
   // Find the redundant inequalities in C*s <= d, s_lower <= s <= s_upper
   void FindRedundantInequalities(
       const Eigen::MatrixXd& C, const Eigen::VectorXd& d,
@@ -470,16 +479,6 @@ class CspaceFreePolytope : public CspaceFreePolytopeBase {
   [[nodiscard]] VectorX<symbolic::Polynomial> CalcDminusCs(
       const Eigen::Ref<const MatrixX<T>>& C,
       const Eigen::Ref<const VectorX<T>>& d) const;
-
-  /*
-   Computes the monomial basis for each pair of bodies.
-
-   There can be multiple collision geometries on the same body, and their SOS
-   problem will all share the same monomial basis. Hence we can first compute
-   the monomial basis for each body, and reuse the result for all the collision
-   geometries on the same body pair.
-   */
-  void CalcMonomialBasis();
 
   /*
    Constructs the program which searches for the plane separating a pair of

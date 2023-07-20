@@ -1,6 +1,7 @@
 #include "drake/systems/primitives/affine_system.h"
 
 #include <set>
+#include <string>
 #include <utility>
 
 #include <Eigen/Eigenvalues>
@@ -330,6 +331,28 @@ bool IsMeaningful(const Eigen::Ref<const Eigen::MatrixXd>& m) {
   return m.size() > 0 && (m.array() != 0).any();
 }
 
+void CompareMatrixSize(const Eigen::Ref<const Eigen::MatrixXd>& M1,
+                       const Eigen::Ref<const Eigen::MatrixXd>& M2,
+                       const std::string& matrix_name) {
+  if (M1.rows() != M2.rows() || M1.cols() != M2.cols()) {
+    throw std::runtime_error(
+        fmt::format("New and current {} have different sizes.", matrix_name));
+  }
+}
+
+void CheckOutputConsistency(const bool is_meaningful,
+                            const bool is_meaningful_new,
+                            const std::string& matrix_name,
+                            const std::string& dependency_name) {
+  if (!is_meaningful && is_meaningful_new) {
+    throw std::runtime_error(fmt::format(
+        "{} makes the output dependent on {}, when it was "
+        "previously independent. This would change the dependencies "
+        "of the output port, and it is currently unsupported.",
+        matrix_name, dependency_name));
+  }
+}
+
 }  // namespace
 
 // Our protected constructor does all of the real work -- everything else
@@ -485,6 +508,38 @@ EventStatus AffineSystem<T>::CalcDiscreteUpdate(
   }
   updates->set_value(xnext);
   return EventStatus::Succeeded();
+}
+
+template <typename T>
+void AffineSystem<T>::UpdateCoefficients(
+    const Eigen::Ref<const Eigen::MatrixXd>& new_A,
+    const Eigen::Ref<const Eigen::MatrixXd>& new_B,
+    const Eigen::Ref<const Eigen::VectorXd>& new_f0,
+    const Eigen::Ref<const Eigen::MatrixXd>& new_C,
+    const Eigen::Ref<const Eigen::MatrixXd>& new_D,
+    const Eigen::Ref<const Eigen::VectorXd>& new_y0) {
+  CompareMatrixSize(new_A, A_, "A");
+  CompareMatrixSize(new_B, B_, "B");
+  CompareMatrixSize(new_f0, f0_, "f0");
+  CompareMatrixSize(new_C, C_, "C");
+  CompareMatrixSize(new_D, D_, "D");
+  CompareMatrixSize(new_y0, y0_, "y0");
+
+  const bool is_new_C_meaningful = IsMeaningful(new_C);
+  const bool is_new_D_meaningful = IsMeaningful(new_D);
+  CheckOutputConsistency(has_meaningful_C_, is_new_C_meaningful, "new_C",
+                         "state");
+  CheckOutputConsistency(has_meaningful_D_, is_new_D_meaningful, "new_D",
+                         "input");
+
+  A_ = new_A;
+  B_ = new_B;
+  f0_ = new_f0;
+  C_ = new_C;
+  D_ = new_D;
+  y0_ = new_y0;
+  has_meaningful_C_ = is_new_C_meaningful;
+  has_meaningful_D_ = is_new_D_meaningful;
 }
 
 // clang-format off

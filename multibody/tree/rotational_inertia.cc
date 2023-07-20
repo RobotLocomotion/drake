@@ -7,6 +7,69 @@
 namespace drake {
 namespace multibody {
 
+namespace {
+
+// Forms a canonical set of 3 principal moment of inertia directions from the
+// non-canonical principal moment of inertia axes directions in @p R_EA.
+// @param[in] principal_moments_inertia for `this` rotational inertia sorted
+// from minimum to maximum.
+// @param[in] R_EA 3x3 rotation matrix relating the expressed-in frame E for
+// `this` rotational inertia to a frame A with unit vectors Ax, Ay, Az. The 1ˢᵗ
+// column of R_EA is Ax_E (Ax expressed in frame E) which is parallel to the
+// principal axis associated with Ixx (smallest principal moment of inertia).
+// Similarly, the 2ⁿᵈ and 3ʳᵈ columns of R_EA are Ay_E and Az_E, which are
+// parallel to principal axes associated with Iyy and Izz (the intermediate and
+// largest principal moments of inertia).
+// @pre The three values in principal_moments_inertia should be non-negative and
+// finite and sorted from minimum to maximum.
+// @returns 3x3 rotation matrix whose 3 canonical principal directions are
+// deduced from R_EA and are closest to the identity matrix.
+// @note Principal axes directions Ax, Ay, Az are not unique. Moments of inertia
+// are associated with lines (not unit vectors), so it possible to reorient the
+// principal directions in various ways, particularly if two or three of the
+// principal moments of inertia are equal.
+// @note The only case currently implemented is the triaxially symmetric case
+// which is when all three principal moments of inertia are equal.
+// TODO(Mitiguy) Implement the other two cases which are the axially symmetric
+//  case (two principal moments of inertia are equal) and the case when each
+//  principal moment of inertia is distinct.
+math::RotationMatrix<double> CalcCanonicalPrincipalDirections(
+    const Vector3<double>& principal_moments_inertia,
+    const math::RotationMatrix<double>& R_EA,
+    const double& inertia_tolerance) {
+  const double& Imin = principal_moments_inertia(0);
+  const double& Imax = principal_moments_inertia(2);
+  math::RotationMatrix<double> canonical_principal_directions = R_EA;
+
+  // Case: Triaxially symmetric principal moments of inertia (all 3 ≈ equal).
+  // Physical example: uniform-density sphere.
+  // For this case, body B's inertia matrix about point P expressed in the
+  // right-handed orthonormal basis A of principal directions is
+  //          ⎡Imin  0   0 ⎤     ⎡ 1  0  0 ⎤
+  // I_BP_A ≈ | 0  Imed  0 | ≈ J | 0  1  0 |  where J ≈ Imin ≈ Imed ≈ Imax.
+  //          ⎣ 0    0 Imax⎦     ⎣ 0  0  1 ⎦
+  // We show: I_BP_E = I_BP_A, where E is any right-handed orthonormal basis.
+  // Proof: To reexpress I_BP_A from basis A to basis E, use the rotation
+  // matrix R_AE and its inverse R_EA as I_BP_E = R_EA * I_BP_A * R_AE.
+  // Substitute for I_BP_A as I_BP_E = R_EA * J * IdentityMatrix * R_AE. Thus
+  // I_BP_E = R_EA * J * R_AE = J * R_EA * R_AE = J * IdentityMatrix = I_BP_A.
+  // Note: Before this function existed, the principal_directions could be:
+  //                        ⎡ 0  1  0 ⎤                           ⎡ 1  0  0 ⎤
+  // principal_directions = | 1  0  0 |   Now, this is changed to | 0  1  0 |
+  //                        ⎣ 0  0 -1 ⎦.                          ⎣ 0  0  1 ⎦.
+  if (Imax - Imin <= 2 * inertia_tolerance) {
+    // Since rotation matrix is arbitrary, we choose the identity matrix.
+    canonical_principal_directions = math::RotationMatrix<double>::Identity();
+  }
+
+  // TODO(Mitiguy) Return canonical principal directions for the other cases.
+  //  Case: Axially symmetric moments of inertia (2 are equal, one differs).
+  //  Case: Distinct principal moments of inertia (all 3 are different).
+
+  return canonical_principal_directions;
+}
+}  // namespace
+
 template <typename T>
 Vector3<double> RotationalInertia<T>::CalcPrincipalMomentsAndMaybeAxesOfInertia(
       math::RotationMatrix<double>* principal_directions) const {
@@ -105,39 +168,13 @@ Vector3<double> RotationalInertia<T>::CalcPrincipalMomentsAndMaybeAxesOfInertia(
     principal_moments = eig_solve.eigenvalues();
   }
 
-  // The rotation matrix stored in principal_directions is not unique. Moments
-  // of inertia are associated with lines (not unit vectors), so it possible to
-  // reorient the principal directions in various ways. If all the moments of
-  // inertia are unique, there are 4 distinct possibilities for the rotation
-  // matrix that represents the principal directions. If two moments of inertia
-  // are equal there is an infinite number of possibilties (but not all rotation
-  // matrices conform). If three moments of inertia are equal, then any rotation
-  // matrix works, so we pick a "canonical" one, namely the identity matrix.
+  // Since moments of inertia are associated with lines (not unit vectors), the
+  // rotation matrix stored in principal_directions does not uniquely describe
+  // the principal axes directions. So, form "canonical" principal directions
+  // that are closest to an identity rotation matrix.
   if (principal_directions != nullptr) {
-    const double& Imin = principal_moments(0);
-    const double& Imax = principal_moments(2);
-    // Case: Triaxially symmetric principal moments of inertia (all 3 ≈ equal).
-    // For this case, body B's inertia matrix about-point P expressed in the
-    // right-handed orthonormal basis A of principal directions is
-    //          ⎡Imin  0   0 ⎤     ⎡ 1  0  0 ⎤
-    // I_BP_A ≈ | 0  Imed  0 | ≈ J | 0  1  0 |  where J ≈ Imin ≈ Imed ≈ Imax.
-    //          ⎣ 0    0 Imax⎦     ⎣ 0  0  1 ⎦
-    // We show: I_BP_E = I_BP_A, where E is any right-handed orthonormal basis.
-    // Proof: To reexpress I_BP_A from basis A to basis E, use the rotation
-    // matrix R_AE and its inverse R_EA as I_BP_E = R_EA * I_BP_A * R_AE.
-    // Substitute for I_BP_A as I_BP_E = R_EA * J * IdentityMatrix * R_AE. Thus
-    // I_BP_E = R_EA * J * R_AE = J * R_EA * R_AE = J * IdentityMatrix = I_BP_A.
-    // Note: The previous sorting of principal_directions (above) can lead to
-    //                        ⎡ 0  1  0 ⎤                           ⎡ 1  0  0 ⎤
-    // principal_directions = | 1  0  0 | which is changed below to | 0  1  0 |
-    //                        ⎣ 0  0 -1 ⎦                           ⎣ 0  0  1 ⎦.
-    if (Imax - Imin <= inertia_tolerance) {
-      // Rotation matrix R_BA is not unique. We choose the identity matrix.
-      *principal_directions = math::RotationMatrix<double>::Identity();
-    }
-    // TODO(Mitiguy) Return canonical principal directions for the other cases.
-    // Case: Axially symmetric moments of inertia (2 are equal, one differs).
-    // Case: Distinct principal moments of inertia (all 3 are different).
+    *principal_directions = CalcCanonicalPrincipalDirections(
+        principal_moments, *principal_directions, inertia_tolerance);
   }
   return principal_moments;
 }
