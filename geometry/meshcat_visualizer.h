@@ -179,7 +179,7 @@ class MeshcatVisualizer final : public systems::LeafSystem<T> {
                      const QueryObject<T>& query_object) const;
 
   /* Makes calls to Meshcat::SetProperty to update color alphas. */
-  void SetColorAlphas() const;
+  void SetColorAlphas(bool is_first_call) const;
 
   /* Handles the initialization event. */
   systems::EventStatus OnInitialization(const systems::Context<T>&) const;
