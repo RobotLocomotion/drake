@@ -9,6 +9,7 @@
 #include "drake/bindings/pydrake/geometry/geometry_py.h"
 #include "drake/bindings/pydrake/geometry/optimization_pybind.h"
 #include "drake/common/yaml/yaml_io.h"
+#include "drake/geometry/optimization/affine_subspace.h"
 #include "drake/geometry/optimization/cartesian_product.h"
 #include "drake/geometry/optimization/graph_of_convex_sets.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
@@ -79,6 +80,20 @@ void DefineGeometryOptimization(py::module m) {
             cls_doc.AddPointInNonnegativeScalingConstraints.doc_7args)
         .def("ToShapeWithPose", &ConvexSet::ToShapeWithPose,
             cls_doc.ToShapeWithPose.doc);
+  }
+
+  // AffineSubspace
+  {
+    const auto& cls_doc = doc.AffineSubspace;
+    py::class_<AffineSubspace, ConvexSet>(m, "AffineSubspace", cls_doc.doc)
+        .def(py::init<>(), cls_doc.ctor.doc_0args)
+        .def(py::init<const Eigen::Ref<const Eigen::MatrixXd>&,
+                 const Eigen::Ref<const Eigen::VectorXd>&>(),
+            py::arg("basis"), py::arg("translation"), cls_doc.ctor.doc_2args)
+        .def("basis", &AffineSubspace::basis, py_rvp::reference_internal,
+            cls_doc.basis.doc)
+        .def("translation", &AffineSubspace::translation,
+            py_rvp::reference_internal, cls_doc.translation.doc);
   }
 
   // CartesianProduct
