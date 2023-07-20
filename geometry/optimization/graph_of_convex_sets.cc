@@ -1281,11 +1281,11 @@ std::vector<const Edge*> GraphOfConvexSets::GetSolutionPath(
       // If no candidate edges are found, backtrack to the previous node and
       // continue the search.
       path_vertices.pop_back();
-      path_edges.pop_back();
       if (path_vertices.empty()) {
         throw std::runtime_error(fmt::format("No path found from {} to {}.",
                                              source.name(), target.name()));
       }
+      path_edges.pop_back();
       continue;
     } else {
       // If we have a maximum flow, then add the vertex/edge to the path and
