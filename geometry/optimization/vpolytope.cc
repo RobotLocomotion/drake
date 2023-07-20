@@ -351,6 +351,14 @@ std::optional<VectorXd> VPolytope::DoMaybeGetPoint() const {
   return std::nullopt;
 }
 
+std::optional<VectorXd> VPolytope::DoMaybeGetFeasiblePoint() const {
+  if (IsEmpty()) {
+    return std::nullopt;
+  } else {
+    return vertices_.col(0);
+  }
+}
+
 bool VPolytope::DoPointInSet(const Eigen::Ref<const VectorXd>& x,
                              double tol) const {
   if (vertices_.cols() == 0) {
