@@ -128,7 +128,7 @@ class TestConvertModelDirectiveToSdformat(
         self.assertEqual(len(output_files), 1)
         _, sdf_str = output_files.popitem()
 
-        # Helper packages that used by some of the test case inputs.
+        # Helper packages that are used by some of the test case inputs.
         package_xml_filenames = [
             FindResourceOrThrow(
                 "drake/multibody/parsing/"
