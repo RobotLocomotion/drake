@@ -5,11 +5,10 @@ Preconditions on the model directives file(s):
 
   - No deep nested welds are present (see issue #19090).
   - It is assumed that the model directives files are well formed.
-  - References to elements in subsequently included files are correct (the
-    tool will not verify them).
-  - It does not contain the ``default_joint_positions`` or
-    the ``default_free_body_pose`` directive since they are still not
-    supported.
+  - References to elements in subsequently included files are correct (the tool
+    will not verify them).
+  - It does not contain the ``default_joint_positions`` or the
+    ``default_free_body_pose`` directive since they are still not supported.
 
 Properties of the resulting SDFormat file(s):
 
