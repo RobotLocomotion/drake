@@ -23,11 +23,14 @@ SapFixedConstraint<T>::SapFixedConstraint(
     FixedConstraintKinematics<T> kinematics)
     : SapHolonomicConstraint<T>(
           typename SapHolonomicConstraint<T>::Kinematics(
-              std::move(kinematics.p_PQs_W), std::move(kinematics.J),
-              VectorX<T>::Zero(kinematics.p_BQs_W.size())),
-          MakeSapHolonomicConstraintParameters(kinematics.p_BQs_W.size()),
-          {kinematics.objectA, kinematics.objectB}),
-      num_constrained_point_pairs_(kinematics.p_BQs_W.size() / 3),
+              /* constraint function value */
+              std::move(kinematics.p_PQs_W),
+              /* Jacobian */ std::move(kinematics.J),
+              /* Bias term */
+              VectorX<T>::Zero(kinematics.p_APs_W.size())),
+          MakeSapHolonomicConstraintParameters(kinematics.p_APs_W.size()),
+          MakeObjectIndices(kinematics)),
+      num_constrained_point_pairs_(kinematics.p_APs_W.size() / 3),
       p_APs_W_(std::move(kinematics.p_APs_W)),
       p_BQs_W_(std::move(kinematics.p_BQs_W)) {}
 
@@ -58,6 +61,15 @@ SapFixedConstraint<T>::MakeSapHolonomicConstraintParameters(
 }
 
 template <typename T>
+std::vector<int> SapFixedConstraint<T>::MakeObjectIndices(
+    const FixedConstraintKinematics<T>& kinematics) {
+  if (kinematics.objectB.has_value()) {
+    return {kinematics.objectA, kinematics.objectB.value()};
+  }
+  return {kinematics.objectA};
+}
+
+template <typename T>
 void SapFixedConstraint<T>::DoAccumulateSpatialImpulses(
     int i, const Eigen::Ref<const VectorX<T>>& gamma,
     SpatialForce<T>* F) const {
@@ -73,13 +85,14 @@ void SapFixedConstraint<T>::DoAccumulateSpatialImpulses(
     }
   } else {
     DRAKE_DEMAND(i == 1);
+    DRAKE_DEMAND(p_BQs_W_.has_value());
     // Object B.
     // gamma == gamma_BQi_W
     // Shift gamma_BQi_W to Bo and add in.
     for (int c = 0; c < num_constrained_point_pairs_; ++c) {
       const SpatialForce<T> gamma_BQi_W(Vector3<T>::Zero(),
                                         gamma.template segment<3>(3 * c));
-      const auto p_BQi_W = p_BQs_W_.template segment<3>(3 * c);
+      const auto p_BQi_W = p_BQs_W_->template segment<3>(3 * c);
       *F += gamma_BQi_W.Shift(-p_BQi_W);
     }
   }

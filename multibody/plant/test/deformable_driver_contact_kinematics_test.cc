@@ -11,10 +11,12 @@ using drake::geometry::GeometryId;
 using drake::geometry::GeometryInstance;
 using drake::geometry::SceneGraph;
 using drake::geometry::Sphere;
+using drake::geometry::internal::ContactParticipation;
 using drake::geometry::internal::DeformableContact;
 using drake::geometry::internal::DeformableContactSurface;
 using drake::math::RigidTransformd;
 using drake::math::RollPitchYawd;
+using drake::multibody::contact_solvers::internal::FixedConstraintKinematics;
 using drake::multibody::contact_solvers::internal::PartialPermutation;
 using drake::systems::Context;
 using drake::systems::DiscreteStateIndex;
@@ -71,14 +73,20 @@ DeformableBodyId RegisterDeformableOctahedron(DeformableModel<double>* model,
   return body_id;
 }
 
-/* Test fixture to test DeformableDriver::AppendContactKinematics.
+/* Test fixture to test DeformableDriver::AppendContactKinematics and
+ DeformableDriver::AppendDeformableRigidFixedConstraintKinematics.
  In particular, this fixture sets up a deformable octahedron centered at world
- origin with 8 elements, 7 vertices, and 21 dofs. A rigid rectangle is added so
- that its top face intersects the bottom half of the deformable octahedron. The
- rigid rectangle can be configured to be dynamic or static to provide coverage
- for the cases with one and two Jacobian blocks. We compare rotation matrix from
- world to the contact frame and contact velocities to expected values. */
-class DeformableDriverContactKinematicsTest : public ::testing::Test {
+ origin with 8 elements, 7 vertices, and 21 dofs. To test contact kinematics,
+ we add a rigid rectangle so that its top face intersects the bottom half of the
+ deformable octahedron. The rigid rectangle can be configured to be dynamic or
+ static to provide coverage for the cases with one and two Jacobian blocks. We
+ compare rotation matrix from world to the contact frame and contact velocities
+ to expected values. Similarly, to test fixed constraint kinematics, we add
+ fixed constraint between the rigid body and the vertex of the deformable body
+ inside the rigid geometry. We then compare the constraint velocities to
+ expected values. */
+class DeformableDriverContactKinematicsTest
+    : public ::testing::TestWithParam<bool> {
  protected:
   void SetUp() {}
 
@@ -109,6 +117,8 @@ class DeformableDriverContactKinematicsTest : public ::testing::Test {
 
     const RigidTransformd X_FR(Vector3<double>(0, 0, -0.75));
     const RigidTransformd X_WR = X_WF_ * X_FR;
+    const RigidTransformd& X_BR = X_WR;  // because the pose of the rigid body
+                                         // in world, X_WB, is identity.
     if (dynamic_rigid_body) {
       /* Register a dynamic rigid body intersecting with the bottom half of the
        deformable octahedron. The rigid body is below the deformable body along
@@ -116,8 +126,6 @@ class DeformableDriverContactKinematicsTest : public ::testing::Test {
        -Fz direction), so Cz = -Fz. */
       const RigidBody<double>& rigid_body =
           plant_->AddRigidBody("rigid_body", SpatialInertia<double>());
-      const RigidTransformd& X_BR = X_WR;  // because the pose of the rigid body
-                                           // in world, X_WB, is identity.
       rigid_geometry_id_ = plant_->RegisterCollisionGeometry(
           rigid_body, X_BR, geometry::Box(10, 10, 1),
           "dynamic_collision_geometry", rigid_proximity_props);
@@ -128,6 +136,19 @@ class DeformableDriverContactKinematicsTest : public ::testing::Test {
           plant_->world_body(), X_WR, geometry::Box(10, 10, 1),
           "static_collision_geometry", rigid_proximity_props);
       rigid_body_index_ = plant_->world_body().index();
+    }
+
+    /* Add fixed constraint. */
+    if (dynamic_rigid_body) {
+      /* The pose of the deformable body in the rigid body's frame, X_BF, is
+       equal to X_WF because X_WB is identity. */
+      const RigidTransformd X_BF = X_WF_;
+      model_->AddFixedConstraint(deformable_body_id_,
+                                 plant_->get_body(rigid_body_index_), X_BF,
+                                 geometry::Box(10, 10, 1), X_BR);
+    } else {
+      model_->AddFixedConstraint(deformable_body_id_, plant_->world_body(),
+                                 X_WF_, geometry::Box(10, 10, 1), X_BR);
     }
 
     plant_->set_discrete_contact_solver(DiscreteContactSolver::kSap);
@@ -236,6 +257,82 @@ class DeformableDriverContactKinematicsTest : public ::testing::Test {
     }
   }
 
+  /* Verifies fixed constraint kinematics data are as expected.
+   @param[in] dynamic_rigid_body  True if a rigid body is registered in the
+   setup (instead of a static body with a collision geometry). */
+  void ValidateFixedConstraintKinematics(bool dynamic_rigid_body) {
+    /* Each discrete contact pair should create a contact kinematics pair. */
+    const Context<double>& plant_context =
+        plant_->GetMyContextFromRoot(*context_);
+    std::vector<FixedConstraintKinematics<double>> constraint_kinematics;
+    driver_->AppendDeformableRigidFixedConstraintKinematics(
+        plant_context, &constraint_kinematics);
+    /* Only the bottom vertex of the deformable body in its reference frame is
+     constrained. */
+    ASSERT_EQ(constraint_kinematics.size(), 1);
+    /* Velocities of the participating deformable dofs. */
+    const VectorXd v0 = driver_->EvalParticipatingVelocities(plant_context);
+    /* The expected constraint velocity, v_DpRq_W, is the velocity of the
+     incident point on the rigid body relative to the deformable vertex
+     expressed in the world frame. We know that v_DpRq_F is (0, 0, 1) from the
+     setup of the scene. */
+    const Vector3d v_DpRq_F(0, 0, 1);
+    const Vector3d expected_vc = X_WF_.rotation() * v_DpRq_F;
+    const FixedConstraintKinematics<double>& constraint_kinematic =
+        constraint_kinematics[0];
+    if (dynamic_rigid_body) {
+      ASSERT_EQ(constraint_kinematic.J.num_cliques(), 2);
+      const Matrix3X<double> J0 =
+          constraint_kinematic.J.clique_jacobian(0).MakeDenseMatrix();
+      ASSERT_EQ(v0.size(), J0.cols());
+      const Matrix3X<double> J1 =
+          constraint_kinematic.J.clique_jacobian(1).MakeDenseMatrix();
+      const Vector3d v_WR_F(0, 0, 0.5);
+      const Vector3d v_WR = X_WF_.rotation() * v_WR_F;
+      const Vector3d w_WR(0, 0, 0);
+      Vector6<double> v1;
+      v1 << w_WR, v_WR;
+      ASSERT_EQ(v1.size(), J1.cols());
+      EXPECT_TRUE(CompareMatrices(J0 * v0 + J1 * v1, expected_vc, 1e-14));
+    } else {
+      ASSERT_EQ(constraint_kinematic.J.num_cliques(), 1);
+      const Matrix3X<double> J0 =
+          constraint_kinematic.J.clique_jacobian(0).MakeDenseMatrix();
+      ASSERT_EQ(v0.size(), J0.cols());
+      EXPECT_TRUE(CompareMatrices(J0 * v0, expected_vc, 1e-14));
+    }
+
+    ASSERT_EQ(constraint_kinematic.p_PQs_W.size(), 3);
+    EXPECT_EQ(constraint_kinematic.p_PQs_W, Vector3d::Zero());
+  }
+
+  /* Verifies that all vertices on the bottom side of the deformable octahedron
+   participates in constraints. That is, all vertices, with the exception of
+   v5, are participating in constraint. */
+  void ValidateConstraintParticipation() {
+    const DeformableBodyIndex body_index =
+        model_->GetBodyIndex(deformable_body_id_);
+    const ContactParticipation& participation =
+        driver_->EvalConstraintParticipation(
+            plant_->GetMyContextFromRoot(*context_), body_index);
+    EXPECT_EQ(participation.num_vertices_in_contact(), 6);
+    /*
+     |   Original       |   Permuted       |   Participating   |
+     |   vertex index   |   vertex index   |   in contact      |
+     | :--------------: | :--------------: | :---------------: |
+     |        0         |        0         |       yes         |
+     |        1         |        1         |       yes         |
+     |        2         |        2         |       yes         |
+     |        3         |        3         |       yes         |
+     |        4         |        4         |       yes         |
+     |        5         |        6         |       no          |
+     |        6         |        5         |       yes         |
+    */
+    std::vector<int> expected_vertex_permutation{0, 1, 2, 3, 4, 6, 5};
+    EXPECT_EQ(participation.CalcVertexPermutation().permutation(),
+              expected_vertex_permutation);
+  }
+
   const math::RigidTransformd X_WF_{RollPitchYawd(1, 2, 3), Vector3d(4, 5, 6)};
   MultibodyPlant<double>* plant_{nullptr};
   SceneGraph<double>* scene_graph_{nullptr};
@@ -284,17 +381,16 @@ class DeformableDriverContactKinematicsTest : public ::testing::Test {
 
 namespace {
 
-TEST_F(DeformableDriverContactKinematicsTest,
-       AppendContactKinematicsStaticRigid) {
-  MakeScene(false);
-  ValidateContactKinematics(false);
+TEST_P(DeformableDriverContactKinematicsTest, ConstraintKinematics) {
+  const bool dynamic = GetParam();
+  MakeScene(dynamic);
+  ValidateContactKinematics(dynamic);
+  ValidateFixedConstraintKinematics(dynamic);
+  ValidateConstraintParticipation();
 }
 
-TEST_F(DeformableDriverContactKinematicsTest,
-       AppendContactKinematicsDynamicRigid) {
-  MakeScene(true);
-  ValidateContactKinematics(true);
-}
+INSTANTIATE_TEST_SUITE_P(All, DeformableDriverContactKinematicsTest,
+                         ::testing::Values(true, false));
 
 }  // namespace
 
