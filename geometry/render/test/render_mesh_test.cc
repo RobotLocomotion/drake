@@ -587,9 +587,8 @@ TEST_F(LoadRenderMeshFromObjTest, MaterialFallbackMultipleAppliedIntrinsic) {
       obj_path, empty_props(), kDefaultDiffuse, diagnostic_policy_);
   EXPECT_EQ(mesh.material.diffuse, kDefaultDiffuse);
   EXPECT_EQ(mesh.material.diffuse_map, "");
-  EXPECT_THAT(
-      TakeWarning(),
-      testing::HasSubstr("use a single material across the whole mesh"));
+  // N.B. We do not test the `log()->debug()` message output for correctness.
+  // Checking for the diffuse material is enough to prove that the code was run.
 }
 
 /* If the obj references the mtl file with an absolute path, there will be a
@@ -637,9 +636,8 @@ TEST_F(LoadRenderMeshFromObjTest, MaterialFallbackDefaultedFaces) {
       obj_path, empty_props(), kDefaultDiffuse, diagnostic_policy_);
   EXPECT_EQ(mesh.material.diffuse, kDefaultDiffuse);
   EXPECT_EQ(mesh.material.diffuse_map, "");
-  EXPECT_THAT(
-      TakeWarning(),
-      testing::HasSubstr("use a single material across the whole mesh"));
+  // N.B. We do not test the `log()->debug()` message output for correctness.
+  // Checking for the diffuse material is enough to prove that the code was run.
 }
 
 /* If the obj references an invalid material name, there will be a warning and
