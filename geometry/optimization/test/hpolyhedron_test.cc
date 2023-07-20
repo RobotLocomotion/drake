@@ -45,11 +45,12 @@ GTEST_TEST(HPolyhedronTest, DefaultConstructor) {
   EXPECT_EQ(H.A().size(), 0);
   EXPECT_EQ(H.b().size(), 0);
   EXPECT_NO_THROW(H.Clone());
-  EXPECT_FALSE(H.IntersectsWith(H));
+  EXPECT_TRUE(H.IntersectsWith(H));
   EXPECT_TRUE(H.IsBounded());
-  EXPECT_THROW(H.IsEmpty(), std::exception);
-  EXPECT_FALSE(H.MaybeGetFeasiblePoint().has_value());
-  EXPECT_FALSE(H.PointInSet(Eigen::VectorXd::Zero(0)));
+  EXPECT_FALSE(H.IsEmpty());
+  EXPECT_TRUE(H.PointInSet(Eigen::VectorXd::Zero(0)));
+  ASSERT_TRUE(H.MaybeGetFeasiblePoint().has_value());
+  EXPECT_TRUE(H.PointInSet(H.MaybeGetFeasiblePoint().value()));
 }
 
 GTEST_TEST(HPolyhedronTest, UnitBoxTest) {

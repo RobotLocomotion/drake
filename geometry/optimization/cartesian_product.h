@@ -22,12 +22,18 @@ with the default values set to the identity map.  This concept is required for
 reasoning about cylinders in arbitrary poses as cartesian products, and more
 generally for describing any affine transform of a CartesianProduct.
 
+Special behavior for IsEmpty: If there are no sets in the product, returns
+nonempty by convention. See:
+https://en.wikipedia.org/wiki/Empty_product#Nullary_Cartesian_product
+Otherwise, if any set in the cartesian product is empty, the whole product
+is empty.
+
 @ingroup geometry_optimization */
 class CartesianProduct final : public ConvexSet {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CartesianProduct)
 
-  /** Constructs a default (zero-dimensional) set. */
+  /** Constructs a default (zero-dimensional, nonempty) set. */
   CartesianProduct();
 
   /** Constructs the product from a vector of convex sets. */

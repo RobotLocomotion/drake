@@ -106,11 +106,12 @@ GTEST_TEST(HyperellipsoidTest, DefaultCtor) {
   EXPECT_THROW(dut.MinimumUniformScalingToTouch(dut), std::exception);
   EXPECT_NO_THROW(dut.Clone());
   EXPECT_EQ(dut.ambient_dimension(), 0);
-  EXPECT_FALSE(dut.IntersectsWith(dut));
+  EXPECT_TRUE(dut.IntersectsWith(dut));
   EXPECT_TRUE(dut.IsBounded());
-  EXPECT_THROW(dut.IsEmpty(), std::exception);
-  EXPECT_FALSE(dut.MaybeGetFeasiblePoint().has_value());
-  EXPECT_FALSE(dut.PointInSet(Eigen::VectorXd::Zero(0)));
+  EXPECT_FALSE(dut.IsEmpty());
+  EXPECT_TRUE(dut.PointInSet(Eigen::VectorXd::Zero(0)));
+  ASSERT_TRUE(dut.MaybeGetFeasiblePoint().has_value());
+  EXPECT_TRUE(dut.PointInSet(dut.MaybeGetFeasiblePoint().value()));
 }
 
 GTEST_TEST(HyperellipsoidTest, Move) {

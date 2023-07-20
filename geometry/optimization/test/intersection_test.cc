@@ -94,12 +94,13 @@ GTEST_TEST(IntersectionTest, DefaultCtor) {
   EXPECT_EQ(dut.num_elements(), 0);
   EXPECT_NO_THROW(dut.Clone());
   EXPECT_EQ(dut.ambient_dimension(), 0);
-  EXPECT_FALSE(dut.IntersectsWith(dut));
+  EXPECT_TRUE(dut.IntersectsWith(dut));
   EXPECT_TRUE(dut.IsBounded());
-  EXPECT_THROW(dut.IsEmpty(), std::exception);
-  EXPECT_FALSE(dut.MaybeGetPoint().has_value());
-  EXPECT_FALSE(dut.MaybeGetFeasiblePoint().has_value());
-  EXPECT_FALSE(dut.PointInSet(Eigen::VectorXd::Zero(0)));
+  EXPECT_FALSE(dut.IsEmpty());
+  EXPECT_TRUE(dut.MaybeGetPoint().has_value());
+  EXPECT_TRUE(dut.PointInSet(Eigen::VectorXd::Zero(0)));
+  ASSERT_TRUE(dut.MaybeGetFeasiblePoint().has_value());
+  EXPECT_TRUE(dut.PointInSet(dut.MaybeGetFeasiblePoint().value()));
 }
 
 GTEST_TEST(IntersectionTest, Move) {
@@ -271,6 +272,15 @@ GTEST_TEST(IntersectionTest, EmptyIntersectionTest2) {
 
   EXPECT_TRUE(S.IsEmpty());
   EXPECT_FALSE(S.MaybeGetFeasiblePoint().has_value());
+}
+
+GTEST_TEST(IntersectionTest, EmptyInput) {
+  const Point P(Vector2d{1.2, 3.4});
+  // A VPolytope constructed from an empty list of vertices is empty.
+  Eigen::Matrix<double, 2, 0> vertices;
+  const VPolytope V = VPolytope(vertices);
+  Intersection S(P, V);
+  EXPECT_TRUE(S.IsEmpty());
 }
 
 }  // namespace optimization

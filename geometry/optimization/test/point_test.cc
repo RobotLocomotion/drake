@@ -75,12 +75,13 @@ GTEST_TEST(PointTest, DefaultCtor) {
   EXPECT_EQ(dut.x().size(), 0);
   EXPECT_NO_THROW(dut.Clone());
   EXPECT_EQ(dut.ambient_dimension(), 0);
-  EXPECT_FALSE(dut.IntersectsWith(dut));
+  EXPECT_TRUE(dut.IntersectsWith(dut));
   EXPECT_TRUE(dut.IsBounded());
-  EXPECT_THROW(dut.IsEmpty(), std::exception);
-  EXPECT_FALSE(dut.MaybeGetPoint().has_value());
-  EXPECT_FALSE(dut.MaybeGetFeasiblePoint().has_value());
-  EXPECT_FALSE(dut.PointInSet(Eigen::VectorXd::Zero(0)));
+  EXPECT_TRUE(dut.MaybeGetPoint().has_value());
+  EXPECT_TRUE(dut.PointInSet(Eigen::VectorXd::Zero(0)));
+  EXPECT_FALSE(dut.IsEmpty());
+  ASSERT_TRUE(dut.MaybeGetFeasiblePoint().has_value());
+  EXPECT_TRUE(dut.PointInSet(dut.MaybeGetFeasiblePoint().value()));
 
   Point P;
   EXPECT_NO_THROW(P.set_x(Eigen::VectorXd::Zero(0)));

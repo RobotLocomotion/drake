@@ -14,12 +14,14 @@ namespace optimization {
 /** A convex set that contains exactly one element.  Also known as a
 singleton or unit set.
 
+This set is always nonempty, even in the zero-dimensional case.
+
 @ingroup geometry_optimization */
 class Point final : public ConvexSet {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Point)
 
-  /** Constructs a default (zero-dimensional) set. */
+  /** Constructs a default (zero-dimensional, nonempty) set. */
   Point();
 
   /** Constructs a Point. */
@@ -51,6 +53,7 @@ class Point final : public ConvexSet {
 
   bool DoIsBounded() const final;
 
+  /** A Point is always nonempty, even in the zero-dimensional case. */
   bool DoIsEmpty() const final;
 
   std::optional<Eigen::VectorXd> DoMaybeGetPoint() const final;

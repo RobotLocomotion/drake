@@ -16,12 +16,14 @@ namespace optimization {
 The ambient dimension of the set is N(N+1)/2; the number of variables required
 to describe the N-by-N semidefinite matrix.
 
+By convention, a zero-dimensional spectrahedron is considered nonempty.
+
 @ingroup geometry_optimization */
 class Spectrahedron final : public ConvexSet {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Spectrahedron)
 
-  /** Default constructor (which constructs the empty set). */
+  /** Default constructor (yields the zero-dimensional nonempty set). */
   Spectrahedron();
 
   /** Constructs the spectrahedron from a MathematicalProgram.

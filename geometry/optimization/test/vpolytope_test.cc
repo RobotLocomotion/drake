@@ -90,12 +90,14 @@ GTEST_TEST(VPolytopeTest, DefaultCtor) {
   EXPECT_EQ(dut.CalcVolume(), 0.0);
   EXPECT_NO_THROW(dut.Clone());
   EXPECT_EQ(dut.ambient_dimension(), 0);
-  EXPECT_FALSE(dut.IntersectsWith(dut));
   EXPECT_TRUE(dut.IsBounded());
-  EXPECT_THROW(dut.IsEmpty(), std::exception);
+  EXPECT_TRUE(dut.IsEmpty());
   EXPECT_FALSE(dut.MaybeGetPoint().has_value());
   EXPECT_FALSE(dut.MaybeGetFeasiblePoint().has_value());
   EXPECT_FALSE(dut.PointInSet(Eigen::VectorXd::Zero(0)));
+
+  // The intersection of {} and {} is {}, so this should be false
+  EXPECT_FALSE(dut.IntersectsWith(dut));
 }
 
 GTEST_TEST(VPolytopeTest, Move) {
@@ -696,8 +698,11 @@ GTEST_TEST(VPolytopeTest, WriteObjTest) {
 GTEST_TEST(VPolytopeTest, EmptyTest) {
   Eigen::Matrix<double, 3, 0> vertices;
   auto V = VPolytope(vertices);
-  EXPECT_EQ(V.ambient_dimension(), 3);
   ASSERT_TRUE(V.IsEmpty());
+  ASSERT_EQ(V.ambient_dimension(), 3);
+  ASSERT_FALSE(V.IntersectsWith(V));
+  EXPECT_FALSE(V.MaybeGetPoint().has_value());
+  EXPECT_FALSE(V.PointInSet(Eigen::VectorXd::Zero(3)));
 }
 
 }  // namespace optimization

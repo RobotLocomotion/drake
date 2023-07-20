@@ -367,6 +367,9 @@ bool HPolyhedron::DoIsBounded() const {
 }
 
 bool HPolyhedron::DoIsEmpty() const {
+  if (ambient_dimension() == 0) {
+    return false;
+  }
   solvers::MathematicalProgram prog;
   solvers::VectorXDecisionVariable x =
       prog.NewContinuousVariables(A_.cols(), "x");
