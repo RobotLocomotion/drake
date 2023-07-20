@@ -137,6 +137,14 @@ void DeformableContact<T>::AddDeformableRigidContactSurface(
       std::move(barycentric_coordinates), std::nullopt, std::nullopt);
 }
 
+template <typename T>
+void DeformableContact<T>::Participate(
+    GeometryId id, const std::unordered_set<int>& vertices) {
+  DRAKE_THROW_UNLESS(IsRegistered(id));
+  auto it = contact_participations_.find(id);
+  it->second.Participate(vertices);
+}
+
 template class DeformableContactSurface<double>;
 template class DeformableContact<double>;
 

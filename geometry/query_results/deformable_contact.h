@@ -107,6 +107,9 @@ class ContactParticipation {
    contact. */
   int num_vertices_in_contact() const { return num_vertices_in_contact_; }
 
+  /* Returns the total number of vertices in the deformable geometry. */
+  int num_vertices() const { return participation_.size(); }
+
  private:
   /* participation_[i] indicates whether the i-th vertex participates in
    contact. */
@@ -267,10 +270,11 @@ class DeformableContact {
 
   /* Returns the contact participating information of the deformable geometry
    with the given id.
-   @pre A geometry with `deformable_id` has been registered via
-   RegisterDeformableGeometry(). */
+   @throws std::exception if a geometry with `deformable_id` hasn't been
+   registered via RegisterDeformableGeometry(). */
   const ContactParticipation& contact_participation(
       GeometryId deformable_id) const {
+    DRAKE_THROW_UNLESS(IsRegistered(deformable_id));
     return contact_participations_.at(deformable_id);
   }
 
@@ -317,6 +321,27 @@ class DeformableContact {
   void RegisterDeformableGeometry(GeometryId id, int num_vertices) {
     contact_participations_.emplace(id, ContactParticipation(num_vertices));
   }
+
+  /* Returns true iff a geometry with the given `id` has been registered. */
+  bool IsRegistered(GeometryId id) const {
+    return contact_participations_.count(id) > 0;
+  }
+
+  /* Returns the number of vertices in the geometry with the given `id`.
+   @throws std::exception if the geometry with the given `id` hasn't been
+   registered via RegisterDeformableGeometry(). */
+  int GetNumVerticesOrThrow(GeometryId id) const {
+    DRAKE_THROW_UNLESS(IsRegistered(id));
+    return contact_participations_.at(id).num_vertices();
+  }
+
+  /* For the deformable geometry with the given `id`, add the given `vertices`
+   to the set of vertices that participate in contract/constraint.
+   @throws std::exception if a geometry with the given `id` hasn't been
+   registered via RegisterDeformableGeometry().
+   @pre All values in the given `vertices` are in [0, GetNumVerticesOrThrow(id)]
+  */
+  void Participate(GeometryId id, const std::unordered_set<int>& vertices);
 
  private:
   std::unordered_map<GeometryId, ContactParticipation> contact_participations_;

@@ -19,6 +19,8 @@ GTEST_TEST(ContactParticipation, NoVertexIsParticipating) {
   // The expected permutation is the identity.
   std::vector<int> kExpectedPermutation = {0, 1, 2};
   EXPECT_EQ(permutation.permutation(), kExpectedPermutation);
+  EXPECT_EQ(dut.num_vertices_in_contact(), 0);
+  EXPECT_EQ(dut.num_vertices(), 3);
 }
 
 GTEST_TEST(ContactParticipation, SomeVerticesAreParticipating) {
@@ -101,8 +103,16 @@ GTEST_TEST(DeformableContactSurface, Getters) {
 GTEST_TEST(DeformableContact, RegisterGeometry) {
   constexpr int kNumVertices = 6;
   DeformableContact<double> dut;
+  EXPECT_FALSE(dut.IsRegistered(kIdA));
   dut.RegisterDeformableGeometry(kIdA, kNumVertices);
+  EXPECT_TRUE(dut.IsRegistered(kIdA));
   EXPECT_EQ(dut.contact_participation(kIdA).num_vertices_in_contact(), 0);
+  /* Querying unregistered geometry throws. */
+  GeometryId fake_id = GeometryId::get_new_id();
+  EXPECT_THROW(dut.contact_participation(fake_id), std::exception);
+
+  EXPECT_THROW(dut.GetNumVerticesOrThrow(fake_id), std::exception);
+  EXPECT_EQ(dut.GetNumVerticesOrThrow(kIdA), 6);
 }
 
 GTEST_TEST(DeformableContact, AddDeformableRigidContactSurface) {
@@ -142,6 +152,15 @@ GTEST_TEST(DeformableContact, AddDeformableRigidContactSurface) {
   EXPECT_FALSE(s.is_B_deformable());
   /* Verify that contact participation is as expected. */
   EXPECT_EQ(dut.contact_participation(kIdA).num_vertices_in_contact(), 4);
+}
+
+GTEST_TEST(DeformableContact, Participate) {
+  constexpr int kNumVertices = 6;
+  DeformableContact<double> dut;
+  dut.RegisterDeformableGeometry(kIdA, kNumVertices);
+  EXPECT_EQ(dut.contact_participation(kIdA).num_vertices_in_contact(), 0);
+  dut.Participate(kIdA, {0, 1, 5});
+  EXPECT_EQ(dut.contact_participation(kIdA).num_vertices_in_contact(), 3);
 }
 
 }  // namespace

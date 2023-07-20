@@ -53,8 +53,10 @@ FixedConstraintKinematics<T> MakeArbitraryKinematics(int num_cliques) {
   auto J_PQ_W = (num_cliques == 1)
                     ? SapConstraintJacobian<T>(clique0, J66)
                     : SapConstraintJacobian<T>(clique0, J66, clique1, J62);
-  return FixedConstraintKinematics<T>{objectA, p_APs_W, objectB,
-                                      p_BQs_W, p_PQs_W, J_PQ_W};
+  return (num_cliques == 1)
+             ? FixedConstraintKinematics<T>{objectA, p_APs_W, p_PQs_W, J_PQ_W}
+             : FixedConstraintKinematics<T>{objectA, p_APs_W, objectB,
+                                            p_BQs_W, p_PQs_W, J_PQ_W};
 }
 
 GTEST_TEST(SapFixedConstraint, SingleCliqueConstraint) {
@@ -63,7 +65,7 @@ GTEST_TEST(SapFixedConstraint, SingleCliqueConstraint) {
       MakeArbitraryKinematics(num_cliques);
   const SapFixedConstraint<double> c(kinematics);
 
-  EXPECT_EQ(c.num_objects(), 2);
+  EXPECT_EQ(c.num_objects(), 1);
   EXPECT_EQ(c.num_constraint_equations(), 6);
   EXPECT_EQ(c.num_constrained_point_pairs(), 2);
   EXPECT_EQ(c.num_cliques(), 1);
@@ -133,7 +135,7 @@ GTEST_TEST(SapFixedConstraint, SingleCliqueConstraintClone) {
   // clone is a deep-copy of the original constraint.
   auto clone = dynamic_pointer_cast<SapFixedConstraint<double>>(c.Clone());
   ASSERT_NE(clone, nullptr);
-  EXPECT_EQ(clone->num_objects(), 2);
+  EXPECT_EQ(clone->num_objects(), 1);
   EXPECT_EQ(clone->num_constraint_equations(), 6);
   EXPECT_EQ(c.num_constrained_point_pairs(), 2);
   EXPECT_EQ(clone->num_cliques(), 1);
