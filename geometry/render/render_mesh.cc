@@ -289,12 +289,12 @@ RenderMesh LoadRenderMeshFromObj(const std::filesystem::path& obj_path,
             return i < 0 ? std::string("__default__")
                          : fmt::format("'{}'", reader.GetMaterials()[i].name);
           });
-      policy.Warning(fmt::format(
+      log()->debug(
           "Drake currently only supports OBJs that use a single material "
           "across the whole mesh; for {}, {} materials were used: {}. The "
           "parsed materials will not be used.",
           obj_path.string(), referenced_materials.size(),
-          fmt::join(mat_names, ", ")));
+          fmt::join(mat_names, ", "));
     }
     mesh_data.material = MakeMeshFallbackMaterial(properties, obj_path,
                                                   default_diffuse, policy);

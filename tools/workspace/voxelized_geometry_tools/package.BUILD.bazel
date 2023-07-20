@@ -105,9 +105,12 @@ cc_library(
     ],
 )
 
+# N.B. This test uses two threads even when OpenMP is not available.
 cc_test(
     name = "pointcloud_voxelization_test",
     srcs = ["test/pointcloud_voxelization_test.cpp"],
+    env = {"OMP_NUM_THREADS": "2"},
+    tags = ["cpu:2"],
     deps = [
         ":voxelized_geometry_tools",
         ":cuda_voxelization_helpers",
@@ -121,9 +124,19 @@ cc_test(
 cc_test(
     name = "mesh_rasterization_test",
     srcs = ["test/mesh_rasterization_test.cpp"],
+    env = {"OMP_NUM_THREADS": "2"},
+    tags = ["cpu:2"],
     deps = [
         ":voxelized_geometry_tools",
         "@common_robotics_utilities",
         "@gtest//:without_main",
+    ],
+)
+
+test_suite(
+    name = "test_suite",
+    tests = [
+        ":mesh_rasterization_test",
+        ":pointcloud_voxelization_test",
     ],
 )

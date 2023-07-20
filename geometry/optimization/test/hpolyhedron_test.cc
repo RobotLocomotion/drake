@@ -45,10 +45,12 @@ GTEST_TEST(HPolyhedronTest, DefaultConstructor) {
   EXPECT_EQ(H.A().size(), 0);
   EXPECT_EQ(H.b().size(), 0);
   EXPECT_NO_THROW(H.Clone());
-  EXPECT_FALSE(H.IntersectsWith(H));
+  EXPECT_TRUE(H.IntersectsWith(H));
   EXPECT_TRUE(H.IsBounded());
-  EXPECT_THROW(H.IsEmpty(), std::exception);
-  EXPECT_FALSE(H.PointInSet(Eigen::VectorXd::Zero(0)));
+  EXPECT_FALSE(H.IsEmpty());
+  EXPECT_TRUE(H.PointInSet(Eigen::VectorXd::Zero(0)));
+  ASSERT_TRUE(H.MaybeGetFeasiblePoint().has_value());
+  EXPECT_TRUE(H.PointInSet(H.MaybeGetFeasiblePoint().value()));
 }
 
 GTEST_TEST(HPolyhedronTest, UnitBoxTest) {
@@ -71,6 +73,10 @@ GTEST_TEST(HPolyhedronTest, UnitBoxTest) {
   // Test MaybeGetPoint.
   EXPECT_FALSE(H.MaybeGetPoint().has_value());
 
+  // Test MaybeGetFeasiblePoint.
+  ASSERT_TRUE(H.MaybeGetFeasiblePoint().has_value());
+  EXPECT_TRUE(H.PointInSet(H.MaybeGetFeasiblePoint().value()));
+
   // Test PointInSet.
   EXPECT_TRUE(H.PointInSet(Vector3d(.8, .3, -.9)));
   EXPECT_TRUE(H.PointInSet(Vector3d(-1.0, 1.0, 1.0)));
@@ -91,6 +97,10 @@ GTEST_TEST(HPolyhedronTest, UnitBoxTest) {
   HPolyhedron H_scene_graph(query, geom_id);
   EXPECT_TRUE(CompareMatrices(A, H_scene_graph.A()));
   EXPECT_TRUE(CompareMatrices(b, H_scene_graph.b()));
+
+  ASSERT_TRUE(H_scene_graph.MaybeGetFeasiblePoint().has_value());
+  EXPECT_TRUE(
+      H_scene_graph.PointInSet(H_scene_graph.MaybeGetFeasiblePoint().value()));
 }
 
 GTEST_TEST(HPolyhedronTest, Move) {
@@ -141,6 +151,11 @@ GTEST_TEST(HPolyhedronTest, ConstructorFromVPolytope) {
   EXPECT_TRUE(hpoly2.PointInSet(Eigen::Vector3d(1.99, -1.99, 3.99)));
   EXPECT_FALSE(hpoly2.PointInSet(Eigen::Vector3d(0, 3.01, 0)));
   EXPECT_FALSE(hpoly2.PointInSet(Eigen::Vector3d(-1.01, 0, 0)));
+
+  ASSERT_TRUE(hpoly1.MaybeGetFeasiblePoint().has_value());
+  EXPECT_TRUE(hpoly1.PointInSet(hpoly1.MaybeGetFeasiblePoint().value()));
+  ASSERT_TRUE(hpoly2.MaybeGetFeasiblePoint().has_value());
+  EXPECT_TRUE(hpoly2.PointInSet(hpoly2.MaybeGetFeasiblePoint().value()));
 }
 
 GTEST_TEST(HPolyhedronTest, L1BallTest) {
@@ -162,6 +177,9 @@ GTEST_TEST(HPolyhedronTest, L1BallTest) {
   EXPECT_EQ(H_L1_box.ambient_dimension(), 3);
   EXPECT_TRUE(CompareMatrices(A, H_L1_box.A()));
   EXPECT_TRUE(CompareMatrices(b, H_L1_box.b()));
+
+  ASSERT_TRUE(H_L1_box.MaybeGetFeasiblePoint().has_value());
+  EXPECT_TRUE(H_L1_box.PointInSet(H_L1_box.MaybeGetFeasiblePoint().value()));
 }
 
 GTEST_TEST(HPolyhedronTest, ArbitraryBoxTest) {
@@ -189,6 +207,9 @@ GTEST_TEST(HPolyhedronTest, ArbitraryBoxTest) {
   EXPECT_FALSE(H.PointInSet(out1_W));
   EXPECT_FALSE(H.PointInSet(out2_W));
 
+  ASSERT_TRUE(H.MaybeGetFeasiblePoint().has_value());
+  EXPECT_TRUE(H.PointInSet(H.MaybeGetFeasiblePoint().value()));
+
   EXPECT_TRUE(CheckAddPointInSetConstraints(H, in1_W));
   EXPECT_TRUE(CheckAddPointInSetConstraints(H, in2_W));
   EXPECT_FALSE(CheckAddPointInSetConstraints(H, out1_W));
@@ -212,6 +233,10 @@ GTEST_TEST(HPolyhedronTest, ArbitraryBoxTest) {
   EXPECT_TRUE(H_F.PointInSet(X_FW * in2_W));
   EXPECT_FALSE(H_F.PointInSet(X_FW * out1_W));
   EXPECT_FALSE(H_F.PointInSet(X_FW * out2_W));
+
+  const double kTol = 1e-14;
+  ASSERT_TRUE(H_F.MaybeGetFeasiblePoint().has_value());
+  EXPECT_TRUE(H_F.PointInSet(H_F.MaybeGetFeasiblePoint().value(), kTol));
 }
 
 GTEST_TEST(HPolyhedronTest, HalfSpaceTest) {
@@ -238,6 +263,9 @@ GTEST_TEST(HPolyhedronTest, HalfSpaceTest) {
   EXPECT_TRUE(H.PointInSet(in2_W));
   EXPECT_FALSE(H.PointInSet(out1_W));
   EXPECT_FALSE(H.PointInSet(out2_W));
+
+  ASSERT_TRUE(H.MaybeGetFeasiblePoint().has_value());
+  EXPECT_TRUE(H.PointInSet(H.MaybeGetFeasiblePoint().value()));
 }
 
 GTEST_TEST(HPolyhedronTest, UnitBox6DTest) {
@@ -251,6 +279,9 @@ GTEST_TEST(HPolyhedronTest, UnitBox6DTest) {
   EXPECT_TRUE(H.PointInSet(in2_W));
   EXPECT_FALSE(H.PointInSet(out1_W));
   EXPECT_FALSE(H.PointInSet(out2_W));
+
+  ASSERT_TRUE(H.MaybeGetFeasiblePoint().has_value());
+  EXPECT_TRUE(H.PointInSet(H.MaybeGetFeasiblePoint().value()));
 }
 
 GTEST_TEST(HPolyhedronTest, InscribedEllipsoidTest) {
@@ -358,6 +389,9 @@ GTEST_TEST(HpolyhedronTest, Scale) {
   EXPECT_TRUE(H_scaled.PointInSet(Vector3d::Constant(-0.99)));
   EXPECT_FALSE(H_scaled.PointInSet(Vector3d::Constant(-1.01)));
 
+  ASSERT_TRUE(H_scaled.MaybeGetFeasiblePoint().has_value());
+  EXPECT_TRUE(H_scaled.PointInSet(H_scaled.MaybeGetFeasiblePoint().value()));
+
   // Shrink to a point.
   const Vector3d kPoint = Vector3d::Constant(-1.0);
   H_scaled = H.Scale(0, kPoint);
@@ -415,6 +449,9 @@ GTEST_TEST(HPolyhedronTest, Scale3) {
   H_scaled = H.Scale(kScale, Vector3d{2, 0, 0});
   EXPECT_FALSE(H_scaled.PointInSet(Vector3d{1, 0, 0}));
   EXPECT_TRUE(H_scaled.PointInSet(Vector3d{-1, 0, 0}));
+
+  ASSERT_TRUE(H_scaled.MaybeGetFeasiblePoint().has_value());
+  EXPECT_TRUE(H_scaled.PointInSet(H_scaled.MaybeGetFeasiblePoint().value()));
 }
 
 GTEST_TEST(HPolyhedronTest, CloneTest) {
@@ -576,6 +613,7 @@ GTEST_TEST(HPolyhedronTest, IsBoundedEmptyPolyhedron) {
   // clang-format on
   HPolyhedron H(A_infeasible, -Vector3d::Ones());
   EXPECT_TRUE(H.IsEmpty());
+  EXPECT_FALSE(H.MaybeGetFeasiblePoint().has_value());
 }
 
 GTEST_TEST(HPolyhedronTest, CartesianPowerTest) {
@@ -633,6 +671,9 @@ GTEST_TEST(HPolyhedronTest, CartesianProductTest) {
   VectorXd x_C{x_A.size() + x_B.size()};
   x_C << x_A, x_B;
   EXPECT_TRUE(H_C.PointInSet(x_C));
+
+  ASSERT_TRUE(H_C.MaybeGetFeasiblePoint().has_value());
+  EXPECT_TRUE(H_C.PointInSet(H_C.MaybeGetFeasiblePoint().value()));
 }
 
 GTEST_TEST(HPolyhedronTest, AxisAlignedContainment) {
@@ -772,6 +813,8 @@ GTEST_TEST(HPolyhedronTest, ReduceToInfeasibleSet) {
 
   EXPECT_TRUE(H.IsEmpty());
   EXPECT_TRUE(H_reduced.IsEmpty());
+  EXPECT_FALSE(H.MaybeGetFeasiblePoint().has_value());
+  EXPECT_FALSE(H_reduced.MaybeGetFeasiblePoint().has_value());
 }
 
 GTEST_TEST(HPolyhedronTest, IsEmptyMinimalInequalitySet) {
@@ -839,6 +882,9 @@ GTEST_TEST(HPolyhedronTest, IntersectionTest) {
   EXPECT_FALSE(H_A.PointInSet(x_B));
   EXPECT_TRUE(H_B.PointInSet(x_B));
   EXPECT_FALSE(H_C.PointInSet(x_B));
+
+  ASSERT_TRUE(H_C.MaybeGetFeasiblePoint().has_value());
+  EXPECT_TRUE(H_C.PointInSet(H_C.MaybeGetFeasiblePoint().value()));
 }
 
 GTEST_TEST(HPolyhedronTest, PontryaginDifferenceTestAxisAligned) {
@@ -850,6 +896,9 @@ GTEST_TEST(HPolyhedronTest, PontryaginDifferenceTestAxisAligned) {
 
   EXPECT_TRUE(CompareMatrices(H_C.A(), H_C_expected.A(), 1e-8));
   EXPECT_TRUE(CompareMatrices(H_C.b(), H_C_expected.b(), 1e-8));
+
+  ASSERT_TRUE(H_C.MaybeGetFeasiblePoint().has_value());
+  EXPECT_TRUE(H_C.PointInSet(H_C.MaybeGetFeasiblePoint().value()));
 }
 
 GTEST_TEST(HPolyhedronTest, PontryaginDifferenceTestSquareTriangle) {

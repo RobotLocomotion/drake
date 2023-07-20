@@ -1,28 +1,8 @@
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
-sh_test(
-    name = "maybe_test",
-    srcs = ["@common_robotics_utilities//:maybe_test"],
-)
-
-sh_test(
-    name = "planning_test",
-    srcs = ["@common_robotics_utilities//:planning_test"],
-)
-
-sh_test(
-    name = "task_planning_test",
-    srcs = ["@common_robotics_utilities//:task_planning_test"],
-)
-
-sh_test(
-    name = "utility_test",
-    srcs = ["@common_robotics_utilities//:utility_test"],
-)
-
-sh_test(
-    name = "voxel_grid_test",
-    srcs = ["@common_robotics_utilities//:voxel_grid_test"],
+test_suite(
+    name = "test_suite",
+    tests = ["@common_robotics_utilities//:test_suite"],
 )
 
 add_lint_tests()

@@ -24,12 +24,15 @@ invertible, but the quadratic form can also represent unbounded sets.
 Note: the name Hyperellipsoid was taken here to avoid conflicting with
 geometry::Ellipsoid and to distinguish that this class supports N dimensions.
 
+A hyperellipsoid can never be empty -- it always contains its center. This
+includes the zero-dimensional case.
+
 @ingroup geometry_optimization */
 class Hyperellipsoid final : public ConvexSet {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Hyperellipsoid)
 
-  /** Constructs a default (zero-dimensional) set. */
+  /** Constructs a default (zero-dimensional, nonempty) set. */
   Hyperellipsoid();
 
   /** Constructs the ellipsoid.

@@ -1,13 +1,10 @@
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
-sh_test(
-    name = "pointcloud_voxelization_test",
-    srcs = ["@voxelized_geometry_tools//:pointcloud_voxelization_test"],
-)
-
-sh_test(
-    name = "mesh_rasterization_test",
-    srcs = ["@voxelized_geometry_tools//:mesh_rasterization_test"],
+test_suite(
+    name = "test_suite",
+    tests = [
+        "@voxelized_geometry_tools//:test_suite",
+    ],
 )
 
 add_lint_tests()

@@ -19,6 +19,7 @@
 
 using Eigen::Map;
 using Eigen::NoChange;
+using common_robotics_utilities::openmp_helpers::DegreeOfParallelism;
 using common_robotics_utilities::openmp_helpers::GetNumOmpThreads;
 using common_robotics_utilities::voxel_grid::DSHVGSetType;
 using common_robotics_utilities::voxel_grid::DynamicSpatialHashedVoxelGrid;
@@ -623,7 +624,12 @@ bool PointCloud::EstimateNormals(
   // Iterate through all points and compute their normals.
   std::atomic<bool> all_points_have_at_least_three_neighbors(true);
 
-  CRU_OMP_PARALLEL_FOR_IF(parallelize)
+  // TODO(calderpg-tri) Expose more control over degree of parallelism.
+  const auto parallelism =
+      parallelize ? DegreeOfParallelism::FromOmp()
+                  : DegreeOfParallelism::None();
+
+  CRU_OMP_PARALLEL_FOR_DEGREE(parallelism)
   for (int i = 0; i < size(); ++i) {
     VectorX<Eigen::Index> indices(num_closest);
     Eigen::VectorXf distances(num_closest);

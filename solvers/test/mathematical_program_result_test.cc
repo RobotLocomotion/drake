@@ -41,6 +41,7 @@ TEST_F(MathematicalProgramResultTest, DefaultConstructor) {
 TEST_F(MathematicalProgramResultTest, Setters) {
   MathematicalProgramResult result;
   result.set_decision_variable_index(decision_variable_index_);
+  EXPECT_EQ(result.get_decision_variable_index(), decision_variable_index_);
   EXPECT_TRUE(CompareMatrices(
       result.get_x_val(),
       Eigen::VectorXd::Constant(decision_variable_index_.size(),

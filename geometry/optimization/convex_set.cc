@@ -21,7 +21,7 @@ ConvexSet::~ConvexSet() = default;
 bool ConvexSet::IntersectsWith(const ConvexSet& other) const {
   DRAKE_THROW_UNLESS(other.ambient_dimension() == this->ambient_dimension());
   if (ambient_dimension() == 0) {
-    return false;
+    return !other.IsEmpty() && !this->IsEmpty();
   }
   solvers::MathematicalProgram prog{};
   const auto& x = prog.NewContinuousVariables(this->ambient_dimension(), "x");
@@ -32,6 +32,14 @@ bool ConvexSet::IntersectsWith(const ConvexSet& other) const {
 }
 
 bool ConvexSet::DoIsEmpty() const {
+  if (ambient_dimension() == 0) {
+    return false;
+    // Zero-dimensional sets are considered to be nonempty by default. Sets
+    // which can be zero-dimensional and empty must handle this behavior in
+    // their derived implementation of DoIsEmpty. Note that the check here is
+    // required, to ensure AddPointInSetConstraints is not called for a zero
+    // dimensional set -- this would throw an error.
+  }
   solvers::MathematicalProgram prog;
   auto point = prog.NewContinuousVariables(ambient_dimension());
   AddPointInSetConstraints(&prog, point);
@@ -54,6 +62,20 @@ bool ConvexSet::DoIsEmpty() const {
 
 std::optional<Eigen::VectorXd> ConvexSet::DoMaybeGetPoint() const {
   return std::nullopt;
+}
+
+std::optional<Eigen::VectorXd> ConvexSet::DoMaybeGetFeasiblePoint() const {
+  DRAKE_DEMAND(ambient_dimension() > 0);
+  solvers::MathematicalProgram prog;
+  auto point = prog.NewContinuousVariables(ambient_dimension());
+  AddPointInSetConstraints(&prog, point);
+  auto result = solvers::Solve(prog);
+  auto status = result.get_solution_result();
+  if (status == solvers::SolutionResult::kSolutionFound) {
+    return result.GetSolution(point);
+  } else {
+    return std::nullopt;
+  }
 }
 
 std::pair<VectorX<symbolic::Variable>,
@@ -98,6 +120,21 @@ ConvexSet::AddPointInNonnegativeScalingConstraints(
   constraints.emplace_back(prog->AddLinearConstraint(
       c.transpose(), -d, std::numeric_limits<double>::infinity(), t));
   return constraints;
+}
+
+std::optional<symbolic::Variable>
+ConvexSet::HandleZeroAmbientDimensionConstraints(
+    solvers::MathematicalProgram* prog, const ConvexSet& set,
+    std::vector<solvers::Binding<solvers::Constraint>>* constraints) const {
+  if (set.IsEmpty()) {
+    drake::log()->warn(
+        "A constituent set is empty, making the MathematicalProgram trivially"
+        " infeasible.");
+    solvers::VectorXDecisionVariable new_vars = prog->NewContinuousVariables(1);
+    constraints->push_back(prog->AddBoundingBoxConstraint(1, -1, new_vars[0]));
+    return new_vars[0];
+  }
+  return std::nullopt;
 }
 
 }  // namespace optimization
