@@ -5,6 +5,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -400,8 +401,13 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   const SystemBase& GetRootSystemBase() const final;
 
   // Returns true if there might be direct feedthrough from the given
-  // @p input_port of the Diagram to the given @p output_port of the Diagram.
-  bool DiagramHasDirectFeedthrough(int input_port, int output_port) const;
+  // `input_port` of the Diagram to the given `output_port` of the Diagram.
+  // The `memoize` dictionary caches the subsystem's reported feedthrough,
+  // to accelerate repeated calls to this function.
+  bool DiagramHasDirectFeedthrough(
+      int input_port, int output_port,
+      std::unordered_map<const System<T>*, std::multimap<int, int>>* memoize)
+      const;
 
   // Allocates a collection of homogeneous events (e.g., publish events) for
   // this Diagram.
