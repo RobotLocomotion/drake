@@ -102,6 +102,8 @@ class VPolytope final : public ConvexSet {
 
   std::optional<Eigen::VectorXd> DoMaybeGetPoint() const final;
 
+  std::optional<Eigen::VectorXd> DoMaybeGetFeasiblePoint() const final;
+
   bool DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
                     double tol) const final;
 
