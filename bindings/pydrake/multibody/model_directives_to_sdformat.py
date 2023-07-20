@@ -617,9 +617,7 @@ def _generate_world(sdf_filename: Path):
     )
     include_elem = ET.SubElement(root_world_elem, "include", merge="true")
     uri_elem = ET.SubElement(include_elem, "uri")
-    uri_elem.text = (
-        "package://" + sdf_filename.parent.name + "/" + sdf_filename.name
-    )
+    uri_elem.text = f"package://{sdf_filename.parent.name}/{sdf_filename.name}"
     world_tree = ET.ElementTree(world_root)
     world_tree = world_tree.getroot()
     xmlstr = minidom.parseString(ET.tostring(world_tree)).toprettyxml(
