@@ -186,7 +186,7 @@ float GetSpotExposure(Light light, vec3 dir_FL_W, vec3 nhat_W) {
   // illuminated. Alternatively, no light if cos(θ) < cos(θₗ).
   float cos_theta = max(dot(dir_FL_W, -dir_L_W), 0.0);
   if (cos_theta < light.cos_half_angle) {
-      return 0;
+      return 0.0;
   }
   return GetPointExposure(light, dir_FL_W, nhat_W);
 }
