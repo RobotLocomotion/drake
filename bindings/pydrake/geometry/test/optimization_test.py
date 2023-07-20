@@ -531,7 +531,7 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertIsNone(options.max_rounded_paths)
         options.convex_relaxation = True
         options.preprocessing = False
-        options.max_rounded_paths = 2
+        options.max_rounded_paths = 0
         options.max_rounding_trials = 5
         options.flow_tolerance = 1e-6
         options.rounding_seed = 1
