@@ -1986,7 +1986,7 @@ GTEST_TEST(ShortestPathTest, Figure9) {
 GTEST_TEST(ShortestPathTest, Graphviz) {
   GraphOfConvexSets g;
   auto source = g.AddVertex(Point(Vector2d{1.0, 2.}), "source");
-  auto target = g.AddVertex(Point(Vector1d{1e-6}), "target");
+  auto target = g.AddVertex(Point(Vector1d{1e-5}), "target");
   g.AddEdge(*source, *target, "edge");
 
   GraphOfConvexSetsOptions options;
@@ -2011,7 +2011,7 @@ GTEST_TEST(ShortestPathTest, Graphviz) {
   EXPECT_THAT(g.GetGraphvizString(result, false, 2, false),
               AllOf(HasSubstr("x = [1.00 2.00]"), HasSubstr("x = [0.00]")));
   EXPECT_THAT(g.GetGraphvizString(result, false, 2, true),
-              AllOf(HasSubstr("x = [1 2]"), HasSubstr("x = [1e-06]")));
+              AllOf(HasSubstr("x = [1 2]"), HasSubstr("x = [1e-05]")));
 }
 
 }  // namespace optimization
