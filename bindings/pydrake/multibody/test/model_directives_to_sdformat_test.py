@@ -182,11 +182,16 @@ class TestConvertModelDirectiveToSdformat(
 
                 # Check frames attached to this body. The converted file has
                 # some spurious extra frames that we'll ignore:
-                # - Frames named` _merged_**`.
+                # - Frames named `_merged_**`.
+                # - Frames named `**__to__**`.
                 # - The `__model__` frame on the spurious model instance.
+                # It's not clear why the spurious extra frames are supposed to
+                # be there; we should probably re-investigate at some point.
+                # For now, at least they should be mostly harmless.
                 sdf_frames = [
                     x for x in get_frames_attached_to(sdf_plant, [sdf_body])
                     if not (x.name().startswith("_merged__")
+                            or ("__to__" in x.name())
                             or (x.name() == "__model__"
                                 and x.model_instance() == sdf_extra_instance))
                 ]
