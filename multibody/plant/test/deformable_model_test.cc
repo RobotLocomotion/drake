@@ -10,6 +10,7 @@ namespace multibody {
 namespace internal {
 namespace {
 
+using Eigen::Vector3d;
 using geometry::GeometryInstance;
 using geometry::SceneGraph;
 using geometry::SceneGraphInspector;
@@ -255,6 +256,68 @@ TEST_F(DeformableModelTest, VertexPositionsOutputPort) {
    this case should be the reference positions. */
   EXPECT_EQ(configurations.value(geometry_id),
             deformable_model_ptr_->GetReferencePositions(body_id));
+}
+
+TEST_F(DeformableModelTest, AddFixedConstraint) {
+  /* Register a deformable sphere with radius 1.0 and a large resolution hint so
+   that it is discretized as an octahedron. */
+  DeformableBodyId deformable_id = RegisterSphere(100);
+  ASSERT_EQ(deformable_model_ptr_->GetFemModel(deformable_id).num_nodes(), 7);
+  const Body<double>& rigid_body =
+      plant_->AddRigidBody("box", SpatialInertia<double>());
+  geometry::Box box(0.5, 0.5, 0.5);
+  const RigidTransformd X_WB(Vector3d(2, 0, 0));
+  const RigidTransformd X_BG(Vector3d(-1, 0, 0));
+  const MultibodyConstraintId constraint_id =
+      deformable_model_ptr_->AddFixedConstraint(deformable_id, rigid_body, X_WB,
+                                                box, X_BG);
+
+  EXPECT_TRUE(deformable_model_ptr_->HasConstraint(deformable_id));
+  EXPECT_EQ(
+      deformable_model_ptr_->fixed_constraint_ids(deformable_id).size(),
+      1);
+  const DeformableRigidFixedConstraintSpec& spec =
+      deformable_model_ptr_->fixed_constraint_spec(constraint_id);
+  EXPECT_EQ(spec.body_A, deformable_id);
+  EXPECT_EQ(spec.body_B, rigid_body.index());
+  /* Only the deformable body vertex with world position (1, 0, 0) is under
+   constraint. */
+  ASSERT_EQ(spec.vertices.size(), 1);
+  const int vertex_index = spec.vertices[0];
+  const Vector3d p_WPi =
+      deformable_model_ptr_->GetReferencePositions(deformable_id)
+          .segment<3>(3 * vertex_index);
+  EXPECT_EQ(p_WPi, Vector3d(1, 0, 0));
+
+  ASSERT_EQ(spec.p_BQs.size(), 1);
+  const Vector3d p_BQi = spec.p_BQs[0];
+  const Vector3d p_WQi = X_WB * p_BQi;
+  EXPECT_EQ(p_WPi, p_WQi);
+
+  /* Throw conditions */
+  /* Non-existant deformable body. */
+  DeformableBodyId fake_deformable_id = DeformableBodyId::get_new_id();
+  EXPECT_THROW(deformable_model_ptr_->AddFixedConstraint(
+                   fake_deformable_id, rigid_body, X_WB, box, X_BG),
+               std::exception);
+  /* Non-existant rigid body (registered with a different MbP). */
+  MultibodyPlant<double> other_plant(0.0);
+  const Body<double>& wrong_rigid_body =
+      other_plant.AddRigidBody("wrong body", SpatialInertia<double>());
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      deformable_model_ptr_->AddFixedConstraint(deformable_id, wrong_rigid_body,
+                                                X_WB, box, X_BG),
+      ".*rigid body.*not registered.*");
+  /* Unsupported shape. */
+  const geometry::Mesh mesh("fake_mesh.vtk");
+  EXPECT_THROW(deformable_model_ptr_->AddFixedConstraint(
+                   deformable_id, rigid_body, X_WB, mesh, X_BG),
+               std::exception);
+  /* Adding constraint after finalize. */
+  plant_->Finalize();
+  EXPECT_THROW(deformable_model_ptr_->AddFixedConstraint(
+                   deformable_id, rigid_body, X_WB, box, X_BG),
+               std::exception);
 }
 
 }  // namespace
