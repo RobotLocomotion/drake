@@ -33,6 +33,7 @@ drake_cc_package_library(
 drake_cc_library(
     name = "convex_set",
     srcs = [
+        "affine_subspace.cc",
         "cartesian_product.cc",
         "convex_set.cc",
         "hpolyhedron.cc",
@@ -44,6 +45,7 @@ drake_cc_library(
         "vpolytope.cc",
     ],
     hdrs = [
+        "affine_subspace.h",
         "cartesian_product.h",
         "convex_set.h",
         "hpolyhedron.h",
@@ -211,6 +213,16 @@ drake_cc_library(
         "//solvers:mathematical_program",
         "//solvers:solve",
         "@gtest//:without_main",
+    ],
+)
+
+drake_cc_googletest(
+    name = "affine_subspace_test",
+    deps = [
+        ":convex_set",
+        ":test_utilities",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/yaml",
     ],
 )
 

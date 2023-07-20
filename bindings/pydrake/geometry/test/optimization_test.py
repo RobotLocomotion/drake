@@ -2,6 +2,7 @@ import pydrake.geometry.optimization as mut
 
 import os.path
 import unittest
+import copy
 
 import numpy as np
 
@@ -55,6 +56,34 @@ class TestGeometryOptimization(unittest.TestCase):
 
         # TODO(SeanCurtis-TRI): This doesn't test the constructor that
         # builds from shape.
+
+    def test_affine_subspace(self):
+        dut = mut.AffineSubspace()
+
+        self.assertEqual(dut.basis().shape[0], 0)
+        self.assertEqual(dut.basis().shape[1], 0)
+        self.assertEqual(dut.translation().shape[0], 0)
+        self.assertEqual(dut.ambient_dimension(), 0)
+        self.assertFalse(dut.IsEmpty())
+        self.assertTrue(dut.IsBounded())
+        self.assertTrue(dut.PointInSet(dut.MaybeGetFeasiblePoint()))
+        self.assertTrue(dut.IntersectsWith(dut))
+
+        basis = np.array([[1, 0, 0], [0, 1, 0]]).T
+        translation = np.array([0, 0, 1])
+        dut = mut.AffineSubspace(basis=basis, translation=translation)
+
+        self.assertEqual(dut.basis().shape[0], 3)
+        self.assertEqual(dut.basis().shape[1], 2)
+        self.assertEqual(dut.translation().shape[0], 3)
+        self.assertEqual(dut.ambient_dimension(), 3)
+        self.assertFalse(dut.IsEmpty())
+        self.assertFalse(dut.IsBounded())
+        self.assertTrue(dut.PointInSet(dut.MaybeGetFeasiblePoint()))
+        self.assertTrue(dut.IntersectsWith(dut))
+
+        self.assertIsNot(dut.Clone(), dut)
+        self.assertIsNot(copy.deepcopy(dut), dut)
 
     def test_h_polyhedron(self):
         mut.HPolyhedron()
