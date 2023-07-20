@@ -498,7 +498,7 @@ def _convert_one_dmd(*, dmd_filename: Path):
     filenames.
     """
     # Check that the file is a .dmd.yaml file.
-    if not dmd_filename.name.endswith('.dmd.yaml'):
+    if not dmd_filename.name.endswith(".dmd.yaml"):
         raise _ConversionError(
             "Unable to determine file format. Make sure the provided file has "
             "the drake model directives '.dmd.yaml' extension"
