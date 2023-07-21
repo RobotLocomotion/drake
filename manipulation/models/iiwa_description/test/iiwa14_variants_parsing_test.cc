@@ -43,6 +43,17 @@ void CompareActuatorLimits(const multibody::JointActuator<double>& joint_a,
   EXPECT_EQ(joint_a.default_rotor_inertia(), joint_b.default_rotor_inertia());
 }
 
+// Compare rotational inertias i.e moments and products of inertia
+void CompareRotationalInertias(const multibody::Body<double>& canonical_body,
+                               const multibody::Body<double>& robot_body) {
+  EXPECT_TRUE(
+      CompareMatrices(canonical_body.default_rotational_inertia().get_moments(),
+                      robot_body.default_rotational_inertia().get_moments()));
+  EXPECT_TRUE(CompareMatrices(
+      canonical_body.default_rotational_inertia().get_products(),
+      robot_body.default_rotational_inertia().get_products()));
+}
+
 // Tests that KUKA LBR iiwa14 models have consistent joint limits.
 // It takes iiwa14_no_collisions.sdf as the canonical model.
 // It assumes all joints are declared in the same order.
@@ -139,6 +150,73 @@ GTEST_TEST(JointLimitsIiwa14, TestEffortVelocityPositionValuesPlanarModel) {
           drake::multibody::JointActuatorIndex(5)),
       plant.get_joint_actuator(drake::multibody::JointActuatorIndex(2)));
 }
+
+// Tests that KUKA LBR iiwa14 models have consistent inertias.
+// It takes iiwa14_no_collisions.sdf as the canonical model.
+// It assumes all links are declared in the same order.
+// It checks values directly on urdf files, generated from xacro.
+GTEST_TEST(InertiasIiwa14, TestInertiaValues) {
+  multibody::MultibodyPlant<double> canonical_plant(0.0);
+  multibody::ModelInstanceIndex canonical_model_instance =
+      LoadIiwa14CanonicalModel(&canonical_plant);
+  canonical_plant.Finalize();
+
+  const std::vector<multibody::BodyIndex> body_canonical_indices =
+      canonical_plant.GetBodyIndices(canonical_model_instance);
+
+  const std::vector<std::string> model_files = {
+      "drake/manipulation/models/iiwa_description/sdf/"
+      "iiwa14_polytope_collision.sdf",
+      "drake/manipulation/models/iiwa_description/urdf/"
+      "iiwa14_no_collision.urdf",
+      "drake/manipulation/models/iiwa_description/urdf/"
+      "iiwa14_polytope_collision.urdf",
+      "drake/manipulation/models/iiwa_description/urdf/"
+      "iiwa14_primitive_collision.urdf",
+      "drake/manipulation/models/iiwa_description/urdf/"
+      "iiwa14_spheres_collision.urdf",
+      "drake/manipulation/models/iiwa_description/urdf/"
+      "iiwa14_spheres_dense_collision.urdf",
+      "drake/manipulation/models/iiwa_description/urdf/"
+      "iiwa14_spheres_dense_elbow_collision.urdf",
+      "drake/manipulation/models/iiwa_description/urdf/"
+      "planar_iiwa14_spheres_dense_elbow_collision.urdf",
+      "drake/manipulation/models/iiwa_description/urdf/"
+      "dual_iiwa14_polytope_collision.urdf"};
+
+  std::vector<std::string> link_names = {
+      "iiwa_link_0", "iiwa_link_1", "iiwa_link_2", "iiwa_link_3",
+      "iiwa_link_4", "iiwa_link_5", "iiwa_link_6", "iiwa_link_7"};
+
+  for (auto& model_file : model_files) {
+    multibody::MultibodyPlant<double> plant(0.0);
+    multibody::Parser parser(&plant);
+    parser.AddModels(FindResourceOrThrow(model_file));
+    plant.Finalize();
+    if (model_file.substr(model_file.find_last_of('/') + 1) ==
+        "dual_iiwa14_polytope_collision.urdf") {
+      for (size_t i = 0; i < link_names.size(); ++i) {
+        const multibody::Body<double>& canonical_body =
+            canonical_plant.GetBodyByName(link_names[i]);
+        const multibody::Body<double>& left_robot_body =
+            plant.GetBodyByName("left_" + link_names[i]);
+        const multibody::Body<double>& right_robot_body =
+            plant.GetBodyByName("right_" + link_names[i]);
+        CompareRotationalInertias(canonical_body, left_robot_body);
+        CompareRotationalInertias(canonical_body, right_robot_body);
+      }
+    } else {
+      for (size_t i = 0; i < link_names.size(); ++i) {
+        const multibody::Body<double>& canonical_body =
+            canonical_plant.GetBodyByName(link_names[i]);
+        const multibody::Body<double>& robot_body =
+            plant.GetBodyByName(link_names[i]);
+        CompareRotationalInertias(canonical_body, robot_body);
+      }
+    }
+  }
+}
+
 }  // namespace
 }  // namespace manipulation
 }  // namespace drake
