@@ -3,15 +3,15 @@
   <model name="iiwa7">
     <link name="iiwa_link_0">
       <inertial>
-        <pose>-0.013 0 0.07 0 0 0</pose>
+        <pose>0 0 0 0 0 0</pose>
         <mass>3.863</mass>
         <inertia>
-          <ixx>0.0141</ixx>
-          <ixy>0</ixy>
-          <ixz>0</ixz>
-          <iyy>0.0171</iyy>
-          <iyz>0</iyz>
-          <izz>0.0178</izz>
+          <ixx>0.04585271544341567</ixx>
+          <ixy>0.0</ixy>
+          <ixz>0.00138811593375</ixz>
+          <iyy>0.04716374798966268</iyy>
+          <iyz>0.0</iyz>
+          <izz>0.029132100933078334</izz>
         </inertia>
       </inertial>
       <visual name="iiwa_link_0_visual">
@@ -37,15 +37,15 @@
     <link name="iiwa_link_1">
       <pose>0 0 0.1575 0 0 0</pose>
       <inertial>
-        <pose>0 -0.0347 0.113 0 0 0</pose>
+        <pose>0 0 0 0 0 0</pose>
         <mass>2.7025</mass>
         <inertia>
-          <ixx>0.0171</ixx>
-          <ixy>0</ixy>
-          <ixz>0</ixz>
-          <iyy>0.0163</iyy>
-          <iyz>0</iyz>
-          <izz>0.006</izz>
+          <ixx>0.06859155128405856</ixx>
+          <ixy>0.0</ixy>
+          <ixz>0.0</ixz>
+          <iyy>0.0637795170182027</iyy>
+          <iyz>0.008060093007142501</iyz>
+          <izz>0.01313804111985583</izz>
         </inertia>
       </inertial>
       <visual name="iiwa_link_1_visual">
@@ -90,15 +90,15 @@
     <link name="iiwa_link_2">
       <pose>0 0 0.3405 1.5708 0 -3.14159</pose>
       <inertial>
-        <pose>0.000 0.0668 0.0344 0 0 0</pose>
+        <pose>0 0 0 0 0 0</pose>
         <mass>2.7258</mass>
         <inertia>
-          <ixx>0.0170</ixx>
-          <ixy>0</ixy>
-          <ixz>0</ixz>
-          <iyy>0.0162</iyy>
-          <iyz>0</iyz>
-          <izz>0.0061</izz>
+          <ixx>0.03198527491414641</ixx>
+          <ixy>-5.265571630582003e-24</ixy>
+          <ixz>-2.353755974819493e-24</ixz>
+          <iyy>0.012590982540459395</iyy>
+          <iyz>-0.002735833303861348</iyz>
+          <izz>0.027795542403906224</izz>
         </inertia>
       </inertial>
       <visual name="iiwa_link_2_visual">
@@ -143,15 +143,15 @@
     <link name="iiwa_link_3">
       <pose>0 0 0.5245 0 0 0</pose>
       <inertial>
-        <pose>0 0.0296 0.1265 0 0 0</pose>
+        <pose>0 0 0 0 0 0</pose>
         <mass>3.175</mass>
         <inertia>
-          <ixx>0.025</ixx>
-          <ixy>0</ixy>
-          <ixz>0</ixz>
-          <iyy>0.0238</iyy>
-          <iyz>0</iyz>
-          <izz>0.0076</izz>
+          <ixx>0.07159881989685833</ixx>
+          <ixy>0.0</ixy>
+          <ixz>0.0</ixz>
+          <iyy>0.06660748642138124</iyy>
+          <iyz>-0.006432459337874999</iyz>
+          <izz>0.014776929098239583</izz>
         </inertia>
       </inertial>
       <visual name="iiwa_link_3_visual">
@@ -196,15 +196,15 @@
     <link name="iiwa_link_4">
       <pose>0 0 0.74 1.5708 0 0</pose>
       <inertial>
-        <pose>0 0.067 0.034 0 0 0</pose>
+        <pose>0 0 0 0 0 0</pose>
         <mass>2.73</mass>
         <inertia>
-          <ixx>0.017</ixx>
-          <ixy>0</ixy>
-          <ixz>0</ixz>
-          <iyy>0.0162</iyy>
-          <iyz>0</iyz>
-          <izz>0.0061</izz>
+          <ixx>0.032699701510840055</ixx>
+          <ixy>0.0</ixy>
+          <ixz>0.0</ixz>
+          <iyy>0.013275525789889985</iyy>
+          <iyz>-0.003690162473497496</iyz>
+          <izz>0.02783837066647007</izz>
         </inertia>
       </inertial>
       <visual name="iiwa_link_4_visual">
@@ -249,15 +249,15 @@
     <link name="iiwa_link_5">
       <pose>0 0 0.924 0 0 -3.14159</pose>
       <inertial>
-        <pose>0.0001 0.021 0.076 0 0 0</pose>
+        <pose>0 0 0 0 0 0</pose>
         <mass>1.69</mass>
         <inertia>
-          <ixx>0.01</ixx>
-          <ixy>0</ixy>
-          <ixz>0</ixz>
-          <iyy>0.0087</iyy>
-          <iyz>0</iyz>
-          <izz>0.00449</izz>
+          <ixx>0.0328809281562667</ixx>
+          <ixy>0.0</ixy>
+          <ixz>0.0</ixz>
+          <iyy>0.03114527761502087</iyy>
+          <iyz>-0.0026918523949200027</iyz>
+          <izz>0.006945280594860832</izz>
         </inertia>
       </inertial>
       <visual name="iiwa_link_5_visual">
@@ -302,15 +302,15 @@
     <link name="iiwa_link_6">
       <pose>0 0 1.1395 1.5708 0 -3.14159</pose>
       <inertial>
-        <pose>0 0.0026 0.0005 0 0 0</pose>
+        <pose>0 0 0 0 0 0</pose>
         <mass>1.8</mass>
         <inertia>
-          <ixx>0.0051</ixx>
-          <ixy>0</ixy>
-          <ixz>0</ixz>
-          <iyy>0.0049</iyy>
-          <iyz>0</iyz>
-          <izz>0.0035</izz>
+          <ixx>0.007552107157500001</ixx>
+          <ixy>-4.432267253171966e-25</ixy>
+          <ixz>-8.696565990584465e-26</ixz>
+          <iyy>0.005459028125550001</iyy>
+          <iyz>1.0306475726431965e-46</iyz>
+          <izz>0.0073467652987499995</izz>
         </inertia>
       </inertial>
       <visual name="iiwa_link_6_visual">
@@ -355,15 +355,15 @@
     <link name="iiwa_link_7">
       <pose>0 0 1.22 0 0 0</pose>
       <inertial>
-        <pose>0 0 0.0294 0 0 0</pose>
-        <mass>.4</mass>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>0.4</mass>
         <inertia>
-          <ixx>0.0004</ixx>
-          <ixy>0</ixy>
-          <ixz>0</ixz>
-          <iyy>0.0004</iyy>
-          <iyz>0</iyz>
-          <izz>0.0005</izz>
+          <ixx>0.0006207836444333333</ixx>
+          <ixy>0.0</ixy>
+          <ixz>0.0</ixz>
+          <iyy>0.0006205412869333333</iyy>
+          <iyz>0.0</iyz>
+          <izz>0.0007192305241666666</izz>
         </inertia>
       </inertial>
       <visual name="iiwa_link_7_visual">
