@@ -64,7 +64,7 @@ py_binary(
     deps = [
         "//bindings/pydrake",
         "@gym_py",
-        "@stable_baselines3_internal//:stable_baselines3",
+        # "@stable_baselines3_internal//:stable_baselines3",
     ],
 )
 
