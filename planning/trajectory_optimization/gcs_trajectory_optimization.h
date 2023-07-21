@@ -401,8 +401,8 @@ class GcsTrajectoryOptimization final {
 
   // Adds a Edge to gcs_ with the name "{u.name} -> {v.name}".
   geometry::optimization::GraphOfConvexSets::Edge* AddEdge(
-      const geometry::optimization::GraphOfConvexSets::Vertex& u,
-      const geometry::optimization::GraphOfConvexSets::Vertex& v);
+      geometry::optimization::GraphOfConvexSets::Vertex* u,
+      geometry::optimization::GraphOfConvexSets::Vertex* v);
 
   geometry::optimization::GraphOfConvexSets gcs_;
 

@@ -110,31 +110,7 @@ GTEST_TEST(GraphOfConvexSetsTest, AddEdge) {
   Point pv(Vector2d(4., 5.));
   Vertex* u = g.AddVertex(pu, "u");
   Vertex* v = g.AddVertex(pv, "v");
-  Edge* e = g.AddEdge(u->id(), v->id(), "e");
-
-  EXPECT_EQ(e->u().name(), u->name());
-  EXPECT_EQ(e->v().name(), v->name());
-
-  EXPECT_EQ(Variables(e->xu()), Variables(u->x()));
-  EXPECT_EQ(Variables(e->xv()), Variables(v->x()));
-
-  auto edges = g.Edges();
-  EXPECT_EQ(edges.size(), 1);
-  EXPECT_EQ(edges.at(0), e);
-
-  const GraphOfConvexSets* const_g = &g;
-  const auto const_edges = const_g->Edges();
-  EXPECT_EQ(const_edges.size(), 1);
-  EXPECT_EQ(const_edges.at(0), e);
-}
-
-GTEST_TEST(GraphOfConvexSetsTest, AddEdge2) {
-  GraphOfConvexSets g;
-  Point pu(Vector3d(1.0, 2.0, 3.0));
-  Point pv(Vector2d(4., 5.));
-  Vertex* u = g.AddVertex(pu, "u");
-  Vertex* v = g.AddVertex(pv, "v");
-  Edge* e = g.AddEdge(*u, *v, "e");
+  Edge* e = g.AddEdge(u, v, "e");
 
   EXPECT_EQ(e->u().name(), u->name());
   EXPECT_EQ(e->v().name(), v->name());
@@ -149,8 +125,8 @@ GTEST_TEST(GraphOfConvexSetsTest, RemoveEdge) {
   Point pv(Vector2d(4., 5.));
   Vertex* u = g.AddVertex(pu, "u");
   Vertex* v = g.AddVertex(pv, "v");
-  Edge* e1 = g.AddEdge(*u, *v, "e1");
-  Edge* e2 = g.AddEdge(*v, *u, "e2");
+  Edge* e1 = g.AddEdge(u, v, "e1");
+  Edge* e2 = g.AddEdge(v, u, "e2");
 
   EXPECT_EQ(g.Edges().size(), 2);
 
@@ -163,7 +139,7 @@ GTEST_TEST(GraphOfConvexSetsTest, RemoveEdge) {
   EXPECT_EQ(v->outgoing_edges().size(), 1);
   EXPECT_EQ(v->outgoing_edges()[0], e2);
 
-  g.RemoveEdge(e1->id());
+  g.RemoveEdge(e1);
   auto edges = g.Edges();
   EXPECT_EQ(edges.size(), 1);
   EXPECT_EQ(edges.at(0), e2);
@@ -174,7 +150,7 @@ GTEST_TEST(GraphOfConvexSetsTest, RemoveEdge) {
   EXPECT_EQ(v->outgoing_edges().size(), 1);
   EXPECT_EQ(v->outgoing_edges()[0], e2);
 
-  g.RemoveEdge(*e2);
+  g.RemoveEdge(e2);
   EXPECT_EQ(g.Edges().size(), 0);
   EXPECT_EQ(u->incoming_edges().size(), 0);
   EXPECT_EQ(u->outgoing_edges().size(), 0);
@@ -187,20 +163,20 @@ GTEST_TEST(GraphOfConvexSetsTest, RemoveVertex) {
   Vertex* v1 = g.AddVertex(Point(Vector2d(3., 5.)));
   Vertex* v2 = g.AddVertex(Point(Vector2d(-2., 4.)));
   Vertex* v3 = g.AddVertex(Point(Vector2d(5., -2.3)));
-  Edge* e1 = g.AddEdge(*v1, *v2);
-  g.AddEdge(*v1, *v3);
-  g.AddEdge(*v3, *v1);
+  Edge* e1 = g.AddEdge(v1, v2);
+  g.AddEdge(v1, v3);
+  g.AddEdge(v3, v1);
 
   EXPECT_EQ(g.Vertices().size(), 3);
   EXPECT_EQ(g.Edges().size(), 3);
 
-  g.RemoveVertex(v3->id());
+  g.RemoveVertex(v3);
   EXPECT_EQ(g.Vertices().size(), 2);
   auto edges = g.Edges();
   EXPECT_EQ(edges.size(), 1);
   EXPECT_EQ(edges.at(0), e1);
 
-  g.RemoveVertex(*v2);
+  g.RemoveVertex(v2);
   auto vertices = g.Vertices();
   EXPECT_EQ(vertices.size(), 1);
   EXPECT_EQ(vertices.at(0), v1);
@@ -217,7 +193,7 @@ class TwoPoints : public ::testing::Test {
   TwoPoints() : pu_{Vector2d(1., 2.)}, pv_{Vector3d(3., 4., 5.)} {
     u_ = g_.AddVertex(pu_, "u");
     v_ = g_.AddVertex(pv_, "v");
-    e_ = g_.AddEdge(*u_, *v_, "e");
+    e_ = g_.AddEdge(u_, v_, "e");
   }
 
   GraphOfConvexSets g_{};
@@ -332,7 +308,7 @@ GTEST_TEST(GraphOfConvexSetsTest, TwoNullPointsConstraint) {
   Point pv(Eigen::VectorXd::Zero(0));
   Vertex* u = g.AddVertex(pu, "u");
   Vertex* v = g.AddVertex(pv, "v");
-  Edge* e = g.AddEdge(u->id(), v->id(), "e");
+  Edge* e = g.AddEdge(u, v, "e");
   DRAKE_EXPECT_THROWS_MESSAGE(e->AddConstraint(symbolic::Formula::True()),
                               ".*total.*ambient.*dimension.*");
 }
@@ -357,8 +333,8 @@ class ThreePoints : public ::testing::Test {
     source_ = g_.AddVertex(p_source_);
     target_ = g_.AddVertex(p_target_);
     sink_ = g_.AddVertex(p_sink_);
-    e_on_ = g_.AddEdge(*source_, *target_);
-    e_off_ = g_.AddEdge(*source_, *sink_);
+    e_on_ = g_.AddEdge(source_, target_);
+    e_off_ = g_.AddEdge(source_, sink_);
 
     subs_on_off_.emplace(e_on_->xv()[0], e_off_->xv()[0]);
     subs_on_off_.emplace(e_on_->xv()[1], e_off_->xv()[1]);
@@ -431,7 +407,7 @@ TEST_F(ThreePoints, LinearCost1) {
   e_on_->AddCost(1.0);
   e_off_->AddCost(1.0);
   source_->AddCost(1.0);
-  auto result = g_.SolveShortestPath(source_->id(), target_->id(), options_);
+  auto result = g_.SolveShortestPath(*source_, *target_, options_);
   ASSERT_TRUE(result.is_success());
   EXPECT_NEAR(e_on_->GetSolutionCost(result), 1.0, 1e-6);
   EXPECT_NEAR(e_off_->GetSolutionCost(result), 0.0, 1e-6);
@@ -448,15 +424,6 @@ TEST_F(ThreePoints, LinearCost1) {
   EXPECT_TRUE(
       CompareMatrices(e_off_->GetSolutionPhiXv(result), 0 * p_sink_.x(), 1e-6));
   CheckConvexRestriction(result);
-
-  // Alternative signatures.
-  auto result2 = g_.SolveShortestPath(*source_, *target_, options_);
-  ASSERT_TRUE(result2.is_success());
-  EXPECT_NEAR(e_on_->GetSolutionCost(result2), 1.0, 1e-6);
-  EXPECT_NEAR(e_off_->GetSolutionCost(result2), 0.0, 1e-6);
-  EXPECT_NEAR(source_->GetSolutionCost(result2), 1.0, 1e-6);
-  EXPECT_NEAR(target_->GetSolutionCost(result2), 0.0, 1e-6);
-  EXPECT_NEAR(sink_->GetSolutionCost(result2), 0.0, 1e-6);
 
   options_.solver_options = SolverOptions();
   auto result4 = g_.SolveShortestPath(*source_, *target_, options_);
@@ -948,8 +915,8 @@ class ThreeBoxes : public ::testing::Test {
     source_ = g_.AddVertex(box, "source");
     target_ = g_.AddVertex(box, "target");
     sink_ = g_.AddVertex(box, "sink");
-    e_on_ = g_.AddEdge(*source_, *target_);
-    e_off_ = g_.AddEdge(*source_, *sink_);
+    e_on_ = g_.AddEdge(source_, target_);
+    e_off_ = g_.AddEdge(source_, sink_);
 
     subs_on_off_.emplace(e_on_->xv()[0], e_off_->xv()[0]);
     subs_on_off_.emplace(e_on_->xv()[1], e_off_->xv()[1]);
@@ -1151,20 +1118,20 @@ GTEST_TEST(ShortestPathTest, ClassicalShortestPath) {
     v[i] = spp.AddVertex(Point(Vector1d{0.0}));
   }
 
-  Edge* v0_to_v1 = spp.AddEdge(*v[0], *v[1]);
+  Edge* v0_to_v1 = spp.AddEdge(v[0], v[1]);
   v0_to_v1->AddCost(3.0);
-  spp.AddEdge(*v[1], *v[0])->AddCost(1.0);
-  spp.AddEdge(*v[0], *v[2])->AddCost(4.0);
-  spp.AddEdge(*v[1], *v[2])->AddCost(1.0);
-  Edge* v0_to_v3 = spp.AddEdge(*v[0], *v[3]);
+  spp.AddEdge(v[1], v[0])->AddCost(1.0);
+  spp.AddEdge(v[0], v[2])->AddCost(4.0);
+  spp.AddEdge(v[1], v[2])->AddCost(1.0);
+  Edge* v0_to_v3 = spp.AddEdge(v[0], v[3]);
   v0_to_v3->AddCost(1.0);
-  Edge* v3_to_v2 = spp.AddEdge(*v[3], *v[2]);
+  Edge* v3_to_v2 = spp.AddEdge(v[3], v[2]);
   v3_to_v2->AddCost(1.0);
-  spp.AddEdge(*v[1], *v[4])
+  spp.AddEdge(v[1], v[4])
       ->AddCost(2.5);  // Updated from original to break symmetry.
-  Edge* v2_to_v4 = spp.AddEdge(*v[2], *v[4]);
+  Edge* v2_to_v4 = spp.AddEdge(v[2], v[4]);
   v2_to_v4->AddCost(3.0);
-  spp.AddEdge(*v[0], *v[4])->AddCost(6.0);
+  spp.AddEdge(v[0], v[4])->AddCost(6.0);
 
   GraphOfConvexSetsOptions options;
   options.convex_relaxation = true;
@@ -1204,8 +1171,8 @@ GTEST_TEST(ShortestPathTest, InfeasibleProblem) {
   Vertex* v2 = spp.AddVertex(Point(Vector1d(0.5)));
   Vertex* target = spp.AddVertex(Point(Vector1d(1)));
 
-  spp.AddEdge(*source, *v1);
-  spp.AddEdge(*v2, *target);
+  spp.AddEdge(source, v1);
+  spp.AddEdge(v2, target);
 
   GraphOfConvexSetsOptions options;
   options.convex_relaxation = true;
@@ -1250,30 +1217,30 @@ GTEST_TEST(ShortestPathTest, TwoStepLoopConstraint) {
   A.block(2, 0, 2, 2) = -Matrix2d::Identity();
   auto cost = std::make_shared<solvers::QuadraticCost>(A, Vector4d::Zero());
 
-  spp.AddEdge(*v[0], *v[1])
+  spp.AddEdge(v[0], v[1])
       ->AddCost(solvers::Binding(cost, {v[0]->x(), v[1]->x()}));
-  spp.AddEdge(*v[1], *v[0])
+  spp.AddEdge(v[1], v[0])
       ->AddCost(solvers::Binding(cost, {v[1]->x(), v[0]->x()}));
-  spp.AddEdge(*v[1], *v[2])
+  spp.AddEdge(v[1], v[2])
       ->AddCost(solvers::Binding(cost, {v[1]->x(), v[2]->x()}));
-  spp.AddEdge(*v[2], *v[1])
+  spp.AddEdge(v[2], v[1])
       ->AddCost(solvers::Binding(cost, {v[2]->x(), v[1]->x()}));
-  spp.AddEdge(*v[2], *v[5])
+  spp.AddEdge(v[2], v[5])
       ->AddCost(solvers::Binding(cost, {v[2]->x(), v[5]->x()}));
-  spp.AddEdge(*v[5], *v[2])
+  spp.AddEdge(v[5], v[2])
       ->AddCost(solvers::Binding(cost, {v[5]->x(), v[2]->x()}));
 
-  spp.AddEdge(*v[0], *v[3])
+  spp.AddEdge(v[0], v[3])
       ->AddCost(solvers::Binding(cost, {v[0]->x(), v[3]->x()}));
-  spp.AddEdge(*v[3], *v[0])
+  spp.AddEdge(v[3], v[0])
       ->AddCost(solvers::Binding(cost, {v[3]->x(), v[0]->x()}));
-  spp.AddEdge(*v[3], *v[4])
+  spp.AddEdge(v[3], v[4])
       ->AddCost(solvers::Binding(cost, {v[3]->x(), v[4]->x()}));
-  spp.AddEdge(*v[4], *v[3])
+  spp.AddEdge(v[4], v[3])
       ->AddCost(solvers::Binding(cost, {v[4]->x(), v[3]->x()}));
-  spp.AddEdge(*v[4], *v[5])
+  spp.AddEdge(v[4], v[5])
       ->AddCost(solvers::Binding(cost, {v[4]->x(), v[5]->x()}));
-  spp.AddEdge(*v[5], *v[4])
+  spp.AddEdge(v[5], v[4])
       ->AddCost(solvers::Binding(cost, {v[5]->x(), v[4]->x()}));
 
   GraphOfConvexSetsOptions options;
@@ -1308,10 +1275,10 @@ GTEST_TEST(ShortestPathTest, PhiConstraint) {
 
   auto v = spp.Vertices();
 
-  Edge* edge_01 = spp.AddEdge(*v[0], *v[1]);
-  Edge* edge_02 = spp.AddEdge(*v[0], *v[2]);
-  Edge* edge_13 = spp.AddEdge(*v[1], *v[3]);
-  Edge* edge_23 = spp.AddEdge(*v[2], *v[3]);
+  Edge* edge_01 = spp.AddEdge(v[0], v[1]);
+  Edge* edge_02 = spp.AddEdge(v[0], v[2]);
+  Edge* edge_13 = spp.AddEdge(v[1], v[3]);
+  Edge* edge_23 = spp.AddEdge(v[2], v[3]);
 
   // |xu - xv|₂
   Matrix<double, 4, 4> A = Matrix<double, 4, 4>::Identity();
@@ -1383,27 +1350,27 @@ GTEST_TEST(ShortestPathTest, PhiConstraint) {
 class PreprocessShortestPathTest : public ::testing::Test {
  protected:
   PreprocessShortestPathTest() {
-    vid_.reserve(7);
+    v_.reserve(7);
     for (int i = 0; i < 7; ++i) {
-      vid_[i] = g_.AddVertex(Point(Vector1d{1.0}))->id();
+      v_[i] = g_.AddVertex(Point(Vector1d{1.0}));
     }
 
     edges_.reserve(13);
-    edges_.push_back(g_.AddEdge(vid_[0], vid_[2]));
-    edges_.push_back(g_.AddEdge(vid_[2], vid_[3]));
-    edges_.push_back(g_.AddEdge(vid_[2], vid_[4]));
-    edges_.push_back(g_.AddEdge(vid_[3], vid_[4]));
-    edges_.push_back(g_.AddEdge(vid_[4], vid_[3]));
-    edges_.push_back(g_.AddEdge(vid_[3], vid_[5]));
-    edges_.push_back(g_.AddEdge(vid_[4], vid_[5]));
+    edges_.push_back(g_.AddEdge(v_[0], v_[2]));
+    edges_.push_back(g_.AddEdge(v_[2], v_[3]));
+    edges_.push_back(g_.AddEdge(v_[2], v_[4]));
+    edges_.push_back(g_.AddEdge(v_[3], v_[4]));
+    edges_.push_back(g_.AddEdge(v_[4], v_[3]));
+    edges_.push_back(g_.AddEdge(v_[3], v_[5]));
+    edges_.push_back(g_.AddEdge(v_[4], v_[5]));
     // Useless backtracking edges
-    edges_.push_back(g_.AddEdge(vid_[3], vid_[2]));
-    edges_.push_back(g_.AddEdge(vid_[5], vid_[4]));
+    edges_.push_back(g_.AddEdge(v_[3], v_[2]));
+    edges_.push_back(g_.AddEdge(v_[5], v_[4]));
     // Useless nodes off source and target
-    edges_.push_back(g_.AddEdge(vid_[0], vid_[1]));
-    edges_.push_back(g_.AddEdge(vid_[1], vid_[0]));
-    edges_.push_back(g_.AddEdge(vid_[5], vid_[6]));
-    edges_.push_back(g_.AddEdge(vid_[6], vid_[5]));
+    edges_.push_back(g_.AddEdge(v_[0], v_[1]));
+    edges_.push_back(g_.AddEdge(v_[1], v_[0]));
+    edges_.push_back(g_.AddEdge(v_[5], v_[6]));
+    edges_.push_back(g_.AddEdge(v_[6], v_[5]));
 
     for (Edge* e : edges_) {
       e->AddCost(1.0);
@@ -1421,13 +1388,14 @@ class PreprocessShortestPathTest : public ::testing::Test {
   }
 
   GraphOfConvexSets g_;
-  std::vector<VertexId> vid_;
+  std::vector<Vertex*> v_;
   std::vector<Edge*> edges_;
   GraphOfConvexSetsOptions options_;
 };
 
 TEST_F(PreprocessShortestPathTest, CheckEdges) {
-  std::set<EdgeId> removed_edges = PreprocessShortestPath(vid_[0], vid_[5]);
+  std::set<EdgeId> removed_edges =
+      PreprocessShortestPath(v_[0]->id(), v_[5]->id());
 
   for (size_t ii = 0; ii < edges_.size(); ii++) {
     if (ii < 7) {
@@ -1440,11 +1408,11 @@ TEST_F(PreprocessShortestPathTest, CheckEdges) {
 
 TEST_F(PreprocessShortestPathTest, CheckResults) {
   options_.preprocessing = false;
-  auto result1 = g_.SolveShortestPath(vid_[0], vid_[5], options_);
+  auto result1 = g_.SolveShortestPath(*v_[0], *v_[5], options_);
   ASSERT_TRUE(result1.is_success());
 
   options_.preprocessing = true;
-  auto result2 = g_.SolveShortestPath(vid_[0], vid_[5], options_);
+  auto result2 = g_.SolveShortestPath(*v_[0], *v_[5], options_);
   ASSERT_TRUE(result2.is_success());
 
   for (Edge* e : edges_) {
@@ -1476,7 +1444,7 @@ TEST_F(PreprocessShortestPathTest, DependsOnOptions) {
   // an exception is proof that the function relied on the options.
   solvers::LinearSystemSolver solver;
   options_.solver = &solver;
-  DRAKE_EXPECT_THROWS_MESSAGE(PreprocessShortestPath(vid_[0], vid_[5]),
+  DRAKE_EXPECT_THROWS_MESSAGE(PreprocessShortestPath(v_[0]->id(), v_[5]->id()),
                               ".*LinearSystemSolver is unable to solve.*");
 
   // TODO(SeanCurtis-TRI): Figure out a way to tell that SolveShortestPath
@@ -1509,22 +1477,22 @@ GTEST_TEST(ShortestPathTest, RoundedSolution) {
       spp.AddVertex(HPolyhedron::MakeBox(Vector2d(-2, 1), Vector2d(2, 2)));
 
   // Edges pointing towards target
-  spp.AddEdge(*source, *p1);
-  spp.AddEdge(*source, *p2);
-  spp.AddEdge(*p1, *p3);
-  spp.AddEdge(*p2, *p4);
-  spp.AddEdge(*p3, *target);
-  spp.AddEdge(*p4, *target);
+  spp.AddEdge(source, p1);
+  spp.AddEdge(source, p2);
+  spp.AddEdge(p1, p3);
+  spp.AddEdge(p2, p4);
+  spp.AddEdge(p3, target);
+  spp.AddEdge(p4, target);
 
   // Edges between parallel vertices
-  spp.AddEdge(*p1, *p2);
-  spp.AddEdge(*p2, *p1);
-  spp.AddEdge(*p3, *p4);
-  spp.AddEdge(*p4, *p3);
+  spp.AddEdge(p1, p2);
+  spp.AddEdge(p2, p1);
+  spp.AddEdge(p3, p4);
+  spp.AddEdge(p4, p3);
 
   // Edges pointing towards source
-  spp.AddEdge(*p3, *p1);
-  spp.AddEdge(*p4, *p2);
+  spp.AddEdge(p3, p1);
+  spp.AddEdge(p4, p2);
 
   // |xu - xv|₂
   Matrix<double, 2, 4> A;
@@ -1542,8 +1510,7 @@ GTEST_TEST(ShortestPathTest, RoundedSolution) {
   options.convex_relaxation = true;
   options.preprocessing = false;
   options.max_rounded_paths = 0;
-  auto relaxed_result =
-      spp.SolveShortestPath(source->id(), target->id(), options);
+  auto relaxed_result = spp.SolveShortestPath(*source, *target, options);
   ASSERT_TRUE(relaxed_result.is_success());
 
   // We do not expect to find a path in the solution with zero tolerance.
@@ -1556,8 +1523,7 @@ GTEST_TEST(ShortestPathTest, RoundedSolution) {
 
   options.preprocessing = true;
   options.max_rounded_paths = 10;
-  auto rounded_result =
-      spp.SolveShortestPath(source->id(), target->id(), options);
+  auto rounded_result = spp.SolveShortestPath(*source, *target, options);
   ASSERT_TRUE(rounded_result.is_success());
 
   EXPECT_LT(relaxed_result.get_optimal_cost(),
@@ -1590,7 +1556,7 @@ GTEST_TEST(ShortestPathTest, RoundedSolution) {
   options.convex_relaxation = false;
   options.preprocessing = false;
   options.max_rounded_paths = 0;
-  auto mip_result = spp.SolveShortestPath(source->id(), target->id(), options);
+  auto mip_result = spp.SolveShortestPath(*source, *target, options);
   EXPECT_NEAR(rounded_result.get_optimal_cost(), mip_result.get_optimal_cost(),
               2e-6);
 
@@ -1609,15 +1575,13 @@ GTEST_TEST(ShortestPathTest, RoundedSolution) {
     options.rounding_solver_options->SetOption(
         solvers::MosekSolver::id(), "MSK_IPAR_INTPNT_MAX_ITERATIONS", 0);
 
-    auto failed_result =
-        spp.SolveShortestPath(source->id(), target->id(), options);
+    auto failed_result = spp.SolveShortestPath(*source, *target, options);
     EXPECT_FALSE(failed_result.is_success());
 
     // Without the convex relaxation, the solver should ignore the
     // rounding_solver_options and succeed.
     options.convex_relaxation = false;
-    auto successful_result =
-        spp.SolveShortestPath(source->id(), target->id(), options);
+    auto successful_result = spp.SolveShortestPath(*source, *target, options);
     EXPECT_TRUE(successful_result.is_success());
   }
 }
@@ -1651,20 +1615,20 @@ GTEST_TEST(ShortestPathTest, RoundingBacktrack) {
   std::vector<Edge*> region_edges;
   std::vector<Edge*> target_edges;
 
-  source_edges.push_back(spp.AddEdge(*source, *v0));
-  source_edges.push_back(spp.AddEdge(*source, *v1));
+  source_edges.push_back(spp.AddEdge(source, v0));
+  source_edges.push_back(spp.AddEdge(source, v1));
 
-  region_edges.push_back(spp.AddEdge(*v0, *v1));
-  region_edges.push_back(spp.AddEdge(*v1, *v0));
-  region_edges.push_back(spp.AddEdge(*v0, *v2));
-  region_edges.push_back(spp.AddEdge(*v2, *v0));
-  region_edges.push_back(spp.AddEdge(*v1, *v3));
-  region_edges.push_back(spp.AddEdge(*v3, *v1));
-  region_edges.push_back(spp.AddEdge(*v2, *v3));
-  region_edges.push_back(spp.AddEdge(*v3, *v2));
+  region_edges.push_back(spp.AddEdge(v0, v1));
+  region_edges.push_back(spp.AddEdge(v1, v0));
+  region_edges.push_back(spp.AddEdge(v0, v2));
+  region_edges.push_back(spp.AddEdge(v2, v0));
+  region_edges.push_back(spp.AddEdge(v1, v3));
+  region_edges.push_back(spp.AddEdge(v3, v1));
+  region_edges.push_back(spp.AddEdge(v2, v3));
+  region_edges.push_back(spp.AddEdge(v3, v2));
 
-  target_edges.push_back(spp.AddEdge(*v2, *target));
-  target_edges.push_back(spp.AddEdge(*v3, *target));
+  target_edges.push_back(spp.AddEdge(v2, target));
+  target_edges.push_back(spp.AddEdge(v3, target));
 
   Matrix<double, 2, 4> A_diff;
   A_diff << -Matrix2d::Identity(), Matrix2d::Identity();
@@ -1693,7 +1657,7 @@ GTEST_TEST(ShortestPathTest, RoundingBacktrack) {
   options.convex_relaxation = true;
   options.preprocessing = false;
   options.max_rounded_paths = 10;
-  auto result = spp.SolveShortestPath(source->id(), target->id(), options);
+  auto result = spp.SolveShortestPath(*source, *target, options);
   ASSERT_TRUE(result.is_success());
 }
 
@@ -1704,8 +1668,8 @@ GTEST_TEST(ShortestPathTest, NoPath) {
   auto v1 = spp.AddVertex(Point(Vector2d(0, 1)));
   auto v2 = spp.AddVertex(Point(Vector2d(1, 0)));
   auto target = spp.AddVertex(Point(Vector2d(1, 1)));
-  spp.AddEdge(*source, *v1);
-  spp.AddEdge(*v2, *target);
+  spp.AddEdge(source, v1);
+  spp.AddEdge(v2, target);
 
   GraphOfConvexSetsOptions options;
   options.convex_relaxation = true;
@@ -1744,7 +1708,7 @@ GTEST_TEST(ShortestPathTest, NoPathDetachedSource) {
   spp.AddVertex(Point(Vector2d(0, 1)));
   auto v2 = spp.AddVertex(Point(Vector2d(1, 0)));
   auto target = spp.AddVertex(Point(Vector2d(1, 1)));
-  spp.AddEdge(*v2, *target);
+  spp.AddEdge(v2, target);
 
   GraphOfConvexSetsOptions options;
   options.convex_relaxation = true;
@@ -1780,7 +1744,7 @@ GTEST_TEST(ShortestPathTest, NoPathDetachedTarget) {
   auto v1 = spp.AddVertex(Point(Vector2d(0, 1)));
   spp.AddVertex(Point(Vector2d(1, 0)));
   auto target = spp.AddVertex(Point(Vector2d(1, 1)));
-  spp.AddEdge(*source, *v1);
+  spp.AddEdge(source, v1);
 
   GraphOfConvexSetsOptions options;
   options.convex_relaxation = true;
@@ -1849,28 +1813,28 @@ GTEST_TEST(ShortestPathTest, TobiasToyExample) {
   Vertex* p5 = spp.AddVertex(VPolytope(vertices), "p5");
   Vertex* target = spp.AddVertex(Point(Vector2d(9, 0)), "target");
 
-  spp.AddEdge(*source, *p1);
-  Edge* source_to_p2 = spp.AddEdge(*source, *p2);
-  Edge* source_to_p3 = spp.AddEdge(*source, *p3);
-  spp.AddEdge(*p1, *e2);
-  spp.AddEdge(*p2, *p3);
-  spp.AddEdge(*p2, *e1);
-  spp.AddEdge(*p2, *e2);
-  spp.AddEdge(*p3, *p2);  // removing this changes the asymptotic behavior.
-  Edge* p3_to_e1 = spp.AddEdge(*p3, *e1);
-  spp.AddEdge(*p3, *p4);
-  spp.AddEdge(*e1, *e2);
-  Edge* e1_to_p4 = spp.AddEdge(*e1, *p4);
-  spp.AddEdge(*e1, *p5);
-  spp.AddEdge(*e2, *e1);
-  spp.AddEdge(*e2, *p5);
-  spp.AddEdge(*e2, *target);
-  spp.AddEdge(*p4, *p3);
-  spp.AddEdge(*p4, *e2);
-  Edge* p4_to_p5 = spp.AddEdge(*p4, *p5);
-  spp.AddEdge(*p4, *target);
-  spp.AddEdge(*p5, *e1);
-  Edge* p5_to_target = spp.AddEdge(*p5, *target);
+  spp.AddEdge(source, p1);
+  Edge* source_to_p2 = spp.AddEdge(source, p2);
+  Edge* source_to_p3 = spp.AddEdge(source, p3);
+  spp.AddEdge(p1, e2);
+  spp.AddEdge(p2, p3);
+  spp.AddEdge(p2, e1);
+  spp.AddEdge(p2, e2);
+  spp.AddEdge(p3, p2);  // removing this changes the asymptotic behavior.
+  Edge* p3_to_e1 = spp.AddEdge(p3, e1);
+  spp.AddEdge(p3, p4);
+  spp.AddEdge(e1, e2);
+  Edge* e1_to_p4 = spp.AddEdge(e1, p4);
+  spp.AddEdge(e1, p5);
+  spp.AddEdge(e2, e1);
+  spp.AddEdge(e2, p5);
+  spp.AddEdge(e2, target);
+  spp.AddEdge(p4, p3);
+  spp.AddEdge(p4, e2);
+  Edge* p4_to_p5 = spp.AddEdge(p4, p5);
+  spp.AddEdge(p4, target);
+  spp.AddEdge(p5, e1);
+  Edge* p5_to_target = spp.AddEdge(p5, target);
 
   // |xu - xv|₂²
   for (const auto& e : spp.Edges()) {
@@ -1884,7 +1848,7 @@ GTEST_TEST(ShortestPathTest, TobiasToyExample) {
   GraphOfConvexSetsOptions options;
   options.convex_relaxation = false;
   options.preprocessing = false;
-  auto result = spp.SolveShortestPath(source->id(), target->id(), options);
+  auto result = spp.SolveShortestPath(*source, *target, options);
   ASSERT_TRUE(result.is_success());
   EXPECT_EQ(spp.GetSolutionPath(*source, *target, result),
             std::vector<const Edge*>(
@@ -1918,8 +1882,7 @@ GTEST_TEST(ShortestPathTest, TobiasToyExample) {
   // higher cost.
   source_to_p2->AddPhiConstraint(true);
   {
-    auto new_result =
-        spp.SolveShortestPath(source->id(), target->id(), options);
+    auto new_result = spp.SolveShortestPath(*source, *target, options);
     ASSERT_TRUE(new_result.is_success());
 
     const std::forward_list<Vertex*> new_shortest_path{source, p2, e2, target};
@@ -1943,8 +1906,7 @@ GTEST_TEST(ShortestPathTest, TobiasToyExample) {
   // higher cost.
   source_to_p3->AddPhiConstraint(false);
   {
-    auto new_result =
-        spp.SolveShortestPath(source->id(), target->id(), options);
+    auto new_result = spp.SolveShortestPath(*source, *target, options);
     ASSERT_TRUE(new_result.is_success());
 
     const std::forward_list<Vertex*> new_shortest_path{source, p1, e2,
@@ -1971,18 +1933,18 @@ GTEST_TEST(ShortestPathTest, TobiasToyExample) {
 GTEST_TEST(ShortestPathTest, Figure9) {
   GraphOfConvexSets spp;
 
-  const Vertex* source = spp.AddVertex(Point(Vector2d::Zero()), "source");
-  const Vertex* v1 = spp.AddVertex(Point(Vector2d(0, 2)));
-  const Vertex* v2 = spp.AddVertex(Point(Vector2d(0, -2)));
-  const Vertex* v3 =
+  Vertex* source = spp.AddVertex(Point(Vector2d::Zero()), "source");
+  Vertex* v1 = spp.AddVertex(Point(Vector2d(0, 2)));
+  Vertex* v2 = spp.AddVertex(Point(Vector2d(0, -2)));
+  Vertex* v3 =
       spp.AddVertex(HPolyhedron::MakeBox(Vector2d(2, -2), Vector2d(4, 2)));
-  const Vertex* target = spp.AddVertex(Point(Vector2d(5, 0)), "target");
+  Vertex* target = spp.AddVertex(Point(Vector2d(5, 0)), "target");
 
-  Edge* e01 = spp.AddEdge(*source, *v1);
-  Edge* e02 = spp.AddEdge(*source, *v2);
-  Edge* e13 = spp.AddEdge(*v1, *v3);
-  Edge* e23 = spp.AddEdge(*v2, *v3);
-  Edge* e34 = spp.AddEdge(*v3, *target);
+  Edge* e01 = spp.AddEdge(source, v1);
+  Edge* e02 = spp.AddEdge(source, v2);
+  Edge* e13 = spp.AddEdge(v1, v3);
+  Edge* e23 = spp.AddEdge(v2, v3);
+  Edge* e34 = spp.AddEdge(v3, target);
 
   // Edge length is distance for all edges.
   Matrix<double, 2, 4> A;
@@ -1996,7 +1958,7 @@ GTEST_TEST(ShortestPathTest, Figure9) {
 
   GraphOfConvexSetsOptions options;
   options.convex_relaxation = true;
-  auto result = spp.SolveShortestPath(source->id(), target->id(), options);
+  auto result = spp.SolveShortestPath(*source, *target, options);
   ASSERT_TRUE(result.is_success());
 
   const double kTol = 2e-4;  // Gurobi required this large tolerance.
@@ -2025,11 +1987,9 @@ GTEST_TEST(ShortestPathTest, Figure9) {
   e23->AddConstraint(e23->xu()[1] == e23->xv()[1]);
   e34->AddConstraint(e34->xu()[1] == e34->xv()[1]);
 
-  auto relaxed_result =
-      spp.SolveShortestPath(source->id(), target->id(), options);
+  auto relaxed_result = spp.SolveShortestPath(*source, *target, options);
   options.max_rounded_paths = 1;
-  auto rounded_result =
-      spp.SolveShortestPath(source->id(), target->id(), options);
+  auto rounded_result = spp.SolveShortestPath(*source, *target, options);
 
   ASSERT_TRUE(relaxed_result.is_success());
   EXPECT_EQ(rounded_result.get_solution_result(),
@@ -2050,7 +2010,7 @@ GTEST_TEST(ShortestPathTest, Graphviz) {
   GraphOfConvexSets g;
   auto source = g.AddVertex(Point(Vector2d{1.0, 2.}), "source");
   auto target = g.AddVertex(Point(Vector1d{1e-5}), "target");
-  g.AddEdge(*source, *target, "edge");
+  g.AddEdge(source, target, "edge");
 
   GraphOfConvexSetsOptions options;
   options.preprocessing = true;
@@ -2083,6 +2043,158 @@ GTEST_TEST(ShortestPathTest, Graphviz) {
   EXPECT_THAT(g.GetGraphvizString(result, false, 2, true),
               AllOf(HasSubstr("x = [1 2]"), HasSubstr("x = [1e-05]")));
 }
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
+GTEST_TEST(GraphOfConvexSetsTest, DeprecatedAddEdge) {
+  GraphOfConvexSets g;
+  Point pu(Vector3d(1.0, 2.0, 3.0));
+  Point pv(Vector2d(4., 5.));
+  Vertex* u = g.AddVertex(pu, "u");
+  Vertex* v = g.AddVertex(pv, "v");
+  Edge* e = g.AddEdge(u->id(), v->id(), "e");
+
+  EXPECT_EQ(e->u().name(), u->name());
+  EXPECT_EQ(e->v().name(), v->name());
+
+  EXPECT_EQ(Variables(e->xu()), Variables(u->x()));
+  EXPECT_EQ(Variables(e->xv()), Variables(v->x()));
+
+  auto edges = g.Edges();
+  EXPECT_EQ(edges.size(), 1);
+  EXPECT_EQ(edges.at(0), e);
+
+  const GraphOfConvexSets* const_g = &g;
+  const auto const_edges = const_g->Edges();
+  EXPECT_EQ(const_edges.size(), 1);
+  EXPECT_EQ(const_edges.at(0), e);
+}
+
+GTEST_TEST(GraphOfConvexSetsTest, DeprecatedRemoveEdge) {
+  GraphOfConvexSets g;
+  Point pu(Vector3d(1.0, 2.0, 3.0));
+  Point pv(Vector2d(4., 5.));
+  Vertex* u = g.AddVertex(pu, "u");
+  Vertex* v = g.AddVertex(pv, "v");
+  Edge* e1 = g.AddEdge(u, v, "e1");
+  Edge* e2 = g.AddEdge(v, u, "e2");
+
+  EXPECT_EQ(g.Edges().size(), 2);
+
+  EXPECT_EQ(u->incoming_edges().size(), 1);
+  EXPECT_EQ(u->incoming_edges()[0], e2);
+  EXPECT_EQ(u->outgoing_edges().size(), 1);
+  EXPECT_EQ(u->outgoing_edges()[0], e1);
+  EXPECT_EQ(v->incoming_edges().size(), 1);
+  EXPECT_EQ(v->incoming_edges()[0], e1);
+  EXPECT_EQ(v->outgoing_edges().size(), 1);
+  EXPECT_EQ(v->outgoing_edges()[0], e2);
+
+  g.RemoveEdge(e1->id());
+  auto edges = g.Edges();
+  EXPECT_EQ(edges.size(), 1);
+  EXPECT_EQ(edges.at(0), e2);
+  EXPECT_EQ(u->incoming_edges().size(), 1);
+  EXPECT_EQ(u->incoming_edges()[0], e2);
+  EXPECT_EQ(u->outgoing_edges().size(), 0);
+  EXPECT_EQ(v->incoming_edges().size(), 0);
+  EXPECT_EQ(v->outgoing_edges().size(), 1);
+  EXPECT_EQ(v->outgoing_edges()[0], e2);
+
+  g.RemoveEdge(e2);
+  EXPECT_EQ(g.Edges().size(), 0);
+  EXPECT_EQ(u->incoming_edges().size(), 0);
+  EXPECT_EQ(u->outgoing_edges().size(), 0);
+  EXPECT_EQ(v->incoming_edges().size(), 0);
+  EXPECT_EQ(v->outgoing_edges().size(), 0);
+}
+
+GTEST_TEST(GraphOfConvexSetsTest, DeprecatedRemoveVertex) {
+  GraphOfConvexSets g;
+  Vertex* v1 = g.AddVertex(Point(Vector2d(3., 5.)));
+  Vertex* v2 = g.AddVertex(Point(Vector2d(-2., 4.)));
+  Vertex* v3 = g.AddVertex(Point(Vector2d(5., -2.3)));
+  Edge* e1 = g.AddEdge(v1, v2);
+  g.AddEdge(v1, v3);
+  g.AddEdge(v3, v1);
+
+  EXPECT_EQ(g.Vertices().size(), 3);
+  EXPECT_EQ(g.Edges().size(), 3);
+
+  g.RemoveVertex(v3->id());
+  EXPECT_EQ(g.Vertices().size(), 2);
+  auto edges = g.Edges();
+  EXPECT_EQ(edges.size(), 1);
+  EXPECT_EQ(edges.at(0), e1);
+
+  g.RemoveVertex(v2);
+  auto vertices = g.Vertices();
+  EXPECT_EQ(vertices.size(), 1);
+  EXPECT_EQ(vertices.at(0), v1);
+  EXPECT_EQ(g.Edges().size(), 0);
+}
+
+TEST_F(ThreePoints, DeprecatedLinearCost1) {
+  e_on_->AddCost(1.0);
+  e_off_->AddCost(1.0);
+  source_->AddCost(1.0);
+  auto result = g_.SolveShortestPath(source_->id(), target_->id(), options_);
+  ASSERT_TRUE(result.is_success());
+  EXPECT_NEAR(e_on_->GetSolutionCost(result), 1.0, 1e-6);
+  EXPECT_NEAR(e_off_->GetSolutionCost(result), 0.0, 1e-6);
+  EXPECT_NEAR(source_->GetSolutionCost(result), 1.0, 1e-6);
+  EXPECT_NEAR(target_->GetSolutionCost(result), 0.0, 1e-6);
+  EXPECT_NEAR(sink_->GetSolutionCost(result), 0.0, 1e-6);
+
+  EXPECT_TRUE(
+      CompareMatrices(e_on_->GetSolutionPhiXu(result), p_source_.x(), 1e-6));
+  EXPECT_TRUE(
+      CompareMatrices(e_on_->GetSolutionPhiXv(result), p_target_.x(), 1e-6));
+  EXPECT_TRUE(CompareMatrices(e_off_->GetSolutionPhiXu(result),
+                              0 * p_source_.x(), 1e-6));
+  EXPECT_TRUE(
+      CompareMatrices(e_off_->GetSolutionPhiXv(result), 0 * p_sink_.x(), 1e-6));
+  CheckConvexRestriction(result);
+
+  // Alternative signatures.
+  auto result2 = g_.SolveShortestPath(*source_, *target_, options_);
+  ASSERT_TRUE(result2.is_success());
+  EXPECT_NEAR(e_on_->GetSolutionCost(result2), 1.0, 1e-6);
+  EXPECT_NEAR(e_off_->GetSolutionCost(result2), 0.0, 1e-6);
+  EXPECT_NEAR(source_->GetSolutionCost(result2), 1.0, 1e-6);
+  EXPECT_NEAR(target_->GetSolutionCost(result2), 0.0, 1e-6);
+  EXPECT_NEAR(sink_->GetSolutionCost(result2), 0.0, 1e-6);
+
+  options_.solver_options = SolverOptions();
+  auto result4 = g_.SolveShortestPath(*source_, *target_, options_);
+  ASSERT_TRUE(result4.is_success());
+  EXPECT_NEAR(e_on_->GetSolutionCost(result4), 1.0, 1e-6);
+  EXPECT_NEAR(e_off_->GetSolutionCost(result4), 0.0, 1e-6);
+  EXPECT_NEAR(source_->GetSolutionCost(result4), 1.0, 1e-6);
+  EXPECT_NEAR(target_->GetSolutionCost(result4), 0.0, 1e-6);
+  EXPECT_NEAR(sink_->GetSolutionCost(result4), 0.0, 1e-6);
+
+  EXPECT_TRUE(
+      CompareMatrices(source_->GetSolution(result4), p_source_.x(), 1e-6));
+  EXPECT_TRUE(
+      CompareMatrices(target_->GetSolution(result4), p_target_.x(), 1e-6));
+  EXPECT_TRUE(sink_->GetSolution(result4).hasNaN());
+
+  if (solvers::ClpSolver::is_available()) {
+    solvers::ClpSolver clp;
+    options_.solver = &clp;
+    auto result3 = g_.SolveShortestPath(*source_, *target_, options_);
+    ASSERT_TRUE(result3.is_success());
+    EXPECT_NEAR(e_on_->GetSolutionCost(result3), 1.0, 1e-6);
+    EXPECT_NEAR(e_off_->GetSolutionCost(result3), 0.0, 1e-6);
+    EXPECT_NEAR(source_->GetSolutionCost(result3), 1.0, 1e-6);
+    EXPECT_NEAR(target_->GetSolutionCost(result3), 0.0, 1e-6);
+    EXPECT_NEAR(sink_->GetSolutionCost(result3), 0.0, 1e-6);
+  }
+}
+
+#pragma GCC diagnostic pop
 
 }  // namespace optimization
 }  // namespace geometry

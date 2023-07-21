@@ -193,8 +193,8 @@ Subgraph::Subgraph(
   // Connect vertices with edges.
   for (const auto& [u_index, v_index] : edges_between_regions) {
     // Add edge.
-    const Vertex& u = *vertices_[u_index];
-    const Vertex& v = *vertices_[v_index];
+    Vertex* u = vertices_[u_index];
+    Vertex* v = vertices_[v_index];
     Edge* uv_edge = traj_opt_.AddEdge(u, v);
 
     edges_.emplace_back(uv_edge);
@@ -202,7 +202,7 @@ Subgraph::Subgraph(
     // Add path continuity constraints.
     uv_edge->AddConstraint(Binding<Constraint>(
         path_continuity_constraint,
-        FilterVariables(ConcatenateVariableRefList({u.x(), v.x()}),
+        FilterVariables(ConcatenateVariableRefList({u->x(), v->x()}),
                         nonzero_cols_mask)));
   }
 }
@@ -399,22 +399,22 @@ EdgesBetweenSubgraphs::EdgesBetweenSubgraphs(
         }
 
         // Add edge.
-        const Vertex& u = *from_subgraph.vertices_[i];
-        const Vertex& v = *to_subgraph.vertices_[j];
+        Vertex* u = from_subgraph.vertices_[i];
+        Vertex* v = to_subgraph.vertices_[j];
         Edge* uv_edge = traj_opt_.AddEdge(u, v);
         edges_.emplace_back(uv_edge);
 
         // Add path continuity constraints.
         uv_edge->AddConstraint(Binding<LinearEqualityConstraint>(
             path_continuity_constraint,
-            FilterVariables(ConcatenateVariableRefList({u.x(), v.x()}),
+            FilterVariables(ConcatenateVariableRefList({u->x(), v->x()}),
                             nonzero_cols_mask)));
 
         if (subspace != nullptr) {
           // Add subspace constraints to the first control point of the v
           // vertex. Since we are using zeroth order continuity, the last
           // control point
-          const auto vars = v.x().segment(0, num_positions());
+          const auto vars = v->x().segment(0, num_positions());
           solvers::MathematicalProgram prog;
           const VectorX<symbolic::Variable> x =
               prog.NewContinuousVariables(num_positions(), "x");
@@ -675,13 +675,13 @@ GcsTrajectoryOptimization::SolvePath(
     // Source subgraph has more than one region. Add a dummy source vertex.
     dummy_source = gcs_.AddVertex(Point(empty_vector), "Dummy source");
     source_vertex = dummy_source;
-    for (const Vertex* v : source.vertices_) {
-      AddEdge(*dummy_source, *v);
+    for (Vertex* v : source.vertices_) {
+      AddEdge(dummy_source, v);
     }
   }
   const ScopeExit cleanup_dummy_source_before_returning([&]() {
     if (dummy_source != nullptr) {
-      gcs_.RemoveVertex(*dummy_source);
+      gcs_.RemoveVertex(dummy_source);
     }
   });
 
@@ -689,13 +689,13 @@ GcsTrajectoryOptimization::SolvePath(
     // Target subgraph has more than one region. Add a dummy target vertex.
     dummy_target = gcs_.AddVertex(Point(empty_vector), "Dummy target");
     target_vertex = dummy_target;
-    for (const Vertex* v : target.vertices_) {
-      AddEdge(*v, *dummy_target);
+    for (Vertex* v : target.vertices_) {
+      AddEdge(v, dummy_target);
     }
   }
   const ScopeExit cleanup_dummy_target_before_returning([&]() {
     if (dummy_target != nullptr) {
-      gcs_.RemoveVertex(*dummy_target);
+      gcs_.RemoveVertex(dummy_target);
     }
   });
 
@@ -773,8 +773,8 @@ GcsTrajectoryOptimization::SolvePath(
   return {CompositeTrajectory<double>(bezier_curves), result};
 }
 
-Edge* GcsTrajectoryOptimization::AddEdge(const Vertex& u, const Vertex& v) {
-  return gcs_.AddEdge(u, v, fmt::format("{} -> {}", u.name(), v.name()));
+Edge* GcsTrajectoryOptimization::AddEdge(Vertex* u, Vertex* v) {
+  return gcs_.AddEdge(u, v, fmt::format("{} -> {}", u->name(), v->name()));
 }
 
 double GcsTrajectoryOptimization::EstimateComplexity() const {

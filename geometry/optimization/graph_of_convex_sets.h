@@ -420,42 +420,39 @@ class GraphOfConvexSets {
   /** Adds an edge to the graph from VertexId @p u_id to VertexId @p v_id.  The
   ids must refer to valid vertices in this graph. If @p name is empty then a
   default name will be provided.
-  @pydrake_mkdoc_identifier{by_id}
   */
+  DRAKE_DEPRECATED("2023-11-01", "Use the overload that takes Vertex* instead.")
   Edge* AddEdge(VertexId u_id, VertexId v_id, std::string name = "");
 
   /** Adds an edge to the graph from Vertex @p u to Vertex @p v.  The
   vertex references must refer to valid vertices in this graph. If @p name is
   empty then a default name will be provided.
-  @pydrake_mkdoc_identifier{by_reference}
   */
-  Edge* AddEdge(const Vertex& u, const Vertex& v, std::string name = "");
+  Edge* AddEdge(Vertex* u, Vertex* v, std::string name = "");
 
   /** Removes vertex @p vertex_id from the graph as well as any edges from or to
   the vertex. Runtime is O(nₑ) where nₑ is the number of edges in the graph.
   @pre The vertex must be part of the graph.
-  @pydrake_mkdoc_identifier{by_id}
   */
+  DRAKE_DEPRECATED("2023-11-01", "Use the overload that takes Vertex* instead.")
   void RemoveVertex(VertexId vertex_id);
 
   /** Removes vertex @p vertex from the graph as well as any edges from or to
   the vertex. Runtime is O(nₑ) where nₑ is the number of edges in the graph.
   @pre The vertex must be part of the graph.
-  @pydrake_mkdoc_identifier{by_reference}
   */
-  void RemoveVertex(const Vertex& vertex);
+  void RemoveVertex(Vertex* vertex);
 
   /** Removes edge @p edge_id from the graph.
   @pre The edge must be part of the graph.
-  @pydrake_mkdoc_identifier{by_id}
   */
+  DRAKE_DEPRECATED("2023-11-01", "Use the overload that takes Vertex* instead.")
   void RemoveEdge(EdgeId edge_id);
 
   /** Removes edge @p edge from the graph.
   @pre The edge must be part of the graph.
-  @pydrake_mkdoc_identifier{by_reference}
   */
-  void RemoveEdge(const Edge& edge);
+  void RemoveEdge(Edge* edge);
 
   /** Returns mutable pointers to the vertices stored in the graph. */
   std::vector<Vertex*> Vertices();
@@ -511,20 +508,15 @@ class GraphOfConvexSets {
   @throws std::exception if any of the costs or constraints in the graph are
   incompatible with the shortest path formulation or otherwise unsupported. All
   costs must be non-negative for all values of the continuous variables.
-
-  @pydrake_mkdoc_identifier{by_id}
-  */
-  solvers::MathematicalProgramResult SolveShortestPath(
-      VertexId source_id, VertexId target_id,
-      const GraphOfConvexSetsOptions& options =
-          GraphOfConvexSetsOptions()) const;
-
-  /** Convenience overload that takes const reference arguments for source and
-  target.
-  @pydrake_mkdoc_identifier{by_reference}
   */
   solvers::MathematicalProgramResult SolveShortestPath(
       const Vertex& source, const Vertex& target,
+      const GraphOfConvexSetsOptions& options =
+          GraphOfConvexSetsOptions()) const;
+
+  DRAKE_DEPRECATED("2023-11-01", "Use the overload that takes Vertex& instead.")
+  solvers::MathematicalProgramResult SolveShortestPath(
+      VertexId source_id, VertexId target_id,
       const GraphOfConvexSetsOptions& options =
           GraphOfConvexSetsOptions()) const;
 
@@ -589,8 +581,6 @@ class GraphOfConvexSets {
       solvers::MathematicalProgram* prog,
       const solvers::Binding<solvers::Constraint>& binding,
       const solvers::VectorXDecisionVariable& vars) const;
-
-  // TODO(russt): remove VertexId and EdgeId from the public API.
 
   // Note: we use VertexId and EdgeId (vs e.g. Vertex* and Edge*) here to
   // provide consistent ordering of the vertices/edges. This is important for
