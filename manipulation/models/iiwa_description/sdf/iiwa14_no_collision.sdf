@@ -93,9 +93,9 @@ Later edited by hand to:
           <ixx>0.0305</ixx>
           <ixy>0</ixy>
           <ixz>0</ixz>
-          <iyy>0.0304</iyy>
+          <iyy>0.011</iyy>
           <iyz>0</iyz>
-          <izz>0.011</izz>
+          <izz>0.0304</izz>
         </inertia>
       </inertial>
       <visual name="iiwa_link_2_visual_grey">
@@ -226,9 +226,9 @@ Later edited by hand to:
           <ixx>0.017</ixx>
           <ixy>0</ixy>
           <ixz>0</ixz>
-          <iyy>0.0164</iyy>
+          <iyy>0.006</iyy>
           <iyz>0</iyz>
-          <izz>0.006</izz>
+          <izz>0.0164</izz>
         </inertia>
       </inertial>
       <visual name="iiwa_link_4_visual_grey">
