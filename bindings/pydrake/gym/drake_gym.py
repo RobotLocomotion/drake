@@ -35,6 +35,7 @@ class DrakeGymEnv(gym.Env):
                  action_port_id: Union[InputPort, InputPortIndex, str] = None,
                  observation_port_id: Union[OutputPortIndex, str] = None,
                  render_rgb_port_id: Union[OutputPortIndex, str] = None,
+                 render_mode: str = 'human',
                  set_home: Callable[[Simulator, Context], None] = None,
                  hardware: bool = False):
         """
@@ -70,18 +71,23 @@ class DrakeGymEnv(gym.Env):
                 dimension with bounds at negative and positive infinity.
             render_rgb_port: An optional output port of `simulator`'s system
                 that returns  an `ImageRgba8U`; often the `color_image` port
-                of a Drake `RgbdSensor`.  When not `None`, this enables the
-                environment `render_mode` `rgb_array`.
+                of a Drake `RgbdSensor`.
+            render_mode: The render mode of the environment determined at
+                initialisation. Defaults to `human` which uses visualizers
+                inside the System (e.g. MeshcatVisualizer,
+                PlanarSceneGraphVisualizer, etc.). `render_mode` equal to
+                `rgb_array` evaluates the `render_rgb_port` and `ansi` calls
+                __repr__ on the system Context.
             set_home: A function that sets the home state (plant, and/or env.)
                 at reset(). The reset state can be specified in one of
                 the two ways:
-                (1) setting random context using a Drake random_generator
-                (e.g. joint.set_random_pose_distribution()),
-                (2) parssing a function set_home().
+                (if set_home is None) setting random context using a Drake
+                random_generator (e.g. joint.set_random_pose_distribution()
+                using the reset() seed),
+                (otherwise) using set_home().
             hardware: If True, it prevents from setting random context at
                 reset() when using random_generator, but it does execute
                 set_home() if given.
-
 
         Notes (using `env` as an instance of this class):
         - You may set simulator/integrator preferences by using `env.simulator`
@@ -132,9 +138,10 @@ class DrakeGymEnv(gym.Env):
         else:
             self.observation_port_id = OutputPortIndex(0)
 
-        self.metadata['render.modes'] = ['human', 'ascii']
+        self.metadata['render_modes'] = ['human', 'ascii']
 
-        # Setup rendering
+        # Setup rendering.
+        self.render_mode = render_mode
         if render_rgb_port_id:
             assert isinstance(render_rgb_port_id, (OutputPortIndex, str))
             self.render_mode = 'rgb_array'
@@ -146,7 +153,7 @@ class DrakeGymEnv(gym.Env):
         if set_home is None or callable(set_home):
             self.set_home = set_home
         else:
-            raise ValueError("Invalid set_home argument")
+            raise ValueError("set_home is not callable.")
 
         self.hardware = hardware
 
@@ -183,12 +190,12 @@ class DrakeGymEnv(gym.Env):
         # observation_port.  Unfortunately, HasDirectFeedthrough returns false
         # positives, and would produce noisy warnings.
 
-        # Setup reward
+        # Setup reward.
         if self.reward_port_id:
             reward_port = get_output_port(self.reward_port_id)
             self.reward = lambda system, context: reward_port.Eval(context)[0]
 
-        # (Maybe) setup rendering port
+        # Setup rendering port.
         if self.render_rgb_port_id:
             self.render_rgb_port = get_output_port(self.render_rgb_port_id)
             assert self.render_rgb_port.get_data_type() == \
@@ -219,6 +226,13 @@ class DrakeGymEnv(gym.Env):
                 raise
             warnings.warn("Calling Done after catching RuntimeError:")
             warnings.warn(e.args[0])
+            # Truncated is used when the solver failed to converge.
+            # Note: this is different than the official use of truncated
+            # in Gymnasium:
+            # "Whether the truncation condition outside the scope of the MDP
+            # is satisfied. Typically, this is a timelimit, but
+            # could also be used to indicate an agent physically going out
+            # of bounds."
             truncated = True
             status = e.args[0]
 
@@ -234,7 +248,6 @@ class DrakeGymEnv(gym.Env):
 
     def reset(self, *,
               seed: Optional[int] = None,
-              return_info: bool = False,
               options: Optional[dict] = None):
         """
         If a callable "simulator factory" was passed to the constructor, then a
@@ -259,12 +272,14 @@ class DrakeGymEnv(gym.Env):
         context.SetTime(0)
         self.simulator.Initialize()
         if self.set_home is not None:
+            # The initial state is set by set_home().
             self.simulator.get_system().SetDefaultContext(context)
             self.set_home(self.simulator, context, seed)
         else:
             if not self.hardware:
                 self.simulator.get_system().SetRandomContext(context,
                                                              self.generator)
+
         # Note: The output port will be evaluated without fixing the input
         # port.
         observations = self.observation_port.Eval(context)

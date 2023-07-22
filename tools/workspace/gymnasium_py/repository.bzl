@@ -1,4 +1,4 @@
-# -*- python -*-
+# -*- bazel -*-
 
 load("@drake//tools/workspace:github.bzl", "github_archive")
 

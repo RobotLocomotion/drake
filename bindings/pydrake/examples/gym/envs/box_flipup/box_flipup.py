@@ -1,40 +1,40 @@
 import gymnasium as gym
 import numpy as np
-import os.path
 
-from pydrake.all import (
-    AddMultibodyPlantSceneGraph,
+from pydrake.common import RandomGenerator
+from pydrake.geometry import (
     Box,
-    ConstantVectorSource,
-    ContactVisualizer,
-    ContactVisualizerParams,
-    DiagramBuilder,
-    EventStatus,
-    FindResourceOrThrow,
-    FixedOffsetFrame,
-    InverseDynamicsController,
-    LeafSystem,
     MeshcatVisualizer,
     MeshcatVisualizerParams,
-    MultibodyPlant,
-    MultibodyPositionToGeometryPose,
-    Multiplexer,
-    Parser,
-    PassThrough,
+    SceneGraph,
+    Sphere,
+)
+from pydrake.math import RigidTransform, RotationMatrix
+from pydrake.multibody.meshcat import (
+    ContactVisualizer,
+    ContactVisualizerParams,
+)
+from pydrake.multibody.parsing import Parser
+from pydrake.multibody.plant import AddMultibodyPlantSceneGraph, MultibodyPlant
+from pydrake.multibody.tree import (
+    FixedOffsetFrame,
     PlanarJoint,
     PrismaticJoint,
-    RandomGenerator,
-    Rgba,
-    RigidTransform,
-    RotationMatrix,
-    SceneGraph,
-    Simulator,
     SpatialInertia,
-    Sphere,
     UnitInertia,
-    Variable,
 )
+from pydrake.symbolic import Variable
+from pydrake.systems.analysis import Simulator
+from pydrake.systems.controllers import InverseDynamicsController
+from pydrake.systems.framework import DiagramBuilder, EventStatus, LeafSystem
+from pydrake.systems.primitives import (
+    ConstantVectorSource,
+    Multiplexer,
+    PassThrough,
+)
+from pydrake.systems.rendering import MultibodyPositionToGeometryPose
 
+from pydrake.common import FindResourceOrThrow
 from pydrake.gym.drake_gym import DrakeGymEnv
 from pydrake.examples.gym.scenario_helpers import (
     AddShape,

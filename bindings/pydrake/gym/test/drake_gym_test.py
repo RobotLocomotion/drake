@@ -43,15 +43,15 @@ class DrakeGymTest(unittest.TestCase):
     # This test is comprehensive enough to make many other tests below
     # redundant, but we can't port it to Drake when the time comes for that
     # without eating `stable_baselines3`'s enormous dependency tree.
-    def test_openai_check_env(self):
-        """Run OpenAI's built-in test suite for our env."""
+    def test_sb3_check_env(self):
+        """Run stable-baselines's built-in test suite for our env."""
         dut = self.make_env()
         stable_baselines3.common.env_checker.check_env(
             env=dut,
             warn=True,
             skip_render_check=True)
 
-    def test_openai_check_vector_env(self):
+    def test_sb3_check_vector_env(self):
         if not vec_env_available:
             return
         # Check that we can construct a vector env.
@@ -65,8 +65,8 @@ class DrakeGymTest(unittest.TestCase):
                 'time_limit': 5,
             })
         # We should `check_env` here, but in our currently supported versions
-        # of `gym` and `stable_baselines3`, stable baselines vector envs do
-        # not pass stable baselines' `check_env` tests
+        # of `gymnasium` and `stable_baselines3`, stable baselines
+        # vector envs do not pass stable baselines' `check_env` tests.
 
     def test_reset(self):
         # reset(int) sets a deterministic seed.
@@ -85,7 +85,7 @@ class DrakeGymTest(unittest.TestCase):
         # externally observable, so don't test it.
 
         # return_options changes the return type.
-        (observation, opts) = dut.reset(return_info=True)
+        (observation, opts) = dut.reset()
         self.assertIsInstance(opts, dict)
         self.assertTrue(dut.observation_space.contains(observation))
 

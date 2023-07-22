@@ -7,40 +7,43 @@ from named_view_helpers import (
 )
 import numpy as np
 
-from pydrake.all import (
-    AddMultibodyPlant,
-    CameraInfo,
-    ClippingRange,
-    ColorRenderCamera,
-    ConstantVectorSource,
-    DepthRange,
-    DepthRenderCamera,
-    DiagramBuilder,
-    EventStatus,
-    ExternallyAppliedSpatialForce_,
-    LeafSystem,
-    MakeRenderEngineVtk,
-    MeshcatVisualizerCpp,
-    MultibodyPlant,
-    MultibodyPlantConfig,
-    Multiplexer,
-    Parser,
-    PassThrough,
-    PublishEvent,
-    RandomGenerator,
-    RenderCameraCore,
-    RenderEngineVtkParams,
-    RgbdSensor,
-    RigidTransform,
-    RollPitchYaw,
-    Simulator,
-    SpatialForce,
-)
+from pydrake.common import RandomGenerator
 from pydrake.common.cpp_param import List
 from pydrake.common.value import Value
+from pydrake.geometry import (
+    ClippingRange,
+    ColorRenderCamera,
+    DepthRange,
+    DepthRenderCamera,
+    MakeRenderEngineVtk,
+    MeshcatVisualizer,
+    RenderCameraCore,
+    RenderEngineVtkParams,
+)
+from pydrake.math import RigidTransform, RollPitchYaw
+from pydrake.multibody.math import SpatialForce
+from pydrake.multibody.parsing import Parser
+from pydrake.multibody.plant import (
+    AddMultibodyPlant,
+    ExternallyAppliedSpatialForce_,
+    MultibodyPlant,
+    MultibodyPlantConfig,
+)
+from pydrake.systems.analysis import Simulator
 from pydrake.systems.drawing import plot_graphviz, plot_system_graphviz
-
-from anzu.common.cc import FindAnzuResourceOrThrow
+from pydrake.systems.framework import (
+    DiagramBuilder,
+    EventStatus,
+    LeafSystem,
+    PublishEvent,
+)
+from pydrake.systems.primitives import (
+    ConstantVectorSource,
+    Multiplexer,
+    PassThrough,
+)
+from pydrake.systems.sensors import CameraInfo, RgbdSensor
+from pydrake.common import FindResourceOrThrow
 from pydrake.gym.drake_gym import DrakeGymEnv
 
 # Gym parameters.
@@ -56,7 +59,7 @@ contact_solver = drake_contact_solvers[0]
 
 def AddAgent(plant):
     parser = Parser(plant)
-    model_file = FindAnzuResourceOrThrow(
+    model_file = FindResourceOrThrow(
         "drake/bindings/pydrake/examples/gym/models/cartpole_BSA.sdf")
     agent = parser.AddModelFromFile(model_file)
     return agent

@@ -1,5 +1,4 @@
-# -*- mode: python -*-
-# vi: set ft=python :
+# -*- bazel -*-
 
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
@@ -64,7 +63,7 @@ py_binary(
     deps = [
         "//bindings/pydrake",
         "@gymnasium_py",
-        # "@stable_baselines3_internal//:stable_baselines3",
+        "@stable_baselines3_internal//:stable_baselines3",
     ],
 )
 
