@@ -5,8 +5,8 @@ load("@drake//tools/skylark:py.bzl", "py_library")
 licenses(["notice"])  # MIT
 
 py_library(
-    name = "gym_py",
-    srcs = glob(["gym/**/*.py"]),
-    imports = ["gym"],
+    name = "gymnasium_py",
+    srcs = glob(["gymnasium/**/*.py"]),
+    imports = ["gymnasium"],
     visibility = ["//visibility:public"],
 )

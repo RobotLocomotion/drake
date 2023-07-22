@@ -1,4 +1,4 @@
-import gym
+import gymnasium as gym
 import matplotlib.pyplot as plt
 from named_view_helpers import (
     MakeNamedViewActuation,

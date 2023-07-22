@@ -2,14 +2,14 @@
 
 load("@drake//tools/workspace:github.bzl", "github_archive")
 
-def gym_py_repository(
+def gymnasium_py_repository(
         name,
         mirrors = None):
     github_archive(
         name = name,
-        repository = "openai/gym",
-        commit = "v0.21.0",
-        sha256 = "0efc4ca01fa0d0cd10391b37db0c52e09084fb7a3fd04cdc68e08081acbf4418",  # noqa
+        repository = "Farama-Foundation/Gymnasium",
+        commit = "v0.29.0",
+        sha256 = "3a108018cf50dc327bfc66e479c280b8112de597804ceeaa3cc50860a2905115",  # noqa
         build_file = ":package.BUILD.bazel",
         mirrors = mirrors,
     )

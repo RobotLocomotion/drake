@@ -1,0 +1,7 @@
+diff --git stable_baselines3/version.txt stable_baselines3/version.txt
+index 227cea2..b99df05 100644
+--- stable_baselines3/version.txt
++++ stable_baselines3/version.txt
+@@ -1,2 +1,2 @@
+-2.0.0
++2.0.0drake_internal

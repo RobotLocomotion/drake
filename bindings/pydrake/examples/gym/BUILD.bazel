@@ -63,7 +63,7 @@ py_binary(
     visibility = ["//visibility:public"],
     deps = [
         "//bindings/pydrake",
-        "@gym_py",
+        "@gymnasium_py",
         # "@stable_baselines3_internal//:stable_baselines3",
     ],
 )
@@ -77,7 +77,7 @@ py_binary(
     visibility = ["//visibility:public"],
     deps = [
         "//bindings/pydrake",
-        "@gym_py",
+        "@gymnasium_py",
         "@stable_baselines3_internal//:stable_baselines3",
     ],
 )

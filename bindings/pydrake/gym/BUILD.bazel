@@ -10,7 +10,7 @@ py_library(
     visibility = ["//visibility:public"],
     deps = [
         "@drake//bindings/pydrake",
-        "@gym_py",
+        "@gymnasium_py",
     ],
 )
 

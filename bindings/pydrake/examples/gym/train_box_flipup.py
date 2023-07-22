@@ -3,18 +3,18 @@ import os
 import sys
 import pdb
 
-import gym
+import gymnasium as gym
 # `multiprocessing` also provides this method, but empirically `psutil`'s
 # version seems more reliable.
 from psutil import cpu_count
 
 sb3_available = False
 try:
-    pdb.set_trace()
     import stable_baselines3
-
+    # print("v", stable_baselines3.__version__)
+    # pdb.set_trace()
     if "drake_internal" not in stable_baselines3.__version__:
-        from stable_baselines3 import A2C, PPO
+        from stable_baselines3 import PPO
         from stable_baselines3.common.env_util import make_vec_env
         from stable_baselines3.common.vec_env import SubprocVecEnv
         sb3_available = True

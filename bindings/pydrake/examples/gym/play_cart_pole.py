@@ -1,7 +1,7 @@
 import argparse
 import time
 
-import gym
+import gymnasium as gym
 from stable_baselines3 import PPO
 from stable_baselines3.common.env_checker import check_env
 
@@ -48,21 +48,21 @@ if __name__ == '__main__':
         model = PPO.load(zip, env, verbose=1, tensorboard_log=log)
 
     input("Press Enter to continue...")
-    obs = env.reset()
+    obs, _ = env.reset()
     for i in range(100000):
         if args.test:
             # Plays a random policy.
             action = env.action_space.sample()
         else:
             action, _state = model.predict(obs, deterministic=True)
-        obs, reward, done, info = env.step(action)
+        obs, reward, terminated, truncated, info = env.step(action)
         if args.debug:
             # This will play the policy step by step.
             input("Press Enter to continue...")
         env.render()
-        if done:
+        if terminated or truncated:
             input("The environment will reset. Press Enter to continue...")
-            obs = env.reset()
+            obs, _ = env.reset()
             # Wait for meshcat to load the env.
             # TODO(JoseBarreiros-TRI) Replace sleep() with a readiness signal
             # from meshcat.

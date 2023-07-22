@@ -1,7 +1,7 @@
 from typing import Callable, Optional, Union
 import warnings
 
-import gym
+import gymnasium as gym
 import numpy as np
 
 from pydrake.common import RandomGenerator
@@ -134,10 +134,11 @@ class DrakeGymEnv(gym.Env):
 
         self.metadata['render.modes'] = ['human', 'ascii']
 
-        # (Maybe) setup rendering
+        # Setup rendering
         if render_rgb_port_id:
             assert isinstance(render_rgb_port_id, (OutputPortIndex, str))
-            self.metadata['render.modes'].append('rgb_array')
+            self.render_mode = 'rgb_array'
+            self.metadata['render_modes'].append('rgb_array')
         self.render_rgb_port_id = render_rgb_port_id
 
         self.generator = RandomGenerator()
@@ -229,11 +230,7 @@ class DrakeGymEnv(gym.Env):
                  == SimulatorStatus.ReturnReason.kReachedTerminationCondition))
         info = dict()
 
-        # TODO(ggould) This interface is in flux and lags its documentation;
-        # when gym is next upgraded it will begin to generate warnings.  At
-        # that time replace `(terminated or truncated)`
-        # with `terminated, truncated`.
-        return observation, reward, (terminated or truncated), info
+        return observation, reward, terminated, truncated, info
 
     def reset(self, *,
               seed: Optional[int] = None,
@@ -244,7 +241,9 @@ class DrakeGymEnv(gym.Env):
         new simulator is created.  Otherwise this method simply resets the
         `simulator` and its Context.
         """
-        assert options is None  # No options supported yet.
+        super().reset(seed=seed)
+        assert options is None or options == dict(), (
+            "Options are not supported in env.reset() method.")
 
         if (seed is not None):
             # TODO(ggould) This should not reset the generator if it was
@@ -269,11 +268,11 @@ class DrakeGymEnv(gym.Env):
         # Note: The output port will be evaluated without fixing the input
         # port.
         observations = self.observation_port.Eval(context)
-        return observations if not return_info else (observations, dict())
+        return observations, dict()
 
-    def render(self, mode='human'):
+    def render(self):
         """
-        Rendering in `human` mode is accomplished by calling Publish on
+        Rendering in `human` mode is accomplished by calling ForcedPublish on
         `system`.  This should cause visualizers inside the System (e.g.
         MeshcatVisualizer, PlanarSceneGraphVisualizer, etc.) to draw their
         outputs.  To be fully compliant, those visualizers should set their
@@ -286,26 +285,16 @@ class DrakeGymEnv(gym.Env):
         """
         assert self.simulator, "You must call reset() first"
 
-        if mode == 'human':
-            self.simulator.get_system().Publish(self.simulator.get_context())
+        if self.render_mode == 'human':
+            self.simulator.get_system().ForcedPublish(
+                self.simulator.get_context())
             return
-        elif mode == 'ansi':
+        elif self.render_mode == 'ansi':
             return __repr__(self.simulator.get_context())
-        elif mode == 'rgb_array':
+        elif self.render_mode == 'rgb_array':
             assert self.render_rgb_port, \
                 "You must set render_rgb_port in the constructor"
             return self.render_rgb_port.Eval(
                 self.simulator.get_context()).data[:, :, :3]
         else:
-            super(DrakeGymEnv, self).render(mode=mode)
-
-    def seed(self, seed=None):
-        """Implements gym.Env.seed using Drake's RandomGenerator."""
-        if seed:
-            self.generator = RandomGenerator(seed)
-        else:
-            seed = self.generator()
-        # Note: One could call self.action_space.seed(self.generator()) here,
-        # but it appears that is not the standard approach:
-        # https://github.com/openai/gym/issues/681
-        return [seed]
+            super(DrakeGymEnv).render()

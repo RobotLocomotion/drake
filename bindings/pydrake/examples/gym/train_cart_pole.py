@@ -1,7 +1,7 @@
 import argparse
 import sys
 
-import gym
+import gymnasium as gym
 
 from pydrake.geometry import StartMeshcat
 

@@ -4,10 +4,6 @@
 This file contains a number of helper utilities to set up our various
 experiments with less code.
 """
-import os
-import sys
-import warnings
-
 import numpy as np
 
 from pydrake.all import (

@@ -1,6 +1,6 @@
 import unittest
 
-import gym
+import gymnasium as gym
 import numpy as np
 import stable_baselines3.common.env_checker
 
@@ -71,14 +71,14 @@ class DrakeGymTest(unittest.TestCase):
     def test_reset(self):
         # reset(int) sets a deterministic seed.
         dut = self.make_env()
-        obs1 = dut.reset(seed=7)
-        obs2 = dut.reset(seed=7)
+        obs1, _ = dut.reset(seed=7)
+        obs2, _ = dut.reset(seed=7)
         self.assertTrue((obs1 == obs2).all())
 
         # reset() on its own gets a new arbitrary seed.
         dut = self.make_env()
-        obs1 = dut.reset()
-        obs2 = dut.reset()
+        obs1, _ = dut.reset()
+        obs2, _ = dut.reset()
         self.assertFalse((obs1 == obs2).all())
 
         # The difference when reset() follows reset(seed) is not
@@ -93,7 +93,7 @@ class DrakeGymTest(unittest.TestCase):
         dut = self.make_env()
         dut.reset()
         # TODO(ggould): This uses the old, pseudo-deprecated gym API.
-        observation, _, _, _ = dut.step(dut.action_space.sample())
+        observation, _, _, _, _ = dut.step(dut.action_space.sample())
         self.assertTrue(dut.observation_space.contains(observation))
 
 
