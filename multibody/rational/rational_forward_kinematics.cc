@@ -1,8 +1,12 @@
 #include "drake/multibody/rational/rational_forward_kinematics.h"
 
+#include <limits>
 #include <utility>
 
+#include <fmt/format.h>
+
 #include "drake/common/drake_assert.h"
+#include "drake/common/fmt_eigen.h"
 #include "drake/multibody/rational/rational_forward_kinematics_internal.h"
 #include "drake/multibody/tree/multibody_tree_topology.h"
 #include "drake/multibody/tree/prismatic_mobilizer.h"
@@ -13,6 +17,7 @@
 namespace drake {
 namespace multibody {
 namespace {
+const double kInf = std::numeric_limits<double>::infinity();
 
 RationalForwardKinematics::Pose<symbolic::Polynomial> GetIdentityPose() {
   RationalForwardKinematics::Pose<symbolic::Polynomial> pose;
@@ -75,10 +80,8 @@ RationalForwardKinematics::RationalForwardKinematics(
       const symbolic::Variable s_angle(fmt::format("s[{}]", s_.size()));
       s_.push_back(s_angle);
       s_angles_.push_back(s_angle);
-      cos_delta_.emplace_back(
-          fmt::format("cos_delta[{}]", cos_delta_.size()));
-      sin_delta_.emplace_back(
-          fmt::format("sin_delta[{}]", sin_delta_.size()));
+      cos_delta_.emplace_back(fmt::format("cos_delta[{}]", cos_delta_.size()));
+      sin_delta_.emplace_back(fmt::format("sin_delta[{}]", sin_delta_.size()));
       sin_cos_.emplace_back(sin_delta_.back(), cos_delta_.back());
       sin_cos_set_.insert(sin_delta_.back());
       sin_cos_set_.insert(cos_delta_.back());
@@ -132,6 +135,52 @@ RationalForwardKinematics::CalcBodyPoseAsMultilinearPolynomial(
         q_star, path[i - 1], path[i], poses[i - 1]));
   }
   return std::move(poses.back());
+}
+void RationalForwardKinematics::ComputeSBounds(
+    const Eigen::Ref<const Eigen::VectorXd>& q_star,
+    const Eigen::Ref<const Eigen::VectorXd>& q_box_lower,
+    const Eigen::Ref<const Eigen::VectorXd>& q_box_upper,
+    Eigen::VectorXd* s_box_lower, Eigen::VectorXd* s_box_upper) const {
+  DRAKE_DEMAND(s_box_lower != nullptr);
+  DRAKE_DEMAND(s_box_upper != nullptr);
+  s_box_lower->resize(s_.size());
+  s_box_upper->resize(s_.size());
+  for (int i = 0; i < ssize(s_); ++i) {
+    const internal::Mobilizer<double>& mobilizer =
+        GetInternalTree(plant_).get_mobilizer(
+            map_s_to_mobilizer_.at(s_[i].get_id()));
+    // the mobilizer cannot be a weld joint since weld joint doesn't introduce
+    // a variable into s_.
+    if (IsRevolute(mobilizer)) {
+      const int q_index = mobilizer.position_start_in_q();
+      if (q_star(q_index) < q_box_lower(q_index)) {
+        throw std::invalid_argument(fmt::format(
+            "ComputeSBounds: q_star({})={} should be >= q_box_lower({})={}.",
+            q_index, q_star(q_index), q_index, q_box_lower(q_index)));
+      }
+      if (q_star(q_index) > q_box_upper(q_index)) {
+        throw std::invalid_argument(fmt::format(
+            "ComputeSBounds: q_star({})={} should be <= q_box_upper({})={}.",
+            q_index, q_star(q_index), q_index, q_box_upper(q_index)));
+      }
+      (*s_box_upper)(i) =
+          q_box_upper(q_index) - q_star(q_index) >= M_PI
+              ? kInf
+              : tan((q_box_upper(q_index) - q_star(q_index)) / 2);
+      (*s_box_lower)(i) =
+          q_box_lower(q_index) - q_star(q_index) <= -M_PI
+              ? -kInf
+              : tan((q_box_lower(q_index) - q_star(q_index)) / 2);
+    } else if (IsPrismatic(mobilizer)) {
+      const int q_index = mobilizer.position_start_in_q();
+      (*s_box_upper)(i) = q_box_upper(q_index) - q_star(q_index);
+      (*s_box_lower)(i) = q_box_lower(q_index) - q_star(q_index);
+    } else {
+      // Successful construction guarantees nothing but supported mobilizer
+      // types.
+      DRAKE_UNREACHABLE();
+    }
+  }
 }
 
 symbolic::RationalFunction

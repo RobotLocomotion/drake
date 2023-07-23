@@ -1,9 +1,12 @@
 #include "drake/multibody/rational/rational_forward_kinematics.h"
 
+#include <limits>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/symbolic/rational_function.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/symbolic_test_util.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/multibody/rational/test/rational_forward_kinematics_test_utilities.h"
@@ -21,6 +24,8 @@ using multibody::BodyIndex;
 using multibody::ModelInstanceIndex;
 using symbolic::Polynomial;
 using symbolic::RationalFunction;
+
+const double kInf = std::numeric_limits<double>::infinity();
 
 void CheckBodyKinematics(const RationalForwardKinematics& dut,
                          const Eigen::Ref<const Eigen::VectorXd>& q_val,
@@ -405,6 +410,53 @@ TEST_F(KinematicTreeTest, TestSAndQConversionSymbolic) {
   Eigen::VectorXd q_star(7);
   q_star << 0.2, 0.3, 0.5, -0.1, 1.2, 0.2, -0.5;
   check_s_val(q_vars, q_val, q_star);
+}
+
+TEST_F(KinematicTreeTest, ComputeSBounds) {
+  RationalForwardKinematics dut(plant_.get());
+
+  // Test q_star within [q_box_lower, q_box_upper]
+  Eigen::VectorXd q_star(7);
+  Eigen::VectorXd q_box_upper(7);
+  Eigen::VectorXd q_box_lower(7);
+  q_star << 0.2, 0.3, 0.5, -0.1, 1.2, 0.2, -0.5;
+  // For all revolute joints, we have q_box_lower > = q_star - pi, q_box_upper
+  // <= q_star + pi.
+  q_box_upper << 1.5, 10, 0.8, 1.5, 2.5, 1.3, -0.1;
+  q_box_lower << -1, -3, -2, -1, 0.1, -0.5, -1;
+  Eigen::VectorXd s_box_lower;
+  Eigen::VectorXd s_box_upper;
+  dut.ComputeSBounds(q_star, q_box_lower, q_box_upper, &s_box_lower,
+                     &s_box_upper);
+  Eigen::VectorXd s_box_lower_expected = dut.ComputeSValue(q_box_lower, q_star);
+  EXPECT_TRUE(CompareMatrices(s_box_lower, s_box_lower_expected));
+  Eigen::VectorXd s_box_upper_expected = dut.ComputeSValue(q_box_upper, q_star);
+  EXPECT_TRUE(CompareMatrices(s_box_upper, s_box_upper_expected));
+  // Some revolute joint has q_box_upper - q_star > pi, q_box_lower - q_star <
+  // pi.
+  q_box_upper(0) = q_star(0) + 1.1 * M_PI;
+  q_box_lower(2) = q_star(2) - 1.2 * M_PI;
+  dut.ComputeSBounds(q_star, q_box_lower, q_box_upper, &s_box_lower,
+                     &s_box_upper);
+  s_box_lower_expected(2) = -kInf;
+  s_box_upper_expected(0) = kInf;
+  EXPECT_TRUE(CompareMatrices(s_box_lower, s_box_lower_expected));
+  EXPECT_TRUE(CompareMatrices(s_box_upper, s_box_upper_expected));
+
+  // Some q_box_lower is larger than q_star.
+  q_star(0) = 0;
+  q_box_lower(0) = 1;
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      dut.ComputeSBounds(q_star, q_box_lower, q_box_upper, &s_box_lower,
+                         &s_box_upper),
+      ".* should be >=.*");
+  // Some q_box_upper is smaller than q_star
+  q_box_lower(0) = -1;
+  q_box_upper(0) = -0.5;
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      dut.ComputeSBounds(q_star, q_box_lower, q_box_upper, &s_box_lower,
+                         &s_box_upper),
+      ".* should be <=.*");
 }
 
 }  // namespace

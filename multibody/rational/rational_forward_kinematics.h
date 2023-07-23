@@ -167,6 +167,19 @@ class RationalForwardKinematics {
     return q_val;
   }
 
+  /**
+   Computes the bound of s when q is in the box q_box_lower <= q <= q_box_upper.
+   Notice that for the revolute joint we have s = tan(clamp((θ − θ*)/2, −π/2,
+   π/2). Namely we will clamp (θ − θ*)/2 at ± π/2
+   @note We assuem for the revolute joint θ_box_lower <= θ_star <= θ_box_upper.
+   @throw an exception otherwise.
+   */
+  void ComputeSBounds(const Eigen::Ref<const Eigen::VectorXd>& q_star,
+                      const Eigen::Ref<const Eigen::VectorXd>& q_box_lower,
+                      const Eigen::Ref<const Eigen::VectorXd>& q_box_upper,
+                      Eigen::VectorXd* s_box_lower,
+                      Eigen::VectorXd* s_box_upper) const;
+
   const MultibodyPlant<double>& plant() const { return plant_; }
 
   Eigen::Map<const VectorX<symbolic::Variable>> s() const {
