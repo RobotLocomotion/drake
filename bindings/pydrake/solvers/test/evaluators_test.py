@@ -4,6 +4,7 @@ import numpy as np
 
 import pydrake.solvers as mp
 import pydrake.symbolic as sym
+from pydrake.autodiffutils import InitializeAutoDiff
 
 
 class TestCost(unittest.TestCase):
@@ -172,6 +173,7 @@ class TestConstraints(unittest.TestCase):
             mp.LinearMatrixInequalityConstraint,
             mp.LinearComplementarityConstraint,
             mp.ExponentialConeConstraint,
+            mp.MinimumValueConstraint,
             mp.Cost,
             mp.LinearCost,
             mp.QuadraticCost,
@@ -182,3 +184,32 @@ class TestConstraints(unittest.TestCase):
         ]
         for cls in cls_list:
             mp.Binding[cls]
+
+
+class TestMinimumValueConstraint(unittest.TestCase):
+    def test_without_minimum_value_upper(self):
+        def value_function(x: np.ndarray, v_influence: float)->np.ndarray:
+            return np.array([x[0]**2, x[0]+1, 2*x[0]])
+
+        # Test the constructor with value_function_double explicitly specified.
+        dut = mp.MinimumValueConstraint(
+            num_vars=1, minimum_value = 0.,
+            influence_value_offset=1., max_num_values=3,
+            value_function=value_function,
+            value_function_double=value_function)
+        self.assertEqual(dut.num_vars() , 1)
+        self.assertEqual(dut.num_constraints(), 1)
+        self.assertTrue(dut.CheckSatisfied(np.array([1.])))
+        self.assertFalse(dut.CheckSatisfied(np.array([-5.])))
+        # Evaluate with autodiff.
+        y = dut.Eval(InitializeAutoDiff(np.array([1.])))
+
+        # Test the constructor with default value_function_double.
+        dut = mp.MinimumValueConstraint(
+            num_vars=1, minimum_value = 0.,
+            influence_value_offset=1., max_num_values=3,
+            value_function=value_function)
+        self.assertTrue(dut.CheckSatisfied(np.array([1.])))
+        self.assertFalse(dut.CheckSatisfied(np.array([-5.])))
+
+

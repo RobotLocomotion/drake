@@ -4,6 +4,8 @@
 #include "drake/bindings/pydrake/common/cpp_param_pybind.h"
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_pybind.h"
+#include "drake/bindings/pydrake/common/wrap_function.h"
+#include "drake/bindings/pydrake/common/wrap_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
@@ -11,6 +13,7 @@
 #include "drake/solvers/constraint.h"
 #include "drake/solvers/cost.h"
 #include "drake/solvers/evaluator_base.h"
+#include "drake/solvers/minimum_value_constraint.h"
 
 using std::string;
 using std::vector;
@@ -35,6 +38,7 @@ using solvers::LinearEqualityConstraint;
 using solvers::LinearMatrixInequalityConstraint;
 using solvers::LInfNormCost;
 using solvers::LorentzConeConstraint;
+using solvers::MinimumValueConstraint;
 using solvers::PerspectiveQuadraticCost;
 using solvers::PositiveSemidefiniteConstraint;
 using solvers::QuadraticConstraint;
@@ -464,6 +468,28 @@ void BindEvaluatorsAndBindings(py::module m) {
           // dtype = object arrays must be copied, and cannot be referenced.
           py_rvp::copy, doc.ExpressionConstraint.vars.doc);
 
+  py::class_<MinimumValueConstraint, Constraint,
+      std::shared_ptr<MinimumValueConstraint>>(
+      m, "MinimumValueConstraint", doc.MinimumValueConstraint.doc)
+      .def(py::init([](int num_vars, double minimum_value,
+                        double influence_value_offset, int max_num_values,
+                        std::function<AutoDiffVecXd(
+                            const Eigen::Ref<const AutoDiffVecXd>&, double)>
+                            value_function,
+                        std::function<Eigen::VectorXd(
+                            const Eigen::Ref<const Eigen::VectorXd>&, double)>
+                            value_function_double) {
+        return std::make_unique<MinimumValueConstraint>(num_vars, minimum_value,
+            influence_value_offset, max_num_values, value_function,
+            value_function_double);
+      }),
+          py::arg("num_vars"), py::arg("minimum_value"),
+          py::arg("influence_value_offset"), py::arg("max_num_values"),
+          py::arg("value_function"),
+          py::arg("value_function_double") = std::function<Eigen::VectorXd(
+              const Eigen::Ref<const Eigen::VectorXd>&, double)>{},
+          doc.MinimumValueConstraint.ctor.doc_6args);
+
   auto constraint_binding = RegisterBinding<Constraint>(&m);
   DefBindingCastConstructor<Constraint>(&constraint_binding);
   RegisterBinding<LinearConstraint>(&m);
@@ -476,6 +502,7 @@ void BindEvaluatorsAndBindings(py::module m) {
   RegisterBinding<LinearMatrixInequalityConstraint>(&m);
   RegisterBinding<LinearComplementarityConstraint>(&m);
   RegisterBinding<ExponentialConeConstraint>(&m);
+  RegisterBinding<MinimumValueConstraint>(&m);
   // TODO(russt): PolynomialConstraint currently uses common::Polynomial, not
   // symbolic::Polynomial. Decide whether we want to bind the current c++
   // implementation as is, or convert it to symbolic::Polynomial first.
