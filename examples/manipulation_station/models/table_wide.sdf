@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<sdf version="1.7">
+  <model name="table">
+    <link name="table_body">
+      <visual name="table_visual">
+        <geometry>
+          <mesh>
+            <uri>package://drake_models/manipulation_station/table_wide.obj</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <collision name="table_top">
+        <pose> 0 0 -0.05 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>1.5 2.1875 0.1</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model>
+</sdf>

@@ -1,0 +1,77 @@
+<?xml version="1.0"?>
+<sdf version="1.7">
+  <model name="bin_model">
+    <!--
+    Axes:
+      +X - Pointing towards front
+      +Y - Pointing to left side
+      +Z - Up
+    Origin:
+      (0, 0, 0) at the center bottom of the bin
+    -->
+    <link name="bin_base">
+      <inertial>
+        <mass>18.70</mass>
+        <inertia>
+          <ixx>0.79</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.53</iyy>
+          <iyz>0</iyz>
+          <izz>1.2</izz>
+        </inertia>
+      </inertial>
+      <visual name="visual">
+        <pose>0 0 0 0 0 1.570796</pose>
+        <geometry>
+        <mesh>
+        <uri>package://drake_models/manipulation_station/bin.obj</uri>
+        </mesh>
+        </geometry>
+      </visual>
+      <collision name="front">
+        <pose>0.2025 0 0.105 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.015 0.56 0.21</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="back">
+        <pose>-0.2025 0 0.105 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.015 0.56 0.21</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="left">
+        <pose>0 0.2725 0.105 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.42 0.015 0.21</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="right">
+        <pose>0 -0.2725 0.105 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.42 0.015 0.21</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="bottom">
+        <pose>0.0 0.0 0.0075 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.42 0.56 0.015</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+    <frame name="bin_front_top_center">
+      <pose relative_to="bin_base">0.22 0 0.21 0 0 0</pose>
+    </frame>
+  </model>
+</sdf>
