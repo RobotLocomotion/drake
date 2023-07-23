@@ -117,6 +117,9 @@ class Hyperellipsoid final : public ConvexSet {
 
   // N.B. No need to override DoMaybeGetPoint here.
 
+  /** Returns the center, which is always feasible. */
+  std::optional<Eigen::VectorXd> DoMaybeGetFeasiblePoint() const final;
+
   bool DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
                     double tol) const final;
 
