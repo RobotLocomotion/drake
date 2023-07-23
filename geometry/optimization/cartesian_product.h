@@ -89,7 +89,7 @@ class CartesianProduct final : public ConvexSet {
 
   std::optional<Eigen::VectorXd> DoMaybeGetFeasiblePoint() const final;
 
-  /** Given a list of vectors, one from each constituent set of this
+  /* Given a list of vectors, one from each constituent set of this
   CartesianProduct, this stacks them into a single vector. Then, if this
   CartesianProduct has an associated transformation (in the form of an A_
   matrix and b_ vector), it applies that transformation. */
