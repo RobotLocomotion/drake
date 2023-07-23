@@ -4,6 +4,8 @@
 #include "drake/bindings/pydrake/common/cpp_param_pybind.h"
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_pybind.h"
+#include "drake/bindings/pydrake/common/wrap_function.h"
+#include "drake/bindings/pydrake/common/wrap_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
@@ -11,6 +13,7 @@
 #include "drake/solvers/constraint.h"
 #include "drake/solvers/cost.h"
 #include "drake/solvers/evaluator_base.h"
+#include "drake/solvers/minimum_value_constraint.h"
 
 using std::string;
 using std::vector;
@@ -35,6 +38,7 @@ using solvers::LinearEqualityConstraint;
 using solvers::LinearMatrixInequalityConstraint;
 using solvers::LInfNormCost;
 using solvers::LorentzConeConstraint;
+using solvers::MinimumValueConstraint;
 using solvers::PerspectiveQuadraticCost;
 using solvers::PositiveSemidefiniteConstraint;
 using solvers::QuadraticConstraint;
@@ -464,6 +468,82 @@ void BindEvaluatorsAndBindings(py::module m) {
           // dtype = object arrays must be copied, and cannot be referenced.
           py_rvp::copy, doc.ExpressionConstraint.vars.doc);
 
+  py::class_<MinimumValueConstraint, Constraint,
+      std::shared_ptr<MinimumValueConstraint>>(
+      m, "MinimumValueConstraint", doc.MinimumValueConstraint.doc)
+      .def(py::init(
+               [](int num_vars, double minimum_value,
+                   double influence_value_offset, int max_num_values,
+                   // If I pass in const Eigen::Ref<const AutoDiffVecXd>& here
+                   // then I got the RuntimeError: dtype=object arrays must be
+                   // copied, and cannot be referenced.
+                   std::function<AutoDiffVecXd(const AutoDiffVecXd&, double)>
+                       value_function,
+                   std::function<Eigen::VectorXd(
+                       const Eigen::Ref<const Eigen::VectorXd>&, double)>
+                       value_function_double) {
+                 return std::make_unique<MinimumValueConstraint>(num_vars,
+                     minimum_value, influence_value_offset, max_num_values,
+                     value_function, value_function_double);
+               }),
+          py::arg("num_vars"), py::arg("minimum_value"),
+          py::arg("influence_value_offset"), py::arg("max_num_values"),
+          py::arg("value_function"),
+          py::arg("value_function_double") = std::function<Eigen::VectorXd(
+              const Eigen::Ref<const Eigen::VectorXd>&, double)>{},
+          doc.MinimumValueConstraint.ctor.doc_6args)
+      .def(py::init(
+               [](int num_vars, double minimum_value_lower,
+                   double minimum_value_upper, double influence_value,
+                   int max_num_values,
+                   // If I pass in const Eigen::Ref<const AutoDiffVecXd>& here
+                   // then I got the RuntimeError: dtype=object arrays must be
+                   // copied, and cannot be referenced.
+                   std::function<AutoDiffVecXd(const AutoDiffVecXd&, double)>
+                       value_function,
+                   std::function<Eigen::VectorXd(
+                       const Eigen::Ref<const Eigen::VectorXd>&, double)>
+                       value_function_double) {
+                 return std::make_unique<MinimumValueConstraint>(num_vars,
+                     minimum_value_lower, minimum_value_upper, influence_value,
+                     max_num_values, value_function, value_function_double);
+               }),
+          py::arg("num_vars"), py::arg("minimum_value_lower"),
+          py::arg("minimum_value_upper"), py::arg("influence_value"),
+          py::arg("max_num_values"), py::arg("value_function"),
+          py::arg("value_function_double") = std::function<Eigen::VectorXd(
+              const Eigen::Ref<const Eigen::VectorXd>&, double)>{},
+          doc.MinimumValueConstraint.ctor.doc_7args)
+      .def("minimum_value_lower", &MinimumValueConstraint::minimum_value_lower,
+          doc.MinimumValueConstraint.minimum_value_lower.doc)
+      .def("minimum_value_upper", &MinimumValueConstraint::minimum_value_upper,
+          doc.MinimumValueConstraint.minimum_value_upper.doc)
+      .def("influence_value", &MinimumValueConstraint::influence_value,
+          doc.MinimumValueConstraint.influence_value.doc)
+      .def(
+          "set_penalty_function",
+          [](MinimumValueConstraint* self,
+              std::function<py::tuple(double, bool)> new_penalty_function) {
+            auto penalty_fun = [new_penalty_function](double x, double* penalty,
+                                   double* dpenalty) {
+              py::tuple penalty_tuple(2);
+              penalty_tuple = new_penalty_function(x, dpenalty != nullptr);
+              *penalty = penalty_tuple[0].cast<double>();
+              if (dpenalty) {
+                *dpenalty = penalty_tuple[1].cast<double>();
+              }
+            };
+            self->set_penalty_function(penalty_fun);
+          },
+          py::arg("new_penalty_function"),
+          "Setter for the penalty function. The penalty function "
+          "new_penalty_function(x: float, compute_grad: bool) -> tuple[float, "
+          "Optional[float]] "
+          "returns [penalty_value, penalty_gradient] when "
+          "compute_grad=True, or [penalty_value, None] when "
+          "compute_grad=False. See minimum_value_constraint.h on the "
+          "requirement on MinimumValuePenaltyFunction.");
+
   auto constraint_binding = RegisterBinding<Constraint>(&m);
   DefBindingCastConstructor<Constraint>(&constraint_binding);
   RegisterBinding<LinearConstraint>(&m);
@@ -476,6 +556,7 @@ void BindEvaluatorsAndBindings(py::module m) {
   RegisterBinding<LinearMatrixInequalityConstraint>(&m);
   RegisterBinding<LinearComplementarityConstraint>(&m);
   RegisterBinding<ExponentialConeConstraint>(&m);
+  RegisterBinding<MinimumValueConstraint>(&m);
   // TODO(russt): PolynomialConstraint currently uses common::Polynomial, not
   // symbolic::Polynomial. Decide whether we want to bind the current c++
   // implementation as is, or convert it to symbolic::Polynomial first.
