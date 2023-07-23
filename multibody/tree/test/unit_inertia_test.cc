@@ -282,6 +282,24 @@ GTEST_TEST(UnitInertia, SolidCylinderAboutEnd) {
       "[^]* The unit_vector argument .* is not a unit vector.");
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+// Tests the static method to obtain the unit inertia of a solid cylinder B
+// computed about a point Bp at the center of its base.
+// 2023-10-01 Remove with the old SolidCylinderAboutEnd test.
+GTEST_TEST(UnitInertia, SolidCylinderAboutEndDeprecated) {
+  const double r = 2.5;
+  const double L = 1.5;
+  const double I_perp = (3.0 * r * r + L * L) / 12.0 + L * L / 4.0;
+  const double I_axial = r * r / 2.0;
+  const UnitInertia<double> G_expected(I_perp, I_perp, I_axial);
+  UnitInertia<double> G_BBp_B =
+      UnitInertia<double>::SolidCylinderAboutEnd(r, L);
+  EXPECT_TRUE(G_BBp_B.CopyToFullMatrix3().isApprox(
+      G_expected.CopyToFullMatrix3(), kEpsilon));
+}
+#pragma GCC diagnostic pop
+
 // Tests the static method to obtain the unit inertia of a solid capsule
 // computed about its center of mass.
 GTEST_TEST(UnitInertia, SolidCapsule) {
