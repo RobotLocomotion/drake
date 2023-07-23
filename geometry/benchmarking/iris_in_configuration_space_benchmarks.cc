@@ -55,7 +55,7 @@ class IiwaWithShelvesAndBins : public benchmark::Fixture {
       iris_options_.num_collision_infeasible_samples = 1;
     } else {
       iris_options_.iteration_limit = 10;
-      iris_options_.num_collision_infeasible_samples = 5;
+      iris_options_.num_collision_infeasible_samples = 3;
     }
     iris_options_.require_sample_point_is_contained = true;
     iris_options_.relative_termination_threshold = 0.01;
