@@ -624,12 +624,11 @@ const char block_urdf[] = R"(
 // A block on a vertical track, free to rotate (in the plane) with width `w` of
 // 2 and height `h` of 1, plus a ground plane at z=0.  The true configuration
 // space is min(q₀ ± .5w sin(q₁) ± .5h cos(q₁)) ≥ 0, where the min is over the
-// ±. These region is also visualized at
+// ±. This region is also visualized at
 // https://www.desmos.com/calculator/ok5ckpa1kp.
 GTEST_TEST(IrisInConfigurationSpaceTest, BlockOnGround) {
   const Vector2d sample{1.0, 0.0};
   IrisOptions options;
-  options.num_collision_infeasible_samples = 10;
   HPolyhedron region = IrisFromUrdf(block_urdf, sample, options);
 
   EXPECT_EQ(region.ambient_dimension(), 2);
@@ -731,8 +730,8 @@ GTEST_TEST(IrisInConfigurationSpaceTest, ConvexConfigurationSpace) {
 
   // With num_collision_infeasible_samples == 1, we found that SNOPT misses this
   // point (on some platforms with some random seeds).
+  options.num_collision_infeasible_samples = 25;
 
-  options.num_collision_infeasible_samples = 15;
   HPolyhedron region = IrisFromUrdf(convex_urdf, sample, options);
   EXPECT_FALSE(region.PointInSet(Vector2d{z_test, theta_test}));
 
