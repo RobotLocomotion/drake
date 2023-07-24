@@ -1,14 +1,14 @@
 #include <gtest/gtest.h>
 
-#include "drake/common/drake_assert.h"
-#include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/rigid_transform.h"
+#include "drake/multibody/tree/ball_rpy_joint.h"
 #include "drake/multibody/tree/frame.h"
-#include "drake/multibody/tree/mobilizer_impl.h"
 #include "drake/multibody/tree/multibody_tree-inl.h"
 #include "drake/multibody/tree/multibody_tree_system.h"
-#include "drake/multibody/tree/space_xyz_mobilizer.h"
+#include "drake/multibody/tree/prismatic_joint.h"
+#include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/spatial_inertia.h"
 #include "drake/multibody/tree/unit_inertia.h"
 #include "drake/systems/framework/context.h"
@@ -18,178 +18,29 @@ namespace multibody {
 namespace internal {
 namespace {
 
+using math::RotationMatrixd;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
 using systems::Context;
 
 constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
 
-// A cylindrical-like mobilizer that permits rotation about the x-axis and
-// translation along the y-axis.
-template <typename T>
-class FeatherstoneMobilizer final : public MobilizerImpl<T, 2, 2> {
- public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FeatherstoneMobilizer)
-
-  FeatherstoneMobilizer(const Frame<T>& inboard_frame_F,
-                        const Frame<T>& outboard_frame_M) :
-      MobilizerImpl<T, 2, 2>(inboard_frame_F, outboard_frame_M) {
-    H_FM_ << 1, 0,
-             0, 0,
-             0, 0,
-             0, 0,
-             0, 1,
-             0, 0;
-  }
-
-  bool can_rotate() const final    { return true; }
-  bool can_translate() const final { return true; }
-
-  const FeatherstoneMobilizer<T>& SetAngles(
-      systems::Context<T>* context,
-      const Vector2<T>& angles) const {
-    auto q = this->GetMutablePositions(context);
-    DRAKE_ASSERT(q.size() == kNq);
-    q = angles;
-    return *this;
-  }
-
-  math::RigidTransform<T> CalcAcrossMobilizerTransform(
-      const systems::Context<T>& context) const override {
-    const Vector3<T> axis_rotation_F = rotation_axis();
-    const T rotation = get_rotation(context);
-    const math::RotationMatrix<T> R_FM(
-        Eigen::AngleAxis<T>(rotation, axis_rotation_F));
-
-    const Vector3<T> axis_translation_F = translation_axis();
-    const T translation = get_translation(context);
-    const Vector3<T> p_FM = translation * axis_translation_F;
-
-    return math::RigidTransform<T>(R_FM, p_FM);
-  }
-
-  SpatialVelocity<T> CalcAcrossMobilizerSpatialVelocity(
-      const systems::Context<T>& context,
-      const Eigen::Ref<const VectorX<T>>& v) const override {
-    DRAKE_ASSERT(v.size() == kNv);
-    return SpatialVelocity<T>(H_FM_ * v);
-  }
-
-  SpatialAcceleration<T> CalcAcrossMobilizerSpatialAcceleration(
-      const systems::Context<T>& context,
-      const Eigen::Ref<const VectorX<T>>& vdot) const override {
-    DRAKE_ASSERT(vdot.size() == kNv);
-    // Note that Hdot * v = 0 for this mobilizer.
-    return SpatialAcceleration<T>(H_FM_ * vdot);
-  }
-
-  void ProjectSpatialForce(
-      const systems::Context<T>& context,
-      const SpatialForce<T>& F_Mo_F,
-      Eigen::Ref<VectorX<T>> tau) const override {
-    DRAKE_ASSERT(tau.size() == kNv);
-    tau = H_FM_.transpose() * F_Mo_F.get_coeffs();
-  }
-
-  bool is_velocity_equal_to_qdot() const override { return true; }
-
-  void MapVelocityToQDot(
-      const systems::Context<T>& context,
-      const Eigen::Ref<const VectorX<T>>& v,
-      EigenPtr<VectorX<T>> qdot) const override {
-    DRAKE_ASSERT(v.size() == kNv);
-    DRAKE_ASSERT(qdot != nullptr);
-    DRAKE_ASSERT(qdot->size() == kNq);
-    *qdot = v;
-  }
-
-  void MapQDotToVelocity(
-      const systems::Context<T>& context,
-      const Eigen::Ref<const VectorX<T>>& qdot,
-      EigenPtr<VectorX<T>> v) const override {
-    DRAKE_ASSERT(qdot.size() == kNq);
-    DRAKE_ASSERT(v != nullptr);
-    DRAKE_ASSERT(v->size() == kNv);
-    *v = qdot;
-  }
-
- protected:
-  void DoCalcNMatrix(const systems::Context<T>&,
-                     EigenPtr<MatrixX<T>> N) const override {
-    N->setIdentity();
-  }
-
-  void DoCalcNplusMatrix(
-      const systems::Context<T>&,
-      EigenPtr<MatrixX<T>> Nplus) const override {
-    Nplus->setIdentity();
-  }
-
-  std::unique_ptr<Mobilizer<double>> DoCloneToScalar(
-      const MultibodyTree<double>& tree_clone) const override {
-    return TemplatedDoCloneToScalar(tree_clone);
-  }
-
-  std::unique_ptr<Mobilizer<AutoDiffXd>> DoCloneToScalar(
-      const MultibodyTree<AutoDiffXd>& tree_clone) const override {
-    return TemplatedDoCloneToScalar(tree_clone);
-  }
-
-  std::unique_ptr<Mobilizer<symbolic::Expression>> DoCloneToScalar(
-      const MultibodyTree<symbolic::Expression>& tree_clone) const override {
-    return TemplatedDoCloneToScalar(tree_clone);
-  }
-
- private:
-  typedef MobilizerImpl<T, 2, 2> MobilizerBase;
-
-  const Vector3<T> rotation_axis() const {
-    return H_FM_.template block<3, 1>(0, 0);
-  }
-
-  const Vector3<T> translation_axis() const {
-    return H_FM_.template block<3, 1>(3, 1);
-  }
-
-  const T get_rotation(const systems::Context<T>& context) const {
-    const auto& q = this->get_positions(context);
-    return q[0];
-  }
-
-  const T get_translation(const systems::Context<T>& context) const {
-    const auto& q = this->get_positions(context);
-    return q[1];
-  }
-
-  template <typename ToScalar>
-  std::unique_ptr<Mobilizer<ToScalar>> TemplatedDoCloneToScalar(
-      const MultibodyTree<ToScalar>& tree_clone) const {
-    const Frame<ToScalar>& inboard_frame_clone =
-        tree_clone.get_variant(this->inboard_frame());
-    const Frame<ToScalar>& outboard_frame_clone =
-        tree_clone.get_variant(this->outboard_frame());
-    return std::make_unique<FeatherstoneMobilizer<ToScalar>>(
-        inboard_frame_clone, outboard_frame_clone);
-  }
-
-  using MobilizerBase::kNq;
-  using MobilizerBase::kNv;
-
-  Eigen::Matrix<T, 6, kNv> H_FM_;
-};
-
-// An articulated body inertia from Example 7.1, Pages 123 - 124 of
-// [Featherstone 2008]. The test consists of a cylinder inside of a box. The
+// An articulated body inertia (ABI) test from Example 7.1, Pages 122 - 124 of
+// [Featherstone 2008]. The test consists of a cylinder C inside of a box B. The
 // cylinder is allowed to rotate about the x-axis and translate along the
-// y-axis.
+// y-axis. We use an intermediate massless body M to emulate a 2 dof joint
+// between the box and cylinder.
 //
 // This will test basic recursion and projection of articulated body inertias.
 // One extension from the example from Featherstone is that this test uses a
-// revolute joint to connect the box with the world (inertial) frame so further
-// testing can be done.
+// gimbal (ball rpy) joint to connect the box with the world (inertial) frame so
+// further testing can be done.
 //
-/// - [Featherstone 2008] Featherstone, R., 2008.
-///     Rigid body dynamics algorithms. Springer.
+// [Featherstone 2008] Featherstone, R., Rigid Body Dynamics Algorithms.
+//                     Springer 2008
+
+// This first test leaves everything aligned with World, making hand calculation
+// of the ABIs easy.
 GTEST_TEST(ArticulatedBodyInertiaAlgorithm, FeatherstoneExample) {
   // Create box (B).
   const double Lx = 0.4, Ly = 1.0, Lz = 1.0;
@@ -209,17 +60,23 @@ GTEST_TEST(ArticulatedBodyInertiaAlgorithm, FeatherstoneExample) {
   auto tree_owned = std::make_unique<MultibodyTree<double>>();
   auto& tree = *tree_owned;
 
-  // Add box body and SpaceXYZ mobilizer.
+  // Add box body and gimbal (BallRpy) joint.
   const RigidBody<double>& box_link = tree.AddBody<RigidBody>("box", M_Bcm);
-  const Frame<double>& world_frame = tree.world_frame();
-  const Frame<double>& box_frame = box_link.body_frame();
-  tree.AddMobilizer<SpaceXYZMobilizer>(world_frame, box_frame);
+  tree.AddJoint<BallRpyJoint>("ball", tree.world_body(), {},
+                              box_link, {});
 
-  // Add cylinder body and Featherstone mobilizer.
+  // Add a massless body that can rotate about x.
+  const RigidBody<double>& massless_link = tree.AddBody<RigidBody>(
+      "massless", SpatialInertia<double>(0, Vector3d::Zero(),
+                                         UnitInertia<double>(0, 0, 0)));
+  tree.AddJoint<RevoluteJoint>(
+      "revolute", box_link, {}, massless_link, {}, Vector3d(1, 0, 0));
+
+  // Add cylinder body and let it translate along y.
   const RigidBody<double>& cylinder_link =
       tree.AddBody<RigidBody>("cylinder", M_Ccm);
-  const Frame<double>& cylinder_frame = cylinder_link.body_frame();
-  tree.AddMobilizer<FeatherstoneMobilizer>(box_frame, cylinder_frame);
+  tree.AddJoint<PrismaticJoint>("prismatic", massless_link, {},
+                                cylinder_link, {}, Vector3d(0, 1, 0));
 
   // Transfer tree to system and get a Context.
   MultibodyTreeSystem<double> system(std::move(tree_owned));
@@ -233,36 +90,63 @@ GTEST_TEST(ArticulatedBodyInertiaAlgorithm, FeatherstoneExample) {
   ArticulatedBodyInertiaCache<double> abc(tree.get_topology());
   tree.CalcArticulatedBodyInertiaCache(*context, &abc);
 
-  // Get expected projected articulated body inertia of cylinder.
+  // Get expected projected articulated body inertia of cylinder. Only the
+  // y translation is projected out.
   Matrix6<double> M_cylinder_mat = M_Ccm.CopyToFullMatrix6();
-  Matrix6<double> Pplus_BC_W_expected_mat = Matrix6<double>::Zero();
-  Pplus_BC_W_expected_mat(1, 1) = M_cylinder_mat(1, 1);
-  Pplus_BC_W_expected_mat(2, 2) = M_cylinder_mat(2, 2);
-  Pplus_BC_W_expected_mat(3, 3) = mass_cylinder;
-  Pplus_BC_W_expected_mat(5, 5) = mass_cylinder;
+  Matrix6<double> Pplus_C_W_expected_mat = Matrix6<double>::Zero();
+  Pplus_C_W_expected_mat(0, 0) = M_cylinder_mat(0, 0);
+  Pplus_C_W_expected_mat(1, 1) = M_cylinder_mat(1, 1);
+  Pplus_C_W_expected_mat(2, 2) = M_cylinder_mat(2, 2);
+  Pplus_C_W_expected_mat(3, 3) = mass_cylinder;
+  Pplus_C_W_expected_mat(5, 5) = mass_cylinder;
 
   // Compare results.
-  const ArticulatedBodyInertia<double>& Pplus_BC_W_expected =
-      ArticulatedBodyInertia<double>(Pplus_BC_W_expected_mat);
-  const ArticulatedBodyInertia<double>& Pplus_BC_W_actual =
+  const ArticulatedBodyInertia<double>& Pplus_C_W_actual =
       abc.get_Pplus_PB_W(cylinder_link.node_index());
-  EXPECT_TRUE(Pplus_BC_W_expected.CopyToFullMatrix6().isApprox(
-      Pplus_BC_W_actual.CopyToFullMatrix6(), kEpsilon));
+  EXPECT_TRUE(CompareMatrices(Pplus_C_W_expected_mat,
+                              Pplus_C_W_actual.CopyToFullMatrix6(), kEpsilon));
+
+  Matrix6<double> Pplus_M_W_expected_mat(Pplus_C_W_expected_mat);
+  Pplus_M_W_expected_mat(0, 0) = 0.0;  // x inertia projected out
+
+  const ArticulatedBodyInertia<double>& Pplus_M_W_actual =
+      abc.get_Pplus_PB_W(massless_link.node_index());
+  EXPECT_TRUE(CompareMatrices(Pplus_M_W_expected_mat,
+      Pplus_M_W_actual.CopyToFullMatrix6(), kEpsilon));
 
   // Get expected projected articulated body inertia of the articulated body
   // consisting of the box and cylinder.
-  Matrix6<double> Pplus_WB_W_expected_mat = Matrix6<double>::Zero();
-  Pplus_WB_W_expected_mat(3, 3) = mass_box + mass_cylinder;
-  Pplus_WB_W_expected_mat(4, 4) = mass_box;
-  Pplus_WB_W_expected_mat(5, 5) = mass_box + mass_cylinder;
+  Matrix6<double> Pplus_B_W_expected_mat = Matrix6<double>::Zero();
+  Pplus_B_W_expected_mat(3, 3) = mass_box + mass_cylinder;
+  Pplus_B_W_expected_mat(4, 4) = mass_box;
+  Pplus_B_W_expected_mat(5, 5) = mass_box + mass_cylinder;
 
   // Compare results.
-  const ArticulatedBodyInertia<double>& P_WB_W_expected =
-      ArticulatedBodyInertia<double>(Pplus_WB_W_expected_mat);
-  const ArticulatedBodyInertia<double>& P_WB_W_actual =
+  const ArticulatedBodyInertia<double>& P_B_W_actual =
       abc.get_Pplus_PB_W(box_link.node_index());
-  EXPECT_TRUE(P_WB_W_expected.CopyToFullMatrix6().isApprox(
-      P_WB_W_actual.CopyToFullMatrix6(), kEpsilon));
+  EXPECT_TRUE(CompareMatrices(Pplus_B_W_expected_mat,
+      P_B_W_actual.CopyToFullMatrix6(), kEpsilon));
+}
+
+// This helper function projects a body's ABI P across its inboard mobilizer
+// with hinge matrix H to get P⁺. (P⁺ is the ABI as seen from the
+// inboard side of the inboard joint, that is, with the joint dofs projected
+// out.) Both inputs should be expressed in World.
+// See section 6.2 (pp. 100-105) in [Jain 2011] for derivation -- this function
+// implements Eqn. 6.25. Noting that our H is transposed from Jain's, we have:
+//    P⁺ = τbar ⋅ P                (6.25)
+//    where τbar = I - G⋅Hᵀ        (6.16)
+//             G = P⋅H⋅D⁻¹         (6.13)
+//             D = Hᵀ⋅P⋅H          (6.13)
+//
+// [Jain 2011] Jain, A., Robot and Multibody Dynamics. Springer 2011
+template <int dofs>
+Matrix6<double> Project(const Matrix6<double>& P,
+                        const Eigen::Matrix<double, 6, dofs>& H) {
+  const auto D = H.transpose() * P * H;
+  const auto G = P * H * D.inverse();
+  const auto taubar = Matrix6<double>::Identity() - G * H.transpose();
+  return taubar * P;
 }
 
 // A similar test to FeatherstoneExample. The main difference is that this
@@ -286,34 +170,36 @@ GTEST_TEST(ArticulatedBodyInertiaAlgorithm, ModifiedFeatherstoneExample) {
   auto tree_owned = std::make_unique<MultibodyTree<double>>();
   auto& tree = *tree_owned;
 
-  // Add box body and SpaceXYZ mobilizer.
-  const RigidBody<double>& box_link = tree.AddBody<RigidBody>(
-      "Box", M_Bcm);
-  const Frame<double>& world_frame = tree.world_frame();
-  const Frame<double>& box_frame = box_link.body_frame();
-  const SpaceXYZMobilizer<double>& WB_mobilizer =
-      tree.AddMobilizer<SpaceXYZMobilizer>(world_frame, box_frame);
+  // Add box body and gimbal (BallRpy) joint.
+  const RigidBody<double>& box_link = tree.AddBody<RigidBody>("box", M_Bcm);
+  const auto& WB_joint =
+      tree.AddJoint<BallRpyJoint>("ball", tree.world_body(), {}, box_link, {});
 
-  // Add cylinder body and Featherstone mobilizer.
-  const RigidBody<double>& cylinder_link = tree.AddBody<RigidBody>(
-      "Cylinder", M_Ccm);
-  const Frame<double>& cylinder_frame = cylinder_link.body_frame();
-  const FeatherstoneMobilizer<double>& BC_mobilizer =
-      tree.AddMobilizer<FeatherstoneMobilizer>(box_frame, cylinder_frame);
+  // Add a massless body that can rotate about x.
+  const RigidBody<double>& massless_link = tree.AddBody<RigidBody>(
+      "massless", SpatialInertia<double>(0, Vector3d::Zero(),
+                                         UnitInertia<double>(0, 0, 0)));
+  const auto& BM_joint = tree.AddJoint<RevoluteJoint>(
+      "revolute", box_link, {}, massless_link, {}, Vector3d(1, 0, 0));
+
+  // Add cylinder body and let it translate along y.
+  const RigidBody<double>& cylinder_link =
+      tree.AddBody<RigidBody>("cylinder", M_Ccm);
+  const auto& MC_joint = tree.AddJoint<PrismaticJoint>(
+      "prismatic", massless_link, {}, cylinder_link, {}, Vector3d(0, 1, 0));
 
   // Transfer tree to system and get a Context.
   MultibodyTreeSystem<double> system(std::move(tree_owned));
   auto context = system.CreateDefaultContext();
 
-  // State of mobilizer connecting the world and box.
+  // State of joint connecting the world and box.
   Vector3d q_WB;
   q_WB << 0.0, -M_PI_2, 0.0;
-  WB_mobilizer.set_angles(context.get(), q_WB);
+  WB_joint.set_angles(context.get(), q_WB);
 
-  // State of the mobilizer connecting the box and cylinder.
-  Vector2<double> q_BC;
-  q_BC << M_PI_4, 0.2;
-  BC_mobilizer.SetAngles(context.get(), q_BC);
+  // State of the joints connecting the box and cylinder.
+  BM_joint.set_angle(context.get(), M_PI_4);
+  MC_joint.set_translation(context.get(), 0.2);
 
   // Update cache.
   PositionKinematicsCache<double> pc(tree.get_topology());
@@ -323,51 +209,78 @@ GTEST_TEST(ArticulatedBodyInertiaAlgorithm, ModifiedFeatherstoneExample) {
   ArticulatedBodyInertiaCache<double> abc(tree.get_topology());
   tree.CalcArticulatedBodyInertiaCache(*context,  &abc);
 
-  // Rotate the spatial inertia about the y-axis to match the rotation of
-  // q_WB.
-  drake::math::RotationMatrix<double> R_ZX =
-      drake::math::RotationMatrix<double>::MakeYRotation(-M_PI_2);
-  Matrix6<double> M_cylinder_mat = M_Ccm.ReExpress(R_ZX).CopyToFullMatrix6();
+  // Find the rotation R_WC from World to the Cylinder frame.
+  // We have R_WB = -π/2 about y, R_BM = π/4 about x, R_MC = identity.
+  const RotationMatrixd R_WB = RotationMatrixd::MakeYRotation(-M_PI_2);
+  const RotationMatrixd R_BM = RotationMatrixd::MakeXRotation(M_PI_4);
+  const RotationMatrixd R_WM = R_WB * R_BM;
+  const RotationMatrixd R_MC;
+  const RotationMatrixd R_WC = R_WB * R_BM * R_MC;
 
-  // Get expected projected articulated body inertia of cylinder.
-  Matrix6<double> Pplus_BC_W_expected_mat = Matrix6<double>::Zero();
-  Pplus_BC_W_expected_mat(0, 0) = M_cylinder_mat(0, 0);
-  Pplus_BC_W_expected_mat(1, 1) = M_cylinder_mat(1, 1);
-  Pplus_BC_W_expected_mat(3, 3) = mass_cylinder;
-  Pplus_BC_W_expected_mat(5, 5) = mass_cylinder;
+  // To rotate spatial 6-vectors & matrices we use 2 diagonal rotation blocks.
+  Matrix6<double> R6_WM = Matrix6<double>::Zero();
+  R6_WM.block<3, 3>(0, 0) = R_WM.matrix();
+  R6_WM.block<3, 3>(3, 3) = R_WM.matrix();
+  const Matrix6<double> R6_WC = R6_WM;  // since R_MC=I
 
-  // Compare results.
-  const ArticulatedBodyInertia<double>& Pplus_BC_W_expected =
-      ArticulatedBodyInertia<double>(Pplus_BC_W_expected_mat);
-  const ArticulatedBodyInertia<double>& Pplus_BC_W_actual =
+  const Matrix6<double> M_Ccm_mat = M_Ccm.CopyToFullMatrix6();
+  Matrix6<double> M_Ccm_proj(M_Ccm_mat);  // This is ABI P_C.
+  M_Ccm_proj(4, 4) = 0.0;  // Project out the y translation to get Pplus.
+  Matrix6<double> Pplus_C_W_expected_mat =
+      R6_WC * M_Ccm_proj * R6_WC.transpose();  // Re-express in World.
+
+  // Compare results for the cylinder.
+  const ArticulatedBodyInertia<double>& Pplus_C_W_expected =
+      ArticulatedBodyInertia<double>(Pplus_C_W_expected_mat);
+  const ArticulatedBodyInertia<double>& Pplus_C_W_actual =
       abc.get_Pplus_PB_W(cylinder_link.node_index());
-  EXPECT_TRUE(Pplus_BC_W_expected.CopyToFullMatrix6().isApprox(
-      Pplus_BC_W_actual.CopyToFullMatrix6(), kEpsilon));
+  EXPECT_TRUE(CompareMatrices(Pplus_C_W_expected_mat,
+                              Pplus_C_W_actual.CopyToFullMatrix6(), kEpsilon));
 
-  // H_WB_W does not change with q.
-  Eigen::Matrix<double, 6, 3> H_WB_W = Eigen::Matrix<double, 6, 3>::Zero();
-  H_WB_W.block<3, 3>(0, 0) = Matrix3<double>::Identity();
+  // Get expected ABI of the massless body. This is just Pplus_C shifted by
+  // the translation amount to get it back to the massless body's frame.
+  Matrix6<double> P_M_W_expected_mat(
+      Pplus_C_W_expected.Shift(R_WC * Vector3d(0.0, -0.2, 0.0))
+      .CopyToFullMatrix6());
+
+  // Verify that we get the right P_M.
+  const ArticulatedBodyInertia<double>& P_M_W_actual =
+      abc.get_P_B_W(massless_link.node_index());
+  EXPECT_TRUE(CompareMatrices(P_M_W_expected_mat,
+                              P_M_W_actual.CopyToFullMatrix6(), kEpsilon));
+
+  // Need to project P_M to Pplus_M. We'll use the local Project() function
+  // to remove the inertia about the massless body's x-axis revolute joint.
+  Vector6d H_M_M; H_M_M << 1, 0, 0, 0, 0, 0;  // rotates about x
+  const Vector6d H_M_W = R6_WM * H_M_M;  // re-express in W
+  Matrix6<double> Pplus_M_W_expected_mat = Project(P_M_W_expected_mat, H_M_W);
+
+  const ArticulatedBodyInertia<double> Pplus_M_W_expected(
+      Pplus_M_W_expected_mat);
+  const ArticulatedBodyInertia<double>& Pplus_M_W_actual =
+      abc.get_Pplus_PB_W(massless_link.node_index());
+  EXPECT_TRUE(CompareMatrices(Pplus_M_W_expected_mat,
+                              Pplus_M_W_actual.CopyToFullMatrix6(), kEpsilon));
+
+  // H for the world-box rpy joint is already in World so we don't need to
+  // rotate it.
+  Eigen::Matrix<double, 6, 3> H_B_W = Eigen::Matrix<double, 6, 3>::Zero();
+  H_B_W.block<3, 3>(0, 0) = Matrix3<double>::Identity();
 
   // The articulated body inertia of the box is the sum of the rotated spatial
-  // inertia of B and the shifted Pplus_BC_W.
-  const Matrix6<double> P_B_W =
-      Pplus_BC_W_expected.Shift(Vector3d(0.0, -0.2, 0.0)).CopyToFullMatrix6()
-          + M_Bcm.ReExpress(R_ZX).CopyToFullMatrix6();
+  // inertia of B and Pplus_M_W.
+  const Matrix6<double> P_B_W_expected_mat =
+      Pplus_M_W_expected_mat + M_Bcm.ReExpress(R_WB).CopyToFullMatrix6();
 
   // Get expected projected articulated body inertia of the articulated body
-  // consisting of the box and cylinder.
-  Matrix6<double> Pplus_WB_W_expected_mat =
-      (Matrix6<double>::Identity() - P_B_W * H_WB_W
-          * (H_WB_W.transpose() * P_B_W * H_WB_W).inverse()
-          * H_WB_W.transpose()) * P_B_W;
+  // consisting of the box, massless body, and cylinder.
+  Matrix6<double> Pplus_B_W_expected_mat = Project(P_B_W_expected_mat, H_B_W);
 
   // Compare results.
-  const ArticulatedBodyInertia<double>& P_WB_W_expected =
-      ArticulatedBodyInertia<double>(Pplus_WB_W_expected_mat);
-  const ArticulatedBodyInertia<double>& P_WB_W_actual =
+  const ArticulatedBodyInertia<double>& Pplus_B_W_actual =
       abc.get_Pplus_PB_W(box_link.node_index());
-  EXPECT_TRUE(P_WB_W_expected.CopyToFullMatrix6().isApprox(
-      P_WB_W_actual.CopyToFullMatrix6(), kEpsilon));
+  EXPECT_TRUE(CompareMatrices(Pplus_B_W_expected_mat,
+      Pplus_B_W_actual.CopyToFullMatrix6(), kEpsilon));
 }
 
 }  // namespace
