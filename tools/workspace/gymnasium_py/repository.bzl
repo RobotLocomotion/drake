@@ -11,5 +11,8 @@ def gymnasium_py_repository(
         commit = "v0.29.0",
         sha256 = "3a108018cf50dc327bfc66e479c280b8112de597804ceeaa3cc50860a2905115",  # noqa
         build_file = ":package.BUILD.bazel",
+        patches = [
+            ":no_ndarray_typing.patch",
+        ],
         mirrors = mirrors,
     )
