@@ -12,6 +12,7 @@
 #include "drake/multibody/contact_solvers/contact_configuration.h"
 #include "drake/multibody/contact_solvers/contact_solver_utils.h"
 #include "drake/multibody/contact_solvers/sap/sap_contact_problem.h"
+#include "drake/multibody/contact_solvers/sap/sap_distance_constraint.h"
 #include "drake/multibody/contact_solvers/sap/sap_friction_cone_constraint.h"
 #include "drake/multibody/contact_solvers/sap/sap_holonomic_constraint.h"
 #include "drake/multibody/contact_solvers/sap/sap_limit_constraint.h"
@@ -31,6 +32,7 @@ using drake::multibody::contact_solvers::internal::MatrixBlock;
 using drake::multibody::contact_solvers::internal::SapConstraint;
 using drake::multibody::contact_solvers::internal::SapConstraintJacobian;
 using drake::multibody::contact_solvers::internal::SapContactProblem;
+using drake::multibody::contact_solvers::internal::SapDistanceConstraint;
 using drake::multibody::contact_solvers::internal::SapFrictionConeConstraint;
 using drake::multibody::contact_solvers::internal::SapHolonomicConstraint;
 using drake::multibody::contact_solvers::internal::SapLimitConstraint;
@@ -400,17 +402,10 @@ void SapDriver<T>::AddDistanceConstraints(const systems::Context<T>& context,
                                           SapContactProblem<T>* problem) const {
   DRAKE_DEMAND(problem != nullptr);
 
-  // Distance constraints do not have impulse limits, they are bi-lateral
-  // constraints. Each distance constraint introduces a single constraint
-  // equation.
-  constexpr double kInfinity = std::numeric_limits<double>::infinity();
-  const Vector1<T> gamma_lower(-kInfinity);
-  const Vector1<T> gamma_upper(kInfinity);
-
   const int nv = plant().num_velocities();
   Matrix3X<T> Jv_WAp_W(3, nv);
   Matrix3X<T> Jv_WBq_W(3, nv);
-  MatrixX<T> Jdistance = MatrixX<T>::Zero(1, nv);
+  Matrix3X<T> Jv_ApBq_W(3, nv);
 
   const Frame<T>& frame_W = plant().world_frame();
 
@@ -418,87 +413,70 @@ void SapDriver<T>::AddDistanceConstraints(const systems::Context<T>& context,
     unused(id);
     const Body<T>& body_A = plant().get_body(spec.body_A);
     const Body<T>& body_B = plant().get_body(spec.body_B);
+    DRAKE_DEMAND(body_A.index() != body_B.index());
 
     const math::RigidTransform<T>& X_WA =
         plant().EvalBodyPoseInWorld(context, body_A);
     const math::RigidTransform<T>& X_WB =
         plant().EvalBodyPoseInWorld(context, body_B);
-    const Vector3<T>& p_WP = X_WA * spec.p_AP.template cast<T>();
-    const Vector3<T>& p_WQ = X_WB * spec.p_BQ.template cast<T>();
+    const Vector3<T> p_WP = X_WA * spec.p_AP.template cast<T>();
+    const Vector3<T> p_AP_W = X_WA.rotation() * spec.p_AP.template cast<T>();
+    const Vector3<T> p_WQ = X_WB * spec.p_BQ.template cast<T>();
+    const Vector3<T> p_BQ_W = X_WB.rotation() * spec.p_BQ.template cast<T>();
 
-    // Distance as the norm of p_PQ_W = p_WQ - p_WP
-    const Vector3<T> p_PQ_W = p_WQ - p_WP;
-    const T d0 = p_PQ_W.norm();
-    // Verify the distance did not become ridiculously small. We use the
-    // user-specified distance as a reference.
-    constexpr double kMinimumDistance = 1.0e-7;
-    constexpr double kRelativeDistance = 1.0e-2;
-    if (d0 < kMinimumDistance + kRelativeDistance * spec.distance) {
-      const std::string msg = fmt::format(
-          "The distance between bodies '{}' and '{}' is: {}. This is "
-          "nonphysically small when compared to the free length of the "
-          "constraint, {}. ",
-          body_A.name(), body_B.name(), d0, spec.distance);
-      throw std::logic_error(msg);
-    }
-    const Vector3<T> p_hat_W = p_PQ_W / d0;
-
-    DRAKE_DEMAND(body_A.index() != body_B.index());
-
-    // Dense Jacobian.
-    // d(distance)/dt = Jdistance * v.
+    // Jacobian for the velocity of point Q (on body B) relative to point P (on
+    // body B).
     manager().internal_tree().CalcJacobianTranslationalVelocity(
         context, JacobianWrtVariable::kV, body_A.body_frame(), frame_W, p_WP,
         frame_W, frame_W, &Jv_WAp_W);
     manager().internal_tree().CalcJacobianTranslationalVelocity(
         context, JacobianWrtVariable::kV, body_B.body_frame(), frame_W, p_WQ,
         frame_W, frame_W, &Jv_WBq_W);
-    Jdistance = p_hat_W.transpose() * (Jv_WBq_W - Jv_WAp_W);
+    Jv_ApBq_W = Jv_WBq_W - Jv_WAp_W;
 
-    const T dissipation_time_scale = spec.damping / spec.stiffness;
+    // Jacobian for the relative velocity v_PQ_W, as required by
+    // SapDistanceConstraint.
+    auto make_constraint_jacobian = [this, &Jv_ApBq_W](BodyIndex bodyA,
+                                                       BodyIndex bodyB) {
+      const TreeIndex treeA_index = tree_topology().body_to_tree_index(bodyA);
+      const TreeIndex treeB_index = tree_topology().body_to_tree_index(bodyB);
+      // Sanity check at least one body is not the world.
+      DRAKE_DEMAND(treeA_index.is_valid() || treeB_index.is_valid());
 
-    // TODO(amcastro-tri): consider exposing this parameter.
-    const double beta = 0.1;
-    const typename SapHolonomicConstraint<T>::Parameters parameters{
-        gamma_lower, gamma_upper, Vector1<T>(spec.stiffness),
-        Vector1<T>(dissipation_time_scale), beta};
+      // Both bodies A and B belong to the same tree or one of them is the
+      // world.
+      const bool single_tree = !treeA_index.is_valid() ||
+                               !treeB_index.is_valid() ||
+                               treeA_index == treeB_index;
 
-    const TreeIndex treeA_index =
-        tree_topology().body_to_tree_index(spec.body_A);
-    const TreeIndex treeB_index =
-        tree_topology().body_to_tree_index(spec.body_B);
+      if (single_tree) {
+        const TreeIndex tree_index =
+            treeA_index.is_valid() ? treeA_index : treeB_index;
+        MatrixX<T> Jtree = Jv_ApBq_W.middleCols(
+            tree_topology().tree_velocities_start(tree_index),
+            tree_topology().num_tree_velocities(tree_index));
+        return SapConstraintJacobian<T>(tree_index, std::move(Jtree));
+      } else {
+        MatrixX<T> JA = Jv_ApBq_W.middleCols(
+            tree_topology().tree_velocities_start(treeA_index),
+            tree_topology().num_tree_velocities(treeA_index));
+        MatrixX<T> JB = Jv_ApBq_W.middleCols(
+            tree_topology().tree_velocities_start(treeB_index),
+            tree_topology().num_tree_velocities(treeB_index));
+        return SapConstraintJacobian<T>(treeA_index, std::move(JA), treeB_index,
+                                        std::move(JB));
+      }
+    };
 
-    // Sanity check at least one body is not the world.
-    DRAKE_DEMAND(treeA_index.is_valid() || treeB_index.is_valid());
+    const typename SapDistanceConstraint<T>::Kinematics kinematics(
+        spec.body_A, p_WP, p_AP_W, spec.body_B, p_WQ, p_BQ_W, spec.distance,
+        make_constraint_jacobian(spec.body_A, spec.body_B));
 
-    // Both bodies A and B belong to the same tree or one of them is the world.
-    const bool single_tree = !treeA_index.is_valid() ||
-                             !treeB_index.is_valid() ||
-                             treeA_index == treeB_index;
+    const typename SapDistanceConstraint<T>::ComplianceParameters parameters(
+        spec.stiffness, spec.damping);
 
-    // Constraint function at current time step.
-    const Vector1<T> g0(d0 - spec.distance);
-    if (single_tree) {
-      const TreeIndex tree_index =
-          treeA_index.is_valid() ? treeA_index : treeB_index;
-      MatrixX<T> Jtree = Jdistance.middleCols(
-          tree_topology().tree_velocities_start(tree_index),
-          tree_topology().num_tree_velocities(tree_index));
-      SapConstraintJacobian<T> J(tree_index, std::move(Jtree));
-      problem->AddConstraint(std::make_unique<SapHolonomicConstraint<T>>(
-          g0, std::move(J), parameters));
-    } else {
-      MatrixX<T> JA = Jdistance.middleCols(
-          tree_topology().tree_velocities_start(treeA_index),
-          tree_topology().num_tree_velocities(treeA_index));
-      MatrixX<T> JB = Jdistance.middleCols(
-          tree_topology().tree_velocities_start(treeB_index),
-          tree_topology().num_tree_velocities(treeB_index));
-      SapConstraintJacobian<T> J(treeA_index, std::move(JA), treeB_index,
-                                 std::move(JB));
-      problem->AddConstraint(std::make_unique<SapHolonomicConstraint<T>>(
-          g0, std::move(J), parameters));
-    }
+    problem->AddConstraint(std::make_unique<SapDistanceConstraint<T>>(
+        std::move(kinematics), std::move(parameters)));
   }
 }
 
