@@ -37,6 +37,7 @@ resources then you will need to set that environment variable.
 import argparse
 import logging
 import os
+from pathlib import Path
 
 from pydrake.visualization._model_visualizer import \
     ModelVisualizer as _ModelVisualizer
@@ -91,6 +92,13 @@ def _main():
              "uses a native window so will not work in a remote or cloud "
              "runtime environment.",
     )
+    assert defaults["environment_map"] == Path()
+    args_parser.add_argument(
+        "--environment_map", default=Path(), type=Path,
+        help="Filesystem path to an image to be used as an environment map. "
+             "It must be an image type normally used by your browser (e.g., "
+             ".jpg, .png, etc.). HDR images are not supported yet."
+    )
 
     args_parser.add_argument(
         "--triad_length",
@@ -136,7 +144,8 @@ def _main():
                                   triad_radius=args.triad_radius,
                                   triad_opacity=args.triad_opacity,
                                   browser_new=args.browser_new,
-                                  pyplot=args.pyplot)
+                                  pyplot=args.pyplot,
+                                  environment_map=args.environment_map)
     package_map = visualizer.package_map()
     package_map.PopulateFromRosPackagePath()
     for item in args.filename:
