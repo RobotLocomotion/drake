@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <utility>
+#include <vector>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
@@ -120,7 +121,7 @@ class SapHolonomicConstraintData {
 
  @tparam_nonsymbolic_scalar */
 template <typename T>
-class SapHolonomicConstraint final : public SapConstraint<T> {
+class SapHolonomicConstraint : public SapConstraint<T> {
  public:
   /* We do not allow copy, move, or assignment generally to avoid slicing.
     Protected copy construction is enabled for sub-classes to use in their
@@ -181,6 +182,31 @@ class SapHolonomicConstraint final : public SapConstraint<T> {
     double beta_{0.1};
   };
 
+  /* Struct to store the kinematic values for the constraint function g, its
+   Jacobian J and bias b. See this class's documentation for details. */
+  struct Kinematics {
+    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Kinematics);
+
+    /* Constraint kinematics values of the constraint function g, Jacobian J and
+     bias b. Refer to SapHolonomicConstraint for details.
+     @throws std::exception if sizes g_in.size(), b_in.size() and J_in.rows()
+     are not all equal. */
+    Kinematics(VectorX<T> g_in, SapConstraintJacobian<T> J_in, VectorX<T> b_in)
+        : g(std::move(g_in)), J(std::move(J_in)), b(std::move(b_in)) {
+      DRAKE_THROW_UNLESS(g.size() == J.rows());
+      DRAKE_THROW_UNLESS(b.size() == g.size());
+    }
+
+    VectorX<T> g;                // Constraint function g.
+    SapConstraintJacobian<T> J;  // Constraint Jacobian J.
+    VectorX<T> b;                // Bias term.
+  };
+
+  /* Constructor for a holonomic constraint given its kinematics and
+   parameters. */
+  SapHolonomicConstraint(Kinematics kinematics, Parameters parameters,
+                         std::vector<int> objects);
+
   /* Constructs a holonomic constraint with zero bias term.
    @param[in] g The value of the constraint function.
    @param[in] J The Jacobian w.r.t. to the clique's generalized velocities.
@@ -211,11 +237,12 @@ class SapHolonomicConstraint final : public SapConstraint<T> {
   /* Returns the holonomic constraint bias b. */
   const VectorX<T>& bias() const { return bias_; }
 
- private:
-  /* Private copy construction is enabled to use in the implementation of
-     DoClone(). */
+ protected:
+  /* Protected copy construction is enabled to use in the implementation of
+      DoClone() here and for specific derived holonomic constraints. */
   SapHolonomicConstraint(const SapHolonomicConstraint&) = default;
 
+ private:
   /* Implementations of SapConstraint NVI functions. */
   std::unique_ptr<AbstractValue> DoMakeData(
       const T& time_step,
@@ -227,7 +254,7 @@ class SapHolonomicConstraint final : public SapConstraint<T> {
                      EigenPtr<VectorX<T>> gamma) const final;
   void DoCalcCostHessian(const AbstractValue& abstract_data,
                          MatrixX<T>* G) const final;
-  std::unique_ptr<SapConstraint<T>> DoClone() const final {
+  std::unique_ptr<SapConstraint<T>> DoClone() const override {
     return std::unique_ptr<SapHolonomicConstraint<T>>(
         new SapHolonomicConstraint<T>(*this));
   }
