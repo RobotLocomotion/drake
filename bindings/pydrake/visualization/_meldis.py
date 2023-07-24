@@ -15,6 +15,7 @@ from drake import (
 )
 from pydrake.common import (
     configure_logging,
+    FindResourceOrThrow,
 )
 from pydrake.common.eigen_geometry import (
     Quaternion,
@@ -503,7 +504,8 @@ class Meldis:
     Refer to the pydrake.visualization.meldis module docs for details.
     """
 
-    def __init__(self, *, meshcat_host=None, meshcat_port=None):
+    def __init__(self, *, meshcat_host=None, meshcat_port=None,
+                 environment_map=None):
         # Bookkeeping for update throttling.
         self._last_update_time = time.time()
 
@@ -522,6 +524,16 @@ class Meldis:
                                port=meshcat_port,
                                show_stats_plot=False)
         self.meshcat = Meshcat(params=params)
+        if (environment_map):
+            if environment_map.startswith("package://"):
+                _logger.warning(
+                    "Can't use environment maps prefixed with package://. "
+                    f"{environment_map}")
+            elif environment_map.startswith("drake/"):
+                self.meshcat.SetEnvironmentMap(
+                    FindResourceOrThrow(environment_map))
+            else:
+                self.meshcat.SetEnvironmentMap(environment_map)
 
         def is_inertia_link(link_name):
             return "::InertiaVisualizer::" in link_name

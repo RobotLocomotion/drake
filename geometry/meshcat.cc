@@ -4,7 +4,6 @@
 #include <atomic>
 #include <cctype>
 #include <exception>
-#include <filesystem>
 #include <fstream>
 #include <functional>
 #include <future>
@@ -30,6 +29,7 @@
 #include "drake/common/network_policy.h"
 #include "drake/common/never_destroyed.h"
 #include "drake/common/scope_exit.h"
+#include "drake/common/ssize.h"
 #include "drake/common/text_logging.h"
 #include "drake/common/unused.h"
 #include "drake/geometry/meshcat_types.h"
@@ -2312,6 +2312,32 @@ void Meshcat::SetProperty(std::string_view path, std::string property,
   if (!recording_ || set_visualizations_while_recording_) {
     impl().SetProperty(path, std::move(property), value);
   }
+}
+
+void Meshcat::SetEnvironmentMap(const std::filesystem::path& image_path) {
+  // Get the image extension so we can report the mime-type of the data.
+  std::string ext = image_path.extension();
+  std::string image_encoding = "";
+  if (ssize(ext) > 1) {
+    ext = ext.substr(1);
+    std::transform(ext.begin(), ext.end(), ext.begin(), [](unsigned char c) {
+      return std::tolower(c);
+    });
+    std::ifstream map_stream(image_path, std::ios::binary | std::ios::ate);
+    if (map_stream.is_open()) {
+      int map_size = map_stream.tellg();
+      map_stream.seekg(0, std::ios::beg);
+      std::vector<uint8_t> map_data;
+      map_data.reserve(map_size);
+      map_data.assign(std::istreambuf_iterator<char>(map_stream),
+                      std::istreambuf_iterator<char>());
+      image_encoding =
+          fmt::format("data:image/{};base64,", ext) +
+          common_robotics_utilities::base64_helpers::Encode(map_data);
+    }
+  }
+  impl().SetProperty("/Background/<object>", "environment_map",
+                      image_encoding);
 }
 
 void Meshcat::SetAnimation(const MeshcatAnimation& animation) {

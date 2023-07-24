@@ -273,6 +273,25 @@ Open up your browser to the URL above.
   std::cout << "[Press RETURN to continue]." << std::endl;
   std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 
+  meshcat->SetProperty("/Background", "visible", true);
+  meshcat->SetEnvironmentMap(
+      FindResourceOrThrow("drake/geometry/test/env_256_cornell_box.png"));
+
+  std::cout << "- An environment map has been loaded from a png -- the Cornell "
+            << "box.\n"
+            << "  The dented green box should reflect it.\n";
+  std::cout << "[Press RETURN to continue]." << std::endl;
+  std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
+  meshcat->SetEnvironmentMap(
+      FindResourceOrThrow("drake/geometry/test/env_256_brick_room.jpg"));
+
+  std::cout << "- The Cornell box has been replaced by a room with brick walls "
+            << "loaded from a jpg.\n";
+  std::cout << "[Press RETURN to continue]." << std::endl;
+  std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
+  meshcat->SetEnvironmentMap("");
   meshcat->Delete();
   std::cout << "- Everything else should have disappeared." << std::endl;
 
@@ -387,13 +406,16 @@ Open up your browser to the URL above.
     std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
   }
 
+  meshcat->SetEnvironmentMap(
+      FindResourceOrThrow("drake/geometry/test/env_256_cornell_box.png"));
   const std::string html_filename(temp_directory() + "/meshcat_static.html");
   std::ofstream html_file(html_filename);
   html_file << meshcat->StaticHtml();
   html_file.close();
+  meshcat->SetEnvironmentMap("");
 
   std::cout << "A standalone HTML file capturing this scene (including the "
-               "animation) has been written to file://"
+               "animation and environment map) has been written to file://"
             << html_filename
             << "\nOpen that location in your browser now and confirm that "
                "the iiwa is visible and the animation plays."
