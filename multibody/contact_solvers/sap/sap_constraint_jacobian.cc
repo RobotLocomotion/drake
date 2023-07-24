@@ -37,6 +37,33 @@ SapConstraintJacobian<T>::SapConstraintJacobian(int first_clique,
           first_clique, MatrixBlock<T>(std::move(J_first_clique)),
           second_clique, MatrixBlock<T>(std::move(J_second_clique))) {}
 
+template <typename T>
+bool SapConstraintJacobian<T>::blocks_are_dense() const {
+  bool is_dense = clique_jacobian(0).is_dense();
+  if (num_cliques() == 2) {
+    is_dense = is_dense && clique_jacobian(1).is_dense();
+  }
+  return is_dense;
+}
+
+template <typename T>
+SapConstraintJacobian<T> SapConstraintJacobian<T>::LeftMultiplyByTranspose(
+    const Eigen::Ref<const MatrixX<T>>& A) const {
+  DRAKE_THROW_UNLESS(blocks_are_dense());
+
+  // Contribution from first the clique.
+  const MatrixX<T> J_first_clique = clique_jacobian(0).MakeDenseMatrix();
+  MatrixX<T> ATJ_first_clique = A.transpose() * J_first_clique;
+  if (num_cliques() == 1) {
+    return SapConstraintJacobian<T>(clique(0), std::move(ATJ_first_clique));
+  }
+  // Jacobian involving two cliques, second clique.
+  const MatrixX<T> J_second_clique = clique_jacobian(1).MakeDenseMatrix();
+  MatrixX<T> ATJ_second_clique = A.transpose() * J_second_clique;
+  return SapConstraintJacobian<T>(clique(0), std::move(ATJ_first_clique),
+                                  clique(1), std::move(ATJ_second_clique));
+}
+
 }  // namespace internal
 }  // namespace contact_solvers
 }  // namespace multibody
