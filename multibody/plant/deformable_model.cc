@@ -134,7 +134,7 @@ MultibodyConstraintId DeformableModel<T>::AddFixedConstraint(
           GetGeometryId(body_A_id));
   int vertex_index = 0;
   for (const Vector3<T>& p_APi : mesh_A->vertices()) {
-    /* Note that `shape` is also registered in the B frame in the throw-away
+    /* Note that `shape` is also registered in the A frame in the throw-away
      scene graph. */
     const std::vector<geometry::SignedDistanceToPoint<T>> signed_distances =
         query.ComputeSignedDistanceToPoint(p_APi);

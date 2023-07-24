@@ -8,6 +8,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/contact_solvers/sap/partial_permutation.h"
+#include "drake/multibody/contact_solvers/sap/sap_fixed_constraint.h"
 #include "drake/multibody/contact_solvers/schur_complement.h"
 #include "drake/multibody/fem/discrete_time_integrator.h"
 #include "drake/multibody/fem/fem_solver.h"
@@ -148,6 +149,14 @@ class DeformableDriver : public ScalarConvertibleComponent<T> {
       const systems::Context<T>& context,
       std::vector<ContactPairKinematics<T>>* result) const;
 
+  /* Appends the constraint kinematics information for each deformable rigid
+   fixed constraint.
+   @pre result != nullptr. */
+  void AppendDeformableRigidFixedConstraintKinematics(
+      const systems::Context<T>& context,
+      std::vector<contact_solvers::internal::FixedConstraintKinematics<T>>*
+          result) const;
+
   /* Evaluates FemState at the next time step for each deformable body and
    copies the them into the corresponding DiscreteValues.
    @pre next_states != nullptr. */
@@ -173,6 +182,7 @@ class DeformableDriver : public ScalarConvertibleComponent<T> {
     std::vector<systems::CacheIndex> fem_solvers;
     std::vector<systems::CacheIndex> next_fem_states;
     systems::CacheIndex deformable_contact;
+    std::vector<systems::CacheIndex> constraint_participations;
     std::vector<systems::CacheIndex> dof_permutations;
     std::unordered_map<geometry::GeometryId, systems::CacheIndex>
         vertex_permutations;
@@ -242,6 +252,16 @@ class DeformableDriver : public ScalarConvertibleComponent<T> {
   /* Eval version of CalcDeformableContact(). */
   const geometry::internal::DeformableContact<T>& EvalDeformableContact(
       const systems::Context<T>& context) const;
+
+  /* Calculates the constraint participation information of the deformable body
+   with the given `index`. See geometry::internal::ContactParticipation. */
+  void CalcConstraintParticipation(
+      const systems::Context<T>& context, DeformableBodyIndex index,
+      geometry::internal::ContactParticipation* constraint_participation) const;
+
+  /* Eval version of EvalConstraintParticipation. */
+  const geometry::internal::ContactParticipation& EvalConstraintParticipation(
+      const systems::Context<T>& context, DeformableBodyIndex index) const;
 
   /* Computes the partial permutation that maps degrees of freedom of the
    deformable body with the given `index` to degrees of freedom that belong to

@@ -1,7 +1,9 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 #include <utility>
+#include <vector>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
@@ -18,7 +20,39 @@ template <typename T>
 struct FixedConstraintKinematics {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(FixedConstraintKinematics);
 
-  /* @param[in] objectA
+  /* Constructor for fixed constraints where only a single body has degrees of
+     freedom.
+     @param[in] objectA
+                Index of the physical object A on which point P attaches.
+                Must be non-negative.
+     @param[in] p_APs_W
+                Positions of point Ps in A, expressed in the world frame.
+     @param[in] p_PQs_W
+                Displacements from point Ps to point Qs, expressed in the
+                world frame.
+     @param[in] J_ApBq_W
+                Jacobian for the relative velocity v_ApBq_W.
+     @pre object_A >= 0
+     @pre p_APs_W_in.size() == p_PQs_W_in.size()
+     @pre p_APs_W_in.size() == J_ApBq_W.rows()
+     @pre p_APs_W_in.size() % 3 == 0 */
+  FixedConstraintKinematics(int objectA_in, VectorX<T> p_APs_W_in,
+                            VectorX<T> p_PQs_W_in,
+                            SapConstraintJacobian<T> J_ApBq_W)
+      : objectA(objectA_in),
+        p_APs_W(std::move(p_APs_W_in)),
+        p_PQs_W(std::move(p_PQs_W_in)),
+        J(std::move(J_ApBq_W)) {
+    DRAKE_THROW_UNLESS(objectA >= 0);
+    const int num_constrained_dofs = p_APs_W.size();
+    DRAKE_THROW_UNLESS(num_constrained_dofs % 3 == 0);
+    DRAKE_THROW_UNLESS(p_PQs_W.size() == num_constrained_dofs);
+    DRAKE_THROW_UNLESS(J.rows() == num_constrained_dofs);
+  }
+
+  /* Constructor for fixed constraints where both bodies have degrees of
+     freedom.
+     @param[in] objectA
                 Index of the physical object A on which point P attaches.
                 Must be non-negative.
      @param[in] p_APs_W
@@ -33,6 +67,7 @@ struct FixedConstraintKinematics {
                 world frame.
      @param[in] J_ApBq_W
                 Jacobian for the relative velocity v_ApBq_W.
+     @pre object_A >= 0 && object_B >= 0
      @pre p_APs_W_in.size() == p_BQs_W_in.size()
      @pre p_APs_W_in.size() == p_PQs_W_in.size()
      @pre p_APs_W_in.size() == J_ApBq_W.rows()
@@ -51,15 +86,15 @@ struct FixedConstraintKinematics {
     const int num_constrained_dofs = p_APs_W.size();
     DRAKE_THROW_UNLESS(num_constrained_dofs % 3 == 0);
     DRAKE_THROW_UNLESS(objectB >= 0);
-    DRAKE_THROW_UNLESS(p_BQs_W.size() == num_constrained_dofs);
+    DRAKE_THROW_UNLESS(p_BQs_W->size() == num_constrained_dofs);
     DRAKE_THROW_UNLESS(p_PQs_W.size() == num_constrained_dofs);
     DRAKE_THROW_UNLESS(J.rows() == num_constrained_dofs);
   }
 
   int objectA{};
   VectorX<T> p_APs_W;
-  int objectB{};
-  VectorX<T> p_BQs_W;
+  std::optional<int> objectB;
+  std::optional<VectorX<T>> p_BQs_W;
   VectorX<T> p_PQs_W;
   SapConstraintJacobian<T> J;
 };
@@ -146,6 +181,11 @@ class SapFixedConstraint final : public SapHolonomicConstraint<T> {
   static typename SapHolonomicConstraint<T>::Parameters
   MakeSapHolonomicConstraintParameters(int num_constraint_equations);
 
+  /* Helper used at construction. This method makes the object indices needed by
+   the base class SapHolonomicConstraint. */
+  static std::vector<int> MakeObjectIndices(
+      const FixedConstraintKinematics<T>& kinematics);
+
   std::unique_ptr<SapConstraint<T>> DoClone() const final {
     return std::unique_ptr<SapFixedConstraint<T>>(
         new SapFixedConstraint<T>(*this));
@@ -153,7 +193,7 @@ class SapFixedConstraint final : public SapHolonomicConstraint<T> {
 
   int num_constrained_point_pairs_{};
   VectorX<T> p_APs_W_;
-  VectorX<T> p_BQs_W_;
+  std::optional<VectorX<T>> p_BQs_W_;
 };
 
 }  // namespace internal
