@@ -34,6 +34,15 @@ SapHolonomicConstraint<T>::Parameters::Parameters(
 }
 
 template <typename T>
+SapHolonomicConstraint<T>::SapHolonomicConstraint(Kinematics kinematics,
+                                                  Parameters parameters,
+                                                  std::vector<int> objects)
+    : SapConstraint<T>(std::move(kinematics.J), std::move(objects)),
+      g_(std::move(kinematics.g)),
+      bias_(std::move(kinematics.b)),
+      parameters_(std::move(parameters)) {}
+
+template <typename T>
 SapHolonomicConstraint<T>::SapHolonomicConstraint(VectorX<T> g,
                                                   SapConstraintJacobian<T> J,
                                                   Parameters parameters)
