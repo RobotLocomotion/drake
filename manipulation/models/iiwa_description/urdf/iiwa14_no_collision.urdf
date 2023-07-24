@@ -98,7 +98,7 @@
       <mass value="6.35"/>
       <!-- 3.95 kuka CAD value-->
       <!--4 Original Drake URDF value-->
-      <inertia ixx="0.0305" ixy="0" ixz="0" iyy="0.0304" iyz="0" izz="0.011"/>
+      <inertia ixx="0.0305" ixy="0" ixz="0" iyy="0.011" iyz="0" izz="0.0304"/>
     </inertial>
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
@@ -169,7 +169,7 @@
       <mass value="3.5"/>
       <!--2.74 kuka CAD value-->
       <!--2.7 Original Drake URDF value-->
-      <inertia ixx="0.017" ixy="0" ixz="0" iyy="0.0164" iyz="0" izz="0.006"/>
+      <inertia ixx="0.017" ixy="0" ixz="0" iyy="0.006" iyz="0" izz="0.0164"/>
     </inertial>
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
