@@ -1,5 +1,6 @@
 #pragma once
 
+#include <filesystem>
 #include <memory>
 #include <optional>
 #include <string>
@@ -559,6 +560,15 @@ class Meshcat {
       std::string_view path, std::string property,
       const std::vector<double>& value,
       const std::optional<double>& time_in_recording = std::nullopt);
+
+  /** Sets the *environment* texture. For objects with physically-based
+   rendering (PBR) material properties (e.g., metallic surfaces), this defines
+   the luminance environment, contributing to total illumination and appearing
+   in reflections.
+
+   If the path is empty, or the image can't be read, the environment map will
+   be cleared. */
+  void SetEnvironmentMap(const std::filesystem::path& image_path);
 
   // TODO(russt): Support multiple animations, by name.  Currently "default" is
   // hard-coded in the meshcat javascript.

@@ -8,6 +8,7 @@ from webbrowser import open as _webbrowser_open
 
 import numpy as np
 
+from pydrake.common import FindResourceOrThrow
 from pydrake.geometry import (
     Box,
     Cylinder,
@@ -70,7 +71,8 @@ class ModelVisualizer:
                  show_rgbd_sensor=False,
                  browser_new=False,
                  pyplot=False,
-                 meshcat=None):
+                 meshcat=None,
+                 environment_map=""):
         """
         Initializes a ModelVisualizer.
 
@@ -103,6 +105,7 @@ class ModelVisualizer:
         self._browser_new = browser_new
         self._pyplot = pyplot
         self._meshcat = meshcat
+        self._environment_map = environment_map
 
         # This is the list of loaded models, to enable the Reload button.
         # If set to None, it means that we won't support reloading because
@@ -165,7 +168,8 @@ class ModelVisualizer:
                 "publish_contacts",
                 "show_rgbd_sensor",
                 "browser_new",
-                "pyplot"]:
+                "pyplot",
+                "environment_map"]:
             value = getattr(prototype, f"_{name}")
             assert value is not None
             result[name] = value
@@ -295,6 +299,16 @@ class ModelVisualizer:
         self.meshcat()
         self._meshcat.Delete()
         self._meshcat.DeleteAddedControls()
+
+        if (self._environment_map):
+            if (self._environment_map.startswith("package://")):
+                print("Can't use environment maps prefixed with package://. ",
+                      self._environment_map)
+            elif (self._environment_map.startswith("drake/")):
+                self._meshcat.SetEnvironmentMap(
+                    FindResourceOrThrow(self._environment_map))
+            else:
+                self._meshcat.SetEnvironmentMap(self._environment_map)
 
         # We want to place the Reload Model Files button far away from the
         # Stop Running button, hence the work to do this here.

@@ -413,6 +413,7 @@ genrule(
 filegroup(
     name = "meshcat_resources",
     srcs = [
+        "env_256_cornell_box.png",
         "meshcat.html",
         ":meshcat.ico",
         ":meshcat.js",

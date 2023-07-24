@@ -273,6 +273,16 @@ Open up your browser to the URL above.
   std::cout << "[Press RETURN to continue]." << std::endl;
   std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 
+  meshcat->SetProperty("/Background", "visible", true);
+  meshcat->SetEnvironmentMap(
+      FindResourceOrThrow("drake/geometry/env_256_cornell_box.png"));
+
+  std::cout << "- An environment map has been loaded, the Cornell box\n"
+            << "  the dented green box should reflect it.\n";
+  std::cout << "[Press RETURN to continue]." << std::endl;
+  std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
+  meshcat->SetEnvironmentMap("");
   meshcat->Delete();
   std::cout << "- Everything else should have disappeared." << std::endl;
 
