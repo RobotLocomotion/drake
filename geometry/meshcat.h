@@ -1,5 +1,6 @@
 #pragma once
 
+#include <filesystem>
 #include <memory>
 #include <optional>
 #include <string>
@@ -559,6 +560,24 @@ class Meshcat {
       std::string_view path, std::string property,
       const std::vector<double>& value,
       const std::optional<double>& time_in_recording = std::nullopt);
+
+  /** Sets the *environment* texture. For objects with physically-based
+   rendering (PBR) material properties (e.g., metallic surfaces), this defines
+   the luminance environment, contributing to total illumination and appearing
+   in reflections.
+
+   The image should be of a format typically supported by web browsers: e.g.,
+   jpg, png, etc. Furthermore, the image must be an
+   <a href="https://en.wikipedia.org/wiki/Equirectangular_projection">
+   equirectangular image</a> (as opposed to a
+   <a href="https://en.wikipedia.org/wiki/Cube_mapping">cube-map</a>).
+
+   If the path is empty, the environment map will be cleared.
+
+   @throws if `image_path` is *not* empty and the file isn't accessible.
+   @pre If `image_path` names an accessible file, it is an appropriate image
+        type. */
+  void SetEnvironmentMap(const std::filesystem::path& image_path);
 
   // TODO(russt): Support multiple animations, by name.  Currently "default" is
   // hard-coded in the meshcat javascript.

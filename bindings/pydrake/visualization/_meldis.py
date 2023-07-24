@@ -1,6 +1,7 @@
 import copy
 import logging
 import numpy as np
+from pathlib import Path
 import sys
 import time
 
@@ -555,7 +556,8 @@ class Meldis:
     Refer to the pydrake.visualization.meldis module docs for details.
     """
 
-    def __init__(self, *, meshcat_host=None, meshcat_port=None):
+    def __init__(self, *, meshcat_host=None, meshcat_port=None,
+                 environment_map: Path = None):
         # Bookkeeping for update throttling.
         self._last_update_time = time.time()
 
@@ -574,6 +576,8 @@ class Meldis:
                                port=meshcat_port,
                                show_stats_plot=False)
         self.meshcat = Meshcat(params=params)
+        if environment_map is not None:
+            self.meshcat.SetEnvironmentMap(environment_map)
 
         def is_inertia_link(link_name):
             return "::InertiaVisualizer::" in link_name
