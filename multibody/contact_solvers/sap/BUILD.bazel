@@ -23,6 +23,7 @@ drake_cc_package_library(
         ":sap_contact_problem",
         ":sap_coupler_constraint",
         ":sap_distance_constraint",
+        ":sap_fixed_constraint",
         ":sap_friction_cone_constraint",
         ":sap_holonomic_constraint",
         ":sap_limit_constraint",
@@ -138,6 +139,19 @@ drake_cc_library(
     name = "sap_distance_constraint",
     srcs = ["sap_distance_constraint.cc"],
     hdrs = ["sap_distance_constraint.h"],
+    deps = [
+        ":sap_constraint",
+        ":sap_constraint_jacobian",
+        ":sap_holonomic_constraint",
+        "//common:default_scalars",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "sap_fixed_constraint",
+    srcs = ["sap_fixed_constraint.cc"],
+    hdrs = ["sap_fixed_constraint.h"],
     deps = [
         ":sap_constraint",
         ":sap_constraint_jacobian",
@@ -303,6 +317,16 @@ drake_cc_googletest(
     name = "sap_distance_constraint_test",
     deps = [
         ":sap_distance_constraint",
+        ":validate_constraint_gradients",
+        "//common:pointer_cast",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "sap_fixed_constraint_test",
+    deps = [
+        ":sap_fixed_constraint",
         ":validate_constraint_gradients",
         "//common:pointer_cast",
         "//common/test_utilities:eigen_matrix_compare",
