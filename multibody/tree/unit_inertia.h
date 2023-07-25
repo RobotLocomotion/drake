@@ -296,8 +296,8 @@ class UnitInertia : public RotationalInertia<T> {
   static UnitInertia<T> SolidCapsule(const T& r, const T& L,
       const Vector3<T>& unit_vector = Vector3<T>::UnitZ());
 
-  /// Creates a unit inertia for a uniform-density solid cylinder B about the
-  /// point Bp (Bp is at a center of the cylinder's circular ends; see below).
+  /// Creates a unit inertia for a uniform-density solid cylinder B about an
+  /// end-point Bp of the cylinder's central longitudinal axis (see below).
   /// @param[in] radius radius of cylinder (meters).
   /// @param[in] length length of cylinder in unit_vector direction (meters).
   /// @param[in] unit_vector unit vector parallel to the axis of the cylinder
