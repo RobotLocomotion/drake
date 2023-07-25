@@ -304,7 +304,7 @@ CspaceFreeBox::FindSeparationCertificateGivenBox(
   // This lambda function formulates and solves a small SOS program for each
   // pair of geometries.
   auto solve_small_sos = [this, &polynomials_to_certify, &active_plane_indices,
-                          &options, &ret](int plane_count) -> bool {
+                          &options, &ret](int plane_count) -> std::pair<bool, int> {
     const int plane_index = active_plane_indices[plane_count];
     auto certificate_program = this->ConstructPlaneSearchProgram(
         polynomials_to_certify.plane_geometries[plane_count],
@@ -320,10 +320,10 @@ CspaceFreeBox::FindSeparationCertificateGivenBox(
           plane_index, separating_planes()[plane_index].a,
           separating_planes()[plane_index].b,
           separating_planes()[plane_index].decision_variables, result));
-      return true;
+      return std::make_pair(true, plane_count);
     } else {
       ret[plane_count].reset();
-      return false;
+      return std::make_pair(false, plane_count);
     }
   };
   this->SolveCertificationForEachPlaneInParallel(
