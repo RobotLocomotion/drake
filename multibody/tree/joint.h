@@ -23,6 +23,7 @@ namespace internal {
 // for a particular joint object.
 template <typename T>
 class JointImplementationBuilder;
+class MobilizerTester;
 }  // namespace internal
 
 /// A %Joint models the kinematical relationship which characterizes the
@@ -503,6 +504,12 @@ class Joint : public MultibodyElement<T> {
     joint_clone->OwnImplementation(std::move(implementation_clone));
 
     return joint_clone;
+  }
+
+  const internal::Mobilizer<T>& GetMobilizerInUse() const {
+    // This implementation should only have one mobilizer.
+    DRAKE_DEMAND(get_implementation().num_mobilizers() == 1);
+    return *get_implementation().mobilizers_[0];
   }
 #endif
   // End of hidden Doxygen section.

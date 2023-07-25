@@ -7,6 +7,7 @@
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/tree/multibody_tree-inl.h"
 #include "drake/multibody/tree/multibody_tree_system.h"
+#include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/test/mobilizer_tester.h"
 #include "drake/systems/framework/context.h"
 
@@ -29,9 +30,10 @@ constexpr double kTolerance = 10 * std::numeric_limits<double>::epsilon();
 class RevoluteMobilizerTest : public MobilizerTester {
  public:
   void SetUp() override {
-    mobilizer_ = &AddMobilizerAndFinalize(
-        std::make_unique<RevoluteMobilizer<double>>(
-            tree().world_body().body_frame(), body_->body_frame(), axis_F_));
+    mobilizer_ = &AddJointAndFinalize<RevoluteJoint, RevoluteMobilizer>(
+        std::make_unique<RevoluteJoint<double>>(
+            "joint0", tree().world_body().body_frame(), body_->body_frame(),
+            axis_F_));
   }
 
  protected:

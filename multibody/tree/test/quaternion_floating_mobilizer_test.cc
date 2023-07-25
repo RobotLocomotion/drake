@@ -9,8 +9,7 @@
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/tree/multibody_tree-inl.h"
-#include "drake/multibody/tree/multibody_tree_system.h"
-#include "drake/multibody/tree/rigid_body.h"
+#include "drake/multibody/tree/quaternion_floating_joint.h"
 #include "drake/multibody/tree/test/mobilizer_tester.h"
 #include "drake/systems/framework/context.h"
 
@@ -34,9 +33,10 @@ constexpr double kTolerance = 10 * std::numeric_limits<double>::epsilon();
 class QuaternionFloatingMobilizerTest : public MobilizerTester {
  public:
   void SetUp() override {
-    mobilizer_ = &AddMobilizerAndFinalize(
-        std::make_unique<QuaternionFloatingMobilizer<double>>(
-            tree().world_body().body_frame(), body_->body_frame()));
+    mobilizer_ = &AddJointAndFinalize<QuaternionFloatingJoint,
+                                          QuaternionFloatingMobilizer>(
+        std::make_unique<QuaternionFloatingJoint<double>>(
+            "joint0", tree().world_body().body_frame(), body_->body_frame()));
   }
 
  protected:

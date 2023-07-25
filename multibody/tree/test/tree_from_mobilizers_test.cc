@@ -183,9 +183,9 @@ class PendulumTests : public ::testing::Test {
     // Adds the shoulder and elbow mobilizers of the pendulum.
     // Using:
     //  const Mobilizer& AddMobilizer(std::unique_ptr<MobilizerType> mobilizer).
-    shoulder_mobilizer_ =
-        &model_->AddMobilizer(
-            make_unique<RevoluteMobilizer<double>>(
+    shoulder_joint_ =
+        &model_->AddJoint(
+            make_unique<RevoluteJoint<double>>("shoulder",
                 *shoulder_inboard_frame_, *shoulder_outboard_frame_,
                 Vector3d::UnitZ() /*revolute axis*/));
 
@@ -297,6 +297,7 @@ class PendulumTests : public ::testing::Test {
   const RevoluteMobilizer<double>* shoulder_mobilizer_{nullptr};
   const RevoluteMobilizer<double>* elbow_mobilizer_{nullptr};
   // Joints:
+  const RevoluteJoint<double>* shoulder_joint_{nullptr};
   const RevoluteJoint<double>* elbow_joint_{nullptr};
   // Pendulum parameters:
   const double link1_length_ = 1.0;
@@ -332,9 +333,10 @@ TEST_F(PendulumTests, CreateModelBasics) {
 
   // Verifies the number of multibody elements is correct.
   EXPECT_EQ(model_->num_bodies(), 3);
+  EXPECT_EQ(model_->num_joints(), 2);
   EXPECT_EQ(model_->num_frames(), 5);
-  // Joint has no implementation before finalize.
-  EXPECT_EQ(model_->num_mobilizers(), 1);
+  // Joints have no implementations before finalize.
+  EXPECT_EQ(model_->num_mobilizers(), 0);
 
   // Check that frames are associated with the correct bodies.
   EXPECT_EQ(
@@ -343,6 +345,19 @@ TEST_F(PendulumTests, CreateModelBasics) {
   EXPECT_EQ(
       shoulder_outboard_frame_->body().index(),
       upper_link_->index());
+
+  // Checks we can retrieve the body associated with a frame.
+  EXPECT_EQ(&shoulder_inboard_frame_->body(), world_body_);
+  EXPECT_EQ(&shoulder_outboard_frame_->body(), upper_link_);
+
+  // We need to Finalize() our model before testing the elbow mobilizer was
+  // created correctly. Joint implementations are created at Finalize().
+  DRAKE_ASSERT_NO_THROW(model_->Finalize());
+  // Each Joint should have a mobilizer now.
+  EXPECT_EQ(model_->num_mobilizers(), 2);
+
+  shoulder_mobilizer_ = JointTester::get_mobilizer(*shoulder_joint_);
+  elbow_mobilizer_ = JointTester::get_mobilizer(*elbow_joint_);
 
   // Checks that mobilizers connect the right frames.
   EXPECT_EQ(shoulder_mobilizer_->inboard_frame().index(),
@@ -356,21 +371,12 @@ TEST_F(PendulumTests, CreateModelBasics) {
   EXPECT_EQ(shoulder_mobilizer_->outboard_body().index(),
             upper_link_->index());
 
-  // Checks we can retrieve the body associated with a frame.
-  EXPECT_EQ(&shoulder_inboard_frame_->body(), world_body_);
-  EXPECT_EQ(&shoulder_outboard_frame_->body(), upper_link_);
-
   // Checks we can request inboard/outboard bodies to a mobilizer.
   EXPECT_EQ(&shoulder_mobilizer_->inboard_body(), world_body_);
   EXPECT_EQ(&shoulder_mobilizer_->outboard_body(), upper_link_);
 
   // Request revolute mobilizers' axes.
   EXPECT_EQ(shoulder_mobilizer_->revolute_axis(), Vector3d::UnitZ());
-
-  // We need to Finalize() our model before testing the elbow mobilizer was
-  // created correctly. Joint implementations are created at Finalize().
-  DRAKE_ASSERT_NO_THROW(model_->Finalize());
-  elbow_mobilizer_ = JointTester::get_mobilizer(*elbow_joint_);
 
   EXPECT_EQ(model_->num_mobilizers(), 2);
   // Check that frames are associated with the correct bodies.
@@ -531,6 +537,7 @@ class PendulumKinematicTests : public PendulumTests {
 
     // Only for testing, in this case we do know our Joint model IS a
     // RevoluteMobilizer.
+    shoulder_mobilizer_ = JointTester::get_mobilizer(*shoulder_joint_);
     elbow_mobilizer_ = JointTester::get_mobilizer(*elbow_joint_);
   }
 

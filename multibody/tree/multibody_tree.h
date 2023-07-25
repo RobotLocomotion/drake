@@ -21,6 +21,7 @@
 #include "drake/common/pointer_cast.h"
 #include "drake/common/random.h"
 #include "drake/math/rigid_transform.h"
+#include "drake/multibody/topology/multibody_graph.h"
 #include "drake/multibody/tree/acceleration_kinematics_cache.h"
 #include "drake/multibody/tree/articulated_body_force_cache.h"
 #include "drake/multibody/tree/articulated_body_inertia_cache.h"
@@ -2275,6 +2276,18 @@ class MultibodyTree {
       tree_clone->CloneBodyAndAdd(body);
     }
 
+    // TODO(sherm1) Remove these unfortunate hacks needed to duplicate the
+    //  multibody graph. The upcoming LinkJointGraph is copyable. (Includes
+    //  Body here and Joint below.)
+
+    // Partially copy multibody_graph_. The looped calls to RegisterJointInGraph
+    // below copy the second half. Skip World since it was created by
+    // MultibodyTree's default constructor above.
+    for (BodyIndex index(1); index < num_bodies(); ++index) {
+      const Body<T>& body = get_body(index);
+      tree_clone->multibody_graph_.AddBody(body.name(), body.model_instance());
+    }
+
     // Frames are cloned in their index order, that is, in the exact same order
     // they were added to the original tree. Since the Frame API enforces the
     // creation of the parent frame first, this traversal guarantees that parent
@@ -2312,6 +2325,11 @@ class MultibodyTree {
 
     for (const auto& actuator : owned_actuators_) {
       tree_clone->CloneActuatorAndAdd(*actuator);
+    }
+
+    // Register the cloned Joints with the multibody_graph_.
+    for (JointIndex index(0); index < num_joints(); ++index) {
+      tree_clone->RegisterJointInGraph(tree_clone->get_joint(index));
     }
 
     // We can safely make a deep copy here since the original multibody tree is
@@ -2550,6 +2568,10 @@ class MultibodyTree {
   // Throw an exception if there are bodies whose default mass or inertia
   // properties will cause subsequent numerical problems.
   void ThrowDefaultMassInertiaError() const;
+
+  const internal::MultibodyGraph& multibody_graph() const {
+    return multibody_graph_;
+  }
 
  private:
   // Make MultibodyTree templated on every other scalar type a friend of
@@ -3024,6 +3046,18 @@ class MultibodyTree {
     name_to_index->emplace(std::move(key), index);
   }
 
+  // Registers a joint in the graph.
+  void RegisterJointInGraph(const Joint<T>& joint) {
+    const std::string type_name = joint.type_name();
+    if (!multibody_graph_.IsJointTypeRegistered(type_name)) {
+      multibody_graph_.RegisterJointType(type_name);
+    }
+    // Note changes in the graph.
+    multibody_graph_.AddJoint(joint.name(), joint.model_instance(), type_name,
+                              joint.parent_body().index(),
+                              joint.child_body().index());
+  }
+
   // If there exists a unique base body (a body whose parent is the world body)
   // in the model given by `model_instance`, return the index of that body.
   // Otherwise return std::nullopt. In particular, if the given `model_instance`
@@ -3039,6 +3073,10 @@ class MultibodyTree {
   // TODO(amcastro-tri): In future PR's adding MBT computational methods, write
   // a method that verifies the state of the topology with a signature similar
   // to RoadGeometry::CheckHasRightSizeForModel().
+
+  // A graph representing the body/joint topology of the multibody plant (Not
+  // to be confused with the spanning-tree model we will build for analysis.)
+  internal::MultibodyGraph multibody_graph_;
 
   const RigidBody<T>* world_body_{nullptr};
   std::vector<std::unique_ptr<Body<T>>> owned_bodies_;

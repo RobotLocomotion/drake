@@ -54,6 +54,12 @@ const BodyType<T>& MultibodyTree<T>::AddBody(
   if (body == nullptr) {
     throw std::logic_error("Input body is a nullptr.");
   }
+
+  DRAKE_DEMAND(body->model_instance().is_valid());
+
+  // Make note in the graph.
+  multibody_graph_.AddBody(body->name(), body->model_instance());
+
   BodyIndex body_index(0);
   FrameIndex body_frame_index(0);
   std::tie(body_index, body_frame_index) = topology_.add_body();
@@ -61,7 +67,6 @@ const BodyType<T>& MultibodyTree<T>::AddBody(
   // owned_bodies_.push_back() below. Do not move them around!
   DRAKE_DEMAND(body_index == num_bodies());
   DRAKE_DEMAND(body_frame_index == num_frames());
-  DRAKE_DEMAND(body->model_instance().is_valid());
 
   // TODO(amcastro-tri): consider not depending on setting this pointer at
   // all. Consider also removing MultibodyElement altogether.
@@ -201,9 +206,9 @@ const MobilizerType<T>& MultibodyTree<T>::AddMobilizer(
   DRAKE_ASSERT(mobilizer_index == num_mobilizers());
 
   // TODO(sammy-tri) This effectively means that there's no way to
-  // programmatically add mobilizers from outside of MultibodyTree
-  // itself with multiple model instances.  I'm not convinced that
-  // this is a problem.
+  //  programmatically add mobilizers from outside of MultibodyTree
+  //  itself with multiple model instances.  I'm not convinced that
+  //  this is a problem.
   if (!mobilizer->model_instance().is_valid()) {
     mobilizer->set_model_instance(default_model_instance());
   }
@@ -311,6 +316,25 @@ const JointType<T>& MultibodyTree<T>::AddJoint(
   if (joint == nullptr) {
     throw std::logic_error("Input joint is a nullptr.");
   }
+
+  if (&joint->parent_body() == &joint->child_body()) {
+    throw std::logic_error(
+        fmt::format("AddJoint(): joint {} would connect body {} to itself.",
+                    joint->name(), joint->parent_body().name()));
+  }
+
+  if (&joint->parent_body().get_parent_tree() !=
+      &joint->child_body().get_parent_tree()) {
+    throw std::logic_error(
+        fmt::format("AddJoint(): can't add joint {} because bodies {} "
+                    "and {} are from different MultibodyPlants.",
+                    joint->name(), joint->parent_body().name(),
+                    joint->child_body().name()));
+  }
+
+  // This will check some additional error conditions.
+  RegisterJointInGraph(*joint);
+
   const JointIndex joint_index(owned_joints_.size());
   joint->set_parent_tree(this, joint_index);
   JointType<T>* raw_joint_ptr = joint.get();

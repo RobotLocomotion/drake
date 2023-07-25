@@ -43,7 +43,7 @@ class RotationMatrix;
 /// rotate relative to frame B, A by a pitch angle `p` about `Cy = By`.
 /// Note: C and B are no longer aligned.
 /// @li 3rd rotation R_AB: Frames D, C, B (collectively -- as if welded)
-/// rotate relative to frame A by a roll angle `y` about `Bz = Az`.
+/// rotate relative to frame A by a yaw angle `y` about `Bz = Az`.
 /// Note: B and A are no longer aligned.
 /// The monogram notation for the rotation matrix relating A to D is `R_AD`.
 ///

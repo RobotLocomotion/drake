@@ -57,9 +57,9 @@ using std::make_unique;
 using std::set;
 using std::unique_ptr;
 
-// Tests the basic MultibodyTree API to add bodies and mobilizers.
+// Tests the basic MultibodyTree API to add bodies and joints.
 // Tests we cannot create graph loops.
-GTEST_TEST(MultibodyTree, BasicAPIToAddBodiesAndMobilizers) {
+GTEST_TEST(MultibodyTree, BasicAPIToAddBodiesAndJoints) {
   auto model = std::make_unique<MultibodyTree<double>>();
 
   // Initially there is only one body, the world.
@@ -76,50 +76,41 @@ GTEST_TEST(MultibodyTree, BasicAPIToAddBodiesAndMobilizers) {
   SpatialInertia<double> M_Bo_B;
 
   // Adds a new body to the world.
-  const RigidBody<double>& pendulum = model->AddBody<RigidBody>(
-      "pendulum", M_Bo_B);
+  const RigidBody<double>& pendulum =
+      model->AddBody<RigidBody>("pendulum", M_Bo_B);
   EXPECT_EQ(pendulum.scoped_name().get_full(),
             "DefaultModelInstance::pendulum");
   EXPECT_EQ(pendulum.body_frame().scoped_name().get_full(),
             "DefaultModelInstance::pendulum");
 
-  // Adds a revolute mobilizer.
-  DRAKE_EXPECT_NO_THROW((model->AddMobilizer<RevoluteMobilizer>(
-      world_body.body_frame(), pendulum.body_frame(), Vector3d::UnitZ())));
+  // Adds a revolute joint.
+  DRAKE_EXPECT_NO_THROW((model->AddJoint<RevoluteJoint>(
+      "joint0", world_body, {}, pendulum, {}, Vector3d::UnitZ())));
 
-  // We cannot add another mobilizer between the same two frames.
-  EXPECT_THROW((model->AddMobilizer<RevoluteMobilizer>(
-      world_body.body_frame(), pendulum.body_frame(),
-      Vector3d::UnitZ())), std::runtime_error);
+  // We cannot add another joint between the same two bodies.
+  EXPECT_THROW((model->AddJoint<RevoluteJoint>(
+                   "joint1", world_body, {}, pendulum, {}, Vector3d::UnitZ())),
+               std::exception);
 
   // Even if connected in the opposite order.
-  EXPECT_THROW((model->AddMobilizer<RevoluteMobilizer>(
-      pendulum.body_frame(), world_body.body_frame(),
-      Vector3d::UnitZ())), std::runtime_error);
+  EXPECT_THROW((model->AddJoint<RevoluteJoint>(
+                   "joint1", pendulum, {}, world_body, {}, Vector3d::UnitZ())),
+               std::exception);
 
-  // Verify we cannot add a mobilizer between a frame and itself.
-  EXPECT_THROW((model->AddMobilizer<RevoluteMobilizer>(
-      pendulum.body_frame(), pendulum.body_frame(),
-      Vector3d::UnitZ())), std::runtime_error);
+  // Verify we cannot add a joint between a body and itself.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      (model->AddJoint<RevoluteJoint>("joint1", pendulum, {}, pendulum,
+                                               {}, Vector3d::UnitZ())),
+      "AddJoint.*joint1 would connect body pendulum to itself.*");
 
   // Adds a second pendulum.
-  const RigidBody<double>& pendulum2 = model->AddBody<RigidBody>(
-      "pendulum2", M_Bo_B);
-  model->AddMobilizer<RevoluteMobilizer>(
-      model->world_frame(), pendulum2.body_frame(), Vector3d::UnitZ());
+  const RigidBody<double>& pendulum2 =
+      model->AddBody<RigidBody>("pendulum2", M_Bo_B);
+  model->AddJoint<RevoluteJoint>("joint1", world_body, {}, pendulum2, {},
+                                 Vector3d::UnitZ());
 
   EXPECT_EQ(model->num_bodies(), 3);
-  EXPECT_EQ(model->num_mobilizers(), 2);
-
-  // Attempts to create a loop. Verify we gen an exception.
-  EXPECT_THROW((model->AddMobilizer<RevoluteMobilizer>(
-      pendulum.body_frame(), pendulum2.body_frame(),
-      Vector3d::UnitZ())), std::runtime_error);
-
-  // Expect the number of bodies and mobilizers not to change after the above
-  // (failed) call.
-  EXPECT_EQ(model->num_bodies(), 3);
-  EXPECT_EQ(model->num_mobilizers(), 2);
+  EXPECT_EQ(model->num_joints(), 2);
 
   // Topology is invalid before MultibodyTree::Finalize().
   EXPECT_FALSE(model->topology_is_valid());
@@ -143,10 +134,42 @@ GTEST_TEST(MultibodyTree, BasicAPIToAddBodiesAndMobilizers) {
 
   // Verifies that an exception is throw if a call to Finalize() is attempted to
   // an already finalized MultibodyTree.
-  EXPECT_THROW(model->Finalize(), std::logic_error);
+  EXPECT_THROW(model->Finalize(), std::exception);
 
   // Verifies that after compilation no more bodies can be added.
-  EXPECT_THROW(model->AddBody<RigidBody>("B", M_Bo_B), std::logic_error);
+  EXPECT_THROW(model->AddBody<RigidBody>("B", M_Bo_B), std::exception);
+}
+
+// Tests the basic MultibodyTree API to add bodies and joints.
+// Tests we cannot create graph loops. See previous test for notes.
+GTEST_TEST(MultibodyTree, TopologicalLoopDisallowed) {
+  auto model = std::make_unique<MultibodyTree<double>>();
+  const Body<double>& world_body = model->world_body();
+  SpatialInertia<double> M_Bo_B;
+  const RigidBody<double>& pendulum =
+      model->AddBody<RigidBody>("pendulum", M_Bo_B);
+  model->AddJoint<RevoluteJoint>(
+      "joint0", world_body, {}, pendulum, {}, Vector3d::UnitZ());
+  const RigidBody<double>& pendulum2 =
+      model->AddBody<RigidBody>("pendulum2", M_Bo_B);
+  model->AddJoint<RevoluteJoint>("joint1", world_body, {}, pendulum2, {},
+                                 Vector3d::UnitZ());
+
+  EXPECT_EQ(model->num_bodies(), 3);
+  EXPECT_EQ(model->num_joints(), 2);
+
+  // Attempts to create a loop. Verify we gen an exception at Finalize().
+  model->AddJoint<RevoluteJoint>(
+      "joint2", pendulum, {}, pendulum2, {}, Vector3d::UnitZ());
+
+  EXPECT_EQ(model->num_bodies(), 3);
+  EXPECT_EQ(model->num_joints(), 3);
+
+  // Topology is invalid before MultibodyTree::Finalize(), and after fail.
+  EXPECT_FALSE(model->topology_is_valid());
+  DRAKE_EXPECT_THROWS_MESSAGE(model->Finalize(),
+                              ".*kinematic loop using joints.*");
+  EXPECT_FALSE(model->topology_is_valid());
 }
 
 // Tests the correctness of MultibodyElement checks to verify one or more
@@ -162,24 +185,23 @@ GTEST_TEST(MultibodyTree, MultibodyElementChecks) {
   // expressed in the body frame B.
   SpatialInertia<double> M_Bo_B;
 
-  const RigidBody<double>& body1 = model1->AddBody<RigidBody>("body1", M_Bo_B);
-  const RigidBody<double>& body2 = model2->AddBody<RigidBody>("body2", M_Bo_B);
+  const RigidBody<double>& body1 = model1->AddRigidBody("body1", M_Bo_B);
+  const RigidBody<double>& body2 = model2->AddRigidBody("body2", M_Bo_B);
 
-  // Verifies we can add a mobilizer between body1 and the world of model1.
-  const RevoluteMobilizer<double>& pin1 =
-      model1->AddMobilizer<RevoluteMobilizer>(
-          model1->world_body().body_frame(), /*inboard frame*/
-          body1.body_frame() /*outboard frame*/,
+  // Verify we can add a joint between body1 and the world of model1.
+  const RevoluteJoint<double>& pin1 =
+      model1->AddJoint<RevoluteJoint>("pin1",
+          model1->world_body(), std::nullopt /*inboard frame*/,
+          body1, std::nullopt /*outboard frame*/,
           Vector3d::UnitZ() /*axis of rotation*/);
 
-  // Verifies we cannot add a mobilizer between frames that belong to another
-  // tree.
-  EXPECT_THROW(
-      (model1->AddMobilizer<RevoluteMobilizer>(
-          model1->world_body().body_frame(), /*inboard frame*/
-          body2.body_frame() /*body2 belongs to model2, not model1!!!*/,
+  // Verify we can't add a joint between bodies that belong to another plant.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      (model1->AddJoint<RevoluteJoint>("nogood",
+          model1->world_body(), std::nullopt,
+          body2 /*body2 belongs to model2, not model1!!!*/, std::nullopt,
           Vector3d::UnitZ() /*axis of rotation*/)),
-      std::logic_error);
+      "AddJoint.*can't add joint nogood.*world.*body2.*different.*Plant.*");
 
   // model1 is complete. Expect no-throw.
   DRAKE_EXPECT_NO_THROW(model1->Finalize());
@@ -187,12 +209,10 @@ GTEST_TEST(MultibodyTree, MultibodyElementChecks) {
   EXPECT_EQ(model1->num_positions(), 1);
   EXPECT_EQ(model1->num_velocities(), 1);
 
-  // model2->Finalize() is not expected to throw an exception. Since body2 has
-  // no joint, MultibodyTree will default it to be free and will assign a free
-  // mobilizer to it.
+  // model2->Finalize() shouldn't throw. Since body2 has no joint, we will
+  // default it to be free and will assign a floating joint to it.
   DRAKE_EXPECT_NO_THROW(model2->Finalize());
-  // We now verify the number of dofs corresponds to a quaternion free mobilizer
-  // by default.
+  // The number of dofs should match a quaternion floating joint.
   EXPECT_EQ(model2->num_positions(), 7);
   EXPECT_EQ(model2->num_velocities(), 6);
 
@@ -211,7 +231,7 @@ GTEST_TEST(MultibodyTree, MultibodyElementChecks) {
   EXPECT_EQ(&MultibodyElementTester::get_parent_tree(model2->world_body()),
             &body2_tree);
 
-  // Verifies bodies have the correct parent tree.
+  // Verify that bodies have the correct parent tree.
   EXPECT_EQ(&body1_tree, model1.get());
   EXPECT_EQ(&body2_tree, model2.get());
 }
@@ -264,14 +284,14 @@ class TreeTopologyTests : public ::testing::Test {
     for (int i = 1; i < kNumBodies; ++i)
       AddTestBody(i);
 
-    // Adds mobilizers to connect bodies according to the following diagram:
+    // Adds Joints to connect bodies according to the following diagram:
     ConnectBodies(*bodies_[1], *bodies_[6]);  // mob. 0
     ConnectBodies(*bodies_[4], *bodies_[2]);  // mob. 1
     ConnectBodies(*bodies_[0], *bodies_[7]);  // mob. 2
     ConnectBodies(*bodies_[5], *bodies_[3]);  // mob. 3
     ConnectBodies(*bodies_[0], *bodies_[5]);  // mob. 4
     WeldBodies(*bodies_[0], *bodies_[9]);     // mob. 5
-    ConnectBodies(*bodies_[4], *bodies_[1], true);  // mob. 6
+    ConnectBodies(*bodies_[4], *bodies_[1]);  // mob. 6
     ConnectBodies(*bodies_[0], *bodies_[4]);  // mob. 7
     WeldBodies(*bodies_[9], *bodies_[8]);     // mob. 8
   }
@@ -287,36 +307,27 @@ class TreeTopologyTests : public ::testing::Test {
   }
 
   void ConnectBodies(
-      const RigidBody<double>& inboard, const RigidBody<double>& outboard,
-      bool use_joint = false) {
-    if ( use_joint ) {
-      // Just for fun, here we explicitly state that the frame on body
-      // "inboard" (frame P) IS the joint frame F, done by passing the empty
-      // curly braces {}.
-      // We DO want the model to have a frame M on body "outbaord" (frame B)
-      // with a pose X_BM = Identity. We therefore pass the identity transform.
-      const auto* joint = &model_->AddJoint<RevoluteJoint>(
-          "FooJoint", inboard,
-          {}, /* Model does not create frame F, and makes F = P.  */
-          outboard,
-          math::RigidTransformd::Identity(), /* Model creates frame M. */
-          Vector3d::UnitZ());
-      joints_.push_back(joint);
-    } else {
-      const Mobilizer<double> *mobilizer =
-          &model_->AddMobilizer<RevoluteMobilizer>(
-              inboard.body_frame(), outboard.body_frame(),
-              Vector3d::UnitZ());
-      mobilizers_.push_back(mobilizer);
-    }
+      const RigidBody<double>& inboard, const RigidBody<double>& outboard) {
+    // Just for fun, here we explicitly state that the frame on body
+    // "inboard" (frame P) IS the joint frame F, done by passing the empty
+    // curly braces {}.
+    // We DO want the model to have a frame M on body "outboard" (frame B)
+    // with a pose X_BM = Identity. We therefore pass the identity transform.
+    const auto* joint = &model_->AddJoint<RevoluteJoint>(
+        fmt::format("FooJoint{}", joint_counter_++), inboard,
+        {}, /* Model does not create frame F, and makes F = P.  */
+        outboard,
+        math::RigidTransformd::Identity(), /* Model creates frame M. */
+        Vector3d::UnitZ());
+    joints_.push_back(joint);
   }
 
   void WeldBodies(const RigidBody<double>& inboard,
                   const RigidBody<double>& outboard) {
-    const Mobilizer<double>* mobilizer = &model_->AddMobilizer<WeldMobilizer>(
-        inboard.body_frame(), outboard.body_frame(),
+    const Joint<double>* joint = &model_->AddJoint<WeldJoint>(
+        fmt::format("WeldJoint{}", joint_counter_++), inboard, {}, outboard, {},
         math::RigidTransformd::Identity());
-    mobilizers_.push_back(mobilizer);
+    joints_.push_back(joint);
   }
 
   void FinalizeModel() {
@@ -324,9 +335,15 @@ class TreeTopologyTests : public ::testing::Test {
 
     // For testing, collect all mobilizer models introduced by Joint objects.
     // These are only available after Finalize().
-    for (const RevoluteJoint<double>* joint : joints_) {
-      const auto* mobilizer = JointTester::get_mobilizer(*joint);
-      mobilizers_.push_back(mobilizer);
+    for (const Joint<double>* joint : joints_) {
+      const RevoluteJoint<double>* revolute =
+          dynamic_cast<const RevoluteJoint<double>*>(joint);
+      if (revolute != nullptr) {
+        const auto* mobilizer = JointTester::get_mobilizer(*revolute);
+        mobilizers_.push_back(mobilizer);
+      } else {
+        mobilizers_.push_back(nullptr);
+      }
     }
   }
 
@@ -486,7 +503,10 @@ class TreeTopologyTests : public ::testing::Test {
   // Mobilizers:
   std::vector<const Mobilizer<double>*> mobilizers_;
   // Joints:
-  std::vector<const RevoluteJoint<double>*> joints_;
+  std::vector<const Joint<double>*> joints_;
+
+ private:
+  int joint_counter_{0};  // Used to generate unique joint names.
 };
 
 // This unit tests verifies that the multibody topology is properly compiled.
@@ -508,7 +528,7 @@ TEST_F(TreeTopologyTests, SizesAndIndexing) {
   FinalizeModel();
   EXPECT_EQ(model_->num_bodies(), 10);
   EXPECT_EQ(model_->num_mobilizers(), 9);
-  EXPECT_EQ(model_->num_joints(), 1);
+  EXPECT_EQ(model_->num_joints(), 9);
 
   const MultibodyTreeTopology& topology = model_->get_topology();
   EXPECT_EQ(topology.get_num_body_nodes(), model_->num_bodies());
@@ -534,7 +554,9 @@ TEST_F(TreeTopologyTests, SizesAndIndexing) {
         topology.get_mobilizer(mobilizer_index);
 
     EXPECT_EQ(body_index, bodies_[body_index]->index());
-    EXPECT_EQ(mobilizer_index, mobilizers_[mobilizer_index]->index());
+    if (mobilizers_[mobilizer_index] != nullptr) {  // skip welds
+      EXPECT_EQ(mobilizer_index, mobilizers_[mobilizer_index]->index());
+    }
 
     // Verify positions and velocity indexes.
     if (mobilizer_topology.num_velocities == 0) {
