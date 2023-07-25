@@ -256,11 +256,24 @@ GTEST_TEST(UnitInertia, SolidCylinderAboutEnd) {
   const double L = 1.5;
   const double I_perp = (3.0 * r * r + L * L) / 12.0 + L * L /4.0;
   const double I_axial = r * r / 2.0;
-  const UnitInertia<double> G_expected(I_perp, I_perp, I_axial);
-  UnitInertia<double> G_BBp_B = UnitInertia<double>::SolidCylinderAboutEnd(
-      r, L, Vector3<double>::UnitZ());
+
+  // Create G_BBp_A, body B's unit inertia about point Bp expressed in terms of
+  // a frame A, where unit vector Az is the axial direction.
+  const UnitInertia<double> G_BBp_A(I_perp, I_perp, I_axial);
+  // Create a non-identity rotation matrix.
+  const drake::math::RotationMatrix<double> R_AB(
+      drake::math::RollPitchYaw<double>(0.1, 0.2, 0.3));
+  // Form G_BBp_B (body B's unit inertia about point Bp expressed in terms
+  // of body B) by reexpressing G_BBp_A using the rotation matrix R_BA.
+  const UnitInertia<double> G_BBp_B = G_BBp_A.ReExpress(R_AB.inverse());
+
+  // Create G_BBp_B more directly via SolidCylinderAboutEnd().
+  const Vector3<double>unit_vec_A = Vector3<double>::UnitZ();
+  const Vector3<double>unit_vec_B = R_AB.inverse() * unit_vec_A;
+  UnitInertia<double> G_BBp_B_test =
+      UnitInertia<double>::SolidCylinderAboutEnd(r, L, unit_vec_B);
   EXPECT_TRUE(G_BBp_B.CopyToFullMatrix3().isApprox(
-      G_expected.CopyToFullMatrix3(), kEpsilon));
+      G_BBp_B_test.CopyToFullMatrix3(), kEpsilon));
 
   // Ensure a bad unit vector throws an exception.
   const Vector3<double> bad_vec(1, 0.1, 0);
