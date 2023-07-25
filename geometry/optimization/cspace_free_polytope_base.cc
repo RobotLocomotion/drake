@@ -267,15 +267,18 @@ void CspaceFreePolytopeBase::SetIndicesOfSOnChainForBodyPair(
 
 void CspaceFreePolytopeBase::SolveCertificationForEachPlaneInParallel(
     const std::vector<int>& active_plane_indices,
-    const std::function<bool(int)>& solve_plane_sos, int num_threads,
-    bool verbose, bool terminate_at_failure) const {
+    const std::function<std::pair<bool, int>(int)>& solve_plane_sos,
+    int num_threads, bool verbose, bool terminate_at_failure) const {
   num_threads = num_threads > 0
                     ? num_threads
                     : static_cast<int>(std::thread::hardware_concurrency());
   // We implement the "thread pool" idea here, by following
   // MonteCarloSimulationParallel class. This implementation doesn't use openMP
   // library.
-  std::list<std::future<bool>> active_operations;
+  std::list<std::future<std::pair<bool, int>>> active_operations;
+  // is_success[plane_count] records whether
+  // this->separating_planes()[active_plane_indices[plane_count]] is found or
+  // not.
   std::vector<std::optional<bool>> is_success(active_plane_indices.size(),
                                               std::nullopt);
   // Keep track of how many SOS have been dispatched already.
@@ -292,12 +295,11 @@ void CspaceFreePolytopeBase::SolveCertificationForEachPlaneInParallel(
       if (IsFutureReady(*operation)) {
         // This call to future.get() is necessary to propagate any exception
         // thrown during SOS setup/solve.
-        const bool sos_success = operation->get();
-        is_success[sos_dispatched].emplace(sos_success);
+        const auto [sos_success, plane_count] = operation->get();
+        is_success[plane_count].emplace(sos_success);
         if (verbose) {
-          drake::log()->debug("SOS {}/{} completed, is_success {}",
-                              sos_dispatched, active_plane_indices.size(),
-                              sos_success);
+          drake::log()->debug("SOS {}/{} completed, is_success {}", plane_count,
+                              active_plane_indices.size(), sos_success);
         }
         if (!sos_success && terminate_at_failure) {
           stop_dispatching = true;

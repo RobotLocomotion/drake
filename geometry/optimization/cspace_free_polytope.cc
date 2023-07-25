@@ -294,10 +294,10 @@ CspaceFreePolytope::FindSeparationCertificateGivenPolytope(
 
   // This lambda function formulates and solves a small SOS program for each
   // pair of geometries.
-  auto solve_small_sos = [this, &d_minus_Cs, &C_redundant_indices,
-                          &s_lower_redundant_indices,
-                          &s_upper_redundant_indices, &active_plane_indices,
-                          &options, &ret](int plane_count) -> bool {
+  auto solve_small_sos =
+      [this, &d_minus_Cs, &C_redundant_indices, &s_lower_redundant_indices,
+       &s_upper_redundant_indices, &active_plane_indices, &options,
+       &ret](int plane_count) -> std::pair<bool, int> {
     const int plane_index = active_plane_indices[plane_count];
     auto certificate_program = this->ConstructPlaneSearchProgram(
         this->plane_geometries_[plane_index], d_minus_Cs, C_redundant_indices,
@@ -311,10 +311,10 @@ CspaceFreePolytope::FindSeparationCertificateGivenPolytope(
           plane_index, separating_planes()[plane_index].a,
           separating_planes()[plane_index].b,
           separating_planes()[plane_index].decision_variables, result));
-      return true;
+      return std::make_pair(true, plane_count);
     } else {
       ret[plane_count].reset();
-      return false;
+      return std::make_pair(false, plane_count);
     }
   };
 
