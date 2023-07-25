@@ -270,8 +270,8 @@ GTEST_TEST(SpatialInertia, SolidCylinderWithDensityOrMass) {
   const double mass = density * volume;
   const Vector3<double> p_BoBcm_B = Vector3<double>::Zero();
 
-  // Test a solid cylinder B about Bcm whose unit_vector is in the z-direction.
-  Vector3<double> unit_vec(0, 0, 1);
+  // Test a solid cylinder B about Bcm whose axis is aligned with unit_vec.
+  const Vector3<double>unit_vec(0.5, -0.5, 1.0 / std::sqrt(2));
   UnitInertia<double>G_BBo_B =
       UnitInertia<double>::SolidCylinder(r, l, unit_vec);
   SpatialInertia<double> M_expected(mass, p_BoBcm_B, G_BBo_B);
@@ -286,9 +286,9 @@ GTEST_TEST(SpatialInertia, SolidCylinderWithDensityOrMass) {
   EXPECT_TRUE(CompareMatrices(M_with_mass.CopyToFullMatrix6(),
       M_with_density.CopyToFullMatrix6()));
 
-  // Test a solid cylinder B about Bp, where Bp is at the center of a circular
-  // end of the cylinder. The position from Bp to Bcm p_BpBcm_B = 0.5*l*Bz.
-  const Vector3<double> p_BpBcm_B(0, 0, 0.5*l);
+  // Test a solid cylinder B about the point Bp, where Bp is at the center of a
+  // circular end of the cylinder with the following position from Bp to Bcm.
+  const Vector3<double> p_BpBcm_B = 0.5 * l * unit_vec;
   const UnitInertia<double>G_BBp_B =
       UnitInertia<double>::SolidCylinderAboutEnd(r, l, unit_vec);
   M_expected = SpatialInertia<double>(mass, p_BpBcm_B, G_BBp_B);
@@ -303,27 +303,11 @@ GTEST_TEST(SpatialInertia, SolidCylinderWithDensityOrMass) {
   EXPECT_TRUE(CompareMatrices(M_with_mass.CopyToFullMatrix6(),
                               M_with_density.CopyToFullMatrix6()));
 
-  // Test a solid cylinder B about Bcm with a different unit vector direction.
-  unit_vec = Vector3<double>(0.5, -0.5, 1.0 / std::sqrt(2));
-  G_BBo_B = UnitInertia<double>::SolidCylinder(r, l, unit_vec);
-  M_expected = SpatialInertia<double>(mass, p_BoBcm_B, G_BBo_B);
-  M_with_density =
+  // Also test a solid cylinder B about Bp using Shift() function.
+  const SpatialInertia<double> M_BBcm_B =
       SpatialInertia<double>::SolidCylinderWithDensity(density, r, l, unit_vec);
-  EXPECT_TRUE(CompareMatrices(M_expected.CopyToFullMatrix6(),
-                              M_with_density.CopyToFullMatrix6()));
-
-  // Ensure SolidCylinderWithMass() matches SolidCylinderWithDensity().
-  M_with_mass =
-      SpatialInertia<double>::SolidCylinderWithMass(mass, r, l, unit_vec);
-  EXPECT_TRUE(CompareMatrices(M_with_mass.CopyToFullMatrix6(),
-      M_with_density.CopyToFullMatrix6()));
-
-  // Test a solid cylinder B about Bp with a different unit vector direction.
-  const Vector3<double> p_BcmBp_B = -0.5 * l * unit_vec;
-  const SpatialInertia<double> M_BBcm_B = M_with_density;
+  const Vector3<double> p_BcmBp_B = -p_BpBcm_B;
   M_expected = M_BBcm_B.Shift(p_BcmBp_B);
-  M_with_density = SpatialInertia<double>::SolidCylinderWithDensityAboutEnd(
-      density, r, l, unit_vec);
 
   // The algorithms to calculate M_expected and M_with_density differ, so
   // use an empirical tolerance of two bits = 2^2 times machine epsilon.
@@ -331,12 +315,6 @@ GTEST_TEST(SpatialInertia, SolidCylinderWithDensityOrMass) {
   EXPECT_TRUE(CompareMatrices(M_expected.CopyToFullMatrix6(),
                               M_with_density.CopyToFullMatrix6(),
                               kTolerance, MatrixCompareType::relative));
-
-  // Match SolidCylinderWithMassAboutEnd() & SolidCylinderWithDensityAboutEnd().
-  M_with_mass = SpatialInertia<double>::SolidCylinderWithMassAboutEnd(
-      mass, r, l, unit_vec);
-  EXPECT_TRUE(CompareMatrices(M_with_density.CopyToFullMatrix6(),
-                              M_with_mass.CopyToFullMatrix6()));
 
   // Ensure a negative density or mass throws an exception.
   DRAKE_EXPECT_THROWS_MESSAGE(

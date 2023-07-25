@@ -265,15 +265,15 @@ class SpatialInertia {
       const T& mass, const T& radius, const T& length,
       const Vector3<T>& unit_vector);
 
-  /// Creates a spatial inertia for a uniform-density solid cylinder B about an
-  /// end-point Bp (Bp is at the center of one of the cylinder's circular ends).
+  /// Creates a spatial inertia for a uniform-density solid cylinder B about the
+  /// point Bp (Bp is at a center of the cylinder's circular ends; see below).
   /// @param[in] density mass per volume (kg/m³).
   /// @param[in] radius radius of cylinder (meters).
   /// @param[in] length length of cylinder in unit_vector direction (meters).
-  /// @param[in] unit_vector unit vector defining the axial direction of the
-  /// cylinder, expressed in B.
+  /// @param[in] unit_vector unit vector parallel to the axis of the cylinder
+  /// and directed from Bp to Bcm (B's center of mass), expressed in B.
   /// @retval M_BBp_B B's spatial inertia about Bp, expressed in B.
-  /// @note The position from Bp to Bcm is length / 2 * unit_vector.
+  /// @note The position from Bp to Bcm is p_BpBcm = length / 2 * unit_vector.
   /// @note B's rotational inertia about Bp is axially symmetric, meaning B has
   /// an equal moment of inertia about any line that both passes through Bp
   /// and is perpendicular to unit_vector.
@@ -285,15 +285,15 @@ class SpatialInertia {
       const T& density, const T& radius, const T& length,
       const Vector3<T>& unit_vector);
 
-  /// Creates a spatial inertia for a uniform-density solid cylinder B about an
-  /// end-point Bp (Bp is at the center of one of the cylinder's circular ends).
+  /// Creates a spatial inertia for a uniform-density solid cylinder B about the
+  /// point Bp (Bp is at a center of the cylinder's circular ends; see below).
   /// @param[in] mass mass of the solid cylinder (kg).
   /// @param[in] radius radius of cylinder (meters).
   /// @param[in] length length of cylinder in unit_vector direction (meters).
-  /// @param[in] unit_vector unit vector defining the axial direction of the
-  /// cylinder, expressed in B.
+  /// @param[in] unit_vector unit vector parallel to the axis of the cylinder
+  /// and directed from Bp to Bcm (B's center of mass), expressed in B.
   /// @retval M_BBp_B B's spatial inertia about Bp, expressed in B.
-  /// @note The position from Bp to Bcm is length / 2 * unit_vector.
+  /// @note The position from Bp to Bcm is p_BpBcm = length / 2 * unit_vector.
   /// @note B's rotational inertia about Bp is axially symmetric, meaning B has
   /// an equal moment of inertia about any line that both passes through Bp
   /// and is perpendicular to unit_vector.
