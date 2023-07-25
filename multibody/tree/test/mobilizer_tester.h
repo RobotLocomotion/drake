@@ -16,11 +16,12 @@ namespace multibody {
 namespace internal {
 
 // Helper fixture to setup a simple MBT model containing a single body
-// connected to the world by a mobilizer.
+// connected to World by a Joint. When we finalize, the Joint will be
+// implemented with a corresponding Mobilizer.
 class MobilizerTester : public ::testing::Test {
  public:
   // Creates a simple model consisting of a single body with a
-  // mobilizer connecting it to the world, with the sole purpose of verifying
+  // Joint connecting it to World, with the sole purpose of verifying
   // the mobilizer methods.
   MobilizerTester() {
     // Spatial inertia for adding a body. The actual value is not important for
@@ -35,6 +36,31 @@ class MobilizerTester : public ::testing::Test {
     body_ = &owned_tree_->AddBody<RigidBody>("body", M_B);
   }
 
+  // Adds a Joint, then finalizes to get a model using a Mobilizer and
+  // returns a reference to that Mobilizer.
+  template <template <typename> class JointType,
+            template <typename> class MobilizerType>
+  const MobilizerType<double>& AddJointAndFinalize(
+      std::unique_ptr<JointType<double>> joint) {
+    // Add a joint between the world and the body:
+    const JointType<double>& joint_ref =
+        owned_tree_->AddJoint(std::move(joint));
+
+    // We are done adding modeling elements. Transfer tree to system,
+    // finalize, and get a Context.
+    system_ = std::make_unique<MultibodyTreeSystem<double>>(
+        std::move(owned_tree_));
+    context_ = system_->CreateDefaultContext();
+
+    const Mobilizer<double>& mobilizer = joint_ref.GetMobilizerInUse();
+    const auto* typed_mobilizer =
+      dynamic_cast<const MobilizerType<double>*>(&mobilizer);
+    DRAKE_DEMAND(typed_mobilizer != nullptr);
+    return *typed_mobilizer;
+  }
+
+  // TODO(sherm1) Remove this as soon as space_xyz_floating_mobilizer_test.cc
+  //  is converted to use the corresponding Joint (when that exists).
   template <template <typename> class MobilizerType>
   const MobilizerType<double>& AddMobilizerAndFinalize(
       std::unique_ptr<MobilizerType<double>> mobilizer) {
@@ -61,7 +87,7 @@ class MobilizerTester : public ::testing::Test {
 
  private:
   // This unique_ptr is only valid between construction and the call to
-  // AddMobilizerAndFinalize(). After AddMobilizerAndFinalize() it is an
+  // AddJointAndFinalize(). After AddJointAndFinalize() it is an
   // invalid nullptr.
   std::unique_ptr<MultibodyTree<double>> owned_tree_;
   MultibodyTree<double>* tree_{nullptr};

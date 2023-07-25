@@ -73,6 +73,7 @@ MultibodyTree<T>::MultibodyTree() {
   // `world_model_instance()` hardcodes the returned index.  Make sure it's
   // correct.
   DRAKE_DEMAND(world_instance == world_model_instance());
+
   world_body_ = &AddRigidBody("world", world_model_instance(),
                               SpatialInertia<double>());
 
@@ -778,6 +779,16 @@ void MultibodyTree<T>::Finalize() {
   CreateJointImplementations();
   FinalizeTopology();
   FinalizeInternals();
+
+  // Add free joints created by tree's finalize to the multibody graph.
+  // Until the call to Finalize(), all joints are added through calls to
+  // MultibodyPlant APIs and therefore registered in the graph. This accounts
+  // for the QuaternionFloatingJoint added for each free body that was not
+  // explicitly given a parent joint. It is important that this loop happens
+  // AFTER finalizing the tree.
+  for (JointIndex i{multibody_graph_.num_joints()}; i < num_joints(); ++i) {
+    RegisterJointInGraph(get_joint(i));
+  }
 }
 
 template <typename T>

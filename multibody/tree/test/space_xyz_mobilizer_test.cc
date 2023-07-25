@@ -7,8 +7,8 @@
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
+#include "drake/multibody/tree/ball_rpy_joint.h"
 #include "drake/multibody/tree/multibody_tree-inl.h"
-#include "drake/multibody/tree/multibody_tree_system.h"
 #include "drake/multibody/tree/test/mobilizer_tester.h"
 #include "drake/systems/framework/context.h"
 
@@ -34,8 +34,8 @@ class SpaceXYZMobilizerTest :  public MobilizerTester {
   // Creates a simple model consisting of a single body with a space xyz
   // mobilizer connecting it to the world.
   void SetUp() override {
-    mobilizer_ = &AddMobilizerAndFinalize(
-        std::make_unique<SpaceXYZMobilizer<double>>(
+    mobilizer_ = &AddJointAndFinalize<BallRpyJoint, SpaceXYZMobilizer>(
+        std::make_unique<BallRpyJoint<double>>("joint0",
             tree().world_body().body_frame(), body_->body_frame()));
   }
 
