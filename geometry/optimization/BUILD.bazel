@@ -280,6 +280,7 @@ drake_cc_googletest(
         "//common/test_utilities:symbolic_test_util",
         "//geometry/optimization:c_iris_test_utilities",
         "//geometry/optimization:cspace_free_box",
+        "//multibody/inverse_kinematics",
         "//solvers:mosek_solver",
     ],
 )
