@@ -675,13 +675,29 @@ GTEST_TEST(IrisInConfigurationSpaceTest, BlockOnGround) {
 // polytopes):  A simple pendulum of length `l` with a sphere at the tip of
 // radius `r` on a vertical track, plus a ground plane at z=0.  The
 // configuration space is given by the joint limits and z + l*cos(theta) >= r.
-// The region is visualized at https://www.desmos.com/calculator/flshvay78b. In
-// addition to testing the convex space, this was originally a test for which
-// Ibex found counter-examples that Snopt missed; now Snopt succeeds due to
-// having options.num_collision_infeasible_samples > 1.
+// The region is also visualized at
+// https://www.desmos.com/calculator/flshvay78b. In addition to testing the
+// convex space, this was originally a test for which Ibex found
+// counter-examples that Snopt missed; now Snopt succeeds due to having
+// options.num_collision_infeasible_samples > 1.
 GTEST_TEST(IrisInConfigurationSpaceTest, ConvexConfigurationSpace) {
   const double l = 1.5;
   const double r = 0.1;
+
+  std::shared_ptr<Meshcat> meshcat = geometry::GetTestEnvironmentMeshcat();
+  meshcat->Set2dRenderMode(math::RigidTransformd(Eigen::Vector3d{0, 0, 1}),
+                           -3.25, 3.25, -3.25, 3.25);
+  meshcat->SetProperty("/Grid", "visible", true);
+  Eigen::RowVectorXd theta1s = Eigen::RowVectorXd::LinSpaced(100, -1.5, 1.5);
+  Eigen::Matrix3Xd points = Eigen::Matrix3Xd::Zero(3, 2 * theta1s.size());
+  for (int i = 0; i < theta1s.size(); ++i) {
+    points(0, i) = r - l * cos(theta1s[i]);
+    points(1, i) = theta1s[i];
+    points(0, points.cols() - i - 1) = 0;
+    points(1, points.cols() - i - 1) = theta1s[i];
+  }
+  meshcat->SetLine("True C_free", points, 2.0, Rgba(0, 0, 1));
+
   const std::string convex_urdf = fmt::format(
       R"(
 <robot name="pendulum_on_vertical_track">
@@ -732,11 +748,21 @@ GTEST_TEST(IrisInConfigurationSpaceTest, ConvexConfigurationSpace) {
   // point (on some platforms with some random seeds).
   options.num_collision_infeasible_samples = 3;
 
+  // Turn on meshcat for addition debugging visualizations.
+  // This example is truly adversarial for IRIS. After one iteration, the
+  // maximum-volume inscribed ellipse is approximately centered in C-free. So
+  // finding a counter-example in the bottom corner (near the test point) is
+  // not only difficult because we need to sample in a corner of the polytope,
+  // but because the objective is actually pulling the counter-example search
+  // away from that corner. Open the meshcat visualization to step through the
+  // details!
+  options.meshcat = meshcat;
+
   HPolyhedron region = IrisFromUrdf(convex_urdf, sample, options);
 
-  // TODO(russt): Change this back to EXPECT_TRUE once we can get reasonable
-  // performance on all platforms. (Focal variants were requiring an
-  // unreasonably high num_collision_infeasible_samples).
+  // TODO(russt): Expecting the test point to be outside the verified region is
+  // too strong of a requirement right now. If we can improve the algorithm then
+  // we should make this EXPECT_FALSE.
   if (!region.PointInSet(Vector2d{z_test, theta_test})) {
     log()->info("Our test point is not in the set");
   }
@@ -746,19 +772,6 @@ GTEST_TEST(IrisInConfigurationSpaceTest, ConvexConfigurationSpace) {
   EXPECT_GE(region.MaximumVolumeInscribedEllipsoid().Volume(), 0.5);
 
   {
-    std::shared_ptr<Meshcat> meshcat = geometry::GetTestEnvironmentMeshcat();
-    meshcat->Set2dRenderMode(math::RigidTransformd(Eigen::Vector3d{0, 0, 1}),
-                             -3.25, 3.25, -3.25, 3.25);
-    meshcat->SetProperty("/Grid", "visible", true);
-    Eigen::RowVectorXd theta1s = Eigen::RowVectorXd::LinSpaced(100, -1.5, 1.5);
-    Eigen::Matrix3Xd points = Eigen::Matrix3Xd::Zero(3, 2 * theta1s.size());
-    for (int i = 0; i < theta1s.size(); ++i) {
-      points(0, i) = r - l * cos(theta1s[i]);
-      points(1, i) = theta1s[i];
-      points(0, points.cols() - i - 1) = 0;
-      points(1, points.cols() - i - 1) = theta1s[i];
-    }
-    meshcat->SetLine("True C_free", points, 2.0, Rgba(0, 0, 1));
     VPolytope vregion = VPolytope(region).GetMinimalRepresentation();
     points.resize(3, vregion.vertices().cols() + 1);
     points.topLeftCorner(2, vregion.vertices().cols()) = vregion.vertices();

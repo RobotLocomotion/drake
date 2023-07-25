@@ -194,6 +194,7 @@ drake_cc_library(
         ":convex_set",
         ":iris_internal",
         "//common:name_value",
+        "//geometry:meshcat",
         "//geometry:scene_graph",
         "//multibody/plant",
         "//solvers:choose_best_solver",
