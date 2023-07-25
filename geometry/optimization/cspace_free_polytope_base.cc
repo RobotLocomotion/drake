@@ -1,10 +1,6 @@
 #include "drake/geometry/optimization/cspace_free_polytope_base.h"
 
-#include <future>
 #include <limits>
-#include <list>
-#include <string>
-#include <thread>
 #include <utility>
 
 #include "drake/geometry/optimization/cspace_free_internal.h"
@@ -15,18 +11,6 @@ namespace geometry {
 namespace optimization {
 const double kInf = std::numeric_limits<double>::infinity();
 namespace {
-// Checks if a future has completed execution.
-// This function is taken from monte_carlo.cc. It will be used in the "thread
-// pool" implementation (which doesn't use the openMP).
-template <typename T>
-bool IsFutureReady(const std::future<T>& future) {
-  // future.wait_for() is the only method to check the status of a future
-  // without waiting for it to complete.
-  const std::future_status status =
-      future.wait_for(std::chrono::milliseconds(1));
-  return (status == std::future_status::ready);
-}
-
 /*
  The monomials in the numerator of body point position has the form ∏ᵢ pow(tᵢ,
  dᵢ) * ∏ⱼ pow(xⱼ, cⱼ), where tᵢ is the configuration variable tᵢ = tan(Δθᵢ/2)
@@ -265,101 +249,6 @@ void CspaceFreePolytopeBase::SetIndicesOfSOnChainForBodyPair(
   }
 }
 
-void CspaceFreePolytopeBase::SolveCertificationForEachPlaneInParallel(
-    const std::vector<int>& active_plane_indices,
-    const std::function<bool(int)>& solve_plane_sos, int num_threads,
-    bool verbose, bool terminate_at_failure) const {
-  num_threads = num_threads > 0
-                    ? num_threads
-                    : static_cast<int>(std::thread::hardware_concurrency());
-  // We implement the "thread pool" idea here, by following
-  // MonteCarloSimulationParallel class. This implementation doesn't use openMP
-  // library.
-  std::list<std::future<bool>> active_operations;
-  std::vector<std::optional<bool>> is_success(active_plane_indices.size(),
-                                              std::nullopt);
-  // Keep track of how many SOS have been dispatched already.
-  int sos_dispatched = 0;
-  // If any SOS is infeasible, then we don't dispatch any more SOS and report
-  // failure.
-  bool stop_dispatching = false;
-  while ((active_operations.size() > 0 ||
-          (sos_dispatched < static_cast<int>(active_plane_indices.size()) &&
-           !stop_dispatching))) {
-    // Check for completed operations.
-    for (auto operation = active_operations.begin();
-         operation != active_operations.end();) {
-      if (IsFutureReady(*operation)) {
-        // This call to future.get() is necessary to propagate any exception
-        // thrown during SOS setup/solve.
-        const bool sos_success = operation->get();
-        is_success[sos_dispatched].emplace(sos_success);
-        if (verbose) {
-          drake::log()->debug("SOS {}/{} completed, is_success {}",
-                              sos_dispatched, active_plane_indices.size(),
-                              sos_success);
-        }
-        if (!sos_success && terminate_at_failure) {
-          stop_dispatching = true;
-        }
-        // Erase returned iterator to the next node in the list.
-        operation = active_operations.erase(operation);
-      } else {
-        // Advance to next node in the list.
-        ++operation;
-      }
-    }
-
-    // Dispatch new SOS.
-    while (static_cast<int>(active_operations.size()) < num_threads &&
-           sos_dispatched < static_cast<int>(active_plane_indices.size()) &&
-           !stop_dispatching) {
-      active_operations.emplace_back(std::async(
-          std::launch::async, std::move(solve_plane_sos), sos_dispatched));
-      if (verbose) {
-        drake::log()->debug("SOS {}/{} dispatched", sos_dispatched,
-                            active_plane_indices.size());
-      }
-      ++sos_dispatched;
-    }
-
-    // Wait a bit before checking for completion.
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
-  }
-
-  if (std::all_of(is_success.begin(), is_success.end(),
-                  [](std::optional<bool> flag) {
-                    return flag.has_value() && flag.value();
-                  })) {
-    if (verbose) {
-      drake::log()->debug("Found Lagrangian multipliers and separating planes");
-    }
-  } else {
-    if (verbose) {
-      std::string bad_pairs;
-      const auto& inspector = scene_graph().model_inspector();
-      for (int plane_count = 0;
-           plane_count < static_cast<int>(active_plane_indices.size());
-           ++plane_count) {
-        const int plane_index = active_plane_indices[plane_count];
-        if (is_success[plane_count].has_value() &&
-            !(is_success[plane_count].value())) {
-          bad_pairs.append(fmt::format(
-              "({}, {})\n",
-              inspector.GetName(separating_planes()[plane_index]
-                                    .positive_side_geometry->id()),
-              inspector.GetName(separating_planes()[plane_index]
-                                    .negative_side_geometry->id())));
-        }
-      }
-
-      drake::log()->debug(
-          "Cannot find Lagrangian multipliers and separating planes for \n{}",
-          bad_pairs);
-    }
-  }
-}
-
 VectorX<symbolic::Variable> CspaceFreePolytopeBase::GetSForPlane(
     const SortedPair<multibody::BodyIndex>& body_pair,
     SForPlane s_for_plane_enum) const {
@@ -420,7 +309,6 @@ int GetGramVarSize(
     }
   }
 }
-
 GramAndMonomialBasis::GramAndMonomialBasis(
     const std::array<VectorX<symbolic::Monomial>, 4>& monomial_basis_array,
     bool with_cross_y, int num_y) {
