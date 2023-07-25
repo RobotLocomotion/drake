@@ -9,6 +9,7 @@
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/multibody_tree-inl.h"
 #include "drake/multibody/tree/multibody_tree_system.h"
+#include "drake/multibody/tree/quaternion_floating_joint.h"
 #include "drake/multibody/tree/rigid_body.h"
 #include "drake/multibody/tree/spatial_inertia.h"
 #include "drake/systems/framework/context.h"
@@ -78,8 +79,9 @@ class LinearBushingRollPitchYawTester : public ::testing::Test {
 
     // Allow relative motion between bodies A and C by adding a 6-DOF mobilizer
     // between frameA of bodyA (world) and frameC of bodyC.
-    mobilizer_ = &model->AddMobilizer(
-        std::make_unique<QuaternionFloatingMobilizer<double>>(frameA, frameC));
+    joint_ = &model->AddJoint(
+        std::make_unique<QuaternionFloatingJoint<double>>("joint0",
+            frameA, frameC));
 
     // Calculate "reasonable" torque and force stiffness/damping constants,
     // where "reasonable" means a critical damping ratio ζ = 0.1 for each of the
@@ -143,10 +145,10 @@ class LinearBushingRollPitchYawTester : public ::testing::Test {
     //   Co's position from Ao expressed in frame A,
     //   C's angular velocity in A expressed in A,
     //   Co's translational velocity in A expressed in A.
-    mobilizer_->SetFromRotationMatrix(&context, R_AC);
-    mobilizer_->set_position(&context, p_AoCo_A);
-    mobilizer_->set_angular_velocity(&context, w_AC_A);
-    mobilizer_->set_translational_velocity(&context, v_ACo_A);
+    joint_->SetFromRotationMatrix(&context, R_AC);
+    joint_->set_position(&context, p_AoCo_A);
+    joint_->set_angular_velocity(&context, w_AC_A);
+    joint_->set_translational_velocity(&context, v_ACo_A);
 
     // ---------- Start of alternate calculations ---------
     // Get the roll-pitch-yaw angles relating orientation of frames A and C.
@@ -349,7 +351,7 @@ class LinearBushingRollPitchYawTester : public ::testing::Test {
   // TODO(Mitiguy) Per issue #12739, consider using MultibodyPlant not MBT.
   std::unique_ptr<MultibodyTreeSystem<double>> mbtree_system_;
   std::unique_ptr<systems::Context<double>> context_;
-  const QuaternionFloatingMobilizer<double>* mobilizer_{nullptr};
+  const QuaternionFloatingJoint<double>* joint_{nullptr};
 
   const RigidBody<double>* bodyA_{nullptr};  // World body (inboard to bushing).
   const RigidBody<double>* bodyC_{nullptr};  // Body attached to bushing.
@@ -675,10 +677,10 @@ TEST_F(LinearBushingRollPitchYawTester, TestGimbalLock) {
   // Use the mobilizer to set frame C's pose and motion in frame A.
   const RotationMatrixd R_AC(rpy_gimbal_lock);
   systems::Context<double>& context = *(context_.get());
-  mobilizer_->SetFromRotationMatrix(&context, R_AC);
-  mobilizer_->set_position(&context, p_zero);
-  mobilizer_->set_angular_velocity(&context, w_zero);
-  mobilizer_->set_translational_velocity(&context, v_zero);
+  joint_->SetFromRotationMatrix(&context, R_AC);
+  joint_->set_position(&context, p_zero);
+  joint_->set_angular_velocity(&context, w_zero);
+  joint_->set_translational_velocity(&context, v_zero);
 
   const char* expected_message =
       "LinearBushingRollPitchYaw::CalcBushingRollPitchYawAngleRates()"

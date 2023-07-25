@@ -287,8 +287,7 @@ MultibodyPlant<T>::MultibodyPlant(
   // it less brittle.
   visual_geometries_.emplace_back();  // Entries for the "world" body.
   collision_geometries_.emplace_back();
-  // Add the world body to the graph.
-  multibody_graph_.AddBody(world_body().name(), world_body().model_instance());
+
   DeclareSceneGraphPorts();
 }
 
@@ -358,17 +357,6 @@ MultibodyPlant<T>::MultibodyPlant(const MultibodyPlant<U>& other)
     //   -reaction_forces_port_
     //   -instance_generalized_contact_forces_output_ports_
 
-    // Partially copy multibody_graph_. The looped calls to RegisterJointInGraph
-    // below copy the second half.
-    // TODO(xuchenhan-tri) MultibodyGraph should offer a public function (or
-    // constructor) for scalar conversion, so that MbP can just delegate the
-    // copying to MbG, instead of leaking knowledge of what kind of data MbG
-    // holds into MbP's converting constructor here.
-    for (BodyIndex index(0); index < num_bodies(); ++index) {
-      const Body<T>& body = get_body(index);
-      multibody_graph_.AddBody(body.name(), body.model_instance());
-    }
-
     time_step_ = other.time_step_;
     // discrete_update_manager_ is copied below after FinalizePlantOnly().
 
@@ -401,10 +389,6 @@ MultibodyPlant<T>::MultibodyPlant(const MultibodyPlant<U>& other)
   }
 
   DeclareSceneGraphPorts();
-
-  for (JointIndex index(0); index < num_joints(); ++index) {
-    RegisterJointInGraph(get_joint(index));
-  }
 
   // MultibodyTree::CloneToScalar() already called MultibodyTree::Finalize()
   // on the new MultibodyTree on U. Therefore we only Finalize the plant's
@@ -807,7 +791,7 @@ template <typename T>
 std::vector<const Body<T>*> MultibodyPlant<T>::GetBodiesWeldedTo(
     const Body<T>& body) const {
   const std::set<BodyIndex> island =
-      multibody_graph_.FindBodiesWeldedTo(body.index());
+      internal_tree().multibody_graph().FindBodiesWeldedTo(body.index());
   // Map body indices to pointers.
   std::vector<const Body<T>*> sub_graph_bodies;
   for (BodyIndex body_index : island) {
@@ -965,16 +949,6 @@ template<typename T>
 void MultibodyPlant<T>::Finalize() {
   // After finalizing the base class, tree is read-only.
   internal::MultibodyTreeSystem<T>::Finalize();
-
-  // Add free joints created by tree's finalize to the multibody graph.
-  // Until the call to Finalize(), all joints are added through calls to
-  // MultibodyPlant APIs and therefore registered in the graph. This accounts
-  // for the QuaternionFloatingJoint added for each free body that was not
-  // explicitly given a parent joint. It is important that this loop happens
-  // AFTER finalizing the internal tree.
-  for (JointIndex i{multibody_graph_.num_joints()}; i < num_joints(); ++i) {
-    RegisterJointInGraph(get_joint(i));
-  }
 
   if (geometry_source_is_registered()) {
     ApplyDefaultCollisionFilters();
@@ -1211,7 +1185,7 @@ void MultibodyPlant<T>::ApplyDefaultCollisionFilters() {
   }
   // We explicitly exclude collisions within welded subgraphs.
   std::vector<std::set<BodyIndex>> subgraphs =
-      multibody_graph_.FindSubgraphsOfWeldedBodies();
+      internal_tree().multibody_graph().FindSubgraphsOfWeldedBodies();
   for (const auto& subgraph : subgraphs) {
     // Only operate on non-trivial weld subgraphs.
     if (subgraph.size() <= 1) { continue; }
@@ -3303,7 +3277,7 @@ void MultibodyPlant<T>::RemoveUnsupportedScalars(
 template <typename T>
 std::vector<std::set<BodyIndex>>
 MultibodyPlant<T>::FindSubgraphsOfWeldedBodies() const {
-  return multibody_graph_.FindSubgraphsOfWeldedBodies();
+  return internal_tree().multibody_graph().FindSubgraphsOfWeldedBodies();
 }
 
 template <typename T>

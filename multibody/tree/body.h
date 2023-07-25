@@ -214,7 +214,7 @@ class Body : public MultibodyElement<T> {
   /// @throws std::exception if this body is not a floating body.
   void Lock(systems::Context<T>* context) const {
     // TODO(rpoyner-tri): consider extending the design to allow locking on
-    // non-floating bodies.
+    //  non-floating bodies.
     if (!is_floating()) {
       throw std::logic_error(fmt::format(
           "Attempted to call Lock() on non-floating body {}", name()));
@@ -228,7 +228,7 @@ class Body : public MultibodyElement<T> {
   /// @throws std::exception if this body is not a floating body.
   void Unlock(systems::Context<T>* context) const {
     // TODO(rpoyner-tri): consider extending the design to allow locking on
-    // non-floating bodies.
+    //  non-floating bodies.
     if (!is_floating()) {
       throw std::logic_error(fmt::format(
           "Attempted to call Unlock() on non-floating body {}", name()));

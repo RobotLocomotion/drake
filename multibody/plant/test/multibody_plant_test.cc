@@ -1711,9 +1711,7 @@ GTEST_TEST(MultibodyPlantTest, ReversedWeldError) {
   // reflect that.
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant.Finalize(),
-      "This multibody tree already has a mobilizer connecting "
-      "inboard frame \\(index=0\\) and outboard frame \\(index=\\d*\\). "
-      "More than one mobilizer between two frames is not allowed.");
+      ".*already has a joint.*extra_welds_to_world.*joint.*not allowed.*");
 }
 
 // Utility to verify that the only ports of MultibodyPlant that are feedthrough

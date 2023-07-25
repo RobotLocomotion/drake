@@ -896,8 +896,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const std::string& name, ModelInstanceIndex model_instance,
       const SpatialInertia<double>& M_BBo_B) {
     DRAKE_MBP_THROW_IF_FINALIZED();
-    // Make note in the graph.
-    multibody_graph_.AddBody(name, model_instance);
     // Add the actual rigid body to the model.
     const RigidBody<T>& body = this->mutable_tree().AddRigidBody(
         name, model_instance, M_BBo_B);
@@ -972,7 +970,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     DRAKE_MBP_THROW_IF_FINALIZED();
     const JointType<T>& result =
         this->mutable_tree().AddJoint(std::move(joint));
-    RegisterJointInGraph(result);
     return result;
   }
 
@@ -1065,7 +1062,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     const JointType<T>& result =
         this->mutable_tree().template AddJoint<JointType>(
             name, parent, X_PF, child, X_BM, std::forward<Args>(args)...);
-    RegisterJointInGraph(result);
     return result;
   }
 
@@ -5205,18 +5201,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // GeometryId is invalid or unknown to this plant.
   BodyIndex FindBodyByGeometryId(geometry::GeometryId) const;
 
-  // Registers a joint in the graph.
-  void RegisterJointInGraph(const Joint<T>& joint) {
-    const std::string type_name = joint.type_name();
-    if (!multibody_graph_.IsJointTypeRegistered(type_name)) {
-      multibody_graph_.RegisterJointType(type_name);
-    }
-    // Note changes in the graph.
-    multibody_graph_.AddJoint(joint.name(), joint.model_instance(), type_name,
-                              joint.parent_body().index(),
-                              joint.child_body().index());
-  }
-
   // Removes `this` MultibodyPlant's ability to convert to the scalar types
   // unsupported by the given `component`.
   void RemoveUnsupportedScalars(
@@ -5411,10 +5395,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // velocities and thus no generalized forces.
   std::vector<systems::OutputPortIndex>
       instance_generalized_contact_forces_output_ports_;
-
-  // A graph representing the body/joint topology of the multibody plant (Not
-  // to be confused with the spanning-tree model we will build for analysis.)
-  internal::MultibodyGraph multibody_graph_;
 
   // If the plant is modeled as a discrete system with periodic updates,
   // time_step_ corresponds to the period of those updates. Otherwise, if the

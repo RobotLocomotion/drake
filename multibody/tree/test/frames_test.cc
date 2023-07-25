@@ -13,7 +13,7 @@
 #include "drake/multibody/tree/fixed_offset_frame.h"
 #include "drake/multibody/tree/multibody_tree-inl.h"
 #include "drake/multibody/tree/multibody_tree_system.h"
-#include "drake/multibody/tree/revolute_mobilizer.h"
+#include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/rigid_body.h"
 #include "drake/systems/framework/context.h"
 
@@ -51,11 +51,9 @@ class FrameTests : public ::testing::Test {
     bodyB_ = &model->AddBody<RigidBody>("B", M_Bo_B);
     frameB_ = &bodyB_->body_frame();
 
-    // Mobilizer connecting bodyB to the world.
-    // The mobilizer is only needed because it is a requirement of MultibodyTree
-    // that all bodies in the model must have an inboard mobilizer.
-    model->AddMobilizer<RevoluteMobilizer>(
-        model->world_frame(), bodyB_->body_frame(),
+    // Joint connecting bodyB to the world.
+    model->AddJoint<RevoluteJoint>("joint0",
+        model->world_body(), {}, *bodyB_, {},
         Vector3d::UnitZ() /*revolute axis*/);
 
     // Some arbitrary pose of frame P in the body frame B.

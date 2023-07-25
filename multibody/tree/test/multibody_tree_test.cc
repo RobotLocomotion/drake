@@ -21,7 +21,7 @@
 #include "drake/multibody/tree/multibody_tree_system.h"
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
-#include "drake/multibody/tree/weld_mobilizer.h"
+#include "drake/multibody/tree/weld_joint.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/continuous_state.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -288,9 +288,11 @@ GTEST_TEST(MultibodyTree, RetrievingAmbiguousNames) {
       MakeKukaIiwaModel<double>(false /* non-finalized model. */);
 
   // Add a duplicate body, but on a different model instance.
+  const ModelInstanceIndex other_model_instance =
+      model->AddModelInstance("other");
   const std::string link_name = "iiwa_link_5";
   EXPECT_NO_THROW(
-      model->AddRigidBody(link_name, world_model_instance(),
+      model->AddRigidBody(link_name, other_model_instance,
                           SpatialInertia<double>()));
   EXPECT_NO_THROW(model->Finalize());
 
@@ -1523,8 +1525,9 @@ class WeldMobilizerTest : public ::testing::Test {
     body1_ = &model->AddBody<RigidBody>("body1", M_B);
     body2_ = &model->AddBody<RigidBody>("body2", M_B);
 
-    model->AddMobilizer<WeldMobilizer>(model->world_body().body_frame(),
-                                       body1_->body_frame(), X_WB1_);
+    model->AddJoint(std::make_unique<WeldJoint<double>>(
+        "weld0", model->world_body().body_frame(), body1_->body_frame(),
+        X_WB1_));
 
     // Add a weld joint between bodies 1 and 2 by welding together inboard
     // frame F (on body 1) with outboard frame M (on body 2).
@@ -1532,7 +1535,8 @@ class WeldMobilizerTest : public ::testing::Test {
         model->AddFrame<FixedOffsetFrame>("F", *body1_, X_B1F_);
     const auto& frame_M =
         model->AddFrame<FixedOffsetFrame>("M", *body2_, X_B2M_);
-    model->AddMobilizer<WeldMobilizer>(frame_F, frame_M, X_FM_);
+    model->AddJoint(
+        std::make_unique<WeldJoint<double>>("weld1", frame_F, frame_M, X_FM_));
 
     // We are done adding modeling elements. Transfer tree to system and get
     // a Context.

@@ -9,6 +9,7 @@
 #include "drake/multibody/tree/multibody_tree-inl.h"
 #include "drake/multibody/tree/multibody_tree_system.h"
 #include "drake/multibody/tree/test/mobilizer_tester.h"
+#include "drake/multibody/tree/universal_joint.h"
 #include "drake/systems/framework/context.h"
 
 namespace drake {
@@ -32,9 +33,9 @@ class UniversalMobilizerTest : public MobilizerTester {
   // Creates a simple model consisting of a single body with a universal
   // mobilizer connecting it to the world.
   void SetUp() override {
-    mobilizer_ =
-        &AddMobilizerAndFinalize(std::make_unique<UniversalMobilizer<double>>(
-            tree().world_body().body_frame(), body_->body_frame()));
+    mobilizer_ = &AddJointAndFinalize<UniversalJoint, UniversalMobilizer>(
+        std::make_unique<UniversalJoint<double>>(
+            "joint0", tree().world_body().body_frame(), body_->body_frame()));
   }
 
   MatrixXd CalcHMatrix(const Vector2d angles) {
