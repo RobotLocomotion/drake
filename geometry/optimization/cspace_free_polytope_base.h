@@ -8,6 +8,7 @@
 #include <thread>
 #include <unordered_map>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
 #include "drake/geometry/optimization/c_iris_collision_geometry.h"
@@ -201,9 +202,13 @@ class CspaceFreePolytopeBase {
    separation plane in parallel.
    @param active_plane_indices We will search for the plane in
    this->separating_planes()[active_plane_indices[i]].
-   @param solve_plane_sos The solve_plane_sos(plane_count) returns the whether
-   the solve for this->separating_planes()[active_plane_indices[plane_count]] is
-   successful or not.
+   @param solve_plane_sos The solve_plane_sos(plane_count) returns the pair
+   (is_success, plane_count), where is_success indicates whether the solve for
+   this->separating_planes()[active_plane_indices[plane_count]] is successful or
+   not. This function returns the input plane_count as one of the output. This
+   is because when we access the return value of solve_small_sos, we need to
+   know the plane_count, and the return value and the input `plane_count` live
+   in different part of the code due to multi-threading.
    @param num_threads The number of threads in the parallel solve.
    @param verbose Whether to print out some messages during the parallel solve.
    @param terminate_at_failure If set to true, then terminate this function when
@@ -211,8 +216,8 @@ class CspaceFreePolytopeBase {
    */
   void SolveCertificationForEachPlaneInParallel(
       const std::vector<int>& active_plane_indices,
-      const std::function<bool(int)>& solve_plane_sos, int num_threads,
-      bool verbose, bool terminate_at_failure) const;
+      const std::function<std::pair<bool, int>(int)>& solve_plane_sos,
+      int num_threads, bool verbose, bool terminate_at_failure) const;
 
  private:
   // Forward declare the tester class to test the private members.
