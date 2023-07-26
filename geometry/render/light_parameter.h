@@ -104,7 +104,7 @@ struct LightParameter {
   /** The position of the light in the frame indicated by `frame` F: p_FL. */
   Eigen::Vector3d position{0, 0, 0};
 
-  /** Specifies the frame to which the camera is fixed: world or camera. */
+  /** Specifies the frame to which the camera is fixed, world or camera. */
   LightFrame frame{LightFrame::kCamera};
 
   /** A multiplier for the brightness of the light. A zero intensity will
