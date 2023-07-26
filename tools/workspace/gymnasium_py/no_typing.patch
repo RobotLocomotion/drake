@@ -559,27 +559,3 @@ index 70b98858..1e48f4d8 100644
          """Take an action for each parallel environment.
 
          Args:
-diff --git gymnasium/envs/registration.py gymnasium/envs/registration.py
-index 8d6d1e8c..40e6e796 100644
---- gymnasium/envs/registration.py
-+++ gymnasium/envs/registration.py
-@@ -554,7 +554,18 @@ def load_plugin_envs(entry_point: str = "gymnasium.envs"):
-         entry_point: The string for the entry point.
-     """
-     # Load third-party environments
--    for plugin in metadata.entry_points(group=entry_point):
-+    print("entry: ", entry_point)
-+    print(metadata.entry_points())
-+    print(metadata.entry_points().keys())
-+    print("type: ", type(metadata.entry_points()))
-+    print(sys.version_info)
-+
-+    if sys.version_info > (3, 7):
-+        plugins = metadata.entry_points(group=entry_point)
-+    else:
-+        plugins = metadata.entry_points()[entry_point]
-+
-+    for plugin in plugins:
-         # Python 3.8 doesn't support plugin.module, plugin.attr
-         # So we'll have to try and parse this ourselves
-         module, attr = None, None
