@@ -10,7 +10,6 @@ from pydrake.systems.framework import (
     Context,
     InputPort,
     InputPortIndex,
-    OutputPort,
     OutputPortIndex,
     PortDataType,
     System,
