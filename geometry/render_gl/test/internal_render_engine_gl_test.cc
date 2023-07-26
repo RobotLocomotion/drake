@@ -1889,10 +1889,8 @@ AdjacentPixel Compare(const typename ImageRgba8U::T* curr_pixel,
   const RgbaColor curr(curr_pixel);
   const RgbaColor next(next_pixel);
 
-  const bool curr_is_ground =
-      curr.r == ground.r && curr.g == ground.g && curr.b == ground.b;
-  const bool next_is_ground =
-      next.r == ground.r && next.g == ground.g && next.b == ground.b;
+  const bool curr_is_ground = IsColorNear(curr, ground);
+  const bool next_is_ground = IsColorNear(next, ground);
   if (!curr_is_ground && next_is_ground) return BoxToGround;
   if (curr_is_ground && !next_is_ground) return GroundToBox;
   return Same;
