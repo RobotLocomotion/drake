@@ -2,16 +2,11 @@ diff --git gymnasium/envs/registration.py gymnasium/envs/registration.py
 index 8d6d1e8c..40e6e796 100644
 --- gymnasium/envs/registration.py
 +++ gymnasium/envs/registration.py
-@@ -554,7 +554,19 @@ def load_plugin_envs(entry_point: str = "gymnasium.envs"):
+@@ -554,7 +554,14 @@ def load_plugin_envs(entry_point: str = "gymnasium.envs"):
          entry_point: The string for the entry point.
      """
      # Load third-party environments
 -    for plugin in metadata.entry_points(group=entry_point):
-+    print("entry: ", entry_point)
-+    print(metadata.entry_points())
-+    print(metadata.entry_points().keys())
-+    print("type: ", type(metadata.entry_points()))
-+    print(sys.version_info)
 +    plugins = []
 +    if sys.version_info > (3, 9):
 +        plugins = metadata.entry_points(group=entry_point)
