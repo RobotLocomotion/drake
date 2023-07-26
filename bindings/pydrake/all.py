@@ -50,7 +50,7 @@ from .trajectories import *
 
 # Submodules.
 from .common.all import *
-from .geometry.all import *
+from .geometry.all import *  # ORDER BREAKS PLANNING?!
 # - `examples` does not offer public Drake library symbols.
 from .multibody.all import *
 from .systems.all import *

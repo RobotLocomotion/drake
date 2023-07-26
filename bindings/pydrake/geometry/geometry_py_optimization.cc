@@ -704,8 +704,8 @@ void DefineGeometryOptimization(py::module m) {
 PYBIND11_MODULE(optimization, m) {
   PYDRAKE_PREVENT_PYTHON3_MODULE_REIMPORT(m);
   py::module::import("pydrake.math");
-  py::module::import("pydrake.geometry");
-  py::module::import("pydrake.multibody.rational");
+//   py::module::import("pydrake.geometry");
+//   py::module::import("pydrake.multibody.rational");
 
   DefineGeometryOptimization(m);
 }
