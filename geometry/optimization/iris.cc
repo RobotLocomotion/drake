@@ -600,6 +600,10 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
 
   VectorXd guess = seed;
 
+  // For debugging visualization.
+  Vector3d point_to_draw = Vector3d::Zero();
+  int num_points_drawn = 0;
+
   while (true) {
     log()->info("IrisInConfigurationSpace iteration {}", iteration);
     int num_constraints = num_initial_constraints;
@@ -676,7 +680,26 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
           guess = P_candidate.UniformSample(&generator, guess);
         }
         ++counter_example_searches_for_this_pair;
+        if (options.meshcat && nq <= 3) {
+          ++num_points_drawn;
+          point_to_draw.head(nq) = guess;
+          std::string path = fmt::format("iteration{:02}/{:03}/guess",
+                                         iteration, num_points_drawn);
+          options.meshcat->SetObject(path, Sphere(0.01),
+                                     geometry::Rgba(0.1, 0.1, 0.1, 1.0));
+          options.meshcat->SetTransform(path,
+                                        RigidTransform<double>(point_to_draw));
+        }
         if (prog.Solve(*solver, guess, &closest)) {
+          if (options.meshcat && nq <= 3) {
+            point_to_draw.head(nq) = closest;
+            std::string path = fmt::format("iteration{:02}/{:03}/found",
+                                           iteration, num_points_drawn);
+            options.meshcat->SetObject(path, Sphere(0.01),
+                                       geometry::Rgba(0.8, 0.1, 0.8, 1.0));
+            options.meshcat->SetTransform(
+                path, RigidTransform<double>(point_to_draw));
+          }
           consecutive_failures = 0;
           new_counter_examples.emplace_back(closest);
           AddTangentToPolytope(E, closest, options.configuration_space_margin,
@@ -691,10 +714,21 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
           }
           prog.UpdatePolytope(A.topRows(num_constraints),
                               b.head(num_constraints));
-        } else if (counter_example_searches_for_this_pair >
-                   ssize(counter_examples[geom_pair])) {
-          // Only count the failures once we start the random guesses.
-          ++consecutive_failures;
+        } else {
+          if (options.meshcat && nq <= 3) {
+            point_to_draw.head(nq) = closest;
+            std::string path = fmt::format("iteration{:02}/{:03}/closest",
+                                           iteration, num_points_drawn);
+            options.meshcat->SetObject(path, Sphere(0.01),
+                                       geometry::Rgba(0.1, 0.8, 0.8, 1.0));
+            options.meshcat->SetTransform(
+                path, RigidTransform<double>(point_to_draw));
+          }
+          if (counter_example_searches_for_this_pair >
+              ssize(counter_examples[geom_pair])) {
+            // Only count the failures once we start the random guesses.
+            ++consecutive_failures;
+          }
         }
         if (!warned_many_searches &&
             counter_example_searches_for_this_pair -
