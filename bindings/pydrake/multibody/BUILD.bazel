@@ -145,7 +145,7 @@ drake_pybind_library(
         ":math_py",
         ":module_py",
         ":tree_py",
-        "//bindings/pydrake/geometry",
+        "//bindings/pydrake/geometry:geometry_py",
         "//bindings/pydrake/common:cpp_template_py",
     ],
     py_srcs = [

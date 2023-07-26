@@ -6,7 +6,6 @@
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/identifier_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
-#include "drake/bindings/pydrake/geometry/geometry_py.h"
 #include "drake/bindings/pydrake/geometry/optimization_pybind.h"
 #include "drake/common/yaml/yaml_io.h"
 #include "drake/geometry/optimization/cartesian_product.h"
@@ -700,6 +699,15 @@ void DefineGeometryOptimization(py::module m) {
   }
 
   // NOLINTNEXTLINE(readability/fn_size)
+}
+
+PYBIND11_MODULE(optimization, m) {
+  PYDRAKE_PREVENT_PYTHON3_MODULE_REIMPORT(m);
+  py::module::import("pydrake.math");
+  py::module::import("pydrake.geometry");
+  py::module::import("pydrake.multibody.rational");
+
+  DefineGeometryOptimization(m);
 }
 
 }  // namespace pydrake

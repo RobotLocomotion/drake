@@ -6,16 +6,6 @@
 
 namespace drake {
 namespace pydrake {
-namespace {
-
-void def_geometry_all(py::module m) {
-  py::dict vars = m.attr("__dict__");
-  py::exec(
-      "from pydrake.geometry import *\n"
-      "from pydrake.geometry.optimization import *\n",
-      py::globals(), vars);
-}
-}  // namespace
 
 PYBIND11_MODULE(geometry, m) {
   PYDRAKE_PREVENT_PYTHON3_MODULE_REIMPORT(m);
@@ -27,12 +17,9 @@ PYBIND11_MODULE(geometry, m) {
   DefineGeometryHydro(m);
   DefineGeometryRender(m);
   DefineGeometrySceneGraph(m);
-  DefineGeometryOptimization(m.def_submodule("optimization"));
   DefineGeometryVisualizers(m);
 
   ExecuteExtraPythonCode(m, true);
-
-  def_geometry_all(m.def_submodule("all"));
 }
 
 }  // namespace pydrake

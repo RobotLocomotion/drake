@@ -18,10 +18,6 @@ void DefineGeometryCommon(py::module m);
  */
 void DefineGeometryHydro(py::module m);
 
-/** Defines all elements in the drake::geometry::optimization namespace.
- See geometry_py_optimization.cc. */
-void DefineGeometryOptimization(py::module m);
-
 /** Binds the public API of the drake/geometry/render and
  drake/geometry/render_* directories. See geometry_py_render.cc. */
 void DefineGeometryRender(py::module m);

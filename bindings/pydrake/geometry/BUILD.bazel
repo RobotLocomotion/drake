@@ -5,6 +5,7 @@ load(
 )
 load(
     "@drake//tools/skylark:drake_py.bzl",
+    "drake_py_library",
     "drake_py_unittest",
 )
 load(
@@ -30,7 +31,7 @@ drake_cc_library(
 )
 
 drake_pybind_library(
-    name = "geometry",
+    name = "geometry_py",
     cc_deps = [
         ":optimization_pybind",
         "//bindings/pydrake:documentation_pybind",
@@ -49,7 +50,6 @@ drake_pybind_library(
         "geometry_py.h",
         "geometry_py_common.cc",
         "geometry_py_hydro.cc",
-        "geometry_py_optimization.cc",
         "geometry_py_render.cc",
         "geometry_py_scene_graph.cc",
         "geometry_py_visualizers.cc",
@@ -70,6 +70,49 @@ drake_pybind_library(
         # 2023-08-01 Remove this source file upon completion of deprecation.
         "render.py",
     ],
+)
+
+# This is broken out to avoid dependency cycles between this library and
+# multibody.
+drake_pybind_library(
+    name = "geometry_optimization_py",
+    cc_deps = [
+        ":optimization_pybind",
+        "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake/common:default_scalars_pybind",
+        "//bindings/pydrake/common:deprecation_pybind",
+        "//bindings/pydrake/common:identifier_pybind",
+        "//bindings/pydrake/common:monostate_pybind",
+        "//bindings/pydrake/common:serialize_pybind",
+        "//bindings/pydrake/common:type_pack",
+        "//bindings/pydrake/common:type_safe_index_pybind",
+        "//bindings/pydrake/common:value_pybind",
+    ],
+    cc_so_name = "optimization",
+    cc_srcs = [
+        "geometry_py_optimization.cc",
+    ],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":geometry_py",
+        "//bindings/pydrake/multibody:rational_py",
+    ],
+)
+
+# Symbol roll-up (for user ease).
+drake_py_library(
+    name = "all_py",
+    srcs = ["all.py"],
+    deps = [
+        ":geometry_py",
+        ":geometry_optimization_py",
+    ],
+)
+
+# Package roll-up (for Bazel dependencies).
+drake_py_library(
+    name = "geometry",
+    deps = [":all_py"],
 )
 
 install(
