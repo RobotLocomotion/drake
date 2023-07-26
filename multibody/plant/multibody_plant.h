@@ -5151,6 +5151,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // with a SceneGraph.
   void DeclareSceneGraphPorts();
 
+  // Computes the poses of all frames registered with SceneGraph through `this`
+  // MultibodyPlant and its owned components.
   void CalcFramePoseOutput(const systems::Context<T>& context,
                            geometry::FramePoseVector<T>* poses) const;
 

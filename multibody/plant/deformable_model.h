@@ -1,5 +1,6 @@
 #pragma once
 
+#include <map>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -149,8 +150,7 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
   }
 
  private:
-  PhysicalModelPointerVariant<T> DoToPhysicalModelPointerVariant()
-      const final {
+  PhysicalModelPointerVariant<T> DoToPhysicalModelPointerVariant() const final {
     return PhysicalModelPointerVariant<T>(this);
   }
 
@@ -178,6 +178,11 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
   void CopyVertexPositions(const systems::Context<T>& context,
                            AbstractValue* output) const;
 
+  /* Sets the poses (in world frame) of all frames associated with the
+   deformable bodies to identity. */
+  void DoCalcFramePoseOutput(const systems::Context<T>& context,
+                             geometry::FramePoseVector<T>* poses) const final;
+
   /* Helper to throw a useful message if a deformable body with the given `id`
    doesn't exist. */
   void ThrowUnlessRegistered(const char* source_method,
@@ -199,6 +204,7 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
       fem_models_;
   std::vector<DeformableBodyId> body_ids_;
   std::unordered_map<DeformableBodyId, DeformableBodyIndex> body_id_to_index_;
+  std::map<DeformableBodyId, geometry::FrameId> body_id_to_frame_id_;
   systems::OutputPortIndex vertex_positions_port_index_;
 };
 

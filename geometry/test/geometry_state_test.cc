@@ -561,8 +561,10 @@ class GeometryStateTestBase {
     constexpr double kRezHint = 0.5;
     auto instance = make_unique<GeometryInstance>(
         RigidTransformd::Identity(), make_unique<Sphere>(sphere), "sphere");
-    geometry_state_.RegisterDeformableGeometry(
-        s_id, InternalFrame::world_frame_id(), std::move(instance), kRezHint);
+    const FrameId f_id =
+        geometry_state_.RegisterFrame(s_id, GeometryFrame("frame"));
+    geometry_state_.RegisterDeformableGeometry(s_id, f_id, std::move(instance),
+                                               kRezHint);
     return s_id;
   }
 
@@ -1643,10 +1645,6 @@ TEST_F(GeometryStateTest, RegisterDeformableGeometry) {
   /* Adding a deformable geometry to non-world frame throws. */
   auto instance1 = make_unique<GeometryInstance>(
       RigidTransformd::Identity(), make_unique<Sphere>(sphere), "sphere");
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      geometry_state_.RegisterDeformableGeometry(
-          s_id, f_id, std::move(instance1), kRezHint),
-      "Registering deformable geometry.*non-world frame.*");
 
   /* Successful registration of deformable geometry. */
   const RigidTransformd X_WG(AngleAxis<double>(M_PI_2, Vector3d::UnitX()),
@@ -1655,7 +1653,7 @@ TEST_F(GeometryStateTest, RegisterDeformableGeometry) {
       X_WG, make_unique<Sphere>(sphere), "sphere");
   const GeometryId expected_g_id = instance2->id();
   const auto g_id = geometry_state_.RegisterDeformableGeometry(
-      s_id, InternalFrame::world_frame_id(), std::move(instance2), kRezHint);
+      s_id, f_id, std::move(instance2), kRezHint);
   EXPECT_EQ(g_id, expected_g_id);
   EXPECT_TRUE(geometry_state_.IsDeformableGeometry(g_id));
 
@@ -1720,10 +1718,14 @@ TEST_F(GeometryStateTest, GetAllDeformableGeometryIds) {
   std::sort(expected_ids.begin(), expected_ids.end());
 
   /* Register in counter-intuitive order. */
-  geometry_state_.RegisterDeformableGeometry(
-      s2_id, InternalFrame::world_frame_id(), std::move(instance2), kRezHint);
-  geometry_state_.RegisterDeformableGeometry(
-      s1_id, InternalFrame::world_frame_id(), std::move(instance1), kRezHint);
+  const FrameId f1_id =
+      geometry_state_.RegisterFrame(s1_id, GeometryFrame("frame"));
+  const FrameId f2_id =
+      geometry_state_.RegisterFrame(s2_id, GeometryFrame("frame"));
+  geometry_state_.RegisterDeformableGeometry(s2_id, f2_id, std::move(instance2),
+                                             kRezHint);
+  geometry_state_.RegisterDeformableGeometry(s1_id, f1_id, std::move(instance1),
+                                             kRezHint);
 
   /* Confirm that we get the expected ids in the expected order. */
   const vector<GeometryId> deformable_ids =
@@ -1959,13 +1961,15 @@ TEST_F(GeometryStateTest, ChangeShapeProximity) {
  SetGeometryConfiguration() *and* FinalizeConfigurationUpdate() is invoked. */
 TEST_F(GeometryStateTest, SetGeometryConfiguration) {
   const SourceId s_id = NewSource("new source");
+  const FrameId deformable_frame_id =
+      geometry_state_.RegisterFrame(s_id, GeometryFrame("deformable's frame"));
   // Add a deformable geometry with proximity property.
   auto deformable_instance = make_unique<GeometryInstance>(
       RigidTransformd::Identity(), make_unique<Sphere>(1.0),
       "deformable sphere");
   deformable_instance->set_proximity_properties(ProximityProperties());
   const auto deformable_id = geometry_state_.RegisterDeformableGeometry(
-      s_id, InternalFrame::world_frame_id(), std::move(deformable_instance),
+      s_id, deformable_frame_id, std::move(deformable_instance),
       /* resolution_hint */ 2.0);
   // Add a rigid geometry with a resolution hint (so that it can be in contact
   // with deformable geometries).

@@ -108,6 +108,13 @@ class PhysicalModel : public internal::ScalarConvertibleComponent<T> {
     return DoToPhysicalModelPointerVariant();
   }
 
+  /* Computes the poses of all frames registered with SceneGraph through `this`
+   physical model. */
+  void CalcFramePoseOutput(const systems::Context<T>& context,
+                           geometry::FramePoseVector<T>* poses) const {
+    DoCalcFramePoseOutput(context, poses);
+  }
+
  protected:
   /* Derived classes must override this function to return their specific model
    variant. */
@@ -136,6 +143,9 @@ class PhysicalModel : public internal::ScalarConvertibleComponent<T> {
   /* Derived class must override this to declare system resources for its
    specific model. */
   virtual void DoDeclareSystemResources(MultibodyPlant<T>* plant) = 0;
+
+  virtual void DoCalcFramePoseOutput(const systems::Context<T>&,
+                                     geometry::FramePoseVector<T>*) const {}
 
   /* Helper method for throwing an exception within public methods that should
    not be called after system resources are declared. The invoking method should

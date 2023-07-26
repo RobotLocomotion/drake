@@ -244,15 +244,17 @@ TEST_F(QueryObjectTest, BakedCopyHasFullUpdate) {
 
   auto deformable_geometry = make_unique<GeometryInstance>(
       RigidTransformd::Identity(), make_unique<Sphere>(1.0), "deformable");
+  FrameId deformable_frame_id =
+      scene_graph_.RegisterFrame(s_id, GeometryFrame("deformable's frame"));
   // Make sure the resolution hint is large enough so that we know that the
   // volume mesh is a octahedron.
   GeometryId g_id = scene_graph_.RegisterDeformableGeometry(
-      s_id, internal::InternalFrame::world_frame_id(),
-      std::move(deformable_geometry), 10.0);
+      s_id, deformable_frame_id, std::move(deformable_geometry), 10.0);
   unique_ptr<Context<double>> context = scene_graph_.CreateDefaultContext();
 
   RigidTransformd X_WF{Vector3d{1, 2, 3}};
-  FramePoseVector<double> poses{{frame_id, X_WF}};
+  FramePoseVector<double> poses{
+      {frame_id, X_WF}, {deformable_frame_id, RigidTransformd::Identity()}};
   scene_graph_.get_source_pose_port(s_id).FixValue(context.get(), poses);
 
   const int kNumVertices = 7;

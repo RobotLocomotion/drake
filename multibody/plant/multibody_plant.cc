@@ -3120,6 +3120,9 @@ void MultibodyPlant<T>::CalcFramePoseOutput(
     poses->set_value(body_index_to_frame_id_.at(body_index),
                      pc.get_X_WB(body.node_index()));
   }
+  for (const auto& model : physical_models_) {
+    model->CalcFramePoseOutput(context, poses);
+  }
 }
 
 template <typename T>

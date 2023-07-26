@@ -312,9 +312,9 @@ TEST_F(SceneGraphTest, RegisterDeformableGeometry) {
       s_id, scene_graph_.world_frame_id(), make_sphere_instance());
   constexpr double kRezHint = 0.5;
   std::unique_ptr<GeometryInstance> geometry_instance = make_sphere_instance();
+  FrameId f_id = scene_graph_.RegisterFrame(s_id, GeometryFrame("frame"));
   GeometryId deformable_id = scene_graph_.RegisterDeformableGeometry(
-      s_id, scene_graph_.world_frame_id(), std::move(geometry_instance),
-      kRezHint);
+      s_id, f_id, std::move(geometry_instance), kRezHint);
 
   const SceneGraphInspector<double>& inspector = scene_graph_.model_inspector();
   EXPECT_EQ(nullptr, inspector.GetReferenceMesh(rigid_id));
@@ -343,10 +343,10 @@ TEST_F(SceneGraphTest, RegisterUnsupportedDeformableGeometry) {
   auto geometry_instance = make_unique<GeometryInstance>(
       RigidTransformd::Identity(), make_unique<Cylinder>(1.0, 2.0), "cylinder");
   SourceId s_id = scene_graph_.RegisterSource();
+  FrameId f_id = scene_graph_.RegisterFrame(s_id, GeometryFrame("frame"));
   DRAKE_EXPECT_THROWS_MESSAGE(
       scene_graph_.RegisterDeformableGeometry(
-          s_id, scene_graph_.world_frame_id(), std::move(geometry_instance),
-          kRezHint),
+          s_id, f_id, std::move(geometry_instance), kRezHint),
       ".*don't yet generate deformable meshes.+ Cylinder.");
 }
 
@@ -461,10 +461,11 @@ TEST_F(SceneGraphTest, ModelInspector) {
 
   FrameId frame_1 = scene_graph_.RegisterFrame(source_id, GeometryFrame{"f1"});
   FrameId frame_2 = scene_graph_.RegisterFrame(source_id, GeometryFrame{"f2"});
+  FrameId frame_3 = scene_graph_.RegisterFrame(source_id, GeometryFrame{"f3"});
 
   constexpr double kRezHint = 0.5;
   GeometryId deformable_id = scene_graph_.RegisterDeformableGeometry(
-      source_id, scene_graph_.world_frame_id(),
+      source_id, frame_3,
       make_unique<GeometryInstance>(RigidTransformd::Identity(),
                                     make_unique<Sphere>(1.0),
                                     "deformable_sphere"),
@@ -493,10 +494,9 @@ TEST_F(SceneGraphTest, ModelInspector) {
   EXPECT_EQ(inspector.GetGeometryIdByName(scene_graph_.world_frame_id(),
                                           Role::kUnassigned, "sphere"),
             anchored_id);
-  EXPECT_EQ(
-      inspector.GetGeometryIdByName(scene_graph_.world_frame_id(),
-                                    Role::kUnassigned, "deformable_sphere"),
-      deformable_id);
+  EXPECT_EQ(inspector.GetGeometryIdByName(frame_3, Role::kUnassigned,
+                                          "deformable_sphere"),
+            deformable_id);
 }
 
 // SceneGraph provides a thin wrapper on the GeometryState renderer
@@ -642,17 +642,19 @@ class GeometrySourceSystem : public systems::LeafSystem<double> {
 
     if (add_deformable) {
       constexpr double kRezHint = 0.5;
+      FrameId deformable_frame_id = scene_graph->RegisterFrame(
+          source_id_, GeometryFrame("deformable's frame"));
+      frame_ids_.push_back(deformable_frame_id);
       GeometryId deformable_id = scene_graph->RegisterDeformableGeometry(
-          source_id_, scene_graph->world_frame_id(), make_sphere_instance(),
-          kRezHint);
+          source_id_, deformable_frame_id, make_sphere_instance(), kRezHint);
 
       const SceneGraphInspector<double>& inspector =
           scene_graph->model_inspector();
       const VolumeMesh<double>* mesh_ptr =
           inspector.GetReferenceMesh(deformable_id);
       DRAKE_DEMAND(mesh_ptr != nullptr);
-      configurations_.set_value(deformable_id,
-          VectorX<double>::Zero(mesh_ptr->num_vertices() * 3));
+      configurations_.set_value(
+          deformable_id, VectorX<double>::Zero(mesh_ptr->num_vertices() * 3));
     }
 
     // Set up output pose port now that the frame is registered.

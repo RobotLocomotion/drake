@@ -866,9 +866,11 @@ TYPED_TEST(DrakeVisualizerTest, VisualizeDeformableGeometry) {
   constexpr double kRadius = 1.0;
   auto geometry_instance = make_unique<GeometryInstance>(
       RigidTransformd::Identity(), make_unique<Sphere>(kRadius), "sphere");
+  FrameId f_id = this->scene_graph_->RegisterFrame(
+      this->configuration_source_id_, GeometryFrame("frame"));
   GeometryId g_id = this->scene_graph_->RegisterDeformableGeometry(
-      this->configuration_source_id_, this->scene_graph_->world_frame_id(),
-      std::move(geometry_instance), kRezHint);
+      this->configuration_source_id_, f_id, std::move(geometry_instance),
+      kRezHint);
   const auto& inspector = this->scene_graph_->model_inspector();
   const VolumeMesh<double>* mesh = inspector.GetReferenceMesh(g_id);
   ASSERT_NE(mesh, nullptr);

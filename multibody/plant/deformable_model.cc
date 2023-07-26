@@ -33,10 +33,10 @@ DeformableBodyId DeformableModel<T>::RegisterDeformableBody(
   /* Register the geometry with SceneGraph. */
   SceneGraph<T>& scene_graph = this->mutable_scene_graph(plant_);
   SourceId source_id = plant_->get_source_id().value();
-  /* All deformable bodies are registered with the world frame at the moment. */
-  const FrameId world_frame_id = scene_graph.world_frame_id();
+  geometry::FrameId frame_id = scene_graph.RegisterFrame(
+      source_id, geometry::GeometryFrame(geometry_instance->name()));
   GeometryId geometry_id = scene_graph.RegisterDeformableGeometry(
-      source_id, world_frame_id, std::move(geometry_instance), resolution_hint);
+      source_id, frame_id, std::move(geometry_instance), resolution_hint);
 
   /* Record the reference positions. */
   const geometry::SceneGraphInspector<T>& inspector =
@@ -59,6 +59,7 @@ DeformableBodyId DeformableModel<T>::RegisterDeformableBody(
   /* Do the book-keeping. */
   reference_positions_.emplace(body_id, std::move(reference_position));
   body_id_to_geometry_id_.emplace(body_id, geometry_id);
+  body_id_to_frame_id_.emplace(body_id, frame_id);
   geometry_id_to_body_id_.emplace(geometry_id, body_id);
   body_ids_.emplace_back(body_id);
   return body_id;
@@ -271,6 +272,17 @@ void DeformableModel<T>::CopyVertexPositions(const systems::Context<T>& context,
     VectorX<T> vertex_positions =
         context.get_discrete_state(discrete_state_index).value().head(num_dofs);
     output_value.set_value(geometry_id, std::move(vertex_positions));
+  }
+}
+
+template <typename T>
+void DeformableModel<T>::DoCalcFramePoseOutput(
+    const systems::Context<T>& context,
+    geometry::FramePoseVector<T>* poses) const {
+  unused(context);
+  for (const auto& [body_id, frame_id] : body_id_to_frame_id_) {
+    unused(body_id);
+    poses->set_value(frame_id, math::RigidTransformd::Identity());
   }
 }
 

@@ -256,11 +256,6 @@ int GeometryState<T>::NumGeometriesWithRole(Role role) const {
 
 template <typename T>
 int GeometryState<T>::NumDynamicGeometries() const {
-  return NumDeformableGeometries() + NumDynamicNonDeformableGeometries();
-}
-
-template <typename T>
-int GeometryState<T>::NumDynamicNonDeformableGeometries() const {
   int count = 0;
   for (const auto& pair : frames_) {
     const InternalFrame& frame = pair.second;
@@ -826,9 +821,10 @@ GeometryId GeometryState<T>::RegisterDeformableGeometry(
   }
 
   const GeometryId geometry_id = geometry->id();
-  if (frame_id != InternalFrame::world_frame_id()) {
+  if (frame_id == InternalFrame::world_frame_id()) {
     throw std::logic_error("Registering deformable geometry with id " +
-                           to_string(geometry_id) + " to a non-world frame");
+                           to_string(geometry_id) +
+                           " to the world frame is not allowed.");
   }
 
   ValidateRegistrationAndSetTopology(source_id, frame_id, geometry_id);

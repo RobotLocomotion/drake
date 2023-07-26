@@ -173,10 +173,6 @@ class GeometryState {
   /** Implementation of SceneGraphInspector::NumDynamicGeometries().  */
   int NumDynamicGeometries() const;
 
-  /** Returns the total number of registered dynamic non-deformable geometries.
-   */
-  int NumDynamicNonDeformableGeometries() const;
-
   /** Returns the total number of registered deformable geometries. All
    deformable geometries are dynamic and _not_ anchored.  */
   int NumDeformableGeometries() const;
