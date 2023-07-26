@@ -31,6 +31,7 @@ using Eigen::VectorXd;
 using internal::CheckAddPointInSetConstraints;
 using internal::MakeSceneGraphWithShape;
 using math::RigidTransformd;
+using math::RollPitchYawd;
 using math::RotationMatrixd;
 using solvers::Binding;
 using solvers::Constraint;
@@ -209,8 +210,7 @@ GTEST_TEST(HyperellipsoidTest, ArbitraryEllipsoidTest) {
   SourceId source_id = scene_graph->RegisterSource("F");
   FrameId frame_id = scene_graph->RegisterFrame(source_id, GeometryFrame("F"));
   auto context2 = scene_graph->CreateDefaultContext();
-  const RigidTransformd X_WF{math::RollPitchYawd(.1, .2, 3),
-                             Vector3d{.5, .87, .1}};
+  const RigidTransformd X_WF{RollPitchYawd(.1, .2, 3), Vector3d{.5, .87, .1}};
   const FramePoseVector<double> pose_vector{{frame_id, X_WF}};
   scene_graph->get_source_pose_port(source_id).FixValue(context2.get(),
                                                         pose_vector);
@@ -424,6 +424,75 @@ GTEST_TEST(HyperellipsoidTest, MakeAxisAlignedTest) {
   Hyperellipsoid E_scene_graph(query, geom_id);
   EXPECT_TRUE(CompareMatrices(E.A(), E_scene_graph.A(), 1e-16));
   EXPECT_TRUE(CompareMatrices(E.center(), E_scene_graph.center(), 1e-16));
+}
+
+GTEST_TEST(HyperellipsoidTest, MinimumVolumeCircumscribedEllipsoid) {
+  Eigen::Matrix3Xd p_FA(3, 6);
+  // clang-format off
+  p_FA << 1, 0, 0, -1,  0,  0,
+          0, 2, 0,  0, -2,  0,
+          0, 0, 3,  0,  0, -3;
+  // clang-format on
+  Hyperellipsoid E_F =
+      Hyperellipsoid::MinimumVolumeCircumscribedEllipsoid(p_FA);
+
+  const double kTol = 1e-3;
+  Matrix3d A_expected;
+  A_expected << 1, 0, 0, 0, 1.0 / 2.0, 0, 0, 0, 1.0 / 3.0;
+  Vector3d center_expected = Vector3d::Zero();
+  EXPECT_TRUE(CompareMatrices(E_F.A(), A_expected, kTol));
+  EXPECT_TRUE(CompareMatrices(E_F.center(), center_expected, kTol));
+
+  const RigidTransformd X_GF{RollPitchYawd(.1, .2, 3), Vector3d{.5, .87, .1}};
+  Eigen::Matrix3Xd p_GA = X_GF * p_FA;
+
+  Hyperellipsoid E_G =
+      Hyperellipsoid::MinimumVolumeCircumscribedEllipsoid(p_GA);
+
+  // The bases are not necessarily the transformed bases, but the norm of the
+  // transformed points should be 1.
+  for (int i = 0; i < p_FA.cols(); ++i) {
+    EXPECT_NEAR((E_G.A() * (X_GF * p_FA.col(i) - E_G.center())).norm(), 1,
+                kTol);
+  }
+}
+
+// This tests the case when we have too few points to define a full-dimensional
+// ellipsoid.
+GTEST_TEST(HyperellipsoidTest, MinimumVolumeCircumscribedEllipsoid2) {
+  Eigen::Matrix2Xd points(2, 2);
+  // clang-format off
+  points << 1, -1,
+            0,  0;
+  // clang-format on
+
+  // The solver succeeds with the default values.
+  Hyperellipsoid E =
+      Hyperellipsoid::MinimumVolumeCircumscribedEllipsoid(points);
+
+  const double kZii_max = 10;
+  const double kTol = 1e-3;
+  E = Hyperellipsoid::MinimumVolumeCircumscribedEllipsoid(points, kZii_max);
+  EXPECT_NEAR(E.A()(0, 0), 1, kTol);
+  EXPECT_NEAR(E.A()(0, 1), 0, kTol);
+  EXPECT_NEAR(E.A()(1, 0), 0, kTol);
+  // The ellipsoid does not collapse in the y direction.
+  EXPECT_GE(E.A()(1, 1), kZii_max);
+}
+
+// Now we just have a single point in a 5 dimensional space. The resulting
+// ellipsoid should be an epsilon ball around the point.
+GTEST_TEST(HyperellipsoidTest, MinimumVolumeCircumscribedEllipsoid3) {
+  Eigen::VectorXd point(5);
+  point << 0.1, 0.2, 0.3, 0.4, 0.5;
+
+  // The solver succeeds with the default values.
+  Hyperellipsoid E = Hyperellipsoid::MinimumVolumeCircumscribedEllipsoid(point);
+  const double kTol = 1e-6;
+  EXPECT_TRUE(CompareMatrices(E.center(), point, kTol));
+  // Perturb the point.
+  point[0] += 0.001;
+  EXPECT_FALSE(E.PointInSet(point));
 }
 
 GTEST_TEST(HyperellipsoidTest, IsBoundedAndVolumeTest) {

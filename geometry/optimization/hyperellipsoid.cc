@@ -28,6 +28,7 @@ using solvers::Constraint;
 using solvers::MathematicalProgram;
 using solvers::VectorXDecisionVariable;
 using std::sqrt;
+using symbolic::Expression;
 using symbolic::Variable;
 
 Hyperellipsoid::Hyperellipsoid()
@@ -175,6 +176,44 @@ Hyperellipsoid Hyperellipsoid::MakeHypersphere(
 Hyperellipsoid Hyperellipsoid::MakeUnitBall(int dim) {
   DRAKE_THROW_UNLESS(dim > 0);
   return Hyperellipsoid(MatrixXd::Identity(dim, dim), VectorXd::Zero(dim));
+}
+
+Hyperellipsoid Hyperellipsoid::MinimumVolumeCircumscribedEllipsoid(
+    const Eigen::Ref<const MatrixXd>& points, double Zii_ub) {
+  const int dim = points.rows();
+  const int N = points.cols();
+
+  MathematicalProgram prog;
+  solvers::MatrixXDecisionVariable A =
+      prog.NewSymmetricContinuousVariables(dim, "A");
+  MatrixX<Expression> Z;
+  std::tie(std::ignore, std::ignore, Z) =
+      prog.AddMaximizeLogDeterminantCost(A.cast<Expression>());
+  prog.AddBoundingBoxConstraint(0, Zii_ub, GetVariableVector(Z.diagonal()));
+  solvers::VectorXDecisionVariable b = prog.NewContinuousVariables(dim, "b");
+  // TODO(russt): Avoid the symbolic computation here and write A_lorentz
+  // directly, s.t. v = A_lorentz * vars + b_lorentz = [1; A * x + b], where
+  // A=Aᵀ and b are the vars.
+  VectorX<Expression> v(dim + 1);
+  v[0] = 1;
+  for (int i = 0; i < N; ++i) {
+    // |Ax + b|₂ <= 1
+    v.tail(dim) = A * points.col(i) + b;
+    prog.AddLorentzConeConstraint(v);
+  }
+
+  solvers::MathematicalProgramResult result = Solve(prog);
+  DRAKE_THROW_UNLESS(result.is_success());
+
+  // Ax + b => A(x-c) = Ax - Ac => c = -A^{-1}b
+  const MatrixXd A_sol = result.GetSolution(A);
+  const VectorXd b_sol = result.GetSolution(b);
+  // Note: We can use llt() because know that A will be positive definite;
+  // there is a PSD constraint, but we are maximizing the eigenvalues of A and
+  // the domain of the points is guaranteed to be bounded.
+  const VectorXd c = A_sol.llt().solve(-b_sol);
+
+  return Hyperellipsoid(A_sol, c);
 }
 
 std::unique_ptr<ConvexSet> Hyperellipsoid::DoClone() const {

@@ -198,6 +198,10 @@ void DefineGeometryOptimization(py::module m) {
             py::arg("radius"), py::arg("center"), cls_doc.MakeHypersphere.doc)
         .def_static("MakeUnitBall", &Hyperellipsoid::MakeUnitBall,
             py::arg("dim"), cls_doc.MakeUnitBall.doc)
+        .def_static("MinimumVolumeCircumscribedEllipsoid",
+            &Hyperellipsoid::MinimumVolumeCircumscribedEllipsoid,
+            py::arg("points"), py::arg("Zii_ub") = 1e6,
+            cls_doc.MinimumVolumeCircumscribedEllipsoid.doc)
         .def(py::pickle(
             [](const Hyperellipsoid& self) {
               return std::make_pair(self.A(), self.center());

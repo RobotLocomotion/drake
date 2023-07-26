@@ -98,6 +98,24 @@ class Hyperellipsoid final : public ConvexSet {
   /** Constructs the L₂-norm unit ball in `dim` dimensions, {x | |x|₂ <= 1 }. */
   static Hyperellipsoid MakeUnitBall(int dim);
 
+  /** Constructs the minimum-volume ellipsoid which contains all of the
+  `points`. This is commonly referred to as the outer Löwner-John ellipsoid.
+
+  @param points is a d-by-n matrix, where d is the ambient dimension and each
+  colum represents one point.
+  @param Zii_ub provides some conditioning for the resulting matrix A via an
+  upper bound on the appropriate slack variables.  If these constraints become
+  active, they will increase the volume; all points will still be contained in
+  the resulting ellipsoid. This is particularly important for the case when the
+  points lie in a lower-dimensional subspace. We have det(A) ≥ det(Z) = ∏ᵢ Zᵢᵢ,
+  and the objective is maximizing log(det(Z)).
+
+  @throws std::exception if the MathematicalProgram fails to solve. This should
+  not happen so long as Zii_ub is reasonable.
+  */
+  static Hyperellipsoid MinimumVolumeCircumscribedEllipsoid(
+      const Eigen::Ref<const Eigen::MatrixXd>& points, double Zii_ub = 1e6);
+
   /** Passes this object to an Archive.
   Refer to @ref yaml_serialization "YAML Serialization" for background. */
   template <typename Archive>
