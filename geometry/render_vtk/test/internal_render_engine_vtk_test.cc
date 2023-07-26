@@ -968,6 +968,91 @@ TEST_F(RenderEngineVtkTest, MeshTest) {
   }
 }
 
+// A smaller version of MeshTest. Confirms that VTK supports glTF files as
+// Mesh and Convex. Conceptually, the glTF file is a cube with different colors
+// on each side. We'll render the cube a couple of times with different
+// orientations to confirm that we're seeing what we expect to see. The
+// *structure* of the glTF is implicitly testing various aspects of the
+// glTF support including:
+//
+//  1. Multiple nodes.
+//  2. Multiple root nodes.
+//  3. Empty nodes (with non-identity transforms).
+//  4. Hierarchies.
+//  5. Textures.
+//     Note: The texture is vertically symmetric -- i.e., you can't tell if the
+//     image is upside down or not.
+//     TODO(SeanCurtis-TRI): Once the following issue is resolved, replace this
+//     with a texture whose vertical orientation matters.
+//     https://discourse.vtk.org/t/vtkgltfimporter-loads-textures-upside-down/12113
+//  6. Materials.
+//  7. Single meshes with multiple materials.
+//
+// If all of that is processed correctly, we should get a cube with a different
+// color on each face. We'll test for those colors.
+TEST_F(RenderEngineVtkTest, GltfSupport) {
+  struct Face {
+    Rgba rendered_color;
+    Rgba material_color;
+    RotationMatrixd rotation;
+    std::string name;
+  };
+  Init(X_WC_, true);
+
+  const std::string filename =
+      FindResourceOrThrow("drake/geometry/render/test/meshes/rainbow_box.gltf");
+
+  Mesh mesh(filename);
+  expected_label_ = RenderLabel(3);
+  // Note: Passing diffuse color or texture to a glTF spawns a warning.
+  PerceptionProperties material;
+  material.AddProperty("label", "id", expected_label_);
+  const GeometryId id = GeometryId::get_new_id();
+  renderer_->RegisterVisual(id, mesh, material, RigidTransformd::Identity(),
+                            true /* needs update */);
+  // Note: These colors are not the colors in the glTF and textures. glTF
+  // files use the PBR shader which behaves differently under lighting than
+  // the more traditional phong material. These colors are the illuminated
+  // material colors given current VTK configurations. If we change how VTK
+  // handles lighting, the `rendered_color` may need to change. The
+  // `material_color` value is provided as a reference.
+  const std::vector<Face> faces{
+      {.rendered_color = Rgba(0.07843137, 0.55294118, 0.10980392),
+       .material_color = Rgba(0.016, 0.945, 0.129),
+       .rotation = RotationMatrixd(),
+       .name = "green"},
+      {.rendered_color = Rgba(0.52941176, 0.25882353, 0.1254902),
+       .material_color = Rgba(0.8, 0.1592, 0.023),
+       .rotation = RotationMatrixd::MakeXRotation(M_PI / 2),
+       .name = "orange"},
+      {.rendered_color = Rgba(0.55294118, 0.07843137, 0.07843137),
+       .material_color = Rgba(0.945, 0.016, 0.016),
+       .rotation = RotationMatrixd::MakeXRotation(M_PI),
+       .name = "red"},
+      {.rendered_color = Rgba(0.09803922, 0.07843137, 0.55294118),
+       .material_color = Rgba(0.8, 0.1592, 0.023),
+       .rotation = RotationMatrixd::MakeXRotation(-M_PI / 2),
+       .name = "blue"},
+      {.rendered_color = Rgba(0.52941176, 0.52941176, 0.0745098),
+       .material_color = Rgba(0.098, 0.016, 0.945),
+       .rotation = RotationMatrixd::MakeYRotation(-M_PI / 2),
+       .name = "yellow"},
+      {.rendered_color = Rgba(0.30980392, 0.0745098, 0.52941176),
+       .material_color = Rgba(0.236, 0.0, 0.8),
+       .rotation = RotationMatrixd::MakeYRotation(M_PI / 2),
+       .name = "purple"},
+  };
+  for (const auto& face : faces) {
+    renderer_->UpdatePoses(unordered_map<GeometryId, RigidTransformd>{
+        {id, RigidTransformd(face.rotation)}});
+
+    expected_color_ = face.rendered_color;
+    PerformCenterShapeTest(
+        renderer_.get(),
+        fmt::format("glTF test on {} face", face.name).c_str());
+  }
+}
+
 // Confirms that meshes/convex referencing a file with an unsupported extension
 // are ignored. (There's also an untested one-time warning.)
 TEST_F(RenderEngineVtkTest, UnsupportedMeshConvex) {
@@ -1336,30 +1421,40 @@ TEST_F(RenderEngineVtkTest, DefaultProperties_RenderLabel) {
 
 // This class exists solely for the purpose of injecting an arbitrary texture
 // onto an actor and confirm that the texture is preserved over the copy.
+// For simplicity, we'll only register shapes that map to vtkActor types.
 class TextureSetterEngine : public RenderEngineVtk {
  public:
   TextureSetterEngine() = default;
 
+  // Returns the *first* actor representing the geometry with the given id.
+  vtkActor* GetColorActor(GeometryId id) const {
+    // 0 is the color index.
+    auto* actor = vtkActor::SafeDownCast(props().at(id)[0]);
+    DRAKE_DEMAND(actor != nullptr);
+    return actor;
+  }
+
   // Reports if the color actor for the geometry with the given `id` has the
   // property texture append by this class's DoRegisterVisual() implementation.
+  // This only tests the first actor for the geometry.
   bool GeometryHasColorTexture(GeometryId id,
                                const std::string& texture_name) const {
-    const auto color_actor = actors().at(id)[0];
-    return color_actor->GetProperty()->GetTexture(texture_name.c_str()) !=
-           nullptr;
+    vtkActor* actor = GetColorActor(id);
+    return actor->GetProperty()->GetTexture(texture_name.c_str()) != nullptr;
   }
 
   // Applies a texture with the given name to the color actor for the geometry
-  // indicated by the given id.
+  // indicated by the given id. This only tests the first actor for the
+  // geometry.
   void ApplyColorTextureToGeometry(GeometryId id,
                                    const std::string& texture_name) {
-    const auto color_actor = actors().at(id)[0];
+    vtkActor* actor = GetColorActor(id);
     vtkNew<vtkImageData> image_data;
     vtkNew<vtkOpenGLTexture> texture;
     texture->SetRepeat(false);
     texture->InterpolateOn();
     texture->SetInputDataObject(image_data.Get());
-    color_actor->GetProperty()->SetTexture(texture_name.c_str(), texture.Get());
+    actor->GetProperty()->SetTexture(texture_name.c_str(), texture.Get());
   }
 
  protected:

@@ -606,13 +606,13 @@ void RenderEngineGltfClient::ImplementGeometry(const Mesh& mesh,
 
 void RenderEngineGltfClient::ImplementMesh(
     const std::filesystem::path& mesh_path, double scale, void* user_data) {
+  auto* data = static_cast<RegistrationData*>(user_data);
   const std::string extension = Mesh(mesh_path.string()).extension();
   if (extension == ".obj") {
-    ImplementObj(mesh_path.string(), scale, user_data);
+    ImplementObj(mesh_path.string(), scale, data);
   } else if (extension == ".gltf") {
     ImplementGltf(mesh_path, scale, user_data);
   } else   {
-    auto* data = static_cast<RegistrationData*>(user_data);
     data->accepted = false;
     static const logging::Warn one_time(
         "RenderEngineGltfClient only supports Mesh/Convex specifications which "

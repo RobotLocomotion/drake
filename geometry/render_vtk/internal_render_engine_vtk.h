@@ -4,15 +4,16 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
-#include <vtkActor.h>
 #include <vtkAutoInit.h>
 #include <vtkCommand.h>
 #include <vtkImageExport.h>
 #include <vtkLight.h>
 #include <vtkNew.h>
 #include <vtkPolyDataAlgorithm.h>
+#include <vtkProp3D.h>
 #include <vtkRenderWindow.h>
 #include <vtkRenderer.h>
 #include <vtkShaderProgram.h>
@@ -20,6 +21,7 @@
 #include <vtkWindowToImageFilter.h>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/drake_export.h"
 #include "drake/common/reset_on_copy.h"
 #include "drake/geometry/render/render_engine.h"
@@ -140,13 +142,25 @@ class DRAKE_NO_EXPORT RenderEngineVtk : public render::RenderEngine,
   //@}
 
  protected:
+  /* Returns all geometries represented as *actors* (not *assemblies*). This
+   may not include all geometries in the RenderEngine, but will include
+   primitive shapes and .obj files that contained a single object with a single
+   material. */
+  DRAKE_DEPRECATED(
+      "2023-12-01",
+      "actors() omits geometries represented by assemblies. Use props() "
+      "instead and use vtkActor::SafeDownCast() or vtkAssembly::SafeDownCast() "
+      "if you need to know the prop type.");
+  std::unordered_map<GeometryId, std::array<vtkSmartPointer<vtkActor>, 3>>
+  actors() const;
+
   /* Returns all actors registered with the engine, keyed by the SceneGraph
    GeometryId. Each GeometryId maps to a triple of actors: color, depth, and
    label. */
   const std::unordered_map<GeometryId,
-                           std::array<vtkSmartPointer<vtkActor>, 3>>&
-  actors() const {
-    return actors_;
+                           std::array<vtkSmartPointer<vtkProp3D>, 3>>&
+  props() const {
+    return props_;
   }
 
   /* Copy constructor for the purpose of cloning. */
@@ -223,8 +237,12 @@ class DRAKE_NO_EXPORT RenderEngineVtk : public render::RenderEngine,
   // Common interface for loading an obj file -- used for both mesh and convex
   // shapes. If `file_name` is of an unsupported type, no geometry will be
   // added.
+  void ImplementMesh(const std::string& file_name, double scale,
+                     void* user_data);
   void ImplementObj(const std::string& file_name, double scale,
-                    void* user_data);
+                    RegistrationData* data);
+  void ImplementGltf(const std::string& file_name, double scale,
+                     RegistrationData* data);
 
  private:
   // Initializes the VTK pipelines.
@@ -233,7 +251,7 @@ class DRAKE_NO_EXPORT RenderEngineVtk : public render::RenderEngine,
   // Performs the common setup for all shape types.
   void ImplementPolyData(vtkPolyDataAlgorithm* source,
                          const geometry::internal::RenderMaterial& material,
-                         void* user_data);
+                         const RegistrationData& data);
 
   void SetDefaultLightPosition(const Vector3<double>& p_DL) override;
 
@@ -244,6 +262,15 @@ class DRAKE_NO_EXPORT RenderEngineVtk : public render::RenderEngine,
 
   // The engine's configuration parameters.
   const RenderEngineVtkParams parameters_;
+
+  // TODO(SeanCurtis-TRI): when vtkGLTFExporter handles vtkAssembly correctly,
+  // then we can just make everything an assembly and not have to worry about
+  // heterogeneity and the base class of vtkProp3D.
+
+  // Each geometry is represented by one "3D property" per pipeline. That
+  // property (or "prop") can be either an actor or an assembly. But it will be
+  // the same type in each pipeline.
+  using PropArray = std::array<vtkSmartPointer<vtkProp3D>, kNumPipelines>;
 
   std::array<std::unique_ptr<RenderingPipeline>, kNumPipelines> pipelines_;
 
@@ -270,9 +297,9 @@ class DRAKE_NO_EXPORT RenderEngineVtk : public render::RenderEngine,
   systems::sensors::ColorD default_clear_color_;
 
   // The collection of per-geometry actors (one actor per pipeline (color,
-  // depth, and label) keyed by the geometry's GeometryId.
-  std::unordered_map<GeometryId, std::array<vtkSmartPointer<vtkActor>, 3>>
-      actors_;
+  // depth, and label) keyed by the geometry's GeometryId. All pointers in the
+  // array must point to the same type, either vtkActor or vtkAssembly.
+  std::unordered_map<GeometryId, PropArray> props_;
 
   // Lights can be defined in the engine parameters. If no lights are defined,
   // we use the fallback_lights. Otherwise, we use the parameter lights.
