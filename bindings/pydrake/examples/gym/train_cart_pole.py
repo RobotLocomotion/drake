@@ -149,7 +149,8 @@ def main():
 
     gym.envs.register(
         id="Cartpole-v0",
-        entry_point="pydrake.examples.gym.envs.cart_pole.cart_pole:CartpoleEnv")
+        entry_point=(
+            "pydrake.examples.gym.envs.cart_pole.cart_pole:CartpoleEnv"))
 
     if not sb3_available:
         print("stable_baselines3 not available.")
