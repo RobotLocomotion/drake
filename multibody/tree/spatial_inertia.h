@@ -266,7 +266,7 @@ class SpatialInertia {
       const Vector3<T>& unit_vector);
 
   /// Creates a spatial inertia for a uniform-density solid cylinder B about an
-  /// end-point Bp of the cylinder's central longitudinal axis (see below).
+  /// end-point Bp of the cylinder's axis (see below for more about Bp).
   /// @param[in] density mass per volume (kg/m³).
   /// @param[in] radius radius of cylinder (meters).
   /// @param[in] length length of cylinder in unit_vector direction (meters).
@@ -286,7 +286,7 @@ class SpatialInertia {
       const Vector3<T>& unit_vector);
 
   /// Creates a spatial inertia for a uniform-density solid cylinder B about an
-  /// end-point Bp of the cylinder's central longitudinal axis (see below).
+  /// end-point Bp of the cylinder's axis (see below for more about Bp).
   /// @param[in] mass mass of the solid cylinder (kg).
   /// @param[in] radius radius of cylinder (meters).
   /// @param[in] length length of cylinder in unit_vector direction (meters).
