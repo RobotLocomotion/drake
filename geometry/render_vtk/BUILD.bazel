@@ -63,6 +63,7 @@ drake_cc_library(
         "@eigen",
         "@vtk//:vtkIOGeometry",
         "@vtk//:vtkIOImage",
+        "@vtk//:vtkIOImport",
         "@vtk//:vtkRenderingCore",
         "@vtk//:vtkRenderingOpenGL2",
     ],

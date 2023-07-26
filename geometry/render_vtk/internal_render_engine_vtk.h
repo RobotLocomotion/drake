@@ -4,15 +4,16 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
-#include <vtkActor.h>
 #include <vtkAutoInit.h>
 #include <vtkCommand.h>
 #include <vtkImageExport.h>
 #include <vtkLight.h>
 #include <vtkNew.h>
 #include <vtkPolyDataAlgorithm.h>
+#include <vtkProp3D.h>
 #include <vtkRenderWindow.h>
 #include <vtkRenderer.h>
 #include <vtkShaderProgram.h>
@@ -139,13 +140,13 @@ class DRAKE_NO_EXPORT RenderEngineVtk : public render::RenderEngine,
   //@}
 
  protected:
-  /* Returns all actors registered with the engine, keyed by the SceneGraph
-   GeometryId. Each GeometryId maps to a triple of actors: color, depth, and
-   label. */
+  /* Returns all props registered with the engine, keyed by the SceneGraph
+   GeometryId. Each GeometryId maps to a triple of props: color, depth, and
+   label. The prop will either be a `vtkActor` or `vtkAssembly`. */
   const std::unordered_map<GeometryId,
-                           std::array<vtkSmartPointer<vtkActor>, 3>>&
-  actors() const {
-    return actors_;
+                           std::array<vtkSmartPointer<vtkProp3D>, 3>>&
+  props() const {
+    return props_;
   }
 
   /* Copy constructor for the purpose of cloning. */
@@ -219,11 +220,21 @@ class DRAKE_NO_EXPORT RenderEngineVtk : public render::RenderEngine,
       const render::ColorRenderCamera& camera,
       systems::sensors::ImageLabel16I* label_image_out) const override;
 
-  // Common interface for loading an obj file -- used for both mesh and convex
-  // shapes. If `file_name` is of an unsupported type, no geometry will be
-  // added.
-  void ImplementObj(const std::string& file_name, double scale,
-                    void* user_data);
+  // Common interface for loading a Mesh-type geometry (i.e., Mesh or Convex).
+  // Examinines the extension and delegates to the appropriate
+  // ImplementExtension() variant to handle that file type, warning otherwise.
+  void ImplementMesh(const std::string& file_name, double scale,
+                     void* user_data);
+
+  // Adds an .obj to the scene for the id currently being reified (data->id).
+  // Returns true if added, false if ignored (for whatever reason).
+  bool ImplementObj(const std::string& file_name, double scale,
+                    const RegistrationData& data);
+
+  // Adds a .gltf to the scene for the id currently being reified (data->id).
+  // Returns true if added, false if ignored (for whatever reason).
+  bool ImplementGltf(const std::string& file_name, double scale,
+                     const RegistrationData& data);
 
  private:
   // Initializes the VTK pipelines.
@@ -232,7 +243,7 @@ class DRAKE_NO_EXPORT RenderEngineVtk : public render::RenderEngine,
   // Performs the common setup for all shape types.
   void ImplementPolyData(vtkPolyDataAlgorithm* source,
                          const geometry::internal::RenderMaterial& material,
-                         void* user_data);
+                         const RegistrationData& data);
 
   void SetDefaultLightPosition(const Vector3<double>& X_DL) override;
 
@@ -240,6 +251,9 @@ class DRAKE_NO_EXPORT RenderEngineVtk : public render::RenderEngine,
   static constexpr int kNumPipelines = 3;
 
   std::array<std::unique_ptr<RenderingPipeline>, kNumPipelines> pipelines_;
+
+  // The engine's configuration parameters.
+  const RenderEngineVtkParams parameters_;
 
   vtkNew<vtkLight> light_;
 
@@ -265,10 +279,18 @@ class DRAKE_NO_EXPORT RenderEngineVtk : public render::RenderEngine,
   // The color to clear the color buffer to.
   systems::sensors::ColorD default_clear_color_;
 
-  // The collection of per-geometry actors (one actor per pipeline (color,
-  // depth, and label) keyed by the geometry's GeometryId.
-  std::unordered_map<GeometryId, std::array<vtkSmartPointer<vtkActor>, 3>>
-      actors_;
+  // TODO(SeanCurtis-TRI): when vtkGLTFExporter handles vtkAssembly correctly,
+  // then we can just make everything an assembly and not have to worry about
+  // heterogeneity and the base class of vtkProp3D.
+
+  // Each geometry is represented by one "3D property" per pipeline. That
+  // property (or "prop") can be either an actor or an assembly. But it will be
+  // the same type in all entries of the array.
+  using PropArray = std::array<vtkSmartPointer<vtkProp3D>, kNumPipelines>;
+
+  // The collection of per-geometry actors -- one actor per pipeline (color,
+  // depth, and label) -- keyed by the geometry's GeometryId.
+  std::unordered_map<GeometryId, PropArray> props_;
 };
 
 }  // namespace internal
