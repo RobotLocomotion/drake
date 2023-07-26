@@ -4,7 +4,7 @@ import gymnasium as gym
 import numpy as np
 import stable_baselines3.common.env_checker
 
-from pydrake.examples.gym.envs.box_flipup.box_flipup import BoxFlipUpEnv
+from pydrake.examples.gym.envs.cart_pole.cart_pole import CartpoleEnv
 
 vec_env_available = False
 try:
@@ -29,13 +29,11 @@ class DrakeGymTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         gym.envs.register(
-            id="BoxFlipUp-v0",
-            entry_point="pydrake.examples.gym.envs.box_flipup.box_flipup:BoxFlipUpEnv")  # noqa
+            id="Cartpole-v0",
+            entry_point="pydrake.examples.gym.envs.cart_pole.cart_pole:CartpoleEnv")  # noqa
 
     def make_env(self):
-        # `new_step_api=False` was supposed to be deprecated some time ago
-        # but is still required by stable_baselines3.
-        return gym.make("BoxFlipUp-v0")
+        return gym.make("Cartpole-v0")
 
     def test_make_env(self):
         self.make_env()
@@ -56,7 +54,7 @@ class DrakeGymTest(unittest.TestCase):
             return
         # Check that we can construct a vector env.
         vector_dut = make_vec_env(
-            BoxFlipUpEnv,
+            CartpoleEnv,
             n_envs=2,
             seed=0,
             vec_env_cls=SubprocVecEnv,

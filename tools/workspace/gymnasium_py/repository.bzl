@@ -12,7 +12,10 @@ def gymnasium_py_repository(
         sha256 = "3a108018cf50dc327bfc66e479c280b8112de597804ceeaa3cc50860a2905115",  # noqa
         build_file = ":package.BUILD.bazel",
         patches = [
-            ":no_ndarray_typing.patch",
+            # This patch is needed for Focal compatibility.
+            # It removes np.typing which is only available
+            # in numpy vesion > 1.20
+            ":no_typing.patch",
         ],
         mirrors = mirrors,
     )

@@ -34,7 +34,7 @@ py_test(
     deps = [
         ":gym",
         ":mock_torch_py",
-        "//bindings/pydrake/examples/gym:box_flipup",
+        "//bindings/pydrake/examples/gym:cart_pole",
         "@stable_baselines3_internal//:stable_baselines3",
     ],
 )

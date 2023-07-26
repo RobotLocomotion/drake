@@ -297,10 +297,18 @@ index 1311316f..2f5cd9dd 100644
              ]
          ) = None,
 diff --git gymnasium/spaces/space.py gymnasium/spaces/space.py
-index 089611df..c6b62b17 100644
+index 089611df..de372c4c 100644
 --- gymnasium/spaces/space.py
 +++ gymnasium/spaces/space.py
-@@ -12,7 +12,7 @@ from gymnasium.utils import seeding
+@@ -4,7 +4,6 @@ from __future__ import annotations
+ from typing import Any, Generic, Iterable, Mapping, Sequence, TypeVar
+
+ import numpy as np
+-import numpy.typing as npt
+
+ from gymnasium.utils import seeding
+
+@@ -12,7 +11,7 @@ from gymnasium.utils import seeding
  T_cov = TypeVar("T_cov", covariant=True)
 
 
@@ -309,6 +317,15 @@ index 089611df..c6b62b17 100644
 
 
  class Space(Generic[T_cov]):
+@@ -44,7 +43,7 @@ class Space(Generic[T_cov]):
+     def __init__(
+         self,
+         shape: Sequence[int] | None = None,
+-        dtype: npt.DTypeLike | None = None,
++        dtype: np.dtype | None = None,
+         seed: int | np.random.Generator | None = None,
+     ):
+         """Constructor of :class:`Space`.
 diff --git gymnasium/spaces/text.py gymnasium/spaces/text.py
 index be15be13..30bf521e 100644
 --- gymnasium/spaces/text.py
