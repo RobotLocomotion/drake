@@ -606,25 +606,24 @@ void RenderEngineGltfClient::ImplementGeometry(const Mesh& mesh,
 
 void RenderEngineGltfClient::ImplementMesh(
     const std::filesystem::path& mesh_path, double scale, void* user_data) {
+  auto& data = *static_cast<RegistrationData*>(user_data);
   const std::string extension = Mesh(mesh_path.string()).extension();
   if (extension == ".obj") {
-    ImplementObj(mesh_path.string(), scale, user_data);
+    data.accepted = ImplementObj(mesh_path.string(), scale, data);
   } else if (extension == ".gltf") {
-    ImplementGltf(mesh_path, scale, user_data);
+    data.accepted = ImplementGltf(mesh_path, scale, data);
   } else   {
-    auto* data = static_cast<RegistrationData*>(user_data);
-    data->accepted = false;
     static const logging::Warn one_time(
         "RenderEngineGltfClient only supports Mesh/Convex specifications which "
         "use .obj or .gltf files. Mesh specifications using other mesh types "
         "(e.g., .stl, .dae, etc.) will be ignored.");
+    data.accepted = false;
   }
 }
 
-void RenderEngineGltfClient::ImplementGltf(
-    const std::filesystem::path& gltf_path, double scale, void* user_data) {
-  auto& data = *static_cast<RenderEngineVtk::RegistrationData*>(user_data);
-
+bool RenderEngineGltfClient::ImplementGltf(
+    const std::filesystem::path& gltf_path, double scale,
+    const RenderEngineVtk::RegistrationData& data) {
   nlohmann::json mesh_data = ReadJsonFile(gltf_path);
 
   // TODO(SeanCurtis-TRI) What to do about a gltf that has no materials? We need
@@ -639,6 +638,7 @@ void RenderEngineGltfClient::ImplementGltf(
   gltfs_.insert({data.id,
                  {std::move(mesh_data), std::move(root_nodes), scale,
                   GetRenderLabelOrThrow(data.properties)}});
+  return true;
 }
 
 Eigen::Matrix4d RenderEngineGltfClient::CameraModelViewTransformMatrix(
