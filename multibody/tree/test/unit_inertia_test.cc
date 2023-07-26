@@ -286,7 +286,7 @@ GTEST_TEST(UnitInertia, SolidCylinderAboutEnd) {
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 // Tests the static method to obtain the unit inertia of a solid cylinder B
 // computed about a point Bp at the center of its base.
-// 2023-10-01 Remove with the old SolidCylinderAboutEnd test.
+// 2023-11-01 Remove with the old SolidCylinderAboutEnd test.
 GTEST_TEST(UnitInertia, SolidCylinderAboutEndDeprecated) {
   const double r = 2.5;
   const double L = 1.5;

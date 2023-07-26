@@ -1158,7 +1158,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def_static("SolidCapsule", &Class::SolidCapsule, py::arg("r"),
             py::arg("L"), py::arg("unit_vector") = Vector3<T>::UnitZ().eval(),
             cls_doc.SolidCapsule.doc)
-        // TODO(2023-10-01) Remove overload wrapping when deprecation complete.
+        // TODO(2023-11-01) Remove overload wrapping when deprecation complete.
         .def_static("SolidCylinderAboutEnd",
             overload_cast_explicit<Class, const T&, const T&,
                 const Vector3<T>&>(&Class::SolidCylinderAboutEnd),
