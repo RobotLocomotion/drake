@@ -98,6 +98,25 @@ class Hyperellipsoid final : public ConvexSet {
   /** Constructs the L₂-norm unit ball in `dim` dimensions, {x | |x|₂ <= 1 }. */
   static Hyperellipsoid MakeUnitBall(int dim);
 
+  /** Constructs the minimum-volume ellipsoid which contains all of the
+  `points`. This is commonly referred to as the outer Löwner-John ellipsoid.
+
+  @param points is a d-by-n matrix, where d is the ambient dimension and each
+  column represents one point.
+  @param rank_tol the singular values of the data matrix will be considered
+  non-zero if their absolute values are strictly greater than `rank_tol`*|max
+  singular value|. The default is 1e-6 to be compatible with common solver
+  tolerances.
+  @throws std::exception if the MathematicalProgram fails to solve. If this were
+  to happen (due to numerical issues), then increasing `rank_tol` should provide
+  a mitigation.
+  @throw std::exception if points includes NaNs or infinite values.
+  @pre The numerical data rank of points is greater than 0. This requires, for
+  instance, that points.cols() > 1.
+  */
+  static Hyperellipsoid MinimumVolumeCircumscribedEllipsoid(
+      const Eigen::Ref<const Eigen::MatrixXd>& points, double rank_tol = 1e-6);
+
   /** Passes this object to an Archive.
   Refer to @ref yaml_serialization "YAML Serialization" for background. */
   template <typename Archive>
@@ -115,7 +134,8 @@ class Hyperellipsoid final : public ConvexSet {
 
   bool DoIsEmpty() const final;
 
-  // N.B. No need to override DoMaybeGetPoint here.
+  // N.B. No need to override DoMaybeGetPoint here. This class cannot represent
+  // a single point.
 
   /** Returns the center, which is always feasible. */
   std::optional<Eigen::VectorXd> DoMaybeGetFeasiblePoint() const final;

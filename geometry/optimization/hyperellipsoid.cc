@@ -28,6 +28,7 @@ using solvers::Constraint;
 using solvers::MathematicalProgram;
 using solvers::VectorXDecisionVariable;
 using std::sqrt;
+using symbolic::Expression;
 using symbolic::Variable;
 
 Hyperellipsoid::Hyperellipsoid()
@@ -175,6 +176,81 @@ Hyperellipsoid Hyperellipsoid::MakeHypersphere(
 Hyperellipsoid Hyperellipsoid::MakeUnitBall(int dim) {
   DRAKE_THROW_UNLESS(dim > 0);
   return Hyperellipsoid(MatrixXd::Identity(dim, dim), VectorXd::Zero(dim));
+}
+
+Hyperellipsoid Hyperellipsoid::MinimumVolumeCircumscribedEllipsoid(
+    const Eigen::Ref<const MatrixXd>& points, double rank_tol) {
+  const int dim = points.rows();
+  int rank;
+  const int N = points.cols();
+
+  // Check the numerical rank of the data matrix.
+  std::optional<Eigen::MatrixXd> U;
+  Eigen::VectorXd mean = points.rowwise().mean();
+  {
+    auto svd = (points.colwise() - mean).bdcSvd(Eigen::ComputeThinU);
+    // Will throw on nans or infs.
+    DRAKE_THROW_UNLESS(svd.info() == Eigen::ComputationInfo::Success);
+    // Eigen's SVD rank never returns zero.
+    if (svd.singularValues()[0] < rank_tol) {
+      throw std::runtime_error(fmt::format(
+          "The numerical rank of the points appears to be zero. (The largest "
+          "singular value is {}, which is below rank_tol = {})",
+          svd.singularValues()[0], rank_tol));
+    }
+    svd.setThreshold(rank_tol);
+    rank = svd.rank();
+    if (rank < dim) {
+      U = svd.matrixU().leftCols(rank);
+    }
+  }
+
+  MathematicalProgram prog;
+  solvers::MatrixXDecisionVariable A =
+      prog.NewSymmetricContinuousVariables(rank, "A");
+  prog.AddMaximizeLogDeterminantCost(A.cast<Expression>());
+  solvers::VectorXDecisionVariable b = prog.NewContinuousVariables(rank, "b");
+  // TODO(russt): Avoid the symbolic computation here and write A_lorentz
+  // directly, s.t. v = A_lorentz * vars + b_lorentz = [1; A * x + b], where
+  // A=Aᵀ and b are the vars.
+  VectorX<Expression> v(rank + 1);
+  v[0] = 1;
+  for (int i = 0; i < N; ++i) {
+    if (U) {  // rank < dim
+      // |AUᵀ(x-mean) + b|₂ <= 1
+      v.tail(rank) = A * U->transpose() * (points.col(i) - mean) + b;
+    } else {  // rank == dim
+      // |Ax + b|₂ <= 1
+      v.tail(rank) = A * points.col(i) + b;
+    }
+    prog.AddLorentzConeConstraint(v);
+  }
+
+  solvers::MathematicalProgramResult result = Solve(prog);
+  if (!result.is_success()) {
+    throw std::runtime_error(
+        fmt::format("The MathematicalProgram was not solved successfully. The "
+                    "ambient dimension is {} and the data rank is {}, computed "
+                    "using rank_tol={}. Consider adjusting rank_tol.",
+                    dim, rank, rank_tol));
+  }
+  log()->info("Solver {}", result.get_solver_id().name());
+  DRAKE_THROW_UNLESS(result.is_success());
+
+  // Ax + b => A(x-c) = Ax - Ac => c = -A^{-1}b
+  const MatrixXd A_sol = result.GetSolution(A);
+  const VectorXd b_sol = result.GetSolution(b);
+  // Note: We can use llt() because know that A will be positive definite;
+  // there is a PSD constraint, but we are maximizing the eigenvalues of A and
+  // the convex hull of the points is guaranteed to be bounded.
+  const VectorXd c = A_sol.llt().solve(-b_sol);
+
+  if (U) {
+    // AUᵀ(x-mean) + b => AUᵀ(x - center), so center = -UA⁻¹b + mean.
+    return Hyperellipsoid(A_sol * U->transpose(), (*U) * c + mean);
+  } else {
+    return Hyperellipsoid(A_sol, c);
+  }
 }
 
 std::unique_ptr<ConvexSet> Hyperellipsoid::DoClone() const {
