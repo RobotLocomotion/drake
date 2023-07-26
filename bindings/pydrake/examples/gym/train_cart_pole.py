@@ -88,13 +88,14 @@ def run_training(config, args):
         model = PPO(policy_type, env, n_steps=4, n_epochs=2,
                     batch_size=8, policy_kwargs=policy_kwargs)
     else:
-        model = PPO(policy_type, env, n_steps=int(2048/num_env), n_epochs=10,
-                    # In SB3, this is the mini-batch size.
-                    # https://github.com/DLR-RM/stable-baselines3/blob/master/docs/modules/ppo.rst
-                    batch_size=64*num_env,
-                    verbose=1,
-                    tensorboard_log=f"{log_dir}runs/{run.id}",
-                    policy_kwargs=policy_kwargs)
+        model = PPO(
+            policy_type, env, n_steps=int(2048/num_env), n_epochs=10,
+            # In SB3, this is the mini-batch size.
+            # https://github.com/DLR-RM/stable-baselines3/blob/master/docs/modules/ppo.rst
+            batch_size=64*num_env,
+            verbose=1,
+            tensorboard_log=f"{log_dir}runs/{run.id}",
+            policy_kwargs=policy_kwargs)
 
     # Separate evaluation env.
     eval_env = gym.make(env_name,
