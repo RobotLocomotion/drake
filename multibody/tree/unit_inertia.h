@@ -8,6 +8,7 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/tree/rotational_inertia.h"
@@ -295,6 +296,19 @@ class UnitInertia : public RotationalInertia<T> {
   /// within 1.0E-14 of 1.0.
   static UnitInertia<T> SolidCapsule(const T& r, const T& L,
       const Vector3<T>& unit_vector = Vector3<T>::UnitZ());
+
+  /// Computes the unit inertia for a unit-mass cylinder of uniform density
+  /// oriented along the z-axis computed about a point at the center of
+  /// its base.
+  /// @param[in] r The radius of the cylinder.
+  /// @param[in] L The length of the cylinder.
+  /// @throws std::exception if r or L is negative.
+  DRAKE_DEPRECATED("2023-11-01",
+                   "SolidCylinderAboutEnd now requires the cylinder's axis "
+                   "direction to be explicitly given.")
+  static UnitInertia<T> SolidCylinderAboutEnd(const T& r, const T& L) {
+    return SolidCylinderAboutEnd(r, L, Vector3<T>::UnitZ());
+  }
 
   /// Creates a unit inertia for a uniform-density solid cylinder B about an
   /// end-point Bp of the cylinder's axis (see below for more about Bp).

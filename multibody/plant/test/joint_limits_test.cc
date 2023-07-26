@@ -138,8 +138,8 @@ GTEST_TEST(JointLimitsTest, RevoluteJoint) {
 
   for (double time_step : {2.5e-4, 5.0e-4, 1.0e-3}) {
     MultibodyPlant<double> plant(time_step);
-    // The rod's cm is at its centroid. The rod's body frame B is at the rod's
-    // left end and connects to the world with a revolute joint.
+    // The rod's center of mass is at its centroid. The rod's body frame B is at
+    // the rod's left end and connects to the world with a revolute joint.
     const auto M_B = SpatialInertia<double>::SolidCylinderWithMassAboutEnd(
         mass, rod_radius, rod_length, Vector3<double>::UnitX());
     const RigidBody<double>& body = plant.AddRigidBody("Body", M_B);

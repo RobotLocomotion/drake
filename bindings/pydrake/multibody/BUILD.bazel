@@ -327,8 +327,8 @@ drake_py_library(
 
 install(
     name = "install",
-    targets = PY_LIBRARIES + [":all_py"],
     py_dest = PACKAGE_INFO.py_dest,
+    targets = PY_LIBRARIES + [":all_py"],
     deps = get_drake_py_installs(PY_LIBRARIES_WITH_INSTALL) + [
         ":install_wrapper_scripts",
     ],
@@ -406,6 +406,7 @@ drake_py_unittest(
         ":parsing_py",
         ":plant_py",
         ":tree_py",
+        "//bindings/pydrake/common/test_utilities:deprecation_py",
         "//bindings/pydrake/common/test_utilities:numpy_compare_py",
         "//bindings/pydrake/common/test_utilities:pickle_compare_py",
         "//bindings/pydrake/common/test_utilities:scipy_stub_py",

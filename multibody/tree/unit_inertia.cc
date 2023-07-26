@@ -7,8 +7,9 @@ namespace multibody {
 
 namespace {
 
-// Throw unless ‖unit_vector‖ is within ≈ 5.5 bits of 1.0.
+// Throws unless ‖unit_vector‖ is within ≈ 5.5 bits of 1.0.
 // Note: 1E-14 ≈ 2^5.5 * std::numeric_limits<double>::epsilon();
+// Note: This function is a no-op when type T is symbolic::Expression.
 template <typename T>
 void ThrowUnlessVectorIsMagnitudeOne(const Vector3<T>& unit_vector,
                                      std::string_view function_name) {
@@ -131,17 +132,7 @@ UnitInertia<T> UnitInertia<T>::SolidCapsule(const T& r, const T& L,
     const Vector3<T>& unit_vector) {
   DRAKE_THROW_UNLESS(r >= 0);
   DRAKE_THROW_UNLESS(L >= 0);
-
-  // Ensure ‖unit_vector‖ is within ≈ 5.5 bits of 1.0.
-  // Note: 1E-14 ≈ 2^5.5 * std::numeric_limits<double>::epsilon();
-  using std::abs;
-  constexpr double kTolerance = 1E-14;
-  if (abs(unit_vector.norm() - 1) > kTolerance) {
-    std::string error_message =
-        fmt::format("{}(): The unit_vector argument {} is not a unit vector.",
-                    __func__, fmt_eigen(unit_vector.transpose()));
-    throw std::logic_error(error_message);
-  }
+  ThrowUnlessVectorIsMagnitudeOne(unit_vector, __func__);
 
   // A special case is required for r = 0 because r = 0 creates a zero volume
   // capsule (and we divide by volume later on). No special case for L = 0 is

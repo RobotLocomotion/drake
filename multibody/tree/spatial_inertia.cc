@@ -34,8 +34,9 @@ void ThrowUnlessValueIsPositiveFinite(const T& value,
   }
 }
 
-// Throw unless ‖unit_vector‖ is within ≈ 5.5 bits of 1.0.
+// Throws unless ‖unit_vector‖ is within ≈ 5.5 bits of 1.0.
 // Note: 1E-14 ≈ 2^5.5 * std::numeric_limits<double>::epsilon();
+// Note: This function is a no-op when type T is symbolic::Expression.
 template<typename T>
 void ThrowUnlessVectorIsMagnitudeOne(const Vector3<T>& unit_vector,
     std::string_view function_name) {
