@@ -121,6 +121,32 @@ AffineSubspace::DoToShapeWithPose() const {
       "ToShapeWithPose is not supported by AffineSubspace.");
 }
 
+bool AffineSubspace::ContainedIn(const AffineSubspace& other,
+                                 double tol) const {
+  // For this AffineSubspace to be contained in other, their ambient
+  // dimensions must be the same, its translation_ must be in other,
+  // and its subspace must be contained in the subspace of other.
+  if (ambient_dimension() != other.ambient_dimension()) {
+    return false;
+  }
+  if (!other.PointInSet(translation_, tol)) {
+    return false;
+  }
+  // Check that this basis is contained in other. If the basis vectors
+  // are all contained in other, than the whole set is.
+  for (int i = 0; i < basis_.cols(); ++i) {
+    if (!other.PointInSet(basis_.col(i) + translation_, tol)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool AffineSubspace::IsNearlyEqualTo(const AffineSubspace& other,
+                                     double tol) const {
+  return ContainedIn(other, tol) && other.ContainedIn(*this, tol);
+}
+
 }  // namespace optimization
 }  // namespace geometry
 }  // namespace drake
