@@ -94,7 +94,11 @@ void DefineGeometryOptimization(py::module m) {
         .def("basis", &AffineSubspace::basis, py_rvp::reference_internal,
             cls_doc.basis.doc)
         .def("translation", &AffineSubspace::translation,
-            py_rvp::reference_internal, cls_doc.translation.doc);
+            py_rvp::reference_internal, cls_doc.translation.doc)
+        .def("ContainedIn", &AffineSubspace::ContainedIn, py::arg("other"),
+            py::arg("tol") = 1e-15, cls_doc.ContainedIn.doc)
+        .def("EquivalentTo", &AffineSubspace::EquivalentTo, py::arg("other"),
+            py::arg("tol") = 1e-15, cls_doc.ContainedIn.doc);
     DefClone(&cls);
   }
 
