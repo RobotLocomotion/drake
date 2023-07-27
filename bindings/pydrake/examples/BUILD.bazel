@@ -49,6 +49,7 @@ drake_pybind_library(
 
 PY_LIBRARIES_WITH_INSTALL = [
     ":examples",
+    "//bindings/pydrake/examples/gym",
     "//bindings/pydrake/examples/multibody",
 ]
 

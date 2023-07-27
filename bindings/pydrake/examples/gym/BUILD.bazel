@@ -1,4 +1,8 @@
-load("//tools/lint:lint.bzl", "add_lint_tests")
+load("@drake//tools/install:install.bzl", "install")
+load(
+    "@drake//tools/skylark:pybind.bzl",
+    "get_pybind_package_info",
+)
 load(
     "//tools/skylark:drake_py.bzl",
     "drake_py_binary",
@@ -9,19 +13,19 @@ load(
     "@drake_detected_os//:os.bzl",
     "UBUNTU_RELEASE",
 )
+load("//bindings/pydrake:pydrake.bzl", "add_lint_tests_pydrake")
 
-filegroup(
-    name = "models",
-    srcs = [
-        "models/cartpole_BSA.sdf",
-    ],
-    visibility = ["//visibility:public"],
-)
+package(default_visibility = [
+    "//bindings/pydrake:__subpackages__",
+])
+
+# This determines how `PYTHONPATH` is configured, and how to install the
+# bindings.
+PACKAGE_INFO = get_pybind_package_info("//bindings")
 
 drake_py_library(
-    name = "named_view_helpers",
+    name = "named_view_helpers_py",
     srcs = ["named_view_helpers.py"],
-    visibility = ["//visibility:public"],
     deps = [
         "//bindings/pydrake/common",
         "//bindings/pydrake/multibody",
@@ -29,14 +33,13 @@ drake_py_library(
 )
 
 drake_py_library(
-    name = "cart_pole",
+    name = "cart_pole_py",
     srcs = ["envs/cart_pole/cart_pole.py"],
     data = [
-        ":models",
+        "models/cartpole_BSA.sdf",
     ],
-    visibility = ["//visibility:public"],
     deps = [
-        ":named_view_helpers",
+        ":named_view_helpers_py",
         "//bindings/pydrake/common",
         "//bindings/pydrake/geometry",
         "//bindings/pydrake/gym",
@@ -48,12 +51,9 @@ drake_py_library(
 drake_py_binary(
     name = "train_cart_pole",
     srcs = ["train_cart_pole.py"],
-    data = [
-        ":models",
-    ],
     visibility = ["//visibility:public"],
     deps = [
-        ":cart_pole",
+        ":cart_pole_py",
         "//bindings/pydrake/geometry",
         "@gymnasium_py",
         "@stable_baselines3_internal//:stable_baselines3",
@@ -63,12 +63,9 @@ drake_py_binary(
 drake_py_binary(
     name = "play_cart_pole",
     srcs = ["play_cart_pole.py"],
-    data = [
-        ":models",
-    ],
     visibility = ["//visibility:public"],
     deps = [
-        ":cart_pole",
+        ":cart_pole_py",
         "//bindings/pydrake/geometry",
         "@gymnasium_py",
         "@stable_baselines3_internal//:stable_baselines3",
@@ -84,7 +81,7 @@ drake_py_test(
     main = "train_cart_pole.py",
     tags = ["manual"] if UBUNTU_RELEASE == "20.04" else [],
     deps = [
-        ":cart_pole",
+        ":cart_pole_py",
         "//bindings/pydrake/geometry",
         "@gymnasium_py",
         "@stable_baselines3_internal//:stable_baselines3",
@@ -98,11 +95,22 @@ drake_py_test(
     main = "play_cart_pole.py",
     tags = ["manual"] if UBUNTU_RELEASE == "20.04" else [],
     deps = [
-        ":cart_pole",
+        ":cart_pole_py",
         "//bindings/pydrake/geometry",
         "@gymnasium_py",
         "@stable_baselines3_internal//:stable_baselines3",
     ],
 )
 
-add_lint_tests()
+PY_LIBRARIES = [
+    ":cart_pole_py",
+    ":named_view_helpers_py",
+]
+
+install(
+    name = "install",
+    targets = PY_LIBRARIES,
+    py_dest = PACKAGE_INFO.py_dest,
+)
+
+add_lint_tests_pydrake()
