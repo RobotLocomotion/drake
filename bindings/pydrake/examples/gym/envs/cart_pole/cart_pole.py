@@ -7,7 +7,6 @@ from pydrake.examples.gym.named_view_helpers import (
 )
 import numpy as np
 
-from pydrake.common import RandomGenerator
 from pydrake.common.cpp_param import List
 from pydrake.common.value import Value
 from pydrake.geometry import (
@@ -44,7 +43,7 @@ from pydrake.systems.primitives import (
 )
 from pydrake.systems.sensors import CameraInfo, RgbdSensor
 from pydrake.common import FindResourceOrThrow
-from pydrake.gym.drake_gym import DrakeGymEnv
+from pydrake.gym import DrakeGymEnv
 
 # Gym parameters.
 sim_time_step = 0.01

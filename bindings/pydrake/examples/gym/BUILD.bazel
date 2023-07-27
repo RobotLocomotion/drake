@@ -9,20 +9,12 @@ load(
 )
 
 py_library(
-    name = "scenario_helpers",
-    srcs = ["scenario_helpers.py"],
-    visibility = ["//visibility:public"],
-    deps = [
-        "//bindings/pydrake",
-    ],
-)
-
-py_library(
     name = "named_view_helpers",
     srcs = ["named_view_helpers.py"],
     visibility = ["//visibility:public"],
     deps = [
-        "//bindings/pydrake",
+        "//bindings/pydrake/common",
+        "//bindings/pydrake/multibody",
     ],
 )
 
@@ -35,8 +27,10 @@ py_library(
     visibility = ["//visibility:public"],
     deps = [
         ":named_view_helpers",
-        ":scenario_helpers",
-        "//bindings/pydrake",
+        "//bindings/pydrake/common",
+        "//bindings/pydrake/geometry",
+        "//bindings/pydrake/multibody",
+        "//bindings/pydrake/systems",
         "//bindings/pydrake/gym",
     ],
 )
@@ -50,7 +44,7 @@ py_binary(
     visibility = ["//visibility:public"],
     deps = [
         ":cart_pole",
-        "//bindings/pydrake",
+        "//bindings/pydrake/geometry",
         "@gymnasium_py",
         "@stable_baselines3_internal//:stable_baselines3",
     ],
@@ -65,7 +59,7 @@ py_binary(
     visibility = ["//visibility:public"],
     deps = [
         ":cart_pole",
-        "//bindings/pydrake",
+        "//bindings/pydrake/geometry",
         "@gymnasium_py",
         "@stable_baselines3_internal//:stable_baselines3",
     ],
@@ -80,7 +74,7 @@ py_test(
     main = "train_cart_pole.py",
     deps = [
         ":cart_pole",
-        "//bindings/pydrake",
+        "//bindings/pydrake/geometry",
         "@gymnasium_py",
         "@stable_baselines3_internal//:stable_baselines3",
     ],
@@ -93,7 +87,7 @@ py_test(
     main = "play_cart_pole.py",
     deps = [
         ":cart_pole",
-        "//bindings/pydrake",
+        "//bindings/pydrake/geometry",
         "@gymnasium_py",
         "@stable_baselines3_internal//:stable_baselines3",
     ],

@@ -2,7 +2,6 @@
 Play a policy for //bindings/pydrake/examples/gym:cart_pole.
 '''
 import argparse
-import time
 import sys
 
 import gymnasium as gym

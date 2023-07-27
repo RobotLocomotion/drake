@@ -1,6 +1,8 @@
-from pydrake.all import JointActuatorIndex, JointIndex, namedview
 from pydrake.common.containers import namedview
-from pydrake.multibody.tree import JointIndex
+from pydrake.multibody.tree import (
+    JointActuatorIndex,
+    JointIndex,
+    )
 
 
 def MakeNamedViewActuation(mbp, view_name):
