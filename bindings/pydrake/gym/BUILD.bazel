@@ -4,6 +4,10 @@ load(
     "drake_py_library",
     "drake_py_unittest",
 )
+load(
+    "@drake_detected_os//:os.bzl",
+    "UBUNTU_RELEASE",
+)
 
 package(default_visibility = [
     "//bindings/pydrake:__subpackages__",
@@ -39,6 +43,7 @@ drake_py_library(
 # to prevent this from being a circular dependency.
 drake_py_unittest(
     name = "drake_gym_test",
+    tags = ["manual"] if UBUNTU_RELEASE == "20.04" else [],
     deps = [
         ":gym",
         ":mock_torch_py",

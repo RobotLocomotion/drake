@@ -8,6 +8,8 @@ Drake Gym is an implementation of Farama's "Gymnsium" interface for reinforcemen
 learning which uses a Drake `Simulator` as a backend.  The Gym interface provided by [the python `gym` module](https://pypi.org/project/gymnasium/) simply
 models a time-stepped process with an action space, a reward function, and some form of state observation.
 
+This feature is not supported on Ubuntu 20.04 (codename "Focal").
+
 A note on dependencies
 ----------------------
 
