@@ -215,7 +215,7 @@ _attrs = {
     "init_submodules": attr.bool(),
     "verbose": attr.bool(),
     "patches": attr.label_list(
-        default = ["@drake//tools/workspace/snopt:snopt-openmp.patch"],
+        default = ["@drake//tools/workspace/snopt:patches/snopt-openmp.patch"],
     ),
     "patch_cmds": attr.string_list(),
     "patch_tool": attr.string(default = "patch"),
