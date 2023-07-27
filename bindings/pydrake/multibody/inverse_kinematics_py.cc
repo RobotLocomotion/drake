@@ -467,7 +467,61 @@ PYBIND11_MODULE(inverse_kinematics, m) {
             // Keep alive, reference: `self` keeps `plant` alive.
             py::keep_alive<1, 2>(),
             // Keep alive, reference: `self` keeps `plant_context` alive.
-            py::keep_alive<1, 4>(), cls_doc.ctor.doc_autodiff_no_upper_bound);
+            py::keep_alive<1, 4>(), cls_doc.ctor.doc_autodiff_no_upper_bound)
+        .def(py::init(
+                 [](const multibody::MultibodyPlant<double>* plant,
+                     double minimum_distance_lower,
+                     double minimum_distance_upper,
+                     systems::Context<double>* plant_context,
+                     std::function<py::tuple(double, bool)> penalty_function,
+                     double influence_distance) {
+                   auto penalty_fun = [penalty_function](double x,
+                                          double* penalty, double* dpenalty) {
+                     py::tuple penalty_tuple(2);
+                     penalty_tuple = penalty_function(x, dpenalty != nullptr);
+                     *penalty = penalty_tuple[0].cast<double>();
+                     if (dpenalty) {
+                       *dpenalty = penalty_tuple[1].cast<double>();
+                     }
+                   };
+                   return std::make_unique<MinimumDistanceConstraint>(plant,
+                       minimum_distance_lower, minimum_distance_upper,
+                       plant_context, penalty_fun, influence_distance);
+                 }),
+            py::arg("plant"), py::arg("minimum_distance_lower"),
+            py::arg("minimum_distance_upper"), py::arg("plant_context"),
+            py::arg("penalty_function"), py::arg("influence_distance"),
+            // Keep alive, reference: `self` keeps `plant` alive.
+            py::keep_alive<1, 2>(),
+            // Keep alive, reference: `self` keeps `plant_context` alive.
+            py::keep_alive<1, 5>(), cls_doc.ctor.doc_double_with_upper_bound)
+        .def(py::init(
+                 [](const multibody::MultibodyPlant<AutoDiffXd>* plant,
+                     double minimum_distance_lower,
+                     double minimum_distance_upper,
+                     systems::Context<AutoDiffXd>* plant_context,
+                     std::function<py::tuple(double, bool)> penalty_function,
+                     double influence_distance) {
+                   auto penalty_fun = [penalty_function](double x,
+                                          double* penalty, double* dpenalty) {
+                     py::tuple penalty_tuple(2);
+                     penalty_tuple = penalty_function(x, dpenalty != nullptr);
+                     *penalty = penalty_tuple[0].cast<double>();
+                     if (dpenalty) {
+                       *dpenalty = penalty_tuple[1].cast<double>();
+                     }
+                   };
+                   return std::make_unique<MinimumDistanceConstraint>(plant,
+                       minimum_distance_lower, minimum_distance_upper,
+                       plant_context, penalty_fun, influence_distance);
+                 }),
+            py::arg("plant"), py::arg("minimum_distance_lower"),
+            py::arg("minimum_distance_upper"), py::arg("plant_context"),
+            py::arg("penalty_function"), py::arg("influence_distance"),
+            // Keep alive, reference: `self` keeps `plant` alive.
+            py::keep_alive<1, 2>(),
+            // Keep alive, reference: `self` keeps `plant_context` alive.
+            py::keep_alive<1, 5>(), cls_doc.ctor.doc_autodiff_with_upper_bound);
   }
 
   {
