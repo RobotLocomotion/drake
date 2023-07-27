@@ -59,6 +59,18 @@ class AffineSubspace final : public ConvexSet {
     a->Visit(MakeNameValue("translation", &translation_));
   }
 
+  /** Returns true if this AffineSubspace is contained in other. This is
+   * computed by checking if translation is in other, and then checking if each
+   * basis vector is in the span of the basis of other. The latter step requires
+   * finding a least-squares solution, so a nonzero tolerance is necessary. (You
+   * may have to adjust the default tolerance depending on the dimension of your
+   * space and the scale of your basis vectors.) */
+  bool ContainedIn(const AffineSubspace& other, double tol = 1e-15) const;
+
+  /** Returns true if the two AffineSubspaces describe the same set, by checking
+   * that each set is contained in the other. */
+  bool IsNearlyEqualTo(const AffineSubspace& other, double tol = 1e-15) const;
+
  private:
   std::unique_ptr<ConvexSet> DoClone() const final;
 

@@ -24,6 +24,8 @@ GTEST_TEST(AffineSubspaceTest, DefaultCtor) {
   EXPECT_TRUE(dut.PointInSet(dut.MaybeGetFeasiblePoint().value()));
   EXPECT_TRUE(dut.PointInSet(Eigen::VectorXd::Zero(0)));
   EXPECT_TRUE(dut.IntersectsWith(dut));
+  EXPECT_TRUE(dut.ContainedIn(AffineSubspace()));
+  EXPECT_TRUE(dut.IsNearlyEqualTo(AffineSubspace()));
 }
 
 GTEST_TEST(AffineSubspaceTest, Point) {
@@ -277,6 +279,156 @@ GTEST_TEST(AffineSubspaceTest, PointInSetConstraints) {
   EXPECT_TRUE(as.PointInSet(x_val, kTol));
   EXPECT_TRUE(
       CompareMatrices(x_val, as.basis() * new_vars_val + translation, kTol));
+}
+
+GTEST_TEST(AffineSubspaceTest, ContainmentTest) {
+  Eigen::Matrix<double, 3, 1> basis1;
+  // clang-format off
+  basis1 << 1,
+            1,
+            0;
+  // clang-format on
+  Eigen::VectorXd translation1(3);
+  translation1 << 0, 0, 1;
+  const AffineSubspace as1(basis1, translation1);
+
+  Eigen::Matrix<double, 3, 2> basis2;
+  // clang-format off
+  basis2 << 1, 0,
+            0, 1,
+            0, 0;
+  // clang-format on
+  Eigen::VectorXd translation2(3);
+  translation2 << 0, 0, 1;
+  const AffineSubspace as2(basis2, translation2);
+
+  EXPECT_TRUE(as1.ContainedIn(as2));
+  EXPECT_FALSE(as2.ContainedIn(as1));
+  EXPECT_FALSE(as1.IsNearlyEqualTo(as2));
+}
+
+GTEST_TEST(AffineSubspaceTest, CompareDifferentDimensions) {
+  // The containment, equality, and inequality methods must handle
+  // the case where the AffineSubspaces are of differing ambient
+  // dimension.
+  Eigen::Matrix<double, 2, 1> basis1;
+  // clang-format off
+  basis1 << 1,
+            0;
+  // clang-format on
+  Eigen::VectorXd translation1(2);
+  translation1 << 0, 1;
+  const AffineSubspace as1(basis1, translation1);
+
+  Eigen::Matrix<double, 3, 2> basis2;
+  // clang-format off
+  basis2 << 1, 0,
+            0, 1,
+            0, 0;
+  // clang-format on
+  Eigen::VectorXd translation2(3);
+  translation2 << 0, 0, 1;
+  const AffineSubspace as2(basis2, translation2);
+
+  EXPECT_FALSE(as1.ContainedIn(as2));
+  EXPECT_FALSE(as2.ContainedIn(as1));
+  EXPECT_FALSE(as1.IsNearlyEqualTo(as2));
+}
+
+GTEST_TEST(AffineSubspaceTest, EqualityTest) {
+  // An affine subspace is invariant under change of basis, and any choice of
+  // point in the affine subspace can be used as the translation. This test
+  // verifies that these properties hold.
+  Eigen::Matrix<double, 3, 2> basis1;
+  // clang-format off
+  basis1 << 1, 0,
+            0, 1,
+            0, 0;
+  // clang- format on
+  Eigen::VectorXd translation1(3);
+  translation1 << 0, 0, 1;
+
+  Eigen::Matrix<double, 3, 2> basis2;
+  // clang-format off
+  basis2 << 1, 1,
+            1, -1,
+            0, 0;
+  // clang-format on
+  Eigen::VectorXd translation2(3);
+  translation2 << 1, 1, 1;
+
+  const AffineSubspace as1(basis1, translation1);
+  const AffineSubspace as2(basis1, translation1);
+  const AffineSubspace as3(basis1, translation2);
+  const AffineSubspace as4(basis2, translation1);
+  const AffineSubspace as5(basis2, translation2);
+
+  const double kTol = 1e-15;
+
+  EXPECT_TRUE(as1.IsNearlyEqualTo(as2, kTol));
+  EXPECT_TRUE(as2.IsNearlyEqualTo(as3, kTol));
+  EXPECT_TRUE(as3.IsNearlyEqualTo(as4, kTol));
+  EXPECT_TRUE(as4.IsNearlyEqualTo(as5, kTol));
+}
+
+GTEST_TEST(AffineSubspaceTest, EqualityTest2) {
+  // This test checks to make sure that IsNearlyEqualTo still works when the
+  // translations are clearly different, and the AffineSubspaces aren't
+  // axis-aligned. This subspace is the plane passing through the points
+  // (1, 0, 0); (0, 1, 0); and (0, 0, 1). We give two different bases and two
+  // different translations -- note that the basis vectors are always orthogonal
+  // to the vector (1, 1, 1).
+  Eigen::Matrix<double, 3, 2> basis1;
+  // clang-format off
+  basis1 << -1,  0.5,
+            0.5, -1,
+            0.5, 0.5;
+  // clang- format on
+  Eigen::Matrix<double, 3, 2> basis2;
+  // clang-format off
+  basis2 << 1,  0,
+            -1, 1,
+            0, -1;
+  // clang- format on
+  Eigen::VectorXd translation1(3);
+  translation1 << 0, 0, 1;
+  Eigen::VectorXd translation2(3);
+  translation2 << 0, 1, 0;
+
+  const AffineSubspace as1(basis1, translation1);
+  const AffineSubspace as2(basis1, translation2);
+  const AffineSubspace as3(basis2, translation1);
+  const AffineSubspace as4(basis2, translation2);
+
+  const double kTol = 1e-15;
+
+  EXPECT_TRUE(as1.IsNearlyEqualTo(as2, kTol));
+  EXPECT_TRUE(as2.IsNearlyEqualTo(as3, kTol));
+  EXPECT_TRUE(as3.IsNearlyEqualTo(as4, kTol));
+}
+
+GTEST_TEST(AffineSubspaceTest, DeliberatelyLooseTolerance) {
+  // Verify that we can set the tolerance very high, and make it look like two
+  // affine subspaces are equivalent (when they aren't).
+  Eigen::Matrix<double, 2, 1> basis1;
+  basis1 << 1, 0;
+  Eigen::Matrix<double, 2, 1> basis2;
+  basis2 << 0, 1;
+  Eigen::VectorXd translation(2);
+  translation << 0, 0;
+
+  const AffineSubspace as1(basis1, translation);
+  const AffineSubspace as2(basis2, translation);
+
+  const double almost_too_high_tol = 1. - 1e-12;
+  const double too_high_tol = 1. + 1e-12;
+
+  EXPECT_FALSE(as1.ContainedIn(as2, almost_too_high_tol));
+  EXPECT_TRUE(as1.ContainedIn(as2, too_high_tol));
+  EXPECT_FALSE(as2.ContainedIn(as1, almost_too_high_tol));
+  EXPECT_TRUE(as2.ContainedIn(as1, too_high_tol));
+  EXPECT_FALSE(as1.IsNearlyEqualTo(as2, almost_too_high_tol));
+  EXPECT_TRUE(as1.IsNearlyEqualTo(as2, too_high_tol));
 }
 
 }  // namespace optimization
