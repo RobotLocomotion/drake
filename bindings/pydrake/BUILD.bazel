@@ -272,6 +272,7 @@ PY_LIBRARIES_WITH_INSTALL = [
     "//bindings/pydrake/examples",
     "//bindings/pydrake/examples/multibody",
     "//bindings/pydrake/geometry",
+    "//bindings/pydrake/gym",
     "//bindings/pydrake/manipulation",
     "//bindings/pydrake/multibody",
     "//bindings/pydrake/planning",
