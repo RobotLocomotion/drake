@@ -1,16 +1,20 @@
-'''
+"""
 Drake Gym
 =========
 
 THIS FEATURE IS EXPERIMENTAL.  Development is ongoing and no guarantees
 against deprecation are provided for any file under this directory.
 
-Drake Gym is an implementation of Farama's "Gymnsium" interface for
+Drake Gym is an implementation of Farama's "Gymnasium" interface for
 reinforcement learning which uses a Drake `Simulator` as a
 backend.  The Gym interface provided
 by [the python `gym` module](https://pypi.org/project/gymnasium/)
 simply models a time-stepped process with an action space,
 a reward function, and some form of state observation.
+
+Note that pydrake.gym is an optional component of pydrake, and will only work
+when the gymnasium package is also installed. As such, the DrakeGymEnv and
+related code is not available for import as part of `pydrake.all`.
 
 A note on dependencies
 ----------------------
@@ -31,6 +35,6 @@ you should install Stable Baselines 3 (for instance,
 training examples will not run without it, and drake does not come with it
 (Drake does include a subset of `stable_baselines3` for testing purposes, but
 not enough to perform training).
-'''
+"""
 
 from .drake_gym import *

@@ -580,6 +580,7 @@ PYI_FILES = [
     "pydrake/examples/multibody/run_planar_scenegraph_visualizer.pyi",
     "pydrake/forwarddiff.pyi",
     "pydrake/geometry/__init__.pyi",
+    "pydrake/gym/__init__.pyi",
     "pydrake/lcm.pyi",
     "pydrake/manipulation/__init__.pyi",
     "pydrake/math.pyi",
