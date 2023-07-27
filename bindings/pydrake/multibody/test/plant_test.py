@@ -97,6 +97,7 @@ from pydrake.common import FindResourceOrThrow
 from pydrake.common.deprecation import install_numpy_warning_filters
 from pydrake.common.eigen_geometry import Quaternion_
 from pydrake.common.test_utilities import numpy_compare
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.test_utilities.pickle_compare import assert_pickle
 from pydrake.common.value import AbstractValue, Value
 from pydrake.geometry import (
@@ -734,8 +735,12 @@ class TestPlant(unittest.TestCase):
         self.assertIsInstance(UnitInertia.SolidCapsule(r=1, L=2,
                                                        unit_vector=[0, 0, 1]),
                               UnitInertia)
-        self.assertIsInstance(UnitInertia.SolidCylinderAboutEnd(r=1, L=2),
+        self.assertIsInstance(UnitInertia.SolidCylinderAboutEnd(
+            radius=0.1, length=0.4, unit_vector=[0, 0, 1]),
                               UnitInertia)
+        with catch_drake_warnings(expected_count=1):
+            self.assertIsInstance(UnitInertia.SolidCylinderAboutEnd(r=1, L=4),
+                                  UnitInertia)
         self.assertIsInstance(
             UnitInertia.AxiallySymmetric(J=1, K=2, b_E=[1, 2, 3]), UnitInertia)
         self.assertIsInstance(UnitInertia.StraightLine(K=1.5, b_E=[1, 2, 3]),
@@ -773,6 +778,8 @@ class TestPlant(unittest.TestCase):
             mass=0.123, radius=0.1, length=0.4, unit_vector=[0, 0, 1])
         SpatialInertia.SolidCylinderWithDensityAboutEnd(
             density=1000, radius=0.1, length=0.4, unit_vector=[0, 0, 1])
+        SpatialInertia.SolidCylinderWithMassAboutEnd(
+            mass=0.123, radius=0.1, length=0.4, unit_vector=[0, 0, 1])
         SpatialInertia.ThinRodWithMass(
             mass=2, length=0.3, unit_vector=[0, 0, 1])
         SpatialInertia.ThinRodWithMassAboutEnd(
