@@ -6,14 +6,6 @@ import stable_baselines3.common.env_checker
 
 from pydrake.examples.gym.envs.cart_pole.cart_pole import CartpoleEnv
 
-# vec_env_available = False
-# try:
-# from stable_baselines3.common.env_util import make_vec_env
-# from stable_baselines3.common.vec_env import SubprocVecEnv
-#     vec_env_availabe = True
-# except ImportError:
-#     print("vec_env is not available, so not testing it.")
-
 
 class DrakeGymTest(unittest.TestCase):
     """
@@ -46,22 +38,9 @@ class DrakeGymTest(unittest.TestCase):
             warn=True,
             skip_render_check=True)
 
-    # def test_sb3_check_vector_env(self):
-    #     # if not vec_env_available:
-    #     #     return
-    #     # Check that we can construct a vector env.
-    #     vector_dut = make_vec_env(
-    #         CartpoleEnv,
-    #         n_envs=2,
-    #         seed=0,
-    #         vec_env_cls=SubprocVecEnv,
-    #         env_kwargs={
-    #             'observations': 'state',
-    #             'time_limit': 5,
-    #         })
-        # We should `check_env` here, but in our currently supported versions
-        # of `gymnasium` and `stable_baselines3`, stable baselines
-        # vector envs do not pass stable baselines' `check_env` tests.
+    # TODO(JoseBarreiros-TRI) Add tests for make_vec_env. In our currently
+    # supported versions of `gymnasium` and `stable_baselines3`, stable
+    # baselines vector envs do not pass stable baselines' `check_env` tests.
 
     def test_reset(self):
         # reset(int) sets a deterministic seed.
