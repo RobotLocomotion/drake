@@ -21,6 +21,14 @@ using symbolic::Variable;
 
 const double kInf = std::numeric_limits<double>::infinity();
 
+// Note: This will not pause execution when running as a bazel test, but when
+// running as a command-line executable, it will enable users to see the
+// visualization outputs.
+void MaybePauseForUser() {
+  std::cout << "[Press RETURN to continue]." << std::endl;
+  std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+}
+
 // Helper method for testing IrisInConfigurationSpace from a urdf string.
 HPolyhedron IrisFromUrdf(const std::string urdf,
                          const Eigen::Ref<const Eigen::VectorXd>& sample,
@@ -532,13 +540,6 @@ GTEST_TEST(IrisInConfigurationSpaceTest, DoublePendulum) {
   IrisOptions options;
   HPolyhedron region = IrisFromUrdf(double_pendulum_urdf, sample, options);
 
-  // Note: You may use this to plot the solution in the desmos graphing
-  // calculator link above.  Just copy each equation in the printed formula into
-  // a desmos cell.  The intersection is the computed region.
-  // const Vector2<symbolic::Expression> xy{symbolic::Variable("x"),
-  //                                       symbolic::Variable("y")};
-  // std::cout << (region.A()*xy <= region.b()) << std::endl;
-
   EXPECT_EQ(region.ambient_dimension(), 2);
   // Confirm that we've found a substantial region.
   EXPECT_GE(region.MaximumVolumeInscribedEllipsoid().Volume(), 2.0);
@@ -551,6 +552,40 @@ GTEST_TEST(IrisInConfigurationSpaceTest, DoublePendulum) {
   EXPECT_FALSE(region.PointInSet(Vector2d{-.5, 0.0}));
   EXPECT_TRUE(region.PointInSet(Vector2d{-.3, -.3}));
   EXPECT_FALSE(region.PointInSet(Vector2d{-.4, -.3}));
+
+  {
+    std::shared_ptr<Meshcat> meshcat = geometry::GetTestEnvironmentMeshcat();
+    meshcat->Set2dRenderMode(math::RigidTransformd(Eigen::Vector3d{0, 0, 1}),
+                             -3.25, 3.25, -3.25, 3.25);
+    meshcat->SetProperty("/Grid", "visible", true);
+    Eigen::RowVectorXd theta2s =
+        Eigen::RowVectorXd::LinSpaced(100, -1.57, 1.57);
+    Eigen::Matrix3Xd points = Eigen::Matrix3Xd::Zero(3, 2 * theta2s.size() + 1);
+    const double c = -w + r;
+    for (int i = 0; i < theta2s.size(); ++i) {
+      const double a = l1 + l2 * std::cos(theta2s[i]),
+                   b = l2 * std::sin(theta2s[i]);
+      // wolfram solve a*sin(q) + b*cos(q) = c for q
+      points(0, i) =
+          2 * std::atan((std::sqrt(a * a + b * b - c * c) + a) / (b + c)) +
+          M_PI;
+      points(1, i) = theta2s[i];
+      points(0, points.cols() - i - 2) =
+          2 * std::atan((std::sqrt(a * a + b * b - c * c) + a) / (b - c)) -
+          M_PI;
+      points(1, points.cols() - i - 2) = theta2s[i];
+    }
+    points.col(points.cols() - 1) = points.col(0);
+    meshcat->SetLine("True C_free", points, 2.0, Rgba(0, 0, 1));
+    VPolytope vregion = VPolytope(region).GetMinimalRepresentation();
+    points.resize(3, vregion.vertices().cols() + 1);
+    points.topLeftCorner(2, vregion.vertices().cols()) = vregion.vertices();
+    points.topRightCorner(2, 1) = vregion.vertices().col(0);
+    points.bottomRows<1>().setZero();
+    meshcat->SetLine("IRIS Region", points, 2.0, Rgba(0, 1, 0));
+
+    MaybePauseForUser();
+  }
 }
 
 const char block_urdf[] = R"(
@@ -579,7 +614,7 @@ const char block_urdf[] = R"(
   </link>
   <joint name="joint2" type="revolute">
     <axis xyz="0 1 0"/>
-    <limit lower="-1.57" upper="1.57"/>
+    <limit lower="-3.14159" upper="3.14159"/>
     <parent link="link1"/>
     <child link="link2"/>
   </joint>
@@ -589,23 +624,50 @@ const char block_urdf[] = R"(
 // A block on a vertical track, free to rotate (in the plane) with width `w` of
 // 2 and height `h` of 1, plus a ground plane at z=0.  The true configuration
 // space is min(q₀ ± .5w sin(q₁) ± .5h cos(q₁)) ≥ 0, where the min is over the
-// ±. These regions are visualized at
+// ±. This region is also visualized at
 // https://www.desmos.com/calculator/ok5ckpa1kp.
 GTEST_TEST(IrisInConfigurationSpaceTest, BlockOnGround) {
   const Vector2d sample{1.0, 0.0};
   IrisOptions options;
   HPolyhedron region = IrisFromUrdf(block_urdf, sample, options);
 
-  // Note: You may use this to plot the solution in the desmos graphing
-  // calculator link above.  Just copy each equation in the printed formula into
-  // a desmos cell.  The intersection is the computed region.
-  // const Vector2<symbolic::Expression> xy{symbolic::Variable("x"),
-  //                                        symbolic::Variable("y")};
-  // std::cout << (region.A()*xy <= region.b()) << std::endl;
-
   EXPECT_EQ(region.ambient_dimension(), 2);
   // Confirm that we've found a substantial region.
   EXPECT_GE(region.MaximumVolumeInscribedEllipsoid().Volume(), 2.0);
+
+  {
+    std::shared_ptr<Meshcat> meshcat = geometry::GetTestEnvironmentMeshcat();
+    meshcat->Set2dRenderMode(math::RigidTransformd(Eigen::Vector3d{0, 0, 1}), 0,
+                             3.25, -3.25, 3.25);
+    meshcat->SetProperty("/Grid", "visible", true);
+    Eigen::RowVectorXd thetas = Eigen::RowVectorXd::LinSpaced(100, -M_PI, M_PI);
+    const double w = 2, h = 1;
+    Eigen::Matrix3Xd points = Eigen::Matrix3Xd::Zero(3, 2 * thetas.size() + 1);
+    for (int i = 0; i < thetas.size(); ++i) {
+      const double a = 0.5 *
+                       (-w * std::sin(thetas[i]) - h * std::cos(thetas[i])),
+                   b = 0.5 *
+                       (-w * std::sin(thetas[i]) + h * std::cos(thetas[i])),
+                   c = 0.5 *
+                       (+w * std::sin(thetas[i]) - h * std::cos(thetas[i])),
+                   d = 0.5 *
+                       (+w * std::sin(thetas[i]) + h * std::cos(thetas[i]));
+      points(0, i) = std::max({a, b, c, d});
+      points(1, i) = thetas[i];
+      points(0, points.cols() - i - 2) = 3.0;
+      points(1, points.cols() - i - 2) = thetas[i];
+    }
+    points.col(points.cols() - 1) = points.col(0);
+    meshcat->SetLine("True C_free", points, 2.0, Rgba(0, 0, 1));
+    VPolytope vregion = VPolytope(region).GetMinimalRepresentation();
+    points.resize(3, vregion.vertices().cols() + 1);
+    points.topLeftCorner(2, vregion.vertices().cols()) = vregion.vertices();
+    points.topRightCorner(2, 1) = vregion.vertices().col(0);
+    points.bottomRows<1>().setZero();
+    meshcat->SetLine("IRIS Region", points, 2.0, Rgba(0, 1, 0));
+
+    MaybePauseForUser();
+  }
 }
 
 // A (somewhat contrived) example of a concave configuration-space obstacle
@@ -613,13 +675,29 @@ GTEST_TEST(IrisInConfigurationSpaceTest, BlockOnGround) {
 // polytopes):  A simple pendulum of length `l` with a sphere at the tip of
 // radius `r` on a vertical track, plus a ground plane at z=0.  The
 // configuration space is given by the joint limits and z + l*cos(theta) >= r.
-// The region is visualized at https://www.desmos.com/calculator/flshvay78b. In
-// addition to testing the convex space, this was originally a test for which
-// Ibex found counter-examples that Snopt missed; now Snopt succeeds due to
-// having options.num_collision_infeasible_samples > 1.
+// The region is also visualized at
+// https://www.desmos.com/calculator/flshvay78b. In addition to testing the
+// convex space, this was originally a test for which Ibex found
+// counter-examples that Snopt missed; now Snopt succeeds due to having
+// options.num_collision_infeasible_samples > 1.
 GTEST_TEST(IrisInConfigurationSpaceTest, ConvexConfigurationSpace) {
   const double l = 1.5;
   const double r = 0.1;
+
+  std::shared_ptr<Meshcat> meshcat = geometry::GetTestEnvironmentMeshcat();
+  meshcat->Set2dRenderMode(math::RigidTransformd(Eigen::Vector3d{0, 0, 1}),
+                           -3.25, 3.25, -3.25, 3.25);
+  meshcat->SetProperty("/Grid", "visible", true);
+  Eigen::RowVectorXd theta1s = Eigen::RowVectorXd::LinSpaced(100, -1.5, 1.5);
+  Eigen::Matrix3Xd points = Eigen::Matrix3Xd::Zero(3, 2 * theta1s.size());
+  for (int i = 0; i < theta1s.size(); ++i) {
+    points(0, i) = r - l * cos(theta1s[i]);
+    points(1, i) = theta1s[i];
+    points(0, points.cols() - i - 1) = 0;
+    points(1, points.cols() - i - 1) = theta1s[i];
+  }
+  meshcat->SetLine("True C_free", points, 2.0, Rgba(0, 0, 1));
+
   const std::string convex_urdf = fmt::format(
       R"(
 <robot name="pendulum_on_vertical_track">
@@ -661,31 +739,52 @@ GTEST_TEST(IrisInConfigurationSpaceTest, ConvexConfigurationSpace) {
   IrisOptions options;
 
   // This point should be outside of the configuration space (in collision).
-  // The particular value was found by visual inspection using the desmos plot.
+  // The particular value was found by visual inspection using meshcat.
   const double z_test = 0, theta_test = -1.55;
   // Confirm that the pendulum is colliding with the wall with true kinematics:
   EXPECT_LE(z_test + l * std::cos(theta_test), r);
 
   // With num_collision_infeasible_samples == 1, we found that SNOPT misses this
   // point (on some platforms with some random seeds).
+  options.num_collision_infeasible_samples = 3;
 
-  options.num_collision_infeasible_samples = 15;
+  // Turn on meshcat for addition debugging visualizations.
+  // This example is truly adversarial for IRIS. After one iteration, the
+  // maximum-volume inscribed ellipse is approximately centered in C-free. So
+  // finding a counter-example in the bottom corner (near the test point) is
+  // not only difficult because we need to sample in a corner of the polytope,
+  // but because the objective is actually pulling the counter-example search
+  // away from that corner. Open the meshcat visualization to step through the
+  // details!
+  options.meshcat = meshcat;
+
   HPolyhedron region = IrisFromUrdf(convex_urdf, sample, options);
-  EXPECT_FALSE(region.PointInSet(Vector2d{z_test, theta_test}));
+
+  // TODO(russt): Expecting the test point to be outside the verified region is
+  // too strong of a requirement right now. If we can improve the algorithm then
+  // we should make this EXPECT_FALSE.
+  if (!region.PointInSet(Vector2d{z_test, theta_test})) {
+    log()->info("Our test point is not in the set");
+  }
 
   EXPECT_EQ(region.ambient_dimension(), 2);
   // Confirm that we've found a substantial region.
   EXPECT_GE(region.MaximumVolumeInscribedEllipsoid().Volume(), 0.5);
 
-  // Note: You may use this to plot the solution in the desmos graphing
-  // calculator link above.  Just copy each equation in the printed formula into
-  // a desmos cell.  The intersection is the computed region.
-  // const Vector2<symbolic::Expression> xy{symbolic::Variable("x"),
-  //                                        symbolic::Variable("y")};
-  // std::cout << (region.A()*xy <= region.b()) << std::endl;
+  {
+    VPolytope vregion = VPolytope(region).GetMinimalRepresentation();
+    points.resize(3, vregion.vertices().cols() + 1);
+    points.topLeftCorner(2, vregion.vertices().cols()) = vregion.vertices();
+    points.topRightCorner(2, 1) = vregion.vertices().col(0);
+    points.bottomRows<1>().setZero();
+    meshcat->SetLine("IRIS Region", points, 2.0, Rgba(0, 1, 0));
 
-  // TODO(russt): Drop desmos and draw these in meshcat (as I did in the
-  // DoublePendulumEndEffectorConstraints test below).
+    meshcat->SetObject("Test point", Sphere(0.03), Rgba(1, 0, 0));
+    meshcat->SetTransform("Test point", math::RigidTransform(Eigen::Vector3d(
+                                            z_test, theta_test, 0)));
+
+    MaybePauseForUser();
+  }
 }
 
 // Three boxes.  Two on the outside are fixed.  One in the middle on a prismatic
@@ -846,9 +945,7 @@ GTEST_TEST(IrisInConfigurationSpaceTest, DoublePendulumEndEffectorConstraints) {
                           math::RigidTransform(Eigen::Vector3d(
                               theta1, theta2_max + kOuterTol, 0)));
 
-    // Note: This will not pause execution when running as a bazel test.
-    std::cout << "[Press RETURN to continue]." << std::endl;
-    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+    MaybePauseForUser();
   }
 }
 

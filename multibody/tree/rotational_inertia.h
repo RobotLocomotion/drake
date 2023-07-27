@@ -505,9 +505,9 @@ class RotationalInertia {
     static_assert(is_lower_triangular_order(1, 1), "Invalid indices");
     static_assert(is_lower_triangular_order(2, 1), "Invalid indices");
     static_assert(is_lower_triangular_order(2, 2), "Invalid indices");
-    return I_SP_E_(0, 0) == T(0) &&
-    I_SP_E_(1, 0) == T(0) && I_SP_E_(1, 1) == T(0) &&
-    I_SP_E_(2, 0) == T(0) && I_SP_E_(2, 1) == T(0) && I_SP_E_(2, 2) == T(0);
+    return I_SP_E_(0, 0) == 0.0 &&
+    I_SP_E_(1, 0) == 0.0 && I_SP_E_(1, 1) == 0.0 &&
+    I_SP_E_(2, 0) == 0.0 && I_SP_E_(2, 1) == 0.0 && I_SP_E_(2, 2) == 0.0;
   }
 
   /// Returns a new %RotationalInertia object templated on `Scalar` initialized

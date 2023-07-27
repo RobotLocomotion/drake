@@ -260,15 +260,15 @@ Matrix3<T> RotationMatrix<T>::QuaternionToRotationMatrix(
   const T szz = sz * z;
 
   Matrix3<T> m;
-  m.coeffRef(0, 0) = T(1) - syy - szz;
+  m.coeffRef(0, 0) = 1.0 - syy - szz;
   m.coeffRef(0, 1) = sxy - swz;
   m.coeffRef(0, 2) = sxz + swy;
   m.coeffRef(1, 0) = sxy + swz;
-  m.coeffRef(1, 1) = T(1) - sxx - szz;
+  m.coeffRef(1, 1) = 1.0 - sxx - szz;
   m.coeffRef(1, 2) = syz - swx;
   m.coeffRef(2, 0) = sxz - swy;
   m.coeffRef(2, 1) = syz + swx;
-  m.coeffRef(2, 2) = T(1) - sxx - syy;
+  m.coeffRef(2, 2) = 1.0 - sxx - syy;
 
   return m;
 }
@@ -452,7 +452,7 @@ Eigen::Quaternion<T> RotationMatrix<T>::ToQuaternion(
 
   // Since the quaternions q and -q correspond to the same rotation matrix,
   // choose to return a canonical quaternion, i.e., with q(0) >= 0.
-  const T canonical_factor = if_then_else(q.w() < 0, T(-1), T(1));
+  const T canonical_factor = if_then_else(q.w() < 0, -1.0, 1.0);
 
   // The quantity q calculated thus far in this algorithm is not a quaternion
   // with magnitude 1.  It differs from a quaternion in that all elements of
@@ -461,7 +461,7 @@ Eigen::Quaternion<T> RotationMatrix<T>::ToQuaternion(
   const T scale = canonical_factor / q.norm();
   q.coeffs() *= scale;
 
-  DRAKE_ASSERT_VOID(ThrowIfNotValid(QuaternionToRotationMatrix(q, T(2))));
+  DRAKE_ASSERT_VOID(ThrowIfNotValid(QuaternionToRotationMatrix(q, 2.0)));
   return q;
 }
 

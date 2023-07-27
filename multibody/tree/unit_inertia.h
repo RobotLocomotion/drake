@@ -8,6 +8,7 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/tree/rotational_inertia.h"
@@ -232,14 +233,14 @@ class UnitInertia : public RotationalInertia<T> {
   /// Computes the unit inertia for a unit-mass solid sphere of uniform density
   /// and radius `r` taken about its center.
   static UnitInertia<T> SolidSphere(const T& r) {
-    return UnitInertia<T>::TriaxiallySymmetric(T(0.4) * r * r);
+    return UnitInertia<T>::TriaxiallySymmetric(0.4 * r * r);
   }
 
   /// Computes the unit inertia for a unit-mass hollow sphere of radius `r`
   /// consisting of an infinitesimally thin shell of uniform density.
   /// The unit inertia is taken about the center of the sphere.
   static UnitInertia<T> HollowSphere(const T& r) {
-    return UnitInertia<T>::TriaxiallySymmetric(T(2)/T(3) * r * r);
+    return UnitInertia<T>::TriaxiallySymmetric(2.0/3.0 * r * r);
   }
 
   /// Computes the unit inertia for a unit-mass solid box of uniform density
@@ -291,8 +292,8 @@ class UnitInertia : public RotationalInertia<T> {
   /// @param[in] L length of the cylindrical part of the capsule.
   /// @param[in] unit_vector direction of the cylindrical part of the capsule.
   ///   It defaults to `Vector3<T>::UnitZ()`.
-  /// @throws std::exception if r or L is negative or if ‖unit_vector‖ ≉ 1,
-  ///   (the magnitude of unit_vector is not within 1E-14 of 1.0).
+  /// @throws std::exception if r or L is negative or if ‖unit_vector‖ is not
+  /// within 1.0E-14 of 1.0.
   static UnitInertia<T> SolidCapsule(const T& r, const T& L,
       const Vector3<T>& unit_vector = Vector3<T>::UnitZ());
 
@@ -302,7 +303,24 @@ class UnitInertia : public RotationalInertia<T> {
   /// @param[in] r The radius of the cylinder.
   /// @param[in] L The length of the cylinder.
   /// @throws std::exception if r or L is negative.
-  static UnitInertia<T> SolidCylinderAboutEnd(const T& r, const T& L);
+  DRAKE_DEPRECATED("2023-11-01",
+                   "SolidCylinderAboutEnd now requires the cylinder's axis "
+                   "direction to be explicitly given.")
+  static UnitInertia<T> SolidCylinderAboutEnd(const T& r, const T& L) {
+    return SolidCylinderAboutEnd(r, L, Vector3<T>::UnitZ());
+  }
+
+  /// Creates a unit inertia for a uniform-density solid cylinder B about an
+  /// end-point Bp of the cylinder's axis (see below for more about Bp).
+  /// @param[in] radius radius of cylinder (meters).
+  /// @param[in] length length of cylinder in unit_vector direction (meters).
+  /// @param[in] unit_vector unit vector parallel to the axis of the cylinder
+  /// and directed from Bp to Bcm (B's center of mass), expressed in B.
+  /// @note The position from Bp to Bcm is p_BpBcm = length / 2 * unit_vector.
+  /// @throws std::exception if radius or length is negative or if
+  /// ‖unit_vector‖ is not within 1.0E-14 of 1.0.
+  static UnitInertia<T> SolidCylinderAboutEnd(
+      const T& radius, const T& length, const Vector3<T>& unit_vector);
 
   /// Creates a unit inertia for a unit-mass uniform density solid tetrahedron B
   /// about a point A, from which position vectors to B's 4 vertices B0, B1, B2,

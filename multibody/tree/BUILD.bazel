@@ -546,6 +546,7 @@ drake_cc_googletest(
     name = "articulated_body_algorithm_test",
     deps = [
         ":tree",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 

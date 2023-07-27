@@ -14,8 +14,8 @@ def ros_xacro_internal_repository(
         sha256 = "8031a544dded557c9c32345a3fceff416f703b615f9082b2c3aefe1b7612ad90",  # noqa
         build_file = ":package.BUILD.bazel",
         patches = [
-            ":disable-console-print.patch",
-            ":disable-import-warning.patch",
+            ":patches/disable-console-print.patch",
+            ":patches/disable-import-warning.patch",
         ],
         mirrors = mirrors,
     )

@@ -1,0 +1,71 @@
+<?xml version="1.0"?>
+<sdf version="1.7">
+  <model name="shelves">
+    <link name="shelves_body">
+      <visual name="shelves_visual">
+        <pose> 0 0 0 0 0 3.14159</pose>
+        <geometry>
+          <mesh>
+            <uri>package://drake_models/manipulation_station/shelves.obj</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <collision name="right_wall">
+        <pose> 0 0.292 0 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.3 0.016 0.783</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="left_wall">
+        <pose> 0 -0.292 0 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.3 0.016 0.783</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="top">
+        <pose> 0 0 0.3995 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.3 0.6 0.016</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="shelf_lower">
+        <pose> 0 0 -0.13115 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.3 0.6 0.016</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="shelf_upper">
+        <pose> 0 0 0.13115 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.3 0.6 0.016</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="bottom">
+        <pose> 0 0 -0.3995 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.3 0.6 0.016</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="back">
+        <pose> -0.142 0 0 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.016 0.6 0.783</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model>
+</sdf>

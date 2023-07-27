@@ -18,18 +18,6 @@ namespace optimization {
 namespace {
 const double kInf = std::numeric_limits<double>::infinity();
 
-// Checks if a future has completed execution.
-// This function is taken from monte_carlo.cc. It will be used in the "thread
-// pool" implementation (which doesn't use the openMP).
-template <typename T>
-bool IsFutureReady(const std::future<T>& future) {
-  // future.wait_for() is the only method to check the status of a future
-  // without waiting for it to complete.
-  const std::future_status status =
-      future.wait_for(std::chrono::milliseconds(1));
-  return (status == std::future_status::ready);
-}
-
 // Solves an optimization problem. If the optimization problem has a cost, then
 // after we find the optimal solution for that cost (where the optimal solution
 // would be on the boundary of the feasible set), we back-off a little bit and
@@ -301,17 +289,15 @@ CspaceFreePolytope::FindSeparationCertificateGivenPolytope(
     }
   }
 
-  std::vector<std::optional<bool>> is_success(active_plane_indices.size(),
-                                              std::nullopt);
   std::vector<std::optional<SeparationCertificateResult>> ret(
       active_plane_indices.size(), std::nullopt);
 
   // This lambda function formulates and solves a small SOS program for each
   // pair of geometries.
-  auto solve_small_sos = [this, &d_minus_Cs, &C_redundant_indices,
-                          &s_lower_redundant_indices,
-                          &s_upper_redundant_indices, &active_plane_indices,
-                          &options, &is_success, &ret](int plane_count) {
+  auto solve_small_sos =
+      [this, &d_minus_Cs, &C_redundant_indices, &s_lower_redundant_indices,
+       &s_upper_redundant_indices, &active_plane_indices, &options,
+       &ret](int plane_count) -> std::pair<bool, int> {
     const int plane_index = active_plane_indices[plane_count];
     auto certificate_program = this->ConstructPlaneSearchProgram(
         this->plane_geometries_[plane_index], d_minus_Cs, C_redundant_indices,
@@ -325,102 +311,16 @@ CspaceFreePolytope::FindSeparationCertificateGivenPolytope(
           plane_index, separating_planes()[plane_index].a,
           separating_planes()[plane_index].b,
           separating_planes()[plane_index].decision_variables, result));
-      is_success[plane_count].emplace(true);
+      return std::make_pair(true, plane_count);
     } else {
       ret[plane_count].reset();
-      is_success[plane_count].emplace(false);
+      return std::make_pair(false, plane_count);
     }
-    return plane_count;
   };
 
-  const int num_threads =
-      options.num_threads > 0
-          ? options.num_threads
-          : static_cast<int>(std::thread::hardware_concurrency());
-  // We implement the "thread pool" idea here, by following
-  // MonteCarloSimulationParallel class. This implementation doesn't use openMP
-  // library.
-  std::list<std::future<int>> active_operations;
-  // Keep track of how many SOS have been dispatched already.
-  int sos_dispatched = 0;
-  // If any SOS is infeasible, then we don't dispatch any more SOS and report
-  // failure.
-  bool stop_dispatching = false;
-  while ((active_operations.size() > 0 ||
-          (sos_dispatched < static_cast<int>(active_plane_indices.size()) &&
-           !stop_dispatching))) {
-    // Check for completed operations.
-    for (auto operation = active_operations.begin();
-         operation != active_operations.end();) {
-      if (IsFutureReady(*operation)) {
-        // This call to future.get() is necessary to propagate any exception
-        // thrown during SOS setup/solve.
-        const int plane_count = operation->get();
-        if (options.verbose) {
-          drake::log()->debug("SOS {}/{} completed, is_success {}", plane_count,
-                              active_plane_indices.size(),
-                              is_success[plane_count].value());
-        }
-        if (!(is_success[plane_count].value()) &&
-            options.terminate_at_failure) {
-          stop_dispatching = true;
-        }
-        // Erase returned iterator to the next node in the list.
-        operation = active_operations.erase(operation);
-      } else {
-        // Advance to next node in the list.
-        ++operation;
-      }
-    }
-
-    // Dispatch new SOS.
-    while (static_cast<int>(active_operations.size()) < num_threads &&
-           sos_dispatched < static_cast<int>(active_plane_indices.size()) &&
-           !stop_dispatching) {
-      active_operations.emplace_back(std::async(
-          std::launch::async, std::move(solve_small_sos), sos_dispatched));
-      if (options.verbose) {
-        drake::log()->debug("SOS {}/{} dispatched", sos_dispatched,
-                            active_plane_indices.size());
-      }
-      ++sos_dispatched;
-    }
-
-    // Wait a bit before checking for completion.
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
-  }
-
-  if (std::all_of(is_success.begin(), is_success.end(),
-                  [](std::optional<bool> flag) {
-                    return flag.has_value() && flag.value();
-                  })) {
-    if (options.verbose) {
-      drake::log()->debug("Found Lagrangian multipliers and separating planes");
-    }
-  } else {
-    if (options.verbose) {
-      std::string bad_pairs;
-      const auto& inspector = scene_graph().model_inspector();
-      for (int plane_count = 0;
-           plane_count < static_cast<int>(active_plane_indices.size());
-           ++plane_count) {
-        const int plane_index = active_plane_indices[plane_count];
-        if (is_success[plane_count].has_value() &&
-            !(is_success[plane_count].value())) {
-          bad_pairs.append(fmt::format(
-              "({}, {})\n",
-              inspector.GetName(separating_planes()[plane_index]
-                                    .positive_side_geometry->id()),
-              inspector.GetName(separating_planes()[plane_index]
-                                    .negative_side_geometry->id())));
-        }
-      }
-
-      drake::log()->warn(
-          "Cannot find Lagrangian multipliers and separating planes for \n{}",
-          bad_pairs);
-    }
-  }
+  this->SolveCertificationForEachPlaneInParallel(
+      active_plane_indices, solve_small_sos, options.num_threads,
+      options.verbose, options.terminate_at_failure);
   return ret;
 }
 

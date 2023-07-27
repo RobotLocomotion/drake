@@ -259,20 +259,21 @@ class SpatialInertia {
   /// and is perpendicular to unit_vector.
   /// @throws std::exception if mass, radius, or length is not positive and
   /// finite or if ‖unit_vector‖ is not within 1.0E-14 of 1.0.
-  //  TODO(Mitiguy) Create SolidCylinderWithMassAboutEnd().
+  /// @see SolidCylinderWithMassAboutEnd() to calculate M_BBp_B, B's spatial
+  /// inertia about Bp (at the center of one of the cylinder's circular ends).
   static SpatialInertia<T> SolidCylinderWithMass(
       const T& mass, const T& radius, const T& length,
       const Vector3<T>& unit_vector);
 
   /// Creates a spatial inertia for a uniform-density solid cylinder B about an
-  /// end-point Bp (Bp is at the center of one of the cylinder's circular ends).
+  /// end-point Bp of the cylinder's axis (see below for more about Bp).
   /// @param[in] density mass per volume (kg/m³).
   /// @param[in] radius radius of cylinder (meters).
   /// @param[in] length length of cylinder in unit_vector direction (meters).
-  /// @param[in] unit_vector unit vector defining the axial direction of the
-  /// cylinder, expressed in B.
+  /// @param[in] unit_vector unit vector parallel to the axis of the cylinder
+  /// and directed from Bp to Bcm (B's center of mass), expressed in B.
   /// @retval M_BBp_B B's spatial inertia about Bp, expressed in B.
-  /// @note The position from Bp to Bcm is length / 2 * unit_vector.
+  /// @note The position from Bp to Bcm is p_BpBcm = length / 2 * unit_vector.
   /// @note B's rotational inertia about Bp is axially symmetric, meaning B has
   /// an equal moment of inertia about any line that both passes through Bp
   /// and is perpendicular to unit_vector.
@@ -282,6 +283,26 @@ class SpatialInertia {
   /// inertia about Bcm (B's center of mass).
   static SpatialInertia<T> SolidCylinderWithDensityAboutEnd(
       const T& density, const T& radius, const T& length,
+      const Vector3<T>& unit_vector);
+
+  /// Creates a spatial inertia for a uniform-density solid cylinder B about an
+  /// end-point Bp of the cylinder's axis (see below for more about Bp).
+  /// @param[in] mass mass of the solid cylinder (kg).
+  /// @param[in] radius radius of cylinder (meters).
+  /// @param[in] length length of cylinder in unit_vector direction (meters).
+  /// @param[in] unit_vector unit vector parallel to the axis of the cylinder
+  /// and directed from Bp to Bcm (B's center of mass), expressed in B.
+  /// @retval M_BBp_B B's spatial inertia about Bp, expressed in B.
+  /// @note The position from Bp to Bcm is p_BpBcm = length / 2 * unit_vector.
+  /// @note B's rotational inertia about Bp is axially symmetric, meaning B has
+  /// an equal moment of inertia about any line that both passes through Bp
+  /// and is perpendicular to unit_vector.
+  /// @throws std::exception if density, radius, or length is not positive and
+  /// finite or if ‖unit_vector‖ is not within 1.0E-14 of 1.0.
+  /// @see SolidCylinderWithMass() to calculate M_BBcm_B, B's spatial inertia
+  /// about Bcm (B's center of mass).
+  static SpatialInertia<T> SolidCylinderWithMassAboutEnd(
+      const T& mass, const T& radius, const T& length,
       const Vector3<T>& unit_vector);
 
   /// Creates a spatial inertia for a uniform-density thin rod B about its
@@ -875,12 +896,6 @@ class SpatialInertia {
   // Gyy = 1/5 (a² + c²)                     | Gyy = 1/3 (a² + c²)
   // Gzz = 1/5 (a² + b²)                     | Gzz = 1/3 (a² + b²)
   // shape_factor = 1/5                      | shape_factor = 1/3
-  //-----------------------------------------|----------------------------------
-  // Hollow ellipsoid with semi-axes a, b, c | Hollow box with ½ lengths a, b, c
-  // Gxx = 1/3 m (b² + c²)                   | Gxx = ?/? (b² + c²)
-  // Gyy = 1/3 m (a² + c²)                   | Gyy = ?/? (a² + c²)
-  // Gzz = 1/3 m (a² + b²)                   | Gzz = ?/? (a² + b²)
-  // shape_factor = 1/3                      | shape_factor = ?/? (TBD Mitiguy)
   //-----------------------------------------|----------------------------------
   // Ellipsoid with semi-axes a, b, c        | Box with ½ lengths a, b, c
   // Mass concentrated in 6 particles on     | Mass concentrated in 8 particles

@@ -492,6 +492,8 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
   const int n = static_cast<int>(pairs.size());
   auto same_point_constraint =
       std::make_shared<internal::SamePointConstraint>(&plant, context);
+  std::map<std::pair<GeometryId, GeometryId>, std::vector<VectorXd>>
+      counter_examples;
 
   // As a surrogate for the true objective, the pairs are sorted by the distance
   // between each collision pair from the seed point configuration. This could
@@ -598,6 +600,10 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
 
   VectorXd guess = seed;
 
+  // For debugging visualization.
+  Vector3d point_to_draw = Vector3d::Zero();
+  int num_points_drawn = 0;
+
   while (true) {
     log()->info("IrisInConfigurationSpace iteration {}", iteration);
     int num_constraints = num_initial_constraints;
@@ -644,17 +650,58 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
 
     // Use the fast nonlinear optimizer until it fails
     // num_collision_infeasible_samples consecutive times.
-    for (const auto& pair : sorted_pairs) {
+    for (const auto& pair_w_distance : sorted_pairs) {
+      std::pair<GeometryId, GeometryId> geom_pair(pair_w_distance.geomA,
+                                                  pair_w_distance.geomB);
       int consecutive_failures = 0;
       internal::ClosestCollisionProgram prog(
-          same_point_constraint, *frames.at(pair.geomA), *frames.at(pair.geomB),
-          *sets.at(pair.geomA), *sets.at(pair.geomB), E,
-          A.topRows(num_constraints), b.head(num_constraints));
+          same_point_constraint, *frames.at(pair_w_distance.geomA),
+          *frames.at(pair_w_distance.geomB), *sets.at(pair_w_distance.geomA),
+          *sets.at(pair_w_distance.geomB), E, A.topRows(num_constraints),
+          b.head(num_constraints));
+      std::vector<VectorXd> prev_counter_examples =
+          std::move(counter_examples[geom_pair]);
+      // Sort by the current ellipsoid metric.
+      std::sort(prev_counter_examples.begin(), prev_counter_examples.end(),
+                [&E](const VectorXd& x, const VectorXd& y) {
+                  return (E.A() * x - E.center()).squaredNorm() <
+                         (E.A() * y - E.center()).squaredNorm();
+                });
+      std::vector<VectorXd> new_counter_examples;
       int counter_example_searches_for_this_pair = 0;
       bool warned_many_searches = false;
       while (consecutive_failures < options.num_collision_infeasible_samples) {
+        // First use previous counter-examples for this pair as the seeds.
+        if (counter_example_searches_for_this_pair <
+            ssize(prev_counter_examples)) {
+          guess = prev_counter_examples[counter_example_searches_for_this_pair];
+        } else {
+          MakeGuessFeasible(P_candidate, &guess);
+          guess = P_candidate.UniformSample(&generator, guess);
+        }
+        ++counter_example_searches_for_this_pair;
+        if (options.meshcat && nq <= 3) {
+          ++num_points_drawn;
+          point_to_draw.head(nq) = guess;
+          std::string path = fmt::format("iteration{:02}/{:03}/guess",
+                                         iteration, num_points_drawn);
+          options.meshcat->SetObject(path, Sphere(0.01),
+                                     geometry::Rgba(0.1, 0.1, 0.1, 1.0));
+          options.meshcat->SetTransform(path,
+                                        RigidTransform<double>(point_to_draw));
+        }
         if (prog.Solve(*solver, guess, &closest)) {
+          if (options.meshcat && nq <= 3) {
+            point_to_draw.head(nq) = closest;
+            std::string path = fmt::format("iteration{:02}/{:03}/found",
+                                           iteration, num_points_drawn);
+            options.meshcat->SetObject(path, Sphere(0.01),
+                                       geometry::Rgba(0.8, 0.1, 0.8, 1.0));
+            options.meshcat->SetTransform(
+                path, RigidTransform<double>(point_to_draw));
+          }
           consecutive_failures = 0;
+          new_counter_examples.emplace_back(closest);
           AddTangentToPolytope(E, closest, options.configuration_space_margin,
                                &A, &b, &num_constraints);
           P_candidate =
@@ -668,25 +715,41 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
           prog.UpdatePolytope(A.topRows(num_constraints),
                               b.head(num_constraints));
         } else {
-          ++consecutive_failures;
+          if (options.meshcat && nq <= 3) {
+            point_to_draw.head(nq) = closest;
+            std::string path = fmt::format("iteration{:02}/{:03}/closest",
+                                           iteration, num_points_drawn);
+            options.meshcat->SetObject(path, Sphere(0.01),
+                                       geometry::Rgba(0.1, 0.8, 0.8, 1.0));
+            options.meshcat->SetTransform(
+                path, RigidTransform<double>(point_to_draw));
+          }
+          if (counter_example_searches_for_this_pair >
+              ssize(counter_examples[geom_pair])) {
+            // Only count the failures once we start the random guesses.
+            ++consecutive_failures;
+          }
         }
-        guess = P_candidate.UniformSample(&generator, guess);
         if (!warned_many_searches &&
-            counter_example_searches_for_this_pair >=
+            counter_example_searches_for_this_pair -
+                    ssize(counter_examples[geom_pair]) >=
                 10 * options.num_collision_infeasible_samples) {
           warned_many_searches = true;
           log()->info(
               " Checking {} against {} has already required {} counter-example "
               "searches; still searching...",
-              inspector.GetName(pair.geomA), inspector.GetName(pair.geomB),
+              inspector.GetName(pair_w_distance.geomA),
+              inspector.GetName(pair_w_distance.geomB),
               counter_example_searches_for_this_pair);
         }
       }
+      counter_examples[geom_pair] = std::move(new_counter_examples);
       if (warned_many_searches) {
         log()->info(
             " Finished checking {} against {} after {} counter-example "
             "searches.",
-            inspector.GetName(pair.geomA), inspector.GetName(pair.geomB),
+            inspector.GetName(pair_w_distance.geomA),
+            inspector.GetName(pair_w_distance.geomB),
             counter_example_searches_for_this_pair);
       }
       if (!seed_point_requirement) break;

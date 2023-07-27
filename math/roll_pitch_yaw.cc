@@ -210,14 +210,14 @@ Vector3<T> RollPitchYaw<T>::CalcRpyDDtFromAngularAccelInChild(
   if (DoesCosPitchAngleViolateGimbalLockTolerance(cp)) {
     ThrowPitchAngleViolatesGimbalLockTolerance(__func__, p);
   }
-  const T one_over_cp = T(1) / cp;
+  const T one_over_cp = 1.0 / cp;
   const T cr_over_cp = cr * one_over_cp;
   const T sr_over_cp = sr * one_over_cp;
   // clang-format off
   Matrix3<T> M;
-  M << T(1), sr_over_cp * sp, cr_over_cp * sp,
-       T(0),              cr,             -sr,
-       T(0), sr_over_cp,  cr_over_cp;
+  M << 1.0, sr_over_cp * sp, cr_over_cp * sp,
+       0.0,              cr,             -sr,
+       0.0, sr_over_cp,  cr_over_cp;
   // clang-format on
 
   // Remainder terms (terms not multiplying α).
@@ -274,9 +274,9 @@ Matrix3<T> RollPitchYaw<T>::CalcMatrixRelatingAngularVelocityInParentToRpyDt()
   const T sy = sin(y), cy = cos(y);
   Matrix3<T> M;
   // clang-format off
-  M << cp * cy,  -sy, T(0),
-       cp * sy,   cy, T(0),
-           -sp, T(0), T(1);
+  M << cp * cy,  -sy, 0.0,
+       cp * sy,   cy, 0.0,
+           -sp,  0.0, 1.0;
   // clang-format on
   return M;
 }
@@ -296,9 +296,9 @@ Matrix3<T> RollPitchYaw<T>::CalcDtMatrixRelatingAngularVelocityInParentToRpyDt(
   const T cp_yDt = cp * yDt;
   Matrix3<T> M;
   // clang-format off
-  M << -cy * sp_pDt - sy * cp_yDt,   -cy * yDt,    T(0),
-       -sy * sp_pDt + cy * cp_yDt,   -sy * yDt,    T(0),
-                        -cp * pDt,         T(0),   T(0);
+  M << -cy * sp_pDt - sy * cp_yDt,   -cy * yDt,    0.0,
+       -sy * sp_pDt + cy * cp_yDt,   -sy * yDt,    0.0,
+                        -cp * pDt,         0.0,    0.0;
   // clang-format on
   return M;
 }
@@ -314,9 +314,9 @@ Matrix3<T> RollPitchYaw<T>::CalcMatrixRelatingAngularVelocityInChildToRpyDt()
   const T sp = sin(p), cp = cos(p);
   Matrix3<T> M;
   // clang-format off
-    M << T(1),  T(0),      -sp,
-         T(0),    cr,  sr * cp,
-         T(0),   -sr,  cr * cp;
+    M << 1.0,   0.0,      -sp,
+         0.0,    cr,  sr * cp,
+         0.0,   -sr,  cr * cp;
   // clang-format on
   return M;
 }
@@ -334,15 +334,15 @@ Matrix3<T> RollPitchYaw<T>::CalcMatrixRelatingRpyDtToAngularVelocityInParent(
       DoesCosPitchAngleViolateGimbalLockTolerance(cp)) {
     ThrowPitchAngleViolatesGimbalLockTolerance(function_name, p);
   }
-  const T one_over_cp = T(1) / cp;
+  const T one_over_cp = 1.0 / cp;
   const T sy = sin(y), cy = cos(y);
   const T cy_over_cp = cy * one_over_cp;
   const T sy_over_cp = sy * one_over_cp;
   Matrix3<T> M;
   // clang-format off
-  M <<     cy_over_cp,       sy_over_cp,  T(0),
-                  -sy,               cy,  T(0),
-      cy_over_cp * sp,  sy_over_cp * sp,  T(1);
+  M <<     cy_over_cp,       sy_over_cp,  0.0,
+                  -sy,               cy,  0.0,
+      cy_over_cp * sp,  sy_over_cp * sp,  1.0;
   // clang-format on
   return M;
 }
@@ -359,15 +359,15 @@ Matrix3<T> RollPitchYaw<T>::CalcMatrixRelatingRpyDtToAngularVelocityInChild(
   if (DoesCosPitchAngleViolateGimbalLockTolerance(cp)) {
     ThrowPitchAngleViolatesGimbalLockTolerance(function_name, p);
   }
-  const T one_over_cp = T(1)/cp;
+  const T one_over_cp = 1.0 / cp;
   const T sr = sin(r), cr = cos(r);
   const T cr_over_cp = cr * one_over_cp;
   const T sr_over_cp = sr * one_over_cp;
   Matrix3<T> M;
   // clang-format off
-  M << T(1), sr_over_cp * sp,  cr_over_cp * sp,
-       T(0),              cr,              -sr,
-       T(0),      sr_over_cp,       cr_over_cp;
+  M << 1.0, sr_over_cp * sp,  cr_over_cp * sp,
+       0.0,              cr,              -sr,
+       0.0,      sr_over_cp,       cr_over_cp;
   // clang-format on
   return M;
 }

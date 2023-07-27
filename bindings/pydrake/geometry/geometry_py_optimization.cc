@@ -9,6 +9,7 @@
 #include "drake/bindings/pydrake/geometry/geometry_py.h"
 #include "drake/bindings/pydrake/geometry/optimization_pybind.h"
 #include "drake/common/yaml/yaml_io.h"
+#include "drake/geometry/optimization/affine_subspace.h"
 #include "drake/geometry/optimization/cartesian_product.h"
 #include "drake/geometry/optimization/graph_of_convex_sets.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
@@ -79,6 +80,22 @@ void DefineGeometryOptimization(py::module m) {
             cls_doc.AddPointInNonnegativeScalingConstraints.doc_7args)
         .def("ToShapeWithPose", &ConvexSet::ToShapeWithPose,
             cls_doc.ToShapeWithPose.doc);
+  }
+
+  // AffineSubspace
+  {
+    const auto& cls_doc = doc.AffineSubspace;
+    py::class_<AffineSubspace, ConvexSet> cls(m, "AffineSubspace", cls_doc.doc);
+    cls  // BR
+        .def(py::init<>(), cls_doc.ctor.doc_0args)
+        .def(py::init<const Eigen::Ref<const Eigen::MatrixXd>&,
+                 const Eigen::Ref<const Eigen::VectorXd>&>(),
+            py::arg("basis"), py::arg("translation"), cls_doc.ctor.doc_2args)
+        .def("basis", &AffineSubspace::basis, py_rvp::reference_internal,
+            cls_doc.basis.doc)
+        .def("translation", &AffineSubspace::translation,
+            py_rvp::reference_internal, cls_doc.translation.doc);
+    DefClone(&cls);
   }
 
   // CartesianProduct
@@ -622,33 +639,19 @@ void DefineGeometryOptimization(py::module m) {
             py::arg("name") = "", py_rvp::reference_internal,
             cls_doc.AddVertex.doc)
         .def("AddEdge",
-            py::overload_cast<GraphOfConvexSets::VertexId,
-                GraphOfConvexSets::VertexId, std::string>(
-                &GraphOfConvexSets::AddEdge),
-            py::arg("u_id"), py::arg("v_id"), py::arg("name") = "",
-            py_rvp::reference_internal, cls_doc.AddEdge.doc_by_id)
-        .def("AddEdge",
-            py::overload_cast<const GraphOfConvexSets::Vertex&,
-                const GraphOfConvexSets::Vertex&, std::string>(
+            py::overload_cast<GraphOfConvexSets::Vertex*,
+                GraphOfConvexSets::Vertex*, std::string>(
                 &GraphOfConvexSets::AddEdge),
             py::arg("u"), py::arg("v"), py::arg("name") = "",
-            py_rvp::reference_internal, cls_doc.AddEdge.doc_by_reference)
+            py_rvp::reference_internal, cls_doc.AddEdge.doc)
         .def("RemoveVertex",
-            py::overload_cast<GraphOfConvexSets::VertexId>(
+            py::overload_cast<GraphOfConvexSets::Vertex*>(
                 &GraphOfConvexSets::RemoveVertex),
-            py::arg("vertex_id"), cls_doc.RemoveVertex.doc_by_id)
-        .def("RemoveVertex",
-            py::overload_cast<const GraphOfConvexSets::Vertex&>(
-                &GraphOfConvexSets::RemoveVertex),
-            py::arg("vertex"), cls_doc.RemoveVertex.doc_by_reference)
+            py::arg("vertex"), cls_doc.RemoveVertex.doc)
         .def("RemoveEdge",
-            py::overload_cast<GraphOfConvexSets::EdgeId>(
+            py::overload_cast<GraphOfConvexSets::Edge*>(
                 &GraphOfConvexSets::RemoveEdge),
-            py::arg("edge_id"), cls_doc.RemoveEdge.doc_by_id)
-        .def("RemoveEdge",
-            py::overload_cast<const GraphOfConvexSets::Edge&>(
-                &GraphOfConvexSets::RemoveEdge),
-            py::arg("edge"), cls_doc.RemoveEdge.doc_by_reference)
+            py::arg("edge"), cls_doc.RemoveEdge.doc)
         .def("Vertices",
             overload_cast_explicit<std::vector<GraphOfConvexSets::Vertex*>>(
                 &GraphOfConvexSets::Vertices),
@@ -666,21 +669,13 @@ void DefineGeometryOptimization(py::module m) {
             cls_doc.GetGraphvizString.doc)
         .def("SolveShortestPath",
             overload_cast_explicit<solvers::MathematicalProgramResult,
-                GraphOfConvexSets::VertexId, GraphOfConvexSets::VertexId,
-                const GraphOfConvexSetsOptions&>(
-                &GraphOfConvexSets::SolveShortestPath),
-            py::arg("source_id"), py::arg("target_id"),
-            py::arg("options") = GraphOfConvexSetsOptions(),
-            cls_doc.SolveShortestPath.doc_by_id)
-        .def("SolveShortestPath",
-            overload_cast_explicit<solvers::MathematicalProgramResult,
                 const GraphOfConvexSets::Vertex&,
                 const GraphOfConvexSets::Vertex&,
                 const GraphOfConvexSetsOptions&>(
                 &GraphOfConvexSets::SolveShortestPath),
             py::arg("source"), py::arg("target"),
             py::arg("options") = GraphOfConvexSetsOptions(),
-            cls_doc.SolveShortestPath.doc_by_reference)
+            cls_doc.SolveShortestPath.doc)
         .def("GetSolutionPath", &GraphOfConvexSets::GetSolutionPath,
             py::arg("source"), py::arg("target"), py::arg("result"),
             py::arg("tolerance") = 1e-3, cls_doc.GetSolutionPath.doc)
@@ -688,6 +683,37 @@ void DefineGeometryOptimization(py::module m) {
             &GraphOfConvexSets::SolveConvexRestriction, py::arg("active_edges"),
             py::arg("options") = GraphOfConvexSetsOptions(),
             cls_doc.SolveConvexRestriction.doc);
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    graph_of_convex_sets
+        .def("AddEdge",
+            WrapDeprecated(cls_doc.AddEdge.doc_deprecated,
+                py::overload_cast<GraphOfConvexSets::VertexId,
+                    GraphOfConvexSets::VertexId, std::string>(
+                    &GraphOfConvexSets::AddEdge)),
+            py::arg("u_id"), py::arg("v_id"), py::arg("name") = "",
+            py_rvp::reference_internal, cls_doc.AddEdge.doc_deprecated)
+        .def("RemoveVertex",
+            WrapDeprecated(cls_doc.RemoveVertex.doc_deprecated,
+                py::overload_cast<GraphOfConvexSets::VertexId>(
+                    &GraphOfConvexSets::RemoveVertex)),
+            py::arg("vertex_id"), cls_doc.RemoveVertex.doc_deprecated)
+        .def("RemoveEdge",
+            WrapDeprecated(cls_doc.RemoveEdge.doc_deprecated,
+                py::overload_cast<GraphOfConvexSets::EdgeId>(
+                    &GraphOfConvexSets::RemoveEdge)),
+            py::arg("edge_id"), cls_doc.RemoveEdge.doc_deprecated)
+        .def("SolveShortestPath",
+            WrapDeprecated(cls_doc.SolveShortestPath.doc_deprecated,
+                overload_cast_explicit<solvers::MathematicalProgramResult,
+                    GraphOfConvexSets::VertexId, GraphOfConvexSets::VertexId,
+                    const GraphOfConvexSetsOptions&>(
+                    &GraphOfConvexSets::SolveShortestPath)),
+            py::arg("source_id"), py::arg("target_id"),
+            py::arg("options") = GraphOfConvexSetsOptions(),
+            cls_doc.SolveShortestPath.doc_deprecated);
+#pragma GCC diagnostic pop
   }
 
   // NOLINTNEXTLINE(readability/fn_size)
