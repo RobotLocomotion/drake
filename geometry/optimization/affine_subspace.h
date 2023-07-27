@@ -59,6 +59,37 @@ class AffineSubspace final : public ConvexSet {
     a->Visit(MakeNameValue("translation", &translation_));
   }
 
+  /** Returns the affine dimension of this set. For an affine subspace,
+  this is simply the number of columns in the basis_ matrix. A point will
+  have affine dimension zero. */
+  int AffineDimension() const { return basis_.cols(); }
+
+  /** Computes the orthogonal projection of x onto the AffineSubspace. This
+  is achieved by finding the least squares solution y for y to x = translation_
+  + basis_*y, and returning translation_ + basis_*y.
+  @pre x.size() == ambient_dimension() */
+  Eigen::VectorXd Project(const Eigen::Ref<const Eigen::VectorXd>& x) const;
+
+  /** Given a point x in the standard basis of the ambient space, returns the
+  coordinates of x in the basis of the AffineSubspace, with the zero point at
+  translation_. The component of x that is orthogonal to the AffineSubspace (if
+  it exists) is discarded, so ToGlobalCoordinates(ToLocalCoordinates(x)) is
+  equivalent to Project(x). Note that if the AffineSubspace is a point, the
+  basis is empty, so the local coordinates will also be empty (and returned as a
+  length-zero vector).
+  @pre x.size() == ambient_dimension() */
+  Eigen::VectorXd ToLocalCoordinates(
+      const Eigen::Ref<const Eigen::VectorXd>& x) const;
+
+  /** Given a point y in the basis of the AffineSubspace, with the zero point
+  at translation_, returns the coordinates of y in the standard basis of the
+  ambient space. If the AffineSubspace is a point, it has an empty basis, so the
+  only possible local coordinates are also empty (and should be passed in as a
+  length-zero vector).
+  @pre y.size() == AffineDimension() */
+  Eigen::VectorXd ToGlobalCoordinates(
+      const Eigen::Ref<const Eigen::VectorXd>& y) const;
+
  private:
   std::unique_ptr<ConvexSet> DoClone() const final;
 

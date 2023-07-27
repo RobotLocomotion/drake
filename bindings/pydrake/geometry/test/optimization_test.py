@@ -69,6 +69,8 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertTrue(dut.IsBounded())
         self.assertTrue(dut.PointInSet(dut.MaybeGetFeasiblePoint()))
         self.assertTrue(dut.IntersectsWith(dut))
+        self.assertTrue(dut.PointInSet(dut.Project([])))
+        self.assertEqual(dut.AffineDimension(), 0)
 
         basis = np.array([[1, 0, 0], [0, 1, 0]]).T
         translation = np.array([0, 0, 1])
@@ -82,6 +84,17 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertFalse(dut.IsBounded())
         self.assertTrue(dut.PointInSet(dut.MaybeGetFeasiblePoint()))
         self.assertTrue(dut.IntersectsWith(dut))
+        self.assertEqual(dut.AffineDimension(), 2)
+
+        test_point = np.array([43, 43, 0])
+        self.assertFalse(dut.PointInSet(test_point))
+        self.assertTrue(dut.PointInSet(dut.Project(test_point)))
+
+        np.testing.assert_array_equal(dut.ToGlobalCoordinates(
+            dut.ToLocalCoordinates(test_point)), dut.Project(test_point))
+        local_coords = np.array([1, -1])
+        np.testing.assert_array_equal(dut.ToLocalCoordinates(
+            dut.ToGlobalCoordinates(local_coords)), local_coords)
 
         self.assertIsNot(dut.Clone(), dut)
         self.assertIsNot(copy.deepcopy(dut), dut)

@@ -63,9 +63,7 @@ bool AffineSubspace::DoPointInSet(const Eigen::Ref<const VectorXd>& x,
     return is_approx_equal_abstol(x, translation_, tol);
   }
   // Otherwise, project onto the flat, and compare to the input.
-  const VectorXd least_squares = basis_decomp_->solve(x - translation_);
-  const VectorXd x_sol = basis_ * least_squares + translation_;
-  return is_approx_equal_abstol(x, x_sol, tol);
+  return is_approx_equal_abstol(x, Project(x), tol);
 }
 
 std::pair<VectorX<Variable>, std::vector<Binding<Constraint>>>
@@ -119,6 +117,38 @@ std::pair<std::unique_ptr<Shape>, math::RigidTransformd>
 AffineSubspace::DoToShapeWithPose() const {
   throw std::runtime_error(
       "ToShapeWithPose is not supported by AffineSubspace.");
+}
+
+Eigen::VectorXd AffineSubspace::Project(
+    const Eigen::Ref<const Eigen::VectorXd>& x) const {
+  DRAKE_THROW_UNLESS(x.size() == ambient_dimension());
+  // If the set is a point, the projection is just that point. This also
+  // directly handles the zero-dimensional case.
+  auto maybe_point = DoMaybeGetPoint();
+  if (maybe_point) {
+    return maybe_point.value();
+  }
+  VectorXd least_squares = basis_decomp_->solve(x - translation_);
+  return basis_ * least_squares + translation_;
+}
+
+Eigen::VectorXd AffineSubspace::ToLocalCoordinates(
+    const Eigen::Ref<const Eigen::VectorXd>& x) const {
+  DRAKE_THROW_UNLESS(x.size() == ambient_dimension());
+  // If the set is a point, then the basis is empty, so there are no local
+  // coordinates. This behavior is handled by returning a length-zero vector.
+  // This also directly handles the zero-dimensional case.
+  auto maybe_point = DoMaybeGetPoint();
+  if (maybe_point) {
+    return Eigen::VectorXd(0);
+  }
+  return basis_decomp_->solve(x - translation_);
+}
+
+Eigen::VectorXd AffineSubspace::ToGlobalCoordinates(
+    const Eigen::Ref<const Eigen::VectorXd>& y) const {
+  DRAKE_THROW_UNLESS(y.size() == AffineDimension());
+  return basis_ * y + translation_;
 }
 
 }  // namespace optimization
