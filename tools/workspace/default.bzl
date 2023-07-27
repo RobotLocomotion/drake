@@ -32,6 +32,7 @@ load("@drake//tools/workspace/glx:repository.bzl", "glx_repository")
 load("@drake//tools/workspace/googlebenchmark:repository.bzl", "googlebenchmark_repository")  # noqa
 load("@drake//tools/workspace/gtest:repository.bzl", "gtest_repository")
 load("@drake//tools/workspace/gurobi:repository.bzl", "gurobi_repository")
+load("@drake//tools/workspace/gym_py:repository.bzl", "gym_py_repository")
 load("@drake//tools/workspace/gymnasium_py:repository.bzl", "gymnasium_py_repository")  # noqa
 load("@drake//tools/workspace/gz_math_internal:repository.bzl", "gz_math_internal_repository")  # noqa
 load("@drake//tools/workspace/gz_utils_internal:repository.bzl", "gz_utils_internal_repository")  # noqa
@@ -180,6 +181,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         gz_math_internal_repository(name = "gz_math_internal", mirrors = mirrors)  # noqa
     if "gz_utils_internal" not in excludes:
         gz_utils_internal_repository(name = "gz_utils_internal", mirrors = mirrors)  # noqa
+    if "gym_py" not in excludes:
+        gym_py_repository(name = "gym_py", mirrors = mirrors)
     if "gymnasium_py" not in excludes:
         gymnasium_py_repository(name = "gymnasium_py", mirrors = mirrors)
     if "intel_realsense_ros_internal" not in excludes:
