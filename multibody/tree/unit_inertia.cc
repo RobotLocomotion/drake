@@ -64,8 +64,8 @@ UnitInertia<T> UnitInertia<T>::SolidCylinder(
   DRAKE_THROW_UNLESS(L >= 0);
   // TODO(Mitiguy) Throw if |b_E| is not within 1.0E-14 of 1 (breaking change).
   DRAKE_THROW_UNLESS(b_E.norm() > std::numeric_limits<double>::epsilon());
-  const T J = r * r / T(2);
-  const T K = (T(3) * r * r + L * L) / T(12);
+  const T J = 0.5 * r * r;
+  const T K = (3.0 * r * r + L * L) / 12.0;
   return AxiallySymmetric(J, K, b_E);
 }
 
@@ -115,13 +115,13 @@ UnitInertia<T> UnitInertia<T>::ThinRod(const T& L, const Vector3<T>& b_E) {
 
 template <typename T>
 UnitInertia<T> UnitInertia<T>::SolidBox(const T& Lx, const T& Ly, const T& Lz) {
-  if (Lx < T(0) || Ly < T(0) || Lz < T(0)) {
+  if (Lx < 0.0 || Ly < 0.0 || Lz < 0.0) {
     const std::string msg =
         "A length argument to UnitInertia::SolidBox() "
         "is negative.";
     throw std::logic_error(msg);
   }
-  const T one_twelfth = T(1) / T(12);
+  const T one_twelfth = 1.0 / 12.0;
   const T Lx2 = Lx * Lx, Ly2 = Ly * Ly, Lz2 = Lz * Lz;
   return UnitInertia(one_twelfth * (Ly2 + Lz2), one_twelfth * (Lx2 + Lz2),
                      one_twelfth * (Lx2 + Ly2));
