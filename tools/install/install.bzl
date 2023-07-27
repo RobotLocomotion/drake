@@ -46,7 +46,7 @@ def _depset_to_list(x):
     return iter_list
 
 #------------------------------------------------------------------------------
-def _output_path(ctx, input_file, strip_prefix = [], warn_foreign = True):
+def _output_path(ctx, input_file, strip_prefix = [], ignore_errors = False):
     """Compute output path (without destination prefix) for install action.
 
     This computes the adjusted output path for an input file. It is the same as
@@ -69,11 +69,10 @@ def _output_path(ctx, input_file, strip_prefix = [], warn_foreign = True):
             if path != None:
                 return path
 
-    # If we get here, we were not able to resolve the path; give up, and print
-    # a warning about installing the "foreign" file.
-    if warn_foreign:
-        print("%s installing file %s which is not in current package" %
-              (ctx.label, input_file.path))
+    # If we get here, we were not able to resolve the path; give up.
+    if not ignore_errors:
+        fail("%s installing file %s which is not in current package" %
+             (ctx.label, input_file.path))
     return input_file.basename
 
 #------------------------------------------------------------------------------
@@ -106,8 +105,7 @@ def _install_action(
         artifact,
         dests,
         strip_prefixes = [],
-        rename = {},
-        warn_foreign = True):
+        rename = {}):
     """Compute install action for a single file.
 
     This takes a single file artifact and returns the appropriate install
@@ -137,7 +135,7 @@ def _install_action(
 
     file_dest = join_paths(
         dest,
-        _output_path(ctx, artifact, strip_prefix, warn_foreign),
+        _output_path(ctx, artifact, strip_prefix),
     )
     file_dest = _rename(file_dest, rename)
 
@@ -150,8 +148,7 @@ def _install_actions(
         dests,
         strip_prefixes = [],
         excluded_files = [],
-        rename = {},
-        warn_foreign = True):
+        rename = {}):
     """Compute install actions for files.
 
     This takes a list of labels (targets or files) and computes the install
@@ -187,7 +184,7 @@ def _install_actions(
             # original relative path and the path with prefix(es) stripped,
             # then use the original relative path for both exclusions and
             # renaming.
-            if _output_path(ctx, a, warn_foreign = False) in excluded_files:
+            if _output_path(ctx, a, ignore_errors = True) in excluded_files:
                 continue
 
             actions.append(
@@ -197,7 +194,6 @@ def _install_actions(
                     dests,
                     strip_prefixes,
                     rename,
-                    warn_foreign,
                 ),
             )
 
@@ -279,7 +275,7 @@ def _install_java_actions(ctx, target):
             _output_path(
                 ctx,
                 target.files_to_run.executable,
-                warn_foreign = False,
+                ignore_errors = True,
             ),
         ]
     return _install_actions(
@@ -336,7 +332,6 @@ def _install_java_launcher_actions(
             java_dest,
             java_strip_prefix,
             rename,
-            warn_foreign = False,
         )
         classpath.append(join_paths("$prefix", jar_install.dst))
 
