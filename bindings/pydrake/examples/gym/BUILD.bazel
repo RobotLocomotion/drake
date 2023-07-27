@@ -1,14 +1,20 @@
-# -*- bazel -*-
-
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
-    "@drake//tools/skylark:py.bzl",
-    "py_binary",
-    "py_library",
-    "py_test",
+    "//tools/skylark:drake_py.bzl",
+    "drake_py_binary",
+    "drake_py_library",
+    "drake_py_test",
 )
 
-py_library(
+filegroup(
+    name = "models",
+    srcs = [
+        "models/cartpole_BSA.sdf",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+drake_py_library(
     name = "named_view_helpers",
     srcs = ["named_view_helpers.py"],
     visibility = ["//visibility:public"],
@@ -18,11 +24,11 @@ py_library(
     ],
 )
 
-py_library(
+drake_py_library(
     name = "cart_pole",
     srcs = ["envs/cart_pole/cart_pole.py"],
     data = [
-        "//bindings/pydrake/examples/gym/models",
+        ":models",
     ],
     visibility = ["//visibility:public"],
     deps = [
@@ -35,11 +41,11 @@ py_library(
     ],
 )
 
-py_binary(
+drake_py_binary(
     name = "train_cart_pole",
     srcs = ["train_cart_pole.py"],
     data = [
-        "//bindings/pydrake/examples/gym/models",
+        ":models",
     ],
     visibility = ["//visibility:public"],
     deps = [
@@ -50,11 +56,11 @@ py_binary(
     ],
 )
 
-py_binary(
+drake_py_binary(
     name = "play_cart_pole",
     srcs = ["play_cart_pole.py"],
     data = [
-        "//bindings/pydrake/examples/gym/models",
+        ":models",
     ],
     visibility = ["//visibility:public"],
     deps = [
@@ -67,7 +73,7 @@ py_binary(
 
 # Get some test coverage on the example; `--test` limits its time
 # and CPU budget.
-py_test(
+drake_py_test(
     name = "train_cart_pole_test",
     srcs = ["train_cart_pole.py"],
     args = ["--test"],
@@ -80,7 +86,7 @@ py_test(
     ],
 )
 
-py_test(
+drake_py_test(
     name = "play_cart_pole_test",
     srcs = ["play_cart_pole.py"],
     args = ["--test"],

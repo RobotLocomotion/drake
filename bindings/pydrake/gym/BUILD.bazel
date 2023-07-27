@@ -1,19 +1,20 @@
-# -*- bazel -*-
-
 load("//tools/lint:lint.bzl", "add_lint_tests")
-load("//tools/skylark:py.bzl", "py_library", "py_test")
 load(
     "//tools/skylark:drake_py.bzl",
+    "drake_py_library",
     "drake_py_unittest",
 )
 
-py_library(
+package(default_visibility = [
+    "//bindings/pydrake:__subpackages__",
+])
+
+drake_py_library(
     name = "gym",
     srcs = [
         "__init__.py",
         "drake_gym.py",
     ],
-    visibility = ["//visibility:public"],
     deps = [
         "//bindings/pydrake/common",
         "//bindings/pydrake/systems",
@@ -21,7 +22,7 @@ py_library(
     ],
 )
 
-py_library(
+drake_py_library(
     name = "mock_torch_py",
     testonly = True,
     srcs = [
