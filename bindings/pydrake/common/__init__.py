@@ -7,7 +7,7 @@ import typing
 import numpy as np
 
 from ._module_py import *
-from ._module_py import _set_log_level
+from ._module_py import _set_log_level, _use_native_cpp_logging
 
 _root_logger = _logging.getLogger()
 _drake_logger = _logging.getLogger("drake")
@@ -39,6 +39,8 @@ def _sync_spdlog_level():
     "enabled for" level would also incorporate the global "logging.disable"
     setting, but we do not reflect that back into C++ spdlog at the moment.
     """
+    if not _drake_logger._tied_to_spdlog:
+        return
     level = _drake_logger.level or _root_logger.level
     _set_log_level(_python_level_to_spdlog(level))
 
@@ -99,6 +101,33 @@ def configure_logging():
     _logging.basicConfig(level=_logging.INFO, format=format)
     _drake_logger.setLevel(_logging.NOTSET)
     _logging.addLevelName(5, "TRACE")
+
+
+def use_native_cpp_logging():
+    """By default, pydrake's C++ code routes all of its log messages to
+    Python's ``logging`` module; this function opts-out of that feature.
+
+    After this function has been called, pydrake's C++ code will log directly
+    to stderr, with no interaction with Python. (The Python settings for log
+    level threshold and message formatting will no longer affect the C++ log
+    messages.)
+
+    This can be useful to avoid C++ logging touching the GIL, e.g., when using
+    Python's ``threading`` module.
+
+    This function is not thread-safe. No other threads should be running when
+    it is called.
+
+    See also the `environment variable
+    <https://drake.mit.edu/doxygen_cxx/group__environment__variables.html>`_
+    ``DRAKE_PYTHON_LOGGING``, which can also be used to opt-out.
+
+    Raises:
+        RuntimeError: If the reconfiguration is not possible, e.g., if you have
+            already manually adjusted the C++ logging configuration.
+    """
+    _use_native_cpp_logging()
+    _drake_logger._tied_to_spdlog = False
 
 
 def _wrap_to_match_input_shape(f):
