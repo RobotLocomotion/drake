@@ -11,6 +11,7 @@ def stable_baselines3_internal_repository(
         build_file = ":package.BUILD.bazel",
         patches = [
             ":no_torch.patch",
+            ":version.patch",
         ],
         mirrors = mirrors,
     )
