@@ -1,3 +1,4 @@
+import sys
 from typing import Callable, Optional, Union
 import warnings
 
@@ -15,6 +16,9 @@ from pydrake.systems.framework import (
     System,
 )
 from pydrake.systems.sensors import ImageRgba8U
+
+
+assert sys.version_info >= (3, 10), "pydrake.gym requires Python 3.10 or newer"
 
 
 class DrakeGymEnv(gym.Env):
