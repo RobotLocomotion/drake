@@ -233,14 +233,14 @@ class UnitInertia : public RotationalInertia<T> {
   /// Computes the unit inertia for a unit-mass solid sphere of uniform density
   /// and radius `r` taken about its center.
   static UnitInertia<T> SolidSphere(const T& r) {
-    return UnitInertia<T>::TriaxiallySymmetric(T(0.4) * r * r);
+    return UnitInertia<T>::TriaxiallySymmetric(0.4 * r * r);
   }
 
   /// Computes the unit inertia for a unit-mass hollow sphere of radius `r`
   /// consisting of an infinitesimally thin shell of uniform density.
   /// The unit inertia is taken about the center of the sphere.
   static UnitInertia<T> HollowSphere(const T& r) {
-    return UnitInertia<T>::TriaxiallySymmetric(T(2)/T(3) * r * r);
+    return UnitInertia<T>::TriaxiallySymmetric(2.0/3.0 * r * r);
   }
 
   /// Computes the unit inertia for a unit-mass solid box of uniform density

@@ -797,28 +797,28 @@ class RotationMatrix {
     const T trace = M.trace();
     if (trace >= M(0, 0) && trace >= M(1, 1) && trace >= M(2, 2)) {
       // This branch occurs if the trace is larger than any diagonal element.
-      w = T(1) + trace;
+      w = 1.0 + trace;
       x = M(2, 1) - M(1, 2);
       y = M(0, 2) - M(2, 0);
       z = M(1, 0) - M(0, 1);
     } else if (M(0, 0) >= M(1, 1) && M(0, 0) >= M(2, 2)) {
       // This branch occurs if M(0,0) is largest among the diagonal elements.
       w = M(2, 1) - M(1, 2);
-      x = T(1) - (trace - 2 * M(0, 0));
+      x = 1.0 - (trace - 2 * M(0, 0));
       y = M(0, 1) + M(1, 0);
       z = M(0, 2) + M(2, 0);
     } else if (M(1, 1) >= M(2, 2)) {
       // This branch occurs if M(1,1) is largest among the diagonal elements.
       w = M(0, 2) - M(2, 0);
       x = M(0, 1) + M(1, 0);
-      y = T(1) - (trace - 2 * M(1, 1));
+      y = 1.0 - (trace - 2 * M(1, 1));
       z = M(1, 2) + M(2, 1);
     } else {
       // This branch occurs if M(2,2) is largest among the diagonal elements.
       w = M(1, 0) - M(0, 1);
       x = M(0, 2) + M(2, 0);
       y = M(1, 2) + M(2, 1);
-      z = T(1) - (trace - 2 * M(2, 2));
+      z = 1.0 - (trace - 2 * M(2, 2));
     }
     // Create a quantity q (which is not yet a unit quaternion).
     // Note: Eigen's Quaternion constructor does not normalize.
@@ -842,25 +842,25 @@ class RotationMatrix {
     const T trace = M00 + M11 + M22;
     const Vector4<T> wxyz =
         if_then_else(trace >= M00 && trace >= M11 && trace >= M22, Vector4<T>{
-          T(1) + trace,
+          1.0 + trace,
           M21 - M12,
           M02 - M20,
           M10 - M01,
         }, if_then_else(M00 >= M11 && M00 >= M22, Vector4<T>{
           M21 - M12,
-          T(1) - (trace - 2 * M00),
+          1.0 - (trace - 2 * M00),
           M01 + M10,
           M02 + M20,
         }, if_then_else(M11 >= M22, Vector4<T>{
           M02 - M20,
           M01 + M10,
-          T(1) - (trace - 2 * M11),
+          1.0 - (trace - 2 * M11),
           M12 + M21,
         }, /* else */ Vector4<T>{
           M10 - M01,
           M02 + M20,
           M12 + M21,
-          T(1) - (trace - 2 * M22),
+          1.0 - (trace - 2 * M22),
         })));
     return Eigen::Quaternion<T>(wxyz(0), wxyz(1), wxyz(2), wxyz(3));
   }
