@@ -128,7 +128,10 @@ Spectrahedron::DoAddPointInNonnegativeScalingConstraints(
     Ab.leftCols(binding.evaluator()->num_vars()) =
         binding.evaluator()->get_sparse_A();
     Ab.rightCols<1>() = -binding.evaluator()->lower_bound();
-    constraints.emplace_back(prog->AddLinearEqualityConstraint(Ab, 0, vars));
+
+    VectorXd zeros = VectorXd::Zero(binding.evaluator()->num_constraints());
+    constraints.emplace_back(
+        prog->AddLinearEqualityConstraint(Ab, zeros, vars));
   }
 
   std::vector<Binding<LinearConstraint>> linear_inequality_constraints =
@@ -146,11 +149,23 @@ Spectrahedron::DoAddPointInNonnegativeScalingConstraints(
         binding.evaluator()->get_sparse_A();
     if (binding.evaluator()->lower_bound().array().isFinite().any()) {
       Ab.rightCols<1>() = -binding.evaluator()->lower_bound();
-      constraints.emplace_back(prog->AddLinearConstraint(Ab, 0, kInf, vars));
+
+      VectorXd zeros = VectorXd::Zero(binding.evaluator()->num_constraints());
+      VectorXd infs =
+          VectorXd::Constant(binding.evaluator()->num_constraints(), kInf);
+
+      constraints.emplace_back(
+          prog->AddLinearConstraint(Ab, zeros, infs, vars));
     }
     if (binding.evaluator()->upper_bound().array().isFinite().any()) {
       Ab.rightCols<1>() = -binding.evaluator()->upper_bound();
-      constraints.emplace_back(prog->AddLinearConstraint(Ab, -kInf, 0, vars));
+
+      VectorXd zeros = VectorXd::Zero(binding.evaluator()->num_constraints());
+      VectorXd infs =
+          VectorXd::Constant(binding.evaluator()->num_constraints(), kInf);
+
+      constraints.emplace_back(
+          prog->AddLinearConstraint(Ab, -infs, zeros, vars));
     }
   }
 
