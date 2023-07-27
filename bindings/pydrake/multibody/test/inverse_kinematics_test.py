@@ -3,6 +3,7 @@ from pydrake.multibody import inverse_kinematics as ik
 from collections import namedtuple
 from functools import partial, wraps
 import math
+import typing
 import unittest
 
 import numpy as np
@@ -570,6 +571,26 @@ class TestConstraints(unittest.TestCase):
             plant=variables.plant,
             minimum_distance=0.1,
             plant_context=variables.plant_context)
+        self.assertIsInstance(constraint, mp.Constraint)
+
+        # Now set the new penalty function
+        def penalty_fun(x: float, compute_grad: bool) \
+                -> typing.Tuple[float, typing.Optional[float]]:
+            if x < 0:
+                if compute_grad:
+                    return x**2, 2 * x
+                else:
+                    return x**2, None
+            else:
+                if compute_grad:
+                    return 0., 0.
+                else:
+                    return 0., None
+
+        constraint = ik.MinimumDistanceConstraint(
+            plant=variables.plant, minimum_distance_lower=0.1,
+            minimum_distance_upper=1, plant_context=variables.plant_context,
+            penalty_function=penalty_fun, influence_distance=3)
         self.assertIsInstance(constraint, mp.Constraint)
 
     @check_type_variables
