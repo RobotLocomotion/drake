@@ -25,6 +25,25 @@
 namespace drake {
 namespace pydrake {
 namespace {
+// This is used in the MinimumDistanceConstraint to convert a penalty function
+// in python to a penalty function in C++.
+using CppPenaltyFunction = std::function<void(double, double*, double*)>;
+using PyPenaltyFunction = std::function<py::tuple(double, bool)>;
+CppPenaltyFunction UnwrapPyPenaltyFunction(PyPenaltyFunction penalty_function) {
+  if (penalty_function) {
+    return [penalty_function](double x, double* penalty, double* dpenalty) {
+      py::tuple penalty_tuple(2);
+      const bool compute_grad = dpenalty != nullptr;
+      penalty_tuple = penalty_function(x, compute_grad);
+      *penalty = penalty_tuple[0].cast<double>();
+      if (compute_grad) {
+        *dpenalty = penalty_tuple[1].cast<double>();
+      }
+    };
+  } else {
+    return multibody::MinimumDistancePenaltyFunction{};
+  }
+}
 
 using solvers::Constraint;
 
@@ -432,8 +451,9 @@ PYBIND11_MODULE(inverse_kinematics, m) {
     using Class = MinimumDistanceConstraint;
     constexpr auto& cls_doc = doc.MinimumDistanceConstraint;
     using Ptr = std::shared_ptr<Class>;
-    py::class_<Class, Constraint, Ptr>(
-        m, "MinimumDistanceConstraint", cls_doc.doc)
+    py::class_<Class, Constraint, Ptr> minimum_distance_constraint(
+        m, "MinimumDistanceConstraint", cls_doc.doc);
+    minimum_distance_constraint
         .def(py::init([](const multibody::MultibodyPlant<double>* const plant,
                           double minimum_distance,
                           systems::Context<double>* plant_context,
@@ -468,6 +488,58 @@ PYBIND11_MODULE(inverse_kinematics, m) {
             py::keep_alive<1, 2>(),
             // Keep alive, reference: `self` keeps `plant_context` alive.
             py::keep_alive<1, 4>(), cls_doc.ctor.doc_autodiff_no_upper_bound);
+
+    std::string py_penalty_doc =
+        "The penalty function penalty_function(x: float, compute_grad: bool) "
+        "-> tuple[float, Optional[float]] returns [penalty_val,  "
+        "penalty_gradient] when compute_grad=True, or [penalty_value, None] "
+        "when compute_grad=False. See minimum_value_constraint.h on the "
+        "requirement on MinimumValuePenaltyFunction. Set penalty_function=None "
+        "and then the constraint will use the default penalty function.";
+    const std::string constructor_double_with_upper_bound_doc =
+        cls_doc.ctor.doc_double_with_upper_bound + py_penalty_doc;
+
+    minimum_distance_constraint.def(
+        py::init(
+            [](const multibody::MultibodyPlant<double>* plant,
+                double minimum_distance_lower, double minimum_distance_upper,
+                systems::Context<double>* plant_context,
+                PyPenaltyFunction penalty_function, double influence_distance) {
+              return std::make_unique<MinimumDistanceConstraint>(plant,
+                  minimum_distance_lower, minimum_distance_upper, plant_context,
+                  UnwrapPyPenaltyFunction(penalty_function),
+                  influence_distance);
+            }),
+        py::arg("plant"), py::arg("minimum_distance_lower"),
+        py::arg("minimum_distance_upper"), py::arg("plant_context"),
+        py::arg("penalty_function"), py::arg("influence_distance"),
+        // Keep alive, reference: `self` keeps `plant` alive.
+        py::keep_alive<1, 2>(),
+        // Keep alive, reference: `self` keeps `plant_context` alive.
+        py::keep_alive<1, 5>(),
+        constructor_double_with_upper_bound_doc.c_str());
+
+    const std::string constructor_autodiff_with_upper_bound_doc =
+        cls_doc.ctor.doc_autodiff_with_upper_bound + py_penalty_doc;
+    minimum_distance_constraint.def(
+        py::init(
+            [](const multibody::MultibodyPlant<AutoDiffXd>* plant,
+                double minimum_distance_lower, double minimum_distance_upper,
+                systems::Context<AutoDiffXd>* plant_context,
+                PyPenaltyFunction penalty_function, double influence_distance) {
+              return std::make_unique<MinimumDistanceConstraint>(plant,
+                  minimum_distance_lower, minimum_distance_upper, plant_context,
+                  UnwrapPyPenaltyFunction(penalty_function),
+                  influence_distance);
+            }),
+        py::arg("plant"), py::arg("minimum_distance_lower"),
+        py::arg("minimum_distance_upper"), py::arg("plant_context"),
+        py::arg("penalty_function"), py::arg("influence_distance"),
+        // Keep alive, reference: `self` keeps `plant` alive.
+        py::keep_alive<1, 2>(),
+        // Keep alive, reference: `self` keeps `plant_context` alive.
+        py::keep_alive<1, 5>(),
+        constructor_autodiff_with_upper_bound_doc.c_str());
   }
 
   {
