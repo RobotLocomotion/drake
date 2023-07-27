@@ -69,6 +69,8 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertTrue(dut.IsBounded())
         self.assertTrue(dut.PointInSet(dut.MaybeGetFeasiblePoint()))
         self.assertTrue(dut.IntersectsWith(dut))
+        self.assertTrue(dut.ContainedIn(mut.AffineSubspace()))
+        self.assertTrue(dut.IsNearlyEqualTo(mut.AffineSubspace()))
 
         basis = np.array([[1, 0, 0], [0, 1, 0]]).T
         translation = np.array([0, 0, 1])
@@ -82,6 +84,14 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertFalse(dut.IsBounded())
         self.assertTrue(dut.PointInSet(dut.MaybeGetFeasiblePoint()))
         self.assertTrue(dut.IntersectsWith(dut))
+        self.assertTrue(dut.ContainedIn(mut.AffineSubspace(
+            basis, translation)))
+        self.assertTrue(dut.IsNearlyEqualTo(mut.AffineSubspace(
+            basis, translation)))
+        self.assertFalse(dut.ContainedIn(mut.AffineSubspace(), tol=0))
+        self.assertFalse(mut.AffineSubspace().ContainedIn(dut, tol=0))
+        self.assertFalse(dut.IsNearlyEqualTo(other=mut.AffineSubspace(),
+                                             tol=0))
 
         self.assertIsNot(dut.Clone(), dut)
         self.assertIsNot(copy.deepcopy(dut), dut)

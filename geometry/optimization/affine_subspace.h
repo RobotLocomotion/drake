@@ -59,6 +59,12 @@ class AffineSubspace final : public ConvexSet {
     a->Visit(MakeNameValue("translation", &translation_));
   }
 
+  /** Returns true if this AffineSubspace is contained in other.*/
+  bool ContainedIn(const AffineSubspace& other, double tol = 1e-15) const;
+
+  /** Returns true if the two AffineSubspaces describe the same set.*/
+  bool IsNearlyEqualTo(const AffineSubspace& other, double tol = 1e-15) const;
+
  private:
   std::unique_ptr<ConvexSet> DoClone() const final;
 
