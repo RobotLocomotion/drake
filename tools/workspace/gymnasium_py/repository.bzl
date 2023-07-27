@@ -1,5 +1,3 @@
-# -*- bazel -*-
-
 load("@drake//tools/workspace:github.bzl", "github_archive")
 
 def gymnasium_py_repository(
@@ -15,10 +13,10 @@ def gymnasium_py_repository(
             # Patches needed for Focal compatibility.
             # This removes np.typing which is only available
             # in numpy vesion > 1.20
-            ":no_typing.patch",
+            ":patches/no_typing.patch",
             # This filters the entry points by group key
             # for python version < 3.9
-            ":metadata.patch",
+            ":patches/metadata.patch",
         ],
         mirrors = mirrors,
     )
