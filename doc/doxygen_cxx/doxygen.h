@@ -217,6 +217,7 @@ namespace solvers {
  This section provides an inventory of environment variables relevant to Drake.
 
  - <b>\ref allow_network "DRAKE_ALLOW_NETWORK"</b>
+ - <b>\ref pydrake_python_logging "DRAKE_PYTHON_LOGGING"</b>
  - <b>\ref drake::common::FindResource() "DRAKE_RESOURCE_ROOT"</b>
  - <b>\ref drake::solvers::GurobiSolver "GRB_LICENSE_FILE"</b> (see also 
    <a href="https://support.gurobi.com/hc/en-us/articles/360013417211-Where-do-I-place-the-Gurobi-license-file-gurobi-lic-">upstream documentation</a>)
@@ -240,7 +241,6 @@ namespace solvers {
  - <b>USER</b>
  - <b>XDG_CACHE_HOME</b> (see
    <a href="https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html">upstream documentation</a>)
- - <b>\ref pydrake_python_logging "DRAKE_PYTHON_LOGGING"</b>
 
  @}
 */
