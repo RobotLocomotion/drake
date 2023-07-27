@@ -29,9 +29,9 @@ py_library(
         ":named_view_helpers",
         "//bindings/pydrake/common",
         "//bindings/pydrake/geometry",
+        "//bindings/pydrake/gym",
         "//bindings/pydrake/multibody",
         "//bindings/pydrake/systems",
-        "//bindings/pydrake/gym",
     ],
 )
 

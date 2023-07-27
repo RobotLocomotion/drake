@@ -32,3 +32,5 @@ training examples will not run without it, and drake does not come with it
 (Drake does include a subset of `stable_baselines3` for testing purposes, but
 not enough to perform training).
 '''
+
+from .drake_gym import *
