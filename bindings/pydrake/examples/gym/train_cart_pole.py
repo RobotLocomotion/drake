@@ -3,6 +3,7 @@ Train a policy for //drake_gym/examples.envs.cart_pole:cart_pole.
 '''
 import argparse
 import sys
+import types
 
 import gymnasium as gym
 
@@ -61,7 +62,8 @@ def run_training(config, args):
                 save_code=True,
             )
     else:
-        run = {"id": "test"}
+        run = types.SimpleNamespace()
+        run.id = "test"
 
     if not args.train_single_env:
         env = make_vec_env(env_name,
