@@ -7,35 +7,29 @@ import sys
 import types
 
 import gymnasium as gym
-
-from pydrake.geometry import StartMeshcat
+import stable_baselines3
 from stable_baselines3.common.env_checker import check_env
 
-sb3_available = False
-try:
-    import stable_baselines3
-    if "drake_internal" not in stable_baselines3.__version__:
-        from stable_baselines3 import PPO
-        from stable_baselines3.common.callbacks import EvalCallback
-        from stable_baselines3.common.env_util import make_vec_env
-        from stable_baselines3.common.vec_env import (
-            DummyVecEnv,
-            SubprocVecEnv,
-            VecVideoRecorder,
-        )
-        import torch as th
-        sb3_available = True
-    else:
-        print("stable_baselines3 found, but was drake internal")
-except ImportError:
-    print("stable_baselines3 not found")
+from pydrake.geometry import StartMeshcat
+
+full_sb3_available = False
+if "drake_internal" not in stable_baselines3.__version__:
+    from stable_baselines3 import PPO
+    from stable_baselines3.common.callbacks import EvalCallback
+    from stable_baselines3.common.env_util import make_vec_env
+    from stable_baselines3.common.vec_env import (
+        DummyVecEnv,
+        SubprocVecEnv,
+        VecVideoRecorder,
+    )
+    import torch as th
+    full_sb3_available = True
 
 use_wandb = True
 try:
     import wandb
     from wandb.integration.sb3 import WandbCallback
 except ModuleNotFoundError as e:
-    print("Not using WandB integration:", e)
     use_wandb = False
 
 
@@ -63,6 +57,7 @@ def _run_training(config, args):
                 save_code=True,
             )
     else:
+        print("Not using WandB integration")
         run = types.SimpleNamespace()
         run.id = "test"
 
@@ -167,8 +162,8 @@ def _main():
         entry_point=(
             "pydrake.examples.gym.envs.cart_pole.cart_pole:CartpoleEnv"))
 
-    if not sb3_available:
-        print("stable_baselines3 not available.")
+    if not full_sb3_available:
+        print("stable_baselines3 found, but was drake internal")
         return 0 if args.test else 1
 
     if args.test:

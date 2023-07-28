@@ -45,15 +45,16 @@ index 516d7ba..29937b2 100644
 +    from stable_baselines3.common.vec_env import DummyVecEnv, VecCheckNan
 +    torch_available = True
 +except ImportError:
-+    print("Torch not available; skipping vector env tests.")
++    pass
 
 
  def _is_numpy_array_space(space: spaces.Space) -> bool:
-@@ -109,6 +115,8 @@ def _check_unsupported_spaces(env: gym.Env, observation_space: spaces.Space, act
+@@ -109,6 +115,9 @@ def _check_unsupported_spaces(env: gym.Env, observation_space: spaces.Space, act
 
  def _check_nan(env: gym.Env) -> None:
      """Check for Inf and NaN using the VecWrapper."""
 +    if not torch_available:
++        print("Torch not available; skipping vector env tests.")
 +        return
      vec_env = VecCheckNan(DummyVecEnv([lambda: env]))
      vec_env.reset()

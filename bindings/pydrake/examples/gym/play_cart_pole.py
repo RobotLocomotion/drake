@@ -6,20 +6,10 @@ import os
 import sys
 
 import gymnasium as gym
+import stable_baselines3
 from stable_baselines3.common.env_checker import check_env
 
 from pydrake.geometry import StartMeshcat
-
-full_sb3_available = False
-try:
-    import stable_baselines3
-    if "drake_internal" not in stable_baselines3.__version__:
-        from stable_baselines3 import PPO
-        full_sb3_available = True
-    else:
-        print("stable_baselines3 found, but was drake internal")
-except ImportError:
-    print("stable_baselines3 not found")
 
 
 def _run_playing(args):
@@ -46,6 +36,8 @@ def _run_playing(args):
     max_steps = 1e5 if not args.test else 1e2
 
     if not args.test:
+        assert "drake_internal" not in stable_baselines3.__version__
+        from stable_baselines3 import PPO
         model = PPO.load(args.model_path, env, verbose=1, tensorboard_log=log)
 
     obs, _ = env.reset()
