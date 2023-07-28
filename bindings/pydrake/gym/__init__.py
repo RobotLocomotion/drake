@@ -39,4 +39,6 @@ training examples will not run without it, and drake does not come with it
 not enough to perform training).
 """
 
-from .drake_gym import *
+from ._drake_gym_env import DrakeGymEnv
+
+__all__ = [x for x in globals() if not x.startswith("_")]

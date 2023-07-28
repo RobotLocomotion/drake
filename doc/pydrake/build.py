@@ -16,6 +16,7 @@ from drake.doc.defs import (
 )
 
 import pydrake.all
+import pydrake.gym  # The gym is not part of "pydrake.all".
 import pydrake.examples  # The examples are not part of "pydrake.all".
 # TODO(eric.cousineau): Indicate these as deprecated.
 from pydrake.common import (
