@@ -39,7 +39,7 @@ except ModuleNotFoundError as e:
     use_wandb = False
 
 
-def run_training(config, args):
+def _run_training(config, args):
     env_name = config["env_name"]
     num_env = config["num_workers"]
     time_limit = config["env_time_limit"]
@@ -152,7 +152,7 @@ def _bazel_chdir():
         os.chdir(original_working_directory)
 
 
-def main():
+def _main():
     _bazel_chdir()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--test', action='store_true')
@@ -193,8 +193,8 @@ def main():
         "disturbances": True,
     }
 
-    run_training(config, args)
+    _run_training(config, args)
 
 
-assert __name__ == '__main__'
-main()
+if __name__ == '__main__':
+    _main()

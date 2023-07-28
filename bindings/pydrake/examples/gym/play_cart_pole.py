@@ -22,7 +22,7 @@ except ImportError:
     print("stable_baselines3 not found")
 
 
-def run_playing(args):
+def _run_playing(args):
 
     if args.log_path is None:
         log = args.log_path
@@ -77,7 +77,7 @@ def _bazel_chdir():
         os.chdir(original_working_directory)
 
 
-def main():
+def _main():
     _bazel_chdir()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--test', action='store_true')
@@ -89,8 +89,8 @@ def main():
     gym.envs.register(id="Cartpole-v0",
                     entry_point="pydrake.examples.gym.envs.cart_pole.cart_pole:CartpoleEnv")  # noqa
 
-    run_playing(args)
+    _run_playing(args)
 
 
-assert __name__ == '__main__'
-main()
+if __name__ == '__main__':
+    _main()
