@@ -136,7 +136,6 @@ drake_cc_library(
         "//common:name_value",
         "//geometry:rgba",
         "//geometry/render:light_parameter",
-        "//geometry/render:render_label",
     ],
 )
 

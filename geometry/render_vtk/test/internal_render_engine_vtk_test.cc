@@ -343,7 +343,7 @@ class RenderEngineVtkTest : public ::testing::Test {
   void Init(const RigidTransformd& X_WR, bool add_terrain = false) {
     const Vector3d bg_rgb{
         kBgColor.r / 255., kBgColor.g / 255., kBgColor.b / 255.};
-    RenderEngineVtkParams params{{}, {}, bg_rgb};
+    const RenderEngineVtkParams params{.default_clear_color = bg_rgb};
     renderer_ = make_unique<RenderEngineVtk>(params);
     InitializeRenderer(X_WR, add_terrain, renderer_.get());
     // Ensure that we truly have a non-default color.
@@ -519,8 +519,8 @@ TEST_F(RenderEngineVtkTest, NoBodyTest) {
 TEST_F(RenderEngineVtkTest, ControlBackgroundColor) {
   std::vector<ColorI> backgrounds{{10, 20, 30}, {128, 196, 255}, {255, 10, 40}};
   for (const auto& bg : backgrounds) {
-    RenderEngineVtkParams params{
-        {}, {}, Vector3d{bg.r / 255., bg.g / 255., bg.b / 255.}};
+    const RenderEngineVtkParams params{
+        .default_clear_color = Vector3d{bg.r / 255., bg.g / 255., bg.b / 255.}};
     RenderEngineVtk engine(params);
     Render(&engine);
     VerifyUniformColor(bg, 255u);
@@ -1279,7 +1279,7 @@ TEST_F(RenderEngineVtkTest, DefaultProperties_RenderLabel) {
   // Case: Change render engine's default to explicitly be unspecified; must
   // throw.
   {
-    RenderEngineVtk renderer{{RenderLabel::kUnspecified, {}}};
+    RenderEngineVtk renderer{{"unspecified", {}}};
     InitializeRenderer(X_WC_, false /* no terrain */, &renderer);
 
     DRAKE_EXPECT_THROWS_MESSAGE(
@@ -1291,7 +1291,7 @@ TEST_F(RenderEngineVtkTest, DefaultProperties_RenderLabel) {
   // report don't care.
   {
     ResetExpectations();
-    RenderEngineVtk renderer{{RenderLabel::kDontCare, {}}};
+    RenderEngineVtk renderer{{"dont_care", {}}};
     InitializeRenderer(X_WC_, true /* no terrain */, &renderer);
 
     DRAKE_EXPECT_NO_THROW(populate_default_sphere(&renderer));
@@ -1304,11 +1304,10 @@ TEST_F(RenderEngineVtkTest, DefaultProperties_RenderLabel) {
 
   // Case: Change render engine's default to invalid default value; must throw.
   {
-    for (RenderLabel label :
-        {RenderLabel::kEmpty, RenderLabel(1), RenderLabel::kDoNotRender}) {
+    for (const auto* label : {"empty", "do_not_render"}) {
       DRAKE_EXPECT_THROWS_MESSAGE(
           RenderEngineVtk({label, {}}),
-          ".* default render label .* either 'kUnspecified' or 'kDontCare'.*");
+          ".* default label must be either 'dont_care' or 'unspecified'.+");
     }
   }
 }

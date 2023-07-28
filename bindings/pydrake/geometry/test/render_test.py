@@ -51,14 +51,13 @@ class TestGeometryRender(unittest.TestCase):
     def test_render_engine_vtk_params(self):
         # Confirm default construction of params.
         params = mut.RenderEngineVtkParams()
-        self.assertEqual(params.default_label, None)
+        self.assertEqual(params.default_label, "unspecified")
         self.assertEqual(params.default_diffuse, None)
 
-        label = mut.RenderLabel(10)
         diffuse = np.array((1.0, 0.0, 0.0, 0.0))
         params = mut.RenderEngineVtkParams(
-            default_label=label, default_diffuse=diffuse)
-        self.assertEqual(params.default_label, label)
+            default_label="dont_care", default_diffuse=diffuse)
+        self.assertEqual(params.default_label, "dont_care")
         self.assertTrue((params.default_diffuse == diffuse).all())
 
         self.assertIn("default_label", repr(params))
@@ -69,15 +68,14 @@ class TestGeometryRender(unittest.TestCase):
         mut.RenderEngineGlParams()
 
         # The kwarg constructor also works.
-        label = mut.RenderLabel(10)
         diffuse = mut.Rgba(1.0, 0.0, 0.0, 0.0)
         params = mut.RenderEngineGlParams(
             default_clear_color=diffuse,
-            default_label=label,
+            default_label="unspecified",
             default_diffuse=diffuse,
         )
         self.assertEqual(params.default_clear_color, diffuse)
-        self.assertEqual(params.default_label, label)
+        self.assertEqual(params.default_label, "unspecified")
         self.assertEqual(params.default_diffuse, diffuse)
 
         self.assertIn("default_label", repr(params))
@@ -88,15 +86,14 @@ class TestGeometryRender(unittest.TestCase):
         mut.RenderEngineGltfClientParams()
 
         # The kwarg constructor also works.
-        label = mut.RenderLabel(10)
         base_url = "http://127.0.0.1:8888"
         render_endpoint = "render"
         params = mut.RenderEngineGltfClientParams(
-            default_label=label,
+            default_label="unspecified",
             base_url=base_url,
             render_endpoint=render_endpoint,
         )
-        self.assertEqual(params.default_label, label)
+        self.assertEqual(params.default_label, "unspecified")
         self.assertEqual(params.render_endpoint, render_endpoint)
         self.assertEqual(params.base_url, base_url)
 
@@ -149,7 +146,7 @@ class TestGeometryRender(unittest.TestCase):
             # See comment below about `rgbd_sensor_test.cc`.
             latest_instance = None
 
-            def __init__(self, render_label=None):
+            def __init__(self):
                 mut.RenderEngine.__init__(self)
                 # N.B. We do not hide these because this is a test class.
                 # Normally, you would want to hide this.

@@ -93,8 +93,7 @@ ShaderCallback::ShaderCallback() :
 vtkNew<ShaderCallback> RenderEngineVtk::uniform_setting_callback_;
 
 RenderEngineVtk::RenderEngineVtk(const RenderEngineVtkParams& parameters)
-    : RenderEngine(parameters.default_label ? *parameters.default_label
-                                            : RenderLabel::kUnspecified),
+    : RenderEngine(parameters.default_label),
       pipelines_{{make_unique<RenderingPipeline>(),
                   make_unique<RenderingPipeline>(),
                   make_unique<RenderingPipeline>()}} {

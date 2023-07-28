@@ -36,14 +36,11 @@ class DummyRenderEngine : public render::RenderEngine {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DummyRenderEngine);
 
   /* Constructor to exercise the default constructor of RenderEngine.  */
-  DummyRenderEngine() : DummyRenderEngine(render::RenderLabel::kUnspecified) {}
+  DummyRenderEngine() : RenderEngine() {}
 
   /* Constructor for configuring the underlying RenderEngine.  */
-  explicit DummyRenderEngine(const render::RenderLabel& label)
-      : render::RenderEngine(label),
-        color_camera_{{"", {2, 2, 1.0}, {0.01, 1}, {}}, false},
-        depth_camera_{color_camera_.core(), {0.01, 0.011}},
-        label_camera_{color_camera_} {}
+  explicit DummyRenderEngine(const std::string& label)
+      : render::RenderEngine(label) {}
 
   /* @group No-op implementation of RenderEngine interface.  */
   //@{
@@ -228,9 +225,11 @@ class DummyRenderEngine : public render::RenderEngine {
   mutable int depth_count_{};
   mutable int label_count_{};
 
-  mutable render::ColorRenderCamera color_camera_;
-  mutable render::DepthRenderCamera depth_camera_;
-  mutable render::ColorRenderCamera label_camera_;
+  mutable render::ColorRenderCamera color_camera_{
+      {"", {2, 2, 1.0}, {0.01, 1}, {}}, false};
+  mutable render::DepthRenderCamera depth_camera_{color_camera_.core(),
+                                                  {0.01, 0.011}};
+  mutable render::ColorRenderCamera label_camera_{color_camera_};
 };
 
 }  // namespace internal

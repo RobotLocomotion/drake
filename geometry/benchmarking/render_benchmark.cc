@@ -67,7 +67,7 @@ enum class EngineType { Vtk, Gl };
 template <EngineType engine_type>
 std::unique_ptr<RenderEngine> MakeEngine(const Vector3d& bg_rgb) {
   if constexpr (engine_type == EngineType::Vtk) {
-    RenderEngineVtkParams params{{}, {}, bg_rgb};
+    const RenderEngineVtkParams params{.default_clear_color = bg_rgb};
     return MakeRenderEngineVtk(params);
   }
   if constexpr (engine_type == EngineType::Gl) {

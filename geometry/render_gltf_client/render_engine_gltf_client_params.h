@@ -4,7 +4,6 @@
 #include <string>
 
 #include "drake/common/name_value.h"
-#include "drake/geometry/render/render_label.h"
 
 namespace drake {
 namespace geometry {
@@ -31,8 +30,10 @@ struct RenderEngineGltfClientParams {
    See GetUrl() for details. */
   std::string render_endpoint{"render"};
 
-  /** The (optional) label to apply when none is otherwise specified. */
-  std::optional<render::RenderLabel> default_label{};
+  /** Default render label policy to apply to a geometry when no render label
+   has been assigned. Should be one of `"unspecified"` or `"dont_care"`.
+   See @ref render_engine_default_label "RenderEngine" for more information. */
+  std::string default_label{"unspecified"};
 
   /** Whether or not the client should log information about which files are
    being generated, as well as any information about HTTP communications between

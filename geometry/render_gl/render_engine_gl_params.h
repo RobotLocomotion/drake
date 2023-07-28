@@ -1,10 +1,10 @@
 #pragma once
 
+#include <string>
 #include <vector>
 
 #include "drake/common/name_value.h"
 #include "drake/geometry/render/light_parameter.h"
-#include "drake/geometry/render/render_label.h"
 #include "drake/geometry/rgba.h"
 
 namespace drake {
@@ -22,9 +22,10 @@ struct RenderEngineGlParams {
     a->Visit(DRAKE_NVP(lights));
   }
 
-  /** Default render label to apply to a geometry when none is otherwise
-   specified.  */
-  render::RenderLabel default_label{render::RenderLabel::kUnspecified};
+  /** Default render label policy to apply to a geometry when no render label
+   has been assigned. Should be one of `"unspecified"` or `"dont_care"`.
+   See @ref render_engine_default_label "RenderEngine" for more information. */
+  std::string default_label{"unspecified"};
 
   /** Default diffuse color to apply to a geometry when none is otherwise
    specified in the (phong, diffuse) property.  */
