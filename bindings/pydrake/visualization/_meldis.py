@@ -479,7 +479,7 @@ class _PointCloudApplet:
 
 
 class _DrawFrameApplet:
-    """Visualizes frame"""
+    """Applet to visualize triads in meshcat"""
     def __init__(self, *, meshcat):
         """Constructs an applet."""
         self._meshcat = meshcat
