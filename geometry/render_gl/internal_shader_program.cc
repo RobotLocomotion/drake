@@ -128,7 +128,7 @@ void ShaderProgram::SetModelViewMatrix(const Eigen::Matrix4f& X_CW,
   // clang-format on
   const Eigen::Matrix4f T_CglM = kT_CglC * T_CM;
   glUniformMatrix4fv(model_view_loc_, 1, GL_FALSE, T_CglM.data());
-  DoModelViewMatrix(X_CW, T_WM, X_WG_f, scale);
+  DoSetModelViewMatrix(X_CW, T_WM, X_WG_f, scale);
 }
 
 GLint ShaderProgram::GetUniformLocation(const std::string& uniform_name) const {

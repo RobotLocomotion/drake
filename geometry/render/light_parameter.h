@@ -19,7 +19,7 @@ namespace render {
   - kPoint: a punctual light source emitting light in all directions.
   - kSpot: A conical light source emitting light from a point into a limited
            set of directions.
-  - kDirectional: a light, infinitely far away, casting light parallel rays of
+  - kDirectional: a light source, infinitely far away, casting parallel rays of
                   light (like a sun). */
 enum class LightType { kPoint = 1, kSpot = 2, kDirectional = 3 };
 

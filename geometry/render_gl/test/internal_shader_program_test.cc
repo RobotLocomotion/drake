@@ -41,7 +41,7 @@ class TestShader final : public ShaderProgram {
 
   // Collection of flags which report if certain virtual methods have been
   // invoked.
-  bool DoModelViewMatrixCalled() const { return do_mv_matrix_called_; }
+  bool DoSetModelViewMatrixCalled() const { return do_mv_matrix_called_; }
 
   bool CalledDoConfigureUniforms() const {
     return do_configure_uniforms_called_;
@@ -66,8 +66,8 @@ class TestShader final : public ShaderProgram {
   }
 
   // Called before calling SetModelViewMatrix(). The values that
-  // SetModelViewMatrix() passes to DoModelViewMatrix() will be tested against
-  // these values to make sure the right values are passed as expected.
+  // SetModelViewMatrix() passes to DoSetModelViewMatrix() will be tested
+  // against these values to make sure the right values are passed as expected.
   void SetExpectedModelViewComponents(const Eigen::Matrix4f& X_CW,
                                       const Eigen::Matrix4f& T_WM,
                                       const Eigen::Matrix4f& X_WG) {
@@ -99,10 +99,10 @@ class TestShader final : public ShaderProgram {
 
   // With three identically typed parameters, we want a test confirming that
   // the right value is passed to the right parameter.
-  void DoModelViewMatrix(const Eigen::Matrix4f& X_CW,
-                         const Eigen::Matrix4f& T_WM,
-                         const Eigen::Matrix4f& X_WG,
-                         const Eigen::Vector3d&) const override {
+  void DoSetModelViewMatrix(const Eigen::Matrix4f& X_CW,
+                            const Eigen::Matrix4f& T_WM,
+                            const Eigen::Matrix4f& X_WG,
+                            const Eigen::Vector3d&) const override {
     do_mv_matrix_called_ = true;
     EXPECT_TRUE(CompareMatrices(X_CW, X_CW_expected_));
     EXPECT_TRUE(CompareMatrices(T_WM, T_WM_expected_));
@@ -445,13 +445,13 @@ TEST_F(ShaderProgramTest, SetModelViewMatrix) {
   const Vector3d scale(0.5, 2, 4);
   Matrix4f T_WM = X_WG.GetAsMatrix4().cast<float>();  // Except for the scale.
   for (int i = 0; i < 3; ++i) T_WM.col(i) *= scale(i);
-  ASSERT_FALSE(test_shader.DoModelViewMatrixCalled());
+  ASSERT_FALSE(test_shader.DoSetModelViewMatrixCalled());
   test_shader.SetExpectedModelViewComponents(X_CW, T_WM,
                                              X_WG.GetAsMatrix4().cast<float>());
   shader.Use();
   shader.SetModelViewMatrix(X_CW, X_WG, scale);
   shader.Unuse();
-  ASSERT_TRUE(test_shader.DoModelViewMatrixCalled());
+  ASSERT_TRUE(test_shader.DoSetModelViewMatrixCalled());
 
   float mv_mat_data[16];
   glGetUniformfv(gl_id(shader), model_view_loc(shader), &mv_mat_data[0]);

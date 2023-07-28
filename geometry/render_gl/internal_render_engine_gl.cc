@@ -101,6 +101,11 @@ uniform mat4 T_CM;  // The "model view matrix" (in OpenGl terms).
 uniform mat4 T_DC;  // The "projection matrix" (in OpenGl terms).
 uniform mat4 T_WM;  // The pose of the geometry (model) in the world.
 uniform mat3 T_WM_normals;  // Rotation * inverse_scale to transform normals.
+// TODO(SeanCurtis-TRI): Rather than propagating normal and position vertex in
+// the *world* frame, compute them in camera frame. It saves one transform per
+// vertex (for which there are a lot) and replaces it with CPU-side
+// transformations of the lights into the camera frame. It also reduces the
+// number of uniforms; T_WM is no longer necessary.
 out vec3 n_W;
 out vec3 p_WV; // Vertex position in world space.
 
@@ -124,6 +129,11 @@ uniform mat4 X_WC;  // Transform light position from camera to world.
 in vec3 n_W;
 in vec3 p_WV;
 
+// TODO(SeanCurtis-TRI): Rather than hard-code this in this compile-time string,
+// set this to the actual number of lights reported. We can still have the
+// render engine subject to a hard light limit, but we can make sure the shader
+// only has defined lights. This should roll into changes in how derived
+// classes access these GLSL functions.
 const int MAX_LIGHT_NUM = 5;
 
 // TODO(SeanCurtis-TRI): We should packing these uniforms more tightly. vec3s
@@ -158,18 +168,18 @@ struct Light {
 
 uniform Light lights[MAX_LIGHT_NUM];
 
-vec3 GetLightPositionInWorld(Light light, vec3 v) {
-  vec3 v_W = v;  // Interpreting v as v_W.
+vec3 GetLightPositionInWorld(Light light) {
+  vec3 v_W = light.position.xyz;  // Interpreting v as v_W.
   if (light.position.w == 1) {
-    v_W = (X_WC * vec4(v, 1.0)).xyz;  // Interpreting v as v_C.
+    v_W = (X_WC * vec4(light.position.xyz, 1.0)).xyz;  // Interpreting v as v_C.
   }
   return v_W;
 }
 
-vec3 GetLightDirectionInWorld(Light light, vec3 v) {
-  vec3 v_W = v;  // Interpreting v as v_W.
+vec3 GetLightDirectionInWorld(Light light) {
+  vec3 v_W = light.dir;  // Interpreting v as v_W.
   if (light.position.w == 1) {
-    v_W = mat3(X_WC) * v;  // Interpreting v as v_C.
+    v_W = mat3(X_WC) * light.dir;  // Interpreting v as v_C.
   }
   return v_W;
 }
@@ -180,7 +190,7 @@ float GetPointExposure(Light light, vec3 dir_FL_W, vec3 nhat_W) {
 
 float GetSpotExposure(Light light, vec3 dir_FL_W, vec3 nhat_W) {
   // TODO: Add a penumbra to the light.
-  vec3 dir_L_W = GetLightDirectionInWorld(light, light.dir);
+  vec3 dir_L_W = GetLightDirectionInWorld(light);
   // If the angle θ between the light vector and the direction from fragment
   // to light is greater than the light's half cone angle θₗ it is not
   // illuminated. Alternatively, no light if cos(θ) < cos(θₗ).
@@ -192,13 +202,13 @@ float GetSpotExposure(Light light, vec3 dir_FL_W, vec3 nhat_W) {
 }
 
 float GetDirectionalExposure(Light light, vec3 nhat_W) {
-  vec3 dir_L_W = GetLightDirectionInWorld(light, light.dir);
+  vec3 dir_L_W = GetLightDirectionInWorld(light);
   return max(dot(nhat_W, normalize(-dir_L_W)), 0.0);
 }
 
 vec3 GetLightIllumination(Light light, vec3 nhat_W) {
   // Position vector from fragment to light.
-  vec3 p_WL = GetLightPositionInWorld(light, light.position.xyz);
+  vec3 p_WL = GetLightPositionInWorld(light);
   // p_WV is interpolated to be p_WF (position of the fragment).
   vec3 p_FL_W = p_WL - p_WV;
   float dist_FL = length(p_FL_W);
@@ -222,11 +232,11 @@ vec3 GetLightIllumination(Light light, vec3 nhat_W) {
   }
 
   // Attenuation.
-  float attenuation = 1 / (light.atten_coeff[0] +
-                           light.atten_coeff[1] * dist_FL +
-                           light.atten_coeff[2] * (dist_FL * dist_FL));
+  float inv_attenuation = light.atten_coeff[0] +
+                          (light.atten_coeff[1] +
+                           light.atten_coeff[2] * dist_FL) * dist_FL;
 
-  return light.color * exposure * attenuation * light.intensity;
+  return light.color * exposure * light.intensity / inv_attenuation;
 }
 
 vec4 GetIlluminatedColor(vec4 diffuse) {
@@ -240,10 +250,7 @@ vec4 GetIlluminatedColor(vec4 diffuse) {
   for (int i = 0; i < MAX_LIGHT_NUM; i++) {
     illum += GetLightIllumination(lights[i], nhat_W);
   }
-  vec4 color = diffuse;
-  color.rgb = illum * diffuse.rgb;
-  color.a = diffuse.a;
-  return color;
+  return vec4(illum * diffuse.rgb, diffuse.a);
 }
 
 )""";
@@ -261,7 +268,7 @@ vec4 GetIlluminatedColor(vec4 diffuse) {
     DoConfigureMoreUniforms();
   }
 
-  void DoModelViewMatrix(const Eigen::Matrix4f& X_CW,
+  void DoSetModelViewMatrix(const Eigen::Matrix4f& X_CW,
                          const Eigen::Matrix4f& T_WM,
                          const Eigen::Matrix4f& X_WG,
                          const Vector3d& scale) const override {
@@ -291,9 +298,6 @@ vec4 GetIlluminatedColor(vec4 diffuse) {
   }
 
   void SetLightParameters(int index, const LightParameter& light) const {
-    // TODO(SeanCurtis-TRI): Consider packing "type" in with "color" and
-    // cos_half_angle in with dir (as vec4). This would reduce the number of
-    // uniforms and OpenGL context changes.
     glUniform1i(GetLightFieldLocation(index, "type"),
                 static_cast<int>(light.type));
     Eigen::Vector3f color = light.color.rgba().head<3>().cast<float>();

@@ -141,7 +141,8 @@ class ShaderProgram {
    (instance, camera)-dependent configuration). The model view matrix X_CM
    transforms a vertex from the model frame M to the camera frame C.
 
-   This method invokes DoModelViewMatrix() with many of the component matrices.
+   This method invokes DoSetModelViewMatrix() with many of the component
+   matrices.
 
    Note: there is a subtle difference between the geometry frame G and the model
    frame M. Geometries are typically defined in a canonical frame in which they
@@ -243,10 +244,10 @@ class ShaderProgram {
                    geometry with identity scale, it should be equal to X_WG.
    @param X_WG     The pose of the geometry in the world frame.
    @param scale    The per-axis scale of the geometry.  */
-  virtual void DoModelViewMatrix(const Eigen::Matrix4f& /* X_CW */,
-                                 const Eigen::Matrix4f& /* T_WM */,
-                                 const Eigen::Matrix4f& /* X_WG */,
-                                 const Eigen::Vector3d& /* scale */) const {}
+  virtual void DoSetModelViewMatrix(const Eigen::Matrix4f& /* X_CW */,
+                                    const Eigen::Matrix4f& /* T_WM */,
+                                    const Eigen::Matrix4f& /* X_WG */,
+                                    const Eigen::Vector3d& /* scale */) const {}
 
  private:
   friend class ShaderProgramTest;

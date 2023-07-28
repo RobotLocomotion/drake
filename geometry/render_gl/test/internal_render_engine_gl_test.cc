@@ -1590,7 +1590,7 @@ TEST_F(RenderEngineGlTest, MeshGeometryReuse) {
 //
 //  A: Box and plane are visible, filling the whole screen (plane behind box);
 //     every pixel has the full diffuse color.
-//  B: The camera is 45° up from the x-axs, so the normals of the visible faces
+//  B: The camera is 45° up from the x-axis, so the normals of the visible faces
 //     of box 1 are both 45° away from the camera's view direction. Every pixel
 //     will have the same value (√2/2 of the full diffuse value).
 //
@@ -1608,7 +1608,7 @@ TEST_F(RenderEngineGlTest, MeshGeometryReuse) {
 //  4. white light (at normal intensity)
 //     - Diffuse color is modulated by the expected light exposure levels.
 //  5. no attenuation
-//     - the near box and far box have have the same exposure from view A
+//     - the near box and far plane have have the same exposure from view A
 //       because it only depends on direction and not distance.
 TEST_F(RenderEngineGlTest, FallbackLight) {
   const RenderEngineGlParams params{.default_clear_color = kBgColor};

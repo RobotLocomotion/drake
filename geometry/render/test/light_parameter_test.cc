@@ -20,6 +20,7 @@ GTEST_TEST(LightParamterTest, DefaultValues) {
   const LightParameter light;
   EXPECT_EQ(light.type, LightType::kDirectional);
   EXPECT_EQ(light.color, Rgba(1, 1, 1));
+  EXPECT_TRUE(CompareMatrices(light.attenuation_values, Vector3d(1, 0, 0)));
   EXPECT_TRUE(CompareMatrices(light.position, Vector3d(0, 0, 0)));
   EXPECT_EQ(light.frame, LightFrame::kCamera);
   EXPECT_EQ(light.intensity, 1.0);
@@ -42,6 +43,8 @@ GTEST_TEST(LightParameterTest, Serialization) {
 
   EXPECT_EQ(light.type, dut.type);
   EXPECT_EQ(light.color, dut.color);
+  EXPECT_TRUE(
+      CompareMatrices(light.attenuation_values, dut.attenuation_values));
   EXPECT_TRUE(CompareMatrices(light.position, dut.position));
   EXPECT_EQ(light.frame, dut.frame);
   EXPECT_EQ(light.intensity, dut.intensity);
