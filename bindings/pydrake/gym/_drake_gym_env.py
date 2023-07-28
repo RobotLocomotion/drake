@@ -31,8 +31,8 @@ class DrakeGymEnv(gym.Env):
                  simulator: Union[Simulator,
                                   Callable[[RandomGenerator], Simulator]],
                  time_step: float,
-                 action_space: gym.spaces.space,
-                 observation_space: gym.spaces.space,
+                 action_space: gym.spaces.Space,
+                 observation_space: gym.spaces.Space,
                  reward: Union[Callable[[System, Context], float],
                                OutputPortIndex, str],
                  action_port_id: Union[InputPort, InputPortIndex, str] = None,
@@ -43,63 +43,63 @@ class DrakeGymEnv(gym.Env):
                  hardware: bool = False):
         """
         Args:
-            simulator: Either:
-                * A drake.systems.analysis.Simulator, or
-                * A function that produces a (randomized) Simulator.
-            time_step: Each call to step() will advance the simulator by
-                `time_step` seconds.
+            simulator: Either a ``drake.systems.analysis.Simulator``, or
+                a function that produces a (randomized) Simulator.
+            time_step: Each call to ``step()`` will advance the simulator by
+                ``time_step`` seconds.
             reward: The reward can be specified in one of two
                 ways: (1) by passing a callable with the signature
-                `value = reward(context)` or (2) by passing a scalar
-                vector-valued output port of `simulator`'s system.
-            action_port_id: The ID of an input port of `simulator`'s system
-                compatible with the action_space.  Each Env *must* have an
-                action port; passing `None` defaults to using the *first*
+                ``value = reward(context)`` or (2) by passing a scalar
+                vector-valued output port of ``simulator``'s system.
+            action_port_id: The ID of an input port of ``simulator``'s system
+                compatible with the ``action_space``.  Each Env *must* have an
+                action port; passing ``None`` defaults to using the *first*
                 input port (inspired by
-                `InputPortSelection.kUseFirstInputIfItExists`).
-            action_space: Defines the `gym.spaces.space` for the actions.  If
-                the action port is vector-valued, then passing `None` defaults
-                to a gym.spaces.Box of the correct dimension with bounds at
+                ``InputPortSelection.kUseFirstInputIfItExists``).
+            action_space: Defines the ``gym.spaces.Space`` for the actions.  If
+                the action port is vector-valued, then passing ``None`` defaults
+                to a ``gym.spaces.Box`` of the correct dimension with bounds at
                 negative and positive infinity.  Note: Stable Baselines 3
-                strongly encourages normalizing the action_space to [-1, 1].
-            observation_port_id: An output port of `simulator`'s system
-                compatible with the observation_space. Each Env *must* have
+                strongly encourages normalizing the ``action_space`` to [-1, 1].
+            observation_port_id: An output port of ``simulator``'s system
+                compatible with the ``observation_space``. Each Env *must* have
                 an observation port (it seems that gym doesn't support empty
-                observation spaces / open-loop policies); passing `None`
+                observation spaces / open-loop policies); passing ``None``
                 defaults to using the *first* input port (inspired by
-                `OutputPortSelection.kUseFirstOutputIfItExists`).
-            observation_space: Defines the gym.spaces.space for the
+                ``OutputPortSelection.kUseFirstOutputIfItExists``).
+            observation_space: Defines the ``gym.spaces.Space`` for the
                 observations.  If the observation port is vector-valued, then
-                passing `None` defaults to a gym.spaces.Box of the correct
+                passing ``None`` defaults to a ``gym.spaces.Box`` of the correct
                 dimension with bounds at negative and positive infinity.
-            render_rgb_port: An optional output port of `simulator`'s system
-                that returns  an `ImageRgba8U`; often the `color_image` port
-                of a Drake `RgbdSensor`.
+            render_rgb_port: An optional output port of ``simulator``'s system
+                that returns  an ``ImageRgba8U``; often the ``color_image`` port
+                of a Drake ``RgbdSensor``.
             render_mode: The render mode of the environment determined at
-                initialisation. Defaults to `human` which uses visualizers
+                initialization. Defaults to ``human`` which uses visualizers
                 inside the System (e.g. MeshcatVisualizer,
-                PlanarSceneGraphVisualizer, etc.). `render_mode` equal to
-                `rgb_array` evaluates the `render_rgb_port` and `ansi` calls
-                __repr__ on the system Context.
+                PlanarSceneGraphVisualizer, etc.). ``render_mode`` equal to
+                ``rgb_array`` evaluates the ``render_rgb_port`` and ``ansi`` calls
+                ``__repr__`` on the system Context.
             set_home: A function that sets the home state (plant, and/or env.)
-                at reset(). The reset state can be specified in one of
+                at ``reset()``. The reset state can be specified in one of
                 the two ways:
-                (if set_home is None) setting random context using a Drake
-                random_generator (e.g. joint.set_random_pose_distribution()
-                using the reset() seed),
-                (otherwise) using set_home().
+                (if ``set_home`` is None) setting random context using a Drake
+                random_generator (e.g., ``joint.set_random_pose_distribution()``
+                using the ``reset()`` seed),
+                (otherwise) using ``set_home()``.
             hardware: If True, it prevents from setting random context at
-                reset() when using random_generator, but it does execute
-                set_home() if given.
+                ``reset()`` when using ``random_generator``, but it does execute
+                ``set_home()`` if given.
 
-        Notes (using `env` as an instance of this class):
-        - You may set simulator/integrator preferences by using `env.simulator`
+        Notes (using ``env`` as an instance of this class):
+
+        - You may set simulator/integrator preferences by using ``env.simulator``
           directly.
-        - The `done` condition returned by `step()` is always False by
-          default.  Use `env.simulator.set_monitor()` to use Drake's monitor
+        - The ``done`` condition returned by ``step()`` is always False by
+          default.  Use ``env.simulator.set_monitor()`` to use Drake's monitor
           functionality for specifying termination conditions.
-        - You may additionally wish to directly set `env.reward_range` and/or
-          `env.spec`.  See the docs for gym.Env for more details.
+        - You may additionally wish to directly set ``env.reward_range`` and/or
+          ``env.spec``.  See the docs for ``gym.Env`` for more details.
         """
         super().__init__()
         if isinstance(simulator, Simulator):
@@ -208,11 +208,11 @@ class DrakeGymEnv(gym.Env):
 
     def step(self, action):
         """
-        Implements gym.Env.step to advance the simulation forward by one
-        `self.time_step`.
+        Implements ``gym.Env.step`` to advance the simulation forward by one
+        ``self.time_step``.
 
         Args:
-            action: an element from self.action_space
+            action: an element from ``self.action_space``.
         """
         assert self.simulator, "You must call reset() first"
 
@@ -255,7 +255,7 @@ class DrakeGymEnv(gym.Env):
         """
         If a callable "simulator factory" was passed to the constructor, then a
         new simulator is created.  Otherwise this method simply resets the
-        `simulator` and its Context.
+        ``simulator`` and its Context.
         """
         super().reset(seed=seed)
         assert options is None or options == dict(), (
@@ -290,16 +290,16 @@ class DrakeGymEnv(gym.Env):
 
     def render(self):
         """
-        Rendering in `human` mode is accomplished by calling ForcedPublish on
-        `system`.  This should cause visualizers inside the System (e.g.
+        Rendering in ``human`` mode is accomplished by calling ForcedPublish on
+        ``system``.  This should cause visualizers inside the System (e.g.
         MeshcatVisualizer, PlanarSceneGraphVisualizer, etc.) to draw their
         outputs.  To be fully compliant, those visualizers should set their
-        default publishing period to `np.inf` (do not publish periodically).
+        default publishing period to ``np.inf`` (do not publish periodically).
 
-        Rendering in `ascii` mode calls __repr__ on the system Context.
+        Rendering in ``ascii`` mode calls ``__repr__`` on the system Context.
 
-        Rendering in `rgb_array` mode is enabled by passing a compatible
-        `render_rgb_port` to the class constructor.
+        Rendering in ``rgb_array`` mode is enabled by passing a compatible
+        ``render_rgb_port`` to the class constructor.
         """
         assert self.simulator, "You must call reset() first"
 
