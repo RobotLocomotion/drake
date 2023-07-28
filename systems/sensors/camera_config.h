@@ -9,6 +9,9 @@
 #include "drake/common/name_value.h"
 #include "drake/common/schema/transform.h"
 #include "drake/geometry/render/render_camera.h"
+#include "drake/geometry/render_gl/render_engine_gl_params.h"
+#include "drake/geometry/render_gltf_client/render_engine_gltf_client_params.h"
+#include "drake/geometry/render_vtk/render_engine_vtk_params.h"
 #include "drake/geometry/rgba.h"
 
 namespace drake {
@@ -248,21 +251,116 @@ struct CameraConfig {
    @pre `renderer_name` is not empty. */
   std::string renderer_name{"default"};
 
-  /** The choice of render engine implementation to use. The value should be
-   one of empty, '"RenderEngineVtk"', or '"RenderEngineGl"'. An `empty` string
-   signals, in essence, "don't care". If a render engine with that name has
-   already been configured, the camera will use it (regardless of type). If
-   the name doesn't already exist, the default, slower, more portable, and more
-   robust RenderEngineVtk will be instantiated. RenderEngineGl can be selected
-   if you are on Ubuntu and need the improved performance (at the *possible*
-   cost of lesser image fidelity).
+  /** The choice of render engine implementation to use. It can be specified
+   simply by providing a `string` containing the class _name_ of the
+   RenderEngine to use (i.e., `"RenderEngineVtk"`, `"RenderEngineGl"`, or
+   `"RenderEngineGltfClient"`). Or, it can be specified by providing parameters
+   for one of those engines: RenderEngineVtkParams, RenderEngineGlParams, or
+   RenderEngineGltfClientParams.
 
-   @pre `renderer_class` is empty or one of '"RenderEngineVtk"' or
-        '"RenderEngineGl"'.
-   @pre For two cameras with the same `renderer_name` value, they must also
-        specify the same `renderer_class` (either implicitly or explicitly).
+   If a `string` containing the render engine class _name_ is provided, the
+   engine instantiated will use the default parameters -- equivalent to passing
+   the set of default parameters.
+
+   It is possible for multiple cameras to reference the same `renderer_name`
+   but configure the renderer differently. This would be a configuration error.
+   The following rules will help prevent problematic configurations:
+
+     - Multiple cameras can reference the same value for `renderer_name`.
+     - If multiple cameras reference the same value for `renderer_name`, only
+       the *first* can use the engine parameters to specify it. Attempting to
+       do so with a later camera will produce an error.
+       - The later cameras can use engine class _name_.
+       - If a later camera names a *different* engine class, that will result
+         in an error.
+
+   In YAML, it can be a bit trickier. Depending on how a collection of cameras
+   is articulated, the concept of "first" may be unclear. In
+   `examples/hardware_sim/scenario.h` the collection is a map. So, the camera
+   configurations are not necessarily processed in the order they appear in the
+   YAML file. Instead, the processing order depends on the mnemonic camera key.
+   So, be aware, if you use a similar mapping, you may have to massage the key
+   names to achieve the requisite processing order. Alternatively, a vector of
+   %CameraConfig in your own scenario file, would guarantee that processing
+   order is the same as file order.
+
+   We intend to relax these restrictions in time, allowing equivalent, redundant
+   specifications of a render engine (and throwing only on inconsistent
+   specifications).
+
+   Passing the empty string is equivalent to saying, "I don't care". If a render
+   engine with that name has already been configured, the camera will use it
+   (regardless of type). If the name doesn't already exist, the default, slower,
+   more portable, and more robust RenderEngineVtk will be instantiated.
+   RenderEngineGl can be selected if you are on Ubuntu and need the improved
+   performance (at the *possible* cost of lesser image fidelity). In YAML,
+   omitting `renderer_class` from the camera specification is equivalent to
+   "passing the empty string".
+
+   <h4>Configuring in YAML</h4>
+
+   It isn't always obvious what the proper spelling in YAML is. The following
+   examples illustrate how the `renderer_class` field can be defined in YAML
+   files.
+
+   1. Use the RenderEngineVtk with all default parameters - providing the class
+      name as a string.
+   @code{yaml}
+   renderer_class: RenderEngineVtk
+   @endcode
+
+   2. Use the RenderEngineVtk with all default parameters - providing the
+      engine parameters with default values.
+   @code{yaml}
+   renderer_class: !RenderEngineVtkParams {}
+   @endcode
+
+   3. Use the RenderEngineVtk with a customized clear color (black).
+   @code{yaml}
+   renderer_class: !RenderEngineVtkParams
+     default_clear_color: [0, 0, 0]
+   @endcode
+
+   4. Use the RenderEngineGl with a customized clear color (black).
+   @code{yaml}
+   renderer_class: !RenderEngineGlParams
+     default_clear_color:
+       rgba: [0, 0, 0, 1]
+   @endcode
+
+   5. Use the RenderEngineGltfClient with fully specified properties.
+   @code{yaml}
+   renderer_class: !RenderEngineGltfClientParams
+     base_url: http://10.10.10.1
+     render_endpoint: server
+     verbose: true
+     cleanup: false
+   @endcode
+
+   Things to note:
+
+     - When providing the _parameters_ for the engine, the declaration must
+       begin with `!` to announce it as a type (examples 2, 3, and 4).
+     - A defaulted set of parameters must have a trailing `{}` (example 2).
+     - Two engine parameter sets may have the same semantic parameter but spell
+       it differently (`default_clear_color` in examples 3 and 4).
+
+   <!-- TODO(SeanCurtis-TRI): Figure out why this doesn't work.
+   ?. Explicitly default to Drake's default render engine.
+   @code{yaml}
+   renderer_class: ""
+   @endcode
+   -->
+
+   @pre `renderer_class` is a string and either empty or one of
+        `"RenderEngineVtk"`, `"RenderEngineGl"`, or `"RenderEngineGltfClient"`,
+        or, it is a parameter type of one of Drake's RenderEngine
+        implementations.
    @sa drake::geometry::SceneGraph::GetRendererTypeName(). */
-  std::string renderer_class;
+  std::variant<std::string, geometry::RenderEngineVtkParams,
+               geometry::RenderEngineGlParams,
+               geometry::RenderEngineGltfClientParams>
+      renderer_class{""};
 
   /** The "background" color. This is the color drawn where there are no objects
    visible. Its default value matches the default value for
@@ -270,10 +368,9 @@ struct CameraConfig {
    documentation for geometry::Rgba::Serialize for how to define this
    value in YAML.
 
-   N.B. If two different cameras are configured to use the same renderer (having
-   identical values for `renderer_name`) but *different* values for
-   `background`, the render engine instance will be configured with one of the
-   set of values. Which one is undefined. */
+   This value is used only if the `render_class` specifies either
+   `"RenderEngineVtk"` or `"RenderEngineGl"` by _name_ (RenderEngineGltfClient
+   doesn't have a configurable background color.) */
   geometry::Rgba background{204 / 255.0, 229 / 255.0, 255 / 255.0, 1.0};
 
   //@}

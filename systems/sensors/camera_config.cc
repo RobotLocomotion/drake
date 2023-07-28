@@ -130,13 +130,20 @@ void CameraConfig::ValidateOrThrow() const {
       },
       focal);
 
-  if (!renderer_class.empty() && !(renderer_class == "RenderEngineVtk" ||
-                                   renderer_class == "RenderEngineGl")) {
-    throw std::logic_error(fmt::format(
-        "Invalid camera configuration; the given renderer_class value '{}' "
-        "must be empty (to use the default) or be one of 'RenderEngineVtk' or "
-        "'RenderEngineGl'.",
-        renderer_class));
+  // We don't worry about the other variant alternatives; if we're here, we've
+  // constructed a set of parameters, and we'll defer to the RenderEngine to
+  // determine if the values are valid.
+  if (std::holds_alternative<std::string>(renderer_class)) {
+    const auto& class_name = std::get<std::string>(renderer_class);
+    if (!class_name.empty() &&
+        !(class_name == "RenderEngineVtk" || class_name == "RenderEngineGl" ||
+          class_name == "RenderEngineGltfClient")) {
+      throw std::logic_error(fmt::format(
+          "Invalid camera configuration; the given renderer_class value '{}' "
+          "must be empty (to use the default) or be one of 'RenderEngineVtk', "
+          "'RenderEngineGl', or 'RenderEngineGltfClient'.",
+          class_name));
+    }
   }
 
   // This throws for us if we have bad bad numerical camera values (or an empty
