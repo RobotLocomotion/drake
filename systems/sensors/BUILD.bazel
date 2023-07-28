@@ -83,6 +83,9 @@ drake_cc_library(
         "//common/schema:transform",
         "//geometry:rgba",
         "//geometry/render:render_camera",
+        "//geometry/render_gl",
+        "//geometry/render_gltf_client",
+        "//geometry/render_vtk",
     ],
 )
 
@@ -103,6 +106,7 @@ drake_cc_library(
         ":rgbd_sensor",
         ":sim_rgbd_sensor",
         "//geometry/render_gl",
+        "//geometry/render_gltf_client",
         "//geometry/render_vtk",
         "//math:geometric_transform",
         "//multibody/parsing:scoped_names",
@@ -357,13 +361,14 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "//common/yaml:yaml_io",
-        "//geometry/render_gl",
+        "//geometry/render_vtk",
         "@fmt",
     ],
 )
 
 drake_cc_googletest(
     name = "camera_config_functions_test",
+    allow_network = ["render_gltf_client"],
     tags = vtk_test_tags(),
     deps = [
         ":camera_config_functions",

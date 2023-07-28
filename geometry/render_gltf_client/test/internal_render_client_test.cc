@@ -139,7 +139,7 @@ TEST_F(RenderClientTest, Constructor) {
   const bool verbose = true;
   const bool cleanup = false;
   const RenderClient client{
-      Params{base_url, render_endpoint, std::nullopt, verbose, cleanup}};
+      Params{base_url, render_endpoint, "", verbose, cleanup}};
   EXPECT_EQ(client.get_params().GetUrl(), base_url + "/" + render_endpoint);
   EXPECT_EQ(client.get_params().verbose, verbose);
   EXPECT_EQ(client.get_params().cleanup, cleanup);

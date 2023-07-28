@@ -76,7 +76,7 @@ class MinimumEngine : public RenderEngine {
 // will confirm that the right geometries get updated.
 GTEST_TEST(RenderEngine, RegistrationAndUpdate) {
   // Change the default render label to something registerable.
-  DummyRenderEngine engine({RenderLabel::kDontCare});
+  DummyRenderEngine engine("dont_care");
 
   // Configure parameters for registering visuals.
   PerceptionProperties skip_properties = engine.rejecting_properties();
@@ -173,7 +173,7 @@ GTEST_TEST(RenderEngine, RemoveGeometry) {
   // The test render engine contains three dynamic geometries and two anchored.
 
   // Set the default render label to something registerable.
-  DummyRenderEngine engine({RenderLabel::kDontCare});
+  DummyRenderEngine engine("dont_care");
   // A set of properties that will cause a shape to be properly registered.
   PerceptionProperties add_properties = engine.accepting_properties();
   RigidTransformd X_WG = RigidTransformd::Identity();
@@ -270,17 +270,16 @@ GTEST_TEST(RenderEngine, DefaultRenderLabel) {
 
   // Case: Confirm kDontCare is valid.
   {
-    DummyRenderEngine engine(RenderLabel::kDontCare);
+    DummyRenderEngine engine("dont_care");
     EXPECT_EQ(engine.default_render_label(), RenderLabel::kDontCare);
   }
 
   // Case: Confirm construction with alternate label is forbidden.
   {
-    for (auto label :
-         {RenderLabel::kDoNotRender, RenderLabel::kEmpty, RenderLabel{10}}) {
+    for (auto label : {"something", "empty"}) {
       DRAKE_EXPECT_THROWS_MESSAGE(DummyRenderEngine{label},
-                                  ".* default render label must be either "
-                                  "'kUnspecified' or 'kDontCare'");
+                                  ".* default label must be either 'dont_care' "
+                                  "or 'unspecified'.+");
     }
   }
 }

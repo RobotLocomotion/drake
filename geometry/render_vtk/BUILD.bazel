@@ -26,7 +26,6 @@ drake_cc_library(
     deps = [
         "//common:essential",
         "//common:name_value",
-        "//geometry/render:render_label",
     ],
 )
 

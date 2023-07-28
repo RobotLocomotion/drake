@@ -1408,7 +1408,7 @@ TEST_F(RenderEngineGlTest, DefaultProperties_RenderLabel) {
   // Case: Change render engine's default to explicitly be unspecified; must
   // throw.
   {
-    RenderEngineGl renderer{{.default_label = RenderLabel::kUnspecified}};
+    RenderEngineGl renderer{{.default_label = "unspecified"}};
     InitializeRenderer(X_WR_, false /* no terrain */, &renderer);
 
     DRAKE_EXPECT_THROWS_MESSAGE(
@@ -1420,7 +1420,7 @@ TEST_F(RenderEngineGlTest, DefaultProperties_RenderLabel) {
   // report don't care.
   {
     ResetExpectations();
-    RenderEngineGl renderer{{.default_label = RenderLabel::kDontCare}};
+    RenderEngineGl renderer{{.default_label = "dont_care"}};
     InitializeRenderer(X_WR_, true /* no terrain */, &renderer);
 
     DRAKE_EXPECT_NO_THROW(populate_default_sphere(&renderer));
@@ -1433,11 +1433,10 @@ TEST_F(RenderEngineGlTest, DefaultProperties_RenderLabel) {
 
   // Case: Change render engine's default to invalid default value; must throw.
   {
-    for (RenderLabel label :
-        {RenderLabel::kEmpty, RenderLabel(1), RenderLabel::kDoNotRender}) {
+    for (const auto* label : {"empty", "do_not_render"}) {
       DRAKE_EXPECT_THROWS_MESSAGE(
           RenderEngineGl({.default_label = label}),
-          ".* default render label .* either 'kUnspecified' or 'kDontCare'.*");
+          ".* default label must be either 'dont_care' or 'unspecified'.+");
     }
   }
 }

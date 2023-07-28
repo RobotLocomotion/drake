@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <optional>
+#include <string>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -91,16 +92,7 @@ class RenderEngine : public ShapeReifier {
 
    @throws std::exception if the default render label is not one of the two
                           allowed labels.  */
-  explicit RenderEngine(
-      const RenderLabel& default_label = RenderLabel::kUnspecified)
-      : default_render_label_(default_label) {
-    if (default_render_label_ != RenderLabel::kUnspecified &&
-        default_render_label_ != RenderLabel::kDontCare) {
-      throw std::logic_error(
-          "RenderEngine's default render label must be either 'kUnspecified' "
-          "or 'kDontCare'");
-    }
-  }
+  explicit RenderEngine(const std::string& default_label = "unspecified");
 
   virtual ~RenderEngine() = default;
 
