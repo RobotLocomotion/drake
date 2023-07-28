@@ -2,6 +2,7 @@
 Play a policy for //bindings/pydrake/examples/gym:cart_pole.
 '''
 import argparse
+import os
 import sys
 
 import gymnasium as gym
@@ -65,7 +66,19 @@ def run_playing(args):
             obs, _ = env.reset()
 
 
+def _bazel_chdir():
+    """When using `bazel run`, the current working directory ("cwd") of the
+    program is set to a deeply-nested runfiles directory, not the actual cwd.
+    In case relative paths are given on the command line, we need to restore
+    the original cwd so that those paths resolve correctly.
+    """
+    original_working_directory = os.environ.get("BUILD_WORKING_DIRECTORY")
+    if original_working_directory is not None:
+        os.chdir(original_working_directory)
+
+
 def main():
+    _bazel_chdir()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--test', action='store_true')
     parser.add_argument('--debug', action='store_true')
