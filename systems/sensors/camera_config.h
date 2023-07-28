@@ -9,6 +9,9 @@
 #include "drake/common/name_value.h"
 #include "drake/common/schema/transform.h"
 #include "drake/geometry/render/render_camera.h"
+#include "drake/geometry/render_gl/render_engine_gl_params.h"
+#include "drake/geometry/render_gltf_client/render_engine_gltf_client_params.h"
+#include "drake/geometry/render_vtk/render_engine_vtk_params.h"
 #include "drake/geometry/rgba.h"
 
 namespace drake {
@@ -248,21 +251,57 @@ struct CameraConfig {
    @pre `renderer_name` is not empty. */
   std::string renderer_name{"default"};
 
-  /** The choice of render engine implementation to use. The value should be
-   one of empty, '"RenderEngineVtk"', or '"RenderEngineGl"'. An `empty` string
-   signals, in essence, "don't care". If a render engine with that name has
-   already been configured, the camera will use it (regardless of type). If
-   the name doesn't already exist, the default, slower, more portable, and more
-   robust RenderEngineVtk will be instantiated. RenderEngineGl can be selected
-   if you are on Ubuntu and need the improved performance (at the *possible*
-   cost of lesser image fidelity).
+  /** The choice of render engine implementation to use. It can be specified
+   simply by *naming* the RenderEngine class to use (i.e., `"RenderEngineVtk"`,
+   `"RenderEngineGl"`, or `"RenderEngineGltfClient"`). Or, it can be specified
+   by providing parameters for one of those engines.
 
-   @pre `renderer_class` is empty or one of '"RenderEngineVtk"' or
-        '"RenderEngineGl"'.
-   @pre For two cameras with the same `renderer_name` value, they must also
-        specify the same `renderer_class` (either implicitly or explicitly).
+   If the render engine class _name_ is provided, the engine instantiated will
+   use the default parameters -- equivalent to passing the set of default
+   parameters. For example, in yaml:
+
+   @code{yaml}
+     my_camera:
+       renderer_class: RenderEngineVtk
+     other_camera:
+       renderer_class: !RenderEngineVtkParams
+   @endcode
+
+   the camera named `my_camera` will have the same configuration as
+   `other_camera` -- the default configuration.
+
+   It is possible for multiple cameras to reference the same `renderer_name`
+   but configure the renderer differently. This would be a configuration error.
+   The following rules will help prevent problematic configurations:
+
+     - Multiple cameras can reference the same value for `renderer_name`.
+     - If multiple cameras reference the same value for `renderer_name`, only
+       the *first* can use the engine parameters to specify it. Attempting to
+       do so with a later camera will produce an error.
+       - The later cameras can use engine class _name_.
+       - If a later camera names a *different* engine class, that will result
+         in an error.
+
+   We intend to relax these restrictions in time, allowing equivalent, redundant
+   specifications of a render engine (and throwing only on inconsistent
+   specifications).
+
+   Passing the empty string is equivalent to saying, "I don't care". If a render
+   engine with that name has already been configured, the camera will use it
+   (regardless of type). If the name doesn't already exist, the default, slower,
+   more portable, and more robust RenderEngineVtk will be instantiated.
+   RenderEngineGl can be selected if you are on Ubuntu and need the improved
+   performance (at the *possible* cost of lesser image fidelity).
+
+   @pre `renderer_class` is a string and either empty or one of
+        '"RenderEngineVtk"', '"RenderEngineGl"', or `"RenderEngineGltfClient"`,
+        or, it is a parameter type of one of Drake's RenderEngine
+        implementations.
    @sa drake::geometry::SceneGraph::GetRendererTypeName(). */
-  std::string renderer_class;
+  std::variant<std::string, geometry::RenderEngineVtkParams,
+               geometry::RenderEngineGlParams,
+               geometry::RenderEngineGltfClientParams>
+      renderer_class{""};
 
   /** The "background" color. This is the color drawn where there are no objects
    visible. Its default value matches the default value for
@@ -270,10 +309,9 @@ struct CameraConfig {
    documentation for geometry::Rgba::Serialize for how to define this
    value in YAML.
 
-   N.B. If two different cameras are configured to use the same renderer (having
-   identical values for `renderer_name`) but *different* values for
-   `background`, the render engine instance will be configured with one of the
-   set of values. Which one is undefined. */
+   This value is used only if the `render_class` specifies either
+   `"RenderEngineVtk"` or `"RenderEngineGl"` by _name_ (RenderEngineGltfClient
+   doesn't have a configurable background color.) */
   geometry::Rgba background{204 / 255.0, 229 / 255.0, 255 / 255.0, 1.0};
 
   //@}

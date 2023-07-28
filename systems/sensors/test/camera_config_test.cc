@@ -10,7 +10,7 @@
 #include "drake/common/schema/transform.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/yaml/yaml_io.h"
-#include "drake/geometry/render_gl/render_engine_gl_params.h"
+#include "drake/geometry/render_vtk/render_engine_vtk_params.h"
 #include "drake/geometry/rgba.h"
 #include "drake/systems/sensors/camera_info.h"
 
@@ -20,7 +20,7 @@ namespace sensors {
 namespace {
 
 using Eigen::Vector3d;
-using geometry::RenderEngineGlParams;
+using geometry::RenderEngineVtkParams;
 using geometry::Rgba;
 using geometry::render::ColorRenderCamera;
 using geometry::render::DepthRenderCamera;
@@ -36,10 +36,11 @@ GTEST_TEST(CameraConfigTest, DefaultValues) {
   ASSERT_NO_THROW(config.ValidateOrThrow());
 
   // The default background color is documented as matching the color in
-  // RenderEngineGlParams. Confirm they match. If either changes, this test
+  // RenderEngineVtkParams. Confirm they match. If either changes, this test
   // will fail and we'll have to decide what to do about it.
-  RenderEngineGlParams params;
-  EXPECT_EQ(config.background, params.default_clear_color);
+  Rgba vtk_background;
+  vtk_background.set(RenderEngineVtkParams().default_clear_color);
+  EXPECT_EQ(config.background, vtk_background);
 }
 
 // Tests the principal point logic.
