@@ -43,21 +43,43 @@ using multibody::parsing::GetScopedFrameByName;
 
 namespace {
 
+// Boilerplate for std::visit.
+template <class... Ts>
+struct overloaded : Ts... {
+  using Ts::operator()...;
+};
+template <class... Ts>
+overloaded(Ts...) -> overloaded<Ts...>;
+
+template <typename ParamsType>
+const std::string& GetEngineTypeNameFromParameters(const ParamsType&) {
+  // TODO(SeanCurtis-TRI): Find some slicker way of getting these names, one
+  // doesn't require instantiating throw away engines. Although, this only
+  // happens once per ParamType, so that might not be so bad.
+  if constexpr (std::is_same_v<ParamsType, RenderEngineVtkParams>) {
+    static const never_destroyed<std::string> type_name(
+        NiceTypeName::Get(MakeRenderEngineVtk({})));
+    return type_name.access();
+  } else if constexpr (std::is_same_v<ParamsType, RenderEngineGlParams>) {
+    static const never_destroyed<std::string> type_name(
+        NiceTypeName::Get(MakeRenderEngineGl({})));
+    return type_name.access();
+  } else if constexpr (std::is_same_v<ParamsType,
+                                      RenderEngineGltfClientParams>) {
+    static const never_destroyed<std::string> type_name(
+        NiceTypeName::Get(MakeRenderEngineGltfClient({})));
+    return type_name.access();
+  } else {
+    DRAKE_UNREACHABLE();
+  }
+}
+
 // Validates the render engine specification in `config`. If the specification
 // is valid, upon return, the specified RenderEngine is defined in `scene_graph`
 // (this may require creating the RenderEngine instance). Throws if the
 // specification is invalid.
-// @pre we already know that config.renderer_class has a "supported" value.
 void ValidateEngineAndMaybeAdd(const CameraConfig& config,
                                SceneGraph<double>* scene_graph) {
-  using Dict = std::map<std::string, std::string>;
-  static const never_destroyed<Dict> type_lookup(
-      std::initializer_list<Dict::value_type>{
-          {"RenderEngineVtk",
-           "drake::geometry::render_vtk::internal::RenderEngineVtk"},
-          {"RenderEngineGl",
-           "drake::geometry::render_gl::internal::RenderEngineGl"}});
-
   DRAKE_DEMAND(scene_graph != nullptr);
 
   // Querying for the type_name of the named renderer will simultaneously tell
@@ -68,40 +90,41 @@ void ValidateEngineAndMaybeAdd(const CameraConfig& config,
 
   // Non-empty type name says that it already exists.
   bool already_exists = !type_name.empty();
-  if (already_exists && !config.renderer_class.empty()) {
-    if (type_lookup.access().at(config.renderer_class) != type_name) {
-      throw std::logic_error(
-          fmt::format("Invalid camera configuration; requested "
-                      "renderer_name = '{}' and renderer_class = '{}'. The "
-                      "name is already used with a different type: {}.",
-                      config.renderer_name, config.renderer_class, type_name));
-    }
+  if (already_exists) {
+    std::visit(
+        [&type_name, &config](auto&& params) {
+          if (GetEngineTypeNameFromParameters(params) != type_name) {
+            throw std::logic_error(fmt::format(
+                "Invalid camera configuration; requested renderer_name = '{}' "
+                "and render_params = '{}'. The name is already used with a "
+                "different type: {}.",
+                config.renderer_name, GetEngineTypeNameFromParameters(params),
+                type_name));
+          }
+        },
+        config.render_params);
   }
 
   if (already_exists) return;
 
-  // Now we know we need to add one. Confirm we can add the specified class.
-  if (config.renderer_class == "RenderEngineGl") {
-    if (!geometry::kHasRenderEngineGl) {
-      throw std::logic_error(
-          "Invalid camera configuration; renderer_class = 'RenderEngineGl' "
-          "is not supported in current build.");
-    }
-    RenderEngineGlParams params{.default_clear_color = config.background};
-    scene_graph->AddRenderer(config.renderer_name, MakeRenderEngineGl(params));
-    return;
-  }
-  // Note: if we add *other* supported render engine implementations, add the
-  // logic for detecting and instantiating those types here.
-
-  // Fall through to the default render engine type (name is either empty or
-  // the only remaining possible value: "RenderEngineVtk").
-  DRAKE_DEMAND(config.renderer_class.empty() ||
-               config.renderer_class == "RenderEngineVtk");
-  RenderEngineVtkParams params;
-  const geometry::Rgba& rgba = config.background;
-  params.default_clear_color = Vector3d{rgba.r(), rgba.g(), rgba.b()};
-  scene_graph->AddRenderer(config.renderer_name, MakeRenderEngineVtk(params));
+  std::visit(overloaded{
+      [&name = config.renderer_name,
+       scene_graph](const RenderEngineVtkParams& params) {
+        scene_graph->AddRenderer(name, MakeRenderEngineVtk(params));
+      },
+      [&name = config.renderer_name,
+       scene_graph](const RenderEngineGlParams& params) {
+        if (!geometry::kHasRenderEngineGl) {
+          throw std::logic_error(
+              "Invalid camera configuration; renderer_class = 'RenderEngineGl' "
+              "is not supported in current build.");
+        }
+        scene_graph->AddRenderer(name, MakeRenderEngineGl(params));
+      },
+      [&name = config.renderer_name,
+       scene_graph](const RenderEngineGltfClientParams& params) {
+        scene_graph->AddRenderer(name, MakeRenderEngineGltfClient(params));
+      }}, config.render_params);
 }
 
 }  // namespace

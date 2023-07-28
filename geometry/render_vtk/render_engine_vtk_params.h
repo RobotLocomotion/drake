@@ -1,10 +1,10 @@
 #pragma once
 
 #include <optional>
+#include <string>
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/name_value.h"
-#include "drake/geometry/render/render_label.h"
 
 namespace drake {
 namespace geometry {
@@ -20,8 +20,10 @@ struct RenderEngineVtkParams  {
     a->Visit(DRAKE_NVP(default_clear_color));
   }
 
-  /** The (optional) label to apply when none is otherwise specified.  */
-  std::optional<render::RenderLabel> default_label{};
+  /** Default render label policy to apply to a geometry when no render label
+   has been assigned. Should be one of `"unspecified"` or `"don't_care"`.
+   See @ref render_engine_default_label "RenderEngine" for more information. */
+  std::string default_label{"unspecified"};
 
   /** The (optional) rgba color to apply to the (phong, diffuse) property when
     none is otherwise specified. Note: currently the alpha channel is unused

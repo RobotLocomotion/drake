@@ -83,6 +83,9 @@ drake_cc_library(
         "//common/schema:transform",
         "//geometry:rgba",
         "//geometry/render:render_camera",
+        "//geometry/render_gl",
+        "//geometry/render_gltf_client",
+        "//geometry/render_vtk",
     ],
 )
 
@@ -103,6 +106,7 @@ drake_cc_library(
         ":rgbd_sensor",
         ":sim_rgbd_sensor",
         "//geometry/render_gl",
+        "//geometry/render_gltf_client",
         "//geometry/render_vtk",
         "//math:geometric_transform",
         "//multibody/parsing:scoped_names",

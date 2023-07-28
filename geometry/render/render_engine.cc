@@ -18,6 +18,26 @@ using systems::sensors::ImageRgba8U;
 using systems::sensors::ImageDepth32F;
 using systems::sensors::ImageLabel16I;
 
+namespace {
+
+RenderLabel GetDefaultLabelByName(const std::string& label_name) {
+  if (label_name == "unspecified") {
+    return RenderLabel::kUnspecified;
+  } else if (label_name == "don't_care") {
+    return RenderLabel::kDontCare;
+  } else {
+    throw std::runtime_error(
+        fmt::format("RenderEngine default label must be one of either "
+                    "\"don't_care\" or \"unspecified\". Given \"{}\".",
+                    label_name));
+  }
+}
+
+}  // namespace
+
+RenderEngine::RenderEngine(const std::string& default_label)
+    : default_render_label_(GetDefaultLabelByName(default_label)) {}
+
 std::unique_ptr<RenderEngine> RenderEngine::Clone() const {
   std::unique_ptr<RenderEngine> clone(DoClone());
   // Make sure that derived classes have actually overridden DoClone().

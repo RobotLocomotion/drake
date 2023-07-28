@@ -133,7 +133,6 @@ drake_cc_library(
     deps = [
         "//common:name_value",
         "//geometry:rgba",
-        "//geometry/render:render_label",
     ],
 )
 

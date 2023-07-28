@@ -9,6 +9,9 @@
 #include "drake/common/name_value.h"
 #include "drake/common/schema/transform.h"
 #include "drake/geometry/render/render_camera.h"
+#include "drake/geometry/render_gl/render_engine_gl_params.h"
+#include "drake/geometry/render_gltf_client/render_engine_gltf_client_params.h"
+#include "drake/geometry/render_vtk/render_engine_vtk_params.h"
 #include "drake/geometry/rgba.h"
 
 namespace drake {
@@ -50,6 +53,7 @@ struct CameraConfig {
     a->Visit(DRAKE_NVP(X_BD));
     a->Visit(DRAKE_NVP(renderer_name));
     a->Visit(DRAKE_NVP(renderer_class));
+    a->Visit(DRAKE_NVP(render_params));
     a->Visit(DRAKE_NVP(background));
     a->Visit(DRAKE_NVP(name));
     a->Visit(DRAKE_NVP(fps));
@@ -261,6 +265,11 @@ struct CameraConfig {
         specify the same `renderer_class` (either implicitly or explicitly).
    @sa drake::geometry::SceneGraph::GetRendererTypeName(). */
   std::string renderer_class;
+
+  /** The parameters for the renderer type to use. */
+  std::variant<geometry::RenderEngineVtkParams, geometry::RenderEngineGlParams,
+               geometry::RenderEngineGltfClientParams>
+      render_params{geometry::RenderEngineVtkParams()};
 
   /** The "background" color. This is the color drawn where there are no objects
    visible. Its default value matches the default value for
