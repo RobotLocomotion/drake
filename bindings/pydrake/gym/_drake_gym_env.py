@@ -57,10 +57,11 @@ class DrakeGymEnv(gym.Env):
                 input port (inspired by
                 ``InputPortSelection.kUseFirstInputIfItExists``).
             action_space: Defines the ``gym.spaces.Space`` for the actions.  If
-                the action port is vector-valued, then passing ``None`` defaults
-                to a ``gym.spaces.Box`` of the correct dimension with bounds at
-                negative and positive infinity.  Note: Stable Baselines 3
-                strongly encourages normalizing the ``action_space`` to [-1, 1].
+                the action port is vector-valued, then passing ``None``
+                defaults to a ``gym.spaces.Box`` of the correct dimension with
+                bounds at negative and positive infinity.  Note: Stable
+                Baselines 3 strongly encourages normalizing the
+                ``action_space`` to [-1, 1].
             observation_port_id: An output port of ``simulator``'s system
                 compatible with the ``observation_space``. Each Env *must* have
                 an observation port (it seems that gym doesn't support empty
@@ -69,32 +70,33 @@ class DrakeGymEnv(gym.Env):
                 ``OutputPortSelection.kUseFirstOutputIfItExists``).
             observation_space: Defines the ``gym.spaces.Space`` for the
                 observations.  If the observation port is vector-valued, then
-                passing ``None`` defaults to a ``gym.spaces.Box`` of the correct
-                dimension with bounds at negative and positive infinity.
+                passing ``None`` defaults to a ``gym.spaces.Box`` of the
+                correct dimension with bounds at negative and positive
+                infinity.
             render_rgb_port: An optional output port of ``simulator``'s system
-                that returns  an ``ImageRgba8U``; often the ``color_image`` port
-                of a Drake ``RgbdSensor``.
+                that returns  an ``ImageRgba8U``; often the ``color_image``
+                port of a Drake ``RgbdSensor``.
             render_mode: The render mode of the environment determined at
                 initialization. Defaults to ``human`` which uses visualizers
                 inside the System (e.g. MeshcatVisualizer,
                 PlanarSceneGraphVisualizer, etc.). ``render_mode`` equal to
-                ``rgb_array`` evaluates the ``render_rgb_port`` and ``ansi`` calls
-                ``__repr__`` on the system Context.
+                ``rgb_array`` evaluates the ``render_rgb_port`` and ``ansi``
+                calls ``__repr__`` on the system Context.
             set_home: A function that sets the home state (plant, and/or env.)
                 at ``reset()``. The reset state can be specified in one of
                 the two ways:
                 (if ``set_home`` is None) setting random context using a Drake
-                random_generator (e.g., ``joint.set_random_pose_distribution()``
+                random_generator (e.g. ``joint.set_random_pose_distribution()``
                 using the ``reset()`` seed),
                 (otherwise) using ``set_home()``.
             hardware: If True, it prevents from setting random context at
-                ``reset()`` when using ``random_generator``, but it does execute
-                ``set_home()`` if given.
+                ``reset()`` when using ``random_generator``, but it does
+                execute ``set_home()`` if given.
 
         Notes (using ``env`` as an instance of this class):
 
-        - You may set simulator/integrator preferences by using ``env.simulator``
-          directly.
+        - You may set simulator/integrator preferences by using
+          ``env.simulator`` directly.
         - The ``done`` condition returned by ``step()`` is always False by
           default.  Use ``env.simulator.set_monitor()`` to use Drake's monitor
           functionality for specifying termination conditions.
