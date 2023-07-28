@@ -9,6 +9,8 @@
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/yaml/yaml_io.h"
 #include "drake/geometry/render_gl/factory.h"
+#include "drake/geometry/render_gltf_client/factory.h"
+#include "drake/geometry/render_vtk/factory.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/sensors/image_to_lcm_image_array_t.h"
@@ -21,6 +23,9 @@ namespace sensors {
 namespace {
 
 using drake::geometry::FrameId;
+using drake::geometry::RenderEngineGlParams;
+using drake::geometry::RenderEngineGltfClientParams;
+using drake::geometry::RenderEngineVtkParams;
 using drake::geometry::Rgba;
 using drake::geometry::SceneGraph;
 using drake::geometry::render::ColorRenderCamera;
@@ -57,7 +62,7 @@ CameraConfig MakeConfig() {
                       .X_BC = Transform{RigidTransformd{Vector3d::UnitX()}},
                       .X_BD = Transform{RigidTransformd{Vector3d::UnitX()}},
                       .renderer_name = "test_renderer",
-                      .renderer_class = "RenderEngineVtk",
+                      .renderer_class = "RenderEngineGltfClient",
                       .background = Rgba(0.25, 0.5, 0.75),
                       .name = "test_camera",
                       .fps = 17,
@@ -129,8 +134,8 @@ TEST_F(CameraConfigFunctionsTest, EarlyExit) {
   EXPECT_EQ(builder_.GetSystems().size(), system_count);
 }
 
-// The tests below require that the default CameraConfig renders at least one
-// image. This test puts a guard on that property.
+/* The tests below require that the default CameraConfig renders at least one
+ image. This test puts a guard on that property. */
 GTEST_TEST(CameraConfigFunctionsTestAux, DefaultConfigRenders) {
   const CameraConfig config;
   EXPECT_TRUE(config.rgb || config.depth);
@@ -176,13 +181,16 @@ TEST_F(CameraConfigFunctionsTest, InvalidParentBaseFrame) {
                               ".*invalid_frame.*");
 }
 
-/* Confirms that render engine is handled correctly.
+/* Confirms that renderer_name is handled correctly.
   - If a render engine is named that hasn't been previously created, a new
     engine is added and the sensor is assigned to it.
   - If a previously existing engine is named, no new engine is created and
     the existing engine is shared.
+    - The error case where the same name is used with a different class is
+      dealt with in RendererNameReuse.
+  - The provided renderer_name and config.name is piped into the sensor.
   This is independent of image type, so, we'll use rgb. */
-TEST_F(CameraConfigFunctionsTest, RenderEngine) {
+TEST_F(CameraConfigFunctionsTest, RendererClassBasic) {
   ASSERT_EQ(scene_graph_->RendererCount(), 0);
 
   CameraConfig config;
@@ -200,7 +208,7 @@ TEST_F(CameraConfigFunctionsTest, RenderEngine) {
   // Now add second camera which uses the same name.
   size_t previous_system_count = builder_.GetSystems().size();
   config.name = config.name + "_the_other_one";
-  ApplyCameraConfig(config, &builder_);
+  EXPECT_NO_THROW(ApplyCameraConfig(config, &builder_));
 
   // No new render engine added.
   ASSERT_EQ(scene_graph_->RendererCount(), 1);
@@ -218,7 +226,7 @@ TEST_F(CameraConfigFunctionsTest, RenderEngine) {
   // Third camera uses a unique name creates a unique render engine.
   config.name = "just_for_test";
   config.renderer_name = "just_for_test";
-  ApplyCameraConfig(config, &builder_);
+  EXPECT_NO_THROW(ApplyCameraConfig(config, &builder_));
   ASSERT_EQ(scene_graph_->RendererCount(), 2);
   // New RgbdSensor added.
   EXPECT_GT(builder_.GetSystems().size(), previous_system_count);
@@ -230,6 +238,140 @@ TEST_F(CameraConfigFunctionsTest, RenderEngine) {
   EXPECT_EQ(sensor3->depth_render_camera().core().renderer_name(),
             config.renderer_name);
 }
+
+/* Exercises the various ways to specify the various RenderEngine classes - via
+ class name or parameters. Simply a regression test to make sure the spellings
+ work. */
+TEST_F(CameraConfigFunctionsTest, RendererClassVariant) {
+  int renderer_count = 0;
+
+  // Add VTK by name.
+  {
+    const CameraConfig config{.renderer_name = "vtk_name",
+                              .renderer_class = "RenderEngineVtk"};
+    ApplyCameraConfig(config, &builder_);
+    EXPECT_EQ(scene_graph_->RendererCount(), ++renderer_count);
+    EXPECT_THAT(scene_graph_->GetRendererTypeName(config.renderer_name),
+                testing::EndsWith("RenderEngineVtk"));
+  }
+  // Add VTK by parameters.
+  {
+    const CameraConfig config{.renderer_name = "vtk_params",
+                              .renderer_class = RenderEngineVtkParams{}};
+    ApplyCameraConfig(config, &builder_);
+    EXPECT_EQ(scene_graph_->RendererCount(), ++renderer_count);
+    EXPECT_THAT(scene_graph_->GetRendererTypeName(config.renderer_name),
+                testing::EndsWith("RenderEngineVtk"));
+  }
+
+  // Add glTF client by name.
+  {
+    const CameraConfig config{.renderer_name = "gltf_client_name",
+                              .renderer_class = "RenderEngineGltfClient"};
+    ApplyCameraConfig(config, &builder_);
+    EXPECT_EQ(scene_graph_->RendererCount(), ++renderer_count);
+    EXPECT_THAT(scene_graph_->GetRendererTypeName(config.renderer_name),
+                testing::EndsWith("RenderEngineGltfClient"));
+  }
+  // Add VTK by parameters.
+  {
+    const CameraConfig config{.renderer_name = "gltf_client_params",
+                              .renderer_class = RenderEngineGltfClientParams{}};
+    ApplyCameraConfig(config, &builder_);
+    EXPECT_EQ(scene_graph_->RendererCount(), ++renderer_count);
+    EXPECT_THAT(scene_graph_->GetRendererTypeName(config.renderer_name),
+                testing::EndsWith("RenderEngineGltfClient"));
+  }
+
+  if (geometry::kHasRenderEngineGl) {
+    // Add GL by name.
+    {
+      const CameraConfig config{.renderer_name = "gl_name",
+                                .renderer_class = "RenderEngineGl"};
+      ApplyCameraConfig(config, &builder_);
+      EXPECT_EQ(scene_graph_->RendererCount(), ++renderer_count);
+      EXPECT_THAT(scene_graph_->GetRendererTypeName(config.renderer_name),
+                  testing::EndsWith("RenderEngineGl"));
+    }
+    // Add GL by parameters.
+    {
+      const CameraConfig config{.renderer_name = "gl_params",
+                                .renderer_class = RenderEngineGlParams{}};
+      ApplyCameraConfig(config, &builder_);
+      EXPECT_EQ(scene_graph_->RendererCount(), ++renderer_count);
+      EXPECT_THAT(scene_graph_->GetRendererTypeName(config.renderer_name),
+                  testing::EndsWith("RenderEngineGl"));
+    }
+  }
+}
+
+/* Confirms the logic for when a renderer name is successfully used several
+ times.
+
+  - If a name is reused and the class is specified via parameters, the
+    parameterized spec must come first.
+ */
+TEST_F(CameraConfigFunctionsTest, RendererNameReuse) {
+  int renderer_count = 0;
+
+  /* Cases: class_name == default parameters. */
+
+  auto perform_test = [this, &renderer_count](const auto& parameters,
+                                              const std::string& name,
+                                              const std::string& prefix) {
+    CameraConfig config{.renderer_name = prefix + "_1",
+                        .renderer_class = parameters};
+    ApplyCameraConfig(config, &builder_);
+    EXPECT_EQ(scene_graph_->RendererCount(), ++renderer_count);
+    EXPECT_THAT(scene_graph_->GetRendererTypeName(config.renderer_name),
+                testing::EndsWith(name));
+
+    // Another camera config using parameters should throw.
+    config.name = prefix + "_2";
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        ApplyCameraConfig(config, &builder_),
+        ".*Only the first instance of the named renderer can use parameters.");
+
+    // However, camera config using the same class name is happy.
+    config.name = prefix + "_3";
+    config.renderer_class = name;
+    EXPECT_NO_THROW(ApplyCameraConfig(config, &builder_));
+    EXPECT_EQ(scene_graph_->RendererCount(), renderer_count);
+
+    // Camera config using the name of a different class is angry.
+    config.name = "should've_been_" + prefix;
+    config.renderer_class =
+        prefix == "vtk" ? "RenderEngineGltfClient" : "RenderEngineVtk";
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        ApplyCameraConfig(config, &builder_),
+        ".*The name is already used with a different type.*.");
+  };
+
+  {
+    SCOPED_TRACE("Vtk");
+    perform_test(RenderEngineVtkParams(), "RenderEngineVtk", "vtk");
+  }
+
+  {
+    SCOPED_TRACE("ClientGltf");
+    perform_test(RenderEngineGltfClientParams(), "RenderEngineGltfClient",
+                 "gltf");
+  }
+
+  if (geometry::kHasRenderEngineGl) {
+    SCOPED_TRACE("Gl");
+    perform_test(RenderEngineGlParams(), "RenderEngineGl", "gl");
+  }
+}
+
+// TODO(SeanCurtis-TRI): We'd like to verify that the .background value is used
+// when RenderEngineVtk or RenderEngineGl are specified by class name. However,
+// we don't have any straightforward way to introspect a SceneGraph model
+// RenderEngine. We can get one from a QueryObject, but that's quite cumbersome.
+// Solving this problem also empowers solving the problem where we detect that
+// a set of engine parameters matches the parameters of a previously
+// instantiated engine, allowing us to relax our "parameters must come only on
+// the first shared renderer name" rule.
 
 // Confirms that all of the parameters in CameraConfig are present in the final
 // configuration. This excludes the following parameters:

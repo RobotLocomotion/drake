@@ -83,6 +83,9 @@ drake_cc_library(
         "//common/schema:transform",
         "//geometry:rgba",
         "//geometry/render:render_camera",
+        "//geometry/render_gl:render_engine_gl_params",
+        "//geometry/render_gltf_client:render_engine_gltf_client_params",
+        "//geometry/render_vtk:render_engine_vtk_params",
     ],
 )
 
@@ -104,6 +107,7 @@ drake_cc_library(
         ":rgbd_sensor_async",
         ":sim_rgbd_sensor",
         "//geometry/render_gl",
+        "//geometry/render_gltf_client",
         "//geometry/render_vtk",
         "//math:geometric_transform",
         "//multibody/parsing:scoped_names",
@@ -358,13 +362,14 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "//common/yaml:yaml_io",
-        "//geometry/render_gl",
+        "//geometry/render_vtk",
         "@fmt",
     ],
 )
 
 drake_cc_googletest(
     name = "camera_config_functions_test",
+    allow_network = ["render_gltf_client"],
     tags = vtk_test_tags(),
     deps = [
         ":camera_config_functions",
@@ -374,6 +379,8 @@ drake_cc_googletest(
         "//common/test_utilities:expect_throws_message",
         "//common/yaml:yaml_io",
         "//geometry/render_gl",
+        "//geometry/render_gltf_client",
+        "//geometry/render_vtk",
         "//lcm:drake_lcm",
         "//systems/lcm:lcm_publisher_system",
     ],
