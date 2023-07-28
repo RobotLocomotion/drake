@@ -54,8 +54,6 @@ drake_py_binary(
     deps = [
         ":cart_pole_py",
         "//bindings/pydrake/geometry",
-        "@gymnasium_py",
-        "@stable_baselines3_internal//:stable_baselines3",
     ],
 )
 
@@ -65,8 +63,6 @@ drake_py_binary(
     deps = [
         ":cart_pole_py",
         "//bindings/pydrake/geometry",
-        "@gymnasium_py",
-        "@stable_baselines3_internal//:stable_baselines3",
     ],
 )
 
