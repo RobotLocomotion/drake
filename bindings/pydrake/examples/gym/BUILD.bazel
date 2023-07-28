@@ -43,7 +43,7 @@ drake_py_library(
 
 drake_py_library(
     name = "cart_pole_py",
-    srcs = ["envs/cart_pole/cart_pole.py"],
+    srcs = ["envs/cart_pole.py"],
     data = [
         "models/cartpole_BSA.sdf",
     ],

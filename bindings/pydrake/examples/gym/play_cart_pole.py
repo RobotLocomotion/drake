@@ -1,5 +1,5 @@
 '''
-Play a policy for //bindings/pydrake/examples/gym:cart_pole.
+Play a policy for //bindings/pydrake/examples/gym/envs:cart_pole.
 '''
 import argparse
 import os
@@ -17,12 +17,12 @@ def _run_playing(args):
     if args.log_path is None:
         log = args.log_path
     else:
-        log = "./rl/tmp/Cartpole/play_runs/"
+        log = "./rl/tmp/CartPole/play_runs/"
 
     # Make a version of the env with meshcat.
     meshcat = StartMeshcat()
     env = gym.make(
-            "Cartpole-v0",
+            "DrakeCartPole-v0",
             meshcat=meshcat,
             time_limit=7,
             debug=args.debug,
@@ -78,8 +78,8 @@ def _main():
     parser.add_argument('--log_path', help="path to the logs directory.")
     args = parser.parse_args()
 
-    gym.envs.register(id="Cartpole-v0",
-                    entry_point="pydrake.examples.gym.envs.cart_pole.cart_pole:CartpoleEnv")  # noqa
+    gym.envs.register(id="DrakeCartPole-v0",
+                    entry_point="pydrake.examples.gym.envs.cart_pole:DrakeCartPoleEnv")  # noqa
 
     _run_playing(args)
 

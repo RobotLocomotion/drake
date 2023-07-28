@@ -1,14 +1,15 @@
 import gymnasium as gym
 import matplotlib.pyplot as plt
+import numpy as np
+
+from pydrake.common import FindResourceOrThrow
+from pydrake.common.cpp_param import List
+from pydrake.common.value import Value
 from pydrake.examples.gym.named_view_helpers import (
     MakeNamedViewActuation,
     MakeNamedViewPositions,
     MakeNamedViewState,
 )
-import numpy as np
-
-from pydrake.common.cpp_param import List
-from pydrake.common.value import Value
 from pydrake.geometry import (
     ClippingRange,
     ColorRenderCamera,
@@ -19,6 +20,7 @@ from pydrake.geometry import (
     RenderCameraCore,
     RenderEngineVtkParams,
 )
+from pydrake.gym import DrakeGymEnv
 from pydrake.math import RigidTransform, RollPitchYaw
 from pydrake.multibody.math import SpatialForce
 from pydrake.multibody.parsing import Parser
@@ -42,8 +44,7 @@ from pydrake.systems.primitives import (
     PassThrough,
 )
 from pydrake.systems.sensors import CameraInfo, RgbdSensor
-from pydrake.common import FindResourceOrThrow
-from pydrake.gym import DrakeGymEnv
+
 
 # Gym parameters.
 sim_time_step = 0.01
@@ -361,12 +362,13 @@ def reset_handler(simulator, diagram_context, seed):
         body.SetMass(plant_context, mass+pair[1])
 
 
-def CartpoleEnv(meshcat=None,
-                time_limit=gym_time_limit,
-                debug=False,
-                obs_noise=False,
-                monitoring_camera=False,
-                add_disturbances=False):
+def DrakeCartPoleEnv(
+        meshcat=None,
+        time_limit=gym_time_limit,
+        debug=False,
+        obs_noise=False,
+        monitoring_camera=False,
+        add_disturbances=False):
 
     # Make simulation.
     simulator = make_sim(meshcat=meshcat,

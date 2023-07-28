@@ -4,8 +4,6 @@ import gymnasium as gym
 import numpy as np
 import stable_baselines3.common.env_checker
 
-from pydrake.examples.gym.envs.cart_pole.cart_pole import CartpoleEnv
-
 
 class DrakeGymTest(unittest.TestCase):
     """
@@ -21,11 +19,11 @@ class DrakeGymTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         gym.envs.register(
-            id="Cartpole-v0",
-            entry_point="pydrake.examples.gym.envs.cart_pole.cart_pole:CartpoleEnv")  # noqa
+            id="DrakeCartPole-v0",
+            entry_point="pydrake.examples.gym.envs.cart_pole:DrakeCartPoleEnv")  # noqa
 
     def make_env(self):
-        return gym.make("Cartpole-v0")
+        return gym.make("DrakeCartPole-v0")
 
     def test_make_env(self):
         self.make_env()
