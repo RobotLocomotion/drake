@@ -181,5 +181,5 @@ def main():
     run_training(config, args)
 
 
-if __name__ == '__main__':
-    sys.exit(main())
+assert __name__ == '__main__'
+main()

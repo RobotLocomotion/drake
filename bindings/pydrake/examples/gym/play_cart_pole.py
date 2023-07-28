@@ -9,12 +9,12 @@ from stable_baselines3.common.env_checker import check_env
 
 from pydrake.geometry import StartMeshcat
 
-sb3_available = False
+full_sb3_available = False
 try:
     import stable_baselines3
     if "drake_internal" not in stable_baselines3.__version__:
         from stable_baselines3 import PPO
-        sb3_available = True
+        full_sb3_available = True
     else:
         print("stable_baselines3 found, but was drake internal")
 except ImportError:
@@ -22,10 +22,6 @@ except ImportError:
 
 
 def run_playing(args):
-    if args.model_path is not None:
-        zip = args.model_path
-    else:
-        zip = "./rl/tmp/Cartpole/models/{model_id}/model.zip"
 
     if args.log_path is None:
         log = args.log_path
@@ -49,7 +45,7 @@ def run_playing(args):
     max_steps = 1e5 if not args.test else 1e2
 
     if not args.test:
-        model = PPO.load(zip, env, verbose=1, tensorboard_log=log)
+        model = PPO.load(args.model_path, env, verbose=1, tensorboard_log=log)
 
     obs, _ = env.reset()
     for _ in range(int(max_steps)):
@@ -83,5 +79,5 @@ def main():
     run_playing(args)
 
 
-if __name__ == '__main__':
-    sys.exit(main())
+assert __name__ == '__main__'
+main()

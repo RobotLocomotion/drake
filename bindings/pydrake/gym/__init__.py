@@ -2,8 +2,10 @@
 Drake Gym
 =========
 
-THIS FEATURE IS EXPERIMENTAL.  Development is ongoing and no guarantees
-against deprecation are provided for any file under this directory.
+THIS FEATURE IS EXPERIMENTAL.
+As per our [guidelines](https://drake.mit.edu/stable.html)
+for experimental code, development is ongoing and no guarantees against
+deprecation are provided for any file under this directory.
 
 Drake Gym is an implementation of Farama's "Gymnasium" interface for
 reinforcement learning which uses a Drake `Simulator` as a

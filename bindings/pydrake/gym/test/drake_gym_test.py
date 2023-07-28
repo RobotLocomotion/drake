@@ -66,6 +66,5 @@ class DrakeGymTest(unittest.TestCase):
     def test_step(self):
         dut = self.make_env()
         dut.reset()
-        # TODO(ggould): This uses the old, pseudo-deprecated gym API.
         observation, _, _, _, _ = dut.step(dut.action_space.sample())
         self.assertTrue(dut.observation_space.contains(observation))

@@ -51,7 +51,6 @@ drake_py_library(
 drake_py_binary(
     name = "train_cart_pole",
     srcs = ["train_cart_pole.py"],
-    visibility = ["//visibility:public"],
     deps = [
         ":cart_pole_py",
         "//bindings/pydrake/geometry",
@@ -63,7 +62,6 @@ drake_py_binary(
 drake_py_binary(
     name = "play_cart_pole",
     srcs = ["play_cart_pole.py"],
-    visibility = ["//visibility:public"],
     deps = [
         ":cart_pole_py",
         "//bindings/pydrake/geometry",
