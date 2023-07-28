@@ -270,6 +270,7 @@ PY_LIBRARIES_WITH_INSTALL = [
     ":trajectories_py",
     "//bindings/pydrake/common",
     "//bindings/pydrake/examples",
+    "//bindings/pydrake/examples/gym",
     "//bindings/pydrake/examples/multibody",
     "//bindings/pydrake/geometry",
     "//bindings/pydrake/gym",

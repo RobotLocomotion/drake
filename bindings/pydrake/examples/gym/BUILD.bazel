@@ -24,9 +24,18 @@ package(default_visibility = [
 PACKAGE_INFO = get_pybind_package_info("//bindings")
 
 drake_py_library(
+    name = "module_py",
+    srcs = ["__init__.py"],
+    deps = [
+        "//bindings/pydrake/examples",
+    ],
+)
+
+drake_py_library(
     name = "named_view_helpers_py",
     srcs = ["named_view_helpers.py"],
     deps = [
+        ":module_py",
         "//bindings/pydrake/common",
         "//bindings/pydrake/multibody",
     ],
@@ -39,6 +48,7 @@ drake_py_library(
         "models/cartpole_BSA.sdf",
     ],
     deps = [
+        ":module_py",
         ":named_view_helpers_py",
         "//bindings/pydrake/common",
         "//bindings/pydrake/geometry",
@@ -48,12 +58,24 @@ drake_py_library(
     ],
 )
 
+drake_py_library(
+    name = "cart_pole_binaries",
+    srcs = [
+        "play_cart_pole.py",
+        "train_cart_pole.py",
+    ],
+    deps = [
+        ":cart_pole_py",
+        ":module_py",
+        "//bindings/pydrake/geometry",
+    ],
+)
+
 drake_py_binary(
     name = "train_cart_pole",
     srcs = ["train_cart_pole.py"],
     deps = [
-        ":cart_pole_py",
-        "//bindings/pydrake/geometry",
+        ":cart_pole_binaries",
     ],
 )
 
@@ -61,8 +83,7 @@ drake_py_binary(
     name = "play_cart_pole",
     srcs = ["play_cart_pole.py"],
     deps = [
-        ":cart_pole_py",
-        "//bindings/pydrake/geometry",
+        ":cart_pole_binaries",
     ],
 )
 
@@ -75,8 +96,7 @@ drake_py_test(
     main = "train_cart_pole.py",
     tags = ["manual"] if UBUNTU_RELEASE == "20.04" else [],
     deps = [
-        ":cart_pole_py",
-        "//bindings/pydrake/geometry",
+        ":cart_pole_binaries",
         "@gymnasium_py",
         "@stable_baselines3_internal//:stable_baselines3",
     ],
@@ -89,17 +109,25 @@ drake_py_test(
     main = "play_cart_pole.py",
     tags = ["manual"] if UBUNTU_RELEASE == "20.04" else [],
     deps = [
-        ":cart_pole_py",
-        "//bindings/pydrake/geometry",
+        ":cart_pole_binaries",
         "@gymnasium_py",
         "@stable_baselines3_internal//:stable_baselines3",
     ],
 )
 
 PY_LIBRARIES = [
+    ":cart_pole_binaries",
     ":cart_pole_py",
     ":named_view_helpers_py",
 ]
+
+# Package roll-up (for Bazel dependencies).
+# N.B. `examples` packages do not have `all` modules.
+drake_py_library(
+    name = "gym",
+    imports = PACKAGE_INFO.py_imports,
+    deps = PY_LIBRARIES,
+)
 
 install(
     name = "install",
