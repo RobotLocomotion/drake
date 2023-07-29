@@ -1369,6 +1369,21 @@ TEST_F(TrivialCollisionCheckerTest, IsCollisionFilteredBetween) {
                                                dut_->get_body(BodyIndex(3))));
 }
 
+TEST_F(TrivialCollisionCheckerTest, GetNumberOfThreads) {
+  EXPECT_EQ(dut_->GetNumberOfThreads(false), 1);
+
+  const int num_omp_threads =
+      common_robotics_utilities::openmp_helpers::GetNumOmpThreads();
+  const int num_contexts = dut_->num_allocated_contexts();
+  const int expected_num_threads = std::min(num_omp_threads, num_contexts);
+
+  if (common_robotics_utilities::openmp_helpers::IsOmpEnabledInBuild()) {
+    EXPECT_GT(expected_num_threads, 1);
+  }
+
+  EXPECT_EQ(dut_->GetNumberOfThreads(true), expected_num_threads);
+}
+
 // Creates a checker on a plant with an N-link chain (optionally) welded to the
 // world. Part of the edge-checking API test infrastructure (see below).
 template <typename CheckerType>
