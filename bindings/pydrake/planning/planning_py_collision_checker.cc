@@ -255,7 +255,9 @@ void DefinePlanningCollisionChecker(py::module m) {
             &Class::ClassifyContextBodyCollisions, py::arg("model_context"),
             py::arg("q"), cls_doc.ClassifyContextBodyCollisions.doc)
         .def("SupportsParallelChecking", &Class::SupportsParallelChecking,
-            cls_doc.SupportsParallelChecking.doc);
+            cls_doc.SupportsParallelChecking.doc)
+        .def("GetNumberOfThreads", &Class::GetNumberOfThreads,
+            py::arg("parallelize"), cls_doc.GetNumberOfThreads.doc);
     DefClone(&cls);
   }
 

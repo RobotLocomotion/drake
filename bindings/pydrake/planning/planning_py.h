@@ -26,6 +26,9 @@ void DefinePlanningRobotDiagram(py::module m);
 /* Defines bindings per planning_py_trajectory_optimization.cc. */
 void DefinePlanningTrajectoryOptimization(py::module m);
 
+/* Defines bindings per planning_py_visibility_graph.cc. */
+void DefinePlanningVisibilityGraph(py::module m);
+
 }  // namespace internal
 }  // namespace pydrake
 }  // namespace drake
