@@ -6,6 +6,7 @@
 #include "drake/planning/distance_and_interpolation_provider.h"
 #include "drake/planning/scene_graph_collision_checker.h"
 #include "drake/planning/unimplemented_collision_checker.h"
+#include "drake/planning/visibility_graph.h"
 
 namespace drake {
 namespace pydrake {
@@ -255,7 +256,9 @@ void DefinePlanningCollisionChecker(py::module m) {
             &Class::ClassifyContextBodyCollisions, py::arg("model_context"),
             py::arg("q"), cls_doc.ClassifyContextBodyCollisions.doc)
         .def("SupportsParallelChecking", &Class::SupportsParallelChecking,
-            cls_doc.SupportsParallelChecking.doc);
+            cls_doc.SupportsParallelChecking.doc)
+        .def("GetNumberOfThreads", &Class::GetNumberOfThreads,
+            py::arg("parallelize"), cls_doc.GetNumberOfThreads.doc);
     DefClone(&cls);
   }
 
