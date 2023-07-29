@@ -5,6 +5,7 @@ import textwrap
 import unittest
 
 import numpy as np
+import scipy.sparse
 
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.geometry import Sphere
@@ -85,6 +86,7 @@ class TestCollisionChecker(unittest.TestCase):
         dut.model = robot
         dut.robot_model_instances = [index]
         dut.configuration_distance_function = self._configuration_distance
+        dut.distance_function_weights = [1.2]*robot.plant().num_positions()
         dut.edge_step_size = 0.125
         dut.env_collision_padding = 0.0625
         dut.self_collision_padding = 0.03125
@@ -94,6 +96,7 @@ class TestCollisionChecker(unittest.TestCase):
         self.assertListEqual(dut.robot_model_instances, [index])
         self.assertEqual(dut.configuration_distance_function(
             np.array([0.25]), np.array([0.75])), 0.5)
+        self.assertEqual(dut.distance_function_weights[0], 1.2)
         self.assertEqual(dut.edge_step_size, 0.125)
         self.assertEqual(dut.env_collision_padding, 0.0625)
         self.assertEqual(dut.self_collision_padding, 0.03125)
@@ -391,3 +394,14 @@ class TestCollisionChecker(unittest.TestCase):
         """
         dut = self._make_scene_graph_collision_checker()
         self._test_collision_checker_base_class(dut)
+
+    def test_visibility_graph(self):
+        checker = self._make_scene_graph_collision_checker()
+        num_pos = checker.model().plant().num_positions()
+        num_points = 5
+        points = np.eye(num_pos, num_points)
+        A = mut.VisibilityGraph(checker=checker,
+                                points=points,
+                                parallelize=False)
+        self.assertEqual(A.shape, (num_points, num_points))
+        self.assertIsInstance(A, scipy.sparse.csc_matrix)

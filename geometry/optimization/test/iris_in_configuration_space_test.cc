@@ -270,16 +270,7 @@ GTEST_TEST(IrisInConfigurationSpaceTest, ConfigurationObstacles) {
   }
 }
 
-/* Box obstacles in all corners.
-┌─────┬─┬─────┐
-│     │ │     │
-│     │ │     │
-├─────┘ └─────┤
-│             │
-├─────┐ ┌─────┤
-│     │ │     │
-│     │ │     │
-└─────┴─┴─────┘ */
+/* Box in 2D */
 const char boxes_in_2d_urdf[] = R"""(
 <robot name="boxes">
   <link name="fixed">

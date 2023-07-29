@@ -23,6 +23,7 @@ drake_cc_package_library(
         ":robot_diagram_builder",
         ":scene_graph_collision_checker",
         ":unimplemented_collision_checker",
+        ":visibility_graph",
     ],
 )
 
@@ -169,6 +170,18 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "visibility_graph",
+    srcs = ["visibility_graph.cc"],
+    hdrs = ["visibility_graph.h"],
+    interface_deps = [
+        ":collision_checker",
+    ],
+    deps = [
+        "@common_robotics_utilities",
+    ],
+)
+
 drake_cc_googletest(
     name = "body_shape_description_test",
     deps = [
@@ -252,6 +265,15 @@ drake_cc_googletest(
         ":scene_graph_collision_checker",
         "//common/test_utilities:eigen_matrix_compare",
         "//planning/test_utilities:collision_checker_abstract_test_suite",
+    ],
+)
+
+drake_cc_googletest(
+    name = "visibility_graph_test",
+    deps = [
+        ":scene_graph_collision_checker",
+        ":visibility_graph",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 

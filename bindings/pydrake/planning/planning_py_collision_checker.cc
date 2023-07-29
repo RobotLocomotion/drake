@@ -5,6 +5,7 @@
 #include "drake/planning/collision_checker.h"
 #include "drake/planning/scene_graph_collision_checker.h"
 #include "drake/planning/unimplemented_collision_checker.h"
+#include "drake/planning/visibility_graph.h"
 
 namespace drake {
 namespace pydrake {
@@ -316,6 +317,10 @@ void DefinePlanningCollisionChecker(py::module m) {
                 "list of properties available here as kwargs.")
                 .c_str());
   }
+
+  m.def("VisibilityGraph", &planning::VisibilityGraph, py::arg("checker"),
+      py::arg("points"), py::arg("parallelize") = true,
+      doc.VisibilityGraph.doc);
 }
 
 }  // namespace internal
