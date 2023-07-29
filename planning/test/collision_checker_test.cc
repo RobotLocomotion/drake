@@ -49,6 +49,7 @@ constexpr bool kHasOpenmp = false;
 #endif
 
 using Eigen::AngleAxisd;
+using Eigen::Vector2d;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
 using geometry::CollisionFilterDeclaration;
@@ -330,6 +331,7 @@ class CollisionCheckerThrowTest : public testing::Test {
             {.model = std::move(diagram_),
              .robot_model_instances = robot_model_instances_,
              .configuration_distance_function = distance_fn_,
+             .distance_function_weights = distance_function_weights_,
              .edge_step_size = edge_step_size_,
              .env_collision_padding = env_collision_padding_,
              .self_collision_padding = self_collision_padding_}),
@@ -346,6 +348,7 @@ class CollisionCheckerThrowTest : public testing::Test {
       [](const VectorXd&, const VectorXd&) {
         return 0.0;
       }};
+  std::optional<VectorXd> distance_function_weights_{};
   double edge_step_size_{0.1};
   double env_collision_padding_{0.0};
   double self_collision_padding_{0.0};
@@ -353,7 +356,15 @@ class CollisionCheckerThrowTest : public testing::Test {
 
 TEST_F(CollisionCheckerThrowTest, BadFn) {
   distance_fn_ = {};
-  ExpectConstructorThrow(".*distance_function != nullptr.*");
+  ExpectConstructorThrow(
+      ".*You must set either configuration_distance_function or "
+      "distance_function_weights.*");
+}
+
+TEST_F(CollisionCheckerThrowTest, WrongSizeDistanceWeights) {
+  distance_fn_ = {};
+  distance_function_weights_ = VectorXd::Ones(2);
+  ExpectConstructorThrow(".*num_positions.*");
 }
 
 TEST_F(CollisionCheckerThrowTest, BadStepSize) {
@@ -1374,13 +1385,25 @@ TEST_F(TrivialCollisionCheckerTest, IsCollisionFilteredBetween) {
                                                dut_->get_body(BodyIndex(3))));
 }
 
+TEST_F(TrivialCollisionCheckerTest, GetNumberOfThreads) {
+  EXPECT_EQ(dut_->GetNumberOfThreads(false), 1);
+
+  const int num_omp_threads =
+      common_robotics_utilities::openmp_helpers::GetNumOmpThreads();
+  const int num_contexts = dut_->num_allocated_contexts();
+  const int expected_num_threads = std::min(num_omp_threads, num_contexts);
+
+  EXPECT_EQ(dut_->GetNumberOfThreads(true), expected_num_threads);
+}
+
 // Creates a checker on a plant with an N-link chain (optionally) welded to the
 // world. Part of the edge-checking API test infrastructure (see below).
 template <typename CheckerType>
 CheckerType MakeEdgeChecker(ConfigurationDistanceFunction calc_dist,
                             double step_size = 0.25,
                             ConfigurationInterpolationFunction interp = nullptr,
-                            bool welded = true, int N = 2) {
+                            bool welded = true, int N = 2,
+                            std::optional<VectorXd> weights = std::nullopt) {
   RobotDiagramBuilder<double> builder;
   // We need just enough state so we can save values in q.
   auto& plant = builder.plant();
@@ -1395,6 +1418,7 @@ CheckerType MakeEdgeChecker(ConfigurationDistanceFunction calc_dist,
   CheckerType checker({.model = std::move(diagram),
                        .robot_model_instances = {robot},
                        .configuration_distance_function = calc_dist,
+                       .distance_function_weights = weights,
                        .edge_step_size = step_size,
                        .env_collision_padding = 0,
                        .self_collision_padding = 0});
@@ -1503,6 +1527,19 @@ GTEST_TEST(EdgeCheckTest, Configuration) {
         dut.MakeStandaloneConfigurationInterpolationFunction()(q1, q2, 0.5),
         0.5 * (q1 + q2));
   }
+}
+
+GTEST_TEST(EdgeCheckTest, DistanceFunctionWeights) {
+  const int N = 3;
+  Vector2d weights(1.2, 3.5);
+  CollisionCheckerTester dut = MakeEdgeChecker<CollisionCheckerTester>(
+      {}, 0.25, nullptr, true, N, weights);
+  EXPECT_EQ(dut.plant().num_positions(), 2);
+
+  const Vector2d q1(.14, -2.5);
+  const Vector2d q2(-0.6, 0.52);
+  EXPECT_EQ(dut.ComputeConfigurationDistance(q1, q2),
+            (q1 - q2).cwiseProduct(weights).norm());
 }
 
 // The default interpolation should handle quaternion and other joints in an
