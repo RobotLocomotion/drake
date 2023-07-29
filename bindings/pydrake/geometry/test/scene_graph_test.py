@@ -4,7 +4,6 @@ import unittest
 from math import pi
 
 from pydrake.common.test_utilities import numpy_compare
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.value import Value
 from pydrake.math import RigidTransform_
 from pydrake.symbolic import Expression
