@@ -6,6 +6,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/symbolic/rational_function.h"
+#include "drake/geometry/optimization/c_iris_collision_geometry.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/mathematical_program_result.h"
 #include "drake/solvers/mosek_solver.h"
@@ -26,6 +27,12 @@ struct PlaneSeparatesGeometries {
       : positive_side_rationals{std::move(m_positive_side_rationals)},
         negative_side_rationals{std::move(m_negative_side_rationals)},
         plane_index{m_plane_index} {}
+
+  const std::vector<symbolic::RationalFunction>& rationals(
+      PlaneSide plane_side) const {
+    return plane_side == PlaneSide::kPositive ? positive_side_rationals
+                                              : negative_side_rationals;
+  }
   const std::vector<symbolic::RationalFunction> positive_side_rationals;
   const std::vector<symbolic::RationalFunction> negative_side_rationals;
   int plane_index{-1};

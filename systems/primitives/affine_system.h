@@ -255,6 +255,15 @@ class AffineSystem : public TimeVaryingAffineSystem<T> {
   VectorX<T> y0(const T&) const final { return VectorX<T>(y0_); }
   /// @}
 
+  /// Updates the coefficients of the affine system. The new coefficients must
+  /// have the same size as existing coefficients.
+  void UpdateCoefficients(const Eigen::Ref<const Eigen::MatrixXd>& A,
+                          const Eigen::Ref<const Eigen::MatrixXd>& B,
+                          const Eigen::Ref<const Eigen::VectorXd>& f0,
+                          const Eigen::Ref<const Eigen::MatrixXd>& C,
+                          const Eigen::Ref<const Eigen::MatrixXd>& D,
+                          const Eigen::Ref<const Eigen::VectorXd>& y0);
+
  protected:
   /// Constructor that specifies scalar-type conversion support.
   /// @param converter scalar-type conversion support helper (i.e., AutoDiff,
@@ -280,14 +289,14 @@ class AffineSystem : public TimeVaryingAffineSystem<T> {
   EventStatus CalcDiscreteUpdate(const Context<T>& context,
                                  DiscreteValues<T>* updates) const final;
 
-  const Eigen::MatrixXd A_;
-  const Eigen::MatrixXd B_;
-  const Eigen::VectorXd f0_;
-  const Eigen::MatrixXd C_;
-  const Eigen::MatrixXd D_;
-  const Eigen::VectorXd y0_;
-  const bool has_meaningful_C_{};
-  const bool has_meaningful_D_{};
+  Eigen::MatrixXd A_;
+  Eigen::MatrixXd B_;
+  Eigen::VectorXd f0_;
+  Eigen::MatrixXd C_;
+  Eigen::MatrixXd D_;
+  Eigen::VectorXd y0_;
+  bool has_meaningful_C_{};
+  bool has_meaningful_D_{};
 };
 
 }  // namespace systems

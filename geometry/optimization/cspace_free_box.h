@@ -1,5 +1,7 @@
 #pragma once
 
+#include <optional>
+#include <unordered_map>
 #include <vector>
 
 #include "drake/geometry/optimization/cspace_free_polytope_base.h"
@@ -74,6 +76,71 @@ class CspaceFreeBox : public CspaceFreePolytopeBase {
   };
 
   /**
+   We certify that a pair of geometries is collision free in the C-space box
+   {q | q_box_lower<=q<=q_box_upper} by finding the separating plane and the
+   Lagrangian multipliers. This struct contains the certificate, that the
+   separating plane {x | aᵀx+b=0 } separates the two geometries in
+   separating_planes()[plane_index] in the C-space box.
+   */
+  struct SeparationCertificateResult final : SeparationCertificateResultBase {
+    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SeparationCertificateResult)
+    SeparationCertificateResult() {}
+    ~SeparationCertificateResult() override = default;
+
+    const std::vector<SeparatingPlaneLagrangians>& lagrangians(
+        PlaneSide plane_side) const {
+      return plane_side == PlaneSide::kPositive
+                 ? positive_side_rational_lagrangians
+                 : negative_side_rational_lagrangians;
+    }
+
+    std::vector<SeparatingPlaneLagrangians> positive_side_rational_lagrangians;
+    std::vector<SeparatingPlaneLagrangians> negative_side_rational_lagrangians;
+  };
+
+  /**
+   This struct stores the necessary information to search for the separating
+   plane for the polytopic C-space box q_box_lower <= q <= q_box_upper.
+   We need to impose that N rationals are non-negative in this C-space box.
+   The denominator of each rational is always positive hence we need to impose
+   the N numerators are non-negative in this C-space box.
+   We impose the condition
+   numerator_i(s) - λ_lower(s)ᵀ * (s - s_lower)
+         -λ_upper(s)ᵀ * (s_upper - s) is sos
+   λ_lower(s) are sos, λ_upper(s) are sos.
+   */
+  struct SeparationCertificate {
+    SeparationCertificate() {}
+
+    [[nodiscard]] SeparationCertificateResult GetSolution(
+        int plane_index, const Vector3<symbolic::Polynomial>& a,
+        const symbolic::Polynomial& b,
+        const VectorX<symbolic::Variable>& plane_decision_vars,
+        const solvers::MathematicalProgramResult& result) const;
+
+    std::vector<SeparatingPlaneLagrangians>& mutable_lagrangians(
+        PlaneSide plane_side) {
+      return plane_side == PlaneSide::kPositive
+                 ? positive_side_rational_lagrangians
+                 : negative_side_rational_lagrangians;
+    }
+    // positive_side_rational_lagrangians[i] is the Lagrangian multipliers for
+    // PlaneSeparatesGeometries::positive_side_rationals[i].
+    std::vector<SeparatingPlaneLagrangians> positive_side_rational_lagrangians;
+    // negative_side_rational_lagrangians[i] is the Lagrangian multipliers for
+    // PlaneSeparatesGeometries::negative_side_rationals[i].
+    std::vector<SeparatingPlaneLagrangians> negative_side_rational_lagrangians;
+  };
+
+  struct SeparationCertificateProgram final : SeparationCertificateProgramBase {
+    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SeparationCertificateProgram)
+    SeparationCertificateProgram() = default;
+    ~SeparationCertificateProgram() = default;
+
+    SeparationCertificate certificate;
+  };
+
+  /**
    @param plant The plant for which we compute the C-space free boxes. It
    must outlive this CspaceFreeBox object.
    @param scene_graph The scene graph that has been connected with `plant`. It
@@ -88,6 +155,31 @@ class CspaceFreeBox : public CspaceFreePolytopeBase {
                 const geometry::SceneGraph<double>* scene_graph,
                 SeparatingPlaneOrder plane_order,
                 const Options& options = Options{});
+
+  /** Finds the certificates that the C-space box {q | q_box_lower <= q <=
+   * q_box_upper} is collision free.
+   *
+   * @param q_box_lower The lower bound of the C-space box.
+   * @param q_box_upper The upper bound of the C-space box.
+   * @param ignored_collision_pairs We ignore the pair of geometries in
+   * `ignored_collision_pairs`.
+   * @param[out] certificates Contains the certificate we successfully found for
+   * each pair of geometries. Notice that depending on `options`, the program
+   * could search for the certificate for each geometry pair in parallel, and
+   * will terminate the search once it fails to find the certificate for any
+   * pair. At termination, the pair of geometries whose optimization hasn't been
+   * finished will not show up in @p certificates.
+   * @retval success If true, then we have certified that the C-space box
+   * {q | q_box_lower<=q<=q_box_upper} is collision free. Otherwise
+   * success=false.
+   */
+  bool FindSeparationCertificateGivenBox(
+      const Eigen::Ref<const Eigen::VectorXd>& q_box_lower,
+      const Eigen::Ref<const Eigen::VectorXd>& q_box_upper,
+      const IgnoredCollisionPairs& ignored_collision_pairs,
+      const FindSeparationCertificateOptions& options,
+      std::unordered_map<SortedPair<geometry::GeometryId>,
+                         SeparationCertificateResult>* certificates) const;
 
  private:
   // Forward declare the tester class that will test the private members.
@@ -132,6 +224,51 @@ class CspaceFreeBox : public CspaceFreePolytopeBase {
       const Eigen::Ref<const Eigen::VectorXd>& q_star,
       const IgnoredCollisionPairs& ignored_collision_pairs,
       PolynomialsToCertify* certify_polynomials) const;
+
+  /*
+   Constructs the program which searches for the plane separating a pair of
+   geometries, for all configuration in the box {q | q_box_lower <= q <=
+   q_box_upper}.
+   @param[in] plane_geometries Contain the conditions that need to be
+   non-negative in the box q_box_lower <= q <= q_box_upper.
+   @param[in] s_minus_s_lower s - s_lower.
+   @param[in] s_upper_minus_s s_upper - s.
+   */
+  [[nodiscard]] SeparationCertificateProgram ConstructPlaneSearchProgram(
+      const PlaneSeparatesGeometries& plane_geometries,
+      const VectorX<symbolic::Polynomial>& s_minus_s_lower,
+      const VectorX<symbolic::Polynomial>& s_upper_minus_s) const;
+
+  /*
+   Finds the certificates that the C-space box {q | q_box_lower <= q <=
+   q_box_upper} is collision free.
+   @retval certificates certificates[i] is the separation certificate for a pair
+   of geometries. If we cannot certify or haven't certified the separation for
+   this pair, then certificates[i] contains std::nullopt. Note that when we run
+   this function in parallel and options.terminate_at_failure=true, we will
+   terminate all the remaining certification programs that have been launched,
+   so certificates[i] = std::nullopt could be either because that we have
+   attempted to find the certificate for this pair of geometry but failed, or it
+   could be that we fail to find the certificate for another pair and haven't
+   attempted to find the certificate for this pair.
+   The geometry pair which certificates[i] certifies is given by
+   separating_planes()[certificates[i].plane_index].geometry_pair().
+   */
+  [[nodiscard]] std::vector<std::optional<SeparationCertificateResult>>
+  FindSeparationCertificateGivenBox(
+      const IgnoredCollisionPairs& ignored_collision_pairs,
+      const Eigen::Ref<const Eigen::VectorXd>& q_box_lower,
+      const Eigen::Ref<const Eigen::VectorXd>& q_box_upper,
+      const FindSeparationCertificateOptions& options) const;
+
+  /*
+   Adds the constraint that each column of s_inner_pts is in the box s_box_lower
+   <= s <= s_box_upper.
+   */
+  void AddCspaceBoxContainment(solvers::MathematicalProgram* prog,
+                               const VectorX<symbolic::Variable>& s_box_lower,
+                               const VectorX<symbolic::Variable>& s_box_upper,
+                               const Eigen::MatrixXd& s_inner_pts) const;
 };
 }  // namespace optimization
 }  // namespace geometry

@@ -1158,8 +1158,22 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def_static("SolidCapsule", &Class::SolidCapsule, py::arg("r"),
             py::arg("L"), py::arg("unit_vector") = Vector3<T>::UnitZ().eval(),
             cls_doc.SolidCapsule.doc)
-        .def_static("SolidCylinderAboutEnd", &Class::SolidCylinderAboutEnd,
-            py::arg("r"), py::arg("L"), cls_doc.SolidCylinderAboutEnd.doc)
+        // TODO(2023-11-01) Remove overload wrapping when deprecation complete.
+        .def_static("SolidCylinderAboutEnd",
+            overload_cast_explicit<Class, const T&, const T&,
+                const Vector3<T>&>(&Class::SolidCylinderAboutEnd),
+            py::arg("radius"), py::arg("length"), py::arg("unit_vector"),
+            cls_doc.SolidCylinderAboutEnd.doc)
+        .def_static("SolidCylinderAboutEnd",
+            WrapDeprecated(cls_doc.SolidCylinderAboutEnd.doc_deprecated,
+                [](const T& r, const T& L) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+                  return Class::SolidCylinderAboutEnd(r, L);
+#pragma GCC diagnostic pop
+                }),
+            py::arg("r"), py::arg("L"),
+            cls_doc.SolidCylinderAboutEnd.doc_deprecated)
         .def_static("AxiallySymmetric", &Class::AxiallySymmetric, py::arg("J"),
             py::arg("K"), py::arg("b_E"), cls_doc.AxiallySymmetric.doc)
         .def_static("StraightLine", &Class::StraightLine, py::arg("K"),
@@ -1201,14 +1215,24 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def_static("SolidCapsuleWithDensity", &Class::SolidCapsuleWithDensity,
             py::arg("density"), py::arg("radius"), py::arg("length"),
             py::arg("unit_vector"), cls_doc.SolidCapsuleWithDensity.doc)
+        .def_static("SolidCapsuleWithMass", &Class::SolidCapsuleWithMass,
+            py::arg("mass"), py::arg("radius"), py::arg("length"),
+            py::arg("unit_vector"), cls_doc.SolidCapsuleWithMass.doc)
         .def_static("SolidCylinderWithDensity",
             &Class::SolidCylinderWithDensity, py::arg("density"),
             py::arg("radius"), py::arg("length"), py::arg("unit_vector"),
             cls_doc.SolidCylinderWithDensity.doc)
+        .def_static("SolidCylinderWithMass", &Class::SolidCylinderWithMass,
+            py::arg("mass"), py::arg("radius"), py::arg("length"),
+            py::arg("unit_vector"), cls_doc.SolidCylinderWithMass.doc)
         .def_static("SolidCylinderWithDensityAboutEnd",
             &Class::SolidCylinderWithDensityAboutEnd, py::arg("density"),
             py::arg("radius"), py::arg("length"), py::arg("unit_vector"),
             cls_doc.SolidCylinderWithDensityAboutEnd.doc)
+        .def_static("SolidCylinderWithMassAboutEnd",
+            &Class::SolidCylinderWithMassAboutEnd, py::arg("mass"),
+            py::arg("radius"), py::arg("length"), py::arg("unit_vector"),
+            cls_doc.SolidCylinderWithMassAboutEnd.doc)
         .def_static("ThinRodWithMass", &Class::ThinRodWithMass, py::arg("mass"),
             py::arg("length"), py::arg("unit_vector"),
             cls_doc.ThinRodWithMass.doc)
@@ -1218,6 +1242,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def_static("SolidEllipsoidWithDensity",
             &Class::SolidEllipsoidWithDensity, py::arg("density"), py::arg("a"),
             py::arg("b"), py::arg("c"), cls_doc.SolidEllipsoidWithDensity.doc)
+        .def_static("SolidEllipsoidWithMass", &Class::SolidEllipsoidWithMass,
+            py::arg("mass"), py::arg("a"), py::arg("b"), py::arg("c"),
+            cls_doc.SolidEllipsoidWithMass.doc)
         .def_static("SolidSphereWithDensity", &Class::SolidSphereWithDensity,
             py::arg("density"), py::arg("radius"),
             cls_doc.SolidSphereWithDensity.doc)

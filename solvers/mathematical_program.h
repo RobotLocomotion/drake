@@ -1216,14 +1216,20 @@ class MathematicalProgram {
    * matrix of symbolic::Variable but symbolic::Expression, because the
    * upper-diagonal entries of Z are not variable, but expression 0.
    * @pre X is a symmetric matrix.
-   * @note We implicitly require that `X` being positive semidefinite (psd) (as
-   * X is the diagonal entry of the big psd matrix above). If your `X` is not
-   * necessarily psd, then don't call this function.
    * @note The constraint log(Z(i, i)) >= t(i) is imposed as an exponential cone
    * constraint. Please make sure your have a solver that supports exponential
    * cone constraint (currently SCS does).
-   * Refer to https://docs.mosek.com/modeling-cookbook/sdo.html#log-determinant
-   * for more details.
+   * @note The constraint that
+   *
+   *     ⌈X         Z⌉ is positive semidifinite.
+   *     ⌊Zᵀ  diag(Z)⌋
+   *
+   * already implies that X is positive semidefinite. The user DO NOT need to
+   * separately impose the constraint that X being psd.
+   *
+   * Refer to
+   * https://docs.mosek.com/modeling-cookbook/sdo.html#log-determinant for more
+   * details.
    */
   std::tuple<Binding<LinearCost>, VectorX<symbolic::Variable>,
              MatrixX<symbolic::Expression>>
@@ -1887,6 +1893,11 @@ class MathematicalProgram {
    lb ≤ .5 xᵀQx + bᵀx ≤ ub
    where `x` might be a subset of the decision variables in this
    MathematicalProgram.
+   Notice that if your quadratic constraint is convex, and you intend to solve
+   the problem with a convex solver (like Mosek), then it is better to
+   reformulate it with a second order cone constraint. See
+   https://docs.mosek.com/10.0/capi/prob-def-quadratic.html#a-recommendation for
+   an explanation.
    @exclude_from_pydrake_mkdoc{Not bound in pydrake.}
    */
   Binding<QuadraticConstraint> AddConstraint(
@@ -1894,6 +1905,11 @@ class MathematicalProgram {
 
   /** Adds quadratic constraint
    lb ≤ .5 xᵀQx + bᵀx ≤ ub
+   Notice that if your quadratic constraint is convex, and you intend to solve
+   the problem with a convex solver (like Mosek), then it is better to
+   reformulate it with a second order cone constraint. See
+   https://docs.mosek.com/10.0/capi/prob-def-quadratic.html#a-recommendation for
+   an explanation.
    @param vars x in the documentation above.
    @param hessian_type Whether the Hessian is positive semidefinite, negative
    semidefinite or indefinite. Drake will check the type if
@@ -1911,6 +1927,11 @@ class MathematicalProgram {
 
   /** Adds quadratic constraint
    lb ≤ .5 xᵀQx + bᵀx ≤ ub
+   Notice that if your quadratic constraint is convex, and you intend to solve
+   the problem with a convex solver (like Mosek), then it is better to
+   reformulate it with a second order cone constraint. See
+   https://docs.mosek.com/10.0/capi/prob-def-quadratic.html#a-recommendation for
+   an explanation.
    @param vars x in the documentation above.
    @param hessian_type Whether the Hessian is positive semidefinite, negative
    semidefinite or indefinite. Drake will check the type if
@@ -1928,6 +1949,11 @@ class MathematicalProgram {
 
   /** Overloads AddQuadraticConstraint, impose lb <= e <= ub where `e` is a
    quadratic expression.
+   Notice that if your quadratic constraint is convex, and you intend to solve
+   the problem with a convex solver (like Mosek), then it is better to
+   reformulate it with a second order cone constraint. See
+   https://docs.mosek.com/10.0/capi/prob-def-quadratic.html#a-recommendation for
+   an explanation.
    */
   Binding<QuadraticConstraint> AddQuadraticConstraint(
       const symbolic::Expression& e, double lb, double ub,

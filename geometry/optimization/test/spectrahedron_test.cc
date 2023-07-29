@@ -23,7 +23,9 @@ using solvers::Solve;
 GTEST_TEST(SpectrahedronTest, DefaultCtor) {
   Spectrahedron spect;
   EXPECT_EQ(spect.ambient_dimension(), 0);
-  EXPECT_THROW(spect.IsEmpty(), std::exception);
+  EXPECT_FALSE(spect.IsEmpty());
+  ASSERT_TRUE(spect.MaybeGetFeasiblePoint().has_value());
+  EXPECT_TRUE(spect.PointInSet(spect.MaybeGetFeasiblePoint().value()));
 }
 
 GTEST_TEST(SpectrahedronTest, Attributes) {
@@ -70,6 +72,8 @@ GTEST_TEST(SpectrahedronTest, TrivialSdp1) {
   EXPECT_TRUE(spect.PointInSet(x_star, kTol));
   EXPECT_FALSE(spect.PointInSet(x_bad, kTol));
   EXPECT_FALSE(spect.MaybeGetPoint().has_value());
+  ASSERT_TRUE(spect.MaybeGetFeasiblePoint().has_value());
+  EXPECT_TRUE(spect.PointInSet(spect.MaybeGetFeasiblePoint().value(), kTol));
 
   MathematicalProgram prog2;
   auto x2 = prog2.NewContinuousVariables<6>("x");
@@ -215,6 +219,64 @@ GTEST_TEST(SpectrahedronTest, TrivialSdp1) {
   }
 }
 
+GTEST_TEST(SpectrahedronTest, AddPointInNonnegativeScalingConstraintsLinEqs) {
+  MathematicalProgram prog;
+  auto X1 = prog.NewSymmetricContinuousVariables<2>();
+  prog.AddPositiveSemidefiniteConstraint(X1);
+
+  const int kNumVars = 3;         // 3 free vars with SDP matrix of size 2x2
+  const int kNumConstraints = 2;  // Test 2 constraints
+  MatrixXd A(kNumConstraints, kNumVars);
+  A << 0.2, 0.0, 1.7, -2.0, 2.3, 1.9;
+  VectorXd b(kNumConstraints);
+  b << 2.0, 1.0;
+
+  prog.AddLinearEqualityConstraint(A, b, prog.decision_variables());
+
+  auto result = Solve(prog);
+  ASSERT_TRUE(result.is_success());
+
+  auto spect = Spectrahedron(prog);
+
+  MathematicalProgram prog2;
+  auto x = prog2.NewContinuousVariables<kNumVars>("x");
+  auto t = prog2.NewContinuousVariables<1>("t");
+  spect.AddPointInNonnegativeScalingConstraints(&prog2, x, t[0]);
+
+  EXPECT_EQ(prog2.positive_semidefinite_constraints().size(), 1);
+  EXPECT_EQ(prog2.linear_equality_constraints().size(), 1);
+  EXPECT_EQ(prog2.bounding_box_constraints().size(), 1);  // t >= 0
+}
+
+GTEST_TEST(SpectrahedronTest, AddPointInNonnegativeScalingConstraintsBBox) {
+  MathematicalProgram prog;
+  auto X1 = prog.NewSymmetricContinuousVariables<2>();
+  prog.AddPositiveSemidefiniteConstraint(X1);
+
+  const int kNumVars = 3;  // 3 free vars with SDP matrix of size 2x2
+  VectorXd lb(kNumVars);
+  lb << -0.1, -2.0, 2.0;
+  VectorXd ub(kNumVars);
+  ub << 1.0, 0.0, 4.0;
+
+  prog.AddBoundingBoxConstraint(lb, ub, prog.decision_variables());
+
+  auto result = Solve(prog);
+  ASSERT_TRUE(result.is_success());
+
+  auto spect = Spectrahedron(prog);
+
+  MathematicalProgram prog2;
+  auto x = prog2.NewContinuousVariables<kNumVars>("x");
+  auto t = prog2.NewContinuousVariables<1>("t");
+  spect.AddPointInNonnegativeScalingConstraints(&prog2, x, t[0]);
+
+  EXPECT_EQ(prog2.positive_semidefinite_constraints().size(), 1);
+  // bounding box constraints become two constraints, upper and lower bound
+  EXPECT_EQ(prog2.linear_constraints().size(), 2);
+  EXPECT_EQ(prog2.bounding_box_constraints().size(), 1);  // t >= 0
+}
+
 GTEST_TEST(SpectrahedronTest, Move) {
   auto make_sdp = []() {
     auto sdp = std::make_unique<MathematicalProgram>();
@@ -257,6 +319,7 @@ GTEST_TEST(SpectrahedronTest, NontriviallyEmpty) {
 
   Spectrahedron spect(prog);
   EXPECT_TRUE(spect.IsEmpty());
+  EXPECT_FALSE(spect.MaybeGetFeasiblePoint().has_value());
 }
 
 }  // namespace

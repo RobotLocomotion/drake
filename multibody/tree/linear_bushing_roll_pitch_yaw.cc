@@ -181,7 +181,7 @@ math::RotationMatrix<T> LinearBushingRollPitchYaw<T>::CalcR_AB(
   // However, R_AC.ToQuaternion() guarantees q0 >= 0, so sqrt(0.5) <= e0 <= 1
   // which means the angle θₑ in e0 = cos(θₑ/2) has range  0 <= θₑ <= π/2.
   DRAKE_ASSERT(q0 >= 0);
-  const T oneOver2e0 = T(1) / (2 * e0);
+  const T oneOver2e0 = 1.0 / (2 * e0);
   const T e1 = q1 * oneOver2e0;
   const T e2 = q2 * oneOver2e0;
   const T e3 = q3 * oneOver2e0;

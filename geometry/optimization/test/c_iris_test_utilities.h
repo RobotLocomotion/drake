@@ -231,9 +231,46 @@ class CspaceFreeBoxTester {
         &(certify_polynomials->data));
   }
 
+  [[nodiscard]] CspaceFreeBox::SeparationCertificateProgram
+  ConstructPlaneSearchProgram(
+      const PlaneSeparatesGeometries& plane_geometries,
+      const VectorX<symbolic::Polynomial>& s_minus_s_lower,
+      const VectorX<symbolic::Polynomial>& s_upper_minus_s) const {
+    return cspace_free_box_.ConstructPlaneSearchProgram(
+        plane_geometries, s_minus_s_lower, s_upper_minus_s);
+  }
+
+  [[nodiscard]] std::vector<
+      std::optional<CspaceFreeBox::SeparationCertificateResult>>
+  FindSeparationCertificateGivenBox(
+      const CspaceFreeBox::IgnoredCollisionPairs& ignored_collision_pairs,
+      const Eigen::Ref<const Eigen::VectorXd>& q_box_lower,
+      const Eigen::Ref<const Eigen::VectorXd>& q_box_upper,
+      const FindSeparationCertificateOptions& options) const {
+    return cspace_free_box_.FindSeparationCertificateGivenBox(
+        ignored_collision_pairs, q_box_lower, q_box_upper, options);
+  }
+
  private:
   CspaceFreeBox cspace_free_box_;
 };
+
+// Returns true if the posture is in collision.
+bool InCollision(const multibody::MultibodyPlant<double>& plant,
+                 const systems::Context<double>& plant_context);
+
+// Evaluate the polynomial at a batch of samples, check if all evaluated results
+// are positive.
+// @param x_samples Each column is a sample of indeterminates.
+void CheckPositivePolynomialBySamples(
+    const symbolic::Polynomial& poly,
+    const Eigen::Ref<const VectorX<symbolic::Variable>>& indeterminates,
+    const Eigen::Ref<const Eigen::MatrixXd>& x_samples);
+
+// Solve an sos program to check if a polynomial is sos.
+// @param tol We seek another polynomial p2 being sos, and the difference
+// between p1's coefficient and p2's coefficient is less than tol.
+bool IsPolynomialSos(const symbolic::Polynomial& p, double tol);
 
 }  // namespace optimization
 }  // namespace geometry

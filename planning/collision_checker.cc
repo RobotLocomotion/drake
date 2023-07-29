@@ -26,6 +26,8 @@
 namespace drake {
 namespace planning {
 
+using common_robotics_utilities::openmp_helpers::DegreeOfParallelism;
+using common_robotics_utilities::openmp_helpers::GetNumOmpThreads;
 using geometry::GeometryId;
 using geometry::QueryObject;
 using geometry::SceneGraphInspector;
@@ -521,8 +523,10 @@ std::vector<uint8_t> CollisionChecker::CheckConfigsCollisionFree(
   // Note: vector<uint8_t> is used since vector<bool> is not thread safe.
   std::vector<uint8_t> collision_checks(configs.size(), 0);
 
-  const bool check_in_parallel = CanEvaluateInParallel() && parallelize;
-  CRU_OMP_PARALLEL_FOR_IF(check_in_parallel)
+  // TODO(calderpg-tri) Expose more control over degree of parallelism.
+  const DegreeOfParallelism parallelism(GetNumberOfThreads(parallelize));
+
+  CRU_OMP_PARALLEL_FOR_DEGREE(parallelism)
   for (size_t idx = 0; idx < configs.size(); ++idx) {
     if (CheckConfigCollisionFree(configs.at(idx))) {
       collision_checks.at(idx) = 1;
@@ -538,7 +542,7 @@ void CollisionChecker::SetConfigurationDistanceFunction(
     const ConfigurationDistanceFunction& distance_function) {
   DRAKE_THROW_UNLESS(distance_function != nullptr);
   SanityCheckConfigurationDistanceFunction(distance_function,
-                                           GetZeroConfiguration());
+                                           GetDefaultConfiguration());
   distance_and_interpolation_provider_->SetConfigurationDistanceFunction(
       distance_function);
 }
@@ -559,7 +563,7 @@ void CollisionChecker::SetConfigurationInterpolationFunction(
     return;
   }
   SanityCheckConfigurationInterpolationFunction(interpolation_function,
-                                                GetZeroConfiguration());
+                                                GetDefaultConfiguration());
   distance_and_interpolation_provider_->SetConfigurationInterpolationFunction(
       interpolation_function);
 }
@@ -657,8 +661,10 @@ std::vector<uint8_t> CollisionChecker::CheckEdgesCollisionFree(
   // Note: vector<uint8_t> is used since vector<bool> is not thread safe.
   std::vector<uint8_t> collision_checks(edges.size(), 0);
 
-  const bool check_in_parallel = CanEvaluateInParallel() && parallelize;
-  CRU_OMP_PARALLEL_FOR_IF(check_in_parallel)
+  // TODO(calderpg-tri) Expose more control over degree of parallelism.
+  const DegreeOfParallelism parallelism(GetNumberOfThreads(parallelize));
+
+  CRU_OMP_PARALLEL_FOR_DEGREE(parallelism)
   for (size_t idx = 0; idx < edges.size(); ++idx) {
     const std::pair<Eigen::VectorXd, Eigen::VectorXd>& edge = edges.at(idx);
     if (CheckEdgeCollisionFree(edge.first, edge.second)) {
@@ -744,8 +750,10 @@ std::vector<EdgeMeasure> CollisionChecker::MeasureEdgesCollisionFree(
   std::vector<EdgeMeasure> collision_checks(edges.size(),
                                             EdgeMeasure(0.0, -1.0));
 
-  const bool check_in_parallel = CanEvaluateInParallel() && parallelize;
-  CRU_OMP_PARALLEL_FOR_IF(check_in_parallel)
+  // TODO(calderpg-tri) Expose more control over degree of parallelism.
+  const DegreeOfParallelism parallelism(GetNumberOfThreads(parallelize));
+
+  CRU_OMP_PARALLEL_FOR_DEGREE(parallelism)
   for (size_t idx = 0; idx < edges.size(); ++idx) {
     const std::pair<Eigen::VectorXd, Eigen::VectorXd>& edge = edges.at(idx);
     collision_checks.at(idx) =
@@ -819,6 +827,10 @@ CollisionChecker::CollisionChecker(CollisionCheckerParams params,
       supports_parallel_checking_(supports_parallel_checking) {
   // Initialize the zero configuration.
   zero_configuration_ = Eigen::VectorXd::Zero(plant().num_positions());
+
+  // Initialize the default configuration.
+  default_configuration_ =
+      plant().GetPositions(*plant().CreateDefaultContext());
 
   // Initialize the collision padding matrix.
   collision_padding_ =
@@ -1166,6 +1178,15 @@ std::string CollisionChecker::CriticizePaddingMatrix(
     }
   }
   return {};
+}
+
+int CollisionChecker::GetNumberOfThreads(const bool parallelize) const {
+  const bool check_in_parallel = CanEvaluateInParallel() && parallelize;
+  if (check_in_parallel) {
+    return std::min(num_allocated_contexts(), GetNumOmpThreads());
+  } else {
+    return 1;
+  }
 }
 
 CollisionChecker::OwnedContextKeeper::~OwnedContextKeeper() = default;

@@ -193,8 +193,8 @@ Subgraph::Subgraph(
   // Connect vertices with edges.
   for (const auto& [u_index, v_index] : edges_between_regions) {
     // Add edge.
-    const Vertex& u = *vertices_[u_index];
-    const Vertex& v = *vertices_[v_index];
+    Vertex* u = vertices_[u_index];
+    Vertex* v = vertices_[v_index];
     Edge* uv_edge = traj_opt_.AddEdge(u, v);
 
     edges_.emplace_back(uv_edge);
@@ -202,7 +202,7 @@ Subgraph::Subgraph(
     // Add path continuity constraints.
     uv_edge->AddConstraint(Binding<Constraint>(
         path_continuity_constraint,
-        FilterVariables(ConcatenateVariableRefList({u.x(), v.x()}),
+        FilterVariables(ConcatenateVariableRefList({u->x(), v->x()}),
                         nonzero_cols_mask)));
   }
 }
@@ -399,22 +399,22 @@ EdgesBetweenSubgraphs::EdgesBetweenSubgraphs(
         }
 
         // Add edge.
-        const Vertex& u = *from_subgraph.vertices_[i];
-        const Vertex& v = *to_subgraph.vertices_[j];
+        Vertex* u = from_subgraph.vertices_[i];
+        Vertex* v = to_subgraph.vertices_[j];
         Edge* uv_edge = traj_opt_.AddEdge(u, v);
         edges_.emplace_back(uv_edge);
 
         // Add path continuity constraints.
         uv_edge->AddConstraint(Binding<LinearEqualityConstraint>(
             path_continuity_constraint,
-            FilterVariables(ConcatenateVariableRefList({u.x(), v.x()}),
+            FilterVariables(ConcatenateVariableRefList({u->x(), v->x()}),
                             nonzero_cols_mask)));
 
         if (subspace != nullptr) {
           // Add subspace constraints to the first control point of the v
           // vertex. Since we are using zeroth order continuity, the last
           // control point
-          const auto vars = v.x().segment(0, num_positions());
+          const auto vars = v->x().segment(0, num_positions());
           solvers::MathematicalProgram prog;
           const VectorX<symbolic::Variable> x =
               prog.NewContinuousVariables(num_positions(), "x");
@@ -665,91 +665,49 @@ GcsTrajectoryOptimization::SolvePath(
 
   const VectorXd empty_vector;
 
-  VertexId source_id = source.vertices_[0]->id();
+  Vertex* source_vertex = source.vertices_[0];
   Vertex* dummy_source = nullptr;
 
-  VertexId target_id = target.vertices_[0]->id();
+  Vertex* target_vertex = target.vertices_[0];
   Vertex* dummy_target = nullptr;
 
   if (source.size() != 1) {
     // Source subgraph has more than one region. Add a dummy source vertex.
     dummy_source = gcs_.AddVertex(Point(empty_vector), "Dummy source");
-    source_id = dummy_source->id();
-    for (const Vertex* v : source.vertices_) {
-      AddEdge(*dummy_source, *v);
+    source_vertex = dummy_source;
+    for (Vertex* v : source.vertices_) {
+      AddEdge(dummy_source, v);
     }
   }
   const ScopeExit cleanup_dummy_source_before_returning([&]() {
     if (dummy_source != nullptr) {
-      gcs_.RemoveVertex(dummy_source->id());
+      gcs_.RemoveVertex(dummy_source);
     }
   });
 
   if (target.size() != 1) {
     // Target subgraph has more than one region. Add a dummy target vertex.
     dummy_target = gcs_.AddVertex(Point(empty_vector), "Dummy target");
-    target_id = dummy_target->id();
-    for (const Vertex* v : target.vertices_) {
-      AddEdge(*v, *dummy_target);
+    target_vertex = dummy_target;
+    for (Vertex* v : target.vertices_) {
+      AddEdge(v, dummy_target);
     }
   }
   const ScopeExit cleanup_dummy_target_before_returning([&]() {
     if (dummy_target != nullptr) {
-      gcs_.RemoveVertex(dummy_target->id());
+      gcs_.RemoveVertex(dummy_target);
     }
   });
 
   solvers::MathematicalProgramResult result =
-      gcs_.SolveShortestPath(source_id, target_id, options);
+      gcs_.SolveShortestPath(*source_vertex, *target_vertex, options);
   if (!result.is_success()) {
     return {CompositeTrajectory<double>({}), result};
   }
 
-  // Extract the flow from the solution.
-  std::unordered_map<VertexId, std::vector<Edge*>> outgoing_edges;
-  std::unordered_map<EdgeId, double> flows;
-  for (Edge* edge : gcs_.Edges()) {
-    outgoing_edges[edge->u().id()].push_back(edge);
-    flows[edge->id()] = result.GetSolution(edge->phi());
-  }
-
-  // Extract the path by traversing the graph with a depth first search.
-  std::unordered_set<VertexId> visited_vertex_ids{source_id};
-  std::vector<VertexId> path_vertex_ids{source_id};
-  std::vector<Edge*> path_edges;
-  while (path_vertex_ids.back() != target_id) {
-    // Find the edge with the maximum flow from the current node.
-    double maximum_flow = 0;
-    VertexId max_flow_vertex_id;
-    Edge* max_flow_edge = nullptr;
-    for (Edge* e : outgoing_edges[path_vertex_ids.back()]) {
-      const double next_flow = flows[e->id()];
-      const VertexId next_vertex_id = e->v().id();
-
-      // If the edge has not been visited and has a flow greater than the
-      // current maximum, update the maximum flow and the vertex id.
-      if (visited_vertex_ids.count(e->v().id()) == 0 &&
-          next_flow > maximum_flow && next_flow > options.flow_tolerance) {
-        maximum_flow = next_flow;
-        max_flow_vertex_id = next_vertex_id;
-        max_flow_edge = e;
-      }
-    }
-
-    if (max_flow_edge == nullptr) {
-      // If no candidate edges are found, backtrack to the previous node and
-      // continue the search.
-      path_vertex_ids.pop_back();
-      DRAKE_DEMAND(!path_vertex_ids.empty());
-      continue;
-    } else {
-      // If the maximum flow is non-zero, add the vertex to the path and
-      // continue the search.
-      visited_vertex_ids.insert(max_flow_vertex_id);
-      path_vertex_ids.push_back(max_flow_vertex_id);
-      path_edges.push_back(max_flow_edge);
-    }
-  }
+  const double kTolerance = 1.0;  // take any path we can get.
+  std::vector<const Edge*> path_edges =
+      gcs_.GetSolutionPath(*source_vertex, *target_vertex, result, kTolerance);
 
   // Remove the dummy edges from the path.
   if (dummy_source != nullptr) {
@@ -763,19 +721,19 @@ GcsTrajectoryOptimization::SolvePath(
 
   // Extract the path from the edges.
   std::vector<copyable_unique_ptr<Trajectory<double>>> bezier_curves;
-  for (Edge* edge : path_edges) {
+  for (const Edge* e : path_edges) {
     // Extract phi from the solution to rescale the control points and duration
     // in case we get the relaxed solution.
-    const double phi_inv = 1 / result.GetSolution(edge->phi());
+    const double phi_inv = 1 / result.GetSolution(e->phi());
     // Extract the control points from the solution.
-    const int num_control_points = vertex_to_subgraph_[&edge->u()]->order() + 1;
+    const int num_control_points = vertex_to_subgraph_[&e->u()]->order() + 1;
     const MatrixX<double> edge_path_points =
         phi_inv *
-        Eigen::Map<MatrixX<double>>(result.GetSolution(edge->xu()).data(),
+        Eigen::Map<MatrixX<double>>(result.GetSolution(e->xu()).data(),
                                     num_positions(), num_control_points);
 
     // Extract the duration from the solution.
-    double h = phi_inv * result.GetSolution(edge->xu()).tail<1>().value();
+    double h = phi_inv * result.GetSolution(e->xu()).tail<1>().value();
     const double start_time =
         bezier_curves.empty() ? 0 : bezier_curves.back()->end_time();
 
@@ -784,30 +742,30 @@ GcsTrajectoryOptimization::SolvePath(
     // would result in a discontinuous trajectory for velocities and higher
     // derivatives.
     if (!(num_control_points == 1 &&
-          vertex_to_subgraph_[&edge->u()]->h_min_ == 0)) {
+          vertex_to_subgraph_[&e->u()]->h_min_ == 0)) {
       bezier_curves.emplace_back(std::make_unique<BezierCurve<double>>(
           start_time, start_time + h, edge_path_points));
     }
   }
 
   // Get the final control points from the solution.
-  const double phi_inv = 1 / result.GetSolution(path_edges.back()->phi());
+  const Edge& last_edge = *path_edges.back();
+  const double phi_inv = 1 / result.GetSolution(last_edge.phi());
   const int num_control_points =
-      vertex_to_subgraph_[&path_edges.back()->v()]->order() + 1;
+      vertex_to_subgraph_[&last_edge.v()]->order() + 1;
   const MatrixX<double> edge_path_points =
-      phi_inv * Eigen::Map<MatrixX<double>>(
-                    result.GetSolution(path_edges.back()->xv()).data(),
-                    num_positions(), num_control_points);
+      phi_inv *
+      Eigen::Map<MatrixX<double>>(result.GetSolution(last_edge.xv()).data(),
+                                  num_positions(), num_control_points);
 
-  double h =
-      phi_inv * result.GetSolution(path_edges.back()->xv()).tail<1>().value();
+  double h = phi_inv * result.GetSolution(last_edge.xv()).tail<1>().value();
   const double start_time =
       bezier_curves.empty() ? 0 : bezier_curves.back()->end_time();
 
   // Skip edges with a single control point that spend near zero time in the
   // region, since zero order continuity constraint is sufficient.
   if (!(num_control_points == 1 &&
-        vertex_to_subgraph_[&path_edges.back()->v()]->h_min_ == 0)) {
+        vertex_to_subgraph_[&last_edge.v()]->h_min_ == 0)) {
     bezier_curves.emplace_back(std::make_unique<BezierCurve<double>>(
         start_time, start_time + h, edge_path_points));
   }
@@ -815,8 +773,8 @@ GcsTrajectoryOptimization::SolvePath(
   return {CompositeTrajectory<double>(bezier_curves), result};
 }
 
-Edge* GcsTrajectoryOptimization::AddEdge(const Vertex& u, const Vertex& v) {
-  return gcs_.AddEdge(u, v, fmt::format("{} -> {}", u.name(), v.name()));
+Edge* GcsTrajectoryOptimization::AddEdge(Vertex* u, Vertex* v) {
+  return gcs_.AddEdge(u, v, fmt::format("{} -> {}", u->name(), v->name()));
 }
 
 double GcsTrajectoryOptimization::EstimateComplexity() const {

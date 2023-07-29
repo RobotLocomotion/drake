@@ -5,15 +5,123 @@
 namespace drake {
 namespace multibody {
 
+namespace {
+
+// Throws unless ‖unit_vector‖ is within ≈ 5.5 bits of 1.0.
+// Note: 1E-14 ≈ 2^5.5 * std::numeric_limits<double>::epsilon();
+// Note: This function is a no-op when type T is symbolic::Expression.
+template <typename T>
+void ThrowUnlessVectorIsMagnitudeOne(const Vector3<T>& unit_vector,
+                                     std::string_view function_name) {
+  if constexpr (scalar_predicate<T>::is_bool) {
+    using std::abs;
+    constexpr double kTolerance = 1E-14;
+    if (abs(unit_vector.norm() - 1) > kTolerance) {
+      DRAKE_DEMAND(!function_name.empty());
+      const std::string error_message =
+          fmt::format("{}(): The unit_vector argument {} is not a unit vector.",
+                      function_name, fmt_eigen(unit_vector.transpose()));
+      throw std::logic_error(error_message);
+    }
+  }
+}
+}  // namespace
+
+template <typename T>
+UnitInertia<T>& UnitInertia<T>::SetFromRotationalInertia(
+    const RotationalInertia<T>& I, const T& mass) {
+  DRAKE_THROW_UNLESS(mass > 0);
+  RotationalInertia<T>::operator=(I / mass);
+  return *this;
+}
+
+template <typename T>
+UnitInertia<T> UnitInertia<T>::PointMass(const Vector3<T>& p_FQ) {
+  // Square each coefficient in p_FQ, perhaps better with p_FQ.array().square()?
+  const Vector3<T> p2m = p_FQ.cwiseAbs2();  // [x²  y²  z²].
+  const T mp0 = -p_FQ(0);  // -x
+  const T mp1 = -p_FQ(1);  // -y
+  return UnitInertia<T>(
+      // Gxx = y² + z²,  Gyy = x² + z²,  Gzz = x² + y²
+      p2m[1] + p2m[2], p2m[0] + p2m[2], p2m[0] + p2m[1],
+      // Gxy = -x y,  Gxz = -x z,   Gyz = -y z
+      mp0 * p_FQ[1], mp0 * p_FQ[2], mp1 * p_FQ[2]);
+}
+
+template <typename T>
+UnitInertia<T> UnitInertia<T>::SolidEllipsoid(
+    const T& a, const T& b, const T& c) {
+  const T a2 = a * a;
+  const T b2 = b * b;
+  const T c2 = c * c;
+  return UnitInertia<T>(0.2 * (b2 + c2), 0.2 * (a2 + c2), 0.2 * (a2 + b2));
+}
+
+template <typename T>
+UnitInertia<T> UnitInertia<T>::SolidCylinder(
+    const T& r, const T& L, const Vector3<T>& b_E) {
+  DRAKE_THROW_UNLESS(r >= 0);
+  DRAKE_THROW_UNLESS(L >= 0);
+  // TODO(Mitiguy) Throw if |b_E| is not within 1.0E-14 of 1 (breaking change).
+  DRAKE_THROW_UNLESS(b_E.norm() > std::numeric_limits<double>::epsilon());
+  const T J = 0.5 * r * r;
+  const T K = (3.0 * r * r + L * L) / 12.0;
+  return AxiallySymmetric(J, K, b_E);
+}
+
+template <typename T>
+UnitInertia<T> UnitInertia<T>::SolidCylinderAboutEnd(
+    const T& radius, const T& length, const Vector3<T>& unit_vector) {
+  DRAKE_THROW_UNLESS(radius >= 0);
+  DRAKE_THROW_UNLESS(length >= 0);
+  ThrowUnlessVectorIsMagnitudeOne(unit_vector, __func__);
+  const T r2 = radius * radius;
+  const T l2 = length * length;
+  const T J = 0.5 * r2;               // Axial moment of inertia J = ½ r².
+  const T K = 0.25 * r2  + l2 / 3.0;  // Transverse moment K = ¼ r² + ⅓ L².
+  return AxiallySymmetric(J, K, unit_vector);
+}
+
+template <typename T>
+UnitInertia<T> UnitInertia<T>::AxiallySymmetric(const T& J, const T& K,
+                                                const Vector3<T>& b_E) {
+  DRAKE_THROW_UNLESS(J >= 0.0);
+  DRAKE_THROW_UNLESS(K >= 0.0);
+  // The triangle inequalities for this case reduce to J <= 2*K:
+  DRAKE_THROW_UNLESS(J <= 2.0 * K);
+  // TODO(Mitiguy) Throw if |b_E| is not within 1.0E-14 of 1 (breaking change).
+  DRAKE_THROW_UNLESS(b_E.norm() > std::numeric_limits<double>::epsilon());
+  // Normalize b_E before using it. Only direction matters:
+  Vector3<T> bhat_E = b_E.normalized();
+  Matrix3<T> G_matrix =
+      K * Matrix3<T>::Identity() + (J - K) * bhat_E * bhat_E.transpose();
+  return UnitInertia<T>(G_matrix(0, 0), G_matrix(1, 1), G_matrix(2, 2),
+                        G_matrix(0, 1), G_matrix(0, 2), G_matrix(1, 2));
+}
+
+template <typename T>
+UnitInertia<T> UnitInertia<T>::StraightLine(const T& K, const Vector3<T>& b_E) {
+  // TODO(Mitiguy) Throw if |b_E| is not within 1.0E-14 of 1 (breaking change).
+  DRAKE_DEMAND(K > 0.0);
+  return AxiallySymmetric(0.0, K, b_E);
+}
+
+template <typename T>
+UnitInertia<T> UnitInertia<T>::ThinRod(const T& L, const Vector3<T>& b_E) {
+  // TODO(Mitiguy) Throw if |b_E| is not within 1.0E-14 of 1 (breaking change).
+  DRAKE_DEMAND(L > 0.0);
+  return StraightLine(L * L / 12.0, b_E);
+}
+
 template <typename T>
 UnitInertia<T> UnitInertia<T>::SolidBox(const T& Lx, const T& Ly, const T& Lz) {
-  if (Lx < T(0) || Ly < T(0) || Lz < T(0)) {
+  if (Lx < 0.0 || Ly < 0.0 || Lz < 0.0) {
     const std::string msg =
         "A length argument to UnitInertia::SolidBox() "
         "is negative.";
     throw std::logic_error(msg);
   }
-  const T one_twelfth = T(1) / T(12);
+  const T one_twelfth = 1.0 / 12.0;
   const T Lx2 = Lx * Lx, Ly2 = Ly * Ly, Lz2 = Lz * Lz;
   return UnitInertia(one_twelfth * (Ly2 + Lz2), one_twelfth * (Lx2 + Lz2),
                      one_twelfth * (Lx2 + Ly2));
@@ -24,17 +132,7 @@ UnitInertia<T> UnitInertia<T>::SolidCapsule(const T& r, const T& L,
     const Vector3<T>& unit_vector) {
   DRAKE_THROW_UNLESS(r >= 0);
   DRAKE_THROW_UNLESS(L >= 0);
-
-  // Ensure ‖unit_vector‖ is within ≈ 5.5 bits of 1.0.
-  // Note: 1E-14 ≈ 2^5.5 * std::numeric_limits<double>::epsilon();
-  using std::abs;
-  constexpr double kTolerance = 1E-14;
-  if (abs(unit_vector.norm() - 1) > kTolerance) {
-    std::string error_message =
-        fmt::format("{}(): The unit_vector argument {} is not a unit vector.",
-                    __func__, fmt_eigen(unit_vector.transpose()));
-    throw std::logic_error(error_message);
-  }
+  ThrowUnlessVectorIsMagnitudeOne(unit_vector, __func__);
 
   // A special case is required for r = 0 because r = 0 creates a zero volume
   // capsule (and we divide by volume later on). No special case for L = 0 is

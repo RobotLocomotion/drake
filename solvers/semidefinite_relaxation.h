@@ -21,6 +21,10 @@ namespace solvers {
  See https://underactuated.mit.edu/optimization.html#sdp_relaxation for
  references and examples.
 
+ Note: Currently, programs using LinearEqualityConstraint will give tighter
+ relaxations than programs using LinearConstraint or BoundingBoxConstraint,
+ even if lower_bound == upper_bound. Prefer LinearEqualityConstraint.
+
  @throws std::exception if `prog` has costs and constraints which are not
  linear nor quadratic.
  */

@@ -151,6 +151,11 @@ For URDF, declare the namespace prefix like this:
 Here is the full list of custom elements:
 - @ref tag_drake_acceleration
 - @ref tag_drake_accepting_renderer
+- @ref tag_drake_ball_constraint
+- @ref tag_drake_ball_constraint_body_A
+- @ref tag_drake_ball_constraint_body_B
+- @ref tag_drake_ball_constraint_p_AP
+- @ref tag_drake_ball_constraint_p_BQ
 - @ref tag_drake_bushing_force_damping
 - @ref tag_drake_bushing_force_stiffness
 - @ref tag_drake_bushing_frameA
@@ -214,6 +219,79 @@ The tag serves as a list of renderers for which this visual is targeted.
     the list of targeted renderers.
 
 This feature is one way to provide multiple visual representations of a body.
+
+@subsection tag_drake_ball_constraint drake:ball_constraint
+
+- SDFormat path: `//model/drake:ball_constraint`
+- URDF path: `/robot/drake:ball_constraint`
+- Syntax: Nested elements @ref tag_drake_ball_constraint_body_A, @ref
+tag_drake_ball_constraint_body_B, @ref tag_drake_ball_constraint_p_AP, and @ref
+tag_drake_ball_constraint_p_BQ
+
+@subsection tag_drake_ball_constraint_semantics Semantics
+
+The element adds a ball constraint to the model via
+drake::multibody::MultibodyPlant::AddBallConstraint().
+
+@subsection tag_drake_ball_constraint_body_A drake:ball_constraint_body_A
+
+- SDFormat path: `//model/drake:ball_constraint/drake:ball_constraint_body_A`
+- URDF path: `/robot/drake:ball_constraint/drake:ball_constraint_body_A/@value`
+- Syntax: String.
+
+@subsection tag_drake_ball_constraint_body_A_semantics Semantics
+
+The string names a body (expected to already be defined by this model) that
+will be passed to drake::multibody::MultibodyPlant::AddBallConstraint()
+as the `body_A` parameter.
+
+@see @ref tag_drake_ball_constraint,
+drake::multibody::MultibodyPlant::AddBallConstraint()
+
+@subsection tag_drake_ball_constraint_body_B drake:ball_constraint_body_B
+
+- SDFormat path: `//model/drake:ball_constraint/drake:ball_constraint_body_B`
+- URDF path: `/robot/drake:ball_constraint/drake:ball_constraint_body_B/@value`
+- Syntax: String.
+
+@subsection tag_drake_ball_constraint_body_B_semantics Semantics
+
+The string names a body (expected to already be defined by this model) that
+will be passed to drake::multibody::MultibodyPlant::AddBallConstraint()
+as the `body_B` parameter.
+
+@see @ref tag_drake_ball_constraint,
+drake::multibody::MultibodyPlant::AddBallConstraint()
+
+@subsection tag_drake_ball_constraint_p_AP drake:ball_constraint_p_AP
+
+- SDFormat path: `//model/drake:ball_constraint/drake:ball_constraint_p_AP`
+- URDF path: `/robot/drake:ball_constraint/drake:ball_constraint_p_AP/@value`
+- Syntax: Three floating point values.
+
+@subsection tag_drake_ball_constraint_p_AP_semantics Semantics
+
+The three floating point values (units of meters) are formed into a
+vector and passed into drake::multibody::MultibodyPlant::AddBallConstraint() as
+the `p_AP` parameter.
+
+@see @ref tag_drake_ball_constraint,
+drake::multibody::MultibodyPlant::AddBallConstraint()
+
+@subsection tag_drake_ball_constraint_p_BQ drake:ball_constraint_p_BQ
+
+- SDFormat path: `//model/drake:ball_constraint/drake:ball_constraint_p_BQ`
+- URDF path: `/robot/drake:ball_constraint/drake:ball_constraint_p_BQ/@value`
+- Syntax: Three floating point values.
+
+@subsection tag_drake_ball_constraint_p_BQ_semantics Semantics
+
+The three floating point values (units of meters) are formed into a
+vector and passed into drake::multibody::MultibodyPlant::AddBallConstraint() as
+the `p_BQ` parameter.
+
+@see @ref tag_drake_ball_constraint,
+drake::multibody::MultibodyPlant::AddBallConstraint()
 
 @subsection tag_drake_bushing_force_damping drake:bushing_force_damping
 

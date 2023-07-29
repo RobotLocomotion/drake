@@ -10,6 +10,33 @@ load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
 package(default_visibility = ["//visibility:private"])
 
 drake_cc_googlebench_binary(
+    name = "iris_in_configuration_space_benchmarks",
+    srcs = ["iris_in_configuration_space_benchmarks.cc"],
+    add_test_rule = True,
+    data = [
+        "//examples/manipulation_station:models",
+        "//manipulation/models/iiwa_description:models",
+        "//manipulation/models/wsg_50_description:models",
+    ],
+    test_args = [
+        "--test",
+    ],
+    test_timeout = "moderate",
+    deps = [
+        "//geometry/optimization:iris",
+        "//multibody/inverse_kinematics",
+        "//multibody/plant",
+        "//tools/performance:fixture_common",
+        "//tools/performance:gflags_main",
+    ],
+)
+
+drake_py_experiment_binary(
+    name = "iris_in_configuration_space_experiment",
+    googlebench_binary = ":iris_in_configuration_space_benchmarks",
+)
+
+drake_cc_googlebench_binary(
     name = "mesh_intersection_benchmark",
     srcs = ["mesh_intersection_benchmark.cc"],
     add_test_rule = True,

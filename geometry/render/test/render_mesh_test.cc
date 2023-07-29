@@ -587,9 +587,8 @@ TEST_F(LoadRenderMeshFromObjTest, MaterialFallbackMultipleAppliedIntrinsic) {
       obj_path, empty_props(), kDefaultDiffuse, diagnostic_policy_);
   EXPECT_EQ(mesh.material.diffuse, kDefaultDiffuse);
   EXPECT_EQ(mesh.material.diffuse_map, "");
-  EXPECT_THAT(
-      TakeWarning(),
-      testing::HasSubstr("use a single material across the whole mesh"));
+  // N.B. We do not test the `log()->debug()` message output for correctness.
+  // Checking for the diffuse material is enough to prove that the code was run.
 }
 
 /* If the obj references the mtl file with an absolute path, there will be a
@@ -637,9 +636,8 @@ TEST_F(LoadRenderMeshFromObjTest, MaterialFallbackDefaultedFaces) {
       obj_path, empty_props(), kDefaultDiffuse, diagnostic_policy_);
   EXPECT_EQ(mesh.material.diffuse, kDefaultDiffuse);
   EXPECT_EQ(mesh.material.diffuse_map, "");
-  EXPECT_THAT(
-      TakeWarning(),
-      testing::HasSubstr("use a single material across the whole mesh"));
+  // N.B. We do not test the `log()->debug()` message output for correctness.
+  // Checking for the diffuse material is enough to prove that the code was run.
 }
 
 /* If the obj references an invalid material name, there will be a warning and
@@ -746,6 +744,24 @@ TEST_F(LoadRenderMeshFromObjTest, RedundantMaterialWarnings) {
   EXPECT_THAT(
       TakeWarning(),
       testing::MatchesRegex(".*has its own materials.*'phong', 'diffuse'.*"));
+}
+
+/* Tests if the `from_mesh_file` flag is correctly propagated. */
+TEST_F(LoadRenderMeshFromObjTest, PropagateFromMeshFileFlag) {
+  for (const bool from_mesh_file : {false, true}) {
+    // N.B. box_no_mtl.obj doesn't exist in the source tree and is generated
+    // from box.obj by stripping out material data by the build system.
+    const std::string filename =
+        from_mesh_file
+            ? FindResourceOrThrow("drake/geometry/render/test/meshes/box.obj")
+            : FindResourceOrThrow(
+                  "drake/geometry/render/test/meshes/box_no_mtl.obj");
+
+    const RenderMesh mesh_data = LoadRenderMeshFromObj(
+        filename, empty_props(), kDefaultDiffuse, diagnostic_policy_);
+    const RenderMaterial material = mesh_data.material;
+    EXPECT_EQ(from_mesh_file, material.from_mesh_file);
+  }
 }
 
 }  // namespace

@@ -17,7 +17,6 @@ drake_cc_package_library(
     visibility = ["//visibility:public"],
     deps = [
         ":c_iris_collision_geometry",
-        ":c_iris_separating_plane",
         ":convex_set",
         ":cspace_free_box",
         ":cspace_free_internal",
@@ -34,6 +33,7 @@ drake_cc_package_library(
 drake_cc_library(
     name = "convex_set",
     srcs = [
+        "affine_subspace.cc",
         "cartesian_product.cc",
         "convex_set.cc",
         "hpolyhedron.cc",
@@ -45,6 +45,7 @@ drake_cc_library(
         "vpolytope.cc",
     ],
     hdrs = [
+        "affine_subspace.h",
         "cartesian_product.h",
         "convex_set.h",
         "hpolyhedron.h",
@@ -97,17 +98,6 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "c_iris_separating_plane",
-    srcs = ["c_iris_separating_plane.cc"],
-    hdrs = ["c_iris_separating_plane.h"],
-    deps = [
-        "//common/symbolic:polynomial",
-        "//geometry/optimization:c_iris_collision_geometry",
-        "//geometry/optimization:cspace_separating_plane",
-    ],
-)
-
-drake_cc_library(
     name = "cspace_free_box",
     srcs = ["cspace_free_box.cc"],
     hdrs = ["cspace_free_box.h"],
@@ -134,9 +124,9 @@ drake_cc_library(
     deps = [
         "//common/symbolic:monomial_util",
         "//geometry/optimization:c_iris_collision_geometry",
-        "//geometry/optimization:c_iris_separating_plane",
         "//geometry/optimization:cspace_free_internal",
         "//geometry/optimization:cspace_free_structs",
+        "//geometry/optimization:cspace_separating_plane",
         "//solvers:choose_best_solver",
         "//solvers:mathematical_program",
         "//solvers:mosek_solver",
@@ -179,7 +169,9 @@ drake_cc_library(
         "//common/symbolic:expression",
         "//solvers:choose_best_solver",
         "//solvers:create_cost",
+        "//solvers:get_program_type",
         "//solvers:mathematical_program_result",
+        "//solvers:mosek_solver",
         "//solvers:solver_interface",
     ],
 )
@@ -204,6 +196,7 @@ drake_cc_library(
         ":convex_set",
         ":iris_internal",
         "//common:name_value",
+        "//geometry:meshcat",
         "//geometry:scene_graph",
         "//multibody/plant",
         "//solvers:choose_best_solver",
@@ -223,6 +216,16 @@ drake_cc_library(
         "//solvers:mathematical_program",
         "//solvers:solve",
         "@gtest//:without_main",
+    ],
+)
+
+drake_cc_googletest(
+    name = "affine_subspace_test",
+    deps = [
+        ":convex_set",
+        ":test_utilities",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/yaml",
     ],
 )
 
@@ -271,6 +274,27 @@ drake_cc_googletest(
         "//common/test_utilities:expect_throws_message",
         "//common/test_utilities:symbolic_test_util",
         "//geometry/optimization:cspace_free_internal",
+    ],
+)
+
+drake_cc_googletest(
+    name = "cspace_free_box_with_mosek_test",
+    timeout = "long",
+    # Some of these test cases take a very long time to run. Run each test case
+    # in its own process (in parallel) to improve test latency.
+    shard_count = 12,
+    # This test launches 2 threads to test both serial and parallel code paths
+    # in CspaceFreePolytope.
+    tags = mosek_test_tags() + ["cpu:2"] + ["no_memcheck"],
+    use_default_main = False,
+    deps = [
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//common/test_utilities:symbolic_test_util",
+        "//geometry/optimization:c_iris_test_utilities",
+        "//geometry/optimization:cspace_free_box",
+        "//multibody/inverse_kinematics",
+        "//solvers:mosek_solver",
     ],
 )
 
@@ -328,6 +352,7 @@ drake_cc_library(
         ":cspace_free_polytope",
         "//geometry:scene_graph",
         "//multibody/plant",
+        "//solvers:sos_basis_generator",
         "//systems/framework:diagram_builder",
         "@gtest//:without_main",
     ],
@@ -343,9 +368,9 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "c_iris_separating_plane_test",
+    name = "cspace_separating_plane_test",
     deps = [
-        ":c_iris_separating_plane",
+        ":cspace_separating_plane",
         "//common/test_utilities:symbolic_test_util",
     ],
 )

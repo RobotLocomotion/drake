@@ -3,6 +3,7 @@
 #include <array>
 #include <map>
 #include <memory>
+#include <optional>
 #include <string>
 #include <tuple>
 #include <unordered_map>
@@ -12,6 +13,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/render/render_engine.h"
+#include "drake/geometry/render/render_material.h"
 #include "drake/geometry/render/render_mesh.h"
 #include "drake/geometry/render_gl/internal_buffer_dim.h"
 #include "drake/geometry/render_gl/internal_opengl_context.h"
@@ -88,29 +90,27 @@ namespace internal {
  bound. Currently, all of this "clean up" work is done in DoClone(). */
 class RenderEngineGl final : public render::RenderEngine {
  public:
-  /** @name Does not allow public copy, move, or assignment  */
+  /* @name Does not allow public copy, move, or assignment  */
   //@{
-#ifdef DRAKE_DOXYGEN_CXX
+
   // Note: the copy constructor is actually protected to serve as the basis for
   // implementing the DoClone() method.
-  RenderEngineGl(const RenderEngineGl&) = delete;
-#endif
   RenderEngineGl& operator=(const RenderEngineGl&) = delete;
   RenderEngineGl(RenderEngineGl&&) = delete;
   RenderEngineGl& operator=(RenderEngineGl&&) = delete;
   //@}}
 
-  /** Construct an instance of the render engine with the given `params`.  */
+  /* Constructs an instance of the render engine with the given `params`.  */
   explicit RenderEngineGl(RenderEngineGlParams params = {});
 
   ~RenderEngineGl() final;
 
-  /** @see RenderEngine::UpdateViewpoint().  */
+  /* @see RenderEngine::UpdateViewpoint().  */
   void UpdateViewpoint(const math::RigidTransformd& X_WR) final;
 
   const RenderEngineGlParams& parameters() const { return parameters_; }
 
-  /** @name    Shape reification  */
+  /* @name    Shape reification  */
   //@{
   using render::RenderEngine::ImplementGeometry;
   void ImplementGeometry(const Box& box, void* user_data) final;
@@ -131,6 +131,14 @@ class RenderEngineGl final : public render::RenderEngine {
   // @pre `this` engine's OpenGl context should be bound.
   void InitGlState();
 
+  // Data to pass through the reification process.
+  struct RegistrationData {
+    const GeometryId id;
+    const math::RigidTransformd& X_WG;
+    const PerceptionProperties& properties;
+    bool accepted{true};
+  };
+
   // Mangles the mesh data before adding it to the engine to support the
   // legacy behavior of mapping mesh.obj -> mesh.png, applying it as a diffuse
   // texture, if found. When we eliminate that behavior, we can eliminate this
@@ -140,7 +148,7 @@ class RenderEngineGl final : public render::RenderEngine {
   //                         OpenGlGeometry.
   void ImplementMesh(int geometry_index, void* user_data,
                      const Vector3<double>& scale,
-                     const std::string& file_name);
+                     const std::string& filename_in);
 
   // @see RenderEngine::DoRegisterVisual().
   bool DoRegisterVisual(GeometryId id, const Shape& shape,
@@ -208,7 +216,10 @@ class RenderEngineGl final : public render::RenderEngine {
   int GetCylinder();
   int GetHalfSpace();
   int GetBox();
-  int GetMesh(const std::string& filename);
+  // Returns the index of the OpenGlGeometry for a mesh with the given filename.
+  // If the filename represents an unsupported file type, no geometry is added,
+  // data->accepted is set to false, and the return value is a meaningless -1.
+  int GetMesh(const std::string& filename, RegistrationData* data);
 
   // Given the render type, returns the texture configuration for that render
   // type. These are the key arguments for glTexImage2D based on the render
@@ -345,9 +356,19 @@ class RenderEngineGl final : public render::RenderEngine {
   // re-use the same geometry. For example, if we tracked them by "aspect ratio"
   // and allowed deviation within a small tolerance, then we could reuse them.
 
-  // Mapping from obj filename to the index into geometries_ containing the
-  // OpenGlGeometry representation of the mesh.
-  std::unordered_map<std::string, int> meshes_;
+  // A data struct that includes the index into geometries_ containing the
+  // OpenGlGeometry representation and an optional material definition of the
+  // mesh. `mesh_material` will have a value *only* when the mesh provides its
+  // own material definition; otherwise, it will remain std::nullopt and the
+  // material will be determined during mesh instantiation.
+  struct RenderGlMesh {
+    int mesh_index{};
+    std::optional<geometry::internal::RenderMaterial> mesh_material{
+        std::nullopt};
+  };
+
+  // Mapping from the obj's canonical filename to RenderGlMesh.
+  std::unordered_map<std::string, RenderGlMesh> meshes_;
 
   // These are caches of reusable RenderTargets. There is a unique render target
   // for each unique image size (BufferDim) and output image type. The

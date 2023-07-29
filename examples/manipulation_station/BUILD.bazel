@@ -16,13 +16,30 @@ load("//tools/lint:lint.bzl", "add_lint_tests")
 load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
 
 models_filegroup(
-    name = "models",
+    name = "installed_models",
     visibility = ["//visibility:public"],
 )
 
 install_data(
     name = "install_data",
-    data = [":models"],
+    data = [":installed_models"],
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "models",
+    srcs = [
+        ":installed_models",
+        "@drake_models//:manipulation_station/bin.mtl",
+        "@drake_models//:manipulation_station/bin.obj",
+        "@drake_models//:manipulation_station/bin.png",
+        "@drake_models//:manipulation_station/shelves.mtl",
+        "@drake_models//:manipulation_station/shelves.obj",
+        "@drake_models//:manipulation_station/shelves.png",
+        "@drake_models//:manipulation_station/table_wide.mtl",
+        "@drake_models//:manipulation_station/table_wide.obj",
+        "@drake_models//:manipulation_station/table_wide.png",
+    ],
     visibility = ["//visibility:public"],
 )
 

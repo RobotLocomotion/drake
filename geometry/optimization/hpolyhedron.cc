@@ -222,6 +222,19 @@ VectorXd HPolyhedron::ChebyshevCenter() const {
   return result.GetSolution(x);
 }
 
+HPolyhedron HPolyhedron::Scale(double scale,
+                               std::optional<Eigen::VectorXd> center) const {
+  DRAKE_THROW_UNLESS(scale >= 0.0);
+  if (center) {
+    DRAKE_THROW_UNLESS(center->size() == ambient_dimension());
+  } else {
+    center = ChebyshevCenter();
+  }
+  return HPolyhedron(
+      A_, std::pow(scale, 1.0 / ambient_dimension()) * (b_ - A_ * *center) +
+              A_ * *center);
+}
+
 HPolyhedron HPolyhedron::CartesianProduct(const HPolyhedron& other) const {
   MatrixXd A_product = MatrixXd::Zero(A_.rows() + other.A().rows(),
                                       A_.cols() + other.A().cols());
@@ -354,6 +367,9 @@ bool HPolyhedron::DoIsBounded() const {
 }
 
 bool HPolyhedron::DoIsEmpty() const {
+  if (ambient_dimension() == 0) {
+    return false;
+  }
   solvers::MathematicalProgram prog;
   solvers::VectorXDecisionVariable x =
       prog.NewContinuousVariables(A_.cols(), "x");

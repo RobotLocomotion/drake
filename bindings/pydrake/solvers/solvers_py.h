@@ -24,6 +24,9 @@ void DefineSolversClp(py::module m);
 /* Defines the CSDP bindings. See solvers_py_csdp.cc. */
 void DefineSolversCsdp(py::module m);
 
+/* Defines the evaluators. See solvers_py_evaluator.cc. */
+void DefineSolversEvaluators(py::module m);
+
 /* Defines the GUROBI bindings. See solvers_py_gurobi.cc. */
 void DefineSolversGurobi(py::module m);
 

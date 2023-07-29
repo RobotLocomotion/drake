@@ -1237,6 +1237,16 @@ class CollisionChecker {
   std::string CriticizePaddingMatrix(const Eigen::MatrixXd& padding,
                                      const char* func) const;
 
+  /* Gets the number of threads that may be used in an OpenMP-parallelized loop,
+   if parallelize=true, or 1 if parallelize=false. */
+  int GetNumberOfThreads(bool parallelize) const;
+
+  /* @returns a generalized position vector, sized according to the full model,
+   whose values come from the plant's default context. */
+  const Eigen::VectorXd& GetDefaultConfiguration() const {
+    return default_configuration_;
+  }
+
   /* This class allocates and maintains the contexts associated with OpenMP
    threads. When the CollisionChecker is evaluated in its implicit mode, the
    contexts used are drawn from this collection and each context is associated
@@ -1489,6 +1499,10 @@ class CollisionChecker {
 
   /* We maintain a "zero configuration" of the model. */
   Eigen::VectorXd zero_configuration_;
+
+  /* We maintain a "default configuration" of the model (based on the plant's
+   default allocated context). */
+  Eigen::VectorXd default_configuration_;
 
   /* Determines whether the checker reports support for parallel evaluation.
    This is defined upon construction by implementations. */

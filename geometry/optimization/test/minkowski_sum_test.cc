@@ -63,6 +63,10 @@ GTEST_TEST(MinkowskiSumTest, BasicTest) {
   // Test IsEmpty.
   EXPECT_FALSE(S.IsEmpty());
 
+  // Test MaybeGetFeasiblePoint.
+  ASSERT_TRUE(S.MaybeGetFeasiblePoint().has_value());
+  EXPECT_TRUE(S.PointInSet(S.MaybeGetFeasiblePoint().value()));
+
   // Test ConvexSets constructor.
   ConvexSets sets;
   sets.emplace_back(P1);
@@ -72,6 +76,8 @@ GTEST_TEST(MinkowskiSumTest, BasicTest) {
   EXPECT_EQ(S2.ambient_dimension(), 2);
   EXPECT_TRUE(S2.PointInSet(in));
   EXPECT_FALSE(S2.PointInSet(out));
+  ASSERT_TRUE(S2.MaybeGetFeasiblePoint().has_value());
+  EXPECT_TRUE(S2.PointInSet(S2.MaybeGetFeasiblePoint().value()));
 }
 
 GTEST_TEST(MinkowskiSumTest, DefaultCtor) {
@@ -79,11 +85,13 @@ GTEST_TEST(MinkowskiSumTest, DefaultCtor) {
   EXPECT_EQ(dut.num_terms(), 0);
   EXPECT_NO_THROW(dut.Clone());
   EXPECT_EQ(dut.ambient_dimension(), 0);
-  EXPECT_FALSE(dut.IntersectsWith(dut));
+  EXPECT_TRUE(dut.IntersectsWith(dut));
   EXPECT_TRUE(dut.IsBounded());
-  EXPECT_THROW(dut.IsEmpty(), std::exception);
-  EXPECT_FALSE(dut.MaybeGetPoint().has_value());
-  EXPECT_FALSE(dut.PointInSet(Eigen::VectorXd::Zero(0)));
+  EXPECT_FALSE(dut.IsEmpty());
+  EXPECT_TRUE(dut.MaybeGetPoint().has_value());
+  EXPECT_TRUE(dut.PointInSet(Eigen::VectorXd::Zero(0)));
+  ASSERT_TRUE(dut.MaybeGetFeasiblePoint().has_value());
+  EXPECT_TRUE(dut.PointInSet(dut.MaybeGetFeasiblePoint().value()));
 }
 
 GTEST_TEST(MinkowskiSumTest, Move) {
@@ -137,6 +145,8 @@ GTEST_TEST(MinkowskiSumTest, FromSceneGraph) {
     EXPECT_TRUE(S.PointInSet(in_W.col(i)));
     EXPECT_FALSE(S.PointInSet(out_W.col(i)));
   }
+  ASSERT_TRUE(S.MaybeGetFeasiblePoint().has_value());
+  EXPECT_TRUE(S.PointInSet(S.MaybeGetFeasiblePoint().value()));
 
   // Test reference_frame frame.
   SourceId source_id = scene_graph->RegisterSource("F");
@@ -157,6 +167,8 @@ GTEST_TEST(MinkowskiSumTest, FromSceneGraph) {
     EXPECT_TRUE(S2.PointInSet(in_F.col(i)));
     EXPECT_FALSE(S2.PointInSet(out_F.col(i)));
   }
+  ASSERT_TRUE(S2.MaybeGetFeasiblePoint().has_value());
+  EXPECT_TRUE(S2.PointInSet(S2.MaybeGetFeasiblePoint().value()));
 }
 
 GTEST_TEST(MinkowskiSumTest, TwoBoxes) {
@@ -167,6 +179,8 @@ GTEST_TEST(MinkowskiSumTest, TwoBoxes) {
   EXPECT_FALSE(S.PointInSet(Vector2d{-1, 2.9}));
   EXPECT_FALSE(S.PointInSet(Vector2d{-1.01, 3}));
   EXPECT_FALSE(S.MaybeGetPoint().has_value());
+  ASSERT_TRUE(S.MaybeGetFeasiblePoint().has_value());
+  EXPECT_TRUE(S.PointInSet(S.MaybeGetFeasiblePoint().value()));
 }
 
 GTEST_TEST(MinkowskiSumTest, CloneTest) {
@@ -271,24 +285,14 @@ GTEST_TEST(MinkowskiSumTest, NonnegativeScalingTest2) {
       PointInScaledSet(x, t, x_solution, Eigen::Vector2d(-1, 0), &prog));
 }
 
-GTEST_TEST(MinkowskiSumTest, EmptyMinkowskiSumTest) {
-  Eigen::MatrixXd A{5, 3};
-  Eigen::VectorXd b{5};
-  // Rows 1-3 define an infeasible set of inequalities.
-  // clang-format off
-  A << 1, 0, 0,
-       1, -1, 0,
-       -1, 0, 1,
-       0, 1, -1,
-       0, 0, -1;
-  b << 1, -1, -1, -1, 0;
-  // clang-format off
-
-  const HPolyhedron H1{A, b};
-  const Point P1(Vector3d{0.1, 1.2, 0.3});
-  const MinkowskiSum S(P1, H1);
-
+GTEST_TEST(MinkowskiSumTest, EmptyInput) {
+  const Point P(Vector2d{1.2, 3.4});
+  // A VPolytope constructed from an empty list of vertices is empty.
+  Eigen::Matrix<double, 2, 0> vertices;
+  const VPolytope V = VPolytope(vertices);
+  MinkowskiSum S(P, V);
   EXPECT_TRUE(S.IsEmpty());
+  EXPECT_FALSE(S.MaybeGetFeasiblePoint().has_value());
 }
 
 }  // namespace optimization

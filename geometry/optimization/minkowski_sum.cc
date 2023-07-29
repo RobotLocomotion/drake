@@ -105,7 +105,7 @@ bool MinkowskiSum::DoIsBounded() const {
 
 bool MinkowskiSum::DoIsEmpty() const {
   if (sets_.size() == 0) {
-    return true;
+    return false;
   }
   // The empty set is annihilatory in Minkowski addition.
   for (const auto& s : sets_) {
@@ -120,6 +120,22 @@ std::optional<VectorXd> MinkowskiSum::DoMaybeGetPoint() const {
   std::optional<VectorXd> result;
   for (const auto& s : sets_) {
     if (std::optional<VectorXd> point = s->MaybeGetPoint()) {
+      if (result.has_value()) {
+        *result += *point;
+      } else {
+        result = std::move(point);
+      }
+    } else {
+      return std::nullopt;
+    }
+  }
+  return result;
+}
+
+std::optional<VectorXd> MinkowskiSum::DoMaybeGetFeasiblePoint() const {
+  std::optional<VectorXd> result;
+  for (const auto& s : sets_) {
+    if (std::optional<VectorXd> point = s->MaybeGetFeasiblePoint()) {
       if (result.has_value()) {
         *result += *point;
       } else {
@@ -171,6 +187,15 @@ MinkowskiSum::DoAddPointInSetConstraints(
         a, 0.0, {Vector1<Variable>(x[i]), X.row(i).transpose()}));
   }
   for (int j = 0; j < num_terms(); ++j) {
+    if (sets_[j]->ambient_dimension() == 0) {
+      std::optional<Variable> new_var =
+          ConvexSet::HandleZeroAmbientDimensionConstraints(prog, *sets_[j],
+                                                           &new_constraints);
+      if (new_var.has_value()) {
+        new_vars.push_back(new_var.value());
+      }
+      continue;
+    }
     const auto [new_vars_in_sets_j, new_constraints_in_sets_j] =
         sets_[j]->AddPointInSetConstraints(prog, X.col(j));
     for (int k = 0; k < new_vars_in_sets_j.rows(); ++k) {
@@ -205,6 +230,11 @@ MinkowskiSum::DoAddPointInNonnegativeScalingConstraints(
         a, 0.0, {Vector1<Variable>(x[i]), X.row(i).transpose()}));
   }
   for (int j = 0; j < num_terms(); ++j) {
+    if (sets_[j]->ambient_dimension() == 0) {
+      ConvexSet::HandleZeroAmbientDimensionConstraints(prog, *sets_[j],
+                                                       &constraints);
+      continue;
+    }
     auto new_constraints =
         sets_[j]->AddPointInNonnegativeScalingConstraints(prog, X.col(j), t);
     constraints.insert(constraints.end(),
@@ -235,6 +265,11 @@ MinkowskiSum::DoAddPointInNonnegativeScalingConstraints(
         a, 0.0, {Vector1<Variable>(x[i]), X.row(i).transpose()}));
   }
   for (int j = 0; j < num_terms(); ++j) {
+    if (sets_[j]->ambient_dimension() == 0) {
+      ConvexSet::HandleZeroAmbientDimensionConstraints(prog, *sets_[j],
+                                                       &constraints);
+      continue;
+    }
     auto new_constraints = sets_[j]->AddPointInNonnegativeScalingConstraints(
         prog, A, b, c, d, X.col(j), t);
     constraints.insert(constraints.end(),

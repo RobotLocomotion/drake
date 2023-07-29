@@ -12,6 +12,8 @@
 namespace drake {
 namespace solvers {
 namespace internal {
+const double kInf = std::numeric_limits<double>::infinity();
+
 using BarFType = std::vector<std::unordered_map<
     MSKint64t, std::pair<std::vector<MSKint64t>, std::vector<MSKrealt>>>>;
 
@@ -560,6 +562,136 @@ GTEST_TEST(AddQuadraticCostAsLinearCost, Test) {
   // Check the optimality condition, the gradient of the cost is 0.
   EXPECT_TRUE(CompareMatrices(Q * x_sol + linear_coeff.toDense(),
                               Eigen::VectorXd::Zero(x.rows()), 1E-10));
+
+  MSK_deleteenv(&env);
+}
+
+GTEST_TEST(AddQuadraticConstraint, Test) {
+  MathematicalProgram prog;
+  MSKenv_t env;
+  MSK_makeenv(&env, nullptr);
+  auto x = prog.NewContinuousVariables<3>();
+  MosekSolverProgram dut(prog, env);
+  AppendFreeVariable(
+      dut.task(), dut.decision_variable_to_mosek_nonmatrix_variable().size());
+  // Add a linear constraint.
+  prog.AddLinearConstraint(Eigen::RowVector2d(1, 2), -10, 20, x.head<2>());
+  std::unordered_map<Binding<LinearConstraint>, ConstraintDualIndices>
+      linear_con_dual_indices;
+  std::unordered_map<Binding<LinearEqualityConstraint>, ConstraintDualIndices>
+      linear_eq_con_dual_indices;
+  MSKrescodee rescode = dut.AddLinearConstraints(prog, &linear_con_dual_indices,
+                                                 &linear_eq_con_dual_indices);
+  // Add a quadratic constraint on a subset of variables.
+  const Eigen::Matrix2d Q0 = Eigen::Vector2d(1, 2).asDiagonal();
+  const Eigen::Vector2d b0(2, -3);
+  const auto quadratic_con0 = prog.AddQuadraticConstraint(
+      Q0, b0, -kInf, 10, Vector2<symbolic::Variable>(x(2), x(0)));
+  // Add a quadratic constraint on duplicated variables.
+  // I intentially use a non-symmetric Q.
+  Eigen::Matrix2d Q1;
+  // clang-format off
+  Q1 << -1, -3,
+        -1, -5;
+  // clang-format on
+  const Eigen::Vector2d b1(1, -2);
+  const auto quadratic_con1 = prog.AddQuadraticConstraint(
+      Q1, b1, -2, kInf, Vector2<symbolic::Variable>(x(1), x(1)));
+  std::unordered_map<Binding<QuadraticConstraint>, MSKint64t>
+      quadratic_constraint_dual_indices;
+  rescode =
+      dut.AddQuadraticConstraints(prog, &quadratic_constraint_dual_indices);
+  EXPECT_EQ(rescode, MSK_RES_OK);
+  EXPECT_EQ(quadratic_constraint_dual_indices.size(), 2);
+  EXPECT_EQ(quadratic_constraint_dual_indices.at(quadratic_con0), 1);
+  EXPECT_EQ(quadratic_constraint_dual_indices.at(quadratic_con1), 2);
+  {
+    // Check the Hessian in the first quadratic constraint.
+    MSKint32t maxnumqcnz = 3;
+    int numqcnz{0};
+    std::vector<MSKint32t> qcsubi(maxnumqcnz);
+    std::vector<MSKint32t> qcsubj(maxnumqcnz);
+    std::vector<MSKrealt> qcval(maxnumqcnz);
+    MSK_getqconk(dut.task(), 1, maxnumqcnz, &numqcnz, qcsubi.data(),
+                 qcsubj.data(), qcval.data());
+    EXPECT_EQ(numqcnz, 2);
+    Eigen::Matrix3d Q0_mosek;
+    Q0_mosek.setZero();
+    for (int i = 0; i < numqcnz; ++i) {
+      Q0_mosek(qcsubi[i], qcsubj[i]) = qcval[i];
+    }
+    Eigen::Matrix3d Q0_mosek_expected = Eigen::Vector3d(2, 0, 1).asDiagonal();
+    EXPECT_TRUE(CompareMatrices(Q0_mosek, Q0_mosek_expected));
+  }
+  {
+    // Check the Hessian in the second quadratic constraint.
+    MSKint32t maxnumqcnz = 3;
+    int numqcnz{0};
+    std::vector<MSKint32t> qcsubi(maxnumqcnz);
+    std::vector<MSKint32t> qcsubj(maxnumqcnz);
+    std::vector<MSKrealt> qcval(maxnumqcnz);
+    MSK_getqconk(dut.task(), 2, maxnumqcnz, &numqcnz, qcsubi.data(),
+                 qcsubj.data(), qcval.data());
+    EXPECT_EQ(numqcnz, 1);
+    Eigen::Matrix3d Q1_mosek;
+    Q1_mosek.setZero();
+    for (int i = 0; i < numqcnz; ++i) {
+      Q1_mosek(qcsubi[i], qcsubj[i]) = qcval[i];
+    }
+    Eigen::Matrix3d Q1_mosek_expected = Eigen::Vector3d(0, -10, 0).asDiagonal();
+    EXPECT_TRUE(CompareMatrices(Q1_mosek, Q1_mosek_expected));
+  }
+  // Check the bound of the quadratic constraint.
+  {
+    MSKboundkeye bound_key;
+    MSKrealt bl;
+    MSKrealt bu;
+    // Test the bound of the first quadratic constraint.
+    MSK_getconbound(dut.task(), 1, &bound_key, &bl, &bu);
+    EXPECT_EQ(bound_key, MSK_BK_UP);
+    EXPECT_EQ(bu, quadratic_con0.evaluator()->upper_bound()(0));
+    EXPECT_EQ(bl, -MSK_INFINITY);
+    // Test the bound of the second quadratic constraint.
+    MSK_getconbound(dut.task(), 2, &bound_key, &bl, &bu);
+    EXPECT_EQ(bound_key, MSK_BK_LO);
+    EXPECT_EQ(bl, quadratic_con1.evaluator()->lower_bound()(0));
+    EXPECT_EQ(bu, MSK_INFINITY);
+  }
+  // Test the linear coefficient.
+  {
+    MSKint32t nzi;
+    std::vector<MSKint32t> subi(prog.num_vars());
+    std::vector<MSKrealt> vali(prog.num_vars());
+    // Test the linear coefficient of the first quadratic constraint
+    MSK_getarow(dut.task(), 1, &nzi, subi.data(), vali.data());
+    EXPECT_EQ(nzi, 2);
+    Eigen::VectorXd a = Eigen::VectorXd::Zero(prog.num_vars());
+    for (int i = 0; i < nzi; ++i) {
+      a(subi[i]) = vali[i];
+    }
+    EXPECT_TRUE(CompareMatrices(a, Eigen::Vector3d(b0(1), 0, b0(0))));
+    // Test the linear coefficient of the second quadratic constraint
+    MSK_getarow(dut.task(), 2, &nzi, subi.data(), vali.data());
+    EXPECT_EQ(nzi, 1);
+    EXPECT_EQ(subi[0], 1);
+    EXPECT_EQ(vali[0], b1(0) + b1(1));
+  }
+  // Solve the optimization problem
+  MSKrescodee terminal_code;
+  MSK_optimizetrm(dut.task(), &terminal_code);
+
+  MSKsoltypee solution_type = MSK_SOL_ITR;
+
+  MSKsolstae solution_status;
+  MSK_getsolsta(dut.task(), solution_type, &solution_status);
+  EXPECT_EQ(solution_status, MSK_SOL_STA_OPTIMAL);
+  Eigen::Vector3d mosek_var_sol;
+  MSK_getxx(dut.task(), solution_type, mosek_var_sol.data());
+  const Eigen::Vector3d x_sol = mosek_var_sol;
+  EXPECT_TRUE(quadratic_con0.evaluator()->CheckSatisfied(
+      Eigen::Vector2d(x_sol(2), x_sol(0))));
+  EXPECT_TRUE(quadratic_con1.evaluator()->CheckSatisfied(
+      Eigen::Vector2d(x_sol(1), x_sol(1))));
 
   MSK_deleteenv(&env);
 }

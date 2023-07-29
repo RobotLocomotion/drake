@@ -79,7 +79,15 @@ MatrixXd OrderCounterClockwise(const MatrixXd& vertices) {
   return sorted_vertices;
 }
 
-MatrixXd GetConvexHullFromObjFile(const std::string& filename, double scale) {
+MatrixXd GetConvexHullFromObjFile(const std::string& filename,
+                                  const std::string& extension, double scale,
+                                  std::string_view prefix) {
+  if (extension != ".obj") {
+    throw std::runtime_error(fmt::format(
+        "{} can only use mesh shapes (i.e.., Convex, Mesh) with a .obj file "
+        "type; given '{}'.",
+        prefix, filename));
+  }
   const auto [tinyobj_vertices, faces, num_faces] =
       internal::ReadObjFile(filename, scale, /* triangulate = */ false);
   unused(faces);
@@ -333,7 +341,7 @@ bool VPolytope::DoIsBounded() const {
 }
 
 bool VPolytope::DoIsEmpty() const {
-  return vertices_.size() == 0;
+  return vertices_.cols() == 0;
 }
 
 std::optional<VectorXd> VPolytope::DoMaybeGetPoint() const {
@@ -343,8 +351,19 @@ std::optional<VectorXd> VPolytope::DoMaybeGetPoint() const {
   return std::nullopt;
 }
 
+std::optional<VectorXd> VPolytope::DoMaybeGetFeasiblePoint() const {
+  if (IsEmpty()) {
+    return std::nullopt;
+  } else {
+    return vertices_.col(0);
+  }
+}
+
 bool VPolytope::DoPointInSet(const Eigen::Ref<const VectorXd>& x,
                              double tol) const {
+  if (vertices_.cols() == 0) {
+    return false;
+  }
   const int n = ambient_dimension();
   const int m = vertices_.cols();
   const double inf = std::numeric_limits<double>::infinity();
@@ -479,17 +498,20 @@ void VPolytope::ImplementGeometry(const Box& box, void* data) {
 void VPolytope::ImplementGeometry(const Convex& convex, void* data) {
   DRAKE_ASSERT(data != nullptr);
   Matrix3Xd* vertex_data = static_cast<Matrix3Xd*>(data);
-  *vertex_data = GetConvexHullFromObjFile(convex.filename(), convex.scale());
+  *vertex_data = GetConvexHullFromObjFile(convex.filename(), convex.extension(),
+                                          convex.scale(), "VPolytope");
 }
 
 void VPolytope::ImplementGeometry(const Mesh& mesh, void* data) {
   DRAKE_ASSERT(data != nullptr);
   Matrix3Xd* vertex_data = static_cast<Matrix3Xd*>(data);
-  *vertex_data = GetConvexHullFromObjFile(mesh.filename(), mesh.scale());
+  *vertex_data = GetConvexHullFromObjFile(mesh.filename(), mesh.extension(),
+                                          mesh.scale(), "VPolytope");
 }
 
 MatrixXd GetVertices(const Convex& convex) {
-  return GetConvexHullFromObjFile(convex.filename(), convex.scale());
+  return GetConvexHullFromObjFile(convex.filename(), convex.extension(),
+                                  convex.scale(), "GetVertices()");
 }
 
 }  // namespace optimization

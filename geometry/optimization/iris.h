@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "drake/common/name_value.h"
+#include "drake/geometry/meshcat.h"
 #include "drake/geometry/optimization/convex_set.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
 #include "drake/multibody/plant/multibody_plant.h"
@@ -115,6 +116,11 @@ struct IrisOptions {
   counter-examples for the additional constraints using in
   IrisInConfigurationSpace. Use this option to set the initial seed. */
   int random_seed{1234};
+
+  /** Passing a meshcat instance may enable debugging visualizations; this
+  currently only happens in IrisInConfigurationSpace and when the
+  configuration space is <= 3 dimensional.*/
+  std::shared_ptr<Meshcat> meshcat{};
 };
 
 /** The IRIS (Iterative Region Inflation by Semidefinite programming) algorithm,

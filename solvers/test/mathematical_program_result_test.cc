@@ -41,6 +41,7 @@ TEST_F(MathematicalProgramResultTest, DefaultConstructor) {
 TEST_F(MathematicalProgramResultTest, Setters) {
   MathematicalProgramResult result;
   result.set_decision_variable_index(decision_variable_index_);
+  EXPECT_EQ(result.get_decision_variable_index(), decision_variable_index_);
   EXPECT_TRUE(CompareMatrices(
       result.get_x_val(),
       Eigen::VectorXd::Constant(decision_variable_index_.size(),
@@ -64,6 +65,11 @@ TEST_F(MathematicalProgramResultTest, Setters) {
   EXPECT_EQ(result.get_optimal_cost(), cost);
   EXPECT_EQ(result.get_solver_id().name(), "foo");
   EXPECT_TRUE(CompareMatrices(result.GetSolution(), x_val));
+
+  result.SetSolution(x0_, 0.123);
+  EXPECT_EQ(result.GetSolution(x0_), 0.123);
+  symbolic::Variable unregistered("unregistered");
+  EXPECT_THROW(result.SetSolution(unregistered, 0.456), std::exception);
 }
 
 TEST_F(MathematicalProgramResultTest, GetSolution) {

@@ -23,7 +23,7 @@ const boolean<T> is_nonnegative_finite(const T& value) {
 
 template<typename T>
 void ThrowUnlessValueIsPositiveFinite(const T& value,
-    const std::string& value_name, const std::string& function_name) {
+    std::string_view value_name, std::string_view function_name) {
   if (!is_positive_finite(value)) {
     DRAKE_DEMAND(!value_name.empty());
     DRAKE_DEMAND(!function_name.empty());
@@ -34,19 +34,22 @@ void ThrowUnlessValueIsPositiveFinite(const T& value,
   }
 }
 
-// Throw unless ‖unit_vector‖ is within ≈ 5.5 bits of 1.0.
+// Throws unless ‖unit_vector‖ is within ≈ 5.5 bits of 1.0.
 // Note: 1E-14 ≈ 2^5.5 * std::numeric_limits<double>::epsilon();
+// Note: This function is a no-op when type T is symbolic::Expression.
 template<typename T>
-void ThrowUnlessUnitVectorIsMagnitudeOne(const T& unit_vector,
-    const std::string& function_name) {
-  using std::abs;
-  constexpr double kTolerance = 1E-14;
-  if (abs(unit_vector.norm() - 1) > kTolerance) {
-    DRAKE_DEMAND(!function_name.empty());
-    const std::string error_message = fmt::format(
-        "{}(): The unit_vector argument {} is not a unit vector.",
-        function_name, fmt_eigen(unit_vector.transpose()));
-    throw std::logic_error(error_message);
+void ThrowUnlessVectorIsMagnitudeOne(const Vector3<T>& unit_vector,
+    std::string_view function_name) {
+  if constexpr (scalar_predicate<T>::is_bool) {
+    using std::abs;
+    constexpr double kTolerance = 1E-14;
+    if (abs(unit_vector.norm() - 1) > kTolerance) {
+      DRAKE_DEMAND(!function_name.empty());
+      const std::string error_message =
+          fmt::format("{}(): The unit_vector argument {} is not a unit vector.",
+                      function_name, fmt_eigen(unit_vector.transpose()));
+      throw std::logic_error(error_message);
+    }
   }
 }
 }  // namespace
@@ -136,12 +139,23 @@ SpatialInertia<T> SpatialInertia<T>::SolidCapsuleWithDensity(
   ThrowUnlessValueIsPositiveFinite(density, "density", __func__);
   ThrowUnlessValueIsPositiveFinite(radius, "radius", __func__);
   ThrowUnlessValueIsPositiveFinite(length, "length", __func__);
-  ThrowUnlessUnitVectorIsMagnitudeOne(unit_vector, __func__);
+  ThrowUnlessVectorIsMagnitudeOne(unit_vector, __func__);
 
   // Volume = π r² L + 4/3 π r³
   const T pi_r_squared = M_PI * radius * radius;
   const T volume = pi_r_squared * length + (4.0 / 3.0) * pi_r_squared * radius;
   const T mass = density * volume;
+  return SolidCapsuleWithMass(mass, radius, length, unit_vector);
+}
+
+template <typename T>
+SpatialInertia<T> SpatialInertia<T>::SolidCapsuleWithMass(
+    const T& mass, const T& radius, const T& length,
+    const Vector3<T>& unit_vector) {
+  ThrowUnlessValueIsPositiveFinite(mass, "mass", __func__);
+  ThrowUnlessValueIsPositiveFinite(radius, "radius", __func__);
+  ThrowUnlessValueIsPositiveFinite(length, "length", __func__);
+  ThrowUnlessVectorIsMagnitudeOne(unit_vector, __func__);
   const Vector3<T> p_BoBcm_B = Vector3<T>::Zero();
   const UnitInertia<T> G_BBo_B =
       UnitInertia<T>::SolidCapsule(radius, length, unit_vector);
@@ -155,15 +169,21 @@ SpatialInertia<T> SpatialInertia<T>::SolidCylinderWithDensity(
   ThrowUnlessValueIsPositiveFinite(density, "density", __func__);
   ThrowUnlessValueIsPositiveFinite(radius, "radius", __func__);
   ThrowUnlessValueIsPositiveFinite(length, "length", __func__);
-  ThrowUnlessUnitVectorIsMagnitudeOne(unit_vector, __func__);
+  ThrowUnlessVectorIsMagnitudeOne(unit_vector, __func__);
   const T volume = M_PI * radius * radius * length;  // π r² l
   const T mass = density * volume;
-  const Vector3<T> p_BoBcm_B = Vector3<T>::Zero();
+  return SolidCylinderWithMass(mass, radius, length, unit_vector);
+}
 
-  // Note: Although a check is made that ‖unit_vector‖ ≈ 1, even if imperfect,
-  // UnitInertia::SolidCylinder() allows for a near zero-vector due to code in
-  // UnitInertia::AxiallySymmetric() which normalizes unit_vector before use.
-  // TODO(Mitiguy) remove normalization in UnitInertia::AxiallySymmetric().
+template <typename T>
+SpatialInertia<T> SpatialInertia<T>::SolidCylinderWithMass(
+    const T& mass, const T& radius, const T& length,
+    const Vector3<T>& unit_vector) {
+  ThrowUnlessValueIsPositiveFinite(mass, "mass", __func__);
+  ThrowUnlessValueIsPositiveFinite(radius, "radius", __func__);
+  ThrowUnlessValueIsPositiveFinite(length, "length", __func__);
+  ThrowUnlessVectorIsMagnitudeOne(unit_vector, __func__);
+  const Vector3<T> p_BoBcm_B = Vector3<T>::Zero();
   const UnitInertia<T> G_BBo_B =
       UnitInertia<T>::SolidCylinder(radius, length, unit_vector);
   return SpatialInertia<T>(mass, p_BoBcm_B, G_BBo_B);
@@ -176,13 +196,24 @@ SpatialInertia<T> SpatialInertia<T>::SolidCylinderWithDensityAboutEnd(
   ThrowUnlessValueIsPositiveFinite(density, "density", __func__);
   ThrowUnlessValueIsPositiveFinite(radius, "radius", __func__);
   ThrowUnlessValueIsPositiveFinite(length, "length", __func__);
-  ThrowUnlessUnitVectorIsMagnitudeOne(unit_vector, __func__);
-  SpatialInertia<T> M_BBcm_B =
-      SpatialInertia<T>::SolidCylinderWithDensity(
-          density, radius, length, unit_vector);
-  const Vector3<T> p_BcmBp_B = -0.5 * length * unit_vector;
-  M_BBcm_B.ShiftFromCenterOfMassInPlace(p_BcmBp_B);
-  return M_BBcm_B;  // Due to shift, this actually returns M_BBp_B.
+  ThrowUnlessVectorIsMagnitudeOne(unit_vector, __func__);
+  const T volume = M_PI * radius * radius * length;  // π r² l
+  const T mass = density * volume;
+  return SolidCylinderWithMassAboutEnd(mass, radius, length, unit_vector);
+}
+
+template <typename T>
+SpatialInertia<T> SpatialInertia<T>::SolidCylinderWithMassAboutEnd(
+    const T& mass, const T& radius, const T& length,
+    const Vector3<T>& unit_vector) {
+  ThrowUnlessValueIsPositiveFinite(mass, "mass", __func__);
+  ThrowUnlessValueIsPositiveFinite(radius, "radius", __func__);
+  ThrowUnlessValueIsPositiveFinite(length, "length", __func__);
+  ThrowUnlessVectorIsMagnitudeOne(unit_vector, __func__);
+  const Vector3<T> p_BpBcm_B = 0.5 * length * unit_vector;
+  const UnitInertia<T> G_BBp_B =
+      UnitInertia<T>::SolidCylinderAboutEnd(radius, length, unit_vector);
+  return SpatialInertia(mass, p_BpBcm_B, G_BBp_B);  // Returns M_BBp_B.
 }
 
 template <typename T>
@@ -190,7 +221,7 @@ SpatialInertia<T> SpatialInertia<T>::ThinRodWithMass(
     const T& mass, const T& length, const Vector3<T>& unit_vector) {
   ThrowUnlessValueIsPositiveFinite(mass, "mass", __func__);
   ThrowUnlessValueIsPositiveFinite(length, "length", __func__);
-  ThrowUnlessUnitVectorIsMagnitudeOne(unit_vector, __func__);
+  ThrowUnlessVectorIsMagnitudeOne(unit_vector, __func__);
 
   // Although a check is made that ‖unit_vector‖ ≈ 1, we normalize regardless.
   // Note: UnitInertia::ThinRod() calls UnitInertia::AxiallySymmetric() which
@@ -207,7 +238,7 @@ SpatialInertia<T> SpatialInertia<T>::ThinRodWithMassAboutEnd(
     const T& mass, const T& length, const Vector3<T>& unit_vector) {
   ThrowUnlessValueIsPositiveFinite(mass, "mass", __func__);
   ThrowUnlessValueIsPositiveFinite(length, "length", __func__);
-  ThrowUnlessUnitVectorIsMagnitudeOne(unit_vector, __func__);
+  ThrowUnlessVectorIsMagnitudeOne(unit_vector, __func__);
   SpatialInertia<T> M_BBcm_B =
       SpatialInertia<T>::ThinRodWithMass(mass, length, unit_vector);
   const Vector3<T> p_BcmBp_B = -0.5 * length * unit_vector;
@@ -224,6 +255,16 @@ SpatialInertia<T> SpatialInertia<T>::SolidEllipsoidWithDensity(
   ThrowUnlessValueIsPositiveFinite(c, "semi-axis c", __func__);
   const T volume = (4.0 / 3.0) * M_PI * a * b * c;  // 4/3 π a b c
   const T mass = density * volume;
+  return SolidEllipsoidWithMass(mass, a, b, c);
+}
+
+template <typename T>
+SpatialInertia<T> SpatialInertia<T>::SolidEllipsoidWithMass(
+    const T& mass, const T& a, const T& b, const T& c) {
+  ThrowUnlessValueIsPositiveFinite(mass, "mass", __func__);
+  ThrowUnlessValueIsPositiveFinite(a, "semi-axis a", __func__);
+  ThrowUnlessValueIsPositiveFinite(b, "semi-axis b", __func__);
+  ThrowUnlessValueIsPositiveFinite(c, "semi-axis c", __func__);
   const Vector3<T> p_BoBcm_B = Vector3<T>::Zero();
   const UnitInertia<T> G_BBo_B = UnitInertia<T>::SolidEllipsoid(a, b, c);
   return SpatialInertia<T>(mass, p_BoBcm_B, G_BBo_B);

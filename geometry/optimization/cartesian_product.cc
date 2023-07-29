@@ -89,8 +89,7 @@ CartesianProduct::CartesianProduct(const QueryObject<double>& query_object,
 
   A_ = X_GF.rotation().matrix();
   b_ = X_GF.translation();
-  // N.B. We leave A_decomp_ unset here. It's only used by MaybeGetPoint and
-  // there it's irrelevant because a cylinder is never a point anyway.
+  A_decomp_ = Eigen::ColPivHouseholderQR<Eigen::MatrixXd>(*A_);
 }
 
 CartesianProduct::~CartesianProduct() = default;
@@ -116,7 +115,7 @@ bool CartesianProduct::DoIsBounded() const {
 
 bool CartesianProduct::DoIsEmpty() const {
   if (sets_.size() == 0) {
-    return true;
+    return false;
   }
   for (const auto& s : sets_) {
     if (s->IsEmpty()) {
@@ -136,7 +135,24 @@ std::optional<VectorXd> CartesianProduct::DoMaybeGetPoint() const {
       return std::nullopt;
     }
   }
+  return CartesianProduct::StackAndMaybeTransform(points);
+}
 
+std::optional<Eigen::VectorXd> CartesianProduct::DoMaybeGetFeasiblePoint()
+    const {
+  std::vector<VectorXd> points;
+  for (const auto& s : sets_) {
+    if (std::optional<VectorXd> point = s->MaybeGetFeasiblePoint()) {
+      points.push_back(std::move(*point));
+    } else {
+      return std::nullopt;
+    }
+  }
+  return CartesianProduct::StackAndMaybeTransform(points);
+}
+
+VectorXd CartesianProduct::StackAndMaybeTransform(
+    const std::vector<Eigen::VectorXd>& points) const {
   // Stack the points.
   const int y_ambient_dimension = A_ ? A_->rows() : ambient_dimension();
   int start = 0;
@@ -199,6 +215,15 @@ CartesianProduct::DoAddPointInSetConstraints(
   }
   int index = 0;
   for (const auto& s : sets_) {
+    if (s->ambient_dimension() == 0) {
+      std::optional<Variable> new_var =
+          ConvexSet::HandleZeroAmbientDimensionConstraints(prog, *s,
+                                                           &new_constraints);
+      if (new_var.has_value()) {
+        new_vars.push_back(new_var.value());
+      }
+      continue;
+    }
     const auto [new_var_in_s, new_constraints_in_s] =
         s->AddPointInSetConstraints(prog,
                                     y.segment(index, s->ambient_dimension()));
@@ -234,6 +259,10 @@ CartesianProduct::DoAddPointInNonnegativeScalingConstraints(
   }
   int index = 0;
   for (const auto& s : sets_) {
+    if (s->ambient_dimension() == 0) {
+      ConvexSet::HandleZeroAmbientDimensionConstraints(prog, *s, &constraints);
+      continue;
+    }
     auto new_constraints = s->AddPointInNonnegativeScalingConstraints(
         prog, y.segment(index, s->ambient_dimension()), t);
     index += s->ambient_dimension();
@@ -264,6 +293,11 @@ CartesianProduct::DoAddPointInNonnegativeScalingConstraints(
         prog->AddLinearEqualityConstraint(Aeq, beq, {y, x, t}));
     int index = 0;
     for (const auto& s : sets_) {
+      if (s->ambient_dimension() == 0) {
+        ConvexSet::HandleZeroAmbientDimensionConstraints(prog, *s,
+                                                         &constraints);
+        continue;
+      }
       int set_dim = s->ambient_dimension();
       auto new_constraints = s->AddPointInNonnegativeScalingConstraints(
           prog, MatrixXd::Identity(set_dim, set_dim), VectorXd::Zero(set_dim),
@@ -276,6 +310,11 @@ CartesianProduct::DoAddPointInNonnegativeScalingConstraints(
   } else {
     int index = 0;
     for (const auto& s : sets_) {
+      if (s->ambient_dimension() == 0) {
+        ConvexSet::HandleZeroAmbientDimensionConstraints(prog, *s,
+                                                         &constraints);
+        continue;
+      }
       auto new_constraints = s->AddPointInNonnegativeScalingConstraints(
           prog, A_x.middleRows(index, s->ambient_dimension()),
           b_x.segment(index, s->ambient_dimension()), c, d, x, t);

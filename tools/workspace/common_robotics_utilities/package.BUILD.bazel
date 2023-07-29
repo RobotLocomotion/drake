@@ -54,6 +54,18 @@ cc_library(
 )
 
 cc_test(
+    name = "hausdorff_distance_test",
+    srcs = ["test/hausdorff_distance_test.cpp"],
+    env = {"OMP_NUM_THREADS": "2"},
+    tags = ["cpu:2"],
+    deps = [
+        ":common_robotics_utilities",
+        "@eigen",
+        "@gtest//:without_main",
+    ],
+)
+
+cc_test(
     name = "maybe_test",
     srcs = ["test/maybe_test.cpp"],
     deps = [
@@ -63,9 +75,12 @@ cc_test(
     ],
 )
 
+# N.B. This test uses two threads even when OpenMP is not available.
 cc_test(
     name = "planning_test",
     srcs = ["test/planning_test.cpp"],
+    env = {"OMP_NUM_THREADS": "2"},
+    tags = ["cpu:2"],
     deps = [
         ":common_robotics_utilities",
         "@eigen",
@@ -101,6 +116,18 @@ cc_test(
         ":common_robotics_utilities",
         "@eigen",
         "@gtest//:without_main",
+    ],
+)
+
+test_suite(
+    name = "test_suite",
+    tests = [
+        "hausdorff_distance_test",
+        "maybe_test",
+        "planning_test",
+        "task_planning_test",
+        "utility_test",
+        "voxel_grid_test",
     ],
 )
 

@@ -8,6 +8,7 @@
 
 #include "drake/geometry/optimization/convex_set.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
+#include "drake/math/rigid_transform.h"
 
 namespace drake {
 namespace geometry {
@@ -21,12 +22,20 @@ interior of the set).
 Note: Unlike the half-space representation, this definition means the set is
 always bounded (hence the name polytope, instead of polyhedron).
 
+A VPolytope is empty if and only if it is composed of zero vertices, i.e.,
+if vertices_.cols() == 0. This includes the zero-dimensional case. If
+vertices_.rows() == 0 but vertices_.cols() > 0, we treat this as having one or
+more copies of 0 in the zero-dimensional vector space {0}. If vertices_.rows()
+and vertices_.cols() are zero, we treat this as no points in {0}, which is
+empty.
+
 @ingroup geometry_optimization */
 class VPolytope final : public ConvexSet {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(VPolytope)
 
-  /** Constructs a default (zero-dimensional) set. */
+  /** Constructs a set with no vertices in the zero-dimensional space, which is
+  empty (by convention). */
   VPolytope();
 
   /** Constructs the polytope from a d-by-n matrix, where d is the ambient
@@ -92,6 +101,8 @@ class VPolytope final : public ConvexSet {
   bool DoIsEmpty() const final;
 
   std::optional<Eigen::VectorXd> DoMaybeGetPoint() const final;
+
+  std::optional<Eigen::VectorXd> DoMaybeGetFeasiblePoint() const final;
 
   bool DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
                     double tol) const final;

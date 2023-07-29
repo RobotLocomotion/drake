@@ -563,7 +563,7 @@ def drake_cc_library(
     used by Drake's installed headers. This is especially helpful when the
     header_lint tool is complaining about third-party dependency pollution.
     Flagging a library as `internal = True` means that the library is internal
-    from the point of view of the the build system, which is an even stronger
+    from the point of view of the build system, which is an even stronger
     promise that merely placing code inside `namespace internal {}`.
     Code that is build-system internal should always be namespace-internal,
     but not all namespace-internal code is build-system internal. For example,

@@ -22,9 +22,6 @@ using systems::ContinuousState;
 using systems::FixedInputPortValue;
 using systems::System;
 
-// We use this alias to silence cpplint barking at mutable references.
-using BenchmarkStateRef = benchmark::State&;
-
 // In the benchmark case instantiations at the bottom of this file, we'll use
 // a bitmask for the case's "Arg" to denote which quantities are in scope as
 // either gradients (for T=AutoDiffXd) or variables (for T=Expression).
@@ -44,11 +41,7 @@ class Cassie : public benchmark::Fixture {
     tools::performance::AddMinMaxStatistics(this);
   }
 
-  // This apparently futile using statement works around "overloaded virtual"
-  // errors in g++. All of this is a consequence of the weird deprecation of
-  // const-ref State versions of SetUp() and TearDown() in benchmark.h.
-  using benchmark::Fixture::SetUp;
-  void SetUp(BenchmarkStateRef state) override {
+  void SetUp(benchmark::State& state) override {
     SetUpNonZeroState();
     SetUpGradientsOrVariables(state);
     tools::performance::TareMemoryManager();
@@ -85,7 +78,8 @@ class Cassie : public benchmark::Fixture {
   // For T=double, any request for gradients is an error.
   // For T=AutoDiffXd, sets the specified gradients to the identity matrix.
   // For T=Expression, sets the specified quantities to symbolic variables.
-  void SetUpGradientsOrVariables(BenchmarkStateRef state);
+  // NOLINTNEXTLINE(runtime/references)
+  void SetUpGradientsOrVariables(benchmark::State& state);
 
   // Use these functions to invalidate input- or state-dependent computations
   // each benchmarked step. Disabling the cache entirely would affect the
@@ -103,7 +97,8 @@ class Cassie : public benchmark::Fixture {
   }
 
   // Runs the MassMatrix benchmark.
-  void DoMassMatrix(BenchmarkStateRef state) {
+  // NOLINTNEXTLINE(runtime/references)
+  void DoMassMatrix(benchmark::State& state) {
     DRAKE_DEMAND(want_grad_vdot(state) == false);
     DRAKE_DEMAND(want_grad_u(state) == false);
     for (auto _ : state) {
@@ -113,7 +108,8 @@ class Cassie : public benchmark::Fixture {
   }
 
   // Runs the InverseDynamics benchmark.
-  void DoInverseDynamics(BenchmarkStateRef state) {
+  // NOLINTNEXTLINE(runtime/references)
+  void DoInverseDynamics(benchmark::State& state) {
     DRAKE_DEMAND(want_grad_u(state) == false);
     for (auto _ : state) {
       InvalidateState();
@@ -122,7 +118,8 @@ class Cassie : public benchmark::Fixture {
   }
 
   // Runs the ForwardDynamics benchmark.
-  void DoForwardDynamics(BenchmarkStateRef state) {
+  // NOLINTNEXTLINE(runtime/references)
+  void DoForwardDynamics(benchmark::State& state) {
     DRAKE_DEMAND(want_grad_vdot(state) == false);
     for (auto _ : state) {
       InvalidateInput();
@@ -195,16 +192,16 @@ void Cassie<T>::SetUpNonZeroState() {
   mass_matrix_out_ = MatrixX<T>::Zero(nv_, nv_);
 }
 
-template <>
-void Cassie<double>::SetUpGradientsOrVariables(BenchmarkStateRef state) {
+template <>  // NOLINTNEXTLINE(runtime/references)
+void Cassie<double>::SetUpGradientsOrVariables(benchmark::State& state) {
   DRAKE_DEMAND(want_grad_q(state) == false);
   DRAKE_DEMAND(want_grad_v(state) == false);
   DRAKE_DEMAND(want_grad_vdot(state) == false);
   DRAKE_DEMAND(want_grad_u(state) == false);
 }
 
-template <>
-void Cassie<AutoDiffXd>::SetUpGradientsOrVariables(BenchmarkStateRef state) {
+template <>  // NOLINTNEXTLINE(runtime/references)
+void Cassie<AutoDiffXd>::SetUpGradientsOrVariables(benchmark::State& state) {
   // For the quantities destined for InitializeAutoDiff, read their default
   // values (without any gradients). For the others, leave the matrix empty.
   VectorX<double> q, v, vdot, u;
@@ -241,8 +238,8 @@ void Cassie<AutoDiffXd>::SetUpGradientsOrVariables(BenchmarkStateRef state) {
   }
 }
 
-template <>
-void Cassie<Expression>::SetUpGradientsOrVariables(BenchmarkStateRef state) {
+template <>  // NOLINTNEXTLINE(runtime/references)
+void Cassie<Expression>::SetUpGradientsOrVariables(benchmark::State& state) {
   if (want_grad_q(state)) {
     const VectorX<Expression> q = MakeVectorVariable(nq_, "q");
     plant_->SetPositions(context_.get(), q);
@@ -269,28 +266,32 @@ void Cassie<Expression>::SetUpGradientsOrVariables(BenchmarkStateRef state) {
 //
 // For T=Expression, the range arg sets which variables to use, using a bitmask.
 
-BENCHMARK_DEFINE_F(CassieDouble, MassMatrix)(BenchmarkStateRef state) {
+// NOLINTNEXTLINE(runtime/references)
+BENCHMARK_DEFINE_F(CassieDouble, MassMatrix)(benchmark::State& state) {
   DoMassMatrix(state);
 }
 BENCHMARK_REGISTER_F(CassieDouble, MassMatrix)
   ->Unit(benchmark::kMicrosecond)
   ->Arg(kWantNoGrad);
 
-BENCHMARK_DEFINE_F(CassieDouble, InverseDynamics)(BenchmarkStateRef state) {
+// NOLINTNEXTLINE(runtime/references)
+BENCHMARK_DEFINE_F(CassieDouble, InverseDynamics)(benchmark::State& state) {
   DoInverseDynamics(state);
 }
 BENCHMARK_REGISTER_F(CassieDouble, InverseDynamics)
   ->Unit(benchmark::kMicrosecond)
   ->Arg(kWantNoGrad);
 
-BENCHMARK_DEFINE_F(CassieDouble, ForwardDynamics)(BenchmarkStateRef state) {
+// NOLINTNEXTLINE(runtime/references)
+BENCHMARK_DEFINE_F(CassieDouble, ForwardDynamics)(benchmark::State& state) {
   DoForwardDynamics(state);
 }
 BENCHMARK_REGISTER_F(CassieDouble, ForwardDynamics)
   ->Unit(benchmark::kMicrosecond)
   ->Arg(kWantNoGrad);
 
-BENCHMARK_DEFINE_F(CassieAutoDiff, MassMatrix)(BenchmarkStateRef state) {
+// NOLINTNEXTLINE(runtime/references)
+BENCHMARK_DEFINE_F(CassieAutoDiff, MassMatrix)(benchmark::State& state) {
   DoMassMatrix(state);
 }
 BENCHMARK_REGISTER_F(CassieAutoDiff, MassMatrix)
@@ -300,7 +301,8 @@ BENCHMARK_REGISTER_F(CassieAutoDiff, MassMatrix)
   ->Arg(kWantGradV)
   ->Arg(kWantGradX);
 
-BENCHMARK_DEFINE_F(CassieAutoDiff, InverseDynamics)(BenchmarkStateRef state) {
+// NOLINTNEXTLINE(runtime/references)
+BENCHMARK_DEFINE_F(CassieAutoDiff, InverseDynamics)(benchmark::State& state) {
   DoInverseDynamics(state);
 }
 BENCHMARK_REGISTER_F(CassieAutoDiff, InverseDynamics)
@@ -314,7 +316,8 @@ BENCHMARK_REGISTER_F(CassieAutoDiff, InverseDynamics)
   ->Arg(kWantGradV|kWantGradVdot)
   ->Arg(kWantGradX|kWantGradVdot);
 
-BENCHMARK_DEFINE_F(CassieAutoDiff, ForwardDynamics)(BenchmarkStateRef state) {
+// NOLINTNEXTLINE(runtime/references)
+BENCHMARK_DEFINE_F(CassieAutoDiff, ForwardDynamics)(benchmark::State& state) {
   DoForwardDynamics(state);
 }
 BENCHMARK_REGISTER_F(CassieAutoDiff, ForwardDynamics)
@@ -328,7 +331,8 @@ BENCHMARK_REGISTER_F(CassieAutoDiff, ForwardDynamics)
   ->Arg(kWantGradV|kWantGradU)
   ->Arg(kWantGradX|kWantGradU);
 
-BENCHMARK_DEFINE_F(CassieExpression, MassMatrix)(BenchmarkStateRef state) {
+// NOLINTNEXTLINE(runtime/references)
+BENCHMARK_DEFINE_F(CassieExpression, MassMatrix)(benchmark::State& state) {
   DoMassMatrix(state);
 }
 BENCHMARK_REGISTER_F(CassieExpression, MassMatrix)
@@ -338,7 +342,8 @@ BENCHMARK_REGISTER_F(CassieExpression, MassMatrix)
   ->Arg(kWantGradV)
   ->Arg(kWantGradX);
 
-BENCHMARK_DEFINE_F(CassieExpression, InverseDynamics)(BenchmarkStateRef state) {
+// NOLINTNEXTLINE(runtime/references)
+BENCHMARK_DEFINE_F(CassieExpression, InverseDynamics)(benchmark::State& state) {
   DoInverseDynamics(state);
 }
 BENCHMARK_REGISTER_F(CassieExpression, InverseDynamics)
@@ -352,7 +357,8 @@ BENCHMARK_REGISTER_F(CassieExpression, InverseDynamics)
   ->Arg(kWantGradV|kWantGradVdot)
   ->Arg(kWantGradX|kWantGradVdot);
 
-BENCHMARK_DEFINE_F(CassieExpression, ForwardDynamics)(BenchmarkStateRef state) {
+// NOLINTNEXTLINE(runtime/references)
+BENCHMARK_DEFINE_F(CassieExpression, ForwardDynamics)(benchmark::State& state) {
   DoForwardDynamics(state);
 }
 BENCHMARK_REGISTER_F(CassieExpression, ForwardDynamics)

@@ -19,6 +19,7 @@
 #include <vtkTransform.h>
 #include <vtkTransformPolyDataFilter.h>
 
+#include "drake/common/diagnostic_policy.h"
 #include "drake/common/text_logging.h"
 #include "drake/geometry/render/render_mesh.h"
 #include "drake/geometry/render/shaders/depth_shaders.h"
@@ -81,14 +82,6 @@ float CheckRangeAndConvertToMeters(float z_buffer_value, double z_near,
   return static_cast<float>(z_buffer_value * (z_far - z_near) + z_near);
 }
 
-// TODO(SeanCurtis-TRI): Add X_PG pose to this data.
-// A package of data required to register a visual geometry.
-struct RegistrationData {
-  const PerceptionProperties& properties;
-  const RigidTransformd& X_WG;
-  const GeometryId id;
-};
-
 }  // namespace
 
 ShaderCallback::ShaderCallback() :
@@ -126,7 +119,7 @@ void RenderEngineVtk::UpdateViewpoint(const RigidTransformd& X_WC) {
 
 void RenderEngineVtk::ImplementGeometry(const Box& box, void* user_data) {
   const RegistrationData* data = static_cast<RegistrationData*>(user_data);
-  ImplementGeometry(CreateVtkBox(box, data->properties).GetPointer(),
+  ImplementPolyData(CreateVtkBox(box, data->properties).GetPointer(),
                     DefineMaterial(data->properties, default_diffuse_),
                     user_data);
 }
@@ -134,7 +127,7 @@ void RenderEngineVtk::ImplementGeometry(const Box& box, void* user_data) {
 void RenderEngineVtk::ImplementGeometry(const Capsule& capsule,
                                         void* user_data) {
   const RegistrationData* data = static_cast<RegistrationData*>(user_data);
-  ImplementGeometry(CreateVtkCapsule(capsule).GetPointer(),
+  ImplementPolyData(CreateVtkCapsule(capsule).GetPointer(),
                     DefineMaterial(data->properties, default_diffuse_),
                     user_data);
 }
@@ -155,7 +148,7 @@ void RenderEngineVtk::ImplementGeometry(const Cylinder& cylinder,
   TransformToDrakeCylinder(transform, transform_filter, vtk_cylinder);
 
   const RegistrationData* data = static_cast<RegistrationData*>(user_data);
-  ImplementGeometry(transform_filter.GetPointer(),
+  ImplementPolyData(transform_filter.GetPointer(),
                     DefineMaterial(data->properties, default_diffuse_),
                     user_data);
 }
@@ -163,7 +156,7 @@ void RenderEngineVtk::ImplementGeometry(const Cylinder& cylinder,
 void RenderEngineVtk::ImplementGeometry(const Ellipsoid& ellipsoid,
                                         void* user_data) {
   const RegistrationData* data = static_cast<RegistrationData*>(user_data);
-  ImplementGeometry(CreateVtkEllipsoid(ellipsoid).GetPointer(),
+  ImplementPolyData(CreateVtkEllipsoid(ellipsoid).GetPointer(),
                     DefineMaterial(data->properties, default_diffuse_),
                     user_data);
 }
@@ -173,7 +166,7 @@ void RenderEngineVtk::ImplementGeometry(const HalfSpace&,
   vtkSmartPointer<vtkPlaneSource> vtk_plane = CreateSquarePlane(kTerrainSize);
 
   const RegistrationData* data = static_cast<RegistrationData*>(user_data);
-  ImplementGeometry(vtk_plane.GetPointer(),
+  ImplementPolyData(vtk_plane.GetPointer(),
                     DefineMaterial(data->properties, default_diffuse_),
                     user_data);
 }
@@ -186,7 +179,7 @@ void RenderEngineVtk::ImplementGeometry(const Sphere& sphere, void* user_data) {
   vtkNew<vtkTexturedSphereSource> vtk_sphere;
   SetSphereOptions(vtk_sphere.GetPointer(), sphere.radius());
   const RegistrationData* data = static_cast<RegistrationData*>(user_data);
-  ImplementGeometry(vtk_sphere.GetPointer(),
+  ImplementPolyData(vtk_sphere.GetPointer(),
                     DefineMaterial(data->properties, default_diffuse_),
                     user_data);
 }
@@ -197,7 +190,7 @@ bool RenderEngineVtk::DoRegisterVisual(
   // Note: the user_data interface on reification requires a non-const pointer.
   RegistrationData data{properties, X_WG, id};
   shape.Reify(this, &data);
-  return true;
+  return data.accepted;
 }
 
 void RenderEngineVtk::DoUpdateVisualPose(GeometryId id,
@@ -382,6 +375,43 @@ RenderEngineVtk::RenderEngineVtk(const RenderEngineVtk& other)
   }
 }
 
+void RenderEngineVtk::ImplementObj(const std::string& file_name, double scale,
+                                   void* user_data) {
+  auto* data = static_cast<RegistrationData*>(user_data);
+
+  if (Mesh(file_name).extension() != ".obj") {
+    static const logging::Warn one_time(
+        "RenderEngineVtk only supports Mesh/Convex specifications which use "
+        ".obj files. Mesh specifications using other mesh types (e.g., "
+        ".gltf, .stl, .dae, etc.) will be ignored.");
+    data->accepted = false;
+    return;
+  }
+
+  RenderMesh mesh_data =
+      LoadRenderMeshFromObj(file_name, data->properties, default_diffuse_,
+                            drake::internal::DiagnosticPolicy());
+  const RenderMaterial material = mesh_data.material;
+
+  vtkSmartPointer<vtkPolyDataAlgorithm> mesh_source =
+      CreateVtkMesh(std::move(mesh_data));
+
+  if (scale == 1) {
+    ImplementPolyData(mesh_source.GetPointer(), material, user_data);
+    return;
+  }
+
+  vtkNew<vtkTransform> transform;
+  // TODO(SeanCurtis-TRI): Should I be allowing only isotropic scale.
+  transform->Scale(scale, scale, scale);
+  vtkNew<vtkTransformPolyDataFilter> transform_filter;
+  transform_filter->SetInputConnection(mesh_source->GetOutputPort());
+  transform_filter->SetTransform(transform.GetPointer());
+  transform_filter->Update();
+
+  ImplementPolyData(transform_filter.GetPointer(), material, user_data);
+}
+
 void RenderEngineVtk::InitializePipelines() {
   const vtkSmartPointer<vtkTransform> vtk_identity =
       ConvertToVtkTransform(RigidTransformd::Identity());
@@ -451,35 +481,7 @@ void RenderEngineVtk::InitializePipelines() {
   pipelines_[ImageType::kColor]->renderer->SetBackgroundAlpha(1.0);
 }
 
-void RenderEngineVtk::ImplementObj(const std::string& file_name, double scale,
-                                   void* user_data) {
-  auto* data = static_cast<RegistrationData*>(user_data);
-
-  RenderMesh mesh_data =
-      LoadRenderMeshFromObj(file_name, data->properties, default_diffuse_,
-                            drake::internal::DiagnosticPolicy());
-  const RenderMaterial material = mesh_data.material;
-
-  vtkSmartPointer<vtkPolyDataAlgorithm> mesh_source =
-      CreateVtkMesh(std::move(mesh_data));
-
-  if (scale == 1) {
-    ImplementGeometry(mesh_source.GetPointer(), material, user_data);
-    return;
-  }
-
-  vtkNew<vtkTransform> transform;
-  // TODO(SeanCurtis-TRI): Should I be allowing only isotropic scale.
-  transform->Scale(scale, scale, scale);
-  vtkNew<vtkTransformPolyDataFilter> transform_filter;
-  transform_filter->SetInputConnection(mesh_source->GetOutputPort());
-  transform_filter->SetTransform(transform.GetPointer());
-  transform_filter->Update();
-
-  ImplementGeometry(transform_filter.GetPointer(), material, user_data);
-}
-
-void RenderEngineVtk::ImplementGeometry(vtkPolyDataAlgorithm* source,
+void RenderEngineVtk::ImplementPolyData(vtkPolyDataAlgorithm* source,
                                         const RenderMaterial& material,
                                         void* user_data) {
   DRAKE_DEMAND(user_data != nullptr);

@@ -22,12 +22,18 @@ with the default values set to the identity map.  This concept is required for
 reasoning about cylinders in arbitrary poses as cartesian products, and more
 generally for describing any affine transform of a CartesianProduct.
 
+Special behavior for IsEmpty: If there are no sets in the product, returns
+nonempty by convention. See:
+https://en.wikipedia.org/wiki/Empty_product#Nullary_Cartesian_product
+Otherwise, if any set in the cartesian product is empty, the whole product
+is empty.
+
 @ingroup geometry_optimization */
 class CartesianProduct final : public ConvexSet {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CartesianProduct)
 
-  /** Constructs a default (zero-dimensional) set. */
+  /** Constructs a default (zero-dimensional, nonempty) set. */
   CartesianProduct();
 
   /** Constructs the product from a vector of convex sets. */
@@ -80,6 +86,15 @@ class CartesianProduct final : public ConvexSet {
   bool DoIsEmpty() const final;
 
   std::optional<Eigen::VectorXd> DoMaybeGetPoint() const final;
+
+  std::optional<Eigen::VectorXd> DoMaybeGetFeasiblePoint() const final;
+
+  /* Given a list of vectors, one from each constituent set of this
+  CartesianProduct, this stacks them into a single vector. Then, if this
+  CartesianProduct has an associated transformation (in the form of an A_
+  matrix and b_ vector), it applies that transformation. */
+  Eigen::VectorXd StackAndMaybeTransform(
+      const std::vector<Eigen::VectorXd>& points) const;
 
   bool DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
                     double tol) const final;
