@@ -107,7 +107,7 @@ DEFINE_string(orientation, "vertical",
               "The orientation of the planar gripper. Options are {vertical, "
               "horizontal}.");
 DEFINE_bool(visualize_contacts, false,
-            "Visualize contacts in Drake visualizer.");
+            "Visualize contacts in Meldis.");
 DEFINE_bool(
     use_position_control, true,
     "If true (default) we simulate position control via inverse dynamics "

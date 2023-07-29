@@ -11,7 +11,7 @@ World's X-Y plane. The center of its top surface is at World origin.
 The compliant ball has radius of 2 cm. By default, it is dropped 4 cm above
 the paddle.
 
-## Run Drake Visualizer
+## Run the legacy Drake Visualizer application of days past
 
 ```
 bazel run //tools:drake_visualizer &

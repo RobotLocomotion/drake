@@ -22,15 +22,10 @@ finite box (if a finite box, the block can fall off the inclined plane).
 
 Open a terminal in the `drake` workspace, and type commands as shown below.
 
-Build the example like so:
-```
-bazel build //tools:drake_visualizer //examples/multibody/inclined_plane_with_body
-```
-
 Run the example like so:
 ```
-bazel-bin/tools/drake_visualizer &
-bazel-bin/examples/multibody/inclined_plane_with_body/inclined_plane_with_body
+bazel run //tools:meldis -- --open-window &
+bazel run //examples/multibody/inclined_plane_with_body:inclined_plane_with_body
 ```
 
 Alternatively,
@@ -38,10 +33,10 @@ to simulate body B as a block that has 4 contacting spheres welded to its
 lowest four corners on a 30 degree inclined plane A (modeled as a half-space), 
 pass command line arguments to the executable by typing:
 ```
-bazel-bin/examples/multibody/inclined_plane_with_body/inclined_plane_with_body -inclined_plane_angle_degrees=30 -bodyB_type=block_with_4Spheres
+bazel run //examples/multibody/inclined_plane_with_body:inclined_plane_with_body -- -inclined_plane_angle_degrees=30 -bodyB_type=block_with_4Spheres
 ```
 
 To see a list of all possible command-line arguments:
 ```
-bazel-bin/examples/multibody/inclined_plane_with_body/inclined_plane_with_body -help
+bazel run //examples/multibody/inclined_plane_with_body:inclined_plane_with_body -- -help
 ```

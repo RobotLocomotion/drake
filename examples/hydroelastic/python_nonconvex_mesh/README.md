@@ -8,7 +8,7 @@ The bell pepper is a non-convex compliant mesh.
 The bowl is a non-convex rigid mesh.
 The table is a compliant box primitive.
 
-## Run Drake Visualizer
+## Run the legacy Drake Visualizer application of days past
 ```
 bazel run //tools:drake_visualizer &
 ```

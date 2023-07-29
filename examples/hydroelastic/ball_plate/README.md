@@ -13,7 +13,7 @@ files and also calling C++ APIs.
 
 ![ball_plate](images/ball_plate.jpg)
 
-<h2> Preliminary Step: drake_visualizer </h2>
+<h2> Preliminary Step: the legacy drake_visualizer application of days past </h2>
 
 ```
 bazel run //tools:drake_visualizer &

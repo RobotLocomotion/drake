@@ -190,9 +190,9 @@ class ContactResultsToLcmSystem final : public systems::LeafSystem<T> {
  @anchor contact_result_vis_creation
 
  These functions extend a Diagram with the required components to publish
- contact results (as reported by MultibodyPlant) to a visualizer (either meldis
- or drake_visualizer). We recommend using these functions instead of assembling
- the requisite components by hand.
+ contact results (as reported by MultibodyPlant) to a visualizer (either Meldis
+ or the legacy ``drake_visualizer`` application of days past). We recommend
+ using these functions instead of assembling the requisite components by hand.
 
  These must be called _during_ Diagram building. Each function makes
  modifications to the diagram being constructed by `builder` including the

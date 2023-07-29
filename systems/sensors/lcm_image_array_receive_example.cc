@@ -2,7 +2,7 @@
 /// ImageToLcmImageArrayT systems.  It receives an incoming stream of
 /// lcmt_image_array messages, unpacks and repacks the color and
 /// depth frames, and retransmits the images.  The output can be viewed in
-/// drake_visualizer.
+/// Meldis once #18862 is finished.
 
 #include <gflags/gflags.h>
 

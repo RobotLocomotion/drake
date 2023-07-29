@@ -16,8 +16,6 @@ it before proceeding.
 `--without-test-only` flag when running the `install_prereqs.sh` script.
 
 ## Run the Client-Server Testing Suite
-There are three commands to run to launch the client, the server, and optionally
-Drake Visualizer for displaying rendered images.
 
 ### Run the Server
 A single threaded / single worker flask development server on host `127.0.0.1`
@@ -52,14 +50,6 @@ $ bazel run //geometry/render_gltf_client:client_demo -- --render_engine vtk
 Note that if you ran your server on an alternate `--host` or `--port`, you will
 need to specify that in `--server_base_url` when running `client_demo`
 executable as well.
-
-### (Optional) Run Drake Visualizer
-
-In a separate terminal, launch drake_visualizer.
-
-```
-$ bazel run //tools:drake_visualizer
-```
 
 ## Testing of the client-server RPC pipeline
 To ensure the RPC (Remote Procedure Call) infrastructure works as expected,
