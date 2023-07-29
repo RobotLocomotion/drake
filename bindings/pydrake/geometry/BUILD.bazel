@@ -112,7 +112,6 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "optimization_test",
-    timeout = "long",
     deps = [
         ":geometry",
         "//bindings/pydrake:math_py",

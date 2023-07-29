@@ -19,7 +19,7 @@ namespace optimization {
  plane. The conditions are that certain rational functions should be always
  positive.
  */
-// TODO (Alexandre.Amice) consider moving to internal since this is never
+// TODO(Alexandre.Amice) consider moving to internal since this is never
 // accessed publically by cspace_free_polytope
 struct PlaneSeparatesGeometries {
   PlaneSeparatesGeometries(

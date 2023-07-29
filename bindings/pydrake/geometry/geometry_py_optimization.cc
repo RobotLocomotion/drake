@@ -846,10 +846,10 @@ void DefineGeometryOptimization(py::module m) {
     cspace_free_polytope_base_cls
         // TODO(Alexandre.Amice): Figure out how to bind rational_forward_kin.
         // The naive method returns an "Unable to convert to Python type" error.
-        //        .def("rational_forward_kin",
-        //                &BaseClass::rational_forward_kin,
-        //                    py_rvp::reference_internal,
-        //                    base_cls_doc.rational_forward_kin.doc)
+        //                .def("rational_forward_kin",
+        //                        &BaseClass::rational_forward_kin,
+        //                            py_rvp::reference_internal,
+        //                            base_cls_doc.rational_forward_kin.doc)
         .def("map_geometries_to_separating_planes",
             &BaseClass::map_geometries_to_separating_planes,
             base_cls_doc.map_geometries_to_separating_planes.doc)
