@@ -40,6 +40,10 @@ GTEST_TEST(BezierCurveTest, Constant) {
   EXPECT_EQ(curve.cols(), 1);
   EXPECT_TRUE(CompareMatrices(curve.value(0.5), kValue));
 
+  auto M = curve.DerivativeControlPointCoefficients(1);
+  EXPECT_EQ(M.rows(), 1);
+  EXPECT_EQ(M.cols(), 0);
+
   curve.ElevateOrder();
   EXPECT_EQ(curve.order(), 1);
   EXPECT_TRUE(CompareMatrices(curve.value(0.5), kValue));
@@ -121,6 +125,14 @@ GTEST_TEST(BezierCurveTest, Linear) {
   CheckConvexHullProperty(curve, num_samples);
   CheckConvexHullProperty(deriv_bezier, num_samples);
 
+  auto M = curve.DerivativeControlPointCoefficients(1);
+  EXPECT_EQ(M.rows(), 2);
+  EXPECT_EQ(M.cols(), 1);
+  for (int i = 0; i < curve.rows(); ++i) {
+    EXPECT_TRUE(CompareMatrices(deriv_bezier.control_points().row(i),
+                                curve.control_points().row(i) * M, 1e-14));
+  }
+
   curve.ElevateOrder();
   EXPECT_EQ(curve.order(), 2);
   EXPECT_TRUE(
@@ -149,6 +161,14 @@ GTEST_TEST(BezierCurveTest, Quadratic) {
   EXPECT_EQ(deriv_bezier.order(), 1);
   EXPECT_EQ(deriv->start_time(), 0.0);
   EXPECT_EQ(deriv->end_time(), 1.0);
+
+  auto M = curve.DerivativeControlPointCoefficients(1);
+  EXPECT_EQ(M.rows(), 3);
+  EXPECT_EQ(M.cols(), 2);
+  for (int i = 0; i < curve.rows(); ++i) {
+    EXPECT_TRUE(CompareMatrices(deriv_bezier.control_points().row(i),
+                                curve.control_points().row(i) * M, 1e-14));
+  }
 
   // second derivative is [ 2; 2 ]
   auto second_deriv = curve.MakeDerivative(2);
@@ -181,7 +201,15 @@ GTEST_TEST(BezierCurveTest, Quadratic) {
                                 Eigen::Vector2d(2, 2), 1e-14));
   }
 
-  // Extract the symoblic exprssion for the bezier curve.
+  M = curve.DerivativeControlPointCoefficients(2);
+  EXPECT_EQ(M.rows(), 3);
+  EXPECT_EQ(M.cols(), 1);
+  for (int i = 0; i < curve.rows(); ++i) {
+    EXPECT_TRUE(CompareMatrices(second_deriv_bezier.control_points().row(i),
+                                curve.control_points().row(i) * M, 1e-14));
+  }
+
+  // Extract the symbolic expression for the bezier curve.
   VectorX<symbolic::Expression> curve_expression{
       curve.GetExpression(symbolic::Variable("t"))};
   for (int i = 0; i < curve_expression.rows(); i++) {
