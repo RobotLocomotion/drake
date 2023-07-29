@@ -819,8 +819,24 @@ CollisionChecker::CollisionChecker(CollisionCheckerParams params,
   collision_padding_ =
       Eigen::MatrixXd::Zero(plant().num_bodies(), plant().num_bodies());
   // Set parameters with safety checks.
-  SetConfigurationDistanceFunction(
-      std::move(params.configuration_distance_function));
+  if (params.configuration_distance_function) {
+    SetConfigurationDistanceFunction(
+        std::move(params.configuration_distance_function));
+  } else if (params.distance_function_weights) {
+    DRAKE_THROW_UNLESS(params.distance_function_weights->size() ==
+                       plant().num_positions());
+    auto weights = *params.distance_function_weights;
+    SetConfigurationDistanceFunction(
+        [weights](const Eigen::VectorXd& q1, const Eigen::VectorXd& q2) {
+          const Eigen::VectorXd delta = q2 - q1;
+          const Eigen::VectorXd weighted_delta = delta.cwiseProduct(weights);
+          return weighted_delta.norm();
+        });
+  } else {
+    throw std::logic_error(
+        "You must set either configuration_distance_function or "
+        "distance_function_weights in the CollisionCheckerParams.");
+  }
   set_edge_step_size(params.edge_step_size);
   SetPaddingAllRobotEnvironmentPairs(params.env_collision_padding);
   SetPaddingAllRobotRobotPairs(params.self_collision_padding);

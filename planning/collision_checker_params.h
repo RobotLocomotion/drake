@@ -2,6 +2,7 @@
 
 #include <functional>
 #include <memory>
+#include <optional>
 #include <vector>
 
 #include <Eigen/Core>
@@ -54,21 +55,28 @@ struct CollisionCheckerParams {
   /** A vector of model instance indices that identify which model instances
   belong to the robot. The list must be non-empty and must not include the
   world model instance. */
-  std::vector<drake::multibody::ModelInstanceIndex> robot_model_instances;
+  std::vector<multibody::ModelInstanceIndex> robot_model_instances;
 
   // TODO(SeanCurtis-TRI): add doc hyperlinks to edge checking doc.
   /** Configuration (probably weighted) distance function.
   @note the `configuration_distance_function` object will be copied and retained
   by a collision checker, so if the function has any lambda-captured data then
-  that data must outlive the collision checker. */
-  ConfigurationDistanceFunction configuration_distance_function;
+  that data must outlive the collision checker.
+
+  If this is nullptr, then `distance_function_weights` must be set. */
+  ConfigurationDistanceFunction configuration_distance_function{nullptr};
+
+  /** Defines the weights for a weighted Euclidean configuration distance
+  function, which will only be used if configuration_distance_function is
+  nullptr. If set, it must have size equal to model->plant().num_positions().
+  */
+  std::optional<Eigen::VectorXd> distance_function_weights{std::nullopt};
 
   // TODO(SeanCurtis-TRI): add doc hyperlinks to edge checking doc.
   /** Step size for edge checking; in units compatible with the configuration
-  distance function.
-  Collision checking of edges q1->q2 is performed by interpolating from q1 to q2
-  at edge_step_size steps and checking the interpolated configuration for
-  collision. The value must be positive. */
+  distance function. Collision checking of edges q1->q2 is performed by
+  interpolating from q1 to q2 at edge_step_size steps and checking the
+  interpolated configuration for collision. The value must be positive. */
   double edge_step_size{};
 
   // TODO(SeanCurtis-TRI): add doc hyperlinks to edge checking doc.
