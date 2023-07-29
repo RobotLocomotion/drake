@@ -81,6 +81,9 @@ void DefinePlanningCollisionCheckerInterfaceTypes(py::module m) {
         .def_readwrite("configuration_distance_function",
             &Class::configuration_distance_function,
             cls_doc.configuration_distance_function.doc)
+        .def_readwrite("distance_function_weights",
+            &Class::distance_function_weights,
+            cls_doc.distance_function_weights.doc)
         .def_readwrite("edge_step_size", &Class::edge_step_size,
             cls_doc.edge_step_size.doc)
         .def_readwrite("env_collision_padding", &Class::env_collision_padding,
