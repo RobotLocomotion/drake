@@ -52,8 +52,21 @@ class BezierCurve final : public trajectories::Trajectory<T> {
   T BernsteinBasis(int i, const T& time,
                    std::optional<int> order = std::nullopt) const;
 
-  /** Returns a reference to the control points which define the curve. */
+  /** Returns a const reference to the control points which define the curve. */
   const MatrixX<T>& control_points() const { return control_points_; }
+
+  /** We often write optimizations using the control points as decision
+   variables.  This returns the matrix, `M`, defining the control points of the
+   `order` derivative in the form:
+   <pre>
+     derivative.control_points().row(i) = this.control_points().row(i) * M.
+   </pre>
+   Notice that the matrix, `M`, is the same for all rows, `i`; this structure
+   is the reason that we do not return, for instance,
+   `vec(all_deriv_control_points) = N * vec(original_control_points)`.
+   @pre derivative_order >= 0. */
+  Eigen::SparseMatrix<double> DerivativeControlPointCoefficients(
+      int derivative_order = 1) const;
 
   // Required methods for trajectories::Trajectory interface.
 
@@ -85,6 +98,7 @@ class BezierCurve final : public trajectories::Trajectory<T> {
   T end_time() const override { return end_time_; }
 
  private:
+  /* Calculates the control points of the derivative curve. */
   MatrixX<T> CalcDerivativePoints(int derivative_order) const;
 
   bool do_has_derivative() const override { return true; }

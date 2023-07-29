@@ -1,6 +1,7 @@
 #include "drake/common/trajectories/bezier_curve.h"
 
 #include <utility>
+#include <vector>
 
 #include "drake/common/drake_bool.h"
 #include "drake/common/symbolic/polynomial.h"
@@ -9,6 +10,7 @@
 namespace drake {
 namespace trajectories {
 
+using Eigen::SparseMatrix;
 using math::BinomialCoefficient;
 
 template <typename T>
@@ -91,6 +93,46 @@ void BezierCurve<T>::ElevateOrder() {
   }
 
   control_points_ = std::move(Q);
+}
+
+template <typename T>
+SparseMatrix<double> BezierCurve<T>::DerivativeControlPointCoefficients(
+    int derivative_order) const {
+  DRAKE_THROW_UNLESS(derivative_order >= 0);
+  if (derivative_order > order()) {
+    return SparseMatrix<double>(order() + 1, 0);  // return the empty matrix.
+  } else if (derivative_order == 0) {
+    SparseMatrix<double> M(order() + 1, order() + 1);
+    M.setIdentity();
+    return M;
+  }
+  const double duration = end_time_ - start_time_;
+  int n = order();
+  SparseMatrix<double> M(n + 1, n);
+  double coeff = n / duration;
+  std::vector<Eigen::Triplet<double>> tripletList;
+  tripletList.reserve(2 * n);
+  for (int i = 0; i < n; ++i) {
+    tripletList.push_back(Eigen::Triplet<double>(i + 1, i, coeff));
+    tripletList.push_back(Eigen::Triplet<double>(i, i, -coeff));
+  }
+  M.setFromTriplets(tripletList.begin(), tripletList.end());
+  for (int o = 1; o < derivative_order; ++o) {
+    n -= 1;
+    SparseMatrix<double> deltaM(n + 1, n);
+    coeff = n / duration;
+    tripletList.clear();
+    for (int i = 0; i < n; ++i) {
+      tripletList.push_back(Eigen::Triplet<double>(i + 1, i, coeff));
+      tripletList.push_back(Eigen::Triplet<double>(i, i, -coeff));
+    }
+    deltaM.setFromTriplets(tripletList.begin(), tripletList.end());
+    // M *= deltaM isn't supported for SparseMatrix.
+    SparseMatrix<double> Mprev = std::move(M);
+    M = Mprev * deltaM;
+  }
+
+  return M;
 }
 
 template <typename T>
