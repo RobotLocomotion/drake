@@ -11,6 +11,8 @@ namespace drake {
 namespace trajectories {
 namespace {
 
+using Eigen::Matrix2d;
+
 // Tests the default constructor.
 GTEST_TEST(BezierCurveTest, DefaultConstructor) {
   BezierCurve<double> curve;
@@ -39,6 +41,10 @@ GTEST_TEST(BezierCurveTest, Constant) {
   EXPECT_EQ(curve.rows(), 2);
   EXPECT_EQ(curve.cols(), 1);
   EXPECT_TRUE(CompareMatrices(curve.value(0.5), kValue));
+
+  auto M = curve.AsLinearInControlPoints(1);
+  EXPECT_EQ(M.rows(), 0);
+  EXPECT_EQ(M.cols(), 1);
 
   curve.ElevateOrder();
   EXPECT_EQ(curve.order(), 1);
@@ -121,6 +127,20 @@ GTEST_TEST(BezierCurveTest, Linear) {
   CheckConvexHullProperty(curve, num_samples);
   CheckConvexHullProperty(deriv_bezier, num_samples);
 
+  auto M = curve.AsLinearInControlPoints(1);
+  EXPECT_EQ(M.rows(), 1);
+  EXPECT_EQ(M.cols(), 2);
+  for (int i = 0; i < curve.rows(); ++i) {
+    EXPECT_TRUE(
+        CompareMatrices(deriv_bezier.control_points().row(i).transpose(),
+                        M * curve.control_points().row(i).transpose(), 1e-14));
+  }
+  M = curve.AsLinearInControlPoints(0);
+  EXPECT_TRUE(CompareMatrices(M.toDense(), Matrix2d::Identity()));
+  M = curve.AsLinearInControlPoints(2);
+  EXPECT_EQ(M.rows(), 0);
+  EXPECT_EQ(M.cols(), 2);
+
   curve.ElevateOrder();
   EXPECT_EQ(curve.order(), 2);
   EXPECT_TRUE(
@@ -149,6 +169,15 @@ GTEST_TEST(BezierCurveTest, Quadratic) {
   EXPECT_EQ(deriv_bezier.order(), 1);
   EXPECT_EQ(deriv->start_time(), 0.0);
   EXPECT_EQ(deriv->end_time(), 1.0);
+
+  auto M = curve.AsLinearInControlPoints(1);
+  EXPECT_EQ(M.rows(), 2);
+  EXPECT_EQ(M.cols(), 3);
+  for (int i = 0; i < curve.rows(); ++i) {
+    EXPECT_TRUE(
+        CompareMatrices(deriv_bezier.control_points().row(i).transpose(),
+                        M * curve.control_points().row(i).transpose(), 1e-14));
+  }
 
   // second derivative is [ 2; 2 ]
   auto second_deriv = curve.MakeDerivative(2);
@@ -181,7 +210,16 @@ GTEST_TEST(BezierCurveTest, Quadratic) {
                                 Eigen::Vector2d(2, 2), 1e-14));
   }
 
-  // Extract the symoblic exprssion for the bezier curve.
+  M = curve.AsLinearInControlPoints(2);
+  EXPECT_EQ(M.rows(), 1);
+  EXPECT_EQ(M.cols(), 3);
+  for (int i = 0; i < curve.rows(); ++i) {
+    EXPECT_TRUE(
+        CompareMatrices(second_deriv_bezier.control_points().row(i).transpose(),
+                        M * curve.control_points().row(i).transpose(), 1e-14));
+  }
+
+  // Extract the symbolic expression for the bezier curve.
   VectorX<symbolic::Expression> curve_expression{
       curve.GetExpression(symbolic::Variable("t"))};
   for (int i = 0; i < curve_expression.rows(); i++) {

@@ -267,6 +267,9 @@ struct Impl {
               cls_doc.BernsteinBasis.doc)
           .def("control_points", &Class::control_points,
               cls_doc.control_points.doc)
+          .def("AsLinearInControlPoints", &Class::AsLinearInControlPoints,
+              py::arg("derivative_order") = 1,
+              cls_doc.AsLinearInControlPoints.doc)
           .def("GetExpression", &Class::GetExpression,
               py::arg("time") = symbolic::Variable("t"),
               cls_doc.GetExpression.doc)
