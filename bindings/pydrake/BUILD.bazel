@@ -516,6 +516,7 @@ drake_py_unittest(
         "//bindings/pydrake/common:yaml_py",
         "//bindings/pydrake/common/test_utilities:numpy_compare_py",
         "//bindings/pydrake/common/test_utilities:pickle_compare_py",
+        "//bindings/pydrake/common/test_utilities:scipy_stub_py",
     ],
 )
 
