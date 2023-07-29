@@ -187,8 +187,64 @@ void MaybeRedirectPythonLogging() {
 
   drake::log()->trace("Successfully redirected C++ logs to Python");
 }
+
+void UseNativeCppLogging() {
+  // If the configurtion exactly matches what MaybeRedirectPythonLogging did,
+  // then we should undo that and return. If the sink configuration already
+  // exactly matches how drake/common/text_logging.cc configures itself by
+  // default, then we should return successfully as a no-op. Otherwise, we
+  // should throw an error.
+  constexpr char error_message[] =
+      "Switching to use_native_cpp_logging is not possible due to an "
+      "unexpected native logging configuration already in place";
+
+  // After MaybeRedirectPythonLogging has happened, we expect two sinks. In case
+  // it was opted-out of using the environment variable, we expect one sink.
+  std::vector<std::shared_ptr<spdlog::sinks::sink> >& root_sinks =
+      drake::log()->sinks();
+  if (!(root_sinks.size() == 2 || root_sinks.size() == 1)) {
+    throw std::runtime_error(error_message);
+  }
+
+  // We expect first sink should still be the text_logging.cc default dist sink,
+  // no matter whether MaybeRedirectPythonLogging has been called.
+  spdlog::sinks::sink* const root_sink = root_sinks.front().get();
+  auto* dist_sink = dynamic_cast<spdlog::sinks::dist_sink_mt*>(root_sink);
+  if (dist_sink == nullptr) {
+    throw std::runtime_error(error_message);
+  }
+  std::vector<std::shared_ptr<spdlog::sinks::sink> >& dist_sinks =
+      dist_sink->sinks();
+
+  // If MaybeRedirectPythonLogging has been opted-out, then we expect the dist
+  // sink should still have (only) the stderr sink.
+  if (root_sinks.size() == 1) {
+    if (!(dist_sinks.size() == 1 &&
+            dynamic_cast<spdlog::sinks::stderr_sink_mt*>(
+                dist_sinks.front().get()))) {
+      throw std::runtime_error(error_message);
+    }
+    // If we reach this point, then we've matched text_logging.cc exactly.
+    // There's nothing more we need to do.
+    return;
+  }
+
+  // MaybeRedirectPythonLogging is in effect, so we expect the second sink to be
+  // the pylogging_sink and the dist sink to be empty.
+  if (!(dist_sinks.empty() &&
+          dynamic_cast<const pylogging_sink*>(root_sinks.back().get()))) {
+    throw std::runtime_error(error_message);
+  }
+
+  // Roll back the MaybeRedirectPythonLogging changes.
+  dist_sink->add_sink(std::make_shared<spdlog::sinks::stderr_sink_mt>());
+  root_sinks.resize(1);
+
+  drake::log()->trace("Successfully routed C++ logs back to stderr directly");
+}
 #else
 void MaybeRedirectPythonLogging() {}
+void UseNativeCppLogging() {}
 #endif
 
 }  // namespace internal
