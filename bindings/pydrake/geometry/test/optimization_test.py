@@ -246,6 +246,11 @@ class TestGeometryOptimization(unittest.TestCase):
         e_ball3 = mut.Hyperellipsoid.MakeUnitBall(dim=3)
         np.testing.assert_array_equal(e_ball3.A(), self.A)
         np.testing.assert_array_equal(e_ball3.center(), [0, 0, 0])
+        points = np.array([[1, 0], [-1, 0], [0, 2], [0, -2]]).T
+        e_lowner_john = mut.Hyperellipsoid.MinimumVolumeCircumscribedEllipsoid(
+            points=points, rank_tol=1e-2)
+        e_lowner_john = mut.Hyperellipsoid.MinimumVolumeCircumscribedEllipsoid(
+            points=points)
 
     def test_minkowski_sum(self):
         mut.MinkowskiSum()
