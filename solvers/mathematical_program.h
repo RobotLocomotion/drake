@@ -1264,7 +1264,8 @@ class MathematicalProgram {
   /**
    * An overloaded version of @ref maximize_geometric_mean.
    * @return cost The added cost (note that since MathematicalProgram only
-   * minimizes the cost, the returned cost evaluates to -c * power(∏ᵢx(i), 1/n).
+   * minimizes the cost, the returned cost evaluates to -power(∏ᵢz(i), 1/n)
+   * where z = A*x+b.
    * @pre A.rows() == b.rows(), A.rows() >= 2.
    */
   Binding<LinearCost> AddMaximizeGeometricMeanCost(
