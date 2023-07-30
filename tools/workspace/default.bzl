@@ -68,6 +68,7 @@ load("@drake//tools/workspace/org_apache_xmlgraphics_commons:repository.bzl", "o
 load("@drake//tools/workspace/osqp_internal:repository.bzl", "osqp_internal_repository")  # noqa
 load("@drake//tools/workspace/petsc:repository.bzl", "petsc_repository")
 load("@drake//tools/workspace/picosha2:repository.bzl", "picosha2_repository")
+load("@drake//tools/workspace/picosha2_internal:repository.bzl", "picosha2_internal_repository")  # noqa
 load("@drake//tools/workspace/platforms:repository.bzl", "platforms_repository")  # noqa
 load("@drake//tools/workspace/pybind11:repository.bzl", "pybind11_repository")
 load("@drake//tools/workspace/pycodestyle:repository.bzl", "pycodestyle_repository")  # noqa
@@ -247,7 +248,11 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
     if "petsc" not in excludes:
         petsc_repository(name = "petsc", mirrors = mirrors)
     if "picosha2" not in excludes:
+        # The @picosha2 external is deprecated in Drake's WORKSPACE and will
+        # be removed on or after 2023-11-01.
         picosha2_repository(name = "picosha2", mirrors = mirrors)
+    if "picosha2_internal" not in excludes:
+        picosha2_internal_repository(name = "picosha2_internal", mirrors = mirrors)  # noqa
     if "platforms" not in excludes:
         platforms_repository(name = "platforms", mirrors = mirrors)
     if "pybind11" not in excludes:

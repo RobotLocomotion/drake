@@ -86,7 +86,7 @@ drake_cc_library(
         "//common:network_policy",
         "//common:scope_exit",
         "//common/yaml",
-        "@picosha2",
+        "@picosha2_internal//:picosha2",
         "@tinyxml2_internal//:tinyxml2",
     ],
 )
@@ -637,7 +637,7 @@ drake_cc_googletest(
         "//common:find_resource",
         "//common:scope_exit",
         "//common/test_utilities:expect_throws_message",
-        "@picosha2",
+        "@picosha2_internal//:picosha2",
     ],
 )
 

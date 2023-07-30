@@ -1,0 +1,18 @@
+Adds a hidden drake_vendor namespace for ODR safety
+
+--- picosha2.h
++++ picosha2.h
+@@ -36,6 +36,7 @@
+ #include <sstream>
+ #include <vector>
+ #include <fstream>
++inline namespace drake_vendor __attribute__ ((visibility ("hidden"))) {
+ namespace picosha2 {
+ typedef unsigned long word_t;
+ typedef unsigned char byte_t;
+@@ -374,4 +375,5 @@
+ 
+ }
+ }// namespace picosha2
++}// namespace drake_vendor
+ #endif  // PICOSHA2_H
