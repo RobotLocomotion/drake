@@ -1,11 +1,8 @@
 load("@drake//tools/workspace:github.bzl", "github_archive")
 
-def tinyobjloader_repository(
+def tinyobjloader_internal_repository(
         name,
         mirrors = None):
-    """The @tinyobjloader external is deprecated in Drake's WORKSPACE and will
-    be removed on or after 2023-11-01.
-    """
     github_archive(
         name = name,
         repository = "tinyobjloader/tinyobjloader",
@@ -14,8 +11,7 @@ def tinyobjloader_repository(
         build_file = ":package.BUILD.bazel",
         mirrors = mirrors,
         patches = [
-            ":patches/double_precision.patch",
-            "//tools/workspace/tinyobjloader_internal:patches/faster_float_parsing.patch",  # noqa
-            "//tools/workspace/tinyobjloader_internal:patches/default_texture_color.patch",  # noqa
+            ":patches/faster_float_parsing.patch",
+            ":patches/default_texture_color.patch",
         ],
     )

@@ -170,7 +170,7 @@ drake_cc_library_ubuntu_only(
     ],
     deps = [
         "//common:essential",
-        "@tinyobjloader",
+        "@tinyobjloader_internal//:tinyobjloader",
     ],
 )
 

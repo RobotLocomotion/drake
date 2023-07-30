@@ -339,7 +339,7 @@ drake_cc_library(
     deps = [
         "//common:essential",
         "@fmt",
-        "@tinyobjloader",
+        "@tinyobjloader_internal//:tinyobjloader",
     ],
 )
 

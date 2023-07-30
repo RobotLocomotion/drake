@@ -103,7 +103,7 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "statsjs",
     "stduuid_internal",
     "suitesparse_internal",
-    "tinyobjloader",
+    "tinyobjloader_internal",
     "tinyxml2_internal",
     "usockets",
     "uwebsockets",
