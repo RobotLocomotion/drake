@@ -1,6 +1,9 @@
 import copy
+import hashlib
 import logging
 import numpy as np
+from pathlib import Path
+import re
 import sys
 import time
 
@@ -98,6 +101,7 @@ class _ViewerApplet:
         self._meshcat = meshcat
         self._path = path
         self._load_message = None
+        self._load_message_mesh_checksum = None
         self._alpha_slider = _Slider(meshcat, alpha_slider_name)
         if should_accept_link is not None:
             self._should_accept_link = should_accept_link
@@ -110,15 +114,61 @@ class _ViewerApplet:
         # Initialize ourself with an empty load message.
         self.on_viewer_load(message=lcmt_viewer_load_robot())
 
+    @staticmethod
+    def _append_mesh_content(geom, hasher):
+        """Given an lcmt_viewer_geometry_data message, appends the content of
+        its cited mesh file(s) to the given hasher.
+        """
+        assert geom.type == lcmt_viewer_geometry_data.MESH
+        assert geom.string_data
+        mesh_filename = Path(geom.string_data)
+
+        # Hash the mesh file itself.
+        try:
+            with open(mesh_filename, "rb") as mesh:
+                mesh_content = mesh.read()
+        except IOError:
+            return
+        hasher.update(mesh_content)
+
+        # Hash the mtl file (if there is one).
+        match = re.search(rb"^\s*mtllib\s+(\S+)\s*$", mesh_content,
+                          re.MULTILINE)
+        if not match:
+            return
+        mtllib, = match.groups()
+        mtllib_path = Path(mtllib.decode("utf-8"))
+        try:
+            with open(mesh_filename.parent / mtllib_path, "rb") as mtl:
+                mtl_content = mtl.read()
+        except IOError:
+            return
+        hasher.update(mtl_content)
+
+    @staticmethod
+    def _calc_load_message_mesh_checksum(message):
+        """Given an lcmt_viewer_load message, return the checksum of all
+        external files that it references.
+        """
+        hasher = hashlib.sha256()
+        for link in message.link:
+            for geom in link.geom:
+                if (geom.type == lcmt_viewer_geometry_data.MESH
+                        and geom.string_data):
+                    _ViewerApplet._append_mesh_content(geom, hasher)
+        return hasher.hexdigest()
+
     def on_viewer_load(self, message):
         """Handler for lcmt_viewer_load."""
         # Ignore duplicate load messages. This is important for visualization
         # performance when the user is repeatedly viewing the same simulation
         # over and over again, since reloading a scene into Meshcat has high
         # latency.
+        mesh_checksum = _ViewerApplet._calc_load_message_mesh_checksum(message)
         if self._load_message is not None:
             if (message.num_links == self._load_message.num_links
-                    and message.encode() == self._load_message.encode()):
+                    and message.encode() == self._load_message.encode()
+                    and mesh_checksum == self._load_message_mesh_checksum):
                 _logger.info("Ignoring duplicate load message")
                 return
 
@@ -127,6 +177,7 @@ class _ViewerApplet:
 
         self._waiting_for_first_draw_message = True
         self._load_message = message
+        self._load_message_mesh_checksum = mesh_checksum
 
     def _build_links(self):
         # Make all of our (ViewerApplet's) geometry invisible so that the
