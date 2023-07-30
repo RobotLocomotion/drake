@@ -263,6 +263,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
     if "ros_xacro_internal" not in excludes:
         ros_xacro_internal_repository(name = "ros_xacro_internal", mirrors = mirrors)  # noqa
     if "rules_pkg" not in excludes:
+        # The @rules_pkg external is deprecated in Drake's WORKSPACE and will
+        # be removed on or after 2023-11-01.
         rules_pkg_repository(name = "rules_pkg", mirrors = mirrors)
     if "rules_python" not in excludes:
         rules_python_repository(name = "rules_python", mirrors = mirrors)
