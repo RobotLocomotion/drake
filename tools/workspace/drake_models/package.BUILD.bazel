@@ -10,3 +10,24 @@ filegroup(
     name = "drake_models",
     srcs = _SRCS,
 )
+
+# Nominally, the `@drake_models` external is fetched via `github_archive()`,
+# which creates a json metadata files to explain what it downloaded. Drake's
+# install rules use that file to pin the lazy-download version of the models.
+#
+# However, in case a developer is using a local checkout of `@drake_models`,
+# the json file will not exist. In that case, we need to generate a stub file
+# to take its place, so that our Bazel install rules can still find it. We'll
+# fill it with dummy data. To guard against shipping a Drake release with the
+# dummy data, the package_map_remote_test checks the content of the json file.
+glob(["drake_repository_metadata.json"], allow_empty = True) or genrule(
+    name = "_gen_dummy_metadata",
+    outs = ["drake_repository_metadata.json"],
+    cmd = "echo '{}' > $@".format(
+        json.encode(dict(
+            urls = [],
+            sha256 = "",
+            strip_prefix = "",
+        )),
+    ),
+)
