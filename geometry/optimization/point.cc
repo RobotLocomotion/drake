@@ -57,7 +57,7 @@ std::unique_ptr<ConvexSet> Point::DoClone() const {
   return std::make_unique<Point>(*this);
 }
 
-bool Point::DoIsBounded() const {
+std::optional<bool> Point::DoIsBoundedShortcut() const {
   return true;
 }
 
