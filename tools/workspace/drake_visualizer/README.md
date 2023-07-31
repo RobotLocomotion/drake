@@ -1,3 +1,10 @@
+# Deprecation
+
+The legacy `drake_visualizer` application is deprecated for removal and is only
+maintained on the Ubuntu 20.04 ("Focal") operating system.  When Drake drops
+support for that platform (ETA spring of 2024), the `drake_visualizer` program
+will also be dropped.
+
 # drake_visualizer
 
 The files in this directory should by and large be ignored by consumers.

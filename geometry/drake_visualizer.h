@@ -59,9 +59,13 @@ std::string MakeLcmChannelNameForRole(const std::string& channel,
 
 }  // namespace internal
 
-/** A system that publishes LCM messages compatible with the `drake_visualizer`
- application representing the current state of a SceneGraph instance (whose
- QueryObject-valued output port is connected to this system's input port).
+/** A system that publishes LCM messages representing the current state of a
+ SceneGraph instance (whose QueryObject-valued output port is connected to this
+ system's input port).
+
+ The messages are compatible with the legacy `drake_visualizer` application of
+ days past, or its modern re-implementation
+ <a href="/pydrake/pydrake.visualization.meldis.html">Meldis</a>.
 
  @system
  name: DrakeVisualizer
@@ -88,7 +92,7 @@ std::string MakeLcmChannelNameForRole(const std::string& channel,
 
  The system uses the versioning mechanism provided by SceneGraph to detect
  changes to the geometry so that a change in SceneGraph's data will propagate
- to `drake_visualizer`.
+ to the message receiver.
 
  @anchor drake_visualizer_role_consumer
  <h3>Visualization by Role</h3>
@@ -117,8 +121,8 @@ std::string MakeLcmChannelNameForRole(const std::string& channel,
  <h4>Appearance of OBJ files</h4>
 
  Meshes represented by OBJ are special. The OBJ file can reference a material
- file (.mtl). If found by `drake_visualizer`, the values in the .mtl will take
- precedence over the ("phong", "diffuse") geometry property.
+ file (.mtl). If the mtl file is found by the receiving application, values in
+ the .mtl will take precedence over the ("phong", "diffuse") geometry property.
 
  It's worth emphasizing that these rules permits control over the appearance of
  collision geometry on a per-geometry basis by assigning an explicit Rgba value
@@ -324,11 +328,11 @@ class DrakeVisualizer final : public systems::LeafSystem<T> {
       const systems::Context<T>& context) const;
 
   /* DrakeVisualizer stores a "model" of what it thinks is registered in the
-   drake_visualizer application. Because drake_visualizer is not part of the
+   receiving application. Because that application is not part of the
    Drake state, this model is likewise not part of the Drake state. It is a
    property of the system. This allows arbitrary changes to the context but
    DrakeVisualizer can still make its *best effort* to ensure that
-   drake_visualizer state is consistent with the messages it is about to send.
+   the remote state is consistent with the messages it is about to send.
    Because of the nature of lcm messages, it cannot make guarantees; lcm
    messages can arrive in a different order than they were broadcast.
 

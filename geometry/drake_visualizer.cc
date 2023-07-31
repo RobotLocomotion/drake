@@ -468,8 +468,8 @@ std::string MakeLcmChannelNameForRole(const std::string& channel,
   DRAKE_DEMAND(params.role != Role::kUnassigned);
 
   // These channel name transformations must be kept in sync with message
-  // consumers (meldis, drake_visualizer) in order for visualization of all
-  // roles to work.
+  // consumers (Meldis, or the legacy ``drake_visualizer`` application of days
+  // past) in order for visualization of all roles to work.
   switch (params.role) {
     case Role::kIllustration:
       return channel + "_ILLUSTRATION";

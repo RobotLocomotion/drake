@@ -127,21 +127,11 @@ workspace directory.
 cd drake
 ```
 
-Ensure that you have built the Drake visualizer with
-```
-bazel build //tools:drake_visualizer
-```
-
-Build the example in this directory
-```
-bazel build //examples/multibody/rolling_sphere/...
-```
-
 ## Visualizer
 
-Before running the example, launch the visualizer (building it as necessary):
+Before running the example, launch the visualizer:
 ```
-bazel-bin/tools/drake_visualizer
+bazel run //tools:meldis -- --open-window &
 ```
 
 ## Example
@@ -154,44 +144,44 @@ can make.
 The command below runs the default configuration using a continuous modeling of
 the dynamics.
 ```
-bazel-bin/examples/multibody/rolling_sphere/rolling_sphere_run_dynamics
+bazel run //examples/multibody/rolling_sphere:rolling_sphere_run_dynamics
 ```
 
 ##### Default behavior, discrete solver
 Run the same configuration as above, but this time using a discrete
 approximation of the dynamics with an update period of one millisecond.
 ```
-bazel-bin/examples/multibody/rolling_sphere/rolling_sphere_run_dynamics --mbp_dt=1.0e-3
+bazel run //examples/multibody/rolling_sphere:rolling_sphere_run_dynamics -- --mbp_dt=1.0e-3
 ```
 The discrete solver supports all other configurations below, including hybrid
 contact.
 
 ##### Default behavior with hydroelastic contact with default compliance type; rigid ground, compliant ball
 ```
-bazel-bin/examples/multibody/rolling_sphere/rolling_sphere_run_dynamics --contact_model=hydroelastic
+bazel run //examples/multibody/rolling_sphere:rolling_sphere_run_dynamics -- --contact_model=hydroelastic
 ```
 
 ##### Default behavior with hydroelastic contact with reversed compliance; compliant ground, rigid ball
 ```
-bazel-bin/examples/multibody/rolling_sphere/rolling_sphere_run_dynamics --contact_model=hydroelastic --rigid_ball=1 --soft_ground=1
+bazel run //examples/multibody/rolling_sphere:rolling_sphere_run_dynamics -- --contact_model=hydroelastic --rigid_ball=1 --soft_ground=1
 ```
 
 ##### Default behavior with hybrid contact
 ```
-bazel-bin/examples/multibody/rolling_sphere/rolling_sphere_run_dynamics --contact_model=hybrid
+bazel run //examples/multibody/rolling_sphere:rolling_sphere_run_dynamics -- --contact_model=hybrid
 ```
 
 ##### Add the wall with hydroelastic contact -- throw when sphere hits the wall
 ```
-bazel-bin/examples/multibody/rolling_sphere/rolling_sphere_run_dynamics --contact_model=hydroelastic --add_wall=1
+bazel run //examples/multibody/rolling_sphere:rolling_sphere_run_dynamics -- --contact_model=hydroelastic --add_wall=1
 ```
 
 ##### Add the wall with hybrid contact
 ```
-bazel-bin/examples/multibody/rolling_sphere/rolling_sphere_run_dynamics --contact_model=hybrid --add_wall=1
+bazel run //examples/multibody/rolling_sphere:rolling_sphere_run_dynamics -- --contact_model=hybrid --add_wall=1
 ```
 
 ##### Add the wall, make the sphere rigid with hybrid contact
 ```
-bazel-bin/examples/multibody/rolling_sphere/rolling_sphere_run_dynamics --contact_model=hybrid --add_wall=1 --rigid_ball=1
+bazel run //examples/multibody/rolling_sphere:rolling_sphere_run_dynamics -- --contact_model=hybrid --add_wall=1 --rigid_ball=1
 ```

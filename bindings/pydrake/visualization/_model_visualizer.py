@@ -40,8 +40,8 @@ from pydrake.visualization._triad import (
 
 class ModelVisualizer:
     """
-    Visualizes models from a file or string buffer in Drake Visualizer,
-    meldis, or MeshCat.
+    Visualizes models from a file or string buffer in MeshCat, Meldis,
+    or the legacy ``drake_visualizer`` application of days past.
 
     To use this class to visualize model(s), create an instance with
     any desired options, add any models, and then call Run()::
