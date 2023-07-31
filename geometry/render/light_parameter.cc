@@ -10,7 +10,7 @@ std::ostream& operator<<(std::ostream& out, const LightType& t) {
       out << "point";
       break;
     case LightType::kSpot:
-      out << "spotlight";
+      out << "spot";
       break;
     case LightType::kDirectional:
       out << "directional";
@@ -22,7 +22,7 @@ std::ostream& operator<<(std::ostream& out, const LightType& t) {
 LightType light_type_from_string(const std::string& spec) {
   if (spec == "point") {
     return LightType::kPoint;
-  } else if (spec == "spotlight") {
+  } else if (spec == "spot") {
     return LightType::kSpot;
   } else if (spec == "directional") {
     return LightType::kDirectional;

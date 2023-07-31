@@ -302,6 +302,11 @@ class RenderEngineGl final : public render::RenderEngine {
     return *active_lights_;
   }
 
+  // Configures all uniforms related to lighting. This should be called once
+  // upon construction, after the shaders have been instantiated. This includes
+  // during cloning.
+  void ConfigureLights();
+
   // The cached value transformation between camera and world frames.
   math::RigidTransformd X_CW_;
 

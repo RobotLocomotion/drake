@@ -29,9 +29,7 @@ namespace internal {
 
 using render::ColorRenderCamera;
 using render::DepthRenderCamera;
-using render::LightFrame;
 using render::LightParameter;
-using render::LightType;
 using render::RenderCameraCore;
 using render::RenderEngine;
 using render::RenderLabel;
@@ -1698,7 +1696,7 @@ TEST_F(RenderEngineGlTest, SingleLight) {
     LightParameter light;
     RgbaColor expected_color;
     std::string description;
-    std::optional<LightType> target_type{std::nullopt};
+    std::string target_type;
   };
 
   // 45-degree vertical field of view.
@@ -1731,7 +1729,7 @@ TEST_F(RenderEngineGlTest, SingleLight) {
       {.light = {.color = Rgba(1, 1, 1),
                  .attenuation_values = {1, 0, 0},
                  .position = {0, 0, 0},
-                 .frame = LightFrame::kCamera,
+                 .frame = "camera",
                  .intensity = 1.0,
                  .direction = {0, 0, 1},
                  // If you show the window for spotlight images, the spotlight
@@ -1742,7 +1740,7 @@ TEST_F(RenderEngineGlTest, SingleLight) {
       {.light = {.color = Rgba(1, 1, 1),
                  .attenuation_values = {1, 0, 0},
                  .position = {0, 0, dist},
-                 .frame = LightFrame::kWorld,
+                 .frame = "world",
                  .intensity = 1.0,
                  .direction = {0, 0, -1},
                  .cone_angle = 22.5},
@@ -1752,7 +1750,7 @@ TEST_F(RenderEngineGlTest, SingleLight) {
       {.light = {.color = Rgba(1, 1, 1),
                  .attenuation_values = {1, 0, 0},
                  .position = {0, 0, dist},
-                 .frame = LightFrame::kCamera,
+                 .frame = "camera",
                  .intensity = 1.0,
                  .direction = {0, 0, -1},
                  .cone_angle = 22.5},
@@ -1786,12 +1784,11 @@ TEST_F(RenderEngineGlTest, SingleLight) {
       {.light = {.cone_angle = 0},
        .expected_color = Rgba(0, 0, 0),
        .description = "Zero cone angle",
-       .target_type = LightType::kSpot}};
+       .target_type = "spot"}};
 
   for (const auto& config : configs) {
-    for (LightType l_type :
-         {LightType::kPoint, LightType::kSpot, LightType::kDirectional}) {
-      if (config.target_type.has_value() && l_type != *config.target_type) {
+    for (const auto& l_type : {"point", "spot", "directional"}) {
+      if (!config.target_type.empty() && l_type != config.target_type) {
         continue;
       }
       SCOPED_TRACE(
@@ -1845,12 +1842,12 @@ TEST_F(RenderEngineGlTest, MultiLights) {
     // The lights are pointing directly at the image center, but their total
     // intensity is 0.75. So, we should get 75% of the diffuse color.
     const RenderEngineGlParams params{
-        .lights = {{.type = LightType::kPoint,
+        .lights = {{.type = "point",
                     .intensity = 0.25},
-                   {.type = LightType::kSpot,
+                   {.type = "spot",
                     .intensity = 0.25,
                     .cone_angle = 45},
-                   {.type = LightType::kDirectional,
+                   {.type = "directional",
                     .intensity = 0.25}}};
     RenderEngineGl renderer(params);
 

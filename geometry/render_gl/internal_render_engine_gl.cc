@@ -299,13 +299,15 @@ vec4 GetIlluminatedColor(vec4 diffuse) {
 
   void SetLightParameters(int index, const LightParameter& light) const {
     glUniform1i(GetLightFieldLocation(index, "type"),
-                static_cast<int>(light.type));
+                static_cast<int>(render::light_type_from_string(light.type)));
     Eigen::Vector3f color = light.color.rgba().head<3>().cast<float>();
     glUniform3fv(GetLightFieldLocation(index, "color"), 1,
                  color.data());
     Eigen::Vector4f position;
     position.head<3>() = light.position.cast<float>();
-    position(3) = light.frame == render::LightFrame::kWorld ? 0.0f : 1.0f;
+    const render::LightFrame frame =
+        render::light_frame_from_string(light.frame);
+    position(3) = frame == render::LightFrame::kWorld ? 0.0f : 1.0f;
     glUniform4fv(GetLightFieldLocation(index, "position"), 1, position.data());
     Eigen::Vector3f atten_coeff = light.attenuation_values.cast<float>();
     glUniform3fv(GetLightFieldLocation(index, "atten_coeff"), 1,
@@ -313,14 +315,14 @@ vec4 GetIlluminatedColor(vec4 diffuse) {
     glUniform1f(GetLightFieldLocation(index, "intensity"),
                 static_cast<float>(light.intensity));
 
-    if (light.type == render::LightType::kSpot) {
+    if (light.type == "spot") {
       // Note: Using the cosine here to speed up the shader so it doesn't have
       // to use cos or acos internally.
       glUniform1f(GetLightFieldLocation(index, "cos_half_angle"),
                   static_cast<float>(cos(light.cone_angle * (M_PI / 180.0))));
     }
 
-    if (light.type != render::LightType::kPoint) {
+    if (light.type != "point") {
       Eigen::Vector3f direction = light.direction.cast<float>();
       glUniform3fv(GetLightFieldLocation(index, "dir"), 1, direction.data());
     }
@@ -693,7 +695,7 @@ RenderEngineGlParams CleanupLights(RenderEngineGlParams params) {
                     ssize(params.lights)));
   }
   for (auto& light : params.lights) {
-    if (light.type != render::LightType::kPoint) {
+    if (light.type != "point") {
       const double dir_magnitude = light.direction.norm();
       if (dir_magnitude > 0) {
         // Zero vectors will remain zero, blacking the light out. But we want
@@ -714,7 +716,7 @@ RenderEngineGl::RenderEngineGl(RenderEngineGlParams params)
       parameters_(CleanupLights(std::move(params))) {
   // The default light parameters have been crafted to create the default
   // "headlamp" camera.
-  fallback_lights_.push_back({.type = render::LightType::kDirectional});
+  fallback_lights_.push_back({});
   // Configuration of basic OpenGl state.
   opengl_context_->MakeCurrent();
 
@@ -727,6 +729,7 @@ RenderEngineGl::RenderEngineGl(RenderEngineGlParams params)
             RenderType::kColor);
   AddShader(make_unique<DefaultTextureColorShader>(texture_library_),
             RenderType::kColor);
+  ConfigureLights();
 
   // Depth shaders -- a single shader that accepts all geometry.
   AddShader(make_unique<DefaultDepthShader>(), RenderType::kDepth);
@@ -946,6 +949,9 @@ unique_ptr<RenderEngine> RenderEngineGl::DoClone() const {
     }
   }
 
+  // Update the shader OpenGL state to properly configure the lighting.
+  clone->ConfigureLights();
+
   return clone;
 }
 
@@ -1002,19 +1008,11 @@ void RenderEngineGl::DoRenderColorImage(const ColorRenderCamera& camera,
   const Eigen::Matrix4f T_DC =
       camera.core().CalcProjectionMatrix().cast<float>();
 
-  for (const auto& [_, shader_ptr] : shader_programs_[RenderType::kColor]) {
-    const auto* lighting_program =
-        dynamic_pointer_cast_or_throw<const LightingShader>(shader_ptr.get());
-    // All color image shaders should inherit form LightingShader.
-    DRAKE_DEMAND(lighting_program != nullptr);
-    lighting_program->Use();
-
-    lighting_program->SetProjectionMatrix(T_DC);
-    lighting_program->SetAllLights(active_lights());
-
-    // Now I need to render the geometries.
-    RenderAt(*lighting_program, RenderType::kColor);
-    lighting_program->Unuse();
+  for (const auto& [_, shader_program] : shader_programs_[RenderType::kColor]) {
+    shader_program->Use();
+    shader_program->SetProjectionMatrix(T_DC);
+    RenderAt(*shader_program, RenderType::kColor);
+    shader_program->Unuse();
   }
   glDisable(GL_BLEND);
 
@@ -1512,6 +1510,20 @@ void RenderEngineGl::SetDefaultLightPosition(const Vector3<double>& p_DL) {
   // This is a stopgap solution until we can completely eliminate this method.
   // p_DC = (0, 0, 1). position = p_CL, so P_CL = p_DL - p_DC.
   fallback_lights_[0].position = p_DL - Vector3<double>{0, 0, 1};
+}
+
+void RenderEngineGl::ConfigureLights() {
+  // Set the lights *once* for all color shaders. Currently, lighting can only
+  // be figured upon construction.
+  for (const auto& [_, shader_ptr] : shader_programs_[RenderType::kColor]) {
+    const auto* lighting_program =
+        dynamic_pointer_cast_or_throw<const LightingShader>(shader_ptr.get());
+    // All color image shaders should inherit form LightingShader.
+    DRAKE_DEMAND(lighting_program != nullptr);
+    lighting_program->Use();
+    lighting_program->SetAllLights(active_lights());
+    lighting_program->Unuse();
+  }
 }
 
 }  // namespace internal

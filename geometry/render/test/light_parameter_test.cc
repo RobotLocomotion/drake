@@ -2,6 +2,7 @@
 
 #include <string>
 
+#include <fmt/format.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
@@ -18,22 +19,22 @@ using Eigen::Vector3d;
 // Test for valid default values.
 GTEST_TEST(LightParamterTest, DefaultValues) {
   const LightParameter light;
-  EXPECT_EQ(light.type, LightType::kDirectional);
+  EXPECT_EQ(light.type, fmt::to_string(fmt_streamed(LightType::kDirectional)));
   EXPECT_EQ(light.color, Rgba(1, 1, 1));
   EXPECT_TRUE(CompareMatrices(light.attenuation_values, Vector3d(1, 0, 0)));
   EXPECT_TRUE(CompareMatrices(light.position, Vector3d(0, 0, 0)));
-  EXPECT_EQ(light.frame, LightFrame::kCamera);
+  EXPECT_EQ(light.frame, fmt::to_string(fmt_streamed(LightFrame::kCamera)));
   EXPECT_EQ(light.intensity, 1.0);
   EXPECT_TRUE(CompareMatrices(light.direction, Vector3d{0, 0, 1}));
   EXPECT_EQ(light.cone_angle, 0);
 }
 
 GTEST_TEST(LightParameterTest, Serialization) {
-  const LightParameter light{.type = LightType::kSpot,
+  const LightParameter light{.type = "spotlight",
                              .color = Rgba(0.25, 0.75, 0.5),
                              .attenuation_values = {0.25, 0.5, 0.75},
                              .position = {1, 2, 3},
-                             .frame = LightFrame::kCamera,
+                             .frame = "world",
                              .intensity = 0.5,
                              .direction = {1, 0, 1},
                              .cone_angle = 90.0};

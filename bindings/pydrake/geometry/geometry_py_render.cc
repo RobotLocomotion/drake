@@ -337,47 +337,12 @@ void DoScalarIndependentDefinitions(py::module m) {
   }
 
   {
-    using Class = geometry::render::LightType;
-    constexpr auto& cls_doc = doc.LightType;
-    py::enum_<Class> cls(m, "LightType", cls_doc.doc);
-    cls  // BR
-        .value("kPoint", LightType::kPoint)
-        .value("kSpot", LightType::kSpot)
-        .value("kDirectional", LightType::kDirectional)
-        .export_values();
-  }
-
-  {
-    using Class = geometry::render::LightFrame;
-    constexpr auto& cls_doc = doc.LightFrame;
-    py::enum_<Class> cls(m, "LightFrame", cls_doc.doc);
-    cls  // BR
-        .value("kWorld", LightFrame::kWorld)
-        .value("kCamera", LightFrame::kCamera)
-        .export_values();
-  }
-
-  {
     using Class = geometry::render::LightParameter;
     constexpr auto& cls_doc = doc.LightParameter;
     py::class_<Class> cls(m, "LightParameter", cls_doc.doc);
     cls  // BR
-        .def(ParamInit<Class>())
-        // Can't use DefAttributesUsingSerialize() because type gets serialized
-        // special.
-        .def_readwrite("type", &LightParameter::type, cls_doc.type.doc)
-        .def_readwrite("color", &LightParameter::color, cls_doc.color.doc)
-        .def_readwrite("attenuation_values",
-            &LightParameter::attenuation_values, cls_doc.attenuation_values.doc)
-        .def_readwrite(
-            "position", &LightParameter::position, cls_doc.position.doc)
-        .def_readwrite("frame", &LightParameter::frame, cls_doc.frame.doc)
-        .def_readwrite(
-            "intensity", &LightParameter::intensity, cls_doc.intensity.doc)
-        .def_readwrite(
-            "direction", &LightParameter::direction, cls_doc.direction.doc)
-        .def_readwrite(
-            "cone_angle", &LightParameter::cone_angle, cls_doc.cone_angle.doc);
+        .def(ParamInit<Class>());
+    DefAttributesUsingSerialize(&cls);
     DefReprUsingSerialize(&cls);
     DefCopyAndDeepCopy(&cls);
   }

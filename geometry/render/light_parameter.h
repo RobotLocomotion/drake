@@ -27,7 +27,7 @@ enum class LightType { kPoint = 1, kSpot = 2, kDirectional = 3 };
 std::ostream& operator<<(std::ostream& out, const LightType& t);
 
 /** Instantiates a LightType from its string representation.
- @param spec  Must be one of 'point', 'spotlight', or 'directional'.
+ @param spec  Must be one of 'point', 'spot', or 'directional'.
  @throws if `spec` is an unrecognized string. */
 LightType light_type_from_string(const std::string& spec);
 
@@ -54,26 +54,21 @@ struct LightParameter {
    Refer to @ref yaml_serialization "YAML Serialization" for background. */
   template <typename Archive>
   void Serialize(Archive* a) {
-    std::string type_str = fmt::to_string(fmt_streamed(type));
-    a->Visit(MakeNameValue("type", &type_str));
-    type = light_type_from_string(type_str);
+    a->Visit(DRAKE_NVP(type));
     a->Visit(DRAKE_NVP(color));
     a->Visit(DRAKE_NVP(attenuation_values));
     a->Visit(DRAKE_NVP(position));
-    std::string frame_str = fmt::to_string(fmt_streamed(frame));
-    a->Visit(MakeNameValue("frame", &frame_str));
-    frame = light_frame_from_string(frame_str);
+    a->Visit(DRAKE_NVP(frame));
     a->Visit(DRAKE_NVP(intensity));
     a->Visit(DRAKE_NVP(direction));
     a->Visit(DRAKE_NVP(cone_angle));
   }
 
-  /** The light type is either Point, Spotlight, or Directional.
-    Default is Directional light, because that is what it was in VTK. */
-  LightType type{LightType::kDirectional};
+  /** The light type is either `"point"`, `"spot"`, or `"directional"`. */
+  std::string type{"directional"};
 
-  /** The illuminating color of the light. The alpha value is currently ignored.
-   */
+  /** The illuminating color of the light (with channels in the range [0, 1]).
+    The alpha value is currently ignored. */
   Rgba color = Rgba(1, 1, 1);
 
   /** The quadratic attenuation constants (k₀, k₁, and k₂). The intensity of
@@ -104,14 +99,14 @@ struct LightParameter {
   /** The position of the light in the frame indicated by `frame` F: p_FL. */
   Eigen::Vector3d position{0, 0, 0};
 
-  /** Specifies the frame to which the camera is fixed, world or camera. */
-  LightFrame frame{LightFrame::kCamera};
+  /** Specifies the frame to which the camera is fixed, `"world"` or `"camera"`.
+   */
+  std::string frame{"camera"};
 
   /** A multiplier for the brightness of the light. A zero intensity will
    effectively disable the light. A value of one will have an intensity equal to
    the light's color. Higher values will magnify the light's illumination (and
-   may be necessary to offset the attenuation effects). The default value is
-   one. */
+   may be necessary to offset the attenuation effects). */
   double intensity{1};
 
   /** The direction the light points in the frame indicated by `frame`. For
