@@ -11,7 +11,9 @@ def conex_internal_repository(
         build_file = ":package.BUILD.bazel",
         patches = [
             ":patches/debug_macros.patch",
+            ":patches/eigen_namespace_pollution.patch",
             ":patches/no_eigen_io.patch",
+            ":patches/vendor.patch",
         ],
         mirrors = mirrors,
     )
