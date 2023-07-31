@@ -473,7 +473,7 @@ drake_cc_library(
         "@common_robotics_utilities",
         "@msgpack_internal//:msgpack",
         "@stduuid_internal//:stduuid",
-        "@uwebsockets",
+        "@uwebsockets_internal//:uwebsockets",
     ],
 )
 

@@ -92,7 +92,9 @@ load("@drake//tools/workspace/tomli_internal:repository.bzl", "tomli_internal_re
 load("@drake//tools/workspace/typing_extensions_internal:repository.bzl", "typing_extensions_internal_repository")  # noqa
 load("@drake//tools/workspace/uritemplate_py_internal:repository.bzl", "uritemplate_py_internal_repository")  # noqa
 load("@drake//tools/workspace/usockets:repository.bzl", "usockets_repository")  # noqa
+load("@drake//tools/workspace/usockets_internal:repository.bzl", "usockets_internal_repository")  # noqa
 load("@drake//tools/workspace/uwebsockets:repository.bzl", "uwebsockets_repository")  # noqa
+load("@drake//tools/workspace/uwebsockets_internal:repository.bzl", "uwebsockets_internal_repository")  # noqa
 load("@drake//tools/workspace/voxelized_geometry_tools:repository.bzl", "voxelized_geometry_tools_repository")  # noqa
 load("@drake//tools/workspace/vtk:repository.bzl", "vtk_repository")
 load("@drake//tools/workspace/x11:repository.bzl", "x11_repository")
@@ -295,9 +297,17 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
     if "uritemplate_py_internal" not in excludes:
         uritemplate_py_internal_repository(name = "uritemplate_py_internal", mirrors = mirrors)  # noqa
     if "usockets" not in excludes:
+        # The @usockets external is deprecated in Drake's WORKSPACE and will be
+        # removed on or after 2023-11-01.
         usockets_repository(name = "usockets", mirrors = mirrors)
+    if "usockets_internal" not in excludes:
+        usockets_internal_repository(name = "usockets_internal", mirrors = mirrors)  # noqa
     if "uwebsockets" not in excludes:
+        # The @uwebsockets external is deprecated in Drake's WORKSPACE and will
+        # be removed on or after 2023-11-01.
         uwebsockets_repository(name = "uwebsockets", mirrors = mirrors)
+    if "uwebsockets_internal" not in excludes:
+        uwebsockets_internal_repository(name = "uwebsockets_internal", mirrors = mirrors)  # noqa
     if "voxelized_geometry_tools" not in excludes:
         voxelized_geometry_tools_repository(name = "voxelized_geometry_tools", mirrors = mirrors)  # noqa
     if "vtk" not in excludes:

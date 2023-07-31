@@ -56,8 +56,8 @@ _IGNORED_REPOSITORIES = [
     "clang_cindex_python3_internal",
     "gym_py",  # Pinned at 0.21; see tools/workspace/gym_py/README.md.
     "pybind11",
-    "usockets",  # Pinned due to upstream regression.
-    "uwebsockets",  # Pinned due to upstream regression.
+    "usockets_internal",  # Pinned due to upstream regression.
+    "uwebsockets_internal",  # Pinned due to upstream regression.
 ]
 
 # For these repositories, we only look at tags, not releases.  For the dict
@@ -84,7 +84,7 @@ _COHORTS = (
     # sdformat depends on both gz libraries; be sure to keep them aligned.
     {"sdformat_internal", "gz_math_internal", "gz_utils_internal"},
     # uwebsockets depends on usockets; be sure to keep them aligned.
-    {"uwebsockets", "usockets"},
+    {"uwebsockets_internal", "usockets_internal"},
 )
 
 
