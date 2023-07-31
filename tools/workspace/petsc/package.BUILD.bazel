@@ -147,6 +147,14 @@ cc_library(
         "@drake//tools/workspace/petsc:stubs",
     ],
     visibility = ["//visibility:public"],
+    deprecation = "The @petsc external is deprecated in Drake's WORKSPACE and will be removed on or after 2023-11-01.",  # noqa
+)
+
+# An alias that avoids the deprecation warning (for Drake's internal use only).
+cc_library(
+    name = "petsc_nowarn",
+    deps = [":petsc"],
+    visibility = ["//visibility:public"],
 )
 
 genrule(

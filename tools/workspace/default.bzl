@@ -245,6 +245,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
     if "osqp_internal" not in excludes:
         osqp_internal_repository(name = "osqp_internal", mirrors = mirrors)
     if "petsc" not in excludes:
+        # The @petsc external is deprecated in Drake's WORKSPACE and will be
+        # removed on or after 2023-11-01.
         petsc_repository(name = "petsc", mirrors = mirrors)
     if "picosha2" not in excludes:
         picosha2_repository(name = "picosha2", mirrors = mirrors)

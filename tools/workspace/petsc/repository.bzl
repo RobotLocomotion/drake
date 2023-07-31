@@ -3,6 +3,9 @@ load("@drake//tools/workspace:github.bzl", "github_archive")
 def petsc_repository(
         name,
         mirrors = None):
+    """The @petsc external is deprecated in Drake's WORKSPACE and will be
+    removed on or after 2023-11-01.
+    """
     github_archive(
         name = name,
         repository = "petsc/petsc",
