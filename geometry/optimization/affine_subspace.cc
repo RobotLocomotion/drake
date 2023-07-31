@@ -63,9 +63,7 @@ bool AffineSubspace::DoPointInSet(const Eigen::Ref<const VectorXd>& x,
     return is_approx_equal_abstol(x, translation_, tol);
   }
   // Otherwise, project onto the flat, and compare to the input.
-  const VectorXd least_squares = basis_decomp_->solve(x - translation_);
-  const VectorXd x_sol = basis_ * least_squares + translation_;
-  return is_approx_equal_abstol(x, x_sol, tol);
+  return is_approx_equal_abstol(x, Project(x), tol);
 }
 
 std::pair<VectorX<Variable>, std::vector<Binding<Constraint>>>
@@ -119,6 +117,44 @@ std::pair<std::unique_ptr<Shape>, math::RigidTransformd>
 AffineSubspace::DoToShapeWithPose() const {
   throw std::runtime_error(
       "ToShapeWithPose is not supported by AffineSubspace.");
+}
+
+Eigen::MatrixXd AffineSubspace::Project(
+    const Eigen::Ref<const Eigen::MatrixXd>& x) const {
+  DRAKE_THROW_UNLESS(x.rows() == ambient_dimension());
+  // If the set is a point, the projection is just that point. This also
+  // directly handles the zero-dimensional case.
+  const auto maybe_point = DoMaybeGetPoint();
+  if (maybe_point) {
+    if (x.cols() == 1) {
+      return maybe_point.value();
+    } else {
+      // Outer product, which will return x.cols() copies of the feasible point.
+      return maybe_point.value() * Eigen::RowVectorXd::Ones(x.cols());
+    }
+  }
+  const Eigen::MatrixXd least_squares =
+      basis_decomp_->solve(x.colwise() - translation_);
+  return (basis_ * least_squares).colwise() + translation_;
+}
+
+Eigen::MatrixXd AffineSubspace::ToLocalCoordinates(
+    const Eigen::Ref<const Eigen::MatrixXd>& x) const {
+  DRAKE_THROW_UNLESS(x.rows() == ambient_dimension());
+  // If the set is a point, then the basis is empty, so there are no local
+  // coordinates. This behavior is handled by returning a length-zero vector.
+  // This also directly handles the zero-dimensional case.
+  auto maybe_point = DoMaybeGetPoint();
+  if (maybe_point) {
+    return Eigen::MatrixXd::Zero(0, x.cols());
+  }
+  return basis_decomp_->solve(x.colwise() - translation_);
+}
+
+Eigen::MatrixXd AffineSubspace::ToGlobalCoordinates(
+    const Eigen::Ref<const Eigen::MatrixXd>& y) const {
+  DRAKE_THROW_UNLESS(y.rows() == AffineDimension());
+  return (basis_ * y).colwise() + translation_;
 }
 
 bool AffineSubspace::ContainedIn(const AffineSubspace& other,

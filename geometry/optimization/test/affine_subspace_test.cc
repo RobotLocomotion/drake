@@ -24,6 +24,14 @@ GTEST_TEST(AffineSubspaceTest, DefaultCtor) {
   EXPECT_TRUE(dut.PointInSet(dut.MaybeGetFeasiblePoint().value()));
   EXPECT_TRUE(dut.PointInSet(Eigen::VectorXd::Zero(0)));
   EXPECT_TRUE(dut.IntersectsWith(dut));
+  EXPECT_NO_THROW(dut.Project(Eigen::VectorXd::Zero(0)));
+  EXPECT_EQ(dut.AffineDimension(), 0);
+  Eigen::VectorXd test_point(0);
+  EXPECT_EQ(dut.ToLocalCoordinates(test_point).size(), 0);
+  EXPECT_TRUE(CompareMatrices(dut.ToLocalCoordinates(test_point), test_point));
+  EXPECT_TRUE(CompareMatrices(
+      dut.ToGlobalCoordinates(dut.ToLocalCoordinates(test_point)),
+      dut.Project(test_point)));
   EXPECT_TRUE(dut.ContainedIn(AffineSubspace()));
   EXPECT_TRUE(dut.IsNearlyEqualTo(AffineSubspace()));
 }
@@ -47,14 +55,34 @@ GTEST_TEST(AffineSubspaceTest, Point) {
   EXPECT_TRUE(as.PointInSet(translation));
   EXPECT_FALSE(as.PointInSet(Eigen::VectorXd::Zero(3)));
   EXPECT_TRUE(as.IntersectsWith(as));
+  EXPECT_TRUE(as.PointInSet(as.Project(Eigen::VectorXd::Zero(3))));
+
+  // Should throw because the ambient dimension is wrong.
+  EXPECT_THROW(as.Project(Eigen::VectorXd::Zero(1)), std::exception);
+
+  // Test local coordinates
+  EXPECT_EQ(as.AffineDimension(), 0);
+  Eigen::VectorXd test_point(3);
+  test_point << 42, 27, 0;
+  EXPECT_EQ(as.ToLocalCoordinates(test_point).size(), 0);
+  EXPECT_TRUE(CompareMatrices(as.ToLocalCoordinates(test_point),
+                              Eigen::VectorXd::Zero(0)));
+  EXPECT_TRUE(
+      CompareMatrices(as.ToGlobalCoordinates(as.ToLocalCoordinates(test_point)),
+                      as.Project(test_point)));
+  EXPECT_TRUE(CompareMatrices(
+      as.ToLocalCoordinates(as.ToGlobalCoordinates(Eigen::VectorXd::Zero(0))),
+      Eigen::VectorXd::Zero(0)));
 }
 
 GTEST_TEST(AffineSubspaceTest, Line) {
   Eigen::Matrix<double, 3, 1> basis;
-  basis << 1, 1, 1;
+  basis << 1, 1, 0;
   Eigen::VectorXd translation(3);
   translation << 1, 0, 0;
   const AffineSubspace as(basis, translation);
+
+  const double kTol = 1e-15;
 
   EXPECT_EQ(as.basis().cols(), 1);
   EXPECT_EQ(as.basis().rows(), 3);
@@ -68,10 +96,29 @@ GTEST_TEST(AffineSubspaceTest, Line) {
   EXPECT_TRUE(as.PointInSet(as.MaybeGetFeasiblePoint().value()));
   EXPECT_TRUE(as.PointInSet(translation));
   Eigen::VectorXd test_point(3);
-  test_point << 2, 1, 1;
-  EXPECT_TRUE(as.PointInSet(test_point));
-  EXPECT_FALSE(as.PointInSet(Eigen::VectorXd::Zero(3)));
+  test_point << 2, 1, 0;
+  EXPECT_TRUE(as.PointInSet(test_point, kTol));
+  EXPECT_FALSE(as.PointInSet(Eigen::VectorXd::Zero(3), kTol));
   EXPECT_TRUE(as.IntersectsWith(as));
+  EXPECT_TRUE(as.PointInSet(as.Project(Eigen::VectorXd::Zero(3)), kTol));
+
+  // Test local coordinates
+  EXPECT_EQ(as.AffineDimension(), 1);
+  Eigen::VectorXd test_point2(3);
+  test_point2 << 2, 1, 1;
+  Eigen::VectorXd expected_project(3);
+  expected_project << 2, 1, 0;
+  Eigen::VectorXd expected_local_coords(1);
+  expected_local_coords << 1;
+  EXPECT_EQ(as.ToLocalCoordinates(test_point2).size(), 1);
+  EXPECT_TRUE(CompareMatrices(as.ToLocalCoordinates(test_point2),
+                              expected_local_coords, kTol));
+  EXPECT_TRUE(CompareMatrices(
+      as.ToGlobalCoordinates(as.ToLocalCoordinates(test_point2)),
+      as.Project(test_point2), kTol));
+  EXPECT_TRUE(CompareMatrices(
+      as.ToLocalCoordinates(as.ToGlobalCoordinates(expected_local_coords)),
+      expected_local_coords, kTol));
 }
 
 GTEST_TEST(AffineSubspaceTest, Plane) {
@@ -84,6 +131,8 @@ GTEST_TEST(AffineSubspaceTest, Plane) {
   Eigen::VectorXd translation(3);
   translation << 0, 0, 1;
   const AffineSubspace as(basis, translation);
+
+  const double kTol = 1e-15;
 
   EXPECT_EQ(as.basis().cols(), 2);
   EXPECT_EQ(as.basis().rows(), 3);
@@ -101,6 +150,25 @@ GTEST_TEST(AffineSubspaceTest, Plane) {
   EXPECT_TRUE(as.PointInSet(test_point));
   EXPECT_FALSE(as.PointInSet(Eigen::VectorXd::Zero(3)));
   EXPECT_TRUE(as.IntersectsWith(as));
+  EXPECT_TRUE(as.PointInSet(as.Project(Eigen::VectorXd::Zero(3))));
+
+  // Test local coordinates
+  EXPECT_EQ(as.AffineDimension(), 2);
+  Eigen::VectorXd test_point2(3);
+  test_point2 << 42, 27, 0;
+  Eigen::VectorXd expected_project(3);
+  expected_project << 42, 27, 1;
+  Eigen::VectorXd expected_local_coords(2);
+  expected_local_coords << 42, 27;
+  EXPECT_EQ(as.ToLocalCoordinates(test_point2).size(), 2);
+  EXPECT_TRUE(CompareMatrices(as.ToLocalCoordinates(test_point2),
+                              expected_local_coords, kTol));
+  EXPECT_TRUE(CompareMatrices(
+      as.ToGlobalCoordinates(as.ToLocalCoordinates(test_point2)),
+      as.Project(test_point2), kTol));
+  EXPECT_TRUE(CompareMatrices(
+      as.ToLocalCoordinates(as.ToGlobalCoordinates(expected_local_coords)),
+      expected_local_coords, kTol));
 }
 
 GTEST_TEST(AffineSubspaceTest, VolumeInR3) {
@@ -113,6 +181,8 @@ GTEST_TEST(AffineSubspaceTest, VolumeInR3) {
   Eigen::VectorXd translation(3);
   translation << 0, 0, 1;
   const AffineSubspace as(basis, translation);
+
+  const double kTol = 1e-15;
 
   EXPECT_EQ(as.basis().cols(), 3);
   EXPECT_EQ(as.basis().rows(), 3);
@@ -130,6 +200,25 @@ GTEST_TEST(AffineSubspaceTest, VolumeInR3) {
   EXPECT_TRUE(as.PointInSet(test_point));
   EXPECT_TRUE(as.PointInSet(Eigen::VectorXd::Zero(3)));
   EXPECT_TRUE(as.IntersectsWith(as));
+  EXPECT_TRUE(as.PointInSet(as.Project(Eigen::VectorXd::Zero(3))));
+
+  // Test local coordinates
+  EXPECT_EQ(as.AffineDimension(), 3);
+  Eigen::VectorXd test_point2(3);
+  test_point2 << 42, 27, 1;
+  Eigen::VectorXd expected_project(3);
+  expected_project << 42, 27, 1;
+  Eigen::VectorXd expected_local_coords(3);
+  expected_local_coords << 42, 27, 0;
+  EXPECT_EQ(as.ToLocalCoordinates(test_point2).size(), 3);
+  EXPECT_TRUE(CompareMatrices(as.ToLocalCoordinates(test_point2),
+                              expected_local_coords, kTol));
+  EXPECT_TRUE(CompareMatrices(
+      as.ToGlobalCoordinates(as.ToLocalCoordinates(test_point2)),
+      as.Project(test_point2), kTol));
+  EXPECT_TRUE(CompareMatrices(
+      as.ToLocalCoordinates(as.ToGlobalCoordinates(expected_local_coords)),
+      expected_local_coords, kTol));
 }
 
 GTEST_TEST(AffineSubspaceTest, VolumeInR4) {
@@ -143,6 +232,8 @@ GTEST_TEST(AffineSubspaceTest, VolumeInR4) {
   Eigen::VectorXd translation(4);
   translation << 0, 0, 0, 1;
   const AffineSubspace as(basis, translation);
+
+  const double kTol = 1e-15;
 
   EXPECT_EQ(as.basis().cols(), 3);
   EXPECT_EQ(as.basis().rows(), 4);
@@ -160,6 +251,25 @@ GTEST_TEST(AffineSubspaceTest, VolumeInR4) {
   EXPECT_TRUE(as.PointInSet(test_point));
   EXPECT_FALSE(as.PointInSet(Eigen::VectorXd::Zero(4)));
   EXPECT_TRUE(as.IntersectsWith(as));
+  EXPECT_TRUE(as.PointInSet(as.Project(Eigen::VectorXd::Zero(4))));
+
+  // Test local coordinates
+  EXPECT_EQ(as.AffineDimension(), 3);
+  Eigen::VectorXd test_point2(4);
+  test_point2 << 42, 27, -7, 0;
+  Eigen::VectorXd expected_project(4);
+  expected_project << 42, 27, -7, 1;
+  Eigen::VectorXd expected_local_coords(3);
+  expected_local_coords << 42, 27, -7;
+  EXPECT_EQ(as.ToLocalCoordinates(test_point2).size(), 3);
+  EXPECT_TRUE(CompareMatrices(as.ToLocalCoordinates(test_point2),
+                              expected_local_coords, kTol));
+  EXPECT_TRUE(CompareMatrices(
+      as.ToGlobalCoordinates(as.ToLocalCoordinates(test_point2)),
+      as.Project(test_point2), kTol));
+  EXPECT_TRUE(CompareMatrices(
+      as.ToLocalCoordinates(as.ToGlobalCoordinates(expected_local_coords)),
+      expected_local_coords, kTol));
 }
 
 GTEST_TEST(AffineSubspaceTest, NotABasis1) {
@@ -279,6 +389,50 @@ GTEST_TEST(AffineSubspaceTest, PointInSetConstraints) {
   EXPECT_TRUE(as.PointInSet(x_val, kTol));
   EXPECT_TRUE(
       CompareMatrices(x_val, as.basis() * new_vars_val + translation, kTol));
+}
+
+GTEST_TEST(AffineSubspaceTest, BatchChangeOfCoordinates) {
+  // Test that the projection and transforms to and from local coordinates can
+  // handle batches of points.
+  Eigen::Matrix<double, 3, 2> basis;
+  // clang-format off
+  basis << 1, 0,
+           0, 1,
+           0, 0;
+  // clang-format on
+  Eigen::VectorXd translation(3);
+  translation << 0, 0, 1;
+  const AffineSubspace as(basis, translation);
+
+  Eigen::Matrix<double, 3, 5> points;
+  // clang-format off
+  points << 1, 2, 3, 4, 5,
+            0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0;
+  // clang-format on
+
+  Eigen::MatrixXd projected = as.Project(points);
+  EXPECT_EQ(projected.rows(), 3);
+  EXPECT_EQ(projected.cols(), 5);
+  for (int i = 0; i < points.cols(); ++i) {
+    EXPECT_TRUE(CompareMatrices(projected.col(i), as.Project(points.col(i))));
+  }
+
+  Eigen::MatrixXd local = as.ToLocalCoordinates(points);
+  EXPECT_EQ(local.rows(), 2);
+  EXPECT_EQ(local.cols(), 5);
+  for (int i = 0; i < points.cols(); ++i) {
+    EXPECT_TRUE(
+        CompareMatrices(local.col(i), as.ToLocalCoordinates(points.col(i))));
+  }
+
+  Eigen::MatrixXd global = as.ToGlobalCoordinates(local);
+  EXPECT_EQ(global.rows(), 3);
+  EXPECT_EQ(global.cols(), 5);
+  for (int i = 0; i < local.cols(); ++i) {
+    EXPECT_TRUE(
+        CompareMatrices(global.col(i), as.ToGlobalCoordinates(local.col(i))));
+  }
 }
 
 GTEST_TEST(AffineSubspaceTest, ContainmentTest) {

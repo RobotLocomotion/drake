@@ -95,6 +95,14 @@ void DefineGeometryOptimization(py::module m) {
             cls_doc.basis.doc)
         .def("translation", &AffineSubspace::translation,
             py_rvp::reference_internal, cls_doc.translation.doc)
+        .def("AffineDimension", &AffineSubspace::AffineDimension,
+            cls_doc.AffineDimension.doc)
+        .def("Project", &AffineSubspace::Project, py::arg("x"),
+            cls_doc.Project.doc)
+        .def("ToLocalCoordinates", &AffineSubspace::ToLocalCoordinates,
+            py::arg("x"), cls_doc.ToLocalCoordinates.doc)
+        .def("ToGlobalCoordinates", &AffineSubspace::ToGlobalCoordinates,
+            py::arg("y"), cls_doc.ToGlobalCoordinates.doc)
         .def("ContainedIn", &AffineSubspace::ContainedIn, py::arg("other"),
             py::arg("tol") = 1e-15, cls_doc.ContainedIn.doc)
         .def("IsNearlyEqualTo", &AffineSubspace::IsNearlyEqualTo,
