@@ -31,5 +31,21 @@ namespace solvers {
 std::unique_ptr<MathematicalProgram> MakeSemidefiniteRelaxation(
     const MathematicalProgram& prog);
 
+/** Combinations of variables in the original program are "linearized" into
+ additional decision variables in the relaxation. For instance, if the original
+ `prog` contained the variables, `x` and `y`, and then the relaxed program will
+ have `x` and `y`, but also `x²`, `xy`, and `y²` as new decision variables. To
+ find the decision variable associated with `xy` in the new program, pass in
+ `vars_in_prog = [x, y]`. 
+
+ @pre `relaxation` was constructed by calling `MakeSemidefiniteRelaxation` on
+ `prog` and no additional semidefinite constraints have been added.
+ @throws std::exception if `vars_in_prog` does not describe a variable in
+ `relaxation`.
+ */
+symbolic::Variable GetVariableInSemidefiniteRelaxation(
+    const MathematicalProgram& prog, const MathematicalProgram& relaxation,
+    std::vector<symbolic::Variable> vars_in_prog);
+
 }  // namespace solvers
 }  // namespace drake

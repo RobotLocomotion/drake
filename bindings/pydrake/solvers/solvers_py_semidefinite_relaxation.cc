@@ -14,6 +14,11 @@ void DefineSolversSemidefiniteRelaxation(py::module m) {
 
   m.def("MakeSemidefiniteRelaxation", &solvers::MakeSemidefiniteRelaxation,
       py::arg("prog"), doc.MakeSemidefiniteRelaxation.doc);
+  
+  m.def("GetVariableInSemidefiniteRelaxation",
+      &solvers::GetVariableInSemidefiniteRelaxation,
+      py::arg("prog"), py::arg("relaxation"), py::arg("vars_in_prog"),
+      doc.GetVariableInSemidefiniteRelaxation.doc);
 }
 
 }  // namespace internal

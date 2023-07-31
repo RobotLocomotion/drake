@@ -259,5 +259,45 @@ std::unique_ptr<MathematicalProgram> MakeSemidefiniteRelaxation(
   return relaxation;
 }
 
+symbolic::Variable GetVariableInSemidefiniteRelaxation(
+    const MathematicalProgram& prog, const MathematicalProgram& relaxation,
+    std::vector<symbolic::Variable> vars_in_prog) {
+  DRAKE_THROW_UNLESS(vars_in_prog.size() > 0);
+  // MakeSemidefiniteRelaxation only supports quadratic problems so far.
+  DRAKE_THROW_UNLESS(vars_in_prog.size() <= 2);
+  if (vars_in_prog.size() == 1) {
+    // The original variables are always available directly in the relaxation.
+    return vars_in_prog[0];
+  }
+
+  VectorXDecisionVariable vector_vars_in_prog(vars_in_prog.size());
+  for (int i = 0; i < std::ssize(vars_in_prog); ++i) {
+    vector_vars_in_prog(i) = vars_in_prog[i];
+  }
+  std::vector<int> indices =
+      prog.FindDecisionVariableIndices(vector_vars_in_prog);
+  // So far, MakeSemidefiniteRelaxation() only adds one PSD constraint.
+  if (relaxation.positive_semidefinite_constraints().size() !=
+                     1) {
+    throw std::logic_error(fmt::format(
+        "The `relaxation` has {} semidefinite constraints; it does not appear "
+        "that it was made with MakeSemidefiniteRelaxation(), or it has been "
+        "modified since then.",
+        relaxation.positive_semidefinite_constraints().size()));
+  }
+  auto psd_binding = relaxation.positive_semidefinite_constraints()[0];
+  const int N = psd_binding.evaluator()->matrix_rows();
+  if (N != prog.num_vars() + 1) {
+    throw std::logic_error(fmt::format(
+        "The `prog` has {} decision variables, but the `relaxation` has a PSD "
+        "constraint on a matrix of size {}-by-{}. This `relaxation` does not "
+        "appear to be associated with this original `prog`.",
+        prog.num_vars(), N, N));
+  }
+  const Eigen::Map<const MatrixX<Variable>> X(psd_binding.variables().data(), N,
+                                              N);
+  return X(indices[0], indices[1]);
+}
+
 }  // namespace solvers
 }  // namespace drake
