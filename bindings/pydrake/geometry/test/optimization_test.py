@@ -96,6 +96,10 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertIsNot(dut.Clone(), dut)
         self.assertIsNot(copy.deepcopy(dut), dut)
 
+        p = np.array([11.1, 12.2, 13.3])
+        point = mut.Point(p)
+        aff = mut.AffineSubspace(set=point, tol=1e-12)
+
     def test_h_polyhedron(self):
         mut.HPolyhedron()
         hpoly = mut.HPolyhedron(A=self.A, b=self.b)

@@ -4,6 +4,15 @@
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/yaml/yaml_io.h"
+#include "drake/geometry/optimization/cartesian_product.h"
+#include "drake/geometry/optimization/convex_set.h"
+#include "drake/geometry/optimization/hpolyhedron.h"
+#include "drake/geometry/optimization/hyperellipsoid.h"
+#include "drake/geometry/optimization/intersection.h"
+#include "drake/geometry/optimization/minkowski_sum.h"
+#include "drake/geometry/optimization/point.h"
+#include "drake/geometry/optimization/spectrahedron.h"
+#include "drake/geometry/optimization/vpolytope.h"
 #include "drake/solvers/solve.h"
 
 namespace drake {
@@ -279,6 +288,536 @@ GTEST_TEST(AffineSubspaceTest, PointInSetConstraints) {
   EXPECT_TRUE(as.PointInSet(x_val, kTol));
   EXPECT_TRUE(
       CompareMatrices(x_val, as.basis() * new_vars_val + translation, kTol));
+}
+
+// Check that the ConvexSet is contained in an AffineSubspace
+bool CheckAffineSubspaceSetContainment(const AffineSubspace& as,
+                                       const ConvexSet& set, double tol = 0) {
+  if (!set.MaybeGetFeasiblePoint().has_value()) {
+    // The empty set is contained in every affine subspace.
+    return true;
+  }
+  Eigen::VectorXd feasible_point = set.MaybeGetFeasiblePoint().value();
+  if (!as.PointInSet(feasible_point, tol)) {
+    return false;
+  }
+
+  solvers::MathematicalProgram prog;
+
+  // x represents the offset relative to the feasible point. We add a bounding
+  // box constraint to ensure the problem is not unbounded.
+  solvers::VectorXDecisionVariable x =
+      prog.NewContinuousVariables(set.ambient_dimension(), "x");
+  prog.AddBoundingBoxConstraint(-1, 1, x);
+
+  // y represents the actual point we are finding, so as to constrain it
+  // to lie within the convex set.
+  solvers::VectorXDecisionVariable y =
+      prog.NewContinuousVariables(set.ambient_dimension(), "y");
+  prog.AddLinearConstraint(y == x + feasible_point);
+  set.AddPointInSetConstraints(&prog, y);
+
+  // This is the objective we use. We will iteratively try to minimize and
+  // maximize the ith component of x for each dimension to find a feasible point
+  // along that axis, and then check that it's contained in the affine hull.
+  Eigen::VectorXd new_objective_vector =
+      Eigen::VectorXd::Zero(set.ambient_dimension());
+  solvers::Binding<solvers::LinearCost> objective =
+      prog.AddLinearCost(new_objective_vector, x);
+
+  for (int i = 0; i < set.ambient_dimension(); ++i) {
+    new_objective_vector.setZero();
+    new_objective_vector[i] = 1;
+    objective.evaluator()->UpdateCoefficients(new_objective_vector);
+
+    auto result = solvers::Solve(prog);
+    DRAKE_DEMAND(result.is_success());
+    if (!as.PointInSet(result.GetSolution(y), tol)) {
+      return false;
+    }
+
+    new_objective_vector[i] = -1;
+    objective.evaluator()->UpdateCoefficients(new_objective_vector);
+
+    result = solvers::Solve(prog);
+    DRAKE_DEMAND(result.is_success());
+    if (!as.PointInSet(result.GetSolution(y), tol)) {
+      return false;
+    }
+  }
+
+  // If we've made it to the end, then we've successfully checked containment.
+  return true;
+}
+
+// Check that an AffineSubspace doesn't contain any extra points besides
+// what's necessary for the ConvexSet. This function loops through each
+// basis vector of the AffineSubspace, removes it, and then sees if the
+// ConvexSet is a subset of the new AffineSubspace. If this is not the case,
+// then the basis vector was necessary. If it is still a subset, then we
+// don't have the affine hull, since it's not the smallest affine set
+// containing the ConvexSet.
+void CheckAffineHullTightness(const AffineSubspace& as, const ConvexSet& set,
+                              double tol = 0) {
+  ASSERT_TRUE(as.ambient_dimension() == set.ambient_dimension());
+  ASSERT_FALSE(set.IsEmpty());
+
+  const Eigen::VectorXd translation = as.translation();
+  const Eigen::MatrixXd basis = as.basis();
+
+  for (int i = 0; i < basis.cols(); ++i) {
+    const int right_cols_num = basis.cols() - i - 1;
+    Eigen::MatrixXd new_basis(basis.rows(), basis.cols() - 1);
+    new_basis << basis.leftCols(i), basis.rightCols(right_cols_num);
+    const AffineSubspace new_as(new_basis, translation);
+    EXPECT_FALSE(CheckAffineSubspaceSetContainment(new_as, set, tol));
+  }
+}
+
+GTEST_TEST(AffineSubspaceTest, AffineHullCartesianProduct) {
+  // Point VPolytope
+  VPolytope point(Eigen::Vector2d(2, -1));
+
+  // Line segment VPolytope
+  Eigen::Matrix<double, 3, 2> line_segment_points;
+  // clang-format off
+  line_segment_points << 0, 1,
+                         0, 1,
+                         0, 1;
+  // clang-format on
+  VPolytope line_segment(line_segment_points);
+
+  CartesianProduct c(point, line_segment);
+  AffineSubspace as(c);
+
+  EXPECT_EQ(as.basis().cols(), 1);
+  EXPECT_EQ(as.basis().rows(), 5);
+  EXPECT_EQ(as.translation().size(), 5);
+  EXPECT_EQ(as.ambient_dimension(), 5);
+
+  const double kTol = 1e-15;
+
+  Eigen::VectorXd test_point(5);
+  test_point << 2, -1, 2, 2, 2;
+  EXPECT_TRUE(as.PointInSet(test_point, kTol));
+
+  EXPECT_TRUE(CheckAffineSubspaceSetContainment(as, c, kTol));
+  CheckAffineHullTightness(as, c, kTol);
+}
+
+GTEST_TEST(AffineSubspaceTest, AffineHullHPolyhedron) {
+  // Test a full-dimensional HPolyhedron
+  HPolyhedron h1 = HPolyhedron::MakeUnitBox(3);
+  AffineSubspace as1(h1);
+
+  EXPECT_EQ(as1.basis().cols(), 3);
+  EXPECT_EQ(as1.basis().rows(), 3);
+  EXPECT_EQ(as1.translation().size(), 3);
+  EXPECT_EQ(as1.ambient_dimension(), 3);
+
+  const double kTol = 1e-15;
+
+  EXPECT_TRUE(CheckAffineSubspaceSetContainment(as1, h1, kTol));
+  CheckAffineHullTightness(as1, h1, kTol);
+
+  // // Test a not-full-dimensional HPolyhedron
+  Eigen::MatrixXd A(6, 3);
+  Eigen::VectorXd b(6);
+
+  // clang-format off
+  A <<  1,  0,  0,
+       -1,  0,  0,
+        0,  1,  0,
+        0, -1,  0,
+        0,  0,  1,
+        0,  0, -1;
+  b << 1, 0, 1, 0, 0, 0;
+  // clang-format on
+  HPolyhedron h2(A, b);
+
+  const double kTol2 = 1e-6;
+
+  AffineSubspace as2(h2, kTol2);
+
+  EXPECT_EQ(as2.basis().cols(), 2);
+  EXPECT_EQ(as2.basis().rows(), 3);
+  EXPECT_EQ(as2.translation().size(), 3);
+  EXPECT_EQ(as2.ambient_dimension(), 3);
+
+  EXPECT_TRUE(CheckAffineSubspaceSetContainment(as2, h2, kTol2));
+  CheckAffineHullTightness(as2, h2, kTol2);
+}
+
+GTEST_TEST(AffineSubspaceTest, AffineHullHyperellipsoid) {
+  // Taken from hyperellipsoid_test.cc
+  const Eigen::Matrix3d D = Eigen::DiagonalMatrix<double, 3>(1.0, 2.0, 3.0);
+  const math::RotationMatrixd R =
+      math::RotationMatrixd::MakeZRotation(M_PI / 2.0);
+  const Eigen::Matrix3d A = D * R.matrix();
+  const Eigen::Vector3d center{4.0, 5.0, 6.0};
+
+  Hyperellipsoid E(A, center);
+  AffineSubspace as(E);
+
+  EXPECT_EQ(as.basis().cols(), 3);
+  EXPECT_EQ(as.basis().rows(), 3);
+  EXPECT_EQ(as.translation().size(), 3);
+  EXPECT_EQ(as.ambient_dimension(), 3);
+
+  EXPECT_TRUE(CheckAffineSubspaceSetContainment(as, E));
+  CheckAffineHullTightness(as, E);
+}
+
+GTEST_TEST(AffineSubspaceTest, AffineHullIntersection) {
+  // Point-Line intersection
+
+  // Point VPolytope
+  VPolytope point(Eigen::Vector3d(0.5, 0.5, 0.5));
+
+  // Line segment VPolytope
+  Eigen::Matrix<double, 3, 2> line_segment_points;
+  // clang-format off
+  line_segment_points << 0, 1,
+                         0, 1,
+                         0, 1;
+  // clang-format on
+  VPolytope line_segment(line_segment_points);
+
+  Intersection i1(point, line_segment);
+  AffineSubspace as1(i1);
+
+  const double kTol1 = 1e-15;
+  EXPECT_TRUE(i1.PointInSet(Eigen::Vector3d(0.5, 0.5, 0.5), kTol1));
+  EXPECT_TRUE(as1.PointInSet(Eigen::Vector3d(0.5, 0.5, 0.5), kTol1));
+
+  EXPECT_EQ(as1.basis().cols(), 0);
+  EXPECT_EQ(as1.basis().rows(), 3);
+  EXPECT_EQ(as1.translation().size(), 3);
+  EXPECT_EQ(as1.ambient_dimension(), 3);
+
+  // Line-Plane intersection (works out to a point)
+  Eigen::Matrix<double, 3, 3> triangle1_points;
+  // clang-format off
+  triangle1_points << 1, 0, 0,
+                      0, 1, 0,
+                      0, 0, 1;
+  // clang-format on
+  VPolytope triangle1(triangle1_points);
+
+  Intersection i2(line_segment, triangle1);
+  AffineSubspace as2(i2);
+
+  const double kTol2 = 1e-12;
+  const Eigen::Vector3d one_third(1. / 3., 1. / 3., 1. / 3.);
+  EXPECT_TRUE(i2.PointInSet(one_third, kTol2));
+  EXPECT_TRUE(as2.PointInSet(one_third, kTol2));
+
+  EXPECT_EQ(as2.basis().cols(), 0);
+  EXPECT_EQ(as2.basis().rows(), 3);
+  EXPECT_EQ(as2.translation().size(), 3);
+  EXPECT_EQ(as2.ambient_dimension(), 3);
+
+  // Line-Plane intersection (works out to a line)
+  Eigen::Matrix<double, 3, 3> triangle2_points;
+  // clang-format off
+  triangle2_points << 0, 1, 1,
+                      0, 1, 1,
+                      0, 0, 1;
+  // clang-format on
+  VPolytope triangle2(triangle2_points);
+
+  Intersection i3(line_segment, triangle2);
+  AffineSubspace as3(i3);
+
+  const double kTol3 = 1e-12;
+  EXPECT_TRUE(i3.PointInSet(Eigen::Vector3d(0, 0, 0), kTol3));
+  EXPECT_TRUE(i3.PointInSet(Eigen::Vector3d(1, 1, 1), kTol3));
+
+  EXPECT_TRUE(as3.PointInSet(Eigen::Vector3d(0, 0, 0), kTol3));
+  EXPECT_TRUE(as3.PointInSet(Eigen::Vector3d(1, 1, 1), kTol3));
+
+  EXPECT_EQ(as3.basis().cols(), 1);
+  EXPECT_EQ(as3.basis().rows(), 3);
+  EXPECT_EQ(as3.translation().size(), 3);
+  EXPECT_EQ(as3.ambient_dimension(), 3);
+
+  EXPECT_TRUE(CheckAffineSubspaceSetContainment(as3, i3, kTol3));
+  CheckAffineHullTightness(as3, i3, kTol3);
+
+  // Plane-Plane intersection (works out to a line)
+  Eigen::Matrix<double, 3, 3> triangle3_points;
+  // clang-format off
+  triangle3_points << 0, 1, 1,
+                      0, 1, 0,
+                      0, 0, 5;
+  // clang-format on
+  VPolytope triangle3(triangle3_points);
+
+  Intersection i4(triangle2, triangle3);
+  AffineSubspace as4(i4);
+
+  // The numerics are much better with commerical sovlers
+  const double kTol4 = 1e-6;
+  EXPECT_TRUE(i4.PointInSet(Eigen::Vector3d(0, 0, 0), kTol4));
+  EXPECT_TRUE(i4.PointInSet(Eigen::Vector3d(1, 1, 0), kTol4));
+
+  EXPECT_TRUE(as4.PointInSet(Eigen::Vector3d(0, 0, 0), kTol4));
+  EXPECT_TRUE(as4.PointInSet(Eigen::Vector3d(1, 1, 0), kTol4));
+
+  EXPECT_EQ(as4.basis().cols(), 1);
+  EXPECT_EQ(as4.basis().rows(), 3);
+  EXPECT_EQ(as4.translation().size(), 3);
+  EXPECT_EQ(as4.ambient_dimension(), 3);
+
+  EXPECT_TRUE(CheckAffineSubspaceSetContainment(as4, i4, kTol4));
+  CheckAffineHullTightness(as4, i4, kTol4);
+
+  // Plane-Plane intersection (works out to a plane)
+  Eigen::Matrix<double, 3, 3> triangle4_points;
+  // clang-format off
+  triangle4_points << 0, 1, 1,
+                      0, 1, 1,
+                      0, 0, 5;
+  // clang-format on
+  VPolytope triangle4(triangle4_points);
+
+  Intersection i5(triangle2, triangle4);
+  AffineSubspace as5(i5);
+
+  const double kTol5 = 1e-6;
+  EXPECT_TRUE(i5.PointInSet(Eigen::Vector3d(0, 0, 0), kTol5));
+  EXPECT_TRUE(i5.PointInSet(Eigen::Vector3d(1, 1, 0), kTol5));
+  EXPECT_TRUE(i5.PointInSet(Eigen::Vector3d(1, 1, 1), kTol5));
+
+  EXPECT_TRUE(as5.PointInSet(Eigen::Vector3d(0, 0, 0), kTol5));
+  EXPECT_TRUE(as5.PointInSet(Eigen::Vector3d(1, 1, 0), kTol5));
+  EXPECT_TRUE(as5.PointInSet(Eigen::Vector3d(1, 1, 1), kTol5));
+
+  EXPECT_EQ(as5.basis().cols(), 2);
+  EXPECT_EQ(as5.basis().rows(), 3);
+  EXPECT_EQ(as5.translation().size(), 3);
+  EXPECT_EQ(as5.ambient_dimension(), 3);
+
+  EXPECT_TRUE(CheckAffineSubspaceSetContainment(as5, i5, kTol5));
+  CheckAffineHullTightness(as5, i5, kTol5);
+}
+
+GTEST_TEST(AffineSubspaceTest, AffineHullMinkowskiSum) {
+  // Two lines that add to a line
+  Eigen::Matrix<double, 3, 2> line_segment1_points;
+  // clang-format off
+  line_segment1_points << 0, 1,
+                          0, 1,
+                          0, 1;
+  // clang-format on
+  VPolytope line_segment1(line_segment1_points);
+  Eigen::Matrix<double, 3, 2> line_segment2_points;
+  // clang-format off
+  line_segment2_points << 2, 3,
+                          2, 3,
+                          2, 3;
+  // clang-format on
+  VPolytope line_segment2(line_segment2_points);
+
+  MinkowskiSum ms1(line_segment1, line_segment2);
+  AffineSubspace as1(ms1);
+
+  const double kTol = 1e-12;
+  EXPECT_TRUE(ms1.PointInSet(Eigen::Vector3d(2, 2, 2), kTol));
+  EXPECT_TRUE(ms1.PointInSet(Eigen::Vector3d(4, 4, 4), kTol));
+
+  EXPECT_TRUE(as1.PointInSet(Eigen::Vector3d(2, 2, 2), kTol));
+  EXPECT_TRUE(as1.PointInSet(Eigen::Vector3d(4, 4, 4), kTol));
+
+  EXPECT_EQ(as1.basis().cols(), 1);
+  EXPECT_EQ(as1.basis().rows(), 3);
+  EXPECT_EQ(as1.translation().size(), 3);
+  EXPECT_EQ(as1.ambient_dimension(), 3);
+
+  EXPECT_TRUE(CheckAffineSubspaceSetContainment(as1, ms1, kTol));
+  CheckAffineHullTightness(as1, ms1, kTol);
+
+  // Two lines that add to a plane
+  Eigen::Matrix<double, 3, 2> line_segment3_points;
+  // clang-format off
+  line_segment3_points << 0, 1,
+                          0, 0,
+                          0, 0;
+  // clang-format on
+  VPolytope line_segment3(line_segment3_points);
+
+  MinkowskiSum ms2(line_segment1, line_segment3);
+  AffineSubspace as2(ms2);
+
+  EXPECT_TRUE(ms2.PointInSet(Eigen::Vector3d(0, 0, 0), kTol));
+  EXPECT_TRUE(ms2.PointInSet(Eigen::Vector3d(1, 0, 0), kTol));
+  EXPECT_TRUE(ms2.PointInSet(Eigen::Vector3d(1, 1, 1), kTol));
+
+  EXPECT_TRUE(as2.PointInSet(Eigen::Vector3d(0, 0, 0), kTol));
+  EXPECT_TRUE(as2.PointInSet(Eigen::Vector3d(1, 0, 0), kTol));
+  EXPECT_TRUE(as2.PointInSet(Eigen::Vector3d(1, 1, 1), kTol));
+
+  EXPECT_EQ(as2.basis().cols(), 2);
+  EXPECT_EQ(as2.basis().rows(), 3);
+  EXPECT_EQ(as2.translation().size(), 3);
+  EXPECT_EQ(as2.ambient_dimension(), 3);
+
+  EXPECT_TRUE(CheckAffineSubspaceSetContainment(as2, ms2, kTol));
+  CheckAffineHullTightness(as2, ms2, kTol);
+
+  // A line and a plane that add to a 3d space
+  Eigen::Matrix<double, 3, 3> triangle_points;
+  // clang-format off
+  triangle_points << 0, 0, 0,
+                     1, 0, 1,
+                     0, 1, 1;
+  // clang-format on
+  VPolytope triangle(triangle_points);
+
+  MinkowskiSum ms3(line_segment3, triangle);
+  AffineSubspace as3(ms3);
+
+  EXPECT_TRUE(ms3.PointInSet(Eigen::Vector3d(0, 1, 0), kTol));
+  EXPECT_TRUE(ms3.PointInSet(Eigen::Vector3d(0, 0, 1), kTol));
+  EXPECT_TRUE(ms3.PointInSet(Eigen::Vector3d(0, 1, 1), kTol));
+  EXPECT_TRUE(ms3.PointInSet(Eigen::Vector3d(1, 1, 1), kTol));
+
+  EXPECT_TRUE(as3.PointInSet(Eigen::Vector3d(0, 1, 0), kTol));
+  EXPECT_TRUE(as3.PointInSet(Eigen::Vector3d(0, 0, 1), kTol));
+  EXPECT_TRUE(as3.PointInSet(Eigen::Vector3d(0, 1, 1), kTol));
+  EXPECT_TRUE(as3.PointInSet(Eigen::Vector3d(1, 1, 1), kTol));
+
+  EXPECT_EQ(as3.basis().cols(), 3);
+  EXPECT_EQ(as3.basis().rows(), 3);
+  EXPECT_EQ(as3.translation().size(), 3);
+  EXPECT_EQ(as3.ambient_dimension(), 3);
+
+  EXPECT_TRUE(CheckAffineSubspaceSetContainment(as3, ms3, kTol));
+  CheckAffineHullTightness(as3, ms3, kTol);
+}
+
+GTEST_TEST(AffineSubspaceTest, AffineHullPoint) {
+  const Eigen::Vector3d p_value{4.2, 2.7, 0.0};
+  Point p(p_value);
+  AffineSubspace as(p);
+
+  EXPECT_EQ(as.basis().cols(), 0);
+  EXPECT_EQ(as.basis().rows(), 3);
+  EXPECT_EQ(as.translation().size(), 3);
+  EXPECT_EQ(as.ambient_dimension(), 3);
+
+  EXPECT_TRUE(as.IsBounded());
+  ASSERT_TRUE(p.MaybeGetFeasiblePoint().has_value());
+  EXPECT_TRUE(as.PointInSet(p.MaybeGetFeasiblePoint().value()));
+}
+
+GTEST_TEST(AffineSubspaceTest, AffineHullSpectrahedron) {
+  // Test the default constructor
+  Spectrahedron spect1;
+  AffineSubspace as1(spect1);
+
+  EXPECT_EQ(as1.basis().cols(), 0);
+  EXPECT_EQ(as1.basis().rows(), 0);
+  EXPECT_EQ(as1.translation().size(), 0);
+  EXPECT_EQ(as1.ambient_dimension(), 0);
+
+  /*
+   * A trivial SDP
+   * max X1(0, 1) + X1(1, 2),
+   * s.t X1 ∈ ℝ³ˣ³ is psd,
+   *     X1(0, 0) + X1(1, 1) + X1(2, 2) = 1,
+   *     -2 ≤ X1(0, 1) + X1(1, 2) - 2 * X1(0, 2) ≤ 0,
+   *     X1(2, 2) ∈ [-1, 1].
+   */
+
+  // Taken from spectrahedron_test.cc
+  // The ambient dimension of this spectrahedron is 6. (Because a 3x3 symmetric
+  // matrix has 6 unique entries, and the remaining 3 are not considered part
+  // of the ambient space.) This spectrahedron has 1 additional equality
+  // constraint, so its affine dimension should be 5.
+  solvers::MathematicalProgram prog;
+  auto X1 = prog.NewSymmetricContinuousVariables<3>();
+  prog.AddLinearCost(-(X1(0, 1) + X1(1, 2)));
+  prog.AddPositiveSemidefiniteConstraint(X1);
+  prog.AddLinearEqualityConstraint(X1(0, 0) + X1(1, 1) + X1(2, 2), 1);
+  prog.AddLinearConstraint(X1(0, 1) + X1(1, 2) - 2 * X1(0, 2), -2, 0);
+  prog.AddBoundingBoxConstraint(-1, 1, X1(2, 2));
+
+  Spectrahedron spect2(prog);
+  EXPECT_EQ(spect2.ambient_dimension(), 6);
+
+  const double kTol = 1e-8;
+
+  AffineSubspace as2(spect2, kTol);
+
+  EXPECT_EQ(as2.basis().cols(), 5);
+  EXPECT_EQ(as2.basis().rows(), 6);
+  EXPECT_EQ(as2.translation().size(), 6);
+  EXPECT_EQ(as2.ambient_dimension(), 6);
+
+  EXPECT_TRUE(CheckAffineSubspaceSetContainment(as2, spect2, kTol));
+  CheckAffineHullTightness(as2, spect2, kTol);
+}
+
+GTEST_TEST(AffineSubspaceTest, AffineHullVPolytope) {
+  // Check that computing the affine hull of an empty set throws an error
+  const VPolytope dut;
+  EXPECT_THROW(AffineSubspace{dut}, std::exception);
+
+  // Check a point as a VPolytope
+  Eigen::Vector3d point(2, -1, 0);
+  VPolytope v(point);
+  AffineSubspace as1(v);
+
+  EXPECT_EQ(as1.basis().cols(), 0);
+  EXPECT_EQ(as1.basis().rows(), 3);
+  EXPECT_EQ(as1.translation().size(), 3);
+  EXPECT_EQ(as1.ambient_dimension(), 3);
+
+  EXPECT_TRUE(as1.PointInSet(Eigen::Vector3d(2, -1, 0)));
+  EXPECT_FALSE(as1.PointInSet(Eigen::Vector3d(2, -1, 1)));
+  EXPECT_TRUE(CheckAffineSubspaceSetContainment(as1, v));
+  CheckAffineHullTightness(as1, v);
+
+  // Check a line segment as a VPolytope
+  Eigen::Matrix<double, 3, 2> line_segment_points;
+  // clang-format off
+  line_segment_points << 0, 1,
+                         0, 1,
+                         0, 1;
+  // clang-format on
+  VPolytope line_segment(line_segment_points);
+  AffineSubspace as2(line_segment);
+
+  EXPECT_EQ(as2.basis().cols(), 1);
+  EXPECT_EQ(as2.basis().rows(), 3);
+  EXPECT_EQ(as2.translation().size(), 3);
+  EXPECT_EQ(as2.ambient_dimension(), 3);
+
+  EXPECT_TRUE(as2.PointInSet(Eigen::Vector3d(2, 2, 2)));
+  EXPECT_FALSE(as2.PointInSet(Eigen::Vector3d(2, 2, 0)));
+  EXPECT_TRUE(CheckAffineSubspaceSetContainment(as2, line_segment));
+  CheckAffineHullTightness(as2, line_segment);
+
+  // Check a triangle in 3D as a VPolytope
+  Eigen::Matrix<double, 3, 3> triangle_points;
+  // clang-format off
+  triangle_points <<  0, 1, 0,
+                      0, 0, 1,
+                      0, 0, 0;
+  // clang-format on
+  VPolytope triangle(triangle_points);
+  AffineSubspace as3(triangle);
+
+  EXPECT_EQ(as3.basis().cols(), 2);
+  EXPECT_EQ(as3.basis().rows(), 3);
+  EXPECT_EQ(as3.translation().size(), 3);
+  EXPECT_EQ(as3.ambient_dimension(), 3);
+
+  EXPECT_TRUE(as3.PointInSet(Eigen::Vector3d(42, 27, 0)));
+  EXPECT_FALSE(as3.PointInSet(Eigen::Vector3d(42, 27, 1)));
+  EXPECT_TRUE(CheckAffineSubspaceSetContainment(as3, triangle));
+  CheckAffineHullTightness(as3, triangle);
 }
 
 GTEST_TEST(AffineSubspaceTest, ContainmentTest) {
