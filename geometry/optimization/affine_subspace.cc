@@ -36,7 +36,7 @@ std::unique_ptr<ConvexSet> AffineSubspace::DoClone() const {
   return std::make_unique<AffineSubspace>(*this);
 }
 
-bool AffineSubspace::DoIsBounded() const {
+std::optional<bool> AffineSubspace::DoIsBoundedShortcut() const {
   return basis_.cols() == 0;
 }
 

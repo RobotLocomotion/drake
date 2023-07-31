@@ -43,7 +43,7 @@ class Spectrahedron final : public ConvexSet {
  private:
   std::unique_ptr<ConvexSet> DoClone() const final;
 
-  bool DoIsBounded() const final;
+  std::optional<bool> DoIsBoundedShortcut() const final;
 
   // N.B. No need to override DoMaybeGetPoint here.
 

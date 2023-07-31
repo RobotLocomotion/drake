@@ -336,7 +336,7 @@ std::unique_ptr<ConvexSet> VPolytope::DoClone() const {
   return std::make_unique<VPolytope>(*this);
 }
 
-bool VPolytope::DoIsBounded() const {
+std::optional<bool> VPolytope::DoIsBoundedShortcut() const {
   return true;
 }
 
