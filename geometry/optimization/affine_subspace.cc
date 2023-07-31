@@ -1,6 +1,8 @@
 #include "drake/geometry/optimization/affine_subspace.h"
 
 #include "drake/common/is_approx_equal_abstol.h"
+#include "drake/geometry/optimization/spectrahedron.h"
+#include "drake/solvers/solve.h"
 
 namespace drake {
 namespace geometry {
@@ -11,6 +13,8 @@ using Eigen::RowVectorXd;
 using Eigen::VectorXd;
 using solvers::Binding;
 using solvers::Constraint;
+using solvers::LinearCost;
+using solvers::MathematicalProgram;
 using solvers::VectorXDecisionVariable;
 using symbolic::Variable;
 
@@ -28,6 +32,87 @@ AffineSubspace::AffineSubspace(const Eigen::Ref<const MatrixXd>& basis,
   } else {
     basis_decomp_ = std::nullopt;
   }
+}
+
+AffineSubspace::AffineSubspace(const ConvexSet& set, double tol)
+    : ConvexSet(0) {
+  // If the set is clearly a singleton, we can easily compute its affine hull.
+  auto singleton_maybe = set.MaybeGetPoint();
+  if (singleton_maybe.has_value()) {
+    // Fall back to the basis and translation constructor.
+    *this = AffineSubspace(Eigen::MatrixXd::Zero(set.ambient_dimension(), 0),
+                           singleton_maybe.value());
+    return;
+  }
+
+  // If the set is not clearly a singleton, we find a feasible point and
+  // iteratively compute a basis of the affine hull. If no feasible point
+  // exists, the set is empty, so we throw an error.
+  auto translation_maybe = set.MaybeGetFeasiblePoint();
+  if (!translation_maybe.has_value()) {
+    throw std::runtime_error("Cannot take the affine hull of an empty set!");
+  }
+  const VectorXd translation = translation_maybe.value();
+  std::vector<VectorXd> basis_vectors;
+
+  // Create the mathematical program we will use to find basis vectors.
+  MathematicalProgram prog;
+
+  // x represents the displacement within a feasible set. We add a bounding box
+  // constraint to ensure the problem is not unbounded.
+  VectorXDecisionVariable x =
+      prog.NewContinuousVariables(set.ambient_dimension(), "x");
+  prog.AddBoundingBoxConstraint(VectorXd::Constant(set.ambient_dimension(), -1),
+                                VectorXd::Constant(set.ambient_dimension(), 1),
+                                x);
+
+  // y and z are two feasible points in the set
+  VectorXDecisionVariable y =
+      prog.NewContinuousVariables(set.ambient_dimension(), "y");
+  VectorXDecisionVariable z =
+      prog.NewContinuousVariables(set.ambient_dimension(), "z");
+  prog.AddLinearConstraint(x == y - z);
+  set.AddPointInSetConstraints(&prog, y);
+  set.AddPointInSetConstraints(&prog, z);
+
+  // This is the objective we use. We will iteratively try to minimize the ith
+  // component of x for each dimension. Anytime this value is negative, it means
+  // we have found a new feasible direction, so we add it to the basis, and also
+  // constrain future feasible x vectors to be orthogonal to it (to ensure
+  // linear independence of the basis).
+  Binding<LinearCost> objective =
+      prog.AddLinearCost(VectorXd::Zero(set.ambient_dimension()), x);
+
+  for (int i = 0; i < set.ambient_dimension(); ++i) {
+    // Update the objective to check the ith dimension
+    VectorXd new_objective_vector = VectorXd::Zero(set.ambient_dimension());
+    new_objective_vector[i] = 1;
+    objective.evaluator()->UpdateCoefficients(new_objective_vector);
+
+    // Minimize x[i]
+    auto result = solvers::Solve(prog);
+    if (!result.is_success()) {
+      throw std::runtime_error(fmt::format(
+          "Failed to compute the affine hull! The solution result was {}.",
+          result.get_solution_result()));
+    }
+    if (result.get_optimal_cost() < -tol) {
+      // Get the solution as a new basis vector, and add a constraint that x
+      // must now be orthogonal to that new basis vector.
+      basis_vectors.push_back(result.GetSolution(x));
+      prog.AddLinearConstraint(result.GetSolution(x), 0, 0, x);
+      continue;
+    }
+  }
+
+  // By construction, basis_vectors is linearly independent. Because we have
+  // checked each direction in the ambient space, it will also span the other
+  // convex set, so we now have its affine hull.
+  MatrixXd basis(set.ambient_dimension(), basis_vectors.size());
+  for (size_t i = 0; i < basis_vectors.size(); ++i) {
+    basis.col(i) = basis_vectors[i];
+  }
+  *this = AffineSubspace(basis, translation);
 }
 
 AffineSubspace::~AffineSubspace() = default;
