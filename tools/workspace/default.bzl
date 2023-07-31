@@ -244,6 +244,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
     if "opengl" not in excludes:
         opengl_repository(name = "opengl")
     if "optitrack_driver" not in excludes:
+        # The @optitrack_driver external is deprecated and will be removed on
+        # or after 2023-11-01.
         optitrack_driver_repository(name = "optitrack_driver", mirrors = mirrors)  # noqa
     if "org_apache_xmlgraphics_commons" not in excludes:
         org_apache_xmlgraphics_commons_repository(name = "org_apache_xmlgraphics_commons", mirrors = mirrors)  # noqa

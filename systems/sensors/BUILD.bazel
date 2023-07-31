@@ -508,6 +508,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "optitrack_receiver_test",
+    copts = ["-Wno-deprecated-declarations"],
     deps = [
         ":optitrack_receiver",
         "//common/test_utilities:eigen_matrix_compare",
@@ -518,6 +519,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "optitrack_sender_test",
+    copts = ["-Wno-deprecated-declarations"],
     deps = [
         ":optitrack_sender",
         "@optitrack_driver//lcmtypes:optitrack_lcmtypes",

@@ -5,6 +5,12 @@ import sys
 
 
 def main():
+    print("""
+Drake's installed optitrack_client script is deprecated and will be removed
+from future releases on or after 2023-11-01. As a replacement, use the wheel
+packages provided by https://github.com/RobotLocomotion/optitrack-driver.
+""")
+
     prefix = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     sys.path.insert(0, os.path.join(
         prefix, 'lib',

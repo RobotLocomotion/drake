@@ -3,6 +3,9 @@ load("@drake//tools/workspace:github.bzl", "github_archive")
 def optitrack_driver_repository(
         name,
         mirrors = None):
+    """The @optitrack_driver external is deprecated and will be removed on or
+    after 2023-11-01.
+    """
     github_archive(
         name = name,
         repository = "RobotLocomotion/optitrack-driver",
