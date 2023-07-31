@@ -404,7 +404,7 @@ drake_cc_library(
     ],
     deps = [
         "//common:unused",
-        "@petsc",
+        "@petsc//:petsc_nowarn",
     ],
 )
 
