@@ -111,7 +111,7 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "yaml_cpp_internal",
 ]] + ["//tools/workspace/%s:install" % p for p in [
     "abseil_cpp_internal",
-    "conex",
+    "conex_internal",
     "drake_visualizer",
     "gflags",
     "optitrack_driver",

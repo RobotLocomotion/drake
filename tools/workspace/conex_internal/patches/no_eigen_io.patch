@@ -1,4 +1,4 @@
-Nerf the DUMP() macro to elide the dumped value
+[conex] Nerf the DUMP() macro to elide the dumped value
 
 Drake builds using EIGEN_NO_IO, so Conex can't use it either.
 

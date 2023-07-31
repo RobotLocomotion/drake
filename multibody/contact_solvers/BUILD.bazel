@@ -226,7 +226,7 @@ drake_cc_library(
         "//common:essential",
     ],
     deps = [
-        "@conex//conex:supernodal_solver",
+        "@conex_internal//conex:supernodal_solver",
     ],
 )
 
