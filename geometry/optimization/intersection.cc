@@ -61,11 +61,7 @@ bool Intersection::DoIsBounded() const {
       return true;
     }
   }
-  // TODO(mpetersen94): Cover case where sets are unbounded but intersection is
-  // bounded.
-  throw std::runtime_error(
-      "Determining the boundedness of an Intersection made up of unbounded "
-      "elements is not currently supported.");
+  return ConvexSet::DoIsBounded();
 }
 
 bool Intersection::DoIsEmpty() const {
