@@ -41,8 +41,8 @@ drake_pybind_library(
     ],
     py_srcs = [
         "_manipulation_extra.py",
-        # TODO(jwnimmer-tri) On 2023-06-01 add deprecation for these modules.
-        # See #18683 for an example of what to do.
+        # TODO(jwnimmer-tri) On 2023-11-01 upon completion of deprecation,
+        # remove these files.
         "kuka_iiwa.py",
         "schunk_wsg.py",
         "util.py",
