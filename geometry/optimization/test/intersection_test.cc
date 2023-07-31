@@ -137,14 +137,14 @@ GTEST_TEST(IntersectionTest, TwoBoxes) {
 GTEST_TEST(IntersectionTest, BoundedTest) {
   HPolyhedron H1 = HPolyhedron(Matrix2d::Identity(), Vector2d{1, 1});
   HPolyhedron H2 = HPolyhedron(-Matrix2d::Identity(), Vector2d{1, 1});
-  Intersection S(H1, H2);
+  Intersection S1(H1, H2);
 
   EXPECT_FALSE(H1.IsBounded());
   EXPECT_FALSE(H2.IsBounded());
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      S.IsBounded(),
-      "Determining the boundedness of an Intersection made up of unbounded "
-      "elements is not currently supported.");
+  EXPECT_TRUE(S1.IsBounded());
+
+  Intersection S2(H1, H1);
+  EXPECT_FALSE(S2.IsBounded());
 }
 
 GTEST_TEST(IntersectionTest, CloneTest) {

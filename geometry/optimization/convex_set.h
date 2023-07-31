@@ -81,11 +81,19 @@ class ConvexSet : public ShapeReifier {
   /** Returns true iff the set is bounded, e.g., there exists an element-wise
   finite lower and upper bound for the set.  Note: for some derived classes,
   this check is trivial, but for others it can require solving an (typically
-  small) optimization problem.  Check the derived class documentation for any
-  notes. When ambient_dimension is zero, always returns true. */
+  small) optimization problem. Check the derived class documentation for any
+  notes. Derived classes may also use the generic base-class implementation of
+  DoIsBounded. This check is relatively expensive, so DoIsBoundedShortcut allows
+  a derived class to sometimes skip the expensive check if certain conditions
+  are satisfied, but fall back to to the expensive check if necessary. See
+  Intersection and Spectrahedron for examples of this behavior. */
   bool IsBounded() const {
     if (ambient_dimension() == 0) {
       return true;
+    }
+    const auto shortcut_result = DoIsBoundedShortcut();
+    if (shortcut_result.has_value()) {
+      return shortcut_result.value();
     }
     return DoIsBounded();
   }
@@ -243,9 +251,16 @@ class ConvexSet : public ShapeReifier {
   /** Non-virtual interface implementation for Clone(). */
   virtual std::unique_ptr<ConvexSet> DoClone() const = 0;
 
+  /** Non-virtual interface implementation for IsBounded(). Trivially returns
+  std::nullopt.
+  @pre ambient_dimension() >= 0 */
+  virtual std::optional<bool> DoIsBoundedShortcut() const {
+    return std::nullopt;
+  }
+
   /** Non-virtual interface implementation for IsBounded().
   @pre ambient_dimension() >= 0 */
-  virtual bool DoIsBounded() const = 0;
+  virtual bool DoIsBounded() const;
 
   /** Non-virtual interface implementation for IsEmpty(). The default
   implementation solves a feasibility optimization problem, but derived
