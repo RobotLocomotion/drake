@@ -245,7 +245,7 @@ class ConvexSet : public ShapeReifier {
 
   /** Non-virtual interface implementation for IsBounded().
   @pre ambient_dimension() >= 0 */
-  virtual bool DoIsBounded() const = 0;
+  virtual bool DoIsBounded() const;
 
   /** Non-virtual interface implementation for IsEmpty(). The default
   implementation solves a feasibility optimization problem, but derived
