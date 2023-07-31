@@ -65,7 +65,7 @@ GTEST_TEST(SpectrahedronTest, TrivialSdp1) {
 
   Spectrahedron spect(prog);
   EXPECT_EQ(spect.ambient_dimension(), 3 * (3 + 1) / 2);
-  DRAKE_EXPECT_THROWS_MESSAGE(spect.IsBounded(), ".*not implemented yet.*");
+  EXPECT_TRUE(spect.IsBounded());
   EXPECT_FALSE(spect.IsEmpty());
 
   const double kTol{1e-6};
@@ -320,6 +320,16 @@ GTEST_TEST(SpectrahedronTest, NontriviallyEmpty) {
   Spectrahedron spect(prog);
   EXPECT_TRUE(spect.IsEmpty());
   EXPECT_FALSE(spect.MaybeGetFeasiblePoint().has_value());
+}
+
+GTEST_TEST(SpectrahedronTest, UnboundedTest) {
+  // Construct an unbounded SDP, and check that IsBounded notices.
+  MathematicalProgram prog;
+  auto X1 = prog.NewSymmetricContinuousVariables<2>();
+  prog.AddPositiveSemidefiniteConstraint(X1);
+  Spectrahedron spect(prog);
+
+  EXPECT_FALSE(spect.IsBounded());
 }
 
 }  // namespace

@@ -11,6 +11,14 @@ namespace drake {
 namespace geometry {
 namespace optimization {
 
+using Eigen::VectorXd;
+using solvers::Binding;
+using solvers::Constraint;
+using solvers::LinearCost;
+using solvers::MathematicalProgram;
+using solvers::VariableRefList;
+using solvers::VectorXDecisionVariable;
+
 ConvexSet::ConvexSet(int ambient_dimension)
     : ambient_dimension_(ambient_dimension) {
   DRAKE_THROW_UNLESS(ambient_dimension >= 0);
@@ -29,6 +37,41 @@ bool ConvexSet::IntersectsWith(const ConvexSet& other) const {
   other.AddPointInSetConstraints(&prog, x);
   solvers::MathematicalProgramResult result = solvers::Solve(prog);
   return result.is_success();
+}
+
+bool ConvexSet::DoIsBounded() const {
+  // The empty set is bounded. We check it first, to ensure that the program
+  // is feasible, so SolutionResult::kInfeasibleOrUnbounded indicates unbounded.
+  // (This is necessary in case the solver can't distinguish between the two.)
+  if (IsEmpty()) {
+    return true;
+  }
+  // Iteratively try to maximize maximize the distance between x and y along
+  // each dimension. If any solves are unbounded, the set is not bounded.
+  MathematicalProgram prog;
+  VectorXDecisionVariable x =
+      prog.NewContinuousVariables(ambient_dimension(), "x");
+  VectorXDecisionVariable y =
+      prog.NewContinuousVariables(ambient_dimension(), "y");
+  AddPointInSetConstraints(&prog, x);
+  AddPointInSetConstraints(&prog, y);
+  Binding<LinearCost> objective = prog.AddLinearCost(
+      VectorXd::Zero(2 * ambient_dimension()), VariableRefList{x, y});
+
+  VectorXd objective_vector(2 * ambient_dimension());
+  for (int i = 0; i < ambient_dimension(); ++i) {
+    objective_vector = VectorXd::Zero(2 * ambient_dimension());
+    objective_vector[i] = 1;
+    objective_vector[i + ambient_dimension()] = -1;
+    objective.evaluator()->UpdateCoefficients(objective_vector);
+    auto result = solvers::Solve(prog);
+    if (result.get_solution_result() == solvers::SolutionResult::kUnbounded ||
+        result.get_solution_result() ==
+            solvers::SolutionResult::kInfeasibleOrUnbounded) {
+      return false;
+    }
+  }
+  return true;
 }
 
 bool ConvexSet::DoIsEmpty() const {
