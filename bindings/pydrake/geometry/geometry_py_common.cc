@@ -343,6 +343,9 @@ void DoScalarIndependentDefinitions(py::module m) {
             py::arg("a") = py::none(), cls_doc.update.doc)
         .def(py::self == py::self)
         .def(py::self != py::self)
+        .def(py::self * py::self)
+        .def("scale_rgb", &Class::scale_rgb, py::arg("scale"),
+            cls_doc.scale_rgb.doc)
         .def("__repr__", [](const Class& self) {
           return py::str("Rgba(r={}, g={}, b={}, a={})")
               .format(self.r(), self.g(), self.b(), self.a());

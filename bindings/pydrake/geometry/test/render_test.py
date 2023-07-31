@@ -22,6 +22,32 @@ from pydrake.systems.sensors import (
 
 
 class TestGeometryRender(unittest.TestCase):
+    def test_light_param(self):
+        # A default constructor exists.
+        mut.LightParameter()
+
+        # The kwarg constructor also works.
+        light = mut.LightParameter(type='spot',
+                                   color=mut.Rgba(0.1, 0.2, 0.3),
+                                   attenuation_values=(1, 2, 3),
+                                   position=(-1, -2, -3),
+                                   frame='camera',
+                                   intensity=0.5,
+                                   direction=(0, 1, 0),
+                                   cone_angle=85)
+        # Attributes are bound explicitly, so we'll test them explicitly.
+        self.assertEqual(light.type, 'spot')
+        self.assertEqual(light.color, mut.Rgba(0.1, 0.2, 0.3))
+        self.assertTupleEqual(tuple(light.attenuation_values), (1, 2, 3))
+        self.assertTupleEqual(tuple(light.position), (-1, -2, -3))
+        self.assertEqual(light.frame, 'camera')
+        self.assertEqual(light.intensity, 0.5)
+        self.assertTupleEqual(tuple(light.direction), (0, 1, 0))
+        self.assertEqual(light.cone_angle, 85)
+
+        self.assertIn("spot", repr(light))
+        copy.copy(light)
+
     def test_render_engine_vtk_params(self):
         # Confirm default construction of params.
         params = mut.RenderEngineVtkParams()

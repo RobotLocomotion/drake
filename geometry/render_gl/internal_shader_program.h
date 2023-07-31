@@ -3,14 +3,17 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <vector>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/geometry_roles.h"
+#include "drake/geometry/render/light_parameter.h"
 #include "drake/geometry/render/render_camera.h"
 #include "drake/geometry/render_gl/internal_opengl_includes.h"
 #include "drake/geometry/render_gl/internal_shader_program_data.h"
 #include "drake/geometry/rgba.h"
+#include "drake/math/rigid_transform.h"
 
 namespace drake {
 namespace geometry {
@@ -129,11 +132,6 @@ class ShaderProgram {
   virtual void SetDepthCameraParameters(
       const render::DepthRenderCamera& /* camera */) const {}
 
-  /* Sets the direction of the directional light (if supported).
-   @pre light_dir_C.norm() == 1.0.  */
-  virtual void SetLightDirection(
-      const Vector3<float>& /* light_dir_C */) const {}
-
   /* Sets the OpenGl projection matrix state. The projection matrix transforms a
    vertex from the camera frame C to the OpenGl 2D device frame D -- it
    projects a point in 3D to a point on the image.  */
@@ -141,8 +139,10 @@ class ShaderProgram {
 
   /* Sets the OpenGl model view matrix (and allows the shader to do any other
    (instance, camera)-dependent configuration). The model view matrix X_CM
-   transforms a vertex from the model frame M to the camera frame C. This will
-   call DoModelViewMatrix().
+   transforms a vertex from the model frame M to the camera frame C.
+
+   This method invokes DoSetModelViewMatrix() with many of the component
+   matrices.
 
    Note: there is a subtle difference between the geometry frame G and the model
    frame M. Geometries are typically defined in a canonical frame in which they
@@ -151,9 +151,12 @@ class ShaderProgram {
    matrix S_MG (such that it is zero off the diagonal and has the x-, y-, and
    z-scale values along the diagonal).
 
-   @param X_CM   The pose of the *model* frame relative to the camera frame.
-   @param scale  The per-axis scale of the geometry.  */
-  void SetModelViewMatrix(const Eigen::Matrix4f& X_CM,
+   @param X_CW   The transform relating the world frame and the camera frame.
+   @param X_WG   The pose of the geometry frame relative to the world frame.
+   @param scale  The per-axis scale of the geometry (applied to the axes of the
+                 geometry frame).  */
+  void SetModelViewMatrix(const Eigen::Matrix4f& X_CW,
+                          const math::RigidTransformd& X_WG,
                           const Eigen::Vector3d& scale) const;
 
   /* Provides the location of the named shader uniform parameter.
@@ -233,12 +236,18 @@ class ShaderProgram {
    See SetModelViewMatrix() docs for the explanation of the difference between
    geometry frame G, model frame M, and input parameter `scale`.
 
-   @param X_CglM   The pose of the model in the OpenGl camera frame; this frame
-                   is different than the physical camera, accounting for frame
-                   conventions in OpenGl.
+   @param X_CW     The relative transform between camera and world frames. This
+                   camera frame is different than the Cgl frame used in the
+                   actual model view matrix, C is the physical frame and Cgl
+                   accounts for OpenGL conventions.
+   @param T_WM     The transform relating the model and world frames. For a
+                   geometry with identity scale, it should be equal to X_WG.
+   @param X_WG     The pose of the geometry in the world frame.
    @param scale    The per-axis scale of the geometry.  */
-  virtual void DoModelViewMatrix(const Eigen::Matrix4f& /* X_CglM */,
-                                 const Eigen::Vector3d& /* scale */) const {}
+  virtual void DoSetModelViewMatrix(const Eigen::Matrix4f& /* X_CW */,
+                                    const Eigen::Matrix4f& /* T_WM */,
+                                    const Eigen::Matrix4f& /* X_WG */,
+                                    const Eigen::Vector3d& /* scale */) const {}
 
  private:
   friend class ShaderProgramTest;

@@ -345,6 +345,10 @@ class TestGeometryCore(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, ".*3 or 4.*"):
             color.rgba = [1.0] * 5
 
+        # Modulation.
+        self.assertIsInstance(color * mut.Rgba(0.5, 0.5, 0.5), mut.Rgba)
+        self.assertIsInstance(color.scale_rgb(0.5), mut.Rgba)
+
         # Confirm value instantiation.
         Value[mut.Rgba]
 

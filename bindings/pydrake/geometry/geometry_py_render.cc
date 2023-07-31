@@ -6,6 +6,7 @@
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
+#include "drake/geometry/render/light_parameter.h"
 #include "drake/geometry/render/render_engine.h"
 #include "drake/geometry/render/render_label.h"
 #include "drake/geometry/render_gl/factory.h"
@@ -21,6 +22,8 @@ using geometry::PerceptionProperties;
 using geometry::Shape;
 using geometry::render::ColorRenderCamera;
 using geometry::render::DepthRenderCamera;
+using geometry::render::LightParameter;
+using geometry::render::LightType;
 using geometry::render::RenderEngine;
 using math::RigidTransformd;
 using systems::sensors::CameraInfo;
@@ -331,6 +334,17 @@ void DoScalarIndependentDefinitions(py::module m) {
     render_label.attr("kDontCare") = RenderLabel::kDontCare;
     render_label.attr("kUnspecified") = RenderLabel::kUnspecified;
     render_label.attr("kMaxUnreserved") = RenderLabel::kMaxUnreserved;
+  }
+
+  {
+    using Class = geometry::render::LightParameter;
+    constexpr auto& cls_doc = doc.LightParameter;
+    py::class_<Class> cls(m, "LightParameter", cls_doc.doc);
+    cls  // BR
+        .def(ParamInit<Class>());
+    DefAttributesUsingSerialize(&cls);
+    DefReprUsingSerialize(&cls);
+    DefCopyAndDeepCopy(&cls);
   }
 
   {
