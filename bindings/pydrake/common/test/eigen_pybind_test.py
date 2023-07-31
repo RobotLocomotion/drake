@@ -42,3 +42,26 @@ class TestEigenPybind(unittest.TestCase):
 
         with self.assertRaises(TypeError):
             test_util.takes_returns_matrix_pointer([0, 1, 2])
+
+    def test_wrap_to_match_input_shape(self):
+        obj = test_util.MyObject()
+        x_1d = np.array([1.0, 2.0])
+        x_2d = np.array([[1.0], [2.0]])
+
+        np.testing.assert_equal(obj.PassThroughNoWrap(x_1d), x_1d)
+        # Note: Without wrapping, this "warps" the shape.
+        np.testing.assert_equal(obj.PassThroughNoWrap(x_2d), x_1d)
+        # With wrapping, they match.
+        np.testing.assert_equal(obj.PassThroughWithWrap(x_1d), x_1d)
+        np.testing.assert_equal(obj.PassThroughWithWrap(x_2d), x_2d)
+
+    def test_wrap_to_match_input_dimension(self):
+        obj = test_util.MyObject()
+        x_1d = np.zeros(3)
+        x_2d = np.zeros((3, 1))
+
+        np.testing.assert_equal(obj.ReturnOnesNoWrap(x_1d), np.ones(2))
+        np.testing.assert_equal(obj.ReturnOnesNoWrap(x_2d), np.ones(2))
+
+        np.testing.assert_equal(obj.ReturnOnesWithWrap(x_1d), np.ones(2))
+        np.testing.assert_equal(obj.ReturnOnesWithWrap(x_2d), np.ones((2, 1)))

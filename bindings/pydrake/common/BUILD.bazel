@@ -716,6 +716,7 @@ drake_pybind_library(
     cc_deps = [":eigen_pybind"],
     cc_so_name = "test/eigen_pybind_test_util",
     cc_srcs = ["test/eigen_pybind_test_util_py.cc"],
+    py_deps = [":module_py"],
     package_info = PACKAGE_INFO,
     visibility = ["//visibility:private"],
 )

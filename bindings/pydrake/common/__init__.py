@@ -101,28 +101,51 @@ def configure_logging():
     _logging.addLevelName(5, "TRACE")
 
 
-def _wrap_to_match_input_shape(f):
-    # See docstring for `WrapToMatchInputShape` in `eigen_pybind.h` for more
-    # details.
-    # N.B. We cannot use `inspect.Signature` due to the fact that pybind11's
-    # instance method is not inspectable for overloads.
+def _wrap_to_match_input(f, match_func):
     assert callable(f), f
 
     @functools.wraps(f)
     def wrapper(self, *args, **kwargs):
         # Call the function first to permit it to raise the appropriate
         # TypeError from pybind11 if the inputs are not correctly formatted.
-        out = f(self, *args, **kwargs)
-        if isinstance(out, np.ndarray):
+        output = f(self, *args, **kwargs)
+        if isinstance(output, np.ndarray):
             arg_list = tuple(args) + tuple(kwargs.values())
             assert len(arg_list) == 1
-            (arg,) = arg_list
-            in_shape = np.asarray(arg).shape
-            return out.reshape(in_shape)
+            (input,) = arg_list
+            return match_func(input, output)
         else:
-            return out
+            return output
 
     return wrapper
+
+
+def _match_input_shape(input, output):
+    return output.reshape(np.asarray(input).shape)
+
+
+def _wrap_to_match_input_shape(f):
+    # See docstring for `WrapToMatchInputShape` in `eigen_pybind.h` for more
+    # details.
+    # N.B. We cannot use `inspect.Signature` due to the fact that pybind11's
+    # instance method is not inspectable for overloads.
+    return _wrap_to_match_input(f, _match_input_shape)
+
+
+def _match_input_dimension(input, output):
+    dim = input.ndim
+    # This may not have sufficient edge case checks.
+    if dim == 1:
+        assert all(d == 1 for d in output.shape[1:])
+        return output.reshape(-1)
+    elif dim == 2:
+        return output.reshape((-1, 1))
+    else:
+        raise RuntimeError(f"Cannot match input dimension dim={dim}")
+
+
+def _wrap_to_match_input_dimension(f):
+    return _wrap_to_match_input(f, _match_input_dimension)
 
 
 class _MangledName:

@@ -71,6 +71,13 @@ inline py::object WrapToMatchInputShape(py::handle func) {
   return wrap(func);
 }
 
+inline py::object WrapToMatchInputDimension(py::handle func) {
+  py::handle wrap =
+      py::module::import("pydrake.common")
+      .attr("_wrap_to_match_input_dimension");
+  return wrap(func);
+}
+
 }  // namespace pydrake
 }  // namespace drake
 
