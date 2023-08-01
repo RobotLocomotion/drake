@@ -6,12 +6,15 @@
 #include "drake/common/symbolic/polynomial.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/geometry/optimization/vpolytope.h"
+#include "drake/solvers/mathematical_program.h"
 
 namespace drake {
 namespace trajectories {
 namespace {
 
 using Eigen::Matrix2d;
+using Eigen::SparseMatrix;
+using Eigen::Vector2d;
 
 // Tests the default constructor.
 GTEST_TEST(BezierCurveTest, DefaultConstructor) {
@@ -43,8 +46,8 @@ GTEST_TEST(BezierCurveTest, Constant) {
   EXPECT_TRUE(CompareMatrices(curve.value(0.5), kValue));
 
   auto M = curve.AsLinearInControlPoints(1);
-  EXPECT_EQ(M.rows(), 0);
-  EXPECT_EQ(M.cols(), 1);
+  EXPECT_EQ(M.rows(), 1);
+  EXPECT_EQ(M.cols(), 0);
 
   curve.ElevateOrder();
   EXPECT_EQ(curve.order(), 1);
@@ -128,18 +131,15 @@ GTEST_TEST(BezierCurveTest, Linear) {
   CheckConvexHullProperty(deriv_bezier, num_samples);
 
   auto M = curve.AsLinearInControlPoints(1);
-  EXPECT_EQ(M.rows(), 1);
-  EXPECT_EQ(M.cols(), 2);
-  for (int i = 0; i < curve.rows(); ++i) {
-    EXPECT_TRUE(
-        CompareMatrices(deriv_bezier.control_points().row(i).transpose(),
-                        M * curve.control_points().row(i).transpose(), 1e-14));
-  }
+  EXPECT_EQ(M.rows(), 2);
+  EXPECT_EQ(M.cols(), 1);
+  EXPECT_TRUE(CompareMatrices(deriv_bezier.control_points(),
+                              curve.control_points() * M, 1e-14));
   M = curve.AsLinearInControlPoints(0);
   EXPECT_TRUE(CompareMatrices(M.toDense(), Matrix2d::Identity()));
   M = curve.AsLinearInControlPoints(2);
-  EXPECT_EQ(M.rows(), 0);
-  EXPECT_EQ(M.cols(), 2);
+  EXPECT_EQ(M.rows(), 2);
+  EXPECT_EQ(M.cols(), 0);
 
   curve.ElevateOrder();
   EXPECT_EQ(curve.order(), 2);
@@ -171,13 +171,10 @@ GTEST_TEST(BezierCurveTest, Quadratic) {
   EXPECT_EQ(deriv->end_time(), 1.0);
 
   auto M = curve.AsLinearInControlPoints(1);
-  EXPECT_EQ(M.rows(), 2);
-  EXPECT_EQ(M.cols(), 3);
-  for (int i = 0; i < curve.rows(); ++i) {
-    EXPECT_TRUE(
-        CompareMatrices(deriv_bezier.control_points().row(i).transpose(),
-                        M * curve.control_points().row(i).transpose(), 1e-14));
-  }
+  EXPECT_EQ(M.rows(), 3);
+  EXPECT_EQ(M.cols(), 2);
+  EXPECT_TRUE(CompareMatrices(deriv_bezier.control_points(),
+                              curve.control_points() * M, 1e-14));
 
   // second derivative is [ 2; 2 ]
   auto second_deriv = curve.MakeDerivative(2);
@@ -211,13 +208,10 @@ GTEST_TEST(BezierCurveTest, Quadratic) {
   }
 
   M = curve.AsLinearInControlPoints(2);
-  EXPECT_EQ(M.rows(), 1);
-  EXPECT_EQ(M.cols(), 3);
-  for (int i = 0; i < curve.rows(); ++i) {
-    EXPECT_TRUE(
-        CompareMatrices(second_deriv_bezier.control_points().row(i).transpose(),
-                        M * curve.control_points().row(i).transpose(), 1e-14));
-  }
+  EXPECT_EQ(M.rows(), 3);
+  EXPECT_EQ(M.cols(), 1);
+  EXPECT_TRUE(CompareMatrices(second_deriv_bezier.control_points(),
+                              curve.control_points() * M, 1e-14));
 
   // Extract the symbolic expression for the bezier curve.
   VectorX<symbolic::Expression> curve_expression{
@@ -238,6 +232,35 @@ GTEST_TEST(BezierCurveTest, Quadratic) {
     EXPECT_TRUE(CompareMatrices(curve.value(sample_time),
                                 Eigen::Vector2d((1 - t) * (1 - t), t * t),
                                 1e-14));
+  }
+}
+
+// Test the example from the AsLinearInControlPoints doc string.
+GTEST_TEST(BezierCurve, ConstraintDerivativeControlPoint) {
+  Eigen::Matrix<double, 2, 3> points;
+  // clang-format off
+  points << 1, 0, 0,
+            0, 0, 1;
+  // clang-format on
+  BezierCurve<double> curve(0, 1, points);
+  auto deriv = curve.MakeDerivative();
+  BezierCurve<double>& deriv_bezier =
+      dynamic_cast<BezierCurve<double>&>(*deriv);
+
+  solvers::MathematicalProgram prog;
+  auto p = prog.NewContinuousVariables<2, 3>("p");
+  prog.SetInitialGuess(p, points);
+
+  SparseMatrix<double> M = curve.AsLinearInControlPoints(1);
+  const Vector2d lb(-0.1, -0.2);
+  const Vector2d ub(0.1, 0.2);
+  const int k = 1;
+  for (int i = 0; i < curve.rows(); ++i) {
+    auto constraint = std::make_shared<solvers::LinearConstraint>(
+        M.col(k).transpose(), Vector1d(lb(i)), Vector1d(ub(i)));
+    auto b = prog.AddConstraint(constraint, p.row(i).transpose());
+    EXPECT_NEAR(prog.EvalBindingAtInitialGuess(b)[0],
+                deriv_bezier.control_points()(i, k), 1e-12);
   }
 }
 
