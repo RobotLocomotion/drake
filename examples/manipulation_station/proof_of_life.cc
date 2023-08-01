@@ -18,8 +18,8 @@ namespace examples {
 namespace manipulation_station {
 namespace {
 
-// Simple example which simulates the manipulation station (and visualizes it
-// with drake visualizer).
+// Simple example which simulates the manipulation station (and transmits
+// visualization data for Meldis to display).
 // TODO(russt): Replace this with a slightly more interesting minimal example
 // (e.g. picking up an object) and perhaps a slightly more descriptive name.
 

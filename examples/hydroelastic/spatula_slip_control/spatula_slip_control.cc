@@ -252,7 +252,7 @@ int main(int argc, char* argv[]) {
       "The example poses the spatula in the closed grip of the gripper and\n"
       "uses an open loop square wave controller to perform a controlled\n"
       "rotational slip of the spatula while maintaining the spatula in\n"
-      "the gripper's grasp. Launch drake-visualizer before running this\n"
+      "the gripper's grasp. Launch drake_visualizer before running this\n"
       "example. See the README.md file for more information.\n");
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   return drake::examples::spatula_slip_control::DoMain();

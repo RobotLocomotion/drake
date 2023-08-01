@@ -229,7 +229,7 @@ int main(int argc, char* argv[]) {
       "A rolling sphere demo using Drake's MultibodyPlant, "
       "with SceneGraph visualization. This demo allows to switch between "
       "different contact models and integrators to evaluate performance."
-      "Launch drake-visualizer before running this example.");
+      "Launch meldis before running this example.");
   // We slow down the default realtime rate to 0.2, so that we can appreciate
   // the motion. Users can still change it on command-line, e.g.
   // --simulator_target_realtime_rate=0.5.

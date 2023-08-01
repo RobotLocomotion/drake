@@ -17,7 +17,7 @@ it before proceeding.
 
 ## Run the Client-Server Testing Suite
 There are three commands to run to launch the client, the server, and optionally
-Drake Visualizer for displaying rendered images.
+Meldis to observe what's happening.
 
 ### Run the Server
 A single threaded / single worker flask development server on host `127.0.0.1`
@@ -53,12 +53,12 @@ Note that if you ran your server on an alternate `--host` or `--port`, you will
 need to specify that in `--server_base_url` when running `client_demo`
 executable as well.
 
-### (Optional) Run Drake Visualizer
+### (Optional) Run Meldis
 
-In a separate terminal, launch drake_visualizer.
+In a separate terminal, launch Meldis.
 
 ```
-$ bazel run //tools:drake_visualizer
+$ bazel run //tools:meldis
 ```
 
 ## Testing of the client-server RPC pipeline

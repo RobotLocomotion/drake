@@ -220,7 +220,7 @@ int DoMain() {
   builder.Connect(scene_graph.get_query_output_port(),
                   camera->query_object_input_port());
 
-  // Broadcast images via LCM for visualization (via drake visualizer).
+  // Broadcast images via LCM for visualization (requires #18862 to see them).
   const double image_publish_period = 1. / FLAGS_render_fps;
   ImageToLcmImageArrayT* image_to_lcm_image_array =
       builder.template AddSystem<ImageToLcmImageArrayT>();

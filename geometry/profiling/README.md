@@ -14,8 +14,9 @@ ball. The rigid bowl is a realistic non-convex object, and the compliant
 ball uses a coarse tetrahedral mesh, which is typical in hydroelastic 
 contact model.
 
-To visualize the contact surface and pressure, run drake_visualizer and
-configure Hydroelastic Contact Visualization plugin as follows:
+To visualize the contact surface and pressure, run the legacy
+``drake_visualizer`` application of days past and configure Hydroelastic
+Contact Visualization plugin as follows:
 1. From the top menu, click on: `Plugins > Contacts > Configure Hydroelastic
  Contact Visualization.`
 2. Change `Maximum pressure` to a reasonably large number (for example, 4e7).

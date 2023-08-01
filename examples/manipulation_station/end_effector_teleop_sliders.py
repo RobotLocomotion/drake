@@ -235,7 +235,7 @@ def main():
         station.Finalize()
 
         # If using meshcat, don't render the cameras, since RgbdCamera
-        # rendering only works with drake-visualizer. Without this check,
+        # rendering only works with Meldis (modulo #18862). Without this check,
         # running this code in a docker container produces libGL errors.
         geometry_query_port = station.GetOutputPort("geometry_query")
 
@@ -249,7 +249,7 @@ def main():
         if args.setup == 'planar':
             meshcat.Set2dRenderMode()
 
-        # Connect and publish to drake visualizer.
+        # Connect LCM visualization.
         DrakeVisualizer.AddToBuilder(builder, geometry_query_port)
         image_to_lcm_image_array = builder.AddSystem(
             ImageToLcmImageArrayT())

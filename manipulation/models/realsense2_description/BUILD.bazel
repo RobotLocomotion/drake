@@ -66,7 +66,6 @@ drake_cc_googletest(
     data = [":models"],
     deps = [
         "//common:find_resource",
-        "//geometry:drake_visualizer",
         "//geometry:scene_graph",
         "//multibody/parsing",
         "//systems/analysis:simulator",
