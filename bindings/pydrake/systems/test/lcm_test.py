@@ -207,7 +207,7 @@ class TestSystemsLcm(unittest.TestCase):
         lcm = DrakeLcm()
         dut = mut.LcmPublisherSystem.Make(
             channel="TEST_CHANNEL", lcm_type=lcmt_quaternion, lcm=lcm,
-            publish_period=0.1)
+            publish_period=0.1, publish_offset=0.01)
         subscriber = Subscriber(lcm, "TEST_CHANNEL", lcmt_quaternion)
         model_message = self._model_message()
         self._fix_and_publish(dut, Value(model_message))
@@ -216,19 +216,21 @@ class TestSystemsLcm(unittest.TestCase):
         # Test `publish_triggers` overload.
         mut.LcmPublisherSystem.Make(
             channel="TEST_CHANNEL", lcm_type=lcmt_quaternion, lcm=lcm,
-            publish_period=0.1, publish_triggers={TriggerType.kPeriodic})
+            publish_period=0.1, publish_offset=0.01,
+            publish_triggers={TriggerType.kPeriodic})
         # Test LcmInterfaceSystem overloads
         lcm_system = mut.LcmInterfaceSystem(lcm=lcm)
         dut = mut.LcmPublisherSystem.Make(
             channel="TEST_CHANNEL", lcm_type=lcmt_quaternion, lcm=lcm_system,
-            publish_period=0.1)
+            publish_period=0.1, publish_offset=0.01)
         self._fix_and_publish(dut, Value(model_message))
         lcm.HandleSubscriptions(0)
         self.assert_lcm_equal(subscriber.message, model_message)
         # Test `publish_triggers` overload.
         mut.LcmPublisherSystem.Make(
             channel="TEST_CHANNEL", lcm_type=lcmt_quaternion, lcm=lcm_system,
-            publish_period=0.1, publish_triggers={TriggerType.kPeriodic})
+            publish_period=0.1, publish_offset=0.01,
+            publish_triggers={TriggerType.kPeriodic})
 
     def test_publisher_cpp(self):
         lcm = DrakeLcm()
