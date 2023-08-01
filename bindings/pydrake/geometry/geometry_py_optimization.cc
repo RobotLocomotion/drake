@@ -90,7 +90,10 @@ void DefineGeometryOptimization(py::module m) {
         .def(py::init<>(), cls_doc.ctor.doc_0args)
         .def(py::init<const Eigen::Ref<const Eigen::MatrixXd>&,
                  const Eigen::Ref<const Eigen::VectorXd>&>(),
-            py::arg("basis"), py::arg("translation"), cls_doc.ctor.doc_2args)
+            py::arg("basis"), py::arg("translation"),
+            cls_doc.ctor.doc_2args_basis_translation)
+        .def(py::init<const ConvexSet&, double>(), py::arg("set"),
+            py::arg("tol") = 0, cls_doc.ctor.doc_2args_set_tol)
         .def("basis", &AffineSubspace::basis, py_rvp::reference_internal,
             cls_doc.basis.doc)
         .def("translation", &AffineSubspace::translation,
