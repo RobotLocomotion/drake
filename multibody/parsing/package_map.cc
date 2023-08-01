@@ -278,7 +278,8 @@ bool PackageData::FindInCache() {
   if (!path_.needs_fetch()) {
     return true;
   }
-  internal::PathOrError try_cache = internal::FindOrCreateCache("package_map");
+  drake::internal::PathOrError try_cache =
+      drake::internal::FindOrCreateCache("package_map");
   if (!try_cache.error.empty()) {
     return false;
   }
@@ -312,7 +313,8 @@ const std::string& PackageData::GetPathWithAutomaticFetching(
   }
 
   // Find and/or create the cache_dir.
-  internal::PathOrError try_cache = internal::FindOrCreateCache("package_map");
+  drake::internal::PathOrError try_cache =
+      drake::internal::FindOrCreateCache("package_map");
   if (!try_cache.error.empty()) {
     throw std::runtime_error(fmt::format(
         "PackageMap: when downloading '{}', could not create temporary cache "
@@ -500,8 +502,10 @@ struct RepositoryMetadataSchema {
   std::string strip_prefix;
 };
 
-/* Loads and parses the metadata from tools/workspace/models_internal into the
-RemoteParams structure needed by PackageMap. */
+}  // namespace
+
+namespace internal {
+
 PackageMap::RemoteParams GetDrakeModelsRemoteParams() {
   const std::string json_filename =
       FindResourceOrThrow("drake/multibody/parsing/drake_models.json");
@@ -520,7 +524,7 @@ PackageMap::RemoteParams GetDrakeModelsRemoteParams() {
   return result;
 }
 
-}  // namespace
+}  // namespace internal
 
 PackageMap::PackageMap() : PackageMap{std::nullopt} {
   // FindResource is the source of truth for where Drake's first-party files
@@ -533,7 +537,7 @@ PackageMap::PackageMap() : PackageMap{std::nullopt} {
   // the if-else to ensure it receives test coverage under bazel (i.e., even if
   // we're never going to download anything).
   static const never_destroyed<RemoteParams> memoized_params(
-      GetDrakeModelsRemoteParams());
+      internal::GetDrakeModelsRemoteParams());
 
   // For drake_models (i.e., https://github.com/RobotLocomotion/models), the
   // location where we find the data will vary. If we have Bazel runfiles with

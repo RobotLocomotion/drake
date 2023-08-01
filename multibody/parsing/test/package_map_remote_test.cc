@@ -295,6 +295,24 @@ TEST_F(PackageMapRemoteTest, AddMapMismatch) {
   DRAKE_EXPECT_THROWS_MESSAGE(dut.AddMap(other), ".*parameters differ.*");
 }
 
+// Sanity check the `package://drake_models/...` defaults.
+TEST_F(PackageMapRemoteTest, DrakeModelsDefaults) {
+  // Check that the package exists by default.
+  std::string drake_models_path;
+  EXPECT_NO_THROW(drake_models_path = PackageMap().GetPath("drake_models"));
+  EXPECT_TRUE(fs::is_directory(drake_models_path)) << drake_models_path;
+
+  // Check its remote fetching configuration (using an internal API, because we
+  // don't actually want to fetch it from the network during a unit test).
+  const RemoteParams params = internal::GetDrakeModelsRemoteParams();
+  EXPECT_GE(params.urls.size(), 1);
+  EXPECT_THAT(params.urls, testing::Each(testing::StartsWith("https://")));
+  EXPECT_EQ(params.sha256.size(), 64);
+  EXPECT_EQ(params.archive_type, std::nullopt);
+  EXPECT_THAT(params.strip_prefix,
+              testing::Optional(testing::StartsWith("models-")));
+}
+
 }  // namespace
 }  // namespace multibody
 }  // namespace drake
