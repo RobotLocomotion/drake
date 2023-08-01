@@ -240,15 +240,59 @@ class CspaceFreeBoxTester {
         plane_geometries, s_minus_s_lower, s_upper_minus_s);
   }
 
-  [[nodiscard]] std::vector<
-      std::optional<CspaceFreeBox::SeparationCertificateResult>>
-  FindSeparationCertificateGivenBox(
-      const CspaceFreeBox::IgnoredCollisionPairs& ignored_collision_pairs,
-      const Eigen::Ref<const Eigen::VectorXd>& q_box_lower,
-      const Eigen::Ref<const Eigen::VectorXd>& q_box_upper,
-      const FindSeparationCertificateOptions& options) const {
+  void FindSeparationCertificateGivenBox(
+      const PolynomialsToCertify& polynomials_to_certify,
+      const FindSeparationCertificateOptions& options,
+      std::vector<std::optional<CspaceFreeBox::SeparationCertificateResult>>*
+          certificates_vec) const {
     return cspace_free_box_.FindSeparationCertificateGivenBox(
-        ignored_collision_pairs, q_box_lower, q_box_upper, options);
+        polynomials_to_certify.data, options, certificates_vec);
+  }
+
+  template <typename T>
+  void CalcSBoundsPolynomial(
+      const VectorX<T>& s_lower, const VectorX<T>& s_upper,
+      VectorX<symbolic::Polynomial>* s_minus_s_lower,
+      VectorX<symbolic::Polynomial>* s_upper_minus_s) const {
+    cspace_free_box_.CalcSBoundsPolynomial(s_lower, s_upper, s_minus_s_lower,
+                                           s_upper_minus_s);
+  }
+
+  [[nodiscard]] int GetGramVarSizeForBoxSearchProgram(
+      const std::vector<PlaneSeparatesGeometries>& plane_geometries_vec) const {
+    return cspace_free_box_.GetGramVarSizeForBoxSearchProgram(
+        plane_geometries_vec);
+  }
+
+  struct FindBoxGivenLagrangianResult {
+    CspaceFreeBox::FindBoxGivenLagrangianResult data;
+  };
+
+  [[nodiscard]] std::optional<FindBoxGivenLagrangianResult>
+  FindBoxGivenLagrangian(
+      const Eigen::Ref<const Eigen::VectorXd>& q_star,
+      const std::vector<PlaneSeparatesGeometries>& plane_geometries_vec,
+      const std::vector<
+          std::optional<CspaceFreeBox::SeparationCertificateResult>>&
+          certificates_vec,
+      const Eigen::Ref<const VectorX<symbolic::Variable>>& s_box_lower,
+      const Eigen::Ref<const VectorX<symbolic::Variable>>& s_box_upper,
+      const Eigen::Ref<const VectorX<symbolic::Polynomial>>&
+          s_minus_s_box_lower,
+      const Eigen::Ref<const VectorX<symbolic::Polynomial>>&
+          s_box_upper_minus_s,
+      int gram_total_size, const Eigen::VectorXd& box_volume_delta,
+      const CspaceFreeBox::FindBoxGivenLagrangianOptions& options) const {
+    const auto result = cspace_free_box_.FindBoxGivenLagrangian(
+        q_star, plane_geometries_vec, certificates_vec, s_box_lower,
+        s_box_upper, s_minus_s_box_lower, s_box_upper_minus_s, gram_total_size,
+        box_volume_delta, options);
+    std::optional<FindBoxGivenLagrangianResult> ret;
+    if (result.has_value()) {
+      ret.emplace(FindBoxGivenLagrangianResult());
+      ret->data = *result;
+    }
+    return ret;
   }
 
  private:
