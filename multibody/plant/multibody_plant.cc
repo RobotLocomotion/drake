@@ -1203,9 +1203,10 @@ void MultibodyPlant<T>::ApplyDefaultCollisionFilters() {
 
       if (child_id && parent_id) {
         scene_graph_->collision_filter_manager().Apply(
-            CollisionFilterDeclaration().ExcludeBetween(
-                geometry::GeometrySet(*child_id),
-                geometry::GeometrySet(*parent_id)));
+            CollisionFilterDeclaration(
+                geometry::CollisionFilterCandidates::kOmitDeformable)
+                .ExcludeBetween(geometry::GeometrySet(*child_id),
+                                geometry::GeometrySet(*parent_id)));
       }
     }
   }
@@ -1239,7 +1240,8 @@ void MultibodyPlant<T>::ExcludeCollisionsWithVisualGeometry() {
   }
   // clang-format off
   scene_graph_->collision_filter_manager().Apply(
-      CollisionFilterDeclaration()
+      CollisionFilterDeclaration(
+        geometry::CollisionFilterCandidates::kOmitDeformable)
           .ExcludeWithin(visual)
           .ExcludeBetween(visual, collision));
   // clang-format on
@@ -1260,8 +1262,10 @@ void MultibodyPlant<T>::ExcludeCollisionGeometriesWithCollisionFilterGroupPair(
             collision_filter_group_a.second));
   } else {
     scene_graph_->collision_filter_manager().Apply(
-        CollisionFilterDeclaration().ExcludeBetween(
-            collision_filter_group_a.second, collision_filter_group_b.second));
+        CollisionFilterDeclaration(
+            geometry::CollisionFilterCandidates::kOmitDeformable)
+            .ExcludeBetween(collision_filter_group_a.second,
+                            collision_filter_group_b.second));
   }
 }
 

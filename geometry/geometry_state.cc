@@ -994,10 +994,12 @@ void GeometryState<T>::AssignRole(SourceId source_id, GeometryId geometry_id,
       // Apply collision filter between geometry id and any geometries that have
       // been identified. If none have been identified, this makes no changes.
       geometry_engine_->collision_filter().Apply(
-          CollisionFilterDeclaration().ExcludeBetween(GeometrySet(geometry_id),
-                                                      ids_for_filtering),
-          [this](const GeometrySet& set) {
-            return this->CollectIds(set, Role::kProximity);
+          CollisionFilterDeclaration(CollisionFilterCandidates::kOmitDeformable)
+              .ExcludeBetween(GeometrySet(geometry_id), ids_for_filtering),
+          [this](const GeometrySet& set, CollisionFilterCandidates candidates) {
+            return this->CollectIds(
+                set, Role::kProximity, /* exclude deformable */
+                candidates == CollisionFilterCandidates::kOmitDeformable);
           },
           true /* is_invariant */);
     } break;
@@ -1275,7 +1277,8 @@ GeometryState<T>::ToAutoDiffXd() const {
 
 template <typename T>
 unordered_set<GeometryId> GeometryState<T>::CollectIds(
-    const GeometrySet& geometry_set, std::optional<Role> role) const {
+    const GeometrySet& geometry_set, std::optional<Role> role,
+    bool exclude_deformable) const {
   unordered_set<GeometryId> resultant_ids;
   for (auto frame_id : geometry_set.frames()) {
     const auto& frame = GetValueOrThrow(frame_id, frames_);
@@ -1297,6 +1300,16 @@ unordered_set<GeometryId> GeometryState<T>::CollectIds(
     }
     if (!role.has_value() || geometry->has_role(*role)) {
       resultant_ids.insert(geometry_id);
+    }
+  }
+
+  if (exclude_deformable) {
+    for (const auto [source_id, deformable_ids] :
+         source_deformable_geometry_id_map_) {
+      unused(source_id);
+      for (GeometryId id : deformable_ids) {
+        resultant_ids.erase(id);
+      }
     }
   }
   return resultant_ids;

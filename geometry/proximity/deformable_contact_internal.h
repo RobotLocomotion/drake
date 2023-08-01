@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "drake/geometry/geometry_ids.h"
+#include "drake/geometry/proximity/collision_filter.h"
 #include "drake/geometry/proximity/deformable_contact_geometries.h"
 #include "drake/geometry/proximity/volume_mesh.h"
 #include "drake/geometry/query_results/deformable_contact.h"
@@ -103,7 +104,8 @@ class Geometries final : public ShapeReifier {
    with respect to all registered rigid geometries. Assumes the vertex positions
    and poses of all registered deformable and rigid geometries are up to date.
   */
-  DeformableContact<double> ComputeDeformableContact() const;
+  DeformableContact<double> ComputeDeformableContact(
+      const CollisionFilter& collision_filter) const;
 
  private:
   friend class GeometriesTester;

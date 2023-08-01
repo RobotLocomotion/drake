@@ -1248,9 +1248,10 @@ class MujocoParser {
         }
       }
 
-      manager.Apply(geometry::CollisionFilterDeclaration().AllowBetween(
-          geometry::GeometrySet({geom1_id}),
-          geometry::GeometrySet({geom2_id})));
+      manager.Apply(geometry::CollisionFilterDeclaration(
+                        geometry::CollisionFilterCandidates::kOmitDeformable)
+                        .AllowBetween(geometry::GeometrySet({geom1_id}),
+                                      geometry::GeometrySet({geom2_id})));
     }
 
     for (XMLElement* exclude_node = node->FirstChildElement("exclude");
