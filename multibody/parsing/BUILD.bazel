@@ -140,7 +140,7 @@ drake_cc_library(
         "//multibody/plant",
         "//multibody/tree:geometry_spatial_inertia",
         "@fmt",
-        "@tinyobjloader",
+        "@tinyobjloader_internal//:tinyobjloader",
     ],
 )
 

@@ -88,6 +88,7 @@ load("@drake//tools/workspace/stduuid_internal:repository.bzl", "stduuid_interna
 load("@drake//tools/workspace/styleguide:repository.bzl", "styleguide_repository")  # noqa
 load("@drake//tools/workspace/suitesparse_internal:repository.bzl", "suitesparse_internal_repository")  # noqa
 load("@drake//tools/workspace/tinyobjloader:repository.bzl", "tinyobjloader_repository")  # noqa
+load("@drake//tools/workspace/tinyobjloader_internal:repository.bzl", "tinyobjloader_internal_repository")  # noqa
 load("@drake//tools/workspace/tinyxml2_internal:repository.bzl", "tinyxml2_internal_repository")  # noqa
 load("@drake//tools/workspace/tomli_internal:repository.bzl", "tomli_internal_repository")  # noqa
 load("@drake//tools/workspace/typing_extensions_internal:repository.bzl", "typing_extensions_internal_repository")  # noqa
@@ -296,7 +297,11 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
     if "suitesparse_internal" not in excludes:
         suitesparse_internal_repository(name = "suitesparse_internal", mirrors = mirrors)  # noqa
     if "tinyobjloader" not in excludes:
+        # The @tinyobjloader external is deprecated in Drake's WORKSPACE and
+        # will be removed on or after 2023-11-01.
         tinyobjloader_repository(name = "tinyobjloader", mirrors = mirrors)
+    if "tinyobjloader_internal" not in excludes:
+        tinyobjloader_internal_repository(name = "tinyobjloader_internal", mirrors = mirrors)  # noqa
     if "tinyxml2_internal" not in excludes:
         tinyxml2_internal_repository(name = "tinyxml2_internal", mirrors = mirrors)  # noqa
     if "tomli_internal" not in excludes:

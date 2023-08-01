@@ -87,7 +87,7 @@ drake_cc_library(
         "//geometry:rgba",
     ],
     deps = [
-        "@tinyobjloader",
+        "@tinyobjloader_internal//:tinyobjloader",
     ],
 )
 
@@ -103,7 +103,7 @@ drake_cc_library(
         "//geometry:rgba",
     ],
     deps = [
-        "@tinyobjloader",
+        "@tinyobjloader_internal//:tinyobjloader",
     ],
 )
 
