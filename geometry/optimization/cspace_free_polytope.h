@@ -578,7 +578,8 @@ class CspaceFreePolytope : public CspaceFreePolytopeBase {
   struct FindPolytopeGivenLagrangianResult {
     Eigen::MatrixXd C;
     Eigen::MatrixXd d;
-    // a[i].dot(x) + b[i] = 0 is the separation plane for separating_planes_[i].
+    // a[i].dot(x) + b[i] = 0 is the separation plane for
+    // this->separating_planes()[i].
     std::unordered_map<int, Vector3<symbolic::Polynomial>> a;
     std::unordered_map<int, symbolic::Polynomial> b;
     Eigen::VectorXd ellipsoid_margins;
