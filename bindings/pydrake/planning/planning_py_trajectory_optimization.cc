@@ -490,7 +490,9 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
             py::arg("target"),
             py::arg("options") =
                 geometry::optimization::GraphOfConvexSetsOptions(),
-            cls_doc.SolvePath.doc);
+            cls_doc.SolvePath.doc)
+        .def("graph_of_convex_sets", &Class::graph_of_convex_sets,
+            py_rvp::reference_internal, cls_doc.graph_of_convex_sets.doc);
   }
 }
 

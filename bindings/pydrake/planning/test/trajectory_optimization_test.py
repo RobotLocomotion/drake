@@ -17,6 +17,7 @@ from pydrake.planning import (
 )
 from pydrake.geometry.optimization import (
     GraphOfConvexSetsOptions,
+    GraphOfConvexSets,
     HPolyhedron,
     Point,
     VPolytope,
@@ -632,6 +633,8 @@ class TestTrajectoryOptimization(unittest.TestCase):
 
         # Add tighter velocity bounds to the main2 subgraph.
         main2.AddVelocityBounds(lb=-0.5*max_vel, ub=0.5*max_vel)
+
+        self.assertIsInstance(gcs.graph_of_convex_sets(), GraphOfConvexSets)
 
         options = GraphOfConvexSetsOptions()
         options.convex_relaxation = True

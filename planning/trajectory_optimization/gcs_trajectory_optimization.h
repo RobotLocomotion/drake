@@ -134,6 +134,14 @@ class GcsTrajectoryOptimization final {
     /* Convenience accessor, for brevity. */
     int num_positions() const { return traj_opt_.num_positions(); }
 
+    /* Extracts the control points variables from a vertex. */
+    Eigen::Map<const MatrixX<symbolic::Variable>> GetControlPoints(
+        const geometry::optimization::GraphOfConvexSets::Vertex& v) const;
+
+    /* Extracts the time scaling variable from a vertex. */
+    symbolic::Variable GetTimeScaling(
+        const geometry::optimization::GraphOfConvexSets::Vertex& v) const;
+
     const geometry::optimization::ConvexSets regions_;
     const int order_;
     const double h_min_;
@@ -143,13 +151,9 @@ class GcsTrajectoryOptimization final {
     std::vector<geometry::optimization::GraphOfConvexSets::Vertex*> vertices_;
     std::vector<geometry::optimization::GraphOfConvexSets::Edge*> edges_;
 
-    // We keep track of the edge variables and trajectory since other
-    // constraints and costs will use these.
-    VectorX<symbolic::Variable> u_h_;
-    VectorX<symbolic::Variable> u_vars_;
-
-    // r(s)
-    trajectories::BezierCurve<symbolic::Expression> u_r_trajectory_;
+    // r(s) is a BezierCurve of the right shape and order, which can be used to
+    // design costs and constraints for the underlying vertices and edges.
+    trajectories::BezierCurve<double> r_trajectory_;
 
     friend class GcsTrajectoryOptimization;
   };
@@ -264,13 +268,13 @@ class GcsTrajectoryOptimization final {
   @param regions represent the valid set a control point can be in. We retain a
   copy of the regions since other functions may access them.
   @param order is the order of the Bézier curve.
-  @param h_max is the maximum duration to spend in a region (seconds). Some
-  solvers struggle numerically with large values.
   @param h_min is the minimum duration to spend in a region (seconds) if that
   region is visited on the optimal path. Some cost and constraints are only
   convex for h > 0. For example the perspective quadratic cost of the path
   energy ||ṙ(s)||² / h becomes non-convex for h = 0. Otherwise h_min can be set
   to 0.
+  @param h_max is the maximum duration to spend in a region (seconds). Some
+  solvers struggle numerically with large values.
   @param name is the name of the subgraph. A default name will be provided.
   */
   Subgraph& AddRegions(const geometry::optimization::ConvexSets& regions,
@@ -310,9 +314,7 @@ class GcsTrajectoryOptimization final {
   /** Adds multiple L2Norm Costs on the upper bound of the path length.
   Since we cannot directly compute the path length of a Bézier curve, we
   minimize the upper bound of the path integral by minimizing the sum of
-  distances between control points. For Bézier curves, this is equivalent to the
-  sum of the L2Norm of the derivative control points of the curve divided by the
-  order.
+  (weighted) distances between control points: ∑ |weight_matrix * (rᵢ₊₁ − rᵢ)|₂.
 
   This cost will be added to the entire graph. Since the path length is only
   defined for Bézier curves that have two or more control points, this cost will
@@ -395,6 +397,13 @@ class GcsTrajectoryOptimization final {
   Here we sum the total number of variable appearances in our costs and
   constraints as a rough approximation of the complexity of the subproblems. */
   double EstimateComplexity() const;
+
+  /** Getter for the underlying GraphOfConvexSets. This is intended primarily
+  for inspecting the resulting programs. */
+  const geometry::optimization::GraphOfConvexSets& graph_of_convex_sets()
+      const {
+    return gcs_;
+  }
 
  private:
   const int num_positions_;

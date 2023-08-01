@@ -22,6 +22,7 @@ using Subgraph = GcsTrajectoryOptimization::Subgraph;
 using EdgesBetweenSubgraphs = GcsTrajectoryOptimization::EdgesBetweenSubgraphs;
 
 using Eigen::MatrixXd;
+using Eigen::SparseMatrix;
 using Eigen::VectorXd;
 using geometry::optimization::CartesianProduct;
 using geometry::optimization::ConvexSet;
@@ -129,51 +130,6 @@ Subgraph::Subgraph(
   const HPolyhedron time_scaling_set =
       HPolyhedron::MakeBox(Vector1d(h_min), Vector1d(h_max));
 
-  // Allocating variables and control points to be used in the constraints.
-  // Bindings allow formulating the constraints once, and then pass them to all
-  // the edges.
-  // An edge goes from the vertex u to the vertex v. Where its control points
-  // and trajectories are needed for continuity constraints. Saving the
-  // variables for u simplifies the cost/constraint formulation for optional
-  // costs like the path length cost.
-  const MatrixX<symbolic::Variable> u_control =
-      MakeMatrixContinuousVariable(num_positions(), order_ + 1, "xu");
-  const MatrixX<symbolic::Variable> v_control =
-      MakeMatrixContinuousVariable(num_positions(), order_ + 1, "xv");
-  const Eigen::Map<const VectorX<symbolic::Variable>> u_control_vars(
-      u_control.data(), u_control.size());
-  const Eigen::Map<const VectorX<symbolic::Variable>> v_control_vars(
-      v_control.data(), v_control.size());
-
-  u_h_ = MakeVectorContinuousVariable(1, "hu");
-  const VectorX<symbolic::Variable> v_h = MakeVectorContinuousVariable(1, "hv");
-
-  u_vars_ = solvers::ConcatenateVariableRefList({u_control_vars, u_h_});
-  const VectorX<symbolic::Variable> edge_vars =
-      solvers::ConcatenateVariableRefList(
-          {u_control_vars, u_h_, v_control_vars, v_h});
-
-  u_r_trajectory_ = BezierCurve<Expression>(0, 1, u_control.cast<Expression>());
-
-  const auto v_r_trajectory =
-      BezierCurve<Expression>(0, 1, v_control.cast<Expression>());
-
-  // TODO(wrangelvid) Pull this out into a function once we have a better way to
-  // extract M from bezier curves.
-  const VectorX<Expression> path_continuity_error =
-      v_r_trajectory.control_points().col(0) -
-      u_r_trajectory_.control_points().col(order);
-  MatrixXd M(num_positions(), edge_vars.size());
-  DecomposeLinearExpressions(path_continuity_error, edge_vars, &M);
-  // Condense M to only keep non-zero columns.
-  const auto& [condensed_matrices, nonzero_cols_mask] =
-      CondenseToNonzeroColumns({M});
-  MatrixXd M_dense = condensed_matrices[0];
-
-  const auto path_continuity_constraint =
-      std::make_shared<LinearEqualityConstraint>(
-          M_dense, VectorXd::Zero(num_positions()));
-
   // Add Regions with time scaling set.
   for (size_t i = 0; i < regions_.size(); ++i) {
     ConvexSets vertex_set;
@@ -186,9 +142,26 @@ Subgraph::Subgraph(
     vertex_set.emplace_back(time_scaling_set);
 
     vertices_.emplace_back(traj_opt_.gcs_.AddVertex(
-        CartesianProduct(vertex_set), fmt::format("{}: {}", name, i)));
+        CartesianProduct(vertex_set), fmt::format("{}: Region{}", name_, i)));
     traj_opt->vertex_to_subgraph_[vertices_.back()] = this;
   }
+
+  r_trajectory_ =
+      BezierCurve<double>(0, 1, MatrixXd::Zero(num_positions(), order + 1));
+
+  // GetControlPoints(u).col(order) - GetControlPoints(v).col(0) = 0, via Ax =
+  // 0, A = [I, -I], x = [u_controls.col(order); v_controls.col(0)].
+  Eigen::SparseMatrix<double> A(num_positions(), 2 * num_positions());
+  std::vector<Eigen::Triplet<double>> tripletList;
+  tripletList.reserve(2 * num_positions());
+  for (int i = 0; i < num_positions(); ++i) {
+    tripletList.push_back(Eigen::Triplet<double>(i, i, 1.0));
+    tripletList.push_back(Eigen::Triplet<double>(i, num_positions() + i, -1.0));
+  }
+  A.setFromTriplets(tripletList.begin(), tripletList.end());
+  const auto path_continuity_constraint =
+      std::make_shared<LinearEqualityConstraint>(
+          A, VectorXd::Zero(num_positions()));
 
   // Connect vertices with edges.
   for (const auto& [u_index, v_index] : edges_between_regions) {
@@ -202,8 +175,7 @@ Subgraph::Subgraph(
     // Add path continuity constraints.
     uv_edge->AddConstraint(Binding<Constraint>(
         path_continuity_constraint,
-        FilterVariables(ConcatenateVariableRefList({u->x(), v->x()}),
-                        nonzero_cols_mask)));
+        {GetControlPoints(*u).col(order), GetControlPoints(*v).col(0)}));
   }
 }
 
@@ -223,13 +195,7 @@ void Subgraph::AddTimeCost(double weight) {
 void Subgraph::AddPathLengthCost(const MatrixXd& weight_matrix) {
   /*
     We will upper bound the trajectory length by the sum of the distances
-    between the control points. ∑ ||rᵢ − rᵢ₊₁||₂
-
-    In the case of a Bézier curve, the path length is given by the integral of
-    the norm of the derivative of the curve.
-
-    So the previous upper bound is equivalent to: ∑ ||ṙᵢ||₂ / order
-    Because ||ṙᵢ||₂ = ||rᵢ₊₁ − rᵢ||₂ * order
+    between the control points. ∑ |weight_matrix * (rᵢ₊₁ − rᵢ)|₂
   */
   DRAKE_THROW_UNLESS(weight_matrix.rows() == num_positions());
   DRAKE_THROW_UNLESS(weight_matrix.cols() == num_positions());
@@ -239,26 +205,17 @@ void Subgraph::AddPathLengthCost(const MatrixXd& weight_matrix) {
         "Path length cost is not defined for a set of order 0.");
   }
 
-  const MatrixX<Expression> u_rdot_control =
-      dynamic_pointer_cast_or_throw<BezierCurve<Expression>>(
-          u_r_trajectory_.MakeDerivative())
-          ->control_points();
+  MatrixXd A(num_positions(), 2 * num_positions());
+  A << weight_matrix, -weight_matrix;
+  const auto path_length_cost =
+      std::make_shared<L2NormCost>(A, VectorXd::Zero(num_positions()));
 
-  for (int i = 0; i < u_rdot_control.cols(); ++i) {
-    MatrixXd M(num_positions(), u_vars_.size());
-    DecomposeLinearExpressions(u_rdot_control.col(i) / order(), u_vars_, &M);
-    // Condense M to only keep non-zero columns.
-    const auto& [condensed_matrices, nonzero_cols_mask] =
-        CondenseToNonzeroColumns({M});
-    MatrixXd M_dense = condensed_matrices[0];
-
-    const auto path_length_cost = std::make_shared<L2NormCost>(
-        weight_matrix * M_dense, VectorXd::Zero(num_positions()));
-
-    for (Vertex* v : vertices_) {
-      // The duration variable is the last element of the vertex.
+  for (Vertex* v : vertices_) {
+    auto control_points = GetControlPoints(*v);
+    for (int i = 0; i < control_points.cols() - 1; ++i) {
       v->AddCost(Binding<L2NormCost>(
-          path_length_cost, FilterVariables(v->x(), nonzero_cols_mask)));
+          path_length_cost,
+          {control_points.col(i + 1), control_points.col(i)}));
     }
   }
 }
@@ -280,43 +237,53 @@ void Subgraph::AddVelocityBounds(const Eigen::Ref<const VectorXd>& lb,
 
   // We have q̇(t) = drds * dsdt = ṙ(s) / h, and h >= 0, so we
   // use h * lb <= ṙ(s) <= h * ub, formulated as:
-  // - inf <=   h * lb - ṙ(s) <= 0
-  // - inf <= - h * ub + ṙ(s) <= 0
+  //     0 <= ṙ(s) - h * lb <= inf,
+  // - inf <= ṙ(s) - h * ub <= 0.
 
-  // This also leverages the convex hull property of the B-splines: if all of
-  // the control points satisfy these convex constraints and the curve is
-  // inside the convex hull of these constraints, then the curve satisfies the
+  // This leverages the convex hull property of the B-splines: if all of the
+  // control points satisfy these convex constraints and the curve is inside
+  // the convex hull of these constraints, then the curve satisfies the
   // constraints for all t.
 
-  const MatrixX<Expression> u_rdot_control =
-      dynamic_pointer_cast_or_throw<BezierCurve<Expression>>(
-          u_r_trajectory_.MakeDerivative())
-          ->control_points();
-
-  MatrixXd b(u_h_.rows(), u_vars_.size());
-  DecomposeLinearExpressions(u_h_.cast<Expression>(), u_vars_, &b);
-
-  for (int i = 0; i < u_rdot_control.cols(); ++i) {
-    MatrixXd M(num_positions(), u_vars_.size());
-    DecomposeLinearExpressions(u_rdot_control.col(i), u_vars_, &M);
-    // Condense M and b to only keep non-zero columns.
-    const auto& [condensed_matrices, nonzero_cols_mask] =
-        CondenseToNonzeroColumns({M, b});
-    MatrixXd M_dense = condensed_matrices[0];
-    MatrixXd b_dense = condensed_matrices[1];
-
-    MatrixXd H(2 * num_positions(), nonzero_cols_mask.count());
-    H << M_dense - ub * b_dense, -M_dense + lb * b_dense;
-
-    const auto velocity_constraint = std::make_shared<LinearConstraint>(
-        H, VectorXd::Constant(2 * num_positions(), -kInf),
-        VectorXd::Zero(2 * num_positions()));
-
+  // The relevant derivatives of the Bezier curve come in the form:
+  // rdot_control.row(i).T = M * r_control.row(i).T, so we loop over the
+  // positions, rather than over the control points.
+  const VectorXd kVecInf = VectorXd::Constant(order_, kInf);
+  const VectorXd kVecZero = VectorXd::Zero(order_);
+  solvers::VectorXDecisionVariable vars(order_ + 2);
+  SparseMatrix<double> H_lb(
+      order_ /* number of control points for one row of ṙ(s)*/,
+      order_ + 2 /* number of control points for one row of r(s) + 1*/);
+  H_lb.leftCols(order_ + 1) = r_trajectory_.AsLinearInControlPoints(1);
+  SparseMatrix<double> H_ub = H_lb;
+  for (int i = 0; i < num_positions(); ++i) {
+    // Lower bound.  0 <= ṙ(s).row(i) - h * lb <= inf.
+    H_lb.rightCols<1>() = VectorXd::Constant(order_, -lb[i]).sparseView();
+    const auto lb_constraint =
+        std::make_shared<LinearConstraint>(H_lb, kVecZero, kVecInf);
+    // Upper bound. -inf <= ṙ(s).row(i) - h * ub <= 0.
+    H_ub.rightCols<1>() = VectorXd::Constant(order_, -ub[i]).sparseView();
+    const auto ub_constraint =
+        std::make_shared<LinearConstraint>(H_ub, -kVecInf, kVecZero);
     for (Vertex* v : vertices_) {
-      v->AddConstraint(Binding<LinearConstraint>(
-          velocity_constraint, FilterVariables(v->x(), nonzero_cols_mask)));
+      vars << GetControlPoints(*v).row(i).transpose(), GetTimeScaling(*v);
+      v->AddConstraint(Binding<LinearConstraint>(lb_constraint, vars));
+      v->AddConstraint(Binding<LinearConstraint>(ub_constraint, vars));
     }
   }
+}
+
+Eigen::Map<const MatrixX<symbolic::Variable>> Subgraph::GetControlPoints(
+    const geometry::optimization::GraphOfConvexSets::Vertex& v) const {
+  DRAKE_DEMAND(v.x().size() == num_positions() * (order_ + 1) + 1);
+  return Eigen::Map<const MatrixX<symbolic::Variable>>(
+      v.x().data(), num_positions(), order_ + 1);
+}
+
+symbolic::Variable Subgraph::GetTimeScaling(
+    const geometry::optimization::GraphOfConvexSets::Vertex& v) const {
+  DRAKE_DEMAND(v.x().size() == num_positions() * (order_ + 1) + 1);
+  return v.x()(v.x().size() - 1);
 }
 
 EdgesBetweenSubgraphs::EdgesBetweenSubgraphs(
@@ -557,6 +524,9 @@ Subgraph& GcsTrajectoryOptimization::AddRegions(
     const ConvexSets& regions,
     const std::vector<std::pair<int, int>>& edges_between_regions, int order,
     double h_min, double h_max, std::string name) {
+  if (name.empty()) {
+    name = fmt::format("Subgraph{}", subgraphs_.size());
+  }
   Subgraph* subgraph = new Subgraph(regions, edges_between_regions, order,
                                     h_min, h_max, std::move(name), this);
 
@@ -581,9 +551,6 @@ Subgraph& GcsTrajectoryOptimization::AddRegions(const ConvexSets& regions,
                                                 int order, double h_min,
                                                 double h_max,
                                                 std::string name) {
-  if (name.empty()) {
-    name = fmt::format("S{}", subgraphs_.size());
-  }
   // TODO(wrangelvid): This is O(n^2) and can be improved.
   std::vector<std::pair<int, int>> edges_between_regions;
   for (size_t i = 0; i < regions.size(); ++i) {
