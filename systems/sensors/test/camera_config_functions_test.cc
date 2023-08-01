@@ -60,6 +60,8 @@ CameraConfig MakeConfig() {
                       .background = Rgba(0.25, 0.5, 0.75),
                       .name = "test_camera",
                       .fps = 17,
+                      .capture_offset = 0.001,
+                      .output_delay = 0.002,
                       .rgb = false,
                       .depth = true,
                       .show_rgb = true,
