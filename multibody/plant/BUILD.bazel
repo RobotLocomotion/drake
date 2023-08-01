@@ -882,6 +882,15 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "deformable_collision_filter_test",
+    deps = [
+        ":multibody_plant_core",
+        "//geometry:scene_graph",
+        "//systems/framework:diagram_builder",
+    ],
+)
+
+drake_cc_googletest(
     name = "deformable_driver_test",
     deps = [
         ":compliant_contact_manager_tester",

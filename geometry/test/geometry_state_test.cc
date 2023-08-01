@@ -553,6 +553,15 @@ class GeometryStateTestBase {
     return source_id_;
   }
 
+  template <typename PropertyType>
+  void AssignRoleToSingleSourceTree(const PropertyType& properties) {
+    ASSERT_TRUE(source_id_.is_valid());
+    for (GeometryId id : geometries_) {
+      geometry_state_.AssignRole(source_id_, id, properties);
+    }
+    geometry_state_.AssignRole(source_id_, anchored_geometry_, properties);
+  }
+
   // This function sets up a dummy GeometryState that contains both rigid
   // (non-deformable) and deformable geometries to facilitate testing.
   SourceId SetUpWithRigidAndDeformableGeometries() {
@@ -678,15 +687,6 @@ class GeometryStateTestBase {
     // get thrown out.
     properties.AddProperty("test", "value", 17);
     AssignRoleToSingleSourceTree(properties);
-  }
-
-  template <typename PropertyType>
-  void AssignRoleToSingleSourceTree(const PropertyType& properties) {
-    ASSERT_TRUE(source_id_.is_valid());
-    for (GeometryId id : geometries_) {
-      geometry_state_.AssignRole(source_id_, id, properties);
-    }
-    geometry_state_.AssignRole(source_id_, anchored_geometry_, properties);
   }
 };
 
@@ -2550,6 +2550,61 @@ TEST_F(GeometryStateTest, NonProximityRoleInCollisionFilter) {
           GeometrySet{added_id}, GeometrySet{anchored_geometry_}));
   pairs = geometry_state_.ComputePointPairPenetration();
   EXPECT_EQ(static_cast<int>(pairs.size()), expected_collisions);
+}
+
+// Test collision filter respects the CollisionFilterScope enum.
+TEST_F(GeometryStateTest, CollisionFilterRespectsScope) {
+  SourceId s_id = SetUpSingleSourceTree();
+
+  // Give all rigid geometries resolution hint so that they can collide with
+  // deformable geometries.
+  ProximityProperties rigid_properties;
+  rigid_properties.AddProperty(internal::kHydroGroup, internal::kRezHint, 10.0);
+  AssignRoleToSingleSourceTree(rigid_properties);
+
+  // Pose all of the frames to the specified poses in their parent frame.
+  FramePoseVector<double> poses;
+  for (int f = 0; f < static_cast<int>(frames_.size()); ++f) {
+    poses.set_value(frames_[f], X_PFs_[f]);
+  }
+  gs_tester_.SetFramePoses(source_id_, poses,
+                           &gs_tester_.mutable_kinematics_data());
+  gs_tester_.FinalizePoseUpdate();
+
+  // Register a giant deformable body that's guaranteed to be in collision with
+  // every single rigid geometry.
+  const Sphere sphere(200.0);
+  constexpr double kRezHint = 100.0;
+  auto instance = make_unique<GeometryInstance>(
+      RigidTransformd::Identity(), make_unique<Sphere>(sphere), "deformable");
+  instance->set_proximity_properties(ProximityProperties());
+  GeometryId deformable_id = geometry_state_.RegisterDeformableGeometry(
+      s_id, InternalFrame::world_frame_id(), std::move(instance), kRezHint);
+  internal::DeformableContact<double> contacts;
+  geometry_state_.ComputeDeformableContact(&contacts);
+  EXPECT_EQ(contacts.contact_surfaces().size(),
+            single_tree_total_geometry_count());
+
+  // Attempting to filter collisions with scope omitting deformable bodies
+  // should have no effect on the number of collisions.
+  geometry_state_.collision_filter_manager().Apply(
+      CollisionFilterDeclaration(CollisionFilterScope::kOmitDeformable)
+          .ExcludeBetween(GeometrySet{deformable_id},
+                          GeometrySet(geometries_)));
+  geometry_state_.ComputeDeformableContact(&contacts);
+  EXPECT_EQ(contacts.contact_surfaces().size(),
+            single_tree_total_geometry_count());
+
+  // Filter with the kAll flag as the scope should have an effect. The collision
+  // between the deformable geometry and all the dynamic rigid geometries are
+  // filtered, and the only collision left should be the deformable geometry vs.
+  // the anchored geometry.
+  geometry_state_.collision_filter_manager().Apply(
+      CollisionFilterDeclaration(CollisionFilterScope::kAll)
+          .ExcludeBetween(GeometrySet{deformable_id},
+                          GeometrySet(geometries_)));
+  geometry_state_.ComputeDeformableContact(&contacts);
+  EXPECT_EQ(contacts.contact_surfaces().size(), 1);
 }
 
 // Test that the appropriate error messages are dispatched.
