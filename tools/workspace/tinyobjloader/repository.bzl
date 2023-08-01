@@ -15,7 +15,7 @@ def tinyobjloader_repository(
         mirrors = mirrors,
         patches = [
             ":patches/double_precision.patch",
-            "//tools/workspace/tinyobjloader_internal:patches/faster_float_parsing.patch",  # noqa
-            "//tools/workspace/tinyobjloader_internal:patches/default_texture_color.patch",  # noqa
+            "@drake//tools/workspace/tinyobjloader_internal:patches/faster_float_parsing.patch",  # noqa
+            "@drake//tools/workspace/tinyobjloader_internal:patches/default_texture_color.patch",  # noqa
         ],
     )

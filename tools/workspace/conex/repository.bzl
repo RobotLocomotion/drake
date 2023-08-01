@@ -14,8 +14,8 @@ def conex_repository(
         build_file = ":package.BUILD.bazel",
         patches = [
             ":patches/deprecation.patch",
-            "//tools/workspace/conex_internal:patches/debug_macros.patch",
-            "//tools/workspace/conex_internal:patches/no_eigen_io.patch",
+            "@drake//tools/workspace/conex_internal:patches/debug_macros.patch",  # noqa
+            "@drake//tools/workspace/conex_internal:patches/no_eigen_io.patch",
         ],
         mirrors = mirrors,
     )
