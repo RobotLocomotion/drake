@@ -151,8 +151,8 @@ class RationalForwardKinematics {
       // the mobilizer cannot be a weld joint since weld joint doesn't introduce
       // a variable into s_.
       const int q_index = mobilizer.position_start_in_q();
-      using std::pow;
       using std::atan2;
+      using std::pow;
       if (IsRevolute(mobilizer)) {
         q_val(q_index) =
             atan2(2 * s_val(i), 1 - pow(s_val(i), 2)) + q_star_val(q_index);
@@ -166,6 +166,13 @@ class RationalForwardKinematics {
     }
     return q_val;
   }
+
+  /** Same as ComputeSValue, but for a revolute joint, if we
+   have (θ−θ*)/2 ≥ π/2 (or ≤ −π/2), we return ∞ (or −∞) for the corresponding s.
+   */
+  [[nodiscard]] Eigen::VectorXd ComputeSValueInfAbovePiOver2(
+      const Eigen::Ref<const Eigen::VectorXd>& q_val,
+      const Eigen::Ref<const Eigen::VectorXd>& q_star_val) const;
 
   const MultibodyPlant<double>& plant() const { return plant_; }
 

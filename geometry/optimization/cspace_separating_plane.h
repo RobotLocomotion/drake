@@ -81,6 +81,11 @@ struct CSpaceSeparatingPlane {
                                               : negative_side_geometry;
   }
 
+  [[nodiscard]] SortedPair<geometry::GeometryId> geometry_pair() const {
+    return SortedPair<geometry::GeometryId>(positive_side_geometry->id(),
+                                            negative_side_geometry->id());
+  }
+
   Vector3<symbolic::Polynomial> a;
   symbolic::Polynomial b;
   const CIrisCollisionGeometry* positive_side_geometry;
