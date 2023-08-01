@@ -12,7 +12,8 @@ namespace geometry {
  ids to support the tests below. */
 class GeometrySetTester {
  public:
-  static std::unordered_set<GeometryId> geometries(const GeometrySet& s) {
+  static std::unordered_set<GeometryId> geometries(const GeometrySet& s,
+                                                   CollisionFilterScope) {
     return s.geometries();
   }
 };

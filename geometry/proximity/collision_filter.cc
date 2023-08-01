@@ -152,11 +152,11 @@ bool CollisionFilter::CanCollideWith(GeometryId id_A, GeometryId id_B) const {
 
 void CollisionFilter::AddFiltersBetween(
     const GeometrySet& set_A, const GeometrySet& set_B,
-    const CollisionFilter::ExtractIds& extract_ids, bool is_invariant,
-    FilterState* state_out) {
-  const std::unordered_set<GeometryId> ids_A = extract_ids(set_A);
+    const CollisionFilter::ExtractIds& extract_ids, CollisionFilterScope scope,
+    bool is_invariant, FilterState* state_out) {
+  const std::unordered_set<GeometryId> ids_A = extract_ids(set_A, scope);
   const std::unordered_set<GeometryId>& ids_B =
-      &set_A == &set_B ? ids_A : extract_ids(set_B);
+      &set_A == &set_B ? ids_A : extract_ids(set_B, scope);
   for (GeometryId id_A : ids_A) {
     for (GeometryId id_B : ids_B) {
       AddFilteredPair(id_A, id_B, is_invariant, state_out);
@@ -166,10 +166,11 @@ void CollisionFilter::AddFiltersBetween(
 
 void CollisionFilter::RemoveFiltersBetween(
     const GeometrySet& set_A, const GeometrySet& set_B,
-    const CollisionFilter::ExtractIds& extract_ids, FilterState* state_out) {
-  const std::unordered_set<GeometryId> ids_A = extract_ids(set_A);
+    const CollisionFilter::ExtractIds& extract_ids, CollisionFilterScope scope,
+    FilterState* state_out) {
+  const std::unordered_set<GeometryId> ids_A = extract_ids(set_A, scope);
   const std::unordered_set<GeometryId>& ids_B =
-      &set_A == &set_B ? ids_A : extract_ids(set_B);
+      &set_A == &set_B ? ids_A : extract_ids(set_B, scope);
   for (GeometryId id_A : ids_A) {
     for (GeometryId id_B : ids_B) {
       RemoveFilteredPair(id_A, id_B, state_out);
@@ -233,6 +234,7 @@ void CollisionFilter::Apply(const CollisionFilterDeclaration& declaration,
                             const CollisionFilter::ExtractIds& extract_ids,
                             bool is_invariant, FilterState* filter_state) {
   using Operation = CollisionFilterDeclaration::StatementOp;
+  const CollisionFilterScope scope = declaration.scope();
   for (const auto& statement : declaration.statements()) {
     switch (statement.operation) {
       case Operation::kAllowBetween:
@@ -240,19 +242,19 @@ void CollisionFilter::Apply(const CollisionFilterDeclaration& declaration,
         // while removing collision filters.
         DRAKE_DEMAND(!is_invariant);
         RemoveFiltersBetween(statement.set_A, statement.set_B, extract_ids,
-                             filter_state);
+                             scope, filter_state);
         break;
       case Operation::kAllowWithin:
         DRAKE_DEMAND(!is_invariant);
         RemoveFiltersBetween(statement.set_A, statement.set_A, extract_ids,
-                             filter_state);
+                             scope, filter_state);
         break;
       case Operation::kExcludeWithin:
-        AddFiltersBetween(statement.set_A, statement.set_A, extract_ids,
+        AddFiltersBetween(statement.set_A, statement.set_A, extract_ids, scope,
                           is_invariant, filter_state);
         break;
       case Operation::kExcludeBetween:
-        AddFiltersBetween(statement.set_A, statement.set_B, extract_ids,
+        AddFiltersBetween(statement.set_A, statement.set_B, extract_ids, scope,
                           is_invariant, filter_state);
         break;
     }

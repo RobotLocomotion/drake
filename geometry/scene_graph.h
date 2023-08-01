@@ -915,6 +915,13 @@ class SceneGraph final : public systems::LeafSystem<T> {
    stored in a particular Context. These methods provide access to the manager
    for the data stored in either location.
 
+   %SceneGraph implicitly filters collisions between rigid geometries affixed to
+   the same frame. This allows representation of complex shapes by providing a
+   union of simpler shapes without producing spurious collisions between those
+   overlapping shapes. %SceneGraph doesn't create *any* collision filters for
+   deformable geometries automatically. Users can add filters to deformable
+   geometries as they require after registration.
+
    Generally, it should be considered a bad practice to hang onto the instance
    of CollisionFilterManager returned by collision_filter_manager(). It is not
    immediately clear whether a particular CollisionFilterManager instance

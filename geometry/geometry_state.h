@@ -515,8 +515,9 @@ class GeometryState {
   CollisionFilterManager collision_filter_manager() {
     geometry_version_.modify_proximity();
     return CollisionFilterManager(
-        &geometry_engine_->collision_filter(), [this](const GeometrySet& set) {
-          return this->CollectIds(set, Role::kProximity);
+        &geometry_engine_->collision_filter(),
+        [this](const GeometrySet& set, CollisionFilterScope scope) {
+          return this->CollectIds(set, Role::kProximity, scope);
         });
   }
 
@@ -632,9 +633,11 @@ class GeometryState {
   // the set that can't be mapped to known geometries or frames will cause an
   // exception to be thrown. The ids can be optionally filtered based on role.
   // If `role` is nullopt, no filtering takes place. Otherwise, just those
-  // geometries with the given role will be returned.
+  // geometries with the given role will be returned. Deformable geometries are
+  // excluded from the results if `scope == kOmitDeformable`.
   std::unordered_set<GeometryId> CollectIds(const GeometrySet& geometry_set,
-                                            std::optional<Role> role) const;
+                                            std::optional<Role> role,
+                                            CollisionFilterScope scope) const;
 
   // Sets the kinematic poses for the frames indicated by the given ids.
   // @param[in]  poses           The frame id and pose values.
