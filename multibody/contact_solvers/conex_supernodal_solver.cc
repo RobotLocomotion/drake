@@ -6,6 +6,8 @@
 #include "conex/clique_ordering.h"
 #include "conex/kkt_solver.h"
 
+#include "drake/common/drake_export.h"
+
 using Eigen::MatrixXd;
 using std::vector;
 using MatrixBlock = std::pair<Eigen::MatrixXd, std::vector<int>>;
@@ -16,6 +18,18 @@ namespace multibody {
 namespace contact_solvers {
 namespace internal {
 namespace {
+
+// Casts the `ConexSuperNodalSolver::solver_` member field to its actual type.
+// NOLINTNEXTLINE(runtime/references)
+conex::SupernodalKKTSolver& solver_cast(std::shared_ptr<void>& solver) {
+  DRAKE_DEMAND(solver.get() != nullptr);
+  return *static_cast<conex::SupernodalKKTSolver*>(solver.get());
+}
+const conex::SupernodalKKTSolver& solver_cast(
+    const std::shared_ptr<void>& solver) {
+  DRAKE_DEMAND(solver.get() != nullptr);
+  return *static_cast<conex::SupernodalKKTSolver*>(solver.get());
+}
 
 /* Computes the dense matrix Jᵀ*G*J. Matrix J is a column-wise concatenation of
  entries in `J_blocks`. More specifically, the layout of J looks like
@@ -107,7 +121,7 @@ std::vector<int> GetMassMatrixStartingColumn(
 
 }  // namespace
 
-class ConexSuperNodalSolver::CliqueAssembler final
+class DRAKE_NO_EXPORT ConexSuperNodalSolver::CliqueAssembler final
     : public ::conex::SupernodalAssemblerBase {
  public:
   // Helper functions for specifying G_i
@@ -362,7 +376,7 @@ void ConexSuperNodalSolver::Initialize(
   }
 
   // Make connections between clique_assemblers and solver->Assemble().
-  solver_->Bind(clique_assemblers_ptrs_);
+  solver_cast(solver_).Bind(clique_assemblers_ptrs_);
   size_ = mass_matrix_starting_columns.back() + mass_matrices.back().cols();
 }
 
@@ -374,7 +388,7 @@ ConexSuperNodalSolver::ConexSuperNodalSolver(
   SparsityData clique_data =
       GetEliminationOrdering(num_jacobian_row_blocks, jacobian_blocks);
 
-  solver_ = std::make_unique<::conex::SupernodalKKTSolver>(
+  solver_ = std::make_shared<::conex::SupernodalKKTSolver>(
       clique_data.variable_cliques, clique_data.data.num_vars,
       clique_data.data.order, clique_data.data.supernodes,
       clique_data.data.separators);
@@ -412,7 +426,7 @@ bool ConexSuperNodalSolver::DoSetWeightMatrix(
   }
 
   if (weight_matrix_compatible) {
-    solver_->Assemble();
+    solver_cast(solver_).Assemble();
   }
 
   // Destroy references to argument weight_matrix.
@@ -424,16 +438,16 @@ bool ConexSuperNodalSolver::DoSetWeightMatrix(
 }
 
 bool ConexSuperNodalSolver::DoFactor() {
-  return solver_->Factor();
+  return solver_cast(solver_).Factor();
 }
 
 void ConexSuperNodalSolver::DoSolveInPlace(Eigen::VectorXd* b) const {
   Eigen::Map<MatrixXd, Eigen::Aligned> ymap(b->data(), b->rows(), 1);
-  solver_->SolveInPlace(&ymap);
+  solver_cast(solver_).SolveInPlace(&ymap);
 }
 
 Eigen::MatrixXd ConexSuperNodalSolver::DoMakeFullMatrix() const {
-  return solver_->KKTMatrix();
+  return solver_cast(solver_).KKTMatrix();
 }
 
 void ConexSuperNodalSolver::CliqueAssembler::Initialize(
