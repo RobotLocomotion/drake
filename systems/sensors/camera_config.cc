@@ -161,6 +161,13 @@ void CameraConfig::ValidateOrThrow() const {
                     fps));
   }
 
+  if (capture_offset < 0 || !std::isfinite(capture_offset)) {
+    throw std::logic_error(fmt::format(
+        "Invalid camera configuration; capture_offset ({}) must be a finite, "
+        "non-negative value.",
+        capture_offset));
+  }
+
   if (X_BC.base_frame.has_value() && !X_BC.base_frame->empty()) {
     throw std::logic_error(
         fmt::format("Invalid camera configuration; X_BC must not specify a "
