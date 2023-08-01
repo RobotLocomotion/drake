@@ -53,7 +53,8 @@ void Geometries::UpdateDeformableVertexPositions(
   }
 }
 
-DeformableContact<double> Geometries::ComputeDeformableContact() const {
+DeformableContact<double> Geometries::ComputeDeformableContact(
+    const CollisionFilter& collision_filter) const {
   DeformableContact<double> result;
   for (const auto& [deformable_id, deformable_geometry] :
        deformable_geometries_) {
@@ -61,13 +62,18 @@ DeformableContact<double> Geometries::ComputeDeformableContact() const {
         deformable_geometry.deformable_mesh().mesh();
     result.RegisterDeformableGeometry(
         deformable_id, deformable_mesh.num_vertices());
+    DRAKE_ASSERT(collision_filter.HasGeometry(deformable_id));
     for (const auto& [rigid_id, rigid_geometry] : rigid_geometries_) {
-      const math::RigidTransform<double>& X_WR = rigid_geometry.pose_in_world();
-      const auto& rigid_bvh = rigid_geometry.rigid_mesh().bvh();
-      const auto& rigid_tri_mesh = rigid_geometry.rigid_mesh().mesh();
-      AddDeformableRigidContactSurface(deformable_geometry, deformable_id,
-                                       rigid_id, rigid_tri_mesh, rigid_bvh,
-                                       X_WR, &result);
+      DRAKE_ASSERT(collision_filter.HasGeometry(rigid_id));
+      if (collision_filter.CanCollideWith(deformable_id, rigid_id)) {
+        const math::RigidTransform<double>& X_WR =
+            rigid_geometry.pose_in_world();
+        const auto& rigid_bvh = rigid_geometry.rigid_mesh().bvh();
+        const auto& rigid_tri_mesh = rigid_geometry.rigid_mesh().mesh();
+        AddDeformableRigidContactSurface(deformable_geometry, deformable_id,
+                                         rigid_id, rigid_tri_mesh, rigid_bvh,
+                                         X_WR, &result);
+      }
     }
   }
   return result;
