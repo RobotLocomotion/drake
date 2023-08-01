@@ -14,6 +14,7 @@ load("@drake//tools/workspace/commons_io:repository.bzl", "commons_io_repository
 load("@drake//tools/workspace/conex:repository.bzl", "conex_repository")
 load("@drake//tools/workspace/conex_internal:repository.bzl", "conex_internal_repository")  # noqa
 load("@drake//tools/workspace/csdp:repository.bzl", "csdp_repository")
+load("@drake//tools/workspace/csdp_internal:repository.bzl", "csdp_internal_repository")  # noqa
 load("@drake//tools/workspace/curl_internal:repository.bzl", "curl_internal_repository")  # noqa
 load("@drake//tools/workspace/double_conversion:repository.bzl", "double_conversion_repository")  # noqa
 load("@drake//tools/workspace/doxygen:repository.bzl", "doxygen_repository")
@@ -141,7 +142,11 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
     if "conex_internal" not in excludes:
         conex_internal_repository(name = "conex_internal", mirrors = mirrors)
     if "csdp" not in excludes:
+        # The @csdp external is deprecated in Drake's WORKSPACE and will be
+        # removed on or after 2023-11-01.
         csdp_repository(name = "csdp", mirrors = mirrors)
+    if "csdp_internal" not in excludes:
+        csdp_internal_repository(name = "csdp_internal", mirrors = mirrors)
     if "curl_internal" not in excludes:
         curl_internal_repository(name = "curl_internal", mirrors = mirrors)
     if "double_conversion" not in excludes:

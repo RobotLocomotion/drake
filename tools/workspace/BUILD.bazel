@@ -116,7 +116,7 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "gflags",
     "optitrack_driver",
 ]] + select({
-    "//conditions:default": ["@csdp//:install"],
+    "//conditions:default": ["@csdp_internal//:install"],
     "//tools:no_csdp": [],
 }) + select({
     "//tools:with_gurobi": ["@gurobi//:install"],
