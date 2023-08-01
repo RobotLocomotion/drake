@@ -193,32 +193,35 @@ PYBIND11_MODULE(lcm, m) {
     cls  // BR
         .def(py::init<const std::string&,
                  std::shared_ptr<const SerializerInterface>,
-                 LcmInterfaceSystem*, double>(),
+                 LcmInterfaceSystem*, double, double>(),
             py::arg("channel"), py::arg("serializer"), py::arg("lcm"),
-            py::arg("publish_period") = 0.0,
+            py::arg("publish_period") = 0.0, py::arg("publish_offset") = 0.0,
             // Keep alive, reference: `self` keeps `lcm` alive.
-            py::keep_alive<1, 4>(), cls_doc.ctor.doc_4args)
+            py::keep_alive<1, 4>(), cls_doc.ctor.doc_5args)
         .def(py::init<const std::string&,
                  std::shared_ptr<const SerializerInterface>, DrakeLcmInterface*,
-                 double>(),
+                 double, double>(),
             py::arg("channel"), py::arg("serializer"), py::arg("lcm"),
-            py::arg("publish_period") = 0.0,
+            py::arg("publish_period") = 0.0, py::arg("publish_offset") = 0.0,
             // Keep alive, reference: `self` keeps `lcm` alive.
-            py::keep_alive<1, 4>(), cls_doc.ctor.doc_4args)
-        .def(py::init<const std::string&,
-                 std::shared_ptr<const SerializerInterface>,
-                 LcmInterfaceSystem*, const systems::TriggerTypeSet&, double>(),
+            py::keep_alive<1, 4>(), cls_doc.ctor.doc_5args)
+        .def(
+            py::init<const std::string&,
+                std::shared_ptr<const SerializerInterface>, LcmInterfaceSystem*,
+                const systems::TriggerTypeSet&, double, double>(),
             py::arg("channel"), py::arg("serializer"), py::arg("lcm"),
             py::arg("publish_triggers"), py::arg("publish_period") = 0.0,
+            py::arg("publish_offset") = 0.0,
             // Keep alive, reference: `self` keeps `lcm` alive.
-            py::keep_alive<1, 4>(), cls_doc.ctor.doc_4args)
+            py::keep_alive<1, 4>(), cls_doc.ctor.doc_6args)
         .def(py::init<const std::string&,
                  std::shared_ptr<const SerializerInterface>, DrakeLcmInterface*,
-                 const systems::TriggerTypeSet&, double>(),
+                 const systems::TriggerTypeSet&, double, double>(),
             py::arg("channel"), py::arg("serializer"), py::arg("lcm"),
             py::arg("publish_triggers"), py::arg("publish_period") = 0.0,
+            py::arg("publish_offset") = 0.0,
             // Keep alive, reference: `self` keeps `lcm` alive.
-            py::keep_alive<1, 4>(), cls_doc.ctor.doc_4args);
+            py::keep_alive<1, 4>(), cls_doc.ctor.doc_6args);
   }
 
   {
