@@ -200,21 +200,30 @@ class GcsTrajectoryOptimization final {
         const geometry::optimization::ConvexSet& B,
         const geometry::optimization::ConvexSet& subspace);
 
+    /* Extracts the control points variables from an edge. */
+    Eigen::Map<const MatrixX<symbolic::Variable>> GetControlPointsU(
+        const geometry::optimization::GraphOfConvexSets::Edge& e) const;
+
+    /* Extracts the control points variables from an edge. */
+    Eigen::Map<const MatrixX<symbolic::Variable>> GetControlPointsV(
+        const geometry::optimization::GraphOfConvexSets::Edge& e) const;
+
+    /* Extracts the time scaling variable from a edge. */
+    symbolic::Variable GetTimeScalingU(
+        const geometry::optimization::GraphOfConvexSets::Edge& e) const;
+
+    /* Extracts the time scaling variable from a edge. */
+    symbolic::Variable GetTimeScalingV(
+        const geometry::optimization::GraphOfConvexSets::Edge& e) const;
+
     GcsTrajectoryOptimization& traj_opt_;
     const int from_subgraph_order_;
     const int to_subgraph_order_;
 
+    trajectories::BezierCurve<double> ur_trajectory_;
+    trajectories::BezierCurve<double> vr_trajectory_;
+
     std::vector<geometry::optimization::GraphOfConvexSets::Edge*> edges_;
-
-    // We keep track of the edge variables and trajectory since other
-    // constraints and costs will use these.
-    VectorX<symbolic::Variable> u_h_;
-    VectorX<symbolic::Variable> u_vars_;
-    trajectories::BezierCurve<symbolic::Expression> u_r_trajectory_;
-
-    VectorX<symbolic::Variable> v_h_;
-    VectorX<symbolic::Variable> v_vars_;
-    trajectories::BezierCurve<symbolic::Expression> v_r_trajectory_;
 
     friend class GcsTrajectoryOptimization;
   };
