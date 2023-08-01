@@ -3,7 +3,10 @@
   <model name='CartPoleBSA'>
     <!-- This sdf file produces a model based on Barto, Sutton, and Anderson
          in “Neuronlike Adaptive Elements That Can Solve Difficult Learning
-         Control Problem”. -->
+         Control Problem”.
+         It is a copy of //examples/multibody/cart_pole:cart_pole.sdf
+         with nicer visuals and added joint limits.
+    -->
     <link name='Cart'>
       <pose>0 0 0 0 0 0</pose>
       <inertial>

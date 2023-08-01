@@ -223,6 +223,9 @@ class DrakeGymEnv(gym.Env):
 
         self.action_port.FixValue(context, action)
         truncated = False
+        # Observation prior to advancing the simulation.
+        prev_observation = self.observation_port.Eval(context)
+        info = dict()
         try:
             status = self.simulator.AdvanceTo(time + self.time_step)
         except RuntimeError as e:
@@ -238,8 +241,13 @@ class DrakeGymEnv(gym.Env):
             # is satisfied. Typically, this is a timelimit, but
             # could also be used to indicate an agent physically going out
             # of bounds."
+            # We handle the solver faling to converge by returning
+            # zero reward and the previous observation since the action
+            # was not successfully applied.
             truncated = True
-            status = e.args[0]
+            terminated = False
+            reward = 0
+            return prev_observation, reward, terminated, truncated, info
 
         observation = self.observation_port.Eval(context)
         reward = self.reward(self.simulator.get_system(), context)
@@ -247,7 +255,6 @@ class DrakeGymEnv(gym.Env):
             not truncated
             and (status.reason()
                  == SimulatorStatus.ReturnReason.kReachedTerminationCondition))
-        info = dict()
 
         return observation, reward, terminated, truncated, info
 

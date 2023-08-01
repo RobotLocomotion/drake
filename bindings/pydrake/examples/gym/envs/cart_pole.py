@@ -139,7 +139,7 @@ def make_sim(meshcat=None,
                     plant.get_actuation_input_port(agent))
     builder.ExportInput(prismatic_actuation_force.get_input_port(), "actions")
 
-    class observation_publisher(LeafSystem):
+    class ObservationPublisher(LeafSystem):
         def __init__(self, noise=False):
             LeafSystem.__init__(self)
             self.Ns = plant.num_multibody_states()
@@ -155,7 +155,7 @@ def make_sim(meshcat=None,
                                                  size=self.Ns)
             output.set_value(plant_state)
 
-    obs_pub = builder.AddSystem(observation_publisher(noise=obs_noise))
+    obs_pub = builder.AddSystem(ObservationPublisher(noise=obs_noise))
 
     builder.Connect(plant.get_state_output_port(), obs_pub.get_input_port(0))
     builder.ExportOutput(obs_pub.get_output_port(), "observations")
@@ -164,7 +164,6 @@ def make_sim(meshcat=None,
         def __init__(self):
             LeafSystem.__init__(self)
             # The state port is not used.
-            # Drake only computes the output of a system that is connected.
             self.DeclareVectorInputPort("state", Ns)
             self.DeclareVectorOutputPort("reward", 1, self.CalcReward)
 

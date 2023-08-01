@@ -2,15 +2,13 @@
 Train a policy for //bindings/pydrake/examples/envs:cart_pole
 '''
 import argparse
-import os
-import sys
-import types
 
 import gymnasium as gym
 import stable_baselines3
 from stable_baselines3.common.env_checker import check_env
 
 from pydrake.geometry import StartMeshcat
+from pydrake.examples.gym.bazel_cwd_helpers import bazel_chdir
 
 full_sb3_available = False
 if "drake_internal" not in stable_baselines3.__version__:
@@ -107,19 +105,8 @@ def _run_training(config, args):
     )
 
 
-def _bazel_chdir():
-    """When using `bazel run`, the current working directory ("cwd") of the
-    program is set to a deeply-nested runfiles directory, not the actual cwd.
-    In case relative paths are given on the command line, we need to restore
-    the original cwd so that those paths resolve correctly.
-    """
-    original_working_directory = os.environ.get("BUILD_WORKING_DIRECTORY")
-    if original_working_directory is not None:
-        os.chdir(original_working_directory)
-
-
 def _main():
-    _bazel_chdir()
+    bazel_chdir()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--test', action='store_true')
     parser.add_argument('--train_single_env', action='store_true')

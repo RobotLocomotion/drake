@@ -42,6 +42,14 @@ drake_py_library(
 )
 
 drake_py_library(
+    name = "bazel_cwd_helpers_py",
+    srcs = ["bazel_cwd_helpers.py"],
+    deps = [
+        ":module_py",
+    ],
+)
+
+drake_py_library(
     name = "cart_pole_py",
     srcs = ["envs/cart_pole.py"],
     data = [
@@ -65,6 +73,7 @@ drake_py_library(
         "train_cart_pole.py",
     ],
     deps = [
+        ":bazel_cwd_helpers_py",
         ":cart_pole_py",
         ":module_py",
         "//bindings/pydrake/geometry",
