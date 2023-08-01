@@ -23,7 +23,6 @@ drake_cc_binary(
         "//common:add_text_logging_gflags",
         "//examples/allegro_hand:allegro_common",
         "//examples/allegro_hand:allegro_lcm",
-        "//geometry:drake_visualizer",
         "//lcmtypes:allegro",
         "//math:geometric_transform",
         "//multibody/parsing",
@@ -35,6 +34,7 @@ drake_cc_binary(
         "//systems/framework:diagram",
         "//systems/lcm:lcm_pubsub_system",
         "//systems/primitives:matrix_gain",
+        "//visualization",
         "@gflags",
     ],
 )
@@ -54,7 +54,7 @@ drake_cc_binary(
 drake_py_unittest(
     name = "run_twisting_mug_test",
     timeout = "moderate",
-    allow_network = ["lcm"],
+    allow_network = ["lcm:meshcat"],
     args = select({
         "//tools/cc_toolchain:debug": ["--compilation_mode=dbg"],
         "//conditions:default": ["--compilation_mode=opt"],

@@ -18,11 +18,11 @@ drake_cc_binary(
     ],
     deps = [
         "//common:add_text_logging_gflags",
-        "//geometry:drake_visualizer",
         "//multibody/benchmarks/inclined_plane",
         "//multibody/plant:contact_results_to_lcm",
         "//systems/analysis:simulator",
         "//systems/framework:diagram",
+        "//visualization",
         "@gflags",
     ],
 )

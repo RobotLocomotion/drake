@@ -5,7 +5,6 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/examples/multibody/rolling_sphere/populate_ball_plant.h"
-#include "drake/geometry/drake_visualizer.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/proximity_properties.h"
 #include "drake/geometry/scene_graph.h"
@@ -17,6 +16,7 @@
 #include "drake/systems/analysis/simulator_gflags.h"
 #include "drake/systems/analysis/simulator_print_stats.h"
 #include "drake/systems/framework/diagram_builder.h"
+#include "drake/visualization/visualization_config_functions.h"
 
 // Integration parameters.
 DEFINE_double(simulation_time, 2.0,
@@ -60,9 +60,6 @@ DEFINE_double(
 DEFINE_bool(visualize, true,
             "If true, the simulation will publish messages for Drake "
             "visualizer. Useful to turn off during profiling sessions.");
-DEFINE_bool(vis_hydro, false,
-            "If true, visualize collision geometries as their hydroelastic "
-            "meshes, where possible.");
 
 // Sphere's spatial velocity.
 DEFINE_double(vx, 1.5,
@@ -171,15 +168,9 @@ int do_main() {
   DRAKE_DEMAND(plant.num_velocities() == 6);
   DRAKE_DEMAND(plant.num_positions() == 7);
 
+  // Provide visualization.
   if (FLAGS_visualize) {
-    geometry::DrakeVisualizerParams params;
-    if (FLAGS_vis_hydro) {
-      params.role = geometry::Role::kProximity;
-      params.show_hydroelastic = true;
-    }
-    geometry::DrakeVisualizerd::AddToBuilder(&builder, scene_graph, nullptr,
-                                             params);
-    ConnectContactResultsToDrakeVisualizer(&builder, plant, scene_graph);
+    visualization::AddDefaultVisualization(&builder);
   }
   auto diagram = builder.Build();
 
