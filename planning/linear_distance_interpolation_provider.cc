@@ -6,6 +6,7 @@
 
 namespace drake {
 namespace planning {
+using common_robotics_utilities::math::Distance;
 using common_robotics_utilities::math::Interpolate;
 using common_robotics_utilities::math::InterpolateXd;
 using multibody::Body;
@@ -43,6 +44,7 @@ Eigen::VectorXd GetJointDistanceWeights(
       Eigen::VectorXd::Ones(plant.num_positions());
 
   // Collect all possible joints that are part of the robot model.
+  // I think these should be all joints, not just robot joints.
   std::vector<JointIndex> joints;
   for (const auto& robot_model_instance : robot_model_instances) {
     auto instance_joints = plant.GetJointIndices(robot_model_instance);
@@ -98,7 +100,15 @@ LinearDistanceAndInterpolationProvider::DoClone() const {
 
 double LinearDistanceAndInterpolationProvider::DoComputeConfigurationDistance(
     const Eigen::VectorXd& from, const Eigen::VectorXd& to) const {
-  return (to - from).cwiseProduct(distance_weights()).norm();
+  Eigen::VectorXd deltas = to - from;
+  for (const int quat_dof_start_index : quaternion_dof_start_indices()) {
+    const Eigen::Quaterniond from_quat(from.segment<4>(quat_dof_start_index));
+    const Eigen::Quaterniond to_quat(to.segment<4>(quat_dof_start_index));
+    // Whatever this is, it needs to match the angle interpolated through by slerp
+    const double quat_angle = Distance(from_quat, to_quat);
+    deltas.segment<4>(quat_dof_start_index) = quat_angle, 0.0, 0.0, 0.0;
+  }
+  return deltas.cwiseProduct(distance_weights()).norm();
 }
 
 Eigen::VectorXd
@@ -111,6 +121,7 @@ LinearDistanceAndInterpolationProvider::DoInterpolateBetweenConfigurations(
   for (const int quat_dof_start_index : quaternion_dof_start_indices()) {
     const Eigen::Quaterniond from_quat(from.segment<4>(quat_dof_start_index));
     const Eigen::Quaterniond to_quat(to.segment<4>(quat_dof_start_index));
+    // Make sure interpolation always does shortest angle (<= 2pi)
     const Eigen::Quaterniond interp_quat =
         Interpolate(from_quat, to_quat, ratio);
     interp.segment<4>(quat_dof_start_index) = interp_quat.coeffs();
