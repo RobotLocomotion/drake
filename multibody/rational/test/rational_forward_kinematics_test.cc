@@ -1,5 +1,7 @@
 #include "drake/multibody/rational/rational_forward_kinematics.h"
 
+#include <limits>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/symbolic/rational_function.h"
@@ -21,6 +23,8 @@ using multibody::BodyIndex;
 using multibody::ModelInstanceIndex;
 using symbolic::Polynomial;
 using symbolic::RationalFunction;
+
+const double kInf = std::numeric_limits<double>::infinity();
 
 void CheckBodyKinematics(const RationalForwardKinematics& dut,
                          const Eigen::Ref<const Eigen::VectorXd>& q_val,
@@ -136,11 +140,23 @@ TEST_F(FinalizedIiwaTest, CalcBodyPose3) {
   q_val << 0.2, 0.3, 0.5, -0.1, 1.2, 2.3, -0.5;
   q_star_val << 1.2, -0.4, 0.3, -0.5, 0.4, 1, 0.2;
   const Eigen::VectorXd s_val = dut.ComputeSValue(q_val, q_star_val);
+  Eigen::VectorXd s_val_overflow =
+      dut.ComputeSValue(q_val, q_star_val, true /* angles_wrap_to_inf */);
+  EXPECT_TRUE(CompareMatrices(s_val, s_val_overflow));
   CheckBodyKinematics(dut, q_val, q_star_val, s_val, world_);
   // Compute the pose in the iiwa_link[i]'s frame.
   for (int i = 0; i < 8; ++i) {
     CheckBodyKinematics(dut, q_val, q_star_val, s_val, iiwa_link_[i]);
   }
+
+  // Now set some (q - q_star)/2 to be above pi/2 (or below pi/2)
+  q_val(0) = q_star_val(0) + 1.1 * M_PI;
+  q_val(1) = q_star_val(1) - 1.2 * M_PI;
+  s_val_overflow =
+      dut.ComputeSValue(q_val, q_star_val, true /* angles_wrap_to_inf */);
+  EXPECT_EQ(s_val_overflow(0), kInf);
+  EXPECT_EQ(s_val_overflow(1), -kInf);
+  EXPECT_TRUE(CompareMatrices(s_val_overflow.tail(5), s_val.tail(5)));
 }
 
 GTEST_TEST(RationalForwardKinematicsTest, CalcBodyPosesForDualArmIiwa) {
