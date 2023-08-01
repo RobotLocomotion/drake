@@ -607,9 +607,11 @@ call to Finalize() must be performed. This call will:
 - Build the underlying tree structure of the multibody model,
 - declare the plant's state,
 - declare the plant's input and output ports,
-- declare collision filters to ignore collisions:
-  - between bodies connected by a joint,
-  - within subgraphs of welded bodies.
+- declare collision filters to ignore collisions among rigid bodies:
+  - between rigid bodies connected by a joint,
+  - within subgraphs of welded rigid bodies.
+Note that collisions involving deformable bodies are not affected by the
+collision filters declared in the call to Finalize().
 
 <!-- TODO(amcastro-tri): Consider making the actual geometry registration
      with GS AFTER Finalize() so that we can tell if there are any bodies
@@ -1565,8 +1567,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   const std::vector<geometry::GeometryId>& GetCollisionGeometriesForBody(
       const Body<T>& body) const;
 
-  /// Excludes the collision geometries between two given collision filter
-  /// groups.
+  /// Excludes the rigid collision geometries between two given collision filter
+  /// groups. Note that collisions involving deformable geometries are not
+  /// filtered by this function.
   /// @pre RegisterAsSourceForSceneGraph() has been called.
   /// @pre Finalize() has *not* been called.
   void ExcludeCollisionGeometriesWithCollisionFilterGroupPair(
@@ -4877,8 +4880,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   // Helper method to apply default collision filters. By default, we don't
   // consider collisions:
-  // * between geometries affixed to bodies connected by a joint
-  // * within subgraphs of welded-together bodies
+  // * between rigid geometries affixed to bodies connected by a joint
+  // * within subgraphs of welded-together rigid bodies
+  // Note that collisions involving deformable bodies are not filtered by
+  // default.
   void ApplyDefaultCollisionFilters();
 
   // For discrete models, MultibodyPlant uses a penalty method to impose joint

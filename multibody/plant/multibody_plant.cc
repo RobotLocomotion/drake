@@ -41,6 +41,7 @@ namespace multibody {
 #define DRAKE_MBP_THROW_IF_NOT_FINALIZED() ThrowIfNotFinalized(__func__)
 
 using geometry::CollisionFilterDeclaration;
+using geometry::CollisionFilterScope;
 using geometry::ContactSurface;
 using geometry::FrameId;
 using geometry::FramePoseVector;
@@ -1199,9 +1200,10 @@ void MultibodyPlant<T>::ApplyDefaultCollisionFilters() {
 
       if (child_id && parent_id) {
         scene_graph_->collision_filter_manager().Apply(
-            CollisionFilterDeclaration().ExcludeBetween(
-                geometry::GeometrySet(*child_id),
-                geometry::GeometrySet(*parent_id)));
+            CollisionFilterDeclaration(
+                CollisionFilterScope::kOmitDeformable)
+                .ExcludeBetween(geometry::GeometrySet(*child_id),
+                                geometry::GeometrySet(*parent_id)));
       }
     }
   }
@@ -1218,7 +1220,8 @@ void MultibodyPlant<T>::ApplyDefaultCollisionFilters() {
     }
     auto geometries = CollectRegisteredGeometries(subgraph_bodies);
     scene_graph_->collision_filter_manager().Apply(
-        CollisionFilterDeclaration().ExcludeWithin(geometries));
+        CollisionFilterDeclaration(CollisionFilterScope::kOmitDeformable)
+            .ExcludeWithin(geometries));
   }
 }
 
@@ -1233,12 +1236,14 @@ void MultibodyPlant<T>::ExcludeCollisionGeometriesWithCollisionFilterGroupPair(
 
   if (collision_filter_group_a.first == collision_filter_group_b.first) {
     scene_graph_->collision_filter_manager().Apply(
-        CollisionFilterDeclaration().ExcludeWithin(
-            collision_filter_group_a.second));
+        CollisionFilterDeclaration(CollisionFilterScope::kOmitDeformable)
+            .ExcludeWithin(collision_filter_group_a.second));
   } else {
     scene_graph_->collision_filter_manager().Apply(
-        CollisionFilterDeclaration().ExcludeBetween(
-            collision_filter_group_a.second, collision_filter_group_b.second));
+        CollisionFilterDeclaration(
+            CollisionFilterScope::kOmitDeformable)
+            .ExcludeBetween(collision_filter_group_a.second,
+                            collision_filter_group_b.second));
   }
 }
 
