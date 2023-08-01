@@ -100,13 +100,16 @@ drake_cc_library(
     ],
     deps = [
         ":camera_info",
+        ":image_to_lcm_image_array_t",
         ":rgbd_sensor",
+        ":rgbd_sensor_async",
         ":sim_rgbd_sensor",
         "//geometry/render_gl",
         "//geometry/render_vtk",
         "//math:geometric_transform",
         "//multibody/parsing:scoped_names",
         "//systems/lcm:lcm_config_functions",
+        "//systems/lcm:lcm_publisher_system",
     ],
 )
 

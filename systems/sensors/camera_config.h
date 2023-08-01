@@ -288,6 +288,12 @@ struct CameraConfig {
    @pre fps is a positive, finite number. */
   double fps{10.0};
 
+  /** Delay (in seconds) between when the scene graph geometry is "captured"
+   and when the output image is published. Refer to the the RgbdSensorAsync
+   class for a comprehensive description.
+   @pre output_delay is non-negative and strictly less than 1/fps. */
+  double output_delay{0.0};
+
   /** If true, RGB images will be produced and published via LCM. */
   bool rgb{true};
 
