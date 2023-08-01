@@ -994,10 +994,10 @@ void GeometryState<T>::AssignRole(SourceId source_id, GeometryId geometry_id,
       // Apply collision filter between geometry id and any geometries that have
       // been identified. If none have been identified, this makes no changes.
       geometry_engine_->collision_filter().Apply(
-          CollisionFilterDeclaration().ExcludeBetween(GeometrySet(geometry_id),
-                                                      ids_for_filtering),
-          [this](const GeometrySet& set) {
-            return this->CollectIds(set, Role::kProximity);
+          CollisionFilterDeclaration(CollisionFilterScope::kOmitDeformable)
+              .ExcludeBetween(GeometrySet(geometry_id), ids_for_filtering),
+          [this](const GeometrySet& set, CollisionFilterScope scope) {
+            return this->CollectIds(set, Role::kProximity, scope);
           },
           true /* is_invariant */);
     } break;
@@ -1275,13 +1275,20 @@ GeometryState<T>::ToAutoDiffXd() const {
 
 template <typename T>
 unordered_set<GeometryId> GeometryState<T>::CollectIds(
-    const GeometrySet& geometry_set, std::optional<Role> role) const {
+    const GeometrySet& geometry_set, std::optional<Role> role,
+    CollisionFilterScope scope) const {
+  auto must_include = [scope](const InternalGeometry& g,
+                              const std::optional<Role>& r) {
+    // Must have compatible role and be part of the scope.
+    return (!r.has_value() || g.has_role(*r)) &&
+           (scope == CollisionFilterScope::kAll || !g.is_deformable());
+  };
   unordered_set<GeometryId> resultant_ids;
   for (auto frame_id : geometry_set.frames()) {
     const auto& frame = GetValueOrThrow(frame_id, frames_);
     for (auto geometry_id : frame.child_geometries()) {
       const InternalGeometry& geometry = geometries_.at(geometry_id);
-      if (!role.has_value() || geometry.has_role(*role)) {
+      if (must_include(geometry, role)) {
         resultant_ids.insert(geometry_id);
       }
     }
@@ -1295,10 +1302,11 @@ unordered_set<GeometryId> GeometryState<T>::CollectIds(
           "SceneGraph: " +
           to_string(geometry_id));
     }
-    if (!role.has_value() || geometry->has_role(*role)) {
+    if (must_include(*geometry, role)) {
       resultant_ids.insert(geometry_id);
     }
   }
+
   return resultant_ids;
 }
 
