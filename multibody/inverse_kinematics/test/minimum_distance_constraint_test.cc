@@ -6,6 +6,8 @@
 #include "drake/math/compute_numerical_gradient.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/inverse_kinematics/test/inverse_kinematics_test_utilities.h"
+#include "drake/planning/scene_graph_collision_checker.h"
+#include "drake/solvers/minimum_value_constraint.h"
 #include "drake/solvers/test_utilities/check_constraint_eval_nonsymbolic.h"
 
 namespace drake {
@@ -474,6 +476,132 @@ GTEST_TEST(ThreeSpheresTest, SomeLargerThanInfluenceSomeSmallerThanMinimum) {
     dut.Eval(q, &y_val);
     EXPECT_TRUE((y_val.array() < dut.lower_bound().array()).any() ||
                 (y_val.array() > dut.upper_bound().array()).any());
+  }
+}
+
+TEST_F(SpheresAndWallsTest, TestWithCollisionChecker) {
+  // Test MinimumDistanceConstraint constructed with CollisionChecker.
+  planning::CollisionCheckerParams params;
+  params.model = builder_.Build();
+  params.robot_model_instances.push_back(multibody::default_model_instance());
+  auto quaternion_difference = [](const Eigen::Ref<const Eigen::Vector4d>& q1,
+                                  const Eigen::Ref<const Eigen::Vector4d>& q2) {
+    // Compute 1-cos(theta/2) where theta is the angle between the two
+    // quaternions.
+    return 1 - (Eigen::Quaterniond(q1(0), q1(1), q1(2), q1(3)).conjugate() *
+                Eigen::Quaterniond(q2(0), q2(1), q2(2), q2(3)))
+                   .w();
+  };
+  params.configuration_distance_function = [quaternion_difference](
+                                               const Eigen::VectorXd& q1,
+                                               const Eigen::VectorXd& q2) {
+    return quaternion_difference(q1.head<4>(), q2.head<4>()) +
+           quaternion_difference(q1.segment<4>(7), q2.segment<4>(7)) +
+           (q1.segment<3>(4) - q2.segment<3>(4)).norm() +
+           (q1.segment<3>(11) - q2.segment<3>(11)).norm();
+  };
+  params.edge_step_size = 0.05;
+  planning::SceneGraphCollisionChecker collision_checker(std::move(params));
+  auto collision_checker_context =
+      collision_checker.MakeStandaloneModelContext();
+  double influence_distance = 0.2;
+  auto check_constraint = [&collision_checker](
+                              const MinimumDistanceConstraint& dut,
+                              const Eigen::Vector3d& p_WS1,
+                              const Eigen::Vector3d& p_WS2, bool is_satisfied) {
+    Eigen::VectorXd q(collision_checker.plant().num_positions());
+    // sphere 1 quaternion.
+    q.head<4>() << 1, 0, 0, 0;
+    q.segment<3>(4) = p_WS1;
+    // sphere 2 quaternion.
+    q.segment<4>(7) << 1, 0, 0, 0;
+    q.tail<3>() = p_WS2;
+    EXPECT_EQ(dut.CheckSatisfied(q), is_satisfied);
+    // Make sure the gradient is correct.
+    const AutoDiffVecXd q_ad = math::InitializeAutoDiff(q);
+    AutoDiffVecXd y_ad;
+    dut.Eval(q_ad, &y_ad);
+
+    math::NumericalGradientOption options(
+        math::NumericalGradientMethod::kCentral);
+    const Eigen::MatrixXd grad_numeric =
+        math::ComputeNumericalGradient<Eigen::VectorXd, Eigen::VectorXd,
+                                       Eigen::VectorXd>(
+            [&dut](const Eigen::VectorXd& x, Eigen::VectorXd* y) {
+              dut.Eval(x, y);
+            },
+            q, options);
+    EXPECT_TRUE(
+        CompareMatrices(math::ExtractGradient(y_ad), grad_numeric, 1E-7));
+  };
+
+  {
+    // We provide both minimum_distance_lower and minimum_distance_upper.
+    double minimum_distance_lower = 0.05;
+    double minimum_distance_upper = 0.15;
+    MinimumDistanceConstraint dut(
+        &collision_checker, minimum_distance_lower, minimum_distance_upper,
+        collision_checker_context.get(),
+        solvers::QuadraticallySmoothedHingeLoss, influence_distance);
+    EXPECT_EQ(dut.num_constraints(), 2);
+    EXPECT_EQ(dut.num_vars(), collision_checker.plant().num_positions());
+
+    // The two spheres almost coincide (do not set the two spheres to exactly
+    // coincide as the distance jacobian is ill defined at that point).
+    check_constraint(dut, Eigen::Vector3d(0, 0, 0), Eigen::Vector3d(1E-4, 0, 0),
+                     false);
+    // The two spheres are separated, but the distance is smaller than
+    // minimum_distance_lower
+    check_constraint(
+        dut, Eigen::Vector3d(0, 0, 0),
+        Eigen::Vector3d(0.9 * minimum_distance_lower + 2 * radius_, 0, 0),
+        false);
+    // The distance between the two spheres is between minimum_distance_lower
+    // and minimum_distance_upper.
+    check_constraint(
+        dut, Eigen::Vector3d(0, 0, 0),
+        Eigen::Vector3d(
+            (minimum_distance_lower + minimum_distance_upper) / 2 + 2 * radius_,
+            0, 0),
+        true);
+    // The distance between the two spheres is above minimum_distance_upper.
+    check_constraint(
+        dut, Eigen::Vector3d(0, 0, 0),
+        Eigen::Vector3d(minimum_distance_upper + 2 * radius_ + 1E-3, 0, 0),
+        false);
+    // The distance between the two spheres is above minimum_distance_upper, but
+    // the distance between sphere 2 and the right wall is between
+    // minimum_distance_lower and minimum_distance_upper.
+    check_constraint(
+        dut, Eigen::Vector3d(0, 0, 0),
+        Eigen::Vector3d(
+            wall_length_ / 2 -
+                (minimum_distance_lower + minimum_distance_upper) / 2 - radius_,
+            0, 0),
+        true);
+  }
+
+  {
+    // Only specify minimum_distance_lower.
+    double minimum_distance = 0.05;
+    MinimumDistanceConstraint dut(&collision_checker, minimum_distance,
+                                  collision_checker_context.get());
+    EXPECT_EQ(dut.num_constraints(), 1);
+    EXPECT_EQ(dut.num_vars(), collision_checker.plant().num_positions());
+
+    // The two spheres almost coincide (do not set the two spheres to exactly
+    // coincide as the distance jacobian is ill defined at that point).
+    check_constraint(dut, Eigen::Vector3d(0, 0, 0), Eigen::Vector3d(1E-4, 0, 0),
+                     false);
+    // The two spheres are separated, but the distance is smaller than
+    // minimum_distance_lower.
+    check_constraint(
+        dut, Eigen::Vector3d(0, 0, 0),
+        Eigen::Vector3d(0.9 * minimum_distance + 2 * radius_, 0, 0), false);
+    // The distance between the two spheres is above minimum_distance.
+    check_constraint(
+        dut, Eigen::Vector3d(0, 0, 0),
+        Eigen::Vector3d(1.1 * minimum_distance + 2 * radius_, 0, 0), true);
   }
 }
 }  // namespace multibody
