@@ -5,7 +5,6 @@
  the pydrake.geometry module. */
 
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
-#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/identifier_pybind.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
@@ -117,12 +116,6 @@ void DoScalarIndependentDefinitions(py::module m) {
         .def("perception_properties", &Class::perception_properties,
             py_rvp::reference_internal, cls_doc.perception_properties.doc);
     DefCopyAndDeepCopy(&cls);
-    constexpr char doc_release_deprecated[] =
-        "Ownership transfer doesn't make sense for Python. Just use shape() "
-        "instead. This function will be removed on or after 2023-08-01.";
-    cls.def("release_shape",
-        WrapDeprecated(doc_release_deprecated, &Class::release_shape),
-        doc_release_deprecated);
   }
 
   // GeometryProperties

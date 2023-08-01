@@ -7,7 +7,6 @@ import unittest
 import numpy as np
 
 from pydrake.common.test_utilities import numpy_compare
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.test_utilities.pickle_compare import assert_pickle
 from pydrake.common.value import AbstractValue, Value
 from pydrake.common.yaml import yaml_load_typed
@@ -87,8 +86,6 @@ class TestGeometryCore(unittest.TestCase):
                               mut.PerceptionProperties)
         self.assertIsInstance(geometry.perception_properties(),
                               mut.PerceptionProperties)
-        with catch_drake_warnings(expected_count=1):
-            self.assertIsInstance(geometry.release_shape(), mut.Shape)
 
     def test_geometry_properties_api(self):
         # Test perception/ illustration properties (specifically Rgba).
