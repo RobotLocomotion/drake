@@ -149,8 +149,8 @@ void ApplyCameraConfig(const CameraConfig& config,
   // Extract camera intrinsics from the config struct.
   const auto [color_camera, depth_camera] = config.MakeCameras();
 
-  // How the systems are wired up is very different, depending on whether or
-  // not we need to model an output_delay.
+  // The systems are wired very differently, depending on whether or not we need
+  // to model an output_delay.
   if (config.output_delay == 0.0) {
     // Construct the sensor itself.
     const SimRgbdSensor sim_camera(config.name, base_frame, config.fps, X_PB,
