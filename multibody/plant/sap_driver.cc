@@ -85,6 +85,21 @@ void SapDriver<T>::DeclareCacheEntries(
                              &SapDriver<T>::CalcContactProblemCache),
       state_input_and_parameters);
   contact_problem_ = contact_problem_cache_entry.cache_index();
+
+  const auto& sap_solver_results_cache_entry =
+      mutable_manager->DeclareCacheEntry(
+          "SAP solver results",
+          systems::ValueProducer(this, &SapDriver<T>::CalcSapSolverResults),
+          state_input_and_parameters);
+  sap_results_ = sap_solver_results_cache_entry.cache_index();
+}
+
+template <typename T>
+const SapSolverResults<T>& SapDriver<T>::EvalSapSolverResults(
+    const systems::Context<T>& context) const {
+  return plant()
+      .get_cache_entry(sap_results_)
+      .template Eval<SapSolverResults<T>>(context);
 }
 
 template <typename T>
@@ -710,9 +725,9 @@ void SapDriver<T>::AddCliqueContribution(
 }
 
 template <typename T>
-void SapDriver<T>::CalcContactSolverResults(
+void SapDriver<T>::CalcSapSolverResults(
     const systems::Context<T>& context,
-    contact_solvers::internal::ContactSolverResults<T>* results) const {
+    SapSolverResults<T>* sap_results) const {
   const ContactProblemCache<T>& contact_problem_cache =
       EvalContactProblemCache(context);
   const SapContactProblem<T>& sap_problem = *contact_problem_cache.sap_problem;
@@ -745,14 +760,19 @@ void SapDriver<T>::CalcContactSolverResults(
   // Solve the reduced DOF locked problem.
   SapSolver<T> sap;
   sap.set_parameters(sap_parameters_);
-  SapSolverResults<T> sap_results;
 
-  // Solve the locked problem only when joint locking is present.
-  const SapSolverStatus status =
-      (has_locked_dofs
-           ? sap.SolveWithGuess(*contact_problem_cache.sap_problem_locked, v0,
-                                &sap_results)
-           : sap.SolveWithGuess(sap_problem, v0, &sap_results));
+  SapSolverStatus status;
+  if (has_locked_dofs) {
+    SapSolverResults<T> locked_sap_results;
+    status = sap.SolveWithGuess(*contact_problem_cache.sap_problem_locked, v0,
+                                &locked_sap_results);
+    if (status == SapSolverStatus::kSuccess) {
+      sap_problem.ExpandContactSolverResults(contact_problem_cache.mapping,
+                                             locked_sap_results, sap_results);
+    }
+  } else {
+    status = sap.SolveWithGuess(sap_problem, v0, sap_results);
+  }
 
   if (status != SapSolverStatus::kSuccess) {
     const std::string msg = fmt::format(
@@ -777,22 +797,83 @@ void SapDriver<T>::CalcContactSolverResults(
         context.get_time());
     throw std::runtime_error(msg);
   }
+}
 
+template <typename T>
+void SapDriver<T>::CalcContactSolverResults(
+    const systems::Context<T>& context,
+    contact_solvers::internal::ContactSolverResults<T>* results) const {
+  const ContactProblemCache<T>& contact_problem_cache =
+      EvalContactProblemCache(context);
+  const SapContactProblem<T>& sap_problem = *contact_problem_cache.sap_problem;
+  const SapSolverResults<T>& sap_results = EvalSapSolverResults(context);
   const std::vector<DiscreteContactPair<T>>& discrete_pairs =
       manager().EvalDiscreteContactPairs(context);
   const int num_contacts = discrete_pairs.size();
+  PackContactSolverResults(context, sap_problem, num_contacts, sap_results,
+                           results);
+}
 
-  if (has_locked_dofs) {
-    SapSolverResults<T> expanded_sap_results;
-    sap_problem.ExpandContactSolverResults(contact_problem_cache.mapping,
-                                           sap_results, &expanded_sap_results);
-    // Pack the expanded solver results.
-    PackContactSolverResults(context, sap_problem, num_contacts,
-                             expanded_sap_results, results);
-  } else {
-    // Pack the solver results.
-    PackContactSolverResults(context, sap_problem, num_contacts, sap_results,
-                             results);
+template <typename T>
+void SapDriver<T>::CalcDiscreteUpdateMultibodyForces(
+    const systems::Context<T>& context, MultibodyForces<T>* forces) const {
+  auto& generalized_forces = forces->mutable_generalized_forces();
+  auto& spatial_forces = forces->mutable_body_forces();
+
+  // Current state (previous time step).
+  const VectorX<T>& x0 =
+      context.get_discrete_state(manager().multibody_state_index()).value();
+  const auto v0 = x0.bottomRows(plant().num_velocities());
+
+  // Next time step state.
+  const contact_solvers::internal::SapContactProblem<T>& problem =
+      *EvalContactProblemCache(context).sap_problem;
+  const SapSolverResults<T>& sap_results = EvalSapSolverResults(context);
+  // Generalized velocities and accelerations.
+  const VectorX<T>& v = sap_results.v;
+  const VectorX<T> a = (v - v0) / plant().time_step();
+
+  // Include all state dependent forces (not constraints) evaluated at t₀
+  // (previous time step as stored in the context).
+  const bool include_joint_limit_penalty_forces = false;
+  manager().CalcNonContactForces(context, include_joint_limit_penalty_forces,
+                                 forces);
+
+  // SAP evaluates damping terms (joint damping and reflected inertia)
+  // implicitly. Therefore we must subtract the explicit term evaluated above
+  // and include the implicit term instead.
+  const VectorX<T> diagonal_inertia = manager().CalcEffectiveDamping(context);
+  generalized_forces -= diagonal_inertia.asDiagonal() * a;
+
+  // Include the contribution from constraints.
+  // TODO(amcastro-tri): Consider deformables.
+  if constexpr (std::is_same_v<T, double>) {
+    if (manager().deformable_driver_ != nullptr) {
+      throw std::logic_error(
+          "The computation of MultibodyForces must be updated to include "
+          "deformable objects.");
+    }
+  }
+
+  VectorX<T> constraints_generalized_forces(plant().num_velocities());
+  std::vector<SpatialForce<T>> constraint_spatial_forces(plant().num_bodies());
+  const VectorX<T>& gamma = sap_results.gamma;
+
+  // N.B. When CompliantContactManager builds the problem, the "about point" for
+  // the reporting of multibody forces is defined to be at body origins and
+  // expressed in the world frame.
+  // Therefore aggregation of forces per-body makes sense in this call.
+  problem.CalcConstraintMultibodyForces(gamma, &constraints_generalized_forces,
+                                        &constraint_spatial_forces);
+  generalized_forces += constraints_generalized_forces;
+
+  // N.B. The CompliantContactManager indexes constraints objects with body
+  // indexes. Therefore using body indices on constraints_generalized_forces is
+  // correct. However MultibodyForce uses BodyNodeIndex, see below.
+  for (BodyIndex b(0); b < plant().num_bodies(); ++b) {
+    // MultibodyForce indexes spatial body forces by BodyNodeIndex.
+    const BodyNodeIndex node_index = plant().get_body(b).node_index();
+    spatial_forces[node_index] += constraint_spatial_forces[b];
   }
 }
 
