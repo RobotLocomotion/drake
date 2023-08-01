@@ -8,14 +8,6 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/multibody/contact_solvers/supernodal_solver.h"
 
-#ifndef DRAKE_DOXYGEN_CXX
-// Forward declaration to avoid the inclusion of conex's headers within a Drake
-// header.
-namespace conex {
-class SupernodalKKTSolver;
-}
-#endif
-
 namespace drake {
 namespace multibody {
 namespace contact_solvers {
@@ -78,7 +70,12 @@ class ConexSuperNodalSolver final : public SuperNodalSolver {
                   const std::vector<BlockTriplet>& jacobian_blocks,
                   const std::vector<Eigen::MatrixXd>& mass_matrices);
 
-  std::unique_ptr<::conex::SupernodalKKTSolver> solver_;
+  // We use 'void' here to avoid the inclusion of conex's headers within a
+  // Drake header; the actual type of the object is a SupernodalKKTSolver.
+  // We use a shared_ptr to have a type-erased deleter; the object is not
+  // actually ever shared anywhere.
+  std::shared_ptr<void> solver_;
+
   // N.B. This array stores pointers to clique assemblers owned by
   // owned_clique_assemblers_.
   std::vector<CliqueAssembler*> clique_assemblers_ptrs_;
