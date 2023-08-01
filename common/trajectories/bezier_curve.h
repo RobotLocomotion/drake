@@ -55,15 +55,38 @@ class BezierCurve final : public trajectories::Trajectory<T> {
   /** Returns a const reference to the control points which define the curve. */
   const MatrixX<T>& control_points() const { return control_points_; }
 
-  /** We often write optimizations using the control points as decision
+  /** Supports writing optimizations using the control points as decision
    variables.  This method returns the matrix, `M`, defining the control points
    of the `order` derivative in the form:
    <pre>
-     derivative.control_points().row(i).T = M * this.control_points().row(i).T
+   derivative.control_points() = this.control_points() * M
    </pre>
-   Note the transpose operators, `.T`; this format was chosen for compatibility
-   use with e.g. solvers::MathematicalProgram::AddLinearConstraint(). Note also
-   that the matrix, `M`, is the same for all rows, `i`, of control_points().
+   For instance, since we have
+   <pre>
+   derivative.control_points().col(k) = this.control_points() * M.col(k),
+   </pre>
+   constraining the kth control point of the `n`th derivative to be in [ub,
+   lb], could be done with:
+   @code
+   auto M = curve.AsLinearInControlPoints(n);
+   for (int i=0; i<curve.rows(); ++i) {
+     auto c = std::make_shared<solvers::LinearConstraint>(
+       M.col(k).transpose(), Vector1d(lb(i)), Vector1d(ub(i)));
+     prog.AddConstraint(c, curve.row(i).transpose());
+   }
+   @endcode
+   Iterating over the rows of the control points is the natural sparsity pattern
+   here (since `M` is the same for all rows).  For instance, we also have
+   <pre>
+   derivative.control_points().row(k).T = M.T * this.control_points().row(k).T,
+   </pre> or
+   <pre>
+   vec(derivative.control_points().T) = blockMT * vec(this.control_points().T),
+   blockMT = [ M.T,   0, .... 0 ]
+             [   0, M.T, 0, ... ]
+             [      ...         ]
+             [  ...    , 0, M.T ].
+   </pre>
    @pre derivative_order >= 0. */
   Eigen::SparseMatrix<double> AsLinearInControlPoints(
       int derivative_order = 1) const;

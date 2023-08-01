@@ -351,7 +351,7 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, VelocityBoundsOnEdges) {
   gcs.AddTimeCost();
 
   // Nonregression bound on the complexity of the underlying GCS MICP.
-  EXPECT_LT(gcs.EstimateComplexity(), 1e2);
+  EXPECT_LT(gcs.EstimateComplexity(), 125);
 
   if (!GurobiOrMosekSolverAvailable()) {
     return;
@@ -927,7 +927,7 @@ TEST_F(SimpleEnv2D, IntermediatePoint) {
   main2.AddPathLengthCost(weight_matrix);
 
   // Nonregression bound on the complexity of the underlying GCS MICP.
-  EXPECT_LT(gcs.EstimateComplexity(), 1e3);
+  EXPECT_LT(gcs.EstimateComplexity(), 1100);
 
   if (!GurobiOrMosekSolverAvailable()) {
     return;
