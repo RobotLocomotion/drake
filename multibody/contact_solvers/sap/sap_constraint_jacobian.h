@@ -100,6 +100,15 @@ class SapConstraintJacobian {
     return clique_jacobians_[local_clique].block;
   }
 
+  /* Returns `true` iff both clique blocks of this Jacobian are dense. */
+  bool blocks_are_dense() const;
+
+  // TODO(amcastro-tri): extend this method to support non-dense blocks.
+  /* Returns Y = Aᵀ⋅J, with J being `this` Jacobian matrix.
+   @pre blocks_are_dense() is true. */
+  SapConstraintJacobian<T> LeftMultiplyByTranspose(
+      const Eigen::Ref<const MatrixX<T>>& A) const;
+
  private:
   // Blocks for each block. Up to two entries only.
   std::vector<CliqueJacobian<T>> clique_jacobians_;
