@@ -1,3 +1,5 @@
+# -*- bazel -*-
+
 load("@drake//tools/skylark:py.bzl", "py_library")
 
 licenses(["notice"])  # MIT
