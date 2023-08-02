@@ -97,6 +97,7 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "nlopt_internal",
     "org_apache_xmlgraphics_commons",
     "petsc",
+    "picosha2_internal",
     "pybind11",
     "qhull_internal",
     "sdformat_internal",
