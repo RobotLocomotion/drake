@@ -5,7 +5,7 @@
 build:kcov --build_tests_only
 build:kcov --copt -g
 build:kcov --copt -O0
-build:kcov --spawn_strategy=standalone
+build:kcov --strategy=TestRunner=local
 build:kcov --run_under //tools/dynamic_analysis:kcov
 build:kcov --local_test_jobs=HOST_CPUS*0.5
 build:kcov --test_tag_filters=-lint,-gurobi,-mosek,-snopt,-no_kcov
