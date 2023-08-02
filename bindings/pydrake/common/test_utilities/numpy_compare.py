@@ -14,6 +14,7 @@ Prefer comparisons in the following order:
 from contextlib import contextmanager
 from collections import namedtuple
 import functools
+import inspect
 from itertools import product
 
 import numpy as np
@@ -312,6 +313,8 @@ def check_all_types(check_func):
 def check_nonsymbolic_types(check_func):
     """Decorator to call a function multiple types with `T={type}`, where
     `type` covers all (common) non-symbolic scalar types for Drake."""
+
+    assert inspect.isfunction(check_func), check_func
 
     @functools.wraps(check_func)
     def wrapper(*args, **kwargs):
