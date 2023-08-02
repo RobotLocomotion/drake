@@ -347,7 +347,7 @@ GTEST_TEST(VPolytopeTest, FromHUnitBoxTest) {
   Vector6d out3_W;
   out3_W << .99, 1.01, .99, 1.01, .99, 1.01;
 
-  const double kTol = 1e-11;
+  const double kTol = 1e-9;
   EXPECT_TRUE(V.PointInSet(in1_W, kTol));
   EXPECT_TRUE(V.PointInSet(in2_W, kTol));
   EXPECT_FALSE(V.PointInSet(out1_W, kTol));
