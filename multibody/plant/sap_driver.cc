@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <limits>
+#include <map>
 #include <memory>
 #include <set>
 #include <string>
@@ -348,8 +349,12 @@ void SapDriver<T>::AddCouplerConstraints(const systems::Context<T>& context,
   const Vector1<T> stiffness(kInfinity);
   const Vector1<T> relaxation_time(plant().time_step());
 
+  const std::map<MultibodyConstraintId, bool>& constraint_active_status =
+      manager().GetConstraintActiveStatus(context);
+
   for (const auto& [id, info] : manager().coupler_constraints_specs()) {
-    unused(id);
+    // Skip this constraint if it is not active.
+    if (!constraint_active_status.at(id)) continue;
     const Joint<T>& joint0 = plant().get_joint(info.joint0_index);
     const Joint<T>& joint1 = plant().get_joint(info.joint1_index);
     const int dof0 = joint0.velocity_start();
@@ -409,8 +414,13 @@ void SapDriver<T>::AddDistanceConstraints(const systems::Context<T>& context,
 
   const Frame<T>& frame_W = plant().world_frame();
 
+  const std::map<MultibodyConstraintId, bool>& constraint_active_status =
+      manager().GetConstraintActiveStatus(context);
+
   for (const auto& [id, spec] : manager().distance_constraints_specs()) {
-    unused(id);
+    // skip this constraint if it is not active.
+    if (!constraint_active_status.at(id)) continue;
+
     const Body<T>& body_A = plant().get_body(spec.body_A);
     const Body<T>& body_B = plant().get_body(spec.body_B);
     DRAKE_DEMAND(body_A.index() != body_B.index());
@@ -504,8 +514,14 @@ void SapDriver<T>::AddBallConstraints(
   MatrixX<T> Jv_ApBq_W = MatrixX<T>::Zero(3, nv);
 
   const Frame<T>& frame_W = plant().world_frame();
+
+  const std::map<MultibodyConstraintId, bool>& constraint_active_status =
+      manager().GetConstraintActiveStatus(context);
+
   for (const auto& [id, spec] : manager().ball_constraints_specs()) {
-    unused(id);
+    // skip this constraint if it is not active.
+    if (!constraint_active_status.at(id)) continue;
+
     const Body<T>& body_A = plant().get_body(spec.body_A);
     const Body<T>& body_B = plant().get_body(spec.body_B);
 
