@@ -8,9 +8,9 @@ import stable_baselines3
 from stable_baselines3.common.env_checker import check_env
 
 from pydrake.geometry import StartMeshcat
-from pydrake.examples.gym.bazel_cwd_helpers import bazel_chdir
+from pydrake.examples.gym._bazel_cwd_helpers import bazel_chdir
 
-full_sb3_available = False
+_full_sb3_available = False
 if "drake_internal" not in stable_baselines3.__version__:
     from stable_baselines3 import PPO
     from stable_baselines3.common.callbacks import EvalCallback
@@ -21,7 +21,7 @@ if "drake_internal" not in stable_baselines3.__version__:
         VecVideoRecorder,
     )
     import torch as th
-    full_sb3_available = True
+    _full_sb3_available = True
 
 
 def _run_training(config, args):
@@ -115,7 +115,7 @@ def _main():
                         default="./rl/tmp/DrakeCartPole/")
     args = parser.parse_args()
 
-    if not full_sb3_available:
+    if not _full_sb3_available:
         print("stable_baselines3 found, but was drake internal")
         return 0 if args.test else 1
 

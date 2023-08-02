@@ -1,6 +1,5 @@
 flask
 jupyter
-python3-cloudpickle
 six
 u-msgpack-python
 websockets

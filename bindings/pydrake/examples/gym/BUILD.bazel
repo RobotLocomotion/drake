@@ -43,7 +43,7 @@ drake_py_library(
 
 drake_py_library(
     name = "bazel_cwd_helpers_py",
-    srcs = ["bazel_cwd_helpers.py"],
+    srcs = ["_bazel_cwd_helpers.py"],
     deps = [
         ":module_py",
     ],
