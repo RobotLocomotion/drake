@@ -18,6 +18,7 @@ cc_library(
         "include/common_robotics_utilities/base64_helpers.hpp",
         "include/common_robotics_utilities/color_builder.hpp",
         "include/common_robotics_utilities/conversions.hpp",
+        "include/common_robotics_utilities/cru_namespace.hpp",
         "include/common_robotics_utilities/dynamic_spatial_hashed_voxel_grid.hpp",  # noqa
         "include/common_robotics_utilities/gaussian_distributions.hpp",
         "include/common_robotics_utilities/math.hpp",

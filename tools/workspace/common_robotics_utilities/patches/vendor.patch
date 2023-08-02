@@ -1,0 +1,13 @@
+[cru] Use hidden linker visibility
+
+This prevents ODR violations in case downstream code also links to CRU.
+
+--- include/common_robotics_utilities/cru_namespace.hpp
++++ include/common_robotics_utilities/cru_namespace.hpp
+@@ -17,5 +17,5 @@
+ 
+ #ifndef CRU_NAMESPACE_BEGIN
+-# define CRU_NAMESPACE_BEGIN inline namespace v1 {
++# define CRU_NAMESPACE_BEGIN inline namespace drake_vendor __attribute__ ((visibility ("hidden"))) {
+ #endif
+ 
