@@ -123,6 +123,13 @@ TEST_F(RenderEngineGltfClientTest, Constructor) {
   EXPECT_EQ(engine.get_params().cleanup, false);
 }
 
+// Confirms that the deprecated option doesn't crash anything.
+TEST_F(RenderEngineGltfClientTest, ConstructorDeprecation) {
+  Params test_params(params_);
+  test_params.default_label = render::RenderLabel::kUnspecified;
+  const RenderEngineGltfClient engine{test_params};
+}
+
 TEST_F(RenderEngineGltfClientTest, Clone) {
   const RenderEngineGltfClient engine{params_};
   const std::unique_ptr<RenderEngine> clone = engine.Clone();

@@ -27,11 +27,7 @@ class RenderClient {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RenderClient);
 
-  /* Constructs the render engine from the given RenderEngineGltfClientParams.
-
-   @note
-     RenderEngineGltfClientParams.default_label struct member is not relevant
-     for the RenderClient construction. */
+  /* Constructs the render client from the given `params`. */
   explicit RenderClient(const RenderEngineGltfClientParams& params);
 
   ~RenderClient();
@@ -182,8 +178,7 @@ class RenderClient {
   //@{
 
   /* Returns a RenderEngineGltfClientParams struct for RenderClient
-   construction.  Note that `default_label` is not relevant for RenderClient
-   class. */
+   construction. */
   const RenderEngineGltfClientParams& get_params() const { return params_; }
 
   /* The temporary directory used for scratch space, including but not limited
