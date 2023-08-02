@@ -3,6 +3,10 @@ load("@drake//tools/workspace:github.bzl", "github_archive")
 def gym_py_repository(
         name,
         mirrors = None):
+    """The @gym_py external is deprecated and will be removed from Drake's
+    WORKSPACE on or after 2023-12-01; see @gymnasium_py for an available newer
+    replacement
+    """
     github_archive(
         name = name,
         repository = "openai/gym",

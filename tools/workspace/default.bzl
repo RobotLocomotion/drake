@@ -35,6 +35,7 @@ load("@drake//tools/workspace/googlebenchmark:repository.bzl", "googlebenchmark_
 load("@drake//tools/workspace/gtest:repository.bzl", "gtest_repository")
 load("@drake//tools/workspace/gurobi:repository.bzl", "gurobi_repository")
 load("@drake//tools/workspace/gym_py:repository.bzl", "gym_py_repository")
+load("@drake//tools/workspace/gymnasium_py:repository.bzl", "gymnasium_py_repository")  # noqa
 load("@drake//tools/workspace/gz_math_internal:repository.bzl", "gz_math_internal_repository")  # noqa
 load("@drake//tools/workspace/gz_utils_internal:repository.bzl", "gz_utils_internal_repository")  # noqa
 load("@drake//tools/workspace/intel_realsense_ros_internal:repository.bzl", "intel_realsense_ros_internal_repository")  # noqa
@@ -195,7 +196,12 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
     if "gz_utils_internal" not in excludes:
         gz_utils_internal_repository(name = "gz_utils_internal", mirrors = mirrors)  # noqa
     if "gym_py" not in excludes:
+        # The @gym_py external is deprecated and will be removed from Drake's
+        # WORKSPACE on or after 2023-12-01; see @gymnasium_py for an available
+        # newer replacement.
         gym_py_repository(name = "gym_py", mirrors = mirrors)
+    if "gymnasium_py" not in excludes:
+        gymnasium_py_repository(name = "gymnasium_py", mirrors = mirrors)
     if "intel_realsense_ros_internal" not in excludes:
         intel_realsense_ros_internal_repository(name = "intel_realsense_ros_internal", mirrors = mirrors)  # noqa
     if "ipopt" not in excludes:
