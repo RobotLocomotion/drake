@@ -335,6 +335,14 @@ drake_cc_googletest_ubuntu_only(
     ],
 )
 
+drake_cc_googletest(
+    name = "render_engine_gl_params_test",
+    deps = [
+        ":render_engine_gl_params",
+        "//common/yaml",
+    ],
+)
+
 add_lint_tests(
     cpplint_extra_srcs = [
         "no_factory.cc",

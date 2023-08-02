@@ -714,6 +714,12 @@ RenderEngineGl::RenderEngineGl(RenderEngineGlParams params)
       opengl_context_(make_unique<OpenGlContext>()),
       texture_library_(make_shared<TextureLibrary>()),
       parameters_(CleanupLights(std::move(params))) {
+  if (params.default_label != RenderLabel::kDontCare) {
+    static const logging::Warn log_once(
+        "RenderEngineGl(): the default_label configuration option is "
+        "deprecated and will be removed from Drake on or after 2023-12-01.");
+  }
+
   // The default light parameters have been crafted to create the default
   // "headlamp" camera.
   fallback_lights_.push_back({});

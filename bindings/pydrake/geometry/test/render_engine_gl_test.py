@@ -12,8 +12,7 @@ class TestGeometry(unittest.TestCase):
     def test_render_engine_gl_api(self, T):
         SceneGraph = mut.SceneGraph_[T]
         scene_graph = SceneGraph()
-        label = mut.RenderLabel(10)
-        params = mut.RenderEngineGlParams(label=label)
+        params = mut.RenderEngineGlParams()
         if 'darwin' in sys.platform:  # OpenGL is not supported on macOS.
             self.assertRaises(RuntimeError, mut.MakeRenderEngineGl)
         else:
