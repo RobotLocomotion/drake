@@ -2,6 +2,8 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/yaml/yaml_io.h"
+
 namespace drake {
 namespace geometry {
 namespace {
@@ -44,6 +46,22 @@ GTEST_TEST(RenderEngineGltfClientParams, GetUrl) {
     dut.render_endpoint = one_case.render_endpoint;
     EXPECT_EQ(dut.GetUrl(), one_case.expected_full_url);
   }
+}
+
+GTEST_TEST(RenderEngineGltfClientParams, Serialization) {
+  using Params = RenderEngineGltfClientParams;
+  const Params original{
+      .base_url = "http://hello",
+      .render_endpoint = "world",
+      .verbose = true,
+      .cleanup = false,
+  };
+  const std::string yaml = yaml::SaveYamlString<Params>(original);
+  const Params dut = yaml::LoadYamlString<Params>(yaml);
+  EXPECT_EQ(dut.base_url, original.base_url);
+  EXPECT_EQ(dut.render_endpoint, original.render_endpoint);
+  EXPECT_EQ(dut.verbose, original.verbose);
+  EXPECT_EQ(dut.cleanup, original.cleanup);
 }
 
 }  // namespace
