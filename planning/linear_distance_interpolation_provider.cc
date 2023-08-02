@@ -106,7 +106,7 @@ double LinearDistanceAndInterpolationProvider::DoComputeConfigurationDistance(
     const Eigen::Quaterniond to_quat(to.segment<4>(quat_dof_start_index));
     // Whatever this is, it needs to match the angle interpolated through by slerp
     const double quat_angle = Distance(from_quat, to_quat);
-    deltas.segment<4>(quat_dof_start_index) = quat_angle, 0.0, 0.0, 0.0;
+    deltas.segment<4>(quat_dof_start_index) << quat_angle, 0.0, 0.0, 0.0;
   }
   return deltas.cwiseProduct(distance_weights()).norm();
 }
