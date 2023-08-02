@@ -67,7 +67,7 @@ index bc09594..79d40d3 100644
 +from ast import Import
  import warnings
  from typing import Dict, Tuple, Union
-
+ 
  import numpy as np
 -import torch as th
  from gymnasium import spaces
@@ -78,12 +78,12 @@ index bc09594..79d40d3 100644
 +    from torch.nn import functional as F
 +except ImportError:
 +    pass  # Let any function calls that use torch fail naturally.
-
-
+ 
+ 
  def is_image_space_channels_first(observation_space: spaces.Box) -> bool:
 @@ -90,10 +95,10 @@ def maybe_transpose(observation: np.ndarray, observation_space: spaces.Space) ->
-
-
+ 
+ 
  def preprocess_obs(
 -    obs: th.Tensor,
 +    obs,
