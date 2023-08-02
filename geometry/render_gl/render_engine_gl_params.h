@@ -16,15 +16,14 @@ struct RenderEngineGlParams {
   Refer to @ref yaml_serialization "YAML Serialization" for background. */
   template <typename Archive>
   void Serialize(Archive* a) {
-    a->Visit(DRAKE_NVP(default_label));
     a->Visit(DRAKE_NVP(default_diffuse));
     a->Visit(DRAKE_NVP(default_clear_color));
     a->Visit(DRAKE_NVP(lights));
   }
 
-  /** Default render label to apply to a geometry when none is otherwise
-   specified.  */
-  render::RenderLabel default_label{render::RenderLabel::kUnspecified};
+  /** (Deprecated.) The default_label is no longer configurable. <br>
+   This will be removed from Drake on or after 2023-12-01. */
+  render::RenderLabel default_label{render::RenderLabel::kDontCare};
 
   /** Default diffuse color to apply to a geometry when none is otherwise
    specified in the (phong, diffuse) property.  */
