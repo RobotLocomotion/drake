@@ -151,4 +151,12 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_googletest(
+    name = "render_engine_vtk_params_test",
+    deps = [
+        ":render_engine_vtk_params",
+        "//common/yaml",
+    ],
+)
+
 add_lint_tests(enable_clang_format_lint = False)
