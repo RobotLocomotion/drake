@@ -106,8 +106,8 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "suitesparse_internal",
     "tinyobjloader_internal",
     "tinyxml2_internal",
-    "usockets",
-    "uwebsockets",
+    "usockets_internal",
+    "uwebsockets_internal",
     "vtk",
     "yaml_cpp_internal",
 ]] + ["//tools/workspace/%s:install" % p for p in [
