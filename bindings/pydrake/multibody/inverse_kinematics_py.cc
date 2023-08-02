@@ -487,7 +487,52 @@ PYBIND11_MODULE(inverse_kinematics, m) {
             // Keep alive, reference: `self` keeps `plant` alive.
             py::keep_alive<1, 2>(),
             // Keep alive, reference: `self` keeps `plant_context` alive.
-            py::keep_alive<1, 4>(), cls_doc.ctor.doc_autodiff_no_upper_bound);
+            py::keep_alive<1, 4>(), cls_doc.ctor.doc_autodiff_no_upper_bound)
+        .def(py::init([](const planning::CollisionChecker* collision_checker,
+                          double minimum_distance,
+                          planning::CollisionCheckerContext*
+                              collision_checker_context,
+                          PyPenaltyFunction penalty_function,
+                          double influence_distance_offset) {
+          return std::make_unique<MinimumDistanceConstraint>(collision_checker,
+              minimum_distance, collision_checker_context,
+              UnwrapPyPenaltyFunction(penalty_function),
+              influence_distance_offset);
+        }),
+            py::arg("collision_checker"), py::arg("minimum_distance"),
+            py::arg("collision_checker_context"),
+            py::arg("penalty_function") = MinimumDistancePenaltyFunction{},
+            py::arg("influence_distance_offset") = 1,
+            // Keep alive, reference: `self` keeps collision_checker
+            // alive.
+            py::keep_alive<1, 2>(),
+            // Keep alive, reference: `self` keeps collision_checker_context
+            // alive.
+            py::keep_alive<1, 4>(),
+            cls_doc.ctor.doc_collision_checker_no_upper_bound)
+        .def(py::init([](const planning::CollisionChecker* collision_checker,
+                          double minimum_distance_lower,
+                          double minimum_distance_upper,
+                          planning::CollisionCheckerContext*
+                              collision_checker_context,
+                          PyPenaltyFunction penalty_function,
+                          double influence_distance) {
+          return std::make_unique<MinimumDistanceConstraint>(collision_checker,
+              minimum_distance_lower, minimum_distance_upper,
+              collision_checker_context,
+              UnwrapPyPenaltyFunction(penalty_function), influence_distance);
+        }),
+            py::arg("collision_checker"), py::arg("minimum_distance_lower"),
+            py::arg("minimum_distance_upper"),
+            py::arg("collision_checker_context"), py::arg("penalty_function"),
+            py::arg("influence_distance"),
+            // Keep alive, reference: `self` keeps `collision_checker`
+            // alive.
+            py::keep_alive<1, 2>(),
+            // Keep alive, reference: `self` keeps `collision_checker_context`
+            // alive.
+            py::keep_alive<1, 5>(),
+            cls_doc.ctor.doc_collision_checker_with_upper_bound);
 
     std::string py_penalty_doc =
         "The penalty function penalty_function(x: float, compute_grad: bool) "

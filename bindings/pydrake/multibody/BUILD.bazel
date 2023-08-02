@@ -439,12 +439,15 @@ drake_py_unittest(
     name = "inverse_kinematics_test",
     data = [
         ":models",
+        "//multibody:models",
+        "//planning/test_utilities:collision_ground_plane.sdf",
     ],
     deps = [
         ":benchmarks_py",
         ":inverse_kinematics_py",
         ":parsing_py",
         "//bindings/pydrake/common/test_utilities",
+        "//bindings/pydrake/planning",
     ],
 )
 
