@@ -15,13 +15,13 @@ struct RenderEngineVtkParams  {
   Refer to @ref yaml_serialization "YAML Serialization" for background. */
   template <typename Archive>
   void Serialize(Archive* a) {
-    a->Visit(DRAKE_NVP(default_label));
     a->Visit(DRAKE_NVP(default_diffuse));
     a->Visit(DRAKE_NVP(default_clear_color));
   }
 
-  /** The (optional) label to apply when none is otherwise specified.  */
-  std::optional<render::RenderLabel> default_label{};
+  /** (Deprecated.) The default_label is no longer configurable. <br>
+   This will be removed from Drake on or after 2023-12-01. */
+  std::optional<render::RenderLabel> default_label;
 
   /** The (optional) rgba color to apply to the (phong, diffuse) property when
     none is otherwise specified. Note: currently the alpha channel is unused

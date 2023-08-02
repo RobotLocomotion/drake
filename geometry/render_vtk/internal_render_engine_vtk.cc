@@ -93,11 +93,18 @@ ShaderCallback::ShaderCallback() :
 vtkNew<ShaderCallback> RenderEngineVtk::uniform_setting_callback_;
 
 RenderEngineVtk::RenderEngineVtk(const RenderEngineVtkParams& parameters)
-    : RenderEngine(parameters.default_label ? *parameters.default_label
-                                            : RenderLabel::kUnspecified),
+    : RenderEngine(  // TODO(jwnimmer-tri) Upon deprecation removal of the
+                     // default_label on 2023-12-01, we should hard-code the
+                     // kDontCare here, instead of using value_or().
+          parameters.default_label.value_or(RenderLabel::kDontCare)),
       pipelines_{{make_unique<RenderingPipeline>(),
                   make_unique<RenderingPipeline>(),
                   make_unique<RenderingPipeline>()}} {
+  if (parameters.default_label.has_value()) {
+    static const logging::Warn log_once(
+        "RenderEngineVtk(): the default_label configuration option is "
+        "deprecated and will be removed from Drake on or after 2023-12-01.");
+  }
   if (parameters.default_diffuse) {
     default_diffuse_.set(*parameters.default_diffuse);
   }
