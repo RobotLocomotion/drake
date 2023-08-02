@@ -309,11 +309,7 @@ void ChangeToLabelMaterials(nlohmann::json* gltf, const ColorD& color) {
 
 RenderEngineGltfClient::RenderEngineGltfClient(
     const RenderEngineGltfClientParams& parameters)
-    : RenderEngineVtk({// TODO(jwnimmer-tri) Upon deprecation removal of the
-                       // default_label on 2023-12-01, we should hard-code the
-                       // kDontCare here, instead of using value_or().
-                       .default_label = parameters.default_label.value_or(
-                           render::RenderLabel::kDontCare)}),
+    : RenderEngineVtk({.default_label = parameters.default_label}),
       render_client_{std::make_unique<RenderClient>(parameters)} {
   if (parameters.default_label.has_value()) {
     static const logging::Warn log_once(
