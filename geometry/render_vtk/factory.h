@@ -57,14 +57,10 @@ namespace geometry {
 
  | Group name | Property Name |   Required    |  Property Type  | Property Description |
  | :--------: | :-----------: | :-----------: | :-------------: | :------------------- |
- |   label    | id            | configurable⁵ |  RenderLabel    | The label to render into the image. |
+ |   label    | id            | no⁵           |  RenderLabel    | The label to render into the image. |
 
- ⁵ %RenderEngineVtk has a default render label value that is applied to any
- geometry that doesn't have a (label, id) property at registration. If a value
- is not explicitly specified, %RenderEngineVtk uses RenderLabel::kUnspecified
- as this default value. It can be explicitly set upon construction. The possible
- values for this default label and the ramifications of that choice are
- documented @ref render_engine_default_label "here".
+ ⁵ When the label property is not set, %RenderEngineVtk uses a default render
+ label of RenderLabel::kDontCare.
 
  <h3>Geometries accepted by %RenderEngineVtk</h3>
 

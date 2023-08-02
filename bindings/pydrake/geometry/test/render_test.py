@@ -52,18 +52,27 @@ class TestGeometryRender(unittest.TestCase):
     def test_render_engine_vtk_params(self):
         # Confirm default construction of params.
         params = mut.RenderEngineVtkParams()
-        self.assertEqual(params.default_label, None)
         self.assertEqual(params.default_diffuse, None)
 
-        label = mut.RenderLabel(10)
         diffuse = np.array((1.0, 0.0, 0.0, 0.0))
-        params = mut.RenderEngineVtkParams(
-            default_label=label, default_diffuse=diffuse)
-        self.assertEqual(params.default_label, label)
+        params = mut.RenderEngineVtkParams(default_diffuse=diffuse)
         self.assertTrue((params.default_diffuse == diffuse).all())
 
-        self.assertIn("default_label", repr(params))
+        self.assertIn("default_diffuse", repr(params))
         copy.copy(params)
+
+    def test_render_engine_vtk_params_deprecated(self):
+        """The default_label attribute is deprecated; make sure it still works,
+        for now.
+        """
+        params = mut.RenderEngineVtkParams()
+        with catch_drake_warnings(expected_count=1):
+            self.assertEqual(params.default_label, None)
+        label = mut.RenderLabel(10)
+        with catch_drake_warnings(expected_count=1):
+            params = mut.RenderEngineVtkParams(default_label=label)
+        with catch_drake_warnings(expected_count=1):
+            self.assertEqual(params.default_label, label)
 
     def test_render_engine_gl_params(self):
         # A default constructor exists.

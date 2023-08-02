@@ -991,7 +991,7 @@ TEST_F(RenderEngineVtkTest, NonUcharChannelTextures) {
   ImageRgba8U color_uchar_texture(intrinsics.width(), intrinsics.height());
   {
     RenderEngineVtk renderer;
-    InitializeRenderer(X_WC_, false /* add terrain */, &renderer);
+    InitializeRenderer(X_WC_, false /* no terrain */, &renderer);
 
     const GeometryId id = GeometryId::get_new_id();
     PerceptionProperties props = simple_material(true);
@@ -1003,7 +1003,7 @@ TEST_F(RenderEngineVtkTest, NonUcharChannelTextures) {
   ImageRgba8U color_uint16_texture(intrinsics.width(), intrinsics.height());
   {
     RenderEngineVtk renderer;
-    InitializeRenderer(X_WC_, false /* add terrain */, &renderer);
+    InitializeRenderer(X_WC_, false /* no terrain */, &renderer);
 
     const GeometryId id = GeometryId::get_new_id();
     PerceptionProperties props = simple_material(true);
@@ -1266,14 +1266,18 @@ TEST_F(RenderEngineVtkTest, DefaultProperties_RenderLabel) {
     engine->UpdatePoses(unordered_map<GeometryId, RigidTransformd>{{id, X_WV}});
   };
 
-  // Case: No change to render engine's default must throw.
+  // Case: The engine's default is "don't care".
   {
+    ResetExpectations();
     RenderEngineVtk renderer;
-    InitializeRenderer(X_WC_, false /* no terrain */, &renderer);
+    InitializeRenderer(X_WC_, true /* add terrain */, &renderer);
 
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        populate_default_sphere(&renderer),
-        ".* geometry with the 'unspecified' or 'empty' render labels.*");
+    DRAKE_EXPECT_NO_THROW(populate_default_sphere(&renderer));
+    expected_label_ = RenderLabel::kDontCare;
+    expected_color_ = RgbaColor(renderer.default_diffuse());
+
+    PerformCenterShapeTest(&renderer,
+                           "Default properties; don't care label");
   }
 
   // Case: Change render engine's default to explicitly be unspecified; must
@@ -1292,7 +1296,7 @@ TEST_F(RenderEngineVtkTest, DefaultProperties_RenderLabel) {
   {
     ResetExpectations();
     RenderEngineVtk renderer{{RenderLabel::kDontCare, {}}};
-    InitializeRenderer(X_WC_, true /* no terrain */, &renderer);
+    InitializeRenderer(X_WC_, true /* add terrain */, &renderer);
 
     DRAKE_EXPECT_NO_THROW(populate_default_sphere(&renderer));
     expected_label_ = RenderLabel::kDontCare;
