@@ -229,9 +229,8 @@ class DrakeGymEnv(gym.Env):
         try:
             status = self.simulator.AdvanceTo(time + self.time_step)
         except RuntimeError as e:
-            if "MultibodyPlant's discrete update solver failed to converge" \
-                    not in e.args[0]:
-                raise
+            # TODO(JoseBarreiros-TRI) We don't currently check for the
+            # error coming from the solver failing to converge.
             warnings.warn("Calling Done after catching RuntimeError:")
             warnings.warn(e.args[0])
             # Truncated is used when the solver failed to converge.
@@ -241,9 +240,10 @@ class DrakeGymEnv(gym.Env):
             # is satisfied. Typically, this is a timelimit, but
             # could also be used to indicate an agent physically going out
             # of bounds."
-            # We handle the solver faling to converge by returning
+            # We handle the solver failure to converge by returning
             # zero reward and the previous observation since the action
-            # was not successfully applied.
+            # was not successfully applied. This comes at a cost of
+            # an extra evaluation of the observation port.
             truncated = True
             terminated = False
             reward = 0

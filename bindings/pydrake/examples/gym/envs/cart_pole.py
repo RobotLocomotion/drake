@@ -206,45 +206,48 @@ def make_sim(meshcat=None,
             rgbd_camera.color_image_output_port(), "color_image")
 
     class DisturbanceGenerator(LeafSystem):
-        def __init__(self, plant, force_mag, period):
+        def __init__(self, plant, force_mag, period, duration):
             # Applies a random force [-1,1] at the COM of the
             # Pole body in the x direction every {period} sec.
+            # for a given duration.
             LeafSystem.__init__(self)
             forces_cls = Value[List[ExternallyAppliedSpatialForce_[float]]]
             self.DeclareAbstractOutputPort("spatial_forces",
                                            lambda: forces_cls(),
                                            self.CalcDisturbances)
-            self.DeclarePeriodicEvent(period_sec=period,
-                                      offset_sec=0,
-                                      event=PublishEvent(
-                                          callback=self._on_per_step))
             self.plant = plant
             self.pole_body = self.plant.GetBodyByName("Pole")
-            self.F = SpatialForce(tau=[0, 0, 0],
-                                  f=[0, 0, 0])
             self.force_mag = force_mag
+            self.period = period
+            self.duration = duration
 
         def CalcDisturbances(self, context, spatial_forces_vector):
-            # Apply force at COM of the Pole body.
+            # Apply a force at COM of the Pole body.
             force = ExternallyAppliedSpatialForce_[float]()
             force.body_index = self.pole_body.index()
             force.p_BoBq_B = self.pole_body.default_com()
-            force.F_Bq_W = self.F
+            y = context.get_time() % self.period
+            if ~((y >= 0) and (y <= self.duration)):
+                spatial_force = SpatialForce(
+                    tau=[0, 0, 0],
+                    f=[np.random.uniform(
+                        low=-self.force_mag,
+                        high=self.force_mag),
+                       0, 0])
+            else:
+                spatial_force = SpatialForce(
+                    tau=[0, 0, 0],
+                    f=[0, 0, 0])
+            force.F_Bq_W = spatial_force
             spatial_forces_vector.set_value([force])
-            self.F = SpatialForce(tau=[0, 0, 0],
-                                  f=[0, 0, 0])
-
-        def _on_per_step(self, context, event):
-
-            self.F = SpatialForce(tau=[0, 0, 0],
-                                  f=[np.random.uniform(low=-self.force_mag,
-                                                       high=self.force_mag),
-                                     0, 0])
 
     if add_disturbances:
-        # Applies a force of 1N every 1s at the COM of the Pole body.
+        # Applies a force of 1N every 1s
+        # for 0.1s at the COM of the Pole body.
         disturbance_generator = builder.AddSystem(
-            DisturbanceGenerator(plant=plant, force_mag=1, period=1))
+            DisturbanceGenerator(
+                plant=plant, force_mag=1,
+                period=1, duration=0.1))
         builder.Connect(disturbance_generator.get_output_port(),
                         plant.get_applied_spatial_force_input_port())
 
