@@ -8,7 +8,7 @@ licenses(["notice"])  # MIT
 py_library(
     name = "stable_baselines3",
     srcs = glob(["**/*.py"]),
-    deps = ["@gym_py"],
+    deps = ["@gymnasium_py"],
     data = glob(["**/version.txt"]),
     visibility = ["//visibility:public"],
 )

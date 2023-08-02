@@ -54,7 +54,6 @@ from drake.tools.workspace.metadata import read_repository_metadata
 _IGNORED_REPOSITORIES = [
     # We don't know how to check non-default branches yet.
     "clang_cindex_python3_internal",
-    "gym_py",  # Pinned at 0.21; see tools/workspace/gym_py/README.md.
     "pybind11",
     "usockets_internal",  # Pinned due to upstream regression.
     "uwebsockets_internal",  # Pinned due to upstream regression.
