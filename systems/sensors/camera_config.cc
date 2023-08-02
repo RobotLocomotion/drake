@@ -55,7 +55,7 @@ void CameraConfig::FovDegrees::ValidateOrThrow() const {
 
 namespace {
 
-// Computes the focal length along a single axis based on the the image
+// Computes the focal length along a single axis based on the image
 // dimension and field of view (in a degrees) in that direction.
 // This computation must be kept in agreement with that in CameraInfo.
 double CalcFocalLength(int image_dimension, double fov_degrees) {
@@ -159,6 +159,13 @@ void CameraConfig::ValidateOrThrow() const {
         fmt::format("Invalid camera configuration; FPS ({}) must be a finite, "
                     "positive value.",
                     fps));
+  }
+
+  if (capture_offset < 0 || !std::isfinite(capture_offset)) {
+    throw std::logic_error(fmt::format(
+        "Invalid camera configuration; capture_offset ({}) must be a finite, "
+        "non-negative value.",
+        capture_offset));
   }
 
   if (X_BC.base_frame.has_value() && !X_BC.base_frame->empty()) {

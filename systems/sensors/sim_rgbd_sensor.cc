@@ -18,19 +18,16 @@ using geometry::render::DepthRenderCamera;
 using math::RigidTransformd;
 using multibody::MultibodyPlant;
 
-RgbdSensor* AddSimRgbdSensor(const SceneGraph<double>& scene_graph,
-                             const MultibodyPlant<double>& plant,
-                             const SimRgbdSensor& sim_rgbd_sensor,
-                             DiagramBuilder<double>* builder) {
-  DRAKE_DEMAND(builder != nullptr);
-  // TODO(eric.cousineau): Simplify this if drake#10247 is resolved.
-
+// TODO(#10247) Remove this function once all MbP frames are geometry frames.
+std::pair<geometry::FrameId, RigidTransformd> GetGeometryFrame(
+    const multibody::Frame<double>& sensor_frame, const RigidTransformd& X_PB) {
   // 'A' is the body for the parent sensor frame.
   // `P` is the parent of the sensor frame.
   // `B` is the sensor frame.
 
-  const auto& frame_P = sim_rgbd_sensor.frame();
+  const auto& frame_P = sensor_frame;
   const auto& body_A = frame_P.body();
+  const auto& plant = sensor_frame.GetParentPlant();
   const std::optional<geometry::FrameId> body_A_id =
       plant.GetBodyFrameIdIfExists(body_A.index());
   DRAKE_THROW_UNLESS(body_A_id.has_value());
@@ -38,10 +35,21 @@ RgbdSensor* AddSimRgbdSensor(const SceneGraph<double>& scene_graph,
   // We must include the offset of the body to ensure that we posture the camera
   // appropriately.
   const RigidTransformd X_AP = frame_P.GetFixedPoseInBodyFrame();
-  const RigidTransformd X_AB = X_AP * sim_rgbd_sensor.X_PB();
+  const RigidTransformd X_AB = X_AP * X_PB;
 
+  return std::make_pair(*body_A_id, X_AB);
+}
+
+RgbdSensor* AddSimRgbdSensor(const SceneGraph<double>& scene_graph,
+                             const MultibodyPlant<double>& /* plant */,
+                             const SimRgbdSensor& sim_rgbd_sensor,
+                             DiagramBuilder<double>* builder) {
+  DRAKE_DEMAND(builder != nullptr);
+
+  const auto [frame_A, X_AB] =
+      GetGeometryFrame(sim_rgbd_sensor.frame(), sim_rgbd_sensor.X_PB());
   auto* rgbd_sensor_sys = builder->AddSystem<RgbdSensor>(
-      *body_A_id, X_AB, sim_rgbd_sensor.color_properties(),
+      frame_A, X_AB, sim_rgbd_sensor.color_properties(),
       sim_rgbd_sensor.depth_properties());
   // `set_name` is only used for debugging.
   rgbd_sensor_sys->set_name("rgbd_sensor_" + sim_rgbd_sensor.serial());
@@ -50,7 +58,8 @@ RgbdSensor* AddSimRgbdSensor(const SceneGraph<double>& scene_graph,
   return rgbd_sensor_sys;
 }
 
-void AddSimRgbdSensorLcmPublisher(const SimRgbdSensor& sim_rgbd_sensor,
+void AddSimRgbdSensorLcmPublisher(std::string_view serial, double fps,
+                                  double publish_offset,
                                   const OutputPort<double>* rgb_port,
                                   const OutputPort<double>* depth_16u_port,
                                   bool do_compress,
@@ -62,8 +71,7 @@ void AddSimRgbdSensorLcmPublisher(const SimRgbdSensor& sim_rgbd_sensor,
 
   auto image_to_lcm_image_array =
       builder->AddSystem<ImageToLcmImageArrayT>(do_compress);
-  image_to_lcm_image_array->set_name("image_to_lcm_" +
-                                     sim_rgbd_sensor.serial());
+  image_to_lcm_image_array->set_name(fmt::format("image_to_lcm_{}", serial));
   if (depth_16u_port) {
     const auto& lcm_depth_port =
         image_to_lcm_image_array->DeclareImageInputPort<PixelType::kDepth16U>(
@@ -78,10 +86,22 @@ void AddSimRgbdSensorLcmPublisher(const SimRgbdSensor& sim_rgbd_sensor,
   }
   auto image_array_lcm_publisher =
       builder->AddSystem(lcm::LcmPublisherSystem::Make<lcmt_image_array>(
-          "DRAKE_RGBD_CAMERA_IMAGES_" + sim_rgbd_sensor.serial(), lcm,
-          1. / sim_rgbd_sensor.rate_hz()));
+          fmt::format("DRAKE_RGBD_CAMERA_IMAGES_{}", serial), lcm, 1.0 / fps,
+          publish_offset));
   builder->Connect(image_to_lcm_image_array->image_array_t_msg_output_port(),
                    image_array_lcm_publisher->get_input_port());
+}
+
+void AddSimRgbdSensorLcmPublisher(const SimRgbdSensor& sim_camera,
+                                  const OutputPort<double>* rgb_port,
+                                  const OutputPort<double>* depth_16u_port,
+                                  bool do_compress,
+                                  DiagramBuilder<double>* builder,
+                                  drake::lcm::DrakeLcmInterface* lcm) {
+  const double publish_offset = 0.0;
+  AddSimRgbdSensorLcmPublisher(sim_camera.serial(), sim_camera.rate_hz(),
+                               publish_offset, rgb_port, depth_16u_port,
+                               do_compress, builder, lcm);
 }
 
 }  // namespace internal
