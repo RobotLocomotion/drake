@@ -30,14 +30,14 @@ drake::lcm::DrakeLcm object is constructed and used internally.
 In the common case where a MultibodyPlant has already been added to `builder`
 using either AddMultibodyPlant() or AddMultibodyPlantSceneGraph(), the default
 value (nullptr) here is suitable and generally should be preferred.
-When provided, it must be a System that's been added to the the given `builder`.
+When provided, it must be a System that's been added to the given `builder`.
 When not provided, uses the system named "plant" in the given `builder`.
 
 @param[in] scene_graph (Optional) The SceneGraph to use for rendering.
 In the common case where a SceneGraph has already been added to `builder` using
 either AddMultibodyPlant() or AddMultibodyPlantSceneGraph(), the default value
 (nullptr) here is suitable and generally should be preferred.
-When provided, it must be a System that's been added to the the given `builder`.
+When provided, it must be a System that's been added to the given `builder`.
 When not provided, uses the system named "scene_graph" in the given `builder`.
 
 @param[in] lcm (Optional) The LCM interface used for visualization message

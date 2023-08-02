@@ -3,6 +3,7 @@
 #include <initializer_list>
 #include <map>
 #include <memory>
+#include <optional>
 #include <string>
 
 #include <fmt/format.h>
@@ -17,6 +18,7 @@
 #include "drake/multibody/parsing/scoped_names.h"
 #include "drake/systems/lcm/lcm_config_functions.h"
 #include "drake/systems/sensors/rgbd_sensor.h"
+#include "drake/systems/sensors/rgbd_sensor_async.h"
 #include "drake/systems/sensors/sim_rgbd_sensor.h"
 
 namespace drake {
@@ -139,24 +141,48 @@ void ApplyCameraConfig(const CameraConfig& config,
   // Extract camera intrinsics from the config struct.
   const auto [color_camera, depth_camera] = config.MakeCameras();
 
-  // Construct the sensor itself.
-  const SimRgbdSensor sim_camera(config.name, base_frame, config.fps, X_PB,
-                                 color_camera, depth_camera);
-  const RgbdSensor* camera_sys =
-      AddSimRgbdSensor(*scene_graph, *plant, sim_camera, builder);
+  // Add the sensor system. When there is no output delay, we use an RgbdSensor;
+  // when there is an output delay, we need to use an RgbdSensorAsync.
+  System<double>* camera_sys{};
+  if (config.output_delay == 0.0) {
+    const SimRgbdSensor sim_camera(config.name, base_frame, config.fps, X_PB,
+                                   color_camera, depth_camera);
+    camera_sys = AddSimRgbdSensor(*scene_graph, *plant, sim_camera, builder);
+  } else {
+    const auto [frame_A, X_AB] = internal::GetGeometryFrame(base_frame, X_PB);
+    const bool render_label_image = false;
+    camera_sys = builder->AddSystem<RgbdSensorAsync>(
+        scene_graph, frame_A, X_AB, config.fps, config.capture_offset,
+        config.output_delay,
+        config.rgb ? std::optional<ColorRenderCamera>{color_camera}
+                   : std::nullopt,
+        config.depth ? std::optional<DepthRenderCamera>{depth_camera}
+                     : std::nullopt,
+        render_label_image);
+    camera_sys->set_name(fmt::format("rgbd_sensor_{}", config.name));
+    builder->Connect(scene_graph->get_query_output_port(),
+                     camera_sys->get_input_port());
+  }
 
   // Find the LCM bus.
   lcm = FindOrCreateLcmBus(lcm, lcm_buses, builder, "ApplyCameraConfig",
                            config.lcm_bus);
   DRAKE_DEMAND(lcm != nullptr);
 
-  // Connect the sensor the the lcm system.
-  const auto* rgb_port =
-      config.rgb ? &camera_sys->color_image_output_port() : nullptr;
-  const auto* depth_16u_port =
-      config.depth ? &camera_sys->depth_image_16U_output_port() : nullptr;
-  AddSimRgbdSensorLcmPublisher(sim_camera, rgb_port, depth_16u_port,
-                               config.do_compress, builder, lcm);
+  // TODO(jwnimmer-tri) When the Simulator has concurrent update + publish
+  // events, it effectively runs the publish event before the update event.
+  // Therefore, we need to fudge the publish time here so that the published
+  // image is correct. Once the framework allows us to schedule publish events
+  // with the ordering we want, we should remove this 0.1% fudge factor.
+  const double lcm_publisher_offset =
+      config.capture_offset + (1.001 * config.output_delay);
+
+  // Connect the sensor to the lcm system.
+  AddSimRgbdSensorLcmPublisher(
+      config.name, config.fps, lcm_publisher_offset,
+      config.rgb ? &camera_sys->GetOutputPort("color_image") : nullptr,
+      config.depth ? &camera_sys->GetOutputPort("depth_image_16u") : nullptr,
+      config.do_compress, builder, lcm);
 }
 
 }  // namespace sensors

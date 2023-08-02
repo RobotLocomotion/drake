@@ -101,6 +101,7 @@ drake_cc_library(
     deps = [
         ":camera_info",
         ":rgbd_sensor",
+        ":rgbd_sensor_async",
         ":sim_rgbd_sensor",
         "//geometry/render_gl",
         "//geometry/render_vtk",
@@ -368,6 +369,7 @@ drake_cc_googletest(
     deps = [
         ":camera_config_functions",
         ":image_to_lcm_image_array_t",
+        ":rgbd_sensor_async",
         ":sim_rgbd_sensor",
         "//common/test_utilities:expect_throws_message",
         "//common/yaml:yaml_io",
