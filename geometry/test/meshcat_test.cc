@@ -1,6 +1,7 @@
 #include "drake/geometry/meshcat.h"
 
 #include <cstdlib>
+#include <filesystem>
 #include <thread>
 
 #include <drake_vendor/msgpack.hpp>
@@ -584,6 +585,46 @@ GTEST_TEST(MeshcatTest, SetPropertyDouble) {
   EXPECT_EQ(data.path, "/Cameras/default/rotated/<object>");
   EXPECT_EQ(data.property, "zoom");
   EXPECT_EQ(data.value, 2.0);
+}
+
+GTEST_TEST(MeshcatTest, SetEnvironmentMap) {
+  Meshcat meshcat;
+  EXPECT_FALSE(meshcat.HasPath("/Background/<object>"));
+  EXPECT_TRUE(
+      meshcat.GetPackedProperty("/Background/<object>", "environment_map")
+          .empty());
+
+  // Set the map to a valid image.
+  const std::filesystem::path env_map(
+      FindResourceOrThrow("drake/geometry/test/env_256_cornell_box.png"));
+  EXPECT_NO_THROW(meshcat.SetEnvironmentMap(env_map));
+  EXPECT_TRUE(meshcat.HasPath("/Background/<object>"));
+
+  std::string property =
+      meshcat.GetPackedProperty("/Background/<object>", "environment_map");
+  msgpack::object_handle oh = msgpack::unpack(property.data(), property.size());
+  auto data = oh.get().as<internal::SetPropertyData<std::string>>();
+  EXPECT_EQ(data.type, "set_property");
+  EXPECT_EQ(data.path, "/Background/<object>");
+  EXPECT_EQ(data.property, "environment_map");
+  EXPECT_THAT(data.value, testing::StartsWith("data:image/png;base64"));
+
+  // Clear the map with an empty string.
+  EXPECT_NO_THROW(meshcat.SetEnvironmentMap(""));
+  EXPECT_TRUE(meshcat.HasPath("/Background/<object>"));
+
+  property =
+      meshcat.GetPackedProperty("/Background/<object>", "environment_map");
+  oh = msgpack::unpack(property.data(), property.size());
+  data = oh.get().as<internal::SetPropertyData<std::string>>();
+  EXPECT_EQ(data.type, "set_property");
+  EXPECT_EQ(data.path, "/Background/<object>");
+  EXPECT_EQ(data.property, "environment_map");
+  EXPECT_EQ(data.value, "");
+
+  // An invalid map throws.
+  DRAKE_EXPECT_THROWS_MESSAGE(meshcat.SetEnvironmentMap("invalid_file.png"),
+                              "Requested environment map cannot be read.+");
 }
 
 GTEST_TEST(MeshcatTest, Buttons) {

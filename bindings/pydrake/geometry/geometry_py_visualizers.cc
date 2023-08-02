@@ -304,6 +304,8 @@ void DoScalarIndependentDefinitions(py::module m) {
             py::arg("path"), py::arg("property"), py::arg("value"),
             py::arg("time_in_recording") = std::nullopt,
             cls_doc.SetProperty.doc_vector_double)
+        .def("SetEnvironmentMap", &Class::SetEnvironmentMap,
+            py::arg("image_path"), cls_doc.SetEnvironmentMap.doc)
         .def("SetAnimation", &Class::SetAnimation, py::arg("animation"),
             +cls_doc.SetAnimation.doc)
         .def("AddButton", &Class::AddButton, py::arg("name"),

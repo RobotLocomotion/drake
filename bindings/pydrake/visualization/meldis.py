@@ -56,8 +56,15 @@ def _main():
         "--idle-timeout", metavar="TIME", type=float, default=15*60,
         help="When no web browser has been connected for this many seconds,"
         " this program will automatically exit. Set to 0 to run indefinitely.")
+    parser.add_argument(
+        "--environment_map",
+        help="Filesystem path to an image to be used as an environment map. "
+             "It must be an image type normally used by your browser (e.g., "
+             ".jpg, .png, etc.). HDR images are not supported yet."
+    )
     args = parser.parse_args()
-    meldis = _Meldis(meshcat_host=args.host, meshcat_port=args.port)
+    meldis = _Meldis(meshcat_host=args.host, meshcat_port=args.port,
+                     environment_map=args.environment_map)
     if args.browser_new is not None:
         url = meldis.meshcat.web_url()
         webbrowser.open(url=url, new=args.browser_new)
