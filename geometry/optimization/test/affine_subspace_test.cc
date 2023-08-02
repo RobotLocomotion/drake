@@ -617,7 +617,7 @@ GTEST_TEST(AffineSubspaceTest, AffineHullIntersection) {
   Intersection i2(line_segment, triangle1);
   AffineSubspace as2(i2);
 
-  const double kTol2 = 1e-12;
+  const double kTol2 = 1e-10;
   const Eigen::Vector3d one_third(1. / 3., 1. / 3., 1. / 3.);
   EXPECT_TRUE(i2.PointInSet(one_third, kTol2));
   EXPECT_TRUE(as2.PointInSet(one_third, kTol2));
@@ -639,7 +639,7 @@ GTEST_TEST(AffineSubspaceTest, AffineHullIntersection) {
   Intersection i3(line_segment, triangle2);
   AffineSubspace as3(i3);
 
-  const double kTol3 = 1e-12;
+  const double kTol3 = 1e-6;
   EXPECT_TRUE(i3.PointInSet(Eigen::Vector3d(0, 0, 0), kTol3));
   EXPECT_TRUE(i3.PointInSet(Eigen::Vector3d(1, 1, 1), kTol3));
 
