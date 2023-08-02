@@ -96,20 +96,27 @@ class TestGeometryRender(unittest.TestCase):
         mut.RenderEngineGltfClientParams()
 
         # The kwarg constructor also works.
-        label = mut.RenderLabel(10)
         base_url = "http://127.0.0.1:8888"
         render_endpoint = "render"
         params = mut.RenderEngineGltfClientParams(
-            default_label=label,
             base_url=base_url,
             render_endpoint=render_endpoint,
         )
-        self.assertEqual(params.default_label, label)
         self.assertEqual(params.render_endpoint, render_endpoint)
         self.assertEqual(params.base_url, base_url)
 
-        self.assertIn("default_label", repr(params))
+        self.assertIn("render_endpoint", repr(params))
         copy.copy(params)
+
+    def test_render_engine_gltf_client_params_deprecated(self):
+        """The render_label attribute is deprecated; make sure it still works,
+        for now.
+        """
+        label = mut.RenderLabel(10)
+        with catch_drake_warnings(expected_count=1):
+            dut = mut.RenderEngineGltfClientParams(default_label=label)
+        with catch_drake_warnings(expected_count=1):
+            self.assertEqual(dut.default_label, label)
 
     def test_render_label(self):
         RenderLabel = mut.RenderLabel

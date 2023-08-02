@@ -18,7 +18,6 @@ struct RenderEngineGltfClientParams {
   void Serialize(Archive* a) {
     a->Visit(DRAKE_NVP(base_url));
     a->Visit(DRAKE_NVP(render_endpoint));
-    a->Visit(DRAKE_NVP(default_label));
     a->Visit(DRAKE_NVP(verbose));
     a->Visit(DRAKE_NVP(cleanup));
   }
@@ -31,8 +30,9 @@ struct RenderEngineGltfClientParams {
    See GetUrl() for details. */
   std::string render_endpoint{"render"};
 
-  /** The (optional) label to apply when none is otherwise specified. */
-  std::optional<render::RenderLabel> default_label{};
+  /** (Deprecated.) The default_label is no longer configurable. <br>
+   This will be removed from Drake on or after 2023-12-01. */
+  std::optional<render::RenderLabel> default_label;
 
   /** Whether or not the client should log information about which files are
    being generated, as well as any information about HTTP communications between
