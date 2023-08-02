@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <utility>
 
 #include "drake/geometry/scene_graph.h"
 #include "drake/lcm/drake_lcm_interface.h"
@@ -102,12 +103,21 @@ RgbdSensor* AddSimRgbdSensor(const geometry::SceneGraph<double>& scene_graph,
                              const SimRgbdSensor& sim_camera,
                              DiagramBuilder<double>* builder);
 
-// TODO(eric.cousineau): Add something for label stuff? Meh.
+/* Helper function that converts a plant frame with offset (per SimRgbdSensor)
+to a geometry frame with offset (per RgbdSensor).
+@param X_PB is relative to the plant_frame "P". */
+std::pair<geometry::FrameId, math::RigidTransformd> GetGeometryFrame(
+    const multibody::Frame<double>& plant_frame,
+    const math::RigidTransformd& X_PB);
+
+// TODO(#19901): Add support for publishing label images.
 /* Adds LCM publishers for images (RGB and/or Depth), at the camera's specified
   rate.
 
- @param sim_camera       The description of the camera whose data will be
-                         published.
+ @param serial           The SimRgbdSensor.serial().
+ @param fps              The SimRgbdSensor.rate_hz().
+ @param publish_offset   Phase offset for publishing; see LcmPublisherSystem
+                         for a comprehensive description.
  @param rgb_port         The (optional) port for color images.
  @param depth_16u_port   The (optional) port for depth images.
  @param do_compress      If true, the published images will be compressed.
@@ -121,6 +131,15 @@ RgbdSensor* AddSimRgbdSensor(const geometry::SceneGraph<double>& scene_graph,
  @pre builder != nullptr.
  @pre rgb_port is null or ImageRgba8U-valued.
  @pre depth_16u_port is null or ImageDepth16U-valued. */
+void AddSimRgbdSensorLcmPublisher(std::string_view serial, double fps,
+                                  double publish_offset,
+                                  const OutputPort<double>* rgb_port,
+                                  const OutputPort<double>* depth_16u_port,
+                                  bool do_compress,
+                                  DiagramBuilder<double>* builder,
+                                  drake::lcm::DrakeLcmInterface* lcm);
+
+// A backwards-compatibility overload to simplify unit testing.
 void AddSimRgbdSensorLcmPublisher(const SimRgbdSensor& sim_camera,
                                   const OutputPort<double>* rgb_port,
                                   const OutputPort<double>* depth_16u_port,

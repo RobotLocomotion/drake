@@ -53,6 +53,8 @@ struct CameraConfig {
     a->Visit(DRAKE_NVP(background));
     a->Visit(DRAKE_NVP(name));
     a->Visit(DRAKE_NVP(fps));
+    a->Visit(DRAKE_NVP(capture_offset));
+    a->Visit(DRAKE_NVP(output_delay));
     a->Visit(DRAKE_NVP(rgb));
     a->Visit(DRAKE_NVP(depth));
     a->Visit(DRAKE_NVP(show_rgb));
@@ -287,6 +289,18 @@ struct CameraConfig {
   /** Publishing rate (in Hz) for both RGB and depth cameras (as requested).
    @pre fps is a positive, finite number. */
   double fps{10.0};
+
+  /** Phase offset (in seconds) for image capture, relative to the simulator's
+   time zero. This can be useful to stagger multiple cameras.
+   Refer to the RgbdSensorAsync class for a comprehensive description.
+   @pre capture_offset is non-negative and finite. */
+  double capture_offset{0.0};
+
+  /** Delay (in seconds) between when the scene graph geometry is "captured"
+   and when the output image is published. Refer to the RgbdSensorAsync class
+   for a comprehensive description.
+   @pre output_delay is non-negative and strictly less than 1/fps. */
+  double output_delay{0.0};
 
   /** If true, RGB images will be produced and published via LCM. */
   bool rgb{true};

@@ -12,6 +12,7 @@
 #include "drake/lcm/drake_lcm.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/sensors/image_to_lcm_image_array_t.h"
+#include "drake/systems/sensors/rgbd_sensor_async.h"
 #include "drake/systems/sensors/sim_rgbd_sensor.h"
 
 namespace drake {
@@ -60,6 +61,8 @@ CameraConfig MakeConfig() {
                       .background = Rgba(0.25, 0.5, 0.75),
                       .name = "test_camera",
                       .fps = 17,
+                      .capture_offset = 0.001,
+                      .output_delay = 0.002,
                       .rgb = false,
                       .depth = true,
                       .show_rgb = true,
@@ -245,6 +248,8 @@ TEST_F(CameraConfigFunctionsTest, AllParametersCount) {
   // We just need one image type so that we get a sensor; confirm that our
   // "not default" config file has at least one image enabled.
   ASSERT_EQ(config.depth || config.rgb, true);
+  // We want a non-async camera.
+  config.output_delay = 0.0;
 
   // Prepare the LCM dictionary, based on the bus name from MakeConfig().
   LcmBuses lcm_buses;
@@ -300,11 +305,40 @@ TEST_F(CameraConfigFunctionsTest, AllParametersCount) {
       builder_, "LcmPublisherSystem(DRAKE_RGBD_CAMERA_IMAGES_test_camera)");
   ASSERT_NE(publisher, nullptr);
   EXPECT_DOUBLE_EQ(publisher->get_publish_period(), 1.0 / config.fps);
+  EXPECT_DOUBLE_EQ(publisher->get_publish_offset(), config.capture_offset);
 
   // Publishing destination.
   const DrakeLcmInterface& actual_lcm =
       const_cast<LcmPublisherSystem*>(publisher)->lcm();
   EXPECT_TRUE(&actual_lcm == &non_default_lcm);
+}
+
+// Confirms that the async camera settings are all properly obeyed.
+TEST_F(CameraConfigFunctionsTest, AsyncCamera) {
+  CameraConfig config;
+  config.name = "test_camera";
+  config.fps = 10.0;
+  config.capture_offset = 0.002;
+  config.output_delay = 0.03;
+
+  ApplyCameraConfig(config, &builder_);
+
+  const auto* sensor =
+      GetSystem<RgbdSensorAsync>(builder_, "rgbd_sensor_test_camera");
+  ASSERT_NE(sensor, nullptr);
+  EXPECT_EQ(sensor->fps(), config.fps);
+  EXPECT_EQ(sensor->capture_offset(), config.capture_offset);
+  EXPECT_EQ(sensor->output_delay(), config.output_delay);
+
+  const auto* publisher = GetSystem<LcmPublisherSystem>(
+      builder_, "LcmPublisherSystem(DRAKE_RGBD_CAMERA_IMAGES_test_camera)");
+  ASSERT_NE(publisher, nullptr);
+  EXPECT_EQ(publisher->get_publish_period(), 1.0 / config.fps);
+  EXPECT_NEAR(publisher->get_publish_offset(),
+              config.capture_offset + config.output_delay,
+              // TODO(jwnimmer-tri) Once the implementation doesn't need a fudge
+              // factor anymore, we should expect exact equality here.
+              1e-4);
 }
 
 // The user can pass a plant and scene_graph explicitly.
