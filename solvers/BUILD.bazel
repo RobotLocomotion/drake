@@ -996,7 +996,10 @@ drake_cc_optional_library(
     srcs = ["csdp_solver_error_handling.cc"],
     hdrs = ["csdp_solver_error_handling.h"],
     copts = ["-fvisibility=hidden"],
-    visibility = ["@csdp//:__pkg__"],
+    visibility = [
+        "@csdp//:__pkg__",
+        "@csdp_internal//:__pkg__",
+    ],
 )
 
 drake_cc_optional_library(
@@ -1005,7 +1008,7 @@ drake_cc_optional_library(
     srcs = ["csdp_cpp_wrapper.cc"],
     hdrs = ["csdp_cpp_wrapper.h"],
     interface_deps = [
-        "@csdp",
+        "@csdp_internal//:csdp",
     ],
     deps = [
         ":csdp_solver_error_handling",

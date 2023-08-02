@@ -526,7 +526,7 @@ drake_py_unittest(
     data = [
         ":text_logging_example",
     ],
-    shard_count = 8,
+    shard_count = 16,
     deps = [
         "//bindings/pydrake/common/test_utilities:meta_py",
     ],
@@ -537,6 +537,22 @@ drake_py_unittest(
     tags = [
         "cpu:2",
     ],
+    deps = [
+        ":module_py",
+        ":text_logging_test_helpers_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "text_logging_threading_direct_to_stderr_test",
+    deps = [
+        ":module_py",
+        ":text_logging_test_helpers_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "text_logging_threading_with_gil_release_test",
     deps = [
         ":module_py",
         ":text_logging_test_helpers_py",

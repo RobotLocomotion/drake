@@ -1,10 +1,5 @@
 # -*- bazel -*-
 
-load(
-    "@drake//tools/install:install.bzl",
-    "install",
-)
-
 licenses(["notice"])  # Apache 2.0
 
 package(default_visibility = ["//visibility:public"])
@@ -19,10 +14,5 @@ cc_library(
     ],
     linkopts = ["-pthread"],
     linkstatic = 1,
-)
-
-# Install the license file.
-install(
-    name = "install",
-    docs = ["LICENSE"],
+    deprecation = "The @uwebsockets external is deprecated in Drake's WORKSPACE and will be removed on or after 2023-11-01.",  # noqa
 )

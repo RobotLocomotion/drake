@@ -2353,6 +2353,81 @@ class TestPlant(unittest.TestCase):
         # Verify the constraint was added.
         self.assertEqual(plant.num_constraints(), 1)
 
+    def test_constraint_active_status_api(self):
+        plant = MultibodyPlant_[float](0.01)
+        plant.set_discrete_contact_solver(DiscreteContactSolver.kSap)
+
+        # Since we won't be performing dynamics computations,
+        # using garbage inertia is ok for this test.
+        M_BBo_B = SpatialInertia_[float]()
+        body_A = plant.AddRigidBody(name="A", M_BBo_B=M_BBo_B)
+        body_B = plant.AddRigidBody(name="B", M_BBo_B=M_BBo_B)
+
+        # Add ball and distance constraints.
+        p_AP = [0.0, 0.0, 0.0]
+        p_BQ = [0.0, 0.0, 0.0]
+        distance_id = plant.AddDistanceConstraint(
+            body_A=body_A, p_AP=p_AP, body_B=body_B, p_BQ=p_BQ, distance=0.01)
+        ball_id = plant.AddBallConstraint(
+            body_A=body_A, p_AP=p_AP, body_B=body_B, p_BQ=p_BQ)
+
+        Parser(plant).AddModelsFromUrl(
+            "package://drake/manipulation/models/"
+            "wsg_50_description/sdf/schunk_wsg_50.sdf")
+
+        # Add coupler constraint.
+        left_slider = plant.GetJointByName("left_finger_sliding_joint")
+        right_slider = plant.GetJointByName("right_finger_sliding_joint")
+        coupler_id = plant.AddCouplerConstraint(
+            joint0=left_slider, joint1=right_slider,
+            gear_ratio=1.2, offset=3.4)
+
+        # We are done creating the model.
+        plant.Finalize()
+
+        # Default context.
+        context = plant.CreateDefaultContext()
+
+        # Verify all constraints are active in a default context.
+        self.assertTrue(
+            plant.GetConstraintActiveStatus(context=context, id=coupler_id))
+        self.assertTrue(
+            plant.GetConstraintActiveStatus(context=context, id=distance_id))
+        self.assertTrue(
+            plant.GetConstraintActiveStatus(context=context, id=ball_id))
+
+        # Set all constraints to inactive.
+        plant.SetConstraintActiveStatus(
+            context=context, id=coupler_id, status=False)
+        plant.SetConstraintActiveStatus(
+            context=context, id=distance_id, status=False)
+        plant.SetConstraintActiveStatus(
+            context=context, id=ball_id, status=False)
+
+        # Verify all constraints are inactive in the context.
+        self.assertFalse(
+            plant.GetConstraintActiveStatus(context=context, id=coupler_id))
+        self.assertFalse(
+            plant.GetConstraintActiveStatus(context=context, id=distance_id))
+        self.assertFalse(
+            plant.GetConstraintActiveStatus(context=context, id=ball_id))
+
+        # Set all constraints to back to active.
+        plant.SetConstraintActiveStatus(
+            context=context, id=coupler_id, status=True)
+        plant.SetConstraintActiveStatus(
+            context=context, id=distance_id, status=True)
+        plant.SetConstraintActiveStatus(
+            context=context, id=ball_id, status=True)
+
+        # Verify all constraints are active in the context.
+        self.assertTrue(
+            plant.GetConstraintActiveStatus(context=context, id=coupler_id))
+        self.assertTrue(
+            plant.GetConstraintActiveStatus(context=context, id=distance_id))
+        self.assertTrue(
+            plant.GetConstraintActiveStatus(context=context, id=ball_id))
+
     @numpy_compare.check_all_types
     def test_multibody_dynamics(self, T):
         MultibodyPlant = MultibodyPlant_[T]

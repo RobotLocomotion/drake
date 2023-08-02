@@ -17,14 +17,20 @@ namespace planning {
 namespace trajectory_optimization {
 namespace {
 
+using Eigen::Map;
+using Eigen::Matrix2d;
+using Eigen::MatrixXd;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
+using Eigen::VectorXd;
 using geometry::optimization::ConvexSets;
+using geometry::optimization::GraphOfConvexSets;
 using geometry::optimization::GraphOfConvexSetsOptions;
 using geometry::optimization::HPolyhedron;
 using geometry::optimization::MakeConvexSets;
 using geometry::optimization::Point;
 using geometry::optimization::VPolytope;
+using solvers::MathematicalProgram;
 
 bool GurobiOrMosekSolverAvailable() {
   return (solvers::MosekSolver::is_available() &&
@@ -60,6 +66,78 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, Basic) {
   EXPECT_TRUE(CompareMatrices(traj.value(traj.end_time()), goal, 1e-6));
 }
 
+GTEST_TEST(GcsTrajectoryOptimizationTest, PathLengthCost) {
+  const int kDimension = 2;
+  GcsTrajectoryOptimization trajopt(kDimension);
+
+  // Add the unit box.
+  const int kOrder = 2;
+  auto& regions = trajopt.AddRegions(
+      MakeConvexSets(HPolyhedron::MakeUnitBox(kDimension)), kOrder);
+  regions.AddPathLengthCost(Matrix2d::Identity());
+
+  const GraphOfConvexSets& gcs = trajopt.graph_of_convex_sets();
+  EXPECT_EQ(gcs.Vertices().size(), 1);
+  const GraphOfConvexSets::Vertex* v = gcs.Vertices()[0];
+  EXPECT_EQ(v->ambient_dimension(), kDimension * (kOrder + 1) + 1);
+
+  EXPECT_EQ(v->GetCosts().size(), 2);
+
+  // Make a small mathematical program just to evaluate the bindings.
+  VectorXd x = VectorXd::LinSpaced(v->ambient_dimension(), 1.23, 4.56);
+  MathematicalProgram prog;
+  prog.AddDecisionVariables(v->x());
+  prog.SetInitialGuessForAllVariables(x);
+  EXPECT_NEAR(prog.EvalBindingAtInitialGuess(v->GetCosts()[0])[0],
+              (x.segment(2, 2) - x.segment(0, 2)).norm(), 1e-12);
+  EXPECT_NEAR(prog.EvalBindingAtInitialGuess(v->GetCosts()[1])[0],
+              (x.segment(4, 2) - x.segment(2, 2)).norm(), 1e-12);
+}
+
+GTEST_TEST(GcsTrajectoryOptimizationTest, VelocityBounds) {
+  const int kDimension = 2;
+  GcsTrajectoryOptimization trajopt(kDimension);
+
+  // Add the unit box.
+  const int kOrder = 2;
+  auto& regions = trajopt.AddRegions(
+      MakeConvexSets(HPolyhedron::MakeUnitBox(kDimension)), kOrder);
+  const Vector2d lb(-1, -2);
+  const Vector2d ub(1, 2);
+  regions.AddVelocityBounds(lb, ub);
+
+  const GraphOfConvexSets& gcs = trajopt.graph_of_convex_sets();
+  EXPECT_EQ(gcs.Vertices().size(), 1);
+  const GraphOfConvexSets::Vertex* v = gcs.Vertices()[0];
+  EXPECT_EQ(v->ambient_dimension(), kDimension * (kOrder + 1) + 1);
+
+  // Make a small mathematical program just to evaluate the bindings.
+  EXPECT_EQ(v->ambient_dimension(), 7);
+  MatrixXd control_points(2, 3);
+  // clang-format off
+  control_points << 0, 1, 3,
+                    4, 1, 0;
+  // clang-format on
+  const double time_scaling = 2.0;
+  VectorXd x(7);
+  x << Map<VectorXd>(control_points.data(), 6), time_scaling;
+  MathematicalProgram prog;
+  prog.AddDecisionVariables(v->x());
+  prog.SetInitialGuessForAllVariables(x);
+
+  EXPECT_EQ(v->GetConstraints().size(), 4);
+  // dimension 0 lower bound. Should be satisfied for all times.
+  EXPECT_TRUE(prog.CheckSatisfiedAtInitialGuess(v->GetConstraints()[0]));
+  // dimension 0 upper bound. The velocity in the second half of the trajectory
+  // is ((3 - 1) / 0.5) / 2) = 2. That exceeds the upper bound of 1.
+  EXPECT_FALSE(prog.CheckSatisfiedAtInitialGuess(v->GetConstraints()[1]));
+  // dimension 1 lower bound. The velocity in the first half of the trajectory
+  // is ((1 - 4) / 0.5) / 2 = -3. That exceeds the lower bound of -2.
+  EXPECT_FALSE(prog.CheckSatisfiedAtInitialGuess(v->GetConstraints()[2]));
+  // dimension 1 upper bound. Should be satisfied for all times.
+  EXPECT_TRUE(prog.CheckSatisfiedAtInitialGuess(v->GetConstraints()[3]));
+}
+
 GTEST_TEST(GcsTrajectoryOptimizationTest, MinimumTimeVsPathLength) {
   /* This simple 2D example will show the difference between the minimum time
   and minimum path length objectives. Bob wants to get from start (S) to goal
@@ -92,7 +170,7 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, MinimumTimeVsPathLength) {
   auto& walking_regions =
       gcs.AddRegions(MakeConvexSets(HPolyhedron::MakeBox(Vector2d(-0.5, -0.5),
                                                          Vector2d(0.5, 0.5))),
-                     3);
+                     3, 0, 20, "walking");
   // Bob can walk at 1 m/s in x and y.
   walking_regions.AddVelocityBounds(Vector2d(-kWalkingSpeed, -kWalkingSpeed),
                                     Vector2d(kWalkingSpeed, kWalkingSpeed));
@@ -102,7 +180,7 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, MinimumTimeVsPathLength) {
           HPolyhedron::MakeBox(Vector2d(-0.5, -0.5), Vector2d(-0.2, 1)),
           HPolyhedron::MakeBox(Vector2d(-0.5, 1), Vector2d(0.5, 1.5)),
           HPolyhedron::MakeBox(Vector2d(0.2, -0.5), Vector2d(0.5, 1))),
-      3);
+      3, 0, 20, "scooter");
   // Bob can ride an e-scooter at 10 m/s in x and y.
   scooter_regions.AddVelocityBounds(Vector2d(-kScooterSpeed, -kScooterSpeed),
                                     Vector2d(kScooterSpeed, kScooterSpeed));
@@ -120,7 +198,7 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, MinimumTimeVsPathLength) {
   gcs.AddPathLengthCost();
 
   // Nonregression bound on the complexity of the underlying GCS MICP.
-  EXPECT_LT(gcs.EstimateComplexity(), 1.5e2);
+  EXPECT_LE(gcs.EstimateComplexity(), 160);
 
   if (!GurobiOrMosekSolverAvailable()) {
     return;
@@ -128,7 +206,7 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, MinimumTimeVsPathLength) {
 
   auto [shortest_path_traj, shortest_path_result] =
       gcs.SolvePath(source, target);
-  EXPECT_TRUE(shortest_path_result.is_success());
+  ASSERT_TRUE(shortest_path_result.is_success());
   EXPECT_EQ(shortest_path_traj.rows(), 2);
   EXPECT_EQ(shortest_path_traj.cols(), 1);
   EXPECT_TRUE(CompareMatrices(

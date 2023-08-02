@@ -1,6 +1,9 @@
 #pragma once
 
+#include <vector>
+
 #include "drake/common/name_value.h"
+#include "drake/geometry/render/light_parameter.h"
 #include "drake/geometry/render/render_label.h"
 #include "drake/geometry/rgba.h"
 
@@ -13,14 +16,14 @@ struct RenderEngineGlParams {
   Refer to @ref yaml_serialization "YAML Serialization" for background. */
   template <typename Archive>
   void Serialize(Archive* a) {
-    a->Visit(DRAKE_NVP(default_label));
     a->Visit(DRAKE_NVP(default_diffuse));
     a->Visit(DRAKE_NVP(default_clear_color));
+    a->Visit(DRAKE_NVP(lights));
   }
 
-  /** Default render label to apply to a geometry when none is otherwise
-   specified.  */
-  render::RenderLabel default_label{render::RenderLabel::kUnspecified};
+  /** (Deprecated.) The default_label is no longer configurable. <br>
+   This will be removed from Drake on or after 2023-12-01. */
+  render::RenderLabel default_label{render::RenderLabel::kDontCare};
 
   /** Default diffuse color to apply to a geometry when none is otherwise
    specified in the (phong, diffuse) property.  */
@@ -28,6 +31,10 @@ struct RenderEngineGlParams {
 
   /** The default background color for color images.  */
   Rgba default_clear_color{204 / 255., 229 / 255., 255 / 255., 1.0};
+
+  /** Lights in the scene. More than five lights is an error. If no lights are
+   defined, a single directional light, fixed to the camera frame, is used. */
+  std::vector<render::LightParameter> lights;
 };
 
 }  // namespace geometry

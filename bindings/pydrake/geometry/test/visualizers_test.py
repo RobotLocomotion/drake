@@ -99,6 +99,7 @@ class TestGeometryVisualizers(unittest.TestCase):
             meshcat2 = mut.Meshcat(port=port)
         self.assertIn("http", meshcat.web_url())
         self.assertIn("ws", meshcat.ws_url())
+        meshcat.SetEnvironmentMap(image_path="")
         meshcat.SetObject(path="/test/box",
                           shape=mut.Box(1, 1, 1),
                           rgba=mut.Rgba(.5, .5, .5))

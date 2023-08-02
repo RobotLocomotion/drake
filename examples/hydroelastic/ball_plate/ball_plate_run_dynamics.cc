@@ -134,7 +134,7 @@ int main(int argc, char* argv[]) {
       "and plate-floor contacts are rigid-compliant, compliant-compliant,\n"
       "and rigid-compliant. The hydroelastic contact model can work with\n"
       "non-convex shapes accurately without resorting to their convex\n"
-      "hulls. Launch drake-visualizer before running this example.\n"
+      "hulls. Launch drake_visualizer before running this example.\n"
       "See the README.md file for more information.\n");
   FLAGS_simulator_publish_every_time_step = true;
   FLAGS_simulator_target_realtime_rate = 0.1;

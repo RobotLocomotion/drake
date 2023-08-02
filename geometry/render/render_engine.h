@@ -363,6 +363,10 @@ class RenderEngine : public ShapeReifier {
 
   //@}
 
+  // TODO(SeanCurtis-TRI): Deprecate this API in favor of our light parameter
+  // specification. First enable lights in RenderEngineVtk and confirm pass
+  // through in RenderEngineGltfClient.
+
   /** Provides access to the light for manual configuration since it's currently
    bound to the camera position. This is a temporary measure to facilitate
    benchmarking and create visible shadows, and should not be used publicly.

@@ -1,10 +1,5 @@
 #pragma once
 
-/// @file This file implements a system which populates optitrack_frame_t
-/// messages for publishing over a message passing system. Currently we support
-/// publishing over LCM, and may support other messaging protocols in the
-/// future.
-
 #include <map>
 #include <string>
 #include <utility>
@@ -12,6 +7,7 @@
 #include "optitrack/optitrack_frame_t.hpp"
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/systems/framework/leaf_system.h"
 
@@ -34,7 +30,12 @@ namespace sensors {
 /// output_ports:
 /// - y0
 /// @endsystem
-class OptitrackLcmFrameSender : public systems::LeafSystem<double> {
+class DRAKE_DEPRECATED(
+    "2023-11-01",
+    "The OptitrackLcmFrameSender will be removed from Drake. If you still need "
+    "to use this class, feel free to copy its source code to your own project "
+    "and customize it to your needs.")  // BR
+    OptitrackLcmFrameSender : public LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(OptitrackLcmFrameSender)
 

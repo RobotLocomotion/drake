@@ -14,6 +14,7 @@ namespace render_gl {
 namespace internal {
 
 using Eigen::Vector3d;
+using math::RigidTransformd;
 
 namespace {
 
@@ -24,9 +25,9 @@ GLuint CompileShader(GLuint shader_type, const std::string& shader_code) {
   glCompileShader(shader_gl_id);
 
   // Check compilation result.
-  GLint result{0};
-  glGetShaderiv(shader_gl_id, GL_COMPILE_STATUS, &result);
-  if (!result) {
+  GLint is_compiled{0};
+  glGetShaderiv(shader_gl_id, GL_COMPILE_STATUS, &is_compiled);
+  if (is_compiled == GL_FALSE) {
     const std::string error_prefix =
         fmt::format("Error compiling {} shader: ",
                     shader_type == GL_VERTEX_SHADER ? "vertex" : "fragment");
@@ -108,23 +109,26 @@ void ShaderProgram::SetProjectionMatrix(const Eigen::Matrix4f& T_DC) const {
   glUniformMatrix4fv(projection_matrix_loc_, 1, GL_FALSE, T_DC.data());
 }
 
-void ShaderProgram::SetModelViewMatrix(const Eigen::Matrix4f& X_CM,
+void ShaderProgram::SetModelViewMatrix(const Eigen::Matrix4f& X_CW,
+                                       const RigidTransformd& X_WG,
                                        const Vector3d& scale) const {
-  const Eigen::DiagonalMatrix<float, 4, 4> scale_mat(
+  const Eigen::DiagonalMatrix<float, 4, 4> S_GM(
       Vector4<float>(scale(0), scale(1), scale(2), 1.0));
+  const Eigen::Matrix4f X_WG_f = X_WG.GetAsMatrix4().cast<float>();
+  const Eigen::Matrix4f T_WM = X_WG_f * S_GM;
+  const Eigen::Matrix4f T_CM = X_CW * T_WM;
   // Our camera frame C wrt the OpenGL's camera frame Cgl.
   // clang-format off
-  static const Eigen::Matrix4f kX_CglC =
+  static const Eigen::Matrix4f kT_CglC =
       (Eigen::Matrix4f() << 1,  0,  0, 0,
                             0, -1,  0, 0,
                             0,  0, -1, 0,
                             0,  0,  0, 1)
           .finished();
   // clang-format on
-  const Eigen::Matrix4f X_CglM = kX_CglC * X_CM;
-  Eigen::Matrix4f T_CglM = X_CglM * scale_mat;
+  const Eigen::Matrix4f T_CglM = kT_CglC * T_CM;
   glUniformMatrix4fv(model_view_loc_, 1, GL_FALSE, T_CglM.data());
-  DoModelViewMatrix(X_CglM, scale);
+  DoSetModelViewMatrix(X_CW, T_WM, X_WG_f, scale);
 }
 
 GLint ShaderProgram::GetUniformLocation(const std::string& uniform_name) const {

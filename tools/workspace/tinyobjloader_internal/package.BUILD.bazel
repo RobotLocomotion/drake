@@ -1,0 +1,27 @@
+# -*- bazel -*-
+
+load(
+    "@drake//tools/install:install.bzl",
+    "install",
+)
+
+licenses(["notice"])  # MIT, ISC
+
+package(
+    default_visibility = ["//visibility:public"],
+)
+
+cc_library(
+    name = "tinyobjloader",
+    srcs = ["tiny_obj_loader.cc"],
+    hdrs = ["tiny_obj_loader.h"],
+    defines = ["TINYOBJLOADER_USE_DOUBLE=1"],
+    copts = ["-fvisibility=hidden"],
+    includes = ["."],
+    linkstatic = 1,
+)
+
+install(
+    name = "install",
+    docs = ["LICENSE"],
+)

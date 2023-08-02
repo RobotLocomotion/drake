@@ -36,12 +36,12 @@ drake_cc_binary(
     deps = [
         ":populate_ball_plant",
         "//common:add_text_logging_gflags",
-        "//geometry:drake_visualizer",
         "//multibody/plant:contact_results_to_lcm",
         "//systems/analysis:simulator",
         "//systems/analysis:simulator_gflags",
         "//systems/analysis:simulator_print_stats",
         "//systems/framework:diagram",
+        "//visualization",
         "@gflags",
     ],
 )

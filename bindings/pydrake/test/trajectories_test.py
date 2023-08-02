@@ -3,6 +3,7 @@ import numpy as np
 import pickle
 from textwrap import dedent
 import unittest
+import scipy.sparse
 
 from pydrake.common import ToleranceType
 from pydrake.common.eigen_geometry import AngleAxis_, Quaternion_
@@ -101,6 +102,10 @@ class TestTrajectories(unittest.TestCase):
         b = curve.BernsteinBasis(i=0, time=1.5, order=1)
         self.assertIsInstance(b, T)
         numpy_compare.assert_float_equal(curve.control_points(), points)
+
+        M = curve.AsLinearInControlPoints(derivative_order=1)
+        self.assertEqual(M.shape, (1, 2))
+        self.assertIsInstance(M, scipy.sparse.csc_matrix)
 
         curve_expression = curve.GetExpression(time=Variable("t"))
         self.assertEqual(curve_expression.shape, (2,))

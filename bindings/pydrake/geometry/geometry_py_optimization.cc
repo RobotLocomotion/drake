@@ -90,11 +90,26 @@ void DefineGeometryOptimization(py::module m) {
         .def(py::init<>(), cls_doc.ctor.doc_0args)
         .def(py::init<const Eigen::Ref<const Eigen::MatrixXd>&,
                  const Eigen::Ref<const Eigen::VectorXd>&>(),
-            py::arg("basis"), py::arg("translation"), cls_doc.ctor.doc_2args)
+            py::arg("basis"), py::arg("translation"),
+            cls_doc.ctor.doc_2args_basis_translation)
+        .def(py::init<const ConvexSet&, double>(), py::arg("set"),
+            py::arg("tol") = 0, cls_doc.ctor.doc_2args_set_tol)
         .def("basis", &AffineSubspace::basis, py_rvp::reference_internal,
             cls_doc.basis.doc)
         .def("translation", &AffineSubspace::translation,
-            py_rvp::reference_internal, cls_doc.translation.doc);
+            py_rvp::reference_internal, cls_doc.translation.doc)
+        .def("AffineDimension", &AffineSubspace::AffineDimension,
+            cls_doc.AffineDimension.doc)
+        .def("Project", &AffineSubspace::Project, py::arg("x"),
+            cls_doc.Project.doc)
+        .def("ToLocalCoordinates", &AffineSubspace::ToLocalCoordinates,
+            py::arg("x"), cls_doc.ToLocalCoordinates.doc)
+        .def("ToGlobalCoordinates", &AffineSubspace::ToGlobalCoordinates,
+            py::arg("y"), cls_doc.ToGlobalCoordinates.doc)
+        .def("ContainedIn", &AffineSubspace::ContainedIn, py::arg("other"),
+            py::arg("tol") = 1e-15, cls_doc.ContainedIn.doc)
+        .def("IsNearlyEqualTo", &AffineSubspace::IsNearlyEqualTo,
+            py::arg("other"), py::arg("tol") = 1e-15, cls_doc.ContainedIn.doc);
     DefClone(&cls);
   }
 
@@ -215,6 +230,10 @@ void DefineGeometryOptimization(py::module m) {
             py::arg("radius"), py::arg("center"), cls_doc.MakeHypersphere.doc)
         .def_static("MakeUnitBall", &Hyperellipsoid::MakeUnitBall,
             py::arg("dim"), cls_doc.MakeUnitBall.doc)
+        .def_static("MinimumVolumeCircumscribedEllipsoid",
+            &Hyperellipsoid::MinimumVolumeCircumscribedEllipsoid,
+            py::arg("points"), py::arg("rank_tol") = 1e-6,
+            cls_doc.MinimumVolumeCircumscribedEllipsoid.doc)
         .def(py::pickle(
             [](const Hyperellipsoid& self) {
               return std::make_pair(self.A(), self.center());

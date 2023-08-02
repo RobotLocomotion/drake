@@ -1,0 +1,23 @@
+# -*- bazel -*-
+
+load(
+    "@drake//tools/install:install.bzl",
+    "install",
+)
+
+licenses(["notice"])  # MIT
+
+package(
+    default_visibility = ["//visibility:public"],
+)
+
+cc_library(
+    name = "picosha2",
+    hdrs = ["picosha2.h"],
+    includes = ["."],
+)
+
+install(
+    name = "install",
+    docs = ["LICENSE"],
+)

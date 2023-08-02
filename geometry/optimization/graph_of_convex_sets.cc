@@ -33,6 +33,7 @@ using Eigen::MatrixXd;
 using Eigen::Ref;
 using Eigen::RowVector2d;
 using Eigen::RowVectorXd;
+using Eigen::SparseMatrix;
 using Eigen::VectorXd;
 using solvers::Binding;
 using solvers::Constraint;
@@ -53,6 +54,7 @@ using solvers::RotatedLorentzConeConstraint;
 using solvers::SolutionResult;
 using solvers::VariableRefList;
 using solvers::VectorXDecisionVariable;
+using solvers::internal::CreateBinding;
 using symbolic::Expression;
 using symbolic::Variable;
 using symbolic::Variables;
@@ -687,12 +689,14 @@ void GraphOfConvexSets::AddPerspectiveConstraint(
   if (LinearEqualityConstraint* lec =
           dynamic_cast<LinearEqualityConstraint*>(constraint)) {
     // A*x = b becomes A*x = phi*b.
-    // TODO(hongkai.dai): use sparse version of Aeq.
-    const Eigen::MatrixXd& A = lec->GetDenseA();
-    MatrixXd Aeq(A.rows(), A.cols() + 1);
-    Aeq.col(0) = -lec->lower_bound();
+    const SparseMatrix<double>& A = lec->get_sparse_A();
+    SparseMatrix<double> Aeq(A.rows(), A.cols() + 1);
+    Aeq.col(0) = -lec->lower_bound().sparseView();
     Aeq.rightCols(A.cols()) = A;
-    prog->AddLinearEqualityConstraint(Aeq, VectorXd::Zero(A.rows()), vars);
+    prog->AddConstraint(
+        CreateBinding(std::make_shared<LinearEqualityConstraint>(
+                          Aeq, VectorXd::Zero(A.rows())),
+                      vars));
     // Note that LinearEqualityConstraint must come before LinearConstraint,
     // because LinearEqualityConstraint isa LinearConstraint.
   } else if (LinearConstraint* lc =
@@ -700,19 +704,52 @@ void GraphOfConvexSets::AddPerspectiveConstraint(
     // lb <= A*x <= ub becomes
     // A*x <= phi*ub and phi*lb <= A*x, which can be spelled
     // [-ub, A][phi; x] <= 0, and 0 <= [-lb, A][phi; x].
-    // TODO(hongkai.dai): use a sparse version of a matrix.
-    const Eigen::MatrixXd& A = lc->GetDenseA();
-    RowVectorXd a(vars.size());
-    for (int i = 0; i < A.rows(); ++i) {
-      if (std::isfinite(lc->upper_bound()[i])) {
-        a[0] = -lc->upper_bound()[i];
-        a.tail(A.cols()) = A.row(i);
-        prog->AddLinearConstraint(a, -inf, 0, vars);
+    if (lc->upper_bound().array().isFinite().all()) {
+      const SparseMatrix<double>& A = lc->get_sparse_A();
+      SparseMatrix<double> Ac(A.rows(), A.cols() + 1);
+      Ac.col(0) = -lc->upper_bound().sparseView();
+      Ac.rightCols(A.cols()) = A;
+      prog->AddConstraint(
+          CreateBinding(std::make_shared<LinearConstraint>(
+                            Ac, VectorXd::Constant(Ac.rows(), -inf),
+                            VectorXd::Zero(Ac.rows())),
+                        vars));
+    } else if (lc->upper_bound().array().isInf().all()) {
+      // Then do nothing.
+    } else {
+      // Need to go constraint by constraint.
+      const Eigen::MatrixXd& A = lc->GetDenseA();
+      RowVectorXd a(vars.size());
+      for (int i = 0; i < A.rows(); ++i) {
+        if (std::isfinite(lc->upper_bound()[i])) {
+          a[0] = -lc->upper_bound()[i];
+          a.tail(A.cols()) = A.row(i);
+          prog->AddLinearConstraint(a, -inf, 0, vars);
+        }
       }
-      if (std::isfinite(lc->lower_bound()[i])) {
-        a[0] = -lc->lower_bound()[i];
-        a.tail(A.cols()) = A.row(i);
-        prog->AddLinearConstraint(a, 0, inf, vars);
+    }
+
+    if (lc->lower_bound().array().isFinite().all()) {
+      const SparseMatrix<double>& A = lc->get_sparse_A();
+      SparseMatrix<double> Ac(A.rows(), A.cols() + 1);
+      Ac.col(0) = -lc->lower_bound().sparseView();
+      Ac.rightCols(A.cols()) = A;
+      prog->AddConstraint(CreateBinding(std::make_shared<LinearConstraint>(
+                                            Ac, VectorXd::Zero(Ac.rows()),
+                                            VectorXd::Constant(Ac.rows(), inf)),
+                                        vars));
+    } else if (lc->lower_bound().array().isInf().all()) {
+      // Then do nothing.
+    } else {
+      // Need to go constraint by constraint.
+      const Eigen::MatrixXd& A = lc->GetDenseA();
+      RowVectorXd a(vars.size());
+      for (int i = 0; i < A.rows(); ++i) {
+        if (std::isfinite(lc->lower_bound()[i])) {
+          a[0] = -lc->lower_bound()[i];
+          a.tail(A.cols()) = A.row(i);
+          prog->AddLinearConstraint(a, 0, inf, vars);
+        }
       }
     }
   } else {

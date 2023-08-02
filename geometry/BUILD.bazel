@@ -339,7 +339,7 @@ drake_cc_library(
     deps = [
         "//common:essential",
         "@fmt",
-        "@tinyobjloader",
+        "@tinyobjloader_internal//:tinyobjloader",
     ],
 )
 
@@ -473,7 +473,7 @@ drake_cc_library(
         "@common_robotics_utilities",
         "@msgpack_internal//:msgpack",
         "@stduuid_internal//:stduuid",
-        "@uwebsockets",
+        "@uwebsockets_internal//:uwebsockets",
     ],
 )
 
@@ -482,6 +482,8 @@ drake_cc_binary(
     testonly = True,
     srcs = ["test/meshcat_manual_test.cc"],
     data = [
+        ":test/env_256_brick_room.jpg",
+        ":test/env_256_cornell_box.png",
         "//examples/kuka_iiwa_arm:models",
         "//geometry/render:test_models",
         "//manipulation/models/iiwa_description:models",
@@ -512,6 +514,7 @@ drake_cc_googletest(
     name = "meshcat_test",
     data = [
         ":meshcat_websocket_client",
+        ":test/env_256_cornell_box.png",
         "//geometry/render:test_models",
     ],
     tags = [

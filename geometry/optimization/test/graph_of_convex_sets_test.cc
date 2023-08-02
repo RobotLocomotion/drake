@@ -40,6 +40,7 @@ using solvers::MathematicalProgramResult;
 using solvers::QuadraticCost;
 using solvers::SolutionResult;
 using solvers::SolverOptions;
+using solvers::internal::CreateBinding;
 using symbolic::Environment;
 using symbolic::Expression;
 using symbolic::Substitution;
@@ -53,6 +54,8 @@ using VertexId = GraphOfConvexSets::VertexId;
 using ::testing::AllOf;
 using ::testing::HasSubstr;
 using ::testing::Not;
+
+const double kInf = std::numeric_limits<double>::infinity();
 
 namespace {
 bool MixedIntegerSolverAvailable() {
@@ -1019,14 +1022,21 @@ TEST_F(ThreeBoxes, LinearEqualityConstraint2) {
   CheckConvexRestriction(result);
 }
 
+// Test linear constraints, including infinite lower and upper bounds.
 TEST_F(ThreeBoxes, LinearConstraint) {
+  const Matrix2d A = Matrix2d::Identity();
   const Vector2d b{.5, .3};
-  e_on_->AddConstraint(e_on_->xv() >= b);
+  e_on_->AddConstraint(CreateBinding(
+      std::make_shared<LinearConstraint>(A, b, Vector2d::Constant(kInf)),
+      e_on_->xv()));  // b ≤ e_on_->xv() ≤ ∞.
   e_off_->AddConstraint(e_off_->xv() >= b);
-  source_->AddConstraint(source_->x() <= -b);
+  source_->AddConstraint(CreateBinding(
+      std::make_shared<LinearConstraint>(A, Vector2d::Constant(-kInf), -b),
+      source_->x()));  // -∞ ≤ source->() ≤ -b.
   auto result = g_.SolveShortestPath(*source_, *target_, options_);
   ASSERT_TRUE(result.is_success());
-  EXPECT_TRUE((source_->GetSolution(result).array() <= b.array() - 1e-6).all());
+  EXPECT_TRUE(
+      (source_->GetSolution(result).array() <= -b.array() + 1e-6).all());
   EXPECT_TRUE((target_->GetSolution(result).array() >= b.array() - 1e-6).all());
   EXPECT_TRUE(sink_->GetSolution(result).hasNaN());
   CheckConvexRestriction(result);
@@ -1072,6 +1082,29 @@ TEST_F(ThreeBoxes, LinearConstraint2) {
       CompareMatrices(source_->GetSolution(result), Vector2d::Zero(), 1e-6));
   EXPECT_FALSE(
       CompareMatrices(target_->GetSolution(result), Vector2d::Zero(), 1e-6));
+  CheckConvexRestriction(result);
+}
+
+// Test constraints that have lower bounds and upper bounds that are a
+// combination of finite and infinite.
+TEST_F(ThreeBoxes, LinearConstraint3) {
+  const Matrix2d A = Matrix2d::Identity();
+  const Vector2d b{.5, -kInf};  // One finite and one infinite.
+  e_on_->AddConstraint(CreateBinding(
+      std::make_shared<LinearConstraint>(A, b, Vector2d::Constant(kInf)),
+      e_on_->xv()));  // b ≤ e_on_->xv() ≤ ∞.
+  e_off_->AddConstraint(CreateBinding(
+      std::make_shared<LinearConstraint>(A, b, Vector2d::Constant(kInf)),
+      e_off_->xv()));  // b ≤ e_off_->xv() ≤ ∞.
+  source_->AddConstraint(CreateBinding(
+      std::make_shared<LinearConstraint>(A, Vector2d::Constant(-kInf), -b),
+      source_->x()));  // -∞ ≤ source->() ≤ -b.
+  auto result = g_.SolveShortestPath(*source_, *target_, options_);
+  ASSERT_TRUE(result.is_success());
+  EXPECT_TRUE(
+      (source_->GetSolution(result).array() <= -b.array() + 1e-6).all());
+  EXPECT_TRUE((target_->GetSolution(result).array() >= b.array() - 1e-6).all());
+  EXPECT_TRUE(sink_->GetSolution(result).hasNaN());
   CheckConvexRestriction(result);
 }
 

@@ -20,6 +20,7 @@ namespace internal {
 class ShaderProgramTest;
 namespace {
 
+using math::RigidTransformd;
 using render::DepthRange;
 using render::DepthRenderCamera;
 using render::RenderCameraCore;
@@ -40,7 +41,7 @@ class TestShader final : public ShaderProgram {
 
   // Collection of flags which report if certain virtual methods have been
   // invoked.
-  bool DoModelViewMatrixCalled() const { return do_mv_matrix_called_; }
+  bool DoSetModelViewMatrixCalled() const { return do_mv_matrix_called_; }
 
   bool CalledDoConfigureUniforms() const {
     return do_configure_uniforms_called_;
@@ -64,6 +65,17 @@ class TestShader final : public ShaderProgram {
     set_depth_camera_called_ = true;
   }
 
+  // Called before calling SetModelViewMatrix(). The values that
+  // SetModelViewMatrix() passes to DoSetModelViewMatrix() will be tested
+  // against these values to make sure the right values are passed as expected.
+  void SetExpectedModelViewComponents(const Eigen::Matrix4f& X_CW,
+                                      const Eigen::Matrix4f& T_WM,
+                                      const Eigen::Matrix4f& X_WG) {
+    X_CW_expected_ = X_CW;
+    T_WM_expected_ = T_WM;
+    X_WG_expected_ = X_WG;
+  }
+
  private:
   friend class drake::geometry::render_gl::internal::ShaderProgramTest;
 
@@ -85,9 +97,16 @@ class TestShader final : public ShaderProgram {
     return ShaderProgramData{shader_id(), AbstractValue::Make(data)};
   }
 
-  void DoModelViewMatrix(const Eigen::Matrix4f&,
-                         const Eigen::Vector3d&) const override {
+  // With three identically typed parameters, we want a test confirming that
+  // the right value is passed to the right parameter.
+  void DoSetModelViewMatrix(const Eigen::Matrix4f& X_CW,
+                            const Eigen::Matrix4f& T_WM,
+                            const Eigen::Matrix4f& X_WG,
+                            const Eigen::Vector3d&) const override {
     do_mv_matrix_called_ = true;
+    EXPECT_TRUE(CompareMatrices(X_CW, X_CW_expected_));
+    EXPECT_TRUE(CompareMatrices(T_WM, T_WM_expected_));
+    EXPECT_TRUE(CompareMatrices(X_WG, X_WG_expected_));
   }
 
   bool do_configure_uniforms_called_{false};
@@ -95,6 +114,9 @@ class TestShader final : public ShaderProgram {
   mutable bool set_instance_params_called_{false};
   mutable bool set_depth_camera_called_{false};
 
+  Eigen::Matrix4f X_CW_expected_;
+  Eigen::Matrix4f T_WM_expected_;
+  Eigen::Matrix4f X_WG_expected_;
   int magic_number_{};
 };
 
@@ -411,20 +433,25 @@ TEST_F(ShaderProgramTest, SetProjectionMatrix) {
 // Confirms that given matrix propagates into the OpenGl state and that the
 // virtual API gets exercised.
 TEST_F(ShaderProgramTest, SetModelViewMatrix) {
-  TestShader shader;
-  shader.LoadFromSources(kVertexSource, kFragmentSource);
-  const ShaderProgram* shader_ptr = &shader;
+  TestShader test_shader;
+  test_shader.LoadFromSources(kVertexSource, kFragmentSource);
+  const ShaderProgram& shader = test_shader;
 
-  // Note: this is a weird, invalid projection matrix that we shouldn't expect
-  // should ever happen by accident.
-  Matrix4f X_CM = Matrix4f::Identity();
-  X_CM.col(3) << 1, 2, 3, 1;  // Simple translation.
+  // Note: the matrix values for T_CW and X_WG are arbitrary collections of
+  // values without real meaning. We just need distinct values.
+  Matrix4f X_CW = Matrix4f::Identity();
+  X_CW.col(3) << 10, 20, 30, 1;
+  const RigidTransformd X_WG(Vector3d(1, 2, 3));  // Simple transformation.
   const Vector3d scale(0.5, 2, 4);
-  ASSERT_FALSE(shader.DoModelViewMatrixCalled());
-  shader_ptr->Use();
-  shader_ptr->SetModelViewMatrix(X_CM, scale);
-  shader_ptr->Unuse();
-  ASSERT_TRUE(shader.DoModelViewMatrixCalled());
+  Matrix4f T_WM = X_WG.GetAsMatrix4().cast<float>();  // Except for the scale.
+  for (int i = 0; i < 3; ++i) T_WM.col(i) *= scale(i);
+  ASSERT_FALSE(test_shader.DoSetModelViewMatrixCalled());
+  test_shader.SetExpectedModelViewComponents(X_CW, T_WM,
+                                             X_WG.GetAsMatrix4().cast<float>());
+  shader.Use();
+  shader.SetModelViewMatrix(X_CW, X_WG, scale);
+  shader.Unuse();
+  ASSERT_TRUE(test_shader.DoSetModelViewMatrixCalled());
 
   float mv_mat_data[16];
   glGetUniformfv(gl_id(shader), model_view_loc(shader), &mv_mat_data[0]);
@@ -436,7 +463,7 @@ TEST_F(ShaderProgramTest, SetModelViewMatrix) {
           .finished();
   const Eigen::DiagonalMatrix<float, 4, 4> scale_mat(
       Vector4<float>(scale(0), scale(1), scale(2), 1.0));
-  const Matrix4f expected_mv_mat = X_CglC * X_CM * scale_mat;
+  const Matrix4f expected_mv_mat = X_CglC * X_CW * T_WM;
   EXPECT_TRUE(CompareMatrices(expected_mv_mat, gl_mv_mat));
 }
 

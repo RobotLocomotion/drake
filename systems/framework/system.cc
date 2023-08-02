@@ -38,9 +38,6 @@ std::unique_ptr<System<T>> System<T>::Clone() const {
   auto intermediate = this->template ToScalarTypeMaybe<U>();
   if (intermediate != nullptr) {
     result = intermediate->template ToScalarTypeMaybe<T>();
-    if (result != nullptr) {
-      result->ResetSystemId();
-    }
   }
 
   // If anything went wrong, throw an exception.

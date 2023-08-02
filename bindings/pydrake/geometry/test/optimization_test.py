@@ -69,6 +69,10 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertTrue(dut.IsBounded())
         self.assertTrue(dut.PointInSet(dut.MaybeGetFeasiblePoint()))
         self.assertTrue(dut.IntersectsWith(dut))
+        self.assertTrue(dut.PointInSet(dut.Project([])))
+        self.assertEqual(dut.AffineDimension(), 0)
+        self.assertTrue(dut.ContainedIn(mut.AffineSubspace()))
+        self.assertTrue(dut.IsNearlyEqualTo(mut.AffineSubspace()))
 
         basis = np.array([[1, 0, 0], [0, 1, 0]]).T
         translation = np.array([0, 0, 1])
@@ -82,9 +86,45 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertFalse(dut.IsBounded())
         self.assertTrue(dut.PointInSet(dut.MaybeGetFeasiblePoint()))
         self.assertTrue(dut.IntersectsWith(dut))
+        self.assertEqual(dut.AffineDimension(), 2)
+
+        test_point = np.array([43, 43, 0])
+        self.assertFalse(dut.PointInSet(test_point))
+        self.assertTrue(dut.PointInSet(dut.Project(test_point)))
+
+        np.testing.assert_array_equal(dut.ToGlobalCoordinates(
+            dut.ToLocalCoordinates(test_point)), dut.Project(test_point))
+        local_coords = np.array([1, -1])
+        np.testing.assert_array_equal(dut.ToLocalCoordinates(
+            dut.ToGlobalCoordinates(local_coords)),
+            local_coords.reshape(-1, 1))
+        np.testing.assert_array_equal(dut.ToLocalCoordinates(
+            dut.ToGlobalCoordinates(local_coords.reshape(-1, 1))),
+            local_coords.reshape(-1, 1))
+
+        test_point_batch = np.zeros((3, 5))
+        self.assertEqual(dut.ToLocalCoordinates(x=test_point_batch).shape,
+                         (2, 5))
+        self.assertEqual(dut.Project(x=test_point_batch).shape, (3, 5))
+        local_coords_batch = np.zeros((2, 5))
+        self.assertEqual(dut.ToGlobalCoordinates(y=local_coords_batch).shape,
+                         (3, 5))
+
+        self.assertTrue(dut.ContainedIn(other=mut.AffineSubspace(
+            basis, translation), tol=0))
+        self.assertTrue(dut.IsNearlyEqualTo(other=mut.AffineSubspace(
+            basis, translation), tol=0))
+        self.assertFalse(dut.ContainedIn(other=mut.AffineSubspace(), tol=0))
+        self.assertFalse(mut.AffineSubspace().ContainedIn(other=dut, tol=0))
+        self.assertFalse(dut.IsNearlyEqualTo(other=mut.AffineSubspace(),
+                                             tol=0))
 
         self.assertIsNot(dut.Clone(), dut)
         self.assertIsNot(copy.deepcopy(dut), dut)
+
+        p = np.array([11.1, 12.2, 13.3])
+        point = mut.Point(p)
+        aff = mut.AffineSubspace(set=point, tol=1e-12)
 
     def test_h_polyhedron(self):
         mut.HPolyhedron()
@@ -246,6 +286,11 @@ class TestGeometryOptimization(unittest.TestCase):
         e_ball3 = mut.Hyperellipsoid.MakeUnitBall(dim=3)
         np.testing.assert_array_equal(e_ball3.A(), self.A)
         np.testing.assert_array_equal(e_ball3.center(), [0, 0, 0])
+        points = np.array([[1, 0], [-1, 0], [0, 2], [0, -2]]).T
+        e_lowner_john = mut.Hyperellipsoid.MinimumVolumeCircumscribedEllipsoid(
+            points=points, rank_tol=1e-2)
+        e_lowner_john = mut.Hyperellipsoid.MinimumVolumeCircumscribedEllipsoid(
+            points=points)
 
     def test_minkowski_sum(self):
         mut.MinkowskiSum()

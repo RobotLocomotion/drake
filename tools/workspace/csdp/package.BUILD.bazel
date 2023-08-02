@@ -1,7 +1,5 @@
 # -*- bazel -*-
 
-load("@drake//tools/install:install.bzl", "install")
-
 licenses(["notice"])  # EPL-2.0
 
 package(default_visibility = ["//visibility:private"])
@@ -71,12 +69,5 @@ cc_library(
         "@lapack",
     ],
     visibility = ["//visibility:public"],
-)
-
-# We do not install the header file (its a private dependency), but we still
-# need to install its license file.
-install(
-    name = "install",
-    docs = ["LICENSE"],
-    visibility = ["//visibility:public"],
+    deprecation = "DRAKE DEPRECATED: The @csdp external is deprecated in Drake's WORKSPACE and will be removed on or after 2023-11-01.",  # noqa
 )

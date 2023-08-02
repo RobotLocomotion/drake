@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import pydrake.manipulation.util as mut
+import pydrake.manipulation as mut
 
 import unittest
 

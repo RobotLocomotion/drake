@@ -3,6 +3,9 @@ load("@drake//tools/workspace:github.bzl", "github_archive")
 def tinyobjloader_repository(
         name,
         mirrors = None):
+    """The @tinyobjloader external is deprecated in Drake's WORKSPACE and will
+    be removed on or after 2023-11-01.
+    """
     github_archive(
         name = name,
         repository = "tinyobjloader/tinyobjloader",
@@ -11,16 +14,8 @@ def tinyobjloader_repository(
         build_file = ":package.BUILD.bazel",
         mirrors = mirrors,
         patches = [
-            # We select tinyobjloader's floating-point typedef using a patch
-            # file instead of `defines = []` because tinyobjloader is a private
-            # dependency of Drake and we don't want the definition to leak into
-            # all target that consume Drake.
             ":patches/double_precision.patch",
-            # We replace tinyobjloader's implementation of float parsing with a
-            # faster call to strtod_l.
-            ":patches/faster_float_parsing.patch",
-            # If only a diffuse texture is given (map_Kd) tinyobj modulates it
-            # to 60% grey. We prefer 100%.
-            ":patches/default_texture_color.patch",
+            "@drake//tools/workspace/tinyobjloader_internal:patches/faster_float_parsing.patch",  # noqa
+            "@drake//tools/workspace/tinyobjloader_internal:patches/default_texture_color.patch",  # noqa
         ],
     )

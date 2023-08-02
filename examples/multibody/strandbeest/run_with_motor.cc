@@ -11,11 +11,13 @@ a way to model kinematic loops. It shows:
 
   Refer to README.md for more details on how to run and modify this example.
 */
+
 #include <fmt/format.h>
 #include <gflags/gflags.h>
 
 #include "drake/multibody/inverse_kinematics/inverse_kinematics.h"
 #include "drake/multibody/parsing/parser.h"
+#include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/linear_bushing_roll_pitch_yaw.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/solvers/solve.h"
@@ -40,6 +42,7 @@ using multibody::LinearBushingRollPitchYaw;
 using multibody::MultibodyPlant;
 using multibody::Parser;
 using multibody::RevoluteJoint;
+using multibody::internal::BallConstraintSpec;
 using solvers::Solve;
 using systems::BasicVector;
 using systems::Context;
@@ -54,20 +57,23 @@ namespace multibody {
 namespace strandbeest {
 namespace {
 
-DEFINE_double(simulation_time, 5.0, "Duration of the simulation in seconds.");
+DEFINE_double(simulation_time, 20.0, "Duration of the simulation in seconds.");
 
-DEFINE_double(initial_velocity, 1.0,
+DEFINE_double(initial_velocity, 5.0,
               "Initial velocity of the crossbar_crank joint.");
 
-DEFINE_double(mbt_dt, 0.0,
-              "Discrete time step. Defaults to 0.0 for a continuous system.");
+DEFINE_double(mbt_dt, 5e-2, "Discrete time step.");
 
-DEFINE_double(penetration_allowance, 1.0e-2, "MBP penetration allowance.");
+DEFINE_double(penetration_allowance, 5.0e-3, "MBP penetration allowance.");
 
 DEFINE_double(stiction_tolerance, 5.0e-2, "MBP stiction tolerance.");
 
-// A simple proportional controller to keep the angular velocity of the joint
-// at a desired rate.
+DEFINE_bool(with_constraints, true,
+            "Use strandbeest model with constraints, otherwise bushing force "
+            "elements are used.");
+
+// A simple proportional controller to keep the angular velocity of the
+// joint at a desired rate.
 template <typename T>
 class DesiredVelocityMotor final : public LeafSystem<T> {
  public:
@@ -106,6 +112,8 @@ class DesiredVelocityMotor final : public LeafSystem<T> {
 };
 
 int do_main() {
+  DRAKE_DEMAND((FLAGS_with_constraints && FLAGS_mbt_dt > 0) ||
+               (!FLAGS_with_constraints && FLAGS_mbt_dt == 0));
   // Build a generic MultibodyPlant and SceneGraph.
   DiagramBuilder<double> builder;
 
@@ -114,7 +122,14 @@ int do_main() {
 
   // Make and add the strandbeest model from a URDF model.
   const std::string urdf_url =
-      "package://drake/examples/multibody/strandbeest/Strandbeest.urdf";
+      (FLAGS_with_constraints ? "package://drake/examples/multibody/"
+                                "strandbeest/model/StrandbeestConstraints.urdf"
+                              : "package://drake/examples/multibody/"
+                                "strandbeest/model/StrandbeestBushings.urdf");
+  if (FLAGS_with_constraints) {
+    strandbeest.set_discrete_contact_solver(
+        drake::multibody::DiscreteContactSolver::kSap);
+  }
   Parser parser(&strandbeest);
   parser.AddModelsFromUrl(urdf_url);
 
@@ -174,6 +189,10 @@ int do_main() {
   lower.segment<3>(4) = Eigen::Vector3d(-2, 0, 1.35);
   upper.segment<3>(4) = Eigen::Vector3d(-2, 0, 1.35);
 
+  strandbeest.SetFreeBodyPose(
+      &strandbeest_context, strandbeest.GetBodyByName("crossbar"),
+      drake::math::RigidTransformd(Vector3d(-2, 0, 1.35)));
+
   // Fix the crank shaft to top dead center.
   const RevoluteJoint<double>& joint_crossbar_crank =
       strandbeest.GetJointByName<RevoluteJoint>("joint_crossbar_crank");
@@ -189,17 +208,26 @@ int do_main() {
   // Add our custom position constraints that fix the floating body (crossbar).
   ik.get_mutable_prog()->AddBoundingBoxConstraint(lower, upper, ik.q());
 
-  // Add a position constraint for each bushing element. The origins of the two
-  // frames defining the bushing should be coincident, so we add an equality
-  // constraint for those poses. Skip the 0th force element (UniformGravity).
-  for (ForceElementIndex bushing_index(1);
-       bushing_index < strandbeest.num_force_elements(); ++bushing_index) {
-    const LinearBushingRollPitchYaw<double>& bushing =
-        strandbeest.GetForceElement<LinearBushingRollPitchYaw>(bushing_index);
+  if (FLAGS_with_constraints) {
+    for (const auto& [id, spec] : strandbeest.get_ball_constraint_specs()) {
+      ik.AddPointToPointDistanceConstraint(
+          strandbeest.get_body(spec.body_A).body_frame(), spec.p_AP,
+          strandbeest.get_body(spec.body_B).body_frame(), spec.p_BQ, 0, 0);
+    }
+  } else {
+    // Add a position constraint for each bushing element. The origins of the
+    // two frames defining the bushing should be coincident, so we add an
+    // equality constraint for those poses. Skip the 0th force element
+    // (UniformGravity).
+    for (ForceElementIndex bushing_index(1);
+         bushing_index < strandbeest.num_force_elements(); ++bushing_index) {
+      const LinearBushingRollPitchYaw<double>& bushing =
+          strandbeest.GetForceElement<LinearBushingRollPitchYaw>(bushing_index);
 
-    ik.AddPointToPointDistanceConstraint(
-        bushing.frameA(), Eigen::Vector3d(0, 0, 0), bushing.frameC(),
-        Eigen::Vector3d(0, 0, 0), 0, 0);
+      ik.AddPointToPointDistanceConstraint(
+          bushing.frameA(), Eigen::Vector3d(0, 0, 0), bushing.frameC(),
+          Eigen::Vector3d(0, 0, 0), 0, 0);
+    }
   }
 
   // Solve the IK. The solved positions will be stored in the context passed
@@ -230,6 +258,7 @@ int main(int argc, char* argv[]) {
       "controlled motor set to a desired crank velocity. Launch meldis before "
       "running this example.");
 
+  FLAGS_simulator_target_realtime_rate = 1.0;
   FLAGS_simulator_accuracy = 1e-2;
   FLAGS_simulator_max_time_step = 1e-1;
   FLAGS_simulator_integration_scheme = "implicit_euler";

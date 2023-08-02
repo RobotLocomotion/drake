@@ -13,11 +13,23 @@ drake_cc_package_library(
     name = "render",
     visibility = ["//visibility:public"],
     deps = [
+        ":light_parameter",
         ":render_camera",
         ":render_engine",
         ":render_label",
         ":render_material",
         ":render_mesh",
+    ],
+)
+
+drake_cc_library(
+    name = "light_parameter",
+    srcs = ["light_parameter.cc"],
+    hdrs = ["light_parameter.h"],
+    deps = [
+        "//common:essential",
+        "//common:name_value",
+        "//geometry:rgba",
     ],
 )
 
@@ -75,7 +87,7 @@ drake_cc_library(
         "//geometry:rgba",
     ],
     deps = [
-        "@tinyobjloader",
+        "@tinyobjloader_internal//:tinyobjloader",
     ],
 )
 
@@ -91,7 +103,7 @@ drake_cc_library(
         "//geometry:rgba",
     ],
     deps = [
-        "@tinyobjloader",
+        "@tinyobjloader_internal//:tinyobjloader",
     ],
 )
 
@@ -113,6 +125,15 @@ filegroup(
         "test/box.sdf",
         "test/diag_gradient.png",
     ]),
+)
+
+drake_cc_googletest(
+    name = "light_parameter_test",
+    deps = [
+        ":light_parameter",
+        "//common/test_utilities",
+        "//common/yaml:yaml_io",
+    ],
 )
 
 drake_cc_googletest(

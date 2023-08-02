@@ -1,0 +1,30 @@
+# -*- bazel -*-
+
+load(
+    "@drake//tools/install:install.bzl",
+    "install",
+)
+
+licenses(["notice"])  # Apache 2.0
+
+package(default_visibility = ["//visibility:public"])
+
+# TODO(#17231) Use an inline hidden namespace to hide the uWS symbols.
+
+cc_library(
+    name = "uwebsockets",
+    hdrs = glob(["src/*.h"]),
+    includes = ["src"],
+    deps = [
+        "@usockets_internal//:usockets",
+        "@zlib",
+    ],
+    linkopts = ["-pthread"],
+    linkstatic = 1,
+)
+
+# Install the license file.
+install(
+    name = "install",
+    docs = ["LICENSE"],
+)

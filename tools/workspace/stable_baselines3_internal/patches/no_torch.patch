@@ -4,7 +4,7 @@ index 0775a8e..f6ae371 100644
 +++ stable_baselines3/__init__.py
 @@ -1,13 +1,19 @@
  import os
-
+ 
 -from stable_baselines3.a2c import A2C
 -from stable_baselines3.common.utils import get_system_info
 -from stable_baselines3.ddpg import DDPG
@@ -27,7 +27,7 @@ index 0775a8e..f6ae371 100644
 +PPO = make_not_loaded("PPO")
 +SAC = make_not_loaded("SAC")
 +TD3 = make_not_loaded("TD3")
-
+ 
  # Read version from file
  version_file = os.path.join(os.path.dirname(__file__), "version.txt")
 diff --git stable_baselines3/common/env_checker.py stable_baselines3/common/env_checker.py
@@ -36,7 +36,7 @@ index 516d7ba..29937b2 100644
 +++ stable_baselines3/common/env_checker.py
 @@ -6,7 +6,13 @@ import numpy as np
  from gymnasium import spaces
-
+ 
  from stable_baselines3.common.preprocessing import check_for_nested_spaces, is_image_space_channels_first
 -from stable_baselines3.common.vec_env import DummyVecEnv, VecCheckNan
 +
@@ -46,11 +46,11 @@ index 516d7ba..29937b2 100644
 +    torch_available = True
 +except ImportError:
 +    pass
-
-
+ 
+ 
  def _is_numpy_array_space(space: spaces.Space) -> bool:
 @@ -109,6 +115,9 @@ def _check_unsupported_spaces(env: gym.Env, observation_space: spaces.Space, act
-
+ 
  def _check_nan(env: gym.Env) -> None:
      """Check for Inf and NaN using the VecWrapper."""
 +    if not torch_available:

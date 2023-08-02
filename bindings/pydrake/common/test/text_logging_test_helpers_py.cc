@@ -1,5 +1,6 @@
 #include <atomic>
 #include <chrono>
+#include <future>
 #include <thread>
 
 #include "pybind11/pybind11.h"
@@ -21,6 +22,12 @@ void do_log_test() {
   drake::log()->warn("Test Warn message");
   drake::log()->error("Test Error message");
   drake::log()->critical("Test Critical message");
+}
+
+// Logs one message at every available level, from an async worker.
+void do_log_test_async() {
+  auto handle = std::async(std::launch::async, &do_log_test);
+  handle.get();
 }
 
 // Launches a C++ thread that logs periodically.
@@ -66,6 +73,9 @@ PYBIND11_MODULE(text_logging_test_helpers, m) {
   m.doc() = "Test text logging";
 
   m.def("do_log_test", &do_log_test);
+  m.def("do_log_test_async", &do_log_test_async);
+  m.def("do_log_test_async_with_gil_release", &do_log_test_async,
+      py::call_guard<py::gil_scoped_release>());
 
   {
     using Class = Worker;

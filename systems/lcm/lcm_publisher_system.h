@@ -68,16 +68,22 @@ class LcmPublisherSystem : public LeafSystem<double> {
    * If the publish period is zero, LcmPublisherSystem will use per-step
    * publishing instead; see LeafSystem::DeclarePerStepPublishEvent().
    *
+   * @param publish_offset Offset that messages will be published (optional),
+   * in seconds. This adds a phase-shift delay to periodic publish events.
+   *
    * @pre publish_period is non-negative.
+   * @pre publish_offset is finite and non-negative.
+   * @pre publish_offset is set to zero when the publish_period is zero.
    */
   template <typename LcmMessage>
   static std::unique_ptr<LcmPublisherSystem> Make(
       const std::string& channel,
       drake::lcm::DrakeLcmInterface* lcm,
-      double publish_period = 0.0) {
+      double publish_period = 0.0,
+      double publish_offset = 0.0) {
     return std::make_unique<LcmPublisherSystem>(
         channel, std::make_unique<Serializer<LcmMessage>>(), lcm,
-        publish_period);
+        publish_period, publish_offset);
   }
 
   /**
@@ -103,19 +109,25 @@ class LcmPublisherSystem : public LeafSystem<double> {
    * publish_period should only be non-zero if one of the publish_triggers is
    * kPeriodic.
    *
-   * @pre publish_period is non-negative.
+   * @param publish_offset Offset that messages will be published (optional),
+   * in seconds. This adds a phase-shift delay to periodic publish events.
+   *
    * @pre publish_triggers contains a subset of {kForced, kPeriodic, kPerStep}.
+   * @pre publish_period is non-negative.
    * @pre publish_period > 0 if and only if publish_triggers contains kPeriodic.
+   * @pre publish_offset is finite and non-negative.
+   * @pre publish_offset > 0 if and only if publish_triggers contains kPeriodic.
    */
   template <typename LcmMessage>
   static std::unique_ptr<LcmPublisherSystem> Make(
       const std::string& channel,
       drake::lcm::DrakeLcmInterface* lcm,
       const systems::TriggerTypeSet& publish_triggers,
-      double publish_period = 0.0) {
+      double publish_period = 0.0,
+      double publish_offset = 0.0) {
     return std::make_unique<LcmPublisherSystem>(
         channel, std::make_unique<Serializer<LcmMessage>>(), lcm,
-        publish_triggers, publish_period);
+        publish_triggers, publish_period, publish_offset);
   }
 
   /**
@@ -138,12 +150,18 @@ class LcmPublisherSystem : public LeafSystem<double> {
    * If the publish period is zero, LcmPublisherSystem will use per-step
    * publishing instead; see LeafSystem::DeclarePerStepPublishEvent().
    *
+   * @param publish_offset Offset that messages will be published (optional),
+   * in seconds. This adds a phase-shift delay to periodic publish events.
+   *
    * @pre publish_period is non-negative.
+   * @pre publish_offset is finite and non-negative.
+   * @pre publish_offset is set to zero when the publish_period is zero.
    */
   LcmPublisherSystem(const std::string& channel,
                      std::shared_ptr<const SerializerInterface> serializer,
                      drake::lcm::DrakeLcmInterface* lcm,
-                     double publish_period = 0.0);
+                     double publish_period = 0.0,
+                     double publish_offset = 0.0);
 
   /**
    * A constructor for an %LcmPublisherSystem that takes LCM message objects on
@@ -168,15 +186,21 @@ class LcmPublisherSystem : public LeafSystem<double> {
    * publish_period should only be non-zero if one of the publish_triggers is
    * kPerStep.
    *
-   * @pre publish_period is non-negative.
-   * @pre publish_period > 0 iff publish_triggers contains kPeriodic.
+   * @param publish_offset Offset that messages will be published (optional),
+   * in seconds. This adds a phase-shift delay to periodic publish events.
+   *
    * @pre publish_triggers contains a subset of {kForced, kPeriodic, kPerStep}.
+   * @pre publish_period is non-negative.
+   * @pre publish_period > 0 if and only if publish_triggers contains kPeriodic.
+   * @pre publish_offset is finite and non-negative.
+   * @pre publish_offset > 0 if and only if publish_triggers contains kPeriodic.
    */
   LcmPublisherSystem(const std::string& channel,
       std::shared_ptr<const SerializerInterface> serializer,
       drake::lcm::DrakeLcmInterface* lcm,
       const systems::TriggerTypeSet& publish_triggers,
-      double publish_period = 0.0);
+      double publish_period = 0.0,
+      double publish_offset = 0.0);
 
   ~LcmPublisherSystem() override;
 
@@ -225,6 +249,11 @@ class LcmPublisherSystem : public LeafSystem<double> {
    */
   double get_publish_period() const;
 
+  /**
+   * Returns the publish_offset provided at construction time.
+   */
+  double get_publish_offset() const;
+
  private:
   EventStatus PublishInputAsLcmMessage(const Context<double>& context) const;
 
@@ -247,6 +276,7 @@ class LcmPublisherSystem : public LeafSystem<double> {
   drake::lcm::DrakeLcmInterface* const lcm_;
 
   const double publish_period_;
+  const double publish_offset_;
 };
 
 }  // namespace lcm

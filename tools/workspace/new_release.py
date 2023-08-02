@@ -55,8 +55,8 @@ _IGNORED_REPOSITORIES = [
     # We don't know how to check non-default branches yet.
     "clang_cindex_python3_internal",
     "pybind11",
-    "usockets",  # Pinned due to upstream regression.
-    "uwebsockets",  # Pinned due to upstream regression.
+    "usockets_internal",  # Pinned due to upstream regression.
+    "uwebsockets_internal",  # Pinned due to upstream regression.
 ]
 
 # For these repositories, we only look at tags, not releases.  For the dict
@@ -83,7 +83,7 @@ _COHORTS = (
     # sdformat depends on both gz libraries; be sure to keep them aligned.
     {"sdformat_internal", "gz_math_internal", "gz_utils_internal"},
     # uwebsockets depends on usockets; be sure to keep them aligned.
-    {"uwebsockets", "usockets"},
+    {"uwebsockets_internal", "usockets_internal"},
 )
 
 

@@ -33,7 +33,7 @@ drake_cc_binary(
 )
 
 # The :models in these packages are installed as part of the Drake release
-# process, and loaded into drake_visualizer's model database by default.
+# process and loaded into //tools:drake_visualizer's model database by default.
 INSTALLED_MODEL_PACKAGES = [
     "//examples/acrobot",
     "//examples/hydroelastic/spatula_slip_control",

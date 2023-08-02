@@ -16,6 +16,7 @@ namespace solvers {
 namespace {
 
 using Eigen::Vector2d;
+using symbolic::Variable;
 
 const double kInf = std::numeric_limits<double>::infinity();
 
@@ -540,6 +541,33 @@ GTEST_TEST(ParseConstraintTest, Quadratic) {
   binding = internal::ParseConstraint(x0 * x0 * x1 + 2 * x1, -kInf, 3);
   EXPECT_NE(dynamic_cast<ExpressionConstraint*>(binding.evaluator().get()),
             nullptr);
+}
+
+GTEST_TEST(ParseConstraintTest, FormulaWithInfiniteLowerOrUpperBounds) {
+  Variable x0("x0"), x1("x1");
+  Vector2<Variable> x(x0, x1);
+  Vector2d b(0.12, kInf);
+  Binding<Constraint> binding =
+      internal::ParseConstraint(x <= b);
+  EXPECT_TRUE(CompareMatrices(binding.evaluator()->upper_bound(), b));
+  binding = internal::ParseConstraint(-b <= x);
+  // Note: The constraints are sorted via get_operands(f) which returns a
+  // std::set. This one gets flipped.
+  EXPECT_TRUE(CompareMatrices(binding.evaluator()->lower_bound(),
+                              -Vector2d(b[1], b[0])));
+  binding = internal::ParseConstraint(b >= x);
+  EXPECT_TRUE(CompareMatrices(binding.evaluator()->upper_bound(), b));
+  binding = internal::ParseConstraint(x >= -b);
+  EXPECT_TRUE(CompareMatrices(binding.evaluator()->lower_bound(), -b));
+
+  DRAKE_EXPECT_THROWS_MESSAGE(internal::ParseConstraint(x <= -b),
+                              ".*an upper bound of -inf.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(internal::ParseConstraint(b <= x),
+                              ".*a lower bound of.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(internal::ParseConstraint(-b >= x),
+                              ".*an upper bound of -inf.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(internal::ParseConstraint(x >= b),
+                              ".*a lower bound of.*");
 }
 
 std::shared_ptr<RotatedLorentzConeConstraint>

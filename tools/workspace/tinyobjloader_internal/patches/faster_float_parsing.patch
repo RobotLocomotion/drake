@@ -1,5 +1,10 @@
---- tiny_obj_loader.h.orig	2021-04-08 18:57:52.000000000 +0900
-+++ tiny_obj_loader.h	2021-04-27 19:33:30.732647124 -0700
+[tinyobjloader] Improve float parsing speed
+
+We replace tinyobjloader's implementation of float parsing with a faster
+call to strtod_l.
+
+--- tiny_obj_loader.h
++++ tiny_obj_loader.h
 @@ -63,6 +63,14 @@
  #include <map>
  #include <string>

@@ -650,4 +650,6 @@ your terminal before you run your process that uses pydrake:
 export DRAKE_PYTHON_LOGGING=0
 ```
 
+See also <a href="/pydrake/pydrake.common.html#pydrake.common.use_native_cpp_logging">pydrake.common.use_native_cpp_logging</a>.
+
 @} */

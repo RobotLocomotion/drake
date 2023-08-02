@@ -12,9 +12,7 @@ If your model's files are small enough (<100KB in a given directory), then you
 may add them directly to Git in a PR to master.
 
 Otherwise, you should add the large files to
-[RobotLocomotion/models](https://github.com/RobotLocomotion/models). Please do
-not commit files that are generally small, like ``*.sdf`` or ``*.urdf`` files,
-in ``RobotLocomotion/models``; instead, please commit those directly.
+[RobotLocomotion/models](https://github.com/RobotLocomotion/models).
 
 Before you decide to submit models, please ensure that you have tests that
 will need them. Do not submit a PR that adds models but has zero intent to use
@@ -24,17 +22,21 @@ See below for the suggested workflow.
 
 ## Develop Changes Locally
 
-1. Clone ``RobotLocomotion/models`` locally
+1. Clone ``RobotLocomotion/models`` locally.
 2. Create a Git branch in your local checkouts of *both* ``models`` and
    ``drake``.
 3. Update ``drake/tools/workspace/drake_models/repository.bzl`` to point to your
    ``models`` checkout using
    ``github_archive(..., local_repository_override = <path>)``.
-4. Update ``drake/tools/workspace/drake_models/files.bzl`` to incorporate the models
-   you want.
-5. Update ``drake/tools/workspace/drake_models/package.BUILD.bazel`` to export the
-   models.
-6. Ensure your tests pass under ``bazel test``.
+4. Incorporate the new ``models`` files into a Drake ``BUILD.bazel`` file where
+   they are needed, typically via ``filegroup(name = "models", ...)``.
+   1. You can grep for ``@drake_models`` to find examples of using existing
+      model files.
+   2. Do not ask the build system to "install" any files from ``drake_models``;
+      they are already available via remote fetching. In particular, don't add
+      any ``install()`` rule for them, nor add them to any ``filegroup()`` that
+      is already being installed.
+5. Ensure your tests pass under ``bazel test``.
 
 ## Submit Changes in a Pull Request
 

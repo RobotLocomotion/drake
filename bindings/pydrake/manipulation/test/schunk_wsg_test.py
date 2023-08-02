@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import pydrake.manipulation.schunk_wsg as mut
+import pydrake.manipulation as mut
 
 import unittest
 import numpy as np

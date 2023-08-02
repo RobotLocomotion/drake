@@ -136,8 +136,7 @@ int do_main() {
     builder.Connect(scene_graph->get_query_output_port(),
                     camera->query_object_input_port());
 
-    // Broadcast the images.
-    // Publishing images to drake visualizer
+    // Broadcast the images to Meldis (available after #18862 is finished).
     auto image_to_lcm_image_array =
         builder.template AddSystem<systems::sensors::ImageToLcmImageArrayT>();
     image_to_lcm_image_array->set_name("converter");

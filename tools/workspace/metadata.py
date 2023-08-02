@@ -37,7 +37,6 @@ def read_repository_metadata(repositories=None):
 
         # These are starlark deps, so don't show up in the query.
         repositories.add("bazel_skylib")
-        repositories.add("rules_pkg")
 
     # Make sure all of the repository_rule results are up-to-date.
     subprocess.check_call(["bazel", "fetch", "//..."])

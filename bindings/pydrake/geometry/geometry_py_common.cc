@@ -5,7 +5,6 @@
  the pydrake.geometry module. */
 
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
-#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/identifier_pybind.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
@@ -117,12 +116,6 @@ void DoScalarIndependentDefinitions(py::module m) {
         .def("perception_properties", &Class::perception_properties,
             py_rvp::reference_internal, cls_doc.perception_properties.doc);
     DefCopyAndDeepCopy(&cls);
-    constexpr char doc_release_deprecated[] =
-        "Ownership transfer doesn't make sense for Python. Just use shape() "
-        "instead. This function will be removed on or after 2023-08-01.";
-    cls.def("release_shape",
-        WrapDeprecated(doc_release_deprecated, &Class::release_shape),
-        doc_release_deprecated);
   }
 
   // GeometryProperties
@@ -343,6 +336,9 @@ void DoScalarIndependentDefinitions(py::module m) {
             py::arg("a") = py::none(), cls_doc.update.doc)
         .def(py::self == py::self)
         .def(py::self != py::self)
+        .def(py::self * py::self)
+        .def("scale_rgb", &Class::scale_rgb, py::arg("scale"),
+            cls_doc.scale_rgb.doc)
         .def("__repr__", [](const Class& self) {
           return py::str("Rgba(r={}, g={}, b={}, a={})")
               .format(self.r(), self.g(), self.b(), self.a());

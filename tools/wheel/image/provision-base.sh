@@ -5,7 +5,7 @@
 
 set -eu -o pipefail
 
-readonly BAZEL_VERSION=6.2.0
+readonly BAZEL_VERSION=6.3.1
 readonly BAZEL_ROOT=https://github.com/bazelbuild/bazel/releases/download
 
 # Fix ssh permissions.

@@ -1172,10 +1172,6 @@ class SystemBase : public internal::SystemMessageInterface {
   system. See @ref system_compatibility. */
   internal::SystemId get_system_id() const { return system_id_; }
 
-  /** (Internal) Assigns a new id used to tag context data as being created by
-  this system. See @ref system_compatibility. */
-  void ResetSystemId();
-
  private:
   void CreateSourceTrackers(ContextBase*) const;
 

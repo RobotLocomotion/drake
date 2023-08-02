@@ -40,8 +40,8 @@ from pydrake.visualization._triad import (
 
 class ModelVisualizer:
     """
-    Visualizes models from a file or string buffer in Drake Visualizer,
-    meldis, or MeshCat.
+    Visualizes models from a file or string buffer in MeshCat, Meldis,
+    or the legacy ``drake_visualizer`` application of days past.
 
     To use this class to visualize model(s), create an instance with
     any desired options, add any models, and then call Run()::
@@ -70,7 +70,8 @@ class ModelVisualizer:
                  show_rgbd_sensor=False,
                  browser_new=False,
                  pyplot=False,
-                 meshcat=None):
+                 meshcat=None,
+                 environment_map: Path = Path()):
         """
         Initializes a ModelVisualizer.
 
@@ -103,6 +104,7 @@ class ModelVisualizer:
         self._browser_new = browser_new
         self._pyplot = pyplot
         self._meshcat = meshcat
+        self._environment_map = environment_map
 
         # This is the list of loaded models, to enable the Reload button.
         # If set to None, it means that we won't support reloading because
@@ -165,7 +167,8 @@ class ModelVisualizer:
                 "publish_contacts",
                 "show_rgbd_sensor",
                 "browser_new",
-                "pyplot"]:
+                "pyplot",
+                "environment_map"]:
             value = getattr(prototype, f"_{name}")
             assert value is not None
             result[name] = value
@@ -295,6 +298,9 @@ class ModelVisualizer:
         self.meshcat()
         self._meshcat.Delete()
         self._meshcat.DeleteAddedControls()
+
+        if self._environment_map.is_file():
+            self._meshcat.SetEnvironmentMap(self._environment_map)
 
         # We want to place the Reload Model Files button far away from the
         # Stop Running button, hence the work to do this here.
