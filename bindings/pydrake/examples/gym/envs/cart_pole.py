@@ -207,9 +207,9 @@ def make_sim(meshcat=None,
 
     class DisturbanceGenerator(LeafSystem):
         def __init__(self, plant, force_mag, period, duration):
-            # Applies a random force [-1,1] at the COM of the
-            # Pole body in the x direction every {period} sec.
-            # for a given duration.
+            # Applies a random force [-force_mag, force_mag] at
+            # the COM of the Pole body in the x direction every
+            # period seconds for a given duration.
             LeafSystem.__init__(self)
             forces_cls = Value[List[ExternallyAppliedSpatialForce_[float]]]
             self.DeclareAbstractOutputPort("spatial_forces",

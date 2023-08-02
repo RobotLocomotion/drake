@@ -70,9 +70,9 @@ def _run_training(config, args):
             verbose=1,
             tensorboard_log=tensorboard_log,
             policy_kwargs=policy_kwargs)
-        print(f"To open tensorboard, run "
-              "`tensorboard --logdir {tensorboard_log}` "
-              "in another terminal.")
+        print("Open tensorboard (optional) via "
+              f"`tensorboard --logdir {tensorboard_log}` "
+              "in another terminal. Press Enter to continue.")
 
     # Separate evaluation env.
     eval_env = gym.make(env_name,
@@ -87,7 +87,7 @@ def _run_training(config, args):
                         eval_env,
                         log_dir+f"videos/test",
                         record_video_trigger=lambda x: x % n == 0,
-                        video_length=200)
+                        video_length=100)
     # Use deterministic actions for evaluation.
     eval_callback = EvalCallback(
         eval_env,
@@ -97,12 +97,12 @@ def _run_training(config, args):
         deterministic=True,
         render=False)
 
-    callbacks = [eval_callback]
-
     model.learn(
         total_timesteps=total_timesteps,
-        callback=callbacks
+        callback=eval_callback,
     )
+
+    eval_env.close()
 
 
 def _main():
@@ -128,7 +128,7 @@ def _main():
 
     config = {
         "policy_type": "MlpPolicy",
-        "total_timesteps": 1e6 if not args.test else 5,
+        "total_timesteps": 5e5 if not args.test else 5,
         "env_name": "DrakeCartPole-v0",
         "num_workers": num_env,
         "env_time_limit": 7 if not args.test else 0.5,

@@ -13,7 +13,7 @@ It can be invoke it via:
 
     bazel run //bindings/pydrake/examples/gym:train_cart_pole
 
-Depending on your machine, you should see the reward (`ep_rew_mean`) increasing from 0 to ~140 in about 20 min.
+Depending on your machine, you should see the reward (`ep_rew_mean`) increasing from 0 to ~120 in about 7 min.
 
 The learned model can be played with:
 
@@ -35,13 +35,13 @@ optimizers).
 Stable Baselines3 iteself is too large and too heavy of a dependency tree for Drake to require itself; as such you will need to provide it yourself to use these examples.  If you are going to train drake gym examples on your machine, you should install a few dependencies including `stable_baselines3` and `gymnasium` inside of a virtual environment. The training examples will not run without it, and drake does not come with it (Drake does include a subset of `stable_baselines3` for testing purposes, but not enough to perform training). Run the training example via:
 
       # Create an environment (or use an existing).
-      python3 -m venv ~/tmp/drakegym
+      python3 -m venv ~/tmp/drakegym --system-site-packages
       # Activate the environment.
       source ~/tmp/drakegym/bin/activate
       # Install dependencies.
       pip install gymnasium stable_baselines3 tensorboard moviepy
       # Run the training.
-      env PYTHONPATH=~tmp/drakegym/lib/python3.10/site-packages \
+      env PYTHONPATH=~/tmp/drakegym/lib/python3.10/site-packages \
           bazel run //bindings/pydrake/examples/gym:train_cart_pole
 
 Notes
