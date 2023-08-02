@@ -1377,10 +1377,6 @@ TEST_F(RenderEngineGlTest, DefaultProperties) {
   // Sets up a box.
   Box box(1, 1, 1);
   const GeometryId id = GeometryId::get_new_id();
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      renderer_->RegisterVisual(id, box, PerceptionProperties(),
-                                RigidTransformd::Identity(), true),
-      ".* geometry with the 'unspecified' or 'empty' render labels.*");
   PerceptionProperties material;
   material.AddProperty("label", "id", RenderLabel::kDontCare);
   renderer_->RegisterVisual(id, box, material, RigidTransformd::Identity(),
@@ -1406,14 +1402,17 @@ TEST_F(RenderEngineGlTest, DefaultProperties_RenderLabel) {
     engine->UpdatePoses(unordered_map<GeometryId, RigidTransformd>{{id, X_WV}});
   };
 
-  // Case: No change to render engine's default must throw.
+  // Case: The engine's default is "don't care".
   {
     RenderEngineGl renderer;
-    InitializeRenderer(X_WR_, false /* no terrain */, &renderer);
+    InitializeRenderer(X_WR_, true /* add terrain */, &renderer);
 
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        populate_default_sphere(&renderer),
-        ".* geometry with the 'unspecified' or 'empty' render labels.*");
+    DRAKE_EXPECT_NO_THROW(populate_default_sphere(&renderer));
+    expected_label_ = RenderLabel::kDontCare;
+    expected_color_ = RgbaColor(renderer.parameters().default_diffuse);
+
+    SCOPED_TRACE("Default properties; don't care label");
+    PerformCenterShapeTest(&renderer);
   }
 
   // Case: Change render engine's default to explicitly be unspecified; must
