@@ -203,27 +203,11 @@ def build_macos(output_dir: Path, keep: bool):
             "overwrite, please delete manually and rerun."
         )
 
-    # Only clone if we need to.  If it is being run after a --keep, then the
-    # clone is already there.  Just run `checkout` to ensure we have the right
-    # worktree available.
+    # Clone VTK.
     vtk_ref = vtk_git_ref()
-    if not package_tree.source_dir.exists():
-        clone_vtk(vtk_ref, package_tree.source_dir)
-    elif package_tree.source_dir.is_dir():
-        subprocess.check_call(
-            [
-                "git",
-                "checkout",
-                vtk_ref,
-            ],
-            cwd=package_tree.source_dir,
-        )
-    else:
-        raise RuntimeError(
-            f"{package_tree.source_dir} exists, but is not a directory. "
-            "Refusing to overwrite, please delete manually and rerun."
-        )
+    clone_vtk(vtk_ref, package_tree.source_dir)
 
+    # Configure and build VTK.
     configure_args = [
         f"-DCMAKE_OSX_ARCHITECTURES:STRING={architecture()}",
         "-DCMAKE_INSTALL_LIBDIR=lib",
