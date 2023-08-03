@@ -27,8 +27,11 @@ class LinearDistanceAndInterpolationProvider final
 
   LinearDistanceAndInterpolationProvider(
       const multibody::MultibodyPlant<double>& plant,
-      const std::vector<multibody::ModelInstanceIndex>& robot_model_instances,
       const std::map<std::string, double>& named_joint_distance_weights);
+
+  LinearDistanceAndInterpolationProvider(
+      const multibody::MultibodyPlant<double>& plant,
+      const Eigen::VectorXd& distance_weights);
 
   ~LinearDistanceAndInterpolationProvider() final;
 
@@ -37,6 +40,8 @@ class LinearDistanceAndInterpolationProvider final
   const std::vector<int>& quaternion_dof_start_indices() const {
     return quaternion_dof_start_indices_;
   }
+
+  void SetDistanceWeights(const Eigen::VectorXd& distance_weights);
 
  private:
   LinearDistanceAndInterpolationProvider(
@@ -52,7 +57,7 @@ class LinearDistanceAndInterpolationProvider final
       double ratio) const final;
 
   const std::vector<int> quaternion_dof_start_indices_;
-  const Eigen::VectorXd distance_weights_;
+  Eigen::VectorXd distance_weights_;
 };
 
 }  // namespace planning
