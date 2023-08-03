@@ -736,9 +736,11 @@ TEST_F(MujocoParserTest, InertiaFromGeometry) {
 
   check_body("default", UnitInertia<double>::SolidSphere(0.1));
   check_body_spatial("sphere", inertia_from_inertial_tag);
-  check_body("capsule", UnitInertia<double>::SolidCapsule(0.1, 4.0));
+  check_body("capsule",
+      UnitInertia<double>::SolidCapsule(0.1, 4.0, Vector3d::UnitZ()));
   check_body("ellipsoid", UnitInertia<double>::SolidEllipsoid(0.1, 0.2, 0.3));
-  check_body("cylinder", UnitInertia<double>::SolidCylinder(0.1, 4.0));
+  check_body("cylinder",
+      UnitInertia<double>::SolidCylinder(0.1, 4.0, Vector3d::UnitZ()));
   check_body("box", UnitInertia<double>::SolidBox(0.2, 4.0, 6.0));
   check_body("box_from_default", UnitInertia<double>::SolidBox(0.2, 0.4, 0.6));
   check_body("ellipsoid_from_default",

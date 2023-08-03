@@ -1152,34 +1152,32 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("Lz"), cls_doc.SolidBox.doc)
         .def_static(
             "SolidCube", &Class::SolidCube, py::arg("L"), cls_doc.SolidCube.doc)
-        .def_static("SolidCylinder", &Class::SolidCylinder, py::arg("r"),
-            py::arg("L"), py::arg("b_E") = Vector3<T>::UnitZ().eval(),
+        .def_static("SolidCylinder",
+            // TODO(jwnimmer-tri) Drop the overload_cast_explicit on 2023-12-01.
+            overload_cast_explicit<Class, const T&, const T&,
+                const Vector3<T>&>(&Class::SolidCylinder),
+            py::arg("radius"), py::arg("length"), py::arg("unit_vector"),
             cls_doc.SolidCylinder.doc)
-        .def_static("SolidCapsule", &Class::SolidCapsule, py::arg("r"),
-            py::arg("L"), py::arg("unit_vector") = Vector3<T>::UnitZ().eval(),
+        .def_static("SolidCapsule",
+            // TODO(jwnimmer-tri) Drop the overload_cast_explicit on 2023-12-01.
+            overload_cast_explicit<Class, const T&, const T&,
+                const Vector3<T>&>(&Class::SolidCapsule),
+            py::arg("radius"), py::arg("length"), py::arg("unit_vector"),
             cls_doc.SolidCapsule.doc)
-        // TODO(2023-11-01) Remove overload wrapping when deprecation complete.
         .def_static("SolidCylinderAboutEnd",
+            // TODO(jwnimmer-tri) Drop the overload_cast_explicit on 2023-12-01.
             overload_cast_explicit<Class, const T&, const T&,
                 const Vector3<T>&>(&Class::SolidCylinderAboutEnd),
             py::arg("radius"), py::arg("length"), py::arg("unit_vector"),
             cls_doc.SolidCylinderAboutEnd.doc)
-        .def_static("SolidCylinderAboutEnd",
-            WrapDeprecated(cls_doc.SolidCylinderAboutEnd.doc_deprecated,
-                [](const T& r, const T& L) {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-                  return Class::SolidCylinderAboutEnd(r, L);
-#pragma GCC diagnostic pop
-                }),
-            py::arg("r"), py::arg("L"),
-            cls_doc.SolidCylinderAboutEnd.doc_deprecated)
-        .def_static("AxiallySymmetric", &Class::AxiallySymmetric, py::arg("J"),
-            py::arg("K"), py::arg("b_E"), cls_doc.AxiallySymmetric.doc)
-        .def_static("StraightLine", &Class::StraightLine, py::arg("K"),
-            py::arg("b_E"), cls_doc.StraightLine.doc)
-        .def_static("ThinRod", &Class::ThinRod, py::arg("L"), py::arg("b_E"),
-            cls_doc.ThinRod.doc)
+        .def_static("AxiallySymmetric", &Class::AxiallySymmetric,
+            py::arg("moment_parallel"), py::arg("moment_perpendicular"),
+            py::arg("unit_vector"), cls_doc.AxiallySymmetric.doc)
+        .def_static("StraightLine", &Class::StraightLine,
+            py::arg("moment_perpendicular"), py::arg("unit_vector"),
+            cls_doc.StraightLine.doc)
+        .def_static("ThinRod", &Class::ThinRod, py::arg("length"),
+            py::arg("unit_vector"), cls_doc.ThinRod.doc)
         .def_static("TriaxiallySymmetric", &Class::TriaxiallySymmetric,
             py::arg("I_triaxial"), cls_doc.TriaxiallySymmetric.doc)
         .def(py::pickle(
@@ -1191,6 +1189,57 @@ void DoScalarDependentDefinitions(py::module m, T) {
                   I(0, 0), I(1, 1), I(2, 2), I(0, 1), I(0, 2), I(1, 2));
             }));
     DefCopyAndDeepCopy(&cls);
+    // TODO(jwnimmer-tri) Remove as of 2023-12-01.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    constexpr char doc_factory_deprecated[] = R"""(
+This overload spelling of a UnitInertia factory method is deprecated.
+
+The named arguments for the UnitInertia factory methods have been renamed:
+ - ``r`` → ``radius``
+ - ``L`` → ``length``
+ - ``J`` → ``moment_parallel``
+ - ``K`` → ``moment_perpendicular``
+ - ``b_E`` → ``unit_vector``
+
+The old argument names will be removed from Drake on or after 2023-12-01.
+
+The ``unit_vector`` argument no longer has a default value, and must already
+have been normalized by the caller. Passing in a non-normalized unit vector
+will result in a warning for now, but an exception on or after 2023-12-01.
+)""";
+    cls  // BR
+        .def_static("SolidCylinder",
+            WrapDeprecated(doc_factory_deprecated,
+                [](const T& r, const T& L, const Vector3<T>& b_E) {
+                  return Class::SolidCylinder(r, L, b_E);
+                }),
+            py::arg("r"), py::arg("L"),
+            py::arg("b_E") = Vector3<T>::UnitZ().eval(), doc_factory_deprecated)
+        .def_static("SolidCylinderAboutEnd",
+            WrapDeprecated(doc_factory_deprecated,
+                [](const T& r, const T& L) {
+                  return Class::SolidCylinderAboutEnd(r, L);
+                }),
+            py::arg("r"), py::arg("L"), doc_factory_deprecated)
+        .def_static("SolidCapsule",
+            WrapDeprecated(doc_factory_deprecated,
+                [](const T& r, const T& L, const Vector3<T>& unit_vector) {
+                  return Class::SolidCapsule(r, L, unit_vector);
+                }),
+            py::arg("r"), py::arg("L"),
+            py::arg("unit_vector") = Vector3<T>::UnitZ().eval(),
+            doc_factory_deprecated)
+        .def_static("AxiallySymmetric",
+            WrapDeprecated(doc_factory_deprecated, &Class::AxiallySymmetric),
+            py::arg("J"), py::arg("K"), py::arg("b_E"), doc_factory_deprecated)
+        .def_static("StraightLine",
+            WrapDeprecated(doc_factory_deprecated, &Class::StraightLine),
+            py::arg("K"), py::arg("b_E"), doc_factory_deprecated)
+        .def_static("ThinRod",
+            WrapDeprecated(doc_factory_deprecated, &Class::ThinRod),
+            py::arg("L"), py::arg("b_E"), doc_factory_deprecated);
+#pragma GCC diagnostic pop
   }
 
   // SpatialInertia
