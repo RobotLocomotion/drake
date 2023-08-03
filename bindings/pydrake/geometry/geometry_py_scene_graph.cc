@@ -191,6 +191,10 @@ void DoScalarDependentDefinitions(py::module m, T) {
                 &Class::RegisterFrame),
             py::arg("source_id"), py::arg("parent_id"), py::arg("frame"),
             cls_doc.RegisterFrame.doc_3args)
+        .def("Rename",
+            py::overload_cast<FrameId, std::string_view>(&Class::Rename),
+            py::arg("frame_id"), py::arg("new_name"),
+            cls_doc.Rename.doc_2args_frame_id_new_name)
         .def("RegisterGeometry",
             py::overload_cast<SourceId, FrameId,
                 std::unique_ptr<GeometryInstance>>(&Class::RegisterGeometry),
@@ -207,6 +211,10 @@ void DoScalarDependentDefinitions(py::module m, T) {
                 &Class::RegisterAnchoredGeometry),
             py::arg("source_id"), py::arg("geometry"),
             cls_doc.RegisterAnchoredGeometry.doc)
+        .def("Rename",
+            py::overload_cast<GeometryId, std::string_view>(&Class::Rename),
+            py::arg("geometry_id"), py::arg("new_name"),
+            cls_doc.Rename.doc_2args_geometry_id_new_name)
         .def("ChangeShape",
             py::overload_cast<SourceId, GeometryId, const Shape&,
                 std::optional<math::RigidTransform<double>>>(

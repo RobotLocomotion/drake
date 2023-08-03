@@ -921,6 +921,33 @@ TEST_F(GeometryStateTest, GetOwningSourceName) {
       "Geometry id .* does not map to a registered geometry");
 }
 
+TEST_F(GeometryStateTest, RenameFrame) {
+  SetUpSingleSourceTree();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.Rename(FrameId::get_new_id(), "invalid"),
+      ".*Cannot rename.*invalid frame id:.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.Rename(frames_[0], "f1"),
+      ".*already existing.*");
+  {
+    std::string something("something");
+    geometry_state_.Rename(frames_[0], something);
+  }
+  EXPECT_EQ(geometry_state_.GetName(frames_[0]), "something");
+}
+
+TEST_F(GeometryStateTest, RenameGeometry) {
+  SetUpSingleSourceTree();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.Rename(GeometryId::get_new_id(), "invalid"),
+      ".*Cannot rename.*invalid geometry id:.*");
+  {
+    std::string something("something");
+    geometry_state_.Rename(geometries_[0], something);
+  }
+  EXPECT_EQ(geometry_state_.GetName(geometries_[0]), "something");
+}
+
 // Compares the transmogrified geometry state (embedded in its tester) against
 // the double state to confirm they have the same values/topology.
 template <typename T>

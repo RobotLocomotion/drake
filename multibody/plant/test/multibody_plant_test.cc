@@ -4620,6 +4620,57 @@ GTEST_TEST(MultibodyPlantTest, GetMutableSceneGraphPreFinalize) {
                               ".*!is_finalized.*");
 }
 
+GTEST_TEST(MultibodyPlantTest, RenameModelInstance) {
+  // Much of the functionality is tested as part of *Tree. Here we test the
+  // additional semantics of *Plant.
+  MultibodyPlant<double> plant(0.0);
+  SceneGraph<double> scene_graph;
+  plant.RegisterAsSourceForSceneGraph(&scene_graph);
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.RenameModelInstance(ModelInstanceIndex(99), "invalid"),
+      ".*no model instance id 99.*");
+
+  // XXX Should these be disallowed?
+  EXPECT_NO_THROW(plant.RenameModelInstance(world_model_instance(), "Mars"));
+  EXPECT_NO_THROW(plant.RenameModelInstance(default_model_instance(), "hmm"));
+
+  std::string robot = R"""(
+<robot name="a">
+  <link name="b">
+    <collision>
+      <geometry>
+        <sphere radius="0.25"/>
+      </geometry>
+    </collision>
+  </link>
+</robot>
+)""";
+
+  Parser parser(&plant);
+  auto models = parser.AddModelsFromString(robot, "urdf");
+  ASSERT_EQ(models.size(), 1);
+  auto& body = plant.GetBodyByName("b");
+  auto frame_id = plant.GetBodyFrameIdOrThrow(body.index());
+  auto& inspector = scene_graph.model_inspector();
+  ASSERT_EQ(inspector.GetName(frame_id), "a::b");
+  auto geoms = inspector.GetGeometries(frame_id);
+  ASSERT_EQ(geoms.size(), 1);
+  ASSERT_EQ(inspector.GetName(geoms[0]), "a::Sphere");
+
+  plant.RenameModelInstance(models[0], "zzz");
+  // Renaming affects scoped geometry names.
+  EXPECT_EQ(inspector.GetName(frame_id), "zzz::b");
+  EXPECT_EQ(inspector.GetName(geoms[0]), "zzz::Sphere");
+  // Renaming allows reload.
+  EXPECT_NO_THROW(parser.AddModelsFromString(robot, "urdf"));
+
+  plant.Finalize();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.RenameModelInstance(models[0], "too_late"),
+      ".*finalized.*renaming.*not allowed.*");
+}
+
 }  // namespace
 }  // namespace multibody
 }  // namespace drake

@@ -47,6 +47,7 @@ using geometry::FramePoseVector;
 using geometry::GeometryFrame;
 using geometry::GeometryId;
 using geometry::GeometryInstance;
+using geometry::GeometrySet;
 using geometry::PenetrationAsPointPair;
 using geometry::ProximityProperties;
 using geometry::render::RenderLabel;
@@ -966,6 +967,36 @@ void MultibodyPlant<T>::CalcForceElementsContribution(
       context, EvalPositionKinematics(context),
       EvalVelocityKinematics(context),
       forces);
+}
+
+template<typename T>
+void MultibodyPlant<T>::RenameModelInstance(ModelInstanceIndex model_instance,
+                                            const std::string& name) {
+  this->mutable_tree().RenameModelInstance(model_instance, name);
+  if (geometry_source_is_registered()) {
+    // Re-spam frame and geometry names, using GetScopedName().
+    auto& inspector = scene_graph_->model_inspector();
+    auto source_frames = inspector.FramesForSource(*source_id_);
+
+    auto do_rename = [&](auto id) {
+      std::string short_name(
+          ScopedName::Parse(inspector.GetName(id)).get_element());
+      scene_graph_->Rename(
+          id, GetScopedName(*this, model_instance, short_name));
+    };
+
+    for (auto& frame_id : source_frames) {
+      if (inspector.GetFrameGroup(frame_id) != model_instance) {
+        continue;
+      }
+      do_rename(frame_id);
+
+      auto geoms = inspector.GetGeometryIds(GeometrySet(frame_id));
+      for (auto& geom_id : geoms) {
+        do_rename(geom_id);
+      }
+    }
+  }
 }
 
 template<typename T>

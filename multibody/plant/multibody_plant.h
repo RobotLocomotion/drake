@@ -1155,6 +1155,17 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return this->mutable_tree().AddModelInstance(name);
   }
 
+  /// Renames an existing model instance.
+  ///
+  /// @param[in] model_instance
+  ///   The instance to rename.
+  /// @param[in] name
+  ///   A string that uniquely identifies the instance within `this`
+  ///   model. An exception is thrown if an instance with the same name
+  ///   already exists in the model. See HasModelInstanceNamed().
+  void RenameModelInstance(ModelInstanceIndex model_instance,
+                           const std::string& name);
+
   /// This method must be called after all elements in the model (joints,
   /// bodies, force elements, constraints, etc.) are added and before any
   /// computations are performed.

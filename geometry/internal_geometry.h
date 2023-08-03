@@ -226,6 +226,11 @@ class InternalGeometry {
     perception_props_ = std::nullopt;
   }
 
+  /* Changes the name of the geometry to `new_name`. */
+  void Rename(std::string_view new_name) {
+    name_ = std::string(new_name);
+  }
+
   //@}
 
   /* Returns a pointer to the geometry's reference mesh if the geometry is
