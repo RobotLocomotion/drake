@@ -789,6 +789,34 @@ FrameId GeometryState<T>::RegisterFrame(SourceId source_id, FrameId parent_id,
 }
 
 template <typename T>
+void GeometryState<T>::RenameFrame(FrameId frame_id, const std::string& name) {
+  FindOrThrow(frame_id, frames_, [frame_id]() {
+    return "Cannot rename frame with invalid frame id: " +
+        to_string(frame_id);
+  });
+  InternalFrame& frame = frames_.at(frame_id);
+  const std::string old_name(frame.name());
+  if (old_name == name) { return; }
+
+  SourceId source_id = frame.source_id();
+
+  // Edit source_frame_name_map_.
+  FrameNameSet& f_name_set = source_frame_name_map_.at(source_id);
+  f_name_set.erase(old_name);
+  const auto& [iterator, was_inserted] =
+      f_name_set.insert(std::string(name));
+  if (!was_inserted) {
+    throw std::logic_error(
+        fmt::format("Renaming frame from '{}'"
+                    " to an already existing name '{}'",
+                    old_name, name));
+  }
+
+  // Edit internal frame object.
+  frame.set_name(name);
+}
+
+template <typename T>
 GeometryId GeometryState<T>::RegisterGeometry(
     SourceId source_id, FrameId frame_id,
     std::unique_ptr<GeometryInstance> geometry) {
@@ -854,6 +882,29 @@ GeometryId GeometryState<T>::RegisterDeformableGeometry(
   AssignAllDefinedRoles(source_id, std::move(geometry));
 
   return geometry_id;
+}
+
+template <typename T>
+void GeometryState<T>::RenameGeometry(GeometryId geometry_id,
+                                      const std::string& name) {
+  InternalGeometry* geometry = GetMutableGeometry(geometry_id);
+  if (geometry == nullptr) {
+    throw std::logic_error(
+        "Cannot rename geometry with invalid geometry id: "
+        + to_string(geometry_id));
+  }
+  if (geometry->name() == name) { return; }
+
+  // Check for name uniqueness in all assigned roles. Note: if the universe of
+  // roles grows, this iteration will need to grow as well.
+  for (Role role : {Role::kProximity, Role::kIllustration, Role::kPerception}) {
+    if (geometry->has_role(role)) {
+      ThrowIfNameExistsInRole(geometry->frame_id(), role, name);
+    }
+  }
+
+  // Edit internal geometry object.
+  geometry->set_name(name);
 }
 
 template <typename T>

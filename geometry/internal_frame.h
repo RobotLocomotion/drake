@@ -2,6 +2,7 @@
 
 #include <string>
 #include <unordered_set>
+#include <utility>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/geometry/geometry_ids.h"
@@ -139,6 +140,11 @@ class InternalFrame {
   void remove_child(GeometryId geometry_id) {
     DRAKE_ASSERT(child_geometries_.count(geometry_id) > 0);
     child_geometries_.erase(geometry_id);
+  }
+
+  /* Changes the name of the frame to `name`. */
+  void set_name(std::string name) {
+    name_ = std::move(name);
   }
 
   /* The identifier used for identifying the single world frame in all

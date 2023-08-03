@@ -446,6 +446,19 @@ class SceneGraph final : public systems::LeafSystem<T> {
   FrameId RegisterFrame(SourceId source_id, FrameId parent_id,
                         const GeometryFrame& frame);
 
+  /** Renames the frame to `name`.
+
+   This method modifies the underlying model and requires a new Context to be
+   allocated. It does not modify the model versions (see @ref
+   scene_graph_versioning).
+
+   @param frame_id  The id of the frame to rename.
+   @param name  The new name.
+   @throws std::exception if a) the `frame_id` does not map to a valid frame,
+                          or b) there is already a frame named `name` from
+                          the same source. */
+  void RenameFrame(FrameId frame_id, std::string name);
+
   // TODO(jwnimmer-tri) Deprecate and remove `source_id` argument, instead using
   // the source_id associated with the given `frame_id`.
   /** Registers a new rigid geometry G for this source. This hangs geometry G on
@@ -552,6 +565,20 @@ class SceneGraph final : public systems::LeafSystem<T> {
   GeometryId RegisterDeformableGeometry(
       systems::Context<T>* context, SourceId source_id, FrameId frame_id,
       std::unique_ptr<GeometryInstance> geometry, double resolution_hint) const;
+
+  /** Renames the geometry to `name`.
+
+   This method modifies the underlying model and requires a new Context to be
+   allocated. It does not modify the model versions (see @ref
+   scene_graph_versioning).
+
+   @param geometry_id  The id of the geometry to rename.
+   @param name  The new name.
+   @throws std::exception if a) the `geometry_id` does not map to a valid
+                          geometry, or b) `name` is not unique within any
+                          assigned role of the geometry in its associated
+                          frame. */
+  void RenameGeometry(GeometryId geometry_id, std::string name);
 
   // TODO(jwnimmer-tri) Deprecate and remove `source_id` argument.
   /** Changes the `shape` of the geometry indicated by the given `geometry_id`.
