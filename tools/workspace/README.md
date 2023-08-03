@@ -93,14 +93,10 @@ Once all upgrades are ready, open a Drake pull request and label it
 change the drop-down that says "Combine commits for review" to choose
 "Review each commit separately" instead.
 
-Once the all Jenkins builds of the pull request have passed,
-additionally launch a macOS build, per
-
-https://drake.mit.edu/jenkins.html#scheduling-an-on-demand-build
-
-Once the macOS build passes, assign the pull request for review.  If the pull
-request contains no especially complicated changes, it may be assigned to the
-on-call platform reviewer and labelled ``status: single reviewer ok``.
+Once all of the Jenkins builds of the pull request have passed, assign the
+pull request for review. If the pull request contains no especially complicated
+changes, it may be assigned to the on-call platform reviewer and labelled
+``status: single reviewer ok``.
 
 For any non-trivial changes (i.e., changes that go beyond changing version
 numbers, checksums, or trivial fixups to patch files or code spelling), do not
