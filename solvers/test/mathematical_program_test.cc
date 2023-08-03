@@ -4013,6 +4013,20 @@ GTEST_TEST(TestMathematicalProgram, TestToString) {
   EXPECT_THAT(s, testing::HasSubstr("3"));
 }
 
+GTEST_TEST(TestMathematicalProgram, TestToLatex) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>("x");
+  auto y = prog.NewIndeterminates<1>("y");
+  prog.AddLinearCost(2 * x[0] + 3 * x[1]);
+  prog.AddLinearConstraint(x[0] + x[1] <= 2.0);
+  prog.AddSosConstraint(x[0] * y[0] * y[0]);
+
+  std::string s = prog.ToLatex();
+  EXPECT_THAT(s, testing::HasSubstr("\\min"));
+  EXPECT_THAT(s, testing::HasSubstr("\\text{subject to}\\quad"));
+  EXPECT_THAT(s, testing::HasSubstr("\\succeq 0."));
+}
+
 GTEST_TEST(TestMathematicalProgram, RemoveLinearConstraint) {
   // ProgramAttribute::kLinearConstraint depends on both
   // prog.linear_constraints() and prog.bounding_box_constraints().

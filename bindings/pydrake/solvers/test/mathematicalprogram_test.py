@@ -164,6 +164,12 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertIn("LinearConstraint", s)
         self.assertIn("QuadraticCost", s)
 
+    def test_to_latex(self):
+        qp = TestQP()
+        s = qp.prog.ToLatex(precision=1)
+        self.assertIn("\\min", s)
+        self.assertIn("\\text{subject to}", s)
+
 # TODO(jwnimmer-tri) MOSEK is also able to solve mixed integer programs;
 # perhaps we should test both of them?
     @unittest.skipUnless(GurobiSolver().available(), "Requires Gurobi")
