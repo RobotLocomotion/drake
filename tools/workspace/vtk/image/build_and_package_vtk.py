@@ -22,8 +22,7 @@ def main() -> None:
             package_tree.source_dir.is_dir()
         ), f"Expected {package_tree.source_dir} to be a directory."
     else:
-        if not package_tree.source_dir.is_dir():
-            clone_vtk(vtk_git_ref(), package_tree.source_dir)
+        clone_vtk(vtk_git_ref(), package_tree.source_dir)
     build_vtk(package_tree, vtk_cmake_configure_args())
     package_vtk(package_tree)
 
