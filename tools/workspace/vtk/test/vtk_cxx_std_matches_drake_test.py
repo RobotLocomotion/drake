@@ -1,7 +1,7 @@
 import re
 import sys
-from pathlib import Path
 import unittest
+from pathlib import Path
 
 from bazel_tools.tools.python.runfiles import runfiles
 
@@ -10,7 +10,6 @@ from vtk_cmake_configure_args import cxx_std  # noqa: E402
 
 
 class TestVtkCxxStdMatchesDrake(unittest.TestCase):
-
     def test_all_supported_platforms(self):
         codenames = [
             "focal",
