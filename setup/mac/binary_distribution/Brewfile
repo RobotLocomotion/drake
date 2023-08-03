@@ -5,7 +5,6 @@ tap 'robotlocomotion/director'
 
 cask 'adoptopenjdk' unless system '/usr/libexec/java_home --version 1.8+ --failfast &> /dev/null'
 
-brew 'clp'
 brew 'cmake'
 brew 'double-conversion'
 brew 'eigen'

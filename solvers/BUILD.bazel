@@ -881,7 +881,7 @@ drake_cc_variant_library(
         ":mathematical_program",
     ],
     deps_enabled = [
-        "@clp",
+        "@clp_internal//:clp",
         "//common:unused",
         "//math:autodiff",
     ],
