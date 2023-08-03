@@ -43,7 +43,7 @@ _varsubst = re.compile(r'^(.*?)(@[^ ]+?@|\$\{[^ ]+?\})(.*)([\r\n]*)')
 #   substitution token with the value in 'definitions' dict for that VAR, or
 #   else the empty string if the value is None.  It is an error if there is no
 #   such key in the dict.
-def _transform(*, line, definitions, strict):
+def _transform_cmake(*, line, definitions, strict):
     used_vars = set()
 
     # Replace define statements.
@@ -95,6 +95,32 @@ def _transform(*, line, definitions, strict):
     return line, used_vars
 
 
+# Looks like "#undef VAR".
+_autoconf_undef = re.compile(r'^(\s*)#undef +([^ \r\n]+)([\r\n]+)')
+
+
+# Transform a source code line using autoconf format.
+# The 'definitions' provides variable values, just like _transform_cmake above.
+def _transform_autoconf(*, line, definitions, strict):
+    used_vars = set()
+    match = _autoconf_undef.match(line)
+    if match:
+        blank, var, newline = match.groups()
+        if var in definitions:
+            used_vars.add(var)
+            value = definitions[var]
+            if value is not None:
+                line = blank + f'#define {var} {value}' + newline
+            else:
+                line = blank + f'/* undef {var} */' + newline
+        elif strict:
+            raise KeyError(f"Missing define or undefine decision for {var}"
+                           " when running in strict=True mode")
+        else:
+            line = blank + f'/* missing {var} */' + newline
+    return line, used_vars
+
+
 # Looks like "set(VAR value)".
 _set_var = re.compile(r'^\s*set\s*\(\s*(.+)\s+(.+)\s*\)\s*$')
 
@@ -106,7 +132,7 @@ def _extract_definition(line, prior_definitions):
         return dict()
     var, value = match.groups()
     try:
-        value, _ = _transform(
+        value, _ = _transform_cmake(
             line=value,
             definitions=prior_definitions,
             strict=False)
@@ -154,6 +180,9 @@ def main():
     parser.add_argument(
         '-U', metavar='NAME', dest='undefines', action='append', default=[])
     parser.add_argument(
+        '--autoconf', action='store_true',
+        help='The input file is in autoconfig format, not cmake format.')
+    parser.add_argument(
         '--cmakelists', action='append', default=[])
     parser.add_argument(
         '--strict', action='store_true')
@@ -163,11 +192,12 @@ def main():
         sys.exit(1)
     definitions, cmakelist_keys = _setup_definitions(args)
 
+    transformer = _transform_autoconf if args.autoconf else _transform_cmake
     total_used_vars = set()
     with open(args.input, 'r') as input_file:
         with open(args.output + '.tmp', 'w') as output_file:
             for input_line in input_file.readlines():
-                output_line, used_vars = _transform(
+                output_line, used_vars = transformer(
                     line=input_line,
                     definitions=definitions,
                     strict=args.strict)
