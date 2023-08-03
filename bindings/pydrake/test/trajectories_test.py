@@ -104,7 +104,7 @@ class TestTrajectories(unittest.TestCase):
         numpy_compare.assert_float_equal(curve.control_points(), points)
 
         M = curve.AsLinearInControlPoints(derivative_order=1)
-        self.assertEqual(M.shape, (1, 2))
+        self.assertEqual(M.shape, (2, 1))
         self.assertIsInstance(M, scipy.sparse.csc_matrix)
 
         curve_expression = curve.GetExpression(time=Variable("t"))

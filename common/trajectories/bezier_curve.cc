@@ -100,7 +100,7 @@ SparseMatrix<double> BezierCurve<T>::AsLinearInControlPoints(
     int derivative_order) const {
   DRAKE_THROW_UNLESS(derivative_order >= 0);
   if (derivative_order > order()) {
-    return SparseMatrix<double>(0, order() + 1);  // Return the empty matrix.
+    return SparseMatrix<double>(order() + 1, 0);  // Return the empty matrix.
   } else if (derivative_order == 0) {
     SparseMatrix<double> M(order() + 1, order() + 1);
     M.setIdentity();
@@ -110,28 +110,28 @@ SparseMatrix<double> BezierCurve<T>::AsLinearInControlPoints(
   int n = order();
   // Note: The derivation of M here follows simply from the
   // CalcDerivativePoints implementation below.
-  SparseMatrix<double> M(n, n + 1);
+  SparseMatrix<double> M(n + 1, n);
   double coeff = n / duration;
   std::vector<Eigen::Triplet<double>> tripletList;
   tripletList.reserve(2 * n);
   for (int i = 0; i < n; ++i) {
-    tripletList.push_back(Eigen::Triplet<double>(i, i + 1, coeff));
+    tripletList.push_back(Eigen::Triplet<double>(i + 1, i, coeff));
     tripletList.push_back(Eigen::Triplet<double>(i, i, -coeff));
   }
   M.setFromTriplets(tripletList.begin(), tripletList.end());
   for (int o = 1; o < derivative_order; ++o) {
     n -= 1;
-    SparseMatrix<double> deltaM(n, n + 1);
+    SparseMatrix<double> deltaM(n + 1, n);
     coeff = n / duration;
     tripletList.clear();
     for (int i = 0; i < n; ++i) {
-      tripletList.push_back(Eigen::Triplet<double>(i, i + 1, coeff));
+      tripletList.push_back(Eigen::Triplet<double>(i + 1, i, coeff));
       tripletList.push_back(Eigen::Triplet<double>(i, i, -coeff));
     }
     deltaM.setFromTriplets(tripletList.begin(), tripletList.end());
-    // Avoid aliasing.
+    // Avoid aliasing. SparseMatrix does not offer the *= operatior.
     SparseMatrix<double> Mprev = std::move(M);
-    M = deltaM * Mprev;
+    M = Mprev * deltaM;
   }
 
   return M;

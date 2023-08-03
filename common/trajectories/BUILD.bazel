@@ -298,6 +298,7 @@ drake_cc_googletest(
         "//common/symbolic:polynomial",
         "//common/test_utilities",
         "//geometry/optimization:convex_set",
+        "//solvers:mathematical_program",
     ],
 )
 
