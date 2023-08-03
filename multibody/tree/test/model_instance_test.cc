@@ -2,6 +2,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/multibody/tree/multibody_tree-inl.h"
 #include "drake/multibody/tree/multibody_tree_system.h"
 #include "drake/multibody/tree/prismatic_joint.h"
@@ -158,6 +159,34 @@ GTEST_TEST(ModelInstance, ModelInstanceTest) {
   EXPECT_EQ(tree_ad->num_positions(instance2), 8);
   EXPECT_EQ(tree_ad->num_velocities(instance2), 7);
   EXPECT_EQ(tree_ad->num_actuated_dofs(instance2), 1);
+}
+
+GTEST_TEST(ModelInstance, ModelInstanceRenameTest) {
+  auto tree_pointer = std::make_unique<internal::MultibodyTree<double>>();
+  internal::MultibodyTree<double>& tree = *tree_pointer;
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      tree.RenameModelInstance(ModelInstanceIndex(99), "invalid"),
+      ".*no model instance id 99.*");
+
+  const ModelInstanceIndex model0 = tree.AddModelInstance("before");
+  EXPECT_EQ(tree.GetModelInstanceByName("before"), model0);
+
+  tree.RenameModelInstance(model0, "after");
+  EXPECT_FALSE(tree.HasModelInstanceNamed("before"));
+  EXPECT_EQ(tree.GetModelInstanceByName("after"), model0);
+  tree.RenameModelInstance(model0, "after");  // to same name is not an error.
+
+  const ModelInstanceIndex model1 = tree.AddModelInstance("another");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      tree.RenameModelInstance(model1, "after"),
+      ".*names must be unique.*");
+
+  tree.Finalize();
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      tree.RenameModelInstance(model0, "too_late"),
+      ".*is finalized already.*");
 }
 
 }  // namespace
