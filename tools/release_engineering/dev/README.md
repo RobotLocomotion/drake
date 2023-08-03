@@ -75,24 +75,6 @@ use `v` on the version string. For example:
 
     bazel run //tools/release_engineering/dev:push_release -- 1.0.0
 
-## Run script for apt
-
-(Before proceeding, refer to the sections below if you need to add a new
-configuration or package.)
-
-Once your machine is set-up, run the `push_release` script as described below:
-
-    cd tools/release_engineering/dev
-    ./push_release <version>
-
-The release creator will provide the version. Again, don’t use `v` on the
-version string. For example:
-
-    ./push_release 0.32.0 20210714 --apt
-
-The script may prompt for the GPG passphrase, which may be found in the AWS
-Secrets Manager. The script may prompt for this multiple times.
-
 ### Verification
 
 Verify that:
@@ -106,6 +88,24 @@ has `<version>` tags for each supported configuration (e.g. Focal and Jammy).
 
 1. The `*.deb` files are in AWS
 `S3/Buckets/drake-packages/drake/release/<configuration>/drake-dev_<version>-1_amd64.deb` for each supported configuration (e.g. focal and jammy)
+
+## Run script for apt
+
+(Before proceeding, refer to the sections below if you need to add a new
+configuration or package.)
+
+Once your machine is set-up, run the `push_release` script as described below:
+
+    cd tools/release_engineering/dev
+    ./push_release <version>
+
+The release creator will provide the version. Again, don’t use `v` on the
+version string. For example:
+
+    ./push_release 0.32.0
+
+The script may prompt for the GPG passphrase, which may be found in the AWS
+Secrets Manager. The script may prompt for this multiple times.
 
 ### [Optional] Add a new configuration
 
