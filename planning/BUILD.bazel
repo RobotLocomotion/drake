@@ -240,6 +240,31 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "distance_interpolation_provider_test",
+    deps = [
+        ":distance_interpolation_provider",
+        ":planning_test_helpers",
+        ":robot_diagram_builder",
+        "//common/test_utilities:eigen_matrix_compare",
+        "@common_robotics_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "linear_distance_interpolation_provider_test",
+    data = [
+        "//manipulation/models/iiwa_description:models",
+        "//planning/test_utilities:collision_ground_plane.sdf",
+    ],
+    deps = [
+        ":linear_distance_interpolation_provider",
+        ":planning_test_helpers",
+        ":robot_diagram_builder",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
     name = "robot_clearance_test",
     deps = [
         ":robot_clearance",

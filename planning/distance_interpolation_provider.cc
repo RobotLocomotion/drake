@@ -1,5 +1,7 @@
 #include "drake/planning/distance_interpolation_provider.h"
 
+#include <cmath>
+
 #include "drake/common/drake_throw.h"
 
 namespace drake {
@@ -10,7 +12,10 @@ DistanceAndInterpolationProvider::~DistanceAndInterpolationProvider() = default;
 double DistanceAndInterpolationProvider::ComputeConfigurationDistance(
     const Eigen::VectorXd& from, const Eigen::VectorXd& to) const {
   DRAKE_THROW_UNLESS(from.size() == to.size());
-  return DoComputeConfigurationDistance(from, to);
+  const double distance = DoComputeConfigurationDistance(from, to);
+  DRAKE_THROW_UNLESS(distance >= 0.0);
+  DRAKE_THROW_UNLESS(std::isfinite(distance));
+  return distance;
 }
 
 Eigen::VectorXd
