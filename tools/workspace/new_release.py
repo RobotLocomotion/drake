@@ -54,6 +54,9 @@ from drake.tools.workspace.metadata import read_repository_metadata
 _IGNORED_REPOSITORIES = [
     # We don't know how to check non-default branches yet.
     "clang_cindex_python3_internal",
+    # The @petsc external is deprecated in Drake's WORKSPACE and will be
+    # removed on or after 2023-11-01.
+    "petsc",
     "pybind11",
     "usockets_internal",  # Pinned due to upstream regression.
     "uwebsockets_internal",  # Pinned due to upstream regression.
