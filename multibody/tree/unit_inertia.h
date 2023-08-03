@@ -283,8 +283,29 @@ class UnitInertia : public RotationalInertia<T> {
   ///   - Length L is negative.
   ///   - `b_E` is the zero vector. That is if `‖b_E‖₂ ≤ ε`, where ε is the
   ///     machine epsilon.
+  DRAKE_DEPRECATED("2023-11-01",
+                   "SolidCylinder now requires the cylinder's axis "
+                   "direction to be explicitly given and to be a unit vector.")
+  static UnitInertia<T> SolidCylinder(const T& r, const T& L) {
+    return SolidCylinder(r, L, Vector3<T>::UnitZ());
+  }
+
+  /// Creates a unit inertia for a uniform density solid cylinder B about
+  /// its geometric center Bo (which is coincident with B's center of mass Bcm).
+  /// @param[in] radius radius of the cylinder (meters).
+  /// @param[in] length length of cylinder in unit_vector direction (meters).
+  /// @param[in] unit_vector unit vector defining the axial direction of the
+  /// cylinder, expressed in B.
+  /// @retval G_BBo_B B's unit inertia about Bo, expressed in B.
+  /// @note B's unit inertia about Bo is axially symmetric, meaning B has
+  /// an equal moment of inertia about any line that both passes through Bo
+  /// and is perpendicular to unit_vector.
+  /// @throws std::exception if radius or length is negative or if
+  /// ‖unit_vector‖ is not within 1.0E-14 of 1.0.
+  /// @see SolidCylinderAboutEnd() to calculate G_BBp_B, B's unit inertia about
+  /// point Bp (Bp is at the center of one of the cylinder's circular ends).
   static UnitInertia<T> SolidCylinder(
-      const T& r, const T& L, const Vector3<T>& b_E = Vector3<T>::UnitZ());
+      const T& radius, const T& length, const Vector3<T>& unit_vector);
 
   /// Computes the unit inertia for a uniform density unit-mass capsule C
   /// whose axis of revolution is along the z-axis.
@@ -294,8 +315,27 @@ class UnitInertia : public RotationalInertia<T> {
   ///   It defaults to `Vector3<T>::UnitZ()`.
   /// @throws std::exception if r or L is negative or if ‖unit_vector‖ is not
   /// within 1.0E-14 of 1.0.
-  static UnitInertia<T> SolidCapsule(const T& r, const T& L,
-      const Vector3<T>& unit_vector = Vector3<T>::UnitZ());
+  DRAKE_DEPRECATED("2023-11-01",
+                   "SolidCapsule now requires the cylinder's axis "
+                   "direction to be explicitly given and to be a unit vector.")
+  static UnitInertia<T> SolidCapsule(const T& r, const T& L) {
+    return SolidCapsule(r, L, Vector3<T>::UnitZ());
+  }
+
+  /// Creates a unit inertia for a uniform density solid capsule B about
+  /// its geometric center Bo (which is coincident with B's center of mass Bcm).
+  /// @param[in] radius radius of the cylinder/half-sphere parts of the capsule.
+  /// @param[in] length length of cylindrical part of the capsule.
+  /// @param[in] unit_vector unit vector defining the axial direction of the
+  /// cylinder, expressed in B.
+  /// @retval G_BBo_B B's unit inertia about Bo, expressed in B.
+  /// @note B's unit inertia about Bo is axially symmetric, meaning B has
+  /// an equal moment of inertia about any line that both passes through Bo
+  /// and is perpendicular to unit_vector.
+  /// @throws std::exception if radius or length is negative or if
+  /// ‖unit_vector‖ is not within 1.0E-14 of 1.0.
+  static UnitInertia<T> SolidCapsule(const T& radius, const T& length,
+      const Vector3<T>& unit_vector);
 
   /// Computes the unit inertia for a unit-mass cylinder of uniform density
   /// oriented along the z-axis computed about a point at the center of
@@ -305,7 +345,7 @@ class UnitInertia : public RotationalInertia<T> {
   /// @throws std::exception if r or L is negative.
   DRAKE_DEPRECATED("2023-11-01",
                    "SolidCylinderAboutEnd now requires the cylinder's axis "
-                   "direction to be explicitly given.")
+                   "direction to be explicitly given and to be a unit vector.")
   static UnitInertia<T> SolidCylinderAboutEnd(const T& r, const T& L) {
     return SolidCylinderAboutEnd(r, L, Vector3<T>::UnitZ());
   }
@@ -359,40 +399,32 @@ class UnitInertia : public RotationalInertia<T> {
   /// axisymmetric objects such as cylinders and cones. Other commonly occurring
   /// geometries with this property are, for instance, propellers with 3+ evenly
   /// spaced blades.
-  /// Given a unit vector b defining the symmetry line L, the moment of inertia
-  /// J about this line L and the moment of inertia K about any line
+  /// Given a unit vector that defines the symmetry line L, the moment of
+  /// inertia J about this line L and the moment of inertia K about any line
   /// perpendicular to L, the axially symmetric unit inertia G is computed as:
   /// <pre>
-  ///   G = K * Id + (J - K) * b ⊗ b
+  ///   G = K * Identity + (J - K) * b ⊗ b
   /// </pre>
-  /// where `Id` is the identity matrix and ⊗ denotes the tensor product
+  /// where `Identity` is the identity matrix and ⊗ denotes the tensor product
   /// operator. See Mitiguy, P., 2016. Advanced Dynamics & Motion Simulation.
-  ///
-  /// @throws std::exception
-  ///   - J is negative. J can be zero.
-  ///   - K is negative. K can be zero.
-  ///   - J ≤ 2 * K, this corresponds to the triangle inequality, see
-  ///     CouldBePhysicallyValid().
-  ///   - `b_E` is the zero vector. That is if `‖b_E‖₂ ≤ ε`, where ε is the
-  ///     machine epsilon.
-  ///
+  /// @param[in] J unit moment of inertia about Bcm for the axis parallel to
+  /// unit_vector.
+  /// @param[in] K unit moment of inertia about Bcm for any line perpendicular
+  /// to unit_vector.
+  /// @param[in] unit_vector unit vector parallel to line L.
+  /// @retval G_BBcm_B B's unit inertia about Bcm, expressed in the same frame E
+  /// as the unit_vector is expressed.
+  /// @note B's unit inertia about Bcm is axially symmetric, meaning B has
+  /// an equal moment of inertia about any line that both passes through Bcm
+  /// and is perpendicular to unit_vector.
+  /// @throws std::exception if J or K is negative or if J ≤ 2 * K (enforces the
+  /// triangle inequality, see CouldBePhysicallyValid()) or if
+  /// ‖unit_vector‖ is not within 1.0E-14 of 1.0.
   /// @note J is a principal moment of inertia with principal axis equal to b.
   /// K is a principal moment with multiplicity of two. Any two axes
   /// perpendicular to b are principal axes with principal moment K.
-  ///
-  /// @param[in] J
-  ///   Unit inertia about axis b.
-  /// @param[in] K
-  ///   Unit inertia about any axis perpendicular to b.
-  /// @param[in] b_E
-  ///   Vector defining the symmetry axis, expressed in a frame E. `b_E` can
-  ///   have a norm different from one; however, it will be normalized before
-  ///   using it. Therefore its norm is ignored and only its direction is used.
-  /// @retval G_Bcm_E
-  ///   An axially symmetric unit inertia about body B's center of mass,
-  ///   expressed in the same frame E as the input unit vector `b_E`.
   static UnitInertia<T> AxiallySymmetric(
-      const T& J, const T& K, const Vector3<T>& b_E);
+      const T& J, const T& K, const Vector3<T>& unit_vector);
 
   /// Computes the unit inertia for a body B of unit-mass uniformly distributed
   /// along a straight, finite, line L with direction `b_E` and with moment of

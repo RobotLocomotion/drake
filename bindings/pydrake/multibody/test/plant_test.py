@@ -742,10 +742,10 @@ class TestPlant(unittest.TestCase):
             self.assertIsInstance(UnitInertia.SolidCylinderAboutEnd(r=1, L=4),
                                   UnitInertia)
         self.assertIsInstance(
-            UnitInertia.AxiallySymmetric(J=1, K=2, b_E=[1, 2, 3]), UnitInertia)
-        self.assertIsInstance(UnitInertia.StraightLine(K=1.5, b_E=[1, 2, 3]),
+            UnitInertia.AxiallySymmetric(J=1, K=2, b_E=[0, 0, 1]), UnitInertia)
+        self.assertIsInstance(UnitInertia.StraightLine(K=1.5, b_E=[0, 0, 1]),
                               UnitInertia)
-        self.assertIsInstance(UnitInertia.ThinRod(L=1.5, b_E=[1, 2, 3]),
+        self.assertIsInstance(UnitInertia.ThinRod(L=1.5, b_E=[0, 0, 1]),
                               UnitInertia)
 
     @numpy_compare.check_all_types
