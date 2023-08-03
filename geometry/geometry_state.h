@@ -346,6 +346,9 @@ class GeometryState {
   /** Implementation of SceneGraph::RegisterFrame().  */
   FrameId RegisterFrame(SourceId source_id, const GeometryFrame& frame);
 
+  /** Implementation of SceneGraph::RenameFrame().  */
+  void RenameFrame(FrameId frame_id, std::string_view new_name);
+
   /** Implementation of
    @ref SceneGraph::RegisterFrame(SourceId,FrameId,const GeometryFrame&)
    "SceneGraph::RegisterFrame()" with parent FrameId.  */
@@ -369,6 +372,9 @@ class GeometryState {
   GeometryId RegisterDeformableGeometry(
       SourceId source_id, FrameId frame_id,
       std::unique_ptr<GeometryInstance> geometry, double resolution_hint);
+
+  /** Implementation of SceneGraph::RenameGeometry().  */
+  void RenameGeometry(GeometryId geometry_id, std::string_view new_name);
 
   /** Implementation of SceneGraph::ChangeShape().  */
   void ChangeShape(
