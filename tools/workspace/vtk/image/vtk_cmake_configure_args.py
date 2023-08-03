@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import subprocess
 
-from vtk_common import codename, system_is_linux, system_is_macos
+from vtk_common import codename, system_is_macos
 
 
 def cxx_std(code_name: str) -> str:
@@ -20,34 +20,22 @@ def cxx_std(code_name: str) -> str:
     raise ValueError(f"Unsupported code name {code_name}.")
 
 
-def fortify_flags() -> list[str]:
-    fortify_compile_flags = " ".join(
+def custom_compile_flags() -> list[str]:
+    """Mimic how drake compiles its other external dependencies.
+
+    These may change over time, and are obtained via ``bazel build -s``.
+    """
+    custom_flags = " ".join(
         [
-            "-D_FORTIFY_SOURCE=2",
-            "-fstack-protector-strong",
+            "-D_FORTIFY_SOURCE=1",
+            "-fstack-protector",
             "-Wno-deprecated-declarations",
         ]
     )
-    flags = [
-        f"-DCMAKE_C_FLAGS:STRING={fortify_compile_flags}",
-        f"-DCMAKE_CXX_FLAGS:STRING={fortify_compile_flags}",
+    return [
+        f"-DCMAKE_C_FLAGS:STRING={custom_flags}",
+        f"-DCMAKE_CXX_FLAGS:STRING={custom_flags}",
     ]
-
-    if system_is_linux():
-        fortify_linker_flags = " ".join(
-            [
-                "-Wl,-Bsymbolic-functions",
-                "-Wl,-z,now",
-                "-Wl,-z,relro",
-            ]
-        )
-        flags += [
-            f"-DCMAKE_EXE_LINKER_FLAGS:STRING={fortify_linker_flags}",
-            f"-DCMAKE_MODULE_LINKER_FLAGS:STRING={fortify_linker_flags}",
-            f"-DCMAKE_SHARED_LINKER_FLAGS:STRING={fortify_linker_flags}",
-        ]
-
-    return flags
 
 
 def vtk_cmake_configure_args() -> list[str]:
@@ -57,7 +45,7 @@ def vtk_cmake_configure_args() -> list[str]:
     not included, caller is responsible for choosing how to build and where to
     install the files (platform specific).
     """
-    cmake_args = fortify_flags()
+    cmake_args = custom_compile_flags()
 
     # Initialize with the common CMake configuration arguments that are common
     # across all of the different build flavors.

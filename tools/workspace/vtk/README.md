@@ -138,35 +138,15 @@ unprovisioned build from the jenkins bot for macOS.
 
 ### Pip Wheels (`manylinux`)
 
-The wheel build docker infrastructure and the docker infrastructure in this
-folder are as similar as possible, and generally speaking the instructions in
-the Ubuntu section above apply here (except for `mirrors.bzl`, which is
-irrelevant, and there is no correlated `package.sh`).  The primary differences
-between the `image/vtk-args` in this directory and the wheel build:
-
-- The wheel builds are static to avoid linker / `LD_LIBRARY_PATH` wrangling for
-  the resultant pip wheels.
-- The `CMAKE_CXX_FLAGS` found in `image/vtk-args` in this directory, for example
-  `-D_FORTIFY_SOURCE=2`, are excluded as they introduce additional complexity
-  for the wheel build that is not desirable.  Those flags are used in
-  `image/vtk-args` in this directory to mirror what `bazel` compiles the rest
-  of drake with, which does not apply to the wheel builds.
-- The `vtk-args` for the wheel builds request that VTK builds more of its
-  external dependencies as part of its build.  Any external dependency for the
-  wheel builds must be packaged in `tools/wheel/image/dependencies/projects`.
-  If an external dependency of VTK is already packaged there, it is reused.
-  Otherwise, since the wheel builds are static, the configurations there request
-  that VTK builds it internally.
-
-Any discrepancies between `image/vtk-args` in this directory and
-`tools/wheel/image/vtk-args` should be documented at the top of the file.
+TODO(svenevs) consolidation in progress here...
 
 ## `repository.bzl`
 
 This file enumerates all of the header files and VTK libraries consumed directly
 or indirectly (transitively) by drake.  There are two kinds of libraries: a
 "private VTK library" (something vendored by VTK as part of its build, e.g.,
-`vtksys`), or a "public VTK library".
+`vtksys`), or a "public VTK library" (something that a drake library depends
+on _directly_).
 
 ### Private VTK Libraries
 
@@ -178,6 +158,14 @@ Assuming you have built a `vtk*.tar.gz` archive using
 `build_binaries_with_docker`, and extracted that archive in a directory called
 `vtk_extract`, you can create the following script to help identify what the
 `deps` of a given `_vtk_cc_library` call will be:
+
+**TODO(svenevs)**: in the existing infrastructure, change `BUILD_SHARED_LIBS`
+to `ON` in [vtk_cmake_configure_args.py](./image/vtk_cmake_configure_args.py)
+and the below section can still be used to identify the dependencies.  To
+help automate the process (this being a manual task is time consuming and easy
+to make mistakes on) would be something like [paraview-config][paraview_config].
+
+[paraview_config]: https://gitlab.kitware.com/paraview/paraview/-/blob/b2d838f45c92a3d1d216cf128d832f5bc3f3bffd/Clients/CommandLineExecutables/paraview-config.in
 
 ```py
 from pathlib import Path
@@ -264,17 +252,18 @@ needed (e.g., with IWYU), the header list for each `_vtk_cc_library` call
 started by enumerating every header available (commented out) and
 iteratively re-compiling / un-commenting a given header file until all
 compilation errors were resolved.  Then delete all remaining commented out
-header files.  You can begin with `bazel build //geometry/render/...` which
-currently contains a large subset of the VTK usage within drake, but you will
-need to compile other targets such as `bazel build //manipulation/util:stl2obj`
-and eventually `bazel build //...`.
+header files.  You can begin with
+`bazel build //geometry/render/render_vtk/...` which currently contains a large\
+subset of the VTK usage within drake, but you will need to compile other targets
+such as `bazel build //manipulation/util:stl2obj` and eventually
+`bazel build //...`.
 
 When you believe that you have the final list of libraries updated, you must
 run the tests.  To begin, the core tests that will affect your work are going
-to be `bazel test //geometry/render/...`, but you will eventually need to make
-sure that `bazel test //...` works as expected (for testing installation).
-The VTK test tags are defined in `tools/skylark/test_tags.bzl:vtk_test_tags()`,
-currently you can run
+to be `bazel test //geometry/render/render_vtk/...`, but you will eventually
+need to make sure that `bazel test //...` works as expected (for testing
+installation).  The VTK test tags are defined in
+`tools/skylark/test_tags.bzl:vtk_test_tags()`, currently you can run
 
 ```console
 $ bazel test \
@@ -288,17 +277,17 @@ or to test the install logic specifically:
 $ bazel test //:py/install_test
 ```
 
-## Bisecting VTK
+## Building Drake with a Manually Compiled VTK
 
-During the upgrade, you may have failing tests particularly from
-`bazel test //geometry/render/...` that may not be obvious to fix.  Since you
-will likely be upgrading against a significant amount of changes within VTK, the
-best approach will be to bisect VTK by temporarily manipulating the build system
-in drake to point to an externally compiled (by you) source tree of VTK.  To
-begin, you will need to update `repository.bzl` to point to the right locations.
-Since some of the library dependencies or names may change, you may need to
-temporarily update `*.bzl` files outside of the `tools/workspace/vtk` folder,
-address those as needed.  For updates to `repository.bzl`,
+If you need to test what things will look like during the upgrade process, or
+alternatively are prototyping VTK for development with drake and need to link
+in a custom build tree to do so, follow the steps in this section.  Drake does
+**not** support a workable public interface to use an alternative VTK, this is
+exclusively for drake development and debugging.
+
+Sometimes during a VTK upgrade the drake unit tests will fail for one reason or
+another.  If the cause is not obvious, the only way to do this is to build drake
+against different versions as you bisect VTK.
 
 1. In the `_vtk_cc_library` function, it may serve to your advantage to just
    make every library publicly visible (related to temporary updates outside of
@@ -316,23 +305,38 @@ address those as needed.  For updates to `repository.bzl`,
    bisecting, but it might not have been strictly required.
 
     ```diff
-      elif os_result.is_ubuntu:
-          if not header_only:
-    -         srcs = ["lib/lib{}-{}.so.1".format(name, VTK_MAJOR_MINOR_VERSION)]
-    +         lib_dir = "/abs/path/to/custom/vtk/install/lib"
-    +         linkopts = linkopts + [
-    +             "-L{}".format(lib_dir),
-    +             "-l{}-{}".format(name, VTK_MAJOR_MINOR_VERSION)
-    +         ]
+     if not header_only:
+         srcs = ["lib/lib{}-{}.a".format(name, VTK_MAJOR_MINOR_VERSION)]
+    +    lib_dir = "/home/local/KHQ/stephen.mcdowell/Desktop/tri/vtk/install/lib"
+    +    linkopts = linkopts + [
+    +        "-l{}/lib{}-{}.a".format(lib_dir, name, VTK_MAJOR_MINOR_VERSION)
+    +    ]
     ```
 
 3. In the `_impl(repository_ctx)` function, you will need to comment out the
-   ubuntu section that sets `archive`, `sha256`, and calls
-   `repository_ctx.download_and_extract`.  Replace it with something like
+   call to `repository_ctx.download_and_extract`.  Replace it with something
+   like
 
-    ```py
-    inc_dir = "/abs/path/to/custom/vtk/install/include"
-    repository_ctx.symlink(inc_dir, "include")
+    ```diff
+    -    repository_ctx.download_and_extract(
+    -        urls,
+    -        output = root_path,
+    -        sha256 = sha256,
+    -        type = "tar.gz",
+    +    # repository_ctx.download_and_extract(
+    +    #     urls,
+    +    #     output = root_path,
+    +    #     sha256 = sha256,
+    +    #     type = "tar.gz",
+    +    # )
+    +    repository_ctx.symlink(
+    +        "/home/local/KHQ/stephen.mcdowell/Desktop/tri/vtk/install/include",
+    +        "include",
+    +    )
+    +    repository_ctx.symlink(
+    +        "/home/local/KHQ/stephen.mcdowell/Desktop/tri/vtk/install/lib",
+    +        "lib",
+         )
     ```
 
 4. At the top of `repository.bzl` you will need to update
@@ -340,11 +344,11 @@ address those as needed.  For updates to `repository.bzl`,
    As you bisect, the VTK major/minor version can be found most easily by
 
     ```console
-    $ find /abs/path/to/custom/vtk/lib -name "*.so"
+    $ find /abs/path/to/custom/vtk/lib -name "*.a"
     ```
 
-    and examine the library suffixes.  You may see `libvtkFiltersPoints-8.90.so`
-    (so `VTK_MAJOR_MINOR_VERSION = "8.90"`), or `libvtkFiltersPoints-9.0.so`
+    and examine the library suffixes.  You may see `libvtkFiltersPoints-8.90.a`
+    (so `VTK_MAJOR_MINOR_VERSION = "8.90"`), or `libvtkFiltersPoints-9.0.a`
     (so `VTK_MAJOR_MINOR_VERSION = "9.0"`).
 
 5. As you bisect, you may need to comment out `_vtk_cc_library` calls for
@@ -365,6 +369,19 @@ address those as needed.  For updates to `repository.bzl`,
    builds / installation trees around.  If you need to bisect a second time,
    since you will be starting with the same `good` and `bad` commits, you will
    be able to reuse them until the bisect diverges.
+
+## Bisecting VTK
+
+During the upgrade, you may have failing tests particularly from
+`bazel test //geometry/render/render_vtk/...` that may not be obvious to fix.
+Since you will likely be upgrading against a significant amount of changes
+within VTK, the best approach will be to bisect VTK by temporarily manipulating
+the build system in drake to point to an externally compiled (by you) source
+tree of VTK.  To begin, you will need to update `repository.bzl` to point to the
+right locations.  Since some of the library dependencies or names may change,
+you may need to temporarily update `*.bzl` files outside of the
+`tools/workspace/vtk` folder, address those as needed.  For updates to
+`repository.bzl`,
 
 A successful workflow was to have the following directory structure (outside of
 your drake repository):
@@ -401,13 +418,28 @@ if ! [[ -d "$inst" ]]; then
     rm -rf vtk-build
     mkdir vtk-build
     cd vtk-build
+
+    # One time only, when creating this script, extract the VTK CMake configure
+    # arguments and put them in an array.  Do this by copying the output of
+    # `bazel run //tools/workspace/vtk:package -- --dump-cmake-configure-args`
+    # into the array here.
+    # IMPORTANT: the first few configuration arguments are CMAKE_CXX_FLAGS,
+    # which need to be re-quoted at the beginning and end of their argument
+    # [not worth solving in the package script]:
+    #
+    # -DCMAKE_C_FLAGS:STRING=-D_FORTIFY_SOURCE=1 -fstack-protector -Wno-deprecated-declarations
+    #                        v                                                                  v
+    # -DCMAKE_C_FLAGS:STRING="-D_FORTIFY_SOURCE=1 -fstack-protector -Wno-deprecated-declarations"
+    #                        ^                                                                  ^
+    vtk_cmake_args=("... paste here...")
+
     # If desired, you can update the below to also add whatever is in
     # image/vtk-args to reduce the total size of the build by turning off
     # various dependencies or unnecessary VTK components.
     cmake -G Ninja \
         -DCMAKE_BUILD_TYPE=Release \
-        -DCMAKE_INSTALL_PREFIX=$inst \
-        -DVTK_BUILD_TESTING=OFF \
+        "-DCMAKE_INSTALL_PREFIX=$inst" \
+        ${vtk_cmake_args[@]} \
         $src
     ninja install
 else
@@ -458,34 +490,3 @@ of VTK as well as modifying `LD_LIBRARY_PATH` for `bazel` commands will require
 many items to be rebuilt.  Avoid rebuilding more of drake than you need to by
 only testing / running the specific target that you need to.  The rest of drake
 that depends on VTK will not be rebuilt.
-
-## `drake_visualizer`
-
-During the upgrade to VTK-9, the `tools/workspace/drake_visualizer` folder was
-updated to build VTK-8 from source.  Its `Dockerfile` and related infrastructure
-is closely related to the infrastructure found in this folder, but will become
-irrelevant when `drake_visualizer` support is dropped.  Previously the
-`drake_visualizer` build would consume the same `vtk*.tar.gz` archive that drake
-used in its build for VTK-8.  As a result, it would contain libraries looking
-for eventual linker references to VTK-8 libraries that would come together at
-the end of build or install.  The VTK-9 update required keeping VTK-8 available
-for `drake_visualizer`, which meant that
-
-1. The `drake_visualizer` build needed to build VTK-8 internally and bundle it.
-2. Both VTK-8 and VTK-9 are installed side-by-side with drake.
-
-Where (2) is concerned, the special cases in
-
-- `tools/install/bazel/drake.BUILD.bazel`
-- `tools/install/installer.py`
-
-for VTK-8 or "director" (what `drake_visualizer` uses) specific libraries should
-be removed.
-
-As part of the testing process for the VTK-9 upgrade, given the side-by-side
-VTK-8 and VTK-9 install, it was required to include in the testing process
-`rm -rf ${prefix} && bazel run //:install -- ${prefix}`, where `${prefix}` is
-any temporary directory to install cleanly upon.  Then make sure that you can
-run `${prefix}/bin/drake-visualizer` (to validate that the `LD_LIBRARY_PATH`,
-rpath, and `PYTHONPATH` manipulations work correctly) in addition to validating
-that `bazel run //tools:drake_visualizer` works.
