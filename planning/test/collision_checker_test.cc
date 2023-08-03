@@ -1417,7 +1417,7 @@ GTEST_TEST(EdgeCheckTest, Configuration) {
                                                  const VectorXd& q2) {
     const double dist = (q1 - q2).norm();
     if (dist == 0) return 0.0;
-    return -1.5;
+    return 1.5;
   };
   CollisionCheckerTester dut = MakeEdgeChecker<CollisionCheckerTester>(dist0);
   const int q_size = dut.plant().num_positions();
@@ -1448,9 +1448,9 @@ GTEST_TEST(EdgeCheckTest, Configuration) {
     // Distance function.
 
     // Evaluate (1) and (2) as constructed. dist0 should always return -1.5.
-    EXPECT_EQ(dut.ComputeConfigurationDistance(q1, q2), -1.5);
+    EXPECT_EQ(dut.ComputeConfigurationDistance(q1, q2), 1.5);
     ASSERT_NE(dut.MakeStandaloneConfigurationDistanceFunction(), nullptr);
-    EXPECT_EQ(dut.MakeStandaloneConfigurationDistanceFunction()(q1, q2), -1.5);
+    EXPECT_EQ(dut.MakeStandaloneConfigurationDistanceFunction()(q1, q2), 1.5);
 
     // Change the function via (3).
     const ConfigurationDistanceFunction dist1 = [](const VectorXd& a,
