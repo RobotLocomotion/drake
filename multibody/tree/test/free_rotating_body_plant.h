@@ -3,6 +3,7 @@
 #include <memory>
 
 #include "drake/math/rigid_transform.h"
+#include "drake/multibody/tree/ball_rpy_joint.h"
 #include "drake/multibody/tree/multibody_tree.h"
 #include "drake/multibody/tree/multibody_tree_system.h"
 #include "drake/multibody/tree/rigid_body.h"
@@ -83,7 +84,7 @@ class FreeRotatingBodyPlant final : public internal::MultibodyTreeSystem<T> {
   double J_{0};
 
   const RigidBody<T>* body_{nullptr};
-  const internal::SpaceXYZMobilizer<T>* mobilizer_{nullptr};
+  const BallRpyJoint<T>* joint_{nullptr};
 };
 
 }  // namespace test

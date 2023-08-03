@@ -7,8 +7,8 @@
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/tree/multibody_tree-inl.h"
 #include "drake/multibody/tree/multibody_tree_system.h"
-#include "drake/multibody/tree/rigid_body.h"
 #include "drake/multibody/tree/test/mobilizer_tester.h"
+#include "drake/multibody/tree/weld_joint.h"
 #include "drake/systems/framework/context.h"
 
 namespace drake {
@@ -28,8 +28,8 @@ constexpr double kTolerance = 10 * std::numeric_limits<double>::epsilon();
 class WeldMobilizerTest :  public MobilizerTester {
  public:
   void SetUp() override {
-    weld_body_to_world_ = &AddMobilizerAndFinalize(
-        std::make_unique<WeldMobilizer<double>>(
+    weld_body_to_world_ = &AddJointAndFinalize<WeldJoint, WeldMobilizer>(
+        std::make_unique<WeldJoint<double>>("joint0",
             tree().world_body().body_frame(), body_->body_frame(), X_WB_));
   }
 

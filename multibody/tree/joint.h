@@ -504,6 +504,12 @@ class Joint : public MultibodyElement<T> {
 
     return joint_clone;
   }
+
+  const internal::Mobilizer<T>& GetMobilizerInUse() const {
+    // This implementation should only have one mobilizer.
+    DRAKE_DEMAND(get_implementation().num_mobilizers() == 1);
+    return *get_implementation().mobilizers_[0];
+  }
 #endif
   // End of hidden Doxygen section.
 

@@ -7,6 +7,7 @@
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/tree/multibody_tree-inl.h"
 #include "drake/multibody/tree/multibody_tree_system.h"
+#include "drake/multibody/tree/planar_joint.h"
 #include "drake/multibody/tree/test/mobilizer_tester.h"
 #include "drake/systems/framework/context.h"
 
@@ -30,9 +31,10 @@ class PlanarMobilizerTest : public MobilizerTester {
   // Creates a simple model consisting of a single body with a planar
   // mobilizer connecting it to the world.
   void SetUp() override {
-    mobilizer_ =
-        &AddMobilizerAndFinalize(std::make_unique<PlanarMobilizer<double>>(
-            tree().world_body().body_frame(), body_->body_frame()));
+    mobilizer_ = &AddJointAndFinalize<PlanarJoint, PlanarMobilizer>(
+        std::make_unique<PlanarJoint<double>>(
+            "joint0", tree().world_body().body_frame(), body_->body_frame(),
+            Vector3d::Zero()));
   }
 
  protected:
