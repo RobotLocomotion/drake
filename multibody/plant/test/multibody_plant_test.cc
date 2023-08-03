@@ -4620,6 +4620,73 @@ GTEST_TEST(MultibodyPlantTest, GetMutableSceneGraphPreFinalize) {
                               ".*!is_finalized.*");
 }
 
+GTEST_TEST(MultibodyPlantTest, RenameModelInstance) {
+  // Much of the functionality is tested as part of *Tree. Here we test the
+  // additional semantics of *Plant.
+  MultibodyPlant<double> plant(0.0);
+  SceneGraph<double> scene_graph;
+  plant.RegisterAsSourceForSceneGraph(&scene_graph);
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.RenameModelInstance(ModelInstanceIndex(99), "invalid"),
+      ".*no model instance id 99.*");
+
+  // These renames are allowed; it is up to applications to decide if they are
+  // a good idea in a given situation.
+  EXPECT_NO_THROW(plant.RenameModelInstance(world_model_instance(), "Mars"));
+  EXPECT_NO_THROW(plant.RenameModelInstance(default_model_instance(), "hmm"));
+
+  std::string robot = R"""(
+<robot name="a">
+  <link name="b">
+    <collision>
+      <geometry>
+        <sphere radius="0.25"/>
+      </geometry>
+    </collision>
+  </link>
+</robot>
+)""";
+
+  Parser parser(&plant);
+  auto models = parser.AddModelsFromString(robot, "urdf");
+  ASSERT_EQ(models.size(), 1);
+  auto& body = plant.GetBodyByName("b");
+  auto frame_id = plant.GetBodyFrameIdOrThrow(body.index());
+  auto& inspector = scene_graph.model_inspector();
+  ASSERT_EQ(inspector.GetName(frame_id), "a::b");
+  auto geoms = inspector.GetGeometries(frame_id);
+  ASSERT_EQ(geoms.size(), 1);
+  ASSERT_EQ(inspector.GetName(geoms[0]), "a::Sphere");
+
+  plant.RenameModelInstance(models[0], "zzz");
+  // Renaming affects scoped geometry names.
+  EXPECT_EQ(inspector.GetName(frame_id), "zzz::b");
+  EXPECT_EQ(inspector.GetName(geoms[0]), "zzz::Sphere");
+  // Renaming allows reload.
+  EXPECT_NO_THROW(parser.AddModelsFromString(robot, "urdf"));
+
+  // Renaming will silently skip frames and geometries that don't match the
+  // typical scoped-name pattern.
+
+  // Oddly renamed frames can evade renaming.
+  scene_graph.RenameFrame(frame_id, "something_random");
+  plant.RenameModelInstance(models[0], "xoxo");
+  EXPECT_EQ(inspector.GetName(frame_id), "something_random");
+  EXPECT_EQ(inspector.GetName(geoms[0]), "xoxo::Sphere");
+
+  // As can peculiarly renamed geometries.
+  scene_graph.RenameGeometry(geoms[0], "anything_else");
+  plant.RenameModelInstance(models[0], "bbbb");
+  EXPECT_EQ(inspector.GetName(frame_id), "something_random");
+  EXPECT_EQ(inspector.GetName(geoms[0]), "anything_else");
+
+  plant.Finalize();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.RenameModelInstance(models[0], "too_late"),
+      ".*finalized.*");
+}
+
 }  // namespace
 }  // namespace multibody
 }  // namespace drake

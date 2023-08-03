@@ -789,6 +789,32 @@ FrameId GeometryState<T>::RegisterFrame(SourceId source_id, FrameId parent_id,
 }
 
 template <typename T>
+void GeometryState<T>::RenameFrame(
+    FrameId frame_id, std::string_view new_name) {
+  FindOrThrow(frame_id, frames_, [frame_id]() {
+    return "Cannot rename frame with invalid frame id: " +
+        to_string(frame_id);
+  });
+  std::string old_name(GetName(frame_id));
+  SourceId source_id = frames_[frame_id].source_id();
+
+  // Edit source_frame_name_map_.
+  FrameNameSet& f_name_set = source_frame_name_map_[source_id];
+  f_name_set.erase(old_name);
+  const auto& [iterator, was_inserted] =
+      f_name_set.insert(std::string(new_name));
+  if (!was_inserted) {
+    throw std::logic_error(
+        fmt::format("Renaming frame from '{}'"
+                    " to an already existing name '{}'",
+                    old_name, new_name));
+  }
+
+  // Edit internal frame object.
+  frames_[frame_id].set_name(new_name);
+}
+
+template <typename T>
 GeometryId GeometryState<T>::RegisterGeometry(
     SourceId source_id, FrameId frame_id,
     std::unique_ptr<GeometryInstance> geometry) {
@@ -854,6 +880,18 @@ GeometryId GeometryState<T>::RegisterDeformableGeometry(
   AssignAllDefinedRoles(source_id, std::move(geometry));
 
   return geometry_id;
+}
+
+template <typename T>
+void GeometryState<T>::RenameGeometry(GeometryId geometry_id,
+                                      std::string_view new_name) {
+  FindOrThrow(geometry_id, geometries_, [geometry_id]() {
+    return "Cannot rename geometry with invalid geometry id: " +
+        to_string(geometry_id);
+  });
+
+  // Edit internal geometry object.
+  geometries_[geometry_id].set_name(new_name);
 }
 
 template <typename T>

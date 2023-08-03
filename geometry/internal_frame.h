@@ -141,6 +141,11 @@ class InternalFrame {
     child_geometries_.erase(geometry_id);
   }
 
+  /* Changes the name of the frame to `name`. */
+  void set_name(std::string_view name) {
+    name_ = std::string(name);
+  }
+
   /* The identifier used for identifying the single world frame in all
    instances of SceneGraph. The world frame will eventually have an arbitrary
    number of child frames and geometries; but there will always only be one

@@ -33,6 +33,9 @@ class TestGeometrySceneGraph(unittest.TestCase):
         global_frame = scene_graph.RegisterFrame(
             source_id=global_source,
             frame=mut.GeometryFrame("anchored_frame1"))
+        scene_graph.RenameFrame(frame_id=global_frame, new_name="something")
+        scene_graph.RenameFrame(frame_id=global_frame,
+                                new_name="anchored_frame1")
         scene_graph.RegisterFrame(
             source_id=global_source, parent_id=global_frame,
             frame=mut.GeometryFrame("anchored_frame2"))
@@ -47,6 +50,8 @@ class TestGeometrySceneGraph(unittest.TestCase):
             geometry=mut.GeometryInstance(X_PG=RigidTransform_[float](),
                                           shape=mut.Sphere(1.),
                                           name="sphere2"))
+        scene_graph.RenameGeometry(geometry_id=sphere_2, new_name="else")
+        scene_graph.RenameGeometry(geometry_id=sphere_2, new_name="sphere2")
         props = mut.ProximityProperties()
         mut.AddRigidHydroelasticProperties(resolution_hint=1, properties=props)
         scene_graph.AssignRole(source_id=global_source, geometry_id=sphere_2,
