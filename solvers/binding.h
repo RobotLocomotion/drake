@@ -87,6 +87,13 @@ class Binding {
     return os.str();
   }
 
+  /** Returns a LaTeX description of this Binding. Does not include any
+   * characters to enter/exit math mode; you might want, e.g. "$$" +
+   * evaluator.ToLatex() + "$$". */
+  std::string ToLatex(int precision = 3) const {
+    return evaluator()->ToLatex(variables(), precision);
+  }
+
   /**
    * Compare two bindings based on their evaluator pointers and the bound
    * variables.
