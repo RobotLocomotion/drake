@@ -78,10 +78,10 @@ def _impl(repository_ctx):
     if os_result.error != None:
         fail(os_result.error)
 
-    if os_result.is_macos and os_result.macos_arch_result == "x86_64":
+    if os_result.is_macos or os_result.is_macos_wheel and os_result.macos_arch_result == "x86_64":
         archive = "vtk-v9.2.0.rc2-1001-gd706250a14-mac-x86_64-1.tar.gz"
         sha256 = "0e7378fc5858313abd9f0ba53df4bf8977cdb4d101c617044ebfa15b90b0f46f"  # noqa
-    elif os_result.is_macos and os_result.macos_arch_result == "arm64":
+    elif os_result.is_macos or os_result.is_macos_wheel and os_result.macos_arch_result == "arm64":
         archive = "vtk-v9.2.0.rc2-1001-gd706250a14-mac-arm64-1.tar.gz"
         sha256 = "61317cda495efe3181cc885737fe6d295c4653234e1d63a6bf45d68416a932be"  # noqa
     elif os_result.ubuntu_release == "20.04" or os_result.is_manylinux:
