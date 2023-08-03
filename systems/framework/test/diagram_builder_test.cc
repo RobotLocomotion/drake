@@ -24,6 +24,10 @@ namespace {
 using InputPortLocator = DiagramBuilder<double>::InputPortLocator;
 using OutputPortLocator = DiagramBuilder<double>::OutputPortLocator;
 
+// Simply an untemplated system that can be extracted from a builder via
+// Get[Mutable]DowncastSubsystemByName.
+class UntemplatedSystem : public LeafSystem<double> {};
+
 // Tests ::empty().
 GTEST_TEST(DiagramBuilderTest, Empty) {
   DiagramBuilder<double> builder;
@@ -786,21 +790,39 @@ GTEST_TEST(DiagramBuilderTest, GetByName) {
   DiagramBuilder<double> builder;
   auto adder = builder.AddNamedSystem<Adder>("adder", 1, 1);
   auto pass = builder.AddNamedSystem<PassThrough>("pass", 1);
+  auto untemplated = builder.AddNamedSystem<UntemplatedSystem>("untemplated");
   EXPECT_TRUE(builder.HasSubsystemNamed("adder"));
   EXPECT_TRUE(builder.HasSubsystemNamed("pass"));
+  EXPECT_TRUE(builder.HasSubsystemNamed("untemplated"));
   EXPECT_FALSE(builder.HasSubsystemNamed("no-such-name"));
 
   // Plain by-name.
   EXPECT_EQ(&builder.GetSubsystemByName("adder"), adder);
   EXPECT_EQ(&builder.GetMutableSubsystemByName("pass"), pass);
+  EXPECT_EQ(&builder.GetMutableSubsystemByName("untemplated"), untemplated);
 
-  // Downcasting by-name.
+  // Downcasting by name.
   const Adder<double>& adder2 =
       builder.GetDowncastSubsystemByName<Adder>("adder");
   const PassThrough<double>& pass2 =
       builder.GetDowncastSubsystemByName<PassThrough>("pass");
+  const UntemplatedSystem& untemplated2 =
+      builder.GetDowncastSubsystemByName<UntemplatedSystem>("untemplated");
   EXPECT_EQ(&adder2, adder);
   EXPECT_EQ(&pass2, pass);
+  EXPECT_EQ(&untemplated2, untemplated);
+
+  // Mutable downcasting by name.
+  Adder<double>& adder3 =
+      builder.GetMutableDowncastSubsystemByName<Adder>("adder");
+  PassThrough<double>& pass3 =
+      builder.GetMutableDowncastSubsystemByName<PassThrough>("pass");
+  UntemplatedSystem& untemplated3 =
+      builder.GetMutableDowncastSubsystemByName<UntemplatedSystem>(
+          "untemplated");
+  EXPECT_EQ(&adder3, adder);
+  EXPECT_EQ(&pass3, pass);
+  EXPECT_EQ(&untemplated3, untemplated);
 
   // Error: no such name.
   DRAKE_EXPECT_THROWS_MESSAGE(

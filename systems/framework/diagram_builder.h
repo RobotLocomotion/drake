@@ -307,8 +307,7 @@ class DiagramBuilder {
   /// @see GetSubsystemByName()
   template <template <typename> class MySystem>
   const MySystem<T>& GetDowncastSubsystemByName(std::string_view name) const {
-    const System<T>& subsystem = this->GetSubsystemByName(name);
-    return *dynamic_pointer_cast_or_throw<const MySystem<T>>(&subsystem);
+    return GetDowncastSubsystemByName<MySystem<T>>(name);
   }
 
   /// Retrieves a mutable reference to the subsystem with name @p name returned
@@ -319,9 +318,37 @@ class DiagramBuilder {
   /// @see GetMutableSubsystemByName()
   template <template <typename> class MySystem>
   MySystem<T>& GetMutableDowncastSubsystemByName(std::string_view name) {
-    System<T>& subsystem = this->GetMutableSubsystemByName(name);
-    return *dynamic_pointer_cast_or_throw<MySystem<T>>(&subsystem);
+    return GetMutableDowncastSubsystemByName<MySystem<T>>(name);
   }
+
+#ifndef DRAKE_DOXYGEN_CXX
+  // We're omitting this from doxygen as the details are unhelpful.
+
+  // Variants of Get[Mutable]DowncastSubsystemByName that allow for leaf
+  // systems that are not templatized.
+  // The requested LeafSystem must still have the same underlying scalar type
+  // as this builder.
+  template <class MyUntemplatizedSystem>
+  const MyUntemplatizedSystem& GetDowncastSubsystemByName(
+      std::string_view name) const {
+    static_assert(std::is_same_v<typename MyUntemplatizedSystem::Scalar, T>,
+                  "Scalar type of untemplatized System doesn't match the "
+                  "DiagramBuilder's.");
+    const System<T>& subsystem = this->GetSubsystemByName(name);
+    return *dynamic_pointer_cast_or_throw<const MyUntemplatizedSystem>(
+        &subsystem);
+  }
+
+  template <class MyUntemplatizedSystem>
+  MyUntemplatizedSystem& GetMutableDowncastSubsystemByName(
+      std::string_view name) {
+    static_assert(std::is_same_v<typename MyUntemplatizedSystem::Scalar, T>,
+                  "Scalar type of untemplatized System doesn't match the "
+                  "DiagramBuilder's.");
+    System<T>& subsystem = this->GetMutableSubsystemByName(name);
+    return *dynamic_pointer_cast_or_throw<MyUntemplatizedSystem>(&subsystem);
+  }
+#endif
 
   /// (Advanced) Returns a reference to the map of connections between Systems.
   /// The reference becomes invalid upon any call to Build or BuildInto.
