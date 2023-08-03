@@ -44,6 +44,9 @@ class EventStatus {
     kFailed = 3
   };
 
+  /** Constructs an %EventStatus indicating nothing happened. */
+  EventStatus() : EventStatus(kDidNothing) {}
+
   /** Returns "did nothing" status, with no message. */
   static EventStatus DidNothing() { return EventStatus(kDidNothing); }
 
@@ -60,6 +63,15 @@ class EventStatus {
   static EventStatus Failed(const SystemBase* system, std::string message) {
     return EventStatus(kFailed, system, std::move(message));
   }
+
+  /** Returns `true` if the status is DidNothing or Succeeded. */
+  bool is_good() const { return severity() <= kSucceeded; }
+
+  /** Returns `true` if the status is Failed. */
+  bool failed() const { return severity() == kFailed; }
+
+  /** Returns `true` if the status is DidNothing. */
+  bool did_nothing() const { return severity() == kDidNothing; }
 
   /** Returns the severity of the current status. */
   Severity severity() const { return severity_; }
@@ -79,7 +91,7 @@ class EventStatus {
   `candidate` severity is less than or equal to `this` severity. This method is
   for use in event dispatchers for accumulating status returns from a series of
   event handlers for a set of simultaneous events. */
-  EventStatus& KeepMoreSevere(EventStatus candidate) {
+  EventStatus& KeepMoreSevere(const EventStatus& candidate) {
     if (candidate.severity() > severity()) *this = candidate;
     return *this;
   }

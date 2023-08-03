@@ -67,7 +67,7 @@ SimulatorStatus Simulator<T>::Initialize(const InitializeParams& params) {
   const T current_time = context_->get_time();
 
   // Assumes success.
-  SimulatorStatus status(ExtractDoubleOrThrow(current_time));
+  SimulatorStatus initialize_status(ExtractDoubleOrThrow(current_time));
 
   // Initialize the integrator.
   integrator_->Initialize();
@@ -126,22 +126,31 @@ SimulatorStatus Simulator<T>::Initialize(const InitializeParams& params) {
   merged_events_->AddToEnd(*per_step_events_);
   if (time_or_witness_triggered_ & kTimeTriggered)
     merged_events_->AddToEnd(*timed_events_);
-  HandlePublish(merged_events_->get_publish_events());
+  EventStatus end_init_event_status =
+      HandlePublish(merged_events_->get_publish_events());
 
-  // TODO(siyuan): transfer publish entirely to individual systems.
-  // Do a force-publish before the simulation starts.
+  // If requested, do a force-publish before the simulation starts.
   if (publish_at_initialization_) {
-    system_.ForcedPublish(*context_);
-    ++num_publishes_;
+    const EventStatus forced_publish_status =
+        system_.ForcedPublish(*context_);
+    if (!forced_publish_status.did_nothing())
+      ++num_publishes_;
+    end_init_event_status.KeepMoreSevere(forced_publish_status);
   }
 
-  CallMonitorUpdateStatusAndMaybeThrow(&status);
+  if (get_monitor()) {
+    const EventStatus monitor_status = get_monitor()(*context_);
+    end_init_event_status.KeepMoreSevere(monitor_status);
+  }
+
+  MaybeUpdateSimulatorStatusFromEventStatus(
+      end_init_event_status, true /* throw on failure */, &initialize_status);
 
   // Initialize runtime variables.
   initialization_done_ = true;
   last_known_simtime_ = ExtractDoubleOrThrow(context_->get_time());
 
-  return status;
+  return initialize_status;
 }
 
 // Processes UnrestrictedUpdateEvent events.
@@ -179,12 +188,15 @@ void Simulator<T>::HandleDiscreteUpdate(
 
 // Processes Publish events.
 template <typename T>
-void Simulator<T>::HandlePublish(
+EventStatus Simulator<T>::HandlePublish(
     const EventCollection<PublishEvent<T>>& events) {
+  EventStatus publish_status;  // Initially set to DidNothing.
   if (events.HasEvents()) {
-    system_.Publish(*context_, events);
-    ++num_publishes_;
+    publish_status = system_.Publish(*context_, events);
+    if (!publish_status.did_nothing())
+      ++num_publishes_;
   }
+  return publish_status;
 }
 
 template <typename T>
@@ -205,7 +217,7 @@ SimulatorStatus Simulator<T>::AdvanceTo(const T& boundary_time) {
   DRAKE_THROW_UNLESS(boundary_time >= context_->get_time());
 
   // Assume success.
-  SimulatorStatus status(ExtractDoubleOrThrow(boundary_time));
+  SimulatorStatus simulator_status(ExtractDoubleOrThrow(boundary_time));
 
   // Integrate until desired interval has completed.
   DRAKE_DEMAND(timed_events_ != nullptr);
@@ -292,19 +304,31 @@ SimulatorStatus Simulator<T>::AdvanceTo(const T& boundary_time) {
     if (time_or_witness_triggered_ & kWitnessTriggered)
       merged_events_->AddToEnd(*witnessed_events_);
 
-    // Handle any publish events at the end of the loop.
-    HandlePublish(merged_events_->get_publish_events());
+    // Handle any end-of-step events at the end of the loop (final publishes
+    // and monitor check).
+    EventStatus end_of_step_event_status =
+        HandlePublish(merged_events_->get_publish_events());
 
-    // TODO(siyuan): transfer per step publish entirely to individual systems.
-    // Allow System a chance to produce some output.
     if (get_publish_every_time_step()) {
-      system_.ForcedPublish(*context_);
-      ++num_publishes_;
+      const EventStatus forced_publish_status =
+          system_.ForcedPublish(*context_);
+      if (!forced_publish_status.did_nothing())
+        ++num_publishes_;
+      end_of_step_event_status.KeepMoreSevere(forced_publish_status);
     }
 
-    CallMonitorUpdateStatusAndMaybeThrow(&status);
-    if (!status.succeeded())
-      break;  // Done.
+    // Invoke the monitor() if there is one. This is logically like a
+    // Diagram-level Publish event so we handle it similarly.
+    if (get_monitor()) {
+      const EventStatus monitor_status = get_monitor()(*context_);
+      end_of_step_event_status.KeepMoreSevere(monitor_status);
+    }
+
+    MaybeUpdateSimulatorStatusFromEventStatus(end_of_step_event_status,
+                                              true /* throw on failure */,
+                                              &simulator_status);
+
+    if (!simulator_status.succeeded()) break;  // Done.
 
     // Break out of the loop after timed and witnessed events are merged in
     // to the event collection and after any publishes.
@@ -318,7 +342,7 @@ SimulatorStatus Simulator<T>::AdvanceTo(const T& boundary_time) {
   // Record the time to detect unexpected jumps.
   last_known_simtime_ = ExtractDoubleOrThrow(context_->get_time());
 
-  return status;
+  return simulator_status;
 }
 
 template <class T>

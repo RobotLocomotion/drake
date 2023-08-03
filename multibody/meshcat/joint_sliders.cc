@@ -279,14 +279,17 @@ Eigen::VectorXd JointSliders<T>::Run(const Diagram<T>& diagram,
   using Duration = std::chrono::duration<double>;
   const auto start_time = Clock::now();
 
-  diagram.ExecuteInitializationEvents(root_context.get());
+  systems::EventStatus status =
+      diagram.ExecuteInitializationEvents(root_context.get());
+  DRAKE_DEMAND(status.is_good());
 
   // Set the context to the initial slider values.
   plant_->SetPositions(&plant_context,
                        this->get_output_port().Eval(sliders_context));
 
   // Loop until the button is clicked, or the timeout (when given) is reached.
-  diagram.ForcedPublish(diagram_context);
+  status = diagram.ForcedPublish(diagram_context);
+  DRAKE_DEMAND(status.is_good());
   while (meshcat_->GetButtonClicks(kButtonName) < 1) {
     if (timeout.has_value()) {
       const auto elapsed = Duration(Clock::now() - start_time).count();
@@ -305,7 +308,8 @@ Eigen::VectorXd JointSliders<T>::Run(const Diagram<T>& diagram,
 
     // Publish the new positions.
     plant_->SetPositions(&plant_context, new_positions);
-    diagram.ForcedPublish(diagram_context);
+    status = diagram.ForcedPublish(diagram_context);
+    DRAKE_DEMAND(status.is_good());
   }
 
   return ExtractDoubleOrThrow(plant_->GetPositions(plant_context).eval());

@@ -91,7 +91,7 @@ TEST_P(ParseTest, Quantities) {
   // Display the object; optionally wait for user input.
   drake::log()->info("Visualize: {}", object_name);
   auto context = diagram->CreateDefaultContext();
-  diagram->ForcedPublish(*context);
+  EXPECT_TRUE(diagram->ForcedPublish(*context).is_good());
   if (FLAGS_pause) {
     WaitForNextButtonClick();
   }

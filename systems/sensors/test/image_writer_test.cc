@@ -300,7 +300,8 @@ class ImageWriterTest : public ::testing::Test {
         port_name, tester.port_count(port.get_index()));
     fs::path expected_file(expected_name);
     EXPECT_FALSE(fs::exists(expected_file));
-    writer.Publish(*context, events->get_publish_events());
+    EXPECT_TRUE(
+        writer.Publish(*context, events->get_publish_events()).is_good());
     EXPECT_TRUE(fs::exists(expected_file));
     EXPECT_EQ(1, tester.port_count(port.get_index()));
     add_file_for_cleanup(expected_file.string());
@@ -660,7 +661,8 @@ TEST_F(ImageWriterTest, SingleConfiguredPort) {
           port_name, tester.port_count(port.get_index()));
       fs::path expected_file(expected_name);
       EXPECT_FALSE(fs::exists(expected_file));
-      writer.Publish(*context, events->get_publish_events());
+      EXPECT_TRUE(
+          writer.Publish(*context, events->get_publish_events()).is_good());
       EXPECT_TRUE(fs::exists(expected_file));
       EXPECT_EQ(1, tester.port_count(port.get_index()));
       add_file_for_cleanup(expected_file.string());

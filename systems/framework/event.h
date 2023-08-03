@@ -87,8 +87,8 @@ template <typename T> class System;
    periodically)
  - per simulation step
  - as a WitnessFunction crosses zero
- - "by force", e.g., the system's CalcUnrestrictedUpdate() function is invoked
-   by some user code
+ - "by force", e.g., the system's CalcForcedUnrestrictedUpdate() function is
+   invoked by some user code
 
  ### How events are handled
 
@@ -101,13 +101,13 @@ template <typename T> class System;
  regardless of the sequence of event updates).
 
  Events can also be dispatched manually ("by force"), i.e., outside of a solver.
- As noted above, one could call CalcUnrestrictedUpdate() to determine how a
- system's state would change and, optionally, update that state manually. Here
+ As noted above, one could call CalcForcedUnrestrictedUpdate() to determine how
+ a system's state would change and, optionally, update that state manually. Here
  is a simple example illustrating a forced publish:
  ```
    SystemX y;
    std::unique_ptr<Context<T>> context = y.CreateDefaultContext();
-   y.Publish(*context);
+   y.ForcedPublish(*context);
  ```
 
  ### Information for leaf system authors
@@ -347,7 +347,7 @@ enum class TriggerType {
   /**
    * This trigger indicates that an associated event is triggered by directly
    * calling the corresponding public system API for event handling (e.g.
-   * Publish(context)).
+   * ForcedPublish(context)).
    */
   kForced,
 
@@ -588,6 +588,10 @@ struct PeriodicEventDataComparator {
  technique avoids a down-cast within the callback body. However, if other
  captures are also necessary, the system callback (with a down-cast) may help
  avoid heap use.
+
+ All Event callbacks return an EventStatus object. For backwards compatibility
+ we provide APIs that accept callbacks returning void; those are wrapped in
+ functions that follow the call with `return EventStatus::Succeeded();`.
 */
 // TODO(rpoyner-tri): extend the support described above to all subclasses.
 
@@ -614,14 +618,24 @@ class PublishEvent final : public Event<T> {
   /**
    * Callback without system reference.
    */
-  typedef std::function<void(const Context<T>&, const PublishEvent<T>&)>
-      PublishCallback;
+  using PublishCallback =
+      std::function<void(const Context<T>&, const PublishEvent<T>&)>;
+  using PublishCallbackWithStatus = std::function<void(
+      const Context<T>&, const PublishEvent<T>&, EventStatus* status)>;
 
   /**
    * Callback with const system reference.
    */
-  typedef std::function<void(const System<T>&, const Context<T>&,
-                             const PublishEvent<T>&)> SystemCallback;
+  using PublishCallbackWithSystem = std::function<void(
+      const System<T>&, const Context<T>&, const PublishEvent<T>&)>;
+
+  using SystemCallback DRAKE_DEPRECATED("2023-12-01",
+                                        "Use PublishCallbackWithSystem") =
+      PublishCallbackWithSystem;
+
+  using PublishCallbackWithSystemAndStatus =
+      std::function<void(const System<T>&, const Context<T>&,
+                         const PublishEvent<T>&, EventStatus* status)>;
   ///@}
 
   /// Makes a PublishEvent with no trigger type, no event data, and
@@ -630,46 +644,91 @@ class PublishEvent final : public Event<T> {
 
   /// Makes a PublishEvent with no trigger type, no event data, and
   /// the specified callback function.
-  explicit PublishEvent(const PublishCallback& callback)
-      : Event<T>(), callback_(callback) {}
+  explicit PublishEvent(const PublishCallbackWithStatus& status_callback)
+      : Event<T>(), callback_(status_callback) {}
 
   /// Makes a PublishEvent with no trigger type, no event data, and
   /// the specified system callback function.
-  explicit PublishEvent(const SystemCallback& system_callback)
-      : Event<T>(), system_callback_(system_callback) {}
+  explicit PublishEvent(
+      const PublishCallbackWithSystemAndStatus& status_system_callback)
+      : Event<T>(), system_callback_(status_system_callback) {}
+
+  /// Makes a PublishEvent with no trigger type, no event data, and
+  /// the specified callback function assumed always to succeed.
+  explicit PublishEvent(const PublishCallback& callback)
+      // Note that we're copying the functor; it could be a temporary.
+      : PublishEvent([callback](const Context<T>& context,
+                                 const PublishEvent<T>& event,
+                                 EventStatus* status) {
+          callback(context, event);
+          if (status != nullptr) *status = EventStatus::Succeeded();
+        }) {}
+
+  /// Makes a PublishEvent with no trigger type, no event data, and
+  /// the specified system callback function assumed always to succeed.
+  explicit PublishEvent(const PublishCallbackWithSystem& system_callback)
+      // Note that we're copying the functor; it could be a temporary.
+      : PublishEvent([system_callback](
+                         const System<T>& system, const Context<T>& context,
+                         const PublishEvent<T>& event, EventStatus* status) {
+          system_callback(system, context, event);
+          if (status != nullptr) *status = EventStatus::Succeeded();
+        }) {}
 
   // Note: Users should not be calling these.
-  #if !defined(DRAKE_DOXYGEN_CXX)
+#if !defined(DRAKE_DOXYGEN_CXX)
   // Makes a PublishEvent with `trigger_type`, no event data, and
   // callback function `callback`, which can be null.
   PublishEvent(const TriggerType& trigger_type,
-               const PublishCallback& callback)
+               const PublishCallbackWithStatus& callback)
       : Event<T>(trigger_type), callback_(callback) {}
 
   // Makes a PublishEvent with `trigger_type`, no event data, and
   // system callback function `system_callback`, which can be null.
   PublishEvent(const TriggerType& trigger_type,
-               const SystemCallback& system_callback)
+               const PublishCallbackWithSystemAndStatus& system_callback)
       : Event<T>(trigger_type), system_callback_(system_callback) {}
+
+  // Assumes success; prefer the status-returning constructor.
+  PublishEvent(const TriggerType& trigger_type, const PublishCallback& callback)
+      : PublishEvent(trigger_type, [callback](const Context<T>& context,
+                                               const PublishEvent<T>& event,
+                                               EventStatus* status) {
+          callback(context, event);
+          if (status != nullptr) *status = EventStatus::Succeeded();
+        }) {}
+
+  // Assumes success; prefer the status-returning constructor.
+  PublishEvent(const TriggerType& trigger_type,
+               const PublishCallbackWithSystem& system_callback)
+      : PublishEvent(trigger_type,
+                     [system_callback](
+                         const System<T>& system, const Context<T>& context,
+                         const PublishEvent<T>& event, EventStatus* status) {
+                       system_callback(system, context, event);
+                       if (status != nullptr)
+                         *status = EventStatus::Succeeded();
+                     }) {}
 
   // Makes a PublishEvent with `trigger_type`, no event data, and
   // no specified callback function.
   explicit PublishEvent(const TriggerType& trigger_type)
       : Event<T>(trigger_type) {}
-  #endif
+#endif
 
   /**
    * Calls the optional callback or system callback function, if one exists,
    * with @p system, @p context, and `this`.
    */
-  void handle(const System<T>& system, const Context<T>& context) const {
+  void handle(const System<T>& system, const Context<T>& context,
+              EventStatus* status = nullptr) const {
     // At most one callback can be set.
     DRAKE_ASSERT(!(callback_ && system_callback_));
-    if (callback_ != nullptr) {
-      callback_(context, *this);
-    } else if (system_callback_ != nullptr) {
-      system_callback_(system, context, *this);
-    }
+    if (callback_ != nullptr)
+      return callback_(context, *this, status);
+    if (system_callback_ != nullptr)
+      return system_callback_(system, context, *this, status);
+    if (status != nullptr) *status = EventStatus::DidNothing();
   }
 
  private:
@@ -688,8 +747,8 @@ class PublishEvent final : public Event<T> {
   // Optional callback functions that handle this publish event. At most one
   // callback can be set; whichever one is set will be invoked. It is valid for
   // no callback to be set.
-  PublishCallback callback_{nullptr};
-  SystemCallback system_callback_{nullptr};
+  PublishCallbackWithStatus callback_{nullptr};
+  PublishCallbackWithSystemAndStatus system_callback_{nullptr};
 };
 
 /**

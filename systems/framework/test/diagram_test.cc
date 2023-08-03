@@ -1529,7 +1529,8 @@ GTEST_TEST(DiagramPublishTest, Publish) {
   PublishNumberDiagram publishing_diagram(42.0);
   EXPECT_EQ(0, publishing_diagram.get());
   auto context = publishing_diagram.CreateDefaultContext();
-  publishing_diagram.ForcedPublish(*context);
+  const EventStatus status = publishing_diagram.ForcedPublish(*context);
+  EXPECT_TRUE(status.is_good());
   EXPECT_EQ(42.0, publishing_diagram.get());
 }
 
@@ -2406,7 +2407,9 @@ TEST_F(DiscreteStateTest, Publish) {
   // Fast forward to 19.0 sec and do the publish.
   EXPECT_EQ(false, diagram_.publisher()->published());
   context_->SetTime(19.0);
-  diagram_.Publish(*context_, events->get_publish_events());
+  EXPECT_TRUE(
+      diagram_.Publish(*context_, events->get_publish_events()).is_good());
+
   // Check that publication occurred.
   EXPECT_EQ(true, diagram_.publisher()->published());
 }
@@ -2428,7 +2431,7 @@ TEST_F(ForcedPublishingSystemDiagramTest, ForcedPublish) {
   auto* forced_publishing_system_two = diagram_.publishing_system_two();
   EXPECT_FALSE(forced_publishing_system_one->published());
   EXPECT_FALSE(forced_publishing_system_two->published());
-  diagram_.ForcedPublish(*context_);
+  EXPECT_TRUE(diagram_.ForcedPublish(*context_).is_good());
   EXPECT_TRUE(forced_publishing_system_one->published());
   EXPECT_TRUE(forced_publishing_system_two->published());
 }
@@ -3273,7 +3276,8 @@ GTEST_TEST(DiagramEventEvaluation, Propagation) {
   context->get_mutable_discrete_state().SetFrom(*tmp_discrete_state);
 
   // Publishes last.
-  diagram->Publish(*context, events->get_publish_events());
+  EXPECT_TRUE(
+      diagram->Publish(*context, events->get_publish_events()).is_good());
 
   // Only sys2 published once.
   EXPECT_EQ(sys0->publish_count(), 0);
@@ -3352,7 +3356,7 @@ GTEST_TEST(MyEventTest, MyEventTestLeaf) {
     dut.GetPerStepEvents(*context, per_step_events.get());
     events->AddToEnd(*periodic_events);
     events->AddToEnd(*per_step_events);
-    dut.Publish(*context, events->get_publish_events());
+    EXPECT_TRUE(dut.Publish(*context, events->get_publish_events()).is_good());
 
     EXPECT_EQ(dut.get_periodic_count(), period > 0 ? 1 : 0);
     EXPECT_EQ(dut.get_per_step_count(), period > 0 ? 0 : 1);
@@ -3400,7 +3404,7 @@ GTEST_TEST(MyEventTest, MyEventTestDiagram) {
 
   // FYI time not actually needed here; events to handle already selected.
   context->SetTime(time);
-  dut->Publish(*context, events->get_publish_events());
+  EXPECT_TRUE(dut->Publish(*context, events->get_publish_events()).is_good());
 
   // Sys0's period is larger, so it doesn't get evaluated.
   EXPECT_EQ(sys[0]->get_periodic_count(), 0);
@@ -3426,7 +3430,8 @@ GTEST_TEST(MyEventTest, MyEventTestDiagram) {
   // it doesn't contain the ones leftover from the CalcNextUpdateTime() call.
   // (If it doesn't get cleared some of the counts will be incremented twice.)
   dut->GetPeriodicEvents(*context, periodic_events.get());
-  dut->Publish(*context, periodic_events->get_publish_events());
+  EXPECT_TRUE(
+      dut->Publish(*context, periodic_events->get_publish_events()).is_good());
 
   EXPECT_EQ(sys[0]->get_periodic_count(), 1);
   EXPECT_EQ(sys[0]->get_per_step_count(), 0);
@@ -3711,7 +3716,7 @@ GTEST_TEST(InitializationTest, InitializationTest) {
   auto dut = builder.Build();
 
   auto context = dut->CreateDefaultContext();
-  dut->ExecuteInitializationEvents(context.get());
+  EXPECT_TRUE(dut->ExecuteInitializationEvents(context.get()).is_good());
 
   EXPECT_TRUE(sys0->get_pub_init());
   EXPECT_TRUE(sys0->get_dis_update_init());

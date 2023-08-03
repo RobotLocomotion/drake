@@ -1170,24 +1170,27 @@ Diagram<T>::AllocateForcedEventCollection(
 }
 
 template <typename T>
-void Diagram<T>::DispatchPublishHandler(
+EventStatus Diagram<T>::DispatchPublishHandler(
     const Context<T>& context,
     const EventCollection<PublishEvent<T>>& event_info) const {
   auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
   DRAKE_DEMAND(diagram_context != nullptr);
   const DiagramEventCollection<PublishEvent<T>>& info =
-      dynamic_cast<const DiagramEventCollection<PublishEvent<T>>&>(
-          event_info);
+      dynamic_cast<const DiagramEventCollection<PublishEvent<T>>&>(event_info);
 
+  EventStatus overall_status, per_subsystem_status;
   for (SubsystemIndex i(0); i < num_subsystems(); ++i) {
     const EventCollection<PublishEvent<T>>& subinfo =
         info.get_subevent_collection(i);
 
     if (subinfo.HasEvents()) {
       const Context<T>& subcontext = diagram_context->GetSubsystemContext(i);
-      registered_systems_[i]->Publish(subcontext, subinfo);
+      per_subsystem_status =
+          registered_systems_[i]->Publish(subcontext, subinfo);
+      overall_status.KeepMoreSevere(per_subsystem_status);
     }
   }
+  return overall_status;
 }
 
 template <typename T>

@@ -210,12 +210,15 @@ RigidTransformd MeshcatPoseSliders<T>::Run(
   using Duration = std::chrono::duration<double>;
   const auto start_time = Clock::now();
 
-  system.ExecuteInitializationEvents(root_context.get());
+  systems::EventStatus status =
+      system.ExecuteInitializationEvents(root_context.get());
+  DRAKE_DEMAND(status.is_good());
 
   RigidTransformd pose = nominal_pose_;
 
   // Loop until the button is clicked, or the timeout (when given) is reached.
-  system.ForcedPublish(system_context);
+  status = system.ForcedPublish(system_context);
+  DRAKE_DEMAND(status.is_good());
   while (meshcat_->GetButtonClicks(kButtonName) < 1) {
     if (timeout.has_value()) {
       const auto elapsed = Duration(Clock::now() - start_time).count();
@@ -233,7 +236,8 @@ RigidTransformd MeshcatPoseSliders<T>::Run(
     }
 
     pose = new_pose;
-    system.ForcedPublish(system_context);
+    status = system.ForcedPublish(system_context);
+    DRAKE_DEMAND(status.is_good());
   }
 
   return pose;

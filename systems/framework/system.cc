@@ -209,15 +209,15 @@ bool System<T>::HasDirectFeedthrough(int input_port, int output_port) const {
 }
 
 template <typename T>
-void System<T>::Publish(const Context<T>& context,
+EventStatus System<T>::Publish(const Context<T>& context,
                         const EventCollection<PublishEvent<T>>& events) const {
   ValidateContext(context);
-  DispatchPublishHandler(context, events);
+  return DispatchPublishHandler(context, events);
 }
 
 template <typename T>
-void System<T>::ForcedPublish(const Context<T>& context) const {
-  Publish(context, this->get_forced_publish_events());
+EventStatus System<T>::ForcedPublish(const Context<T>& context) const {
+  return Publish(context, this->get_forced_publish_events());
 }
 
 template <typename T>
@@ -476,10 +476,12 @@ void System<T>::GetInitializationEvents(
 }
 
 template <typename T>
-void System<T>::ExecuteInitializationEvents(Context<T>* context) const {
+EventStatus System<T>::ExecuteInitializationEvents(Context<T>* context) const {
   auto discrete_updates = AllocateDiscreteVariables();
   auto state = context->CloneState();
   auto init_events = AllocateCompositeEventCollection();
+
+  EventStatus overall_status, per_events_status;
 
   // NOTE: The execution order here must match the code in
   // Simulator::Initialize().
@@ -502,8 +504,10 @@ void System<T>::ExecuteInitializationEvents(Context<T>* context) const {
   }
   // Do any publishes last.
   if (init_events->get_publish_events().HasEvents()) {
-    Publish(*context, init_events->get_publish_events());
+    per_events_status = Publish(*context, init_events->get_publish_events());
+    overall_status.KeepMoreSevere(per_events_status);
   }
+  return overall_status;
 }
 
 template <typename T>

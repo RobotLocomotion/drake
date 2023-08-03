@@ -252,8 +252,10 @@ class System : public SystemBase {
   so that a step begins exactly at the next publication time. In the latter
   case the change in step size may affect the numerical result somewhat
   since a smaller integrator step produces a more accurate solution. */
-  void Publish(const Context<T>& context,
-               const EventCollection<PublishEvent<T>>& events) const;
+  // TODO(sherm1) Remove the nodiscard before merging.
+  [[nodiscard]] EventStatus Publish(
+      const Context<T>& context,
+      const EventCollection<PublishEvent<T>>& events) const;
 
   /** (Advanced) Manually triggers any PublishEvent that has trigger
   type kForced. Invokes the publish event dispatcher on this %System with the
@@ -273,7 +275,8 @@ class System : public SystemBase {
 
   @see Publish(), CalcForcedDiscreteVariableUpdate(),
        CalcForcedUnrestrictedUpdate() */
-  void ForcedPublish(const Context<T>& context) const;
+  // TODO(sherm1) Remove the nodiscard before merging.
+  [[nodiscard]] EventStatus ForcedPublish(const Context<T>& context) const;
   //@}
 
   //----------------------------------------------------------------------------
@@ -738,7 +741,9 @@ class System : public SystemBase {
   Note that this is not fully equivalent to Simulator::Initialize() because
   _only_ initialization events are handled here, while Simulator::Initialize()
   also processes other events associated with time zero. */
-  void ExecuteInitializationEvents(Context<T>* context) const;
+  // TODO(sherm1) Remove the nodiscard before merging.
+  [[nodiscard]] EventStatus ExecuteInitializationEvents(
+      Context<T>* context) const;
 
   /** Determines whether there exists a unique periodic timing (offset and
   period) that triggers one or more discrete update events (and, if so, returns
@@ -1531,7 +1536,7 @@ class System : public SystemBase {
 
   /** This function dispatches all publish events to the appropriate
   handlers. */
-  virtual void DispatchPublishHandler(
+  [[nodiscard]] virtual EventStatus DispatchPublishHandler(
       const Context<T>& context,
       const EventCollection<PublishEvent<T>>& events) const = 0;
 

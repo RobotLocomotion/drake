@@ -57,12 +57,13 @@ class ForcedDispatchOverrideSystem : public LeafSystem<double> {
   }
 
  private:
-  void DoPublish(
+  EventStatus DoPublish(
       const Context<double>&,
       const std::vector<const PublishEvent<double>*>& events) const final {
     got_publish_event_ = (events.size() == 1);
     if (got_publish_event_)
       publish_event_trigger_type_ = events.front()->get_trigger_type();
+    return EventStatus::Succeeded();
   }
 
   void DoCalcDiscreteVariableUpdates(
@@ -106,7 +107,7 @@ GTEST_TEST(ForcedDispatchOverrideSystemTest, Dispatchers) {
   auto discrete_values = system.AllocateDiscreteVariables();
   EXPECT_EQ(discrete_values->get_system_id(), context->get_system_id());
   auto state = context->CloneState();
-  system.ForcedPublish(*context);
+  EXPECT_TRUE(system.ForcedPublish(*context).is_good());
   system.CalcForcedDiscreteVariableUpdate(*context, discrete_values.get());
   system.CalcForcedUnrestrictedUpdate(*context, state.get());
   ASSERT_TRUE(system.got_publish_event());
@@ -2412,11 +2413,13 @@ class DoPublishOverrideSystem : public LeafSystem<double> {
   }
 
  private:
-  void DoPublish(
+  EventStatus DoPublish(
       const Context<double>& context,
       const std::vector<const PublishEvent<double>*>& events) const override {
     ++do_publish_count_;
-    if (!ignore_events_) LeafSystem<double>::DoPublish(context, events);
+    if (!ignore_events_)
+      return LeafSystem<double>::DoPublish(context, events);
+    return EventStatus::DidNothing();
   }
 
   // If true, DoPublish ignores events, calls LeafSystem::DoPublish() if false.
@@ -2445,10 +2448,10 @@ GTEST_TEST(DoPublishOverrideTest, ConfirmOverride) {
   ASSERT_EQ(system.do_publish_count(), 0);
   ASSERT_EQ(system.event_handle_count(), 0);
 
-  system.ForcedPublish(*context);
+  EXPECT_TRUE(system.ForcedPublish(*context).is_good());
   EXPECT_EQ(system.do_publish_count(), 1);
   EXPECT_EQ(system.event_handle_count(), 1);
-  system.Publish(*context, events);
+  EXPECT_TRUE(system.Publish(*context, events).is_good());
   EXPECT_EQ(system.do_publish_count(), 2);
   EXPECT_EQ(system.event_handle_count(), 2);
 
@@ -2457,10 +2460,10 @@ GTEST_TEST(DoPublishOverrideTest, ConfirmOverride) {
   system.set_ignore_events(true);
   ASSERT_TRUE(system.ignore_events());
 
-  system.ForcedPublish(*context);
+  EXPECT_TRUE(system.ForcedPublish(*context).is_good());
   EXPECT_EQ(system.do_publish_count(), 3);
   EXPECT_EQ(system.event_handle_count(), 2);
-  system.Publish(*context, events);
+  EXPECT_TRUE(system.Publish(*context, events).is_good());
   EXPECT_EQ(system.do_publish_count(), 4);
   EXPECT_EQ(system.event_handle_count(), 2);
 }
@@ -2824,7 +2827,9 @@ GTEST_TEST(InitializationTest, ManualEventProcessing) {
   EXPECT_EQ(init_events->get_system_id(), context->get_system_id());
   dut.GetInitializationEvents(*context, init_events.get());
 
-  dut.Publish(*context, init_events->get_publish_events());
+  EXPECT_TRUE(
+      dut.Publish(*context, init_events->get_publish_events()).is_good());
+
   dut.CalcDiscreteVariableUpdate(*context,
                                  init_events->get_discrete_update_events(),
                                  discrete_updates.get());
@@ -2842,7 +2847,7 @@ GTEST_TEST(InitializationTest, DefaultEventProcessing) {
   InitializationTestSystem dut;
   auto context = dut.CreateDefaultContext();
 
-  dut.ExecuteInitializationEvents(context.get());
+  EXPECT_TRUE(dut.ExecuteInitializationEvents(context.get()).is_good());
 
   EXPECT_TRUE(dut.get_pub_init());
   EXPECT_TRUE(dut.get_dis_update_init());
@@ -3032,8 +3037,9 @@ GTEST_TEST(EventSugarTest, HandlersGetCalled) {
   dut.CalcDiscreteVariableUpdate(
       *context, all_events->get_discrete_update_events(), &*discrete_state);
   dut.CalcForcedDiscreteVariableUpdate(*context, &*discrete_state);
-  dut.Publish(*context, all_events->get_publish_events());
-  dut.ForcedPublish(*context);
+  EXPECT_TRUE(
+      dut.Publish(*context, all_events->get_publish_events()).is_good());
+  EXPECT_TRUE(dut.ForcedPublish(*context).is_good());
 
   EXPECT_EQ(dut.num_publish(), 5);
   EXPECT_EQ(dut.num_second_publish_handler_publishes(), 1);

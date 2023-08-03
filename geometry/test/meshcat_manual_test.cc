@@ -330,7 +330,7 @@ Open up your browser to the URL above.
 
     plant.SetPositions(&plant.GetMyMutableContextFromRoot(context.get()),
                        Eigen::Vector2d{0.1, 0.3});
-    diagram->ForcedPublish(*context);
+    (void)diagram->ForcedPublish(*context);
     std::cout << "- Now you should see three colliding hydroelastic spheres."
               << std::endl;
     MaybePauseForUser();
@@ -371,7 +371,7 @@ Open up your browser to the URL above.
     auto context = diagram->CreateDefaultContext();
     diagram->get_input_port().FixValue(context.get(), Eigen::VectorXd::Zero(7));
 
-    diagram->ForcedPublish(*context);
+    (void)diagram->ForcedPublish(*context);
     std::cout
         << "- Now you should see a kuka model (from MultibodyPlant/SceneGraph)"
         << std::endl;

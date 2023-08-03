@@ -175,8 +175,10 @@ GTEST_TEST(TestStaticEquilibriumProblem, TwoSpheresWithinBin) {
 
           free_spheres_double.plant().SetPositions(
               free_spheres_double.get_mutable_plant_context(), q_sol);
-          free_spheres_double.get_mutable_diagram()->ForcedPublish(
-              free_spheres_double.diagram_context());
+          const systems::EventStatus status =
+              free_spheres_double.get_mutable_diagram()->ForcedPublish(
+                  free_spheres_double.diagram_context());
+          EXPECT_TRUE(status.is_good());
           const double tol = 2E-5;
           EXPECT_NEAR(q_sol.head<4>().squaredNorm(), 1, tol);
           EXPECT_NEAR(q_sol.segment<4>(7).squaredNorm(), 1, tol);

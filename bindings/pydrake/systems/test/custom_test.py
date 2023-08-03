@@ -423,7 +423,7 @@ class TestCustom(unittest.TestCase):
 
             def DoPublish(self, context, events):
                 # Call base method to ensure we do not get recursion.
-                LeafSystem.DoPublish(self, context, events)
+                status = LeafSystem.DoPublish(self, context, events)
                 # N.B. We do not test for a singular call to `DoPublish`
                 # (checking `assertFalse(self.called_publish)` first) because
                 # the above `_DeclareInitializationEvent` will call both its
@@ -431,6 +431,7 @@ class TestCustom(unittest.TestCase):
                 # `Simulator::Initialize` from `call_leaf_system_overrides`,
                 # even when we explicitly say not to publish at initialize.
                 self.called_publish = True
+                return status
 
             def DoCalcTimeDerivatives(self, context, derivatives):
                 # Note:  Don't call base method here; it would abort because

@@ -303,10 +303,11 @@ class LeafSystem : public System<T> {
         PublishEvent<T>(TriggerType::kPeriodic, [publish](
                             const System<T>& system,
                             const Context<T>& context,
-                            const PublishEvent<T>&) {
+                            const PublishEvent<T>&,
+                            EventStatus* status) {
           const auto& sys = dynamic_cast<const MySystem&>(system);
-          // TODO(sherm1) Forward the return status.
-          (sys.*publish)(context);  // Ignore return status for now.
+          EventStatus publish_status = (sys.*publish)(context);
+          if (status != nullptr) *status = std::move(publish_status);
         }));
   }
 
@@ -331,10 +332,11 @@ class LeafSystem : public System<T> {
             TriggerType::kPeriodic,
             [publish](const System<T>& system,
                       const Context<T>& context,
-                      const PublishEvent<T>&) {
+                      const PublishEvent<T>&,
+                      EventStatus* status) {
               const auto& sys = dynamic_cast<const MySystem&>(system);
               (sys.*publish)(context);
-              // TODO(sherm1) return EventStatus::Succeeded()
+              if (status != nullptr) *status = EventStatus::Succeeded();
             }));
   }
 
@@ -622,10 +624,10 @@ class LeafSystem : public System<T> {
     DeclarePerStepEvent<PublishEvent<T>>(PublishEvent<T>(
         TriggerType::kPerStep,
         [publish](const System<T>& system, const Context<T>& context,
-                  const PublishEvent<T>&) {
+                  const PublishEvent<T>&, EventStatus* status) {
           const auto& sys = dynamic_cast<const MySystem&>(system);
-          // TODO(sherm1) Forward the return status.
-          (sys.*publish)(context);  // Ignore return status for now.
+          EventStatus publish_status = (sys.*publish)(context);
+          if (status != nullptr) *status = std::move(publish_status);
         }));
   }
 
@@ -1843,8 +1845,9 @@ class LeafSystem : public System<T> {
   already error-checked @p context so you may assume that it is valid.
 
   @param[in] context Const current context.
-  @param[in] events All the publish events that need handling. */
-  virtual void DoPublish(
+  @param[in] events All the publish events that need handling.
+  @retval status the most severe event status return encountered. */
+  [[nodiscard]] virtual EventStatus DoPublish(
       const Context<T>& context,
       const std::vector<const PublishEvent<T>*>& events) const;
 
@@ -1943,7 +1946,7 @@ class LeafSystem : public System<T> {
   // Assumes @param events is an instance of LeafEventCollection, throws
   // std::bad_cast otherwise.
   // Assumes @param events is not empty. Aborts otherwise.
-  void DispatchPublishHandler(
+  [[nodiscard]] EventStatus DispatchPublishHandler(
       const Context<T>& context,
       const EventCollection<PublishEvent<T>>& events) const final;
 

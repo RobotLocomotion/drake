@@ -92,7 +92,7 @@ TEST_F(MeshcatVisualizerWithIiwaTest, BasicTest) {
             0);
 
   EXPECT_FALSE(meshcat_->HasPath("/drake/visualizer/iiwa14"));
-  diagram_->ForcedPublish(*context_);
+  EXPECT_TRUE(diagram_->ForcedPublish(*context_).is_good());
   EXPECT_TRUE(meshcat_->HasPath("/drake/visualizer/iiwa14"));
   for (int link = 0; link < 8; link++) {
     EXPECT_NE(meshcat_->GetPackedTransform(
@@ -132,7 +132,7 @@ TEST_F(MeshcatVisualizerWithIiwaTest, Roles) {
     params.role = role;
     SetUpDiagram(params);
     EXPECT_FALSE(meshcat_->HasPath("visualizer/iiwa14/iiwa_link_7"));
-    diagram_->ForcedPublish(*context_);
+    EXPECT_TRUE(diagram_->ForcedPublish(*context_).is_good());
     EXPECT_TRUE(meshcat_->HasPath("visualizer/iiwa14/iiwa_link_7"));
     auto& inspector = scene_graph_->model_inspector();
     FrameId iiwa_link_7 = plant_->GetBodyFrameIdOrThrow(
@@ -166,7 +166,7 @@ TEST_F(MeshcatVisualizerWithIiwaTest, Prefix) {
   SetUpDiagram(params);
   EXPECT_EQ(visualizer_->get_name(), "meshcat_visualizer(/foo)");
   EXPECT_FALSE(meshcat_->HasPath("/foo/iiwa14"));
-  diagram_->ForcedPublish(*context_);
+  EXPECT_TRUE(diagram_->ForcedPublish(*context_).is_good());
   EXPECT_TRUE(meshcat_->HasPath("/foo/iiwa14"));
   EXPECT_FALSE(meshcat_->HasPath("/drake/visualizer"));
 
@@ -175,7 +175,7 @@ TEST_F(MeshcatVisualizerWithIiwaTest, Prefix) {
   EXPECT_FALSE(meshcat_->HasPath("/drake/foo/iiwa14"));
   SetUpDiagram(params);
   EXPECT_EQ(visualizer_->get_name(), "meshcat_visualizer(foo)");
-  diagram_->ForcedPublish(*context_);
+  EXPECT_TRUE(diagram_->ForcedPublish(*context_).is_good());
   EXPECT_TRUE(meshcat_->HasPath("/drake/foo/iiwa14"));
   EXPECT_FALSE(meshcat_->HasPath("/drake/visualizer"));
 }
@@ -206,7 +206,8 @@ TEST_F(MeshcatVisualizerWithIiwaTest, DeletePrefixOnInitialization) {
   {  // Send an initialization event.
     auto events = diagram_->AllocateCompositeEventCollection();
     diagram_->GetInitializationEvents(*context_, events.get());
-    diagram_->Publish(*context_, events->get_publish_events());
+    EXPECT_TRUE(
+        diagram_->Publish(*context_, events->get_publish_events()).is_good());
   }
   // Confirm that my scribble was deleted.
   EXPECT_FALSE(meshcat_->HasPath("/drake/visualizer/my_random_path"));
@@ -219,7 +220,8 @@ TEST_F(MeshcatVisualizerWithIiwaTest, DeletePrefixOnInitialization) {
   {  // Send an initialization event.
     auto events = diagram_->AllocateCompositeEventCollection();
     diagram_->GetInitializationEvents(*context_, events.get());
-    diagram_->Publish(*context_, events->get_publish_events());
+    EXPECT_TRUE(
+        diagram_->Publish(*context_, events->get_publish_events()).is_good());
   }
   // Confirm that my scribble remains.
   EXPECT_TRUE(meshcat_->HasPath("/drake/visualizer/my_random_path"));
@@ -227,7 +229,7 @@ TEST_F(MeshcatVisualizerWithIiwaTest, DeletePrefixOnInitialization) {
 
 TEST_F(MeshcatVisualizerWithIiwaTest, Delete) {
   SetUpDiagram();
-  diagram_->ForcedPublish(*context_);
+  EXPECT_TRUE(diagram_->ForcedPublish(*context_).is_good());
   EXPECT_TRUE(meshcat_->HasPath("/drake/visualizer"));
   visualizer_->Delete();
   EXPECT_FALSE(meshcat_->HasPath("/drake/visualizer"));
@@ -251,13 +253,13 @@ TEST_F(MeshcatVisualizerWithIiwaTest, Recording) {
 
   // Publish once without recording and confirm that we don't have the iiwa
   // frame.
-  diagram_->ForcedPublish(*context_);
+  EXPECT_TRUE(diagram_->ForcedPublish(*context_).is_good());
   visualizer_->StartRecording();
   auto animation = visualizer_->get_mutable_recording();
   EXPECT_FALSE(has_iiwa_frame(*animation, 0));
 
   // Publish again *with* recording and confirm that we do now have the frame.
-  diagram_->ForcedPublish(*context_);
+  EXPECT_TRUE(diagram_->ForcedPublish(*context_).is_good());
   EXPECT_TRUE(has_iiwa_frame(*animation, 0));
 
   // Deleting the recording removes that frame.
@@ -266,7 +268,7 @@ TEST_F(MeshcatVisualizerWithIiwaTest, Recording) {
   EXPECT_FALSE(has_iiwa_frame(*animation, 0));
 
   // We are still recording, so publish *will* add it.
-  diagram_->ForcedPublish(*context_);
+  EXPECT_TRUE(diagram_->ForcedPublish(*context_).is_good());
   EXPECT_TRUE(has_iiwa_frame(*animation, 0));
 
   // But if we stop recording, then it's not added.
@@ -274,14 +276,14 @@ TEST_F(MeshcatVisualizerWithIiwaTest, Recording) {
   visualizer_->DeleteRecording();
   animation = visualizer_->get_mutable_recording();
   EXPECT_FALSE(has_iiwa_frame(*animation, 0));
-  diagram_->ForcedPublish(*context_);
+  EXPECT_TRUE(diagram_->ForcedPublish(*context_).is_good());
   EXPECT_FALSE(has_iiwa_frame(*animation, 0));
 
   // Now publish a time 0.0 and time = 1.0 and confirm we have the frames.
   animation = visualizer_->StartRecording();
-  diagram_->ForcedPublish(*context_);
+  EXPECT_TRUE(diagram_->ForcedPublish(*context_).is_good());
   context_->SetTime(1.0);
-  diagram_->ForcedPublish(*context_);
+  EXPECT_TRUE(diagram_->ForcedPublish(*context_).is_good());
   EXPECT_TRUE(has_iiwa_frame(*animation, 0));
   EXPECT_TRUE(
       has_iiwa_frame(*animation, std::floor(1.0 / params.publish_period)));
@@ -293,7 +295,7 @@ TEST_F(MeshcatVisualizerWithIiwaTest, Recording) {
 
 TEST_F(MeshcatVisualizerWithIiwaTest, RecordingWithoutSetTransform) {
   SetUpDiagram();
-  diagram_->ForcedPublish(*context_);
+  EXPECT_TRUE(diagram_->ForcedPublish(*context_).is_good());
   std::string X_7_message =
       meshcat_->GetPackedTransform("/drake/visualizer/iiwa14/iiwa_link_7");
 
@@ -304,7 +306,7 @@ TEST_F(MeshcatVisualizerWithIiwaTest, RecordingWithoutSetTransform) {
   bool set_transforms_while_recording = false;
   visualizer_->StartRecording(set_transforms_while_recording);
   // This publish should *not* change the transform in the Meshcat scene tree.
-  diagram_->ForcedPublish(*context_);
+  EXPECT_TRUE(diagram_->ForcedPublish(*context_).is_good());
   EXPECT_EQ(
       meshcat_->GetPackedTransform("/drake/visualizer/iiwa14/iiwa_link_7"),
       X_7_message);
@@ -312,7 +314,7 @@ TEST_F(MeshcatVisualizerWithIiwaTest, RecordingWithoutSetTransform) {
   set_transforms_while_recording = true;
   visualizer_->StartRecording(set_transforms_while_recording);
   // This publish *should* change the transform in the Meshcat scene tree.
-  diagram_->ForcedPublish(*context_);
+  EXPECT_TRUE(diagram_->ForcedPublish(*context_).is_good());
   EXPECT_NE(
       meshcat_->GetPackedTransform("/drake/visualizer/iiwa14/iiwa_link_7"),
       X_7_message);
@@ -327,7 +329,7 @@ TEST_F(MeshcatVisualizerWithIiwaTest, ScalarConversion) {
   // Call publish to provide code coverage for the AutoDiffXd version of
   // UpdateMeshcat / SetObjects SetTransforms.  We simply confirm that the code
   // doesn't blow up.
-  ad_diagram->ForcedPublish(*ad_context);
+  EXPECT_TRUE(ad_diagram->ForcedPublish(*ad_context).is_good());
 }
 
 // When opted-in by the user, we should display the hydroelastic tessellation
@@ -361,7 +363,7 @@ GTEST_TEST(MeshcatVisualizerTest, HydroGeometry) {
     // Send the geometry to Meshcat.
     auto diagram = builder.Build();
     auto context = diagram->CreateDefaultContext();
-    diagram->ForcedPublish(*context);
+    EXPECT_TRUE(diagram->ForcedPublish(*context).is_good());
 
     // Read back the mesh for a hydroelastic shape. Its size (in bytes) will
     // tell us whether or not hydro was used -- the normal representation is
@@ -410,7 +412,7 @@ GTEST_TEST(MeshcatVisualizerTest, MultipleModels) {
   EXPECT_FALSE(meshcat->HasPath("/drake/visualizer/iiwa14"));
   EXPECT_FALSE(meshcat->HasPath("/drake/visualizer/second/iiwa14"));
 
-  diagram->ForcedPublish(*context);
+  EXPECT_TRUE(diagram->ForcedPublish(*context).is_good());
 
   EXPECT_TRUE(meshcat->HasPath("/drake/visualizer/iiwa14"));
   EXPECT_TRUE(meshcat->HasPath("/drake/visualizer/second/iiwa14"));
@@ -473,7 +475,7 @@ GTEST_TEST(MeshcatVisualizerTest, AcceptingProperty) {
       const bool should_show =
           (accepting == "prefix") ||
           (include_unspecified_accepting && accepting.empty());
-      diagram->ForcedPublish(*context);
+      EXPECT_TRUE(diagram->ForcedPublish(*context).is_good());
       EXPECT_EQ(meshcat->HasPath(geom_path), should_show);
     }
   }
@@ -488,13 +490,13 @@ TEST_F(MeshcatVisualizerWithIiwaTest, AlphaSlidersSystemCheck) {
 
   // Simulate for a moment and publish to populate the visualizer.
   simulator.AdvanceTo(0.1);
-  diagram_->ForcedPublish(*context_);
+  EXPECT_TRUE(diagram_->ForcedPublish(*context_).is_good());
 
   meshcat_->SetSliderValue("visualizer α", 0.5);
 
   // Simulate and publish again to cause an update.
   simulator.AdvanceTo(0.1);
-  diagram_->ForcedPublish(*context_);
+  EXPECT_TRUE(diagram_->ForcedPublish(*context_).is_good());
 }
 
 // Checks whether the given path has been set to a new color beyond it's initial
@@ -580,7 +582,7 @@ GTEST_TEST(MeshcatVisualizerTest, AlphaSliderCheckResults) {
     // value of 100%.
     const std::string geom_path =
         fmt::format("visualizer/box/box/{}", geom_id.get_value());
-    diagram->ForcedPublish(*context);
+    EXPECT_TRUE(diagram->ForcedPublish(*context).is_good());
 
     // If the geometry had a zero alpha, it's promoted to the default (100%).
     // If the geometry already had a non-zero alpha, it remains unchanged.
@@ -596,7 +598,7 @@ GTEST_TEST(MeshcatVisualizerTest, AlphaSliderCheckResults) {
     // If the test case specifies a <100% alpha, move the slider and republish.
     if (scenario.slider_value != 1.0) {
       meshcat->SetSliderValue("visualizer α", scenario.slider_value);
-      diagram->ForcedPublish(*context);
+      EXPECT_TRUE(diagram->ForcedPublish(*context).is_good());
     }
 
     // Check to see whether the visualizer adjusted the alpha value with a

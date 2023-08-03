@@ -60,7 +60,7 @@ TEST_F(MeshcatPointCloudVisualizerTest, Publish) {
 
   EXPECT_TRUE(meshcat_->GetPackedObject("cloud").empty());
   EXPECT_TRUE(meshcat_->GetPackedTransform("cloud").empty());
-  diagram_->ForcedPublish(*context_);
+  EXPECT_TRUE(diagram_->ForcedPublish(*context_).is_good());
   EXPECT_FALSE(meshcat_->GetPackedObject("cloud").empty());
   EXPECT_FALSE(meshcat_->GetPackedTransform("cloud").empty());
 }
@@ -70,7 +70,7 @@ TEST_F(MeshcatPointCloudVisualizerTest, NoPose) {
 
   EXPECT_TRUE(meshcat_->GetPackedObject("cloud").empty());
   EXPECT_TRUE(meshcat_->GetPackedTransform("cloud").empty());
-  diagram_->ForcedPublish(*context_);
+  EXPECT_TRUE(diagram_->ForcedPublish(*context_).is_good());
   EXPECT_FALSE(meshcat_->GetPackedObject("cloud").empty());
   // It still publishes a transform; but it publishes the identity.
   EXPECT_FALSE(meshcat_->GetPackedTransform("cloud").empty());
@@ -91,7 +91,7 @@ TEST_F(MeshcatPointCloudVisualizerTest, PublishPeriod) {
 TEST_F(MeshcatPointCloudVisualizerTest, Delete) {
   SetUpDiagram();
 
-  diagram_->ForcedPublish(*context_);
+  EXPECT_TRUE(diagram_->ForcedPublish(*context_).is_good());
   EXPECT_FALSE(meshcat_->GetPackedObject("cloud").empty());
 
   visualizer_->Delete();
@@ -115,7 +115,7 @@ TEST_F(MeshcatPointCloudVisualizerTest, ScalarConversion) {
 
   // Call publish to provide code coverage for the AutoDiffXd version of
   // UpdateMeshcat.  We simply confirm that the code doesn't blow up.
-  ad_diagram->ForcedPublish(*ad_context);
+  EXPECT_TRUE(ad_diagram->ForcedPublish(*ad_context).is_good());
 }
 
 

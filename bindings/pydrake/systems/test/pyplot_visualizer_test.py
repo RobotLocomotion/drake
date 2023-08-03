@@ -111,7 +111,7 @@ class TestPyplotVisualizer(unittest.TestCase):
         context = visualizer.AllocateContext()
         for time in times:
             context.SetTime(time)
-            visualizer.ForcedPublish(context)
+            status = visualizer.ForcedPublish(context)
 
         # Check that there are now recorded contexts with matching times.
         visualizer.stop_recording()

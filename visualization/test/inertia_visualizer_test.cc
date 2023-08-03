@@ -60,7 +60,7 @@ class InertiaVisualizerConfigTest : public ::testing::Test {
 
     diagram_ = builder_.Build();
     context_ = diagram_->CreateDefaultContext();
-    diagram_->ForcedPublish(*context_);
+    EXPECT_TRUE(diagram_->ForcedPublish(*context_).is_good());
   }
 
  protected:

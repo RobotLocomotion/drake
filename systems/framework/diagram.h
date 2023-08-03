@@ -425,7 +425,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   // For each subsystem, if there is a publish event in its corresponding
   // subevent collection, calls its Publish method with the appropriate
   // subcontext and subevent collection.
-  void DispatchPublishHandler(
+  [[nodiscard]] EventStatus DispatchPublishHandler(
       const Context<T>& context,
       const EventCollection<PublishEvent<T>>& event_info) const final;
 

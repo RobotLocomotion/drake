@@ -72,8 +72,8 @@ GTEST_TEST(LcmPublisherSystemTest, TestInitializationEvent) {
   // Simulator::Initialize() behavior.
   auto init_events = dut1->AllocateCompositeEventCollection();
   dut1->GetInitializationEvents(*context, &*init_events);
-  dut1->Publish(*context, init_events->get_publish_events());
-
+  EXPECT_TRUE(
+      dut1->Publish(*context, init_events->get_publish_events()).is_good());
   EXPECT_TRUE(init_was_called);
 
   // Nothing should have been published to this channel.
@@ -101,7 +101,7 @@ GTEST_TEST(LcmPublisherSystemTest, SerializerTest) {
 
   // Verifies that a correct message is published.
   Subscriber sub(&interface, channel_name);
-  dut->ForcedPublish(*context.get());
+  EXPECT_TRUE(dut->ForcedPublish(*context.get()).is_good());
   interface.HandleSubscriptions(0);
   EXPECT_TRUE(CompareLcmtDrakeSignalMessages(sub.message(), sample_data));
 }
@@ -186,7 +186,7 @@ GTEST_TEST(LcmPublisherSystemTest, TestForcedPublishTrigger) {
   dut->get_input_port().FixValue(context.get(), lcmt_drake_signal{});
 
   for (int i = 0; i < force_publish_count; i++) {
-    dut->ForcedPublish(*context);
+    EXPECT_TRUE(dut->ForcedPublish(*context).is_good());
     interface.HandleSubscriptions(0);
   }
 

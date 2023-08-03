@@ -140,10 +140,11 @@ class TestSystemBase : public System<T> {
     ADD_FAILURE() << "A test called a method that was expected to be unused.";
   }
 
-  void DispatchPublishHandler(
+  EventStatus DispatchPublishHandler(
       const Context<T>& context,
       const EventCollection<PublishEvent<T>>& event_info) const override {
     ADD_FAILURE() << "A test called a method that was expected to be unused.";
+    return EventStatus::DidNothing();
   }
 
   void DispatchDiscreteVariableUpdateHandler(
@@ -222,20 +223,23 @@ class TestSystem : public TestSystemBase<double> {
   }
 
   // The default publish function.
-  void MyPublish(const Context<double>& context,
-                 const std::vector<const PublishEvent<double>*>& events) const {
+  EventStatus MyPublish(
+      const Context<double>& context,
+      const std::vector<const PublishEvent<double>*>& events) const {
     ++publish_count_;
+    return EventStatus::Succeeded();
   }
 
  protected:
-  void DispatchPublishHandler(
+  EventStatus DispatchPublishHandler(
       const Context<double>& context,
       const EventCollection<PublishEvent<double>>& events) const final {
     const LeafEventCollection<PublishEvent<double>>& leaf_events =
        dynamic_cast<const LeafEventCollection<PublishEvent<double>>&>(events);
     if (leaf_events.HasEvents()) {
-      this->MyPublish(context, leaf_events.get_events());
+      return this->MyPublish(context, leaf_events.get_events());
     }
+    return EventStatus::DidNothing();
   }
 
   void DispatchDiscreteVariableUpdateHandler(
@@ -362,7 +366,9 @@ TEST_F(SystemTest, DiscretePublish) {
   EXPECT_EQ(events.front()->get_trigger_type(),
             TriggerType::kPeriodic);
 
-  system_.Publish(*context_, event_info->get_publish_events());
+  const EventStatus status =
+      system_.Publish(*context_, event_info->get_publish_events());
+  EXPECT_TRUE(status.is_good());
   EXPECT_EQ(1, system_.get_publish_count());
 }
 

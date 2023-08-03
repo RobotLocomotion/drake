@@ -150,7 +150,8 @@ int DoMain() {
     simulator.AdvanceTo(time);
     // Force-publish the lcmt_planar_gripper_command (via the command_pub system
     // within the diagram).
-    diagram->ForcedPublish(diagram_context);
+    const systems::EventStatus status = diagram->ForcedPublish(diagram_context);
+    DRAKE_DEMAND(status.is_good());
   }
 
   // We should never reach here.

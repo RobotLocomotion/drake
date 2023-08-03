@@ -714,28 +714,24 @@ class Simulator {
   void HandleDiscreteUpdate(
       const EventCollection<DiscreteUpdateEvent<T>>& events);
 
-  void HandlePublish(const EventCollection<PublishEvent<T>>& events);
+  [[nodiscard]] EventStatus HandlePublish(
+      const EventCollection<PublishEvent<T>>& events);
 
-  // Invoke the monitor() if there is one. If it wants termination we'll
-  // update the Simulator status accordingly. If it reports failure,
-  // currently we just throw.
-  // TODO(sherm1) Add an option where the Simulator returns failed status
-  // rather than throwing.
-  void CallMonitorUpdateStatusAndMaybeThrow(SimulatorStatus* status) {
-    DRAKE_DEMAND(status != nullptr);
-    if (!get_monitor()) return;
-    const EventStatus monitor_status = get_monitor()(*context_);
-    if (monitor_status.severity() == EventStatus::kReachedTermination) {
-      status->SetReachedTermination(ExtractDoubleOrThrow(context_->get_time()),
-                                    monitor_status.system(),
-                                    monitor_status.message());
-      return;
-    }
-    if (monitor_status.severity() == EventStatus::kFailed) {
-      status->SetEventHandlerFailed(ExtractDoubleOrThrow(context_->get_time()),
-                                    monitor_status.system(),
-                                    monitor_status.message());
-      throw std::runtime_error(status->FormatMessage());
+  // If an event (or monitor) returns termination or failure, update the
+  // Simulator status accordingly. Optionally throw on failure.
+  void MaybeUpdateSimulatorStatusFromEventStatus(
+      const EventStatus& event_status, bool throw_on_failure,
+      SimulatorStatus* simulator_status) {
+    if (event_status.severity() == EventStatus::kReachedTermination) {
+      simulator_status->SetReachedTermination(
+          ExtractDoubleOrThrow(context_->get_time()), event_status.system(),
+          event_status.message());
+    } else if (event_status.severity() == EventStatus::kFailed) {
+      simulator_status->SetEventHandlerFailed(
+          ExtractDoubleOrThrow(context_->get_time()), event_status.system(),
+          event_status.message());
+      if (throw_on_failure)
+        throw std::runtime_error(simulator_status->FormatMessage());
     }
     // For any other condition, leave the status unchanged.
   }

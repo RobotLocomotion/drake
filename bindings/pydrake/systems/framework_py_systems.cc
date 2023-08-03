@@ -123,8 +123,8 @@ struct Impl {
     // Trampoline virtual methods.
 
     // TODO(sherm): This overload should be deprecated and removed; the
-    // preferred workflow is to register callbacks with Declare*PublishEvent.
-    void DoPublish(const Context<T>& context,
+    //  preferred workflow is to register callbacks with Declare*PublishEvent.
+    EventStatus DoPublish(const Context<T>& context,
         const vector<const PublishEvent<T>*>& events) const override {
       // Yuck! We have to dig in and use internals :(
       // We must ensure that pybind only sees pointers, since this method may
@@ -132,9 +132,10 @@ struct Impl {
       // @see https://github.com/pybind/pybind11/issues/1241
       // TODO(eric.cousineau): Figure out how to supply different behavior,
       // possibly using function wrapping.
-      PYBIND11_OVERLOAD_INT(void, LeafSystem<T>, "DoPublish", &context, events);
+      PYBIND11_OVERLOAD_INT(
+          EventStatus, LeafSystem<T>, "DoPublish", &context, events);
       // If the macro did not return, use default functionality.
-      Base::DoPublish(context, events);
+      return Base::DoPublish(context, events);
     }
 
     void DoCalcTimeDerivatives(const Context<T>& context,
@@ -222,15 +223,15 @@ struct Impl {
     using Base::Base;
 
     // Trampoline virtual methods.
-    void DoPublish(const Context<T>& context,
+    EventStatus DoPublish(const Context<T>& context,
         const vector<const PublishEvent<T>*>& events) const override {
       // Copied from above, since we cannot use `PyLeafSystemBase` due to final
       // overrides of some methods.
       // TODO(eric.cousineau): Make this more granular?
       PYBIND11_OVERLOAD_INT(
-          void, VectorSystem<T>, "DoPublish", &context, events);
+          EventStatus, VectorSystem<T>, "DoPublish", &context, events);
       // If the macro did not return, use default functionality.
-      Base::DoPublish(context, events);
+      return Base::DoPublish(context, events);
     }
 
     void DoCalcVectorOutput(const Context<T>& context,
