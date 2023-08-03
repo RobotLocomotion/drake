@@ -157,11 +157,10 @@ std::string GetSceneFileName(ImageType image_type, int64_t scene_id) {
                      ImageTypeToString(image_type));
 }
 
-/* Searches the gltf and identifies all *mesh* root nodes: nodes that are not
-  referenced in a node's "children" list but do have the "mesh" attribute.
-  Returns a map from the *index* of a root node to that node's transform *in the
-  file* (T_FN). The transform can consist of rotation, translation, *and* scale
-  components. */
+/* Searches the gltf and identifies all root nodes (a node that doesn't appear
+ in a "children" list). Returns a map from the *index* of each root node to that
+ node's transform *in the file* (T_FN). The transform can consist of rotation,
+ translation, *and* scale components. */
 std::map<int, Matrix4<double>> FindRootNodes(const nlohmann::json& gltf) {
   std::map<int, Matrix4<double>> roots;
   std::set<int> indices;
@@ -178,38 +177,40 @@ std::map<int, Matrix4<double>> FindRootNodes(const nlohmann::json& gltf) {
         }
       }
     }
-    // Cull non-meshes and compute transforms.
+    // TODO(SeanCurtis-TRI): We could test to make sure that the root node is
+    // actually referenced in a scene (or even the default scene) and omit it
+    // from the set if it's not.
+
+    // Compute transforms for the identified root nodes.
     for (int n : indices) {
       const auto& node = nodes[n];
-      if (node.contains("mesh")) {
-        Matrix4<double> T_FN;
-        if (node.contains("matrix")) {
-          T_FN = EigenMatrixFromGltfMatrix(node["matrix"]);
-        } else {
-          T_FN = Matrix4<double>::Identity();
-          if (node.contains("translation")) {
-            const auto& t = node["translation"];
-            const Vector3<double> p_GN(t[0].get<double>(), t[1].get<double>(),
-                                       t[2].get<double>());
-            T_FN.block<3, 1>(0, 3) = p_GN.transpose();
-          }
-          if (node.contains("rotation")) {
-            const auto& q = node["rotation"];
-            // glTF rotation is (x, y, z, w) quaternion. Eigen is (w, x, y, z).
-            const Quaternion<double> quat_GN(
-                q[3].get<double>(), q[0].get<double>(), q[1].get<double>(),
-                q[2].get<double>());
-            T_FN.block<3, 3>(0, 0) = math::RotationMatrixd(quat_GN).matrix();
-          }
-          if (node.contains("scale")) {
-            const auto& s = node["scale"];
-            for (int i = 0; i < 3; ++i) {
-              T_FN.block<3, 1>(0, i) *= s[i].get<double>();
-            }
+      Matrix4<double> T_FN;
+      if (node.contains("matrix")) {
+        T_FN = EigenMatrixFromGltfMatrix(node["matrix"]);
+      } else {
+        T_FN = Matrix4<double>::Identity();
+        if (node.contains("translation")) {
+          const auto& t = node["translation"];
+          const Vector3<double> p_GN(t[0].get<double>(), t[1].get<double>(),
+                                      t[2].get<double>());
+          T_FN.block<3, 1>(0, 3) = p_GN.transpose();
+        }
+        if (node.contains("rotation")) {
+          const auto& q = node["rotation"];
+          // glTF rotation is (x, y, z, w) quaternion. Eigen is (w, x, y, z).
+          const Quaternion<double> quat_GN(
+              q[3].get<double>(), q[0].get<double>(), q[1].get<double>(),
+              q[2].get<double>());
+          T_FN.block<3, 3>(0, 0) = math::RotationMatrixd(quat_GN).matrix();
+        }
+        if (node.contains("scale")) {
+          const auto& s = node["scale"];
+          for (int i = 0; i < 3; ++i) {
+            T_FN.block<3, 1>(0, i) *= s[i].get<double>();
           }
         }
-        roots.insert(roots.end(), {n, T_FN});
       }
+      roots.insert(roots.end(), {n, T_FN});
     }
   }
 

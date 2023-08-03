@@ -419,15 +419,19 @@ TEST_F(RenderEngineGltfClientGltfTest, RegisteringMeshes) {
   const Tester::GltfRecord& record = gltfs.at(gltf_id);
   EXPECT_EQ(record.scale, scale_);
   EXPECT_EQ(record.label, label_);
-  // There are two nodes in the gltf, but only one root node.
-  EXPECT_EQ(record.contents["nodes"].size(), 2);
-  EXPECT_EQ(record.root_nodes.size(), 1);
-  // The pose of the stored matrix is drawn from the gltf directly.
-  EXPECT_EQ(record.contents["nodes"][record.root_nodes.begin()->first]["name"],
-            "root_tri");
-  EXPECT_TRUE(
-      CompareMatrices(record.root_nodes.begin()->second,
-                      RigidTransformd(Vector3d(1, 3, -2)).GetAsMatrix4()));
+  // There are three nodes in the gltf, but only two root nodes. One of the
+  // root nodes is empty.
+  EXPECT_EQ(record.contents["nodes"].size(), 3);
+  EXPECT_EQ(record.root_nodes.size(), 2);
+  // The root node data extracted directly from tri_tree.gltf.
+  const std::map<int, Matrix4<double>> expected_roots{
+      {1, RigidTransformd(Vector3d(1, 3, -2)).GetAsMatrix4()},    // root_tri
+      {2, RigidTransformd(Vector3d(-1, -3, 2)).GetAsMatrix4()}};  // empty_root
+  for (const int index : {1, 2}) {
+    EXPECT_TRUE(
+        CompareMatrices(record.root_nodes.at(index), expected_roots.at(index)))
+        << "Index: " << index;
+  }
   // The pose of the root node should have been set as part of its registration.
   // We're not testing it here because defining that pose is a bit more
   // elaborate. It is tested below in a dedicated test.
@@ -491,23 +495,30 @@ TEST_F(RenderEngineGltfClientGltfTest, PoseComputation) {
   const std::map<GeometryId, Tester::GltfRecord>& gltfs =
       Tester::gltfs(engine_);
   const Tester::GltfRecord& record = gltfs.at(gltf_id);
-  const Matrix4<double>& T_FN_expected = record.root_nodes.begin()->second;
+  for (const auto& [node_index, T_FN_expected] : record.root_nodes) {
+    const json& root = record.contents["nodes"][node_index];
+    SCOPED_TRACE(fmt::format("Node {}({})", root["name"].get<std::string>(),
+                             node_index));
+    // Confirm computation of X_WN during registration.
+    const Matrix4<double> X_WN_init = extract_T_WN(root);
+    const Matrix4<double> T_FN_init = extract_T_FN(X_WN_init, X_WG_, scale_);
+    EXPECT_TRUE(CompareMatrices(T_FN_init, T_FN_expected, 1e-15));
+  }
 
-  // Now confirm its pose was updated during registration to X_WG and scale.
-  const json& root = record.contents["nodes"][record.root_nodes.begin()->first];
-  const Matrix4<double> X_WN_init = extract_T_WN(root);
-  const Matrix4<double> T_FN_init = extract_T_FN(X_WN_init, X_WG_, scale_);
-  EXPECT_TRUE(CompareMatrices(T_FN_init, T_FN_expected, 1e-15));
-
-  // Now we'll pose the geometry and confirm the pose is as expected.
   const RigidTransformd X_WG_update(RollPitchYawd{M_PI * 0.5, 0, 3 * M_PI / 2},
                                     Vector3d(-3, 1, 2));
   engine_.UpdatePoses(
       std::unordered_map<GeometryId, RigidTransformd>{{gltf_id, X_WG_update}});
-  const Matrix4<double> T_WN_update = extract_T_WN(root);
-  const Matrix4<double> T_FN_update =
-      extract_T_FN(T_WN_update, X_WG_update, scale_);
-  EXPECT_TRUE(CompareMatrices(T_FN_update, T_FN_expected, 1e-15));
+  for (const auto& [node_index, T_FN_expected] : record.root_nodes) {
+    const json& root = record.contents["nodes"][node_index];
+    SCOPED_TRACE(fmt::format("Node {}({})", root["name"].get<std::string>(),
+                             node_index));
+    // Confirm computation of X_WN during UpdatePoses.
+    const Matrix4<double> T_WN_update = extract_T_WN(root);
+    const Matrix4<double> T_FN_update =
+        extract_T_FN(T_WN_update, X_WG_update, scale_);
+    EXPECT_TRUE(CompareMatrices(T_FN_update, T_FN_expected, 1e-15));
+  }
 }
 
 /* ExportScene() is responsible for merging gltf geometries into the VTK-made
@@ -516,7 +527,7 @@ TEST_F(RenderEngineGltfClientGltfTest, PoseComputation) {
    - The gltf data is present (it's been merged).
      - We're not validating all of the data; we've got unit tests on the
        merging code. We'll simply look for evidence that it has merged: its
-       root node.
+       root nodes.
    - If exporting for a label image, the materials should become simplified
      with only material.pbrMetallicRoughness.{baseColorFactor, emissiveFactor}.
  */
@@ -529,19 +540,21 @@ TEST_F(RenderEngineGltfClientGltfTest, ExportScene) {
    Node". */
   ASSERT_EQ(gltf_obj_only["nodes"].size(), 3);
 
-  /* Now we add the gltf. It adds two nodes: "root_tri" and "child_tri". */
+  /* Now we add the gltf. It adds three nodes: "empty_root", "root_tri", and
+   "child_tri". */
   AddGltf();
 
   const json gltf_color  = ExportAndReadJson("color.gltf", ImageType::kColor);
-  ASSERT_EQ(gltf_color["nodes"].size(), 5);
-  bool gltf_root_present = false;
+  ASSERT_EQ(gltf_color["nodes"].size(), 6);
+  bool root_tri_present = false;
+  bool empty_root_present = false;
   for (const auto& n : gltf_color["nodes"]) {
-    if (n["name"].get<std::string>() == "root_tri") {
-      gltf_root_present = true;
-      break;
-    }
+    const std::string& name = n["name"].get<std::string>();
+    root_tri_present = root_tri_present || name == "root_tri";
+    empty_root_present = empty_root_present || name == "empty_root";
   }
-  EXPECT_TRUE(gltf_root_present);
+  EXPECT_TRUE(root_tri_present);
+  EXPECT_TRUE(empty_root_present);
 
   /* Finally, let's compare label and color. */
   auto find_mat_for_node = [](const json& gltf, std::string_view node_name) {

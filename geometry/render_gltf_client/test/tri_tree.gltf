@@ -33,6 +33,14 @@
 				3,
 				-2
 			]
+		},
+		{
+			"name":"empty_root",
+			"translation":[
+				-1,
+				-3,
+				2
+			]
 		}
 	],
 	"materials":[
