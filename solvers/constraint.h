@@ -297,6 +297,8 @@ class QuadraticConstraint : public Constraint {
   std::ostream& DoDisplay(std::ostream&,
                           const VectorX<symbolic::Variable>&) const override;
 
+  std::string DoToLatex(const VectorX<symbolic::Variable>&, int) const override;
+
   // Updates hessian_type_ based on Q_;
   void UpdateHessianType(std::optional<HessianType> hessian_type);
 
@@ -400,6 +402,8 @@ class LorentzConeConstraint : public Constraint {
   std::ostream& DoDisplay(std::ostream&,
                           const VectorX<symbolic::Variable>&) const override;
 
+  std::string DoToLatex(const VectorX<symbolic::Variable>&, int) const override;
+
   Eigen::SparseMatrix<double> A_;
   // We need to store a dense matrix of A_, so that we can compute the gradient
   // using AutoDiffXd, and return the gradient as a dense matrix.
@@ -481,6 +485,8 @@ class RotatedLorentzConeConstraint : public Constraint {
 
   std::ostream& DoDisplay(std::ostream&,
                           const VectorX<symbolic::Variable>&) const override;
+
+  std::string DoToLatex(const VectorX<symbolic::Variable>&, int) const override;
 
   Eigen::SparseMatrix<double> A_;
   // We need to store a dense matrix of A_, so that we can compute the gradient
@@ -676,6 +682,8 @@ class LinearConstraint : public Constraint {
   std::ostream& DoDisplay(std::ostream&,
                           const VectorX<symbolic::Variable>&) const override;
 
+  std::string DoToLatex(const VectorX<symbolic::Variable>&, int) const override;
+
   internal::SparseAndDenseMatrix A_;
 
  private:
@@ -792,6 +800,8 @@ class BoundingBoxConstraint : public LinearConstraint {
   std::ostream& DoDisplay(std::ostream&,
                           const VectorX<symbolic::Variable>&) const override;
 
+  std::string DoToLatex(const VectorX<symbolic::Variable>&, int) const override;
+
   // This function (inheried from the base LinearConstraint class) should not be
   // called by BoundingBoxConstraint, so we hide it as a private function.
   // TODO(hongkai.dai): BoundingBoxConstraint should derive from Constraint, not
@@ -803,9 +813,13 @@ class BoundingBoxConstraint : public LinearConstraint {
  * Implements a constraint of the form:
  *
  * <pre>
- *   Mx + q >= 0
- *   x >= 0
+ *   Mx + q ≥ 0
+ *   x ≥ 0
  *   x'(Mx + q) == 0
+ * </pre>
+ * Often this is summarized with the short-hand:
+ * <pre>
+ *   0 ≤ z ⊥ Mz+q ≥ 0
  * </pre>
  *
  * An implied slack variable complements any 0 component of x.  To get
@@ -845,6 +859,8 @@ class LinearComplementarityConstraint : public Constraint {
 
   symbolic::Formula DoCheckSatisfied(
       const Eigen::Ref<const VectorX<symbolic::Variable>>& x) const override;
+
+  std::string DoToLatex(const VectorX<symbolic::Variable>&, int) const override;
 
  private:
   // Return Mx + q (the value of the slack variable).
@@ -956,6 +972,8 @@ class PositiveSemidefiniteConstraint : public Constraint {
   void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
               VectorX<symbolic::Expression>* y) const override;
 
+  std::string DoToLatex(const VectorX<symbolic::Variable>&, int) const override;
+
  private:
   int matrix_rows_;  // Number of rows in the symmetric matrix being positive
                      // semi-definite.
@@ -1017,6 +1035,8 @@ class LinearMatrixInequalityConstraint : public Constraint {
   void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
               VectorX<symbolic::Expression>* y) const override;
 
+  std::string DoToLatex(const VectorX<symbolic::Variable>&, int) const override;
+
  private:
   std::vector<Eigen::MatrixXd> F_;
   const int matrix_rows_{};
@@ -1064,6 +1084,8 @@ class ExpressionConstraint : public Constraint {
 
   std::ostream& DoDisplay(std::ostream&,
                           const VectorX<symbolic::Variable>&) const override;
+
+  std::string DoToLatex(const VectorX<symbolic::Variable>&, int) const override;
 
  private:
   VectorX<symbolic::Expression> expressions_{0};
@@ -1132,6 +1154,8 @@ class ExponentialConeConstraint : public Constraint {
 
   void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
               VectorX<symbolic::Expression>* y) const override;
+
+  std::string DoToLatex(const VectorX<symbolic::Variable>&, int) const override;
 
  private:
   Eigen::SparseMatrix<double> A_;

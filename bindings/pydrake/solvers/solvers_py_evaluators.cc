@@ -66,6 +66,8 @@ auto RegisterBinding(py::handle* scope) {
           py::arg("c"), py::arg("v"), cls_doc.ctor.doc)
       .def("evaluator", &B::evaluator, cls_doc.evaluator.doc)
       .def("variables", &B::variables, cls_doc.variables.doc)
+      .def(
+          "ToLatex", &B::ToLatex, py::arg("precision") = 3, cls_doc.ToLatex.doc)
       .def("__str__", &B::to_string, cls_doc.to_string.doc);
   if (!std::is_same_v<C, EvaluatorBase>) {
     // This is required for implicit argument conversion. See below for
@@ -147,6 +149,8 @@ void BindEvaluatorsAndBindings(py::module m) {
             cls_doc.get_description.doc)
         .def("set_description", &Class::set_description,
             cls_doc.set_description.doc)
+        .def("ToLatex", &Class::ToLatex, py::arg("vars"),
+            py::arg("precision") = 3, cls_doc.ToLatex.doc)
         .def("SetGradientSparsityPattern", &Class::SetGradientSparsityPattern,
             py::arg("gradient_sparsity_pattern"),
             cls_doc.SetGradientSparsityPattern.doc)

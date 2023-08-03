@@ -196,6 +196,22 @@ class MathematicalProgram {
    */
   [[nodiscard]] std::string to_string() const;
 
+  /** Returns a string representation of this program in LaTeX.
+   *
+   * This can be particularly useful e.g. in a Jupyter (python) notebook:
+   * @code
+   * from IPython.display import Markdown, display
+   * display(Markdown(prog.ToLatex()))
+   * @endcode
+   *
+   * Note that by default, we do not require variables to have unique names.
+   * Providing useful variable names and calling Evaluator::set_description() to
+   * describe the costs and constraints can dramatically improve the readability
+   * of the output.  See the tutorial `debug_mathematical_program.ipynb`
+   * for more information.
+   */
+  std::string ToLatex(int precision = 3);
+
   /**
    * Adds continuous variables, appending them to an internal vector of any
    * existing vars.
