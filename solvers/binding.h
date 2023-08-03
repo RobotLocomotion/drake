@@ -87,6 +87,11 @@ class Binding {
     return os.str();
   }
 
+  /** Returns a LaTeX description of this Binding. */
+  std::string ToLatex(int precision = 3) const {
+    return evaluator()->ToLatex(variables(), precision);
+  }
+
   /**
    * Compare two bindings based on their evaluator pointers and the bound
    * variables.

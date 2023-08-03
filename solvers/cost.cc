@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "drake/common/symbolic/latex.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/differentiable_norm.h"
 #include "drake/solvers/constraint.h"
@@ -33,6 +34,26 @@ std::ostream& DisplayCost(const Cost& cost, std::ostream& os,
 
   return os;
 }
+
+std::string ToLatexDescription(const Cost& cost) {
+  if (cost.get_description().empty()) {
+    return "";
+  }
+  return fmt::format(" \\tag{{{}}}", cost.get_description());
+}
+
+std::string ToLatexCost(const Cost& cost,
+                        const VectorX<symbolic::Variable>& vars,
+                        int precision) {
+  VectorX<symbolic::Expression> e;
+  cost.Eval(vars, &e);
+  DRAKE_DEMAND(e.size() == 1);
+  std::string latex = symbolic::ToLatex(e[0], precision);
+
+  latex += ToLatexDescription(cost);
+  return latex;
+}
+
 }  // namespace
 
 template <typename DerivedX, typename U>
@@ -59,6 +80,11 @@ void LinearCost::DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
 std::ostream& LinearCost::DoDisplay(
     std::ostream& os, const VectorX<symbolic::Variable>& vars) const {
   return DisplayCost(*this, os, "LinearCost", vars);
+}
+
+std::string LinearCost::DoToLatex(const VectorX<symbolic::Variable>& vars,
+                                  int precision) const {
+  return ToLatexCost(*this, vars, precision);
 }
 
 template <typename DerivedX, typename U>
@@ -102,6 +128,11 @@ void QuadraticCost::DoEval(
 std::ostream& QuadraticCost::DoDisplay(
     std::ostream& os, const VectorX<symbolic::Variable>& vars) const {
   return DisplayCost(*this, os, "QuadraticCost", vars);
+}
+
+std::string QuadraticCost::DoToLatex(const VectorX<symbolic::Variable>& vars,
+                                     int precision) const {
+  return ToLatexCost(*this, vars, precision);
 }
 
 bool QuadraticCost::CheckHessianPsd() {
@@ -169,6 +200,13 @@ std::ostream& L1NormCost::DoDisplay(
   return DisplayCost(*this, os, "L1NormCost", vars);
 }
 
+std::string L1NormCost::DoToLatex(const VectorX<symbolic::Variable>& vars,
+                                  int precision) const {
+  return fmt::format("\\left|{}\\right|_1{}",
+                     symbolic::ToLatex((A_ * vars + b_).eval(), precision),
+                     ToLatexDescription(*this));
+}
+
 L2NormCost::L2NormCost(const Eigen::Ref<const Eigen::MatrixXd>& A,
                        const Eigen::Ref<const Eigen::VectorXd>& b)
     : Cost(A.cols()), A_(A), b_(b) {
@@ -210,6 +248,13 @@ void L2NormCost::DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
 std::ostream& L2NormCost::DoDisplay(
     std::ostream& os, const VectorX<symbolic::Variable>& vars) const {
   return DisplayCost(*this, os, "L2NormCost", vars);
+}
+
+std::string L2NormCost::DoToLatex(const VectorX<symbolic::Variable>& vars,
+                                  int precision) const {
+  return fmt::format("\\left|{}\\right|_2{}",
+                     symbolic::ToLatex((A_ * vars + b_).eval(), precision),
+                     ToLatexDescription(*this));
 }
 
 LInfNormCost::LInfNormCost(const Eigen::Ref<const Eigen::MatrixXd>& A,
@@ -254,6 +299,13 @@ void LInfNormCost::DoEval(
 std::ostream& LInfNormCost::DoDisplay(
     std::ostream& os, const VectorX<symbolic::Variable>& vars) const {
   return DisplayCost(*this, os, "LInfNormCost", vars);
+}
+
+std::string LInfNormCost::DoToLatex(const VectorX<symbolic::Variable>& vars,
+                                    int precision) const {
+  return fmt::format("\\left|{}\\right|_\\infty{}",
+                     symbolic::ToLatex((A_ * vars + b_).eval(), precision),
+                     ToLatexDescription(*this));
 }
 
 PerspectiveQuadraticCost::PerspectiveQuadraticCost(
@@ -307,6 +359,11 @@ std::ostream& PerspectiveQuadraticCost::DoDisplay(
   return DisplayCost(*this, os, "PerspectiveQuadraticCost", vars);
 }
 
+std::string PerspectiveQuadraticCost::DoToLatex(
+    const VectorX<symbolic::Variable>& vars, int precision) const {
+  return ToLatexCost(*this, vars, precision);
+}
+
 ExpressionCost::ExpressionCost(const symbolic::Expression& e)
     : Cost(e.GetVariables().size()),
       /* We reuse the Constraint evaluator's implementation. */
@@ -344,6 +401,11 @@ void ExpressionCost::DoEval(
 std::ostream& ExpressionCost::DoDisplay(
     std::ostream& os, const VectorX<symbolic::Variable>& vars) const {
   return DisplayCost(*this, os, "ExpressionCost", vars);
+}
+
+std::string ExpressionCost::DoToLatex(const VectorX<symbolic::Variable>& vars,
+                                      int precision) const {
+  return ToLatexCost(*this, vars, precision);
 }
 
 }  // namespace solvers
