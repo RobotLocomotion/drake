@@ -1,6 +1,7 @@
 import re
 import sys
 from pathlib import Path
+import unittest
 
 from bazel_tools.tools.python.runfiles import runfiles
 
@@ -8,54 +9,34 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "image"))
 from vtk_cmake_configure_args import cxx_std  # noqa: E402
 
 
-def _rlocation(relative_path: str) -> Path:
-    """Return the real path to ``drake/{relative_path}``."""
-    manifest = runfiles.Create()
-    resource_path = f"drake/{relative_path}"
-    resolved_path = manifest.Rlocation(resource_path)
-    assert resolved_path, f"Missing {resource_path}"
-    return Path(resolved_path).resolve()
+class TestVtkCxxStdMatchesDrake(unittest.TestCase):
 
+    def test_all_supported_platforms(self):
+        codenames = [
+            "focal",
+            "jammy",
+            "mac",
+        ]
+        for codename in codenames:
+            with self.subTest(codename=codename):
+                self._check(codename)
 
-def parse_cxx_std_from_bazelrc(bazelrc_path: Path):
-    """Load the bazelrc path, parse and return the C++ standard drake uses."""
-    with open(bazelrc_path) as f:
-        for line in f:
-            m = re.match(
-                r"^build --cxxopt=-std=c\+\+(?P<cxx_std>[0-9]{2})",
-                line,
-            )
-            if m is not None:
-                return m.group("cxx_std")
+    def _check(self, codename):
+        if codename == "mac":
+            resource = "drake/tools/macos.bazelrc"
+        else:
+            resource = f"drake/tools/ubuntu-{codename}.bazelrc"
+        bazelrc_path = Path(runfiles.Create().Rlocation(resource)).resolve()
+        with self.subTest(bazelrc_path=bazelrc_path):
+            drake_cxx_std = self._parse_cxx_std_from_bazelrc(bazelrc_path)
+            vtk_cxx_std = cxx_std(codename)
+            self.assertEqual(vtk_cxx_std, drake_cxx_std)
 
-    raise RuntimeError(f"Could not find --cxxopt=-std=c++XY in {bazelrc_path}")
-
-
-def assert_cxx_std_matches(codename: str):
-    """Assert that the drake and VTK C++ standard for ``codename`` match."""
-    assert codename in {
-        "mac",
-        "focal",
-        "jammy",
-    }, f"Unexpected codename={codename}"
-
-    if codename == "mac":
-        bazelrc_path = _rlocation("tools/macos.bazelrc")
-    else:
-        bazelrc_path = _rlocation(f"tools/ubuntu-{codename}.bazelrc")
-    drake_cxx_std = parse_cxx_std_from_bazelrc(bazelrc_path)
-    vtk_cxx_std = cxx_std(codename)
-    assert vtk_cxx_std == drake_cxx_std, (
-        f"C++ standard mismatch for {codename}: vtk_cxx_std={vtk_cxx_std}, "
-        f"drake_cxx_std={drake_cxx_std} parsed from {bazelrc_path}."
-    )
-
-
-def main():
-    assert_cxx_std_matches("mac")
-    assert_cxx_std_matches("focal")
-    assert_cxx_std_matches("jammy")
-
-
-if __name__ == "__main__":
-    main()
+    def _parse_cxx_std_from_bazelrc(self, bazelrc_path: Path):
+        """Returns Drake's C++ standard based on the given bazelrc file."""
+        with open(bazelrc_path) as f:
+            for line in f:
+                match = re.match(r"^build --cxxopt=-std=c\+\+(\S*)", line)
+                if match is not None:
+                    return match.groups()[0]
+        self.fail("Could not find C++ std in bazelrc")

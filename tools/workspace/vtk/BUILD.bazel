@@ -1,4 +1,4 @@
-load("//tools/skylark:drake_py.bzl", "drake_py_binary", "drake_py_test")
+load("//tools/skylark:drake_py.bzl", "drake_py_binary", "drake_py_unittest")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 drake_py_binary(
@@ -20,7 +20,7 @@ drake_py_binary(
 
 add_lint_tests(python_lint_extra_srcs = ["find_vtk_headers.py"])
 
-drake_py_test(
+drake_py_unittest(
     name = "vtk_cxx_std_matches_drake_test",
     data = [
         "image/vtk_cmake_configure_args.py",
