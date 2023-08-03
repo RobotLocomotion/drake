@@ -921,6 +921,45 @@ TEST_F(GeometryStateTest, GetOwningSourceName) {
       "Geometry id .* does not map to a registered geometry");
 }
 
+TEST_F(GeometryStateTest, RenameFrame) {
+  SetUpSingleSourceTree();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.RenameFrame(FrameId::get_new_id(), "invalid"),
+      ".*Cannot rename.*invalid frame id:.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.RenameFrame(frames_[0], "f1"),
+      ".*already existing.*");
+
+  // Renaming a frame to it's existing name does not cause errors.
+  std::string original_name0(geometry_state_.GetName(frames_[0]));
+  geometry_state_.RenameFrame(frames_[0], original_name0);
+  EXPECT_EQ(geometry_state_.GetName(frames_[0]), original_name0);
+
+  {
+    std::string something("something");
+    geometry_state_.RenameFrame(frames_[0], something);
+  }
+  EXPECT_EQ(geometry_state_.GetName(frames_[0]), "something");
+}
+
+TEST_F(GeometryStateTest, RenameGeometry) {
+  SetUpSingleSourceTree();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.RenameGeometry(GeometryId::get_new_id(), "invalid"),
+      ".*Cannot rename.*invalid geometry id:.*");
+
+  // Renaming a geometry to it's existing name does not cause errors.
+  std::string original_name0(geometry_state_.GetName(geometries_[0]));
+  geometry_state_.RenameGeometry(geometries_[0], original_name0);
+  EXPECT_EQ(geometry_state_.GetName(geometries_[0]), original_name0);
+
+  {
+    std::string something("something");
+    geometry_state_.RenameGeometry(geometries_[0], something);
+  }
+  EXPECT_EQ(geometry_state_.GetName(geometries_[0]), "something");
+}
+
 // Compares the transmogrified geometry state (embedded in its tester) against
 // the double state to confirm they have the same values/topology.
 template <typename T>
