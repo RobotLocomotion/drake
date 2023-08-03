@@ -218,6 +218,8 @@ def make_sim(meshcat=None,
             self.plant = plant
             self.pole_body = self.plant.GetBodyByName("Pole")
             self.force_mag = force_mag
+            assert period > duration, (
+                f"period: {period} must be larger than duration: {duration}")
             self.period = period
             self.duration = duration
 
@@ -227,7 +229,7 @@ def make_sim(meshcat=None,
             force.body_index = self.pole_body.index()
             force.p_BoBq_B = self.pole_body.default_com()
             y = context.get_time() % self.period
-            if ~((y >= 0) and (y <= self.duration)):
+            if not ((y >= 0) and (y <= (self.period - self.duration))):
                 spatial_force = SpatialForce(
                     tau=[0, 0, 0],
                     f=[np.random.uniform(

@@ -72,7 +72,7 @@ def _run_training(config, args):
             policy_kwargs=policy_kwargs)
         print("Open tensorboard (optional) via "
               f"`tensorboard --logdir {tensorboard_log}` "
-              "in another terminal. Press Enter to continue.")
+              "in another terminal.")
 
     # Separate evaluation env.
     eval_env = gym.make(env_name,
