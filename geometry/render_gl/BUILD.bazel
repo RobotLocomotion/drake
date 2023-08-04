@@ -96,6 +96,7 @@ drake_cc_library(
     hdrs = [
         "factory.h",
     ],
+    visibility = ["//visibility:public"],
     interface_deps = [
         ":render_engine_gl_params",
         "//geometry/render:render_engine",
@@ -132,6 +133,7 @@ drake_cc_library(
     hdrs = [
         "render_engine_gl_params.h",
     ],
+    visibility = ["//visibility:public"],
     deps = [
         "//common:name_value",
         "//geometry:rgba",

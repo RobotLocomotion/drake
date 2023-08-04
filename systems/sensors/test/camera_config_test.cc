@@ -11,16 +11,40 @@
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/yaml/yaml_io.h"
 #include "drake/geometry/render_gl/render_engine_gl_params.h"
+#include "drake/geometry/render_gltf_client/render_engine_gltf_client_params.h"
+#include "drake/geometry/render_vtk/render_engine_vtk_params.h"
 #include "drake/geometry/rgba.h"
 #include "drake/systems/sensors/camera_info.h"
 
 namespace drake {
+namespace geometry {
+
+// Some quick and dirty comparison operators so we can use gtest matchers with
+// the render engine parameter types.
+bool operator==(const RenderEngineVtkParams& p1,
+                const RenderEngineVtkParams& p2) {
+  return yaml::SaveYamlString(p1) == yaml::SaveYamlString(p2);
+}
+
+bool operator==(const RenderEngineGlParams& p1,
+                const RenderEngineGlParams& p2) {
+  return yaml::SaveYamlString(p1) == yaml::SaveYamlString(p2);
+}
+
+bool operator==(const RenderEngineGltfClientParams& p1,
+                const RenderEngineGltfClientParams& p2) {
+  return yaml::SaveYamlString(p1) == yaml::SaveYamlString(p2);
+}
+
+}  // namespace geometry
 namespace systems {
 namespace sensors {
 namespace {
 
 using Eigen::Vector3d;
 using geometry::RenderEngineGlParams;
+using geometry::RenderEngineGltfClientParams;
+using geometry::RenderEngineVtkParams;
 using geometry::Rgba;
 using geometry::render::ColorRenderCamera;
 using geometry::render::DepthRenderCamera;
@@ -36,10 +60,11 @@ GTEST_TEST(CameraConfigTest, DefaultValues) {
   ASSERT_NO_THROW(config.ValidateOrThrow());
 
   // The default background color is documented as matching the color in
-  // RenderEngineGlParams. Confirm they match. If either changes, this test
+  // RenderEngineVtkParams. Confirm they match. If either changes, this test
   // will fail and we'll have to decide what to do about it.
-  RenderEngineGlParams params;
-  EXPECT_EQ(config.background, params.default_clear_color);
+  Rgba vtk_background;
+  vtk_background.set(RenderEngineVtkParams().default_clear_color);
+  EXPECT_EQ(config.background, vtk_background);
 }
 
 // Tests the principal point logic.
@@ -241,6 +266,53 @@ GTEST_TEST(CameraConfigTest, SerializeBackgroundRgba) {
   const std::string yaml =
       SaveYamlString<CameraConfig>(config, {}, CameraConfig());
   EXPECT_EQ(yaml, "background:\n  rgba: [0.1, 0.2, 0.3, 0.4]\n");
+}
+
+// Various tests to support the documented examples in the documentation. The
+// number of each parsed config should correspond to the number in the docs for
+// the renderer_class field.
+GTEST_TEST(CameraConfigTest, DeserializingRendererClass) {
+  auto parse = [](const char* yaml) -> CameraConfig {
+    return LoadYamlString<CameraConfig>(yaml, {}, CameraConfig());
+  };
+
+  const CameraConfig config_1 = parse("renderer_class: RenderEngineVtk");
+  EXPECT_THAT(config_1.renderer_class,
+              testing::VariantWith<std::string>("RenderEngineVtk"));
+
+  const CameraConfig config_2 =
+      parse("renderer_class: !RenderEngineVtkParams {}");
+  EXPECT_THAT(
+      config_2.renderer_class,
+      testing::VariantWith<RenderEngineVtkParams>(RenderEngineVtkParams{}));
+
+  const CameraConfig config_3 = parse(R"""(
+   renderer_class: !RenderEngineVtkParams
+     default_clear_color: [0, 0, 0])""");
+  EXPECT_THAT(config_3.renderer_class,
+              testing::VariantWith<RenderEngineVtkParams>(
+                  RenderEngineVtkParams{.default_clear_color = {0, 0, 0}}));
+
+  const CameraConfig config_4 = parse(R"""(
+   renderer_class: !RenderEngineGlParams
+     default_clear_color:
+       rgba: [0, 0, 0, 1])""");
+  EXPECT_THAT(config_4.renderer_class,
+              testing::VariantWith<RenderEngineGlParams>(
+                  RenderEngineGlParams{.default_clear_color = Rgba(0, 0, 0)}));
+
+  const CameraConfig config_5 = parse(R"""(
+   renderer_class: !RenderEngineGltfClientParams
+     base_url: http://10.10.10.1
+     render_endpoint: server
+     verbose: true
+     cleanup: false)""");
+  EXPECT_THAT(config_5.renderer_class,
+              testing::VariantWith<RenderEngineGltfClientParams>(
+                  RenderEngineGltfClientParams{.base_url = "http://10.10.10.1",
+                                               .render_endpoint = "server",
+                                               .verbose = true,
+                                               .cleanup = false}));
 }
 
 // Helper functions for validating a render camera.
