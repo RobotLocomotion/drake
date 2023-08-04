@@ -6,8 +6,8 @@ def gtest_repository(
     github_archive(
         name = name,
         repository = "google/googletest",
-        commit = "v1.13.0",
-        sha256 = "ad7fdba11ea011c1d925b3289cf4af2c66a352e18d4c7264392fead75e919363",  # noqa
+        commit = "v1.14.0",
+        sha256 = "8ad598c73ad796e0d8280b082cebd82a630d73e73cd3c70057938a6501bba5d7",  # noqa
         build_file = ":package.BUILD.bazel",
         patches = [
             ":patches/add_printers.patch",
