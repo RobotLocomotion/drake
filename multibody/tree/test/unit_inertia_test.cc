@@ -239,7 +239,7 @@ GTEST_TEST(UnitInertia, SolidCylinder) {
       "[^]* The unit_vector argument .* is not a unit vector.");
 
   // Form unit inertia for a cylinder oriented in an "interesting" direction.
-  const Vector3d v = bad_vec / bad_vec.norm();  // Make
+  const Vector3d v = bad_vec.normalized();
   const UnitInertia<double> Gv =
       UnitInertia<double>::SolidCylinder(r, L, v);
   // Generate a rotation matrix from a Frame V in which Vz = v to frame Z where
@@ -371,9 +371,9 @@ GTEST_TEST(UnitInertia, SolidCapsule) {
                               I_capsule_expected.get_products(), kEpsilon));
 
   // Ensure a bad unit vector throws an exception.
-  const Vector3<double> bad_vec(1, 0.1, 0);
+  const Vector3<double> bad_uvec(1, 0.1, 0);
   DRAKE_EXPECT_THROWS_MESSAGE(
-      UnitInertia<double>::SolidCapsule(r, L, bad_vec),
+      UnitInertia<double>::SolidCapsule(r, L, bad_uvec),
       "[^]* The unit_vector argument .* is not a unit vector.");
 }
 
@@ -449,7 +449,7 @@ GTEST_TEST(UnitInertia, AxiallySymmetric) {
       "[^]* The unit_vector argument .* is not a unit vector.");
 
   // Cylinder's axis. A vector on the y-z plane, at -pi/4 from the z axis.
-  const Vector3d b_E = bad_uvec / bad_uvec.norm();
+  const Vector3d b_E = bad_uvec.normalized();
 
   // Rotation of -pi/4 about the x axis, from a Z frame having its z axis
   // aligned with the z-axis of the cylinder to the expressed-in frame E.
@@ -497,9 +497,14 @@ GTEST_TEST(UnitInertia, ThinRod) {
   // Moment of inertia for an infinitesimally thin rod of length L.
   const double I_rod = L * L / 12.0;
 
+  const Vector3d bad_uvec = Vector3d::UnitY() + Vector3d::UnitZ();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      UnitInertia<double>::StraightLine(I_rod, bad_uvec),
+      "[^]* The unit_vector argument .* is not a unit vector.");
+
   // Rod's axis. A vector on the y-z plane, at -pi/4 from the z axis.
   // The vector doesn't need to be normalized.
-  const Vector3d b_E = Vector3d::UnitY() + Vector3d::UnitZ();
+  const Vector3d b_E = bad_uvec.normalized();
 
   // Rotation of -pi/4 about the x axis, from a Z frame having its z-axis
   // aligned with the rod to the expressed-in frame E.
@@ -513,7 +518,7 @@ GTEST_TEST(UnitInertia, ThinRod) {
   // The expected inertia is that of a cylinder of zero radius and height L with
   // its longitudinal axis aligned with b.
   UnitInertia<double> G_Z =
-      UnitInertia<double>::SolidCylinder(0.0, L, Vector3d::UnitZ());
+      UnitInertia<double>::SolidCylinder(0, L, Vector3d::UnitZ());
   UnitInertia<double> G_E_expected = G_Z.ReExpress(R_EZ);
 
   // Verify the computed values.

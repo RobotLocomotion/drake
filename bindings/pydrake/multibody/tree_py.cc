@@ -1174,8 +1174,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
                 }),
             py::arg("r"), py::arg("L"),
             cls_doc.SolidCylinderAboutEnd.doc_deprecated)
-        .def_static("AxiallySymmetric", &Class::AxiallySymmetric, py::arg("J"),
-            py::arg("K"), py::arg("b_E"), cls_doc.AxiallySymmetric.doc)
+        .def_static("AxiallySymmetric", &Class::AxiallySymmetric,
+            py::arg("moment_parallel"), py::arg("moment_perpendicular"),
+            py::arg("unit_vector"), cls_doc.AxiallySymmetric.doc)
         .def_static("StraightLine", &Class::StraightLine, py::arg("K"),
             py::arg("b_E"), cls_doc.StraightLine.doc)
         .def_static("ThinRod", &Class::ThinRod, py::arg("L"), py::arg("b_E"),

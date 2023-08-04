@@ -98,38 +98,47 @@ UnitInertia<T> UnitInertia<T>::SolidCylinderAboutEnd(
 }
 
 template <typename T>
-UnitInertia<T> UnitInertia<T>::AxiallySymmetric(
-    const T& J, const T& K, const Vector3<T>& unit_vector) {
-  DRAKE_THROW_UNLESS(J >= 0.0);
-  DRAKE_THROW_UNLESS(K >= 0.0);
-  DRAKE_THROW_UNLESS(J <= 2.0 * K);  // Triangle inequality simplifies to J ≤ K.
-  ThrowUnlessVectorIsMagnitudeOne(unit_vector, __func__);
+UnitInertia<T> UnitInertia<T>::AxiallySymmetric(const T& moment_parallel,
+    const T& moment_perpendicular, const Vector3<T>& unit_vector) {
+  const T& J = moment_parallel;
+  const T& K = moment_perpendicular;
+  DRAKE_THROW_UNLESS(moment_parallel >= 0.0);       // Ensure J ≥ 0.
+  DRAKE_THROW_UNLESS(moment_perpendicular >= 0.0);  // Ensure K ≥ 0.
+
+  // When the about-point Bp is Bcm, the moment of inertia triangle inequality
+  // simplifies to J ≤ 2 K.  If Bp is not Bp, J ≤ 2 K is still valid because
+  // K_Bp (perpendicular moment of inertia about Bp) relates to
+  // K_Bcm (perpendicular moment of inertia about Bcm) as K_Bp = K_Bcm + dist²,
+  // where dist is the distance between points Bp and Bcm.
+  DRAKE_THROW_UNLESS(moment_parallel <= 2.0 * moment_perpendicular);
 
   // TODO(Mitiguy) consider a "trust_me" type of parameter that can skip
   //  normalizing the unit_vector (it frequently is perfect on entry).
+  ThrowUnlessVectorIsMagnitudeOne(unit_vector, __func__);
   Vector3<T> uvec = unit_vector.normalized();
-  Matrix3<T> G_matrix =
+
+  // Form B's unit inertia about a point Bp on B's symmetry axis,
+  // expressed in the same frame E as the unit_vector is expressed.
+  Matrix3<T> G_BBp_E =
       K * Matrix3<T>::Identity() + (J - K) * uvec * uvec.transpose();
-  return UnitInertia<T>(G_matrix(0, 0), G_matrix(1, 1), G_matrix(2, 2),
-                        G_matrix(0, 1), G_matrix(0, 2), G_matrix(1, 2));
+  return UnitInertia<T>(G_BBp_E(0, 0), G_BBp_E(1, 1), G_BBp_E(2, 2),
+                        G_BBp_E(0, 1), G_BBp_E(0, 2), G_BBp_E(1, 2));
 }
 
 template <typename T>
-UnitInertia<T> UnitInertia<T>::StraightLine(const T& K,
+UnitInertia<T> UnitInertia<T>::StraightLine(const T& moment_perpendicular,
     const Vector3<T>& unit_vector) {
-  // TODO(Mitiguy) Throw if |b_E| is not within 1.0E-14 of 1 (breaking change).
-  DRAKE_DEMAND(K > 0.0);
+  DRAKE_THROW_UNLESS(moment_perpendicular > 0.0);
   ThrowUnlessVectorIsMagnitudeOne(unit_vector, __func__);
-  return AxiallySymmetric(0.0, K, unit_vector);
+  return AxiallySymmetric(0.0, moment_perpendicular, unit_vector);
 }
 
 template <typename T>
-UnitInertia<T> UnitInertia<T>::ThinRod(const T& L,
+UnitInertia<T> UnitInertia<T>::ThinRod(const T& length,
     const Vector3<T>& unit_vector) {
-  // TODO(Mitiguy) Throw if |b_E| is not within 1.0E-14 of 1 (breaking change).
-  DRAKE_DEMAND(L > 0.0);
+  DRAKE_THROW_UNLESS(length > 0.0);
   ThrowUnlessVectorIsMagnitudeOne(unit_vector, __func__);
-  return StraightLine(L * L / 12.0, unit_vector);
+  return StraightLine(length * length / 12.0, unit_vector);
 }
 
 template <typename T>
