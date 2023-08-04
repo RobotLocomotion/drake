@@ -28,7 +28,7 @@ class _SchemaLoader(yaml.loader.SafeLoader):
           "std": 4.0,
         }.
         """
-        assert type(loader) == _SchemaLoader, loader
+        assert type(loader) is _SchemaLoader, loader
         result = loader.construct_mapping(node)
         result.update({"_tag": tag})
         return result
