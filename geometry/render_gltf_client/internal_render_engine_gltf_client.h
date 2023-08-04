@@ -5,7 +5,7 @@
 #include <memory>
 #include <string>
 
-#include <drake_vendor/nlohmann/json.hpp>
+#include <nlohmann/json.hpp>
 
 #include "drake/common/drake_export.h"
 #include "drake/geometry/render/render_camera.h"

@@ -4,7 +4,7 @@
 #include <utility>
 #include <vector>
 
-#include <drake_vendor/fcl/fcl.h>
+#include <fcl/fcl.h>
 #include <fmt/format.h>
 
 #include "drake/common/drake_export.h"

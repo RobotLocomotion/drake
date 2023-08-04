@@ -1,6 +1,6 @@
 #pragma once
 
-#include <drake_vendor/gz/math/Pose3.hh>
+#include <gz/math/Pose3.hh>
 
 #include "drake/common/eigen_types.h"
 #include "drake/math/rigid_transform.h"

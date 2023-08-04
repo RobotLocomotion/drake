@@ -22,7 +22,6 @@ cc_library(
     name = "hdrs_no_vendor",
     hdrs = _HDRS_NO_VENDOR,
     strip_include_prefix = "include",
-    include_prefix = "drake_vendor",
 )
 
 # The upstream headers that we'll use.
@@ -38,13 +37,10 @@ cc_library_vendored(
     hdrs = _HDRS,
     defines = ["MSGPACK_NO_BOOST"],
     hdrs_vendored = [
-        x.replace("include/", "drake_src/drake_vendor/")
+        x.replace("include/", "drake_hdr/")
         for x in _HDRS
     ],
-    edit_include = {
-        "msgpack/": "drake_vendor/msgpack/",
-    },
-    includes = ["drake_src"],
+    includes = ["drake_hdr"],
     linkstatic = 1,
     deps = [":hdrs_no_vendor"],
     visibility = ["//visibility:public"],

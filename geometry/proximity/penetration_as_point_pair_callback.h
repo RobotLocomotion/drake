@@ -3,7 +3,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include <drake_vendor/fcl/fcl.h>
+#include <fcl/fcl.h>
 
 #include "drake/common/drake_export.h"
 #include "drake/geometry/proximity/collision_filter.h"

@@ -7,10 +7,10 @@
 #include <sstream>
 #include <vector>
 
-#include <drake_vendor/sdf/Root.hh>
-#include <drake_vendor/sdf/parser.hh>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+#include <sdf/Root.hh>
+#include <sdf/parser.hh>
 
 #include "drake/common/find_resource.h"
 #include "drake/common/fmt_eigen.h"

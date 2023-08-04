@@ -4,10 +4,10 @@
 #include <filesystem>
 #include <thread>
 
-#include <drake_vendor/msgpack.hpp>
 #include <fmt/format.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+#include <msgpack.hpp>
 
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"

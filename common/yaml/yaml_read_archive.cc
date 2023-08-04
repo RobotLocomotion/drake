@@ -3,9 +3,9 @@
 #include <algorithm>
 #include <cstring>
 
-#include <drake_vendor/yaml-cpp/yaml.h>
 #include <fmt/format.h>
 #include <fmt/ostream.h>
+#include <yaml-cpp/yaml.h>
 
 #include "drake/common/nice_type_name.h"
 

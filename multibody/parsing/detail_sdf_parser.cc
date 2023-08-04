@@ -10,15 +10,15 @@
 #include <variant>
 #include <vector>
 
-#include <drake_vendor/sdf/Error.hh>
-#include <drake_vendor/sdf/Frame.hh>
-#include <drake_vendor/sdf/Joint.hh>
-#include <drake_vendor/sdf/JointAxis.hh>
-#include <drake_vendor/sdf/Link.hh>
-#include <drake_vendor/sdf/Model.hh>
-#include <drake_vendor/sdf/ParserConfig.hh>
-#include <drake_vendor/sdf/Root.hh>
-#include <drake_vendor/sdf/World.hh>
+#include <sdf/Error.hh>
+#include <sdf/Frame.hh>
+#include <sdf/Joint.hh>
+#include <sdf/JointAxis.hh>
+#include <sdf/Link.hh>
+#include <sdf/Model.hh>
+#include <sdf/ParserConfig.hh>
+#include <sdf/Root.hh>
+#include <sdf/World.hh>
 
 #include "drake/geometry/geometry_instance.h"
 #include "drake/math/rigid_transform.h"

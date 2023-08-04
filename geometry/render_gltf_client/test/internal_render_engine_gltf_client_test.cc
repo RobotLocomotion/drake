@@ -5,8 +5,8 @@
 #include <set>
 #include <vector>
 
-#include <drake_vendor/nlohmann/json.hpp>
 #include <gtest/gtest.h>
+#include <nlohmann/json.hpp>
 #include <vtkCamera.h>
 #include <vtkMatrix4x4.h>
 

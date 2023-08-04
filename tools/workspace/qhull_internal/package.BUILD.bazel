@@ -71,16 +71,13 @@ cc_library_vendored(
     name = "qhull",
     hdrs = _HDRS_CPP,
     hdrs_vendored = [
-        x.replace("src/libqhullcpp/", "drake_src/drake_vendor/libqhullcpp/")
+        x.replace("src/libqhullcpp/", "drake_hdr/libqhullcpp/")
         for x in _HDRS_CPP
     ],
-    includes = ["drake_src"],
-    edit_include = {
-        "libqhullcpp/": "drake_vendor/libqhullcpp/",
-    },
+    includes = ["drake_hdr"],
     srcs = _SRCS_CPP,
     srcs_vendored = [
-        x.replace("src/", "drake_src/drake_vendor/")
+        x.replace("src/", "drake_src/")
         for x in _SRCS_CPP
     ],
     copts = ["-w"],
