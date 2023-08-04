@@ -7,8 +7,8 @@
 #include <string>
 #include <vector>
 
-#include <drake_vendor/nlohmann/json.hpp>
 #include <gtest/gtest.h>
+#include <nlohmann/json.hpp>
 
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"

@@ -3,7 +3,7 @@
 #include <memory>
 #include <sstream>
 
-#include <drake_vendor/fcl/fcl.h>
+#include <fcl/fcl.h>
 #include <gtest/gtest.h>
 
 namespace drake {

@@ -126,17 +126,14 @@ cc_library_vendored(
     ],
     hdrs = _HDRS,
     hdrs_vendored = [
-        x.replace("include/fcl/", "drake_src/drake_vendor/fcl/")
+        x.replace("include/fcl/", "drake_hdr/fcl/")
         for x in _HDRS
     ],
-    edit_include = {
-        "fcl/": "drake_vendor/fcl/",
-    },
     copts = ["-fvisibility=hidden"],
     defines = [
         "FCL_STATIC_DEFINE",
     ],
-    includes = ["drake_src"],
+    includes = ["drake_hdr"],
     linkstatic = True,
     deps = [
         "@ccd_internal//:ccd",

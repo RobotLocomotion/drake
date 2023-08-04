@@ -7,13 +7,13 @@
 #include <string>
 #include <utility>
 
-#include <drake_vendor/sdf/Box.hh>
-#include <drake_vendor/sdf/Capsule.hh>
-#include <drake_vendor/sdf/Cylinder.hh>
-#include <drake_vendor/sdf/Element.hh>
-#include <drake_vendor/sdf/Ellipsoid.hh>
-#include <drake_vendor/sdf/Plane.hh>
-#include <drake_vendor/sdf/Sphere.hh>
+#include <sdf/Box.hh>
+#include <sdf/Capsule.hh>
+#include <sdf/Cylinder.hh>
+#include <sdf/Element.hh>
+#include <sdf/Ellipsoid.hh>
+#include <sdf/Plane.hh>
+#include <sdf/Sphere.hh>
 
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/proximity_properties.h"
