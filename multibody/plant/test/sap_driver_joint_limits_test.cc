@@ -674,8 +674,7 @@ TEST_F(KukaIiwaArmTests, CouplerConstraints) {
     EXPECT_EQ(params.impulse_lower_limits(), -kInfinity);
     EXPECT_EQ(params.impulse_upper_limits(), kInfinity);
     EXPECT_EQ(params.stiffnesses(), kInfinity);
-    EXPECT_EQ(params.relaxation_times(),
-              Vector1d::Constant(plant_.time_step()));
+    EXPECT_EQ(params.relaxation_times(), Vector1d::Zero());
     EXPECT_EQ(params.beta(), 0.1);
   }
 }
