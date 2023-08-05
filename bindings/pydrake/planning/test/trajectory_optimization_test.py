@@ -123,8 +123,8 @@ class TestTrajectoryOptimization(unittest.TestCase):
         dircol.GetInputSamples(result=result)
         dircol.GetStateSamples(result=result)
         dircol.GetSequentialVariableSamples(result=result, name="test")
-        dircol.ReconstructInputTrajectory(result=result)
-        dircol.ReconstructStateTrajectory(result=result)
+        u_traj = dircol.ReconstructInputTrajectory(result=result)
+        x_traj = dircol.ReconstructStateTrajectory(result=result)
 
         constraint = DirectCollocationConstraint(plant, context)
         AddDirectCollocationConstraint(constraint, dircol.time_step(0),
