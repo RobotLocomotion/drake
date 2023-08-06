@@ -21,6 +21,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_export.h"
+#include "drake/common/reset_on_copy.h"
 #include "drake/geometry/render/render_engine.h"
 #include "drake/geometry/render/render_label.h"
 #include "drake/geometry/render/render_material.h"
@@ -234,14 +235,17 @@ class DRAKE_NO_EXPORT RenderEngineVtk : public render::RenderEngine,
                          const geometry::internal::RenderMaterial& material,
                          void* user_data);
 
-  void SetDefaultLightPosition(const Vector3<double>& X_DL) override;
+  void SetDefaultLightPosition(const Vector3<double>& p_DL) override;
+
+  const std::vector<render::LightParameter>& active_lights() const;
 
   // Three pipelines: rgb, depth, and label.
   static constexpr int kNumPipelines = 3;
 
-  std::array<std::unique_ptr<RenderingPipeline>, kNumPipelines> pipelines_;
+  // The engine's configuration parameters.
+  const RenderEngineVtkParams parameters_;
 
-  vtkNew<vtkLight> light_;
+  std::array<std::unique_ptr<RenderingPipeline>, kNumPipelines> pipelines_;
 
   // By design, all of the geometry is shared across clones of the render
   // engine. This is predicated upon the idea that the geometry is *not*
@@ -269,6 +273,16 @@ class DRAKE_NO_EXPORT RenderEngineVtk : public render::RenderEngine,
   // depth, and label) keyed by the geometry's GeometryId.
   std::unordered_map<GeometryId, std::array<vtkSmartPointer<vtkActor>, 3>>
       actors_;
+
+  // Lights can be defined in the engine parameters. If no lights are defined,
+  // we use the fallback_lights. Otherwise, we use the parameter lights.
+  mutable std::vector<render::LightParameter> fallback_lights_;
+
+  // A pointer to the set of lights to actually use at runtime -- it will either
+  // point to the lights in parameters_ or the fallback_lights_. Don't access
+  // this directly; call active_lights() instead.
+  mutable reset_on_copy<const std::vector<render::LightParameter>*>
+      active_lights_{};
 };
 
 }  // namespace internal

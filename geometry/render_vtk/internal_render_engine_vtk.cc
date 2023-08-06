@@ -33,6 +33,7 @@ namespace render_vtk {
 namespace internal {
 
 using Eigen::Vector2d;
+using Eigen::Vector3d;
 using Eigen::Vector4d;
 using geometry::internal::DefineMaterial;
 using geometry::internal::LoadRenderMeshFromObj;
@@ -41,6 +42,7 @@ using geometry::internal::RenderMesh;
 using math::RigidTransformd;
 using render::ColorRenderCamera;
 using render::DepthRenderCamera;
+using render::LightParameter;
 using render::RenderCameraCore;
 using render::RenderEngine;
 using render::RenderLabel;
@@ -97,6 +99,7 @@ RenderEngineVtk::RenderEngineVtk(const RenderEngineVtkParams& parameters)
                      // default_label on 2023-12-01, we should hard-code the
                      // kDontCare here, instead of using value_or().
           parameters.default_label.value_or(RenderLabel::kDontCare)),
+      parameters_(parameters),
       pipelines_{{make_unique<RenderingPipeline>(),
                   make_unique<RenderingPipeline>(),
                   make_unique<RenderingPipeline>()}} {
@@ -311,6 +314,7 @@ void RenderEngineVtk::DoRenderLabelImage(
 
 RenderEngineVtk::RenderEngineVtk(const RenderEngineVtk& other)
     : RenderEngine(other),
+      parameters_(other.parameters_),
       pipelines_{{make_unique<RenderingPipeline>(),
                   make_unique<RenderingPipeline>(),
                   make_unique<RenderingPipeline>()}},
@@ -419,18 +423,63 @@ void RenderEngineVtk::ImplementObj(const std::string& file_name, double scale,
   ImplementPolyData(transform_filter.GetPointer(), material, user_data);
 }
 
+namespace {
+
+vtkSmartPointer<vtkLight> MakeVtkLight(const LightParameter& light_param) {
+  vtkNew<vtkLight> light;
+  light->SetColor(light_param.color.rgba().data());
+  light->SetIntensity(light_param.intensity);
+  if (light_param.type == "directional") {
+    light->SetPositional(false);
+  } else {
+    light->SetPositional(true);
+    light->SetAttenuationValues(light_param.attenuation_values.data());
+    if (light_param.type == "point") {
+      light->SetConeAngle(90.0);
+    } else if (light_param.type == "spot") {
+      light->SetConeAngle(light_param.cone_angle);
+    } else {
+      throw std::runtime_error(
+          fmt::format("RenderEngineVtk given an invalid light type. Expected "
+                      "one of 'point', 'spot', or 'directional'. Given '{}'.",
+                      light_param.type));
+    }
+  }
+  if (light_param.frame == "camera") {
+    // LightParameter has the camera located at Co looking in the +Cz direction.
+    // VTK has camera positioned at p_DC = <0, 0, 1> in the device frame D,
+    // looking in the -Dz direction. So, we need to translate p_CL to p_DL by
+    // negating the z-value and offsetting it by p_DC. We need to treat the
+    // light direction similarly.
+    const Vector3d& p_CL_C = light_param.position;
+    const Vector3d p_CL_D(p_CL_C.x(), p_CL_C.y(), -p_CL_C.z() + 1);
+    light->SetPosition(p_CL_D.data());
+    const Vector3d& dir_LT_C = light_param.direction;
+    const Vector3d& dir_LT_D{dir_LT_C.x(), dir_LT_C.y(), -dir_LT_C.z()};
+    const Vector3d p_CT = p_CL_D + dir_LT_D;
+    // Setting the focal point on a point light is harmless.
+    light->SetFocalPoint(p_CT.data());
+    light->SetLightTypeToCameraLight();
+  } else if (light_param.frame == "world") {
+    light->SetPosition(light_param.position.data());
+    const Vector3d p_WT = light_param.position + light_param.direction;
+    light->SetFocalPoint(p_WT.data());
+    light->SetLightTypeToSceneLight();
+  } else {
+    throw std::runtime_error(
+        fmt::format("RenderEngineVtk given an invalid frame for a light. "
+                    "Expected one of 'world' or 'camera'. Given '{}'.",
+                    light_param.frame));
+  }
+
+  return light;
+}
+
+}  // namespace
+
 void RenderEngineVtk::InitializePipelines() {
   const vtkSmartPointer<vtkTransform> vtk_identity =
       ConvertToVtkTransform(RigidTransformd::Identity());
-
-  // TODO(SeanCurtis-TRI): Things like configuring lights should *not* be part
-  //  of initializing the pipelines. When we support light declaration, this
-  //  will get moved out.
-  light_->SetLightTypeToCameraLight();
-  light_->SetConeAngle(45.0);
-  light_->SetAttenuationValues(1.0, 0.0, 0.0);
-  light_->SetIntensity(1);
-  light_->SetTransformMatrix(vtk_identity->GetMatrix());
 
   // Generic configuration of pipelines.
   for (auto& pipeline : pipelines_) {
@@ -466,8 +515,6 @@ void RenderEngineVtk::InitializePipelines() {
     pipeline->filter->SetInputBufferTypeToRGBA();
     pipeline->exporter->SetInputData(pipeline->filter->GetOutput());
     pipeline->exporter->ImageLowerLeftOff();
-
-    pipeline->renderer->AddLight(light_);
   }
 
   // Pipeline-specific tweaks.
@@ -486,6 +533,10 @@ void RenderEngineVtk::InitializePipelines() {
   pipelines_[ImageType::kColor]->renderer->SetBackground(
       default_clear_color_.r, default_clear_color_.g, default_clear_color_.b);
   pipelines_[ImageType::kColor]->renderer->SetBackgroundAlpha(1.0);
+  for (const auto& light_param : active_lights()) {
+    pipelines_[ImageType::kColor]->renderer->AddLight(
+        MakeVtkLight(light_param));
+  }
 }
 
 void RenderEngineVtk::ImplementPolyData(vtkPolyDataAlgorithm* source,
@@ -595,8 +646,25 @@ RenderEngineVtk::RenderingPipeline& RenderEngineVtk::get_mutable_pipeline(
   return *pipelines_[image_type];
 }
 
-void RenderEngineVtk::SetDefaultLightPosition(const Vector3<double>& X_DL) {
-  light_->SetPosition(X_DL[0], X_DL[1], X_DL[2]);
+void RenderEngineVtk::SetDefaultLightPosition(const Vector3<double>&) {
+  log()->warn(
+      "RenderEngineVtk::SetDefaultLightPosition() no longer affects lighting. "
+      "Instead, configure the lights at construction via "
+      "RenderEngineVtkParams.");
+}
+
+const std::vector<LightParameter>& RenderEngineVtk::active_lights()
+    const {
+  if (active_lights_ == nullptr) {
+    if (parameters_.lights.size() > 0) {
+      active_lights_ = &parameters_.lights;
+    } else {
+      fallback_lights_.push_back({});
+      DRAKE_DEMAND(fallback_lights_.size() == 1);
+      active_lights_ = &fallback_lights_;
+    }
+  }
+  return *active_lights_;
 }
 
 void RenderEngineVtk::PerformVtkUpdate(const RenderingPipeline& p) {
