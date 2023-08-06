@@ -1,5 +1,6 @@
 #include "drake/common/symbolic/latex.h"
 
+#include <limits>
 #include <sstream>
 #include <stdexcept>
 
@@ -12,6 +13,29 @@ using std::string;
 using std::to_string;
 
 namespace {
+
+bool multiple_of_famous_constant(double value, double famous_constant_value,
+                                 std::string famous_constant_latex,
+                                 int precision, std::string* out) {
+  const double epsilon = 1e-14;
+  if (std::abs(value) < epsilon) {  // Handle zero.
+    return false;
+  }
+  if (std::abs(std::fmod(value, famous_constant_value)) < epsilon ||
+      std::abs(std::fmod(value, famous_constant_value) -
+               famous_constant_value) < epsilon) {
+    const double coeff = std::round(value / famous_constant_value);
+    if (coeff == 1.0) {
+      *out = famous_constant_latex;
+    } else if (coeff == -1.0) {
+      *out = "-" + famous_constant_latex;
+    } else {
+      *out = ToLatex(coeff, precision) + famous_constant_latex;
+    }
+    return true;
+  }
+  return false;
+}
 
 // Visitor class for code generation.
 class LatexVisitor {
@@ -361,6 +385,23 @@ string ToLatex(const Formula& f, int precision) {
 }
 
 string ToLatex(double val, int precision) {
+  if (std::isnan(val)) {
+    return "\\text{NaN}";
+  }
+  const double inf{std::numeric_limits<double>::infinity()};
+  if (val == inf) {
+    return "\\infty";
+  }
+  if (val == -inf) {
+    return "-\\infty";
+  }
+  std::string constant;
+  if (multiple_of_famous_constant(val, M_PI, "\\pi", precision, &constant)) {
+    return constant;
+  }
+  if (multiple_of_famous_constant(val, M_E, "e", precision, &constant)) {
+    return constant;
+  }
   double intpart;
   if (std::modf(val, &intpart) == 0.0) {
     // Then it's an integer.
