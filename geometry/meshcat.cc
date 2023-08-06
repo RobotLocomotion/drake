@@ -19,9 +19,9 @@
 
 #include <App.h>
 #include <common_robotics_utilities/base64_helpers.hpp>
-#include <drake_vendor/msgpack.hpp>
-#include <drake_vendor/uuid.h>
 #include <fmt/format.h>
+#include <msgpack.hpp>
+#include <uuid.h>
 
 #include "drake/common/drake_export.h"
 #include "drake/common/drake_throw.h"

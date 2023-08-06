@@ -22,7 +22,6 @@ cc_library(
     name = "stduuid",
     hdrs = ["include/uuid.h"],
     strip_include_prefix = "include",
-    include_prefix = "drake_vendor",
     linkstatic = 1,
     deps = [":gsl"],
 )

@@ -10,11 +10,11 @@
 #include <tuple>
 
 #include <Eigen/Eigenvalues>
-#include <drake_vendor/libqhullcpp/Coordinates.h>
-#include <drake_vendor/libqhullcpp/Qhull.h>
-#include <drake_vendor/libqhullcpp/QhullFacet.h>
-#include <drake_vendor/libqhullcpp/QhullFacetList.h>
 #include <fmt/format.h>
+#include <libqhullcpp/Coordinates.h>
+#include <libqhullcpp/Qhull.h>
+#include <libqhullcpp/QhullFacet.h>
+#include <libqhullcpp/QhullFacetList.h>
 
 #include "drake/geometry/optimization/vpolytope.h"
 #include "drake/math/matrix_util.h"
