@@ -157,7 +157,7 @@ TEST_P(TwoBodiesTest, ConfirmConstraintProperties) {
             Vector3d(kInfinity, kInfinity, kInfinity));
 
   EXPECT_EQ(p.stiffnesses(), Vector3d(kInfinity, kInfinity, kInfinity));
-  EXPECT_EQ(p.relaxation_times(), plant_.time_step() * Vector3d::Ones());
+  EXPECT_EQ(p.relaxation_times(), Vector3d::Zero());
 
   // This value is hard-coded in the source. This test serves as a brake to
   // prevent the value changing without notification. Changing this value
