@@ -818,7 +818,7 @@ drake_cc_library(
     ],
     deps = [
         "@fmt",
-        "@vtk//:vtkIOGeometry",
+        "@vtk_internal//:vtkIOGeometry",
     ],
 )
 

@@ -64,12 +64,6 @@ endif()
 set(eigen_dlname "eigen-${eigen_version}.tar.gz")
 list(APPEND ALL_PROJECTS eigen)
 
-# double-conversion
-set(double-conversion_version 3.1.5)
-set(double-conversion_url "https://github.com/google/double-conversion/archive/v${double-conversion_version}/double-conversion-${double-conversion_version}.tar.gz")
-set(double-conversion_md5 "e94d3a33a417e692e5600e75019f0272")
-list(APPEND ALL_PROJECTS double-conversion)
-
 # lapack (blas)
 set(lapack_version 3.10.0)
 set(lapack_url "https://github.com/Reference-LAPACK/lapack/archive/v${lapack_version}.tar.gz")
