@@ -21,6 +21,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_export.h"
+#include "drake/common/reset_on_copy.h"
 #include "drake/geometry/render/render_engine.h"
 #include "drake/geometry/render/render_label.h"
 #include "drake/geometry/render/render_material.h"
@@ -244,14 +245,27 @@ class DRAKE_NO_EXPORT RenderEngineVtk : public render::RenderEngine,
                          const geometry::internal::RenderMaterial& material,
                          const RegistrationData& data);
 
-  void SetDefaultLightPosition(const Vector3<double>& X_DL) override;
+  void SetDefaultLightPosition(const Vector3<double>& p_DL) override;
+
+  // Handles the logic for using the lights defined in the construction
+  // parameters vs the built-in fallback light. The implementation should only
+  // access the lights via this method (and not via the parameters nor
+  // fallback_lights_).
+  const std::vector<render::LightParameter>& active_lights() const {
+    if (!parameters_.lights.empty()) {
+      return parameters_.lights;
+    }
+    DRAKE_DEMAND(!fallback_lights_.empty());
+    return fallback_lights_;
+  }
 
   // Three pipelines: rgb, depth, and label.
   static constexpr int kNumPipelines = 3;
 
-  std::array<std::unique_ptr<RenderingPipeline>, kNumPipelines> pipelines_;
+  // The engine's configuration parameters.
+  const RenderEngineVtkParams parameters_;
 
-  vtkNew<vtkLight> light_;
+  std::array<std::unique_ptr<RenderingPipeline>, kNumPipelines> pipelines_;
 
   // By design, all of the geometry is shared across clones of the render
   // engine. This is predicated upon the idea that the geometry is *not*
@@ -287,6 +301,18 @@ class DRAKE_NO_EXPORT RenderEngineVtk : public render::RenderEngine,
   // The collection of per-geometry actors -- one actor per pipeline (color,
   // depth, and label) -- keyed by the geometry's GeometryId.
   std::unordered_map<GeometryId, PropArray> props_;
+
+  // The collection of per-geometry actors (one actor per pipeline (color,
+  // depth, and label) keyed by the geometry's GeometryId.
+  std::unordered_map<GeometryId, std::array<vtkSmartPointer<vtkActor>, 3>>
+      actors_;
+
+  // Lights can be defined in the engine parameters. If no lights are defined,
+  // we use the fallback_lights. Otherwise, we use the parameter lights.
+  // Note: We are initializing this vector with a *single* light by using the
+  // LightParameter default constructor; it has been specifically designed to
+  // serve as the default light.
+  std::vector<render::LightParameter> fallback_lights_{{}};
 };
 
 }  // namespace internal
