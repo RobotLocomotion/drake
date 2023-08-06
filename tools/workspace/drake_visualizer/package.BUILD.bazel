@@ -40,10 +40,10 @@ filegroup(
         "share/doc/director/LICENSE.txt",
     ],
     data = [
-        # N.B. We do NOT depend on "@vtk" here, even though drake-visualizer
-        # uses VTK. In Drake, "@vtk" refers to a newer version; the VTK used by
-        # drake-visuazlier is already built-in to the visualizer's globbed list
-        # of files, immediately above.
+        # N.B. We do NOT depend on our WORKSPACE copy of VTK here, even though
+        # drake-visualizer uses VTK. The VTK libraries used by drake-visualizer
+        # are part of the pre-compiled image and therefore are part of the srcs
+        # glob immediately above.
         ":drake_visualizer_python_deps",
         "@lcm//:libdrake_lcm.so",
     ],
