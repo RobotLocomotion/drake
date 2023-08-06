@@ -2,7 +2,7 @@
 
 #include <filesystem>
 
-#include <drake_vendor/nlohmann/json.hpp>
+#include <nlohmann/json.hpp>
 
 #include "drake/common/eigen_types.h"
 

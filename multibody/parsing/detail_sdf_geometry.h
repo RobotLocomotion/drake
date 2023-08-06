@@ -4,9 +4,9 @@
 #include <optional>
 #include <string>
 
-#include <drake_vendor/sdf/Collision.hh>
-#include <drake_vendor/sdf/Geometry.hh>
-#include <drake_vendor/sdf/Visual.hh>
+#include <sdf/Collision.hh>
+#include <sdf/Geometry.hh>
+#include <sdf/Visual.hh>
 
 #include "drake/common/diagnostic_policy.h"
 #include "drake/geometry/geometry_instance.h"

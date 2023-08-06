@@ -15,7 +15,7 @@
 #include <utility>
 #include <vector>
 
-#include <drake_vendor/fcl/fcl.h>
+#include <fcl/fcl.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/default_scalars.h"

@@ -99,7 +99,7 @@ cc_library_vendored(
     name = "gz_utils",
     hdrs = _HDRS,
     hdrs_vendored = [
-        x.replace("include/gz/", "drake_src/drake_vendor/gz/")
+        x.replace("include/gz/", "drake_hdr/gz/")
         for x in _HDRS
     ],
     srcs = _SRCS,
@@ -107,12 +107,9 @@ cc_library_vendored(
         x.replace("src/", "drake_src/")
         for x in _SRCS
     ],
-    edit_include = {
-        "gz/": "drake_vendor/gz/",
-    },
     copts = ["-w"],
     linkstatic = True,
-    includes = ["drake_src"],
+    includes = ["drake_hdr"],
     visibility = ["//visibility:public"],
 )
 

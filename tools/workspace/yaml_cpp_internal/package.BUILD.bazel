@@ -33,13 +33,10 @@ cc_library_vendored(
     ],
     hdrs = _HDRS,
     hdrs_vendored = [
-        x.replace("include/yaml-cpp/", "drake_src/drake_vendor/yaml-cpp/")
+        x.replace("include/yaml-cpp/", "drake_hdr/yaml-cpp/")
         for x in _HDRS
     ],
-    edit_include = {
-        "yaml-cpp/": "drake_vendor/yaml-cpp/",
-    },
-    includes = ["drake_src"],
+    includes = ["drake_hdr"],
     linkstatic = 1,
     visibility = ["//visibility:public"],
 )

@@ -1,8 +1,8 @@
 #include "drake/multibody/parsing/detail_sdf_diagnostic.h"
 
-#include <drake_vendor/sdf/Root.hh>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+#include <sdf/Root.hh>
 
 #include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/diagnostic_policy_test_base.h"

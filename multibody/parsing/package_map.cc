@@ -16,8 +16,8 @@
 #include <tuple>
 #include <utility>
 
-#include <drake_vendor/tinyxml2.h>
 #include <picosha2.h>
+#include <tinyxml2.h>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_throw.h"
