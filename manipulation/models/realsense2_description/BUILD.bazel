@@ -33,15 +33,14 @@ _OBJS = [x[:-3] + "obj" for x in _STLS]
 [
     genrule(
         name = obj + "_genrule",
-        srcs = [stl],
+        srcs = [stl] + ["//manipulation/util:stl2obj"],
         outs = [obj],
         cmd = " ".join([
             "$(location //manipulation/util:stl2obj)",
-            "--input=$<",
+            "--input=$(location {})".format(stl),
             "--output=$@",
             "--reduction=0.98",
         ]),
-        tools = ["//manipulation/util:stl2obj"],
         visibility = ["//visibility:private"],
     )
     for stl, obj in zip(_STLS, _OBJS)
