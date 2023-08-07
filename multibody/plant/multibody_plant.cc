@@ -598,6 +598,10 @@ template <typename T>
 void MultibodyPlant<T>::set_contact_model(ContactModel model) {
   DRAKE_MBP_THROW_IF_FINALIZED();
   contact_model_ = model;
+  if (scene_graph_) {
+    scene_graph_->set_hydro_inferred(
+        contact_model_ == ContactModel::kHydroelasticInferred);
+  }
 }
 
 template <typename T>
@@ -1730,6 +1734,7 @@ void MultibodyPlant<T>::CalcContactResultsContinuous(
       break;
 
     case ContactModel::kHydroelastic:
+    case ContactModel::kHydroelasticInferred:
       AppendContactResultsContinuousHydroelastic(context, contact_results);
       break;
 
@@ -2482,6 +2487,7 @@ void MultibodyPlant<T>::CalcAndAddSpatialContactForcesContinuous(
       break;
 
     case ContactModel::kHydroelastic:
+    case ContactModel::kHydroelasticInferred:
       *F_BBo_W_array = EvalHydroelasticContactForces(context).F_BBo_W_array;
       break;
 

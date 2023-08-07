@@ -295,6 +295,9 @@ class ProximityEngine {
    use for proximity queries for deformable contact. */
   const deformable::Geometries& deformable_contact_geometries() const;
 
+  void set_hydro_inferred(bool value);
+  bool get_hydro_inferred() const;
+
  private:
   // Testing utilities:
   // These functions facilitate *limited* introspection into the engine state.

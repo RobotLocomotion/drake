@@ -423,6 +423,8 @@ class SceneGraphInspector {
   CloneGeometryInstance(GeometryId geometry_id) const;
   //@}
 
+  bool get_hydro_inferred() const;
+
  private:
   // Only SceneGraph and QueryObject instances can construct
   // SceneGraphInspector instances.

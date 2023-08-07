@@ -324,6 +324,13 @@ class Geometries final : public ShapeReifier {
   void MaybeAddGeometry(const Shape& shape, GeometryId id,
                         const ProximityProperties& properties);
 
+  void set_hydro_inferred(bool value) {
+    hydro_inferred_ = value;
+  }
+  bool get_hydro_inferred() const {
+    return hydro_inferred_;
+  }
+
  private:
   // Data to be used during reification. It is passed as the `user_data`
   // parameter in the ImplementGeometry API.
@@ -364,6 +371,9 @@ class Geometries final : public ShapeReifier {
 
   // The representations of all rigid geometries.
   std::unordered_map<GeometryId, RigidGeometry> rigid_geometries_;
+
+  // Whether to infer hydro properties for un-annotated geometry.
+  bool hydro_inferred_{false};
 };
 
 /* @name Creating hydroelastic representations of shapes
