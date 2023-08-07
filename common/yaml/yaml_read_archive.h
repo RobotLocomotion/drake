@@ -311,7 +311,7 @@ class YamlReadArchive final {
                          Variant* storage) {
     // For the first type declared in the variant<> (I == 0), the tag can be
     // absent; otherwise, the tag must match one of the variant's types.
-    if (((I == 0) && (tag.empty() || (tag == "?"))) ||
+    if (((I == 0) && (tag.empty() || (tag == "?") || (tag == "!"))) ||
         IsTagMatch(drake::NiceTypeName::GetFromStorage<T>(), tag)) {
       T& typed_storage = storage->template emplace<I>();
       this->Visit(drake::MakeNameValue(name, &typed_storage));
