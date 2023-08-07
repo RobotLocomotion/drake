@@ -319,6 +319,9 @@ GTEST_TEST(CameraConfigTest, DeserializingRendererClass) {
                                                .render_endpoint = "server",
                                                .verbose = true,
                                                .cleanup = false}));
+
+  const CameraConfig config_6 = parse("renderer_class: \"\"");
+  EXPECT_THAT(config_6.renderer_class, testing::VariantWith<std::string>(""));
 }
 
 // Helper functions for validating a render camera.
