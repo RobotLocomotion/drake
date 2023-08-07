@@ -43,6 +43,8 @@ constexpr const char* EnumToChars(ContactModel enum_value) {
       return "point";
     case ContactModel::kHydroelasticsOnly:
       return "hydroelastic";
+    case ContactModel::kHydroelasticInferred:
+      return "hydroelastic_inferred";
     case ContactModel::kHydroelasticWithFallback:
       return "hydroelastic_with_fallback";
   }

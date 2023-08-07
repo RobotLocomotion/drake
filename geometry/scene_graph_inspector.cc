@@ -304,6 +304,11 @@ std::unique_ptr<GeometryInstance> SceneGraphInspector<T>::CloneGeometryInstance(
   return geometry_instance;
 }
 
+template <typename T>
+bool SceneGraphInspector<T>::get_hydro_inferred() const {
+  return state_->get_hydro_inferred();
+}
+
 }  // namespace geometry
 }  // namespace drake
 
