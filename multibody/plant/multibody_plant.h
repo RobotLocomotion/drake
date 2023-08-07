@@ -145,6 +145,11 @@ enum class ContactModel {
   /// details.
   kHydroelasticWithFallback,
 
+  /// Contact forces are computed using the hydroelastic model, where possible.
+  /// Where hydroelastic properties are missing, default property values are
+  /// inferred to enable hydrorelastic contact queries.
+  kHydroelasticInferred,
+
   /// Legacy alias. TODO(jwnimmer-tri) Deprecate this constant.
   kHydroelasticsOnly = kHydroelastic,
   /// Legacy alias. TODO(jwnimmer-tri) Deprecate this constant.

@@ -973,6 +973,7 @@ void CompliantContactManager<T>::DoCalcContactResults(
       AppendContactResultsForPointContact(context, contact_results);
       break;
     case ContactModel::kHydroelastic:
+    case ContactModel::kHydroelasticInferred:
       AppendContactResultsForHydroelasticContact(context, contact_results);
       break;
     case ContactModel::kHydroelasticWithFallback:
