@@ -4,7 +4,6 @@ default-jre
 jupyter-notebook
 libblas-dev
 libbz2-1.0
-libdouble-conversion3
 libeigen3-dev
 libexpat1
 libfreetype6
@@ -35,7 +34,6 @@ libspdlog-dev
 libsqlite3-0
 libtheora0
 libtiff5
-libvtk9.1
 libx11-6
 libxml2
 libxt6

@@ -206,7 +206,7 @@ drake_cc_library(
         ":lcm_image_traits",
         "//lcmtypes:image_array",
         "@libpng",
-        "@vtk//:vtkIOImage",
+        "@vtk_internal//:vtkIOImage",
         "@zlib",
     ],
 )
@@ -309,7 +309,7 @@ drake_cc_library(
         "//systems/framework",
     ],
     deps = [
-        "@vtk//:vtkIOImage",
+        "@vtk_internal//:vtkIOImage",
     ],
 )
 
@@ -421,7 +421,7 @@ drake_cc_googletest(
         ":image_writer",
         "//common:temp_directory",
         "//common/test_utilities",
-        "@vtk//:vtkIOImage",
+        "@vtk_internal//:vtkIOImage",
     ],
 )
 
