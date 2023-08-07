@@ -53,8 +53,7 @@ def _transform(*, line, definitions, strict):
         if var not in definitions:
             defined = False
             if strict:
-                raise KeyError(f"Missing define or undefine decision for {var}"
-                               " when running in strict=True mode")
+                raise KeyError(var)
         else:
             defined = definitions[var] is not None
             used_vars.add(var)
@@ -85,7 +84,7 @@ def _transform(*, line, definitions, strict):
         assert len(var) > 0
 
         if var not in definitions:
-            raise KeyError('Missing definition for ' + var)
+            raise KeyError(var)
         used_vars.add(var)
         value = definitions.get(var)
         if value is None:
@@ -147,8 +146,8 @@ def _setup_definitions(args):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--input', metavar='FILE')
-    parser.add_argument('--output', metavar='FILE')
+    parser.add_argument('--input', metavar='FILE', action='append')
+    parser.add_argument('--output', metavar='FILE', action='append')
     parser.add_argument(
         '-D', metavar='NAME', dest='defines', action='append', default=[])
     parser.add_argument(
@@ -158,27 +157,37 @@ def main():
     parser.add_argument(
         '--strict', action='store_true')
     args = parser.parse_args()
-    if args.input is None or args.output is None:
+    if not (len(args.input) == len(args.output)
+            and len(args.input) > 0):
         parser.print_usage()
         sys.exit(1)
     definitions, cmakelist_keys = _setup_definitions(args)
 
     total_used_vars = set()
-    with open(args.input, 'r') as input_file:
-        with open(args.output + '.tmp', 'w') as output_file:
-            for input_line in input_file.readlines():
-                output_line, used_vars = _transform(
-                    line=input_line,
-                    definitions=definitions,
-                    strict=args.strict)
-                output_file.write(output_line)
-                total_used_vars |= used_vars
+    missing_vars = set()
+    for input_path, output_path in zip(args.input, args.output):
+        with open(input_path, 'r') as input_file:
+            with open(output_path + '.tmp', 'w') as output_file:
+                for input_line in input_file.readlines():
+                    try:
+                        output_line, used_vars = _transform(
+                            line=input_line,
+                            definitions=definitions,
+                            strict=args.strict)
+                        output_file.write(output_line)
+                        total_used_vars |= used_vars
+                    except KeyError as e:
+                        missing_vars.add(e.args[0])
+    if missing_vars:
+        raise RuntimeError(f"The definitions of {sorted(missing_vars)} were"
+                           " required, but missing.")
     unused_vars = definitions.keys() - cmakelist_keys - total_used_vars
     if unused_vars:
         raise RuntimeError(f"The definitions of {sorted(unused_vars)} were"
                            " ignored and therefore seem like dead code;"
                            " remove them from defines= or undefines=.")
-    os.rename(args.output + '.tmp', args.output)
+    for output_path in args.output:
+        os.rename(output_path + '.tmp', output_path)
 
 
 if __name__ == '__main__':
