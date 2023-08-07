@@ -1,6 +1,6 @@
-'''
+"""
 Play a policy for //bindings/pydrake/examples/gym/envs:cart_pole.
-'''
+"""
 import argparse
 import os
 
@@ -21,6 +21,8 @@ def _run_playing(args):
 
     # Make a version of the env with meshcat.
     meshcat = StartMeshcat()
+    print(f"For visualization, "
+          f"open the url {meshcat.web_url()} in your browser.")
     env = gym.make(
             "DrakeCartPole-v0",
             meshcat=meshcat,
@@ -33,7 +35,7 @@ def _run_playing(args):
         check_env(env)
 
     env.simulator.set_target_realtime_rate(1.0)
-    max_steps = 1e5 if not args.test else 1e2
+    max_steps = 1e5 if not args.test else 5e2
 
     if not args.test:
         assert "drake_internal" not in stable_baselines3.__version__

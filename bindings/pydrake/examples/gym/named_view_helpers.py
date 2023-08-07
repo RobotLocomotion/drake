@@ -1,3 +1,7 @@
+"""
+The following functions provide a convenient method
+to print and access vectors by state or actuator name.
+"""
 from pydrake.common.containers import namedview
 from pydrake.multibody.tree import (
     JointActuatorIndex,

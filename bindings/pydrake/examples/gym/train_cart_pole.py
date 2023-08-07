@@ -1,6 +1,6 @@
-'''
+"""
 Train a policy for //bindings/pydrake/examples/envs:cart_pole
-'''
+"""
 import argparse
 
 import gymnasium as gym

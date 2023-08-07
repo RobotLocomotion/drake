@@ -47,6 +47,17 @@ class DrakeGymEnv(gym.Env):
                 a function that produces a (randomized) Simulator.
             time_step: Each call to ``step()`` will advance the simulator by
                 ``time_step`` seconds.
+            action_space: Defines the ``gym.spaces.Space`` for the actions.  If
+                the action port is vector-valued, then passing ``None``
+                defaults to a ``gym.spaces.Box`` of the correct dimension with
+                bounds at negative and positive infinity.  Note: Stable
+                Baselines 3 strongly encourages normalizing the
+                ``action_space`` to [-1, 1].
+            observation_space: Defines the ``gym.spaces.Space`` for the
+                observations.  If the observation port is vector-valued, then
+                passing ``None`` defaults to a ``gym.spaces.Box`` of the
+                correct dimension with bounds at negative and positive
+                infinity.
             reward: The reward can be specified in one of two
                 ways: (1) by passing a callable with the signature
                 ``value = reward(context)`` or (2) by passing a scalar
@@ -56,26 +67,15 @@ class DrakeGymEnv(gym.Env):
                 action port; passing ``None`` defaults to using the *first*
                 input port (inspired by
                 ``InputPortSelection.kUseFirstInputIfItExists``).
-            action_space: Defines the ``gym.spaces.Space`` for the actions.  If
-                the action port is vector-valued, then passing ``None``
-                defaults to a ``gym.spaces.Box`` of the correct dimension with
-                bounds at negative and positive infinity.  Note: Stable
-                Baselines 3 strongly encourages normalizing the
-                ``action_space`` to [-1, 1].
             observation_port_id: An output port of ``simulator``'s system
                 compatible with the ``observation_space``. Each Env *must* have
                 an observation port (it seems that gym doesn't support empty
                 observation spaces / open-loop policies); passing ``None``
                 defaults to using the *first* input port (inspired by
                 ``OutputPortSelection.kUseFirstOutputIfItExists``).
-            observation_space: Defines the ``gym.spaces.Space`` for the
-                observations.  If the observation port is vector-valued, then
-                passing ``None`` defaults to a ``gym.spaces.Box`` of the
-                correct dimension with bounds at negative and positive
-                infinity.
-            render_rgb_port: An optional output port of ``simulator``'s system
-                that returns  an ``ImageRgba8U``; often the ``color_image``
-                port of a Drake ``RgbdSensor``.
+            render_rgb_port_id: An optional output port of ``simulator``'s
+                system that returns  an ``ImageRgba8U``; often the
+                ``color_image`` port of a Drake ``RgbdSensor``.
             render_mode: The render mode of the environment determined at
                 initialization. Defaults to ``human`` which uses visualizers
                 inside the System (e.g. MeshcatVisualizer,

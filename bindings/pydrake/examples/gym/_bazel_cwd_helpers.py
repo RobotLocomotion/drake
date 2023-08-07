@@ -8,4 +8,4 @@ def bazel_chdir():
     the original cwd so that those paths resolve correctly.
     """
     if 'BUILD_WORKSPACE_DIRECTORY' in os.environ:
-        os.chdir(os.environ['BUILD_WORKING_DIRECTORY'])
+        os.chdir(os.environ['BUILD_WORKSPACE_DIRECTORY'])

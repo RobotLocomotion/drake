@@ -9,7 +9,9 @@ It includes added noise in the observation, added random disturbances,
 randomized states (position, velocity), randomized mass,
 and a monitoring camera for rollout logging.
 
-It can be invoke it via:
+Before trying the following examples, read the note on dependencies below.
+
+Training can be invoked it via:
 
     bazel run //bindings/pydrake/examples/gym:train_cart_pole
 
@@ -24,6 +26,7 @@ A random policy can be played with:
 
     bazel run //bindings/pydrake/examples/gym:play_cart_pole -- --test
 
+To visualize, open meshcat according to the prompts.
 
 A note on dependencies
 ----------------------
@@ -40,7 +43,8 @@ Stable Baselines3 iteself is too large and too heavy of a dependency tree for Dr
       source ~/tmp/drakegym/bin/activate
       # Install dependencies.
       pip install gymnasium stable_baselines3 tensorboard moviepy
-      # Run the training.
+      # From the Drake source tree, run the training.
+      cd {your_your_drake_directory}/drake
       env PYTHONPATH=~/tmp/drakegym/lib/python3.10/site-packages \
           bazel run //bindings/pydrake/examples/gym:train_cart_pole
 

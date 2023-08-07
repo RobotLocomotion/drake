@@ -99,26 +99,26 @@ def make_sim(meshcat=None,
     controller_plant.set_name("controller_plant")
 
     # Extract the controller plant information.
-    Ns = controller_plant.num_multibody_states()
-    Nv = controller_plant.num_velocities()
-    Na = controller_plant.num_actuators()
-    Nj = controller_plant.num_joints()
-    Np = controller_plant.num_positions()
+    ns = controller_plant.num_multibody_states()
+    nv = controller_plant.num_velocities()
+    na = controller_plant.num_actuators()
+    nj = controller_plant.num_joints()
+    npos = controller_plant.num_positions()
 
     # Make NamedViews
-    StateView = MakeNamedViewState(controller_plant, "States")
-    PositionView = MakeNamedViewPositions(controller_plant, "Position")
-    ActuationView = MakeNamedViewActuation(controller_plant, "Actuation")
+    state_view = MakeNamedViewState(controller_plant, "States")
+    position_view = MakeNamedViewPositions(controller_plant, "Position")
+    actuation_view = MakeNamedViewActuation(controller_plant, "Actuation")
 
     if debug:
-        print(f'\nNumber of position: {Np},',
-              f'Number of velocities: {Nv},',
-              f'Number of actuators: {Na},',
-              f'Number of joints: {Nj},',
-              f'Number of multibody states: {Ns}')
-        print("State view: ", StateView(np.ones(Ns)))
-        print("Position view: ", PositionView(np.ones(Np)))
-        print("Actuation view: ", ActuationView(np.ones(Na)), '\n')
+        print(f'\nNumber of position: {npos},',
+              f'Number of velocities: {nv},',
+              f'Number of actuators: {na},',
+              f'Number of joints: {nj},',
+              f'Number of multibody states: {ns}')
+        print("State view: ", state_view(np.ones(ns)))
+        print("Position view: ", position_view(np.ones(npos)))
+        print("Actuation view: ", actuation_view(np.ones(na)), '\n')
 
         # Visualize the plant.
         plt.figure()
@@ -142,9 +142,9 @@ def make_sim(meshcat=None,
     class ObservationPublisher(LeafSystem):
         def __init__(self, noise=False):
             LeafSystem.__init__(self)
-            self.Ns = plant.num_multibody_states()
-            self.DeclareVectorInputPort("plant_states", self.Ns)
-            self.DeclareVectorOutputPort("observations", self.Ns, self.CalcObs)
+            self.ns = plant.num_multibody_states()
+            self.DeclareVectorInputPort("plant_states", self.ns)
+            self.DeclareVectorOutputPort("observations", self.ns, self.CalcObs)
             self.noise = noise
 
         def CalcObs(self, context, output):
@@ -152,7 +152,7 @@ def make_sim(meshcat=None,
             if self.noise:
                 plant_state += np.random.uniform(low=-0.01,
                                                  high=0.01,
-                                                 size=self.Ns)
+                                                 size=self.ns)
             output.set_value(plant_state)
 
     obs_pub = builder.AddSystem(ObservationPublisher(noise=obs_noise))
@@ -164,7 +164,8 @@ def make_sim(meshcat=None,
         def __init__(self):
             LeafSystem.__init__(self)
             # The state port is not used.
-            self.DeclareVectorInputPort("state", Ns)
+            ns = plant.num_multibody_states()
+            self.DeclareVectorInputPort("state", ns)
             self.DeclareVectorOutputPort("reward", 1, self.CalcReward)
 
         def CalcReward(self, context, output):
@@ -257,7 +258,7 @@ def make_sim(meshcat=None,
     simulator = Simulator(diagram)
     simulator.Initialize()
 
-    def monitor(context, state_view=StateView):
+    def monitor(context, state_view=state_view):
         '''
         Monitors the simulation for episode end conditions.
         '''
@@ -385,9 +386,9 @@ def DrakeCartPoleEnv(
     plant = simulator.get_system().GetSubsystemByName("plant")
 
     # Define Action space.
-    Na = 1
-    low_a = plant.GetEffortLowerLimits()[:Na]
-    high_a = plant.GetEffortUpperLimits()[:Na]
+    na = 1
+    low_a = plant.GetEffortLowerLimits()[:na]
+    high_a = plant.GetEffortUpperLimits()[:na]
     action_space = gym.spaces.Box(low=np.asarray(low_a, dtype="float64"),
                                   high=np.asarray(high_a, dtype="float64"),
                                   dtype=np.float64)
