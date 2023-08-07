@@ -7,7 +7,6 @@ gfortran
 git
 libbz2-dev
 libclang-12-dev
-libdouble-conversion-dev
 libexpat1-dev
 libgl-dev
 libglew-dev

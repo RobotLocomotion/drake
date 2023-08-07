@@ -102,6 +102,7 @@ load("@drake//tools/workspace/uwebsockets:repository.bzl", "uwebsockets_reposito
 load("@drake//tools/workspace/uwebsockets_internal:repository.bzl", "uwebsockets_internal_repository")  # noqa
 load("@drake//tools/workspace/voxelized_geometry_tools:repository.bzl", "voxelized_geometry_tools_repository")  # noqa
 load("@drake//tools/workspace/vtk:repository.bzl", "vtk_repository")
+load("@drake//tools/workspace/vtk_internal:repository.bzl", "vtk_internal_repository")  # noqa
 load("@drake//tools/workspace/x11:repository.bzl", "x11_repository")
 load("@drake//tools/workspace/xmlrunner_py:repository.bzl", "xmlrunner_py_repository")  # noqa
 load("@drake//tools/workspace/yaml_cpp_internal:repository.bzl", "yaml_cpp_internal_repository")  # noqa
@@ -154,6 +155,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
     if "curl_internal" not in excludes:
         curl_internal_repository(name = "curl_internal", mirrors = mirrors)
     if "double_conversion" not in excludes:
+        # The @double_conversion external is deprecated in Drake's WORKSPACE
+        # and will be removed on or after 2023-11-01.
         double_conversion_repository(name = "double_conversion")
     if "doxygen" not in excludes:
         doxygen_repository(name = "doxygen", mirrors = mirrors)
@@ -343,7 +346,11 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
     if "voxelized_geometry_tools" not in excludes:
         voxelized_geometry_tools_repository(name = "voxelized_geometry_tools", mirrors = mirrors)  # noqa
     if "vtk" not in excludes:
+        # The @vtk external is deprecated in Drake's WORKSPACE and will be
+        # removed on or after 2023-12-01.
         vtk_repository(name = "vtk", mirrors = mirrors)
+    if "vtk_internal" not in excludes:
+        vtk_internal_repository(name = "vtk_internal", mirrors = mirrors)
     if "x11" not in excludes:
         x11_repository(name = "x11")
     if "xmlrunner_py" not in excludes:

@@ -176,28 +176,6 @@ cc_library(
     }),
 )
 
-# Depend on the subset of VTK's shared libraries that Drake uses.
-cc_library(
-    name = "vtk_deps",
-    deps = [
-        # TODO(jwnimmer-tri) This duplicates the list of VTK libraries needed
-        # by //sensors.  We should find a way for ":drake_shared_library" to be
-        # declared without having to repeat this list here.
-        "@vtk//:vtkCommonCore",
-        "@vtk//:vtkCommonDataModel",
-        "@vtk//:vtkCommonExecutionModel",
-        "@vtk//:vtkCommonTransforms",
-        "@vtk//:vtkFiltersGeneral",
-        "@vtk//:vtkFiltersSources",
-        "@vtk//:vtkIOExport",
-        "@vtk//:vtkIOGeometry",
-        "@vtk//:vtkIOImage",
-        "@vtk//:vtkIOImport",
-        "@vtk//:vtkRenderingCore",
-        "@vtk//:vtkRenderingOpenGL2",
-    ],
-)
-
 # Depend on X11 iff on Ubuntu and not MacOS.
 cc_library(
     name = "x11_deps",
@@ -241,7 +219,6 @@ cc_library(
         ":gurobi_deps",
         ":ipopt_deps",
         ":mosek_deps",
-        ":vtk_deps",
         ":x11_deps",
         "//common:drake_marker_shared_library",
         "@lcm",

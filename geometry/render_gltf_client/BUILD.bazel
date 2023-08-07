@@ -99,7 +99,7 @@ drake_cc_library(
         "//geometry/render:render_engine",
         "//systems/sensors:image",
         "@picosha2_internal//:picosha2",
-        "@vtk//:vtkIOImage",
+        "@vtk_internal//:vtkIOImage",
     ],
 )
 
@@ -121,7 +121,7 @@ drake_cc_library(
         "//geometry/render_vtk:internal_render_engine_vtk",
         "//systems/sensors:image",
         "@nlohmann_internal//:nlohmann",
-        "@vtk//:vtkIOExport",
+        "@vtk_internal//:vtkIOExport",
     ],
 )
 
@@ -263,10 +263,10 @@ drake_cc_binary(
         "//systems/sensors:color_palette",
         "//systems/sensors:image",
         "@gflags",
-        "@vtk//:vtkIOImage",
-        "@vtk//:vtkIOImport",
-        "@vtk//:vtkRenderingCore",
-        "@vtk//:vtkRenderingOpenGL2",
+        "@vtk_internal//:vtkIOImage",
+        "@vtk_internal//:vtkIOImport",
+        "@vtk_internal//:vtkRenderingCore",
+        "@vtk_internal//:vtkRenderingOpenGL2",
     ],
 )
 

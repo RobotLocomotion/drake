@@ -192,7 +192,7 @@ drake_cc_library_ubuntu_only(
         ":internal_opengl_context",
     ],
     deps = [
-        "@vtk//:vtkIOImage",
+        "@vtk_internal//:vtkIOImage",
     ],
 )
 
@@ -239,7 +239,7 @@ drake_cc_googletest_ubuntu_only(
         "//common/test_utilities:expect_throws_message",
         "//geometry/render:render_label",
         "//systems/sensors:color_palette",
-        "@vtk//:vtkIOImage",
+        "@vtk_internal//:vtkIOImage",
     ],
 )
 
