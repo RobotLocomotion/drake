@@ -1057,7 +1057,7 @@ GTEST_TEST(HPolyhedronTest, AlixAlignedBox){
   b << 1, 1, 2, 1;
   // clang-format on
   HPolyhedron H(A, b);
-  auto aabb_opt = H.CalcAxisAlignedBoundingBox();
+  auto aabb_opt = H.MaybeCalcAxisAlignedBoundingBox();
   EXPECT_TRUE(aabb_opt.has_value());
   auto aabb = aabb_opt.value();
   EXPECT_NEAR(aabb.lower_corner()(0), -2, 1e-6);

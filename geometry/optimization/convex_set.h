@@ -152,8 +152,12 @@ class ConvexSet : public ShapeReifier {
     return DoPointInSet(x, tol);
   }
 
-  /** Returns the pair */
-  std::optional<AxisAlignedBox> CalcAxisAlignedBoundingBox() const;
+  /** Returns the minimum axis axligned bounding box of the convex set */
+  std::optional<AxisAlignedBox> MaybeCalcAxisAlignedBoundingBox() const;
+
+  std::optional<double> MaybeCalcVolume() const;
+
+  std::optional<double> MaybeCalcVolumeViaSampling(RandomGenerator* generator) const;
 
   /** Adds a constraint to an existing MathematicalProgram enforcing that the
   point defined by vars is inside the set.
@@ -262,6 +266,8 @@ class ConvexSet : public ShapeReifier {
   derived implementation of DoIsEmpty. */
   virtual bool DoIsEmpty() const;
 
+  double DoCalcVolume(const AxisAlignedBox& aabb) const;
+
   /** Non-virtual interface implementation for MaybeGetPoint(). The default
   implementation returns nullopt. Sets that can model a single point should
   override with a custom implementation.
@@ -352,23 +358,6 @@ class ConvexSet : public ShapeReifier {
   // an invariant like `∑(set.size() for set in sets_) == ambient_dimension_`,
   // we need to zero the dimension when `sets_` is moved-from.
   reset_after_move<int> ambient_dimension_;
-};
-
-class AxisAlignedBox{
-  public:
-  AxisAlignedBox(const Eigen::VectorXd& lower_corner,
-                 const Eigen::VectorXd& upper_corner)
-      : lower_corner_(lower_corner), upper_corner_(upper_corner) {
-    DRAKE_THROW_UNLESS(lower_corner.size() == upper_corner.size());
-  }
-
-  const Eigen::VectorXd lower_corner() const { return lower_corner_; }
-
-  const Eigen::VectorXd upper_corner() const { return upper_corner_; }
-
-  private:
-  const Eigen::VectorXd lower_corner_;
-  const Eigen::VectorXd upper_corner_;
 };
 
 /** Provides the recommended container for passing a collection of ConvexSet

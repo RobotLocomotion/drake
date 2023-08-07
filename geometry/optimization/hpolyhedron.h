@@ -22,7 +22,7 @@ class VPolytope;
 By convention, we treat a zero-dimensional HPolyhedron as nonempty.
 
 @ingroup geometry_optimization */
-class HPolyhedron final : public ConvexSet {
+class HPolyhedron : public ConvexSet {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(HPolyhedron)
 
@@ -49,7 +49,7 @@ class HPolyhedron final : public ConvexSet {
   // SceneGraph's AABB or OBB representation (for arbitrary objects) pending
   // #15121.
 
-  ~HPolyhedron() final;
+  ~HPolyhedron();
 
   /** Returns the half-space representation matrix A. */
   const Eigen::MatrixXd& A() const { return A_; }
@@ -285,6 +285,25 @@ class HPolyhedron final : public ConvexSet {
 
   Eigen::MatrixXd A_{};
   Eigen::VectorXd b_{};
+};
+
+/** Axis-aligned box in Rᵈ.  This is a special case of Hpolyhedron. */
+class AxisAlignedBox final: public HPolyhedron{
+  public:
+  AxisAlignedBox(const Eigen::Ref<const Eigen::VectorXd>& lower_corner,
+              const Eigen::Ref<const Eigen::VectorXd>& upper_corner);
+
+  const Eigen::VectorXd lower_corner() const { return lower_corner_; }
+
+  const Eigen::VectorXd upper_corner() const { return upper_corner_; }
+
+  double CalcVolume() const;
+
+//   Eigen::VectorXd UniformSample(RandomGenerator* generator) const;
+
+  private:
+  Eigen::VectorXd lower_corner_ {};
+  Eigen::VectorXd upper_corner_ {};
 };
 
 }  // namespace optimization
