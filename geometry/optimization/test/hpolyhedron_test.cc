@@ -1045,6 +1045,27 @@ GTEST_TEST(HPolyhedronTest, UniformSampleTest2) {
   EXPECT_GT(num_success, 0);
 }
 
+// Test the computation of the minimal axis-aligned bounding box of a polyhedron.
+GTEST_TEST(HPolyhedronTest, AlixAlignedBox){
+  Matrix<double, 4, 2> A;
+  Matrix<double, 4, 1> b;
+  // clang-format off
+  A <<  1,  0,  // x ≤ 1
+        1,  1,  // x + y ≤ 1
+       -1,  0,  // x ≥ -2
+        -1, -1;  // x+y ≥ -1
+  b << 1, 1, 2, 1;
+  // clang-format on
+  HPolyhedron H(A, b);
+  auto aabb_opt = H.CalcAxisAlignedBoundingBox();
+  EXPECT_TRUE(aabb_opt.has_value());
+  auto aabb = aabb_opt.value();
+  EXPECT_NEAR(aabb.lower_corner()(0), -2, 1e-6);
+  EXPECT_NEAR(aabb.upper_corner()(0), 1, 1e-6);
+  EXPECT_NEAR(aabb.lower_corner()(1), -2, 1e-6);
+  EXPECT_NEAR(aabb.upper_corner()(1), 3, 1e-6); 
+}
+
 GTEST_TEST(HPolyhedronTest, Serialize) {
   const HPolyhedron H = HPolyhedron::MakeL1Ball(3);
   const std::string yaml = yaml::SaveYamlString(H);

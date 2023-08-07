@@ -56,6 +56,10 @@ The geometry::optimization tools support:
 @ingroup geometry
 @ingroup solvers */
 
+// forward declarations
+class ConvexSet;
+class AxisAlignedBox;
+
 /** Abstract base class for defining a convex set.
 @ingroup geometry_optimization */
 class ConvexSet : public ShapeReifier {
@@ -147,6 +151,9 @@ class ConvexSet : public ShapeReifier {
     }
     return DoPointInSet(x, tol);
   }
+
+  /** Returns the pair */
+  std::optional<AxisAlignedBox> CalcAxisAlignedBoundingBox() const;
 
   /** Adds a constraint to an existing MathematicalProgram enforcing that the
   point defined by vars is inside the set.
@@ -345,6 +352,23 @@ class ConvexSet : public ShapeReifier {
   // an invariant like `∑(set.size() for set in sets_) == ambient_dimension_`,
   // we need to zero the dimension when `sets_` is moved-from.
   reset_after_move<int> ambient_dimension_;
+};
+
+class AxisAlignedBox{
+  public:
+  AxisAlignedBox(const Eigen::VectorXd& lower_corner,
+                 const Eigen::VectorXd& upper_corner)
+      : lower_corner_(lower_corner), upper_corner_(upper_corner) {
+    DRAKE_THROW_UNLESS(lower_corner.size() == upper_corner.size());
+  }
+
+  const Eigen::VectorXd lower_corner() const { return lower_corner_; }
+
+  const Eigen::VectorXd upper_corner() const { return upper_corner_; }
+
+  private:
+  const Eigen::VectorXd lower_corner_;
+  const Eigen::VectorXd upper_corner_;
 };
 
 /** Provides the recommended container for passing a collection of ConvexSet
