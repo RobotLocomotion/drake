@@ -13,10 +13,7 @@ def scs_internal_repository(
         sha256 = "fe5e8c61ca5ea97975e231b1bb4a873d86e7908fdff416101c2a7cd13ecf5b41",  # noqa
         build_file = ":package.BUILD.bazel",
         patches = [
-            # Fix some include paths for our build of QDLDL.
-            # TODO(jwnimmer-tri) We should upstream these options under a
-            # config switch.
-            ":private.h.diff",
+            ":patches/include_paths.patch",
         ],
         mirrors = mirrors,
     )
