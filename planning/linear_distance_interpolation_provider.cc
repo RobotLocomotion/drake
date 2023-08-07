@@ -71,8 +71,8 @@ Eigen::VectorXd GetJointDistanceWeights(
               joint.name(), joint_distance_weight);
         } else {
           throw std::runtime_error(fmt::format(
-              "Joint {} [{}] has type [{}] not supported when named joint "
-              "distance weights, construct "
+              "Joint {} [{}] has type [{}] not supported when using named joint"
+              " distance weights, construct "
               "LinearDistanceAndInterpolationProvider with a vector of distance"
               " weights instead",
               i, joint.name(), joint.type_name()));
@@ -119,7 +119,7 @@ Eigen::VectorXd SanityCheckDistanceWeights(
     if (x_weight != 0.0 || y_weight != 0.0 || z_weight != 0.0) {
       throw std::runtime_error(fmt::format(
           "Provided distance weights for quaternion dof starting at index {} "
-          "with values ({}, {}, {}, {}) must be ({}, 0.0, 0.0, 0.0) instead",
+          "with values ({}, {}, {}, {}) must be ({}, 0, 0, 0) instead",
           i, w_weight, x_weight, y_weight, z_weight, w_weight));
     }
   }
