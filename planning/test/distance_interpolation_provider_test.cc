@@ -4,6 +4,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/unused.h"
 
 namespace drake {
@@ -85,38 +86,42 @@ GTEST_TEST(BrokenDistanceAndInterpolationProviderTest, Test) {
   EXPECT_NE(cloned, nullptr);
 
   // Distance with different length qs throws.
-  EXPECT_THROW(provider.ComputeConfigurationDistance(Eigen::VectorXd::Zero(2),
-                                                     Eigen::VectorXd::Zero(3)),
-               std::exception);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      provider.ComputeConfigurationDistance(Eigen::VectorXd::Zero(2),
+                                            Eigen::VectorXd::Zero(3)),
+      ".* condition 'from\\.size\\(\\) == to\\.size\\(\\)' failed.*");
 
   // Interpolation with different length qs throws.
-  EXPECT_THROW(provider.InterpolateBetweenConfigurations(
-                   Eigen::VectorXd::Zero(2), Eigen::VectorXd::Zero(3), 0.0),
-               std::exception);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      provider.InterpolateBetweenConfigurations(Eigen::VectorXd::Zero(2),
+                                                Eigen::VectorXd::Zero(3), 0.0),
+      ".* condition 'from\\.size\\(\\) == to\\.size\\(\\)' failed.*");
 
   // Interpolation with ratios outside [0, 1] throws.
-  EXPECT_THROW(provider.InterpolateBetweenConfigurations(
-                   Eigen::VectorXd::Zero(2), Eigen::VectorXd::Zero(2), -0.1),
-               std::exception);
-  EXPECT_THROW(provider.InterpolateBetweenConfigurations(
-                   Eigen::VectorXd::Zero(2), Eigen::VectorXd::Zero(2), 1.1),
-               std::exception);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      provider.InterpolateBetweenConfigurations(Eigen::VectorXd::Zero(2),
+                                                Eigen::VectorXd::Zero(2), -0.1),
+      ".* condition 'ratio >= 0\\.0' failed.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      provider.InterpolateBetweenConfigurations(Eigen::VectorXd::Zero(2),
+                                                Eigen::VectorXd::Zero(2), 1.1),
+      ".* condition 'ratio <= 1\\.0' failed.*");
 
   // "Broken" provider causes all distance queries to throw.
-  EXPECT_THROW(provider.ComputeConfigurationDistance(Eigen::VectorXd::Zero(2),
-                                                     Eigen::VectorXd::Zero(2)),
-               std::exception);
-  EXPECT_THROW(provider.ComputeConfigurationDistance(Eigen::VectorXd::Zero(2),
-                                                     Eigen::VectorXd::Zero(2)),
-               std::exception);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      provider.ComputeConfigurationDistance(Eigen::VectorXd::Zero(2),
+                                            Eigen::VectorXd::Zero(2)),
+      ".* condition 'distance >= 0\\.0' failed.*");
 
   // "Broken" provider causes all interpolation queries to throw.
-  EXPECT_THROW(provider.InterpolateBetweenConfigurations(
-                   Eigen::VectorXd::Zero(2), Eigen::VectorXd::Zero(2), 0.0),
-               std::exception);
-  EXPECT_THROW(provider.InterpolateBetweenConfigurations(
-                   Eigen::VectorXd::Zero(2), Eigen::VectorXd::Zero(2), 1.0),
-               std::exception);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      provider.InterpolateBetweenConfigurations(Eigen::VectorXd::Zero(2),
+                                                Eigen::VectorXd::Zero(2), 0.0),
+      ".* condition 'from\\.size\\(\\) == interpolated\\.size\\(\\)' failed.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      provider.InterpolateBetweenConfigurations(Eigen::VectorXd::Zero(2),
+                                                Eigen::VectorXd::Zero(2), 1.0),
+      ".* condition 'from\\.size\\(\\) == interpolated\\.size\\(\\)' failed.*");
 }
 
 GTEST_TEST(SimpleLinearDistanceAndInterpolationProviderTest, Test) {
@@ -127,22 +132,26 @@ GTEST_TEST(SimpleLinearDistanceAndInterpolationProviderTest, Test) {
   EXPECT_NE(cloned, nullptr);
 
   // Distance with different length qs throws.
-  EXPECT_THROW(provider.ComputeConfigurationDistance(Eigen::VectorXd::Zero(2),
-                                                     Eigen::VectorXd::Zero(3)),
-               std::exception);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      provider.ComputeConfigurationDistance(Eigen::VectorXd::Zero(2),
+                                            Eigen::VectorXd::Zero(3)),
+      ".* condition 'from\\.size\\(\\) == to\\.size\\(\\)' failed.*");
 
   // Interpolation with different length qs throws.
-  EXPECT_THROW(provider.InterpolateBetweenConfigurations(
-                   Eigen::VectorXd::Zero(2), Eigen::VectorXd::Zero(3), 0.0),
-               std::exception);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      provider.InterpolateBetweenConfigurations(Eigen::VectorXd::Zero(2),
+                                                Eigen::VectorXd::Zero(3), 0.0),
+      ".* condition 'from\\.size\\(\\) == to\\.size\\(\\)' failed.**");
 
   // Interpolation with ratios outside [0, 1] throws.
-  EXPECT_THROW(provider.InterpolateBetweenConfigurations(
-                   Eigen::VectorXd::Zero(2), Eigen::VectorXd::Zero(2), -0.1),
-               std::exception);
-  EXPECT_THROW(provider.InterpolateBetweenConfigurations(
-                   Eigen::VectorXd::Zero(2), Eigen::VectorXd::Zero(2), 1.1),
-               std::exception);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      provider.InterpolateBetweenConfigurations(Eigen::VectorXd::Zero(2),
+                                                Eigen::VectorXd::Zero(2), -0.1),
+      ".* condition 'ratio >= 0\\.0' failed.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      provider.InterpolateBetweenConfigurations(Eigen::VectorXd::Zero(2),
+                                                Eigen::VectorXd::Zero(2), 1.1),
+      ".* condition 'ratio <= 1\\.0' failed.*");
 
   // Distance queries.
   EXPECT_EQ(provider.ComputeConfigurationDistance(Eigen::VectorXd::Zero(2),
