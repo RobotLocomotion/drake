@@ -1451,6 +1451,8 @@ PYBIND11_MODULE(plant, m) {
         .value("kPoint", Class::kPoint, cls_doc.kPoint.doc)
         .value("kHydroelasticWithFallback", Class::kHydroelasticWithFallback,
             cls_doc.kHydroelasticWithFallback.doc)
+        .value("kHydroelasticInferred", Class::kHydroelasticInferred,
+            cls_doc.kHydroelasticInferred.doc)
         // Legacy alias. TODO(jwnimmer-tri) Deprecate this constant.
         .value("kHydroelasticsOnly", Class::kHydroelasticsOnly,
             cls_doc.kHydroelasticsOnly.doc)
