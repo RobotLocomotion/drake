@@ -1,5 +1,6 @@
 #pragma once
 
+#include <limits>
 #include <unordered_map>
 #include <vector>
 
@@ -106,13 +107,18 @@ class RationalForwardKinematics {
   /** Computes values of s from q_val and q_star_val, while handling the index
    matching between q and s (we don't guarantee that s(i) is computed from
    q(i)).
+   @param angles_wrap_to_inf If set to True, then for a revolute joint whose (θ
+   −θ*) >=π/2 (or <= −π/2), we set the corresponding s to ∞ (or −∞), @default is
+   false.
    */
   template <typename Derived>
   [[nodiscard]] std::enable_if_t<is_eigen_vector<Derived>::value,
                                  VectorX<typename Derived::Scalar>>
   ComputeSValue(const Eigen::MatrixBase<Derived>& q_val,
-                const Eigen::Ref<const Eigen::VectorXd>& q_star_val) const {
+                const Eigen::Ref<const Eigen::VectorXd>& q_star_val,
+                bool angles_wrap_to_inf = false) const {
     VectorX<typename Derived::Scalar> s_val(s_.size());
+    using T = typename Derived::Scalar;
     for (int i = 0; i < s_val.size(); ++i) {
       const internal::Mobilizer<double>& mobilizer =
           GetInternalTree(plant_).get_mobilizer(
@@ -121,7 +127,18 @@ class RationalForwardKinematics {
       // a variable into s_.
       if (IsRevolute(mobilizer)) {
         const int q_index = mobilizer.position_start_in_q();
-        s_val(i) = tan((q_val(q_index) - q_star_val(q_index)) / 2);
+        const auto delta = (q_val(q_index) - q_star_val(q_index)) / 2;
+        if (angles_wrap_to_inf) {
+          if (delta >= T(M_PI / 2)) {
+            s_val(i) = T(std::numeric_limits<double>::infinity());
+          } else if (delta <= -T(M_PI / 2)) {
+            s_val(i) = T(-std::numeric_limits<double>::infinity());
+          } else {
+            s_val(i) = tan(delta);
+          }
+        } else {
+          s_val(i) = tan(delta);
+        }
       } else if (IsPrismatic(mobilizer)) {
         const int q_index = mobilizer.position_start_in_q();
         s_val(i) = q_val(q_index) - q_star_val(q_index);
@@ -151,8 +168,8 @@ class RationalForwardKinematics {
       // the mobilizer cannot be a weld joint since weld joint doesn't introduce
       // a variable into s_.
       const int q_index = mobilizer.position_start_in_q();
-      using std::pow;
       using std::atan2;
+      using std::pow;
       if (IsRevolute(mobilizer)) {
         q_val(q_index) =
             atan2(2 * s_val(i), 1 - pow(s_val(i), 2)) + q_star_val(q_index);

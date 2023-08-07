@@ -141,9 +141,9 @@ void CspaceFreeBox::GeneratePolynomialsToCertify(
     const Eigen::Ref<const Eigen::VectorXd>& q_star,
     const IgnoredCollisionPairs& ignored_collision_pairs,
     PolynomialsToCertify* certify_polynomials) const {
-  this->CalcSBoundsPolynomial(s_box_lower, s_box_upper,
-                              &(certify_polynomials->s_minus_s_box_lower),
-                              &(certify_polynomials->s_box_upper_minus_s));
+  this->CalcSBoundsPolynomial<double>(
+      s_box_lower, s_box_upper, &(certify_polynomials->s_minus_s_box_lower),
+      &(certify_polynomials->s_box_upper_minus_s));
 
   std::map<int, const CSpaceSeparatingPlane<symbolic::Variable>*>
       separating_planes_map;
