@@ -55,17 +55,13 @@ std::unique_ptr<ConvexSet> Intersection::DoClone() const {
   return std::make_unique<Intersection>(*this);
 }
 
-bool Intersection::DoIsBounded() const {
+std::optional<bool> Intersection::DoIsBoundedShortcut() const {
   for (const auto& s : sets_) {
     if (s->IsBounded()) {
       return true;
     }
   }
-  // TODO(mpetersen94): Cover case where sets are unbounded but intersection is
-  // bounded.
-  throw std::runtime_error(
-      "Determining the boundedness of an Intersection made up of unbounded "
-      "elements is not currently supported.");
+  return std::nullopt;
 }
 
 bool Intersection::DoIsEmpty() const {

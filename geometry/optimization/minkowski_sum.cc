@@ -94,7 +94,7 @@ std::unique_ptr<ConvexSet> MinkowskiSum::DoClone() const {
   return std::make_unique<MinkowskiSum>(*this);
 }
 
-bool MinkowskiSum::DoIsBounded() const {
+std::optional<bool> MinkowskiSum::DoIsBoundedShortcut() const {
   for (const auto& s : sets_) {
     if (!s->IsBounded()) {
       return false;
