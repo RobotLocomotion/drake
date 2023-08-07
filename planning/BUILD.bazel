@@ -246,6 +246,7 @@ drake_cc_googletest(
         ":planning_test_helpers",
         ":robot_diagram_builder",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
         "@common_robotics_utilities",
     ],
 )
@@ -255,12 +256,15 @@ drake_cc_googletest(
     data = [
         "//manipulation/models/iiwa_description:models",
         "//planning/test_utilities:collision_ground_plane.sdf",
+        "//planning/test_utilities:flying_robot_base.sdf",
     ],
     deps = [
         ":linear_distance_interpolation_provider",
         ":planning_test_helpers",
         ":robot_diagram_builder",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "@common_robotics_utilities",
     ],
 )
 
