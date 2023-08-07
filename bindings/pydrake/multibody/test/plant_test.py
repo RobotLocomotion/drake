@@ -2614,6 +2614,7 @@ class TestPlant(unittest.TestCase):
             ContactModel.kHydroelastic,
             ContactModel.kPoint,
             ContactModel.kHydroelasticWithFallback,
+            ContactModel.kHydroelasticInferred,
             # Also test the legacy aliases.
             ContactModel.kHydroelasticsOnly,
             ContactModel.kPointContactOnly,
