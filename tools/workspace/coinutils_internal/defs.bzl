@@ -179,7 +179,7 @@ def coin_cc_library(
             srcs = [upstream_src, vendor_src],
             outs = [vendor_src + ".patch"],
             cmd = " ".join([
-                "(diff -u0",
+                "(diff -U0",
                 "--label={upstream_src} $(execpath {upstream_src})",
                 "--label={vendor_src} $(execpath {vendor_src})",
                 "> $@ || [[ $$? == 1 ]])",
