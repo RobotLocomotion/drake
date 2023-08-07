@@ -980,6 +980,8 @@ class SceneGraph final : public systems::LeafSystem<T> {
       systems::Context<T>* context) const;
   //@}
 
+  void set_hydro_inferred(bool value);
+
  private:
   // Friend class to facilitate testing.
   friend class SceneGraphTester;

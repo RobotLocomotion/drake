@@ -861,6 +861,14 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     return iter->second->getNodeType() == fcl::GEOM_CONVEX;
   }
 
+  void set_hydro_inferred(bool value) {
+    hydroelastic_geometries_.set_hydro_inferred(value);
+  }
+
+  bool get_hydro_inferred() const {
+    return hydroelastic_geometries_.get_hydro_inferred();
+  }
+
  private:
   // Engine on one scalar can see the members of other engines.
   friend class ProximityEngineTester;
@@ -1151,6 +1159,16 @@ template <typename T>
 std::vector<SortedPair<GeometryId>>
 ProximityEngine<T>::FindCollisionCandidates() const {
   return impl_->FindCollisionCandidates();
+}
+
+template <typename T>
+void ProximityEngine<T>::set_hydro_inferred(bool value) {
+  impl_->set_hydro_inferred(value);
+}
+
+template <typename T>
+bool ProximityEngine<T>::get_hydro_inferred() const {
+  return impl_->get_hydro_inferred();
 }
 
 // Testing utilities

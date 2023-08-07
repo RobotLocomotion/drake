@@ -616,6 +616,13 @@ class GeometryState {
 
   //@}
 
+  void set_hydro_inferred(bool value) {
+    geometry_engine_->set_hydro_inferred(value);
+  }
+  bool get_hydro_inferred() const {
+    return geometry_engine_->get_hydro_inferred();
+  }
+
  private:
   // GeometryState of one scalar type is friends with all other scalar types.
   template <typename>

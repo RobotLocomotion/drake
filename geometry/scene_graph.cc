@@ -373,13 +373,18 @@ const SceneGraphInspector<T>& SceneGraph<T>::model_inspector() const {
 
 template <typename T>
 CollisionFilterManager SceneGraph<T>::collision_filter_manager() {
-  return model_.collision_filter_manager();;
+  return model_.collision_filter_manager();
 }
 
 template <typename T>
 CollisionFilterManager SceneGraph<T>::collision_filter_manager(
     Context<T>* context) const {
   return mutable_geometry_state(context).collision_filter_manager();
+}
+
+template <typename T>
+void SceneGraph<T>::set_hydro_inferred(bool value) {
+    model_.set_hydro_inferred(value);
 }
 
 template <typename T>
