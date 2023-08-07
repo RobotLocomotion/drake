@@ -24,6 +24,7 @@ GTEST_TEST(SymbolicLatex, BasicTest) {
   EXPECT_EQ(ToLatex(1.0, 1), "1");
   EXPECT_EQ(ToLatex(1.01), "1.010");
   EXPECT_EQ(ToLatex(1.01, 1), "1.0");
+  EXPECT_EQ(ToLatex(4e9), "4000000000");
   EXPECT_EQ(ToLatex(kInf - kInf), "\\text{NaN}");
   EXPECT_EQ(ToLatex(kInf), "\\infty");
   EXPECT_EQ(ToLatex(-kInf), "-\\infty");
