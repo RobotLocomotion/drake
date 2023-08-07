@@ -23,7 +23,7 @@ build:kcov_everything --define=WITH_MOSEK=ON
 build:kcov_everything --define=WITH_SNOPT=ON
 build:kcov_everything --copt -g
 build:kcov_everything --copt -O0
-build:kcov_everything --spawn_strategy=standalone
+build:kcov_everything --strategy=TestRunner=local
 build:kcov_everything --run_under=//tools/dynamic_analysis:kcov
 build:kcov_everything --local_test_jobs=HOST_CPUS*0.5
 build:kcov_everything --test_tag_filters=-lint,-no_kcov
