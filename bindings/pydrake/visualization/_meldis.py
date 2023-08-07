@@ -1,14 +1,23 @@
+from collections import deque
 import copy
 import hashlib
 import logging
-import numpy as np
 from pathlib import Path
 import re
 import sys
+import tempfile
+import threading
 import time
+import zlib
+
+from flask import Flask, Response
+import numpy as np
+from PIL import Image
 
 from drake import (
     lcmt_contact_results_for_viz,
+    lcmt_image,
+    lcmt_image_array,
     lcmt_point_cloud,
     lcmt_point_cloud_field,
     lcmt_viewer_draw,
@@ -615,6 +624,120 @@ class _DrawFrameApplet:
                                                   message.quaternion[i]))
 
 
+class _ImageServer(Flask):
+    """Streams images via the HTTP protocol given an image source. The image
+    source should be a continuously running generator function that yields
+    images sequentially.
+    """
+
+    def __init__(self, *, image_generator):
+        super().__init__("meldis_lcm_image_viewer")
+        self.add_url_rule("/", view_func=self._serve_image)
+
+        self._image_generator = image_generator
+
+    def _serve_image(self):
+        return Response(
+            self._image_generator(),
+            mimetype="multipart/x-mixed-replace; boundary=frame",
+        )
+
+
+class _ImageArrayApplet:
+    """Displays LCM images in another URL that has the same host IP but a
+    different port number.
+
+    It listens to `lcmt_image_arry` messages, processes them to image files,
+    and store the images to a queue. A flask server, _ImageServer, grabs images
+    when available and broadcasts them to the URL for visualization.
+    """
+
+    _IMAGE_DATA_TYPE = {
+        lcmt_image.CHANNEL_TYPE_INT16: np.int16,
+        lcmt_image.CHANNEL_TYPE_UINT8: np.uint8,
+        lcmt_image.CHANNEL_TYPE_UINT16: np.uint16,
+        lcmt_image.CHANNEL_TYPE_FLOAT32: np.float32,
+    }
+    """The mapping from `lcmt_image` channel_type enum to numpy data type."""
+
+    _IMAGE_CHANNEL_NUM = {
+        lcmt_image.PIXEL_FORMAT_RGBA: 4,
+        lcmt_image.PIXEL_FORMAT_DEPTH: 1,
+        lcmt_image.PIXEL_FORMAT_LABEL: 1,
+    }
+    """The mapping from `lcmt_image` pixel_format enum to the number of
+    channels.
+    """
+
+    def __init__(self, host):
+        # Scratch space to store temporary images.
+        self._temp_dir = tempfile.TemporaryDirectory()
+
+        # Pending image files to be sent to the server.
+        self._image_queue = deque()
+
+        # Instantiate an `_ImageServer` and run it in another thread.
+        self._image_server = _ImageServer(image_generator=self.image_generator)
+        threading.Thread(
+            target=lambda: self._image_server.run(
+                host=host, port=0, debug=False, threaded=False
+            )
+        ).start()
+
+    def image_generator(self):
+        while True:
+            if len(self._image_queue) > 0:
+                with threading.Lock():
+                    image_file = self._image_queue.popleft()
+                yield (
+                    b"--frame\r\n"
+                    b"Content-Type: image/png\r\n\r\n"
+                    + image_file
+                    + b"\r\n"
+                )
+
+    def on_image_array(self, message):
+        """Converts `lcmt_image_array` to image files and stores them in a
+        deque. Note that only a subset of `lcmt_image` types are supported.
+        """
+        for image in message.images:
+            w = image.width
+            h = image.height
+
+            # Validate the image.
+            data_type = self._IMAGE_DATA_TYPE.get(image.channel_type, None)
+            num_channels = self._IMAGE_CHANNEL_NUM.get(
+                image.pixel_format, None
+            )
+            bytes_per_pixel = np.dtype(data_type).itemsize * num_channels
+            assert data_type, image.channel_type
+            assert num_channels, image.pixel_format
+            assert image.row_stride == w * bytes_per_pixel, image.row_stride
+
+            if (
+                image.compression_method
+                == lcmt_image.COMPRESSION_METHOD_NOT_COMPRESSED
+            ):
+                data_bytes = image.data
+            elif (
+                image.compression_method == lcmt_image.COMPRESSION_METHOD_ZLIB
+            ):
+                # TODO(eric): Consider using `data`s buffer, if possible.
+                # Can decompress() somehow use an existing buffer in Python?
+                data_bytes = zlib.decompress(image.data)
+            else:
+                raise RuntimeError(
+                    f"Unsupported compression type:{image.compression_method}"
+                )
+
+            # TODO(zachfang): Fix this. We can't save unbounded image files.
+            pil_image = Image.frombuffer("RGBA", (w, h), data_bytes)
+            png_image_path = f"{self._temp_dir.name}/{int(time.time())}.png"
+            pil_image.save(png_image_path)
+            with threading.Lock():
+                self._image_queue.append(open(png_image_path, "rb").read())
+
+
 class Meldis:
     """
     MeshCat LCM Display Server (MeLDiS)
@@ -725,6 +848,11 @@ class Meldis:
         self._subscribe_multichannel(regex="DRAKE_DRAW_FRAMES.*",
                                      message_type=lcmt_viewer_draw,
                                      handler=draw_frame.on_frame_update)
+        # Subscribe to all images.
+        image_array = _ImageArrayApplet(host=meshcat_host or "localhost")
+        self._subscribe(channel="DRAKE_RGBD_CAMERA_IMAGES",
+                        message_type=lcmt_image_array,
+                        handler=image_array.on_image_array)
 
         # Bookkeeping for automatic shutdown.
         self._last_poll = None
