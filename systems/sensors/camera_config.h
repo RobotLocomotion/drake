@@ -337,6 +337,11 @@ struct CameraConfig {
      cleanup: false
    @endcode
 
+   6. Explicitly request Drake's default render engine.
+   @code{yaml}
+   renderer_class: ""
+   @endcode
+
    Things to note:
 
      - When providing the _parameters_ for the engine, the declaration must
@@ -344,13 +349,6 @@ struct CameraConfig {
      - A defaulted set of parameters must have a trailing `{}` (example 2).
      - Two engine parameter sets may have the same semantic parameter but spell
        it differently (`default_clear_color` in examples 3 and 4).
-
-   <!-- TODO(SeanCurtis-TRI): Figure out why this doesn't work.
-   ?. Explicitly default to Drake's default render engine.
-   @code{yaml}
-   renderer_class: ""
-   @endcode
-   -->
 
    @pre `renderer_class` is a string and either empty or one of
         `"RenderEngineVtk"`, `"RenderEngineGl"`, or `"RenderEngineGltfClient"`,
