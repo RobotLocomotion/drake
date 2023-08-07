@@ -260,10 +260,8 @@ _AUTOCONF_DEFINES = [
     "IPOPT_VERSION=\"drake_vendor\"",
     # Features of the standard library and/or host system.
     "HAVE_CFLOAT=1",
-    "HAVE_CIEEEFP=1",
     "HAVE_CMATH=1",
     "HAVE_FLOAT_H=1",
-    "HAVE_IEEEFP_H=1",
     "HAVE_INTTYPES_H=1",
     "HAVE_MATH_H=1",
     "HAVE_STDINT_H=1",
@@ -296,6 +294,8 @@ _AUTOCONF_DEFINES = [
 
 _AUTOCONF_UNDEFINES = [
     # Don't use these features of the standard library and/or host system.
+    "HAVE_CIEEEFP",
+    "HAVE_IEEEFP_H",
     "CXX_NO_MINUS_C_MINUS_O",
     "F77_DUMMY_MAIN",
     "F77_FUNC",
@@ -377,6 +377,10 @@ install(
         "LICENSE",
         # We must redistribute our code changes, per Ipopt's EPL-2.0 license.
         ":drake_ipopt.patch",
+        "@drake//tools/workspace/ipopt_internal_fromsource:patches",
+    ],
+    allowed_externals = [
+        "@drake//tools/workspace/ipopt_internal_fromsource:patches",
     ],
     visibility = ["//visibility:public"],
 )

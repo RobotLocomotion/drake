@@ -8,6 +8,8 @@ load("@drake//tools/workspace/cc:repository.bzl", "cc_repository")
 load("@drake//tools/workspace/ccd_internal:repository.bzl", "ccd_internal_repository")  # noqa
 load("@drake//tools/workspace/clang_cindex_python3_internal:repository.bzl", "clang_cindex_python3_internal_repository")  # noqa
 load("@drake//tools/workspace/clp:repository.bzl", "clp_repository")
+load("@drake//tools/workspace/clp_internal:repository.bzl", "clp_internal_repository")  # noqa
+load("@drake//tools/workspace/coinutils_internal:repository.bzl", "coinutils_internal_repository")  # noqa
 load("@drake//tools/workspace/com_jidesoft_jide_oss:repository.bzl", "com_jidesoft_jide_oss_repository")  # noqa
 load("@drake//tools/workspace/common_robotics_utilities:repository.bzl", "common_robotics_utilities_repository")  # noqa
 load("@drake//tools/workspace/commons_io:repository.bzl", "commons_io_repository")  # noqa
@@ -132,7 +134,13 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
     if "clang_cindex_python3_internal" not in excludes:
         clang_cindex_python3_internal_repository(name = "clang_cindex_python3_internal", mirrors = mirrors)  # noqa
     if "clp" not in excludes:
+        # The @clp external is deprecated in Drake's WORKSPACE and will be
+        # removed on or after 2023-12-01.
         clp_repository(name = "clp")
+    if "clp_internal" not in excludes:
+        clp_internal_repository(name = "clp_internal", mirrors = mirrors)
+    if "coinutils_internal" not in excludes:
+        coinutils_internal_repository(name = "coinutils_internal", mirrors = mirrors)  # noqa
     if "com_jidesoft_jide_oss" not in excludes:
         com_jidesoft_jide_oss_repository(name = "com_jidesoft_jide_oss", mirrors = mirrors)  # noqa
     if "common_robotics_utilities" not in excludes:
