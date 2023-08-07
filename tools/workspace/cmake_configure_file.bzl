@@ -5,12 +5,15 @@ load(
 
 # Defines the implementation actions to cmake_configure_file.
 def _cmake_configure_file_impl(ctx):
-    arguments = [
-        "--input",
-        ctx.file.src.path,
-        "--output",
-        ctx.outputs.out.path,
-    ]
+    if len(ctx.files.srcs) == 0:
+        fail("There must be at least one srcs")
+    if len(ctx.files.srcs) != len(ctx.outputs.outs):
+        fail("The number of srcs and outs must be congruent")
+    arguments = []
+    for src in ctx.files.srcs:
+        arguments += ["--input", src.path]
+    for out in ctx.outputs.outs:
+        arguments += ["--output", out.path]
     for item in ctx.attr.defines:
         arguments += ["-D" + item]
     for item in ctx.attr.undefines:
@@ -22,8 +25,8 @@ def _cmake_configure_file_impl(ctx):
     if ctx.attr.strict:
         arguments += ["--strict"]
     ctx.actions.run(
-        inputs = [ctx.file.src] + ctx.files.cmakelists,
-        outputs = [ctx.outputs.out],
+        inputs = ctx.files.srcs + ctx.files.cmakelists,
+        outputs = ctx.outputs.outs,
         arguments = arguments,
         env = ctx.attr.env,
         executable = ctx.executable.cmake_configure_file_py,
@@ -33,11 +36,8 @@ def _cmake_configure_file_impl(ctx):
 # Defines the rule to cmake_configure_file.
 _cmake_configure_file_gen = rule(
     attrs = {
-        "src": attr.label(
-            allow_single_file = True,
-            mandatory = True,
-        ),
-        "out": attr.output(mandatory = True),
+        "srcs": attr.label_list(allow_files = True, mandatory = True),
+        "outs": attr.output_list(mandatory = True),
         "defines": attr.string_list(),
         "undefines": attr.string_list(),
         "cmakelists": attr.label_list(allow_files = True),
@@ -93,8 +93,35 @@ def cmake_configure_file(
     """
     _cmake_configure_file_gen(
         name = name,
-        src = src,
-        out = out,
+        srcs = [src],
+        outs = [out],
+        defines = defines,
+        undefines = undefines,
+        cmakelists = cmakelists,
+        strict = strict,
+        env = hermetic_python_env(),
+        **kwargs
+    )
+
+def cmake_configure_files(
+        name,
+        srcs = None,
+        outs = None,
+        defines = None,
+        undefines = None,
+        cmakelists = None,
+        strict = None,
+        **kwargs):
+    """Like cmake_configure_file(), but with itemwise pairs of srcs => outs,
+    instead of just one pair of src => out.
+
+    When in strict mode, the defines / undefines must be used by *at least one*
+    of the srcs; only a definition that is unused by all srcs is an error.
+    """
+    _cmake_configure_file_gen(
+        name = name,
+        srcs = srcs,
+        outs = outs,
         defines = defines,
         undefines = undefines,
         cmakelists = cmakelists,
@@ -127,8 +154,8 @@ def autoconf_configure_file(
     """
     _cmake_configure_file_gen(
         name = name,
-        src = src,
-        out = out,
+        srcs = [src],
+        outs = [out],
         defines = defines,
         undefines = undefines,
         strict = strict,
