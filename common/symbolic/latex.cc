@@ -1,12 +1,13 @@
 #include "drake/common/symbolic/latex.h"
 
-#include <limits>
+#include <optional>
 #include <sstream>
 #include <stdexcept>
 
 namespace drake {
 namespace symbolic {
 
+using std::optional;
 using std::ostringstream;
 using std::runtime_error;
 using std::string;
@@ -14,27 +15,26 @@ using std::to_string;
 
 namespace {
 
-bool multiple_of_famous_constant(double value, double famous_constant_value,
-                                 std::string famous_constant_latex,
-                                 int precision, std::string* out) {
+// If `value` is an integer multiple of `famous_constant_value`, returns the
+// latex for the multiplied constant `{int_coeff}{famous_constant_latex}`.
+std::optional<string> multiple_of_famous_constant(
+    double value, double famous_constant_value,
+    string famous_constant_latex) {
   const double epsilon = 1e-14;
   if (std::abs(value) < epsilon) {  // Handle zero.
-    return false;
+    return std::nullopt;
   }
-  if (std::abs(std::fmod(value, famous_constant_value)) < epsilon ||
-      std::abs(std::fmod(value, famous_constant_value) -
-               famous_constant_value) < epsilon) {
-    const double coeff = std::round(value / famous_constant_value);
+  const double coeff = std::round(value / famous_constant_value);
+  const double difference = coeff * famous_constant_value - value;
+  if (std::abs(difference) < epsilon) {
     if (coeff == 1.0) {
-      *out = famous_constant_latex;
+      return famous_constant_latex;
     } else if (coeff == -1.0) {
-      *out = "-" + famous_constant_latex;
-    } else {
-      *out = ToLatex(coeff, precision) + famous_constant_latex;
+      return "-" + famous_constant_latex;
     }
-    return true;
+    return ToLatex(coeff, 0) + famous_constant_latex;
   }
-  return false;
+  return std::nullopt;
 }
 
 // Visitor class for code generation.
@@ -388,26 +388,22 @@ string ToLatex(double val, int precision) {
   if (std::isnan(val)) {
     return "\\text{NaN}";
   }
-  const double inf{std::numeric_limits<double>::infinity()};
-  if (val == inf) {
-    return "\\infty";
+  if (std::isinf(val)) {
+    return val < 0 ? "-\\infty" : "\\infty";
   }
-  if (val == -inf) {
-    return "-\\infty";
+  if (optional<string> result =
+          multiple_of_famous_constant(val, M_PI, "\\pi")) {
+    return *result;
   }
-  std::string multiple_of_famous;
-  if (multiple_of_famous_constant(val, M_PI, "\\pi", precision,
-                                  &multiple_of_famous)) {
-    return multiple_of_famous;
-  }
-  if (multiple_of_famous_constant(val, M_E, "e", precision,
-                                  &multiple_of_famous)) {
-    return multiple_of_famous;
+  if (optional<string> result =
+          multiple_of_famous_constant(val, M_E, "e")) {
+    return *result;
   }
   double intpart;
   if (std::modf(val, &intpart) == 0.0) {
-    // Then it's an integer.
-    return std::to_string(static_cast<int>(val));
+    // Then it's an integer. Note that we can't static_cast<int>() because it
+    // might not be a *small* integer.
+    return fmt::format("{:.0f}", val);
   }
   std::ostringstream oss;
   oss.precision(precision);
