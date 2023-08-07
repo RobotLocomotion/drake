@@ -127,17 +127,6 @@ install(
     ],
 )
 
-# Depend on CLP's shared library iff CLP is enabled.
-cc_library(
-    name = "clp_deps",
-    deps = select({
-        "//conditions:default": [
-            "@clp",
-        ],
-        "//tools:no_clp": [],
-    }),
-)
-
 # Depend on IPOPT's shared library iff IPOPT is enabled and we're on a platform
 # that uses the host OS shared library.
 selects.config_setting_group(
@@ -237,7 +226,6 @@ cc_library(
 cc_library(
     name = "libdrake_runtime_so_deps",
     deps = [
-        ":clp_deps",
         ":gurobi_deps",
         ":ipopt_deps",
         ":mosek_deps",
