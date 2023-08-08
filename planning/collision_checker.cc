@@ -542,7 +542,7 @@ void CollisionChecker::SetConfigurationDistanceFunction(
     const ConfigurationDistanceFunction& distance_function) {
   DRAKE_THROW_UNLESS(distance_function != nullptr);
   SanityCheckConfigurationDistanceFunction(distance_function,
-                                           GetZeroConfiguration());
+                                           GetDefaultConfiguration());
   distance_and_interpolation_provider_->SetConfigurationDistanceFunction(
       distance_function);
 }
@@ -563,7 +563,7 @@ void CollisionChecker::SetConfigurationInterpolationFunction(
     return;
   }
   SanityCheckConfigurationInterpolationFunction(interpolation_function,
-                                                GetZeroConfiguration());
+                                                GetDefaultConfiguration());
   distance_and_interpolation_provider_->SetConfigurationInterpolationFunction(
       interpolation_function);
 }
@@ -856,7 +856,7 @@ CollisionChecker::CollisionChecker(CollisionCheckerParams params,
             std::move(params.distance_and_interpolation_provider));
   } else if (params_has_distance_function) {
     SanityCheckConfigurationDistanceFunction(
-        params.configuration_distance_function, GetZeroConfiguration());
+        params.configuration_distance_function, GetDefaultConfiguration());
     // Generate the default interpolation function.
     const ConfigurationInterpolationFunction default_interpolation_fn =
         MakeDefaultConfigurationInterpolationFunction(
