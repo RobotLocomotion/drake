@@ -1166,8 +1166,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
                   return Class::SolidCylinder(r, L);
 #pragma GCC diagnostic pop
                 }),
-            py::arg("r"), py::arg("L"),
-            cls_doc.SolidCylinder.doc_deprecated)
+            py::arg("r"), py::arg("L"), cls_doc.SolidCylinder.doc_deprecated)
         .def_static("SolidCapsule",
             overload_cast_explicit<Class, const T&, const T&,
                 const Vector3<T>&>(&Class::SolidCapsule),
@@ -1182,8 +1181,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
                   return Class::SolidCapsule(r, L);
 #pragma GCC diagnostic pop
                 }),
-            py::arg("r"), py::arg("L"),
-            cls_doc.SolidCapsule.doc_deprecated)
+            py::arg("r"), py::arg("L"), cls_doc.SolidCapsule.doc_deprecated)
         .def_static("SolidCylinderAboutEnd",
             overload_cast_explicit<Class, const T&, const T&,
                 const Vector3<T>&>(&Class::SolidCylinderAboutEnd),
@@ -1206,9 +1204,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def_static("StraightLine", &Class::StraightLine,
             py::arg("moment_perpendicular"), py::arg("unit_vector"),
             cls_doc.StraightLine.doc)
-        .def_static("ThinRod", &Class::ThinRod,
-            py::arg("length"), py::arg("unit_vector"),
-            cls_doc.ThinRod.doc)
+        .def_static("ThinRod", &Class::ThinRod, py::arg("length"),
+            py::arg("unit_vector"), cls_doc.ThinRod.doc)
         .def_static("TriaxiallySymmetric", &Class::TriaxiallySymmetric,
             py::arg("I_triaxial"), cls_doc.TriaxiallySymmetric.doc)
         .def(py::pickle(
