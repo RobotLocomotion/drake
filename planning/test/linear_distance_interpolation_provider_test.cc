@@ -80,6 +80,8 @@ void DoFixedIiwaTest(const RobotDiagram<double>& model,
   // Make sure weights match expected values.
   EXPECT_TRUE(CompareMatrices(provider.distance_weights(), expected_weights));
 
+  EXPECT_TRUE(provider.quaternion_dof_start_indices().empty());
+
   // Define test configurations.
   const auto zero_q = Eigen::VectorXd::Zero(model.plant().num_positions());
   const auto ones_q = Eigen::VectorXd::Ones(model.plant().num_positions());
@@ -159,6 +161,9 @@ void DoFloatingIiwaTest(const RobotDiagram<double>& model,
 
   // Make sure weights match expected values.
   EXPECT_TRUE(CompareMatrices(provider.distance_weights(), expected_weights));
+
+  EXPECT_EQ(provider.quaternion_dof_start_indices().size(), 1);
+  EXPECT_EQ(provider.quaternion_dof_start_indices().at(0), 0);
 
   const Eigen::VectorXd expected_arm_weights =
       model.plant().GetPositionsFromArray(arm_model_instance, expected_weights);
@@ -303,6 +308,29 @@ GTEST_TEST(FixedIiwaTest, Test) {
         LinearDistanceAndInterpolationProvider(model->plant(),
                                                has_non_finite_weights),
         "Provided distance weight 6 with value inf is not finite");
+  }
+
+  // Changing weights.
+  {
+    Eigen::VectorXd initial_weights(7);
+    initial_weights << 1, 2, 3, 4, 5, 6, 7;
+
+    LinearDistanceAndInterpolationProvider provider(model->plant(),
+                                                    initial_weights);
+    EXPECT_TRUE(CompareMatrices(provider.distance_weights(), initial_weights));
+
+    Eigen::VectorXd good_update_weights(7);
+    good_update_weights << 7, 6, 5, 4, 3, 2, 1;
+
+    provider.SetDistanceWeights(good_update_weights);
+    EXPECT_TRUE(
+        CompareMatrices(provider.distance_weights(), good_update_weights));
+
+    Eigen::VectorXd bad_update_weights(7);
+    bad_update_weights << 7, 6, 5, 4, 3, 2, -1;
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        provider.SetDistanceWeights(bad_update_weights),
+        "Provided distance weight 6 with value -1 is less than zero");
   }
 }
 
