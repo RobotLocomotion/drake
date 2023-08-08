@@ -589,6 +589,8 @@ void BindMathematicalProgram(py::module m) {
   prog_cls  // BR
       .def("__str__", &MathematicalProgram::to_string,
           doc.MathematicalProgram.to_string.doc)
+      .def("ToLatex", &MathematicalProgram::ToLatex, py::arg("precision") = 3,
+          doc.MathematicalProgram.ToLatex.doc)
       .def("NewContinuousVariables",
           static_cast<VectorXDecisionVariable (MathematicalProgram::*)(
               int, const std::string&)>(

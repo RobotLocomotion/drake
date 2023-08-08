@@ -18,7 +18,9 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/fmt_eigen.h"
+#include "drake/common/ssize.h"
 #include "drake/common/symbolic/decompose.h"
+#include "drake/common/symbolic/latex.h"
 #include "drake/common/symbolic/monomial_util.h"
 #include "drake/math/matrix_util.h"
 #include "drake/solvers/binding.h"
@@ -67,6 +69,54 @@ string MathematicalProgram::to_string() const {
   std::ostringstream os;
   os << *this;
   return os.str();
+}
+
+std::string MathematicalProgram::ToLatex(int precision) {
+  if (num_vars() == 0) {
+    return "\\text{This MathematicalProgram has no decision variables.}";
+  }
+
+  std::stringstream ss;
+  ss << "\\begin{align*}\n";
+  if (GetAllCosts().empty()) {
+    ss << "\\text{find}_{";
+  } else {
+    ss << "\\min_{";
+  }
+  // TODO(russt): summarize vectors and matrices here by name, instead of every
+  // element.
+  bool first = true;
+  for (int i = 0; i < num_vars(); ++i) {
+    if (!first) {
+      ss << ", ";
+    }
+    first = false;
+    ss << symbolic::ToLatex(
+        decision_variables()[i]);  // precision is not needed.
+  }
+  ss << "} \\quad & ";
+
+  first = true;
+  for (const auto& b : GetAllCosts()) {
+    if (!first) ss << "\\\\\n &  + ";
+    first = false;
+    ss << b.ToLatex(precision);
+  }
+  std::vector<Binding<Constraint>> constraints = GetAllConstraints();
+  for (int i = 0; i < ssize(constraints); ++i) {
+    if (i == 0) {
+      ss << "\\\\\n \\text{subject to}\\quad";
+    }
+    ss << " & " << constraints[i].ToLatex(precision);
+    if (i == ssize(constraints) - 1) {
+      ss << ".";
+    } else {
+      ss << ",";
+    }
+    ss << "\\\\\n";
+  }
+  ss << "\\end{align*}\n";
+  return ss.str();
 }
 
 MatrixXDecisionVariable MathematicalProgram::NewVariables(

@@ -103,6 +103,12 @@ class EvaluatorBase {
    */
   std::ostream& Display(std::ostream& os) const;
 
+  /** Returns a LaTeX string describing this evaluator. Does not include any
+   * characters to enter/exit math mode; you might want, e.g. "$$" +
+   * evaluator.ToLatex() + "$$". */
+  std::string ToLatex(const VectorX<symbolic::Variable>& vars,
+                      int precision = 3) const;
+
   /**
    * Getter for the number of variables, namely the number of rows in x, as
    * used in Eval(x, y).
@@ -190,6 +196,9 @@ class EvaluatorBase {
    */
   virtual std::ostream& DoDisplay(
       std::ostream& os, const VectorX<symbolic::Variable>& vars) const;
+
+  virtual std::string DoToLatex(const VectorX<symbolic::Variable>& vars,
+                                int precision) const;
 
   // Setter for the number of outputs.
   // This method is only meant to be called, if the sub-class structure permits

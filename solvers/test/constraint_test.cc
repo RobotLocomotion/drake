@@ -11,6 +11,7 @@
 #include "drake/common/test_utilities/symbolic_test_util.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
+#include "drake/solvers/test/generic_trivial_constraints.h"
 
 using Eigen::Matrix2d;
 using Eigen::MatrixXd;
@@ -812,6 +813,215 @@ GTEST_TEST(testConstraint, testExponentialConeConstraint) {
   EXPECT_TRUE(CompareMatrices(math::ExtractValue(y_autodiff), y_expected, tol));
   EXPECT_TRUE(CompareMatrices(math::ExtractGradient(y_autodiff),
                               math::ExtractGradient(y_autodiff_expected), tol));
+}
+
+/* Note: To render the latex string output with the most relevant engine, open
+a jupyter notebook and run, e.g.:
+```
+from IPython.display import Markdown, display
+latex = "0 \\le (1.2 + x_{0} + 2x_{1})"
+display(Markdown(f"$${latex}$$"))
+```
+with the appropriate latex string. */
+
+GTEST_TEST(ToLatex, GenericConstraint) {
+  test::GenericTrivialConstraint1 c;
+  c.set_description("test");
+  Vector3<Variable> vars = symbolic::MakeVectorVariable<3>("x");
+  EXPECT_EQ(
+      c.ToLatex(vars),
+      "\\text{GenericTrivialConstraint1}(x_{0}, x_{1}, x_{2}) \\tag{test}");
+}
+
+GTEST_TEST(ToLatex, LinearConstraint) {
+  Matrix2d A;
+  A << 1, 2, 3, 4;
+  const Vector2d lb(-1, -2);
+  const Vector2d ub(1, kInf);
+  LinearConstraint c(A, lb, ub);
+  c.set_description("test");
+  Vector2<Variable> vars = symbolic::MakeVectorVariable<2>("x");
+  EXPECT_EQ(c.ToLatex(vars),
+            "\\begin{bmatrix} -1 \\\\ -2 \\end{bmatrix} \\le \\begin{bmatrix} "
+            "1 & 2 \\\\ 3 & 4 \\end{bmatrix} \\begin{bmatrix} x_{0} \\\\ x_{1} "
+            "\\end{bmatrix} \\le \\begin{bmatrix} 1 \\\\ \\infty "
+            "\\end{bmatrix} \\tag{test}");
+
+  // Trivial lower or upper bounds are not displayed.
+  LinearConstraint c_no_lb(A, Vector2d::Constant(-kInf), ub);
+  EXPECT_EQ(c_no_lb.ToLatex(vars),
+            "\\begin{bmatrix} 1 & 2 \\\\ 3 & 4 \\end{bmatrix} \\begin{bmatrix} "
+            "x_{0} \\\\ x_{1} \\end{bmatrix} \\le \\begin{bmatrix} 1 \\\\ "
+            "\\infty \\end{bmatrix}");
+  LinearConstraint c_no_ub(A, lb, Vector2d::Constant(kInf));
+  EXPECT_EQ(c_no_ub.ToLatex(vars),
+            "\\begin{bmatrix} -1 \\\\ -2 \\end{bmatrix} \\le \\begin{bmatrix} "
+            "1 & 2 \\\\ 3 & 4 \\end{bmatrix} \\begin{bmatrix} x_{0} \\\\ x_{1} "
+            "\\end{bmatrix}");
+
+  // LinearEqualityConstraint sets lb == ub.
+  LinearEqualityConstraint c_eq(A, lb);
+  EXPECT_EQ(
+      c_eq.ToLatex(vars),
+      "\\begin{bmatrix} 1 & 2 \\\\ 3 & 4 \\end{bmatrix} \\begin{bmatrix} x_{0} "
+      "\\\\ x_{1} \\end{bmatrix} = \\begin{bmatrix} -1 \\\\ -2 \\end{bmatrix}");
+
+  // Scalar constraints are a special case.
+  LinearConstraint c_scalar(A.row(0), Vector1d{-1}, Vector1d{1});
+  EXPECT_EQ(c_scalar.ToLatex(vars), "-1 \\le (x_{0} + 2x_{1}) \\le 1");
+}
+
+GTEST_TEST(ToLatex, BoundingBoxConstraint) {
+  const Vector2d lb(-1, -2);
+  const Vector2d ub(1, kInf);
+  BoundingBoxConstraint c(lb, ub);
+  c.set_description("test");
+  Vector2<Variable> vars = symbolic::MakeVectorVariable<2>("x");
+  EXPECT_EQ(c.ToLatex(vars),
+            "\\begin{bmatrix} -1 \\\\ -2 \\end{bmatrix} \\le \\begin{bmatrix} "
+            "x_{0} \\\\ x_{1} \\end{bmatrix} \\le \\begin{bmatrix} 1 \\\\ "
+            "\\infty \\end{bmatrix} \\tag{test}");
+
+  // Scalar constraints are a special case.
+  BoundingBoxConstraint c_scalar(Vector1d{-1}, Vector1d{1});
+  EXPECT_EQ(c_scalar.ToLatex(vars.head<1>()), "-1 \\le x_{0} \\le 1");
+}
+
+GTEST_TEST(ToLatex, QuadraticConstraint) {
+  Matrix2d Q;
+  Q << 1, 2, 2, 4;
+  Vector2d b{3, 5};
+  const double lb = -1;
+  const double ub = 1;
+  QuadraticConstraint c(Q, b, lb, ub);
+  c.set_description("test");
+  Vector2<Variable> vars = symbolic::MakeVectorVariable<2>("x");
+  EXPECT_EQ(c.ToLatex(vars),
+            "-1 \\le \\begin{bmatrix} x_{0} \\\\ x_{1} \\end{bmatrix}^T "
+            "\\begin{bmatrix} 0.500 & 1 \\\\ 1 & 2 \\end{bmatrix} "
+            "\\begin{bmatrix} x_{0} "
+            "\\\\ x_{1} \\end{bmatrix} + (3x_{0} + 5x_{1}) \\le 1 \\tag{test}");
+
+  // xᵀx = 1.
+  QuadraticConstraint c_eq(2 * Matrix2d::Identity(), Vector2d::Zero(), 1, 1);
+  EXPECT_EQ(c_eq.ToLatex(vars),
+            "\\begin{bmatrix} x_{0} \\\\ x_{1} \\end{bmatrix}^T "
+            "\\begin{bmatrix} 1 & 0 \\\\ 0 & 1 \\end{bmatrix} \\begin{bmatrix} "
+            "x_{0} \\\\ x_{1} \\end{bmatrix} = 1");
+}
+
+GTEST_TEST(ToLatex, PolynomialConstraint) {
+  const Polynomiald x("x");
+  const Polynomiald y("y");
+  const Polynomiald poly = (x - 1) * (x - 1) + (y + 2) * (y + 2);
+  const std::vector<Polynomiald::VarType> var_mapping = {
+      x.GetSimpleVariable(), y.GetSimpleVariable()};
+  PolynomialConstraint c(Vector1<Polynomiald>(poly), var_mapping, Vector1d{-1},
+                         Vector1d{1});
+  c.set_description("test");
+  Vector2<Variable> vars = symbolic::MakeVectorVariable<2>("x");
+  // TODO(russt): Improve this (or perhaps even deprecate the constraint type).
+  // PolynomialConstraint doesn't currently support Expression.
+  EXPECT_EQ(c.ToLatex(vars),
+            "\\text{PolynomialConstraint}(x_{0}, x_{1}) \\tag{test}");
+}
+
+GTEST_TEST(ToLatex, LorentzConeConstraints) {
+  MatrixXd A(4, 2);
+  // clang-format off
+  A << 1, 2,
+       3, 4,
+       5, 6,
+       7, 8;
+  // clang-format on
+  VectorXd b(4);
+  b << 1.2, 3.4, 5.6, 7.8;
+  LorentzConeConstraint lc(A, b);
+  lc.set_description("test");
+  Vector2<Variable> vars = symbolic::MakeVectorVariable<2>("x");
+  EXPECT_EQ(lc.ToLatex(vars, 1),
+            "\\left|\\begin{bmatrix} (3.4 + 3x_{0} + 4x_{1}) \\\\ (5.6 + "
+            "5x_{0} + 6x_{1}) \\\\ (7.8 + 7x_{0} + 8x_{1}) "
+            "\\end{bmatrix}\\right|_2 \\le (1.2 + x_{0} + 2x_{1}) \\tag{test}");
+
+  RotatedLorentzConeConstraint rlc(A, b);
+  rlc.set_description("test");
+  EXPECT_EQ(rlc.ToLatex(vars, 1),
+            "0 \\le (1.2 + x_{0} + 2x_{1}),\\\\ 0 \\le (3.4 + 3x_{0} + "
+            "4x_{1}),\\\\ \\left|\\begin{bmatrix} (5.6 + 5x_{0} + 6x_{1}) \\\\ "
+            "(7.8 + 7x_{0} + 8x_{1}) \\end{bmatrix}\\right|_2^2 \\le (1.2 + "
+            "x_{0} + 2x_{1}) (3.4 + 3x_{0} + 4x_{1}) \\tag{test}");
+}
+
+GTEST_TEST(ToLatex, LinearComplementarityConstraint) {
+  Eigen::Matrix2d M = Eigen::Matrix2d::Identity();
+  Eigen::Vector2d q(-1, -1);
+
+  LinearComplementarityConstraint c(M, q);
+  c.set_description("test");
+  Vector2<Variable> vars = symbolic::MakeVectorVariable<2>("x");
+  EXPECT_EQ(c.ToLatex(vars),
+            "0 \\le \\begin{bmatrix} x_{0} \\\\ x_{1} \\end{bmatrix} \\perp "
+            "\\begin{bmatrix} (-1 + x_{0}) \\\\ (-1 + x_{1}) \\end{bmatrix} "
+            "\\ge 0 \\tag{test}");
+}
+
+GTEST_TEST(ToLatex, PositiveSemidefiniteConstraint) {
+  Variable x{"x"}, y{"y"}, z{"z"};
+  Matrix2<Variable> S;
+  S << x, y, y, z;
+  PositiveSemidefiniteConstraint c(2);
+  c.set_description("test");
+  Vector4<Variable> vars{x, y, y, z};
+  EXPECT_EQ(c.ToLatex(vars),
+            "\\begin{bmatrix} x & y \\\\ y & z \\end{bmatrix} \\succeq 0 "
+            "\\tag{test}");
+}
+
+GTEST_TEST(ToLatex, LinearMatrixInequalityConstraint) {
+  Eigen::Matrix2d F0 = 2 * Eigen::Matrix2d::Identity();
+  Eigen::Matrix2d F1;
+  F1 << 1, 1, 1, 1;
+  Eigen::Matrix2d F2;
+  F2 << 1, 2, 2, 1;
+  LinearMatrixInequalityConstraint c({F0, F1, F2});
+  c.set_description("test");
+  Vector2<Variable> vars = symbolic::MakeVectorVariable<2>("x");
+  EXPECT_EQ(
+      c.ToLatex(vars),
+      "\\begin{bmatrix} (2 + x_{0} + x_{1}) & (x_{0} + 2x_{1}) \\\\ (x_{0} + "
+      "2x_{1}) & (2 + x_{0} + x_{1}) \\end{bmatrix} \\succeq 0 \\tag{test}");
+}
+
+GTEST_TEST(ToLatex, ExpressionConstraint) {
+  Vector2<Variable> x = symbolic::MakeVectorVariable<2>("x");
+  ExpressionConstraint c_scalar(Vector1<Expression>{1.2 + x(0) + 2 * x(1)},
+                                Vector1d{-1.2}, Vector1d{0.3});
+  c_scalar.set_description("test");
+  EXPECT_EQ(c_scalar.ToLatex(c_scalar.vars(), 1),
+            "-1.2 \\le (1.2 + x_{0} + 2x_{1}) \\le 0.3 \\tag{test}");
+
+  ExpressionConstraint c_vector(
+      Vector2<Expression>{0.1 + x(0), 3 * x(0) * x(1)}, Vector2d{-1, -2},
+      Vector2d{1, 2});
+  EXPECT_EQ(c_vector.ToLatex(c_vector.vars(), 1),
+            "\\begin{bmatrix} -1 \\\\ -2 \\end{bmatrix} \\le \\begin{bmatrix} "
+            "(0.1 + x_{0}) \\\\ 3 x_{0} x_{1} \\end{bmatrix} \\le "
+            "\\begin{bmatrix} 1 \\\\ 2 \\end{bmatrix}");
+}
+
+GTEST_TEST(ToLatex, ExponentialConeConstraint) {
+  Eigen::SparseMatrix<double> A(3, 2);
+  A.coeffRef(0, 0) = 2;
+  A.coeffRef(1, 1) = 3;
+  A.coeffRef(2, 0) = 1;
+  Eigen::Vector3d b(1, 2, 3);
+  ExponentialConeConstraint c(A, b);
+  c.set_description("test");
+  Vector2<Variable> vars = symbolic::MakeVectorVariable<2>("x");
+  EXPECT_EQ(c.ToLatex(vars),
+            "0 \\le (2 + 3x_{1}),\\\\ (1 + 2x_{0}) \\le (2 + 3x_{1}) "
+            "e^{\\frac{(3 + x_{0})}{(2 + 3x_{1})}} \\tag{test}");
 }
 
 }  // namespace

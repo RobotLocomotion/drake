@@ -80,6 +80,16 @@ class TestCost(unittest.TestCase):
         self.assertTrue(e.EqualTo(cost.expression()))
         self.assertEqual(sym.Variables(cost.vars()), sym.Variables([x, y]))
 
+    def test_to_latex(self):
+        x = sym.Variable("x")
+        y = sym.Variable("y")
+        e = np.sin(x) + y
+        cost = mp.ExpressionCost(e=e)
+        self.assertEqual(cost.ToLatex(vars=cost.vars(), precision=1),
+                         "(y + \\sin{x})")
+        binding = mp.Binding[mp.ExpressionCost](cost, cost.vars())
+        self.assertEqual(binding.ToLatex(precision=1), "(y + \\sin{x})")
+
 
 class TestConstraints(unittest.TestCase):
     def test_bounding_box_constraint(self):
