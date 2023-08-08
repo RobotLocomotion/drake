@@ -446,9 +446,9 @@ class UnitInertia : public RotationalInertia<T> {
   /// @see ThinRod() is an example of an object that is axially symmetric and
   /// that has a zero moment of inertia about Bp in the unit_vector direction.
   static UnitInertia<T> StraightLine(const T& moment_perpendicular,
-      const Vector3 <T>& unit_vector);
+      const Vector3<T>& unit_vector);
 
-  /// Creates a unit inertia for a uniform density very thin rod B about its
+  /// Creates a unit inertia for a uniform density thin rod B about its
   /// center of mass Bcm (which is coincident with B's geometric center Bo).
   /// @param[in] length length of rod in unit_vector direction (meters).
   /// @param[in] unit_vector unit vector defining the rod's axial direction,

@@ -25,7 +25,6 @@ void ThrowUnlessVectorIsMagnitudeOne(const Vector3<T>& unit_vector,
     // 𝐯⋅𝐯 - 1 ≤ 2 ε   and 𝐯⋅𝐯 - 1 ≥ -2 ε  or  |𝐯⋅𝐯 − 1| ≤ 2 ε
     // -------------------------------------------------------------
     // Hence the following simple test can be replaced by a more efficient one.
-    // Note: Avoiding square roots helps symbolic expressions simplify.
     // constexpr double kTolerance = 1E-14;
     // if (abs(unit_vector.norm() - 1) > kTolerance) {
     // -------------------------------------------------------------
@@ -106,7 +105,7 @@ UnitInertia<T> UnitInertia<T>::AxiallySymmetric(const T& moment_parallel,
   DRAKE_THROW_UNLESS(moment_perpendicular >= 0.0);  // Ensure K ≥ 0.
 
   // When the about-point Bp is Bcm, the moment of inertia triangle inequality
-  // simplifies to J ≤ 2 K.  If Bp is not Bp, J ≤ 2 K is still valid because
+  // simplifies to J ≤ 2 K. If Bp is not Bcm, J ≤ 2 K is worth verifying because
   // K_Bp (perpendicular moment of inertia about Bp) relates to
   // K_Bcm (perpendicular moment of inertia about Bcm) as K_Bp = K_Bcm + dist²,
   // where dist is the distance between points Bp and Bcm.
