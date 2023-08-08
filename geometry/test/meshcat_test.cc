@@ -118,7 +118,22 @@ GTEST_TEST(MeshcatTest, Ports) {
   // The default constructor gets a default port.
   Meshcat m3;
   EXPECT_GE(m3.port(), 7000);
-  EXPECT_LE(m3.port(), 7099);
+  EXPECT_LE(m3.port(), 7999);
+}
+
+GTEST_TEST(MeshcatTest, EphemeralPort) {
+  // Use port 0 to choose an ephemeral port:
+  //  https://en.wikipedia.org/wiki/Ephemeral_port
+  Meshcat meshcat(0);
+  EXPECT_GE(meshcat.port(), 32768);
+
+  // Try clicking a button to make sure the number was correct.
+  meshcat.AddButton("button");
+  CheckWebsocketCommand(meshcat, R"""({
+      "type": "button",
+      "name": "button"
+    })""", {}, {});
+  EXPECT_EQ(meshcat.GetButtonClicks("button"), 1);
 }
 
 // Use a basic web_url_pattern to affect web_url() and ws_url(). The pattern
