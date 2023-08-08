@@ -1,0 +1,157 @@
+# -*- bazel -*-
+
+load(
+    "@drake//tools/install:install.bzl",
+    "install",
+)
+load(
+    "@drake//tools/workspace/coinutils_internal:defs.bzl",
+    "coin_cc_library",
+)
+
+licenses(["reciprocal"])  # EPL-2.0
+
+package(default_visibility = ["//visibility:private"])
+
+exports_files([
+    # Always provide access to license texts.
+    "LICENSE",
+])
+
+_HDRS = glob(
+    [
+        "CoinUtils/src/*.hpp",
+        "CoinUtils/src/*.h",
+    ],
+    exclude = [
+        "**/config*",
+        "**/*Config.h",
+    ],
+    allow_empty = False,
+)
+
+_SRCS = glob(
+    [
+        "CoinUtils/src/*.cpp",
+    ],
+    allow_empty = False,
+)
+
+_AUTOCONF_DEFINES = [
+    "COINUTILS_VERSION=\"drake_vendor\"",
+    "PACKAGE_VERSION=\"drake_vendor\"",
+    "VERSION=\"drake_vendor\"",
+    # Features of the standard library and/or host system.
+    "COINUTILS_HAS_CSTDINT=1",
+    "COINUTILS_HAS_STDINT_H=1",
+    "COIN_C_FINITE=std::isfinite",
+    "COIN_C_ISNAN=std::isnan",
+    "COIN_INT64_T=int64_t",
+    "COIN_INTPTR_T=intptr_t",
+    "COIN_UINT64_T=uint64_t",
+    "HAVE_CFLOAT=1",
+    "HAVE_CINTTYPES=1",
+    "HAVE_CMATH=1",
+    "HAVE_CSTDINT=1",
+    "HAVE_FLOAT_H=1",
+    "HAVE_INTTYPES_H=1",
+    "HAVE_MATH_H=1",
+    "HAVE_STDINT_H=1",
+    "HAVE_STDLIB_H=1",
+    "HAVE_STRINGS_H=1",
+    "HAVE_STRING_H=1",
+    "HAVE_SYS_STAT_H=1",
+    "HAVE_SYS_TYPES_H=1",
+    "HAVE_UNISTD_H=1",
+    "STDC_HEADERS=1",
+    # Optional dependencies that we do actually want to use.
+    "COIN_HAS_BLAS=1",
+    "COIN_HAS_LAPACK=1",
+    # No debug self-checks (the default).
+    "COIN_COINUTILS_CHECKLEVEL=0",
+    "COIN_COINUTILS_VERBOSITY=0",
+]
+
+_AUTOCONF_UNDEFINES = [
+    # Don't use these features of the standard library and/or host system.
+    "COINUTILS_PTHREADS",
+    "F77_DUMMY_MAIN",
+    "F77_FUNC_",
+    "FC_DUMMY_MAIN_EQ_F77",
+    "HAVE_CIEEEFP",
+    "HAVE_DLFCN_H",
+    "HAVE_ENDIAN_H",
+    "HAVE_IEEEFP_H",
+    "HAVE_MEMORY_H",
+    "HAVE_WINDOWS_H",
+    # Optional dependencies that we don't use.
+    "COIN_HAS_BZLIB",
+    "COIN_HAS_GLPK",
+    "COIN_HAS_NETLIB",
+    "COIN_HAS_READLINE",
+    "COIN_HAS_SAMPLE",
+    "COIN_HAS_ZLIB",
+    "HAVE_BZLIB_H",
+    "HAVE_READLINE_READLINE_H",
+    "HAVE_ZLIB_H",
+    # Don't use internal memory pooling; libc pooling will suffice.
+    "COINUTILS_MEMPOOL_MAXPOOLED",
+    "COINUTILS_MEMPOOL_OVERRIDE_NEW",
+    # Chaff.
+    "COINUTILS_SVN_REV",
+    "COINUTILS_VERSION_MAJOR",
+    "COINUTILS_VERSION_MINOR",
+    "COINUTILS_VERSION_RELEASE",
+    "PACKAGE",
+    "PACKAGE_BUGREPORT",
+    "PACKAGE_NAME",
+    "PACKAGE_STRING",
+    "PACKAGE_TARNAME",
+    "SIZEOF_INT",
+    "SIZEOF_INT_P",
+    "SIZEOF_LONG",
+    "SIZEOF_LONG_LONG",
+    # This is actually used by the C++ code, but autoconf_configure_file can't
+    # handle it. We'll use _CONFIG_PRIVATE_DEFINES for this instead, below.
+    "F77_FUNC",
+]
+
+_CONFIG_PRIVATE_DEFINES = [
+    "F77_FUNC(name,NAME)=name##_",
+]
+
+_INCLUDES = [
+    "CoinUtils/src/",
+]
+
+coin_cc_library(
+    name = "coinutils",
+    config_h = "CoinUtilsConfig.h",
+    config_h_public = "CoinUtils/src/config_coinutils_default.h",
+    config_h_private = "CoinUtils/src/config.h.in",
+    autoconf_defines = _AUTOCONF_DEFINES,
+    autoconf_undefines = _AUTOCONF_UNDEFINES,
+    config_private_defines = _CONFIG_PRIVATE_DEFINES,
+    hdrs_public = _HDRS,
+    includes_public = _INCLUDES,
+    hdrs_private = _HDRS,
+    includes_private = _INCLUDES,
+    srcs = _SRCS,
+    vendor_tool_args = ["--no-inline-namespace"],
+    output_vendoring_patch = "drake_coinutils.patch",
+    visibility = ["//visibility:public"],
+)
+
+install(
+    name = "install",
+    docs = [
+        "LICENSE",
+        # We must redistribute our code changes, per CoinUtils EPL-2.0 license.
+        ":drake_coinutils.patch",
+        "@drake//tools/workspace/coinutils_internal:patches",
+    ],
+    allowed_externals = [
+        "@drake//tools/workspace/coinutils_internal:patches",
+    ],
+    visibility = ["//visibility:public"],
+)
