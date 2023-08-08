@@ -39,8 +39,9 @@ struct MeshcatParams {
   std::string host{"*"};
 
   /** Meshcat will listen on the given http `port`. If no port is specified,
-  then it will listen on the first available port starting at 7000 (up to 7099).
-  @pre We require `port` >= 1024. */
+  then it will listen on the first available port starting at 7000 (up to 7999).
+  If port 0 is specified, it will listen on an arbitrary "ephemeral" port.
+  @pre We require `port` == 0 || `port` >= 1024. */
   std::optional<int> port{std::nullopt};
 
   /** The `web_url_pattern` may be used to change the web_url() (and therefore
@@ -143,8 +144,9 @@ class Meshcat {
   enum SideOfFaceToRender { kFrontSide = 0, kBackSide = 1, kDoubleSide = 2 };
 
   /** Constructs the %Meshcat instance on `port`. If no port is specified,
-  it will listen on the first available port starting at 7000 (up to 7099).
-  @pre We require `port` >= 1024.
+  it will listen on the first available port starting at 7000 (up to 7999).
+  If port 0 is specified, it will listen on an arbitrary "ephemeral" port.
+  @pre We require `port` == 0 || `port` >= 1024.
   @throws std::exception if no requested `port` is available. */
   explicit Meshcat(std::optional<int> port = std::nullopt);
 
