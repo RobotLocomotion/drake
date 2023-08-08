@@ -224,7 +224,17 @@ void DoFloatingIiwaTest(const RobotDiagram<double>& model,
 GTEST_TEST(FixedIiwaTest, Test) {
   const auto model = MakePlanningTestModel(MakeFixedIiwaDirectives());
 
-  // Default weights.
+  // Default weights (none).
+  {
+    const LinearDistanceAndInterpolationProvider provider(model->plant());
+
+    Eigen::VectorXd expected_weights(7);
+    expected_weights << 1, 1, 1, 1, 1, 1, 1;
+
+    DoFixedIiwaTest(*model, provider, expected_weights);
+  }
+
+  // Default weights (empty map).
   {
     const LinearDistanceAndInterpolationProvider provider(
         model->plant(), std::map<std::string, double>{});
@@ -299,7 +309,17 @@ GTEST_TEST(FixedIiwaTest, Test) {
 GTEST_TEST(FloatingIiwaTest, Test) {
   const auto model = MakePlanningTestModel(MakeFloatingIiwaDirectives());
 
-  // Default weights.
+  // Default weights (none).
+  {
+    const LinearDistanceAndInterpolationProvider provider(model->plant());
+
+    Eigen::VectorXd expected_weights(14);
+    expected_weights << 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1;
+
+    DoFloatingIiwaTest(*model, provider, expected_weights);
+  }
+
+  // Default weights (empty map).
   {
     const LinearDistanceAndInterpolationProvider provider(
         model->plant(), std::map<std::string, double>{});

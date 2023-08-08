@@ -33,6 +33,9 @@ class LinearDistanceAndInterpolationProvider final
       const multibody::MultibodyPlant<double>& plant,
       const Eigen::VectorXd& distance_weights);
 
+  explicit LinearDistanceAndInterpolationProvider(
+      const multibody::MultibodyPlant<double>& plant);
+
   ~LinearDistanceAndInterpolationProvider() final;
 
   const Eigen::VectorXd& distance_weights() const { return distance_weights_; }
