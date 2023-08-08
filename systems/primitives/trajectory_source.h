@@ -26,7 +26,7 @@ namespace systems {
 /// - y0
 /// @endsystem
 ///
-/// @tparam_double_only
+/// @tparam_default_scalar
 /// @ingroup primitive_systems
 template <typename T>
 class TrajectorySource final : public SingleOutputVectorSource<T> {
@@ -37,7 +37,8 @@ class TrajectorySource final : public SingleOutputVectorSource<T> {
   /// @param output_derivative_order The number of times to take the derivative.
   /// Must be greater than or equal to zero.
   /// @param zero_derivatives_beyond_limits All derivatives will be zero before
-  /// the start time or after the end time of @p trajectory.
+  /// the start time or after the end time of @p trajectory. However, this
+  /// clamping is ignored for T=Expression.
   /// @pre The value of `trajectory` is a column vector. More precisely,
   /// trajectory.cols() == 1.
   explicit TrajectorySource(const trajectories::Trajectory<T>& trajectory,
@@ -66,3 +67,6 @@ class TrajectorySource final : public SingleOutputVectorSource<T> {
 
 }  // namespace systems
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::TrajectorySource)

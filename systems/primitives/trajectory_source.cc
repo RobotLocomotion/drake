@@ -50,9 +50,19 @@ void TrajectorySource<T>::DoCalcVectorOutput(
   int len = trajectory_->rows();
   output->head(len) = trajectory_->value(context.get_time());
 
-  double time = context.get_time();
-  bool set_zero = clamp_derivatives_ && (time > trajectory_->end_time() ||
-                                         time < trajectory_->start_time());
+  T time = context.get_time();
+  bool set_zero = false;
+  if (clamp_derivatives_ && !scalar_predicate<T>::is_bool) {
+    // zero_derivatives_beyond_limits is true by default, but presumably most
+    // users will not want the clamped derivatives for symbolic types.
+    log()->warn(
+        "TrajectorySource: Derivatives are not clamped for symbolic types. "
+        "Pass zero_derivatives_beyond_limits=false in the constructor to avoid "
+        "this warning");
+  } else {
+    set_zero = clamp_derivatives_ && (time > trajectory_->end_time() ||
+                                      time < trajectory_->start_time());
+  }
 
   for (size_t i = 0; i < derivatives_.size(); ++i) {
     if (set_zero) {
@@ -64,7 +74,8 @@ void TrajectorySource<T>::DoCalcVectorOutput(
   }
 }
 
-template class TrajectorySource<double>;
-
 }  // namespace systems
 }  // namespace drake
+
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::TrajectorySource)

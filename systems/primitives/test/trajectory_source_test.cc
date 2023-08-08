@@ -87,6 +87,25 @@ TEST_F(TrajectorySourceTest, ConstantVectorSourceIsStateless) {
   EXPECT_EQ(0, context_->num_continuous_states());
 }
 
+template <typename T>
+void TestScalar(bool zero_derivatives_beyond_limits) {
+  auto pp = PiecewisePolynomial<T>::ZeroOrderHold(Vector3<T>{0, 1, 2},
+                                                  RowVector3<T>{1.2, 3, 1.5});
+  TrajectorySource<T> source(pp, 1, zero_derivatives_beyond_limits);
+  auto context = source.CreateDefaultContext();
+  context->SetTime(0.5);
+  EXPECT_NEAR(ExtractDoubleOrThrow(source.get_output_port().Eval(*context))[0],
+              1.2, 1e-14);
+}
+
+GTEST_TEST(AdditionalTrajectorySourceTests, Scalars) {
+  for (bool zero_derivatives_beyond_limits : {true, false}) {
+    TestScalar<double>(zero_derivatives_beyond_limits);
+    TestScalar<AutoDiffXd>(zero_derivatives_beyond_limits);
+    TestScalar<symbolic::Expression>(zero_derivatives_beyond_limits);
+  }
+}
+
 }  // namespace
 }  // namespace systems
 }  // namespace drake

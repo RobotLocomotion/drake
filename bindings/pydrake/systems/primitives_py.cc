@@ -594,6 +594,15 @@ PYBIND11_MODULE(primitives, m) {
                 .doc_3args_period_sec_abstract_model_value_offset_sec)
         .def("period", &ZeroOrderHold<T>::period, doc.ZeroOrderHold.period.doc)
         .def("offset", &ZeroOrderHold<T>::offset, doc.ZeroOrderHold.offset.doc);
+
+    DefineTemplateClassWithDefault<TrajectorySource<T>, LeafSystem<T>>(
+        m, "TrajectorySource", GetPyParam<T>(), doc.TrajectorySource.doc)
+        .def(py::init<const trajectories::Trajectory<T>&, int, bool>(),
+            py::arg("trajectory"), py::arg("output_derivative_order") = 0,
+            py::arg("zero_derivatives_beyond_limits") = true,
+            doc.TrajectorySource.ctor.doc)
+        .def("UpdateTrajectory", &TrajectorySource<T>::UpdateTrajectory,
+            py::arg("trajectory"), doc.TrajectorySource.UpdateTrajectory.doc);
   };
   type_visit(bind_common_scalar_types, CommonScalarPack{});
 
@@ -742,15 +751,6 @@ PYBIND11_MODULE(primitives, m) {
       .def(py::init<RandomDistribution, int, double>(), py::arg("distribution"),
           py::arg("num_outputs"), py::arg("sampling_interval_sec"),
           doc.RandomSource.ctor.doc);
-
-  py::class_<TrajectorySource<double>, LeafSystem<double>>(
-      m, "TrajectorySource", doc.TrajectorySource.doc)
-      .def(py::init<const trajectories::Trajectory<double>&, int, bool>(),
-          py::arg("trajectory"), py::arg("output_derivative_order") = 0,
-          py::arg("zero_derivatives_beyond_limits") = true,
-          doc.TrajectorySource.ctor.doc)
-      .def("UpdateTrajectory", &TrajectorySource<double>::UpdateTrajectory,
-          py::arg("trajectory"), doc.TrajectorySource.UpdateTrajectory.doc);
 
   m.def("AddRandomInputs", &AddRandomInputs<double>,
        py::arg("sampling_interval_sec"), py::arg("builder"),
