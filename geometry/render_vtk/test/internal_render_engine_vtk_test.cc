@@ -1,6 +1,7 @@
 #include "drake/geometry/render_vtk/internal_render_engine_vtk.h"
 
 #include <cstring>
+#include <filesystem>
 #include <limits>
 #include <optional>
 #include <string>
@@ -25,6 +26,7 @@
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/systems/sensors/image.h"
+#include "drake/systems/sensors/image_writer.h"
 
 namespace drake {
 namespace geometry {
@@ -1446,10 +1448,11 @@ TEST_F(RenderEngineVtkTest, FallbackLight) {
   const ColorRenderCamera camera(depth_camera_.core(), kShowWindow);
   ImageRgba8U image(camera.core().intrinsics().width(),
                     camera.core().intrinsics().height());
-  renderer.RegisterVisual(GeometryId::get_new_id(), box, props, X_WB,
-                          false /* needs update */);
   renderer.RegisterVisual(GeometryId::get_new_id(), HalfSpace(), props,
                           RigidTransformd::Identity(),
+                          false /* needs update */);
+  props.UpdateProperty("phong", "diffuse", Rgba(0.9, 0.1, 0.1));
+  renderer.RegisterVisual(GeometryId::get_new_id(), box, props, X_WB,
                           false /* needs update */);
 
   // The reduced exposure due to the 45-degree angle between all visible face
@@ -1468,16 +1471,24 @@ TEST_F(RenderEngineVtkTest, FallbackLight) {
       {.X_WR = RigidTransformd(RotationMatrixd::MakeXRotation(M_PI),
                                X_WB.translation() + Vector3d(0, 0, 1.1)),
        .expected_color = test_color,
-       .description = "View A"},
+       .description = "View_A"},
       {.X_WR = RigidTransformd(RotationMatrixd::MakeXRotation(-3 * M_PI / 4),
                                X_WB.translation() + Vector3d(0, -2, 2)),
        .expected_color = reduced_color,
-       .description = "View B"}};
+       .description = "View_B"}};
   for (const auto& config : configs) {
     SCOPED_TRACE(config.description);
     renderer.UpdateViewpoint(config.X_WR);
 
     EXPECT_NO_THROW(renderer.RenderColorImage(camera, &image));
+
+    // Save the color image for offline inspection.
+    // See bazel-testlogs/geometry/render_vtk/internal_render_engine_vtk/test.outputs/output.zip.
+    if (const char* dir = std::getenv("TEST_UNDECLARED_OUTPUTS_DIR")) {
+      const std::string filename =
+          fmt::format("image-{}.png", config.description);
+      systems::sensors::SaveToPng(image, std::filesystem::path(dir) / filename);
+    }
 
     // We test the images by looking at the colors along a row on the bottom of
     // the image and near the middle of the image. We won't do the top because
