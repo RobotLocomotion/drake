@@ -886,6 +886,13 @@ void BindMathematicalProgram(py::module m) {
           doc.MathematicalProgram.AddLinearConstraint.doc_4args_A_lb_ub_vars)
       .def("AddLinearConstraint",
           static_cast<Binding<LinearConstraint> (MathematicalProgram::*)(
+              const Eigen::Ref<const Eigen::RowVectorXd>&, double, double,
+              const Eigen::Ref<const VectorXDecisionVariable>&)>(
+              &MathematicalProgram::AddLinearConstraint),
+          py::arg("a"), py::arg("lb"), py::arg("ub"), py::arg("vars"),
+          doc.MathematicalProgram.AddLinearConstraint.doc_4args_a_lb_ub_vars)
+      .def("AddLinearConstraint",
+          static_cast<Binding<LinearConstraint> (MathematicalProgram::*)(
               const Expression&, double, double)>(
               &MathematicalProgram::AddLinearConstraint),
           py::arg("e"), py::arg("lb"), py::arg("ub"),
