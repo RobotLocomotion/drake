@@ -1,0 +1,9 @@
+directives:
+
+- add_model:
+    name: simple_model
+    file: package://process_model_directives_test/simple_model.sdf
+    default_free_body_pose:
+      base:
+        translation: [1, 2, 3]
+        rotation: !Rpy { deg: [5, 6, 7] }

@@ -1,0 +1,24 @@
+<?xml version="1.0" ?>
+<sdf version="1.9">
+  <model name="hidden_frame">
+    <include>
+      <name>simple_model</name>
+      <uri>package://process_model_directives_test/simple_model.sdf</uri>
+      <placement_frame>frame</placement_frame>
+      <pose relative_to="top_level_model::top_injected_frame"/>
+    </include>
+    <model name="top_level_model">
+      <include merge="true">
+        <name>top_level_model</name>
+        <uri>package://process_model_directives_test/simple_model.sdf</uri>
+      </include>
+      <frame name="top_injected_frame" attached_to="base">
+        <pose degrees="true">1.0 2.0 3.0   10.0 20.0 30.0</pose>
+      </frame>
+    </model>
+    <joint name="top_level_model__top_injected_frame__to__simple_model__frame__weld_joint" type="fixed">
+      <parent>top_level_model::top_injected_frame</parent>
+      <child>simple_model::frame</child>
+    </joint>
+  </model>
+</sdf>

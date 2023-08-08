@@ -1,0 +1,1 @@
+Found weld with deeply nested child frame \[top_level_model::robot1::robot_base\]. Welds with deeply nested childs are not suported.

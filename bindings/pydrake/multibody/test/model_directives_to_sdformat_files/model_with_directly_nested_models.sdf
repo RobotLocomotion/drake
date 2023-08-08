@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<sdf xmlns:drake="http://drake.mit.edu" version="1.7">
+  <model name="scoped_model">
+    <link name="base"/>
+    <model name="robot1">
+      <link name="robot_base"/>
+      <frame name="tool_frame">
+        <pose relative_to="robot_base">1 2 3  0 0 0</pose>
+      </frame>
+    </model>
+    <frame name="frame">
+      <pose relative_to="base">1 2 3  0 0 0</pose>
+    </frame>
+  </model>
+</sdf>
