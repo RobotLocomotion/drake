@@ -39,7 +39,7 @@ class DrakeGymEnv(gym.Env):
                  observation_port_id: Union[OutputPortIndex, str] = None,
                  render_rgb_port_id: Union[OutputPortIndex, str] = None,
                  render_mode: str = 'human',
-                 set_home: Callable[[Simulator, Context], None] = None,
+                 reset_handler: Callable[[Simulator, Context], None] = None,
                  hardware: bool = False):
         """
         Args:
@@ -82,16 +82,18 @@ class DrakeGymEnv(gym.Env):
                 PlanarSceneGraphVisualizer, etc.). ``render_mode`` equal to
                 ``rgb_array`` evaluates the ``render_rgb_port`` and ``ansi``
                 calls ``__repr__`` on the system Context.
-            set_home: A function that sets the home state (plant, and/or env.)
-                at ``reset()``. The reset state can be specified in one of
+            reset_handler: A function that sets the home state
+                (plant, and/or env.) at ``reset()``.
+                The reset state can be specified in one of
                 the two ways:
-                (if ``set_home`` is None) setting random context using a Drake
-                random_generator (e.g. ``joint.set_random_pose_distribution()``
-                using the ``reset()`` seed),
-                (otherwise) using ``set_home()``.
+                (if ``reset_handler`` is None) setting random context using
+                a Drake random_generator
+                (e.g. ``joint.set_random_pose_distribution()``
+                using the ``reset()`` seed), (otherwise) using
+                ``reset_handler()``.
             hardware: If True, it prevents from setting random context at
                 ``reset()`` when using ``random_generator``, but it does
-                execute ``set_home()`` if given.
+                execute ``reset_handler()`` if given.
 
         Notes (using ``env`` as an instance of this class):
 
@@ -155,10 +157,10 @@ class DrakeGymEnv(gym.Env):
 
         self.generator = RandomGenerator()
 
-        if set_home is None or callable(set_home):
-            self.set_home = set_home
+        if reset_handler is None or callable(reset_handler):
+            self.reset_handler = reset_handler
         else:
-            raise ValueError("set_home is not callable.")
+            raise ValueError("reset_handler is not callable.")
 
         self.hardware = hardware
 
@@ -283,10 +285,10 @@ class DrakeGymEnv(gym.Env):
         context = self.simulator.get_mutable_context()
         context.SetTime(0)
         self.simulator.Initialize()
-        if self.set_home is not None:
-            # The initial state is set by set_home().
+        if self.reset_handler is not None:
+            # The initial state is set by reset_handler().
             self.simulator.get_system().SetDefaultContext(context)
-            self.set_home(self.simulator, context, seed)
+            self.reset_handler(self.simulator, context, seed)
         else:
             if not self.hardware:
                 self.simulator.get_system().SetRandomContext(context,

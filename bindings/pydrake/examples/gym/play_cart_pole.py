@@ -2,7 +2,7 @@
 Play a policy for //bindings/pydrake/examples/gym/envs:cart_pole.
 """
 import argparse
-import os
+import warnings
 
 import gymnasium as gym
 import stable_baselines3
@@ -69,6 +69,8 @@ def _main():
     parser.add_argument('--log_path', help="path to the logs directory.")
     args = parser.parse_args()
 
+    if not args.debug:
+        warnings.filterwarnings("ignore")
     gym.envs.register(id="DrakeCartPole-v0",
                     entry_point="pydrake.examples.gym.envs.cart_pole:DrakeCartPoleEnv")  # noqa
 

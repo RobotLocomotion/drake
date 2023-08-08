@@ -389,9 +389,9 @@ def DrakeCartPoleEnv(
     na = 1
     low_a = plant.GetEffortLowerLimits()[:na]
     high_a = plant.GetEffortUpperLimits()[:na]
-    action_space = gym.spaces.Box(low=np.asarray(low_a, dtype="float64"),
-                                  high=np.asarray(high_a, dtype="float64"),
-                                  dtype=np.float64)
+    action_space = gym.spaces.Box(low=np.asarray(low_a, dtype="float32"),
+                                  high=np.asarray(high_a, dtype="float32"),
+                                  dtype=np.float32)
 
     # Define observation space.
     low = np.concatenate(
@@ -410,7 +410,7 @@ def DrakeCartPoleEnv(
         reward="reward",
         action_port_id="actions",
         observation_port_id="observations",
-        set_home=reset_handler,
+        reset_handler=reset_handler,
         render_rgb_port_id="color_image" if monitoring_camera else None)
 
     # Expose parameters that could be useful for learning.
