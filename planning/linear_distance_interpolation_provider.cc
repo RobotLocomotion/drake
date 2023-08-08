@@ -36,17 +36,26 @@ std::vector<int> GetQuaternionDofStartIndices(
   return quaternion_dof_start_indices;
 }
 
+Eigen::VectorXd GetDefaultDistanceWeights(
+    int num_positions, const std::vector<int>& quaternion_dof_start_indices) {
+  // The default weight for all joints is 1, except for quaternion DoF where
+  // only the first weight may be non-zero.
+  Eigen::VectorXd default_distance_weights =
+      Eigen::VectorXd::Ones(num_positions);
+  for (const int i : quaternion_dof_start_indices) {
+    default_distance_weights.segment<4>(i) << 1.0, 0.0, 0.0, 0.0;
+  }
+  return default_distance_weights;
+}
+
 Eigen::VectorXd GetJointDistanceWeights(
     const MultibodyPlant<double>& plant,
     const std::vector<int>& quaternion_dof_start_indices,
     const std::map<std::string, double>& named_joint_distance_weights) {
   // The default weight for all joints is 1, except for quaternion DoF where
   // only the first weight may be non-zero.
-  Eigen::VectorXd joint_distance_weights =
-      Eigen::VectorXd::Ones(plant.num_positions());
-  for (const int i : quaternion_dof_start_indices) {
-    joint_distance_weights.segment<4>(i) << 1.0, 0.0, 0.0, 0.0;
-  }
+  Eigen::VectorXd joint_distance_weights = GetDefaultDistanceWeights(
+      plant.num_positions(), quaternion_dof_start_indices);
 
   // Go through the model and set joint distance weights accordingly.
   for (JointIndex i(0); i < plant.num_joints(); ++i) {
@@ -145,6 +154,14 @@ LinearDistanceAndInterpolationProvider::LinearDistanceAndInterpolationProvider(
       distance_weights_(SanityCheckDistanceWeights(
           plant.num_positions(), quaternion_dof_start_indices_,
           distance_weights)) {}
+
+LinearDistanceAndInterpolationProvider::LinearDistanceAndInterpolationProvider(
+    const multibody::MultibodyPlant<double>& plant)
+    : quaternion_dof_start_indices_(GetQuaternionDofStartIndices(plant)),
+      distance_weights_(SanityCheckDistanceWeights(
+          plant.num_positions(), quaternion_dof_start_indices_,
+          GetDefaultDistanceWeights(plant.num_positions(),
+                                    quaternion_dof_start_indices_))) {}
 
 LinearDistanceAndInterpolationProvider::
     ~LinearDistanceAndInterpolationProvider() = default;
