@@ -57,7 +57,7 @@ from pydrake.systems.primitives import (
     SymbolicVectorSystem, SymbolicVectorSystem_,
     TrajectoryAffineSystem, TrajectoryAffineSystem_,
     TrajectoryLinearSystem, TrajectoryLinearSystem_,
-    TrajectorySource,
+    TrajectorySource, TrajectorySource_,
     VectorLog, VectorLogSink, VectorLogSink_,
     WrapToSystem, WrapToSystem_,
     ZeroOrderHold, ZeroOrderHold_,
@@ -110,6 +110,7 @@ class TestGeneral(unittest.TestCase):
                                    supports_symbolic=False)
         self._check_instantiations(TrajectoryLinearSystem_,
                                    supports_symbolic=False)
+        self._check_instantiations(TrajectorySource_)
         self._check_instantiations(VectorLogSink_)
         self._check_instantiations(WrapToSystem_)
         self._check_instantiations(ZeroOrderHold_)

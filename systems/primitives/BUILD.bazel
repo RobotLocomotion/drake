@@ -673,8 +673,11 @@ drake_cc_googletest(
     deps = [
         ":trajectory_source",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//common/trajectories:bezier_curve",
         "//common/trajectories:piecewise_polynomial",
         "//systems/framework",
+        "//systems/framework/test_utilities:scalar_conversion",
     ],
 )
 
