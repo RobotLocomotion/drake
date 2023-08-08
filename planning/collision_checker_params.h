@@ -51,6 +51,9 @@ struct CollisionCheckerParams {
   nullptr. */
   std::unique_ptr<RobotDiagram<double>> model;
 
+  std::unique_ptr<DistanceAndInterpolationProvider>
+      distance_and_interpolation_provider;
+
   // TODO(SeanCurtis-TRI): add doc hyperlinks to edge checking doc.
   /** A vector of model instance indices that identify which model instances
   belong to the robot. The list must be non-empty and must not include the
@@ -83,9 +86,6 @@ struct CollisionCheckerParams {
   distance between robot and itself is less than padding, the checker reports a
   collision. */
   double self_collision_padding{};
-
-  std::unique_ptr<DistanceAndInterpolationProvider>
-      distance_and_interpolation_provider;
 };
 
 }  // namespace planning

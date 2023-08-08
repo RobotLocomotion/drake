@@ -72,6 +72,45 @@ class TestCollisionChecker(unittest.TestCase):
         self.assertIsInstance(dut, mut.BodyShapeDescription)
         self.assertEqual(dut.body_name(), "box")
 
+    def test_linear_distance_interpolation_provider(self):
+        robot, _ = self._make_robot_diagram()
+        plant = robot.plant()
+
+        default_weights_provider = mut.LinearDistanceAndInterpolationProvider(
+            plant=plant)
+        self.assertIsInstance(
+            default_weights_provider,
+            mut.LinearDistanceAndInterpolationProvider)
+
+        # Named weights don't work for multi-position joints like in the test
+        # model.
+        named_joint_distance_weights = {}
+        named_weights_provider = mut.LinearDistanceAndInterpolationProvider(
+            plant=plant,
+            named_joint_distance_weights=named_joint_distance_weights)
+        self.assertIsInstance(
+            named_weights_provider, mut.LinearDistanceAndInterpolationProvider)
+
+        distance_weights = np.array([1.0, 0.0, 0.0, 0.0, 2.0, 3.0, 4.0])
+        weights_vector_provider = mut.LinearDistanceAndInterpolationProvider(
+            plant=plant,
+            distance_weights=distance_weights)
+        self.assertIsInstance(
+            weights_vector_provider,
+            mut.LinearDistanceAndInterpolationProvider)
+        numpy_compare.assert_equal(
+            weights_vector_provider.distance_weights(),
+            distance_weights)
+        self.assertEqual(
+            weights_vector_provider.quaternion_dof_start_indices(),
+            [0])
+
+        new_distance_weights = np.array([4.0, 0.0, 0.0, 0.0, 3.0, 2.0, 1.0])
+        weights_vector_provider.SetDistanceWeights(new_distance_weights)
+        numpy_compare.assert_equal(
+            weights_vector_provider.distance_weights(),
+            new_distance_weights)
+
     @staticmethod
     def _configuration_distance(q1, q2):
         """A boring implementation of ConfigurationDistanceFunction."""
@@ -323,6 +362,13 @@ class TestCollisionChecker(unittest.TestCase):
             4)
         dut.CheckConfigsCollisionFree([q])  # Omit the defaulted arg.
 
+        provider = dut.distance_and_interpolation_provider()
+        self.assertIsInstance(provider, mut.DistanceAndInterpolationProvider)
+        # This throws because the collision checker was created with functions,
+        # not a DistanceAndInterpolationProvider.
+        with self.assertRaises(BaseException):
+            dut.SetDistanceAndInterpolationProvider(provider.Clone())
+
         def distance_function(q1, q2):
             return np.linalg.norm(q1 - q2)
 
@@ -382,6 +428,7 @@ class TestCollisionChecker(unittest.TestCase):
         robot, index = self._make_robot_diagram()
         return mut.SceneGraphCollisionChecker(
             model=robot,
+            distance_and_interpolation_provider=None,
             robot_model_instances=[index],
             configuration_distance_function=self._configuration_distance,
             edge_step_size=0.125)
