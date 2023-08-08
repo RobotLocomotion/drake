@@ -290,7 +290,7 @@ class CspaceFreePolytope : public CspaceFreePolytopeBase {
       return a_;
     }
 
-    /** Each plane index is mapped to a vector of polynomial, */
+    /** Each plane index is mapped to a polynomial, */
     [[nodiscard]] const std::unordered_map<int, symbolic::Polynomial>& b()
         const {
       return b_;

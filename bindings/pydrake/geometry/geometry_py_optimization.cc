@@ -844,12 +844,17 @@ void DefineGeometryOptimization(py::module m) {
     py::class_<BaseClass> cspace_free_polytope_base_cls(
         m, "CspaceFreePolytopeBase", base_cls_doc.doc);
     cspace_free_polytope_base_cls
-        // TODO(Alexandre.Amice): Figure out how to bind rational_forward_kin.
-        // The naive method returns an "Unable to convert to Python type" error.
-        //                .def("rational_forward_kin",
-        //                        &BaseClass::rational_forward_kin,
-        //                            py_rvp::reference_internal,
-        //                            base_cls_doc.rational_forward_kin.doc)
+        // TODO(Alexandre.Amice): Bind rational_forward_kinematics once
+        // pydrake.so is a single shared library. Currently, binding this method
+        // would require importing pydrake.multibody.rational to avoid an
+        // "Unable to convert to Python type" error. However, this would create
+        // the dependency loop pydrake.geometry.optimization ->
+        // pydrake.multibody.rational -> pydrake.multibody -> pydrake.geometry
+        // -> pydrake.geometry.optimizaiton.
+        // .def("rational_forward_kin",
+        // &BaseClass::rational_forward_kin,
+        // py_rvp::reference_internal,
+        // base_cls_doc.rational_forward_kin.doc)
         .def("map_geometries_to_separating_planes",
             &BaseClass::map_geometries_to_separating_planes,
             base_cls_doc.map_geometries_to_separating_planes.doc)
