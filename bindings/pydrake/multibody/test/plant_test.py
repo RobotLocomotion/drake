@@ -405,6 +405,8 @@ class TestPlant(unittest.TestCase):
         self.assertIs(
             link1_frame,
             plant.GetFrameByName(name="Link1", model_instance=model_instance))
+        self.assertEqual(
+            len(plant.GetFrameIndices(model_instance=model_instance)), 7)
         self.assertIs(link1.GetParentPlant(), plant)
         self.assertTrue(plant.HasModelInstanceNamed(name="acrobot"))
         self.assertEqual(

@@ -755,6 +755,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
                 ModelInstanceIndex>(&Class::GetFrameByName),
             py::arg("name"), py::arg("model_instance"),
             py_rvp::reference_internal, cls_doc.GetFrameByName.doc_2args)
+        .def("GetFrameIndices", &Class::GetFrameIndices,
+            py::arg("model_instance"), cls_doc.GetFrameIndices.doc)
         .def("GetBodyByName",
             overload_cast_explicit<const Body<T>&, string_view>(
                 &Class::GetBodyByName),
