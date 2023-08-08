@@ -217,23 +217,37 @@ int DoMain() {
   const FrameId world_id = scene_graph.world_frame_id();
   RgbdSensor* camera =
       builder.AddSystem<RgbdSensor>(world_id, X_WB, color_camera, depth_camera);
+  RgbdSensor* camera2 =
+      builder.AddSystem<RgbdSensor>(world_id, X_WB, color_camera, depth_camera);
   builder.Connect(scene_graph.get_query_output_port(),
                   camera->query_object_input_port());
+  builder.Connect(scene_graph.get_query_output_port(),
+                  camera2->query_object_input_port());
 
   // Broadcast images via LCM for visualization (requires #18862 to see them).
   const double image_publish_period = 1. / FLAGS_render_fps;
-  ImageToLcmImageArrayT* image_to_lcm_image_array =
+  ImageToLcmImageArrayT* image_to_lcm_image_array1 =
       builder.template AddSystem<ImageToLcmImageArrayT>();
-  image_to_lcm_image_array->set_name("converter");
+  image_to_lcm_image_array1->set_name("converter");
+  ImageToLcmImageArrayT* image_to_lcm_image_array2 =
+      builder.template AddSystem<ImageToLcmImageArrayT>();
+  image_to_lcm_image_array2->set_name("converter2");
 
-  LcmPublisherSystem* image_array_lcm_publisher{nullptr};
-  image_array_lcm_publisher =
+  LcmPublisherSystem* image_array_lcm_publisher1{nullptr};
+  LcmPublisherSystem* image_array_lcm_publisher2{nullptr};
+  image_array_lcm_publisher1 =
       builder.template AddSystem(LcmPublisherSystem::Make<lcmt_image_array>(
-          "DRAKE_RGBD_CAMERA_IMAGES", &lcm, image_publish_period));
-  image_array_lcm_publisher->set_name("publisher");
+          "DRAKE_RGBD_CAMERA_IMAGES_123", &lcm, image_publish_period));
+  image_array_lcm_publisher1->set_name("publisher1");
+  image_array_lcm_publisher2 =
+      builder.template AddSystem(LcmPublisherSystem::Make<lcmt_image_array>(
+          "DRAKE_RGBD_CAMERA_IMAGES_456", &lcm, image_publish_period));
+  image_array_lcm_publisher2->set_name("publisher2");
 
-  builder.Connect(image_to_lcm_image_array->image_array_t_msg_output_port(),
-                  image_array_lcm_publisher->get_input_port());
+  builder.Connect(image_to_lcm_image_array1->image_array_t_msg_output_port(),
+                  image_array_lcm_publisher1->get_input_port());
+  builder.Connect(image_to_lcm_image_array2->image_array_t_msg_output_port(),
+                  image_array_lcm_publisher2->get_input_port());
 
   ImageWriter* image_writer{nullptr};
   const bool save_images = IsValidSaveDirectory(FLAGS_save_dir);
@@ -247,9 +261,13 @@ int DoMain() {
 
   if (FLAGS_color) {
     const auto& port =
-        image_to_lcm_image_array->DeclareImageInputPort<PixelType::kRgba8U>(
+        image_to_lcm_image_array1->DeclareImageInputPort<PixelType::kRgba8U>(
             "color");
     builder.Connect(camera->color_image_output_port(), port);
+    const auto& port2 =
+        image_to_lcm_image_array2->DeclareImageInputPort<PixelType::kRgba8U>(
+            "color2");
+    builder.Connect(camera2->color_image_output_port(), port2);
 
     if (save_images) {
       const auto& writer_port =
@@ -261,7 +279,7 @@ int DoMain() {
 
   if (FLAGS_depth) {
     const auto& port =
-        image_to_lcm_image_array->DeclareImageInputPort<PixelType::kDepth32F>(
+        image_to_lcm_image_array1->DeclareImageInputPort<PixelType::kDepth32F>(
             "depth");
     builder.Connect(camera->depth_image_32F_output_port(), port);
 
@@ -275,7 +293,7 @@ int DoMain() {
 
   if (FLAGS_label) {
     const auto& port =
-        image_to_lcm_image_array->DeclareImageInputPort<PixelType::kLabel16I>(
+        image_to_lcm_image_array1->DeclareImageInputPort<PixelType::kLabel16I>(
             "label");
     builder.Connect(camera->label_image_output_port(), port);
 
