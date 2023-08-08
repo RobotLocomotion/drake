@@ -975,7 +975,6 @@ void MultibodyPlant<T>::Finalize() {
 
   if (geometry_source_is_registered()) {
     ApplyDefaultCollisionFilters();
-    ExcludeCollisionsWithVisualGeometry();
   }
   FinalizePlantOnly();
 
@@ -1221,25 +1220,6 @@ void MultibodyPlant<T>::ApplyDefaultCollisionFilters() {
     scene_graph_->collision_filter_manager().Apply(
         CollisionFilterDeclaration().ExcludeWithin(geometries));
   }
-}
-
-template <typename T>
-void MultibodyPlant<T>::ExcludeCollisionsWithVisualGeometry() {
-  DRAKE_DEMAND(geometry_source_is_registered());
-  geometry::GeometrySet visual;
-  for (const auto& body_geometries : visual_geometries_) {
-    visual.Add(body_geometries);
-  }
-  geometry::GeometrySet collision;
-  for (const auto& body_geometries : collision_geometries_) {
-    collision.Add(body_geometries);
-  }
-  // clang-format off
-  scene_graph_->collision_filter_manager().Apply(
-      CollisionFilterDeclaration()
-          .ExcludeWithin(visual)
-          .ExcludeBetween(visual, collision));
-  // clang-format on
 }
 
 template <typename T>

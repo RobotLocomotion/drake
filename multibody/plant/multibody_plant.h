@@ -4904,11 +4904,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // that still guarantees stability.
   void SetUpJointLimitsParameters();
 
-  // This is a *temporary* method to eliminate visual geometries from collision
-  // while we wait for geometry roles to be introduced.
-  // TODO(SeanCurtis-TRI): Remove this when geometry roles are introduced.
-  void ExcludeCollisionsWithVisualGeometry();
-
   // Helper method to declare state, cache entries, and ports after Finalize().
   void DeclareStateCacheAndPorts();
 
