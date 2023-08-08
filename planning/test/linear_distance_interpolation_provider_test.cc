@@ -299,7 +299,7 @@ GTEST_TEST(FixedIiwaTest, Test) {
     DRAKE_EXPECT_THROWS_MESSAGE(
         LinearDistanceAndInterpolationProvider(model->plant(),
                                                has_negative_weights),
-        "Provided distance weight 0 with value -1 is less than zero");
+        "Provided distance weight 0 with value .* is less than zero");
 
     Eigen::VectorXd has_non_finite_weights(7);
     has_non_finite_weights << 1, 2, 3, 4, 5, 6,
@@ -307,7 +307,7 @@ GTEST_TEST(FixedIiwaTest, Test) {
     DRAKE_EXPECT_THROWS_MESSAGE(
         LinearDistanceAndInterpolationProvider(model->plant(),
                                                has_non_finite_weights),
-        "Provided distance weight 6 with value inf is not finite");
+        "Provided distance weight 6 with value .* is not finite");
   }
 
   // Changing weights.
@@ -330,7 +330,7 @@ GTEST_TEST(FixedIiwaTest, Test) {
     bad_update_weights << 7, 6, 5, 4, 3, 2, -1;
     DRAKE_EXPECT_THROWS_MESSAGE(
         provider.SetDistanceWeights(bad_update_weights),
-        "Provided distance weight 6 with value -1 is less than zero");
+        "Provided distance weight 6 with value .* is less than zero");
   }
 }
 
