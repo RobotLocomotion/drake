@@ -44,14 +44,7 @@ class LinearDistanceAndInterpolationProvider final
     return quaternion_dof_start_indices_;
   }
 
-  void SetDistanceWeights(const Eigen::VectorXd& distance_weights);
-
  private:
-  LinearDistanceAndInterpolationProvider(
-      const LinearDistanceAndInterpolationProvider& other);
-
-  std::unique_ptr<DistanceAndInterpolationProvider> DoClone() const final;
-
   double DoComputeConfigurationDistance(const Eigen::VectorXd& from,
                                         const Eigen::VectorXd& to) const final;
 
@@ -60,7 +53,7 @@ class LinearDistanceAndInterpolationProvider final
       double ratio) const final;
 
   const std::vector<int> quaternion_dof_start_indices_;
-  Eigen::VectorXd distance_weights_;
+  const Eigen::VectorXd distance_weights_;
 };
 
 }  // namespace planning

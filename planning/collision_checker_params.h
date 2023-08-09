@@ -51,7 +51,7 @@ struct CollisionCheckerParams {
   nullptr. */
   std::unique_ptr<RobotDiagram<double>> model;
 
-  std::unique_ptr<DistanceAndInterpolationProvider>
+  std::shared_ptr<const DistanceAndInterpolationProvider>
       distance_and_interpolation_provider;
 
   // TODO(SeanCurtis-TRI): add doc hyperlinks to edge checking doc.

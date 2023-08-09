@@ -30,11 +30,6 @@ DistanceAndInterpolationProvider::InterpolateBetweenConfigurations(
   return interpolated;
 }
 
-std::unique_ptr<DistanceAndInterpolationProvider>
-DistanceAndInterpolationProvider::Clone() const {
-  return DoClone();
-}
-
 DistanceAndInterpolationProvider::DistanceAndInterpolationProvider() = default;
 
 DistanceAndInterpolationProvider::DistanceAndInterpolationProvider(

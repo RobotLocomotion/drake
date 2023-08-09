@@ -166,22 +166,6 @@ LinearDistanceAndInterpolationProvider::LinearDistanceAndInterpolationProvider(
 LinearDistanceAndInterpolationProvider::
     ~LinearDistanceAndInterpolationProvider() = default;
 
-void LinearDistanceAndInterpolationProvider::SetDistanceWeights(
-    const Eigen::VectorXd& distance_weights) {
-  distance_weights_ = SanityCheckDistanceWeights(distance_weights_.size(),
-                                                 quaternion_dof_start_indices(),
-                                                 distance_weights);
-}
-
-LinearDistanceAndInterpolationProvider::LinearDistanceAndInterpolationProvider(
-    const LinearDistanceAndInterpolationProvider&) = default;
-
-std::unique_ptr<DistanceAndInterpolationProvider>
-LinearDistanceAndInterpolationProvider::DoClone() const {
-  return std::unique_ptr<DistanceAndInterpolationProvider>(
-      new LinearDistanceAndInterpolationProvider(*this));
-}
-
 double LinearDistanceAndInterpolationProvider::DoComputeConfigurationDistance(
     const Eigen::VectorXd& from, const Eigen::VectorXd& to) const {
   Eigen::VectorXd deltas = to - from;

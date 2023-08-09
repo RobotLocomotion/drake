@@ -65,7 +65,8 @@ void DefinePlanningCollisionCheckerInterfaceTypes(py::module m) {
   {
     using Class = DistanceAndInterpolationProvider;
     constexpr auto& cls_doc = doc.DistanceAndInterpolationProvider;
-    py::class_<Class> cls(m, "DistanceAndInterpolationProvider", cls_doc.doc);
+    py::class_<Class, std::shared_ptr<Class>> cls(
+        m, "DistanceAndInterpolationProvider", cls_doc.doc);
     cls  // BR
         .def("ComputeConfigurationDistance",
             &Class::ComputeConfigurationDistance,
@@ -73,14 +74,14 @@ void DefinePlanningCollisionCheckerInterfaceTypes(py::module m) {
         .def("InterpolateBetweenConfigurations",
             &Class::InterpolateBetweenConfigurations,
             cls_doc.InterpolateBetweenConfigurations.doc);
-    DefClone(&cls);
   }
 
   {
     using Class = LinearDistanceAndInterpolationProvider;
     constexpr auto& cls_doc = doc.LinearDistanceAndInterpolationProvider;
-    py::class_<Class, DistanceAndInterpolationProvider> cls(
-        m, "LinearDistanceAndInterpolationProvider", cls_doc.doc);
+    py::class_<Class, DistanceAndInterpolationProvider,
+        std::shared_ptr<LinearDistanceAndInterpolationProvider>>
+        cls(m, "LinearDistanceAndInterpolationProvider", cls_doc.doc);
     cls  // BR
         .def(py::init<const drake::multibody::MultibodyPlant<double>&>(),
             py::arg("plant"), cls_doc.ctor.doc)
@@ -95,9 +96,7 @@ void DefinePlanningCollisionCheckerInterfaceTypes(py::module m) {
             py_rvp::reference_internal, cls_doc.distance_weights.doc)
         .def("quaternion_dof_start_indices",
             &Class::quaternion_dof_start_indices, py_rvp::reference_internal,
-            cls_doc.quaternion_dof_start_indices.doc)
-        .def("SetDistanceWeights", &Class::SetDistanceWeights,
-            cls_doc.SetDistanceWeights.doc);
+            cls_doc.quaternion_dof_start_indices.doc);
   }
 
   {
@@ -116,17 +115,9 @@ void DefinePlanningCollisionCheckerInterfaceTypes(py::module m) {
               self.model = std::move(model);
             },
             cls_doc.model.doc)
-        .def_property(
-            "distance_and_interpolation_provider",
-            [](const Class& self) -> const DistanceAndInterpolationProvider* {
-              return self.distance_and_interpolation_provider.get();
-            },
-            [](Class& self, std::unique_ptr<DistanceAndInterpolationProvider>
-                                distance_and_interpolation_provider) {
-              self.distance_and_interpolation_provider =
-                  std::move(distance_and_interpolation_provider);
-            },
-            cls_doc.model.doc)
+        .def_readwrite("distance_and_interpolation_provider",
+            &Class::distance_and_interpolation_provider,
+            cls_doc.distance_and_interpolation_provider.doc)
         .def_readwrite("robot_model_instances", &Class::robot_model_instances,
             cls_doc.robot_model_instances.doc)
         .def_readwrite("configuration_distance_function",
