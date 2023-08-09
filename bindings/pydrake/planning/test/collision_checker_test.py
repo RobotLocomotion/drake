@@ -424,7 +424,6 @@ class TestCollisionChecker(unittest.TestCase):
         robot, index = self._make_robot_diagram()
         return mut.SceneGraphCollisionChecker(
             model=robot,
-            distance_and_interpolation_provider=None,
             robot_model_instances=[index],
             configuration_distance_function=self._configuration_distance,
             edge_step_size=0.125)
