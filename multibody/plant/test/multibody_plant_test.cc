@@ -1716,9 +1716,11 @@ GTEST_TEST(MultibodyPlantTest, ReversedWeldError) {
       "More than one mobilizer between two frames is not allowed.");
 }
 
-// Utility to verify that the only ports of MultibodyPlant that are feedthrough
-// are acceleration and reaction force ports.
-bool OnlyAccelerationAndReactionPortsFeedthrough(
+// Utility to verify the subset of output ports we expect to be direct a
+// feedthrough of the inputs.
+// @returns `true` iff only if a closed subset of the ports is direct
+// feedthrough.
+bool VerifyFeedthroughPorts(
     const MultibodyPlant<double>& plant) {
   // Create a set of the indices of all ports that can be feedthrough.
   std::set<int> ok_to_feedthrough;
@@ -1730,6 +1732,10 @@ bool OnlyAccelerationAndReactionPortsFeedthrough(
         plant.get_generalized_acceleration_output_port(i).get_index());
   ok_to_feedthrough.insert(
       plant.get_body_spatial_accelerations_output_port().get_index());
+  if (plant.is_discrete()) {
+    ok_to_feedthrough.insert(
+        plant.get_contact_results_output_port().get_index());
+  }
 
   // Now find all the feedthrough ports and make sure they are on the
   // list of expected feedthrough ports.
