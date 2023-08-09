@@ -11,14 +11,7 @@ namespace planning {
 
 class DistanceAndInterpolationProvider {
  public:
-  // The copy constructor is protected to allow certain derived classes to be
-  // cloneable.
-  // Does not allow copy, move, or assignment.
-  DistanceAndInterpolationProvider(DistanceAndInterpolationProvider&&) = delete;
-  DistanceAndInterpolationProvider& operator=(
-      const DistanceAndInterpolationProvider&) = delete;
-  DistanceAndInterpolationProvider& operator=(
-      DistanceAndInterpolationProvider&&) = delete;
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DistanceAndInterpolationProvider);
 
   virtual ~DistanceAndInterpolationProvider();
 
@@ -31,9 +24,6 @@ class DistanceAndInterpolationProvider {
 
  protected:
   DistanceAndInterpolationProvider();
-
-  DistanceAndInterpolationProvider(
-      const DistanceAndInterpolationProvider& other);
 
   virtual double DoComputeConfigurationDistance(
       const Eigen::VectorXd& from, const Eigen::VectorXd& to) const = 0;

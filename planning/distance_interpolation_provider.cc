@@ -32,8 +32,5 @@ DistanceAndInterpolationProvider::InterpolateBetweenConfigurations(
 
 DistanceAndInterpolationProvider::DistanceAndInterpolationProvider() = default;
 
-DistanceAndInterpolationProvider::DistanceAndInterpolationProvider(
-    const DistanceAndInterpolationProvider& other) = default;
-
 }  // namespace planning
 }  // namespace drake

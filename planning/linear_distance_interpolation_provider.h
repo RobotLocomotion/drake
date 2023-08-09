@@ -16,14 +16,7 @@ namespace planning {
 class LinearDistanceAndInterpolationProvider final
     : public DistanceAndInterpolationProvider {
  public:
-  // The copy constructor is private for use in implementing DoClone().
-  // Does not allow copy, move, or assignment.
-  LinearDistanceAndInterpolationProvider(
-      LinearDistanceAndInterpolationProvider&&) = delete;
-  LinearDistanceAndInterpolationProvider& operator=(
-      const LinearDistanceAndInterpolationProvider&) = delete;
-  LinearDistanceAndInterpolationProvider& operator=(
-      LinearDistanceAndInterpolationProvider&&) = delete;
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearDistanceAndInterpolationProvider);
 
   LinearDistanceAndInterpolationProvider(
       const multibody::MultibodyPlant<double>& plant,

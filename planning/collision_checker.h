@@ -9,7 +9,6 @@
 #include <utility>
 #include <vector>
 
-#include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/drake_throw.h"
 #include "drake/multibody/plant/multibody_plant.h"
@@ -814,14 +813,11 @@ class CollisionChecker {
   //@{
 
   /** Sets the distance and interpolation provider to use.
-   @pre the collision checker instance in use is already using a distance and
-   interpolation provider, not (deprecated) separate distance and interpolation
-   functions.
+   Note that in case any of the (deprecated) separate distance and interpolation
+   functions were in use, this supplants _both_ of them.
   */
   void SetDistanceAndInterpolationProvider(
-      std::shared_ptr<const DistanceAndInterpolationProvider> provider) {
-    distance_and_interpolation_provider_->SetProvider(std::move(provider));
-  }
+      std::shared_ptr<const DistanceAndInterpolationProvider> provider);
 
   const DistanceAndInterpolationProvider& distance_and_interpolation_provider()
       const {
@@ -1378,83 +1374,6 @@ class CollisionChecker {
     mutable std::mutex standalone_contexts_mutex_;
   };
 
-  class TransitionalDistanceAndInterpolationProvider final
-      : public DistanceAndInterpolationProvider {
-   public:
-    TransitionalDistanceAndInterpolationProvider(
-        std::shared_ptr<const DistanceAndInterpolationProvider> provider)
-        : provider_(std::move(provider)) {
-      DRAKE_THROW_UNLESS(provider_ != nullptr);
-    }
-
-    TransitionalDistanceAndInterpolationProvider(
-        const ConfigurationDistanceFunction& distance_function,
-        const ConfigurationInterpolationFunction& interpolation_function)
-        : distance_function_(distance_function),
-          interpolation_function_(interpolation_function) {
-      DRAKE_THROW_UNLESS(distance_function_ != nullptr);
-      DRAKE_THROW_UNLESS(interpolation_function_ != nullptr);
-    }
-
-    ~TransitionalDistanceAndInterpolationProvider() final = default;
-
-    std::unique_ptr<TransitionalDistanceAndInterpolationProvider> Clone()
-        const {
-      return std::unique_ptr<TransitionalDistanceAndInterpolationProvider>(
-          new TransitionalDistanceAndInterpolationProvider(*this));
-    }
-
-    void SetProvider(
-        std::shared_ptr<const DistanceAndInterpolationProvider> provider) {
-      DRAKE_THROW_UNLESS(provider != nullptr);
-      DRAKE_THROW_UNLESS(has_provider());
-      provider_ = std::move(provider);
-    }
-
-    void SetConfigurationDistanceFunction(
-        const ConfigurationDistanceFunction& distance_function) {
-      DRAKE_THROW_UNLESS(distance_function != nullptr);
-      DRAKE_THROW_UNLESS(!has_provider());
-      distance_function_ = distance_function;
-    }
-
-    void SetConfigurationInterpolationFunction(
-        const ConfigurationInterpolationFunction& interpolation_function) {
-      DRAKE_THROW_UNLESS(interpolation_function != nullptr);
-      DRAKE_THROW_UNLESS(!has_provider());
-      interpolation_function_ = interpolation_function;
-    }
-
-    bool has_provider() const { return provider_ != nullptr; }
-
-   private:
-    TransitionalDistanceAndInterpolationProvider(
-        const TransitionalDistanceAndInterpolationProvider& other) = default;
-
-    double DoComputeConfigurationDistance(
-        const Eigen::VectorXd& from, const Eigen::VectorXd& to) const final {
-      if (distance_function_) {
-        return distance_function_(from, to);
-      } else {
-        return provider_->ComputeConfigurationDistance(from, to);
-      }
-    }
-
-    Eigen::VectorXd DoInterpolateBetweenConfigurations(
-        const Eigen::VectorXd& from, const Eigen::VectorXd& to,
-        double ratio) const final {
-      if (interpolation_function_) {
-        return interpolation_function_(from, to, ratio);
-      } else {
-        return provider_->InterpolateBetweenConfigurations(from, to, ratio);
-      }
-    }
-
-    std::shared_ptr<const DistanceAndInterpolationProvider> provider_;
-    ConfigurationDistanceFunction distance_function_;
-    ConfigurationInterpolationFunction interpolation_function_;
-  };
-
   /* Model of the robot used during initial setup only. */
   std::shared_ptr<RobotDiagram<double>> setup_model_;
 
@@ -1479,7 +1398,7 @@ class CollisionChecker {
   const std::vector<int> uncontrolled_dofs_that_kinematically_affect_the_robot_;
 
   /* Provider for distance and interpolation functions */
-  drake::copyable_unique_ptr<TransitionalDistanceAndInterpolationProvider>
+  std::shared_ptr<const DistanceAndInterpolationProvider>
       distance_and_interpolation_provider_;
 
   /* Step size for edge collision checking. */

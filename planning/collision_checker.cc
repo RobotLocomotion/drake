@@ -62,6 +62,51 @@ void SanityCheckConfigurationInterpolationFunction(
     DRAKE_THROW_UNLESS(test_interpolated_q(index) == zero_configuration(index));
   }
 }
+
+class LegacyDistanceAndInterpolationProvider final
+    : public DistanceAndInterpolationProvider {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LegacyDistanceAndInterpolationProvider);
+
+  LegacyDistanceAndInterpolationProvider(
+      const ConfigurationDistanceFunction& distance_function,
+      const ConfigurationInterpolationFunction& interpolation_function)
+      : distance_function_(distance_function),
+        interpolation_function_(interpolation_function) {
+    DRAKE_THROW_UNLESS(distance_function_ != nullptr);
+    DRAKE_THROW_UNLESS(interpolation_function_ != nullptr);
+  }
+
+  std::shared_ptr<const LegacyDistanceAndInterpolationProvider>
+  WithConfigurationDistanceFunction(
+      const ConfigurationDistanceFunction& distance_function) const {
+    return std::make_shared<LegacyDistanceAndInterpolationProvider>(
+        distance_function, interpolation_function_);
+  }
+
+  std::shared_ptr<const LegacyDistanceAndInterpolationProvider>
+  WithConfigurationInterpolationFunction(
+      const ConfigurationInterpolationFunction& interpolation_function) const {
+    return std::make_shared<LegacyDistanceAndInterpolationProvider>(
+        distance_function_, interpolation_function);
+  }
+
+ private:
+  double DoComputeConfigurationDistance(const Eigen::VectorXd& from,
+                                        const Eigen::VectorXd& to) const final {
+    return distance_function_(from, to);
+  }
+
+  Eigen::VectorXd DoInterpolateBetweenConfigurations(
+      const Eigen::VectorXd& from, const Eigen::VectorXd& to,
+      double ratio) const final {
+    return interpolation_function_(from, to, ratio);
+  }
+
+ private:
+  ConfigurationDistanceFunction distance_function_;
+  ConfigurationInterpolationFunction interpolation_function_;
+};
 }  // namespace
 
 // Default interpolator; it uses SLERP for quaternion-valued groups of dofs and
@@ -538,13 +583,28 @@ std::vector<uint8_t> CollisionChecker::CheckConfigsCollisionFree(
   return collision_checks;
 }
 
+void CollisionChecker::SetDistanceAndInterpolationProvider(
+    std::shared_ptr<const DistanceAndInterpolationProvider> provider) {
+  DRAKE_THROW_UNLESS(provider != nullptr);
+  distance_and_interpolation_provider_ = std::move(provider);
+}
+
 void CollisionChecker::SetConfigurationDistanceFunction(
     const ConfigurationDistanceFunction& distance_function) {
+  auto legacy =
+      std::dynamic_pointer_cast<const LegacyDistanceAndInterpolationProvider>(
+          distance_and_interpolation_provider_);
+  if (legacy == nullptr) {
+    throw std::logic_error(
+        "CollisionChecker::SetConfigurationDistanceFunction() "
+        "is not supported after a DistanceAndInterpolationProvider "
+        "has already been set.");
+  }
   DRAKE_THROW_UNLESS(distance_function != nullptr);
   SanityCheckConfigurationDistanceFunction(distance_function,
                                            GetDefaultConfiguration());
-  distance_and_interpolation_provider_->SetConfigurationDistanceFunction(
-      distance_function);
+  distance_and_interpolation_provider_ =
+      legacy->WithConfigurationDistanceFunction(distance_function);
 }
 
 ConfigurationDistanceFunction
@@ -556,6 +616,15 @@ CollisionChecker::MakeStandaloneConfigurationDistanceFunction() const {
 
 void CollisionChecker::SetConfigurationInterpolationFunction(
     const ConfigurationInterpolationFunction& interpolation_function) {
+  auto legacy =
+      std::dynamic_pointer_cast<const LegacyDistanceAndInterpolationProvider>(
+          distance_and_interpolation_provider_);
+  if (legacy == nullptr) {
+    throw std::logic_error(
+        "CollisionChecker::SetConfigurationInterpolationFunction() "
+        "is not supported after a DistanceAndInterpolationProvider "
+        "has already been set.");
+  }
   if (interpolation_function == nullptr) {
     SetConfigurationInterpolationFunction(
         MakeDefaultConfigurationInterpolationFunction(
@@ -564,8 +633,8 @@ void CollisionChecker::SetConfigurationInterpolationFunction(
   }
   SanityCheckConfigurationInterpolationFunction(interpolation_function,
                                                 GetDefaultConfiguration());
-  distance_and_interpolation_provider_->SetConfigurationInterpolationFunction(
-      interpolation_function);
+  distance_and_interpolation_provider_ =
+      legacy->WithConfigurationInterpolationFunction(interpolation_function);
 }
 
 ConfigurationInterpolationFunction
@@ -852,8 +921,7 @@ CollisionChecker::CollisionChecker(CollisionCheckerParams params,
 
   if (params_has_provider) {
     distance_and_interpolation_provider_ =
-        std::make_unique<TransitionalDistanceAndInterpolationProvider>(
-            std::move(params.distance_and_interpolation_provider));
+        std::move(params.distance_and_interpolation_provider);
   } else if (params_has_distance_function) {
     SanityCheckConfigurationDistanceFunction(
         params.configuration_distance_function, GetDefaultConfiguration());
@@ -862,7 +930,7 @@ CollisionChecker::CollisionChecker(CollisionCheckerParams params,
         MakeDefaultConfigurationInterpolationFunction(
             GetQuaternionDofStartIndices(plant()));
     distance_and_interpolation_provider_ =
-        std::make_unique<TransitionalDistanceAndInterpolationProvider>(
+        std::make_unique<LegacyDistanceAndInterpolationProvider>(
             params.configuration_distance_function, default_interpolation_fn);
   } else {
     DRAKE_UNREACHABLE();
