@@ -430,9 +430,40 @@ class Meshcat {
                        double xmin = -1, double xmax = 1, double ymin = -1,
                        double ymax = 1);
 
-  /** Resets the default camera, background, grid lines, and axes to their
-   default settings. */
+  /** Resets the default camera, camera target, background, grid lines, and axes
+   to their default settings. */
   void ResetRenderMode();
+
+  /** Positions the camera's view target point T to the location in
+   `target_in_world` (`p_WT`).
+
+   If the camera is orthographic (i.e., by calling Set2DRenderMode() or
+   SetCamera(OrthographicCamera)), this will have no effect.
+
+   @warning Setting the target position to be coincident with the camera
+   position will cause the camera orientation to return to its default
+   orientation (looking along the +Wy axis with +Wz up) and lock the camera so
+   that it can't be rotated, panned, or zoomed.
+
+   @param target_in_world the position of the target point T in Drake's z-up
+               world frame (p_WT). */
+  void SetCameraTarget(const Eigen::Vector3d& target_in_world);
+
+  /** A convenience function for positioning the camera and its view target
+   in the world frame.
+
+   Unlike SetCameraTarget() this can be used to orient orthographic cameras
+   as well.
+
+   @note This is Drake's z-up world frame and not the three.js world frame
+   you'd have to use if you set the "position" on the camera directly.
+
+   @param camera_in_world the position of the camera's origin C in Drake's z-up
+               world frame (p_WC).
+   @param target_in_world the position of the target point T in Drake's z-up
+               world frame (p_WT). */
+  void PoseCamera(const Eigen::Vector3d& camera_in_world,
+                  const Eigen::Vector3d& target_in_world);
 
   /** Set the RigidTransform for a given path in the scene tree relative to its
   parent path. An object's pose is the concatenation of all of the transforms
