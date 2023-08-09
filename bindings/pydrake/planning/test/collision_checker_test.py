@@ -251,7 +251,7 @@ class TestCollisionChecker(unittest.TestCase):
                             start_self if update_self is None else update_self)
                         self.assertEqual(actual, expected)
 
-    def _test_collision_checker_base_class(self, dut):
+    def _test_collision_checker_base_class(self, dut, has_provider):
         """Checks the API of CollisionChecker, given a concrete instance.
         """
         self.assertIsInstance(dut.model(), mut.RobotDiagram)
@@ -347,25 +347,27 @@ class TestCollisionChecker(unittest.TestCase):
             4)
         dut.CheckConfigsCollisionFree([q])  # Omit the defaulted arg.
 
-        def distance_function(q1, q2):
-            return np.linalg.norm(q1 - q2)
+        if not has_provider:
+            def distance_function(q1, q2):
+                return np.linalg.norm(q1 - q2)
 
-        dut.SetConfigurationDistanceFunction(
-            distance_function=distance_function)
-        dut.ComputeConfigurationDistance(q1=q, q2=q)
-        self.assertEqual(
-            dut.MakeStandaloneConfigurationDistanceFunction()(q, q),
-            0.0)
+            dut.SetConfigurationDistanceFunction(
+                distance_function=distance_function)
+            dut.ComputeConfigurationDistance(q1=q, q2=q)
+            self.assertEqual(
+                dut.MakeStandaloneConfigurationDistanceFunction()(q, q),
+                0.0)
 
-        def interpolation_function(q1, q2, r):
-            return q1 + (q2 - q1) * r
+            def interpolation_function(q1, q2, r):
+                return q1 + (q2 - q1) * r
 
-        dut.SetConfigurationInterpolationFunction(
-            interpolation_function=interpolation_function)
-        dut.InterpolateBetweenConfigurations(q1=q, q2=q, ratio=0.5)
-        numpy_compare.assert_equal(
-            dut.MakeStandaloneConfigurationInterpolationFunction()(q, q, 0.5),
-            q)
+            dut.SetConfigurationInterpolationFunction(
+                interpolation_function=interpolation_function)
+            dut.InterpolateBetweenConfigurations(q1=q, q2=q, ratio=0.5)
+            numpy_compare.assert_equal(
+                dut.MakeStandaloneConfigurationInterpolationFunction()(
+                    q, q, 0.5),
+                q)
 
         dut.edge_step_size()
         dut.set_edge_step_size(edge_step_size=0.2)
@@ -408,28 +410,32 @@ class TestCollisionChecker(unittest.TestCase):
             dut.model().plant())
         dut.SetDistanceAndInterpolationProvider(new_provider)
 
-    def _make_function_scene_graph_collision_checker(self):
+    def _make_scene_graph_collision_checker(self, use_provider):
         robot, index = self._make_robot_diagram()
-        return mut.SceneGraphCollisionChecker(
-            model=robot,
-            robot_model_instances=[index],
-            configuration_distance_function=self._configuration_distance,
-            edge_step_size=0.125)
-
-    def _make_provider_scene_graph_collision_checker(self):
-        robot, index = self._make_robot_diagram()
-        provider = mut.LinearDistanceAndInterpolationProvider(robot.plant())
-        return mut.SceneGraphCollisionChecker(
-            model=robot,
-            distance_and_interpolation_provider=provider,
-            robot_model_instances=[index],
-            edge_step_size=0.125)
+        if use_provider:
+            provider = mut.LinearDistanceAndInterpolationProvider(
+                robot.plant())
+            return mut.SceneGraphCollisionChecker(
+                model=robot,
+                distance_and_interpolation_provider=provider,
+                robot_model_instances=[index],
+                edge_step_size=0.125)
+        else:
+            return mut.SceneGraphCollisionChecker(
+                model=robot,
+                robot_model_instances=[index],
+                configuration_distance_function=self._configuration_distance,
+                edge_step_size=0.125)
 
     def test_scene_graph_collision_checker(self):
         """Tests the full CollisionChecker API.
         """
-        function_checker = self._make_function_scene_graph_collision_checker()
-        self._test_collision_checker_base_class(function_checker)
+        use_provider = False
+        function_checker = self._make_scene_graph_collision_checker(
+            use_provider)
+        self._test_collision_checker_base_class(function_checker, use_provider)
 
-        provider_checker = self._make_function_scene_graph_collision_checker()
-        self._test_collision_checker_base_class(provider_checker)
+        use_provider = True
+        provider_checker = self._make_scene_graph_collision_checker(
+            use_provider)
+        self._test_collision_checker_base_class(provider_checker, use_provider)
