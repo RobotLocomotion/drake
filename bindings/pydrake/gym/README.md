@@ -26,7 +26,7 @@ A random policy can be played with:
 
     bazel run //bindings/pydrake/examples/gym:play_cart_pole -- --test
 
-To visualize, open meshcat according to the prompts.
+To visualize, open meshcat by following the link in the prompts. If this link fails, it is likely that your loopback device is broken. Try using http://127.0.0.1:7000 instead.
 
 A note on dependencies
 ----------------------
