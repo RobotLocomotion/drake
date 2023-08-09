@@ -30,6 +30,7 @@ drake_cc_package_library(
         ":expect_throws_message",
         ":is_dynamic_castable",
         ":is_memcpy_movable",
+        ":maybe_pause_for_user",
         ":measure_execution",
         ":random_polynomial_matrix",
         ":symbolic_test_util",
@@ -241,6 +242,13 @@ drake_cc_googletest(
     deps = [
         ":expect_no_throw",
     ],
+)
+
+drake_cc_library(
+    name = "maybe_pause_for_user",
+    testonly = 1,
+    srcs = ["maybe_pause_for_user.cc"],
+    hdrs = ["maybe_pause_for_user.h"],
 )
 
 add_lint_tests(enable_clang_format_lint = False)
