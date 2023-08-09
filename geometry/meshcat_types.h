@@ -380,6 +380,12 @@ struct SetCameraData {
   MSGPACK_DEFINE_MAP(type, path, object);
 };
 
+struct SetCameraTargetData {
+  std::string type{"set_target"};
+  std::vector<double> value;
+  MSGPACK_DEFINE_MAP(type, value);
+};
+
 struct SetTransformData {
   std::string type{"set_transform"};
   std::string path;
