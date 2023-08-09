@@ -31,7 +31,6 @@
 #include "drake/common/scope_exit.h"
 #include "drake/common/ssize.h"
 #include "drake/common/text_logging.h"
-#include "drake/common/unused.h"
 #include "drake/geometry/meshcat_types.h"
 
 #ifdef BOOST_VERSION
@@ -217,13 +216,11 @@ class SceneTreeElement {
     if (transform_) {
       ws->send(*transform_);
     }
-    for (const auto& [property, msg] : properties_) {
-      unused(property);
+    for (const auto& [_, msg] : properties_) {
       ws->send(msg);
     }
 
-    for (const auto& [name, child] : children_) {
-      unused(name);
+    for (const auto& [_, child] : children_) {
       child->Send(ws);
     }
   }
@@ -238,13 +235,11 @@ class SceneTreeElement {
     if (transform_) {
       html += CreateCommand(*transform_);
     }
-    for (const auto& [property, msg] : properties_) {
-      unused(property);
+    for (const auto& [_, msg] : properties_) {
       html += CreateCommand(msg);
     }
 
-    for (const auto& [name, child] : children_) {
-      unused(name);
+    for (const auto& [_, child] : children_) {
       html += child->CreateCommands();
     }
     return html;
@@ -581,7 +576,7 @@ class Meshcat::Impl {
   // invariants that we need to maintain.
   //
   // It launches the websocket thread and waits for the thread to reply that
-  // either the application started listning successfully, or else failed.
+  // either the application started listening successfully, or else failed.
   //
   // If the websocket thread failed to bind to a port, then this constructor
   // will first join the websocket thread and then throw an exception; the
@@ -1067,10 +1062,13 @@ class Meshcat::Impl {
   void SetCamera(CameraData camera, std::string path) {
     DRAKE_DEMAND(IsThread(main_thread_id_));
 
+    is_orthographic_ = std::is_same_v<OrthographicCamera, CameraData>;
+
     uuids::uuid_random_generator uuid_generator{generator_};
     internal::SetCameraData<CameraData> data;
     data.path = std::move(path);
     data.object.object = std::move(camera);
+    SetCameraTarget({0, 0, 0});
 
     Defer([this, data = std::move(data)]() {
       DRAKE_DEMAND(IsThread(websocket_thread_id_));
@@ -1272,6 +1270,40 @@ class Meshcat::Impl {
     SetProperty("/Background", "visible", true);
     SetProperty("/Grid", "visible", true);
     SetProperty("/Axes", "visible", true);
+  }
+
+  // This function is public via the PIMPL.
+  // The public version of this only applies to perspective cameras. But, this
+  // implementation allows for an override so that SetCameraPose() can orient
+  // orthographic cameras as well.
+  void SetCameraTarget(const Eigen::Vector3d& p_WT,
+                       bool only_perspective = true) {
+    DRAKE_DEMAND(IsThread(main_thread_id_));
+
+    if (only_perspective && is_orthographic_) return;
+
+    internal::SetCameraTargetData data;
+    // The pose is given in Drake's z-up world. We need to rotate it to a
+    // y-up world.
+    data.value = {p_WT.x(), p_WT.z(), -p_WT.y()};
+
+    Defer([this, data = std::move(data)]() {
+      DRAKE_DEMAND(IsThread(websocket_thread_id_));
+      DRAKE_DEMAND(app_ != nullptr);
+      std::stringstream message_stream;
+      msgpack::pack(message_stream, data);
+      std::string message = message_stream.str();
+      app_->publish("all", message, uWS::OpCode::BINARY, false);
+      camera_target_message_ = std::move(message);
+    });
+  }
+
+  // This function is public via the PIMPL.
+  void SetCameraPose(const Eigen::Vector3d& p_WC, const Eigen::Vector3d& p_WT) {
+    SetCameraTarget(p_WT, false /* only_perspective */);
+    SetTransform("/Cameras/default", math::RigidTransformd());
+    SetProperty("/Cameras/default/rotated/<object>", "position",
+                std::vector<double>{p_WC.x(), p_WC.z(), -p_WC.y()});
   }
 
   // This function is public via the PIMPL.
@@ -1535,6 +1567,9 @@ class Meshcat::Impl {
       if (!animation_.empty()) {
         commands += CreateCommand(animation_);
       }
+      if (!camera_target_message_.empty()) {
+        commands += CreateCommand(camera_target_message_);
+      }
       p.set_value(std::move(commands));
     });
 
@@ -1735,15 +1770,13 @@ class Meshcat::Impl {
       // IsThread(websocket_thread_id_) is checked by the Handle... function.
       HandleSocketOpen(ws);
     };
-    behavior.close = [this](WebSocket* ws, int, std::string_view message) {
+    behavior.close = [this](WebSocket* ws, int, std::string_view) {
       // IsThread(websocket_thread_id_) is checked by the Handle... function.
-      unused(message);
       HandleSocketClose(ws);
     };
     behavior.message = [this](WebSocket* ws, std::string_view message,
-                              uWS::OpCode op_code) {
+                              uWS::OpCode) {
       // IsThread(websocket_thread_id_) is checked by the Handle... function.
-      unused(op_code);
       HandleMessage(ws, message);
     };
 
@@ -1834,6 +1867,10 @@ class Meshcat::Impl {
         msgpack::pack(message_stream, s_iter->second);
         ws->send(message_stream.str());
       }
+    }
+
+    if (!camera_target_message_.empty()) {
+      ws->send(camera_target_message_);
     }
 
     // Tell client if the realtime rate plot should be hidden
@@ -1978,6 +2015,7 @@ class Meshcat::Impl {
   mutable std::mutex controls_mutex_;
   std::map<std::string, internal::SetButtonControl, std::less<>> buttons_{};
   std::map<std::string, internal::SetSliderControl, std::less<>> sliders_{};
+  std::string camera_target_message_;
   Meshcat::Gamepad gamepad_{};
   std::vector<std::string> controls_{};  // Names of buttons and sliders in the
                                          // order they were added.
@@ -1989,6 +2027,7 @@ class Meshcat::Impl {
   int port_{};
   std::mt19937 generator_{};
   double realtime_rate_{0.0};
+  bool is_orthographic_{false};
 
   // These variables should only be accessed in the websocket thread.
   std::thread::id websocket_thread_id_{};
@@ -2359,6 +2398,15 @@ void Meshcat::Set2dRenderMode(const math::RigidTransformd& X_WC, double xmin,
 
 void Meshcat::ResetRenderMode() {
   impl().ResetRenderMode();
+}
+
+void Meshcat::SetCameraTarget(const Eigen::Vector3d& target_in_world) {
+  impl().SetCameraTarget(target_in_world);
+}
+
+void Meshcat::SetCameraPose(const Eigen::Vector3d& camera_in_world,
+                            const Eigen::Vector3d& target_in_world) {
+  impl().SetCameraPose(camera_in_world, target_in_world);
 }
 
 void Meshcat::AddButton(std::string name, std::string keycode) {
