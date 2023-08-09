@@ -3,7 +3,7 @@
 #include "drake/bindings/pydrake/planning/planning_py.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/planning/collision_checker.h"
-#include "drake/planning/distance_interpolation_provider.h"
+#include "drake/planning/distance_and_interpolation_provider.h"
 #include "drake/planning/scene_graph_collision_checker.h"
 #include "drake/planning/unimplemented_collision_checker.h"
 

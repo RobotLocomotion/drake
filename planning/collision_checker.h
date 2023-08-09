@@ -15,7 +15,7 @@
 #include "drake/planning/body_shape_description.h"
 #include "drake/planning/collision_checker_context.h"
 #include "drake/planning/collision_checker_params.h"
-#include "drake/planning/distance_interpolation_provider.h"
+#include "drake/planning/distance_and_interpolation_provider.h"
 #include "drake/planning/edge_measure.h"
 #include "drake/planning/robot_clearance.h"
 #include "drake/planning/robot_collision_type.h"

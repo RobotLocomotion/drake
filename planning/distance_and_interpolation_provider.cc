@@ -1,4 +1,4 @@
-#include "drake/planning/distance_interpolation_provider.h"
+#include "drake/planning/distance_and_interpolation_provider.h"
 
 #include <cmath>
 

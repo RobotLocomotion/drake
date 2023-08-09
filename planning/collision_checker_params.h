@@ -7,7 +7,7 @@
 #include <Eigen/Core>
 
 #include "drake/multibody/tree/multibody_tree_indexes.h"
-#include "drake/planning/distance_interpolation_provider.h"
+#include "drake/planning/distance_and_interpolation_provider.h"
 #include "drake/planning/robot_diagram.h"
 
 namespace drake {

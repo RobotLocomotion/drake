@@ -1,4 +1,4 @@
-#include "drake/planning/linear_distance_interpolation_provider.h"
+#include "drake/planning/linear_distance_and_interpolation_provider.h"
 
 #include <stdexcept>
 
