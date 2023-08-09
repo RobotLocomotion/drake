@@ -1,0 +1,98 @@
+<?xml version="1.0"?>
+<sdf version='1.7'>
+  <model name='CartPoleBSA'>
+    <!-- This sdf file produces a model based on Barto, Sutton, and Anderson
+         in “Neuronlike Adaptive Elements That Can Solve Difficult Learning
+         Control Problem”.
+         It is a copy of //examples/multibody/cart_pole:cart_pole.sdf
+         with nicer visuals and added joint limits.
+    -->
+    <link name='Cart'>
+      <pose>0 0 0 0 0 0</pose>
+      <inertial>
+        <mass>1.0</mass>
+        <inertia>
+          <ixx>1.0e-20</ixx><iyy>1.0e-20</iyy><izz>1.0e-20</izz>
+          <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+        </inertia>
+      </inertial>
+
+      <visual name='cart_visual'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.3 0.2 0.2</size>
+          </box>
+        </geometry>
+        <material>
+          <diffuse>0 0 0.1 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
+    <link name='Pole'>
+      <!-- The pole is modeled as a point mass at the middle of a pole. -->
+      <!-- The length of the pole is 1.0 meters. -->
+      <pose>0 0 0.5 0 0 0</pose>
+      <inertial>
+        <mass>0.1</mass>
+        <inertia>
+          <ixx>1.0e-20</ixx><iyy>1.0e-20</iyy><izz>1.0e-20</izz>
+          <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+        </inertia>
+      </inertial>
+
+      <visual name='pole_point_mass'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.05</radius>
+          </sphere>
+        </geometry>
+        <material>
+          <diffuse>0.4 1 0.1 1</diffuse>
+        </material>
+      </visual>
+      <visual name='pole_rod'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.025</radius>
+            <length>1.0</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse>0.4 0.1 0.1 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
+    <joint name='CartSlider' type='prismatic'>
+      <parent>world</parent>
+      <child>Cart</child>
+      <axis>
+        <xyz>1.0 0.0 0.0</xyz>
+        <limit>
+          <!-- This joint is actuated. -->
+          <effort>10.0</effort>
+          <lower>-4.8</lower>
+          <upper>4.8</upper>
+        </limit>
+      </axis>
+    </joint>
+
+    <joint name='PolePin' type='revolute'>
+      <!-- Pose of the joint frame in the pole's frame (located at the COM) -->
+      <pose>0 0 -0.5 0 0 0</pose>
+      <parent>Cart</parent>
+      <child>Pole</child>
+      <axis>
+        <xyz>0.0 -1.0 0.0</xyz>
+        <limit>
+          <!-- This joint is not actuated. -->
+          <effort>-1.0</effort>
+        </limit>
+      </axis>
+    </joint>
+  </model>
+</sdf>

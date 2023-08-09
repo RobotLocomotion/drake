@@ -1,0 +1,8 @@
+diff --git stable_baselines3/version.txt stable_baselines3/version.txt
+index 359a5b9..71f1752 100644
+--- stable_baselines3/version.txt
++++ stable_baselines3/version.txt
+@@ -1 +1 @@
+-2.0.0
++2.0.0drake_internal
+\ No newline at end of file
