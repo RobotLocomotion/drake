@@ -184,8 +184,8 @@ std::vector<RotationMatrix<T>> SapDriver<T>::AddContactConstraints(
   // Quick no-op exit.
   if (num_contacts == 0) return std::vector<RotationMatrix<T>>();
 
-  std::vector<ContactPairKinematics<T>> contact_kinematics =
-      manager().CalcContactKinematics(context);
+  const std::vector<ContactPairKinematics<T>>& contact_kinematics =
+      manager().EvalContactKinematics(context);
 
   std::vector<RotationMatrix<T>> R_WC;
   R_WC.reserve(num_contacts);
@@ -195,7 +195,7 @@ std::vector<RotationMatrix<T>> SapDriver<T>::AddContactConstraints(
     const T stiffness = discrete_pair.stiffness;
     const T dissipation_time_scale = discrete_pair.dissipation_time_scale;
     const T friction = discrete_pair.friction_coefficient;
-    ContactConfiguration<T>& configuration =
+    const ContactConfiguration<T>& configuration =
         contact_kinematics[icontact].configuration;
     const auto& jacobian_blocks = contact_kinematics[icontact].jacobian;
 
@@ -217,13 +217,13 @@ std::vector<RotationMatrix<T>> SapDriver<T>::AddContactConstraints(
       SapConstraintJacobian<T> J(jacobian_blocks[0].tree,
                                  std::move(jacobian_blocks[0].J));
       problem->AddConstraint(std::make_unique<SapFrictionConeConstraint<T>>(
-          std::move(configuration), std::move(J), std::move(parameters)));
+          configuration, std::move(J), std::move(parameters)));
     } else {
       SapConstraintJacobian<T> J(
           jacobian_blocks[0].tree, std::move(jacobian_blocks[0].J),
           jacobian_blocks[1].tree, std::move(jacobian_blocks[1].J));
       problem->AddConstraint(std::make_unique<SapFrictionConeConstraint<T>>(
-          std::move(configuration), std::move(J), std::move(parameters)));
+          configuration, std::move(J), std::move(parameters)));
     }
   }
   return R_WC;
