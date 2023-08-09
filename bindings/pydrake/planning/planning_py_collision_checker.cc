@@ -276,7 +276,7 @@ void DefinePlanningCollisionChecker(py::module m) {
           py::object params_py = params_ctor(**kwargs);
           auto* params = params_py.cast<CollisionCheckerParams*>();
           DRAKE_DEMAND(params != nullptr);
-          // Now, transfer ownership of the pointers.
+          // Now, transfer ownership of the pointer.
           params->model = std::move(model);
           return std::make_unique<SceneGraphCollisionChecker>(
               std::move(*params));
@@ -309,7 +309,7 @@ void DefinePlanningCollisionChecker(py::module m) {
           py::object params_py = params_ctor(**kwargs);
           auto* params = params_py.cast<CollisionCheckerParams*>();
           DRAKE_DEMAND(params != nullptr);
-          // Now, transfer ownership of the pointers.
+          // Now, transfer ownership of the pointer.
           params->model = std::move(model);
           return std::make_unique<UnimplementedCollisionChecker>(
               std::move(*params), supports_parallel_checking);

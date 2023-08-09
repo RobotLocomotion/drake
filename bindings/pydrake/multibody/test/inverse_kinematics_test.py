@@ -634,7 +634,7 @@ class TestConstraints(unittest.TestCase):
             return np.linalg.norm(q1 - q2)
 
         collision_checker = SceneGraphCollisionChecker(
-            model=robot, distance_and_interpolation_provider=None,
+            model=robot,
             robot_model_instances=[index],
             configuration_distance_function=distance_function,
             edge_step_size=0.125)
