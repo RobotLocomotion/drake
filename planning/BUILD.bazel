@@ -18,6 +18,7 @@ drake_cc_package_library(
         ":collision_checker_context",
         ":collision_checker_params",
         ":distance_and_interpolation_provider",
+        ":iris_clique_cover",
         ":linear_distance_and_interpolation_provider",
         ":robot_clearance",
         ":robot_collision_type",
@@ -100,6 +101,19 @@ drake_cc_library(
     hdrs = ["distance_and_interpolation_provider.h"],
     deps = [
         "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "iris_clique_cover",
+    srcs = ["iris_clique_cover.cc"],
+    hdrs = ["iris_clique_cover.h"],
+    interface_deps = [
+        ":collision_checker",
+        "//geometry/optimization:iris",
+    ],
+    deps = [
+        ":visibility_graph",
     ],
 )
 
@@ -259,6 +273,18 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "@common_robotics_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "iris_clique_cover_test",
+    # Be sure to exercise OpenMP-related features.
+    num_threads = 2,
+    deps = [
+        ":iris_clique_cover",
+        ":robot_diagram_builder",
+        ":scene_graph_collision_checker",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
