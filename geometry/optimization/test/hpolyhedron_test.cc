@@ -7,6 +7,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/fmt_eigen.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/maybe_pause_for_user.h"
 #include "drake/common/yaml/yaml_io.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/meshcat.h"
@@ -971,9 +972,7 @@ GTEST_TEST(HPolyhedronTest, UniformSampleTest) {
     cloud.mutable_xyzs().bottomRows<1>().setZero();
     meshcat->SetObject("samples", cloud, 0.01, Rgba(0, 0, 1));
 
-    // Note: This will not pause execution when running as a bazel test.
-    std::cout << "[Press RETURN to continue]." << std::endl;
-    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+    common::MaybePauseForUser();
   }
 
   // Check that they are all in the polyhedron.
