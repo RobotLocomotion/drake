@@ -83,19 +83,16 @@ class VPolytope final : public ConvexSet {
   This is an axis-aligned box, centered at the origin, with edge length 2. */
   static VPolytope MakeUnitBox(int dim);
 
-  /** Computes the volume of this V-Polytope.
-  @note this function calls qhull to compute the volume. */
-  [[nodiscard]] double Volume() const;
-
   /** Uses qhull to compute the Delaunay triangulation and then writes the
   vertices and faces to `filename` in the Wavefront Obj format. Note that the
   extension `.obj` is not automatically added to the `filename`.
   @pre ambient_dimension() == 3. */
   void WriteObj(const std::filesystem::path& filename) const;
 
-  double DoVolume() const {
-    throw std::runtime_error("VPolytope::DoVolume() is not implemented yet.");
-  }
+ protected:
+  /** Computes the volume of this V-Polytope.
+  @note this function calls qhull to compute the volume. */
+  double DoVolume() const;
 
  private:
   std::unique_ptr<ConvexSet> DoClone() const final;

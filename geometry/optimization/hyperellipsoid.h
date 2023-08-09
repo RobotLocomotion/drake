@@ -126,6 +126,7 @@ class Hyperellipsoid final : public ConvexSet {
     CheckInvariants();
   }
 
+ protected:
   /** Returns the volume of the hyperellipsoid (in Euclidean space). */
   double DoVolume() const;
 
