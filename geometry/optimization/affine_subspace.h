@@ -125,6 +125,11 @@ class AffineSubspace final : public ConvexSet {
    * that each set is contained in the other. */
   bool IsNearlyEqualTo(const AffineSubspace& other, double tol = 1e-15) const;
 
+double DoVolume() const {
+    throw std::runtime_error(
+        "Cannot compute volume of an affine subspace.");
+  }
+
  private:
   std::unique_ptr<ConvexSet> DoClone() const final;
 

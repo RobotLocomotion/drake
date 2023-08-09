@@ -22,7 +22,7 @@ class VPolytope;
 By convention, we treat a zero-dimensional HPolyhedron as nonempty.
 
 @ingroup geometry_optimization */
-class HPolyhedron : public ConvexSet {
+class HPolyhedron: public ConvexSet {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(HPolyhedron)
 
@@ -220,6 +220,10 @@ class HPolyhedron : public ConvexSet {
     CheckInvariants();
   }
 
+double DoVolume() const {
+    throw std::runtime_error("Exact volume computation for HPolyhedrons is not implemented.");
+  }
+  
  private:
   /* @pre other.ambient_dimension() == this->ambient_dimension() */
   [[nodiscard]] HPolyhedron DoIntersectionNoChecks(
@@ -229,29 +233,29 @@ class HPolyhedron : public ConvexSet {
   [[nodiscard]] HPolyhedron DoIntersectionWithChecks(const HPolyhedron& other,
                                                      double tol) const;
 
-  std::unique_ptr<ConvexSet> DoClone() const final;
+  std::unique_ptr<ConvexSet> DoClone() const;
 
-  bool DoIsBounded() const final;
+  bool DoIsBounded() const;
 
-  bool DoIsEmpty() const final;
+  bool DoIsEmpty() const;
 
   // N.B. No need to override DoMaybeGetPoint here.
 
   bool DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
-                    double tol) const final;
+                    double tol) const;
 
   std::pair<VectorX<symbolic::Variable>,
             std::vector<solvers::Binding<solvers::Constraint>>>
   DoAddPointInSetConstraints(
       solvers::MathematicalProgram* prog,
       const Eigen::Ref<const solvers::VectorXDecisionVariable>& vars)
-      const final;
+      const;
 
   std::vector<solvers::Binding<solvers::Constraint>>
   DoAddPointInNonnegativeScalingConstraints(
       solvers::MathematicalProgram* prog,
       const Eigen::Ref<const solvers::VectorXDecisionVariable>& x,
-      const symbolic::Variable& t) const final;
+      const symbolic::Variable& t) const;
 
   std::vector<solvers::Binding<solvers::Constraint>>
   DoAddPointInNonnegativeScalingConstraints(
@@ -260,7 +264,7 @@ class HPolyhedron : public ConvexSet {
       const Eigen::Ref<const Eigen::VectorXd>& b_x,
       const Eigen::Ref<const Eigen::VectorXd>& c, double d,
       const Eigen::Ref<const solvers::VectorXDecisionVariable>& x,
-      const Eigen::Ref<const solvers::VectorXDecisionVariable>& t) const final;
+      const Eigen::Ref<const solvers::VectorXDecisionVariable>& t) const;
 
   // TODO(russt): Implement DoToShapeWithPose.  Currently we don't have a Shape
   // that can consume this output.  The obvious candidate is Convex, that class
@@ -285,25 +289,6 @@ class HPolyhedron : public ConvexSet {
 
   Eigen::MatrixXd A_{};
   Eigen::VectorXd b_{};
-};
-
-/** Axis-aligned box in Rᵈ.  This is a special case of Hpolyhedron. */
-class AxisAlignedBox final: public HPolyhedron{
-  public:
-  AxisAlignedBox(const Eigen::Ref<const Eigen::VectorXd>& lower_corner,
-              const Eigen::Ref<const Eigen::VectorXd>& upper_corner);
-
-  const Eigen::VectorXd lower_corner() const { return lower_corner_; }
-
-  const Eigen::VectorXd upper_corner() const { return upper_corner_; }
-
-  double CalcVolume() const;
-
-//   Eigen::VectorXd UniformSample(RandomGenerator* generator) const;
-
-  private:
-  Eigen::VectorXd lower_corner_ {};
-  Eigen::VectorXd upper_corner_ {};
 };
 
 }  // namespace optimization

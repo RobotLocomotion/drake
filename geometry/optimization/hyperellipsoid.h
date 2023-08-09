@@ -57,9 +57,6 @@ class Hyperellipsoid final : public ConvexSet {
   /** Returns the center of the ellipsoid. */
   const Eigen::VectorXd& center() const { return center_; }
 
-  /** Returns the volume of the hyperellipsoid (in Euclidean space). */
-  double Volume() const;
-
   /** Computes the smallest uniform scaling of this ellipsoid for which it still
   intersects @p other. √ minₓ (x-center)ᵀAᵀA(x-center) s.t. x ∈ other.  Note
   that if center ∈ other, then we expect scaling = 0 and x = center (up to
@@ -128,6 +125,9 @@ class Hyperellipsoid final : public ConvexSet {
     a->Visit(MakeNameValue("center", &center_));
     CheckInvariants();
   }
+
+  /** Returns the volume of the hyperellipsoid (in Euclidean space). */
+  double DoVolume() const;
 
  private:
   std::unique_ptr<ConvexSet> DoClone() const final;

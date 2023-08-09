@@ -83,7 +83,7 @@ double volume_of_unit_sphere(int dim) {
 
 }  // namespace
 
-double Hyperellipsoid::Volume() const {
+double Hyperellipsoid::DoVolume() const {
   if (ambient_dimension() == 0) {
     return 0.0;
   }

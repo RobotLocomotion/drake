@@ -58,7 +58,7 @@ The geometry::optimization tools support:
 
 // forward declarations
 class ConvexSet;
-class AxisAlignedBox;
+class HyperRectangle;
 
 /** Abstract base class for defining a convex set.
 @ingroup geometry_optimization */
@@ -153,11 +153,25 @@ class ConvexSet : public ShapeReifier {
   }
 
   /** Returns the minimum axis axligned bounding box of the convex set */
-  std::optional<AxisAlignedBox> MaybeCalcAxisAlignedBoundingBox() const;
+  std::optional<HyperRectangle> MaybeCalcAxisAlignedBoundingBox() const;
 
-  std::optional<double> MaybeCalcVolume() const;
 
-  std::optional<double> MaybeCalcVolumeViaSampling(RandomGenerator* generator) const;
+  double Volume() const {
+    if (!IsBounded()) {
+      throw std::runtime_error(
+          "Cannot calculate volume of an unbounded set.");
+    }
+    return DoVolume();
+  }
+
+  double CalcVolumeViaSampling(RandomGenerator* generator, const double rel_accuracy = 1e-2, 
+  const size_t min_num_samples = 10, const size_t max_num_samples = 1e4) const{
+    if (!IsBounded()) {
+      throw std::runtime_error(
+          "Cannot calculate volume of an unbounded set.");
+    }
+    return DoCalcVolumeViaSampling(generator, rel_accuracy, min_num_samples, max_num_samples);
+  }
 
   /** Adds a constraint to an existing MathematicalProgram enforcing that the
   point defined by vars is inside the set.
@@ -237,6 +251,7 @@ class ConvexSet : public ShapeReifier {
   // TODO(russt): Consider adding a set_solver() method here, which determines
   // the solver that any derived class uses if it solves an optimization.
 
+
  protected:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ConvexSet)
 
@@ -265,8 +280,6 @@ class ConvexSet : public ShapeReifier {
   can be zero-dimensional and empty must handle this behavior in their
   derived implementation of DoIsEmpty. */
   virtual bool DoIsEmpty() const;
-
-  double DoCalcVolume(const AxisAlignedBox& aabb) const;
 
   /** Non-virtual interface implementation for MaybeGetPoint(). The default
   implementation returns nullopt. Sets that can model a single point should
@@ -341,6 +354,10 @@ class ConvexSet : public ShapeReifier {
   std::optional<symbolic::Variable> HandleZeroAmbientDimensionConstraints(
       solvers::MathematicalProgram* prog, const ConvexSet& set,
       std::vector<solvers::Binding<solvers::Constraint>>* constraints) const;
+
+  virtual double DoVolume() const = 0;
+
+  double DoCalcVolumeViaSampling(RandomGenerator* generator, const double rel_accuracy, const size_t min_num_samples, const size_t max_num_samples) const;
 
  private:
   // The reset_after_move wrapper adjusts ConvexSet's default move constructor

@@ -87,7 +87,7 @@ GTEST_TEST(VPolytopeTest, DefaultCtor) {
   const VPolytope dut;
   EXPECT_NO_THROW(dut.GetMinimalRepresentation());
   EXPECT_EQ(dut.vertices().size(), 0);
-  EXPECT_EQ(dut.CalcVolume(), 0.0);
+  EXPECT_EQ(dut.Volume(), 0.0);
   EXPECT_NO_THROW(dut.Clone());
   EXPECT_EQ(dut.ambient_dimension(), 0);
   EXPECT_TRUE(dut.IsBounded());
@@ -558,14 +558,14 @@ GTEST_TEST(VPolytopeTest, NonnegativeScalingTest2) {
 
 GTEST_TEST(VPolytopeTest, CalcVolume) {
   const double tol{1E-6};
-  EXPECT_NEAR(VPolytope::MakeUnitBox(3).CalcVolume(), 8, tol);
+  EXPECT_NEAR(VPolytope::MakeUnitBox(3).Volume(), 8, tol);
 
   Eigen::Matrix<double, 2, 5> vertices_2d;
   // clang-format off
   vertices_2d << 1, -1, 0, 0, 0,
                  0, 0, 1, -1, 0;
   // clang-format on
-  EXPECT_NEAR(VPolytope(vertices_2d).CalcVolume(), 2, tol);
+  EXPECT_NEAR(VPolytope(vertices_2d).Volume(), 2, tol);
 
   Eigen::Matrix<double, 3, 5> vertices_3d;
   // clang-format off
@@ -573,7 +573,7 @@ GTEST_TEST(VPolytopeTest, CalcVolume) {
                  0, 1, 0, 0, 0.25,
                  0, 0, 1, 0, 0.25;
   // clang-format on
-  EXPECT_NEAR(VPolytope(vertices_3d).CalcVolume(), 1.0 / 6, tol);
+  EXPECT_NEAR(VPolytope(vertices_3d).Volume(), 1.0 / 6, tol);
 
   // A degenerate case where al the 3d vertices are on a 2d plane.
   Eigen::Matrix<double, 3, 4> vertices_3d_planar;
@@ -582,7 +582,7 @@ GTEST_TEST(VPolytopeTest, CalcVolume) {
                         0, 0, 1, -1,
                         0, 0, 0, 0;
   // clang-format on
-  EXPECT_NEAR(VPolytope(vertices_3d_planar).CalcVolume(), 0., tol);
+  EXPECT_NEAR(VPolytope(vertices_3d_planar).Volume(), 0., tol);
 }
 
 double CalcPathLength(const Eigen::MatrixXd& vertices) {
@@ -614,7 +614,7 @@ GTEST_TEST(VPolytopeTest, GetMinimalRepresentationTest) {
     // clang-format on
     auto vpoly = VPolytope(vertices).GetMinimalRepresentation();
     EXPECT_EQ(vpoly.vertices().cols(), 4);
-    EXPECT_NEAR(vpoly.CalcVolume(), l * l, tol);
+    EXPECT_NEAR(vpoly.Volume(), l * l, tol);
     ASSERT_TRUE(vpoly.MaybeGetFeasiblePoint().has_value());
     EXPECT_TRUE(vpoly.PointInSet(vpoly.MaybeGetFeasiblePoint().value(), tol));
     // Calculate the length of the path that visits all the vertices
@@ -652,7 +652,7 @@ GTEST_TEST(VPolytopeTest, GetMinimalRepresentationTest) {
     // clang-format on
     auto vpoly = VPolytope(vertices).GetMinimalRepresentation();
     EXPECT_EQ(vpoly.vertices().cols(), 8);
-    EXPECT_NEAR(vpoly.CalcVolume(), l * l * l, tol);
+    EXPECT_NEAR(vpoly.Volume(), l * l * l, tol);
     ASSERT_TRUE(vpoly.MaybeGetFeasiblePoint().has_value());
     EXPECT_TRUE(vpoly.PointInSet(vpoly.MaybeGetFeasiblePoint().value(), tol));
 

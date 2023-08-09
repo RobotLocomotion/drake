@@ -259,7 +259,7 @@ VPolytope VPolytope::GetMinimalRepresentation() const {
   return VPolytope(minimal_vertices);
 }
 
-double VPolytope::CalcVolume() const {
+double VPolytope::Volume() const {
   if (ambient_dimension() == 0) {
     return 0.0;
   }

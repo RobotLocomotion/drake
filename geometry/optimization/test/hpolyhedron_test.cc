@@ -1,4 +1,5 @@
 #include "drake/geometry/optimization/hpolyhedron.h"
+#include "drake/geometry/optimization/hyperrectangle.h"
 
 #include <limits>
 
@@ -366,7 +367,7 @@ GTEST_TEST(HpolyhedronTest, Scale) {
   // The new volume should be 16.
   HPolyhedron H_scaled = H.Scale(kScale);
   VPolytope V(H_scaled);
-  EXPECT_NEAR(V.CalcVolume(), 16.0, kTol);
+  EXPECT_NEAR(V.Volume(), 16.0, kTol);
   // The vertices should be pow(16,1/3)/2.
   const double kVertexValue = std::pow(16.0, 1.0 / 3.0) / 2.0;
   for (int i = 0; i < V.vertices().rows(); ++i) {
@@ -378,12 +379,12 @@ GTEST_TEST(HpolyhedronTest, Scale) {
   // Again with the center specified explicitly.
   H_scaled = H.Scale(kScale, Vector3d::Zero());
   V = VPolytope(H_scaled);
-  EXPECT_NEAR(V.CalcVolume(), 16.0, kTol);
+  EXPECT_NEAR(V.Volume(), 16.0, kTol);
 
   // Again with the center in the bottom corner.
   H_scaled = H.Scale(1.0 / 8.0, Vector3d::Constant(-1.0));
   V = VPolytope(H_scaled);
-  EXPECT_NEAR(V.CalcVolume(), 1.0, kTol);
+  EXPECT_NEAR(V.Volume(), 1.0, kTol);
   EXPECT_TRUE(H_scaled.PointInSet(Vector3d::Constant(-0.01)));
   EXPECT_FALSE(H_scaled.PointInSet(Vector3d::Constant(0.01)));
   EXPECT_TRUE(H_scaled.PointInSet(Vector3d::Constant(-0.99)));
@@ -1046,7 +1047,7 @@ GTEST_TEST(HPolyhedronTest, UniformSampleTest2) {
 }
 
 // Test the computation of the minimal axis-aligned bounding box of a polyhedron.
-GTEST_TEST(HPolyhedronTest, AlixAlignedBox){
+GTEST_TEST(HPolyhedronTest, MaybeCalcAxisAlignedBoundingBox){
   Matrix<double, 4, 2> A;
   Matrix<double, 4, 1> b;
   // clang-format off
@@ -1064,6 +1065,37 @@ GTEST_TEST(HPolyhedronTest, AlixAlignedBox){
   EXPECT_NEAR(aabb.upper_corner()(0), 1, 1e-6);
   EXPECT_NEAR(aabb.lower_corner()(1), -2, 1e-6);
   EXPECT_NEAR(aabb.upper_corner()(1), 3, 1e-6); 
+  // Check the volume of the bounding box.
+  EXPECT_NEAR(aabb.Volume(), 15, 1e-6);
+  // The H-polyhedron volume throws an exception.
+  EXPECT_THROW(H.Volume(), std::runtime_error);
+  // Compute the volume of the polytope
+  RandomGenerator generator(1234);
+  const auto polytope_volume = H.CalcVolumeViaSampling(&generator, 1e-2);
+  // Hpolyhedron volume is compared against the analytic value.
+  EXPECT_NEAR(polytope_volume, 6.0, 1e-1); 
+}
+
+// Test functions on hyperrectangle.
+GTEST_TEST(HPolyhedronTest, HyperRectangle){
+  const Vector3d lower_corner{-1, -2, -3};
+  const Vector3d upper_corner{3, 2, 1};
+  const HyperRectangle hyperrectangle(lower_corner, upper_corner);
+  EXPECT_EQ(hyperrectangle.ambient_dimension(), 3);
+  // The volume of the hyperrectangle is 4*4*4 = 64.
+  EXPECT_NEAR(hyperrectangle.Volume(), 64, 1e-6);
+  // Check the center of the hyperrectangle.
+  const auto center = hyperrectangle.ChebyshevCenter();
+  EXPECT_NEAR(center(0), 1, 1e-6);
+  EXPECT_NEAR(center(1), 0, 1e-6);
+  EXPECT_NEAR(center(2), -1, 1e-6);
+  // Get uniform samples.
+  const int n_samples = 10;
+  RandomGenerator generator(1234);
+  for (int i = 0; i < n_samples; ++i){
+    const auto sample = hyperrectangle.UniformSample(&generator);
+    EXPECT_TRUE(hyperrectangle.PointInSet(sample, 1e-12));
+  }
 }
 
 GTEST_TEST(HPolyhedronTest, Serialize) {

@@ -680,48 +680,6 @@ void HPolyhedron::CheckInvariants() const {
   DRAKE_THROW_UNLESS(b_.array().isFinite().all());
 }
 
-std::optional<AxisAlignedBox> ConvexSet::MaybeCalcAxisAlignedBoundingBox() const{
-  solvers::MathematicalProgram prog;
-  auto point = prog.NewContinuousVariables(ambient_dimension());
-  AddPointInSetConstraints(&prog, point);
-  std::vector<int> directions {-1, 1};
-  Eigen::VectorXd cost_vector = Eigen::VectorXd::Zero(ambient_dimension());
-  Eigen::VectorXd lower_corner {cost_vector};
-  Eigen::VectorXd upper_corner {cost_vector};
-  auto cost = prog.AddLinearCost(cost_vector.transpose(), 0.0, point);
-  for (int i = 0; i < ambient_dimension(); i++) {
-    for (const auto direction : directions) {
-      cost_vector(i) = static_cast<double>(direction);
-      cost.evaluator()->UpdateCoefficients(cost_vector);
-      auto result = solvers::Solve(prog);
-      if (result.is_success()) {
-        if (direction == 1) {
-          lower_corner(i) = result.get_optimal_cost();
-        }
-        else {
-          upper_corner(i) = -result.get_optimal_cost();
-        }
-      }
-      else {
-        return std::nullopt;
-      }
-      cost_vector(i) = 0.0;
-    }
-  }
-  return AxisAlignedBox(lower_corner, upper_corner);
-}
-
-double ConvexSet::DoCalcVolume(const AxisAlignedBox& aabb) const{
-
-}
-
-AxisAlignedBox::AxisAlignedBox(const Eigen::Ref<const Eigen::VectorXd>& lower_corner,
-                               const Eigen::Ref<const Eigen::VectorXd>& upper_corner)
-      : HPolyhedron(HPolyhedron::MakeBox(lower_corner, upper_corner)),
-      lower_corner_(lower_corner), upper_corner_(upper_corner){
-    DRAKE_THROW_UNLESS(lower_corner.size() == upper_corner.size());
-  }
-
 }  // namespace optimization
 }  // namespace geometry
 }  // namespace drake

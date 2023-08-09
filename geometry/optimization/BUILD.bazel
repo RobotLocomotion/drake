@@ -43,6 +43,7 @@ drake_cc_library(
         "point.cc",
         "spectrahedron.cc",
         "vpolytope.cc",
+        "hyperrectangle.cc"
     ],
     hdrs = [
         "affine_subspace.h",
@@ -55,6 +56,7 @@ drake_cc_library(
         "point.h",
         "spectrahedron.h",
         "vpolytope.h",
+        "hyperrectangle.h"
     ],
     interface_deps = [
         "//geometry:scene_graph",

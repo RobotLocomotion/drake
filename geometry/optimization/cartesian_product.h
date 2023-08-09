@@ -78,6 +78,14 @@ class CartesianProduct final : public ConvexSet {
   set implementations. */
   using ConvexSet::PointInSet;
 
+  double DoVolume() const {
+    double volume = 1.0;
+    for (const auto& set : sets_) {
+      volume *= set->Volume();
+    }
+    return volume;
+  }
+
  private:
   std::unique_ptr<ConvexSet> DoClone() const final;
 
