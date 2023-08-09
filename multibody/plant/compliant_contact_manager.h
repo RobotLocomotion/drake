@@ -165,6 +165,15 @@ class CompliantContactManager final
 
   void DoDeclareCacheEntries() final;
 
+  // Computes the effective damping matrix D̃ used in discrete schemes treating
+  // damping terms implicitly. This includes joint damping and reflected
+  // inertias. That is, if R is the diagonal matrix of reflected inertias and D
+  // is the diagonal matrix of joint damping coefficients, then the effective
+  // discrete damping term D̃ is: D̃ = R + δt⋅D.
+  // Since D̃ is diagonal this method returns a VectorX with the diagonal
+  // entries only.
+  VectorX<T> CalcEffectiveDamping(const systems::Context<T>& context) const;
+
   // TODO(amcastro-tri): implement these APIs according to #16955.
   // @throws For SAP if T = symbolic::Expression.
   // @throws For TAMSI if T = symbolic::Expression only if the model contains
@@ -177,9 +186,11 @@ class CompliantContactManager final
   void DoCalcAccelerationKinematicsCache(
       const systems::Context<T>&,
       multibody::internal::AccelerationKinematicsCache<T>*) const final;
-  void DoCalcContactResults(
-      const systems::Context<T>&,
-      ContactResults<T>* contact_results) const final;
+  void DoCalcContactResults(const systems::Context<T>&,
+                            ContactResults<T>* contact_results) const final;
+  void DoCalcDiscreteUpdateMultibodyForces(
+      const systems::Context<T>& context,
+      MultibodyForces<T>* forces) const final;
 
   // This method computes sparse kinematics information for each contact pair at
   // the given configuration stored in `context`.

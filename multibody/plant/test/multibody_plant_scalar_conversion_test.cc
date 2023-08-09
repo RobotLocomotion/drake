@@ -189,6 +189,10 @@ class DoubleOnlyDiscreteUpdateManager final
 
   void DoCalcContactResults(const systems::Context<T>&,
                             ContactResults<T>*) const final {}
+
+  void DoCalcDiscreteUpdateMultibodyForces(
+      const systems::Context<T>& context,
+      MultibodyForces<T>* forces) const final {}
 };
 
 // This test verifies that adding external components that do not support some

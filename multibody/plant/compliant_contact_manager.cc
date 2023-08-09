@@ -20,12 +20,12 @@
 #include "drake/multibody/triangle_quadrature/gaussian_triangle_quadrature_rule.h"
 #include "drake/systems/framework/context.h"
 
-using drake::multibody::contact_solvers::internal::ContactConfiguration;
 using drake::geometry::ContactSurface;
 using drake::geometry::GeometryId;
 using drake::geometry::PenetrationAsPointPair;
 using drake::math::RigidTransform;
 using drake::math::RotationMatrix;
+using drake::multibody::contact_solvers::internal::ContactConfiguration;
 using drake::multibody::contact_solvers::internal::ContactSolverResults;
 using drake::multibody::contact_solvers::internal::MatrixBlock;
 using drake::multibody::internal::DiscreteContactPair;
@@ -113,8 +113,8 @@ void CompliantContactManager<T>::DoDeclareCacheEntries() {
   // Cache contact kinematics.
   const auto& contact_kinematics_cache_entry = this->DeclareCacheEntry(
       "Contact kinematics.",
-      systems::ValueProducer(
-          this, &CompliantContactManager::CalcContactKinematics),
+      systems::ValueProducer(this,
+                             &CompliantContactManager::CalcContactKinematics),
       {systems::System<T>::xd_ticket(),
        systems::System<T>::all_parameters_ticket()});
   cache_indexes_.contact_kinematics =
@@ -366,8 +366,7 @@ void CompliantContactManager<T>::AppendDiscreteContactPairsForPointContact(
   const geometry::SceneGraphInspector<T>& inspector = query_object.inspector();
 
   const std::vector<std::vector<int>>& per_tree_unlocked_indices =
-      this->EvalJointLockingCache(context)
-          .unlocked_velocity_indices_per_tree;
+      this->EvalJointLockingCache(context).unlocked_velocity_indices_per_tree;
   const MultibodyTreeTopology& topology = this->internal_tree().get_topology();
 
   // Fill in the point contact pairs.
@@ -422,9 +421,18 @@ void CompliantContactManager<T>::AppendDiscreteContactPairsForPointContact(
       const T phi0 = -pair.depth;
       const T fn0 = k * pair.depth;  // Used by TAMSI, ignored by SAP.
 
-      contact_pairs.push_back({pair.id_A, pair.id_B, p_WC, pair.nhat_BA_W, phi0,
-                              fn0, k, d, tau, mu, {} /* no surface index */,
-                              {} /* no face index */});
+      contact_pairs.push_back({pair.id_A,
+                               pair.id_B,
+                               p_WC,
+                               pair.nhat_BA_W,
+                               phi0,
+                               fn0,
+                               k,
+                               d,
+                               tau,
+                               mu,
+                               {} /* no surface index */,
+                               {} /* no face index */});
     }
   }
 }
@@ -461,8 +469,7 @@ void CompliantContactManager<T>::
       this->EvalContactSurfaces(context);
 
   const std::vector<std::vector<int>>& per_tree_unlocked_indices =
-      this->EvalJointLockingCache(context)
-          .unlocked_velocity_indices_per_tree;
+      this->EvalJointLockingCache(context).unlocked_velocity_indices_per_tree;
   const MultibodyTreeTopology& topology = this->internal_tree().get_topology();
 
   const int num_surfaces = surfaces.size();
@@ -601,6 +608,15 @@ void CompliantContactManager<T>::
 }
 
 template <typename T>
+VectorX<T> CompliantContactManager<T>::CalcEffectiveDamping(
+    const systems::Context<T>& context) const {
+  const VectorX<T> diagonal_inertia =
+      plant().EvalReflectedInertiaCache(context) +
+      joint_damping_ * plant().time_step();
+  return diagonal_inertia;
+}
+
+template <typename T>
 void CompliantContactManager<T>::CalcAccelerationsDueToNonConstraintForcesCache(
     const systems::Context<T>& context,
     AccelerationsDueNonConstraintForcesCache<T>* forward_dynamics_cache) const {
@@ -640,9 +656,7 @@ void CompliantContactManager<T>::CalcAccelerationsDueToNonConstraintForcesCache(
   // below in terms of MultibodyTree APIs.
 
   // We must include reflected rotor inertias along with the new term dt⋅D.
-  const VectorX<T> diagonal_inertia =
-      plant().EvalReflectedInertiaCache(context) +
-      joint_damping_ * plant().time_step();
+  const VectorX<T> diagonal_inertia = CalcEffectiveDamping(context);
 
   // We compute the articulated body inertia including the contribution of the
   // additional diagonal elements arising from the implicit treatment of joint
@@ -863,7 +877,7 @@ void CompliantContactManager<T>::CalcHydroelasticContactInfo(
   const int num_surfaces = all_surfaces.size();
 
   std::vector<SpatialForce<T>> F_Ao_W_per_surface(num_surfaces,
-                                                      SpatialForce<T>::Zero());
+                                                  SpatialForce<T>::Zero());
 
   std::vector<std::vector<HydroelasticQuadraturePointData<T>>> quadrature_data(
       num_surfaces);
@@ -921,8 +935,7 @@ void CompliantContactManager<T>::CalcHydroelasticContactInfo(
 
   const MultibodyTreeTopology& topology = this->internal_tree().get_topology();
   const std::vector<std::vector<int>>& per_tree_unlocked_indices =
-      this->EvalJointLockingCache(context)
-          .unlocked_velocity_indices_per_tree;
+      this->EvalJointLockingCache(context).unlocked_velocity_indices_per_tree;
 
   // Update contact info to include the correct contact forces.
   for (int surface_index = 0; surface_index < num_surfaces; ++surface_index) {
@@ -1111,6 +1124,32 @@ void CompliantContactManager<T>::DoCalcAccelerationKinematicsCache(
       context0, plant().EvalPositionKinematics(context0),
       plant().EvalVelocityKinematics(context0), ac->get_vdot(),
       &ac->get_mutable_A_WB_pool());
+}
+
+template <typename T>
+void CompliantContactManager<T>::DoCalcDiscreteUpdateMultibodyForces(
+    const systems::Context<T>& context, MultibodyForces<T>* forces) const {
+  // Thus far only TAMSI and SAP are supported. Verify this is true.
+  DRAKE_DEMAND(
+      plant().get_discrete_contact_solver() == DiscreteContactSolver::kSap ||
+      plant().get_discrete_contact_solver() == DiscreteContactSolver::kTamsi);
+
+  // Delegate to specific solver driver.
+  if (plant().get_discrete_contact_solver() == DiscreteContactSolver::kSap) {
+    if constexpr (std::is_same_v<T, symbolic::Expression>) {
+      throw std::logic_error(
+          "Discrete updates with the SAP solver are not supported for T = "
+          "symbolic::Expression");
+    } else {
+      DRAKE_DEMAND(sap_driver_ != nullptr);
+      sap_driver_->CalcDiscreteUpdateMultibodyForces(context, forces);
+    }
+  }
+
+  if (plant().get_discrete_contact_solver() == DiscreteContactSolver::kTamsi) {
+    DRAKE_DEMAND(tamsi_driver_ != nullptr);
+    tamsi_driver_->CalcDiscreteUpdateMultibodyForces(context, forces);
+  }
 }
 
 }  // namespace internal
