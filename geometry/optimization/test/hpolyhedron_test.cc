@@ -13,6 +13,7 @@
 #include "drake/geometry/optimization/test_utilities.h"
 #include "drake/geometry/optimization/vpolytope.h"
 #include "drake/geometry/scene_graph.h"
+#include "drake/geometry/test_utilities/maybe_pause_for_user.h"
 #include "drake/geometry/test_utilities/meshcat_environment.h"
 #include "drake/math/random_rotation.h"
 #include "drake/math/rigid_transform.h"
@@ -971,9 +972,7 @@ GTEST_TEST(HPolyhedronTest, UniformSampleTest) {
     cloud.mutable_xyzs().bottomRows<1>().setZero();
     meshcat->SetObject("samples", cloud, 0.01, Rgba(0, 0, 1));
 
-    // Note: This will not pause execution when running as a bazel test.
-    std::cout << "[Press RETURN to continue]." << std::endl;
-    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+    geometry::MaybePauseForUser();
   }
 
   // Check that they are all in the polyhedron.

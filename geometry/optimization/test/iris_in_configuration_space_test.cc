@@ -6,6 +6,7 @@
 #include "drake/geometry/optimization/hpolyhedron.h"
 #include "drake/geometry/optimization/iris.h"
 #include "drake/geometry/optimization/vpolytope.h"
+#include "drake/geometry/test_utilities/maybe_pause_for_user.h"
 #include "drake/geometry/test_utilities/meshcat_environment.h"
 #include "drake/multibody/inverse_kinematics/inverse_kinematics.h"
 #include "drake/multibody/parsing/parser.h"
@@ -17,17 +18,10 @@ namespace optimization {
 namespace {
 
 using Eigen::Vector2d;
+using geometry::MaybePauseForUser;
 using symbolic::Variable;
 
 const double kInf = std::numeric_limits<double>::infinity();
-
-// Note: This will not pause execution when running as a bazel test, but when
-// running as a command-line executable, it will enable users to see the
-// visualization outputs.
-void MaybePauseForUser() {
-  std::cout << "[Press RETURN to continue]." << std::endl;
-  std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-}
 
 // Helper method for testing IrisInConfigurationSpace from a urdf string.
 HPolyhedron IrisFromUrdf(const std::string urdf,

@@ -402,6 +402,7 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//common/yaml",
         "//geometry:meshcat",
+        "//geometry/test_utilities:maybe_pause_for_user",
         "//geometry/test_utilities:meshcat_environment",
     ],
 )
@@ -452,6 +453,7 @@ drake_cc_googletest(
         ":iris",
         "//common/test_utilities:expect_throws_message",
         "//geometry:meshcat",
+        "//geometry/test_utilities:maybe_pause_for_user",
         "//geometry/test_utilities:meshcat_environment",
         "//multibody/inverse_kinematics",
         "//multibody/parsing:parser",

@@ -15,6 +15,7 @@ drake_cc_package_library(
     deps = [
         ":dummy_render_engine",
         ":geometry_set_tester",
+        ":maybe_pause_for_user",
     ],
 )
 
@@ -49,6 +50,13 @@ drake_cc_library(
         "//geometry:meshcat",
         "@gtest//:without_main",
     ],
+)
+
+drake_cc_library(
+    name = "maybe_pause_for_user",
+    testonly = 1,
+    srcs = [],
+    hdrs = ["maybe_pause_for_user.h"],
 )
 
 add_lint_tests(enable_clang_format_lint = False)
