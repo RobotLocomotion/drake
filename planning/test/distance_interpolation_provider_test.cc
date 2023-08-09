@@ -15,20 +15,13 @@ namespace {
 class BrokenDistanceAndInterpolationProvider final
     : public DistanceAndInterpolationProvider {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BrokenDistanceAndInterpolationProvider)
+
   BrokenDistanceAndInterpolationProvider() = default;
 
   ~BrokenDistanceAndInterpolationProvider() final = default;
 
  private:
-  // Copy constructor for use in Clone().
-  BrokenDistanceAndInterpolationProvider(
-      const BrokenDistanceAndInterpolationProvider& other) = default;
-
-  std::unique_ptr<DistanceAndInterpolationProvider> DoClone() const final {
-    return std::unique_ptr<DistanceAndInterpolationProvider>(
-        new BrokenDistanceAndInterpolationProvider(*this));
-  }
-
   double DoComputeConfigurationDistance(const Eigen::VectorXd& from,
                                         const Eigen::VectorXd& to) const final {
     drake::unused(from);
@@ -52,20 +45,13 @@ class BrokenDistanceAndInterpolationProvider final
 class SimpleLinearDistanceAndInterpolationProvider final
     : public DistanceAndInterpolationProvider {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SimpleLinearDistanceAndInterpolationProvider)
+
   SimpleLinearDistanceAndInterpolationProvider() = default;
 
   ~SimpleLinearDistanceAndInterpolationProvider() final = default;
 
  private:
-  // Copy constructor for use in Clone().
-  SimpleLinearDistanceAndInterpolationProvider(
-      const SimpleLinearDistanceAndInterpolationProvider& other) = default;
-
-  std::unique_ptr<DistanceAndInterpolationProvider> DoClone() const final {
-    return std::unique_ptr<DistanceAndInterpolationProvider>(
-        new SimpleLinearDistanceAndInterpolationProvider(*this));
-  }
-
   double DoComputeConfigurationDistance(const Eigen::VectorXd& from,
                                         const Eigen::VectorXd& to) const final {
     return (to - from).norm();
@@ -80,10 +66,6 @@ class SimpleLinearDistanceAndInterpolationProvider final
 
 GTEST_TEST(BrokenDistanceAndInterpolationProviderTest, Test) {
   const BrokenDistanceAndInterpolationProvider provider;
-
-  // Test Clone().
-  const auto cloned = provider.Clone();
-  EXPECT_NE(cloned, nullptr);
 
   // Distance with different length qs throws.
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -127,10 +109,6 @@ GTEST_TEST(BrokenDistanceAndInterpolationProviderTest, Test) {
 GTEST_TEST(SimpleLinearDistanceAndInterpolationProviderTest, Test) {
   const SimpleLinearDistanceAndInterpolationProvider provider;
 
-  // Test Clone().
-  const auto cloned = provider.Clone();
-  EXPECT_NE(cloned, nullptr);
-
   // Distance with different length qs throws.
   DRAKE_EXPECT_THROWS_MESSAGE(
       provider.ComputeConfigurationDistance(Eigen::VectorXd::Zero(2),
@@ -141,7 +119,7 @@ GTEST_TEST(SimpleLinearDistanceAndInterpolationProviderTest, Test) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       provider.InterpolateBetweenConfigurations(Eigen::VectorXd::Zero(2),
                                                 Eigen::VectorXd::Zero(3), 0.0),
-      ".* condition 'from\\.size\\(\\) == to\\.size\\(\\)' failed.**");
+      ".* condition 'from\\.size\\(\\) == to\\.size\\(\\)' failed.*");
 
   // Interpolation with ratios outside [0, 1] throws.
   DRAKE_EXPECT_THROWS_MESSAGE(

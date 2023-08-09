@@ -105,12 +105,6 @@ class TestCollisionChecker(unittest.TestCase):
             weights_vector_provider.quaternion_dof_start_indices(),
             [0])
 
-        new_distance_weights = np.array([4.0, 0.0, 0.0, 0.0, 3.0, 2.0, 1.0])
-        weights_vector_provider.SetDistanceWeights(new_distance_weights)
-        numpy_compare.assert_equal(
-            weights_vector_provider.distance_weights(),
-            new_distance_weights)
-
     @staticmethod
     def _configuration_distance(q1, q2):
         """A boring implementation of ConfigurationDistanceFunction."""
@@ -367,7 +361,9 @@ class TestCollisionChecker(unittest.TestCase):
         # This throws because the collision checker was created with functions,
         # not a DistanceAndInterpolationProvider.
         with self.assertRaises(BaseException):
-            dut.SetDistanceAndInterpolationProvider(provider.Clone())
+            new_provider = mut.LinearDistanceAndInterpolationProvider(
+                dut.model().plant())
+            dut.SetDistanceAndInterpolationProvider(new_provider)
 
         def distance_function(q1, q2):
             return np.linalg.norm(q1 - q2)

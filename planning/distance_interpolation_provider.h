@@ -4,12 +4,15 @@
 
 #include <Eigen/Core>
 
+#include "drake/common/drake_copyable.h"
+
 namespace drake {
 namespace planning {
 
 class DistanceAndInterpolationProvider {
  public:
-  // The copy constructor is protected for use in implementing Clone().
+  // The copy constructor is protected to allow certain derived classes to be
+  // cloneable.
   // Does not allow copy, move, or assignment.
   DistanceAndInterpolationProvider(DistanceAndInterpolationProvider&&) = delete;
   DistanceAndInterpolationProvider& operator=(
@@ -18,8 +21,6 @@ class DistanceAndInterpolationProvider {
       DistanceAndInterpolationProvider&&) = delete;
 
   virtual ~DistanceAndInterpolationProvider();
-
-  std::unique_ptr<DistanceAndInterpolationProvider> Clone() const;
 
   double ComputeConfigurationDistance(const Eigen::VectorXd& from,
                                       const Eigen::VectorXd& to) const;
@@ -31,11 +32,8 @@ class DistanceAndInterpolationProvider {
  protected:
   DistanceAndInterpolationProvider();
 
-  /// Copy constructor for use in Clone().
   DistanceAndInterpolationProvider(
       const DistanceAndInterpolationProvider& other);
-
-  virtual std::unique_ptr<DistanceAndInterpolationProvider> DoClone() const = 0;
 
   virtual double DoComputeConfigurationDistance(
       const Eigen::VectorXd& from, const Eigen::VectorXd& to) const = 0;

@@ -73,10 +73,6 @@ multibody::parsing::ModelDirectives MakeFloatingIiwaDirectives() {
 void DoFixedIiwaTest(const RobotDiagram<double>& model,
                      const LinearDistanceAndInterpolationProvider& provider,
                      const Eigen::VectorXd& expected_weights) {
-  // Test Clone().
-  const auto cloned = provider.Clone();
-  EXPECT_NE(cloned, nullptr);
-
   // Make sure weights match expected values.
   EXPECT_TRUE(CompareMatrices(provider.distance_weights(), expected_weights));
 
@@ -154,10 +150,6 @@ void DoFloatingIiwaTest(const RobotDiagram<double>& model,
   const Eigen::VectorXd full_zero_q = make_full_q(arm_zero_q, X_WBase_identity);
   const Eigen::VectorXd full_test_q = make_full_q(arm_ones_q, X_WBase_test);
   const Eigen::VectorXd full_half_q = make_full_q(arm_half_q, X_WBase_half);
-
-  // Test Clone().
-  const auto cloned = provider.Clone();
-  EXPECT_NE(cloned, nullptr);
 
   // Make sure weights match expected values.
   EXPECT_TRUE(CompareMatrices(provider.distance_weights(), expected_weights));
@@ -308,29 +300,6 @@ GTEST_TEST(FixedIiwaTest, Test) {
         LinearDistanceAndInterpolationProvider(model->plant(),
                                                has_non_finite_weights),
         "Provided distance weight 6 with value .* is not finite");
-  }
-
-  // Changing weights.
-  {
-    Eigen::VectorXd initial_weights(7);
-    initial_weights << 1, 2, 3, 4, 5, 6, 7;
-
-    LinearDistanceAndInterpolationProvider provider(model->plant(),
-                                                    initial_weights);
-    EXPECT_TRUE(CompareMatrices(provider.distance_weights(), initial_weights));
-
-    Eigen::VectorXd good_update_weights(7);
-    good_update_weights << 7, 6, 5, 4, 3, 2, 1;
-
-    provider.SetDistanceWeights(good_update_weights);
-    EXPECT_TRUE(
-        CompareMatrices(provider.distance_weights(), good_update_weights));
-
-    Eigen::VectorXd bad_update_weights(7);
-    bad_update_weights << 7, 6, 5, 4, 3, 2, -1;
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        provider.SetDistanceWeights(bad_update_weights),
-        "Provided distance weight 6 with value .* is less than zero");
   }
 }
 

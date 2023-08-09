@@ -184,11 +184,8 @@ void DefinePlanningCollisionChecker(py::module m) {
         .def("CheckConfigsCollisionFree", &Class::CheckConfigsCollisionFree,
             py::arg("configs"), py::arg("parallelize") = true,
             cls_doc.CheckConfigsCollisionFree.doc)
-        .def(
-            "SetDistanceAndInterpolationProvider",
-            [](Class& self, const DistanceAndInterpolationProvider& provider) {
-              self.SetDistanceAndInterpolationProvider(provider.Clone());
-            },
+        .def("SetDistanceAndInterpolationProvider",
+            &Class::SetDistanceAndInterpolationProvider, py::arg("provider"),
             cls_doc.SetDistanceAndInterpolationProvider.doc)
         .def("distance_and_interpolation_provider",
             &Class::distance_and_interpolation_provider,
@@ -272,8 +269,6 @@ void DefinePlanningCollisionChecker(py::module m) {
     py::object params_ctor = m.attr("CollisionCheckerParams");
     cls  // BR
         .def(py::init([params_ctor](std::unique_ptr<RobotDiagram<double>> model,
-                          std::unique_ptr<DistanceAndInterpolationProvider>
-                              distance_and_interpolation_provider,
                           const py::kwargs& kwargs) {
           // For lifetime management, we need to treat pointer-like arguments
           // separately. Start by creating a Params object in Python with all
@@ -283,16 +278,12 @@ void DefinePlanningCollisionChecker(py::module m) {
           DRAKE_DEMAND(params != nullptr);
           // Now, transfer ownership of the pointers.
           params->model = std::move(model);
-          params->distance_and_interpolation_provider =
-              std::move(distance_and_interpolation_provider);
           return std::make_unique<SceneGraphCollisionChecker>(
               std::move(*params));
         }),
             py::kw_only(), py::arg("model"),
-            py::arg("distance_and_interpolation_provider"),
-            // Keep alive, ownership: `model` and
-            // `distance_and_interpolation_provider`keep `self` alive.
-            py::keep_alive<2, 1>(), py::keep_alive<3, 1>(),
+            // Keep alive, ownership: `model` keeps `self` alive.
+            py::keep_alive<2, 1>(),
             (std::string(cls_doc.ctor.doc) +
                 "\n\n"
                 "See :class:`pydrake.planning.CollisionCheckerParams` for the "
@@ -310,8 +301,6 @@ void DefinePlanningCollisionChecker(py::module m) {
     py::object params_ctor = m.attr("CollisionCheckerParams");
     cls  // BR
         .def(py::init([params_ctor](std::unique_ptr<RobotDiagram<double>> model,
-                          std::unique_ptr<DistanceAndInterpolationProvider>
-                              distance_and_interpolation_provider,
                           bool supports_parallel_checking,
                           const py::kwargs& kwargs) {
           // For lifetime management, we need to treat pointer-like arguments
@@ -322,17 +311,13 @@ void DefinePlanningCollisionChecker(py::module m) {
           DRAKE_DEMAND(params != nullptr);
           // Now, transfer ownership of the pointers.
           params->model = std::move(model);
-          params->distance_and_interpolation_provider =
-              std::move(distance_and_interpolation_provider);
           return std::make_unique<UnimplementedCollisionChecker>(
               std::move(*params), supports_parallel_checking);
         }),
             py::kw_only(), py::arg("model"),
-            py::arg("distance_and_interpolation_provider"),
             py::arg("supports_parallel_checking"),
-            // Keep alive, ownership: `model` and
-            // `distance_and_interpolation_provider`keep `self` alive.
-            py::keep_alive<2, 1>(), py::keep_alive<3, 1>(),
+            // Keep alive, ownership: `model` keeps `self` alive.
+            py::keep_alive<2, 1>(),
             (std::string(cls_doc.ctor.doc) +
                 "\n\n"
                 "See :class:`pydrake.planning.CollisionCheckerParams` for the "

@@ -819,7 +819,7 @@ class CollisionChecker {
    functions.
   */
   void SetDistanceAndInterpolationProvider(
-      std::unique_ptr<DistanceAndInterpolationProvider> provider) {
+      std::shared_ptr<const DistanceAndInterpolationProvider> provider) {
     distance_and_interpolation_provider_->SetProvider(std::move(provider));
   }
 
@@ -1382,7 +1382,7 @@ class CollisionChecker {
       : public DistanceAndInterpolationProvider {
    public:
     TransitionalDistanceAndInterpolationProvider(
-        std::unique_ptr<DistanceAndInterpolationProvider> provider)
+        std::shared_ptr<const DistanceAndInterpolationProvider> provider)
         : provider_(std::move(provider)) {
       DRAKE_THROW_UNLESS(provider_ != nullptr);
     }
@@ -1396,13 +1396,16 @@ class CollisionChecker {
       DRAKE_THROW_UNLESS(interpolation_function_ != nullptr);
     }
 
-    TransitionalDistanceAndInterpolationProvider(
-        const TransitionalDistanceAndInterpolationProvider& other) = default;
-
     ~TransitionalDistanceAndInterpolationProvider() final = default;
 
+    std::unique_ptr<TransitionalDistanceAndInterpolationProvider> Clone()
+        const {
+      return std::unique_ptr<TransitionalDistanceAndInterpolationProvider>(
+          new TransitionalDistanceAndInterpolationProvider(*this));
+    }
+
     void SetProvider(
-        std::unique_ptr<DistanceAndInterpolationProvider> provider) {
+        std::shared_ptr<const DistanceAndInterpolationProvider> provider) {
       DRAKE_THROW_UNLESS(provider != nullptr);
       DRAKE_THROW_UNLESS(has_provider());
       provider_ = std::move(provider);
@@ -1425,10 +1428,8 @@ class CollisionChecker {
     bool has_provider() const { return provider_ != nullptr; }
 
    private:
-    std::unique_ptr<DistanceAndInterpolationProvider> DoClone() const final {
-      return std::unique_ptr<DistanceAndInterpolationProvider>(
-          new TransitionalDistanceAndInterpolationProvider(*this));
-    }
+    TransitionalDistanceAndInterpolationProvider(
+        const TransitionalDistanceAndInterpolationProvider& other) = default;
 
     double DoComputeConfigurationDistance(
         const Eigen::VectorXd& from, const Eigen::VectorXd& to) const final {
@@ -1449,7 +1450,7 @@ class CollisionChecker {
       }
     }
 
-    drake::copyable_unique_ptr<DistanceAndInterpolationProvider> provider_;
+    std::shared_ptr<const DistanceAndInterpolationProvider> provider_;
     ConfigurationDistanceFunction distance_function_;
     ConfigurationInterpolationFunction interpolation_function_;
   };
