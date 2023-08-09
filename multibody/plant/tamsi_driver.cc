@@ -5,11 +5,15 @@
 #include <vector>
 
 #include "drake/common/eigen_types.h"
+#include "drake/geometry/geometry_ids.h"
+#include "drake/math/rigid_transform.h"
 #include "drake/multibody/plant/compliant_contact_manager.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/plant/slicing_and_indexing.h"
 #include "drake/multibody/plant/tamsi_solver.h"
 
+using drake::geometry::GeometryId;
+using drake::math::RigidTransform;
 using drake::multibody::contact_solvers::internal::ContactSolverResults;
 
 namespace drake {
@@ -133,9 +137,8 @@ void TamsiDriver<T>::CalcContactSolverResults(
   }
 
   // Joint locking: quick exit if everything is locked.
-  const auto& indices = manager()
-                            .EvalJointLockingCache(context)
-                            .unlocked_velocity_indices;
+  const auto& indices =
+      manager().EvalJointLockingCache(context).unlocked_velocity_indices;
   if (indices.empty()) {
     // Everything is locked! Return a result that indicates no velocity, but
     // reports normal forces.
@@ -299,6 +302,83 @@ void TamsiDriver<T>::CallTamsiSolver(
   results->vn = tamsi_solver->get_normal_velocities();
   results->vt = tamsi_solver->get_tangential_velocities();
   results->tau_contact = tamsi_solver->get_generalized_contact_forces();
+}
+
+template <typename T>
+void TamsiDriver<T>::CalcAndAddSpatialContactForcesFromContactResults(
+    const systems::Context<T>& context,
+    const ContactResults<T>& contact_results,
+    std::vector<SpatialForce<T>>* spatial_contact_forces) const {
+  // Add contribution from point contact.
+  for (int i = 0; i < contact_results.num_point_pair_contacts(); ++i) {
+    const PointPairContactInfo<T>& pair =
+        contact_results.point_pair_contact_info(i);
+    const Body<T>& bodyA = plant().get_body(pair.bodyA_index());
+    const Body<T>& bodyB = plant().get_body(pair.bodyB_index());
+    const Vector3<T>& f_Bc_W = pair.contact_force();
+    const Vector3<T>& p_WC = pair.contact_point();
+    const SpatialForce<T> F_Bc_W(Vector3<T>::Zero(), f_Bc_W);
+
+    // Contact spatial force on body A.
+    const RigidTransform<T>& X_WA = plant().EvalBodyPoseInWorld(context, bodyA);
+    const Vector3<T>& p_WA = X_WA.translation();
+    const Vector3<T> p_CA_W = p_WA - p_WC;
+    const SpatialForce<T> F_Ao_W = -F_Bc_W.Shift(p_CA_W);
+
+    // Contact spatial force on body B.
+    const RigidTransform<T>& X_WB = plant().EvalBodyPoseInWorld(context, bodyB);
+    const Vector3<T>& p_WB = X_WB.translation();
+    const Vector3<T> p_CB_W = p_WB - p_WC;
+    const SpatialForce<T> F_Bo_W = F_Bc_W.Shift(p_CB_W);
+
+    spatial_contact_forces->at(bodyA.node_index()) += F_Ao_W;
+    spatial_contact_forces->at(bodyB.node_index()) += F_Bo_W;
+  }
+
+  // Add contribution from hydroelastic contact.
+  for (int i = 0; i < contact_results.num_hydroelastic_contacts(); ++i) {
+    const HydroelasticContactInfo<T>& info =
+        contact_results.hydroelastic_contact_info(i);
+
+    const GeometryId geometryM_id = info.contact_surface().id_M();
+    const GeometryId geometryN_id = info.contact_surface().id_N();
+    const BodyIndex bodyA_index = manager().FindBodyByGeometryId(geometryM_id);
+    const BodyIndex bodyB_index = manager().FindBodyByGeometryId(geometryN_id);
+    const Body<T>& bodyA = plant().get_body(bodyA_index);
+    const Body<T>& bodyB = plant().get_body(bodyB_index);
+
+    // Spatial contact force at the centroid of the contact surface.
+    const SpatialForce<T>& F_Ac_W = info.F_Ac_W();
+    const Vector3<T>& p_WC = info.contact_surface().centroid();
+
+    // Contact spatial force on body A.
+    const RigidTransform<T>& X_WA = plant().EvalBodyPoseInWorld(context, bodyA);
+    const Vector3<T>& p_WA = X_WA.translation();
+    const Vector3<T> p_CA_W = p_WA - p_WC;
+    const SpatialForce<T> F_Ao_W = F_Ac_W.Shift(p_CA_W);
+
+    // Contact spatial force on body B.
+    const RigidTransform<T>& X_WB = plant().EvalBodyPoseInWorld(context, bodyB);
+    const Vector3<T>& p_WB = X_WB.translation();
+    const Vector3<T> p_CB_W = p_WB - p_WC;
+    const SpatialForce<T> F_Bo_W = -F_Ac_W.Shift(p_CB_W);
+
+    spatial_contact_forces->at(bodyA.node_index()) += F_Ao_W;
+    spatial_contact_forces->at(bodyB.node_index()) += F_Bo_W;
+  }
+}
+
+template <typename T>
+void TamsiDriver<T>::CalcDiscreteUpdateMultibodyForces(
+    const systems::Context<T>& context, MultibodyForces<T>* forces) const {
+  const bool include_joint_limit_penalty_forces = true;
+  manager().CalcNonContactForces(context, include_joint_limit_penalty_forces,
+                                 forces);
+  auto& Fapplied_Bo_W_array = forces->mutable_body_forces();
+  const ContactResults<T>& contact_results =
+      manager().EvalContactResults(context);
+  CalcAndAddSpatialContactForcesFromContactResults(context, contact_results,
+                                                   &Fapplied_Bo_W_array);
 }
 
 }  // namespace internal
