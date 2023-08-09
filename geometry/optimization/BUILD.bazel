@@ -38,12 +38,12 @@ drake_cc_library(
         "convex_set.cc",
         "hpolyhedron.cc",
         "hyperellipsoid.cc",
+        "hyperrectangle.cc",
         "intersection.cc",
         "minkowski_sum.cc",
         "point.cc",
         "spectrahedron.cc",
         "vpolytope.cc",
-        "hyperrectangle.cc"
     ],
     hdrs = [
         "affine_subspace.h",
@@ -51,12 +51,12 @@ drake_cc_library(
         "convex_set.h",
         "hpolyhedron.h",
         "hyperellipsoid.h",
+        "hyperrectangle.h",
         "intersection.h",
         "minkowski_sum.h",
         "point.h",
         "spectrahedron.h",
         "vpolytope.h",
-        "hyperrectangle.h"
     ],
     interface_deps = [
         "//geometry:scene_graph",

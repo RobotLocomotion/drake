@@ -156,16 +156,6 @@ HyperRectangle::DoAddPointInNonnegativeScalingConstraints(
   return constraints;
 }
 
-// /** Non-virtual interface implementation for ToShapeWithPose().
-// @pre ambient_dimension() == 3 */
-// std::pair<std::unique_ptr<Shape>, math::RigidTransformd>
-// HyperRectangle::DoToShapeWithPose() const{
-//   throw std::runtime_error(
-//     "ToShapeWithPose is not implemented yet for HPolyhedron.  Implementing "
-//     "this will likely require additional support from the Convex shape "
-//     "class (to support in-memory mesh data, or file I/O).");
-// }
-
 std::unique_ptr<ConvexSet> HyperRectangle::DoClone() const {
   return std::make_unique<HyperRectangle>(*this);
 }
