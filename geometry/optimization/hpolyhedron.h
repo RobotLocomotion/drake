@@ -22,7 +22,7 @@ class VPolytope;
 By convention, we treat a zero-dimensional HPolyhedron as nonempty.
 
 @ingroup geometry_optimization */
-class HPolyhedron: public ConvexSet {
+class HPolyhedron : public ConvexSet {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(HPolyhedron)
 
@@ -220,10 +220,11 @@ class HPolyhedron: public ConvexSet {
     CheckInvariants();
   }
 
-double DoVolume() const {
-    throw std::runtime_error("Exact volume computation for HPolyhedrons is not implemented.");
+  double DoVolume() const {
+    throw std::runtime_error(
+        "Exact volume computation for HPolyhedrons is not implemented.");
   }
-  
+
  private:
   /* @pre other.ambient_dimension() == this->ambient_dimension() */
   [[nodiscard]] HPolyhedron DoIntersectionNoChecks(
@@ -248,8 +249,7 @@ double DoVolume() const {
             std::vector<solvers::Binding<solvers::Constraint>>>
   DoAddPointInSetConstraints(
       solvers::MathematicalProgram* prog,
-      const Eigen::Ref<const solvers::VectorXDecisionVariable>& vars)
-      const;
+      const Eigen::Ref<const solvers::VectorXDecisionVariable>& vars) const;
 
   std::vector<solvers::Binding<solvers::Constraint>>
   DoAddPointInNonnegativeScalingConstraints(

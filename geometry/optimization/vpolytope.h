@@ -93,9 +93,8 @@ class VPolytope final : public ConvexSet {
   @pre ambient_dimension() == 3. */
   void WriteObj(const std::filesystem::path& filename) const;
 
-double DoVolume() const {
-    throw std::runtime_error(
-        "VPolytope::DoVolume() is not implemented yet.");
+  double DoVolume() const {
+    throw std::runtime_error("VPolytope::DoVolume() is not implemented yet.");
   }
 
  private:

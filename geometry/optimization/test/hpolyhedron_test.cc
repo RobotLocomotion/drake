@@ -1,5 +1,4 @@
 #include "drake/geometry/optimization/hpolyhedron.h"
-#include "drake/geometry/optimization/hyperrectangle.h"
 
 #include <limits>
 
@@ -11,6 +10,7 @@
 #include "drake/common/yaml/yaml_io.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/meshcat.h"
+#include "drake/geometry/optimization/hyperrectangle.h"
 #include "drake/geometry/optimization/test_utilities.h"
 #include "drake/geometry/optimization/vpolytope.h"
 #include "drake/geometry/scene_graph.h"
@@ -1046,8 +1046,9 @@ GTEST_TEST(HPolyhedronTest, UniformSampleTest2) {
   EXPECT_GT(num_success, 0);
 }
 
-// Test the computation of the minimal axis-aligned bounding box of a polyhedron.
-GTEST_TEST(HPolyhedronTest, MaybeCalcAxisAlignedBoundingBox){
+// Test the computation of the minimal axis-aligned bounding box of a
+// polyhedron.
+GTEST_TEST(HPolyhedronTest, MaybeCalcAxisAlignedBoundingBox) {
   Matrix<double, 4, 2> A;
   Matrix<double, 4, 1> b;
   // clang-format off
@@ -1064,7 +1065,7 @@ GTEST_TEST(HPolyhedronTest, MaybeCalcAxisAlignedBoundingBox){
   EXPECT_NEAR(aabb.lower_corner()(0), -2, 1e-6);
   EXPECT_NEAR(aabb.upper_corner()(0), 1, 1e-6);
   EXPECT_NEAR(aabb.lower_corner()(1), -2, 1e-6);
-  EXPECT_NEAR(aabb.upper_corner()(1), 3, 1e-6); 
+  EXPECT_NEAR(aabb.upper_corner()(1), 3, 1e-6);
   // Check the volume of the bounding box.
   EXPECT_NEAR(aabb.Volume(), 15, 1e-6);
   // The H-polyhedron volume throws an exception.
@@ -1073,11 +1074,11 @@ GTEST_TEST(HPolyhedronTest, MaybeCalcAxisAlignedBoundingBox){
   RandomGenerator generator(1234);
   const auto polytope_volume = H.CalcVolumeViaSampling(&generator, 1e-2);
   // Hpolyhedron volume is compared against the analytic value.
-  EXPECT_NEAR(polytope_volume, 6.0, 1e-1); 
+  EXPECT_NEAR(polytope_volume, 6.0, 1e-1);
 }
 
 // Test functions on hyperrectangle.
-GTEST_TEST(HPolyhedronTest, HyperRectangle){
+GTEST_TEST(HPolyhedronTest, HyperRectangle) {
   const Vector3d lower_corner{-1, -2, -3};
   const Vector3d upper_corner{3, 2, 1};
   const HyperRectangle hyperrectangle(lower_corner, upper_corner);
@@ -1092,7 +1093,7 @@ GTEST_TEST(HPolyhedronTest, HyperRectangle){
   // Get uniform samples.
   const int n_samples = 10;
   RandomGenerator generator(1234);
-  for (int i = 0; i < n_samples; ++i){
+  for (int i = 0; i < n_samples; ++i) {
     const auto sample = hyperrectangle.UniformSample(&generator);
     EXPECT_TRUE(hyperrectangle.PointInSet(sample, 1e-12));
   }

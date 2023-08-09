@@ -14,18 +14,17 @@ namespace drake {
 namespace geometry {
 namespace optimization {
 
-
 /** Axis-aligned box in Rᵈ.  This is a special case of Hpolyhedron. */
-class HyperRectangle: public HPolyhedron{
-  public:
+class HyperRectangle : public HPolyhedron {
+ public:
   HyperRectangle(const Eigen::Ref<const Eigen::VectorXd>& lower_corner,
-              const Eigen::Ref<const Eigen::VectorXd>& upper_corner);
+                 const Eigen::Ref<const Eigen::VectorXd>& upper_corner);
 
   const Eigen::VectorXd lower_corner() const { return lower_corner_; }
 
   const Eigen::VectorXd upper_corner() const { return upper_corner_; }
 
-   ~HyperRectangle();
+  ~HyperRectangle();
 
   double CalcVolumeViaSampling(RandomGenerator* generator) const;
 
@@ -33,8 +32,7 @@ class HyperRectangle: public HPolyhedron{
 
   HPolyhedron ToHPolyhedron() const;
 
-  protected:
-
+ protected:
   std::unique_ptr<ConvexSet> DoClone() const;
 
   /** Non-virtual interface implementation for IsBounded().
@@ -48,7 +46,6 @@ class HyperRectangle: public HPolyhedron{
   can be zero-dimensional and empty must handle this behavior in their
   derived implementation of DoIsEmpty. */
   bool DoIsEmpty() const { return false; }
-
 
   /** Non-virtual interface implementation for MaybeGetPoint(). The default
   implementation returns nullopt. Sets that can model a single point should
@@ -65,13 +62,13 @@ class HyperRectangle: public HPolyhedron{
   @pre x.size() == ambient_dimension()
   @pre ambient_dimension() >= 0 */
   bool DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
-                            double tol) const;
+                    double tol) const;
 
   /** Non-virtual interface implementation for AddPointInSetConstraints().
   @pre vars.size() == ambient_dimension()
   @pre ambient_dimension() > 0 */
   std::pair<VectorX<symbolic::Variable>,
-                    std::vector<solvers::Binding<solvers::Constraint>>>
+            std::vector<solvers::Binding<solvers::Constraint>>>
   DoAddPointInSetConstraints(
       solvers::MathematicalProgram* prog,
       const Eigen::Ref<const solvers::VectorXDecisionVariable>& vars) const;
@@ -107,12 +104,11 @@ class HyperRectangle: public HPolyhedron{
 
   double DoVolume() const;
 
-  private:
-  Eigen::VectorXd lower_corner_ {};
-  Eigen::VectorXd upper_corner_ {};
+ private:
+  Eigen::VectorXd lower_corner_{};
+  Eigen::VectorXd upper_corner_{};
 };
 
-
-} // namespace optimization
-} // namespace geometry
+}  // namespace optimization
+}  // namespace geometry
 }  // namespace drake

@@ -48,9 +48,7 @@ class Point final : public ConvexSet {
   @pre x must be of size ambient_dimension(). */
   void set_x(const Eigen::Ref<const Eigen::VectorXd>& x);
 
-  double DoVolume() const {
-    return 0.0;
-  }
+  double DoVolume() const { return 0.0; }
 
  private:
   std::unique_ptr<ConvexSet> DoClone() const final;

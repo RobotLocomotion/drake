@@ -63,9 +63,7 @@ class MinkowskiSum final : public ConvexSet {
   */
   using ConvexSet::PointInSet;
 
-double DoVolume() const {
-    throw std::runtime_error("Not implemented.");
-  }
+  double DoVolume() const { throw std::runtime_error("Not implemented."); }
 
  private:
   std::unique_ptr<ConvexSet> DoClone() const final;
