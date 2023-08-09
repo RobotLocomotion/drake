@@ -93,9 +93,9 @@ void DefinePlanningCollisionCheckerInterfaceTypes(py::module m) {
             py::arg("plant"), py::arg("named_joint_distance_weights"),
             cls_doc.ctor.doc)
         .def("distance_weights", &Class::distance_weights,
-            py_rvp::reference_internal, cls_doc.distance_weights.doc)
+            cls_doc.distance_weights.doc)
         .def("quaternion_dof_start_indices",
-            &Class::quaternion_dof_start_indices, py_rvp::reference_internal,
+            &Class::quaternion_dof_start_indices,
             cls_doc.quaternion_dof_start_indices.doc);
   }
 

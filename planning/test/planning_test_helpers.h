@@ -14,6 +14,9 @@ namespace test {
 std::unique_ptr<RobotDiagram<double>> MakePlanningTestModel(
     const multibody::parsing::ModelDirectives& directives);
 
+/* Returns a vector of non-uniform distance weights for a 7-dof iiwa. */
+Eigen::VectorXd GetIiwaDistanceWeights();
+
 /* Returns a particular ConfigurationDistanceFunction for a 7-dof iiwa.
 The weights are non-uniform. */
 ConfigurationDistanceFunction MakeWeightedIiwaConfigurationDistanceFunction();

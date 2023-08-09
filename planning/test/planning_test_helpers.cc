@@ -30,9 +30,14 @@ std::unique_ptr<RobotDiagram<double>> MakePlanningTestModel(
   return builder->Build();
 }
 
-ConfigurationDistanceFunction MakeWeightedIiwaConfigurationDistanceFunction() {
+Eigen::VectorXd GetIiwaDistanceWeights() {
   Eigen::VectorXd weights = Eigen::VectorXd::Zero(7);
   weights << 2.0, 2.0, 2.0, 2.0, 1.0, 1.0, 1.0;
+  return weights;
+}
+
+ConfigurationDistanceFunction MakeWeightedIiwaConfigurationDistanceFunction() {
+  Eigen::VectorXd weights = GetIiwaDistanceWeights();
 
   const ConfigurationDistanceFunction weighted_cspace_distance_fn =
       [weights](const Eigen::VectorXd& q1, const Eigen::VectorXd& q2) {
