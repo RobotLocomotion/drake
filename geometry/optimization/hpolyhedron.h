@@ -42,7 +42,8 @@ class HPolyhedron final : public ConvexSet {
               std::optional<FrameId> reference_frame = std::nullopt);
 
   /** Constructs a new HPolyedron from a VPolytope object.  This function will
-  use qhull. */
+  use qhull.
+  @throws std::exception if vpoly is empty and zero dimensional. */
   explicit HPolyhedron(const VPolytope& vpoly);
 
   // TODO(russt): Add a method/constructor that would create the geometry using
