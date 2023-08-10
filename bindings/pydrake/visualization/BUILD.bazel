@@ -55,6 +55,7 @@ drake_pybind_library(
         "//lcmtypes:lcmtypes_drake_py",
     ],
     py_srcs = [
+        "lcm_image_array_viewer.py",
         "meldis.py",
         "model_visualizer.py",
         "_meldis.py",
@@ -77,6 +78,13 @@ drake_py_binary(
     name = "model_visualizer",
     srcs = ["model_visualizer.py"],
     data = ["//:all_models"],
+    visibility = ["//tools:__pkg__"],
+    deps = [":visualization"],
+)
+
+drake_py_binary(
+    name = "lcm_image_array_viewer",
+    srcs = ["lcm_image_array_viewer.py"],
     visibility = ["//tools:__pkg__"],
     deps = [":visualization"],
 )
@@ -168,6 +176,13 @@ drake_py_unittest(
     ],
     deps = [
         ":model_visualizer",
+    ],
+)
+
+drake_py_unittest(
+    name = "lcm_image_array_viewer_test",
+    deps = [
+        ":visualization",
     ],
 )
 
