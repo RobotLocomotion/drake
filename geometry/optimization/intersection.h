@@ -42,8 +42,6 @@ class Intersection final : public ConvexSet {
   intersection. */
   const ConvexSet& element(int i) const;
 
-  double DoVolume() const { throw std::runtime_error("Not implemented."); }
-
  private:
   std::unique_ptr<ConvexSet> DoClone() const final;
 
@@ -81,6 +79,11 @@ class Intersection final : public ConvexSet {
   // TODO(mpetersen94): Implement DoToShapeWithPose.
   std::pair<std::unique_ptr<Shape>, math::RigidTransformd> DoToShapeWithPose()
       const final;
+
+  double DoVolume() const {
+    throw std::runtime_error(
+        "Exact volume of generic intersections is not implemented.");
+  }
 
   ConvexSets sets_{};  // Not marked const to support move semantics.
 };

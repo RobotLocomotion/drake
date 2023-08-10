@@ -1,5 +1,6 @@
 #pragma once
 
+#include <limits>
 #include <memory>
 #include <optional>
 #include <utility>
@@ -125,10 +126,6 @@ class AffineSubspace final : public ConvexSet {
    * that each set is contained in the other. */
   bool IsNearlyEqualTo(const AffineSubspace& other, double tol = 1e-15) const;
 
-  double DoVolume() const {
-    throw std::runtime_error("Cannot compute volume of an affine subspace.");
-  }
-
  private:
   std::unique_ptr<ConvexSet> DoClone() const final;
 
@@ -166,6 +163,14 @@ class AffineSubspace final : public ConvexSet {
 
   std::pair<std::unique_ptr<Shape>, math::RigidTransformd> DoToShapeWithPose()
       const final;
+
+  double DoVolume() const {
+    if (basis_.cols() == 0) {
+      return 0;
+    }
+    // return infinity if the affine subspace is unbounded.
+    return std::numeric_limits<double>::infinity();
+  }
 
   // Note, we store the original basis as given, plus the QR decomposition, for
   // later use in many of the associated methods. We do not store this if

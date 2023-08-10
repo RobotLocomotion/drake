@@ -339,6 +339,16 @@ void CartesianProduct::ImplementGeometry(const Cylinder& cylinder, void* data) {
   *c = cylinder;
 }
 
+double CartesianProduct::DoVolume() const {
+  {
+    double volume = 1.0;
+    for (const auto& set : sets_) {
+      volume *= set->Volume();
+    }
+    return volume;
+  }
+}
+
 }  // namespace optimization
 }  // namespace geometry
 }  // namespace drake

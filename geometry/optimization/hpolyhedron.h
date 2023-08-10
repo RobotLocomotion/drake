@@ -223,7 +223,8 @@ class HPolyhedron : public ConvexSet {
  private:
   double DoVolume() const {
     throw std::runtime_error(
-        "Exact volume computation for HPolyhedrons is not implemented.");
+        "Exact volume computation for HPolyhedrons is not implemented. Try "
+        "CalcVolumeViaSampling.");
   }
 
   /* @pre other.ambient_dimension() == this->ambient_dimension() */

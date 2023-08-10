@@ -63,8 +63,6 @@ class MinkowskiSum final : public ConvexSet {
   */
   using ConvexSet::PointInSet;
 
-  double DoVolume() const { throw std::runtime_error("Not implemented."); }
-
  private:
   std::unique_ptr<ConvexSet> DoClone() const final;
 
@@ -106,6 +104,8 @@ class MinkowskiSum final : public ConvexSet {
   // Implement support shapes for the ShapeReifier interface.
   using ShapeReifier::ImplementGeometry;
   void ImplementGeometry(const Capsule& capsule, void* data) final;
+
+  double DoVolume() const { throw std::runtime_error("Not implemented."); }
 
   ConvexSets sets_{};  // Not marked const to support move semantics.
 };

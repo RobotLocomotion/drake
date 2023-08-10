@@ -155,6 +155,9 @@ class ConvexSet : public ShapeReifier {
   /** Returns the minimum axis axligned bounding box of the convex set */
   std::optional<HyperRectangle> MaybeCalcAxisAlignedBoundingBox() const;
 
+  /** Volume computation for the convex set.
+  @return volume of the convex set.
+  @throws std::exception if the set is unbounded. */
   double Volume() const {
     if (!IsBounded()) {
       throw std::runtime_error("Cannot calculate volume of an unbounded set.");
@@ -162,12 +165,32 @@ class ConvexSet : public ShapeReifier {
     return DoVolume();
   }
 
+  /** Returns the volume of the set, calculated by sampling points from the set
+    and using Monte Carlo integration.  If the set is unbounded, throws an
+    exception.
+    @note this method is intended to be used for low to moderate dimensions
+    (d<15). For larger dimensions, a telescopic product approach has yet to be
+    implemented. See, e.g.,
+    https://proceedings.mlr.press/v151/chevallier22a/chevallier22a.pdf
+    @param generator a random number generator.
+    @param rel_accuracy the relative accuracy of the volume estimate (default
+    1e-2). This is the relative error in the estimate of the volume, i.e., the
+    estimate is likekly to be within (1+2*rel_accuracy)*volume and
+    (1-2*rel_accuracy)*volume with probability 0.95 according to the Law of
+    Large Numbers.
+    https://people.math.umass.edu/~lr7q/ps_files/teaching/math456/Chapter6.pdf
+    The computation will terminate when the relative error is less than
+    rel_accuracy.
+    @param min_num_samples the minimum number of samples to use (default 100).
+    @param max_num_samples the maximum number of samples to use (default 1e4).
+    @return the estimated volume of the set. */
   double CalcVolumeViaSampling(RandomGenerator* generator,
                                const double rel_accuracy = 1e-2,
-                               const size_t min_num_samples = 10,
+                               const size_t min_num_samples = 100,
                                const size_t max_num_samples = 1e4) const {
     if (!IsBounded()) {
-      throw std::runtime_error("Cannot calculate volume of an unbounded set.");
+      throw std::runtime_error(
+          "Cannot calculate the volume of an unbounded set.");
     }
     return DoCalcVolumeViaSampling(generator, rel_accuracy, min_num_samples,
                                    max_num_samples);
@@ -354,8 +377,13 @@ class ConvexSet : public ShapeReifier {
       solvers::MathematicalProgram* prog, const ConvexSet& set,
       std::vector<solvers::Binding<solvers::Constraint>>* constraints) const;
 
+  /** Non-virtual interface implementation for DoVolume(). In case the exact
+   * volume is not available for a convex set (such as HPolyhedron), this method
+   * will throw an exception. In this case, use DoCalcVolumeViaSampling()
+   * instead. */
   virtual double DoVolume() const = 0;
 
+  /** Non-virtual interface implementation for DoCalcVolumeViaSampling(). */
   double DoCalcVolumeViaSampling(RandomGenerator* generator,
                                  const double rel_accuracy,
                                  const size_t min_num_samples,

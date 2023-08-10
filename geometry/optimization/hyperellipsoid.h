@@ -126,10 +126,6 @@ class Hyperellipsoid final : public ConvexSet {
     CheckInvariants();
   }
 
- protected:
-  /** Returns the volume of the hyperellipsoid (in Euclidean space). */
-  double DoVolume() const;
-
  private:
   std::unique_ptr<ConvexSet> DoClone() const final;
 
@@ -177,6 +173,9 @@ class Hyperellipsoid final : public ConvexSet {
   using ShapeReifier::ImplementGeometry;
   void ImplementGeometry(const Ellipsoid& ellipsoid, void* data) final;
   void ImplementGeometry(const Sphere& sphere, void* data) final;
+
+  /** calculates the volume of the hyperellipsoid (in Euclidean space). */
+  double DoVolume() const;
 
   Eigen::MatrixXd A_{};
   Eigen::VectorXd center_{};

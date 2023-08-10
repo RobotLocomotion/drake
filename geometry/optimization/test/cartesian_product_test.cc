@@ -10,6 +10,7 @@
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
+#include "drake/geometry/optimization/hyperrectangle.h"
 #include "drake/geometry/optimization/point.h"
 #include "drake/geometry/optimization/test_utilities.h"
 #include "drake/geometry/optimization/vpolytope.h"
@@ -539,6 +540,18 @@ GTEST_TEST(CartesianProductTest, EmptyInput) {
   CartesianProduct S(P, V);
   EXPECT_TRUE(S.IsEmpty());
   EXPECT_FALSE(S.MaybeGetFeasiblePoint().has_value());
+}
+
+GTEST_TEST(CartesianProductTest, Volume) {
+  // A triangle with vertices (0,0), (1,0), (0,3) has area 3/2.
+  Eigen::Matrix<double, 2, 3> vertices;
+  vertices << 0, 1, 0, 0, 0, 3;
+  VPolytope V = VPolytope(vertices);
+  // A rectangle from (0,0) to (3,2) has area 6.
+  HyperRectangle R =
+      HyperRectangle(Eigen::Vector2d::Zero(), Eigen::Vector2d(3, 2));
+  CartesianProduct S(V, R);
+  EXPECT_NEAR(S.Volume(), 9, 1e-6);
 }
 
 }  // namespace optimization
