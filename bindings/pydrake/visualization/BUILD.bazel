@@ -81,6 +81,20 @@ drake_py_binary(
     deps = [":visualization"],
 )
 
+drake_py_binary(
+    name = "lcm_image_array_viewer",
+    srcs = ["_lcm_image_array_viewer.py"],
+    deps = [":visualization"],
+)
+
+# TODO(jwnimmer-tri) For now, this is a private library for testing only. Once
+# Meldis needs this it should move up into the main "visualization" library.
+drake_py_library(
+    name = "_lcm_image_array_viewer_py",
+    srcs = ["_lcm_image_array_viewer.py"],
+    deps = [":visualization"],
+)
+
 cmake_configure_file(
     name = "generate_run_installed_meldis",
     src = "run_installed_meldis.py.in",
@@ -208,6 +222,13 @@ drake_py_unittest(
     name = "visualization_test",
     deps = [
         ":visualization",
+    ],
+)
+
+drake_py_unittest(
+    name = "lcm_image_array_viewer_test",
+    deps = [
+        ":_lcm_image_array_viewer_py",
     ],
 )
 
