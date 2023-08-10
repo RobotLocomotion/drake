@@ -14,7 +14,8 @@ namespace drake {
 namespace geometry {
 namespace optimization {
 
-/** Axis-aligned box in Rᵈ defined by its lower bounda and upper bounds. */
+/** Axis-aligned hyperrectangle in Rᵈ defined by its lower bounds and upper
+ * bounds as {x| lb ≤ x ≤ ub} */
 class HyperRectangle final : public ConvexSet {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(HyperRectangle)

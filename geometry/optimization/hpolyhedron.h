@@ -49,7 +49,7 @@ class HPolyhedron : public ConvexSet {
   // SceneGraph's AABB or OBB representation (for arbitrary objects) pending
   // #15121.
 
-  ~HPolyhedron();
+  ~HPolyhedron() final;
 
   /** Returns the half-space representation matrix A. */
   const Eigen::MatrixXd& A() const { return A_; }
@@ -235,28 +235,29 @@ class HPolyhedron : public ConvexSet {
   [[nodiscard]] HPolyhedron DoIntersectionWithChecks(const HPolyhedron& other,
                                                      double tol) const;
 
-  std::unique_ptr<ConvexSet> DoClone() const;
+  std::unique_ptr<ConvexSet> DoClone() const final;
 
-  bool DoIsBounded() const;
+  bool DoIsBounded() const final;
 
-  bool DoIsEmpty() const;
+  bool DoIsEmpty() const final;
 
   // N.B. No need to override DoMaybeGetPoint here.
 
   bool DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
-                    double tol) const;
+                    double tol) const final;
 
   std::pair<VectorX<symbolic::Variable>,
             std::vector<solvers::Binding<solvers::Constraint>>>
   DoAddPointInSetConstraints(
       solvers::MathematicalProgram* prog,
-      const Eigen::Ref<const solvers::VectorXDecisionVariable>& vars) const;
+      const Eigen::Ref<const solvers::VectorXDecisionVariable>& vars)
+      const final;
 
   std::vector<solvers::Binding<solvers::Constraint>>
   DoAddPointInNonnegativeScalingConstraints(
       solvers::MathematicalProgram* prog,
       const Eigen::Ref<const solvers::VectorXDecisionVariable>& x,
-      const symbolic::Variable& t) const;
+      const symbolic::Variable& t) const final;
 
   std::vector<solvers::Binding<solvers::Constraint>>
   DoAddPointInNonnegativeScalingConstraints(
@@ -265,7 +266,7 @@ class HPolyhedron : public ConvexSet {
       const Eigen::Ref<const Eigen::VectorXd>& b_x,
       const Eigen::Ref<const Eigen::VectorXd>& c, double d,
       const Eigen::Ref<const solvers::VectorXDecisionVariable>& x,
-      const Eigen::Ref<const solvers::VectorXDecisionVariable>& t) const;
+      const Eigen::Ref<const solvers::VectorXDecisionVariable>& t) const final;
 
   // TODO(russt): Implement DoToShapeWithPose.  Currently we don't have a Shape
   // that can consume this output.  The obvious candidate is Convex, that class
