@@ -84,14 +84,15 @@ void DefinePlanningCollisionCheckerInterfaceTypes(py::module m) {
         cls(m, "LinearDistanceAndInterpolationProvider", cls_doc.doc);
     cls  // BR
         .def(py::init<const drake::multibody::MultibodyPlant<double>&>(),
-            py::arg("plant"), cls_doc.ctor.doc)
+            py::arg("plant"), cls_doc.ctor.doc_1args_plant)
         .def(py::init<const drake::multibody::MultibodyPlant<double>&,
                  const Eigen::VectorXd&>(),
-            py::arg("plant"), py::arg("distance_weights"), cls_doc.ctor.doc)
+            py::arg("plant"), py::arg("distance_weights"),
+            cls_doc.ctor.doc_2args_plant_distance_weights)
         .def(py::init<const drake::multibody::MultibodyPlant<double>&,
                  const std::map<std::string, double>&>(),
             py::arg("plant"), py::arg("named_joint_distance_weights"),
-            cls_doc.ctor.doc)
+            cls_doc.ctor.doc_2args_plant_named_joint_distance_weights)
         .def("distance_weights", &Class::distance_weights,
             cls_doc.distance_weights.doc)
         .def("quaternion_dof_start_indices",

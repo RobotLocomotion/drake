@@ -51,6 +51,10 @@ struct CollisionCheckerParams {
   nullptr. */
   std::unique_ptr<RobotDiagram<double>> model;
 
+  /** A DistanceAndInterpolationProvider to support configuration distance and
+  interpolation operations.
+  @note Either a DistanceAndInterpolationProvider OR a
+  ConfigurationDistanceFunction must be provided, not both. */
   std::shared_ptr<const DistanceAndInterpolationProvider>
       distance_and_interpolation_provider;
 
@@ -61,7 +65,11 @@ struct CollisionCheckerParams {
   std::vector<drake::multibody::ModelInstanceIndex> robot_model_instances;
 
   // TODO(SeanCurtis-TRI): add doc hyperlinks to edge checking doc.
+  // TODO(calderpg-tri, jwnimmer-tri) Deprecate support for separate distance
+  // and interpolation functions.
   /** Configuration (probably weighted) distance function.
+  @note Either a DistanceAndInterpolationProvider OR a
+  ConfigurationDistanceFunction must be provided, not both.
   @note the `configuration_distance_function` object will be copied and retained
   by a collision checker, so if the function has any lambda-captured data then
   that data must outlive the collision checker. */

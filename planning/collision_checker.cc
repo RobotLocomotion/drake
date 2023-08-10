@@ -44,6 +44,8 @@ using multibody::world_model_instance;
 using systems::Context;
 
 namespace {
+// TODO(calderpg-tri, jwnimmer-tri) Remove unnecessary helpers once standalone
+// distance and interpolation functions are no longer supported.
 void SanityCheckConfigurationDistanceFunction(
     const ConfigurationDistanceFunction& distance_function,
     const Eigen::VectorXd& zero_configuration) {
@@ -107,7 +109,6 @@ class LegacyDistanceAndInterpolationProvider final
   ConfigurationDistanceFunction distance_function_;
   ConfigurationInterpolationFunction interpolation_function_;
 };
-}  // namespace
 
 // Default interpolator; it uses SLERP for quaternion-valued groups of dofs and
 // LERP for everything else. See the documentation in CollisionChecker's
@@ -149,8 +150,6 @@ std::vector<int> GetQuaternionDofStartIndices(
   }
   return quaternion_dof_start_indices;
 }
-
-namespace {
 
 // Returns the set of indices in `q` that kinematically affect the robot model
 // but that are not a part of the robot dofs (e.g., a floating or mobile base).

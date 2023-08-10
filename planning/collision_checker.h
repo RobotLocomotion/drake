@@ -819,6 +819,7 @@ class CollisionChecker {
   void SetDistanceAndInterpolationProvider(
       std::shared_ptr<const DistanceAndInterpolationProvider> provider);
 
+  /** Gets the DistanceAndInterpolationProvider in use. */
   const DistanceAndInterpolationProvider& distance_and_interpolation_provider()
       const {
     return *distance_and_interpolation_provider_;
@@ -828,9 +829,13 @@ class CollisionChecker {
    @pre distance_function satisfies the requirements documented on
    ConfigurationDistanceFunction and a DistanceAndInterpolationProvider is not
    already in use.
+   @pre the collision checker was created with separate distance and
+   interpolation functions, not a combined DistanceAndInterpolationProvider.
    @note the `distance_function` object will be copied and retained by this
    collision checker, so if the function has any lambda-captured data then
    that data must outlive this collision checker. */
+  // TODO(calderpg-tri, jwnimmer-tri) Deprecate support for separate distance
+  // and interpolation functions.
   void SetConfigurationDistanceFunction(
       const ConfigurationDistanceFunction& distance_function);
 
@@ -860,11 +865,15 @@ class CollisionChecker {
    @pre interpolation_function satisfies the requirements documented on
    ConfigurationInterpolationFunction, or is nullptr and a
    DistanceAndInterpolationProvider is not already in use.
+   @pre the collision checker was created with separate distance and
+   interpolation functions, not a combined DistanceAndInterpolationProvider.
    @note the `interpolation_function` object will be copied and retained by
    this collision checker, so if the function has any lambda-captured data
    then that data must outlive this collision checker.
    @note the default function uses linear interpolation for most variables,
    and uses slerp for quaternion valued variables.*/
+  // TODO(calderpg-tri, jwnimmer-tri) Deprecate support for separate distance
+  // and interpolation functions.
   void SetConfigurationInterpolationFunction(
       const ConfigurationInterpolationFunction& interpolation_function);
 
