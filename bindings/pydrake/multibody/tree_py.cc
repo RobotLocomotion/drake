@@ -1187,7 +1187,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
                 const Vector3<T>&>(&Class::SolidCylinderAboutEnd),
             py::arg("radius"), py::arg("length"), py::arg("unit_vector"),
             cls_doc.SolidCylinderAboutEnd.doc)
-        // TODO(2023-11-01) Remove overload wrapping when deprecation complete.
+        // TODO(2023-12-01) Remove overload wrapping when deprecation complete.
         .def_static("SolidCylinderAboutEnd",
             WrapDeprecated(cls_doc.SolidCylinderAboutEnd.doc_deprecated,
                 [](const T& r, const T& L) {

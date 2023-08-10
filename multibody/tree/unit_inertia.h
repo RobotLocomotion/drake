@@ -328,7 +328,7 @@ class UnitInertia : public RotationalInertia<T> {
   /// @param[in] r The radius of the cylinder.
   /// @param[in] L The length of the cylinder.
   /// @throws std::exception if r or L is negative.
-  DRAKE_DEPRECATED("2023-11-01",
+  DRAKE_DEPRECATED("2023-12-01",
                    "SolidCylinderAboutEnd now requires the cylinder's axis "
                    "direction to be explicitly given and to be a unit vector.")
   static UnitInertia<T> SolidCylinderAboutEnd(const T& r, const T& L) {
