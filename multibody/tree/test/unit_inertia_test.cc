@@ -232,14 +232,9 @@ GTEST_TEST(UnitInertia, SolidCylinder) {
   EXPECT_TRUE(Gy.CopyToFullMatrix3().isApprox(
       Gy_expected.CopyToFullMatrix3(), kEpsilon));
 
-  // Ensure a bad unit vector throws an exception.
-  const Vector3<double> bad_vec(1.0, 2.0, 3.0);
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      UnitInertia<double>::SolidCylinder(r, L, bad_vec),
-      "[^]* The unit_vector argument .* is not a unit vector.");
-
-  // Form unit inertia for a cylinder oriented in an "interesting" direction.
-  const Vector3d v = bad_vec.normalized();
+  // Compute the unit inertia for a cylinder oriented along a non-unit,
+  // non-axial vector.
+  const Vector3d v(1.0, 2.0, 3.0);
   const UnitInertia<double> Gv =
       UnitInertia<double>::SolidCylinder(r, L, v);
   // Generate a rotation matrix from a Frame V in which Vz = v to frame Z where
@@ -445,13 +440,10 @@ GTEST_TEST(UnitInertia, AxiallySymmetric) {
   const double I_perp = (3.0 * r * r + L * L) / 12.0;
   const double I_axial = r * r / 2.0;
 
-  const Vector3d bad_uvec = Vector3d::UnitY() + Vector3d::UnitZ();
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      UnitInertia<double>::AxiallySymmetric(I_axial, I_perp, bad_uvec),
-      "[^]* The unit_vector argument .* is not a unit vector.");
-
   // Cylinder's axis. A vector on the y-z plane, at -pi/4 from the z axis.
-  const Vector3d b_E = bad_uvec.normalized();
+  // The vector doesn't need to be normalized (but take note that automatic
+  // normalization is deprecated).
+  const Vector3d b_E = Vector3d::UnitY() + Vector3d::UnitZ();
 
   // Rotation of -pi/4 about the x axis, from a Z frame having its z axis
   // aligned with the z-axis of the cylinder to the expressed-in frame E.
@@ -499,14 +491,10 @@ GTEST_TEST(UnitInertia, ThinRod) {
   // Moment of inertia for an infinitesimally thin rod of length L.
   const double I_rod = L * L / 12.0;
 
-  const Vector3d bad_uvec = Vector3d::UnitY() + Vector3d::UnitZ();
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      UnitInertia<double>::StraightLine(I_rod, bad_uvec),
-      "[^]* The unit_vector argument .* is not a unit vector.");
-
   // Rod's axis. A vector on the y-z plane, at -pi/4 from the z axis.
-  // The vector doesn't need to be normalized.
-  const Vector3d b_E = bad_uvec.normalized();
+  // The vector doesn't need to be normalized (but take note that automatic
+  // normalization is deprecated).
+  const Vector3d b_E = Vector3d::UnitY() + Vector3d::UnitZ();
 
   // Rotation of -pi/4 about the x axis, from a Z frame having its z-axis
   // aligned with the rod to the expressed-in frame E.
