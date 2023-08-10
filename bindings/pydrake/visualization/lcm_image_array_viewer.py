@@ -141,20 +141,32 @@ class LcmImageArrayViewer:
                 self._colorized_depth._colorize_depth_image(depth, rgba)
             rgba_images.append(rgba)
 
-        # Concatenate the images if needed or we will simply extract the
-        # underlying numpy data.
-        if len(rgba_images) > 1:
-            display_image = np.concatenate(
-                [img.data for img in rgba_images], axis=1
-            )
-        else:
-            display_image = rgba_images[0].data
+        # Stack the images vertically.
+        display_image = LcmImageArrayViewer.concatenate_images(
+            rgba_images, len(rgba_images), 1
+        )
 
-        # Update the image for display in memory.
+        # Save the image in-memory.
         pil_image = Image.fromarray(display_image)
         buffer = BytesIO()
-        pil_image.save(buffer, format="png")
+        pil_image.save(buffer, format="png", compress_level=0)
         return buffer.getbuffer()
+
+    @staticmethod
+    def concatenate_images(images, row, col):
+        """Helper function to concatenate multiple images. `images` is assumed
+        to be a list of systems::sensros::Image with the same image size.
+        """
+        assert len(images) == row * col
+        col_images = []
+        for i in range(row):
+            row_images = []
+            for j in range(col):
+                image = images[i * col + j]
+                row_images.append(image.data)
+            row_image = np.hstack(row_images)
+            col_images.append(row_image)
+        return np.vstack(col_images)
 
 
 def main():
