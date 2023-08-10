@@ -5,13 +5,13 @@ def meshcat_repository(
         mirrors = None):
     github_archive(
         name = name,
-        repository = "rdeits/meshcat",
+        repository = "SeanCurtis-TRI/meshcat",
         upgrade_advice = """
         Updating this commit requires local testing; see
         drake/tools/workspace/meshcat/README.md for details.
         """,
-        commit = "c40e062d1b9156562f57666ca30d1d55482702cf",
-        sha256 = "a28b284202a95823ddd5cf2ba59944475ecf0d2fa83f54cc931a05a3600601bf",  # noqa
+        commit = "d9245235a0dd819a6d4c07a0e970ff7403edde67",
+        sha256 = "34e5892257e2c94ee1782c7cc7a6476303a490ec093e4ed76e900a5ffae06f15",  # noqa
         build_file = ":package.BUILD.bazel",
         mirrors = mirrors,
     )
