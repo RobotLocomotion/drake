@@ -212,7 +212,7 @@ GTEST_TEST(UnitInertia, SolidCylinder) {
   const double I_perp = (3.0 * r * r + L * L) / 12.0;
   const double I_axial = r * r / 2.0;
   const UnitInertia<double> Gz_expected(I_perp, I_perp, I_axial);
-  // Compute the unit inertia for a cylinder oriented along the z-axis
+  // Compute the unit inertia for a cylinder oriented along the z-axis.
   UnitInertia<double> Gz =
       UnitInertia<double>::SolidCylinder(r, L, Vector3d::UnitZ());
   EXPECT_TRUE(Gz.CopyToFullMatrix3().isApprox(
@@ -255,6 +255,7 @@ GTEST_TEST(UnitInertia, SolidCylinder) {
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+// 2023-12-01 Remove with the deprecated 2 argument SolidCylinder() function.
 GTEST_TEST(UnitInertia, SolidCylinderDeprecated) {
   const double r = 2.5;
   const double L = 1.5;
@@ -414,6 +415,7 @@ GTEST_TEST(UnitInertia, SolidCapsuleDegenerateIntoThinRod) {
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+// 2023-12-01 Remove with the deprecated 2 argument SolidCapsule() function.
 GTEST_TEST(UnitInertia, SolidCapsuleDeprecated) {
   const double r = 2.5;
   const double L = 1.5;
@@ -644,8 +646,9 @@ GTEST_TEST(UnitInertia, SolidTetrahedronAboutPoint) {
 GTEST_TEST(UnitInertia, ShiftFromCenterOfMassInPlace) {
   const double r = 2.5;
   const double L = 1.5;
-  UnitInertia<double> G_expected = UnitInertia<double>::SolidCylinderAboutEnd(
-          r, L, Vector3<double>::UnitZ());
+  const UnitInertia<double> G_expected =
+      UnitInertia<double>::SolidCylinderAboutEnd(r, L,
+                                                 Vector3<double>::UnitZ());
   UnitInertia<double> G =
       UnitInertia<double>::SolidCylinder(r, L, Vector3<double>::UnitZ());
   EXPECT_FALSE(G.CopyToFullMatrix3().isApprox(
@@ -658,7 +661,7 @@ GTEST_TEST(UnitInertia, ShiftFromCenterOfMassInPlace) {
   // Now test that we can perform the inverse operation and obtain the original
   // unit inertia.
   // As a shift into a new object:
-  UnitInertia<double> G2 = G.ShiftToCenterOfMass({0.0, 0.0, -L / 2.0});
+  const UnitInertia<double> G2 = G.ShiftToCenterOfMass({0.0, 0.0, -L / 2.0});
   // As a shift in place:
   G.ShiftToCenterOfMassInPlace({0.0, 0.0, -L / 2.0});
   const UnitInertia<double> G_cylinder =
@@ -669,7 +672,7 @@ GTEST_TEST(UnitInertia, ShiftFromCenterOfMassInPlace) {
       G_cylinder.CopyToFullMatrix3(), kEpsilon));
 
   // Create a new object.
-  UnitInertia<double> G3 =
+  const UnitInertia<double> G3 =
       G_cylinder.ShiftFromCenterOfMass({0.0, 0.0, L / 2.0});
   EXPECT_TRUE(G3.CopyToFullMatrix3().isApprox(
       G_expected.CopyToFullMatrix3(), kEpsilon));

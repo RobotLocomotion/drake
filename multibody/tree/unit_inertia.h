@@ -260,30 +260,14 @@ class UnitInertia : public RotationalInertia<T> {
     return SolidBox(L, L, L);
   }
 
-  /// Computes the unit inertia for a unit-mass cylinder B, of uniform density,
-  /// having its axis of revolution along input vector `b_E`. The resulting unit
-  /// inertia is computed about the cylinder's center of mass `Bcm` and is
-  /// expressed in the same frame E as the input axis of revolution `b_E`.
-  ///
-  /// @param[in] r The radius of the cylinder, it must be non-negative.
-  /// @param[in] L The length of the cylinder, it must be non-negative.
-  /// @param[in] b_E
-  ///   Vector defining the axis of revolution of the cylinder, expressed in a
-  ///   frame E. `b_E` can have a norm different from one; however, it will be
-  ///   normalized before using it. Therefore its norm is ignored and only its
-  ///   direction is used. It defaults to `Vector3<T>::UnitZ()`.
-  /// @retval G_Bcm_E
-  ///   The unit inertia for a solid cylinder B, of uniform density, with axis
-  ///   of revolution along `b_E`, computed about the cylinder's center of mass
-  ///   `Bcm`, and expressed in the same frame E as the input axis of rotation
-  ///   `b_E`.
-  ///
-  /// @throws std::exception
-  ///   - Radius r is negative.
-  ///   - Length L is negative.
-  ///   - `b_E` is the zero vector. That is if `‖b_E‖₂ ≤ ε`, where ε is the
-  ///     machine epsilon.
-  DRAKE_DEPRECATED("2023-11-01",
+  /// Computes the unit inertia for a uniform density solid cylinder B
+  /// whose axis of revolution is an implied z-direction.
+  /// @param[in] r radius of the cylinder.
+  /// @param[in] L length of the cylinder.
+  /// @retval G_Bcm_E B's unit inertia about Bcm (B's center of mass), expressed
+  /// in the same frame E as the implied z-direction.
+  /// @throws std::exception if radius r or length L is negative.
+  DRAKE_DEPRECATED("2023-12-01",
                    "SolidCylinder now requires the cylinder's axis "
                    "direction to be explicitly given and to be a unit vector.")
   static UnitInertia<T> SolidCylinder(const T& r, const T& L) {
@@ -308,15 +292,14 @@ class UnitInertia : public RotationalInertia<T> {
   static UnitInertia<T> SolidCylinder(
       const T& radius, const T& length, const Vector3<T>& unit_vector);
 
-  /// Computes the unit inertia for a uniform density unit-mass capsule C
-  /// whose axis of revolution is along the z-axis.
+  /// Computes the unit inertia for a uniform density solid capsule C
+  /// whose axis of revolution is an implied z-direction.
   /// @param[in] r radius of the cylinder/half-sphere parts of the capsule.
   /// @param[in] L length of the cylindrical part of the capsule.
-  /// @param[in] unit_vector direction of the cylindrical part of the capsule.
-  ///   It defaults to `Vector3<T>::UnitZ()`.
-  /// @throws std::exception if r or L is negative or if ‖unit_vector‖ is not
-  /// within 1.0E-14 of 1.0.
-  DRAKE_DEPRECATED("2023-11-01",
+  /// @retval G_Bcm_E B's unit inertia about Bcm (B's center of mass), expressed
+  /// in the same frame E as the implied z-direction.
+  /// @throws std::exception if radius r or length L is negative.
+  DRAKE_DEPRECATED("2023-12-01",
                    "SolidCapsule now requires the capsules's axis "
                    "direction to be explicitly given and to be a unit vector.")
   static UnitInertia<T> SolidCapsule(const T& r, const T& L) {
@@ -420,6 +403,9 @@ class UnitInertia : public RotationalInertia<T> {
   /// frame E.
   /// @retval G_BBp_E B's unit inertia about point Bp on B's symmetry axis,
   /// expressed in the same frame E as the unit_vector is expressed.
+  /// @pre Points Bp and Bcm are both on B's symmetry axis. The actual location
+  /// of these points is not known by this function. However, the value of
+  /// moment_perpendicular (K) is associated with point Bp.
   /// @note B's unit inertia about Bp is axially symmetric, meaning B has an
   /// equal moment of inertia about any line that both passes through Bp and
   /// is perpendicular to unit_vector.

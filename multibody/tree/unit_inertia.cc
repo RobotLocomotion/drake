@@ -7,12 +7,20 @@ namespace multibody {
 
 namespace {
 
-// Throws unless ‖unit_vector‖ is within ≈ 5.5 bits of 1.0.
+// Throws unless ‖unit_vector‖ is within 1E-14 (≈ 5.5 bits) of 1.0.
 // Note: 1E-14 ≈ 2^5.5 * std::numeric_limits<double>::epsilon();
-// Note: This function is a no-op when type T is symbolic::Expression.
+// retval ‖unit_vector‖² which is exactly 1.0 for a perfect unit_vector.
+// @note: When type T is symbolic::Expression, this function is a no-op that
+// returns 1.
+// @note Although this function uses a tolerance of 1E-14 for determining
+// whether unit_vector is acceptable, unit_vector can be normalized for more
+// accurate calculations (e.g., giving ‖unit_vector‖ to be within 1E-16 of 1.0).
+// Unless ‖unit_vector‖ is exactly 1 (common since coordinate axes are popular
+// directions), the calling function should consider normalizing unit_vector
+// even if unit_vector passes this test.
 template <typename T>
-void ThrowUnlessVectorIsMagnitudeOne(const Vector3<T>& unit_vector,
-                                     std::string_view function_name) {
+T ThrowUnlessVectorIsMagnitudeOne(const Vector3<T>& unit_vector,
+                                       std::string_view function_name) {
   if constexpr (scalar_predicate<T>::is_bool) {
     using std::abs;
     // A test that a unit vector's magnitude is within a very small ε of 1 is
@@ -29,14 +37,17 @@ void ThrowUnlessVectorIsMagnitudeOne(const Vector3<T>& unit_vector,
     // if (abs(unit_vector.norm() - 1) > kTolerance) {
     // -------------------------------------------------------------
     constexpr double kTolerance2 = 2E-14;
-    if (abs(unit_vector.squaredNorm() - 1) > kTolerance2) {
+    const T uvec_squared = unit_vector.squaredNorm();
+    if (abs(uvec_squared - 1) > kTolerance2) {
       DRAKE_DEMAND(!function_name.empty());
       const std::string error_message =
           fmt::format("{}(): The unit_vector argument {} is not a unit vector.",
                       function_name, fmt_eigen(unit_vector.transpose()));
       throw std::logic_error(error_message);
     }
+    return uvec_squared;
   }
+  return 1.0;
 }
 }  // namespace
 
@@ -76,10 +87,10 @@ UnitInertia<T> UnitInertia<T>::SolidCylinder(
   DRAKE_THROW_UNLESS(radius >= 0);
   DRAKE_THROW_UNLESS(length >= 0);
   ThrowUnlessVectorIsMagnitudeOne(unit_vector, __func__);
-  const T r2 = radius * radius;
-  const T l2 = length * length;
-  const T J = 0.5 * r2;               // Axial moment of inertia J = ½ r².
-  const T K = 0.25 * r2 + l2 / 12.0;  // Transverse moment K = ¼ r² + ¹⁄₁₂ l².
+  const T rsq = radius * radius;
+  const T lsq = length * length;
+  const T J = 0.5 * rsq;                // Axial moment of inertia J = ½ r².
+  const T K = 0.25 * rsq + lsq / 12.0;  // Transverse moment K = ¼ r² + ¹⁄₁₂ l².
   return AxiallySymmetric(J, K, unit_vector);
 }
 
@@ -89,10 +100,10 @@ UnitInertia<T> UnitInertia<T>::SolidCylinderAboutEnd(
   DRAKE_THROW_UNLESS(radius >= 0);
   DRAKE_THROW_UNLESS(length >= 0);
   ThrowUnlessVectorIsMagnitudeOne(unit_vector, __func__);
-  const T r2 = radius * radius;
-  const T l2 = length * length;
-  const T J = 0.5 * r2;               // Axial moment of inertia J = ½ r².
-  const T K = 0.25 * r2  + l2 / 3.0;  // Transverse moment K = ¼ r² + ⅓ l².
+  const T rsq = radius * radius;
+  const T lsq = length * length;
+  const T J = 0.5 * rsq;                // Axial moment of inertia J = ½ r².
+  const T K = 0.25 * rsq  + lsq / 3.0;  // Transverse moment K = ¼ r² + ⅓ l².
   return AxiallySymmetric(J, K, unit_vector);
 }
 
@@ -109,16 +120,20 @@ UnitInertia<T> UnitInertia<T>::AxiallySymmetric(const T& moment_parallel,
   // K_Bp (perpendicular moment of inertia about Bp) relates to
   // K_Bcm (perpendicular moment of inertia about Bcm) as K_Bp = K_Bcm + dist²,
   // where dist is the distance between points Bp and Bcm.
-  DRAKE_THROW_UNLESS(moment_parallel <= 2.0 * moment_perpendicular);
+  // This test has a tolerance of 5 bits (5 bits = 2^5 * epsilon).
+  constexpr double two_plus_tiny =
+      2.0 + 32 * std::numeric_limits<double>::epsilon();
+  DRAKE_THROW_UNLESS(moment_parallel <= two_plus_tiny * moment_perpendicular);
 
   // TODO(Mitiguy) consider a "trust_me" type of parameter that can skip
   //  normalizing the unit_vector (it frequently is perfect on entry).
-  ThrowUnlessVectorIsMagnitudeOne(unit_vector, __func__);
-  Vector3<T> uvec = unit_vector.normalized();
+  const T mag_squared = ThrowUnlessVectorIsMagnitudeOne(unit_vector, __func__);
+  const Vector3<T> uvec =
+      (mag_squared == 1.0) ? unit_vector : unit_vector.normalized();
 
   // Form B's unit inertia about a point Bp on B's symmetry axis,
   // expressed in the same frame E as the unit_vector is expressed.
-  Matrix3<T> G_BBp_E =
+  const Matrix3<T> G_BBp_E =
       K * Matrix3<T>::Identity() + (J - K) * uvec * uvec.transpose();
   return UnitInertia<T>(G_BBp_E(0, 0), G_BBp_E(1, 1), G_BBp_E(2, 2),
                         G_BBp_E(0, 1), G_BBp_E(0, 2), G_BBp_E(1, 2));
@@ -175,10 +190,10 @@ UnitInertia<T> UnitInertia<T>::SolidCapsule(const T& radius, const T& length,
   // available for electronic download from Cornell digital library.
 
   // Calculate vc (the volume of cylinder C) and vh (volume of half-sphere H).
-  const T r2 = radius * radius;
-  const T r3 = r2 * radius;
-  const T vc = M_PI * r2 * length;     // vc = π r² L
-  const T vh = 2.0 / 3.0 * M_PI * r3;  // vh = 2/3 π r³
+  const T rsq = radius * radius;
+  const T rcubed = rsq * radius;
+  const T vc = M_PI * rsq * length;        // vc = π r² L
+  const T vh = 2.0 / 3.0 * M_PI * rcubed;  // vh = 2/3 π r³
 
   // Denoting mc as the mass of cylinder C and mh as the mass of half-sphere H,
   // and knowing the capsule has a uniform density and the capsule's mass is 1
@@ -187,9 +202,9 @@ UnitInertia<T> UnitInertia<T>::SolidCapsule(const T& radius, const T& length,
   const T mc = vc / v;        // Mass in the cylinder (relates to volume).
   const T mh = vh / v;        // Mass in each half-sphere (relates to volume).
 
-  // The distance dH between Hcm (the half-sphere H's center of mass) and Ccm
-  // (the cylinder C's center of mass) is from [Kane, Figure A23, pg. 369].
-  // dH = 3.0 / 8.0 * r + L / 2.0;
+  // The distance dH between Hcm (half-sphere H's center of mass) and Ccm
+  // (cylinder C's center of mass) is given in [Kane, Figure A23, pg. 369] as
+  // dH = ⅜ radius + ½ length.
   const T dH = 0.375 * radius + 0.5 * length;
 
   // The discussion that follows assumes Ic_zz is the axial moment of inertia
@@ -213,9 +228,9 @@ UnitInertia<T> UnitInertia<T>::SolidCapsule(const T& radius, const T& length,
 
   // The previous algorithm for Ixx and Izz is algebraically manipulated to a
   // more efficient result by factoring on mh and mc and computing numbers as
-  const T l2 = length * length;
-  const T Ixx = mc * (l2/12.0 + 0.25*r2) + mh * (0.51875*r2 + 2*dH*dH);
-  const T Izz = (0.5*mc + 0.8*mh) * r2;  // Axial moment of inertia.
+  const T lsq = length * length;
+  const T Ixx = mc * (lsq/12.0 + 0.25*rsq) + mh * (0.51875*rsq + 2*dH*dH);
+  const T Izz = (0.5*mc + 0.8*mh) * rsq;  // Axial moment of inertia.
   return UnitInertia<T>::AxiallySymmetric(Izz, Ixx, unit_vector);
 }
 
