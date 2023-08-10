@@ -32,6 +32,7 @@ T ThrowUnlessVectorIsMagnitudeOne(const Vector3<T>& unit_vector,
 template <typename T>
 std::pair<T, std::string> CheckVectorIsMagnitudeOne(
     const Vector3<T>& unit_vector, std::string_view function_name) {
+  DRAKE_DEMAND(!function_name.empty());
   if constexpr (scalar_predicate<T>::is_bool) {
     using std::abs;
     // A test that a unit vector's magnitude is within a very small ε of 1 is
