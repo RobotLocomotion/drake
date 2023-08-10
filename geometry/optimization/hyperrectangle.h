@@ -14,8 +14,8 @@ namespace drake {
 namespace geometry {
 namespace optimization {
 
-/** Axis-aligned box in Rᵈ.  This is a special case of Hpolyhedron. */
-class HyperRectangle : public HPolyhedron {
+/** Axis-aligned box in Rᵈ defined by its lower bounda and upper bounds. */
+class HyperRectangle final : public ConvexSet {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(HyperRectangle)
 
@@ -24,13 +24,21 @@ class HyperRectangle : public HPolyhedron {
   HyperRectangle(const Eigen::Ref<const Eigen::VectorXd>& lb,
                  const Eigen::Ref<const Eigen::VectorXd>& ub);
 
+  /** Get the lower bound of the hyperrectangle. */
   const Eigen::VectorXd lb() const { return lb_; }
 
+  /** Get the upper bound of the hyperrectangle. */
   const Eigen::VectorXd ub() const { return ub_; }
 
   /** Variant of UniformSample for hyperrectangles that uses uniform sampling in
    * each axis */
   Eigen::VectorXd UniformSample(RandomGenerator* generator) const;
+
+  /** Get the center of the hyperrectangle. */
+  Eigen::VectorXd Center() const;
+
+  // Helper to convert this hyperrectangle to an HPolyhedron.
+  HPolyhedron MakeHPolyhedron() const;
 
   /** Passes this object to an Archive.
     Refer to @ref yaml_serialization "YAML Serialization" for background. */
@@ -74,44 +82,47 @@ class HyperRectangle : public HPolyhedron {
   bool DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
                     double tol) const;
 
-  // /** Non-virtual interface implementation for AddPointInSetConstraints().
-  // @pre vars.size() == ambient_dimension()
-  // @pre ambient_dimension() > 0 */
-  // std::pair<VectorX<symbolic::Variable>,
-  //           std::vector<solvers::Binding<solvers::Constraint>>>
-  // DoAddPointInSetConstraints(
-  //     solvers::MathematicalProgram* prog,
-  //     const Eigen::Ref<const solvers::VectorXDecisionVariable>& vars) const;
+  /** Non-virtual interface implementation for AddPointInSetConstraints().
+  @pre vars.size() == ambient_dimension()
+  @pre ambient_dimension() > 0 */
+  std::pair<VectorX<symbolic::Variable>,
+            std::vector<solvers::Binding<solvers::Constraint>>>
+  DoAddPointInSetConstraints(
+      solvers::MathematicalProgram* prog,
+      const Eigen::Ref<const solvers::VectorXDecisionVariable>& vars)
+      const final;
 
-  //   /** Non-virtual interface implementation for
-  //   AddPointInNonnegativeScalingConstraints().
-  //   @pre x.size() == ambient_dimension()
-  //   @pre ambient_dimension() > 0 */
-  //   std::vector<solvers::Binding<solvers::Constraint>>
-  //   DoAddPointInNonnegativeScalingConstraints(
-  //       solvers::MathematicalProgram* prog,
-  //       const Eigen::Ref<const solvers::VectorXDecisionVariable>& x,
-  //       const symbolic::Variable& t) const;
+  /** Non-virtual interface implementation for
+  AddPointInNonnegativeScalingConstraints().
+  @pre x.size() == ambient_dimension()
+  @pre ambient_dimension() > 0 */
+  std::vector<solvers::Binding<solvers::Constraint>>
+  DoAddPointInNonnegativeScalingConstraints(
+      solvers::MathematicalProgram* prog,
+      const Eigen::Ref<const solvers::VectorXDecisionVariable>& x,
+      const symbolic::Variable& t) const final;
 
-  // using HPolyhedron::DoAddPointInNonnegativeScalingConstraints;
-  //   /** Non-virtual interface implementation for
-  //   AddPointInNonnegativeScalingConstraints(). Subclasses must override to
-  //   add the constraints needed to keep the point A * x + b in the
-  //   non-negative scaling of the set. Note that subclasses do not need to add
-  //   the constraint c * t + d ≥ 0 as it is already added.
-  //   @pre ambient_dimension() > 0
-  //   @pre A.rows() == ambient_dimension()
-  //   @pre A.rows() == b.rows()
-  //   @pre A.cols() == x.size()
-  //   @pre c.rows() == t.size() */
-  //   std::vector<solvers::Binding<solvers::Constraint>>
-  //   DoAddPointInNonnegativeScalingConstraints(
-  //       solvers::MathematicalProgram* prog,
-  //       const Eigen::Ref<const Eigen::MatrixXd>& A,
-  //       const Eigen::Ref<const Eigen::VectorXd>& b,
-  //       const Eigen::Ref<const Eigen::VectorXd>& c, double d,
-  //       const Eigen::Ref<const solvers::VectorXDecisionVariable>& x,
-  //       const Eigen::Ref<const solvers::VectorXDecisionVariable>& t) const;
+  /** Non-virtual interface implementation for
+  AddPointInNonnegativeScalingConstraints(). Subclasses must override to
+  add the constraints needed to keep the point A * x + b in the
+  non-negative scaling of the set. Note that subclasses do not need to add
+  the constraint c * t + d ≥ 0 as it is already added.
+  @pre ambient_dimension() > 0
+  @pre A.rows() == ambient_dimension()
+  @pre A.rows() == b.rows()
+  @pre A.cols() == x.size()
+  @pre c.rows() == t.size() */
+  std::vector<solvers::Binding<solvers::Constraint>>
+  DoAddPointInNonnegativeScalingConstraints(
+      solvers::MathematicalProgram* prog,
+      const Eigen::Ref<const Eigen::MatrixXd>& A,
+      const Eigen::Ref<const Eigen::VectorXd>& b,
+      const Eigen::Ref<const Eigen::VectorXd>& c, double d,
+      const Eigen::Ref<const solvers::VectorXDecisionVariable>& x,
+      const Eigen::Ref<const solvers::VectorXDecisionVariable>& t) const final;
+
+  std::pair<std::unique_ptr<Shape>, math::RigidTransformd> DoToShapeWithPose()
+      const final;
 
   double DoVolume() const;
 

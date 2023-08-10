@@ -48,8 +48,6 @@ class Point final : public ConvexSet {
   @pre x must be of size ambient_dimension(). */
   void set_x(const Eigen::Ref<const Eigen::VectorXd>& x);
 
-  double DoVolume() const { return 0.0; }
-
  private:
   std::unique_ptr<ConvexSet> DoClone() const final;
 
@@ -90,6 +88,8 @@ class Point final : public ConvexSet {
   // Implement support shapes for the ShapeReifier interface.
   using ShapeReifier::ImplementGeometry;
   void ImplementGeometry(const Sphere& sphere, void* data) final;
+
+  double DoVolume() const final { return 0.0; }
 
   Eigen::VectorXd x_;
 };
