@@ -314,7 +314,7 @@ class UnitInertia : public RotationalInertia<T> {
 
   DRAKE_DEPRECATED("2023-12-01",
                    "SolidCylinderAboutEnd now requires the cylinder's axis "
-                   "direction to be explicitly given and to be a unit vector.")
+                   "direction to be explicitly given.")
   static UnitInertia<T> SolidCylinderAboutEnd(const T& r, const T& L) {
     return SolidCylinderAboutEnd(r, L, Vector3<T>::UnitZ());
   }
