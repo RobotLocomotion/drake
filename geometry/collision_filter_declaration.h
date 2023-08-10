@@ -16,6 +16,18 @@ class CollisionFilter;
 }  // namespace internal
 #endif
 
+/** Enum that defines the scope of the geometries that are affected by the
+ collision filtering mechanism. */
+enum class CollisionFilterScope {
+  /** All geometries are considered when collision filters are applied. */
+  kAll,
+  /** Deformable geometries are omitted when applying collision filters. That
+   means that all deformable geometries are not affected by the collision filter
+   declaration even if they are included in the GeometrySet when the filter is
+   declared. */
+  kOmitDeformable
+};
+
 /** Class for articulating changes to the configuration of SceneGraph's
  "collision filters"; collision filters limit the scope of various proximity
  queries.
@@ -49,6 +61,9 @@ class CollisionFilterDeclaration {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CollisionFilterDeclaration)
 
   CollisionFilterDeclaration() = default;
+
+  explicit CollisionFilterDeclaration(CollisionFilterScope scope)
+      : scope_(scope) {}
 
   /** @name  Allowing pairs in consideration (removing collision filters)
 
@@ -159,8 +174,13 @@ class CollisionFilterDeclaration {
   // it from the declaration implementation.
   const std::vector<Statement>& statements() const { return statements_; }
 
+  CollisionFilterScope scope() const { return scope_; }
+
   // The sequence of statements in this declaration.
   std::vector<Statement> statements_;
+
+  // Defines the scope of the filter. Defaults to all geometries.
+  CollisionFilterScope scope_{CollisionFilterScope::kAll};
 };
 
 }  // namespace geometry

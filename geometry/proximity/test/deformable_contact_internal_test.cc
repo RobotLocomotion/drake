@@ -12,6 +12,17 @@
 
 namespace drake {
 namespace geometry {
+
+/* Use GeometrySetTester's friend status with GeometrySet to leak its geometry
+ ids to support the tests below. */
+class GeometrySetTester {
+ public:
+  static std::unordered_set<GeometryId> geometries(const GeometrySet& s,
+                                                   CollisionFilterScope) {
+    return s.geometries();
+  }
+};
+
 namespace internal {
 namespace deformable {
 
@@ -60,6 +71,11 @@ ProximityProperties MakeProximityPropsWithRezHint(double resolution_hint) {
 math::RigidTransformd default_pose() {
   return math::RigidTransformd(math::RollPitchYaw<double>(1, 2, 3),
                                Vector3d(4, 5, 6));
+}
+
+/* Returns a value for the collision filter id extraction functor. */
+static CollisionFilter::ExtractIds get_extract_ids_functor() {
+  return &GeometrySetTester::geometries;
 }
 
 GTEST_TEST(GeometriesTest, AddRigidGeometry) {
@@ -309,9 +325,10 @@ GTEST_TEST(GeometriesTest, UpdateDeformableVertexPositions) {
 
 GTEST_TEST(GeometriesTest, ComputeDeformableContact) {
   Geometries geometries;
+  CollisionFilter collision_filter;
   /* The contact data is empty when there is no deformable geometry. */
   DeformableContact<double> contact_data =
-      geometries.ComputeDeformableContact();
+      geometries.ComputeDeformableContact(collision_filter);
   EXPECT_EQ(contact_data.contact_surfaces().size(), 0);
 
   /* Add a deformable unit cube. */
@@ -320,9 +337,10 @@ GTEST_TEST(GeometriesTest, ComputeDeformableContact) {
       MakeBoxVolumeMesh<double>(Box::MakeCube(1.0), 1.0);
   const int num_vertices = deformable_mesh.num_vertices();
   geometries.AddDeformableGeometry(deformable_id, std::move(deformable_mesh));
+  collision_filter.AddGeometry(deformable_id);
 
   /* There is no geometry to collide with the deformable geometry yet. */
-  contact_data = geometries.ComputeDeformableContact();
+  contact_data = geometries.ComputeDeformableContact(collision_filter);
   ASSERT_EQ(contact_data.contact_surfaces().size(), 0);
   /* Add a rigid unit cube. */
   GeometryId rigid_id = GeometryId::get_new_id();
@@ -330,9 +348,10 @@ GTEST_TEST(GeometriesTest, ComputeDeformableContact) {
   math::RigidTransform<double> X_WR(Vector3d(0, -2.0, 0));
   geometries.MaybeAddRigidGeometry(Box::MakeCube(1.0), rigid_id,
                                    rigid_properties, X_WR);
+  collision_filter.AddGeometry(rigid_id);
 
   /* The deformable box and the rigid box are not in contact yet. */
-  contact_data = geometries.ComputeDeformableContact();
+  contact_data = geometries.ComputeDeformableContact(collision_filter);
   ASSERT_EQ(contact_data.contact_surfaces().size(), 0);
 
   /* Now shift the rigid geometry closer to the deformable geometry.
@@ -356,7 +375,7 @@ GTEST_TEST(GeometriesTest, ComputeDeformableContact) {
   geometries.UpdateRigidWorldPose(rigid_id, X_WR);
 
   /* Now there should be exactly one contact data. */
-  contact_data = geometries.ComputeDeformableContact();
+  contact_data = geometries.ComputeDeformableContact(collision_filter);
   ASSERT_EQ(contact_data.contact_surfaces().size(), 1);
 
   /* Verify that the contact surface is as expected. */
@@ -389,6 +408,14 @@ GTEST_TEST(GeometriesTest, ComputeDeformableContact) {
             expected_contact_surface.num_contact_points());
   EXPECT_TRUE(contact_surface.contact_mesh_W().Equal(
       expected_contact_surface.contact_mesh_W()));
+
+  /* No contact is reported if the the pair of rigid and deformable geometries
+   are filtered in the collision filter. */
+  collision_filter.Apply(CollisionFilterDeclaration().ExcludeBetween(
+                             GeometrySet(deformable_id), GeometrySet(rigid_id)),
+                         get_extract_ids_functor());
+  contact_data = geometries.ComputeDeformableContact(collision_filter);
+  EXPECT_EQ(contact_data.contact_surfaces().size(), 0);
 }
 
 }  // namespace

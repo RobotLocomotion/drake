@@ -33,8 +33,8 @@ class CollisionFilter {
 
    This callback should throw if the GeometrySet contains FrameId values that
    cannot be mapped to GeometryIds. */
-  using ExtractIds =
-      std::function<std::unordered_set<GeometryId>(const GeometrySet&)>;
+  using ExtractIds = std::function<std::unordered_set<GeometryId>(
+      const GeometrySet&, CollisionFilterScope)>;
 
   /* Applies the collision filter declaration to the persistent state. The
    callback `extract_ids` provides a means to convert the GeometrySet into an
@@ -188,9 +188,10 @@ class CollisionFilter {
   /* Removes the geometry with the given `id` from the given filter state. */
   static void RemoveGeometry(GeometryId id, FilterState* filter_state_out);
 
-  /* Declares pairs (`id_A`, `id_B`) `∀ id_A ∈ set_A, id_B ∈ set_B` to be
-   filtered. For each pair, if they are already filtered, no discernible change
-   is made.
+  /* Declares pairs (`id_A`, `id_B`) `∀ id_A ∈ set_A*, id_B ∈ set_B*` to be
+   filtered, where `set_A*` and `set_B*` are the geometry ids in `set_A` and
+   `set_B`, respectively, consistent with the given `scope`. For each
+   pair, if they are already filtered, no discernible change is made.
 
    The filtered pair can be made "invariant" such that subsequent calls to
    RemoveFiltersBetween will not remove the filter. This is intended to support
@@ -202,16 +203,20 @@ class CollisionFilter {
   static void AddFiltersBetween(const GeometrySet& set_A,
                                 const GeometrySet& set_B,
                                 const ExtractIds& extract_ids,
+                                CollisionFilterScope scope,
                                 bool is_invariant, FilterState* state_out);
 
-  /* Declares pairs (`id_A`, `id_B`) `∀ id_A ∈ set_A, id_B ∈ set_B` to be
-   unfiltered (if the filter isn't invariant). For each pair, if they are
-   already unfiltered, no discernible change is made.
+  /* Declares pairs (`id_A`, `id_B`) `∀ id_A ∈ set_A*, id_B ∈ set_B*` to be
+   unfiltered (if the filter isn't invariant) where `set_A*` and `set_B*` are
+   the geometry ids in `set_A` and `set_B`, respectively, consistent with the
+   given `scope`. For each pair, if they are already unfiltered, no discernible
+   change is made.
 
    @pre All ids `id_A` and `id_B` are part of the system.  */
   static void RemoveFiltersBetween(const GeometrySet& set_A,
                                    const GeometrySet& set_B,
                                    const ExtractIds& extract_ids,
+                                   CollisionFilterScope scope,
                                    FilterState* state_out);
 
   /* Atomic operation in support of AddFiltersBetween().  */
