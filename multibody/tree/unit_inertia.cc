@@ -23,8 +23,15 @@ namespace {
 // AxiallySymmetric() which does the normalization.
 template <typename T>
 T ThrowUnlessVectorIsMagnitudeOne(const Vector3<T>& unit_vector,
-                                  std::string_view function_name) {
-  DRAKE_DEMAND(!function_name.empty());
+                                  std::string_view function_name);
+
+// The implementation logic underlying ThrowUnlessVectorIsMagnitudeOne(), but
+// instead of throwing, returns the exception message as an extra return value.
+// When there are no errors, the error_message will be empty.
+// @retval {‖unit_vector‖², error_message} as a pair.
+template <typename T>
+std::pair<T, std::string> CheckVectorIsMagnitudeOne(
+    const Vector3<T>& unit_vector, std::string_view function_name) {
   if constexpr (scalar_predicate<T>::is_bool) {
     using std::abs;
     // A test that a unit vector's magnitude is within a very small ε of 1 is
@@ -46,11 +53,23 @@ T ThrowUnlessVectorIsMagnitudeOne(const Vector3<T>& unit_vector,
       const std::string error_message =
           fmt::format("{}(): The unit_vector argument {} is not a unit vector.",
                       function_name, fmt_eigen(unit_vector.transpose()));
-      throw std::logic_error(error_message);
+      return {uvec_squared, error_message};
     }
-    return uvec_squared;
+    return {uvec_squared, {}};
   }
-  return 1.0;
+  return {1.0, {}};
+}
+
+template <typename T>
+T ThrowUnlessVectorIsMagnitudeOne(const Vector3<T>& unit_vector,
+                                  std::string_view function_name) {
+  DRAKE_DEMAND(!function_name.empty());
+  auto [result, error_message] =
+      CheckVectorIsMagnitudeOne(unit_vector, function_name);
+  if (!error_message.empty()) {
+    throw std::logic_error(error_message);
+  }
+  return result;
 }
 
 // Like ThrowUnlessVectorIsMagnitudeOne(), but warns (once per process) instead
@@ -59,15 +78,15 @@ template <typename T>
 T WarnUnlessVectorIsMagnitudeOne(const Vector3<T>& unit_vector,
                                  std::string_view function_name) {
   DRAKE_DEMAND(!function_name.empty());
-  try {
-    return ThrowUnlessVectorIsMagnitudeOne(unit_vector, function_name);
-  } catch (const std::logic_error& e) {
+  auto [result, error_message] =
+      CheckVectorIsMagnitudeOne(unit_vector, function_name);
+  if (!error_message.empty()) {
     static const logging::Warn log_once(
         "{} Implicit normalization is deprecated; on or after 2023-12-01 this "
         "will become an exception.",
-        e.what());
-    return unit_vector.squaredNorm();
+        error_message);
   }
+  return result;
 }
 }  // namespace
 
