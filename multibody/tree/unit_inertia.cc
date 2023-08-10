@@ -127,9 +127,10 @@ UnitInertia<T> UnitInertia<T>::AxiallySymmetric(const T& moment_parallel,
 
   // TODO(Mitiguy) consider a "trust_me" type of parameter that can skip
   //  normalizing the unit_vector (it frequently is perfect on entry).
+  using std::sqrt;
   const T mag_squared = ThrowUnlessVectorIsMagnitudeOne(unit_vector, __func__);
   const Vector3<T> uvec =
-      (mag_squared == 1.0) ? unit_vector : unit_vector.normalized();
+      (mag_squared == 1.0) ? unit_vector : unit_vector / sqrt(mag_squared);
 
   // Form B's unit inertia about a point Bp on B's symmetry axis,
   // expressed in the same frame E as the unit_vector is expressed.
