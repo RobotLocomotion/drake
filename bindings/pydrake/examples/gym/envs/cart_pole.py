@@ -61,7 +61,7 @@ def AddAgent(plant):
     parser = Parser(plant)
     model_file = FindResourceOrThrow(
         "drake/bindings/pydrake/examples/gym/models/cartpole_BSA.sdf")
-    agent = parser.AddModelFromFile(model_file)
+    agent, = parser.AddModels(model_file)
     return agent
 
 
