@@ -81,6 +81,13 @@ drake_py_binary(
     deps = [":visualization"],
 )
 
+drake_py_binary(
+    name = "lcm_image_array_viewer",
+    srcs = ["lcm_image_array_viewer.py"],
+    visibility = ["//tools:__pkg__"],
+    deps = [":visualization"],
+)
+
 cmake_configure_file(
     name = "generate_run_installed_meldis",
     src = "run_installed_meldis.py.in",
