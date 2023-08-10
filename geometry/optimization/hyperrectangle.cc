@@ -30,77 +30,69 @@ using solvers::VectorXDecisionVariable;
 using symbolic::Expression;
 using symbolic::Variable;
 
-HyperRectangle::HyperRectangle(
-    const Eigen::Ref<const Eigen::VectorXd>& lower_corner,
-    const Eigen::Ref<const Eigen::VectorXd>& upper_corner)
-    : HPolyhedron(HPolyhedron::MakeBox(lower_corner, upper_corner)),
-      lower_corner_(lower_corner),
-      upper_corner_(upper_corner) {
-  DRAKE_THROW_UNLESS(lower_corner.size() == upper_corner.size());
-  DRAKE_THROW_UNLESS((lower_corner.array() <= upper_corner.array()).all());
-}
+HyperRectangle::HyperRectangle() : HPolyhedron() {}
 
-HyperRectangle::~HyperRectangle() = default;
+HyperRectangle::HyperRectangle(const Eigen::Ref<const Eigen::VectorXd>& lb,
+                               const Eigen::Ref<const Eigen::VectorXd>& ub)
+    : HPolyhedron(HPolyhedron::MakeBox(lb, ub)), lb_(lb), ub_(ub) {}
 
 std::optional<Eigen::VectorXd> HyperRectangle::DoMaybeGetPoint() const {
-  return lower_corner_;
+  return lb_;
 }
 
 std::optional<Eigen::VectorXd> HyperRectangle::DoMaybeGetFeasiblePoint() const {
-  return (upper_corner_ + lower_corner_) / 2.0;
+  return (ub_ + lb_) / 2.0;
 }
 
 bool HyperRectangle::DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
                                   double tol) const {
-  return (x.array() >= lower_corner_.array() - tol).all() &&
-         (x.array() <= upper_corner_.array() + tol).all();
+  return (x.array() >= lb_.array() - tol).all() &&
+         (x.array() <= ub_.array() + tol).all();
 }
 
 Eigen::VectorXd HyperRectangle::UniformSample(
     RandomGenerator* generator) const {
   Eigen::VectorXd sample(ambient_dimension());
-  for (int i = 0; i < lower_corner_.size(); ++i) {
-    std::uniform_real_distribution<double> distribution(lower_corner_(i),
-                                                        upper_corner_(i));
+  for (int i = 0; i < lb_.size(); ++i) {
+    std::uniform_real_distribution<double> distribution(lb_(i), ub_(i));
     sample(i) = distribution(*generator);
   }
   return sample;
 }
 
-std::vector<solvers::Binding<solvers::Constraint>>
-HyperRectangle::DoAddPointInNonnegativeScalingConstraints(
-    solvers::MathematicalProgram* prog,
-    const Eigen::Ref<const solvers::VectorXDecisionVariable>& x,
-    const symbolic::Variable& t) const {
-  std::vector<solvers::Binding<solvers::Constraint>> constraints;
-  const int n_rows = x.rows();
-  DRAKE_THROW_UNLESS(x.size() == lower_corner_.size());
-  Eigen::MatrixXd A_con_lower = Eigen::MatrixXd::Identity(n_rows, n_rows + 1);
-  Eigen::MatrixXd A_con_upper = Eigen::MatrixXd::Identity(n_rows, n_rows + 1);
-  A_con_lower.col(n_rows) = -lower_corner_;
-  A_con_upper.col(n_rows) = -upper_corner_;
-  constraints.push_back(prog->AddLinearConstraint(
-      A_con_lower,
-      VectorXd::Constant(n_rows, -std::numeric_limits<double>::infinity()),
-      VectorXd::Zero(n_rows), {x, Vector1<Variable>(t)}));
-  constraints.push_back(prog->AddLinearConstraint(
-      A_con_upper,
-      VectorXd::Constant(n_rows, std::numeric_limits<double>::infinity()),
-      VectorXd::Zero(n_rows), {x, Vector1<Variable>(t)}));
-  return constraints;
-}
+// std::vector<solvers::Binding<solvers::Constraint>>
+// HyperRectangle::DoAddPointInNonnegativeScalingConstraints(
+//     solvers::MathematicalProgram* prog,
+//     const Eigen::Ref<const solvers::VectorXDecisionVariable>& x,
+//     const symbolic::Variable& t) const {
+//   std::vector<solvers::Binding<solvers::Constraint>> constraints;
+//   const int n_rows = x.rows();
+//   DRAKE_THROW_UNLESS(x.size() == lb_.size());
+//   Eigen::MatrixXd A_con_lower = Eigen::MatrixXd::Identity(n_rows, n_rows +
+//   1); Eigen::MatrixXd A_con_upper = Eigen::MatrixXd::Identity(n_rows, n_rows
+//   + 1); A_con_lower.col(n_rows) = -lb_; A_con_upper.col(n_rows) = -ub_;
+//   constraints.push_back(prog->AddLinearConstraint(
+//       A_con_lower,
+//       VectorXd::Constant(n_rows, -std::numeric_limits<double>::infinity()),
+//       VectorXd::Zero(n_rows), {x, Vector1<Variable>(t)}));
+//   constraints.push_back(prog->AddLinearConstraint(
+//       A_con_upper,
+//       VectorXd::Constant(n_rows, std::numeric_limits<double>::infinity()),
+//       VectorXd::Zero(n_rows), {x, Vector1<Variable>(t)}));
+//   return constraints;
+// }
 
-std::pair<VectorX<symbolic::Variable>,
-          std::vector<solvers::Binding<solvers::Constraint>>>
-HyperRectangle::DoAddPointInSetConstraints(
-    solvers::MathematicalProgram* prog,
-    const Eigen::Ref<const solvers::VectorXDecisionVariable>& vars) const {
-  std::vector<solvers::Binding<solvers::Constraint>> constraints;
-  VectorX<symbolic::Variable> vars_sym(vars.size());
-  constraints.push_back(
-      prog->AddBoundingBoxConstraint(lower_corner_, upper_corner_, vars));
-  return {std::move(vars_sym), std::move(constraints)};
-}
+// std::pair<VectorX<symbolic::Variable>,
+//           std::vector<solvers::Binding<solvers::Constraint>>>
+// HyperRectangle::DoAddPointInSetConstraints(
+//     solvers::MathematicalProgram* prog,
+//     const Eigen::Ref<const solvers::VectorXDecisionVariable>& vars) const {
+//   std::vector<solvers::Binding<solvers::Constraint>> constraints;
+//   VectorX<symbolic::Variable> vars_sym(vars.size());
+//   constraints.push_back(
+//       prog->AddBoundingBoxConstraint(lb_, ub_, vars));
+//   return {std::move(vars_sym), std::move(constraints)};
+// }
 
 std::optional<HyperRectangle> ConvexSet::MaybeCalcAxisAlignedBoundingBox()
     const {
@@ -109,8 +101,8 @@ std::optional<HyperRectangle> ConvexSet::MaybeCalcAxisAlignedBoundingBox()
   AddPointInSetConstraints(&prog, point);
   std::vector<int> directions{-1, 1};
   Eigen::VectorXd cost_vector = Eigen::VectorXd::Zero(ambient_dimension());
-  Eigen::VectorXd lower_corner{cost_vector};
-  Eigen::VectorXd upper_corner{cost_vector};
+  Eigen::VectorXd lb{cost_vector};
+  Eigen::VectorXd ub{cost_vector};
   auto cost = prog.AddLinearCost(cost_vector.transpose(), 0.0, point);
   for (int i = 0; i < ambient_dimension(); i++) {
     for (const auto direction : directions) {
@@ -119,41 +111,21 @@ std::optional<HyperRectangle> ConvexSet::MaybeCalcAxisAlignedBoundingBox()
       auto result = solvers::Solve(prog);
       if (result.is_success()) {
         if (direction == 1) {
-          lower_corner(i) = result.get_optimal_cost();
+          lb(i) = result.get_optimal_cost();
         } else {
-          upper_corner(i) = -result.get_optimal_cost();
+          ub(i) = -result.get_optimal_cost();
         }
       } else {
+        drake::log()->warn(
+            "ConvexSet::MaybeCalcAxisAlignedBoundingBox(): Failed to solve the "
+            "optimization problem. Maybe an unbounded set?");
         return std::nullopt;
       }
+      // reset the cost vector
       cost_vector(i) = 0.0;
     }
   }
-  return HyperRectangle(lower_corner, upper_corner);
-}
-
-std::vector<solvers::Binding<solvers::Constraint>>
-HyperRectangle::DoAddPointInNonnegativeScalingConstraints(
-    solvers::MathematicalProgram* prog,
-    const Eigen::Ref<const Eigen::MatrixXd>& A,
-    const Eigen::Ref<const Eigen::VectorXd>& b,
-    const Eigen::Ref<const Eigen::VectorXd>& c, double d,
-    const Eigen::Ref<const solvers::VectorXDecisionVariable>& x,
-    const Eigen::Ref<const solvers::VectorXDecisionVariable>& t) const {
-  std::vector<solvers::Binding<solvers::Constraint>> constraints;
-  const int n_rows = A.rows();
-  const int n_cols = A.rows() + c.size();
-  DRAKE_THROW_UNLESS(x.size() == lower_corner_.size());
-  Eigen::MatrixXd A_con_lower = Eigen::MatrixXd::Zero(n_rows, n_cols);
-  Eigen::MatrixXd A_con_upper = Eigen::MatrixXd::Zero(n_rows, n_cols);
-  A_con_lower.block(0, 0, n_rows, n_rows) = A;
-  for (int i = 0; i < n_rows; i++) {
-    A_con_lower.row(i).tail(n_cols) = c.transpose() * upper_corner_(i);
-    A_con_upper.row(i).tail(n_cols) = c.transpose() * lower_corner_(i);
-  }
-  constraints.push_back(prog->AddLinearConstraint(
-      A_con_lower, -b + d * upper_corner_, VectorXd::Zero(n_rows), {x, t}));
-  return constraints;
+  return HyperRectangle(lb, ub);
 }
 
 std::unique_ptr<ConvexSet> HyperRectangle::DoClone() const {
@@ -161,7 +133,12 @@ std::unique_ptr<ConvexSet> HyperRectangle::DoClone() const {
 }
 
 double HyperRectangle::DoVolume() const {
-  return (upper_corner_ - lower_corner_).prod();
+  return (ub_ - lb_).prod();
+}
+
+void HyperRectangle::CheckInvariants() {
+  DRAKE_THROW_UNLESS(lb_.size() == ub_.size());
+  DRAKE_THROW_UNLESS((lb_.array() <= ub_.array()).all());
 }
 
 double ConvexSet::DoCalcVolumeViaSampling(RandomGenerator* generator,

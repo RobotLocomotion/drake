@@ -1048,7 +1048,7 @@ GTEST_TEST(HPolyhedronTest, UniformSampleTest2) {
 
 // Test the computation of the minimal axis-aligned bounding box of a
 // polyhedron.
-GTEST_TEST(HPolyhedronTest, MaybeCalcAxisAlignedBoundingBox) {
+GTEST_TEST(HyperRectangleTest, MaybeCalcAxisAlignedBoundingBox) {
   Matrix<double, 4, 2> A;
   Matrix<double, 4, 1> b;
   // clang-format off
@@ -1062,10 +1062,10 @@ GTEST_TEST(HPolyhedronTest, MaybeCalcAxisAlignedBoundingBox) {
   auto aabb_opt = H.MaybeCalcAxisAlignedBoundingBox();
   EXPECT_TRUE(aabb_opt.has_value());
   auto aabb = aabb_opt.value();
-  EXPECT_NEAR(aabb.lower_corner()(0), -2, 1e-6);
-  EXPECT_NEAR(aabb.upper_corner()(0), 1, 1e-6);
-  EXPECT_NEAR(aabb.lower_corner()(1), -2, 1e-6);
-  EXPECT_NEAR(aabb.upper_corner()(1), 3, 1e-6);
+  EXPECT_NEAR(aabb.lb()(0), -2, 1e-6);
+  EXPECT_NEAR(aabb.ub()(0), 1, 1e-6);
+  EXPECT_NEAR(aabb.lb()(1), -2, 1e-6);
+  EXPECT_NEAR(aabb.ub()(1), 3, 1e-6);
   // Check the volume of the bounding box.
   EXPECT_NEAR(aabb.Volume(), 15, 1e-6);
   // The H-polyhedron volume throws an exception.
@@ -1073,15 +1073,16 @@ GTEST_TEST(HPolyhedronTest, MaybeCalcAxisAlignedBoundingBox) {
   // Compute the volume of the polytope
   RandomGenerator generator(1234);
   const auto polytope_volume = H.CalcVolumeViaSampling(&generator, 1e-2);
-  // Hpolyhedron volume is compared against the analytic value.
+  // Hpolyhedron volume is compared against the analytic value = 6.0 as it is a
+  // parallelogram.
   EXPECT_NEAR(polytope_volume, 6.0, 1e-1);
 }
 
 // Test functions on hyperrectangle.
-GTEST_TEST(HPolyhedronTest, HyperRectangle) {
-  const Vector3d lower_corner{-1, -2, -3};
-  const Vector3d upper_corner{3, 2, 1};
-  const HyperRectangle hyperrectangle(lower_corner, upper_corner);
+GTEST_TEST(HyperRectangleTest, SampleTest) {
+  const Vector3d lb{-1, -2, -3};
+  const Vector3d ub{3, 2, 1};
+  const HyperRectangle hyperrectangle(lb, ub);
   EXPECT_EQ(hyperrectangle.ambient_dimension(), 3);
   // The volume of the hyperrectangle is 4*4*4 = 64.
   EXPECT_NEAR(hyperrectangle.Volume(), 64, 1e-6);
@@ -1097,15 +1098,33 @@ GTEST_TEST(HPolyhedronTest, HyperRectangle) {
     const auto sample = hyperrectangle.UniformSample(&generator);
     EXPECT_TRUE(hyperrectangle.PointInSet(sample, 1e-12));
   }
+  // Verify the point in set program is feasible.
+  MathematicalProgram prog;
+  const auto x = prog.NewContinuousVariables(3, "x");
+  auto [new_vars, con] = hyperrectangle.AddPointInSetConstraints(&prog, x);
+  // There should be no new variables.
+  EXPECT_EQ(new_vars.size(), 0);
+  // Inside the rectangle.
+  prog.SetInitialGuess(x, Vector3d::Zero());
+  EXPECT_TRUE(prog.CheckSatisfiedAtInitialGuess(con[0]));
+  // At the edge of the rectangle.
+  prog.SetInitialGuess(x, Vector3d(-1, -2, 1));
+  EXPECT_TRUE(prog.CheckSatisfiedAtInitialGuess(con[0]));
+  // outside the rectangle
+  prog.SetInitialGuess(x, Vector3d(3, 2, -4));
+  EXPECT_FALSE(prog.CheckSatisfiedAtInitialGuess(con[0]));
 }
 
-GTEST_TEST(HPolyhedronTest, Serialize) {
-  const HPolyhedron H = HPolyhedron::MakeL1Ball(3);
-  const std::string yaml = yaml::SaveYamlString(H);
-  const auto H2 = yaml::LoadYamlString<HPolyhedron>(yaml);
-  EXPECT_EQ(H.ambient_dimension(), H2.ambient_dimension());
-  EXPECT_TRUE(CompareMatrices(H.A(), H2.A()));
-  EXPECT_TRUE(CompareMatrices(H.b(), H2.b()));
+GTEST_TEST(HyperRectangleTest, Serialize) {
+  const Vector3d lb{-1, -2, -3};
+  const Vector3d ub{3, 2, 1};
+  const HyperRectangle hyperrectangle(lb, ub);
+  const std::string yaml = yaml::SaveYamlString(hyperrectangle);
+  const auto hyperrectangle2 = yaml::LoadYamlString<HyperRectangle>(yaml);
+  EXPECT_EQ(hyperrectangle.ambient_dimension(),
+            hyperrectangle2.ambient_dimension());
+  EXPECT_TRUE(CompareMatrices(hyperrectangle.lb(), hyperrectangle2.lb()));
+  EXPECT_TRUE(CompareMatrices(hyperrectangle.ub(), hyperrectangle2.ub()));
 }
 
 }  // namespace optimization

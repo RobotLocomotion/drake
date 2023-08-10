@@ -220,12 +220,12 @@ class HPolyhedron : public ConvexSet {
     CheckInvariants();
   }
 
+ private:
   double DoVolume() const {
     throw std::runtime_error(
         "Exact volume computation for HPolyhedrons is not implemented.");
   }
 
- private:
   /* @pre other.ambient_dimension() == this->ambient_dimension() */
   [[nodiscard]] HPolyhedron DoIntersectionNoChecks(
       const HPolyhedron& other) const;
