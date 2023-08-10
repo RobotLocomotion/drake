@@ -25,7 +25,8 @@ DistanceAndInterpolationProvider::InterpolateBetweenConfigurations(
   DRAKE_THROW_UNLESS(from.size() == to.size());
   DRAKE_THROW_UNLESS(ratio >= 0.0);
   DRAKE_THROW_UNLESS(ratio <= 1.0);
-  auto interpolated = DoInterpolateBetweenConfigurations(from, to, ratio);
+  Eigen::VectorXd interpolated =
+      DoInterpolateBetweenConfigurations(from, to, ratio);
   DRAKE_THROW_UNLESS(from.size() == interpolated.size());
   return interpolated;
 }

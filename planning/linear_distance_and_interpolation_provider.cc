@@ -3,7 +3,6 @@
 #include <stdexcept>
 
 #include <common_robotics_utilities/math.hpp>
-#include <common_robotics_utilities/print.hpp>
 #include <fmt/format.h>
 
 #include "drake/common/drake_throw.h"

@@ -9,7 +9,6 @@
 #include <utility>
 #include <vector>
 
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/drake_throw.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/planning/body_shape_description.h"

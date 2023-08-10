@@ -24,8 +24,8 @@ class BrokenDistanceAndInterpolationProvider final
  private:
   double DoComputeConfigurationDistance(const Eigen::VectorXd& from,
                                         const Eigen::VectorXd& to) const final {
-    drake::unused(from);
-    drake::unused(to);
+    unused(from);
+    unused(to);
     // Throws because distances cannot be negative.
     return -1.0;
   }
@@ -33,8 +33,8 @@ class BrokenDistanceAndInterpolationProvider final
   Eigen::VectorXd DoInterpolateBetweenConfigurations(
       const Eigen::VectorXd& from, const Eigen::VectorXd& to,
       double ratio) const final {
-    drake::unused(to);
-    drake::unused(ratio);
+    unused(to);
+    unused(ratio);
     // Throws because interpolated configurations must be the same size as the
     // provided from and to configurations.
     return Eigen::VectorXd::Zero(from.size() + 1);

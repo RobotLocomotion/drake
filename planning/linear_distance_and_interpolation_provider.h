@@ -1,7 +1,6 @@
 #pragma once
 
 #include <map>
-#include <memory>
 #include <string>
 #include <vector>
 
@@ -14,14 +13,14 @@ namespace drake {
 namespace planning {
 
 /** This class represents a basic "linear" implementation of
- DistanceAndInterpolationProvider.
+DistanceAndInterpolationProvider.
 
- - Configuration distance is computed as distance.cwiseProduct(weights).norm(),
- where distance is computed as the angle between quaternion DoF and difference
- between all other positions. Default weights are (1, 0, 0, 0) for quaternion
- DoF and 1 for all other positions.
- - Configuration interpolation is performed using slerp for quaternion DoF and
- linear interpolation for all other positions. */
+- Configuration distance is computed as difference.cwiseProduct(weights).norm(),
+where difference is computed as the angle between quaternion DoF and difference
+between all other positions. Default weights are (1, 0, 0, 0) for quaternion
+DoF and 1 for all other positions.
+- Configuration interpolation is performed using slerp for quaternion DoF and
+linear interpolation for all other positions. */
 class LinearDistanceAndInterpolationProvider final
     : public DistanceAndInterpolationProvider {
  public:
@@ -33,8 +32,7 @@ class LinearDistanceAndInterpolationProvider final
   positions.
   @pre named distance weights may not be specified for joints with more than one
   position (e.g. planar, ball, or quaternion joints).
-  @pre all distance weights must be non-negative and finite.
-  */
+  @pre all distance weights must be non-negative and finite. */
   LinearDistanceAndInterpolationProvider(
       const multibody::MultibodyPlant<double>& plant,
       const std::map<std::string, double>& named_joint_distance_weights);
@@ -56,10 +54,10 @@ class LinearDistanceAndInterpolationProvider final
 
   ~LinearDistanceAndInterpolationProvider() final;
 
-  /** Get the distance weights. */
+  /** Gets the distance weights. */
   const Eigen::VectorXd& distance_weights() const { return distance_weights_; }
 
-  /** Get the start indices for quaterion DoF in the position vector. */
+  /** Gets the start indices for quaterion DoF in the position vector. */
   const std::vector<int>& quaternion_dof_start_indices() const {
     return quaternion_dof_start_indices_;
   }

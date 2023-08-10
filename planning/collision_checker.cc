@@ -22,6 +22,7 @@
 #include "drake/common/drake_throw.h"
 #include "drake/common/fmt_eigen.h"
 #include "drake/multibody/parsing/scoped_names.h"
+#include "drake/planning/linear_distance_and_interpolation_provider.h"
 
 namespace drake {
 namespace planning {
@@ -137,18 +138,8 @@ MakeDefaultConfigurationInterpolationFunction(
 
 std::vector<int> GetQuaternionDofStartIndices(
     const MultibodyPlant<double>& plant) {
-  // TODO(SeanCurtis-TRI) Body::has_quaternion_dofs() is actually a misnomer for
-  // is_quaternion_floating(). The name implies general quaternion awareness but
-  // its documentation doesn't guarantee that. We should re-express this in
-  // terms of joints so that we can catch quaternions in any kind of joint.
-  std::vector<int> quaternion_dof_start_indices;
-  for (BodyIndex body_index(0); body_index < plant.num_bodies(); ++body_index) {
-    const auto& body = plant.get_body(body_index);
-    if (body.has_quaternion_dofs()) {
-      quaternion_dof_start_indices.push_back(body.floating_positions_start());
-    }
-  }
-  return quaternion_dof_start_indices;
+  return LinearDistanceAndInterpolationProvider(plant)
+      .quaternion_dof_start_indices();
 }
 
 // Returns the set of indices in `q` that kinematically affect the robot model

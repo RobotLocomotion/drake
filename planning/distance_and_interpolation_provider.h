@@ -1,7 +1,5 @@
 #pragma once
 
-#include <memory>
-
 #include <Eigen/Core>
 
 #include "drake/common/drake_copyable.h"
@@ -10,7 +8,7 @@ namespace drake {
 namespace planning {
 
 /** This class represents the base interface for performing configuration
- distance and interpolation operations, used by CollisionChecker. */
+distance and interpolation operations, used by CollisionChecker. */
 class DistanceAndInterpolationProvider {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DistanceAndInterpolationProvider);
