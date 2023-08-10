@@ -214,8 +214,8 @@ class Parser final {
   std::vector<ModelInstanceIndex> AddModelsFromUrl(
       const std::string& url);
 
-  // TODO(rpoyner-tri): deprecate on or after 2023-01.
   /// Legacy spelling of AddModels.
+  DRAKE_DEPRECATED("2023-12-01", "Use AddModels() instead.")
   std::vector<ModelInstanceIndex> AddAllModelsFromFile(
       const std::string& file_name);
 
@@ -244,6 +244,8 @@ class Parser final {
   ///
   /// @sa http://sdformat.org/tutorials?tut=composition&ver=1.7 for details on
   /// nesting in SDFormat.
+  DRAKE_DEPRECATED("2023-12-01", "Use parser.AddModels() and"
+                   " plant.RenameModelInstance() instead.")
   ModelInstanceIndex AddModelFromFile(
       const std::string& file_name,
       const std::string& model_name = {});
