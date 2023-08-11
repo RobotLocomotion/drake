@@ -351,11 +351,6 @@ class CollisionCheckerThrowTest : public testing::Test {
   double self_collision_padding_{0.0};
 };
 
-TEST_F(CollisionCheckerThrowTest, BadFn) {
-  distance_fn_ = {};
-  ExpectConstructorThrow(".*distance_function != nullptr.*");
-}
-
 TEST_F(CollisionCheckerThrowTest, BadStepSize) {
   edge_step_size_ = 0.0;
   ExpectConstructorThrow(".*edge_step_size.*");

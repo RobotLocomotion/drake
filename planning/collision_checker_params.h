@@ -54,7 +54,9 @@ struct CollisionCheckerParams {
   /** A DistanceAndInterpolationProvider to support configuration distance and
   interpolation operations.
   @note Either a DistanceAndInterpolationProvider OR a
-  ConfigurationDistanceFunction must be provided, not both. */
+  ConfigurationDistanceFunction may be provided, not both. If neither is
+  provided, a LinearDistanceAndInterpolationProvider with default weights is
+  used. */
   std::shared_ptr<const DistanceAndInterpolationProvider>
       distance_and_interpolation_provider;
 
@@ -69,7 +71,9 @@ struct CollisionCheckerParams {
   // and interpolation functions.
   /** Configuration (probably weighted) distance function.
   @note Either a DistanceAndInterpolationProvider OR a
-  ConfigurationDistanceFunction must be provided, not both.
+  ConfigurationDistanceFunction may be provided, not both. If neither is
+  provided, a LinearDistanceAndInterpolationProvider with default weights is
+  used.
   @note the `configuration_distance_function` object will be copied and retained
   by a collision checker, so if the function has any lambda-captured data then
   that data must outlive the collision checker. */

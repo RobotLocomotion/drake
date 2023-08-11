@@ -24,8 +24,10 @@ using multibody::Body;
 using multibody::BodyIndex;
 using testing::ElementsAre;
 
+enum class MakeCheckerOptions { kMakeNone, kMakeProvider, kMakeFunction };
+
 CollisionCheckerTestParams MakeSceneGraphCollisionCheckerParams(
-    bool use_provider) {
+    MakeCheckerOptions make_checker_option) {
   CollisionCheckerTestParams result;
   const CollisionCheckerConstructionParams p;
   auto model = MakePlanningTestModel(MakeCollisionCheckerTestScene());
@@ -33,10 +35,10 @@ CollisionCheckerTestParams MakeSceneGraphCollisionCheckerParams(
   std::unique_ptr<LinearDistanceAndInterpolationProvider> provider = nullptr;
   ConfigurationDistanceFunction distance_function = nullptr;
 
-  if (use_provider) {
+  if (make_checker_option == MakeCheckerOptions::kMakeProvider) {
     provider = std::make_unique<LinearDistanceAndInterpolationProvider>(
         model->plant(), GetIiwaDistanceWeights());
-  } else {
+  } else if (make_checker_option == MakeCheckerOptions::kMakeFunction) {
     distance_function = MakeWeightedIiwaConfigurationDistanceFunction();
   }
 
@@ -185,8 +187,11 @@ void EnforceCollisionFilterConsistency(
 
 INSTANTIATE_TEST_SUITE_P(
     SceneGraphCollisionCheckerTestSuite, CollisionCheckerAbstractTestSuite,
-    testing::Values(MakeSceneGraphCollisionCheckerParams(false),
-                    MakeSceneGraphCollisionCheckerParams(true)));
+    testing::Values(
+        MakeSceneGraphCollisionCheckerParams(MakeCheckerOptions::kMakeNone),
+        MakeSceneGraphCollisionCheckerParams(MakeCheckerOptions::kMakeProvider),
+        MakeSceneGraphCollisionCheckerParams(
+            MakeCheckerOptions::kMakeFunction)));
 
 // Creates three spheres (each on a prismatic joint with its parent set to
 // the world origin) and checks their RobotClearance query.

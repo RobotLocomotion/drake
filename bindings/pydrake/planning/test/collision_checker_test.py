@@ -410,7 +410,9 @@ class TestCollisionChecker(unittest.TestCase):
             dut.model().plant())
         dut.SetDistanceAndInterpolationProvider(new_provider)
 
-    def _make_scene_graph_collision_checker(self, use_provider):
+    def _make_scene_graph_collision_checker(self, use_provider, use_function):
+        self.assertFalse(use_provider and use_function)
+
         robot, index = self._make_robot_diagram()
         if use_provider:
             provider = mut.LinearDistanceAndInterpolationProvider(
@@ -420,22 +422,31 @@ class TestCollisionChecker(unittest.TestCase):
                 distance_and_interpolation_provider=provider,
                 robot_model_instances=[index],
                 edge_step_size=0.125)
-        else:
+        elif use_function:
             return mut.SceneGraphCollisionChecker(
                 model=robot,
                 robot_model_instances=[index],
                 configuration_distance_function=self._configuration_distance,
                 edge_step_size=0.125)
+        else:
+            return mut.SceneGraphCollisionChecker(
+                model=robot,
+                robot_model_instances=[index],
+                edge_step_size=0.125)
 
     def test_scene_graph_collision_checker(self):
         """Tests the full CollisionChecker API.
         """
-        use_provider = False
-        function_checker = self._make_scene_graph_collision_checker(
-            use_provider)
-        self._test_collision_checker_base_class(function_checker, use_provider)
+        # With no provider or function specified, the default SGCC has a
+        # LinearDistanceAndInterpolationProvider.
+        default_checker = self._make_scene_graph_collision_checker(
+            False, False)
+        self._test_collision_checker_base_class(default_checker, True)
 
-        use_provider = True
         provider_checker = self._make_scene_graph_collision_checker(
-            use_provider)
-        self._test_collision_checker_base_class(provider_checker, use_provider)
+            True, False)
+        self._test_collision_checker_base_class(provider_checker, True)
+
+        function_checker = self._make_scene_graph_collision_checker(
+            False, True)
+        self._test_collision_checker_base_class(function_checker, False)

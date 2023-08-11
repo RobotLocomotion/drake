@@ -915,16 +915,16 @@ CollisionChecker::CollisionChecker(CollisionCheckerParams params,
   const bool params_has_distance_function =
       params.configuration_distance_function != nullptr;
 
-  if (params_has_provider == params_has_distance_function) {
+  if (params_has_provider && params_has_distance_function) {
     throw std::runtime_error(
-        "CollisionCheckerParams must contain either "
+        "CollisionCheckerParams may contain either "
         "distance_and_interpolation_provider != nullptr "
         "or distance_function != nullptr, not both");
   }
 
   if (params_has_provider) {
-    distance_and_interpolation_provider_ =
-        std::move(params.distance_and_interpolation_provider);
+    SetDistanceAndInterpolationProvider(
+        std::move(params.distance_and_interpolation_provider));
   } else if (params_has_distance_function) {
     SanityCheckConfigurationDistanceFunction(
         params.configuration_distance_function, GetDefaultConfiguration());
@@ -936,7 +936,8 @@ CollisionChecker::CollisionChecker(CollisionCheckerParams params,
         std::make_unique<LegacyDistanceAndInterpolationProvider>(
             params.configuration_distance_function, default_interpolation_fn);
   } else {
-    DRAKE_UNREACHABLE();
+    SetDistanceAndInterpolationProvider(
+        std::make_unique<LinearDistanceAndInterpolationProvider>(plant()));
   }
 
   // Set edge step size.
