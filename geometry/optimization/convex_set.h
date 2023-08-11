@@ -1,5 +1,6 @@
 #pragma once
 
+#include <limits>
 #include <memory>
 #include <optional>
 #include <utility>
@@ -164,7 +165,7 @@ class ConvexSet : public ShapeReifier {
   @throws std::exception if the set is unbounded. */
   double Volume() const {
     if (!IsBounded()) {
-      throw std::runtime_error("Cannot calculate volume of an unbounded set.");
+      return std::numeric_limits<double>::infinity();
     }
     return DoVolume();
   }

@@ -79,7 +79,8 @@ void DefineGeometryOptimization(py::module m) {
             py::arg("d"), py::arg("x"), py::arg("t"),
             cls_doc.AddPointInNonnegativeScalingConstraints.doc_7args)
         .def("ToShapeWithPose", &ConvexSet::ToShapeWithPose,
-            cls_doc.ToShapeWithPose.doc);
+            cls_doc.ToShapeWithPose.doc)
+        .def("Volume", &ConvexSet::Volume, cls_doc.Volume.doc);
   }
 
   // AffineSubspace
