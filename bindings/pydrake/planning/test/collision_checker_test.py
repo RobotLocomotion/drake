@@ -78,12 +78,12 @@ class TestCollisionChecker(unittest.TestCase):
 
         mut.LinearDistanceAndInterpolationProvider(plant=plant)
 
-        # Named weights don't work for multi-position joints like in the test
-        # model.
-        named_joint_distance_weights = {}
+        box_joint_index = plant.GetJointByName("$world_box").index()
+        box_joint_weights = np.array([1.0, 0.0, 0.0, 0.0, 2.0, 3.0, 4.0])
+        joint_distance_weights = {box_joint_index: box_joint_weights}
         mut.LinearDistanceAndInterpolationProvider(
             plant=plant,
-            named_joint_distance_weights=named_joint_distance_weights)
+            joint_distance_weights=joint_distance_weights)
 
         distance_weights = np.array([1.0, 0.0, 0.0, 0.0, 2.0, 3.0, 4.0])
         weights_vector_provider = mut.LinearDistanceAndInterpolationProvider(

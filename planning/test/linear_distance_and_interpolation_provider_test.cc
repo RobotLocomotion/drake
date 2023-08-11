@@ -1,8 +1,11 @@
 #include "drake/planning/linear_distance_and_interpolation_provider.h"
 
+#include <string>
+
 #include <common_robotics_utilities/math.hpp>
 #include <gtest/gtest.h>
 
+#include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/unused.h"
@@ -15,6 +18,7 @@ namespace test {
 namespace {
 using common_robotics_utilities::math::Distance;
 using common_robotics_utilities::math::Interpolate;
+using multibody::JointIndex;
 
 multibody::parsing::ModelDirectives MakeFixedIiwaDirectives() {
   // Assemble model directives.
@@ -221,6 +225,10 @@ void DoFloatingIiwaTest(const RobotDiagram<double>& model,
 GTEST_TEST(FixedIiwaTest, Test) {
   const auto model = MakePlanningTestModel(MakeFixedIiwaDirectives());
 
+  const auto get_index = [&](const std::string& joint_name) {
+    return model->plant().GetJointByName(joint_name).index();
+  };
+
   // Default weights (none).
   {
     const LinearDistanceAndInterpolationProvider provider(model->plant());
@@ -234,7 +242,7 @@ GTEST_TEST(FixedIiwaTest, Test) {
   // Default weights (empty map).
   {
     const LinearDistanceAndInterpolationProvider provider(
-        model->plant(), std::map<std::string, double>{});
+        model->plant(), std::map<JointIndex, Eigen::VectorXd>{});
 
     Eigen::VectorXd expected_weights(7);
     expected_weights << 1, 1, 1, 1, 1, 1, 1;
@@ -244,17 +252,17 @@ GTEST_TEST(FixedIiwaTest, Test) {
 
   // Non-default weights (map).
   {
-    std::map<std::string, double> named_weights;
-    named_weights["iiwa_joint_1"] = 1.0;
-    named_weights["iiwa_joint_2"] = 2.0;
-    named_weights["iiwa_joint_3"] = 3.0;
-    named_weights["iiwa_joint_4"] = 4.0;
-    named_weights["iiwa_joint_5"] = 5.0;
-    named_weights["iiwa_joint_6"] = 6.0;
-    named_weights["iiwa_joint_7"] = 7.0;
+    std::map<JointIndex, Eigen::VectorXd> joint_weights;
+    joint_weights[get_index("iiwa_joint_1")] = Vector1d(1.0);
+    joint_weights[get_index("iiwa_joint_2")] = Vector1d(2.0);
+    joint_weights[get_index("iiwa_joint_3")] = Vector1d(3.0);
+    joint_weights[get_index("iiwa_joint_4")] = Vector1d(4.0);
+    joint_weights[get_index("iiwa_joint_5")] = Vector1d(5.0);
+    joint_weights[get_index("iiwa_joint_6")] = Vector1d(6.0);
+    joint_weights[get_index("iiwa_joint_7")] = Vector1d(7.0);
 
     const LinearDistanceAndInterpolationProvider provider(model->plant(),
-                                                          named_weights);
+                                                          joint_weights);
 
     Eigen::VectorXd expected_weights(7);
     expected_weights << 1, 2, 3, 4, 5, 6, 7;
@@ -273,7 +281,38 @@ GTEST_TEST(FixedIiwaTest, Test) {
     DoFixedIiwaTest(*model, provider, weights);
   }
 
-  // Invalid weights.
+  // Invalid weights (map).
+  {
+    std::map<JointIndex, Eigen::VectorXd> has_negative_weights;
+    has_negative_weights[get_index("iiwa_joint_1")] = Vector1d(-1.0);
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        LinearDistanceAndInterpolationProvider(model->plant(),
+                                               has_negative_weights),
+        ".* \\[iiwa_joint_1\\] .* are not non-negative and finite");
+
+    std::map<JointIndex, Eigen::VectorXd> has_non_finite_weights;
+    has_non_finite_weights[get_index("iiwa_joint_1")] =
+        Vector1d(std::numeric_limits<double>::infinity());
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        LinearDistanceAndInterpolationProvider(model->plant(),
+                                               has_non_finite_weights),
+        ".* \\[iiwa_joint_1\\] .* are not non-negative and finite");
+
+    std::map<JointIndex, Eigen::VectorXd> has_too_many_values;
+    has_too_many_values[get_index("iiwa_joint_1")] = Eigen::Vector2d(1.0, 2.0);
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        LinearDistanceAndInterpolationProvider(model->plant(),
+                                               has_too_many_values),
+        ".* \\[iiwa_joint_1\\] .* do not match .* num_positions 1");
+
+    std::map<JointIndex, Eigen::VectorXd> has_no_such_joint;
+    has_no_such_joint[JointIndex(20)] = Vector1d(1.0);
+    DRAKE_EXPECT_THROWS_MESSAGE(LinearDistanceAndInterpolationProvider(
+                                    model->plant(), has_no_such_joint),
+                                ".* 'joint_index < num_joints\\(\\)' failed.*");
+  }
+
+  // Invalid weights (vector).
   {
     const auto too_few_weights = Eigen::VectorXd::Ones(4);
     DRAKE_EXPECT_THROWS_MESSAGE(
@@ -306,6 +345,10 @@ GTEST_TEST(FixedIiwaTest, Test) {
 GTEST_TEST(FloatingIiwaTest, Test) {
   const auto model = MakePlanningTestModel(MakeFloatingIiwaDirectives());
 
+  const auto get_index = [&](const std::string& joint_name) {
+    return model->plant().GetJointByName(joint_name).index();
+  };
+
   // Default weights (none).
   {
     const LinearDistanceAndInterpolationProvider provider(model->plant());
@@ -319,7 +362,7 @@ GTEST_TEST(FloatingIiwaTest, Test) {
   // Default weights (empty map).
   {
     const LinearDistanceAndInterpolationProvider provider(
-        model->plant(), std::map<std::string, double>{});
+        model->plant(), std::map<JointIndex, Eigen::VectorXd>{});
 
     Eigen::VectorXd expected_weights(14);
     expected_weights << 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1;
@@ -329,20 +372,22 @@ GTEST_TEST(FloatingIiwaTest, Test) {
 
   // Non-default weights (map).
   {
-    std::map<std::string, double> named_weights;
-    named_weights["iiwa_joint_1"] = 1.0;
-    named_weights["iiwa_joint_2"] = 2.0;
-    named_weights["iiwa_joint_3"] = 3.0;
-    named_weights["iiwa_joint_4"] = 4.0;
-    named_weights["iiwa_joint_5"] = 5.0;
-    named_weights["iiwa_joint_6"] = 6.0;
-    named_weights["iiwa_joint_7"] = 7.0;
+    std::map<JointIndex, Eigen::VectorXd> joint_weights;
+    joint_weights[get_index("iiwa_joint_1")] = Vector1d(1.0);
+    joint_weights[get_index("iiwa_joint_2")] = Vector1d(2.0);
+    joint_weights[get_index("iiwa_joint_3")] = Vector1d(3.0);
+    joint_weights[get_index("iiwa_joint_4")] = Vector1d(4.0);
+    joint_weights[get_index("iiwa_joint_5")] = Vector1d(5.0);
+    joint_weights[get_index("iiwa_joint_6")] = Vector1d(6.0);
+    joint_weights[get_index("iiwa_joint_7")] = Vector1d(7.0);
+    joint_weights[get_index("$world_flying_robot_base")] =
+        (Eigen::VectorXd(7) << 11, 0, 0, 0, 12, 13, 14).finished();
 
     const LinearDistanceAndInterpolationProvider provider(model->plant(),
-                                                          named_weights);
+                                                          joint_weights);
 
     Eigen::VectorXd expected_weights(14);
-    expected_weights << 1, 0, 0, 0, 1, 1, 1, 1, 2, 3, 4, 5, 6, 7;
+    expected_weights << 11, 0, 0, 0, 12, 13, 14, 1, 2, 3, 4, 5, 6, 7;
 
     DoFloatingIiwaTest(*model, provider, expected_weights);
   }
@@ -358,16 +403,19 @@ GTEST_TEST(FloatingIiwaTest, Test) {
     DoFloatingIiwaTest(*model, provider, weights);
   }
 
-  // Invalid weights.
+  // Invalid weights (map).
   {
-    std::map<std::string, double> invalid_named_weights;
-    invalid_named_weights["$world_flying_robot_base"] = 2.0;
-
+    std::map<JointIndex, Eigen::VectorXd> invalid_quat_weights;
+    invalid_quat_weights[get_index("$world_flying_robot_base")] =
+        (Eigen::VectorXd(7) << 1, 2, 3, 4, 5, 6, 7).finished();
     DRAKE_EXPECT_THROWS_MESSAGE(
         LinearDistanceAndInterpolationProvider(model->plant(),
-                                               invalid_named_weights),
-        ".* \\[quaternion_floating\\] not supported when using named.*");
+                                               invalid_quat_weights),
+        ".* for quaternion dof .* must be .* instead.*");
+  }
 
+  // Invalid weights (vector).
+  {
     Eigen::VectorXd invalid_quat_weights(14);
     invalid_quat_weights << 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14;
 

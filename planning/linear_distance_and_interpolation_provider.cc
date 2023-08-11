@@ -14,7 +14,6 @@ using multibody::Body;
 using multibody::BodyIndex;
 using multibody::Joint;
 using multibody::JointIndex;
-using multibody::ModelInstanceIndex;
 using multibody::MultibodyPlant;
 
 namespace {
@@ -47,49 +46,41 @@ Eigen::VectorXd GetDefaultDistanceWeights(
   return default_distance_weights;
 }
 
-Eigen::VectorXd GetJointDistanceWeights(
+Eigen::VectorXd GetDistanceWeights(
     const MultibodyPlant<double>& plant,
     const std::vector<int>& quaternion_dof_start_indices,
-    const std::map<std::string, double>& named_joint_distance_weights) {
+    const std::map<JointIndex, Eigen::VectorXd>& joint_distance_weights) {
   // The default weight for all joints is 1, except for quaternion DoF where
   // only the first weight may be non-zero.
-  Eigen::VectorXd joint_distance_weights = GetDefaultDistanceWeights(
+  Eigen::VectorXd distance_weights = GetDefaultDistanceWeights(
       plant.num_positions(), quaternion_dof_start_indices);
 
-  // Go through the model and set joint distance weights accordingly.
-  for (JointIndex i(0); i < plant.num_joints(); ++i) {
-    const Joint<double>& joint = plant.get_joint(i);
-    if (joint.num_positions() > 0) {
-      // TODO(calderpg-tri) Find a solution that incorporates model instances.
-      // Note: this ignores model instances, so two joints with the same name
-      // but in different model instances will receive the same weight. This
-      // also assumes that joint names are usefully unique; this is not enforced
-      // by drake::multibody::Joint, but is reasonably true for any sane model.
-      const auto found = named_joint_distance_weights.find(joint.name());
-      if (found != named_joint_distance_weights.end()) {
-        const double joint_distance_weight = found->second;
-        DRAKE_THROW_UNLESS(joint_distance_weight >= 0.0);
+  for (const auto& [joint_index, joint_weights] : joint_distance_weights) {
+    const Joint<double>& joint = plant.get_joint(joint_index);
 
-        // TODO(calderpg-tri) Find a way to support more joint types.
-        if (joint.num_positions() == 1) {
-          joint_distance_weights(joint.position_start()) =
-              joint_distance_weight;
-          drake::log()->debug(
-              "Set single position joint {} [{}] distance weight to {}", i,
-              joint.name(), joint_distance_weight);
-        } else {
-          throw std::runtime_error(fmt::format(
-              "Joint {} [{}] has type [{}] not supported when using named joint"
-              " distance weights, construct "
-              "LinearDistanceAndInterpolationProvider with a vector of distance"
-              " weights instead",
-              i, joint.name(), joint.type_name()));
-        }
+    if (joint.num_positions() != joint_weights.size()) {
+      throw std::runtime_error(fmt::format(
+          "Provided distance weights for joint {} [{}] with type [{}] are [{}] "
+          "which do not match that joint's num_positions {}",
+          joint_index, joint.name(), joint.type_name(),
+          fmt_eigen(joint_weights.transpose()), joint.num_positions()));
+    }
+
+    for (int i = 0; i < joint_weights.size(); ++i) {
+      const double weight = joint_weights(i);
+      if (!std::isfinite(weight) || weight < 0.0) {
+        throw std::runtime_error(fmt::format(
+            "Provided distance weights for joint {} [{}] are [{}] which are not"
+            " non-negative and finite",
+            joint_index, joint.name(), fmt_eigen(joint_weights.transpose())));
       }
     }
+
+    distance_weights.segment(joint.position_start(), joint.num_positions()) =
+        joint_weights;
   }
 
-  return joint_distance_weights;
+  return distance_weights;
 }
 
 /* Checks that provided distance weights satisfy preconditions:
@@ -145,16 +136,16 @@ Eigen::VectorXd SanityCheckDistanceWeights(
 }  // namespace
 
 LinearDistanceAndInterpolationProvider::LinearDistanceAndInterpolationProvider(
-    const multibody::MultibodyPlant<double>& plant,
-    const std::map<std::string, double>& named_joint_distance_weights)
+    const MultibodyPlant<double>& plant,
+    const std::map<JointIndex, Eigen::VectorXd>& joint_distance_weights)
     : quaternion_dof_start_indices_(GetQuaternionDofStartIndices(plant)),
       distance_weights_(SanityCheckDistanceWeights(
           plant.num_positions(), quaternion_dof_start_indices_,
-          GetJointDistanceWeights(plant, quaternion_dof_start_indices_,
-                                  named_joint_distance_weights))) {}
+          GetDistanceWeights(plant, quaternion_dof_start_indices_,
+                             joint_distance_weights))) {}
 
 LinearDistanceAndInterpolationProvider::LinearDistanceAndInterpolationProvider(
-    const multibody::MultibodyPlant<double>& plant,
+    const MultibodyPlant<double>& plant,
     const Eigen::VectorXd& distance_weights)
     : quaternion_dof_start_indices_(GetQuaternionDofStartIndices(plant)),
       distance_weights_(SanityCheckDistanceWeights(
@@ -162,7 +153,7 @@ LinearDistanceAndInterpolationProvider::LinearDistanceAndInterpolationProvider(
           distance_weights)) {}
 
 LinearDistanceAndInterpolationProvider::LinearDistanceAndInterpolationProvider(
-    const multibody::MultibodyPlant<double>& plant)
+    const MultibodyPlant<double>& plant)
     : quaternion_dof_start_indices_(GetQuaternionDofStartIndices(plant)),
       distance_weights_(SanityCheckDistanceWeights(
           plant.num_positions(), quaternion_dof_start_indices_,

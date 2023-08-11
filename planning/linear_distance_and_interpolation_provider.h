@@ -1,7 +1,6 @@
 #pragma once
 
 #include <map>
-#include <string>
 #include <vector>
 
 #include <Eigen/Core>
@@ -27,15 +26,13 @@ class LinearDistanceAndInterpolationProvider final
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearDistanceAndInterpolationProvider);
 
   /** Constructs a LinearDistanceAndInterpolationProvider for the specified
-  `plant` using the provided map of distance weights
-  `named_joint_distance_weights` and default weights (i.e. 1) for all other
-  positions.
-  @pre named distance weights may not be specified for joints with more than one
-  position (e.g. planar, ball, or quaternion joints).
+  `plant` using the provided map of distance weights `joint_distance_weights`
+  and default weights (i.e. 1) for all other positions.
   @pre all distance weights must be non-negative and finite. */
   LinearDistanceAndInterpolationProvider(
       const multibody::MultibodyPlant<double>& plant,
-      const std::map<std::string, double>& named_joint_distance_weights);
+      const std::map<multibody::JointIndex, Eigen::VectorXd>&
+          joint_distance_weights);
 
   /** Constructs a LinearDistanceAndInterpolationProvider for the specified
   `plant` with the provided distance weights `distance_weights`.
