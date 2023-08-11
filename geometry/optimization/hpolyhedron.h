@@ -22,7 +22,7 @@ class VPolytope;
 By convention, we treat a zero-dimensional HPolyhedron as nonempty.
 
 @ingroup geometry_optimization */
-class HPolyhedron : public ConvexSet {
+class HPolyhedron final : public ConvexSet {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(HPolyhedron)
 
