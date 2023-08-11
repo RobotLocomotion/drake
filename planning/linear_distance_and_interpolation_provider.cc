@@ -92,6 +92,13 @@ Eigen::VectorXd GetJointDistanceWeights(
   return joint_distance_weights;
 }
 
+/* Checks that provided distance weights satisfy preconditions:
+- distance_weights.size() must match num_positions
+- all weights must be non-negative and finite
+- all quaternion DoF weights must be of the form (weight, 0, 0, 0)
+
+Returns distance_weights unchanged if preconditions are satisfied, throws
+otherwise. */
 Eigen::VectorXd SanityCheckDistanceWeights(
     int num_positions, const std::vector<int>& quaternion_dof_start_indices,
     const Eigen::VectorXd& distance_weights) {

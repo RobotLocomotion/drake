@@ -21,7 +21,6 @@
 
 #include "drake/common/drake_throw.h"
 #include "drake/common/fmt_eigen.h"
-#include "drake/multibody/parsing/scoped_names.h"
 #include "drake/planning/linear_distance_and_interpolation_provider.h"
 
 namespace drake {
@@ -576,6 +575,20 @@ std::vector<uint8_t> CollisionChecker::CheckConfigsCollisionFree(
 void CollisionChecker::SetDistanceAndInterpolationProvider(
     std::shared_ptr<const DistanceAndInterpolationProvider> provider) {
   DRAKE_THROW_UNLESS(provider != nullptr);
+
+  const Eigen::VectorXd& default_q = GetDefaultConfiguration();
+
+  const double test_distance =
+      provider->ComputeConfigurationDistance(default_q, default_q);
+  DRAKE_THROW_UNLESS(test_distance == 0.0);
+
+  const Eigen::VectorXd test_interpolated_q =
+      provider->InterpolateBetweenConfigurations(default_q, default_q, 0.0);
+  DRAKE_THROW_UNLESS(test_interpolated_q.size() == default_q.size());
+  for (int index = 0; index < test_interpolated_q.size(); ++index) {
+    DRAKE_THROW_UNLESS(test_interpolated_q(index) == default_q(index));
+  }
+
   distance_and_interpolation_provider_ = std::move(provider);
 }
 
