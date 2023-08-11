@@ -242,7 +242,7 @@ std::vector<GeometryId> GeometryState<T>::GetAllGeometryIds() const {
 template <typename T>
 unordered_set<GeometryId> GeometryState<T>::GetGeometryIds(
       const GeometrySet& geometry_set, const std::optional<Role>& role) const {
-  return CollectIds(geometry_set, role);
+  return CollectIds(geometry_set, role, CollisionFilterScope::kAll);
 }
 
 template <typename T>
@@ -789,6 +789,34 @@ FrameId GeometryState<T>::RegisterFrame(SourceId source_id, FrameId parent_id,
 }
 
 template <typename T>
+void GeometryState<T>::RenameFrame(FrameId frame_id, const std::string& name) {
+  FindOrThrow(frame_id, frames_, [frame_id]() {
+    return "Cannot rename frame with invalid frame id: " +
+        to_string(frame_id);
+  });
+  InternalFrame& frame = frames_.at(frame_id);
+  const std::string old_name(frame.name());
+  if (old_name == name) { return; }
+
+  SourceId source_id = frame.source_id();
+
+  // Edit source_frame_name_map_.
+  FrameNameSet& f_name_set = source_frame_name_map_.at(source_id);
+  f_name_set.erase(old_name);
+  const auto& [iterator, was_inserted] =
+      f_name_set.insert(std::string(name));
+  if (!was_inserted) {
+    throw std::logic_error(
+        fmt::format("Renaming frame from '{}'"
+                    " to an already existing name '{}'",
+                    old_name, name));
+  }
+
+  // Edit internal frame object.
+  frame.set_name(name);
+}
+
+template <typename T>
 GeometryId GeometryState<T>::RegisterGeometry(
     SourceId source_id, FrameId frame_id,
     std::unique_ptr<GeometryInstance> geometry) {
@@ -854,6 +882,29 @@ GeometryId GeometryState<T>::RegisterDeformableGeometry(
   AssignAllDefinedRoles(source_id, std::move(geometry));
 
   return geometry_id;
+}
+
+template <typename T>
+void GeometryState<T>::RenameGeometry(GeometryId geometry_id,
+                                      const std::string& name) {
+  InternalGeometry* geometry = GetMutableGeometry(geometry_id);
+  if (geometry == nullptr) {
+    throw std::logic_error(
+        "Cannot rename geometry with invalid geometry id: "
+        + to_string(geometry_id));
+  }
+  if (geometry->name() == name) { return; }
+
+  // Check for name uniqueness in all assigned roles. Note: if the universe of
+  // roles grows, this iteration will need to grow as well.
+  for (Role role : {Role::kProximity, Role::kIllustration, Role::kPerception}) {
+    if (geometry->has_role(role)) {
+      ThrowIfNameExistsInRole(geometry->frame_id(), role, name);
+    }
+  }
+
+  // Edit internal geometry object.
+  geometry->set_name(name);
 }
 
 template <typename T>
@@ -993,11 +1044,13 @@ void GeometryState<T>::AssignRole(SourceId source_id, GeometryId geometry_id,
       ids_for_filtering.Add(geometry.frame_id());
       // Apply collision filter between geometry id and any geometries that have
       // been identified. If none have been identified, this makes no changes.
+      // Per public documentation of SceneGraph, we exclude deformable
+      // geometries and only filter among rigid geometries.
       geometry_engine_->collision_filter().Apply(
-          CollisionFilterDeclaration().ExcludeBetween(GeometrySet(geometry_id),
-                                                      ids_for_filtering),
-          [this](const GeometrySet& set) {
-            return this->CollectIds(set, Role::kProximity);
+          CollisionFilterDeclaration(CollisionFilterScope::kOmitDeformable)
+              .ExcludeBetween(GeometrySet(geometry_id), ids_for_filtering),
+          [this](const GeometrySet& set, CollisionFilterScope scope) {
+            return this->CollectIds(set, Role::kProximity, scope);
           },
           true /* is_invariant */);
     } break;
@@ -1275,13 +1328,20 @@ GeometryState<T>::ToAutoDiffXd() const {
 
 template <typename T>
 unordered_set<GeometryId> GeometryState<T>::CollectIds(
-    const GeometrySet& geometry_set, std::optional<Role> role) const {
+    const GeometrySet& geometry_set, std::optional<Role> role,
+    CollisionFilterScope scope) const {
+  auto must_include = [scope](const InternalGeometry& g,
+                              const std::optional<Role>& r) {
+    // Must have compatible role and be part of the scope.
+    return (!r.has_value() || g.has_role(*r)) &&
+           (scope == CollisionFilterScope::kAll || !g.is_deformable());
+  };
   unordered_set<GeometryId> resultant_ids;
   for (auto frame_id : geometry_set.frames()) {
     const auto& frame = GetValueOrThrow(frame_id, frames_);
     for (auto geometry_id : frame.child_geometries()) {
       const InternalGeometry& geometry = geometries_.at(geometry_id);
-      if (!role.has_value() || geometry.has_role(*role)) {
+      if (must_include(geometry, role)) {
         resultant_ids.insert(geometry_id);
       }
     }
@@ -1295,10 +1355,11 @@ unordered_set<GeometryId> GeometryState<T>::CollectIds(
           "SceneGraph: " +
           to_string(geometry_id));
     }
-    if (!role.has_value() || geometry->has_role(*role)) {
+    if (must_include(*geometry, role)) {
       resultant_ids.insert(geometry_id);
     }
   }
+
   return resultant_ids;
 }
 

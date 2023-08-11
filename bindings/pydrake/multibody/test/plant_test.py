@@ -200,6 +200,10 @@ class TestPlant(unittest.TestCase):
         body_default_rotational_inertial = body.default_rotational_inertia()
         body_default_spatial_inertial = body.default_spatial_inertia()
         new_model_instance = plant.AddModelInstance("new_model_instance")
+        plant.RenameModelInstance(model_instance=new_model_instance,
+                                  name="something")
+        plant.RenameModelInstance(model_instance=new_model_instance,
+                                  name="new_model_instance")
         body = plant.AddRigidBody(name="new_body_2",
                                   M_BBo_B=spatial_inertia,
                                   model_instance=new_model_instance)
@@ -405,6 +409,8 @@ class TestPlant(unittest.TestCase):
         self.assertIs(
             link1_frame,
             plant.GetFrameByName(name="Link1", model_instance=model_instance))
+        self.assertEqual(
+            len(plant.GetFrameIndices(model_instance=model_instance)), 7)
         self.assertIs(link1.GetParentPlant(), plant)
         self.assertTrue(plant.HasModelInstanceNamed(name="acrobot"))
         self.assertEqual(

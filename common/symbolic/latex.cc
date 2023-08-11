@@ -1,17 +1,41 @@
 #include "drake/common/symbolic/latex.h"
 
+#include <optional>
 #include <sstream>
 #include <stdexcept>
 
 namespace drake {
 namespace symbolic {
 
+using std::optional;
 using std::ostringstream;
 using std::runtime_error;
 using std::string;
 using std::to_string;
 
 namespace {
+
+// If `value` is an integer multiple of `famous_constant_value`, returns the
+// latex for the multiplied constant `{int_coeff}{famous_constant_latex}`.
+std::optional<string> multiple_of_famous_constant(
+    double value, double famous_constant_value,
+    string famous_constant_latex) {
+  const double epsilon = 1e-14;
+  if (std::abs(value) < epsilon) {  // Handle zero.
+    return std::nullopt;
+  }
+  const double coeff = std::round(value / famous_constant_value);
+  const double difference = coeff * famous_constant_value - value;
+  if (std::abs(difference) < epsilon) {
+    if (coeff == 1.0) {
+      return famous_constant_latex;
+    } else if (coeff == -1.0) {
+      return "-" + famous_constant_latex;
+    }
+    return ToLatex(coeff, 0) + famous_constant_latex;
+  }
+  return std::nullopt;
+}
 
 // Visitor class for code generation.
 class LatexVisitor {
@@ -361,10 +385,25 @@ string ToLatex(const Formula& f, int precision) {
 }
 
 string ToLatex(double val, int precision) {
+  if (std::isnan(val)) {
+    return "\\text{NaN}";
+  }
+  if (std::isinf(val)) {
+    return val < 0 ? "-\\infty" : "\\infty";
+  }
+  if (optional<string> result =
+          multiple_of_famous_constant(val, M_PI, "\\pi")) {
+    return *result;
+  }
+  if (optional<string> result =
+          multiple_of_famous_constant(val, M_E, "e")) {
+    return *result;
+  }
   double intpart;
   if (std::modf(val, &intpart) == 0.0) {
-    // Then it's an integer.
-    return std::to_string(static_cast<int>(val));
+    // Then it's an integer. Note that we can't static_cast<int>() because it
+    // might not be a *small* integer.
+    return fmt::format("{:.0f}", val);
   }
   std::ostringstream oss;
   oss.precision(precision);

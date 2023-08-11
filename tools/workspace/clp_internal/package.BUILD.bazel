@@ -1,0 +1,166 @@
+# -*- bazel -*-
+
+load(
+    "@drake//tools/install:install.bzl",
+    "install",
+)
+load(
+    "@drake//tools/workspace/coinutils_internal:defs.bzl",
+    "coin_cc_library",
+)
+
+licenses(["reciprocal"])  # EPL-2.0
+
+package(default_visibility = ["//visibility:private"])
+
+exports_files([
+    # Always provide access to license texts.
+    "LICENSE",
+])
+
+_HDRS = glob(
+    [
+        "Clp/src/*.h",
+        "Clp/src/*.hpp",
+    ],
+    exclude = [
+        "**/config*",
+        "**/*Config.h",
+    ],
+    allow_empty = False,
+)
+
+_SRCS = glob(
+    [
+        "Clp/src/*.cpp",
+    ],
+    exclude = [
+        "**/ClpMain*",
+        # We treat COIN_HAS_ABC as OFF.
+        "**/Abc*",
+        "**/CoinAbc*",
+        # We treat COIN_HAS_AMD, COIN_HAS_CHOLMOD, and COIN_HAS_GLPK as OFF.
+        "**/ClpCholeskyUfl*",
+        # We treat COIN_HAS_MUMPS as OFF.
+        # TODO(jwnimmer-tri) We can probably enable this. I've left it off for
+        # now only out of inertia -- Ubuntu builds CLP without MUMPS.
+        "**/ClpCholeskyMumps*",
+        # We treat COIN_HAS_WSMP as OFF.
+        "**/ClpCholeskyWssmp*",
+    ],
+    allow_empty = False,
+)
+
+_AUTOCONF_DEFINES = [
+    "CLP_VERSION=\"drake_vendor\"",
+    "PACKAGE_VERSION=\"drake_vendor\"",
+    "VERSION=\"drake_vendor\"",
+    # Features of the standard library and/or host system.
+    "HAVE_CFLOAT=1",
+    "HAVE_CMATH=1",
+    "HAVE_FLOAT_H=1",
+    "HAVE_INTTYPES_H=1",
+    "HAVE_MATH_H=1",
+    "HAVE_STDINT_H=1",
+    "HAVE_STDLIB_H=1",
+    "HAVE_STRINGS_H=1",
+    "HAVE_STRING_H=1",
+    "HAVE_SYS_STAT_H=1",
+    "HAVE_SYS_TYPES_H=1",
+    "HAVE_UNISTD_H=1",
+    "STDC_HEADERS=1",
+    # Optional dependencies that we do actually want to use.
+    "COIN_HAS_BLAS=1",
+    "COIN_HAS_COINUTILS=1",
+    # No debug self-checks (the default).
+    "COIN_CLP_CHECKLEVEL=0",
+    "COIN_CLP_VERBOSITY=0",
+    # These are no-ops, but they can't be omitted.
+    "CLP_VERSION_MAJOR",
+    "CLP_VERSION_MINOR",
+    "CLP_VERSION_RELEASE",
+]
+
+_AUTOCONF_UNDEFINES = [
+    # Don't use these features of the standard library and/or host system.
+    "F77_DUMMY_MAIN",
+    "F77_FUNC_",
+    "FC_DUMMY_MAIN_EQ_F77",
+    "HAVE_CIEEEFP",
+    "HAVE_DLFCN_H",
+    "HAVE_IEEEFP_H",
+    "HAVE_MEMORY_H",
+    # TODO(jwnimmer-tri) We can probably enable this. I've left it off for now
+    # only out of inertia -- Ubuntu builds CLP without MUMPS.
+    "COIN_HAS_MUMPS",
+    # Optional dependencies that we don't use.
+    "CLP_HAS_ABC",
+    "COIN_HAS_AMD",
+    "COIN_HAS_ASL",
+    "COIN_HAS_CHOLMOD",
+    "COIN_HAS_GLPK",
+    "COIN_HAS_NETLIB",
+    "COIN_HAS_OSI",
+    "COIN_HAS_OSITESTS",
+    "COIN_HAS_READLINE",
+    "COIN_HAS_SAMPLE",
+    "COIN_HAS_WSMP",
+    "HAVE_READLINE_READLINE_H",
+    # Chaff.
+    "CLP_SVN_REV",
+    "PACKAGE",
+    "PACKAGE_BUGREPORT",
+    "PACKAGE_NAME",
+    "PACKAGE_STRING",
+    "PACKAGE_TARNAME",
+    # This is actually used by the C++ code, but autoconf_configure_file can't
+    # handle it. We'll use _CONFIG_PRIVATE_DEFINES for this instead, below.
+    "F77_FUNC",
+]
+
+_CONFIG_PRIVATE_DEFINES = [
+    "F77_FUNC(name,NAME)=name##_",
+    # This is consistent with a bespoke definition in the upstream Makefile.am.
+    # This definition is somehow not provided by autoconf.
+    "COIN_HAS_CLP=1",
+]
+
+_INCLUDES = [
+    "Clp/src/",
+]
+
+coin_cc_library(
+    name = "clp",
+    config_h = "ClpConfig.h",
+    config_h_public = "Clp/src/config_clp_default.h",
+    config_h_private = "Clp/src/config.h.in",
+    autoconf_defines = _AUTOCONF_DEFINES,
+    autoconf_undefines = _AUTOCONF_UNDEFINES,
+    config_private_defines = _CONFIG_PRIVATE_DEFINES,
+    hdrs_public = _HDRS,
+    includes_public = _INCLUDES,
+    hdrs_private = _HDRS,
+    includes_private = _INCLUDES,
+    srcs = _SRCS,
+    vendor_tool_args = ["--no-inline-namespace"],
+    output_vendoring_patch = "drake_clp.patch",
+    deps = [
+        "@coinutils_internal//:coinutils",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+install(
+    name = "install",
+    docs = [
+        "LICENSE",
+        # We must redistribute our code changes, per Clp EPL-2.0 license.
+        ":drake_clp.patch",
+        "@drake//tools/workspace/clp_internal:patches",
+    ],
+    allowed_externals = [
+        "@drake//tools/workspace/clp_internal:patches",
+    ],
+    doc_strip_prefix = ["patches"],
+    visibility = ["//visibility:public"],
+)

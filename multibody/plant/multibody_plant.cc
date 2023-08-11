@@ -41,12 +41,14 @@ namespace multibody {
 #define DRAKE_MBP_THROW_IF_NOT_FINALIZED() ThrowIfNotFinalized(__func__)
 
 using geometry::CollisionFilterDeclaration;
+using geometry::CollisionFilterScope;
 using geometry::ContactSurface;
 using geometry::FrameId;
 using geometry::FramePoseVector;
 using geometry::GeometryFrame;
 using geometry::GeometryId;
 using geometry::GeometryInstance;
+using geometry::GeometrySet;
 using geometry::PenetrationAsPointPair;
 using geometry::ProximityProperties;
 using geometry::render::RenderLabel;
@@ -969,13 +971,64 @@ void MultibodyPlant<T>::CalcForceElementsContribution(
 }
 
 template<typename T>
+void MultibodyPlant<T>::RenameModelInstance(ModelInstanceIndex model_instance,
+                                            const std::string& name) {
+  DRAKE_THROW_UNLESS(!is_finalized());
+  const std::string old_name(GetModelInstanceName(model_instance));
+  if (old_name == name) { return; }
+  this->mutable_tree().RenameModelInstance(model_instance, name);
+  if (geometry_source_is_registered()) {
+    // Re-spam frame and geometry names, if they contain the model name as
+    // constructed by GetScopedName(). Otherwise, leave non-matching names
+    // alone.
+    auto& inspector = scene_graph_->model_inspector();
+
+    // TODO(rpoyner-tri): replace with c++ built-in starts_with once we drop
+    // C++17 support.
+    auto starts_with = [](const std::string& str, const std::string& prefix) {
+      return str.compare(0, prefix.size(), prefix) == 0;
+    };
+
+    const std::string old_prefix(old_name + "::");
+    const std::string new_prefix(name + "::");
+    auto maybe_make_new_name = [&](auto id) {
+      std::string existing_name(inspector.GetName(id));
+      if (starts_with(existing_name, old_prefix)) {
+        // Replace old prefix with new prefix.
+        return new_prefix + existing_name.substr(old_prefix.size());
+      }
+      // Return empty string to signal no match found.
+      return std::string();
+    };
+
+    std::string new_name;
+    for (auto& frame_id : inspector.FramesForSource(*source_id_)) {
+      if (inspector.GetFrameGroup(frame_id) != model_instance) {
+        continue;
+      }
+      new_name = maybe_make_new_name(frame_id);
+      if (!new_name.empty()) {
+        scene_graph_->RenameFrame(frame_id, new_name);
+      }
+
+      auto geoms = inspector.GetGeometryIds(GeometrySet(frame_id));
+      for (auto& geom_id : geoms) {
+        new_name = maybe_make_new_name(geom_id);
+        if (!new_name.empty()) {
+          scene_graph_->RenameGeometry(geom_id, new_name);
+        }
+      }
+    }
+  }
+}
+
+template<typename T>
 void MultibodyPlant<T>::Finalize() {
   // After finalizing the base class, tree is read-only.
   internal::MultibodyTreeSystem<T>::Finalize();
 
   if (geometry_source_is_registered()) {
     ApplyDefaultCollisionFilters();
-    ExcludeCollisionsWithVisualGeometry();
   }
   FinalizePlantOnly();
 
@@ -1200,9 +1253,10 @@ void MultibodyPlant<T>::ApplyDefaultCollisionFilters() {
 
       if (child_id && parent_id) {
         scene_graph_->collision_filter_manager().Apply(
-            CollisionFilterDeclaration().ExcludeBetween(
-                geometry::GeometrySet(*child_id),
-                geometry::GeometrySet(*parent_id)));
+            CollisionFilterDeclaration(
+                CollisionFilterScope::kOmitDeformable)
+                .ExcludeBetween(geometry::GeometrySet(*child_id),
+                                geometry::GeometrySet(*parent_id)));
       }
     }
   }
@@ -1219,27 +1273,9 @@ void MultibodyPlant<T>::ApplyDefaultCollisionFilters() {
     }
     auto geometries = CollectRegisteredGeometries(subgraph_bodies);
     scene_graph_->collision_filter_manager().Apply(
-        CollisionFilterDeclaration().ExcludeWithin(geometries));
+        CollisionFilterDeclaration(CollisionFilterScope::kOmitDeformable)
+            .ExcludeWithin(geometries));
   }
-}
-
-template <typename T>
-void MultibodyPlant<T>::ExcludeCollisionsWithVisualGeometry() {
-  DRAKE_DEMAND(geometry_source_is_registered());
-  geometry::GeometrySet visual;
-  for (const auto& body_geometries : visual_geometries_) {
-    visual.Add(body_geometries);
-  }
-  geometry::GeometrySet collision;
-  for (const auto& body_geometries : collision_geometries_) {
-    collision.Add(body_geometries);
-  }
-  // clang-format off
-  scene_graph_->collision_filter_manager().Apply(
-      CollisionFilterDeclaration()
-          .ExcludeWithin(visual)
-          .ExcludeBetween(visual, collision));
-  // clang-format on
 }
 
 template <typename T>
@@ -1253,12 +1289,14 @@ void MultibodyPlant<T>::ExcludeCollisionGeometriesWithCollisionFilterGroupPair(
 
   if (collision_filter_group_a.first == collision_filter_group_b.first) {
     scene_graph_->collision_filter_manager().Apply(
-        CollisionFilterDeclaration().ExcludeWithin(
-            collision_filter_group_a.second));
+        CollisionFilterDeclaration(CollisionFilterScope::kOmitDeformable)
+            .ExcludeWithin(collision_filter_group_a.second));
   } else {
     scene_graph_->collision_filter_manager().Apply(
-        CollisionFilterDeclaration().ExcludeBetween(
-            collision_filter_group_a.second, collision_filter_group_b.second));
+        CollisionFilterDeclaration(
+            CollisionFilterScope::kOmitDeformable)
+            .ExcludeBetween(collision_filter_group_a.second,
+                            collision_filter_group_b.second));
   }
 }
 

@@ -76,9 +76,19 @@ std::unique_ptr<ConvexSet> Spectrahedron::DoClone() const {
   return std::make_unique<Spectrahedron>(*this);
 }
 
-bool Spectrahedron::DoIsBounded() const {
-  throw std::runtime_error(
-      "Spectrahedron::IsBounded() is not implemented yet.");
+std::optional<bool> Spectrahedron::DoIsBoundedShortcut() const {
+  // CSDP cannot handle an unconstrained spectrahedron (i.e. a set whose only
+  // constraints are positive semidefinite constraints), so we must check for
+  // that case explicitly.
+  auto constraints = sdp_->GetAllConstraints();
+  auto psd_constraints = sdp_->positive_semidefinite_constraints();
+  if (constraints.size() == psd_constraints.size()) {
+    // If there are no constraints, then the set is bounded iff its ambient
+    // dimension is zero. If the ambient dimension is zero, it's caught in
+    // IsBounded, so we know the set will be unbounded.
+    return false;
+  }
+  return std::nullopt;
 }
 
 bool Spectrahedron::DoPointInSet(const Eigen::Ref<const VectorXd>& x,

@@ -87,20 +87,6 @@ GTEST_TEST(CameraConfigTest, NonDefault) {
   EXPECT_EQ(full_data, differential_data);
 }
 
-/* Returns a pointer to the named instance of TargetSystem (if it exists). */
-template <typename TargetSystem>
-const TargetSystem* GetSystem(const DiagramBuilder<double>& builder,
-                              const std::string& name) {
-  for (const auto* system : builder.GetSystems()) {
-    if (system->get_name() == name) {
-      const TargetSystem* result = dynamic_cast<const TargetSystem*>(system);
-      EXPECT_NE(result, nullptr);
-      return result;
-    }
-  }
-  return nullptr;
-}
-
 class CameraConfigFunctionsTest : public ::testing::Test {
  protected:
   void SetUp() override {
@@ -148,10 +134,9 @@ TEST_F(CameraConfigFunctionsTest, ParentBaseFrameDefaultToWorld) {
   config.X_PB.base_frame = std::nullopt;
   ApplyCameraConfig(config, &builder_);
 
-  const auto* sensor =
-      GetSystem<RgbdSensor>(builder_, "rgbd_sensor_preview_camera");
-  ASSERT_NE(sensor, nullptr);
-  EXPECT_EQ(sensor->parent_frame_id(), scene_graph_->world_frame_id());
+  const auto& sensor = builder_.GetDowncastSubsystemByName<RgbdSensor>(
+      "rgbd_sensor_preview_camera");
+  EXPECT_EQ(sensor.parent_frame_id(), scene_graph_->world_frame_id());
 }
 
 /* If base frame *is* given in X_PB, the sensor must be posed relative to
@@ -161,13 +146,12 @@ TEST_F(CameraConfigFunctionsTest, ParentBaseFrameSpecified) {
   config.X_PB.base_frame = "test_frame";
   ApplyCameraConfig(config, &builder_);
 
-  const auto* sensor =
-      GetSystem<RgbdSensor>(builder_, "rgbd_sensor_preview_camera");
-  ASSERT_NE(sensor, nullptr);
+  const auto& sensor = builder_.GetDowncastSubsystemByName<RgbdSensor>(
+      "rgbd_sensor_preview_camera");
   // Although we've declared it to be relative to a *frame*, there is no
   // geometry::FrameId associated with the frame. So, instead, RgbdSensor
   // references the body to which the named frame is affixed.
-  EXPECT_EQ(sensor->parent_frame_id(), body_frame_id_);
+  EXPECT_EQ(sensor.parent_frame_id(), body_frame_id_);
   // We don't test that the camera is posed relative to the *body* frame
   // correctly because that is covered by the tests for `SimRgbdSensor`.
 }
@@ -197,12 +181,11 @@ TEST_F(CameraConfigFunctionsTest, RendererClassBasic) {
   ApplyCameraConfig(config, &builder_);
   ASSERT_EQ(scene_graph_->RendererCount(), 1);
 
-  const auto* sensor1 =
-      GetSystem<RgbdSensor>(builder_, "rgbd_sensor_preview_camera");
-  ASSERT_NE(sensor1, nullptr);
-  EXPECT_EQ(sensor1->color_render_camera().core().renderer_name(),
+  const auto& sensor1 = builder_.GetDowncastSubsystemByName<RgbdSensor>(
+      "rgbd_sensor_preview_camera");
+  EXPECT_EQ(sensor1.color_render_camera().core().renderer_name(),
             config.renderer_name);
-  EXPECT_EQ(sensor1->depth_render_camera().core().renderer_name(),
+  EXPECT_EQ(sensor1.depth_render_camera().core().renderer_name(),
             config.renderer_name);
 
   // Now add second camera which uses the same name.
@@ -215,12 +198,11 @@ TEST_F(CameraConfigFunctionsTest, RendererClassBasic) {
   // New RgbdSensor added.
   EXPECT_GT(builder_.GetSystems().size(), previous_system_count);
   previous_system_count = builder_.GetSystems().size();
-  const auto* sensor2 = GetSystem<RgbdSensor>(
-      builder_, "rgbd_sensor_preview_camera_the_other_one");
-  ASSERT_NE(sensor2, nullptr);
-  EXPECT_EQ(sensor2->color_render_camera().core().renderer_name(),
+  const auto& sensor2 = builder_.GetDowncastSubsystemByName<RgbdSensor>(
+      "rgbd_sensor_preview_camera_the_other_one");
+  EXPECT_EQ(sensor2.color_render_camera().core().renderer_name(),
             config.renderer_name);
-  EXPECT_EQ(sensor2->depth_render_camera().core().renderer_name(),
+  EXPECT_EQ(sensor2.depth_render_camera().core().renderer_name(),
             config.renderer_name);
 
   // Third camera uses a unique name creates a unique render engine.
@@ -230,12 +212,11 @@ TEST_F(CameraConfigFunctionsTest, RendererClassBasic) {
   ASSERT_EQ(scene_graph_->RendererCount(), 2);
   // New RgbdSensor added.
   EXPECT_GT(builder_.GetSystems().size(), previous_system_count);
-  const auto* sensor3 =
-      GetSystem<RgbdSensor>(builder_, "rgbd_sensor_just_for_test");
-  ASSERT_NE(sensor3, nullptr);
-  EXPECT_EQ(sensor3->color_render_camera().core().renderer_name(),
+  const auto& sensor3 = builder_.GetDowncastSubsystemByName<RgbdSensor>(
+      "rgbd_sensor_just_for_test");
+  EXPECT_EQ(sensor3.color_render_camera().core().renderer_name(),
             config.renderer_name);
-  EXPECT_EQ(sensor3->depth_render_camera().core().renderer_name(),
+  EXPECT_EQ(sensor3.depth_render_camera().core().renderer_name(),
             config.renderer_name);
 }
 
@@ -398,12 +379,11 @@ TEST_F(CameraConfigFunctionsTest, AllParametersCount) {
 
   // Add the camera and then read back its properties to confirm.
   ApplyCameraConfig(config, &builder_, &lcm_buses);
-  const auto* sensor =
-      GetSystem<RgbdSensor>(builder_, "rgbd_sensor_test_camera");
-  ASSERT_NE(sensor, nullptr);
+  const auto& sensor = builder_.GetDowncastSubsystemByName<RgbdSensor>(
+      "rgbd_sensor_test_camera");
 
-  const ColorRenderCamera& color = sensor->color_render_camera();
-  const DepthRenderCamera& depth = sensor->depth_render_camera();
+  const ColorRenderCamera& color = sensor.color_render_camera();
+  const DepthRenderCamera& depth = sensor.depth_render_camera();
 
   // Camera intrinsics.
   EXPECT_EQ(color.core().intrinsics().width(), config.width);
@@ -433,22 +413,22 @@ TEST_F(CameraConfigFunctionsTest, AllParametersCount) {
   EXPECT_EQ(color.show_window(), config.show_rgb);
 
   // Name.
-  EXPECT_THAT(sensor->get_name(), ::testing::HasSubstr(config.name));
+  EXPECT_THAT(sensor.get_name(), ::testing::HasSubstr(config.name));
 
   // Render engine name.
   EXPECT_EQ(color.core().renderer_name(), config.renderer_name);
   EXPECT_EQ(depth.core().renderer_name(), config.renderer_name);
 
   // Publishing rate.
-  const auto* publisher = GetSystem<LcmPublisherSystem>(
-      builder_, "LcmPublisherSystem(DRAKE_RGBD_CAMERA_IMAGES_test_camera)");
-  ASSERT_NE(publisher, nullptr);
-  EXPECT_DOUBLE_EQ(publisher->get_publish_period(), 1.0 / config.fps);
-  EXPECT_DOUBLE_EQ(publisher->get_publish_offset(), config.capture_offset);
+  const auto& publisher =
+      builder_.GetDowncastSubsystemByName<LcmPublisherSystem>(
+          "LcmPublisherSystem(DRAKE_RGBD_CAMERA_IMAGES_test_camera)");
+  EXPECT_DOUBLE_EQ(publisher.get_publish_period(), 1.0 / config.fps);
+  EXPECT_DOUBLE_EQ(publisher.get_publish_offset(), config.capture_offset);
 
   // Publishing destination.
   const DrakeLcmInterface& actual_lcm =
-      const_cast<LcmPublisherSystem*>(publisher)->lcm();
+      const_cast<LcmPublisherSystem&>(publisher).lcm();
   EXPECT_TRUE(&actual_lcm == &non_default_lcm);
 }
 
@@ -462,18 +442,17 @@ TEST_F(CameraConfigFunctionsTest, AsyncCamera) {
 
   ApplyCameraConfig(config, &builder_);
 
-  const auto* sensor =
-      GetSystem<RgbdSensorAsync>(builder_, "rgbd_sensor_test_camera");
-  ASSERT_NE(sensor, nullptr);
-  EXPECT_EQ(sensor->fps(), config.fps);
-  EXPECT_EQ(sensor->capture_offset(), config.capture_offset);
-  EXPECT_EQ(sensor->output_delay(), config.output_delay);
+  const auto& sensor = builder_.GetDowncastSubsystemByName<RgbdSensorAsync>(
+      "rgbd_sensor_test_camera");
+  EXPECT_EQ(sensor.fps(), config.fps);
+  EXPECT_EQ(sensor.capture_offset(), config.capture_offset);
+  EXPECT_EQ(sensor.output_delay(), config.output_delay);
 
-  const auto* publisher = GetSystem<LcmPublisherSystem>(
-      builder_, "LcmPublisherSystem(DRAKE_RGBD_CAMERA_IMAGES_test_camera)");
-  ASSERT_NE(publisher, nullptr);
-  EXPECT_EQ(publisher->get_publish_period(), 1.0 / config.fps);
-  EXPECT_NEAR(publisher->get_publish_offset(),
+  const auto& publisher =
+      builder_.GetDowncastSubsystemByName<LcmPublisherSystem>(
+          "LcmPublisherSystem(DRAKE_RGBD_CAMERA_IMAGES_test_camera)");
+  EXPECT_EQ(publisher.get_publish_period(), 1.0 / config.fps);
+  EXPECT_NEAR(publisher.get_publish_offset(),
               config.capture_offset + config.output_delay,
               // TODO(jwnimmer-tri) Once the implementation doesn't need a fudge
               // factor anymore, we should expect exact equality here.
@@ -500,11 +479,11 @@ TEST_F(CameraConfigFunctionsTest, PublishingRgb) {
   ApplyCameraConfig(config, &builder_);
 
   // Rgb and depth ports.
-  const auto* images =
-      GetSystem<ImageToLcmImageArrayT>(builder_, "image_to_lcm_test_camera");
-  ASSERT_NE(images, nullptr);
-  EXPECT_THROW(images->GetInputPort("depth"), std::exception);
-  EXPECT_NO_THROW(images->GetInputPort("rgb"));
+  const auto& images =
+      builder_.GetDowncastSubsystemByName<ImageToLcmImageArrayT>(
+          "image_to_lcm_test_camera");
+  EXPECT_THROW(images.GetInputPort("depth"), std::exception);
+  EXPECT_NO_THROW(images.GetInputPort("rgb"));
 }
 
 // Confirms that if only depth is specified, only depth is published.
@@ -517,11 +496,11 @@ TEST_F(CameraConfigFunctionsTest, PublishingDepth) {
   ApplyCameraConfig(config, &builder_);
 
   // Rgb and depth ports.
-  const auto* images =
-      GetSystem<ImageToLcmImageArrayT>(builder_, "image_to_lcm_test_camera");
-  ASSERT_NE(images, nullptr);
-  EXPECT_NO_THROW(images->GetInputPort("depth"));
-  EXPECT_THROW(images->GetInputPort("rgb"), std::exception);
+  const auto& images =
+      builder_.GetDowncastSubsystemByName<ImageToLcmImageArrayT>(
+          "image_to_lcm_test_camera");
+  EXPECT_NO_THROW(images.GetInputPort("depth"));
+  EXPECT_THROW(images.GetInputPort("rgb"), std::exception);
 }
 
 // Confirms that if both rgb and depth are specified, both are published.
@@ -534,11 +513,11 @@ TEST_F(CameraConfigFunctionsTest, PublishingRgbAndDepth) {
   ApplyCameraConfig(config, &builder_);
 
   // Rgb and depth ports.
-  const auto* images =
-      GetSystem<ImageToLcmImageArrayT>(builder_, "image_to_lcm_test_camera");
-  ASSERT_NE(images, nullptr);
-  EXPECT_NO_THROW(images->GetInputPort("depth"));
-  EXPECT_NO_THROW(images->GetInputPort("rgb"));
+  const auto& images =
+      builder_.GetDowncastSubsystemByName<ImageToLcmImageArrayT>(
+          "image_to_lcm_test_camera");
+  EXPECT_NO_THROW(images.GetInputPort("depth"));
+  EXPECT_NO_THROW(images.GetInputPort("rgb"));
 }
 
 // ApplyCameraConfig doesn't have its own validation logic, but it is

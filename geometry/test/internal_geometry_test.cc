@@ -220,6 +220,17 @@ GTEST_TEST(InternalGeometryTest, DeformableGeometry) {
   EXPECT_FALSE(rigid_geometry.is_deformable());
 }
 
+GTEST_TEST(InternalGeometryTest, Rename) {
+  InternalGeometry geometry;
+  EXPECT_TRUE(geometry.name().empty());
+  {
+    // Scope the new name to make sure the object takes a copy.
+    std::string new_name("new_name");
+    geometry.set_name(new_name);
+  }
+  EXPECT_EQ(geometry.name(), "new_name");
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace geometry

@@ -772,6 +772,75 @@ GTEST_TEST(ExpressionCost, Basic) {
   EXPECT_EQ(os.str(), "ExpressionCost (x * sin(y))");
 }
 
+GTEST_TEST(ToLatex, GenericCost) {
+  test::GenericTrivialCost1 c;
+  c.set_description("test");
+  Vector3<Variable> vars = symbolic::MakeVectorVariable<3>("x");
+  EXPECT_EQ(c.ToLatex(vars),
+            "\\text{GenericTrivialCost1}(x_{0}, x_{1}, x_{2}) \\tag{test}");
+}
+
+GTEST_TEST(ToLatex, LinearCost) {
+  LinearCost c(Vector3d(1, 2, 3), 4);
+  c.set_description("test");
+  Vector3<Variable> vars = symbolic::MakeVectorVariable<3>("x");
+  EXPECT_EQ(c.ToLatex(vars), "(4 + x_{0} + 2x_{1} + 3x_{2}) \\tag{test}");
+}
+
+GTEST_TEST(ToLatex, QuadraticCost) {
+  QuadraticCost c(Matrix3d::Identity(), Vector3d(1, 2, 3), 4);
+  c.set_description("test");
+  Vector3<Variable> vars = symbolic::MakeVectorVariable<3>("x");
+  EXPECT_EQ(c.ToLatex(vars),
+            "(4 + x_{0} + 2x_{1} + 3x_{2} + 0.500x_{0}^{2} + 0.500x_{1}^{2} + "
+            "0.500x_{2}^{2}) \\tag{test}");
+}
+
+GTEST_TEST(ToLatex, L1NormCost) {
+  L1NormCost c(Matrix3d::Identity(), Vector3d(1, 2, 3));
+  c.set_description("test");
+  Vector3<Variable> vars = symbolic::MakeVectorVariable<3>("x");
+  EXPECT_EQ(c.ToLatex(vars),
+            "\\left|\\begin{bmatrix} (1 + x_{0}) \\\\ (2 + x_{1}) \\\\ (3 + "
+            "x_{2}) \\end{bmatrix}\\right|_1 \\tag{test}");
+}
+
+GTEST_TEST(ToLatex, L2NormCost) {
+  L2NormCost c(Matrix3d::Identity(), Vector3d(1, 2, 3));
+  c.set_description("test");
+  Vector3<Variable> vars = symbolic::MakeVectorVariable<3>("x");
+  EXPECT_EQ(c.ToLatex(vars),
+            "\\left|\\begin{bmatrix} (1 + x_{0}) \\\\ (2 + x_{1}) \\\\ (3 + "
+            "x_{2}) \\end{bmatrix}\\right|_2 \\tag{test}");
+}
+
+GTEST_TEST(ToLatex, LInfNormCost) {
+  LInfNormCost c(Matrix3d::Identity(), Vector3d(1, 2, 3));
+  c.set_description("test");
+  Vector3<Variable> vars = symbolic::MakeVectorVariable<3>("x");
+  EXPECT_EQ(c.ToLatex(vars),
+            "\\left|\\begin{bmatrix} (1 + x_{0}) \\\\ (2 + x_{1}) \\\\ (3 + "
+            "x_{2}) \\end{bmatrix}\\right|_\\infty \\tag{test}");
+}
+
+GTEST_TEST(ToLatex, PerspectiveQuadraticCost) {
+  PerspectiveQuadraticCost c(Matrix3d::Identity(), Vector3d(1, 2, 3));
+  c.set_description("test");
+  Vector3<Variable> vars = symbolic::MakeVectorVariable<3>("x");
+  EXPECT_EQ(
+      c.ToLatex(vars),
+      "\\frac{((2 + x_{1})^{2} + (3 + x_{2})^{2})}{(1 + x_{0})} \\tag{test}");
+}
+
+GTEST_TEST(ToLatex, ExpressionCost) {
+  Variable x("x"), y("y");
+  Expression e = x * sin(y);
+  ExpressionCost c(e);
+  c.set_description("test");
+  Vector2<Variable> vars(x, y);
+  EXPECT_EQ(c.ToLatex(vars), "x \\sin{y} \\tag{test}");
+}
+
 }  // namespace
 }  // namespace solvers
 }  // namespace drake

@@ -1,5 +1,6 @@
 #include "drake/multibody/rational/rational_forward_kinematics.h"
 
+#include <limits>
 #include <utility>
 
 #include "drake/common/drake_assert.h"
@@ -75,10 +76,8 @@ RationalForwardKinematics::RationalForwardKinematics(
       const symbolic::Variable s_angle(fmt::format("s[{}]", s_.size()));
       s_.push_back(s_angle);
       s_angles_.push_back(s_angle);
-      cos_delta_.emplace_back(
-          fmt::format("cos_delta[{}]", cos_delta_.size()));
-      sin_delta_.emplace_back(
-          fmt::format("sin_delta[{}]", sin_delta_.size()));
+      cos_delta_.emplace_back(fmt::format("cos_delta[{}]", cos_delta_.size()));
+      sin_delta_.emplace_back(fmt::format("sin_delta[{}]", sin_delta_.size()));
       sin_cos_.emplace_back(sin_delta_.back(), cos_delta_.back());
       sin_cos_set_.insert(sin_delta_.back());
       sin_cos_set_.insert(cos_delta_.back());

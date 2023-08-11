@@ -232,6 +232,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py_rvp::reference_internal, py::arg("frame"), cls_doc.AddFrame.doc)
         .def("AddModelInstance", &Class::AddModelInstance, py::arg("name"),
             cls_doc.AddModelInstance.doc)
+        .def("RenameModelInstance", &Class::RenameModelInstance,
+            py::arg("model_instance"), py::arg("name"),
+            cls_doc.RenameModelInstance.doc)
         .def(
             "AddRigidBody",
             [](Class * self, const std::string& name,
@@ -755,6 +758,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
                 ModelInstanceIndex>(&Class::GetFrameByName),
             py::arg("name"), py::arg("model_instance"),
             py_rvp::reference_internal, cls_doc.GetFrameByName.doc_2args)
+        .def("GetFrameIndices", &Class::GetFrameIndices,
+            py::arg("model_instance"), cls_doc.GetFrameIndices.doc)
         .def("GetBodyByName",
             overload_cast_explicit<const Body<T>&, string_view>(
                 &Class::GetBodyByName),

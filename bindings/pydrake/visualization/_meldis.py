@@ -1,7 +1,9 @@
 import copy
+import hashlib
 import logging
 import numpy as np
 from pathlib import Path
+import re
 import sys
 import time
 
@@ -90,6 +92,70 @@ class _Slider:
         return value, value_changed
 
 
+class _GeometryFileHasher:
+    """Calculates a checksum of external file(s) referenced by geometry
+    messages such as lcmt_viewer_load_robot or similar.
+
+    Each "on_..." method incorporates all of the external files cited by the
+    given argument (of a specific type) into the current hash. Files that are
+    named but cannot be opened are silently skipped.
+    """
+
+    def __init__(self):
+        self._paths = []
+        self._hasher = hashlib.sha256()
+
+    def value(self):
+        return self._hasher.hexdigest()
+
+    def _read_file(self, path: Path):
+        """Reads the given file and adds its content to the current hash.
+        Returns the file content (as ``bytes``, not ``str``).
+        Remembers the filename (for unit testing).
+        If the file is missing, silently returns an empty ``bytes``.
+        """
+        try:
+            with open(path, "rb") as f:
+                content = f.read()
+            self._hasher.update(content)
+            self._paths.append(path)
+            return content
+        except IOError:
+            return b""
+
+    def on_viewer_load_robot(self, message: lcmt_viewer_load_robot):
+        assert isinstance(message, lcmt_viewer_load_robot)
+        for link in message.link:
+            for geom in link.geom:
+                self.on_viewer_geometry_data(geom)
+
+    def on_viewer_geometry_data(self, message: lcmt_viewer_geometry_data):
+        assert isinstance(message, lcmt_viewer_geometry_data)
+        if (message.type == lcmt_viewer_geometry_data.MESH
+                and message.string_data):
+            self.on_mesh(Path(message.string_data))
+
+    def on_mesh(self, path: Path):
+        assert isinstance(path, Path)
+        content = self._read_file(path)
+        if path.suffix.lower() == ".obj":
+            for mtl_names in re.findall(rb"^\s*mtllib\s+(.*?)\s*$", content,
+                                        re.MULTILINE):
+                for mtl_name in mtl_names.decode("utf-8").split():
+                    self.on_mtl(path.parent / mtl_name)
+
+    def on_mtl(self, path: Path):
+        assert isinstance(path, Path)
+        content = self._read_file(path)
+        for tex_name in re.findall(rb"^\s*map_.*?\s+(\S+)\s*$", content,
+                                   re.MULTILINE):
+            self.on_texture(path.parent / tex_name.decode("utf-8"))
+
+    def on_texture(self, path: Path):
+        assert isinstance(path, Path)
+        self._read_file(path)
+
+
 class _ViewerApplet:
     """Displays lcmt_viewer_load_robot and lcmt_viewer_draw into MeshCat."""
 
@@ -105,6 +171,7 @@ class _ViewerApplet:
         self._meshcat = meshcat
         self._path = path
         self._load_message = None
+        self._load_message_mesh_checksum = None
         self._alpha_slider = _Slider(meshcat, alpha_slider_name)
         if should_accept_link is not None:
             self._should_accept_link = should_accept_link
@@ -123,9 +190,13 @@ class _ViewerApplet:
         # performance when the user is repeatedly viewing the same simulation
         # over and over again, since reloading a scene into Meshcat has high
         # latency.
+        hasher = _GeometryFileHasher()
+        hasher.on_viewer_load_robot(message)
+        mesh_checksum = hasher.value()
         if self._load_message is not None:
             if (message.num_links == self._load_message.num_links
-                    and message.encode() == self._load_message.encode()):
+                    and message.encode() == self._load_message.encode()
+                    and mesh_checksum == self._load_message_mesh_checksum):
                 _logger.info("Ignoring duplicate load message")
                 return
 
@@ -134,6 +205,7 @@ class _ViewerApplet:
 
         self._waiting_for_first_draw_message = True
         self._load_message = message
+        self._load_message_mesh_checksum = mesh_checksum
 
     def _build_links(self):
         # Make all of our (ViewerApplet's) geometry invisible so that the

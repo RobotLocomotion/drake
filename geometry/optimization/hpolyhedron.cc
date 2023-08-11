@@ -341,7 +341,7 @@ HPolyhedron HPolyhedron::MakeL1Ball(const int dim) {
   return {A, b};
 }
 
-bool HPolyhedron::DoIsBounded() const {
+std::optional<bool> HPolyhedron::DoIsBoundedShortcut() const {
   if (A_.rows() < A_.cols()) {
     return false;
   }

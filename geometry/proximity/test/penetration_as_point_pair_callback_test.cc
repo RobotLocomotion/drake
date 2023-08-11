@@ -169,7 +169,8 @@ class PenetrationAsPointPairCallbackTest : public ::testing::Test {
     // Filter the pair (A, B); we'll put the ids in a set and simply return that
     // set for the extract ids function.
     std::unordered_set<GeometryId> ids{id_A_, id_B_};
-    CollisionFilter::ExtractIds extract = [&ids](const GeometrySet&) {
+    CollisionFilter::ExtractIds extract = [&ids](const GeometrySet&,
+                                                 CollisionFilterScope) {
       return ids;
     };
     collision_filter_.Apply(

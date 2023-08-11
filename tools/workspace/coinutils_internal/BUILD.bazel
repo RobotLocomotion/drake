@@ -1,0 +1,17 @@
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+# Drake must redistribute any code changes, per CoinUtils's EPL-2.0 license.
+# Here we'll glob all of the patch files from their conventional home.
+#
+# The glob might be empty if we don't have any patches at the moment,
+# but we'll keep the boilerplate here as a fail-safe.
+filegroup(
+    name = "patches",
+    srcs = glob(
+        ["patches/**"],
+        allow_empty = True,
+    ),
+    visibility = ["//visibility:public"],
+)
+
+add_lint_tests()

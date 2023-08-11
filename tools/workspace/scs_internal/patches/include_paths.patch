@@ -1,0 +1,17 @@
+[scs] Fix some include paths for our build of QDLDL.
+
+TODO(jwnimmer-tri) We should upstream these options under a config
+switch.
+
+--- linsys/cpu/direct/private.h
++++ linsys/cpu/direct/private.h
+@@ -7,7 +7,7 @@
+ 
+ #include "csparse.h"
+-#include "external/amd/amd.h"
+-#include "external/qdldl/qdldl.h"
++#include "amd.h"
++#include "qdldl.h"
+ #include "glbopts.h"
+ #include "scs.h"
+ 

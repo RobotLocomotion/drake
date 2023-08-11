@@ -169,6 +169,7 @@ drake_cc_library(
     ],
     deps = [
         "//common:nice_type_name",
+        "//common/symbolic:latex",
     ],
 )
 
@@ -185,6 +186,7 @@ drake_cc_library(
         "//common/symbolic:expression",
     ],
     deps = [
+        "//common/symbolic:latex",
         "//common/symbolic:polynomial",
         "//math:gradient",
         "//math:matrix_util",
@@ -214,6 +216,7 @@ drake_cc_library(
     ],
     deps = [
         ":constraint",
+        "//common/symbolic:latex",
         "//math:gradient",
     ],
 )
@@ -371,6 +374,7 @@ drake_cc_library(
     ],
     deps = [
         ":sos_basis_generator",
+        "//common/symbolic:latex",
         "//math:matrix_util",
     ],
 )
@@ -881,7 +885,7 @@ drake_cc_variant_library(
         ":mathematical_program",
     ],
     deps_enabled = [
-        "@clp",
+        "@clp_internal//:clp",
         "//common:unused",
         "//math:autodiff",
     ],
@@ -1100,6 +1104,7 @@ drake_cc_googletest(
     name = "constraint_test",
     deps = [
         ":constraint",
+        ":generic_trivial_constraint",
         "//common/symbolic:expression",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",

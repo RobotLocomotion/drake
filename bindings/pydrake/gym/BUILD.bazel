@@ -1,0 +1,74 @@
+load("@drake//tools/install:install.bzl", "install")
+load(
+    "@drake//tools/skylark:pybind.bzl",
+    "get_pybind_package_info",
+)
+load(
+    "//tools/skylark:drake_py.bzl",
+    "drake_py_library",
+    "drake_py_unittest",
+)
+load(
+    "@drake_detected_os//:os.bzl",
+    "UBUNTU_RELEASE",
+)
+load("//bindings/pydrake:pydrake.bzl", "add_lint_tests_pydrake")
+
+package(default_visibility = [
+    "//bindings/pydrake:__subpackages__",
+])
+
+# This determines how `PYTHONPATH` is configured, and how to install the
+# bindings.
+PACKAGE_INFO = get_pybind_package_info("//bindings")
+
+drake_py_library(
+    name = "gym",
+    srcs = [
+        "__init__.py",
+        "_drake_gym_env.py",
+    ],
+    deps = [
+        "//bindings/pydrake/common",
+        "//bindings/pydrake/systems",
+        "@gymnasium_py",
+    ],
+)
+
+drake_py_library(
+    name = "mock_torch_py",
+    testonly = True,
+    srcs = [
+        "test/mock_torch/torch/__init__.py",
+        "test/mock_torch/torch/distributions.py",
+        "test/mock_torch/torch/nn.py",
+        "test/mock_torch/torch/optim.py",
+    ],
+    imports = ["test/mock_torch"],
+)
+
+# TODO(ggould-tri) This depends on things in `examples` in order to build a
+# working env in order to run Gym's validation functions.  We rely on Bazel
+# to prevent this from being a circular dependency.
+drake_py_unittest(
+    name = "drake_gym_test",
+    tags = ["manual"] if UBUNTU_RELEASE == "20.04" else [],
+    deps = [
+        ":gym",
+        ":mock_torch_py",
+        "//bindings/pydrake/examples/gym:cart_pole_py",
+        "@stable_baselines3_internal//:stable_baselines3",
+    ],
+)
+
+PY_LIBRARIES = [
+    ":gym",
+]
+
+install(
+    name = "install",
+    targets = PY_LIBRARIES,
+    py_dest = PACKAGE_INFO.py_dest,
+)
+
+add_lint_tests_pydrake()

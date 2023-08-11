@@ -5,7 +5,6 @@ build --incompatible_load_python_rules_from_bzl=yes
 build -c opt
 
 # Default build options.
-build --force_pic
 build --strip=never
 build --strict_system_includes
 

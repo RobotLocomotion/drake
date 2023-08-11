@@ -7,6 +7,7 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/find_runfiles.h"
 #include "drake/common/temp_directory.h"
+#include "drake/common/test_utilities/maybe_pause_for_user.h"
 #include "drake/geometry/meshcat.h"
 #include "drake/geometry/meshcat_animation.h"
 #include "drake/geometry/meshcat_visualizer.h"
@@ -27,6 +28,7 @@ namespace drake {
 namespace geometry {
 
 using Eigen::Vector3d;
+using common::MaybePauseForUser;
 using math::RigidTransformd;
 using math::RotationMatrixd;
 
@@ -190,8 +192,7 @@ Open up your browser to the URL above.
   - the same triangle mesh drawn in multicolor.
   - a blue mesh plot of the function z = y*sin(5*x).
 )""";
-  std::cout << "[Press RETURN to continue]." << std::endl;
-  std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+  MaybePauseForUser();
 
   std::cout << "Calling meshcat.Flush(), which will block until all clients "
                "have received all the data)...";
@@ -234,15 +235,14 @@ Open up your browser to the URL above.
   meshcat->SetAnimation(animation);
 
   std::cout << "You can review/replay the animation from the controls menu.\n";
-  std::cout << "[Press RETURN to continue]." << std::endl;
-  std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+  MaybePauseForUser();
 
   meshcat->Set2dRenderMode(math::RigidTransform(Vector3d{0, -3, 0}), -4,
                            4, -2, 2);
 
   std::cout << "- The scene should have switched to 2D rendering mode.\n";
   std::cout << "[Press RETURN to continue]." << std::endl;
-  std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+  MaybePauseForUser();
 
   meshcat->Set2dRenderMode(
       math::RigidTransform(math::RotationMatrixd::MakeZRotation(-M_PI / 2.0),
@@ -250,14 +250,12 @@ Open up your browser to the URL above.
       -2, 2, -2, 2);
 
   std::cout << "- Now 2D rendering along the +x axis (red sphere in front).\n";
-  std::cout << "[Press RETURN to continue]." << std::endl;
-  std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+  MaybePauseForUser();
 
   std::cout << "- The scene should have switched back to 3D.\n";
   meshcat->ResetRenderMode();
 
-  std::cout << "[Press RETURN to continue]." << std::endl;
-  std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+  MaybePauseForUser();
 
   // Turn off the background (it will appear white).
   meshcat->SetProperty("/Background", "visible", false);
@@ -270,8 +268,7 @@ Open up your browser to the URL above.
       << "- The lights should have dimmed.\n"
       << "- The background should have been disabled (it will appear white)"
       << std::endl;
-  std::cout << "[Press RETURN to continue]." << std::endl;
-  std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+  MaybePauseForUser();
 
   meshcat->SetProperty("/Background", "visible", true);
   meshcat->SetEnvironmentMap(
@@ -280,23 +277,20 @@ Open up your browser to the URL above.
   std::cout << "- An environment map has been loaded from a png -- the Cornell "
             << "box.\n"
             << "  The dented green box should reflect it.\n";
-  std::cout << "[Press RETURN to continue]." << std::endl;
-  std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+  MaybePauseForUser();
 
   meshcat->SetEnvironmentMap(
       FindResourceOrThrow("drake/geometry/test/env_256_brick_room.jpg"));
 
   std::cout << "- The Cornell box has been replaced by a room with brick walls "
             << "loaded from a jpg.\n";
-  std::cout << "[Press RETURN to continue]." << std::endl;
-  std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+  MaybePauseForUser();
 
   meshcat->SetEnvironmentMap("");
   meshcat->Delete();
   std::cout << "- Everything else should have disappeared." << std::endl;
 
-  std::cout << "[Press RETURN to continue]." << std::endl;
-  std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+  MaybePauseForUser();
 
   meshcat->SetProperty("/Lights/AmbientLight/<object>", "intensity", 0.6);
 
@@ -339,8 +333,7 @@ Open up your browser to the URL above.
     diagram->ForcedPublish(*context);
     std::cout << "- Now you should see three colliding hydroelastic spheres."
               << std::endl;
-    std::cout << "[Press RETURN to continue]." << std::endl;
-    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+    MaybePauseForUser();
 
     contact.Delete();
     visualizer.Delete();
@@ -383,8 +376,7 @@ Open up your browser to the URL above.
         << "- Now you should see a kuka model (from MultibodyPlant/SceneGraph)"
         << std::endl;
 
-    std::cout << "[Press RETURN to continue]." << std::endl;
-    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+    MaybePauseForUser();
 
     std::cout << "Now we'll run the simulation...\n"
               << "- You should see the robot fall down and hit the table\n"
@@ -402,8 +394,7 @@ Open up your browser to the URL above.
            "animation.  Use the animation GUI to confirm."
         << std::endl;
 
-    std::cout << "[Press RETURN to continue]." << std::endl;
-    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+    MaybePauseForUser();
   }
 
   meshcat->SetEnvironmentMap(
@@ -421,8 +412,7 @@ Open up your browser to the URL above.
                "the iiwa is visible and the animation plays."
             << std::endl;
 
-  std::cout << "[Press RETURN to continue]." << std::endl;
-  std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+  MaybePauseForUser();
 
   std::remove(html_filename.c_str());
   std::cout
@@ -446,8 +436,7 @@ Open up your browser to the URL above.
             << ") and confirm that moving the slider in one updates the slider "
                "in the other.\n";
 
-  std::cout << "[Press RETURN to continue]." << std::endl;
-  std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+  MaybePauseForUser();
 
   std::cout << "Got " << meshcat->GetButtonClicks("ButtonTest")
             << " clicks on ButtonTest.\n"
@@ -468,8 +457,7 @@ Open up your browser to the URL above.
       << "sufficient to consider the test passing; the exact values do not "
       << "matter.\n";
 
-  std::cout << "[Press RETURN to continue]." << std::endl;
-  std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+  MaybePauseForUser();
 
   Meshcat::Gamepad gamepad = meshcat->GetGamepad();
   if (!gamepad.index) {

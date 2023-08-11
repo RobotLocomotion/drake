@@ -526,6 +526,9 @@ TEST_P(YamlReadArchiveTest, Variant) {
     EXPECT_EQ(x.value, expected) << doc;
   };
 
+  test("doc:\n  value: \"\"", "");
+  test("doc:\n  value: foo", "foo");
+  test("doc:\n  value: \"foo\"", "foo");
   test("doc:\n  value: !!str foo", "foo");
   test("doc:\n  value: !!float 1.0", 1.0);
   test("doc:\n  value: !DoubleStruct { value: 1.0 }", DoubleStruct{1.0});

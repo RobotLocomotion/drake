@@ -1,0 +1,12 @@
+[clp] Add missing include for COIN_DBL_MAX
+
+--- Clp/src/CbcOrClpParam.cpp
++++ Clp/src/CbcOrClpParam.cpp
+@@ -3,6 +3,7 @@
+ // Corporation and others.  All Rights Reserved.
+ // This code is licensed under the terms of the Eclipse Public License (EPL).
+ 
++#include "CoinFinite.hpp"
+ #include "CoinPragma.hpp"
+ #include "CoinTime.hpp"
+ #include "CbcOrClpParam.hpp"

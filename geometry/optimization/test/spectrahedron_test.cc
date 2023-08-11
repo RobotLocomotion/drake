@@ -65,7 +65,7 @@ GTEST_TEST(SpectrahedronTest, TrivialSdp1) {
 
   Spectrahedron spect(prog);
   EXPECT_EQ(spect.ambient_dimension(), 3 * (3 + 1) / 2);
-  DRAKE_EXPECT_THROWS_MESSAGE(spect.IsBounded(), ".*not implemented yet.*");
+  EXPECT_TRUE(spect.IsBounded());
   EXPECT_FALSE(spect.IsEmpty());
 
   const double kTol{1e-6};
@@ -320,6 +320,39 @@ GTEST_TEST(SpectrahedronTest, NontriviallyEmpty) {
   Spectrahedron spect(prog);
   EXPECT_TRUE(spect.IsEmpty());
   EXPECT_FALSE(spect.MaybeGetFeasiblePoint().has_value());
+}
+
+GTEST_TEST(SpectrahedronTest, UnboundedTest) {
+  // Construct an unconstrained SDP, and check that IsBounded notices.
+  MathematicalProgram prog;
+  auto X1 = prog.NewSymmetricContinuousVariables<2>();
+  prog.AddPositiveSemidefiniteConstraint(X1);
+  Spectrahedron spect(prog);
+  EXPECT_FALSE(spect.IsBounded());
+
+  // Construct an unbounded but constrainted SDP, and check that IsBounded
+  // notices.
+  prog.AddLinearConstraint(X1(0, 0) >= 0);
+  Spectrahedron spect2(prog);
+  EXPECT_FALSE(spect2.IsBounded());
+
+  // Add more constraints that keep the program unbounded
+  prog.AddLinearConstraint(X1(0, 0) == X1(1, 1));
+  prog.AddLinearConstraint(X1(0, 1) >= 1);
+  Spectrahedron spect3(prog);
+  EXPECT_FALSE(spect3.IsBounded());
+
+  // Add a constraint that makes the program bounded
+  prog.AddLinearConstraint(X1(0, 0) + X1(0, 1) + X1(1, 1) <= 43);
+  Spectrahedron spect4(prog);
+  EXPECT_TRUE(spect4.IsBounded());
+
+  // Add a constraint that makes the program infeasible (the empty
+  // set is bounded)
+  prog.AddLinearConstraint(X1(0, 0) >= 50);
+  Spectrahedron spect5(prog);
+  EXPECT_TRUE(spect5.IsEmpty());
+  EXPECT_TRUE(spect5.IsBounded());
 }
 
 }  // namespace
