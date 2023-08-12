@@ -48,20 +48,22 @@ namespace {
 // distance and interpolation functions are no longer supported.
 void SanityCheckConfigurationDistanceFunction(
     const ConfigurationDistanceFunction& distance_function,
-    const Eigen::VectorXd& zero_configuration) {
+    const Eigen::VectorXd& default_configuration) {
   const double test_distance =
-      distance_function(zero_configuration, zero_configuration);
+      distance_function(default_configuration, default_configuration);
   DRAKE_THROW_UNLESS(test_distance == 0.0);
 }
 
 void SanityCheckConfigurationInterpolationFunction(
     const ConfigurationInterpolationFunction& interpolation_function,
-    const Eigen::VectorXd& zero_configuration) {
+    const Eigen::VectorXd& default_configuration) {
   const Eigen::VectorXd test_interpolated_q =
-      interpolation_function(zero_configuration, zero_configuration, 0.0);
-  DRAKE_THROW_UNLESS(test_interpolated_q.size() == zero_configuration.size());
+      interpolation_function(default_configuration, default_configuration, 0.0);
+  DRAKE_THROW_UNLESS(test_interpolated_q.size() ==
+                     default_configuration.size());
   for (int index = 0; index < test_interpolated_q.size(); ++index) {
-    DRAKE_THROW_UNLESS(test_interpolated_q(index) == zero_configuration(index));
+    DRAKE_THROW_UNLESS(test_interpolated_q(index) ==
+                       default_configuration(index));
   }
 }
 
@@ -106,8 +108,8 @@ class LegacyDistanceAndInterpolationProvider final
   }
 
  private:
-  ConfigurationDistanceFunction distance_function_;
-  ConfigurationInterpolationFunction interpolation_function_;
+  const ConfigurationDistanceFunction distance_function_;
+  const ConfigurationInterpolationFunction interpolation_function_;
 };
 
 // Default interpolator; it uses SLERP for quaternion-valued groups of dofs and

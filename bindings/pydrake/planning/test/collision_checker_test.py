@@ -414,25 +414,20 @@ class TestCollisionChecker(unittest.TestCase):
         self.assertFalse(use_provider and use_function)
 
         robot, index = self._make_robot_diagram()
+        plant = robot.plant()
+        checker_kwargs = dict(
+            model=robot,
+            robot_model_instances=[index],
+            edge_step_size=0.125)
+
         if use_provider:
-            provider = mut.LinearDistanceAndInterpolationProvider(
-                robot.plant())
-            return mut.SceneGraphCollisionChecker(
-                model=robot,
-                distance_and_interpolation_provider=provider,
-                robot_model_instances=[index],
-                edge_step_size=0.125)
-        elif use_function:
-            return mut.SceneGraphCollisionChecker(
-                model=robot,
-                robot_model_instances=[index],
-                configuration_distance_function=self._configuration_distance,
-                edge_step_size=0.125)
-        else:
-            return mut.SceneGraphCollisionChecker(
-                model=robot,
-                robot_model_instances=[index],
-                edge_step_size=0.125)
+            checker_kwargs["distance_and_interpolation_provider"] = \
+                mut.LinearDistanceAndInterpolationProvider(plant)
+        if use_function:
+            checker_kwargs["configuration_distance_function"] = \
+                self._configuration_distance
+
+        return mut.SceneGraphCollisionChecker(**checker_kwargs)
 
     def test_scene_graph_collision_checker(self):
         """Tests the full CollisionChecker API.

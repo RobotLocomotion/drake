@@ -8,7 +8,6 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
-#include "drake/common/unused.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/planning/test/planning_test_helpers.h"
 
@@ -26,6 +25,7 @@ void DoFixedIiwaTest(const RobotDiagram<double>& model,
   // Make sure weights match expected values.
   EXPECT_TRUE(CompareMatrices(provider.distance_weights(), expected_weights));
 
+  // Make sure quaternion DoF are correct (none for fixed case).
   EXPECT_TRUE(provider.quaternion_dof_start_indices().empty());
 
   // Define test configurations.
@@ -69,6 +69,13 @@ void DoFixedIiwaTest(const RobotDiagram<double>& model,
 void DoFloatingIiwaTest(const RobotDiagram<double>& model,
                         const LinearDistanceAndInterpolationProvider& provider,
                         const Eigen::VectorXd& expected_weights) {
+  // Make sure weights match expected values.
+  EXPECT_TRUE(CompareMatrices(provider.distance_weights(), expected_weights));
+
+  // Make sure quaternion DoF are correct (one for floating case).
+  EXPECT_EQ(provider.quaternion_dof_start_indices().size(), 1);
+  EXPECT_EQ(provider.quaternion_dof_start_indices().at(0), 0);
+
   const auto model_context = model.CreateDefaultContext();
   auto& plant_context = model.mutable_plant_context(model_context.get());
   const auto arm_model_instance = model.plant().GetModelInstanceByName("iiwa");
@@ -100,12 +107,6 @@ void DoFloatingIiwaTest(const RobotDiagram<double>& model,
   const Eigen::VectorXd full_zero_q = make_full_q(arm_zero_q, X_WBase_identity);
   const Eigen::VectorXd full_test_q = make_full_q(arm_ones_q, X_WBase_test);
   const Eigen::VectorXd full_half_q = make_full_q(arm_half_q, X_WBase_half);
-
-  // Make sure weights match expected values.
-  EXPECT_TRUE(CompareMatrices(provider.distance_weights(), expected_weights));
-
-  EXPECT_EQ(provider.quaternion_dof_start_indices().size(), 1);
-  EXPECT_EQ(provider.quaternion_dof_start_indices().at(0), 0);
 
   const Eigen::VectorXd expected_arm_weights =
       model.plant().GetPositionsFromArray(arm_model_instance, expected_weights);
