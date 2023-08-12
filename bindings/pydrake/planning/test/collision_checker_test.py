@@ -408,7 +408,7 @@ class TestCollisionChecker(unittest.TestCase):
         self.assertIsInstance(provider, mut.DistanceAndInterpolationProvider)
         new_provider = mut.LinearDistanceAndInterpolationProvider(
             dut.model().plant())
-        dut.SetDistanceAndInterpolationProvider(new_provider)
+        dut.SetDistanceAndInterpolationProvider(provider=new_provider)
 
     def _make_scene_graph_collision_checker(self, use_provider, use_function):
         self.assertFalse(use_provider and use_function)

@@ -814,7 +814,7 @@ class CollisionChecker {
   /** Sets the distance and interpolation provider to use.
    Note that in case any of the (to-be-deprecated) separate distance and
    interpolation functions were in use, this supplants _both_ of them.
-   @pre provider satisifies the requirements documents on
+   @pre provider satisfies the requirements documents on
    DistanceAndInterpolationProvider.
   */
   void SetDistanceAndInterpolationProvider(

@@ -54,7 +54,7 @@ class LinearDistanceAndInterpolationProvider final
   /** Gets the distance weights. */
   const Eigen::VectorXd& distance_weights() const { return distance_weights_; }
 
-  /** Gets the start indices for quaterion DoF in the position vector. */
+  /** Gets the start indices for quaternion DoF in the position vector. */
   const std::vector<int>& quaternion_dof_start_indices() const {
     return quaternion_dof_start_indices_;
   }
