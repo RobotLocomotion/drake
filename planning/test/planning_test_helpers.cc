@@ -30,6 +30,13 @@ std::unique_ptr<RobotDiagram<double>> MakePlanningTestModel(
   return builder->Build();
 }
 
+std::unique_ptr<RobotDiagram<double>> MakePlanningTestModel(
+    const std::string& model_ext, const std::string& model_contents) {
+  auto builder = std::make_unique<RobotDiagramBuilder<double>>();
+  builder->parser().AddModelsFromString(model_contents, model_ext);
+  return builder->Build();
+}
+
 Eigen::VectorXd GetIiwaDistanceWeights() {
   Eigen::VectorXd weights = Eigen::VectorXd::Zero(7);
   weights << 2.0, 2.0, 2.0, 2.0, 1.0, 1.0, 1.0;

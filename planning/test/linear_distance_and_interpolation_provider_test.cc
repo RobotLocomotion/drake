@@ -20,60 +20,6 @@ using common_robotics_utilities::math::Distance;
 using common_robotics_utilities::math::Interpolate;
 using multibody::JointIndex;
 
-multibody::parsing::ModelDirectives MakeFixedIiwaDirectives() {
-  // Assemble model directives.
-  multibody::parsing::ModelDirective add_env_model;
-  add_env_model.add_model = multibody::parsing::AddModel{
-      "package://drake/planning/test_utilities/collision_ground_plane.sdf",
-      "ground_plane_box"};
-  multibody::parsing::ModelDirective add_env_weld;
-  add_env_weld.add_weld = multibody::parsing::AddWeld{
-      "world", "ground_plane_box::ground_plane_box"};
-
-  multibody::parsing::ModelDirective add_robot_model;
-  add_robot_model.add_model = multibody::parsing::AddModel{
-      "package://drake/manipulation/models/iiwa_description/urdf/"
-      "iiwa14_spheres_dense_collision.urdf",
-      "iiwa"};
-  multibody::parsing::ModelDirective add_robot_weld;
-  add_robot_weld.add_weld = multibody::parsing::AddWeld{"world", "iiwa::base"};
-
-  const multibody::parsing::ModelDirectives directives{
-      .directives = {add_env_model, add_env_weld, add_robot_model,
-                     add_robot_weld}};
-  return directives;
-}
-
-multibody::parsing::ModelDirectives MakeFloatingIiwaDirectives() {
-  // Assemble model directives.
-  multibody::parsing::ModelDirective add_env_model;
-  add_env_model.add_model = multibody::parsing::AddModel{
-      "package://drake/planning/test_utilities/collision_ground_plane.sdf",
-      "ground_plane_box"};
-  multibody::parsing::ModelDirective add_env_weld;
-  add_env_weld.add_weld = multibody::parsing::AddWeld{
-      "world", "ground_plane_box::ground_plane_box"};
-
-  multibody::parsing::ModelDirective add_arm_model;
-  add_arm_model.add_model = multibody::parsing::AddModel{
-      "package://drake/manipulation/models/iiwa_description/urdf/"
-      "iiwa14_spheres_dense_collision.urdf",
-      "iiwa"};
-
-  multibody::parsing::ModelDirective add_base_model;
-  add_base_model.add_model = multibody::parsing::AddModel{
-      "package://drake/planning/test_utilities/flying_robot_base.sdf",
-      "flying_robot_base"};
-  multibody::parsing::ModelDirective add_base_arm_weld;
-  add_base_arm_weld.add_weld = multibody::parsing::AddWeld{
-      "flying_robot_base::flying_robot_base", "iiwa::base"};
-
-  const multibody::parsing::ModelDirectives directives{
-      .directives = {add_env_model, add_env_weld, add_arm_model, add_base_model,
-                     add_base_arm_weld}};
-  return directives;
-}
-
 void DoFixedIiwaTest(const RobotDiagram<double>& model,
                      const LinearDistanceAndInterpolationProvider& provider,
                      const Eigen::VectorXd& expected_weights) {
@@ -223,7 +169,21 @@ void DoFloatingIiwaTest(const RobotDiagram<double>& model,
 }
 
 GTEST_TEST(FixedIiwaTest, Test) {
-  const auto model = MakePlanningTestModel(MakeFixedIiwaDirectives());
+  const auto model = MakePlanningTestModel("dmd.yaml", R"""(
+directives:
+  - add_model:
+      name: ground_plane_box
+      file: package://drake/planning/test_utilities/collision_ground_plane.sdf
+  - add_weld:
+      parent: world
+      child: ground_plane_box::ground_plane_box
+  - add_model:
+      name: iiwa
+      file: package://drake/manipulation/models/iiwa_description/urdf/iiwa14_spheres_dense_collision.urdf
+  - add_weld:
+      parent: world
+      child: iiwa::base
+)""");
 
   const auto get_index = [&](const std::string& joint_name) {
     return model->plant().GetJointByName(joint_name).index();
@@ -343,7 +303,24 @@ GTEST_TEST(FixedIiwaTest, Test) {
 }
 
 GTEST_TEST(FloatingIiwaTest, Test) {
-  const auto model = MakePlanningTestModel(MakeFloatingIiwaDirectives());
+  const auto model = MakePlanningTestModel("dmd.yaml", R"""(
+directives:
+  - add_model:
+      name: ground_plane_box
+      file: package://drake/planning/test_utilities/collision_ground_plane.sdf
+  - add_weld:
+      parent: world
+      child: ground_plane_box::ground_plane_box
+  - add_model:
+      name: flying_robot_base
+      file: package://drake/planning/test_utilities/flying_robot_base.sdf
+  - add_model:
+      name: iiwa
+      file: package://drake/manipulation/models/iiwa_description/urdf/iiwa14_spheres_dense_collision.urdf
+  - add_weld:
+      parent: flying_robot_base::flying_robot_base
+      child: iiwa::base
+)""");
 
   const auto get_index = [&](const std::string& joint_name) {
     return model->plant().GetJointByName(joint_name).index();
