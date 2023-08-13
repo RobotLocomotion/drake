@@ -79,14 +79,14 @@ class PyPlotVisualizer(LeafSystem):
         self._is_recording = False
         self._recorded_contexts = []
 
-        def on_initialize(context, event):
+        def on_initialize(system, context, event):
             if self._show:
                 self.fig.show()
 
         self.DeclareInitializationEvent(
             event=PublishEvent(
                 trigger_type=TriggerType.kInitialization,
-                callback=on_initialize))
+                system_callback=on_initialize))
 
     def DoPublish(self, context, event):
         # TODO(SeanCurtis-TRI) We want to be able to use this visualizer to

@@ -65,8 +65,8 @@ class JointSliders(VectorSystem):
         resolution = _reshape(resolution, robot.num_positions())
 
         # Schedule window updates in either case (new or existing window):
-        self.DeclarePeriodicEvent(update_period_sec, 0.0,
-                                  PublishEvent(self._process_event_queue))
+        self.DeclarePeriodicEvent(update_period_sec, 0.0, PublishEvent(
+            system_callback=self._process_event_queue))
 
         self._slider = []
         self._slider_position_start = []
@@ -128,7 +128,7 @@ class JointSliders(VectorSystem):
         for i in range(len(self._slider)):
             self._slider[i].value = q[i]
 
-    def _process_event_queue(self, unused_context, unused_event):
+    def _process_event_queue(self, system, context, event):
         process_ipywidget_events()
 
     def DoCalcVectorOutput(self, context, unused, unused2, output):

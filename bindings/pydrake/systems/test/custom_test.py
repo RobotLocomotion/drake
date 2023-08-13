@@ -355,7 +355,7 @@ class TestCustom(unittest.TestCase):
                 self.DeclareInitializationEvent(
                     event=PublishEvent(
                         trigger_type=TriggerType.kInitialization,
-                        callback=self._on_initialize))
+                        system_callback=self._on_initialize))
                 self.DeclarePeriodicDiscreteUpdateNoHandler(
                     period_sec=1.0, offset_sec=0.)
                 self.DeclarePeriodicPublishEvent(
@@ -379,7 +379,7 @@ class TestCustom(unittest.TestCase):
                 self.DeclarePerStepEvent(
                     event=PublishEvent(
                         trigger_type=TriggerType.kPerStep,
-                        callback=self._on_per_step))
+                        system_callback=self._on_per_step))
                 self.DeclareForcedPublishEvent(
                     publish=self._on_forced_publish)
                 self.DeclareForcedDiscreteUpdateEvent(
@@ -391,7 +391,7 @@ class TestCustom(unittest.TestCase):
                     offset_sec=0.0,
                     event=PublishEvent(
                         trigger_type=TriggerType.kPeriodic,
-                        callback=self._on_periodic))
+                        system_callback=self._on_periodic))
                 self.DeclareContinuousState(2)
                 self.DeclareDiscreteState(1)
                 # Ensure that we have inputs / outputs to call direct
@@ -413,9 +413,11 @@ class TestCustom(unittest.TestCase):
                     "witness", WitnessFunctionDirection.kCrossesZero,
                     self._witness)
                 # Test bindings for both callback function signatures.
+                with catch_drake_warnings(expected_count=1):
+                    deprecated_event = UnrestrictedUpdateEvent(self._reset)
                 self.reset_witness = self.MakeWitnessFunction(
                     "reset", WitnessFunctionDirection.kCrossesZero,
-                    self._guard, UnrestrictedUpdateEvent(self._reset))
+                    self._guard, deprecated_event)
                 self.system_reset_witness = self.MakeWitnessFunction(
                     "system reset", WitnessFunctionDirection.kCrossesZero,
                     self._guard, UnrestrictedUpdateEvent(
@@ -450,18 +452,21 @@ class TestCustom(unittest.TestCase):
                 return [self.witness, self.reset_witness,
                         self.system_reset_witness]
 
-            def _on_initialize(self, context, event):
+            def _on_initialize(self, system, context, event):
+                test.assertIs(system, self)
                 test.assertIsInstance(context, Context)
                 test.assertIsInstance(event, PublishEvent)
                 test.assertFalse(self.called_initialize)
                 self.called_initialize = True
 
-            def _on_per_step(self, context, event):
+            def _on_per_step(self, system, context, event):
+                test.assertIs(system, self)
                 test.assertIsInstance(context, Context)
                 test.assertIsInstance(event, PublishEvent)
                 self.called_per_step = True
 
-            def _on_periodic(self, context, event):
+            def _on_periodic(self, system, context, event):
+                test.assertIs(system, self)
                 test.assertIsInstance(context, Context)
                 test.assertIsInstance(event, PublishEvent)
                 test.assertFalse(self.called_periodic)

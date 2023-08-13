@@ -67,8 +67,8 @@ class PoseSliders(LeafSystem):
 
         # Note: This timing affects the keyboard teleop performance. A larger
         #       time step causes more lag in the response.
-        self.DeclarePeriodicEvent(0.01, 0.0,
-                                  PublishEvent(self._process_event_queue))
+        self.DeclarePeriodicEvent(0.01, 0.0, PublishEvent(
+            system_callback=self._process_event_queue))
 
         self._roll = FloatSlider(min=min_range.roll,
                                  max=max_range.roll,
@@ -158,7 +158,7 @@ class PoseSliders(LeafSystem):
         self._y.value = xyz[1]
         self._z.value = xyz[2]
 
-    def _process_event_queue(self, context, event):
+    def _process_event_queue(self, system, context, event):
         """
         Allows the ipython kernel to process the event queue.
         """
@@ -214,10 +214,10 @@ class WidgetSystem(LeafSystem):
                 partial(self.DoCalcOutput, port_index=i))
             port.disable_caching_by_default()
 
-        self.DeclarePeriodicEvent(update_period_sec, 0.0,
-                                  PublishEvent(self._process_event_queue))
+        self.DeclarePeriodicEvent(update_period_sec, 0.0, PublishEvent(
+            system_callback=self._process_event_queue))
 
-    def _process_event_queue(self, unused_context, unused_event):
+    def _process_event_queue(self, system, context, event):
         """
         Allows the ipython kernel to process the event queue.
         """
