@@ -44,6 +44,7 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
   py::module::import("pydrake.systems.framework");
   py::module::import("pydrake.systems.primitives");
   py::module::import("pydrake.solvers");
+  py::module::import("pydrake.trajectories");
 
   {
     using Class = MultipleShooting;
