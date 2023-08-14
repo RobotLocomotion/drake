@@ -478,55 +478,108 @@ void DoScalarDependentDefinitions(py::module m) {
       m, "Event", GetPyParam<T>(), doc.Event.doc)
       .def("get_trigger_type", &Event<T>::get_trigger_type,
           doc.Event.get_trigger_type.doc);
-  DefineTemplateClassWithDefault<PublishEvent<T>, Event<T>>(
-      m, "PublishEvent", GetPyParam<T>(), doc.PublishEvent.doc)
-      .def(py::init(WrapCallbacks(
-               [](const typename PublishEvent<T>::PublishCallback& callback) {
-                 return std::make_unique<PublishEvent<T>>(callback);
-               })),
-          py::arg("callback"), doc.PublishEvent.ctor.doc_1args_callback)
-      .def(py::init(
-               WrapCallbacks([](const typename PublishEvent<T>::SystemCallback&
-                                     system_callback) {
-                 return std::make_unique<PublishEvent<T>>(system_callback);
-               })),
-          py::arg("system_callback"),
-          doc.PublishEvent.ctor.doc_1args_system_callback)
-      .def(py::init(WrapCallbacks(
-               [](const TriggerType& trigger_type,
-                   const typename PublishEvent<T>::PublishCallback& callback) {
-                 return std::make_unique<PublishEvent<T>>(
-                     trigger_type, callback);
-               })),
-          py::arg("trigger_type"), py::arg("callback"),
-          "Users should not be calling these")
-      .def(py::init(
-               WrapCallbacks([](const TriggerType& trigger_type,
-                                 const typename PublishEvent<T>::SystemCallback&
-                                     system_callback) {
-                 return std::make_unique<PublishEvent<T>>(
-                     trigger_type, system_callback);
-               })),
-          py::arg("trigger_type"), py::arg("system_callback"),
-          "Users should not be calling these");
+  {
+    auto cls = DefineTemplateClassWithDefault<PublishEvent<T>, Event<T>>(
+        m, "PublishEvent", GetPyParam<T>(), doc.PublishEvent.doc);
+    // Because Python doesn't offer static type checking to help remind the user
+    // to return an EventStatus from an event handler function, we'll bind the
+    // callback as optional<> to allow the user to omit a return statement.
+    //
+    // We'll also keep around both callbacks (with and without a System) because
+    // the C++ rationale for injecting the System doesn't apply to Python so we
+    // might as well not disturb any existing Python users of events.
+    using Callback = std::function<std::optional<EventStatus>(
+        const Context<T>&, const PublishEvent<T>&)>;
+    using SystemCallback = std::function<std::optional<EventStatus>(
+        const System<T>&, const Context<T>&, const PublishEvent<T>&)>;
+    cls  // BR
+        .def(py::init(WrapCallbacks([](const Callback& callback) {
+          return std::make_unique<PublishEvent<T>>(
+              [callback](const System<T>&, const Context<T>& context,
+                  const PublishEvent<T>& event) {
+                return callback(context, event)
+                    .value_or(EventStatus::Succeeded());
+              });
+        })),
+            py::arg("callback"),
+            "Constructs a PublishEvent with the given callback function.")
+        .def(py::init(WrapCallbacks([](const SystemCallback& system_callback) {
+          return std::make_unique<PublishEvent<T>>(
+              [system_callback](const System<T>& system,
+                  const Context<T>& context, const PublishEvent<T>& event) {
+                return system_callback(system, context, event)
+                    .value_or(EventStatus::Succeeded());
+              });
+        })),
+            py::arg("system_callback"),
+            "Constructs a PublishEvent with the given callback function.")
+        .def(py::init(WrapCallbacks(
+                 [](const TriggerType& trigger_type, const Callback& callback) {
+                   return std::make_unique<PublishEvent<T>>(trigger_type,
+                       [callback](const System<T>&, const Context<T>& context,
+                           const PublishEvent<T>& event) {
+                         return callback(context, event)
+                             .value_or(EventStatus::Succeeded());
+                       });
+                 })),
+            py::arg("trigger_type"), py::arg("callback"),
+            "Users should not be calling these")
+        .def(py::init(WrapCallbacks([](const TriggerType& trigger_type,
+                                        const SystemCallback& system_callback) {
+          return std::make_unique<PublishEvent<T>>(trigger_type,
+              [system_callback](const System<T>& system,
+                  const Context<T>& context, const PublishEvent<T>& event) {
+                return system_callback(system, context, event)
+                    .value_or(EventStatus::Succeeded());
+              });
+        })),
+            py::arg("trigger_type"), py::arg("system_callback"),
+            "Users should not be calling these");
+  }
   DefineTemplateClassWithDefault<DiscreteUpdateEvent<T>, Event<T>>(
       m, "DiscreteUpdateEvent", GetPyParam<T>(), doc.DiscreteUpdateEvent.doc);
-  DefineTemplateClassWithDefault<UnrestrictedUpdateEvent<T>, Event<T>>(m,
-      "UnrestrictedUpdateEvent", GetPyParam<T>(),
-      doc.UnrestrictedUpdateEvent.doc)
-      .def(
-          py::init(WrapCallbacks([](const typename UnrestrictedUpdateEvent<
-                                     T>::UnrestrictedUpdateCallback& callback) {
-            return std::make_unique<UnrestrictedUpdateEvent<T>>(callback);
-          })),
-          py::arg("callback"),
-          doc.UnrestrictedUpdateEvent.ctor.doc_1args_callback)
-      .def(py::init(WrapCallbacks([](const typename UnrestrictedUpdateEvent<
-                                      T>::SystemCallback& system_callback) {
-        return std::make_unique<UnrestrictedUpdateEvent<T>>(system_callback);
-      })),
-          py::arg("system_callback"),
-          doc.UnrestrictedUpdateEvent.ctor.doc_1args_system_callback);
+  {
+    auto cls =
+        DefineTemplateClassWithDefault<UnrestrictedUpdateEvent<T>, Event<T>>(m,
+            "UnrestrictedUpdateEvent", GetPyParam<T>(),
+            doc.UnrestrictedUpdateEvent.doc);
+    // Because Python doesn't offer static type checking to help remind the user
+    // to return an EventStatus from an event handler function, we'll bind the
+    // callback as optional<> to allow the user to omit a return statement.
+    //
+    // We'll also keep around both callbacks (with and without a System) because
+    // the C++ rationale for injecting the System doesn't apply to Python so we
+    // might as well not disturb any existing Python users of events.
+    using Callback = std::function<std::optional<EventStatus>(
+        const Context<T>&, const UnrestrictedUpdateEvent<T>&, State<T>*)>;
+    using SystemCallback =
+        std::function<std::optional<EventStatus>(const System<T>&,
+            const Context<T>&, const UnrestrictedUpdateEvent<T>&, State<T>*)>;
+    cls  // BR
+        .def(py::init(WrapCallbacks([](const Callback& callback) {
+          return std::make_unique<UnrestrictedUpdateEvent<T>>(
+              [callback](const System<T>&, const Context<T>& context,
+                  const UnrestrictedUpdateEvent<T>& event, State<T>* state) {
+                return callback(context, event, state)
+                    .value_or(EventStatus::Succeeded());
+              });
+        })),
+            py::arg("callback"),
+            "Constructs an UnrestrictedUpdateEvent with the given callback "
+            "function.")
+        .def(py::init(WrapCallbacks([](const SystemCallback& system_callback) {
+          return std::make_unique<UnrestrictedUpdateEvent<T>>(
+              [system_callback](const System<T>& system,
+                  const Context<T>& context,
+                  const UnrestrictedUpdateEvent<T>& event, State<T>* state) {
+                return system_callback(system, context, event, state)
+                    .value_or(EventStatus::Succeeded());
+              });
+        })),
+            py::arg("system_callback"),
+            "Constructs an UnrestrictedUpdateEvent with the given callback "
+            "function.");
+  }
 
   // Glue mechanisms.
   DefineTemplateClassWithDefault<DiagramBuilder<T>>(

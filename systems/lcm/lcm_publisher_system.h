@@ -255,6 +255,7 @@ class LcmPublisherSystem : public LeafSystem<double> {
   double get_publish_offset() const;
 
  private:
+  EventStatus Initialize(const Context<double>& context) const;
   EventStatus PublishInputAsLcmMessage(const Context<double>& context) const;
 
   // The channel on which to publish LCM messages.
