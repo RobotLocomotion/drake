@@ -63,12 +63,14 @@ SimulatorStatus Simulator<T>::Initialize(const InitializeParams& params) {
   if (!context_)
     throw std::logic_error("Initialize(): Context has not been set.");
 
+  initialization_done_ = false;
+
   // Record the current time so we can restore it later (see below).
   // *Don't* use a reference here!
   const T current_time = context_->get_time();
 
   // Assumes success.
-  SimulatorStatus status(ExtractDoubleOrThrow(current_time));
+  SimulatorStatus initialize_status(ExtractDoubleOrThrow(current_time));
 
   // Initialize the integrator.
   integrator_->Initialize();
@@ -76,116 +78,201 @@ SimulatorStatus Simulator<T>::Initialize(const InitializeParams& params) {
   // Restore default values.
   ResetStatistics();
 
-  // Process all the initialization events.
+  // Collect all the initialization events for processing below.
   merged_events_ = system_.AllocateCompositeEventCollection();
   if (!params.suppress_initialization_events) {
     system_.GetInitializationEvents(*context_, merged_events_.get());
   }
 
-  // Do unrestricted updates first.
-  HandleUnrestrictedUpdate(merged_events_->get_unrestricted_update_events());
-  // Do restricted (discrete variable) updates next.
-  HandleDiscreteUpdate(merged_events_->get_discrete_update_events());
+  // Event status uses a "first worst" strategy but gives up immediately if a
+  // state-modifying event reports failure. However, all publish events are
+  // invoked even if one fails, prior to reporting the failure.
 
-  // Gets all per-step events to be handled.
+  // Do unrestricted updates first.
+  EventStatus accumulated_event_status = HandleUnrestrictedUpdate(
+      merged_events_->get_unrestricted_update_events());
+  if (HasEventFailureOrMaybeThrow(accumulated_event_status,
+                                  true /*throw on failure*/,
+                                  &initialize_status)) {
+    return initialize_status;
+  }
+
+  // Do restricted (discrete variable) updates next.
+  accumulated_event_status.KeepMoreSevere(
+      HandleDiscreteUpdate(merged_events_->get_discrete_update_events()));
+  if (HasEventFailureOrMaybeThrow(accumulated_event_status,
+                                  true /*throw on failure*/,
+                                  &initialize_status)) {
+    return initialize_status;
+  }
+
+  // TODO(sherm1) "early publish" initialization events should be handled here.
+
+  // Allocate persistent event collection data structures.
   per_step_events_ = system_.AllocateCompositeEventCollection();
   DRAKE_DEMAND(per_step_events_ != nullptr);
-  system_.GetPerStepEvents(*context_, per_step_events_.get());
-
-  // Allocate timed events collection.
   timed_events_ = system_.AllocateCompositeEventCollection();
   DRAKE_DEMAND(timed_events_ != nullptr);
-
-  // Ensure that CalcNextUpdateTime() can return the current time by perturbing
-  // current time as slightly toward negative infinity as we can allow.
-  const T slightly_before_current_time =
-      internal::GetPreviousNormalizedValue(current_time);
-  context_->PerturbTime(slightly_before_current_time, current_time);
-
-  // Get the next timed event.
-  const T time_of_next_timed_event =
-      system_.CalcNextUpdateTime(*context_, timed_events_.get());
-
-  // Reset the context time.
-  context_->SetTime(current_time);
-
-  // Indicate a timed event is to be handled, if appropriate.
-  if (time_of_next_timed_event == current_time) {
-    time_or_witness_triggered_ = kTimeTriggered;
-  } else {
-    time_or_witness_triggered_ = kNothingTriggered;
-  }
-
-  // Allocate the witness function collection.
   witnessed_events_ = system_.AllocateCompositeEventCollection();
+  DRAKE_DEMAND(witnessed_events_ != nullptr);
 
-  // Do any publishes last. Merge the initialization events with per-step
-  // events and current_time timed events (if any). We expect all initialization
-  // events to precede any per-step or timed events in the merged collection.
-  // Note that per-step and timed discrete/unrestricted update events are *not*
-  // processed here; just publish events.
-  merged_events_->AddToEnd(*per_step_events_);
-  if (time_or_witness_triggered_ & kTimeTriggered)
-    merged_events_->AddToEnd(*timed_events_);
-  HandlePublish(merged_events_->get_publish_events());
+  // If any one of the unrestricted or discrete update events (or early publish
+  // events) reported "reached termination" then we shouldn't go any further. To
+  // see why, compare this with AdvanceTo() where this is the point of a step
+  // after which we would advance time (which we should not do if we've already
+  // reached termination).
+  if (!accumulated_event_status.reached_termination()) {
+    // The initial update events did not cause termination, so we need to issue
+    // end-of-step publishes and prepare for the next step. We'll handle publish
+    // events below (including initialization, forced, time-triggered, and
+    // monitor events) and collect time- and step-triggered update events to
+    // be issued at the start of the next step.
 
-  // TODO(siyuan): transfer publish entirely to individual systems.
-  // Do a force-publish before the simulation starts.
-  if (publish_at_initialization_) {
-    system_.ForcedPublish(*context_);
-    ++num_publishes_;
+    // Collect the per-step events.
+    system_.GetPerStepEvents(*context_, per_step_events_.get());
+
+    // Collect time-triggered events that trigger now, if any. To ensure that
+    // CalcNextUpdateTime() can return the current time we briefly perturb the
+    // current time slightly toward negative infinity.
+    // TODO(sherm1) This is broken if an exception is raised in
+    //  CalcNextUpdateTime() since the time will be left perturbed. Likely fix:
+    //  use a ScopeExit object that restores the time on destruction.
+    const T slightly_before_current_time =
+        internal::GetPreviousNormalizedValue(current_time);
+    context_->PerturbTime(slightly_before_current_time, current_time);
+    const T time_of_next_timed_event =
+        system_.CalcNextUpdateTime(*context_, timed_events_.get());
+    context_->SetTime(current_time);  // Restore the current time.
+
+    // Indicate a timed event is to be handled now, if appropriate.
+    time_or_witness_triggered_ =
+        (time_of_next_timed_event == current_time ? kTimeTriggered
+                                                  : kNothingTriggered);
+
+    // Merge the initialization events with per-step events and current_time
+    // time-triggered events. Initialization events will precede any per-step or
+    // timed events in the merged collection. Note that per-step and timed
+    // discrete/unrestricted update events are *not* processed here; just
+    // publish events.
+    merged_events_->AddToEnd(*per_step_events_);
+    if (time_or_witness_triggered_ & kTimeTriggered)
+      merged_events_->AddToEnd(*timed_events_);
+
+    // At this point merged_events_ has any publish events we need to handle
+    // now (including initialization, per-step, and time now-triggered).
+    // Defer throwing on failure until all publish events are handled.
+
+    accumulated_event_status.KeepMoreSevere(
+        HandlePublish(merged_events_->get_publish_events()));
+
+    // If requested, do a force-publish before the simulation starts.
+    if (publish_at_initialization_) {
+      accumulated_event_status.KeepMoreSevere(
+          HandlePublish(system_.get_forced_publish_events()));
+    }
+
+    // Invoke the monitor() if there is one. This is logically like a
+    // Diagram-level Publish event so we handle it similarly.
+    if (get_monitor())
+      accumulated_event_status.KeepMoreSevere(get_monitor()(*context_));
+
+    if (HasEventFailureOrMaybeThrow(accumulated_event_status,
+                                    true /*throw on failure*/,
+                                    &initialize_status)) {
+      return initialize_status;
+    }
   }
 
-  CallMonitorUpdateStatusAndMaybeThrow(&status);
+  // This is expected to be used for interrupting a long-running simulation
+  // but we'll call it here for consistency with AdvanceTo() in case it gains
+  // other uses.
+  if (python_monitor_ != nullptr) python_monitor_();
 
-  // Initialize runtime variables.
-  initialization_done_ = true;
+  // If we get here, none of the event handlers reported failure, but we may
+  // have reached early termination.
+
+  if (accumulated_event_status.severity() == EventStatus::kReachedTermination) {
+    initialize_status.SetReachedTermination(
+        ExtractDoubleOrThrow(context_->get_time()),
+        accumulated_event_status.system(), accumulated_event_status.message());
+  }
+
+  // This is a successful initialization, though possibly returning "reached
+  // termination".
+
   last_known_simtime_ = ExtractDoubleOrThrow(context_->get_time());
-
-  return status;
+  initialization_done_ = true;
+  return initialize_status;
 }
 
 // Processes UnrestrictedUpdateEvent events.
 template <typename T>
-void Simulator<T>::HandleUnrestrictedUpdate(
+EventStatus Simulator<T>::HandleUnrestrictedUpdate(
     const EventCollection<UnrestrictedUpdateEvent<T>>& events) {
-  if (events.HasEvents()) {
-    // First, compute the unrestricted updates into a temporary buffer.
-    system_.CalcUnrestrictedUpdate(*context_, events,
-        unrestricted_updates_.get());
-    // Now write the update back into the context.
-    system_.ApplyUnrestrictedUpdate(events, unrestricted_updates_.get(),
-        context_.get());
-    ++num_unrestricted_updates_;
+  if (!events.HasEvents()) return EventStatus::DidNothing();
 
-    // Mark the witness function vector as needing to be redetermined.
-    redetermine_active_witnesses_ = true;
-  }
+  // First, compute the unrestricted updates into a temporary buffer
+  // and return if no update is warranted.
+  const EventStatus status = system_.CalcUnrestrictedUpdate(
+      *context_, events, unrestricted_updates_.get());
+  if (status.did_nothing() || status.failed()) return status;
+
+  // Now write the update back into the context.
+  system_.ApplyUnrestrictedUpdate(events, unrestricted_updates_.get(),
+                                  context_.get());
+  ++num_unrestricted_updates_;
+  // Mark the witness function vector as needing to be redetermined.
+  redetermine_active_witnesses_ = true;
+
+  return status;
 }
 
 // Processes DiscreteEvent events.
 template <typename T>
-void Simulator<T>::HandleDiscreteUpdate(
+EventStatus Simulator<T>::HandleDiscreteUpdate(
     const EventCollection<DiscreteUpdateEvent<T>>& events) {
-  if (events.HasEvents()) {
-    // First, compute the discrete updates into a temporary buffer.
-    system_.CalcDiscreteVariableUpdate(*context_, events,
-        discrete_updates_.get());
-    // Then, write them back into the context.
-    system_.ApplyDiscreteVariableUpdate(events, discrete_updates_.get(),
-        context_.get());
-    ++num_discrete_updates_;
-  }
+  if (!events.HasEvents()) return EventStatus::DidNothing();
+
+  // First, compute the discrete updates into a temporary buffer and return
+  // if no update is warranted.
+  const EventStatus status = system_.CalcDiscreteVariableUpdate(
+      *context_, events, discrete_updates_.get());
+  if (status.did_nothing() || status.failed()) return status;
+
+  // Write updates back into the context.
+  system_.ApplyDiscreteVariableUpdate(events, discrete_updates_.get(),
+                                      context_.get());
+  ++num_discrete_updates_;
+
+  return status;
 }
 
 // Processes Publish events.
 template <typename T>
-void Simulator<T>::HandlePublish(
+EventStatus Simulator<T>::HandlePublish(
     const EventCollection<PublishEvent<T>>& events) {
-  if (events.HasEvents()) {
-    system_.Publish(*context_, events);
-    ++num_publishes_;
-  }
+  if (!events.HasEvents()) return EventStatus::DidNothing();
+
+  // Don't count this as a publish if it did nothing or failed.
+  const EventStatus status = system_.Publish(*context_, events);
+  if (status.did_nothing() || status.failed()) return status;
+
+  ++num_publishes_;
+
+  return status;
+}
+
+template <typename T>
+bool Simulator<T>::HasEventFailureOrMaybeThrow(
+    const EventStatus& event_status, bool throw_on_failure,
+    SimulatorStatus* simulator_status) {
+  if (!event_status.failed()) return false;
+  simulator_status->SetEventHandlerFailed(
+      ExtractDoubleOrThrow(context_->get_time()), event_status.system(),
+      event_status.message());
+  if (throw_on_failure)
+    throw std::runtime_error(simulator_status->FormatMessage());
+  return true;  // Failed, propagate error status upward.
 }
 
 template <typename T>
@@ -206,9 +293,8 @@ SimulatorStatus Simulator<T>::AdvanceTo(const T& boundary_time) {
   DRAKE_THROW_UNLESS(boundary_time >= context_->get_time());
 
   // Assume success.
-  SimulatorStatus status(ExtractDoubleOrThrow(boundary_time));
+  SimulatorStatus simulator_status(ExtractDoubleOrThrow(boundary_time));
 
-  // Integrate until desired interval has completed.
   DRAKE_DEMAND(timed_events_ != nullptr);
   DRAKE_DEMAND(witnessed_events_ != nullptr);
   DRAKE_DEMAND(merged_events_ != nullptr);
@@ -223,6 +309,7 @@ SimulatorStatus Simulator<T>::AdvanceTo(const T& boundary_time) {
   if (time_or_witness_triggered_ & kWitnessTriggered)
     merged_events_->AddToEnd(*witnessed_events_);
 
+  // Take steps until desired interval has completed.
   while (true) {
     // Starting a new step on the trajectory.
     const T step_start_time = context_->get_time();
@@ -234,84 +321,150 @@ SimulatorStatus Simulator<T>::AdvanceTo(const T& boundary_time) {
     // The general policy here is to do actions in decreasing order of
     // "violence" to the state, i.e. unrestricted -> discrete -> continuous ->
     // publish. The "timed" actions happen before the "per step" ones.
+    // Event status is accumulated in a "first worst" manner -- we keep going
+    // until something fails. Failure from state-updating events (discrete or
+    // unrestricted) halts processing immediately. Failure from a publish event
+    // still allows the remaining publish events to be handled prior to
+    // reporting the failure.
 
     // Do unrestricted updates first.
-    HandleUnrestrictedUpdate(merged_events_->get_unrestricted_update_events());
+    EventStatus accumulated_event_status = HandleUnrestrictedUpdate(
+        merged_events_->get_unrestricted_update_events());
+    if (HasEventFailureOrMaybeThrow(accumulated_event_status,
+                                    true /*throw on failure*/,
+                                    &simulator_status)) {
+      return simulator_status;
+    }
+
     // Do restricted (discrete variable) updates next.
-    HandleDiscreteUpdate(merged_events_->get_discrete_update_events());
-
-    // How far can we go before we have to handle timed events? This can return
-    // infinity, meaning we don't see any timed events coming. When an earlier
-    // event trigger time is returned, at least one Event object must be
-    // returned. Note that if the returned time is the current time, we handle
-    // the Events and then restart at the same time, possibly discovering more
-    // events.
-    const T time_of_next_timed_event =
-        system_.CalcNextUpdateTime(*context_, timed_events_.get());
-    DRAKE_DEMAND(time_of_next_timed_event >= step_start_time);
-
-    using std::isfinite;
-    DRAKE_DEMAND(!isfinite(time_of_next_timed_event) ||
-                 timed_events_->HasEvents());
-
-    // Determine whether the set of events requested by the System at
-    // time_of_next_timed_event includes an Update action, a Publish action, or
-    // both.
-    T next_update_time = std::numeric_limits<double>::infinity();
-    T next_publish_time = std::numeric_limits<double>::infinity();
-    if (timed_events_->HasDiscreteUpdateEvents() ||
-        timed_events_->HasUnrestrictedUpdateEvents()) {
-      next_update_time = time_of_next_timed_event;
-    }
-    if (timed_events_->HasPublishEvents()) {
-      next_publish_time = time_of_next_timed_event;
+    accumulated_event_status.KeepMoreSevere(
+        HandleDiscreteUpdate(merged_events_->get_discrete_update_events()));
+    if (HasEventFailureOrMaybeThrow(accumulated_event_status,
+                                    true /*throw on failure*/,
+                                    &simulator_status)) {
+      return simulator_status;
     }
 
-    // Integrate the continuous state forward in time. Note that if
-    // time_of_next_timed_event is the current time, this will return
-    // immediately without time having advanced. That still counts as a step.
-    time_or_witness_triggered_ = IntegrateContinuousState(
-        next_publish_time,
-        next_update_time,
-        boundary_time,
-        witnessed_events_.get());
+    // TODO(sherm1) "early publish" events should be handled here. Also
+    //  update the Step() documentation at the top of simulator.h.
 
-    // Update the number of simulation steps taken.
-    ++num_steps_taken_;
+    // If any one of the unrestricted or discrete update events (or early
+    // publish events) reported "reached termination" (at start time tₛ), then
+    // we're done with this step (and the simulation) and should not advance
+    // time further. This doesn't increment num_steps_taken because we really
+    // just finished off the previous step (like AdvancePendingEvents()).
+    if (!accumulated_event_status.reached_termination()) {
+      // The initial update events did not cause termination, so we need to
+      // advance time, issue end-of-step publishes and prepare for the next
+      // step.
 
-    // TODO(sherm1) Constraint projection goes here.
+      // How far can we advance time before we have to handle timed events? This
+      // can return infinity, meaning we don't see any timed events coming. When
+      // an earlier event trigger time is returned, at least one Event object
+      // must be returned. Note that if the returned time is the current time,
+      // we handle the Events and then restart at the same time, possibly
+      // discovering more events.
+      const T time_of_next_timed_event =
+          system_.CalcNextUpdateTime(*context_, timed_events_.get());
+      DRAKE_DEMAND(time_of_next_timed_event >= step_start_time);
 
-    // Clear events for the next loop iteration.
-    merged_events_->Clear();
+      using std::isfinite;
+      DRAKE_DEMAND(!isfinite(time_of_next_timed_event) ||
+          timed_events_->HasEvents());
 
-    // Merge in per-step events.
-    merged_events_->AddToEnd(*per_step_events_);
+      // Determine whether the set of events requested by the System at
+      // time_of_next_timed_event includes an Update action, a Publish action,
+      // or both.
+      T next_update_time = std::numeric_limits<double>::infinity();
+      T next_publish_time = std::numeric_limits<double>::infinity();
+      if (timed_events_->HasDiscreteUpdateEvents() ||
+          timed_events_->HasUnrestrictedUpdateEvents()) {
+        next_update_time = time_of_next_timed_event;
+      }
+      if (timed_events_->HasPublishEvents()) {
+        next_publish_time = time_of_next_timed_event;
+      }
 
-    // Only merge timed / witnessed events in if an event was triggered.
-    if (time_or_witness_triggered_ & kTimeTriggered)
-      merged_events_->AddToEnd(*timed_events_);
-    if (time_or_witness_triggered_ & kWitnessTriggered)
-      merged_events_->AddToEnd(*witnessed_events_);
+      // Integrate the continuous state (if any) forward in time. Note that if
+      // time_of_next_timed_event is the current time, this will return
+      // immediately without time having advanced. That still counts as a step.
+      time_or_witness_triggered_ = IntegrateContinuousState(
+          next_publish_time,
+          next_update_time,
+          boundary_time,
+          witnessed_events_.get());
 
-    // Handle any publish events at the end of the loop.
-    HandlePublish(merged_events_->get_publish_events());
+      // Update the number of simulation steps taken.
+      ++num_steps_taken_;
 
-    // TODO(siyuan): transfer per step publish entirely to individual systems.
-    // Allow System a chance to produce some output.
-    if (get_publish_every_time_step()) {
-      system_.ForcedPublish(*context_);
-      ++num_publishes_;
+      // TODO(sherm1) Constraint projection goes here.
+
+      // Clear events for the next loop iteration.
+      merged_events_->Clear();
+
+      // Merge in per-step events.
+      merged_events_->AddToEnd(*per_step_events_);
+
+      // Only merge timed / witnessed events in if an event was triggered.
+      if (time_or_witness_triggered_ & kTimeTriggered)
+        merged_events_->AddToEnd(*timed_events_);
+      if (time_or_witness_triggered_ & kWitnessTriggered)
+        merged_events_->AddToEnd(*witnessed_events_);
+
+      // At this point merged_events_ has any publish events we need to handle
+      // now (including per-step, witnessed, and time-triggered). These are
+      // simultaneous and all will be handled even if there is a failure.
+
+      accumulated_event_status.KeepMoreSevere(
+          HandlePublish(merged_events_->get_publish_events()));
+
+      if (get_publish_every_time_step()) {
+        accumulated_event_status.KeepMoreSevere(
+            HandlePublish(system_.get_forced_publish_events()));
+      }
+
+      // Invoke the monitor() if there is one. This is logically like a
+      // Diagram-level Publish event so we handle it similarly.
+      if (get_monitor())
+        accumulated_event_status.KeepMoreSevere(get_monitor()(*context_));
+
+      // If any of the publish event handlers failed, stop now.
+      if (HasEventFailureOrMaybeThrow(accumulated_event_status,
+                                      true /*throw on failure*/,
+                                      &simulator_status)) {
+        return simulator_status;
+      }
     }
 
-    CallMonitorUpdateStatusAndMaybeThrow(&status);
-    if (!status.succeeded())
-      break;  // Done.
+    // Allow for interrupt in Python.
+    if (python_monitor_ != nullptr) python_monitor_();
 
-    // Break out of the loop after timed and witnessed events are merged in
-    // to the event collection and after any publishes.
-    if (context_->get_time() >= boundary_time)
+    // If we get here, none of the event handlers reported failure, but we may
+    // have reached early termination.
+
+    if (accumulated_event_status.reached_termination()) {
+      simulator_status.SetReachedTermination(
+          ExtractDoubleOrThrow(context_->get_time()),
+          accumulated_event_status.system(),
+          accumulated_event_status.message());
+    }
+
+    // Break out of the loop if we've reached a termination condition. Except
+    // in case of failure above, at termination we will have already handled
+    // publish events and merged other per-step, timed, and witnessed events
+    // into the event collection. Those "straggler" events can be handled at the
+    // end of a simulation with AdvancePendingEvents().
+    if (!simulator_status.succeeded() || context_->get_time() >= boundary_time)
       break;
   }
+
+  // TODO(sherm1) Provide an option to return status rather than throw on
+  //  failure.
+
+  // We reach here after hitting a termination condition or a failure when
+  // "throw on failure" is disabled (not supported yet). Note that if we
+  // exit by throwing the following "clean up" steps will not have been
+  // performed.
 
   // TODO(edrumwri): Add test coverage to complete #8490.
   redetermine_active_witnesses_ = true;
@@ -319,7 +472,7 @@ SimulatorStatus Simulator<T>::AdvanceTo(const T& boundary_time) {
   // Record the time to detect unexpected jumps.
   last_known_simtime_ = ExtractDoubleOrThrow(context_->get_time());
 
-  return status;
+  return simulator_status;
 }
 
 template <class T>
