@@ -11,6 +11,8 @@
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/weld_joint.h"
+#include "drake/solvers/ipopt_solver.h"
+#include "drake/solvers/snopt_solver.h"
 #include "drake/solvers/solve.h"
 #include "drake/systems/framework/diagram_builder.h"
 
@@ -91,7 +93,7 @@ void KukaTest::CheckGlobalIKSolution(
 Eigen::VectorXd KukaTest::CheckNonlinearIK(
     const Eigen::Vector3d& ee_pos_lb_W, const Eigen::Vector3d& ee_pos_ub_W,
     const Eigen::Quaterniond& ee_orient, double angle_tol,
-    const Eigen::Matrix<double, 7, 1>& q_guess,
+    const std::vector<Eigen::Matrix<double, 7, 1>>& q_guesses,
     const Eigen::Matrix<double, 7, 1>& q_nom, bool ik_success_expected) const {
   InverseKinematics ik(*plant_);
   ik.AddPositionConstraint(plant_->get_body(BodyIndex{ee_idx_}).body_frame(),
@@ -102,14 +104,31 @@ Eigen::VectorXd KukaTest::CheckNonlinearIK(
       math::RotationMatrix<double>::Identity(), plant_->world_frame(),
       math::RotationMatrix<double>(ee_orient), angle_tol);
   Eigen::VectorXd q_sol(7);
-  Eigen::VectorXd q_guess_ik = q_guess;
   Eigen::VectorXd q_nom_ik = q_nom;
   ik.get_mutable_prog()->AddQuadraticErrorCost(
       Eigen::MatrixXd::Identity(plant_->num_positions(),
                                 plant_->num_positions()),
       q_nom_ik, ik.q());
-  const auto result = solvers::Solve(ik.prog(), q_guess_ik);
-  EXPECT_EQ(result.is_success(), ik_success_expected);
+
+  bool found_solution = false;
+  for (const auto& q_guess : q_guesses) {
+    const auto result = solvers::Solve(ik.prog(), q_guess);
+    if (!result.is_success()) {
+      drake::log()->info("q_guess: {}\n", fmt_eigen(q_guess.transpose()));
+      drake::log()->info("Nonlinear IK use solver {}",
+                         result.get_solver_id().name());
+      drake::log()->info("Solution result is {}", result.get_solution_result());
+      if (result.get_solver_id() == solvers::SnoptSolver::id()) {
+        drake::log()->info(
+            "SNOPT info {}",
+            result.get_solver_details<solvers::SnoptSolver>().info);
+      }
+    } else {
+      found_solution = true;
+      break;
+    }
+  }
+  EXPECT_EQ(found_solution, ik_success_expected);
   return q_sol;
 }
 
