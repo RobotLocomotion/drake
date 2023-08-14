@@ -425,7 +425,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   // For each subsystem, if there is a publish event in its corresponding
   // subevent collection, calls its Publish method with the appropriate
   // subcontext and subevent collection.
-  void DispatchPublishHandler(
+  [[nodiscard]] EventStatus DispatchPublishHandler(
       const Context<T>& context,
       const EventCollection<PublishEvent<T>>& event_info) const final;
 
@@ -433,7 +433,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   // corresponding subevent collection, calls its CalcDiscreteVariableUpdate()
   // method with the appropriate subcontext, subevent collection and
   // substate.
-  void DispatchDiscreteVariableUpdateHandler(
+  [[nodiscard]] EventStatus DispatchDiscreteVariableUpdateHandler(
       const Context<T>& context,
       const EventCollection<DiscreteUpdateEvent<T>>& events,
       DiscreteValues<T>* discrete_state) const final;
@@ -445,7 +445,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   // For each subsystem, if there is an unrestricted update event in its
   // corresponding subevent collection, calls its CalcUnrestrictedUpdate
   // method with the appropriate subcontext, subevent collection and substate.
-  void DispatchUnrestrictedUpdateHandler(
+  [[nodiscard]] EventStatus DispatchUnrestrictedUpdateHandler(
       const Context<T>& context,
       const EventCollection<UnrestrictedUpdateEvent<T>>& events,
       State<T>* state) const final;
