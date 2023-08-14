@@ -3,6 +3,7 @@
 #include "drake/bindings/pydrake/planning/planning_py.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/planning/collision_checker.h"
+#include "drake/planning/distance_and_interpolation_provider.h"
 #include "drake/planning/scene_graph_collision_checker.h"
 #include "drake/planning/unimplemented_collision_checker.h"
 
@@ -183,6 +184,13 @@ void DefinePlanningCollisionChecker(py::module m) {
         .def("CheckConfigsCollisionFree", &Class::CheckConfigsCollisionFree,
             py::arg("configs"), py::arg("parallelize") = true,
             cls_doc.CheckConfigsCollisionFree.doc)
+        .def("SetDistanceAndInterpolationProvider",
+            &Class::SetDistanceAndInterpolationProvider, py::arg("provider"),
+            cls_doc.SetDistanceAndInterpolationProvider.doc)
+        .def("distance_and_interpolation_provider",
+            &Class::distance_and_interpolation_provider,
+            py_rvp::reference_internal,
+            cls_doc.distance_and_interpolation_provider.doc)
         .def("SetConfigurationDistanceFunction",
             WrapCallbacks(&Class::SetConfigurationDistanceFunction),
             py::arg("distance_function"),

@@ -4,7 +4,9 @@
 #include "drake/planning/body_shape_description.h"
 #include "drake/planning/collision_checker_context.h"
 #include "drake/planning/collision_checker_params.h"
+#include "drake/planning/distance_and_interpolation_provider.h"
 #include "drake/planning/edge_measure.h"
+#include "drake/planning/linear_distance_and_interpolation_provider.h"
 #include "drake/planning/robot_clearance.h"
 #include "drake/planning/robot_collision_type.h"
 
@@ -61,6 +63,45 @@ void DefinePlanningCollisionCheckerInterfaceTypes(py::module m) {
   }
 
   {
+    using Class = DistanceAndInterpolationProvider;
+    constexpr auto& cls_doc = doc.DistanceAndInterpolationProvider;
+    py::class_<Class, std::shared_ptr<Class>> cls(
+        m, "DistanceAndInterpolationProvider", cls_doc.doc);
+    cls  // BR
+        .def("ComputeConfigurationDistance",
+            &Class::ComputeConfigurationDistance,
+            cls_doc.ComputeConfigurationDistance.doc)
+        .def("InterpolateBetweenConfigurations",
+            &Class::InterpolateBetweenConfigurations,
+            cls_doc.InterpolateBetweenConfigurations.doc);
+  }
+
+  {
+    using Class = LinearDistanceAndInterpolationProvider;
+    constexpr auto& cls_doc = doc.LinearDistanceAndInterpolationProvider;
+    py::class_<Class, DistanceAndInterpolationProvider,
+        std::shared_ptr<LinearDistanceAndInterpolationProvider>>
+        cls(m, "LinearDistanceAndInterpolationProvider", cls_doc.doc);
+    cls  // BR
+        .def(py::init<const drake::multibody::MultibodyPlant<double>&>(),
+            py::arg("plant"), cls_doc.ctor.doc_1args_plant)
+        .def(py::init<const drake::multibody::MultibodyPlant<double>&,
+                 const Eigen::VectorXd&>(),
+            py::arg("plant"), py::arg("distance_weights"),
+            cls_doc.ctor.doc_2args_plant_distance_weights)
+        .def(py::init<const drake::multibody::MultibodyPlant<double>&,
+                 const std::map<drake::multibody::JointIndex,
+                     Eigen::VectorXd>&>(),
+            py::arg("plant"), py::arg("joint_distance_weights"),
+            cls_doc.ctor.doc_2args_plant_joint_distance_weights)
+        .def("distance_weights", &Class::distance_weights,
+            py_rvp::reference_internal, cls_doc.distance_weights.doc)
+        .def("quaternion_dof_start_indices",
+            &Class::quaternion_dof_start_indices,
+            cls_doc.quaternion_dof_start_indices.doc);
+  }
+
+  {
     using Class = CollisionCheckerParams;
     constexpr auto& cls_doc = doc.CollisionCheckerParams;
     py::class_<Class> cls(m, "CollisionCheckerParams", cls_doc.doc);
@@ -76,6 +117,9 @@ void DefinePlanningCollisionCheckerInterfaceTypes(py::module m) {
               self.model = std::move(model);
             },
             cls_doc.model.doc)
+        .def_readwrite("distance_and_interpolation_provider",
+            &Class::distance_and_interpolation_provider,
+            cls_doc.distance_and_interpolation_provider.doc)
         .def_readwrite("robot_model_instances", &Class::robot_model_instances,
             cls_doc.robot_model_instances.doc)
         .def_readwrite("configuration_distance_function",

@@ -19,6 +19,21 @@ namespace drake {
 namespace geometry {
 namespace optimization {
 
+void CheckOrthogonalComplementBasis(const AffineSubspace& as) {
+  Eigen::MatrixXd perpendicular_basis = as.OrthogonalComplementBasis();
+  EXPECT_EQ(perpendicular_basis.cols(),
+            as.ambient_dimension() - as.AffineDimension());
+  EXPECT_EQ(perpendicular_basis.rows(), as.ambient_dimension());
+  // Check that every perpendicular basis vector is orthogonal to
+  // every basis vector.
+  const double kTol = 1e-15;
+  for (int i = 0; i < perpendicular_basis.cols(); ++i) {
+    for (int j = 0; j < as.basis().cols(); ++j) {
+      EXPECT_NEAR(0, as.basis().col(j).dot(perpendicular_basis.col(i)), kTol);
+    }
+  }
+}
+
 GTEST_TEST(AffineSubspaceTest, DefaultCtor) {
   const AffineSubspace dut;
   EXPECT_EQ(dut.basis().cols(), 0);
@@ -43,6 +58,7 @@ GTEST_TEST(AffineSubspaceTest, DefaultCtor) {
       dut.Project(test_point)));
   EXPECT_TRUE(dut.ContainedIn(AffineSubspace()));
   EXPECT_TRUE(dut.IsNearlyEqualTo(AffineSubspace()));
+  CheckOrthogonalComplementBasis(dut);
 }
 
 GTEST_TEST(AffineSubspaceTest, Point) {
@@ -65,6 +81,7 @@ GTEST_TEST(AffineSubspaceTest, Point) {
   EXPECT_FALSE(as.PointInSet(Eigen::VectorXd::Zero(3)));
   EXPECT_TRUE(as.IntersectsWith(as));
   EXPECT_TRUE(as.PointInSet(as.Project(Eigen::VectorXd::Zero(3))));
+  CheckOrthogonalComplementBasis(as);
 
   // Should throw because the ambient dimension is wrong.
   EXPECT_THROW(as.Project(Eigen::VectorXd::Zero(1)), std::exception);
@@ -110,6 +127,7 @@ GTEST_TEST(AffineSubspaceTest, Line) {
   EXPECT_FALSE(as.PointInSet(Eigen::VectorXd::Zero(3), kTol));
   EXPECT_TRUE(as.IntersectsWith(as));
   EXPECT_TRUE(as.PointInSet(as.Project(Eigen::VectorXd::Zero(3)), kTol));
+  CheckOrthogonalComplementBasis(as);
 
   // Test local coordinates
   EXPECT_EQ(as.AffineDimension(), 1);
@@ -160,6 +178,7 @@ GTEST_TEST(AffineSubspaceTest, Plane) {
   EXPECT_FALSE(as.PointInSet(Eigen::VectorXd::Zero(3)));
   EXPECT_TRUE(as.IntersectsWith(as));
   EXPECT_TRUE(as.PointInSet(as.Project(Eigen::VectorXd::Zero(3))));
+  CheckOrthogonalComplementBasis(as);
 
   // Test local coordinates
   EXPECT_EQ(as.AffineDimension(), 2);
@@ -210,6 +229,7 @@ GTEST_TEST(AffineSubspaceTest, VolumeInR3) {
   EXPECT_TRUE(as.PointInSet(Eigen::VectorXd::Zero(3)));
   EXPECT_TRUE(as.IntersectsWith(as));
   EXPECT_TRUE(as.PointInSet(as.Project(Eigen::VectorXd::Zero(3))));
+  CheckOrthogonalComplementBasis(as);
 
   // Test local coordinates
   EXPECT_EQ(as.AffineDimension(), 3);
@@ -261,6 +281,7 @@ GTEST_TEST(AffineSubspaceTest, VolumeInR4) {
   EXPECT_FALSE(as.PointInSet(Eigen::VectorXd::Zero(4)));
   EXPECT_TRUE(as.IntersectsWith(as));
   EXPECT_TRUE(as.PointInSet(as.Project(Eigen::VectorXd::Zero(4))));
+  CheckOrthogonalComplementBasis(as);
 
   // Test local coordinates
   EXPECT_EQ(as.AffineDimension(), 3);

@@ -351,11 +351,6 @@ class CollisionCheckerThrowTest : public testing::Test {
   double self_collision_padding_{0.0};
 };
 
-TEST_F(CollisionCheckerThrowTest, BadFn) {
-  distance_fn_ = {};
-  ExpectConstructorThrow(".*distance_function != nullptr.*");
-}
-
 TEST_F(CollisionCheckerThrowTest, BadStepSize) {
   edge_step_size_ = 0.0;
   ExpectConstructorThrow(".*edge_step_size.*");
@@ -1417,7 +1412,7 @@ GTEST_TEST(EdgeCheckTest, Configuration) {
                                                  const VectorXd& q2) {
     const double dist = (q1 - q2).norm();
     if (dist == 0) return 0.0;
-    return -1.5;
+    return 1.5;
   };
   CollisionCheckerTester dut = MakeEdgeChecker<CollisionCheckerTester>(dist0);
   const int q_size = dut.plant().num_positions();
@@ -1448,9 +1443,9 @@ GTEST_TEST(EdgeCheckTest, Configuration) {
     // Distance function.
 
     // Evaluate (1) and (2) as constructed. dist0 should always return -1.5.
-    EXPECT_EQ(dut.ComputeConfigurationDistance(q1, q2), -1.5);
+    EXPECT_EQ(dut.ComputeConfigurationDistance(q1, q2), 1.5);
     ASSERT_NE(dut.MakeStandaloneConfigurationDistanceFunction(), nullptr);
-    EXPECT_EQ(dut.MakeStandaloneConfigurationDistanceFunction()(q1, q2), -1.5);
+    EXPECT_EQ(dut.MakeStandaloneConfigurationDistanceFunction()(q1, q2), 1.5);
 
     // Change the function via (3).
     const ConfigurationDistanceFunction dist1 = [](const VectorXd& a,

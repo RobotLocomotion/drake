@@ -23,9 +23,11 @@ drake_cc_library(
     hdrs = ["collision_checker_abstract_test_suite.h"],
     data = [
         ":collision_ground_plane.sdf",
+        ":flying_robot_base.sdf",
         "//manipulation/models/iiwa_description:models",
     ],
     deps = [
+        "//multibody/parsing",
         "//planning:collision_avoidance",
         "//planning:collision_checker",
         "@common_robotics_utilities",

@@ -17,6 +17,8 @@ drake_cc_package_library(
         ":collision_checker",
         ":collision_checker_context",
         ":collision_checker_params",
+        ":distance_and_interpolation_provider",
+        ":linear_distance_and_interpolation_provider",
         ":robot_clearance",
         ":robot_collision_type",
         ":robot_diagram",
@@ -57,14 +59,16 @@ drake_cc_library(
         ":body_shape_description",
         ":collision_checker_context",
         ":collision_checker_params",
+        ":distance_and_interpolation_provider",
         ":robot_clearance",
         ":robot_collision_type",
-        ":robot_diagram_builder",
+        ":robot_diagram",
         "//common:essential",
         "//geometry",
         "//multibody/plant",
     ],
     deps = [
+        ":linear_distance_and_interpolation_provider",
         "@common_robotics_utilities",
     ],
 )
@@ -83,8 +87,32 @@ drake_cc_library(
     name = "collision_checker_params",
     hdrs = ["collision_checker_params.h"],
     deps = [
+        ":distance_and_interpolation_provider",
         ":robot_diagram",
         "//multibody/tree:multibody_tree_indexes",
+    ],
+)
+
+drake_cc_library(
+    name = "distance_and_interpolation_provider",
+    srcs = ["distance_and_interpolation_provider.cc"],
+    hdrs = ["distance_and_interpolation_provider.h"],
+    deps = [
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "linear_distance_and_interpolation_provider",
+    srcs = ["linear_distance_and_interpolation_provider.cc"],
+    hdrs = ["linear_distance_and_interpolation_provider.h"],
+    interface_deps = [
+        ":distance_and_interpolation_provider",
+        "//multibody/plant",
+    ],
+    deps = [
+        "//common:essential",
+        "@common_robotics_utilities",
     ],
 )
 
@@ -164,7 +192,7 @@ drake_cc_library(
     visibility = ["//visibility:private"],
     deps = [
         ":collision_checker",
-        ":robot_diagram",
+        ":robot_diagram_builder",
         "//multibody/parsing",
     ],
 )
@@ -212,6 +240,32 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "distance_and_interpolation_provider_test",
+    deps = [
+        ":distance_and_interpolation_provider",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "@common_robotics_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "linear_distance_and_interpolation_provider_test",
+    data = [
+        "//manipulation/models/iiwa_description:models",
+        "//planning/test_utilities:collision_ground_plane.sdf",
+        "//planning/test_utilities:flying_robot_base.sdf",
+    ],
+    deps = [
+        ":linear_distance_and_interpolation_provider",
+        ":planning_test_helpers",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "@common_robotics_utilities",
+    ],
+)
+
+drake_cc_googletest(
     name = "robot_clearance_test",
     deps = [
         ":robot_clearance",
@@ -248,6 +302,7 @@ drake_cc_googletest(
     # Be sure to exercise OpenMP-related features.
     num_threads = 2,
     deps = [
+        ":linear_distance_and_interpolation_provider",
         ":planning_test_helpers",
         ":scene_graph_collision_checker",
         "//common/test_utilities:eigen_matrix_compare",
@@ -258,6 +313,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "unimplemented_collision_checker_test",
     deps = [
+        ":robot_diagram_builder",
         ":unimplemented_collision_checker",
         "//common/test_utilities:expect_throws_message",
     ],

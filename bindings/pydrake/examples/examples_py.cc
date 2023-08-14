@@ -15,6 +15,7 @@ Python examples.
   py::module::import("pydrake.multibody.plant");
   py::module::import("pydrake.systems.framework");
   py::module::import("pydrake.systems.primitives");
+  py::module::import("pydrake.systems.sensors");
 
   // These are in alphabetical order; the modules do not depend on each other.
   internal::DefineExamplesAcrobot(m);

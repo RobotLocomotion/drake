@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <string>
 
 #include "drake/multibody/parsing/model_directives.h"
 #include "drake/planning/collision_checker.h"
@@ -13,6 +14,15 @@ namespace test {
 /* Creates a RobotDiagram from the given directives. */
 std::unique_ptr<RobotDiagram<double>> MakePlanningTestModel(
     const multibody::parsing::ModelDirectives& directives);
+
+/* Creates a RobotDiagram from the given model data string.
+The model_ext is the file format extension (e.g., "dmd.yaml").
+The model_data is the model file contents. */
+std::unique_ptr<RobotDiagram<double>> MakePlanningTestModel(
+    const std::string& model_ext, const std::string& model_contents);
+
+/* Returns a vector of non-uniform distance weights for a 7-dof iiwa. */
+Eigen::VectorXd GetIiwaDistanceWeights();
 
 /* Returns a particular ConfigurationDistanceFunction for a 7-dof iiwa.
 The weights are non-uniform. */
