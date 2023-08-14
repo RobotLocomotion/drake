@@ -15,4 +15,5 @@ from .tree import *  # noqa
 from .benchmarks.all import *  # noqa
 
 # Main programs.
+from . import fix_inertia
 from . import mesh_to_model
