@@ -95,7 +95,7 @@ class SparseSystem : public LeafSystem<symbolic::Expression> {
     derivatives->SetFromVector(xdot);
   }
 
-  void DoCalcDiscreteVariableUpdates(
+  EventStatus DoCalcDiscreteVariableUpdates(
       const systems::Context<symbolic::Expression>& context,
       const std::vector<
           const systems::DiscreteUpdateEvent<symbolic::Expression>*>&,
@@ -112,6 +112,7 @@ class SparseSystem : public LeafSystem<symbolic::Expression> {
     const Vector2<symbolic::Expression> next_xd =
         A * xd + B1 * u0 + B2 * u1 + f0;
     discrete_state->set_value(0, next_xd);
+    return EventStatus::Succeeded();
   }
 };
 

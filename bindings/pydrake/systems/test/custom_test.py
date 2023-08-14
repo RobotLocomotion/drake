@@ -114,6 +114,7 @@ class CustomVectorSystem(VectorSystem):
         self.ValidateContext(context)
         x_n[:] = x + 2*u
         self.has_called.append("discrete")
+        return EventStatus.Succeeded()
 
 
 # Wraps `Adder`.
@@ -426,7 +427,7 @@ class TestCustom(unittest.TestCase):
 
             def DoPublish(self, context, events):
                 # Call base method to ensure we do not get recursion.
-                LeafSystem.DoPublish(self, context, events)
+                status = LeafSystem.DoPublish(self, context, events)
                 # N.B. We do not test for a singular call to `DoPublish`
                 # (checking `assertFalse(self.called_publish)` first) because
                 # the above `_DeclareInitializationEvent` will call both its
@@ -434,6 +435,7 @@ class TestCustom(unittest.TestCase):
                 # `Simulator::Initialize` from `call_leaf_system_overrides`,
                 # even when we explicitly say not to publish at initialize.
                 self.called_publish = True
+                return status
 
             def DoCalcTimeDerivatives(self, context, derivatives):
                 # Note:  Don't call base method here; it would abort because
@@ -444,9 +446,10 @@ class TestCustom(unittest.TestCase):
             def DoCalcDiscreteVariableUpdates(
                     self, context, events, discrete_state):
                 # Call base method to ensure we do not get recursion.
-                LeafSystem.DoCalcDiscreteVariableUpdates(
+                status = LeafSystem.DoCalcDiscreteVariableUpdates(
                     self, context, events, discrete_state)
                 self.called_discrete = True
+                return status
 
             def DoGetWitnessFunctions(self, context):
                 self.called_getwitness = True

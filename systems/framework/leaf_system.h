@@ -1837,7 +1837,7 @@ class LeafSystem : public System<T> {
 
   @param[in] context Const current context.
   @param[in] events All the publish events that need handling. */
-  virtual void DoPublish(
+  [[nodiscard]] virtual EventStatus DoPublish(
       const Context<T>& context,
       const std::vector<const PublishEvent<T>*>& events) const;
 
@@ -1870,7 +1870,7 @@ class LeafSystem : public System<T> {
   @param[in] events All the discrete update events that need handling.
   @param[in,out] discrete_state The current state of the system on input;
   the desired state of the system on return. */
-  virtual void DoCalcDiscreteVariableUpdates(
+  [[nodiscard]] virtual EventStatus DoCalcDiscreteVariableUpdates(
       const Context<T>& context,
       const std::vector<const DiscreteUpdateEvent<T>*>& events,
       DiscreteValues<T>* discrete_state) const;
@@ -1906,7 +1906,7 @@ class LeafSystem : public System<T> {
                         handling.
   @param[in,out] state   The current state of the system on input; the
                          desired state of the system on return. */
-  virtual void DoCalcUnrestrictedUpdate(
+  [[nodiscard]] virtual EventStatus DoCalcUnrestrictedUpdate(
       const Context<T>& context,
       const std::vector<const UnrestrictedUpdateEvent<T>*>& events,
       State<T>* state) const;
@@ -1936,7 +1936,7 @@ class LeafSystem : public System<T> {
   // Assumes @param events is an instance of LeafEventCollection, throws
   // std::bad_cast otherwise.
   // Assumes @param events is not empty. Aborts otherwise.
-  void DispatchPublishHandler(
+  EventStatus DispatchPublishHandler(
       const Context<T>& context,
       const EventCollection<PublishEvent<T>>& events) const final;
 
@@ -1944,7 +1944,7 @@ class LeafSystem : public System<T> {
   // Assumes @p events is an instance of LeafEventCollection, throws
   // std::bad_cast otherwise.
   // Assumes @p events is not empty. Aborts otherwise.
-  void DispatchDiscreteVariableUpdateHandler(
+  EventStatus DispatchDiscreteVariableUpdateHandler(
       const Context<T>& context,
       const EventCollection<DiscreteUpdateEvent<T>>& events,
       DiscreteValues<T>* discrete_state) const final;
@@ -1960,7 +1960,7 @@ class LeafSystem : public System<T> {
   // Assumes @p events is an instance of LeafEventCollection, throws
   // std::bad_cast otherwise.
   // Assumes @p events is not empty. Aborts otherwise.
-  void DispatchUnrestrictedUpdateHandler(
+  EventStatus DispatchUnrestrictedUpdateHandler(
       const Context<T>& context,
       const EventCollection<UnrestrictedUpdateEvent<T>>& events,
       State<T>* state) const final;

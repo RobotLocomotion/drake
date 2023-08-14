@@ -57,7 +57,7 @@ void DiscreteDerivative<T>::set_input_history(
 }
 
 template <typename T>
-void DiscreteDerivative<T>::DoCalcDiscreteVariableUpdates(
+EventStatus DiscreteDerivative<T>::DoCalcDiscreteVariableUpdates(
     const drake::systems::Context<T>& context,
     const std::vector<const drake::systems::DiscreteUpdateEvent<T>*>&,
     drake::systems::DiscreteValues<T>* state) const {
@@ -71,6 +71,8 @@ void DiscreteDerivative<T>::DoCalcDiscreteVariableUpdates(
   if (suppress_initial_transient_) {
     state->get_mutable_vector(2)[0] = context.get_discrete_state(2)[0] + 1.0;
   }
+
+  return EventStatus::Succeeded();
 }
 
 template <typename T>
