@@ -97,7 +97,7 @@ class PyPlotVisualizer(LeafSystem):
         # simulate it.
         # We need to bind a mechanism for declaring forced events so we don't
         # have to resort to overriding the dispatcher.
-        LeafSystem.DoPublish(self, context, event)
+        status = LeafSystem.DoPublish(self, context, event)
         if self._show:
             self.draw(context)
             self.fig.canvas.draw()
@@ -107,6 +107,7 @@ class PyPlotVisualizer(LeafSystem):
             snapshot.SetTimeStateAndParametersFrom(context)
             self.FixInputPortsFrom(self, context, snapshot)
             self._recorded_contexts.append(snapshot)
+        return status
 
     def draw(self, context):
         """Draws a single frame.

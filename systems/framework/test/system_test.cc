@@ -105,10 +105,11 @@ class TestSystemBase : public System<T> {
     ADD_FAILURE() << "A test called a method that was expected to be unused.";
   }
 
-  void DispatchUnrestrictedUpdateHandler(
+  EventStatus DispatchUnrestrictedUpdateHandler(
       const Context<T>&, const EventCollection<UnrestrictedUpdateEvent<T>>&,
       State<T>*) const final {
     ADD_FAILURE() << "A test called a method that was expected to be unused.";
+    return EventStatus::DidNothing();
   }
 
   void DoApplyUnrestrictedUpdate(
@@ -140,17 +141,19 @@ class TestSystemBase : public System<T> {
     ADD_FAILURE() << "A test called a method that was expected to be unused.";
   }
 
-  void DispatchPublishHandler(
+  EventStatus DispatchPublishHandler(
       const Context<T>& context,
       const EventCollection<PublishEvent<T>>& event_info) const override {
     ADD_FAILURE() << "A test called a method that was expected to be unused.";
+    return EventStatus::DidNothing();
   }
 
-  void DispatchDiscreteVariableUpdateHandler(
+  EventStatus DispatchDiscreteVariableUpdateHandler(
       const Context<T>& context,
       const EventCollection<DiscreteUpdateEvent<T>>& event_info,
       DiscreteValues<T>* discrete_state) const override {
     ADD_FAILURE() << "A test called a method that was expected to be unused.";
+    return EventStatus::DidNothing();
   }
 
   std::multimap<int, int> GetDirectFeedthroughs() const override {
@@ -228,7 +231,7 @@ class TestSystem : public TestSystemBase<double> {
   }
 
  protected:
-  void DispatchPublishHandler(
+  EventStatus DispatchPublishHandler(
       const Context<double>& context,
       const EventCollection<PublishEvent<double>>& events) const final {
     const LeafEventCollection<PublishEvent<double>>& leaf_events =
@@ -236,9 +239,10 @@ class TestSystem : public TestSystemBase<double> {
     if (leaf_events.HasEvents()) {
       this->MyPublish(context, leaf_events.get_events());
     }
+    return EventStatus::Succeeded();
   }
 
-  void DispatchDiscreteVariableUpdateHandler(
+  EventStatus DispatchDiscreteVariableUpdateHandler(
       const Context<double>& context,
       const EventCollection<DiscreteUpdateEvent<double>>& events,
       DiscreteValues<double>* discrete_state) const final {
@@ -249,6 +253,7 @@ class TestSystem : public TestSystemBase<double> {
       this->MyCalcDiscreteVariableUpdates(context, leaf_events.get_events(),
           discrete_state);
     }
+    return EventStatus::Succeeded();
   }
 
   // Sets up an arbitrary mapping from the current time to the next discrete
@@ -362,7 +367,9 @@ TEST_F(SystemTest, DiscretePublish) {
   EXPECT_EQ(events.front()->get_trigger_type(),
             TriggerType::kPeriodic);
 
-  system_.Publish(*context_, event_info->get_publish_events());
+  const EventStatus status =
+      system_.Publish(*context_, event_info->get_publish_events());
+  EXPECT_EQ(status.severity(), EventStatus::kSucceeded);
   EXPECT_EQ(1, system_.get_publish_count());
 }
 
@@ -376,8 +383,9 @@ TEST_F(SystemTest, DiscreteUpdate) {
 
   std::unique_ptr<DiscreteValues<double>> update =
       system_.AllocateDiscreteVariables();
-  system_.CalcDiscreteVariableUpdate(
+  const EventStatus status = system_.CalcDiscreteVariableUpdate(
       *context_, event_info->get_discrete_update_events(), update.get());
+  EXPECT_EQ(status.severity(), EventStatus::kSucceeded);
   EXPECT_EQ(1, system_.get_update_count());
 }
 
