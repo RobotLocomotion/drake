@@ -33,6 +33,7 @@ using systems::BasicVector;
 using systems::Context;
 using systems::DiscreteUpdateEvent;
 using systems::DiscreteValues;
+using systems::EventStatus;
 using systems::InputPortIndex;
 using systems::LinearSystem;
 using systems::SymbolicVectorSystem;

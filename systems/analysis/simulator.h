@@ -115,8 +115,14 @@ priori and is determined by the Step() algorithm. Each step consists of zero or
 more unrestricted updates, followed by zero or more discrete updates, followed
 by (possibly zero-length) continuous time and state advancement, followed by
 zero or more publishes, and then a call to the monitor() function if one has
-been defined. Updates, publishes, and the monitor can report errors or detect a
-termination condition; that is not shown in the pseudocode below.
+been defined.
+
+Updates, publishes, and the monitor can report errors or detect a
+termination condition; that is not shown in the pseudocode below. We follow
+this policy: a "failed" return from any computation terminates the step
+immediately with no further processing. A "reached termination" return permits
+further processing of simultaneous events and is superseded if a failure
+occurs but doesn't permit time to advance any further.
 
 The pseudocode will clarify the effects on time and state of each of the update
 stages above. This algorithm is given a starting Context value `{tₛ, x⁻(tₛ)}`
@@ -250,20 +256,18 @@ class Simulator {
   // TODO(sherm1) Make Initialize() attempt to satisfy constraints.
 
   /// Prepares the %Simulator for a simulation. In order, the sequence of
-  /// actions taken here are:
+  /// actions taken here is:
   /// - The active integrator's Initialize() method is invoked.
   /// - Statistics are reset.
   /// - By default, initialization update events are triggered and handled to
   ///   produce the initial trajectory value `{t₀, x(t₀)}`. If initialization
   ///   events are suppressed, it is the caller's responsibility to ensure the
   ///   desired initial state.
-
   /// - Then that initial value is provided to the handlers for any publish
   ///   events that have triggered, including initialization events if any, and
   ///   per-step publish events, periodic or other time-triggered publish
   ///   events that are scheduled for the initial time t₀, and finally a call
   ///   to the monitor() function if one has been defined.
-
   ///
   /// See the class documentation for more information. We recommend calling
   /// Initialize() explicitly prior to beginning a simulation so that error
@@ -283,7 +287,8 @@ class Simulator {
   /// Initialize() call is missing.
   ///
   /// @note The only way to suppress initialization events is by calling
-  /// Initialize() explicitly. The most common scenario for this is when
+  /// Initialize() explicitly with the `suppress_initialization_events`
+  /// parameter set. The most common scenario for this is when
   /// reusing a Simulator object. In this case, the caller is responsible for
   /// ensuring the correctness of the initial state.
   ///
@@ -304,11 +309,10 @@ class Simulator {
   SimulatorStatus Initialize(const InitializeParams& params = {});
 
   /// Advances the System's trajectory until `boundary_time` is reached in
-  /// the context or some other termination condition occurs. A variety of
-  /// `std::runtime_error` conditions are possible here, as well as error
+  /// the Context or some other termination condition occurs. A variety of
+  /// `std::exception` conditions are possible here, as well as error
   /// conditions that may be thrown by the System when it is asked to perform
-  /// computations. Be sure to enclose your simulation in a `try-catch` block
-  /// and display the `what()` message.
+  /// computations.
   ///
   /// We recommend that you call Initialize() prior to making the first call
   /// to AdvanceTo(). However, if you don't it will be called for you the first
@@ -425,7 +429,7 @@ class Simulator {
   /// });
   /// @endcode
   /// In the above case the Simulator's AdvanceTo() method will throw an
-  /// std::runtime_error containing a human-readable message including
+  /// std::exception containing a human-readable message including
   /// the text provided in the monitor.
   ///
   /// @note monitor() is called every time the trajectory is advanced by a step,
@@ -450,7 +454,8 @@ class Simulator {
   }
 
   // TODO(sherm1): Provide options for issuing a warning or aborting the
-  // simulation if the desired rate cannot be achieved.
+  //  simulation if the desired rate cannot be achieved.
+
   /// Slow the simulation down to *approximately* synchronize with real time
   /// when it would otherwise run too fast. Normally the %Simulator takes steps
   /// as quickly as it can. You can request that it slow down to synchronize
@@ -586,8 +591,10 @@ class Simulator {
   /// have post construction or immediately after `Initialize()`.
   void ResetStatistics();
 
-  /// Gets the number of publishes made since the last Initialize() or
-  /// ResetStatistics() call.
+  /// Gets the number of publish dispatcher calls made since the last
+  /// Initialize() or ResetStatistics() call. Note that a single dispatcher
+  /// call may handle multiple publish events. Does not count calls that fail
+  /// or return "did nothing".
   int64_t get_num_publishes() const { return num_publishes_; }
 
   /// Gets the number of steps since the last Initialize() call. (We're
@@ -595,12 +602,16 @@ class Simulator {
   /// AdvanceTo() call can potentially take many steps.
   int64_t get_num_steps_taken() const { return num_steps_taken_; }
 
-  /// Gets the number of discrete variable updates performed since the last
-  /// Initialize() call.
+  /// Gets the number of discrete variable update dispatcher calls since the
+  /// last Initialize() or ResetStatistics() call. Note that a single dispatcher
+  /// call may handle multiple discrete update events. Does not count calls that
+  /// fail or return "did nothing".
   int64_t get_num_discrete_updates() const { return num_discrete_updates_; }
 
-  /// Gets the number of "unrestricted" updates performed since the last
-  /// Initialize() call.
+  /// Gets the number of unrestricted update dispatcher calls since the last
+  /// Initialize() or ResetStatistics() call. Note that a single dispatcher
+  /// call may handle multiple unrestricted update events. Does not count calls
+  /// that fail or return "did nothing".
   int64_t get_num_unrestricted_updates() const {
     return num_unrestricted_updates_; }
 
@@ -708,36 +719,29 @@ class Simulator {
       std::unique_ptr<const System<T>> owned_system,
       std::unique_ptr<Context<T>> context);
 
-  void HandleUnrestrictedUpdate(
+  [[nodiscard]] EventStatus HandleUnrestrictedUpdate(
       const EventCollection<UnrestrictedUpdateEvent<T>>& events);
 
-  void HandleDiscreteUpdate(
+  [[nodiscard]] EventStatus HandleDiscreteUpdate(
       const EventCollection<DiscreteUpdateEvent<T>>& events);
 
-  void HandlePublish(const EventCollection<PublishEvent<T>>& events);
+  [[nodiscard]] EventStatus HandlePublish(
+      const EventCollection<PublishEvent<T>>& events);
 
-  // Invoke the monitor() if there is one. If it wants termination we'll
-  // update the Simulator status accordingly. If it reports failure,
-  // currently we just throw.
-  // TODO(sherm1) Add an option where the Simulator returns failed status
-  // rather than throwing.
-  void CallMonitorUpdateStatusAndMaybeThrow(SimulatorStatus* status) {
-    DRAKE_DEMAND(status != nullptr);
-    if (!get_monitor()) return;
-    const EventStatus monitor_status = get_monitor()(*context_);
-    if (monitor_status.severity() == EventStatus::kReachedTermination) {
-      status->SetReachedTermination(ExtractDoubleOrThrow(context_->get_time()),
-                                    monitor_status.system(),
-                                    monitor_status.message());
-      return;
-    }
-    if (monitor_status.severity() == EventStatus::kFailed) {
-      status->SetEventHandlerFailed(ExtractDoubleOrThrow(context_->get_time()),
-                                    monitor_status.system(),
-                                    monitor_status.message());
-      throw std::runtime_error(status->FormatMessage());
-    }
-    // For any other condition, leave the status unchanged.
+  // If an event handler failed, we have to interrupt the simulation.
+  // In that case, updates the SimulatorStatus to explain what happened and
+  // then optionally throws or returns true. Returns false and does nothing
+  // if no failure.
+  bool CheckForEventFailureAndMaybeThrow(
+      const EventStatus& event_status, bool throw_on_failure,
+      SimulatorStatus* simulator_status) {
+    if (!event_status.failed()) return false;
+    simulator_status->SetEventHandlerFailed(
+        ExtractDoubleOrThrow(context_->get_time()), event_status.system(),
+        event_status.message());
+    if (throw_on_failure)
+      throw std::runtime_error(simulator_status->FormatMessage());
+    return true;  // Failed, propagate error status upward.
   }
 
   TimeOrWitnessTriggered IntegrateContinuousState(

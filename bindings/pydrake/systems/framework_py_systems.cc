@@ -123,7 +123,7 @@ struct Impl {
     // Trampoline virtual methods.
 
     // TODO(sherm): This overload should be deprecated and removed; the
-    // preferred workflow is to register callbacks with Declare*PublishEvent.
+    //  preferred workflow is to register callbacks with Declare*PublishEvent.
     void DoPublish(const Context<T>& context,
         const vector<const PublishEvent<T>*>& events) const override {
       // Yuck! We have to dig in and use internals :(
@@ -131,7 +131,7 @@ struct Impl {
       // be called from C++, and pybind will not have seen these objects yet.
       // @see https://github.com/pybind/pybind11/issues/1241
       // TODO(eric.cousineau): Figure out how to supply different behavior,
-      // possibly using function wrapping.
+      //  possibly using function wrapping.
       PYBIND11_OVERLOAD_INT(void, LeafSystem<T>, "DoPublish", &context, events);
       // If the macro did not return, use default functionality.
       Base::DoPublish(context, events);
@@ -147,8 +147,8 @@ struct Impl {
     }
 
     // TODO(sherm): This overload should be deprecated and removed; the
-    // preferred workflow is to register callbacks with
-    // Declare*DiscreteUpdateEvent.
+    //  preferred workflow is to register callbacks with
+    //  Declare*DiscreteUpdateEvent.
     void DoCalcDiscreteVariableUpdates(const Context<T>& context,
         const std::vector<const DiscreteUpdateEvent<T>*>& events,
         DiscreteValues<T>* discrete_state) const override {
@@ -163,7 +163,7 @@ struct Impl {
     // expecting the python overload to return a list of witnesses (instead
     // of taking in an empty pointer to std::vector<>.
     // TODO(russt): This is actually a System method, so make a PySystem
-    // trampoline if this is needed outside of LeafSystem.
+    //  trampoline if this is needed outside of LeafSystem.
     void DoGetWitnessFunctions(const Context<T>& context,
         std::vector<const WitnessFunction<T>*>* witnesses) const override {
       auto wrapped = [&]() -> std::vector<const WitnessFunction<T>*> {

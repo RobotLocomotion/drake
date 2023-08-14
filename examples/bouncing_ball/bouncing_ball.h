@@ -99,7 +99,8 @@ class BouncingBall final : public systems::LeafSystem<T> {
   // Updates the velocity discontinuously to reverse direction. This method
   // is called by the Simulator when the signed distance witness function
   // triggers.
-  void DoCalcUnrestrictedUpdate(const systems::Context<T>& context,
+  void DoCalcUnrestrictedUpdate(
+      const systems::Context<T>& context,
       const std::vector<const systems::UnrestrictedUpdateEvent<T>*>&,
       systems::State<T>* next_state) const override {
     systems::VectorBase<T>& next_cstate =
@@ -122,8 +123,7 @@ class BouncingBall final : public systems::LeafSystem<T> {
     //
     // [Stronge 1991]  W. J. Stronge. Unraveling paradoxical theories for rigid
     //                 body collisions. J. Appl. Mech., 58:1049-1055, 1991.
-    next_cstate.SetAtIndex(
-        1, cstate.GetAtIndex(1) * restitution_coef_ * -1.);
+    next_cstate.SetAtIndex(1, cstate.GetAtIndex(1) * restitution_coef_ * -1.);
   }
 
   // The signed distance witness function is always active and, hence, always

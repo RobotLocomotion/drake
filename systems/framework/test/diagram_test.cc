@@ -2062,8 +2062,9 @@ TEST_F(DiscreteStateTest, UpdateDiscreteVariables) {
 
   // Fast forward to 9.0 sec and do the update.
   context_->SetTime(9.0);
-  diagram_.CalcDiscreteVariableUpdate(
+  EventStatus status = diagram_.CalcDiscreteVariableUpdate(
       *context_, events->get_discrete_update_events(), updates.get());
+  EXPECT_EQ(status.severity(), EventStatus::kSucceeded);
 
   // Note that non-participating hold1's state should not have been
   // copied (if it had been it would be 1001.0).
@@ -2087,8 +2088,9 @@ TEST_F(DiscreteStateTest, UpdateDiscreteVariables) {
 
   // Fast forward to 12.0 sec and do the update again.
   context_->SetTime(12.0);
-  diagram_.CalcDiscreteVariableUpdate(
+  status = diagram_.CalcDiscreteVariableUpdate(
       *context_, events->get_discrete_update_events(), updates.get());
+  EXPECT_EQ(status.severity(), EventStatus::kSucceeded);
   EXPECT_EQ(17.0, updates1[0]);
   EXPECT_EQ(23.0, updates2[0]);
 }
@@ -2132,8 +2134,9 @@ TEST_F(DiscreteStateTest, DiscreteUpdateNotificationsAreLocalized) {
 
   // Fast forward to 2.0 sec and collect the update.
   context_->SetTime(2.0);
-  diagram_.CalcDiscreteVariableUpdate(
+  const EventStatus status = diagram_.CalcDiscreteVariableUpdate(
       *context_, discrete_events, updates.get());
+  EXPECT_EQ(status.severity(), EventStatus::kSucceeded);
 
   // Of course nothing should have been notified since nothing's changed yet.
   EXPECT_EQ(num_notifications(ctx1), notifications_1);
@@ -2298,8 +2301,9 @@ GTEST_TEST(DiscreteStateDiagramTest, CalcDiscreteVariableUpdate) {
   // Fast forward to the event time, and record it for the test below.
   double time = 2.0;
   context->SetTime(time);
-  diagram.CalcDiscreteVariableUpdate(
+  EventStatus status = diagram.CalcDiscreteVariableUpdate(
       *context, events->get_discrete_update_events(), x_buf.get());
+  EXPECT_EQ(status.severity(), EventStatus::kSucceeded);
 
   // The non-participating sys2 state shouldn't have been copied (if it had
   // it would now be 2). sys1's state should have been copied, replacing the
@@ -2327,8 +2331,9 @@ GTEST_TEST(DiscreteStateDiagramTest, CalcDiscreteVariableUpdate) {
   // Fast forward to the new event time, and record it for the tests below.
   time = 6.0;
   context->SetTime(time);
-  diagram.CalcDiscreteVariableUpdate(
+  status = diagram.CalcDiscreteVariableUpdate(
       *context, events->get_discrete_update_events(), x_buf.get());
+  EXPECT_EQ(status.severity(), EventStatus::kSucceeded);
   // Both sys1 and sys2's discrete data should be updated.
   diagram.ApplyDiscreteVariableUpdate(events->get_discrete_update_events(),
                                       x_buf.get(), context.get());
@@ -2410,7 +2415,10 @@ TEST_F(DiscreteStateTest, Publish) {
   // Fast forward to 19.0 sec and do the publish.
   EXPECT_EQ(false, diagram_.publisher()->published());
   context_->SetTime(19.0);
-  diagram_.Publish(*context_, events->get_publish_events());
+  const EventStatus status =
+      diagram_.Publish(*context_, events->get_publish_events());
+  EXPECT_EQ(status.severity(), EventStatus::kSucceeded);
+
   // Check that publication occurred.
   EXPECT_EQ(true, diagram_.publisher()->published());
 }
@@ -2459,7 +2467,7 @@ class SystemWithAbstractState : public LeafSystem<double> {
                             .get_mutable_value<double>();
     // The initial value for state should match what's currently in the
     // context.
-    ASSERT_EQ(state_num, context.get_abstract_state<double>(0));
+    EXPECT_EQ(state_num, context.get_abstract_state<double>(0));
     state_num += context.get_time();
   }
 
@@ -2560,8 +2568,9 @@ TEST_F(AbstractStateDiagramTest, CalcUnrestrictedUpdate) {
 
   double time = 2.0;
   context_->SetTime(time);
-  diagram_.CalcUnrestrictedUpdate(
+  EventStatus status = diagram_.CalcUnrestrictedUpdate(
       *context_, events->get_unrestricted_update_events(), x_buf.get());
+  EXPECT_EQ(status.severity(), EventStatus::kSucceeded);
 
   // The non-participating sys2 state shouldn't have been copied (if it had
   // it would now be kSys2Id). sys1's state should have been copied, replacing
@@ -2593,8 +2602,9 @@ TEST_F(AbstractStateDiagramTest, CalcUnrestrictedUpdate) {
 
   time = 6.0;
   context_->SetTime(time);
-  diagram_.CalcUnrestrictedUpdate(
+  status = diagram_.CalcUnrestrictedUpdate(
       *context_, events->get_unrestricted_update_events(), x_buf.get());
+  EXPECT_EQ(status.severity(), EventStatus::kSucceeded);
   // Both sys1 and sys2's abstract data should be updated.
   diagram_.ApplyUnrestrictedUpdate(events->get_unrestricted_update_events(),
                                    x_buf.get(), context_.get());
@@ -2648,8 +2658,9 @@ TEST_F(AbstractStateDiagramTest, UnrestrictedUpdateNotificationsAreLocalized) {
 
   // Fast forward to 2.0 sec and collect the update.
   context_->SetTime(next_time);
-  diagram_.CalcUnrestrictedUpdate(
+  const EventStatus status = diagram_.CalcUnrestrictedUpdate(
       *context_, unrestricted_events, updates.get());
+  EXPECT_EQ(status.severity(), EventStatus::kSucceeded);
 
   // Of course nothing should have been notified since nothing's changed yet.
   EXPECT_EQ(num_notifications(ctx1), notifications_1);
@@ -3266,18 +3277,20 @@ GTEST_TEST(DiagramEventEvaluation, Propagation) {
   ASSERT_TRUE(events->HasEvents());
 
   // Does unrestricted update first.
-  diagram->CalcUnrestrictedUpdate(
+  EventStatus status = diagram->CalcUnrestrictedUpdate(
       *context, events->get_unrestricted_update_events(), tmp_state.get());
+  EXPECT_EQ(status.severity(), EventStatus::kSucceeded);
   context->get_mutable_state().SetFrom(*tmp_state);
 
   // Does discrete updates second.
-  diagram->CalcDiscreteVariableUpdate(*context,
-                                      events->get_discrete_update_events(),
-                                      tmp_discrete_state.get());
+  status = diagram->CalcDiscreteVariableUpdate(
+      *context, events->get_discrete_update_events(), tmp_discrete_state.get());
+  EXPECT_EQ(status.severity(), EventStatus::kSucceeded);
   context->get_mutable_discrete_state().SetFrom(*tmp_discrete_state);
 
   // Publishes last.
-  diagram->Publish(*context, events->get_publish_events());
+  status = diagram->Publish(*context, events->get_publish_events());
+  EXPECT_EQ(status.severity(), EventStatus::kSucceeded);
 
   // Only sys2 published once.
   EXPECT_EQ(sys0->publish_count(), 0);
@@ -3356,7 +3369,9 @@ GTEST_TEST(MyEventTest, MyEventTestLeaf) {
     dut.GetPerStepEvents(*context, per_step_events.get());
     events->AddToEnd(*periodic_events);
     events->AddToEnd(*per_step_events);
-    dut.Publish(*context, events->get_publish_events());
+    const EventStatus status =
+        dut.Publish(*context, events->get_publish_events());
+    EXPECT_EQ(status.severity(), EventStatus::kSucceeded);
 
     EXPECT_EQ(dut.get_periodic_count(), period > 0 ? 1 : 0);
     EXPECT_EQ(dut.get_per_step_count(), period > 0 ? 0 : 1);
@@ -3404,7 +3419,8 @@ GTEST_TEST(MyEventTest, MyEventTestDiagram) {
 
   // FYI time not actually needed here; events to handle already selected.
   context->SetTime(time);
-  dut->Publish(*context, events->get_publish_events());
+  EventStatus status = dut->Publish(*context, events->get_publish_events());
+  EXPECT_EQ(status.severity(), EventStatus::kSucceeded);
 
   // Sys0's period is larger, so it doesn't get evaluated.
   EXPECT_EQ(sys[0]->get_periodic_count(), 0);
@@ -3430,7 +3446,8 @@ GTEST_TEST(MyEventTest, MyEventTestDiagram) {
   // it doesn't contain the ones leftover from the CalcNextUpdateTime() call.
   // (If it doesn't get cleared some of the counts will be incremented twice.)
   dut->GetPeriodicEvents(*context, periodic_events.get());
-  dut->Publish(*context, periodic_events->get_publish_events());
+  status = dut->Publish(*context, periodic_events->get_publish_events());
+  EXPECT_EQ(status.severity(), EventStatus::kSucceeded);
 
   EXPECT_EQ(sys[0]->get_periodic_count(), 1);
   EXPECT_EQ(sys[0]->get_per_step_count(), 0);
