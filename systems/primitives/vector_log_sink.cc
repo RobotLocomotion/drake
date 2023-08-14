@@ -66,10 +66,7 @@ VectorLogSink<T>::VectorLogSink(int input_size,
   }
 
   if (publish_triggers.find(TriggerType::kPerStep) != publish_triggers.end()) {
-    this->DeclarePerStepEvent(PublishEvent<T>(
-        [this](const Context<T>& context, const PublishEvent<T>&) {
-          this->WriteToLog(context);
-        }));
+    this->DeclarePerStepPublishEvent(&VectorLogSink::WriteToLog);
   }
 }
 
