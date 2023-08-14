@@ -75,8 +75,6 @@ class Spectrahedron final : public ConvexSet {
   std::pair<std::unique_ptr<Shape>, math::RigidTransformd> DoToShapeWithPose()
       const final;
 
-  double DoVolume() const final;
-
   copyable_unique_ptr<solvers::MathematicalProgram> sdp_{};
 };
 

@@ -89,6 +89,10 @@ class VPolytope final : public ConvexSet {
   @pre ambient_dimension() == 3. */
   void WriteObj(const std::filesystem::path& filename) const;
 
+  /** Computes the volume of this V-Polytope.
+  @note this function calls qhull to compute the volume. */
+  using ConvexSet::CalcVolume;
+
  private:
   std::unique_ptr<ConvexSet> DoClone() const final;
 
@@ -133,8 +137,6 @@ class VPolytope final : public ConvexSet {
   void ImplementGeometry(const Convex& convex, void* data) final;
   void ImplementGeometry(const Mesh& mesh, void* data) final;
 
-  /** Computes the volume of this V-Polytope.
-  @note this function calls qhull to compute the volume. */
   double DoVolume() const;
 
   Eigen::MatrixXd vertices_;

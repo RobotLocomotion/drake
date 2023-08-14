@@ -292,10 +292,6 @@ Spectrahedron::DoToShapeWithPose() const {
       "ToShapeWithPose is not supported by Spectrahedron.");
 }
 
-double Spectrahedron::DoVolume() const {
-  throw std::runtime_error("Spectrahedron::DoVolume() is not implemented yet.");
-}
-
 }  // namespace optimization
 }  // namespace geometry
 }  // namespace drake

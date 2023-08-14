@@ -345,7 +345,7 @@ class TestGeometryOptimization(unittest.TestCase):
         v_box = mut.VPolytope.MakeBox(
             lb=[-1, -1, -1], ub=[1, 1, 1])
         self.assertTrue(v_box.PointInSet([0, 0, 0]))
-        self.assertAlmostEqual(v_box.Volume(), 8, 1E-10)
+        self.assertAlmostEqual(v_box.CalcVolume(), 8, 1E-10)
         v_unit_box = mut.VPolytope.MakeUnitBox(dim=3)
         self.assertTrue(v_unit_box.PointInSet([0, 0, 0]))
         v_from_h = mut.VPolytope(H=mut.HPolyhedron.MakeUnitBox(dim=3))
@@ -364,7 +364,7 @@ class TestGeometryOptimization(unittest.TestCase):
         ])
 
         vpoly = mut.VPolytope(vertices=vertices).GetMinimalRepresentation()
-        self.assertAlmostEqual(vpoly.Volume(), np.pi * r * r, delta=1e-3)
+        self.assertAlmostEqual(vpoly.CalcVolume(), np.pi * r * r, delta=1e-3)
         self.assertEqual(vpoly.vertices().shape[1], n)
         # Calculate the length of the path that visits all the vertices
         # sequentially.
@@ -381,7 +381,7 @@ class TestGeometryOptimization(unittest.TestCase):
             [0, 0, 0, 0, a, a, a, a, a/2, a/3, a/4, a/5]
         ])
         vpoly = mut.VPolytope(vertices=vertices).GetMinimalRepresentation()
-        self.assertAlmostEqual(vpoly.Volume(), a * a * a)
+        self.assertAlmostEqual(vpoly.CalcVolume(), a * a * a)
         self.assertEqual(vpoly.vertices().shape[1], 8)
         temp_file_name = f"{temp_directory()}/vpoly.obj"
         vpoly.WriteObj(filename=temp_file_name)

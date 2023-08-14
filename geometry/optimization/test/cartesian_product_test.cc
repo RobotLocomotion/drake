@@ -548,10 +548,10 @@ GTEST_TEST(CartesianProductTest, Volume) {
   vertices << 0, 1, 0, 0, 0, 3;
   VPolytope V = VPolytope(vertices);
   // A rectangle from (0,0) to (3,2) has area 6.
-  HyperRectangle R =
-      HyperRectangle(Eigen::Vector2d::Zero(), Eigen::Vector2d(3, 2));
+  Hyperrectangle R =
+      Hyperrectangle(Eigen::Vector2d::Zero(), Eigen::Vector2d(3, 2));
   CartesianProduct S(V, R);
-  EXPECT_NEAR(S.Volume(), 9, 1e-6);
+  EXPECT_NEAR(S.CalcVolume(), 9, 1e-6);
 }
 
 }  // namespace optimization

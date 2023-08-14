@@ -259,28 +259,6 @@ VPolytope VPolytope::GetMinimalRepresentation() const {
   return VPolytope(minimal_vertices);
 }
 
-double VPolytope::DoVolume() const {
-  if (ambient_dimension() == 0) {
-    return 0.0;
-  }
-  orgQhull::Qhull qhull;
-  try {
-    qhull.runQhull("", ambient_dimension(), vertices_.cols(), vertices_.data(),
-                   "");
-  } catch (const orgQhull::QhullError& e) {
-    if (e.errorCode() == qh_ERRsingular) {
-      // The convex hull is singular. It has 0 volume.
-      return 0;
-    }
-  }
-  if (qhull.qhullStatus() != 0) {
-    throw std::runtime_error(
-        fmt::format("Qhull terminated with status {} and  message:\n{}",
-                    qhull.qhullStatus(), qhull.qhullMessage()));
-  }
-  return qhull.volume();
-}
-
 void VPolytope::WriteObj(const std::filesystem::path& filename) const {
   DRAKE_THROW_UNLESS(ambient_dimension() == 3);
 
@@ -507,6 +485,28 @@ void VPolytope::ImplementGeometry(const Mesh& mesh, void* data) {
   Matrix3Xd* vertex_data = static_cast<Matrix3Xd*>(data);
   *vertex_data = GetConvexHullFromObjFile(mesh.filename(), mesh.extension(),
                                           mesh.scale(), "VPolytope");
+}
+
+double VPolytope::DoVolume() const {
+  if (ambient_dimension() == 0) {
+    return 0.0;
+  }
+  orgQhull::Qhull qhull;
+  try {
+    qhull.runQhull("", ambient_dimension(), vertices_.cols(), vertices_.data(),
+                   "");
+  } catch (const orgQhull::QhullError& e) {
+    if (e.errorCode() == qh_ERRsingular) {
+      // The convex hull is singular. It has 0 volume.
+      return 0;
+    }
+  }
+  if (qhull.qhullStatus() != 0) {
+    throw std::runtime_error(
+        fmt::format("Qhull terminated with status {} and  message:\n{}",
+                    qhull.qhullStatus(), qhull.qhullMessage()));
+  }
+  return qhull.volume();
 }
 
 MatrixXd GetVertices(const Convex& convex) {

@@ -16,29 +16,31 @@ namespace optimization {
 
 /** Axis-aligned hyperrectangle in Rᵈ defined by its lower bounds and upper
  * bounds as {x| lb ≤ x ≤ ub} */
-class HyperRectangle final : public ConvexSet {
+class Hyperrectangle final : public ConvexSet {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(HyperRectangle)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Hyperrectangle)
 
-  HyperRectangle();
+  Hyperrectangle();
 
-  HyperRectangle(const Eigen::Ref<const Eigen::VectorXd>& lb,
+  /** Constructs a hyperrectangle from its lower and upper bounds.
+   @pre lb.size() == ub.size()
+   @pre lb(i) <= ub(i) for all i */
+  Hyperrectangle(const Eigen::Ref<const Eigen::VectorXd>& lb,
                  const Eigen::Ref<const Eigen::VectorXd>& ub);
 
-  /** Get the lower bound of the hyperrectangle. */
-  const Eigen::VectorXd lb() const { return lb_; }
+  /** Get the lower bounds of the hyperrectangle. */
+  const Eigen::VectorXd& lb() const { return lb_; }
 
-  /** Get the upper bound of the hyperrectangle. */
-  const Eigen::VectorXd ub() const { return ub_; }
+  /** Get the upper bounds of the hyperrectangle. */
+  const Eigen::VectorXd& ub() const { return ub_; }
 
-  /** Variant of UniformSample for hyperrectangles that uses uniform sampling in
-   * each axis */
+  /** Draws a uniform sample from the set. */
   Eigen::VectorXd UniformSample(RandomGenerator* generator) const;
 
   /** Get the center of the hyperrectangle. */
   Eigen::VectorXd Center() const;
 
-  // Helper to convert this hyperrectangle to an HPolyhedron.
+  /** Helper to convert this hyperrectangle to an HPolyhedron. */
   HPolyhedron MakeHPolyhedron() const;
 
   /** Passes this object to an Archive.
@@ -54,38 +56,19 @@ class HyperRectangle final : public ConvexSet {
  private:
   std::unique_ptr<ConvexSet> DoClone() const;
 
-  /** Non-virtual interface implementation for IsBounded().
-  @pre ambient_dimension() >= 0 */
-  bool DoIsBounded() const { return true; }
+  bool DoIsBounded() const;
 
-  /** Non-virtual interface implementation for IsEmpty(). The default
-  implementation solves a feasibility optimization problem, but derived
-  classes can override with a custom (more efficient) implementation.
-  Zero-dimensional sets are considered to be nonempty by default. Sets which
-  can be zero-dimensional and empty must handle this behavior in their
-  derived implementation of DoIsEmpty. */
+  /* An Hyperrectangle can not empty as lb <= ub is already checked in the
+   * ctor*/
   bool DoIsEmpty() const { return false; }
 
-  /** Non-virtual interface implementation for MaybeGetPoint(). The default
-  implementation returns nullopt. Sets that can model a single point should
-  override with a custom implementation.
-  @pre ambient_dimension() >= 0 */
   std::optional<Eigen::VectorXd> DoMaybeGetPoint() const;
 
-  /** Non-virtual interface implementation for MaybeGetFeasiblePoint(). The
-  default implementation solves a feasibility optimization problem, but
-  derived classes can override with a custom (more efficient) implementation. */
   std::optional<Eigen::VectorXd> DoMaybeGetFeasiblePoint() const;
 
-  /** Non-virtual interface implementation for PointInSet().
-  @pre x.size() == ambient_dimension()
-  @pre ambient_dimension() >= 0 */
   bool DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
                     double tol) const;
 
-  /** Non-virtual interface implementation for AddPointInSetConstraints().
-  @pre vars.size() == ambient_dimension()
-  @pre ambient_dimension() > 0 */
   std::pair<VectorX<symbolic::Variable>,
             std::vector<solvers::Binding<solvers::Constraint>>>
   DoAddPointInSetConstraints(
@@ -93,26 +76,12 @@ class HyperRectangle final : public ConvexSet {
       const Eigen::Ref<const solvers::VectorXDecisionVariable>& vars)
       const final;
 
-  /** Non-virtual interface implementation for
-  AddPointInNonnegativeScalingConstraints().
-  @pre x.size() == ambient_dimension()
-  @pre ambient_dimension() > 0 */
   std::vector<solvers::Binding<solvers::Constraint>>
   DoAddPointInNonnegativeScalingConstraints(
       solvers::MathematicalProgram* prog,
       const Eigen::Ref<const solvers::VectorXDecisionVariable>& x,
       const symbolic::Variable& t) const final;
 
-  /** Non-virtual interface implementation for
-  AddPointInNonnegativeScalingConstraints(). Subclasses must override to
-  add the constraints needed to keep the point A * x + b in the
-  non-negative scaling of the set. Note that subclasses do not need to add
-  the constraint c * t + d ≥ 0 as it is already added.
-  @pre ambient_dimension() > 0
-  @pre A.rows() == ambient_dimension()
-  @pre A.rows() == b.rows()
-  @pre A.cols() == x.size()
-  @pre c.rows() == t.size() */
   std::vector<solvers::Binding<solvers::Constraint>>
   DoAddPointInNonnegativeScalingConstraints(
       solvers::MathematicalProgram* prog,

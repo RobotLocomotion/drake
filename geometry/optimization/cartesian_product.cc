@@ -343,7 +343,7 @@ double CartesianProduct::DoVolume() const {
   {
     double volume = 1.0;
     for (const auto& set : sets_) {
-      volume *= set->Volume();
+      volume *= set->CalcVolume();
     }
     return volume;
   }

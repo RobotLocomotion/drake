@@ -83,17 +83,6 @@ double volume_of_unit_sphere(int dim) {
 
 }  // namespace
 
-double Hyperellipsoid::DoVolume() const {
-  if (ambient_dimension() == 0) {
-    return 0.0;
-  }
-  if (A_.rows() < A_.cols()) {
-    return std::numeric_limits<double>::infinity();
-  }
-  // Note: this will (correctly) return infinity if the determinant is zero.
-  return volume_of_unit_sphere(ambient_dimension()) / A_.determinant();
-}
-
 std::pair<double, VectorXd> Hyperellipsoid::MinimumUniformScalingToTouch(
     const ConvexSet& other) const {
   DRAKE_THROW_UNLESS(ambient_dimension() > 0);
@@ -388,6 +377,17 @@ void Hyperellipsoid::ImplementGeometry(const Ellipsoid& ellipsoid, void* data) {
 void Hyperellipsoid::ImplementGeometry(const Sphere& sphere, void* data) {
   auto* A = static_cast<Eigen::Matrix3d*>(data);
   *A = Eigen::Matrix3d::Identity() / sphere.radius();
+}
+
+double Hyperellipsoid::DoVolume() const {
+  if (ambient_dimension() == 0) {
+    return 0.0;
+  }
+  if (A_.rows() < A_.cols()) {
+    return std::numeric_limits<double>::infinity();
+  }
+  // Note: this will (correctly) return infinity if the determinant is zero.
+  return volume_of_unit_sphere(ambient_dimension()) / A_.determinant();
 }
 
 }  // namespace optimization

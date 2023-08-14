@@ -126,6 +126,10 @@ class Hyperellipsoid final : public ConvexSet {
     CheckInvariants();
   }
 
+  /** Computes the volume for the hyperellipsoid set.
+  DRAKE_DEPRECATED("2024-02-01", "Use CalcVolume instead.") */
+  double Volume() const { return CalcVolume(); }
+
  private:
   std::unique_ptr<ConvexSet> DoClone() const final;
 

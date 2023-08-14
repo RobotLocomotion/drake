@@ -102,6 +102,38 @@ GTEST_TEST(MakeConvexSetsTest, NoExtraCopying) {
     LimitMalloc guard({.max_num_allocations = num, .min_num_allocations = num});
     MakeConvexSets(box);
   }
+}
+
+// Test the computation of the minimal axis-aligned bounding box of a
+// polyhedron.
+GTEST_TEST(HyperRectangleTest, MaybeCalcAxisAlignedBoundingBox) {
+  Matrix<double, 4, 2> A;
+  Matrix<double, 4, 1> b;
+  // clang-format off
+  A <<  1,  0,  // x ≤ 1
+        1,  1,  // x + y ≤ 1
+       -1,  0,  // x ≥ -2
+        -1, -1;  // x+y ≥ -1
+  b << 1, 1, 2, 1;
+  // clang-format on
+  HPolyhedron H(A, b);
+  HyperRectangle aabb_opt = H.MaybeCalcAxisAlignedBoundingBox();
+  EXPECT_TRUE(aabb_opt.has_value());
+  auto aabb = aabb_opt.value();
+  EXPECT_NEAR(aabb.lb()(0), -2, 1e-6);
+  EXPECT_NEAR(aabb.ub()(0), 1, 1e-6);
+  EXPECT_NEAR(aabb.lb()(1), -2, 1e-6);
+  EXPECT_NEAR(aabb.ub()(1), 3, 1e-6);
+  // Check the volume of the bounding box.
+  EXPECT_NEAR(aabb.CalcVolume(), 15, 1e-6);
+  // The H-polyhedron volume throws an exception.
+  EXPECT_THROW(H.CalcVolume(), std::runtime_error);
+  // Compute the volume of the polytope
+  RandomGenerator generator(1234);
+  const auto polytope_volume = H.CalcVolumeViaSampling(&generator, 1e-2);
+  // Hpolyhedron volume is compared against the analytic value = 6.0 as it is a
+  // parallelogram.
+  EXPECT_NEAR(polytope_volume, 6.0, 1e-1);
 };
 
 }  // namespace

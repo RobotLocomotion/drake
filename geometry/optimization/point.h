@@ -89,7 +89,7 @@ class Point final : public ConvexSet {
   using ShapeReifier::ImplementGeometry;
   void ImplementGeometry(const Sphere& sphere, void* data) final;
 
-  double DoVolume() const final { return 0.0; }
+  double DoVolume() const { return 0.0; }
 
   Eigen::VectorXd x_;
 };

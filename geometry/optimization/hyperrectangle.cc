@@ -12,6 +12,7 @@
 #include <Eigen/Eigenvalues>
 #include <fmt/format.h>
 
+#include "drake/geometry/optimization/convex_set.h"
 #include "drake/solvers/solve.h"
 
 namespace drake {
@@ -30,27 +31,40 @@ using solvers::VectorXDecisionVariable;
 using symbolic::Expression;
 using symbolic::Variable;
 
-HyperRectangle::HyperRectangle() : ConvexSet(0) {}
+Hyperrectangle::Hyperrectangle() : ConvexSet(0) {}
 
-HyperRectangle::HyperRectangle(const Eigen::Ref<const Eigen::VectorXd>& lb,
+Hyperrectangle::Hyperrectangle(const Eigen::Ref<const Eigen::VectorXd>& lb,
                                const Eigen::Ref<const Eigen::VectorXd>& ub)
-    : ConvexSet(lb.size()), lb_(lb), ub_(ub) {}
-
-std::optional<Eigen::VectorXd> HyperRectangle::DoMaybeGetPoint() const {
-  return lb_;
+    : ConvexSet(lb.size()), lb_(lb), ub_(ub) {
+  CheckInvariants();
 }
 
-std::optional<Eigen::VectorXd> HyperRectangle::DoMaybeGetFeasiblePoint() const {
+std::unique_ptr<ConvexSet> Hyperrectangle::DoClone() const {
+  return std::make_unique<Hyperrectangle>(*this);
+}
+
+bool Hyperrectangle::DoIsBounded() const {
+  return (ub_.array() - lb_.array()).allFinite();
+}
+
+std::optional<Eigen::VectorXd> Hyperrectangle::DoMaybeGetPoint() const {
+  if (lb_ == ub_) {
+    return lb_;
+  }
+  return std::nullopt;
+}
+
+std::optional<Eigen::VectorXd> Hyperrectangle::DoMaybeGetFeasiblePoint() const {
   return (ub_ + lb_) / 2.0;
 }
 
-bool HyperRectangle::DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
+bool Hyperrectangle::DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
                                   double tol) const {
   return (x.array() >= lb_.array() - tol).all() &&
          (x.array() <= ub_.array() + tol).all();
 }
 
-Eigen::VectorXd HyperRectangle::UniformSample(
+Eigen::VectorXd Hyperrectangle::UniformSample(
     RandomGenerator* generator) const {
   Eigen::VectorXd sample(ambient_dimension());
   for (int i = 0; i < lb_.size(); ++i) {
@@ -61,13 +75,12 @@ Eigen::VectorXd HyperRectangle::UniformSample(
 }
 
 std::vector<solvers::Binding<solvers::Constraint>>
-HyperRectangle::DoAddPointInNonnegativeScalingConstraints(
+Hyperrectangle::DoAddPointInNonnegativeScalingConstraints(
     solvers::MathematicalProgram* prog,
     const Eigen::Ref<const solvers::VectorXDecisionVariable>& x,
     const symbolic::Variable& t) const {
   std::vector<solvers::Binding<solvers::Constraint>> constraints;
   const int n_d = x.rows();
-  DRAKE_THROW_UNLESS(x.size() == ambient_dimension());
   // Add constraints of the form x \in t * [lb, ub].
   // Can be written as:
   // [I, -lb][x,t] >= 0 and [I, -ub][x,t] <= 0
@@ -87,7 +100,7 @@ HyperRectangle::DoAddPointInNonnegativeScalingConstraints(
 }
 
 std::vector<solvers::Binding<solvers::Constraint>>
-HyperRectangle::DoAddPointInNonnegativeScalingConstraints(
+Hyperrectangle::DoAddPointInNonnegativeScalingConstraints(
     solvers::MathematicalProgram* prog,
     const Eigen::Ref<const Eigen::MatrixXd>& A,
     const Eigen::Ref<const Eigen::VectorXd>& b,
@@ -122,7 +135,7 @@ HyperRectangle::DoAddPointInNonnegativeScalingConstraints(
 
 std::pair<VectorX<symbolic::Variable>,
           std::vector<solvers::Binding<solvers::Constraint>>>
-HyperRectangle::DoAddPointInSetConstraints(
+Hyperrectangle::DoAddPointInSetConstraints(
     solvers::MathematicalProgram* prog,
     const Eigen::Ref<const solvers::VectorXDecisionVariable>& vars) const {
   std::vector<solvers::Binding<solvers::Constraint>> constraints;
@@ -131,114 +144,32 @@ HyperRectangle::DoAddPointInSetConstraints(
   return {std::move(vars_sym), std::move(constraints)};
 }
 
-std::optional<HyperRectangle> ConvexSet::MaybeCalcAxisAlignedBoundingBox()
-    const {
-  solvers::MathematicalProgram prog;
-  auto point = prog.NewContinuousVariables(ambient_dimension());
-  AddPointInSetConstraints(&prog, point);
-  std::vector<int> directions{-1, 1};
-  Eigen::VectorXd cost_vector = Eigen::VectorXd::Zero(ambient_dimension());
-  Eigen::VectorXd lb = Eigen::VectorXd::Zero(ambient_dimension());
-  Eigen::VectorXd ub = Eigen::VectorXd::Zero(ambient_dimension());
-  auto cost = prog.AddLinearCost(cost_vector.transpose(), 0.0, point);
-  for (int i = 0; i < ambient_dimension(); i++) {
-    for (const auto direction : directions) {
-      cost_vector(i) = static_cast<double>(direction);
-      cost.evaluator()->UpdateCoefficients(cost_vector);
-      auto result = solvers::Solve(prog);
-      if (result.is_success()) {
-        if (direction == 1) {
-          lb(i) = result.get_optimal_cost();
-        } else {
-          ub(i) = -result.get_optimal_cost();
-        }
-      } else {
-        drake::log()->warn(
-            "ConvexSet::MaybeCalcAxisAlignedBoundingBox(): Failed to solve the "
-            "optimization problem. Maybe the set is unbounded?");
-        return std::nullopt;
-      }
-      // reset the cost vector
-      cost_vector(i) = 0.0;
-    }
-  }
-  return HyperRectangle(lb, ub);
-}
-
-std::unique_ptr<ConvexSet> HyperRectangle::DoClone() const {
-  return std::make_unique<HyperRectangle>(*this);
-}
-
-double HyperRectangle::DoVolume() const {
-  return (ub_ - lb_).prod();
-}
-
-Eigen::VectorXd HyperRectangle::Center() const {
+Eigen::VectorXd Hyperrectangle::Center() const {
   return (ub_ + lb_) / 2.0;
 }
 
-HPolyhedron HyperRectangle::MakeHPolyhedron() const {
+HPolyhedron Hyperrectangle::MakeHPolyhedron() const {
   return HPolyhedron::MakeBox(lb_, ub_);
 }
 
 std::pair<std::unique_ptr<Shape>, math::RigidTransformd>
-HyperRectangle::DoToShapeWithPose() const {
+Hyperrectangle::DoToShapeWithPose() const {
   if (ambient_dimension() != 3) {
     throw std::runtime_error(
-        "HyperRectangle::DoToShapeWithPose() is only implemented for "
+        "Hyperrectangle::DoToShapeWithPose() is only implemented for "
         "ambient_dimension() == 3");
   }
-  return std::make_pair(
-      std::make_unique<geometry::Box>(ub_ - lb_),
-      math::RigidTransformd(math::RotationMatrixd::Identity(), Center()));
+  return std::make_pair(std::make_unique<geometry::Box>(ub_ - lb_),
+                        math::RigidTransformd(Center()));
 }
 
-void HyperRectangle::CheckInvariants() {
+double Hyperrectangle::DoVolume() const {
+  return (ub_ - lb_).prod();
+}
+
+void Hyperrectangle::CheckInvariants() {
   DRAKE_THROW_UNLESS(lb_.size() == ub_.size());
   DRAKE_THROW_UNLESS((lb_.array() <= ub_.array()).all());
-}
-
-double ConvexSet::DoCalcVolumeViaSampling(RandomGenerator* generator,
-                                          const double desired_rel_accuracy,
-                                          const size_t min_num_samples,
-                                          const size_t max_num_samples) const {
-  DRAKE_THROW_UNLESS(desired_rel_accuracy <= 1.0);
-  DRAKE_THROW_UNLESS(min_num_samples <= max_num_samples);
-  const auto aabb_opt = this->MaybeCalcAxisAlignedBoundingBox();
-  if (!aabb_opt.has_value()) {
-    throw std::runtime_error("Cannot calculate volume of unbounded set.");
-  }
-  const HyperRectangle aabb = aabb_opt.value();
-  size_t num_samples = 0;
-  size_t num_hits = 0;
-  double relative_accuracy = 1.0;
-  while ((num_samples < min_num_samples ||
-          relative_accuracy > desired_rel_accuracy) &&
-         num_samples < max_num_samples) {
-    auto point = aabb.UniformSample(generator);
-    num_samples++;
-    if (this->PointInSet(point)) {
-      num_hits++;
-    }
-    const double mean = static_cast<double>(num_hits) / num_samples;
-    if (mean > 0) {
-      // The standard deviation of the MonteCarlo estimate is sigma/sqrt(n),
-      // where sigma is the standard deviation of the Bernoulli distribution.
-      // The standard deviation of the Bernoulli distribution is sqrt(p(1-p)),
-      // where p is the probability of success.  Therefore, the standard
-      // deviation of the estimate is sqrt((1-p)/p/n).  The relative accuracy is
-      // the standard deviation divided by the mean, so the relative accuracy is
-      // sqrt((1-p)/p/n)/p = sqrt((1-p)/p^2/n) = sqrt((1/p-1)/n).
-      relative_accuracy = std::sqrt((1 - mean) / mean / num_samples);
-    }
-  }
-  if (relative_accuracy > desired_rel_accuracy) {
-    drake::log()->warn(
-        "Volume calculation did not converge to desired accuracy {}.  "
-        "Relative accuracy achieved: {}",
-        desired_rel_accuracy, relative_accuracy);
-  }
-  return aabb.Volume() * num_hits / num_samples;
 }
 
 }  // namespace optimization

@@ -410,6 +410,16 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "hyperrectangle_test",
+    deps = [
+        ":convex_set",
+        ":test_utilities",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/yaml",
+    ],
+)
+
+drake_cc_googletest(
     name = "hyperellipsoid_test",
     deps = [
         ":convex_set",

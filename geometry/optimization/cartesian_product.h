@@ -142,7 +142,7 @@ class CartesianProduct final : public ConvexSet {
   std::optional<Eigen::ColPivHouseholderQR<Eigen::MatrixXd>> A_decomp_{
       std::nullopt};
 
-  double DoVolume() const final;
+  double DoVolume() const;
 };
 
 }  // namespace optimization

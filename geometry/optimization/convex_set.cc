@@ -4,6 +4,7 @@
 #include <limits>
 #include <memory>
 
+#include "drake/geometry/optimization/hyperrectangle.h"
 #include "drake/solvers/solution_result.h"
 #include "drake/solvers/solve.h"
 
@@ -189,6 +190,96 @@ ConvexSet::HandleZeroAmbientDimensionConstraints(
     return new_vars[0];
   }
   return std::nullopt;
+}
+
+std::optional<Hyperrectangle> ConvexSet::MaybeCalcAxisAlignedBoundingBox()
+    const {
+  solvers::MathematicalProgram prog;
+  auto point = prog.NewContinuousVariables(ambient_dimension());
+  AddPointInSetConstraints(&prog, point);
+  std::vector<int> directions{-1, 1};
+  Eigen::VectorXd cost_vector = Eigen::VectorXd::Zero(ambient_dimension());
+  Eigen::VectorXd lb = Eigen::VectorXd::Zero(ambient_dimension());
+  Eigen::VectorXd ub = Eigen::VectorXd::Zero(ambient_dimension());
+  auto cost = prog.AddLinearCost(cost_vector.transpose(), 0.0, point);
+  for (int i = 0; i < ambient_dimension(); i++) {
+    for (const auto direction : directions) {
+      cost_vector(i) = static_cast<double>(direction);
+      cost.evaluator()->UpdateCoefficients(cost_vector);
+      auto result = solvers::Solve(prog);
+      if (result.is_success()) {
+        if (direction == 1) {
+          lb(i) = result.get_optimal_cost();
+        } else {
+          ub(i) = -result.get_optimal_cost();
+        }
+      } else {
+        drake::log()->warn(
+            "ConvexSet::MaybeCalcAxisAlignedBoundingBox(): Failed to solve the "
+            "optimization problem. Maybe the set is unbounded?");
+        return std::nullopt;
+      }
+      // reset the cost vector
+      cost_vector(i) = 0.0;
+    }
+  }
+  return Hyperrectangle(lb, ub);
+}
+
+double ConvexSet::CalcVolumeViaSampling(RandomGenerator* generator,
+                                        const double desired_rel_accuracy,
+                                        const size_t min_num_samples,
+                                        const size_t max_num_samples) const {
+  if (ambient_dimension() == 0) {
+    return 0.0;
+  }
+  if (!IsBounded()) {
+    return std::numeric_limits<double>::infinity();
+  }
+  DRAKE_THROW_UNLESS(desired_rel_accuracy <= 1.0);
+  DRAKE_THROW_UNLESS(min_num_samples <= max_num_samples);
+  const auto aabb_opt = this->MaybeCalcAxisAlignedBoundingBox();
+  // if aabb_opt is nullopt and the set is not infinity, then we have
+  // a problem with the solver.
+  DRAKE_DEMAND(aabb_opt.has_value());
+  const Hyperrectangle& aabb = aabb_opt.value();
+  size_t num_samples = 0;
+  size_t num_hits = 0;
+  double relative_accuracy = 1.0;
+  while ((num_samples < min_num_samples ||
+          relative_accuracy > desired_rel_accuracy) &&
+         num_samples < max_num_samples) {
+    auto point = aabb.UniformSample(generator);
+    ++num_samples;
+    if (this->PointInSet(point)) {
+      ++num_hits;
+    }
+    const double mean = static_cast<double>(num_hits) / num_samples;
+    if (mean > 0) {
+      // The standard deviation of the MonteCarlo estimate is sigma/sqrt(n),
+      // where sigma is the standard deviation of the Bernoulli distribution.
+      // The standard deviation of the Bernoulli distribution is sqrt(p(1-p)),
+      // where p is the probability of success.  Therefore, the standard
+      // deviation of the estimate is sqrt((1-p)/p/n).  The relative accuracy is
+      // the standard deviation divided by the mean, so the relative accuracy is
+      // sqrt((1-p)*p/n)/p = sqrt((1/p-1)/n).
+      relative_accuracy = std::sqrt((1 - mean) / mean / num_samples);
+    }
+  }
+  if (relative_accuracy > desired_rel_accuracy) {
+    drake::log()->warn(
+        "Volume calculation did not converge to desired accuracy {}.  "
+        "Relative accuracy achieved: {}",
+        desired_rel_accuracy, relative_accuracy);
+  }
+  return aabb.CalcVolume() * num_hits / num_samples;
+}
+
+double ConvexSet::DoVolume() const {
+  throw std::runtime_error(
+      fmt::format("The class {} has not implemented an exact volume "
+                  "calculation yet. Use CalcVolumeViaSampling() instead.",
+                  NiceTypeName::Get(*this)));
 }
 
 }  // namespace optimization
