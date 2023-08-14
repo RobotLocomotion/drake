@@ -4,6 +4,7 @@
 
 #include "drake/common/test_utilities/limit_malloc.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
+#include "drake/geometry/optimization/hyperrectangle.h"
 #include "drake/geometry/optimization/point.h"
 
 namespace drake {
@@ -11,6 +12,9 @@ namespace geometry {
 namespace optimization {
 namespace {
 
+using Eigen::Matrix;
+using Eigen::Matrix3d;
+using Eigen::MatrixXd;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
 using test::LimitMalloc;
@@ -117,7 +121,7 @@ GTEST_TEST(HyperRectangleTest, MaybeCalcAxisAlignedBoundingBox) {
   b << 1, 1, 2, 1;
   // clang-format on
   HPolyhedron H(A, b);
-  HyperRectangle aabb_opt = H.MaybeCalcAxisAlignedBoundingBox();
+  std::optional<Hyperrectangle> aabb_opt = H.MaybeCalcAxisAlignedBoundingBox();
   EXPECT_TRUE(aabb_opt.has_value());
   auto aabb = aabb_opt.value();
   EXPECT_NEAR(aabb.lb()(0), -2, 1e-6);
