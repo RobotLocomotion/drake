@@ -73,7 +73,9 @@ GTEST_TEST(LcmPublisherSystemTest, TestInitializationEvent) {
   // Simulator::Initialize() behavior.
   auto init_events = dut1->AllocateCompositeEventCollection();
   dut1->GetInitializationEvents(*context, &*init_events);
-  dut1->Publish(*context, init_events->get_publish_events());
+  const EventStatus status =
+      dut1->Publish(*context, init_events->get_publish_events());
+  EXPECT_TRUE(status.succeeded());
 
   EXPECT_TRUE(init_was_called);
 

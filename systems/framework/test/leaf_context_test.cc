@@ -931,6 +931,18 @@ TEST_F(LeafContextTest, PerturbTime) {
   EXPECT_FALSE(context_.get_true_time());
 }
 
+// Check that the hidden mutable "utility flag" in the Context can be set
+// even in a const Context.
+TEST_F(LeafContextTest, UtilityFlag) {
+  auto set_flag = [](const Context<double>& context) {
+    context.set_use_default_implementation(true);
+  };
+
+  EXPECT_FALSE(context_.get_use_default_implementation());
+  set_flag(context_);
+  EXPECT_TRUE(context_.get_use_default_implementation());
+}
+
 }  // namespace
 }  // namespace systems
 }  // namespace drake

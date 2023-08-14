@@ -206,7 +206,9 @@ TEST_F(MeshcatVisualizerWithIiwaTest, DeletePrefixOnInitialization) {
   {  // Send an initialization event.
     auto events = diagram_->AllocateCompositeEventCollection();
     diagram_->GetInitializationEvents(*context_, events.get());
-    diagram_->Publish(*context_, events->get_publish_events());
+    const systems::EventStatus status =
+        diagram_->Publish(*context_, events->get_publish_events());
+    EXPECT_TRUE(status.succeeded());
   }
   // Confirm that my scribble was deleted.
   EXPECT_FALSE(meshcat_->HasPath("/drake/visualizer/my_random_path"));
@@ -219,7 +221,9 @@ TEST_F(MeshcatVisualizerWithIiwaTest, DeletePrefixOnInitialization) {
   {  // Send an initialization event.
     auto events = diagram_->AllocateCompositeEventCollection();
     diagram_->GetInitializationEvents(*context_, events.get());
-    diagram_->Publish(*context_, events->get_publish_events());
+    const systems::EventStatus status =
+        diagram_->Publish(*context_, events->get_publish_events());
+    EXPECT_TRUE(status.did_nothing());
   }
   // Confirm that my scribble remains.
   EXPECT_TRUE(meshcat_->HasPath("/drake/visualizer/my_random_path"));
