@@ -123,18 +123,19 @@ struct Impl {
     // Trampoline virtual methods.
 
     // TODO(sherm): This overload should be deprecated and removed; the
-    // preferred workflow is to register callbacks with Declare*PublishEvent.
-    void DoPublish(const Context<T>& context,
+    //  preferred workflow is to register callbacks with Declare*PublishEvent.
+    EventStatus DoPublish(const Context<T>& context,
         const vector<const PublishEvent<T>*>& events) const override {
       // Yuck! We have to dig in and use internals :(
       // We must ensure that pybind only sees pointers, since this method may
       // be called from C++, and pybind will not have seen these objects yet.
       // @see https://github.com/pybind/pybind11/issues/1241
       // TODO(eric.cousineau): Figure out how to supply different behavior,
-      // possibly using function wrapping.
-      PYBIND11_OVERLOAD_INT(void, LeafSystem<T>, "DoPublish", &context, events);
+      //  possibly using function wrapping.
+      PYBIND11_OVERLOAD_INT(
+          EventStatus, LeafSystem<T>, "DoPublish", &context, events);
       // If the macro did not return, use default functionality.
-      Base::DoPublish(context, events);
+      return Base::DoPublish(context, events);
     }
 
     void DoCalcTimeDerivatives(const Context<T>& context,
@@ -147,23 +148,24 @@ struct Impl {
     }
 
     // TODO(sherm): This overload should be deprecated and removed; the
-    // preferred workflow is to register callbacks with
-    // Declare*DiscreteUpdateEvent.
-    void DoCalcDiscreteVariableUpdates(const Context<T>& context,
+    //  preferred workflow is to register callbacks with
+    //  Declare*DiscreteUpdateEvent.
+    EventStatus DoCalcDiscreteVariableUpdates(const Context<T>& context,
         const std::vector<const DiscreteUpdateEvent<T>*>& events,
         DiscreteValues<T>* discrete_state) const override {
       // See `DoPublish` for explanation.
-      PYBIND11_OVERLOAD_INT(void, LeafSystem<T>,
+      PYBIND11_OVERLOAD_INT(EventStatus, LeafSystem<T>,
           "DoCalcDiscreteVariableUpdates", &context, events, discrete_state);
       // If the macro did not return, use default functionality.
-      Base::DoCalcDiscreteVariableUpdates(context, events, discrete_state);
+      return Base::DoCalcDiscreteVariableUpdates(
+          context, events, discrete_state);
     }
 
     // This actually changes the signature of DoGetWitnessFunction,
     // expecting the python overload to return a list of witnesses (instead
     // of taking in an empty pointer to std::vector<>.
     // TODO(russt): This is actually a System method, so make a PySystem
-    // trampoline if this is needed outside of LeafSystem.
+    //  trampoline if this is needed outside of LeafSystem.
     void DoGetWitnessFunctions(const Context<T>& context,
         std::vector<const WitnessFunction<T>*>* witnesses) const override {
       auto wrapped = [&]() -> std::vector<const WitnessFunction<T>*> {
@@ -222,15 +224,15 @@ struct Impl {
     using Base::Base;
 
     // Trampoline virtual methods.
-    void DoPublish(const Context<T>& context,
+    EventStatus DoPublish(const Context<T>& context,
         const vector<const PublishEvent<T>*>& events) const override {
       // Copied from above, since we cannot use `PyLeafSystemBase` due to final
       // overrides of some methods.
       // TODO(eric.cousineau): Make this more granular?
       PYBIND11_OVERLOAD_INT(
-          void, VectorSystem<T>, "DoPublish", &context, events);
+          EventStatus, VectorSystem<T>, "DoPublish", &context, events);
       // If the macro did not return, use default functionality.
-      Base::DoPublish(context, events);
+      return Base::DoPublish(context, events);
     }
 
     void DoCalcVectorOutput(const Context<T>& context,
@@ -264,17 +266,17 @@ struct Impl {
       Base::DoCalcVectorOutput(context, input, state, derivatives);
     }
 
-    void DoCalcVectorDiscreteVariableUpdates(const Context<T>& context,
+    EventStatus DoCalcVectorDiscreteVariableUpdates(const Context<T>& context,
         const Eigen::VectorBlock<const VectorX<T>>& input,
         const Eigen::VectorBlock<const VectorX<T>>& state,
         Eigen::VectorBlock<VectorX<T>>* next_state) const override {
       // WARNING: Mutating `next_state` will not work when T is AutoDiffXd,
       // Expression, etc. See above.
-      PYBIND11_OVERLOAD_INT(void, VectorSystem<T>,
+      PYBIND11_OVERLOAD_INT(EventStatus, VectorSystem<T>,
           "DoCalcVectorDiscreteVariableUpdates", &context, input, state,
           ToEigenRef(next_state));
       // If the macro did not return, use default functionality.
-      Base::DoCalcVectorDiscreteVariableUpdates(
+      return Base::DoCalcVectorDiscreteVariableUpdates(
           context, input, state, next_state);
     }
   };

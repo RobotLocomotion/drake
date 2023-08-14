@@ -108,7 +108,7 @@ class DiscreteDerivative final : public LeafSystem<T> {
   bool suppress_initial_transient() const;
 
  private:
-  void DoCalcDiscreteVariableUpdates(
+  EventStatus DoCalcDiscreteVariableUpdates(
       const Context<T>& context,
       const std::vector<const DiscreteUpdateEvent<T>*>&,
       DiscreteValues<T>* discrete_state) const final;

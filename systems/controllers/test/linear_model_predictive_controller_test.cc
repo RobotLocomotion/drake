@@ -107,7 +107,7 @@ class CubicPolynomialSystem final : public LeafSystem<T> {
 
   // x1(k+1) = u(k)
   // x2(k+1) = -x1³(k)
-  void DoCalcDiscreteVariableUpdates(
+  EventStatus DoCalcDiscreteVariableUpdates(
       const Context<T>& context,
       const std::vector<const DiscreteUpdateEvent<T>*>&,
       DiscreteValues<T>* next_state) const final {
@@ -115,6 +115,7 @@ class CubicPolynomialSystem final : public LeafSystem<T> {
     const T& x1 = context.get_discrete_state(0).get_value()[0];
     const T& u = this->get_input_port(0).Eval(context)[0];
     next_state->set_value(0, Vector2<T>{u, pow(x1, 3.)});
+    return EventStatus::Succeeded();
   }
 
   void OutputState(const systems::Context<T>& context,

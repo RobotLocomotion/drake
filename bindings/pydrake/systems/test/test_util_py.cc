@@ -93,7 +93,7 @@ PYBIND11_MODULE(test_util, m) {
       // Call `Publish` to test `DoPublish`.
       auto events =
           LeafEventCollection<PublishEvent<T>>::MakeForcedEventCollection();
-      system.Publish(*context, *events);
+      (void)system.Publish(*context, *events);
     }
     {
       // Call `HasDirectFeedthrough` to test `DoHasDirectFeedthrough`.

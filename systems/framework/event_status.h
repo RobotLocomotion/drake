@@ -61,6 +61,16 @@ class EventStatus {
     return EventStatus(kFailed, system, std::move(message));
   }
 
+  /** Returns `true` if the status is DidNothing. */
+  bool did_nothing() const { return severity() == kDidNothing; }
+
+  /** Returns `true` if the status is Succeeded. */
+  bool succeeded() const { return severity() <= kSucceeded; }
+
+  /** Returns `true` if the status is Failed. */
+  bool failed() const { return severity() == kFailed; }
+
+
   /** Returns the severity of the current status. */
   Severity severity() const { return severity_; }
 
@@ -73,6 +83,11 @@ class EventStatus {
   event handler that produced the current status. Returns an empty string if
   no message was provided. */
   const std::string& message() const { return message_; }
+
+  /** If failed(), throws an std::exception with a human-readable message.
+  @param function_name The name of the user-callable API that encountered
+                       the failure. Don't include "()". */
+  void ThrowOnFailure(const char* function_name) const;
 
   /** (Advanced) Replaces the contents of `this` with the more-severe status
   if `candidate` is a more severe status than `this` one. Does nothing if

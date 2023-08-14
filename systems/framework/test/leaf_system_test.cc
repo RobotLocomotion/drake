@@ -57,24 +57,26 @@ class ForcedDispatchOverrideSystem : public LeafSystem<double> {
   }
 
  private:
-  void DoPublish(
+  EventStatus DoPublish(
       const Context<double>&,
       const std::vector<const PublishEvent<double>*>& events) const final {
     got_publish_event_ = (events.size() == 1);
     if (got_publish_event_)
       publish_event_trigger_type_ = events.front()->get_trigger_type();
+    return EventStatus::Succeeded();
   }
 
-  void DoCalcDiscreteVariableUpdates(
+  EventStatus DoCalcDiscreteVariableUpdates(
       const Context<double>&,
       const std::vector<const DiscreteUpdateEvent<double>*>& events,
       DiscreteValues<double>*) const final {
     got_discrete_update_event_ = (events.size() == 1);
     if (got_discrete_update_event_)
       discrete_update_event_trigger_type_ = events.front()->get_trigger_type();
+    return EventStatus::Succeeded();
   }
 
-  void DoCalcUnrestrictedUpdate(
+  EventStatus DoCalcUnrestrictedUpdate(
       const Context<double>&,
       const std::vector<const UnrestrictedUpdateEvent<double>*>& events,
       State<double>*) const final {
@@ -83,6 +85,7 @@ class ForcedDispatchOverrideSystem : public LeafSystem<double> {
       unrestricted_update_event_trigger_type_ =
           events.front()->get_trigger_type();
     }
+    return EventStatus::Succeeded();
   }
 
   // Variables used to determine whether the handlers have been called with
@@ -1731,9 +1734,9 @@ TEST_F(LeafSystemTest, CallbackAndInvalidUpdates) {
     event.AddToComposite(&leaf_events);
   }
 
-  // Verify no exception is thrown.
-  DRAKE_EXPECT_NO_THROW(system_.CalcUnrestrictedUpdate(
-      *context, leaf_events.get_unrestricted_update_events(), x.get()));
+  const EventStatus status = system_.CalcUnrestrictedUpdate(
+      *context, leaf_events.get_unrestricted_update_events(), x.get());
+  EXPECT_EQ(status.severity(), EventStatus::kSucceeded);
 
   // Change the function to change the continuous state dimension.
   // Call the unrestricted update function again, now verifying that an
@@ -1754,10 +1757,10 @@ TEST_F(LeafSystemTest, CallbackAndInvalidUpdates) {
 
   // Call the unrestricted update function, verifying that an exception
   // is thrown.
-  EXPECT_THROW(
-      system_.CalcUnrestrictedUpdate(
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      (void)system_.CalcUnrestrictedUpdate(
           *context, leaf_events.get_unrestricted_update_events(), x.get()),
-      std::logic_error);
+      ".*dimensions cannot be changed.*");
 
   // Restore the continuous state (size).
   x->set_continuous_state(std::make_unique<ContinuousState<double>>(
@@ -2416,11 +2419,13 @@ class DoPublishOverrideSystem : public LeafSystem<double> {
   }
 
  private:
-  void DoPublish(
+  EventStatus DoPublish(
       const Context<double>& context,
       const std::vector<const PublishEvent<double>*>& events) const override {
     ++do_publish_count_;
-    if (!ignore_events_) LeafSystem<double>::DoPublish(context, events);
+    if (!ignore_events_)
+      return LeafSystem<double>::DoPublish(context, events);
+    return EventStatus::DidNothing();
   }
 
   // If true, DoPublish ignores events, calls LeafSystem::DoPublish() if false.
@@ -2452,7 +2457,8 @@ GTEST_TEST(DoPublishOverrideTest, ConfirmOverride) {
   system.ForcedPublish(*context);
   EXPECT_EQ(system.do_publish_count(), 1);
   EXPECT_EQ(system.event_handle_count(), 1);
-  system.Publish(*context, events);
+  EventStatus status = system.Publish(*context, events);
+  EXPECT_EQ(status.severity(), EventStatus::kSucceeded);
   EXPECT_EQ(system.do_publish_count(), 2);
   EXPECT_EQ(system.event_handle_count(), 2);
 
@@ -2464,7 +2470,8 @@ GTEST_TEST(DoPublishOverrideTest, ConfirmOverride) {
   system.ForcedPublish(*context);
   EXPECT_EQ(system.do_publish_count(), 3);
   EXPECT_EQ(system.event_handle_count(), 2);
-  system.Publish(*context, events);
+  status = system.Publish(*context, events);
+  EXPECT_EQ(status.severity(), EventStatus::kDidNothing);
   EXPECT_EQ(system.do_publish_count(), 4);
   EXPECT_EQ(system.event_handle_count(), 2);
 }
@@ -2828,12 +2835,15 @@ GTEST_TEST(InitializationTest, ManualEventProcessing) {
   EXPECT_EQ(init_events->get_system_id(), context->get_system_id());
   dut.GetInitializationEvents(*context, init_events.get());
 
-  dut.Publish(*context, init_events->get_publish_events());
-  dut.CalcDiscreteVariableUpdate(*context,
+  EventStatus status = dut.Publish(*context, init_events->get_publish_events());
+  EXPECT_EQ(status.severity(), EventStatus::kSucceeded);
+  status = dut.CalcDiscreteVariableUpdate(*context,
                                  init_events->get_discrete_update_events(),
                                  discrete_updates.get());
-  dut.CalcUnrestrictedUpdate(
+  EXPECT_EQ(status.severity(), EventStatus::kSucceeded);
+  status = dut.CalcUnrestrictedUpdate(
       *context, init_events->get_unrestricted_update_events(), state.get());
+  EXPECT_EQ(status.severity(), EventStatus::kSucceeded);
 
   EXPECT_TRUE(dut.get_pub_init());
   EXPECT_TRUE(dut.get_dis_update_init());
@@ -3030,13 +3040,16 @@ GTEST_TEST(EventSugarTest, HandlersGetCalled) {
   dut.GetPeriodicEvents(*context, &*periodic_events);
   all_events->AddToEnd(*periodic_events);
 
-  dut.CalcUnrestrictedUpdate(
+  EventStatus status = dut.CalcUnrestrictedUpdate(
       *context, all_events->get_unrestricted_update_events(), &*state);
+  EXPECT_EQ(status.severity(), EventStatus::kSucceeded);
   dut.CalcForcedUnrestrictedUpdate(*context, &*state);
-  dut.CalcDiscreteVariableUpdate(
+  status = dut.CalcDiscreteVariableUpdate(
       *context, all_events->get_discrete_update_events(), &*discrete_state);
+  EXPECT_EQ(status.severity(), EventStatus::kSucceeded);
   dut.CalcForcedDiscreteVariableUpdate(*context, &*discrete_state);
-  dut.Publish(*context, all_events->get_publish_events());
+  status = dut.Publish(*context, all_events->get_publish_events());
+  EXPECT_EQ(status.severity(), EventStatus::kSucceeded);
   dut.ForcedPublish(*context);
 
   EXPECT_EQ(dut.num_publish(), 5);

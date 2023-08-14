@@ -791,32 +791,45 @@ SystemConstraintIndex LeafSystem<T>::DeclareInequalityConstraint(
 }
 
 template <typename T>
-void LeafSystem<T>::DoPublish(
+EventStatus LeafSystem<T>::DoPublish(
     const Context<T>& context,
     const std::vector<const PublishEvent<T>*>& events) const {
+  EventStatus overall_status = EventStatus::DidNothing();
   for (const PublishEvent<T>* event : events) {
-    event->handle(*this, context);
+    const EventStatus per_event_status = event->handle(*this, context);
+    overall_status.KeepMoreSevere(per_event_status);
+    if (overall_status.failed()) break;  // Stop at the first disaster.
   }
+  return overall_status;
 }
 
 template <typename T>
-void LeafSystem<T>::DoCalcDiscreteVariableUpdates(
+EventStatus LeafSystem<T>::DoCalcDiscreteVariableUpdates(
     const Context<T>& context,
     const std::vector<const DiscreteUpdateEvent<T>*>& events,
     DiscreteValues<T>* discrete_state) const {
+  EventStatus overall_status = EventStatus::DidNothing();
   for (const DiscreteUpdateEvent<T>* event : events) {
-    event->handle(*this, context, discrete_state);
+    const EventStatus per_event_status =
+        event->handle(*this, context, discrete_state);
+    overall_status.KeepMoreSevere(per_event_status);
+    if (overall_status.failed()) break;  // Stop at the first disaster.
   }
+  return overall_status;
 }
 
 template <typename T>
-void LeafSystem<T>::DoCalcUnrestrictedUpdate(
+EventStatus LeafSystem<T>::DoCalcUnrestrictedUpdate(
     const Context<T>& context,
     const std::vector<const UnrestrictedUpdateEvent<T>*>& events,
     State<T>* state) const {
+  EventStatus overall_status = EventStatus::DidNothing();
   for (const UnrestrictedUpdateEvent<T>* event : events) {
-    event->handle(*this, context, state);
+    const EventStatus per_event_status = event->handle(*this, context, state);
+    overall_status.KeepMoreSevere(per_event_status);
+    if (overall_status.failed()) break;  // Stop at the first disaster.
   }
+  return overall_status;
 }
 
 template <typename T>
@@ -866,18 +879,18 @@ LeafSystem<T>::DoMapPeriodicEventsByTiming(const Context<T>&) const {
 }
 
 template <typename T>
-void LeafSystem<T>::DispatchPublishHandler(
+EventStatus LeafSystem<T>::DispatchPublishHandler(
     const Context<T>& context,
     const EventCollection<PublishEvent<T>>& events) const {
   const LeafEventCollection<PublishEvent<T>>& leaf_events =
      dynamic_cast<const LeafEventCollection<PublishEvent<T>>&>(events);
   // Only call DoPublish if there are publish events.
   DRAKE_DEMAND(leaf_events.HasEvents());
-  this->DoPublish(context, leaf_events.get_events());
+  return this->DoPublish(context, leaf_events.get_events());
 }
 
 template <typename T>
-void LeafSystem<T>::DispatchDiscreteVariableUpdateHandler(
+EventStatus LeafSystem<T>::DispatchDiscreteVariableUpdateHandler(
     const Context<T>& context,
     const EventCollection<DiscreteUpdateEvent<T>>& events,
     DiscreteValues<T>* discrete_state) const {
@@ -889,7 +902,7 @@ void LeafSystem<T>::DispatchDiscreteVariableUpdateHandler(
   // Must initialize the output argument with the current contents of the
   // discrete state.
   discrete_state->SetFrom(context.get_discrete_state());
-  this->DoCalcDiscreteVariableUpdates(context, leaf_events.get_events(),
+  return this->DoCalcDiscreteVariableUpdates(context, leaf_events.get_events(),
       discrete_state);  // in/out
 }
 
@@ -906,7 +919,7 @@ void LeafSystem<T>::DoApplyDiscreteVariableUpdate(
 }
 
 template <typename T>
-void LeafSystem<T>::DispatchUnrestrictedUpdateHandler(
+EventStatus LeafSystem<T>::DispatchUnrestrictedUpdateHandler(
     const Context<T>& context,
     const EventCollection<UnrestrictedUpdateEvent<T>>& events,
     State<T>* state) const {
@@ -918,7 +931,7 @@ void LeafSystem<T>::DispatchUnrestrictedUpdateHandler(
   // Must initialize the output argument with the current contents of the
   // state.
   state->SetFrom(context.get_state());
-  this->DoCalcUnrestrictedUpdate(context, leaf_events.get_events(),
+  return this->DoCalcUnrestrictedUpdate(context, leaf_events.get_events(),
       state);  // in/out
 }
 

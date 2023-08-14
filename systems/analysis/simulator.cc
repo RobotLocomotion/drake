@@ -67,7 +67,7 @@ SimulatorStatus Simulator<T>::Initialize(const InitializeParams& params) {
   const T current_time = context_->get_time();
 
   // Assumes success.
-  SimulatorStatus status(ExtractDoubleOrThrow(current_time));
+  SimulatorStatus initialize_status(ExtractDoubleOrThrow(current_time));
 
   // Initialize the integrator.
   integrator_->Initialize();
@@ -81,10 +81,25 @@ SimulatorStatus Simulator<T>::Initialize(const InitializeParams& params) {
     system_.GetInitializationEvents(*context_, merged_events_.get());
   }
 
+  // Event status uses a "first worst" strategy and gives up if some event
+  // handler reports failure.
+
   // Do unrestricted updates first.
-  HandleUnrestrictedUpdate(merged_events_->get_unrestricted_update_events());
+  EventStatus accumulated_event_status = HandleUnrestrictedUpdate(
+      merged_events_->get_unrestricted_update_events());
+  if (CheckForEventFailureAndMaybeThrow(accumulated_event_status,
+                                        true /*throw on failure*/,
+                                        &initialize_status))
+    return initialize_status;
+
   // Do restricted (discrete variable) updates next.
-  HandleDiscreteUpdate(merged_events_->get_discrete_update_events());
+  EventStatus event_status =
+      HandleDiscreteUpdate(merged_events_->get_discrete_update_events());
+  accumulated_event_status.KeepMoreSevere(event_status);
+  if (CheckForEventFailureAndMaybeThrow(accumulated_event_status,
+                                        true /*throw on failure*/,
+                                        &initialize_status))
+    return initialize_status;
 
   // Gets all per-step events to be handled.
   per_step_events_ = system_.AllocateCompositeEventCollection();
@@ -126,65 +141,98 @@ SimulatorStatus Simulator<T>::Initialize(const InitializeParams& params) {
   merged_events_->AddToEnd(*per_step_events_);
   if (time_or_witness_triggered_ & kTimeTriggered)
     merged_events_->AddToEnd(*timed_events_);
-  HandlePublish(merged_events_->get_publish_events());
+  event_status = HandlePublish(merged_events_->get_publish_events());
+  accumulated_event_status.KeepMoreSevere(event_status);
+  if (CheckForEventFailureAndMaybeThrow(accumulated_event_status,
+                                        true /*throw on failure*/,
+                                        &initialize_status))
+    return initialize_status;
 
-  // TODO(siyuan): transfer publish entirely to individual systems.
-  // Do a force-publish before the simulation starts.
+  // If requested, do a force-publish before the simulation starts.
   if (publish_at_initialization_) {
-    system_.ForcedPublish(*context_);
-    ++num_publishes_;
+    event_status = HandlePublish(system_.get_forced_publish_events());
+    accumulated_event_status.KeepMoreSevere(event_status);
+    if (CheckForEventFailureAndMaybeThrow(accumulated_event_status,
+                                          true /*throw on failure*/,
+                                          &initialize_status))
+      return initialize_status;
   }
 
-  CallMonitorUpdateStatusAndMaybeThrow(&status);
+  if (get_monitor()) {
+    event_status = get_monitor()(*context_);
+    accumulated_event_status.KeepMoreSevere(event_status);
+    if (CheckForEventFailureAndMaybeThrow(accumulated_event_status,
+                                          true /*throw on failure*/,
+                                          &initialize_status))
+      return initialize_status;
+  }
+
+  // If we get here, none of the event handlers reported failure.
+
+  if (accumulated_event_status.severity() == EventStatus::kReachedTermination) {
+    initialize_status.SetReachedTermination(
+        ExtractDoubleOrThrow(context_->get_time()),
+        accumulated_event_status.system(), accumulated_event_status.message());
+  }
 
   // Initialize runtime variables.
   initialization_done_ = true;
   last_known_simtime_ = ExtractDoubleOrThrow(context_->get_time());
 
-  return status;
+  return initialize_status;
 }
 
 // Processes UnrestrictedUpdateEvent events.
 template <typename T>
-void Simulator<T>::HandleUnrestrictedUpdate(
+EventStatus Simulator<T>::HandleUnrestrictedUpdate(
     const EventCollection<UnrestrictedUpdateEvent<T>>& events) {
+  EventStatus status = EventStatus::DidNothing();
   if (events.HasEvents()) {
     // First, compute the unrestricted updates into a temporary buffer.
-    system_.CalcUnrestrictedUpdate(*context_, events,
+    status = system_.CalcUnrestrictedUpdate(*context_, events,
         unrestricted_updates_.get());
-    // Now write the update back into the context.
-    system_.ApplyUnrestrictedUpdate(events, unrestricted_updates_.get(),
-        context_.get());
-    ++num_unrestricted_updates_;
-
-    // Mark the witness function vector as needing to be redetermined.
-    redetermine_active_witnesses_ = true;
+    if (!(status.did_nothing() || status.failed())) {
+      // Now write the update back into the context.
+      system_.ApplyUnrestrictedUpdate(events, unrestricted_updates_.get(),
+                                      context_.get());
+      ++num_unrestricted_updates_;
+      // Mark the witness function vector as needing to be redetermined.
+      redetermine_active_witnesses_ = true;
+    }
   }
+  return status;
 }
 
 // Processes DiscreteEvent events.
 template <typename T>
-void Simulator<T>::HandleDiscreteUpdate(
+EventStatus Simulator<T>::HandleDiscreteUpdate(
     const EventCollection<DiscreteUpdateEvent<T>>& events) {
+  EventStatus status = EventStatus::DidNothing();
   if (events.HasEvents()) {
     // First, compute the discrete updates into a temporary buffer.
-    system_.CalcDiscreteVariableUpdate(*context_, events,
+    status = system_.CalcDiscreteVariableUpdate(*context_, events,
         discrete_updates_.get());
-    // Then, write them back into the context.
-    system_.ApplyDiscreteVariableUpdate(events, discrete_updates_.get(),
-        context_.get());
-    ++num_discrete_updates_;
+    if (!(status.did_nothing() || status.failed())) {
+      // Write updates back into the context.
+      system_.ApplyDiscreteVariableUpdate(events, discrete_updates_.get(),
+                                          context_.get());
+      ++num_discrete_updates_;
+    }
   }
+  return status;
 }
 
 // Processes Publish events.
 template <typename T>
-void Simulator<T>::HandlePublish(
+EventStatus Simulator<T>::HandlePublish(
     const EventCollection<PublishEvent<T>>& events) {
+  EventStatus status = EventStatus::DidNothing();
   if (events.HasEvents()) {
-    system_.Publish(*context_, events);
-    ++num_publishes_;
+    status = system_.Publish(*context_, events);
+    if (!(status.did_nothing() || status.failed()))
+      ++num_publishes_;
   }
+  return status;
 }
 
 template <typename T>
@@ -205,7 +253,7 @@ SimulatorStatus Simulator<T>::AdvanceTo(const T& boundary_time) {
   DRAKE_THROW_UNLESS(boundary_time >= context_->get_time());
 
   // Assume success.
-  SimulatorStatus status(ExtractDoubleOrThrow(boundary_time));
+  SimulatorStatus simulator_status(ExtractDoubleOrThrow(boundary_time));
 
   // Integrate until desired interval has completed.
   DRAKE_DEMAND(timed_events_ != nullptr);
@@ -233,11 +281,25 @@ SimulatorStatus Simulator<T>::AdvanceTo(const T& boundary_time) {
     // The general policy here is to do actions in decreasing order of
     // "violence" to the state, i.e. unrestricted -> discrete -> continuous ->
     // publish. The "timed" actions happen before the "per step" ones.
+    // Event status is accumulated in a "first worst" manner -- we keep going
+    // until something fails.
 
     // Do unrestricted updates first.
-    HandleUnrestrictedUpdate(merged_events_->get_unrestricted_update_events());
+    EventStatus accumulated_event_status = HandleUnrestrictedUpdate(
+        merged_events_->get_unrestricted_update_events());
+    if (CheckForEventFailureAndMaybeThrow(accumulated_event_status,
+                                          true /*throw on failure*/,
+                                          &simulator_status))
+      return simulator_status;
+
     // Do restricted (discrete variable) updates next.
-    HandleDiscreteUpdate(merged_events_->get_discrete_update_events());
+    EventStatus event_status =
+        HandleDiscreteUpdate(merged_events_->get_discrete_update_events());
+    accumulated_event_status.KeepMoreSevere(event_status);
+    if (CheckForEventFailureAndMaybeThrow(accumulated_event_status,
+                                          true /*throw on failure*/,
+                                          &simulator_status))
+      return simulator_status;
 
     // How far can we go before we have to handle timed events? This can return
     // infinity, meaning we don't see any timed events coming. When an earlier
@@ -292,19 +354,46 @@ SimulatorStatus Simulator<T>::AdvanceTo(const T& boundary_time) {
     if (time_or_witness_triggered_ & kWitnessTriggered)
       merged_events_->AddToEnd(*witnessed_events_);
 
-    // Handle any publish events at the end of the loop.
-    HandlePublish(merged_events_->get_publish_events());
+    // Handle any end-of-step events at the end of the loop (final publishes
+    // and monitor check).
+    event_status = HandlePublish(merged_events_->get_publish_events());
+    accumulated_event_status.KeepMoreSevere(event_status);
+    if (CheckForEventFailureAndMaybeThrow(accumulated_event_status,
+                                          true /*throw on failure*/,
+                                          &simulator_status))
+      return simulator_status;
 
-    // TODO(siyuan): transfer per step publish entirely to individual systems.
-    // Allow System a chance to produce some output.
     if (get_publish_every_time_step()) {
-      system_.ForcedPublish(*context_);
-      ++num_publishes_;
+      event_status = HandlePublish(system_.get_forced_publish_events());
+      accumulated_event_status.KeepMoreSevere(event_status);
+      if (CheckForEventFailureAndMaybeThrow(accumulated_event_status,
+                                            true /*throw on failure*/,
+                                            &simulator_status))
+        return simulator_status;
     }
 
-    CallMonitorUpdateStatusAndMaybeThrow(&status);
-    if (!status.succeeded())
-      break;  // Done.
+    // Invoke the monitor() if there is one. This is logically like a
+    // Diagram-level Publish event so we handle it similarly.
+    if (get_monitor()) {
+      event_status = get_monitor()(*context_);
+      accumulated_event_status.KeepMoreSevere(event_status);
+      if (CheckForEventFailureAndMaybeThrow(accumulated_event_status,
+                                            true /*throw on failure*/,
+                                            &simulator_status))
+        return simulator_status;
+    }
+
+    // If we get here, none of the event handlers reported failure.
+
+    if (accumulated_event_status.severity() ==
+        EventStatus::kReachedTermination) {
+      simulator_status.SetReachedTermination(
+          ExtractDoubleOrThrow(context_->get_time()),
+          accumulated_event_status.system(),
+          accumulated_event_status.message());
+    }
+
+    if (!simulator_status.succeeded()) break;  // Done.
 
     // Break out of the loop after timed and witnessed events are merged in
     // to the event collection and after any publishes.
@@ -318,7 +407,7 @@ SimulatorStatus Simulator<T>::AdvanceTo(const T& boundary_time) {
   // Record the time to detect unexpected jumps.
   last_known_simtime_ = ExtractDoubleOrThrow(context_->get_time());
 
-  return status;
+  return simulator_status;
 }
 
 template <class T>

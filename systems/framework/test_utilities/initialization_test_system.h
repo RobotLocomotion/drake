@@ -42,7 +42,7 @@ class InitializationTestSystem : public LeafSystem<double> {
     pub_init_ = true;
   }
 
-  void DoCalcDiscreteVariableUpdates(
+  EventStatus DoCalcDiscreteVariableUpdates(
       const Context<double>&,
       const std::vector<const DiscreteUpdateEvent<double>*>& events,
       DiscreteValues<double>* discrete_state) const final {
@@ -50,9 +50,10 @@ class InitializationTestSystem : public LeafSystem<double> {
     EXPECT_EQ(events.front()->get_trigger_type(), TriggerType::kInitialization);
     dis_update_init_ = true;
     discrete_state->set_value(Vector1d(1.23));
+    return EventStatus::Succeeded();
   }
 
-  void DoCalcUnrestrictedUpdate(
+  EventStatus DoCalcUnrestrictedUpdate(
       const Context<double>&,
       const std::vector<const UnrestrictedUpdateEvent<double>*>& events,
       State<double>* state) const final {
@@ -60,6 +61,7 @@ class InitializationTestSystem : public LeafSystem<double> {
     EXPECT_EQ(events.front()->get_trigger_type(), TriggerType::kInitialization);
     unres_update_init_ = true;
     state->get_mutable_abstract_state<bool>(0) = true;
+    return EventStatus::Succeeded();
   }
 
   mutable bool pub_init_{false};

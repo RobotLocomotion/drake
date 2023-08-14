@@ -481,7 +481,7 @@ void Rod2D<T>::CalcImpactProblemData(
 /// Integrates the Rod 2D example forward in time using a
 /// half-explicit discretization scheme.
 template <class T>
-void Rod2D<T>::DoCalcDiscreteVariableUpdates(
+systems::EventStatus Rod2D<T>::DoCalcDiscreteVariableUpdates(
     const systems::Context<T>& context,
     const std::vector<const systems::DiscreteUpdateEvent<T>*>&,
     systems::DiscreteValues<T>* discrete_state) const {
@@ -600,6 +600,8 @@ void Rod2D<T>::DoCalcDiscreteVariableUpdates(
       discrete_state->get_mutable_value(0);
   new_state.segment(0, 3) = qplus;
   new_state.segment(3, 3) = vplus;
+
+  return systems::EventStatus::Succeeded();
 }
 
 // Computes the impulses such that the vertical velocity at the contact point

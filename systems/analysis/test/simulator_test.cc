@@ -1420,12 +1420,15 @@ class UnrestrictedUpdater : public LeafSystem<double> {
     event.AddToComposite(event_info);
   }
 
-  void DoCalcUnrestrictedUpdate(
+  EventStatus DoCalcUnrestrictedUpdate(
       const Context<double>& context,
       const std::vector<const UnrestrictedUpdateEvent<double>*>& events,
       State<double>* state) const override {
-    if (unrestricted_update_callback_ != nullptr)
+    if (unrestricted_update_callback_ != nullptr) {
       unrestricted_update_callback_(context, state);
+      return EventStatus::Succeeded();
+    }
+    return EventStatus::DidNothing();
   }
 
   void DoCalcTimeDerivatives(
@@ -2138,7 +2141,7 @@ GTEST_TEST(SimulatorTest, Initialization) {
       pub_init_ = true;
     }
 
-    void DoCalcDiscreteVariableUpdates(
+    EventStatus DoCalcDiscreteVariableUpdates(
         const Context<double>& context,
         const std::vector<const DiscreteUpdateEvent<double>*>& events,
         DiscreteValues<double>*) const final {
@@ -2147,10 +2150,12 @@ GTEST_TEST(SimulatorTest, Initialization) {
           TriggerType::kInitialization) {
         EXPECT_EQ(context.get_time(), 0);
         dis_update_init_ = true;
+        return EventStatus::Succeeded();
       }
+      return EventStatus::DidNothing();
     }
 
-    void DoCalcUnrestrictedUpdate(
+    EventStatus DoCalcUnrestrictedUpdate(
         const Context<double>& context,
         const std::vector<const UnrestrictedUpdateEvent<double>*>& events,
         State<double>*) const final {
@@ -2159,7 +2164,9 @@ GTEST_TEST(SimulatorTest, Initialization) {
           TriggerType::kInitialization) {
         EXPECT_EQ(context.get_time(), 0);
         unres_update_init_ = true;
+        return EventStatus::Succeeded();
       }
+      return EventStatus::DidNothing();
     }
 
     mutable bool pub_init_{false};
