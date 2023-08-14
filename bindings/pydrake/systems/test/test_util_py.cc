@@ -93,7 +93,8 @@ PYBIND11_MODULE(test_util, m) {
       // Call `Publish` to test `DoPublish`.
       auto events =
           LeafEventCollection<PublishEvent<T>>::MakeForcedEventCollection();
-      system.Publish(*context, *events);
+      const EventStatus status = system.Publish(*context, *events);
+      DRAKE_DEMAND(status.did_nothing());
     }
     {
       // Call `HasDirectFeedthrough` to test `DoHasDirectFeedthrough`.

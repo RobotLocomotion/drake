@@ -23,7 +23,7 @@ TEST_F(EventDeprecatedTest, PublishCallback) {
       };
   PublishEvent<double> event(callback);
   EventStatus result = event.handle(system_, context_);
-  EXPECT_EQ(result.severity(), EventStatus::Severity::kSucceeded);
+  EXPECT_TRUE(result.succeeded());
   EXPECT_TRUE(called);
 }
 
@@ -36,7 +36,7 @@ TEST_F(EventDeprecatedTest, PublishSystemCallback) {
       };
   PublishEvent<double> event(callback);
   EventStatus result = event.handle(system_, context_);
-  EXPECT_EQ(result.severity(), EventStatus::Severity::kSucceeded);
+  EXPECT_TRUE(result.succeeded());
   EXPECT_TRUE(called);
 }
 
@@ -50,7 +50,7 @@ TEST_F(EventDeprecatedTest, DiscreteUpdateCallback) {
   DiscreteUpdateEvent<double> event(callback);
   DiscreteValues<double> out;
   EventStatus result = event.handle(system_, context_, &out);
-  EXPECT_EQ(result.severity(), EventStatus::Severity::kSucceeded);
+  EXPECT_TRUE(result.succeeded());
   EXPECT_TRUE(called);
 }
 
@@ -64,7 +64,7 @@ TEST_F(EventDeprecatedTest, DiscreteUpdateSystemCallback) {
   DiscreteUpdateEvent<double> event(callback);
   DiscreteValues<double> out;
   EventStatus result = event.handle(system_, context_, &out);
-  EXPECT_EQ(result.severity(), EventStatus::Severity::kSucceeded);
+  EXPECT_TRUE(result.succeeded());
   EXPECT_TRUE(called);
 }
 
@@ -78,7 +78,7 @@ TEST_F(EventDeprecatedTest, UnrestrictedUpdateCallback) {
   UnrestrictedUpdateEvent<double> event(callback);
   State<double> out;
   EventStatus result = event.handle(system_, context_, &out);
-  EXPECT_EQ(result.severity(), EventStatus::Severity::kSucceeded);
+  EXPECT_TRUE(result.succeeded());
   EXPECT_TRUE(called);
 }
 
@@ -93,7 +93,7 @@ TEST_F(EventDeprecatedTest, UnrestrictedUpdateSystemCallback) {
   UnrestrictedUpdateEvent<double> event(callback);
   State<double> out;
   EventStatus result = event.handle(system_, context_, &out);
-  EXPECT_EQ(result.severity(), EventStatus::Severity::kSucceeded);
+  EXPECT_TRUE(result.succeeded());
   EXPECT_TRUE(called);
 }
 
