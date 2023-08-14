@@ -305,8 +305,7 @@ class LeafSystem : public System<T> {
                             const Context<T>& context,
                             const PublishEvent<T>&) {
           const auto& sys = dynamic_cast<const MySystem&>(system);
-          // TODO(sherm1) Forward the return status.
-          (sys.*publish)(context);  // Ignore return status for now.
+          return (sys.*publish)(context);
         }));
   }
 
@@ -334,7 +333,7 @@ class LeafSystem : public System<T> {
                       const PublishEvent<T>&) {
               const auto& sys = dynamic_cast<const MySystem&>(system);
               (sys.*publish)(context);
-              // TODO(sherm1) return EventStatus::Succeeded()
+              return EventStatus::Succeeded();
             }));
   }
 
@@ -375,8 +374,7 @@ class LeafSystem : public System<T> {
                      const DiscreteUpdateEvent<T>&,
                      DiscreteValues<T>* xd) {
               const auto& sys = dynamic_cast<const MySystem&>(system);
-              // TODO(sherm1) Forward the return status.
-              (sys.*update)(context, &*xd);  // Ignore return status for now.
+              return (sys.*update)(context, &*xd);
             }));
   }
 
@@ -406,7 +404,7 @@ class LeafSystem : public System<T> {
                      DiscreteValues<T>* xd) {
               const auto& sys = dynamic_cast<const MySystem&>(system);
               (sys.*update)(context, &*xd);
-              // TODO(sherm1) return EventStatus::Succeeded()
+              return EventStatus::Succeeded();
             }));
   }
 
@@ -444,8 +442,7 @@ class LeafSystem : public System<T> {
                      const Context<T>& context,
                      const UnrestrictedUpdateEvent<T>&, State<T>* x) {
               const auto& sys = dynamic_cast<const MySystem&>(system);
-              // TODO(sherm1) Forward the return status.
-              (sys.*update)(context, &*x);  // Ignore return status for now.
+              return (sys.*update)(context, &*x);
             }));
   }
 
@@ -472,7 +469,7 @@ class LeafSystem : public System<T> {
                      const UnrestrictedUpdateEvent<T>&, State<T>* x) {
               const auto& sys = dynamic_cast<const MySystem&>(system);
               (sys.*update)(context, &*x);
-              // TODO(sherm1) return EventStatus::Succeeded()
+              return EventStatus::Succeeded();
             }));
   }
 
@@ -624,8 +621,7 @@ class LeafSystem : public System<T> {
         [publish](const System<T>& system, const Context<T>& context,
                   const PublishEvent<T>&) {
           const auto& sys = dynamic_cast<const MySystem&>(system);
-          // TODO(sherm1) Forward the return status.
-          (sys.*publish)(context);  // Ignore return status for now.
+          return (sys.*publish)(context);
         }));
   }
 
@@ -662,8 +658,7 @@ class LeafSystem : public System<T> {
             [update](const System<T>& system, const Context<T>& context,
                      const DiscreteUpdateEvent<T>&, DiscreteValues<T>* xd) {
               const auto& sys = dynamic_cast<const MySystem&>(system);
-              // TODO(sherm1) Forward the return status.
-              (sys.*update)(context, &*xd);  // Ignore return status for now.
+              return (sys.*update)(context, &*xd);
             }));
   }
 
@@ -699,8 +694,7 @@ class LeafSystem : public System<T> {
         [update](const System<T>& system, const Context<T>& context,
                  const UnrestrictedUpdateEvent<T>&, State<T>* x) {
           const auto& sys = dynamic_cast<const MySystem&>(system);
-          // TODO(sherm1) Forward the return status.
-          (sys.*update)(context, &*x);  // Ignore return status for now.
+          return (sys.*update)(context, &*x);
         }));
   }
 
@@ -786,10 +780,10 @@ class LeafSystem : public System<T> {
 
     DeclareInitializationEvent<PublishEvent<T>>(PublishEvent<T>(
         TriggerType::kInitialization,
-        [this_ptr, publish](const Context<T>& context,
-                            const PublishEvent<T>&) {
-          // TODO(sherm1) Forward the return status.
-          (this_ptr->*publish)(context);  // Ignore return status for now.
+        [publish](const System<T>& system, const Context<T>& context,
+                  const PublishEvent<T>&) {
+          const auto& sys = dynamic_cast<const MySystem&>(system);
+          return (sys.*publish)(context);
         }));
   }
 
@@ -824,12 +818,10 @@ class LeafSystem : public System<T> {
 
     DeclareInitializationEvent(DiscreteUpdateEvent<T>(
         TriggerType::kInitialization,
-        [this_ptr, update](const Context<T>& context,
-                           const DiscreteUpdateEvent<T>&,
-                           DiscreteValues<T>* xd) {
-          // TODO(sherm1) Forward the return status.
-          (this_ptr->*update)(context,
-                              &*xd);  // Ignore return status for now.
+        [update](const System<T>& system, const Context<T>& context,
+                 const DiscreteUpdateEvent<T>&, DiscreteValues<T>* xd) {
+          const auto& sys = dynamic_cast<const MySystem&>(system);
+          return (sys.*update)(context, &*xd);
         }));
   }
 
@@ -864,11 +856,10 @@ class LeafSystem : public System<T> {
 
     DeclareInitializationEvent(UnrestrictedUpdateEvent<T>(
         TriggerType::kInitialization,
-        [this_ptr, update](const Context<T>& context,
-                           const UnrestrictedUpdateEvent<T>&, State<T>* x) {
-          // TODO(sherm1) Forward the return status.
-          (this_ptr->*update)(context,
-                              &*x);  // Ignore return status for now.
+        [update](const System<T>& system, const Context<T>& context,
+                 const UnrestrictedUpdateEvent<T>&, State<T>* x) {
+          const auto& sys = dynamic_cast<const MySystem&>(system);
+          return (sys.*update)(context, &*x);
         }));
   }
 
@@ -959,9 +950,10 @@ class LeafSystem : public System<T> {
     // Instantiate the event.
     PublishEvent<T> forced(
         TriggerType::kForced,
-        [this_ptr, publish](const Context<T>& context, const PublishEvent<T>&) {
-          // TODO(sherm1) Forward the return status.
-          (this_ptr->*publish)(context);  // Ignore return status for now.
+        [publish](const System<T>& system, const Context<T>& context,
+                  const PublishEvent<T>&) {
+          const auto& sys = dynamic_cast<const MySystem&>(system);
+          return (sys.*publish)(context);
         });
 
     // Add the event to the collection of forced publish events.
@@ -997,12 +989,11 @@ class LeafSystem : public System<T> {
     // Instantiate the event.
     DiscreteUpdateEvent<T> forced(
         TriggerType::kForced,
-        [this_ptr, update](const Context<T>& context,
-                           const DiscreteUpdateEvent<T>&,
-                           DiscreteValues<T>* discrete_state) {
-          // TODO(sherm1) Forward the return status.
-          (this_ptr->*update)(
-              context, discrete_state);  // Ignore return status for now.
+        [update](const System<T>& system, const Context<T>& context,
+                 const DiscreteUpdateEvent<T>&,
+                 DiscreteValues<T>* discrete_state) {
+          const auto& sys = dynamic_cast<const MySystem&>(system);
+          return (sys.*update)(context, discrete_state);
         });
 
     // Add the event to the collection of forced discrete update events.
@@ -1039,10 +1030,10 @@ class LeafSystem : public System<T> {
     // Instantiate the event.
     UnrestrictedUpdateEvent<T> forced(
         TriggerType::kForced,
-        [this_ptr, update](const Context<T>& context,
-                           const UnrestrictedUpdateEvent<T>&, State<T>* state) {
-          // TODO(sherm1) Forward the return status.
-          (this_ptr->*update)(context, state);  // Ignore return status for now.
+        [update](const System<T>& system, const Context<T>& context,
+                 const UnrestrictedUpdateEvent<T>&, State<T>* state) {
+          const auto& sys = dynamic_cast<const MySystem&>(system);
+          return (sys.*update)(context, state);
         });
 
     // Add the event to the collection of forced unrestricted update events.
@@ -1625,16 +1616,16 @@ class LeafSystem : public System<T> {
           const Context<T>&, const PublishEvent<T>&) const) const {
     static_assert(std::is_base_of_v<LeafSystem<T>, MySystem>,
                   "Expected to be invoked from a LeafSystem-derived system.");
-    auto fn = [this, publish_callback](
-        const Context<T>& context, const PublishEvent<T>& publish_event) {
-      auto system_ptr = dynamic_cast<const MySystem*>(this);
-      DRAKE_DEMAND(system_ptr != nullptr);
-      return (system_ptr->*publish_callback)(context, publish_event);
-    };
-    PublishEvent<T> publish_event(fn);
-    publish_event.set_trigger_type(TriggerType::kWitness);
+    PublishEvent<T> event(
+        TriggerType::kWitness,
+        [publish_callback](const System<T>& system, const Context<T>& context,
+                           const PublishEvent<T>& callback_event) {
+          const auto& sys = dynamic_cast<const MySystem&>(system);
+          (sys.*publish_callback)(context, callback_event);
+          return EventStatus::Succeeded();
+        });
     return std::make_unique<WitnessFunction<T>>(
-        this, this, description, direction_type, calc, publish_event.Clone());
+        this, this, description, direction_type, calc, event.Clone());
   }
 
   /** Constructs the witness function with the given description (used primarily
@@ -1653,16 +1644,17 @@ class LeafSystem : public System<T> {
           const DiscreteUpdateEvent<T>&, DiscreteValues<T>*) const) const {
     static_assert(std::is_base_of_v<LeafSystem<T>, MySystem>,
                   "Expected to be invoked from a LeafSystem-derived system.");
-    auto fn = [this, du_callback](const Context<T>& context,
-        const DiscreteUpdateEvent<T>& du_event, DiscreteValues<T>* values) {
-      auto system_ptr = dynamic_cast<const MySystem*>(this);
-      DRAKE_DEMAND(system_ptr != nullptr);
-      return (system_ptr->*du_callback)(context, du_event, values);
-    };
-    DiscreteUpdateEvent<T> du_event(fn);
-    du_event.set_trigger_type(TriggerType::kWitness);
+    DiscreteUpdateEvent<T> event(
+        TriggerType::kWitness,
+        [du_callback](const System<T>& system, const Context<T>& context,
+                      const DiscreteUpdateEvent<T>& callback_event,
+                      DiscreteValues<T>* values) {
+          const auto& sys = dynamic_cast<const MySystem&>(system);
+          (sys.*du_callback)(context, callback_event, values);
+          return EventStatus::Succeeded();
+        });
     return std::make_unique<WitnessFunction<T>>(
-        this, this, description, direction_type, calc, du_event.Clone());
+        this, this, description, direction_type, calc, event.Clone());
   }
 
   /** Constructs the witness function with the given description (used primarily
@@ -1681,16 +1673,17 @@ class LeafSystem : public System<T> {
           const UnrestrictedUpdateEvent<T>&, State<T>*) const) const {
     static_assert(std::is_base_of_v<LeafSystem<T>, MySystem>,
                   "Expected to be invoked from a LeafSystem-derived system.");
-    auto fn = [this, uu_callback](const Context<T>& context,
-        const UnrestrictedUpdateEvent<T>& uu_event, State<T>* state) {
-      auto system_ptr = dynamic_cast<const MySystem*>(this);
-      DRAKE_DEMAND(system_ptr != nullptr);
-      return (system_ptr->*uu_callback)(context, uu_event, state);
-    };
-    UnrestrictedUpdateEvent<T> uu_event(fn);
-    uu_event.set_trigger_type(TriggerType::kWitness);
+    UnrestrictedUpdateEvent<T> event(
+        TriggerType::kWitness,
+        [uu_callback](const System<T>& system, const Context<T>& context,
+                      const UnrestrictedUpdateEvent<T>& callback_event,
+                      State<T>* state) {
+          const auto& sys = dynamic_cast<const MySystem&>(system);
+          (sys.*uu_callback)(context, callback_event, state);
+          return EventStatus::Succeeded();
+        });
     return std::make_unique<WitnessFunction<T>>(
-        this, this, description, direction_type, calc, uu_event.Clone());
+        this, this, description, direction_type, calc, event.Clone());
   }
 
   /** Constructs the witness function with the given description (used primarily
