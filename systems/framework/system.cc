@@ -206,15 +206,17 @@ bool System<T>::HasDirectFeedthrough(int input_port, int output_port) const {
 }
 
 template <typename T>
-void System<T>::Publish(const Context<T>& context,
+EventStatus System<T>::Publish(const Context<T>& context,
                         const EventCollection<PublishEvent<T>>& events) const {
   ValidateContext(context);
-  DispatchPublishHandler(context, events);
+  return DispatchPublishHandler(context, events);
 }
 
 template <typename T>
 void System<T>::ForcedPublish(const Context<T>& context) const {
-  Publish(context, this->get_forced_publish_events());
+  const EventStatus status =
+      Publish(context, this->get_forced_publish_events());
+  status.ThrowOnFailure(__func__);
 }
 
 template <typename T>
@@ -295,14 +297,14 @@ void System<T>::CalcImplicitTimeDerivativesResidual(
 }
 
 template <typename T>
-void System<T>::CalcDiscreteVariableUpdate(
+EventStatus System<T>::CalcDiscreteVariableUpdate(
     const Context<T>& context,
     const EventCollection<DiscreteUpdateEvent<T>>& events,
     DiscreteValues<T>* discrete_state) const {
   ValidateContext(context);
   ValidateCreatedForThisSystem(discrete_state);
 
-  DispatchDiscreteVariableUpdateHandler(context, events, discrete_state);
+  return DispatchDiscreteVariableUpdateHandler(context, events, discrete_state);
 }
 
 template <typename T>
@@ -318,12 +320,13 @@ template <typename T>
 void System<T>::CalcForcedDiscreteVariableUpdate(
     const Context<T>& context,
     DiscreteValues<T>* discrete_state) const {
-  CalcDiscreteVariableUpdate(
+  const EventStatus status = CalcDiscreteVariableUpdate(
       context, this->get_forced_discrete_update_events(), discrete_state);
+  status.ThrowOnFailure(__func__);
 }
 
 template <typename T>
-void System<T>::CalcUnrestrictedUpdate(
+EventStatus System<T>::CalcUnrestrictedUpdate(
     const Context<T>& context,
     const EventCollection<UnrestrictedUpdateEvent<T>>& events,
     State<T>* state) const {
@@ -333,14 +336,18 @@ void System<T>::CalcUnrestrictedUpdate(
   const int discrete_state_dim = state->get_discrete_state().num_groups();
   const int abstract_state_dim = state->get_abstract_state().size();
 
-  DispatchUnrestrictedUpdateHandler(context, events, state);
+  const EventStatus status =
+      DispatchUnrestrictedUpdateHandler(context, events, state);
 
   if (continuous_state_dim != state->get_continuous_state().size() ||
       discrete_state_dim != state->get_discrete_state().num_groups() ||
-      abstract_state_dim != state->get_abstract_state().size())
+      abstract_state_dim != state->get_abstract_state().size()) {
     throw std::logic_error(
         "State variable dimensions cannot be changed "
         "in CalcUnrestrictedUpdate().");
+  }
+
+  return status;
 }
 
 template <typename T>
@@ -355,8 +362,9 @@ void System<T>::ApplyUnrestrictedUpdate(
 template <typename T>
 void System<T>::CalcForcedUnrestrictedUpdate(const Context<T>& context,
                                              State<T>* state) const {
-  CalcUnrestrictedUpdate(
+  const EventStatus status = CalcUnrestrictedUpdate(
       context, this->get_forced_unrestricted_update_events(), state);
+  status.ThrowOnFailure(__func__);
 }
 
 template <typename T>
@@ -418,8 +426,8 @@ void System<T>::CalcUniquePeriodicDiscreteUpdate(
   ValidateCreatedForThisSystem(discrete_values);
 
   // TODO(sherm1) We only need the DiscreteUpdateEvent portion of the
-  // CompositeEventCollection but don't have a convenient way to allocate
-  // that in a Leaf vs. Diagram agnostic way. Add that if needed for speed.
+  //  CompositeEventCollection but don't have a convenient way to allocate
+  //  that in a Leaf vs. Diagram agnostic way. Add that if needed for speed.
   auto collection = AllocateCompositeEventCollection();
 
   std::optional<PeriodicEventData> timing;
@@ -440,8 +448,9 @@ void System<T>::CalcUniquePeriodicDiscreteUpdate(
   discrete_values->SetFrom(context.get_discrete_state());
 
   // Then let the event handlers modify them or not.
-  this->CalcDiscreteVariableUpdate(
+  const EventStatus status = this->CalcDiscreteVariableUpdate(
       context, collection->get_discrete_update_events(), discrete_values);
+  status.ThrowOnFailure(__func__);
 }
 
 template <typename T>
@@ -481,25 +490,29 @@ void System<T>::ExecuteInitializationEvents(Context<T>* context) const {
   // NOTE: The execution order here must match the code in
   // Simulator::Initialize().
   GetInitializationEvents(*context, init_events.get());
+
   // Do unrestricted updates first.
   if (init_events->get_unrestricted_update_events().HasEvents()) {
-    CalcUnrestrictedUpdate(*context,
-                           init_events->get_unrestricted_update_events(),
-                           state.get());
+    const EventStatus status = CalcUnrestrictedUpdate(
+        *context, init_events->get_unrestricted_update_events(), state.get());
+    status.ThrowOnFailure(__func__);
     ApplyUnrestrictedUpdate(init_events->get_unrestricted_update_events(),
                             state.get(), context);
   }
   // Do restricted (discrete variable) updates next.
   if (init_events->get_discrete_update_events().HasEvents()) {
-    CalcDiscreteVariableUpdate(*context,
-                               init_events->get_discrete_update_events(),
-                               discrete_updates.get());
+    const EventStatus status = CalcDiscreteVariableUpdate(
+        *context, init_events->get_discrete_update_events(),
+        discrete_updates.get());
+    status.ThrowOnFailure(__func__);
     ApplyDiscreteVariableUpdate(init_events->get_discrete_update_events(),
                                 discrete_updates.get(), context);
   }
   // Do any publishes last.
   if (init_events->get_publish_events().HasEvents()) {
-    Publish(*context, init_events->get_publish_events());
+    const EventStatus status =
+        Publish(*context, init_events->get_publish_events());
+    status.ThrowOnFailure(__func__);
   }
 }
 
