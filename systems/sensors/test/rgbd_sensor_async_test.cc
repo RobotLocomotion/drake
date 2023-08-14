@@ -406,8 +406,10 @@ TEST_F(RgbdSensorAsyncTest, RenderBackgroundColor) {
       events->get_unrestricted_update_events();
   EXPECT_TRUE(update_events.HasEvents());
   auto next_state_out = simulator.get_context().CloneState();
-  EXPECT_NO_THROW(simulator.get_system().CalcUnrestrictedUpdate(
-      simulator.get_context(), update_events, next_state_out.get()));
+  EXPECT_TRUE(simulator.get_system()
+                  .CalcUnrestrictedUpdate(simulator.get_context(),
+                                          update_events, next_state_out.get())
+                  .succeeded());
 }
 
 }  // namespace
