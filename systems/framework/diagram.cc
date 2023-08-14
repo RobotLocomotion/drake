@@ -1215,28 +1215,34 @@ Diagram<T>::AllocateForcedEventCollection(
 }
 
 template <typename T>
-void Diagram<T>::DispatchPublishHandler(
+EventStatus Diagram<T>::DispatchPublishHandler(
     const Context<T>& context,
     const EventCollection<PublishEvent<T>>& event_info) const {
   auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
   DRAKE_DEMAND(diagram_context != nullptr);
   const DiagramEventCollection<PublishEvent<T>>& info =
-      dynamic_cast<const DiagramEventCollection<PublishEvent<T>>&>(
-          event_info);
+      dynamic_cast<const DiagramEventCollection<PublishEvent<T>>&>(event_info);
 
+  EventStatus overall_status = EventStatus::DidNothing();
   for (SubsystemIndex i(0); i < num_subsystems(); ++i) {
     const EventCollection<PublishEvent<T>>& subinfo =
         info.get_subevent_collection(i);
 
     if (subinfo.HasEvents()) {
       const Context<T>& subcontext = diagram_context->GetSubsystemContext(i);
-      registered_systems_[i]->Publish(subcontext, subinfo);
+      const EventStatus per_subsystem_status =
+          registered_systems_[i]->Publish(subcontext, subinfo);
+      overall_status.KeepMoreSevere(per_subsystem_status);
+      // Unlike the discrete & unrestricted event policy, we don't stop handling
+      // publish events when one fails; we just report the first failure after
+      // all the publishes are done.
     }
   }
+  return overall_status;
 }
 
 template <typename T>
-void Diagram<T>::DispatchDiscreteVariableUpdateHandler(
+EventStatus Diagram<T>::DispatchDiscreteVariableUpdateHandler(
     const Context<T>& context,
     const EventCollection<DiscreteUpdateEvent<T>>& events,
     DiscreteValues<T>* discrete_state) const {
@@ -1250,6 +1256,7 @@ void Diagram<T>::DispatchDiscreteVariableUpdateHandler(
       dynamic_cast<const DiagramEventCollection<DiscreteUpdateEvent<T>>&>(
           events);
 
+  EventStatus overall_status = EventStatus::DidNothing();
   for (SubsystemIndex i(0); i < num_subsystems(); ++i) {
     const EventCollection<DiscreteUpdateEvent<T>>& subevents =
         diagram_events.get_subevent_collection(i);
@@ -1259,10 +1266,14 @@ void Diagram<T>::DispatchDiscreteVariableUpdateHandler(
       DiscreteValues<T>& subdiscrete =
           diagram_discrete->get_mutable_subdiscrete(i);
 
-      registered_systems_[i]->CalcDiscreteVariableUpdate(
+      const EventStatus per_subsystem_status =
+          registered_systems_[i]->CalcDiscreteVariableUpdate(
           subcontext, subevents, &subdiscrete);
+      overall_status.KeepMoreSevere(per_subsystem_status);
+      if (overall_status.failed()) break;  // Stop at the first disaster.
     }
   }
+  return overall_status;
 }
 
 template <typename T>
@@ -1293,7 +1304,7 @@ void Diagram<T>::DoApplyDiscreteVariableUpdate(
 }
 
 template <typename T>
-void Diagram<T>::DispatchUnrestrictedUpdateHandler(
+EventStatus Diagram<T>::DispatchUnrestrictedUpdateHandler(
     const Context<T>& context,
     const EventCollection<UnrestrictedUpdateEvent<T>>& events,
     State<T>* state) const {
@@ -1306,6 +1317,7 @@ void Diagram<T>::DispatchUnrestrictedUpdateHandler(
       dynamic_cast<const DiagramEventCollection<UnrestrictedUpdateEvent<T>>&>(
           events);
 
+  EventStatus overall_status = EventStatus::DidNothing();
   for (SubsystemIndex i(0); i < num_subsystems(); ++i) {
     const EventCollection<UnrestrictedUpdateEvent<T>>& subevents =
         diagram_events.get_subevent_collection(i);
@@ -1314,10 +1326,14 @@ void Diagram<T>::DispatchUnrestrictedUpdateHandler(
       const Context<T>& subcontext = diagram_context->GetSubsystemContext(i);
       State<T>& substate = diagram_state->get_mutable_substate(i);
 
-      registered_systems_[i]->CalcUnrestrictedUpdate(subcontext, subevents,
-                                                     &substate);
+      const EventStatus per_subsystem_status =
+          registered_systems_[i]->CalcUnrestrictedUpdate(subcontext, subevents,
+                                                         &substate);
+      overall_status.KeepMoreSevere(per_subsystem_status);
+      if (overall_status.failed()) break;  // Stop at the first disaster.
     }
   }
+  return overall_status;
 }
 
 template <typename T>
