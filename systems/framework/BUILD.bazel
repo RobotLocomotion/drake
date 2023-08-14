@@ -177,6 +177,7 @@ drake_cc_library(
     name = "event_collection",
     srcs = [
         "event_collection.cc",
+        "event_status.cc",
     ],
     hdrs = [
         "event.h",
@@ -186,6 +187,7 @@ drake_cc_library(
     deps = [
         ":abstract_values",
         ":context",
+        ":system_base",
         "//common:default_scalars",
         "//common:essential",
         "//common:value",
@@ -848,6 +850,8 @@ drake_cc_googletest(
     name = "event_status_test",
     deps = [
         ":event_collection",
+        ":leaf_system",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 

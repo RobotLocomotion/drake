@@ -2067,8 +2067,9 @@ TEST_F(DiscreteStateTest, UpdateDiscreteVariables) {
 
   // Fast forward to 9.0 sec and do the update.
   context_->SetTime(9.0);
-  diagram_.CalcDiscreteVariableUpdate(
+  EventStatus status = diagram_.CalcDiscreteVariableUpdate(
       *context_, events->get_discrete_update_events(), updates.get());
+  EXPECT_TRUE(status.succeeded());
 
   // Note that non-participating hold1's state should not have been
   // copied (if it had been it would be 1001.0).
@@ -2092,8 +2093,9 @@ TEST_F(DiscreteStateTest, UpdateDiscreteVariables) {
 
   // Fast forward to 12.0 sec and do the update again.
   context_->SetTime(12.0);
-  diagram_.CalcDiscreteVariableUpdate(
+  status = diagram_.CalcDiscreteVariableUpdate(
       *context_, events->get_discrete_update_events(), updates.get());
+  EXPECT_TRUE(status.succeeded());
   EXPECT_EQ(17.0, updates1[0]);
   EXPECT_EQ(23.0, updates2[0]);
 }
@@ -2137,8 +2139,9 @@ TEST_F(DiscreteStateTest, DiscreteUpdateNotificationsAreLocalized) {
 
   // Fast forward to 2.0 sec and collect the update.
   context_->SetTime(2.0);
-  diagram_.CalcDiscreteVariableUpdate(
+  const EventStatus status = diagram_.CalcDiscreteVariableUpdate(
       *context_, discrete_events, updates.get());
+  EXPECT_TRUE(status.succeeded());
 
   // Of course nothing should have been notified since nothing's changed yet.
   EXPECT_EQ(num_notifications(ctx1), notifications_1);
@@ -2303,8 +2306,9 @@ GTEST_TEST(DiscreteStateDiagramTest, CalcDiscreteVariableUpdate) {
   // Fast forward to the event time, and record it for the test below.
   double time = 2.0;
   context->SetTime(time);
-  diagram.CalcDiscreteVariableUpdate(
+  EventStatus status = diagram.CalcDiscreteVariableUpdate(
       *context, events->get_discrete_update_events(), x_buf.get());
+  EXPECT_TRUE(status.succeeded());
 
   // The non-participating sys2 state shouldn't have been copied (if it had
   // it would now be 2). sys1's state should have been copied, replacing the
@@ -2332,8 +2336,9 @@ GTEST_TEST(DiscreteStateDiagramTest, CalcDiscreteVariableUpdate) {
   // Fast forward to the new event time, and record it for the tests below.
   time = 6.0;
   context->SetTime(time);
-  diagram.CalcDiscreteVariableUpdate(
+  status = diagram.CalcDiscreteVariableUpdate(
       *context, events->get_discrete_update_events(), x_buf.get());
+  EXPECT_TRUE(status.succeeded());
   // Both sys1 and sys2's discrete data should be updated.
   diagram.ApplyDiscreteVariableUpdate(events->get_discrete_update_events(),
                                       x_buf.get(), context.get());
@@ -2415,7 +2420,10 @@ TEST_F(DiscreteStateTest, Publish) {
   // Fast forward to 19.0 sec and do the publish.
   EXPECT_EQ(false, diagram_.publisher()->published());
   context_->SetTime(19.0);
-  diagram_.Publish(*context_, events->get_publish_events());
+  const EventStatus status =
+      diagram_.Publish(*context_, events->get_publish_events());
+  EXPECT_TRUE(status.succeeded());
+
   // Check that publication occurred.
   EXPECT_EQ(true, diagram_.publisher()->published());
 }
@@ -2565,8 +2573,9 @@ TEST_F(AbstractStateDiagramTest, CalcUnrestrictedUpdate) {
 
   double time = 2.0;
   context_->SetTime(time);
-  diagram_.CalcUnrestrictedUpdate(
+  EventStatus status = diagram_.CalcUnrestrictedUpdate(
       *context_, events->get_unrestricted_update_events(), x_buf.get());
+  EXPECT_TRUE(status.succeeded());
 
   // The non-participating sys2 state shouldn't have been copied (if it had
   // it would now be kSys2Id). sys1's state should have been copied, replacing
@@ -2598,8 +2607,9 @@ TEST_F(AbstractStateDiagramTest, CalcUnrestrictedUpdate) {
 
   time = 6.0;
   context_->SetTime(time);
-  diagram_.CalcUnrestrictedUpdate(
+  status = diagram_.CalcUnrestrictedUpdate(
       *context_, events->get_unrestricted_update_events(), x_buf.get());
+  EXPECT_TRUE(status.succeeded());
   // Both sys1 and sys2's abstract data should be updated.
   diagram_.ApplyUnrestrictedUpdate(events->get_unrestricted_update_events(),
                                    x_buf.get(), context_.get());
@@ -2653,8 +2663,9 @@ TEST_F(AbstractStateDiagramTest, UnrestrictedUpdateNotificationsAreLocalized) {
 
   // Fast forward to 2.0 sec and collect the update.
   context_->SetTime(next_time);
-  diagram_.CalcUnrestrictedUpdate(
+  const EventStatus status = diagram_.CalcUnrestrictedUpdate(
       *context_, unrestricted_events, updates.get());
+  EXPECT_TRUE(status.succeeded());
 
   // Of course nothing should have been notified since nothing's changed yet.
   EXPECT_EQ(num_notifications(ctx1), notifications_1);
@@ -3231,9 +3242,9 @@ class PerStepActionTestSystem : public LeafSystem<double> {
 // trigger doesn't matter.
 GTEST_TEST(DiagramEventEvaluation, Propagation) {
   std::unique_ptr<Diagram<double>> sub_diagram;
-  PerStepActionTestSystem* sys0;
-  PerStepActionTestSystem* sys1;
-  PerStepActionTestSystem* sys2;
+  PerStepActionTestSystem* sys0{};
+  PerStepActionTestSystem* sys1{};
+  PerStepActionTestSystem* sys2{};
 
   // Sub diagram. Has sys0, and sys1.
   // sys0 does not have any per step actions.
@@ -3271,18 +3282,20 @@ GTEST_TEST(DiagramEventEvaluation, Propagation) {
   ASSERT_TRUE(events->HasEvents());
 
   // Does unrestricted update first.
-  diagram->CalcUnrestrictedUpdate(
+  EventStatus status = diagram->CalcUnrestrictedUpdate(
       *context, events->get_unrestricted_update_events(), tmp_state.get());
+  EXPECT_TRUE(status.succeeded());
   context->get_mutable_state().SetFrom(*tmp_state);
 
   // Does discrete updates second.
-  diagram->CalcDiscreteVariableUpdate(*context,
-                                      events->get_discrete_update_events(),
-                                      tmp_discrete_state.get());
+  status = diagram->CalcDiscreteVariableUpdate(
+      *context, events->get_discrete_update_events(), tmp_discrete_state.get());
+  EXPECT_TRUE(status.succeeded());
   context->get_mutable_discrete_state().SetFrom(*tmp_discrete_state);
 
   // Publishes last.
-  diagram->Publish(*context, events->get_publish_events());
+  status = diagram->Publish(*context, events->get_publish_events());
+  EXPECT_TRUE(status.succeeded());
 
   // Only sys2 published once.
   EXPECT_EQ(sys0->publish_count(), 0);
@@ -3306,6 +3319,277 @@ GTEST_TEST(DiagramEventEvaluation, Propagation) {
   EXPECT_EQ(sys2_context.get_discrete_state(0)[0], 0);
   EXPECT_EQ(sys2_context.get_abstract_state<std::string>(0), "wow0");
   EXPECT_EQ(sys2->publish_count(), 1);
+}
+
+// A System that has one of each kind of event, with independently settable
+// return statuses. We'll use this to test whether Diagrams properly
+// implement our policy for handling error returns for simultaneous events.
+class EventStatusTestSystem : public LeafSystem<double> {
+ public:
+  EventStatusTestSystem() {
+    DeclareForcedUnrestrictedUpdateEvent(
+        &EventStatusTestSystem::UnrestrictedHandler);
+    DeclareForcedDiscreteUpdateEvent(&EventStatusTestSystem::DiscreteHandler);
+    DeclareForcedPublishEvent(&EventStatusTestSystem::PublishHandler);
+  }
+
+  void set_unrestricted_severity(EventStatus::Severity severity) {
+    unrestricted_severity_ = severity;
+  }
+  void set_discrete_severity(EventStatus::Severity severity) {
+    discrete_severity_ = severity;
+  }
+  void set_publish_severity(EventStatus::Severity severity) {
+    publish_severity_ = severity;
+  }
+
+  void set_all_did_nothing() {
+    set_unrestricted_severity(EventStatus::kDidNothing);
+    set_discrete_severity(EventStatus::kDidNothing);
+    set_publish_severity(EventStatus::kDidNothing);
+  }
+
+  int unrestricted_count() const { return unrestricted_count_; }
+  int discrete_count() const { return discrete_count_; }
+  int publish_count() const { return publish_count_; }
+
+  void reset() {
+    unrestricted_severity_ = discrete_severity_ = publish_severity_ =
+        EventStatus::kSucceeded;
+    unrestricted_count_ = discrete_count_ = publish_count_ = 0;
+    unrestricted_order_ = discrete_order_ = publish_order_ = -1;
+  }
+
+  static void reset_order() { order_ = 0; }
+
+  // Expected number of event executions of each event.
+  void check_counts(const std::array<int, 3> expected) const {
+    EXPECT_EQ(unrestricted_count_, expected[0]);
+    EXPECT_EQ(discrete_count_, expected[1]);
+    EXPECT_EQ(publish_count_, expected[2]);
+  }
+
+  // Expected sequence number for each event at last execution.
+  void check_order(const std::array<int, 3> expected) const {
+    EXPECT_EQ(unrestricted_order_, expected[0]);
+    EXPECT_EQ(discrete_order_, expected[1]);
+    EXPECT_EQ(publish_order_, expected[2]);
+  }
+
+ private:
+  EventStatus MakeStatus(std::string id, EventStatus::Severity severity) const {
+    switch (severity) {
+      case EventStatus::kDidNothing:
+        return EventStatus::DidNothing();
+      case EventStatus::kSucceeded:
+        return EventStatus::Succeeded();
+      case EventStatus::kReachedTermination:
+        return EventStatus::ReachedTermination(
+            this, fmt::format("{} terminated", id));
+      case EventStatus::kFailed:
+        return EventStatus::Failed(this, fmt::format("{} failed", id));
+    }
+    DRAKE_UNREACHABLE();
+  }
+
+  EventStatus UnrestrictedHandler(const Context<double>&,
+                                  State<double>*) const {
+    ++unrestricted_count_;
+    unrestricted_order_ = order_++;
+    return MakeStatus("unrestricted", unrestricted_severity_);
+  }
+  EventStatus DiscreteHandler(const Context<double>&,
+                              DiscreteValues<double>*) const {
+    ++discrete_count_;
+    discrete_order_ = order_++;
+    return MakeStatus("discrete", discrete_severity_);
+  }
+  EventStatus PublishHandler(const Context<double>&) const {
+    ++publish_count_;
+    publish_order_ = order_++;
+    return MakeStatus("publish", publish_severity_);
+  }
+
+  // The corresponding handlers return whatever status is set here.
+  EventStatus::Severity unrestricted_severity_{EventStatus::kSucceeded};
+  EventStatus::Severity discrete_severity_{EventStatus::kSucceeded};
+  EventStatus::Severity publish_severity_{EventStatus::kSucceeded};
+
+  mutable int unrestricted_count_{0}, unrestricted_order_{-1};
+  mutable int discrete_count_{0}, discrete_order_{-1};
+  mutable int publish_count_{0}, publish_order_{-1};
+  static int order_;
+};
+
+int EventStatusTestSystem::order_ = 0;
+
+// Policy to verify:
+//   1 events are handled in the order the subsystems were added
+//   2 if all events succeed, all get executed and return succeeded
+// 3ab if all events do nothing (a), all get executed and we return did_nothing;
+//     a mix of succeeded & did nothing is succeeded
+// 4ab if an unrestricted (a) or discrete (b) update fails, we fail immediately
+//     and return a message attributing the error to the right subsystem
+//   5 if a publish event fails, we continue to handle remaining publish events
+//     and then finally report the correct message for the first failure
+// 6ab a reached_termination status doesn't prevent execution but reports
+//     the first detection (a), but is superceded by a later failure (b)
+GTEST_TEST(DiagramEventEvaluation, EventStatusHandling) {
+  std::unique_ptr<Diagram<double>> sub_diagram0;
+  std::unique_ptr<Diagram<double>> sub_diagram1;
+  EventStatusTestSystem* sys[5];
+
+  {  // Sub diagram 0 has sys0 & sys1.
+    DiagramBuilder<double> builder;
+    sys[0] = builder.AddSystem<EventStatusTestSystem>();
+    sys[0]->set_name("sys0");
+    sys[1] = builder.AddSystem<EventStatusTestSystem>();
+    sys[1]->set_name("sys1");
+    sub_diagram0 = builder.Build();
+    sub_diagram0->set_name("sub_diagram0");
+  }
+
+  {  // Sub diagram 1 has sys4 & sys5.
+    DiagramBuilder<double> builder;
+    sys[3] = builder.AddSystem<EventStatusTestSystem>();
+    sys[3]->set_name("sys3");
+    sys[4] = builder.AddSystem<EventStatusTestSystem>();
+    sys[4]->set_name("sys4");
+    sub_diagram1 = builder.Build();
+    sub_diagram1->set_name("sub_diagram1");
+  }
+
+  // Now build the diagram consisting of the two subdiagrams separated by
+  // one more leaf system:
+  //                                diagram
+  //                   sub_diagram0  sys2  sub_diagram1
+  //                    sys0  sys1          sys3  sys4
+  //
+  DiagramBuilder<double> builder;
+  builder.AddSystem(std::move(sub_diagram0));
+  sys[2] = builder.AddSystem<EventStatusTestSystem>();
+  sys[2]->set_name("sys2");
+  builder.AddSystem(std::move(sub_diagram1));
+  auto diagram = builder.Build();
+  diagram->set_name("diagram");
+
+  // We aren't looking for state updates; we just need a place to put the
+  // (ignored) outputs. We just need to know who got called when.
+  auto context = diagram->CreateDefaultContext();
+  State<double>& state = context->get_mutable_state();
+  DiscreteValues<double>& discrete_state = state.get_mutable_discrete_state();
+
+  auto clear = [&]() {
+    for (int i=0; i < 5; ++i) {
+      auto& system = *sys[i];
+      system.reset();
+    }
+    EventStatusTestSystem::reset_order();
+  };
+
+  // Policy 1 & 2: Every handler returns success and should be invoked in order.
+  clear();
+  EventStatus unrestricted_status = diagram->CalcUnrestrictedUpdate(
+      *context, diagram->get_forced_unrestricted_update_events(), &state);
+  EventStatus discrete_status = diagram->CalcDiscreteVariableUpdate(
+      *context, diagram->get_forced_discrete_update_events(), &discrete_state);
+  EventStatus publish_status =
+      diagram->Publish(*context, diagram->get_forced_publish_events());
+
+  EXPECT_TRUE(unrestricted_status.succeeded());
+  EXPECT_TRUE(discrete_status.succeeded());
+  EXPECT_TRUE(publish_status.succeeded());
+
+  for (int i = 0; i < 5; ++i) {
+    const auto& system = *sys[i];
+    system.check_counts({1, 1, 1});
+    system.check_order({i, 5 + i, 10 + i});
+  }
+
+  // Policy 3ab: Unrestricted & publish handlers all return did_nothing, so
+  // their final status should be did_nothing. One of the discrete handlers
+  // succeeds so its final status should be succeeded. Order unchanged from
+  // above.
+  clear();
+  for (auto* system : sys) system->set_all_did_nothing();
+  sys[3]->set_discrete_severity(EventStatus::kSucceeded);
+  unrestricted_status = diagram->CalcUnrestrictedUpdate(
+      *context, diagram->get_forced_unrestricted_update_events(), &state);
+  discrete_status = diagram->CalcDiscreteVariableUpdate(
+      *context, diagram->get_forced_discrete_update_events(), &discrete_state);
+  publish_status =
+      diagram->Publish(*context, diagram->get_forced_publish_events());
+
+  EXPECT_TRUE(unrestricted_status.did_nothing());
+  EXPECT_TRUE(discrete_status.succeeded());
+  EXPECT_TRUE(publish_status.did_nothing());
+
+  for (int i = 0; i < 5; ++i) {
+    const auto& system = *sys[i];
+    system.check_counts({1, 1, 1});
+    system.check_order({i, 5 + i, 10 + i});
+  }
+
+  // (We don't need to re-check ordering because it can't change due
+  // to status returns.)
+
+  // Policy 4a: sys[1] unrestricted fails. Nothing after should execute.
+  clear();
+  sys[1]->set_unrestricted_severity(EventStatus::kFailed);
+  unrestricted_status = diagram->CalcUnrestrictedUpdate(
+      *context, diagram->get_forced_unrestricted_update_events(), &state);
+  EXPECT_TRUE(unrestricted_status.failed());
+  EXPECT_EQ(unrestricted_status.system(), sys[1]);
+  EXPECT_EQ(unrestricted_status.message(), "unrestricted failed");
+  for (int i=0; i < 2; ++i) sys[i]->check_counts({1, 0, 0});
+  for (int i=2; i < 5; ++i) sys[i]->check_counts({0, 0, 0});
+
+  // Policy 4b: sys[2] discrete fails. Nothing after should execute.
+  clear();
+  sys[2]->set_discrete_severity(EventStatus::kFailed);
+  discrete_status = diagram->CalcDiscreteVariableUpdate(
+      *context, diagram->get_forced_discrete_update_events(), &discrete_state);
+  EXPECT_TRUE(discrete_status.failed());
+  EXPECT_EQ(discrete_status.system(), sys[2]);
+  EXPECT_EQ(discrete_status.message(), "discrete failed");
+  for (int i=0; i < 3; ++i) sys[i]->check_counts({0, 1, 0});
+  for (int i=3; i < 5; ++i) sys[i]->check_counts({0, 0, 0});
+
+  // Policy 5: sys[0] publish fails. All other publishes should execute
+  // but then the returned status is the sys[0] failure.
+  clear();
+  sys[0]->set_publish_severity(EventStatus::kFailed);
+  publish_status =
+      diagram->Publish(*context, diagram->get_forced_publish_events());
+  EXPECT_TRUE(publish_status.failed());
+  EXPECT_EQ(publish_status.system(), sys[0]);
+  EXPECT_EQ(publish_status.message(), "publish failed");
+  for (int i=0; i < 5; ++i) sys[i]->check_counts({0, 0, 1});
+
+  // Policy 6a: sys[1] unrestricted and sys[3] unrestricted report termination.
+  // Everything executes and the sys[1] termination return is reported.
+  clear();
+  sys[1]->set_unrestricted_severity(EventStatus::kReachedTermination);
+  sys[3]->set_unrestricted_severity(EventStatus::kReachedTermination);
+  unrestricted_status = diagram->CalcUnrestrictedUpdate(
+      *context, diagram->get_forced_unrestricted_update_events(), &state);
+  EXPECT_TRUE(unrestricted_status.reached_termination());
+  EXPECT_EQ(unrestricted_status.system(), sys[1]);
+  EXPECT_EQ(unrestricted_status.message(), "unrestricted terminated");
+  for (int i=0; i < 5; ++i) sys[i]->check_counts({1, 0, 0});
+
+  // Policy 6b: sys[1] discrete reports termination, sys[3] fails.
+  // sys[4] is not executed, and the sys[3] failure is reported.
+  clear();
+  sys[1]->set_discrete_severity(EventStatus::kReachedTermination);
+  sys[3]->set_discrete_severity(EventStatus::kFailed);
+  discrete_status = diagram->CalcDiscreteVariableUpdate(
+      *context, diagram->get_forced_discrete_update_events(), &discrete_state);
+  EXPECT_TRUE(discrete_status.failed());
+  EXPECT_EQ(discrete_status.system(), sys[3]);
+  EXPECT_EQ(discrete_status.message(), "discrete failed");
+  for (int i=0; i < 4; ++i) sys[i]->check_counts({0, 1, 0});
+  sys[4]->check_counts({0, 0, 0});
 }
 
 class MyEventTestSystem : public LeafSystem<double> {
@@ -3361,7 +3645,9 @@ GTEST_TEST(MyEventTest, MyEventTestLeaf) {
     dut.GetPerStepEvents(*context, per_step_events.get());
     events->AddToEnd(*periodic_events);
     events->AddToEnd(*per_step_events);
-    dut.Publish(*context, events->get_publish_events());
+    const EventStatus status =
+        dut.Publish(*context, events->get_publish_events());
+    EXPECT_TRUE(status.succeeded());
 
     EXPECT_EQ(dut.get_periodic_count(), period > 0 ? 1 : 0);
     EXPECT_EQ(dut.get_per_step_count(), period > 0 ? 0 : 1);
@@ -3409,7 +3695,8 @@ GTEST_TEST(MyEventTest, MyEventTestDiagram) {
 
   // FYI time not actually needed here; events to handle already selected.
   context->SetTime(time);
-  dut->Publish(*context, events->get_publish_events());
+  EventStatus status = dut->Publish(*context, events->get_publish_events());
+  EXPECT_TRUE(status.succeeded());
 
   // Sys0's period is larger, so it doesn't get evaluated.
   EXPECT_EQ(sys[0]->get_periodic_count(), 0);
@@ -3435,7 +3722,8 @@ GTEST_TEST(MyEventTest, MyEventTestDiagram) {
   // it doesn't contain the ones leftover from the CalcNextUpdateTime() call.
   // (If it doesn't get cleared some of the counts will be incremented twice.)
   dut->GetPeriodicEvents(*context, periodic_events.get());
-  dut->Publish(*context, periodic_events->get_publish_events());
+  status = dut->Publish(*context, periodic_events->get_publish_events());
+  EXPECT_TRUE(status.succeeded());
 
   EXPECT_EQ(sys[0]->get_periodic_count(), 1);
   EXPECT_EQ(sys[0]->get_per_step_count(), 0);

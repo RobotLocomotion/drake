@@ -1731,9 +1731,9 @@ TEST_F(LeafSystemTest, CallbackAndInvalidUpdates) {
     event.AddToComposite(&leaf_events);
   }
 
-  // Verify no exception is thrown.
-  DRAKE_EXPECT_NO_THROW(system_.CalcUnrestrictedUpdate(
-      *context, leaf_events.get_unrestricted_update_events(), x.get()));
+  const EventStatus status = system_.CalcUnrestrictedUpdate(
+      *context, leaf_events.get_unrestricted_update_events(), x.get());
+  EXPECT_TRUE(status.succeeded());
 
   // Change the function to change the continuous state dimension.
   // Call the unrestricted update function again, now verifying that an
@@ -1754,10 +1754,10 @@ TEST_F(LeafSystemTest, CallbackAndInvalidUpdates) {
 
   // Call the unrestricted update function, verifying that an exception
   // is thrown.
-  EXPECT_THROW(
+  DRAKE_EXPECT_THROWS_MESSAGE(
       system_.CalcUnrestrictedUpdate(
           *context, leaf_events.get_unrestricted_update_events(), x.get()),
-      std::logic_error);
+      ".*dimensions cannot be changed.*");
 
   // Restore the continuous state (size).
   x->set_continuous_state(std::make_unique<ContinuousState<double>>(
@@ -1783,10 +1783,10 @@ TEST_F(LeafSystemTest, CallbackAndInvalidUpdates) {
 
   // Call the unrestricted update function again, again verifying that an
   // exception is thrown.
-  EXPECT_THROW(
+  DRAKE_EXPECT_THROWS_MESSAGE(
       system_.CalcUnrestrictedUpdate(
           *context, leaf_events.get_unrestricted_update_events(), x.get()),
-      std::logic_error);
+      ".*dimensions cannot be changed.*");
 
   // Restore the discrete state (size).
   x->set_discrete_state(std::make_unique<DiscreteValues<double>>(
@@ -1808,10 +1808,10 @@ TEST_F(LeafSystemTest, CallbackAndInvalidUpdates) {
 
   // Call the unrestricted update function again, again verifying that an
   // exception is thrown.
-  EXPECT_THROW(
+  DRAKE_EXPECT_THROWS_MESSAGE(
       system_.CalcUnrestrictedUpdate(
           *context, leaf_events.get_unrestricted_update_events(), x.get()),
-      std::logic_error);
+      ".*dimensions cannot be changed.*");
 }
 
 // Tests that the next update time is computed correctly for LeafSystems
@@ -2420,7 +2420,8 @@ class DoPublishOverrideSystem : public LeafSystem<double> {
       const Context<double>& context,
       const std::vector<const PublishEvent<double>*>& events) const override {
     ++do_publish_count_;
-    if (!ignore_events_) LeafSystem<double>::DoPublish(context, events);
+    if (!ignore_events_)
+      LeafSystem<double>::DoPublish(context, events);
   }
 
   // If true, DoPublish ignores events, calls LeafSystem::DoPublish() if false.
@@ -2452,7 +2453,8 @@ GTEST_TEST(DoPublishOverrideTest, ConfirmOverride) {
   system.ForcedPublish(*context);
   EXPECT_EQ(system.do_publish_count(), 1);
   EXPECT_EQ(system.event_handle_count(), 1);
-  system.Publish(*context, events);
+  EventStatus status = system.Publish(*context, events);
+  EXPECT_TRUE(status.succeeded());
   EXPECT_EQ(system.do_publish_count(), 2);
   EXPECT_EQ(system.event_handle_count(), 2);
 
@@ -2464,7 +2466,8 @@ GTEST_TEST(DoPublishOverrideTest, ConfirmOverride) {
   system.ForcedPublish(*context);
   EXPECT_EQ(system.do_publish_count(), 3);
   EXPECT_EQ(system.event_handle_count(), 2);
-  system.Publish(*context, events);
+  status = system.Publish(*context, events);
+  EXPECT_TRUE(status.succeeded());
   EXPECT_EQ(system.do_publish_count(), 4);
   EXPECT_EQ(system.event_handle_count(), 2);
 }
@@ -2828,12 +2831,15 @@ GTEST_TEST(InitializationTest, ManualEventProcessing) {
   EXPECT_EQ(init_events->get_system_id(), context->get_system_id());
   dut.GetInitializationEvents(*context, init_events.get());
 
-  dut.Publish(*context, init_events->get_publish_events());
-  dut.CalcDiscreteVariableUpdate(*context,
+  EventStatus status = dut.Publish(*context, init_events->get_publish_events());
+  EXPECT_TRUE(status.succeeded());
+  status = dut.CalcDiscreteVariableUpdate(*context,
                                  init_events->get_discrete_update_events(),
                                  discrete_updates.get());
-  dut.CalcUnrestrictedUpdate(
+  EXPECT_TRUE(status.succeeded());
+  status = dut.CalcUnrestrictedUpdate(
       *context, init_events->get_unrestricted_update_events(), state.get());
+  EXPECT_TRUE(status.succeeded());
 
   EXPECT_TRUE(dut.get_pub_init());
   EXPECT_TRUE(dut.get_dis_update_init());
@@ -2861,7 +2867,9 @@ GTEST_TEST(InitializationTest, DefaultEventProcessing) {
 // is a set of sugar methods to facilitate that; this class uses them all.
 class EventSugarTestSystem : public LeafSystem<double> {
  public:
-  EventSugarTestSystem() {
+  explicit EventSugarTestSystem(EventStatus::Severity desired_status =
+      EventStatus::kSucceeded)
+      : desired_status_(desired_status) {
     DeclareInitializationPublishEvent(
         &EventSugarTestSystem::MyPublishHandler);
     DeclareInitializationDiscreteUpdateEvent(
@@ -2927,38 +2935,38 @@ class EventSugarTestSystem : public LeafSystem<double> {
  private:
   EventStatus MyPublishHandler(const Context<double>& context) const {
     MySuccessfulPublishHandler(context);
-    return EventStatus::Succeeded();
+    return MakeStatus();
   }
 
   EventStatus MySecondPublishHandler(const Context<double>& context) const {
     ++num_second_publish_handler_publishes_;
-    return EventStatus::Succeeded();
+    return MakeStatus();
   }
 
   EventStatus MyDiscreteUpdateHandler(
       const Context<double>& context,
       DiscreteValues<double>* discrete_state) const {
     MySuccessfulDiscreteUpdateHandler(context, &*discrete_state);
-    return EventStatus::Succeeded();
+    return MakeStatus();
   }
 
   EventStatus MySecondDiscreteUpdateHandler(
       const Context<double>& context,
       DiscreteValues<double>* discrete_state) const {
     ++num_second_discrete_update_;
-    return EventStatus::Succeeded();
+    return MakeStatus();
   }
 
   EventStatus MyUnrestrictedUpdateHandler(const Context<double>& context,
                                           State<double>* state) const {
     MySuccessfulUnrestrictedUpdateHandler(context, &*state);
-    return EventStatus::Succeeded();
+    return MakeStatus();
   }
 
   EventStatus MySecondUnrestrictedUpdateHandler(const Context<double>& context,
                                                 State<double>* state) const {
     ++num_second_unrestricted_update_;
-    return EventStatus::Succeeded();
+    return MakeStatus();
   }
 
   void MySuccessfulPublishHandler(const Context<double>&) const {
@@ -2974,6 +2982,22 @@ class EventSugarTestSystem : public LeafSystem<double> {
                                              State<double>*) const {
     ++num_unrestricted_update_;
   }
+
+  EventStatus MakeStatus() const {
+    switch (desired_status_) {
+      case EventStatus::kDidNothing:
+        return EventStatus::DidNothing();
+      case EventStatus::kSucceeded:
+        return EventStatus::Succeeded();
+      case EventStatus::kReachedTermination:
+        return EventStatus::ReachedTermination(this, "Terminated");
+      case EventStatus::kFailed:
+        return EventStatus::Failed(this, "Something bad happened");
+    }
+    DRAKE_UNREACHABLE();
+  }
+
+  const EventStatus::Severity desired_status_;
 
   mutable int num_publish_{0};
   mutable int num_second_publish_handler_publishes_{0};
@@ -3030,13 +3054,16 @@ GTEST_TEST(EventSugarTest, HandlersGetCalled) {
   dut.GetPeriodicEvents(*context, &*periodic_events);
   all_events->AddToEnd(*periodic_events);
 
-  dut.CalcUnrestrictedUpdate(
+  EventStatus status = dut.CalcUnrestrictedUpdate(
       *context, all_events->get_unrestricted_update_events(), &*state);
+  EXPECT_TRUE(status.succeeded());
   dut.CalcForcedUnrestrictedUpdate(*context, &*state);
-  dut.CalcDiscreteVariableUpdate(
+  status = dut.CalcDiscreteVariableUpdate(
       *context, all_events->get_discrete_update_events(), &*discrete_state);
+  EXPECT_TRUE(status.succeeded());
   dut.CalcForcedDiscreteVariableUpdate(*context, &*discrete_state);
-  dut.Publish(*context, all_events->get_publish_events());
+  status = dut.Publish(*context, all_events->get_publish_events());
+  EXPECT_TRUE(status.succeeded());
   dut.ForcedPublish(*context);
 
   EXPECT_EQ(dut.num_publish(), 5);
@@ -3045,6 +3072,65 @@ GTEST_TEST(EventSugarTest, HandlersGetCalled) {
   EXPECT_EQ(dut.num_second_discrete_update(), 1);
   EXPECT_EQ(dut.num_unrestricted_update(), 5);
   EXPECT_EQ(dut.num_second_unrestricted_update(), 1);
+}
+
+// Verify that user-initiated event APIs throw on handler failure.
+GTEST_TEST(EventSugarTest, ForcedEventsThrowOnFailure) {
+  EventSugarTestSystem dut(EventStatus::kFailed);
+  dut.set_name("dut");
+  auto context = dut.CreateDefaultContext();
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      dut.ForcedPublish(*context),
+      "ForcedPublish.*event handler.*"
+      "EventSugarTestSystem.*dut.*failed.*Something bad happened.*");
+
+  auto discrete_state = dut.AllocateDiscreteVariables();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      dut.CalcForcedDiscreteVariableUpdate(*context, &*discrete_state),
+      "CalcForcedDiscreteVariableUpdate.*event handler.*"
+      "EventSugarTestSystem.*dut.*failed.*Something bad happened.*");
+
+  auto state = context->CloneState();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      dut.CalcForcedUnrestrictedUpdate(*context, &*state),
+      "CalcForcedUnrestrictedUpdate.*event handler.*"
+      "EventSugarTestSystem.*dut.*failed.*Something bad happened.*");
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      dut.ExecuteInitializationEvents(&*context),
+      "ExecuteInitializationEvents.*event handler.*"
+      "EventSugarTestSystem.*dut.*failed.*Something bad happened.*");
+}
+
+// Verify that user-initiated event APIs don't throw for any status less
+// than failure (including "reached termination".
+GTEST_TEST(EventSugarTest, ForcedEventsDontThrowWhenNoFailure) {
+  EventSugarTestSystem successful(EventStatus::kSucceeded);
+  EventSugarTestSystem terminating(EventStatus::kReachedTermination);
+  auto successful_context = successful.CreateDefaultContext();
+  auto terminating_context = terminating.CreateDefaultContext();
+
+  EXPECT_NO_THROW(successful.ForcedPublish(*successful_context));
+  EXPECT_NO_THROW(terminating.ForcedPublish(*terminating_context));
+
+  auto successful_discrete_state = successful.AllocateDiscreteVariables();
+  auto terminating_discrete_state = terminating.AllocateDiscreteVariables();
+  EXPECT_NO_THROW(successful.CalcForcedDiscreteVariableUpdate(
+      *successful_context, &*successful_discrete_state));
+  EXPECT_NO_THROW(terminating.CalcForcedDiscreteVariableUpdate(
+      *terminating_context, &*terminating_discrete_state));
+
+  auto successful_state = successful_context->CloneState();
+  auto terminating_state = terminating_context->CloneState();
+  EXPECT_NO_THROW(successful.CalcForcedUnrestrictedUpdate(*successful_context,
+                                                          &*successful_state));
+  EXPECT_NO_THROW(terminating.CalcForcedUnrestrictedUpdate(
+      *terminating_context, &*terminating_state));
+
+  EXPECT_NO_THROW(successful.ExecuteInitializationEvents(&*successful_context));
+  EXPECT_NO_THROW(
+      terminating.ExecuteInitializationEvents(&*terminating_context));
 }
 
 // A System that does not override the default implicit time derivatives
