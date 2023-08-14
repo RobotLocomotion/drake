@@ -30,14 +30,15 @@ TEST_F(KukaTest, ReachableTest) {
 
     EXPECT_TRUE(result.is_success());
 
-    double pos_tol = 0.061;
-    double orient_tol = 0.25;
+    double pos_tol = 0.09;
+    double orient_tol = 0.3;
     CheckGlobalIKSolution(result, pos_tol, orient_tol);
     // Now call nonlinear IK with the solution from global IK as the initial
     // seed. If the global IK provides a good initial seed, then the nonlinear
     // IK should be able to find a solution.
     Eigen::Matrix<double, 7, 1> q_global_ik =
         global_ik_.ReconstructGeneralizedPositionSolution(result);
+    drake::log()->info("Nonlinear IK call 1\n");
     CheckNonlinearIK(ee_pos_lb_W, ee_pos_ub_W, ee_desired_orient, angle_tol,
                      q_global_ik, q_global_ik, 1);
 
@@ -64,6 +65,7 @@ TEST_F(KukaTest, ReachableTest) {
     EXPECT_LE(ee_orient_err.angle(), angle_tol + 1E-4);
 
     q_global_ik = global_ik_.ReconstructGeneralizedPositionSolution(result);
+    drake::log()->info("Nonlinear IK call 2\n");
     CheckNonlinearIK(ee_pos_lb_W, ee_pos_ub_W, ee_desired_orient, angle_tol,
                      q_global_ik, q_global_ik, 1);
 

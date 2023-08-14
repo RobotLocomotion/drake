@@ -11,6 +11,8 @@
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/weld_joint.h"
+#include "drake/solvers/ipopt_solver.h"
+#include "drake/solvers/snopt_solver.h"
 #include "drake/solvers/solve.h"
 #include "drake/systems/framework/diagram_builder.h"
 
@@ -108,7 +110,19 @@ Eigen::VectorXd KukaTest::CheckNonlinearIK(
       Eigen::MatrixXd::Identity(plant_->num_positions(),
                                 plant_->num_positions()),
       q_nom_ik, ik.q());
-  const auto result = solvers::Solve(ik.prog(), q_guess_ik);
+
+  solvers::IpoptSolver ipopt_solver;
+  const auto result = ipopt_solver.Solve(ik.prog(), q_guess_ik);
+  if (!result.is_success()) {
+    drake::log()->info("Nonlinear IK use solver {}",
+                       result.get_solver_id().name());
+    drake::log()->info("Solution result is {}", result.get_solution_result());
+    if (result.get_solver_id() == solvers::SnoptSolver::id()) {
+      drake::log()->info(
+          "SNOPT info {}",
+          result.get_solver_details<solvers::SnoptSolver>().info);
+    }
+  }
   EXPECT_EQ(result.is_success(), ik_success_expected);
   return q_sol;
 }
