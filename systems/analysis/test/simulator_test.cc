@@ -249,18 +249,19 @@ class TwoWitnessStatelessSystem : public LeafSystem<double> {
 
   explicit TwoWitnessStatelessSystem(double off1, double off2)
       : offset1_(off1), offset2_(off2) {
-    auto witness_handler = [this](const Context<double>& context,
-                                  const PublishEvent<double>& event) {
-      this->PublishOnWitness(context, event);
-    };
+    PublishEvent<double> event([](const System<double>& system,
+                                  const Context<double>& callback_context,
+                                  const PublishEvent<double>& callback_event) {
+      dynamic_cast<const TwoWitnessStatelessSystem&>(system).PublishOnWitness(
+          callback_context, callback_event);
+      return EventStatus::Succeeded();
+    });
     witness1_ = this->MakeWitnessFunction(
         "clock witness1", WitnessFunctionDirection::kCrossesZero,
-        &TwoWitnessStatelessSystem::CalcClockWitness1,
-        PublishEvent<double>(witness_handler));
+        &TwoWitnessStatelessSystem::CalcClockWitness1, event);
     witness2_ = this->MakeWitnessFunction(
         "clock witness2", WitnessFunctionDirection::kCrossesZero,
-        &TwoWitnessStatelessSystem::CalcClockWitness2,
-        PublishEvent<double>(witness_handler));
+        &TwoWitnessStatelessSystem::CalcClockWitness2, event);
   }
 
   void set_publish_callback(
@@ -727,16 +728,19 @@ class PeriodicPublishWithTimedWitnessSystem final : public LeafSystem<double> {
       1.0, 0.5, &PeriodicPublishWithTimedWitnessSystem::PublishPeriodic);
 
     // Declare the publish event for the witness trigger.
-    auto fn = [this](const Context<double>& context,
-        const PublishEvent<double>& witness_publish_event) {
-      return this->PublishWitness(context, witness_publish_event);
-    };
-    PublishEvent<double> witness_publish(fn);
+    PublishEvent<double> event([](const System<double>& system,
+                                  const Context<double>& callback_context,
+                                  const PublishEvent<double>& callback_event) {
+      dynamic_cast<const PeriodicPublishWithTimedWitnessSystem&>(system)
+          .PublishWitness(callback_context, callback_event);
+      return EventStatus::Succeeded();
+    });
     witness_ = this->MakeWitnessFunction(
-      "timed_witness", WitnessFunctionDirection::kPositiveThenNonPositive,
-      [witness_trigger_time](const Context<double>& context) {
-        return witness_trigger_time - context.get_time();
-      }, witness_publish);
+        "timed_witness", WitnessFunctionDirection::kPositiveThenNonPositive,
+        [witness_trigger_time](const Context<double>& context) {
+          return witness_trigger_time - context.get_time();
+        },
+        event);
   }
 
   double periodic_publish_time() const { return periodic_publish_time_; }
@@ -1311,35 +1315,14 @@ class DiscreteInputAccumulator : public LeafSystem<double> {
 
     DeclareVectorInputPort("u", 1);
 
-    // Set initial condition x_0 = 0, and clear the result.
-    DeclareInitializationEvent(
-        DiscreteUpdateEvent<double>([this](const Context<double>&,
-                                           const DiscreteUpdateEvent<double>&,
-                                           DiscreteValues<double>* x_0) {
-          (*x_0)[0] = 0.;
-          result_.clear();
-        }));
-
-    // Output y_n using a Drake "publish" event (occurs at the end of step n).
-    DeclarePeriodicEvent(
+    DeclareInitializationDiscreteUpdateEvent(
+        &DiscreteInputAccumulator::OnInitializeUpdate);
+    DeclarePeriodicPublishEvent(
         kPeriod, kPublishOffset,
-        PublishEvent<double>(
-            [this](const Context<double>& context,
-                   const PublishEvent<double>&) {
-              result_.push_back(get_x(context));  // y_n = x_n
-            }));
-
-    // Update to x_{n+1} (x_np1), using a Drake "discrete update" event (occurs
-    // at the beginning of step n+1).
-    DeclarePeriodicEvent(
+        &DiscreteInputAccumulator::OnPeriodicPublish);
+    DeclarePeriodicDiscreteUpdateEvent(
         kPeriod, kPublishOffset,
-        DiscreteUpdateEvent<double>([this](const Context<double>& context,
-                                           const DiscreteUpdateEvent<double>&,
-                                           DiscreteValues<double>* x_np1) {
-          const double x_n = get_x(context);
-          const double u = get_input_port(0).Eval(context)[0];
-          (*x_np1)[0] = x_n + u;  // x_{n+1} = x_n + u(t)
-        }));
+        &DiscreteInputAccumulator::OnPeriodicUpdate);
   }
 
   const std::vector<double>& result() const { return result_; }
@@ -1348,11 +1331,35 @@ class DiscreteInputAccumulator : public LeafSystem<double> {
   static constexpr double kPublishOffset = 0.;
 
  private:
+  // Sets initial condition x_0 = 0, and clears the result.
+  EventStatus OnInitializeUpdate(const Context<double>&,
+                                 DiscreteValues<double>* x_0) const {
+    (*x_0)[0] = 0.0;
+    result_.clear();
+    return EventStatus::Succeeded();
+  }
+
+  // Outputs y_n using a Drake "publish" event (occurs at the end of step n).
+  EventStatus OnPeriodicPublish(const Context<double>& context) const {
+    result_.push_back(get_x(context));  // y_n = x_n
+    return EventStatus::Succeeded();
+  }
+
+  // Updates to x_{n+1} (x_np1), using a Drake "discrete update" event (occurs
+  // at the beginning of step n+1).
+  EventStatus OnPeriodicUpdate(const Context<double>& context,
+                               DiscreteValues<double>* x_np1) const {
+    const double x_n = get_x(context);
+    const double u = get_input_port(0).Eval(context)[0];
+    (*x_np1)[0] = x_n + u;  // x_{n+1} = x_n + u(t)
+    return EventStatus::Succeeded();
+  }
+
   double get_x(const Context<double>& context) const {
     return context.get_discrete_state()[0];
   }
 
-  std::vector<double> result_;
+  mutable std::vector<double> result_;
 };
 
 // Build a diagram that takes a DeltaFunction input and then simulates this
@@ -2097,20 +2104,20 @@ GTEST_TEST(SimulatorTest, Initialization) {
    public:
     InitializationTestSystem() {
       PublishEvent<double> pub_event(
-          TriggerType::kInitialization,
-          std::bind(&InitializationTestSystem::InitPublish, this,
-                    std::placeholders::_1, std::placeholders::_2));
+          [](const System<double>& system,
+             const Context<double>& callback_context,
+             const PublishEvent<double>& callback_event) {
+            dynamic_cast<const InitializationTestSystem&>(system).InitPublish(
+                callback_context, callback_event);
+            return EventStatus::Succeeded();
+          });
       DeclareInitializationEvent(pub_event);
 
-      DeclareInitializationEvent(DiscreteUpdateEvent<double>(
-          TriggerType::kInitialization));
-      DeclareInitializationEvent(UnrestrictedUpdateEvent<double>(
-          TriggerType::kInitialization));
+      DeclareInitializationEvent(DiscreteUpdateEvent<double>{});
+      DeclareInitializationEvent(UnrestrictedUpdateEvent<double>{});
 
       DeclarePeriodicDiscreteUpdateNoHandler(0.1);
-      DeclarePerStepEvent<UnrestrictedUpdateEvent<double>>(
-          UnrestrictedUpdateEvent<double>(
-              TriggerType::kPerStep));
+      DeclarePerStepEvent(UnrestrictedUpdateEvent<double>{});
     }
 
     bool get_pub_init() const { return pub_init_; }
@@ -2360,16 +2367,18 @@ GTEST_TEST(SimulatorTest, MissedPublishEventIssue13296) {
       const double inf = std::numeric_limits<double>::infinity();
       *next_update_time = message_is_waiting_ ? context.get_time() : inf;
       PublishEvent<double> event(
-          TriggerType::kTimed,
-          [this](const Context<double>& handler_context,
-                 const PublishEvent<double>& publish_event) {
-            this->MyPublishHandler(handler_context, publish_event);
+          [](const System<double>& system,
+             const Context<double>& callback_context,
+             const PublishEvent<double>& callback_event) {
+            dynamic_cast<const RightNowEventSystem&>(system).MyPublishHandler(
+                callback_context, callback_event);
+            return EventStatus::Succeeded();
           });
-      event.AddToComposite(event_info);
+      event.AddToComposite(TriggerType::kTimed, event_info);
     }
 
     void MyPublishHandler(const Context<double>& context,
-                          const PublishEvent<double>& publish_event) const {
+                          const PublishEvent<double>&) const {
       ++publish_counter_;
     }
 
