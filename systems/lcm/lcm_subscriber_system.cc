@@ -110,12 +110,14 @@ void LcmSubscriberSystem::DoCalcNextUpdateTime(
 
   // Create a unrestricted event and tie the handler to the corresponding
   // function.
-  systems::UnrestrictedUpdateEvent<double>::UnrestrictedUpdateCallback
-      callback = [this](const Context<double>& c,
-                        const systems::UnrestrictedUpdateEvent<double>&,
-                        State<double>* s) {
-        this->ProcessMessageAndStoreToAbstractState(c, s);
-      };
+  auto callback = [](const System<double>& system,
+                     const Context<double>& callback_context,
+                     const systems::UnrestrictedUpdateEvent<double>&,
+                     State<double>* callback_state) {
+    const auto& self = dynamic_cast<const LcmSubscriberSystem&>(system);
+    return self.ProcessMessageAndStoreToAbstractState(callback_context,
+                                                      callback_state);
+  };
 
   // Schedule an update event at the current time.
   *time = context.get_time();

@@ -16,8 +16,11 @@ class InitializationTestSystem : public LeafSystem<double> {
   InitializationTestSystem() {
     PublishEvent<double> pub_event(
         TriggerType::kInitialization,
-        std::bind(&InitializationTestSystem::InitPublish, this,
-                  std::placeholders::_1, std::placeholders::_2));
+        [this](const System<double>&, const Context<double>&,
+               const PublishEvent<double>& event) {
+          this->InitPublish(event);
+          return EventStatus::Succeeded();
+        });
     DeclareInitializationEvent(pub_event);
 
     DeclareDiscreteState(1);
@@ -34,8 +37,7 @@ class InitializationTestSystem : public LeafSystem<double> {
   bool get_unres_update_init() const { return unres_update_init_; }
 
  private:
-  void InitPublish(const Context<double>&,
-                   const PublishEvent<double>& event) const {
+  void InitPublish(const PublishEvent<double>& event) const {
     EXPECT_EQ(event.get_trigger_type(), TriggerType::kInitialization);
     pub_init_ = true;
   }
