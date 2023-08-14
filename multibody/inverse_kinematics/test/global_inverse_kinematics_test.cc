@@ -105,7 +105,7 @@ TEST_F(KukaTest, UnreachableTest) {
   Eigen::Matrix<double, 7, 1> q_guess;
   q_nom.setZero();
   q_guess.setZero();
-  CheckNonlinearIK(ee_pos_lb, ee_pos_ub, ee_desired_orient, 0, q_nom, q_guess,
+  CheckNonlinearIK(ee_pos_lb, ee_pos_ub, ee_desired_orient, 0, {q_guess}, q_nom,
                    false);
 }
 
