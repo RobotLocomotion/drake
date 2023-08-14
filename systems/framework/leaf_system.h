@@ -1835,6 +1835,10 @@ class LeafSystem : public System<T> {
   is only called from the public non-virtual Publish(), which will have
   already error-checked @p context so you may assume that it is valid.
 
+  @note There is no provision for returning EventStatus from DoPublish() as
+  there is if you use the default dispatcher. Instead, your DoPublish() will be
+  assumed to return EventStatus::Succeeded() regardless of what happened.
+
   @param[in] context Const current context.
   @param[in] events All the publish events that need handling. */
   virtual void DoPublish(
@@ -1865,6 +1869,11 @@ class LeafSystem : public System<T> {
   implementations may assume that @p context is valid; that
   @p discrete_state is non-null, and that the referenced object has the
   same constituent structure as was produced by AllocateDiscreteVariables().
+
+  @note There is no provision for returning EventStatus from
+  DoCalcDiscreteVariableUpdates() as there is if you use the default
+  dispatcher. Instead, your DoCalcDiscreteVariableUpdates() will be assumed to
+  return EventStatus::Succeeded() regardless of what happened.
 
   @param[in] context The "before" state.
   @param[in] events All the discrete update events that need handling.
@@ -1899,6 +1908,11 @@ class LeafSystem : public System<T> {
   implementations may assume that the @p context is valid; that @p state
   is non-null, and that the referenced object has the same constituent
   structure as the state in @p context.
+
+  @note There is no provision for returning EventStatus from
+  DoCalcUnrestrictedUpdate() as there is if you use the default dispatcher.
+  Instead, your DoCalcUnrestrictedUpdate() will be assumed to return
+  EventStatus::Succeeded() regardless of what happened.
 
   @param[in]     context The "before" state that is to be used to calculate
                          the returned state update.
@@ -1936,7 +1950,7 @@ class LeafSystem : public System<T> {
   // Assumes @param events is an instance of LeafEventCollection, throws
   // std::bad_cast otherwise.
   // Assumes @param events is not empty. Aborts otherwise.
-  void DispatchPublishHandler(
+  [[nodiscard]] EventStatus DispatchPublishHandler(
       const Context<T>& context,
       const EventCollection<PublishEvent<T>>& events) const final;
 
@@ -1944,7 +1958,7 @@ class LeafSystem : public System<T> {
   // Assumes @p events is an instance of LeafEventCollection, throws
   // std::bad_cast otherwise.
   // Assumes @p events is not empty. Aborts otherwise.
-  void DispatchDiscreteVariableUpdateHandler(
+  [[nodiscard]] EventStatus DispatchDiscreteVariableUpdateHandler(
       const Context<T>& context,
       const EventCollection<DiscreteUpdateEvent<T>>& events,
       DiscreteValues<T>* discrete_state) const final;
@@ -1960,7 +1974,7 @@ class LeafSystem : public System<T> {
   // Assumes @p events is an instance of LeafEventCollection, throws
   // std::bad_cast otherwise.
   // Assumes @p events is not empty. Aborts otherwise.
-  void DispatchUnrestrictedUpdateHandler(
+  [[nodiscard]] EventStatus DispatchUnrestrictedUpdateHandler(
       const Context<T>& context,
       const EventCollection<UnrestrictedUpdateEvent<T>>& events,
       State<T>* state) const final;
