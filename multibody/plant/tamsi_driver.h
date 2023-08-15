@@ -1,11 +1,15 @@
 #pragma once
 
+#include <vector>
+
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/contact_solvers/contact_solver_results.h"
 #include "drake/multibody/plant/contact_jacobians.h"
+#include "drake/multibody/plant/contact_results.h"
 #include "drake/multibody/plant/tamsi_solver.h"
+#include "drake/multibody/tree/multibody_forces.h"
 #include "drake/multibody/tree/multibody_tree_topology.h"
 #include "drake/systems/framework/context.h"
 
@@ -45,6 +49,12 @@ class TamsiDriver {
       const systems::Context<T>& context,
       contact_solvers::internal::ContactSolverResults<T>* results) const;
 
+  // Computes the aggregated multibody forces to step the discrete dynamics from
+  // the state in `context`. This includes force elements evaluated at
+  // `context`, joint limits penalty forces and contact forces.
+  void CalcDiscreteUpdateMultibodyForces(const systems::Context<T>& context,
+                                         MultibodyForces<T>* forces) const;
+
  private:
   // Returns a reference to the manager provided at construction.
   const CompliantContactManager<T>& manager() const { return *manager_; }
@@ -83,6 +93,13 @@ class TamsiDriver {
       const MatrixX<T>& Jn, const MatrixX<T>& Jt, const VectorX<T>& stiffness,
       const VectorX<T>& damping, const VectorX<T>& mu,
       contact_solvers::internal::ContactSolverResults<T>* results) const;
+
+  // Helper to aggregate per-body contact spatial forces, given we know the
+  // contact results.
+  void CalcAndAddSpatialContactForcesFromContactResults(
+      const systems::Context<T>& context,
+      const ContactResults<T>& contact_results,
+      std::vector<SpatialForce<T>>* spatial_contact_forces) const;
 
   // Const access to the manager.
   const CompliantContactManager<T>* const manager_{nullptr};
