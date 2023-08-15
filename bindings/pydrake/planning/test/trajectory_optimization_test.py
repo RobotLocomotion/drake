@@ -22,16 +22,15 @@ from pydrake.geometry.optimization import (
     Point,
     VPolytope,
 )
+import pydrake.solvers as mp
+from pydrake.symbolic import Variable
+from pydrake.systems.framework import InputPortSelection
+from pydrake.systems.primitives import LinearSystem
 from pydrake.trajectories import (
     BsplineTrajectory,
     CompositeTrajectory,
     PiecewisePolynomial,
 )
-import pydrake.solvers as mp
-from pydrake.symbolic import Variable
-from pydrake.systems.framework import InputPortSelection
-from pydrake.systems.primitives import LinearSystem
-from pydrake.trajectories import PiecewisePolynomial, BsplineTrajectory
 from pydrake.symbolic import Variable
 from pydrake.systems.framework import InputPortSelection
 from pydrake.systems.primitives import LinearSystem
@@ -439,6 +438,29 @@ class TestTrajectoryOptimization(unittest.TestCase):
         q = trajopt.ReconstructTrajectory(result=result)
         self.assertIsInstance(q, BsplineTrajectory)
         trajopt.SetInitialGuess(trajectory=q)
+
+    def test_gcs_trajectory_optimization_basic(self):
+        """This based on the C++ GcsTrajectoryOptimizationTest.Basic test. It's
+        a simple test of the bindings that does not require MOSEK. It uses a
+        single region (the unit box), and plans a line segment inside that box.
+        """
+        gcs = GcsTrajectoryOptimization(num_positions=2)
+        start = [-0.5, -0.5]
+        end = [0.5, 0.5]
+        source = gcs.AddRegions(regions=[Point(start)], order=0)
+        target = gcs.AddRegions(regions=[Point(end)], order=0)
+        regions = gcs.AddRegions(regions=[HPolyhedron.MakeUnitBox(2)],
+                                 order=1, h_min=1.0)
+        gcs.AddEdges(source, regions)
+        gcs.AddEdges(regions, target)
+        traj, result = gcs.SolvePath(source, target)
+        self.assertTrue(result.is_success())
+        self.assertEqual(traj.rows(), 2)
+        self.assertEqual(traj.cols(), 1)
+        traj_start = traj.value(traj.start_time()).squeeze()
+        traj_end = traj.value(traj.end_time()).squeeze()
+        np.testing.assert_allclose(traj_start, start, atol=1e-6)
+        np.testing.assert_allclose(traj_end, end, atol=1e-6)
 
     def test_gcs_trajectory_optimization_2d(self):
         """The following 2D environment has been presented in the GCS paper.
