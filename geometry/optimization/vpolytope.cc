@@ -29,6 +29,7 @@ using Eigen::VectorXd;
 using math::RigidTransformd;
 using solvers::Binding;
 using solvers::Constraint;
+using solvers::LinearCost;
 using solvers::MathematicalProgram;
 using solvers::VectorXDecisionVariable;
 using symbolic::Variable;
@@ -138,10 +139,127 @@ VPolytope::VPolytope(const QueryObject<double>& query_object,
   vertices_ = X_EG * vertices;
 }
 
-VPolytope::VPolytope(const HPolyhedron& hpoly)
+VPolytope::VPolytope(const HPolyhedron& hpoly, const double tol)
     : ConvexSet(hpoly.ambient_dimension()) {
+  // First, assert that the HPolyhedron is bounded (since a VPolytope cannot
+  // be used to represent an unbounded set).
   DRAKE_THROW_UNLESS(hpoly.IsBounded());
 
+  // Next, handle the case where the HPolyhedron is zero-dimensional.
+  if (hpoly.ambient_dimension() == 0) {
+    // A zero-dimensional HPolyhedron is always considered nonempty. (See
+    // documentation of the HPolyhedron class.) Thus, we construct a matrix with
+    // zero rows and one column, denoting a single point in the zero-dimensional
+    // vector space.
+    Eigen::MatrixXd points = Eigen::MatrixXd::Zero(0, 1);
+    *this = VPolytope(points);
+    return;
+  }
+
+  // Next, handle the case where the HPolyhedron is empty.
+  if (hpoly.IsEmpty()) {
+    // We construct a VPolytope with ambient_dimension() rows and zero columns,
+    // denoting zero points in the same dimensional space (i.e. the empty set).
+    *this = VPolytope(Eigen::MatrixXd::Zero(hpoly.ambient_dimension(), 0));
+    return;
+  }
+
+  // Next, handle the case where the HPolyhedron is not full dimensional.
+  const AffineSubspace affine_hull(hpoly, tol);
+  if (affine_hull.AffineDimension() < affine_hull.ambient_dimension()) {
+    // This special case avoids the QHull error QH6023, which occurs when the
+    // feasible point given to QHull is not clearly inside the HPolyhedron. If
+    // the HPolyhedron is not full dimensional, this error will occur, even if
+    // the point is indeed inside the HPolyhedron. To handle this, we project
+    // onto the affine hull and do computations there, before lifting the
+    // resulting VPolytope to the ambient space.
+
+    // Note that QHull will not function in zero or one dimensional spaces, so
+    // we handle these separately here.
+    if (affine_hull.AffineDimension() == 0) {
+      // If affine_hull is zero dimensional, then hpoly is just a single point.
+      const auto maybe_point = hpoly.MaybeGetFeasiblePoint();
+      DRAKE_DEMAND(maybe_point.has_value());
+      Eigen::MatrixXd points_in(hpoly.ambient_dimension(), 1);
+      points_in << maybe_point.value();
+      *this = VPolytope(points_in);
+      return;
+    } else if (affine_hull.AffineDimension() == 1) {
+      // If it's one dimensional, then it's a line segment. Then the affine hull
+      // has only one basis vector, so to find the endpoints, we minimize and
+      // maximize the dot product of this vector with a vector decision
+      // variable, constrained to lie in the HPolyhedron.
+      DRAKE_DEMAND(affine_hull.basis().cols() == 1);
+      MathematicalProgram prog;
+      VectorXDecisionVariable x =
+          prog.NewContinuousVariables(hpoly.ambient_dimension());
+      hpoly.AddPointInSetConstraints(&prog, x);
+      Binding<LinearCost> objective =
+          prog.AddLinearCost(affine_hull.basis().col(0), x);
+      const auto result1 = solvers::Solve(prog);
+
+      // The only reason this solve could fail is if hpoly were unbounded or
+      // empty. Both cases are explicitly handled before this.
+      DRAKE_DEMAND(result1.is_success());
+      const Eigen::VectorXd point1 = result1.GetSolution(x);
+
+      // Now, update the coefficients of the objective, and solve again.
+      objective.evaluator()->UpdateCoefficients(-affine_hull.basis().col(0));
+      const auto result2 = solvers::Solve(prog);
+      DRAKE_DEMAND(result2.is_success());
+      const Eigen::VectorXd point2 = result2.GetSolution(x);
+
+      Eigen::MatrixXd vertices(hpoly.ambient_dimension(), 2);
+      vertices << point1, point2;
+      *this = VPolytope(vertices);
+      return;
+    }
+
+    // If we have a HPolyhedron defined as {Ax <= b : x in R^n} in the ambient
+    // space, and its Affine Hull is the set {Cy + d : y in R^m}, then its
+    // representation in the local coordinates of the affine hull will be
+    // {A(Cy + d) <= b : y in R^m}, or equivalently, {ACy <= b - Ad : y in R^m}.
+
+    // To prevent numerical issues, we have to remove the halfspaces which are
+    // parallel to the affine hull. We check this by taking the dot product of
+    // each constraint vector with each basis vector. If the constraint vector
+    // is orthogonal to every basis vector (within a prespecified tolerance),
+    // then it defines a hyperplane that is parallel to the affine hull, and we
+    // must remove it.
+    Eigen::MatrixXd product = hpoly.A() * affine_hull.basis();
+    const auto mask = product.rowwise().lpNorm<Eigen::Infinity>().array() > tol;
+    const int count_nonzero = mask.count();
+    Eigen::MatrixXd A_filtered(count_nonzero, hpoly.ambient_dimension());
+    Eigen::VectorXd b_filtered(count_nonzero);
+    int row = 0;
+    for (int i = 0; i < hpoly.A().rows(); ++i) {
+      if (mask[i]) {
+        A_filtered.row(row) = hpoly.A().row(i);
+        b_filtered[row] = hpoly.b()[i];
+        ++row;
+      }
+    }
+
+    HPolyhedron hpoly_subspace(
+        A_filtered * affine_hull.basis(),
+        b_filtered - A_filtered * affine_hull.translation());
+
+    // Because hpoly_subspace is full-dimensional in the coordinates of the
+    // affine subspace, we can directly convert to a VPolytope. If QHull has
+    // additional errors besides the dimension one, they will be caught here.
+    VPolytope vpoly_subspace(hpoly_subspace);
+
+    // Finally, we extract the vertices of vpoly_subspace and lift them into the
+    // ambient space, obtaining the desired VPolytope.
+    Eigen::MatrixXd points_local = vpoly_subspace.vertices();
+    Eigen::MatrixXd points_global =
+        affine_hull.ToGlobalCoordinates(points_local);
+    *this = VPolytope(points_global);
+    return;
+  }
+
+  // Now that we know the HPolyhedron is full dimensional, we can finish the
+  // various setup steps and call QHull.
   MatrixXd coeffs(hpoly.A().rows(), hpoly.A().cols() + 1);
   coeffs.leftCols(hpoly.A().cols()) = hpoly.A();
   coeffs.col(hpoly.A().cols()) = -hpoly.b();
