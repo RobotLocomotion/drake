@@ -163,7 +163,7 @@ HPolyhedron::HPolyhedron(const VPolytope& vpoly)
     Eigen::MatrixXd points_local =
         affine_hull.ToLocalCoordinates(vpoly.vertices());
 
-    // Note QHull will not function in zero or one dimensional spaces, so
+    // Note that QHull will not function in zero or one dimensional spaces, so
     // we handle these separately here.
     Eigen::MatrixXd global_A;
     Eigen::VectorXd global_b;

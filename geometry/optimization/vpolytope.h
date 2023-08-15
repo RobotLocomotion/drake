@@ -6,6 +6,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/geometry/optimization/affine_subspace.h"
 #include "drake/geometry/optimization/convex_set.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
 #include "drake/math/rigid_transform.h"
@@ -46,9 +47,14 @@ class VPolytope final : public ConvexSet {
 
   /** Constructs the polytope from a bounded polyhedron (using Qhull).
   @throws std::runtime_error if H is unbounded or if Qhull terminates with an
-  error.
+  error. If the HPolyhedron is not full-dimensional, we perform computations
+  in a coordinate system of its affine hull. `tol` specifies the numerical
+  tolerance used in the computation of the affine hull. See the documentation
+  of AffineSubspace for more details. A loose tolerance is necessary for the
+  built-in solvers, but a tighter tolerance can be used with commercial solvers
+  (e.g. Gurobi and Mosek).
   @pydrake_mkdoc_identifier{hpolyhedron} */
-  explicit VPolytope(const HPolyhedron& H);
+  explicit VPolytope(const HPolyhedron& H, const double tol = 1e-9);
 
   /** Constructs the polytope from a SceneGraph geometry.
   @pydrake_mkdoc_identifier{scenegraph} */
