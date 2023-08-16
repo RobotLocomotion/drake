@@ -801,6 +801,7 @@ licenses([
             "vtkAbstractMapper3D.h",
             "vtkActor.h",
             "vtkActorCollection.h",
+            "vtkAssembly.h",
             "vtkCamera.h",
             "vtkLight.h",
             "vtkMapper.h",
