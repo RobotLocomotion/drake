@@ -29,7 +29,7 @@ namespace systems {
 ///
 /// Note: Scalar conversion is supported from double to any other scalar, but
 /// the stored Trajectory is not automatically scalar converted. You must call
-/// UpdateTrajectory() with an updated Trajectory<T> in order to fully-enable
+/// UpdateTrajectory() with an updated Trajectory<T> in order to fully enable
 /// scalar-type support on the trajectory parameters/values.
 ///
 /// @tparam_default_scalar @ingroup primitive_systems
