@@ -2871,6 +2871,7 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
   // contact.
   const bool use_hydroelastic =
       contact_model_ == ContactModel::kHydroelastic ||
+      contact_model_ == ContactModel::kHydroelasticInferred ||
       contact_model_ == ContactModel::kHydroelasticWithFallback;
   if (use_hydroelastic) {
     auto& contact_info_and_body_spatial_forces_cache_entry =
