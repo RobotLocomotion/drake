@@ -5026,6 +5026,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
         return data.contact_surfaces;
       }
       case ContactModel::kHydroelastic:
+      case ContactModel::kHydroelasticInferred:
         return this->get_cache_entry(cache_indexes_.contact_surfaces)
             .template Eval<std::vector<geometry::ContactSurface<T>>>(context);
       default:

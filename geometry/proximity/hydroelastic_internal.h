@@ -325,6 +325,11 @@ class Geometries final : public ShapeReifier {
                         const ProximityProperties& properties);
 
   void set_hydro_inferred(bool value) {
+    // XXX prototype: Only allow changing the value before any ambiguous
+    // geometries are added.
+    if (value != hydro_inferred_) {
+      DRAKE_DEMAND(!hydro_inferred_too_late_);
+    }
     hydro_inferred_ = value;
   }
   bool get_hydro_inferred() const {
@@ -374,6 +379,8 @@ class Geometries final : public ShapeReifier {
 
   // Whether to infer hydro properties for un-annotated geometry.
   bool hydro_inferred_{false};
+  // For now, just demand we don't miss the boat.
+  bool hydro_inferred_too_late_{false};
 };
 
 /* @name Creating hydroelastic representations of shapes
