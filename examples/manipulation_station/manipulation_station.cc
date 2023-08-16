@@ -838,25 +838,24 @@ void ManipulationStation<T>::Finalize(
       builder.Connect(scene_graph_->get_query_output_port(),
                       camera->query_object_input_port());
 
-      auto depth_to_cloud = builder.template AddSystem<
-          perception::DepthImageToPointCloud>(
+      auto depth_to_cloud =
+          builder.template AddSystem<perception::DepthImageToPointCloud>(
               camera->depth_camera_info(),
-              systems::sensors::PixelType::kDepth16U,
-              0.001f /* depth camera is in mm */,
-              perception::pc_flags::kXYZs |
-              perception::pc_flags::kRGBs);
+              systems::sensors::PixelType::kDepth32F,
+              1.0 /* depth camera is in meters */,
+              perception::pc_flags::kXYZs | perception::pc_flags::kRGBs);
       auto x_pc_system = builder.template AddSystem<
           systems::ConstantValueSource>(Value<RigidTransformd>(X_PC));
       builder.Connect(camera->color_image_output_port(),
                       depth_to_cloud->color_image_input_port());
-      builder.Connect(camera->depth_image_16U_output_port(),
+      builder.Connect(camera->depth_image_32F_output_port(),
                       depth_to_cloud->depth_image_input_port());
       builder.Connect(x_pc_system->get_output_port(),
                       depth_to_cloud->camera_pose_input_port());
 
       builder.ExportOutput(camera->color_image_output_port(),
                            camera_name + "_rgb_image");
-      builder.ExportOutput(camera->depth_image_16U_output_port(),
+      builder.ExportOutput(camera->depth_image_32F_output_port(),
                            camera_name + "_depth_image");
       builder.ExportOutput(camera->label_image_output_port(),
                            camera_name + "_label_image");

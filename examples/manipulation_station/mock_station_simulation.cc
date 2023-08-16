@@ -150,32 +150,34 @@ int do_main(int argc, char* argv[]) {
   builder.Connect(wsg_status->get_output_port(0),
                   wsg_status_publisher->get_input_port());
 
-  // Publish the camera outputs.
+  // Publish the camera outputs. Images from each camera will be broadcasted
+  // in different channels, i.e, DRAKE_RGBD_CAMERA_IMAGES_{camera_name}.
   if (FLAGS_publish_cameras) {
-    auto image_encoder = builder.AddSystem<
-        systems::sensors::ImageToLcmImageArrayT>();
     for (const auto& camera_name : station->get_camera_names()) {
-      // RGB
+      auto image_encoder =
+          builder.AddSystem<systems::sensors::ImageToLcmImageArrayT>();
+      // RGB.
       const std::string rgb_name = "camera_" + camera_name + "_rgb_image";
       const auto& rgb_output = station->GetOutputPort(rgb_name);
       const auto& rgb_input =
           image_encoder->DeclareImageInputPort<
               systems::sensors::PixelType::kRgba8U>(rgb_name);
       builder.Connect(rgb_output, rgb_input);
-      // Depth
+      // Depth.
       const std::string depth_name = "camera_" + camera_name + "_depth_image";
       const auto& depth_output = station->GetOutputPort(depth_name);
       const auto& depth_input =
-          image_encoder->DeclareImageInputPort<
-              systems::sensors::PixelType::kDepth16U>(depth_name);
+          image_encoder
+              ->DeclareImageInputPort<systems::sensors::PixelType::kDepth32F>(
+                  depth_name);
       builder.Connect(depth_output, depth_input);
+      const double fps = 30.0;
+      auto image_publisher = builder.AddSystem(
+          systems::lcm::LcmPublisherSystem::Make<drake::lcmt_image_array>(
+              "DRAKE_RGBD_CAMERA_IMAGES_" + camera_name, lcm, 1.0 / fps));
+      builder.Connect(image_encoder->image_array_t_msg_output_port(),
+                      image_publisher->get_input_port());
     }
-    const double fps = 30.0;
-    auto image_publisher = builder.AddSystem(
-        systems::lcm::LcmPublisherSystem::Make<drake::lcmt_image_array>(
-            "DRAKE_RGBD_CAMERA_IMAGES", lcm, 1.0 / fps));
-    builder.Connect(image_encoder->image_array_t_msg_output_port(),
-                    image_publisher->get_input_port());
   }
 
   // Publish the point clouds.
