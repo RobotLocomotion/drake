@@ -88,9 +88,10 @@ struct NamedEnum {
   const char* const name;
 };
 
-constexpr std::array<NamedEnum<ContactModel>, 3> kContactModels{{
+constexpr std::array<NamedEnum<ContactModel>, 4> kContactModels{{
   {ContactModel::kPointContactOnly},
   {ContactModel::kHydroelasticsOnly},
+  {ContactModel::kHydroelasticInferred},
   {ContactModel::kHydroelasticWithFallback},
 }};
 
