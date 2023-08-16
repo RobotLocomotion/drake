@@ -18,7 +18,7 @@ DEFINE_double(simulation_time, 0.4,
 // See MultibodyPlantConfig for the valid strings of contact_model.
 DEFINE_string(contact_model, "hydroelastic",
               "Contact model. Options are: 'point', 'hydroelastic', "
-              "'hydroelastic_with_fallback'.");
+              "'hydroelastic_with_fallback', 'hydroelastic_inferred'.");
 // See MultibodyPlantConfig for the valid strings of contact surface
 // representation.
 DEFINE_string(contact_surface_representation, "polygon",
