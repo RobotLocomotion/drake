@@ -24,7 +24,8 @@ DEFINE_double(simulation_time, 2.0,
 
 // Contact model parameters.
 DEFINE_string(contact_model, "point",
-              "Contact model. Options are: 'point', 'hydroelastic', 'hybrid'.");
+              "Contact model. Options are: 'point', 'hydroelastic', 'hybrid',"
+              " inferred'.");
 DEFINE_string(hydro_rep, "tri",
               "Contact-surface representation for hydroelastics. "
               "Options are: 'tri' for triangles, 'poly' for polygons. "
@@ -160,6 +161,9 @@ int do_main() {
     plant.set_contact_model(ContactModel::kHydroelasticWithFallback);
     plant.Finalize();
     plant.set_penetration_allowance(0.001);
+  } else if (FLAGS_contact_model == "inferred") {
+    plant.set_contact_model(ContactModel::kHydroelasticInferred);
+    plant.Finalize();
   } else {
     throw std::runtime_error("Invalid contact model '" + FLAGS_contact_model +
                              "'.");

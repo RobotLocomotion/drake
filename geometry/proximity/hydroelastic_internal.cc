@@ -62,12 +62,15 @@ void Geometries::MaybeAddGeometry(const Shape& shape, GeometryId id,
   if (type != HydroelasticType::kUndefined) {
     ReifyData data{type, id, properties};
     shape.Reify(this, &data);
-  } else if (hydro_inferred_) {
-    // XXX how ambitious can/should we be with property inference?
-    ProximityProperties inferred_properties;
-    AddRigidHydroelasticProperties(0.01, &inferred_properties);
-    ReifyData data{type, id, inferred_properties};
-    shape.Reify(this, &data);
+  } else {
+    hydro_inferred_too_late_ = true;
+    if (hydro_inferred_) {
+      // XXX how ambitious can/should we be with property inference?
+      ProximityProperties inferred_properties;
+      AddRigidHydroelasticProperties(0.01, &inferred_properties);
+      ReifyData data{type, id, inferred_properties};
+      shape.Reify(this, &data);
+    }
   }
 }
 
