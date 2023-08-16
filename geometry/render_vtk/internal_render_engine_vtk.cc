@@ -6,8 +6,11 @@
 #include <stdexcept>
 #include <utility>
 
+#include <vtkActor.h>
+#include <vtkAssembly.h>
 #include <vtkCamera.h>
 #include <vtkCylinderSource.h>
+#include <vtkGLTFImporter.h>
 #include <vtkImageCast.h>
 #include <vtkOpenGLPolyDataMapper.h>
 #include <vtkOpenGLShaderProperty.h>
@@ -125,22 +128,20 @@ void RenderEngineVtk::UpdateViewpoint(const RigidTransformd& X_WC) {
 }
 
 void RenderEngineVtk::ImplementGeometry(const Box& box, void* user_data) {
-  const RegistrationData* data = static_cast<RegistrationData*>(user_data);
-  ImplementPolyData(CreateVtkBox(box, data->properties).GetPointer(),
-                    DefineMaterial(data->properties, default_diffuse_),
-                    user_data);
+  const RegistrationData& data = *static_cast<RegistrationData*>(user_data);
+  ImplementPolyData(CreateVtkBox(box, data.properties).GetPointer(),
+                    DefineMaterial(data.properties, default_diffuse_), data);
 }
 
 void RenderEngineVtk::ImplementGeometry(const Capsule& capsule,
                                         void* user_data) {
-  const RegistrationData* data = static_cast<RegistrationData*>(user_data);
+  const RegistrationData& data = *static_cast<RegistrationData*>(user_data);
   ImplementPolyData(CreateVtkCapsule(capsule).GetPointer(),
-                    DefineMaterial(data->properties, default_diffuse_),
-                    user_data);
+                    DefineMaterial(data.properties, default_diffuse_), data);
 }
 
 void RenderEngineVtk::ImplementGeometry(const Convex& convex, void* user_data) {
-  ImplementObj(convex.filename(), convex.scale(), user_data);
+  ImplementMesh(convex.filename(), convex.scale(), user_data);
 }
 
 void RenderEngineVtk::ImplementGeometry(const Cylinder& cylinder,
@@ -154,41 +155,36 @@ void RenderEngineVtk::ImplementGeometry(const Cylinder& cylinder,
   vtkNew<vtkTransformPolyDataFilter> transform_filter;
   TransformToDrakeCylinder(transform, transform_filter, vtk_cylinder);
 
-  const RegistrationData* data = static_cast<RegistrationData*>(user_data);
+  const RegistrationData& data = *static_cast<RegistrationData*>(user_data);
   ImplementPolyData(transform_filter.GetPointer(),
-                    DefineMaterial(data->properties, default_diffuse_),
-                    user_data);
+                    DefineMaterial(data.properties, default_diffuse_), data);
 }
 
 void RenderEngineVtk::ImplementGeometry(const Ellipsoid& ellipsoid,
                                         void* user_data) {
-  const RegistrationData* data = static_cast<RegistrationData*>(user_data);
+  const RegistrationData& data = *static_cast<RegistrationData*>(user_data);
   ImplementPolyData(CreateVtkEllipsoid(ellipsoid).GetPointer(),
-                    DefineMaterial(data->properties, default_diffuse_),
-                    user_data);
+                    DefineMaterial(data.properties, default_diffuse_), data);
 }
 
-void RenderEngineVtk::ImplementGeometry(const HalfSpace&,
-                                        void* user_data) {
+void RenderEngineVtk::ImplementGeometry(const HalfSpace&, void* user_data) {
   vtkSmartPointer<vtkPlaneSource> vtk_plane = CreateSquarePlane(kTerrainSize);
 
-  const RegistrationData* data = static_cast<RegistrationData*>(user_data);
+  const RegistrationData& data = *static_cast<RegistrationData*>(user_data);
   ImplementPolyData(vtk_plane.GetPointer(),
-                    DefineMaterial(data->properties, default_diffuse_),
-                    user_data);
+                    DefineMaterial(data.properties, default_diffuse_), data);
 }
 
 void RenderEngineVtk::ImplementGeometry(const Mesh& mesh, void* user_data) {
-  ImplementObj(mesh.filename(), mesh.scale(), user_data);
+  ImplementMesh(mesh.filename(), mesh.scale(), user_data);
 }
 
 void RenderEngineVtk::ImplementGeometry(const Sphere& sphere, void* user_data) {
   vtkNew<vtkTexturedSphereSource> vtk_sphere;
   SetSphereOptions(vtk_sphere.GetPointer(), sphere.radius());
-  const RegistrationData* data = static_cast<RegistrationData*>(user_data);
+  const RegistrationData& data = *static_cast<RegistrationData*>(user_data);
   ImplementPolyData(vtk_sphere.GetPointer(),
-                    DefineMaterial(data->properties, default_diffuse_),
-                    user_data);
+                    DefineMaterial(data.properties, default_diffuse_), data);
 }
 
 bool RenderEngineVtk::DoRegisterVisual(
@@ -203,24 +199,23 @@ bool RenderEngineVtk::DoRegisterVisual(
 void RenderEngineVtk::DoUpdateVisualPose(GeometryId id,
                                          const RigidTransformd& X_WG) {
   vtkSmartPointer<vtkTransform> vtk_X_WG = ConvertToVtkTransform(X_WG);
-  // TODO(SeanCurtis-TRI): Perhaps provide the ability to specify actors for
-  //  specific pipelines; i.e. only update the color actor or only the label
-  //  actor, etc.
-  for (const auto& actor : actors_.at(id)) {
-    actor->SetUserTransform(vtk_X_WG);
+  // TODO(SeanCurtis-TRI): Perhaps provide the ability to specify which pipeline
+  //  is being updated and only update the pose of the prop for that pipeline.
+  for (const auto& prop : props_.at(id)) {
+    prop->SetUserTransform(vtk_X_WG);
   }
 }
 
 bool RenderEngineVtk::DoRemoveGeometry(GeometryId id) {
-  auto iter = actors_.find(id);
+  auto iter = props_.find(id);
 
-  if (iter != actors_.end()) {
-    std::array<vtkSmartPointer<vtkActor>, 3>& pipe_actors = iter->second;
+  if (iter != props_.end()) {
+    PropArray& pipe_props = iter->second;
     for (int i = 0; i < kNumPipelines; ++i) {
-      // If the label actor hasn't been added to its renderer, this is a no-op.
-      pipelines_[i]->renderer->RemoveActor(pipe_actors[i]);
+      // Note: the misnamed `RemoveActor()` actually removes vtkProps.
+      pipelines_[i]->renderer->RemoveActor(pipe_props[i]);
     }
-    actors_.erase(iter);
+    props_.erase(iter);
     return true;
   }
 
@@ -309,6 +304,31 @@ void RenderEngineVtk::DoRenderLabelImage(
   }
 }
 
+namespace {
+
+// Clones an array of props into a new, equivalent array. The new array is a
+// *shallow* copy of the source. VTK requires us to know the most derived type
+// of the object we're cloning (because we have to copy *into* an existing
+// object of that type).
+template <typename VtkType, std::size_t N>
+std::array<vtkSmartPointer<vtkProp3D>, N> CloneProps(
+    const std::array<vtkSmartPointer<vtkProp3D>, N>& source_props) {
+  static_assert(std::is_base_of_v<vtkProp3D, VtkType>,
+                "Geometries should all be derived from vtkProp3D.");
+  std::array<vtkSmartPointer<vtkProp3D>, N> target_props;
+  for (std::size_t i = 0; i < N; ++i) {
+    // NOTE: source *should* be const; but none of the getters on the
+    // source are const-compatible.
+    DRAKE_DEMAND(source_props[i]);
+    vtkNew<VtkType> clone;
+    clone->ShallowCopy(source_props[i]);
+    target_props[i] = std::move(clone);
+  }
+  return target_props;
+}
+
+}  // namespace
+
 RenderEngineVtk::RenderEngineVtk(const RenderEngineVtk& other)
     : RenderEngine(other),
       pipelines_{{make_unique<RenderingPipeline>(),
@@ -318,58 +338,19 @@ RenderEngineVtk::RenderEngineVtk(const RenderEngineVtk& other)
       default_clear_color_{other.default_clear_color_} {
   InitializePipelines();
 
-  // Utility function for creating a cloned actor which *shares* the same
-  // underlying polygonal data.
-  auto clone_actor_array = [this](
-      const std::array<vtkSmartPointer<vtkActor>, kNumPipelines>& source_actors,
-      std::array<vtkSmartPointer<vtkActor>, kNumPipelines>* clone_actors_ptr) {
-    DRAKE_DEMAND(clone_actors_ptr != nullptr);
-    std::array<vtkSmartPointer<vtkActor>, kNumPipelines>& clone_actors =
-        *clone_actors_ptr;
-    for (int i = 0; i < kNumPipelines; ++i) {
-      // NOTE: source *should* be const; but none of the getters on the source
-      // are const-compatible.
-      DRAKE_DEMAND(source_actors[i]);
-      DRAKE_DEMAND(clone_actors[i]);
-      vtkActor& source = *source_actors[i];
-      vtkActor& clone = *clone_actors[i];
-
-      clone.SetShaderProperty(source.GetShaderProperty());
-
-      // NOTE: The clone renderer and original renderer *share* polygon data
-      // (via the shared mapper) and all textures. If the meshes or textures get
-      // modified _in place_ in a clone, the change would be visible to all
-      // copies of the renderer. If that proves to be problematic we'll have to
-      // make the copy "deeper" as appropriate.
-      if (source.GetTexture() == nullptr) {
-        clone.GetProperty()->SetColor(source.GetProperty()->GetColor());
-        clone.GetProperty()->SetOpacity(source.GetProperty()->GetOpacity());
-      } else {
-        clone.SetTexture(source.GetTexture());
-      }
-      const auto& source_textures = source.GetProperty()->GetAllTextures();
-      for (auto& [name, texture] : source_textures) {
-        clone.GetProperty()->SetTexture(name.c_str(), texture);
-      }
-
-      clone.SetMapper(source.GetMapper());
-      clone.SetUserTransform(source.GetUserTransform());
-      // This is necessary because *terrain* has its lighting turned off. To
-      // blindly handle arbitrary actors being flagged as terrain, we need
-      // to treat all actors this way.
-      clone.GetProperty()->SetLighting(source.GetProperty()->GetLighting());
-
-      pipelines_.at(i)->renderer.Get()->AddActor(&clone);
+  for (const auto& [id, source_props] : other.props_) {
+    PropArray target_props;
+    if (vtkActor::SafeDownCast(source_props[0]) != nullptr) {
+      target_props = CloneProps<vtkActor>(source_props);
+    } else if (vtkAssembly::SafeDownCast(source_props[0]) != nullptr) {
+      target_props = CloneProps<vtkAssembly>(source_props);
     }
-  };
-
-  for (const auto& other_id_actor_pair : other.actors_) {
-    std::array<vtkSmartPointer<vtkActor>, kNumPipelines> actors{
-        vtkSmartPointer<vtkActor>::New(), vtkSmartPointer<vtkActor>::New(),
-        vtkSmartPointer<vtkActor>::New()};
-    clone_actor_array(other_id_actor_pair.second, &actors);
-    const GeometryId id = other_id_actor_pair.first;
-    actors_.insert({id, std::move(actors)});
+    for (int i = 0; i < kNumPipelines; ++i) {
+      // We should have copied *something*, either actors or assemblies.
+      DRAKE_DEMAND(target_props[i].Get() != nullptr);
+      pipelines_.at(i)->renderer.Get()->AddActor(target_props[i]);
+    }
+    props_.insert({id, std::move(target_props)});
   }
 
   // Copy camera properties
@@ -382,21 +363,28 @@ RenderEngineVtk::RenderEngineVtk(const RenderEngineVtk& other)
   }
 }
 
-void RenderEngineVtk::ImplementObj(const std::string& file_name, double scale,
-                                   void* user_data) {
-  auto* data = static_cast<RegistrationData*>(user_data);
+void RenderEngineVtk::ImplementMesh(const std::string& file_name, double scale,
+                                    void* user_data) {
+  auto& data = *static_cast<RegistrationData*>(user_data);
 
-  if (Mesh(file_name).extension() != ".obj") {
+  const std::string extension = Mesh(file_name).extension();
+  if (extension == ".obj") {
+    data.accepted = ImplementObj(file_name, scale, data);
+  } else if (extension == ".gltf") {
+    data.accepted = ImplementGltf(file_name, scale, data);
+  } else {
     static const logging::Warn one_time(
         "RenderEngineVtk only supports Mesh/Convex specifications which use "
-        ".obj files. Mesh specifications using other mesh types (e.g., "
-        ".gltf, .stl, .dae, etc.) will be ignored.");
-    data->accepted = false;
-    return;
+        ".obj and .gltf files. Mesh specifications using other mesh types "
+        "(e.g., .stl, .dae, etc.) will be ignored.");
+    data.accepted = false;
   }
+}
 
+bool RenderEngineVtk::ImplementObj(const std::string& file_name, double scale,
+                                   const RegistrationData& data) {
   RenderMesh mesh_data =
-      LoadRenderMeshFromObj(file_name, data->properties, default_diffuse_,
+      LoadRenderMeshFromObj(file_name, data.properties, default_diffuse_,
                             drake::internal::DiagnosticPolicy());
   const RenderMaterial material = mesh_data.material;
 
@@ -404,8 +392,8 @@ void RenderEngineVtk::ImplementObj(const std::string& file_name, double scale,
       CreateVtkMesh(std::move(mesh_data));
 
   if (scale == 1) {
-    ImplementPolyData(mesh_source.GetPointer(), material, user_data);
-    return;
+    ImplementPolyData(mesh_source.GetPointer(), material, data);
+    return true;
   }
 
   vtkNew<vtkTransform> transform;
@@ -416,7 +404,105 @@ void RenderEngineVtk::ImplementObj(const std::string& file_name, double scale,
   transform_filter->SetTransform(transform.GetPointer());
   transform_filter->Update();
 
-  ImplementPolyData(transform_filter.GetPointer(), material, user_data);
+  ImplementPolyData(transform_filter.GetPointer(), material, data);
+  return true;
+}
+
+bool RenderEngineVtk::ImplementGltf(const std::string& file_name, double scale,
+                                    const RegistrationData& data) {
+  vtkNew<vtkGLTFImporter> importer;
+  importer->SetFileName(file_name.c_str());
+  importer->Update();
+
+  auto* renderer = importer->GetRenderer();
+  DRAKE_DEMAND(renderer != nullptr);
+
+  if (renderer->VisibleActorCount() == 0) {
+    log()->warn("No visible meshes found in glTF file: {}", file_name);
+    return false;
+  }
+
+  auto make_file_assembly = [scale]() {
+    vtkNew<vtkAssembly> file_assembly;
+    file_assembly->SetScale(scale);
+    file_assembly->RotateX(90);
+    return file_assembly;
+  };
+
+  // The final assemblies associated with the GeometryId.
+  PropArray props;
+
+  vtkSmartPointer<vtkTransform> vtk_X_WG = ConvertToVtkTransform(data.X_WG);
+
+  // Color.
+  if (data.properties.HasProperty("phong", "diffuse") ||
+      data.properties.HasProperty("phong", "diffuse_map")) {
+    log()->warn(
+        "Drake materials have been assigned to a glTF file. glTF defines its "
+        "own materials, so post hoc materials will be ignored and should be "
+        "removed from the model specification. glTF file: '{}'",
+        file_name);
+  }
+
+  const RenderLabel label = GetRenderLabelOrThrow(data.properties);
+  const ColorD label_color = RenderEngine::GetColorDFromLabel(label);
+
+  for (int i = 0; i < kNumPipelines; ++i) {
+    // VTK imports a collection of visible parts. Whatever the glTF hierarchy
+    // was, VTK brings in actors that all have their poses defined w.r.t. the
+    // file's world frame.
+    //
+    // We'll place all these actors in a new assembly. We'll use this "file"
+    // assembly to account for scale, and the rotation necessary to re-express
+    // the y-up glTF world frame to Drake's z-up world frame. This will
+    // ultimately become the child of the geometry assembly which gets posed
+    // with the drake pose X_WG associated with the geometry id.
+    vtkNew<vtkAssembly> file_root_node(make_file_assembly());
+    auto* actors = renderer->GetActors();
+    actors->InitTraversal();
+    // For each source_actor, create a color, depth, and label actor.
+    while (vtkActor* source_actor = actors->GetNextActor()) {
+      if (i == ImageType::kColor) {
+        // Color rendering can use the source_actor without changes.
+        file_root_node->AddPart(source_actor);
+      } else {
+        // Depth and label images require new actors, based on the source, but
+        // with changes to their materials (aka "mapper").
+        vtkNew<vtkActor> actor;
+        vtkNew<vtkOpenGLPolyDataMapper> mapper;
+        actor->SetMapper(mapper);
+        actor->SetUserTransform(source_actor->GetUserTransform());
+        mapper->SetInputConnection(
+            source_actor->GetMapper()->GetInputAlgorithm()->GetOutputPort());
+        if (i == ImageType::kLabel) {
+          // Label requires a mapper with the encoded RenderLabel color.
+          actor->GetProperty()->LightingOff();
+          actor->GetProperty()->SetColor(label_color.r, label_color.g,
+                                         label_color.b);
+        } else if (i == ImageType::kDepth) {
+          // Depth requires a mapper with the depth shader.
+          vtkOpenGLShaderProperty* shader_prop =
+              vtkOpenGLShaderProperty::SafeDownCast(actor->GetShaderProperty());
+          DRAKE_DEMAND(shader_prop != nullptr);
+          shader_prop->SetVertexShaderCode(render::shaders::kDepthVS);
+          shader_prop->SetFragmentShaderCode(render::shaders::kDepthFS);
+          mapper->AddObserver(vtkCommand::UpdateShaderEvent,
+                              uniform_setting_callback_.Get());
+        }
+        file_root_node->AddPart(actor);
+      }
+    }
+    vtkNew<vtkAssembly> geometry_root;
+    geometry_root->AddPart(file_root_node.Get());
+    geometry_root->SetUserTransform(vtk_X_WG);
+    pipelines_.at(i)->renderer.Get()->AddActor(geometry_root);
+    props[i] = std::move(geometry_root);
+  }
+
+  props_.insert({data.id, std::move(props)});
+
+  // We've successfully processed the .gltf. Report it as accepted.
+  return true;
 }
 
 void RenderEngineVtk::InitializePipelines() {
@@ -490,9 +576,7 @@ void RenderEngineVtk::InitializePipelines() {
 
 void RenderEngineVtk::ImplementPolyData(vtkPolyDataAlgorithm* source,
                                         const RenderMaterial& material,
-                                        void* user_data) {
-  DRAKE_DEMAND(user_data != nullptr);
-
+                                        const RegistrationData& data) {
   std::array<vtkSmartPointer<vtkActor>, kNumPipelines> actors{
       vtkSmartPointer<vtkActor>::New(), vtkSmartPointer<vtkActor>::New(),
       vtkSmartPointer<vtkActor>::New()};
@@ -513,16 +597,17 @@ void RenderEngineVtk::ImplementPolyData(vtkPolyDataAlgorithm* source,
     mapper->SetInputConnection(source->GetOutputPort());
   }
 
-  const RegistrationData& data = *static_cast<RegistrationData*>(user_data);
-
   vtkSmartPointer<vtkTransform> vtk_X_WG = ConvertToVtkTransform(data.X_WG);
 
   // Adds the actor into the specified pipeline.
-  auto connect_actor = [this, &actors, &mappers,
+  PropArray props;
+  auto connect_actor = [this, &actors, &mappers, &props,
                         &vtk_X_WG](ImageType image_type) {
-    actors[image_type]->SetMapper(mappers[image_type].Get());
-    actors[image_type]->SetUserTransform(vtk_X_WG);
-    pipelines_[image_type]->renderer->AddActor(actors[image_type].Get());
+    vtkActor* actor = actors[image_type].Get();
+    actor->SetMapper(mappers[image_type].Get());
+    actor->SetUserTransform(vtk_X_WG);
+    pipelines_[image_type]->renderer->AddActor(actor);
+    props[image_type] = actor;
   };
 
   // Label actor.
@@ -531,7 +616,7 @@ void RenderEngineVtk::ImplementPolyData(vtkPolyDataAlgorithm* source,
     // NOTE: We only configure the label actor if it doesn't have to "do not
     // render" label applied. We *have* created an actor and connected it to
     // a mapper; but otherwise, we leave it disconnected.
-    auto& label_actor = actors[ImageType::kLabel];
+    vtkActor* label_actor = actors[ImageType::kLabel].Get();
     // This is to disable shadows and to get an object painted with a single
     // color.
     label_actor->GetProperty()->LightingOff();
@@ -541,8 +626,7 @@ void RenderEngineVtk::ImplementPolyData(vtkPolyDataAlgorithm* source,
   }
 
   // Color actor.
-  auto& color_actor = actors[ImageType::kColor];
-
+  vtkActor* color_actor = actors[ImageType::kColor].Get();
   if (!material.diffuse_map.empty()) {
     vtkNew<vtkPNGReader> texture_reader;
     texture_reader->SetFileName(material.diffuse_map.c_str());
@@ -584,7 +668,7 @@ void RenderEngineVtk::ImplementPolyData(vtkPolyDataAlgorithm* source,
   connect_actor(ImageType::kDepth);
 
   // Take ownership of the actors.
-  actors_.insert({data.id, std::move(actors)});
+  props_.insert({data.id, std::move(props)});
 }
 
 RenderEngineVtk::RenderingPipeline& RenderEngineVtk::get_mutable_pipeline(

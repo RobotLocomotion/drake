@@ -187,8 +187,9 @@ the main body of the document:
    3. Notify `@BetsyMcPhail` by creating a GitHub issue asking her to manually 
       tag docker images and upload the releases to S3. Be sure to provide her 
       with the release tag in the same ping.
-   4. Announce on Drake Slack, ``#general``.
-   5. Party on, Wayne.
+   4. Create a GitHub issue on the [drake-ros](https://github.com/RobotLocomotion/drake-ros/issues) repository, requesting an update of the `DRAKE_SUGGESTED_VERSION` constant.
+   5. Announce on Drake Slack, ``#general``.
+   6. Party on, Wayne.
 
 ## Post-release wheel upload
 

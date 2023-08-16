@@ -222,11 +222,6 @@ SpatialInertia<T> SpatialInertia<T>::ThinRodWithMass(
   ThrowUnlessValueIsPositiveFinite(mass, "mass", __func__);
   ThrowUnlessValueIsPositiveFinite(length, "length", __func__);
   ThrowUnlessVectorIsMagnitudeOne(unit_vector, __func__);
-
-  // Although a check is made that ‖unit_vector‖ ≈ 1, we normalize regardless.
-  // Note: UnitInertia::ThinRod() calls UnitInertia::AxiallySymmetric() which
-  // also normalizes unit_vector before use.
-  // TODO(Mitiguy) remove normalization in UnitInertia::AxiallySymmetric().
   const UnitInertia<T> G_BBcm_B =
       UnitInertia<T>::ThinRod(length, unit_vector);
   const Vector3<T> p_BoBcm_B = Vector3<T>::Zero();

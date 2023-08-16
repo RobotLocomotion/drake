@@ -1721,12 +1721,13 @@ TEST_F(LeafSystemTest, CallbackAndInvalidUpdates) {
   // Create an unrestricted update callback that just copies the state.
   LeafCompositeEventCollection<double> leaf_events;
   {
-    UnrestrictedUpdateEvent<double>::UnrestrictedUpdateCallback callback = [](
-        const Context<double>& c, const Event<double>&, State<double>* s) {
-      s->SetFrom(*c.CloneState());
-    };
-
-    UnrestrictedUpdateEvent<double> event(TriggerType::kPeriodic, callback);
+    UnrestrictedUpdateEvent<double> event(
+        TriggerType::kPeriodic,
+        [](const System<double>&, const Context<double>& c,
+           const Event<double>&, State<double>* s) {
+          s->SetFrom(*c.CloneState());
+          return EventStatus::Succeeded();
+        });
     event.AddToComposite(&leaf_events);
   }
 
@@ -1739,14 +1740,15 @@ TEST_F(LeafSystemTest, CallbackAndInvalidUpdates) {
   // exception is thrown.
   leaf_events.Clear();
   {
-    UnrestrictedUpdateEvent<double>::UnrestrictedUpdateCallback callback = [](
-        const Context<double>& c, const Event<double>&, State<double>* s) {
-      s->SetFrom(*c.CloneState());
-      s->set_continuous_state(std::make_unique<ContinuousState<double>>(
-          std::make_unique<BasicVector<double>>(4), 4, 0, 0));
-    };
-
-    UnrestrictedUpdateEvent<double> event(TriggerType::kPeriodic, callback);
+    UnrestrictedUpdateEvent<double> event(
+        TriggerType::kPeriodic,
+        [](const System<double>&, const Context<double>& c,
+           const Event<double>&, State<double>* s) {
+          s->SetFrom(*c.CloneState());
+          s->set_continuous_state(std::make_unique<ContinuousState<double>>(
+              std::make_unique<BasicVector<double>>(4), 4, 0, 0));
+          return EventStatus::Succeeded();
+        });
     event.AddToComposite(&leaf_events);
   }
 
@@ -1764,17 +1766,18 @@ TEST_F(LeafSystemTest, CallbackAndInvalidUpdates) {
   // Change the event to indicate to change the discrete state dimension.
   leaf_events.Clear();
   {
-    UnrestrictedUpdateEvent<double>::UnrestrictedUpdateCallback callback = [](
-        const Context<double>& c, const Event<double>&, State<double>* s) {
-      std::vector<std::unique_ptr<BasicVector<double>>> disc_data;
-      s->SetFrom(*c.CloneState());
-      disc_data.push_back(std::make_unique<BasicVector<double>>(1));
-      disc_data.push_back(std::make_unique<BasicVector<double>>(1));
-      s->set_discrete_state(
-          std::make_unique<DiscreteValues<double>>(std::move(disc_data)));
-    };
-
-    UnrestrictedUpdateEvent<double> event(TriggerType::kPeriodic, callback);
+    UnrestrictedUpdateEvent<double> event(
+        TriggerType::kPeriodic,
+        [](const System<double>&, const Context<double>& c,
+           const Event<double>&, State<double>* s) {
+          std::vector<std::unique_ptr<BasicVector<double>>> disc_data;
+          s->SetFrom(*c.CloneState());
+          disc_data.push_back(std::make_unique<BasicVector<double>>(1));
+          disc_data.push_back(std::make_unique<BasicVector<double>>(1));
+          s->set_discrete_state(
+              std::make_unique<DiscreteValues<double>>(std::move(disc_data)));
+          return EventStatus::Succeeded();
+        });
     event.AddToComposite(&leaf_events);
   }
 
@@ -1792,13 +1795,14 @@ TEST_F(LeafSystemTest, CallbackAndInvalidUpdates) {
   // Change the event to indicate to change the abstract state dimension.
   leaf_events.Clear();
   {
-    UnrestrictedUpdateEvent<double>::UnrestrictedUpdateCallback callback = [](
-        const Context<double>& c, const Event<double>&, State<double>* s) {
-      s->SetFrom(*c.CloneState());
-      s->set_abstract_state(std::make_unique<AbstractValues>());
-    };
-
-    UnrestrictedUpdateEvent<double> event(TriggerType::kPeriodic, callback);
+    UnrestrictedUpdateEvent<double> event(
+        TriggerType::kPeriodic,
+        [](const System<double>&, const Context<double>& c,
+           const Event<double>&, State<double>* s) {
+          s->SetFrom(*c.CloneState());
+          s->set_abstract_state(std::make_unique<AbstractValues>());
+          return EventStatus::Succeeded();
+        });
     event.AddToComposite(&leaf_events);
   }
 

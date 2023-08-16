@@ -1880,6 +1880,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   void set_contact_model(ContactModel model);
 
   /// Sets the contact solver type used for discrete %MultibodyPlant models.
+  /// @warning This function is a no-op for continuous models (when
+  /// is_discrete() is false.)
   /// @throws std::exception iff called post-finalize.
   void set_discrete_contact_solver(DiscreteContactSolver contact_solver);
 
@@ -5055,17 +5057,15 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const systems::Context<T>& context,
       ContactResults<T>* contact_results) const;
 
-  // This method accumulates both point and hydroelastic contact results into
-  // contact_results when the model is discrete.
-  // @param[out] contact_results is fully overwritten
-  void CalcContactResultsDiscrete(const systems::Context<T>& context,
-                                  ContactResults<T>* contact_results) const;
-
   // Evaluate contact results.
   const ContactResults<T>& EvalContactResults(
       const systems::Context<T>& context) const {
-    return this->get_cache_entry(cache_indexes_.contact_results)
-        .template Eval<ContactResults<T>>(context);
+    if (this->is_discrete()) {
+      return discrete_update_manager_->EvalContactResults(context);
+    } else {
+      return this->get_cache_entry(cache_indexes_.contact_results)
+          .template Eval<ContactResults<T>>(context);
+    }
   }
 
   // Calc method for the reaction forces output port.

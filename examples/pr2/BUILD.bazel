@@ -38,6 +38,7 @@ _OBJS = [x[:-3] + "obj" for x in _STLS]
         srcs = [stl] + ["//manipulation/util:stl2obj"],
         outs = [obj],
         cmd = " ".join([
+            "env TSAN_OPTIONS=report_bugs=0",
             "$(location //manipulation/util:stl2obj)",
             "--input=$(location {})".format(stl),
             "--output=$@",
