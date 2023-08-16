@@ -45,6 +45,7 @@ struct MultibodyPlantConfig {
   /// - "point"
   /// - "hydroelastic"
   /// - "hydroelastic_with_fallback"
+  /// - "hydroelastic_inferred"
   std::string contact_model{"hydroelastic_with_fallback"};
 
   /// Configures the MultibodyPlant::set_discrete_contact_solver().
