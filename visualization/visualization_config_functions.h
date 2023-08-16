@@ -34,7 +34,7 @@ plant.Finalize();
 
 // Add the visualization.
 const VisualizationConfig vis_config = ...;
-ApplyVisualizationConfig(config, &builder);
+ApplyVisualizationConfig(vis_config, &builder);
 
 // Simulate.
 Simulator<double> simulator(builder.Build());
