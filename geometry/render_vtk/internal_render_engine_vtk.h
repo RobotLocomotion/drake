@@ -40,7 +40,7 @@ namespace internal {
 
 #ifndef DRAKE_DOXYGEN_CXX
 struct ModuleInitVtkRenderingOpenGL2 {
-  ModuleInitVtkRenderingOpenGL2(){
+  ModuleInitVtkRenderingOpenGL2() {
     VTK_AUTOINIT_CONSTRUCT(vtkRenderingOpenGL2)
   }
 };
@@ -67,13 +67,9 @@ class DRAKE_NO_EXPORT ShaderCallback : public vtkCommand {
     program->SetUniformf("z_far", z_far_);
   }
 
-  void set_z_near(float z_near) {
-    z_near_ = z_near;
-  }
+  void set_z_near(float z_near) { z_near_ = z_near; }
 
-  void set_z_far(float z_far) {
-    z_far_ = z_far;
-  }
+  void set_z_far(float z_far) { z_far_ = z_far; }
 
  private:
   float z_near_{0.f};
@@ -132,9 +128,7 @@ class DRAKE_NO_EXPORT RenderEngineVtk : public render::RenderEngine,
    using. These values must be set at construction.  */
   //@{
 
-  Eigen::Vector4d default_diffuse() const {
-    return default_diffuse_.rgba();
-  }
+  Eigen::Vector4d default_diffuse() const { return default_diffuse_.rgba(); }
 
   using render::RenderEngine::default_render_label;
   //@}

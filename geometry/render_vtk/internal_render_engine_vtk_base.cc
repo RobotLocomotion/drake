@@ -27,9 +27,9 @@ namespace render_vtk {
 namespace internal {
 namespace {
 
-using geometry::internal::RenderMesh;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
+using geometry::internal::RenderMesh;
 
 // TODO(SeanCurtis-TRI): The semantics of this textured box needs to be
 //  explained *somewhere* in the documentation. The layout of the texture on the
@@ -104,7 +104,7 @@ class DrakeCubeSource : public vtkPolyDataAlgorithm {
     vtkFloatArray* newTCoords = vtkFloatArray::New();
     vtkCellArray* newPolys = vtkCellArray::New();
 
-    ScopeExit guard([newPoints, newNormals, newTCoords, newPolys](){
+    ScopeExit guard([newPoints, newNormals, newTCoords, newPolys]() {
       newPoints->Delete();
       newNormals->Delete();
       newTCoords->Delete();
@@ -286,8 +286,7 @@ class DrakeObjSource : public vtkPolyDataAlgorithm {
     newPolys->Allocate(newPolys->EstimateSize(num_tris, 3));
 
     for (int p = 0; p < num_points; ++p) {
-      newPoints->InsertNextPoint(mesh_.positions(p, 0),
-                                 mesh_.positions(p, 1),
+      newPoints->InsertNextPoint(mesh_.positions(p, 0), mesh_.positions(p, 1),
                                  mesh_.positions(p, 2));
       const double n[] = {mesh_.normals(p, 0), mesh_.normals(p, 1),
                           mesh_.normals(p, 2)};
@@ -346,8 +345,8 @@ vtkSmartPointer<vtkPolyDataAlgorithm> CreateVtkBox(
   vtkSmartPointer<DrakeCubeSource> vtk_box =
       vtkSmartPointer<DrakeCubeSource>::New();
   vtk_box->set_size({box.width(), box.depth(), box.height()});
-  const Vector2d& uv_scale = properties.GetPropertyOrDefault(
-      "phong", "diffuse_scale", Vector2d{1, 1});
+  const Vector2d& uv_scale =
+      properties.GetPropertyOrDefault("phong", "diffuse_scale", Vector2d{1, 1});
   vtk_box->set_uv_scale(uv_scale);
   return vtk_box;
 }

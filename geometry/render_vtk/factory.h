@@ -8,6 +8,9 @@
 
 namespace drake {
 namespace geometry {
+// We need to get clang-format to ignore the long table lines so they get
+// rendered properly in doxygen.
+// clang-format off
 
 /** Constructs a RenderEngine implementation which uses a VTK-based OpenGL
  renderer.
@@ -74,6 +77,7 @@ namespace geometry {
  */
 std::unique_ptr<render::RenderEngine> MakeRenderEngineVtk(
     const RenderEngineVtkParams& params);
+// clang-format on
 
 }  // namespace geometry
 }  // namespace drake
