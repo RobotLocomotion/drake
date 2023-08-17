@@ -110,8 +110,7 @@ GTEST_TEST(RenderEngine, RegistrationAndUpdate) {
   for (const auto& label : {RenderLabel::kEmpty, RenderLabel::kUnspecified}) {
     DRAKE_EXPECT_THROWS_MESSAGE(
         engine.RegisterVisual(GeometryId::get_new_id(), sphere,
-                              make_properties(label), {},
-                              false),
+                              make_properties(label), {}, false),
         "Cannot register a geometry with the 'unspecified' or 'empty' render "
         "labels.*");
   }
@@ -134,8 +133,8 @@ GTEST_TEST(RenderEngine, RegistrationAndUpdate) {
     // Case: the shape is configured for registration, but does *not* require
     // updating.
     const auto& [id, X_WG] = *(X_WG_all.begin());
-    bool accepted = engine.RegisterVisual(id, sphere,
-                                          add_properties, X_WG, !is_dynamic);
+    bool accepted =
+        engine.RegisterVisual(id, sphere, add_properties, X_WG, !is_dynamic);
     EXPECT_TRUE(accepted);
     EXPECT_TRUE(CompareMatrices(engine.world_pose(id).GetAsMatrix34(),
                                 X_WG.GetAsMatrix34()));
@@ -184,8 +183,8 @@ GTEST_TEST(RenderEngine, RemoveGeometry) {
   for (int i = 0; i < need_update_count + anchored_count; ++i) {
     const GeometryId id = GeometryId::get_new_id();
     const bool is_dynamic = i % 2 == 0;  // alternate dynamic, anchored, etc.
-    const bool accepted = engine.RegisterVisual(id, sphere, add_properties,
-                                                X_WG, is_dynamic);
+    const bool accepted =
+        engine.RegisterVisual(id, sphere, add_properties, X_WG, is_dynamic);
     if (!accepted) {
       throw std::logic_error("The geometry wasn't accepted for registration");
     }
@@ -233,7 +232,7 @@ GTEST_TEST(RenderEngine, ColorLabelConversion) {
   auto same_colors = [](const auto& expected, const auto& test) {
     if (expected.r != test.r || expected.g != test.g || expected.b != test.b) {
       return ::testing::AssertionFailure()
-          << "Expected color " << expected << ", found " << test;
+             << "Expected color " << expected << ", found " << test;
     }
     return ::testing::AssertionSuccess();
   };
