@@ -54,8 +54,8 @@ std::unique_ptr<RenderEngine> MakeEngine(const Vector3d& bg_rgb) {
   // so that shadows can be seen in the render.
   if constexpr (engine_type == EngineType::Vtk) {
     const RenderEngineVtkParams params{
-      .default_clear_color = bg_rgb,
-      .lights = {{.type = "point", .position = {0.5, 0.5, 0}}}};
+        .default_clear_color = bg_rgb,
+        .lights = {{.type = "point", .position = {0.5, 0.5, 0}}}};
     return MakeRenderEngineVtk(params);
   }
   if constexpr (engine_type == EngineType::Gl) {
@@ -329,27 +329,27 @@ class RenderBenchmark : public benchmark::Fixture {
  The parameters are 4-tuples of: sphere count, camera count, image width, and
  image height. */
 #define STR(s) #s
-#define MAKE_BENCHMARK(Renderer, ImageT) \
-BENCHMARK_DEFINE_F(RenderBenchmark, Renderer##ImageT) \
-    (benchmark::State&state) { \
-  ImageT##Image<EngineType::Renderer>(state, STR(Renderer##ImageT)); \
-} \
-BENCHMARK_REGISTER_F(RenderBenchmark, Renderer##ImageT) \
-    ->Unit(benchmark::kMillisecond) \
-    ->Args({1, 1, 640, 480}) \
-    ->Args({12, 1, 640, 480}) \
-    ->Args({120, 1, 640, 480}) \
-    ->Args({240, 1, 640, 480}) \
-    ->Args({480, 1, 640, 480}) \
-    ->Args({1200, 1, 640, 480}) \
-    ->Args({1, 10, 640, 480}) \
-    ->Args({1200, 10, 640, 480}) \
-    ->Args({1, 1, 320, 240}) \
-    ->Args({1, 1, 1280, 960}) \
-    ->Args({1, 1, 2560, 1920}) \
-    ->Args({1200, 1, 320, 240}) \
-    ->Args({1200, 1, 1280, 960}) \
-    ->Args({1200, 1, 2560, 1920})
+#define MAKE_BENCHMARK(Renderer, ImageT)                               \
+  BENCHMARK_DEFINE_F(RenderBenchmark, Renderer##ImageT)                \
+  (benchmark::State & state) {                                         \
+    ImageT##Image<EngineType::Renderer>(state, STR(Renderer##ImageT)); \
+  }                                                                    \
+  BENCHMARK_REGISTER_F(RenderBenchmark, Renderer##ImageT)              \
+      ->Unit(benchmark::kMillisecond)                                  \
+      ->Args({1, 1, 640, 480})                                         \
+      ->Args({12, 1, 640, 480})                                        \
+      ->Args({120, 1, 640, 480})                                       \
+      ->Args({240, 1, 640, 480})                                       \
+      ->Args({480, 1, 640, 480})                                       \
+      ->Args({1200, 1, 640, 480})                                      \
+      ->Args({1, 10, 640, 480})                                        \
+      ->Args({1200, 10, 640, 480})                                     \
+      ->Args({1, 1, 320, 240})                                         \
+      ->Args({1, 1, 1280, 960})                                        \
+      ->Args({1, 1, 2560, 1920})                                       \
+      ->Args({1200, 1, 320, 240})                                      \
+      ->Args({1200, 1, 1280, 960})                                     \
+      ->Args({1200, 1, 2560, 1920})
 
 MAKE_BENCHMARK(Vtk, Color);
 MAKE_BENCHMARK(Vtk, Depth);

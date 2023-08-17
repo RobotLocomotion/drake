@@ -13,6 +13,8 @@ namespace drake {
 namespace geometry {
 namespace internal {
 
+// Turn clang-formatting off so it doesn't interfere with the long lines.
+// clang-format off
 /* @defgroup mesh_intersection_benchmarks Mesh Intersection Benchmarks
  @ingroup proximity_queries
 
@@ -137,7 +139,7 @@ Resulting contact surface sizes:
  performed to compute the average value. For more information see the [google
  benchmark documentation](https://github.com/google/benchmark).
  */
-
+// clang-format on
 using Eigen::AngleAxis;
 using Eigen::Vector3d;
 using math::RigidTransformd;
@@ -169,8 +171,7 @@ class MeshIntersectionBenchmark : public benchmark::Fixture {
   /* Parse arguments from the benchmark state.
   @return A tuple representing the resolution, the contact overlap, and the
           rotation factor.  */
-  static std::tuple<int, int, int> ReadState(
-      const benchmark::State& state) {
+  static std::tuple<int, int, int> ReadState(const benchmark::State& state) {
     return std::make_tuple(state.range(0), state.range(1), state.range(2));
   }
 

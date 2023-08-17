@@ -204,7 +204,7 @@ directives:
     iris_options_.configuration_obstacles.clear();
     Context<double>& plant_context =
         plant_->GetMyMutableContextFromRoot(diagram_context_.get());
-    for (const auto& [name, q0]  : seeds_) {
+    for (const auto& [name, q0] : seeds_) {
       log()->info("Computing region for seed: {}", name);
       plant_->SetPositions(&plant_context, q0);
       HPolyhedron hpoly =

@@ -13,15 +13,11 @@ class MeshcatEnvironment final : public ::testing::Environment {
  public:
   // This function is called by googletest during main(), but before any test
   // cases are run.
-  void SetUp() final {
-    meshcat_ = std::make_shared<Meshcat>();
-  }
+  void SetUp() final { meshcat_ = std::make_shared<Meshcat>(); }
 
   // This function is called by googletest during main() after all test cases
   // have been run.
-  void TearDown() final {
-    meshcat_.reset();
-  }
+  void TearDown() final { meshcat_.reset(); }
 
   // Helper for GetTestEnvironmentMeshcat, below.
   std::shared_ptr<Meshcat> GetSingleton() const {
@@ -52,4 +48,3 @@ std::shared_ptr<Meshcat> GetTestEnvironmentMeshcat() {
 
 }  // namespace geometry
 }  // namespace drake
-

@@ -48,9 +48,9 @@ namespace contact_surface {
 
 using Eigen::Vector3d;
 using Eigen::Vector4d;
+using geometry::AddCompliantHydroelasticProperties;
 using geometry::AddContactMaterial;
 using geometry::AddRigidHydroelasticProperties;
-using geometry::AddCompliantHydroelasticProperties;
 using geometry::Box;
 using geometry::Capsule;
 using geometry::ContactSurface;
