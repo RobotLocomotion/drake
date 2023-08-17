@@ -29,6 +29,20 @@ namespace geometry {
 namespace internal {
 namespace hydroelastic {
 
+namespace {
+void BackfillDefaults(ProximityProperties* properties) {
+  auto backfill = [&](const std::string& group_name, const std::string& name,
+                      auto default_value) {
+    properties->UpdateProperty(
+        group_name, name,
+        properties->GetPropertyOrDefault(group_name, name, default_value));
+  };
+  backfill(kHydroGroup, kElastic, 1.5e9);
+  backfill(kHydroGroup, kRezHint, 0.01);
+  backfill(kHydroGroup, kSlabThickness, 1e3);
+}
+}  // namespace
+
 using std::make_unique;
 
 SoftMesh& SoftMesh::operator=(const SoftMesh& s) {
@@ -59,16 +73,15 @@ void Geometries::MaybeAddGeometry(const Shape& shape, GeometryId id,
                                   const ProximityProperties& properties) {
   const HydroelasticType type = properties.GetPropertyOrDefault(
       kHydroGroup, kComplianceType, HydroelasticType::kUndefined);
+  hydro_inferred_too_late_ = true;
   if (type != HydroelasticType::kUndefined) {
     ReifyData data{type, id, properties};
     shape.Reify(this, &data);
   } else {
-    hydro_inferred_too_late_ = true;
     if (hydro_inferred_) {
-      // XXX how ambitious can/should we be with property inference?
-      ProximityProperties inferred_properties;
-      AddRigidHydroelasticProperties(0.01, &inferred_properties);
-      ReifyData data{type, id, inferred_properties};
+      ProximityProperties inferred_properties(properties);
+      BackfillDefaults(&inferred_properties);
+      ReifyData data{HydroelasticType::kSoft, id, inferred_properties};
       shape.Reify(this, &data);
     }
   }
@@ -101,7 +114,21 @@ void Geometries::ImplementGeometry(const HalfSpace& half_space,
 }
 
 void Geometries::ImplementGeometry(const Mesh& mesh, void* user_data) {
-  MakeShape(mesh, *static_cast<ReifyData*>(user_data));
+  ReifyData* rdata = static_cast<ReifyData*>(user_data);
+  // XXX hydro type hackery.
+  if (hydro_inferred_) {
+    // Get the originally found type.
+    HydroelasticType type = rdata->properties.GetPropertyOrDefault(
+        kHydroGroup, kComplianceType, HydroelasticType::kUndefined);
+    if (type == HydroelasticType::kUndefined) {
+      if (mesh.extension() != ".vtk") {
+        // We have no prayer of making a soft geometry -- avoid it.
+        type = HydroelasticType::kRigid;
+        rdata->type = type;
+      }
+    }
+  }
+  MakeShape(mesh, *rdata);
 }
 
 void Geometries::ImplementGeometry(const Sphere& sphere, void* user_data) {

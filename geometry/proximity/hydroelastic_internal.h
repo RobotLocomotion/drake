@@ -325,7 +325,7 @@ class Geometries final : public ShapeReifier {
                         const ProximityProperties& properties);
 
   void set_hydro_inferred(bool value) {
-    // XXX prototype: Only allow changing the value before any ambiguous
+    // XXX prototype: Only allow changing the value before an
     // geometries are added.
     if (value != hydro_inferred_) {
       DRAKE_DEMAND(!hydro_inferred_too_late_);
