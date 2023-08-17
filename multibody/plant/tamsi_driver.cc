@@ -25,8 +25,8 @@ TamsiDriver<T>::TamsiDriver(const CompliantContactManager<T>* manager)
 template <typename T>
 internal::ContactJacobians<T> TamsiDriver<T>::CalcContactJacobians(
     const systems::Context<T>& context) const {
-  const std::vector<ContactPairKinematics<T>> contact_kinematics =
-      manager().CalcContactKinematics(context);
+  const std::vector<ContactPairKinematics<T>>& contact_kinematics =
+      manager().EvalContactKinematics(context);
 
   const int nc = contact_kinematics.size();
   const int nv = manager().plant().num_velocities();
