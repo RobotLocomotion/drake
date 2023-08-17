@@ -36,10 +36,9 @@ GTEST_TEST(HttpServiceCurlTest, PostForm) {
     temp_file.close();
     DRAKE_EXPECT_THROWS_MESSAGE(
         service.PostForm(temp_dir, url, {}, {}, verbose),
-        fmt::format(
-            ".*refusing to overwrite temporary file '{}' that "
-            "already exists, please cleanup temporary directory '{}'.",
-            temp_file_path.string(), temp_dir));
+        fmt::format(".*refusing to overwrite temporary file '{}' that "
+                    "already exists, please cleanup temporary directory '{}'.",
+                    temp_file_path.string(), temp_dir));
     fs::remove(temp_file_path);
   }
 
@@ -51,9 +50,8 @@ GTEST_TEST(HttpServiceCurlTest, PostForm) {
     fs::permissions(temp_dir, all_write, fs::perm_options::remove);
     DRAKE_EXPECT_THROWS_MESSAGE(
         service.PostForm(temp_dir, url, {}, {}, verbose),
-        fmt::format(
-            ".*unable to open temporary file '{}.*\\.curl'.",
-            temp_dir));
+        fmt::format(".*unable to open temporary file '{}.*\\.curl'.",
+                    temp_dir));
     fs::permissions(temp_dir, orig_perms, fs::perm_options::replace);
   }
 
@@ -81,11 +79,11 @@ GTEST_TEST(HttpServiceCurlTest, PostForm) {
     test_binary << 111.111 << 222.222 << 333.333;
     test_binary.close();
 
-    const auto res_2 = service.PostForm(
-        temp_dir, url, {{"width", "640"}, {"height", "480"}},
-        {{"json", {test_json_path, test_json_mime}},
-         {"binary", {test_binary_path, test_binary_mime}}},
-        verbose);
+    const auto res_2 =
+        service.PostForm(temp_dir, url, {{"width", "640"}, {"height", "480"}},
+                         {{"json", {test_json_path, test_json_mime}},
+                          {"binary", {test_binary_path, test_binary_mime}}},
+                         verbose);
     EXPECT_FALSE(res_2.Good());
     EXPECT_FALSE(res_2.data_path.has_value());
     EXPECT_TRUE(res_2.service_error_message.has_value());

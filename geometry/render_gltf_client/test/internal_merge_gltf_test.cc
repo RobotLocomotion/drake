@@ -134,7 +134,7 @@ class MergeTest : public testing::TestWithParam<MergeCase> {
     cases->push_back(
         {.target = fmt::format(R"""({{"{}":[0, 1]}})""", independent),
          .source = fmt::format(R"""({{"{0}":[{{"{1}":10}}, {{"{1}":20}}]}})""",
-                              array, index),
+                               array, index),
          .array_name = array,
          .expected = fmt::format(R"""([{{"{0}":12}}, {{"{0}":22}}])""", index),
          .description = fmt::format(
