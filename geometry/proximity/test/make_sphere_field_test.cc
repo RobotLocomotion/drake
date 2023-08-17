@@ -39,9 +39,8 @@ void CheckMinMaxBoundaryValue(
   EXPECT_EQ(max_pressure, hydroelastic_modulus);
 
   // Check that all boundary vertices have zero pressure.
-  std::vector<int> boundary_vertex_indices =
-      CollectUniqueVertices(
-          IdentifyBoundaryFaces(pressure_field.mesh().tetrahedra()));
+  std::vector<int> boundary_vertex_indices = CollectUniqueVertices(
+      IdentifyBoundaryFaces(pressure_field.mesh().tetrahedra()));
   for (int v : boundary_vertex_indices) {
     double pressure = pressure_field.EvaluateAtVertex(v);
     EXPECT_EQ(pressure, 0.0);
@@ -76,7 +75,7 @@ GTEST_TEST(MakeSphereFieldTest, MakeSpherePressureField) {
 
   const double kElasticModulus = 1.0e5;
   VolumeMeshFieldLinear<double, double> pressure_field =
-    MakeSpherePressureField<double>(sphere, &mesh, kElasticModulus);
+      MakeSpherePressureField<double>(sphere, &mesh, kElasticModulus);
 
   CheckMinMaxBoundaryValue(pressure_field, kElasticModulus);
 }

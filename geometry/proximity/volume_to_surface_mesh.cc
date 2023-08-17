@@ -147,9 +147,8 @@ TriangleSurfaceMesh<T> ConvertVolumeToSurfaceMesh(const VolumeMesh<T>& volume) {
                                 std::move(surface_vertices));
 }
 
-DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS((
-  &ConvertVolumeToSurfaceMesh<T>
-))
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    (&ConvertVolumeToSurfaceMesh<T>))
 
 }  // namespace geometry
 }  // namespace drake

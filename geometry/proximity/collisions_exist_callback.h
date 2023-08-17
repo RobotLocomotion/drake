@@ -46,8 +46,7 @@ struct CallbackData {
           process early.
   */
 bool Callback(fcl::CollisionObjectd* object_A_ptr,
-              fcl::CollisionObjectd* object_B_ptr,
-              void* callback_data);
+              fcl::CollisionObjectd* object_B_ptr, void* callback_data);
 
 }  // namespace has_collisions
 }  // namespace internal

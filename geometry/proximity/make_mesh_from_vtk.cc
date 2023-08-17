@@ -44,9 +44,8 @@ VolumeMesh<T> MakeVolumeMeshFromVtk(const Mesh& mesh_spec) {
   }
 }
 
-DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS((
-    &MakeVolumeMeshFromVtk<T>
-))
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    (&MakeVolumeMeshFromVtk<T>))
 
 }  // namespace internal
 }  // namespace geometry

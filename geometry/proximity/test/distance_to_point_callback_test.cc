@@ -136,9 +136,9 @@ class PointShapeAutoDiffSignedDistanceTester {
     const Vector3<AutoDiffXd> p_WN_ad = X_WG_.cast<AutoDiffXd>() * result.p_GN;
     const Vector3<AutoDiffXd> p_WQ_ad_expected =
         p_WN_ad + result.distance * result.grad_W;
-    auto p_WQ_val_compare = CompareMatrices(
-        math::ExtractValue(p_WQ_ad),
-        math::ExtractValue(p_WQ_ad_expected), tolerance_);
+    auto p_WQ_val_compare =
+        CompareMatrices(math::ExtractValue(p_WQ_ad),
+                        math::ExtractValue(p_WQ_ad_expected), tolerance_);
     if (!p_WQ_val_compare) {
       if (error) failure << "\n";
       error = true;
@@ -149,10 +149,9 @@ class PointShapeAutoDiffSignedDistanceTester {
     // We'll only test the derivatives of the gradient if we expect it to be
     // unique.
     if (is_grad_W_unique) {
-      auto p_WQ_derivative_compare = CompareMatrices(
-          math::ExtractGradient(p_WQ_ad),
-          math::ExtractGradient(p_WQ_ad_expected),
-          tolerance_);
+      auto p_WQ_derivative_compare =
+          CompareMatrices(math::ExtractGradient(p_WQ_ad),
+                          math::ExtractGradient(p_WQ_ad_expected), tolerance_);
       if (!p_WQ_derivative_compare) {
         if (error) failure << "\n";
         error = true;
@@ -164,7 +163,7 @@ class PointShapeAutoDiffSignedDistanceTester {
 
     if (!error) return ::testing::AssertionSuccess();
     return failure;
-}
+  }
 
  private:
   const Shape& shape_;
@@ -650,8 +649,8 @@ void TestScalarShapeSupport() {
   // The Drake-supported geometries (minus Mesh which isn't supported by
   // ProximityEngine yet).
 
-  auto run_callback = [&query_point, &threshold, &distances, &data, other_id](
-      auto geometry_shared_ptr) {
+  auto run_callback = [&query_point, &threshold, &distances, &data,
+                       other_id](auto geometry_shared_ptr) {
     // Note: the `threshold` value gets reset by invoking Callback(). So, we
     // need to reset it each time.
     threshold = std::numeric_limits<double>::max();
@@ -681,7 +680,8 @@ void TestScalarShapeSupport() {
   }
 
   // Ellipsoid
-  { run_callback(make_shared<fcl::Ellipsoidd>(1.5, 0.7, 3));
+  {
+    run_callback(make_shared<fcl::Ellipsoidd>(1.5, 0.7, 3));
     EXPECT_EQ(distances.size(), (ExpectedResult<T, fcl::Ellipsoidd>()));
   }
 

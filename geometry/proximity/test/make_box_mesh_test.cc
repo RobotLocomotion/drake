@@ -359,7 +359,7 @@ GTEST_TEST(MakeBoxVolumeMeshTest, GenerateVertices) {
         Vector3<double> expect_r_MV = Vector3<double>(i - 1, j - 2, k - 3);
         Vector3<double> r_MV = vertices[sequential_index];
         EXPECT_TRUE(CompareMatrices(expect_r_MV, r_MV))
-                    << "Incorrect vertex position.";
+            << "Incorrect vertex position.";
       }
     }
   }
@@ -396,8 +396,8 @@ GTEST_TEST(MakeBoxVolumeMeshTest, AddSixTetrahedraOfCell) {
   //
   // This table has the expected six tetrahedra of the rectangular cell.
   // They share the main diagonal v₃₃v₅₉.
-  const int expect_elements[6][4] {
-      // clang-format off
+  // clang-format off
+  const int expect_elements[6][4]{
       {33, 59, 53, 58},
       {33, 59, 58, 38},
       {33, 59, 38, 39},
@@ -449,8 +449,7 @@ GTEST_TEST(MakeBoxVolumeMeshTest, GenerateMesh) {
   const double expect_volume = box.width() * box.depth() * box.height();
   double volume = 0.0;
   for (int e = 0; e < box_mesh.num_elements(); ++e) {
-    double tetrahedron_volume =
-        box_mesh.CalcTetrahedronVolume(e);
+    double tetrahedron_volume = box_mesh.CalcTetrahedronVolume(e);
     EXPECT_GT(tetrahedron_volume, 0.0);
     volume += tetrahedron_volume;
   }

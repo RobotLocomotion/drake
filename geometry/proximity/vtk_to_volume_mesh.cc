@@ -21,9 +21,8 @@ namespace internal {
 VolumeMesh<double> ReadVtkToVolumeMesh(const std::string& filename,
                                        double scale) {
   if (scale <= 0.0) {
-    throw std::runtime_error(
-        fmt::format("ReadVtkToVolumeMesh: scale={} is not a positive number",
-                    scale));
+    throw std::runtime_error(fmt::format(
+        "ReadVtkToVolumeMesh: scale={} is not a positive number", scale));
   }
   vtkNew<vtkUnstructuredGridReader> reader;
   reader->SetFileName(filename.c_str());

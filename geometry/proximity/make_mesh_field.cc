@@ -21,8 +21,7 @@ namespace {
 template <typename T>
 TriangleSurfaceMesh<double> ConvertVolumeToSurfaceMeshDouble(
     const VolumeMesh<T>& volume_mesh) {
-  TriangleSurfaceMesh<T> surface =
-      ConvertVolumeToSurfaceMesh(volume_mesh);
+  TriangleSurfaceMesh<T> surface = ConvertVolumeToSurfaceMesh(volume_mesh);
   if constexpr (std::is_same_v<T, double>) {
     return surface;
   } else {
@@ -78,9 +77,8 @@ VolumeMeshFieldLinear<T, T> MakeVolumeMeshPressureField(
   return {std::move(pressure_values), mesh_M, true};
 }
 
-DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS((
-    &MakeVolumeMeshPressureField<T>
-))
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    (&MakeVolumeMeshPressureField<T>))
 
 }  // namespace internal
 }  // namespace geometry

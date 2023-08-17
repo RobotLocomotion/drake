@@ -217,7 +217,7 @@ Vector3<T> ProjectMidpointToMiddleCylinder(const Vector3<T>& p,
 // vertex.
 template <typename T>
 Vector3<T> ProjectMidPoint(const Vector3<T>& x, const Vector3<T>& y,
-                            CylinderVertexType v_type, const double radius) {
+                           CylinderVertexType v_type, const double radius) {
   // Project boundary vertices onto the surface of the cylinder.
   const Vector3<T> v = (x + y) / 2.0;
 
@@ -291,8 +291,7 @@ int CreateNewVertex(int vertex_a_index, int vertex_b_index,
 //    Radius of the cylinder.
 template <typename T>
 void RefineCylinderTetrahdron(
-    const VolumeElement& tet,
-    std::vector<Vector3<T>>* split_mesh_vertices_ptr,
+    const VolumeElement& tet, std::vector<Vector3<T>>* split_mesh_vertices_ptr,
     std::vector<VolumeElement>* split_mesh_tetrahedra_ptr,
     std::vector<CylinderVertexType>* split_vertex_type_ptr,
     std::unordered_map<SortedPair<int>, int>* vertex_map_ptr,

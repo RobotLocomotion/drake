@@ -122,8 +122,7 @@ enum class SliceFunctionType {
  have a bunch of trivial zeros and ones). The intersecting plane is likewise
  defined in that same frame F. Finally, the result of slicing the tet with the
  plane produces results in the *world* frame W (via the X_WF_ transform). */
-class SliceTest
-    : public ::testing::TestWithParam<SliceFunctionType> {
+class SliceTest : public ::testing::TestWithParam<SliceFunctionType> {
  protected:
   void SetUp() override {
     // An arbitrary transform that doesn't contain any identities (although it
@@ -379,8 +378,7 @@ class SliceTest
    data in `edge_vertices`. */
   ::testing::AssertionResult PressuresMatchVertices(
       const PolygonSurfaceMeshFieldLinear<double, double>& field_W,
-      int tet_index,
-      const vector<EdgeVertex>& edge_vertices,
+      int tet_index, const vector<EdgeVertex>& edge_vertices,
       const VolumeMeshFieldLinear<double, double>& field_F) const {
     constexpr double kEps = 32 * std::numeric_limits<double>::epsilon();
     for (const auto& edge_vertex : edge_vertices) {
@@ -1252,13 +1250,11 @@ GTEST_TEST(MeshPlaneIntersectionTest, SoftVolumeRigidHalfSpace) {
     EXPECT_EQ(contact_surface->id_N(), id_B);
     EXPECT_EQ(contact_surface->tri_mesh_W().num_elements(), 6);
     // Sample the face normals.
-    const Vector3d& norm_W =
-        contact_surface->tri_mesh_W().face_normal(0);
+    const Vector3d& norm_W = contact_surface->tri_mesh_W().face_normal(0);
     const Vector3d& Sx_W = X_WS.rotation().col(0);
     EXPECT_TRUE(CompareMatrices(norm_W, Sx_W, kEps));
     // Sample the vertex positions: in the S frame they should all have x = 0.5.
-    const Vector3d& p_WV =
-        contact_surface->tri_mesh_W().vertex(0);
+    const Vector3d& p_WV = contact_surface->tri_mesh_W().vertex(0);
     const Vector3d p_SV = X_WS.inverse() * p_WV;
     EXPECT_NEAR(p_SV(0), 0.5, kEps);
   }
@@ -1294,8 +1290,7 @@ GTEST_TEST(MeshPlaneIntersectionTest, SoftVolumeRigidHalfSpace) {
     EXPECT_EQ(contact_surface->id_N(), id_B);
     // The effect of reversing the labels reverses the normals, so repeat the
     // normal test, but in the opposite direction.
-    const Vector3d& norm_W =
-        contact_surface->tri_mesh_W().face_normal(0);
+    const Vector3d& norm_W = contact_surface->tri_mesh_W().face_normal(0);
     const Vector3d& Sx_W = X_WS.rotation().col(0);
     EXPECT_TRUE(CompareMatrices(norm_W, -Sx_W, kEps));
   }
