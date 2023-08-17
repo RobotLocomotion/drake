@@ -53,7 +53,9 @@ int64_t GetNextSceneId() {
 /* RenderEngineGltfClient always produces a gltf+json file.  See also:
  https://www.khronos.org/registry/glTF/specs/2.0/glTF-2.0.html#_media_type_registrations
  */
-std::string MimeType() { return "model/gltf+json"; }
+std::string MimeType() {
+  return "model/gltf+json";
+}
 
 /* Drake uses an explicit projection matrix with RenderEngineVtk to fine tune
  the displayed viewing frustum tailored to the sensor being rendered.  The
@@ -192,7 +194,7 @@ std::map<int, Matrix4<double>> FindRootNodes(const nlohmann::json& gltf) {
         if (node.contains("translation")) {
           const auto& t = node["translation"];
           const Vector3<double> p_GN(t[0].get<double>(), t[1].get<double>(),
-                                      t[2].get<double>());
+                                     t[2].get<double>());
           T_FN.block<3, 1>(0, 3) = p_GN.transpose();
         }
         if (node.contains("rotation")) {
@@ -569,7 +571,7 @@ void RenderEngineGltfClient::ExportScene(const std::string& export_path,
   // be up to date after closing it. Now we can check for errors.
   if (!f) {
     throw std::runtime_error(
-      "RenderEngineGltfClient: Error writing exported scene data to disk.");
+        "RenderEngineGltfClient: Error writing exported scene data to disk.");
   }
 }
 
@@ -612,7 +614,7 @@ void RenderEngineGltfClient::ImplementMesh(
     data.accepted = ImplementObj(mesh_path.string(), scale, data);
   } else if (extension == ".gltf") {
     data.accepted = ImplementGltf(mesh_path, scale, data);
-  } else   {
+  } else {
     static const logging::Warn one_time(
         "RenderEngineGltfClient only supports Mesh/Convex specifications which "
         "use .obj or .gltf files. Mesh specifications using other mesh types "

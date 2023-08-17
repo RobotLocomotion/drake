@@ -14,6 +14,7 @@ GTEST_TEST(RenderEngineGltfClientParams, GetUrl) {
     std::string render_endpoint;
     std::string expected_full_url;
   };
+  // clang-format off
   std::vector<TestData> all_test_cases{{
       // Check that sandwiched slashes are added or removed correctly.
       {"127.0.0.1:8000",    "render",    "127.0.0.1:8000/render"},
@@ -40,6 +41,7 @@ GTEST_TEST(RenderEngineGltfClientParams, GetUrl) {
       {"///",          "///",       "/"},
       {"///",          "render",    "/render"},
   }};
+  // clang-format on
   for (const auto& one_case : all_test_cases) {
     RenderEngineGltfClientParams dut;
     dut.base_url = one_case.base_url;

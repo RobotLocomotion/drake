@@ -214,10 +214,9 @@ std::string RenderClient::RenderOnServer(
 
   const std::string url = params_.GetUrl();
   // Post the form and validate the results.
-  const HttpResponse response =
-      http_service_->PostForm(temp_directory_, url, field_map,
-                              {{"scene", {scene_path, mime_type}}},
-                              params_.verbose);
+  const HttpResponse response = http_service_->PostForm(
+      temp_directory_, url, field_map, {{"scene", {scene_path, mime_type}}},
+      params_.verbose);
   if (!response.Good()) {
     /* Server may have responded with meaningful text, try and load the file
      as a string. */

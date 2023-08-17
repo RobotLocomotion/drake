@@ -146,7 +146,8 @@ bool ValidateOutputExtension() {
 /* Constructs and sets the explicit projection matrix rather than using the one
  from glTF which only supports limited intrinsic specification.  The
  implementation is imported from RenderCameraCore::CalcProjectionMatrix().
- @sa https://github.com/RobotLocomotion/drake/blob/master/geometry/render/render_camera.cc
+ @sa
+ https://github.com/RobotLocomotion/drake/blob/master/geometry/render/render_camera.cc
  */
 void CalcProjectionMatrix(vtkRenderer* renderer) {
   vtkCamera* camera = renderer->GetActiveCamera();
@@ -191,8 +192,7 @@ void SetDefaultLighting(vtkRenderer* renderer) {
 
 int DoMain() {
   // All the input args should be validated past this point.
-  if (!ValidateOutputExtension())
-    return 1;
+  if (!ValidateOutputExtension()) return 1;
 
   vtkNew<vtkRenderer> renderer;
   renderer->UseHiddenLineRemovalOn();
