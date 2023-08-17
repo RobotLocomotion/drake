@@ -71,7 +71,7 @@ GTEST_TEST(ThreadSafetyTest, TextureLibrary) {
       FindResourceOrThrow("drake/geometry/render/test/meshes/box.png");
 
   std::atomic<int> num_errors{0};
-  auto work = [&library, &image_name, &num_errors, &contexts] (int i) {
+  auto work = [&library, &image_name, &num_errors, &contexts](int i) {
     try {
       contexts[i].MakeCurrent();
       std::optional<GLuint> id = library.GetTextureId(image_name);
@@ -157,10 +157,12 @@ GTEST_TEST(ThreadSafetyTest, OpenGlContext) {
 }
 
 /* Helper for variant resolution. */
-template<class... Ts>
-struct overloaded : Ts... { using Ts::operator()...; };
+template <class... Ts>
+struct overloaded : Ts... {
+  using Ts::operator()...;
+};
 // explicit deduction guide (not needed as of C++20)
-template<class... Ts>
+template <class... Ts>
 overloaded(Ts...) -> overloaded<Ts...>;
 
 /* Adds the given `shape` as an *anchored* geometry to the given `engine` at the

@@ -16,10 +16,10 @@ namespace render_gl {
 namespace internal {
 namespace {
 
-using geometry::internal::RenderMesh;
 using Eigen::AngleAxisd;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
+using geometry::internal::RenderMesh;
 using std::vector;
 
 // Computes the normal to the indicated triangle whose magnitude is twice the
@@ -367,8 +367,8 @@ GTEST_TEST(PrimitiveMeshTests, MakeLongLatUnitSphere) {
     // texture coordinates.
     // We'll confirm the north and south poles (first and last vertices) are
     // where we expect them.
-    EXPECT_TRUE(CompareMatrices(mesh_data.uvs.row(0),
-                                Vector2d(0, 1).transpose()));
+    EXPECT_TRUE(
+        CompareMatrices(mesh_data.uvs.row(0), Vector2d(0, 1).transpose()));
     const int row_count = mesh_data.uvs.rows();
     EXPECT_TRUE(CompareMatrices(mesh_data.uvs.row(row_count - 1),
                                 Vector2d(0, 0).transpose()));
@@ -421,8 +421,8 @@ GTEST_TEST(PrimitiveMeshTests, MakeUnitCylinder) {
     TestGenericPrimitiveTraits(mesh_data);
 
     // See note in MakeLongLatUnitSphere about testing texture coordinates.
-    EXPECT_TRUE(CompareMatrices(mesh_data.uvs.row(0),
-                                Vector2d(0, 1).transpose()));
+    EXPECT_TRUE(
+        CompareMatrices(mesh_data.uvs.row(0), Vector2d(0, 1).transpose()));
     const int row_count = mesh_data.uvs.rows();
     EXPECT_TRUE(CompareMatrices(mesh_data.uvs.row(row_count - 1),
                                 Vector2d(0, 0).transpose()));
@@ -476,8 +476,8 @@ GTEST_TEST(PrimitiveMeshTests, MakeSquarePatch) {
     // Coarse sampling of UVs. The first vertex should be at (0, 0) the last
     // at (1, 1). See note on texture coordinate testing in
     // MakeLongLatUnitSphere.
-    EXPECT_TRUE(CompareMatrices(mesh_data.uvs.row(0),
-                                Vector2d(0, 0).transpose()));
+    EXPECT_TRUE(
+        CompareMatrices(mesh_data.uvs.row(0), Vector2d(0, 0).transpose()));
     const int row_count = mesh_data.uvs.rows();
     EXPECT_TRUE(CompareMatrices(mesh_data.uvs.row(row_count - 1),
                                 Vector2d(1, 1).transpose()));
@@ -515,8 +515,8 @@ GTEST_TEST(PrimitiveMeshTests, MakeUnitBox) {
   // We expect the UVs to have the pattern (0, 0) -> (1, 0) -> (1, 1) -> (1, 0)
   // once for each face. We'll test that explicitly.
   for (int row = 0; row < mesh_data.uvs.rows(); row += 4) {
-    ASSERT_TRUE(CompareMatrices(mesh_data.uvs.row(row),
-                                Vector2d(0, 0).transpose()));
+    ASSERT_TRUE(
+        CompareMatrices(mesh_data.uvs.row(row), Vector2d(0, 0).transpose()));
     ASSERT_TRUE(CompareMatrices(mesh_data.uvs.row(row + 1),
                                 Vector2d(1, 0).transpose()));
     ASSERT_TRUE(CompareMatrices(mesh_data.uvs.row(row + 2),
@@ -566,8 +566,8 @@ GTEST_TEST(PrimitiveMeshTests, MakeCapsule) {
     TestGenericPrimitiveTraits(mesh_data);
 
     // See note in MakeLongLatUnitSphere about testing texture coordinates.
-    EXPECT_TRUE(CompareMatrices(mesh_data.uvs.row(0),
-                                Vector2d(0, 1).transpose()));
+    EXPECT_TRUE(
+        CompareMatrices(mesh_data.uvs.row(0), Vector2d(0, 1).transpose()));
     const int row_count = mesh_data.uvs.rows();
     EXPECT_TRUE(CompareMatrices(mesh_data.uvs.row(row_count - 1),
                                 Vector2d(0, 0).transpose()));

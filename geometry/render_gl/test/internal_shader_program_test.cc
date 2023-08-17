@@ -79,9 +79,7 @@ class TestShader final : public ShaderProgram {
  private:
   friend class drake::geometry::render_gl::internal::ShaderProgramTest;
 
-  void DoConfigureUniforms() final {
-    do_configure_uniforms_called_ = true;
-  }
+  void DoConfigureUniforms() final { do_configure_uniforms_called_ = true; }
 
   std::unique_ptr<ShaderProgram> DoClone() const final {
     return std::make_unique<TestShader>(*this);
@@ -281,8 +279,7 @@ TEST_F(ShaderProgramTest, LoadShadersError) {
   {
     // Case: Missing projection matrix uniform. In this case, one is *listed*
     // in the shader, but because it isn't used, it gets compiled out.
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        program.LoadFromSources(R"""(
+    DRAKE_EXPECT_THROWS_MESSAGE(program.LoadFromSources(R"""(
   #version 330
   uniform mat4 T_CM;
   uniform mat4 T_DC;
@@ -292,15 +289,14 @@ TEST_F(ShaderProgramTest, LoadShadersError) {
     p_CV = T_CM * vec4(0.0, 0.0, 0.0, 1.0);
   }
 )""",
-                                kFragmentSource),
-        "Cannot get shader uniform 'T_DC'");
+                                                        kFragmentSource),
+                                "Cannot get shader uniform 'T_DC'");
   }
 
   {
     // Case: Missing modelview matrix uniform. In this case, one is *listed*
     // in the shader, but because it isn't used, it gets compiled out.
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        program.LoadFromSources(R"""(
+    DRAKE_EXPECT_THROWS_MESSAGE(program.LoadFromSources(R"""(
   #version 330
   uniform mat4 T_CM;
   uniform mat4 T_DC;
@@ -310,8 +306,8 @@ TEST_F(ShaderProgramTest, LoadShadersError) {
     p_CV = vec4(0.0, 0.0, 0.0, 1.0);
   }
 )""",
-                                kFragmentSource),
-        "Cannot get shader uniform 'T_CM'");
+                                                        kFragmentSource),
+                                "Cannot get shader uniform 'T_CM'");
   }
 }
 
