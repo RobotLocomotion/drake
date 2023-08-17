@@ -84,14 +84,10 @@ class DummyRenderEngine : public render::RenderEngine {
 
   /* Initializes the set data to the freshly-constructed values. This
    leaves the registered data intact.  */
-  void init_test_data() {
-    updated_ids_.clear();
-  }
+  void init_test_data() { updated_ids_.clear(); }
 
   /* If true, this render engine will accept all registered geometry.  */
-  void set_force_accept(bool force_accept) {
-    force_accept_ = force_accept;
-  }
+  void set_force_accept(bool force_accept) { force_accept_ = force_accept; }
 
   /* Reports the number of geometries that have been _accepted_ in
    registration.  */
@@ -110,9 +106,9 @@ class DummyRenderEngine : public render::RenderEngine {
 
   // Reports the number of times the Render[]Image API was called using the
   // simple camera specification.
-  int num_color_renders() const { return color_count_;  }
-  int num_depth_renders() const { return depth_count_;  }
-  int num_label_renders() const { return label_count_;  }
+  int num_color_renders() const { return color_count_; }
+  int num_depth_renders() const { return depth_count_; }
+  int num_label_renders() const { return label_count_; }
 
   const render::ColorRenderCamera& last_color_camera() const {
     return color_camera_;
@@ -139,9 +135,9 @@ class DummyRenderEngine : public render::RenderEngine {
   const math::RigidTransformd& last_updated_X_WC() const { return X_WC_; }
 
   // Promote these to be public to facilitate testing.
-  using RenderEngine::LabelFromColor;
   using RenderEngine::GetColorDFromLabel;
   using RenderEngine::GetColorIFromLabel;
+  using RenderEngine::LabelFromColor;
 
  protected:
   /* Dummy implementation that registers the given `shape` if the `properties`
