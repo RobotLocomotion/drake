@@ -389,7 +389,9 @@ bool CallbackWithFallback(fcl::CollisionObjectd* object_A_ptr,
   return false;
 }
 
+// clang-format off
 }  // namespace hydroelastic
+// clang-format on
 }  // namespace internal
 }  // namespace geometry
 }  // namespace drake

@@ -271,7 +271,9 @@ bool Callback(fcl::CollisionObjectd* object_A_ptr,
               // NOLINTNEXTLINE
               void* callback_data, double& threshold);
 
+// clang-format off
 }  // namespace point_distance
+// clang-format on
 }  // namespace internal
 }  // namespace geometry
 }  // namespace drake

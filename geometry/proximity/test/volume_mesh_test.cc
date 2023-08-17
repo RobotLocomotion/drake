@@ -117,11 +117,13 @@ void TestVolumeMeshEqual() {
   {
     std::vector<Vector3<T>> vertices_copy = mesh->vertices();
     std::vector<VolumeElement> tetrahedra = mesh->tetrahedra();
+    // clang-format off
     // Re-order vertices of the first tetrahedron.
     tetrahedra[0] = VolumeElement(tetrahedra[0].vertex(1),
                                   tetrahedra[0].vertex(2),
                                   tetrahedra[0].vertex(0),
                                   tetrahedra[0].vertex(3));
+    // clang-format on
     VolumeMesh<T> mesh_different_tetrahedra(std::move(tetrahedra),
                                             std::move(vertices_copy));
     EXPECT_FALSE(mesh->Equal(mesh_different_tetrahedra));

@@ -60,9 +60,8 @@ void CheckMinMaxBoundaryValue(
 class MakeCapsuleFieldTest : public testing::TestWithParam<int> {};
 
 INSTANTIATE_TEST_SUITE_P(CapsuleField, MakeCapsuleFieldTest,
-                         testing::Values(3,  // Coarsest possible mesh.
-                                         20  // Fine mesh.
-                                         ));
+                         testing::Values(3, /* Coarsest possible mesh */
+                                         20 /* Fine mesh */));
 
 TEST_P(MakeCapsuleFieldTest, CheckMinMaxBoundaryValue) {
   const double radius = 0.5;

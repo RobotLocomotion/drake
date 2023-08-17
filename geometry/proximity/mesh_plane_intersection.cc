@@ -40,6 +40,7 @@ constexpr std::array<std::pair<int, int>, 6> kTetEdges = {
  A -1 is a sentinel value indicating no edge encoding. The number of
  intersecting edges is equal to the index of the *first* -1 (with an implicit
  logical -1 at index 4).  */
+// clang-format off
 constexpr std::array<std::array<int, 4>, 16> kMarchingTetsTable = {
                                 /* bits    3210 */
     std::array<int, 4>{-1, -1, -1, -1}, /* 0000 */
@@ -58,7 +59,7 @@ constexpr std::array<std::array<int, 4>, 16> kMarchingTetsTable = {
     std::array<int, 4>{0, 4, 1, -1},    /* 1101 */
     std::array<int, 4>{0, 2, 3, -1},    /* 1110 */
     std::array<int, 4>{-1, -1, -1, -1}  /* 1111 */};
-
+// clang-format on
 }  // namespace
 
 template <typename T>

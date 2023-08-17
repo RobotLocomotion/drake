@@ -154,10 +154,12 @@ void ComputeDistanceToPrimitive(const fcl::Capsuled& capsule,
   }
 }
 
+// clang-format off
 #define INSTANTIATE_DISTANCE_TO_PRIMITIVE(Shape, S)                         \
 template void ComputeDistanceToPrimitive<S>(                                \
     const fcl::Shape&, const math::RigidTransform<S>&, const Vector3<S>&,   \
     Vector3<S>*, S*, Vector3<S>*)
+// clang-format on
 
 // INSTANTIATE_DISTANCE_TO_PRIMITIVE(Sphered, double);
 // INSTANTIATE_DISTANCE_TO_PRIMITIVE(Sphered, AutoDiffXd);

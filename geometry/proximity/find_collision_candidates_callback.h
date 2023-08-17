@@ -56,7 +56,9 @@ bool Callback(fcl::CollisionObjectd* object_A_ptr,
               // NOLINTNEXTLINE
               void* callback_data);
 
+// clang-format off
 }  // namespace find_collision_candidates
+// clang-format on
 }  // namespace internal
 }  // namespace geometry
 }  // namespace drake

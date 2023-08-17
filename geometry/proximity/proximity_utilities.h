@@ -158,6 +158,8 @@ using Eigen::Vector3d;
  for points *inside* the capsule, positive value for points outside.  */
 double CalcDistanceToSurface(const Capsule& capsule, const Vector3d& p_CP);
 
+// clang-format off
 }  // namespace internal
+// clang-format on
 }  // namespace geometry
 }  // namespace drake

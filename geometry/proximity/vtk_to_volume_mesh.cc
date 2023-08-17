@@ -45,10 +45,12 @@ VolumeMesh<double> ReadVtkToVolumeMesh(const std::string& filename,
   for (iter->InitTraversal(); !iter->IsDoneWithTraversal();
        iter->GoToNextCell()) {
     vtkIdList* vtk_vertex_ids = iter->GetPointIds();
+    // clang-format off
     elements.emplace_back(vtk_vertex_ids->GetId(0),
                           vtk_vertex_ids->GetId(1),
                           vtk_vertex_ids->GetId(2),
                           vtk_vertex_ids->GetId(3));
+    // clang-format on
   }
   iter->Delete();
 

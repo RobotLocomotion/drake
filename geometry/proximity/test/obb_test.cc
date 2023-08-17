@@ -412,11 +412,13 @@ TEST_F(ObbMakerTestTriangle, CalcOrientationByPca) {
 }
 
 TEST_F(ObbMakerTestTriangle, CalcOrientedBox) {
+  // clang-format off
   const RotationMatrixd R_MB =
       RotationMatrixd::MakeFromOrthonormalColumns(
           Vector3d(1., -0.5, -0.5).normalized(),
           Vector3d(0., 1., -1.).normalized(),
           Vector3d(1., 1., 1.).normalized());
+  // clang-format on
 
   const Obb obb =
       ObbMakerTester<TriangleSurfaceMesh<double>>(mesh_M_, test_vertices_)

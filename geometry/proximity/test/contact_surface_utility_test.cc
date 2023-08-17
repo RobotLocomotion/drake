@@ -72,10 +72,12 @@ GTEST_TEST(TriMeshBuilderTest, AddingFeatures) {
   // The triangle defined in frame N so it's easy to reason about.
   const std::vector<Vector3d> polygon_N{
       {0.25, 0, 0.25}, {0.5, 0, 0.25}, {0.25, 0, 0.5}, {0.25, 0, 0.35}};
+  // clang-format off
   const std::vector<Vector3d> polygon_M{X_MN * polygon_N[0],
                                         X_MN * polygon_N[1],
                                         X_MN * polygon_N[2],
                                         X_MN * polygon_N[3]};
+  // clang-format on
   const Vector3d p_MC_expected =
       (polygon_M[0] + polygon_M[1] + polygon_M[2]) / 3;
   const Vector3d nhat_M = X_MN.rotation() * Vector3d(0, -1, 0);
@@ -161,10 +163,12 @@ GTEST_TEST(PolyMeshBuilderTest, AddingFeatures) {
   // The polygon's defined in frame N so it's easy to reason about.
   const std::vector<Vector3d> polygon_N{
       {0.25, 0, 0.25}, {0.5, 0, 0.25}, {0.25, 0, 0.5}, {0.25, 0, 0.35}};
+  // clang-format off
   const std::vector<Vector3d> polygon_M{X_MN * polygon_N[0],
                                         X_MN * polygon_N[1],
                                         X_MN * polygon_N[2],
                                         X_MN * polygon_N[3]};
+  // clang-format on
   const Vector3d nhat_M = X_MN.rotation() * Vector3d(0, -1, 0);
 
   // To build the mesh, we just need to be able to evaluate *some* pressure

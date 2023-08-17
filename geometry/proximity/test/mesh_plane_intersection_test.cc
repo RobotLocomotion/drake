@@ -77,6 +77,7 @@ VolumeMesh<T> TrivialVolumeMesh(
     for (const auto& element : element_data) {
       elements.emplace_back(element);
     }
+    // clang-format off
     const Vector3<T> vertex_data[5] = {
         Vector3<T>::Zero(),
         Vector3<T>::UnitX(),
@@ -84,6 +85,7 @@ VolumeMesh<T> TrivialVolumeMesh(
         Vector3<T>::UnitZ(),
         -Vector3<T>::UnitZ()
     };
+    // clang-format on
     for (auto& vertex : vertex_data) {
       vertices.emplace_back(X_FM * vertex);
     }
@@ -92,6 +94,7 @@ VolumeMesh<T> TrivialVolumeMesh(
     for (const auto& element : element_data) {
       elements.emplace_back(element);
     }
+    // clang-format off
     const Vector3<T> vertex_data[8] = {
         Vector3<T>::Zero(),
         Vector3<T>::UnitX(),
@@ -102,6 +105,7 @@ VolumeMesh<T> TrivialVolumeMesh(
         Vector3<T>::UnitX(),
         -Vector3<T>::UnitZ()
     };
+    // clang-format on
     for (auto& vertex : vertex_data) {
       vertices.emplace_back(X_FM * vertex);
     }
