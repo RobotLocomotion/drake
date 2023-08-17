@@ -38,9 +38,8 @@ GTEST_TEST(OpenGlGeometryTest, Construction) {
   EXPECT_EQ(geometry.has_tex_coord, true);
   EXPECT_EQ(geometry.v_count, 7);
 
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      OpenGlGeometry(1, 2, 3, -1, false, 1),
-      "Index buffer size must be non-negative");
+  DRAKE_EXPECT_THROWS_MESSAGE(OpenGlGeometry(1, 2, 3, -1, false, 1),
+                              "Index buffer size must be non-negative");
 }
 
 GTEST_TEST(OpenGlGeometryTest, IsDefined) {
@@ -76,8 +75,8 @@ GTEST_TEST(OpenGlInstanceTest, Construction) {
                                      AbstractValue::Make(7.3)};
   const ShaderProgramData label_data{ShaderId::get_new_id(),
                                      AbstractValue::Make(RenderLabel(13))};
-  const ShaderProgramData color_data(
-      ShaderId::get_new_id(), AbstractValue::Make(33));
+  const ShaderProgramData color_data(ShaderId::get_new_id(),
+                                     AbstractValue::Make(33));
 
   const OpenGlInstance instance{geometry_index, X_WG,       scale,
                                 color_data,     depth_data, label_data};
@@ -97,9 +96,8 @@ GTEST_TEST(OpenGlInstanceTest, Construction) {
       label_data.value().get_value<RenderLabel>());
   EXPECT_EQ(instance.shader_data[RenderType::kLabel].shader_id(),
             label_data.shader_id());
-  EXPECT_EQ(
-      instance.shader_data[RenderType::kColor].value().get_value<int>(),
-      color_data.value().get_value<int>());
+  EXPECT_EQ(instance.shader_data[RenderType::kColor].value().get_value<int>(),
+            color_data.value().get_value<int>());
   EXPECT_EQ(instance.shader_data[RenderType::kColor].shader_id(),
             color_data.shader_id());
 }

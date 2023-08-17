@@ -167,14 +167,13 @@ std::ostream& operator<<(std::ostream& out, const RgbaColor& c) {
 }
 
 // Tests color within tolerance.
-bool IsColorNear(
-    const RgbaColor& expected, const RgbaColor& tested,
-    double tolerance = kColorPixelTolerance) {
+bool IsColorNear(const RgbaColor& expected, const RgbaColor& tested,
+                 double tolerance = kColorPixelTolerance) {
   using std::abs;
   return (abs(expected.r - tested.r) < tolerance &&
-      abs(expected.g - tested.g) < tolerance &&
-      abs(expected.b - tested.b) < tolerance &&
-      abs(expected.a - tested.a) < tolerance);
+          abs(expected.g - tested.g) < tolerance &&
+          abs(expected.b - tested.b) < tolerance &&
+          abs(expected.a - tested.a) < tolerance);
 }
 
 // Tests that the color in the given `image` located at screen coordinate `p`
@@ -186,10 +185,9 @@ bool IsColorNear(
   if (IsColorNear(expected, tested, tolerance)) {
     return ::testing::AssertionSuccess();
   }
-  return ::testing::AssertionFailure() << "Expected: " << expected
-                                       << " at " << p
-                                       << ", tested: " << tested
-                                       << " with tolerance: " << tolerance;
+  return ::testing::AssertionFailure()
+         << "Expected: " << expected << " at " << p << ", tested: " << tested
+         << " with tolerance: " << tolerance;
 }
 
 // This test suite facilitates a test with a ground plane and floating shape.
@@ -260,7 +258,7 @@ class RenderEngineVtkTest : public ::testing::Test {
     for (int y = 0; y < label->height(); ++y) {
       for (int x = 0; x < label->width(); ++x) {
         ASSERT_EQ(label->at(x, y)[0], value)
-                      << "At pixel (" << x << ", " << y << ")";
+            << "At pixel (" << x << ", " << y << ")";
       }
     }
   }
@@ -310,8 +308,8 @@ class RenderEngineVtkTest : public ::testing::Test {
         return ::testing::AssertionSuccess();
       } else {
         return ::testing::AssertionFailure()
-               << "Expected depth at " << coord << " to be infinity. Found: "
-               << actual_depth;
+               << "Expected depth at " << coord
+               << " to be infinity. Found: " << actual_depth;
       }
     } else {
       float delta = std::abs(expected_depth - actual_depth);
@@ -330,8 +328,7 @@ class RenderEngineVtkTest : public ::testing::Test {
   // plane. If images are provided, the given images will be tested, otherwise
   // the member images will be tested.
   void VerifyOutliers(const RenderEngineVtk& renderer,
-                      const DepthRenderCamera& camera,
-                      const char* name,
+                      const DepthRenderCamera& camera, const char* name,
                       const ImageRgba8U* color_in = nullptr,
                       const ImageDepth32F* depth_in = nullptr,
                       const ImageLabel16I* label_in = nullptr) const {
@@ -343,30 +340,27 @@ class RenderEngineVtkTest : public ::testing::Test {
       const int x = screen_coord.x;
       const int y = screen_coord.y;
       EXPECT_TRUE(CompareColor(expected_outlier_color_, color, screen_coord))
-                << "Color at: " << screen_coord << " for test: " << name;
+          << "Color at: " << screen_coord << " for test: " << name;
       EXPECT_TRUE(IsExpectedDepth(depth, screen_coord, expected_outlier_depth_,
                                   kDepthTolerance))
-                << "Depth at: " << screen_coord << " for test: " << name;
+          << "Depth at: " << screen_coord << " for test: " << name;
       EXPECT_EQ(label.at(x, y)[0], expected_outlier_label_)
-                << "Label at: " << screen_coord << " for test: " << name;
+          << "Label at: " << screen_coord << " for test: " << name;
     }
   }
 
-  void SetUp() override {
-    ResetExpectations();
-  }
+  void SetUp() override { ResetExpectations(); }
 
   // Tests that don't instantiate their own renderers should invoke this.
   void Init(const RigidTransformd& X_WR, bool add_terrain = false) {
-    const Vector3d bg_rgb{
-        kBgColor.r / 255., kBgColor.g / 255., kBgColor.b / 255.};
+    const Vector3d bg_rgb{kBgColor.r / 255., kBgColor.g / 255.,
+                          kBgColor.b / 255.};
     RenderEngineVtkParams params{{}, {}, bg_rgb};
     renderer_ = make_unique<RenderEngineVtk>(params);
     InitializeRenderer(X_WR, add_terrain, renderer_.get());
     // Ensure that we truly have a non-default color.
-    EXPECT_FALSE(IsColorNear(
-        RgbaColor(kDefaultVisualColor, 1.),
-        RgbaColor(renderer_->default_diffuse())));
+    EXPECT_FALSE(IsColorNear(RgbaColor(kDefaultVisualColor, 1.),
+                             RgbaColor(renderer_->default_diffuse())));
   }
 
   // Tests that instantiate their own renderers can initialize their renderers
@@ -458,8 +452,7 @@ class RenderEngineVtkTest : public ::testing::Test {
   // Performs the work to test the rendering with a shape centered in the
   // image. To pass, the renderer will have to have been populated with a
   // compatible shape and camera configuration (e.g., PopulateSphereTest()).
-  void PerformCenterShapeTest(RenderEngineVtk* renderer,
-                              const char* name,
+  void PerformCenterShapeTest(RenderEngineVtk* renderer, const char* name,
                               const DepthRenderCamera* camera = nullptr) {
     const DepthRenderCamera& cam = camera ? *camera : depth_camera_;
     const int w = cam.core().intrinsics().width();
@@ -474,12 +467,11 @@ class RenderEngineVtkTest : public ::testing::Test {
     VerifyCenterShapeTest(*renderer, name, cam, color, depth, label);
   }
 
-  void VerifyCenterShapeTest(const RenderEngineVtk& renderer,
-                              const char* name,
-                              const DepthRenderCamera& camera,
-                              const ImageRgba8U& color,
-                              const ImageDepth32F& depth,
-                              const ImageLabel16I& label) const {
+  void VerifyCenterShapeTest(const RenderEngineVtk& renderer, const char* name,
+                             const DepthRenderCamera& camera,
+                             const ImageRgba8U& color,
+                             const ImageDepth32F& depth,
+                             const ImageLabel16I& label) const {
     VerifyOutliers(renderer, camera, name, &color, &depth, &label);
 
     // Verifies inside the sphere.
@@ -487,12 +479,12 @@ class RenderEngineVtkTest : public ::testing::Test {
     const int x = inlier.x;
     const int y = inlier.y;
     EXPECT_TRUE(CompareColor(expected_color_, color, inlier))
-              << "Color at: " << inlier << " for test: " << name;
-    EXPECT_TRUE(IsExpectedDepth(depth, inlier, expected_object_depth_,
-                                kDepthTolerance))
-              << "Depth at: " << inlier << " for test: " << name;
+        << "Color at: " << inlier << " for test: " << name;
+    EXPECT_TRUE(
+        IsExpectedDepth(depth, inlier, expected_object_depth_, kDepthTolerance))
+        << "Depth at: " << inlier << " for test: " << name;
     EXPECT_EQ(label.at(x, y)[0], static_cast<int>(expected_label_))
-              << "Label at: " << inlier << " for test: " << name;
+        << "Label at: " << inlier << " for test: " << name;
   }
 
   RgbaColor expected_color_{kDefaultVisualColor, 255};
@@ -585,7 +577,7 @@ TEST_F(RenderEngineVtkTest, TerrainTest) {
 TEST_F(RenderEngineVtkTest, HorizonTest) {
   // Camera at the origin, pointing in a direction parallel to the ground.
   RigidTransformd X_WR{RotationMatrixd{AngleAxisd(-M_PI_2, Vector3d::UnitX()) *
-      AngleAxisd(M_PI_2, Vector3d::UnitY())}};
+                                       AngleAxisd(M_PI_2, Vector3d::UnitY())}};
   Init(X_WR, true);
 
   const ColorRenderCamera camera(depth_camera_.core(), kShowWindow);
@@ -669,8 +661,7 @@ TEST_F(RenderEngineVtkTest, BoxTest) {
                             Vector2d{texture_scale, texture_scale});
         }
       }
-      renderer_->RegisterVisual(id, box, props,
-                                RigidTransformd::Identity(),
+      renderer_->RegisterVisual(id, box, props, RigidTransformd::Identity(),
                                 true /* needs update */);
       // We want to position the box so that one corner of the box exactly
       // covers the pixel used for the "inlier test" (w/2, h/2). We can't put
@@ -713,9 +704,9 @@ TEST_F(RenderEngineVtkTest, BoxTest) {
       PerformCenterShapeTest(
           renderer_.get(),
           fmt::format("Box test - {}",
-                      use_texture ?
-                      (texture_scaled ? "scaled texture" : "unscaled texture") :
-                      "diffuse color")
+                      use_texture ? (texture_scaled ? "scaled texture"
+                                                    : "unscaled texture")
+                                  : "diffuse color")
               .c_str());
     }
   }
@@ -1198,9 +1189,9 @@ TEST_F(RenderEngineVtkTest, RemoveVisual) {
 // Optimizers on some platforms break code and cause test failures. Worse
 // still, there is no agreement on attribute spelling.
 #ifdef __clang__
-__attribute__((optnone))
+      __attribute__((optnone))
 #else
-__attribute__((optimize("-O0")))
+      __attribute__((optimize("-O0")))
 #endif
   {
     expected_color_ = color;
@@ -1352,12 +1343,11 @@ TEST_F(RenderEngineVtkTest, DifferentCameras) {
     // NOTE: Need to restored expected outlier depth for next test.
     expected_outlier_depth_ = old_outlier_depth;
 
-      const DepthRenderCamera clipping_near_plane{
+    const DepthRenderCamera clipping_near_plane{
         depth_camera_.core(),
         {expected_object_depth_ + 0.1, depth_range.max_depth()}};
     expected_object_depth_ = 0;
-    PerformCenterShapeTest(renderer_.get(),
-                           "Camera change - z near clips mesh",
+    PerformCenterShapeTest(renderer_.get(), "Camera change - z near clips mesh",
                            &clipping_near_plane);
   }
 }
@@ -1386,8 +1376,7 @@ TEST_F(RenderEngineVtkTest, DefaultProperties_RenderLabel) {
     expected_label_ = RenderLabel::kDontCare;
     expected_color_ = RgbaColor(renderer.default_diffuse());
 
-    PerformCenterShapeTest(&renderer,
-                           "Default properties; don't care label");
+    PerformCenterShapeTest(&renderer, "Default properties; don't care label");
   }
 
   // Case: Change render engine's default to explicitly be unspecified; must
@@ -1412,14 +1401,13 @@ TEST_F(RenderEngineVtkTest, DefaultProperties_RenderLabel) {
     expected_label_ = RenderLabel::kDontCare;
     expected_color_ = RgbaColor(renderer.default_diffuse());
 
-    PerformCenterShapeTest(&renderer,
-                           "Default properties; don't care label");
+    PerformCenterShapeTest(&renderer, "Default properties; don't care label");
   }
 
   // Case: Change render engine's default to invalid default value; must throw.
   {
     for (RenderLabel label :
-        {RenderLabel::kEmpty, RenderLabel(1), RenderLabel::kDoNotRender}) {
+         {RenderLabel::kEmpty, RenderLabel(1), RenderLabel::kDoNotRender}) {
       DRAKE_EXPECT_THROWS_MESSAGE(
           RenderEngineVtk({label, {}}),
           ".* default render label .* either 'kUnspecified' or 'kDontCare'.*");
@@ -1685,35 +1673,28 @@ TEST_F(RenderEngineVtkTest, SingleLight) {
        .expected_color = Rgba(0, 0, 0),
        // The lights are positioned badly to illuminate anything.
        .description = "World coordinates in the camera frame - nothing lit!"},
-      {.light = {.color = light_color,
-                 .cone_angle = 22.5},
+      {.light = {.color = light_color, .cone_angle = 22.5},
        .expected_color = modulated_color,
        .description = "Non-white light color"},
-      {.light = {.intensity = 0.1,
-                 .cone_angle = 22.5},
+      {.light = {.intensity = 0.1, .cone_angle = 22.5},
        .expected_color = kTerrainRgba.scale_rgb(0.1),
        .description = "Low intensity"},
-      {.light = {.intensity = 3.0,
-                 .cone_angle = 22.5},
+      {.light = {.intensity = 3.0, .cone_angle = 22.5},
        .expected_color = kTerrainRgba.scale_rgb(3),
        .description = "High intensity"},
-      {.light = {.attenuation_values = {2, 0, 0},
-                 .cone_angle = 22.5},
+      {.light = {.attenuation_values = {2, 0, 0}, .cone_angle = 22.5},
        .expected_color = kTerrainRgba.scale_rgb(0.5),
        .description = "Non-unit constant attenuation"},
-      {.light = {.attenuation_values = {0, 1, 0},
-                 .cone_angle = 22.5},
+      {.light = {.attenuation_values = {0, 1, 0}, .cone_angle = 22.5},
        .expected_color = kTerrainRgba.scale_rgb(1 / dist),
        .description = "Linear attenuation"},
-      {.light = {.attenuation_values = {0, 0, 1},
-                 .cone_angle = 22.5},
+      {.light = {.attenuation_values = {0, 0, 1}, .cone_angle = 22.5},
        .expected_color = kTerrainRgba.scale_rgb(1 / (dist * dist)),
        .description = "Quadratic attenuation"},
       {.light = {.cone_angle = 0},
        .expected_color = Rgba(0, 0, 0),
        .description = "Zero cone angle",
-       .target_type = "spot"}
-      };
+       .target_type = "spot"}};
 
   for (const auto& config : configs) {
     for (const auto& l_type : {"point", "spot", "directional"}) {
@@ -1756,7 +1737,7 @@ TEST_F(RenderEngineVtkTest, SingleLight) {
 TEST_F(RenderEngineVtkTest, MultiLights) {
   const ColorRenderCamera camera(depth_camera_.core(), kShowWindow);
   const RigidTransformd X_WR(RotationMatrixd::MakeXRotation(M_PI),
-                              Vector3d(0, 0, 3));
+                             Vector3d(0, 0, 3));
   ImageRgba8U image(camera.core().intrinsics().width(),
                     camera.core().intrinsics().height());
   const int cx = image.width() / 2;
@@ -1767,20 +1748,12 @@ TEST_F(RenderEngineVtkTest, MultiLights) {
   // should get 75% of the diffuse color. To test the non-limits on the number
   // of lights, we'll duplicate each light with half the intensity.
   const RenderEngineVtkParams params{
-      .lights = {{.type = "point",
-                  .intensity = 0.25 * 0.5},
-                  {.type = "point",
-                  .intensity = 0.25 * 0.5},
-                  {.type = "spot",
-                  .intensity = 0.25 * 0.5,
-                  .cone_angle = 45},
-                  {.type = "spot",
-                  .intensity = 0.25 * 0.5,
-                  .cone_angle = 45},
-                  {.type = "directional",
-                  .intensity = 0.25 * 0.5},
-                  {.type = "directional",
-                  .intensity = 0.25 * 0.5}}};
+      .lights = {{.type = "point", .intensity = 0.25 * 0.5},
+                 {.type = "point", .intensity = 0.25 * 0.5},
+                 {.type = "spot", .intensity = 0.25 * 0.5, .cone_angle = 45},
+                 {.type = "spot", .intensity = 0.25 * 0.5, .cone_angle = 45},
+                 {.type = "directional", .intensity = 0.25 * 0.5},
+                 {.type = "directional", .intensity = 0.25 * 0.5}}};
   RenderEngineVtk renderer(params);
 
   InitializeRenderer(X_WR, true /* add terrain */, &renderer);
@@ -1855,8 +1828,7 @@ Vector4<int> FindBoxEdges(const ImageType& image) {
 
       // Look for edge between current pixel and pixel below.
       const T* bottom_pixel = image.at(x, y + 1);
-      const AdjacentPixel bottom_result =
-          Compare(curr_pixel, bottom_pixel);
+      const AdjacentPixel bottom_result = Compare(curr_pixel, bottom_pixel);
       if (bottom_result == GroundToBox) {
         // Current lies on the ground, next lies on the box; bottom edge.
         DRAKE_DEMAND(edges(3) == -1 || edges(3) == y + 1);
@@ -1869,8 +1841,7 @@ Vector4<int> FindBoxEdges(const ImageType& image) {
 
       // Look for edge between current pixel and pixel to the right.
       const T* right_pixel = image.at(x + 1, y);
-      const AdjacentPixel right_result =
-          Compare(curr_pixel, right_pixel);
+      const AdjacentPixel right_result = Compare(curr_pixel, right_pixel);
       if (right_result == GroundToBox) {
         // Current lies on the ground, next lies on the box; left edge.
         DRAKE_DEMAND(edges(0) == -1 || edges(0) == x + 1);
@@ -1884,7 +1855,7 @@ Vector4<int> FindBoxEdges(const ImageType& image) {
   }
 
   return edges;
-  }
+}
 
 }  // namespace
 
@@ -2081,12 +2052,12 @@ TEST_F(RenderEngineVtkTest, IntrinsicsAndRenderProperties) {
     renderer_->RenderDepthImage(depth_camera, &depth);
 
     // Confirm pixel in corner (ground) and pixel in center (box).
-    EXPECT_TRUE(
-        IsExpectedDepth(depth, ScreenCoord{w / 2, h / 2},
-            ImageTraits<PixelType::kDepth32F>::kTooClose, 0.0));
-    EXPECT_TRUE(
-        IsExpectedDepth(depth, ScreenCoord{0, 0},
-            ImageTraits<PixelType::kDepth32F>::kTooFar, 0.0));
+    EXPECT_TRUE(IsExpectedDepth(depth, ScreenCoord{w / 2, h / 2},
+                                ImageTraits<PixelType::kDepth32F>::kTooClose,
+                                0.0));
+    EXPECT_TRUE(IsExpectedDepth(depth, ScreenCoord{0, 0},
+                                ImageTraits<PixelType::kDepth32F>::kTooFar,
+                                0.0));
   }
 
   {
@@ -2100,12 +2071,12 @@ TEST_F(RenderEngineVtkTest, IntrinsicsAndRenderProperties) {
     renderer_->RenderDepthImage(depth_camera, &depth);
 
     // Confirm pixel in corner (ground) and pixel in center (box).
-    EXPECT_TRUE(
-        IsExpectedDepth(depth, ScreenCoord{w / 2, h / 2},
-            ImageTraits<PixelType::kDepth32F>::kTooFar, 0.0));
-    EXPECT_TRUE(
-        IsExpectedDepth(depth, ScreenCoord{0, 0},
-            ImageTraits<PixelType::kDepth32F>::kTooFar, 0.0));
+    EXPECT_TRUE(IsExpectedDepth(depth, ScreenCoord{w / 2, h / 2},
+                                ImageTraits<PixelType::kDepth32F>::kTooFar,
+                                0.0));
+    EXPECT_TRUE(IsExpectedDepth(depth, ScreenCoord{0, 0},
+                                ImageTraits<PixelType::kDepth32F>::kTooFar,
+                                0.0));
   }
 
   {
@@ -2122,12 +2093,12 @@ TEST_F(RenderEngineVtkTest, IntrinsicsAndRenderProperties) {
     renderer_->RenderDepthImage(depth_camera, &depth);
 
     // Confirm pixel in corner (ground) and pixel in center (box).
-    EXPECT_TRUE(
-        IsExpectedDepth(depth, ScreenCoord{w / 2, h / 2},
-            ImageTraits<PixelType::kDepth32F>::kTooClose, 0.0));
-    EXPECT_TRUE(
-        IsExpectedDepth(depth, ScreenCoord{0, 0},
-            ImageTraits<PixelType::kDepth32F>::kTooClose, 0.0));
+    EXPECT_TRUE(IsExpectedDepth(depth, ScreenCoord{w / 2, h / 2},
+                                ImageTraits<PixelType::kDepth32F>::kTooClose,
+                                0.0));
+    EXPECT_TRUE(IsExpectedDepth(depth, ScreenCoord{0, 0},
+                                ImageTraits<PixelType::kDepth32F>::kTooClose,
+                                0.0));
   }
 }
 

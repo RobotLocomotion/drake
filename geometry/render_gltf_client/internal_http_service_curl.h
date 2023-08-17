@@ -21,11 +21,11 @@ class HttpServiceCurl : public HttpService {
 
  protected:
   /* @see HttpService::DoPostForm */
-  HttpResponse DoPostForm(
-      const std::string& temp_directory, const std::string& url,
-      const DataFieldsMap& data_fields,
-      const FileFieldsMap& file_fields,
-      bool verbose = false) override;
+  HttpResponse DoPostForm(const std::string& temp_directory,
+                          const std::string& url,
+                          const DataFieldsMap& data_fields,
+                          const FileFieldsMap& file_fields,
+                          bool verbose = false) override;
 };
 
 }  // namespace internal

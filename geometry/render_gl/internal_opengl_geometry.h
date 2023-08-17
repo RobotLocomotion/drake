@@ -37,7 +37,8 @@ struct OpenGlGeometry {
   OpenGlGeometry() = default;
 
   /* Constructs an %OpenGlGeometry from the given "object names" OpenGl objects.
-   (See e.g., https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glGenFramebuffers.xhtml
+   (See e.g.,
+   https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glGenFramebuffers.xhtml
    for an example of where such an "object name" would come from.)
 
    @param vertex_array_in       The handle to the OpenGl vertex array object
@@ -53,10 +54,9 @@ struct OpenGlGeometry {
                                 implication, the number of normals and texture
                                 coordinates).
    @pre `index_buffer_size_in >= 0`.  */
-  OpenGlGeometry(GLuint vertex_array_in,
-                 GLuint vertex_buffer_in, GLuint index_buffer_in,
-                 int index_buffer_size_in, bool has_tex_coord_in,
-                 int v_count_in)
+  OpenGlGeometry(GLuint vertex_array_in, GLuint vertex_buffer_in,
+                 GLuint index_buffer_in, int index_buffer_size_in,
+                 bool has_tex_coord_in, int v_count_in)
       : vertex_array{vertex_array_in},
         vertex_buffer{vertex_buffer_in},
         index_buffer{index_buffer_in},
@@ -119,8 +119,7 @@ struct OpenGlInstance {
    and the instance's shader data for depth and label shaders.
    @pre g_in references a defined OpenGlGeometry.
    @pre The shader program data has valid shader ids.  */
-  OpenGlInstance(int g_in,
-                 const math::RigidTransformd& pose_in,
+  OpenGlInstance(int g_in, const math::RigidTransformd& pose_in,
                  const Vector3<double>& scale_in, ShaderProgramData color_data,
                  ShaderProgramData depth_data, ShaderProgramData label_data)
       : geometry(g_in), X_WG(pose_in), scale(scale_in) {

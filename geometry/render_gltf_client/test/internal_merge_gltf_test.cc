@@ -33,6 +33,8 @@ GTEST_TEST(GltfMergeTest, JsonEigenConversion) {
   EXPECT_TRUE(CompareMatrices(M_return, M));
 }
 
+using MergeFunction = std::function<void(json*, json&&)>;
+
 /* Specification of a test case. Because each function under test is responsible
  for merging a particular array, each test case examines only the targeted
  array (see array_name). */
@@ -50,7 +52,7 @@ struct MergeCase {
   /* A description of what is being tested -- displayed for test failure. */
   string description;
   /* The merge function that should be called. */
-  std::function<void(json*, json&&)> merge{};
+  MergeFunction merge{};
 
   friend std::ostream& operator<<(std::ostream& out,
                                   const MergeCase& merge_case) {
@@ -109,7 +111,7 @@ class MergeTest : public testing::TestWithParam<MergeCase> {
                         device under test. */
   static void BumpIndex(vector<MergeCase>* cases, const string& array,
                         const string& independent, const string& index,
-                        std::function<void(json*, json&&)> merge) {
+                        MergeFunction merge) {
     DRAKE_DEMAND(cases != nullptr);
     cases->push_back(
         {.target = fmt::format(R"""({{"{}":[10, 20], "{}":[0, 1]}})""", array,
@@ -134,7 +136,7 @@ class MergeTest : public testing::TestWithParam<MergeCase> {
     cases->push_back(
         {.target = fmt::format(R"""({{"{}":[0, 1]}})""", independent),
          .source = fmt::format(R"""({{"{0}":[{{"{1}":10}}, {{"{1}":20}}]}})""",
-                              array, index),
+                               array, index),
          .array_name = array,
          .expected = fmt::format(R"""([{{"{0}":12}}, {{"{0}":22}}])""", index),
          .description = fmt::format(
@@ -172,7 +174,7 @@ class MergeTest : public testing::TestWithParam<MergeCase> {
    @param merge         The function that merges the named arrays. This is the
                         device under test. */
   static void VerbatimCopy(vector<MergeCase>* cases, const string& array,
-                           std::function<void(json*, json&&)> merge) {
+                           MergeFunction merge) {
     DRAKE_DEMAND(cases != nullptr);
     cases->push_back(
         {.target = fmt::format("{{\"{}\":[0, 1]}}", array),
@@ -226,7 +228,7 @@ class MergeTest : public testing::TestWithParam<MergeCase> {
      We can't use the test case APIs to test bumping node indices because the
      nodes are not direct children of a "scene" element. */
 
-    std::function<void(json*, json&&)> merge = MergeScenes;
+    MergeFunction merge = MergeScenes;
     return vector<MergeCase>{
         {.target = R"""({"scenes":[{"name":"Scene", "nodes":[0],
                                     "extras":{"v":2}}],
@@ -278,7 +280,7 @@ class MergeTest : public testing::TestWithParam<MergeCase> {
   }
 
   static vector<MergeCase> MergeNodesCases() {
-    std::function<void(json*, json&&)> merge = MergeNodes;
+    MergeFunction merge = MergeNodes;
     /* A "node" has indices to bump, "mesh" or "camera". But it may also contain
      an array of node indices, "children". "mesh" and "camera" can use the
      test case framework, but the "children" requires a bespoke test.
@@ -310,7 +312,7 @@ class MergeTest : public testing::TestWithParam<MergeCase> {
   }
 
   static vector<MergeCase> MergeMeshesCases() {
-    std::function<void(json*, json&&)> merge = MergeMeshes;
+    MergeFunction merge = MergeMeshes;
     /* Meshes cannot use the test case creation utilities.
       1. Meshes delete two properties mesh.weights and
          mesh.primitives[i].targets.
@@ -375,7 +377,7 @@ class MergeTest : public testing::TestWithParam<MergeCase> {
   }
 
   static vector<MergeCase> MergeMaterialsCases() {
-    std::function<void(json*, json&&)> merge = MergeMaterials;
+    MergeFunction merge = MergeMaterials;
     /* Merging materials requires delving into the elements recursively. The
      indices to bump are not directly children of the "material" element. So,
      we test the bump logic directly. */
