@@ -283,8 +283,8 @@ TEST_F(LoadRenderMeshFromObjTest, GeometryTriangulatePolygons) {
         const int index = mesh_data.indices(t, i);
         EXPECT_TRUE(CompareMatrices(mesh_data.normals.row(index),
                                     params.n0.transpose()));
-        EXPECT_TRUE(CompareMatrices(mesh_data.uvs.row(index),
-                                    params.uv0.transpose()));
+        EXPECT_TRUE(
+            CompareMatrices(mesh_data.uvs.row(index), params.uv0.transpose()));
       }
     }
     // The last two triangles come from f1 and all have the expected normal and
@@ -294,8 +294,8 @@ TEST_F(LoadRenderMeshFromObjTest, GeometryTriangulatePolygons) {
         const int index = mesh_data.indices(t, i);
         EXPECT_TRUE(CompareMatrices(mesh_data.normals.row(index),
                                     params.n1.transpose()));
-        EXPECT_TRUE(CompareMatrices(mesh_data.uvs.row(index),
-                                    params.uv1.transpose()));
+        EXPECT_TRUE(
+            CompareMatrices(mesh_data.uvs.row(index), params.uv1.transpose()));
       }
     }
   }
@@ -335,7 +335,8 @@ TEST_F(LoadRenderMeshFromObjTest, GeometryPreserveTriangulation) {
   f 3/1/1 4/1/1 5/1/1
   f 1/1/1 6/1/1 7/1/1
   f 1/1/1 7/1/1 2/1/1
-  )""", "preserve_triangulation.obj");
+  )""",
+                                      "preserve_triangulation.obj");
 
   const RenderMesh mesh_data = LoadRenderMeshFromObj(
       obj_path, empty_props(), kDefaultDiffuse, diagnostic_policy_);
@@ -369,7 +370,8 @@ TEST_F(LoadRenderMeshFromObjTest, GeometryRemoveUnreferencedVertices) {
   vt 0 0
   f 1/1/1 2/1/1 3/1/1
   f 6/1/1 3/1/1 4/1/1
-  )""", "unreferenced_vertices.obj");
+  )""",
+                                      "unreferenced_vertices.obj");
   const RenderMesh mesh_data = LoadRenderMeshFromObj(
       obj_path, empty_props(), kDefaultDiffuse, diagnostic_policy_);
   EXPECT_EQ(mesh_data.positions.rows(), 5);
@@ -466,8 +468,7 @@ TEST_F(LoadRenderMeshFromObjTest, MaterialLibraryDislocatedTexture) {
   const RenderMesh mesh = LoadRenderMeshFromObj(
       obj_path, empty_props(), kDefaultDiffuse, diagnostic_policy_);
   EXPECT_EQ(mesh.material.diffuse, Rgba(1, 1, 1));
-  EXPECT_EQ(mesh.material.diffuse_map,
-            (temp_dir() / "diag_gradient.png"));
+  EXPECT_EQ(mesh.material.diffuse_map, (temp_dir() / "diag_gradient.png"));
 }
 
 /* The OBJ has multiple intrinsic materials *defined* in the .mtl file. But only

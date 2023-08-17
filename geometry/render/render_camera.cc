@@ -44,13 +44,13 @@ Eigen::Matrix4d RenderCameraCore::CalcProjectionMatrix() const {
   const double d = f - n;
 
   Eigen::Matrix4d T_DC = Eigen::Matrix4d::Zero();
-  T_DC(0, 0) =  2 * fx / w;
-  T_DC(0, 2) =  (w - 2 * cx) / w;
-  T_DC(1, 1) =  2 * fy / h;
-  T_DC(1, 2) =  -(h - 2 * cy) / h;
-  T_DC(2, 2) =  -(f + n) / d;
-  T_DC(2, 3) =  -2 * f * n / d;
-  T_DC(3, 2) =  -1;
+  T_DC(0, 0) = 2 * fx / w;
+  T_DC(0, 2) = (w - 2 * cx) / w;
+  T_DC(1, 1) = 2 * fy / h;
+  T_DC(1, 2) = -(h - 2 * cy) / h;
+  T_DC(2, 2) = -(f + n) / d;
+  T_DC(2, 3) = -2 * f * n / d;
+  T_DC(3, 2) = -1;
   return T_DC;
 }
 

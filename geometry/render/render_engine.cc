@@ -14,9 +14,9 @@ namespace render {
 
 using math::RigidTransformd;
 using systems::sensors::CameraInfo;
-using systems::sensors::ImageRgba8U;
 using systems::sensors::ImageDepth32F;
 using systems::sensors::ImageLabel16I;
+using systems::sensors::ImageRgba8U;
 
 std::unique_ptr<RenderEngine> RenderEngine::Clone() const {
   std::unique_ptr<RenderEngine> clone(DoClone());
@@ -36,10 +36,11 @@ std::unique_ptr<RenderEngine> RenderEngine::Clone() const {
   return clone;
 }
 
-bool RenderEngine::RegisterVisual(
-    GeometryId id, const drake::geometry::Shape& shape,
-    const PerceptionProperties& properties,
-    const RigidTransformd& X_WG, bool needs_updates) {
+bool RenderEngine::RegisterVisual(GeometryId id,
+                                  const drake::geometry::Shape& shape,
+                                  const PerceptionProperties& properties,
+                                  const RigidTransformd& X_WG,
+                                  bool needs_updates) {
   // TODO(SeanCurtis-TRI): Test that the id hasn't already been used.
   const bool accepted = DoRegisterVisual(id, shape, properties, X_WG);
   if (accepted) {

@@ -9,8 +9,8 @@ const RenderLabel RenderLabel::kUnspecified;
 const RenderLabel RenderLabel::kEmpty(kUnspecified.value_ - 1, false);
 const RenderLabel RenderLabel::kDoNotRender(kUnspecified.value_ - 2, false);
 const RenderLabel RenderLabel::kDontCare(kUnspecified.value_ - 3, false);
-const RenderLabel::ValueType RenderLabel::kMaxUnreserved(
-    kUnspecified.value_ - 4);
+const RenderLabel::ValueType RenderLabel::kMaxUnreserved(kUnspecified.value_ -
+                                                         4);
 
 std::ostream& operator<<(std::ostream& out, const RenderLabel& label) {
   out << label.value_;
