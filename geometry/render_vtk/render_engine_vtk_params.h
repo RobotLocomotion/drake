@@ -12,7 +12,7 @@ namespace drake {
 namespace geometry {
 
 /** Construction parameters for the RenderEngineVtk.  */
-struct RenderEngineVtkParams  {
+struct RenderEngineVtkParams {
   /** Passes this object to an Archive.
   Refer to @ref yaml_serialization "YAML Serialization" for background. */
   template <typename Archive>

@@ -89,11 +89,11 @@ float CheckRangeAndConvertToMeters(float z_buffer_value, double z_near,
 
 }  // namespace
 
-ShaderCallback::ShaderCallback() :
-    // These values are arbitrary "reasonable" values, but we expect them to
-    // *both* be overwritten upon every usage.
-    z_near_(0.01),
-    z_far_(100.0) {}
+ShaderCallback::ShaderCallback()
+    :  // These values are arbitrary "reasonable" values, but we expect them to
+       // *both* be overwritten upon every usage.
+      z_near_(0.01),
+      z_far_(100.0) {}
 
 vtkNew<ShaderCallback> RenderEngineVtk::uniform_setting_callback_;
 
@@ -190,9 +190,9 @@ void RenderEngineVtk::ImplementGeometry(const Sphere& sphere, void* user_data) {
                     DefineMaterial(data.properties, default_diffuse_), data);
 }
 
-bool RenderEngineVtk::DoRegisterVisual(
-    GeometryId id, const Shape& shape, const PerceptionProperties& properties,
-    const RigidTransformd& X_WG) {
+bool RenderEngineVtk::DoRegisterVisual(GeometryId id, const Shape& shape,
+                                       const PerceptionProperties& properties,
+                                       const RigidTransformd& X_WG) {
   // Note: the user_data interface on reification requires a non-const pointer.
   RegistrationData data{properties, X_WG, id};
   shape.Reify(this, &data);
@@ -229,9 +229,8 @@ std::unique_ptr<RenderEngine> RenderEngineVtk::DoClone() const {
   return std::unique_ptr<RenderEngineVtk>(new RenderEngineVtk(*this));
 }
 
-void RenderEngineVtk::DoRenderColorImage(
-    const ColorRenderCamera& camera,
-    ImageRgba8U* color_image_out) const {
+void RenderEngineVtk::DoRenderColorImage(const ColorRenderCamera& camera,
+                                         ImageRgba8U* color_image_out) const {
   UpdateWindow(camera.core(), camera.show_window(),
                *pipelines_[ImageType::kColor], "Color Image");
   PerformVtkUpdate(*pipelines_[ImageType::kColor]);
@@ -241,9 +240,8 @@ void RenderEngineVtk::DoRenderColorImage(
   pipelines_[ImageType::kColor]->exporter->Export(color_image_out->at(0, 0));
 }
 
-void RenderEngineVtk::DoRenderDepthImage(
-    const DepthRenderCamera& camera,
-      ImageDepth32F* depth_image_out) const {
+void RenderEngineVtk::DoRenderDepthImage(const DepthRenderCamera& camera,
+                                         ImageDepth32F* depth_image_out) const {
   UpdateWindow(camera, *pipelines_[ImageType::kDepth]);
   PerformVtkUpdate(*pipelines_[ImageType::kDepth]);
 
@@ -274,16 +272,15 @@ void RenderEngineVtk::DoRenderDepthImage(
         // Dividing by 255 so that the range gets to be [0, 1].
         shader_value /= 255.f;
         // TODO(kunimatsu-tri) Calculate this in a vertex shader.
-        depth_image_out->at(u, v)[0] = CheckRangeAndConvertToMeters(
-            shader_value, min_depth, max_depth);
+        depth_image_out->at(u, v)[0] =
+            CheckRangeAndConvertToMeters(shader_value, min_depth, max_depth);
       }
     }
   }
 }
 
-void RenderEngineVtk::DoRenderLabelImage(
-    const ColorRenderCamera& camera,
-    ImageLabel16I* label_image_out) const {
+void RenderEngineVtk::DoRenderLabelImage(const ColorRenderCamera& camera,
+                                         ImageLabel16I* label_image_out) const {
   UpdateWindow(camera.core(), camera.show_window(),
                *pipelines_[ImageType::kLabel], "Label Image");
   PerformVtkUpdate(*pipelines_[ImageType::kLabel]);
@@ -641,8 +638,8 @@ void RenderEngineVtk::ImplementPolyData(vtkPolyDataAlgorithm* source,
   DRAKE_DEMAND(shader_prop != nullptr);
   shader_prop->SetVertexShaderCode(render::shaders::kDepthVS);
   shader_prop->SetFragmentShaderCode(render::shaders::kDepthFS);
-  mappers[ImageType::kDepth]->AddObserver(
-      vtkCommand::UpdateShaderEvent, uniform_setting_callback_.Get());
+  mappers[ImageType::kDepth]->AddObserver(vtkCommand::UpdateShaderEvent,
+                                          uniform_setting_callback_.Get());
 
   for (auto& mapper : mappers) {
     mapper->SetInputConnection(source->GetOutputPort());
