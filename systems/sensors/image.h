@@ -6,6 +6,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/reset_after_move.h"
 #include "drake/systems/sensors/pixel_types.h"
@@ -42,9 +43,20 @@ using ImageLabel16I = Image<PixelType::kLabel16I>;
 /// The type for greyscale image where the channel has the type of uint8_t.
 using ImageGrey8U = Image<PixelType::kGrey8U>;
 
+#ifndef DRAKE_DOXYGEN_CXX
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+constexpr auto kInternalPixelTypeExpr = PixelType::kExpr;
+#pragma GCC diagnostic pop
+#endif
+
 /// The type for symbolic image where the channel has the type of
 /// symbolic::Expression.
-using ImageExpr = Image<PixelType::kExpr>;
+using ImageExpr DRAKE_DEPRECATED(
+    "2023-12-01",
+    "ImageExpr is deprecated because kExpr is no longer a supported PixelType."
+    "There is no direct replacement available, but Eigen::Array<Expression> "
+    "might be a suitable alternative.") = Image<kInternalPixelTypeExpr>;
 
 /// Simple data format for Image. For the complex calculation with the image,
 /// consider converting this to other libaries' Matrix data format, i.e.,

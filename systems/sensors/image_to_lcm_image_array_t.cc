@@ -122,8 +122,11 @@ void PackImageToLcmImageT(const AbstractValue& untyped_image,
       PackImageToLcmImageT(image_value, msg, do_compress);
       break;
     }
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     case PixelType::kExpr:
       throw std::domain_error("PixelType::kExpr is not supported.");
+#pragma GCC diagnostic pop
   }
 }
 
