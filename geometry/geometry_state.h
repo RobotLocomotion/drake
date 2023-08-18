@@ -759,8 +759,7 @@ class GeometryState {
   // Handles adding the given geometry to the proximity engine. The only
   // GeometryState-level data structure modified is the proximity version. All
   // other changes to GeometryState data must happen elsewhere.
-  void AddToProximityEngineUnchecked(
-      const internal::InternalGeometry& geometry);
+  void AddToProximityEngineUnchecked(internal::InternalGeometry* geometry);
 
   // Handles removing the given geometry from the proximity engine. The only
   // GeometryState-level data structure modified is the proximity version. All

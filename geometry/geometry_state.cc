@@ -944,7 +944,7 @@ void GeometryState<T>::ChangeShape(SourceId source_id, GeometryId geometry_id,
     // unchecked version because we just need the engine mechanism; no
     // further GeometryState checking.
     RemoveFromProximityEngineUnchecked(*geometry);
-    AddToProximityEngineUnchecked(*geometry);
+    AddToProximityEngineUnchecked(geometry);
   }
   if (geometry->has_illustration_role()) {
     // Illustration has no "engine"; it's just the InternalGeometry. All
@@ -1016,6 +1016,7 @@ void GeometryState<T>::AssignRole(SourceId source_id, GeometryId geometry_id,
   geometry_version_.modify_proximity();
   switch (assign) {
     case RoleAssign::kNew: {
+      ProximityProperties* props = &properties;
       geometry.SetRole(std::move(properties));
       if (geometry.is_deformable()) {
         DRAKE_DEMAND(geometry.reference_mesh() != nullptr);
@@ -1027,11 +1028,11 @@ void GeometryState<T>::AssignRole(SourceId source_id, GeometryId geometry_id,
             convert_to_double(kinematics_data_.X_WGs.at(geometry_id));
         geometry_engine_->AddDynamicGeometry(geometry.shape(), X_WG,
                                              geometry_id,
-                                             *geometry.proximity_properties());
+                                             props);
       } else {
         geometry_engine_->AddAnchoredGeometry(geometry.shape(), geometry.X_FG(),
                                               geometry_id,
-                                              *geometry.proximity_properties());
+                                              props);
       }
       // The set of geometries G such that I need to introduce filtered pairs
       // (geometry_id, gᵢ) ∀ gᵢ ∈ G. Generally, it consists of those proximity
@@ -1057,7 +1058,7 @@ void GeometryState<T>::AssignRole(SourceId source_id, GeometryId geometry_id,
     case RoleAssign::kReplace:
       // Give the engine a chance to compare properties before and after.
       geometry_engine_->UpdateRepresentationForNewProperties(geometry,
-                                                             properties);
+                                                             &properties);
       geometry.SetRole(std::move(properties));
       break;
     default:
@@ -1635,23 +1636,27 @@ bool GeometryState<T>::RemoveRoleUnchecked(GeometryId geometry_id, Role role) {
 
 template <typename T>
 void GeometryState<T>::AddToProximityEngineUnchecked(
-    const InternalGeometry& geometry) {
-  const GeometryId geometry_id = geometry.id();
-  if (geometry.is_deformable()) {
-    DRAKE_DEMAND(geometry.reference_mesh() != nullptr);
-    geometry_engine_->AddDeformableGeometry(*geometry.reference_mesh(),
+    InternalGeometry* geometry) {
+  const GeometryId geometry_id = geometry->id();
+  ProximityProperties props(*geometry->proximity_properties());
+  if (geometry->is_deformable()) {
+    DRAKE_DEMAND(geometry->reference_mesh() != nullptr);
+    geometry_engine_->AddDeformableGeometry(*geometry->reference_mesh(),
                                             geometry_id);
-  } else if (geometry.is_dynamic()) {
+  } else if (geometry->is_dynamic()) {
     // Pass the geometry to the engine.
     const RigidTransformd& X_WG =
         convert_to_double(kinematics_data_.X_WGs.at(geometry_id));
-    geometry_engine_->AddDynamicGeometry(geometry.shape(), X_WG, geometry_id,
-                                         *geometry.proximity_properties());
+    geometry_engine_->AddDynamicGeometry(geometry->shape(), X_WG, geometry_id,
+                                         &props);
+    geometry->SetRole(props);
   } else {
-    geometry_engine_->AddAnchoredGeometry(geometry.shape(), geometry.X_FG(),
+    geometry_engine_->AddAnchoredGeometry(geometry->shape(), geometry->X_FG(),
                                           geometry_id,
-                                          *geometry.proximity_properties());
+                                          &props);
+    geometry->SetRole(props);
   }
+
   geometry_version_.modify_proximity();
 }
 
