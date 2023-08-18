@@ -147,7 +147,7 @@ enum class ContactModel {
 
   /// Contact forces are computed using the hydroelastic model, where possible.
   /// Where hydroelastic properties are missing, default property values are
-  /// inferred to enable hydrorelastic contact queries.
+  /// inferred to enable hydroelastic contact queries.
   kHydroelasticInferred,
 
   /// Legacy alias. TODO(jwnimmer-tri) Deprecate this constant.

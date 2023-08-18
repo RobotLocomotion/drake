@@ -327,6 +327,7 @@ void CompliantContactManager<T>::CalcDiscreteContactPairs(
   // higher order quadrature, polygons would have to be decomposed into smaller
   // n-gons which can receive an appropriate set of quadrature points.
   if (contact_model == ContactModel::kHydroelastic ||
+      contact_model == ContactModel::kHydroelasticInferred ||
       contact_model == ContactModel::kHydroelasticWithFallback) {
     const std::vector<geometry::ContactSurface<T>>& surfaces =
         this->EvalContactSurfaces(context);
@@ -343,6 +344,7 @@ void CompliantContactManager<T>::CalcDiscreteContactPairs(
     AppendDiscreteContactPairsForPointContact(context, contact_pairs);
   }
   if (contact_model == ContactModel::kHydroelastic ||
+      contact_model == ContactModel::kHydroelasticInferred ||
       contact_model == ContactModel::kHydroelasticWithFallback) {
     AppendDiscreteContactPairsForHydroelasticContact(context, contact_pairs);
   }
