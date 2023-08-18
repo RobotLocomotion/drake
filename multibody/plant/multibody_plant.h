@@ -156,6 +156,13 @@ enum class ContactModel {
   kPointContactOnly = kPoint,
 };
 
+
+/// @return true iff the model uses hydroelastic contact computations.
+bool uses_hydroelastic_contact(ContactModel value);
+
+/// @return true iff the model uses point contact computations.
+bool uses_point_contact(ContactModel value);
+
 /// The type of the contact solver used for a discrete MultibodyPlant model.
 ///
 /// Note: the SAP solver only fully supports scalar type `double`. For
