@@ -37,7 +37,7 @@ void BackfillDefaults(ProximityProperties* properties) {
         group_name, name,
         properties->GetPropertyOrDefault(group_name, name, default_value));
   };
-  backfill(kHydroGroup, kElastic, 1.5e9);
+  backfill(kHydroGroup, kElastic, 1e8);
   backfill(kHydroGroup, kRezHint, 0.01);
   backfill(kHydroGroup, kSlabThickness, 1e3);
 }
@@ -83,6 +83,10 @@ void Geometries::MaybeAddGeometry(const Shape& shape, GeometryId id,
       BackfillDefaults(&inferred_properties);
       ReifyData data{HydroelasticType::kSoft, id, inferred_properties};
       shape.Reify(this, &data);
+      inferred_properties.UpdateProperty(kHydroGroup, kComplianceType,
+                                         data.type);
+      // XXX HACK write back inferred properties. Woo.
+      const_cast<ProximityProperties&>(properties) = inferred_properties;
     }
   }
 }
