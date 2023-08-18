@@ -70,23 +70,23 @@ void Geometries::RemoveGeometry(GeometryId id) {
 }
 
 void Geometries::MaybeAddGeometry(const Shape& shape, GeometryId id,
-                                  const ProximityProperties& properties) {
-  const HydroelasticType type = properties.GetPropertyOrDefault(
+                                  ProximityProperties* properties) {
+  const HydroelasticType type = properties->GetPropertyOrDefault(
       kHydroGroup, kComplianceType, HydroelasticType::kUndefined);
   hydro_inferred_too_late_ = true;
   if (type != HydroelasticType::kUndefined) {
-    ReifyData data{type, id, properties};
+    ReifyData data{type, id, *properties};
     shape.Reify(this, &data);
   } else {
     if (hydro_inferred_) {
-      ProximityProperties inferred_properties(properties);
+      ProximityProperties inferred_properties(*properties);
       BackfillDefaults(&inferred_properties);
       ReifyData data{HydroelasticType::kSoft, id, inferred_properties};
       shape.Reify(this, &data);
       inferred_properties.UpdateProperty(kHydroGroup, kComplianceType,
                                          data.type);
-      // XXX HACK write back inferred properties. Woo.
-      const_cast<ProximityProperties&>(properties) = inferred_properties;
+      // Write back inferred properties.
+      *properties = inferred_properties;
     }
   }
 }

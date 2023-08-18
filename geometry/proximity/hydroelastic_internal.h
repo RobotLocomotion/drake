@@ -322,7 +322,7 @@ class Geometries final : public ShapeReifier {
                           are malformed.
    @pre There is no previous representation associated with id.  */
   void MaybeAddGeometry(const Shape& shape, GeometryId id,
-                        const ProximityProperties& properties);
+                        ProximityProperties* properties);
 
   void set_hydro_inferred(bool value) {
     // XXX prototype: Only allow changing the value before an

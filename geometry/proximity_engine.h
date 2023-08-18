@@ -97,7 +97,7 @@ class ProximityEngine {
                   belongs.
    @param props   The proximity properties for the shape.  */
   void AddDynamicGeometry(const Shape& shape, const math::RigidTransformd& X_WG,
-                          GeometryId id, const ProximityProperties& props = {});
+                          GeometryId id, ProximityProperties* props);
 
   /* Adds the given `shape` to the engine's _anchored_ geometry.
    @param shape   The shape to add.
@@ -107,7 +107,7 @@ class ProximityEngine {
    @param props   The proximity properties for the shape.  */
   void AddAnchoredGeometry(const Shape& shape,
                            const math::RigidTransformd& X_WG, GeometryId id,
-                           const ProximityProperties& props = {});
+                           ProximityProperties* props);
 
   /* Adds a new deformable geometry to the engine.
    @param mesh_W  The volume mesh representation of the deformable geometry
@@ -133,7 +133,7 @@ class ProximityEngine {
          are to be replaced.  */
   void UpdateRepresentationForNewProperties(
       const InternalGeometry& geometry,
-      const ProximityProperties& new_properties);
+      ProximityProperties* new_properties);
 
   // TODO(SeanCurtis-TRI): Decide if knowing whether something is dynamic or not
   //  is *actually* sufficiently helpful to justify this act.

@@ -166,7 +166,7 @@ void BuildTreeFromReference(
 struct ReifyData {
   unique_ptr<CollisionObjectd> fcl_object;
   const GeometryId id;
-  const ProximityProperties& properties;
+  ProximityProperties* properties;
   const RigidTransformd X_WG;
 };
 
@@ -281,13 +281,13 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   CollisionFilter& collision_filter() { return collision_filter_; }
 
   void AddDynamicGeometry(const Shape& shape, const RigidTransformd& X_WG,
-                          GeometryId id, const ProximityProperties& props) {
+                          GeometryId id, ProximityProperties* props) {
     AddGeometry(shape, X_WG, id, props, true, &dynamic_tree_,
                 &dynamic_objects_);
   }
 
   void AddAnchoredGeometry(const Shape& shape, const RigidTransformd& X_WG,
-                           GeometryId id, const ProximityProperties& props) {
+                           GeometryId id, ProximityProperties* props) {
     AddGeometry(shape, X_WG, id, props, false, &anchored_tree_,
                 &anchored_objects_);
   }
@@ -308,7 +308,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
 
   void UpdateRepresentationForNewProperties(
       const InternalGeometry& geometry,
-      const ProximityProperties& new_properties) {
+      ProximityProperties* new_properties) {
     const GeometryId id = geometry.id();
     // Note: Currently, the only aspects of a geometry's representation that can
     // be affected by its proximity properties are its hydroelastic
@@ -341,7 +341,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     const RigidTransformd X_WG = GetX_WG(id, geometry.is_dynamic());
     geometries_for_deformable_contact_.RemoveGeometry(id);
     geometries_for_deformable_contact_.MaybeAddRigidGeometry(
-        geometry.shape(), id, new_properties, X_WG);
+        geometry.shape(), id, *new_properties, X_WG);
   }
 
   // Returns true if the geometry with the given Id has been registered in
@@ -444,7 +444,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     const ReifyData& data = *static_cast<ReifyData*>(user_data);
 
     geometries_for_deformable_contact_.MaybeAddRigidGeometry(
-        shape, data.id, data.properties, data.X_WG);
+        shape, data.id, *data.properties, data.X_WG);
   }
 
   void ImplementGeometry(const Box& box, void* user_data) override {
@@ -465,7 +465,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
 
   void ImplementGeometry(const Convex& convex, void* user_data) override {
     const ReifyData& data = *static_cast<ReifyData*>(user_data);
-    const HydroelasticType type = data.properties.GetPropertyOrDefault(
+    const HydroelasticType type = data.properties->GetPropertyOrDefault(
         kHydroGroup, kComplianceType, HydroelasticType::kUndefined);
     if (type == HydroelasticType::kUndefined && convex.extension() != ".obj") {
       throw std::runtime_error(
@@ -519,7 +519,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
 
   void ImplementGeometry(const Mesh& mesh, void* user_data) override {
     const ReifyData& data = *static_cast<ReifyData*>(user_data);
-    const HydroelasticType type = data.properties.GetPropertyOrDefault(
+    const HydroelasticType type = data.properties->GetPropertyOrDefault(
         kHydroGroup, kComplianceType, HydroelasticType::kUndefined);
 
     // We process hydroelastic geometry first, so we have access to mesh
@@ -877,7 +877,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
 
   void AddGeometry(
       const Shape& shape, const RigidTransformd& X_WG, GeometryId id,
-      const ProximityProperties& props, bool is_dynamic,
+      ProximityProperties* props, bool is_dynamic,
       fcl::DynamicAABBTreeCollisionManager<double>* tree,
       unordered_map<GeometryId, unique_ptr<CollisionObjectd>>* objects) {
     ReifyData data{nullptr, id, props, X_WG};
@@ -1003,14 +1003,16 @@ template <typename T>
 void ProximityEngine<T>::AddDynamicGeometry(const Shape& shape,
                                             const RigidTransformd& X_WG,
                                             GeometryId id,
-                                            const ProximityProperties& props) {
+                                            ProximityProperties* props) {
+  DRAKE_DEMAND(props != nullptr);
   impl_->AddDynamicGeometry(shape, X_WG, id, props);
 }
 
 template <typename T>
 void ProximityEngine<T>::AddAnchoredGeometry(
     const Shape& shape, const RigidTransformd& X_WG, GeometryId id,
-    const ProximityProperties& props) {
+    ProximityProperties* props) {
+  DRAKE_DEMAND(props != nullptr);
   impl_->AddAnchoredGeometry(shape, X_WG, id, props);
 }
 
@@ -1023,7 +1025,7 @@ void ProximityEngine<T>::AddDeformableGeometry(const VolumeMesh<double>& mesh,
 template <typename T>
 void ProximityEngine<T>::UpdateRepresentationForNewProperties(
     const InternalGeometry& geometry,
-    const ProximityProperties& new_properties) {
+    ProximityProperties* new_properties) {
   impl_->UpdateRepresentationForNewProperties(geometry, new_properties);
 }
 
