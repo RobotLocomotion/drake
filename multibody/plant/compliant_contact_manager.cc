@@ -315,8 +315,7 @@ void CompliantContactManager<T>::CalcDiscreteContactPairs(
   // We guard for case (2) since EvalPointPairPenetrations() cannot be called
   // when point contact is not used and would otherwise throw an exception.
   int num_point_pairs = 0;  // The number of point contact pairs.
-  if (contact_model == ContactModel::kPoint ||
-      contact_model == ContactModel::kHydroelasticWithFallback) {
+  if (uses_point_contact(contact_model)) {
     num_point_pairs = plant().EvalPointPairPenetrations(context).size();
   }
 
@@ -326,9 +325,7 @@ void CompliantContactManager<T>::CalcDiscreteContactPairs(
   // This is compatible with a mesh that is triangle or polygon. If we attempted
   // higher order quadrature, polygons would have to be decomposed into smaller
   // n-gons which can receive an appropriate set of quadrature points.
-  if (contact_model == ContactModel::kHydroelastic ||
-      contact_model == ContactModel::kHydroelasticInferred ||
-      contact_model == ContactModel::kHydroelasticWithFallback) {
+  if (uses_hydroelastic_contact(contact_model)) {
     const std::vector<geometry::ContactSurface<T>>& surfaces =
         this->EvalContactSurfaces(context);
     for (const auto& s : surfaces) {
@@ -339,13 +336,10 @@ void CompliantContactManager<T>::CalcDiscreteContactPairs(
   const int num_contact_pairs = num_point_pairs + num_quadrature_pairs;
   contact_pairs->reserve(num_contact_pairs);
 
-  if (contact_model == ContactModel::kPoint ||
-      contact_model == ContactModel::kHydroelasticWithFallback) {
+  if (uses_point_contact(contact_model)) {
     AppendDiscreteContactPairsForPointContact(context, contact_pairs);
   }
-  if (contact_model == ContactModel::kHydroelastic ||
-      contact_model == ContactModel::kHydroelasticInferred ||
-      contact_model == ContactModel::kHydroelasticWithFallback) {
+  if (uses_hydroelastic_contact(contact_model)) {
     AppendDiscreteContactPairsForHydroelasticContact(context, contact_pairs);
   }
   if constexpr (std::is_same_v<T, double>) {

@@ -32,6 +32,32 @@
 namespace drake {
 namespace multibody {
 
+/// @return true iff the model uses hydroelastic contact computations.
+bool uses_hydroelastic_contact(ContactModel value) {
+  switch (value) {
+    case ContactModel::kHydroelastic:
+    case ContactModel::kHydroelasticInferred:
+    case ContactModel::kHydroelasticWithFallback:
+      return true;
+    case ContactModel::kPoint:
+      return false;
+  }
+  DRAKE_UNREACHABLE();
+}
+
+/// @return true iff the model uses point contact computations.
+bool uses_point_contact(ContactModel value) {
+  switch (value) {
+    case ContactModel::kHydroelasticWithFallback:
+    case ContactModel::kPoint:
+      return true;
+    case ContactModel::kHydroelastic:
+    case ContactModel::kHydroelasticInferred:
+      return false;
+  }
+  DRAKE_UNREACHABLE();
+}
+
 // Helper macro to throw an exception within methods that should not be called
 // post-finalize.
 #define DRAKE_MBP_THROW_IF_FINALIZED() ThrowIfFinalized(__func__)
@@ -2869,10 +2895,7 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
 
   // Cache entry for spatial forces and contact info due to hydroelastic
   // contact.
-  const bool use_hydroelastic =
-      contact_model_ == ContactModel::kHydroelastic ||
-      contact_model_ == ContactModel::kHydroelasticInferred ||
-      contact_model_ == ContactModel::kHydroelasticWithFallback;
+  const bool use_hydroelastic = uses_hydroelastic_contact(contact_model_);
   if (use_hydroelastic) {
     auto& contact_info_and_body_spatial_forces_cache_entry =
         this->DeclareCacheEntry(
