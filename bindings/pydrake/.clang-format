@@ -18,6 +18,13 @@ AllowShortFunctionsOnASingleLine: Inline
 # Compress lambdas onto a single line iff they are empty.
 AllowShortLambdasOnASingleLine: Empty
 
+# Don't automatically respell namespace comments. Our current version of Clang
+# makes mistakes when the namespace is tagged with DRAKE_NO_EXPORT. We'll rely
+# on cpplint to flag any problematic comments, for a person to fix by hand.
+# We could re-renable this if https://github.com/llvm/llvm-project/issues/61251
+# gets fixed.
+FixNamespaceComments: false
+
 # Specify the #include statement order.  This implements the order mandated by
 # the Google C++ Style Guide: related header, C headers, C++ headers, library
 # headers, and finally the project headers.
