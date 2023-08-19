@@ -256,7 +256,7 @@ std::unique_ptr<ConvexSet> Hyperellipsoid::DoClone() const {
   return std::make_unique<Hyperellipsoid>(*this);
 }
 
-bool Hyperellipsoid::DoIsBounded() const {
+std::optional<bool> Hyperellipsoid::DoIsBoundedShortcut() const {
   if (A_.rows() < A_.cols()) {
     return false;
   }

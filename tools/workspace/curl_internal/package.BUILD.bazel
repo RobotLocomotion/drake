@@ -89,6 +89,7 @@ _SRCS = [
     "lib/inet_ntop.c",
     "lib/inet_pton.c",
     "lib/llist.c",
+    "lib/macos.c",
     "lib/md4.c",
     "lib/md5.c",
     "lib/memdebug.c",

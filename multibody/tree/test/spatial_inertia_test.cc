@@ -880,7 +880,7 @@ GTEST_TEST(SpatialInertia, Shift) {
   // First define it in frame B.
   SpatialInertia<double> M_BBcm_W(
       mass, Vector3d::Zero(),
-      UnitInertia<double>::SolidCylinder(radius, length));
+      UnitInertia<double>::SolidCylinder(radius, length, Vector3d::UnitZ()));
   // Then re-express in frame W.
   M_BBcm_W.ReExpressInPlace(R_WB);
 

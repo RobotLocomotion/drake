@@ -15,9 +15,9 @@ namespace internal {
 
 using drake::internal::DiagnosticPolicy;
 
-void MaybeWarnForRedundantMaterial(
-    const GeometryProperties& props, std::string_view mesh_name,
-    const DiagnosticPolicy& policy) {
+void MaybeWarnForRedundantMaterial(const GeometryProperties& props,
+                                   std::string_view mesh_name,
+                                   const DiagnosticPolicy& policy) {
   std::vector<std::string> ignored_props;
   if (props.HasProperty("phong", "diffuse")) {
     ignored_props.push_back(fmt::format(
@@ -39,10 +39,10 @@ void MaybeWarnForRedundantMaterial(
   }
 }
 
-RenderMaterial MakeMeshFallbackMaterial(
-    const GeometryProperties& props, const std::filesystem::path& mesh_path,
-    const Rgba& default_diffuse,
-    const DiagnosticPolicy& policy) {
+RenderMaterial MakeMeshFallbackMaterial(const GeometryProperties& props,
+                                        const std::filesystem::path& mesh_path,
+                                        const Rgba& default_diffuse,
+                                        const DiagnosticPolicy& policy) {
   // If a material is indicated *at all* in the properties, that
   // defines the material.
   if (props.HasProperty("phong", "diffuse") ||
@@ -79,10 +79,9 @@ RenderMaterial MakeMeshFallbackMaterial(
   return material;
 }
 
-RenderMaterial DefineMaterial(
-    const GeometryProperties& props,
-    const Rgba& default_diffuse,
-    const DiagnosticPolicy& policy) {
+RenderMaterial DefineMaterial(const GeometryProperties& props,
+                              const Rgba& default_diffuse,
+                              const DiagnosticPolicy& policy) {
   RenderMaterial material;
 
   material.diffuse_map =

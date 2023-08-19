@@ -164,11 +164,16 @@ const InputPort<double>& ImageWriter::DeclareImageInputPort(
   const auto& port =
       DeclareAbstractInputPort(port_name, Value<Image<kPixelType>>());
 
+  // There is no DeclarePeriodicPublishEvent that accepts a lambda, so we must
+  // use the advanced API to add our event.
   PublishEvent<double> event(
       TriggerType::kPeriodic,
-      [this, port_index = port.get_index()](const Context<double>& context,
-                                            const PublishEvent<double>&) {
-        WriteImage<kPixelType>(context, port_index);
+      [port_index = port.get_index()](const System<double>& system,
+                                      const Context<double>& context,
+                                      const PublishEvent<double>&) {
+        const auto& self = dynamic_cast<const ImageWriter&>(system);
+        self.WriteImage<kPixelType>(context, port_index);
+        return EventStatus::Succeeded();
       });
   DeclarePeriodicEvent<PublishEvent<double>>(publish_period, start_time, event);
   port_info_.emplace_back(std::move(file_name_format), kPixelType);

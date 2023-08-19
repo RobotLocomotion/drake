@@ -4,7 +4,7 @@
 #include <utility>
 #include <vector>
 
-#include <drake_vendor/fcl/fcl.h>
+#include <fcl/fcl.h>
 #include <fmt/format.h>
 #include <gtest/gtest.h>
 
@@ -626,7 +626,8 @@ GTEST_TEST(Callback, ScalarSupportWithFilters) {
   // Filter the pair (A, B); we'll put the ids in a set and simply return that
   // set for the extract ids function.
   std::unordered_set<GeometryId> ids{data_A.id(), data_B.id()};
-  CollisionFilter::ExtractIds extract = [&ids](const GeometrySet&) {
+  CollisionFilter::ExtractIds extract = [&ids](const GeometrySet&,
+                                               CollisionFilterScope) {
     return ids;
   };
   collision_filter.Apply(CollisionFilterDeclaration().ExcludeWithin(
@@ -679,7 +680,8 @@ GTEST_TEST(Callback, RespectCollisionFiltering) {
   // Filter the pair (A, B); we'll put the ids in a set and simply return that
   // set for the extract ids function.
   std::unordered_set<GeometryId> ids{data_A.id(), data_B.id()};
-  CollisionFilter::ExtractIds extract = [&ids](const GeometrySet&) {
+  CollisionFilter::ExtractIds extract = [&ids](const GeometrySet&,
+                                               CollisionFilterScope) {
     return ids;
   };
   collision_filter.Apply(CollisionFilterDeclaration().ExcludeWithin(

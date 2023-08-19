@@ -76,20 +76,6 @@ set(lapack_url "https://github.com/Reference-LAPACK/lapack/archive/v${lapack_ver
 set(lapack_md5 "d70fc27a8bdebe00481c97c728184f09")
 list(APPEND ALL_PROJECTS lapack)
 
-# coinutils
-set(coinutils_version 2.11.4)
-set(coinutils_url "https://github.com/coin-or/CoinUtils/archive/refs/tags/releases/${coinutils_version}.tar.gz")
-set(coinutils_md5 "dcdb2a327344014de9d8b050575fa90b")
-set(coinutils_dlname "coinutils-${coinutils_version}.tar.gz")
-list(APPEND ALL_PROJECTS coinutils)
-
-# clp
-set(clp_version 1.17.5)
-set(clp_url "https://github.com/coin-or/Clp/archive/refs/tags/releases/${clp_version}.tar.gz")
-set(clp_md5 "f7c25af22d2f03398cbbdf38c8b4f6fd")
-set(clp_dlname "clp-${clp_version}.tar.gz")
-list(APPEND ALL_PROJECTS clp)
-
 # ipopt (requires mumps)
 if(APPLE)
     set(mumps_version 5.4.1)  # Latest available in Ubuntu.

@@ -62,6 +62,10 @@ PYBIND11_MODULE(sensors, m) {
   py::module::import("pydrake.geometry");
   py::module::import("pydrake.systems.framework");
 
+  // Note: for this module's C++ enums we choose not to bind the C++ `to_string`
+  // functions as `__str__` in Python. The `enum.Enum` class already provides a
+  // `__str__` that looks more Pythonic than our C++ `to_string`.
+
   // Expose only types that are used.
   py::enum_<PixelFormat>(m, "PixelFormat")
       .value("kRgba", PixelFormat::kRgba)
@@ -105,7 +109,8 @@ PYBIND11_MODULE(sensors, m) {
       pixel_type.value(pixel_type_name.c_str(), kPixelType);
       py::tuple py_param = GetPyParam(param);
 
-      // Add traits.
+      // Add traits. Note that we choose not to bind kPixelScalar because the
+      // ChannelType already makes the same information easily available.
       py::class_<ImageTraitsT> traits(
           m, TemporaryClassName<ImageTraitsT>().c_str());
       traits.attr("ChannelType") = GetPyParam<T>()[0];

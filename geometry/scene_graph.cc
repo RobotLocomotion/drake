@@ -181,6 +181,11 @@ FrameId SceneGraph<T>::RegisterFrame(SourceId source_id, FrameId parent_id,
 }
 
 template <typename T>
+void SceneGraph<T>::RenameFrame(FrameId frame_id, const std::string& name) {
+  return model_.RenameFrame(frame_id, name);
+}
+
+template <typename T>
 GeometryId SceneGraph<T>::RegisterGeometry(
     SourceId source_id, FrameId frame_id,
     std::unique_ptr<GeometryInstance> geometry) {
@@ -216,6 +221,12 @@ GeometryId SceneGraph<T>::RegisterDeformableGeometry(
   auto& g_state = mutable_geometry_state(context);
   return g_state.RegisterDeformableGeometry(
       source_id, frame_id, std::move(geometry), resolution_hint);
+}
+
+template <typename T>
+void SceneGraph<T>::RenameGeometry(GeometryId geometry_id,
+                                   const std::string& name) {
+  return model_.RenameGeometry(geometry_id, name);
 }
 
 template <typename T>

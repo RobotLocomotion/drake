@@ -9,6 +9,7 @@
 #include <fmt/format.h>
 
 #include "drake/common/symbolic/decompose.h"
+#include "drake/common/symbolic/latex.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/matrix_util.h"
 
@@ -17,6 +18,7 @@ using std::abs;
 namespace drake {
 namespace solvers {
 
+using symbolic::ToLatex;
 const double kInf = std::numeric_limits<double>::infinity();
 
 namespace {
@@ -63,6 +65,46 @@ std::ostream& DisplayConstraint(const Constraint& constraint, std::ostream& os,
   }
   return os;
 }
+
+std::string ToLatexLowerBound(const Constraint& constraint, int precision) {
+  const auto& lb = constraint.lower_bound();
+  if (lb.array().isInf().all()) {
+    return "";
+  }
+  if (lb == constraint.upper_bound()) {
+    // We'll write this as == instead of <=.
+    return "";
+  }
+  if (lb.size() == 1) {
+    return ToLatex(lb[0], precision) + " \\le ";
+  }
+  return ToLatex(lb) + " \\le ";
+}
+
+std::string ToLatexUpperBound(const Constraint& constraint, int precision) {
+  const auto& ub = constraint.upper_bound();
+  if (ub.array().isInf().all()) {
+    return "";
+  }
+  std::string comparator = (ub == constraint.lower_bound()) ? " = " : " \\le ";
+  if (ub.size() == 1) {
+    return comparator + ToLatex(ub[0], precision);
+  }
+  return comparator + ToLatex(ub);
+}
+
+std::string ToLatexConstraint(const Constraint& constraint,
+                              const VectorX<symbolic::Variable>& vars,
+                              int precision) {
+  VectorX<symbolic::Expression> y(constraint.num_constraints());
+  constraint.Eval(vars, &y);
+  return fmt::format(
+      "{}{}{}", ToLatexLowerBound(constraint, precision),
+      constraint.num_constraints() == 1 ? symbolic::ToLatex(y[0], precision)
+                                        : symbolic::ToLatex(y, precision),
+      ToLatexUpperBound(constraint, precision));
+}
+
 }  // namespace
 
 void Constraint::check(int num_constraints) const {
@@ -154,6 +196,19 @@ void QuadraticConstraint::DoEval(
 std::ostream& QuadraticConstraint::DoDisplay(
     std::ostream& os, const VectorX<symbolic::Variable>& vars) const {
   return DisplayConstraint(*this, os, "QuadraticConstraint", vars, false);
+}
+
+std::string QuadraticConstraint::DoToLatex(
+    const VectorX<symbolic::Variable>& vars, int precision) const {
+  // TODO(russt): Handle Q_ = c*I as a special case.
+  std::string b_term;
+  if (!b_.isZero()) {
+    b_term = " + " + symbolic::ToLatex(b_.dot(vars), precision);
+  }
+  return fmt::format(
+      "{}{}^T {} {}{}{}", ToLatexLowerBound(*this, precision),
+      symbolic::ToLatex(vars), symbolic::ToLatex((0.5 * Q_).eval(), precision),
+      symbolic::ToLatex(vars), b_term, ToLatexUpperBound(*this, precision));
 }
 
 namespace {
@@ -270,6 +325,14 @@ std::ostream& LorentzConeConstraint::DoDisplay(
   return DisplayConstraint(*this, os, "LorentzConeConstraint", vars, false);
 }
 
+std::string LorentzConeConstraint::DoToLatex(
+    const VectorX<symbolic::Variable>& vars, int precision) const {
+  VectorX<symbolic::Expression> z = A_ * vars + b_;
+  return fmt::format("\\left|{}\\right|_2 \\le {}",
+                     symbolic::ToLatex(z.tail(z.size() - 1).eval(), precision),
+                     symbolic::ToLatex(z(0), precision));
+}
+
 void RotatedLorentzConeConstraint::UpdateCoefficients(
     const Eigen::Ref<const Eigen::MatrixXd>& new_A,
     const Eigen::Ref<const Eigen::VectorXd>& new_b) {
@@ -318,6 +381,16 @@ std::ostream& RotatedLorentzConeConstraint::DoDisplay(
     std::ostream& os, const VectorX<symbolic::Variable>& vars) const {
   return DisplayConstraint(*this, os, "RotatedLorentzConeConstraint", vars,
                            false);
+}
+
+std::string RotatedLorentzConeConstraint::DoToLatex(
+    const VectorX<symbolic::Variable>& vars, int precision) const {
+  VectorX<symbolic::Expression> z = A_ * vars + b_;
+  return fmt::format(
+      "0 \\le {},\\\\ 0 \\le {},\\\\ \\left|{}\\right|_2^2 \\le {}",
+      symbolic::ToLatex(z(0), precision), symbolic::ToLatex(z(1), precision),
+      symbolic::ToLatex(z.tail(z.size() - 2).eval(), precision),
+      symbolic::ToLatex(z(0) * z(1), precision));
 }
 
 LinearConstraint::LinearConstraint(const Eigen::Ref<const Eigen::MatrixXd>& A,
@@ -423,6 +496,20 @@ std::ostream& LinearConstraint::DoDisplay(
   return DisplayConstraint(*this, os, "LinearConstraint", vars, false);
 }
 
+std::string LinearConstraint::DoToLatex(
+    const VectorX<symbolic::Variable>& vars, int precision) const {
+  if (num_constraints() == 1) {
+    return fmt::format(
+        "{}{}{}", ToLatexLowerBound(*this, precision),
+        symbolic::ToLatex((A_.get_as_sparse() * vars)[0], precision),
+        ToLatexUpperBound(*this, precision));
+  }
+  return fmt::format(
+      "{}{} {}{}", ToLatexLowerBound(*this, precision),
+      symbolic::ToLatex(GetDenseA(), precision), symbolic::ToLatex(vars),
+      ToLatexUpperBound(*this, precision));
+}
+
 std::ostream& LinearEqualityConstraint::DoDisplay(
     std::ostream& os, const VectorX<symbolic::Variable>& vars) const {
   return DisplayConstraint(*this, os, "LinearEqualityConstraint", vars, true);
@@ -466,6 +553,14 @@ void BoundingBoxConstraint::DoEval(
 std::ostream& BoundingBoxConstraint::DoDisplay(
     std::ostream& os, const VectorX<symbolic::Variable>& vars) const {
   return DisplayConstraint(*this, os, "BoundingBoxConstraint", vars, false);
+}
+
+std::string BoundingBoxConstraint::DoToLatex(
+    const VectorX<symbolic::Variable>& vars, int precision) const {
+  return fmt::format("{}{}{}", ToLatexLowerBound(*this, precision),
+                     num_constraints() == 1 ? symbolic::ToLatex(vars[0])
+                                            : symbolic::ToLatex(vars),
+                     ToLatexUpperBound(*this, precision));
 }
 
 template <typename DerivedX, typename ScalarY>
@@ -527,6 +622,13 @@ symbolic::Formula LinearComplementarityConstraint::DoCheckSatisfied(
   return f;
 }
 
+std::string LinearComplementarityConstraint::DoToLatex(
+    const VectorX<symbolic::Variable>& vars, int precision) const {
+  return fmt::format("0 \\le {} \\perp {} \\ge 0",
+                     symbolic::ToLatex(vars, precision),
+                     symbolic::ToLatex((M_ * vars + q_).eval(), precision));
+}
+
 void PositiveSemidefiniteConstraint::DoEval(
     const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd* y) const {
   DRAKE_ASSERT(x.rows() == num_constraints() * num_constraints());
@@ -556,6 +658,13 @@ void PositiveSemidefiniteConstraint::DoEval(
   throw std::logic_error(
       "The Eval function for positive semidefinite constraint is not defined, "
       "since the eigen solver does not work for symbolic::Expression.");
+}
+
+std::string PositiveSemidefiniteConstraint::DoToLatex(
+    const VectorX<symbolic::Variable>& vars, int precision) const {
+  Eigen::Map<const MatrixX<symbolic::Variable>> S(
+      vars.data(), matrix_rows(), matrix_rows());
+  return fmt::format("{} \\succeq 0", symbolic::ToLatex(S.eval(), precision));
 }
 
 void LinearMatrixInequalityConstraint::DoEval(
@@ -599,6 +708,15 @@ LinearMatrixInequalityConstraint::LinearMatrixInequalityConstraint(
     DRAKE_ASSERT(Fi.rows() == matrix_rows_);
     DRAKE_ASSERT(math::IsSymmetric(Fi, symmetry_tolerance));
   }
+}
+
+std::string LinearMatrixInequalityConstraint::DoToLatex(
+    const VectorX<symbolic::Variable>& vars, int precision) const {
+  MatrixX<symbolic::Expression> S = F_[0];
+  for (int i = 1; i < static_cast<int>(F_.size()); ++i) {
+    S += vars(i - 1) * F_[i];
+  }
+  return fmt::format("{} \\succeq 0", symbolic::ToLatex(S, precision));
 }
 
 ExpressionConstraint::ExpressionConstraint(
@@ -690,6 +808,11 @@ std::ostream& ExpressionConstraint::DoDisplay(
   return DisplayConstraint(*this, os, "ExpressionConstraint", vars, false);
 }
 
+std::string ExpressionConstraint::DoToLatex(
+    const VectorX<symbolic::Variable>& vars, int precision) const {
+  return ToLatexConstraint(*this, vars, precision);
+}
+
 ExponentialConeConstraint::ExponentialConeConstraint(
     const Eigen::Ref<const Eigen::SparseMatrix<double>>& A,
     const Eigen::Ref<const Eigen::Vector3d>& b)
@@ -705,7 +828,7 @@ template <typename DerivedX, typename ScalarY>
 void ExponentialConeConstraint::DoEvalGeneric(
     const Eigen::MatrixBase<DerivedX>& x, VectorX<ScalarY>* y) const {
   y->resize(num_constraints());
-  Vector3<ScalarY> z = A_ * x.template cast<ScalarY>() + b_;
+  const Vector3<ScalarY> z = A_ * x.template cast<ScalarY>() + b_;
   using std::exp;
   (*y)(0) = z(0) - z(1) * exp(z(2) / z(1));
   (*y)(1) = z(1);
@@ -726,5 +849,15 @@ void ExponentialConeConstraint::DoEval(
     VectorX<symbolic::Expression>* y) const {
   DoEvalGeneric(x, y);
 }
+
+std::string ExponentialConeConstraint::DoToLatex(
+    const VectorX<symbolic::Variable>& vars, int precision) const {
+  const Vector3<symbolic::Expression> z = A_ * vars + b_;
+  return fmt::format("0 \\le {},\\\\ {} \\le {}",
+                     symbolic::ToLatex(z(1), precision),
+                     symbolic::ToLatex(z(0), precision),
+                     symbolic::ToLatex(z(1) * exp(z(2) / z(1)), precision));
+}
+
 }  // namespace solvers
 }  // namespace drake

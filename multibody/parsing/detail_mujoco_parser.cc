@@ -10,8 +10,8 @@
 #include <utility>
 #include <vector>
 
-#include <drake_vendor/tinyxml2.h>
 #include <fmt/format.h>
+#include <tinyxml2.h>
 
 #include "drake/geometry/shape_specification.h"
 #include "drake/math/rigid_transform.h"

@@ -16,10 +16,12 @@ drake_cc_package_library(
     deps = [
         ":contact_problem_graph",
         ":partial_permutation",
+        ":sap_ball_constraint",
         ":sap_constraint",
         ":sap_constraint_bundle",
         ":sap_constraint_jacobian",
         ":sap_contact_problem",
+        ":sap_coupler_constraint",
         ":sap_distance_constraint",
         ":sap_friction_cone_constraint",
         ":sap_holonomic_constraint",
@@ -103,6 +105,32 @@ drake_cc_library(
         "//common:essential",
         "//multibody/contact_solvers:block_sparse_matrix",
         "//multibody/plant:slicing_and_indexing",
+    ],
+)
+
+drake_cc_library(
+    name = "sap_ball_constraint",
+    srcs = ["sap_ball_constraint.cc"],
+    hdrs = ["sap_ball_constraint.h"],
+    deps = [
+        ":sap_constraint",
+        ":sap_constraint_jacobian",
+        ":sap_holonomic_constraint",
+        "//common:default_scalars",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "sap_coupler_constraint",
+    srcs = ["sap_coupler_constraint.cc"],
+    hdrs = ["sap_coupler_constraint.h"],
+    deps = [
+        ":sap_constraint",
+        ":sap_constraint_jacobian",
+        ":sap_holonomic_constraint",
+        "//common:default_scalars",
+        "//common:essential",
     ],
 )
 
@@ -248,6 +276,26 @@ drake_cc_googletest(
         ":sap_contact_problem",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "sap_ball_constraint_test",
+    deps = [
+        ":sap_ball_constraint",
+        ":validate_constraint_gradients",
+        "//common:pointer_cast",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "sap_coupler_constraint_test",
+    deps = [
+        ":sap_coupler_constraint",
+        ":validate_constraint_gradients",
+        "//common:pointer_cast",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 

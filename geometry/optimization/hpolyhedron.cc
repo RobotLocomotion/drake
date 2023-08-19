@@ -10,12 +10,13 @@
 #include <tuple>
 
 #include <Eigen/Eigenvalues>
-#include <drake_vendor/libqhullcpp/Coordinates.h>
-#include <drake_vendor/libqhullcpp/Qhull.h>
-#include <drake_vendor/libqhullcpp/QhullFacet.h>
-#include <drake_vendor/libqhullcpp/QhullFacetList.h>
 #include <fmt/format.h>
+#include <libqhullcpp/Coordinates.h>
+#include <libqhullcpp/Qhull.h>
+#include <libqhullcpp/QhullFacet.h>
+#include <libqhullcpp/QhullFacetList.h>
 
+#include "drake/geometry/optimization/affine_subspace.h"
 #include "drake/geometry/optimization/vpolytope.h"
 #include "drake/math/matrix_util.h"
 #include "drake/math/rotation_matrix.h"
@@ -128,12 +129,126 @@ HPolyhedron::HPolyhedron(const QueryObject<double>& query_object,
 
 HPolyhedron::HPolyhedron(const VPolytope& vpoly)
     : ConvexSet(vpoly.ambient_dimension()) {
+  // First, handle the case where the VPolytope is empty.
+  if (vpoly.IsEmpty()) {
+    if (vpoly.ambient_dimension() == 0) {
+      throw std::runtime_error(
+          "Cannot convert an empty VPolytope with ambient dimension zero into "
+          "a HPolyhedron.");
+    } else {
+      // Just create an infeasible HPolyhedron.
+      Eigen::MatrixXd A = Eigen::MatrixXd::Zero(2, vpoly.ambient_dimension());
+      Eigen::VectorXd b = Eigen::VectorXd::Zero(2);
+      // x <= 1
+      A(0, 0) = 1;
+      b[0] = 1;
+      // -x <= -2, equivalent to x >= 2
+      A(1, 0) = -1;
+      b[1] = -2;
+      *this = HPolyhedron(A, b);
+      return;
+    }
+  }
+  // Next, handle the case where the VPolytope is not full dimensional.
+  const AffineSubspace affine_hull(vpoly);
+  if (affine_hull.AffineDimension() < affine_hull.ambient_dimension()) {
+    // This special case avoids two QHull errors: QH6214 and QH6154.
+    // QH6214 is due to the VPolytope not having enough vertices to make a
+    // full dimensional simplex, and QH6154 is due to the VPolytope not being
+    // full-dimensional, because all the vertices lie along a proper affine
+    // subspace. We can handle both of these cases by projecting onto the
+    // affine hull and doing the computations there. Then, we lift back to the
+    // original space, and add hyperplanes to require the point lie on the
+    // affine subspace.
+    Eigen::MatrixXd points_local =
+        affine_hull.ToLocalCoordinates(vpoly.vertices());
+
+    // Note QHull will not function in zero or one dimensional spaces, so
+    // we handle these separately here.
+    Eigen::MatrixXd global_A;
+    Eigen::VectorXd global_b;
+    if (affine_hull.AffineDimension() == 0) {
+      // If it's just a point, then the orthogonal complement constraints
+      // will do all the work, and we can set global_A and global_b to empty.
+      global_A = Eigen::MatrixXd::Zero(0, ambient_dimension());
+      global_b = Eigen::VectorXd::Zero(0);
+    } else if (affine_hull.AffineDimension() == 1) {
+      // In this case, we have a line, so we just pick the highest and lowest
+      // points on that line (w.r.t. the direction of the one vector in the
+      // affine basis) and put hyperplanes there.
+      int min_idx, max_idx;
+      Eigen::VectorXd point_local_vector = points_local.row(0);
+
+      point_local_vector.minCoeff(&min_idx);
+      point_local_vector.maxCoeff(&max_idx);
+      Eigen::VectorXd lower_point = vpoly.vertices().col(min_idx);
+      Eigen::VectorXd upper_point = vpoly.vertices().col(max_idx);
+      Eigen::VectorXd direction = affine_hull.basis();
+
+      global_A = Eigen::MatrixXd::Zero(2, ambient_dimension());
+      global_A.row(0) = -direction;
+      global_A.row(1) = direction;
+      global_b = Eigen::VectorXd::Zero(2);
+      global_b[0] = -lower_point.dot(direction);
+      global_b[1] = upper_point.dot(direction);
+    } else {
+      // Construct a new VPolytope in the local coordinates, and then try
+      // converting it to an HPolyhedron. This VPolytope is full dimensional
+      // and has enough points for QHull, so in the subsequent call of the
+      // VPolytope -> HPolyhedron constructor, none of this conditional block
+      // is considered, and it goes directly to QHull. If QHull has additional
+      // errors besides the dimension ones, they will be caught there.
+      HPolyhedron hpoly_subspace(VPolytope{points_local});
+
+      // Now, lift the HPolyhedron to the original ambient space. A point x in
+      // R^n is projected to P(x-d), where d is the AffineSubspace translation,
+      // and P is the projection matrix associated with the basis B (so that PB
+      // is the identity matrix, mapping points in the local coordinates of the
+      // AffineSubspace to themselves, where B is the matrix whose columns are
+      // the basis vectors). Thus, an HPolyhedron in local coordinates
+      // {Ay <= b : y in R^m} can be lifted to an HPolyhedron in global
+      // coordinates by substituting P(x-d) for y. After simplification, we have
+      // {APx <= b + APd : x in R^n}.
+
+      // First, we obtain the matrix P. Because it's a linear operator, we can
+      // compute its matrix by passing in the standard basis vectors (centered
+      // at the translation of the AffineSubspace).
+      Eigen::MatrixXd P_in =
+          Eigen::MatrixXd::Identity(ambient_dimension(), ambient_dimension());
+      Eigen::MatrixXd P = affine_hull.ToLocalCoordinates(
+          P_in.colwise() + affine_hull.translation());
+
+      // Now, we construct the global versions of A and b.
+      global_A = hpoly_subspace.A() * P;
+      global_b = hpoly_subspace.b() +
+                 hpoly_subspace.A() * P * affine_hull.translation();
+    }
+
+    // Finally, we add additional constraints from the perpendicular basis. This
+    // ensures that the points in the new HPolyhedron lie along the affine hull
+    // of the VPolytope.
+    Eigen::MatrixXd perpendicular_basis =
+        affine_hull.OrthogonalComplementBasis();
+    Eigen::MatrixXd perp_A(2 * perpendicular_basis.cols(), ambient_dimension());
+    perp_A << perpendicular_basis.transpose(), -perpendicular_basis.transpose();
+    Eigen::VectorXd perp_b = perp_A * affine_hull.translation();
+
+    Eigen::MatrixXd full_A(global_A.rows() + perp_A.rows(),
+                           ambient_dimension());
+    full_A << global_A, perp_A;
+    Eigen::VectorXd full_b(global_b.size() + perp_b.size());
+    full_b << global_b, perp_b;
+    *this = HPolyhedron(full_A, full_b);
+    return;
+  }
+
+  // Now that we know that the VPolytope is full dimensional, we can call QHull.
   orgQhull::Qhull qhull;
   qhull.runQhull("", vpoly.ambient_dimension(), vpoly.vertices().cols(),
                  vpoly.vertices().data(), "");
   if (qhull.qhullStatus() != 0) {
     throw std::runtime_error(
-        fmt::format("Qhull terminated with status {} and  message:\n{}",
+        fmt::format("Qhull exited with status {} and  message:\n{}",
                     qhull.qhullStatus(), qhull.qhullMessage()));
   }
   A_.resize(qhull.facetCount(), ambient_dimension());
@@ -341,7 +456,7 @@ HPolyhedron HPolyhedron::MakeL1Ball(const int dim) {
   return {A, b};
 }
 
-bool HPolyhedron::DoIsBounded() const {
+std::optional<bool> HPolyhedron::DoIsBoundedShortcut() const {
   if (A_.rows() < A_.cols()) {
     return false;
   }

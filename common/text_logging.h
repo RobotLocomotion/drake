@@ -197,7 +197,7 @@ sink* get_dist_sink();
 ///   return data;
 /// }
 /// </pre>
-struct Warn {
+struct[[maybe_unused]] Warn {
   template <typename... Args>
   Warn(const char* a, const Args&... b) {
     // TODO(jwnimmer-tri) Ideally we would compile-time check our Warn format

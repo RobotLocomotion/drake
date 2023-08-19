@@ -7,7 +7,7 @@
 #include <utility>
 #include <vector>
 
-#include <drake_vendor/fcl/fcl.h>
+#include <fcl/fcl.h>
 #include <fmt/ostream.h>
 #include <gtest/gtest.h>
 
@@ -909,7 +909,8 @@ GTEST_TEST(ProximityEngineTests, SignedDistancePairClosestPoint) {
   {
     // I know the GeometrySet only has id_A and id_B, so I'll construct the
     // extracted set by hand.
-    auto extract_ids = [id_A, id_B](const GeometrySet&) {
+    auto extract_ids = [id_A, id_B](const GeometrySet&,
+                                    CollisionFilterScope) {
       return std::unordered_set<GeometryId>{id_A, id_B};
     };
     engine.collision_filter().Apply(
@@ -2460,7 +2461,8 @@ TEST_F(SimplePenetrationTest, WithCollisionFilters) {
 
   // I know the GeometrySet only has id_A and id_B, so I'll construct the
   // extracted set by hand.
-  auto extract_ids = [origin_id, collide_id](const GeometrySet&) {
+  auto extract_ids = [origin_id, collide_id](const GeometrySet&,
+                                             CollisionFilterScope) {
     return std::unordered_set<GeometryId>{origin_id, collide_id};
   };
   engine_.collision_filter().Apply(CollisionFilterDeclaration().ExcludeWithin(

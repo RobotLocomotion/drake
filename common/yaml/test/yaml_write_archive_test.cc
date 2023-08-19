@@ -204,6 +204,7 @@ TEST_F(YamlWriteArchiveTest, Variant) {
     EXPECT_EQ(Save(x), WrapDoc(expected));
   };
 
+  test(Variant4(std::string()), "\"\"");
   test(Variant4(std::string("foo")), "foo");
   test(Variant4(DoubleStruct{1.0}), "!DoubleStruct\n    value: 1.0");
   test(Variant4(EigenVecStruct{Eigen::Vector2d(1.0, 2.0)}),

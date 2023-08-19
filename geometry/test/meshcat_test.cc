@@ -4,10 +4,10 @@
 #include <filesystem>
 #include <thread>
 
-#include <drake_vendor/msgpack.hpp>
 #include <fmt/format.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+#include <msgpack.hpp>
 
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
@@ -107,18 +107,41 @@ GTEST_TEST(MeshcatTest, ConstructMultiple) {
   EXPECT_NE(meshcat.web_url(), meshcat2.web_url());
 }
 
-GTEST_TEST(MeshcatTest, Ports) {
-  Meshcat meshcat(7050);
-  EXPECT_EQ(meshcat.port(), 7050);
+// We'll assume that nothing else on the machine is using this port.
+// This will have false positives if something else was using the port.
+GTEST_TEST(MeshcatTest, HardCodedPort) {
+  // Use a port greater than 8000, to make sure the user can step outside our
+  // default range of [7000, 7999].
+  const int specific_port = 8422;
+  Meshcat meshcat(specific_port);
+  EXPECT_EQ(meshcat.port(), specific_port);
+}
+
+GTEST_TEST(MeshcatTest, DefaultPort) {
+  // The default constructor gets a default port.
+  Meshcat meshcat;
+  const int port = meshcat.port();
+  EXPECT_GE(port, 7000);
+  EXPECT_LE(port, 7999);
 
   // Can't open the same port twice.
-  DRAKE_EXPECT_THROWS_MESSAGE(Meshcat(7050),
+  DRAKE_EXPECT_THROWS_MESSAGE(Meshcat(port),
                               "Meshcat failed to open a websocket port.");
+}
 
-  // The default constructor gets a default port.
-  Meshcat m3;
-  EXPECT_GE(m3.port(), 7000);
-  EXPECT_LE(m3.port(), 7099);
+GTEST_TEST(MeshcatTest, EphemeralPort) {
+  // Use port 0 to choose an ephemeral port:
+  //  https://en.wikipedia.org/wiki/Ephemeral_port
+  Meshcat meshcat(0);
+  EXPECT_GE(meshcat.port(), 32768);
+
+  // Try clicking a button to make sure the number was correct.
+  meshcat.AddButton("button");
+  CheckWebsocketCommand(meshcat, R"""({
+      "type": "button",
+      "name": "button"
+    })""", {}, {});
+  EXPECT_EQ(meshcat.GetButtonClicks("button"), 1);
 }
 
 // Use a basic web_url_pattern to affect web_url() and ws_url(). The pattern

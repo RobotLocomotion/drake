@@ -120,7 +120,7 @@ std::unique_ptr<ConvexSet> AffineSubspace::DoClone() const {
   return std::make_unique<AffineSubspace>(*this);
 }
 
-bool AffineSubspace::DoIsBounded() const {
+std::optional<bool> AffineSubspace::DoIsBoundedShortcut() const {
   return basis_.cols() == 0;
 }
 
@@ -265,6 +265,23 @@ bool AffineSubspace::ContainedIn(const AffineSubspace& other,
 bool AffineSubspace::IsNearlyEqualTo(const AffineSubspace& other,
                                      double tol) const {
   return ContainedIn(other, tol) && other.ContainedIn(*this, tol);
+}
+
+Eigen::MatrixXd AffineSubspace::OrthogonalComplementBasis() const {
+  // If we have a zero-dimensional AffineSubspace (i.e. a point), the
+  // basis_decomp_ isn't constructed, and we just return a basis of the whole
+  // space.
+  if (!basis_decomp_.has_value()) {
+    return MatrixXd::Identity(ambient_dimension(), ambient_dimension());
+  }
+  // The perpendicular space is equivalent to the kernel of the QR decomposition
+  // stored in this class. So we can simply access the rightmost columns of the
+  // Q matrix, as described here:
+  // https://stackoverflow.com/questions/54766392/eigen-obtain-the-kernel-of-a-sparse-matrix
+  int perpendicular_basis_dimension = ambient_dimension() - AffineDimension();
+  MatrixXd Q = basis_decomp_.value().householderQ() *
+               MatrixXd::Identity(ambient_dimension(), ambient_dimension());
+  return Q.rightCols(perpendicular_basis_dimension);
 }
 
 }  // namespace optimization

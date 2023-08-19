@@ -41,12 +41,14 @@ namespace multibody {
 #define DRAKE_MBP_THROW_IF_NOT_FINALIZED() ThrowIfNotFinalized(__func__)
 
 using geometry::CollisionFilterDeclaration;
+using geometry::CollisionFilterScope;
 using geometry::ContactSurface;
 using geometry::FrameId;
 using geometry::FramePoseVector;
 using geometry::GeometryFrame;
 using geometry::GeometryId;
 using geometry::GeometryInstance;
+using geometry::GeometrySet;
 using geometry::PenetrationAsPointPair;
 using geometry::ProximityProperties;
 using geometry::render::RenderLabel;
@@ -969,13 +971,64 @@ void MultibodyPlant<T>::CalcForceElementsContribution(
 }
 
 template<typename T>
+void MultibodyPlant<T>::RenameModelInstance(ModelInstanceIndex model_instance,
+                                            const std::string& name) {
+  DRAKE_THROW_UNLESS(!is_finalized());
+  const std::string old_name(GetModelInstanceName(model_instance));
+  if (old_name == name) { return; }
+  this->mutable_tree().RenameModelInstance(model_instance, name);
+  if (geometry_source_is_registered()) {
+    // Re-spam frame and geometry names, if they contain the model name as
+    // constructed by GetScopedName(). Otherwise, leave non-matching names
+    // alone.
+    auto& inspector = scene_graph_->model_inspector();
+
+    // TODO(rpoyner-tri): replace with c++ built-in starts_with once we drop
+    // C++17 support.
+    auto starts_with = [](const std::string& str, const std::string& prefix) {
+      return str.compare(0, prefix.size(), prefix) == 0;
+    };
+
+    const std::string old_prefix(old_name + "::");
+    const std::string new_prefix(name + "::");
+    auto maybe_make_new_name = [&](auto id) {
+      std::string existing_name(inspector.GetName(id));
+      if (starts_with(existing_name, old_prefix)) {
+        // Replace old prefix with new prefix.
+        return new_prefix + existing_name.substr(old_prefix.size());
+      }
+      // Return empty string to signal no match found.
+      return std::string();
+    };
+
+    std::string new_name;
+    for (auto& frame_id : inspector.FramesForSource(*source_id_)) {
+      if (inspector.GetFrameGroup(frame_id) != model_instance) {
+        continue;
+      }
+      new_name = maybe_make_new_name(frame_id);
+      if (!new_name.empty()) {
+        scene_graph_->RenameFrame(frame_id, new_name);
+      }
+
+      auto geoms = inspector.GetGeometryIds(GeometrySet(frame_id));
+      for (auto& geom_id : geoms) {
+        new_name = maybe_make_new_name(geom_id);
+        if (!new_name.empty()) {
+          scene_graph_->RenameGeometry(geom_id, new_name);
+        }
+      }
+    }
+  }
+}
+
+template<typename T>
 void MultibodyPlant<T>::Finalize() {
   // After finalizing the base class, tree is read-only.
   internal::MultibodyTreeSystem<T>::Finalize();
 
   if (geometry_source_is_registered()) {
     ApplyDefaultCollisionFilters();
-    ExcludeCollisionsWithVisualGeometry();
   }
   FinalizePlantOnly();
 
@@ -1200,9 +1253,10 @@ void MultibodyPlant<T>::ApplyDefaultCollisionFilters() {
 
       if (child_id && parent_id) {
         scene_graph_->collision_filter_manager().Apply(
-            CollisionFilterDeclaration().ExcludeBetween(
-                geometry::GeometrySet(*child_id),
-                geometry::GeometrySet(*parent_id)));
+            CollisionFilterDeclaration(
+                CollisionFilterScope::kOmitDeformable)
+                .ExcludeBetween(geometry::GeometrySet(*child_id),
+                                geometry::GeometrySet(*parent_id)));
       }
     }
   }
@@ -1219,27 +1273,9 @@ void MultibodyPlant<T>::ApplyDefaultCollisionFilters() {
     }
     auto geometries = CollectRegisteredGeometries(subgraph_bodies);
     scene_graph_->collision_filter_manager().Apply(
-        CollisionFilterDeclaration().ExcludeWithin(geometries));
+        CollisionFilterDeclaration(CollisionFilterScope::kOmitDeformable)
+            .ExcludeWithin(geometries));
   }
-}
-
-template <typename T>
-void MultibodyPlant<T>::ExcludeCollisionsWithVisualGeometry() {
-  DRAKE_DEMAND(geometry_source_is_registered());
-  geometry::GeometrySet visual;
-  for (const auto& body_geometries : visual_geometries_) {
-    visual.Add(body_geometries);
-  }
-  geometry::GeometrySet collision;
-  for (const auto& body_geometries : collision_geometries_) {
-    collision.Add(body_geometries);
-  }
-  // clang-format off
-  scene_graph_->collision_filter_manager().Apply(
-      CollisionFilterDeclaration()
-          .ExcludeWithin(visual)
-          .ExcludeBetween(visual, collision));
-  // clang-format on
 }
 
 template <typename T>
@@ -1253,12 +1289,14 @@ void MultibodyPlant<T>::ExcludeCollisionGeometriesWithCollisionFilterGroupPair(
 
   if (collision_filter_group_a.first == collision_filter_group_b.first) {
     scene_graph_->collision_filter_manager().Apply(
-        CollisionFilterDeclaration().ExcludeWithin(
-            collision_filter_group_a.second));
+        CollisionFilterDeclaration(CollisionFilterScope::kOmitDeformable)
+            .ExcludeWithin(collision_filter_group_a.second));
   } else {
     scene_graph_->collision_filter_manager().Apply(
-        CollisionFilterDeclaration().ExcludeBetween(
-            collision_filter_group_a.second, collision_filter_group_b.second));
+        CollisionFilterDeclaration(
+            CollisionFilterScope::kOmitDeformable)
+            .ExcludeBetween(collision_filter_group_a.second,
+                            collision_filter_group_b.second));
   }
 }
 
@@ -1680,6 +1718,7 @@ void MultibodyPlant<T>::CalcContactResultsContinuous(
     const systems::Context<T>& context,
     ContactResults<T>* contact_results) const {
   this->ValidateContext(context);
+  DRAKE_DEMAND(!is_discrete());
   DRAKE_DEMAND(contact_results != nullptr);
   contact_results->Clear();
   contact_results->set_plant(this);
@@ -1842,14 +1881,6 @@ void MultibodyPlant<T>::AppendContactResultsContinuousPointPair(
           {bodyA_index, bodyB_index, f_Bc_W, p_WC, vn, slip_velocity, pair});
     }
   }
-}
-
-template <typename T>
-void MultibodyPlant<T>::CalcContactResultsDiscrete(
-    const systems::Context<T>& context,
-    ContactResults<T>* contact_results) const {
-  DRAKE_DEMAND(contact_results != nullptr);
-  discrete_update_manager_->CalcContactResults(context, contact_results);
 }
 
 template <typename T>
@@ -2778,12 +2809,18 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
           .get_index();
 
   // Contact results output port.
-  const auto& contact_results_cache_entry =
-      this->get_cache_entry(cache_indexes_.contact_results);
+  const systems::DependencyTicket state_ticket =
+      is_discrete() ? this->xd_ticket() : this->kinematics_ticket();
+  std::set<systems::DependencyTicket> contact_results_prerequisites = {
+      state_ticket};
+  if (is_discrete()) {
+    contact_results_prerequisites.insert(this->all_input_ports_ticket());
+    contact_results_prerequisites.insert(this->all_parameters_ticket());
+  }
   contact_results_port_ = this->DeclareAbstractOutputPort(
                                   "contact_results", ContactResults<T>(),
                                   &MultibodyPlant<T>::CopyContactResultsOutput,
-                                  {contact_results_cache_entry.ticket()})
+                                  contact_results_prerequisites)
                               .get_index();
 
   // Let external model managers declare their state, cache and ports in
@@ -2843,34 +2880,25 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
         contact_info_and_body_spatial_forces_cache_entry.cache_index();
   }
 
-  // Cache contact results.
-  // In discrete mode contact forces computation requires to advance the system
-  // from step n to n+1. Therefore they are a function of state and input.
+  // Cache contact results, for continuous plant models.
   // In continuous mode contact forces are simply a function of state.
-  std::set<systems::DependencyTicket> dependency_ticket = [this,
-                                                           use_hydroelastic]() {
-    std::set<systems::DependencyTicket> tickets;
-    if (is_discrete()) {
-      tickets.insert(systems::System<T>::xd_ticket());
-      tickets.insert(systems::System<T>::all_parameters_ticket());
-    } else {
-      tickets.insert(this->kinematics_ticket());
-      if (use_hydroelastic) {
-        tickets.insert(this->cache_entry_ticket(
-            cache_indexes_.contact_info_and_body_spatial_forces));
-      }
-    }
-    tickets.insert(this->all_parameters_ticket());
-
-    return tickets;
-  }();
-  auto& contact_results_cache_entry = this->DeclareCacheEntry(
-      std::string("Contact results."),
-      is_discrete() ?
-          &MultibodyPlant<T>::CalcContactResultsDiscrete :
-          &MultibodyPlant<T>::CalcContactResultsContinuous,
-      {dependency_ticket});
-  cache_indexes_.contact_results = contact_results_cache_entry.cache_index();
+  if (!is_discrete()) {
+    std::set<systems::DependencyTicket> dependency_ticket =
+        [this, use_hydroelastic]() {
+          std::set<systems::DependencyTicket> tickets;
+          tickets.insert(this->kinematics_ticket());
+          if (use_hydroelastic) {
+            tickets.insert(this->cache_entry_ticket(
+                cache_indexes_.contact_info_and_body_spatial_forces));
+          }
+          tickets.insert(this->all_parameters_ticket());
+          return tickets;
+        }();
+    auto& contact_results_cache_entry = this->DeclareCacheEntry(
+        std::string("Contact results (continuous)"),
+        &MultibodyPlant<T>::CalcContactResultsContinuous, {dependency_ticket});
+    cache_indexes_.contact_results = contact_results_cache_entry.cache_index();
+  }
 
   // Cache spatial continuous contact forces.
   auto& spatial_contact_forces_continuous_cache_entry = this->DeclareCacheEntry(
@@ -3155,33 +3183,35 @@ void MultibodyPlant<T>::CalcReactionForces(
   // Guard against failure to acquire the geometry input deep in the call graph.
   ValidateGeometryInput(context, get_reaction_forces_output_port());
 
-  const VectorX<T>& vdot = this->EvalForwardDynamics(context).get_vdot();
-
-  // TODO(sherm1) EvalForwardDynamics() should record the forces it used
-  //              so that we don't have to attempt to reconstruct them
-  //              here (and this is broken, see #13888).
+  // Compute the multibody forces applied during the computation of forward
+  // dynamics, consistent with the value of vdot obtained below.
   MultibodyForces<T> applied_forces(*this);
-  CalcNonContactForces(context, is_discrete(), &applied_forces);
   auto& Fapplied_Bo_W_array = applied_forces.mutable_body_forces();
   auto& tau_applied = applied_forces.mutable_generalized_forces();
-
-  // Add in forces due to contact.
-  // Only add in hydroelastic contact forces for continuous mode for now as
-  // the forces computed by CalcHydroelasticContactForces() are wrong in
-  // discrete mode. See (#13888).
-  if (!is_discrete()) {
-    CalcAndAddSpatialContactForcesContinuous(context, &Fapplied_Bo_W_array);
+  if (is_discrete()) {
+    applied_forces =
+        discrete_update_manager_->EvalDiscreteUpdateMultibodyForces(context);
   } else {
-    CalcAndAddContactForcesByPenaltyMethod(context, &Fapplied_Bo_W_array);
+    CalcNonContactForces(context, is_discrete(), &applied_forces);
+    CalcAndAddSpatialContactForcesContinuous(context, &Fapplied_Bo_W_array);
   }
 
   // Compute reaction forces at each mobilizer.
+  // N.B. For discrete systems, this approach right now evaluates Coriolis terms
+  // at the state stored in the context (previous time step). This is correct
+  // for the discrete solvers we have today, though it might change for future
+  // solvers that prefer an implicit evaluation of these terms.
+  // TODO(amcastro-tri): Consider having a
+  // DiscreteUpdateManager::EvalReactionForces() to ensure the manager performs
+  // this computation consistently with its discrete update.
+  const VectorX<T>& vdot = this->EvalForwardDynamics(context).get_vdot();
   std::vector<SpatialAcceleration<T>> A_WB_vector(num_bodies());
   std::vector<SpatialForce<T>> F_BMo_W_vector(num_bodies());
   VectorX<T> tau_id(num_velocities());
   internal_tree().CalcInverseDynamics(context, vdot, Fapplied_Bo_W_array,
                                       tau_applied, &A_WB_vector,
                                       &F_BMo_W_vector, &tau_id);
+
   // Since vdot is the result of Fapplied and tau_applied we expect the result
   // from inverse dynamics to be zero.
   // TODO(amcastro-tri): find a better estimation for this bound. For instance,

@@ -26,6 +26,7 @@ drake_cc_library(
     deps = [
         "//common:essential",
         "//common:name_value",
+        "//geometry/render:light_parameter",
         "//geometry/render:render_label",
     ],
 )
@@ -63,6 +64,7 @@ drake_cc_library(
         "@eigen",
         "@vtk//:vtkIOGeometry",
         "@vtk//:vtkIOImage",
+        "@vtk//:vtkIOImport",
         "@vtk//:vtkRenderingCore",
         "@vtk//:vtkRenderingOpenGL2",
     ],
@@ -117,6 +119,8 @@ drake_cc_googletest(
                 "RenderEngineVtkTest.DefaultProperties_RenderLabel",
                 "RenderEngineVtkTest.DifferentCameras",
                 "RenderEngineVtkTest.EllipsoidTest",
+                "RenderEngineVtkTest.FallbackLight",
+                "RenderEngineVtkTest.GltfSupport",
                 "RenderEngineVtkTest.HorizonTest",
                 "RenderEngineVtkTest.IntrinsicsAndRenderProperties",
                 "RenderEngineVtkTest.MeshTest",
@@ -159,4 +163,4 @@ drake_cc_googletest(
     ],
 )
 
-add_lint_tests(enable_clang_format_lint = False)
+add_lint_tests()

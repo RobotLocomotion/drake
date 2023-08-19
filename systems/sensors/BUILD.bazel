@@ -426,6 +426,13 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "pixel_types_test",
+    deps = [
+        ":image",
+    ],
+)
+
+drake_cc_googletest(
     name = "rgbd_sensor_test",
     tags = vtk_test_tags(),
     deps = [

@@ -589,6 +589,8 @@ void BindMathematicalProgram(py::module m) {
   prog_cls  // BR
       .def("__str__", &MathematicalProgram::to_string,
           doc.MathematicalProgram.to_string.doc)
+      .def("ToLatex", &MathematicalProgram::ToLatex, py::arg("precision") = 3,
+          doc.MathematicalProgram.ToLatex.doc)
       .def("NewContinuousVariables",
           static_cast<VectorXDecisionVariable (MathematicalProgram::*)(
               int, const std::string&)>(
@@ -882,6 +884,13 @@ void BindMathematicalProgram(py::module m) {
               &MathematicalProgram::AddLinearConstraint),
           py::arg("A"), py::arg("lb"), py::arg("ub"), py::arg("vars"),
           doc.MathematicalProgram.AddLinearConstraint.doc_4args_A_lb_ub_vars)
+      .def("AddLinearConstraint",
+          static_cast<Binding<LinearConstraint> (MathematicalProgram::*)(
+              const Eigen::Ref<const Eigen::RowVectorXd>&, double, double,
+              const Eigen::Ref<const VectorXDecisionVariable>&)>(
+              &MathematicalProgram::AddLinearConstraint),
+          py::arg("a"), py::arg("lb"), py::arg("ub"), py::arg("vars"),
+          doc.MathematicalProgram.AddLinearConstraint.doc_4args_a_lb_ub_vars)
       .def("AddLinearConstraint",
           static_cast<Binding<LinearConstraint> (MathematicalProgram::*)(
               const Expression&, double, double)>(

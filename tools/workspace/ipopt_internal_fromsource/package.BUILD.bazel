@@ -6,16 +6,8 @@ load(
     "install",
 )
 load(
-    "@drake//tools/skylark:drake_cc.bzl",
-    "cc_linkonly_library",
-)
-load(
-    "@drake//tools/workspace:cmake_configure_file.bzl",
-    "cmake_configure_file",
-)
-load(
-    "@drake//tools/workspace:vendor_cxx.bzl",
-    "cc_library_vendored",
+    "@drake//tools/workspace/coinutils_internal:defs.bzl",
+    "coin_cc_library",
 )
 
 licenses(["reciprocal"])  # EPL-2.0
@@ -264,247 +256,131 @@ _HDRS_PRIVATE = glob([
     "src/Common/IpoptConfig.h",
 ], allow_empty = False)
 
-# The next three rules are for the private flavor of IpoptConfig.h.
-#
-# The upstream IpoptConfig.h is a tricksy little beast. When compiling the
-# library source code, it refers to the configure-generated header. When
-# installing into include paths for the user, it uses something different
-# (a narrower header with just the IPOPT version numbers & etc).
-#
-# Here we'll generate the private header with the configuration we want,
-# by respelling it from autoconf to cmake and then setting our definitions.
-#
-# We can use cc_library (not cc_library_vendored) to declare the header
-# because it only has preprocessor definitions (no C++ object code).
-genrule(
-    name = "_respell_autoconf_to_cmakeconfig",
-    srcs = ["src/Common/config.h.in"],
-    outs = ["src/Common/config.h.in.cmake"],
-    cmd = "sed -e 's|#undef \\(.*\\)|#cmakedefine \\1 @\\1@|' $< > $@",
-)
+_AUTOCONF_DEFINES = [
+    "IPOPT_VERSION=\"drake_vendor\"",
+    # Features of the standard library and/or host system.
+    "HAVE_CFLOAT=1",
+    "HAVE_CMATH=1",
+    "HAVE_FLOAT_H=1",
+    "HAVE_INTTYPES_H=1",
+    "HAVE_MATH_H=1",
+    "HAVE_STDINT_H=1",
+    "HAVE_STDIO_H=1",
+    "HAVE_STDLIB_H=1",
+    "HAVE_STRINGS_H=1",
+    "HAVE_STRING_H=1",
+    "HAVE_SYS_STAT_H=1",
+    "HAVE_SYS_TYPES_H=1",
+    "HAVE_UNISTD_H=1",
+    "HAVE_VSNPRINTF=1",
+    "IPOPT_C_FINITE=std::isfinite",
+    "IPOPT_HAS_RAND=1",
+    "IPOPT_HAS_STD__RAND=1",
+    "IPOPT_HAS_VA_COPY=1",
+    "STDC_HEADERS=1",
+    # Optional dependencies that we do actually want to use.
+    "IPOPT_HAS_LAPACK=1",
+    "IPOPT_HAS_MUMPS=1",
+    # No debug self-checks (the default).
+    "IPOPT_CHECKLEVEL=0",
+    "IPOPT_VERBOSITY=0",
+    # These are no-ops, but they can't be omitted.
+    "HSLLIB_EXPORT=",
+    "IPOPTAMPLINTERFACELIB_EXPORT=",
+    "IPOPTLIB_EXPORT=__attribute__ ((visibility (\"hidden\")))",
+    "SIPOPTAMPLINTERFACELIB_EXPORT=",
+    "SIPOPTLIB_EXPORT=",
+]
 
-cmake_configure_file(
-    name = "_configure",
-    src = ":src/Common/config.h.in.cmake",
-    out = "hdr_private/IpoptConfig.h",
-    defines = [
-        "IPOPT_VERSION=\"drake_vendor\"",
-        # Features of the standard library and/or host system.
-        "HAVE_CFLOAT=1",
-        "HAVE_CIEEEFP=1",
-        "HAVE_CMATH=1",
-        "HAVE_FLOAT_H=1",
-        "HAVE_IEEEFP_H=1",
-        "HAVE_INTTYPES_H=1",
-        "HAVE_MATH_H=1",
-        "HAVE_STDINT_H=1",
-        "HAVE_STDIO_H=1",
-        "HAVE_STDLIB_H=1",
-        "HAVE_STRINGS_H=1",
-        "HAVE_STRING_H=1",
-        "HAVE_SYS_STAT_H=1",
-        "HAVE_SYS_TYPES_H=1",
-        "HAVE_UNISTD_H=1",
-        "HAVE_VSNPRINTF=1",
-        "IPOPT_C_FINITE=std::isfinite",
-        "IPOPT_HAS_RAND=1",
-        "IPOPT_HAS_STD__RAND=1",
-        "IPOPT_HAS_VA_COPY=1",
-        "STDC_HEADERS=1",
-        # Optional dependencies that we do actually want to use.
-        "IPOPT_HAS_LAPACK=1",
-        "IPOPT_HAS_MUMPS=1",
-        # No debug self-checks (the default).
-        "IPOPT_CHECKLEVEL=0",
-        "IPOPT_VERBOSITY=0",
-        # These are no-ops, but they can't be omitted.
-        "HSLLIB_EXPORT=",
-        "IPOPTAMPLINTERFACELIB_EXPORT=",
-        "IPOPTLIB_EXPORT=__attribute__ ((visibility (\"hidden\")))",
-        "SIPOPTAMPLINTERFACELIB_EXPORT=",
-        "SIPOPTLIB_EXPORT=",
-    ],
-    undefines = [
-        # Don't use these features of the standard library and/or host system.
-        "CXX_NO_MINUS_C_MINUS_O",
-        "F77_DUMMY_MAIN",
-        "F77_FUNC",
-        "F77_FUNC_",
-        "F77_NO_MINUS_C_MINUS_O",
-        "FC_DUMMY_MAIN_EQ_F77",
-        "HAVE_DLFCN_H",
-        "HAVE__VSNPRINTF",
-        "IPOPT_HAS_DRAND48",
-        "IPOPT_HAS_FEENABLEEXCEPT",
-        "IPOPT_INT64",
-        "IPOPT_SINGLE",
-        # Optional dependencies that we don't use.
-        "BUILD_INEXACT",
-        "HAVE_MPI_INITIALIZED",
-        "HAVE_WINDOWS_H",
-        "IPOPT_HAS_ASL",
-        "IPOPT_HAS_HSL",
-        "IPOPT_HAS_LINEARSOLVERLOADER",
-        "IPOPT_HAS_PARDISO_MKL",
-        "IPOPT_HAS_SPRAL",
-        "IPOPT_HAS_WSMP",
-        "IPOPT_HSL_FUNC",
-        "IPOPT_HSL_FUNC_",
-        "IPOPT_MPIINIT",
-        "IPOPT_WSMP_FUNC",
-        "IPOPT_WSMP_FUNC_",
-        "PARDISO_LIB",
-        # Chaff that's not used by the C++ code anyway.
-        "IPOPT_LAPACK_FUNC_",
-        "IPOPT_VERSION_MAJOR",
-        "IPOPT_VERSION_MINOR",
-        "IPOPT_VERSION_RELEASE",
-        "LT_OBJDIR",
-        "PACKAGE_BUGREPORT",
-        "PACKAGE_NAME",
-        "PACKAGE_STRING",
-        "PACKAGE_TARNAME",
-        "PACKAGE_URL",
-        "PACKAGE_VERSION",
-        "SIZEOF_INT_P",
-        # This is actually used by the C++ code, but cmake_configure_file can't
-        # handle it. We'll use `defines = []` for this instead (see below).
-        "IPOPT_LAPACK_FUNC",
-    ],
-    strict = True,
-)
+_AUTOCONF_UNDEFINES = [
+    # Don't use these features of the standard library and/or host system.
+    "HAVE_CIEEEFP",
+    "HAVE_IEEEFP_H",
+    "CXX_NO_MINUS_C_MINUS_O",
+    "F77_DUMMY_MAIN",
+    "F77_FUNC",
+    "F77_FUNC_",
+    "F77_NO_MINUS_C_MINUS_O",
+    "FC_DUMMY_MAIN_EQ_F77",
+    "HAVE_CIEEEFP",
+    "HAVE_DLFCN_H",
+    "HAVE_IEEEFP_H",
+    "HAVE__VSNPRINTF",
+    "IPOPT_HAS_DRAND48",
+    "IPOPT_HAS_FEENABLEEXCEPT",
+    "IPOPT_INT64",
+    "IPOPT_SINGLE",
+    # Optional dependencies that we don't use.
+    "BUILD_INEXACT",
+    "HAVE_MPI_INITIALIZED",
+    "HAVE_WINDOWS_H",
+    "IPOPT_HAS_ASL",
+    "IPOPT_HAS_HSL",
+    "IPOPT_HAS_LINEARSOLVERLOADER",
+    "IPOPT_HAS_PARDISO_MKL",
+    "IPOPT_HAS_SPRAL",
+    "IPOPT_HAS_WSMP",
+    "IPOPT_HSL_FUNC",
+    "IPOPT_HSL_FUNC_",
+    "IPOPT_MPIINIT",
+    "IPOPT_WSMP_FUNC",
+    "IPOPT_WSMP_FUNC_",
+    "PARDISO_LIB",
+    # Chaff that's not used by the C++ code anyway.
+    "IPOPT_LAPACK_FUNC_",
+    "IPOPT_VERSION_MAJOR",
+    "IPOPT_VERSION_MINOR",
+    "IPOPT_VERSION_RELEASE",
+    "LT_OBJDIR",
+    "PACKAGE_BUGREPORT",
+    "PACKAGE_NAME",
+    "PACKAGE_STRING",
+    "PACKAGE_TARNAME",
+    "PACKAGE_URL",
+    "PACKAGE_VERSION",
+    "SIZEOF_INT_P",
+    # This is actually used by the C++ code, but autoconf_configure_file can't
+    # handle it. We'll use _CONFIG_PRIVATE_DEFINES for this instead, below.
+    "IPOPT_LAPACK_FUNC",
+]
 
-cc_library(
-    name = "_ipopt_config_private",
-    hdrs = [":hdr_private/IpoptConfig.h"],
-    strip_include_prefix = "hdr_private",
-    defines = [
-        "IPOPT_LAPACK_FUNC(name,NAME)=name##_",
-    ],
-    linkstatic = True,
-)
+_CONFIG_PRIVATE_DEFINES = [
+    "IPOPT_LAPACK_FUNC(name,NAME)=name##_",
+]
 
-# Compile all of the object code for the library.
-cc_library_vendored(
-    name = "_build",
+coin_cc_library(
+    name = "ipopt",
+    config_h = "IpoptConfig.h",
+    config_h_public = "src/Common/config_ipopt_default.h",
+    config_h_private = "src/Common/config.h.in",
+    autoconf_defines = _AUTOCONF_DEFINES,
+    autoconf_undefines = _AUTOCONF_UNDEFINES,
+    config_private_defines = _CONFIG_PRIVATE_DEFINES,
+    hdrs_public = _HDRS_PUBLIC,
+    includes_public = _INCLUDES_PUBLIC,
+    hdrs_private = _HDRS_PRIVATE,
+    includes_private = _INCLUDES_PRIVATE,
     srcs = _SRCS,
-    srcs_vendored = [
-        x.replace("src/", "drake_src/")
-        for x in _SRCS
-    ],
-    hdrs = _HDRS_PRIVATE,
-    hdrs_vendored = [
-        x.replace("src/", "drake_src/")
-        for x in _HDRS_PRIVATE
-    ],
-    includes = [
-        x.replace("src/", "drake_src/")
-        for x in _INCLUDES_PRIVATE
-    ],
-    vendor_tool_args = [
-        "--no-inline-namespace",
-    ],
-    linkstatic = True,
+    vendor_tool_args = ["--no-inline-namespace"],
+    output_vendoring_patch = "drake_ipopt.patch",
     deps = [
-        ":_ipopt_config_private",
         "@blas",
         "@lapack",
         "@mumps_internal//:dmumps_seq",
     ],
-)
-
-# Discard the headers, leaving only the object code.
-cc_linkonly_library(
-    name = "_objs",
-    deps = [":_build"],
-)
-
-# The next two rules are for the public flavor of IpoptConfig.h.
-#
-# We can use cc_library (not cc_library_vendored) to declare the header
-# because it only has preprocessor definitions (no C++ object code).
-genrule(
-    name = "_ipopt_config_public_genrule",
-    srcs = ["src/Common/config_ipopt_default.h"],
-    outs = ["hdr_public/IpoptConfig.h"],
-    cmd = "cp $< $@",
-)
-
-cc_library(
-    name = "_ipopt_config_public",
-    hdrs = [":hdr_public/IpoptConfig.h"],
-    strip_include_prefix = "hdr_public",
-    linkstatic = True,
-)
-
-# Assemble the public headers + object code into the library Drake will use.
-cc_library_vendored(
-    name = "ipopt",
-    hdrs = _HDRS_PUBLIC,
-    hdrs_vendored = [
-        x.replace("src/", "drake_hdr/")
-        for x in _HDRS_PUBLIC
-    ],
-    includes = [
-        x.replace("src/", "drake_hdr/")
-        for x in _INCLUDES_PUBLIC
-    ],
-    vendor_tool_args = [
-        "--no-inline-namespace",
-    ],
-    linkstatic = True,
-    deps = [
-        ":_ipopt_config_public",
-        ":_objs",
-    ],
     visibility = ["//visibility:public"],
-)
-
-# The next three stanzas create a patch file of our diffs to install alongside
-# our binaries (which is required by Ipopt's EPL-2.0 license).
-_DIFF_INPUTS = [
-    ("src/Common/config.h.in", "hdr_private/IpoptConfig.h"),
-] + zip(
-    _SRCS + _HDRS_PRIVATE,
-    [
-        x.replace("src/", "drake_src/")
-        for x in _SRCS + _HDRS_PRIVATE
-    ],
-)
-
-[
-    genrule(
-        name = "genrule_{}_patch".format(vendor_src),
-        srcs = [upstream_src, vendor_src],
-        outs = [vendor_src + ".patch"],
-        cmd = " ".join([
-            "(diff -u0",
-            "--label={upstream_src} $(execpath {upstream_src})",
-            "--label={vendor_src} $(execpath {vendor_src})",
-            "> $@ || [[ $$? == 1 ]])",
-        ]).format(
-            upstream_src = upstream_src,
-            vendor_src = vendor_src,
-        ),
-    )
-    for upstream_src, vendor_src in _DIFF_INPUTS
-]
-
-genrule(
-    name = "genrule_full_patch",
-    srcs = [
-        vendor_src + ".patch"
-        for (_, vendor_src) in _DIFF_INPUTS
-    ],
-    outs = ["drake_ipopt.patch"],
-    cmd = "cat $(SRCS) > $@",
 )
 
 install(
     name = "install",
     docs = [
         "LICENSE",
+        # We must redistribute our code changes, per Ipopt's EPL-2.0 license.
         ":drake_ipopt.patch",
+        "@drake//tools/workspace/ipopt_internal_fromsource:patches",
+    ],
+    allowed_externals = [
+        "@drake//tools/workspace/ipopt_internal_fromsource:patches",
     ],
     visibility = ["//visibility:public"],
 )

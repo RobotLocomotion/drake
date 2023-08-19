@@ -242,8 +242,8 @@ class ContactSurface {
                  std::unique_ptr<TriangleSurfaceMeshFieldLinear<T, T>> e_MN,
                  std::unique_ptr<std::vector<Vector3<T>>> grad_eM_W = nullptr,
                  std::unique_ptr<std::vector<Vector3<T>>> grad_eN_W = nullptr)
-    : ContactSurface(id_M, id_N, std::move(mesh_W), std::move(e_MN),
-                     std::move(grad_eM_W), std::move(grad_eN_W), 1) {}
+      : ContactSurface(id_M, id_N, std::move(mesh_W), std::move(e_MN),
+                       std::move(grad_eM_W), std::move(grad_eN_W), 1) {}
 
   /** Constructs a %ContactSurface with a polygonal mesh representation. */
   ContactSurface(GeometryId id_M, GeometryId id_N,
@@ -251,8 +251,8 @@ class ContactSurface {
                  std::unique_ptr<PolygonSurfaceMeshFieldLinear<T, T>> e_MN,
                  std::unique_ptr<std::vector<Vector3<T>>> grad_eM_W = nullptr,
                  std::unique_ptr<std::vector<Vector3<T>>> grad_eN_W = nullptr)
-    : ContactSurface(id_M, id_N, std::move(mesh_W), std::move(e_MN),
-                     std::move(grad_eM_W), std::move(grad_eN_W), 1) {}
+      : ContactSurface(id_M, id_N, std::move(mesh_W), std::move(e_MN),
+                       std::move(grad_eM_W), std::move(grad_eN_W), 1) {}
 
   //@}
 
@@ -462,7 +462,11 @@ class ContactSurface {
     // TODO(SeanCurtis-TRI): Determine if this work is necessary. It is neither
     // documented nor tested that the face winding is guaranteed to be one way
     // or the other. Alternatively, this should be documented and tested.
-    std::visit([](auto&& mesh) { mesh->ReverseFaceWinding(); }, mesh_W_);
+    std::visit(
+        [](auto&& mesh) {
+          mesh->ReverseFaceWinding();
+        },
+        mesh_W_);
 
     // Note: the scalar field does not depend on the order of M and N.
     std::swap(grad_eM_W_, grad_eN_W_);
@@ -486,7 +490,8 @@ class ContactSurface {
   std::unique_ptr<std::vector<Vector3<T>>> grad_eM_W_;
   std::unique_ptr<std::vector<Vector3<T>>> grad_eN_W_;
 
-  template <typename U> friend class ContactSurfaceTester;
+  template <typename U>
+  friend class ContactSurfaceTester;
 };
 
 }  // namespace geometry

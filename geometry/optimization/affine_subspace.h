@@ -125,10 +125,14 @@ class AffineSubspace final : public ConvexSet {
    * that each set is contained in the other. */
   bool IsNearlyEqualTo(const AffineSubspace& other, double tol = 1e-15) const;
 
+  /** Returns an orthonormal basis of the vector subspace which is perpendicular
+   * to this AffineSubspace.*/
+  Eigen::MatrixXd OrthogonalComplementBasis() const;
+
  private:
   std::unique_ptr<ConvexSet> DoClone() const final;
 
-  bool DoIsBounded() const final;
+  std::optional<bool> DoIsBoundedShortcut() const final;
 
   bool DoIsEmpty() const final;
 

@@ -4,6 +4,7 @@
 
 #include "drake/common/drake_throw.h"
 #include "drake/common/nice_type_name.h"
+#include "drake/common/symbolic/latex.h"
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
@@ -49,6 +50,33 @@ std::ostream& EvaluatorBase::DoDisplay(
   os << "\n";
 
   return os;
+}
+
+std::string EvaluatorBase::ToLatex(const VectorX<symbolic::Variable>& vars,
+                                   int precision) const {
+  const int num_vars = this->num_vars();
+  DRAKE_THROW_UNLESS(vars.rows() == num_vars || num_vars == Eigen::Dynamic);
+  std::string tag = "";
+  if (!get_description().empty()) {
+    tag = fmt::format(" \\tag{{{}}}", get_description());
+  }
+  return this->DoToLatex(vars, precision) + tag;
+}
+
+std::string EvaluatorBase::DoToLatex(const VectorX<symbolic::Variable>& vars,
+                                     int) const {
+  // Fall back to the default display if no latex display is provided.
+  const int vars_rows = vars.rows();
+  std::stringstream ss;
+  ss << "\\text{" << NiceTypeName::RemoveNamespaces(NiceTypeName::Get(*this))
+     << "}(";
+  for (int i = 0; i < vars_rows; ++i) {
+    if (i > 0) { ss << ", "; }
+    ss << symbolic::ToLatex(vars(i));
+  }
+  ss << ")";
+
+  return ss.str();
 }
 
 namespace {

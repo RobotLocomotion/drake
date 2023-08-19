@@ -1,6 +1,9 @@
 #pragma once
+
+#include <array>
 #include <map>
 #include <memory>
+#include <optional>
 #include <utility>
 #include <vector>
 
@@ -103,6 +106,67 @@ void SolveSeparationCertificateProgramBase(
     const FindSeparationCertificateOptions& options,
     const CSpaceSeparatingPlane<symbolic::Variable>& separating_plane,
     SeparationCertificateResultBase* result);
+
+// Returns the total size of the lower triangular variables in the Gram
+// matrices. Each Gram matrix should match with the monomial basis in
+// `monomial_basis_array`. Depending on whether we include y in the
+// indeterminates (see Options::with_cross_y for more details) and the size of
+// y, the number of Gram matrices will change.
+// @param monomial_basis The candidate monomial_basis for all gram matricies.
+// @param with_cross_y See Options::with_cross_y
+// @param num_y The size of y indterminates.
+int GetGramVarSize(
+    const std::array<VectorX<symbolic::Monomial>, 4>& monomial_basis_array,
+    bool with_cross_y, int num_y);
+
+// Given the monomial_basis_array, compute the sos polynomial.
+// monomial_basis_array contains [m(s), y₀*m(s), y₁*m(s), y₂*m(s)].
+//
+// If num_y == 0, then the sos polynomial is just
+// m(s)ᵀ * X * m(s)
+// where X is a Gram matrix, `grams` is a length-1 vector containing X.
+//
+// If num_y != 0 and with_cross_y = true, then the sos polynomial is
+// ⌈    m(s)⌉ᵀ * Y * ⌈    m(s)⌉
+// | y₀*m(s)|        | y₀*m(s)|
+// |   ...  |        |   ...  |
+// ⌊ yₙ*m(s)⌋        ⌊ yₙ*m(s)⌋
+// where n = num_y-1. Y is a Gram matrix, `grams` is a length-1 vector
+// containing Y.
+//
+// if num_y != 0 and with_cross_y = false, then the sos polynomial is
+// ∑ᵢ ⌈    m(s)⌉ᵀ * Zᵢ * ⌈    m(s)⌉
+//    ⌊ yᵢ*m(s)⌋         ⌊ yᵢ*m(s)⌋
+// where Zᵢ is a Gram matrix, i = 0, ..., num_y-1.  `grams` is a vector of
+// length `num_y`, and grams[i] = Zᵢ
+struct GramAndMonomialBasis {
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(GramAndMonomialBasis)
+
+  GramAndMonomialBasis(
+      const std::array<VectorX<symbolic::Monomial>, 4>& monomial_basis_array,
+      bool with_cross_y, int num_y);
+
+  // Adds the constraint that the polynomial represented by this Gram and
+  // monomial basis is sos.
+  void AddSos(solvers::MathematicalProgram* prog,
+              const Eigen::Ref<const VectorX<symbolic::Variable>>& gram_lower,
+              symbolic::Polynomial* poly);
+
+  int gram_var_size;
+  std::vector<MatrixX<symbolic::Variable>> grams;
+  std::vector<VectorX<symbolic::Monomial>> monomial_basis;
+};
+
+// Solves an optimization problem. If the optimization problem has a cost, then
+// after we find the optimal solution for that cost (where the optimal solution
+// would be on the boundary of the feasible set), we back-off a little bit and
+// only find a strictly feasible solution in the strict interior of the
+// feasible set. This helps the next iteration of the bilinear alternation.
+// @note that `prog` will be mutated after this function call if it has a cost.
+solvers::MathematicalProgramResult SolveWithBackoff(
+    solvers::MathematicalProgram* prog, std::optional<double> backoff_scale,
+    const std::optional<solvers::SolverOptions>& solver_options,
+    const solvers::SolverId& solver_id);
 
 }  // namespace internal
 }  // namespace optimization

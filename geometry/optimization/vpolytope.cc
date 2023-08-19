@@ -9,9 +9,9 @@
 #include <numeric>
 #include <string>
 
-#include <drake_vendor/libqhullcpp/Qhull.h>
-#include <drake_vendor/libqhullcpp/QhullVertexSet.h>
 #include <fmt/format.h>
+#include <libqhullcpp/Qhull.h>
+#include <libqhullcpp/QhullVertexSet.h>
 
 #include "drake/common/is_approx_equal_abstol.h"
 #include "drake/geometry/read_obj.h"
@@ -336,7 +336,7 @@ std::unique_ptr<ConvexSet> VPolytope::DoClone() const {
   return std::make_unique<VPolytope>(*this);
 }
 
-bool VPolytope::DoIsBounded() const {
+std::optional<bool> VPolytope::DoIsBoundedShortcut() const {
   return true;
 }
 

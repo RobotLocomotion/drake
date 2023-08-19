@@ -350,5 +350,4 @@ add_lint_tests(
         "no_factory.cc",
         "factory.cc",
     ],
-    enable_clang_format_lint = False,
 )

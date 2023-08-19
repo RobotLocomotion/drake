@@ -5,7 +5,7 @@
 #include <utility>
 #include <vector>
 
-#include <drake_vendor/fcl/fcl.h>
+#include <fcl/fcl.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/expect_no_throw.h"
@@ -211,7 +211,8 @@ class TestScene {
     // Filter the pair (A, B); we'll put the ids in a set and simply return that
     // set for the extract ids function.
     std::unordered_set<GeometryId> ids{data_A.id(), data_B.id()};
-    CollisionFilter::ExtractIds extract = [&ids](const GeometrySet&) {
+    CollisionFilter::ExtractIds extract = [&ids](const GeometrySet&,
+                                                 CollisionFilterScope) {
       return ids;
     };
     collision_filter_.Apply(CollisionFilterDeclaration().ExcludeWithin(

@@ -15,17 +15,32 @@ namespace {
 GTEST_TEST(SymbolicLatex, BasicTest) {
   Variable x{"x"}, y{"y"};
   Variable b("b", Variable::Type::BOOLEAN);
+  const double kInf = std::numeric_limits<double>::infinity();
 
   // Expressions
   EXPECT_EQ(ToLatex(x), "x");
+  EXPECT_EQ(ToLatex(0.0), "0");
   EXPECT_EQ(ToLatex(1.0), "1");
   EXPECT_EQ(ToLatex(1.0, 1), "1");
   EXPECT_EQ(ToLatex(1.01), "1.010");
   EXPECT_EQ(ToLatex(1.01, 1), "1.0");
+  EXPECT_EQ(ToLatex(4e9), "4000000000");
+  EXPECT_EQ(ToLatex(kInf - kInf), "\\text{NaN}");
+  EXPECT_EQ(ToLatex(kInf), "\\infty");
+  EXPECT_EQ(ToLatex(-kInf), "-\\infty");
+  EXPECT_EQ(ToLatex(M_PI), "\\pi");
+  EXPECT_EQ(ToLatex(-M_PI), "-\\pi");
+  EXPECT_EQ(ToLatex(14.0 * M_PI), "14\\pi");
+  EXPECT_EQ(ToLatex(0 * M_PI), "0");
+  EXPECT_EQ(ToLatex(M_PI + 1e-16, 3), "\\pi");
+  EXPECT_EQ(ToLatex(M_PI + 1e-13, 3), "3.142");
+  EXPECT_EQ(ToLatex(M_PI - 1e-16, 3), "\\pi");
+  EXPECT_EQ(ToLatex(M_PI - 1e-13, 3), "3.142");
+  EXPECT_EQ(ToLatex(-7.0 * M_E), "-7e");
   EXPECT_EQ(ToLatex(x + y), "(x + y)");
   EXPECT_EQ(ToLatex(x + 2.3), "(2.300 + x)");
   EXPECT_EQ(ToLatex(x - y), "(x - y)");
-  EXPECT_EQ(ToLatex(x - 2*y), "(x - 2y)");
+  EXPECT_EQ(ToLatex(x - 2 * y), "(x - 2y)");
   EXPECT_EQ(ToLatex(2 * x + 3 * x + 4 * y), "(5x + 4y)");
   EXPECT_EQ(ToLatex(2.1 * x + 3.2 * y * y, 1), "(2.1x + 3.2y^{2})");
   EXPECT_EQ(ToLatex(x * pow(y, 2)), "x y^{2}");
@@ -92,10 +107,9 @@ GTEST_TEST(SymbolicLatex, BasicTest) {
       R"""(\begin{bmatrix} x & 2.3 y \\ 2.3 y & (x + y) \end{bmatrix})""");
 
   // Formula with a PSD Matrix.
-  EXPECT_EQ(
-      ToLatex(positive_semidefinite(Me), 1),
-      R"""(\begin{bmatrix} x & 2.3 y \\ 2.3 y & (x + y) \end{bmatrix})"""
-      R"""( \succeq 0)""");
+  EXPECT_EQ(ToLatex(positive_semidefinite(Me), 1),
+            R"""(\begin{bmatrix} x & 2.3 y \\ 2.3 y & (x + y) \end{bmatrix})"""
+            R"""( \succeq 0)""");
 }
 
 GTEST_TEST(SymbolicLatex, MatrixSubscripts) {

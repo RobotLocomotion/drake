@@ -21,7 +21,7 @@
 
 #include "drake/common/drake_throw.h"
 #include "drake/common/fmt_eigen.h"
-#include "drake/multibody/parsing/scoped_names.h"
+#include "drake/planning/linear_distance_and_interpolation_provider.h"
 
 namespace drake {
 namespace planning {
@@ -42,6 +42,75 @@ using multibody::ModelInstanceIndex;
 using multibody::MultibodyPlant;
 using multibody::world_model_instance;
 using systems::Context;
+
+namespace {
+// TODO(calderpg-tri, jwnimmer-tri) Remove unnecessary helpers once standalone
+// distance and interpolation functions are no longer supported.
+void SanityCheckConfigurationDistanceFunction(
+    const ConfigurationDistanceFunction& distance_function,
+    const Eigen::VectorXd& default_configuration) {
+  const double test_distance =
+      distance_function(default_configuration, default_configuration);
+  DRAKE_THROW_UNLESS(test_distance == 0.0);
+}
+
+void SanityCheckConfigurationInterpolationFunction(
+    const ConfigurationInterpolationFunction& interpolation_function,
+    const Eigen::VectorXd& default_configuration) {
+  const Eigen::VectorXd test_interpolated_q =
+      interpolation_function(default_configuration, default_configuration, 0.0);
+  DRAKE_THROW_UNLESS(test_interpolated_q.size() ==
+                     default_configuration.size());
+  for (int index = 0; index < test_interpolated_q.size(); ++index) {
+    DRAKE_THROW_UNLESS(test_interpolated_q(index) ==
+                       default_configuration(index));
+  }
+}
+
+class LegacyDistanceAndInterpolationProvider final
+    : public DistanceAndInterpolationProvider {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LegacyDistanceAndInterpolationProvider);
+
+  LegacyDistanceAndInterpolationProvider(
+      const ConfigurationDistanceFunction& distance_function,
+      const ConfigurationInterpolationFunction& interpolation_function)
+      : distance_function_(distance_function),
+        interpolation_function_(interpolation_function) {
+    DRAKE_THROW_UNLESS(distance_function_ != nullptr);
+    DRAKE_THROW_UNLESS(interpolation_function_ != nullptr);
+  }
+
+  std::shared_ptr<const LegacyDistanceAndInterpolationProvider>
+  WithConfigurationDistanceFunction(
+      const ConfigurationDistanceFunction& distance_function) const {
+    return std::make_shared<LegacyDistanceAndInterpolationProvider>(
+        distance_function, interpolation_function_);
+  }
+
+  std::shared_ptr<const LegacyDistanceAndInterpolationProvider>
+  WithConfigurationInterpolationFunction(
+      const ConfigurationInterpolationFunction& interpolation_function) const {
+    return std::make_shared<LegacyDistanceAndInterpolationProvider>(
+        distance_function_, interpolation_function);
+  }
+
+ private:
+  double DoComputeConfigurationDistance(const Eigen::VectorXd& from,
+                                        const Eigen::VectorXd& to) const final {
+    return distance_function_(from, to);
+  }
+
+  Eigen::VectorXd DoInterpolateBetweenConfigurations(
+      const Eigen::VectorXd& from, const Eigen::VectorXd& to,
+      double ratio) const final {
+    return interpolation_function_(from, to, ratio);
+  }
+
+ private:
+  const ConfigurationDistanceFunction distance_function_;
+  const ConfigurationInterpolationFunction interpolation_function_;
+};
 
 // Default interpolator; it uses SLERP for quaternion-valued groups of dofs and
 // LERP for everything else. See the documentation in CollisionChecker's
@@ -70,21 +139,9 @@ MakeDefaultConfigurationInterpolationFunction(
 
 std::vector<int> GetQuaternionDofStartIndices(
     const MultibodyPlant<double>& plant) {
-  // TODO(SeanCurtis-TRI) Body::has_quaternion_dofs() is actually a misnomer for
-  // is_quaternion_floating(). The name implies general quaternion awareness but
-  // its documentation doesn't guarantee that. We should re-express this in
-  // terms of joints so that we can catch quaternions in any kind of joint.
-  std::vector<int> quaternion_dof_start_indices;
-  for (BodyIndex body_index(0); body_index < plant.num_bodies(); ++body_index) {
-    const auto& body = plant.get_body(body_index);
-    if (body.has_quaternion_dofs()) {
-      quaternion_dof_start_indices.push_back(body.floating_positions_start());
-    }
-  }
-  return quaternion_dof_start_indices;
+  return LinearDistanceAndInterpolationProvider(plant)
+      .quaternion_dof_start_indices();
 }
-
-namespace {
 
 // Returns the set of indices in `q` that kinematically affect the robot model
 // but that are not a part of the robot dofs (e.g., a floating or mobile base).
@@ -517,13 +574,42 @@ std::vector<uint8_t> CollisionChecker::CheckConfigsCollisionFree(
   return collision_checks;
 }
 
+void CollisionChecker::SetDistanceAndInterpolationProvider(
+    std::shared_ptr<const DistanceAndInterpolationProvider> provider) {
+  DRAKE_THROW_UNLESS(provider != nullptr);
+
+  const Eigen::VectorXd& default_q = GetDefaultConfiguration();
+
+  const double test_distance =
+      provider->ComputeConfigurationDistance(default_q, default_q);
+  DRAKE_THROW_UNLESS(test_distance == 0.0);
+
+  const Eigen::VectorXd test_interpolated_q =
+      provider->InterpolateBetweenConfigurations(default_q, default_q, 0.0);
+  DRAKE_THROW_UNLESS(test_interpolated_q.size() == default_q.size());
+  for (int index = 0; index < test_interpolated_q.size(); ++index) {
+    DRAKE_THROW_UNLESS(test_interpolated_q(index) == default_q(index));
+  }
+
+  distance_and_interpolation_provider_ = std::move(provider);
+}
+
 void CollisionChecker::SetConfigurationDistanceFunction(
     const ConfigurationDistanceFunction& distance_function) {
+  auto legacy =
+      std::dynamic_pointer_cast<const LegacyDistanceAndInterpolationProvider>(
+          distance_and_interpolation_provider_);
+  if (legacy == nullptr) {
+    throw std::logic_error(
+        "CollisionChecker::SetConfigurationDistanceFunction() "
+        "is not supported after a DistanceAndInterpolationProvider "
+        "has already been set.");
+  }
   DRAKE_THROW_UNLESS(distance_function != nullptr);
-  const double test_distance =
-      distance_function(GetDefaultConfiguration(), GetDefaultConfiguration());
-  DRAKE_THROW_UNLESS(test_distance == 0.0);
-  configuration_distance_function_ = distance_function;
+  SanityCheckConfigurationDistanceFunction(distance_function,
+                                           GetDefaultConfiguration());
+  distance_and_interpolation_provider_ =
+      legacy->WithConfigurationDistanceFunction(distance_function);
 }
 
 ConfigurationDistanceFunction
@@ -535,21 +621,25 @@ CollisionChecker::MakeStandaloneConfigurationDistanceFunction() const {
 
 void CollisionChecker::SetConfigurationInterpolationFunction(
     const ConfigurationInterpolationFunction& interpolation_function) {
+  auto legacy =
+      std::dynamic_pointer_cast<const LegacyDistanceAndInterpolationProvider>(
+          distance_and_interpolation_provider_);
+  if (legacy == nullptr) {
+    throw std::logic_error(
+        "CollisionChecker::SetConfigurationInterpolationFunction() "
+        "is not supported after a DistanceAndInterpolationProvider "
+        "has already been set.");
+  }
   if (interpolation_function == nullptr) {
     SetConfigurationInterpolationFunction(
         MakeDefaultConfigurationInterpolationFunction(
             GetQuaternionDofStartIndices(plant())));
     return;
   }
-  const Eigen::VectorXd test_interpolated_q = interpolation_function(
-      GetDefaultConfiguration(), GetDefaultConfiguration(), 0.0);
-  DRAKE_THROW_UNLESS(test_interpolated_q.size() ==
-                     GetDefaultConfiguration().size());
-  for (int index = 0; index < test_interpolated_q.size(); ++index) {
-    DRAKE_THROW_UNLESS(test_interpolated_q(index) ==
-                       GetDefaultConfiguration()(index));
-  }
-  configuration_interpolation_function_ = interpolation_function;
+  SanityCheckConfigurationInterpolationFunction(interpolation_function,
+                                                GetDefaultConfiguration());
+  distance_and_interpolation_provider_ =
+      legacy->WithConfigurationInterpolationFunction(interpolation_function);
 }
 
 ConfigurationInterpolationFunction
@@ -818,16 +908,43 @@ CollisionChecker::CollisionChecker(CollisionCheckerParams params,
   // Initialize the collision padding matrix.
   collision_padding_ =
       Eigen::MatrixXd::Zero(plant().num_bodies(), plant().num_bodies());
-  // Set parameters with safety checks.
-  SetConfigurationDistanceFunction(
-      std::move(params.configuration_distance_function));
-  set_edge_step_size(params.edge_step_size);
   SetPaddingAllRobotEnvironmentPairs(params.env_collision_padding);
   SetPaddingAllRobotRobotPairs(params.self_collision_padding);
-  // Generate the default interpolation function.
-  SetConfigurationInterpolationFunction(
-      MakeDefaultConfigurationInterpolationFunction(
-          GetQuaternionDofStartIndices(plant())));
+
+  // Set distance and interpolation provider/functions.
+  const bool params_has_provider =
+      params.distance_and_interpolation_provider != nullptr;
+  const bool params_has_distance_function =
+      params.configuration_distance_function != nullptr;
+
+  if (params_has_provider && params_has_distance_function) {
+    throw std::runtime_error(
+        "CollisionCheckerParams may contain either "
+        "distance_and_interpolation_provider != nullptr "
+        "or distance_function != nullptr, not both");
+  }
+
+  if (params_has_provider) {
+    SetDistanceAndInterpolationProvider(
+        std::move(params.distance_and_interpolation_provider));
+  } else if (params_has_distance_function) {
+    SanityCheckConfigurationDistanceFunction(
+        params.configuration_distance_function, GetDefaultConfiguration());
+    // Generate the default interpolation function.
+    const ConfigurationInterpolationFunction default_interpolation_fn =
+        MakeDefaultConfigurationInterpolationFunction(
+            GetQuaternionDofStartIndices(plant()));
+    distance_and_interpolation_provider_ =
+        std::make_unique<LegacyDistanceAndInterpolationProvider>(
+            params.configuration_distance_function, default_interpolation_fn);
+  } else {
+    SetDistanceAndInterpolationProvider(
+        std::make_unique<LinearDistanceAndInterpolationProvider>(plant()));
+  }
+
+  // Set edge step size.
+  set_edge_step_size(params.edge_step_size);
+
   // Generate the filtered collision matrix.
   nominal_filtered_collisions_ = GenerateFilteredCollisionMatrix();
   filtered_collisions_ = nominal_filtered_collisions_;

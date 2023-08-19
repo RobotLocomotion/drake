@@ -12,7 +12,7 @@
 namespace drake {
 namespace geometry {
 namespace render {
-namespace  {
+namespace {
 
 class RenderLabelTests : public ::testing::Test {
  protected:

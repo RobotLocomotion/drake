@@ -19,12 +19,30 @@ _STLS = glob(
 _OBJS = [x[:-3] + "obj" for x in _STLS]
 
 [
+    # Recall this about genrules:
+    #
+    # - `srcs` are built for the "target" configuration, which is what all of
+    #   our other programs and tests use; these will have a nice warm cache.
+    #
+    # - `tools` are built for the "exec" configuration, which is only ever used
+    #   for genrules (or `tools` for any other flavor of rule); any large
+    #   programs here will be costly to rebuild completely from scratch just
+    #   for the genrule.
+    #
+    # Therefore, we add `stl2obj` as `srcs` (not `tools`) to avoid building it
+    # in the "exec" configuration all by its lonesome self. We want to use the
+    # same build of its dependencies as all of our regular code, for a smaller
+    # footprint and better caching.
     genrule(
         name = obj + "_genrule",
-        srcs = [stl],
+        srcs = [stl] + ["//manipulation/util:stl2obj"],
         outs = [obj],
-        cmd = "$(location //manipulation/util:stl2obj) --input $< --output $@",
-        tools = ["//manipulation/util:stl2obj"],
+        cmd = " ".join([
+            "env TSAN_OPTIONS=report_bugs=0",
+            "$(location //manipulation/util:stl2obj)",
+            "--input=$(location {})".format(stl),
+            "--output=$@",
+        ]),
         visibility = ["//visibility:private"],
     )
     for stl, obj in zip(_STLS, _OBJS)

@@ -1,6 +1,6 @@
 #include "drake/geometry/proximity/distance_to_point_callback.h"
 
-#include <drake_vendor/fcl/fcl.h>
+#include <fcl/fcl.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/fmt_eigen.h"

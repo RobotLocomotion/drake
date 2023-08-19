@@ -15,9 +15,9 @@ namespace geometry {
 namespace render_gl {
 namespace internal {
 
-using geometry::internal::RenderMesh;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
+using geometry::internal::RenderMesh;
 using std::vector;
 
 namespace {
@@ -101,7 +101,7 @@ RenderMesh MakeRevoluteShape(int rotate_sample_count, int curve_sample_count,
 
   /* Computes the vertex position for the index `v` of the vertex in the ring,
    v ∈ [0, R] (inclusive), with the given z-value and ring radius r.  */
-  auto make_vertex = [delta_theta](int v, double v_z, double r)  {
+  auto make_vertex = [delta_theta](int v, double v_z, double r) {
     const double theta = v * delta_theta;
     const double v_x = r * std::cos(theta);
     const double v_y = r * std::sin(theta);
@@ -247,7 +247,7 @@ RenderMesh MakeLongLatUnitSphere(int longitude_bands, int latitude_bands) {
     DRAKE_DEMAND(ring_i >= 0 && ring_i <= latitude_bands);
     return ::cosf(ring_i * delta_phi);
   };
-  auto calc_radius_i = [calc_z_i, latitude_bands](int ring_i) -> double{
+  auto calc_radius_i = [calc_z_i, latitude_bands](int ring_i) -> double {
     DRAKE_DEMAND(ring_i >= 0 && ring_i <= latitude_bands);
     if (ring_i == 0 || ring_i == latitude_bands) return 0;
     const double z_i = calc_z_i(ring_i);
@@ -481,7 +481,7 @@ RenderMesh MakeUnitCylinder(int num_strips, int num_bands) {
    face. Even if the cylinder is scaled to arbitrary radius/length this
    mapping will still be true.  */
   const int ring_size = num_strips + 1;
-  const double arc_length = 3;  /* Two radii + length.  */
+  const double arc_length = 3; /* Two radii + length.  */
   int uv_index = 0;
   /* North pole.  */
   full_mesh_data.uvs.row(uv_index) << 0, 1;
@@ -819,7 +819,7 @@ RenderMesh MakeCapsule(int samples, double radius, double length) {
       c = v + 1 - R
     */
   int capsule_t = hemisphere_tri_count;
-  int v = H + ring_size;      /* the "first" vertex of the southern equator.  */
+  int v = H + ring_size; /* the "first" vertex of the southern equator.  */
   for (int i = 0; i < samples; ++i, ++v, capsule_t += 2) {
     data.indices.row(capsule_t) << v, v + 1, v - ring_size;
     data.indices.row(capsule_t + 1) << v + 1, v + 1 - ring_size, v - ring_size;

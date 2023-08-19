@@ -135,6 +135,8 @@ the main body of the document:
    3. Click "Build with Parameters".
    4. Change "sha1" to the full **git sha** corresponding to ``v1.N.0`` and
       "release_version" to ``1.N.0`` (no "v").
+      - If you mistakenly provide the "v" in "release_version", your build will
+        appear to work, but actually fail 5-6 minutes later.
    5. Click "Build"; each build will take around an hour, give or take.
    6. Note: The macOS wheel jobs will produce one `.whl` file, whereas the linux
       job will produce multiple `.whl` files (in the same job).
@@ -171,14 +173,18 @@ the main body of the document:
       prior release's web page and click "Edit" to get the markdown), with
       appropriate edits as follows:
       * The version number
-   5. Into the box labeled "Attach binaries by dropping them here or selecting
-      them.", drag and drop the 36 release files from
-      ``/tmp/drake-release/v1.N.0``:
+   5. Click the box labeled "Attach binaries by dropping them here or selecting
+      them." and then choose for upload the 36 release files from
+      ``/tmp/drake-release/v1.N.0/...``:
       - 12: 4 `.tar.gz` + 8 checksums
       - 6: 2 `.deb` + 4 checksums
       - 12: 4 linux `.whl` + 8 checksums
       - 3: 1 macOS x86 `.whl` + 2 checksums
       - 3: 1 macOS arm `.whl` + 2 checksums
+      * Note that on Jammy with `snap` provided Firefox, drag-and-drop from
+        Nautilus will fail, and drop all of your release page inputs typed so
+        far. Use the Firefox-provided selection dialog instead, by clicking on
+        the box.
    6. Choose "Save draft" and take a deep breath.
 8. Once the documentation build finishes, release!
    1. Check that the link to drake.mit.edu docs from the GitHub release draft
@@ -187,8 +193,11 @@ the main body of the document:
    3. Notify `@BetsyMcPhail` by creating a GitHub issue asking her to manually 
       tag docker images and upload the releases to S3. Be sure to provide her 
       with the release tag in the same ping.
-   4. Announce on Drake Slack, ``#general``.
-   5. Party on, Wayne.
+   4. Create a GitHub issue on the [drake-ros](https://github.com/RobotLocomotion/drake-ros/issues)
+      repository, requesting an update of the `DRAKE_SUGGESTED_VERSION`
+      constant.
+   5. Announce on Drake Slack, ``#general``.
+   6. Party on, Wayne.
 
 ## Post-release wheel upload
 
@@ -197,6 +206,13 @@ After tagging the release, you must manually upload a PyPI release.
 If you haven't done so already, follow Drake's PyPI
 [account setup](https://docs.google.com/document/d/17D0yzyr0kGH44eWpiNY7E33A8hW1aiJRmADaoAlVISE/edit#)
 instructions to obtain a username and password.
+
+Most likely, you will want to use an api token to authenticate yourself to the
+``twine`` uploader. See <https://pypi.org/help/#apitoken> and <https://packaging.python.org/en/latest/guides/distributing-packages-using-setuptools/#create-an-account>
+for advice on managing api tokens.
+
+For Jammy (and later?), ``apt install twine`` gives a perfectly adequate
+version of ``twine``.
 
 1. Run ``twine`` to upload the wheel release, as follows:
 
@@ -272,13 +288,13 @@ the email address associated with your github account.
          the option vanishes and the notebook completes.
       4. The ``rendering_multibody_plant`` sometimes crashes with an interrupted
          error. In that case, click through to the "Environment" gear in the
-         right-hand panel, then into the ``init.ipynb`` notebook and re-run the
+         left-hand panel, then into the ``init.ipynb`` notebook and re-run the
          initialization. Then go back to  ``rendering_multibody_plant`` and try
          again.
    2. To deploy run each of the ~2 dozen notebooks (i.e., do this step for
       ``authoring_leaf_system`` then ``authoring_multibody_simulation`` then
       ... etc.):
-      1. In the right-hand panel of your screen, take note that each notebook
+      1. In the left-hand panel of your screen, take note that each notebook
          appears in two places -- in "NOTEBOOKS" near the top and in "FILES"
          near the bottom. The "NOTEBOOKS" is the old copy; the "FILES" is the
          new copy. Our goal is to replace the old copy with the new.
@@ -307,6 +323,6 @@ the email address associated with your github account.
       10. The moved notebook no longer appears in "FILES", so you can always
           use the top-most ``*.ipynb`` in "FILES" as your checklist for which
           one to tackle next.
-6. On the right side, click "Environment" then "Stop Machine", as a
+6. On the left side, click "Environment" then "Stop Machine", as a
    courtesy. (It will time out on its own within the hour, but we might as
    well save a few nanograms of CO2 where we can.)

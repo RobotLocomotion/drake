@@ -257,16 +257,10 @@ cc_library_vendored(
     ],
     hdrs = _HDRS,
     hdrs_vendored = [
-        x.replace("include/sdf/", "drake_src/drake_vendor/sdf/")
+        x.replace("include/sdf/", "drake_hdr/sdf/")
         for x in _HDRS
     ],
-    edit_include = {
-        "sdf/": "drake_vendor/sdf/",
-        "gz/math/": "drake_vendor/gz/math/",
-        "gz/utils/": "drake_vendor/gz/utils/",
-        "tinyxml2": "drake_vendor/tinyxml2",
-    },
-    includes = ["drake_src"],
+    includes = ["drake_hdr"],
     copts = ["-w"],
     defines = ["SDFORMAT_STATIC_DEFINE", "SDFORMAT_DISABLE_CONSOLE_LOGFILE"],
     linkstatic = 1,
@@ -294,10 +288,6 @@ cc_library_vendored(
         x.replace("src/", "drake_src/src/")
         for x in _IGN_CMDLINE_SRCS
     ],
-    edit_include = {
-        "sdf/": "drake_vendor/sdf/",
-        "gz/math/": "drake_vendor/gz/math/",
-    },
     copts = ["-w"],
     linkstatic = 1,
     visibility = ["@drake//tools/workspace/sdformat_internal:__pkg__"],

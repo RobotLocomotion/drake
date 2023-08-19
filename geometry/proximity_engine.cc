@@ -10,7 +10,7 @@
 #include <utility>
 #include <vector>
 
-#include <drake_vendor/fcl/fcl.h>
+#include <fcl/fcl.h>
 #include <fmt/format.h>
 
 #include "drake/common/default_scalars.h"
@@ -776,7 +776,8 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   void ComputeDeformableContact(
       DeformableContact<double>* deformable_contact) const {
     *deformable_contact =
-        geometries_for_deformable_contact_.ComputeDeformableContact();
+        geometries_for_deformable_contact_.ComputeDeformableContact(
+            collision_filter_);
   }
 
   // Testing utilities

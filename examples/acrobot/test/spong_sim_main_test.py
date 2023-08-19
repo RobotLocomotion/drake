@@ -58,10 +58,10 @@ class TestRunSpongControlledAcrobot(unittest.TestCase):
         # semantics; just check that we have the right data shape and type.
         dump = load_scenario(filename=dump_file)
         self.assertEqual(len(dump["controller_params"]), 4)
-        self.assertTrue(all(type(x) == float
+        self.assertTrue(all(type(x) is float
                             for x in dump["controller_params"]))
         self.assertEqual(len(dump["initial_state"]), 4)
-        self.assertTrue(all(type(x) == float
+        self.assertTrue(all(type(x) is float
                             for x in dump["initial_state"]))
 
 

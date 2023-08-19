@@ -553,6 +553,15 @@ class GeometryStateTestBase {
     return source_id_;
   }
 
+  template <typename PropertyType>
+  void AssignRoleToSingleSourceTree(const PropertyType& properties) {
+    ASSERT_TRUE(source_id_.is_valid());
+    for (GeometryId id : geometries_) {
+      geometry_state_.AssignRole(source_id_, id, properties);
+    }
+    geometry_state_.AssignRole(source_id_, anchored_geometry_, properties);
+  }
+
   // This function sets up a dummy GeometryState that contains both rigid
   // (non-deformable) and deformable geometries to facilitate testing.
   SourceId SetUpWithRigidAndDeformableGeometries() {
@@ -678,15 +687,6 @@ class GeometryStateTestBase {
     // get thrown out.
     properties.AddProperty("test", "value", 17);
     AssignRoleToSingleSourceTree(properties);
-  }
-
-  template <typename PropertyType>
-  void AssignRoleToSingleSourceTree(const PropertyType& properties) {
-    ASSERT_TRUE(source_id_.is_valid());
-    for (GeometryId id : geometries_) {
-      geometry_state_.AssignRole(source_id_, id, properties);
-    }
-    geometry_state_.AssignRole(source_id_, anchored_geometry_, properties);
   }
 };
 
@@ -919,6 +919,39 @@ TEST_F(GeometryStateTest, GetOwningSourceName) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       geometry_state_.GetOwningSourceName(GeometryId::get_new_id()),
       "Geometry id .* does not map to a registered geometry");
+}
+
+TEST_F(GeometryStateTest, RenameFrame) {
+  SetUpSingleSourceTree();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.RenameFrame(FrameId::get_new_id(), "invalid"),
+      ".*Cannot rename.*invalid frame id:.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.RenameFrame(frames_[0], "f1"),
+      ".*already existing.*");
+
+  // Renaming a frame to its existing name does not cause errors.
+  std::string original_name0(geometry_state_.GetName(frames_[0]));
+  geometry_state_.RenameFrame(frames_[0], original_name0);
+  EXPECT_EQ(geometry_state_.GetName(frames_[0]), original_name0);
+
+  geometry_state_.RenameFrame(frames_[0], "something");
+  EXPECT_EQ(geometry_state_.GetName(frames_[0]), "something");
+}
+
+TEST_F(GeometryStateTest, RenameGeometry) {
+  SetUpSingleSourceTree();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.RenameGeometry(GeometryId::get_new_id(), "invalid"),
+      ".*Cannot rename.*invalid geometry id:.*");
+
+  // Renaming a geometry to its existing name does not cause errors.
+  std::string original_name0(geometry_state_.GetName(geometries_[0]));
+  geometry_state_.RenameGeometry(geometries_[0], original_name0);
+  EXPECT_EQ(geometry_state_.GetName(geometries_[0]), original_name0);
+
+  geometry_state_.RenameGeometry(geometries_[0], "something");
+  EXPECT_EQ(geometry_state_.GetName(geometries_[0]), "something");
 }
 
 // Compares the transmogrified geometry state (embedded in its tester) against
@@ -2550,6 +2583,73 @@ TEST_F(GeometryStateTest, NonProximityRoleInCollisionFilter) {
           GeometrySet{added_id}, GeometrySet{anchored_geometry_}));
   pairs = geometry_state_.ComputePointPairPenetration();
   EXPECT_EQ(static_cast<int>(pairs.size()), expected_collisions);
+}
+
+// Tests two aspects of GeometryState collision filter behavior:
+//
+//   1. No collision filters are applied to a deformable geometry (it and the
+//      anchored geometry are both registered to the world frame) automatically.
+//   2. GeometryState::CollectIds() respects the scope parameter in applying
+//      collision filters.
+//
+// This is tested by calling ComputeDeformableContact(). In its initial state,
+// we should report contact between a massive deformable geometry and *all*
+// rigid geometries. Then applying a collision filter between the deformable
+// geometry and one of the rigid geometries will reduce the number of contacts
+// by one.
+TEST_F(GeometryStateTest, CollisionFilterRespectsScope) {
+  SourceId s_id = SetUpSingleSourceTree();
+
+  // Give all rigid geometries resolution hint so that they can collide with
+  // deformable geometries.
+  ProximityProperties rigid_properties;
+  rigid_properties.AddProperty(internal::kHydroGroup, internal::kRezHint, 10.0);
+  AssignRoleToSingleSourceTree(rigid_properties);
+
+  // Pose all of the frames to the specified poses in their parent frame.
+  FramePoseVector<double> poses;
+  for (int f = 0; f < static_cast<int>(frames_.size()); ++f) {
+    poses.set_value(frames_[f], X_PFs_[f]);
+  }
+  gs_tester_.SetFramePoses(source_id_, poses,
+                           &gs_tester_.mutable_kinematics_data());
+  gs_tester_.FinalizePoseUpdate();
+
+  // Register a giant deformable geometry that's guaranteed to be in collision
+  // with every single rigid geometry.
+  const Sphere sphere(200.0);
+  constexpr double kRezHint = 100.0;
+  auto instance = make_unique<GeometryInstance>(
+      RigidTransformd::Identity(), make_unique<Sphere>(sphere), "deformable");
+  instance->set_proximity_properties(ProximityProperties());
+  GeometryId deformable_id = geometry_state_.RegisterDeformableGeometry(
+      s_id, InternalFrame::world_frame_id(), std::move(instance), kRezHint);
+  internal::DeformableContact<double> contacts;
+  geometry_state_.ComputeDeformableContact(&contacts);
+  EXPECT_EQ(contacts.contact_surfaces().size(),
+            single_tree_total_geometry_count());
+
+  // Attempting to filter collisions with scope omitting deformable geometries
+  // should have no effect on the number of collisions.
+  geometry_state_.collision_filter_manager().Apply(
+      CollisionFilterDeclaration(CollisionFilterScope::kOmitDeformable)
+          .ExcludeBetween(GeometrySet{deformable_id},
+                          GeometrySet(geometries_)));
+  geometry_state_.ComputeDeformableContact(&contacts);
+  EXPECT_EQ(contacts.contact_surfaces().size(),
+            single_tree_total_geometry_count());
+
+  // Filter with the kAll flag as the scope should have an effect. The collision
+  // between the deformable geometry and one dynamic rigid geometry and one
+  // anchored rigid geometry are filtered, so the number of collisions should
+  // reduce by 2.
+  geometry_state_.collision_filter_manager().Apply(
+      CollisionFilterDeclaration(CollisionFilterScope::kAll)
+          .ExcludeBetween(GeometrySet{deformable_id},
+                          GeometrySet({geometries_[0], anchored_geometry_})));
+  geometry_state_.ComputeDeformableContact(&contacts);
+  EXPECT_EQ(contacts.contact_surfaces().size(),
+            single_tree_total_geometry_count() - 2);
 }
 
 // Test that the appropriate error messages are dispatched.

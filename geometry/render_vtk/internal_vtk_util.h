@@ -40,11 +40,10 @@ vtkSmartPointer<vtkTransform> ConvertToVtkTransform(
 //
 // @tparam transform The transform to convert into a `vtkTransform`.
 template <typename T, typename... Ts, size_t N = 1 + sizeof...(Ts)>
-const vtkPointerArray<T, N> MakeVtkPointerArray(
-    const vtkNew<T>& element, const vtkNew<Ts>&... elements) {
-  return vtkPointerArray<T, N>{{
-      vtkSmartPointer<T>(element.GetPointer()),
-      vtkSmartPointer<Ts>(elements.GetPointer())...}};
+const vtkPointerArray<T, N> MakeVtkPointerArray(const vtkNew<T>& element,
+                                                const vtkNew<Ts>&... elements) {
+  return vtkPointerArray<T, N>{{vtkSmartPointer<T>(element.GetPointer()),
+                                vtkSmartPointer<Ts>(elements.GetPointer())...}};
 }
 
 }  // namespace internal

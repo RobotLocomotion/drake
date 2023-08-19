@@ -3,6 +3,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/symbolic_test_util.h"
 #include "drake/geometry/optimization/cspace_free_internal.h"
 #include "drake/geometry/optimization/test/c_iris_test_utilities.h"
 #include "drake/multibody/rational/rational_forward_kinematics_internal.h"
@@ -43,6 +44,15 @@ class CspaceFreePolytopeBaseTester {
   const std::unordered_map<SortedPair<multibody::BodyIndex>, std::vector<int>>&
   map_body_pair_to_s_on_chain() const {
     return cspace_free_polytope_base_.map_body_pair_to_s_on_chain();
+  }
+
+  template <typename T>
+  void CalcSBoundsPolynomial(
+      const VectorX<T>& s_box_lower, const VectorX<T>& s_box_upper,
+      VectorX<symbolic::Polynomial>* s_minus_s_lower,
+      VectorX<symbolic::Polynomial>* s_upper_minus_s) const {
+    return cspace_free_polytope_base_.CalcSBoundsPolynomial<T>(
+        s_box_lower, s_box_upper, s_minus_s_lower, s_upper_minus_s);
   }
 
  private:
@@ -176,6 +186,49 @@ TEST_F(CIrisToyRobotTest, CspaceFreePolytopeBaseConstructor2) {
   check_plane_s(body2_sphere_, body3_box_,
                 symbolic::Variables({s(0), s(1), s(2)}));
 }
+
+TEST_F(CIrisToyRobotTest, CalcSBoundsPolynomial) {
+  const Eigen::Vector3d q_star(0, 0, 0);
+  CspaceFreePolytopeBaseTester tester(
+      plant_, scene_graph_, SeparatingPlaneOrder::kAffine,
+      CspaceFreePolytopeDummy::SForPlane::kOnChain);
+  VectorX<symbolic::Polynomial> s_minus_s_lower;
+  VectorX<symbolic::Polynomial> s_upper_minus_s;
+  // Test with double.
+  Eigen::Vector3d s_lower(-1, -2, -3);
+  Eigen::Vector3d s_upper(0, -1, 2);
+  tester.CalcSBoundsPolynomial<double>(s_lower, s_upper, &s_minus_s_lower,
+                                       &s_upper_minus_s);
+  const auto& s = tester.cspace_free_polytope_base().rational_forward_kin().s();
+  for (int i = 0; i < 3; ++i) {
+    EXPECT_PRED2(symbolic::test::PolyEqual, s_minus_s_lower(i),
+                 symbolic::Polynomial((s(i) - s_lower(i))));
+    EXPECT_PRED2(symbolic::test::PolyEqual, s_upper_minus_s(i),
+                 symbolic::Polynomial((s_upper(i) - s(i))));
+  }
+  // Test with s_lower and s_upper being symbolic
+  const Vector3<symbolic::Variable> s_lower_sym =
+      symbolic::MakeVectorContinuousVariable(3, "s_lower");
+  const Vector3<symbolic::Variable> s_upper_sym =
+      symbolic::MakeVectorContinuousVariable(3, "s_upper");
+  tester.CalcSBoundsPolynomial<symbolic::Variable>(
+      s_lower_sym, s_upper_sym, &s_minus_s_lower, &s_upper_minus_s);
+  EXPECT_EQ(s_minus_s_lower.rows(), 3);
+  EXPECT_EQ(s_upper_minus_s.rows(), 3);
+  for (int i = 0; i < 3; ++i) {
+    EXPECT_TRUE(
+        s_minus_s_lower(i).decision_variables().include(s_lower_sym(i)));
+    EXPECT_TRUE(
+        s_upper_minus_s(i).decision_variables().include(s_upper_sym(i)));
+    EXPECT_PRED2(symbolic::test::PolyEqual, s_minus_s_lower(i),
+                 symbolic::Polynomial(s(i) - s_lower_sym(i),
+                                      symbolic::Variables({s(i)})));
+    EXPECT_PRED2(symbolic::test::PolyEqual, s_upper_minus_s(i),
+                 symbolic::Polynomial(s_upper_sym(i) - s(i),
+                                      symbolic::Variables({s(i)})));
+  }
+}
+
 }  // namespace optimization
 }  // namespace geometry
 }  // namespace drake

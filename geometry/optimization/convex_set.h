@@ -81,13 +81,17 @@ class ConvexSet : public ShapeReifier {
   /** Returns true iff the set is bounded, e.g., there exists an element-wise
   finite lower and upper bound for the set.  Note: for some derived classes,
   this check is trivial, but for others it can require solving an (typically
-  small) optimization problem.  Check the derived class documentation for any
-  notes. When ambient_dimension is zero, always returns true. */
+  small) optimization problem. Check the derived class documentation for any
+  notes. */
   bool IsBounded() const {
     if (ambient_dimension() == 0) {
       return true;
     }
-    return DoIsBounded();
+    const auto shortcut_result = DoIsBoundedShortcut();
+    if (shortcut_result.has_value()) {
+      return shortcut_result.value();
+    }
+    return GenericDoIsBounded();
   }
 
   /** Returns true iff the set is empty. Note: for some derived classes, this
@@ -243,9 +247,13 @@ class ConvexSet : public ShapeReifier {
   /** Non-virtual interface implementation for Clone(). */
   virtual std::unique_ptr<ConvexSet> DoClone() const = 0;
 
-  /** Non-virtual interface implementation for IsBounded().
+  /** Non-virtual interface implementation for DoIsBoundedShortcut(). Trivially
+  returns std::nullopt. This allows a derived class to implement its own
+  boundedness checks, to potentially avoid the more expensive base class checks.
   @pre ambient_dimension() >= 0 */
-  virtual bool DoIsBounded() const = 0;
+  virtual std::optional<bool> DoIsBoundedShortcut() const {
+    return std::nullopt;
+  }
 
   /** Non-virtual interface implementation for IsEmpty(). The default
   implementation solves a feasibility optimization problem, but derived
@@ -330,6 +338,10 @@ class ConvexSet : public ShapeReifier {
       std::vector<solvers::Binding<solvers::Constraint>>* constraints) const;
 
  private:
+  /** Generic implementation for IsBounded() -- applicable for all convex sets.
+  @pre ambient_dimension() >= 0 */
+  bool GenericDoIsBounded() const;
+
   // The reset_after_move wrapper adjusts ConvexSet's default move constructor
   // and move assignment operator to set the ambient dimension of a moved-from
   // object back to zero. This is essential to keep the ambient dimension in

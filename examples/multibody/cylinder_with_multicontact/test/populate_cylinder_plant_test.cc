@@ -65,8 +65,11 @@ GTEST_TEST(PopulateCylinderPlant, VerifyPlant) {
 
   EXPECT_EQ(M_Bcm_B.get_mass(), mass);
   EXPECT_EQ(M_Bcm_B.get_com(), Vector3d::Zero());
-  EXPECT_EQ(M_Bcm_B.get_unit_inertia().get_moments(),
-            Vector3d(G_perp, G_perp, G_axis));
+
+  // An empirical tolerance: two bits = 2^2 times machine epsilon.
+  const double kTolerance = 4 * std::numeric_limits<double>::epsilon();
+  EXPECT_TRUE(CompareMatrices(M_Bcm_B.get_unit_inertia().get_moments(),
+                              Vector3d(G_perp, G_perp, G_axis), kTolerance));
   EXPECT_EQ(M_Bcm_B.get_unit_inertia().get_products(), Vector3d::Zero());
 
   // TODO(amcastro-tri): Verify geometry including:

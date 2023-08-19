@@ -200,6 +200,10 @@ class TestPlant(unittest.TestCase):
         body_default_rotational_inertial = body.default_rotational_inertia()
         body_default_spatial_inertial = body.default_spatial_inertia()
         new_model_instance = plant.AddModelInstance("new_model_instance")
+        plant.RenameModelInstance(model_instance=new_model_instance,
+                                  name="something")
+        plant.RenameModelInstance(model_instance=new_model_instance,
+                                  name="new_model_instance")
         body = plant.AddRigidBody(name="new_body_2",
                                   M_BBo_B=spatial_inertia,
                                   model_instance=new_model_instance)
@@ -405,6 +409,8 @@ class TestPlant(unittest.TestCase):
         self.assertIs(
             link1_frame,
             plant.GetFrameByName(name="Link1", model_instance=model_instance))
+        self.assertEqual(
+            len(plant.GetFrameIndices(model_instance=model_instance)), 7)
         self.assertIs(link1.GetParentPlant(), plant)
         self.assertTrue(plant.HasModelInstanceNamed(name="acrobot"))
         self.assertEqual(
@@ -727,26 +733,54 @@ class TestPlant(unittest.TestCase):
         self.assertIsInstance(UnitInertia.SolidBox(Lx=1, Ly=2, Lz=3),
                               UnitInertia)
         self.assertIsInstance(UnitInertia.SolidCube(L=2), UnitInertia)
-        self.assertIsInstance(UnitInertia.SolidCylinder(r=1.5, L=2),
+        self.assertIsInstance(UnitInertia.SolidCylinder(
+                                  radius=1.5, length=2, unit_vector=[0, 0, 1]),
                               UnitInertia)
-        self.assertIsInstance(
-            UnitInertia.SolidCylinder(r=1.5, L=2, b_E=[1, 2, 3]), UnitInertia)
-        self.assertIsInstance(UnitInertia.SolidCapsule(r=1, L=2), UnitInertia)
-        self.assertIsInstance(UnitInertia.SolidCapsule(r=1, L=2,
-                                                       unit_vector=[0, 0, 1]),
+        with catch_drake_warnings(expected_count=1):
+            self.assertIsInstance(UnitInertia.SolidCylinder(r=1.5, L=2),
+                                  UnitInertia)
+        with catch_drake_warnings(expected_count=1):
+            self.assertIsInstance(UnitInertia.SolidCylinder(
+                                      r=1.5, L=2, b_E=[1, 2, 3]),
+                                  UnitInertia)
+        self.assertIsInstance(UnitInertia.SolidCapsule(
+                                  radius=1, length=2, unit_vector=[0, 0, 1]),
                               UnitInertia)
+        with catch_drake_warnings(expected_count=1):
+            self.assertIsInstance(UnitInertia.SolidCapsule(r=1, L=2),
+                                  UnitInertia)
+        with catch_drake_warnings(expected_count=1):
+            self.assertIsInstance(UnitInertia.SolidCapsule(
+                                      r=1, L=2, unit_vector=[0, 0, 1]),
+                                  UnitInertia)
         self.assertIsInstance(UnitInertia.SolidCylinderAboutEnd(
             radius=0.1, length=0.4, unit_vector=[0, 0, 1]),
                               UnitInertia)
         with catch_drake_warnings(expected_count=1):
             self.assertIsInstance(UnitInertia.SolidCylinderAboutEnd(r=1, L=4),
                                   UnitInertia)
-        self.assertIsInstance(
-            UnitInertia.AxiallySymmetric(J=1, K=2, b_E=[1, 2, 3]), UnitInertia)
-        self.assertIsInstance(UnitInertia.StraightLine(K=1.5, b_E=[1, 2, 3]),
+        self.assertIsInstance(UnitInertia.AxiallySymmetric(
+                                  moment_parallel=1, moment_perpendicular=2,
+                                  unit_vector=[0, 0, 1]),
                               UnitInertia)
-        self.assertIsInstance(UnitInertia.ThinRod(L=1.5, b_E=[1, 2, 3]),
+        with catch_drake_warnings(expected_count=1):
+            self.assertIsInstance(UnitInertia.AxiallySymmetric(
+                                      J=1, K=2, b_E=[1, 2, 3]),
+                                  UnitInertia)
+        self.assertIsInstance(UnitInertia.StraightLine(
+                                  moment_perpendicular=1.5,
+                                  unit_vector=[0, 0, 1]),
                               UnitInertia)
+        with catch_drake_warnings(expected_count=1):
+            self.assertIsInstance(UnitInertia.StraightLine(
+                                      K=1.5, b_E=[1, 2, 3]),
+                                  UnitInertia)
+        self.assertIsInstance(UnitInertia.ThinRod(
+                                  length=1.5, unit_vector=[0, 0, 1]),
+                              UnitInertia)
+        with catch_drake_warnings(expected_count=1):
+            self.assertIsInstance(UnitInertia.ThinRod(L=1.5, b_E=[1, 2, 3]),
+                                  UnitInertia)
 
     @numpy_compare.check_all_types
     def test_spatial_inertia_api(self, T):

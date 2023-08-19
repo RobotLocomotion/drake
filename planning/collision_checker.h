@@ -14,6 +14,7 @@
 #include "drake/planning/body_shape_description.h"
 #include "drake/planning/collision_checker_context.h"
 #include "drake/planning/collision_checker_params.h"
+#include "drake/planning/distance_and_interpolation_provider.h"
 #include "drake/planning/edge_measure.h"
 #include "drake/planning/robot_clearance.h"
 #include "drake/planning/robot_collision_type.h"
@@ -810,12 +811,32 @@ class CollisionChecker {
    applying appropriate padding. */
   //@{
 
+  /** Sets the distance and interpolation provider to use.
+   Note that in case any of the (to-be-deprecated) separate distance and
+   interpolation functions were in use, this supplants _both_ of them.
+   @pre provider satisfies the requirements documents on
+   DistanceAndInterpolationProvider.
+  */
+  void SetDistanceAndInterpolationProvider(
+      std::shared_ptr<const DistanceAndInterpolationProvider> provider);
+
+  /** Gets the DistanceAndInterpolationProvider in use. */
+  const DistanceAndInterpolationProvider& distance_and_interpolation_provider()
+      const {
+    return *distance_and_interpolation_provider_;
+  }
+
   /** Sets the configuration distance function to `distance_function`.
    @pre distance_function satisfies the requirements documented on
-   ConfigurationDistanceFunction.
+   ConfigurationDistanceFunction and a DistanceAndInterpolationProvider is not
+   already in use.
+   @pre the collision checker was created with separate distance and
+   interpolation functions, not a combined DistanceAndInterpolationProvider.
    @note the `distance_function` object will be copied and retained by this
    collision checker, so if the function has any lambda-captured data then
    that data must outlive this collision checker. */
+  // TODO(calderpg-tri, jwnimmer-tri) Deprecate support for separate distance
+  // and interpolation functions.
   void SetConfigurationDistanceFunction(
       const ConfigurationDistanceFunction& distance_function);
 
@@ -824,7 +845,8 @@ class CollisionChecker {
    time or via SetConfigurationDistanceFunction(). */
   double ComputeConfigurationDistance(const Eigen::VectorXd& q1,
                                       const Eigen::VectorXd& q2) const {
-    return configuration_distance_function_(q1, q2);
+    return distance_and_interpolation_provider_->ComputeConfigurationDistance(
+        q1, q2);
   }
 
   /** @returns a functor that captures this object, so it can be used like a
@@ -842,12 +864,17 @@ class CollisionChecker {
    @param interpolation_function a functor, or nullptr. If nullptr, the default
    function will be configured and used.
    @pre interpolation_function satisfies the requirements documented on
-   ConfigurationInterpolationFunction, or is nullptr.
+   ConfigurationInterpolationFunction, or is nullptr and a
+   DistanceAndInterpolationProvider is not already in use.
+   @pre the collision checker was created with separate distance and
+   interpolation functions, not a combined DistanceAndInterpolationProvider.
    @note the `interpolation_function` object will be copied and retained by
    this collision checker, so if the function has any lambda-captured data
    then that data must outlive this collision checker.
    @note the default function uses linear interpolation for most variables,
    and uses slerp for quaternion valued variables.*/
+  // TODO(calderpg-tri, jwnimmer-tri) Deprecate support for separate distance
+  // and interpolation functions.
   void SetConfigurationInterpolationFunction(
       const ConfigurationInterpolationFunction& interpolation_function);
 
@@ -859,8 +886,8 @@ class CollisionChecker {
   Eigen::VectorXd InterpolateBetweenConfigurations(const Eigen::VectorXd& q1,
                                                    const Eigen::VectorXd& q2,
                                                    double ratio) const {
-    DRAKE_THROW_UNLESS(ratio >= 0.0 && ratio <= 1.0);
-    return configuration_interpolation_function_(q1, q2, ratio);
+    return distance_and_interpolation_provider_
+        ->InterpolateBetweenConfigurations(q1, q2, ratio);
   }
 
   /** @returns a functor that captures this object, so it can be used like a
@@ -1380,11 +1407,9 @@ class CollisionChecker {
    base). In many cases this vector will be empty. */
   const std::vector<int> uncontrolled_dofs_that_kinematically_affect_the_robot_;
 
-  /* Function to compute distance between two configurations. */
-  ConfigurationDistanceFunction configuration_distance_function_;
-
-  /* Function to interpolate between two configurations. */
-  ConfigurationInterpolationFunction configuration_interpolation_function_;
+  /* Provider for distance and interpolation functions */
+  std::shared_ptr<const DistanceAndInterpolationProvider>
+      distance_and_interpolation_provider_;
 
   /* Step size for edge collision checking. */
   double edge_step_size_ = 0.0;

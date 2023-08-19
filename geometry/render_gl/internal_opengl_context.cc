@@ -43,13 +43,13 @@ F* GetGlXFunctionArb(const char* func_name) {
 // header file declaration (instead of the dynamic lookup that happens under
 // the hood) to improve readability and debug-ability.  For API docs see
 // https://www.khronos.org/registry/OpenGL/extensions/ARB/GLX_ARB_create_context.txt
-GLXContext glXCreateContextAttribsARB(
-    Display* dpy, GLXFBConfig config, GLXContext share_context, Bool direct,
-    const int* attrib_list) {
-  return GetGlXFunctionArb<
-      GLXContext(Display*, GLXFBConfig, GLXContext, Bool, const int*)>(
-      "glXCreateContextAttribsARB")(
-          dpy, config, share_context, direct, attrib_list);
+GLXContext glXCreateContextAttribsARB(Display* dpy, GLXFBConfig config,
+                                      GLXContext share_context, Bool direct,
+                                      const int* attrib_list) {
+  return GetGlXFunctionArb<GLXContext(Display*, GLXFBConfig, GLXContext, Bool,
+                                      const int*)>(
+      "glXCreateContextAttribsARB")(dpy, config, share_context, direct,
+                                    attrib_list);
 }
 
 // Returns the GL_VENDOR bytes as a std::string.
@@ -127,7 +127,9 @@ class OpenGlContext::Impl {
 
     GLXFBConfig* fb_configs =
         glXChooseFBConfig(display(), screen_id, kVisualAttribs, &fb_count);
-    ScopeExit guard([fb_configs]() { XFree(fb_configs); });
+    ScopeExit guard([fb_configs]() {
+      XFree(fb_configs);
+    });
     if (fb_configs == nullptr) {
       throw std::runtime_error(
           "Error initializing OpenGL Context for RenderEngineGL; no suitable "
@@ -145,7 +147,9 @@ class OpenGlContext::Impl {
           "Unable to generate an OpenGl display window; visual info "
           "unavailable.");
     }
-    ScopeExit visual_guard([visual]() { XFree(visual); });
+    ScopeExit visual_guard([visual]() {
+      XFree(visual);
+    });
     XSetWindowAttributes window_attribs;
 
     // Track to see if we have successful initialization; if not, we use this
@@ -169,10 +173,9 @@ class OpenGlContext::Impl {
                             window_width_, window_height_, 0, visual->depth,
                             InputOutput, visual->visual,
                             CWColormap | CWEventMask, &window_attribs);
-    ScopeExit window_guard(
-        [window = window_, &is_complete]() {
-          if (!is_complete) XDestroyWindow(display(), window);
-        });
+    ScopeExit window_guard([window = window_, &is_complete]() {
+      if (!is_complete) XDestroyWindow(display(), window);
+    });
 
     // Create an OpenGL context.
     const int kContextAttribs[] = {GLX_CONTEXT_MAJOR_VERSION_ARB, 3,
@@ -187,10 +190,9 @@ class OpenGlContext::Impl {
           "Error initializing OpenGL Context for RenderEngineGL; failed to "
           "create context via glXCreateContextAttribsARB.");
     }
-    ScopeExit context_guard(
-        [context = context_, &is_complete]() {
-          if (!is_complete) glXDestroyContext(display(), context);
-        });
+    ScopeExit context_guard([context = context_, &is_complete]() {
+      if (!is_complete) glXDestroyContext(display(), context);
+    });
 
     XSync(display(), False);
 
@@ -224,9 +226,7 @@ class OpenGlContext::Impl {
     }
   }
 
-  bool IsCurrent() const {
-    return glXGetCurrentContext() == context_;
-  }
+  bool IsCurrent() const { return glXGetCurrentContext() == context_; }
 
   void DisplayWindow(const int width, const int height) {
     if (width != window_width_ || height != window_height_) {
@@ -321,23 +321,33 @@ OpenGlContext::OpenGlContext(const OpenGlContext& other)
 
 OpenGlContext::~OpenGlContext() = default;
 
-void OpenGlContext::MakeCurrent() const { impl_->MakeCurrent(); }
+void OpenGlContext::MakeCurrent() const {
+  impl_->MakeCurrent();
+}
 
-void OpenGlContext::ClearCurrent() { glXMakeCurrent(display(), None, NULL); }
+void OpenGlContext::ClearCurrent() {
+  glXMakeCurrent(display(), None, NULL);
+}
 
-bool OpenGlContext::IsCurrent() const { return impl_->IsCurrent(); }
+bool OpenGlContext::IsCurrent() const {
+  return impl_->IsCurrent();
+}
 
 void OpenGlContext::DisplayWindow(const int width, const int height) {
   impl_->DisplayWindow(width, height);
 }
 
-void OpenGlContext::HideWindow() { impl_->HideWindow(); }
+void OpenGlContext::HideWindow() {
+  impl_->HideWindow();
+}
 
 bool OpenGlContext::IsWindowViewable() const {
   return impl_->IsWindowViewable();
 }
 
-void OpenGlContext::UpdateWindow() { impl_->UpdateWindow(); }
+void OpenGlContext::UpdateWindow() {
+  impl_->UpdateWindow();
+}
 
 GLint OpenGlContext::max_texture_size() {
   return OpenGlContext::Impl::max_texture_size();

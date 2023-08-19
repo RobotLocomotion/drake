@@ -2,8 +2,8 @@
 
 #include <thread>
 
-#include <drake_vendor/msgpack.hpp>
 #include <gtest/gtest.h>
+#include <msgpack.hpp>
 
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/expect_throws_message.h"

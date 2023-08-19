@@ -268,6 +268,12 @@ GTEST_TEST(CameraConfigTest, SerializeBackgroundRgba) {
   EXPECT_EQ(yaml, "background:\n  rgba: [0.1, 0.2, 0.3, 0.4]\n");
 }
 
+GTEST_TEST(CameraConfigTest, SerializationDefaultRoundTrip) {
+  const CameraConfig original;
+  const std::string yaml = SaveYamlString<CameraConfig>(original);
+  EXPECT_NO_THROW(LoadYamlString<CameraConfig>(yaml)) << "with yaml:\n" << yaml;
+}
+
 // Various tests to support the documented examples in the documentation. The
 // number of each parsed config should correspond to the number in the docs for
 // the renderer_class field.
@@ -313,6 +319,9 @@ GTEST_TEST(CameraConfigTest, DeserializingRendererClass) {
                                                .render_endpoint = "server",
                                                .verbose = true,
                                                .cleanup = false}));
+
+  const CameraConfig config_6 = parse("renderer_class: \"\"");
+  EXPECT_THAT(config_6.renderer_class, testing::VariantWith<std::string>(""));
 }
 
 // Helper functions for validating a render camera.

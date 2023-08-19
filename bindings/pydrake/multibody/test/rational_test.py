@@ -67,7 +67,8 @@ class TestRationalForwardKinematics(unittest.TestCase):
         # Tests the double conversions
         q_star = np.zeros(self.plant.num_positions())
         q = np.ones(self.plant.num_positions())
-        s = self.rat_forward.ComputeSValue(q_val=q, q_star_val=q_star)
+        s = self.rat_forward.ComputeSValue(
+            q_val=q, q_star_val=q_star, angles_wrap_to_inf=False)
         q_recomputed = self.rat_forward.ComputeQValue(s_val=s,
                                                       q_star_val=q_star)
         self.assertTrue(np.allclose(q, q_recomputed))

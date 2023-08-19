@@ -132,10 +132,10 @@ class RenderEngine : public ShapeReifier {
                           or a geometry has already been registered with the
                           given `id`.
   */
-  bool RegisterVisual(
-      GeometryId id,
-      const Shape& shape, const PerceptionProperties& properties,
-      const math::RigidTransformd& X_WG, bool needs_updates = true);
+  bool RegisterVisual(GeometryId id, const Shape& shape,
+                      const PerceptionProperties& properties,
+                      const math::RigidTransformd& X_WG,
+                      bool needs_updates = true);
 
   /** Removes the geometry indicated by the given `id` from the engine.
    @param id    The id of the geometry to remove.
@@ -252,9 +252,9 @@ class RenderEngine : public ShapeReifier {
 
    In accessing the RenderLabel property in `properties` derived class should
    _exclusively_ use GetRenderLabelOrThrow().  */
-  virtual bool DoRegisterVisual(
-      GeometryId id, const Shape& shape, const PerceptionProperties& properties,
-      const math::RigidTransformd& X_WG) = 0;
+  virtual bool DoRegisterVisual(GeometryId id, const Shape& shape,
+                                const PerceptionProperties& properties,
+                                const math::RigidTransformd& X_WG) = 0;
 
   /** The NVI-function for updating the pose of a render geometry (identified
    by `id`) to the given pose X_WG.

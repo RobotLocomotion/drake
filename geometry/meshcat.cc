@@ -19,9 +19,9 @@
 
 #include <App.h>
 #include <common_robotics_utilities/base64_helpers.hpp>
-#include <drake_vendor/msgpack.hpp>
-#include <drake_vendor/uuid.h>
 #include <fmt/format.h>
+#include <msgpack.hpp>
+#include <uuid.h>
 
 #include "drake/common/drake_export.h"
 #include "drake/common/drake_throw.h"
@@ -595,7 +595,8 @@ class Meshcat::Impl {
       : prefix_("/drake"),
         main_thread_id_(std::this_thread::get_id()),
         params_(params) {
-    DRAKE_THROW_UNLESS(params.port.value_or(7000) >= 1024);
+    DRAKE_THROW_UNLESS(!params.port.has_value() || *params.port == 0 ||
+                       *params.port >= 1024);
     if (!drake::internal::IsNetworkingAllowed("meshcat")) {
       throw std::runtime_error(
           "Meshcat has been disabled via the DRAKE_ALLOW_NETWORK environment "
@@ -1726,9 +1727,6 @@ class Meshcat::Impl {
     // our code from potential implementation changes to uWebSockets.
     const std::string bind_host = (host == "*") ? "" : host;
 
-    int port = desired_port ? *desired_port : 7000;
-    const int kMaxPort = desired_port ? *desired_port : 7099;
-
     uWS::App::WebSocketBehavior<PerSocketData> behavior;
     // Set maxBackpressure = 0 so that uWS does *not* drop any messages due to
     // back pressure.
@@ -1759,20 +1757,30 @@ class Meshcat::Impl {
             .ws<PerSocketData>("/*", std::move(behavior));
     app_ = &app;
 
-    do {
-      app.listen(
-          bind_host, port, LIBUS_LISTEN_EXCLUSIVE_PORT,
-          [this](us_listen_socket_t* socket) {
-            DRAKE_DEMAND(IsThread(websocket_thread_id_));
-            if (socket) {
-              listen_socket_ = socket;
-            }
-          });
-    } while (listen_socket_ == nullptr && port++ < kMaxPort);
+    // Search for an open port.
+    int chosen_port{};
+    const int search_start = desired_port.value_or(7000);
+    const int search_end = desired_port.value_or(8000);
+    for (int port = search_start; port <= search_end; ++port) {
+      // N.B. Using `port == 0` requests an ephemeral port.
+      // https://github.com/uNetworking/uSockets/pull/136.
+      app.listen(bind_host, port, LIBUS_LISTEN_EXCLUSIVE_PORT,
+                 [this](us_listen_socket_t* socket) {
+                   DRAKE_DEMAND(IsThread(websocket_thread_id_));
+                   if (socket) {
+                     listen_socket_ = socket;
+                   }
+                 });
+      if (listen_socket_ != nullptr) {
+        chosen_port = us_socket_local_port(
+            /* ssl = */ 0, reinterpret_cast<us_socket_t*>(listen_socket_));
+        DRAKE_THROW_UNLESS(chosen_port > 0);
+        break;
+      }
+    }
 
     bool connected = listen_socket_ != nullptr;
-    app_promise.set_value(std::make_tuple(port, connected));
-
+    app_promise.set_value(std::make_tuple(chosen_port, connected));
     if (!connected) {
       return;
     }
@@ -2077,16 +2085,8 @@ class Meshcat::Impl {
   std::atomic<bool> inject_message_fault_{false};
 };
 
-namespace {
-MeshcatParams MakeMeshcatParamsPortOnly(std::optional<int> port) {
-  MeshcatParams result;
-  result.port = port;
-  return result;
-}
-}  // namespace
-
 Meshcat::Meshcat(std::optional<int> port)
-    : Meshcat(MakeMeshcatParamsPortOnly(port)) {}
+    : Meshcat(MeshcatParams{.port = port}) {}
 
 Meshcat::Meshcat(const MeshcatParams& params)
     // Creates the server thread, bind to the port, etc.

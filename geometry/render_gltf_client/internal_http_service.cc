@@ -16,8 +16,7 @@ void ThrowIfFilesMissing(const FileFieldsMap& file_fields) {
   for (const auto& [field_name, field_data_pair] : file_fields) {
     const auto& file_path = field_data_pair.first;
     if (!std::filesystem::is_regular_file(file_path)) {
-      missing_files.emplace_back(
-          fmt::format("{}='{}'", field_name, file_path));
+      missing_files.emplace_back(fmt::format("{}='{}'", field_name, file_path));
     }
   }
 
@@ -30,11 +29,11 @@ void ThrowIfFilesMissing(const FileFieldsMap& file_fields) {
 
 }  // namespace
 
-HttpResponse HttpService::PostForm(
-    const std::string& temp_directory, const std::string& url,
-    const DataFieldsMap& data_fields,
-    const FileFieldsMap& file_fields,
-    bool verbose) {
+HttpResponse HttpService::PostForm(const std::string& temp_directory,
+                                   const std::string& url,
+                                   const DataFieldsMap& data_fields,
+                                   const FileFieldsMap& file_fields,
+                                   bool verbose) {
   ThrowIfFilesMissing(file_fields);
   return DoPostForm(temp_directory, url, data_fields, file_fields, verbose);
 }

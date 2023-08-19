@@ -55,7 +55,7 @@ if sys.version_info[:2] >= (3, 10) and not hasattr(umsgpack, 'Hashable'):
 
 
 def print_recursive_comparison(d1, d2, level='root'):
-    if type(d1) != type(d2):
+    if type(d1) is not type(d2):
         print(f"{level:<20} Type mismatch")
         print(f"{level:<20}    {type(d1)}: {repr(d1)}")
         print(f"{level:<20}    {type(d2)}: {repr(d2)}")

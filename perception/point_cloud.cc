@@ -10,8 +10,8 @@
 #include <common_robotics_utilities/dynamic_spatial_hashed_voxel_grid.hpp>
 #include <common_robotics_utilities/openmp_helpers.hpp>
 #include <common_robotics_utilities/voxel_grid.hpp>
-#include <drake_vendor/nanoflann.hpp>
 #include <fmt/format.h>
+#include <nanoflann.hpp>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_throw.h"

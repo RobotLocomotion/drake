@@ -85,6 +85,12 @@ TEST_F(TestBinding, TestPrinting) {
       "3\n";
   EXPECT_EQ(fmt::format("{}", linear_binding), str_expected3);
   EXPECT_EQ(linear_binding.to_string(), str_expected3);
+
+  // Test ToLatex().
+  EXPECT_EQ(linear_binding.ToLatex(1),
+            "\\begin{bmatrix} 1 \\\\ 2 \\end{bmatrix} \\le \\begin{bmatrix} 1 "
+            "& 2 \\\\ 3 & 4 \\end{bmatrix} \\begin{bmatrix} x1 \\\\ x2 "
+            "\\end{bmatrix} \\le \\begin{bmatrix} 2 \\\\ 3 \\end{bmatrix}");
 }
 
 TEST_F(TestBinding, TestHash) {
