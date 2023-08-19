@@ -740,7 +740,7 @@ class TestCspaceFreePolytope(unittest.TestCase):
             options=options)
 
     def test_CspaceFreePolytope_SeparatingPlaneOrder(self):
-        # access the separating plane orders
+        # Access the separating plane orders.
         possible_orders = [mut.SeparatingPlaneOrder.kAffine]
         self.assertEqual(len(possible_orders), 1)
 
@@ -908,13 +908,8 @@ class TestCspaceFreePolytope(unittest.TestCase):
     def test_CspaceFreePolytope_getters_and_auxillary_structs(self):
         dut = self.cspace_free_polytope
 
-        # TODO(Alexandre.Amice): uncomment once rational_forward_kin is bound.
-        # rat_forward = dut.rational_forward_kin()
-        # self.assertEqual(
-        #     rat_forward.ComputeSValue(
-        #         np.zeros(self.plant.num_positions()),
-        #         np.zeros(self.plant.num_positions())),
-        #     np.zeros(self.plant.num_positions()))
+        # TODO(Alexandre.Amice): Insert the suggested test from #20025 once the
+        #  issue is resolved.
 
         self.assertGreaterEqual(
             len(dut.map_geometries_to_separating_planes().keys()), 1)
@@ -960,7 +955,7 @@ class TestCspaceFreePolytope(unittest.TestCase):
         # not tested as they cannot be instantiated. They are bound only to
         # provide subclassing to other bindings. The class
         # FindSeparationCertificateOptions is tested in
-        # test_CspaceFreePolytope_Options along with all the other options
+        # test_CspaceFreePolytope_Options along with all the other options.
 
     @unittest.skipUnless(MosekSolver().available(), "Requires Mosek")
     def test_CspaceFreePolytopeMethods(self):
@@ -1005,7 +1000,7 @@ class TestCspaceFreePolytope(unittest.TestCase):
             options=binary_search_options
         )
 
-        # Accesses all members of SearchResult
+        # Accesses all members of SearchResult.
         self.assertGreaterEqual(result.num_iter(), 1)
         self.assertGreaterEqual(len(result.C()), 1)
         self.assertGreaterEqual(len(result.d()), 1)
@@ -1024,13 +1019,13 @@ class TestCspaceFreePolytope(unittest.TestCase):
         self.assertIsInstance(result[0],
                               mut.CspaceFreePolytope.SearchResult)
 
-        # Make and Solve GeometrySeparableProgram
+        # Make and Solve GeometrySeparableProgram.
         pair = list(self.cspace_free_polytope.
                     map_geometries_to_separating_planes().keys())[0]
         cert_prog = \
             self.cspace_free_polytope.MakeIsGeometrySeparableProgram(
                 geometry_pair=pair, C=C_init, d=d_init)
-        # Call all CspaceFreePolytope.SeparationCertificateProgram methods
+        # Call all CspaceFreePolytope.SeparationCertificateProgram methods.
         certificates = cert_prog.certificate
         self.assertIsInstance(certificates,
                               mut.CspaceFreePolytope.SeparationCertificate)
@@ -1049,7 +1044,7 @@ class TestCspaceFreePolytope(unittest.TestCase):
                 certificate_program=cert_prog, options=lagrangian_options)
 
         # Call all CspaceFreePolytope.SeparationCertificateResult
-        # methods
+        # methods.
         self.assertEqual(cert_prog_sol.a.shape, (3,))
         self.assertIsInstance(cert_prog_sol.a[0], Polynomial)
         self.assertIsInstance(cert_prog_sol.b, Polynomial)
@@ -1058,7 +1053,7 @@ class TestCspaceFreePolytope(unittest.TestCase):
         self.assertIsInstance(
             cert_prog_sol.result, MathematicalProgramResult)
 
-        # Bindings for SeparatingPlaneLagrangians
+        # Bindings for SeparatingPlaneLagrangians.
         positive_side_lagrangians = \
             cert_prog_sol.positive_side_rational_lagrangians
         positive_test_lagrangian = positive_side_lagrangians[0]

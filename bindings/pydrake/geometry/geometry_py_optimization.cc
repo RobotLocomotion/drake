@@ -45,7 +45,7 @@ void DoSeparatingPlaneDeclaration(py::module m, T) {
     auto cls =
         DefineTemplateClassWithDefault<Class>(
             m, "CSpaceSeparatingPlane", param, base_cls_doc.doc)
-            // use py_rvp::copy here because numpy.ndarray with dtype=object
+            // Use py_rvp::copy here because numpy.ndarray with dtype=object
             // arrays must be copied, and cannot be referenced.
             .def_readonly("a", &Class::a, py_rvp::copy, base_cls_doc.a.doc)
             .def_readonly("b", &Class::b, base_cls_doc.b.doc)
@@ -58,7 +58,7 @@ void DoSeparatingPlaneDeclaration(py::module m, T) {
             .def_readonly("expressed_body", &Class::expressed_body,
                 base_cls_doc.expressed_body.doc)
             .def_readonly("plane_degree", &Class::plane_degree)
-            // use py_rvp::copy here because numpy.ndarray with dtype=object
+            // Use py_rvp::copy here because numpy.ndarray with dtype=object
             // arrays must be copied, and cannot be referenced.
             .def_readonly("decision_variables", &Class::decision_variables,
                 py_rvp::copy, base_cls_doc.a.doc);
@@ -844,17 +844,8 @@ void DefineGeometryOptimization(py::module m) {
     py::class_<BaseClass> cspace_free_polytope_base_cls(
         m, "CspaceFreePolytopeBase", base_cls_doc.doc);
     cspace_free_polytope_base_cls
-        // TODO(Alexandre.Amice): Bind rational_forward_kinematics once
-        // pydrake.so is a single shared library. Currently, binding this method
-        // would require importing pydrake.multibody.rational to avoid an
-        // "Unable to convert to Python type" error. However, this would create
-        // the dependency loop pydrake.geometry.optimization ->
-        // pydrake.multibody.rational -> pydrake.multibody -> pydrake.geometry
-        // -> pydrake.geometry.optimizaiton.
-        // .def("rational_forward_kin",
-        // &BaseClass::rational_forward_kin,
-        // py_rvp::reference_internal,
-        // base_cls_doc.rational_forward_kin.doc)
+        // TODO(Alexandre.Amice): Bind rational_forward_kinematics to resolve
+        // #20025.
         .def("map_geometries_to_separating_planes",
             &BaseClass::map_geometries_to_separating_planes,
             base_cls_doc.map_geometries_to_separating_planes.doc)
@@ -923,40 +914,39 @@ void DefineGeometryOptimization(py::module m) {
         .def("GetSolution", &Class::SeparatingPlaneLagrangians::GetSolution,
             py::arg("result"),
             cls_doc.SeparatingPlaneLagrangians.GetSolution.doc)
-        // use py_rvp::copy here because numpy.ndarray with dtype=object arrays
+        // Use py_rvp::copy here because numpy.ndarray with dtype=object arrays
         // must be copied, and cannot be referenced.
         .def("polytope", &Class::SeparatingPlaneLagrangians::mutable_polytope,
             py_rvp::copy)
         .def("s_lower", &Class::SeparatingPlaneLagrangians::mutable_s_lower)
         .def("s_upper", &Class::SeparatingPlaneLagrangians::mutable_s_upper);
-    {
-      using SepCertClass = Class::SeparationCertificateResult;
-      py::class_<SepCertClass>(cspace_free_polytope_cls,
-          "SeparationCertificateResult",
-          cls_doc.SeparationCertificateResult.doc)
-          .def_readonly("plane_index", &SepCertClass::plane_index)
-          .def_readonly("positive_side_rational_lagrangians",
-              &Class::SeparationCertificateResult::
-                  positive_side_rational_lagrangians,
-              cls_doc.SeparationCertificateResult
-                  .positive_side_rational_lagrangians.doc)
-          .def_readonly("negative_side_rational_lagrangians",
-              &Class::SeparationCertificateResult::
-                  negative_side_rational_lagrangians,
-              cls_doc.SeparationCertificateResult
-                  .negative_side_rational_lagrangians.doc)
-          // use py_rvp::copy here because numpy.ndarray with dtype=object
-          // arrays must be copied, and cannot be referenced.
-          .def_readonly("a", &SepCertClass::a, py_rvp::copy,
-              doc.SeparationCertificateResultBase.a.doc)
-          .def_readonly(
-              "b", &SepCertClass::b, doc.SeparationCertificateResultBase.b.doc)
-          .def_readonly("result", &SepCertClass::result)
-          // use py_rvp::copy here because numpy.ndarray with dtype=object
-          // arrays must be copied, and cannot be referenced.
-          .def_readonly("plane_decision_var_vals",
-              &SepCertClass::plane_decision_var_vals, py_rvp::copy);
-    }
+
+    using SepCertClass = Class::SeparationCertificateResult;
+    py::class_<SepCertClass>(cspace_free_polytope_cls,
+        "SeparationCertificateResult", cls_doc.SeparationCertificateResult.doc)
+        .def_readonly("plane_index", &SepCertClass::plane_index)
+        .def_readonly("positive_side_rational_lagrangians",
+            &Class::SeparationCertificateResult::
+                positive_side_rational_lagrangians,
+            cls_doc.SeparationCertificateResult
+                .positive_side_rational_lagrangians.doc)
+        .def_readonly("negative_side_rational_lagrangians",
+            &Class::SeparationCertificateResult::
+                negative_side_rational_lagrangians,
+            cls_doc.SeparationCertificateResult
+                .negative_side_rational_lagrangians.doc)
+        // Use py_rvp::copy here because numpy.ndarray with dtype=object
+        // arrays must be copied, and cannot be referenced.
+        .def_readonly("a", &SepCertClass::a, py_rvp::copy,
+            doc.SeparationCertificateResultBase.a.doc)
+        .def_readonly(
+            "b", &SepCertClass::b, doc.SeparationCertificateResultBase.b.doc)
+        .def_readonly("result", &SepCertClass::result)
+        // Use py_rvp::copy here because numpy.ndarray with dtype=object
+        // arrays must be copied, and cannot be referenced.
+        .def_readonly("plane_decision_var_vals",
+            &SepCertClass::plane_decision_var_vals, py_rvp::copy);
+
     py::class_<Class::SeparationCertificate>(cspace_free_polytope_cls,
         "SeparationCertificate", cls_doc.SeparationCertificate.doc)
         .def("GetSolution", &Class::SeparationCertificate::GetSolution,
@@ -967,27 +957,26 @@ void DefineGeometryOptimization(py::module m) {
             &Class::SeparationCertificate::positive_side_rational_lagrangians)
         .def_readwrite("negative_side_rational_lagrangians",
             &Class::SeparationCertificate::negative_side_rational_lagrangians);
-    {
-      py::class_<Class::SeparationCertificateProgram,
-          SeparationCertificateProgramBase>(cspace_free_polytope_cls,
-          "SeparationCertificateProgram",
-          cls_doc.SeparationCertificateProgram.doc)
-          .def(py::init<>())
-          .def_readonly(
-              "plane_index", &Class::SeparationCertificateProgram::plane_index)
-          .def_readonly(
-              "certificate", &Class::SeparationCertificateProgram::certificate);
-    }
-    {
-      py::class_<Class::FindSeparationCertificateGivenPolytopeOptions,
-          FindSeparationCertificateOptions>(cspace_free_polytope_cls,
-          "FindSeparationCertificateGivenPolytopeOptions",
-          cls_doc.FindSeparationCertificateGivenPolytopeOptions.doc)
-          .def(py::init<>())
-          .def_readwrite("ignore_redundant_C",
-              &Class::FindSeparationCertificateGivenPolytopeOptions::
-                  ignore_redundant_C);
-    }
+
+    py::class_<Class::SeparationCertificateProgram,
+        SeparationCertificateProgramBase>(cspace_free_polytope_cls,
+        "SeparationCertificateProgram",
+        cls_doc.SeparationCertificateProgram.doc)
+        .def(py::init<>())
+        .def_readonly(
+            "plane_index", &Class::SeparationCertificateProgram::plane_index)
+        .def_readonly(
+            "certificate", &Class::SeparationCertificateProgram::certificate);
+
+    py::class_<Class::FindSeparationCertificateGivenPolytopeOptions,
+        FindSeparationCertificateOptions>(cspace_free_polytope_cls,
+        "FindSeparationCertificateGivenPolytopeOptions",
+        cls_doc.FindSeparationCertificateGivenPolytopeOptions.doc)
+        .def(py::init<>())
+        .def_readwrite("ignore_redundant_C",
+            &Class::FindSeparationCertificateGivenPolytopeOptions::
+                ignore_redundant_C);
+
     py::enum_<Class::EllipsoidMarginCost>(cspace_free_polytope_cls,
         "EllipsoidMarginCost", cls_doc.EllipsoidMarginCost.doc)
         .value("kSum", Class::EllipsoidMarginCost::kSum)
@@ -1019,7 +1008,7 @@ void DefineGeometryOptimization(py::module m) {
         .def(py::init<>())
         .def("C", &Class::SearchResult::C)
         .def("d", &Class::SearchResult::d)
-        // use py_rvp::copy here because numpy.ndarray with dtype=object arrays
+        // Use py_rvp::copy here because numpy.ndarray with dtype=object arrays
         // must be copied, and cannot be referenced.
         .def("a", &Class::SearchResult::a, py_rvp::copy)
         .def("b", &Class::SearchResult::b)
