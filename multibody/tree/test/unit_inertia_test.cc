@@ -212,10 +212,9 @@ GTEST_TEST(UnitInertia, SolidCylinder) {
   const double I_perp = (3.0 * r * r + L * L) / 12.0;
   const double I_axial = r * r / 2.0;
   const UnitInertia<double> Gz_expected(I_perp, I_perp, I_axial);
-  // Compute the unit inertia for a cylinder oriented along the z-axis
-  // (the default).
+  // Compute the unit inertia for a cylinder oriented along the z-axis.
   UnitInertia<double> Gz =
-      UnitInertia<double>::SolidCylinder(r, L);
+      UnitInertia<double>::SolidCylinder(r, L, Vector3d::UnitZ());
   EXPECT_TRUE(Gz.CopyToFullMatrix3().isApprox(
       Gz_expected.CopyToFullMatrix3(), kEpsilon));
 
@@ -248,6 +247,25 @@ GTEST_TEST(UnitInertia, SolidCylinder) {
   EXPECT_TRUE(Gv.CopyToFullMatrix3().isApprox(
       Gv_expected.CopyToFullMatrix3(), kEpsilon));
 }
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+// 2023-12-01 Remove with the deprecated 2 argument SolidCylinder() function.
+GTEST_TEST(UnitInertia, SolidCylinderDeprecated) {
+  const double r = 2.5;
+  const double L = 1.5;
+  const double I_perp = (3.0 * r * r + L * L) / 12.0;
+  const double I_axial = r * r / 2.0;
+  const UnitInertia<double> Gz_expected(I_perp, I_perp, I_axial);
+
+  // Compute the unit inertia for a cylinder oriented along the z-axis
+  // (the default).
+  UnitInertia<double> Gz =
+      UnitInertia<double>::SolidCylinder(r, L);
+  EXPECT_TRUE(Gz.CopyToFullMatrix3().isApprox(
+      Gz_expected.CopyToFullMatrix3(), kEpsilon));
+}
+#pragma GCC diagnostic pop
 
 // Tests the static method to obtain the unit inertia of a solid cylinder B
 // computed about a point Bp at the center of its base.
@@ -286,7 +304,7 @@ GTEST_TEST(UnitInertia, SolidCylinderAboutEnd) {
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 // Tests the static method to obtain the unit inertia of a solid cylinder B
 // computed about a point Bp at the center of its base.
-// 2023-11-01 Remove with the old SolidCylinderAboutEnd test.
+// 2023-12-01 Remove with the old SolidCylinderAboutEnd test.
 GTEST_TEST(UnitInertia, SolidCylinderAboutEndDeprecated) {
   const double r = 2.5;
   const double L = 1.5;
@@ -320,7 +338,8 @@ GTEST_TEST(UnitInertia, SolidCapsule) {
 
   // The inertia properties of a capsule is calculated three ways.
   // Calculation 1: Multiply the capsule's mass with its unit inertia.
-  const UnitInertia<double> G_capsule = UnitInertia<double>::SolidCapsule(r, L);
+  const UnitInertia<double> G_capsule =
+      UnitInertia<double>::SolidCapsule(r, L, Vector3d::UnitZ());
   RotationalInertia<double> I_capsule = mass_capsule * G_capsule;
 
   // Calculation 2: Calculate the inertia analytically.
@@ -372,8 +391,8 @@ GTEST_TEST(UnitInertia, SolidCapsule) {
   Ih.ShiftToThenAwayFromCenterOfMassInPlace(mh, p_HoHcm_C, p_HcmCcm_C);
 
   // Form the cylinder's inertia about its center of mass and verify results.
-  const RotationalInertia<double> I_cylinder =
-      mass_cylinder * UnitInertia<double>::SolidCylinder(r, L);
+  const RotationalInertia<double> I_cylinder = mass_cylinder *
+      UnitInertia<double>::SolidCylinder(r, L, Vector3d::UnitZ());
   I_capsule = I_cylinder + 2 * Ih;
   EXPECT_TRUE(CompareMatrices(I_capsule.get_moments(),
                               I_capsule_expected.get_moments(), kEpsilon));
@@ -381,9 +400,9 @@ GTEST_TEST(UnitInertia, SolidCapsule) {
                               I_capsule_expected.get_products(), kEpsilon));
 
   // Ensure a bad unit vector throws an exception.
-  const Vector3<double> bad_vec(1, 0.1, 0);
+  const Vector3<double> bad_uvec(1, 0.1, 0);
   DRAKE_EXPECT_THROWS_MESSAGE(
-      UnitInertia<double>::SolidCapsule(r, L, bad_vec),
+      UnitInertia<double>::SolidCapsule(r, L, bad_uvec),
       "[^]* The unit_vector argument .* is not a unit vector.");
 }
 
@@ -393,7 +412,8 @@ GTEST_TEST(UnitInertia, SolidCapsuleDegenerateIntoSolidSphere) {
   const double r = 2.5;
   const double L = 0;
   const UnitInertia<double> G_expected = UnitInertia<double>::SolidSphere(r);
-  const UnitInertia<double> G = UnitInertia<double>::SolidCapsule(r, L);
+  const UnitInertia<double> G =
+      UnitInertia<double>::SolidCapsule(r, L, Vector3d::UnitZ());
   EXPECT_TRUE(CompareMatrices(G.get_moments(), G_expected.get_moments()));
   EXPECT_TRUE(CompareMatrices(G.get_products(), G_expected.get_products()));
 }
@@ -406,7 +426,7 @@ GTEST_TEST(UnitInertia, SolidCapsuleDegenerateIntoThinRod) {
   const UnitInertia<double> G_expected =
       UnitInertia<double>::ThinRod(L, Vector3d::UnitZ());
   const UnitInertia<double> G_degenerate =
-      UnitInertia<double>::SolidCapsule(r, L);
+      UnitInertia<double>::SolidCapsule(r, L, Vector3d::UnitZ());
   EXPECT_TRUE(
       CompareMatrices(G_degenerate.get_moments(), G_expected.get_moments()));
   EXPECT_TRUE(
@@ -414,12 +434,24 @@ GTEST_TEST(UnitInertia, SolidCapsuleDegenerateIntoThinRod) {
   // The unit inertia of the capsule should be close to that of a thin rod when
   // the radius is vanishingly small.
   const UnitInertia<double> G_close_to_degenerate =
-      UnitInertia<double>::SolidCapsule(kEpsilon, L);
+      UnitInertia<double>::SolidCapsule(kEpsilon, L, Vector3d::UnitZ());
   EXPECT_TRUE(CompareMatrices(G_close_to_degenerate.get_moments(),
                               G_expected.get_moments(), kEpsilon));
   EXPECT_TRUE(CompareMatrices(G_close_to_degenerate.get_products(),
                               G_expected.get_products()));
 }
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+// 2023-12-01 Remove with the deprecated 2 argument SolidCapsule() function.
+GTEST_TEST(UnitInertia, SolidCapsuleDeprecated) {
+  const double r = 2.5;
+  const double L = 1.5;
+  const UnitInertia<double> G_capsule = UnitInertia<double>::SolidCapsule(r, L);
+  EXPECT_TRUE(G_capsule.CopyToFullMatrix3().isApprox(
+              G_capsule.CopyToFullMatrix3(), kEpsilon));
+}
+#pragma GCC diagnostic pop
 
 // Unit tests for the factory method UnitInertia::AxiallySymmetric().
 // This test creates the unit inertia for a cylinder of radius r and length L
@@ -442,7 +474,8 @@ GTEST_TEST(UnitInertia, AxiallySymmetric) {
   const double I_axial = r * r / 2.0;
 
   // Cylinder's axis. A vector on the y-z plane, at -pi/4 from the z axis.
-  // The vector doesn't need to be normalized.
+  // The vector doesn't need to be normalized (but take note that automatic
+  // normalization is deprecated).
   const Vector3d b_E = Vector3d::UnitY() + Vector3d::UnitZ();
 
   // Rotation of -pi/4 about the x axis, from a Z frame having its z axis
@@ -456,7 +489,8 @@ GTEST_TEST(UnitInertia, AxiallySymmetric) {
 
   // The expected inertia is that of a cylinder of radius r and height L with
   // its longitudinal axis aligned with b.
-  UnitInertia<double> G_Z = UnitInertia<double>::SolidCylinder(r, L);
+  UnitInertia<double> G_Z =
+      UnitInertia<double>::SolidCylinder(r, L, Vector3d::UnitZ());
   UnitInertia<double> G_E_expected = G_Z.ReExpress(R_EZ);
 
   // Verify the computed values.
@@ -491,7 +525,8 @@ GTEST_TEST(UnitInertia, ThinRod) {
   const double I_rod = L * L / 12.0;
 
   // Rod's axis. A vector on the y-z plane, at -pi/4 from the z axis.
-  // The vector doesn't need to be normalized.
+  // The vector doesn't need to be normalized (but take note that automatic
+  // normalization is deprecated).
   const Vector3d b_E = Vector3d::UnitY() + Vector3d::UnitZ();
 
   // Rotation of -pi/4 about the x axis, from a Z frame having its z-axis
@@ -505,7 +540,8 @@ GTEST_TEST(UnitInertia, ThinRod) {
 
   // The expected inertia is that of a cylinder of zero radius and height L with
   // its longitudinal axis aligned with b.
-  UnitInertia<double> G_Z = UnitInertia<double>::SolidCylinder(0.0, L);
+  UnitInertia<double> G_Z =
+      UnitInertia<double>::SolidCylinder(0, L, Vector3d::UnitZ());
   UnitInertia<double> G_E_expected = G_Z.ReExpress(R_EZ);
 
   // Verify the computed values.
@@ -632,8 +668,8 @@ GTEST_TEST(UnitInertia, ShiftFromCenterOfMassInPlace) {
   const double r = 2.5;
   const double L = 1.5;
   const UnitInertia<double> G_expected =
-      UnitInertia<double>::SolidCylinderAboutEnd(
-          r, L, Vector3<double>::UnitZ());
+      UnitInertia<double>::SolidCylinderAboutEnd(r, L,
+                                                 Vector3<double>::UnitZ());
   UnitInertia<double> G =
       UnitInertia<double>::SolidCylinder(r, L, Vector3<double>::UnitZ());
   EXPECT_FALSE(G.CopyToFullMatrix3().isApprox(
@@ -646,18 +682,19 @@ GTEST_TEST(UnitInertia, ShiftFromCenterOfMassInPlace) {
   // Now test that we can perform the inverse operation and obtain the original
   // unit inertia.
   // As a shift into a new object:
-  UnitInertia<double> G2 = G.ShiftToCenterOfMass({0.0, 0.0, -L / 2.0});
+  const UnitInertia<double> G2 = G.ShiftToCenterOfMass({0.0, 0.0, -L / 2.0});
   // As a shift in place:
   G.ShiftToCenterOfMassInPlace({0.0, 0.0, -L / 2.0});
+  const UnitInertia<double> G_cylinder =
+      UnitInertia<double>::SolidCylinder(r, L, Vector3<double>::UnitZ());
   EXPECT_TRUE(G.CopyToFullMatrix3().isApprox(
-      UnitInertia<double>::SolidCylinder(r, L).CopyToFullMatrix3(), kEpsilon));
+      G_cylinder.CopyToFullMatrix3(), kEpsilon));
   EXPECT_TRUE(G2.CopyToFullMatrix3().isApprox(
-      UnitInertia<double>::SolidCylinder(r, L).CopyToFullMatrix3(), kEpsilon));
+      G_cylinder.CopyToFullMatrix3(), kEpsilon));
 
   // Create a new object.
-  UnitInertia<double> G3 =
-      UnitInertia<double>::
-      SolidCylinder(r, L).ShiftFromCenterOfMass({0.0, 0.0, L / 2.0});
+  const UnitInertia<double> G3 =
+      G_cylinder.ShiftFromCenterOfMass({0.0, 0.0, L / 2.0});
   EXPECT_TRUE(G3.CopyToFullMatrix3().isApprox(
       G_expected.CopyToFullMatrix3(), kEpsilon));
   EXPECT_TRUE(G3.CouldBePhysicallyValid());
@@ -991,7 +1028,8 @@ GTEST_TEST(UnitInertia, CompatibleWithSymbolicExpression) {
   const Variable L("L");
   // Compute the unit inertia for a cylinder oriented along the z-axis
   // (the default).
-  UnitInertia<Expression> Gz = UnitInertia<Expression>::SolidCylinder(r, L);
+  UnitInertia<Expression> Gz =
+      UnitInertia<Expression>::SolidCylinder(r, L, Vector3<double>::UnitZ());
 
   // Let's give the variables above some values.
   const double r_value = 0.025;

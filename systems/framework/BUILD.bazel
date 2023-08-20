@@ -862,6 +862,15 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "event_deprecated_test",
+    copts = ["-Wno-deprecated-declarations"],
+    deps = [
+        ":event_collection",
+        "//systems/primitives:pass_through",
+    ],
+)
+
+drake_cc_googletest(
     name = "leaf_context_test",
     deps = [
         ":leaf_context",

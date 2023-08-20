@@ -202,11 +202,11 @@ HttpServiceCurl::HttpServiceCurl() : HttpService() {
 
 HttpServiceCurl::~HttpServiceCurl() {}
 
-HttpResponse HttpServiceCurl::DoPostForm(
-    const std::string& temp_directory, const std::string& url,
-    const DataFieldsMap& data_fields,
-    const FileFieldsMap& file_fields,
-    bool verbose) {
+HttpResponse HttpServiceCurl::DoPostForm(const std::string& temp_directory,
+                                         const std::string& url,
+                                         const DataFieldsMap& data_fields,
+                                         const FileFieldsMap& file_fields,
+                                         bool verbose) {
   // Create and fill out a <form> to POST.
   CURL* curl{nullptr};
   CURLcode result;

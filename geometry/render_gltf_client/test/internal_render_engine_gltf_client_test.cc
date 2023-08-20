@@ -22,6 +22,10 @@
 #include "drake/geometry/render_gltf_client/render_engine_gltf_client_params.h"
 #include "drake/geometry/render_gltf_client/test/internal_sample_image_data.h"
 
+// This might *seem* to be unused, but don't remove it! We rely on this to dump
+// images to the console when calling `EXPECT_EQ(Image<...>, Image<...>)`.
+#include "drake/systems/sensors/test_utilities/image_compare.h"
+
 namespace drake {
 namespace geometry {
 namespace render_gltf_client {
@@ -139,8 +143,7 @@ TEST_F(RenderEngineGltfClientTest, Clone) {
 
   EXPECT_EQ(engine.get_params().GetUrl(), clone_engine->get_params().GetUrl());
   EXPECT_EQ(engine.get_params().verbose, clone_engine->get_params().verbose);
-  EXPECT_EQ(engine.get_params().cleanup,
-            clone_engine->get_params().cleanup);
+  EXPECT_EQ(engine.get_params().cleanup, clone_engine->get_params().cleanup);
   /* Cloning creates a new temporary directory, the underlying RenderClient is
    not cloned and as such a new temporary directory is created. */
   EXPECT_NE(engine.temp_directory(), clone_engine->temp_directory());
@@ -177,9 +180,9 @@ TEST_F(RenderEngineGltfClientTest, UpdateViewpoint) {
    diagonal or the bottom row. */
   auto maybe_transform_inverse = [](const Eigen::Matrix4d& mat) {
     Matrix4d inverse{mat};
-  #if VTK_VERSION_NUMBER > VTK_VERSION_CHECK(9, 1, 0)
-      return inverse;  // The bug (vtk#8883) was fixed in 9.1.0.
-  #else
+#if VTK_VERSION_NUMBER > VTK_VERSION_CHECK(9, 1, 0)
+    return inverse;  // The bug (vtk#8883) was fixed in 9.1.0.
+#else
     // Invert the rotation via transpose.
     inverse.topLeftCorner<3, 3>().transposeInPlace();
     // Rotate the inverted translation.
@@ -187,7 +190,7 @@ TEST_F(RenderEngineGltfClientTest, UpdateViewpoint) {
     const Vector3d t_inv = inverse.topLeftCorner<3, 3>() * (-t);
     inverse.topRightCorner<3, 1>() = t_inv;
     return inverse;
-  #endif
+#endif
   };
   auto compare = [&](const Matrix4d& vtk, const Matrix4d& gltf) {
     constexpr double tolerance = 1e-9;
@@ -544,7 +547,7 @@ TEST_F(RenderEngineGltfClientGltfTest, ExportScene) {
    "child_tri". */
   AddGltf();
 
-  const json gltf_color  = ExportAndReadJson("color.gltf", ImageType::kColor);
+  const json gltf_color = ExportAndReadJson("color.gltf", ImageType::kColor);
   ASSERT_EQ(gltf_color["nodes"].size(), 6);
   bool root_tri_present = false;
   bool empty_root_present = false;
@@ -581,7 +584,6 @@ TEST_F(RenderEngineGltfClientGltfTest, ExportScene) {
   // We're not testing the actual differences. The fact that they're different
   // shows that something is being done. And observation of label images in the
   // wild will quickly report if what is being done is bad.
-
 
   // In the case of problems where we're writing the glTF file, we should throw
   // a (somewhat) meaningful message. We use an inaccessible file as proxy for

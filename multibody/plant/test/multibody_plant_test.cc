@@ -1714,9 +1714,11 @@ GTEST_TEST(MultibodyPlantTest, ReversedWeldError) {
       ".*already has a joint.*extra_welds_to_world.*joint.*not allowed.*");
 }
 
-// Utility to verify that the only ports of MultibodyPlant that are feedthrough
-// are acceleration and reaction force ports.
-bool OnlyAccelerationAndReactionPortsFeedthrough(
+// Utility to verify the subset of output ports we expect to be direct a
+// feedthrough of the inputs.
+// @returns `true` iff only if a closed subset of the ports is direct
+// feedthrough.
+bool VerifyFeedthroughPorts(
     const MultibodyPlant<double>& plant) {
   // Create a set of the indices of all ports that can be feedthrough.
   std::set<int> ok_to_feedthrough;
@@ -1728,6 +1730,10 @@ bool OnlyAccelerationAndReactionPortsFeedthrough(
         plant.get_generalized_acceleration_output_port(i).get_index());
   ok_to_feedthrough.insert(
       plant.get_body_spatial_accelerations_output_port().get_index());
+  if (plant.is_discrete()) {
+    ok_to_feedthrough.insert(
+        plant.get_contact_results_output_port().get_index());
+  }
 
   // Now find all the feedthrough ports and make sure they are on the
   // list of expected feedthrough ports.
@@ -1822,7 +1828,7 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
 
   // Only accelerations and joint reaction forces feedthrough, even with the
   // new ports related to SceneGraph interaction.
-  EXPECT_TRUE(OnlyAccelerationAndReactionPortsFeedthrough(plant));
+  EXPECT_TRUE(VerifyFeedthroughPorts(plant));
 
   EXPECT_EQ(plant.num_visual_geometries(), 0);
   EXPECT_EQ(plant.num_collision_geometries(), 3);
@@ -2768,7 +2774,7 @@ class KukaArmTest : public ::testing::TestWithParam<double> {
 
     // Only accelerations and joint reaction forces feedthrough, for either
     // continuous or discrete plants.
-    EXPECT_TRUE(OnlyAccelerationAndReactionPortsFeedthrough(*plant_));
+    EXPECT_TRUE(VerifyFeedthroughPorts(*plant_));
 
     EXPECT_EQ(plant_->num_positions(), 7);
     EXPECT_EQ(plant_->num_velocities(), 7);

@@ -269,9 +269,9 @@ vec4 GetIlluminatedColor(vec4 diffuse) {
   }
 
   void DoSetModelViewMatrix(const Eigen::Matrix4f& X_CW,
-                         const Eigen::Matrix4f& T_WM,
-                         const Eigen::Matrix4f& X_WG,
-                         const Vector3d& scale) const override {
+                            const Eigen::Matrix4f& T_WM,
+                            const Eigen::Matrix4f& X_WG,
+                            const Vector3d& scale) const override {
     // For lighting, we need the normal and position of a fragment in the world
     // frame. The pose of the fragment (from its corresponding vertices) comes
     // simply from T_WM. But the normals require a different transform:
@@ -301,8 +301,7 @@ vec4 GetIlluminatedColor(vec4 diffuse) {
     glUniform1i(GetLightFieldLocation(index, "type"),
                 static_cast<int>(render::light_type_from_string(light.type)));
     Eigen::Vector3f color = light.color.rgba().head<3>().cast<float>();
-    glUniform3fv(GetLightFieldLocation(index, "color"), 1,
-                 color.data());
+    glUniform3fv(GetLightFieldLocation(index, "color"), 1, color.data());
     Eigen::Vector4f position;
     position.head<3>() = light.position.cast<float>();
     const render::LightFrame frame =
@@ -311,7 +310,7 @@ vec4 GetIlluminatedColor(vec4 diffuse) {
     glUniform4fv(GetLightFieldLocation(index, "position"), 1, position.data());
     Eigen::Vector3f atten_coeff = light.attenuation_values.cast<float>();
     glUniform3fv(GetLightFieldLocation(index, "atten_coeff"), 1,
-                atten_coeff.data());
+                 atten_coeff.data());
     glUniform1f(GetLightFieldLocation(index, "intensity"),
                 static_cast<float>(light.intensity));
 
@@ -447,8 +446,8 @@ class DefaultTextureColorShader final : public LightingShader {
     Vector2<float> texture_scale;
   };
 
-  std::optional<ShaderProgramData>
-  DoCreateProgramData(const PerceptionProperties& properties) const final {
+  std::optional<ShaderProgramData> DoCreateProgramData(
+      const PerceptionProperties& properties) const final {
     if (!properties.HasProperty("phong", "diffuse_map")) return std::nullopt;
 
     const string& file_name =
@@ -465,13 +464,15 @@ class DefaultTextureColorShader final : public LightingShader {
       throw std::runtime_error(fmt::format(
           "A mesh with no texture coordinates has erroneously defined the "
           "property ('phong', 'diffuse_map') as {}. To use a diffuse texture "
-          "map, the mesh must have texture coordinates.", file_name));
+          "map, the mesh must have texture coordinates.",
+          file_name));
     }
 
     const auto& scale = properties.GetPropertyOrDefault(
         "phong", "diffuse_scale", Vector2d(1, 1));
-    return ShaderProgramData{shader_id(), AbstractValue::Make(
-      InstanceData{*texture_id, scale.cast<float>()})};
+    return ShaderProgramData{
+        shader_id(),
+        AbstractValue::Make(InstanceData{*texture_id, scale.cast<float>()})};
   }
 
   std::shared_ptr<TextureLibrary> library_{};
@@ -523,8 +524,7 @@ class DefaultDepthShader final : public ShaderProgram {
     LoadFromSources(kVertexShader, kFragmentShader);
   }
 
-  void SetDepthCameraParameters(
-      const DepthRenderCamera& camera) const final {
+  void SetDepthCameraParameters(const DepthRenderCamera& camera) const final {
     glUniform1f(depth_z_near_loc_, camera.depth_range().min_depth());
     glUniform1f(depth_z_far_loc_, camera.depth_range().max_depth());
   }
@@ -856,16 +856,15 @@ void RenderEngineGl::InitGlState() {
   glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE);
 }
 
-void RenderEngineGl::ImplementMesh(int geometry_index,
-                                   void* user_data,
+void RenderEngineGl::ImplementMesh(int geometry_index, void* user_data,
                                    const Vector3<double>& scale,
                                    const std::string& filename_in) {
   const RegistrationData& data = *static_cast<RegistrationData*>(user_data);
   PerceptionProperties temp_props(data.properties);
 
   const OpenGlGeometry& geometry = geometries_[geometry_index];
-  temp_props.AddProperty(
-      kInternalGroup, kHasTexCoordProperty, geometry.has_tex_coord);
+  temp_props.AddProperty(kInternalGroup, kHasTexCoordProperty,
+                         geometry.has_tex_coord);
 
   const std::string file_key = GetPathKey(filename_in);
   RenderMaterial material;
@@ -903,8 +902,7 @@ bool RenderEngineGl::DoRemoveGeometry(GeometryId id) {
   auto iter = visuals_.find(id);
   if (iter != visuals_.end()) {
     // Remove from the shader families to which it belongs!
-    auto remove_from_family = [this](GeometryId g_id,
-                                     const auto& shader_data,
+    auto remove_from_family = [this](GeometryId g_id, const auto& shader_data,
                                      RenderType render_type) {
       const ShaderId s_id = shader_data[render_type].shader_id();
       auto& geometries = shader_families_[render_type].at(s_id);
@@ -982,8 +980,8 @@ void RenderEngineGl::RenderAt(const ShaderProgram& shader_program,
     //  times. Stored, I'd cast once.
     shader_program.SetModelViewMatrix(X_CW, instance.X_WG, instance.scale);
 
-    glDrawElements(GL_TRIANGLES, geometry.index_buffer_size,
-                   GL_UNSIGNED_INT, 0);
+    glDrawElements(GL_TRIANGLES, geometry.index_buffer_size, GL_UNSIGNED_INT,
+                   0);
   }
   // Unbind the vertex array back to the default of 0.
   glBindVertexArray(0);
@@ -1359,8 +1357,8 @@ int RenderEngineGl::CreateGlGeometry(const RenderMesh& mesh_data) {
   const int kFloatsPerPosition = 3;
   const int kFloatsPerNormal = 3;
   const int kFloatsPerUv = 2;
-  vertex_data.reserve(
-      v_count * (kFloatsPerPosition + kFloatsPerNormal + kFloatsPerUv));
+  vertex_data.reserve(v_count *
+                      (kFloatsPerPosition + kFloatsPerNormal + kFloatsPerUv));
   // N.B. we are implicitly converting from double to float by inserting them
   // into the vector.
   vertex_data.insert(vertex_data.end(), mesh_data.positions.data(),
@@ -1370,8 +1368,8 @@ int RenderEngineGl::CreateGlGeometry(const RenderMesh& mesh_data) {
   vertex_data.insert(vertex_data.end(), mesh_data.uvs.data(),
                      mesh_data.uvs.data() + v_count * kFloatsPerUv);
   glNamedBufferStorage(geometry.vertex_buffer,
-                       vertex_data.size() * sizeof(GLfloat),
-                       vertex_data.data(), 0);
+                       vertex_data.size() * sizeof(GLfloat), vertex_data.data(),
+                       0);
 
   // Create the index buffer object (IBO).
   using indices_uint_t = decltype(mesh_data.indices)::Scalar;
@@ -1422,21 +1420,20 @@ void RenderEngineGl::CreateVertexArray(OpenGlGeometry* geometry) const {
   vbo_offset += geometry->v_count * kFloatsPerPosition * sizeof(GLfloat);
 
   const int normal_attrib = 1;
-  glVertexArrayVertexBuffer(
-      geometry->vertex_array, normal_attrib, geometry->vertex_buffer,
-      vbo_offset, kFloatsPerNormal * sizeof(GLfloat));
+  glVertexArrayVertexBuffer(geometry->vertex_array, normal_attrib,
+                            geometry->vertex_buffer, vbo_offset,
+                            kFloatsPerNormal * sizeof(GLfloat));
   glVertexArrayAttribFormat(geometry->vertex_array, normal_attrib,
                             kFloatsPerNormal, GL_FLOAT, GL_FALSE, 0);
   glEnableVertexArrayAttrib(geometry->vertex_array, normal_attrib);
   vbo_offset += geometry->v_count * kFloatsPerNormal * sizeof(GLfloat);
 
   const int uv_attrib = 2;
-  glVertexArrayVertexBuffer(
-      geometry->vertex_array, uv_attrib, geometry->vertex_buffer,
-      vbo_offset, kFloatsPerUv * sizeof(GLfloat));
-  glVertexArrayAttribFormat(geometry->vertex_array, uv_attrib,
-                            kFloatsPerUv, GL_FLOAT,
-                            GL_FALSE, 0);
+  glVertexArrayVertexBuffer(geometry->vertex_array, uv_attrib,
+                            geometry->vertex_buffer, vbo_offset,
+                            kFloatsPerUv * sizeof(GLfloat));
+  glVertexArrayAttribFormat(geometry->vertex_array, uv_attrib, kFloatsPerUv,
+                            GL_FLOAT, GL_FALSE, 0);
   glEnableVertexArrayAttrib(geometry->vertex_array, uv_attrib);
   vbo_offset += geometry->v_count * kFloatsPerUv * sizeof(GLfloat);
 

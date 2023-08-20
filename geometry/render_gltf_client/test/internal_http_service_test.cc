@@ -24,11 +24,11 @@ class EmptyService : public HttpService {
   EmptyService() = default;
 
  protected:
-  HttpResponse DoPostForm(
-      const std::string& /* temp_directory */, const std::string& /* url */,
-      const DataFieldsMap& /* data_fields */,
-      const FileFieldsMap& /* file_fields */,
-      bool /* verbose */ = false) override {
+  HttpResponse DoPostForm(const std::string& /* temp_directory */,
+                          const std::string& /* url */,
+                          const DataFieldsMap& /* data_fields */,
+                          const FileFieldsMap& /* file_fields */,
+                          bool /* verbose */ = false) override {
     HttpResponse ret;
     ret.http_code = 200;
     return ret;
@@ -83,9 +83,8 @@ TEST_F(HttpServicePostFormTest, ValidFiles) {
 
 // A request to upload a missing file will throw.
 TEST_F(HttpServicePostFormTest, NoSuchFile) {
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      PostForm({{"foo", "/no/such/file"}}),
-      ".*missing.*foo.*/no/such/file.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(PostForm({{"foo", "/no/such/file"}}),
+                              ".*missing.*foo.*/no/such/file.*");
 }
 
 // A request to upload a multiple missing files reports all of the errors.
@@ -98,10 +97,12 @@ TEST_F(HttpServicePostFormTest, NoSuchFileMultiple) {
 // When one files exists and one does not, only the missing file is reported.
 TEST_F(HttpServicePostFormTest, MixedFiles) {
   EXPECT_THAT(
-      [&]() { PostForm({{"image", jpg_path_}, {"foo", "/no/such/file"}}); },
-      testing::ThrowsMessage<std::exception>(testing::AllOf(
-          testing::Not(testing::HasSubstr("image")),
-          testing::HasSubstr("/no/such/file"))));
+      [&]() {
+        PostForm({{"image", jpg_path_}, {"foo", "/no/such/file"}});
+      },
+      testing::ThrowsMessage<std::exception>(
+          testing::AllOf(testing::Not(testing::HasSubstr("image")),
+                         testing::HasSubstr("/no/such/file"))));
 }
 
 }  // namespace

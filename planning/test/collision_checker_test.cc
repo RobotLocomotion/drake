@@ -351,11 +351,6 @@ class CollisionCheckerThrowTest : public testing::Test {
   double self_collision_padding_{0.0};
 };
 
-TEST_F(CollisionCheckerThrowTest, BadFn) {
-  distance_fn_ = {};
-  ExpectConstructorThrow(".*distance_function != nullptr.*");
-}
-
 TEST_F(CollisionCheckerThrowTest, BadStepSize) {
   edge_step_size_ = 0.0;
   ExpectConstructorThrow(".*edge_step_size.*");
@@ -1374,6 +1369,21 @@ TEST_F(TrivialCollisionCheckerTest, IsCollisionFilteredBetween) {
                                                dut_->get_body(BodyIndex(3))));
 }
 
+TEST_F(TrivialCollisionCheckerTest, GetNumberOfThreads) {
+  EXPECT_EQ(dut_->GetNumberOfThreads(false), 1);
+
+  const int num_omp_threads =
+      common_robotics_utilities::openmp_helpers::GetNumOmpThreads();
+  const int num_contexts = dut_->num_allocated_contexts();
+  const int expected_num_threads = std::min(num_omp_threads, num_contexts);
+
+  if (common_robotics_utilities::openmp_helpers::IsOmpEnabledInBuild()) {
+    EXPECT_GT(expected_num_threads, 1);
+  }
+
+  EXPECT_EQ(dut_->GetNumberOfThreads(true), expected_num_threads);
+}
+
 // Creates a checker on a plant with an N-link chain (optionally) welded to the
 // world. Part of the edge-checking API test infrastructure (see below).
 template <typename CheckerType>
@@ -1417,7 +1427,7 @@ GTEST_TEST(EdgeCheckTest, Configuration) {
                                                  const VectorXd& q2) {
     const double dist = (q1 - q2).norm();
     if (dist == 0) return 0.0;
-    return -1.5;
+    return 1.5;
   };
   CollisionCheckerTester dut = MakeEdgeChecker<CollisionCheckerTester>(dist0);
   const int q_size = dut.plant().num_positions();
@@ -1448,9 +1458,9 @@ GTEST_TEST(EdgeCheckTest, Configuration) {
     // Distance function.
 
     // Evaluate (1) and (2) as constructed. dist0 should always return -1.5.
-    EXPECT_EQ(dut.ComputeConfigurationDistance(q1, q2), -1.5);
+    EXPECT_EQ(dut.ComputeConfigurationDistance(q1, q2), 1.5);
     ASSERT_NE(dut.MakeStandaloneConfigurationDistanceFunction(), nullptr);
-    EXPECT_EQ(dut.MakeStandaloneConfigurationDistanceFunction()(q1, q2), -1.5);
+    EXPECT_EQ(dut.MakeStandaloneConfigurationDistanceFunction()(q1, q2), 1.5);
 
     // Change the function via (3).
     const ConfigurationDistanceFunction dist1 = [](const VectorXd& a,

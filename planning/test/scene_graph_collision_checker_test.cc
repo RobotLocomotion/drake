@@ -4,6 +4,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/planning/linear_distance_and_interpolation_provider.h"
 #include "drake/planning/robot_diagram_builder.h"
 #include "drake/planning/test/planning_test_helpers.h"
 #include "drake/planning/test_utilities/collision_checker_abstract_test_suite.h"
@@ -23,16 +24,30 @@ using multibody::Body;
 using multibody::BodyIndex;
 using testing::ElementsAre;
 
-CollisionCheckerTestParams MakeSceneGraphCollisionCheckerParams() {
+enum class MakeCheckerOptions { kMakeNone, kMakeProvider, kMakeFunction };
+
+CollisionCheckerTestParams MakeSceneGraphCollisionCheckerParams(
+    MakeCheckerOptions make_checker_option) {
   CollisionCheckerTestParams result;
   const CollisionCheckerConstructionParams p;
   auto model = MakePlanningTestModel(MakeCollisionCheckerTestScene());
+
+  std::unique_ptr<LinearDistanceAndInterpolationProvider> provider = nullptr;
+  ConfigurationDistanceFunction distance_function = nullptr;
+
+  if (make_checker_option == MakeCheckerOptions::kMakeProvider) {
+    provider = std::make_unique<LinearDistanceAndInterpolationProvider>(
+        model->plant(), GetIiwaDistanceWeights());
+  } else if (make_checker_option == MakeCheckerOptions::kMakeFunction) {
+    distance_function = MakeWeightedIiwaConfigurationDistanceFunction();
+  }
+
   const auto robot_instance = model->plant().GetModelInstanceByName("iiwa");
   result.checker.reset(new SceneGraphCollisionChecker(
       {.model = std::move(model),
+       .distance_and_interpolation_provider = std::move(provider),
        .robot_model_instances = {robot_instance},
-       .configuration_distance_function =
-           MakeWeightedIiwaConfigurationDistanceFunction(),
+       .configuration_distance_function = std::move(distance_function),
        .edge_step_size = p.edge_step_size,
        .env_collision_padding = p.env_padding,
        .self_collision_padding = p.self_padding}));
@@ -172,7 +187,11 @@ void EnforceCollisionFilterConsistency(
 
 INSTANTIATE_TEST_SUITE_P(
     SceneGraphCollisionCheckerTestSuite, CollisionCheckerAbstractTestSuite,
-    testing::Values(MakeSceneGraphCollisionCheckerParams()));
+    testing::Values(
+        MakeSceneGraphCollisionCheckerParams(MakeCheckerOptions::kMakeNone),
+        MakeSceneGraphCollisionCheckerParams(MakeCheckerOptions::kMakeProvider),
+        MakeSceneGraphCollisionCheckerParams(
+            MakeCheckerOptions::kMakeFunction)));
 
 // Creates three spheres (each on a prismatic joint with its parent set to
 // the world origin) and checks their RobotClearance query.

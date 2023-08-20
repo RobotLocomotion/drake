@@ -8,9 +8,6 @@ namespace render_gltf_client {
 /** @defgroup render_engine_gltf_client_server_api glTF Render Client-Server API
     @ingroup render_engines
 
-@warning This feature is currently in "beta testing" and may change without any
-deprecation notice ahead of time.
-
 <h2 id="overview">Overview</h2>
 
 Drake offers built-in renderers (RenderEngineVtk, RenderEngineGl), but in some

@@ -222,6 +222,7 @@ drake_cc_googletest(
         "//common:find_resource",
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
+        "//systems/sensors/test_utilities:image_compare",
     ],
 )
 
@@ -237,6 +238,7 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
+        "//systems/sensors/test_utilities:image_compare",
         "@nlohmann_internal//:nlohmann",
     ],
 )
@@ -353,4 +355,4 @@ drake_cc_googletest(
     ],
 )
 
-add_lint_tests(enable_clang_format_lint = False)
+add_lint_tests()

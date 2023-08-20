@@ -1,3 +1,5 @@
+/* See render_benchmark_doxygen.h for discussion of this benchmark.  */
+
 #include <unistd.h>
 
 #include <filesystem>
@@ -12,23 +14,6 @@
 
 namespace drake {
 namespace geometry {
-namespace render {
-
-/* See render_benchmark_doxygen.h for discussion of this benchmark.  */
-
-/* Friend class for accessing RenderEngine's protected/private functionality. */
-class RenderEngineTester {
- public:
-  RenderEngineTester() = delete;
-
-  static void SetDefaultLightPosition(const Vector3<double>& X_DL,
-                                      RenderEngine* renderer) {
-    renderer->SetDefaultLightPosition(X_DL);
-  }
-};
-
-}  // namespace render
-
 namespace {
 
 using Eigen::Vector3d;
@@ -39,7 +24,6 @@ using render::DepthRange;
 using render::DepthRenderCamera;
 using render::RenderCameraCore;
 using render::RenderEngine;
-using render::RenderEngineTester;
 using render::RenderLabel;
 using systems::sensors::ImageDepth32F;
 using systems::sensors::ImageLabel16I;
@@ -66,13 +50,19 @@ enum class EngineType { Vtk, Gl };
 /* Creates a render engine of the given type with the given background color. */
 template <EngineType engine_type>
 std::unique_ptr<RenderEngine> MakeEngine(const Vector3d& bg_rgb) {
+  // Offset the light from its default position (coincident with the camera)
+  // so that shadows can be seen in the render.
   if constexpr (engine_type == EngineType::Vtk) {
-    RenderEngineVtkParams params{{}, {}, bg_rgb};
+    const RenderEngineVtkParams params{
+        .default_clear_color = bg_rgb,
+        .lights = {{.type = "point", .position = {0.5, 0.5, 0}}}};
     return MakeRenderEngineVtk(params);
   }
   if constexpr (engine_type == EngineType::Gl) {
-    RenderEngineGlParams params;
-    params.default_clear_color.set(bg_rgb[0], bg_rgb[1], bg_rgb[2], 1.0);
+    const Rgba bg(bg_rgb[0], bg_rgb[1], bg_rgb[2]);
+    const RenderEngineGlParams params{
+        .default_clear_color = bg,
+        .lights = {{.type = "point", .position = {0.5, 0.5, 0}}}};
     return MakeRenderEngineGl(params);
   }
 }
@@ -308,14 +298,6 @@ class RenderBenchmark : public benchmark::Fixture {
                                   DepthRange{kZNear, kZFar});
     }
     AddSphereArray(sphere_count, depth_cameras_[0].core(), engine);
-
-    // Offset the light from its default position shared with the camera, i.e.
-    // (0, 0, 1), so that shadows can be seen in the render.
-    // TODO(SeanCurtis-TRI) This is using a stop-gap mechanism for configuring
-    // light position. Swap it to use a light declaration API when it is
-    // introduced.
-    RenderEngineTester::SetDefaultLightPosition(Vector3d{0.5, 0.5, 1},
-                                                engine);
   }
 
   std::vector<DepthRenderCamera> depth_cameras_;
@@ -347,27 +329,27 @@ class RenderBenchmark : public benchmark::Fixture {
  The parameters are 4-tuples of: sphere count, camera count, image width, and
  image height. */
 #define STR(s) #s
-#define MAKE_BENCHMARK(Renderer, ImageT) \
-BENCHMARK_DEFINE_F(RenderBenchmark, Renderer##ImageT) \
-    (benchmark::State&state) { \
-  ImageT##Image<EngineType::Renderer>(state, STR(Renderer##ImageT)); \
-} \
-BENCHMARK_REGISTER_F(RenderBenchmark, Renderer##ImageT) \
-    ->Unit(benchmark::kMillisecond) \
-    ->Args({1, 1, 640, 480}) \
-    ->Args({12, 1, 640, 480}) \
-    ->Args({120, 1, 640, 480}) \
-    ->Args({240, 1, 640, 480}) \
-    ->Args({480, 1, 640, 480}) \
-    ->Args({1200, 1, 640, 480}) \
-    ->Args({1, 10, 640, 480}) \
-    ->Args({1200, 10, 640, 480}) \
-    ->Args({1, 1, 320, 240}) \
-    ->Args({1, 1, 1280, 960}) \
-    ->Args({1, 1, 2560, 1920}) \
-    ->Args({1200, 1, 320, 240}) \
-    ->Args({1200, 1, 1280, 960}) \
-    ->Args({1200, 1, 2560, 1920})
+#define MAKE_BENCHMARK(Renderer, ImageT)                               \
+  BENCHMARK_DEFINE_F(RenderBenchmark, Renderer##ImageT)                \
+  (benchmark::State & state) {                                         \
+    ImageT##Image<EngineType::Renderer>(state, STR(Renderer##ImageT)); \
+  }                                                                    \
+  BENCHMARK_REGISTER_F(RenderBenchmark, Renderer##ImageT)              \
+      ->Unit(benchmark::kMillisecond)                                  \
+      ->Args({1, 1, 640, 480})                                         \
+      ->Args({12, 1, 640, 480})                                        \
+      ->Args({120, 1, 640, 480})                                       \
+      ->Args({240, 1, 640, 480})                                       \
+      ->Args({480, 1, 640, 480})                                       \
+      ->Args({1200, 1, 640, 480})                                      \
+      ->Args({1, 10, 640, 480})                                        \
+      ->Args({1200, 10, 640, 480})                                     \
+      ->Args({1, 1, 320, 240})                                         \
+      ->Args({1, 1, 1280, 960})                                        \
+      ->Args({1, 1, 2560, 1920})                                       \
+      ->Args({1200, 1, 320, 240})                                      \
+      ->Args({1200, 1, 1280, 960})                                     \
+      ->Args({1200, 1, 2560, 1920})
 
 MAKE_BENCHMARK(Vtk, Color);
 MAKE_BENCHMARK(Vtk, Depth);

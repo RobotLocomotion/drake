@@ -188,21 +188,20 @@ class HttpService {
      invalid HTTP response code, should **not** produce an exception but rather
      encode this information in the returned HttpResponse for the caller to
      determine how to proceed. */
-  HttpResponse PostForm(
-      const std::string& temp_directory, const std::string& url,
-      const DataFieldsMap& data_fields,
-      const FileFieldsMap& file_fields,
-      bool verbose = false);
+  HttpResponse PostForm(const std::string& temp_directory,
+                        const std::string& url,
+                        const DataFieldsMap& data_fields,
+                        const FileFieldsMap& file_fields, bool verbose = false);
 
  protected:
   /* The NVI-function for posting an HTML form to a render server. When
    PostForm calls this, it has already validated the existence of the files in
    `file_fields`. */
-  virtual HttpResponse DoPostForm(
-      const std::string& temp_directory, const std::string& url,
-      const DataFieldsMap& data_fields,
-      const FileFieldsMap& file_fields,
-      bool verbose) = 0;
+  virtual HttpResponse DoPostForm(const std::string& temp_directory,
+                                  const std::string& url,
+                                  const DataFieldsMap& data_fields,
+                                  const FileFieldsMap& file_fields,
+                                  bool verbose) = 0;
 };
 
 }  // namespace internal

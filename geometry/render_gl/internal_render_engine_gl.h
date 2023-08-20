@@ -237,8 +237,8 @@ class RenderEngineGl final : public render::RenderEngine {
   // objects (render buffer, frame_buffer, and texture). It should only be
   // called if there is not already a cached render target for the camera's
   // reported image size (w, h) in render_targets_.
-  static RenderTarget CreateRenderTarget(
-      const render::RenderCameraCore& camera, RenderType render_type);
+  static RenderTarget CreateRenderTarget(const render::RenderCameraCore& camera,
+                                         RenderType render_type);
 
   // Obtains the label image rendered from a specific object pose. This is
   // slower than it has to be because it does per-pixel processing on the CPU.
@@ -255,8 +255,7 @@ class RenderEngineGl final : public render::RenderEngine {
   // Creates an OpenGlGeometry from the mesh defined by the given `mesh_data`.
   // The geometry is added to geometries_ and its index is returned.
   // This is *not* threadsafe.
-  int CreateGlGeometry(
-      const geometry::internal::RenderMesh& mesh_data);
+  int CreateGlGeometry(const geometry::internal::RenderMesh& mesh_data);
 
   // Given a geometry that has its buffers (and vertex counts assigned), ties
   // all of the buffer data into the vertex array attributes.
@@ -344,8 +343,7 @@ class RenderEngineGl final : public render::RenderEngine {
   std::array<ShaderFamily, RenderType::kTypeCount> shader_families_;
 
   // The collection of all shader programs (grouped by render type).
-  std::array<std::unordered_map<ShaderId,
-                                copyable_unique_ptr<ShaderProgram>>,
+  std::array<std::unordered_map<ShaderId, copyable_unique_ptr<ShaderProgram>>,
              RenderType::kTypeCount>
       shader_programs_;
 
@@ -394,9 +392,8 @@ class RenderEngineGl final : public render::RenderEngine {
   // Note: copies of this render engine share the same frame buffer objects.
   // If RenderEngineGl is included in a SceneGraph and its context is cloned
   // multiple times, mutating this cache is *not* thread safe.
-  mutable std::array<
-      std::unordered_map<BufferDim, RenderTarget>,
-      RenderType::kTypeCount>
+  mutable std::array<std::unordered_map<BufferDim, RenderTarget>,
+                     RenderType::kTypeCount>
       frame_buffers_;
 
   // Mapping from GeometryId to the visual data associated with that geometry.

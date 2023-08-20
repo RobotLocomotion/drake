@@ -22,30 +22,9 @@
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/render_gltf_client/internal_http_service.h"
 #include "drake/geometry/render_gltf_client/test/internal_sample_image_data.h"
+#include "drake/systems/sensors/test_utilities/image_compare.h"
 
 namespace drake {
-namespace systems {
-namespace sensors {
-// Add support for printing EXPECT_EQ(Image, Image) failures.
-template <PixelType kPixelType>
-void PrintTo(const Image<kPixelType>& image, std::ostream* os) {
-  using T = typename Image<kPixelType>::T;
-  using Promoted = std::conditional_t<std::is_integral_v<T>, int, T>;
-  constexpr int num_channels = Image<kPixelType>::kNumChannels;
-  const int width = image.width();
-  const int height = image.height();
-  *os << "\n";
-  for (int z = 0; z < num_channels; ++z) {
-    const T* const base = image.at(0, 0) + z;
-    using Stride = Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>;
-    Eigen::Map<const MatrixX<T>, 0, Stride> eigen(
-        base, height, width, Stride(num_channels, width * num_channels));
-    fmt::print(*os, "Channel {}:\n", z);
-    fmt::print(*os, "{}\n", fmt_eigen(eigen.template cast<Promoted>()));
-  }
-}
-}  // namespace sensors
-}  // namespace systems
 namespace geometry {
 namespace render_gltf_client {
 namespace internal {
@@ -95,7 +74,8 @@ class RenderClientTest : public ::testing::Test {
   // Creates the given filename (and returns the filename for convenience).
   std::string Touch(const std::string& filename) {
     std::ofstream stream{filename};
-    stream << "## RenderClientTest sample file." << "\n";
+    stream << "## RenderClientTest sample file."
+           << "\n";
     DRAKE_DEMAND(stream.good());
     return filename;
   }
@@ -128,8 +108,8 @@ class RenderClientTest : public ::testing::Test {
 TEST_F(RenderClientTest, Constructor) {
   // Verify default attributes are set properly given a default `Params`.
   const RenderClient default_client{Params{}};
-  EXPECT_EQ(
-      default_client.get_params().GetUrl(), "http://127.0.0.1:8000/render");
+  EXPECT_EQ(default_client.get_params().GetUrl(),
+            "http://127.0.0.1:8000/render");
   EXPECT_EQ(default_client.get_params().verbose, false);
   EXPECT_EQ(default_client.get_params().cleanup, true);
 
@@ -451,16 +431,14 @@ TEST_F(RenderClientTest, RenderOnServerValidImageReturn) {
 TEST_F(RenderClientTest, ComputeSha256Good) {
   // To obtain this magic number, use a bash command:
   //   sha256sum geometry/render_gltf_client/test/test_depth_32F.tiff
-  EXPECT_EQ(
-      RenderClient::ComputeSha256(kTestDepthImage32FPath),
-      "6bb5621f3cdf06bb43c7104eb9a2dc5ab85db79b2c491be69c7704d03c476c1b");
+  EXPECT_EQ(RenderClient::ComputeSha256(kTestDepthImage32FPath),
+            "6bb5621f3cdf06bb43c7104eb9a2dc5ab85db79b2c491be69c7704d03c476c1b");
 }
 
 TEST_F(RenderClientTest, ComputeSha256Bad) {
   // Failure case: provided input file does not exist.
-  DRAKE_EXPECT_THROWS_MESSAGE(
-        RenderClient::ComputeSha256("/no/such/file"),
-        ".*cannot open.*/no/such/file.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(RenderClient::ComputeSha256("/no/such/file"),
+                              ".*cannot open.*/no/such/file.*");
 }
 
 TEST_F(RenderClientTest, RenameHttpServiceResponseGood) {
@@ -478,22 +456,23 @@ TEST_F(RenderClientTest, RenameHttpServiceResponseGood) {
    Additionally, do not test for no extension input_scene + ext="", this is
    already tested for above as an expected exception. */
   const fs::path base = scratch_;
-  const fs::path sub = base/"sub";
+  const fs::path sub = base / "sub";
   fs::create_directory(sub);
   const std::vector<RenameResult> renames{
       // All components have extensions.
-      {base/"path_0.bin",  base/"input_0.gltf", ".png",  base/"input_0.png"},
+      {base / "path_0.bin", base / "input_0.gltf", ".png",
+       base / "input_0.png"},
       // Input scene does not have a file extension.
-      {base/"path_1.curl", base/"input_1",      ".foo",  base/"input_1.foo"},
+      {base / "path_1.curl", base / "input_1", ".foo", base / "input_1.foo"},
       // Input path does not have an extension.
-      {base/"path_2",      base/"input_2.gltf", ".tiff", base/"input_2.tiff"},
+      {base / "path_2", base / "input_2.gltf", ".tiff", base / "input_2.tiff"},
       // Input and path do not have an extension.
-      {base/"path_3",      base/"input_3",      ".zip",  base/"input_3.zip"},
+      {base / "path_3", base / "input_3", ".zip", base / "input_3.zip"},
       // Empty extension is allowed.
-      {base/"path_4.txt",  base/"input_4.txt",  "",      base/"input_4"},
+      {base / "path_4.txt", base / "input_4.txt", "", base / "input_4"},
       // Source is in different directory.
-      {sub/"path_5.bin",   base/"input_5.gltf", ".jpg",  base/"input_5.jpg"}
-  };
+      {sub / "path_5.bin", base / "input_5.gltf", ".jpg",
+       base / "input_5.jpg"}};
 
   for (const auto& r : renames) {
     Touch(r.response_data_path);
@@ -545,14 +524,18 @@ TEST_F(RenderClientTest, LoadColorImageBad) {
 
   // Failure case 2: not a valid image file.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      RenderClient::LoadColorImage(Touch(scratch_/"fake.png"), &ignored),
+      RenderClient::LoadColorImage(Touch(scratch_ / "fake.png"), &ignored),
       ".*cannot load.*fake.*");
 
   // Failure case 3: wrong image dimensions (on each axis).
   for (const bool selector : {true, false}) {
     int width = kTestImageWidth;
     int height = kTestImageHeight;
-    if (selector) { ++width; } else { ++height; }
+    if (selector) {
+      ++width;
+    } else {
+      ++height;
+    }
     ImageRgba8U wrong_size(width, height, 0);
     DRAKE_EXPECT_THROWS_MESSAGE(
         RenderClient::LoadColorImage(kTestRgbaImagePath, &wrong_size),
@@ -596,14 +579,18 @@ TEST_F(RenderClientTest, LoadDepthImageBad) {
 
   // Failure case 2: not a valid image file.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      RenderClient::LoadDepthImage(Touch(scratch_/"fake.tiff"), &ignored),
+      RenderClient::LoadDepthImage(Touch(scratch_ / "fake.tiff"), &ignored),
       ".*cannot load.*fake.*");
 
   // Failure case 3: wrong image dimensions (on each axis).
   for (const bool selector : {true, false}) {
     int width = kTestImageWidth;
     int height = kTestImageHeight;
-    if (selector) { ++width; } else { ++height; }
+    if (selector) {
+      ++width;
+    } else {
+      ++height;
+    }
     ImageDepth32F wrong_size(width, height, 0);
     DRAKE_EXPECT_THROWS_MESSAGE(
         RenderClient::LoadDepthImage(kTestDepthImage32FPath, &wrong_size),

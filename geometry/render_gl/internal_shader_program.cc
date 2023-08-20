@@ -140,7 +140,9 @@ GLint ShaderProgram::GetUniformLocation(const std::string& uniform_name) const {
   return id;
 }
 
-void ShaderProgram::Use() const { glUseProgram(gl_id_); }
+void ShaderProgram::Use() const {
+  glUseProgram(gl_id_);
+}
 
 void ShaderProgram::Unuse() const {
   GLint curr_program;
