@@ -251,4 +251,20 @@ drake_cc_library(
     hdrs = ["maybe_pause_for_user.h"],
 )
 
+drake_cc_googletest(
+    name = "maybe_pause_for_user_test",
+    deps = [
+        ":maybe_pause_for_user",
+    ],
+)
+
+drake_cc_binary(
+    name = "maybe_pause_for_user_manual_test",
+    testonly = 1,
+    srcs = ["test/maybe_pause_for_user_manual_test.cc"],
+    deps = [
+        ":maybe_pause_for_user",
+    ],
+)
+
 add_lint_tests(enable_clang_format_lint = False)
