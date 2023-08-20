@@ -22,6 +22,10 @@
 #include "drake/geometry/render_gltf_client/render_engine_gltf_client_params.h"
 #include "drake/geometry/render_gltf_client/test/internal_sample_image_data.h"
 
+// This might *seem* to be unused, but don't remove it! We rely on this to dump
+// images to the console when calling `EXPECT_EQ(Image<...>, Image<...>)`.
+#include "drake/systems/sensors/test_utilities/image_compare.h"
+
 namespace drake {
 namespace geometry {
 namespace render_gltf_client {

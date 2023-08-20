@@ -8,17 +8,12 @@
 #include <string>
 
 #include <gtest/gtest.h>
-#include <vtkImageData.h>
-#include <vtkImageExport.h>
-#include <vtkNew.h>
-#include <vtkPNGReader.h>
-#include <vtkSmartPointer.h>
-#include <vtkTIFFReader.h>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/systems/framework/event_collection.h"
+#include "drake/systems/sensors/test_utilities/image_compare.h"
 
 namespace drake {
 namespace systems {
@@ -207,74 +202,6 @@ class ImageWriterTest : public ::testing::Test {
   }
 
   template <PixelType kPixelType>
-  static ::testing::AssertionResult ReadImage(const std::string& image_name,
-                                              Image<kPixelType>* image) {
-    fs::path image_path(image_name);
-    if (fs::exists(image_path)) {
-      vtkSmartPointer<vtkImageReader2> reader;
-      switch (kPixelType) {
-        case PixelType::kRgba8U:
-        case PixelType::kGrey8U:
-        case PixelType::kDepth16U:
-        case PixelType::kLabel16I:
-          reader = vtkSmartPointer<vtkPNGReader>::New();
-          break;
-        case PixelType::kDepth32F:
-          reader = vtkSmartPointer<vtkTIFFReader>::New();
-          break;
-        default:
-          return ::testing::AssertionFailure()
-                 << "Trying to read an unknown image type";
-      }
-      reader->SetFileName(image_name.c_str());
-      vtkNew<vtkImageExport> exporter;
-      exporter->SetInputConnection(reader->GetOutputPort());
-      exporter->Update();
-      vtkImageData* image_data = exporter->GetInput();
-      // Assumes 1-dimensional data -- the 4x1 image.
-      if (image_data->GetDataDimension() == 1) {
-        int read_width;
-        image_data->GetDimensions(&read_width);
-        if (read_width == image->width()) {
-          exporter->Export(image->at(0, 0));
-          return ::testing::AssertionSuccess();
-        }
-      }
-      int dims[3];
-      exporter->GetDataDimensions(&dims[0]);
-      return ::testing::AssertionFailure()
-             << "Expected a " << image->width() << "x" << image->height()
-             << "image. Read an image of size: " << dims[0] << "x" << dims[1]
-             << "x" << dims[2];
-    } else {
-      return ::testing::AssertionFailure()
-             << "The image to be read does not exist: " << image_name;
-    }
-  }
-
-  template <PixelType kPixelType>
-  static ::testing::AssertionResult MatchesFileOnDisk(
-      const std::string& file_name, const Image<kPixelType>& expected) {
-    Image<kPixelType> read_image(expected.width(), expected.height());
-    auto result = ReadImage(file_name, &read_image);
-    if (result == ::testing::AssertionSuccess()) {
-      for (int u = 0; u < 4; ++u) {
-        for (int c = 0; c < ImageTraits<kPixelType>::kNumChannels; ++c) {
-          if (read_image.at(u, 0)[c] != expected.at(u, 0)[c]) {
-            if (result != ::testing::AssertionFailure()) {
-              result = ::testing::AssertionFailure();
-            }
-            result << "\nPixel (" << u << ", 0)[" << c << "] doesn't match. "
-                   << "From disk(" << read_image.at(u, 0)[0]
-                   << ", reference image: " << expected.at(u, 0)[0];
-          }
-        }
-      }
-    }
-    return result;
-  }
-
-  template <PixelType kPixelType>
   static void TestWritingImageOnPort() {
     ImageWriter writer;
     ImageWriterTester tester(writer);
@@ -305,7 +232,9 @@ class ImageWriterTest : public ::testing::Test {
     EXPECT_EQ(1, tester.port_count(port.get_index()));
     add_file_for_cleanup(expected_file.string());
 
-    EXPECT_TRUE(MatchesFileOnDisk(expected_name, image));
+    Image<kPixelType> readback;
+    ASSERT_TRUE(LoadImage(expected_name, &readback));
+    EXPECT_EQ(readback, image);
   }
 
  private:
@@ -697,56 +626,6 @@ TEST_F(ImageWriterTest, WritesDepthImage16U) {
 // This simply confirms that the color image gets written to the right format.
 TEST_F(ImageWriterTest, WritesGreyImage) {
   TestWritingImageOnPort<PixelType::kGrey8U>();
-}
-
-// Evaluate the stand-alone test for color images.
-TEST_F(ImageWriterTest, SaveToPng_Color) {
-  ImageRgba8U color_image = test_image<PixelType::kRgba8U>();
-
-  const std::string color_image_name = temp_name();
-  SaveToPng(color_image, color_image_name);
-
-  EXPECT_TRUE(MatchesFileOnDisk(color_image_name, color_image));
-}
-
-// Evaluate the stand-alone test for depth images.
-TEST_F(ImageWriterTest, SaveToTiff_Depth) {
-  ImageDepth32F depth_image = test_image<PixelType::kDepth32F>();
-
-  const std::string depth_image_name = temp_name();
-  SaveToTiff(depth_image, depth_image_name);
-
-  EXPECT_TRUE(MatchesFileOnDisk(depth_image_name, depth_image));
-}
-
-// Evaluate the stand-alone test for label images.
-TEST_F(ImageWriterTest, SaveToPng_Label) {
-  ImageLabel16I label_image = test_image<PixelType::kLabel16I>();
-
-  const std::string label_image_name = temp_name();
-  SaveToPng(label_image, label_image_name);
-
-  EXPECT_TRUE(MatchesFileOnDisk(label_image_name, label_image));
-}
-
-// Evaluate the stand-alone test for depth16 images.
-TEST_F(ImageWriterTest, SaveToPng_Depth16) {
-  ImageDepth16U image = test_image<PixelType::kDepth16U>();
-
-  const std::string image_name = temp_name();
-  SaveToPng(image, image_name);
-
-  EXPECT_TRUE(MatchesFileOnDisk(image_name, image));
-}
-
-// Evaluate the stand-alone test for grey images.
-TEST_F(ImageWriterTest, SaveToPng_Grey) {
-  ImageGrey8U image = test_image<PixelType::kGrey8U>();
-
-  const std::string image_name = temp_name();
-  SaveToPng(image, image_name);
-
-  EXPECT_TRUE(MatchesFileOnDisk(image_name, image));
 }
 
 }  // namespace
