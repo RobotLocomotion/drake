@@ -8,4 +8,3 @@ template class MeshFieldLinear<AutoDiffXd, VolumeMesh<AutoDiffXd>>;
 
 }  // namespace geometry
 }  // namespace drake
-

@@ -91,9 +91,9 @@ class CharacterizePointDistanceResultTest : public CharacterizeResultTest<T> {
             signed_distance < 0
                 ? " inside near "
                 : (signed_distance > 0 ? " outside near " : " touching at ");
-        configs.push_back(
-            {AlignPlanes(p_WC, a_norm_W, p_WB, b_norm_W), signed_distance,
-             "point" + relates + sample_B.description});
+        configs.push_back({AlignPlanes(p_WC, a_norm_W, p_WB, b_norm_W),
+                           signed_distance,
+                           "point" + relates + sample_B.description});
       }
     }
     return configs;

@@ -143,8 +143,9 @@ class SoftGeometry {
    this will throw if is_half_space() returns `true`.  */
   const VolumeMeshFieldLinear<double, double>& pressure_field() const {
     if (is_half_space()) {
-      throw std::runtime_error("SoftGeometry::pressure_field() cannot be "
-                               "invoked for soft half space");
+      throw std::runtime_error(
+          "SoftGeometry::pressure_field() cannot be "
+          "invoked for soft half space");
     }
     return std::get<SoftMesh>(geometry_).pressure();
   }
@@ -184,8 +185,7 @@ class RigidMesh {
 
   explicit RigidMesh(std::unique_ptr<TriangleSurfaceMesh<double>> mesh)
       : mesh_(std::move(mesh)),
-        bvh_(std::make_unique<Bvh<Obb, TriangleSurfaceMesh<double>>>(
-            *mesh_)) {}
+        bvh_(std::make_unique<Bvh<Obb, TriangleSurfaceMesh<double>>>(*mesh_)) {}
 
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RigidMesh)
 

@@ -422,4 +422,3 @@ class MeshFieldLinear {
 
 }  // namespace geometry
 }  // namespace drake
-

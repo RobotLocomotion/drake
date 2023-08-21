@@ -40,6 +40,7 @@ constexpr std::array<std::pair<int, int>, 6> kTetEdges = {
  A -1 is a sentinel value indicating no edge encoding. The number of
  intersecting edges is equal to the index of the *first* -1 (with an implicit
  logical -1 at index 4).  */
+// clang-format off
 constexpr std::array<std::array<int, 4>, 16> kMarchingTetsTable = {
                                 /* bits    3210 */
     std::array<int, 4>{-1, -1, -1, -1}, /* 0000 */
@@ -58,15 +59,14 @@ constexpr std::array<std::array<int, 4>, 16> kMarchingTetsTable = {
     std::array<int, 4>{0, 4, 1, -1},    /* 1101 */
     std::array<int, 4>{0, 2, 3, -1},    /* 1110 */
     std::array<int, 4>{-1, -1, -1, -1}  /* 1111 */};
-
+// clang-format on
 }  // namespace
 
 template <typename T>
-void SliceTetrahedronWithPlane(
-    int tet_index, const VolumeMesh<double>& mesh_M, const Plane<T>& plane_M,
-    std::vector<Vector3<T>>* polygon_vertices,
-    std::vector<SortedPair<int>>* cut_edges) {
-
+void SliceTetrahedronWithPlane(int tet_index, const VolumeMesh<double>& mesh_M,
+                               const Plane<T>& plane_M,
+                               std::vector<Vector3<T>>* polygon_vertices,
+                               std::vector<SortedPair<int>>* cut_edges) {
   DRAKE_DEMAND(polygon_vertices != nullptr);
 
   T distance[4];
@@ -263,8 +263,8 @@ ComputeContactSurfaceFromSoftVolumeRigidHalfSpace(
   // indices.
 
   if (representation == HydroelasticContactRepresentation::kTriangle) {
-    return ComputeContactSurface<TriMeshBuilder<T>>(
-        id_S, field_S, id_R, plane_S, tet_indices, X_WS);
+    return ComputeContactSurface<TriMeshBuilder<T>>(id_S, field_S, id_R,
+                                                    plane_S, tet_indices, X_WS);
   } else {
     return ComputeContactSurface<PolyMeshBuilder<T>>(
         id_S, field_S, id_R, plane_S, tet_indices, X_WS);
@@ -273,20 +273,20 @@ ComputeContactSurfaceFromSoftVolumeRigidHalfSpace(
 
 template int SliceTetWithPlane<TriMeshBuilder<double>>(
     int, const VolumeMeshFieldLinear<double, double>&, const Plane<double>&,
-    const math::RigidTransform<double>&,
-    TriMeshBuilder<double>*, std::unordered_map<SortedPair<int>, int>*);
+    const math::RigidTransform<double>&, TriMeshBuilder<double>*,
+    std::unordered_map<SortedPair<int>, int>*);
 template int SliceTetWithPlane<TriMeshBuilder<AutoDiffXd>>(
     int, const VolumeMeshFieldLinear<double, double>&, const Plane<AutoDiffXd>&,
-    const math::RigidTransform<AutoDiffXd>&,
-    TriMeshBuilder<AutoDiffXd>*, std::unordered_map<SortedPair<int>, int>*);
+    const math::RigidTransform<AutoDiffXd>&, TriMeshBuilder<AutoDiffXd>*,
+    std::unordered_map<SortedPair<int>, int>*);
 template int SliceTetWithPlane<PolyMeshBuilder<double>>(
     int, const VolumeMeshFieldLinear<double, double>&, const Plane<double>&,
-    const math::RigidTransform<double>&,
-    PolyMeshBuilder<double>*, std::unordered_map<SortedPair<int>, int>*);
+    const math::RigidTransform<double>&, PolyMeshBuilder<double>*,
+    std::unordered_map<SortedPair<int>, int>*);
 template int SliceTetWithPlane<PolyMeshBuilder<AutoDiffXd>>(
     int, const VolumeMeshFieldLinear<double, double>&, const Plane<AutoDiffXd>&,
-    const math::RigidTransform<AutoDiffXd>&,
-    PolyMeshBuilder<AutoDiffXd>*, std::unordered_map<SortedPair<int>, int>*);
+    const math::RigidTransform<AutoDiffXd>&, PolyMeshBuilder<AutoDiffXd>*,
+    std::unordered_map<SortedPair<int>, int>*);
 
 template std::unique_ptr<ContactSurface<double>>
 ComputeContactSurface<TriMeshBuilder<double>>(
@@ -309,9 +309,9 @@ ComputeContactSurface<PolyMeshBuilder<AutoDiffXd>>(
     GeometryId plane_id, const Plane<AutoDiffXd>&, const std::vector<int>&,
     const math::RigidTransform<AutoDiffXd>&);
 
-DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS((
-    &ComputeContactSurfaceFromSoftVolumeRigidHalfSpace<T>,
-    &SliceTetrahedronWithPlane<T>))
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    (&ComputeContactSurfaceFromSoftVolumeRigidHalfSpace<T>,
+     &SliceTetrahedronWithPlane<T>))
 
 }  // namespace internal
 }  // namespace geometry

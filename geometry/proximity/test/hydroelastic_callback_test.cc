@@ -58,10 +58,7 @@ ProximityProperties soft_properties() {
 using ScalarTypes = ::testing::Types<double, AutoDiffXd>;
 
 // Specification of the shape types to use with TestScene.
-enum class ShapeType {
-  kSphere,
-  kHalfSpace
-};
+enum class ShapeType { kSphere, kHalfSpace };
 
 // Utility class for encoding a scene with two geometries. Each geometry can be
 // either a sphere or a half space. The sphere gets tessellated and is
@@ -75,8 +72,7 @@ class TestScene {
         shape_A_type_(A_shape_type),
         shape_B_type_(B_shape_type),
         data_{&collision_filter_, &X_WGs_, &hydroelastic_geometries_,
-              HydroelasticContactRepresentation::kTriangle,
-              &surfaces_} {
+              HydroelasticContactRepresentation::kTriangle, &surfaces_} {
     X_WGs_[id_A_] = RigidTransform<T>();
     X_WGs_[id_B_] = RigidTransform<T>();
   }
@@ -545,14 +541,14 @@ TYPED_TEST(MaybeCalcContactSurfaceTests, UndefinedGeometry) {
   ASSERT_EQ(scene.surfaces().size(), 0u);
 
   // Case: first is undefined.
-  result = MaybeCalcContactSurface<T>(
-      &scene.shape_B(), &scene.shape_A(), &scene.data());
+  result = MaybeCalcContactSurface<T>(&scene.shape_B(), &scene.shape_A(),
+                                      &scene.data());
   ASSERT_EQ(result, CalcContactSurfaceResult::kUnsupported);
   ASSERT_EQ(scene.surfaces().size(), 0u);
 
   // Case: both are undefined.
-  result = MaybeCalcContactSurface<T>(
-      &scene.shape_B(), &scene.shape_B(), &scene.data());
+  result = MaybeCalcContactSurface<T>(&scene.shape_B(), &scene.shape_B(),
+                                      &scene.data());
   ASSERT_EQ(result, CalcContactSurfaceResult::kUnsupported);
   ASSERT_EQ(scene.surfaces().size(), 0u);
 }
@@ -611,7 +607,7 @@ TYPED_TEST(MaybeCalcContactSurfaceTests, BothHalfSpace) {
           &scene.shape_A(), &scene.shape_B(), &scene.data());
 
       if (first_type == HydroelasticType::kRigid &&
-      second_type == HydroelasticType::kRigid) {
+          second_type == HydroelasticType::kRigid) {
         EXPECT_EQ(result, CalcContactSurfaceResult::kRigidRigid);
         EXPECT_EQ(scene.surfaces().size(), 0u);
       } else {

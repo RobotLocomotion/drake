@@ -208,7 +208,7 @@ void VerifyCylinderMeshWithMa(const VolumeMesh<double>& mesh,
                                           tetrahedron.vertex(i));
     }
     ASSERT_TRUE(tetrahedron_has_an_interior_vertex)
-              << "A tetrahedron has all its vertices on the boundary.";
+        << "A tetrahedron has all its vertices on the boundary.";
   }
   // C2. No tetrahedron has all four vertices at the same distance to the
   //     cylinder's surface. Assume every mesh vertex is in the cylinder (B1
@@ -303,7 +303,6 @@ GTEST_TEST(MakeCylinderVolumeMeshWithMaTest, Coarsest) {
   EXPECT_EQ(mesh.num_vertices(), 3 * num_vertex_per_circle + 3);
   VerifyCylinderMeshWithMa(mesh, cylinder, num_vertex_per_circle);
 }
-
 
 GTEST_TEST(MakeCylinderVolumeMesh, CoarsestMesh) {
   const double radius = 1.0;

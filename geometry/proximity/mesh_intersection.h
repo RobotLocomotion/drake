@@ -94,7 +94,8 @@ template <typename T>
 void RemoveNearlyDuplicateVertices(std::vector<Vector3<T>>* polygon);
 
 // Forward declaration of Tester class, so we can grant friend access.
-template <typename MeshBuilder> class SurfaceVolumeIntersectorTester;
+template <typename MeshBuilder>
+class SurfaceVolumeIntersectorTester;
 
 /* %SurfaceVolumeIntersector performs a mesh-intersection algorithm between a
  triangulated surface mesh and a tetrahedral volume mesh with a field
@@ -223,10 +224,9 @@ class SurfaceVolumeIntersector {
       const VolumeMeshFieldLinear<double, double>& volume_field_M,
       const TriangleSurfaceMesh<double>& surface_N,
       const math::RigidTransform<T>& X_MN,
-      const math::RigidTransform<double>& X_MN_d,
-      MeshBuilder* builder_M,
-      bool filter_face_normal_along_field_gradient,
-      int tet_index, int tri_index);
+      const math::RigidTransform<double>& X_MN_d, MeshBuilder* builder_M,
+      bool filter_face_normal_along_field_gradient, int tet_index,
+      int tri_index);
 
  private:
   /* Intersects a triangle with a tetrahedron, returning the portion of the
@@ -445,8 +445,8 @@ std::unique_ptr<ContactSurface<T>>
 ComputeContactSurfaceFromSoftVolumeRigidSurface(
     const GeometryId id_S, const VolumeMeshFieldLinear<double, double>& field_S,
     const Bvh<Obb, VolumeMesh<double>>& bvh_S,
-    const math::RigidTransform<T>& X_WS,
-    const GeometryId id_R, const TriangleSurfaceMesh<double>& mesh_R,
+    const math::RigidTransform<T>& X_WS, const GeometryId id_R,
+    const TriangleSurfaceMesh<double>& mesh_R,
     const Bvh<Obb, TriangleSurfaceMesh<double>>& bvh_R,
     const math::RigidTransform<T>& X_WR,
     HydroelasticContactRepresentation representation);

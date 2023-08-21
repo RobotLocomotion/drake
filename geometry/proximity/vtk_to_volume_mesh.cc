@@ -23,9 +23,8 @@ namespace internal {
 VolumeMesh<double> ReadVtkToVolumeMesh(const std::string& filename,
                                        double scale) {
   if (scale <= 0.0) {
-    throw std::runtime_error(
-        fmt::format("ReadVtkToVolumeMesh: scale={} is not a positive number",
-                    scale));
+    throw std::runtime_error(fmt::format(
+        "ReadVtkToVolumeMesh: scale={} is not a positive number", scale));
   }
   vtkNew<vtkUnstructuredGridReader> reader;
   reader->SetFileName(filename.c_str());
@@ -48,10 +47,12 @@ VolumeMesh<double> ReadVtkToVolumeMesh(const std::string& filename,
   for (iter->InitTraversal(); !iter->IsDoneWithTraversal();
        iter->GoToNextCell()) {
     vtkIdList* vtk_vertex_ids = iter->GetPointIds();
+    // clang-format off
     elements.emplace_back(vtk_vertex_ids->GetId(0),
                           vtk_vertex_ids->GetId(1),
                           vtk_vertex_ids->GetId(2),
                           vtk_vertex_ids->GetId(3));
+    // clang-format on
   }
   iter->Delete();
 

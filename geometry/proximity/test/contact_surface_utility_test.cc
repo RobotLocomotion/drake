@@ -72,10 +72,12 @@ GTEST_TEST(TriMeshBuilderTest, AddingFeatures) {
   // The triangle defined in frame N so it's easy to reason about.
   const std::vector<Vector3d> polygon_N{
       {0.25, 0, 0.25}, {0.5, 0, 0.25}, {0.25, 0, 0.5}, {0.25, 0, 0.35}};
+  // clang-format off
   const std::vector<Vector3d> polygon_M{X_MN * polygon_N[0],
                                         X_MN * polygon_N[1],
                                         X_MN * polygon_N[2],
                                         X_MN * polygon_N[3]};
+  // clang-format on
   const Vector3d p_MC_expected =
       (polygon_M[0] + polygon_M[1] + polygon_M[2]) / 3;
   const Vector3d nhat_M = X_MN.rotation() * Vector3d(0, -1, 0);
@@ -161,10 +163,12 @@ GTEST_TEST(PolyMeshBuilderTest, AddingFeatures) {
   // The polygon's defined in frame N so it's easy to reason about.
   const std::vector<Vector3d> polygon_N{
       {0.25, 0, 0.25}, {0.5, 0, 0.25}, {0.25, 0, 0.5}, {0.25, 0, 0.35}};
+  // clang-format off
   const std::vector<Vector3d> polygon_M{X_MN * polygon_N[0],
                                         X_MN * polygon_N[1],
                                         X_MN * polygon_N[2],
                                         X_MN * polygon_N[3]};
+  // clang-format on
   const Vector3d nhat_M = X_MN.rotation() * Vector3d(0, -1, 0);
 
   // To build the mesh, we just need to be able to evaluate *some* pressure
@@ -238,8 +242,7 @@ class LinearFunction {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(LinearFunction);
 
-  LinearFunction(const Vector3d& grad_F, double d)
-      : grad_F_(grad_F), d_(d) {}
+  LinearFunction(const Vector3d& grad_F, double d) : grad_F_(grad_F), d_(d) {}
 
   double operator()(const Vector3d& p_FV) const {
     return grad_F_.dot(p_FV) + d_;
@@ -284,8 +287,7 @@ GTEST_TEST(MeshBuilder, EquivalentForceIntegration) {
        LinearFunction{Vector3d{1, 2, 3}, 3}},
       {{Vector3d{1, -1, 0}, Vector3d{1, 1, 0}, Vector3d{-1, 1, 0},
         Vector3d{-1, -1, 0}},
-       LinearFunction{Vector3d{-1, 2, -3}, 2}}
-       };
+       LinearFunction{Vector3d{-1, 2, -3}, 2}}};
 
   TriMeshBuilder<double> tri_builder_M;
   PolyMeshBuilder<double> poly_builder_M;
@@ -417,9 +419,11 @@ TEST_F(ContactSurfaceUtilityTest, PolygonCentroidTest) {
   for (const auto& X_FM : X_FMs_) {
     // Now put the vertices in an arbitrary frame F.
     vector<Vector3d> vertices_F;
-    std::transform(
-        vertices_M.begin(), vertices_M.end(), std::back_inserter(vertices_F),
-        [&X_FM](const Vector3d& v_M) -> Vector3d { return X_FM * v_M; });
+    std::transform(vertices_M.begin(), vertices_M.end(),
+                   std::back_inserter(vertices_F),
+                   [&X_FM](const Vector3d& v_M) -> Vector3d {
+                     return X_FM * v_M;
+                   });
     const Vector3d& nhat_F = X_FM.rotation().matrix().col(2);
 
     {
@@ -533,8 +537,8 @@ TEST_F(ContactSurfaceUtilityTest, NonPlanarPolygon) {
 TEST_F(ContactSurfaceUtilityTest, EvalNormalWithDegeneratePolygon) {
   if (kDrakeAssertIsArmed) {
     const vector<Vector3d> vertices_M{
-        Vector3d{-1.5, -0.25, 0}, Vector3d{1, 0, 0},
-        Vector3d{0.75, 1.25, 0}, Vector3d{0, 1, 0}};
+        Vector3d{-1.5, -0.25, 0}, Vector3d{1, 0, 0}, Vector3d{0.75, 1.25, 0},
+        Vector3d{0, 1, 0}};
     const Vector3d My = Vector3d::UnitY();
 
     {
@@ -647,9 +651,11 @@ TEST_F(ContactSurfaceUtilityTest, PolygonCentroidTest_NormalUse) {
 
   for (const auto& X_FM : X_FMs_) {
     vector<Vector3d> vertices_F;
-    std::transform(
-        vertices_M.begin(), vertices_M.end(), std::back_inserter(vertices_F),
-        [&X_FM](const Vector3d& v_M) -> Vector3d { return X_FM * v_M; });
+    std::transform(vertices_M.begin(), vertices_M.end(),
+                   std::back_inserter(vertices_F),
+                   [&X_FM](const Vector3d& v_M) -> Vector3d {
+                     return X_FM * v_M;
+                   });
     const Vector3d p_FC_expected = X_FM * p_MC_expected;
     const Vector3d& Mz_F = X_FM.rotation().matrix().col(2);
 
@@ -669,9 +675,9 @@ TEST_F(ContactSurfaceUtilityTest, PolygonCentroidTest_NormalUse) {
     const Vector3d not_normal_F = (My_F + 2 * Mz_F).normalized();
     // Larger epsilon reflects loss of precision as the "normal" becomes
     // less and less normal.
-    EXPECT_TRUE(CompareMatrices(CalcPolygonCentroid<double>(
-                                    pseudo_triangle, not_normal_F, vertices_F),
-                                p_FC_expected, 10 * kEps));
+    EXPECT_TRUE(CompareMatrices(
+        CalcPolygonCentroid<double>(pseudo_triangle, not_normal_F, vertices_F),
+        p_FC_expected, 10 * kEps));
   }
 }
 
@@ -698,8 +704,8 @@ TEST_F(ContactSurfaceUtilityTest, AddPolygonToTriangleMeshData) {
   //       v0    │
   //             │
   const vector<Vector3d> vertices_source{
-      Vector3d{-1.5, -0.25, 0}, Vector3d{1, 0, 0},
-      Vector3d{0.75, 1.25, 0}, Vector3d{0, 1, 0}};
+      Vector3d{-1.5, -0.25, 0}, Vector3d{1, 0, 0}, Vector3d{0.75, 1.25, 0},
+      Vector3d{0, 1, 0}};
 
   vector<SurfaceTriangle> faces;
   vector<Vector3d> vertices_M(vertices_source);
@@ -718,9 +724,8 @@ TEST_F(ContactSurfaceUtilityTest, AddPolygonToTriangleMeshData) {
   const Vector3d poly_normal_M{0, 0, 1};
 
   ASSERT_EQ(vertices_M.size(), vertices_source.size() + 1);
-  ASSERT_TRUE(
-      CompareMatrices(vertices_M.back(),
-                      CalcPolygonCentroid(quad, nhat_M, vertices_M)));
+  ASSERT_TRUE(CompareMatrices(vertices_M.back(),
+                              CalcPolygonCentroid(quad, nhat_M, vertices_M)));
   const int centroid_index = static_cast<int>(vertices_M.size()) - 1;
 
   ASSERT_EQ(faces.size(), quad.size());

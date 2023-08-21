@@ -22,15 +22,14 @@ CallbackData::CallbackData(const CollisionFilter* collision_filter_in)
 }
 
 bool Callback(fcl::CollisionObjectd* object_A_ptr,
-              fcl::CollisionObjectd* object_B_ptr,
-              void* callback_data) {
+              fcl::CollisionObjectd* object_B_ptr, void* callback_data) {
   auto& data = *static_cast<CallbackData*>(callback_data);
 
   const EncodedData encoding_a(*object_A_ptr);
   const EncodedData encoding_b(*object_B_ptr);
 
-  const bool can_collide = data.collision_filter.CanCollideWith(
-      encoding_a.id(), encoding_b.id());
+  const bool can_collide =
+      data.collision_filter.CanCollideWith(encoding_a.id(), encoding_b.id());
   if (!can_collide) return false;
 
   // Unpack the callback data.

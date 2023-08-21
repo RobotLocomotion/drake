@@ -48,9 +48,8 @@ void CheckMinMaxBoundaryValue(
   // knowledge of the mesh structure. This goes for medial axis vertices also.
 
   // Check that all boundary vertices have zero pressure.
-  std::vector<int> boundary_vertex_indices =
-      CollectUniqueVertices(
-          IdentifyBoundaryFaces(pressure_field.mesh().tetrahedra()));
+  std::vector<int> boundary_vertex_indices = CollectUniqueVertices(
+      IdentifyBoundaryFaces(pressure_field.mesh().tetrahedra()));
   for (int v : boundary_vertex_indices) {
     ASSERT_EQ(pressure_field.EvaluateAtVertex(v), 0.0);
   }
@@ -60,10 +59,9 @@ void CheckMinMaxBoundaryValue(
 // vertices per circular rim" is provided.
 class MakeCapsuleFieldTest : public testing::TestWithParam<int> {};
 
-INSTANTIATE_TEST_SUITE_P(CapsuleField, MakeCapsuleFieldTest, testing::Values(
-    3,  // Coarsest possible mesh.
-    20  // Fine mesh.
-));
+INSTANTIATE_TEST_SUITE_P(CapsuleField, MakeCapsuleFieldTest,
+                         testing::Values(3, /* Coarsest possible mesh */
+                                         20 /* Fine mesh */));
 
 TEST_P(MakeCapsuleFieldTest, CheckMinMaxBoundaryValue) {
   const double radius = 0.5;
@@ -81,8 +79,6 @@ TEST_P(MakeCapsuleFieldTest, CheckMinMaxBoundaryValue) {
 
   CheckMinMaxBoundaryValue(pressure_field, kElasticModulus);
 }
-
-
 
 }  // namespace
 }  // namespace internal

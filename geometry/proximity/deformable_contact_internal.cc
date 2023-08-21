@@ -60,8 +60,8 @@ DeformableContact<double> Geometries::ComputeDeformableContact(
        deformable_geometries_) {
     const VolumeMesh<double>& deformable_mesh =
         deformable_geometry.deformable_mesh().mesh();
-    result.RegisterDeformableGeometry(
-        deformable_id, deformable_mesh.num_vertices());
+    result.RegisterDeformableGeometry(deformable_id,
+                                      deformable_mesh.num_vertices());
     DRAKE_ASSERT(collision_filter.HasGeometry(deformable_id));
     for (const auto& [rigid_id, rigid_geometry] : rigid_geometries_) {
       DRAKE_ASSERT(collision_filter.HasGeometry(rigid_id));

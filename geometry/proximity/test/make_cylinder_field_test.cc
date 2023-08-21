@@ -41,9 +41,8 @@ void CheckMinMaxBoundaryValue(
   EXPECT_NEAR(max_pressure, hydroelastic_modulus, tolerance);
 
   // Check that all boundary vertices have zero pressure.
-  std::vector<int> boundary_vertex_indices =
-      CollectUniqueVertices(
-          IdentifyBoundaryFaces(pressure_field.mesh().tetrahedra()));
+  std::vector<int> boundary_vertex_indices = CollectUniqueVertices(
+      IdentifyBoundaryFaces(pressure_field.mesh().tetrahedra()));
   for (int v : boundary_vertex_indices) {
     double pressure = pressure_field.EvaluateAtVertex(v);
     ASSERT_EQ(pressure, 0.0);
