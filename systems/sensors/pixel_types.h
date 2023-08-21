@@ -4,6 +4,7 @@
 #include <limits>
 #include <string>
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/fmt.h"
 #include "drake/common/hash.h"
 #include "drake/common/symbolic/expression.h"
@@ -38,7 +39,8 @@ enum class PixelType {
   /// The pixel format used by ImageLabel16I.
   kLabel16I,
   /// The pixel format representing symbolic::Expression.
-  kExpr,
+  kExpr DRAKE_DEPRECATED("2023-12-01",
+                         "kExpr is no longer a supported PixelType"),
 };
 
 std::string to_string(PixelType);
@@ -62,7 +64,8 @@ enum class PixelFormat {
   /// The pixel format used for all the labe images.
   kLabel,
   /// The pixel format used for all the symbolic images.
-  kExpr,
+  kExpr DRAKE_DEPRECATED("2023-12-01",
+                         "kExpr is no longer a supported PixelType"),
 };
 
 std::string to_string(PixelFormat);
@@ -171,12 +174,17 @@ struct ImageTraits<PixelType::kGrey8U> {
   static constexpr PixelFormat kPixelFormat = PixelFormat::kGrey;
 };
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+// (Deprecated) kExpr is no longer a supported PixelType; these traits will be
+// removed on or after 2023-12-01.
 template <>
 struct ImageTraits<PixelType::kExpr> {
   typedef symbolic::Expression ChannelType;
   static constexpr int kNumChannels = 1;
   static constexpr PixelFormat kPixelFormat = PixelFormat::kExpr;
 };
+#pragma GCC diagnostic pop
 
 }  // namespace sensors
 }  // namespace systems
