@@ -6,6 +6,7 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/geometry/proximity/distance_to_point_callback.h"
+#include "drake/geometry/proximity/distance_to_shape_touching.h"
 #include "drake/math/rotation_matrix.h"
 
 namespace drake {
@@ -63,7 +64,9 @@ void DistancePairGeometry<T>::SphereShapeDistance(const fcl::Sphered& sphere_A,
 
 template <>
 void CalcDistanceFallback<double>(const fcl::CollisionObjectd& a,
+                                  const math::RigidTransformd& X_WA,
                                   const fcl::CollisionObjectd& b,
+                                  const math::RigidTransformd& X_WB,
                                   const fcl::DistanceRequestd& request,
                                   SignedDistancePair<double>* pair_data) {
   fcl::DistanceResultd result;
@@ -76,22 +79,19 @@ void CalcDistanceFallback<double>(const fcl::CollisionObjectd& a,
 
   // Setting the witness points.
   const Eigen::Vector3d& p_WCa = result.nearest_points[0];
-  pair_data->p_ACa = a.getTransform().inverse() * p_WCa;
+  pair_data->p_ACa = X_WA.inverse() * p_WCa;
   const Eigen::Vector3d& p_WCb = result.nearest_points[1];
-  pair_data->p_BCb = b.getTransform().inverse() * p_WCb;
+  pair_data->p_BCb = X_WB.inverse() * p_WCb;
 
   // Setting the normal.
   // TODO(DamrongGuoy): We should set the tolerance through SceneGraph for
   //  determining whether the two geometries are touching or not. For now, we
   //  use this number.
   const double kEps = 1e-14;
-  const double kNan = std::numeric_limits<double>::quiet_NaN();
 
-  // Returns NaN in nhat when min_distance is 0 or almost 0.
-  // TODO(DamrongGuoy): In the future, we should return nhat_BA_W as the
-  //  outward face normal when the two objects are touching.
   if (std::abs(result.min_distance) < kEps) {
-    pair_data->nhat_BA_W = Eigen::Vector3d(kNan, kNan, kNan);
+    pair_data->nhat_BA_W = CalcGradientWhenTouching(
+        a, X_WA, b, X_WB, pair_data->p_ACa, pair_data->p_BCb);
   } else {
     pair_data->nhat_BA_W = (p_WCa - p_WCb) / result.min_distance;
   }
@@ -127,7 +127,7 @@ void ComputeNarrowPhaseDistance(const fcl::CollisionObjectd& a,
   DRAKE_DEMAND(result != nullptr);
 
   if (RequiresFallback(a, b)) {
-    CalcDistanceFallback<T>(a, b, request, result);
+    CalcDistanceFallback<T>(a, X_WA, b, X_WB, request, result);
     return;
   }
 

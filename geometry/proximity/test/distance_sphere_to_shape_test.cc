@@ -71,8 +71,9 @@ GTEST_TEST(SphereShapeDistance, FallbackSupport) {
   EncodedData(id_b, true).write_to(&obj_b);
 
   SignedDistancePair<double> distance_pair_d{};
-  DRAKE_EXPECT_NO_THROW(
-      CalcDistanceFallback<double>(obj_a, obj_b, request, &distance_pair_d));
+  DRAKE_EXPECT_NO_THROW(CalcDistanceFallback<double>(
+      obj_a, RigidTransformd(), obj_b, RigidTransformd(), request,
+      &distance_pair_d));
   EXPECT_TRUE(distance_pair_d.id_A.is_valid());
   EXPECT_TRUE(distance_pair_d.id_B.is_valid());
   ASSERT_LT(id_a, id_b);  // Confirm assumption that the next two tests require.
@@ -81,8 +82,9 @@ GTEST_TEST(SphereShapeDistance, FallbackSupport) {
 
   SignedDistancePair<AutoDiffXd> distance_pair_ad{};
   DRAKE_EXPECT_THROWS_MESSAGE(
-      CalcDistanceFallback<AutoDiffXd>(obj_a, obj_b, request,
-                                       &distance_pair_ad),
+      CalcDistanceFallback<AutoDiffXd>(obj_a, RigidTransform<AutoDiffXd>(),
+                                       obj_b, RigidTransform<AutoDiffXd>(),
+                                       request, &distance_pair_ad),
       "Signed distance queries between shapes .+ and .+ are not supported for "
       "scalar type .*AutoDiffXd.*");
 }
