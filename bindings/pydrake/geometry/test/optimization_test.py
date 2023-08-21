@@ -58,6 +58,38 @@ class TestGeometryOptimization(unittest.TestCase):
         # TODO(SeanCurtis-TRI): This doesn't test the constructor that
         # builds from shape.
 
+    def test_affine_ball(self):
+        dut = mut.AffineBall()
+
+        self.assertEqual(dut.B().shape[0], 0)
+        self.assertEqual(dut.B().shape[1], 0)
+        self.assertEqual(dut.center().shape[0], 0)
+        self.assertEqual(dut.ambient_dimension(), 0)
+        self.assertEqual(dut.Volume(), 1)
+        self.assertFalse(dut.IsEmpty())
+        self.assertTrue(dut.IsBounded())
+        self.assertTrue(dut.PointInSet(dut.MaybeGetFeasiblePoint()))
+        self.assertTrue(dut.IntersectsWith(dut))
+
+        B = np.eye(2)
+        center = np.zeros(2)
+        E = mut.AffineBall(B=B, center=center)
+
+        self.assertEqual(E.B().shape[0], 2)
+        self.assertEqual(E.B().shape[1], 2)
+        self.assertEqual(E.center().shape[0], 2)
+        self.assertEqual(E.ambient_dimension(), 2)
+        self.assertEqual(E.Volume(), np.pi)
+        self.assertFalse(E.IsEmpty())
+        self.assertTrue(E.IsBounded())
+        self.assertTrue(E.PointInSet(E.MaybeGetFeasiblePoint()))
+        self.assertTrue(E.IntersectsWith(E))
+
+        mut.Hyperellipsoid.MakeAxisAligned(
+            radius=np.ones(3), center=np.zeros(3))
+        mut.Hyperellipsoid.MakeHypersphere(radius=2, center=np.zeros(3))
+        mut.Hyperellipsoid.MakeUnitBall(dim=2)
+
     def test_affine_subspace(self):
         dut = mut.AffineSubspace()
 
