@@ -21,6 +21,7 @@
 #include "drake/common/temp_directory.h"
 #include "drake/common/text_logging.h"
 #include "drake/geometry/render_gltf_client/internal_http_service_curl.h"
+#include "drake/systems/sensors/vtk_image_reader_writer.h"
 
 namespace drake {
 namespace geometry {
@@ -37,8 +38,10 @@ using render::RenderCameraCore;
 using systems::sensors::CameraInfo;
 using systems::sensors::ImageDepth16U;
 using systems::sensors::ImageDepth32F;
+using systems::sensors::ImageFileFormat;
 using systems::sensors::ImageLabel16I;
 using systems::sensors::ImageRgba8U;
+using systems::sensors::internal::MakeReader;
 
 /* Adds field_name = field_data to the map, assumes data_map does **not**
  already have the key `field_name`. */
@@ -88,30 +91,17 @@ void AddField<RenderImageType>(DataFieldsMap* data_map,
   }
 }
 
-void ReadPngFile(const std::string& path, vtkImageExport* image_exporter) {
-  // Load the PNG file from disk if possible.
-  vtkNew<vtkPNGReader> png_reader;
-  if (!png_reader->CanReadFile(path.c_str())) {
+void ReadImageFile(ImageFileFormat format, const std::string& path,
+                   vtkImageExport* image_exporter) {
+  // Load the image file from disk if possible.
+  auto reader = MakeReader(format, path);
+  if (!reader->CanReadFile(path.c_str())) {
     throw std::runtime_error(
-        fmt::format("RenderClient: cannot load '{}' as PNG.", path));
+        fmt::format("RenderClient: cannot load '{}' as {}.", path, format));
   }
-  png_reader->SetFileName(path.c_str());
-  image_exporter->SetInputConnection(png_reader->GetOutputPort());
+  image_exporter->SetInputConnection(reader->GetOutputPort());
   image_exporter->ImageLowerLeftOff();
-  png_reader->Update();  // Loads the image.
-}
-
-void ReadTiffFile(const std::string& path, vtkImageExport* image_exporter) {
-  // Load the TIFF file from disk if possible.
-  vtkNew<vtkTIFFReader> tiff_reader;
-  if (!tiff_reader->CanReadFile(path.c_str())) {
-    throw std::runtime_error(
-        fmt::format("RenderClient: cannot load '{}' as TIFF.", path));
-  }
-  tiff_reader->SetFileName(path.c_str());
-  image_exporter->SetInputConnection(tiff_reader->GetOutputPort());
-  // TODO(svenevs): why is ImageLowerLeftOff() not required for this exporter?
-  tiff_reader->Update();
+  reader->Update();  // Loads the image.
 }
 
 /* Verifies the loaded image has the correct dimensions.  This includes
@@ -269,7 +259,10 @@ std::string RenderClient::RenderOnServer(
 
    NOTE: Do not rely on or trust the server to (correctly) report a valid mime
    type for the sent image.  VTK image readers' `CanReadFile` methods check
-   if the file *content* can actually be loaded (regardless of extension). */
+   if the file *content* can actually be loaded (regardless of extension).
+
+   TODO(jwnimmer-tri) Add image_reader_writer.h helper function(s) to subsume
+   this manual file type detection. */
   vtkNew<vtkPNGReader> png_reader;
   if (png_reader->CanReadFile(bin_out_path.c_str())) {
     return RenameHttpServiceResponse(bin_out_path, scene_path, ".png");
@@ -322,7 +315,7 @@ void RenderClient::LoadColorImage(const std::string& path,
   DRAKE_DEMAND(color_image_out != nullptr);
 
   vtkNew<vtkImageExport> image_exporter;
-  ReadPngFile(path, image_exporter);
+  ReadImageFile(ImageFileFormat::kPng, path, image_exporter);
   const int width = color_image_out->width();
   const int height = color_image_out->height();
   VerifyImportedImageDimensions(width, height, image_exporter, path);
@@ -391,9 +384,9 @@ void RenderClient::LoadDepthImage(const std::string& path,
   vtkNew<vtkImageExport> image_exporter;
   const std::string ext{fs::path{path}.extension()};
   if (ext == ".png") {
-    ReadPngFile(path, image_exporter);
+    ReadImageFile(ImageFileFormat::kPng, path, image_exporter);
   } else if (ext == ".tiff") {
-    ReadTiffFile(path, image_exporter);
+    ReadImageFile(ImageFileFormat::kTiff, path, image_exporter);
   } else {
     throw std::runtime_error("RenderClient: unsupported file extension");
   }
