@@ -250,11 +250,28 @@ drake_cc_library(
     deps = [
         ":collision_filter",
         ":distance_to_point_callback",
+        ":distance_to_shape_touching",
         ":proximity_utilities",
         "//common:default_scalars",
         "//common:drake_export",
         "//common:nice_type_name",
         "//geometry/query_results:signed_distance_pair",
+    ],
+)
+
+drake_cc_library(
+    name = "distance_to_shape_touching",
+    srcs = ["distance_to_shape_touching.cc"],
+    hdrs = ["distance_to_shape_touching.h"],
+    internal = True,
+    visibility = [
+        "//geometry:__pkg__",
+    ],
+    deps = [
+        "//common:drake_export",
+        "//common:essential",
+        "//math:geometric_transform",
+        "@fcl_internal//:fcl",
     ],
 )
 
@@ -1003,6 +1020,16 @@ drake_cc_googletest(
         ":distance_to_shape_callback",
         "//common:temp_directory",
         "//geometry:proximity_engine",
+        "//math:geometric_transform",
+    ],
+)
+
+drake_cc_googletest(
+    name = "distance_to_shape_touching_test",
+    deps = [
+        ":distance_to_shape_touching",
+        "//common:essential",
+        "//common/test_utilities:eigen_matrix_compare",
         "//math:geometric_transform",
     ],
 )

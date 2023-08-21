@@ -194,6 +194,18 @@ void CalcDistanceFallback<double>(const fcl::CollisionObjectd& a,
                                   const fcl::DistanceRequestd& request,
                                   SignedDistancePair<double>* pair_data);
 
+/* When two objects touch (have 0 or almost 0 signed distance), computes
+ the signed-distance gradient nhat_BA_W, which is a unit vector in the
+ direction of fastest increasing distance pointing outward from object `b`
+ into object `a`, expressed in World frame.
+
+ @note  This function is used only in fcl fallback (CalcDistanceFallback)
+        but not the hand-crafted functions (DistancePairGeometry). */
+Eigen::Vector3d CalcGradientWhenTouch(const fcl::CollisionObjectd& a,
+                                      const fcl::CollisionObjectd& b,
+                                      const Eigen::Vector3d& p_ACa,
+                                      const Eigen::Vector3d& p_BCb);
+
 //@}
 
 /* Reports if the given geometries require using the fallback. */
@@ -211,7 +223,12 @@ bool RequiresFallback(const fcl::CollisionObjectd& a,
  @param request         The distance request parameters.
  @param result          The structure to capture the computation results in.
  @tparam T Computation scalar type.
- @pre The pair should *not* be (Halfspace, X), unless X is Sphere.  */
+ @pre The pair should *not* be (Halfspace, X), unless X is Sphere.
+
+ @note The poses of the objects are specified in two ways. Our hand-crafted
+ code (see DistancePairGeometry above) requires `X_WA` and `X_WB`, and,
+ for FCL fallback (see CalcDistanceFallback above), the fcl::CollisionObject
+ `a` and `b` must contain their poses too. */
 template <typename T>
 void ComputeNarrowPhaseDistance(const fcl::CollisionObjectd& a,
                                 const math::RigidTransform<T>& X_WA,

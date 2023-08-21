@@ -465,6 +465,26 @@ GTEST_TEST(ComputeNarrowPhaseDistance, sphere_touches_shape) {
   EXPECT_EQ(Vector3d(1, 0, 0), result.nhat_BA_W);
 }
 
+// When a box is just touching a box, confirms that the two witness points
+// are at the same locations and nhat_BA_W is not NaN. More comprehensive
+// tests are in distance_to_shape_touching_test.cc.
+GTEST_TEST(CalcDistanceFallback, box_touches_box) {
+  const RigidTransformd X_WA = RigidTransformd::Identity();
+  CollisionObjectd box_A(make_shared<Boxd>(2, 2, 2), X_WA.rotation().matrix(),
+                         X_WA.translation());
+  const RigidTransformd X_WB(Vector3d(2, 0, 0));
+  CollisionObjectd box_B(make_shared<Boxd>(2, 2, 2), X_WB.rotation().matrix(),
+                         X_WB.translation());
+
+  SignedDistancePair<double> result;
+  CalcDistanceFallback(box_A, box_B, fcl::DistanceRequestd(), &result);
+
+  const auto p_WCa = X_WA * result.p_ACa;
+  const auto p_WCb = X_WB * result.p_BCb;
+  EXPECT_EQ(p_WCa, p_WCb);
+  EXPECT_FALSE(result.nhat_BA_W.array().isNaN().any());
+}
+
 template <typename T>
 class CallbackScalarSupport : public ::testing::Test {
  public:

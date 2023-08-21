@@ -6,12 +6,15 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/geometry/proximity/distance_to_point_callback.h"
+#include "drake/geometry/proximity/distance_to_shape_touching.h"
 #include "drake/math/rotation_matrix.h"
 
 namespace drake {
 namespace geometry {
 namespace internal {
 namespace shape_distance {
+
+using Eigen::Vector3d;
 
 template <typename T>
 void DistancePairGeometry<T>::operator()(const fcl::Sphered& sphere_A,
@@ -77,7 +80,7 @@ void CalcDistanceFallback<double>(const fcl::CollisionObjectd& a,
   // Setting the witness points.
   const Eigen::Vector3d& p_WCa = result.nearest_points[0];
   pair_data->p_ACa = a.getTransform().inverse() * p_WCa;
-  const Eigen::Vector3d& p_WCb = result.nearest_points[1];
+  const Vector3d& p_WCb = result.nearest_points[1];
   pair_data->p_BCb = b.getTransform().inverse() * p_WCb;
 
   // Setting the normal.
@@ -85,16 +88,49 @@ void CalcDistanceFallback<double>(const fcl::CollisionObjectd& a,
   //  determining whether the two geometries are touching or not. For now, we
   //  use this number.
   const double kEps = 1e-14;
-  const double kNan = std::numeric_limits<double>::quiet_NaN();
 
-  // Returns NaN in nhat when min_distance is 0 or almost 0.
-  // TODO(DamrongGuoy): In the future, we should return nhat_BA_W as the
-  //  outward face normal when the two objects are touching.
-  if (std::abs(result.min_distance) < kEps) {
-    pair_data->nhat_BA_W = Eigen::Vector3d(kNan, kNan, kNan);
-  } else {
+  if (std::abs(result.min_distance) >= kEps) {
     pair_data->nhat_BA_W = (p_WCa - p_WCb) / result.min_distance;
+  } else {
+    pair_data->nhat_BA_W =
+        CalcGradientWhenTouch(a, b, pair_data->p_ACa, pair_data->p_BCb);
   }
+}
+
+Vector3d CalcGradientWhenTouch(const fcl::CollisionObjectd& a,
+                               const fcl::CollisionObjectd& b,
+                               const Vector3d& p_ACa,
+                               const Vector3d& p_BCb) {
+  // The cases for a sphere touching an ellipsoid/convex mesh/general mesh
+  // will reach here, but the cases for a sphere touching a box/capsule/
+  // cylinder/halfspace/sphere are handled by the hand-crafted functions
+  // in DistancePairGeometry.
+  if (a.collisionGeometry()->getNodeType() == fcl::GEOM_SPHERE) {
+    const Vector3d nhat_AB_A = p_ACa.normalized();
+    const math::RotationMatrixd R_WA(a.getRotation());
+    const Vector3d nhat_BA_W = R_WA * (-nhat_AB_A);
+    return nhat_BA_W;
+  }
+  if (b.collisionGeometry()->getNodeType() == fcl::GEOM_SPHERE) {
+    const Vector3d nhat_BA_B = p_BCb.normalized();
+    const math::RotationMatrixd R_WB(b.getRotation());
+    const Vector3d nhat_BA_W = R_WB * nhat_BA_B;
+    return nhat_BA_W;
+  }
+  if (a.collisionGeometry()->getNodeType() == fcl::GEOM_BOX &&
+      b.collisionGeometry()->getNodeType() == fcl::GEOM_BOX) {
+    const auto& box_A =
+        *static_cast<const fcl::Boxd*>(a.collisionGeometry().get());
+    const auto& box_B =
+        *static_cast<const fcl::Boxd*>(b.collisionGeometry().get());
+    return BoxBoxGradient(box_A, box_B,
+                          math::RigidTransformd(a.getTransform()),
+                          math::RigidTransformd(b.getTransform()),
+                          p_ACa, p_BCb);
+  }
+  // TODO(14789): Take care of other shapes. For now, return NaN.
+  const double kNan = std::numeric_limits<double>::quiet_NaN();
+  return Vector3d(kNan, kNan, kNan);
 }
 
 bool RequiresFallback(const fcl::CollisionObjectd& a,
