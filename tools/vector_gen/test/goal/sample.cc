@@ -16,10 +16,10 @@ const int SampleIndices::kUnset;
 const std::vector<std::string>& SampleIndices::GetCoordinateNames() {
   static const drake::never_destroyed<std::vector<std::string>> coordinates(
       std::vector<std::string>{
-          "x",         // BR
-          "two_word",  // BR
-          "absone",    // BR
-          "unset",     // BR
+          "x",
+          "two_word",
+          "absone",
+          "unset",
       });
   return coordinates.access();
 }
