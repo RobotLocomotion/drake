@@ -60,6 +60,14 @@ Hyperellipsoid::Hyperellipsoid(const QueryObject<double>& query_object,
   center_ = X_GE.inverse().translation();
 }
 
+Hyperellipsoid::Hyperellipsoid(const AffineBall& ellipsoid)
+    : ConvexSet(ellipsoid.ambient_dimension()) {
+  const auto B_QR = Eigen::ColPivHouseholderQR<MatrixXd>(ellipsoid.B());
+  DRAKE_THROW_UNLESS(B_QR.isInvertible());
+  center_ = ellipsoid.center();
+  A_ = B_QR.inverse();
+}
+
 Hyperellipsoid::~Hyperellipsoid() = default;
 
 namespace {

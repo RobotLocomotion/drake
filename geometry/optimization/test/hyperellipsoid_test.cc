@@ -9,6 +9,7 @@
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/yaml/yaml_io.h"
 #include "drake/geometry/geometry_frame.h"
+#include "drake/geometry/optimization/affine_ball.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
 #include "drake/geometry/optimization/test_utilities.h"
 #include "drake/geometry/scene_graph.h"
@@ -656,6 +657,20 @@ GTEST_TEST(HyperellipsoidTest, Serialize) {
   EXPECT_EQ(E.ambient_dimension(), E2.ambient_dimension());
   EXPECT_TRUE(CompareMatrices(E.A(), E2.A()));
   EXPECT_TRUE(CompareMatrices(E.center(), E2.center()));
+}
+
+GTEST_TEST(HyperellipsoidTest, FromAffineBall) {
+  const double a = 2.3, b = 4.5, c = 6.1;
+  const Vector3d center{3.4, -2.3, 7.4};
+  AffineBall ab = AffineBall::MakeAxisAligned(Vector3d{a, b, c}, center);
+  EXPECT_NO_THROW(Hyperellipsoid{ab});
+  Hyperellipsoid h(ab);
+  EXPECT_TRUE(CompareMatrices(h.center(), ab.center()));
+  EXPECT_TRUE(CompareMatrices(h.A() * ab.B(), MatrixXd::Identity(3, 3)));
+
+  AffineBall ab_sub_dimensional =
+      AffineBall::MakeAxisAligned(Vector3d{a, b, 0}, center);
+  EXPECT_THROW(Hyperellipsoid{ab_sub_dimensional}, std::exception);
 }
 
 }  // namespace optimization

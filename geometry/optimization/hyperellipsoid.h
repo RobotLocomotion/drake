@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "drake/common/name_value.h"
+#include "drake/geometry/optimization/affine_ball.h"
 #include "drake/geometry/optimization/convex_set.h"
 
 namespace drake {
@@ -19,7 +20,8 @@ only that the matrix AᵀA is positive semi-definite.
 Compare this with an alternative (very useful) parameterization of the
 ellipsoid: `{Bu + center | |u|₂ ≤ 1}`, which is an affine scaling of the unit
 ball.  This is related to the quadratic form by `B = A⁻¹`, when `A` is
-invertible, but the quadratic form can also represent unbounded sets.
+invertible, but the quadratic form can also represent unbounded sets. This
+representation is implemented in AffineBall.
 
 Note: the name Hyperellipsoid was taken here to avoid conflicting with
 geometry::Ellipsoid and to distinguish that this class supports N dimensions.
@@ -48,6 +50,10 @@ class Hyperellipsoid final : public ConvexSet {
   Hyperellipsoid(const QueryObject<double>& query_object,
                  GeometryId geometry_id,
                  std::optional<FrameId> reference_frame = std::nullopt);
+
+  /** Constructs a Hyperellipsoid from an AffineBall.
+  @pre ellipsoid.B() is invertible.*/
+  explicit Hyperellipsoid(const AffineBall& ellipsoid);
 
   ~Hyperellipsoid() final;
 
