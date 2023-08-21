@@ -9,11 +9,13 @@
 #include <vector>
 
 #include <fmt/format.h>
-#include <vtkImageData.h>
-#include <vtkNew.h>
-#include <vtkPNGWriter.h>
-#include <vtkSmartPointer.h>
-#include <vtkTIFFWriter.h>
+
+// To ease build system upkeep, we annotate VTK includes with their deps.
+#include <vtkImageData.h>     // vtkCommonDataModel
+#include <vtkNew.h>           // vtkCommonCore
+#include <vtkPNGWriter.h>     // vtkIOImage
+#include <vtkSmartPointer.h>  // vtkCommonCore
+#include <vtkTIFFWriter.h>    // vtkIOImage
 
 namespace drake {
 namespace systems {

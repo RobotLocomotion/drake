@@ -7,8 +7,10 @@
 
 #include <gtest/gtest.h>
 #include <nlohmann/json.hpp>
-#include <vtkCamera.h>
-#include <vtkMatrix4x4.h>
+
+// To ease build system upkeep, we annotate VTK includes with their deps.
+#include <vtkCamera.h>     // vtkRenderingCore
+#include <vtkMatrix4x4.h>  // vtkCommonMath
 
 #include "drake/common/find_resource.h"
 #include "drake/common/fmt_eigen.h"

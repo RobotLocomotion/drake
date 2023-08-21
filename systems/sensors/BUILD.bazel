@@ -206,6 +206,7 @@ drake_cc_library(
         ":lcm_image_traits",
         "//lcmtypes:image_array",
         "@libpng",
+        "@vtk//:vtkCommonCore",
         "@vtk//:vtkIOImage",
         "@zlib",
     ],

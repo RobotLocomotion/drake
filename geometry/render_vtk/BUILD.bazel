@@ -62,9 +62,14 @@ drake_cc_library(
         "//geometry/render_vtk:render_engine_vtk_params",
         "//systems/sensors:color_palette",
         "@eigen",
+        "@vtk//:vtkCommonCore",
+        "@vtk//:vtkCommonExecutionModel",
+        "@vtk//:vtkCommonTransforms",
+        "@vtk//:vtkFiltersSources",
         "@vtk//:vtkIOGeometry",
         "@vtk//:vtkIOImage",
         "@vtk//:vtkIOImport",
+        "@vtk//:vtkImagingCore",
         "@vtk//:vtkRenderingCore",
         "@vtk//:vtkRenderingOpenGL2",
     ],
@@ -83,6 +88,10 @@ drake_cc_library(
         "//geometry/render:render_material",
         "//geometry/render:render_mesh",
         "@vtk//:vtkCommonCore",
+        "@vtk//:vtkCommonDataModel",
+        "@vtk//:vtkCommonExecutionModel",
+        "@vtk//:vtkCommonTransforms",
+        "@vtk//:vtkFiltersGeneral",
         "@vtk//:vtkFiltersSources",
     ],
 )
@@ -145,6 +154,8 @@ drake_cc_googletest(
         "//geometry/test_utilities:dummy_render_engine",
         "//math:geometric_transform",
         "@vtk//:vtkIOImage",
+        "@vtk//:vtkRenderingCore",
+        "@vtk//:vtkRenderingOpenGL2",
     ],
 )
 
@@ -152,6 +163,9 @@ drake_cc_googletest(
     name = "internal_vtk_util_test",
     deps = [
         ":internal_vtk_util",
+        "@vtk//:vtkCommonCore",
+        "@vtk//:vtkCommonDataModel",
+        "@vtk//:vtkFiltersSources",
     ],
 )
 
