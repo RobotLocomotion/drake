@@ -168,13 +168,7 @@ class AffineSubspace final : public ConvexSet {
   std::pair<std::unique_ptr<Shape>, math::RigidTransformd> DoToShapeWithPose()
       const final;
 
-  double DoVolume() const {
-    if (basis_.cols() == 0) {
-      return 0;
-    }
-    // return infinity if the affine subspace is unbounded.
-    return std::numeric_limits<double>::infinity();
-  }
+  double DoCalcVolume() const final;
 
   // Note, we store the original basis as given, plus the QR decomposition, for
   // later use in many of the associated methods. We do not store this if

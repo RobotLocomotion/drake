@@ -32,6 +32,7 @@ AffineSubspace::AffineSubspace(const Eigen::Ref<const MatrixXd>& basis,
   } else {
     basis_decomp_ = std::nullopt;
   }
+  set_has_exact_volume(true);
 }
 
 AffineSubspace::AffineSubspace(const ConvexSet& set, double tol)
@@ -201,6 +202,17 @@ std::pair<std::unique_ptr<Shape>, math::RigidTransformd>
 AffineSubspace::DoToShapeWithPose() const {
   throw std::runtime_error(
       "ToShapeWithPose is not supported by AffineSubspace.");
+}
+
+double AffineSubspace::DoCalcVolume() const {
+  {
+    if (!basis_decomp_.has_value() ||
+        basis_decomp_.value().rank() < ambient_dimension()) {
+      return 0;
+    }
+    // return infinity if the affine subspace is unbounded.
+    return std::numeric_limits<double>::infinity();
+  }
 }
 
 Eigen::MatrixXd AffineSubspace::Project(

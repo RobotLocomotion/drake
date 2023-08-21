@@ -126,8 +126,8 @@ class Hyperellipsoid final : public ConvexSet {
     CheckInvariants();
   }
 
-  /** Computes the volume for the hyperellipsoid set.
-  DRAKE_DEPRECATED("2024-02-01", "Use CalcVolume instead.") */
+  // TODO(SeanCurtis-TRI) Deprecate this function.
+  /** Computes the volume for the hyperellipsoid set.*/
   double Volume() const { return CalcVolume(); }
 
  private:
@@ -171,15 +171,14 @@ class Hyperellipsoid final : public ConvexSet {
   std::pair<std::unique_ptr<Shape>, math::RigidTransformd> DoToShapeWithPose()
       const final;
 
+  double DoCalcVolume() const final;
+
   void CheckInvariants() const;
 
   // Implement support shapes for the ShapeReifier interface.
   using ShapeReifier::ImplementGeometry;
   void ImplementGeometry(const Ellipsoid& ellipsoid, void* data) final;
   void ImplementGeometry(const Sphere& sphere, void* data) final;
-
-  /** calculates the volume of the hyperellipsoid (in Euclidean space). */
-  double DoVolume() const;
 
   Eigen::MatrixXd A_{};
   Eigen::VectorXd center_{};

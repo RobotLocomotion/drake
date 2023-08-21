@@ -237,7 +237,7 @@ double ConvexSet::CalcVolumeViaSampling(RandomGenerator* generator,
     return std::numeric_limits<double>::infinity();
   }
   DRAKE_THROW_UNLESS(desired_rel_accuracy <= 1.0);
-  DRAKE_THROW_UNLESS(min_num_samples <= max_num_samples);
+  DRAKE_DEMAND(min_num_samples <= max_num_samples);
   const auto aabb_opt = this->MaybeCalcAxisAlignedBoundingBox();
   // if aabb_opt is nullopt and the set is not infinity, then we have
   // a problem with the solver.
@@ -245,37 +245,44 @@ double ConvexSet::CalcVolumeViaSampling(RandomGenerator* generator,
   const Hyperrectangle& aabb = aabb_opt.value();
   size_t num_samples = 0;
   size_t num_hits = 0;
-  double relative_accuracy = 1.0;
+  double relative_accuracy_squared = 1.0;
+  const double desired_rel_accuracy_squared = std::pow(desired_rel_accuracy, 2);
   while ((num_samples < min_num_samples ||
-          relative_accuracy > desired_rel_accuracy) &&
+          relative_accuracy_squared > desired_rel_accuracy_squared) &&
          num_samples < max_num_samples) {
     auto point = aabb.UniformSample(generator);
     ++num_samples;
     if (this->PointInSet(point)) {
       ++num_hits;
     }
-    const double mean = static_cast<double>(num_hits) / num_samples;
-    if (mean > 0) {
+    // p is the probability of hitting the set = num_hits/num_samples
+    if (num_hits > 0) {
+      // Let p be the probability of hitting the set, p = num_hits/num_samples
       // The standard deviation of the MonteCarlo estimate is sigma/sqrt(n),
       // where sigma is the standard deviation of the Bernoulli distribution.
-      // The standard deviation of the Bernoulli distribution is sqrt(p(1-p)),
+      // The standard deviation of the Bernoulli distribution is sqrt((1-p)*p),
       // where p is the probability of success.  Therefore, the standard
-      // deviation of the estimate is sqrt((1-p)/p/n).  The relative accuracy is
+      // deviation of the estimate is sqrt((1-p)*p/n).  The relative accuracy is
       // the standard deviation divided by the mean, so the relative accuracy is
-      // sqrt((1-p)*p/n)/p = sqrt((1/p-1)/n).
-      relative_accuracy = std::sqrt((1 - mean) / mean / num_samples);
+      // sqrt((1-p)*p/n)/p = sqrt((1-p)/p/n)
+      // Therefore, the relative accuracy squared is (1-p)/p/n
+      // or simply num_misses/num_hits/n_samples, where num_misses =
+      // num_samples - num_hits.
+      relative_accuracy_squared = static_cast<double>(num_samples - num_hits) /
+                                  (num_hits * num_samples);
     }
   }
-  if (relative_accuracy > desired_rel_accuracy) {
+  if (relative_accuracy_squared > desired_rel_accuracy_squared) {
     drake::log()->warn(
         "Volume calculation did not converge to desired accuracy {}.  "
         "Relative accuracy achieved: {}",
-        desired_rel_accuracy, relative_accuracy);
+        desired_rel_accuracy, std::sqrt(relative_accuracy_squared));
   }
-  return aabb.CalcVolume() * num_hits / num_samples;
+  return aabb.CalcVolume() * static_cast<double>(num_hits) /
+         static_cast<double>(num_samples);
 }
 
-double ConvexSet::DoVolume() const {
+double ConvexSet::DoCalcVolume() const {
   throw std::runtime_error(
       fmt::format("The class {} has not implemented an exact volume "
                   "calculation yet. Use CalcVolumeViaSampling() instead.",

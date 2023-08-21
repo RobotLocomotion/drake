@@ -551,6 +551,7 @@ GTEST_TEST(CartesianProductTest, Volume) {
   Hyperrectangle R =
       Hyperrectangle(Eigen::Vector2d::Zero(), Eigen::Vector2d(3, 2));
   CartesianProduct S(V, R);
+  EXPECT_TRUE(S.has_exact_volume());
   EXPECT_NEAR(S.CalcVolume(), 9, 1e-6);
 }
 

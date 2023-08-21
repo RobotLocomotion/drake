@@ -36,17 +36,29 @@ int SumAmbientDimensions(const ConvexSets& sets) {
   return dim;
 }
 
+bool HasExactVolumme(const ConvexSets& sets) {
+  for (const auto& set : sets) {
+    if (!set->has_exact_volume()) {
+      return false;
+    }
+  }
+  return true;
+}
+
 }  // namespace
 
 CartesianProduct::CartesianProduct() : CartesianProduct(ConvexSets{}) {}
 
 CartesianProduct::CartesianProduct(const ConvexSets& sets)
-    : ConvexSet(SumAmbientDimensions(sets)), sets_(sets) {}
+    : ConvexSet(SumAmbientDimensions(sets)), sets_(sets) {
+  set_has_exact_volume(HasExactVolumme(sets));
+}
 
 CartesianProduct::CartesianProduct(const ConvexSet& setA, const ConvexSet& setB)
     : ConvexSet(setA.ambient_dimension() + setB.ambient_dimension()) {
   sets_.emplace_back(setA.Clone());
   sets_.emplace_back(setB.Clone());
+  set_has_exact_volume(HasExactVolumme(sets_));
 }
 
 CartesianProduct::CartesianProduct(const ConvexSets& sets,
@@ -64,6 +76,7 @@ CartesianProduct::CartesianProduct(const ConvexSets& sets,
   DRAKE_THROW_UNLESS(A_->cols() == x_ambient_dimension);
   // Ensure that A is injective.
   DRAKE_THROW_UNLESS(A_decomp_->rank() == A_->cols());
+  set_has_exact_volume(HasExactVolumme(sets_));
 }
 
 CartesianProduct::CartesianProduct(const QueryObject<double>& query_object,
@@ -77,6 +90,8 @@ CartesianProduct::CartesianProduct(const QueryObject<double>& query_object,
   sets_.emplace_back(
       Hyperellipsoid::MakeHypersphere(cylinder.radius(), Vector2d::Zero())
           .Clone());
+  // ToDo(@sadraddini) use MakeBox out of a future zonotope class instead so
+  // that we can compute the volume exactly.
   sets_.emplace_back(HPolyhedron::MakeBox(Vector1d{-cylinder.length() / 2.0},
                                           Vector1d{cylinder.length() / 2.0})
                          .Clone());
@@ -90,6 +105,7 @@ CartesianProduct::CartesianProduct(const QueryObject<double>& query_object,
   A_ = X_GF.rotation().matrix();
   b_ = X_GF.translation();
   A_decomp_ = Eigen::ColPivHouseholderQR<Eigen::MatrixXd>(*A_);
+  set_has_exact_volume(HasExactVolumme(sets_));
 }
 
 CartesianProduct::~CartesianProduct() = default;
@@ -334,12 +350,7 @@ CartesianProduct::DoToShapeWithPose() const {
       "ToShapeWithPose is not implemented yet for CartesianProduct.");
 }
 
-void CartesianProduct::ImplementGeometry(const Cylinder& cylinder, void* data) {
-  Cylinder* c = static_cast<Cylinder*>(data);
-  *c = cylinder;
-}
-
-double CartesianProduct::DoVolume() const {
+double CartesianProduct::DoCalcVolume() const {
   {
     double volume = 1.0;
     for (const auto& set : sets_) {
@@ -347,6 +358,11 @@ double CartesianProduct::DoVolume() const {
     }
     return volume;
   }
+}
+
+void CartesianProduct::ImplementGeometry(const Cylinder& cylinder, void* data) {
+  Cylinder* c = static_cast<Cylinder*>(data);
+  *c = cylinder;
 }
 
 }  // namespace optimization

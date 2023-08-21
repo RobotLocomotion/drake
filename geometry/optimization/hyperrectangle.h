@@ -54,20 +54,20 @@ class Hyperrectangle final : public ConvexSet {
   }
 
  private:
-  std::unique_ptr<ConvexSet> DoClone() const;
+  std::unique_ptr<ConvexSet> DoClone() const final;
 
   bool DoIsBounded() const;
 
-  /* An Hyperrectangle can not empty as lb <= ub is already checked in the
-   * ctor*/
-  bool DoIsEmpty() const { return false; }
+  /** An Hyperrectangle can not empty as lb <= ub is already checked in the ctor
+   */
+  bool DoIsEmpty() const final { return false; }
 
-  std::optional<Eigen::VectorXd> DoMaybeGetPoint() const;
+  std::optional<Eigen::VectorXd> DoMaybeGetPoint() const final;
 
-  std::optional<Eigen::VectorXd> DoMaybeGetFeasiblePoint() const;
+  std::optional<Eigen::VectorXd> DoMaybeGetFeasiblePoint() const final;
 
   bool DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
-                    double tol) const;
+                    double tol) const final;
 
   std::pair<VectorX<symbolic::Variable>,
             std::vector<solvers::Binding<solvers::Constraint>>>
@@ -94,7 +94,7 @@ class Hyperrectangle final : public ConvexSet {
   std::pair<std::unique_ptr<Shape>, math::RigidTransformd> DoToShapeWithPose()
       const final;
 
-  double DoVolume() const;
+  double DoCalcVolume() const final;
 
   void CheckInvariants();
 

@@ -37,6 +37,7 @@ Hyperrectangle::Hyperrectangle(const Eigen::Ref<const Eigen::VectorXd>& lb,
                                const Eigen::Ref<const Eigen::VectorXd>& ub)
     : ConvexSet(lb.size()), lb_(lb), ub_(ub) {
   CheckInvariants();
+  set_has_exact_volume(true);
 }
 
 std::unique_ptr<ConvexSet> Hyperrectangle::DoClone() const {
@@ -44,7 +45,8 @@ std::unique_ptr<ConvexSet> Hyperrectangle::DoClone() const {
 }
 
 bool Hyperrectangle::DoIsBounded() const {
-  return (ub_.array() - lb_.array()).allFinite();
+  // the finiteness of lb_ and ub_ is checked in the ctor.
+  return true;
 }
 
 std::optional<Eigen::VectorXd> Hyperrectangle::DoMaybeGetPoint() const {
@@ -163,11 +165,14 @@ Hyperrectangle::DoToShapeWithPose() const {
                         math::RigidTransformd(Center()));
 }
 
-double Hyperrectangle::DoVolume() const {
+double Hyperrectangle::DoCalcVolume() const {
   return (ub_ - lb_).prod();
 }
 
 void Hyperrectangle::CheckInvariants() {
+  // only bounded hyperrectangles are supported.
+  DRAKE_THROW_UNLESS(lb_.array().allFinite());
+  DRAKE_THROW_UNLESS(ub_.array().allFinite());
   DRAKE_THROW_UNLESS(lb_.size() == ub_.size());
   DRAKE_THROW_UNLESS((lb_.array() <= ub_.array()).all());
 }

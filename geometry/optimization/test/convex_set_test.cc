@@ -2,6 +2,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/limit_malloc.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
 #include "drake/geometry/optimization/hyperrectangle.h"
@@ -109,8 +110,8 @@ GTEST_TEST(MakeConvexSetsTest, NoExtraCopying) {
 }
 
 // Test the computation of the minimal axis-aligned bounding box of a
-// polyhedron.
-GTEST_TEST(HyperRectangleTest, MaybeCalcAxisAlignedBoundingBox) {
+// polyhedron. Then test the computation of the volume of the bounding box.
+GTEST_TEST(VolumeTest, BoundingBoxAroundHPolyhedron) {
   Matrix<double, 4, 2> A;
   Matrix<double, 4, 1> b;
   // clang-format off
@@ -123,15 +124,27 @@ GTEST_TEST(HyperRectangleTest, MaybeCalcAxisAlignedBoundingBox) {
   HPolyhedron H(A, b);
   std::optional<Hyperrectangle> aabb_opt = H.MaybeCalcAxisAlignedBoundingBox();
   EXPECT_TRUE(aabb_opt.has_value());
-  auto aabb = aabb_opt.value();
+  const auto& aabb = aabb_opt.value();
   EXPECT_NEAR(aabb.lb()(0), -2, 1e-6);
   EXPECT_NEAR(aabb.ub()(0), 1, 1e-6);
   EXPECT_NEAR(aabb.lb()(1), -2, 1e-6);
   EXPECT_NEAR(aabb.ub()(1), 3, 1e-6);
+  // An HPolyhedron does not have an exact volume.
+  EXPECT_FALSE(H.has_exact_volume());
+  // exact volume of a hyperrectangle can be computed
+  EXPECT_TRUE(aabb.has_exact_volume());
+  // If the hyperractangle is cast as a ConvexSet, it does still have an exact
+  // volume.
+  const ConvexSet& aabb_convex_set = aabb;
+  EXPECT_TRUE(aabb_convex_set.has_exact_volume());
+  // But it does not throw an exception when computing the volume.
+  EXPECT_NO_THROW(aabb_convex_set.CalcVolume());
   // Check the volume of the bounding box.
   EXPECT_NEAR(aabb.CalcVolume(), 15, 1e-6);
-  // The H-polyhedron volume throws an exception.
-  EXPECT_THROW(H.CalcVolume(), std::runtime_error);
+  // The H-polyhedron volume throws an exception that asks user to use
+  // CalcVolumeViaSampling instead.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      H.CalcVolume(), ".*HPolyhedron.*Use CalcVolumeViaSampling.. instead.");
   // Compute the volume of the polytope
   RandomGenerator generator(1234);
   const auto polytope_volume = H.CalcVolumeViaSampling(&generator, 1e-2);

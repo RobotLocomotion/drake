@@ -131,13 +131,13 @@ class VPolytope final : public ConvexSet {
   std::pair<std::unique_ptr<Shape>, math::RigidTransformd> DoToShapeWithPose()
       const final;
 
+  double DoCalcVolume() const final;
+
   // Implement support shapes for the ShapeReifier interface.
   using ShapeReifier::ImplementGeometry;
   void ImplementGeometry(const Box& box, void* data) final;
   void ImplementGeometry(const Convex& convex, void* data) final;
   void ImplementGeometry(const Mesh& mesh, void* data) final;
-
-  double DoVolume() const;
 
   Eigen::MatrixXd vertices_;
 };

@@ -234,50 +234,61 @@ class ConvexSet : public ShapeReifier {
   // TODO(russt): Consider adding a set_solver() method here, which determines
   // the solver that any derived class uses if it solves an optimization.
 
-  /** Returns the minimum axis aligned bounding box of the convex set, for sets
-   * with finite volume. (std::nullopt otherwise). */
+  /** Returns the minimum axis-aligned bounding box of the convex set, for sets
+  with finite volume. (std::nullopt otherwise). */
   std::optional<Hyperrectangle> MaybeCalcAxisAlignedBoundingBox() const;
 
   /** Computes the exact volume for the convex set.
   @note It is not possible to obtain the exact volume of some convex sets in
-  polynmoial time.
-  @throws std::exception if the exact computation of the volume for this class
-  is not possible or implemented. Currently this method is implemented for
-  @HPolyhedron, @VPolytope, @CartesianProduct, and @Hyperrectangle. For generic
-  @HPolyhedron objects, use the approximate volume computation via
-  @CalcVolumeViaSampling.
-  @note returns infinity if the set is unbounded.
-  */
+  polynomial time. Calling has_exact_volume() will return true if the exact
+  volume can be computed for this convex set.
+  @throws std::exception if the derived class has not implemented the exact
+  computation of the volume, i.e., has_exact_volume() returns false.
+  Currently, the exact volume is only implemented for the following convex sets:
+  - Hyperrectangle
+  - VPolytope
+  - Hyperellipsoid
+  - CartesianProduct (only if all the constituent sets have exact volume)
+  And has trivial implementation for the following convex sets:
+  - AffineSubspace (zero volume if the set is not full-dimensional, otherwise
+  infinity)
+  - Point (zero volume)
+  For other convex sets, the exact volume computation is not implemented yet.
+  In this case, the user can use @sa CalcVolumeViaSampling() to obtain an
+  estimate
+  @note returns infinity if the set is unbounded. */
   double CalcVolume() const {
     if (!IsBounded()) {
       return std::numeric_limits<double>::infinity();
     }
-    return DoVolume();
+    return DoCalcVolume();
   }
 
-  /** Returns the volume of the set, calculated by sampling points from the set
-    and using Monte Carlo integration.  If the set is unbounded, throws an
-    exception.
-    @note this method is intended to be used for low to moderate dimensions
-    (d<15). For larger dimensions, a telescopic product approach has yet to be
-    implemented. See, e.g.,
-    https://proceedings.mlr.press/v151/chevallier22a/chevallier22a.pdf
-    @param generator a random number generator.
-    @param rel_accuracy the relative accuracy of the volume estimate (default
-    1e-2). This is the relative error in the estimate of the volume, i.e., the
-    estimate is likely to be within (1+2*rel_accuracy)*volume and
-    (1-2*rel_accuracy)*volume with probability 0.95 according to the Law of
-    Large Numbers.
-    https://people.math.umass.edu/~lr7q/ps_files/teaching/math456/Chapter6.pdf
-    The computation will terminate when the relative error is less than
-    rel_accuracy.
-    @param min_num_samples the minimum number of samples to use.
-    @param max_num_samples the maximum number of samples to use.
-    @return the estimated volume of the set. */
+  /** Calculates an estimate of the volume of the convex set using sampling and
+  performing Monte Carlo integration.
+  @note this method is intended to be used for low to moderate dimensions
+  (d<15). For larger dimensions, a telescopic product approach has yet to be
+  implemented. See, e.g.,
+  https://proceedings.mlr.press/v151/chevallier22a/chevallier22a.pdf
+  @param generator a random number generator.
+  @param rel_accuracy the relative accuracy of the volume estimate in the sense
+  that the estimated volume is likely to be within the interval defined by
+  (1±2*rel_accuracy)*true_volume with probability 0.95 according to the Law of
+  Large Numbers.
+  https://people.math.umass.edu/~lr7q/ps_files/teaching/math456/Chapter6.pdf
+  The computation will terminate when the relative error is less than
+  rel_accuracy or when the maximum number of samples is reached.
+  @param min_num_samples the minimum number of samples to use.
+  @param max_num_samples the maximum number of samples to use.
+  @pre `min_num_samples` <= `max_num_samples`.`
+  @return the estimated volume of the set. */
   double CalcVolumeViaSampling(RandomGenerator* generator,
                                const double rel_accuracy = 1e-2,
                                const size_t min_num_samples = 100,
                                const size_t max_num_samples = 1e4) const;
+
+  /** Returns true if the exact volume can be computed for this convex set. */
+  bool has_exact_volume() const { return has_exact_volume_; }
 
  protected:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ConvexSet)
@@ -372,6 +383,11 @@ class ConvexSet : public ShapeReifier {
   virtual std::pair<std::unique_ptr<Shape>, math::RigidTransformd>
   DoToShapeWithPose() const = 0;
 
+  /** Interface implementation for DoCalcVolume(). In case the exact volume is
+   not available for a convex set (such as HPolyhedron), this method will throw
+   an exception. */
+  virtual double DoCalcVolume() const;
+
   /** Instances of subclasses such as CartesianProduct and MinkowskiSum can
   have constituent sets with zero ambient dimension, which much be handled in a
   special manner when calling methods such as DoAddPointInSetConstraints. If the
@@ -386,10 +402,10 @@ class ConvexSet : public ShapeReifier {
       solvers::MathematicalProgram* prog, const ConvexSet& set,
       std::vector<solvers::Binding<solvers::Constraint>>* constraints) const;
 
-  /** Interface implementation for DoVolume(). In case the exact volume is not
-   available for a convex set (such as HPolyhedron), this method will throw an
-   exception. */
-  virtual double DoVolume() const;
+  /** Sets the exact volume computation flag. */
+  void set_has_exact_volume(bool has_exact_volume) {
+    has_exact_volume_ = has_exact_volume;
+  }
 
  private:
   /** Generic implementation for IsBounded() -- applicable for all convex sets.
@@ -411,6 +427,8 @@ class ConvexSet : public ShapeReifier {
   // an invariant like `∑(set.size() for set in sets_) == ambient_dimension_`,
   // we need to zero the dimension when `sets_` is moved-from.
   reset_after_move<int> ambient_dimension_;
+
+  bool has_exact_volume_{false};
 };
 
 /** Provides the recommended container for passing a collection of ConvexSet

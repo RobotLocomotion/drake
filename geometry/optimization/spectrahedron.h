@@ -40,6 +40,9 @@ class Spectrahedron final : public ConvexSet {
   // only work in the case where the ambient_dimension is ONLY symmetric
   // matrices.
 
+  /** @throws  Not implemented. */
+  using ConvexSet::CalcVolume;
+
  private:
   std::unique_ptr<ConvexSet> DoClone() const final;
 

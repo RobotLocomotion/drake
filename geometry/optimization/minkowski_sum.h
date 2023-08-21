@@ -105,8 +105,6 @@ class MinkowskiSum final : public ConvexSet {
   using ShapeReifier::ImplementGeometry;
   void ImplementGeometry(const Capsule& capsule, void* data) final;
 
-  double DoVolume() const { throw std::runtime_error("Not implemented."); }
-
   ConvexSets sets_{};  // Not marked const to support move semantics.
 };
 

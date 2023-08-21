@@ -78,6 +78,10 @@ class CartesianProduct final : public ConvexSet {
   set implementations. */
   using ConvexSet::PointInSet;
 
+  /** @throws  Not implemented if the exact volume for any of of the sets in the
+   * product is not supported. */
+  using ConvexSet::CalcVolume;
+
  private:
   std::unique_ptr<ConvexSet> DoClone() const final;
 
@@ -142,7 +146,7 @@ class CartesianProduct final : public ConvexSet {
   std::optional<Eigen::ColPivHouseholderQR<Eigen::MatrixXd>> A_decomp_{
       std::nullopt};
 
-  double DoVolume() const;
+  double DoCalcVolume() const final;
 };
 
 }  // namespace optimization

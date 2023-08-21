@@ -97,14 +97,7 @@ GTEST_TEST(HyperRectangleTest, Sampling) {
 GTEST_TEST(HyperRectangleTest, InfinityTest) {
   const auto lb = Vector3d::Constant(-std::numeric_limits<double>::infinity());
   const auto ub = Vector3d::Constant(1);
-  const Hyperrectangle hyperrectangle(lb, ub);
-  EXPECT_EQ(hyperrectangle.ambient_dimension(), 3);
-  // The volume of the hyperrectangle is infinity.
-  EXPECT_TRUE(std::isinf(hyperrectangle.CalcVolume()));
-  // Check the center of the hyperrectangle.
-  const auto center = hyperrectangle.Center();
-  EXPECT_TRUE(std::isinf(center(0)));
-  EXPECT_FALSE(hyperrectangle.IsBounded());
+  EXPECT_THROW(Hyperrectangle(lb, ub), std::exception);
 }
 
 GTEST_TEST(HyperRectangleTest, AddPointInConstraints) {
@@ -126,8 +119,17 @@ GTEST_TEST(HyperRectangleTest, AddPointInConstraints) {
   // outside the rectangle
   prog.SetInitialGuess(x, Vector3d(3, 2, -4));
   EXPECT_FALSE(prog.CheckSatisfiedAtInitialGuess(con[0]));
+}
+
+// Test AddPointInNonnegativeScalingConstraints
+GTEST_TEST(HyperRectangleTest, AddPointInNonnegativeScalingConstraints) {
   // Test AddPointInNonnegativeScalingConstraints
+  const Vector3d lb{-1, -2, -3};
+  const Vector3d ub{3, 2, 1};
+  const Hyperrectangle hyperrectangle(lb, ub);
+  MathematicalProgram prog;
   const auto t = prog.NewContinuousVariables(1, "t")[0];
+  const auto x = prog.NewContinuousVariables(3, "x");
   auto scaled_con =
       hyperrectangle.AddPointInNonnegativeScalingConstraints(&prog, x, t);
   // 2 constraints + 1 added for t>0
@@ -146,8 +148,9 @@ GTEST_TEST(HyperRectangleTest, AddPointInConstraints) {
   EXPECT_FALSE(prog.CheckSatisfiedAtInitialGuess(scaled_con));
 }
 
-GTEST_TEST(HyperRectangleTest, AddPointInNonnegativeScalingConstraints) {
-  // Test AddPointInNonnegativeScalingConstraints with matrices
+// Test AddPointInNonnegativeScalingConstraints with matrices
+GTEST_TEST(HyperRectangleTest,
+           AddPointInNonnegativeScalingConstraintsWithMatrices) {
   const Vector3d lb{-1, -2, -3};
   const Vector3d ub{3, 2, 1};
   const Hyperrectangle hyperrectangle(lb, ub);
