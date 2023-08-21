@@ -6,9 +6,11 @@
 #include <unordered_map>
 
 #include <gtest/gtest.h>
-#include <vtkImageData.h>
-#include <vtkNew.h>
-#include <vtkPNGReader.h>
+
+// To ease build system upkeep, we annotate VTK includes with their deps.
+#include <vtkImageData.h>  // vtkCommonDataModel
+#include <vtkNew.h>        // vtkCommonCore
+#include <vtkPNGReader.h>  // vtkIOImage
 
 #include "drake/common/find_resource.h"
 #include "drake/common/fmt_eigen.h"

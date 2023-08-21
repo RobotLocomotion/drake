@@ -24,6 +24,7 @@ drake_cc_library(
     deps = [
         "//systems/sensors:image",
         "@gtest//:without_main",
+        "@vtk//:vtkCommonCore",
         "@vtk//:vtkIOImage",
     ],
 )

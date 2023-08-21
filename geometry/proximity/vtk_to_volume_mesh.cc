@@ -4,10 +4,12 @@
 #include <vector>
 
 #include <fmt/format.h>
-#include <vtkCellIterator.h>
-#include <vtkNew.h>
-#include <vtkUnstructuredGrid.h>
-#include <vtkUnstructuredGridReader.h>
+
+// To ease build system upkeep, we annotate VTK includes with their deps.
+#include <vtkCellIterator.h>            // vtkCommonDataModel
+#include <vtkNew.h>                     // vtkCommonCore
+#include <vtkUnstructuredGrid.h>        // vtkCommonDataModel
+#include <vtkUnstructuredGridReader.h>  // vtkIOLegacy
 
 #include "drake/common/eigen_types.h"
 

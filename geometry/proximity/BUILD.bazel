@@ -819,7 +819,9 @@ drake_cc_library(
     ],
     deps = [
         "@fmt",
-        "@vtk//:vtkIOGeometry",
+        "@vtk//:vtkCommonCore",
+        "@vtk//:vtkCommonDataModel",
+        "@vtk//:vtkIOLegacy",
     ],
 )
 

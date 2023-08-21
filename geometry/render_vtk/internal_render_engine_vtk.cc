@@ -6,21 +6,22 @@
 #include <stdexcept>
 #include <utility>
 
-#include <vtkActor.h>
-#include <vtkAssembly.h>
-#include <vtkCamera.h>
-#include <vtkCylinderSource.h>
-#include <vtkGLTFImporter.h>
-#include <vtkImageCast.h>
-#include <vtkOpenGLPolyDataMapper.h>
-#include <vtkOpenGLShaderProperty.h>
-#include <vtkOpenGLTexture.h>
-#include <vtkPNGReader.h>
-#include <vtkPlaneSource.h>
-#include <vtkProperty.h>
-#include <vtkTexturedSphereSource.h>
-#include <vtkTransform.h>
-#include <vtkTransformPolyDataFilter.h>
+// To ease build system upkeep, we annotate VTK includes with their deps.
+#include <vtkActor.h>                    // vtkRenderingCore
+#include <vtkAssembly.h>                 // vtkRenderingCore
+#include <vtkCamera.h>                   // vtkRenderingCore
+#include <vtkCylinderSource.h>           // vtkFiltersSources
+#include <vtkGLTFImporter.h>             // vtkIOImport
+#include <vtkImageCast.h>                // vtkImagingCore
+#include <vtkOpenGLPolyDataMapper.h>     // vtkRenderingOpenGL2
+#include <vtkOpenGLShaderProperty.h>     // vtkRenderingOpenGL2
+#include <vtkOpenGLTexture.h>            // vtkRenderingOpenGL2
+#include <vtkPNGReader.h>                // vtkIOImage
+#include <vtkPlaneSource.h>              // vtkFiltersSources
+#include <vtkProperty.h>                 // vtkRenderingCore
+#include <vtkTexturedSphereSource.h>     // vtkFiltersSources
+#include <vtkTransform.h>                // vtkCommonTransforms
+#include <vtkTransformPolyDataFilter.h>  // vtkFiltersGeneral
 
 #include "drake/common/diagnostic_policy.h"
 #include "drake/common/text_logging.h"

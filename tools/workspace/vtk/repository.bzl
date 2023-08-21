@@ -550,10 +550,12 @@ licenses([
         ],
     )
 
-    # Indirect dependency: omit headers.
     file_content += _vtk_cc_library(
         os_result,
         "vtkImagingCore",
+        hdrs = [
+            "vtkImageCast.h",
+        ],
         deps = [
             ":vtkCommonCore",
             ":vtkCommonDataModel",
@@ -698,7 +700,6 @@ licenses([
             "vtkBMPReader.h",
             "vtkBMPWriter.h",
             "vtkIOImageModule.h",
-            "vtkImageCast.h",
             "vtkImageExport.h",
             "vtkImageReader.h",
             "vtkImageReader2.h",

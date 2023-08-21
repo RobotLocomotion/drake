@@ -6,18 +6,19 @@
 #include <unordered_map>
 #include <vector>
 
-#include <vtkAutoInit.h>
-#include <vtkCommand.h>
-#include <vtkImageExport.h>
-#include <vtkLight.h>
-#include <vtkNew.h>
-#include <vtkPolyDataAlgorithm.h>
-#include <vtkProp3D.h>
-#include <vtkRenderWindow.h>
-#include <vtkRenderer.h>
-#include <vtkShaderProgram.h>
-#include <vtkSmartPointer.h>
-#include <vtkWindowToImageFilter.h>
+// To ease build system upkeep, we annotate VTK includes with their deps.
+#include <vtkAutoInit.h>             // vtkCommonCore
+#include <vtkCommand.h>              // vtkCommonCore
+#include <vtkImageExport.h>          // vtkIOImage
+#include <vtkLight.h>                // vtkRenderingCore
+#include <vtkNew.h>                  // vtkCommonCore
+#include <vtkPolyDataAlgorithm.h>    // vtkCommonExecutionModel
+#include <vtkProp3D.h>               // vtkRenderingCore
+#include <vtkRenderWindow.h>         // vtkRenderingCore
+#include <vtkRenderer.h>             // vtkRenderingCore
+#include <vtkShaderProgram.h>        // vtkRenderingOpenGL2
+#include <vtkSmartPointer.h>         // vtkCommonCore
+#include <vtkWindowToImageFilter.h>  // vtkRenderingCore
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_export.h"

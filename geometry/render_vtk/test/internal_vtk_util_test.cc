@@ -5,10 +5,12 @@
 
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
-#include <vtkCellData.h>
-#include <vtkNew.h>
-#include <vtkPlaneSource.h>
-#include <vtkSmartPointer.h>
+
+// To ease build system upkeep, we annotate VTK includes with their deps.
+#include <vtkCellData.h>      // vtkCommonDataModel
+#include <vtkNew.h>           // vtkCommonCore
+#include <vtkPlaneSource.h>   // vtkFiltersSources
+#include <vtkSmartPointer.h>  // vtkCommonCore
 
 namespace drake {
 namespace geometry {
