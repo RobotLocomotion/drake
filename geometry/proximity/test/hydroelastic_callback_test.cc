@@ -109,11 +109,11 @@ class TestScene {
     switch (type) {
       case HydroelasticType::kSoft:
         this->hydroelastic_geometries_.MaybeAddGeometry(shape, id,
-                                                        soft_properties());
+                                                        &soft_properties());
         break;
       case HydroelasticType::kRigid:
         this->hydroelastic_geometries_.MaybeAddGeometry(shape, id,
-                                                        rigid_properties());
+                                                        &rigid_properties());
         break;
       case HydroelasticType::kUndefined:
         // Note: HydroelasticType::kUndefined will not be added.

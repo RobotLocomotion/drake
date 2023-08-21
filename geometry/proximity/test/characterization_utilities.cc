@@ -391,7 +391,8 @@ class ProximityEngineTester {
   // fcl::Convex.
   ProximityEngine<double> engine;
   const GeometryId id = GeometryId::get_new_id();
-  engine.AddDynamicGeometry(Convex(obj_path, 1.0), {}, id);
+  ProximityProperties props;
+  engine.AddDynamicGeometry(Convex(obj_path, 1.0), {}, id, &props);
   if (ProximityEngineTester::IsFclConvexType(engine, id)) {
     return ::testing::AssertionSuccess();
   }

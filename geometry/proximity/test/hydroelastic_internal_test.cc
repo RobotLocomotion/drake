@@ -355,10 +355,10 @@ GTEST_TEST(Hydroelastic, GeometriesPopulationAndQuery) {
   EXPECT_EQ(geometries.hydroelastic_type(bad_id), HydroelasticType::kUndefined);
 
   // Once added, they report the appropriate type.
-  geometries.MaybeAddGeometry(Sphere(0.5), soft_id, soft_properties);
+  geometries.MaybeAddGeometry(Sphere(0.5), soft_id, &soft_properties);
   EXPECT_EQ(geometries.hydroelastic_type(soft_id),
             HydroelasticType::kSoft);
-  geometries.MaybeAddGeometry(Sphere(0.5), rigid_id, rigid_properties);
+  geometries.MaybeAddGeometry(Sphere(0.5), rigid_id, &rigid_properties);
   EXPECT_EQ(geometries.hydroelastic_type(rigid_id), HydroelasticType::kRigid);
 
   // Ids that report the correct type, successfully access the appropriate
@@ -374,14 +374,14 @@ GTEST_TEST(Hydroelastic, RemoveGeometry) {
   const GeometryId rigid_id = GeometryId::get_new_id();
   ProximityProperties rigid_properties;
   AddRigidHydroelasticProperties(1.0, &rigid_properties);
-  geometries.MaybeAddGeometry(Sphere(0.5), rigid_id, rigid_properties);
+  geometries.MaybeAddGeometry(Sphere(0.5), rigid_id, &rigid_properties);
   ASSERT_EQ(geometries.hydroelastic_type(rigid_id), HydroelasticType::kRigid);
 
   // Add a soft geometry.
   const GeometryId soft_id = GeometryId::get_new_id();
   ProximityProperties soft_properties;
   AddCompliantHydroelasticProperties(1.0, 1e8, &soft_properties);
-  geometries.MaybeAddGeometry(Sphere(0.5), soft_id, soft_properties);
+  geometries.MaybeAddGeometry(Sphere(0.5), soft_id, &soft_properties);
   ASSERT_EQ(geometries.hydroelastic_type(soft_id), HydroelasticType::kSoft);
 
   // Case 1: Remove a geometry that has no representation is a no-op.
