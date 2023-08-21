@@ -19,6 +19,8 @@ namespace optimization {
  plane. The conditions are that certain rational functions should be always
  positive.
  */
+// TODO(Alexandre.Amice) consider moving to internal since this is never
+// accessed publically by cspace_free_polytope
 struct PlaneSeparatesGeometries {
   PlaneSeparatesGeometries(
       std::vector<symbolic::RationalFunction> m_positive_side_rationals,
