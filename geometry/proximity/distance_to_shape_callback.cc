@@ -6,6 +6,7 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/geometry/proximity/distance_to_point_callback.h"
+#include "drake/geometry/proximity/distance_to_shape_touching.h"
 #include "drake/math/rotation_matrix.h"
 
 namespace drake {
@@ -85,13 +86,10 @@ void CalcDistanceFallback<double>(const fcl::CollisionObjectd& a,
   //  determining whether the two geometries are touching or not. For now, we
   //  use this number.
   const double kEps = 1e-14;
-  const double kNan = std::numeric_limits<double>::quiet_NaN();
 
-  // Returns NaN in nhat when min_distance is 0 or almost 0.
-  // TODO(DamrongGuoy): In the future, we should return nhat_BA_W as the
-  //  outward face normal when the two objects are touching.
   if (std::abs(result.min_distance) < kEps) {
-    pair_data->nhat_BA_W = Eigen::Vector3d(kNan, kNan, kNan);
+    pair_data->nhat_BA_W =
+        CalcGradientWhenTouch(a, b, pair_data->p_ACa, pair_data->p_BCb);
   } else {
     pair_data->nhat_BA_W = (p_WCa - p_WCb) / result.min_distance;
   }

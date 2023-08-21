@@ -211,7 +211,12 @@ bool RequiresFallback(const fcl::CollisionObjectd& a,
  @param request         The distance request parameters.
  @param result          The structure to capture the computation results in.
  @tparam T Computation scalar type.
- @pre The pair should *not* be (Halfspace, X), unless X is Sphere.  */
+ @pre The pair should *not* be (Halfspace, X), unless X is Sphere.
+
+ @note The poses of the objects are specified in two ways. Our hand-crafted
+ code (see DistancePairGeometry above) requires `X_WA` and `X_WB`, and,
+ for FCL fallback (see CalcDistanceFallback above), the fcl::CollisionObject
+ `a` and `b` must contain their poses too. */
 template <typename T>
 void ComputeNarrowPhaseDistance(const fcl::CollisionObjectd& a,
                                 const math::RigidTransform<T>& X_WA,
