@@ -118,7 +118,7 @@ namespace render {
  For example:
  ```
  bazel run //geometry/benchmarking:render_experiment -- \
-    --output_dir=trial2 --save_image_path="/tmp" --show_window=true
+    --output_dir=trial2 -- -save_image_path="/tmp" -show_window=true
  ```
 
  <h4>Interpreting the benchmark</h4>
