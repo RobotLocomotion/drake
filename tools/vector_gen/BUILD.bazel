@@ -25,7 +25,6 @@ drake_py_binary(
     name = "lcm_vector_gen",
     srcs = ["lcm_vector_gen.py"],
     deps = [
-        "//tools/lint:clang_format",
         "//tools/lint:find_data",
     ],
 )

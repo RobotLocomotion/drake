@@ -152,6 +152,7 @@ def cc_vector_gen(
 def drake_cc_vector_gen_library(
         name,
         srcs = [],
+        tags = [],
         deps = [],
         **kwargs):
     """Given *_named_vector.yaml files in `srcs`, declare a drake_cc_library
@@ -165,6 +166,7 @@ def drake_cc_vector_gen_library(
     generated = cc_vector_gen(
         name = name + "_codegen",
         srcs = srcs,
+        tags = tags,
         include_prefix = "drake",
         drake_workspace_name = "",
         visibility = [],
@@ -173,6 +175,7 @@ def drake_cc_vector_gen_library(
         name = name,
         srcs = generated.srcs,
         hdrs = generated.hdrs,
+        tags = tags + ["nolint"],
         deps = deps + generated.deps,
         **kwargs
     )

@@ -1,4 +1,3 @@
-clang-format-12
 coinor-libcoinutils-dev
 default-jdk
 file
