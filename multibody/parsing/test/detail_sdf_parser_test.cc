@@ -22,6 +22,7 @@
 #include "drake/geometry/shape_specification.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/roll_pitch_yaw.h"
+#include "drake/multibody/parsing/detail_mujoco_parser.h"
 #include "drake/multibody/parsing/detail_path_utils.h"
 #include "drake/multibody/parsing/detail_urdf_parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
@@ -72,10 +73,18 @@ class SdfParserTest : public test::DiagnosticPolicyTestBase{
   }
 
   static ParserInterface& TestingSelect(const DiagnosticPolicy&,
-                                        const std::string&) {
+                                        const std::string& filename) {
     // TODO(rpoyner-tri): add more formats here, as tests use them.
     static never_destroyed<UrdfParserWrapper> urdf;
-    return urdf.access();
+    static never_destroyed<MujocoParserWrapper> mujoco;
+    if (EndsWithCaseInsensitive(filename, ".urdf")) {
+      return urdf.access();
+    }
+    if (EndsWithCaseInsensitive(filename, ".xml")) {
+      return mujoco.access();
+    }
+    throw std::runtime_error(fmt::format(
+        "Unsupported file format in unittest for file ({})", filename));
   }
 
 
@@ -3247,6 +3256,11 @@ void TestMergeIncludeWithInterfaceApi(const MultibodyPlant<double>& plant,
   const auto arm_sdf_model_instance =
       plant.GetModelInstanceByName(sdf::JoinName(model_prefix, "arm_sdf"));
 
+  ASSERT_TRUE(
+      plant.HasModelInstanceNamed(sdf::JoinName(model_prefix, "arm_mjcf")));
+  const auto arm_mjcf_model_instance =
+      plant.GetModelInstanceByName(sdf::JoinName(model_prefix, "arm_mjcf"));
+
   // Pose of torso link
   const RigidTransformd X_WT(RollPitchYawd(0, 0, 0), Vector3d(0, 0, 1));
 
@@ -3311,6 +3325,21 @@ void TestMergeIncludeWithInterfaceApi(const MultibodyPlant<double>& plant,
     const RigidTransformd X_WM = gripper_mount_frame.CalcPoseInWorld(*context);
     EXPECT_TRUE(CompareMatrices(X_WM_expected.GetAsMatrix4(),
                                 X_WM.GetAsMatrix4(), kEps));
+  }
+  {
+    // Frame G represents the model frame of model top::arm_mjcf
+    const auto& arm_mjcf_model_frame =
+        plant.GetFrameByName("__model__", arm_mjcf_model_instance);
+    const RigidTransformd X_WG = arm_mjcf_model_frame.CalcPoseInWorld(*context);
+    EXPECT_TRUE(
+        CompareMatrices(X_WT.GetAsMatrix4(), X_WG.GetAsMatrix4(), kEps));
+
+    const RigidTransformd X_WL2_expected(RollPitchYawd(0.1, 0.2, 0.3),
+                                         Vector3d(11, 4, 4));
+    const auto& arm_L2 = plant.GetFrameByName("L2", arm_mjcf_model_instance);
+    const RigidTransformd X_WL2 = arm_L2.CalcPoseInWorld(*context);
+    EXPECT_TRUE(CompareMatrices(X_WL2_expected.GetAsMatrix4(),
+                                X_WL2.GetAsMatrix4(), kEps));
   }
 }
 

@@ -529,6 +529,7 @@ drake_cc_googletest(
         "//multibody/benchmarks/acrobot:models",
     ],
     deps = [
+        ":detail_mujoco_parser",
         ":detail_sdf_parser",
         "//common:find_resource",
         "//common/test_utilities",

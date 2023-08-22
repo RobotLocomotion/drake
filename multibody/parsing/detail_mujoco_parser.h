@@ -58,6 +58,11 @@ class MujocoParserWrapper final : public ParserInterface {
       const std::optional<std::string>& parent_model_name,
       const ParsingWorkspace& workspace) final;
 
+  std::string MergeModel(const DataSource& data_source,
+                         const std::string& model_name,
+                         ModelInstanceIndex merge_into_model_instance,
+                         const ParsingWorkspace& workspace) final;
+
   std::vector<ModelInstanceIndex> AddAllModels(
       const DataSource& data_source,
       const std::optional<std::string>& parent_model_name,
