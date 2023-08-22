@@ -11,9 +11,11 @@
 #include <Eigen/Dense>
 #include <fmt/format.h>
 #include <gtest/gtest.h>
-#include <vtkOpenGLTexture.h>
-#include <vtkPNGReader.h>
-#include <vtkProperty.h>
+
+// To ease build system upkeep, we annotate VTK includes with their deps.
+#include <vtkOpenGLTexture.h>  // vtkRenderingOpenGL2
+#include <vtkPNGReader.h>      // vtkIOImage
+#include <vtkProperty.h>       // vtkRenderingCore
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/find_resource.h"

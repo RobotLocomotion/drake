@@ -264,16 +264,9 @@ GTEST_TEST(IrisInConfigurationSpaceTest, ConfigurationObstacles) {
   }
 }
 
-/* Box obstacles in all corners.
-┌─────┬─┬─────┐
-│     │ │     │
-│     │ │     │
-├─────┘ └─────┤
-│             │
-├─────┐ ┌─────┤
-│     │ │     │
-│     │ │     │
-└─────┴─┴─────┘ */
+/* Box in 2D. A box is free to translate in x and y, and has joint limits
+restricting the range in y and collision geometries restricting the range in x.
+*/
 const char boxes_in_2d_urdf[] = R"""(
 <robot name="boxes">
   <link name="fixed">

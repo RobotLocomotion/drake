@@ -10,11 +10,13 @@
 
 #include <fmt/format.h>
 #include <picosha2.h>
-#include <vtkImageData.h>
-#include <vtkImageExport.h>
-#include <vtkNew.h>
-#include <vtkPNGReader.h>
-#include <vtkTIFFReader.h>
+
+// To ease build system upkeep, we annotate VTK includes with their deps.
+#include <vtkImageData.h>    // vtkCommonDataModel
+#include <vtkImageExport.h>  // vtkIOImage
+#include <vtkNew.h>          // vtkCommonCore
+#include <vtkPNGReader.h>    // vtkIOImage
+#include <vtkTIFFReader.h>   // vtkIOImage
 
 #include "drake/common/temp_directory.h"
 #include "drake/common/text_logging.h"

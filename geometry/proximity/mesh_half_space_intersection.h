@@ -78,8 +78,7 @@ void ConstructTriangleHalfspaceIntersectionPolygon(
     const TriangleSurfaceMesh<double>& mesh_F, int tri_index,
     const PosedHalfSpace<typename MeshBuilder::ScalarType>& half_space_F,
     const std::function<typename MeshBuilder::ScalarType(
-        const Vector3<typename MeshBuilder::ScalarType>&)>&
-        pressure_in_F,
+        const Vector3<typename MeshBuilder::ScalarType>&)>& pressure_in_F,
     const Vector3<typename MeshBuilder::ScalarType>& grad_pressure_in_W,
     const math::RigidTransform<typename MeshBuilder::ScalarType>& X_WF,
     MeshBuilder* builder_W,
@@ -128,8 +127,7 @@ ComputeContactSurface(
     GeometryId half_space_id,
     const PosedHalfSpace<typename MeshBuilder::ScalarType>& half_space_F,
     const std::function<typename MeshBuilder::ScalarType(
-        const Vector3<typename MeshBuilder::ScalarType>&)>&
-        pressure_in_F,
+        const Vector3<typename MeshBuilder::ScalarType>&)>& pressure_in_F,
     const Vector3<typename MeshBuilder::ScalarType>& grad_p_W,
     const std::vector<int>& tri_indices,
     const math::RigidTransform<typename MeshBuilder::ScalarType>& X_WF);

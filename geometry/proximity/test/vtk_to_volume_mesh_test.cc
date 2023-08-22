@@ -27,8 +27,7 @@ GTEST_TEST(VtkToVolumeMeshTest, OneTetrahedronFile) {
 GTEST_TEST(VtkToVolumeMeshTest, KeepMeshIgnoreFieldVariables) {
   const std::string test_file = FindResourceOrThrow(
       "drake/geometry/test/two_tetrahedra_with_field_variable.vtk");
-  VolumeMesh<double> volume_mesh =
-      internal::ReadVtkToVolumeMesh(test_file);
+  VolumeMesh<double> volume_mesh = internal::ReadVtkToVolumeMesh(test_file);
 
   const VolumeMesh<double> expected_mesh{
       {{0, 1, 2, 3}, {0, 2, 1, 4}},
@@ -42,8 +41,8 @@ GTEST_TEST(VtkToVolumeMeshTest, Scale) {
       FindResourceOrThrow("drake/geometry/test/one_tetrahedron.vtk");
   // Scale from a one-meter object to a one-centimeter object.
   const double kScale = 0.01;
-  VolumeMesh<double> volume_mesh = internal::ReadVtkToVolumeMesh(test_file,
-                                                                 kScale);
+  VolumeMesh<double> volume_mesh =
+      internal::ReadVtkToVolumeMesh(test_file, kScale);
 
   const VolumeMesh<double> expected_mesh{
       {{0, 1, 2, 3}},
@@ -69,8 +68,7 @@ GTEST_TEST(VtkToVolumeMeshTest, BadScale) {
 
 GTEST_TEST(VtkToVolumeMeshTest, BogusFileName) {
   const std::string bogus_filename = "bogus_filename";
-  EXPECT_THROW(internal::ReadVtkToVolumeMesh(bogus_filename),
-               std::exception);
+  EXPECT_THROW(internal::ReadVtkToVolumeMesh(bogus_filename), std::exception);
 }
 
 GTEST_TEST(VtkToVolumeMeshTest, WrongFileType) {

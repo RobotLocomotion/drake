@@ -75,10 +75,12 @@ std::vector<std::array<int, 3>> IdentifyBoundaryFaces(
   // v1 v3 v0
   // has its right-handed normal pointing outwards from the tetrahedron.
   const int tetrahedron_faces[4][3] = {
+      // clang-format off
       {1, 2, 3},
       {3, 2, 0},
       {2, 1, 0},
       {1, 3, 0}
+      // clang-format on
   };
   for (const VolumeElement& tetrahedron : tetrahedra) {
     for (const auto& face_vertices : tetrahedron_faces) {
@@ -147,9 +149,8 @@ TriangleSurfaceMesh<T> ConvertVolumeToSurfaceMesh(const VolumeMesh<T>& volume) {
                                 std::move(surface_vertices));
 }
 
-DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS((
-  &ConvertVolumeToSurfaceMesh<T>
-))
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    (&ConvertVolumeToSurfaceMesh<T>))
 
 }  // namespace geometry
 }  // namespace drake

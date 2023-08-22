@@ -878,6 +878,15 @@ std::vector<RobotCollisionType> CollisionChecker::ClassifyContextBodyCollisions(
   return DoClassifyContextBodyCollisions(*model_context);
 }
 
+int CollisionChecker::GetNumberOfThreads(const bool parallelize) const {
+  const bool check_in_parallel = CanEvaluateInParallel() && parallelize;
+  if (check_in_parallel) {
+    return std::min(num_allocated_contexts(), GetNumOmpThreads());
+  } else {
+    return 1;
+  }
+}
+
 CollisionChecker::CollisionChecker(CollisionCheckerParams params,
                                    bool supports_parallel_checking)
     : setup_model_(std::move(params.model)),
@@ -1251,15 +1260,6 @@ std::string CollisionChecker::CriticizePaddingMatrix(
     }
   }
   return {};
-}
-
-int CollisionChecker::GetNumberOfThreads(const bool parallelize) const {
-  const bool check_in_parallel = CanEvaluateInParallel() && parallelize;
-  if (check_in_parallel) {
-    return std::min(num_allocated_contexts(), GetNumOmpThreads());
-  } else {
-    return 1;
-  }
 }
 
 CollisionChecker::OwnedContextKeeper::~OwnedContextKeeper() = default;

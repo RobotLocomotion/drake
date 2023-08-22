@@ -63,9 +63,9 @@ void ThrowIfInvalidForCentroid(const char* prefix,
 
   // First test for sufficient length.
   if (n_F.norm() < 1e-10) {
-    throw std::runtime_error(fmt::format(
-        "{}: given normal is too small; normal [{}] with length {}",
-        prefix, fmt_eigen(n_F.transpose()), n_F.norm()));
+    throw std::runtime_error(
+        fmt::format("{}: given normal is too small; normal [{}] with length {}",
+                    prefix, fmt_eigen(n_F.transpose()), n_F.norm()));
   }
 
   // Now test for orthogonality.
@@ -97,9 +97,7 @@ void ThrowIfInvalidForCentroid(const char* prefix,
   for (int i = 0; i < v_count; ++i) {
     const Vector3<T>& v = vertices_F[polygon[i]];
     A.block(i, 0, 1, 4) << ExtractDoubleOrThrow(v(0)),
-                           ExtractDoubleOrThrow(v(1)),
-                           ExtractDoubleOrThrow(v(2)),
-                           1.0;
+        ExtractDoubleOrThrow(v(1)), ExtractDoubleOrThrow(v(2)), 1.0;
   }
 
   Eigen::FullPivLU<MatrixX<double>> lu(A);
@@ -131,21 +129,19 @@ void ThrowIfInvalidForCentroid(const char* prefix,
   // side of the polygon plane, simply throw out the sign of the dot product.
   using std::abs;
   if (abs(plane_norm.dot(n_F.normalized())) < 0.7071) {
-    throw std::runtime_error(
-        fmt::format("{}: the given normal is not perpendicular to the "
-                    "polygon's plane; given normal: [{}], plane normal: [{}]",
-                    prefix, fmt_eigen(n_F.transpose()),
-                    fmt_eigen(plane_norm.transpose())));
+    throw std::runtime_error(fmt::format(
+        "{}: the given normal is not perpendicular to the "
+        "polygon's plane; given normal: [{}], plane normal: [{}]",
+        prefix, fmt_eigen(n_F.transpose()), fmt_eigen(plane_norm.transpose())));
   }
 }
 
 }  // namespace
 
 template <typename T>
-int TriMeshBuilder<T>::AddPolygon(
-    const std::vector<int>& polygon_vertices,
-    const Vector3<T>& nhat_B,
-    const Vector3<T>& grad_e_MN_B) {
+int TriMeshBuilder<T>::AddPolygon(const std::vector<int>& polygon_vertices,
+                                  const Vector3<T>& nhat_B,
+                                  const Vector3<T>& grad_e_MN_B) {
   // Vertices and pressure values at vertex positions must already have been
   // explicitly added to use this method.
   DRAKE_ASSERT_VOID(
@@ -193,10 +189,9 @@ PolyMeshBuilder<T>::PolyMeshBuilder() {
 }
 
 template <typename T>
-int PolyMeshBuilder<T>::AddPolygon(
-    const std::vector<int>& polygon_vertices,
-    const Vector3<T>& /* nhat_B */,
-    const Vector3<T>& grad_e_MN_B) {
+int PolyMeshBuilder<T>::AddPolygon(const std::vector<int>& polygon_vertices,
+                                   const Vector3<T>& /* nhat_B */,
+                                   const Vector3<T>& grad_e_MN_B) {
   // Vertices and pressure values at vertex positions must already have been
   // explicitly added to use this method.
   DRAKE_ASSERT_VOID(
@@ -364,17 +359,15 @@ bool IsFaceNormalInNormalDirection(const Vector3<T>& normal_F,
 }
 
 // Instantiation to facilitate unit testing of this support function.
-DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS((
-    &AddPolygonToTriangleMeshData<T>,
-    &IsFaceNormalInNormalDirection<T>,
-    &CalcPolygonCentroid<T>
-))
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    (&AddPolygonToTriangleMeshData<T>, &IsFaceNormalInNormalDirection<T>,
+     &CalcPolygonCentroid<T>))
 
 }  // namespace internal
 }  // namespace geometry
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-  class ::drake::geometry::internal::TriMeshBuilder)
+    class ::drake::geometry::internal::TriMeshBuilder)
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-  class ::drake::geometry::internal::PolyMeshBuilder)
+    class ::drake::geometry::internal::PolyMeshBuilder)

@@ -27,8 +27,7 @@ Obb::Obb(const RigidTransformd& X_HB, const Vector3<double>& half_width)
   PadBoundary();
 }
 
-bool Obb::HasOverlap(const Obb& a, const Obb& b,
-                     const RigidTransformd& X_GH) {
+bool Obb::HasOverlap(const Obb& a, const Obb& b, const RigidTransformd& X_GH) {
   // The canonical frame A of box `a` is posed in the hierarchy frame G, and
   // the canonical frame B of box `b` is posed in the hierarchy frame H.
   const RigidTransformd& X_GA = a.pose();
@@ -50,14 +49,13 @@ bool Obb::HasOverlap(const Obb& obb_G, const Aabb& aabb_H,
             = X_HG * p_GO_G - p_HA_H
             = X_HG * obb_G.center() - aabb_H.center()  */
   const RigidTransformd X_HG = X_GH.inverse();
-  const RotationMatrixd R_AO =
-      X_HG.rotation() * obb_G.pose().rotation();
+  const RotationMatrixd R_AO = X_HG.rotation() * obb_G.pose().rotation();
   const RigidTransformd X_AO(R_AO, X_HG * obb_G.center() - aabb_H.center());
   return BoxesOverlap(aabb_H.half_width(), obb_G.half_width(), X_AO);
 }
 
 bool Obb::HasOverlap(const Obb& bv, const Plane<double>& plane_P,
-                      const math::RigidTransformd& X_PH) {
+                     const math::RigidTransformd& X_PH) {
   // We want the two corners of the box that lie at the most extreme extents in
   // the plane's normal direction. Then we can determine their heights
   // -- if the interval of heights includes _zero_, the box overlaps.
@@ -90,7 +88,7 @@ bool Obb::HasOverlap(const Obb& bv, const Plane<double>& plane_P,
 }
 
 bool Obb::HasOverlap(const Obb& bv, const HalfSpace&,
-                      const math::RigidTransformd& X_CH) {
+                     const math::RigidTransformd& X_CH) {
   /*
                                               Hy           Hx
                                                 ╲        ╱
@@ -304,7 +302,7 @@ Vector3d ObbMaker<MeshType>::CalcVolumeGradient(const Obb& box) const {
   //  a better optimization when we changed it. Check this number again when
   //  we improve the optimization.
   constexpr double h = 5. * M_PI / 180.;  // 5-degree step.
-  constexpr double one_over_h = 1./h;
+  constexpr double one_over_h = 1.0 / h;
   // Roll, pitch, and yaw the box slightly each time by angle h to change from
   // box frame B to frames Br, Bp, and By respectively.
   static const RotationMatrixd R_BBr(RollPitchYawd(h, 0., 0.));
@@ -406,4 +404,3 @@ template class ObbMaker<VolumeMesh<drake::AutoDiffXd>>;
 }  // namespace internal
 }  // namespace geometry
 }  // namespace drake
-

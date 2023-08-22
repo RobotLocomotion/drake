@@ -70,7 +70,7 @@ class PenetrationAsPointPairCallbackTest : public ::testing::Test {
         id_cylinder_(GeometryId::get_new_id()),
         id_halfspace_(GeometryId::get_new_id()),
         id_capsule_(GeometryId::get_new_id()) {}
-// TODO(DamrongGuoy): add tests for ellipsoid.
+  // TODO(DamrongGuoy): add tests for ellipsoid.
 
  protected:
   void SetUp() override {
@@ -238,7 +238,7 @@ class PenetrationAsPointPairCallbackTest : public ::testing::Test {
       EXPECT_FALSE(Callback<double>(&sphere_A_, &shape, &callback_data_double));
       ASSERT_EQ(point_pairs_double.size(), 1u);
       EXPECT_NEAR(ExtractDoubleOrThrow(first_result.depth),
-                  point_pairs_double[0].depth, 2*kEps);
+                  point_pairs_double[0].depth, 2 * kEps);
       EXPECT_TRUE(CompareMatrices(math::ExtractValue(first_result.p_WCa),
                                   point_pairs_double[0].p_WCa));
       EXPECT_TRUE(CompareMatrices(math::ExtractValue(first_result.p_WCb),
@@ -406,20 +406,17 @@ TEST_F(PenetrationAsPointPairCallbackTest, TestGradient) {
       std::pow(p_WBo_val.norm(), 3);
   // nhat_BA_W = -p_WBo / |p_WBo|, hence ∂nhat_BA_W /∂p_WBo = -∂(p_WBo/|p_WBo|)
   // / ∂p_WBo
-  EXPECT_TRUE(
-      CompareMatrices(math::ExtractGradient(result.nhat_BA_W),
-                      -dp_WBo_normalized_dp_WBo, kEps));
+  EXPECT_TRUE(CompareMatrices(math::ExtractGradient(result.nhat_BA_W),
+                              -dp_WBo_normalized_dp_WBo, kEps));
   // p_WCa = radius * p_WBo / |p_WBo|.
   const Eigen::Matrix3d dp_WCa_dp_WBo = dp_WBo_normalized_dp_WBo * kRadius;
-  EXPECT_TRUE(
-      CompareMatrices(math::ExtractGradient(result.p_WCa),
-                      dp_WCa_dp_WBo, kEps));
+  EXPECT_TRUE(CompareMatrices(math::ExtractGradient(result.p_WCa),
+                              dp_WCa_dp_WBo, kEps));
   // p_WCb = p_WBo - radius * p_WBo / |p_WBo|.
   const Eigen::Matrix3d dp_WCb_dp_WBo =
       Eigen::Matrix3d::Identity() - dp_WBo_normalized_dp_WBo * kRadius;
-  EXPECT_TRUE(
-      CompareMatrices(math::ExtractGradient(result.p_WCb),
-                      dp_WCb_dp_WBo, kEps));
+  EXPECT_TRUE(CompareMatrices(math::ExtractGradient(result.p_WCb),
+                              dp_WCb_dp_WBo, kEps));
 }
 
 TEST_F(PenetrationAsPointPairCallbackTest, SphereBoxDouble) {

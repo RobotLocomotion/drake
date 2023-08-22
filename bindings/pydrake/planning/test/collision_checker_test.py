@@ -5,6 +5,7 @@ import textwrap
 import unittest
 
 import numpy as np
+import scipy.sparse
 
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.geometry import Sphere
@@ -403,6 +404,7 @@ class TestCollisionChecker(unittest.TestCase):
         dut.ClassifyContextBodyCollisions(model_context=ccc, q=q)
 
         self.assertIsInstance(dut.SupportsParallelChecking(), bool)
+        self.assertEqual(dut.GetNumberOfThreads(parallelize=True), 1)
 
         provider = dut.distance_and_interpolation_provider()
         self.assertIsInstance(provider, mut.DistanceAndInterpolationProvider)
@@ -445,3 +447,17 @@ class TestCollisionChecker(unittest.TestCase):
         function_checker = self._make_scene_graph_collision_checker(
             False, True)
         self._test_collision_checker_base_class(function_checker, False)
+
+    def test_visibility_graph(self):
+        checker = self._make_scene_graph_collision_checker(True, False)
+        plant = checker.model().plant()
+        num_points = 2
+        points = np.empty((plant.num_positions(), num_points))
+        points[:, 0] = plant.GetPositions(checker.plant_context())
+        points[:, 1] = points[:, 0]
+        points[-1, 1] += 0.1
+        A = mut.VisibilityGraph(checker=checker,
+                                points=points,
+                                parallelize=False)
+        self.assertEqual(A.shape, (num_points, num_points))
+        self.assertIsInstance(A, scipy.sparse.csc_matrix)

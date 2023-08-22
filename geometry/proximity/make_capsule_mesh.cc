@@ -179,9 +179,8 @@ VolumeMesh<T> MakeCapsuleVolumeMesh(const Capsule& capsule,
   return {std::move(mesh_elements), std::move(mesh_vertices)};
 }
 
-DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS((
-    &MakeCapsuleVolumeMesh<T>
-))
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    (&MakeCapsuleVolumeMesh<T>))
 
 }  // namespace internal
 }  // namespace geometry

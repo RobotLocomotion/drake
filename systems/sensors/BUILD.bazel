@@ -206,6 +206,7 @@ drake_cc_library(
         ":lcm_image_traits",
         "//lcmtypes:image_array",
         "@libpng",
+        "@vtk//:vtkCommonCore",
         "@vtk//:vtkIOImage",
         "@zlib",
     ],
@@ -421,7 +422,16 @@ drake_cc_googletest(
         ":image_writer",
         "//common:temp_directory",
         "//common/test_utilities",
-        "@vtk//:vtkIOImage",
+        "//systems/sensors/test_utilities:image_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "image_writer_free_functions_test",
+    deps = [
+        ":image_writer",
+        "//common:temp_directory",
+        "//systems/sensors/test_utilities:image_compare",
     ],
 )
 

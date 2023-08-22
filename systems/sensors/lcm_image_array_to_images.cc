@@ -3,10 +3,12 @@
 #include <vector>
 
 #include <png.h>
-#include <vtkImageExport.h>
-#include <vtkJPEGReader.h>
-#include <vtkNew.h>
 #include <zlib.h>
+
+// To ease build system upkeep, we annotate VTK includes with their deps.
+#include <vtkImageExport.h>  // vtkIOImage
+#include <vtkJPEGReader.h>   // vtkIOImage
+#include <vtkNew.h>          // vtkCommonCore
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/text_logging.h"

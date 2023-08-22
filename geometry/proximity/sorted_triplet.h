@@ -24,7 +24,7 @@ namespace internal {
 //
 // @tparam T A template type that provides `operator<` and supports default
 //           construction.
-template<class T>
+template <class T>
 struct SortedTriplet {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SortedTriplet)
   static_assert(is_less_than_comparable<T>::value,
@@ -68,13 +68,13 @@ struct SortedTriplet {
 
 // Two triplets of the same type are equal iff their members are equal after
 // sorting.
-template<class T>
+template <class T>
 inline bool operator==(const SortedTriplet<T>& x, const SortedTriplet<T>& y) {
   return !(x < y) && !(y < x);
 }
 
 // Compares two triplets using lexicographic ordering.
-template<class T>
+template <class T>
 inline bool operator<(const SortedTriplet<T>& x, const SortedTriplet<T>& y) {
   return std::tie(x.first(), x.second(), x.third()) <
          std::tie(y.first(), y.second(), y.third());
@@ -92,4 +92,3 @@ inline bool operator<(const SortedTriplet<T>& x, const SortedTriplet<T>& y) {
 // TODO(DamrongGuoy): Implement std::swap().
 
 // TODO(DamrongGuoy): Implement std::hash<SortedTriplet<T>>.
-

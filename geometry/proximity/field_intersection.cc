@@ -76,9 +76,9 @@ bool CalcEquilibriumPlane(int element0,
 
 template <typename T>
 std::vector<Vector3<T>> IntersectTetrahedra(
-    int element0, const VolumeMesh<double>& mesh0_M,
-    int element1, const VolumeMesh<double>& mesh1_N,
-    const math::RigidTransform<T>& X_MN, const Plane<T>& equilibrium_plane_M) {
+    int element0, const VolumeMesh<double>& mesh0_M, int element1,
+    const VolumeMesh<double>& mesh1_N, const math::RigidTransform<T>& X_MN,
+    const Plane<T>& equilibrium_plane_M) {
   // TODO(DamrongGuoy): Refactor this buffer from being a function-local
   //  variable to a class member variable to reduce heap allocations. Then,
   //  return the const reference. I cannot make them static function-local
@@ -89,12 +89,10 @@ std::vector<Vector3<T>> IntersectTetrahedra(
 
   // Intersects the equilibrium plane with the tetrahedron element0.
   std::vector<Vector3<T>>* polygon_M = &(polygon_buffer[0]);
-  SliceTetrahedronWithPlane(element0, mesh0_M, equilibrium_plane_M,
-                            polygon_M);
+  SliceTetrahedronWithPlane(element0, mesh0_M, equilibrium_plane_M, polygon_M);
   RemoveNearlyDuplicateVertices(polygon_M);
   // Null polygon
-  if (polygon_M->size() < 3)
-    return {};
+  if (polygon_M->size() < 3) return {};
 
   // Positions of vertices of tetrahedral element1 in mesh1_N expressed in
   // frame M.
@@ -209,8 +207,7 @@ void IntersectFields(const VolumeMeshFieldLinear<double, double>& field0_M,
         IntersectTetrahedra(tet0, field0_M.mesh(), tet1, field1_N.mesh(), X_MN,
                             equilibrium_plane_M);
 
-    if (polygon_vertices_M.size() < 3)
-      continue;
+    if (polygon_vertices_M.size() < 3) continue;
 
     // Add the vertices to the builder (with corresponding pressure values)
     // and construct index-based polygon representation.
@@ -233,8 +230,7 @@ void IntersectFields(const VolumeMeshFieldLinear<double, double>& field0_M,
     }
   }
 
-  if (builder.num_faces() == 0)
-    return;
+  if (builder.num_faces() == 0) return;
 
   std::tie(*surface_01_M, *e_01_M) = builder.MakeMeshAndField();
 }
@@ -243,8 +239,8 @@ template <class MeshType, class MeshBuilder, typename T, class FieldType>
 std::unique_ptr<ContactSurface<T>> IntersectCompliantVolumes(
     GeometryId id0, const VolumeMeshFieldLinear<double, double>& field0_F,
     const Bvh<Obb, VolumeMesh<double>>& bvh0_F,
-    const math::RigidTransform<T>& X_WF,
-    GeometryId id1, const VolumeMeshFieldLinear<double, double>& field1_G,
+    const math::RigidTransform<T>& X_WF, GeometryId id1,
+    const VolumeMeshFieldLinear<double, double>& field1_G,
     const Bvh<Obb, VolumeMesh<double>>& bvh1_G,
     const math::RigidTransform<T>& X_WG) {
   const math::RigidTransform<T> X_FG = X_WF.InvertAndCompose(X_WG);
@@ -258,8 +254,7 @@ std::unique_ptr<ContactSurface<T>> IntersectCompliantVolumes(
                                          X_FG, &surface01_F, &field01_F,
                                          &grad_field0_Fs, &grad_field1_Fs);
 
-  if (surface01_F == nullptr)
-    return nullptr;
+  if (surface01_F == nullptr) return nullptr;
 
   // TODO(DamrongGuoy): Compute the mesh and field with the quantities
   //  expressed in World frame by construction so that we can delete these
@@ -288,12 +283,11 @@ std::unique_ptr<ContactSurface<T>> IntersectCompliantVolumes(
 }
 
 template <typename T>
-std::unique_ptr<ContactSurface<T>>
-ComputeContactSurfaceFromCompliantVolumes(
+std::unique_ptr<ContactSurface<T>> ComputeContactSurfaceFromCompliantVolumes(
     GeometryId id0, const VolumeMeshFieldLinear<double, double>& field0_F,
     const Bvh<Obb, VolumeMesh<double>>& bvh0_F,
-    const math::RigidTransform<T>& X_WF,
-    GeometryId id1, const VolumeMeshFieldLinear<double, double>& field1_G,
+    const math::RigidTransform<T>& X_WF, GeometryId id1,
+    const VolumeMeshFieldLinear<double, double>& field1_G,
     const Bvh<Obb, VolumeMesh<double>>& bvh1_G,
     const math::RigidTransform<T>& X_WG,
     HydroelasticContactRepresentation representation) {
@@ -398,12 +392,10 @@ template std::unique_ptr<ContactSurface<AutoDiffXd>> IntersectCompliantVolumes<
     const Bvh<Obb, VolumeMesh<double>>& bvh1_G,
     const math::RigidTransform<AutoDiffXd>& X_WG);
 
-DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS((
-  &CalcEquilibriumPlane<T>,
-  &IntersectTetrahedra<T>,
-  &IsPlaneNormalAlongPressureGradient<T>,
-  &ComputeContactSurfaceFromCompliantVolumes<T>
-))
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    (&CalcEquilibriumPlane<T>, &IntersectTetrahedra<T>,
+     &IsPlaneNormalAlongPressureGradient<T>,
+     &ComputeContactSurfaceFromCompliantVolumes<T>))
 
 }  // namespace internal
 }  // namespace geometry

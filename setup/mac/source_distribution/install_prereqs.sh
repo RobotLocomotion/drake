@@ -45,6 +45,10 @@ fi
 
 brew bundle --file="${BASH_SOURCE%/*}/Brewfile" --no-lock
 
+if [[ "${with_test_only}" -eq 1 ]]; then
+  brew bundle --file="${BASH_SOURCE%/*}/Brewfile-test-only" --no-lock
+fi
+
 if ! command -v pip3.11 &>/dev/null; then
   echo 'ERROR: pip3.11 is NOT installed. The post-install step for the python@3.11 formula may have failed.' >&2
   exit 2

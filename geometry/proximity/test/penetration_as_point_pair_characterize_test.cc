@@ -54,9 +54,7 @@ class CharacterizePointPairResultTest : public CharacterizeResultTest<T> {
   CharacterizePointPairResultTest()
       : CharacterizeResultTest<T>(make_unique<PenetrationCallback<T>>()) {}
 
-  std::vector<double> TestDistances() const final {
-    return {-this->kDistance};
-  }
+  std::vector<double> TestDistances() const final { return {-this->kDistance}; }
 };
 
 /* *-Mesh has not been implemented because Mesh is represented by Convex.

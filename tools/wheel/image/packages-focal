@@ -11,9 +11,8 @@ g++
 gfortran
 libgfortran-7-dev
 yasm
-# Clang (for clang-format).
+# Clang (for mkdoc).
 libclang-12-dev
-clang-format-12
 # Other code tools.
 cmake
 git

@@ -22,30 +22,9 @@
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/render_gltf_client/internal_http_service.h"
 #include "drake/geometry/render_gltf_client/test/internal_sample_image_data.h"
+#include "drake/systems/sensors/test_utilities/image_compare.h"
 
 namespace drake {
-namespace systems {
-namespace sensors {
-// Add support for printing EXPECT_EQ(Image, Image) failures.
-template <PixelType kPixelType>
-void PrintTo(const Image<kPixelType>& image, std::ostream* os) {
-  using T = typename Image<kPixelType>::T;
-  using Promoted = std::conditional_t<std::is_integral_v<T>, int, T>;
-  constexpr int num_channels = Image<kPixelType>::kNumChannels;
-  const int width = image.width();
-  const int height = image.height();
-  *os << "\n";
-  for (int z = 0; z < num_channels; ++z) {
-    const T* const base = image.at(0, 0) + z;
-    using Stride = Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>;
-    Eigen::Map<const MatrixX<T>, 0, Stride> eigen(
-        base, height, width, Stride(num_channels, width * num_channels));
-    fmt::print(*os, "Channel {}:\n", z);
-    fmt::print(*os, "{}\n", fmt_eigen(eigen.template cast<Promoted>()));
-  }
-}
-}  // namespace sensors
-}  // namespace systems
 namespace geometry {
 namespace render_gltf_client {
 namespace internal {

@@ -3,10 +3,12 @@
 #include <array>
 
 #include <Eigen/Dense>
-#include <vtkNew.h>
-#include <vtkPlaneSource.h>
-#include <vtkSmartPointer.h>
-#include <vtkTransform.h>
+
+// To ease build system upkeep, we annotate VTK includes with their deps.
+#include <vtkNew.h>           // vtkCommonCore
+#include <vtkPlaneSource.h>   // vtkFiltersSources
+#include <vtkSmartPointer.h>  // vtkCommonCore
+#include <vtkTransform.h>     // vtkCommonTransforms
 
 #include "drake/common/drake_copyable.h"
 #include "drake/math/rigid_transform.h"

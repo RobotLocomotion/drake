@@ -56,6 +56,13 @@ Log into Docker to ensure that you will be able to push the Docker images:
 
 The Docker ID and password may be found in the AWS Secrets Manager.
 
+### Create GitHub API Token
+
+To create the required `~/.config/readonly_github_api_token.txt` file, open a
+browser to https://github.com/settings/tokens and create a new token (it does
+not need any extra permissions; the default "no checkboxes are set" is good),
+and save the plaintext hexadecimal token to that file.
+
 ### Get the push_release scripts
 
 Clone the drake repository:
@@ -81,13 +88,14 @@ Verify that:
 
 1. [s3://drake-packages/drake/release](https://s3.console.aws.amazon.com/s3/buckets/drake-packages?region=us-east-1&prefix=drake/release/&showversions=false)
 contains a set of `drake-<version>-[...].tar.gz[...]` files for each supported
-configuration (e.g. Focal, Jammy and Mac).
+configuration (e.g. focal, jammy and mac).
 
 1. [Dockerhub](https://hub.docker.com/r/robotlocomotion/drake/tags?ordering=last_updated&page=1)
-has `<version>` tags for each supported configuration (e.g. Focal and Jammy).
+has `<version>` tags for each supported configuration (e.g. focal and jammy).
 
 1. The `*.deb` files are in AWS
-`S3/Buckets/drake-packages/drake/release/<configuration>/drake-dev_<version>-1_amd64.deb` for each supported configuration (e.g. focal and jammy)
+[s3://drake-packages/drake/release](https://s3.console.aws.amazon.com/s3/buckets/drake-packages?region=us-east-1&prefix=drake/release/&showversions=false)
+`/<configuration>/drake-dev_<version>-1_amd64.deb` for each supported configuration (e.g. focal and jammy)
 
 ## Run script for apt
 
@@ -104,7 +112,7 @@ version string. For example:
 
     ./push_release 0.32.0
 
-The script may prompt for the GPG passphrase, which may be found in the AWS
+The script will prompt for the GPG passphrase, which may be found in the AWS
 Secrets Manager. The script may prompt for this multiple times.
 
 ### [Optional] Add a new configuration
