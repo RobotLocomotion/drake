@@ -9,9 +9,10 @@
 #include "drake/common/eigen_types.h"
 #include "drake/math/rigid_transform.h"
 
-/* @file Support distance queries between shapes when they touch by providing
- a reasonable distance gradient. These functions are used only in fcl fallback
- (see shape_distance::CalcDistanceFallback) */
+/* @file Support distance queries between shapes when they barely touch (have
+ zero signed distance) by providing a reasonable distance gradient. These
+ functions are used only in fcl fallback (shape_distance::CalcDistanceFallback)
+ */
 
 namespace drake {
 namespace geometry {
@@ -62,13 +63,20 @@ std::pair<double, double> ProjectedMinMax(const fcl::Boxd& box_A,
                                           const Eigen::Vector3d& unit_vector_W);
 
 /* Returns the unit vector nhat_BA_W--out of box_B into box_A expressed in
- World frame--of a separating axis between two touching boxes parallel to
- a vector in `v_Ws`. If there is no such separating axis, returns NaN vector.
+ World frame--parallel to a vector in `v_Ws` that can make a separating axis
+ between two touching boxes. If no vector in `v_Ws` can make it, returns
+ Vector3d of NaN.
+
+ See https://en.wikipedia.org/wiki/Hyperplane_separation_theorem for the
+ definition of separating axis.
+
+ @note If there are multiple vectors in `v_Ws` that can make a separating
+       axis, we use the first one in the list.
 
  @note A vector in `v_Ws` doesn't have to be a unit vector.
 
- See https://en.wikipedia.org/wiki/Hyperplane_separation_theorem for the
- definition of separating axis.  */
+ @pre The signed distance between the two boxes is zero (or within an
+      internal tolerance), i.e., the two boxes barely touch.  */
 Eigen::Vector3d MakeSeparatingVector(const fcl::Boxd& box_A,
                                      const fcl::Boxd& box_B,
                                      const math::RigidTransformd& X_WA,

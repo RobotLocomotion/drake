@@ -53,7 +53,6 @@ int AxisIndexIfStrictlyOnEdge(const Eigen::Vector3d& p_BQ,
     }
   }
   if (count == 2) {
-    DRAKE_THROW_UNLESS(0 <= candidate_axis && candidate_axis < 3);
     return candidate_axis;
   }
   return -1;
@@ -129,9 +128,9 @@ Vector3d BoxBoxGradient(const fcl::Boxd& box_A,
                         const math::RigidTransformd& X_WB,
                         const Eigen::Vector3d& p_ACa,
                         const Eigen::Vector3d& p_BCb) {
-  // Verify that the two boxes touch by checking that their witness points
-  // co-locate.
-  DRAKE_THROW_UNLESS((X_WA * p_ACa - X_WB * p_BCb).norm() < 1e-14);
+  // Verify that the witness points co-locate.
+  const double kEps = 1e-14;
+  DRAKE_DEMAND((X_WA * p_ACa - X_WB * p_BCb).norm() < kEps);
 
   // Face-to-*. Use the face normal if a witness point is strictly inside
   // a face (but neither edge nor vertex).
@@ -150,90 +149,77 @@ Vector3d BoxBoxGradient(const fcl::Boxd& box_A,
   const bool Ca_is_strictly_on_edge = (axis_index_A != -1);
   const bool Cb_is_strictly_on_edge = (axis_index_B != -1);
   if (Ca_is_strictly_on_edge && Cb_is_strictly_on_edge) {
-    // Non-parallel edge-to-edge. Edge Ea in Box A and edge Eb in Box B crosses
-    // each other.  A separation plane passes through Ea and Eb. Its separation
-    // axis is along the crosss product of the edge directions of Ea and Eb.
-    const Vector3d nhat_BA_W =
-        MakeSeparatingVector(box_A, box_B, X_WA, X_WB,
-                             std::vector<Vector3d>{
-                                 X_WA.rotation().col(axis_index_A).cross(
-                                     X_WB.rotation().col(axis_index_B))});
-    if (!nhat_BA_W.array().isNaN().any()) {
+    const Vector3d cross_product_W =
+        X_WA.rotation()
+            .col(axis_index_A)
+            .cross(X_WB.rotation().col(axis_index_B));
+    if (cross_product_W.norm() > kEps) {
+      // The two edges are not parallel.
+      const Vector3d nhat_BA_W =
+          MakeSeparatingVector(box_A, box_B, X_WA, X_WB, {cross_product_W});
+      DRAKE_ASSERT(!nhat_BA_W.array().isNaN().any());
       return nhat_BA_W;
     } else {
-      // Parallel edge-to-edge. An edge in Box A and an edge in Box B
-      // overlaps. A separation plane passes through at least one of the
-      // two faces sharing the edge. For simplicity, we check all three
-      // candidates instead of just two candidates.
-      return MakeSeparatingVector(
-          box_A, box_B, X_WA, X_WB,
-          std::vector<Vector3d>{X_WA.rotation().col(0),
-                                X_WA.rotation().col(1),
-                                X_WA.rotation().col(2)});
+      // Parallel edge-to-edge. A separating plane passes through at least
+      // one of the two faces sharing the edge in Box A.
+      const Vector3d nhat_BA_W =
+          MakeSeparatingVector(box_A, box_B, X_WA, X_WB,
+                               {X_WA.rotation().col((axis_index_A + 1) % 3),
+                                X_WA.rotation().col((axis_index_A + 2) % 3)});
+      DRAKE_ASSERT(!nhat_BA_W.array().isNaN().any());
+      return nhat_BA_W;
     }
   }
 
-  // Edge-vertex. An edge in Box A touches a vertex in Box B. A separation
-  // plane passes through that edge in Box A and one of the edges of that
-  // vertex in Box B.
+  // Edge-vertex. An edge in Box A touches a vertex in Box B. A separating
+  // plane passes through the edge in Box A and one of the edges incident
+  // to the vertex in Box B.
   const bool Cb_is_at_a_vertex = IsAtVertex(p_BCb, box_B);
   if (Ca_is_strictly_on_edge && Cb_is_at_a_vertex) {
     const Vector3d edge_vector_A_W = X_WA.rotation().col(axis_index_A);
-    const Vector3d nhat_BA_W = MakeSeparatingVector(
-        box_A, box_B, X_WA, X_WB,
-        std::vector<Vector3d>{
-            edge_vector_A_W.cross(X_WB.rotation().col(0)),
-            edge_vector_A_W.cross(X_WB.rotation().col(1)),
-            edge_vector_A_W.cross(X_WB.rotation().col(2))});
-    if (!nhat_BA_W.array().isNaN().any()) {
-      return nhat_BA_W;
-    }
+    const Vector3d nhat_BA_W =
+        MakeSeparatingVector(box_A, box_B, X_WA, X_WB,
+                             {edge_vector_A_W.cross(X_WB.rotation().col(0)),
+                              edge_vector_A_W.cross(X_WB.rotation().col(1)),
+                              edge_vector_A_W.cross(X_WB.rotation().col(2))});
+    DRAKE_ASSERT(!nhat_BA_W.array().isNaN().any());
+    return nhat_BA_W;
   }
   // Vertex-edge. This is the symmetric case of the above case.
   const bool Ca_is_at_a_vertex = IsAtVertex(p_ACa, box_A);
   if (Cb_is_strictly_on_edge && Ca_is_at_a_vertex) {
     const Vector3d edge_vector_B_W = X_WB.rotation().col(axis_index_B);
-    const Vector3d nhat_BA_W = MakeSeparatingVector(
-        box_A, box_B, X_WA, X_WB,
-        std::vector<Vector3d>{
-            edge_vector_B_W.cross(X_WA.rotation().col(0)),
-            edge_vector_B_W.cross(X_WA.rotation().col(1)),
-            edge_vector_B_W.cross(X_WA.rotation().col(2))});
-    if (!nhat_BA_W.array().isNaN().any()) {
-      return nhat_BA_W;
-    }
+    const Vector3d nhat_BA_W =
+        MakeSeparatingVector(box_A, box_B, X_WA, X_WB,
+                             {edge_vector_B_W.cross(X_WA.rotation().col(0)),
+                              edge_vector_B_W.cross(X_WA.rotation().col(1)),
+                              edge_vector_B_W.cross(X_WA.rotation().col(2))});
+    DRAKE_ASSERT(!nhat_BA_W.array().isNaN().any());
+    return nhat_BA_W;
   }
 
   // Vertex-vertex.
   DRAKE_ASSERT(Ca_is_at_a_vertex && Cb_is_at_a_vertex);
   Vector3d nhat_BA_W = MakeSeparatingVector(
       box_A, box_B, X_WA, X_WB,
-      std::vector<Vector3d>{X_WA.rotation().col(0),
-                            X_WA.rotation().col(1),
-                            X_WA.rotation().col(2),
-                            X_WB.rotation().col(0),
-                            X_WB.rotation().col(1),
-                            X_WB.rotation().col(2)});
+      {X_WA.rotation().col(0), X_WA.rotation().col(1), X_WA.rotation().col(2),
+       X_WB.rotation().col(0), X_WB.rotation().col(1), X_WB.rotation().col(2)});
   if (!nhat_BA_W.array().isNaN().any()) {
     return nhat_BA_W;
   }
   nhat_BA_W = MakeSeparatingVector(
       box_A, box_B, X_WA, X_WB,
-      std::vector<Vector3d>{
-          X_WA.rotation().col(0).cross(X_WB.rotation().col(0)),
-          X_WA.rotation().col(0).cross(X_WB.rotation().col(1)),
-          X_WA.rotation().col(0).cross(X_WB.rotation().col(2)),
-          X_WA.rotation().col(1).cross(X_WB.rotation().col(0)),
-          X_WA.rotation().col(1).cross(X_WB.rotation().col(1)),
-          X_WA.rotation().col(1).cross(X_WB.rotation().col(2)),
-          X_WA.rotation().col(2).cross(X_WB.rotation().col(0)),
-          X_WA.rotation().col(2).cross(X_WB.rotation().col(1)),
-          X_WA.rotation().col(2).cross(X_WB.rotation().col(2))});
-  if (!nhat_BA_W.array().isNaN().any()) {
-    return nhat_BA_W;
-  }
-
-  DRAKE_UNREACHABLE();
+      {X_WA.rotation().col(0).cross(X_WB.rotation().col(0)),
+       X_WA.rotation().col(0).cross(X_WB.rotation().col(1)),
+       X_WA.rotation().col(0).cross(X_WB.rotation().col(2)),
+       X_WA.rotation().col(1).cross(X_WB.rotation().col(0)),
+       X_WA.rotation().col(1).cross(X_WB.rotation().col(1)),
+       X_WA.rotation().col(1).cross(X_WB.rotation().col(2)),
+       X_WA.rotation().col(2).cross(X_WB.rotation().col(0)),
+       X_WA.rotation().col(2).cross(X_WB.rotation().col(1)),
+       X_WA.rotation().col(2).cross(X_WB.rotation().col(2))});
+  DRAKE_ASSERT(!nhat_BA_W.array().isNaN().any());
+  return nhat_BA_W;
 }
 
 }  // namespace shape_distance

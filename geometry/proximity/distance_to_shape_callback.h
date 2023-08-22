@@ -199,6 +199,9 @@ void CalcDistanceFallback<double>(const fcl::CollisionObjectd& a,
  direction of fastest increasing distance pointing outward from object `b`
  into object `a`, expressed in World frame.
 
+ @param p_ACa  Witness point of object `a` measured and expressed in frame A.
+ @param p_BCb  Witness point of object `b` measired and expressed in frame B.
+
  @note  This function is used only in fcl fallback (CalcDistanceFallback)
         but not the hand-crafted functions (DistancePairGeometry). */
 Eigen::Vector3d CalcGradientWhenTouch(const fcl::CollisionObjectd& a,
