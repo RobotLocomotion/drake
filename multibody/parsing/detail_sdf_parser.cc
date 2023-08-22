@@ -85,15 +85,16 @@ namespace {
 // populates the MultibodyPlant using the DOM objects created above (e.g.
 // AddModelsFromSpecification).
 //
-// Data structure to hold model instances that were created during libsdformat's
-// Interface API callback for handling merged models.
-// When handling merged models during libsdformat's Interface API callback, we
-// have to create model instances of parents of merged models since the parent
-// models are regular SDFormat elements and will only be handled at a later
-// stage of parsing. This data structure is used to store these parent model
-// instances so that when we're going through Drake's parsing stage (last step
-// in the parsing stage summary above), we are aware of these model instances
-// and not try to recreate them.
+//
+// `ModelInstanceIndexRange` is a data structure to hold model instances that
+// were created during libsdformat's Interface API callback for handling merged
+// models. When handling merged models during libsdformat's Interface API
+// callback, we have to create model instances of parents of merged models since
+// the parent models are regular SDFormat elements and will only be handled at a
+// later stage of parsing. This data structure is used to store these parent
+// model instances so that when we're going through Drake's parsing stage (last
+// step in the parsing stage summary above), we are aware of these model
+// instances and not try to recreate them.
 using ModelInstanceIndexRange =
     std::pair<ModelInstanceIndex, ModelInstanceIndex>;
 
@@ -1386,7 +1387,9 @@ ModelInstanceIndex AddModelInstanceIfReusable(
 // Helper class that does bookkeeping on the frame bearing elements of a given
 // model instance in a MultibodyPlant. This is used to keep track of newly
 // created elements after a custom parser is called so that we can create
-// Interface API data structures from just the newly created elements. Note: We
+// Interface API data structures from just the newly created elements.
+// The Interface API step is necessary so that we can construct the appropriate
+// pose graph at higher levels of the hierarchy using libsdformat. Note: We
 // assume that Drake custom parsers do not support nested models.
 // TODO(azeey) If any of Drakes custom parsers start supporting nested models,
 // this needs to be updated to keep track of them.
@@ -1753,11 +1756,10 @@ sdf::InterfaceModelPtr ConvertToInterfaceModel(
 
   const auto& model_frame = plant->GetFrameByName(
       interface_model_helper.model_frame_name, model_instance);
-  std::string canonical_link_name =
+  const std::string canonical_link_name =
       GetRelativeBodyName(model_frame.body(), model_instance, *plant);
-  RigidTransformd X_PM = RigidTransformd::Identity();
-  RigidTransformd X_WM = GetDefaultFramePose(*plant, model_frame);
-  X_PM = X_WP.inverse() * X_WM;
+  const RigidTransformd X_WM = GetDefaultFramePose(*plant, model_frame);
+  const RigidTransformd X_PM = X_WP.inverse() * X_WM;
 
   auto interface_model = std::make_shared<sdf::InterfaceModel>(
       model_name, reposture_model, false, canonical_link_name,
@@ -1820,15 +1822,15 @@ sdf::InterfaceModelPtr ParseNestedInterfaceModel(
 
   ModelInstanceIndex main_model_instance;
   // New instances will have indices starting from cur_num_models
-  const bool isMergeInclude = include.IsMerge().value_or(false);
+  const bool is_merge_include = include.IsMerge().value_or(false);
 
-  InterfaceModelHelper interface_model_helper(*plant, isMergeInclude);
+  InterfaceModelHelper interface_model_helper(*plant, is_merge_include);
   ParsingWorkspace subworkspace{options, package_map, subdiagnostic, plant,
     collision_resolver, parser_selector};
 
   std::string model_frame_name = "__model__";
   std::string model_name;
-  if (isMergeInclude) {
+  if (is_merge_include) {
     // Create the parent model instance if it hasn't been created already.
     // This can happen if this is the first model to be merge-included.
     const auto parent_model_instance =
@@ -1860,6 +1862,11 @@ sdf::InterfaceModelPtr ParseNestedInterfaceModel(
         ScopedName::Parse(plant->GetModelInstanceName(main_model_instance))
             .get_element();
 
+    // In the non-merge-include case, we don't need to compute the diff, but we
+    // still use the interface_model_helper to hold all the frame bearing
+    // elements of the newly created model instance so we can later convert
+    // this model instance to an Interface Model for libsdformat's Interface
+    // API.
     interface_model_helper.TakeSnapShot(main_model_instance);
   }
   DRAKE_DEMAND(!model_name.empty());
