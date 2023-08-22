@@ -55,5 +55,13 @@
         <name>test_arm_urdf_name</name>
       </include>
     </model>
+
+    <model name="arm_mjcf">
+      <pose relative_to="arm_sdf"/>
+      <include merge="true">
+        <pose>10 2 0 0 0 0</pose>
+        <uri>package://interface_api_test/arm.xml</uri>
+      </include>
+    </model>
   </model>
 </sdf>

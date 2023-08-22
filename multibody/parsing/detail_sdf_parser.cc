@@ -1,6 +1,5 @@
 #include "drake/multibody/parsing/detail_sdf_parser.h"
 
-#include <algorithm>
 #include <limits>
 #include <map>
 #include <memory>
@@ -1661,6 +1660,7 @@ RigidTransformd GetDefaultFramePose(
 // For the libsdformat API, see:
 // http://sdformat.org/tutorials?tut=composition_proposal
 constexpr char kExtUrdf[] = ".urdf";
+constexpr char kExtXml[] = ".xml";
 
 void AddBodiesToInterfaceModel(const MultibodyPlant<double>& plant,
                                const sdf::InterfaceModelPtr& interface_model,
@@ -1792,9 +1792,10 @@ sdf::InterfaceModelPtr ParseNestedInterfaceModel(
          collision_resolver, parser_selector] = workspace;
   const std::string resolved_filename{include.ResolvedFileName()};
 
-  // Do not attempt to parse anything other than URDF files.
+  // Do not attempt to parse anything other than URDF and MuJoCo xml files.
   const bool is_urdf = EndsWithCaseInsensitive(resolved_filename, kExtUrdf);
-  if (!is_urdf) {
+  const bool is_xml = EndsWithCaseInsensitive(resolved_filename, kExtXml);
+  if (!is_urdf && !is_xml) {
     // TODO(rpoyner-tri): implement nesting of mujoco files; saved for another
     // day since it requires some study of mujoco scene composition semantics.
     return nullptr;
@@ -1875,7 +1876,7 @@ sdf::InterfaceModelPtr ParseNestedInterfaceModel(
   auto body_indices = workspace.plant->GetBodyIndices(main_model_instance);
   if (body_indices.empty()) {
     errors->emplace_back(sdf::ErrorCode::ELEMENT_INVALID,
-                         "URDF must have at least one link.");
+                         "Model must have at least one link.");
     return nullptr;
   }
   const auto& canonical_link = workspace.plant->get_body(body_indices[0]);
