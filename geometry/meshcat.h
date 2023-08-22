@@ -446,9 +446,7 @@ class Meshcat {
    SetCamera(OrthographicCamera)), this will have no effect.
 
    @warning Setting the target position to be coincident with the camera
-   position will cause the camera orientation to return to its default
-   orientation (looking along the +Wy axis with +Wz up) and lock the camera so
-   that it can't be rotated, panned, or zoomed.
+   position will lead to undefined behavior.
 
    @param target_in_world the position of the target point T in Drake's z-up
                world frame (p_WT). */
@@ -465,6 +463,9 @@ class Meshcat {
 
    @note This is Drake's z-up world frame and not the three.js world frame
    you'd have to use if you set the "position" on the camera directly.
+
+   @warning The behavior is undefined if camera and target positions are
+   coincident.
 
    @param camera_in_world the position of the camera's origin C in Drake's z-up
                world frame (p_WC).

@@ -562,6 +562,14 @@ int ToMeshcatColor(const Rgba& rgba) {
          static_cast<int>(255 * rgba.b());
 }
 
+// Meshcat inherits three.js's y-up world and it is applied to camera and
+// camera target positions. To simply set the object's position property, we
+// need to express the position in three.js's y-up world frame.
+// It's simply a 90-degree rotation around the x-axis, so we hard-code it here.
+Eigen::Vector3d MeshcatYUpPosition(const Eigen::Vector3d& p_WP) {
+  return Eigen::Vector3d(p_WP.x(), p_WP.z(), -p_WP.y());
+}
+
 }  // namespace
 
 class Meshcat::Impl {
@@ -1283,9 +1291,9 @@ class Meshcat::Impl {
     if (only_perspective && is_orthographic_) return;
 
     internal::SetCameraTargetData data;
-    // The pose is given in Drake's z-up world. We need to rotate it to a
-    // y-up world.
-    data.value = {p_WT.x(), p_WT.z(), -p_WT.y()};
+    // The target position in meshcat's y-up world.
+    const Eigen::Vector3d p_WT_y = MeshcatYUpPosition(p_WT);
+    data.value = {p_WT_y.x(), p_WT_y.y(), p_WT_y.z()};
 
     Defer([this, data = std::move(data)]() {
       DRAKE_DEMAND(IsThread(websocket_thread_id_));
@@ -1302,8 +1310,10 @@ class Meshcat::Impl {
   void SetCameraPose(const Eigen::Vector3d& p_WC, const Eigen::Vector3d& p_WT) {
     SetCameraTarget(p_WT, false /* only_perspective */);
     SetTransform("/Cameras/default", math::RigidTransformd());
+    // The camera position in meshcat's y-up world.
+    const Eigen::Vector3d p_WC_y = MeshcatYUpPosition(p_WC);
     SetProperty("/Cameras/default/rotated/<object>", "position",
-                std::vector<double>{p_WC.x(), p_WC.z(), -p_WC.y()});
+                std::vector<double>{p_WC_y.x(), p_WC_y.y(), p_WC_y.z()});
   }
 
   // This function is public via the PIMPL.

@@ -305,7 +305,7 @@ Open up your browser to the URL above.
   meshcat->SetEnvironmentMap("");
   meshcat->SetCameraTarget(Vector3d::Zero());
   meshcat->Delete();
-  std::cout << "- Everything else should have disappeared." << std::endl;
+  std::cout << "- Everything should have disappeared." << std::endl;
 
   MaybePauseForUser();
 
