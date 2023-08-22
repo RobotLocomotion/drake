@@ -23,7 +23,7 @@ AffineSubspace::AffineSubspace()
 
 AffineSubspace::AffineSubspace(const Eigen::Ref<const MatrixXd>& basis,
                                const Eigen::Ref<const VectorXd>& translation)
-    : ConvexSet(basis.rows()), basis_(basis), translation_(translation) {
+    : ConvexSet(basis.rows(), true), basis_(basis), translation_(translation) {
   DRAKE_THROW_UNLESS(basis_.rows() == translation_.size());
   DRAKE_THROW_UNLESS(basis_.rows() >= basis_.cols());
   if (basis.rows() > 0 && basis.cols() > 0) {
@@ -32,11 +32,10 @@ AffineSubspace::AffineSubspace(const Eigen::Ref<const MatrixXd>& basis,
   } else {
     basis_decomp_ = std::nullopt;
   }
-  set_has_exact_volume(true);
 }
 
 AffineSubspace::AffineSubspace(const ConvexSet& set, double tol)
-    : ConvexSet(0) {
+    : ConvexSet(0, true) {
   // If the set is clearly a singleton, we can easily compute its affine hull.
   const auto singleton_maybe = set.MaybeGetPoint();
   if (singleton_maybe.has_value()) {

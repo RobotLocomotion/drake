@@ -36,15 +36,14 @@ Hyperellipsoid::Hyperellipsoid()
 
 Hyperellipsoid::Hyperellipsoid(const Eigen::Ref<const MatrixXd>& A,
                                const Eigen::Ref<const VectorXd>& center)
-    : ConvexSet(center.size()), A_(A), center_(center) {
+    : ConvexSet(center.size(), true), A_(A), center_(center) {
   CheckInvariants();
-  set_has_exact_volume(true);
 }
 
 Hyperellipsoid::Hyperellipsoid(const QueryObject<double>& query_object,
                                GeometryId geometry_id,
                                std::optional<FrameId> reference_frame)
-    : ConvexSet(3) {
+    : ConvexSet(3, true) {
   Eigen::Matrix3d A_G;
   query_object.inspector().GetShape(geometry_id).Reify(this, &A_G);
   // p_GG_varᵀ * A_Gᵀ * A_G * p_GG_var ≤ 1

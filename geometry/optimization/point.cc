@@ -22,14 +22,13 @@ using symbolic::Variable;
 
 Point::Point() : Point(VectorXd(0)) {}
 
-Point::Point(const Eigen::Ref<const VectorXd>& x) : ConvexSet(x.size()), x_(x) {
-  set_has_exact_volume(true);
-}
+Point::Point(const Eigen::Ref<const VectorXd>& x)
+    : ConvexSet(x.size(), true), x_(x) {}
 
 Point::Point(const QueryObject<double>& query_object, GeometryId geometry_id,
              std::optional<FrameId> reference_frame,
              double maximum_allowable_radius)
-    : ConvexSet(3) {
+    : ConvexSet(3, true) {
   double radius = -1.0;
   query_object.inspector().GetShape(geometry_id).Reify(this, &radius);
   if (radius > maximum_allowable_radius) {
@@ -45,7 +44,6 @@ Point::Point(const QueryObject<double>& query_object, GeometryId geometry_id,
   const RigidTransformd& X_WG = query_object.GetPoseInWorld(geometry_id);
   const RigidTransformd X_EG = X_WE.InvertAndCompose(X_WG);
   x_ = X_EG.translation();
-  set_has_exact_volume(true);
 }
 
 Point::~Point() = default;

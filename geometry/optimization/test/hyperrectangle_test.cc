@@ -35,8 +35,22 @@ bool PointInScaledSet(const solvers::VectorXDecisionVariable& x_vars,
   return prog->CheckSatisfiedAtInitialGuess(constraints, tol);
 }
 
+GTEST_TEST(HyperrectangleTest, Default) {
+  const Hyperrectangle dut;
+  EXPECT_EQ(dut.ambient_dimension(), 0);
+  EXPECT_DOUBLE_EQ(dut.CalcVolume(), 0);
+  EXPECT_EQ(dut.Center().size(), 0);
+  EXPECT_TRUE(dut.MaybeGetPoint().has_value());
+  EXPECT_EQ(dut.MaybeGetPoint()->size(), 0);
+  EXPECT_TRUE(dut.MaybeGetFeasiblePoint().has_value());
+  EXPECT_EQ(dut.MaybeGetFeasiblePoint()->size(), 0);
+  EXPECT_TRUE(dut.PointInSet(VectorXd()));
+  const auto hpolyhedron = dut.MakeHPolyhedron();
+  EXPECT_EQ(hpolyhedron.ambient_dimension(), 0);
+}
+
 // Test functions on hyperrectangle.
-GTEST_TEST(HyperRectangleTest, BasicTests) {
+GTEST_TEST(HyperrectangleTest, BasicTests) {
   const Vector3d lb{-1, -2, -3};
   const Vector3d ub{3, 2, 1};
   const Hyperrectangle hyperrectangle(lb, ub);
@@ -71,7 +85,7 @@ GTEST_TEST(HyperRectangleTest, BasicTests) {
       point_hyperrectangle.MaybeGetFeasiblePoint().value(), Vector3d{1, 2, 3}));
 }
 
-GTEST_TEST(HyperRectangleTest, Sampling) {
+GTEST_TEST(HyperrectangleTest, Sampling) {
   const Hyperrectangle hyperrectangle(Eigen::Vector2d{-1, -2},
                                       Eigen::Vector2d{3, 2});
   const int n_samples = 1000;
@@ -94,13 +108,13 @@ GTEST_TEST(HyperRectangleTest, Sampling) {
       CompareMatrices(variance, Eigen::Vector2d{16.0 / 12, 16.0 / 12}, 1e-1));
 }
 
-GTEST_TEST(HyperRectangleTest, InfinityTest) {
+GTEST_TEST(HyperrectangleTest, InfinityTest) {
   const auto lb = Vector3d::Constant(-std::numeric_limits<double>::infinity());
   const auto ub = Vector3d::Constant(1);
   EXPECT_THROW(Hyperrectangle(lb, ub), std::exception);
 }
 
-GTEST_TEST(HyperRectangleTest, AddPointInConstraints) {
+GTEST_TEST(HyperrectangleTest, AddPointInSetConstraints) {
   const Vector3d lb{-1, -2, -3};
   const Vector3d ub{3, 2, 1};
   const Hyperrectangle hyperrectangle(lb, ub);
@@ -121,8 +135,8 @@ GTEST_TEST(HyperRectangleTest, AddPointInConstraints) {
   EXPECT_FALSE(prog.CheckSatisfiedAtInitialGuess(con[0]));
 }
 
-// Test AddPointInNonnegativeScalingConstraints
-GTEST_TEST(HyperRectangleTest, AddPointInNonnegativeScalingConstraints) {
+// Test AddPointInNonnegativeScalingConstraints.
+GTEST_TEST(HyperrectangleTest, AddPointInNonnegativeScalingConstraints) {
   // Test AddPointInNonnegativeScalingConstraints
   const Vector3d lb{-1, -2, -3};
   const Vector3d ub{3, 2, 1};
@@ -148,8 +162,8 @@ GTEST_TEST(HyperRectangleTest, AddPointInNonnegativeScalingConstraints) {
   EXPECT_FALSE(prog.CheckSatisfiedAtInitialGuess(scaled_con));
 }
 
-// Test AddPointInNonnegativeScalingConstraints with matrices
-GTEST_TEST(HyperRectangleTest,
+// Test AddPointInNonnegativeScalingConstraints with matrices.
+GTEST_TEST(HyperrectangleTest,
            AddPointInNonnegativeScalingConstraintsWithMatrices) {
   const Vector3d lb{-1, -2, -3};
   const Vector3d ub{3, 2, 1};
@@ -204,7 +218,7 @@ GTEST_TEST(HyperRectangleTest,
   }
 }
 
-GTEST_TEST(HyperRectangleTest, Serialize) {
+GTEST_TEST(HyperrectangleTest, Serialize) {
   const Vector3d lb{-1, -2, -3};
   const Vector3d ub{3, 2, 1};
   const Hyperrectangle hyperrectangle(lb, ub);

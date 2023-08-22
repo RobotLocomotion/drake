@@ -121,14 +121,12 @@ MatrixXd GetConvexHullFromObjFile(const std::string& filename,
 VPolytope::VPolytope() : VPolytope(MatrixXd(0, 0)) {}
 
 VPolytope::VPolytope(const Eigen::Ref<const MatrixXd>& vertices)
-    : ConvexSet(vertices.rows()), vertices_(vertices) {
-  set_has_exact_volume(true);
-}
+    : ConvexSet(vertices.rows(), true), vertices_(vertices) {}
 
 VPolytope::VPolytope(const QueryObject<double>& query_object,
                      GeometryId geometry_id,
                      std::optional<FrameId> reference_frame)
-    : ConvexSet(3) {
+    : ConvexSet(3, true) {
   Matrix3Xd vertices;
   query_object.inspector().GetShape(geometry_id).Reify(this, &vertices);
 
@@ -138,11 +136,10 @@ VPolytope::VPolytope(const QueryObject<double>& query_object,
   const RigidTransformd& X_WG = query_object.GetPoseInWorld(geometry_id);
   const RigidTransformd X_EG = X_WE.InvertAndCompose(X_WG);
   vertices_ = X_EG * vertices;
-  set_has_exact_volume(true);
 }
 
 VPolytope::VPolytope(const HPolyhedron& hpoly)
-    : ConvexSet(hpoly.ambient_dimension()) {
+    : ConvexSet(hpoly.ambient_dimension(), true) {
   DRAKE_THROW_UNLESS(hpoly.IsBounded());
 
   MatrixXd coeffs(hpoly.A().rows(), hpoly.A().cols() + 1);
@@ -201,7 +198,6 @@ VPolytope::VPolytope(const HPolyhedron& hpoly)
                         eigen_center;
     ii++;
   }
-  set_has_exact_volume(true);
 }
 
 VPolytope::~VPolytope() = default;
