@@ -373,13 +373,17 @@ class GraphOfConvexSets {
     double GetSolutionCost(
         const solvers::MathematicalProgramResult& result) const;
 
-    /** Returns the vector value of the slack variables associated with ϕxᵤ in a
-    solvers::MathematicalProgramResult. */
+    /** Returns the vector value of the slack variables associated with ϕxᵤ in
+    a solvers::MathematicalProgramResult. This can obtain a different value
+    than `result.GetSolution(edge->xu())`, which is equivalent to
+    `result.GetSolution(edge->u()->x())`; in the case of a loose convex
+    relaxation `result.GetSolution(edge->xu())` will be the *averaged* value of
+    the edge slacks for all non-zero-flow edges. */
     Eigen::VectorXd GetSolutionPhiXu(
         const solvers::MathematicalProgramResult& result) const;
 
     /** Returns the vector value of the slack variables associated with ϕxᵥ in
-    a solvers::MathematicalProgramResult. */
+    a solvers::MathematicalProgramResult. See GetSolutionPhiXu(). */
     Eigen::VectorXd GetSolutionPhiXv(
         const solvers::MathematicalProgramResult& result) const;
 
