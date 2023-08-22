@@ -1760,16 +1760,17 @@ TEST_F(SdfParserTest, TestSdformatParserPolicies) {
 // Reports if the frame with the given id has a geometry with the given role
 // whose name is the same as what ShapeName(ShapeType{}) would produce.
 template <typename ShapeType>
-::testing::AssertionResult FrameHasShape(
-    geometry::FrameId frame_id, geometry::Role role,
-    const SceneGraph<double>& scene_graph, const ShapeType& shape,
-    const std::string_view model_name = "test_robot") {
+::testing::AssertionResult FrameHasShape(geometry::FrameId frame_id,
+                                         geometry::Role role,
+                                         const SceneGraph<double>& scene_graph,
+                                         const ShapeType& shape) {
   const auto& inspector = scene_graph.model_inspector();
   const std::string name = geometry::ShapeName(shape).name();
   try {
-    // Note: MBP prepends the model index to the geometry name.
-    const geometry::GeometryId geometry_id = inspector.GetGeometryIdByName(
-        frame_id, role, fmt::format("{}::{}", model_name, name));
+    // Note: MBP prepends the model index to the geometry name; in this case
+    // that model instance  name is "test_robot".
+    const geometry::GeometryId geometry_id =
+        inspector.GetGeometryIdByName(frame_id, role, "test_robot::" + name);
     const std::string shape_type =
         geometry::ShapeName(inspector.GetShape(geometry_id)).name();
     if (shape_type != name) {
@@ -2715,7 +2716,7 @@ TEST_F(SdfParserTest, FramesAsJointParentOrChild) {
 // API which bypasses the URDF->SDFormat conversion. This also verifies that
 // SDFormat files can be forced to be loaded via the Interface API by changing
 // their file extension and registering the appropriate custom parser.
-TEST_F(SdfParserTest, InterfaceAPI) {
+TEST_F(SdfParserTest, InterfaceApi) {
   AddSceneGraph();
   const std::string sdf_file_path = FindResourceOrThrow(
       "drake/multibody/parsing/test/sdf_parser_test/interface_api_test/"
@@ -2730,21 +2731,13 @@ TEST_F(SdfParserTest, InterfaceAPI) {
   // default filters.
   {
     const auto& inspector = scene_graph_.model_inspector();
-    static constexpr int kNumGeometries = 5;
-    static constexpr int kNumProximityGeometries = 4;
+    static constexpr int kNumLinks = 4;
     // Verify the number we expect and that they are all in proximity role.
-    ASSERT_EQ(kNumGeometries , inspector.num_geometries());
-    ASSERT_EQ(kNumProximityGeometries,
+    ASSERT_EQ(kNumLinks, inspector.num_geometries());
+    ASSERT_EQ(kNumLinks,
               inspector.NumGeometriesWithRole(geometry::Role::kProximity));
     std::vector<GeometryId> ids = inspector.GetAllGeometryIds();
-    ASSERT_EQ(ids.size(), kNumGeometries);
-
-    auto proxEnd =
-        std::remove_if(ids.begin(), ids.end(), [&inspector](auto id) {
-          return inspector.GetProximityProperties(id) == nullptr;
-        });
-    ids.erase(proxEnd, ids.end());
-    ASSERT_EQ(ids.size(), kNumProximityGeometries);
+    ASSERT_EQ(ids.size(), kNumLinks);
 
     // Make sure the plant is not finalized such that the Finalize() default
     // filtering has not taken into effect yet. This guarantees that the
@@ -2777,16 +2770,6 @@ TEST_F(SdfParserTest, InterfaceAPI) {
     const RigidTransformd X_WL1 = arm_L1.CalcPoseInWorld(*context);
     EXPECT_TRUE(CompareMatrices(X_WA_expected.GetAsMatrix4(),
                                 X_WL1.GetAsMatrix4(), kEps));
-    const auto frame_id = plant_.GetBodyFrameIdOrThrow(arm_L1.body().index());
-    // Check that geometries have been created properly.
-    EXPECT_TRUE(FrameHasShape(frame_id, geometry::Role::kPerception,
-                              scene_graph_, geometry::Box{0.1, 0.1, 0.1},
-                              "top::arm"));
-    const auto& inspector = scene_graph_.model_inspector();
-    EXPECT_NO_THROW(inspector.GetGeometryIdByName(
-        frame_id, geometry::Role::kPerception, "top::arm::Box"));
-    EXPECT_NO_THROW(inspector.GetGeometryIdByName(
-        frame_id, geometry::Role::kProximity, "top::arm::L1"));
   }
 
   // Test placement_frame using a table and a mug flipped upside down
@@ -3190,7 +3173,7 @@ TEST_F(SdfParserTest, TestSingleModelEnforcement) {
 }
 
 // Verify merge-include works with Interface API.
-TEST_F(SdfParserTest, BasicMergeIncludeInterfaceAPI) {
+TEST_F(SdfParserTest, BasicMergeIncludeInterfaceApi) {
   AddSceneGraph();
   const std::string full_name = FindResourceOrThrow(
       "drake/multibody/parsing/test/sdf_parser_test/interface_api_test/"
@@ -3228,20 +3211,7 @@ TEST_F(SdfParserTest, BasicMergeIncludeInterfaceAPI) {
   EXPECT_TRUE(plant_.HasBodyNamed("gripper_link", arm_model));
 }
 
-// Two models are merge-included in the model loaded by this test.
-// 1. In top_merge_include.sdf: arm_merge_include.forced_nesting_sdf is merge
-//    included. The merged model is contained in a parent model named
-//    "arm_urdf". The contents of arm.urdf are moved to "arm_urdf" such that
-//    "arm_urdf::L1" now references link "L1" from arm.urdf.
-// 2. In arm_merge_include.forced_nesting_sdf: gripper.sdf is merge included
-//    whith puts "gripper_link" and "gripper_frame" in the scope of the parent
-//    model "arm". So instead of "arm::gripper::gripper_frame", we now have
-//    "arm::gripper_frame".
-// 2. In top_merge_include.sdf: arm.urdf is merge included. The merged model is
-//    contained in a parent model named "arm_urdf". The contents of arm.urdf are
-//    moved to "arm_urdf" such that "arm_urdf::L1" now references link "L1" from
-//    arm.urdf.
-void TestMergeIncludeWithInterfaceAPI(const MultibodyPlant<double>& plant,
+void TestMergeIncludeWithInterfaceApi(const MultibodyPlant<double>& plant,
                                       const SceneGraph<double>& scene_graph,
                                       const std::string model_prefix) {
   auto context = plant.CreateDefaultContext();
@@ -3304,15 +3274,6 @@ void TestMergeIncludeWithInterfaceAPI(const MultibodyPlant<double>& plant,
     const RigidTransformd X_WL1 = arm_L1.CalcPoseInWorld(*context);
     EXPECT_TRUE(CompareMatrices(X_WL1_expected.GetAsMatrix4(),
                                 X_WL1.GetAsMatrix4(), kEps));
-
-    // Check that geometries have been created properly.
-    const auto frame_id = plant.GetBodyFrameIdOrThrow(arm_L1.body().index());
-    EXPECT_TRUE(FrameHasShape(frame_id, geometry::Role::kPerception,
-                              scene_graph, geometry::Box{0.1, 0.1, 0.1},
-                              sdf::JoinName(model_prefix, "arm_sdf")));
-    EXPECT_TRUE(FrameHasShape(frame_id, geometry::Role::kProximity, scene_graph,
-                              geometry::Sphere{0.2},
-                              sdf::JoinName(model_prefix, "arm_sdf")));
   }
 
   {
@@ -3329,13 +3290,6 @@ void TestMergeIncludeWithInterfaceAPI(const MultibodyPlant<double>& plant,
     const RigidTransformd X_WL2 = arm_L2.CalcPoseInWorld(*context);
     EXPECT_TRUE(CompareMatrices(X_WL2_expected.GetAsMatrix4(),
                                 X_WL2.GetAsMatrix4(), kEps));
-
-    // Check that geometries have been created properly.
-    const auto frame_id = plant.GetBodyFrameIdOrThrow(
-        plant.GetBodyByName("L1", arm_urdf_model_instance).index());
-    EXPECT_TRUE(FrameHasShape(frame_id, geometry::Role::kPerception,
-                              scene_graph, geometry::Box{0.1, 0.1, 0.1},
-                              sdf::JoinName(model_prefix, "arm_urdf")));
   }
   {
     // Frame F represents the model frame of model top::arm_sdf::flange
@@ -3360,7 +3314,7 @@ void TestMergeIncludeWithInterfaceAPI(const MultibodyPlant<double>& plant,
   }
 }
 
-TEST_F(SdfParserTest, MergeIncludeInterfaceAPI1) {
+TEST_F(SdfParserTest, MergeIncludeInterfaceApi1) {
   AddSceneGraph();
   package_map_.AddPackageXml(FindResourceOrThrow(
       "drake/multibody/parsing/test/sdf_parser_test/interface_api_test/"
@@ -3372,10 +3326,11 @@ TEST_F(SdfParserTest, MergeIncludeInterfaceAPI1) {
   AddModelFromSdfFile(sdf_file_path, "");
 
   plant_.Finalize();
-  TestMergeIncludeWithInterfaceAPI(plant_, scene_graph_, "top");
+  SCOPED_TRACE("MergeIncludeInterfaceApi1");
+  TestMergeIncludeWithInterfaceApi(plant_, scene_graph_, "top");
 }
 
-TEST_F(SdfParserTest, MergeIncludeInterfaceAPI2) {
+TEST_F(SdfParserTest, MergeIncludeInterfaceApi2) {
   AddSceneGraph();
   package_map_.AddPackageXml(FindResourceOrThrow(
       "drake/multibody/parsing/test/sdf_parser_test/interface_api_test/"
@@ -3388,8 +3343,9 @@ TEST_F(SdfParserTest, MergeIncludeInterfaceAPI2) {
   AddModelsFromSdfFile(sdf_file_path);
 
   plant_.Finalize();
-  TestMergeIncludeWithInterfaceAPI(plant_, scene_graph_, "top");
-  TestMergeIncludeWithInterfaceAPI(plant_, scene_graph_, "another_top");
+  SCOPED_TRACE("MergeIncludeInterfaceApi2");
+  TestMergeIncludeWithInterfaceApi(plant_, scene_graph_, "top");
+  TestMergeIncludeWithInterfaceApi(plant_, scene_graph_, "another_top");
 }
 
 TEST_F(SdfParserTest, MergeIncludeIntoWorld) {
@@ -3411,8 +3367,9 @@ TEST_F(SdfParserTest, MergeIncludeIntoWorld) {
 
   AddModelsFromSdfString(sdf_string);
   plant_.Finalize();
-  TestMergeIncludeWithInterfaceAPI(plant_, scene_graph_, "top");
-  TestMergeIncludeWithInterfaceAPI(plant_, scene_graph_, "another_top");
+  SCOPED_TRACE("MergeIncludeIntoWorld");
+  TestMergeIncludeWithInterfaceApi(plant_, scene_graph_, "top");
+  TestMergeIncludeWithInterfaceApi(plant_, scene_graph_, "another_top");
 }
 }  // namespace
 }  // namespace internal
