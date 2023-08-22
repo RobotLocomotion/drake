@@ -1277,10 +1277,11 @@ class MujocoParser {
 
   // Assets without an absolute path are referenced relative to the "main MJCF
   // model file" path, `main_mjcf_path`.
-  std::optional<ModelInstanceIndex> Parse(const std::string& model_name_in,
-                           const std::optional<std::string>& parent_model_name,
-                           XMLDocument* xml_doc,
-                           const std::filesystem::path& main_mjcf_path) {
+  std::pair<std::optional<ModelInstanceIndex>, std::string> Parse(
+      const std::string& model_name_in,
+      const std::optional<std::string>& parent_model_name,
+      std::optional<ModelInstanceIndex> merge_into_model_instance,
+      XMLDocument* xml_doc, const std::filesystem::path& main_mjcf_path) {
     main_mjcf_path_ = main_mjcf_path;
 
     XMLElement* node = xml_doc->FirstChildElement("mujoco");
@@ -1297,8 +1298,13 @@ class MujocoParser {
             "must be specified.");
       return {};
     }
-    model_name = MakeModelName(model_name, parent_model_name, workspace_);
-    model_instance_ = plant_->AddModelInstance(model_name);
+
+    if (!merge_into_model_instance.has_value()) {
+      model_name = MakeModelName(model_name, parent_model_name, workspace_);
+      model_instance_ = plant_->AddModelInstance(model_name);
+    } else {
+      model_instance_ = *merge_into_model_instance;
+    }
 
     // Parse the compiler parameters.
     for (XMLElement* compiler_node = node->FirstChildElement("compiler");
@@ -1362,7 +1368,7 @@ class MujocoParser {
     WarnUnsupportedElement(*node, "sensor");
     WarnUnsupportedElement(*node, "keyframe");
 
-    return model_instance_;
+    return std::make_pair(model_instance_, model_name);
   }
 
   void Warning(const XMLNode& location, std::string message) const {
@@ -1402,12 +1408,12 @@ class MujocoParser {
   std::map<std::string, SpatialInertia<double>> mesh_inertia_;
 };
 
-}  // namespace
-
-std::optional<ModelInstanceIndex> AddModelFromMujocoXml(
+std::pair<std::optional<ModelInstanceIndex>, std::string>
+AddOrMergeModelFromMujocoXml(
     const DataSource& data_source, const std::string& model_name_in,
     const std::optional<std::string>& parent_model_name,
-    const ParsingWorkspace& workspace) {
+    const ParsingWorkspace& workspace,
+    std::optional<ModelInstanceIndex> merge_into_model_instance) {
   DRAKE_THROW_UNLESS(!workspace.plant->is_finalized());
 
   TinyXml2Diagnostic diag(&workspace.diagnostic, &data_source);
@@ -1434,7 +1440,18 @@ std::optional<ModelInstanceIndex> AddModelFromMujocoXml(
   }
 
   MujocoParser parser(workspace, data_source);
-  return parser.Parse(model_name_in, parent_model_name, &xml_doc, path);
+  return parser.Parse(model_name_in, parent_model_name,
+                      merge_into_model_instance, &xml_doc, path);
+}
+}  // namespace
+
+std::optional<ModelInstanceIndex> AddModelFromMujocoXml(
+    const DataSource& data_source, const std::string& model_name_in,
+    const std::optional<std::string>& parent_model_name,
+    const ParsingWorkspace& workspace) {
+  return AddOrMergeModelFromMujocoXml(data_source, model_name_in,
+                                      parent_model_name, workspace,
+                                      std::nullopt).first;
 }
 
 MujocoParserWrapper::MujocoParserWrapper() {}
@@ -1448,6 +1465,16 @@ std::optional<ModelInstanceIndex> MujocoParserWrapper::AddModel(
   return AddModelFromMujocoXml(data_source, model_name, parent_model_name,
                                workspace);
 }
+
+std::string MujocoParserWrapper::MergeModel(
+    const DataSource& data_source, const std::string& model_name,
+    ModelInstanceIndex merge_into_model_instance,
+    const ParsingWorkspace& workspace) {
+  return AddOrMergeModelFromMujocoXml(data_source, model_name, std::nullopt,
+                                      workspace, merge_into_model_instance)
+      .second;
+}
+
 
 std::vector<ModelInstanceIndex> MujocoParserWrapper::AddAllModels(
     const DataSource& data_source,

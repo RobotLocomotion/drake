@@ -60,7 +60,7 @@ class ParserInterface {
   // @param model_name
   //   The name given to the newly created instance of this model.  If
   //   empty, the model name found within the model data will be used.
-  // @param model_instance
+  // @param merge_into_model_instance
   //   The model instance into which the contents of the model will be added.
   // @param workspace
   //   The ParsingWorkspace.
@@ -68,10 +68,10 @@ class ParserInterface {
   //   Note, this is not the name of the @p model_instance. Instead, it's the
   //   name of the original model that has now been merged into @p
   //   model_instance.
-  virtual std::string MergeModel(const DataSource& /* data_source */,
-                                 const std::string& /* model_name */,
-                                 ModelInstanceIndex /* model_instance */,
-                                 const ParsingWorkspace& /* workspace */) {
+  virtual std::string MergeModel(
+      const DataSource& /* data_source */, const std::string& /* model_name */,
+      ModelInstanceIndex /* merge_into_model_instance*/,
+      const ParsingWorkspace& /* workspace */) {
     throw std::runtime_error(
         fmt::format("MergeModel is not implemented for this input type"));
   }

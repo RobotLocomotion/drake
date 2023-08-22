@@ -77,11 +77,12 @@ class UrdfParser {
     DRAKE_DEMAND(xml_doc != nullptr);
   }
 
-  // @return a model instance index, if one was created during parsing.
+  // @return a model instance index, if one was created during parsing, and name
+  // of model either passed in or parsed from document.
   // @throw std::exception on parse error.
   // @note: see AddModelFromUrdf for a full account of diagnostics, error
   // reporting, and return values.
-  std::optional<ModelInstanceIndex> Parse();
+  std::pair<std::optional<ModelInstanceIndex>, std::string> Parse();
   void ParseBushing(XMLElement* node);
   void ParseBallConstraint(XMLElement* node);
   void ParseFrame(XMLElement* node);
@@ -138,9 +139,9 @@ class UrdfParser {
   const std::string& model_name() { return model_name_; }
 
  private:
-  std::string model_name_;
+  const std::string model_name_;
   const std::optional<std::string> parent_model_name_;
-  std::optional<ModelInstanceIndex> merge_into_model_instance_;
+  const std::optional<ModelInstanceIndex> merge_into_model_instance_;
   const std::string root_dir_;
   XMLDocument* const xml_doc_;
   const ParsingWorkspace& w_;
@@ -973,7 +974,7 @@ void UrdfParser::ParseBallConstraint(XMLElement* node) {
   internal::ParseBallConstraint(read_vector, read_body, w_.plant);
 }
 
-std::optional<ModelInstanceIndex> UrdfParser::Parse() {
+std::pair<std::optional<ModelInstanceIndex>, std::string> UrdfParser::Parse() {
   XMLElement* node = xml_doc_->FirstChildElement("robot");
   if (!node) {
     Error(*xml_doc_, "URDF does not contain a robot tag.");
@@ -996,8 +997,6 @@ std::optional<ModelInstanceIndex> UrdfParser::Parse() {
   } else {
     model_instance_ = *merge_into_model_instance_;
   }
-
-  model_name_ = model_name;
 
   // Parses the model's material elements. Throws an exception if there's a
   // material name clash regardless of whether the associated RGBA values are
@@ -1050,7 +1049,7 @@ std::optional<ModelInstanceIndex> UrdfParser::Parse() {
 
   if (node->FirstChildElement("loop_joint")) {
     Error(*node, "loop joints are not supported in MultibodyPlant");
-    return model_instance_;
+    return std::make_pair(model_instance_, model_name);
   }
 
   // Parses the model's Drake frame elements.
@@ -1076,15 +1075,15 @@ std::optional<ModelInstanceIndex> UrdfParser::Parse() {
     ParseBallConstraint(ball_constraint_node);
   }
 
-  return model_instance_;
+  return std::make_pair(model_instance_, model_name);
 }
 
 std::pair<std::optional<ModelInstanceIndex>, std::string>
-AddOrMergeModelFromUrdf(const DataSource& data_source,
-                        const std::string& model_name_in,
-                        const std::optional<std::string>& parent_model_name,
-                        const ParsingWorkspace& workspace,
-                        std::optional<ModelInstanceIndex> model_instance) {
+AddOrMergeModelFromUrdf(
+    const DataSource& data_source, const std::string& model_name_in,
+    const std::optional<std::string>& parent_model_name,
+    const ParsingWorkspace& workspace,
+    std::optional<ModelInstanceIndex> merge_into_model_instance) {
   MultibodyPlant<double>* plant = workspace.plant;
   DRAKE_THROW_UNLESS(plant != nullptr);
   DRAKE_THROW_UNLESS(!plant->is_finalized());
@@ -1109,10 +1108,9 @@ AddOrMergeModelFromUrdf(const DataSource& data_source,
   }
 
   UrdfParser parser(&data_source, model_name_in, parent_model_name,
-                    model_instance, data_source.GetRootDir(), &xml_doc,
-                    workspace);
-  auto added_model_instance = parser.Parse();
-  return std::make_pair(added_model_instance, parser.model_name());
+                    merge_into_model_instance, data_source.GetRootDir(),
+                    &xml_doc, workspace);
+  return parser.Parse();;
 }
 }  // namespace
 
@@ -1137,12 +1135,12 @@ std::optional<ModelInstanceIndex> UrdfParserWrapper::AddModel(
                           workspace);
 }
 
-std::string UrdfParserWrapper::MergeModel(const DataSource& data_source,
-                                          const std::string& model_name,
-                                          ModelInstanceIndex model_instance,
-                                          const ParsingWorkspace& workspace) {
+std::string UrdfParserWrapper::MergeModel(
+    const DataSource& data_source, const std::string& model_name,
+    ModelInstanceIndex merge_into_model_instance,
+    const ParsingWorkspace& workspace) {
   return AddOrMergeModelFromUrdf(data_source, model_name, std::nullopt,
-                                 workspace, model_instance).second;
+                                 workspace, merge_into_model_instance).second;
 }
 
 std::vector<ModelInstanceIndex> UrdfParserWrapper::AddAllModels(

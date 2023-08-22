@@ -62,7 +62,7 @@ class UrdfParserWrapper final : public ParserInterface {
 
   std::string MergeModel(const DataSource& data_source,
                          const std::string& model_name,
-                         ModelInstanceIndex model_instance,
+                         ModelInstanceIndex merge_into_model_instance,
                          const ParsingWorkspace& workspace) final;
 
   std::vector<ModelInstanceIndex> AddAllModels(
