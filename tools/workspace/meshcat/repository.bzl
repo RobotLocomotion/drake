@@ -5,7 +5,7 @@ def meshcat_repository(
         mirrors = None):
     github_archive(
         name = name,
-        repository = "rdeits/meshcat",
+        repository = "meshcat-dev/meshcat",
         upgrade_advice = """
         Updating this commit requires local testing; see
         drake/tools/workspace/meshcat/README.md for details.
