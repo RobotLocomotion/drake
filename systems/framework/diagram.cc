@@ -369,9 +369,16 @@ const System<T>& Diagram<T>::GetSubsystemByName(std::string_view name) const {
       return *child;
     }
   }
+  std::vector<std::string> subsystem_names;
+  subsystem_names.reserve(registered_systems_.size());
+  for (const auto& child : registered_systems_) {
+    subsystem_names.emplace_back(child->get_name());
+  }
+
   throw std::logic_error(fmt::format(
-      "System {} does not have a subsystem named {}",
-      this->GetSystemName(), name));
+      "System {} does not have a subsystem named {}. The existing subsystems "
+      "are named {{{}}}.",
+      this->GetSystemName(), name, fmt::join(subsystem_names, ", ")));
 }
 
 template <typename T>
