@@ -548,7 +548,6 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
           hydroelastic_geometries_.rigid_geometry(data.id).mesh().vertices());
     } else {
       if (mesh.extension() == ".vtk") {
-        // TODO(rpoyner-tri): could take convex hull here.
         shared_verts = make_shared<const std::vector<Vector3d>>(
             ConvertVolumeToSurfaceMesh(
                 ReadVtkToVolumeMesh(mesh.filename()))
