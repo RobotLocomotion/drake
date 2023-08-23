@@ -16,6 +16,15 @@ AddMultibodyPlantSceneGraphResult<double> AddMultibodyPlant(
     const MultibodyPlantConfig& config,
     systems::DiagramBuilder<double>* builder);
 
+/// Adds a new MultibodyPlant and SceneGraph to the given `builder`.  The
+/// plant's settings such as `time_step` are set using the given
+/// `plant_config`. The scene graph's settings are set using the given
+/// `scene_graph_config`.
+AddMultibodyPlantSceneGraphResult<double> AddMultibodyPlant(
+    const MultibodyPlantConfig& plant_config,
+    const geometry::SceneGraphConfig& scene_graph_config,
+    systems::DiagramBuilder<double>* builder);
+
 /// Applies settings given in `config` to an existing `plant`. The `time_step`
 /// is the one value in `config` that cannot be updated -- it can only be set
 /// in the MultibodyPlant constructor. Consider using AddMultibodyPlant() or

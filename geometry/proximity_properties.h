@@ -9,6 +9,7 @@
 
 #include <optional>
 #include <ostream>
+#include <string>
 
 #include "drake/common/fmt_ostream.h"
 #include "drake/geometry/geometry_roles.h"
@@ -85,6 +86,11 @@ enum class HydroelasticType {
   kRigid,
   kSoft
 };
+
+/* Conversion functions between hydroelastic type and string. */
+HydroelasticType GetHydroelasticTypeFromString(
+    std::string_view hydroelastic_type);
+std::string GetStringFromHydroelasticType(HydroelasticType hydroelastic_type);
 
 /* Streaming operator for writing hydroelastic type to output stream.  */
 std::ostream& operator<<(std::ostream& out, const HydroelasticType& type);
