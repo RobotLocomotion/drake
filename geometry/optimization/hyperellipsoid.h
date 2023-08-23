@@ -104,27 +104,6 @@ class Hyperellipsoid final : public ConvexSet {
   /** Constructs the L₂-norm unit ball in `dim` dimensions, {x | |x|₂ <= 1 }. */
   static Hyperellipsoid MakeUnitBall(int dim);
 
-  /** Constructs the minimum-volume ellipsoid which contains all of the
-  `points`. This is commonly referred to as the outer Löwner-John ellipsoid.
-
-  @param points is a d-by-n matrix, where d is the ambient dimension and each
-  column represents one point.
-  @param rank_tol the singular values of the data matrix will be considered
-  non-zero if they are strictly greater than `rank_tol` * `max_singular_value`.
-  The default is 1e-6 to be compatible with common solver tolerances. This is
-  used to detect if the data lies on a lower-dimensional affine space than the
-  ambient dimension of the ellipsoid.
-  @throws std::exception if the MathematicalProgram fails to solve. If this
-  were to happen (due to numerical issues), then increasing `rank_tol` should
-  provide a mitigation.
-  @throw std::exception if points includes NaNs or infinite values.
-  @pre The numerical data rank of points is greater than 0 (the largest
-  singular value is greater than rank_tol). This requires, for instance, that
-  points.cols() > 1.
-  */
-  static Hyperellipsoid MinimumVolumeCircumscribedEllipsoid(
-      const Eigen::Ref<const Eigen::MatrixXd>& points, double rank_tol = 1e-6);
-
   /** Passes this object to an Archive.
   Refer to @ref yaml_serialization "YAML Serialization" for background. */
   template <typename Archive>
