@@ -10,6 +10,7 @@
 #include "drake/common/nice_type_name.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/geometry_state.h"
+#include "drake/geometry/internal_hydroelasticate.h"
 #include "drake/systems/framework/context.h"
 
 namespace drake {
@@ -79,16 +80,95 @@ class GeometryStateValue final : public Value<GeometryState<T>> {
   template <typename>
   friend class GeometryStateValue;
 };
+
+
+// Throws if config values are invalid.
+void ValidateConfig(const SceneGraphConfig& config) {
+  const auto& hydro = config.hydroelastic;
+  DRAKE_THROW_UNLESS(std::isfinite(hydro.minimum_primitive_size));
+  DRAKE_THROW_UNLESS(std::isfinite(hydro.default_hydroelastic_modulus));
+  DRAKE_THROW_UNLESS(std::isfinite(hydro.default_mesh_resolution_hint));
+  DRAKE_THROW_UNLESS(std::isfinite(hydro.default_slab_thickness));
+
+  DRAKE_THROW_UNLESS(hydro.minimum_primitive_size >= 0.0);
+  DRAKE_THROW_UNLESS(hydro.default_hydroelastic_modulus > 0.0);
+  DRAKE_THROW_UNLESS(hydro.default_mesh_resolution_hint > 0.0);
+  DRAKE_THROW_UNLESS(hydro.default_slab_thickness > 0.0);
+}
+
 }  // namespace
 
+
+/* Hub: Encapsulate some state to internally enforce the invariants for
+   hydroelasticated model caching in one place, with otherwise unrestricted
+   access to models and configuration.
+
+   Invariants are as follows:
+
+   * The hydroelasticated model cache is either:
+      * empty, or
+      * up-to-date with the current model and configuration.
+
+   To enforce the cache invariant:
+
+   * whenever we wish to mutate the model or configuration, invalidated any
+     previously cached hydro model.
+   * whenever we request a hydro model:
+     * if the cache is empty, make a new hydro model and cache it.
+     * if the cache is populated, return the cache value.
+ */
 template <typename T>
-SceneGraph<T>::SceneGraph()
+class SceneGraph<T>::Hub {
+ public:
+  Hub() = default;
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Hub)
+
+  const SceneGraphConfig& config() const { return config_; }
+
+  SceneGraphConfig& mutable_config() {
+    hydroelasticated_model_.reset();
+    return config_;
+  }
+
+  const GeometryState<T>& model() const { return model_; }
+
+  GeometryState<T>& mutable_model() {
+    hydroelasticated_model_.reset();
+    return model_;
+  }
+
+  const GeometryState<T>& hydroelasticated_model() const {
+    EnsureHydroelasticatedModel();
+    return *hydroelasticated_model_;
+  }
+
+ private:
+  void EnsureHydroelasticatedModel() const {
+    if (!hydroelasticated_model_) {
+      hydroelasticated_model_ = std::make_unique<GeometryState<T>>(model_);
+      internal::Hydroelasticate(hydroelasticated_model_.get(), config_);
+    }
+  }
+
+  SceneGraphConfig config_;
+  GeometryState<T> model_;
+  // The cached hydro model, maybe. It is populated by requests for such a
+  // model, and invalidated by mutable access to either model or config.
+  mutable std::unique_ptr<GeometryState<T>> hydroelasticated_model_;
+};
+
+template <typename T>
+SceneGraph<T>::SceneGraph(const SceneGraphConfig& config)
     : LeafSystem<T>(SystemTypeTag<SceneGraph>{}),
-      owned_model_(std::make_unique<GeometryState<T>>()),
-      model_(*owned_model_) {
-  model_inspector_.set(&model_);
+      owned_hub_(std::make_unique<Hub>()),
+      hub_(*owned_hub_) {
+  ValidateConfig(config);
+  hub_.mutable_config() = config;
+  model_inspector_.set(&hub_.model());
   geometry_state_index_ =
       this->DeclareAbstractParameter(GeometryStateValue<T>());
+  scene_graph_config_index_ =
+      this->DeclareAbstractParameter(Value<SceneGraphConfig>());
 
   query_port_index_ =
       this->DeclareAbstractOutputPort("query", &SceneGraph::CalcQueryObject)
@@ -109,7 +189,9 @@ template <typename T>
 template <typename U>
 SceneGraph<T>::SceneGraph(const SceneGraph<U>& other)
     : SceneGraph() {
-  model_ = GeometryState<T>(other.model_);
+  hub_.mutable_config() = other.hub_.config();
+  hub_.mutable_model() =
+      GeometryState<T>(other.hub_.model());
 
   // We need to guarantee that the same source ids map to the same port indices.
   // We'll do this by processing the source ids in monotonically increasing
@@ -143,9 +225,20 @@ SceneGraph<T>::~SceneGraph() = default;
 
 template <typename T>
 SourceId SceneGraph<T>::RegisterSource(const std::string& name) {
-  SourceId source_id = model_.RegisterNewSource(name);
+  SourceId source_id = hub_.mutable_model().RegisterNewSource(name);
   MakeSourcePorts(source_id);
   return source_id;
+}
+
+template <typename T>
+void SceneGraph<T>::set_config(const SceneGraphConfig& config) {
+  ValidateConfig(config);
+  hub_.mutable_config() = config;
+}
+
+template <typename T>
+SceneGraphConfig SceneGraph<T>::get_config() const {
+  return hub_.config();
 }
 
 template <typename T>
@@ -171,25 +264,27 @@ const InputPort<T>& SceneGraph<T>::get_source_configuration_port(
 template <typename T>
 FrameId SceneGraph<T>::RegisterFrame(SourceId source_id,
                                      const GeometryFrame& frame) {
-  return model_.RegisterFrame(source_id, frame);
+  return hub_.mutable_model().RegisterFrame(source_id, frame);
 }
 
 template <typename T>
 FrameId SceneGraph<T>::RegisterFrame(SourceId source_id, FrameId parent_id,
                                      const GeometryFrame& frame) {
-  return model_.RegisterFrame(source_id, parent_id, frame);
+  return hub_.mutable_model().RegisterFrame(
+      source_id, parent_id, frame);
 }
 
 template <typename T>
 void SceneGraph<T>::RenameFrame(FrameId frame_id, const std::string& name) {
-  return model_.RenameFrame(frame_id, name);
+  return hub_.mutable_model().RenameFrame(frame_id, name);
 }
 
 template <typename T>
 GeometryId SceneGraph<T>::RegisterGeometry(
     SourceId source_id, FrameId frame_id,
     std::unique_ptr<GeometryInstance> geometry) {
-  return model_.RegisterGeometry(source_id, frame_id, std::move(geometry));
+  return hub_.mutable_model().RegisterGeometry(
+      source_id, frame_id, std::move(geometry));
 }
 
 template <typename T>
@@ -197,20 +292,28 @@ GeometryId SceneGraph<T>::RegisterGeometry(
     Context<T>* context, SourceId source_id, FrameId frame_id,
     std::unique_ptr<GeometryInstance> geometry) const {
   auto& g_state = mutable_geometry_state(context);
-  return g_state.RegisterGeometry(source_id, frame_id, std::move(geometry));
+  bool has_proximity = (geometry->proximity_properties() != nullptr);
+  auto geometry_id =
+      g_state.RegisterGeometry(source_id, frame_id, std::move(geometry));
+  const auto& config = scene_graph_config(*context);
+  if (config.hydroelastic.enabled == true && has_proximity) {
+    internal::Hydroelasticate(&g_state, config, geometry_id);
+  }
+  return geometry_id;
 }
 
 template <typename T>
 GeometryId SceneGraph<T>::RegisterAnchoredGeometry(
     SourceId source_id, std::unique_ptr<GeometryInstance> geometry) {
-  return model_.RegisterAnchoredGeometry(source_id, std::move(geometry));
+  return hub_.mutable_model().RegisterAnchoredGeometry(
+      source_id, std::move(geometry));
 }
 
 template <typename T>
 GeometryId SceneGraph<T>::RegisterDeformableGeometry(
     SourceId source_id, FrameId frame_id,
     std::unique_ptr<GeometryInstance> geometry, double resolution_hint) {
-  return model_.RegisterDeformableGeometry(
+  return hub_.mutable_model().RegisterDeformableGeometry(
       source_id, frame_id, std::move(geometry), resolution_hint);
 }
 
@@ -226,14 +329,15 @@ GeometryId SceneGraph<T>::RegisterDeformableGeometry(
 template <typename T>
 void SceneGraph<T>::RenameGeometry(GeometryId geometry_id,
                                    const std::string& name) {
-  return model_.RenameGeometry(geometry_id, name);
+  return hub_.mutable_model().RenameGeometry(geometry_id, name);
 }
 
 template <typename T>
 void SceneGraph<T>::ChangeShape(
     SourceId source_id, GeometryId geometry_id, const Shape& shape,
     std::optional<math::RigidTransform<double>> X_FG) {
-  return model_.ChangeShape(source_id, geometry_id, shape, X_FG);
+  return hub_.mutable_model().ChangeShape(
+      source_id, geometry_id, shape, X_FG);
 }
 
 template <typename T>
@@ -241,12 +345,12 @@ void SceneGraph<T>::ChangeShape(
     Context<T>* context, SourceId source_id, GeometryId geometry_id,
     const Shape& shape, std::optional<math::RigidTransform<double>> X_FG) {
   auto& g_state = mutable_geometry_state(context);
-  return g_state.ChangeShape(source_id, geometry_id, shape, X_FG);
+  g_state.ChangeShape(source_id, geometry_id, shape, X_FG);
 }
 
 template <typename T>
 void SceneGraph<T>::RemoveGeometry(SourceId source_id, GeometryId geometry_id) {
-  model_.RemoveGeometry(source_id, geometry_id);
+  hub_.mutable_model().RemoveGeometry(source_id, geometry_id);
 }
 
 template <typename T>
@@ -259,7 +363,8 @@ void SceneGraph<T>::RemoveGeometry(Context<T>* context, SourceId source_id,
 template <typename T>
 void SceneGraph<T>::AddRenderer(
     std::string name, std::unique_ptr<render::RenderEngine> renderer) {
-  return model_.AddRenderer(std::move(name), std::move(renderer));
+  return hub_.mutable_model().AddRenderer(
+      std::move(name), std::move(renderer));
 }
 
 template <typename T>
@@ -272,7 +377,7 @@ void SceneGraph<T>::AddRenderer(
 
 template <typename T>
 void SceneGraph<T>::RemoveRenderer(const std::string& name) {
-  return model_.RemoveRenderer(name);
+  return hub_.mutable_model().RemoveRenderer(name);
 }
 
 template <typename T>
@@ -284,7 +389,7 @@ void SceneGraph<T>::RemoveRenderer(Context<T>* context,
 
 template <typename T>
 bool SceneGraph<T>::HasRenderer(const std::string& name) const {
-  return model_.HasRenderer(name);
+  return hub_.model().HasRenderer(name);
 }
 
 template <typename T>
@@ -296,7 +401,8 @@ bool SceneGraph<T>::HasRenderer(const Context<T>& context,
 
 template <typename T>
 std::string SceneGraph<T>::GetRendererTypeName(const std::string& name) const {
-  const render::RenderEngine* engine = model_.GetRenderEngineByName(name);
+  const render::RenderEngine* engine =
+      hub_.model().GetRenderEngineByName(name);
   if (engine == nullptr) {
     return {};
   }
@@ -318,7 +424,7 @@ std::string SceneGraph<T>::GetRendererTypeName(const Context<T>& context,
 
 template <typename T>
 int SceneGraph<T>::RendererCount() const {
-  return model_.RendererCount();
+  return hub_.model().RendererCount();
 }
 
 template <typename T>
@@ -329,7 +435,7 @@ int SceneGraph<T>::RendererCount(const Context<T>& context) const {
 
 template <typename T>
 vector<std::string> SceneGraph<T>::RegisteredRendererNames() const {
-  return model_.RegisteredRendererNames();
+  return hub_.model().RegisteredRendererNames();
 }
 
 template <typename T>
@@ -343,7 +449,8 @@ template <typename T>
 void SceneGraph<T>::AssignRole(SourceId source_id, GeometryId geometry_id,
                                ProximityProperties properties,
                                RoleAssign assign) {
-  model_.AssignRole(source_id, geometry_id, std::move(properties), assign);
+  hub_.mutable_model().AssignRole(
+      source_id, geometry_id, std::move(properties), assign);
 }
 
 template <typename T>
@@ -353,13 +460,18 @@ void SceneGraph<T>::AssignRole(Context<T>* context, SourceId source_id,
                                RoleAssign assign) const {
   auto& g_state = mutable_geometry_state(context);
   g_state.AssignRole(source_id, geometry_id, std::move(properties), assign);
+  const auto& config = scene_graph_config(*context);
+  if (config.hydroelastic.enabled == true) {
+    internal::Hydroelasticate(&g_state, config, geometry_id);
+  }
 }
 
 template <typename T>
 void SceneGraph<T>::AssignRole(SourceId source_id, GeometryId geometry_id,
                                PerceptionProperties properties,
                                RoleAssign assign) {
-  model_.AssignRole(source_id, geometry_id, std::move(properties), assign);
+  hub_.mutable_model().AssignRole(
+      source_id, geometry_id, std::move(properties), assign);
 }
 
 template <typename T>
@@ -375,7 +487,8 @@ template <typename T>
 void SceneGraph<T>::AssignRole(SourceId source_id, GeometryId geometry_id,
                                IllustrationProperties properties,
                                RoleAssign assign) {
-  model_.AssignRole(source_id, geometry_id, std::move(properties), assign);
+  hub_.mutable_model().AssignRole(
+      source_id, geometry_id, std::move(properties), assign);
 }
 
 template <typename T>
@@ -395,7 +508,7 @@ void SceneGraph<T>::AssignRole(Context<T>* context, SourceId source_id,
 
 template <typename T>
 int SceneGraph<T>::RemoveRole(SourceId source_id, FrameId frame_id, Role role) {
-  return model_.RemoveRole(source_id, frame_id, role);
+  return hub_.mutable_model().RemoveRole(source_id, frame_id, role);
 }
 
 template <typename T>
@@ -408,7 +521,8 @@ int SceneGraph<T>::RemoveRole(Context<T>* context, SourceId source_id,
 template <typename T>
 int SceneGraph<T>::RemoveRole(SourceId source_id, GeometryId geometry_id,
                               Role role) {
-  return model_.RemoveRole(source_id, geometry_id, role);
+  return hub_.mutable_model().RemoveRole(
+      source_id, geometry_id, role);
 }
 
 template <typename T>
@@ -425,7 +539,7 @@ const SceneGraphInspector<T>& SceneGraph<T>::model_inspector() const {
 
 template <typename T>
 CollisionFilterManager SceneGraph<T>::collision_filter_manager() {
-  return model_.collision_filter_manager();;
+  return hub_.mutable_model().collision_filter_manager();
 }
 
 template <typename T>
@@ -438,8 +552,14 @@ template <typename T>
 void SceneGraph<T>::SetDefaultParameters(const Context<T>& context,
                                          Parameters<T>* parameters) const {
   LeafSystem<T>::SetDefaultParameters(context, parameters);
+  const GeometryState<T>* from = &hub_.model();
+  if (hub_.config().hydroelastic.enabled) {
+    from = &hub_.hydroelasticated_model();
+  }
   parameters->template get_mutable_abstract_parameter<GeometryState<T>>(
-      geometry_state_index_) = model_;
+      geometry_state_index_) = *from;
+  parameters->template get_mutable_abstract_parameter<SceneGraphConfig>(
+      scene_graph_config_index_) = hub_.config();
 }
 
 template <typename T>
@@ -449,14 +569,15 @@ void SceneGraph<T>::MakeSourcePorts(SourceId source_id) {
   // Create and store the input ports for this source id.
   SourcePorts& source_ports = input_source_ids_[source_id];
   source_ports.pose_port =
-      this->DeclareAbstractInputPort(model_.GetName(source_id) + "_pose",
-                                     Value<FramePoseVector<T>>())
-          .get_index();
+      this->DeclareAbstractInputPort(
+          hub_.model().GetName(source_id) + "_pose",
+          Value<FramePoseVector<T>>())
+      .get_index();
   source_ports.configuration_port =
       this->DeclareAbstractInputPort(
-              model_.GetName(source_id) + "_configuration",
-              Value<GeometryConfigurationVector<T>>())
-          .get_index();
+          hub_.model().GetName(source_id) + "_configuration",
+          Value<GeometryConfigurationVector<T>>())
+      .get_index();
 }
 
 template <typename T>
@@ -598,6 +719,14 @@ const GeometryState<T>& SceneGraph<T>::geometry_state(
     const Context<T>& context) const {
   return context.get_parameters()
       .template get_abstract_parameter<GeometryState<T>>(geometry_state_index_);
+}
+
+template <typename T>
+const SceneGraphConfig& SceneGraph<T>::scene_graph_config(
+    const systems::Context<T>& context) const {
+  return context.get_parameters()
+      .template get_abstract_parameter<SceneGraphConfig>(
+          scene_graph_config_index_);
 }
 
 }  // namespace geometry

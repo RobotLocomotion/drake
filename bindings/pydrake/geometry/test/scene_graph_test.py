@@ -330,6 +330,31 @@ class TestGeometrySceneGraph(unittest.TestCase):
                     frame_id=global_frame, role=role),
                 1 if i == 0 else 0)
 
+    def test_scene_graph_config(self):
+        hydro_config = mut.HydroelasticConfig()
+        scene_graph_config = mut.SceneGraphConfig()
+        scene_graph = mut.SceneGraph(config=scene_graph_config)
+        got_config = scene_graph.get_config()
+        self.assertFalse(got_config.hydroelastic.enabled)
+        scene_graph_config.hydroelastic.enabled = True
+        scene_graph.set_config(config=scene_graph_config)
+        got_config = scene_graph.get_config()
+        self.assertTrue(got_config.hydroelastic.enabled)
+
+        # ParamInit.
+        param_init_hydro = mut.HydroelasticConfig(
+            enabled=True,
+            minimum_primitive_size=1,
+            default_hydroelastic_modulus=2,
+            default_mesh_resolution_hint=3,
+            default_slab_thickness=4,
+        )
+        param_init_scene_graph = mut.SceneGraphConfig(
+            hydroelastic=param_init_hydro)
+        # Spot-check that at least one value got passed through.
+        self.assertEqual(
+            param_init_scene_graph.hydroelastic.default_slab_thickness, 4)
+
     @numpy_compare.check_all_types
     def test_scene_graph_renderer_with_context(self, T):
         SceneGraph = mut.SceneGraph_[T]

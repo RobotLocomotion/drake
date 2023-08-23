@@ -4,11 +4,13 @@
  pydrake.geometry module. */
 
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
+#include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/scene_graph.h"
+#include "drake/geometry/scene_graph_config.h"
 
 namespace drake {
 namespace pydrake {
@@ -30,6 +32,28 @@ void DoScalarIndependentDefinitions(py::module m) {
     py::enum_<Class>(m, "HydroelasticContactRepresentation", cls_doc.doc)
         .value("kTriangle", Class::kTriangle, cls_doc.kTriangle.doc)
         .value("kPolygon", Class::kPolygon, cls_doc.kPolygon.doc);
+  }
+
+  {
+    using Class = geometry::HydroelasticConfig;
+    constexpr auto& cls_doc = doc.HydroelasticConfig;
+    py::class_<Class> cls(m, "HydroelasticConfig", cls_doc.doc);
+    cls  // BR
+        .def(ParamInit<Class>());
+    DefAttributesUsingSerialize(&cls, cls_doc);
+    DefReprUsingSerialize(&cls);
+    DefCopyAndDeepCopy(&cls);
+  }
+
+  {
+    using Class = geometry::SceneGraphConfig;
+    constexpr auto& cls_doc = doc.SceneGraphConfig;
+    py::class_<Class> cls(m, "SceneGraphConfig", cls_doc.doc);
+    cls  // BR
+        .def(ParamInit<Class>());
+    DefAttributesUsingSerialize(&cls, cls_doc);
+    DefReprUsingSerialize(&cls);
+    DefCopyAndDeepCopy(&cls);
   }
 }
 
@@ -164,7 +188,11 @@ void DoScalarDependentDefinitions(py::module m, T) {
     auto cls = DefineTemplateClassWithDefault<Class, LeafSystem<T>>(
         m, "SceneGraph", param, cls_doc.doc);
     cls  // BR
-        .def(py::init<>(), cls_doc.ctor.doc)
+        .def(py::init<SceneGraphConfig>(),
+            py::arg("config") = SceneGraphConfig{}, cls_doc.ctor.doc)
+        .def("set_config", &Class::set_config, py::arg("config"),
+            cls_doc.set_config.doc)
+        .def("get_config", &Class::get_config, cls_doc.get_config.doc)
         .def("get_source_pose_port", &Class::get_source_pose_port,
             py_rvp::reference_internal, cls_doc.get_source_pose_port.doc)
         .def("get_source_configuration_port",

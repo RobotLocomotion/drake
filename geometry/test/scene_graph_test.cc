@@ -6,6 +6,7 @@
 #include <fmt/format.h>
 #include <gtest/gtest.h>
 
+#include "drake/common/find_resource.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
@@ -15,6 +16,7 @@
 #include "drake/geometry/geometry_set.h"
 #include "drake/geometry/geometry_state.h"
 #include "drake/geometry/make_mesh_for_deformable.h"
+#include "drake/geometry/proximity_properties.h"
 #include "drake/geometry/query_object.h"
 #include "drake/geometry/render/render_label.h"
 #include "drake/geometry/shape_specification.h"
@@ -34,6 +36,10 @@ namespace drake {
 namespace geometry {
 
 using internal::DummyRenderEngine;
+using internal::HydroelasticType;
+using internal::kComplianceType;
+using internal::kHydroGroup;
+using internal::kSlabThickness;
 using math::RigidTransformd;
 using std::make_unique;
 using std::unique_ptr;
@@ -348,6 +354,95 @@ TEST_F(SceneGraphTest, RegisterUnsupportedDeformableGeometry) {
           s_id, scene_graph_.world_frame_id(), std::move(geometry_instance),
           kRezHint),
       ".*don't yet generate deformable meshes.+ Cylinder.");
+}
+
+// Smoke test hydroelasticate. Fine detail should be tested in
+// internal_hydroelasticate_test.
+TEST_F(SceneGraphTest, Hydroelasticate) {
+  EXPECT_FALSE(scene_graph_.get_config().hydroelastic.enabled);
+  SourceId s_id = scene_graph_.RegisterSource();
+  auto geometry_instance = make_unique<GeometryInstance>(
+      RigidTransformd::Identity(), make_unique<Box>(1.0, 2.0, 3.0), "box");
+  geometry_instance->set_proximity_properties(ProximityProperties());
+  auto g_id = scene_graph_.RegisterGeometry(
+      s_id, scene_graph_.world_frame_id(), std::move(geometry_instance));
+  // Plain context.
+  CreateDefaultContext();
+  auto props = query_object().inspector().GetProximityProperties(g_id);
+  EXPECT_FALSE(props->HasGroup(kHydroGroup));
+
+  SceneGraphConfig config;
+  config.hydroelastic.enabled = true;
+  scene_graph_.set_config(config);
+  EXPECT_TRUE(scene_graph_.get_config().hydroelastic.enabled);
+  // Hydroelasticated context.
+  CreateDefaultContext();
+  props = query_object().inspector().GetProximityProperties(g_id);
+  EXPECT_TRUE(props->HasGroup(kHydroGroup));
+
+  // Add a new shape into the context, with empty proximity role.
+  geometry_instance = make_unique<GeometryInstance>(
+      RigidTransformd::Identity(), make_unique<Box>(1.0, 3.0, 5.0), "box2");
+  geometry_instance->set_proximity_properties(ProximityProperties());
+  g_id = scene_graph_.RegisterGeometry(
+      context_.get(), s_id, scene_graph_.world_frame_id(),
+      std::move(geometry_instance));
+  props = query_object().inspector().GetProximityProperties(g_id);
+  EXPECT_TRUE(props->HasGroup(kHydroGroup));
+
+  // Add a new shape into the context, then assign a proximity role.
+  geometry_instance = make_unique<GeometryInstance>(
+      RigidTransformd::Identity(), make_unique<Box>(1.0, 1.0, 1.0), "box3");
+  g_id = scene_graph_.RegisterGeometry(
+      context_.get(), s_id, scene_graph_.world_frame_id(),
+      std::move(geometry_instance));
+  scene_graph_.AssignRole(context_.get(), s_id, g_id, ProximityProperties());
+  props = query_object().inspector().GetProximityProperties(g_id);
+  EXPECT_TRUE(props->HasGroup(kHydroGroup));
+  EXPECT_EQ(props->GetProperty<HydroelasticType>(kHydroGroup, kComplianceType),
+            HydroelasticType::kSoft);
+
+  // Replace the role, with a blank set of properties. The resulting properties
+  // are hydroelasticated.
+  scene_graph_.AssignRole(context_.get(), s_id, g_id, ProximityProperties(),
+                          RoleAssign::kReplace);
+  props = query_object().inspector().GetProximityProperties(g_id);
+  EXPECT_TRUE(props->HasGroup(kHydroGroup));
+  EXPECT_EQ(props->GetProperty<HydroelasticType>(kHydroGroup, kComplianceType),
+            HydroelasticType::kSoft);
+
+  // Replace the role, removing an arbitrary property, but retaining the
+  // compliance type. The property stays removed.
+  ProximityProperties edit_props(
+      *query_object().inspector().GetProximityProperties(g_id));
+  edit_props.RemoveProperty(kHydroGroup, kSlabThickness);
+  scene_graph_.AssignRole(context_.get(), s_id, g_id, edit_props,
+                          RoleAssign::kReplace);
+  props = query_object().inspector().GetProximityProperties(g_id);
+  EXPECT_TRUE(props->HasGroup(kHydroGroup));
+  EXPECT_FALSE(props->HasProperty(kHydroGroup, kSlabThickness));
+  EXPECT_EQ(props->GetProperty<HydroelasticType>(kHydroGroup, kComplianceType),
+            HydroelasticType::kSoft);
+
+  // Change a shape in the context: replace "box3" with a volume mesh.
+  scene_graph_.ChangeShape(
+      context_.get(), s_id, g_id,
+      Mesh(FindResourceOrThrow(
+          "drake/geometry/test/extruded_u_volume_mesh.vtk")));
+  EXPECT_TRUE(props->HasGroup(kHydroGroup));
+  EXPECT_EQ(props->GetProperty<HydroelasticType>(kHydroGroup,
+  kComplianceType),
+            HydroelasticType::kSoft);
+
+  // Change a shape in the context: replace "box3" with a surface mesh.
+  //
+  // Note: we can't do this test and the prior test in the opposite order,
+  // because ChangeShape() is not exception safe.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      scene_graph_.ChangeShape(
+          context_.get(), s_id, g_id,
+          Mesh(FindResourceOrThrow("drake/geometry/test/octahedron.obj"))),
+      ".*");  // XXX still wrangling error architecture.
 }
 
 template <typename T>

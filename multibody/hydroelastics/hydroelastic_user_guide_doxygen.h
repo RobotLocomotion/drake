@@ -114,6 +114,49 @@ contact forces. As the implementation evolves, more and more contact will be
 captured with hydroelastic contact and the circumstances in which the
 point-contact fallback is applied will decrease.
 
+@subsubsection hug_hydroelasticate Automatic Hydroelasticate
+
+The automatic hydroelasticate feature offers a quick-start path to using
+hydroelastic contact, without the need to fully annotate the collision
+geometries of robot models. (The full annotation process is described in the
+sections following this one.)
+
+With automatic hydroelasticate, the results will be approximate, but using
+this feature may be a good starting point for some. It allows an incremental
+approach to adding hydroelastic annotations as needed.
+
+To use automatic hydroelasticate, all that is needed is to set a
+configuration flag for drake::geometry::SceneGraph:
+
+@code
+  geometry::SceneGraphConfig scene_graph_config;
+  scene_graph_config.hydroelasticate.enabled = true;
+  auto [plant, scene_graph] =
+      multibody::AddMultibodyPlant(plant_config, scene_graph_config, &builder);
+@endcode
+
+For an example of a trivial conversion of an existing simulation, see the <a
+href="https://github.com/RobotLocomotion/drake/tree/master/examples/simple_gripper">examples/simple_gripper</a>
+program in the Drake source code. It offers a `--hydroelasticate` command line
+option, which permits turning the feature on or off.
+
+When this feature is enabled, all of the geometries in contexts created for the
+scene graph will be annotated with a default set of hydroelastic and friction
+properties. In addition, geometries smaller than some threshold size will be
+ignored for collisions; this allows quick adaption of models that have been
+augmented with tiny collision spheres to operate with point contact.
+
+These transformations will allow hydroelastic contact to work, but the values
+of the properties may not be ideal. The default set of properties are
+controlled by drake::geometry::HydroelasticateConfig, and can be changed for
+each application. The threshold size for geometries to ignore can also be
+changed via that configuration structure.
+
+Having used hydroelasticate to get up and running, it may still be useful to
+add specific hydroelastic annotations to model files. Any explicit properties
+in model files (or applied by calling Drake APIs) will take precedence over
+the hydroelasticate defaults for the annotated geometries.
+
 @subsubsection creating_hydro_reps Creating hydroelastic representations of collision geometries
 
 By default no geometry in drake::geometry::SceneGraph has a hydroelastic

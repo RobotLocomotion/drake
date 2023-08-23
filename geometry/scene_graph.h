@@ -13,6 +13,7 @@
 #include "drake/geometry/kinematics_vector.h"
 #include "drake/geometry/query_object.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
+#include "drake/geometry/scene_graph_config.h"
 #include "drake/geometry/scene_graph_inspector.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -322,13 +323,27 @@ class SceneGraph final : public systems::LeafSystem<T> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SceneGraph)
 
   /** Constructs a default (empty) scene graph. */
-  SceneGraph();
+  explicit SceneGraph(const SceneGraphConfig& config = {});
 
   /** Constructor used for scalar conversions. */
   template <typename U>
   explicit SceneGraph(const SceneGraph<U>& other);
 
   ~SceneGraph() final;
+
+  /** @name      Configuration
+   Allows configuration changes to scene graph systems.
+   */
+  //@{
+
+  /** Sets the configuration. */
+  void set_config(const SceneGraphConfig& config);
+
+  /** @return the current configuration. */
+  SceneGraphConfig get_config() const;
+
+  //@}
+
 
   /** @name       Port management
    Access to SceneGraph's input/output ports. This topic includes
@@ -1110,6 +1125,11 @@ class SceneGraph final : public systems::LeafSystem<T> {
   const GeometryState<T>& geometry_state(
       const systems::Context<T>& context) const;
 
+  // Extracts a reference to the underlying scene graph configuration from the
+  // given context.
+  const SceneGraphConfig& scene_graph_config(
+      const systems::Context<T>& context) const;
+
   // A struct that stores the port indices for a given source.
   // TODO(SeanCurtis-TRI): Consider making these TypeSafeIndex values.
   struct SourcePorts {
@@ -1124,19 +1144,20 @@ class SceneGraph final : public systems::LeafSystem<T> {
   // The index of the output port with the QueryObject abstract value.
   int query_port_index_{-1};
 
-  // SceneGraph owns its configured model; it gets copied into the context when
-  // the context is set to its "default" state. We use unique_ptr in support of
-  // forward-declaring GeometryState<T> to reduce our #include footprint, but
-  // initialize a model_ reference to always point to the owned_model_, as a
-  // convenient shortcut in the code to treat it as if it were a direct member.
-  std::unique_ptr<GeometryState<T>> owned_model_;
-  GeometryState<T>& model_;
+  // Encapsulate some model detail to help enforce internal invariants.
+  class Hub;
+  std::unique_ptr<Hub> owned_hub_;
+  class Hub& hub_;
 
   SceneGraphInspector<T> model_inspector_;
 
-  // The geometry state is stored in the Context either as a Parameter with this
+  // The geometry state is stored in the Context as a Parameter with this
   // index.
   int geometry_state_index_{-1};
+
+  // The scene graph configuration from the time the context was created is
+  // stored in the Context as a Parameter with this index.
+  int scene_graph_config_index_{-1};
 
   // The cache indices for the pose and configuration update cache entries.
   systems::CacheIndex pose_update_index_{};
