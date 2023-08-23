@@ -149,7 +149,7 @@ class DummyVolumeSet : public ConvexSet {
   }
   std::pair<std::unique_ptr<Shape>, math::RigidTransformd> DoToShapeWithPose()
       const override {
-    return {nullptr, {}};
+    return {nullptr, math::RigidTransformd()};
   }
 };
 
