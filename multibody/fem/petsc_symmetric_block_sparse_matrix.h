@@ -99,6 +99,11 @@ class PetscSymmetricBlockSparseMatrix {
   void AddToBlock(const VectorX<int>& block_indices,
                   const MatrixX<double>& block);
 
+  /* Operation equivalent to
+    A.block(ib * b, jb * b, b, b) = block;
+  */
+  void AddToBlock(int ib, int jb, const MatrixX<double>& block);
+
   /* Solves for A*x = b using the given type of solver, where A is this matrix.
    @warn The compatibility of the solver and preconditioner type with the
    problem at hand is not checked. Callers need to be careful to choose the

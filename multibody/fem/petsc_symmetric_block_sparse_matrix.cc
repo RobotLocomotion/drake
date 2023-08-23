@@ -205,6 +205,15 @@ class PetscSymmetricBlockSparseMatrix::Impl {
                         block_indices.data(), block.data(), ADD_VALUES);
   }
 
+  void AddToBlock(int ib, int jb, const MatrixX<double>& block) {
+    /* Notice that `MatSetValuesBlocked()` takes row major data whereas
+     Eigen's default format (in `block.data()`) is column major, as in Fortran.
+     Therefore we must make a copy with the proper row major order. */
+    const MatrixX<double> row_major = block.transpose();
+    MatSetValuesBlocked(owned_matrix_, 1, &ib, 1, &jb, row_major.data(),
+                        ADD_VALUES);
+  }
+
   /* Makes a dense matrix representation of this block-sparse matrix. This
    operation is expensive and is usually only used for debugging purpose. */
   MatrixX<double> MakeDenseMatrix() const {
@@ -370,6 +379,11 @@ PetscSymmetricBlockSparseMatrix::Clone() const {
 void PetscSymmetricBlockSparseMatrix::AddToBlock(
     const VectorX<int>& block_indices, const MatrixX<double>& block) {
   pimpl_->AddToBlock(block_indices, block);
+}
+
+void PetscSymmetricBlockSparseMatrix::AddToBlock(int ib, int jb,
+                                                 const MatrixX<double>& block) {
+  pimpl_->AddToBlock(ib, jb, block);
 }
 
 PetscSolverStatus PetscSymmetricBlockSparseMatrix::Solve(
