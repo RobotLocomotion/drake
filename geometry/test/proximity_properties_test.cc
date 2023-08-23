@@ -1,5 +1,7 @@
 #include "drake/geometry/proximity_properties.h"
 
+#include <sstream>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/expect_throws_message.h"
@@ -170,6 +172,25 @@ GTEST_TEST(ProximityPropertiesTest, AddHalfSpaceSoftProperties) {
                                  AddCompliantHydroelasticPropertiesForHalfSpace(
                                      1., modulus, p);
                                });
+}
+
+GTEST_TEST(ProximityPropertiesTest, HydroelasticTypeTest) {
+  std::vector<std::pair<const char*, HydroelasticType>> known_values{
+      std::pair("undefined", HydroelasticType::kUndefined),
+      std::pair("rigid", HydroelasticType::kRigid),
+      std::pair("compliant", HydroelasticType::kSoft),
+  };
+
+  for (const auto& [name, value] : known_values) {
+    EXPECT_EQ(internal::GetHydroelasticTypeFromString(name), value);
+    EXPECT_EQ(internal::GetStringFromHydroelasticType(value), name);
+    std::stringstream ss;
+    ss << value;
+    EXPECT_EQ(ss.str(), name);
+  }
+
+  DRAKE_EXPECT_THROWS_MESSAGE(internal::GetHydroelasticTypeFromString("foobar"),
+                              ".*Unknown.*foobar.*");
 }
 
 }  // namespace
