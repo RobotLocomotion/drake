@@ -27,6 +27,7 @@ namespace {
 using Eigen::Vector2d;
 using Eigen::Vector3d;
 using geometry::SceneGraph;
+using geometry::SceneGraphConfig;
 using geometry::Sphere;
 using math::RigidTransformd;
 using math::RollPitchYawd;
@@ -60,6 +61,7 @@ DEFINE_double(penetration_allowance, 1.0e-2,
               "See MultibodyPlant::set_penetration_allowance().");
 DEFINE_double(v_stiction_tolerance, 1.0e-2,
               "The maximum slipping speed allowed during stiction. [m/s].");
+DEFINE_bool(hydroelasticate, false, "Enable hydroelastication. See [doc TBD].");
 
 // Pads parameters
 DEFINE_int32(ring_samples, 8,
@@ -164,8 +166,10 @@ int do_main() {
   MultibodyPlantConfig plant_config;
   plant_config.time_step = FLAGS_mbp_discrete_update_period;
   plant_config.discrete_contact_solver = FLAGS_discrete_solver;
+  SceneGraphConfig scene_graph_config;
+  scene_graph_config.hydroelastication.enabled = FLAGS_hydroelasticate;
   auto [plant, scene_graph] =
-      multibody::AddMultibodyPlant(plant_config, &builder);
+      multibody::AddMultibodyPlant(plant_config, scene_graph_config, &builder);
 
   Parser parser(&plant);
   parser.AddModelsFromUrl(

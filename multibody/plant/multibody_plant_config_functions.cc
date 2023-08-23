@@ -5,6 +5,7 @@
 #include <utility>
 
 #include "drake/common/drake_assert.h"
+#include "drake/geometry/scene_graph_config_functions.h"
 
 namespace drake {
 namespace multibody {
@@ -15,6 +16,17 @@ AddResult AddMultibodyPlant(const MultibodyPlantConfig& config,
                             systems::DiagramBuilder<double>* builder) {
   AddResult result = AddMultibodyPlantSceneGraph(builder, config.time_step);
   ApplyMultibodyPlantConfig(config, &result.plant);
+  return result;
+}
+
+AddMultibodyPlantSceneGraphResult<double> AddMultibodyPlant(
+    const MultibodyPlantConfig& plant_config,
+    const geometry::SceneGraphConfig& scene_graph_config,
+    systems::DiagramBuilder<double>* builder) {
+  AddResult result =
+      AddMultibodyPlantSceneGraph(builder, plant_config.time_step);
+  ApplyMultibodyPlantConfig(plant_config, &result.plant);
+  geometry::ApplySceneGraphConfig(scene_graph_config, &result.scene_graph);
   return result;
 }
 
