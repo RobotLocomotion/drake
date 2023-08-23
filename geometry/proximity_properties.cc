@@ -1,5 +1,8 @@
 #include "drake/geometry/proximity_properties.h"
 
+#include <array>
+#include <string>
+
 namespace drake {
 namespace geometry {
 namespace internal {
@@ -16,20 +19,63 @@ const char* const kRezHint = "resolution_hint";
 const char* const kComplianceType = "compliance_type";
 const char* const kSlabThickness = "slab_thickness";
 
-std::ostream& operator<<(std::ostream& out, const HydroelasticType& type) {
-  switch (type) {
+namespace {
+
+// Use a switch() statement here, to ensure the compiler sends us a reminder
+// when somebody adds a new value to the enum. New values must be listed here
+// as well as in the list of kHydroelasticTypes below.
+constexpr const char* EnumToChars(HydroelasticType enum_value) {
+  switch (enum_value) {
     case HydroelasticType::kUndefined:
-      out << "undefined";
-      break;
+      return "undefined";
     case HydroelasticType::kRigid:
-      out << "rigid";
-      break;
-    case HydroelasticType::kSoft:
-      out << "soft";
-      break;
-    default:
-      DRAKE_UNREACHABLE();
+      return "rigid";
+    case HydroelasticType::kCompliant:
+      return "compliant";
   }
+  DRAKE_UNREACHABLE();
+}
+
+template <typename Enum>
+struct NamedEnum {
+  // An implicit conversion here enables the convenient initializer_list syntax
+  // that's used below, so we'll say NOLINTNEXTLINE(runtime/explicit).
+  constexpr NamedEnum(Enum value_in)
+      : value(value_in), name(EnumToChars(value_in)) {}
+  const Enum value;
+  const char* const name;
+};
+
+constexpr std::array<NamedEnum<HydroelasticType>, 3> kHydroelasticTypes{{
+    {HydroelasticType::kUndefined},
+    {HydroelasticType::kRigid},
+    {HydroelasticType::kCompliant},
+}};
+
+}  // namespace
+
+HydroelasticType GetHydroelasticTypeFromString(
+    std::string_view hydroelastic_type) {
+  for (const auto& [value, name] : kHydroelasticTypes) {
+    if (name == hydroelastic_type) {
+      return value;
+    }
+  }
+  throw std::logic_error(
+      fmt::format("Unknown hydroelastic_type: '{}'", hydroelastic_type));
+}
+
+std::string GetStringFromHydroelasticType(HydroelasticType hydroelastic_type) {
+  for (const auto& [value, name] : kHydroelasticTypes) {
+    if (value == hydroelastic_type) {
+      return name;
+    }
+  }
+  DRAKE_UNREACHABLE();
+}
+
+std::ostream& operator<<(std::ostream& out, const HydroelasticType& type) {
+  out << EnumToChars(type);
   return out;
 }
 
@@ -101,7 +147,7 @@ void AddCompliantHydroelasticProperties(double hydroelastic_modulus,
   properties->AddProperty(internal::kHydroGroup, internal::kElastic,
                           hydroelastic_modulus);
   properties->AddProperty(internal::kHydroGroup, internal::kComplianceType,
-                          internal::HydroelasticType::kSoft);
+                          internal::HydroelasticType::kCompliant);
 }
 }  // namespace
 
