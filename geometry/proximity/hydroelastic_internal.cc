@@ -423,7 +423,6 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
   return SoftGeometry(SoftMesh(std::move(mesh), std::move(pressure)));
 }
 
-
 }  // namespace hydroelastic
 }  // namespace internal
 }  // namespace geometry

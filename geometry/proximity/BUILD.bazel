@@ -819,7 +819,9 @@ drake_cc_library(
     ],
     deps = [
         "@fmt",
-        "@vtk//:vtkIOGeometry",
+        "@vtk//:vtkCommonCore",
+        "@vtk//:vtkCommonDataModel",
+        "@vtk//:vtkIOLegacy",
     ],
 )
 
@@ -1419,4 +1421,4 @@ drake_cc_googletest(
     ],
 )
 
-add_lint_tests(enable_clang_format_lint = False)
+add_lint_tests()

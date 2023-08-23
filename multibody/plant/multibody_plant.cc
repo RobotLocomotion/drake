@@ -1990,7 +1990,7 @@ void MultibodyPlant<T>::CalcHydroelasticContactForces(
     const ProximityProperties* propM =
         inspector.GetProximityProperties(geometryM_id);
     const ProximityProperties* propN =
-        inspector.GetProximityProperties(geometryM_id);
+        inspector.GetProximityProperties(geometryN_id);
     DRAKE_DEMAND(propM != nullptr);
     DRAKE_DEMAND(propN != nullptr);
     DRAKE_THROW_UNLESS(propM->HasProperty(geometry::internal::kMaterialGroup,

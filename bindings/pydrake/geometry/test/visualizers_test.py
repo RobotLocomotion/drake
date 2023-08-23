@@ -170,6 +170,9 @@ class TestGeometryVisualizers(unittest.TestCase):
         meshcat.Set2dRenderMode(
             X_WC=RigidTransform(), xmin=-1, xmax=1, ymin=-1, ymax=1)
         meshcat.ResetRenderMode()
+        meshcat.SetCameraTarget(target_in_world=[1, 2, 3])
+        meshcat.SetCameraPose(camera_in_world=[3, 4, 5],
+                              target_in_world=[1, 1, 1])
         meshcat.AddButton(name="button", keycode="KeyB")
         self.assertEqual(meshcat.GetButtonClicks(name="button"), 0)
         meshcat.DeleteButton(name="button")

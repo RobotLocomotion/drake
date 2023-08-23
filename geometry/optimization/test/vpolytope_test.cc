@@ -465,6 +465,104 @@ GTEST_TEST(VPolytopeTest, FromUnboundedHPolytopeTest) {
   DRAKE_EXPECT_THROWS_MESSAGE(VPolytope{H}, ".*hpoly.IsBounded().*");
 }
 
+GTEST_TEST(VPolytopeTest, ConstructorFromHPolyhedronQHullProblems) {
+  // Test cases of HPolyhedra that QHull cannot handle on its own.
+  // Code logic in the constructor should handle these cases without any
+  // QHull errors.
+
+  // Empty case.
+  Eigen::Matrix<double, 2, 1> A0;
+  // clang-format off
+  A0 << 1,   // x  <= 0
+        -1;  // -x <= -1 (equivalently, x >= 1)
+  // clang-format on
+  Eigen::VectorXd b0 = Eigen::VectorXd::Zero(2);
+  b0[1] = -1;
+  HPolyhedron hpoly0(A0, b0);
+  EXPECT_TRUE(hpoly0.IsEmpty());
+  EXPECT_NO_THROW(VPolytope{hpoly0});
+  const VPolytope vpoly0(hpoly0);
+  EXPECT_TRUE(vpoly0.IsEmpty());
+
+  // Zero-dimensional case (singleton point).
+  Eigen::Matrix<double, 6, 3> A1;
+  // clang-format off
+  A1 << 1,  0,  0,  // x  <= 0
+        -1, 0,  0,  // -x <= 0 (equivalently, x >= 0)
+        0,  1,  0,  // y  <= 0
+        0, -1,  0,  // -y <= 0 (equivalently, y >= 0)
+        0,  0,  1,  // z  <= 0
+        0,  0, -1;  // -z <= 0 (equivalently, z >= 0)
+  // clang-format on
+  Eigen::VectorXd b1 = Eigen::VectorXd::Zero(6);
+  HPolyhedron hpoly1(A1, b1);
+  EXPECT_NO_THROW(VPolytope{hpoly1});
+  const VPolytope vpoly1(hpoly1);
+  EXPECT_TRUE(vpoly1.PointInSet(Eigen::Vector3d(0, 0, 0)));
+  EXPECT_FALSE(vpoly1.PointInSet(Eigen::Vector3d(1, 0, 0)));
+  EXPECT_FALSE(vpoly1.PointInSet(Eigen::Vector3d(-1, 0, 0)));
+  EXPECT_FALSE(vpoly1.PointInSet(Eigen::Vector3d(0, 1, 0)));
+  EXPECT_FALSE(vpoly1.PointInSet(Eigen::Vector3d(0, -1, 0)));
+  EXPECT_FALSE(vpoly1.PointInSet(Eigen::Vector3d(0, 0, 1)));
+  EXPECT_FALSE(vpoly1.PointInSet(Eigen::Vector3d(0, 0, -1)));
+
+  // Due to poor numerics, a surprisingly loose tolerance is needed for
+  // PointInSet queries with VPolytope. This bug is tracked in Github issue
+  // #17197.
+  const double vpolyTol = 1e-8;
+
+  // One-dimensional case (line segment).
+  Eigen::Matrix<double, 6, 3> A2;
+  // clang-format off
+  A2 << 1,  0,  0,  // x  <= 1
+        -1, 0,  0,  // -x <= 0 (equivalently, x >= 0)
+        0,  1,  0,  // y  <= 0
+        0, -1,  0,  // -y <= 0 (equivalently, y >= 0)
+        0,  0,  1,  // z  <= 0
+        0,  0, -1;  // -z <= 0 (equivalently, z >= 0)
+  // clang-format on
+  Eigen::VectorXd b2 = Eigen::VectorXd::Zero(6);
+  b2[0] = 1;
+  HPolyhedron hpoly2(A2, b2);
+  EXPECT_NO_THROW(VPolytope{hpoly2});
+  const VPolytope vpoly2(hpoly2);
+  EXPECT_TRUE(vpoly2.PointInSet(Eigen::Vector3d(0, 0, 0), vpolyTol));
+  EXPECT_TRUE(vpoly2.PointInSet(Eigen::Vector3d(1, 0, 0), vpolyTol));
+  EXPECT_FALSE(vpoly2.PointInSet(Eigen::Vector3d(2, 0, 0), vpolyTol));
+  EXPECT_FALSE(vpoly2.PointInSet(Eigen::Vector3d(-1, 0, 0), vpolyTol));
+  EXPECT_FALSE(vpoly2.PointInSet(Eigen::Vector3d(0, 1, 0), vpolyTol));
+  EXPECT_FALSE(vpoly2.PointInSet(Eigen::Vector3d(0, -1, 0), vpolyTol));
+  EXPECT_FALSE(vpoly2.PointInSet(Eigen::Vector3d(0, 0, 1), vpolyTol));
+  EXPECT_FALSE(vpoly2.PointInSet(Eigen::Vector3d(0, 0, -1), vpolyTol));
+
+  // Two-dimensional case (square).
+  Eigen::Matrix<double, 6, 3> A3;
+  // clang-format off
+  A3 << 1,  0,  0,  // x  <= 0
+        -1, 0,  0,  // -x <= 0 (equivalently, x >= 0)
+        0,  1,  0,  // y  <= 1
+        0, -1,  0,  // -y <= 0 (equivalently, y >= 0)
+        0,  0,  1,  // z  <= 1
+        0,  0, -1;  // -z <= 0 (equivalently, z >= 0)
+  // clang-format on
+  Eigen::VectorXd b3 = Eigen::VectorXd::Zero(6);
+  b3[2] = 1;
+  b3[4] = 1;
+  HPolyhedron hpoly3(A3, b3);
+  EXPECT_NO_THROW(VPolytope{hpoly3});
+  const VPolytope vpoly3(hpoly3);
+  EXPECT_TRUE(vpoly3.PointInSet(Eigen::Vector3d(0, 0, 0), vpolyTol));
+  EXPECT_TRUE(vpoly3.PointInSet(Eigen::Vector3d(0, 1, 0), vpolyTol));
+  EXPECT_TRUE(vpoly3.PointInSet(Eigen::Vector3d(0, 0, 1), vpolyTol));
+  EXPECT_TRUE(vpoly3.PointInSet(Eigen::Vector3d(0, 1, 1), vpolyTol));
+  EXPECT_FALSE(vpoly3.PointInSet(Eigen::Vector3d(1, 0, 0), vpolyTol));
+  EXPECT_FALSE(vpoly3.PointInSet(Eigen::Vector3d(-1, 0, 0), vpolyTol));
+  EXPECT_FALSE(vpoly3.PointInSet(Eigen::Vector3d(0, -1, 0), vpolyTol));
+  EXPECT_FALSE(vpoly3.PointInSet(Eigen::Vector3d(0, 2, 0), vpolyTol));
+  EXPECT_FALSE(vpoly3.PointInSet(Eigen::Vector3d(0, 0, -1), vpolyTol));
+  EXPECT_FALSE(vpoly3.PointInSet(Eigen::Vector3d(0, 0, 2), vpolyTol));
+}
+
 GTEST_TEST(VPolytopeTest, CloneTest) {
   VPolytope V = VPolytope::MakeBox(Vector3d{-3, -4, -5}, Vector3d{6, 7, 8});
   std::unique_ptr<ConvexSet> clone = V.Clone();

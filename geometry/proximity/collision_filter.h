@@ -203,8 +203,8 @@ class CollisionFilter {
   static void AddFiltersBetween(const GeometrySet& set_A,
                                 const GeometrySet& set_B,
                                 const ExtractIds& extract_ids,
-                                CollisionFilterScope scope,
-                                bool is_invariant, FilterState* state_out);
+                                CollisionFilterScope scope, bool is_invariant,
+                                FilterState* state_out);
 
   /* Declares pairs (`id_A`, `id_B`) `∀ id_A ∈ set_A*, id_B ∈ set_B*` to be
    unfiltered (if the filter isn't invariant) where `set_A*` and `set_B*` are

@@ -34,11 +34,13 @@ drake_pybind_library(
     cc_deps = [
         ":optimization_pybind",
         "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake:polynomial_types_pybind",
         "//bindings/pydrake/common:default_scalars_pybind",
         "//bindings/pydrake/common:deprecation_pybind",
         "//bindings/pydrake/common:identifier_pybind",
         "//bindings/pydrake/common:monostate_pybind",
         "//bindings/pydrake/common:serialize_pybind",
+        "//bindings/pydrake/common:sorted_pair_pybind",
         "//bindings/pydrake/common:type_pack",
         "//bindings/pydrake/common:type_safe_index_pybind",
         "//bindings/pydrake/common:value_pybind",

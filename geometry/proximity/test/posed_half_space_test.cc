@@ -27,8 +27,7 @@ GTEST_TEST(PosedHalfSpaceTest, Construction) {
   const Vector3d p_FP{2.5, -1.25, 0.25};
 
   EXPECT_NO_THROW(PosedHalfSpace<double>(nhat_F, p_FP));
-  EXPECT_THROW(PosedHalfSpace<double>(5e-11 * nhat_F, p_FP),
-               std::exception);
+  EXPECT_THROW(PosedHalfSpace<double>(5e-11 * nhat_F, p_FP), std::exception);
 
   // Case: Declaring the vector already normalized.
   if (kDrakeAssertIsArmed) {

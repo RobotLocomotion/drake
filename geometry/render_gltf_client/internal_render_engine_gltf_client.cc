@@ -9,10 +9,11 @@
 #include <string_view>
 #include <utility>
 
-#include <vtkCamera.h>
-#include <vtkGLTFExporter.h>
-#include <vtkMatrix4x4.h>
-#include <vtkVersionMacros.h>
+// To ease build system upkeep, we annotate VTK includes with their deps.
+#include <vtkCamera.h>         // vtkRenderingCore
+#include <vtkGLTFExporter.h>   // vtkIOExport
+#include <vtkMatrix4x4.h>      // vtkCommonMath
+#include <vtkVersionMacros.h>  // vtkCommonCore
 
 #include "drake/common/never_destroyed.h"
 #include "drake/common/ssize.h"

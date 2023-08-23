@@ -984,7 +984,9 @@ TEST_F(DiagramTest, GetSubsystemByName) {
   EXPECT_FALSE(diagram_->HasSubsystemNamed("not_a_subsystem"));
   DRAKE_EXPECT_THROWS_MESSAGE(
       diagram_->GetSubsystemByName("not_a_subsystem"),
-      "System .* does not have a subsystem named not_a_subsystem");
+      "System .* does not have a subsystem named not_a_subsystem. The existing "
+      "subsystems are named \\{adder0, adder1, adder2, stateless, integrator0, "
+      "integrator1, sink, kitchen_sink\\}.");
 }
 
 TEST_F(DiagramTest, GetDowncastSubsystemByName) {
@@ -998,7 +1000,9 @@ TEST_F(DiagramTest, GetDowncastSubsystemByName) {
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       diagram_->GetDowncastSubsystemByName<StatelessSystem>("not_a_subsystem"),
-      "System .* does not have a subsystem named not_a_subsystem");
+      "System .* does not have a subsystem named not_a_subsystem. The existing "
+      "subsystems are named \\{adder0, adder1, adder2, stateless, integrator0, "
+      "integrator1, sink, kitchen_sink\\}.");
 
   // Now downcast a non-templatized system (invokes a different overload).
   // This will only compile if the subsystem's scalar type matches the

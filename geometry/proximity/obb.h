@@ -16,7 +16,8 @@ namespace geometry {
 namespace internal {
 
 // Forward declarations.
-template <typename> class ObbMaker;
+template <typename>
+class ObbMaker;
 class Aabb;
 
 /* Oriented bounding box used in Bvh. The box is defined in a canonical
@@ -161,7 +162,8 @@ class Obb {
 };
 
 // Forward declaration, so we can grant friend access to the tester.
-template <typename MeshType> class ObbMakerTester;
+template <typename MeshType>
+class ObbMakerTester;
 
 /* %ObbMaker performs an algorithm to create an oriented bounding box that
  fits a specified set of vertices in a mesh.

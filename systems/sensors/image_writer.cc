@@ -9,11 +9,13 @@
 #include <vector>
 
 #include <fmt/format.h>
-#include <vtkImageData.h>
-#include <vtkNew.h>
-#include <vtkPNGWriter.h>
-#include <vtkSmartPointer.h>
-#include <vtkTIFFWriter.h>
+
+// To ease build system upkeep, we annotate VTK includes with their deps.
+#include <vtkImageData.h>     // vtkCommonDataModel
+#include <vtkNew.h>           // vtkCommonCore
+#include <vtkPNGWriter.h>     // vtkIOImage
+#include <vtkSmartPointer.h>  // vtkCommonCore
+#include <vtkTIFFWriter.h>    // vtkIOImage
 
 namespace drake {
 namespace systems {
@@ -216,8 +218,11 @@ const InputPort<double>& ImageWriter::DeclareImageInputPort(
           std::move(port_name), std::move(file_name_format), publish_period,
           start_time);
     }
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     case PixelType::kExpr:
       break;
+#pragma GCC diagnostic pop
   }
   throw std::logic_error(fmt::format(
       "ImageWriter::DeclareImageInputPort does not support pixel_type={}",

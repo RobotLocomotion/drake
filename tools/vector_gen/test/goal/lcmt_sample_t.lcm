@@ -8,7 +8,7 @@ struct lcmt_sample_t {
   int64_t timestamp;
 
   double x;  // Some coordinate
-  double two_word;  // A very long documentation string that will certainly flow across multiple lines of C++
+  double two_word;  // A very long documentation string that exceeds the typical C++ line length of 80 characters
   double absone;  // A signed, normalized value
   double unset;  // A value that is unset by default
 }

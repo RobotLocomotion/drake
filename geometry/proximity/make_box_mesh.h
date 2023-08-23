@@ -222,7 +222,6 @@ TriangleSurfaceMesh<T> MakeBoxSurfaceMesh(const Box& box,
       MakeBoxVolumeMesh<T>(box, resolution_hint));
 }
 
-
 /* The functions below are only support functions for the main API above. They
  are introduced here so that they can be put under test but shouldn't be
  otherwise considered as a viable public API. */

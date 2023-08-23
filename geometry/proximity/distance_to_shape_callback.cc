@@ -175,8 +175,7 @@ void ComputeNarrowPhaseDistance(const fcl::CollisionObjectd& a,
       break;
     }
     case fcl::GEOM_CAPSULE: {
-      const auto& capsule_O =
-          *static_cast<const fcl::Capsuled*>(o_geometry);
+      const auto& capsule_O = *static_cast<const fcl::Capsuled*>(o_geometry);
       distance_pair(sphere_S, capsule_O);
       break;
     }
@@ -288,10 +287,8 @@ bool Callback(fcl::CollisionObjectd* object_A_ptr,
   return false;
 }
 
-DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((
-    &ComputeNarrowPhaseDistance<T>,
-    &Callback<T>
-))
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    (&ComputeNarrowPhaseDistance<T>, &Callback<T>))
 
 }  // namespace shape_distance
 }  // namespace internal
