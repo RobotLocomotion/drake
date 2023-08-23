@@ -5,10 +5,6 @@
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 
-// @file Test special cases when two shapes touch each other for
-// ComputeNarrowPhaseDistance() and CalcDistanceFallback() in
-// distance_to_shape_callback.
-
 namespace drake {
 namespace geometry {
 namespace internal {
@@ -20,6 +16,137 @@ using Eigen::Vector3d;
 using fcl::Boxd;
 using math::RigidTransformd;
 using math::RollPitchYawd;
+
+GTEST_TEST(PointInBox, FaceNormalIfStrictlyOnFace) {
+  // The box spans [-1,1]x[-2,2]x[-4,4].
+  const fcl::Boxd box_B(2, 4, 8);
+
+  // Test some representative cases but not all possible cases.
+  // This point is strictly on -X face of the box.
+  EXPECT_EQ(FaceNormalIfStrictlyOnFace(Vector3d(-1, 0.2, 0.3), box_B),
+            -Vector3d::UnitX());
+  // This point is strictly on +Y face of the box.
+  EXPECT_EQ(FaceNormalIfStrictlyOnFace(Vector3d(0.1, 2, -0.3), box_B),
+            Vector3d::UnitY());
+  // This point is strictly on +Z face of the box.
+  EXPECT_EQ(FaceNormalIfStrictlyOnFace(Vector3d(0.1, -0.2, 4), box_B),
+            Vector3d::UnitZ());
+  // This point is in the interior of the box.
+  EXPECT_TRUE(FaceNormalIfStrictlyOnFace(Vector3d(0.1, -0.2, 0.3), box_B)
+                  .array().isNaN().any());
+  // This point is outside the box.
+  EXPECT_TRUE(FaceNormalIfStrictlyOnFace(Vector3d(10, 10, 10), box_B)
+                  .array().isNaN().any());
+
+  // Test special cases for a point on an edge or a vertex of the box.
+  // This point is on an edge of the box.
+  EXPECT_TRUE(FaceNormalIfStrictlyOnFace(Vector3d(0.01, -2, 4), box_B)
+                  .array().isNaN().any());
+  // This point is at a vertex of the box.
+  EXPECT_TRUE(FaceNormalIfStrictlyOnFace(Vector3d(1, -2, 4), box_B)
+                  .array().isNaN().any());
+}
+
+GTEST_TEST(PointInBox, AxisIndexIfStrictlyOnEdge) {
+  // The box spans [-1,1]x[-2,2]x[-4,4].
+  const fcl::Boxd box_B(2, 4, 8);
+
+  // Test some representative cases but not all possible cases.
+  // This point is on an edge parallel to X-axis of the box.
+  EXPECT_EQ(AxisIndexIfStrictlyOnEdge(Vector3d(0.1, 2, -4), box_B), 0);
+  // This point is on an edge parallel to Y-axis of the box.
+  EXPECT_EQ(AxisIndexIfStrictlyOnEdge(Vector3d(-1, 0.1, 4), box_B), 1);
+  // This point is on an edge parallel to Z-axis of the box.
+  EXPECT_EQ(AxisIndexIfStrictlyOnEdge(Vector3d(1, -2, 0.1), box_B), 2);
+  // This point is in the interior of the box.
+  EXPECT_EQ(AxisIndexIfStrictlyOnEdge(Vector3d(0.1, -0.2, 0.3), box_B), -1);
+  // This point is outside the box.
+  EXPECT_EQ(AxisIndexIfStrictlyOnEdge(Vector3d(10, 10, 10), box_B), -1);
+
+  // Test a special case for a point at a vertex of the box.
+  EXPECT_EQ(AxisIndexIfStrictlyOnEdge(Vector3d(-1, -2, -4), box_B), -1);
+}
+
+GTEST_TEST(PointInBox, IsAtVertex) {
+  // The box spans [-1,1]x[-2,2]x[-4,4].
+  const fcl::Boxd box_B(2, 4, 8);
+
+  EXPECT_TRUE(IsAtVertex(Vector3d(1, 2, 4), box_B));
+  // The point is in the middle of an edge.
+  EXPECT_FALSE(IsAtVertex(Vector3d(0, 2, 4), box_B));
+  // The point is at the center of a face.
+  EXPECT_FALSE(IsAtVertex(Vector3d(0, 0, 4), box_B));
+  // The point is at the center of the box.
+  EXPECT_FALSE(IsAtVertex(Vector3d(0, 0, 0), box_B));
+  // The point is outside the box.
+  EXPECT_FALSE(IsAtVertex(Vector3d(10, 10, 10), box_B));
+}
+
+GTEST_TEST(BoxBox, ProjectedMinMax) {
+  // This box spans [-2,2]x[-3,3]x[-6,6]. Half the length of its diagonal
+  // is 7 because 2² + 3² + 6² = 4 + 9 + 36 = 49 = 7². We will use this fact
+  // in the test later.
+  const fcl::Boxd box_B(4, 6, 12);
+  // Use the unit vector along the diagonal of the box.
+  const Vector3d unit_vector_W = Vector3d(2, 3, 6).normalized();
+
+  // To simplify the test, first we fix box_B's frame to World frame.
+  {
+    const RigidTransformd X_WB = RigidTransformd::Identity();
+    double min_value, max_value;
+    std::tie(min_value, max_value) =
+        ProjectedMinMax(box_B, X_WB, unit_vector_W);
+    // The min_value and max_value corresponds to half the length of the
+    // diagonal of the box.
+    const double kEps = 1e-14;
+    EXPECT_NEAR(min_value, -7, kEps);
+    EXPECT_NEAR(max_value, 7, kEps);
+  }
+
+  // Now verify that the pose X_WB of the box can take effect.
+  {
+    const RigidTransformd X_WB(Vector3d(2, 3, 6));
+    double min_value, max_value;
+    std::tie(min_value, max_value) =
+        ProjectedMinMax(box_B, X_WB, unit_vector_W);
+    // The min_value and max_value are shifted by X_WB.
+    const double kEps = 1e-14;
+    EXPECT_NEAR(min_value, 0, kEps);
+    EXPECT_NEAR(max_value, 14, kEps);
+  }
+}
+
+//        Y
+//        ↑
+//        | +--------------+
+//        | |              |
+//     +----+              |
+//     | A  |      B       | ---→ X
+//     +----+              |
+//          |              |
+//          +--------------+
+//
+GTEST_TEST(BoxBox, MakeSeparatingVector) {
+  const RigidTransformd X_WA = RigidTransformd::Identity();
+  const fcl::Boxd box_A(1, 1, 1);
+  const RigidTransformd X_WB(Vector3d(2, 0, 0));
+  const fcl::Boxd box_B(3.0, 3.0, 3.0);
+
+  EXPECT_EQ(
+      MakeSeparatingVector(box_A, box_B, X_WA, X_WB, {Vector3d(0.1, 0, 0)}),
+      -Vector3d::UnitX());
+  EXPECT_EQ(
+      MakeSeparatingVector(box_B, box_A, X_WB, X_WA, {Vector3d(0.1, 0, 0)}),
+      Vector3d::UnitX());
+  EXPECT_TRUE(
+      MakeSeparatingVector(box_B, box_A, X_WB, X_WA, {Vector3d(0, 1, 1)})
+          .array().isNaN().any());
+  EXPECT_TRUE(
+      MakeSeparatingVector(box_B, box_A, X_WB, X_WA, {Vector3d::Zero()})
+          .array().isNaN().any());
+  EXPECT_TRUE(
+      MakeSeparatingVector(box_B, box_A, X_WB, X_WA, {}).array().isNaN().any());
+}
 
 // On a face.
 // On Box A, the witness point is at a vertex.

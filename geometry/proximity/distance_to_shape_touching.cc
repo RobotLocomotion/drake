@@ -78,6 +78,8 @@ bool IsAtVertex(const Vector3d& p_BQ, const fcl::Boxd& box_B) {
 std::pair<double, double> ProjectedMinMax(const fcl::Boxd& box_A,
                                           const RigidTransformd& X_WA,
                                           const Vector3d& unit_vector_W) {
+  const double kEps = 1e-14;
+  DRAKE_DEMAND(abs(unit_vector_W.norm() - 1) < kEps);
   const Vector3d half_size_A = box_A.side / 2.0;
   double min_value = std::numeric_limits<double>::infinity();
   double max_value = -std::numeric_limits<double>::infinity();
