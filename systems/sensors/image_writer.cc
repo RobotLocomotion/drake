@@ -12,14 +12,16 @@
 
 // To ease build system upkeep, we annotate VTK includes with their deps.
 #include <vtkImageData.h>     // vtkCommonDataModel
+#include <vtkImageWriter.h>   // vtkIOImage
 #include <vtkNew.h>           // vtkCommonCore
-#include <vtkPNGWriter.h>     // vtkIOImage
 #include <vtkSmartPointer.h>  // vtkCommonCore
-#include <vtkTIFFWriter.h>    // vtkIOImage
+
+#include "drake/systems/sensors/vtk_image_reader_writer.h"
 
 namespace drake {
 namespace systems {
 namespace sensors {
+namespace {
 
 template <PixelType kPixelType>
 void SaveToFileHelper(const Image<kPixelType>& image,
@@ -37,19 +39,19 @@ void SaveToFileHelper(const Image<kPixelType>& image,
     case PixelType::kRgba8U:
     case PixelType::kGrey8U:
       vtk_image->AllocateScalars(VTK_UNSIGNED_CHAR, num_channels);
-      writer = vtkSmartPointer<vtkPNGWriter>::New();
+      writer = internal::MakeWriter(ImageFileFormat::kPng, file_path);
       break;
     case PixelType::kDepth16U:
       vtk_image->AllocateScalars(VTK_UNSIGNED_SHORT, num_channels);
-      writer = vtkSmartPointer<vtkPNGWriter>::New();
+      writer = internal::MakeWriter(ImageFileFormat::kPng, file_path);
       break;
     case PixelType::kDepth32F:
       vtk_image->AllocateScalars(VTK_FLOAT, num_channels);
-      writer = vtkSmartPointer<vtkTIFFWriter>::New();
+      writer = internal::MakeWriter(ImageFileFormat::kTiff, file_path);
       break;
     case PixelType::kLabel16I:
       vtk_image->AllocateScalars(VTK_UNSIGNED_SHORT, num_channels);
-      writer = vtkSmartPointer<vtkPNGWriter>::New();
+      writer = internal::MakeWriter(ImageFileFormat::kPng, file_path);
       break;
     default:
       throw std::logic_error(
@@ -71,10 +73,11 @@ void SaveToFileHelper(const Image<kPixelType>& image,
     }
   }
 
-  writer->SetFileName(file_path.c_str());
   writer->SetInputData(vtk_image.GetPointer());
   writer->Write();
 }
+
+}  // namespace
 
 void SaveToPng(const ImageRgba8U& image, const std::string& file_path) {
   SaveToFileHelper(image, file_path);
