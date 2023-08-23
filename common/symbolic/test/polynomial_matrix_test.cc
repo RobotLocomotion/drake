@@ -237,7 +237,7 @@ TEST_F(SymbolicPolynomialMatrixTest, PolynomialVariable) {
   // Checks Dynamic op Dynamic where op = {+, -, *, ·}.
   EXPECT_TRUE(CheckAddition(M_poly_dynamic_, M_variable_dynamic_));
   EXPECT_TRUE(CheckSubtraction(M_poly_dynamic_, M_variable_dynamic_));
-//  EXPECT_TRUE(CheckMultiplication(M_poly_dynamic_, M_variable_dynamic_));
+  EXPECT_TRUE(CheckMultiplication(M_poly_dynamic_, M_variable_dynamic_));
 //  EXPECT_TRUE(CheckDotProduct(v_poly_dynamic_, v_variable_dynamic_));
 
   // Checks Static op Dynamic where op = {+, -, *, ·}.
