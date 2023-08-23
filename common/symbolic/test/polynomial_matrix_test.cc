@@ -30,6 +30,12 @@ class SymbolicPolynomialMatrixTest : public ::testing::Test {
   MatrixX<double> M_double_dynamic_{2, 2};
   Eigen::Matrix<double, 2, 2> M_double_static_;
 
+  MatrixX<Expression> M_expression_dynamic_{2, 2};
+  Eigen::Matrix<Expression, 2, 2> M_expression_static_;
+
+  MatrixX<Variable> M_variable_dynamic_{2, 2};
+  Eigen::Matrix<Variable, 2, 2> M_variable_static_;
+
   VectorX<Polynomial> v_poly_dynamic_{2};
   Eigen::Matrix<Polynomial, 2, 1> v_poly_static_;
 
@@ -38,6 +44,12 @@ class SymbolicPolynomialMatrixTest : public ::testing::Test {
 
   VectorX<double> v_double_dynamic_{2};
   Eigen::Matrix<double, 2, 1> v_double_static_;
+
+  VectorX<Expression> v_expression_dynamic_{2};
+  Eigen::Vector<Expression, 2> v_expression_static_;
+
+  VectorX<Variable> v_variable_dynamic_{2};
+  Eigen::Vector<Variable, 2> v_variable_static_;
 
   void SetUp() override {
     // clang-format off
@@ -55,6 +67,16 @@ class SymbolicPolynomialMatrixTest : public ::testing::Test {
                           5.0, -9.0;  // [ 5.0  -9.0]
     M_double_static_ << -2.0,  4.0,   // [-2.0   4.0]
                          5.0, -9.0;   // [ 5.0  -9.0]
+
+    M_expression_dynamic_ << Expression{},    symbolic::cos(var_x_ + var_y_),        // [0        cos(x + y)]
+                             symbolic::sin(2 + var_x_ * var_y_), Expression{var_z_}; // [sin(2 + xy)   z    ]
+    M_expression_static_ << Expression{},    symbolic::cos(var_x_ + var_y_),         // [0        cos(x + y)]
+                            symbolic::sin(2 + var_x_ * var_y_), Expression{var_z_};  // [sin(2 + xy)   z    ]
+
+    M_variable_dynamic_ << var_x_, var_y_, // [x, y]
+                           var_z_, var_y_; // [z, y]
+    M_variable_static_ << var_x_, var_y_,  // [x, y]
+                          var_z_, var_y_;  // [z, y]
 
     v_poly_dynamic_ << (m_x_ + m_y_),             // [x+y    ]
                        (3 + m_x_ * m_y_ * m_z_);  // [3 + xyz]
@@ -78,10 +100,12 @@ class SymbolicPolynomialMatrixTest : public ::testing::Test {
 ::testing::AssertionResult CompareMatricesWithExpansion(
     const Eigen::Ref<const MatrixX<Expression>>& m1,
     const Eigen::Ref<const MatrixX<Expression>>& m2) {
-  const MatrixX<Expression> m1_expanded{
-      m1.unaryExpr([](const Expression& e) { return e.Expand(); })};
-  const MatrixX<Expression> m2_expanded{
-      m2.unaryExpr([](const Expression& e) { return e.Expand(); })};
+  const MatrixX<Expression> m1_expanded{m1.unaryExpr([](const Expression& e) {
+    return e.Expand();
+  })};
+  const MatrixX<Expression> m2_expanded{m2.unaryExpr([](const Expression& e) {
+    return e.Expand();
+  })};
   if (m1_expanded == m2_expanded) {
     return ::testing::AssertionSuccess() << fmt::format(
                "m1 and m2 are equal after expansion where m1 = \n{}\n"
@@ -206,6 +230,33 @@ TEST_F(SymbolicPolynomialMatrixTest, PolynomialDouble) {
   EXPECT_TRUE(CheckSubtraction(M_poly_static_, M_double_static_));
   EXPECT_TRUE(CheckMultiplication(M_poly_static_, M_double_static_));
   EXPECT_TRUE(CheckDotProduct(v_poly_static_, v_double_static_));
+}
+
+
+TEST_F(SymbolicPolynomialMatrixTest, PolynomialVariable) {
+  // Checks Dynamic op Dynamic where op = {+, -, *, ·}.
+  EXPECT_TRUE(CheckAddition(M_poly_dynamic_, M_variable_dynamic_));
+  EXPECT_TRUE(CheckSubtraction(M_poly_dynamic_, M_variable_dynamic_));
+//  EXPECT_TRUE(CheckMultiplication(M_poly_dynamic_, M_variable_dynamic_));
+//  EXPECT_TRUE(CheckDotProduct(v_poly_dynamic_, v_variable_dynamic_));
+
+  // Checks Static op Dynamic where op = {+, -, *, ·}.
+  EXPECT_TRUE(CheckAddition(M_poly_static_, M_variable_dynamic_));
+  EXPECT_TRUE(CheckSubtraction(M_poly_static_, M_variable_dynamic_));
+//  EXPECT_TRUE(CheckMultiplication(M_poly_static_, M_variable_dynamic_));
+//  EXPECT_TRUE(CheckDotProduct(v_poly_static_, v_variable_dynamic_));
+//
+//  // Checks Dynamic op Static where op = {+, -, *}.
+  EXPECT_TRUE(CheckAddition(M_poly_dynamic_, M_variable_static_));
+  EXPECT_TRUE(CheckSubtraction(M_poly_dynamic_, M_variable_static_));
+//  EXPECT_TRUE(CheckMultiplication(M_poly_dynamic_, M_variable_static_));
+//  EXPECT_TRUE(CheckDotProduct(v_poly_dynamic_, v_variable_static_));
+//
+//  // Checks Static op Static where op = {+, -, *, ·}.
+  EXPECT_TRUE(CheckAddition(M_poly_static_, M_variable_static_));
+  EXPECT_TRUE(CheckSubtraction(M_poly_static_, M_variable_static_));
+//  EXPECT_TRUE(CheckMultiplication(M_poly_static_, M_variable_static_));
+//  EXPECT_TRUE(CheckDotProduct(v_poly_static_, v_variable_static_));
 }
 
 TEST_F(SymbolicPolynomialMatrixTest, MonomialPolynomial) {

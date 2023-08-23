@@ -11,6 +11,8 @@ from pydrake.symbolic import (
     Expression,
     MakeMatrixContinuousVariable,
     Variable,
+    Polynomial,
+    Monomial
 )
 
 
@@ -19,11 +21,14 @@ def _matmul_dtype_pairs():
     that operate on a pair of matrix inputs. We'll test all pairs *except* we
     won't mix autodiff with symbolic.
     """
-    types = (float, AutoDiffXd, Variable, Expression)
+    types = (float, AutoDiffXd, Variable, Expression, Polynomial, Monomial)
     for T1, T2 in itertools.product(types, types):
         has_autodiff = any([T in (AutoDiffXd,) for T in (T1, T2)])
-        has_symbolic = any([T in (Variable, Expression) for T in (T1, T2)])
-        if has_autodiff and has_symbolic:
+        has_variable = any([T in (Variable,) for T in (T1, T2)])
+        has_expr = any([T in (Expression,) for T in (T1, T2)])
+        has_polynomial = any([T in (Polynomial, Monomial) for T in (T1, T2)])
+        has_symbolic = has_variable or has_expr or has_polynomial
+        if has_autodiff and has_symbolic or has_expr and has_polynomial:
             continue
         yield dict(T1=T1, T2=T2)
 

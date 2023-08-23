@@ -33,6 +33,8 @@ namespace drake {
 namespace pydrake {
 
 using symbolic::Expression;
+using symbolic::Monomial;
+using symbolic::Polynomial;
 using symbolic::Variable;
 
 namespace {
@@ -623,6 +625,12 @@ std::string_view GetDtypeName() {
   if constexpr (std::is_same_v<T, Expression>) {
     return "Expression";
   }
+  if constexpr (std::is_same_v<T, Polynomial>) {
+    return "Polynomial";
+  }
+  if constexpr (std::is_same_v<T, Monomial>) {
+    return "Monomial";
+  }
 }
 
 /* Binds a native C++ matmul(A, B) for wide variety of scalar types. This is
@@ -653,7 +661,14 @@ void DefineHeterogeneousMatmul(py::module m) {
           if constexpr (std::is_same_v<T3, AutoDiffXd>) {
             return A.template cast<AutoDiffXd>() *
                    B.template cast<AutoDiffXd>();
-          } else {
+          }
+//          else if constexpr (// Monomial op Monomial returns Polynomial in
+//                             // Eigen. See polynomial.h for explanation.
+//                             std::is_same_v<T3, Monomial>) {
+//            return A.template cast<Polynomial>() *
+//                   B.template cast<Polynomial>();
+//          }
+          else {
             return A * B;
           }
         },
@@ -670,6 +685,18 @@ void DefineHeterogeneousMatmul(py::module m) {
   bind.operator()<double, AutoDiffXd>();
   bind.operator()<AutoDiffXd, double>();
   bind.operator()<AutoDiffXd, AutoDiffXd>();
+
+  // Bind the Polynomial-related overloads.
+  bind.operator()<double, Polynomial>();
+  bind.operator()<Polynomial, double>();
+  bind.operator()<Monomial, Polynomial>();
+  bind.operator()<Polynomial, Monomial>();
+  bind.operator()<Polynomial, Polynomial>();
+  bind.operator()<Polynomial, Variable>();
+  bind.operator()<Variable, Variable>();
+
+  // TODO(Alexandre.Amice) Also do Monomial op,
+//  bind.operator()<Monomial, Monomial>();
 
   // Bind the Expression-related overloads.
   bind.operator()<double, Variable>();
