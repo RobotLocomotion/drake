@@ -82,4 +82,20 @@ drake_py_experiment_binary(
     googlebench_binary = ":render_benchmark",
 )
 
+drake_cc_googlebench_binary(
+    name = "hydroelasticate_benchmark",
+    srcs = ["hydroelasticate_benchmark.cc"],
+    add_test_rule = True,
+    deps = [
+        "//geometry:scene_graph",
+        "//tools/performance:gflags_main",
+        "@fmt",
+    ],
+)
+
+drake_py_experiment_binary(
+    name = "hydroelasticate_experiment",
+    googlebench_binary = ":hydroelasticate_benchmark",
+)
+
 add_lint_tests()
