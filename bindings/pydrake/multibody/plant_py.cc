@@ -1348,7 +1348,19 @@ void DoScalarDependentDefinitions(py::module m, T) {
             auto pair = AddMultibodyPlant(config, builder);
             return result_to_tuple(builder, pair);
           },
-          py::arg("config"), py::arg("builder"), doc.AddMultibodyPlant.doc);
+          py::arg("config"), py::arg("builder"),
+          doc.AddMultibodyPlant.doc_2args);
+      m.def(
+          "AddMultibodyPlant",
+          [result_to_tuple](const MultibodyPlantConfig& plant_config,
+              const geometry::SceneGraphConfig& scene_graph_config,
+              systems::DiagramBuilder<T>* builder) {
+            auto pair =
+                AddMultibodyPlant(plant_config, scene_graph_config, builder);
+            return result_to_tuple(builder, pair);
+          },
+          py::arg("plant_config"), py::arg("scene_graph_config"),
+          py::arg("builder"), doc.AddMultibodyPlant.doc_3args);
       m.def("ApplyMultibodyPlantConfig", &ApplyMultibodyPlantConfig,
           py::arg("config"), py::arg("plant"),
           doc.ApplyMultibodyPlantConfig.doc);
