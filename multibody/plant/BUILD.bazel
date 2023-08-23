@@ -428,6 +428,7 @@ drake_cc_library(
     deps = [
         ":multibody_plant_config",
         ":multibody_plant_core",
+        "//geometry:scene_graph_config_functions",
         "//systems/framework:diagram_builder",
     ],
 )
@@ -1127,6 +1128,7 @@ drake_cc_googletest(
     deps = [
         ":multibody_plant_config_functions",
         ":plant",
+        "//geometry:scene_graph_config_functions",
         "//systems/analysis:simulator",
     ],
 )
