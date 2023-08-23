@@ -78,8 +78,8 @@ class CartesianProduct final : public ConvexSet {
   set implementations. */
   using ConvexSet::PointInSet;
 
-  /** @throws  Not implemented if the exact volume for any of of the sets in the
-   * product is not supported. */
+  /** @throws  if `set.has_exact_volume() == false` for any of the sets in the
+   * product. */
   using ConvexSet::CalcVolume;
 
  private:

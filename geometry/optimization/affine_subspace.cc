@@ -204,14 +204,13 @@ AffineSubspace::DoToShapeWithPose() const {
 }
 
 double AffineSubspace::DoCalcVolume() const {
-  {
-    if (!basis_decomp_.has_value() ||
-        basis_decomp_.value().rank() < ambient_dimension()) {
-      return 0;
-    }
-    // return infinity if the affine subspace is unbounded.
-    return std::numeric_limits<double>::infinity();
+  if (ambient_dimension() == 0 || AffineDimension() < ambient_dimension()) {
+    // An AffineSubspace has zero volume if it is zero dimensional or has a
+    // lower affine dimension than its ambient space. Otherwise, it represents
+    // the whole ambient space, and has infinite volume."
+    return 0;
   }
+  return std::numeric_limits<double>::infinity();
 }
 
 Eigen::MatrixXd AffineSubspace::Project(

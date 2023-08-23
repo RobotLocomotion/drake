@@ -57,9 +57,6 @@ The geometry::optimization tools support:
 @ingroup geometry
 @ingroup solvers */
 
-// forward declarations
-class Hyperrectangle;
-
 /** Abstract base class for defining a convex set.
 @ingroup geometry_optimization */
 class ConvexSet : public ShapeReifier {
@@ -234,10 +231,6 @@ class ConvexSet : public ShapeReifier {
   // TODO(russt): Consider adding a set_solver() method here, which determines
   // the solver that any derived class uses if it solves an optimization.
 
-  /** Returns the minimum axis-aligned bounding box of the convex set, for sets
-  with finite volume. (std::nullopt otherwise). */
-  std::optional<Hyperrectangle> MaybeCalcAxisAlignedBoundingBox() const;
-
   /** Computes the exact volume for the convex set.
   @note Not every convex set can report an exact volume. In that case, use
   CalcVolumeViaSampling() instead.
@@ -251,21 +244,20 @@ class ConvexSet : public ShapeReifier {
   implemented. See, e.g.,
   https://proceedings.mlr.press/v151/chevallier22a/chevallier22a.pdf
   @param generator a random number generator.
-  @param rel_accuracy the relative accuracy of the volume estimate in the sense
-  that the estimated volume is likely to be within the interval defined by
-  (1±2*rel_accuracy)*true_volume with probability 0.95 according to the Law of
-  Large Numbers.
+  @param desired_rel_accuracy the desired relative accuracy of the volume
+  estimate in the sense that the estimated volume is likely to be within the
+  interval defined by (1±2*desired_rel_accuracy)*true_volume with probability of
+  *at least* 0.95 according to the Law of Large Numbers.
   https://people.math.umass.edu/~lr7q/ps_files/teaching/math456/Chapter6.pdf
   The computation will terminate when the relative error is less than
   rel_accuracy or when the maximum number of samples is reached.
-  @param min_num_samples the minimum number of samples to use.
   @param max_num_samples the maximum number of samples to use.
   @pre `min_num_samples` <= `max_num_samples`.`
-  @return the estimated volume of the set. */
-  double CalcVolumeViaSampling(RandomGenerator* generator,
-                               const double rel_accuracy = 1e-2,
-                               const size_t min_num_samples = 100,
-                               const size_t max_num_samples = 1e4) const;
+  @return a pair the estimated volume of the set and an upper bound for the
+  relative accuracy */
+  std::pair<double, double> CalcVolumeViaSampling(
+      RandomGenerator* generator, const double desired_rel_accuracy = 1e-2,
+      const size_t max_num_samples = 1e4) const;
 
   /** Returns true if the exact volume can be computed for this convex set. */
   bool has_exact_volume() const { return has_exact_volume_; }
@@ -365,8 +357,8 @@ class ConvexSet : public ShapeReifier {
   virtual std::pair<std::unique_ptr<Shape>, math::RigidTransformd>
   DoToShapeWithPose() const = 0;
 
-  /** Interface implementation for DoCalcVolume(). This will *only* be called if
-  has_exact_volume() returns true; */
+  /** Non-virtual interface implementation for CalcVolume(). This will *only* be
+  called if has_exact_volume() returns true; */
   virtual double DoCalcVolume() const;
 
   /** Instances of subclasses such as CartesianProduct and MinkowskiSum can

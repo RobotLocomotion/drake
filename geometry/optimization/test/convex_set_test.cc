@@ -5,6 +5,7 @@
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/limit_malloc.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
+#include "drake/geometry/optimization/hyperellipsoid.h"
 #include "drake/geometry/optimization/hyperrectangle.h"
 #include "drake/geometry/optimization/point.h"
 
@@ -198,47 +199,8 @@ GTEST_TEST(ConvexSetTest, CalcVolume) {
   EXPECT_GT(HasImplSet(true).CalcVolume(), 0);
 }
 
-// Tests the computation of the minimal axis-aligned bounding box of a
-// polyhedron.
-GTEST_TEST(ConvexSetTest, AxisAlignedBoundingBox) {
-  // Case: Unbounded.
-  {
-    Matrix<double, 4, 2> A;
-    Matrix<double, 4, 1> b;
-    // clang-format off
-    A <<  1,  1,  // x + y ≤ 1
-         -1,  0,  // x ≥ -2
-         -1, -1;  // x+y ≥ -1
-    b << 1, 2, 1;
-    // clang-format on
-    HPolyhedron H(A, b);
-    EXPECT_FALSE(H.MaybeCalcAxisAlignedBoundingBox().has_value());
-  }
-
-  // Case: Bounded parallelogram.
-  {
-    Matrix<double, 4, 2> A;
-    Matrix<double, 4, 1> b;
-    // clang-format off
-    A <<  1,  0,  // x ≤ 1
-          1,  1,  // x + y ≤ 1
-         -1,  0,  // x ≥ -2
-         -1, -1;  // x+y ≥ -1
-    b << 1, 1, 2, 1;
-    // clang-format on
-    HPolyhedron H(A, b);
-    std::optional<Hyperrectangle> aabb_opt =
-        H.MaybeCalcAxisAlignedBoundingBox();
-    EXPECT_TRUE(aabb_opt.has_value());
-    const auto& aabb = aabb_opt.value();
-    EXPECT_NEAR(aabb.lb()(0), -2, 1e-6);
-    EXPECT_NEAR(aabb.ub()(0), 1, 1e-6);
-    EXPECT_NEAR(aabb.lb()(1), -2, 1e-6);
-    EXPECT_NEAR(aabb.ub()(1), 3, 1e-6);
-  }
-}
-
-GTEST_TEST(ConvexSetTest, CalcVolumeViaSampling) {
+// We can compute the volume of a HPolyhedron via sampling.
+GTEST_TEST(ConvexSetTest, HPolyheronCalcVolumeViaSampling) {
   Matrix<double, 4, 2> A;
   Matrix<double, 4, 1> b;
   // clang-format off
@@ -252,9 +214,31 @@ GTEST_TEST(ConvexSetTest, CalcVolumeViaSampling) {
 
   // Compute the estimated volume of the polytope.
   RandomGenerator generator(1234);
-  const auto estimated_volume = H.CalcVolumeViaSampling(&generator, 1e-2);
+  const double desired_rel_accuracy = 1e-2;
+  const auto [estimated_volume, rel_accuracy] =
+      H.CalcVolumeViaSampling(&generator, desired_rel_accuracy);
+  EXPECT_LE(rel_accuracy, desired_rel_accuracy);
   // H is a simple parallelogram with volume 6.0.
-  EXPECT_NEAR(estimated_volume, 6.0, 1e-1);
+  EXPECT_NEAR(estimated_volume, 6.0, 6.0 * desired_rel_accuracy);
+}
+
+// Compute the value of pi via sampling the unit circle.
+GTEST_TEST(ConvexSetTest, CalcPiViaCalcVolumeViaSampling) {
+  Hyperellipsoid unit_circle = Hyperellipsoid::MakeUnitBall(2);
+  RandomGenerator generator(1234);
+  const double desired_rel_accuracy = 1e-3;
+  // We need 250K hits, which means about 318K samples. Most likely will not
+  // achive this with 100K samples.
+  const auto [estimated_volume_bad, rel_accuracy_bad] =
+      unit_circle.CalcVolumeViaSampling(&generator, desired_rel_accuracy, 1e5);
+  const auto [estimated_volume_good, rel_accuracy_good] =
+      unit_circle.CalcVolumeViaSampling(&generator, desired_rel_accuracy, 1e6);
+  EXPECT_GT(rel_accuracy_bad, desired_rel_accuracy);
+  EXPECT_LE(rel_accuracy_good, desired_rel_accuracy);
+  // We must get close to pi
+  EXPECT_FALSE(std::abs(estimated_volume_bad - M_PI) / M_PI <
+               desired_rel_accuracy);
+  EXPECT_NEAR(estimated_volume_good, M_PI, M_PI * desired_rel_accuracy);
 };
 
 }  // namespace

@@ -193,40 +193,6 @@ ConvexSet::HandleZeroAmbientDimensionConstraints(
   return std::nullopt;
 }
 
-std::optional<Hyperrectangle> ConvexSet::MaybeCalcAxisAlignedBoundingBox()
-    const {
-  solvers::MathematicalProgram prog;
-  auto point = prog.NewContinuousVariables(ambient_dimension());
-  AddPointInSetConstraints(&prog, point);
-  std::vector<int> directions{-1, 1};
-  Eigen::VectorXd cost_vector = Eigen::VectorXd::Zero(ambient_dimension());
-  Eigen::VectorXd lb = Eigen::VectorXd::Zero(ambient_dimension());
-  Eigen::VectorXd ub = Eigen::VectorXd::Zero(ambient_dimension());
-  auto cost = prog.AddLinearCost(cost_vector.transpose(), 0.0, point);
-  for (int i = 0; i < ambient_dimension(); i++) {
-    for (const auto direction : directions) {
-      cost_vector(i) = static_cast<double>(direction);
-      cost.evaluator()->UpdateCoefficients(cost_vector);
-      auto result = solvers::Solve(prog);
-      if (result.is_success()) {
-        if (direction == 1) {
-          lb(i) = result.get_optimal_cost();
-        } else {
-          ub(i) = -result.get_optimal_cost();
-        }
-      } else {
-        drake::log()->warn(
-            "ConvexSet::MaybeCalcAxisAlignedBoundingBox(): Failed to solve the "
-            "optimization problem. Maybe the set is unbounded?");
-        return std::nullopt;
-      }
-      // reset the cost vector
-      cost_vector(i) = 0.0;
-    }
-  }
-  return Hyperrectangle(lb, ub);
-}
-
 double ConvexSet::CalcVolume() const {
   if (!has_exact_volume()) {
     throw std::runtime_error(
@@ -237,29 +203,28 @@ double ConvexSet::CalcVolume() const {
   return DoCalcVolume();
 }
 
-double ConvexSet::CalcVolumeViaSampling(RandomGenerator* generator,
-                                        const double desired_rel_accuracy,
-                                        const size_t min_num_samples,
-                                        const size_t max_num_samples) const {
+std::pair<double, double> ConvexSet::CalcVolumeViaSampling(
+    RandomGenerator* generator, const double desired_rel_accuracy,
+    const size_t max_num_samples) const {
   if (ambient_dimension() == 0) {
-    return 0.0;
+    return std::make_pair(0.0, 0.0);
   }
   if (!IsBounded()) {
-    return std::numeric_limits<double>::infinity();
+    // return infinity, nan
+    return std::make_pair(std::numeric_limits<double>::infinity(),
+                          std::numeric_limits<double>::quiet_NaN());
   }
   DRAKE_THROW_UNLESS(desired_rel_accuracy <= 1.0);
-  DRAKE_THROW_UNLESS(min_num_samples <= max_num_samples);
-  const auto aabb_opt = this->MaybeCalcAxisAlignedBoundingBox();
+  const auto aabb_opt = Hyperrectangle::MaybeCalcAxisAlignedBoundingBox(*this);
   // if aabb_opt is nullopt and the set is not infinity, then we have
   // a problem with the solver.
   DRAKE_DEMAND(aabb_opt.has_value());
   const Hyperrectangle& aabb = aabb_opt.value();
   size_t num_samples = 0;
   size_t num_hits = 0;
-  double relative_accuracy_squared = 1.0;
+  double relative_accuracy_ub_squared = 1.0;
   const double desired_rel_accuracy_squared = std::pow(desired_rel_accuracy, 2);
-  while ((num_samples < min_num_samples ||
-          relative_accuracy_squared > desired_rel_accuracy_squared) &&
+  while (relative_accuracy_ub_squared > desired_rel_accuracy_squared &&
          num_samples < max_num_samples) {
     auto point = aabb.UniformSample(generator);
     ++num_samples;
@@ -268,29 +233,30 @@ double ConvexSet::CalcVolumeViaSampling(RandomGenerator* generator,
     }
     // p is the probability of hitting the set = num_hits/num_samples
     if (num_hits > 0) {
-      // Let p be the probability of hitting the set, p = num_hits/num_samples
+      // Let p be the real probability of hitting the set. We are estimating p
       // The standard deviation of the MonteCarlo estimate is sigma/sqrt(n),
       // where sigma is the standard deviation of the Bernoulli distribution.
       // The standard deviation of the Bernoulli distribution is sqrt((1-p)*p),
       // where p is the probability of success.  Therefore, the standard
-      // deviation of the estimate is sqrt((1-p)*p/n).  The relative accuracy is
-      // the standard deviation divided by the mean, so the relative accuracy is
-      // sqrt((1-p)*p/n)/p = sqrt((1-p)/p/n)
-      // Therefore, the relative accuracy squared is (1-p)/p/n
-      // or simply num_misses/num_hits/n_samples, where num_misses =
-      // num_samples - num_hits.
-      relative_accuracy_squared = static_cast<double>(num_samples - num_hits) /
-                                  (num_hits * num_samples);
+      // deviation of the estimate is sqrt((1-p)*p/n). We don't know p, but the
+      // max value of (1-p)*p is 1/4, which occurs at p = 1/2. the standard
+      // deviation divided by the mean, so the error is upper-bounded by
+      // sqrt(1/(4*n)). Therefore, the relative_accuracy_squared < 1/(4*n*p) or
+      // simply 1/ (4 * num_hits).
+      relative_accuracy_ub_squared = static_cast<double>(1) / (4 * num_hits);
     }
   }
-  if (relative_accuracy_squared > desired_rel_accuracy_squared) {
+  if (relative_accuracy_ub_squared > desired_rel_accuracy_squared) {
     drake::log()->warn(
         "Volume calculation did not converge to desired accuracy {}.  "
         "Relative accuracy achieved: {}",
-        desired_rel_accuracy, std::sqrt(relative_accuracy_squared));
+        desired_rel_accuracy, std::sqrt(relative_accuracy_ub_squared));
   }
-  return aabb.CalcVolume() * static_cast<double>(num_hits) /
-         static_cast<double>(num_samples);
+  const auto estimated_volume = aabb.CalcVolume() *
+                                static_cast<double>(num_hits) /
+                                static_cast<double>(num_samples);
+  const auto relative_accuracy_ub = std::sqrt(relative_accuracy_ub_squared);
+  return std::make_pair(estimated_volume, relative_accuracy_ub);
 }
 
 double ConvexSet::DoCalcVolume() const {

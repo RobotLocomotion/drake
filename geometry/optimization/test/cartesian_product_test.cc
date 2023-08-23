@@ -79,6 +79,10 @@ GTEST_TEST(CartesianProductTest, BasicTest) {
   // Test MaybeGetFeasiblePoint.
   ASSERT_TRUE(S2.MaybeGetFeasiblePoint().has_value());
   EXPECT_TRUE(S2.PointInSet(S2.MaybeGetFeasiblePoint().value()));
+
+  // Test Volume
+  EXPECT_TRUE(S.has_exact_volume());
+  EXPECT_EQ(S.CalcVolume(), 0);
 }
 
 GTEST_TEST(CartesianProductTest, DefaultCtor) {
@@ -93,6 +97,8 @@ GTEST_TEST(CartesianProductTest, DefaultCtor) {
   ASSERT_TRUE(dut.MaybeGetFeasiblePoint().has_value());
   EXPECT_TRUE(dut.PointInSet(dut.MaybeGetFeasiblePoint().value()));
   EXPECT_TRUE(dut.PointInSet(Eigen::VectorXd::Zero(0)));
+  EXPECT_TRUE(dut.has_exact_volume());
+  EXPECT_EQ(dut.CalcVolume(), 0);
 }
 
 GTEST_TEST(CartesianProductTest, Move) {
@@ -553,6 +559,39 @@ GTEST_TEST(CartesianProductTest, Volume) {
   CartesianProduct S(V, R);
   EXPECT_TRUE(S.has_exact_volume());
   EXPECT_NEAR(S.CalcVolume(), 9, 1e-6);
+}
+
+GTEST_TEST(CartesianProductTest, ScaledVolume) {
+  // A triangle with vertices (0,0), (1,0), (0,3) has area 3/2.
+  Eigen::Matrix<double, 2, 3> vertices;
+  vertices << 0, 1, 0, 0, 0, 3;
+  VPolytope V = VPolytope(vertices);
+  Eigen::Matrix2d A1;
+  A1 << 2, 3, 2, -1;
+  Eigen::Vector2d b(0, 0);
+  CartesianProduct S1(MakeConvexSets(V), A1, b);
+  EXPECT_TRUE(S1.has_exact_volume());
+  // the determinent of A1 is -8, so the volume is 3/2 * 8 = 12
+  EXPECT_NEAR(S1.CalcVolume(), 12, 1e-6);
+  Eigen::MatrixXd A2(2, 1);
+  A2 << 1, 2;
+  CartesianProduct S2(MakeConvexSets(V), A2, b);
+  EXPECT_TRUE(S2.has_exact_volume());
+  // A2 is not full dimensional, so the volume is 0.
+  EXPECT_NEAR(S2.CalcVolume(), 0, 1e-6);
+  // A line segment from (0,0) to (10,0) has length 10.
+  Hyperrectangle L = Hyperrectangle(Vector1d::Zero(), Vector1d(10));
+  // 3D case
+  Eigen::MatrixXd A3(3, 3);
+  // clang-format off
+  A3 << 1, 0, 3,
+        5, 1, 4,
+        -2, 0, 1;
+  // clang-format on
+  // the determinent of A3 is 7, so the volume is 10 * 7 * 3/2= 105
+  CartesianProduct S3(MakeConvexSets(V, L), A3, Eigen::Vector3d::Zero());
+  EXPECT_TRUE(S3.has_exact_volume());
+  EXPECT_NEAR(S3.CalcVolume(), 105, 1e-6);
 }
 
 }  // namespace optimization

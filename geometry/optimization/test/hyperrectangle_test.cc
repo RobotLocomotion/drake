@@ -218,6 +218,47 @@ GTEST_TEST(HyperrectangleTest,
   }
 }
 
+// Tests the computation of the minimal axis-aligned bounding box of a
+// polyhedron.
+GTEST_TEST(HyperrectangleTest, AxisAlignedBoundingBox) {
+  // Case: Unbounded.
+  {
+    Matrix<double, 3, 2> A;
+    Matrix<double, 3, 1> b;
+    // clang-format off
+    A <<  1,  1,  // x + y ≤ 1
+         -1,  0,  // x ≥ -2
+         -1, -1;  // x+y ≥ -1
+    b << 1, 2, 1;
+    // clang-format on
+    HPolyhedron H(A, b);
+    EXPECT_FALSE(
+        Hyperrectangle::MaybeCalcAxisAlignedBoundingBox(H).has_value());
+  }
+
+  // Case: Bounded parallelogram.
+  {
+    Matrix<double, 4, 2> A;
+    Matrix<double, 4, 1> b;
+    // clang-format off
+    A <<  1,  0,  // x ≤ 1
+          1,  1,  // x + y ≤ 1
+         -1,  0,  // x ≥ -2
+         -1, -1;  // x+y ≥ -1
+    b << 1, 1, 2, 1;
+    // clang-format on
+    HPolyhedron H(A, b);
+    std::optional<Hyperrectangle> aabb_opt =
+        Hyperrectangle::MaybeCalcAxisAlignedBoundingBox(H);
+    EXPECT_TRUE(aabb_opt.has_value());
+    const auto& aabb = aabb_opt.value();
+    EXPECT_NEAR(aabb.lb()(0), -2, 1e-6);
+    EXPECT_NEAR(aabb.ub()(0), 1, 1e-6);
+    EXPECT_NEAR(aabb.lb()(1), -2, 1e-6);
+    EXPECT_NEAR(aabb.ub()(1), 3, 1e-6);
+  }
+}
+
 GTEST_TEST(HyperrectangleTest, Serialize) {
   const Vector3d lb{-1, -2, -3};
   const Vector3d ub{3, 2, 1};

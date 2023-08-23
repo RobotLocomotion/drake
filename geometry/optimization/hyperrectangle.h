@@ -43,6 +43,11 @@ class Hyperrectangle final : public ConvexSet {
   /** Helper to convert this hyperrectangle to an HPolyhedron. */
   HPolyhedron MakeHPolyhedron() const;
 
+  /** Returns the minimum axis-aligned bounding box of a convex set, for sets
+  with finite volume. (std::nullopt otherwise). */
+  static std::optional<Hyperrectangle> MaybeCalcAxisAlignedBoundingBox(
+      const ConvexSet& set);
+
   /** Passes this object to an Archive.
     Refer to @ref yaml_serialization "YAML Serialization" for background. */
   template <typename Archive>

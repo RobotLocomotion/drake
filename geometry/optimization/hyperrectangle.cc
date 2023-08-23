@@ -39,6 +39,42 @@ Hyperrectangle::Hyperrectangle(const Eigen::Ref<const Eigen::VectorXd>& lb,
   CheckInvariants();
 }
 
+std::optional<Hyperrectangle> Hyperrectangle::MaybeCalcAxisAlignedBoundingBox(
+    const ConvexSet& set) {
+  solvers::MathematicalProgram prog;
+  int n = set.ambient_dimension();
+  auto point = prog.NewContinuousVariables(n);
+  set.AddPointInSetConstraints(&prog, point);
+  std::vector<int> directions{-1, 1};
+  Eigen::VectorXd cost_vector = Eigen::VectorXd::Zero(n);
+  Eigen::VectorXd lb = Eigen::VectorXd::Zero(n);
+  Eigen::VectorXd ub = Eigen::VectorXd::Zero(n);
+  auto cost = prog.AddLinearCost(cost_vector.transpose(), 0.0, point);
+  for (int i = 0; i < n; i++) {
+    for (const auto direction : directions) {
+      cost_vector(i) = static_cast<double>(direction);
+      cost.evaluator()->UpdateCoefficients(cost_vector);
+      auto result = solvers::Solve(prog);
+      if (result.is_success()) {
+        if (direction == 1) {
+          lb(i) = result.get_optimal_cost();
+        } else {
+          ub(i) = -result.get_optimal_cost();
+        }
+      } else {
+        drake::log()->warn(
+            "Hyperrectangle::MaybeCalcAxisAlignedBoundingBox: Failed to solve "
+            "the "
+            "optimization problem. Maybe the set is unbounded?");
+        return std::nullopt;
+      }
+      // reset the cost vector
+      cost_vector(i) = 0.0;
+    }
+  }
+  return Hyperrectangle(lb, ub);
+}
+
 std::unique_ptr<ConvexSet> Hyperrectangle::DoClone() const {
   return std::make_unique<Hyperrectangle>(*this);
 }

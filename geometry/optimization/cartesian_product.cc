@@ -357,13 +357,23 @@ CartesianProduct::DoToShapeWithPose() const {
 }
 
 double CartesianProduct::DoCalcVolume() const {
-  {
-    double volume = 1.0;
-    for (const auto& set : sets_) {
-      volume *= set->CalcVolume();
-    }
-    return volume;
+  if (sets_.size() == 0) {
+    return 0;
   }
+  double volume = 1.0;
+  for (const auto& set : sets_) {
+    volume *= set->CalcVolume();
+  }
+  if (A_.has_value()) {
+    // Note: The constructor enforces that A_ is full column rank.
+    if (A_decomp_.value().rank() < A_->rows()) {
+      volume *= 0.0;
+    } else {
+      // the determinant of a triangular matrix is the product of the diagonal
+      volume *= std::abs(A_decomp_.value().matrixQR().diagonal().prod());
+    }
+  }
+  return volume;
 }
 
 void CartesianProduct::ImplementGeometry(const Cylinder& cylinder, void* data) {
