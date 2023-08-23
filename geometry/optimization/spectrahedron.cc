@@ -41,10 +41,10 @@ VectorXDecisionVariable GetVariablesByIndex(
 
 }  // namespace
 
-Spectrahedron::Spectrahedron() : ConvexSet(0) {}
+Spectrahedron::Spectrahedron() : ConvexSet(0, false) {}
 
 Spectrahedron::Spectrahedron(const MathematicalProgram& prog)
-    : ConvexSet(prog.num_vars()) {
+    : ConvexSet(prog.num_vars(), false) {
   for (const ProgramAttribute& attr : prog.required_capabilities()) {
     if (supported_attributes().count(attr) < 1) {
       throw std::runtime_error(fmt::format(

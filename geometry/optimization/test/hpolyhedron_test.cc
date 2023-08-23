@@ -1141,6 +1141,15 @@ GTEST_TEST(HPolyhedronTest, UniformSampleTest2) {
   EXPECT_GT(num_success, 0);
 }
 
+GTEST_TEST(HPolyhedronTest, Serialize) {
+  const HPolyhedron H = HPolyhedron::MakeL1Ball(3);
+  const std::string yaml = yaml::SaveYamlString(H);
+  const auto H2 = yaml::LoadYamlString<HPolyhedron>(yaml);
+  EXPECT_EQ(H.ambient_dimension(), H2.ambient_dimension());
+  EXPECT_TRUE(CompareMatrices(H.A(), H2.A()));
+  EXPECT_TRUE(CompareMatrices(H.b(), H2.b()));
+}
+
 }  // namespace optimization
 }  // namespace geometry
 }  // namespace drake

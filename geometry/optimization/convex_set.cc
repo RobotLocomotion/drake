@@ -20,8 +20,9 @@ using solvers::MathematicalProgram;
 using solvers::VariableRefList;
 using solvers::VectorXDecisionVariable;
 
-ConvexSet::ConvexSet(int ambient_dimension)
-    : ambient_dimension_(ambient_dimension) {
+ConvexSet::ConvexSet(int ambient_dimension, bool has_exact_volume)
+    : ambient_dimension_(ambient_dimension),
+      has_exact_volume_(has_exact_volume) {
   DRAKE_THROW_UNLESS(ambient_dimension >= 0);
 }
 
@@ -226,6 +227,16 @@ std::optional<Hyperrectangle> ConvexSet::MaybeCalcAxisAlignedBoundingBox()
   return Hyperrectangle(lb, ub);
 }
 
+double ConvexSet::CalcVolume() const {
+  if (!has_exact_volume()) {
+    throw std::runtime_error(
+        fmt::format("The class {} reports that it cannot report an exact "
+                    "volume. Use CalcVolumeViaSampling() instead.",
+                    NiceTypeName::Get(*this)));
+  }
+  return DoCalcVolume();
+}
+
 double ConvexSet::CalcVolumeViaSampling(RandomGenerator* generator,
                                         const double desired_rel_accuracy,
                                         const size_t min_num_samples,
@@ -237,7 +248,7 @@ double ConvexSet::CalcVolumeViaSampling(RandomGenerator* generator,
     return std::numeric_limits<double>::infinity();
   }
   DRAKE_THROW_UNLESS(desired_rel_accuracy <= 1.0);
-  DRAKE_DEMAND(min_num_samples <= max_num_samples);
+  DRAKE_THROW_UNLESS(min_num_samples <= max_num_samples);
   const auto aabb_opt = this->MaybeCalcAxisAlignedBoundingBox();
   // if aabb_opt is nullopt and the set is not infinity, then we have
   // a problem with the solver.
@@ -284,8 +295,8 @@ double ConvexSet::CalcVolumeViaSampling(RandomGenerator* generator,
 
 double ConvexSet::DoCalcVolume() const {
   throw std::runtime_error(
-      fmt::format("The class {} has not implemented an exact volume "
-                  "calculation yet. Use CalcVolumeViaSampling() instead.",
+      fmt::format("The class {} has a defect -- has_exact_volume() is "
+                  "reporting true, but DoCalcVolume has not been implemented.",
                   NiceTypeName::Get(*this)));
 }
 

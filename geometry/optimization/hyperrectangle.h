@@ -56,8 +56,6 @@ class Hyperrectangle final : public ConvexSet {
  private:
   std::unique_ptr<ConvexSet> DoClone() const final;
 
-  bool DoIsBounded() const;
-
   /** An Hyperrectangle can not empty as lb <= ub is already checked in the ctor
    */
   bool DoIsEmpty() const final { return false; }

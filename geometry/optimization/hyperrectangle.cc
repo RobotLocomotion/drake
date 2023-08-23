@@ -31,22 +31,16 @@ using solvers::VectorXDecisionVariable;
 using symbolic::Expression;
 using symbolic::Variable;
 
-Hyperrectangle::Hyperrectangle() : ConvexSet(0) {}
+Hyperrectangle::Hyperrectangle() : ConvexSet(0, true) {}
 
 Hyperrectangle::Hyperrectangle(const Eigen::Ref<const Eigen::VectorXd>& lb,
                                const Eigen::Ref<const Eigen::VectorXd>& ub)
-    : ConvexSet(lb.size()), lb_(lb), ub_(ub) {
+    : ConvexSet(lb.size(), true), lb_(lb), ub_(ub) {
   CheckInvariants();
-  set_has_exact_volume(true);
 }
 
 std::unique_ptr<ConvexSet> Hyperrectangle::DoClone() const {
   return std::make_unique<Hyperrectangle>(*this);
-}
-
-bool Hyperrectangle::DoIsBounded() const {
-  // the finiteness of lb_ and ub_ is checked in the ctor.
-  return true;
 }
 
 std::optional<Eigen::VectorXd> Hyperrectangle::DoMaybeGetPoint() const {
@@ -166,6 +160,9 @@ Hyperrectangle::DoToShapeWithPose() const {
 }
 
 double Hyperrectangle::DoCalcVolume() const {
+  if (ambient_dimension() == 0) {
+    return 0.0;
+  }
   return (ub_ - lb_).prod();
 }
 

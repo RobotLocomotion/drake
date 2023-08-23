@@ -239,30 +239,10 @@ class ConvexSet : public ShapeReifier {
   std::optional<Hyperrectangle> MaybeCalcAxisAlignedBoundingBox() const;
 
   /** Computes the exact volume for the convex set.
-  @note It is not possible to obtain the exact volume of some convex sets in
-  polynomial time. Calling has_exact_volume() will return true if the exact
-  volume can be computed for this convex set.
-  @throws std::exception if the derived class has not implemented the exact
-  computation of the volume, i.e., has_exact_volume() returns false.
-  Currently, the exact volume is only implemented for the following convex sets:
-  - Hyperrectangle
-  - VPolytope
-  - Hyperellipsoid
-  - CartesianProduct (only if all the constituent sets have exact volume)
-  And has trivial implementation for the following convex sets:
-  - AffineSubspace (zero volume if the set is not full-dimensional, otherwise
-  infinity)
-  - Point (zero volume)
-  For other convex sets, the exact volume computation is not implemented yet.
-  In this case, the user can use @sa CalcVolumeViaSampling() to obtain an
-  estimate
-  @note returns infinity if the set is unbounded. */
-  double CalcVolume() const {
-    if (!IsBounded()) {
-      return std::numeric_limits<double>::infinity();
-    }
-    return DoCalcVolume();
-  }
+  @note Not every convex set can report an exact volume. In that case, use
+  CalcVolumeViaSampling() instead.
+  @throws std::exception if `has_exact_volume()` returns `false`. */
+  double CalcVolume() const;
 
   /** Calculates an estimate of the volume of the convex set using sampling and
   performing Monte Carlo integration.
@@ -293,8 +273,10 @@ class ConvexSet : public ShapeReifier {
  protected:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ConvexSet)
 
-  /** For use by derived classes to construct a %ConvexSet. */
-  explicit ConvexSet(int ambient_dimension);
+  /** For use by derived classes to construct a %ConvexSet.
+  @param has_exact_volume Derived classes should pass `true` if they've
+  implemented DoCalcVolume() to return a value (at least sometimes). */
+  explicit ConvexSet(int ambient_dimension, bool has_exact_volume);
 
   /** Implements non-virtual base class serialization. */
   template <typename Archive>
@@ -383,9 +365,8 @@ class ConvexSet : public ShapeReifier {
   virtual std::pair<std::unique_ptr<Shape>, math::RigidTransformd>
   DoToShapeWithPose() const = 0;
 
-  /** Interface implementation for DoCalcVolume(). In case the exact volume is
-   not available for a convex set (such as HPolyhedron), this method will throw
-   an exception. */
+  /** Interface implementation for DoCalcVolume(). This will *only* be called if
+  has_exact_volume() returns true; */
   virtual double DoCalcVolume() const;
 
   /** Instances of subclasses such as CartesianProduct and MinkowskiSum can
@@ -401,11 +382,6 @@ class ConvexSet : public ShapeReifier {
   std::optional<symbolic::Variable> HandleZeroAmbientDimensionConstraints(
       solvers::MathematicalProgram* prog, const ConvexSet& set,
       std::vector<solvers::Binding<solvers::Constraint>>* constraints) const;
-
-  /** Sets the exact volume computation flag. */
-  void set_has_exact_volume(bool has_exact_volume) {
-    has_exact_volume_ = has_exact_volume;
-  }
 
  private:
   /** Generic implementation for IsBounded() -- applicable for all convex sets.

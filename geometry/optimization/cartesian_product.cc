@@ -36,7 +36,16 @@ int SumAmbientDimensions(const ConvexSets& sets) {
   return dim;
 }
 
-bool HasExactVolumme(const ConvexSets& sets) {
+bool HasExactVolume(const std::vector<const ConvexSet*>& sets) {
+  for (const auto* set : sets) {
+    if (!set->has_exact_volume()) {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool HasExactVolume(const ConvexSets& sets) {
   for (const auto& set : sets) {
     if (!set->has_exact_volume()) {
       return false;
@@ -50,21 +59,20 @@ bool HasExactVolumme(const ConvexSets& sets) {
 CartesianProduct::CartesianProduct() : CartesianProduct(ConvexSets{}) {}
 
 CartesianProduct::CartesianProduct(const ConvexSets& sets)
-    : ConvexSet(SumAmbientDimensions(sets)), sets_(sets) {
-  set_has_exact_volume(HasExactVolumme(sets));
-}
+    : ConvexSet(SumAmbientDimensions(sets), HasExactVolume(sets)),
+      sets_(sets) {}
 
 CartesianProduct::CartesianProduct(const ConvexSet& setA, const ConvexSet& setB)
-    : ConvexSet(setA.ambient_dimension() + setB.ambient_dimension()) {
+    : ConvexSet(setA.ambient_dimension() + setB.ambient_dimension(),
+                HasExactVolume(std::vector{&setA, &setB})) {
   sets_.emplace_back(setA.Clone());
   sets_.emplace_back(setB.Clone());
-  set_has_exact_volume(HasExactVolumme(sets_));
 }
 
 CartesianProduct::CartesianProduct(const ConvexSets& sets,
                                    const Eigen::Ref<const MatrixXd>& A,
                                    const Eigen::Ref<const VectorXd>& b)
-    : ConvexSet(A.cols()),
+    : ConvexSet(A.cols(), HasExactVolume(sets)),
       sets_(sets),
       A_(A),
       b_(b),
@@ -76,13 +84,12 @@ CartesianProduct::CartesianProduct(const ConvexSets& sets,
   DRAKE_THROW_UNLESS(A_->cols() == x_ambient_dimension);
   // Ensure that A is injective.
   DRAKE_THROW_UNLESS(A_decomp_->rank() == A_->cols());
-  set_has_exact_volume(HasExactVolumme(sets_));
 }
 
 CartesianProduct::CartesianProduct(const QueryObject<double>& query_object,
                                    GeometryId geometry_id,
                                    std::optional<FrameId> reference_frame)
-    : ConvexSet(3) {
+    : ConvexSet(3, true) {
   Cylinder cylinder(1., 1.);
   query_object.inspector().GetShape(geometry_id).Reify(this, &cylinder);
 
@@ -105,7 +112,6 @@ CartesianProduct::CartesianProduct(const QueryObject<double>& query_object,
   A_ = X_GF.rotation().matrix();
   b_ = X_GF.translation();
   A_decomp_ = Eigen::ColPivHouseholderQR<Eigen::MatrixXd>(*A_);
-  set_has_exact_volume(HasExactVolumme(sets_));
 }
 
 CartesianProduct::~CartesianProduct() = default;
