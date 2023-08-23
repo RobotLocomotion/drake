@@ -32,6 +32,7 @@ drake_cc_package_library(
         ":geometry_version",
         ":internal_frame",
         ":internal_geometry",
+        ":internal_hydroelasticate",
         ":kinematics_vector",
         ":make_mesh_for_deformable",
         ":meshcat",
@@ -45,6 +46,7 @@ drake_cc_package_library(
         ":read_obj",
         ":rgba",
         ":scene_graph",
+        ":scene_graph_config",
         ":scene_graph_inspector",
         ":shape_specification",
         ":shape_to_string",
@@ -256,6 +258,16 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "internal_hydroelasticate",
+    srcs = ["internal_hydroelasticate.cc"],
+    hdrs = ["internal_hydroelasticate.h"],
+    deps = [
+        ":geometry_state",
+        ":scene_graph_config",
+    ],
+)
+
+drake_cc_library(
     name = "make_mesh_for_deformable",
     srcs = ["make_mesh_for_deformable.cc"],
     hdrs = ["make_mesh_for_deformable.h"],
@@ -278,6 +290,14 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "scene_graph_config",
+    hdrs = ["scene_graph_config.h"],
+    deps = [
+        "//common:name_value",
+    ],
+)
+
+drake_cc_library(
     name = "scene_graph",
     srcs = [
         "query_object.cc",
@@ -289,6 +309,8 @@ drake_cc_library(
     ],
     deps = [
         ":geometry_state",
+        ":internal_hydroelasticate",
+        ":scene_graph_config",
         ":scene_graph_inspector",
         "//common:essential",
         "//common:nice_type_name",
@@ -793,6 +815,18 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "internal_hydroelasticate_test",
+    data = [
+        ":test_obj_files",
+        ":test_vtk_files",
+    ],
+    deps = [
+        ":internal_hydroelasticate",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
     name = "make_mesh_for_deformable_test",
     data = [
         ":test_vtk_files",
@@ -825,7 +859,19 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "scene_graph_config_test",
+    deps = [
+        ":scene_graph_config",
+        "//common/yaml",
+    ],
+)
+
+drake_cc_googletest(
     name = "scene_graph_test",
+    data = [
+        ":test_obj_files",
+        ":test_vtk_files",
+    ],
     deps = [
         ":scene_graph",
         "//common/test_utilities:eigen_matrix_compare",

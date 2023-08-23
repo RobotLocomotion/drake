@@ -119,6 +119,7 @@ from pydrake.geometry import (
     Role,
     PenetrationAsPointPair_,
     ProximityProperties,
+    SceneGraphConfig,
     SignedDistancePair_,
     SignedDistanceToPoint_,
     Sphere,
@@ -283,6 +284,18 @@ class TestPlant(unittest.TestCase):
         ApplyMultibodyPlantConfig(config=config, plant=plant)
         self.assertEqual(plant.get_contact_model(),
                          ContactModel.kHydroelasticsOnly)
+
+    def test_multibody_plant_config_3args(self):
+        plant_config = MultibodyPlantConfig(time_step=0.01)
+        scene_graph_config = SceneGraphConfig()
+
+        builder = DiagramBuilder_[float]()
+        plant, scene_graph = AddMultibodyPlant(
+            plant_config=plant_config,
+            scene_graph_config=scene_graph_config,
+            builder=builder)
+        self.assertIsNotNone(plant)
+        self.assertIsNotNone(scene_graph)
 
     @numpy_compare.check_all_types
     def test_get_bodies_welded_to_keep_alive(self, T):
