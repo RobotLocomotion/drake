@@ -3223,6 +3223,7 @@ TEST_F(SdfParserTest, BasicMergeIncludeInterfaceApi) {
 void TestMergeIncludeWithInterfaceApi(const MultibodyPlant<double>& plant,
                                       const SceneGraph<double>& scene_graph,
                                       const std::string model_prefix) {
+  SCOPED_TRACE(model_prefix);
   auto context = plant.CreateDefaultContext();
   EXPECT_FALSE(
       plant.HasModelInstanceNamed(sdf::JoinName(model_prefix, "arm::gripper")));
