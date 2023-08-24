@@ -5,6 +5,7 @@
 #include <numeric>
 #include <sstream>
 #include <stdexcept>
+#include <thread>
 #include <unordered_map>
 #include <utility>
 
@@ -14,8 +15,13 @@
 #include "drake/common/symbolic/expression/expression_cell.h"
 #undef DRAKE_COMMON_SYMBOLIC_EXPRESSION_DETAIL_HEADER
 
+#include "drake/common/ssize.h"
 #include "drake/common/symbolic/decompose.h"
 #include "drake/common/text_logging.h"
+
+#if defined(_OPENMP)
+#include <omp.h>
+#endif
 
 using std::accumulate;
 using std::make_pair;
@@ -407,7 +413,14 @@ Polynomial::Polynomial(const Expression& e, Variables indeterminates)
   DRAKE_ASSERT_VOID(CheckInvariant());
 }
 
-const Variables& Polynomial::indeterminates() const { return indeterminates_; }
+Polynomial::Polynomial(const Variable& v) : Polynomial{v, {v}} {
+  // No need to call CheckInvariant() because the following should hold.
+  DRAKE_ASSERT(decision_variables().empty());
+}
+
+const Variables& Polynomial::indeterminates() const {
+  return indeterminates_;
+}
 
 void Polynomial::SetIndeterminates(const Variables& new_indeterminates) {
   if (new_indeterminates.IsSupersetOf(indeterminates_) &&
@@ -562,6 +575,18 @@ double Polynomial::Evaluate(const Environment& env) const {
       });
 }
 
+std::vector<double> Polynomial::EvaluateBatch(
+    const std::vector<Environment>& envs) const {
+  std::vector<double> ret(ssize(envs));
+#if defined(_OPENMP)
+#pragma omp parallel for num_threads(std::thread::hardware_concurrency())
+#endif
+  for (int i = 0; i < ssize(envs); ++i) {
+    ret.at(i) = this->Evaluate(envs.at(i));
+  }
+  return ret;
+}
+
 Polynomial Polynomial::EvaluatePartial(const Environment& env) const {
   MapType new_map;  // Will use this to construct the return value.
   for (const auto& product_i : monomial_to_coefficient_map_) {
@@ -582,6 +607,18 @@ Polynomial Polynomial::EvaluatePartial(const Environment& env) const {
     }
   }
   return Polynomial{new_map};
+}
+
+std::vector<Polynomial> Polynomial::EvaluatePartialBatch(
+    const std::vector<Environment>& envs) const {
+  std::vector<Polynomial> ret(ssize(envs));
+#if defined(_OPENMP)
+#pragma omp parallel for num_threads(std::thread::hardware_concurrency())
+#endif
+  for (int i = 0; i < ssize(envs); ++i) {
+    ret.at(i) = this->EvaluatePartial(envs.at(i));
+  }
+  return ret;
 }
 
 Polynomial Polynomial::EvaluatePartial(const Variable& var,
@@ -824,8 +861,7 @@ Polynomial& Polynomial::AddProduct(const Expression& coeff, const Monomial& m) {
 
 Polynomial Polynomial::SubstituteAndExpand(
     const std::unordered_map<Variable, Polynomial>& indeterminate_substitution,
-    SubstituteAndExpandCacheData* substitutions_cached_data)
-    const {
+    SubstituteAndExpandCacheData* substitutions_cached_data) const {
   SubstituteAndExpandCacheData substitutions_default_obj;
   SubstituteAndExpandCacheData* cached_data_ptr =
       substitutions_cached_data == nullptr ? &substitutions_default_obj

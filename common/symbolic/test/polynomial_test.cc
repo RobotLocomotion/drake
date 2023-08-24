@@ -210,6 +210,18 @@ TEST_F(SymbolicPolynomialTest, ConstructorFromExpressionAndIndeterminates3) {
   EXPECT_TRUE(p1.monomial_to_coefficient_map().empty());
 }
 
+TEST_F(SymbolicPolynomialTest, ConstructFromVariable) {
+  // Variable -------------------> Polynomial
+  //     | Expression()                    | .ToExpression()
+  //    \/                                 \/
+  // Expanded Expression     ==      Expression
+  for (const Variable& v : var_xyz_) {
+    const Expression expr{v};
+    const Expression expr_from_polynomial{Polynomial{v}.ToExpression()};
+    EXPECT_PRED2(ExprEqual, expr, expr_from_polynomial);
+  }
+}
+
 TEST_F(SymbolicPolynomialTest, IndeterminatesAndDecisionVariables) {
   // p = 3ab²*x²y -bc*z³
   const Polynomial p{
@@ -1029,6 +1041,61 @@ TEST_F(SymbolicPolynomialTest, Evaluate) {
   EXPECT_THROW(unused(p.Evaluate(partial_env)), runtime_error);
 }
 
+TEST_F(SymbolicPolynomialTest, EvaluateBatch) {
+  // p = ax²y + bxy + cz
+  const Polynomial p{a_ * x_ * x_ * y_ + b_ * x_ * y_ + c_ * z_, var_xyz_};
+
+  const Environment env1{{
+      {var_a_, 1.0},
+      {var_b_, 2.0},
+      {var_c_, 3.0},
+      {var_x_, -1.0},
+      {var_y_, -2.0},
+      {var_z_, -3.0},
+  }};
+  const Environment env2{{
+      {var_a_, 4.0},
+      {var_b_, 1.0},
+      {var_c_, 2.0},
+      {var_x_, -7.0},
+      {var_y_, -5.0},
+      {var_z_, -2.0},
+  }};
+  const double expected1{1.0 * -1.0 * -1.0 * -2.0 + 2.0 * -1.0 * -2.0 +
+                         3.0 * -3.0};
+  const double expected2{4.0 * -7.0 * -7.0 * -5.0 + 1.0 * -7.0 * -5.0 +
+                         2.0 * -2.0};
+
+  const int num_env_1 = 10;
+  const int num_env_2 = 5;
+  std::vector<Environment> envs;
+  envs.reserve(num_env_1 + num_env_2);
+  for (int i = 0; i < num_env_1; ++i) {
+    envs.push_back(env1);
+  }
+  for (int i = 0; i < num_env_2; ++i) {
+    envs.push_back(env2);
+  }
+
+  std::vector<double> eval_result = p.EvaluateBatch(envs);
+  for (int i = 0; i < num_env_1 + num_env_2; ++i) {
+    if (i < num_env_1) {
+      EXPECT_EQ(eval_result.at(i), expected1);
+    } else {
+      EXPECT_EQ(eval_result.at(i), expected2);
+    }
+  }
+
+  const Environment partial_env{{
+      {var_a_, 4.0},
+      {var_c_, 2.0},
+      {var_x_, -7.0},
+      {var_z_, -2.0},
+  }};
+  envs.push_back(partial_env);
+  EXPECT_THROW(unused(p.EvaluateBatch(envs)), runtime_error);
+}
+
 TEST_F(SymbolicPolynomialTest, PartialEvaluate1) {
   // p1 = a*x² + b*x + c
   // p2 = p1[x ↦ 3.0] = 3²a + 3b + c.
@@ -1068,6 +1135,37 @@ TEST_F(SymbolicPolynomialTest, PartialEvaluate4) {
                      var_xyz_};
   const Environment env{{{var_a_, 0.0}, {var_b_, 0.0}, {var_c_, 0.0}}};
   EXPECT_THROW(unused(p.EvaluatePartial(env)), runtime_error);
+}
+
+TEST_F(SymbolicPolynomialTest, PartialEvaluateBatch) {
+  // p = a*x²*y + b*x*z + c/b
+  const Polynomial p{a_ * x_ * x_ * y_ + b_ * x_* z_ + c_ / b_ , var_xyz_};
+
+  const Environment env1{{{var_x_, 3.0}}};
+  // q0 = p[x ↦ 3.0] = 3²a*y + 3b + c/b*z.
+  const Polynomial q0{a_ * 3.0 * 3.0 * y_ + b_ * 3.0* z_ + c_ / b_, var_xyz_};
+
+  const Environment env2{{{var_y_, 2.0}, {var_z_, 4.0}}};
+  // q1 = p[y ↦ 2.0, z ↦ 4.0,] = 2a*x² + b*x*4.0 + c/b.
+  const Polynomial q1{a_ * x_ * x_ * 2.0 + b_ * x_ * 4.0 + c_ / b_, var_xyz_};
+
+  // q2 = p[a ↦ 2.0, x ↦ 3.0] = 2*3²*y + b*3*z + c/b
+  //                          = 18*y + 3b + c/b*z
+  const Environment env3{{{var_a_, 2.0}, {var_x_, 3.0}}};
+  const Polynomial q2{2.0 * 3.0 * 3.0 * y_ + b_ * 3.0 * z_ + c_ / b_, var_xyz_};
+
+  // Not marked const as we will emplace a bad environment soon.
+  std::vector<Environment> envs{env1, env2, env3};
+  const std::vector<Polynomial> q_expected_vect = p.EvaluatePartialBatch(envs);
+  EXPECT_PRED2(PolyEqual, q_expected_vect.at(0), q0);
+  EXPECT_PRED2(PolyEqual, q_expected_vect.at(1), q1);
+  EXPECT_PRED2(PolyEqual, q_expected_vect.at(2), q2);
+
+  // Partially evaluating p with [a ↦ 0, b ↦ 0, c ↦ 0] throws `runtime_error`
+  // because of the divide-by-zero
+  const Environment env_bad{{{var_a_, 0.0}, {var_b_, 0.0}, {var_c_, 0.0}}};
+  envs.push_back(env_bad);
+  EXPECT_THROW(unused(p.EvaluatePartialBatch(envs)), runtime_error);
 }
 
 TEST_F(SymbolicPolynomialTest, EvaluateIndeterminates) {
