@@ -17,53 +17,32 @@ using drake::math::RigidTransform;
 
 /* Implements a SAP (compliant) weld constraint between two bodies.
 
- Consider a frame P on an object A and a frame Q on an object B. We define the
- intermediate frame N as the frame halfway between frame P and Q using linear
- interpolation for the pose of the origin of N and spherical linear
- interpolation for the rotational component of N's pose. Using poses expressed
- relative to the world frame:
-   p_WNo = (p_WPo + p_WQo) / 2
-   R_WN = slerp(R_WP, R_WQ, 0.5)
- We use this intermediate frame N so that computed impulses are
- symmetric wrt object A and object B. This constraint is modeled with 6
- constraint equations, which can be decomposed into a rotational component (3
- equations) and a translational component (3 equations).
+ Consider a frame P on an object A and a frame Q on an object B. This constraint
+ is modeled with 6 constraint equations, which can be decomposed into a
+ rotational component (3 equations) and a translational component (3 equations).
 
- Let a = a_PQ_N = sinθ⋅k ≈ θ⋅k be a small angle approximation to the Euler
- vector representation of the relative rotation R_PQ, Q's orientation in P
- expressed in frame N. Let p = p_PoQo_N, Qo's position relative to Po expressed
- in frame N. This constraint penalizes the full constraint function, g, to
- impose:
-   g = (a_PQ_N, p_PoQo_N) = 0 ∈ ℝ⁶
- with corresponding constraint velocity:
-   ġ = vc(v) ≈ (w_PQ_N, v_PoQo_N) = V_N_PQ_N
-
- N.B. Only when P and Q are coincident is their relative velocity independent
- of which frame it is measured in. This means that the way we model this
- constraint lacks frame-invariance. We make an approximation measuring the
- relative velocity in the world frame for convenience, V_W_PQ ≈ V_N_PQ, leading
- to a small error of order O(‖p_PQ‖⋅‖w_WN‖). Non-coincident P and Q also leads
- to a small artifact discussed below where angular momentum is not conserved.
- See MakeSapHolonomicConstraintKinematics() for a derivation of this constraint
- velocity and discussion of these approximations.
+ Let a_PQ = θ⋅k be the Euler vector representation of the relative rotation
+ R_PQ, Q's orientation in P. Let p = p_PoQo, Qo's position relative to Po. This
+ constraint penalizes the full constraint function, g, to impose:
+   g = (a_PQ, p_PoQo) = 0 ∈ ℝ⁶
+ See MakeSapHolonomicConstraintKinematics() for the derivation of the constraint
+ function's velocity.
 
  This leads to a constraint impulse γ, which is likewise composed of a
  rotational and translational component:
    γ = (γᵣ, γₜ) ∈ ℝ⁶
- This constraint impulse corresponds to a spatial impulse on B, applied at Q
- expressed in frame N:
-   Γ_Bq_N = (γᵣ, γₜ)
- and a spatial impulse on A applied at P expressed in frame N:
-   Γ_Ap_N = -(γᵣ, γₜ)
+ This constraint impulse corresponds to a spatial impulse on B, applied at Bm,
+ a material point of B coincident with the midpoint of P and Q:
+   Γ_BBm_N = (γᵣ, γₜ)
+ and likewise a spatial impulse on A, applied at Am, a material point of B
+ coincident with the midpoint of P and Q:
+   Γ_AAm_N = -(γᵣ, γₜ)
 
  N.B. See DoAccumulateSpatialImpulses() for a discussion of where this
- interpretation of γ comes from. In general when P and Q are not coincident this
- formulation does NOT conserve angular momentum, introducing a small moment of
- order O(‖γₜ‖⋅‖p_PQ‖).
+ interpretation of γ comes from.
 
- DoAccumulateSpatialImpulses() shifts these impulses to the body frame origins
- and re-expresses them in the world frame, reporting Γ_BBo_W and Γ_AAo_W,
- respectively.
+ DoAccumulateSpatialImpulses() shifts these impulses to the body frame origins,
+ reporting Γ_BBo_W and Γ_AAo_W, respectively.
 
  @tparam_nonsymbolic_scalar */
 template <typename T>
@@ -92,15 +71,17 @@ class SapWeldConstraint final : public SapHolonomicConstraint<T> {
          Index of the physical object B on which frame Q attaches.
        @param[in] X_WQ Pose of frame Q in the world frame.
        @param[in] p_BQ_W Position of point Q in B, expressed in the world frame.
-       @param[in] J_W_PQ Jacobian for the relative spatial velocity V_W_PQ.
+       @param[in] J_W_AmBm Jacobian for the relative spatial velocity V_W_AmBm
+         of Am and Bm, material points on A and B respectively, both coincident
+         with M, the midpoint of P and Q.
 
        @note Thus far only dense Jacobian blocks are supported, i.e. rigid body
        applications in mind.
-       @throws std::exception If J_W_PQ.blocks_are_dense() == false.
+       @throws std::exception If J_W_AmBm.blocks_are_dense() == false.
     */
     Kinematics(int objectA, RigidTransform<T> X_WP, Vector3<T> p_AP_W,
                int objectB, RigidTransform<T> X_WQ, Vector3<T> p_BQ_W,
-               SapConstraintJacobian<T> J_W_PQ);
+               SapConstraintJacobian<T> J_AmBm_W);
 
     int objectA() const { return objectA_; }
     const RigidTransform<T>& X_WP() const { return X_WP_; }
@@ -110,9 +91,8 @@ class SapWeldConstraint final : public SapHolonomicConstraint<T> {
     const Vector3<T>& p_BQ_W() const { return p_BQ_W_; }
     const SapConstraintJacobian<T>& jacobian() const { return J_; }
 
-    const RigidTransform<T>& X_WN() const { return X_WN_; }
-    const Vector3<T>& p_PoQo_N() const { return p_PoQo_N_; }
-    const Vector3<T>& a_PQ_N() const { return a_PQ_N_; }
+    const Vector3<T>& p_PoQo_W() const { return p_PoQo_W_; }
+    const Vector3<T>& a_PQ_W() const { return a_PQ_W_; }
 
    private:
     /* Index to a physical object A. */
@@ -133,19 +113,16 @@ class SapWeldConstraint final : public SapHolonomicConstraint<T> {
     /* Position of point Q in B, expressed in the world frame.  */
     Vector3<T> p_BQ_W_;
 
-    /* Jacobian that defines the spatial velocity V_W_PQ of frame P relative
-     to point Q, expressed in the world frame. That is, V_W_PQ = J⋅v. */
+    /* Jacobian that defines the spatial velocity V_W_AmBm of Bm relative to Am,
+     * expressed in the world frame. That is, V_W_AmBm = J⋅v. */
     SapConstraintJacobian<T> J_;
 
-    /* Pose of intermediate frame N in the world frame. */
-    RigidTransform<T> X_WN_;
-
-    /* Position vector from Po to point Qo expressed in frame N. */
-    Vector3<T> p_PoQo_N_;
+    /* Position vector from Po to point Qo expressed in the world frame. */
+    Vector3<T> p_PoQo_W_;
 
     /* Rotation relating frame P to frame Q expressed as the axis angle
-     * product a = θ⋅k expressed in frame N */
-    Vector3<T> a_PQ_N_;
+     * product a = θ⋅k expressed in the world frame. */
+    Vector3<T> a_PQ_W_;
   };
 
   /* Constructs a weld constraint given its kinematics in a particular

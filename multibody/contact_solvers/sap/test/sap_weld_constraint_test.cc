@@ -60,11 +60,11 @@ typename SapWeldConstraint<T>::Kinematics MakeArbitraryKinematics(
   Vector3<T> p_BQ_W(10., 11., 12.);
   const int clique0 = 3;
   const int clique1 = 12;
-  auto Jv_FpFq_W = (num_cliques == 1) ? SapConstraintJacobian<T>(clique0, J62_W)
-                                      : SapConstraintJacobian<T>(
-                                            clique0, J62_W, clique1, J64_W);
+  auto J_AmBm_W = (num_cliques == 1) ? SapConstraintJacobian<T>(clique0, J62_W)
+                                     : SapConstraintJacobian<T>(clique0, J62_W,
+                                                                clique1, J64_W);
   return typename SapWeldConstraint<T>::Kinematics{
-      objectA, X_WP, p_AP_W, objectB, X_WQ, p_BQ_W, Jv_FpFq_W};
+      objectA, X_WP, p_AP_W, objectB, X_WQ, p_BQ_W, J_AmBm_W};
 }
 
 GTEST_TEST(SapWeldConstraint, SingleCliqueConstraint) {
@@ -73,19 +73,13 @@ GTEST_TEST(SapWeldConstraint, SingleCliqueConstraint) {
       MakeArbitraryKinematics(num_cliques);
   SapWeldConstraint<double> c(kinematics);
 
-  const MatrixX<double>& R_NW =
-      c.kinematics().X_WN().rotation().matrix().transpose();
-  MatrixX<double> J62_N(J62_W.rows(), J62_W.cols());
-  J62_N << R_NW * J62_W.template topRows<3>(),
-      R_NW * J62_W.template bottomRows<3>();
-
   EXPECT_EQ(c.num_objects(), 2);
   EXPECT_EQ(c.num_constraint_equations(), 6);
   EXPECT_EQ(c.num_cliques(), 1);
   EXPECT_EQ(c.first_clique(), c.kinematics().jacobian().clique(0));
   EXPECT_THROW(c.second_clique(), std::exception);
   EXPECT_TRUE(CompareMatrices(c.first_clique_jacobian().MakeDenseMatrix(),
-                              J62_N, kEps, MatrixCompareType::relative));
+                              J62_W, kEps, MatrixCompareType::relative));
   EXPECT_THROW(c.second_clique_jacobian(), std::exception);
 
   // Check default SapHolonomicConstraint::Parameters values are set.
@@ -106,27 +100,15 @@ GTEST_TEST(SapWeldConstraint, TwoCliquesConstraint) {
       MakeArbitraryKinematics(num_cliques);
   SapWeldConstraint<double> c(kinematics);
 
-  const MatrixX<double>& R_NW =
-      c.kinematics().X_WN().rotation().matrix().transpose();
-  MatrixX<double> J62_N(J62_W.rows(), J62_W.cols());
-  J62_N << R_NW * J62_W.template topRows<3>(),
-      R_NW * J62_W.template bottomRows<3>();
-  MatrixX<double> J64_N(J64_W.rows(), J64_W.cols());
-  J64_N << R_NW * J64_W.template topRows<3>(),
-      R_NW * J64_W.template bottomRows<3>();
-
   EXPECT_EQ(c.num_objects(), 2);
   EXPECT_EQ(c.num_constraint_equations(), 6);
   EXPECT_EQ(c.num_cliques(), 2);
   EXPECT_EQ(c.first_clique(), c.kinematics().jacobian().clique(0));
   EXPECT_EQ(c.second_clique(), c.kinematics().jacobian().clique(1));
-
-  // c's Jacobian is expressed in intermediate frame N, but we expect R_NW = I
-  // by construction, so J(0) == J62_W and J(1) == J64_W.
   EXPECT_TRUE(CompareMatrices(c.first_clique_jacobian().MakeDenseMatrix(),
-                              J62_N, kEps, MatrixCompareType::relative));
+                              J62_W, kEps, MatrixCompareType::relative));
   EXPECT_TRUE(CompareMatrices(c.second_clique_jacobian().MakeDenseMatrix(),
-                              J64_N, kEps, MatrixCompareType::relative));
+                              J64_W, kEps, MatrixCompareType::relative));
 
   // Check default SapHolonomicConstraint::Parameters values are set.
   EXPECT_EQ(c.parameters().impulse_lower_limits(), -kInf * Vector6d::Ones());
@@ -249,18 +231,17 @@ GTEST_TEST(SapWeldConstraint, AccumulateSpatialImpulses) {
   const Vector6d gamma =
       (Vector6d() << -1.2, 3.4, 5.6, -7.8, 9.1, -2.3).finished();
 
-  const SpatialForce<double> gamma_Bq_N(gamma.template head<3>(),
-                                        gamma.template tail<3>());
-
-  const RotationMatrix<double>& R_WN = c.kinematics().X_WN().rotation();
-
   // Expected spatial impulse on B.
-  const SpatialForce<double> gamma_BBo_W =
-      (R_WN * gamma_Bq_N).Shift(-kinematics.p_BQ_W());
+  const SpatialForce<double> gamma_BBm_W(gamma.template head<3>(),
+                                         gamma.template tail<3>());
+  const Vector3d p_BoBm_W = kinematics.p_BQ_W() - 0.5 * kinematics.p_PoQo_W();
+  const SpatialForce<double> gamma_BBo_W = gamma_BBm_W.Shift(-p_BoBm_W);
 
   // Expected spatial impulse on A.
-  SpatialForce<double> gamma_AAo_W =
-      (R_WN * -gamma_Bq_N).Shift(-kinematics.p_AP_W());
+  const SpatialForce<double> gamma_AAm_W(-gamma.template head<3>(),
+                                         -gamma.template tail<3>());
+  const Vector3d p_AoAm_W = kinematics.p_AP_W() + 0.5 * kinematics.p_PoQo_W();
+  SpatialForce<double> gamma_AAo_W = gamma_AAm_W.Shift(-p_AoAm_W);
 
   const SpatialForce<double> gamma0_BBo_W(Vector3d(1., 2., 3),
                                           Vector3d(4., 5., 6));

@@ -564,9 +564,9 @@ void SapDriver<T>::AddWeldConstraints(
   DRAKE_DEMAND(problem != nullptr);
 
   const int nv = plant().num_velocities();
-  Matrix6X<T> J_WP(6, nv);
-  Matrix6X<T> J_WQ(6, nv);
-  MatrixX<T> J_PQ = MatrixX<T>::Zero(6, nv);
+  Matrix6X<T> J_WAm(6, nv);
+  Matrix6X<T> J_WBm(6, nv);
+  MatrixX<T> J_W_AmBm = MatrixX<T>::Zero(6, nv);
 
   const Frame<T>& frame_W = plant().world_frame();
 
@@ -583,20 +583,23 @@ void SapDriver<T>::AddWeldConstraints(
     const Vector3<T> p_BQ_W =
         X_WB.rotation() * spec.X_BQ.translation().template cast<T>();
 
+    // Let M be the midpoint of P and Q.
+    const Vector3<T> p_WM = 0.5 * (X_WP.translation() + X_WQ.translation());
+    const Vector3<T> p_AM = p_WM - X_WA.translation();
+    const Vector3<T> p_BM = p_WM - X_WB.translation();
+
     // Dense Jacobian.
     manager().internal_tree().CalcJacobianSpatialVelocity(
-        context, JacobianWrtVariable::kV, body_A.body_frame(),
-        spec.X_AP.translation().template cast<T>(), frame_W, frame_W,
-        &J_WP);
+        context, JacobianWrtVariable::kV, body_A.body_frame(), p_AM, frame_W,
+        frame_W, &J_WAm);
     manager().internal_tree().CalcJacobianSpatialVelocity(
-        context, JacobianWrtVariable::kV, body_B.body_frame(),
-        spec.X_BQ.translation().template cast<T>(), frame_W, frame_W,
-        &J_WQ);
-    J_PQ = (J_WQ - J_WP);
+        context, JacobianWrtVariable::kV, body_B.body_frame(), p_BM, frame_W,
+        frame_W, &J_WBm);
+    J_W_AmBm = (J_WBm - J_WAm);
 
     // TODO(joemasterjohn) consolidate make_jacobian for use by other
     // constraints that need the same jacobian computed here.
-    auto make_constraint_jacobian = [this, &J_PQ](const Body<T>& bodyA,
+    auto make_constraint_jacobian = [this, &J_W_AmBm](const Body<T>& bodyA,
                                                   const Body<T>& bodyB) {
       const TreeIndex treeA_index =
           tree_topology().body_to_tree_index(bodyA.index());
@@ -623,15 +626,15 @@ void SapDriver<T>::AddWeldConstraints(
       if (single_tree) {
         const TreeIndex tree_index =
             treeA_index.is_valid() ? treeA_index : treeB_index;
-        MatrixX<T> Jtree_W = J_PQ.middleCols(
+        MatrixX<T> Jtree_W = J_W_AmBm.middleCols(
             tree_topology().tree_velocities_start(tree_index),
             tree_topology().num_tree_velocities(tree_index));
         return SapConstraintJacobian<T>(tree_index, std::move(Jtree_W));
       } else {
-        MatrixX<T> JA_W = J_PQ.middleCols(
+        MatrixX<T> JA_W = J_W_AmBm.middleCols(
             tree_topology().tree_velocities_start(treeA_index),
             tree_topology().num_tree_velocities(treeA_index));
-        MatrixX<T> JB_W = J_PQ.middleCols(
+        MatrixX<T> JB_W = J_W_AmBm.middleCols(
             tree_topology().tree_velocities_start(treeB_index),
             tree_topology().num_tree_velocities(treeB_index));
         return SapConstraintJacobian<T>(treeA_index, std::move(JA_W),

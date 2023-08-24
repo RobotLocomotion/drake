@@ -15,71 +15,29 @@ namespace multibody {
 namespace contact_solvers {
 namespace internal {
 
-namespace {
-// Returns the pose of a frame F in frame M, where the pose of F is defined by
-// interpolating between the poses of frame A and B in frame M. The position of
-// the origin of F is given by linear interpolation between p_MAo and p_MBo:
-//   p_MFo = (1 - t) * p_MAo + t * p_MBo
-// and the orientation of F in M:
-//   R_MF = slerp(R_MA, R_MB, t)
-// We take the same convention as Eigen's slerp function in that:
-//   Interpolate(X_MA, X_MB, 0) = X_MA and Interpolate(X_MA, X_MB, 1) = X_MB
-// Only valid for 0 <= t <= 1 and will throw an exception otherwise.
 template <typename T>
-RigidTransform<T> Interpolate(const RigidTransform<T>& X_MA,
-                              const RigidTransform<T> X_MB, const T& t) {
-  DRAKE_THROW_UNLESS(0 <= t && t <= 1);
-  return RigidTransform<T>(
-      X_MA.rotation().ToQuaternion().slerp(t, X_MB.rotation().ToQuaternion()),
-      (1.0 - t) * X_MA.translation() + t * X_MB.translation());
-}
-}  // namespace
-
-template <typename T>
-SapWeldConstraint<T>::Kinematics::Kinematics(
-    int objectA, RigidTransform<T> X_WP, Vector3<T> p_AP_W, int objectB,
-    RigidTransform<T> X_WQ, Vector3<T> p_BQ_W, SapConstraintJacobian<T> J_W_PQ)
+SapWeldConstraint<T>::Kinematics::Kinematics(int objectA,
+                                             RigidTransform<T> X_WP,
+                                             Vector3<T> p_AP_W, int objectB,
+                                             RigidTransform<T> X_WQ,
+                                             Vector3<T> p_BQ_W,
+                                             SapConstraintJacobian<T> J_AmBm_W)
     : objectA_(objectA),
       X_WP_(std::move(X_WP)),
       p_AP_W_(std::move(p_AP_W)),
       objectB_(objectB),
       X_WQ_(std::move(X_WQ)),
       p_BQ_W_(std::move(p_BQ_W)),
-      J_(std::move(J_W_PQ)) {
+      J_(std::move(J_AmBm_W)) {
   // Thus far only dense Jacobian blocks are supported, i.e. rigid body
   // applications in mind.
   DRAKE_THROW_UNLESS(J_.blocks_are_dense());
 
-  X_WN_ = Interpolate(X_WP_, X_WQ_, T(0.5));
+  p_PoQo_W_ = X_WQ_.translation() - X_WP_.translation();
+  const AngleAxis<T> R_PQ =
+      X_WP_.rotation().InvertAndCompose(X_WQ_.rotation()).ToAngleAxis();
 
-  const math::RigidTransform<T> X_NP = X_WN_.InvertAndCompose(X_WP_);
-  const math::RigidTransform<T> X_NQ = X_WN_.InvertAndCompose(X_WQ_);
-
-  p_PoQo_N_ = X_NQ.translation() - X_NP.translation();
-  const RotationMatrix<T> R_PQ =
-      X_WP_.rotation().InvertAndCompose(X_WQ_.rotation());
-
-  const Matrix3<T>& R = R_PQ.matrix();
-
-  // Rodrigues' formula states that for a rotation matrix R:
-  //   R = I + sin(θ)⋅K + (1−cos(θ))⋅K²
-  // where K = k× is the skew-symmetric cross product matrix
-  // (such that k×⋅v = k×v), and where θ and k are the angle and axis
-  // representation of rotation matrix R. Because I and K² are symmetric
-  // and K is antisymmetric, we can write:
-  //   R - Rᵀ = 2⋅sin(θ)⋅K
-  // For small angles, we can approximate sin(θ) ≈ θ.
-  // Using this approximation, we can write sin(θ)⋅K ≈ θ⋅K = a×, where we
-  // defined a = θk. We can then recover the components of a using
-  //   a× = (R-Rᵀ)/2
-  // and the definition of the skew-symmetric cross product matrix:
-  //
-  //        |   0  -a₂  a₁ |
-  //   a× = |  a₂   0  -a₀ |
-  //        | -a₁  a₀   0  |
-  //
-  a_PQ_N_ = Vector3<T>(0.5 * (R(2, 1) - R(1, 2)), 0.5 * (R(0, 2) - R(2, 0)),
-                       0.5 * (R(1, 0) - R(0, 1)));
+  a_PQ_W_ = X_WP.rotation() * (R_PQ.angle() * R_PQ.axis());
 }
 
 template <typename T>
@@ -119,74 +77,74 @@ SapWeldConstraint<T>::MakeSapHolonomicConstraintKinematics(
 
   // Constraint function g.
   Vector6<T> g =
-      (Vector6<T>() << kinematics.a_PQ_N(), kinematics.p_PoQo_N()).finished();
+      (Vector6<T>() << kinematics.a_PQ_W(), kinematics.p_PoQo_W()).finished();
   Vector6<T> b = Vector6<T>::Zero();  // Bias term.
 
-  // Consider the constraint velocity ġ = (ȧ_PQ_N, ṗ_PoQo_N). The translational
-  // component:
-  //   ṗ_PoQo_N = v_N_PoQo_N
-  // I.e. by definition, the velocity of Qo relative to Po, measured and
-  // expressed in frame N. Only when P and Q are coincident is their relative
-  // velocity independent of which frame it is measured in. This means that the
-  // way we model this constraint lacks frame-invariance. It is unclear at this
-  // time if choosing a particular frame leads to a better approximation,
-  // conditioning, etc. We make an approximation by instead measuring the
-  // relative velocity in the world frame for convenience, v_W_PoQo ≈ v_N_PoQo,
-  // leading to a small error of order O(‖p_PQ‖⋅‖w_WN‖).
+  // To write this holonomic constraint implicitly, we need to formulate
+  // g(t + dt). Typically we just make use the first-order truncation of the
+  // Taylor series for g(t):
+  //   g(t + dt) = g(0) + dt⋅ʷdg/dt + O(dt²)
+  // using vc = ʷdg/dt as the constraint velocity and accumulating a small error
+  // of O(dt²). We stray from this approach for several reasons, outlined below.
   //
-  // The angular component:
-  //   ȧ_PQ = ᴺd(θk)/dt = ᴺdθ/dt⋅k + θ⋅ᴺdk/dt
+  // We can decompose constraint velocity into:
+  //   ʷdg/dt = (a_PQ_W, v_W_PoQo).
+  // First let's consider the translational component, v_W_PoQo. Choosing
+  // this quantity directly would lead to an impulse applied at Po and an equal
+  // and opposite impulse at Qo. This unfortunately does not conserve angular
+  // momentum and introduces a small error of order O(‖γ‖⋅‖p_PQ‖), where ‖γ‖ is
+  // the magnitude of the constraint impulse γ. We instead choose a velocity
+  // that leads to an impulse that conserves angular momentum.
+  //
+  // With M the midpoint of Po and Qo, we define Am to be a material point on A
+  // coincident with M and likewise Bm a material point on B, coincident with M.
+  // We define the translational component of our constraint velocity as:
+  //   vcₜ ≜ v_W_AmBm
+  // We can write v_W_AmBm in terms of v_W_PoQo:
+  //   v_W_AmBm = v_WBm - v_WAm
+  //            = (v_WQo + w_WB×p_QoBm_W) - (v_WPo + w_WA×p_PoAm_W)
+  //            = v_W_PoQo + (w_WB×(p_QoPo_W / 2) - w_WA×(p_PoQo_W / 2))
+  //            = v_W_PoQo + p_PoQo_W×(w_WA + w_WB)/2
+  // Then rearranging the translational component of our approximation:
+  //   gₜ(t + dt) = gₜ(0) + dt⋅v_W_PoQo + O(dt²)
+  //              = gₜ(0) + dt⋅(v_W_AmBm - p_PoQo_W×(w_WA + w_WB)/2) + O(dt²)
+  //              = gₜ(0) + dt⋅v_W_AmBm + O(dt⋅‖p_PQ‖⋅‖w_WA + w_WB‖)
+  //
+  // Thus choosing v_W_AmBm as the translational component of vcₜ approximates
+  // gₜ(t + dt) with an error order O(dt⋅‖p_PQ‖⋅‖w_WA + w_WB‖), which we can
+  // expect to be small when the constraint is close to satisfied. We show
+  // below (in DoAccumulateSpatialImpulses()) that this choice has the
+  // additional benefit of conserving angular momentum.
+  //
+  // For the angular component:
+  //   ᴺd(a_PQ)/dt = ᴺd(θk)/dt = ᴺdθ/dt⋅k + θ⋅ᴺdk/dt
   // From [Mitiguy 2022, §9.2.2]:
   //   θ⋅ᴮdk/dt = θ/2⋅[(cos(θ/2)/sin(θ/2))⋅(w_AB − ᴮdθ/dt⋅k) + k×w_AB)]
   // If we make a small angle assumption θ ≈ 0 to get:
   //   θ⋅ᴮdk/dt ≈ w_AB − ᴮdθ/dt⋅k + θ/2⋅k×w_AB
   // Thus:
-  //   ȧ_PQ ≈ ᴮdθ/dt⋅k + w_AB − ᴮdθ/dt⋅k + θ/2⋅k×w_AB
-  //          = w_AB + θ/2⋅k×w_AB
+  //   ᴮd(a_PQ)/dt ≈ ᴮdθ/dt⋅k + w_AB − ᴮdθ/dt⋅k + θ/2⋅k×w_AB
+  //               = w_AB + θ/2⋅k×w_AB
   // Again making the small angle assumption and ignoring the θ dependent term:
-  //   ȧ_PQ ≈ w_AB
+  //   ᴮd(a_PQ)/dt ≈ w_AB
   //
   // N.B. We had a choice of which frame to measure dk/dt, but when we make the
   // small angle assumption the frame dependent terms drop out. Our
-  // approximation is independent of any frame between P and Q, thus:
-  //   ȧ_PQ_N ≈ w_AB_N
+  // approximation is independent of any frame between P and Q, thus we can say
+  // that measured and expressed in the world frame:
+  //   ʷd(a_PQ)/dt ≈ w_AB
   //
   // Then by our approximations:
-  //   ġ = (ȧ_PQ_N, ṗ_PoQo_N) ≈ (w_AB_N, v_W_PoQo_N) = V_W_PQ_N
+  //   vc = (ʷd(a_PQ)/dt, ʷd(p_PoQo)/dt) ≈ (w_AB_W, v_W_AmBm) = V_W_AmBm
   //
   // Thus the constraint Jacobian is the relative spatial velocity jacobian
-  // between P and Q expressed in frame N:
-  //  ġ = V_W_PQ_N = R_NW ⋅ V_W_PQ = (R_NW ⋅ J_W_PQ) ⋅ v = J ⋅ v
+  // between P and Q in the world frame:
+  //  ġ = V_W_AmBm = J_W_AmBm ⋅ v
   //
   // [Mitiguy 2022] Mitiguy, P., 2022. Advanced Dynamics & Motion Simulation.
-  const MatrixX<T> R_NW = kinematics.X_WN().rotation().matrix().transpose();
-
-  const SapConstraintJacobian<T>& J = kinematics.jacobian();
-  const MatrixX<T> J_W_PQ_first_clique = J.clique_jacobian(0).MakeDenseMatrix();
-  MatrixX<T> J_N_PQ_first_clique(J_W_PQ_first_clique.rows(),
-                                 J_W_PQ_first_clique.cols());
-  J_N_PQ_first_clique << R_NW * J_W_PQ_first_clique.template topRows<3>(),
-      R_NW * J_W_PQ_first_clique.template bottomRows<3>();
-
-  if (kinematics.jacobian().num_cliques() == 1) {
-    return typename SapHolonomicConstraint<T>::Kinematics(
-        std::move(g),
-        SapConstraintJacobian<T>(J.clique(0), std::move(J_N_PQ_first_clique)),
-        std::move(b));
-  }
-
-  const MatrixX<T> J_W_PQ_second_clique =
-      J.clique_jacobian(1).MakeDenseMatrix();
-  MatrixX<T> J_N_PQ_second_clique(J_W_PQ_second_clique.rows(),
-                                  J_W_PQ_second_clique.cols());
-  J_N_PQ_second_clique << R_NW * J_W_PQ_second_clique.template topRows<3>(),
-      R_NW * J_W_PQ_second_clique.template bottomRows<3>();
 
   return typename SapHolonomicConstraint<T>::Kinematics(
-      std::move(g),
-      SapConstraintJacobian<T>(J.clique(0), std::move(J_N_PQ_first_clique),
-                               J.clique(1), std::move(J_N_PQ_second_clique)),
-      std::move(b));
+      std::move(g), std::move(kinematics.jacobian()), std::move(b));
 }
 
 template <typename T>
@@ -198,11 +156,11 @@ void SapWeldConstraint<T>::DoAccumulateSpatialImpulses(
   // B are free bodies for simplicity. In this case the generalized velocities v
   // are just the spatial velocities of each body in the world frame stacked:
   //   v = [w_WA, v_WA, w_WB, v_WB]
-  // We know that J⋅v = V_W_PQ_N = V_WQ_N - V_WP_N. Thus J is just the operator
+  // We know that J⋅v = V_W_AmBm = V_WBm - V_WAm. Thus J is just the operator
   // that takes the difference of the body's spatial velocities measured and
-  // expressed in world, shifts to P and Q and re-expresses in N:
-  //   J = [         -[R_NW]         0            [R_NW]       0]
-  //       [[R_NW]⋅[p_AP_W]ₓ  -[R_NW]  -[R_NW]⋅[p_BQ_W]ₓ [R_NW]]
+  // expressed in world, and shifts to Am and Bm:
+  //   J = [      -[I]      0          [I]    0]
+  //       [[p_AoAm_W]ₓ  -[I]  -[p_BoBm_W]ₓ [I]]
   // We also know from the optimality condition of the SAP formulation
   // (essentially the balance of momentum condition):
   //   A⋅(v - v*) - Jᵀ⋅γ = 0
@@ -210,30 +168,30 @@ void SapWeldConstraint<T>::DoAccumulateSpatialImpulses(
   // body A and a spatial impulse on body B stacked:
   //   Jᵀ⋅γ = [Γ_Ao_W, Γ_Bo_W]
   // Where:
-  //   Γ_Ao_W = ([R_WN]⋅(-γᵣ) - [p_PA]ₓ⋅[R_WN]⋅(-γₜ), [R_WN]⋅(-γₜ)) and
-  //   Γ_Bo_W = ([R_WN]⋅( γᵣ) - [p_QB]ₓ⋅[R_WN]⋅( γᵣ), [R_WN]⋅( γₜ))
+  //   Γ_Ao_W = ((-γᵣ) - [p_AmAo]ₓ⋅(-γₜ), (-γₜ)) and
+  //   Γ_Bo_W = (( γᵣ) - [p_BmBo]ₓ⋅( γᵣ), ( γₜ))
   // Therefore Jᵀ can be understood as the operator that takes a spatial impulse
-  // -γ (expressed in N) applied on body A at Po, re-expresses in W, and shifts
-  // to Ao. As well it takes the equal and opposite spatial impulse γ (expressed
-  // in N) applied on body B at Qo, re-expresses in W, and shifts to Bo.
-  // Thus, this constraint can be interpreted as applying an impulse γ at point
-  // Qo on B and an impulse -γ at point Po on A. As a consequence the constraint
-  // satisfies Newton's 3rd law, but does introduce a small moment of order
-  // O(‖γ‖⋅‖p_PQ‖) when P and Q are not coincident.
-
-  const RotationMatrix<T>& R_WN = kinematics().X_WN().rotation();
+  // -γ applied on body A at Am and shifts to Ao. As well it takes the equal and
+  // opposite spatial impulse γ applied on body B at Bm and shifts to Bo. Thus,
+  // this constraint can be interpreted as applying an impulse γ at point Bm on
+  // B and an impulse -γ at point Am on A. As a consequence the constraint
+  // impulse satisfies Newton's 3rd law and conserves angular momentum.
   if (i == 0) {
-    // Object A. Re-express in world and shift to Ao.
-    // Spatial impulse on A, applied at point Po, expressed in frame N.
-    const SpatialForce<T> gamma_APo_N(-gamma.template head<3>(),
+    // Object A.
+    // Spatial impulse on A, applied at point Am, expressed in the world frame.
+    const SpatialForce<T> gamma_AAm_W(-gamma.template head<3>(),
                                       -gamma.template tail<3>());
-    *F += (R_WN * gamma_APo_N).Shift(-kinematics().p_AP_W());
+    const Vector3<T> p_AoAm_W =
+        kinematics().p_AP_W() + 0.5 * kinematics().p_PoQo_W();
+    *F += gamma_AAm_W.Shift(-p_AoAm_W);
   } else {
-    // Object B. Re-express in world and shift to Bo.
-    // Spatial impulse on B, applied at point Qo, expressed in frame N.
-    const SpatialForce<T> gamma_BQo_N(gamma.template head<3>(),
+    // Object B.
+    // Spatial impulse on B, applied at point Bm, expressed in the world frame.
+    const SpatialForce<T> gamma_BBm_W(gamma.template head<3>(),
                                       gamma.template tail<3>());
-    *F += (R_WN * gamma_BQo_N).Shift(-kinematics().p_BQ_W());
+    const Vector3<T> p_BoBm_W =
+        kinematics().p_BQ_W() - 0.5 * kinematics().p_PoQo_W();
+    *F += gamma_BBm_W.Shift(-p_BoBm_W);
     return;
   }
 }

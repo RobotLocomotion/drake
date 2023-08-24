@@ -28,6 +28,7 @@ using Eigen::Vector3d;
 using Eigen::VectorXd;
 
 constexpr double kInfinity = std::numeric_limits<double>::infinity();
+constexpr double kEps = 2 * std::numeric_limits<double>::epsilon();
 
 namespace drake {
 namespace multibody {
@@ -109,10 +110,8 @@ class TwoBodiesTest : public ::testing::TestWithParam<TestConfig> {
   // Parameters of the problem. Arbitrary and non-zero.
   const Vector3d p_AP_{1.0, -2.0, 3.0};
   const Vector3d p_BQ_{-5.0, 4.0, -6.0};
-  const RigidTransformd X_AP_{RotationMatrixd::MakeZRotation(theta),
-                              p_AP_};
-  const RigidTransformd X_BQ_{RotationMatrixd::MakeZRotation(-theta),
-                              p_BQ_};
+  const RigidTransformd X_AP_{RotationMatrixd::MakeZRotation(theta), p_AP_};
+  const RigidTransformd X_BQ_{RotationMatrixd::MakeZRotation(-theta), p_BQ_};
   const Vector3d kOffset_{0.1, 0.2, 0.3};
 };
 
@@ -172,16 +171,9 @@ TEST_P(TwoBodiesTest, ConfirmConstraintProperties) {
   EXPECT_EQ(p.beta(), 0.1);
 
   // The constraint function for a weld constraint is defined as:
-  //   g = (a_PQ_N, p_PQ_N)
-  //
-  // Where frame N is defined as an interpolated frame "halfway" between frames
-  // P and Q. The position of the origin of frame N in the world frame, p_WNo,
-  // is the midpoint of p_WPo and p_WQo and its orientation in the world R_WN
-  // frame is the midpoint of the spherical linear interpolation of R_WP and
-  // R_WQ.
-  //
-  // a_PQ_N = θ⋅k is the axis-angle representation of of the relative
-  // orientation between frames P and Q, expressed in frame N.
+  //   g = (a_PQ_W, p_PQ_W)
+  // a_PQ_W = θ⋅k is the axis-angle representation of of the relative
+  // orientation between frames P and Q, expressed the world frame.
 
   const Vector6d& g = constraint->constraint_function();
   const RigidTransformd& X_WA = plant_.EvalBodyPoseInWorld(*context_, *bodyA_);
@@ -189,99 +181,78 @@ TEST_P(TwoBodiesTest, ConfirmConstraintProperties) {
   const RigidTransformd X_WP = X_WA * X_AP_;
   const RigidTransformd X_WQ = X_WB * X_BQ_;
 
-  // Linear interpolation of two poses measured in the common frame M.
-  const auto& interpolate = [](const RigidTransformd& X_MA,
-                               const RigidTransformd& X_MB, double t) {
-    return math::RigidTransformd(
-        X_MA.rotation().ToQuaternion().slerp(t, X_MB.rotation().ToQuaternion()),
-        (1.0 - t) * X_MA.translation() + t * X_MB.translation());
-  };
+  const Vector3d p_PQ_W = X_WQ.translation() - X_WP.translation();
+  EXPECT_TRUE(CompareMatrices(g.template tail<3>(), p_PQ_W));
 
-  const math::RigidTransformd X_WN = interpolate(X_WP, X_WQ, 0.5);
-
-  const math::RigidTransformd X_NP = X_WN.InvertAndCompose(X_WP);
-  const math::RigidTransformd X_NQ = X_WN.InvertAndCompose(X_WQ);
-
-  const Vector3d p_PQ_N = X_NQ.translation() - X_NP.translation();
-  EXPECT_TRUE(CompareMatrices(g.template tail<3>(), p_PQ_N));
-
-  const RotationMatrixd R_PQ = X_NP.rotation().transpose() * X_NQ.rotation();
+  const RotationMatrixd R_PQ =
+      X_WP.rotation().InvertAndCompose(X_WQ.rotation());
   const Eigen::AngleAxis<double> a = R_PQ.ToAngleAxis();
-  const Vector3d a_PQ_N = a.angle() * a.axis();
-  // The constraint makes a small angle approximation on sin(θ) so we have
-  // an expected relative error of magnitude of order O(θ³).
-  const double expected_error = 2 * std::pow(theta, 3);
-  EXPECT_TRUE(CompareMatrices(g.template head<3>(), a_PQ_N, expected_error,
-                              MatrixCompareType::relative));
+  const Vector3d a_PQ_W = X_WP.rotation() * (a.angle() * a.axis());
+  EXPECT_TRUE(CompareMatrices(g.template head<3>(), a_PQ_W));
 
   // Verify the constraint Jacobians (based on number of cliques).
   // We know by construction that the 6 generalized velocities for a floating
   // body, A, are laid out in the same order as V_WA. We can express the
   // Jacobian of the constraint with respect to each body's spatial velocity:
   //
-  // g = (a_PQ_N, p_PQ_N)
+  // g = (a_PQ_W, p_PQ_W)
   //
-  // d(g)/dt = V_W_PQ_N
+  // d(g)/dt = V_W_AmBm (as documented in the class)
   //
-  // N.B. Only when P and Q are coincident is their relative velocity
-  // independent of which frame it is measured in. We choose to measure in the
-  // world frame as our most convenient Newtonian frame. See the class
-  // documentation of SapWeldConstraint for more details.
+  // V_W_AmBm = V_WBm_N - V_WAm
   //
-  // V_W_PQ_N = V_WQ_N - V_WP_N
+  //        =   (w_WB, v_WB + w_WB x p_BBm_W)
+  //          - (w_WA, v_WA + w_WA x p_AAm_W)
   //
-  //        =   (w_WB_N, v_WB_N + w_WB_N x p_BQ_N)
-  //          - (w_WA_N, v_WA_N + w_WA_N x p_AP_N)
+  //        =   (w_WB, v_WB - p_BBm_W x w_WB)
+  //          - (w_WA, v_WA - p_AAm_W x w_WA)
   //
-  //        =   (w_WB_N, v_WB_N - p_BQ_N x w_WB_N)
-  //          - (w_WA_N, v_WA_N - p_AP_N x w_WA_N)
-  //
-  //        = [   [R_NW]       0 ]            [   [R_NW]       0 ]
-  //          [-[p_BQ_N]ₓ [R_NW] ] ⋅ V_WB_W - [-[p_AP_N]ₓ [R_NW] ] ⋅ V_WA_W
+  //        = [       [I]    0 ]          [       [I]    0 ]
+  //          [-[p_BBm_W]ₓ [I] ] ⋅ V_WB - [-[p_AAm_W]ₓ [I] ] ⋅ V_WA
   //
   //        = J_B ⋅ V_WB - J_A ⋅ V_WA
-
-  const Matrix3d& R_NW = X_WN.rotation().matrix().transpose();
-  const Matrix3d R_NA =
-      X_WN.rotation().InvertAndCompose(X_WA.rotation()).matrix();
-  const Matrix3d R_NB =
-      X_WN.rotation().InvertAndCompose(X_WB.rotation()).matrix();
-  const Vector3d p_BQ_N = R_NB * X_BQ_.translation();
-  const Vector3d p_AP_N = R_NA * X_AP_.translation();
+  const Vector3d p_AAm_W = constraint->kinematics().p_AP_W() +
+                           0.5 * constraint->kinematics().p_PoQo_W();
+  const Vector3d p_BBm_W = constraint->kinematics().p_BQ_W() -
+                           0.5 * constraint->kinematics().p_PoQo_W();
+  const Matrix3d I3 = Matrix3d::Identity();
   // clang-format off
-  const Matrix3d p_AP_Nx =
-      (Matrix3d() <<          0, -p_AP_N(2),  p_AP_N(1),
-                      p_AP_N(2),          0, -p_AP_N(0),
-                     -p_AP_N(1),  p_AP_N(0),          0).finished();
-  const Matrix3d p_BQ_Nx =
-      (Matrix3d() <<          0, -p_BQ_N(2),  p_BQ_N(1),
-                      p_BQ_N(2),          0, -p_BQ_N(0),
-                     -p_BQ_N(1),  p_BQ_N(0),          0).finished();
+  const Matrix3d p_AAm_Wx =
+      (Matrix3d() <<           0, -p_AAm_W(2),  p_AAm_W(1),
+                      p_AAm_W(2),           0, -p_AAm_W(0),
+                     -p_AAm_W(1),  p_AAm_W(0),           0).finished();
+  const Matrix3d p_BBm_Wx =
+      (Matrix3d() <<           0, -p_BBm_W(2),  p_BBm_W(1),
+                      p_BBm_W(2),           0, -p_BBm_W(0),
+                     -p_BBm_W(1),  p_BBm_W(0),           0).finished();
   // clang-format on
   if (expected_num_cliques == 1) {
     const MatrixXd& J = constraint->first_clique_jacobian().MakeDenseMatrix();
     // clang-format off
       const MatrixXd J_expected =
-        (MatrixXd(6, 6) <<     R_NW, Matrix3d::Zero(),
-                           -p_BQ_Nx,             R_NW).finished();
+        (MatrixXd(6, 6) <<         I3, Matrix3d::Zero(),
+                            -p_BBm_Wx,               I3).finished();
     // clang-format on
-    EXPECT_TRUE(CompareMatrices(J, J_expected));
+    EXPECT_TRUE(
+        CompareMatrices(J, J_expected, kEps, MatrixCompareType::relative));
   } else {
     const MatrixXd& Ja = constraint->first_clique_jacobian().MakeDenseMatrix();
     // clang-format off
     const MatrixXd Ja_expected =
-      -(MatrixXd(6, 6) <<      R_NW, Matrix3d::Zero(),
-                           -p_AP_Nx,             R_NW).finished();
+      -(MatrixXd(6, 6) <<         I3, Matrix3d::Zero(),
+                           -p_AAm_Wx,               I3).finished();
     // clang-format on
-    EXPECT_TRUE(CompareMatrices(Ja, Ja_expected));
+    EXPECT_TRUE(
+        CompareMatrices(Ja, Ja_expected, kEps, MatrixCompareType::relative));
 
     const MatrixXd& Jb = constraint->second_clique_jacobian().MakeDenseMatrix();
     // clang-format off
       const MatrixXd Jb_expected =
-        (MatrixXd(6, 6) <<     R_NW, Matrix3d::Zero(),
-                           -p_BQ_Nx,             R_NW).finished();
+        (MatrixXd(6, 6) <<        I3, Matrix3d::Zero(),
+                           -p_BBm_Wx,               I3).finished();
     // clang-format on
-    EXPECT_TRUE(CompareMatrices(Jb, Jb_expected));
+    EXPECT_TRUE(
+        CompareMatrices(Jb, Jb_expected, kEps, MatrixCompareType::relative));
   }
 }
 
