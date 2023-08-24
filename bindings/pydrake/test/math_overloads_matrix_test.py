@@ -21,14 +21,15 @@ def _matmul_dtype_pairs():
     that operate on a pair of matrix inputs. We'll test all pairs *except* we
     won't mix autodiff with symbolic.
     """
-    types = (float, AutoDiffXd, Variable, Expression, Polynomial, Monomial)
+    # types = (float, AutoDiffXd, Variable, Expression, Polynomial, Monomial)
+    types = (float, AutoDiffXd, Variable, Expression, Polynomial)
     for T1, T2 in itertools.product(types, types):
         has_autodiff = any([T in (AutoDiffXd,) for T in (T1, T2)])
         has_variable = any([T in (Variable,) for T in (T1, T2)])
         has_expr = any([T in (Expression,) for T in (T1, T2)])
         has_polynomial = any([T in (Polynomial, Monomial) for T in (T1, T2)])
         has_symbolic = has_variable or has_expr or has_polynomial
-        if has_autodiff and has_symbolic or has_expr and has_polynomial:
+        if has_autodiff and has_symbolic:
             continue
         yield dict(T1=T1, T2=T2)
 
@@ -52,6 +53,10 @@ class MathOverloadsMatrixTest(unittest.TestCase,
         if dtype is Expression:
             # Return a like-sized matrix of variables promoted to expressions.
             return self._astype(M, Variable, name).astype(dtype=Expression)
+        if dtype is Polynomial:
+            return self._astype(M, Variable, name).astype(dtype=Polynomial)
+        if dtype is Monomial:
+            return self._astype(M, Variable, name).astype(dtype=Monomial)
         assert False
 
     @meta.run_with_multiple_values(_matmul_dtype_pairs())

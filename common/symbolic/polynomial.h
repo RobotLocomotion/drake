@@ -111,6 +111,14 @@ class Polynomial {
   /// @throws std::exception if @p e is not a polynomial.
   explicit Polynomial(const Expression& e);
 
+  /// Constructs a polynomial from a varaible @p v. Note that v is considered an
+  /// indeterminate.
+  //
+  // Note that this implicit conversion is desirable to have a dot product of
+  // two Eigen::Vector<Variable>s return a Polynomial.
+  // NOLINTNEXTLINE(runtime/explicit)
+  explicit Polynomial(const Variable& v);
+
   /// Constructs a polynomial from an expression @p e by decomposing it with
   /// respect to @p indeterminates.
   ///
@@ -491,15 +499,16 @@ typename std::enable_if_t<
         // {Polynomial, Monomial, double} x {Polynomial, Monomial, double}
         (std::is_same_v<typename MatrixL::Scalar, Polynomial> ||
          std::is_same_v<typename MatrixL::Scalar, Monomial> ||
-         std::is_same_v<typename MatrixL::Scalar, double>) &&
-        (std::is_same_v<typename MatrixR::Scalar, Polynomial> ||
-         std::is_same_v<typename MatrixR::Scalar, Monomial> ||
-         std::is_same_v<typename MatrixR::Scalar, double>) &&
+         std::is_same_v<
+             typename MatrixL::Scalar,
+             double>)&&(std::is_same_v<typename MatrixR::Scalar, Polynomial> ||
+                        std::is_same_v<typename MatrixR::Scalar, Monomial> ||
+                        std::is_same_v<typename MatrixR::Scalar, double>)&&
         // Exclude Polynomial x Polynomial case (because the other seven
         // operations call this case. If we include this case here, we will have
         // self-recursion).
         !(std::is_same_v<typename MatrixL::Scalar, Polynomial> &&
-          std::is_same_v<typename MatrixR::Scalar, Polynomial>) &&
+          std::is_same_v<typename MatrixR::Scalar, Polynomial>)&&
         // Exclude double x double case.
         !(std::is_same_v<typename MatrixL::Scalar, double> &&
           std::is_same_v<typename MatrixR::Scalar, double>),
@@ -511,85 +520,87 @@ operator*(const MatrixL& lhs, const MatrixR& rhs) {
   // no-op.
   return lhs.template cast<Polynomial>() * rhs.template cast<Polynomial>();
 }
-
-//Eigen::MatrixX<Polynomial>
-//operator*(const Eigen::MatrixX<Polynomial>& lhs, const Eigen::MatrixX<Variable>& rhs) {
-//  return lhs * rhs.template cast<Polynomial>();
-//}
-
-
 #endif
-//
-///// Computes the Jacobian matrix J of the vector function @p f with respect to
-///// @p vars. J(i,j) contains ∂f(i)/∂vars(j).
-/////
-/////  For example, Jacobian([x * cos(y), x * sin(y), x^2], {x, y}) returns the
-/////  following 3x2 matrix:
-/////  <pre>
-/////  = |cos(y)   -x * sin(y)|
-/////    |sin(y)    x * cos(y)|
-/////    | 2 * x             0|
-/////  </pre>
-/////
-///// @pre {@p vars is non-empty}.
-//MatrixX<Polynomial> Jacobian(const Eigen::Ref<const VectorX<Polynomial>>& f,
-//                             const std::vector<Variable>& vars);
-//
-///// Computes the Jacobian matrix J of the vector function @p f with respect to
-///// @p vars. J(i,j) contains ∂f(i)/∂vars(j).
-/////
-///// @pre {@p vars is non-empty}.
-///// @pydrake_mkdoc_identifier{expression}
-//MatrixX<Polynomial> Jacobian(const Eigen::Ref<const VectorX<Polynomial>>& f,
-//                             const Eigen::Ref<const VectorX<Variable>>& vars);
-//
-//
-///// Evaluates a symbolic matrix @p m using @p env and @p random_generator.
-/////
-///// If there is a random variable in @p m which is unassigned in @p env, this
-///// function uses @p random_generator to sample a value and use the value to
-///// substitute all occurrences of the random variable in @p m.
-/////
-///// @returns a matrix of double whose size is the size of @p m.
-///// @throws std::exception if NaN is detected during evaluation.
-///// @throws std::exception if @p m includes unassigned random variables but
-/////                           @p random_generator is `nullptr`.
-///// @pydrake_mkdoc_identifier{expression}
-//template <typename Derived>
-//std::enable_if_t<std::is_same_v<typename Derived::Scalar, Polynomial>,
-//                 MatrixLikewise<double, Derived>>
-//Evaluate(const Eigen::MatrixBase<Derived>& m,
-//         const Environment& env = Environment{},
-//         RandomGenerator* random_generator = nullptr) {
-//  // Note that the return type is written out explicitly to help gcc 5 (on
-//  // ubuntu).  Previously the implementation used `auto`, and placed  an `
-//  // .eval()` at the end to prevent lazy evaluation.
-//  if (random_generator == nullptr) {
-//    return m.unaryExpr([&env](const Polynomial& p) {
-//      return p.Evaluate(env);
-//    });
-//  } else {
-//    // Construct an environment by extending `env` by sampling values for the
-//    // random variables in `m` which are unassigned in `env`.
-//    const Environment env_with_random_variables{PopulateRandomVariables(
-//        env, GetDistinctVariables(m), random_generator)};
-//    return m.unaryExpr([&env_with_random_variables](const Polynomial& p) {
-//      return p.Evaluate(env_with_random_variables);
-//    });
-//  }
-//}
-//
-///** Evaluates @p m using a given environment (by default, an empty environment).
-// *
-// * @throws std::exception if there exists a variable in @p m whose value is
-// *                        not provided by @p env.
-// * @throws std::exception if NaN is detected during evaluation.
-// */
-//Eigen::SparseMatrix<double> Evaluate(
-//    const Eigen::Ref<const Eigen::SparseMatrix<Expression>>& m,
-//    const Environment& env = Environment{});
+
+/// Provides the following operations:
+///
+/// - Matrix<Polynomial> * Matrix<Variable> => Matrix<Polynomial>
+/// - Matrix<Variable> * Matrix<Polynomial> => Matrix<Polynomial>
+/// - Matrix<Monomial> * Matrix<Variable> => Matrix<Polynomial>
+/// - Matrix<Variable> * Matrix<Monomial> => Matrix<Polynomial>
+///
+/// @note that these operator overloadings are necessary even after providing
+/// Eigen::ScalarBinaryOpTraits. See
+/// https://stackoverflow.com/questions/41494288/mixing-scalar-types-in-eigen
+/// for more information.
+#if defined(DRAKE_DOXYGEN_CXX)
+template <typename MatrixL, typename MatrixR>
+Eigen::Matrix<Polynomial, MatrixL::RowsAtCompileTime,
+              MatrixR::ColsAtCompileTime>
+operator*(const MatrixL& lhs, const MatrixR& rhs);
+#else
+template <typename MatrixL, typename MatrixR>
+typename std::enable_if_t<
+    std::is_base_of_v<Eigen::MatrixBase<MatrixL>, MatrixL> &&
+            std::is_base_of_v<Eigen::MatrixBase<MatrixR>, MatrixR> &&
+            // {Polynomial, Monomial, Variable} x {Polynomial, Monomial,
+            // Variable}
+            ((std::is_same_v<typename MatrixL::Scalar, Polynomial> ||
+              std::is_same_v<
+                  typename MatrixL::Scalar,
+                  Monomial>)&&(std::is_same_v<typename MatrixR::Scalar,
+                                              Variable>)) ||
+        (std::is_same_v<typename MatrixL::Scalar, Variable> &&
+         (std::is_same_v<typename MatrixR::Scalar, Polynomial>
+          || std::is_same_v<typename MatrixR::Scalar, Monomial>)),
+    Eigen::Matrix<Polynomial, MatrixL::RowsAtCompileTime,
+                  MatrixR::ColsAtCompileTime>>
+operator*(const MatrixL& lhs, const MatrixR& rhs) {
+  // "foo.template cast<Polynomial>()" is redundant if foo is of Polynomial.
+  // However, we have checked that `-O2` compiler optimization reduces it into a
+  // no-op.
+  return lhs.template cast<Polynomial>() * rhs.template cast<Polynomial>();
+}
+#endif
 
 
+/// Provides the following operations:
+///
+/// - Matrix<Polynomial> * Matrix<Expression> => Matrix<Expression>
+/// - Matrix<Expression> * Matrix<Polynomial> => Matrix<Expression>
+/// - Matrix<Monomial> * Matrix<Expression> => Matrix<Expression>
+/// - Matrix<Expression> * Matrix<Monomial> => Matrix<Expression>
+///
+/// @note that these operator overloadings are necessary even after providing
+/// Eigen::ScalarBinaryOpTraits. See
+/// https://stackoverflow.com/questions/41494288/mixing-scalar-types-in-eigen
+/// for more information.
+#if defined(DRAKE_DOXYGEN_CXX)
+template <typename MatrixL, typename MatrixR>
+Eigen::Matrix<Polynomial, MatrixL::RowsAtCompileTime,
+              MatrixR::ColsAtCompileTime>
+operator*(const MatrixL& lhs, const MatrixR& rhs);
+#else
+template <typename MatrixL, typename MatrixR>
+typename std::enable_if_t<
+    std::is_base_of_v<Eigen::MatrixBase<MatrixL>, MatrixL> &&
+            std::is_base_of_v<Eigen::MatrixBase<MatrixR>, MatrixR> &&
+            // {Polynomial, Monomial, Expression} x {Polynomial, Monomial,
+            // Expression}
+            ((std::is_same_v<typename MatrixL::Scalar, Polynomial> ||
+              std::is_same_v<
+                  typename MatrixL::Scalar,
+                  Monomial>)&&(std::is_same_v<typename MatrixR::Scalar,
+                                              Expression>)) ||
+        (std::is_same_v<typename MatrixL::Scalar, Expression> &&
+         (std::is_same_v<typename MatrixR::Scalar, Polynomial>
+          || std::is_same_v<typename MatrixR::Scalar, Monomial>)),
+    Eigen::Matrix<Expression, MatrixL::RowsAtCompileTime,
+                  MatrixR::ColsAtCompileTime>>
+operator*(const MatrixL& lhs, const MatrixR& rhs) {
+  return lhs.template cast<Expression>() * rhs.template cast<Expression>();
+}
+#endif
 }  // namespace symbolic
 }  // namespace drake
 
@@ -687,12 +698,50 @@ DRAKE_SYMBOLIC_SCALAR_SUM_DIFF_PRODUCT_CONJ_PRODUCT_TRAITS(
 // Informs Eigen that Variable op Polynomial gets Polynomial
 // where op ∈ {+, -, *, conj_product}.
 DRAKE_SYMBOLIC_SCALAR_SUM_DIFF_PRODUCT_CONJ_PRODUCT_TRAITS(
-    drake::symbolic::Variable, drake::symbolic::Polynomial, drake::symbolic::Polynomial)
+    drake::symbolic::Variable, drake::symbolic::Polynomial,
+    drake::symbolic::Polynomial)
 
 // Informs Eigen that Polynomial op Variable gets Polynomial
 // where op ∈ {+, -, *, conj_product}.
 DRAKE_SYMBOLIC_SCALAR_SUM_DIFF_PRODUCT_CONJ_PRODUCT_TRAITS(
-    drake::symbolic::Polynomial, drake::symbolic::Variable, drake::symbolic::Polynomial)
+    drake::symbolic::Polynomial, drake::symbolic::Variable,
+    drake::symbolic::Polynomial)
+
+// Informs Eigen that Variable op Monomial gets Polynomial
+// where op ∈ {+, -, *, conj_product}.
+DRAKE_SYMBOLIC_SCALAR_SUM_DIFF_PRODUCT_CONJ_PRODUCT_TRAITS(
+    drake::symbolic::Variable, drake::symbolic::Monomial,
+    drake::symbolic::Polynomial)
+
+// Informs Eigen that Monomial op Variable gets Polynomial
+// where op ∈ {+, -, *, conj_product}.
+DRAKE_SYMBOLIC_SCALAR_SUM_DIFF_PRODUCT_CONJ_PRODUCT_TRAITS(
+    drake::symbolic::Monomial, drake::symbolic::Variable,
+    drake::symbolic::Polynomial)
+
+// Informs Eigen that Polynomial op Expression gets Expression
+// where op ∈ {+, -, *, conj_product}.
+DRAKE_SYMBOLIC_SCALAR_SUM_DIFF_PRODUCT_CONJ_PRODUCT_TRAITS(
+    drake::symbolic::Polynomial, drake::symbolic::Expression,
+    drake::symbolic::Expression)
+
+// Informs Eigen that Expression op Polynomial gets Expression
+// where op ∈ {+, -, *, conj_product}.
+DRAKE_SYMBOLIC_SCALAR_SUM_DIFF_PRODUCT_CONJ_PRODUCT_TRAITS(
+    drake::symbolic::Expression, drake::symbolic::Polynomial,
+    drake::symbolic::Expression)
+
+// Informs Eigen that Monomial op Expression gets Expression
+// where op ∈ {+, -, *, conj_product}.
+DRAKE_SYMBOLIC_SCALAR_SUM_DIFF_PRODUCT_CONJ_PRODUCT_TRAITS(
+    drake::symbolic::Monomial, drake::symbolic::Expression,
+    drake::symbolic::Expression)
+
+// Informs Eigen that Expression op Monomial gets Expression
+// where op ∈ {+, -, *, conj_product}.
+DRAKE_SYMBOLIC_SCALAR_SUM_DIFF_PRODUCT_CONJ_PRODUCT_TRAITS(
+    drake::symbolic::Expression, drake::symbolic::Monomial,
+    drake::symbolic::Expression)
 
 #undef DRAKE_SYMBOLIC_SCALAR_SUM_DIFF_PRODUCT_CONJ_PRODUCT_TRAITS
 #undef DRAKE_SYMBOLIC_SCALAR_BINARY_OP_TRAITS
@@ -708,9 +757,8 @@ EIGEN_DEVICE_FUNC inline drake::symbolic::Expression cast(
 }  // namespace internal
 namespace numext {
 template <>
-bool equal_strict(
-    const drake::symbolic::Polynomial& x,
-    const drake::symbolic::Polynomial& y);
+bool equal_strict(const drake::symbolic::Polynomial& x,
+                  const drake::symbolic::Polynomial& y);
 template <>
 EIGEN_STRONG_INLINE bool not_equal_strict(
     const drake::symbolic::Polynomial& x,
@@ -733,7 +781,9 @@ template <typename Derived>
     std::is_same_v<typename Derived::Scalar, Polynomial>,
     MatrixLikewise<double, Derived>>
 Evaluate(const Eigen::MatrixBase<Derived>& m, const Environment& env) {
-  return m.unaryExpr([&env](const Polynomial& p) { return p.Evaluate(env); });
+  return m.unaryExpr([&env](const Polynomial& p) {
+    return p.Evaluate(env);
+  });
 }
 
 /// Computes the Jacobian matrix J of the vector function @p f with respect to
@@ -785,10 +835,8 @@ CalcPolynomialWLowerTriangularPart(
 }  // namespace symbolic
 }  // namespace drake
 
-
 // TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
 namespace fmt {
 template <>
-struct formatter<drake::symbolic::Polynomial>
-    : drake::ostream_formatter {};
+struct formatter<drake::symbolic::Polynomial> : drake::ostream_formatter {};
 }  // namespace fmt

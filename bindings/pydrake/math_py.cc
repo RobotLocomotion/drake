@@ -693,10 +693,18 @@ void DefineHeterogeneousMatmul(py::module m) {
   bind.operator()<Polynomial, Monomial>();
   bind.operator()<Polynomial, Polynomial>();
   bind.operator()<Polynomial, Variable>();
-  bind.operator()<Variable, Variable>();
+  bind.operator()<Variable, Polynomial>();
+  bind.operator()<Polynomial, Expression>();
+  bind.operator()<Expression, Polynomial>();
 
-  // TODO(Alexandre.Amice) Also do Monomial op,
+  // Bind the Polynomial-related overloads.
+  bind.operator()<double, Monomial>();
+  bind.operator()<Monomial, double>();
 //  bind.operator()<Monomial, Monomial>();
+  bind.operator()<Monomial, Variable>();
+  bind.operator()<Variable, Monomial>();
+  bind.operator()<Monomial, Expression>();
+  bind.operator()<Monomial, Polynomial>();
 
   // Bind the Expression-related overloads.
   bind.operator()<double, Variable>();

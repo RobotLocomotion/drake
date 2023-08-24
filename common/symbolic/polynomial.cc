@@ -407,6 +407,11 @@ Polynomial::Polynomial(const Expression& e, Variables indeterminates)
   DRAKE_ASSERT_VOID(CheckInvariant());
 }
 
+Polynomial::Polynomial(const Variable& v) : Polynomial{v, {v}} {
+  // No need to call CheckInvariant() because the following should hold.
+  DRAKE_ASSERT(decision_variables().empty());
+}
+
 const Variables& Polynomial::indeterminates() const { return indeterminates_; }
 
 void Polynomial::SetIndeterminates(const Variables& new_indeterminates) {
