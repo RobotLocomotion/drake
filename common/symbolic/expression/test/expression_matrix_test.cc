@@ -468,7 +468,7 @@ TEST_F(SymbolicExpressionMatrixTest, EvaluateDenseMatrix) {
 
   // 2. B is a dynamic-size matrix (2 x 2) = [x-y  x]
   //                                         [y    z]
-  MatrixX<Expression> B(2, 2);
+  Eigen::MatrixX<Expression> B(2, 2);
   Eigen::MatrixXd B_eval_expected(2, 2);
   // clang-format off
   B << x_ - y_, x_,

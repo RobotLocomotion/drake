@@ -46,10 +46,10 @@ class SymbolicPolynomialMatrixTest : public ::testing::Test {
   Eigen::Matrix<double, 2, 1> v_double_static_;
 
   VectorX<Expression> v_expression_dynamic_{2};
-  Eigen::Vector<Expression, 2> v_expression_static_;
+  Eigen::Matrix<Expression, 2, 1> v_expression_static_;
 
   VectorX<Variable> v_variable_dynamic_{2};
-  Eigen::Vector<Variable, 2> v_variable_static_;
+  Eigen::Matrix<Variable, 2, 1> v_variable_static_;
 
   void SetUp() override {
     // clang-format off

@@ -9,6 +9,7 @@
 #include <utility>
 
 #include <fmt/format.h>
+#include <thread>
 
 #define DRAKE_COMMON_SYMBOLIC_EXPRESSION_DETAIL_HEADER
 #include "drake/common/symbolic/expression/expression_cell.h"
@@ -578,7 +579,7 @@ std::vector<double> Polynomial::EvaluateBatch(
     const std::vector<Environment>& envs) const {
   std::vector<double> ret(ssize(envs));
 #if defined(_OPENMP)
-#pragma omp parallel for
+#pragma omp parallel for num_threads(std::thread::hardware_concurrency())
 #endif
   for (int i = 0; i < ssize(envs); ++i) {
     ret.at(i) = this->Evaluate(envs.at(i));
@@ -612,7 +613,7 @@ std::vector<Polynomial> Polynomial::EvaluatePartialBatch(
     const std::vector<Environment>& envs) const {
   std::vector<Polynomial> ret(ssize(envs));
 #if defined(_OPENMP)
-#pragma omp parallel for
+#pragma omp parallel for num_threads(std::thread::hardware_concurrency())
 #endif
   for (int i = 0; i < ssize(envs); ++i) {
     ret.at(i) = this->EvaluatePartial(envs.at(i));
