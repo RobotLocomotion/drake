@@ -19,7 +19,7 @@ namespace internal {
 namespace {
 
 const double kTolerance = 1e-15;
-const double kSize = 10.;
+const double kSize = 10.0;
 const double kHalfSize = kSize * 0.5;
 const int kNumPoints = 4;
 
@@ -31,10 +31,10 @@ struct Point {
 
 // clang-format off
 const Point kExpectedPointSet[kNumPoints] = {
-  Point{ kHalfSize, -kHalfSize, 0.},
-  Point{ kHalfSize,  kHalfSize, 0.},
-  Point{-kHalfSize, -kHalfSize, 0.},
-  Point{-kHalfSize,  kHalfSize, 0.}
+  Point{ kHalfSize, -kHalfSize, 0.0},
+  Point{ kHalfSize,  kHalfSize, 0.0},
+  Point{-kHalfSize, -kHalfSize, 0.0},
+  Point{-kHalfSize,  kHalfSize, 0.0}
 };
 // clang-format on
 
@@ -54,18 +54,28 @@ GTEST_TEST(PointsCorrespondenceTest, PlaneCreationTest) {
 
 // Verifies whether the conversion is correct.
 GTEST_TEST(ConvertToVtkTransformTest, ConversionTest) {
-  const math::RigidTransformd expected(
-      Eigen::AngleAxisd(1.,
-                        Eigen::Vector3d(1. / std::sqrt(3.), 1. / std::sqrt(3.),
-                                        1. / std::sqrt(3.))),
-      Eigen::Vector3d(1., 2., 3.));
+  const math::RigidTransformd X_AB(
+      Eigen::AngleAxisd(1.0, Eigen::Vector3d::Constant(1.0 / std::sqrt(3.0))),
+      Eigen::Vector3d(1.0, 2.0, 3.0));
 
-  auto dut = ConvertToVtkTransform(expected);
+  auto dut_X_AB = ConvertToVtkTransform(X_AB);
 
   for (int i = 0; i < 4; ++i) {
     for (int j = 0; j < 4; ++j) {
-      EXPECT_NEAR(expected.GetAsMatrix4()(i, j),
-                  dut->GetMatrix()->GetElement(i, j), kTolerance);
+      EXPECT_NEAR(X_AB.GetAsMatrix4()(i, j),
+                  dut_X_AB->GetMatrix()->GetElement(i, j), kTolerance);
+    }
+  }
+
+  const double scale = 1.5;
+  auto dut_T_AB = ConvertToVtkTransform(X_AB, scale);
+  Eigen::Matrix4d T_AB_expected = X_AB.GetAsMatrix4();
+  T_AB_expected.block<3, 3>(0, 0) *= scale;
+
+  for (int i = 0; i < 4; ++i) {
+    for (int j = 0; j < 4; ++j) {
+      EXPECT_NEAR(T_AB_expected(i, j), dut_T_AB->GetMatrix()->GetElement(i, j),
+                  kTolerance);
     }
   }
 }

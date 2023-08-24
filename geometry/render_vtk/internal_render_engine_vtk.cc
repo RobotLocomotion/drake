@@ -8,7 +8,6 @@
 
 // To ease build system upkeep, we annotate VTK includes with their deps.
 #include <vtkActor.h>                    // vtkRenderingCore
-#include <vtkAssembly.h>                 // vtkRenderingCore
 #include <vtkCamera.h>                   // vtkRenderingCore
 #include <vtkCylinderSource.h>           // vtkFiltersSources
 #include <vtkGLTFImporter.h>             // vtkIOImport
@@ -31,6 +30,7 @@
 #include "drake/geometry/render/shaders/depth_shaders.h"
 #include "drake/geometry/render_vtk/internal_render_engine_vtk_base.h"
 #include "drake/geometry/render_vtk/internal_vtk_util.h"
+#include "drake/math/rotation_matrix.h"
 #include "drake/systems/sensors/color_palette.h"
 
 namespace drake {
@@ -46,6 +46,7 @@ using geometry::internal::LoadRenderMeshFromObj;
 using geometry::internal::RenderMaterial;
 using geometry::internal::RenderMesh;
 using math::RigidTransformd;
+using math::RotationMatrixd;
 using render::ColorRenderCamera;
 using render::DepthRenderCamera;
 using render::LightParameter;
@@ -208,7 +209,19 @@ void RenderEngineVtk::DoUpdateVisualPose(GeometryId id,
   // TODO(SeanCurtis-TRI): Perhaps provide the ability to specify which pipeline
   //  is being updated and only update the pose of the prop for that pipeline.
   for (const auto& prop : props_.at(id)) {
-    prop->SetUserTransform(vtk_X_WG);
+    for (const auto& part : prop.parts) {
+      if (part.T_GA != nullptr) {
+        // The goal is to update the actor's pose without allocating new
+        // transforms or matrices. Using part.actor->GetUserMatrix() as the
+        // result of the matrix product is unreliable. Instead, write to the
+        // matrix from the user transform.
+        vtkMatrix4x4* T_WA = part.actor->GetUserTransform()->GetMatrix();
+        vtkMatrix4x4::Multiply4x4(vtk_X_WG->GetMatrix(), part.T_GA, T_WA);
+        part.actor->Modified();
+      } else {
+        part.actor->SetUserTransform(vtk_X_WG);
+      }
+    }
   }
 }
 
@@ -218,8 +231,9 @@ bool RenderEngineVtk::DoRemoveGeometry(GeometryId id) {
   if (iter != props_.end()) {
     PropArray& pipe_props = iter->second;
     for (int i = 0; i < kNumPipelines; ++i) {
-      // Note: the misnamed `RemoveActor()` actually removes vtkProps.
-      pipelines_[i]->renderer->RemoveActor(pipe_props[i]);
+      for (const auto& part : pipe_props[i].parts) {
+        pipelines_[i]->renderer->RemoveActor(part.actor);
+      }
     }
     props_.erase(iter);
     return true;
@@ -307,31 +321,6 @@ void RenderEngineVtk::DoRenderLabelImage(const ColorRenderCamera& camera,
   }
 }
 
-namespace {
-
-// Clones an array of props into a new, equivalent array. The new array is a
-// *shallow* copy of the source. VTK requires us to know the most derived type
-// of the object we're cloning (because we have to copy *into* an existing
-// object of that type).
-template <typename VtkType, std::size_t N>
-std::array<vtkSmartPointer<vtkProp3D>, N> CloneProps(
-    const std::array<vtkSmartPointer<vtkProp3D>, N>& source_props) {
-  static_assert(std::is_base_of_v<vtkProp3D, VtkType>,
-                "Geometries should all be derived from vtkProp3D.");
-  std::array<vtkSmartPointer<vtkProp3D>, N> target_props;
-  for (std::size_t i = 0; i < N; ++i) {
-    // NOTE: source *should* be const; but none of the getters on the
-    // source are const-compatible.
-    DRAKE_DEMAND(source_props[i]);
-    vtkNew<VtkType> clone;
-    clone->ShallowCopy(source_props[i]);
-    target_props[i] = std::move(clone);
-  }
-  return target_props;
-}
-
-}  // namespace
-
 RenderEngineVtk::RenderEngineVtk(const RenderEngineVtk& other)
     : RenderEngine(other),
       parameters_(other.parameters_),
@@ -344,15 +333,17 @@ RenderEngineVtk::RenderEngineVtk(const RenderEngineVtk& other)
 
   for (const auto& [id, source_props] : other.props_) {
     PropArray target_props;
-    if (vtkActor::SafeDownCast(source_props[0]) != nullptr) {
-      target_props = CloneProps<vtkActor>(source_props);
-    } else if (vtkAssembly::SafeDownCast(source_props[0]) != nullptr) {
-      target_props = CloneProps<vtkAssembly>(source_props);
-    }
     for (int i = 0; i < kNumPipelines; ++i) {
-      // We should have copied *something*, either actors or assemblies.
-      DRAKE_DEMAND(target_props[i].Get() != nullptr);
-      pipelines_.at(i)->renderer.Get()->AddActor(target_props[i]);
+      auto& renderer = *pipelines_.at(i)->renderer;
+      const Prop& source_prop = source_props[i];
+      Prop& target_prop = target_props[i];
+      for (const auto& source_part : source_prop.parts) {
+        vtkNew<vtkActor> target_actor;
+        target_actor->ShallowCopy(source_part.actor);
+        renderer.AddActor(target_actor);
+        target_prop.parts.push_back(
+            Part{.actor = std::move(target_actor), .T_GA = source_part.T_GA});
+      }
     }
     props_.insert({id, std::move(target_props)});
   }
@@ -412,42 +403,6 @@ bool RenderEngineVtk::ImplementObj(const std::string& file_name, double scale,
   return true;
 }
 
-namespace {
-
-/* It has been shown that when we import glTF files and place the resultant
- vtkActors under a vtkAssembly, that the glTF's texture images get inverted
- vertically. See
- https://discourse.vtk.org/t/vtkgltfimporter-loads-textures-upside-down/12113
- This is a simple hack that allows us to keep the vtkAssembly.
- This function simply iterates through an actor's glTF textures and flips
- them in the y direction.
-
- Once vtkAssembly is better behaved, this can be removed. When we remove it,
- we can also remove the test GltfTextureOrientation in
- internal_render_engine_vtk_test.cc */
-void FlipGltfTextures(vtkActor* actor) {
-  // Set up a small, reusable graph for flipping a texture's image data.
-  vtkNew<vtkImageFlip> flip_y;
-  flip_y->SetFilteredAxis(1);
-  flip_y->SetOutputDimensionality(2);
-  vtkNew<vtkImageData> image_data;
-  flip_y->SetInputData(image_data);
-
-  vtkProperty* property = actor->GetProperty();
-  // The four "special textures with reserved names" (vtkProperty.h) that get
-  // used during glTF parsing.
-  for (const char* tex_name :
-       {"albedoTex", "materialTex", "emissiveTex", "normalTex"}) {
-    if (vtkTexture* texture = property->GetTexture(tex_name)) {
-      image_data->ShallowCopy(texture->GetImageDataInput(0));
-      flip_y->SetOutput(texture->GetImageDataInput(0));
-      flip_y->Update();
-    }
-  }
-}
-
-}  // namespace
-
 bool RenderEngineVtk::ImplementGltf(const std::string& file_name, double scale,
                                     const RegistrationData& data) {
   vtkNew<vtkGLTFImporter> importer;
@@ -462,17 +417,16 @@ bool RenderEngineVtk::ImplementGltf(const std::string& file_name, double scale,
     return false;
   }
 
-  auto make_file_assembly = [scale]() {
-    vtkNew<vtkAssembly> file_assembly;
-    file_assembly->SetScale(scale);
-    file_assembly->RotateX(90);
-    return file_assembly;
-  };
-
-  // The final assemblies associated with the GeometryId.
-  PropArray props;
-
+  // The pose of the geometry in Drake's world. This is a component of the final
+  // UserMatrix value.
   vtkSmartPointer<vtkTransform> vtk_X_WG = ConvertToVtkTransform(data.X_WG);
+
+  // The relative transform from the file's frame F to the geometry's frame G.
+  // This includes the rotation from y-up to z-up and the requested scale.
+  const RigidTransformd X_GF(RotationMatrixd::MakeXRotation(M_PI / 2));
+  vtkSmartPointer<vtkTransform> vtk_T_GF_xform =
+      ConvertToVtkTransform(X_GF, scale);
+  vtkMatrix4x4* T_GF = vtk_T_GF_xform->GetMatrix();
 
   // Color.
   if (data.properties.HasProperty("phong", "diffuse") ||
@@ -487,60 +441,69 @@ bool RenderEngineVtk::ImplementGltf(const std::string& file_name, double scale,
   const RenderLabel label = GetRenderLabelOrThrow(data.properties);
   const ColorD label_color = RenderEngine::GetColorDFromLabel(label);
 
+  // The final assemblies associated with the GeometryId.
+  PropArray prop_array;
+
   for (int i = 0; i < kNumPipelines; ++i) {
-    // VTK imports a collection of visible parts. Whatever the glTF hierarchy
-    // was, VTK brings in actors that all have their poses defined w.r.t. the
-    // file's world frame.
+    // VTK imports a collection of visible parts (nee vtkActors), regardless
+    // what the glTF hierarchy was, The actor poses are all measured and
+    // expressed w.r.t. the file's frame F.
     //
-    // We'll place all these actors in a new assembly. We'll use this "file"
-    // assembly to account for scale, and the rotation necessary to re-express
-    // the y-up glTF world frame to Drake's z-up world frame. This will
-    // ultimately become the child of the geometry assembly which gets posed
-    // with the drake pose X_WG associated with the geometry id.
-    vtkNew<vtkAssembly> file_root_node(make_file_assembly());
+    // We'll store each actor from the glTF file in a single Part, storing the
+    // transform of the actor frame A to the *geometry* frame G (see below).
+    auto& prop = prop_array[i];
     auto* actors = renderer->GetActors();
     actors->InitTraversal();
     // For each source_actor, create a color, depth, and label actor.
     while (vtkActor* source_actor = actors->GetNextActor()) {
+      vtkSmartPointer<vtkActor> part_actor;
       if (i == ImageType::kColor) {
         // Color rendering can use the source_actor without changes.
-        FlipGltfTextures(source_actor);
-        file_root_node->AddPart(source_actor);
+        part_actor = source_actor;
       } else {
         // Depth and label images require new actors, based on the source, but
         // with changes to their materials (aka "mapper").
-        vtkNew<vtkActor> actor;
+        part_actor = vtkNew<vtkActor>();
         vtkNew<vtkOpenGLPolyDataMapper> mapper;
-        actor->SetMapper(mapper);
-        actor->SetUserTransform(source_actor->GetUserTransform());
+        part_actor->SetMapper(mapper);
         mapper->SetInputConnection(
             source_actor->GetMapper()->GetInputAlgorithm()->GetOutputPort());
         if (i == ImageType::kLabel) {
           // Label requires a mapper with the encoded RenderLabel color.
-          actor->GetProperty()->LightingOff();
-          actor->GetProperty()->SetColor(label_color.r, label_color.g,
-                                         label_color.b);
+          part_actor->GetProperty()->LightingOff();
+          part_actor->GetProperty()->SetColor(label_color.r, label_color.g,
+                                              label_color.b);
         } else if (i == ImageType::kDepth) {
           // Depth requires a mapper with the depth shader.
           vtkOpenGLShaderProperty* shader_prop =
-              vtkOpenGLShaderProperty::SafeDownCast(actor->GetShaderProperty());
+              vtkOpenGLShaderProperty::SafeDownCast(
+                  part_actor->GetShaderProperty());
           DRAKE_DEMAND(shader_prop != nullptr);
           shader_prop->SetVertexShaderCode(render::shaders::kDepthVS);
           shader_prop->SetFragmentShaderCode(render::shaders::kDepthFS);
           mapper->AddObserver(vtkCommand::UpdateShaderEvent,
                               uniform_setting_callback_.Get());
         }
-        file_root_node->AddPart(actor);
       }
+      // vtkGLTFImporter uses the actors UserTransform to define the actor's
+      // transform in the file frame (T_FA). We also have to use the
+      // UserTransform to pose the geometry in Drake's world (T_WG). So, that
+      // means we have to pose it as T_WA = X_WG * T_GA = X_WG * T_GF * T_FA.
+      // We save T_GA with the actor in the part so we can keep computing T_WA
+      // as X_WG changes.
+      vtkNew<vtkMatrix4x4> T_GA;
+      vtkMatrix4x4* T_FA = source_actor->GetUserMatrix();
+      vtkMatrix4x4::Multiply4x4(T_GF, T_FA, T_GA);
+      vtkNew<vtkMatrix4x4> T_WA;
+      vtkMatrix4x4::Multiply4x4(vtk_X_WG->GetMatrix(), T_GA, T_WA);
+      part_actor->SetUserMatrix(T_WA);
+      pipelines_.at(i)->renderer->AddActor(part_actor);
+      prop.parts.push_back(
+          {.actor = std::move(part_actor), .T_GA = std::move(T_GA)});
     }
-    vtkNew<vtkAssembly> geometry_root;
-    geometry_root->AddPart(file_root_node.Get());
-    geometry_root->SetUserTransform(vtk_X_WG);
-    pipelines_.at(i)->renderer.Get()->AddActor(geometry_root);
-    props[i] = std::move(geometry_root);
   }
 
-  props_.insert({data.id, std::move(props)});
+  props_.insert({data.id, std::move(prop_array)});
 
   // We've successfully processed the .gltf. Report it as accepted.
   return true;
@@ -691,11 +654,11 @@ void RenderEngineVtk::ImplementPolyData(vtkPolyDataAlgorithm* source,
   PropArray props;
   auto connect_actor = [this, &actors, &mappers, &props,
                         &vtk_X_WG](ImageType image_type) {
-    vtkActor* actor = actors[image_type].Get();
+    vtkSmartPointer<vtkActor>& actor = actors[image_type];
     actor->SetMapper(mappers[image_type].Get());
     actor->SetUserTransform(vtk_X_WG);
     pipelines_[image_type]->renderer->AddActor(actor);
-    props[image_type] = actor;
+    props[image_type].parts.push_back({.actor = actor, .T_GA = nullptr});
   };
 
   // Label actor.
