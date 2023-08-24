@@ -468,7 +468,7 @@ TEST_F(SymbolicExpressionMatrixTest, EvaluateDenseMatrix) {
 
   // 2. B is a dynamic-size matrix (2 x 2) = [x-y  x]
   //                                         [y    z]
-  Eigen::MatrixX<Expression> B(2, 2);
+  MatrixX<Expression> B(2, 2);
   Eigen::MatrixXd B_eval_expected(2, 2);
   // clang-format off
   B << x_ - y_, x_,
@@ -508,7 +508,7 @@ std::cout << "check 2" << std::endl;
   // 2. B is a dynamic-size matrix (2 x 2) = [x-y  x]
   //                                         [y    z]
   MatrixX<Expression> B(2, 2);
-  Eigen::MatrixX<Expression> B_eval_expected(2, 2);
+  MatrixX<Expression> B_eval_expected(2, 2);
   // clang-format off
   B << x_ - y_, x_,
        y_,      z_;
@@ -516,7 +516,7 @@ std::cout << "check 2" << std::endl;
                      2.0,       z_;
   // clang-format on
   std::cout << "check 3" << std::endl;
-  const Eigen::MatrixX<Expression> B_eval{EvaluatePartial(B, env)};
+  const MatrixX<Expression> B_eval{EvaluatePartial(B, env)};
   EXPECT_EQ(B_eval_expected, B_eval);
 
   // 3. Check if EvaluatePartial throws if it computes NaN in evaluation.
