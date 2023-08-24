@@ -4,6 +4,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/examples/hydroelastic/ball_plate/make_ball_plate_plant.h"
+#include "drake/geometry/hydroelastize.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/multibody/plant/multibody_plant_config.h"
 #include "drake/multibody/plant/multibody_plant_config_functions.h"
@@ -93,6 +94,7 @@ int do_main() {
           FLAGS_friction_coefficient},
       FLAGS_resolution_hint_factor, &plant);
 
+  Hydroelastize(&scene_graph);
   plant.Finalize();
 
   DRAKE_DEMAND(plant.num_velocities() == 12);

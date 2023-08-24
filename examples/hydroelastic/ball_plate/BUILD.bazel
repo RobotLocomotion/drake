@@ -40,6 +40,7 @@ drake_cc_binary(
     deps = [
         ":make_ball_plate_plant",
         "//common:add_text_logging_gflags",
+        "//geometry:hydroelastize",
         "//systems/analysis:simulator",
         "//systems/analysis:simulator_gflags",
         "//systems/analysis:simulator_print_stats",
