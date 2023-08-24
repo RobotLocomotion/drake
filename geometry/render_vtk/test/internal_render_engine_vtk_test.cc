@@ -42,6 +42,21 @@ namespace drake {
 namespace geometry {
 namespace render_vtk {
 namespace internal {
+
+// Use friend access to grab actors.
+class RenderEngineVtkTester {
+ public:
+  // This returns the first color actor associated with the given `id` (if there
+  // are multiple actors for the geometry).
+  static vtkActor* GetColorActor(const RenderEngineVtk& renderer,
+                                 GeometryId id) {
+    // First 0 is the color index, second is the first actor.
+    vtkActor* actor = renderer.props_.at(id).at(0).parts.at(0).actor.Get();
+    DRAKE_DEMAND(actor != nullptr);
+    return actor;
+  }
+};
+
 namespace {
 
 using Eigen::AngleAxisd;
@@ -1474,20 +1489,12 @@ class TextureSetterEngine : public RenderEngineVtk {
  public:
   TextureSetterEngine() = default;
 
-  // Returns the *first* actor representing the geometry with the given id.
-  vtkActor* GetColorActor(GeometryId id) const {
-    // 0 is the color index.
-    auto* actor = vtkActor::SafeDownCast(props().at(id)[0]);
-    DRAKE_DEMAND(actor != nullptr);
-    return actor;
-  }
-
   // Reports if the color actor for the geometry with the given `id` has the
   // property texture append by this class's DoRegisterVisual() implementation.
   // This only tests the first actor for the geometry.
   bool GeometryHasColorTexture(GeometryId id,
                                const std::string& texture_name) const {
-    vtkActor* actor = GetColorActor(id);
+    vtkActor* actor = RenderEngineVtkTester::GetColorActor(*this, id);
     return actor->GetProperty()->GetTexture(texture_name.c_str()) != nullptr;
   }
 
@@ -1496,7 +1503,7 @@ class TextureSetterEngine : public RenderEngineVtk {
   // geometry.
   void ApplyColorTextureToGeometry(GeometryId id,
                                    const std::string& texture_name) {
-    vtkActor* actor = GetColorActor(id);
+    vtkActor* actor = RenderEngineVtkTester::GetColorActor(*this, id);
     vtkNew<vtkImageData> image_data;
     vtkNew<vtkOpenGLTexture> texture;
     texture->SetRepeat(false);
