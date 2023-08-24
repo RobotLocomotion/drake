@@ -35,6 +35,14 @@ while [ "${1:-}" != "" ]; do
     --with-doc-only)
       source_distribution_args+=(--with-doc-only)
       ;;
+    # Install Bazel from a deb package.
+    --with-bazel)
+      source_distribution_args+=(--with-bazel)
+      ;;
+    # Do NOT install bazel.
+    --without-bazel)
+      source_distribution_args+=(--without-bazel)
+      ;;
     # Install prerequisites that are only needed for --config clang, i.e.,
     # opts-in to the ability to compile Drake's C++ code using Clang.
     --with-clang)
