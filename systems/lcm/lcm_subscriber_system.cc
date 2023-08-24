@@ -23,12 +23,18 @@ constexpr int kMagic = 6832;  // An arbitrary value.
 LcmSubscriberSystem::LcmSubscriberSystem(
     const std::string& channel,
     std::shared_ptr<const SerializerInterface> serializer,
-    drake::lcm::DrakeLcmInterface* lcm)
+    drake::lcm::DrakeLcmInterface* lcm,
+    double wait_for_message_on_initialization_timeout)
     : channel_(channel),
       serializer_(std::move(serializer)),
-      magic_number_{kMagic} {
+      magic_number_{kMagic},
+      // Only capture the lcm pointer if it is required.
+      lcm_{wait_for_message_on_initialization_timeout > 0 ? lcm : nullptr},
+      wait_for_message_on_initialization_timeout_{
+          wait_for_message_on_initialization_timeout} {
   DRAKE_THROW_UNLESS(serializer_ != nullptr);
   DRAKE_THROW_UNLESS(lcm != nullptr);
+  DRAKE_THROW_UNLESS(!std::isnan(wait_for_message_on_initialization_timeout));
 
   subscription_ = lcm->Subscribe(
       channel_, [this](const void* buffer, int size) {
@@ -58,6 +64,11 @@ LcmSubscriberSystem::LcmSubscriberSystem(
   this->DeclareForcedUnrestrictedUpdateEvent(
       &LcmSubscriberSystem::ProcessMessageAndStoreToAbstractState);
 
+  // On initialization, we process any existing received messages and maybe
+  // wait for new messages.
+  this->DeclareInitializationUnrestrictedUpdateEvent(
+      &LcmSubscriberSystem::Initialize);
+
   set_name(make_name(channel_));
 }
 
@@ -68,19 +79,21 @@ LcmSubscriberSystem::~LcmSubscriberSystem() {
 
 // This function processes the internal received message and store the results
 // to the abstract states, which include both the message and message counts.
-systems::EventStatus LcmSubscriberSystem::ProcessMessageAndStoreToAbstractState(
-    const Context<double>&, State<double>* state) const {
-  AbstractValues& abstract_state = state->get_mutable_abstract_state();
+EventStatus LcmSubscriberSystem::ProcessMessageAndStoreToAbstractState(
+    const Context<double>& context, State<double>* state) const {
   std::lock_guard<std::mutex> lock(received_message_mutex_);
-  if (!received_message_.empty()) {
-    serializer_->Deserialize(
-        received_message_.data(), received_message_.size(),
-        &abstract_state.get_mutable_value(kStateIndexMessage));
+  const int context_message_count = GetMessageCount(context);
+  if (context_message_count == received_message_count_) {
+    state->SetFrom(context.get_state());
+    return EventStatus::DidNothing();
   }
-  abstract_state.get_mutable_value(kStateIndexMessageCount)
-      .get_mutable_value<int>() = received_message_count_;
-
-  return systems::EventStatus::Succeeded();
+  serializer_->Deserialize(
+      received_message_.data(), received_message_.size(),
+      &state->get_mutable_abstract_state().get_mutable_value(
+          kStateIndexMessage));
+  state->get_mutable_abstract_state<int>(kStateIndexMessageCount) =
+      received_message_count_;
+  return EventStatus::Succeeded();
 }
 
 int LcmSubscriberSystem::GetMessageCount(const Context<double>& context) const {
@@ -202,6 +215,51 @@ int LcmSubscriberSystem::WaitForMessage(
 int LcmSubscriberSystem::GetInternalMessageCount() const {
   std::unique_lock<std::mutex> lock(received_message_mutex_);
   return received_message_count_;
+}
+
+EventStatus LcmSubscriberSystem::Initialize(const Context<double>& context,
+                                            State<double>* state) const {
+  // In the default case when waiting is disabled, we'll opportunistically try
+  // to update our state, but we might return EventStatus::DidNothing().
+  if (wait_for_message_on_initialization_timeout_ <= 0.0) {
+    return ProcessMessageAndStoreToAbstractState(context, state);
+  }
+
+  // The user has requested to pause initialization until context changes.
+  // Start by peeking to see if there's already a message waiting.
+  DRAKE_DEMAND(lcm_ != nullptr);
+  lcm_->HandleSubscriptions(0 /* timeout_millis */);
+  EventStatus result = ProcessMessageAndStoreToAbstractState(context, state);
+  if (result.severity() != EventStatus::kDidNothing) {
+    return result;
+  }
+
+  // No message was pending. We'll spin until we get one (or run out of time).
+  log()->info("Waiting for messages on {}", channel_);
+  using Clock = std::chrono::steady_clock;
+  using Duration = std::chrono::duration<double>;
+  const auto start_time = Clock::now();
+  while (Duration(Clock::now() - start_time).count() <
+         wait_for_message_on_initialization_timeout_) {
+    // Since the DrakeLcmInterface will not be handling subscriptions during
+    // this initialization, we must handle them directly here.
+    lcm_->HandleSubscriptions(1 /* timeout_millis*/);
+    result = ProcessMessageAndStoreToAbstractState(context, state);
+    if (result.severity() != EventStatus::kDidNothing) {
+      log()->info("Received message on {}", channel_);
+      return result;
+    }
+  }
+
+  // We ran out of time.
+  result = EventStatus::Failed(
+      this,
+      fmt::format(
+          "Timed out without receiving any message on channel {} at url {}",
+          channel_, lcm_->get_lcm_url()));
+  // TODO(russt): Once EventStatus are actually propagated, return the status
+  // instead of throwing it.
+  throw std::runtime_error(result.message());
 }
 
 }  // namespace lcm
