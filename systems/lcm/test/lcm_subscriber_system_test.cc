@@ -5,6 +5,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcm/lcmt_drake_signal_utils.h"
 #include "drake/lcmt_drake_signal.hpp"
@@ -95,6 +96,65 @@ GTEST_TEST(LcmSubscriberSystemTest, ReceiveTest) {
 
   // Verify that the dut produces the output message.
   EvalOutputHelper(*dut, context.get(), output.get());
+
+  const AbstractValue* abstract_value = output->get_data(0);
+  ASSERT_NE(abstract_value, nullptr);
+  auto value = abstract_value->get_value<lcmt_drake_signal>();
+  EXPECT_TRUE(CompareLcmtDrakeSignalMessages(value, sample_data.value));
+}
+
+// Tests LcmSubscriberSystem using a Serializer.
+GTEST_TEST(LcmSubscriberSystemTest, InitializationNoWaitTest) {
+  drake::lcm::DrakeLcm lcm;
+  const std::string channel_name = "channel_name";
+
+  // The "device under test".
+  auto dut = LcmSubscriberSystem::Make<lcmt_drake_signal>(channel_name, &lcm);
+
+  // Establish the context and output for the dut.
+  std::unique_ptr<Context<double>> context = dut->CreateDefaultContext();
+  std::unique_ptr<SystemOutput<double>> output = dut->AllocateOutput();
+
+  // Produce a sample message.
+  SampleData sample_data;
+  sample_data.PublishAndHandle(&lcm, channel_name);
+
+  // Use the initialization event to process the message.
+  dut->ExecuteInitializationEvents(context.get());
+  dut->CalcOutput(*context, output.get());
+
+  const AbstractValue* abstract_value = output->get_data(0);
+  ASSERT_NE(abstract_value, nullptr);
+  auto value = abstract_value->get_value<lcmt_drake_signal>();
+  EXPECT_TRUE(CompareLcmtDrakeSignalMessages(value, sample_data.value));
+}
+
+GTEST_TEST(LcmSubscriberSystemTest, InitializationWithWaitTest) {
+  drake::lcm::DrakeLcm lcm;
+  const std::string channel_name = "channel_name";
+  const double wait_for_message_on_initialization_timeout{0.01};
+
+  // The "device under test".
+  auto dut = LcmSubscriberSystem::Make<lcmt_drake_signal>(
+      channel_name, &lcm, wait_for_message_on_initialization_timeout);
+
+  // Establish the context and output for the dut.
+  std::unique_ptr<Context<double>> context = dut->CreateDefaultContext();
+  std::unique_ptr<SystemOutput<double>> output = dut->AllocateOutput();
+
+  // The initialization event will fail (timeout) if no message is received.
+  DRAKE_EXPECT_THROWS_MESSAGE(dut->ExecuteInitializationEvents(context.get()),
+                              "Timed out without receiving any message on "
+                              "channel channel_name at url.*");
+
+  // Produce a sample message.
+  SampleData sample_data;
+  // Publish, but do not call handle.
+  Publish(&lcm, channel_name, sample_data.value);
+
+  // Now the initialization event calls handle and obtains the message.
+  dut->ExecuteInitializationEvents(context.get());
+  dut->CalcOutput(*context, output.get());
 
   const AbstractValue* abstract_value = output->get_data(0);
   ASSERT_NE(abstract_value, nullptr);

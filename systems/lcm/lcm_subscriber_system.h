@@ -57,30 +57,53 @@ class LcmSubscriberSystem : public LeafSystem<double> {
    *
    * @param[in] channel The LCM channel on which to subscribe.
    *
-   * @param lcm A non-null pointer to the LCM subsystem to subscribe on.
+   * @param lcm A non-null pointer to the LCM subsystem to subscribe on. If
+   * `wait_for_message_on_initialization_timeout > 0`, then the pointer must
+   * remain valid for the lifetime of the returned system.
+   *
+   * @param wait_for_message_on_initialization_timeout The number of seconds
+   * (wall-clock elapsed time) to wait for GetInternalMessageCount() to be > 0.
+   * If this timeout is <= 0, then the initialization event does not handle any
+   * new messages, but only processes existing received messages. If the
+   * timeout is > 0, then the initialization event will call
+   * lcm->HandleSubscriptions() until at least one message is received or until
+   * the timeout. Pass ∞ to wait indefinitely.
    */
   template <typename LcmMessage>
   static std::unique_ptr<LcmSubscriberSystem> Make(
-      const std::string& channel, drake::lcm::DrakeLcmInterface* lcm) {
+      const std::string& channel, drake::lcm::DrakeLcmInterface* lcm,
+      double wait_for_message_on_initialization_timeout = 0.0) {
     return std::make_unique<LcmSubscriberSystem>(
-        channel, std::make_unique<Serializer<LcmMessage>>(), lcm);
+        channel, std::make_unique<Serializer<LcmMessage>>(), lcm,
+        wait_for_message_on_initialization_timeout);
   }
 
   /**
    * Constructor that returns a subscriber System that provides message objects
-   * on its sole abstract-valued output port.  The type of the message object is
-   * determined by the @p serializer.
+   * on its sole abstract-valued output port.  The type of the message object
+   * is determined by the @p serializer.
    *
    * @param[in] channel The LCM channel on which to subscribe.
    *
    * @param[in] serializer The serializer that converts between byte vectors
    * and LCM message objects. Cannot be null.
    *
-   * @param lcm A non-null pointer to the LCM subsystem to subscribe on.
+   * @param lcm A non-null pointer to the LCM subsystem to subscribe on. If
+   * `wait_for_message_on_initialization_timeout > 0`, then the pointer must
+   * remain valid for the lifetime of the returned system.
+   *
+   * @param wait_for_message_on_initialization_timeout The number of seconds
+   * (wall-clock elapsed time) to wait for GetInternalMessageCount() to be > 0.
+   * If this timeout is <= 0, then the initialization event does not handle any
+   * new messages, but only processes existing received messages. If the
+   * timeout is > 0, then the initialization event will call
+   * lcm->HandleSubscriptions() until at least one message is received or until
+   * the timeout. Pass ∞ to wait indefinitely.
    */
   LcmSubscriberSystem(const std::string& channel,
                       std::shared_ptr<const SerializerInterface> serializer,
-                      drake::lcm::DrakeLcmInterface* lcm);
+                      drake::lcm::DrakeLcmInterface* lcm,
+                      double wait_for_message_on_initialization_timeout = 0.0);
 
   ~LcmSubscriberSystem() override;
 
@@ -129,6 +152,9 @@ class LcmSubscriberSystem : public LeafSystem<double> {
   systems::EventStatus ProcessMessageAndStoreToAbstractState(
       const Context<double>&, State<double>* state) const;
 
+  systems::EventStatus Initialize(const Context<double>&,
+                                  State<double>* state) const;
+
   // The channel on which to receive LCM messages.
   const std::string channel_;
 
@@ -154,6 +180,13 @@ class LcmSubscriberSystem : public LeafSystem<double> {
 
   // A little hint to help catch use-after-free.
   int magic_number_{};
+
+  // The lcm interface is (maybe) used to handle subscriptions during
+  // Initialization.
+  drake::lcm::DrakeLcmInterface* const lcm_;
+
+  // A timeout in seconds.
+  const double wait_for_message_on_initialization_timeout_;
 };
 
 }  // namespace lcm

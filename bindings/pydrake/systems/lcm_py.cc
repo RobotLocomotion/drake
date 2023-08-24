@@ -230,14 +230,16 @@ PYBIND11_MODULE(lcm, m) {
     py::class_<Class, LeafSystem<double>>(m, "LcmSubscriberSystem")
         .def(py::init<const std::string&,
                  std::shared_ptr<const SerializerInterface>,
-                 LcmInterfaceSystem*>(),
+                 LcmInterfaceSystem*, double>(),
             py::arg("channel"), py::arg("serializer"), py::arg("lcm"),
+            py::arg("wait_for_message_on_initialization_timeout") = 0.0,
             // Keep alive, reference: `self` keeps `lcm` alive.
             py::keep_alive<1, 4>(), doc.LcmSubscriberSystem.ctor.doc)
         .def(py::init<const std::string&,
-                 std::shared_ptr<const SerializerInterface>,
-                 DrakeLcmInterface*>(),
+                 std::shared_ptr<const SerializerInterface>, DrakeLcmInterface*,
+                 double>(),
             py::arg("channel"), py::arg("serializer"), py::arg("lcm"),
+            py::arg("wait_for_message_on_initialization_timeout") = 0.0,
             // Keep alive, reference: `self` keeps `lcm` alive.
             py::keep_alive<1, 4>(), doc.LcmSubscriberSystem.ctor.doc)
         .def("WaitForMessage", &Class::WaitForMessage,
