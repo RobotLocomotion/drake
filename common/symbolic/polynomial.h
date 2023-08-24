@@ -218,8 +218,8 @@ class Polynomial {
   ///
   /// @throws std::exception if there is a variable in this polynomial whose
   /// assignment is not provided by at least one of the enivornments @p envs.
-//  [[nodiscard]] std::vector<double> EvaluateBatch(
-//      const std::vector<Environment>& envs) const;
+  [[nodiscard]] std::vector<double> EvaluateBatch(
+      const std::vector<Environment>& envs) const;
 
   /// Partially evaluates this polynomial using an environment @p env.
   ///
@@ -229,8 +229,8 @@ class Polynomial {
   /// Partially evaluates this polynomial for a list of environment @p envs.
   ///
   /// @throws std::exception if NaN is detected during evaluation.
-//  [[nodiscard]] std::vector<Polynomial> EvaluatePartialBatch(
-//      const std::vector<Environment>& envs) const;
+  [[nodiscard]] std::vector<Polynomial> EvaluatePartialBatch(
+      const std::vector<Environment>& envs) const;
 
   /// Partially evaluates this polynomial by substituting @p var with @p c.
   ///
@@ -535,7 +535,7 @@ operator*(const MatrixL& lhs, const MatrixR& rhs) {
   // no-op.
   return lhs.template cast<Polynomial>() * rhs.template cast<Polynomial>();
 }
-//#endif
+#endif
 
 /// Provides the following operations:
 ///
@@ -548,12 +548,12 @@ operator*(const MatrixL& lhs, const MatrixR& rhs) {
 /// Eigen::ScalarBinaryOpTraits. See
 /// https://stackoverflow.com/questions/41494288/mixing-scalar-types-in-eigen
 /// for more information.
-//#if defined(DRAKE_DOXYGEN_CXX)
-//template <typename MatrixL, typename MatrixR>
-//Eigen::Matrix<Polynomial, MatrixL::RowsAtCompileTime,
-//              MatrixR::ColsAtCompileTime>
-//operator*(const MatrixL& lhs, const MatrixR& rhs);
-//#else
+#if defined(DRAKE_DOXYGEN_CXX)
+template <typename MatrixL, typename MatrixR>
+Eigen::Matrix<Polynomial, MatrixL::RowsAtCompileTime,
+              MatrixR::ColsAtCompileTime>
+operator*(const MatrixL& lhs, const MatrixR& rhs);
+#else
 template <typename MatrixL, typename MatrixR>
 typename std::enable_if_t<
     std::is_base_of_v<Eigen::MatrixBase<MatrixL>, MatrixL> &&
@@ -566,8 +566,8 @@ typename std::enable_if_t<
                   Monomial>)&&(std::is_same_v<typename MatrixR::Scalar,
                                               Variable>)) ||
         (std::is_same_v<typename MatrixL::Scalar, Variable> &&
-         (std::is_same_v<typename MatrixR::Scalar, Polynomial> ||
-          std::is_same_v<typename MatrixR::Scalar, Monomial>)),
+         (std::is_same_v<typename MatrixR::Scalar, Polynomial>
+          || std::is_same_v<typename MatrixR::Scalar, Monomial>)),
     Eigen::Matrix<Polynomial, MatrixL::RowsAtCompileTime,
                   MatrixR::ColsAtCompileTime>>
 operator*(const MatrixL& lhs, const MatrixR& rhs) {
@@ -576,7 +576,8 @@ operator*(const MatrixL& lhs, const MatrixR& rhs) {
   // no-op.
   return lhs.template cast<Polynomial>() * rhs.template cast<Polynomial>();
 }
-//#endif
+#endif
+
 
 /// Provides the following operations:
 ///
@@ -589,12 +590,12 @@ operator*(const MatrixL& lhs, const MatrixR& rhs) {
 /// Eigen::ScalarBinaryOpTraits. See
 /// https://stackoverflow.com/questions/41494288/mixing-scalar-types-in-eigen
 /// for more information.
-//#if defined(DRAKE_DOXYGEN_CXX)
-//template <typename MatrixL, typename MatrixR>
-//Eigen::Matrix<Polynomial, MatrixL::RowsAtCompileTime,
-//              MatrixR::ColsAtCompileTime>
-//operator*(const MatrixL& lhs, const MatrixR& rhs);
-//#else
+#if defined(DRAKE_DOXYGEN_CXX)
+template <typename MatrixL, typename MatrixR>
+Eigen::Matrix<Polynomial, MatrixL::RowsAtCompileTime,
+              MatrixR::ColsAtCompileTime>
+operator*(const MatrixL& lhs, const MatrixR& rhs);
+#else
 template <typename MatrixL, typename MatrixR>
 typename std::enable_if_t<
     std::is_base_of_v<Eigen::MatrixBase<MatrixL>, MatrixL> &&
@@ -607,15 +608,15 @@ typename std::enable_if_t<
                   Monomial>)&&(std::is_same_v<typename MatrixR::Scalar,
                                               Expression>)) ||
         (std::is_same_v<typename MatrixL::Scalar, Expression> &&
-         (std::is_same_v<typename MatrixR::Scalar, Polynomial> ||
-          std::is_same_v<typename MatrixR::Scalar, Monomial>)),
+         (std::is_same_v<typename MatrixR::Scalar, Polynomial>
+          || std::is_same_v<typename MatrixR::Scalar, Monomial>)),
     Eigen::Matrix<Expression, MatrixL::RowsAtCompileTime,
                   MatrixR::ColsAtCompileTime>>
 operator*(const MatrixL& lhs, const MatrixR& rhs) {
   return lhs.template cast<Expression>() * rhs.template cast<Expression>();
 }
 #endif
-//}  // namespace symbolic
+}  // namespace symbolic
 }  // namespace drake
 
 namespace std {
@@ -771,9 +772,8 @@ EIGEN_DEVICE_FUNC inline drake::symbolic::Expression cast(
 }  // namespace internal
 namespace numext {
 template <>
-bool equal_strict(
-    const drake::symbolic::Polynomial& x,
-    const drake::symbolic::Polynomial& y);
+bool equal_strict(const drake::symbolic::Polynomial& x,
+                  const drake::symbolic::Polynomial& y);
 template <>
 EIGEN_STRONG_INLINE bool not_equal_strict(
     const drake::symbolic::Polynomial& x,
@@ -796,24 +796,24 @@ template <typename Derived>
     std::is_same_v<typename Derived::Scalar, Polynomial>,
     MatrixLikewise<double, Derived>>
 Evaluate(const Eigen::MatrixBase<Derived>& m, const Environment& env) {
-  return m.unaryExpr([&env](const Polynomial& p) {
+  return m.unaryExpr([&env](const Polynomial &p) {
     return p.Evaluate(env);
   });
-
+}
 /// Partially evaluates a matrix `m` of symbolic polynomials using `env`.
 ///
 /// @returns a matrix of Polynomials whose size is the size of @p m.
 /// @throws std::exception if NaN is detected during evaluation.
 /// @pydrake_mkdoc_identifier{polynomial}
-//template <typename Derived>
-//[[nodiscard]] std::enable_if_t<
-//    std::is_same_v<typename Derived::Scalar, Polynomial>,
-//    MatrixLikewise<Polynomial, Derived>>
-//EvaluatePartial(const Eigen::MatrixBase<Derived>& m, const Environment& env) {
-//  return m.unaryExpr([&env](const Polynomial& p) {
-//    return p.EvaluatePartial(env);
-//  });
-//}
+template <typename Derived>
+[[nodiscard]] std::enable_if_t<
+    std::is_same_v<typename Derived::Scalar, Polynomial>,
+    MatrixLikewise<Polynomial, Derived>>
+EvaluatePartial(const Eigen::MatrixBase<Derived>& m, const Environment& env) {
+  return m.unaryExpr([&env](const Polynomial& p) {
+    return p.EvaluatePartial(env);
+  });
+}
 
 /// Computes the Jacobian matrix J of the vector function @p f with respect to
 /// @p vars. J(i,j) contains ∂f(i)/∂vars(j).
@@ -864,10 +864,8 @@ CalcPolynomialWLowerTriangularPart(
 }  // namespace symbolic
 }  // namespace drake
 
-
 // TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
 namespace fmt {
 template <>
-struct formatter<drake::symbolic::Polynomial>
-    : drake::ostream_formatter {};
+struct formatter<drake::symbolic::Polynomial> : drake::ostream_formatter {};
 }  // namespace fmt

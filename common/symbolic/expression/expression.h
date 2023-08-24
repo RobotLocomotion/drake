@@ -1585,6 +1585,34 @@ Eigen::SparseMatrix<double> Evaluate(
     const Eigen::Ref<const Eigen::SparseMatrix<Expression>>& m,
     const Environment& env = Environment{});
 
+/// Partially evaluates a symbolic matrix @p m using @p env.
+///
+/// @returns a matrix of expressions whose size is the size of @p m.
+/// @throws std::exception if NaN is detected during evaluation.
+/// @pydrake_mkdoc_identifier{expression}
+template <typename Derived>
+std::enable_if_t<std::is_same_v<typename Derived::Scalar, Expression>,
+                 MatrixLikewise<Expression, Derived>>
+EvaluatePartial(const Eigen::MatrixBase<Derived>& m,
+         const Environment& env = Environment{}) {
+  // Note that the return type is written out explicitly to help gcc 5 (on
+  // ubuntu).  Previously the implementation used `auto`, and placed  an `
+  // .eval()` at the end to prevent lazy evaluation.
+    return m.unaryExpr([&env](const Expression& e) {
+      return e.EvaluatePartial(env);
+    });
+}
+
+/** Partially evaluates @p m using a given environment (by default, an empty environment).
+ *
+ * @throws std::exception if there exists a variable in @p m whose value is
+ *                        not provided by @p env.
+ * @throws std::exception if NaN is detected during evaluation.
+ */
+Eigen::SparseMatrix<Expression> EvaluatePartial(
+    const Eigen::Ref<const Eigen::SparseMatrix<Expression>>& m,
+    const Environment& env = Environment{});
+
 /// Substitutes a symbolic matrix @p m using a given substitution @p subst.
 ///
 /// @returns a matrix of symbolic expressions whose size is the size of @p m.

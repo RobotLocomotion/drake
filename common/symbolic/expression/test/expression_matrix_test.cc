@@ -489,6 +489,46 @@ TEST_F(SymbolicExpressionMatrixTest, EvaluateDenseMatrix) {
                               "NaN is detected during Symbolic computation.");
 }
 
+TEST_F(SymbolicExpressionMatrixTest, EvaluatePartialDenseMatrix) {
+  const Environment env{{{var_x_, 1.0}, {var_y_, 2.0}}};
+
+  // 1. A_ is a fixed-size matrix (3 x 2) = [x  1]
+  //                                        [y -1]
+  //                                        [z  3.141592]
+  Eigen::Matrix<Expression, 3, 2> A_eval_expected;
+  // clang-format off
+  A_eval_expected << 1.0, 1.0,
+                     2.0, -1.0,
+                     z_, 3.141592;
+  // clang-format on
+  const Eigen::Matrix<Expression, 3, 2> A_eval{EvaluatePartial(1.0 * A_, env)};
+  std::cout << "check 1" << std::endl;
+  EXPECT_EQ(A_eval_expected, A_eval);
+std::cout << "check 2" << std::endl;
+  // 2. B is a dynamic-size matrix (2 x 2) = [x-y  x]
+  //                                         [y    z]
+  MatrixX<Expression> B(2, 2);
+  Eigen::MatrixX<Expression> B_eval_expected(2, 2);
+  // clang-format off
+  B << x_ - y_, x_,
+       y_,      z_;
+  B_eval_expected << 1.0 - 2.0, 1.0,
+                     2.0,       z_;
+  // clang-format on
+  std::cout << "check 3" << std::endl;
+  const Eigen::MatrixX<Expression> B_eval{EvaluatePartial(B, env)};
+  EXPECT_EQ(B_eval_expected, B_eval);
+
+  // 3. Check if EvaluatePartial throws if it computes NaN in evaluation.
+  MatrixX<Expression> C(2, 2);
+  // clang-format off
+  C << x_, Expression::NaN(),
+       y_, z_;
+  // clang-format on
+  DRAKE_EXPECT_THROWS_MESSAGE(EvaluatePartial(C, env),
+                              "NaN is detected during environment substitution.");
+}
+
 TEST_F(SymbolicExpressionMatrixTest, EvaluateSparseMatrix) {
   const Environment env{{{var_x_, 1.0}, {var_y_, 2.0}, {var_z_, 3.0}}};
 
@@ -502,6 +542,21 @@ TEST_F(SymbolicExpressionMatrixTest, EvaluateSparseMatrix) {
 
   EXPECT_EQ(A.coeff(0, 0).Evaluate(env), A_eval.coeff(0, 0));
   EXPECT_EQ(A.coeff(2, 1).Evaluate(env), A_eval.coeff(2, 1));
+}
+
+TEST_F(SymbolicExpressionMatrixTest, EvaluatePartialSparseMatrix) {
+  const Environment env{{{var_x_, 1.0}, {var_z_, 2.0}}};
+
+  Eigen::SparseMatrix<Expression> A{3, 2};
+  A.insert(0, 0) = x_ + y_;
+  A.insert(2, 1) = 3 + z_;
+
+  const Eigen::SparseMatrix<Expression> A_eval{EvaluatePartial(A, env)};
+
+  EXPECT_EQ(A.nonZeros(), A_eval.nonZeros());
+
+  EXPECT_EQ(A.coeff(0, 0).EvaluatePartial(env), A_eval.coeff(0, 0));
+  EXPECT_EQ(A.coeff(2, 1).EvaluatePartial(env), A_eval.coeff(2, 1));
 }
 
 TEST_F(SymbolicExpressionMatrixTest, EvaluateWithRandomGenerator) {

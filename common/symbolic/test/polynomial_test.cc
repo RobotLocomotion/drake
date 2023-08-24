@@ -1041,6 +1041,43 @@ TEST_F(SymbolicPolynomialTest, Evaluate) {
   EXPECT_THROW(unused(p.Evaluate(partial_env)), runtime_error);
 }
 
+TEST_F(SymbolicPolynomialTest, Evaluate) {
+  // p = ax²y + bxy + cz
+  const Polynomial p{a_ * x_ * x_ * y_ + b_ * x_ * y_ + c_ * z_, var_xyz_};
+
+  const Environment env1{{
+      {var_a_, 1.0},
+      {var_b_, 2.0},
+      {var_c_, 3.0},
+      {var_x_, -1.0},
+      {var_y_, -2.0},
+      {var_z_, -3.0},
+  }};
+  const double expected1{1.0 * -1.0 * -1.0 * -2.0 + 2.0 * -1.0 * -2.0 +
+                         3.0 * -3.0};
+  EXPECT_EQ(p.Evaluate(env1), expected1);
+
+  const Environment env2{{
+      {var_a_, 4.0},
+      {var_b_, 1.0},
+      {var_c_, 2.0},
+      {var_x_, -7.0},
+      {var_y_, -5.0},
+      {var_z_, -2.0},
+  }};
+  const double expected2{4.0 * -7.0 * -7.0 * -5.0 + 1.0 * -7.0 * -5.0 +
+                         2.0 * -2.0};
+  EXPECT_EQ(p.Evaluate(env2), expected2);
+
+  const Environment partial_env{{
+      {var_a_, 4.0},
+      {var_c_, 2.0},
+      {var_x_, -7.0},
+      {var_z_, -2.0},
+  }};
+  EXPECT_THROW(unused(p.Evaluate(partial_env)), runtime_error);
+}
+
 TEST_F(SymbolicPolynomialTest, PartialEvaluate1) {
   // p1 = a*x² + b*x + c
   // p2 = p1[x ↦ 3.0] = 3²a + 3b + c.
