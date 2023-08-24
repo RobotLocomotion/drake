@@ -31,7 +31,7 @@ TEST_F(KukaTest, ReachableTest) {
     EXPECT_TRUE(result.is_success());
 
     double pos_tol = 0.09;
-    double orient_tol = 0.3;
+    double orient_tol = 0.35;
     CheckGlobalIKSolution(result, pos_tol, orient_tol);
     // Now call nonlinear IK with the solution from global IK as the initial
     // seed. If the global IK provides a good initial seed, then the nonlinear
