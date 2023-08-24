@@ -499,7 +499,8 @@ PYBIND11_MODULE(symbolic, m) {
       [](const MatrixX<Expression>& M, const Environment::map& env) {
         return EvaluatePartial(M, Environment{env});
       },
-      py::arg("m"), py::arg("env") = Environment::map{}, doc.EvaluatePartial.doc_expression);
+      py::arg("m"), py::arg("env") = Environment::map{},
+      doc.EvaluatePartial.doc_expression);
 
   m.def("GetVariableVector", &symbolic::GetVariableVector,
       py::arg("expressions"), doc.GetVariableVector.doc);
@@ -888,9 +889,10 @@ PYBIND11_MODULE(symbolic, m) {
           py::arg("env"), doc.Polynomial.Evaluate.doc)
       .def(
           "EvaluateBatch",
-          [](const Polynomial& self, const std::vector<Environment::map>& envs) {
+          [](const Polynomial& self,
+              const std::vector<Environment::map>& envs) {
             std::vector<Environment> envs_literal(envs.size());
-            for(int i = 0; i < static_cast<int>(envs.size()); ++i) {
+            for (int i = 0; i < static_cast<int>(envs.size()); ++i) {
               envs_literal.at(i) = Environment(envs.at(i));
             }
             return self.EvaluateBatch(envs_literal);
@@ -912,9 +914,10 @@ PYBIND11_MODULE(symbolic, m) {
           doc.Polynomial.EvaluatePartial.doc_2args)
       .def(
           "EvaluatePartialBatch",
-          [](const Polynomial& self, const std::vector<Environment::map>& envs) {
+          [](const Polynomial& self,
+              const std::vector<Environment::map>& envs) {
             std::vector<Environment> envs_literal(envs.size());
-            for(int i = 0; i < static_cast<int>(envs.size()); ++i) {
+            for (int i = 0; i < static_cast<int>(envs.size()); ++i) {
               envs_literal.at(i) = Environment(envs.at(i));
             }
             return self.EvaluatePartialBatch(envs_literal);

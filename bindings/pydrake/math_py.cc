@@ -661,14 +661,7 @@ void DefineHeterogeneousMatmul(py::module m) {
           if constexpr (std::is_same_v<T3, AutoDiffXd>) {
             return A.template cast<AutoDiffXd>() *
                    B.template cast<AutoDiffXd>();
-          }
-//          else if constexpr (// Monomial op Monomial returns Polynomial in
-//                             // Eigen. See polynomial.h for explanation.
-//                             std::is_same_v<T3, Monomial>) {
-//            return A.template cast<Polynomial>() *
-//                   B.template cast<Polynomial>();
-//          }
-          else {
+          } else {
             return A * B;
           }
         },
@@ -700,7 +693,7 @@ void DefineHeterogeneousMatmul(py::module m) {
   // Bind the Polynomial-related overloads.
   bind.operator()<double, Monomial>();
   bind.operator()<Monomial, double>();
-//  bind.operator()<Monomial, Monomial>();
+  // TODO(Alexandre.Amice) figure out the spelling for <Monomial, Monomial>
   bind.operator()<Monomial, Variable>();
   bind.operator()<Variable, Monomial>();
   bind.operator()<Monomial, Expression>();

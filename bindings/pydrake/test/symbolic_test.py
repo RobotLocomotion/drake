@@ -1580,9 +1580,9 @@ class TestSymbolicPolynomial(unittest.TestCase):
 
         result = sym.EvaluatePartial([p1, p2], env)
         result_expected = np.array([[sym.Polynomial(1.0+y)],
-                                    [sym.Polynomial(2.0 + y* y)]])
+                                    [sym.Polynomial(2.0 + y * y)]])
         for i in range(result.shape[0]):
-            self.assertTrue(result[i,0].EqualTo(result_expected[i,0]))
+            self.assertTrue(result[i, 0].EqualTo(result_expected[i, 0]))
 
     def test_matrix_substitute_with_substitution(self):
         m = np.array([[x + y, x * y]])
@@ -1635,8 +1635,8 @@ class TestSymbolicPolynomial(unittest.TestCase):
         evaluated1 = sym.EvaluatePartial(m, env)
         evaluated2 = sym.EvaluatePartial(m=m, env=env)
         for i in range(m.shape[1]):
-            self.assertTrue(evaluated1[0,i].EqualTo(expected[0,i]))
-            self.assertTrue(evaluated2[0,i].EqualTo(expected[0,i]))
+            self.assertTrue(evaluated1[0, i].EqualTo(expected[0, i]))
+            self.assertTrue(evaluated2[0, i].EqualTo(expected[0, i]))
 
     def test_hash(self):
         p1 = sym.Polynomial(x * x, [x])
@@ -1657,6 +1657,7 @@ class TestSymbolicPolynomial(unittest.TestCase):
                          env[a] * env[x] * env[x] + env[b] * env[x] + env[c])
         self.assertEqual(p.Evaluate(env=env),
                          env[a] * env[x] * env[x] + env[b] * env[x] + env[c])
+
     def test_polynomial_evaluate_batch(self):
         p = sym.Polynomial(a * x * x + b * x + c, [x])
         env = {a: 2.0,
@@ -1665,8 +1666,8 @@ class TestSymbolicPolynomial(unittest.TestCase):
                x: 2.0}
         num_rep = 10
         envs = [env]*num_rep
-        expected_ret = [env[a] * env[x] * env[x] + env[b] * env[x] + env[c]]\
-                       *num_rep
+        expected_ret = \
+            [env[a] * env[x] * env[x] + env[b] * env[x] + env[c]] * num_rep
         ret = p.EvaluateBatch(envs)
         self.assertEqual(len(ret), num_rep)
         self.assertEqual(ret,
@@ -1712,7 +1713,8 @@ class TestSymbolicPolynomial(unittest.TestCase):
 
         num_rep = 10
         envs = [env]*num_rep
-        expected_ret = sym.Polynomial(env[a] * x * x + env[b] * x + env[c], [x])
+        expected_ret = sym.Polynomial(
+            env[a] * x * x + env[b] * x + env[c], [x])
         ret = p.EvaluatePartialBatch(envs=envs)
         self.assertEqual(len(ret), num_rep)
         for q in ret:
