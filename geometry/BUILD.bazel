@@ -30,6 +30,7 @@ drake_cc_package_library(
         ":geometry_set",
         ":geometry_state",
         ":geometry_version",
+        ":hydroelastize",
         ":internal_frame",
         ":internal_geometry",
         ":kinematics_vector",
@@ -794,6 +795,13 @@ drake_cc_googletest(
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
         "//geometry/proximity:make_sphere_mesh",
+    ],
+)
+
+drake_cc_googletest(
+    name = "hydroelastize_test",
+    deps = [
+        ":hydroelastize",
     ],
 )
 
