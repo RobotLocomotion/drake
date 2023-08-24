@@ -14,8 +14,13 @@
 #include "drake/common/symbolic/expression/expression_cell.h"
 #undef DRAKE_COMMON_SYMBOLIC_EXPRESSION_DETAIL_HEADER
 
+//#include "drake/common/ssize.h"
 #include "drake/common/symbolic/decompose.h"
 #include "drake/common/text_logging.h"
+
+//#if defined(_OPENMP)
+//#include <omp.h>
+//#endif
 
 using std::accumulate;
 using std::make_pair;
@@ -412,7 +417,9 @@ Polynomial::Polynomial(const Variable& v) : Polynomial{v, {v}} {
   DRAKE_ASSERT(decision_variables().empty());
 }
 
-const Variables& Polynomial::indeterminates() const { return indeterminates_; }
+const Variables& Polynomial::indeterminates() const {
+  return indeterminates_;
+}
 
 void Polynomial::SetIndeterminates(const Variables& new_indeterminates) {
   if (new_indeterminates.IsSupersetOf(indeterminates_) &&
@@ -567,6 +574,18 @@ double Polynomial::Evaluate(const Environment& env) const {
       });
 }
 
+//std::vector<double> Polynomial::EvaluateBatch(
+//    const std::vector<Environment>& envs) const {
+//  std::vector<double> ret(ssize(envs));
+//#if defined(_OPENMP)
+//#pragma omp parallel for
+//#endif
+//  for (int i = 0; i < ssize(envs); ++i) {
+//    ret.at(i) = this->Evaluate(envs.at(i));
+//  }
+//  return ret;
+//}
+
 Polynomial Polynomial::EvaluatePartial(const Environment& env) const {
   MapType new_map;  // Will use this to construct the return value.
   for (const auto& product_i : monomial_to_coefficient_map_) {
@@ -588,6 +607,18 @@ Polynomial Polynomial::EvaluatePartial(const Environment& env) const {
   }
   return Polynomial{new_map};
 }
+//
+//std::vector<Polynomial> Polynomial::EvaluatePartialBatch(
+//    const std::vector<Environment>& envs) const {
+//  std::vector<Polynomial> ret(ssize(envs));
+//#if defined(_OPENMP)
+//#pragma omp parallel for
+//#endif
+//  for (int i = 0; i < ssize(envs); ++i) {
+//    ret.at(i) = this->EvaluatePartial(envs.at(i));
+//  }
+//  return ret;
+//}
 
 Polynomial Polynomial::EvaluatePartial(const Variable& var,
                                        const double c) const {
@@ -829,8 +860,7 @@ Polynomial& Polynomial::AddProduct(const Expression& coeff, const Monomial& m) {
 
 Polynomial Polynomial::SubstituteAndExpand(
     const std::unordered_map<Variable, Polynomial>& indeterminate_substitution,
-    SubstituteAndExpandCacheData* substitutions_cached_data)
-    const {
+    SubstituteAndExpandCacheData* substitutions_cached_data) const {
   SubstituteAndExpandCacheData substitutions_default_obj;
   SubstituteAndExpandCacheData* cached_data_ptr =
       substitutions_cached_data == nullptr ? &substitutions_default_obj
@@ -1095,8 +1125,12 @@ Polynomial operator+(const Monomial& m, const double c) {
 Polynomial operator+(const double c, const Monomial& m) {
   return c + Polynomial(m);
 }
-Polynomial operator+(Polynomial p, const Variable& v) { return p += v; }
-Polynomial operator+(const Variable& v, Polynomial p) { return p += v; }
+Polynomial operator+(Polynomial p, const Variable& v) {
+  return p += v;
+}
+Polynomial operator+(const Variable& v, Polynomial p) {
+  return p += v;
+}
 Expression operator+(const Expression& e, const Polynomial& p) {
   return e + p.ToExpression();
 }
@@ -1104,23 +1138,33 @@ Expression operator+(const Polynomial& p, const Expression& e) {
   return p.ToExpression() + e;
 }
 
-Polynomial operator-(Polynomial p1, const Polynomial& p2) { return p1 -= p2; }
-Polynomial operator-(Polynomial p, const Monomial& m) { return p -= m; }
+Polynomial operator-(Polynomial p1, const Polynomial& p2) {
+  return p1 -= p2;
+}
+Polynomial operator-(Polynomial p, const Monomial& m) {
+  return p -= m;
+}
 Polynomial operator-(const Monomial& m, Polynomial p) {
   return p = -1 * p + m;  // p' = m - p = -1 * p + m.
 }
 Polynomial operator-(const Monomial& m1, const Monomial& m2) {
   return Polynomial(m1) - m2;
 }
-Polynomial operator-(Polynomial p, const double c) { return p -= c; }
-Polynomial operator-(const double c, Polynomial p) { return p = -p + c; }
+Polynomial operator-(Polynomial p, const double c) {
+  return p -= c;
+}
+Polynomial operator-(const double c, Polynomial p) {
+  return p = -p + c;
+}
 Polynomial operator-(const Monomial& m, const double c) {
   return Polynomial(m) - c;
 }
 Polynomial operator-(const double c, const Monomial& m) {
   return c - Polynomial(m);
 }
-Polynomial operator-(Polynomial p, const Variable& v) { return p -= v; }
+Polynomial operator-(Polynomial p, const Variable& v) {
+  return p -= v;
+}
 Polynomial operator-(const Variable& v, const Polynomial& p) {
   return Polynomial(v, p.indeterminates()) - p;
 }
@@ -1131,15 +1175,33 @@ Expression operator-(const Polynomial& p, const Expression& e) {
   return p.ToExpression() - e;
 }
 
-Polynomial operator*(Polynomial p1, const Polynomial& p2) { return p1 *= p2; }
-Polynomial operator*(Polynomial p, const Monomial& m) { return p *= m; }
-Polynomial operator*(const Monomial& m, Polynomial p) { return p *= m; }
-Polynomial operator*(const double c, Polynomial p) { return p *= c; }
-Polynomial operator*(Polynomial p, const double c) { return p *= c; }
-Polynomial operator*(const Monomial& m, double c) { return Polynomial(m) * c; }
-Polynomial operator*(double c, const Monomial& m) { return c * Polynomial(m); }
-Polynomial operator*(Polynomial p, const Variable& v) { return p *= v; }
-Polynomial operator*(const Variable& v, Polynomial p) { return p *= v; }
+Polynomial operator*(Polynomial p1, const Polynomial& p2) {
+  return p1 *= p2;
+}
+Polynomial operator*(Polynomial p, const Monomial& m) {
+  return p *= m;
+}
+Polynomial operator*(const Monomial& m, Polynomial p) {
+  return p *= m;
+}
+Polynomial operator*(const double c, Polynomial p) {
+  return p *= c;
+}
+Polynomial operator*(Polynomial p, const double c) {
+  return p *= c;
+}
+Polynomial operator*(const Monomial& m, double c) {
+  return Polynomial(m) * c;
+}
+Polynomial operator*(double c, const Monomial& m) {
+  return c * Polynomial(m);
+}
+Polynomial operator*(Polynomial p, const Variable& v) {
+  return p *= v;
+}
+Polynomial operator*(const Variable& v, Polynomial p) {
+  return p *= v;
+}
 Expression operator*(const Expression& e, const Polynomial& p) {
   return e * p.ToExpression();
 }
@@ -1202,9 +1264,8 @@ ostream& operator<<(ostream& os, const Polynomial& p) {
 namespace Eigen {
 namespace numext {
 template <>
-bool equal_strict(
-    const drake::symbolic::Polynomial& x,
-    const drake::symbolic::Polynomial& y) {
+bool equal_strict(const drake::symbolic::Polynomial& x,
+                  const drake::symbolic::Polynomial& y) {
   return static_cast<bool>(x == y);
 }
 }  // namespace numext
