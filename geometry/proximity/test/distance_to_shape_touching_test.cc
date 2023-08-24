@@ -23,23 +23,21 @@ GTEST_TEST(PointInBox, FaceNormalIfStrictlyOnFace) {
 
   // Test some representative cases but not all possible cases.
   // This point is strictly on -X face of the box.
-  EXPECT_EQ(FaceNormalIfStrictlyOnFace(Vector3d(-1, 0.2, 0.3), box_B),
+  EXPECT_EQ(FaceNormalIfStrictlyOnFace(Vector3d(-1, 0.02, 0.03), box_B),
             -Vector3d::UnitX());
   // This point is strictly on +Y face of the box.
-  EXPECT_EQ(FaceNormalIfStrictlyOnFace(Vector3d(0.1, 2, -0.3), box_B),
+  EXPECT_EQ(FaceNormalIfStrictlyOnFace(Vector3d(0.01, 2, -0.03), box_B),
             Vector3d::UnitY());
-  // This point is strictly on +Z face of the box.
-  EXPECT_EQ(FaceNormalIfStrictlyOnFace(Vector3d(0.1, -0.2, 4), box_B),
-            Vector3d::UnitZ());
+  // This point is strictly on -Z face of the box.
+  EXPECT_EQ(FaceNormalIfStrictlyOnFace(Vector3d(0.01, -0.02, -4), box_B),
+            -Vector3d::UnitZ());
   // This point is in the interior of the box.
-  EXPECT_TRUE(FaceNormalIfStrictlyOnFace(Vector3d(0.1, -0.2, 0.3), box_B)
+  EXPECT_TRUE(FaceNormalIfStrictlyOnFace(Vector3d(0.01, -0.02, 0.03), box_B)
                   .array().isNaN().any());
   // This point is outside the box.
   EXPECT_TRUE(FaceNormalIfStrictlyOnFace(Vector3d(10, 10, 10), box_B)
                   .array().isNaN().any());
-
-  // Test special cases for a point on an edge or a vertex of the box.
-  // This point is on an edge of the box.
+  // This point is on an edge parallel to X-axis of the box.
   EXPECT_TRUE(FaceNormalIfStrictlyOnFace(Vector3d(0.01, -2, 4), box_B)
                   .array().isNaN().any());
   // This point is at a vertex of the box.
@@ -62,8 +60,9 @@ GTEST_TEST(PointInBox, AxisIndexIfStrictlyOnEdge) {
   EXPECT_EQ(AxisIndexIfStrictlyOnEdge(Vector3d(0.1, -0.2, 0.3), box_B), -1);
   // This point is outside the box.
   EXPECT_EQ(AxisIndexIfStrictlyOnEdge(Vector3d(10, 10, 10), box_B), -1);
-
-  // Test a special case for a point at a vertex of the box.
+  // This point is in the middle of +Z face of the box.
+  EXPECT_EQ(AxisIndexIfStrictlyOnEdge(Vector3d(0, 0, 4), box_B), -1);
+  // This point is at a vertex of the box.
   EXPECT_EQ(AxisIndexIfStrictlyOnEdge(Vector3d(-1, -2, -4), box_B), -1);
 }
 
@@ -71,10 +70,11 @@ GTEST_TEST(PointInBox, IsAtVertex) {
   // The box spans [-1,1]x[-2,2]x[-4,4].
   const fcl::Boxd box_B(2, 4, 8);
 
+  // Test some representative cases but not all possible cases.
   EXPECT_TRUE(IsAtVertex(Vector3d(1, 2, 4), box_B));
-  // The point is in the middle of an edge.
+  // The point is in the middle of an edge parallel to X axis.
   EXPECT_FALSE(IsAtVertex(Vector3d(0, 2, 4), box_B));
-  // The point is at the center of a face.
+  // The point is at the center of +Z face.
   EXPECT_FALSE(IsAtVertex(Vector3d(0, 0, 4), box_B));
   // The point is at the center of the box.
   EXPECT_FALSE(IsAtVertex(Vector3d(0, 0, 0), box_B));
@@ -90,7 +90,7 @@ GTEST_TEST(BoxBox, ProjectedMinMax) {
   // Use the unit vector along the diagonal of the box.
   const Vector3d unit_vector_W = Vector3d(2, 3, 6).normalized();
 
-  // To simplify the test, first we fix box_B's frame to World frame.
+  // First we fix box_B's frame to World frame.
   {
     const RigidTransformd X_WB = RigidTransformd::Identity();
     double min_value, max_value;
@@ -103,13 +103,15 @@ GTEST_TEST(BoxBox, ProjectedMinMax) {
     EXPECT_NEAR(max_value, 7, kEps);
   }
 
-  // Now verify that the pose X_WB of the box can take effect.
+  // Confirm that X_WB can change the min_value and max_value by moving
+  // the box along half its diagonal vector.
   {
     const RigidTransformd X_WB(Vector3d(2, 3, 6));
     double min_value, max_value;
     std::tie(min_value, max_value) =
         ProjectedMinMax(box_B, X_WB, unit_vector_W);
-    // The min_value and max_value are shifted by X_WB.
+    // The min_value and max_value are shifted by half the diagonal from
+    // [-7,7] to [0,14].
     const double kEps = 1e-14;
     EXPECT_NEAR(min_value, 0, kEps);
     EXPECT_NEAR(max_value, 14, kEps);
@@ -132,18 +134,23 @@ GTEST_TEST(BoxBox, MakeSeparatingVector) {
   const RigidTransformd X_WB(Vector3d(2, 0, 0));
   const fcl::Boxd box_B(3.0, 3.0, 3.0);
 
+  // The vector parameter doesn't have to be a unit vector.
   EXPECT_EQ(
       MakeSeparatingVector(box_A, box_B, X_WA, X_WB, {Vector3d(0.1, 0, 0)}),
       -Vector3d::UnitX());
+  // Switching A and B flips the separating vector.
   EXPECT_EQ(
       MakeSeparatingVector(box_B, box_A, X_WB, X_WA, {Vector3d(0.1, 0, 0)}),
       Vector3d::UnitX());
+  // Non-separation direction gets NaN.
   EXPECT_TRUE(
       MakeSeparatingVector(box_B, box_A, X_WB, X_WA, {Vector3d(0, 1, 1)})
           .array().isNaN().any());
+  // Zero vector gets NaN.
   EXPECT_TRUE(
       MakeSeparatingVector(box_B, box_A, X_WB, X_WA, {Vector3d::Zero()})
           .array().isNaN().any());
+  // An empty list of vectors gets NaN.
   EXPECT_TRUE(
       MakeSeparatingVector(box_B, box_A, X_WB, X_WA, {}).array().isNaN().any());
 }
