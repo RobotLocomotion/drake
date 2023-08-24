@@ -40,13 +40,6 @@
             <scale>1.0 1.0 1.0</scale>
           </mesh>
         </geometry>
-        <drake:proximity_properties>
-          <drake:rigid_hydroelastic/>
-          <!--
-          We do not set drake:mesh_resolution_hint here because it has no
-          effect on meshes imported from obj file.
-          -->
-        </drake:proximity_properties>
       </collision>
     </link>
     <frame name="origin">
