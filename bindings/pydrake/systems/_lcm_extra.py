@@ -39,7 +39,11 @@ class PySerializer(SerializerInterface):
 
 
 @staticmethod
-def _make_lcm_subscriber(channel, lcm_type, lcm, use_cpp_serializer=False):
+def _make_lcm_subscriber(channel,
+                         lcm_type,
+                         lcm,
+                         use_cpp_serializer=False,
+                         wait_for_message_on_initialization_timeout=0.0):
     """Convenience to create an LCM subscriber system with a concrete type.
 
     Args:
@@ -57,7 +61,8 @@ def _make_lcm_subscriber(channel, lcm_type, lcm, use_cpp_serializer=False):
         serializer = PySerializer(lcm_type)
     else:
         serializer = _Serializer_[lcm_type]()
-    return LcmSubscriberSystem(channel, serializer, lcm)
+    return LcmSubscriberSystem(channel, serializer, lcm,
+                               wait_for_message_on_initialization_timeout)
 
 
 @staticmethod

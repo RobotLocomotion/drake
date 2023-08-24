@@ -203,6 +203,7 @@ drake_cc_googletest(
     name = "lcm_subscriber_system_test",
     deps = [
         ":lcm_subscriber_system",
+        "//common/test_utilities:expect_throws_message",
         "//lcm:drake_lcm",
         "//lcm:lcmt_drake_signal_utils",
     ],

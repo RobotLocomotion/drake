@@ -23,10 +23,14 @@ constexpr int kMagic = 6832;  // An arbitrary value.
 LcmSubscriberSystem::LcmSubscriberSystem(
     const std::string& channel,
     std::shared_ptr<const SerializerInterface> serializer,
-    drake::lcm::DrakeLcmInterface* lcm)
+    drake::lcm::DrakeLcmInterface* lcm,
+    double wait_for_message_on_initialization_timeout)
     : channel_(channel),
       serializer_(std::move(serializer)),
-      magic_number_{kMagic} {
+      magic_number_{kMagic},
+      lcm_{lcm},
+      wait_for_message_on_initialization_timeout_{
+          wait_for_message_on_initialization_timeout} {
   DRAKE_THROW_UNLESS(serializer_ != nullptr);
   DRAKE_THROW_UNLESS(lcm != nullptr);
 
@@ -57,6 +61,11 @@ LcmSubscriberSystem::LcmSubscriberSystem(
   // remove this feature.
   this->DeclareForcedUnrestrictedUpdateEvent(
       &LcmSubscriberSystem::ProcessMessageAndStoreToAbstractState);
+
+  // On initialization, we process any existing received messages and maybe
+  // wait for new messages.
+  this->DeclareInitializationUnrestrictedUpdateEvent(
+      &LcmSubscriberSystem::Initialize);
 
   set_name(make_name(channel_));
 }
@@ -202,6 +211,42 @@ int LcmSubscriberSystem::WaitForMessage(
 int LcmSubscriberSystem::GetInternalMessageCount() const {
   std::unique_lock<std::mutex> lock(received_message_mutex_);
   return received_message_count_;
+}
+
+EventStatus LcmSubscriberSystem::Initialize(const Context<double>& context,
+                                            State<double>* state) const {
+  if (GetInternalMessageCount() < 1 &&
+      wait_for_message_on_initialization_timeout_ > 0.0) {
+    log()->info("Waiting for messages on {}", channel_);
+
+    using Clock = std::chrono::steady_clock;
+    using Duration = std::chrono::duration<double>;
+    const auto start_time = Clock::now();
+
+    while (GetInternalMessageCount() < 1 &&
+          Duration(Clock::now() - start_time).count() <
+              wait_for_message_on_initialization_timeout_) {
+      // Since the DrakeLcmInterface will not be handling subscriptions during
+      // this initialization, we must handle them directly here.
+      lcm_->HandleSubscriptions(100 /* timeout_millis*/);
+    }
+    if (GetInternalMessageCount() > 0) {
+      log()->info("Received");
+    } else {
+      // TODO(russt): Remove this once EventStatus are actually propagated.
+      throw std::runtime_error(fmt::format(
+          "Timed out without receiving any message on {}", channel_));
+      log()->info("TIMEOUT");
+    }
+  }
+
+  if (GetInternalMessageCount() > 0) {
+    return ProcessMessageAndStoreToAbstractState(context, state);
+  } else {
+    return EventStatus::Failed(
+        this,
+        fmt::format("Timed out without receiving any message on {}", channel_));
+  }
 }
 
 }  // namespace lcm
