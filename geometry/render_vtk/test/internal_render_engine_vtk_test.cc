@@ -42,6 +42,32 @@ namespace drake {
 namespace geometry {
 namespace render_vtk {
 namespace internal {
+
+// Use friend access to grab actors.
+class RenderEngineVtkTester {
+ public:
+  // This returns the first color actor associated with the given `id` (if there
+  // are multiple actors for the geometry).
+  static vtkActor* GetColorActor(const RenderEngineVtk& renderer,
+                                 GeometryId id) {
+    // First 0 is the color index, second is the first actor.
+    vtkActor* actor = renderer.props_.at(id).at(0).parts.at(0).actor.Get();
+    DRAKE_DEMAND(actor != nullptr);
+    return actor;
+  }
+
+  // Return all of the colors actors associated with the given geometry id.
+  static std::vector<vtkActor*> GetColorActors(const RenderEngineVtk& renderer,
+                                               GeometryId id) {
+    const auto& color_prop = renderer.props_.at(id).at(0);
+    std::vector<vtkActor*> actors;
+    for (const auto& part : color_prop.parts) {
+      actors.push_back(part.actor.Get());
+    }
+    return actors;
+  }
+};
+
 namespace {
 
 using Eigen::AngleAxisd;
@@ -966,16 +992,15 @@ TEST_F(RenderEngineVtkTest, MeshTest) {
   }
 }
 
-// The use of vtkAssembly causes VTK to render textures "upside down". We
-// currently resolve this by flipping them back (see FlipGltfTextures in
-// internal_render_engine_vtk_test.cc). While that hack is necessary, we
-// want to confirm that all of the textures are being appropriately flipped.
-// We'll do so by testing a special gltf file (that uses all possible glTF
-// textures) and compare the rendered result against a reference image.
+// A simple regression test to make sure that we are supporting all of the
+// texture types that glTF supports. To that end, we have a special glTF file
+// that we'll render and test the resulting image against a reference image.
 //
 // Changes to the camera pose, the glTF file being tested, or render camera
-// intrinsics will require the reference image to be re-rendered.
-TEST_F(RenderEngineVtkTest, GltfTextureOrientation) {
+// intrinsics will require the reference image to be re-rendered. Simply save
+// the image that is rendered by this test as the new reference (subject to
+// visual inspection).
+TEST_F(RenderEngineVtkTest, GltfTextureSupport) {
   const RotationMatrixd R_WC(math::RollPitchYawd(-M_PI / 2.5, 0, M_PI / 4));
   const RigidTransformd X_WC(R_WC,
                              R_WC * Vector3d(0, 0, -6) + Vector3d(0, 0, -0.15));
@@ -1101,6 +1126,44 @@ TEST_F(RenderEngineVtkTest, GltfSupport) {
     PerformCenterShapeTest(
         vtk_clone,
         fmt::format("glTF test on {} face - clone", face.name).c_str());
+  }
+}
+
+// When VTK imports a glTF file, the transforms of nodes in the file's frame are
+// not stored in vtkProp3D's transform components (position, origin,
+// orientation, and scale). This simply confirms that each of those quantities
+// are the identity value.
+bool TransformComponentsAreIdentity(vtkActor* a) {
+  Vector3d position, origin, orientation, scale;
+  a->GetPosition(position.data());
+  a->GetOrigin(origin.data());
+  a->GetOrientation(orientation.data());
+  a->GetScale(scale.data());
+  return (position.array() == 0).all() && (origin.array() == 0).all() &&
+         (orientation.array() == 0).all() && (scale.array() == 1).all();
+}
+
+// How Drake uses VTK to handle glTF files is predicated on an understanding on
+// how vtkGLTFImporter creates pose information for glTF nodes. This test serves
+// as a signal if VTK's handling of glTF nodes changes. See
+// TransformComponentsAreIdentity().
+TEST_F(RenderEngineVtkTest, VtkGltfBehavior) {
+  Init(X_WC_, true);
+
+  const std::string filename =
+      FindResourceOrThrow("drake/geometry/render/test/meshes/rainbow_box.gltf");
+
+  Mesh mesh(filename);
+  expected_label_ = RenderLabel(3);
+  // Note: Passing diffuse color or texture to a glTF spawns a warning.
+  PerceptionProperties material;
+  material.AddProperty("label", "id", expected_label_);
+  const GeometryId id = GeometryId::get_new_id();
+  renderer_->RegisterVisual(id, mesh, material, RigidTransformd::Identity(),
+                            true /* needs update */);
+  for (vtkActor* actor :
+       RenderEngineVtkTester::GetColorActors(*renderer_, id)) {
+    ASSERT_TRUE(TransformComponentsAreIdentity(actor));
   }
 }
 
@@ -1474,20 +1537,12 @@ class TextureSetterEngine : public RenderEngineVtk {
  public:
   TextureSetterEngine() = default;
 
-  // Returns the *first* actor representing the geometry with the given id.
-  vtkActor* GetColorActor(GeometryId id) const {
-    // 0 is the color index.
-    auto* actor = vtkActor::SafeDownCast(props().at(id)[0]);
-    DRAKE_DEMAND(actor != nullptr);
-    return actor;
-  }
-
   // Reports if the color actor for the geometry with the given `id` has the
   // property texture append by this class's DoRegisterVisual() implementation.
   // This only tests the first actor for the geometry.
   bool GeometryHasColorTexture(GeometryId id,
                                const std::string& texture_name) const {
-    vtkActor* actor = GetColorActor(id);
+    vtkActor* actor = RenderEngineVtkTester::GetColorActor(*this, id);
     return actor->GetProperty()->GetTexture(texture_name.c_str()) != nullptr;
   }
 
@@ -1496,7 +1551,7 @@ class TextureSetterEngine : public RenderEngineVtk {
   // geometry.
   void ApplyColorTextureToGeometry(GeometryId id,
                                    const std::string& texture_name) {
-    vtkActor* actor = GetColorActor(id);
+    vtkActor* actor = RenderEngineVtkTester::GetColorActor(*this, id);
     vtkNew<vtkImageData> image_data;
     vtkNew<vtkOpenGLTexture> texture;
     texture->SetRepeat(false);
