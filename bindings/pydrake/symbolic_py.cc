@@ -494,6 +494,12 @@ PYBIND11_MODULE(symbolic, m) {
       },
       py::arg("m"), py::arg("env") = Environment::map{},
       py::arg("generator") = nullptr, doc.Evaluate.doc_expression);
+  m.def(
+      "EvaluatePartial",
+      [](const MatrixX<Expression>& M, const Environment::map& env) {
+        return EvaluatePartial(M, Environment{env});
+      },
+      py::arg("m"), py::arg("env") = Environment::map{}, doc.EvaluatePartial.doc_expression);
 
   m.def("GetVariableVector", &symbolic::GetVariableVector,
       py::arg("expressions"), doc.GetVariableVector.doc);
@@ -880,6 +886,16 @@ PYBIND11_MODULE(symbolic, m) {
             return self.Evaluate(Environment{env});
           },
           py::arg("env"), doc.Polynomial.Evaluate.doc)
+      .def(
+          "EvaluateBatch",
+          [](const Polynomial& self, const std::vector<Environment::map>& envs) {
+            std::vector<Environment> envs_literal(envs.size());
+            for(int i = 0; i < static_cast<int>(envs.size()); ++i) {
+              envs_literal.at(i) = Environment(envs.at(i));
+            }
+            return self.EvaluateBatch(envs_literal);
+          },
+          py::arg("envs"), doc.Polynomial.EvaluateBatch.doc)
       // TODO(Eric.Cousineau): add python binding for symbolic::Environment.
       .def(
           "EvaluatePartial",
@@ -894,6 +910,16 @@ PYBIND11_MODULE(symbolic, m) {
           },
           py::arg("var"), py::arg("c"),
           doc.Polynomial.EvaluatePartial.doc_2args)
+      .def(
+          "EvaluatePartialBatch",
+          [](const Polynomial& self, const std::vector<Environment::map>& envs) {
+            std::vector<Environment> envs_literal(envs.size());
+            for(int i = 0; i < static_cast<int>(envs.size()); ++i) {
+              envs_literal.at(i) = Environment(envs.at(i));
+            }
+            return self.EvaluatePartialBatch(envs_literal);
+          },
+          py::arg("envs"), doc.Polynomial.EvaluatePartialBatch.doc)
       .def(
           "EvaluateIndeterminates",
           [](const Polynomial& self,
@@ -1050,6 +1076,12 @@ PYBIND11_MODULE(symbolic, m) {
         return Evaluate(M, Environment{env});
       },
       py::arg("m"), py::arg("env"), doc.Evaluate.doc_polynomial);
+  m.def(
+      "EvaluatePartial",
+      [](const MatrixX<Polynomial>& M, const Environment::map& env) {
+        return EvaluatePartial(M, Environment{env});
+      },
+      py::arg("m"), py::arg("env"), doc.EvaluatePartial.doc_polynomial);
 
   m.def(
       "Jacobian",
