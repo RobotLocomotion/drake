@@ -15,20 +15,25 @@ AddResult AddMultibodyPlant(
     const MultibodyPlantConfig& config,
     systems::DiagramBuilder<double>* builder) {
   AddResult result = AddMultibodyPlantSceneGraph(builder, config.time_step);
-  result.plant.set_penetration_allowance(config.penetration_allowance);
-  result.plant.set_stiction_tolerance(config.stiction_tolerance);
-  result.plant.set_contact_model(
+  ApplyMultibodyPlantConfig(config, &result.plant);
+  return result;
+}
+
+void ApplyMultibodyPlantConfig(const MultibodyPlantConfig& config,
+                               MultibodyPlant<double>* plant) {
+  plant->set_penetration_allowance(config.penetration_allowance);
+  plant->set_stiction_tolerance(config.stiction_tolerance);
+  plant->set_contact_model(
       internal::GetContactModelFromString(config.contact_model));
-  result.plant.set_discrete_contact_solver(
+  plant->set_discrete_contact_solver(
       internal::GetDiscreteContactSolverFromString(
           config.discrete_contact_solver));
-  result.plant.set_sap_near_rigid_threshold(config.sap_near_rigid_threshold);
-  result.plant.set_contact_surface_representation(
+  plant->set_sap_near_rigid_threshold(config.sap_near_rigid_threshold);
+  plant->set_contact_surface_representation(
       internal::GetContactSurfaceRepresentationFromString(
           config.contact_surface_representation));
-  result.plant.set_adjacent_bodies_collision_filters(
+  plant->set_adjacent_bodies_collision_filters(
       config.adjacent_bodies_collision_filters);
-  return result;
 }
 
 namespace internal {

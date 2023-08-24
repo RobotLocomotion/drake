@@ -16,6 +16,13 @@ AddMultibodyPlantSceneGraphResult<double> AddMultibodyPlant(
     const MultibodyPlantConfig& config,
     systems::DiagramBuilder<double>* builder);
 
+/// Applies settings given in `config` to an existing `plant`. The `time_step`
+/// is the one value in `config` that is not set -- it can only be set in the
+/// MultibodyPlant constructor. Consider using AddMultibodyPlant() or manually
+/// passing `config.time_step` when you construct the MultibodyPlant.
+void ApplyMultibodyPlantConfig(const MultibodyPlantConfig& config,
+                               MultibodyPlant<double>* plant);
+
 namespace internal {
 
 // (Exposed for unit testing only.)
