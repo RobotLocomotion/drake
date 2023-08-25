@@ -84,6 +84,12 @@ MODULE_SETTINGS = {
     },
 
     # Second, we'll configure the modules Drake needs (in alphabetical order).
+    "VTK::CommonColor": {
+        # TODO can we cull anything here?
+    },
+    "VTK::CommonComputationalGeometry": {
+        # TODO can we cull anything here?
+    },
     "VTK::CommonCore": {
         "visibility": ["//visibility:public"],
         "hdrs_glob_exclude": [
@@ -190,6 +196,7 @@ MODULE_SETTINGS = {
         "visibility": ["//visibility:public"],
     },
     "VTK::CommonMath": {
+        "visibility": ["//visibility:public"],
         # This module has a lot of code we don't need. We'll opt-out of the
         # default srcs glob, and instead just specify what Drake needs.
         "srcs_glob_exclude": ["**"],
@@ -223,7 +230,104 @@ MODULE_SETTINGS = {
         ],
     },
     "VTK::CommonTransforms": {
-        # This isn't used directly by Drake, but is used by other VTK modules.
+        "visibility": ["//visibility:public"],
+    },
+    "VTK::FiltersCore": {
+        "visibility": ["//visibility:public"],
+        # This module has a lot of code we don't need. We'll opt-out of the
+        # default srcs glob, and instead just specify what Drake needs.
+        "srcs_glob_exclude": ["**"],
+        "srcs_extra": [
+            "Filters/Core/vtkDecimatePro.cxx",
+            "Filters/Core/vtkPolyDataNormals.cxx",
+            "Filters/Core/vtkPolyDataTangents.cxx",
+            "Filters/Core/vtkTriangleFilter.cxx",
+        ],
+    },
+    "VTK::FiltersGeneral": {
+        "visibility": ["//visibility:public"],
+        # This module has a lot of code we don't need. We'll opt-out of the
+        # default srcs glob, and instead just specify what Drake needs.
+        "srcs_glob_exclude": ["**"],
+        "srcs_extra": [
+            "Filters/General/vtkTransformPolyDataFilter.cxx",
+            "Filters/General/vtkSphericalHarmonics.cxx",
+        ],
+    },
+    "VTK::FiltersGeometry": {
+        # This module claimed as a dependency by several other modules, but
+        # none of them end up needing anything from this module once they
+        # have been trimmed down to the classes Drake uses.
+        "srcs_glob_exclude": ["**"],
+    },
+    "VTK::FiltersHybrid": {
+        # This module has a lot of code we don't need. We'll opt-out of the
+        # default srcs glob, and instead just specify what Drake needs.
+        "srcs_glob_exclude": ["**"],
+        "srcs_extra": [
+            "Filters/Hybrid/vtkWeightedTransformFilter.cxx",
+        ],
+        "included_cxxs": [
+            "Filters/Hybrid/vtkEarthSourceData.cxx",
+        ],
+    },
+    "VTK::FiltersSources": {
+        "visibility": ["//visibility:public"],
+    },
+    "VTK::IOCore": {
+        "srcs_glob_exclude": [
+            # Skip code we don't need.
+            "**/*Codec*",
+            "**/*Particle*",
+            "**/*Java*",
+            "**/*UTF*",
+            # Skip this to avoid a dependency on lz4.
+            "**/*LZ4*",
+            # Skip this to avoid a dependency on lzma.
+            "**/*LZMA*",
+        ],
+        "module_deps_ignore": [
+            "VTK::lz4",
+            "VTK::lzma",
+        ],
+    },
+    "VTK::IOExport": {
+        "visibility": ["//visibility:public"],
+        # This module has a lot of code we don't need. We'll opt-out of the
+        # default srcs glob, and instead just specify what Drake needs.
+        "srcs_glob_exclude": ["**"],
+        "srcs_extra": [
+            "IO/Export/vtkExporter.cxx",
+            "IO/Export/vtkGLTFExporter.cxx",
+        ],
+        "module_deps_ignore": [
+            "VTK::DomainsChemistry",
+            "VTK::FiltersCore",
+            "VTK::FiltersGeometry",
+            "VTK::IOImage",
+            "VTK::IOXML",
+            "VTK::ImagingCore",
+            "VTK::RenderingContext2D",
+            "VTK::RenderingFreeType",
+            "VTK::RenderingVtkJS",
+            "VTK::libharu",
+        ],
+    },
+    "VTK::IOGeometry": {
+        "visibility": ["//visibility:public"],
+        # This module has a lot of code we don't need. We'll opt-out of the
+        # default srcs glob, and instead just specify what Drake needs.
+        "srcs_glob_exclude": ["**"],
+        "srcs_extra": [
+            "IO/Geometry/vtkGLTFDocumentLoader.cxx",
+            "IO/Geometry/vtkGLTFDocumentLoaderInternals.cxx",
+            "IO/Geometry/vtkGLTFReader.cxx",
+            "IO/Geometry/vtkGLTFUtils.cxx",
+            "IO/Geometry/vtkGLTFWriter.cxx",
+            "IO/Geometry/vtkGLTFWriterUtils.cxx",
+            "IO/Geometry/vtkOBJWriter.cxx",
+            "IO/Geometry/vtkSTLReader.cxx",
+        ],
     },
     "VTK::IOImage": {
         "visibility": ["//visibility:public"],
@@ -248,11 +352,151 @@ MODULE_SETTINGS = {
             "VTK::metaio",
         ],
     },
+    "VTK::IOImport": {
+        "visibility": ["//visibility:public"],
+        # This module has a lot of code we don't need. We'll opt-out of the
+        # default srcs glob, and instead just specify what Drake needs.
+        "srcs_glob_exclude": ["**"],
+        "srcs_extra": [
+            "IO/Import/vtkImporter.cxx",
+            "IO/Import/vtkGLTFImporter.cxx",
+        ],
+    },
+    "VTK::IOLegacy": {
+        "visibility": ["//visibility:public"],
+        # This module has a lot of code we don't need. We'll opt-out of the
+        # default srcs glob, and instead just specify what Drake needs.
+        "srcs_glob_exclude": ["**"],
+        "srcs_extra": [
+            "IO/Legacy/vtkDataReader.cxx",
+            "IO/Legacy/vtkUnstructuredGridReader.cxx",
+        ],
+    },
     "VTK::ImagingCore": {
         "visibility": ["//visibility:public"],
     },
+    "VTK::ImagingSources": {
+        # TODO can we cull anything here?
+    },
+    "VTK::RenderingCore": {
+        "visibility": ["//visibility:public"],
+        "copts_extra": [
+            # Match the VTK defaults.
+            "-DVTK_OPENGL2",
+        ],
+    },
+    "VTK::RenderingOpenGL2": {
+        "visibility": ["//visibility:public"],
+        "cmake_defines": select({
+            ":osx": [
+                "VTK_USE_COCOA",
+            ],
+            "//conditions:default": [
+                "VTK_USE_X",
+            ],
+        }),
+        "cmake_undefines": [
+            "VTK_DEFAULT_RENDER_WINDOW_OFFSCREEN",
+            "VTK_OPENGL_ENABLE_STREAM_ANNOTATIONS",
+            "VTK_OPENGL_HAS_EGL",
+            "VTK_OPENGL_HAS_OSMESA",
+            "VTK_REPORT_OPENGL_ERRORS",
+            "VTK_REPORT_OPENGL_ERRORS_IN_RELEASE_BUILDS",
+            "VTK_USE_CORE_GRAPHICS",
+            "VTK_USE_DIRECTX",
+            "VTK_USE_NVCONTROL",
+        ] + select({
+            ":osx": [
+                "VTK_USE_X",
+            ],
+            "//conditions:default": [
+                "VTK_USE_COCOA",
+            ],
+        }),
+        "hdrs_extra": [
+            ":generated_rendering_opengl2_sources",
+        ],
+        "srcs_glob_exclude": [
+            # This is configure-time setup code, not library code.
+            "**/vtkProbe*",
+            # Avoid buliding unnecessary VTK::RenderingHyperTreeGrid.
+            "**/*HyperTreeGrid*",
+            # Exclude all renderers by default; we'll incorporate the necessary
+            # ones using with srcs_extra immediately below.
+            "**/vtkCocoa*",
+            "**/vtkEGL*",
+            "**/vtkOSOpenGL*",
+            "**/vtkSDL2OpenGL*",
+            "**/vtkWin32OpenGL*",
+            "**/vtkXOpenGL*",
+        ],
+        "srcs_objc_non_arc": select({
+            ":osx": [
+                "Rendering/OpenGL2/vtkCocoaGLView.mm",
+                "Rendering/OpenGL2/vtkCocoaRenderWindow.mm",
+            ],
+            "//conditions:default": [],
+        }),
+        "srcs_extra": select({
+            ":osx": [],
+            "//conditions:default": [
+                "Rendering/OpenGL2/vtkXOpenGLRenderWindow.cxx",
+            ],
+        }) + [
+            # The vtkObjectFactory.cmake logic for vtk_object_factory_configure
+            # is too difficult to implement in Bazel at the moment. Instead,
+            # we'll commit the two generated files and directly mention them.
+            "@drake//tools/workspace/vtk_internal:gen/vtkRenderingOpenGL2ObjectFactory.h",  # noqa
+            "@drake//tools/workspace/vtk_internal:gen/vtkRenderingOpenGL2ObjectFactory.cxx",  # noqa
+        ],
+        "linkopts_extra": select({
+            ":osx": [
+                # Mimic vtk_module_link(... "-framework Cocoa") from upstream.
+                "-framework Cocoa",
+            ],
+            "//conditions:default": [],
+        }),
+        "deps_extra": select({
+            ":osx": [],
+            "//conditions:default": [
+                # Mimic vtk_module_link(... X11::X11) from upstream.
+                "@x11",
+            ],
+        }),
+        "module_deps_ignore": [
+            "VTK::RenderingHyperTreeGrid",
+        ],
+    },
+    "VTK::RenderingUI": {
+        # This module has a lot of code we don't need. We'll opt-out of the
+        # default srcs glob, and instead just specify what Drake needs.
+        "srcs_glob_exclude": ["**"],
+        "srcs_extra": [
+            "Rendering/UI/vtkGenericRenderWindowInteractor.cxx",
+        ],
+    },
 
     # Third, we'll configure dependencies that come from Drake's WORKSPACE.
+    "VTK::fmt": {
+        "cmake_defines": [
+            "VTK_MODULE_USE_EXTERNAL_VTK_fmt=1",
+        ],
+        "deps_extra": [
+            "@fmt",
+        ],
+    },
+    "VTK::glew": {
+        "cmake_defines": [
+            "VTK_MODULE_USE_EXTERNAL_vtkglew=1",
+        ],
+        "cmake_undefines": [
+            "VTK_GLEW_SHARED",
+            "VTK_MODULE_vtkglew_GLES3",
+        ],
+        "deps_extra": [
+            "@glew",
+        ],
+    },
     "VTK::jpeg": {
         "cmake_defines": [
             "VTK_MODULE_USE_EXTERNAL_vtkjpeg=1",
@@ -265,6 +509,19 @@ MODULE_SETTINGS = {
             # We should write our own WORKSPACE rule to build it sensibly,
             # or switch to VTK's vendored version.
             "@libjpeg",
+        ],
+    },
+    "VTK::nlohmannjson": {
+        "cmake_defines": [
+            "VTK_MODULE_USE_EXTERNAL_vtknlohmannjson=1",
+        ],
+        "deps_extra": [
+            "@nlohmann_internal//:nlohmann",
+        ],
+    },
+    "VTK::opengl": {
+        "deps_extra": [
+            "@opengl",
         ],
     },
     "VTK::png": {
@@ -300,6 +557,20 @@ MODULE_SETTINGS = {
 
     # Fourth, we'll configure dependencies that we let VTK build and vendor on
     # its own, because nothing else in Drake needs these.
+    "VTK::doubleconversion": {
+        "cmake_undefines": [
+            "VTK_MODULE_USE_EXTERNAL_vtkdoubleconversion",
+        ],
+        "hdrs_content": {
+            "ThirdParty/doubleconversion/vtkdoubleconversion_export.h": """
+                #pragma once
+                #define VTKDOUBLECONVERSION_EXPORT
+            """,
+        },
+        "srcs_glob_extra": [
+            "ThirdParty/doubleconversion/**/*.cc",
+        ],
+    },
     "VTK::pugixml": {
         # TODO(jwnimmer-tri) The only user of pugixml is vtkDataAssembly.
         # Possibly there is some way to disable XML I/O support on that
