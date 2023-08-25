@@ -110,7 +110,7 @@
 /// visualization hook=ups:
 /// <ul>
 ///   <li> Connections to <a
-///        href="https://github.com/rdeits/meshcat">MeshCat</a>
+///        href="https://github.com/meshcat-dev/meshcat">MeshCat</a>
 ///        are available (via the Python bindings) <a
 ///        href="https://github.com/RussTedrake/underactuated/tree/master/underactuated">here</a>.
 ///   </li>
