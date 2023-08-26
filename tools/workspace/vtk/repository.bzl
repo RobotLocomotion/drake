@@ -555,6 +555,8 @@ licenses([
         "vtkImagingCore",
         hdrs = [
             "vtkImageCast.h",
+            "vtkImageFlip.h",
+            "vtkImageReslice.h",
         ],
         deps = [
             ":vtkCommonCore",
