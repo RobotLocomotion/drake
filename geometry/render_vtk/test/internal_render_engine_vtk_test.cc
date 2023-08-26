@@ -971,12 +971,10 @@ TEST_F(RenderEngineVtkTest, MeshTest) {
 //  2. Multiple root nodes.
 //  3. Empty nodes (with non-identity transforms).
 //  4. Hierarchies.
-//  5. Textures.
-//     Note: The texture is vertically symmetric -- i.e., you can't tell if the
-//     image is upside down or not.
-//     TODO(SeanCurtis-TRI): Once the following issue is resolved, replace this
-//     with a texture whose vertical orientation matters.
-//     https://discourse.vtk.org/t/vtkgltfimporter-loads-textures-upside-down/12113
+//  5. Textures. The texture is not symmetric; if the image is applied to the
+//     mesh badly, the asymmetry will reveal that. There was a previous version
+//     that vertically flipped the image. This property of the texture map
+//     serves as a regression guard against that behavior.
 //  6. Materials.
 //  7. Single meshes with multiple materials.
 //
