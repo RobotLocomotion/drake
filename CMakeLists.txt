@@ -104,11 +104,6 @@ else()
     "tools/ubuntu-${UNIX_DISTRIBUTION_CODENAME}.bazelrc")
 endif()
 
-# The version passed to find_package(Bazel) should match the
-# minimum_bazel_version value in the call to versions.check() in WORKSPACE.
-set(MINIMUM_BAZEL_VERSION 4.0)
-find_package(Bazel ${MINIMUM_BAZEL_VERSION} MODULE REQUIRED)
-
 get_filename_component(C_COMPILER_REALPATH "${CMAKE_C_COMPILER}" REALPATH)
 get_filename_component(C_COMPILER_NAME "${C_COMPILER_REALPATH}" NAME)
 
@@ -581,6 +576,7 @@ endforeach()
 # name `drake_build_cwd` isn't important, it just needs to be unique.
 configure_file(cmake/bazel.rc.in drake_build_cwd/.bazelrc @ONLY)
 configure_file(cmake/WORKSPACE.in drake_build_cwd/WORKSPACE.bazel @ONLY)
+file(CREATE_LINK "${PROJECT_SOURCE_DIR}/.bazeliskrc" drake_build_cwd/.bazeliskrc SYMBOLIC)
 
 include(ExternalProject)
 
@@ -588,15 +584,18 @@ ExternalProject_Add(drake_cxx_python
   SOURCE_DIR "${PROJECT_SOURCE_DIR}"
   BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/drake_build_cwd"
   CONFIGURE_COMMAND
-    "${Bazel_EXECUTABLE}"
+    "${Python_EXECUTABLE}"
+    "${PROJECT_SOURCE_DIR}/third_party/com_github_bazelbuild_bazelisk/bazelisk.py"
     info --announce_rc
   BUILD_COMMAND
-    "${Bazel_EXECUTABLE}"
+    "${Python_EXECUTABLE}"
+    "${PROJECT_SOURCE_DIR}/third_party/com_github_bazelbuild_bazelisk/bazelisk.py"
     build
     ${BAZEL_INSTALL_TARGET}
   BUILD_ALWAYS ON
   INSTALL_COMMAND
-    "${Bazel_EXECUTABLE}"
+    "${Python_EXECUTABLE}"
+    "${PROJECT_SOURCE_DIR}/third_party/com_github_bazelbuild_bazelisk/bazelisk.py"
     run
     ${BAZEL_INSTALL_TARGET}
     --
