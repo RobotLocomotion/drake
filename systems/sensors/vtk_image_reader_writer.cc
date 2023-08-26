@@ -1,5 +1,6 @@
 #include "drake/systems/sensors/vtk_image_reader_writer.h"
 
+#include <functional>
 #include <utility>
 #include <variant>
 
@@ -130,6 +131,9 @@ vtkSmartPointer<vtkImageWriter> MakeWriter(ImageFileFormat format,
         typed_writer->WriteToMemoryOn();
       },
       writer_variant);
+
+  // Either a FileName or FilePrefix is mandatory.
+  writer->SetFilePrefix("drake");
 
   // Add an observer to the writer that copies the encoded image into the
   // `output` buffer.
