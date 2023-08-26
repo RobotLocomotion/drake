@@ -22,3 +22,6 @@ cat > "${bazelrc}" <<EOF
 import %workspace%/tools/macos.bazelrc
 import %workspace%/tools/macos-arch-${arch}.bazelrc
 EOF
+
+# Prefetch the bazelisk download of bazel.
+(cd "${workspace_dir}" && bazelisk version) > /dev/null
