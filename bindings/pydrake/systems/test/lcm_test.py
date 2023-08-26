@@ -148,6 +148,12 @@ class TestSystemsLcm(unittest.TestCase):
         simulator.AdvanceTo(0.00025)  # Arbitrary positive value.
         return simulator.get_context().Clone()
 
+    def test_lcm_interface_systems(self):
+        lcm = DrakeLcm()
+        lcm_system = mut.LcmInterfaceSystem(lcm=lcm)
+        self.assertIsInstance(lcm_system.get_lcm_url(), str)
+        self.assertEqual(lcm_system.HandleSubscriptions(timeout_millis=10), 0)
+
     def test_subscriber(self):
         lcm = DrakeLcm()
         dut = mut.LcmSubscriberSystem.Make(

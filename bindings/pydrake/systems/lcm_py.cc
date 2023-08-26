@@ -109,7 +109,10 @@ PYBIND11_MODULE(lcm, m) {
         (std::string(cls_doc.doc) + kLcmInterfaceSystemClassWarning).c_str())
         .def(py::init<DrakeLcmInterface*>(),
             // Keep alive, reference: `self` keeps `lcm` alive.
-            py::keep_alive<1, 2>(), py::arg("lcm"), cls_doc.ctor.doc_1args_lcm);
+            py::keep_alive<1, 2>(), py::arg("lcm"), cls_doc.ctor.doc_1args_lcm)
+        .def("get_lcm_url", &Class::get_lcm_url, cls_doc.get_lcm_url.doc)
+        .def("HandleSubscriptions", &Class::HandleSubscriptions,
+            py::arg("timeout_millis"), cls_doc.HandleSubscriptions.doc);
   }
 
   {
