@@ -2,13 +2,7 @@ load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
-exports_files(
-    glob(["com_github_pybind_pybind11/**"]),
-    licenses = ["notice"],  # BSD-3-Clause
-    visibility = [
-        "//tools/workspace/pybind11:__pkg__",
-    ],
-)
+exports_files(glob(["com_github_bazelbuild_bazelisk/**"]))
 
 add_lint_tests(
     bazel_lint_extra_srcs = [
