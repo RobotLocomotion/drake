@@ -25,11 +25,13 @@ void InverseDynamicsController<T>::SetUp(
   DiagramBuilder<T> builder;
   InverseDynamics<T>* inverse_dynamics{};
   if (owned_plant) {
-    inverse_dynamics = builder.template AddSystem<InverseDynamics<T>>(
-        std::move(owned_plant), InverseDynamics<T>::kInverseDynamics);
+    inverse_dynamics = builder.template AddNamedSystem<InverseDynamics<T>>(
+        "InverseDynamics", std::move(owned_plant),
+        InverseDynamics<T>::kInverseDynamics);
   } else {
-    inverse_dynamics = builder.template AddSystem<InverseDynamics<T>>(
-        multibody_plant_for_control_, InverseDynamics<T>::kInverseDynamics);
+    inverse_dynamics = builder.template AddNamedSystem<InverseDynamics<T>>(
+        "InverseDynamics", multibody_plant_for_control_,
+        InverseDynamics<T>::kInverseDynamics);
   }
 
   const int num_positions = multibody_plant_for_control_->num_positions();
@@ -74,11 +76,10 @@ joints modeled with quaternions.)""", num_positions, num_velocities));
   */
 
   // Adds a PID.
-  pid_ = builder.template AddSystem<PidController<T>>(kp, ki, kd);
-  pid_->set_name("pid");
+  pid_ = builder.template AddNamedSystem<PidController<T>>("pid", kp, ki, kd);
 
   // Adds a adder to do PID's acceleration + reference acceleration.
-  auto adder = builder.template AddSystem<Adder<T>>(2, dim);
+  auto adder = builder.template AddNamedSystem<Adder<T>>("+", 2, dim);
 
   // Adds PID's output with reference acceleration
   builder.Connect(pid_->get_output_port_control(), adder->get_input_port(0));
@@ -103,8 +104,8 @@ joints modeled with quaternions.)""", num_positions, num_velocities));
   if (!has_reference_acceleration_) {
     // Uses a zero constant source for reference acceleration.
     auto zero_feedforward_acceleration =
-        builder.template AddSystem<ConstantVectorSource<T>>(
-            VectorX<T>::Zero(dim));
+        builder.template AddNamedSystem<ConstantVectorSource<T>>(
+            "desired_acceleration=0", VectorX<T>::Zero(dim));
     builder.Connect(zero_feedforward_acceleration->get_output_port(),
                     adder->get_input_port(1));
   } else {
