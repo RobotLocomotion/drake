@@ -289,6 +289,12 @@ class TestSystemsLcm(unittest.TestCase):
         self.assertIsInstance(scope, mut.LcmScopeSystem)
         self.assertIsInstance(publisher, mut.LcmPublisherSystem)
 
+    def test_lcm_interface_system_getters(self):
+        lcm = DrakeLcm()
+        lcm_system = mut.LcmInterfaceSystem(lcm=lcm)
+        self.assertIsInstance(lcm_system.get_lcm_url(), str)
+        self.assertEqual(lcm_system.HandleSubscriptions(timeout_millis=10), 0)
+
     def test_lcm_interface_system_diagram(self):
         # First, check the class doc.
         self.assertIn(

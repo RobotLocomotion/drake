@@ -55,7 +55,7 @@
 }
 
 {
-   MOSEK memory leak #2 
+   MOSEK memory leak #2
    Memcheck:Leak
    match-leak-kinds: possible
    fun:calloc
@@ -71,6 +71,18 @@
     match-leak-kinds: possible
     fun:malloc
     fun:mkl_serv_thread_free_buffers
+    fun:PRIVATE*
+}
+
+# Started happening when Gurobi got updated to 10.0.2. PR 19766.
+{
+    <gurobi-2>
+    Memcheck:Leak
+    match-leak-kinds: possible
+    fun:malloc
+    ...
+    fun:mkl_blas_dtrsm
+    ...
     fun:PRIVATE*
 }
 
