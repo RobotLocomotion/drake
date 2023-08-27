@@ -225,6 +225,7 @@ VolumeViaSamplingResult ConvexSet::CalcVolumeViaSampling(
   }
   DRAKE_THROW_UNLESS(desired_rel_accuracy <= 1.0);
   DRAKE_THROW_UNLESS(desired_rel_accuracy >= 0);
+  DRAKE_THROW_UNLESS(max_num_samples > 0);
   const auto aabb_opt = Hyperrectangle::MaybeCalcAxisAlignedBoundingBox(*this);
   // if aabb_opt is nullopt and the set is not infinity, then we have
   // a problem with the solver.

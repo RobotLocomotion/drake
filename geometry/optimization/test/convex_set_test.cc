@@ -227,6 +227,13 @@ GTEST_TEST(ConvexSetTest, HPolyheronCalcVolumeViaSampling) {
   EXPECT_NEAR(result.volume, 6.0, 6.0 * desired_rel_accuracy);
   // We have not used all the samples
   EXPECT_LT(result.num_samples, max_num_samples);
+  // Case when inputs are bad.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      H.CalcVolumeViaSampling(&generator, -1, max_num_samples),
+      ".*desired_rel_accuracy.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      H.CalcVolumeViaSampling(&generator, desired_rel_accuracy, 0),
+      ".*max_num_samples.*");
 }
 
 // Compute the value of pi via sampling the unit circle.

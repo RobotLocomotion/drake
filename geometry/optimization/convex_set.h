@@ -276,7 +276,6 @@ class ConvexSet : public ShapeReifier {
   The computation will terminate when the relative error is less than
   rel_accuracy or when the maximum number of samples is reached.
   @param max_num_samples the maximum number of samples to use.
-  @pre `min_num_samples` <= `max_num_samples`.`
   @pre `desired_rel_accuracy` is in the range [0,1].
   @return a pair the estimated volume of the set and an upper bound for the
   relative accuracy

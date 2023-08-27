@@ -40,6 +40,8 @@ GTEST_TEST(HyperrectangleTest, Default) {
   const Hyperrectangle dut;
   EXPECT_EQ(dut.ambient_dimension(), 0);
   DRAKE_EXPECT_THROWS_MESSAGE(dut.CalcVolume(), ".*zero.*");
+  RandomGenerator gen(1234);
+  DRAKE_EXPECT_THROWS_MESSAGE(dut.CalcVolumeViaSampling(&gen), ".*zero.*");
   EXPECT_EQ(dut.Center().size(), 0);
   EXPECT_TRUE(dut.MaybeGetPoint().has_value());
   EXPECT_EQ(dut.MaybeGetPoint()->size(), 0);
