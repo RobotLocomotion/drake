@@ -141,6 +141,9 @@ drake_py_unittest(
         "test/test_scenarios.yaml",
         ":demo_py",
     ],
+    env = {
+        "_DRAKE_DEPRECATION_IS_ERROR": "1",
+    },
     shard_count = 3,
     deps = [
         ":hardware_sim_test_common",
