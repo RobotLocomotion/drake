@@ -89,7 +89,7 @@ CartesianProduct::CartesianProduct(const ConvexSets& sets,
 CartesianProduct::CartesianProduct(const QueryObject<double>& query_object,
                                    GeometryId geometry_id,
                                    std::optional<FrameId> reference_frame)
-    : ConvexSet(3, true) {
+    : ConvexSet(3, false) {
   Cylinder cylinder(1., 1.);
   query_object.inspector().GetShape(geometry_id).Reify(this, &cylinder);
 
@@ -366,11 +366,11 @@ double CartesianProduct::DoCalcVolume() const {
   }
   if (A_.has_value()) {
     // Note: The constructor enforces that A_ is full column rank.
-    if (A_decomp_.value().rank() < A_->rows()) {
+    if (A_decomp_->rank() < A_->rows()) {
       volume *= 0.0;
     } else {
       // the determinant of a triangular matrix is the product of the diagonal
-      volume *= std::abs(A_decomp_.value().matrixQR().diagonal().prod());
+      volume *= std::abs(A_decomp_->matrixQR().diagonal().prod());
     }
   }
   return volume;

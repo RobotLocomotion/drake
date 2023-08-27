@@ -79,7 +79,7 @@ class CartesianProduct final : public ConvexSet {
   using ConvexSet::PointInSet;
 
   /** @throws  if `set.has_exact_volume() == false` for any of the sets in the
-   * product. */
+  product. */
   using ConvexSet::CalcVolume;
 
  private:

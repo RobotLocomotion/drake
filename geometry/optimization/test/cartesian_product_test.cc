@@ -66,6 +66,10 @@ GTEST_TEST(CartesianProductTest, BasicTest) {
   ASSERT_TRUE(S.MaybeGetFeasiblePoint().has_value());
   EXPECT_TRUE(S.PointInSet(S.MaybeGetFeasiblePoint().value()));
 
+  // Test Volume
+  EXPECT_TRUE(S.has_exact_volume());
+  EXPECT_EQ(S.CalcVolume(), 0);
+
   // Test ConvexSets constructor.
   ConvexSets sets;
   sets.emplace_back(P1);
@@ -79,10 +83,6 @@ GTEST_TEST(CartesianProductTest, BasicTest) {
   // Test MaybeGetFeasiblePoint.
   ASSERT_TRUE(S2.MaybeGetFeasiblePoint().has_value());
   EXPECT_TRUE(S2.PointInSet(S2.MaybeGetFeasiblePoint().value()));
-
-  // Test Volume
-  EXPECT_TRUE(S.has_exact_volume());
-  EXPECT_EQ(S.CalcVolume(), 0);
 }
 
 GTEST_TEST(CartesianProductTest, DefaultCtor) {
@@ -98,7 +98,7 @@ GTEST_TEST(CartesianProductTest, DefaultCtor) {
   EXPECT_TRUE(dut.PointInSet(dut.MaybeGetFeasiblePoint().value()));
   EXPECT_TRUE(dut.PointInSet(Eigen::VectorXd::Zero(0)));
   EXPECT_TRUE(dut.has_exact_volume());
-  EXPECT_EQ(dut.CalcVolume(), 0);
+  DRAKE_EXPECT_THROWS_MESSAGE(dut.CalcVolume(), ".*zero.*");
 }
 
 GTEST_TEST(CartesianProductTest, Move) {
@@ -156,6 +156,7 @@ GTEST_TEST(CartesianProductTest, FromSceneGraph) {
 
   ASSERT_TRUE(S.MaybeGetFeasiblePoint().has_value());
   EXPECT_TRUE(S.PointInSet(S.MaybeGetFeasiblePoint().value(), kTol));
+  EXPECT_FALSE(S.has_exact_volume());
 
   // Test reference_frame frame.
   SourceId source_id = scene_graph->RegisterSource("F");
@@ -548,17 +549,44 @@ GTEST_TEST(CartesianProductTest, EmptyInput) {
   EXPECT_FALSE(S.MaybeGetFeasiblePoint().has_value());
 }
 
+// Test volume methods.
 GTEST_TEST(CartesianProductTest, Volume) {
-  // A triangle with vertices (0,0), (1,0), (0,3) has area 3/2.
+  // HPolyhedron = box (but not supported because it is a
+  // HPolyhedron object, and treated as a generic one)
+  HPolyhedron H = HPolyhedron::MakeBox(Vector2d{1, 1}, Vector2d{2, 2});
+  // VPolytope = triangle (area = 3/2)
   Eigen::Matrix<double, 2, 3> vertices;
-  vertices << 0, 1, 0, 0, 0, 3;
+  // clang-format off
+  vertices << 0, 1, 0,
+              0, 0, 3;
+  // clang-format on
   VPolytope V = VPolytope(vertices);
-  // A rectangle from (0,0) to (3,2) has area 6.
-  Hyperrectangle R =
-      Hyperrectangle(Eigen::Vector2d::Zero(), Eigen::Vector2d(3, 2));
-  CartesianProduct S(V, R);
-  EXPECT_TRUE(S.has_exact_volume());
-  EXPECT_NEAR(S.CalcVolume(), 9, 1e-6);
+  // Hyperrectangle (volume = 6)
+  Hyperrectangle R = Hyperrectangle(Vector2d::Zero(), Vector2d(3, 2));
+  // Hyperellipsoid (volume = 3.14159)
+  Hyperellipsoid E =
+      Hyperellipsoid(Eigen::MatrixXd::Identity(2, 2), Vector2d(1, 2));
+  // CartesianProduct of H, V, R, E
+  CartesianProduct S1(MakeConvexSets(H, V, R, E));
+  EXPECT_FALSE(S1.has_exact_volume());
+  // CartesianProduct of V, R, E
+  CartesianProduct S2(MakeConvexSets(V, R, E));
+  EXPECT_TRUE(S2.has_exact_volume());
+  EXPECT_NEAR(S2.CalcVolume(), M_PI * 6 * 3 / 2, 1e-3);
+  // CartesianProduct of R, E
+  CartesianProduct S3(MakeConvexSets(R, E));
+  EXPECT_TRUE(S3.has_exact_volume());
+  EXPECT_NEAR(S3.CalcVolume(), M_PI * 6, 1e-3);
+  // CartesianProduct of R, E, different constructor
+  CartesianProduct S4(R, E);
+  EXPECT_TRUE(S4.has_exact_volume());
+  EXPECT_NEAR(S4.CalcVolume(), M_PI * 6, 1e-3);
+  // CartesianProduct of H, V
+  CartesianProduct S5(MakeConvexSets(H, V));
+  EXPECT_FALSE(S5.has_exact_volume());
+  // CartesianProduct of H, V, different constructor
+  CartesianProduct S6(H, V);
+  EXPECT_FALSE(S6.has_exact_volume());
 }
 
 GTEST_TEST(CartesianProductTest, ScaledVolume) {

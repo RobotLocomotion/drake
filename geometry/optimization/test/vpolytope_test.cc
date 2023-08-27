@@ -87,7 +87,7 @@ GTEST_TEST(VPolytopeTest, DefaultCtor) {
   const VPolytope dut;
   EXPECT_NO_THROW(dut.GetMinimalRepresentation());
   EXPECT_EQ(dut.vertices().size(), 0);
-  EXPECT_EQ(dut.CalcVolume(), 0.0);
+  DRAKE_EXPECT_THROWS_MESSAGE(dut.CalcVolume(), ".*zero.*");
   EXPECT_NO_THROW(dut.Clone());
   EXPECT_EQ(dut.ambient_dimension(), 0);
   EXPECT_TRUE(dut.IsBounded());

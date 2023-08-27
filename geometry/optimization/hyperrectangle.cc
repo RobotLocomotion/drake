@@ -64,8 +64,7 @@ std::optional<Hyperrectangle> Hyperrectangle::MaybeCalcAxisAlignedBoundingBox(
       } else {
         drake::log()->warn(
             "Hyperrectangle::MaybeCalcAxisAlignedBoundingBox: Failed to solve "
-            "the "
-            "optimization problem. Maybe the set is unbounded?");
+            "the optimization problem. Maybe the set is unbounded?");
         return std::nullopt;
       }
       // reset the cost vector
@@ -196,9 +195,6 @@ Hyperrectangle::DoToShapeWithPose() const {
 }
 
 double Hyperrectangle::DoCalcVolume() const {
-  if (ambient_dimension() == 0) {
-    return 0.0;
-  }
   return (ub_ - lb_).prod();
 }
 

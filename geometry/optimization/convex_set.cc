@@ -200,21 +200,31 @@ double ConvexSet::CalcVolume() const {
                     "volume. Use CalcVolumeViaSampling() instead.",
                     NiceTypeName::Get(*this)));
   }
+  if (ambient_dimension() == 0) {
+    throw std::runtime_error(
+        fmt::format("Attempting to calculate the volume of a zero-dimensional "
+                    "set {}. This is not well-defined.",
+                    NiceTypeName::Get(*this)));
+  }
   return DoCalcVolume();
 }
 
-std::pair<double, double> ConvexSet::CalcVolumeViaSampling(
+VolumeViaSamplingResult ConvexSet::CalcVolumeViaSampling(
     RandomGenerator* generator, const double desired_rel_accuracy,
     const size_t max_num_samples) const {
   if (ambient_dimension() == 0) {
-    return std::make_pair(0.0, 0.0);
+    throw std::runtime_error(
+        fmt::format("Attempting to calculate the volume of a zero-dimensional "
+                    "set {}. This is not well-defined.",
+                    NiceTypeName::Get(*this)));
   }
   if (!IsBounded()) {
-    // return infinity, nan
-    return std::make_pair(std::numeric_limits<double>::infinity(),
-                          std::numeric_limits<double>::quiet_NaN());
+    // return infinity, nan, 0 samples.
+    return VolumeViaSamplingResult(std::numeric_limits<double>::infinity(),
+                                   std::numeric_limits<double>::quiet_NaN(), 0);
   }
   DRAKE_THROW_UNLESS(desired_rel_accuracy <= 1.0);
+  DRAKE_THROW_UNLESS(desired_rel_accuracy >= 0);
   const auto aabb_opt = Hyperrectangle::MaybeCalcAxisAlignedBoundingBox(*this);
   // if aabb_opt is nullopt and the set is not infinity, then we have
   // a problem with the solver.
@@ -231,32 +241,34 @@ std::pair<double, double> ConvexSet::CalcVolumeViaSampling(
     if (this->PointInSet(point)) {
       ++num_hits;
     }
-    // p is the probability of hitting the set = num_hits/num_samples
+    // p is the probability of hitting the set = num_hits/num_samples.
     if (num_hits > 0) {
-      // Let p be the real probability of hitting the set. We are estimating p
+      // Let p be the real probability of hitting the set. We are estimating p.
       // The standard deviation of the MonteCarlo estimate is sigma/sqrt(n),
       // where sigma is the standard deviation of the Bernoulli distribution.
       // The standard deviation of the Bernoulli distribution is sqrt((1-p)*p),
       // where p is the probability of success.  Therefore, the standard
       // deviation of the estimate is sqrt((1-p)*p/n). We don't know p, but the
-      // max value of (1-p)*p is 1/4, which occurs at p = 1/2. the standard
-      // deviation divided by the mean, so the error is upper-bounded by
-      // sqrt(1/(4*n)). Therefore, the relative_accuracy_squared < 1/(4*n*p) or
-      // simply 1/ (4 * num_hits).
+      // max value of (1-p)*p is 1/4, which occurs at p = 1/2.
+      // https://people.math.umass.edu/~lr7q/ps_files/teaching/math456/Chapter6.pdf
+      // The standard deviation divided by the mean, so the error is
+      // upper-bounded by sqrt(1/(4*n)). Therefore, the
+      // relative_accuracy_squared < 1/(4*n*p) or simply 1/ (4 * num_hits).
       relative_accuracy_ub_squared = static_cast<double>(1) / (4 * num_hits);
     }
   }
   if (relative_accuracy_ub_squared > desired_rel_accuracy_squared) {
     drake::log()->warn(
-        "Volume calculation did not converge to desired accuracy {}.  "
-        "Relative accuracy achieved: {}",
+        "Volume calculation did not converge to desired relaive accuracy {}."
+        "The tightest upper bound on relative accuracy achieved: {}",
         desired_rel_accuracy, std::sqrt(relative_accuracy_ub_squared));
   }
   const auto estimated_volume = aabb.CalcVolume() *
                                 static_cast<double>(num_hits) /
                                 static_cast<double>(num_samples);
   const auto relative_accuracy_ub = std::sqrt(relative_accuracy_ub_squared);
-  return std::make_pair(estimated_volume, relative_accuracy_ub);
+  return VolumeViaSamplingResult(estimated_volume, relative_accuracy_ub,
+                                 num_samples);
 }
 
 double ConvexSet::DoCalcVolume() const {

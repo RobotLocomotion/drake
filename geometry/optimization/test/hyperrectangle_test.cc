@@ -5,6 +5,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/yaml/yaml_io.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
 #include "drake/geometry/optimization/test_utilities.h"
@@ -38,7 +39,7 @@ bool PointInScaledSet(const solvers::VectorXDecisionVariable& x_vars,
 GTEST_TEST(HyperrectangleTest, Default) {
   const Hyperrectangle dut;
   EXPECT_EQ(dut.ambient_dimension(), 0);
-  EXPECT_DOUBLE_EQ(dut.CalcVolume(), 0);
+  DRAKE_EXPECT_THROWS_MESSAGE(dut.CalcVolume(), ".*zero.*");
   EXPECT_EQ(dut.Center().size(), 0);
   EXPECT_TRUE(dut.MaybeGetPoint().has_value());
   EXPECT_EQ(dut.MaybeGetPoint()->size(), 0);

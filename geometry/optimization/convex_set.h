@@ -57,6 +57,29 @@ The geometry::optimization tools support:
 @ingroup geometry
 @ingroup solvers */
 
+/** Struct for holding the result of a volume calculation from
+ * CalcVolumeViaSampling */
+struct VolumeViaSamplingResult {
+  /** The estimated volume of the set. */
+  double volume;
+
+  /** An upper bound for the relative accuracy of the volume estimate. */
+  double rel_accuracy;
+
+  /** The number of samples used to compute the volume estimate. */
+  size_t num_samples;
+
+  // This constructor is deleted to prevent the user from
+  // constructing a VolumeViaSamplingResult with uninitialized values.
+  VolumeViaSamplingResult() = delete;
+
+  VolumeViaSamplingResult(const double volume_in, const double rel_accuracy_in,
+                          const size_t num_samples_in)
+      : volume(volume_in),
+        rel_accuracy(rel_accuracy_in),
+        num_samples(num_samples_in) {}
+};
+
 /** Abstract base class for defining a convex set.
 @ingroup geometry_optimization */
 class ConvexSet : public ShapeReifier {
@@ -234,7 +257,8 @@ class ConvexSet : public ShapeReifier {
   /** Computes the exact volume for the convex set.
   @note Not every convex set can report an exact volume. In that case, use
   CalcVolumeViaSampling() instead.
-  @throws std::exception if `has_exact_volume()` returns `false`. */
+  @throws std::exception if `has_exact_volume()` returns `false`.
+  @throws if ambient_dimension() == 0 */
   double CalcVolume() const;
 
   /** Calculates an estimate of the volume of the convex set using sampling and
@@ -253,13 +277,21 @@ class ConvexSet : public ShapeReifier {
   rel_accuracy or when the maximum number of samples is reached.
   @param max_num_samples the maximum number of samples to use.
   @pre `min_num_samples` <= `max_num_samples`.`
+  @pre `desired_rel_accuracy` is in the range [0,1].
   @return a pair the estimated volume of the set and an upper bound for the
-  relative accuracy */
-  std::pair<double, double> CalcVolumeViaSampling(
+  relative accuracy
+  @throws if ambient_dimension() == 0
+  @throws if the minimum axis-aligned bounding box of the set cannot be
+  computed. */
+  VolumeViaSamplingResult CalcVolumeViaSampling(
       RandomGenerator* generator, const double desired_rel_accuracy = 1e-2,
       const size_t max_num_samples = 1e4) const;
 
-  /** Returns true if the exact volume can be computed for this convex set. */
+  /** Returns true if the exact volume can be computed for this type convex set.
+  @note This value reasons about to the generic case of the convex set class
+  rather than the specific instance of the convex set. For example, the exact
+  volume of a box is trivival to compute, but if the box is created as a
+  HPolyhedron, then the exact volume cannot be computed. */
   bool has_exact_volume() const { return has_exact_volume_; }
 
  protected:

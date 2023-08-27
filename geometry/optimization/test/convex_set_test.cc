@@ -114,7 +114,7 @@ GTEST_TEST(MakeConvexSetsTest, NoExtraCopying) {
 class DummyVolumeSet : public ConvexSet {
  public:
   explicit DummyVolumeSet(bool can_calc_volume)
-      : ConvexSet(0, can_calc_volume) {}
+      : ConvexSet(1, can_calc_volume) {}
 
  protected:
   std::unique_ptr<ConvexSet> DoClone() const override { return nullptr; }
@@ -215,11 +215,18 @@ GTEST_TEST(ConvexSetTest, HPolyheronCalcVolumeViaSampling) {
   // Compute the estimated volume of the polytope.
   RandomGenerator generator(1234);
   const double desired_rel_accuracy = 1e-2;
-  const auto [estimated_volume, rel_accuracy] =
-      H.CalcVolumeViaSampling(&generator, desired_rel_accuracy);
-  EXPECT_LE(rel_accuracy, desired_rel_accuracy);
+  // Some Monte-Carlo math here. Refer to the comments in CalcVolumeViaSampling
+  // The number of used hits should be about 1/4*100^2 = 2500.
+  // Since the volume of aabb is 15, then we need > 6250 samples for such an
+  // accuracy.
+  const size_t max_num_samples = 1e4;
+  const VolumeViaSamplingResult result = H.CalcVolumeViaSampling(
+      &generator, desired_rel_accuracy, max_num_samples);
+  EXPECT_LE(result.rel_accuracy, desired_rel_accuracy);
   // H is a simple parallelogram with volume 6.0.
-  EXPECT_NEAR(estimated_volume, 6.0, 6.0 * desired_rel_accuracy);
+  EXPECT_NEAR(result.volume, 6.0, 6.0 * desired_rel_accuracy);
+  // We have not used all the samples
+  EXPECT_LT(result.num_samples, max_num_samples);
 }
 
 // Compute the value of pi via sampling the unit circle.
@@ -229,16 +236,21 @@ GTEST_TEST(ConvexSetTest, CalcPiViaCalcVolumeViaSampling) {
   const double desired_rel_accuracy = 1e-3;
   // We need 250K hits, which means about 318K samples. Most likely will not
   // achive this with 100K samples.
-  const auto [estimated_volume_bad, rel_accuracy_bad] =
-      unit_circle.CalcVolumeViaSampling(&generator, desired_rel_accuracy, 1e5);
-  const auto [estimated_volume_good, rel_accuracy_good] =
-      unit_circle.CalcVolumeViaSampling(&generator, desired_rel_accuracy, 1e6);
-  EXPECT_GT(rel_accuracy_bad, desired_rel_accuracy);
-  EXPECT_LE(rel_accuracy_good, desired_rel_accuracy);
-  // We must get close to pi
-  EXPECT_FALSE(std::abs(estimated_volume_bad - M_PI) / M_PI <
+  const size_t max_num_samples_low = 1e5;
+  const size_t max_num_samples_high = 1e6;
+  const VolumeViaSamplingResult bad_result = unit_circle.CalcVolumeViaSampling(
+      &generator, desired_rel_accuracy, max_num_samples_low);
+  const VolumeViaSamplingResult good_result = unit_circle.CalcVolumeViaSampling(
+      &generator, desired_rel_accuracy, max_num_samples_high);
+  EXPECT_GT(bad_result.rel_accuracy, desired_rel_accuracy);
+  EXPECT_LE(good_result.rel_accuracy, desired_rel_accuracy);
+  // We must get close enough to pi with good estimate
+  EXPECT_FALSE(std::abs(bad_result.volume - M_PI) / M_PI <
                desired_rel_accuracy);
-  EXPECT_NEAR(estimated_volume_good, M_PI, M_PI * desired_rel_accuracy);
+  EXPECT_NEAR(good_result.volume, M_PI, M_PI * desired_rel_accuracy);
+  // We reach the max_num_samples in the bad estimate, but not in the good one.
+  EXPECT_EQ(bad_result.num_samples, max_num_samples_low);
+  EXPECT_LT(good_result.num_samples, max_num_samples_high);
 };
 
 }  // namespace

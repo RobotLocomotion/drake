@@ -578,9 +578,6 @@ VPolytope::DoToShapeWithPose() const {
 }
 
 double VPolytope::DoCalcVolume() const {
-  if (ambient_dimension() == 0) {
-    return 0.0;
-  }
   orgQhull::Qhull qhull;
   try {
     qhull.runQhull("", ambient_dimension(), vertices_.cols(), vertices_.data(),
