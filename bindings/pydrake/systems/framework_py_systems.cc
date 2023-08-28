@@ -1119,6 +1119,10 @@ void DoScalarIndependentDefinitions(py::module m) {
         .def("implicit_time_derivatives_residual_size",
             &Class::implicit_time_derivatives_residual_size,
             cls_doc.implicit_time_derivatives_residual_size.doc)
+        .def("ValidateContext",
+            overload_cast_explicit<void, const ContextBase&>(
+              &Class::ValidateContext),
+            py::arg("context"), cls_doc.ValidateContext.doc)
         // Parameters.
         .def("num_abstract_parameters", &Class::num_abstract_parameters,
             cls_doc.num_abstract_parameters.doc)

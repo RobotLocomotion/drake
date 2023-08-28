@@ -101,14 +101,17 @@ class CustomVectorSystem(VectorSystem):
         self.has_called = []
 
     def DoCalcVectorOutput(self, context, u, x, y):
+        self.ValidateContext(context=context)
         y[:] = np.hstack([u, x])
         self.has_called.append("output")
 
     def DoCalcVectorTimeDerivatives(self, context, u, x, x_dot):
+        self.ValidateContext(context)
         x_dot[:] = x + u
         self.has_called.append("continuous")
 
     def DoCalcVectorDiscreteVariableUpdates(self, context, u, x, x_n):
+        self.ValidateContext(context)
         x_n[:] = x + 2*u
         self.has_called.append("discrete")
 
