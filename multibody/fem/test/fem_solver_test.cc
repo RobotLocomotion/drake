@@ -11,7 +11,6 @@ namespace drake {
 namespace multibody {
 namespace fem {
 namespace internal {
-namespace {
 
 using Eigen::MatrixXd;
 constexpr double kTolerance = 16 * std::numeric_limits<double>::epsilon();
@@ -33,13 +32,17 @@ struct BoolWrapper {
 template <typename T>
 class FemSolverTest : public ::testing::Test {
  protected:
+  void set_max_newton_iterations(int max_iterations) {
+    solver_.max_iterations_ = max_iterations;
+  }
   DummyModel<T::value> model_{};
   AccelerationNewmarkScheme<double> integrator_{kDt, kGamma, kBeta};
   FemSolver<double> solver_{&model_, &integrator_};
 };
 
-TYPED_TEST_SUITE_P(FemSolverTest);
+namespace {
 
+TYPED_TEST_SUITE_P(FemSolverTest);
 TYPED_TEST_P(FemSolverTest, Tolerance) {
   /* Default values. */
   EXPECT_EQ(this->solver_.relative_tolerance(), 1e-4);
@@ -66,11 +69,9 @@ TYPED_TEST_P(FemSolverTest, AdvanceOneTimeStep) {
   builder.AddTwoElementsWithSharedNodes();
   builder.Build();
   std::unique_ptr<FemState<double>> state0 = this->model_.MakeFemState();
-  std::unique_ptr<FemState<double>> state = this->model_.MakeFemState();
-  FemSolverData<double> data(this->model_);
-  data.set_nonparticipating_vertices({0, 1});
+  const std::unordered_set<int> nonparticipating_vertices = {0, 1};
   const int num_iterations =
-      this->solver_.AdvanceOneTimeStep(*state0, state.get(), &data);
+      this->solver_.AdvanceOneTimeStep(*state0, nonparticipating_vertices);
   EXPECT_EQ(num_iterations, 1);
 
   /* Compute the expected result from AdvanceOneTimeStep(). */
@@ -88,31 +89,53 @@ TYPED_TEST_P(FemSolverTest, AdvanceOneTimeStep) {
   llt.compute(A0);
   const VectorX<double> dz = llt.solve(-b0);
   this->integrator_.UpdateStateFromChangeInUnknowns(dz, expected_state.get());
+  const FemState<double>& computed_state =
+      *this->solver_.next_state_and_schur_complement().state;
   EXPECT_TRUE(CompareMatrices(expected_state->GetPositions(),
-                              state->GetPositions(), kTolerance));
+                              computed_state.GetPositions(), kTolerance));
   EXPECT_TRUE(CompareMatrices(expected_state->GetAccelerations(),
-                              state->GetAccelerations(), kTolerance));
+                              computed_state.GetAccelerations(), kTolerance));
   EXPECT_TRUE(CompareMatrices(expected_state->GetVelocities(),
-                              state->GetVelocities(), kTolerance));
+                              computed_state.GetVelocities(), kTolerance));
 
   /* Check the Schur complement is as expected. */
   auto tangent_matrix = this->model_.MakeTangentMatrix();
-  this->model_.CalcTangentMatrix(*state, this->integrator_.GetWeights(),
+  this->model_.CalcTangentMatrix(computed_state, this->integrator_.GetWeights(),
                                  tangent_matrix.get());
   contact_solvers::internal::SchurComplement
-      force_balance_tangent_matrix_schur_complement(
-          *tangent_matrix, data.nonparticipating_vertices());
-  /* Multiply by dt to get the schur complement of the tangent matrix of the
-   momentum balance. */
+      force_balance_tangent_matrix_schur_complement(*tangent_matrix,
+                                                    nonparticipating_vertices);
   const MatrixXd expected_schur_complement =
       force_balance_tangent_matrix_schur_complement.get_D_complement();
+  const contact_solvers::internal::SchurComplement& computed_schur_complement =
+      this->solver_.next_state_and_schur_complement().schur_complement;
   EXPECT_TRUE(CompareMatrices(expected_schur_complement,
-                              data.schur_complement().get_D_complement(),
+                              computed_schur_complement.get_D_complement(),
                               kTolerance, MatrixCompareType::relative));
 }
 
+/* Tests that AdvanceOneTimeStep for nonlinear models throws an error message if
+ * the Newton solver doesn't converge within the max number of iterations. */
+TYPED_TEST_P(FemSolverTest, Nonconvergence) {
+  constexpr bool is_linear = TypeParam::value;
+  if (!is_linear) {
+    typename DummyModel<is_linear>::DummyBuilder builder(&this->model_);
+    builder.AddTwoElementsWithSharedNodes();
+    builder.Build();
+    std::unique_ptr<FemState<double>> state0 = this->model_.MakeFemState();
+    const std::unordered_set<int> nonparticipating_vertices = {0, 1};
+    /* We set up the model so that nonlinear solves takes exactly one iteration
+     to converge. */
+    this->set_max_newton_iterations(0);
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        this->solver_.AdvanceOneTimeStep(*state0, nonparticipating_vertices),
+        ".*failed.*");
+  }
+}
+
 using AllTypes = ::testing::Types<BoolWrapper<true>, BoolWrapper<false>>;
-REGISTER_TYPED_TEST_SUITE_P(FemSolverTest, Tolerance, AdvanceOneTimeStep);
+REGISTER_TYPED_TEST_SUITE_P(FemSolverTest, Tolerance, AdvanceOneTimeStep,
+                            Nonconvergence);
 INSTANTIATE_TYPED_TEST_SUITE_P(LinearAndNonLinear, FemSolverTest, AllTypes);
 
 }  // namespace
