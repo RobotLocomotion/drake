@@ -405,7 +405,7 @@ class MeshcatShapeReifier : public ShapeReifier {
 
       // TODO(SeanCurtis-TRI): This doesn't work for STL even though meshcat
       // supports STL. Meshcat treats STL differently from obj or dae.
-      // https://github.com/rdeits/meshcat/blob/4b4f8ffbaa5f609352ea6227bd5ae8207b579c70/src/index.js#L130-L146.
+      // https://github.com/meshcat-dev/meshcat/blob/4b4f8ffbaa5f609352ea6227bd5ae8207b579c70/src/index.js#L130-L146.
       // The "data" property of the _meshfile_geometry for obj and dae are
       // simply passed along verbatim. But for STL it is interpreted as a
       // buffer. However, we're not passing the data in a way that deserializes

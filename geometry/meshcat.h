@@ -67,7 +67,7 @@ struct MeshcatParams {
   bool show_stats_plot{true};
 };
 
-/** Provides an interface to %Meshcat (https://github.com/rdeits/meshcat).
+/** Provides an interface to %Meshcat (https://github.com/meshcat-dev/meshcat).
 
 Each instance of this class spawns a thread which runs an http/websocket server.
 Users can navigate their browser to the hosted URL to visualize the Meshcat
@@ -81,7 +81,7 @@ supported. We may generalize this in the future.
 
 @section meshcat_path Meshcat paths and the scene tree
 
-https://github.com/rdeits/meshcat#api provides a nice introduction to the
+https://github.com/meshcat-dev/meshcat#api provides a nice introduction to the
 websocket API that we wrap with this class.  One of the core concepts is the
 "scene tree" -- a directory-like structure of objects, transforms, and
 properties. The scene tree is viewable in the browser by clicking on "Open
@@ -112,8 +112,8 @@ properties.
 The root directory contains a number of elements that are set up automatically
 in the browser.  These include "/Background", "/Lights", "/Grid", and
 "/Cameras".  To find more details please see the @link
-https://github.com/rdeits/meshcat#api meshcat documentation @endlink and the
-@link https://threejs.org/docs/index.html three.js documentation @endlink.
+https://github.com/meshcat-dev/meshcat#api meshcat documentation @endlink and
+the @link https://threejs.org/docs/index.html three.js documentation @endlink.
 - You can modify these elements, create new lights/cameras, and even delete
 these elements (one at a time).
 - Delete("/") is not allowed.  It will be silently ignored.
