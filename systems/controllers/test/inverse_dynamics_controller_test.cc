@@ -31,7 +31,8 @@ class InverseDynamicsControllerTest : public ::testing::Test {
     auto inverse_dynamics_context = test_sys->CreateDefaultContext();
     auto output = test_sys->AllocateOutput();
     const MultibodyPlant<double>& robot_plant =
-        *test_sys->get_multibody_plant_for_control();
+        *test_sys->get_multibody_plant();
+
 
     // Sets current state and reference state and acceleration values.
     const int dim = robot_plant.num_positions();
@@ -83,6 +84,17 @@ class InverseDynamicsControllerTest : public ::testing::Test {
     const BasicVector<double>* output_vector = output->get_vector_data(0);
     EXPECT_TRUE(CompareMatrices(expected_torque, output_vector->get_value(),
                                 1e-10, MatrixCompareType::absolute));
+
+    // Test deprecated aliases.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    EXPECT_EQ(
+        test_sys->get_multibody_plant(),
+        test_sys->get_multibody_plant_for_control());
+    EXPECT_EQ(
+        &test_sys->get_output_port_generalized_force(),
+        &test_sys->get_output_port_control());
+#pragma GCC diagnostic pop
   }
 };
 

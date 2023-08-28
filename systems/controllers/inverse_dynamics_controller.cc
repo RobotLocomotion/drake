@@ -115,8 +115,11 @@ joints modeled with quaternions.)""", num_positions, num_velocities));
   }
 
   // Exposes inverse dynamics' output force port.
-  output_port_index_control_ =
-      builder.ExportOutput(inverse_dynamics->get_output_port_force(), "force");
+  // TODO(eric.cousineau): Deprecate "force" in lieu of "generalized_force".
+  output_port_index_generalized_forces_ =
+      builder.ExportOutput(
+          inverse_dynamics->get_output_port_force(),
+          "force");
 
   builder.BuildInto(this);
 }
