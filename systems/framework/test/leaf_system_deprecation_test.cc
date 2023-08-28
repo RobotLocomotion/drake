@@ -228,6 +228,12 @@ TEST_F(LeafSystemDeprecationTest, CalcOutputNoSpurious) {
   EXPECT_EQ(has_warned(port), false);
 }
 
+TEST_F(LeafSystemDeprecationTest, GraphvizNoSpurious) {
+  auto& port = DeclareDeprecatedOutput();
+  dut_.GetGraphvizString();
+  EXPECT_EQ(has_warned(port), false);
+}
+
 // ======== Acceptance test ========
 
 // Illustrates how to use the deprecation mechanism in practice. We have a
