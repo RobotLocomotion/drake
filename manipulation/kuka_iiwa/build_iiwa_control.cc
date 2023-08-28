@@ -206,7 +206,7 @@ IiwaControlPorts BuildSimplifiedIiwaControl(
         gravity_comp->get_input_port_estimated_state());
     auto adder = builder->template AddSystem<Adder>(2, num_iiwa_positions);
     builder->Connect(
-        gravity_comp->get_output_port_force(),
+        gravity_comp->get_output_port_generalized_force(),
         adder->get_input_port(0));
     ports.commanded_torque = &adder->get_input_port(1);
     builder->Connect(
