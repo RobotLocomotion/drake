@@ -110,7 +110,7 @@ FemModel<T>::FemModel()
 template <typename T>
 void FemModel<T>::ThrowIfModelStateIncompatible(
     const char* func, const FemState<T>& fem_state) const {
-  if (!fem_state.is_created_from_system(*fem_state_system_)) {
+  if (!is_compatible_with(fem_state)) {
     throw std::logic_error(std::string(func) +
                            "(): The FEM model and state are not compatible.");
   }
