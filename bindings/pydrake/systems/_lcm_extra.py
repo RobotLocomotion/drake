@@ -39,7 +39,12 @@ class PySerializer(SerializerInterface):
 
 
 @staticmethod
-def _make_lcm_subscriber(channel, lcm_type, lcm, use_cpp_serializer=False):
+def _make_lcm_subscriber(channel,
+                         lcm_type,
+                         lcm,
+                         use_cpp_serializer=False,
+                         *,
+                         wait_for_message_on_initialization_timeout=0.0):
     """Convenience to create an LCM subscriber system with a concrete type.
 
     Args:
@@ -48,7 +53,16 @@ def _make_lcm_subscriber(channel, lcm_type, lcm, use_cpp_serializer=False):
         lcm: LCM service instance.
         use_cpp_serializer: Use C++ serializer to interface with LCM converter
             systems that are implemented in C++. LCM types must be registered
-            in C++ via `BindCppSerializer`.
+            in C++ via ``BindCppSerializer``.
+        wait_for_message_on_initialization_timeout: Configures the behavior of
+            initialization events (see ``System.ExecuteInitializationEvents``
+            and ``Simulator.Initialize``) by specifying the number of seconds
+            (wall-clock elapsed time) to wait for a new message. If this
+            timeout is <= 0, initialization will copy any already-received
+            messages into the Context but will not process any new messages.
+            If this timeout is > 0, initialization will call
+            ``lcm.HandleSubscriptions()`` until at least one message is
+            received or until the timeout. Pass ∞ to wait indefinitely.
     """
     # TODO(eric.cousineau): Make `use_cpp_serializer` be kwarg-only.
     # N.B. This documentation is actually public, as it is assigned to classes
@@ -57,7 +71,8 @@ def _make_lcm_subscriber(channel, lcm_type, lcm, use_cpp_serializer=False):
         serializer = PySerializer(lcm_type)
     else:
         serializer = _Serializer_[lcm_type]()
-    return LcmSubscriberSystem(channel, serializer, lcm)
+    return LcmSubscriberSystem(channel, serializer, lcm,
+                               wait_for_message_on_initialization_timeout)
 
 
 @staticmethod
