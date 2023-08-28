@@ -41,15 +41,15 @@ namespace controllers {
  * @system
  * name: InverseDynamics
  * input_ports:
- * - u0 (estimated state)
- * - <span style="color:gray">u1</span> (desired accelerations)
+ * - estimated_state
+ * - <span style="color:gray">desired_acceleration</span>
  * output_ports:
- * - y0 (force)
+ * - force
  * @endsystem
  *
- * Port `u0` accepts system estimated state; port `y0` emits generalized
- * forces. Port `u1` is only present when the `mode` at construction is not
- * `kGravityCompensation`. When present, `u1` accepts desired accelerations.
+ * The desired acceleration port shown in <span style="color:gray">gray</span>
+ * is only present when the `mode` at construction is not
+ * `kGravityCompensation`.
  *
  * @tparam_default_scalar
  * @ingroup control_systems
@@ -147,17 +147,17 @@ class InverseDynamics final : public LeafSystem<T> {
   // Mode dictates whether to do inverse dynamics or just gravity compensation.
   const InverseDynamicsMode mode_;
 
-  int input_port_index_state_{0};
-  int input_port_index_desired_acceleration_{0};
-  int output_port_index_force_{0};
+  InputPortIndex input_port_index_state_;
+  InputPortIndex input_port_index_desired_acceleration_;
+  OutputPortIndex output_port_index_force_;
 
-  const int q_dim_{0};
-  const int v_dim_{0};
+  const int q_dim_;
+  const int v_dim_;
 
   // Note: unused in gravity compensation mode.
-  drake::systems::CacheIndex external_forces_cache_index_;
+  CacheIndex external_forces_cache_index_;
 
-  drake::systems::CacheIndex plant_context_cache_index_;
+  CacheIndex plant_context_cache_index_;
 };
 
 }  // namespace controllers
