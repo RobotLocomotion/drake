@@ -90,16 +90,16 @@ joints modeled with quaternions.)""", num_positions, num_velocities));
 
   // Exposes estimated state input port.
   // Connects estimated state to PID.
-  input_port_index_estimated_state_ = builder.ExportInput(
-      pid_->get_input_port_estimated_state(), "estimated_state");
+  estimated_state_ = builder.ExportInput(pid_->get_input_port_estimated_state(),
+                                         "estimated_state");
 
   // Connects estimated state to inverse dynamics.
-  builder.ConnectInput(input_port_index_estimated_state_,
+  builder.ConnectInput(estimated_state_,
                        inverse_dynamics->get_input_port_estimated_state());
 
   // Exposes reference state input port.
-  input_port_index_desired_state_ = builder.ExportInput(
-      pid_->get_input_port_desired_state(), "desired_state");
+  desired_state_ = builder.ExportInput(pid_->get_input_port_desired_state(),
+                                       "desired_state");
 
   if (!has_reference_acceleration_) {
     // Uses a zero constant source for reference acceleration.
@@ -110,13 +110,19 @@ joints modeled with quaternions.)""", num_positions, num_velocities));
                     adder->get_input_port(1));
   } else {
     // Exposes reference acceleration input port.
-    input_port_index_desired_acceleration_ =
+    desired_acceleration_ =
         builder.ExportInput(adder->get_input_port(1), "desired_acceleration");
   }
 
   // Exposes inverse dynamics' output force port.
-  output_port_index_control_ =
-      builder.ExportOutput(inverse_dynamics->get_output_port_force(), "force");
+  generalized_force_ = builder.ExportOutput(
+      inverse_dynamics->get_output_port_generalized_force(),
+      "generalized_force");
+
+  // The output port name 'force' is deprecated and will be removed from Drake
+  // on or after 2024-01-01. Use the name 'generalized_force' instead.
+  builder.ExportOutput(inverse_dynamics->get_output_port_generalized_force(),
+                       "force");
 
   builder.BuildInto(this);
 }
