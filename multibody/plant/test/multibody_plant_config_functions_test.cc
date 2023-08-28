@@ -12,7 +12,7 @@ namespace {
 
 using yaml::LoadYamlString;
 
-GTEST_TEST(MultibodyPlantConfigFunctionsTest, BasicTest) {
+GTEST_TEST(MultibodyPlantConfigFunctionsTest, AddMultibodyBasicTest) {
   MultibodyPlantConfig config;
   config.time_step = 0.002;
   config.penetration_allowance = 0.003;
@@ -30,6 +30,29 @@ GTEST_TEST(MultibodyPlantConfigFunctionsTest, BasicTest) {
   EXPECT_EQ(result.plant.get_contact_surface_representation(),
             geometry::HydroelasticContactRepresentation::kPolygon);
   EXPECT_EQ(result.plant.get_adjacent_bodies_collision_filters(), false);
+  // There is no getter for penetration_allowance nor stiction_tolerance, so we
+  // can't test them.
+}
+
+GTEST_TEST(MultibodyPlantConfigFunctionsTest,
+           ApplyMultibodyPlantConfigBasicTest) {
+  MultibodyPlantConfig config;
+  config.time_step = 0.002;
+  config.penetration_allowance = 0.003;
+  config.stiction_tolerance = 0.004;
+  config.sap_near_rigid_threshold = 0.1;
+  config.contact_model = "hydroelastic";
+  config.contact_surface_representation = "polygon";
+  config.adjacent_bodies_collision_filters = false;
+
+  MultibodyPlant<double> plant(config.time_step);
+  ApplyMultibodyPlantConfig(config, &plant);
+  // The time_step is not set.
+  EXPECT_EQ(plant.get_sap_near_rigid_threshold(), 0.1);
+  EXPECT_EQ(plant.get_contact_model(), ContactModel::kHydroelasticsOnly);
+  EXPECT_EQ(plant.get_contact_surface_representation(),
+            geometry::HydroelasticContactRepresentation::kPolygon);
+  EXPECT_EQ(plant.get_adjacent_bodies_collision_filters(), false);
   // There is no getter for penetration_allowance nor stiction_tolerance, so we
   // can't test them.
 }
