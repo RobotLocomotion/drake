@@ -317,6 +317,12 @@ TEST_F(CameraConfigFunctionsTest, RendererNameReuse) {
     EXPECT_NO_THROW(ApplyCameraConfig(config, &builder_));
     EXPECT_EQ(scene_graph_->RendererCount(), renderer_count);
 
+    // Using an empty class name means "don't care", so is also happy.
+    config.name = name + "_emtpy_class_name_succeeds";
+    config.renderer_class = "";
+    EXPECT_NO_THROW(ApplyCameraConfig(config, &builder_));
+    EXPECT_EQ(scene_graph_->RendererCount(), renderer_count);
+
     // Camera config using the name of a different class is angry.
     config.name = name + "_wrong_class_name_throws";
     config.renderer_class = name == "RenderEngineVtk" ? "RenderEngineGltfClient"
@@ -573,14 +579,6 @@ TEST_F(CameraConfigFunctionsTest, RenderEngineRequest) {
                        .renderer_class = "RenderEngineGl"},
           &builder_),
       ".*The name is already used with a different type.+");
-
-  // Using existing name but *no* render engine uses existing engine. Call to
-  // ApplyCameraConfig doesn't throw, and the renderer count doesn't change.
-  // This test assumes that this behavior doesn't depend on the type of the
-  // RenderEngine.
-  current_renderer_count = scene_graph_->RendererCount();
-  ApplyCameraConfig(CameraConfig{.renderer_name = "vtk_renderer"}, &builder_);
-  EXPECT_EQ(current_renderer_count, scene_graph_->RendererCount());
 
   // Now explicitly request a new RenderEngineGl -- whether it throws depends
   // on whether GL is available.
