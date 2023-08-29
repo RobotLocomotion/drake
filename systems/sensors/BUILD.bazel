@@ -613,4 +613,29 @@ drake_cc_googletest(
     ],
 )
 
+# This "reader writer canary" is the same test program as above, but linked
+# with @vtk_internal (VTK built from source) instead of @vtk (the host VTK).
+# This is a temporary measure for CI to help us understand if the VTK source
+# build is satisfactory. Once all of Drake has switched to @vtk_internal, we
+# can (and should) remove this test rule, since it will be redundant.
+drake_cc_googletest(
+    name = "vtk_image_reader_writer_canary_test",
+    srcs = [
+        "image_file_format.cc",
+        "image_file_format.h",
+        "test/vtk_image_reader_writer_test.cc",
+        "vtk_image_reader_writer.cc",
+        "vtk_image_reader_writer.h",
+    ],
+    deps = [
+        "//common:essential",
+        "//common:temp_directory",
+        "//common:unused",
+        "//common/test_utilities:expect_throws_message",
+        "@vtk_internal//:vtkCommonCore",
+        "@vtk_internal//:vtkCommonDataModel",
+        "@vtk_internal//:vtkIOImage",
+    ],
+)
+
 add_lint_tests()
