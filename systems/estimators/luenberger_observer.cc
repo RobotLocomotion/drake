@@ -20,10 +20,13 @@ LuenbergerObserver<T>::LuenbergerObserver(
   observed_system_->ValidateContext(observed_system_context);
 
   // Note: Could potentially extend this to MIMO systems.
-  DRAKE_DEMAND(observed_system_->num_input_ports() <= 1);
-  DRAKE_DEMAND(observed_system_->num_output_ports() == 1);
-  DRAKE_DEMAND(observed_system_->get_output_port(0).get_data_type() ==
-               kVectorValued);
+  const InputPort<T>* const observed_system_input =
+      (observed_system_->num_input_ports() > 0)
+          ? &observed_system_->get_input_port()
+          : nullptr;
+  const OutputPort<T>& observed_system_output =
+      observed_system_->get_output_port();
+  DRAKE_DEMAND(observed_system_output.get_data_type() == kVectorValued);
 
   DRAKE_DEMAND(observed_system_context.has_only_continuous_state());
   // Otherwise there is nothing to estimate.
@@ -50,20 +53,19 @@ LuenbergerObserver<T>::LuenbergerObserver(
   // First input port is the output of the observed system.
   const auto& y_input_port = this->DeclareVectorInputPort(
       "observed_system_output",
-      *observed_system_->AllocateOutput()->get_vector_data(0));
+      *observed_system_->AllocateOutput()->get_vector_data(
+          observed_system_output.get_index()));
   std::set<DependencyTicket> input_port_tickets{y_input_port.ticket()};
 
   // Check the size of the gain matrix.
   DRAKE_DEMAND(observer_gain_.rows() == xc.size());
-  DRAKE_DEMAND(observer_gain_.cols() ==
-               observed_system_->get_output_port(0).size());
+  DRAKE_DEMAND(observer_gain_.cols() == observed_system_output.size());
 
   // Second input port is the input to the observed system (if it exists).
-  if (observed_system_->num_input_ports() > 0) {
-    DRAKE_DEMAND(observed_system_->get_input_port(0).get_data_type() ==
-                 kVectorValued);
-    auto input_vec = observed_system_->AllocateInputVector(
-        observed_system_->get_input_port(0));
+  if (observed_system_input != nullptr) {
+    DRAKE_DEMAND(observed_system_input->get_data_type() == kVectorValued);
+    auto input_vec =
+        observed_system_->AllocateInputVector(*observed_system_input);
     const auto& u_input_port =
         this->DeclareVectorInputPort("observed_system_input", *input_vec);
     input_port_tickets.emplace(u_input_port.ticket());
@@ -109,7 +111,7 @@ void LuenbergerObserver<T>::UpdateObservedSystemContext(
   if (observed_system_->num_input_ports() > 0) {
     // TODO(russt): Avoid this dynamic allocation by fixing the input port once
     // and updating it here.
-    observed_system_->get_input_port(0).FixValue(
+    observed_system_->get_input_port().FixValue(
         observed_system_context,
         this->get_observed_system_input_input_port().Eval(context));
   }
@@ -126,7 +128,7 @@ void LuenbergerObserver<T>::DoCalcTimeDerivatives(
 
   // Evaluate the observed system.
   const VectorX<T>& yhat =
-      observed_system_->get_output_port(0).Eval(observed_system_context);
+      observed_system_->get_output_port().Eval(observed_system_context);
   VectorX<T> xdothat =
       observed_system_->EvalTimeDerivatives(observed_system_context)
           .CopyToVector();

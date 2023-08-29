@@ -365,6 +365,8 @@ class DiagramBuilder {
 
   /// Declares that sole input port on the @p dest system is connected to sole
   /// output port on the @p src system.
+  /// This function ignores deprecated ports, unless there is only one port in
+  /// which case it will use the deprecated port.
   /// @note The connection created between @p src and @p dest via a call to
   /// this method can be effectively overridden by any subsequent call to
   /// InputPort::FixValue(). That is, calling InputPort::FixValue() on an

@@ -748,6 +748,38 @@ std::string System<T>::GetMemoryObjectName() const {
 }
 
 template <typename T>
+const InputPort<T>& System<T>::GetSoleInputPort() const {
+  // Give a nice message if there were no inputs at all.
+  if (num_input_ports() == 0) {
+    throw std::logic_error(fmt::format(
+        "System::get_input_port(): {} system '{}' does not have any inputs",
+        this->GetSystemType(), this->GetSystemPathname()));
+  }
+
+  // Check if there is exactly one non-deprecated input port (and return it).
+  int num_non_deprecated = 0;
+  InputPortIndex non_deprecated_index;
+  for (InputPortIndex i{0}; i < num_input_ports(); i++) {
+    const InputPortBase& port_base = this->GetInputPortBaseOrThrow(
+        __func__, i, /* warn_deprecated = */ false);
+    if (port_base.get_deprecation() == std::nullopt) {
+      ++num_non_deprecated;
+      non_deprecated_index = i;
+    }
+  }
+  if (num_non_deprecated == 1) {
+    return get_input_port(non_deprecated_index);
+  }
+
+  // Too many inputs.
+  throw std::logic_error(fmt::format(
+      "System::get_input_port(): {} system '{}' has {} inputs, so this "
+      "convenience function cannot be used; instead, use another overload "
+      "e.g. get_input_port(InputPortIndex) or GetInputPort(string)",
+      this->GetSystemType(), this->GetSystemPathname(), num_input_ports()));
+}
+
+template <typename T>
 const InputPort<T>* System<T>::get_input_port_selection(
     std::variant<InputPortSelection, InputPortIndex> port_index) const {
   if (std::holds_alternative<InputPortIndex>(port_index)) {
@@ -806,6 +838,38 @@ bool System<T>::HasInputPort(
     }
   }
   return false;
+}
+
+template <typename T>
+const OutputPort<T>& System<T>::GetSoleOutputPort() const {
+  // Give a nice message if there were no outputs at all.
+  if (num_output_ports() == 0) {
+    throw std::logic_error(fmt::format(
+        "System::get_output_port(): {} system '{}' does not have any outputs",
+        this->GetSystemType(), this->GetSystemPathname()));
+  }
+
+  // Check if there is exactly one non-deprecated output port (and return it).
+  int num_non_deprecated = 0;
+  OutputPortIndex non_deprecated_index;
+  for (OutputPortIndex i{0}; i < num_output_ports(); i++) {
+    const OutputPortBase& port_base = this->GetOutputPortBaseOrThrow(
+        __func__, i, /* warn_deprecated = */ false);
+    if (port_base.get_deprecation() == std::nullopt) {
+      ++num_non_deprecated;
+      non_deprecated_index = i;
+    }
+  }
+  if (num_non_deprecated == 1) {
+    return get_output_port(non_deprecated_index);
+  }
+
+  // Too many outputs.
+  throw std::logic_error(fmt::format(
+      "System::get_output_port(): {} system '{}' has {} outputs, so this "
+      "convenience function cannot be used; instead, use another overload "
+      "e.g. get_output_port(OutputPortIndex) or GetOutputPort(string)",
+      this->GetSystemType(), this->GetSystemPathname(), num_output_ports()));
 }
 
 template <typename T>
