@@ -63,20 +63,22 @@ class ShapeAdjuster final : public ShapeReifier {
 
 }  // namespace
 
-template <typename T>
-void Hydroelastize(SceneGraph<T>* scene_graph) {
-  DRAKE_DEMAND(scene_graph != nullptr);
-  auto& inspector = scene_graph->model_inspector();
-  Hydroelastize<T, SceneGraphInspector<T>, SceneGraph<T>>(
-      inspector, scene_graph);
-}
+// template <typename T>
+// void Hydroelastize(SceneGraph<T>* scene_graph) {
+//   DRAKE_DEMAND(scene_graph != nullptr);
+//   auto& inspector = scene_graph->model_inspector();
+//   Hydroelastize<T, SceneGraphInspector<T>, SceneGraph<T>>(
+//       inspector, scene_graph);
+// }
 
+namespace internal {
 template <typename T>
 void Hydroelastize(GeometryState<T>* geometry_state) {
   DRAKE_DEMAND(geometry_state != nullptr);
   Hydroelastize<T, GeometryState<T>, GeometryState<T>>(
       *geometry_state, geometry_state);
 }
+}  // namespace internal
 
 template <typename T, typename Reader, typename Writer>
 void Hydroelastize(const Reader& reader, Writer* writer) {
@@ -113,8 +115,8 @@ void Hydroelastize(const Reader& reader, Writer* writer) {
 }
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((
-    static_cast<void(*)(SceneGraph<T>*)>(&Hydroelastize),
-    static_cast<void(*)(GeometryState<T>*)>(&Hydroelastize)
+    // static_cast<void(*)(SceneGraph<T>*)>(&Hydroelastize),
+    static_cast<void(*)(GeometryState<T>*)>(&internal::Hydroelastize)
 ))
 
 }  // namespace geometry
