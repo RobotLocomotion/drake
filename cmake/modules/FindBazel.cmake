@@ -1,9 +1,10 @@
 # -*- mode: cmake -*-
 # vi: set ft=cmake :
 
-find_program(Bazel_EXECUTABLE bazel)
+find_program(Bazel_EXECUTABLE NAMES bazel bazelisk)
 
 execute_process(COMMAND "${Bazel_EXECUTABLE}" version
+  WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
   RESULT_VARIABLE _BAZEL_VERSION_EXECUTE_PROCESS_RESULT_VARIABLE
   OUTPUT_VARIABLE _BAZEL_VERSION_EXECUTE_PROCESS_OUTPUT_VARIABLE
   ERROR_QUIET
