@@ -1,6 +1,7 @@
 #pragma once
 
 #include "drake/geometry/scene_graph.h"
+#include "drake/geometry/geometry_state.h"
 
 namespace drake {
 namespace geometry {
@@ -11,6 +12,9 @@ namespace geometry {
  */
 template <typename T>
 void Hydroelastize(SceneGraph<T>* scene_graph);
+
+template <typename T>
+void Hydroelastize(GeometryState<T>* geometry_state);
 
 }  // namespace geometry
 }  // namespace drake
