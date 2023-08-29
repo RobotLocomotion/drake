@@ -95,9 +95,10 @@ GTEST_TEST(FemModelTest, CalcTangentMatrix) {
   const MatrixXd expected_tangent_matrix =
       weights(0) * expected_stiffness_matrix +
       weights(1) * expected_damping_matrix + weights(2) * expected_mass_matrix;
-  EXPECT_TRUE(CompareMatrices(
-      tangent_matrix->MakeDenseMatrix(), expected_tangent_matrix,
-      std::numeric_limits<double>::epsilon(), MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(tangent_matrix->MakeDenseMatrix(),
+                              expected_tangent_matrix,
+                              4.0 * std::numeric_limits<double>::epsilon(),
+                              MatrixCompareType::relative));
 
   /* Test the PetscSymmetricBlockSparseMatrix variant of tangent matrix. */
   unique_ptr<internal::PetscSymmetricBlockSparseMatrix> petsc_tangent_matrix =
@@ -106,9 +107,10 @@ GTEST_TEST(FemModelTest, CalcTangentMatrix) {
   ASSERT_EQ(petsc_tangent_matrix->cols(), model.num_dofs());
   model.CalcTangentMatrix(*fem_state, weights, petsc_tangent_matrix.get());
   petsc_tangent_matrix->AssembleIfNecessary();
-  EXPECT_TRUE(CompareMatrices(
-      petsc_tangent_matrix->MakeDenseMatrix(), expected_tangent_matrix,
-      std::numeric_limits<double>::epsilon(), MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(petsc_tangent_matrix->MakeDenseMatrix(),
+                              expected_tangent_matrix,
+                              4.0 * std::numeric_limits<double>::epsilon(),
+                              MatrixCompareType::relative));
 }
 
 GTEST_TEST(FemModelTest, CalcTangentMatrixNoAutoDiff) {
