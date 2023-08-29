@@ -45,6 +45,7 @@ drake_cc_package_library(
         ":read_obj",
         ":rgba",
         ":scene_graph",
+        ":scene_graph_config",
         ":scene_graph_inspector",
         ":shape_specification",
         ":shape_to_string",
@@ -256,7 +257,7 @@ drake_cc_library(
     srcs = ["hydroelastize.cc"],
     hdrs = ["hydroelastize.h"],
     deps = [
-        ":scene_graph",
+        ":geometry_state",
     ],
 )
 
@@ -283,6 +284,14 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "scene_graph_config",
+    hdrs = ["scene_graph_config.h"],
+    deps = [
+        "//common:name_value",
+    ],
+)
+
+drake_cc_library(
     name = "scene_graph",
     srcs = [
         "query_object.cc",
@@ -294,6 +303,8 @@ drake_cc_library(
     ],
     deps = [
         ":geometry_state",
+        ":hydroelastize",
+        ":scene_graph_config",
         ":scene_graph_inspector",
         "//common:essential",
         "//common:nice_type_name",
