@@ -317,7 +317,7 @@ TEST_F(CameraConfigFunctionsTest, RendererNameReuse) {
     EXPECT_NO_THROW(ApplyCameraConfig(config, &builder_));
     EXPECT_EQ(scene_graph_->RendererCount(), renderer_count);
 
-    // Using an empty class name means "don't care", so it also happy.
+    // Using an empty class name means "don't care", so is also happy.
     config.name = name + "_emtpy_class_name_succeeds";
     config.renderer_class = "";
     EXPECT_NO_THROW(ApplyCameraConfig(config, &builder_));
