@@ -13,6 +13,7 @@
 #include "drake/geometry/kinematics_vector.h"
 #include "drake/geometry/query_object.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
+#include "drake/geometry/scene_graph_config.h"
 #include "drake/geometry/scene_graph_inspector.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -322,7 +323,7 @@ class SceneGraph final : public systems::LeafSystem<T> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SceneGraph)
 
   /** Constructs a default (empty) scene graph. */
-  SceneGraph();
+  explicit SceneGraph(SceneGraphConfig config = {});
 
   /** Constructor used for scalar conversions. */
   template <typename U>
@@ -1100,6 +1101,8 @@ class SceneGraph final : public systems::LeafSystem<T> {
   // The cache indices for the pose and configuration update cache entries.
   systems::CacheIndex pose_update_index_{};
   systems::CacheIndex configuration_update_index_{};
+
+  SceneGraphConfig config_;
 };
 
 }  // namespace geometry
