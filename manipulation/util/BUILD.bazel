@@ -246,6 +246,7 @@ filegroup(
 
 filegroup(
     name = "test_models",
+    testonly = True,
     srcs = [
         ":test/simple_nested_model.sdf",
         ":test/simple_world_with_two_models.sdf",
