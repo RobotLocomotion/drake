@@ -29,10 +29,10 @@ void BackfillDefaults(ProximityProperties* properties) {
   backfill(kHydroGroup, kSlabThickness, 1e3);
 }
 
-template <typename T>
+template <typename Reader>
 class ShapeAdjuster final : public ShapeReifier {
  public:
-  explicit ShapeAdjuster(const SceneGraphInspector<T>& inspector)
+  explicit ShapeAdjuster(const Reader& inspector)
       : inspector_(inspector) {}
 
   void MakeShapeAdjustments(GeometryId gid, ProximityProperties* props) {
@@ -58,7 +58,7 @@ class ShapeAdjuster final : public ShapeReifier {
   }
 
  private:
-  const SceneGraphInspector<T>& inspector_;
+  const Reader& inspector_;
 };
 
 }  // namespace
@@ -66,16 +66,29 @@ class ShapeAdjuster final : public ShapeReifier {
 template <typename T>
 void Hydroelastize(SceneGraph<T>* scene_graph) {
   DRAKE_DEMAND(scene_graph != nullptr);
-  // Iterate over all geometries with a proximity role.
   auto& inspector = scene_graph->model_inspector();
-  auto gids = inspector.GetGeometryIds(
-      GeometrySet(inspector.GetAllGeometryIds()), Role::kProximity);
-  auto source_ids = inspector.GetAllSourceIds();
-  ShapeAdjuster shape_adjuster(inspector);
+  Hydroelastize<T, SceneGraphInspector<T>, SceneGraph<T>>(
+      inspector, scene_graph);
+}
+
+template <typename T>
+void Hydroelastize(GeometryState<T>* geometry_state) {
+  DRAKE_DEMAND(geometry_state != nullptr);
+  Hydroelastize<T, GeometryState<T>, GeometryState<T>>(
+      *geometry_state, geometry_state);
+}
+
+template <typename T, typename Reader, typename Writer>
+void Hydroelastize(const Reader& reader, Writer* writer) {
+  // Iterate over all geometries with a proximity role.
+  auto gids = reader.GetGeometryIds(
+      GeometrySet(reader.GetAllGeometryIds()), Role::kProximity);
+  auto source_ids = reader.GetAllSourceIds();
+  ShapeAdjuster shape_adjuster(reader);
   for (const auto& gid : gids) {
     // Get current proximity properties -- some should exist, given the
     // filtering done above.
-    ProximityProperties props(*inspector.GetProximityProperties(gid));
+    ProximityProperties props(*reader.GetProximityProperties(gid));
     const HydroelasticType type = props.GetPropertyOrDefault(
       kHydroGroup, kComplianceType, HydroelasticType::kUndefined);
     // Update proximity properties to a suitable hydro configuration.
@@ -90,17 +103,19 @@ void Hydroelastize(SceneGraph<T>* scene_graph) {
       // Jump through pointless hoops.
       SourceId gid_source_id;
       for (const auto& source_id : source_ids) {
-        if (inspector.BelongsToSource(gid, source_id)) {
+        if (reader.BelongsToSource(gid, source_id)) {
           gid_source_id = source_id;
         }
       }
-      scene_graph->AssignRole(gid_source_id, gid, props, RoleAssign::kReplace);
+      writer->AssignRole(gid_source_id, gid, props, RoleAssign::kReplace);
     }
   }
 }
 
-DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    (&Hydroelastize<T>));
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((
+    static_cast<void(*)(SceneGraph<T>*)>(&Hydroelastize),
+    static_cast<void(*)(GeometryState<T>*)>(&Hydroelastize)
+))
 
 }  // namespace geometry
 }  // namespace drake
