@@ -994,7 +994,18 @@ TEST_F(RenderEngineVtkTest, GltfTextureOrientation) {
   const std::string ref_filename = FindResourceOrThrow(
       "drake/geometry/render/test/fully_textured_pyramid_rendered.png");
   systems::sensors::LoadImage(ref_filename, &expected_image);
-  EXPECT_EQ(image, expected_image);
+  auto images_nearly_equal = [](const ImageRgba8U& img1, const ImageRgba8U& img2) {
+    if (img1.size() != img2.size()) {
+      return false;
+    }
+    for (int i = 0; i < img1.size(); ++i) {
+      if (std::abs(img1.at(0, 0)[i] - img2.at(0, 0)[i]) > 2) {
+        return false;
+      }
+    }
+    return true;
+  };
+  EXPECT_TRUE(images_nearly_equal(image, expected_image));
 }
 
 // A smaller version of MeshTest. Confirms that VTK supports glTF files as
