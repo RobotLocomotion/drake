@@ -170,7 +170,7 @@ class DeformableDriver : public ScalarConvertibleComponent<T> {
     std::vector<systems::CacheIndex> fem_states;
     std::vector<systems::CacheIndex> free_motion_fem_states;
     std::vector<systems::CacheIndex> next_fem_states;
-    std::vector<systems::CacheIndex> fem_solver_scratches;
+    std::vector<systems::CacheIndex> fem_solver_data;
     systems::CacheIndex deformable_contact;
     std::vector<systems::CacheIndex> dof_permutations;
     std::unordered_map<geometry::GeometryId, systems::CacheIndex>

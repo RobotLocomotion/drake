@@ -15,6 +15,7 @@ template <typename T, int num_locations>
 struct CorotatedModelTraits {
   using Scalar = T;
   using Data = CorotatedModelData<T, num_locations>;
+  static constexpr int is_linear = false;
 };
 
 /* Implements the fixed corotated hyperelastic constitutive model as
