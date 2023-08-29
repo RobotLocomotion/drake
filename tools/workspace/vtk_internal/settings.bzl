@@ -225,6 +225,54 @@ MODULE_SETTINGS = {
     "VTK::CommonTransforms": {
         # This isn't used directly by Drake, but is used by other VTK modules.
     },
+    "VTK::FiltersCore": {
+        "visibility": ["//visibility:public"],
+        # This module has a lot of code we don't need. We'll opt-out of the
+        # default srcs glob, and instead just specify what Drake needs.
+        "srcs_glob_exclude": ["**"],
+        "srcs_extra": [
+            "Filters/Core/vtkAppendPolyData.cxx",
+            "Filters/Core/vtkDecimatePro.cxx",
+            "Filters/Core/vtkGlyph3D.cxx",
+            "Filters/Core/vtkPolyDataNormals.cxx",
+            "Filters/Core/vtkPolyDataTangents.cxx",
+            "Filters/Core/vtkTriangleFilter.cxx",
+        ],
+    },
+    "VTK::IOCore": {
+        "srcs_glob_exclude": [
+            # Skip code we don't need.
+            "**/*Codec*",
+            "**/*Particle*",
+            "**/*Java*",
+            "**/*UTF*",
+            # Skip this to avoid a dependency on lz4.
+            "**/*LZ4*",
+            # Skip this to avoid a dependency on lzma.
+            "**/*LZMA*",
+        ],
+        "module_deps_ignore": [
+            "VTK::lz4",
+            "VTK::lzma",
+        ],
+    },
+    "VTK::IOGeometry": {
+        "visibility": ["//visibility:public"],
+        # This module has a lot of code we don't need. We'll opt-out of the
+        # default srcs glob, and instead just specify what Drake needs.
+        "srcs_glob_exclude": ["**"],
+        "srcs_extra": [
+            "IO/Geometry/vtkOBJWriter.cxx",
+            "IO/Geometry/vtkSTLReader.cxx",
+        ],
+        "module_deps_ignore": [
+            "VTK::IOLegacy",
+            "VTK::FiltersGeneral",
+            "VTK::FiltersHybrid",
+            "VTK::RenderingCore",
+            "VTK::nlohmannjson",
+        ],
+    },
     "VTK::IOImage": {
         "visibility": ["//visibility:public"],
         # This module has a lot of code we don't need. We'll opt-out of the
@@ -300,6 +348,20 @@ MODULE_SETTINGS = {
 
     # Fourth, we'll configure dependencies that we let VTK build and vendor on
     # its own, because nothing else in Drake needs these.
+    "VTK::doubleconversion": {
+        "cmake_undefines": [
+            "VTK_MODULE_USE_EXTERNAL_vtkdoubleconversion",
+        ],
+        "hdrs_content": {
+            "ThirdParty/doubleconversion/vtkdoubleconversion_export.h": """
+                #pragma once
+                #define VTKDOUBLECONVERSION_EXPORT
+            """,
+        },
+        "srcs_glob_extra": [
+            "ThirdParty/doubleconversion/**/*.cc",
+        ],
+    },
     "VTK::pugixml": {
         # TODO(jwnimmer-tri) The only user of pugixml is vtkDataAssembly.
         # Possibly there is some way to disable XML I/O support on that

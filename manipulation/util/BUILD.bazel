@@ -151,8 +151,8 @@ drake_cc_binary(
         "//common:add_text_logging_gflags",
         "//common:essential",
         "@gflags",
-        "@vtk//:vtkFiltersCore",
-        "@vtk//:vtkIOGeometry",
+        "@vtk_internal//:vtkFiltersCore",
+        "@vtk_internal//:vtkIOGeometry",
     ],
 )
 
