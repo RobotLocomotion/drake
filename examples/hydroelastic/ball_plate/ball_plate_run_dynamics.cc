@@ -4,7 +4,6 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/examples/hydroelastic/ball_plate/make_ball_plate_plant.h"
-#include "drake/geometry/hydroelastize.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/multibody/plant/multibody_plant_config.h"
 #include "drake/multibody/plant/multibody_plant_config_functions.h"
@@ -73,14 +72,18 @@ using drake::multibody::SpatialVelocity;
 int do_main() {
   systems::DiagramBuilder<double> builder;
 
-  multibody::MultibodyPlantConfig config;
+  multibody::MultibodyPlantConfig plant_config;
   // We allow only discrete systems.
   DRAKE_DEMAND(FLAGS_mbp_dt > 0.0);
-  config.time_step = FLAGS_mbp_dt;
-  config.penetration_allowance = 0.001;
-  config.contact_model = FLAGS_contact_model;
-  config.contact_surface_representation = FLAGS_contact_surface_representation;
-  auto [plant, scene_graph] = AddMultibodyPlant(config, &builder);
+  plant_config.time_step = FLAGS_mbp_dt;
+  plant_config.penetration_allowance = 0.001;
+  plant_config.contact_model = FLAGS_contact_model;
+  plant_config.contact_surface_representation =
+      FLAGS_contact_surface_representation;
+  geometry::SceneGraphConfig scene_graph_config;
+  scene_graph_config.hydroelastize = true;
+  auto [plant, scene_graph] = AddMultibodyPlant(
+      plant_config, scene_graph_config, &builder);
 
   // Ball's parameters.
   const double radius = 0.05;   // m
@@ -94,7 +97,6 @@ int do_main() {
           FLAGS_friction_coefficient},
       FLAGS_resolution_hint_factor, &plant);
 
-  Hydroelastize(&scene_graph);
   plant.Finalize();
 
   DRAKE_DEMAND(plant.num_velocities() == 12);

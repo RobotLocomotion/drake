@@ -10,6 +10,7 @@
 #include "drake/common/nice_type_name.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/geometry_state.h"
+#include "drake/geometry/hydroelastize.h"
 #include "drake/systems/framework/context.h"
 
 namespace drake {
@@ -82,10 +83,10 @@ class GeometryStateValue final : public Value<GeometryState<T>> {
 }  // namespace
 
 template <typename T>
-SceneGraph<T>::SceneGraph()
+SceneGraph<T>::SceneGraph(SceneGraphConfig config)
     : LeafSystem<T>(SystemTypeTag<SceneGraph>{}),
       owned_model_(std::make_unique<GeometryState<T>>()),
-      model_(*owned_model_) {
+      model_(*owned_model_), config_(config) {
   model_inspector_.set(&model_);
   geometry_state_index_ =
       this->DeclareAbstractParameter(GeometryStateValue<T>());
@@ -109,6 +110,7 @@ template <typename T>
 template <typename U>
 SceneGraph<T>::SceneGraph(const SceneGraph<U>& other)
     : SceneGraph() {
+  config_ = other.config_;
   model_ = GeometryState<T>(other.model_);
 
   // We need to guarantee that the same source ids map to the same port indices.
@@ -386,8 +388,12 @@ template <typename T>
 void SceneGraph<T>::SetDefaultParameters(const Context<T>& context,
                                          Parameters<T>* parameters) const {
   LeafSystem<T>::SetDefaultParameters(context, parameters);
+  GeometryState<T> value = model_;
+  if (config_.hydroelastize) {
+    internal::Hydroelastize(&value);
+  }
   parameters->template get_mutable_abstract_parameter<GeometryState<T>>(
-      geometry_state_index_) = model_;
+      geometry_state_index_) = value;
 }
 
 template <typename T>
