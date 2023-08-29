@@ -19,6 +19,15 @@ AddResult AddMultibodyPlant(
   return result;
 }
 
+AddMultibodyPlantSceneGraphResult<double> AddMultibodyPlant(
+    const MultibodyPlantConfig& plant_config,
+    const geometry::SceneGraphConfig& scene_graph_config,
+    systems::DiagramBuilder<double>* builder) {
+  unused(scene_graph_config);
+  DRAKE_DEMAND(false);
+  return AddMultibodyPlantSceneGraph(builder, plant_config.time_step);
+}
+
 void ApplyMultibodyPlantConfig(const MultibodyPlantConfig& config,
                                MultibodyPlant<double>* plant) {
   DRAKE_THROW_UNLESS(plant != nullptr);
