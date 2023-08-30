@@ -1,3 +1,4 @@
+import copy
 import os
 import unittest
 
@@ -6,7 +7,6 @@ import numpy as np
 from pydrake.autodiffutils import AutoDiffXd
 import pydrake.common as mut
 import pydrake.common._module_py._testing as mut_testing
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 
 
 class TestCommon(unittest.TestCase):
@@ -31,7 +31,36 @@ class TestCommon(unittest.TestCase):
     def test_find_resource_or_throw(self):
         mut.FindResourceOrThrow("drake/examples/acrobot/Acrobot.urdf")
 
-    def test_test_temp_directory(self):
+    def test_parallelism(self):
+        # This matches the BUILD.bazel rule for this test program.
+        self.assertEqual(os.environ.get("DRAKE_NUM_THREADS"), "2")
+        max_num_threads = 2
+
+        # Construction.
+        mut.Parallelism()
+        mut.Parallelism(parallelize=False)
+        mut.Parallelism(num_threads=1)
+        mut.Parallelism.Max()
+
+        # Copyable.
+        copy.copy(mut.Parallelism())
+
+        # The num_threads() getter.
+        self.assertEqual(mut.Parallelism().num_threads(), 1)
+        self.assertEqual(mut.Parallelism.Max().num_threads(), max_num_threads)
+
+        # Construction without kwarg names must be careful not to automatically
+        # convert between bool and int.
+        self.assertEqual(mut.Parallelism(False).num_threads(), 1)
+        self.assertEqual(mut.Parallelism(True).num_threads(), max_num_threads)
+        self.assertEqual(mut.Parallelism(1).num_threads(), 1)
+        self.assertEqual(mut.Parallelism(3).num_threads(), 3)
+
+        # Floats are right out.
+        with self.assertRaisesRegex(Exception, "types"):
+            mut.Parallelism(0.5)
+
+    def test_temp_directory(self):
         temp_dir = mut.temp_directory()
         # We'll simply confirm that the path *starts* with the TEST_TMPDIR and
         # that it exists. We'll assume that it otherwise has the documented
