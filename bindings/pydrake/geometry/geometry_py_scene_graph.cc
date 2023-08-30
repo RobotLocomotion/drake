@@ -5,11 +5,14 @@
 
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/monostate_pybind.h"
+#include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/scene_graph.h"
+#include "drake/geometry/scene_graph_config.h"
+#include "drake/geometry/scene_graph_config_functions.h"
 
 namespace drake {
 namespace pydrake {
@@ -165,12 +168,19 @@ void DoScalarDependentDefinitions(py::module m, T) {
     auto cls = DefineTemplateClassWithDefault<Class, LeafSystem<T>>(
         m, "SceneGraph", param, cls_doc.doc);
     cls  // BR
-        .def(py::init<>(), cls_doc.ctor.doc)
+        .def(py::init<SceneGraphConfig>(),
+            py::arg("config") = SceneGraphConfig{}, cls_doc.ctor.doc)
         .def("get_source_pose_port", &Class::get_source_pose_port,
             py_rvp::reference_internal, cls_doc.get_source_pose_port.doc)
         .def("get_source_configuration_port",
             &Class::get_source_configuration_port, py_rvp::reference_internal,
             cls_doc.get_source_configuration_port.doc);
+
+    cls  // BR
+        .def("set_hydroelastize", &Class::set_hydroelastize, py::arg("value"),
+            cls_doc.set_hydroelastize.doc)
+        .def("get_hydroelastize", &Class::get_hydroelastize,
+            cls_doc.get_hydroelastize.doc);
 
     cls  // BR
         .def("get_query_output_port", &Class::get_query_output_port,
@@ -589,11 +599,26 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("Equal", &Class::Equal, py::arg("surface"), cls_doc.Equal.doc);
     DefCopyAndDeepCopy(&cls);
   }
+
+  m.def("ApplySceneGraphConfig", &ApplySceneGraphConfig, py::arg("config"),
+      py::arg("scene_graph"), doc.ApplySceneGraphConfig.doc);
 }  // NOLINT(readability/fn_size)
 }  // namespace
 
 void DefineGeometrySceneGraph(py::module m) {
   py::module::import("pydrake.systems.framework");
+  constexpr auto& doc = pydrake_doc.drake.geometry;
+  {
+    using Class = geometry::SceneGraphConfig;
+    constexpr auto& cls_doc = doc.SceneGraphConfig;
+    py::class_<Class> cls(m, "SceneGraphConfig", cls_doc.doc);
+    cls  // BR
+        .def(ParamInit<Class>());
+    DefAttributesUsingSerialize(&cls, cls_doc);
+    DefReprUsingSerialize(&cls);
+    DefCopyAndDeepCopy(&cls);
+  }
+
   DoScalarIndependentDefinitions(m);
   type_visit([m](auto dummy) { DoScalarDependentDefinitions(m, dummy); },
       CommonScalarPack{});
