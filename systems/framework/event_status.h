@@ -20,7 +20,7 @@ their event handlers. */
 // TODO(sherm1) Add the following text to the above doxygen comment when
 // EventStatus is propagated up from the handlers.
 /* (Advanced) In case you are writing an event dispatcher (that is, you are
-overriding LeafSystem::DoPublish(), LeafSystem::DoCalcDiscreteVariableUpdates(),
+overriding LeafSystem::DoPublish(),
 or LeafSystem::DoCalcUnrestrictedUpdate()), the dispatcher's return
 status should be the returned status of highest severity in a series of event
 handlers invoked for simultaneous events. In case of multiple returns at the

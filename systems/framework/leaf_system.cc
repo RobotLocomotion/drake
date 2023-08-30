@@ -815,12 +815,10 @@ void LeafSystem<T>::DoPublish(
 
 template <typename T>
 void LeafSystem<T>::DoCalcDiscreteVariableUpdates(
-    const Context<T>& context,
-    const std::vector<const DiscreteUpdateEvent<T>*>& events,
+    const Context<T>&,
+    const std::vector<const DiscreteUpdateEvent<T>*>&,
     DiscreteValues<T>* discrete_state) const {
-  for (const DiscreteUpdateEvent<T>* event : events) {
-    event->handle(*this, context, discrete_state);
-  }
+  discrete_state->mutable_dispatcher_flags().use_default_dispatch = true;
 }
 
 template <typename T>
@@ -896,15 +894,36 @@ void LeafSystem<T>::DispatchDiscreteVariableUpdateHandler(
     const EventCollection<DiscreteUpdateEvent<T>>& events,
     DiscreteValues<T>* discrete_state) const {
   const LeafEventCollection<DiscreteUpdateEvent<T>>& leaf_events =
-      dynamic_cast<const LeafEventCollection<DiscreteUpdateEvent<T>>&>(
-          events);
+      dynamic_cast<const LeafEventCollection<DiscreteUpdateEvent<T>>&>(events);
   DRAKE_DEMAND(leaf_events.HasEvents());
 
   // Must initialize the output argument with the current contents of the
   // discrete state.
   discrete_state->SetFrom(context.get_discrete_state());
+
+  // If a subclass overrides DoCalcDiscreteVariableUpdates, then this will
+  // remain false. Otherwise, our own DoCalcDiscreteVariableUpdates will set
+  // this back to true.
+  discrete_state->mutable_dispatcher_flags().use_default_dispatch = false;
+
+  // Check if a user has overridden the dispatcher (and let them perform their
+  // updates, if so).
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   this->DoCalcDiscreteVariableUpdates(context, leaf_events.get_events(),
-      discrete_state);  // in/out
+                                      discrete_state);
+#pragma GCC diagnostic pop
+  if (!discrete_state->mutable_dispatcher_flags().use_default_dispatch) {
+    static const logging::Warn log_once(
+        "Overriding LeafSystem::DoCalcDiscreteVariableUpdates is deprecated "
+        "and will be removed from Drake on or after 2024-01-01.");
+    return /* EventStatus::Succeeded() */;
+  }
+
+  // Use default dispatch.
+  for (const DiscreteUpdateEvent<T>* event : leaf_events.get_events()) {
+    event->handle(*this, context, discrete_state);
+  }
 }
 
 template <typename T>

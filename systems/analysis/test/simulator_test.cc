@@ -2113,10 +2113,13 @@ GTEST_TEST(SimulatorTest, Initialization) {
           });
       DeclareInitializationEvent(pub_event);
 
-      DeclareInitializationEvent(DiscreteUpdateEvent<double>{});
+      DeclareInitializationDiscreteUpdateEvent(
+          &InitializationTestSystem::InitializationDiscreteUpdateHandler);
       DeclareInitializationEvent(UnrestrictedUpdateEvent<double>{});
 
-      DeclarePeriodicDiscreteUpdateNoHandler(0.1);
+      DeclarePeriodicDiscreteUpdateEvent(
+          0.1, 0.0,
+          &InitializationTestSystem::PeriodicDiscreteUpdateHandler);
       DeclarePerStepEvent(UnrestrictedUpdateEvent<double>{});
     }
 
@@ -2138,16 +2141,16 @@ GTEST_TEST(SimulatorTest, Initialization) {
       pub_init_ = true;
     }
 
-    void DoCalcDiscreteVariableUpdates(
-        const Context<double>& context,
-        const std::vector<const DiscreteUpdateEvent<double>*>& events,
-        DiscreteValues<double>*) const final {
-      EXPECT_EQ(events.size(), 1);
-      if (events.front()->get_trigger_type() ==
-          TriggerType::kInitialization) {
-        EXPECT_EQ(context.get_time(), 0);
-        dis_update_init_ = true;
-      }
+    EventStatus InitializationDiscreteUpdateHandler(
+        const Context<double>& context, DiscreteValues<double>*) const {
+      EXPECT_EQ(context.get_time(), 0);
+      dis_update_init_ = true;
+      return EventStatus::Succeeded();
+    }
+
+    EventStatus PeriodicDiscreteUpdateHandler(const Context<double>&,
+                                              DiscreteValues<double>*) const {
+      return EventStatus::DidNothing();
     }
 
     void DoCalcUnrestrictedUpdate(

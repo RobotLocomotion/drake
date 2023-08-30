@@ -19,6 +19,13 @@
 namespace drake {
 namespace systems {
 
+namespace internal {
+/* A deprecation shim. Remove on 2024-01-01. */
+struct DispatcherFlags {
+  bool use_default_dispatch{};
+};
+}  // namespace internal
+
 /// %DiscreteValues is a container for numerical but non-continuous state
 /// and parameters. It may own its underlying data, for use with leaf Systems,
 /// or not, for use with Diagrams.
@@ -249,6 +256,11 @@ class DiscreteValues {
   void set_system_id(internal::SystemId id) { system_id_ = id; }
   //@}
 
+  /// (Internal use only) A deprecation shim. Remove on 2024-01-01.
+  internal::DispatcherFlags& mutable_dispatcher_flags() {
+    return dispatcher_flags_;
+  }
+
  private:
   // Throw unless this object is compatible with convenience methods; i.e., it
   // has exactly one group.
@@ -286,6 +298,9 @@ class DiscreteValues {
 
   // Unique id of the subsystem that created this object.
   internal::SystemId system_id_;
+
+  // A deprecation shim. Remove on 2024-01-01.
+  internal::DispatcherFlags dispatcher_flags_;
 };
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(

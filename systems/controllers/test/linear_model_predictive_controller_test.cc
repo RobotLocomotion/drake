@@ -95,7 +95,8 @@ class CubicPolynomialSystem final : public LeafSystem<T> {
                                   &CubicPolynomialSystem::OutputState,
                                   {this->all_state_ticket()});
     this->DeclareDiscreteState(2);
-    this->DeclarePeriodicDiscreteUpdateNoHandler(time_step);
+    this->DeclarePeriodicDiscreteUpdateEvent(
+        time_step, 0.0, &CubicPolynomialSystem<T>::CalcDiscreteUpdate);
   }
 
   template <typename U>
@@ -107,10 +108,9 @@ class CubicPolynomialSystem final : public LeafSystem<T> {
 
   // x1(k+1) = u(k)
   // x2(k+1) = -x1³(k)
-  void DoCalcDiscreteVariableUpdates(
+  void CalcDiscreteUpdate(
       const Context<T>& context,
-      const std::vector<const DiscreteUpdateEvent<T>*>&,
-      DiscreteValues<T>* next_state) const final {
+      DiscreteValues<T>* next_state) const {
     using std::pow;
     const T& x1 = context.get_discrete_state(0).get_value()[0];
     const T& u = this->get_input_port(0).Eval(context)[0];

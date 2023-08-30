@@ -359,8 +359,9 @@ class TestCustom(unittest.TestCase):
                     event=PublishEvent(
                         trigger_type=TriggerType.kInitialization,
                         callback=self._on_initialize))
-                self.DeclarePeriodicDiscreteUpdateNoHandler(
-                    period_sec=1.0, offset_sec=0.)
+                with catch_drake_warnings(expected_count=1):
+                    self.DeclarePeriodicDiscreteUpdateNoHandler(
+                        period_sec=1.0, offset_sec=0.)
                 self.DeclarePeriodicPublishEvent(
                     period_sec=1.0,
                     offset_sec=0,
@@ -444,8 +445,9 @@ class TestCustom(unittest.TestCase):
             def DoCalcDiscreteVariableUpdates(
                     self, context, events, discrete_state):
                 # Call base method to ensure we do not get recursion.
-                LeafSystem.DoCalcDiscreteVariableUpdates(
-                    self, context, events, discrete_state)
+                with catch_drake_warnings(expected_count=1):
+                    LeafSystem.DoCalcDiscreteVariableUpdates(
+                        self, context, events, discrete_state)
                 self.called_discrete = True
 
             def DoGetWitnessFunctions(self, context):

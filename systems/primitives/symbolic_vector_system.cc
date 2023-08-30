@@ -130,7 +130,10 @@ SymbolicVectorSystem<T>::SymbolicVectorSystem(
       this->DeclareContinuousState(state_vars_.size());
     } else {
       this->DeclareDiscreteState(state_vars_.size());
-      this->DeclarePeriodicDiscreteUpdateNoHandler(time_period_, 0.0);
+      this->DeclarePeriodicDiscreteUpdateEvent(
+          time_period_, 0.0, &SymbolicVectorSystem<T>::CalcDiscreteUpdate);
+      this->DeclareForcedDiscreteUpdateEvent(
+          &SymbolicVectorSystem<T>::CalcDiscreteUpdate);
     }
   }
   if (parameter_vars_.size() > 0) {
@@ -351,15 +354,14 @@ void SymbolicVectorSystem<T>::DoCalcTimeDerivatives(
 }
 
 template <typename T>
-void SymbolicVectorSystem<T>::DoCalcDiscreteVariableUpdates(
+EventStatus SymbolicVectorSystem<T>::CalcDiscreteUpdate(
     const drake::systems::Context<T>& context,
-    const std::vector<const drake::systems::DiscreteUpdateEvent<T>*>& events,
     drake::systems::DiscreteValues<T>* updates) const {
-  unused(events);
   DRAKE_DEMAND(time_period_ > 0.0);
   DRAKE_DEMAND(dynamics_.size() > 0);
   EvaluateWithContext(context, dynamics_, dynamics_jacobian_,
                       dynamics_needs_inputs_, &updates->get_mutable_vector());
+  return EventStatus::Succeeded();
 }
 
 }  // namespace systems
