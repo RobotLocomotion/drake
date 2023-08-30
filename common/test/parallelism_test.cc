@@ -96,9 +96,9 @@ GTEST_TEST(ParallelismTest, ParsingLogicTest) {
 
   // When both environment variables are set, the DRAKE one always wins even if
   // it's unparseable.
+  EXPECT_EQ(ConfigureMaxNumThreads("2", "1"), 2);
   EXPECT_EQ(ConfigureMaxNumThreads("", "1"), fallback);
   EXPECT_EQ(ConfigureMaxNumThreads("-1", "1"), fallback);
-  EXPECT_EQ(ConfigureMaxNumThreads("5", "3"), 5);
 }
 
 }  // namespace
