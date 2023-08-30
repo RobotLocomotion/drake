@@ -10,6 +10,7 @@
 #include <Eigen/Dense>
 
 #include "drake/common/eigen_types.h"
+#include "drake/common/parallelism.h"
 #include "drake/perception/point_cloud_flags.h"
 
 namespace drake {
@@ -341,7 +342,7 @@ class PointCloud final {
   /// @throws std::exception if has_xyzs() is false.
   /// @throws std::exception if voxel_size <= 0.
   PointCloud VoxelizedDownSample(
-      double voxel_size, bool parallelize = false) const;
+      double voxel_size, Parallelism parallelize = false) const;
 
   /// Estimates the normal vectors in `this` by fitting a plane at each point
   /// in the cloud using up to `num_closest` points within Euclidean distance
@@ -359,7 +360,7 @@ class PointCloud final {
   /// @pre @p radius > 0 and @p num_closest >= 3.
   /// @throws std::exception if has_xyzs() is false.
   bool EstimateNormals(
-      double radius, int num_closest, bool parallelize = false);
+      double radius, int num_closest, Parallelism parallelize = false);
 
  private:
   void SetDefault(int start, int num);
