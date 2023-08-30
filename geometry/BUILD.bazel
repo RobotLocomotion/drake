@@ -46,6 +46,7 @@ drake_cc_package_library(
         ":rgba",
         ":scene_graph",
         ":scene_graph_config",
+        ":scene_graph_config_functions",
         ":scene_graph_inspector",
         ":shape_specification",
         ":shape_to_string",
@@ -288,6 +289,15 @@ drake_cc_library(
     hdrs = ["scene_graph_config.h"],
     deps = [
         "//common:name_value",
+    ],
+)
+
+drake_cc_library(
+    name = "scene_graph_config_functions",
+    srcs = ["scene_graph_config_functions.cc"],
+    hdrs = ["scene_graph_config_functions.h"],
+    deps = [
+        ":scene_graph",
     ],
 )
 
