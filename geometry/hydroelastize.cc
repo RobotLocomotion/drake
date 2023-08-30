@@ -7,13 +7,7 @@
 
 namespace drake {
 namespace geometry {
-
-using internal::HydroelasticType;
-using internal::kComplianceType;
-using internal::kElastic;
-using internal::kHydroGroup;
-using internal::kRezHint;
-using internal::kSlabThickness;
+namespace internal {
 
 namespace {
 
@@ -29,14 +23,9 @@ void BackfillDefaults(ProximityProperties* properties) {
   backfill(kHydroGroup, kSlabThickness, 1e3);
 }
 
-template <typename Reader>
 class ShapeAdjuster final : public ShapeReifier {
  public:
-  explicit ShapeAdjuster(const Reader& inspector)
-      : inspector_(inspector) {}
-
-  void MakeShapeAdjustments(GeometryId gid, ProximityProperties* props) {
-    const auto& shape(inspector_.GetShape(gid));
+  void MakeShapeAdjustments(const Shape& shape, ProximityProperties* props) {
     shape.Reify(this, props);
   }
 
@@ -56,41 +45,21 @@ class ShapeAdjuster final : public ShapeReifier {
                             HydroelasticType::kRigid);
     }
   }
-
- private:
-  const Reader& inspector_;
 };
 
 }  // namespace
 
-// template <typename T>
-// void Hydroelastize(SceneGraph<T>* scene_graph) {
-//   DRAKE_DEMAND(scene_graph != nullptr);
-//   auto& inspector = scene_graph->model_inspector();
-//   Hydroelastize<T, SceneGraphInspector<T>, SceneGraph<T>>(
-//       inspector, scene_graph);
-// }
-
-namespace internal {
 template <typename T>
 void Hydroelastize(GeometryState<T>* geometry_state) {
   DRAKE_DEMAND(geometry_state != nullptr);
-  Hydroelastize<T, GeometryState<T>, GeometryState<T>>(
-      *geometry_state, geometry_state);
-}
-}  // namespace internal
-
-template <typename T, typename Reader, typename Writer>
-void Hydroelastize(const Reader& reader, Writer* writer) {
-  // Iterate over all geometries with a proximity role.
-  auto gids = reader.GetGeometryIds(
-      GeometrySet(reader.GetAllGeometryIds()), Role::kProximity);
-  auto source_ids = reader.GetAllSourceIds();
-  ShapeAdjuster shape_adjuster(reader);
+  auto gids = geometry_state->GetGeometryIds(
+      GeometrySet(geometry_state->GetAllGeometryIds()), Role::kProximity);
+  auto source_ids = geometry_state->GetAllSourceIds();
+  ShapeAdjuster shape_adjuster;
   for (const auto& gid : gids) {
     // Get current proximity properties -- some should exist, given the
     // filtering done above.
-    ProximityProperties props(*reader.GetProximityProperties(gid));
+    ProximityProperties props(*geometry_state->GetProximityProperties(gid));
     const HydroelasticType type = props.GetPropertyOrDefault(
       kHydroGroup, kComplianceType, HydroelasticType::kUndefined);
     // Update proximity properties to a suitable hydro configuration.
@@ -101,23 +70,24 @@ void Hydroelastize(const Reader& reader, Writer* writer) {
       BackfillDefaults(&props);
 
       // Shape adjuster will fix configurations that can't work.
-      shape_adjuster.MakeShapeAdjustments(gid, &props);
+      shape_adjuster.MakeShapeAdjustments(
+          geometry_state->GetShape(gid), &props);
       // Jump through pointless hoops.
       SourceId gid_source_id;
       for (const auto& source_id : source_ids) {
-        if (reader.BelongsToSource(gid, source_id)) {
+        if (geometry_state->BelongsToSource(gid, source_id)) {
           gid_source_id = source_id;
         }
       }
-      writer->AssignRole(gid_source_id, gid, props, RoleAssign::kReplace);
+      geometry_state->AssignRole(gid_source_id, gid, props,
+                                 RoleAssign::kReplace);
     }
   }
 }
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((
-    // static_cast<void(*)(SceneGraph<T>*)>(&Hydroelastize),
-    static_cast<void(*)(GeometryState<T>*)>(&internal::Hydroelastize)
+    &Hydroelastize<T>
 ))
-
+}  // namespace internal
 }  // namespace geometry
 }  // namespace drake
