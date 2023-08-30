@@ -178,8 +178,11 @@ class MeshcatVisualizer final : public systems::LeafSystem<T> {
   void SetTransforms(const systems::Context<T>& context,
                      const QueryObject<T>& query_object) const;
 
-  /* Makes calls to Meshcat::SetProperty to update color alphas. */
-  void SetColorAlphas(bool is_first_call) const;
+  /* Makes calls to Meshcat::SetProperty to update geometry alphas. During
+   initialization, it is necessary to explicitly configure each geometry
+   individually due to race conditions between setting the geometry and
+   configuring it. Once the geometry is loaded, they can be updated en masse. */
+  void SetAlphas(bool individual_geometries) const;
 
   /* Handles the initialization event. */
   systems::EventStatus OnInitialization(const systems::Context<T>&) const;
@@ -216,7 +219,7 @@ class MeshcatVisualizer final : public systems::LeafSystem<T> {
   mutable std::map<GeometryId, Rgba> colors_{};
 
   /* The last alpha value applied to the objects in geometries_; used to avoid
-   * unnecessary updates to geometry colors. */
+   unnecessary updates to geometry opacities. */
   mutable double alpha_value_{1.0};
 
   /* The parameters for the visualizer.  */

@@ -66,7 +66,7 @@ InertiaVisualizer<T>::InertiaVisualizer(
     // We set alpha to 0.0 here to support visualizers without alpha sliders.
     // MeshcatVisualizer will update the alpha of this geometry based on the
     // alpha slider's value.
-    props.AddProperty("phong", "diffuse", Rgba{0.0, 0.0, 1.0, 0.0});
+    props.AddProperty("phong", "diffuse", Rgba{0.0, 0.0, 1.0, 1.0});
     geom->set_illustration_properties(std::move(props));
     item.geometry = scene_graph->RegisterGeometry(source_id_, item.Bcm_frame,
                                                   std::move(geom));

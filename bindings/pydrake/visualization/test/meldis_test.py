@@ -386,11 +386,11 @@ class TestMeldis(unittest.TestCase):
         dut._invoke_poll()
 
         # Confirm the new color of the box.
-        path = "/DRAKE_VIEWER/2/plant/box/box/0"
+        path = "/DRAKE_VIEWER"
         self.assertEqual(meshcat.HasPath(path), True)
-        message = meshcat._GetPackedProperty(path, "color")
+        message = meshcat._GetPackedProperty(path, "modulated_opacity")
         parsed = umsgpack.unpackb(message)
-        self.assertListEqual(parsed['value'], rgb + [new_alpha])
+        self.assertEqual(parsed['value'], new_alpha)
 
     def test_inertia_geometry(self):
         url = "package://drake/examples/manipulation_station/models/sphere.sdf"
