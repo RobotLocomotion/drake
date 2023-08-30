@@ -18,6 +18,12 @@ namespace internal {
  @pre a and b are sorted in increasing order. */
 std::vector<int> Union(const std::vector<int>& a, const std::vector<int>& b);
 
+/* Computes the union of k sorted vectors of integers.
+ @param vectors  A vector containing k sorted vectors.
+ @returns A sorted vector containing the union of the input vectors.
+ @pre All entries of `vectors` are non-null and are sorted. */
+std::vector<int> Union(const std::vector<const std::vector<int>*>& vectors);
+
 /* Returns the set difference of a and b (a \ b) as a sorted vector.
  @pre a and b are sorted in increasing order. */
 std::vector<int> SetDifference(const std::vector<int>& a,

@@ -19,6 +19,17 @@ GTEST_TEST(MinimumDegreeOrderingTest, Union) {
   EXPECT_EQ(result, expected);
 }
 
+GTEST_TEST(MinimumDegreeOrderingTest, KWayUnion) {
+  const std::vector<int> a = {1, 2, 5, 8, 9};
+  const std::vector<int> b = {1, 3, 5, 7, 9, 11};
+  const std::vector<int> c = {2, 4, 5, 8, 9};
+  const std::vector<int> d = {1, 3, 7, 10, 11};
+  const std::vector<const std::vector<int>*> vectors{&a, &b, &c, &d};
+  const std::vector<int> result = Union(vectors);
+  const std::vector<int> expected = {1, 2, 3, 4, 5, 7, 8, 9, 10, 11};
+  EXPECT_EQ(result, expected);
+}
+
 GTEST_TEST(MinimumDegreeOrderingTest, SetDifference) {
   const std::vector<int> a = {1, 2, 5, 8, 9};
   const std::vector<int> b = {1, 3, 5, 7, 9, 11};

@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <functional>
+#include <queue>
 #include <set>
 #include <utility>
 
@@ -17,6 +18,57 @@ std::vector<int> Union(const std::vector<int>& a, const std::vector<int>& b) {
   result.reserve(a.size() + b.size());
   std::set_union(a.begin(), a.end(), b.begin(), b.end(),
                  std::back_inserter(result));
+  return result;
+}
+
+std::vector<int> Union(const std::vector<const std::vector<int>*>& vectors) {
+  std::vector<int> result;
+
+  /* Priority queue element.
+   The pair contains the integer value and its indices:
+   (value, (vector index, value index)). */
+  using Element = std::pair<int, std::pair<int, int>>;
+
+  /* Custom comparator for the priority queue to act as a min heap. */
+  auto compare = [](const Element& a, const Element& b) {
+    return a.first > b.first;
+  };
+
+  /* Priority queue to help with merging. */
+  std::priority_queue<Element, std::vector<Element>, decltype(compare)> pq(
+      compare);
+
+  /* Insert the first element of each vector into the priority queue. */
+  for (int i = 0; i < ssize(vectors); ++i) {
+    DRAKE_DEMAND(vectors[i] != nullptr);
+    if (!vectors[i]->empty()) {
+      pq.push({vectors[i]->at(0), {i, 0}});
+    }
+  }
+
+  /* Process elements in the priority queue. */
+  while (!pq.empty()) {
+    auto current = pq.top();
+    pq.pop();
+
+    int value = current.first;
+    int vector_index = current.second.first;
+    int value_index = current.second.second;
+
+    /* Add to the result only if it's not the same as the last added element (to
+     avoid duplicates). */
+    if (result.empty() || result.back() != value) {
+      result.push_back(value);
+    }
+
+    // Push the next element from the same vector to the priority queue.
+    const int new_value_index = value_index + 1;
+    if (new_value_index < ssize(*vectors[vector_index])) {
+      pq.push({vectors[vector_index]->at(new_value_index),
+               {vector_index, new_value_index}});
+    }
+  }
+
   return result;
 }
 
@@ -56,12 +108,11 @@ void Node::UpdateExternalDegree(const std::vector<Node>& nodes) {
   }
 
   /* Add in |L \ i| term where L = ∪ₑLₑ and e ∈ Eᵢ. */
-  std::vector<int> L_union;
-  // TODO(xuchenhan-tri): This can be quadratic in the worst case and can be
-  // made more efficient by doing a K-way union if needed.
+  std::vector<const std::vector<int>*> to_be_unioned;
   for (int e : E) {
-    L_union = Union(L_union, nodes[e].L);
+    to_be_unioned.push_back(&nodes[e].L);
   }
+  std::vector<int> L_union = Union(to_be_unioned);
   RemoveValueFromSortedVector(index, &L_union);
   for (int l : L_union) {
     degree += nodes[l].size;
@@ -136,15 +187,15 @@ std::vector<int> ComputeMinimumDegreeOrdering(
     const int p = min_node.index;
     result[k] = p;
     Node& node_p = nodes[p];
-
-    /* Turn node p from a variable to an element. */
-    node_p.L = node_p.A;
-    /* Absorb into Lp all variables adjacent to element e where e is adjacent to
-     p. Make sure to exclude p itself since p is turning from a variable into an
-     element. */
+    std::vector<const std::vector<int>*> to_be_unioned;
+    to_be_unioned.push_back(&node_p.A);
+    /* Turn node p from a variable to an element (Ap->Lp), and absorb into Lp
+     all variables adjacent to element e where e is adjacent to p. Make sure to
+     exclude p itself since p is turning from a variable into an element. */
     for (int e : node_p.E) {
-      node_p.L = Union(node_p.L, nodes[e].L);
+      to_be_unioned.push_back(&nodes[e].L);
     }
+    node_p.L = Union(to_be_unioned);
     RemoveValueFromSortedVector(p, &(node_p.L));
     /* Update all neighboring variables of p. */
     for (int i : node_p.L) {
@@ -203,12 +254,12 @@ BlockSparsityPattern SymbolicCholeskyFactor(
      j. This is the same as described in equation 4.3 in [Davis 2006].
       Lⱼ = Aⱼ ∪ {j} ∪ ( ∪ Lₛ \ {s})
      where the union over s is over all children of j. */
-    L_sparsity[j] = A_sparsity[j];
+    std::vector<const std::vector<int>*> to_be_unioned;
+    to_be_unioned.push_back(&A_sparsity[j]);
     for (int c : children[j]) {
-      // TODO(xuchenhan-tri): Consider doing a k-way union instead of a loop
-      // for efficiency.
-      L_sparsity[j] = Union(L_sparsity[j], L_sparsity[c]);
+      to_be_unioned.push_back(&L_sparsity[c]);
     }
+    L_sparsity[j] = Union(to_be_unioned);
     /* Instead of union over Lₛ \ {s}, we union over Lₛ and remove all entries
      smaller than j here in a single pass. */
     L_sparsity[j] = std::vector<int>(
