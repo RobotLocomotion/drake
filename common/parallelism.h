@@ -1,64 +1,101 @@
 #pragma once
 
-#include <common_robotics_utilities/openmp_helpers.hpp>
+#include <optional>
+#include <string_view>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_throw.h"
 
-namespace anzu {
-namespace planning {
+namespace drake {
 
-// TODO(calderpg) Move this class to drake/common.
-/// Provides a common interface for specifying the desired degree of parallelism
-/// to use in a parallelized operation, regardless of how the parallelization is
-/// implemented (e.g. OpenMP, std::async, TBB, etc). Represents a fixed number
-/// of threads to use; either 1 (no parallelism), a user-specified number of
-/// threads (any number >= 1), or the maximum number of threads to use. The
-/// maximum number of threads to use defaults to the hardware concurrency as
-/// reported via std::thread::hardware_concurrency(), and may be further limited
-/// via the environment variable DRAKE_NUM_THREADS prior to the first
-/// construction of a Parallelism(true). To be safe, any configuration of this
-/// variable after main() should be performed prior to calling any Drake code.
+/** Specifies a desired degree of parallelism for a parallelized operation.
+
+This class denotes a specific number of threads; either 1 (no parallelism), a
+user-specified value (any number >= 1), or the maximum number. For convenience,
+conversion from `bool` is provided so that `false` is no parallelism and `true`
+is maximum parallelism.
+
+Drake's API uses this class to allow users to control the degree of parallelism,
+regardless of how the parallelization is implemented (e.g., `std::async`,
+OpenMP, TBB, etc).
+
+@section DRAKE_NUM_THREADS Configuring the process-wide maximum parallelism
+
+The number of threads denoted by Parallelism::Max() is configurable with
+environment variables, but will be invariant within a single process. The first
+time it's accessed, the configured value will be latched into a global variable
+indefinitely. To ensure your configuration is obeyed, any changes to the
+environment variables that govern the max parallelism should be made prior to
+importing or calling any Drake code.
+
+The following recipe determines the value that Parallelism::Max().num_threads()
+will report:
+
+1. The default is the hardware limit from `std::thread::hardware_concurrency()`;
+this will be used when none of the special cases below are in effect.
+
+2. If the environment variable `DRAKE_NUM_THREADS` is set to a postive integer
+less than `hardware_concurrency()`, the `num_threads` will be that value.
+
+3. If the environment variable `DRAKE_NUM_THREADS` is not set but the
+environment variable `OMP_NUM_THREADS` is set to a postive integer less than
+`hardware_concurrency()`, the `num_threads` will be that value. (Note in
+particular that a comma-separated `OMP_NUM_THREADS` value will be ignored, even
+though that syntax might be valid for an OpenMP library).
+
+The configuration recipe above does not require Drake to be built with OpenMP
+enabled. The inspection of `OMP_NUM_THREADS` as a configuration value is
+provided for convenience, regardless of whether OpenMP is enabled.
+
+<b>A note for Drake developers</b>
+
+In Drake's unit tests, `DRAKE_NUM_THREADS` is set to "1" by default. If your
+unit requires actual parallelism, use the `num_threads = N` attribute in the
+`BUILD.bazel` file to declare a different value. */
 class Parallelism {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Parallelism)
 
-  /// Gets a Parallelism with no parallelism (i.e. num_threads=1).
-  static Parallelism None() { return Parallelism(false); }
+  /** Constructs a %Parallelism with no parallelism (i.e., num_threads=1).
+  Python note: This function is not bound in pydrake (due to its name); instead,
+  pass either `1` or `False` to the constructor. */
+  static Parallelism None() { return Parallelism(); }
 
-  /// Gets a Parallelism with the maximum number of threads.
-  static Parallelism Max() { return Parallelism(true); }
+  /** Constructs a %Parallelism with the maximum number of threads. Refer to the
+  class overview documentation for how to configure the maximum. */
+  static Parallelism Max();
 
-  /// Default constructor, no parallelism (i.e. num_threads=1) by default.
-  Parallelism() : Parallelism(false) {}
+  /** Default constructs with no parallelism (i.e., num_threads=1). */
+  Parallelism() = default;
 
-  /// Constructs a Parallelism with either no parallelism (i.e. num_threads=1)
-  /// or the maximum number of threads, as selected by `parallelize`.
-  Parallelism(bool parallelize);  // NOLINT(runtime/explicit)
+  /** Constructs a %Parallelism with either no parallelism (i.e., num_threads=1)
+  or the maximum number of threads (Max()), as selected by `parallelize`. */
+  Parallelism(bool parallelize) {  // NOLINT(runtime/explicit)
+    if (parallelize) {
+      *this = Max();
+    }
+  }
 
-  /// Constructs with the provided number of threads `num_threads`.
-  /// @pre num_threads >= 1.
-  /// @note Constructing and using a Parallelism with num_threads greater than
-  /// the actual hardware concurrency may result in fewer than the specified
-  /// number of threads actually being launched or poor performance due to CPU
-  /// contention.
+  /** Constructs with the provided number of threads `num_threads`.
+  @pre num_threads >= 1.
+  @note Constructing and using a %Parallelism with num_threads greater than the
+  actual hardware concurrency may result in fewer than the specified number of
+  threads actually being launched or poor performance due to CPU contention. */
   explicit Parallelism(int num_threads) : num_threads_(num_threads) {
     DRAKE_THROW_UNLESS(num_threads >= 1);
   }
 
+  /** Returns the degree of parallelism. The result will always be >= 1. */
   int num_threads() const { return num_threads_; }
 
  private:
   int num_threads_ = 1;
 };
 
-/// Convenience helper to convert the provided `parallelism` to the equivalent
-/// CRU DegreeOfParallelism value.
-inline common_robotics_utilities::openmp_helpers::DegreeOfParallelism ToCRU(
-    Parallelism parallelism) {
-  return common_robotics_utilities::openmp_helpers::DegreeOfParallelism(
-      parallelism.num_threads());
-}
+namespace internal {
+// Exposed for unit testing.
+int ConfigureMaxNumThreads(const char* drake_num_threads,
+                           const char* omp_num_threads);
+}  // namespace internal
 
-}  // namespace planning
-}  // namespace anzu
+}  // namespace drake
