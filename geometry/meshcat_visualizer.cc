@@ -135,7 +135,7 @@ systems::EventStatus MeshcatVisualizer<T>::UpdateMeshcat(
   if (!version_.has_value() ||
       !version_->IsSameAs(current_version, params_.role)) {
     SetObjects(query_object.inspector());
-    SetColorAlphas(/* is_first_call = */ true);
+    SetAlphas(/* is_first_call = */ true);
     version_ = current_version;
   }
   SetTransforms(context, query_object);
@@ -143,7 +143,7 @@ systems::EventStatus MeshcatVisualizer<T>::UpdateMeshcat(
     double new_alpha_value = meshcat_->GetSliderValue(alpha_slider_name_);
     if (new_alpha_value != alpha_value_) {
       alpha_value_ = new_alpha_value;
-      SetColorAlphas(/* is_first_call = */ false);
+      SetAlphas(/* is_first_call = */ false);
     }
   }
   std::optional<double> rate = realtime_rate_calculator_.UpdateAndRecalculate(
@@ -265,26 +265,19 @@ void MeshcatVisualizer<T>::SetTransforms(
 }
 
 template <typename T>
-void MeshcatVisualizer<T>::SetColorAlphas(bool is_first_call) const {
-  double max_alpha = 0.0;
-  for (const auto& [geom_id, path] : geometries_) {
-    max_alpha = std::max(max_alpha, colors_[geom_id].a());
-  }
-
-  if (is_first_call && alpha_value_ == 1.0 && max_alpha > 0.0) {
-    // We can skip all of the no-op calls to SetProperty.
-    return;
-  }
-
-  for (const auto& [geom_id, path] : geometries_) {
-    Rgba color = colors_[geom_id];
-    if (max_alpha == 0.0) {
-      color.update({}, {}, {}, alpha_value_);
-    } else {
-      color.update({}, {}, {}, alpha_value_ * color.a());
+void MeshcatVisualizer<T>::SetAlphas(bool is_first_call) const {
+  if (is_first_call) {
+    for (const auto& [_, geo_path] : geometries_) {
+      meshcat_->SetProperty(geo_path, "modulated_opacity", alpha_value_);
     }
-    meshcat_->SetProperty(path, "color",
-                          {color.r(), color.g(), color.b(), color.a()});
+  } else {
+    // The geometries visualized by this visualizer (stored in geometries_) all
+    // have a common prefix and for a well-configured visualizer, it is a
+    // *unique* prefix. So, we can rely on meshcat's behavior to update all
+    // materials in a tree with a single invocation on the root path. This
+    // requires that all instantiation of objects are complete in the visualizer
+    // instance.
+    meshcat_->SetProperty(params_.prefix, "modulated_opacity", alpha_value_);
   }
 }
 
