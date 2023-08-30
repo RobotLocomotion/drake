@@ -3,6 +3,8 @@ load(
     "pkg_config_repository",
 )
 
+# TODO(jwnimmer-tri) XXX deprecate me.
+
 def liblz4_repository(
         name,
         licenses = ["notice"],  # BSD-2-Clause
@@ -15,5 +17,6 @@ def liblz4_repository(
         licenses = licenses,
         modname = modname,
         pkg_config_paths = pkg_config_paths,
+        extra_deprecation = "The @liblz4 external is deprecated in Drake's WORKSPACE and will be removed on or after 2023-12-01.",  # noqa
         **kwargs
     )

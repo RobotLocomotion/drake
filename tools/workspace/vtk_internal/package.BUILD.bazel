@@ -1,10 +1,15 @@
 # -*- bazel -*-
 
 load(
+    "@drake//tools/install:install.bzl",
+    "install",
+)
+load(
     "@drake//tools/workspace/vtk_internal:rules.bzl",
     "compile_all_modules",
     "generate_abi_namespace",
     "generate_common_core_sources",
+    "generate_rendering_opengl2_sources",
     "vtk_cc_module",
 )
 
@@ -19,6 +24,8 @@ config_setting(
 generate_abi_namespace()
 
 generate_common_core_sources()
+
+generate_rendering_opengl2_sources()
 
 # Help solve a circular dependency between CommonCore <=> CommonDataModel.
 # This library inter-operates with both the VTK::CommonCore in settings.bzl
@@ -39,3 +46,16 @@ cc_library(
 # their required transitive dependency modules (per the vtk.module metadata).
 
 compile_all_modules()
+
+# Install any license notices.
+
+install(
+    name = "install",
+    docs = [
+        "Copyright.txt",
+        "ThirdParty/doubleconversion/vtkdoubleconversion/COPYING",
+        "ThirdParty/pugixml/vtkpugixml/LICENSE.md",
+        "ThirdParty/utf8/vtkutf8/LICENSE",
+    ],
+    visibility = ["//visibility:public"],
+)
