@@ -1,9 +1,11 @@
-#include "planning/parallelism.h"
+#include "drake/common/parallelism.h"
+
+#include <thread>
 
 #include <gtest/gtest.h>
 
-namespace anzu {
-namespace planning {
+namespace drake {
+namespace internal {
 namespace {
 constexpr int kNoneThreads = 1;
 // This is configured by the test rule, which sets the environment variable.
@@ -59,6 +61,46 @@ GTEST_TEST(ParallelismTest, BoolConversionAssignmentTest) {
   EXPECT_EQ(assigned_parallelism.num_threads(), kNoneThreads);
 }
 
+// Tests all variety of environment variable string parsing.
+GTEST_TEST(ParallelismTest, ParsingLogicTest) {
+  // When string parsing fails, this is what we get back.
+  const int fallback = std::thread::hardware_concurrency();
+  EXPECT_EQ(ConfigureMaxNumThreads(nullptr, nullptr), fallback);
+
+  // A table of test cases for string value => configured max.
+  std::vector<std::pair<const char*, int>> tests = {{
+      // Happy values.
+      {"1", 1},
+      {"2", 2},
+      // Empty values.
+      {"", fallback},
+      {" ", fallback},
+      // Garbage values.
+      {"4,4,4", fallback},
+      {"1.0", fallback},
+      {"a", fallback},
+      {"a1", fallback},
+      {"0x01", fallback},
+      {"☃", fallback},
+      {"1☃", fallback},
+      // Out-of-bounds values.
+      {"-100", fallback},
+      {"-1", fallback},
+      {"0", fallback},
+      {"999999999", fallback},
+  }};
+  for (const auto& [value, expected_max] : tests) {
+    EXPECT_EQ(ConfigureMaxNumThreads(value, nullptr), expected_max) << value;
+    EXPECT_EQ(ConfigureMaxNumThreads(nullptr, value), expected_max) << value;
+  }
+
+  // When both environment variables are set, the DRAKE one always wins even if
+  // it's unparseable.
+  EXPECT_EQ(ConfigureMaxNumThreads("", "1"), fallback);
+  EXPECT_EQ(ConfigureMaxNumThreads("-1", "1"), fallback);
+  EXPECT_EQ(ConfigureMaxNumThreads("5", "3"), 5);
+}
+
 }  // namespace
-}  // namespace planning
-}  // namespace anzu
+}  // namespace internal
+}  // namespace drake
