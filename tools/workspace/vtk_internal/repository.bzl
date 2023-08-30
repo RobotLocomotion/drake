@@ -10,6 +10,9 @@ load(
 def parse_module(repo_ctx, subdir):
     """Parses and returns a vtk.module file as a dict.
 
+    For an overview of VTK modules, see:
+    https://github.com/Kitware/VTK/blob/v9.2.6/Documentation/Doxygen/ModuleSystem.md#modules
+
     An upstream `Foo/Bar/vtk.module` file is formatted like this:
     NAME
       VTK::FooBar
