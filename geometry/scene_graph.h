@@ -309,6 +309,21 @@ class SceneGraph final : public systems::LeafSystem<T> {
 
   ~SceneGraph() final;
 
+  /** @name      Configuration
+   To the extent possible, allow configuration changes to scene graph systems.
+   */
+  //@{
+
+  /** Set the hydroelastize behavior flag. See TBD for details. */
+  void set_hydroelastize(bool value) { config_.hydroelastize = value; }
+
+  /** @return the current hydroelastize behavior flag value. See TBD for
+   * details. */
+  bool get_hydroelastize() const { return config_.hydroelastize; }
+
+  //@}
+
+
   /** @name       Port management
    Access to SceneGraph's input/output ports. This topic includes
    registration of geometry sources because the input ports are mapped to
