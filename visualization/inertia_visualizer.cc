@@ -63,10 +63,13 @@ InertiaVisualizer<T>::InertiaVisualizer(
     IllustrationProperties props;
     props.AddProperty("meshcat", "accepting", "inertia");
     // TODO(trowell-tri) This color is a placeholder until texturing is added.
-    // We set alpha to 0.0 here to support visualizers without alpha sliders.
-    // MeshcatVisualizer will update the alpha of this geometry based on the
-    // alpha slider's value.
-    props.AddProperty("phong", "diffuse", Rgba{0.0, 0.0, 1.0, 0.0});
+
+    // We set inherent opacity (alpha) to 1. This means if InertiaVisualizer is
+    // used in a viewer without a slider control for opacity, the inertia
+    // geometry will be permanently visible (but does allow us to use
+    // meshcat.js's "modulated_opacity" property to manage its opacity
+    // in a manner consistent with MeshcatVisualizer).
+    props.AddProperty("phong", "diffuse", Rgba{0.0, 0.0, 1.0, 1.0});
     geom->set_illustration_properties(std::move(props));
     item.geometry = scene_graph->RegisterGeometry(source_id_, item.Bcm_frame,
                                                   std::move(geom));
