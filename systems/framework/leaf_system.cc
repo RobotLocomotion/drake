@@ -12,6 +12,9 @@
 namespace drake {
 namespace systems {
 
+template <typename T>
+thread_local bool LeafSystem<T>::default_dispatch_needed_;
+
 namespace {
 
 // Returns the next sample time for the given @p attribute.
@@ -805,16 +808,9 @@ SystemConstraintIndex LeafSystem<T>::DeclareInequalityConstraint(
 }
 
 template <typename T>
-EventStatus LeafSystem<T>::DoPublish(
-    const Context<T>& context,
-    const std::vector<const PublishEvent<T>*>& events) const {
-  EventStatus overall_status = EventStatus::DidNothing();
-  for (const PublishEvent<T>* event : events) {
-    const EventStatus per_event_status = event->handle(*this, context);
-    overall_status.KeepMoreSevere(per_event_status);
-    if (overall_status.failed()) break;  // Stop at the first disaster.
-  }
-  return overall_status;
+void LeafSystem<T>::DoPublish(
+    const Context<T>&, const std::vector<const PublishEvent<T>*>&) const {
+  this->default_dispatch_needed_ = true;
 }
 
 template <typename T>
@@ -900,7 +896,19 @@ EventStatus LeafSystem<T>::DispatchPublishHandler(
      dynamic_cast<const LeafEventCollection<PublishEvent<T>>&>(events);
   // Only call DoPublish if there are publish events.
   DRAKE_DEMAND(leaf_events.HasEvents());
-  return this->DoPublish(context, leaf_events.get_events());
+  this->default_dispatch_needed_ = false;
+  this->DoPublish(context, leaf_events.get_events());
+
+  if (!this->default_dispatch_needed_)
+    return EventStatus::Succeeded();  // LeafSystem overrode DoPublish().
+
+  EventStatus overall_status = EventStatus::DidNothing();
+  for (const PublishEvent<T>* event : leaf_events.get_events()) {
+    const EventStatus per_event_status = event->handle(*this, context);
+    overall_status.KeepMoreSevere(per_event_status);
+    if (overall_status.failed()) break;  // Stop at the first disaster.
+  }
+  return overall_status;
 }
 
 template <typename T>

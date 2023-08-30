@@ -57,13 +57,12 @@ class ForcedDispatchOverrideSystem : public LeafSystem<double> {
   }
 
  private:
-  EventStatus DoPublish(
+  void DoPublish(
       const Context<double>&,
       const std::vector<const PublishEvent<double>*>& events) const final {
     got_publish_event_ = (events.size() == 1);
     if (got_publish_event_)
       publish_event_trigger_type_ = events.front()->get_trigger_type();
-    return EventStatus::Succeeded();
   }
 
   EventStatus DoCalcDiscreteVariableUpdates(
@@ -2419,13 +2418,12 @@ class DoPublishOverrideSystem : public LeafSystem<double> {
   }
 
  private:
-  EventStatus DoPublish(
+  void DoPublish(
       const Context<double>& context,
       const std::vector<const PublishEvent<double>*>& events) const override {
     ++do_publish_count_;
     if (!ignore_events_)
-      return LeafSystem<double>::DoPublish(context, events);
-    return EventStatus::DidNothing();
+      LeafSystem<double>::DoPublish(context, events);
   }
 
   // If true, DoPublish ignores events, calls LeafSystem::DoPublish() if false.
@@ -2471,7 +2469,7 @@ GTEST_TEST(DoPublishOverrideTest, ConfirmOverride) {
   EXPECT_EQ(system.do_publish_count(), 3);
   EXPECT_EQ(system.event_handle_count(), 2);
   status = system.Publish(*context, events);
-  EXPECT_EQ(status.severity(), EventStatus::kDidNothing);
+  EXPECT_EQ(status.severity(), EventStatus::kSucceeded);
   EXPECT_EQ(system.do_publish_count(), 4);
   EXPECT_EQ(system.event_handle_count(), 2);
 }

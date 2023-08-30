@@ -1835,9 +1835,13 @@ class LeafSystem : public System<T> {
   is only called from the public non-virtual Publish(), which will have
   already error-checked @p context so you may assume that it is valid.
 
+  @note There is no provision for returning EventStatus from DoPublish() as
+  there is if you use the default. Instead, your DoPublish() will be assumed
+  to return EventStatus::Succeeded() regardless of what happened.
+
   @param[in] context Const current context.
   @param[in] events All the publish events that need handling. */
-  [[nodiscard]] virtual EventStatus DoPublish(
+  virtual void DoPublish(
       const Context<T>& context,
       const std::vector<const PublishEvent<T>*>& events) const;
 
@@ -2057,6 +2061,9 @@ class LeafSystem : public System<T> {
 
   // Model abstract parameters to be used during Context allocation.
   internal::ModelValues model_abstract_parameters_;
+
+  // Set `true` by our default implementations of dispatcher overloads.
+  static thread_local bool default_dispatch_needed_;
 };
 
 }  // namespace systems
