@@ -17,5 +17,8 @@ template <typename T>
 void Hydroelastize(GeometryState<T>* geometry_state);
 }  // namespace internal
 
+// TODO(rpoyner-tri): gain access to configuration values for hydro properties
+// TODO(rpoyner-tri): ignore "tiny bubbles"
+
 }  // namespace geometry
 }  // namespace drake
