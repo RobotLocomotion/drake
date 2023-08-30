@@ -44,6 +44,7 @@ drake_cc_package_library(
         ":name_value",
         ":network_policy",
         ":nice_type_name",
+        ":parallelism",
         ":pointer_cast",
         ":polynomial",
         ":random",
@@ -391,6 +392,15 @@ drake_cc_library(
     ],
     deps = [
         ":nice_type_name_override_header",
+    ],
+)
+
+drake_cc_library(
+    name = "parallelism",
+    srcs = ["parallelism.cc"],
+    hdrs = ["parallelism.h"],
+    deps = [
+        ":essential",
     ],
 )
 
@@ -1006,6 +1016,14 @@ drake_cc_googletest(
     num_threads = 2,
     deps = [
         "//common:essential",
+    ],
+)
+
+drake_cc_googletest(
+    name = "parallelism_test",
+    num_threads = 2,
+    deps = [
+        ":parallelism",
     ],
 )
 

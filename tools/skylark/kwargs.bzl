@@ -71,6 +71,7 @@ def incorporate_num_threads(kwargs, *, num_threads):
         kwargs = _bump_cpu_tag(kwargs, new_size = num_threads)
         kwargs = amend(kwargs, "tags", append = ["omp"])
     kwargs = amend(kwargs, "env", update = {
+        "DRAKE_NUM_THREADS": str(num_threads),
         "OMP_NUM_THREADS": str(num_threads),
         "OPENBLAS_NUM_THREADS": str(num_threads),
         "NUMEXPR_NUM_THREADS": str(num_threads),

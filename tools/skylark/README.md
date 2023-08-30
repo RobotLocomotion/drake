@@ -34,18 +34,21 @@ license servers for commercial solvers).
 
 Can either be None, or else an integer.
 
-When None or 1, adds `OMP_NUM_THREADS="1"` to `env` to disable OpenMP.
+When None or 1, adds `DRAKE_NUM_THREADS="1"` and `OMP_NUM_THREADS="1"` to `env`
+to disable Drake's use of std::async and OpenMP.
 
-When N>1, adds `OMP_NUM_THREADS="N"` to `env` to allow for the desired level of
-parallelism, and also adds "cpu:N" to `tags` to reserve sufficient CPUs for the
-test. Those changes are a *necessary* but not *sufficient* condition to enable
-actual CPU parallelism while running the test. In addition, the overall build
-must also have OpenMP enabled, via --config=omp or --config=everything.
+When N>1, adds `DRAKE_NUM_THREADS="N"` and `OMP_NUM_THREADS="N"` to `env` to
+allow for the desired level of parallelism, and also adds "cpu:N" to `tags` to
+reserve sufficient CPUs for the test. Those changes are a *necessary* but might
+not be *sufficient* condition to enable actual CPU parallelism while running the
+test. In addition, the overall build must also have OpenMP enabled, via
+--config=omp or --config=everything, if the code uses OpenMP for parallelism
+(instead of std::async).
 
 Note that setting N>1 will also be applied to any sub-processes that are
 launched by your test program.  Ask for help on Slack if you need this flag to
 work correctly in the presence of sub-processes.
 
-(Aside: Besides OMP_NUM_THREADS, the function also sets several other
-environment variables using alternative spellings of the same concept;
-the overall effect should be the same.)
+(Aside: Besides the two named environment variables, the function also sets
+several other environment variables using alternative spellings of the same
+concept; the overall effect should be the same.)
