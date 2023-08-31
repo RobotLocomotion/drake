@@ -13,12 +13,14 @@
 #include <vtkCylinderSource.h>           // vtkFiltersSources
 #include <vtkGLTFImporter.h>             // vtkIOImport
 #include <vtkImageCast.h>                // vtkImagingCore
+#include <vtkImageFlip.h>                // vtkImagingCore
 #include <vtkOpenGLPolyDataMapper.h>     // vtkRenderingOpenGL2
 #include <vtkOpenGLShaderProperty.h>     // vtkRenderingOpenGL2
 #include <vtkOpenGLTexture.h>            // vtkRenderingOpenGL2
 #include <vtkPNGReader.h>                // vtkIOImage
 #include <vtkPlaneSource.h>              // vtkFiltersSources
 #include <vtkProperty.h>                 // vtkRenderingCore
+#include <vtkTexture.h>                  // vtkRenderingCore
 #include <vtkTexturedSphereSource.h>     // vtkFiltersSources
 #include <vtkTransform.h>                // vtkCommonTransforms
 #include <vtkTransformPolyDataFilter.h>  // vtkFiltersGeneral
@@ -410,6 +412,42 @@ bool RenderEngineVtk::ImplementObj(const std::string& file_name, double scale,
   return true;
 }
 
+namespace {
+
+/* It has been shown that when we import glTF files and place the resultant
+ vtkActors under a vtkAssembly, that the glTF's texture images get inverted
+ vertically. See
+ https://discourse.vtk.org/t/vtkgltfimporter-loads-textures-upside-down/12113
+ This is a simple hack that allows us to keep the vtkAssembly.
+ This function simply iterates through an actor's glTF textures and flips
+ them in the y direction.
+
+ Once vtkAssembly is better behaved, this can be removed. When we remove it,
+ we can also remove the test GltfTextureOrientation in
+ internal_render_engine_vtk_test.cc */
+void FlipGltfTextures(vtkActor* actor) {
+  // Set up a small, reusable graph for flipping a texture's image data.
+  vtkNew<vtkImageFlip> flip_y;
+  flip_y->SetFilteredAxis(1);
+  flip_y->SetOutputDimensionality(2);
+  vtkNew<vtkImageData> image_data;
+  flip_y->SetInputData(image_data);
+
+  vtkProperty* property = actor->GetProperty();
+  // The four "special textures with reserved names" (vtkProperty.h) that get
+  // used during glTF parsing.
+  for (const char* tex_name :
+       {"albedoTex", "materialTex", "emissiveTex", "normalTex"}) {
+    if (vtkTexture* texture = property->GetTexture(tex_name)) {
+      image_data->ShallowCopy(texture->GetImageDataInput(0));
+      flip_y->SetOutput(texture->GetImageDataInput(0));
+      flip_y->Update();
+    }
+  }
+}
+
+}  // namespace
+
 bool RenderEngineVtk::ImplementGltf(const std::string& file_name, double scale,
                                     const RegistrationData& data) {
   vtkNew<vtkGLTFImporter> importer;
@@ -466,6 +504,7 @@ bool RenderEngineVtk::ImplementGltf(const std::string& file_name, double scale,
     while (vtkActor* source_actor = actors->GetNextActor()) {
       if (i == ImageType::kColor) {
         // Color rendering can use the source_actor without changes.
+        FlipGltfTextures(source_actor);
         file_root_node->AddPart(source_actor);
       } else {
         // Depth and label images require new actors, based on the source, but
