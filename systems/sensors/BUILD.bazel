@@ -216,8 +216,8 @@ drake_cc_library(
         ":lcm_image_traits",
         ":vtk_image_reader_writer",
         "//lcmtypes:image_array",
-        "@vtk//:vtkCommonCore",
-        "@vtk//:vtkIOImage",
+        "@vtk_internal//:vtkCommonCore",
+        "@vtk_internal//:vtkIOImage",
         "@zlib",
     ],
 )
@@ -321,9 +321,9 @@ drake_cc_library(
     ],
     deps = [
         ":vtk_image_reader_writer",
-        "@vtk//:vtkCommonCore",
-        "@vtk//:vtkCommonDataModel",
-        "@vtk//:vtkIOImage",
+        "@vtk_internal//:vtkCommonCore",
+        "@vtk_internal//:vtkCommonDataModel",
+        "@vtk_internal//:vtkIOImage",
     ],
 )
 
@@ -350,8 +350,8 @@ drake_cc_library(
     deps = [
         ":image_file_format",
         "//common:unused",
-        "@vtk//:vtkCommonCore",
-        "@vtk//:vtkIOImage",
+        "@vtk_internal//:vtkCommonCore",
+        "@vtk_internal//:vtkIOImage",
     ],
 )
 
@@ -607,9 +607,9 @@ drake_cc_googletest(
         ":vtk_image_reader_writer",
         "//common:temp_directory",
         "//common/test_utilities:expect_throws_message",
-        "@vtk//:vtkCommonCore",
-        "@vtk//:vtkCommonDataModel",
-        "@vtk//:vtkIOImage",
+        "@vtk_internal//:vtkCommonCore",
+        "@vtk_internal//:vtkCommonDataModel",
+        "@vtk_internal//:vtkIOImage",
     ],
 )
 
