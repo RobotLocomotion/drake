@@ -1,12 +1,8 @@
 #pragma once
 
-#include <cmath>
-#include <cstdlib>
+#include <Eigen/Core>
 
-#include <Eigen/Dense>
-
-namespace drake {
-namespace math {
+namespace drake::math {
 
 /**
 Computes the unique stabilizing solution X to the discrete-time algebraic
@@ -14,12 +10,10 @@ Riccati equation:
 
 AᵀXA − X − AᵀXB(BᵀXB + R)⁻¹BᵀXA + Q = 0
 
-@throws std::exception if Q is not positive semi-definite.
-@throws std::exception if R is not positive definite.
-
-Based on the Schur Vector approach outlined in this paper:
-"On the Numerical Solution of the Discrete-Time Algebraic Riccati Equation"
-by Thrasyvoulos Pappas, Alan J. Laub, and Nils R. Sandell
+@throws std::runtime_error if Q is not symmetric positive semidefinite.
+@throws std::runtime_error if R is not symmetric positive definite.
+@throws std::runtime_error if (A, B) isn't a stabilizable pair.
+@throws std::runtime_error if (A, C) isn't a detectable pair where Q = CᵀC.
 */
 Eigen::MatrixXd DiscreteAlgebraicRiccatiEquation(
     const Eigen::Ref<const Eigen::MatrixXd>& A,
@@ -68,8 +62,10 @@ J = Σ [uₖ] [0 R][uₖ] ΔT
    k=0
 @endverbatim
 
-@throws std::runtime_error if Q − NR⁻¹Nᵀ is not positive semi-definite.
-@throws std::runtime_error if R is not positive definite.
+@throws std::runtime_error if Q₂ is not symmetric positive semidefinite.
+@throws std::runtime_error if R is not symmetric positive definite.
+@throws std::runtime_error if (A₂, B) isn't a stabilizable pair.
+@throws std::runtime_error if (A₂, C) isn't a detectable pair where Q₂ = CᵀC.
 */
 Eigen::MatrixXd DiscreteAlgebraicRiccatiEquation(
     const Eigen::Ref<const Eigen::MatrixXd>& A,
@@ -77,6 +73,5 @@ Eigen::MatrixXd DiscreteAlgebraicRiccatiEquation(
     const Eigen::Ref<const Eigen::MatrixXd>& Q,
     const Eigen::Ref<const Eigen::MatrixXd>& R,
     const Eigen::Ref<const Eigen::MatrixXd>& N);
-}  // namespace math
-}  // namespace drake
 
+}  // namespace drake::math
