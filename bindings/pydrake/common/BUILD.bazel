@@ -494,10 +494,10 @@ install(
 drake_py_unittest(
     name = "module_test",
     data = ["//examples/acrobot:models"],
+    num_threads = 2,
     deps = [
         ":module_py",
         "//bindings/pydrake:autodiffutils_py",
-        "//bindings/pydrake/common/test_utilities:deprecation_py",
     ],
 )
 
