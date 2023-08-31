@@ -33,6 +33,7 @@ namespace drake {
 namespace pydrake {
 
 using symbolic::Expression;
+using symbolic::Monomial;
 using symbolic::Variable;
 
 namespace {
@@ -623,6 +624,12 @@ std::string_view GetDtypeName() {
   if constexpr (std::is_same_v<T, Expression>) {
     return "Expression";
   }
+  if constexpr (std::is_same_v<T, symbolic::Polynomial>) {
+    return "Polynomial";
+  }
+  if constexpr (std::is_same_v<T, Monomial>) {
+    return "Monomial";
+  }
 }
 
 /* Binds a native C++ matmul(A, B) for wide variety of scalar types. This is
@@ -631,7 +638,8 @@ implementations. Doing a matmul elementwise with a C++ <=> Python call for every
 flop is extraordinarily slow.*/
 void DefineHeterogeneousMatmul(py::module m) {
   const auto bind = [&m]<typename T1, typename T2>() {
-    using T3 = decltype(std::declval<T1>() * std::declval<T2>());
+    using T3 = typename decltype(std::declval<MatrixX<T1>>() *
+                                 std::declval<MatrixX<T2>>())::Scalar;
     // To avoid too much doc spam, we'll use a more descriptive docstring for
     // the first overload only.
     const std::string_view extra_doc =
@@ -671,13 +679,41 @@ void DefineHeterogeneousMatmul(py::module m) {
   bind.operator()<AutoDiffXd, double>();
   bind.operator()<AutoDiffXd, AutoDiffXd>();
 
-  // Bind the Expression-related overloads.
+  // Bind the symbolic expression family of overloads.
+  //
+  // The order here is important for choosing the most specific types (e.g., so
+  // that a Polynomial stays as a Polynomial instead of lapsing back into an
+  // Expression). The order should go start from the narrowest type and work up
+  // to the broadest type.
+  //
+  // - One operand is a double.
   bind.operator()<double, Variable>();
   bind.operator()<Variable, double>();
+  bind.operator()<double, Monomial>();
+  bind.operator()<Monomial, double>();
+  bind.operator()<double, symbolic::Polynomial>();
+  bind.operator()<symbolic::Polynomial, double>();
   bind.operator()<double, Expression>();
   bind.operator()<Expression, double>();
+  // - One operand is a Variable.
+  bind.operator()<Variable, Variable>();
+  bind.operator()<Variable, Monomial>();
+  bind.operator()<Monomial, Variable>();
+  bind.operator()<Variable, symbolic::Polynomial>();
+  bind.operator()<symbolic::Polynomial, Variable>();
   bind.operator()<Variable, Expression>();
   bind.operator()<Expression, Variable>();
+  // - One operand is a Monomial.
+  bind.operator()<Monomial, Monomial>();
+  bind.operator()<Monomial, symbolic::Polynomial>();
+  bind.operator()<symbolic::Polynomial, Monomial>();
+  bind.operator()<Monomial, Expression>();
+  bind.operator()<Expression, Monomial>();
+  // - One operand is a Polynomial.
+  bind.operator()<symbolic::Polynomial, symbolic::Polynomial>();
+  bind.operator()<symbolic::Polynomial, Expression>();
+  bind.operator()<Expression, symbolic::Polynomial>();
+  // - Both operands are Expression.
   bind.operator()<Expression, Expression>();
 }
 
