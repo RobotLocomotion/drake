@@ -1891,8 +1891,38 @@ TEST_F(UrdfParserTest, PlanarJointAxisRespected) {
   auto context = plant_.CreateDefaultContext();
   const math::RigidTransform<double>& X_WB =
       plant_.EvalBodyPoseInWorld(*context, plant_.GetBodyByName("link2"));
-  // The provided axis dictates that the second link moves in the xz-plane.
-  const Vector3d expected_translation(3.4, 0, 1.2);
+  const Vector3d p_WB_F(1.2, 3.4, 0.0);
+  // The rotation that aligns +Mz with +By is the right-handed rotation around
+  // Bx by 270 degrees.
+  const math::RotationMatrixd R_BM =
+      math::RotationMatrixd::MakeXRotation(3 * M_PI_2);
+  // R_WB and R_MF are both identities.
+  const math::RotationMatrixd R_WF = R_BM;
+  const Vector3d p_WB = R_WF * p_WB_F;
+  EXPECT_TRUE(CompareMatrices(X_WB.translation(), p_WB,
+              4.0 * std::numeric_limits<double>::epsilon()));
+}
+
+TEST_F(UrdfParserTest, PlanarJointCanonicalFrame) {
+  constexpr const char* model = R"""(
+    <robot name='a'>
+      <link name="link1"/>
+      <link name="link2"/>
+      <drake:joint name="planar_joint" type="planar">
+        <parent link="link1"/>
+        <child link="link2"/>
+        <axis xyz = "0 0 1" />
+      </drake:joint>
+    </robot>)""";
+  EXPECT_NE(AddModelFromUrdfString(model, ""), std::nullopt);
+  plant_.Finalize();
+  plant_.GetMutableJointByName<PlanarJoint>("planar_joint")
+      .set_default_translation(Vector2<double>(1.2, 3.4));
+  auto context = plant_.CreateDefaultContext();
+  const math::RigidTransform<double>& X_WB =
+      plant_.EvalBodyPoseInWorld(*context, plant_.GetBodyByName("link2"));
+  // When the joint axis is (0, 0, 1), we shouldn't flip the x and y axes.
+  const Vector3d expected_translation(1.2, 3.4, 0);
   EXPECT_EQ(X_WB.translation(), expected_translation);
 }
 
