@@ -357,9 +357,7 @@ CartesianProduct::DoToShapeWithPose() const {
 }
 
 double CartesianProduct::DoCalcVolume() const {
-  if (sets_.size() == 0) {
-    return 0;
-  }
+  DRAKE_DEMAND(sets_.size() > 0);
   double volume = 1.0;
   for (const auto& set : sets_) {
     volume *= set->CalcVolume();

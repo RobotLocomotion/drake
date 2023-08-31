@@ -202,16 +202,16 @@ double ConvexSet::CalcVolume() const {
   }
   if (ambient_dimension() == 0) {
     throw std::runtime_error(
-        fmt::format("Attempting to calculate the volume of a zero-dimensional "
-                    "set {}. This is not well-defined.",
+        fmt::format("The instance defined from {} is a zero-dimensional set. "
+                    "The volume is not well defined.",
                     NiceTypeName::Get(*this)));
   }
   return DoCalcVolume();
 }
 
-VolumeViaSamplingResult ConvexSet::CalcVolumeViaSampling(
+SampledVolume ConvexSet::CalcVolumeViaSampling(
     RandomGenerator* generator, const double desired_rel_accuracy,
-    const size_t max_num_samples) const {
+    const int max_num_samples) const {
   if (ambient_dimension() == 0) {
     throw std::runtime_error(
         fmt::format("Attempting to calculate the volume of a zero-dimensional "
@@ -220,8 +220,9 @@ VolumeViaSamplingResult ConvexSet::CalcVolumeViaSampling(
   }
   if (!IsBounded()) {
     // return infinity, nan, 0 samples.
-    return VolumeViaSamplingResult(std::numeric_limits<double>::infinity(),
-                                   std::numeric_limits<double>::quiet_NaN(), 0);
+    return {.volume = std::numeric_limits<double>::infinity(),
+            .rel_accuracy = std::numeric_limits<double>::quiet_NaN(),
+            .num_samples = 0};
   }
   DRAKE_THROW_UNLESS(desired_rel_accuracy <= 1.0);
   DRAKE_THROW_UNLESS(desired_rel_accuracy >= 0);
@@ -231,8 +232,8 @@ VolumeViaSamplingResult ConvexSet::CalcVolumeViaSampling(
   // a problem with the solver.
   DRAKE_DEMAND(aabb_opt.has_value());
   const Hyperrectangle& aabb = aabb_opt.value();
-  size_t num_samples = 0;
-  size_t num_hits = 0;
+  int num_samples = 0;
+  int num_hits = 0;
   double relative_accuracy_ub_squared = 1.0;
   const double desired_rel_accuracy_squared = std::pow(desired_rel_accuracy, 2);
   while (relative_accuracy_ub_squared > desired_rel_accuracy_squared &&
@@ -260,7 +261,7 @@ VolumeViaSamplingResult ConvexSet::CalcVolumeViaSampling(
   }
   if (relative_accuracy_ub_squared > desired_rel_accuracy_squared) {
     drake::log()->warn(
-        "Volume calculation did not converge to desired relaive accuracy {}."
+        "Volume calculation did not converge to desired relative accuracy {}."
         "The tightest upper bound on relative accuracy achieved: {}",
         desired_rel_accuracy, std::sqrt(relative_accuracy_ub_squared));
   }
@@ -268,8 +269,9 @@ VolumeViaSamplingResult ConvexSet::CalcVolumeViaSampling(
                                 static_cast<double>(num_hits) /
                                 static_cast<double>(num_samples);
   const auto relative_accuracy_ub = std::sqrt(relative_accuracy_ub_squared);
-  return VolumeViaSamplingResult(estimated_volume, relative_accuracy_ub,
-                                 num_samples);
+  return {.volume = estimated_volume,
+          .rel_accuracy = relative_accuracy_ub,
+          .num_samples = num_samples};
 }
 
 double ConvexSet::DoCalcVolume() const {

@@ -1,6 +1,7 @@
 #include "drake/geometry/optimization/hyperrectangle.h"
 
 #include <algorithm>
+#include <array>
 #include <bitset>
 #include <limits>
 #include <memory>
@@ -45,7 +46,7 @@ std::optional<Hyperrectangle> Hyperrectangle::MaybeCalcAxisAlignedBoundingBox(
   int n = set.ambient_dimension();
   auto point = prog.NewContinuousVariables(n);
   set.AddPointInSetConstraints(&prog, point);
-  std::vector<int> directions{-1, 1};
+  std::array<int, 2> directions{-1, 1};
   Eigen::VectorXd cost_vector = Eigen::VectorXd::Zero(n);
   Eigen::VectorXd lb = Eigen::VectorXd::Zero(n);
   Eigen::VectorXd ub = Eigen::VectorXd::Zero(n);
@@ -64,7 +65,9 @@ std::optional<Hyperrectangle> Hyperrectangle::MaybeCalcAxisAlignedBoundingBox(
       } else {
         drake::log()->warn(
             "Hyperrectangle::MaybeCalcAxisAlignedBoundingBox: Failed to solve "
-            "the optimization problem. Maybe the set is unbounded?");
+            "the bounding box optimization problem. Maybe the set is unbounded "
+            "in {} direction at dimension {}.",
+            direction == 1 ? "negative" : "positive", i);
         return std::nullopt;
       }
       // reset the cost vector
@@ -149,12 +152,10 @@ Hyperrectangle::DoAddPointInNonnegativeScalingConstraints(
   const int n_cols = A.cols() + c.rows();
   Eigen::MatrixXd A_con_lb = Eigen::MatrixXd::Zero(n_rows, n_cols);
   Eigen::MatrixXd A_con_ub = Eigen::MatrixXd::Zero(n_rows, n_cols);
-  A_con_lb.block(0, 0, n_rows, A.cols()) = A;
-  A_con_ub.block(0, 0, n_rows, A.cols()) = A;
-  for (int i = 0; i < c.rows(); ++i) {
-    A_con_lb.col(A.cols() + i) = -lb_ * c(i);
-    A_con_ub.col(A.cols() + i) = -ub_ * c(i);
-  }
+  A_con_lb.leftCols(A.cols()) = A;
+  A_con_ub.leftCols(A.cols()) = A;
+  A_con_lb.rightCols(c.rows()) = -lb_ * c.transpose();
+  A_con_ub.rightCols(c.rows()) = -ub_ * c.transpose();
   const auto infinity_vector =
       VectorXd::Constant(n_rows, std::numeric_limits<double>::infinity());
   constraints.push_back(prog->AddLinearConstraint(A_con_ub, -infinity_vector,

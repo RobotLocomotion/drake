@@ -113,8 +113,8 @@ GTEST_TEST(MakeConvexSetsTest, NoExtraCopying) {
 // Minimum implementation of a ConvexSet.
 class DummyVolumeSet : public ConvexSet {
  public:
-  explicit DummyVolumeSet(bool can_calc_volume)
-      : ConvexSet(1, can_calc_volume) {}
+  explicit DummyVolumeSet(int dim, bool can_calc_volume)
+      : ConvexSet(dim, can_calc_volume) {}
 
  protected:
   std::unique_ptr<ConvexSet> DoClone() const override { return nullptr; }
@@ -157,7 +157,8 @@ class DummyVolumeSet : public ConvexSet {
 // that it can compute an exact volume.
 class NoImplSet final : public DummyVolumeSet {
  public:
-  explicit NoImplSet(bool can_calc_volume) : DummyVolumeSet(can_calc_volume) {}
+  explicit NoImplSet(int dim, bool can_calc_volume)
+      : DummyVolumeSet(dim, can_calc_volume) {}
 };
 
 // A convex set that has implemented DoCalcVolume(), but can arbitrarily
@@ -168,8 +169,9 @@ class NoImplSet final : public DummyVolumeSet {
 // base on `has_exact_value()`.
 class HasImplSet final : public DummyVolumeSet {
  public:
-  explicit HasImplSet(bool can_calc_volume)
-      : DummyVolumeSet(can_calc_volume), can_calc_volume_(can_calc_volume) {}
+  explicit HasImplSet(int dim, bool can_calc_volume)
+      : DummyVolumeSet(dim, can_calc_volume),
+        can_calc_volume_(can_calc_volume) {}
 
  private:
   double DoCalcVolume() const final { return can_calc_volume_ ? 1.5 : -1; }
@@ -181,73 +183,47 @@ class HasImplSet final : public DummyVolumeSet {
 GTEST_TEST(ConvexSetTest, CalcVolume) {
   // CalcVolume() correctly avoids calling DoCalcVolume().
   DRAKE_EXPECT_THROWS_MESSAGE(
-      NoImplSet(false).CalcVolume(),
+      NoImplSet(1, false).CalcVolume(),
       ".*NoImplSet reports that it cannot report an exact volume.*");
 
   // CalcVolume() calls DoCalcVolume(), revealing the class has lied.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      NoImplSet(true).CalcVolume(),
+      NoImplSet(1, true).CalcVolume(),
       ".*NoImplSet has a defect -- has_exact_volume.. is reporting true.*");
 
   // CalcVolume() correctly avoids calling the implemented DoCalcVolume().
   DRAKE_EXPECT_THROWS_MESSAGE(
-      HasImplSet(false).CalcVolume(),
+      HasImplSet(1, false).CalcVolume(),
       ".*HasImplSet reports that it cannot report an exact volume.*");
 
   // CalcVolume() called DoCalcVolume() correctly, and it returned a positive
   // value.
-  EXPECT_GT(HasImplSet(true).CalcVolume(), 0);
-}
+  EXPECT_GT(HasImplSet(1, true).CalcVolume(), 0);
 
-// We can compute the volume of a HPolyhedron via sampling.
-GTEST_TEST(ConvexSetTest, HPolyheronCalcVolumeViaSampling) {
-  Matrix<double, 4, 2> A;
-  Matrix<double, 4, 1> b;
-  // clang-format off
-  A <<  1,  0,  // x ≤ 1
-        1,  1,  // x + y ≤ 1
-       -1,  0,  // x ≥ -2
-       -1, -1;  // x+y ≥ -1
-  b << 1, 1, 2, 1;
-  // clang-format on
-  HPolyhedron H(A, b);
-
-  // Compute the estimated volume of the polytope.
-  RandomGenerator generator(1234);
-  const double desired_rel_accuracy = 1e-2;
-  // Some Monte-Carlo math here. Refer to the comments in CalcVolumeViaSampling
-  // The number of used hits should be about 1/4*100^2 = 2500.
-  // Since the volume of aabb is 15, then we need > 6250 samples for such an
-  // accuracy.
-  const size_t max_num_samples = 1e4;
-  const VolumeViaSamplingResult result = H.CalcVolumeViaSampling(
-      &generator, desired_rel_accuracy, max_num_samples);
-  EXPECT_LE(result.rel_accuracy, desired_rel_accuracy);
-  // H is a simple parallelogram with volume 6.0.
-  EXPECT_NEAR(result.volume, 6.0, 6.0 * desired_rel_accuracy);
-  // We have not used all the samples
-  EXPECT_LT(result.num_samples, max_num_samples);
-  // Case when inputs are bad.
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      H.CalcVolumeViaSampling(&generator, -1, max_num_samples),
-      ".*desired_rel_accuracy.*");
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      H.CalcVolumeViaSampling(&generator, desired_rel_accuracy, 0),
-      ".*max_num_samples.*");
+  // In the case of zero dimension, the exception happens after checking
+  // has_exact_volume.
+  DRAKE_EXPECT_THROWS_MESSAGE(NoImplSet(0, false).CalcVolume(),
+                              ".*an exact volume.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(NoImplSet(0, true).CalcVolume(),
+                              ".*NoImplSet is a zero-dimensional set.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(HasImplSet(0, false).CalcVolume(),
+                              ".*an exact volume.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(HasImplSet(0, true).CalcVolume(),
+                              ".*HasImplSet is a zero-dimensional set.*");
 }
 
 // Compute the value of pi via sampling the unit circle.
-GTEST_TEST(ConvexSetTest, CalcPiViaCalcVolumeViaSampling) {
+GTEST_TEST(ConvexSetTest, CalcVolumeViaSampling) {
   Hyperellipsoid unit_circle = Hyperellipsoid::MakeUnitBall(2);
   RandomGenerator generator(1234);
   const double desired_rel_accuracy = 1e-3;
   // We need 250K hits, which means about 318K samples. Most likely will not
-  // achive this with 100K samples.
-  const size_t max_num_samples_low = 1e5;
-  const size_t max_num_samples_high = 1e6;
-  const VolumeViaSamplingResult bad_result = unit_circle.CalcVolumeViaSampling(
+  // achieve this with 100K samples.
+  const int max_num_samples_low = 1e5;
+  const int max_num_samples_high = 1e6;
+  const SampledVolume bad_result = unit_circle.CalcVolumeViaSampling(
       &generator, desired_rel_accuracy, max_num_samples_low);
-  const VolumeViaSamplingResult good_result = unit_circle.CalcVolumeViaSampling(
+  const SampledVolume good_result = unit_circle.CalcVolumeViaSampling(
       &generator, desired_rel_accuracy, max_num_samples_high);
   EXPECT_GT(bad_result.rel_accuracy, desired_rel_accuracy);
   EXPECT_LE(good_result.rel_accuracy, desired_rel_accuracy);

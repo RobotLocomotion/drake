@@ -57,27 +57,17 @@ The geometry::optimization tools support:
 @ingroup geometry
 @ingroup solvers */
 
-/** Struct for holding the result of a volume calculation from
- * CalcVolumeViaSampling */
-struct VolumeViaSamplingResult {
+/** The result of a volume calculation from CalcVolumeViaSampling(). */
+struct SampledVolume {
   /** The estimated volume of the set. */
-  double volume;
+  double volume{};
 
-  /** An upper bound for the relative accuracy of the volume estimate. */
-  double rel_accuracy;
+  /** An upper bound for the relative accuracy of the volume estimate. When not
+  evaluated, this value is NaN. */
+  double rel_accuracy{};
 
   /** The number of samples used to compute the volume estimate. */
-  size_t num_samples;
-
-  // This constructor is deleted to prevent the user from
-  // constructing a VolumeViaSamplingResult with uninitialized values.
-  VolumeViaSamplingResult() = delete;
-
-  VolumeViaSamplingResult(const double volume_in, const double rel_accuracy_in,
-                          const size_t num_samples_in)
-      : volume(volume_in),
-        rel_accuracy(rel_accuracy_in),
-        num_samples(num_samples_in) {}
+  int num_samples{};
 };
 
 /** Abstract base class for defining a convex set.
@@ -258,7 +248,7 @@ class ConvexSet : public ShapeReifier {
   @note Not every convex set can report an exact volume. In that case, use
   CalcVolumeViaSampling() instead.
   @throws std::exception if `has_exact_volume()` returns `false`.
-  @throws if ambient_dimension() == 0 */
+  @throws if ambient_dimension() == 0. */
   double CalcVolume() const;
 
   /** Calculates an estimate of the volume of the convex set using sampling and
@@ -279,14 +269,15 @@ class ConvexSet : public ShapeReifier {
   @pre `desired_rel_accuracy` is in the range [0,1].
   @return a pair the estimated volume of the set and an upper bound for the
   relative accuracy
-  @throws if ambient_dimension() == 0
+  @throws if ambient_dimension() == 0.
   @throws if the minimum axis-aligned bounding box of the set cannot be
   computed. */
-  VolumeViaSamplingResult CalcVolumeViaSampling(
-      RandomGenerator* generator, const double desired_rel_accuracy = 1e-2,
-      const size_t max_num_samples = 1e4) const;
+  SampledVolume CalcVolumeViaSampling(RandomGenerator* generator,
+                                      const double desired_rel_accuracy = 1e-2,
+                                      const int max_num_samples = 1e4) const;
 
-  /** Returns true if the exact volume can be computed for this type convex set.
+  /** Returns true if the exact volume can be computed for this convex set
+  instance.
   @note This value reasons about to the generic case of the convex set class
   rather than the specific instance of the convex set. For example, the exact
   volume of a box is trivival to compute, but if the box is created as a
@@ -389,7 +380,7 @@ class ConvexSet : public ShapeReifier {
   DoToShapeWithPose() const = 0;
 
   /** Non-virtual interface implementation for CalcVolume(). This will *only* be
-  called if has_exact_volume() returns true; */
+  called if has_exact_volume() returns true and ambient_dimension() > 0 */
   virtual double DoCalcVolume() const;
 
   /** Instances of subclasses such as CartesianProduct and MinkowskiSum can
