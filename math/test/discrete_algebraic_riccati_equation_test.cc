@@ -76,40 +76,54 @@ GTEST_TEST(DARE, NonInvertibleA) {
   // Test 1: non-invertible A
   // Example 2 of "On the Numerical Solution of the Discrete-Time Algebraic
   // Riccati Equation"
-  Eigen::MatrixXd A{{0.5, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 1}, {0, 0, 0, 0}};
-  Eigen::MatrixXd B{{0}, {0}, {0}, {1}};
-  Eigen::MatrixXd Q{{1, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}};
-  Eigen::MatrixXd R{{0.25}};
+  Eigen::MatrixXd A{4, 4};
+  A << 0.5, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0;
+  Eigen::MatrixXd B{4, 1};
+  B << 0, 0, 0, 1;
+  Eigen::MatrixXd Q{4, 4};
+  Q << 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+  Eigen::MatrixXd R{1, 1};
+  R << 0.25;
   SolveDAREandVerify(A, B, Q, R);
 
-  Eigen::MatrixXd Aref{
-      {0.25, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 1}, {0, 0, 0, 0}};
+  Eigen::MatrixXd Aref{4, 4};
+  Aref << 0.25, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0;
   SolveDAREandVerify(A, B, (A - Aref).transpose() * Q * (A - Aref),
                      B.transpose() * Q * B + R, (A - Aref).transpose() * Q * B);
 }
 
 GTEST_TEST(DARE, InvertibleA) {
   // Test 2: invertible A
-  Eigen::MatrixXd A{{1, 1}, {0, 1}};
-  Eigen::MatrixXd B{{0}, {1}};
-  Eigen::MatrixXd Q{{1, 0}, {0, 0}};
-  Eigen::MatrixXd R{{0.3}};
+  Eigen::MatrixXd A{2, 2};
+  A << 1, 1, 0, 1;
+  Eigen::MatrixXd B{2, 1};
+  B << 0, 1;
+  Eigen::MatrixXd Q{2, 2};
+  Q << 1, 0, 0, 0;
+  Eigen::MatrixXd R{1, 1};
+  R << 0.3;
   SolveDAREandVerify(A, B, Q, R);
 
-  Eigen::MatrixXd Aref{{0.5, 1}, {0, 1}};
+  Eigen::MatrixXd Aref{2, 2};
+  Aref << 0.5, 1, 0, 1;
   SolveDAREandVerify(A, B, (A - Aref).transpose() * Q * (A - Aref),
                      B.transpose() * Q * B + R, (A - Aref).transpose() * Q * B);
 }
 
 GTEST_TEST(DARE, FirstGeneralizedEigenvalueOfSTIsStable) {
   // Test 3: the first generalized eigenvalue of (S, T) is stable
-  Eigen::MatrixXd A{{0, 1}, {0, 0}};
-  Eigen::MatrixXd B{{0}, {1}};
-  Eigen::MatrixXd Q{{1, 0}, {0, 1}};
-  Eigen::MatrixXd R{{1}};
+  Eigen::MatrixXd A{2, 2};
+  A << 0, 1, 0, 0;
+  Eigen::MatrixXd B{2, 1};
+  B << 0, 1;
+  Eigen::MatrixXd Q{2, 2};
+  Q << 1, 0, 0, 1;
+  Eigen::MatrixXd R{1, 1};
+  R << 1;
   SolveDAREandVerify(A, B, Q, R);
 
-  Eigen::MatrixXd Aref{{0, 0.5}, {0, 0}};
+  Eigen::MatrixXd Aref{2, 2};
+  Aref << 0, 0.5, 0, 0;
   SolveDAREandVerify(A, B, (A - Aref).transpose() * Q * (A - Aref),
                      B.transpose() * Q * B + R, (A - Aref).transpose() * Q * B);
 }
@@ -129,12 +143,14 @@ GTEST_TEST(DARE, IdentitySystem) {
 GTEST_TEST(DARE, MoreInputsThanStates) {
   // Test 5: More inputs than states
   const Eigen::Matrix2d A{Eigen::Matrix2d::Identity()};
-  const Eigen::MatrixXd B{{1, 0, 0}, {0, 0.5, 0.3}};
+  Eigen::MatrixXd B{2, 3};
+  B << 1, 0, 0, 0, 0.5, 0.3;
   const Eigen::Matrix2d Q{Eigen::Matrix2d::Identity()};
   const Eigen::Matrix3d R{Eigen::Matrix3d::Identity()};
   SolveDAREandVerify(A, B, Q, R);
 
-  const Eigen::MatrixXd N{{1, 0, 0}, {0, 1, 0}};
+  Eigen::MatrixXd N{2, 3};
+  N << 1, 0, 0, 0, 1, 0;
   SolveDAREandVerify(A, B, Q, R, N);
 }
 
