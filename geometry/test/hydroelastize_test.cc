@@ -15,7 +15,8 @@ namespace {
 GTEST_TEST(HydroelastizeTest, TrivialGeometryState) {
   // Feeding in an a empty scene graph does not crash.
   GeometryState<double> geometry_state;
-  EXPECT_NO_THROW(internal::Hydroelastize(&geometry_state));
+  SceneGraphConfig config;
+  EXPECT_NO_THROW(internal::Hydroelastize(&geometry_state, config));
 }
 
 }  // namespace
