@@ -390,7 +390,7 @@ void SceneGraph<T>::SetDefaultParameters(const Context<T>& context,
   LeafSystem<T>::SetDefaultParameters(context, parameters);
   GeometryState<T> value = model_;
   if (config_.hydroelastize) {
-    internal::Hydroelastize(&value);
+    internal::Hydroelastize(&value, config_);
   }
   parameters->template get_mutable_abstract_parameter<GeometryState<T>>(
       geometry_state_index_) = value;

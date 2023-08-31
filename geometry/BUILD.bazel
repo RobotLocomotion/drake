@@ -259,6 +259,7 @@ drake_cc_library(
     hdrs = ["hydroelastize.h"],
     deps = [
         ":geometry_state",
+        ":scene_graph_config",
     ],
 )
 
