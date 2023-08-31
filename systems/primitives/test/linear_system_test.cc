@@ -857,7 +857,7 @@ class MimoSystem final : public LeafSystem<T> {
     Vector3<T> u1 = this->get_input_port(1).Eval(context);
     Vector2<T> x = get_state_vector(context);
 
-    output->SetFromVector(C0_ * x + D00_ * u0 + D01_ * u1);
+    output->SetFromVector(Vector1<T>(C0_ * x + D00_ * u0 + D01_ * u1));
   }
 
   void CalcOutput1(const Context<T>& context, BasicVector<T>* output) const {
