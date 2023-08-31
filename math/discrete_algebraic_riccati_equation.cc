@@ -99,6 +99,7 @@ Eigen::MatrixXd DiscreteAlgebraicRiccatiEquation(
   DRAKE_THROW_UNLESS(IsStabilizable(A, B));
 
   // Ensure (A, C) pair where Q = CᵀC is detectable
+  // NOLINTNEXTLINE(whitespace/braces)
   Eigen::MatrixXd C = Eigen::MatrixXd{Q_ldlt.matrixL()} *
                       Q_ldlt.vectorD().cwiseSqrt().asDiagonal();
   DRAKE_THROW_UNLESS(IsDetectable(A, C));
