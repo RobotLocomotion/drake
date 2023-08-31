@@ -581,9 +581,13 @@ void UrdfParser::ParseJoint(
     // e.g., revolute joint.  Here, we still set F to be coincident with M at
     // the zero state of the joint, but they are not necessarily coincident with
     // B. Instead, we let Mz_B to be specified by the parsed axis, and we let M
-    // and B have the same origin.
-    const Vector3d& Mz_B = axis;
-    const RotationMatrixd R_BM = RotationMatrixd::MakeFromOneVector(Mz_B, 2);
+    // and B have the same origin. Note that, in addition, this does not
+    // uniquely determine M or F, we still have the freedom to choose the x (or
+    // the y) axis to uniquely characterize M and F. Here we choose the M so
+    // that it's as close to B as possible.
+    const RotationMatrixd R_BM =
+        RotationMatrixd::MakeClosestRotationToIdentityFromUnitZ(
+            axis);  // axis is normalized above.
     const RigidTransformd X_BM = RigidTransformd(R_BM, Vector3d::Zero());
     const RigidTransformd X_PM = X_PB * X_BM;
     const RigidTransformd& X_PF = X_PM;
