@@ -15,8 +15,10 @@ template <typename T> class MultibodyTree;
 template <typename T> class MultibodyTreeSystem;
 }  // namespace internal
 
-/// A class to hold a set of forces applied to a MultibodyTree system.
-/// Forces can include generalized forces as well as body spatial forces.
+/// A class to hold a set of forces applied to a MultibodyTree system. Forces
+/// can include generalized forces as well as body spatial forces.
+/// MultibodyPlant::CalcGeneralizedForces() can be used to compute the _total_
+/// generalized force, combining generalized_forces() and body_forces().
 ///
 /// @tparam_default_scalar
 template <typename T>

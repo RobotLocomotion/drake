@@ -2542,6 +2542,8 @@ class TestPlant(unittest.TestCase):
 
         forces = MultibodyForces(plant=plant)
         plant.CalcForceElementsContribution(context=context, forces=forces)
+        tau = plant.CalcGeneralizedForces(context=context, forces=forces)
+        self.assertEqual(tau.shape, (2,))
         copy.copy(forces)
 
         # Test generalized forces.
@@ -2552,6 +2554,8 @@ class TestPlant(unittest.TestCase):
             np.testing.assert_equal(forces.generalized_forces(), 1)
             forces.SetZero()
             np.testing.assert_equal(forces.generalized_forces(), 0)
+            tau = plant.CalcGeneralizedForces(context=context, forces=forces)
+            np.testing.assert_equal(tau, [0, 0])
 
         # Test standalone construction.
         standalone_forces = MultibodyForces(nb=1, nv=2)
