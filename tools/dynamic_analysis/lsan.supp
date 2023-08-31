@@ -1,2 +1,0 @@
-# Suppress leaks from global variables in VTK's dynamic libraries.
-leak:libvtk*-9.1.so.1
