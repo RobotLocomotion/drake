@@ -11,16 +11,20 @@ namespace internal {
 
 namespace {
 
-void BackfillDefaults(ProximityProperties* properties) {
+void BackfillDefaults(ProximityProperties* properties,
+                      const SceneGraphConfig& config) {
   auto backfill = [&](const std::string& group_name, const std::string& name,
                       auto default_value) {
     properties->UpdateProperty(
         group_name, name,
         properties->GetPropertyOrDefault(group_name, name, default_value));
   };
-  backfill(kHydroGroup, kElastic, 1e8);
-  backfill(kHydroGroup, kRezHint, 0.01);
-  backfill(kHydroGroup, kSlabThickness, 1e3);
+  backfill(kHydroGroup, kElastic,
+           config.hydroelastize_default_hydroelastic_modulus);
+  backfill(kHydroGroup, kRezHint,
+           config.hydroelastize_default_resolution_hint);
+  backfill(kHydroGroup, kSlabThickness,
+           config.hydroelastize_default_slab_thickness);
 }
 
 class ShapeAdjuster final : public ShapeReifier {
@@ -50,7 +54,8 @@ class ShapeAdjuster final : public ShapeReifier {
 }  // namespace
 
 template <typename T>
-void Hydroelastize(GeometryState<T>* geometry_state) {
+void Hydroelastize(GeometryState<T>* geometry_state,
+                   const SceneGraphConfig& config) {
   DRAKE_DEMAND(geometry_state != nullptr);
   auto gids = geometry_state->GetGeometryIds(
       GeometrySet(geometry_state->GetAllGeometryIds()), Role::kProximity);
@@ -67,7 +72,7 @@ void Hydroelastize(GeometryState<T>* geometry_state) {
       // Start from the assumption that the shape can be declared soft.
       props.UpdateProperty(kHydroGroup, kComplianceType,
                            HydroelasticType::kSoft);
-      BackfillDefaults(&props);
+      BackfillDefaults(&props, config);
 
       // Shape adjuster will fix configurations that can't work.
       shape_adjuster.MakeShapeAdjustments(
