@@ -309,6 +309,7 @@ class SceneGraph final : public systems::LeafSystem<T> {
 
   ~SceneGraph() final;
 
+  // TODO(rpoyner-tri): add accessors for other config items.
   /** @name      Configuration
    To the extent possible, allow configuration changes to scene graph systems.
    */
