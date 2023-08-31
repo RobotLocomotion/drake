@@ -328,7 +328,7 @@ modulus value.
 
 Currently we can only visualize the contact surface using the legacy
 ``drake_visualizer`` application of days past; however, it will be replaced by
-[MeshCat](https://github.com/rdeits/meshcat) in the future.
+[MeshCat](https://github.com/meshcat-dev/meshcat) in the future.
 
 Start Drake Visualizer by:
 

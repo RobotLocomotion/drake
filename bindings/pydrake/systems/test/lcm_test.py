@@ -151,7 +151,8 @@ class TestSystemsLcm(unittest.TestCase):
     def test_subscriber(self):
         lcm = DrakeLcm()
         dut = mut.LcmSubscriberSystem.Make(
-            channel="TEST_CHANNEL", lcm_type=lcmt_quaternion, lcm=lcm)
+            channel="TEST_CHANNEL", lcm_type=lcmt_quaternion, lcm=lcm,
+            wait_for_message_on_initialization_timeout=0.0)
         model_message = self._model_message()
         lcm.Publish(channel="TEST_CHANNEL", buffer=model_message.encode())
         lcm.HandleSubscriptions(0)
@@ -172,7 +173,8 @@ class TestSystemsLcm(unittest.TestCase):
         lcm = DrakeLcm()
         dut = mut.LcmSubscriberSystem.Make(
             channel="TEST_CHANNEL", lcm_type=lcmt_quaternion, lcm=lcm,
-            use_cpp_serializer=True)
+            use_cpp_serializer=True,
+            wait_for_message_on_initialization_timeout=0.0)
         model_message = self._model_message()
         lcm.Publish(channel="TEST_CHANNEL", buffer=model_message.encode())
         lcm.HandleSubscriptions(0)

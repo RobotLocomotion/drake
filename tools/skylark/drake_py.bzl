@@ -190,10 +190,6 @@ def drake_py_unittest(
         fail("Changing srcs= is not allowed by drake_py_unittest." +
              " Use drake_py_test instead, if you need something weird.")
     srcs = ["test/%s.py" % name, helper]
-    allow_network = kwargs.pop("allow_network", None)
-    kwargs = incorporate_allow_network(kwargs, allow_network = allow_network)
-    num_threads = kwargs.pop("num_threads", 1)
-    kwargs = incorporate_num_threads(kwargs, num_threads = num_threads)
     drake_py_test(
         name = name,
         srcs = srcs,
@@ -250,6 +246,7 @@ def drake_py_test(
         fail("Only drake_py_unittest can use sharding")
     shard_count = kwargs.pop("_drake_py_unittest_shard_count", None)
 
+    kwargs = incorporate_allow_network(kwargs, allow_network = allow_network)
     kwargs = incorporate_num_threads(kwargs, num_threads = num_threads)
     kwargs = amend(kwargs, "tags", append = ["py"])
 

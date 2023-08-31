@@ -838,6 +838,8 @@ def install_test(
             "//tools/install:install_test_helper",
             "//tools/install:otool",
         ],
+        # Several install tests need some network access.
+        allow_network = ["meshcat", "package_map"],
         # The commands in our "list of commands" use unittest themselves, so we
         # do the same for our own test rig.  That means that both our rig and
         # the "list of commands" python programs must have a __main__ clause

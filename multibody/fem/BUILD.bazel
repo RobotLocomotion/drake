@@ -250,6 +250,9 @@ drake_cc_library(
         ":discrete_time_integrator",
         ":fem_model",
         "//common:essential",
+        "//multibody/contact_solvers:block_sparse_cholesky_solver",
+        "//multibody/contact_solvers:block_sparse_lower_triangular_or_symmetric_matrix",  # noqa
+        "//multibody/contact_solvers:schur_complement",
     ],
 )
 
@@ -600,6 +603,7 @@ drake_cc_library(
     srcs = ["test/dummy_element.cc"],
     hdrs = ["test/dummy_element.h"],
     deps = [
+        ":corotated_model",
         ":damping_model",
         ":fem_element",
         ":fem_state",

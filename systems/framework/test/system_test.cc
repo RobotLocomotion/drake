@@ -402,28 +402,72 @@ TEST_F(SystemTest, PortReferencesAreStable) {
   EXPECT_EQ(kAbstractValued, first_output.get_data_type());
 }
 
-// Tests the convenience methods for the case when we have exactly one input or
-// output port.
-TEST_F(SystemTest, ExactlyOnePortConvenience) {
+// Tests the convenience method for the case when we have exactly one port.
+TEST_F(SystemTest, ExactlyOneInputPortConvenience) {
+  // No ports: fail.
   DRAKE_EXPECT_THROWS_MESSAGE(system_.get_input_port(),
-                              ".*num_input_ports\\(\\) = 0");
+                              ".*does not have any inputs");
 
+  // One port: pass.
   system_.DeclareInputPort("one", kVectorValued, 2);
   EXPECT_EQ(&system_.get_input_port(), &system_.get_input_port(0));
 
+  // One deprecated port: pass.
+  const_cast<InputPort<double>&>(system_.get_input_port(0))
+      .set_deprecation("deprecated");
+  EXPECT_EQ(&system_.get_input_port(), &system_.get_input_port(0));
+
+  // Two ports (one non-deprecated): pass.
   system_.DeclareInputPort("two", kVectorValued, 2);
-  DRAKE_EXPECT_THROWS_MESSAGE(system_.get_input_port(),
-                              ".*num_input_ports\\(\\) = 2");
+  EXPECT_EQ(&system_.get_input_port(), &system_.get_input_port(1));
 
+  // Three ports (two non-deprecated): fail.
+  system_.DeclareInputPort("three", kVectorValued, 2);
+  DRAKE_EXPECT_THROWS_MESSAGE(system_.get_input_port(), ".*has 3 inputs.*");
+
+  // Three ports (one non-deprecated): pass.
+  const_cast<InputPort<double>&>(system_.get_input_port(1))
+      .set_deprecation("deprecated");
+  EXPECT_EQ(&system_.get_input_port(), &system_.get_input_port(2));
+
+  // Three deprecated ports: fail
+  const_cast<InputPort<double>&>(system_.get_input_port(2))
+      .set_deprecation("deprecated");
+  DRAKE_EXPECT_THROWS_MESSAGE(system_.get_input_port(), ".*has 3 inputs.*");
+}
+
+// Tests the convenience method for the case when we have exactly one port.
+TEST_F(SystemTest, ExactlyOneOutputPortConvenience) {
+  // No ports: fail.
   DRAKE_EXPECT_THROWS_MESSAGE(system_.get_output_port(),
-                              ".*num_output_ports\\(\\) = 0");
+                              ".*does not have any outputs");
 
+  // One port: pass.
   system_.AddAbstractOutputPort();
   EXPECT_EQ(&system_.get_output_port(), &system_.get_output_port(0));
 
+  // One deprecated port: pass.
+  const_cast<OutputPort<double>&>(system_.get_output_port(0))
+      .set_deprecation("deprecated");
+  EXPECT_EQ(&system_.get_output_port(), &system_.get_output_port(0));
+
+  // Two ports (one non-deprecated): pass.
   system_.AddAbstractOutputPort();
-  DRAKE_EXPECT_THROWS_MESSAGE(system_.get_output_port(),
-                              ".*num_output_ports\\(\\) = 2");
+  EXPECT_EQ(&system_.get_output_port(), &system_.get_output_port(1));
+
+  // Three ports (two non-deprecated): fail.
+  system_.AddAbstractOutputPort();
+  DRAKE_EXPECT_THROWS_MESSAGE(system_.get_output_port(), ".*has 3 outputs.*");
+
+  // Three ports (one non-deprecated): pass.
+  const_cast<OutputPort<double>&>(system_.get_output_port(1))
+      .set_deprecation("deprecated");
+  EXPECT_EQ(&system_.get_output_port(), &system_.get_output_port(2));
+
+  // Three deprecated ports: fail.
+  const_cast<OutputPort<double>&>(system_.get_output_port(2))
+      .set_deprecation("deprecated");
+  DRAKE_EXPECT_THROWS_MESSAGE(system_.get_output_port(), ".*has 3 outputs.*");
 }
 
 TEST_F(SystemTest, PortNameTest) {

@@ -30,7 +30,7 @@ LinearModelPredictiveController<T>::LinearModelPredictiveController(
       model_(std::move(model)),
       base_context_(std::move(base_context)),
       num_states_(model_->CreateDefaultContext()->get_discrete_state(0).size()),
-      num_inputs_(model_->get_input_port(0).size()),
+      num_inputs_(model_->get_input_port().size()),
       Q_(Q),
       R_(R),
       time_period_(time_period),
@@ -38,14 +38,15 @@ LinearModelPredictiveController<T>::LinearModelPredictiveController(
   DRAKE_DEMAND(time_period_ > 0.);
   DRAKE_DEMAND(time_horizon_ > 0.);
 
-  // Check that the model is SISO and has discrete states belonging to a single
-  // group.
+  // Check that the model is SISO
+  model_->get_input_port();
+  model_->get_output_port();
+
+  // Check that the model has discrete states belonging to a single group.
   const auto model_context = model_->CreateDefaultContext();
   DRAKE_DEMAND(model_context->num_discrete_state_groups() == 1);
   DRAKE_DEMAND(model_context->num_continuous_states() == 0);
   DRAKE_DEMAND(model_context->num_abstract_states() == 0);
-  DRAKE_DEMAND(model_->num_input_ports() == 1);
-  DRAKE_DEMAND(model_->num_output_ports() == 1);
 
   // Check that the provided  x0, u0, Q, R are consistent with the model.
   DRAKE_DEMAND(num_states_ > 0 && num_inputs_ > 0);
@@ -77,7 +78,7 @@ void LinearModelPredictiveController<T>::CalcControl(
   const Eigen::VectorXd current_input =
       SetupAndSolveQp(*base_context_, current_state);
 
-  const VectorX<T> input_ref = model_->get_input_port(0).Eval(*base_context_);
+  const VectorX<T> input_ref = model_->get_input_port().Eval(*base_context_);
 
   control->SetFromVector(current_input + input_ref);
 

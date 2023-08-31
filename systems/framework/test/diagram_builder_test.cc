@@ -758,6 +758,11 @@ TEST_F(DiagramBuilderSolePortsTest, TooFewDestInputs) {
 TEST_F(DiagramBuilderSolePortsTest, TooManyDestInputs) {
   using std::exception;
   EXPECT_THROW(builder_.Connect(*out1_, *in2out1_), std::exception);
+
+  // However, if all but one input port were deprecated, then it succeeds.
+  const_cast<InputPort<double>&>(in2out1_->get_input_port(1))
+      .set_deprecation("deprecated");
+  EXPECT_NO_THROW(builder_.Connect(*out1_, *in2out1_));
 }
 
 // A diagram of Sink->Gain is has too few src inputs.
@@ -770,6 +775,11 @@ TEST_F(DiagramBuilderSolePortsTest, TooFewSrcInputs) {
 TEST_F(DiagramBuilderSolePortsTest, TooManySrcInputs) {
   using std::exception;
   EXPECT_THROW(builder_.Connect(*in1out2_, *in1out1_), std::exception);
+
+  // However, if all but one output port were deprecated, then it succeeds.
+  const_cast<OutputPort<double>&>(in1out2_->get_output_port(1))
+      .set_deprecation("deprecated");
+  EXPECT_NO_THROW(builder_.Connect(*in1out2_, *in1out1_));
 }
 
 // Test for GetSystems and GetMutableSystems.

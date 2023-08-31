@@ -231,6 +231,7 @@ TEST_F(VolumetricElementTest, Constructor) {
   ElementType move_constructed_element(std::move(elements_[0]));
   EXPECT_EQ(move_constructed_element.node_indices(), kNodeIndices);
   EXPECT_EQ(density(move_constructed_element), kDensity);
+  EXPECT_FALSE(element().is_linear);
 }
 
 /* Any undeformed state gives zero energy and zero force. */

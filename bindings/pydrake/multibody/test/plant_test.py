@@ -69,6 +69,7 @@ from pydrake.multibody.math import (
 from pydrake.multibody.plant import (
     AddMultibodyPlant,
     AddMultibodyPlantSceneGraph,
+    ApplyMultibodyPlantConfig,
     CalcContactFrictionFromSurfaceProperties,
     ConnectContactResultsToDrakeVisualizer,
     ContactModel,
@@ -264,9 +265,16 @@ class TestPlant(unittest.TestCase):
         copy.copy(config)
 
         builder = DiagramBuilder_[float]()
-        plant, scene_graph = AddMultibodyPlant(config, builder)
+        plant, scene_graph = AddMultibodyPlant(config=config, builder=builder)
         self.assertIsNotNone(plant)
         self.assertIsNotNone(scene_graph)
+
+        self.assertNotEqual(plant.get_contact_model(),
+                            ContactModel.kHydroelasticsOnly)
+        config.contact_model = "hydroelastic"
+        ApplyMultibodyPlantConfig(config=config, plant=plant)
+        self.assertEqual(plant.get_contact_model(),
+                         ContactModel.kHydroelasticsOnly)
 
     @numpy_compare.check_all_types
     def test_get_bodies_welded_to_keep_alive(self, T):
@@ -1317,9 +1325,11 @@ class TestPlant(unittest.TestCase):
         numpy_compare.assert_float_allclose(
             plant.GetPositionsAndVelocities(context), x0)
 
-        # Test SetDefaultPositions
+        # Test Get/SetDefaultPositions
         plant.SetDefaultPositions(q=q0)
+        plant.GetDefaultPositions()
         plant.SetDefaultPositions(model_instance=instance, q_instance=q0)
+        plant.GetDefaultPositions(model_instance=instance)
 
         # Test existence of context resetting methods.
         plant.SetDefaultState(context, state=context.get_mutable_state())

@@ -1,0 +1,29 @@
+[vtk] Adjust VTK_VERSION macros for simplicity
+
+Consolidate the version specification to a 3-tuple of individual numbers;
+with Bazel, we can't rely on upstream's CMakeLists code to concatenate them.
+
+This change is Drake-specific, so we do not plan to upstream it.
+
+--- Common/Core/vtkVersionFull.h.in
++++ Common/Core/vtkVersionFull.h.in
+@@ -17,6 +17,6 @@
+ 
+ /* This is in its own header to reduce build dependencies */
+ 
+-#define VTK_VERSION_FULL "@VTK_VERSION_FULL@"
++#define VTK_VERSION_FULL VTK_VERSION "-drake"
+ 
+ #endif
+
+--- Common/Core/vtkVersionMacros.h.in
++++ Common/Core/vtkVersionMacros.h.in
+@@ -20,7 +20,7 @@
+ #define VTK_MAJOR_VERSION @VTK_MAJOR_VERSION@
+ #define VTK_MINOR_VERSION @VTK_MINOR_VERSION@
+ #define VTK_BUILD_VERSION @VTK_BUILD_VERSION@
+-#define VTK_VERSION "@VTK_VERSION@"
++#define VTK_VERSION "@VTK_MAJOR_VERSION@.@VTK_MINOR_VERSION@.@VTK_BUILD_VERSION@"
+ 
+ #define VTK_SOURCE_VERSION "vtk version " VTK_VERSION
+ 

@@ -71,6 +71,24 @@ filegroup(
     visibility = ["//:__subpackages__"],
 )
 
+# A manually-curated collection of some test model files in Drake, for use by
+# //tools:model_visualizer_private.
+filegroup(
+    name = "some_test_models",
+    testonly = True,
+    data = [
+        # It's okay to add more items to this list, as needed.
+        "//geometry/render:test_models",
+        "//manipulation/util:test_models",
+        "//manipulation/util:test_directives",
+        "//multibody/parsing:test_models",
+        "//geometry:test_obj_files",
+        "//geometry:test_stl_files",
+        "//geometry:test_vtk_files",
+    ],
+    visibility = ["//tools:__pkg__"],
+)
+
 # To create a manifest of all installed files for use by drake_bazel_installed,
 # we declare an install target that contains almost everything -- but it can't
 # contain the bazel logic that is generated based on the manifest, so we'll add
