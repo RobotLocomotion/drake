@@ -1,6 +1,7 @@
 #pragma once
 
 #include "drake/geometry/geometry_state.h"
+#include "drake/geometry/scene_graph_config.h"
 
 namespace drake {
 namespace geometry {
@@ -11,8 +12,8 @@ namespace internal {
     @pre scene_graph is not nullptr.
  */
 template <typename T>
-void Hydroelastize(GeometryState<T>* geometry_state);
-// TODO(rpoyner-tri): gain access to configuration values for hydro properties
+void Hydroelastize(GeometryState<T>* geometry_state,
+                   const SceneGraphConfig& config);
 // TODO(rpoyner-tri): ignore "tiny bubbles"
 
 }  // namespace internal
