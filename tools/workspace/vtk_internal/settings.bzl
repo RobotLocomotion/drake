@@ -29,17 +29,18 @@ MODULE_SETTINGS = {
         # Upstream, this module has opt-in flags for each small feature within
         # the module. The VTK CMake script chooses which features to enable. To
         # match that logic here, we'll opt-out the default srcs glob and opt-in
-        # to specific files that match how upstream VTK configures KWSys.
+        # to specific files that match how upstream VTK configures KWSys (with
+        # exceptions noted inline below).
         "srcs_glob_exclude": ["**"],
         "srcs_extra": [
             "Utilities/KWSys/vtksys/Base64.c",
-            "Utilities/KWSys/vtksys/CommandLineArguments.cxx",
+            # CommandLineArguments.cxx is unused in Drake, so is omitted here.
             "Utilities/KWSys/vtksys/Directory.cxx",
             "Utilities/KWSys/vtksys/DynamicLoader.cxx",
             "Utilities/KWSys/vtksys/EncodingC.c",
             "Utilities/KWSys/vtksys/EncodingCXX.cxx",
             "Utilities/KWSys/vtksys/FStream.cxx",
-            "Utilities/KWSys/vtksys/Glob.cxx",
+            # Glob.cxx is unused in Drake, so is omitted here.
             "Utilities/KWSys/vtksys/MD5.c",
             "Utilities/KWSys/vtksys/ProcessUNIX.c",
             "Utilities/KWSys/vtksys/RegularExpression.cxx",
@@ -243,6 +244,7 @@ MODULE_SETTINGS = {
         "srcs_glob_exclude": [
             # Skip code we don't need.
             "**/*Codec*",
+            "**/*Glob*",
             "**/*Particle*",
             "**/*Java*",
             "**/*UTF*",
