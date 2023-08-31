@@ -126,6 +126,37 @@ GTEST_TEST(VolumeMeshRefinerTest, TestRefineEdge) {
   EXPECT_EQ(refined_mesh.num_elements(), 6);
 }
 
+GTEST_TEST(VolumeMeshRefinerTest, InputGoodAlready) {
+  //      +Z
+  //       |
+  //       v3
+  //       |
+  //       |  v4 = (v0 + v1 + v2 + v3) / 4
+  //     v0+------v2---+Y
+  //      /
+  //     /
+  //   v1
+  //   /
+  // +X
+  //
+  const VolumeMesh<double> test_mesh(
+      std::vector<VolumeElement>{
+          {0, 1, 2, 4}, {0, 3, 1, 4}, {3, 2, 1, 4}, {3, 0, 2, 4}},
+      std::vector<Vector3d>{Vector3d::Zero(), Vector3d::UnitX(),
+                            Vector3d::UnitY(), Vector3d::UnitZ(),
+                            Vector3d{0.25, 0.25, 0.25}});
+  ASSERT_EQ(DetectTetrahedronWithAllBoundaryVertices(test_mesh).size(), 0);
+  ASSERT_EQ(DetectInteriorTriangleWithAllBoundaryVertices(test_mesh).size(), 0);
+  ASSERT_EQ(DetectInteriorEdgeWithAllBoundaryVertices(test_mesh).size(), 0);
+  ASSERT_EQ(test_mesh.num_vertices(), 5);
+  ASSERT_EQ(test_mesh.num_elements(), 4);
+
+  VolumeMeshRefiner refiner(test_mesh);
+  VolumeMesh<double> refined_mesh = refiner.Refine();
+
+  EXPECT_TRUE(refined_mesh.Equal(test_mesh));
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace geometry

@@ -24,6 +24,9 @@ class VolumeMeshRefiner {
   // @note Depending on how many problematic simplices the input mesh has,
   // the refined mesh can have as many as 4 times tetrahedra of the input
   // mesh.
+  //
+  // @note If the input mesh has no problematic simplices, the returned mesh
+  // will be the same as the input.
   VolumeMesh<double> Refine();
 
  private:
