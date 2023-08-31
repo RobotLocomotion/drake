@@ -1,64 +1,14 @@
 #include "drake/math/discrete_algebraic_riccati_equation.h"
 
 #include <Eigen/Cholesky>
-#include <Eigen/Eigenvalues>
 #include <Eigen/LU>
-#include <Eigen/QR>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/is_approx_equal_abstol.h"
+#include "drake/systems/primitives/linear_system_internal.h"
 
 namespace drake::math {
-
-namespace {
-
-/**
- * Returns true if (A, B) is a stabilizable pair.
- *
- * (A,B) is stabilizable if and only if the uncontrollable eigenvalues of A, if
- * any, have absolute values less than one, where an eigenvalue is
- * uncontrollable if rank([λI - A, B]) < n where n is the number of states.
- */
-bool IsStabilizable(const Eigen::Ref<const Eigen::MatrixXd>& A,
-                    const Eigen::Ref<const Eigen::MatrixXd>& B) {
-  int states = B.rows();
-  int inputs = B.cols();
-
-  Eigen::EigenSolver<Eigen::MatrixXd> es{A, false};
-  for (int i = 0; i < states; ++i) {
-    if (es.eigenvalues()[i].real() * es.eigenvalues()[i].real() +
-            es.eigenvalues()[i].imag() * es.eigenvalues()[i].imag() <
-        1) {
-      continue;
-    }
-
-    Eigen::MatrixXcd E{states, states + inputs};
-    E << es.eigenvalues()[i] * Eigen::MatrixXcd::Identity(states, states) - A,
-        B;
-
-    Eigen::ColPivHouseholderQR<Eigen::MatrixXcd> qr{E};
-    if (qr.rank() < states) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
-/**
- * Returns true if (A, C) is a detectable pair.
- *
- * (A, C) is detectable if and only if the unobservable eigenvalues of A, if
- * any, have absolute values less than one, where an eigenvalue is unobservable
- * if rank([λI - A; C]) < n where n is the number of states.
- */
-bool IsDetectable(const Eigen::Ref<const Eigen::MatrixXd>& A,
-                  const Eigen::Ref<const Eigen::MatrixXd>& C) {
-  return IsStabilizable(A.transpose(), C.transpose());
-}
-
-}  // namespace
 
 Eigen::MatrixXd DiscreteAlgebraicRiccatiEquation(
     const Eigen::Ref<const Eigen::MatrixXd>& A,
@@ -96,13 +46,15 @@ Eigen::MatrixXd DiscreteAlgebraicRiccatiEquation(
   DRAKE_THROW_UNLESS(R_llt.info() == Eigen::Success);
 
   // Ensure (A, B) pair is stabilizable
-  DRAKE_THROW_UNLESS(IsStabilizable(A, B));
+  DRAKE_THROW_UNLESS(
+      drake::systems::internal::IsStabilizable(A, B, false, std::nullopt));
 
   // Ensure (A, C) pair where Q = CᵀC is detectable
   // NOLINTNEXTLINE(whitespace/braces)
   Eigen::MatrixXd C = Eigen::MatrixXd{Q_ldlt.matrixL()} *
                       Q_ldlt.vectorD().cwiseSqrt().asDiagonal();
-  DRAKE_THROW_UNLESS(IsDetectable(A, C));
+  DRAKE_THROW_UNLESS(
+      drake::systems::internal::IsDetectable(A, C, false, std::nullopt));
 
   // Implements the SDA algorithm on page 5 of [1].
   //
