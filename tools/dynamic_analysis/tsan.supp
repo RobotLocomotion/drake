@@ -50,7 +50,7 @@ race:__cxa_finalize
 mutex:__cxa_finalize
 
 # Issue #16494.
-race:vtkNew<vtkRenderWindow>::~vtkNew
+race:drake_vendor::vtkNew<drake_vendor::vtkRenderWindow>::~vtkNew
 
 # In the lcm_memq handler, while correctly holding a mutex it obtains exclusive
 # access to the next message by popping it off of the queue, but then it

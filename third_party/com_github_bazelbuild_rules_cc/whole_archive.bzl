@@ -52,6 +52,12 @@ def _cc_whole_archive_library_impl(ctx):
         old_libraries = old_linker_input.libraries
         new_libraries = []
         for old_library in old_libraries:
+            if old_library.static_library != None:
+                old_static_library_path = old_library.static_library.path
+                if "/applebin_macos-darwin_" in old_static_library_path:
+                    # Avoid double-linking from objc_library() deps; see
+                    # https://github.com/bazelbuild/rules_apple/issues/1474.
+                    continue
             new_library = cc_common.create_library_to_link(
                 actions = ctx.actions,
                 feature_configuration = feature_configuration,
