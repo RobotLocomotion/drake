@@ -262,6 +262,38 @@ class RotationMatrix {
   static RotationMatrix<T> MakeFromOneUnitVector(const Vector3<T>& u_A,
                                                  int axis_index);
 
+  /// Creates a 3D right-handed orthonormal basis B from a given unit vector
+  /// b_A, returned as a rotation matrix R_AB. It consists of orthogonal unit
+  /// vectors [Bx, By, Bz] where Bz is b_A normalized.
+  /// The angle-axis representation of the resulting rotation is the one with
+  /// the minimum rotation angle that rotates A to B. When b_A is not parallel
+  /// or antiparallel to [0, 0, 1], such rotation is unique.
+  /// @param[in] b_A vector expressed in frame A that when normalized represents
+  ///  Bz.
+  /// @throws std::exception if b_A cannot be made into a unit vector because
+  ///  b_A contains a NaN or infinity or |b_A| < 1.0E-10.
+  /// @retval R_AB the rotation matrix with properties as described above.
+  static RotationMatrix<T> MakeClosestRotationToIdentityFromZAxis(
+      const Vector3<T>& b_A) {
+    const Vector3<T> Bz = NormalizeOrThrow(b_A, __func__);
+    const Vector3<T> Az = Vector3<T>(0, 0, 1);
+    // The rotation axis of the Axis-Angle representation of the resulting
+    // rotation.
+    Vector3<T> axis = Az.cross(Bz);
+    Vector3<T> normalized_axis = axis.normalized();
+    // rotation_axis's norm should be 1 after normalization. If not, then it
+    // implies that Mz_B and Bz_B are parallel or anti-parallel, causing axis
+    // to be the zero vector. In that case, we arbitrarily choose Ax as the
+    // rotation axis.
+    if (normalized_axis.norm() < 0.1) {
+      normalized_axis = Vector3<T>(1, 0, 0);
+    }
+    using std::atan2;
+    const T axis_norm = axis.norm();
+    const T angle = atan2(axis_norm, Az.dot(Bz));
+    return RotationMatrix<T>(Eigen::AngleAxis<T>(angle, normalized_axis));
+  }
+
   /// Creates a %RotationMatrix templatized on a scalar type U from a
   /// %RotationMatrix templatized on scalar type T.  For example,
   /// ```

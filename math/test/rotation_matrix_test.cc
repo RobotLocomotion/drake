@@ -1310,6 +1310,67 @@ GTEST_TEST(RotationMatrixTest, MakeFromOneVectorExceptions) {
   VerifyMakeFromOneUnitVector(R_AB, huge_vector.normalized(), axis_index);
 }
 
+class MakeClosestRotationToIdentityFromZAxisTest
+    : public ::testing::TestWithParam<Vector3d> {};
+
+TEST_P(MakeClosestRotationToIdentityFromZAxisTest, TestDouble) {
+  const Vector3d b_A = GetParam();
+  const RotationMatrixd R_AB =
+      RotationMatrixd::MakeClosestRotationToIdentityFromZAxis(b_A);
+
+  ASSERT_TRUE(R_AB.IsValid());
+  EXPECT_TRUE(CompareMatrices(b_A.normalized(), R_AB.col(2), 4.0 * kEpsilon));
+
+  // The resulting rotation from MakeClosestRotationToIdentityFromZAxis is the
+  // one with the minimum rotation angle that satisfies the z-axis requirement,
+  // so it should be smaller than or equal to the rotation angle of an arbitrary
+  // rotation that also satisfies the z-axis requirement.
+  const RotationMatrixd other_R_AB = RotationMatrixd::MakeFromOneVector(b_A, 2);
+  EXPECT_LE(R_AB.ToAngleAxis().angle(),
+            other_R_AB.ToAngleAxis().angle() + 4.0 * kEpsilon);
+}
+
+// Make an std::vector of arbitrary Vector3d's.
+std::vector<Vector3d> MakeVectors() {
+  std::vector<Vector3d> result;
+  result.reserve(342);
+  for (int z = -3; z <= 3; ++z) {
+    for (int y = -3; y <= 3; ++y) {
+      for (int x = -3; x <= 3; ++x) {
+        if (x != 0 || y != 0 || z != 0) {
+          result.emplace_back(x, y, z);
+        }
+      }
+    }
+  }
+  return result;
+}
+
+INSTANTIATE_TEST_SUITE_P(MakeClosestRotationToIdentityFromZAxisTest,
+                         MakeClosestRotationToIdentityFromZAxisTest,
+                         ::testing::ValuesIn(MakeVectors()));
+
+GTEST_TEST(MakeClosestRotationToIdentityFromZAxisTest, Symbolic) {
+  const Vector3d b_A(1, 2, 3);
+  const RotationMatrixd R_AB =
+      RotationMatrixd::MakeClosestRotationToIdentityFromZAxis(b_A);
+  const RotationMatrix<symbolic::Expression> R_AB_sym = RotationMatrix<
+      symbolic::Expression>::MakeClosestRotationToIdentityFromZAxis(b_A);
+  EXPECT_TRUE(
+      CompareMatrices(R_AB.matrix(), ExtractDoubleOrThrow(R_AB_sym.matrix())));
+}
+
+GTEST_TEST(MakeClosestRotationToIdentityFromZAxisTest, ThrowCondition) {
+  // Verify that a invalid input throws.
+  constexpr double kTolerance = 2 * std::numeric_limits<double>::epsilon();
+  const Vector3<double> too_small_vector(1.0E-10 - kTolerance, 0, 0);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      RotationMatrix<double>::MakeClosestRotationToIdentityFromZAxis(
+          too_small_vector),
+      "RotationMatrix::MakeClosestRotationToIdentityFromZAxis.*cannot "
+      "normalize[^]+");
+}
+
 }  // namespace
 }  // namespace math
 }  // namespace drake
