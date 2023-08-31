@@ -2543,6 +2543,7 @@ class TestPlant(unittest.TestCase):
         forces = MultibodyForces(plant=plant)
         plant.CalcForceElementsContribution(context=context, forces=forces)
         tau = plant.CalcGeneralizedForces(context=context, forces=forces)
+        self.assertEqual(tau.shape, (2,))
         copy.copy(forces)
 
         # Test generalized forces.
