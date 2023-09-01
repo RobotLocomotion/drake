@@ -27,15 +27,14 @@ class MessageMailbox {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MessageMailbox)
 
+  MessageMailbox() = default;
+
   lcmt_drake_signal GetMessage() const {
     lcmt_drake_signal result{};
     std::lock_guard<std::mutex> lock(mutex_);
     result = message_;
     return result;
   }
-
- protected:
-  MessageMailbox() = default;
 
   void SetMessage(const lcmt_drake_signal& new_value) {
     std::lock_guard<std::mutex> lock(mutex_);
@@ -45,46 +44,6 @@ class MessageMailbox {
  private:
   mutable std::mutex mutex_;
   lcmt_drake_signal message_{};
-};
-
-// Subscribes to LCM without any DrakeLcmInterface sugar or mocks.
-class NativeMailbox final : public MessageMailbox {
- public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(NativeMailbox)
-
-  // A constructor that adds the LCM message subscription.
-  NativeMailbox(const std::string& channel_name, ::lcm::LCM* lcm) {
-    lcm->subscribe(channel_name, &NativeMailbox::Handle, this);
-  }
-
- private:
-  void Handle(const ::lcm::ReceiveBuffer*, const std::string&,
-              const lcmt_drake_signal* message) {
-    DRAKE_DEMAND(message != nullptr);
-    SetMessage(*message);
-  }
-};
-
-// Subscribes to LCM using DrakeLcm::Subscribe.
-class DutMailbox final : public MessageMailbox {
- public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DutMailbox)
-
-  DutMailbox(const std::string& channel, DrakeLcm* dut) {
-    auto subscription =
-        dut->Subscribe(channel, [this](const void* data, int size) {
-          this->Handle(data, size);
-        });
-    // By default, deleting the subscription should not unsubscribe.
-    subscription.reset();
-  }
-
- private:
-  void Handle(const void* data, int size) {
-    lcmt_drake_signal decoded{};
-    decoded.decode(data, 0, size);
-    SetMessage(decoded);
-  }
 };
 
 // Test fixture.
@@ -135,25 +94,17 @@ class DrakeLcmThreadTest : public ::testing::Test {
   lcmt_drake_signal message_{};
 };
 
-// Tests DrakeLcm's ability to publish an LCM message.
-// We subscribe using the native LCM APIs.
-TEST_F(DrakeLcmThreadTest, PublishTest) {
-  ::lcm::LCM* const native_lcm = dut_.get_lcm_instance();
-  const std::string channel_name = "DrakeLcmThreadTest.PublishTest";
-  NativeMailbox mailbox(channel_name, native_lcm);
+// Tests DrakeLcm's ability to pub/sub LCM messages using threads.
+TEST_F(DrakeLcmThreadTest, PubSubTest) {
+  const std::string channel_name = "DrakeLcmThreadTest.PubSubTest";
+  MessageMailbox mailbox;
+  dut_.Subscribe(channel_name, [&mailbox](const void* data, int size) {
+    lcmt_drake_signal decoded{};
+    decoded.decode(data, 0, size);
+    mailbox.SetMessage(decoded);
+  });
   LoopUntilDone(mailbox, [&]() {
     Publish(&dut_, channel_name, message_);
-  });
-}
-
-// Tests DrakeLcm's ability to subscribe to an LCM message.
-// We publish using the native LCM APIs.
-TEST_F(DrakeLcmThreadTest, SubscribeTest) {
-  ::lcm::LCM* const native_lcm = dut_.get_lcm_instance();
-  const std::string channel_name = "DrakeLcmThreadTest.SubscribeTest";
-  DutMailbox mailbox(channel_name, &dut_);
-  LoopUntilDone(mailbox, [&]() {
-    native_lcm->publish(channel_name, &message_);
   });
 }
 

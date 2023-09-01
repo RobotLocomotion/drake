@@ -98,7 +98,7 @@ std::string DrakeLcm::get_lcm_url() const {
   return impl_->lcm_url_;
 }
 
-::lcm::LCM* DrakeLcm::get_lcm_instance() {
+::lcm::LCM* DrakeLcm::get_native() {
   return &impl_->lcm_;
 }
 
