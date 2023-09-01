@@ -913,7 +913,7 @@ Note: The above is for the C++ documentation. For Python, use
                       // return anything.
                       throw py::type_error(
                           "The MakeWitnessFunction() calc callback must return "
-                          "a floating pointp value, not NoneType.");
+                          "a floating point value, not NoneType.");
                     }
                     return *result;
                   });
