@@ -1117,6 +1117,8 @@ drake_cc_googletest(
     name = "minimum_value_constraint_test",
     deps = [
         ":minimum_value_constraint",
+        "//solvers:mathematical_program",
+        "//solvers:solve",
         "//solvers/test_utilities",
     ],
 )

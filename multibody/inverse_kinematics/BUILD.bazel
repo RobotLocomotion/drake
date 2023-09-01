@@ -298,6 +298,18 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "minimum_distance_constraint_nlp_test",
+    deps = [
+        ":inverse_kinematics_core",
+        ":inverse_kinematics_test_utilities",
+        ":kinematic_evaluators",
+        "//solvers:ipopt_solver",
+        "//solvers:snopt_solver",
+        "//solvers:solve",
+    ],
+)
+
+drake_cc_googletest(
     name = "distance_constraint_test",
     deps = [
         ":inverse_kinematics_test_utilities",
