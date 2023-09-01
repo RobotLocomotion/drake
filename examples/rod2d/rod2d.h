@@ -504,10 +504,9 @@ class Rod2D : public systems::LeafSystem<T> {
   void DoCalcTimeDerivatives(const systems::Context<T>& context,
                              systems::ContinuousState<T>* derivatives)
                                const override;
-  void DoCalcDiscreteVariableUpdates(
+  void CalcDiscreteUpdate(
       const systems::Context<T>& context,
-      const std::vector<const systems::DiscreteUpdateEvent<T>*>& events,
-      systems::DiscreteValues<T>* discrete_state) const override;
+      systems::DiscreteValues<T>* discrete_state) const;
   void SetDefaultState(const systems::Context<T>& context,
                        systems::State<T>* state) const override;
 

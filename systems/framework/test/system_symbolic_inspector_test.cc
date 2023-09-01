@@ -29,6 +29,8 @@ class SparseSystem : public LeafSystem<symbolic::Expression> {
 
     this->DeclareContinuousState(kSize);
     this->DeclareDiscreteState(kSize);
+    this->DeclarePeriodicDiscreteUpdateEvent(0.1, 0.0,
+                                             &SparseSystem::CalcDiscreteUpdate);
 
     this->DeclareEqualityConstraint(&SparseSystem::CalcConstraint, kSize,
                                     "equality constraint");
@@ -95,12 +97,9 @@ class SparseSystem : public LeafSystem<symbolic::Expression> {
     derivatives->SetFromVector(xdot);
   }
 
-  void DoCalcDiscreteVariableUpdates(
+  void CalcDiscreteUpdate(
       const systems::Context<symbolic::Expression>& context,
-      const std::vector<
-          const systems::DiscreteUpdateEvent<symbolic::Expression>*>&,
-      systems::DiscreteValues<symbolic::Expression>* discrete_state)
-      const override {
+      systems::DiscreteValues<symbolic::Expression>* discrete_state) const {
     const auto& u0 = this->get_input_port(0).Eval(context);
     const auto& u1 = this->get_input_port(1).Eval(context);
     const Vector2<symbolic::Expression> xd =

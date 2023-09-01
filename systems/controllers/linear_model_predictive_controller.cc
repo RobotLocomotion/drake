@@ -63,7 +63,11 @@ LinearModelPredictiveController<T>::LinearModelPredictiveController(
     throw std::runtime_error("R must be positive definite");
   }
 
-  this->DeclarePeriodicDiscreteUpdateNoHandler(time_period_);
+  this->DeclarePeriodicDiscreteUpdateEvent(
+      time_period_, 0.0,
+      &LinearModelPredictiveController<T>::CalcDiscreteUpdate);
+  this->DeclareForcedDiscreteUpdateEvent(
+      &LinearModelPredictiveController<T>::CalcDiscreteUpdate);
 
   if (base_context_ != nullptr) {
     linear_model_ = Linearize(*model_, *base_context_);
@@ -83,6 +87,12 @@ void LinearModelPredictiveController<T>::CalcControl(
   control->SetFromVector(current_input + input_ref);
 
   // TODO(jadecastro) Implement the time-varying case.
+}
+
+template <typename T>
+EventStatus LinearModelPredictiveController<T>::CalcDiscreteUpdate(
+    const Context<T>&, DiscreteValues<T>*) const {
+  return EventStatus::DidNothing();
 }
 
 template <typename T>
