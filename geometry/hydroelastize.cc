@@ -29,10 +29,15 @@ void BackfillDefaults(ProximityProperties* properties,
 
 class ShapeAdjuster final : public ShapeReifier {
  public:
-  void MakeShapeAdjustments(const Shape& shape, ProximityProperties* props) {
-    shape.Reify(this, props);
+  // @returns true if the shape is too small to participate in hydroelastic
+  // contact for this scene.
+  bool MakeShapeAdjustments(const Shape& shape, ProximityProperties* props) {
+    ReifyData data = {props, false};
+    shape.Reify(this, &data);
+    return data.is_too_small;
   }
 
+  // TODO(rpoyner-tri): implement too-small checks for all shapes.
   void ImplementGeometry(const Box&, void*) final {}
   void ImplementGeometry(const Capsule&, void*) final {}
   void ImplementGeometry(const Convex&, void*) final {}
@@ -40,15 +45,27 @@ class ShapeAdjuster final : public ShapeReifier {
   void ImplementGeometry(const Ellipsoid&, void*) final {}
   void ImplementGeometry(const HalfSpace&, void*) final {}
   void ImplementGeometry(const MeshcatCone&, void*) final {}
-  void ImplementGeometry(const Sphere&, void*) final {}
-  void ImplementGeometry(const Mesh& mesh, void* user_data) final {
-    auto* props = static_cast<ProximityProperties*>(user_data);
-    if (mesh.extension() != ".vtk") {
-      // We have no prayer of making a soft geometry -- avoid it.
-      props->UpdateProperty(kHydroGroup, kComplianceType,
-                            HydroelasticType::kRigid);
+  void ImplementGeometry(const Sphere& sphere, void* ptr) final {
+    ReifyData* data = static_cast<ReifyData*>(ptr);
+    double rez_hint = data->props->GetPropertyOrDefault(
+        kHydroGroup, kRezHint, 0.0);
+    if (sphere.radius() < rez_hint * 1e-2) {
+      data->is_too_small = true;
     }
   }
+  void ImplementGeometry(const Mesh& mesh, void* ptr) final {
+    ReifyData* data = static_cast<ReifyData*>(ptr);
+    if (mesh.extension() != ".vtk") {
+      // We have no prayer of making a soft geometry -- avoid it.
+      data->props->UpdateProperty(kHydroGroup, kComplianceType,
+                                  HydroelasticType::kRigid);
+    }
+  }
+
+  struct ReifyData {
+    ProximityProperties* props{};
+    bool is_too_small{false};
+  };
 };
 
 }  // namespace
@@ -75,7 +92,7 @@ void Hydroelastize(GeometryState<T>* geometry_state,
       BackfillDefaults(&props, config);
 
       // Shape adjuster will fix configurations that can't work.
-      shape_adjuster.MakeShapeAdjustments(
+      bool is_too_small = shape_adjuster.MakeShapeAdjustments(
           geometry_state->GetShape(gid), &props);
       // Jump through pointless hoops.
       SourceId gid_source_id;
@@ -84,8 +101,18 @@ void Hydroelastize(GeometryState<T>* geometry_state,
           gid_source_id = source_id;
         }
       }
-      geometry_state->AssignRole(gid_source_id, gid, props,
-                                 RoleAssign::kReplace);
+      if (is_too_small) {
+        // TODO(rpoyner-tri): figure out a less hostile disposition of
+        // too-small geometries. This particular implementation violates
+        // weird/sketchy caching assumptions of MbP and in particular,
+        // internal::GeometryNames. It's been hacked for now (see XXX markers
+        // there), but perhaps a solution involving collision filters would be
+        // better.
+        geometry_state->RemoveGeometry(gid_source_id, gid);
+      } else {
+        geometry_state->AssignRole(gid_source_id, gid, props,
+                                   RoleAssign::kReplace);
+      }
     }
   }
 }
