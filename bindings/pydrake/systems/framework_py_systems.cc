@@ -166,15 +166,24 @@ struct Impl {
     // trampoline if this is needed outside of LeafSystem.
     void DoGetWitnessFunctions(const Context<T>& context,
         std::vector<const WitnessFunction<T>*>* witnesses) const override {
-      auto wrapped = [&]() -> std::vector<const WitnessFunction<T>*> {
-        PYBIND11_OVERLOAD_INT(std::vector<const WitnessFunction<T>*>,
+      auto wrapped =
+          [&]() -> std::optional<std::vector<const WitnessFunction<T>*>> {
+        PYBIND11_OVERLOAD_INT(
+            std::optional<std::vector<const WitnessFunction<T>*>>,
             LeafSystem<T>, "DoGetWitnessFunctions", &context);
         std::vector<const WitnessFunction<T>*> result;
         // If the macro did not return, use default functionality.
         Base::DoGetWitnessFunctions(context, &result);
-        return result;
+        return {result};
       };
-      *witnesses = wrapped();
+      auto result = wrapped();
+      if (!result.has_value()) {
+        // Give a good error message in case the user forgot to return anything.
+        throw py::type_error(
+            "Overrides of DoGetWitnessFunctions() must return "
+            "List[WitnessFunction], not NoneType.");
+      }
+      *witnesses = std::move(*result);
     }
   };
 
@@ -894,10 +903,20 @@ Note: The above is for the C++ documentation. For Python, use
         .def("MakeWitnessFunction",
             WrapCallbacks([](PyLeafSystem* self, const std::string& description,
                               const WitnessFunctionDirection& direction_type,
-                              std::function<T(const Context<T>&)> calc)
-                              -> std::unique_ptr<WitnessFunction<T>> {
-              return self->MakeWitnessFunction(
-                  description, direction_type, calc);
+                              std::function<std::optional<T>(const Context<T>&)>
+                                  calc) -> std::unique_ptr<WitnessFunction<T>> {
+              return self->MakeWitnessFunction(description, direction_type,
+                  [calc](const Context<T>& context) -> T {
+                    const std::optional<T> result = calc(context);
+                    if (!result.has_value()) {
+                      // Give a good error message in case the user forgot to
+                      // return anything.
+                      throw py::type_error(
+                          "The MakeWitnessFunction() calc callback must return "
+                          "a floating pointp value, not NoneType.");
+                    }
+                    return *result;
+                  });
             }),
             py_rvp::reference_internal, py::arg("description"),
             py::arg("direction_type"), py::arg("calc"),
