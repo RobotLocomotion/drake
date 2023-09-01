@@ -29,6 +29,14 @@ T SmoothUnderMax(const std::vector<T>& x) {
   return math::SoftUnderMax(x, 100 /* alpha */);
 }
 
+/** Computes a smoth over approximation of min(x). */
+template <typename T>
+T SmoothOverMin(const std::vector<T>& x) {
+  // This SoftOverMin approaches min(x) as α increases. We choose α = 100, as
+  // that gives a qualitatively good fit for xᵢ around the range [0, 1].
+  return math::SoftOverMin(x, 100 /* alpha */);
+}
+
 template <typename T>
 T ScaleValue(T value, double minimum_value, double influence_value) {
   return (value - influence_value) / (influence_value - minimum_value);
@@ -317,5 +325,51 @@ void MinimumValueConstraint::DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
                                     AutoDiffVecXd* y) const {
   DoEvalGeneric(x, y);
 }
+
+MinimumValueUpperBoundConstraint::MinimumValueUpperBoundConstraint(
+    int num_vars, double minimum_value_upper, double normalizer,
+    std::function<AutoDiffVecXd(const Eigen::Ref<const AutoDiffVecXd>&)>
+        value_function,
+    std::function<VectorX<double>(const Eigen::Ref<const VectorX<double>>&)>
+        value_function_double)
+    : Constraint(1, num_vars, Vector1d(-kInf), Vector1d(0)),
+      minimum_value_upper_{minimum_value_upper},
+      normalizer_{normalizer},
+      value_function_{value_function},
+      value_function_double_{value_function_double} {
+  DRAKE_DEMAND(normalizer > 0);
+}
+
+template <typename T>
+void MinimumValueUpperBoundConstraint::DoEvalGeneric(
+    const Eigen::Ref<const VectorX<T>>& x, VectorX<T>* y) const {
+  VectorX<T> v;
+  if constexpr (std::is_same_v<T, double>) {
+    if (value_function_double_) {
+      v = value_function_double_(x);
+    } else {
+      v = math::ExtractValue(value_function_(x.template cast<AutoDiffXd>()));
+    }
+  } else {
+    v = value_function_(x);
+  }
+  const Eigen::Array<T, Eigen::Dynamic, 1> min_input =
+      (v.array() - T(minimum_value_upper_)) / T(normalizer_);
+
+  y->resize(1);
+  (*y)(0) = SmoothOverMin(
+      std::vector<T>(min_input.data(), min_input.data() + min_input.size()));
+}
+
+void MinimumValueUpperBoundConstraint::DoEval(
+    const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd* y) const {
+  DoEvalGeneric<double>(x, y);
+}
+
+void MinimumValueUpperBoundConstraint::DoEval(
+    const Eigen::Ref<const AutoDiffVecXd>& x, AutoDiffVecXd* y) const {
+  DoEvalGeneric<AutoDiffXd>(x, y);
+}
+
 }  // namespace solvers
 }  // namespace drake
