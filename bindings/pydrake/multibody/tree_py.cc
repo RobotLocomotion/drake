@@ -177,6 +177,20 @@ void DoScalarIndependentDefinitions(py::module m) {
               fmt_streamed(py::repr(py_namespace)),
               fmt_streamed(py::repr(py_element)));
         });
+  }
+
+  {
+    using Class = PdControllerGains;
+    constexpr auto& cls_doc = doc.PdControllerGains;
+    py::class_<Class> cls(m, "PdControllerGains", cls_doc.doc);
+    cls  // BR
+        .def(py::init<double, double>(), py::arg("p"), py::arg("d"),
+            cls_doc.ctor.doc);
+    cls  // BR
+        .def_readwrite("proportional_gain", &Class::proportional_gain,
+            cls_doc.proportional_gain.doc)
+        .def_readwrite("derivative_gain", &Class::derivative_gain,
+            cls_doc.derivative_gain.doc);
     DefCopyAndDeepCopy(&cls);
   }
 }
@@ -837,7 +851,11 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("SetGearRatio", &Class::SetGearRatio, py::arg("context"),
             py::arg("gear_ratio"), cls_doc.SetGearRatio.doc)
         .def("calc_reflected_inertia", &Class::calc_reflected_inertia,
-            py::arg("context"), cls_doc.calc_reflected_inertia.doc);
+            py::arg("context"), cls_doc.calc_reflected_inertia.doc)
+        .def("set_controller_gains", &Class::set_controller_gains,
+            py::arg("gains"), cls_doc.set_controller_gains.doc)
+        .def("has_controller", &Class::has_controller,
+            cls_doc.has_controller.doc);
   }
 
   // Force Elements.
