@@ -100,9 +100,9 @@ drake_cc_library(
         "//systems/sensors:image",
         "//systems/sensors:vtk_image_reader_writer",
         "@picosha2_internal//:picosha2",
-        "@vtk//:vtkCommonCore",
-        "@vtk//:vtkCommonDataModel",
-        "@vtk//:vtkIOImage",
+        "@vtk_internal//:vtkCommonCore",
+        "@vtk_internal//:vtkCommonDataModel",
+        "@vtk_internal//:vtkIOImage",
     ],
 )
 
@@ -124,10 +124,10 @@ drake_cc_library(
         "//geometry/render_vtk:internal_render_engine_vtk",
         "//systems/sensors:image",
         "@nlohmann_internal//:nlohmann",
-        "@vtk//:vtkCommonCore",
-        "@vtk//:vtkCommonMath",
-        "@vtk//:vtkIOExport",
-        "@vtk//:vtkRenderingCore",
+        "@vtk_internal//:vtkCommonCore",
+        "@vtk_internal//:vtkCommonMath",
+        "@vtk_internal//:vtkIOExport",
+        "@vtk_internal//:vtkRenderingCore",
     ],
 )
 
@@ -246,8 +246,8 @@ drake_cc_googletest(
         "//common/test_utilities:expect_throws_message",
         "//systems/sensors/test_utilities:image_compare",
         "@nlohmann_internal//:nlohmann",
-        "@vtk//:vtkCommonMath",
-        "@vtk//:vtkRenderingCore",
+        "@vtk_internal//:vtkCommonMath",
+        "@vtk_internal//:vtkRenderingCore",
     ],
 )
 
@@ -273,12 +273,12 @@ drake_cc_binary(
         "//systems/sensors:color_palette",
         "//systems/sensors:image",
         "@gflags",
-        "@vtk//:vtkCommonCore",
-        "@vtk//:vtkCommonMath",
-        "@vtk//:vtkIOImage",
-        "@vtk//:vtkIOImport",
-        "@vtk//:vtkRenderingCore",
-        "@vtk//:vtkRenderingOpenGL2",
+        "@vtk_internal//:vtkCommonCore",
+        "@vtk_internal//:vtkCommonMath",
+        "@vtk_internal//:vtkIOImage",
+        "@vtk_internal//:vtkIOImport",
+        "@vtk_internal//:vtkRenderingCore",
+        "@vtk_internal//:vtkRenderingOpenGL2",
     ],
 )
 
