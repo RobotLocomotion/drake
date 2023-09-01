@@ -186,6 +186,99 @@ SpheresAndWallsTest::SpheresAndWallsTest() : builder_{} {
   builder_.plant().Finalize();
 }
 
+Planar2DofTest::Planar2DofTest() : builder_{} {
+  builder_.plant().set_name("planar_2dof");
+
+  const std::string urdf = R"""(
+        <robot name="planar2Dof">
+          <link name="link0">
+            <collision name="link0_box">
+              <geometry>
+                <box size="0.1 0.02 0.1"/>
+              </geometry>
+            </collision>
+            <visual name="link0_box">
+              <geometry>
+                <box size="0.1 0.02 0.1"/>
+              </geometry>
+            </visual>
+          </link>
+          <joint name="joint0" type="revolute">
+            <axis xyz="0 0 1"/>
+            <limit lower="-3.14" upper="3.14"/>
+            <parent link="link0"/>
+            <child link="link1"/>
+          </joint>
+          <link name="link1">
+            <collision name="link1_box">
+              <origin xyz="0 0.25 0"/>
+              <geometry>
+                <box size="0.05 0.5 0.05"/>
+              </geometry>
+            </collision>
+            <visual name="link1_box">
+              <origin xyz="0 0.25 0"/>
+              <geometry>
+                <box size="0.05 0.5 0.05"/>
+              </geometry>
+            </visual>
+          </link>
+          <joint name="joint1" type="revolute">
+            <origin xyz="0 0.5 0"/>
+            <axis xyz="0 0 1"/>
+            <limit lower="-2.5" upper="2.5"/>
+            <parent link="link1"/>
+            <child link="link2"/>
+          </joint>
+          <link name="link2">
+            <collision name="link2_box">
+              <origin xyz="0 0.25 0"/>
+              <geometry>
+                <box size="0.03 0.5 0.03"/>
+              </geometry>
+            </collision>
+            <visual name="link2_box">
+              <origin xyz="0 0.25 0"/>
+              <geometry>
+                <box size="0.03 0.5 0.03"/>
+              </geometry>
+            </visual>
+          </link>
+        </robot>
+        )""";
+  builder_.parser().AddModelsFromString(urdf, "urdf");
+  builder_.plant().WeldFrames(builder_.plant().world_frame(),
+                              builder_.plant().GetFrameByName("link0"));
+  for (int i = 0; i < 3; ++i) {
+    body_indices_[i] =
+        builder_.plant().GetBodyByName(fmt::format("link{}", i)).index();
+    body_box_ids_[i] =
+        builder_.scene_graph().model_inspector().GetGeometryIdByName(
+            builder_.plant().GetBodyFrameIdIfExists(body_indices_[i]).value(),
+            geometry::Role::kProximity,
+            fmt::format("planar2Dof::link{}_box", i));
+  }
+
+  geometry::ProximityProperties proximity_properties{};
+  // Kinematics doesn't care about robot dynamics. Use arbitrary material
+  // properties.
+  AddContactMaterial(0.1, 250, multibody::CoulombFriction<double>{0.9, 0.5},
+                     &proximity_properties);
+  const double sphere_radius = 0.05;
+  std::array<Eigen::Vector3d, 4> sphere_pos;
+  sphere_pos[0] << 0.5, 0.3, 0;
+  sphere_pos[1] << -0.5, 0.3, 0;
+  sphere_pos[2] << 0.5, -0.6, 0;
+  sphere_pos[3] << -0.3, -0.2, 0;
+  for (int i = 0; i < 4; ++i) {
+    world_sphere_ids_[i] = builder_.plant().RegisterCollisionGeometry(
+        builder_.plant().world_body(), math::RigidTransformd(sphere_pos[i]),
+        geometry::Sphere(sphere_radius), fmt::format("world_sphere{}", i),
+        proximity_properties);
+  }
+  builder_.plant().Finalize();
+}
+
 template <typename T>
 std::unique_ptr<systems::Diagram<T>> ConstructBoxSphereDiagram(
     const Eigen::Vector3d& box_size, double radius,

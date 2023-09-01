@@ -157,6 +157,19 @@ class SpheresAndWallsTest : public ::testing::Test {
   std::array<geometry::GeometryId, 2> spheres_;
 };
 
+// We put a 2-dof planar robot (with two revolute joints and some obstacles in
+// the environment.
+class Planar2DofTest : public ::testing::Test {
+ public:
+  Planar2DofTest();
+
+ public:
+  planning::RobotDiagramBuilder<double> builder_;
+  std::array<multibody::BodyIndex, 3> body_indices_;
+  std::array<geometry::GeometryId, 3> body_box_ids_;
+  std::array<geometry::GeometryId, 4> world_sphere_ids_;
+};
+
 /**
  * Compute the signed distance between a box and a sphere.
  * @param box_size The size of the box.

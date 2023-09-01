@@ -604,5 +604,6 @@ TEST_F(SpheresAndWallsTest, TestWithCollisionChecker) {
         Eigen::Vector3d(1.1 * minimum_distance + 2 * radius_, 0, 0), true);
   }
 }
+
 }  // namespace multibody
 }  // namespace drake

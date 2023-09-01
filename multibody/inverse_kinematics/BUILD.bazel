@@ -69,6 +69,7 @@ drake_cc_library(
         "distance_constraint.cc",
         "distance_constraint_utilities.cc",
         "gaze_target_constraint.cc",
+        "in_collision_constraint.cc",
         "kinematic_evaluator_utilities.cc",
         "minimum_distance_constraint.cc",
         "orientation_constraint.cc",
@@ -88,6 +89,7 @@ drake_cc_library(
         "distance_constraint.h",
         "distance_constraint_utilities.h",
         "gaze_target_constraint.h",
+        "in_collision_constraint.h",
         "kinematic_evaluator_utilities.h",
         "minimum_distance_constraint.h",
         "orientation_constraint.h",
@@ -287,6 +289,17 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "in_collision_constraint_test",
+    deps = [
+        ":inverse_kinematics_test_utilities",
+        ":kinematic_evaluators",
+        "//common/test_utilities:expect_throws_message",
+        "//planning:scene_graph_collision_checker",
+        "//solvers/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
     name = "minimum_distance_constraint_test",
     deps = [
         ":inverse_kinematics_test_utilities",
@@ -294,6 +307,18 @@ drake_cc_googletest(
         "//common/test_utilities:expect_throws_message",
         "//planning:scene_graph_collision_checker",
         "//solvers/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "in_collision_constraint_nlp_test",
+    deps = [
+        ":inverse_kinematics_core",
+        ":inverse_kinematics_test_utilities",
+        ":kinematic_evaluators",
+        "//solvers:ipopt_solver",
+        "//solvers:snopt_solver",
+        "//solvers:solve",
     ],
 )
 
