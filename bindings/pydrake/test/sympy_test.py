@@ -8,6 +8,7 @@ import sympy
 
 from pydrake.symbolic import (
     Expression,
+    Formula,
     Variable,
 )
 
@@ -16,11 +17,16 @@ class TestSympy(unittest.TestCase):
 
     def test_round_trip(self):
         x, y, z = Variable("x"), Variable("y"), Variable("z")
-        expressions = [
+        inputs = [
             # Constants.
             1.0,
-            Expression(1.0),
             math.nan,
+            Expression(1.0),
+            Expression(math.nan),
+            True,
+            False,
+            Formula(True),
+            Formula(False),
             # Variables.
             x,
             Expression(x),
@@ -51,13 +57,14 @@ class TestSympy(unittest.TestCase):
             mut.max(y, x),
             mut.ceil(x),
             mut.floor(x),
+            # ... TODO(jwnimmer-tri) ... more
         ]
-        for e in expressions:
-            with self.subTest(e=e):
+        for item in inputs:
+            with self.subTest(item=item):
                 memo = dict()
-                converted = mut.to_sympy(e, memo=memo)
+                converted = mut.to_sympy(item, memo=memo)
                 readback = mut.from_sympy(converted, memo=memo)
-                if isinstance(e, float):
-                    np.testing.assert_equal(e, readback)
+                if isinstance(item, (float, bool)):
+                    np.testing.assert_equal(item, readback)
                 else:
-                    self.assertTrue(e.EqualTo(readback), msg=repr(readback))
+                    self.assertTrue(item.EqualTo(readback), msg=repr(readback))
