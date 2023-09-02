@@ -76,11 +76,24 @@ class TestSympy(unittest.TestCase):
         ]
         for item in inputs:
             with self.subTest(item=item):
-                memo = dict()
-                converted = mut.to_sympy(item, memo=memo)
-                readback = mut.from_sympy(converted, memo=memo)
-                if isinstance(item, (float, bool)):
-                    np.testing.assert_equal(item, readback)
-                else:
-                    msg = f"Got readback={readback!r} ({type(readback)})"
-                    self.assertTrue(item.EqualTo(readback), msg=msg)
+                self._test_one_round_trip(item)
+
+    def _test_one_round_trip(self, item):
+        memo = dict()
+        converted = mut.to_sympy(item, memo=memo)
+        readback = mut.from_sympy(converted, memo=memo)
+
+        # When the input was a built-in type, np.testing works well.
+        if isinstance(item, (float, bool)):
+            np.testing.assert_equal(item, readback)
+            return
+
+        # When the input was a Drake type, check for structral equality.
+        item_str = f"item={item!r} ({type(item)})"
+        readback_str = f"readback={readback!r} ({type(readback)})"
+        try:
+            self.assertTrue(item.EqualTo(readback), msg=f"Got {readback_str}")
+            return
+        except TypeError as e:
+            pass
+        self.fail(f"The {item_str} and {readback_str} are incomparable")

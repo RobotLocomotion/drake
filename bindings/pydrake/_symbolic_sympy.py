@@ -31,7 +31,9 @@ def _make_sympy_if_then_else(cond, then, else_):
 _SYMPY_CONSTRUCTOR = {
     # Leave floats alone -- don't preemptively wrap them in sympy.Float.
     ExpressionKind.Constant: _no_change,
-    ExpressionKind.NaN: _no_change,  # TODO(jwnimmer-tri) maybe sympy.NaN?
+    # Like Drake's NaN, the SymPy NaN also rejects, e.g., comparison operators.
+    # That's more like what we want than `math.nan`, which allows comparison.
+    ExpressionKind.NaN: lambda _: sympy.nan,
     # Use the SymPy preferred spelling of bools.
     FormulaKind.True_: lambda: sympy.true,
     FormulaKind.False_: lambda: sympy.false,
@@ -71,7 +73,7 @@ _SYMPY_CONSTRUCTOR = {
     FormulaKind.Neq: sympy.Unequality,
     FormulaKind.Not: sympy.Not,
     FormulaKind.Or: sympy.Or,
-    # Not implemented yet:
+    # We don't support converting these kinds of terms (yet).
     ExpressionKind.UninterpretedFunction: None,
     FormulaKind.Forall: None,
     FormulaKind.Isnan: None,
@@ -184,7 +186,7 @@ def _from_sympy(x: Union[float, bool, sympy.Expr],
     if isinstance(x, (float, bool)):
         return x
     if x.is_number:
-        return x.evalf()
+        return float(x.evalf())
     sympy_vars = []
     drake_vars = []
     for item in x.atoms():
