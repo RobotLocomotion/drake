@@ -69,9 +69,8 @@ class TestSympy(unittest.TestCase):
             x >= y,
             x < y,
             x <= y,
-            # TODO(jwnimmer-tri) Fix me.
-            # mut.logical_and(q, r),
-            # mut.logical_or(q, r),
+            mut.logical_and(q, r),
+            mut.logical_or(q, r),
             mut.logical_not(q),
         ]
         for item in inputs:

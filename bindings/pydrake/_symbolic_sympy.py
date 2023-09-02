@@ -130,9 +130,18 @@ class DrakePrinter(MpmathPrinter):
             "user_functions": {},
         })
 
+    def _print_drake_logical_op(self, expr, op):
+        args = [self._print(arg) for arg in expr.args]
+        return f"logical_{op}({', '.join(args)})"
+
+    def _print_And(self, expr):
+        return self._print_drake_logical_op(expr, "and")
+
+    def _print_Or(self, expr):
+        return self._print_drake_logical_op(expr, "or")
+
     def _print_Not(self, expr):
-        arg = self._print(expr.args[0])
-        return f"logical_not({arg})"
+        return self._print_drake_logical_op(expr, "not")
 
 
 _DRAKE_PRINTER = DrakePrinter()
