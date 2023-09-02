@@ -3,6 +3,7 @@
 does not # directly depend on SymPy.
 """
 
+import operator
 from typing import Dict, Union
 
 import sympy
@@ -26,8 +27,28 @@ _SYMPY_CONSTRUCTOR = {
     # SymPy doesn't need any extra call to convert a variable to an expression.
     ExpressionKind.Var: _no_change,
     # The rest is all boring stuff.
+    ExpressionKind.Abs: sympy.Abs,
+    ExpressionKind.Acos: sympy.acos,
     ExpressionKind.Add: sympy.Add,
+    ExpressionKind.Asin: sympy.asin,
+    ExpressionKind.Atan: sympy.atan,
+    ExpressionKind.Atan2: sympy.atan2,
+    ExpressionKind.Ceil: sympy.ceiling,
+    ExpressionKind.Cos: sympy.cos,
+    ExpressionKind.Cosh: sympy.cosh,
+    ExpressionKind.Div: operator.truediv,
+    ExpressionKind.Exp: sympy.exp,
+    ExpressionKind.Floor: sympy.floor,
+    ExpressionKind.Log: sympy.log,
+    ExpressionKind.Max: sympy.Max,
+    ExpressionKind.Min: sympy.Min,
     ExpressionKind.Mul: sympy.Mul,
+    ExpressionKind.Pow: sympy.Pow,
+    ExpressionKind.Sin: sympy.sin,
+    ExpressionKind.Sinh: sympy.sinh,
+    ExpressionKind.Sqrt: sympy.sqrt,
+    ExpressionKind.Tan:  sympy.tan,
+    ExpressionKind.Tanh: sympy.tanh,
 }
 
 
