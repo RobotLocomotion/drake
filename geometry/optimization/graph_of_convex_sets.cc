@@ -377,7 +377,15 @@ std::string GraphOfConvexSets::GetGraphvizString(
     graphviz << " [label=\"" << e->name();
     if (result) {
       graphviz << "\n";
-      graphviz << "cost = " << e->GetSolutionCost(*result);
+      if (e->ell_.size() > 0) {
+        // SolveConvexRestriction does not yet return the rewritten costs.
+        if (result->get_decision_variable_index()->count(e->ell_[0].get_id()) !=
+            0) {
+          graphviz << "cost = " << e->GetSolutionCost(*result);
+        }
+      } else {
+        graphviz << "cost = 0";
+      }
       if (show_slacks) {
         graphviz << ",\n";
         graphviz << "ϕ = " << result->GetSolution(e->phi()) << ",\n";
