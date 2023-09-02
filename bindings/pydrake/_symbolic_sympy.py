@@ -23,6 +23,11 @@ def _no_change(x):
     return x
 
 
+def _make_sympy_if_then_else(cond, then, else_):
+    # N.B. We can't use sympy.ITE -- that operates on three booleans.
+    return sympy.Piecewise((then, cond), (else_, True))
+
+
 _SYMPY_CONSTRUCTOR = {
     # Leave floats alone -- don't preemptively wrap them in sympy.Float.
     ExpressionKind.Constant: _no_change,
@@ -33,7 +38,7 @@ _SYMPY_CONSTRUCTOR = {
     # SymPy doesn't need any extra call to convert a variable to an expression.
     ExpressionKind.Var: _no_change,
     FormulaKind.Var: _no_change,
-    # The rest is all boring stuff.
+    # The rest is all boring stuff, in alphabetical order.
     ExpressionKind.Abs: sympy.Abs,
     ExpressionKind.Acos: sympy.acos,
     ExpressionKind.Add: sympy.Add,
@@ -46,6 +51,7 @@ _SYMPY_CONSTRUCTOR = {
     ExpressionKind.Div: operator.truediv,
     ExpressionKind.Exp: sympy.exp,
     ExpressionKind.Floor: sympy.floor,
+    ExpressionKind.IfThenElse: _make_sympy_if_then_else,
     ExpressionKind.Log: sympy.log,
     ExpressionKind.Max: sympy.Max,
     ExpressionKind.Min: sympy.Min,
@@ -66,7 +72,6 @@ _SYMPY_CONSTRUCTOR = {
     FormulaKind.Not: sympy.Not,
     FormulaKind.Or: sympy.Or,
     # Not implemented yet:
-    ExpressionKind.IfThenElse: None,
     ExpressionKind.UninterpretedFunction: None,
     FormulaKind.Forall: None,
     FormulaKind.Isnan: None,
@@ -143,6 +148,20 @@ class _DrakePrinter(MpmathPrinter):
 
     def _print_Not(self, expr):
         return self._print_drake_logical_op(expr, "not")
+
+    def _print_Piecewise(self, expr):
+        assert len(expr.args) > 0
+        if expr.args[-1].cond not in (True, sympy.true):
+            raise NotImplementedError(
+                "Piecewise functions must always have a value; the final "
+                "condition must be the literal value `True`.")
+        result = [self._print(expr.args[-1].expr)]
+        for arg in reversed(expr.args[:-1]):
+            arg_cond = self._print(arg.cond)
+            arg_expr = self._print(arg.expr)
+            result.insert(0, f"if_then_else({arg_cond}, {arg_expr}, ")
+            result.append(")")
+        return "".join(result)
 
 
 _DRAKE_PRINTER = _DrakePrinter()

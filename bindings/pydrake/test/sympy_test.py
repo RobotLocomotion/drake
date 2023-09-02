@@ -62,6 +62,7 @@ class TestSympy(unittest.TestCase):
             mut.max(y, x),
             mut.ceil(x),
             mut.floor(x),
+            mut.if_then_else(q, x, y),
             # Boolean functions, ordered to match FormulaKind.
             x == y,
             x != y,
