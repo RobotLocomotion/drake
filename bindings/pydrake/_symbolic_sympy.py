@@ -85,6 +85,5 @@ def _from_sympy(x: Union[float, sympy.Expr],
             drake_vars.append(_var_from_sympy(item, memo=memo))
             continue
         raise NotImplementedError("Unsupported atom {item!r}")
-    # TODO(jwnimmer-tri) We really should use docstring_limit=0.
-    return sympy.lambdify(args=sympy_vars, expr=x,
+    return sympy.lambdify(args=sympy_vars, expr=x, docstring_limit=0,
                           modules=[pydrake.symbolic])(*drake_vars)

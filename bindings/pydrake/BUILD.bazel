@@ -516,6 +516,7 @@ drake_py_unittest(
     name = "sympy_test",
     deps = [
         ":symbolic_py",
+        "@sympy_py_internal//:sympy_py",
     ],
 )
 

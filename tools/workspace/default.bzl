@@ -93,6 +93,7 @@ load("@drake//tools/workspace/statsjs:repository.bzl", "statsjs_repository")
 load("@drake//tools/workspace/stduuid_internal:repository.bzl", "stduuid_internal_repository")  # noqa
 load("@drake//tools/workspace/styleguide:repository.bzl", "styleguide_repository")  # noqa
 load("@drake//tools/workspace/suitesparse_internal:repository.bzl", "suitesparse_internal_repository")  # noqa
+load("@drake//tools/workspace/sympy_py_internal:repository.bzl", "sympy_py_internal_repository")  # noqa
 load("@drake//tools/workspace/tinyobjloader:repository.bzl", "tinyobjloader_repository")  # noqa
 load("@drake//tools/workspace/tinyobjloader_internal:repository.bzl", "tinyobjloader_internal_repository")  # noqa
 load("@drake//tools/workspace/tinyxml2_internal:repository.bzl", "tinyxml2_internal_repository")  # noqa
@@ -326,6 +327,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         styleguide_repository(name = "styleguide", mirrors = mirrors)
     if "suitesparse_internal" not in excludes:
         suitesparse_internal_repository(name = "suitesparse_internal", mirrors = mirrors)  # noqa
+    if "sympy_py_internal" not in excludes:
+        sympy_py_internal_repository(name = "sympy_py_internal", mirrors = mirrors)  # noqa
     if "tinyobjloader" not in excludes:
         # The @tinyobjloader external is deprecated in Drake's WORKSPACE and
         # will be removed on or after 2023-11-01.
