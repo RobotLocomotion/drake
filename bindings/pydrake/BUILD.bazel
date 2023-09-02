@@ -225,7 +225,10 @@ drake_pybind_library(
         ":module_py",
         "//bindings/pydrake/common:compatibility_py",
     ],
-    py_srcs = ["_symbolic_extra.py"],
+    py_srcs = [
+        "_symbolic_extra.py",
+        "_symbolic_sympy.py",
+    ],
 )
 
 drake_pybind_library(
@@ -506,6 +509,13 @@ drake_py_unittest(
         "//bindings/pydrake/common:containers_py",
         "//bindings/pydrake/common/test_utilities",
         "//bindings/pydrake/common/test_utilities:numpy_compare_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "sympy_test",
+    deps = [
+        ":symbolic_py",
     ],
 )
 
