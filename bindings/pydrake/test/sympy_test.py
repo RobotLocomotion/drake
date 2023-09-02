@@ -64,15 +64,28 @@ class TestSympy(unittest.TestCase):
             mut.floor(x),
             mut.if_then_else(q, x, y),
             # Boolean functions, ordered to match FormulaKind.
+            # First with op(x, y).
             x == y,
             x != y,
             x > y,
             x >= y,
             x < y,
             x <= y,
+            # Next with op(y, x).
+            y == x,
+            y != x,
+            y > x,
+            y >= x,
+            y < x,
+            y <= x,
+            # Next the module functions.
             mut.logical_and(q, r),
             mut.logical_or(q, r),
+            mut.logical_and(r, q),
+            mut.logical_or(r, q),
             mut.logical_not(q),
+            # Combine and nest multiple kinds of functions.
+            mut.if_then_else(y > x, x + mut.pow(y, 3), mut.exp(z)),
         ]
         for item in inputs:
             with self.subTest(item=item):
@@ -90,10 +103,13 @@ class TestSympy(unittest.TestCase):
 
         # When the input was a Drake type, check for structral equality.
         item_str = f"item={item!r} ({type(item)})"
+        converted_str = f"converted={converted!r} ({type(converted)})"
         readback_str = f"readback={readback!r} ({type(readback)})"
         try:
-            self.assertTrue(item.EqualTo(readback), msg=f"Got {readback_str}")
+            self.assertTrue(item.EqualTo(readback),
+                            msg=f"Got {readback_str} (from {converted_str})")
             return
         except TypeError as e:
             pass
-        self.fail(f"The {item_str} and {readback_str} are incomparable")
+        self.fail(f"Incomparable {item_str} with "
+                  f"{readback_str} (from {converted_str})")

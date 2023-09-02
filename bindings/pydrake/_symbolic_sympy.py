@@ -27,14 +27,14 @@ def _no_change(x):
 
 
 def _make_sympy_if_then_else(cond: sympy.Expr,
-                             then: sympy.Expr,
-                             else_: sympy.Expr):
-    """Returns the SymPy spelling of `{then} if {cond} else {else_}`, also
-    known as the "ternary conditional" operator.
+                             expr_then: sympy.Expr,
+                             expr_else: sympy.Expr):
+    """Returns the SymPy spelling of `{then_expr} if {cond} else {expr_else}`,
+    also known as the "ternary conditional" operator.
     """
     # N.B. We can't use sympy.ITE -- that operates on three booleans; the Drake
     # if_then_else operates on (bool, float, float).
-    return sympy.Piecewise((then, cond), (else_, True))
+    return sympy.Piecewise((expr_then, cond), (expr_else, True))
 
 
 # This table maps from ExpressionKind and FormulaKind to the SymPy constructor
@@ -98,7 +98,7 @@ def _var_to_sympy(drake_var: Variable, *, memo: Dict):
     If the Drake variable was already in the `memo` dict, returns the value in
     the dict. Otherwise, creates and returns a new sympy.Dummy() variable.
     """
-    sympy_var = memo.get(drake_var)
+    sympy_var = memo.get(drake_var.get_id())
     if sympy_var is None:
         # TODO(jwnimmer-tri) Use drake_type to fill in the assumptions.
         drake_type = drake_var.get_type()
@@ -107,7 +107,7 @@ def _var_to_sympy(drake_var: Variable, *, memo: Dict):
             name=drake_var.get_name(),
             dummy_index=drake_var.get_id(),
             **assumptions)
-        memo[drake_var] = sympy_var
+        memo[drake_var.get_id()] = sympy_var
         memo[sympy_var] = drake_var
     return sympy_var
 

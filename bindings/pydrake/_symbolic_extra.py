@@ -40,14 +40,15 @@ def to_sympy(x: typing.Union[float, bool, Variable, Expression, Formula],
     Args:
         x: The pydrake object to be converted.
         memo: (Optional) Mapping between Drake variables and SymPy variables.
-            Converting a pydrake.symbolic.Variable to SymPy will look up the
-            Drake variable as a key in this dictionary. If a value is found,
-            then it will be used as the SymPy atom for that Drake variable.
-            Otherwise, a new SymPy variable will be created and used, and both
-            mappings `{drake_var: sympy_var}` and `{sympy_var: drake_var}` will
-            be inserted into `memo`.
+            Converting a ``pydrake.symbolic.Variable`` to SymPy will look up
+            the Drake variable's ``v.get_id()`` as a key in this dictionary.
+            If a value is found, it will be used as the SymPy atom for that
+            Drake variable.  Otherwise, a new SymPy variable will be created
+            and used, and both mappings ``{drake_var.get_id(): sympy_var}``
+            and ``{sympy_var: drake_var}`` will be inserted into ``memo``.
 
     See also :meth:`pydrake.symbolic.from_sympy`.
+
     """
     global _symbolic_sympy
     if _symbolic_sympy is None:
@@ -68,7 +69,7 @@ def from_sympy(x: typing.Union[float, bool, 'sympy.Expr'],
     Args:
         x: The SymPy object to be converted.
         memo: (Optional) Mapping between SymPy variables and Drake variables.
-            Converting a SymPy variable to a pydrake.symbolic.Variable will
+            Converting a SymPy variable to a ``pydrake.symbolic.Variable`` will
             look up the SymPy variable as a key in this dictionary.
             If a value is found, then it will be used as the Drake variable.
             If no value is found, then (for now) raises an exception. In the
