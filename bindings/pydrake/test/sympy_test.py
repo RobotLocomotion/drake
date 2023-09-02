@@ -12,11 +12,14 @@ from pydrake.symbolic import (
     Variable,
 )
 
+BOOLEAN = Variable.Type.BOOLEAN
+
 
 class TestSympy(unittest.TestCase):
 
     def test_round_trip(self):
-        x, y, z = Variable("x"), Variable("y"), Variable("z")
+        x, y, z = [Variable(name) for name in "x y z".split()]
+        q, r = [Variable(name, BOOLEAN) for name in "q r".split()]
         inputs = [
             # Constants.
             1.0,
@@ -30,6 +33,8 @@ class TestSympy(unittest.TestCase):
             # Variables.
             x,
             Expression(x),
+            q,
+            Formula(q),
             # Arithmetic.
             x + y,
             y * z,

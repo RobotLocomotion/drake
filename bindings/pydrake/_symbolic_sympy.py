@@ -26,11 +26,12 @@ _SYMPY_CONSTRUCTOR = {
     # Leave floats alone -- don't preemptively wrap them in sympy.Float.
     ExpressionKind.Constant: _no_change,
     ExpressionKind.NaN: _no_change,
-    # Leave bools alone?
-    FormulaKind.True_: lambda: True,
-    FormulaKind.False_: lambda: False,
+    # Use the SymPy preferred spelling of bools.
+    FormulaKind.True_: lambda: sympy.true,
+    FormulaKind.False_: lambda: sympy.false,
     # SymPy doesn't need any extra call to convert a variable to an expression.
     ExpressionKind.Var: _no_change,
+    FormulaKind.Var: _no_change,
     # Not implemented yet:
     ExpressionKind.IfThenElse: None,
     ExpressionKind.UninterpretedFunction: None,
@@ -76,9 +77,13 @@ _SYMPY_CONSTRUCTOR = {
 def _var_to_sympy(drake_var: Variable, *, memo: Dict):
     sympy_var = memo.get(drake_var)
     if sympy_var is None:
+        # TODO(jwnimmer-tri) Use drake_type to fill in the assumptions.
+        drake_type = drake_var.get_type()
+        assumptions = {}
         sympy_var = sympy.Dummy(
             name=drake_var.get_name(),
-            dummy_index=drake_var.get_id())
+            dummy_index=drake_var.get_id(),
+            **assumptions)
         memo[drake_var] = sympy_var
         memo[sympy_var] = drake_var
     return sympy_var
@@ -128,10 +133,12 @@ def _from_sympy(x: Union[float, bool, sympy.Expr],
     for item in x.atoms():
         if item.is_number:
             continue
+        if isinstance(item, sympy.logic.boolalg.BooleanAtom):
+            continue
         if isinstance(item, sympy.Dummy):
             sympy_vars.append(item)
             drake_vars.append(_var_from_sympy(item, memo=memo))
             continue
-        raise NotImplementedError("Unsupported atom {item!r}")
+        raise NotImplementedError(f"Unsupported atom {item!r} ({type(item)})")
     return sympy.lambdify(args=sympy_vars, expr=x, docstring_limit=0,
                           modules=[pydrake.symbolic])(*drake_vars)
