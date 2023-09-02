@@ -1,6 +1,6 @@
 """This file contains the implementation of to_sympy and from_sympy as used by
 `_symbolic_extra.py`. It is loaded is loaded lazily (on demand), so that Drake
-does not # directly depend on SymPy.
+does not directly depend on SymPy.
 """
 
 import operator
@@ -11,8 +11,9 @@ import sympy
 import pydrake.symbolic
 from pydrake.symbolic import (
     Expression,
-    Formula,
     ExpressionKind,
+    Formula,
+    FormulaKind,
     Variable,
 )
 
@@ -24,8 +25,15 @@ def _no_change(x):
 _SYMPY_CONSTRUCTOR = {
     # Leave floats alone -- don't preemptively wrap them in sympy.Float.
     ExpressionKind.Constant: _no_change,
+    ExpressionKind.NaN: _no_change,
+    # Leave bools alone?
+    FormulaKind.True_: lambda: True,
+    FormulaKind.False_: lambda: False,
     # SymPy doesn't need any extra call to convert a variable to an expression.
     ExpressionKind.Var: _no_change,
+    # Not implemented yet:
+    ExpressionKind.IfThenElse: None,
+    ExpressionKind.UninterpretedFunction: None,
     # The rest is all boring stuff.
     ExpressionKind.Abs: sympy.Abs,
     ExpressionKind.Acos: sympy.acos,
@@ -49,6 +57,19 @@ _SYMPY_CONSTRUCTOR = {
     ExpressionKind.Sqrt: sympy.sqrt,
     ExpressionKind.Tan:  sympy.tan,
     ExpressionKind.Tanh: sympy.tanh,
+    # Not implemented yet.
+    FormulaKind.And: None,
+    FormulaKind.Eq: None,
+    FormulaKind.Forall: None,
+    FormulaKind.Geq: None,
+    FormulaKind.Gt: None,
+    FormulaKind.Isnan: None,
+    FormulaKind.Leq: None,
+    FormulaKind.Lt: None,
+    FormulaKind.Neq: None,
+    FormulaKind.Not: None,
+    FormulaKind.Or: None,
+    FormulaKind.PositiveSemidefinite: None,
 }
 
 
@@ -70,15 +91,21 @@ def _var_from_sympy(sympy_var: sympy.Dummy, *, memo: Dict):
     return drake_var
 
 
-def _to_sympy(x: Union[float, Variable, Expression],
+def _to_sympy(x: Union[float, bool, Variable, Expression, Formula],
               *,
               memo: Dict) -> sympy.Expr:
     # TODO(jwnimmer-try) Also support Formula, Polynomial, Monomial, etc.
-    if isinstance(x, float):
+    if isinstance(x, (float, bool)):
         return x
     if isinstance(x, Variable):
         return _var_to_sympy(drake_var=x, memo=memo)
-    kind = x.get_kind()
+    try:
+        kind = x.get_kind()
+    except AttributeError as e:
+        kind = None
+    if kind is None:
+        raise NotImplementedError(
+            f"Cannot create a SymPy object from the given object {x!r}")
     sympy_constructor = _SYMPY_CONSTRUCTOR.get(kind)
     if sympy_constructor is None:
         raise NotImplementedError(
@@ -89,10 +116,10 @@ def _to_sympy(x: Union[float, Variable, Expression],
     return sympy_constructor(*sympy_args)
 
 
-def _from_sympy(x: Union[float, sympy.Expr],
+def _from_sympy(x: Union[float, bool, sympy.Expr],
                 *,
                 memo: Dict) -> Expression:
-    if isinstance(x, float):
+    if isinstance(x, (float, bool)):
         return x
     if x.is_number:
         return x.evalf()
