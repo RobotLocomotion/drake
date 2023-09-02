@@ -102,13 +102,7 @@ void Hydroelastize(GeometryState<T>* geometry_state,
         }
       }
       if (is_too_small) {
-        // TODO(rpoyner-tri): figure out a less hostile disposition of
-        // too-small geometries. This particular implementation violates
-        // weird/sketchy caching assumptions of MbP and in particular,
-        // internal::GeometryNames. It's been hacked for now (see XXX markers
-        // there), but perhaps a solution involving collision filters would be
-        // better.
-        geometry_state->RemoveGeometry(gid_source_id, gid);
+        geometry_state->RemoveRole(gid_source_id, gid, Role::kProximity);
       } else {
         geometry_state->AssignRole(gid_source_id, gid, props,
                                    RoleAssign::kReplace);
