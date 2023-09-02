@@ -58,6 +58,7 @@ load("@drake//tools/workspace/libpng:repository.bzl", "libpng_repository")
 load("@drake//tools/workspace/libtiff:repository.bzl", "libtiff_repository")
 load("@drake//tools/workspace/meshcat:repository.bzl", "meshcat_repository")
 load("@drake//tools/workspace/mosek:repository.bzl", "mosek_repository")
+load("@drake//tools/workspace/mpmath_py_internal:repository.bzl", "mpmath_py_internal_repository")  # noqa
 load("@drake//tools/workspace/msgpack_internal:repository.bzl", "msgpack_internal_repository")  # noqa
 load("@drake//tools/workspace/mumps_internal:repository.bzl", "mumps_internal_repository")  # noqa
 load("@drake//tools/workspace/mypy_extensions_internal:repository.bzl", "mypy_extensions_internal_repository")  # noqa
@@ -249,6 +250,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         meshcat_repository(name = "meshcat", mirrors = mirrors)
     if "mosek" not in excludes:
         mosek_repository(name = "mosek")
+    if "mpmath_py_internal" not in excludes:
+        mpmath_py_internal_repository(name = "mpmath_py_internal", mirrors = mirrors)  # noqa
     if "msgpack_internal" not in excludes:
         msgpack_internal_repository(name = "msgpack_internal", mirrors = mirrors)  # noqa
     if "mumps_internal" not in excludes:

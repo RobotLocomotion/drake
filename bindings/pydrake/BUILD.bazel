@@ -516,6 +516,9 @@ drake_py_unittest(
     name = "sympy_test",
     deps = [
         ":symbolic_py",
+        # We'll run the unit test against the latest (pinned) version of SymPy,
+        # even if the host system has a different version installed already.
+        "@mpmath_py_internal//:mpmath_py",
         "@sympy_py_internal//:sympy_py",
     ],
 )
