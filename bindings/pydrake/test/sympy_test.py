@@ -72,7 +72,7 @@ class TestSympy(unittest.TestCase):
             # TODO(jwnimmer-tri) Fix me.
             # mut.logical_and(q, r),
             # mut.logical_or(q, r),
-            # mut.logical_not(q),
+            mut.logical_not(q),
         ]
         for item in inputs:
             with self.subTest(item=item):
@@ -82,4 +82,5 @@ class TestSympy(unittest.TestCase):
                 if isinstance(item, (float, bool)):
                     np.testing.assert_equal(item, readback)
                 else:
-                    self.assertTrue(item.EqualTo(readback), msg=repr(readback))
+                    msg = f"Got readback={readback!r} ({type(readback)})"
+                    self.assertTrue(item.EqualTo(readback), msg=msg)

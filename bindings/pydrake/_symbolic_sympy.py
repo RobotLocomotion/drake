@@ -7,6 +7,7 @@ import operator
 from typing import Dict, Union
 
 import sympy
+from sympy.printing.pycode import MpmathPrinter
 
 import pydrake.symbolic
 from pydrake.symbolic import (
@@ -120,6 +121,33 @@ def _to_sympy(x: Union[float, bool, Variable, Expression, Formula],
     return sympy_constructor(*sympy_args)
 
 
+class DrakePrinter(MpmathPrinter):
+    def __init__(self):
+        super().__init__({
+            "fully_qualified_modules": False,
+            "inline": True,
+            "allow_unknown_functions": True,
+            "user_functions": {},
+        })
+
+    def _print_Not(self, expr):
+        arg = self._print(expr.args[0])
+        return f"logical_not({arg})"
+
+
+_DRAKE_PRINTER = DrakePrinter()
+
+
+def _lambdify(*, args, expr):
+    return sympy.lambdify(
+        args=args,
+        expr=expr,
+        modules=pydrake.symbolic,
+        printer=_DRAKE_PRINTER,
+        use_imps=False,
+        docstring_limit=0)
+
+
 def _from_sympy(x: Union[float, bool, sympy.Expr],
                 *,
                 memo: Dict) -> Expression:
@@ -139,5 +167,5 @@ def _from_sympy(x: Union[float, bool, sympy.Expr],
             drake_vars.append(_var_from_sympy(item, memo=memo))
             continue
         raise NotImplementedError(f"Unsupported atom {item!r} ({type(item)})")
-    return sympy.lambdify(args=sympy_vars, expr=x, docstring_limit=0,
-                          modules=[pydrake.symbolic])(*drake_vars)
+    drake_func = _lambdify(expr=x, args=sympy_vars)
+    return drake_func(*drake_vars)
