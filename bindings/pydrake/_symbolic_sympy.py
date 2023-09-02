@@ -20,14 +20,25 @@ from pydrake.symbolic import (
 
 
 def _no_change(x):
+    """This function simply returns its argument. It is used below in the table
+    of constructors to signify that no type-conversion is required.
+    """
     return x
 
 
-def _make_sympy_if_then_else(cond, then, else_):
-    # N.B. We can't use sympy.ITE -- that operates on three booleans.
+def _make_sympy_if_then_else(cond: sympy.Expr,
+                             then: sympy.Expr,
+                             else_: sympy.Expr):
+    """Returns the SymPy spelling of `{then} if {cond} else {else_}`, also
+    known as the "ternary conditional" operator.
+    """
+    # N.B. We can't use sympy.ITE -- that operates on three booleans; the Drake
+    # if_then_else operates on (bool, float, float).
     return sympy.Piecewise((then, cond), (else_, True))
 
 
+# This table maps from ExpressionKind and FormulaKind to the SymPy constructor
+# for that kind of term; this forms the core of `pydrake.symbolic.to_sympy()`.
 _SYMPY_CONSTRUCTOR = {
     # Leave floats alone -- don't preemptively wrap them in sympy.Float.
     ExpressionKind.Constant: _no_change,
@@ -82,6 +93,11 @@ _SYMPY_CONSTRUCTOR = {
 
 
 def _var_to_sympy(drake_var: Variable, *, memo: Dict):
+    """Converts a Drake variable into a SymPy Variable.
+
+    If the Drake variable was already in the `memo` dict, returns the value in
+    the dict. Otherwise, creates and returns a new sympy.Dummy() variable.
+    """
     sympy_var = memo.get(drake_var)
     if sympy_var is None:
         # TODO(jwnimmer-tri) Use drake_type to fill in the assumptions.
@@ -97,9 +113,17 @@ def _var_to_sympy(drake_var: Variable, *, memo: Dict):
 
 
 def _var_from_sympy(sympy_var: sympy.Dummy, *, memo: Dict):
+    """Converts a SymPy variable into a Drake Variable.
+
+    At the moment, the *only* supported conversion is to look up the variable
+    in `memo`, i.e., the user my pre-define the mapping.
+
+    TODO(jwnimmer-tri) This could probably have a better fallback plan.
+    """
     drake_var = memo.get(sympy_var)
     if drake_var is None:
-        raise NotImplementedError()
+        raise NotImplementedError(
+            f"The SymPy variable {sympy_var} is missing from the `memo` dict.")
     return drake_var
 
 
@@ -107,6 +131,9 @@ def _to_sympy(x: Union[float, bool, Variable, Expression, Formula],
               *,
               memo: Dict = None) -> Union[
                   float, bool, 'sympy.Expr']:
+    """This is the private implementation of pydrake.symbolic.to_sympy().
+    Refer to that module-level function for the full docstring.
+    """
     # TODO(jwnimmer-try) Also support Polynomial, Monomial, etc.
     if isinstance(x, (float, bool)):
         return x
@@ -130,6 +157,10 @@ def _to_sympy(x: Union[float, bool, Variable, Expression, Formula],
 
 
 class _DrakePrinter(MpmathPrinter):
+    """A slightly customized Printer class that handles a few unique spellings
+    necessary for writing Drake code.
+    """
+
     def __init__(self):
         super().__init__({
             "fully_qualified_modules": False,
@@ -139,6 +170,9 @@ class _DrakePrinter(MpmathPrinter):
         })
 
     def _print_drake_logical_op(self, expr, op):
+        """Uses pydrake.symbolic.logical_{op} instead of the Python built-in
+        boolean operators (`and`, `or`, and `not`).
+        """
         args = [self._print(arg) for arg in expr.args]
         return f"logical_{op}({', '.join(args)})"
 
@@ -152,6 +186,10 @@ class _DrakePrinter(MpmathPrinter):
         return self._print_drake_logical_op(expr, "not")
 
     def _print_Piecewise(self, expr):
+        """Undo the effect of _make_sympy_if_then_else, by converting a list of
+        `((cond1, expr1), (cond2, expr2), ...)` pairs into a nested chain of
+        `if_then_else(cond1, expr1, if_then_else(cond2, expr2, ...))` calls.
+        """
         assert len(expr.args) > 0
         if expr.args[-1].cond not in (True, sympy.true):
             raise NotImplementedError(
@@ -170,6 +208,7 @@ _DRAKE_PRINTER = _DrakePrinter()
 
 
 def _lambdify(*, expr, args):
+    """Wraps sympy.lambdify with extra hard-coded arguments."""
     return sympy.lambdify(
         expr=expr,
         args=args,
@@ -183,10 +222,16 @@ def _from_sympy(x: Union[float, bool, sympy.Expr],
                 *,
                 memo: Dict = None) -> Union[
                     float, bool, Variable, Expression, Formula]:
+    """This is the private implementation of pydrake.symbolic.from_sympy().
+    Refer to that module-level function for the full docstring.
+    """
+    # Return non-SymPy inputs as-is.
     if isinstance(x, (float, bool)):
         return x
+    # Return constants quickly.
     if x.is_number:
         return float(x.evalf())
+    # Find the SymPy variables in `x` and look up the matching Drake variables.
     sympy_vars = []
     drake_vars = []
     for item in x.atoms():
@@ -199,5 +244,8 @@ def _from_sympy(x: Union[float, bool, sympy.Expr],
             drake_vars.append(_var_from_sympy(item, memo=memo))
             continue
         raise NotImplementedError(f"Unsupported atom {item!r} ({type(item)})")
+    # Convert the SymPy expression to a Python function of the variables.
     drake_func = _lambdify(expr=x, args=sympy_vars)
+    # Call the Python function using the Drake variables; this returns the
+    # Drake symbolic expression.
     return drake_func(*drake_vars)
