@@ -25,16 +25,13 @@ def _no_change(x):
 _SYMPY_CONSTRUCTOR = {
     # Leave floats alone -- don't preemptively wrap them in sympy.Float.
     ExpressionKind.Constant: _no_change,
-    ExpressionKind.NaN: _no_change,
+    ExpressionKind.NaN: _no_change,  # TODO(jwnimmer-tri) maybe sympy.NaN?
     # Use the SymPy preferred spelling of bools.
     FormulaKind.True_: lambda: sympy.true,
     FormulaKind.False_: lambda: sympy.false,
     # SymPy doesn't need any extra call to convert a variable to an expression.
     ExpressionKind.Var: _no_change,
     FormulaKind.Var: _no_change,
-    # Not implemented yet:
-    ExpressionKind.IfThenElse: None,
-    ExpressionKind.UninterpretedFunction: None,
     # The rest is all boring stuff.
     ExpressionKind.Abs: sympy.Abs,
     ExpressionKind.Acos: sympy.acos,
@@ -58,18 +55,20 @@ _SYMPY_CONSTRUCTOR = {
     ExpressionKind.Sqrt: sympy.sqrt,
     ExpressionKind.Tan:  sympy.tan,
     ExpressionKind.Tanh: sympy.tanh,
-    # Not implemented yet.
-    FormulaKind.And: None,
-    FormulaKind.Eq: None,
+    FormulaKind.And: sympy.And,
+    FormulaKind.Eq: sympy.Equality,
+    FormulaKind.Geq: sympy.GreaterThan,
+    FormulaKind.Gt: sympy.StrictGreaterThan,
+    FormulaKind.Leq: sympy.LessThan,
+    FormulaKind.Lt: sympy.StrictLessThan,
+    FormulaKind.Neq: sympy.Unequality,
+    FormulaKind.Not: sympy.Not,
+    FormulaKind.Or: sympy.Or,
+    # Not implemented yet:
+    ExpressionKind.IfThenElse: None,
+    ExpressionKind.UninterpretedFunction: None,
     FormulaKind.Forall: None,
-    FormulaKind.Geq: None,
-    FormulaKind.Gt: None,
     FormulaKind.Isnan: None,
-    FormulaKind.Leq: None,
-    FormulaKind.Lt: None,
-    FormulaKind.Neq: None,
-    FormulaKind.Not: None,
-    FormulaKind.Or: None,
     FormulaKind.PositiveSemidefinite: None,
 }
 
@@ -99,7 +98,7 @@ def _var_from_sympy(sympy_var: sympy.Dummy, *, memo: Dict):
 def _to_sympy(x: Union[float, bool, Variable, Expression, Formula],
               *,
               memo: Dict) -> sympy.Expr:
-    # TODO(jwnimmer-try) Also support Formula, Polynomial, Monomial, etc.
+    # TODO(jwnimmer-try) Also support Polynomial, Monomial, etc.
     if isinstance(x, (float, bool)):
         return x
     if isinstance(x, Variable):

@@ -62,7 +62,17 @@ class TestSympy(unittest.TestCase):
             mut.max(y, x),
             mut.ceil(x),
             mut.floor(x),
-            # ... TODO(jwnimmer-tri) ... more
+            # Boolean functions, ordered to match FormulaKind.
+            x == y,
+            x != y,
+            x > y,
+            x >= y,
+            x < y,
+            x <= y,
+            # TODO(jwnimmer-tri) Fix me.
+            # mut.logical_and(q, r),
+            # mut.logical_or(q, r),
+            # mut.logical_not(q),
         ]
         for item in inputs:
             with self.subTest(item=item):
