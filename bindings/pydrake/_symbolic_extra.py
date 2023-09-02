@@ -29,10 +29,11 @@ def _reduce_mul(*args):
 _symbolic_sympy = None
 
 
-def to_sympy(x: typing.Union[float, Variable, Expression],
+def to_sympy(x: typing.Union[float, bool, Variable, Expression, Formula],
              *,
-             memo: typing.Dict = None) -> 'sympy.Expr':
-    """Converts a pydrake Expression to the corresponding SymPy Expr.
+             memo: typing.Dict = None) -> typing.Union[
+                 float, bool, 'sympy.Expr']:
+    """Converts a pydrake object to the corresponding SymPy Expr.
 
     Certain expressions are not supported and will raise NotImplementedError.
 
@@ -46,10 +47,11 @@ def to_sympy(x: typing.Union[float, Variable, Expression],
     return _symbolic_sympy._to_sympy(x, memo=memo)
 
 
-def from_sympy(x: typing.Union[float, 'sympy.Expr'],
+def from_sympy(x: typing.Union[float, bool, 'sympy.Expr'],
                *,
-               memo: typing.Dict = None) -> Expression:
-    """Converts a SymPy Expr to the corresponding pydrake Expression.
+               memo: typing.Dict = None) -> typing.Union[
+                   float, bool, Variable, Expression, Formula]:
+    """Converts a SymPy Expr to the corresponding pydrake object.
 
     Certain expressions are not supported and will raise NotImplementedError.
 

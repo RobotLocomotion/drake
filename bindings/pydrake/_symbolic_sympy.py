@@ -98,7 +98,8 @@ def _var_from_sympy(sympy_var: sympy.Dummy, *, memo: Dict):
 
 def _to_sympy(x: Union[float, bool, Variable, Expression, Formula],
               *,
-              memo: Dict) -> sympy.Expr:
+              memo: Dict = None) -> Union[
+                  float, bool, 'sympy.Expr']:
     # TODO(jwnimmer-try) Also support Polynomial, Monomial, etc.
     if isinstance(x, (float, bool)):
         return x
@@ -121,7 +122,7 @@ def _to_sympy(x: Union[float, bool, Variable, Expression, Formula],
     return sympy_constructor(*sympy_args)
 
 
-class DrakePrinter(MpmathPrinter):
+class _DrakePrinter(MpmathPrinter):
     def __init__(self):
         super().__init__({
             "fully_qualified_modules": False,
@@ -144,13 +145,13 @@ class DrakePrinter(MpmathPrinter):
         return self._print_drake_logical_op(expr, "not")
 
 
-_DRAKE_PRINTER = DrakePrinter()
+_DRAKE_PRINTER = _DrakePrinter()
 
 
-def _lambdify(*, args, expr):
+def _lambdify(*, expr, args):
     return sympy.lambdify(
-        args=args,
         expr=expr,
+        args=args,
         modules=pydrake.symbolic,
         printer=_DRAKE_PRINTER,
         use_imps=False,
@@ -159,7 +160,8 @@ def _lambdify(*, args, expr):
 
 def _from_sympy(x: Union[float, bool, sympy.Expr],
                 *,
-                memo: Dict) -> Expression:
+                memo: Dict = None) -> Union[
+                    float, bool, Variable, Expression, Formula]:
     if isinstance(x, (float, bool)):
         return x
     if x.is_number:
