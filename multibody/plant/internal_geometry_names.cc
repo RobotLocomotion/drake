@@ -52,7 +52,6 @@ void ResetHelper(
   const int num_bodies = plant.num_bodies();
   for (BodyIndex i{0}; i < num_bodies; ++i) {
     const Body<T>& body = plant.get_body(i);
-    // XXX mbp caching sucks. Sucks. SUCKS.
     const auto& geometry_ids = plant.GetCollisionGeometriesForBody(body);
     if (geometry_ids.empty()) {
       continue;
@@ -89,16 +88,8 @@ void GeometryNames::ResetFull(
     const MultibodyPlant<T>& plant,
     const SceneGraphInspector<T>& inspector) {
   DRAKE_THROW_UNLESS(plant.is_finalized());
-  // XXX mbp caching sucks. Sucks. SUCKS.
-  const auto gid_universe =
-      inspector.GetGeometryIds(
-          geometry::GeometrySet(inspector.GetAllGeometryIds()),
-          geometry::Role::kProximity);
-  std::function lookup = [&inspector, &gid_universe](GeometryId id)
+  std::function lookup = [&inspector](GeometryId id)
       -> std::optional<std::string_view> {
-    if (gid_universe.count(id) == 0) {
-      return {};
-    }
     return inspector.GetName(id);
   };
   ResetHelper(plant, lookup, &entries_);
