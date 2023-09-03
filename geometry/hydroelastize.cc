@@ -38,22 +38,70 @@ class ShapeAdjuster final : public ShapeReifier {
   }
 
   // TODO(rpoyner-tri): implement too-small checks for all shapes.
-  void ImplementGeometry(const Box&, void*) final {}
-  void ImplementGeometry(const Capsule&, void*) final {}
-  void ImplementGeometry(const Convex&, void*) final {}
-  void ImplementGeometry(const Cylinder&, void*) final {}
-  void ImplementGeometry(const Ellipsoid&, void*) final {}
-  void ImplementGeometry(const HalfSpace&, void*) final {}
-  void ImplementGeometry(const MeshcatCone&, void*) final {}
+  void ImplementGeometry(const Box& box, void* ptr) final {
+    ReifyData* data = static_cast<ReifyData*>(ptr);
+    double max_radius = std::max(box.width(), std::max(box.depth(), box.height()));
+    double rez_hint = data->props->GetPropertyOrDefault(
+        kHydroGroup, kRezHint, 0.0);
+    if (2 * max_radius < rez_hint * 1e-2) {
+      data->is_too_small = true;
+    }
+  }
+
+  void ImplementGeometry(const Capsule& capsule, void* ptr) final {
+    ReifyData* data = static_cast<ReifyData*>(ptr);
+    double max_radius = capsule.length() * 0.5 + capsule.radius();
+    double rez_hint = data->props->GetPropertyOrDefault(
+        kHydroGroup, kRezHint, 0.0);
+    if (2 * max_radius < rez_hint * 1e-2) {
+      data->is_too_small = true;
+    }
+  }
+
+  void ImplementGeometry(const Convex&, void*) final {
+    // TODO(rpoyner-tri): implement too-small checks. How?
+  }
+
+  void ImplementGeometry(const Cylinder& cylinder, void* ptr) final {
+    ReifyData* data = static_cast<ReifyData*>(ptr);
+    double max_radius = std::max(cylinder.radius(), cylinder.length() * 0.5);
+    double rez_hint = data->props->GetPropertyOrDefault(
+        kHydroGroup, kRezHint, 0.0);
+    if (2 * max_radius < rez_hint * 1e-2) {
+      data->is_too_small = true;
+    }
+  }
+
+  void ImplementGeometry(const Ellipsoid& ellipsoid, void* ptr) final {
+    ReifyData* data = static_cast<ReifyData*>(ptr);
+    double max_radius = std::max(
+        ellipsoid.a(), std::max(ellipsoid.b(), ellipsoid.c()));
+    double rez_hint = data->props->GetPropertyOrDefault(
+        kHydroGroup, kRezHint, 0.0);
+    if (2 * max_radius < rez_hint * 1e-2) {
+      data->is_too_small = true;
+    }
+  }
+
+  void ImplementGeometry(const HalfSpace&, void*) final {
+    // Halfspaces are plenty big by definition; nothing to do.
+  }
+
+  void ImplementGeometry(const MeshcatCone&, void*) final {
+    // Documented not to participate in proximity queries; nothing to do.
+  }
+
   void ImplementGeometry(const Sphere& sphere, void* ptr) final {
     ReifyData* data = static_cast<ReifyData*>(ptr);
     double rez_hint = data->props->GetPropertyOrDefault(
         kHydroGroup, kRezHint, 0.0);
-    if (sphere.radius() < rez_hint * 1e-2) {
+    if (2 * sphere.radius() < rez_hint * 1e-2) {
       data->is_too_small = true;
     }
   }
+
   void ImplementGeometry(const Mesh& mesh, void* ptr) final {
+    // TODO(rpoyner-tri): implement too-small checks. How?
     ReifyData* data = static_cast<ReifyData*>(ptr);
     if (mesh.extension() != ".vtk") {
       // We have no prayer of making a soft geometry -- avoid it.
