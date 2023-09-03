@@ -14,7 +14,6 @@ namespace internal {
 template <typename T>
 void Hydroelastize(GeometryState<T>* geometry_state,
                    const SceneGraphConfig& config);
-// TODO(rpoyner-tri): ignore "tiny bubbles"
 
 }  // namespace internal
 }  // namespace geometry
