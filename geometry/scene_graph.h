@@ -243,6 +243,7 @@ class QueryObject;
  that affects geometry with one of those roles will modify the corresponding
  version. For example:
 
+ In C++:
  @code
  // Does *not* modify any version; no roles have been assigned.
  const GeometryId geometry_id = scene_graph.RegisterGeometry(
@@ -260,6 +261,27 @@ class QueryObject;
  // registered with any renderer.
  scene_graph.RemoveGeometry(source_id, geometry_id);
  @endcode
+
+ In Python:
+ @python_details_begin
+ @code{.py}
+ # Does *not* modify any version; no roles have been assigned.
+ geometry_id = scene_graph.RegisterGeometry(
+     source_id, frame_id, GeometryInstance(...))
+ # Modifies the proximity version.
+ scene_graph.AssignRole(source_id, geometry_id, ProximityProperties())
+ # Modifies the illustration version.
+ scene_graph.AssignRole(source_id, geometry_id, IllustrationProperties())
+ # Modifies the perception version if there exists a renderer that accepts the
+ # geometry.
+ scene_graph.AssignRole(source_id, geometry_id, PerceptionProperties())
+ # Modifies the illustration version.
+ scene_graph.RemoveRole(source_id, geometry_id, Role.kIllustration)
+ # Modifies proximity version and perception version if the geometry is
+ # registered with any renderer.
+ scene_graph.RemoveGeometry(source_id, geometry_id)
+ @endcode
+ @python_details_end
 
  Each copy of geometry data maintains its own set of versions.
  %SceneGraph's model has its own version, and that version is the same as the

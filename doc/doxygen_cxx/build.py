@@ -252,12 +252,20 @@ def _build(*, out_dir, temp_dir, modules, quick):
         ]
     _postprocess_doxygen_log(lines, check_for_errors)
 
-    # Fix the formatting of deprecation text (see drake#15619 for an example).
     extra_perl_statements = [
-        # Remove quotes around the removal date.
+        # Rework @python_details_{begin,end} use HTML <details>, not <span>.
+        # (Our current version of Doxygen doesn't know about <details>, so we
+        # needed to choose an HTML element like <span> that makes it through.)
+        (r's#<p><span class="_python_details_begin"></span> </p>#'
+         r'<p><details><summary>Click to expand Python code...</summary>#;'),
+        (r's#<p> <span class="_python_details_end"></span></p>$#'
+         r'</details></p>#;'),
+
+        # Fix the formatting of deprecation text (see #15619 for an example).
+        # (1) Remove quotes around the removal date.
         r's#(removed from Drake on or after) "(....-..-..)" *\.#\1 \2.#;',
-        # Remove all quotes within the explanation text, i.e., the initial and
-        # final quotes, as well as internal quotes that might be due to C++
+        # (2) Remove all quotes within the explanation text, i.e., the initial
+        # and final quotes, as well as internal quotes that might be due to C++
         # multi-line string literals.
         # - The quotes must appear after a "_deprecatedNNNNNN" anchor.
         # - The quotes must appear before a "<br />" end-of-line.
