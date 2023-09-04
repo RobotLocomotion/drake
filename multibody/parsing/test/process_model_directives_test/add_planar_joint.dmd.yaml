@@ -1,0 +1,29 @@
+# This file is for testing the add_planar_joint directive.
+directives:
+
+- add_model:
+    name: xy_model
+    file: package://process_model_directives_test/simple_model.sdf
+
+- add_planar_joint:
+    name: xy_planar
+    parent: world
+    child: xy_model::base
+    default_translation: [-1, -2]
+    default_rotation_deg: 90 
+
+- add_model:
+    name: xz_model
+    file: package://process_model_directives_test/simple_model.sdf
+
+- add_frame:
+    name: xz_frame
+    X_PF:
+      base_frame: world
+      rotation: !Rpy { deg: [90, 0, 0] }
+
+- add_planar_joint:
+    name: xz_planar
+    parent: xz_frame
+    child: xz_model::base
+    damping: [0.1, 0.2, 0.3]

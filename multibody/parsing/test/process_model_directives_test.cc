@@ -9,10 +9,12 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/tree/planar_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
 
 namespace drake {
@@ -242,6 +244,47 @@ GTEST_TEST(ProcessModelDirectivesTest, TestBackreferences) {
       plant.GetModelInstanceByName("nested::simple_model")));
 }
 
+// Test backreference behavior in ModelDirectives.
+GTEST_TEST(ProcessModelDirectivesTest, AddPlanarJoint) {
+  ModelDirectives directives = LoadModelDirectives(
+      FindResourceOrThrow(std::string(kTestDir) +
+                          "/add_planar_joint.dmd.yaml"));
+
+  MultibodyPlant<double> plant(0.);
+  ProcessModelDirectives(directives, &plant,
+                         nullptr, make_parser(&plant).get());
+  plant.Finalize();
+  auto context = plant.CreateDefaultContext();
+
+  EXPECT_TRUE(plant.HasJointNamed("xy_planar",
+                                  plant.GetModelInstanceByName("xy_model")));
+  const PlanarJoint<double>& xy_planar =
+      plant.GetJointByName<PlanarJoint>("xy_planar");
+  const Body<double>& xy_body =
+      plant.GetBodyByName("base", plant.GetModelInstanceByName("xy_model"));
+  RigidTransformd X_WB = xy_body.EvalPoseInWorld(*context);
+  // The default translation from the yaml file is [-1, -2].
+  EXPECT_TRUE(CompareMatrices(X_WB.translation(), Vector3d(-1, -2, 0), 1e-14));
+  // The default rotation from the yaml file is 90 degrees about the z axis.
+  EXPECT_NEAR(xy_planar.get_rotation(*context), M_PI / 2, 1e-14);
+  plant.GetJointByName<PlanarJoint>("xy_planar")
+      .set_translation(context.get(), Eigen::Vector2d{1, 2});
+  X_WB = xy_body.EvalPoseInWorld(*context);
+  EXPECT_TRUE(CompareMatrices(X_WB.translation(), Vector3d(1, 2, 0), 1e-14));
+
+  EXPECT_TRUE(plant.HasJointNamed("xz_planar",
+                                  plant.GetModelInstanceByName("xz_model")));
+  const PlanarJoint<double>& xz_planar =
+      plant.GetJointByName<PlanarJoint>("xz_planar");
+  const Body<double>& xz_body =
+      plant.GetBodyByName("base", plant.GetModelInstanceByName("xz_model"));
+  xz_planar.set_translation(context.get(), Eigen::Vector2d{3, 4});
+  X_WB = xz_body.EvalPoseInWorld(*context);
+  EXPECT_TRUE(CompareMatrices(X_WB.translation(), Vector3d(3, 0, 4), 1e-14));
+  EXPECT_TRUE(
+      CompareMatrices(xz_planar.damping(), Vector3d(0.1, 0.2, 0.3), 1e-14));
+}
+
 // Test frame injection in ModelDirectives.
 GTEST_TEST(ProcessModelDirectivesTest, InjectFrames) {
   ModelDirectives directives = LoadModelDirectives(
@@ -380,8 +423,8 @@ GTEST_TEST(ProcessModelDirectivesTest, DeepNestedChildWelds) {
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       ProcessModelDirectives(directives, &plant, nullptr,
-        make_parser(&plant).get()),
-        R"(.*Failure at .* in AddWeld\(\): condition 'found' failed.*)");
+                             make_parser(&plant).get()),
+      R"(.*Failure at .* in RecordParentInstance\(\): condition 'found' failed.*)");
 }
 
 // Test model directives failure to load welds with a child to a
@@ -394,8 +437,8 @@ GTEST_TEST(ProcessModelDirectivesTest, DeepNestedChildFrameWelds) {
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       ProcessModelDirectives(directives, &plant, nullptr,
-        make_parser(&plant).get()),
-        R"(.*Failure at .* in AddWeld\(\): condition 'found' failed.*)");
+                             make_parser(&plant).get()),
+      R"(.*Failure at .* in RecordParentInstance\(\): condition 'found' failed.*)");
 }
 
 }  // namespace

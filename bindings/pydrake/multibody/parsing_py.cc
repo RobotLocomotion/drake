@@ -147,6 +147,16 @@ PYBIND11_MODULE(parsing, m) {
   }
 
   {
+    using Class = parsing::AddPlanarJoint;
+    constexpr auto& cls_doc = doc.parsing.AddPlanarJoint;
+    py::class_<Class> cls(m, "AddPlanarJoint", cls_doc.doc);
+    cls.def(ParamInit<Class>());
+    DefAttributesUsingSerialize(&cls, cls_doc);
+    DefReprUsingSerialize(&cls);
+    DefCopyAndDeepCopy(&cls);
+  }
+
+  {
     using Class = parsing::AddModel;
     constexpr auto& cls_doc = doc.parsing.AddModel;
     py::class_<Class> cls(m, "AddModel", cls_doc.doc);

@@ -69,6 +69,52 @@ struct AddWeld {
   std::optional<drake::schema::Transform> X_PC{};
 };
 
+// Note: We define planar joints here, but not the other joint types (at least
+// not yet). Planar joints are worthy of special treatment here, because they
+// are often used as replacements for floating joints, and are often applied
+// between different model instances (rather than inside a model instance). For
+// example, we might want to create a 2D environment with many objects all added
+// using planar "floating" joints.
+
+/// Directive to add a planar joint between two named frames, a parent and a
+/// child.
+struct AddPlanarJoint {
+  bool IsValid() const {
+    if (parent.empty()) {
+      drake::log()->error("add_planar_joint: `parent` must be non-empty");
+      return false;
+    } else if (child.empty()) {
+      drake::log()->error("add_planar_joint: `child` must be non-empty");
+      return false;
+    }
+    return true;
+  }
+
+  template <typename Archive>
+  void Serialize(Archive* a) {
+    a->Visit(DRAKE_NVP(name));
+    a->Visit(DRAKE_NVP(parent));
+    a->Visit(DRAKE_NVP(child));
+    a->Visit(DRAKE_NVP(damping));
+    a->Visit(DRAKE_NVP(default_translation));
+    a->Visit(DRAKE_NVP(default_rotation_deg));
+  }
+
+  /// Name of joint to be added.
+  std::string name;
+  /// Parent frame. Can specify scope.
+  std::string parent;
+  /// Child frame. Can (and should) specify scope.
+  std::string child;
+  /// Damping coefficient for the joint.
+  std::optional<Eigen::Vector3d> damping{};
+  /// Default positions (x, y, theta).
+  std::optional<Eigen::Vector2d> default_translation{};
+  std::optional<double> default_rotation_deg{};
+
+  // TODO(russt): Consider adding X_PF and/or X_FM for convenience.
+};
+
 /// Directive to add a model from a URDF or SDFormat file to a scene, using a
 /// given name for the added instance.
 struct AddModel {
@@ -247,12 +293,13 @@ struct ModelDirective {
     const bool unique =
         (add_model.has_value() + add_model_instance.has_value() +
          add_frame.has_value() + add_weld.has_value() +
-         add_collision_filter_group.has_value() +
+         add_planar_joint.has_value() + add_collision_filter_group.has_value() +
          add_directives.has_value()) == 1;
     if (!unique) {
       drake::log()->error(
           "directive: Specify one of `add_model`, `add_model_instance`, "
-          "`add_frame`, `add_collision_filter_group`, or `add_directives`");
+          "`add_frame`, `add_weld`, `add_planar_joint`, "
+          "`add_collision_filter_group`, or `add_directives`");
       return false;
     } else if (add_model) {
       return add_model->IsValid();
@@ -262,6 +309,8 @@ struct ModelDirective {
       return add_frame->IsValid();
     } else if (add_weld) {
       return add_weld->IsValid();
+    } else if (add_planar_joint) {
+      return add_planar_joint->IsValid();
     } else if (add_collision_filter_group) {
       return add_collision_filter_group->IsValid();
     } else {
@@ -275,6 +324,7 @@ struct ModelDirective {
     a->Visit(DRAKE_NVP(add_model_instance));
     a->Visit(DRAKE_NVP(add_frame));
     a->Visit(DRAKE_NVP(add_weld));
+    a->Visit(DRAKE_NVP(add_planar_joint));
     a->Visit(DRAKE_NVP(add_collision_filter_group));
     a->Visit(DRAKE_NVP(add_directives));
   }
@@ -283,6 +333,7 @@ struct ModelDirective {
   std::optional<AddModelInstance> add_model_instance;
   std::optional<AddFrame> add_frame;
   std::optional<AddWeld> add_weld;
+  std::optional<AddPlanarJoint> add_planar_joint;
   std::optional<AddCollisionFilterGroup> add_collision_filter_group;
   std::optional<AddDirectives> add_directives;
 };

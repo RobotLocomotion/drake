@@ -6,6 +6,7 @@ from pydrake.multibody.parsing import (
     AddFrame,
     AddModel,
     AddModelInstance,
+    AddPlanarJoint,
     AddWeld,
     GetScopedFrameByName,
     LoadModelDirectives,
@@ -320,6 +321,13 @@ directives:
     def test_add_weld_struct(self):
         """Checks the bindings of the AddWeld helper struct."""
         dut = AddWeld(parent="foo")
+        self.assertIn("foo", repr(dut))
+        copy.copy(dut)
+        copy.deepcopy(dut)
+
+    def test_add_planar_joint_struct(self):
+        """Checks the bindings of the AddPlanarJoint helper struct."""
+        dut = AddPlanarJoint(name="foo")
         self.assertIn("foo", repr(dut))
         copy.copy(dut)
         copy.deepcopy(dut)

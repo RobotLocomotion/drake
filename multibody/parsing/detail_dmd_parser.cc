@@ -3,11 +3,13 @@
 #include <filesystem>
 #include <memory>
 #include <set>
+#include <utility>
 
 #include "drake/common/yaml/yaml_io.h"
 #include "drake/multibody/parsing/detail_make_model_name.h"
 #include "drake/multibody/parsing/detail_path_utils.h"
 #include "drake/multibody/parsing/scoped_names.h"
+#include "drake/multibody/tree/planar_joint.h"
 #include "drake/multibody/tree/scoped_name.h"
 
 namespace drake {
@@ -20,29 +22,22 @@ using parsing::GetScopedFrameByName;
 
 namespace {
 
-// Adds a new weld joint to @p plant from @p parent_frame as indicated by @p
-// weld (as resolved relative to @p model_namespace) and update the @p info for
-// the child model accordingly.
-void AddWeld(
-    const Frame<double>& parent_frame,
-    const Frame<double>& child_frame,
-    const math::RigidTransform<double>& X_PC,
-    MultibodyPlant<double>* plant,
-    std::vector<ModelInstanceInfo>* added_models) {
-  plant->WeldFrames(parent_frame, child_frame, X_PC);
-  if (added_models) {
-    // Record weld info into crappy ModelInstanceInfo struct.
-    bool found = false;
-    for (auto& info : *added_models) {
-      if (info.model_instance == child_frame.model_instance()) {
-        found = true;
-        // See warning in ModelInstanceInfo about these members.
-        info.parent_frame_name = parent_frame.name();
-        info.child_frame_name = child_frame.name();
-      }
+// Records genealogy info into ModelInstanceInfo struct.
+// @throws std::exception if child_frame is not found in added_models.
+void RecordParentInstance(const Frame<double>& parent_frame,
+                          const Frame<double>& child_frame,
+                          std::vector<ModelInstanceInfo>* added_models) {
+  DRAKE_DEMAND(added_models != nullptr);
+  bool found = false;
+  for (auto& info : *added_models) {
+    if (info.model_instance == child_frame.model_instance()) {
+      found = true;
+      // See warning in ModelInstanceInfo about these members.
+      info.parent_frame_name = parent_frame.name();
+      info.child_frame_name = child_frame.name();
     }
-    DRAKE_THROW_UNLESS(found);
   }
+  DRAKE_THROW_UNLESS(found);
 }
 
 void ParseModelDirectivesImpl(
@@ -140,10 +135,35 @@ void ParseModelDirectivesImpl(
       if (directive.add_weld->X_PC) {
         X_PC = directive.add_weld->X_PC->GetDeterministicValue();
       }
-      AddWeld(
-          get_scoped_frame(directive.add_weld->parent),
-          get_scoped_frame(directive.add_weld->child),
-          X_PC, plant, added_models);
+      const Frame<double>& parent_frame =
+          get_scoped_frame(directive.add_weld->parent);
+      const Frame<double>& child_frame =
+          get_scoped_frame(directive.add_weld->child);
+      plant->WeldFrames(parent_frame, child_frame, X_PC);
+      if (added_models) {
+        RecordParentInstance(parent_frame, child_frame, added_models);
+      }
+    } else if (directive.add_planar_joint) {
+      const Frame<double>& parent_frame =
+          get_scoped_frame(directive.add_planar_joint->parent);
+      const Frame<double>& child_frame =
+          get_scoped_frame(directive.add_planar_joint->child);
+      auto joint = std::make_unique<PlanarJoint<double>>(
+          directive.add_planar_joint->name, parent_frame, child_frame,
+          *directive.add_planar_joint->damping);
+      if (directive.add_planar_joint->default_translation) {
+        joint->set_default_translation(
+            *directive.add_planar_joint->default_translation);
+      }
+      if (directive.add_planar_joint->default_rotation_deg) {
+        const double default_rotation_rad =
+            *directive.add_planar_joint->default_rotation_deg * M_PI / 180;
+        joint->set_default_rotation(default_rotation_rad);
+      }
+      plant->AddJoint(std::move(joint));
+      if (added_models) {
+        RecordParentInstance(parent_frame, child_frame, added_models);
+      }
 
     } else if (directive.add_collision_filter_group) {
       // If there's no geometry registered, there's nothing to be done with
