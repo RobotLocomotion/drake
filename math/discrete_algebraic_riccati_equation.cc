@@ -50,9 +50,12 @@ Eigen::MatrixXd DiscreteAlgebraicRiccatiEquation(
       drake::systems::internal::IsStabilizable(A, B, false, std::nullopt));
 
   // Ensure (A, C) pair where Q = CᵀC is detectable
-  // NOLINTNEXTLINE(whitespace/braces)
-  Eigen::MatrixXd C = Eigen::MatrixXd{Q_ldlt.matrixL()} *
-                      Q_ldlt.vectorD().cwiseSqrt().asDiagonal();
+  //
+  // Q = CᵀC = LDLᵀ
+  // C = √(D)Lᵀ
+  Eigen::MatrixXd C = Q_ldlt.vectorD().cwiseSqrt().asDiagonal() *
+                      // NOLINTNEXTLINE(whitespace/braces)
+                      Eigen::MatrixXd{Q_ldlt.matrixL().transpose()};
   DRAKE_THROW_UNLESS(
       drake::systems::internal::IsDetectable(A, C, false, std::nullopt));
 
