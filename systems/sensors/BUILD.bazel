@@ -216,8 +216,8 @@ drake_cc_library(
         ":lcm_image_traits",
         ":vtk_image_reader_writer",
         "//lcmtypes:image_array",
-        "@vtk//:vtkCommonCore",
-        "@vtk//:vtkIOImage",
+        "@vtk_internal//:vtkCommonCore",
+        "@vtk_internal//:vtkIOImage",
         "@zlib",
     ],
 )
@@ -321,9 +321,9 @@ drake_cc_library(
     ],
     deps = [
         ":vtk_image_reader_writer",
-        "@vtk//:vtkCommonCore",
-        "@vtk//:vtkCommonDataModel",
-        "@vtk//:vtkIOImage",
+        "@vtk_internal//:vtkCommonCore",
+        "@vtk_internal//:vtkCommonDataModel",
+        "@vtk_internal//:vtkIOImage",
     ],
 )
 
@@ -350,8 +350,8 @@ drake_cc_library(
     deps = [
         ":image_file_format",
         "//common:unused",
-        "@vtk//:vtkCommonCore",
-        "@vtk//:vtkIOImage",
+        "@vtk_internal//:vtkCommonCore",
+        "@vtk_internal//:vtkIOImage",
     ],
 )
 
@@ -606,31 +606,6 @@ drake_cc_googletest(
     deps = [
         ":vtk_image_reader_writer",
         "//common:temp_directory",
-        "//common/test_utilities:expect_throws_message",
-        "@vtk//:vtkCommonCore",
-        "@vtk//:vtkCommonDataModel",
-        "@vtk//:vtkIOImage",
-    ],
-)
-
-# This "reader writer canary" is the same test program as above, but linked
-# with @vtk_internal (VTK built from source) instead of @vtk (the host VTK).
-# This is a temporary measure for CI to help us understand if the VTK source
-# build is satisfactory. Once all of Drake has switched to @vtk_internal, we
-# can (and should) remove this test rule, since it will be redundant.
-drake_cc_googletest(
-    name = "vtk_image_reader_writer_canary_test",
-    srcs = [
-        "image_file_format.cc",
-        "image_file_format.h",
-        "test/vtk_image_reader_writer_test.cc",
-        "vtk_image_reader_writer.cc",
-        "vtk_image_reader_writer.h",
-    ],
-    deps = [
-        "//common:essential",
-        "//common:temp_directory",
-        "//common:unused",
         "//common/test_utilities:expect_throws_message",
         "@vtk_internal//:vtkCommonCore",
         "@vtk_internal//:vtkCommonDataModel",

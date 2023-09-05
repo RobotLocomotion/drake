@@ -31,6 +31,13 @@ build:kcov_everything --nocache_test_results
 # See timeout note above. Timeouts are 10x default values.
 build:kcov_everything --test_timeout=600,3000,9000,36000
 
+# Compile VTK without symbols; VTK symbols are too big for ASan & LSan.
+build:_vtk_no_debug --per_file_copt=external/vtk_internal@-g0
+build:asan --config=_vtk_no_debug
+build:asan_everything --config=_vtk_no_debug
+build:tsan --config=_vtk_no_debug
+build:tsan_everything --config=_vtk_no_debug
+
 ### ASan build. Clang only. ###
 build:asan --build_tests_only
 build:asan --copt=-g
