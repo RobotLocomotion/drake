@@ -108,6 +108,7 @@ drake_pybind_library(
         "//bindings/pydrake/common:deprecation_pybind",
         "//bindings/pydrake/common:serialize_pybind",
         "//bindings/pydrake/common:wrap_pybind",
+        "//systems/analysis:simulator_python_internal_header",
     ],
     cc_srcs = ["analysis_py.cc"],
     package_info = PACKAGE_INFO,
