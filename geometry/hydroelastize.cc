@@ -1,5 +1,6 @@
 #include "drake/geometry/hydroelastize.h"
 
+#include <algorithm>
 #include <string>
 
 #include "drake/geometry/proximity_properties.h"
@@ -40,7 +41,8 @@ class ShapeAdjuster final : public ShapeReifier {
   // TODO(rpoyner-tri): implement too-small checks for all shapes.
   void ImplementGeometry(const Box& box, void* ptr) final {
     ReifyData* data = static_cast<ReifyData*>(ptr);
-    double max_radius = std::max(box.width(), std::max(box.depth(), box.height()));
+    double max_radius =
+        std::max(box.width(), std::max(box.depth(), box.height()));
     double rez_hint = data->props->GetPropertyOrDefault(
         kHydroGroup, kRezHint, 0.0);
     if (2 * max_radius < rez_hint * 1e-2) {
