@@ -236,6 +236,24 @@ GTEST_TEST(DARETest, ACNotDetectable_ABQRN) {
   EXPECT_THROW(SolveDAREandVerify(A, B, Q, R, N), std::runtime_error);
 }
 
+GTEST_TEST(DARETest, QDecomposition) {
+  // Ensures the decomposition of Q into CᵀC is correct
+
+  const Eigen::Matrix2d A{{1.0, 0.0}, {0.0, 0.0}};
+  const Eigen::Matrix2d B{Eigen::Matrix2d::Identity()};
+  const Eigen::Matrix2d R{Eigen::Matrix2d::Identity()};
+
+  // (A, C₁) should be detectable pair
+  const Eigen::Matrix2d C_1{{0.0, 0.0}, {1.0, 0.0}};
+  const Eigen::Matrix2d Q_1 = C_1.transpose() * C_1;
+  EXPECT_NO_THROW(SolveDAREandVerify(A, B, Q_1, R));
+
+  // (A, C₂) shouldn't be detectable pair
+  const Eigen::Matrix2d C_2 = C_1.transpose();
+  const Eigen::Matrix2d Q_2 = C_2.transpose() * C_2;
+  EXPECT_THROW(SolveDAREandVerify(A, B, Q_2, R), std::runtime_error);
+}
+
 }  // namespace
 
 }  // namespace drake::math
