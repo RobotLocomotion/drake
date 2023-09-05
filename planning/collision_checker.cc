@@ -26,7 +26,6 @@
 namespace drake {
 namespace planning {
 
-using common_robotics_utilities::openmp_helpers::DegreeOfParallelism;
 using common_robotics_utilities::openmp_helpers::GetNumOmpThreads;
 using geometry::GeometryId;
 using geometry::QueryObject;
@@ -560,9 +559,13 @@ std::vector<uint8_t> CollisionChecker::CheckConfigsCollisionFree(
   std::vector<uint8_t> collision_checks(configs.size(), 0);
 
   // TODO(calderpg-tri) Expose more control over degree of parallelism.
-  const DegreeOfParallelism parallelism(GetNumberOfThreads(parallelize));
+  const int number_of_threads = GetNumberOfThreads(parallelize);
+  drake::log()->debug("MeasureEdgesCollisionFree uses {} thread(s)",
+                      number_of_threads);
 
-  CRU_OMP_PARALLEL_FOR_DEGREE(parallelism)
+#if defined(_OPENMP)
+#pragma omp parallel for num_threads(number_of_threads) schedule(static)
+#endif
   for (size_t idx = 0; idx < configs.size(); ++idx) {
     if (CheckConfigCollisionFree(configs.at(idx))) {
       collision_checks.at(idx) = 1;
@@ -708,8 +711,14 @@ bool CollisionChecker::CheckEdgeCollisionFreeParallel(
     const int num_steps =
         static_cast<int>(std::max(1.0, std::ceil(distance / edge_step_size())));
     std::atomic<bool> edge_valid(true);
+
+    // TODO(calderpg-tri) Expose more control over degree of parallelism.
+    const int number_of_threads = GetNumberOfThreads(true);
+    drake::log()->debug("CheckEdgeCollisionFreeParallel uses {} thread(s)",
+                        number_of_threads);
+
 #if defined(_OPENMP)
-#pragma omp parallel for
+#pragma omp parallel for num_threads(number_of_threads) schedule(static)
 #endif
     for (int step = 0; step < num_steps; ++step) {
       if (edge_valid.load()) {
@@ -736,9 +745,13 @@ std::vector<uint8_t> CollisionChecker::CheckEdgesCollisionFree(
   std::vector<uint8_t> collision_checks(edges.size(), 0);
 
   // TODO(calderpg-tri) Expose more control over degree of parallelism.
-  const DegreeOfParallelism parallelism(GetNumberOfThreads(parallelize));
+  const int number_of_threads = GetNumberOfThreads(parallelize);
+  drake::log()->debug("MeasureEdgesCollisionFree uses {} thread(s)",
+                      number_of_threads);
 
-  CRU_OMP_PARALLEL_FOR_DEGREE(parallelism)
+#if defined(_OPENMP)
+#pragma omp parallel for num_threads(number_of_threads) schedule(static)
+#endif
   for (size_t idx = 0; idx < edges.size(); ++idx) {
     const std::pair<Eigen::VectorXd, Eigen::VectorXd>& edge = edges.at(idx);
     if (CheckEdgeCollisionFree(edge.first, edge.second)) {
@@ -790,8 +803,14 @@ EdgeMeasure CollisionChecker::MeasureEdgeCollisionFreeParallel(
     // Start by assuming the whole edge is fine; we'll whittle away at it.
     alpha.store(1.0);
     std::mutex alpha_mutex;
+
+    // TODO(calderpg-tri) Expose more control over degree of parallelism.
+    const int number_of_threads = GetNumberOfThreads(true);
+    drake::log()->debug("MeasureEdgeCollisionFreeParallel uses {} thread(s)",
+                        number_of_threads);
+
 #if defined(_OPENMP)
-#pragma omp parallel for
+#pragma omp parallel for num_threads(number_of_threads) schedule(static)
 #endif
     for (int step = 0; step <= num_steps; ++step) {
       const double ratio = step / static_cast<double>(num_steps);
@@ -825,9 +844,13 @@ std::vector<EdgeMeasure> CollisionChecker::MeasureEdgesCollisionFree(
                                             EdgeMeasure(0.0, -1.0));
 
   // TODO(calderpg-tri) Expose more control over degree of parallelism.
-  const DegreeOfParallelism parallelism(GetNumberOfThreads(parallelize));
+  const int number_of_threads = GetNumberOfThreads(parallelize);
+  drake::log()->debug("MeasureEdgesCollisionFree uses {} thread(s)",
+                      number_of_threads);
 
-  CRU_OMP_PARALLEL_FOR_DEGREE(parallelism)
+#if defined(_OPENMP)
+#pragma omp parallel for num_threads(number_of_threads) schedule(static)
+#endif
   for (size_t idx = 0; idx < edges.size(); ++idx) {
     const std::pair<Eigen::VectorXd, Eigen::VectorXd>& edge = edges.at(idx);
     collision_checks.at(idx) =

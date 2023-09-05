@@ -3,16 +3,12 @@
 #include <iterator>
 #include <vector>
 
-#include <common_robotics_utilities/openmp_helpers.hpp>
 #if defined(_OPENMP)
 #include <omp.h>
 #endif
 
 namespace drake {
 namespace planning {
-
-using common_robotics_utilities::openmp_helpers::DegreeOfParallelism;
-
 namespace {
 
 /* A custom iterator that turns undirected edges encoded in the given
@@ -121,7 +117,7 @@ Eigen::SparseMatrix<bool> VisibilityGraph(
   // parallel evaluations.
   std::vector<uint8_t> points_free(num_points, 0x00);
 #if defined(_OPENMP)
-#pragma omp parallel for num_threads(num_threads_to_use)
+#pragma omp parallel for num_threads(num_threads_to_use) schedule(static)
 #endif
   for (int i = 0; i < num_points; ++i) {
     points_free[i] =
