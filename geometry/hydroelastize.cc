@@ -5,6 +5,7 @@
 
 #include "drake/geometry/proximity_properties.h"
 #include "drake/geometry/shape_specification.h"
+#include "drake/multibody/plant/coulomb_friction.h"
 
 namespace drake {
 namespace geometry {
@@ -20,16 +21,24 @@ void BackfillDefaults(ProximityProperties* properties,
         group_name, name,
         properties->GetPropertyOrDefault(group_name, name, default_value));
   };
+
   backfill(kHydroGroup, kElastic,
            config.hydroelastize_default_hydroelastic_modulus);
   backfill(kHydroGroup, kRezHint,
            config.hydroelastize_default_resolution_hint);
   backfill(kHydroGroup, kSlabThickness,
            config.hydroelastize_default_slab_thickness);
+
   backfill(kMaterialGroup, kHcDissipation,
            config.hydroelastize_default_hunt_crossley_dissipation);
-  backfill(kMaterialGroup, kFriction,
-           config.hydroelastize_default_dynamic_friction);
+  // Obey the documented law of CoulombFriction:
+  // static friction >= dynamic friction.
+  multibody::CoulombFriction friction{
+    std::max(config.hydroelastize_default_dynamic_friction,
+             config.hydroelastize_default_static_friction),
+    config.hydroelastize_default_dynamic_friction,
+  };
+  backfill(kMaterialGroup, kFriction, friction);
 }
 
 class ShapeAdjuster final : public ShapeReifier {
