@@ -223,7 +223,8 @@ void DefinePlanningCollisionChecker(py::module m) {
             py::arg("q1"), py::arg("q2"))
         .def("CheckEdgeCollisionFreeParallel",
             &Class::CheckEdgeCollisionFreeParallel, py::arg("q1"),
-            py::arg("q2"), cls_doc.CheckEdgeCollisionFreeParallel.doc)
+            py::arg("q2"), py::arg("parallelism") = true,
+            cls_doc.CheckEdgeCollisionFreeParallel.doc)
         .def("CheckEdgesCollisionFree", &Class::CheckEdgesCollisionFree,
             py::arg("edges"), py::arg("parallelize") = true,
             cls_doc.CheckEdgesCollisionFree.doc)
@@ -235,7 +236,8 @@ void DefinePlanningCollisionChecker(py::module m) {
             cls_doc.MeasureContextEdgeCollisionFree.doc)
         .def("MeasureEdgeCollisionFreeParallel",
             &Class::MeasureEdgeCollisionFreeParallel, py::arg("q1"),
-            py::arg("q2"), cls_doc.MeasureEdgeCollisionFreeParallel.doc)
+            py::arg("q2"), py::arg("parallelism") = true,
+            cls_doc.MeasureEdgeCollisionFreeParallel.doc)
         .def("MeasureEdgesCollisionFree", &Class::MeasureEdgesCollisionFree,
             py::arg("edges"), py::arg("parallelize") = true,
             cls_doc.MeasureEdgesCollisionFree.doc)

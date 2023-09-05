@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "drake/common/drake_throw.h"
+#include "drake/common/parallelism.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/planning/body_shape_description.h"
 #include "drake/planning/collision_checker_context.h"
@@ -692,7 +693,7 @@ class CollisionChecker {
    each configuration, 1 if collision free, 0 if in collision. */
   std::vector<uint8_t> CheckConfigsCollisionFree(
       const std::vector<Eigen::VectorXd>& configs,
-      bool parallelize = true) const;
+      Parallelism parallelize = Parallelism::Max()) const;
 
   //@}
 
@@ -933,8 +934,9 @@ class CollisionChecker {
    @param q1 Start configuration for edge.
    @param q2 End configuration for edge.
    @returns true if collision free, false if in collision. */
-  bool CheckEdgeCollisionFreeParallel(const Eigen::VectorXd& q1,
-                                      const Eigen::VectorXd& q2) const;
+  bool CheckEdgeCollisionFreeParallel(
+      const Eigen::VectorXd& q1, const Eigen::VectorXd& q2,
+      Parallelism parallelism = Parallelism::Max()) const;
 
   /** Checks multiple configuration-to-configuration edges for collision.
    Collision checks are parallelized via OpenMP when supported and enabled by
@@ -947,7 +949,7 @@ class CollisionChecker {
    if collision free, 0 if in collision. */
   std::vector<uint8_t> CheckEdgesCollisionFree(
       const std::vector<std::pair<Eigen::VectorXd, Eigen::VectorXd>>& edges,
-      bool parallelize = true) const;
+      Parallelism parallelize = Parallelism::Max()) const;
 
   /** Checks a single configuration-to-configuration edge for collision, using
    the current thread's associated context.
@@ -972,8 +974,9 @@ class CollisionChecker {
    @param q1 Start configuration for edge.
    @param q2 End configuration for edge.
    @returns A measure of how much of the edge is collision free. */
-  EdgeMeasure MeasureEdgeCollisionFreeParallel(const Eigen::VectorXd& q1,
-                                               const Eigen::VectorXd& q2) const;
+  EdgeMeasure MeasureEdgeCollisionFreeParallel(
+      const Eigen::VectorXd& q1, const Eigen::VectorXd& q2,
+      Parallelism parallelism = Parallelism::Max()) const;
 
   /** Checks multiple configuration-to-configuration edge for collision.
    Collision checks are parallelized via OpenMP when supported and enabled by
@@ -986,7 +989,7 @@ class CollisionChecker {
             is the result for the iᵗʰ edge. */
   std::vector<EdgeMeasure> MeasureEdgesCollisionFree(
       const std::vector<std::pair<Eigen::VectorXd, Eigen::VectorXd>>& edges,
-      bool parallelize = true) const;
+      Parallelism parallelize = Parallelism::Max()) const;
 
   //@}
 
@@ -1065,7 +1068,7 @@ class CollisionChecker {
 
   /** Gets the number of threads that may be used in an OpenMP-parallelized
    loop, if parallelize=true, or 1 if parallelize=false. */
-  int GetNumberOfThreads(bool parallelize) const;
+  int GetNumberOfThreads(Parallelism parallelize) const;
 
  protected:
   /** Derived classes declare upon construction whether they support parallel

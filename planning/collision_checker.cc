@@ -554,11 +554,11 @@ bool CollisionChecker::CheckContextConfigCollisionFree(
 }
 
 std::vector<uint8_t> CollisionChecker::CheckConfigsCollisionFree(
-    const std::vector<Eigen::VectorXd>& configs, const bool parallelize) const {
+    const std::vector<Eigen::VectorXd>& configs,
+    const Parallelism parallelize) const {
   // Note: vector<uint8_t> is used since vector<bool> is not thread safe.
   std::vector<uint8_t> collision_checks(configs.size(), 0);
 
-  // TODO(calderpg-tri) Expose more control over degree of parallelism.
   const int number_of_threads = GetNumberOfThreads(parallelize);
   drake::log()->debug("MeasureEdgesCollisionFree uses {} thread(s)",
                       number_of_threads);
@@ -691,9 +691,14 @@ bool CollisionChecker::CheckContextEdgeCollisionFree(
 }
 
 bool CollisionChecker::CheckEdgeCollisionFreeParallel(
-    const Eigen::VectorXd& q1, const Eigen::VectorXd& q2) const {
+    const Eigen::VectorXd& q1, const Eigen::VectorXd& q2,
+    const Parallelism parallelism) const {
+  const int number_of_threads = GetNumberOfThreads(parallelism);
+  drake::log()->debug("CheckEdgeCollisionFreeParallel uses {} thread(s)",
+                      number_of_threads);
+
   // Only perform parallel operations if `omp parallel for` will use >1 thread.
-  if (CanEvaluateInParallel()) {
+  if (number_of_threads > 1) {
     // Fail fast if q2 is in collision. This method is used by motion planners
     // that extend/connect towards some target configuration, and thus require a
     // number of edge collision checks in which q1 is often known to be
@@ -711,11 +716,6 @@ bool CollisionChecker::CheckEdgeCollisionFreeParallel(
     const int num_steps =
         static_cast<int>(std::max(1.0, std::ceil(distance / edge_step_size())));
     std::atomic<bool> edge_valid(true);
-
-    // TODO(calderpg-tri) Expose more control over degree of parallelism.
-    const int number_of_threads = GetNumberOfThreads(true);
-    drake::log()->debug("CheckEdgeCollisionFreeParallel uses {} thread(s)",
-                        number_of_threads);
 
 #if defined(_OPENMP)
 #pragma omp parallel for num_threads(number_of_threads) schedule(static)
@@ -740,11 +740,10 @@ bool CollisionChecker::CheckEdgeCollisionFreeParallel(
 
 std::vector<uint8_t> CollisionChecker::CheckEdgesCollisionFree(
     const std::vector<std::pair<Eigen::VectorXd, Eigen::VectorXd>>& edges,
-    const bool parallelize) const {
+    const Parallelism parallelize) const {
   // Note: vector<uint8_t> is used since vector<bool> is not thread safe.
   std::vector<uint8_t> collision_checks(edges.size(), 0);
 
-  // TODO(calderpg-tri) Expose more control over degree of parallelism.
   const int number_of_threads = GetNumberOfThreads(parallelize);
   drake::log()->debug("MeasureEdgesCollisionFree uses {} thread(s)",
                       number_of_threads);
@@ -791,9 +790,14 @@ EdgeMeasure CollisionChecker::MeasureContextEdgeCollisionFree(
 }
 
 EdgeMeasure CollisionChecker::MeasureEdgeCollisionFreeParallel(
-    const Eigen::VectorXd& q1, const Eigen::VectorXd& q2) const {
-  // Only perform parallel operations if omp parallel for will use >1 thread.
-  if (CanEvaluateInParallel()) {
+    const Eigen::VectorXd& q1, const Eigen::VectorXd& q2,
+    const Parallelism parallelism) const {
+  const int number_of_threads = GetNumberOfThreads(parallelism);
+  drake::log()->debug("MeasureEdgeCollisionFreeParallel uses {} thread(s)",
+                      number_of_threads);
+
+  // Only perform parallel operations if `omp parallel for` will use >1 thread.
+  if (number_of_threads > 1) {
     const double distance = ComputeConfigurationDistance(q1, q2);
     const int num_steps =
         static_cast<int>(std::max(1.0, std::ceil(distance / edge_step_size())));
@@ -803,11 +807,6 @@ EdgeMeasure CollisionChecker::MeasureEdgeCollisionFreeParallel(
     // Start by assuming the whole edge is fine; we'll whittle away at it.
     alpha.store(1.0);
     std::mutex alpha_mutex;
-
-    // TODO(calderpg-tri) Expose more control over degree of parallelism.
-    const int number_of_threads = GetNumberOfThreads(true);
-    drake::log()->debug("MeasureEdgeCollisionFreeParallel uses {} thread(s)",
-                        number_of_threads);
 
 #if defined(_OPENMP)
 #pragma omp parallel for num_threads(number_of_threads) schedule(static)
@@ -839,11 +838,10 @@ EdgeMeasure CollisionChecker::MeasureEdgeCollisionFreeParallel(
 
 std::vector<EdgeMeasure> CollisionChecker::MeasureEdgesCollisionFree(
     const std::vector<std::pair<Eigen::VectorXd, Eigen::VectorXd>>& edges,
-    const bool parallelize) const {
+    const Parallelism parallelize) const {
   std::vector<EdgeMeasure> collision_checks(edges.size(),
                                             EdgeMeasure(0.0, -1.0));
 
-  // TODO(calderpg-tri) Expose more control over degree of parallelism.
   const int number_of_threads = GetNumberOfThreads(parallelize);
   drake::log()->debug("MeasureEdgesCollisionFree uses {} thread(s)",
                       number_of_threads);
@@ -901,10 +899,11 @@ std::vector<RobotCollisionType> CollisionChecker::ClassifyContextBodyCollisions(
   return DoClassifyContextBodyCollisions(*model_context);
 }
 
-int CollisionChecker::GetNumberOfThreads(const bool parallelize) const {
-  const bool check_in_parallel = CanEvaluateInParallel() && parallelize;
+int CollisionChecker::GetNumberOfThreads(const Parallelism parallelize) const {
+  const bool check_in_parallel =
+      CanEvaluateInParallel() && parallelize.num_threads() > 1;
   if (check_in_parallel) {
-    return std::min(num_allocated_contexts(), GetNumOmpThreads());
+    return std::min(num_allocated_contexts(), parallelize.num_threads());
   } else {
     return 1;
   }
@@ -1027,8 +1026,10 @@ void CollisionChecker::OwnedContextKeeper::AllocateOwnedContexts(
 }
 
 bool CollisionChecker::CanEvaluateInParallel() const {
-  return SupportsParallelChecking() &&
-         common_robotics_utilities::openmp_helpers::GetNumOmpThreads() > 1;
+  // TODO(calderpg-tri) Remove OpenMP dependence once alternative parallel-for
+  // loop backends are supported.
+  return SupportsParallelChecking() && num_allocated_contexts() > 1 &&
+         common_robotics_utilities::openmp_helpers::IsOmpEnabledInBuild();
 }
 
 std::string CollisionChecker::CriticizePaddingMatrix() const {
