@@ -1441,6 +1441,11 @@ class CollisionChecker {
    This is defined upon construction by implementations. */
   bool supports_parallel_checking_{};
 
+  /* Specifies how much parallelism can be used in implicit context operations.
+  If the checker does not support parallel evaluation, this will specify no
+  parallelism. */
+  Parallelism implicit_context_parallelism_;
+
   /* The names of all groups with added geometries. */
   std::map<std::string, std::vector<AddedShape>> geometry_groups_;
 };

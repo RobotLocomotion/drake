@@ -930,6 +930,16 @@ CollisionChecker::CollisionChecker(CollisionCheckerParams params,
           CalcUncontrolledDofsThatKinematicallyAffectTheRobot(
               setup_model_->plant(), robot_model_instances_)),
       supports_parallel_checking_(supports_parallel_checking) {
+  // Initialize the supported implicit context parallelism.
+  if (SupportsParallelChecking()) {
+    implicit_context_parallelism_ = params.implicit_context_parallelism;
+  } else {
+    drake::log()->warn(
+        "Collision checker reports that parallel evaluation is not supported, "
+        "setting implicit context parallelism to 1 thread");
+    implicit_context_parallelism_ = Parallelism::None();
+  }
+
   // Initialize the zero configuration.
   zero_configuration_ = Eigen::VectorXd::Zero(plant().num_positions());
   // Initialize the default configuration.
@@ -988,27 +998,15 @@ void CollisionChecker::AllocateContexts() {
   DRAKE_THROW_UNLESS(IsInitialSetup());
   // Move to a const model.
   model_ = std::move(setup_model_);
-  // Make a diagram & plant context for each thread.
-  const int num_omp_threads =
-      common_robotics_utilities::openmp_helpers::GetNumOmpThreads();
-  const int max_num_omp_threads =
-      common_robotics_utilities::openmp_helpers::GetMaxNumOmpThreads();
-  const int omp_thread_limit =
-      common_robotics_utilities::openmp_helpers::GetOmpThreadLimit();
-  const bool omp_enabled_in_build =
-      common_robotics_utilities::openmp_helpers::IsOmpEnabledInBuild();
-  const int num_threads = std::max(num_omp_threads, max_num_omp_threads);
-  log()->info(
-      "Allocating contexts to support {} parallel queries given "
-      "omp_num_threads {} omp_max_threads {} and omp_thread_limit {} "
-      "OpenMP enabled in build? {}",
-      num_threads, num_omp_threads, max_num_omp_threads, omp_thread_limit,
-      omp_enabled_in_build);
+  // Make enough contexts to support the specified implicit context parallelism.
+  log()->info("Allocating contexts to support implicit context parallelism {}",
+              implicit_context_parallelism_.num_threads());
   // Make the prototype context.
   const std::unique_ptr<CollisionCheckerContext> prototype_context =
       CreatePrototypeContext();
   DRAKE_THROW_UNLESS(prototype_context != nullptr);
-  owned_contexts_.AllocateOwnedContexts(*prototype_context, num_threads);
+  owned_contexts_.AllocateOwnedContexts(
+      *prototype_context, implicit_context_parallelism_.num_threads());
 }
 
 void CollisionChecker::OwnedContextKeeper::AllocateOwnedContexts(

@@ -91,6 +91,7 @@ drake_cc_library(
     deps = [
         ":distance_and_interpolation_provider",
         ":robot_diagram",
+        "//common:parallelism",
         "//multibody/tree:multibody_tree_indexes",
     ],
 )
