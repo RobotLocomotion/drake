@@ -112,3 +112,56 @@ the latter.
 
 Each build command has a corresponding test defined as part of the
 ``//doc:manual_tests`` test suite.
+
+# Custom markup
+
+Drake has a few local conventions for adding markup to documentation strings.
+
+## @experimental
+
+The ``@experimental`` command generates a documentation paragraph that opts-out
+of the [Stable API](/stable.html).
+
+## @python_detail_...
+
+In Drake Doxygen, we can collapse Python example code under an "accordion", so
+that it only appears when the user clicks to expand it. Use the Drake-specific
+custom commands ``@python_details_begin`` and ``@python_details_end``.
+Here's an example:
+
+```
+/** Some overview.
+
+A code example in C++:
+@code{.cpp}
+int foo = 123;
+fmt:print("foo={}", foo);
+@endcode
+
+A code example in Python:
+@python_details_begin
+@code{.py}
+foo = 123
+print(f"foo={foo}")
+@endcode
+@python_details_end
+
+See also https://fmt.dev/.
+*/
+```
+
+## @tparam_...
+
+``@tparam`` is a built-in Doxygen command to describe a template argument. In
+Drake, for code templated on the "scalar type", writing out the description of
+the scalar type template in every class would be onerous boilerplate. Instead,
+we have a few custom abbreviations for the common cases:
+
+```
+@tparam_default_scalar
+@tparam_nonsymbolic_scalar
+@tparam_double_only
+```
+
+See the [C++ API documentation](/doxygen_cxx/group__default__scalars.html)
+for a full description.

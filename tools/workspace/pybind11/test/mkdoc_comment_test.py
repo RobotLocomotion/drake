@@ -316,7 +316,7 @@ eu non diam phasellus vestibulum.
         self.assertEqual(process_comment("/// @brief Static method"),
                          "Static method")
 
-    def test_code(self):
+    def test_code_cpp(self):
         input = """\
 /// @code{.cpp}
 /// Class class();
@@ -324,10 +324,37 @@ eu non diam phasellus vestibulum.
 /// @endcode
 """.rstrip()
         output = """\
-::
+.. raw:: html
+
+    <details><summary>Click to expand C++ code...</summary>
+
+.. code-block:: c++
 
     Class class();
     class.PublicMethod();
+
+.. raw:: html
+
+    </details>
+""".rstrip()
+        self.assertEqual(process_comment(input), output)
+
+    def test_code_py(self):
+        input = """\
+/// @python_details_begin
+/// @code{.py}
+/// # This is a Python comment.
+/// foo = dict()
+/// print(foo)
+/// @endcode
+/// @python_details_end
+""".rstrip()
+        output = """\
+.. code-block:: python
+
+    # This is a Python comment.
+    foo = dict()
+    print(foo)
 """.rstrip()
         self.assertEqual(process_comment(input), output)
 
