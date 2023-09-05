@@ -1,12 +1,14 @@
 #include "drake/math/discrete_algebraic_riccati_equation.h"
 
+#include <exception>
+
 #include <Eigen/LU>  // for inverse()
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 
-namespace drake::math {
-
+namespace drake {
+namespace math {
 namespace {
 
 void SolveDAREandVerify(const Eigen::Ref<const Eigen::MatrixXd>& A,
@@ -160,7 +162,7 @@ GTEST_TEST(DARE, QNotSymmetricPositiveSemidefinite_ABQR) {
   const Eigen::Matrix2d Q{-Eigen::Matrix2d::Identity()};
   const Eigen::Matrix2d R{Eigen::Matrix2d::Identity()};
 
-  EXPECT_THROW(SolveDAREandVerify(A, B, Q, R), std::runtime_error);
+  EXPECT_THROW(SolveDAREandVerify(A, B, Q, R), std::exception);
 }
 
 GTEST_TEST(DARE, QNotSymmetricPositiveSemidefinite_ABQRN) {
@@ -170,7 +172,7 @@ GTEST_TEST(DARE, QNotSymmetricPositiveSemidefinite_ABQRN) {
   const Eigen::Matrix2d R{Eigen::Matrix2d::Identity()};
   const Eigen::Matrix2d N{2.0 * Eigen::Matrix2d::Identity()};
 
-  EXPECT_THROW(SolveDAREandVerify(A, B, Q, R, N), std::runtime_error);
+  EXPECT_THROW(SolveDAREandVerify(A, B, Q, R, N), std::exception);
 }
 
 GTEST_TEST(DARE, RNotSymmetricPositiveDefinite_ABQR) {
@@ -179,10 +181,10 @@ GTEST_TEST(DARE, RNotSymmetricPositiveDefinite_ABQR) {
   const Eigen::Matrix2d Q{Eigen::Matrix2d::Identity()};
 
   const Eigen::Matrix2d R1{Eigen::Matrix2d::Zero()};
-  EXPECT_THROW(SolveDAREandVerify(A, B, Q, R1), std::runtime_error);
+  EXPECT_THROW(SolveDAREandVerify(A, B, Q, R1), std::exception);
 
   const Eigen::Matrix2d R2{-Eigen::Matrix2d::Identity()};
-  EXPECT_THROW(SolveDAREandVerify(A, B, Q, R2), std::runtime_error);
+  EXPECT_THROW(SolveDAREandVerify(A, B, Q, R2), std::exception);
 }
 
 GTEST_TEST(DARE, RNotSymmetricPositiveDefinite_ABQRN) {
@@ -192,10 +194,10 @@ GTEST_TEST(DARE, RNotSymmetricPositiveDefinite_ABQRN) {
   const Eigen::Matrix2d N{Eigen::Matrix2d::Identity()};
 
   const Eigen::Matrix2d R1{Eigen::Matrix2d::Zero()};
-  EXPECT_THROW(SolveDAREandVerify(A, B, Q, R1, N), std::runtime_error);
+  EXPECT_THROW(SolveDAREandVerify(A, B, Q, R1, N), std::exception);
 
   const Eigen::Matrix2d R2{-Eigen::Matrix2d::Identity()};
-  EXPECT_THROW(SolveDAREandVerify(A, B, Q, R2, N), std::runtime_error);
+  EXPECT_THROW(SolveDAREandVerify(A, B, Q, R2, N), std::exception);
 }
 
 GTEST_TEST(DARE, ABNotStabilizable_ABQR) {
@@ -204,7 +206,7 @@ GTEST_TEST(DARE, ABNotStabilizable_ABQR) {
   const Eigen::Matrix2d Q{Eigen::Matrix2d::Identity()};
   const Eigen::Matrix2d R{Eigen::Matrix2d::Identity()};
 
-  EXPECT_THROW(SolveDAREandVerify(A, B, Q, R), std::runtime_error);
+  EXPECT_THROW(SolveDAREandVerify(A, B, Q, R), std::exception);
 }
 
 GTEST_TEST(DARETest, ABNotStabilizable_ABQRN) {
@@ -214,7 +216,7 @@ GTEST_TEST(DARETest, ABNotStabilizable_ABQRN) {
   const Eigen::Matrix2d R{Eigen::Matrix2d::Identity()};
   const Eigen::Matrix2d N{Eigen::Matrix2d::Identity()};
 
-  EXPECT_THROW(SolveDAREandVerify(A, B, Q, R, N), std::runtime_error);
+  EXPECT_THROW(SolveDAREandVerify(A, B, Q, R, N), std::exception);
 }
 
 GTEST_TEST(DARETest, ACNotDetectable_ABQR) {
@@ -223,7 +225,7 @@ GTEST_TEST(DARETest, ACNotDetectable_ABQR) {
   const Eigen::Matrix2d Q{Eigen::Matrix2d::Zero()};
   const Eigen::Matrix2d R{Eigen::Matrix2d::Identity()};
 
-  EXPECT_THROW(SolveDAREandVerify(A, B, Q, R), std::runtime_error);
+  EXPECT_THROW(SolveDAREandVerify(A, B, Q, R), std::exception);
 }
 
 GTEST_TEST(DARETest, ACNotDetectable_ABQRN) {
@@ -233,7 +235,7 @@ GTEST_TEST(DARETest, ACNotDetectable_ABQRN) {
   const Eigen::Matrix2d R{Eigen::Matrix2d::Identity()};
   const Eigen::Matrix2d N{Eigen::Matrix2d::Zero()};
 
-  EXPECT_THROW(SolveDAREandVerify(A, B, Q, R, N), std::runtime_error);
+  EXPECT_THROW(SolveDAREandVerify(A, B, Q, R, N), std::exception);
 }
 
 GTEST_TEST(DARETest, QDecomposition) {
@@ -253,9 +255,9 @@ GTEST_TEST(DARETest, QDecomposition) {
   // (A, C₂) shouldn't be detectable pair
   const Eigen::Matrix2d C_2 = C_1.transpose();
   const Eigen::Matrix2d Q_2 = C_2.transpose() * C_2;
-  EXPECT_THROW(SolveDAREandVerify(A, B, Q_2, R), std::runtime_error);
+  EXPECT_THROW(SolveDAREandVerify(A, B, Q_2, R), std::exception);
 }
 
 }  // namespace
-
-}  // namespace drake::math
+}  // namespace math
+}  // namespace drake

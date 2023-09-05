@@ -2,7 +2,8 @@
 
 #include <Eigen/Core>
 
-namespace drake::math {
+namespace drake {
+namespace math {
 
 /**
 Computes the unique stabilizing solution X to the discrete-time algebraic
@@ -10,10 +11,10 @@ Riccati equation:
 
 AᵀXA − X − AᵀXB(BᵀXB + R)⁻¹BᵀXA + Q = 0
 
-@throws std::runtime_error if Q is not symmetric positive semidefinite.
-@throws std::runtime_error if R is not symmetric positive definite.
-@throws std::runtime_error if (A, B) isn't a stabilizable pair.
-@throws std::runtime_error if (A, C) isn't a detectable pair where Q = CᵀC.
+@throws std::exception if Q is not symmetric positive semidefinite.
+@throws std::exception if R is not symmetric positive definite.
+@throws std::exception if (A, B) isn't a stabilizable pair.
+@throws std::exception if (A, C) isn't a detectable pair where Q = CᵀC.
 */
 Eigen::MatrixXd DiscreteAlgebraicRiccatiEquation(
     const Eigen::Ref<const Eigen::MatrixXd>& A,
@@ -62,10 +63,10 @@ J = Σ [uₖ] [0 R][uₖ] ΔT
    k=0
 @endverbatim
 
-@throws std::runtime_error if Q₂ is not symmetric positive semidefinite.
-@throws std::runtime_error if R is not symmetric positive definite.
-@throws std::runtime_error if (A₂, B) isn't a stabilizable pair.
-@throws std::runtime_error if (A₂, C) isn't a detectable pair where Q₂ = CᵀC.
+@throws std::exception if Q₂ is not symmetric positive semidefinite.
+@throws std::exception if R is not symmetric positive definite.
+@throws std::exception if (A₂, B) isn't a stabilizable pair.
+@throws std::exception if (A₂, C) isn't a detectable pair where Q₂ = CᵀC.
 */
 Eigen::MatrixXd DiscreteAlgebraicRiccatiEquation(
     const Eigen::Ref<const Eigen::MatrixXd>& A,
@@ -74,4 +75,5 @@ Eigen::MatrixXd DiscreteAlgebraicRiccatiEquation(
     const Eigen::Ref<const Eigen::MatrixXd>& R,
     const Eigen::Ref<const Eigen::MatrixXd>& N);
 
-}  // namespace drake::math
+}  // namespace math
+}  // namespace drake

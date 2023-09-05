@@ -8,7 +8,8 @@
 #include "drake/common/is_approx_equal_abstol.h"
 #include "drake/systems/primitives/linear_system_internal.h"
 
-namespace drake::math {
+namespace drake {
+namespace math {
 
 Eigen::MatrixXd DiscreteAlgebraicRiccatiEquation(
     const Eigen::Ref<const Eigen::MatrixXd>& A,
@@ -147,4 +148,5 @@ Eigen::MatrixXd DiscreteAlgebraicRiccatiEquation(
   return DiscreteAlgebraicRiccatiEquation(A_2, B, Q_2, R);
 }
 
-}  // namespace drake::math
+}  // namespace math
+}  // namespace drake
