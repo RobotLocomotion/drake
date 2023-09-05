@@ -26,6 +26,10 @@ void BackfillDefaults(ProximityProperties* properties,
            config.hydroelastize_default_resolution_hint);
   backfill(kHydroGroup, kSlabThickness,
            config.hydroelastize_default_slab_thickness);
+  backfill(kMaterialGroup, kHcDissipation,
+           config.hydroelastize_default_hunt_crossley_dissipation);
+  backfill(kMaterialGroup, kFriction,
+           config.hydroelastize_default_dynamic_friction);
 }
 
 class ShapeAdjuster final : public ShapeReifier {
@@ -38,7 +42,6 @@ class ShapeAdjuster final : public ShapeReifier {
     return data.is_too_small;
   }
 
-  // TODO(rpoyner-tri): implement too-small checks for all shapes.
   void ImplementGeometry(const Box& box, void* ptr) final {
     ReifyData* data = static_cast<ReifyData*>(ptr);
     double max_radius =
@@ -61,7 +64,11 @@ class ShapeAdjuster final : public ShapeReifier {
   }
 
   void ImplementGeometry(const Convex&, void*) final {
-    // TODO(rpoyner-tri): implement too-small checks. How?
+    // For now, let us claim that anything supplied as a mesh will likely be
+    // appropriately sized to be part of the scene, and not a point-contact
+    // helper shape. Therefore, too-small checking should not be
+    // necessary. TODO(rpoyner-tri): Revisit this if there are
+    // counter-examples.
   }
 
   void ImplementGeometry(const Cylinder& cylinder, void* ptr) final {
@@ -103,7 +110,11 @@ class ShapeAdjuster final : public ShapeReifier {
   }
 
   void ImplementGeometry(const Mesh& mesh, void* ptr) final {
-    // TODO(rpoyner-tri): implement too-small checks. How?
+    // For now, let us claim that anything supplied as a mesh will likely be
+    // appropriately sized to be part of the scene, and not a point-contact
+    // helper shape. Therefore, too-small checking should not be
+    // necessary. TODO(rpoyner-tri): Revisit this if there are
+    // counter-examples.
     ReifyData* data = static_cast<ReifyData*>(ptr);
     if (mesh.extension() != ".vtk") {
       // We have no prayer of making a soft geometry -- avoid it.
