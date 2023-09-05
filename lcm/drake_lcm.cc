@@ -105,7 +105,7 @@ std::string DrakeLcm::get_lcm_url() const {
   return impl_->lcm_url_;
 }
 
-::lcm::LCM* DrakeLcm::get_lcm_instance() {
+::lcm::LCM* DrakeLcm::get_native() {
   if (impl_->lcm_cpp_ == nullptr) {
     // Create the C++ wrapper only when requested by the user or our unit test.
     impl_->lcm_cpp_ = std::make_unique<::lcm::LCM>(impl_->lcm_);
