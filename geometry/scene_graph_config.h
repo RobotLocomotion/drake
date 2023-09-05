@@ -21,6 +21,7 @@ struct SceneGraphConfig {
     a->Visit(DRAKE_NVP(hydroelastize_default_slab_thickness));
     a->Visit(DRAKE_NVP(hydroelastize_default_hunt_crossley_dissipation));
     a->Visit(DRAKE_NVP(hydroelastize_default_dynamic_friction));
+    a->Visit(DRAKE_NVP(hydroelastize_default_static_friction));
   }
 
   /// Configures the SceneGraph::set_hydroelastize().
@@ -28,6 +29,8 @@ struct SceneGraphConfig {
 
   // TODO(rpoyner-tri): Choose reasonable and sane default values; these are
   // just guesses.
+
+  // TODO(rpoyner-tri): Error checking/reporting strategy for bad values.
 
   /// Configures the default hydroelastic modulus to use when hydroelastize is
   /// active.
@@ -44,6 +47,9 @@ struct SceneGraphConfig {
   /// Configures the default dynamic friction to use when hydroelastize is
   /// active.
   double hydroelastize_default_dynamic_friction{0.5};
+  /// Configures the default dynamic friction to use when hydroelastize is
+  /// active.
+  double hydroelastize_default_static_friction{0.5};
 };
 
 }  // namespace geometry
