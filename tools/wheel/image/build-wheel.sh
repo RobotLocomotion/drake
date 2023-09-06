@@ -63,7 +63,7 @@ if [[ "$(uname)" == "Linux" ]]; then
       /opt/drake-wheel-content/*
 fi
 
-# NOTE: build-vtk.sh also puts licenses in /opt/drake-dependencies/licenses.
+# Copy the license files from third party dependencies we vendor.
 cp -r -t ${WHEEL_DIR}/pydrake/doc \
     /opt/drake-dependencies/licenses/*
 

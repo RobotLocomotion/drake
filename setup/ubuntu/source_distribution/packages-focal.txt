@@ -6,16 +6,12 @@ git
 libblas-dev
 libbz2-dev
 libclang-12-dev
-libdouble-conversion-dev
 libexpat1-dev
 libgl-dev
-libglew-dev
 libglib2.0-dev
 libglx-dev
 libjpeg-turbo8-dev
 liblapack-dev
-liblz4-dev
-liblzma-dev
 libmumps-seq-dev
 libopengl-dev
 libpng-dev
