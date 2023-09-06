@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<sdf xmlns:drake="http://drake.mit.edu" version="1.8">
+  <!-- A box with one-sided walls. -->
+  <model name="room">
+    <!-- Add box primitives. -->
+    <link name="room">
+      <visual name="room">
+        <geometry>
+          <mesh>
+            <uri>package://drake/geometry/render/test/meshes/room.gltf</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+  </model>
+</sdf>
