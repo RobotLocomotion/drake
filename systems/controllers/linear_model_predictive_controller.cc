@@ -63,7 +63,16 @@ LinearModelPredictiveController<T>::LinearModelPredictiveController(
     throw std::runtime_error("R must be positive definite");
   }
 
-  this->DeclarePeriodicDiscreteUpdateNoHandler(time_period_);
+  // TODO(jwnimmer-tri) This seems like a misunderstood attempt at implementing
+  // discrete dynamics. The intent *appears* to be that SetupAndSolveQp should
+  // be run once every time_step. However, both because its result is NOT stored
+  // as state and because the output is direct-feedthrough from the input, we do
+  // not actually embody any kind of discrete dynamics. Anytime a user evaluates
+  // the output port after the input port has changed, we'll redo the QP, even
+  // when the current time is not an integer multiple of the step.
+  this->DeclarePeriodicDiscreteUpdateEvent(
+      time_period_, 0.0,
+      &LinearModelPredictiveController<T>::DoNothingButPretendItWasSomething);
 
   if (base_context_ != nullptr) {
     linear_model_ = Linearize(*model_, *base_context_);
@@ -83,6 +92,13 @@ void LinearModelPredictiveController<T>::CalcControl(
   control->SetFromVector(current_input + input_ref);
 
   // TODO(jadecastro) Implement the time-varying case.
+}
+
+template <typename T>
+EventStatus
+LinearModelPredictiveController<T>::DoNothingButPretendItWasSomething(
+    const Context<T>&, DiscreteValues<T>*) const {
+  return EventStatus::Succeeded();
 }
 
 template <typename T>
