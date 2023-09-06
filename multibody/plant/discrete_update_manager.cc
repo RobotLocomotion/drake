@@ -218,8 +218,22 @@ template <typename T>
 const internal::JointLockingCacheData<T>&
 DiscreteUpdateManager<T>::EvalJointLockingCache(
     const systems::Context<T>& context) const {
+  return MultibodyPlantDiscreteUpdateManagerAttorney<T>::EvalJointLockingCache(
+      plant(), context);
+}
+
+template <typename T>
+VectorX<T> DiscreteUpdateManager<T>::AssembleActuationInput(
+    const systems::Context<T>& context) const {
+  return MultibodyPlantDiscreteUpdateManagerAttorney<T>::AssembleActuationInput(
+      plant(), context);
+}
+
+template <typename T>
+VectorX<T> DiscreteUpdateManager<T>::AssembleDesiredStateInput(
+    const systems::Context<T>& context) const {
   return MultibodyPlantDiscreteUpdateManagerAttorney<
-      T>::EvalJointLockingCache(plant(), context);
+      T>::AssembleDesiredStateInput(plant(), context);
 }
 
 template <typename T>

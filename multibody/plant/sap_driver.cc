@@ -19,6 +19,7 @@
 #include "drake/multibody/contact_solvers/sap/sap_friction_cone_constraint.h"
 #include "drake/multibody/contact_solvers/sap/sap_holonomic_constraint.h"
 #include "drake/multibody/contact_solvers/sap/sap_limit_constraint.h"
+#include "drake/multibody/contact_solvers/sap/sap_pd_controller_constraint.h"
 #include "drake/multibody/contact_solvers/sap/sap_solver.h"
 #include "drake/multibody/contact_solvers/sap/sap_solver_results.h"
 #include "drake/multibody/plant/compliant_contact_manager.h"
@@ -41,6 +42,7 @@ using drake::multibody::contact_solvers::internal::SapDistanceConstraint;
 using drake::multibody::contact_solvers::internal::SapFrictionConeConstraint;
 using drake::multibody::contact_solvers::internal::SapHolonomicConstraint;
 using drake::multibody::contact_solvers::internal::SapLimitConstraint;
+using drake::multibody::contact_solvers::internal::SapPdControllerConstraint;
 using drake::multibody::contact_solvers::internal::SapSolver;
 using drake::multibody::contact_solvers::internal::SapSolverResults;
 using drake::multibody::contact_solvers::internal::SapSolverStatus;
@@ -571,6 +573,55 @@ void SapDriver<T>::AddBallConstraints(
 }
 
 template <typename T>
+void SapDriver<T>::AddPdControllerConstraints(
+    const systems::Context<T>& context, SapContactProblem<T>* problem) const {
+  DRAKE_DEMAND(problem != nullptr);
+
+  // Do nothing if not PD controllers were specified.
+  if (manager_->pd_controller_specs_.size() == 0) return;
+
+  // Previous time step positions.
+  const VectorX<T> q0 = plant().GetPositions(context);
+
+  // Desired positions & velocities.
+  const int num_actuators = plant().num_actuators();
+  // TODO(amcastro-tri): makes these EvalFoo() instead to avoid heap
+  // allocations.
+  const VectorX<T> desired_state = manager_->AssembleDesiredStateInput(context);
+  const VectorX<T> feed_forward_actuation =
+      manager_->AssembleActuationInput(context);
+
+  for (const PdControllerConstraintSpecs& info :
+       manager_->pd_controller_specs_) {
+    const JointActuator<T>& actuator =
+        plant().get_joint_actuator(info.actuator_index);
+    const Joint<T>& joint = actuator.joint();
+    const double effort_limit = actuator.effort_limit();
+    const T& qd = desired_state[actuator.index()];
+    const T& vd = desired_state[num_actuators + actuator.index()];
+    const T& u0 = feed_forward_actuation[info.actuator_index];
+
+    const int dof = joint.velocity_start();
+    const TreeIndex tree = tree_topology().velocity_to_tree_index(dof);
+    const int tree_dof = dof - tree_topology().tree_velocities_start(tree);
+    const int tree_nv = tree_topology().num_tree_velocities(tree);
+
+    // Controller gains.
+    // TODO(amcastro-tri): consider getting these from the actuator?
+    const T& Kp = info.proportional_gain;
+    const T& Kd = info.derivative_gain;
+
+    typename SapPdControllerConstraint<T>::Parameters parameters{Kp, Kd,
+                                                                 effort_limit};
+    typename SapPdControllerConstraint<T>::Configuration configuration{
+        tree, tree_dof, tree_nv, q0[dof], qd, vd, u0};
+
+    problem->AddConstraint(std::make_unique<SapPdControllerConstraint<T>>(
+        std::move(configuration), std::move(parameters)));
+  }
+}
+
+template <typename T>
 void SapDriver<T>::CalcContactProblemCache(
     const systems::Context<T>& context, ContactProblemCache<T>* cache) const {
   std::vector<MatrixX<T>> A;
@@ -596,6 +647,7 @@ void SapDriver<T>::CalcContactProblemCache(
   AddCouplerConstraints(context, &problem);
   AddDistanceConstraints(context, &problem);
   AddBallConstraints(context, &problem);
+  AddPdControllerConstraints(context, &problem);
 
   // Make a reduced version of the original contact problem using joint locking
   // data.
