@@ -110,7 +110,7 @@ cc_test(
     name = "pointcloud_voxelization_test",
     srcs = ["test/pointcloud_voxelization_test.cpp"],
     env = {"OMP_NUM_THREADS": "2"},
-    tags = ["cpu:2"],
+    tags = ["cpu:2", "external"],
     deps = [
         ":voxelized_geometry_tools",
         ":cuda_voxelization_helpers",
