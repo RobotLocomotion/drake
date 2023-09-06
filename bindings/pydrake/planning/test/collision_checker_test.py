@@ -382,7 +382,7 @@ class TestCollisionChecker(unittest.TestCase):
         dut.CheckEdgeCollisionFree(q1=q, q2=q)
         dut.CheckEdgeCollisionFree(q1=q, q2=q, context_number=1)
         dut.CheckContextEdgeCollisionFree(model_context=ccc, q1=q, q2=q)
-        dut.CheckEdgeCollisionFreeParallel(q1=q, q2=q)
+        dut.CheckEdgeCollisionFreeParallel(q1=q, q2=q, parallelism=False)
         self.assertEqual(
             len(dut.CheckEdgesCollisionFree(
                 edges=[(q, q)]*4,
@@ -393,7 +393,7 @@ class TestCollisionChecker(unittest.TestCase):
         dut.MeasureEdgeCollisionFree(q1=q, q2=q)
         dut.MeasureEdgeCollisionFree(q1=q, q2=q, context_number=1)
         dut.MeasureContextEdgeCollisionFree(model_context=ccc, q1=q, q2=q)
-        dut.MeasureEdgeCollisionFreeParallel(q1=q, q2=q)
+        dut.MeasureEdgeCollisionFreeParallel(q1=q, q2=q, parallelism=False)
         measures = dut.MeasureEdgesCollisionFree(
             edges=[(q, q)]*4, parallelize=False)
         self.assertEqual(len(measures), 4)
