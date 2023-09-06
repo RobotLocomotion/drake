@@ -139,6 +139,10 @@ coin_cc_library(
     srcs = _SRCS,
     vendor_tool_args = ["--no-inline-namespace"],
     output_vendoring_patch = "drake_coinutils.patch",
+    deps = [
+        "@blas",
+        "@lapack",
+    ],
     visibility = ["//visibility:public"],
 )
 
