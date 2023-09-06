@@ -51,13 +51,18 @@ class EmptySystem : public LeafSystem<T> {
   void AddPeriodicDiscreteUpdate() {
     const double default_period = 1.125;
     const double default_offset = 2.25;
-    this->DeclarePeriodicDiscreteUpdateNoHandler(default_period,
-                                                 default_offset);
+    this->DeclarePeriodicDiscreteUpdateEvent(default_period, default_offset,
+                                             &EmptySystem::Noop);
   }
 
   // Adds a specific periodic discrete update.
   void AddPeriodicDiscreteUpdate(double period, double offset) {
-    this->DeclarePeriodicDiscreteUpdateNoHandler(period, offset);
+    this->DeclarePeriodicDiscreteUpdateEvent(period, offset,
+                                             &EmptySystem::Noop);
+  }
+
+  EventStatus Noop(const Context<T>&, DiscreteValues<T>*) const {
+    return EventStatus::DidNothing();
   }
 };
 
