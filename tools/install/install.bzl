@@ -576,7 +576,7 @@ _install_rule = rule(
 def install(tags = [], **kwargs):
     # (The documentation for this function is immediately below.)
     _install_rule(
-        tags = tags + ["install"],
+        tags = tags + ["install", "manual"],
         **kwargs
     )
 
@@ -725,7 +725,7 @@ _install_files_rule = rule(
 def install_files(tags = [], **kwargs):
     # (The documentation for this function is immediately below.)
     _install_files_rule(
-        tags = tags + ["install"],
+        tags = tags + ["install", "manual"],
         **kwargs
     )
 

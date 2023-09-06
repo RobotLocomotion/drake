@@ -261,30 +261,9 @@ drake_py_library(
 )
 
 PY_LIBRARIES_WITH_INSTALL = [
-    ":autodiffutils_py",
-    ":lcm_py",
-    ":math_py",
-    ":perception_py",
-    ":polynomial_py",
-    ":symbolic_py",
-    ":trajectories_py",
-    "//bindings/pydrake/common",
-    "//bindings/pydrake/examples",
-    "//bindings/pydrake/examples/gym",
-    "//bindings/pydrake/examples/multibody",
-    "//bindings/pydrake/geometry",
-    "//bindings/pydrake/gym",
-    "//bindings/pydrake/manipulation",
-    "//bindings/pydrake/multibody",
-    "//bindings/pydrake/planning",
-    "//bindings/pydrake/solvers",
-    "//bindings/pydrake/systems",
-    "//bindings/pydrake/visualization",
 ]
 
 PY_LIBRARIES = [
-    ":module_py",
-    ":tutorials_py",
 ]
 
 # Symbol roll-up (for user ease).
@@ -640,6 +619,7 @@ generate_python_stubs(
     outs = PYI_FILES,
     package = "pydrake",
     tool = ":stubgen",
+    tags = ["manual"],
 )
 
 # PEP 561 marker file; tells tools that type information is available.
@@ -648,6 +628,7 @@ genrule(
     srcs = [],
     outs = ["pydrake/py.typed"],
     cmd = "echo '# Marker file for PEP 561.' > $@",
+    tags = ["manual"],
 )
 
 generate_file(

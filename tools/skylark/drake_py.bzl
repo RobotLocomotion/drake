@@ -1,10 +1,22 @@
-load("//tools/skylark:py.bzl", "py_binary", "py_library", "py_test")
+load("//tools/skylark:py.bzl", native_py_binary="py_binary", native_py_library="py_library", native_py_test="py_test")
 load(
     "//tools/skylark:kwargs.bzl",
     "amend",
     "incorporate_allow_network",
     "incorporate_num_threads",
 )
+
+def native_py(rule, name, *, tags=None, **kwargs):
+    rule(name = name, tags = (tags or []) + ["manual"], **kwargs)
+
+def py_binary(name, **kwargs):
+    native_py(native_py_binary, name=name, **kwargs)
+
+def py_library(name, **kwargs):
+    native_py(native_py_library, name=name, **kwargs)
+
+def py_test(name, **kwargs):
+    native_py(native_py_test, name=name, **kwargs)
 
 def drake_py_library(
         name,

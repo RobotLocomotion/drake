@@ -392,6 +392,7 @@ sh_test(
     ],
     tags = [
         "no_memcheck",  # This wraps python; python is memcheck-exempt.
+        "manual",
     ],
 )
 

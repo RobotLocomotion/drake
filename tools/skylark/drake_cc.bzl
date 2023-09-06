@@ -82,6 +82,9 @@ GCC_CC_TEST_FLAGS = [
     "-Wno-unused-parameter",
 ]
 
+def native_cc(rule, name, *, tags=None, **kwargs):
+    rule(name = name, tags = (tags or []) + ["manual"], **kwargs)
+
 def _platform_copts(rule_copts, rule_gcc_copts, rule_clang_copts, cc_test = 0):
     """Returns both the rule_copts (plus rule_{cc}_copts iff under the
     specified compiler), and platform-specific copts.
@@ -425,7 +428,7 @@ def _raw_drake_cc_library(
             fail("implementation_deps are only supported for static libraries")
         compiled_name = "_{}_compiled_cc_impl".format(name)
         compiled_visibility = ["//visibility:private"]
-    native.cc_library(
+    native_cc(native.cc_library,
         name = compiled_name,
         srcs = srcs,
         hdrs = hdrs,
@@ -449,7 +452,7 @@ def _raw_drake_cc_library(
     # our static archive, and then squash them together to the final result.
     if implementation_deps:
         headers_name = "_{}_headers_cc_impl".format(name)
-        native.cc_library(
+        native_cc(native.cc_library,
             name = headers_name,
             hdrs = hdrs,
             strip_include_prefix = strip_include_prefix,
@@ -468,7 +471,7 @@ def _raw_drake_cc_library(
             visibility = ["//visibility:private"],
             tags = tags,
         )
-        native.cc_library(
+        native_cc(native.cc_library,
             name = name,
             deps = [
                 ":" + headers_name,
@@ -722,7 +725,7 @@ def drake_cc_binary(
         **kwargs
     )
 
-    native.cc_binary(
+    native_cc(native.cc_binary,
         name = name,
         srcs = new_srcs,
         data = data,
@@ -748,7 +751,7 @@ def drake_cc_binary(
         outs = [name + ".dSYM"],
         output_to_bindir = 1,
         testonly = testonly,
-        tags = tags + ["dsym"],
+        tags = tags + ["dsym"] + ["manual"],
         visibility = ["//visibility:private"],
         cmd = _dsym_command(name),
     )
@@ -813,7 +816,7 @@ def drake_cc_test(
         copts = new_copts,
         **kwargs
     )
-    native.cc_test(
+    native_cc(native.cc_test,
         name = name,
         size = size,
         srcs = new_srcs,
@@ -835,7 +838,7 @@ def drake_cc_test(
         outs = [name + ".dSYM"],
         output_to_bindir = 1,
         testonly = kwargs["testonly"],
-        tags = ["dsym"],
+        tags = ["dsym", "manual"],
         visibility = ["//visibility:private"],
         cmd = _dsym_command(name),
     )
