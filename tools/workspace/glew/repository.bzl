@@ -15,5 +15,6 @@ def glew_repository(
         licenses = licenses,
         modname = modname,
         pkg_config_paths = pkg_config_paths,
+        deprecation = "The @glew external is deprecated in Drake's WORKSPACE and will be removed on or after 2024-01-01.",  # noqa
         **kwargs
     )

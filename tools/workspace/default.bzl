@@ -166,6 +166,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
     if "curl_internal" not in excludes:
         curl_internal_repository(name = "curl_internal", mirrors = mirrors)
     if "double_conversion" not in excludes:
+        # The @double_conversion external is deprecated in Drake's WORKSPACE
+        # and will be removed on or after 2024-01-01.
         double_conversion_repository(name = "double_conversion")
     if "doxygen" not in excludes:
         doxygen_repository(name = "doxygen", mirrors = mirrors)
@@ -192,6 +194,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
     if "github3_py_internal" not in excludes:
         github3_py_internal_repository(name = "github3_py_internal", mirrors = mirrors)  # noqa
     if "glew" not in excludes:
+        # The @glew external is deprecated in Drake's WORKSPACE and will be
+        # removed on or after 2024-01-01.
         glew_repository(name = "glew")
     if "glib" not in excludes:
         glib_repository(name = "glib")
@@ -235,8 +239,12 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
     if "liblapack" not in excludes:
         liblapack_repository(name = "liblapack")
     if "liblz4" not in excludes:
+        # The @liblz4 external is deprecated in Drake's WORKSPACE and will be
+        # removed on or after 2024-01-01.
         liblz4_repository(name = "liblz4")
     if "liblzma" not in excludes:
+        # The @liblzma external is deprecated in Drake's WORKSPACE and will be
+        # removed on or after 2024-01-01.
         liblzma_repository(name = "liblzma")
     if "libpfm" not in excludes:
         libpfm_repository(name = "libpfm")
@@ -355,6 +363,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
     if "voxelized_geometry_tools" not in excludes:
         voxelized_geometry_tools_repository(name = "voxelized_geometry_tools", mirrors = mirrors)  # noqa
     if "vtk" not in excludes:
+        # The @vtk external is deprecated in Drake's WORKSPACE and will be
+        # removed on or after 2024-01-01.
         vtk_repository(name = "vtk", mirrors = mirrors)
     if "vtk_internal" not in excludes:
         vtk_internal_repository(name = "vtk_internal", mirrors = mirrors)
