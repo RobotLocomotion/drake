@@ -76,8 +76,8 @@ namespace planning {
  context by using `model_context(optional<int> context_number)` and related
  methods. These methods may be called in two ways:
 
- - without a context number, the association between and thread and context uses
-   the OpenMP notion of thread number
+ - without a context number, the association between thread and context uses the
+   OpenMP notion of thread number
  - with a context number, the method uses the context corresponding to the
    provided number
 
