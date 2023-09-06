@@ -68,21 +68,6 @@ class DirichletBoundaryConditionTest : public ::testing::Test {
     return A;
   }
 
-  /* Makes a PETSc tangent matrix with
-    [ A00   0;
-      0    A11]. */
-  static unique_ptr<PetscSymmetricBlockSparseMatrix> MakePetscTangentMatrix() {
-    const std::vector<int> num_upper_triangular_blocks_per_row = {1, 1};
-    auto A = make_unique<PetscSymmetricBlockSparseMatrix>(
-        kNumDofs, 3, num_upper_triangular_blocks_per_row);
-    const Vector1<int> index0(0);
-    A->AddToBlock(index0, A00);
-    const Vector1<int> index1(1);
-    A->AddToBlock(index1, A11);
-    A->AssembleIfNecessary();
-    return A;
-  }
-
   /* The DirichletBoundaryCondition under test. */
   DirichletBoundaryCondition<double> bc_;
   unique_ptr<FemStateSystem<double>> fem_state_system_;
@@ -130,21 +115,6 @@ TEST_F(DirichletBoundaryConditionTest,
   auto A = MakeTangentMatrix();
   bc_.ApplyBoundaryConditionToTangentMatrix(A.get());
   EXPECT_TRUE(CompareMatrices(A->MakeDenseMatrix(), expected_tangent_matrix));
-
-  DenseMatrix expected_petsc_matrix;
-  // clang-format off
-  expected_petsc_matrix << 1, 0, 0,    0,    0,     0,
-                           0, 1, 0,    0,    0,     0,
-                           0, 0, 1,    0,    0,     0,
-
-                           0, 0, 0,    0.3,  0.1,   0.05,
-                           0, 0, 0,    0.1,  0.2,   0.025,
-                           0, 0, 0,    0.05, 0.025, 0.3;
-  // clang-format on
-  auto A_petsc = MakePetscTangentMatrix();
-  bc_.ApplyBoundaryConditionToTangentMatrix(A_petsc.get());
-  EXPECT_TRUE(
-      CompareMatrices(A_petsc->MakeDenseMatrix(), expected_petsc_matrix));
 }
 
 /* Tests out-of-bound boundary conditions throw an exception. */
@@ -163,10 +133,6 @@ TEST_F(DirichletBoundaryConditionTest, OutOfBound) {
   auto A = MakeTangentMatrix();
   DRAKE_EXPECT_THROWS_MESSAGE(
       bc_.ApplyBoundaryConditionToTangentMatrix(A.get()),
-      "An index of the Dirichlet boundary condition is out of range.");
-  auto A_petsc = MakePetscTangentMatrix();
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      bc_.ApplyBoundaryConditionToTangentMatrix(A_petsc.get()),
       "An index of the Dirichlet boundary condition is out of range.");
 }
 
