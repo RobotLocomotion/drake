@@ -437,17 +437,26 @@ GTEST_TEST(CollisionCheckerTest, CollisionCheckerEmpty) {
   // are required to allocate contexts during construction. This is proof that
   // such an erroneous implementation can't appear functional.
   EXPECT_THROW(dut.plant_context(), std::exception);
+  EXPECT_THROW(dut.plant_context(0), std::exception);
   EXPECT_THROW(dut.model_context(), std::exception);
+  EXPECT_THROW(dut.model_context(0), std::exception);
   EXPECT_THROW(dut.Clone(), std::exception);
   EXPECT_THROW(dut.MakeStandaloneModelContext(), std::exception);
   EXPECT_THROW(dut.PerformOperationAgainstAllModelContexts(op), std::exception);
 
   dut.AllocateContexts();
   EXPECT_NO_THROW(dut.plant_context());
+  EXPECT_NO_THROW(dut.plant_context(0));
   EXPECT_NO_THROW(dut.model_context());
+  EXPECT_NO_THROW(dut.model_context(0));
   EXPECT_NO_THROW(dut.Clone());
   EXPECT_NO_THROW(dut.MakeStandaloneModelContext());
   EXPECT_NO_THROW(dut.PerformOperationAgainstAllModelContexts(op));
+
+  // Asking for an out-of-range context number throws.
+  EXPECT_FALSE(dut.SupportsParallelChecking());
+  EXPECT_THROW(dut.plant_context(1), std::exception);
+  EXPECT_THROW(dut.model_context(1), std::exception);
 }
 
 // Test the robot model introspection APIs.

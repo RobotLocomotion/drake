@@ -3,9 +3,13 @@
 #include <iterator>
 #include <vector>
 
+#include <common_robotics_utilities/openmp_helpers.hpp>
+
 #if defined(_OPENMP)
 #include <omp.h>
 #endif
+
+using common_robotics_utilities::openmp_helpers::GetContextOmpThreadNum;
 
 namespace drake {
 namespace planning {
@@ -120,8 +124,8 @@ Eigen::SparseMatrix<bool> VisibilityGraph(
 #pragma omp parallel for num_threads(num_threads_to_use) schedule(static)
 #endif
   for (int i = 0; i < num_points; ++i) {
-    points_free[i] =
-        static_cast<uint8_t>(checker.CheckConfigCollisionFree(points.col(i)));
+    points_free[i] = static_cast<uint8_t>(checker.CheckConfigCollisionFree(
+        points.col(i), GetContextOmpThreadNum()));
   }
 
   // Choose std::vector as a thread-safe data structure for the parallel
@@ -135,7 +139,8 @@ Eigen::SparseMatrix<bool> VisibilityGraph(
       edges[i].push_back(i);
       for (int j = i + 1; j < num_points; ++j) {
         if (points_free[j] > 0 &&
-            checker.CheckEdgeCollisionFree(points.col(i), points.col(j))) {
+            checker.CheckEdgeCollisionFree(points.col(i), points.col(j),
+                                           GetContextOmpThreadNum())) {
           edges[i].push_back(j);
         }
       }

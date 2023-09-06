@@ -55,7 +55,8 @@ namespace planning {
  per thread. It offers two models to achieve multi-threaded parallel collision
  checking:
 
- - using OpenMP thread pools and "implicit contexts" managed by this object
+ - using thread pools (e.g. OpenMP or similar) and "implicit contexts" managed
+   by this object
  - using arbitrary threads and "explicit contexts" created by this object
 
  @anchor ccb_implicit_contexts
@@ -65,28 +66,54 @@ namespace planning {
  (e.g. from std::async threads), but rather are designed for use with a main
  thread and various thread-pool-parallel operations achieved by using
  directives like `omp parallel`. To support this usage, the base class
- `AllocateContexts()` protected method establishes a pool of contexts, one per
- OMP thread. `AllocateContexts()` must be called and only be called as part of
- the constructor of a derived class defined as final.
+ `AllocateContexts()` protected method establishes a pool of contexts to support
+ the implicit context parallelism specified in the constructor (note: if the
+ collision checker declares that parallel checking is not supported, only one
+ implict context will be allocated). `AllocateContexts()` must be called and
+ only be called as part of the constructor of a derived class defined as final.
 
  Once the context pool is created, clients can access a thread-associated
- context by using `model_context()` and related methods. The association
- between thread and context uses the OpenMP notion of thread number. As a
- result, these context access methods are only safe under the following
- conditions:
+ context by using `model_context(optional<int> context_number)` and related
+ methods. These methods may be called in two ways:
+
+ - without a context number, the association between and thread and context uses
+   the OpenMP notion of thread number
+ - with a context number, the method uses the context corresponding to the
+   provided number
+
+ Without a context number, these context access methods are only safe under the
+ following conditions:
 
  - the caller is the "main thread"
- - the caller is an OMP team thread *during execution of a parallel region*
+ - the caller is an OpenMP team thread *during execution of a parallel region*
+
+ With a context number, these context access methods are only safe under the
+ following conditions:
+
+ - no two or more threads simultaneously use the same context number
 
  Methods supporting implicit context parallelism are noted below by having a
  reference to this section.
 
  Users of this class (derived classes and others) can write their own parallel
- operations using implicit contexts, provided they use OpenMP directives and
- limit parallel blocks to only use `const` methods or methods marked to support
- implicit contexts parallelism.
+ operations using implicit contexts, provided they limit parallel blocks to only
+ use `const` methods or methods marked to support implicit contexts parallelism,
+ and the parallel operations are:
 
- <!-- TODO(calderpg, rick-poyner) Add OpenMP for-loop example once drakelint
+ - without a context number, only with parallelism using OpenMP directives
+ - with a context number, via a parallelization method that provides a notion of
+   thread numbers similar in behavior to OpenMP's (i.e. a thread number in
+   [0, # of threads), not arbitrary values like `std::this_thread::get_id()`)
+
+ To determine the greatest implicit context parallelism that can be achieved in
+ an OpenMP-parallelized operation, `GetNumberOfThreads(Parallelism parallelize)`
+ returns the lesser of the provided `parallelism` and the supported implicit
+ context parallelism.
+
+ <!-- TODO(calderpg-tri) Update once GetNumberOfThreads behavior is no longer
+      dependent on OpenMP being available. -->
+
+ <!-- TODO(calderpg, rick-poyner) Add parallel for-loop examples once drakelint
       supports OpenMP pragmas in docs.  -->
 
  @anchor ccb_explicit_contexts
@@ -223,25 +250,31 @@ class CollisionChecker {
   /** @returns the number of internal (not standalone) per-thread contexts. */
   int num_allocated_contexts() const { return owned_contexts_.num_contexts(); }
 
-  /** @returns a `const` reference to the collision checking context to be used
+  /** @param context_number Optional implicit context number.
+   @returns a `const` reference to the collision checking context to be used
    with the current thread.
    @see @ref ccb_implicit_contexts "Implicit Context Parallelism". */
-  const CollisionCheckerContext& model_context() const;
+  const CollisionCheckerContext& model_context(
+      std::optional<int> context_number = std::nullopt) const;
 
   // TODO(jeremy.nimmer) This is only lightly used, maybe we should toss it?
-  /** @returns a `const` reference to the multibody plant sub-context within
+  /** @param context_number Optional implicit context number.
+   @returns a `const` reference to the multibody plant sub-context within
    the context for the current thread.
    @see @ref ccb_implicit_contexts "Implicit Context Parallelism". */
-  const systems::Context<double>& plant_context() const {
-    return model_context().plant_context();
+  const systems::Context<double>& plant_context(
+      std::optional<int> context_number = std::nullopt) const {
+    return model_context(context_number).plant_context();
   }
 
   /** Updates the generalized positions `q` in the current thread's associated
    context, and returns a reference to the MultibodyPlant's now-updated context.
+   @param context_number Optional implicit context number.
    @see @ref ccb_implicit_contexts "Implicit Context Parallelism". */
   const systems::Context<double>& UpdatePositions(
-      const Eigen::VectorXd& q) const {
-    return UpdateContextPositions(&mutable_model_context(), q);
+      const Eigen::VectorXd& q,
+      std::optional<int> context_number = std::nullopt) const {
+    return UpdateContextPositions(&mutable_model_context(context_number), q);
   }
 
   /** Explicit Context-based version of UpdatePositions().
@@ -668,9 +701,12 @@ class CollisionChecker {
   /** Checks a single configuration for collision using the current thread's
    associated context.
    @param q Configuration to check
+   @param context_number Optional implicit context number.
    @returns true if collision free, false if in collision.
    @see @ref ccb_implicit_contexts "Implicit Context Parallelism". */
-  bool CheckConfigCollisionFree(const Eigen::VectorXd& q) const;
+  bool CheckConfigCollisionFree(
+      const Eigen::VectorXd& q,
+      std::optional<int> context_number = std::nullopt) const;
 
   /** Explicit Context-based version of CheckConfigCollisionFree().
    @throws std::exception if model_context is nullptr.
@@ -687,8 +723,8 @@ class CollisionChecker {
    available for execution.
    See @ref collision_checker_parallel_edge "function-level parallelism" for
    guidance on proper usage.
-   @param configs       Configurations to check
-   @param parallelize   Should configuration collision checks be parallelized?
+   @param configs     Configurations to check
+   @param parallelize How should configuration collision checks be parallelized?
    @returns std::vector<uint8_t>, one for each configuration in configs. For
    each configuration, 1 if collision free, 0 if in collision. */
   std::vector<uint8_t> CheckConfigsCollisionFree(
@@ -915,10 +951,12 @@ class CollisionChecker {
    the current thread's associated context.
    @param q1 Start configuration for edge.
    @param q2 End configuration for edge.
+   @param context_number Optional implicit context number.
    @returns true if collision free, false if in collision.
    @see @ref ccb_implicit_contexts "Implicit Context Parallelism". */
-  bool CheckEdgeCollisionFree(const Eigen::VectorXd& q1,
-                              const Eigen::VectorXd& q2) const;
+  bool CheckEdgeCollisionFree(
+      const Eigen::VectorXd& q1, const Eigen::VectorXd& q2,
+      std::optional<int> context_number = std::nullopt) const;
 
   /** Explicit Context-based version of CheckEdgeCollisionFree().
    @throws std::exception if `model_context` is nullptr.
@@ -933,6 +971,7 @@ class CollisionChecker {
    guidance on proper usage.
    @param q1 Start configuration for edge.
    @param q2 End configuration for edge.
+   @param parallelism How should edge collision check be parallelized?
    @returns true if collision free, false if in collision. */
   bool CheckEdgeCollisionFreeParallel(
       const Eigen::VectorXd& q1, const Eigen::VectorXd& q2,
@@ -944,7 +983,7 @@ class CollisionChecker {
    See @ref collision_checker_parallel_edge "function-level parallelism" for
    guidance on proper usage.
    @param edges        Edges to check, each in the form of pair<q1, q2>.
-   @param parallelize  Should edge collision checks be parallelized?
+   @param parallelize  How should edge collision checks be parallelized?
    @returns std::vector<uint8_t>, one for each edge in edges. For each edge, 1
    if collision free, 0 if in collision. */
   std::vector<uint8_t> CheckEdgesCollisionFree(
@@ -955,10 +994,12 @@ class CollisionChecker {
    the current thread's associated context.
    @param q1 Start configuration for edge.
    @param q2 End configuration for edge.
+   @param context_number Optional implicit context number.
    @returns A measure of how much of the edge is collision free.
    @see @ref ccb_implicit_contexts "Implicit Context Parallelism". */
-  EdgeMeasure MeasureEdgeCollisionFree(const Eigen::VectorXd& q1,
-                                       const Eigen::VectorXd& q2) const;
+  EdgeMeasure MeasureEdgeCollisionFree(
+      const Eigen::VectorXd& q1, const Eigen::VectorXd& q2,
+      std::optional<int> context_number = std::nullopt) const;
 
   /** Explicit Context-based version of MeasureEdgeCollisionFree().
    @throws std::exception if `model_context` is nullptr.
@@ -973,6 +1014,7 @@ class CollisionChecker {
    guidance on proper usage.
    @param q1 Start configuration for edge.
    @param q2 End configuration for edge.
+   @param parallelism How should edge collision check be parallelized?
    @returns A measure of how much of the edge is collision free. */
   EdgeMeasure MeasureEdgeCollisionFreeParallel(
       const Eigen::VectorXd& q1, const Eigen::VectorXd& q2,
@@ -984,7 +1026,7 @@ class CollisionChecker {
    See @ref collision_checker_parallel_edge "function-level parallelism" for
    guidance on proper usage.
    @param edges        Edges to check, each in the form of pair<q1, q2>.
-   @param parallelize  Should edge collision checks be parallelized?
+   @param parallelize  How should edge collision checks be parallelized?
    @returns A measure of how much of each edge is collision free. The iᵗʰ entry
             is the result for the iᵗʰ edge. */
   std::vector<EdgeMeasure> MeasureEdgesCollisionFree(
@@ -1022,9 +1064,11 @@ class CollisionChecker {
    particular CollisionChecker instance is implemented (see MaxNumDistances()).
    @see RobotClearance for details on the quantities ϕ and Jqᵣ_ϕ (and other
    details).
+   @param context_number Optional implicit context number.
    @see @ref ccb_implicit_contexts "Implicit Context Parallelism". */
-  RobotClearance CalcRobotClearance(const Eigen::VectorXd& q,
-                                    double influence_distance) const;
+  RobotClearance CalcRobotClearance(
+      const Eigen::VectorXd& q, double influence_distance,
+      std::optional<int> context_number = std::nullopt) const;
 
   /** Explicit Context-based version of CalcRobotClearance().
    @throws std::exception if `model_context` is nullptr.
@@ -1035,8 +1079,9 @@ class CollisionChecker {
 
   /** Returns an upper bound on the number of distances returned by
    CalcRobotClearance(), using the current thread's associated context.
+   @param context_number Optional implicit context number.
    @see @ref ccb_implicit_contexts "Implicit Context Parallelism". */
-  int MaxNumDistances() const;
+  int MaxNumDistances(std::optional<int> context_number = std::nullopt) const;
 
   /** Explicit Context-based version of MaxNumDistances().
    @see @ref ccb_explicit_contexts "Explicit Context Parallelism". */
@@ -1046,13 +1091,15 @@ class CollisionChecker {
   /** Classifies which robot bodies are in collision (and which type of
    collision) for the provided configuration `q`, using the current thread's
    associated context.
+   @param context_number Optional implicit context number.
    @returns a vector of collision types arranged in body index order. Only
    entries for robot bodies are guaranteed to be valid; entries for
    environment bodies are populated with kNoCollision, regardless of their
    actual status.
    @see @ref ccb_implicit_contexts "Implicit Context Parallelism". */
   std::vector<RobotCollisionType> ClassifyBodyCollisions(
-      const Eigen::VectorXd& q) const;
+      const Eigen::VectorXd& q,
+      std::optional<int> context_number = std::nullopt) const;
 
   /** Explicit Context-based version of ClassifyBodyCollisions().
    @throws std::exception if `model_context` is nullptr.
@@ -1067,7 +1114,9 @@ class CollisionChecker {
   bool SupportsParallelChecking() const { return supports_parallel_checking_; }
 
   /** Gets the number of threads that may be used in an OpenMP-parallelized
-   loop, if parallelize=true, or 1 if parallelize=false. */
+   loop, which is the lesser of (a) the number of implicit contexts or (b) the
+   number of threads specified by `parallelize`. If OpenMP is not available,
+   returns 1. */
   int GetNumberOfThreads(Parallelism parallelize) const;
 
  protected:
@@ -1194,8 +1243,10 @@ class CollisionChecker {
   std::string CriticizePaddingMatrix() const;
 
  private:
-  /* @see @ref ccb_implicit_contexts "Implicit Context Parallelism". */
-  CollisionCheckerContext& mutable_model_context() const;
+  /* @param context_number Optional implicit context number.
+   @see @ref ccb_implicit_contexts "Implicit Context Parallelism". */
+  CollisionCheckerContext& mutable_model_context(
+      std::optional<int> context_number = std::nullopt) const;
 
   /* Tests the given filtered collision matrix for several invariants, throwing
    if they are not satisfied:

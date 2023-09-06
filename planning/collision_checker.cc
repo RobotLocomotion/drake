@@ -26,7 +26,7 @@
 namespace drake {
 namespace planning {
 
-using common_robotics_utilities::openmp_helpers::GetNumOmpThreads;
+using common_robotics_utilities::openmp_helpers::GetContextOmpThreadNum;
 using geometry::GeometryId;
 using geometry::QueryObject;
 using geometry::SceneGraphInspector;
@@ -224,9 +224,10 @@ bool CollisionChecker::IsPartOfRobot(BodyIndex body_index) const {
   return IsPartOfRobot(get_body(body_index));
 }
 
-const CollisionCheckerContext& CollisionChecker::model_context() const {
-  return owned_contexts_.get_model_context(
-      common_robotics_utilities::openmp_helpers::GetContextOmpThreadNum());
+const CollisionCheckerContext& CollisionChecker::model_context(
+    const std::optional<int> context_number) const {
+  const int context_index = context_number.value_or(GetContextOmpThreadNum());
+  return owned_contexts_.get_model_context(context_index);
 }
 
 std::shared_ptr<CollisionCheckerContext>
@@ -542,8 +543,9 @@ void CollisionChecker::SetCollisionFilteredWithAllBodies(BodyIndex body_index) {
 }
 
 bool CollisionChecker::CheckConfigCollisionFree(
-    const Eigen::VectorXd& q) const {
-  return CheckContextConfigCollisionFree(&mutable_model_context(), q);
+    const Eigen::VectorXd& q, const std::optional<int> context_number) const {
+  return CheckContextConfigCollisionFree(&mutable_model_context(context_number),
+                                         q);
 }
 
 bool CollisionChecker::CheckContextConfigCollisionFree(
@@ -567,7 +569,7 @@ std::vector<uint8_t> CollisionChecker::CheckConfigsCollisionFree(
 #pragma omp parallel for num_threads(number_of_threads) schedule(static)
 #endif
   for (size_t idx = 0; idx < configs.size(); ++idx) {
-    if (CheckConfigCollisionFree(configs.at(idx))) {
+    if (CheckConfigCollisionFree(configs.at(idx), GetContextOmpThreadNum())) {
       collision_checks.at(idx) = 1;
     } else {
       collision_checks.at(idx) = 0;
@@ -653,9 +655,11 @@ CollisionChecker::MakeStandaloneConfigurationInterpolationFunction() const {
   };
 }
 
-bool CollisionChecker::CheckEdgeCollisionFree(const Eigen::VectorXd& q1,
-                                              const Eigen::VectorXd& q2) const {
-  return CheckContextEdgeCollisionFree(&mutable_model_context(), q1, q2);
+bool CollisionChecker::CheckEdgeCollisionFree(
+    const Eigen::VectorXd& q1, const Eigen::VectorXd& q2,
+    const std::optional<int> context_number) const {
+  return CheckContextEdgeCollisionFree(&mutable_model_context(context_number),
+                                       q1, q2);
 }
 
 bool CollisionChecker::CheckContextEdgeCollisionFree(
@@ -726,7 +730,7 @@ bool CollisionChecker::CheckEdgeCollisionFreeParallel(
             static_cast<double>(step) / static_cast<double>(num_steps);
         const Eigen::VectorXd qinterp =
             InterpolateBetweenConfigurations(q1, q2, ratio);
-        if (!CheckConfigCollisionFree(qinterp)) {
+        if (!CheckConfigCollisionFree(qinterp, GetContextOmpThreadNum())) {
           edge_valid.store(false);
         }
       }
@@ -753,7 +757,8 @@ std::vector<uint8_t> CollisionChecker::CheckEdgesCollisionFree(
 #endif
   for (size_t idx = 0; idx < edges.size(); ++idx) {
     const std::pair<Eigen::VectorXd, Eigen::VectorXd>& edge = edges.at(idx);
-    if (CheckEdgeCollisionFree(edge.first, edge.second)) {
+    if (CheckEdgeCollisionFree(edge.first, edge.second,
+                               GetContextOmpThreadNum())) {
       collision_checks.at(idx) = 1;
     } else {
       collision_checks.at(idx) = 0;
@@ -764,8 +769,10 @@ std::vector<uint8_t> CollisionChecker::CheckEdgesCollisionFree(
 }
 
 EdgeMeasure CollisionChecker::MeasureEdgeCollisionFree(
-    const Eigen::VectorXd& q1, const Eigen::VectorXd& q2) const {
-  return MeasureContextEdgeCollisionFree(&mutable_model_context(), q1, q2);
+    const Eigen::VectorXd& q1, const Eigen::VectorXd& q2,
+    const std::optional<int> context_number) const {
+  return MeasureContextEdgeCollisionFree(&mutable_model_context(context_number),
+                                         q1, q2);
 }
 
 EdgeMeasure CollisionChecker::MeasureContextEdgeCollisionFree(
@@ -818,7 +825,7 @@ EdgeMeasure CollisionChecker::MeasureEdgeCollisionFreeParallel(
       if (possible_alpha < alpha.load()) {
         const Eigen::VectorXd qinterp =
             InterpolateBetweenConfigurations(q1, q2, ratio);
-        if (!CheckConfigCollisionFree(qinterp)) {
+        if (!CheckConfigCollisionFree(qinterp, GetContextOmpThreadNum())) {
           std::lock_guard<std::mutex> update_lock(alpha_mutex);
           // Between the initial decision to interpolate and check collisions
           // and now, another thread may have proven a *lower* alpha is invalid;
@@ -851,16 +858,17 @@ std::vector<EdgeMeasure> CollisionChecker::MeasureEdgesCollisionFree(
 #endif
   for (size_t idx = 0; idx < edges.size(); ++idx) {
     const std::pair<Eigen::VectorXd, Eigen::VectorXd>& edge = edges.at(idx);
-    collision_checks.at(idx) =
-        MeasureEdgeCollisionFree(edge.first, edge.second);
+    collision_checks.at(idx) = MeasureEdgeCollisionFree(
+        edge.first, edge.second, GetContextOmpThreadNum());
   }
 
   return collision_checks;
 }
 
 RobotClearance CollisionChecker::CalcRobotClearance(
-    const Eigen::VectorXd& q, const double influence_distance) const {
-  return CalcContextRobotClearance(&mutable_model_context(), q,
+    const Eigen::VectorXd& q, const double influence_distance,
+    const std::optional<int> context_number) const {
+  return CalcContextRobotClearance(&mutable_model_context(context_number), q,
                                    influence_distance);
 }
 
@@ -878,8 +886,9 @@ RobotClearance CollisionChecker::CalcContextRobotClearance(
   return result;
 }
 
-int CollisionChecker::MaxNumDistances() const {
-  return MaxContextNumDistances(model_context());
+int CollisionChecker::MaxNumDistances(
+    const std::optional<int> context_number) const {
+  return MaxContextNumDistances(model_context(context_number));
 }
 
 int CollisionChecker::MaxContextNumDistances(
@@ -888,8 +897,9 @@ int CollisionChecker::MaxContextNumDistances(
 }
 
 std::vector<RobotCollisionType> CollisionChecker::ClassifyBodyCollisions(
-    const Eigen::VectorXd& q) const {
-  return ClassifyContextBodyCollisions(&mutable_model_context(), q);
+    const Eigen::VectorXd& q, const std::optional<int> context_number) const {
+  return ClassifyContextBodyCollisions(&mutable_model_context(context_number),
+                                       q);
 }
 
 std::vector<RobotCollisionType> CollisionChecker::ClassifyContextBodyCollisions(
@@ -1034,9 +1044,10 @@ std::string CollisionChecker::CriticizePaddingMatrix() const {
   return CriticizePaddingMatrix(collision_padding_, __func__);
 }
 
-CollisionCheckerContext& CollisionChecker::mutable_model_context() const {
-  return owned_contexts_.get_mutable_model_context(
-      common_robotics_utilities::openmp_helpers::GetContextOmpThreadNum());
+CollisionCheckerContext& CollisionChecker::mutable_model_context(
+    const std::optional<int> context_number) const {
+  const int context_index = context_number.value_or(GetContextOmpThreadNum());
+  return owned_contexts_.get_mutable_model_context(context_index);
 }
 
 void CollisionChecker::ValidateFilteredCollisionMatrix(
