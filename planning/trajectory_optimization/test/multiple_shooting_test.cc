@@ -674,23 +674,6 @@ GTEST_TEST(MultipleShootingTest, NewSequentialVariableTest) {
               result.GetSolution(trajopt.h_vars()).sum(), 1e-6);
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-GTEST_TEST(MultipleShootingTest, DeprecationTest) {
-  const int kNumInputs{1};
-  const int kNumStates{2};
-  const int kNumSampleTimes{2};
-  const double kFixedTimeStep{0.1};
-  MyDirectTrajOpt trajopt(kNumInputs, kNumStates, kNumSampleTimes,
-                          kFixedTimeStep, kFixedTimeStep);
-  EXPECT_EQ(trajopt.timestep(0), trajopt.time_step(0));
-
-  MyDirectTrajOpt trajopt2(kNumInputs, kNumStates, kNumSampleTimes,
-                           kFixedTimeStep);
-  EXPECT_EQ(trajopt2.fixed_timestep(), trajopt2.fixed_time_step());
-}
-#pragma GCC diagnostic pop
-
 }  // namespace
 }  // namespace trajectory_optimization
 }  // namespace planning

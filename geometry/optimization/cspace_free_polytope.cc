@@ -1132,13 +1132,6 @@ VectorX<symbolic::Polynomial> CspaceFreePolytope::CalcDminusCs(
   return d_minus_Cs;
 }
 
-std::map<multibody::BodyIndex,
-         std::vector<std::unique_ptr<CIrisCollisionGeometry>>>
-GetCollisionGeometries(const multibody::MultibodyPlant<double>& plant,
-                       const geometry::SceneGraph<double>& scene_graph) {
-  return internal::GetCollisionGeometries(plant, scene_graph);
-}
-
 HPolyhedron CspaceFreePolytope::GetPolyhedronWithJointLimits(
     const Eigen::MatrixXd& C, const Eigen::VectorXd& d) const {
   const int s_size = rational_forward_kin().s().rows();
