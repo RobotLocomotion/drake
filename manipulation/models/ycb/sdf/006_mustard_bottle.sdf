@@ -47,22 +47,14 @@
       slightly inset box will provide contact with a *slight* offset (in this
       case a deviation of 0.0005 m from the visual surface).
      -->
-      <collision name="mesh_collision">
-        <pose>0.0049 0.092 0.027 1.57 -0.40 0.0</pose>
+      <collision name="box_collision">
+        <pose>0 0.015 0 0 0 0</pose>
         <geometry>
-          <mesh>
-            <uri>package://drake_models/ycb/meshes/006_mustard_bottle_textured.obj</uri>
-          </mesh>
+          <box>
+            <size>0.090000 0.160300 0.052200</size>
+          </box>
         </geometry>
       </collision>
-      <!-- <collision name="box_collision"> -->
-      <!--   <pose>0 0.015 0 0 0 0</pose> -->
-      <!--   <geometry> -->
-      <!--     <box> -->
-      <!--       <size>0.090000 0.160300 0.052200</size> -->
-      <!--     </box> -->
-      <!--   </geometry> -->
-      <!-- </collision> -->
       <collision name="point_collision1">
         <pose>0.045500 0.093150 0.026600 0 0 0 </pose>
         <geometry>
