@@ -61,7 +61,10 @@ class DrakeLcm::Impl {
     // Create the native instance only after all other checks are finished.
     lcm_ = ::lcm_create(lcm_url_.c_str());
     if (lcm_ == nullptr) {
-      throw std::runtime_error("Failure on lcm_create()");
+      // The initialization failed and printed a console warning. Create
+      // a dummy object instead (to at least have something non-null).
+      lcm_ = ::lcm_create("memq://");
+      DRAKE_THROW_UNLESS(lcm_ != nullptr);
     }
   }
 
