@@ -2,6 +2,7 @@
 
 #include <limits>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -18,6 +19,15 @@ namespace multibody {
 
 // Forward declaration for JointActuator<T>.
 template<typename T> class Joint;
+
+/// PD controller gains. This enables the modeling of a simple low level PD
+/// controllers, see JointActuator::set_controller_gains().
+struct PdControllerGains {
+  // Proportional gain of the controller.
+  double p{0.0};
+  // Derivative gain of the controller.
+  double d{0.0};
+};
 
 /// The %JointActuator class is mostly a simple bookkeeping structure to
 /// represent an actuator acting on a given Joint.
@@ -251,6 +261,46 @@ class JointActuator final : public MultibodyElement<T> {
   }
   /// @} <!-- Reflected Inertia -->
 
+  /// @anchor pd_controlled_joint_actuator
+  /// @name                 PD Controlled Actuators
+  ///
+  /// Refer to @ref mbp_actuation "Actuation" for further details on the
+  /// modeling of PD controlled actuators.
+  ///@{
+
+  // TODO(amcastro-tri): Place gains in the context as parameters to allow
+  // changing them post-finalize.
+  /// Set controller gains for this joint actuator.
+  /// This enables the modeling of a simple PD controller of the form:
+  ///   ũ = -Kp⋅(q − qd) - Kd⋅(v − vd) + u_ff
+  ///   u = max(−e, min(e, ũ))
+  /// where qd and vd are the desired configuration and velocity for joint(), Kp
+  /// and Kd are the proportional and derivative gains specified in `gains`,
+  /// u_ff is the feedforward actuation and `e` corresponds to effort_limit().
+  ///
+  /// For simulation, feedforward actuation can be provided through
+  /// MultibodyPlant::get_actuation_input_port(). Desired configuration and
+  /// velocity are specified through
+  /// MultibodyPlant::get_desired_state_input_port().
+  ///
+  /// @throws iff the proportional gain is not strictly positive or if the
+  /// derivative gain is negative.
+  /// @throws iff the owning MultibodyPlant is finalized. See
+  /// MultibodyPlant::Finalize().
+  void set_controller_gains(PdControllerGains gains);
+
+  /// Returns `true` if controller gains have been specified with a call to
+  /// set_controller_gains().
+  bool has_controller() const { return pd_controller_gains_.has_value(); }
+
+  /// Returns a reference to the controller gains for this actuator.
+  /// @pre has_controller() is `true`.
+  const PdControllerGains& get_controller_gains() const {
+    DRAKE_DEMAND(has_controller());
+    return *pd_controller_gains_;
+  }
+  /// @} <!-- PD Controlled Actuators -->
+
   /// @cond
   // For internal use only.
   // NVI to DoCloneToScalar() templated on the scalar type of the new clone to
@@ -335,6 +385,8 @@ class JointActuator final : public MultibodyElement<T> {
 
   // The topology of this actuator. Only valid post- MultibodyTree::Finalize().
   internal::JointActuatorTopology topology_;
+
+  std::optional<PdControllerGains> pd_controller_gains_{std::nullopt};
 };
 
 }  // namespace multibody
