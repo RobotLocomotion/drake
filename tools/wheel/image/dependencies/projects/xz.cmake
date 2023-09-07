@@ -3,7 +3,8 @@ ExternalProject_Add(xz
     URL_MD5 ${xz_md5}
     ${COMMON_EP_ARGS}
     BUILD_IN_SOURCE 1
-    CONFIGURE_COMMAND ./configure
+    # autogen.sh generates configure
+    CONFIGURE_COMMAND ./autogen.sh && ./configure
         --prefix=${CMAKE_INSTALL_PREFIX}
         --disable-shared
         CFLAGS=-fPIC

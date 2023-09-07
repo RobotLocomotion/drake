@@ -3,8 +3,10 @@ default-jdk
 # GNU autotools.
 autoconf
 automake
+autopoint
 libtool
 libltdl-dev
+po4a
 # Core compilers.
 gcc
 g++

@@ -3,4 +3,5 @@
 brew 'bash'
 brew 'coreutils'
 brew 'ninja'
+brew 'po4a'
 brew 'yasm'
