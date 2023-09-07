@@ -178,8 +178,9 @@ class HasImplSet final : public DummyVolumeSet {
   bool can_calc_volume_{};
 };
 
-// Confirms that CalcVolume() respects has_exact_volume() and that errors in
-// derived classes are detected and reported.
+// Confirms that CalcVolume() respects has_exact_volume() and the ambient
+// dimension before invoking DoCalcVolume() and that errors in derived classes
+// are detected and reported.
 GTEST_TEST(ConvexSetTest, CalcVolume) {
   // CalcVolume() correctly avoids calling DoCalcVolume().
   DRAKE_EXPECT_THROWS_MESSAGE(
