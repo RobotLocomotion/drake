@@ -43,7 +43,14 @@ DEFINE_double(
     contact_damping, 10.0,
     "Hunt and Crossley damping for the deformable body, only used when "
     "'contact_approximation' is set to 'lagged' or 'similar' [s/m].");
+DEFINE_bool(
+    nonlinear, false,
+    "Whether to use nonlinear consitutive model for the deformable body");
+DEFINE_bool(
+    openmp, true,
+    "Whether to use nonlinear consitutive model for the deformable body");
 
+using drake::Parallelism;
 using drake::examples::deformable::ParallelGripperController;
 using drake::examples::deformable::PointSourceForceField;
 using drake::examples::deformable::SuctionCupController;
@@ -174,8 +181,10 @@ int do_main() {
   deformable_config.set_poissons_ratio(FLAGS_nu);
   deformable_config.set_mass_density(FLAGS_density);
   deformable_config.set_stiffness_damping_coefficient(FLAGS_beta);
-  deformable_config.set_material_model(
-      drake::multibody::fem::MaterialModel::kNeoHookean);
+  if (FLAGS_nonlinear == true) {
+    deformable_config.set_material_model(
+        drake::multibody::fem::MaterialModel::kNeoHookean);
+  }
 
   /* Load the geometry and scale it down to 65% (to showcase the scaling
    capability and to make the torus suitable for grasping by the gripper). */
@@ -186,6 +195,9 @@ int do_main() {
    ground. */
   const RigidTransformd X_WB(Vector3<double>(0.0, 0.0, kL / 2.0));
   DeformableModel<double>& deformable_model = plant.mutable_deformable_model();
+  if (FLAGS_openmp) {
+    deformable_model.SetParallelism(Parallelism(10));
+  }
 
   RegisterDeformableTorus(&deformable_model, "deformable_torus", X_WB,
                           deformable_config, scale, FLAGS_contact_damping);

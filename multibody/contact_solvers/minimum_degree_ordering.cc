@@ -47,6 +47,27 @@ void InsertValueInSortedVector(int value, std::vector<int>* sorted_vector) {
   }
 }
 
+/* Updates the weights of all nodes according to Algorithm 2 in [Amestoy 1996].
+ */
+void UpdateWeights(const std::vector<int>& Lp, std::vector<Node>* nodes) {
+  DRAKE_DEMAND(nodes != nullptr);
+  for (Node& n : *nodes) {
+    n.weight = -1;
+  }
+  for (int i : Lp) {
+    for (int e : nodes->at(i).E) {
+      Node& node_e = (*nodes)[e];
+      if (node_e.weight < 0) {
+        node_e.weight = 0;
+        for (int l : node_e.L) {
+          node_e.weight += nodes->at(l).size;
+        }
+      }
+      node_e.weight -= nodes->at(i).size;
+    }
+  }
+}
+
 void Node::UpdateExternalDegree(const std::vector<Node>& nodes) {
   degree = 0;
 
@@ -68,14 +89,33 @@ void Node::UpdateExternalDegree(const std::vector<Node>& nodes) {
   }
 }
 
+void Node::ApproximateExternalDegree(int p, int Lp_size,
+                                     const std::vector<Node>& nodes) {
+  degree = 0;
+
+  /* Add in |Aᵢ \ i| term. */
+  for (int a : A) {
+    degree += nodes[a].size;
+  }
+
+  /* Add in |Lp \ i| term. */
+  degree += Lp_size;
+
+  for (int e : E) {
+    if (e != p) {
+      degree += nodes[e].weight >= 0 ? nodes[e].weight : nodes[e].L.size();
+    }
+  }
+}
+
 std::vector<int> ComputeMinimumDegreeOrdering(
-    const BlockSparsityPattern& block_sparsity_pattern) {
-  return ComputeMinimumDegreeOrdering(block_sparsity_pattern, {});
+    const BlockSparsityPattern& block_sparsity_pattern, bool use_amd) {
+  return ComputeMinimumDegreeOrdering(block_sparsity_pattern, {}, use_amd);
 }
 
 std::vector<int> ComputeMinimumDegreeOrdering(
     const BlockSparsityPattern& block_sparsity_pattern,
-    const std::unordered_set<int>& priority_elements) {
+    const std::unordered_set<int>& priority_elements, bool use_amd) {
   /* Initialize for Minimum Degree: Populate index, size, and A, the list of
    adjacent variables. E, L are empty initially. */
   const std::vector<int>& block_sizes = block_sparsity_pattern.block_sizes();
@@ -146,6 +186,9 @@ std::vector<int> ComputeMinimumDegreeOrdering(
       node_p.L = Union(node_p.L, nodes[e].L);
     }
     RemoveValueFromSortedVector(p, &(node_p.L));
+    if (use_amd) {
+      UpdateWeights(node_p.L, &nodes);
+    }
     /* Update all neighboring variables of p. */
     for (int i : node_p.L) {
       Node& node_i = nodes[i];
@@ -162,7 +205,18 @@ std::vector<int> ComputeMinimumDegreeOrdering(
       RemoveValueFromSortedVector(p, &(node_i.A));
       InsertValueInSortedVector(p, &(node_i.E));
       /* Compute external degree. */
-      node_i.UpdateExternalDegree(nodes);
+      if (use_amd) {
+        /* Compute |Lp \ i|, or Lp_size. */
+        std::vector<int> Lp = node_p.L;
+        RemoveValueFromSortedVector(i, &Lp);
+        int Lp_size = 0;
+        for (int n : Lp) {
+          Lp_size += nodes[n].size;
+        }
+        node_i.ApproximateExternalDegree(p, Lp_size, nodes);
+      } else {
+        node_i.UpdateExternalDegree(nodes);
+      }
       SimplifiedNode new_node = {.degree = node_i.degree,
                                  .index = node_i.index,
                                  .priority = old_node.priority};
