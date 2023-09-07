@@ -714,6 +714,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("get_joint_actuator", &Class::get_joint_actuator,
             py::arg("actuator_index"), py_rvp::reference_internal,
             cls_doc.get_joint_actuator.doc)
+        .def("get_mutable_joint_actuator", &Class::get_mutable_joint_actuator,
+            py::arg("actuator_index"), py_rvp::reference_internal,
+            cls_doc.get_mutable_joint_actuator.doc)
         .def("get_frame", &Class::get_frame, py::arg("frame_index"),
             py_rvp::reference_internal, cls_doc.get_frame.doc)
         .def("gravity_field", &Class::gravity_field, py_rvp::reference_internal,
@@ -904,6 +907,12 @@ void DoScalarDependentDefinitions(py::module m, T) {
                 ModelInstanceIndex>(&Class::get_actuation_input_port),
             py::arg("model_instance"), py_rvp::reference_internal,
             cls_doc.get_actuation_input_port.doc_1args)
+        .def("get_desired_state_input_port",
+            overload_cast_explicit<const systems::InputPort<T>&,
+                multibody::ModelInstanceIndex>(
+                &Class::get_desired_state_input_port),
+            py::arg("model_instance"), py_rvp::reference_internal,
+            cls_doc.get_desired_state_input_port.doc)
         .def("get_applied_generalized_force_input_port",
             overload_cast_explicit<const systems::InputPort<T>&>(
                 &Class::get_applied_generalized_force_input_port),
