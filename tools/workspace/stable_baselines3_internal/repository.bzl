@@ -11,7 +11,9 @@ def stable_baselines3_internal_repository(
         build_file = ":package.BUILD.bazel",
         patches = [
             ":patches/no_torch.patch",
-            ":patches/version.patch",
+        ],
+        patch_cmds = [
+            "sed -i -e 's#$#drake_internal#' stable_baselines3/version.txt",
         ],
         mirrors = mirrors,
     )
