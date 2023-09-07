@@ -106,8 +106,10 @@ class CollisionCheckerTester : public UnimplementedCollisionChecker {
  public:
   explicit CollisionCheckerTester(CollisionCheckerParams params,
                                   bool supports_parallel_checking = false)
-      : UnimplementedCollisionChecker(std::move(params),
-                                      supports_parallel_checking) {}
+      : UnimplementedCollisionChecker(
+            MaybeNerfParamParallelism(std::move(params),
+                                      supports_parallel_checking),
+            supports_parallel_checking) {}
 
   //@{
   // Interesting virtual overrides.
@@ -229,6 +231,14 @@ class CollisionCheckerTester : public UnimplementedCollisionChecker {
   //@}
 
  private:
+  static CollisionCheckerParams MaybeNerfParamParallelism(
+      CollisionCheckerParams params, bool supports_parallel_checking) {
+    if (!supports_parallel_checking) {
+      params.implicit_context_parallelism = Parallelism::None();
+    }
+    return params;
+  }
+
   bool collision_free_{false};
   optional<GeometryId> added_shape_id_;
   // Updated with every call to DoUpdateContextPositions().

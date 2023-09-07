@@ -143,7 +143,10 @@ TEST_P(CollisionCheckerAbstractTestSuite, AddObstacles) {
   }
 }
 
-void CollisionCheckerAbstractTestSuite::TestParallelizeableDiscreteQueries(
+// Tests "discrete" configuration and edge collision check methods. Provided
+// `parallelism` controls parallelism of parallel check methods.
+// TODO(calderpg-tri) Improve so that parallelism is exercised on all queries.
+void CollisionCheckerAbstractTestSuite::TestDiscreteQueries(
     const CollisionCheckerTestParams& params, const Parallelism parallelism) {
   auto& checker = *params.checker;
   // Check single queries Queries we know are collision-free, given the robot
@@ -242,17 +245,20 @@ TEST_P(CollisionCheckerAbstractTestSuite, StressParallelDiscreteQueries) {
   // tests are not flaky.
   const int iterations = params.thread_stress_iterations;
   for (int iteration = 0; iteration < iterations; ++iteration) {
-    TestParallelizeableDiscreteQueries(params, parallelism);
+    TestDiscreteQueries(params, parallelism);
   }
 }
 
 TEST_P(CollisionCheckerAbstractTestSuite, ForceSerializeDiscreteQueries) {
   auto params = GetParam();
   const auto parallelism = Parallelism::None();
-  TestParallelizeableDiscreteQueries(params, parallelism);
+  TestDiscreteQueries(params, parallelism);
 }
 
-void CollisionCheckerAbstractTestSuite::TestParallelizeableGradientQueries(
+// Tests "distance" clearance and collision avoidance methods. Provided
+// `parallelism` controls parallelism of calls to `CalcRobotClearance` only.
+// TODO(calderpg-tri) Improve so that parallelism is exercised on all queries.
+void CollisionCheckerAbstractTestSuite::TestDistanceQueries(
     const CollisionCheckerTestParams& params, const Parallelism parallelism) {
   auto& checker = *params.checker;
 
@@ -325,14 +331,14 @@ TEST_P(CollisionCheckerAbstractTestSuite, StressParallelGradientQueries) {
   // tests are not flaky.
   const int iterations = params.thread_stress_iterations;
   for (int iteration = 0; iteration < iterations; ++iteration) {
-    TestParallelizeableGradientQueries(params, parallelism);
+    TestDistanceQueries(params, parallelism);
   }
 }
 
 TEST_P(CollisionCheckerAbstractTestSuite, ForceSerializeGradientQueries) {
   auto params = GetParam();
   const auto parallelism = Parallelism::None();
-  TestParallelizeableGradientQueries(params, parallelism);
+  TestDistanceQueries(params, parallelism);
 }
 
 }  // namespace test

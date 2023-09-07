@@ -226,7 +226,8 @@ bool CollisionChecker::IsPartOfRobot(BodyIndex body_index) const {
 
 const CollisionCheckerContext& CollisionChecker::model_context(
     const std::optional<int> context_number) const {
-  const int context_index = context_number.value_or(GetContextOmpThreadNum());
+  const int context_index =
+      context_number.has_value() ? *context_number : GetContextOmpThreadNum();
   return owned_contexts_.get_model_context(context_index);
 }
 
@@ -562,7 +563,7 @@ std::vector<uint8_t> CollisionChecker::CheckConfigsCollisionFree(
   std::vector<uint8_t> collision_checks(configs.size(), 0);
 
   const int number_of_threads = GetNumberOfThreads(parallelize);
-  drake::log()->debug("MeasureEdgesCollisionFree uses {} thread(s)",
+  drake::log()->debug("CheckConfigsCollisionFree uses {} thread(s)",
                       number_of_threads);
 
 #if defined(_OPENMP)
@@ -696,8 +697,8 @@ bool CollisionChecker::CheckContextEdgeCollisionFree(
 
 bool CollisionChecker::CheckEdgeCollisionFreeParallel(
     const Eigen::VectorXd& q1, const Eigen::VectorXd& q2,
-    const Parallelism parallelism) const {
-  const int number_of_threads = GetNumberOfThreads(parallelism);
+    const Parallelism parallelize) const {
+  const int number_of_threads = GetNumberOfThreads(parallelize);
   drake::log()->debug("CheckEdgeCollisionFreeParallel uses {} thread(s)",
                       number_of_threads);
 
@@ -749,7 +750,7 @@ std::vector<uint8_t> CollisionChecker::CheckEdgesCollisionFree(
   std::vector<uint8_t> collision_checks(edges.size(), 0);
 
   const int number_of_threads = GetNumberOfThreads(parallelize);
-  drake::log()->debug("MeasureEdgesCollisionFree uses {} thread(s)",
+  drake::log()->debug("CheckEdgesCollisionFree uses {} thread(s)",
                       number_of_threads);
 
 #if defined(_OPENMP)
@@ -798,8 +799,8 @@ EdgeMeasure CollisionChecker::MeasureContextEdgeCollisionFree(
 
 EdgeMeasure CollisionChecker::MeasureEdgeCollisionFreeParallel(
     const Eigen::VectorXd& q1, const Eigen::VectorXd& q2,
-    const Parallelism parallelism) const {
-  const int number_of_threads = GetNumberOfThreads(parallelism);
+    const Parallelism parallelize) const {
+  const int number_of_threads = GetNumberOfThreads(parallelize);
   drake::log()->debug("MeasureEdgeCollisionFreeParallel uses {} thread(s)",
                       number_of_threads);
 
@@ -939,15 +940,14 @@ CollisionChecker::CollisionChecker(CollisionCheckerParams params,
       uncontrolled_dofs_that_kinematically_affect_the_robot_(
           CalcUncontrolledDofsThatKinematicallyAffectTheRobot(
               setup_model_->plant(), robot_model_instances_)),
-      supports_parallel_checking_(supports_parallel_checking) {
-  // Initialize the supported implicit context parallelism.
-  if (SupportsParallelChecking()) {
-    implicit_context_parallelism_ = params.implicit_context_parallelism;
-  } else {
-    drake::log()->warn(
-        "Collision checker reports that parallel evaluation is not supported, "
-        "setting implicit context parallelism to 1 thread");
-    implicit_context_parallelism_ = Parallelism::None();
+      supports_parallel_checking_(supports_parallel_checking),
+      implicit_context_parallelism_(params.implicit_context_parallelism) {
+  // Sanity check the supported implicit context parallelism.
+  if (!SupportsParallelChecking() &&
+      implicit_context_parallelism_.num_threads() > 1) {
+    throw std::runtime_error(
+        "implicit context parallelism > 1 cannot be used with a collision "
+        "checker that does not support parallel operations");
   }
 
   // Initialize the zero configuration.
@@ -1046,7 +1046,8 @@ std::string CollisionChecker::CriticizePaddingMatrix() const {
 
 CollisionCheckerContext& CollisionChecker::mutable_model_context(
     const std::optional<int> context_number) const {
-  const int context_index = context_number.value_or(GetContextOmpThreadNum());
+  const int context_index =
+      context_number.has_value() ? *context_number : GetContextOmpThreadNum();
   return owned_contexts_.get_mutable_model_context(context_index);
 }
 

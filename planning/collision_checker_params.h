@@ -103,7 +103,8 @@ struct CollisionCheckerParams {
   /** Specify how many contexts should be allocated to support collision checker
   implicit context parallelism. Defaults to the maximum parallelism. If the
   specific collision checker type in use declares that it *does not* support
-  parallel queries, then implicit context parallelism is set to None(). */
+  parallel queries, then implicit context parallelism is set to None().
+  @see @ref ccb_implicit_contexts "Implicit Context Parallelism". */
   Parallelism implicit_context_parallelism = Parallelism::Max();
 };
 
