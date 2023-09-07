@@ -2117,7 +2117,10 @@ GTEST_TEST(ShortestPathTest, Graphviz) {
   GraphOfConvexSets g;
   auto source = g.AddVertex(Point(Vector2d{1.0, 2.}), "source");
   auto target = g.AddVertex(Point(Vector1d{1e-5}), "target");
-  g.AddEdge(source, target, "edge");
+  g.AddEdge(source, target, "source_to_target")->AddCost(1.23);
+  auto other = g.AddVertex(Point(Vector1d{4.0}), "other");
+  g.AddEdge(source, other, "source_to_other")->AddCost(3.45);
+  g.AddEdge(other, target, "other_to_target");  // No cost from other to target.
 
   GraphOfConvexSetsOptions options;
   options.preprocessing = true;
@@ -2125,9 +2128,9 @@ GTEST_TEST(ShortestPathTest, Graphviz) {
 
   // Note: Testing the entire string against a const string is too fragile,
   // since the VertexIds are Identifier<> and increment on a global counter.
-  EXPECT_THAT(
-      g.GetGraphvizString(),
-      AllOf(HasSubstr("source"), HasSubstr("target"), HasSubstr("edge")));
+  EXPECT_THAT(g.GetGraphvizString(),
+              AllOf(HasSubstr("source"), HasSubstr("target"),
+                    HasSubstr("source_to_target")));
   auto result = g.SolveShortestPath(*source, *target, options);
   EXPECT_THAT(g.GetGraphvizString(result),
               AllOf(HasSubstr("x ="), HasSubstr("cost ="), HasSubstr("ϕ ="),
@@ -2136,6 +2139,8 @@ GTEST_TEST(ShortestPathTest, Graphviz) {
   // With a rounded result.
   options.max_rounded_paths = 1;
   result = g.SolveShortestPath(*source, *target, options);
+  // Note: The cost here only comes from the cost=0 on other_to_target until
+  // SolveConvexRestriction provides the rewritten costs.
   EXPECT_THAT(g.GetGraphvizString(result),
               AllOf(HasSubstr("x ="), HasSubstr("cost ="), HasSubstr("ϕ =")));
 

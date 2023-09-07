@@ -30,7 +30,8 @@ Rod2D<T>::Rod2D(SystemType system_type, double dt)
 
     // Discretization approach requires three position variables and
     // three velocity variables, all discrete, and periodic update.
-    this->DeclarePeriodicDiscreteUpdateNoHandler(dt);
+    this->DeclarePeriodicDiscreteUpdateEvent(dt, 0.0,
+                                             &Rod2D<T>::CalcDiscreteUpdate);
     auto state_index = this->DeclareDiscreteState(6);
     state_output_port_ = &this->DeclareStateOutputPort(
         "state_output", state_index);
@@ -481,9 +482,8 @@ void Rod2D<T>::CalcImpactProblemData(
 /// Integrates the Rod 2D example forward in time using a
 /// half-explicit discretization scheme.
 template <class T>
-void Rod2D<T>::DoCalcDiscreteVariableUpdates(
+void Rod2D<T>::CalcDiscreteUpdate(
     const systems::Context<T>& context,
-    const std::vector<const systems::DiscreteUpdateEvent<T>*>&,
     systems::DiscreteValues<T>* discrete_state) const {
   using std::sin;
   using std::cos;

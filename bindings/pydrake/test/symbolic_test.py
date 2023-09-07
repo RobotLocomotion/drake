@@ -678,6 +678,8 @@ class TestSymbolicExpression(unittest.TestCase):
     def test_equalto(self):
         self.assertTrue((x + y).EqualTo(x + y))
         self.assertFalse((x + y).EqualTo(x - y))
+        self.assertTrue(sym.Formula(True).EqualTo(True))
+        self.assertTrue(sym.Formula(boolean).EqualTo(boolean))
 
     def test_get_kind(self):
         self.assertEqual((x + y).get_kind(), sym.ExpressionKind.Add)
@@ -932,6 +934,8 @@ class TestSymbolicExpression(unittest.TestCase):
 
 class TestSymbolicFormula(unittest.TestCase):
     def test_constructor(self):
+        sym.Formula()
+        sym.Formula(value=True)
         sym.Formula(var=boolean)
 
     def test_factory_functions(self):

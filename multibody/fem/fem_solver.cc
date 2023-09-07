@@ -9,41 +9,86 @@ namespace multibody {
 namespace fem {
 namespace internal {
 
+using contact_solvers::internal::Block3x3SparseSymmetricMatrix;
+using contact_solvers::internal::SchurComplement;
+using LinearSolver =
+    contact_solvers::internal::BlockSparseCholeskySolver<Matrix3<double>>;
+
 template <typename T>
-FemSolverData<T>::FemSolverData(const FemModel<T>& model) {
-  b_.resize(model.num_dofs());
-  dz_.resize(model.num_dofs());
-  tangent_matrix_ = model.MakeTangentMatrix();
-  /* For non-linear models, we use a BlockSparseCholeskySolver to solve the
-   linear systems from Newton-Raphson iterations. This usually allow for
-   better elimination ordering. For linear models, we use `schur_complement`
-   to both solve the linear system and to find the Schur complement to avoid
-   factoring the matrix more times than necessary. */
-  if (!model.is_linear()) {
-    linear_solver_.SetMatrix(*tangent_matrix_);
+FemSolver<T>::FemStateAndSchurComplement::FemStateAndSchurComplement(
+    const FemModel<T>& model)
+    : state(model.MakeFemState()) {}
+
+template <typename T>
+FemSolver<T>::FemStateAndSchurComplement::~FemStateAndSchurComplement() =
+    default;
+
+template <typename T>
+FemSolver<T>::Scratch::Scratch(const FemModel<T>& model) {
+  ReinitializeIfNeeded(model);
+}
+
+template <typename T>
+FemSolver<T>::Scratch::~Scratch() = default;
+
+template <typename T>
+void FemSolver<T>::Scratch::ReinitializeIfNeeded(const FemModel<T>& model) {
+  if (b.size() != model.num_dofs()) {
+    b.resize(model.num_dofs());
+    dz.resize(model.num_dofs());
+    tangent_matrix = model.MakeTangentMatrix();
+    /* For non-linear models, we use a BlockSparseCholeskySolver to solve the
+     linear systems from Newton-Raphson iterations. This usually allow for
+     better elimination ordering. In addition, since the sparsity pattern
+     remains unchanged throughout Newton iterations, using the linear solver
+     prevents reallocation for the L matrix in the Cholesky factorizations. For
+     linear models, we use `schur_complement` to both solve the linear system
+     and to find the Schur complement to avoid factoring the matrix more times
+     than necessary.
+    */
+    if (!model.is_linear()) {
+      linear_solver.SetMatrix(*tangent_matrix);
+    }
   }
 }
 
 template <typename T>
 FemSolver<T>::FemSolver(const FemModel<T>* model,
                         const DiscreteTimeIntegrator<T>* integrator)
-    : model_(model), integrator_(integrator) {
+    : model_(model),
+      integrator_(integrator),
+      next_state_and_schur_complement_(*model),
+      scratch_(*model) {
   DRAKE_DEMAND(model_ != nullptr);
   DRAKE_DEMAND(integrator_ != nullptr);
 }
 
 template <typename T>
-int FemSolver<T>::AdvanceOneTimeStep(const FemState<T>& prev_state,
-                                     FemState<T>* next_state,
-                                     FemSolverData<T>* data) const {
-  DRAKE_DEMAND(next_state != nullptr);
-  DRAKE_DEMAND(data != nullptr);
+FemSolver<T>::~FemSolver() = default;
+
+template <typename T>
+int FemSolver<T>::AdvanceOneTimeStep(
+    const FemState<T>& prev_state,
+    const std::unordered_set<int>& nonparticipating_vertices) {
   model_->ThrowIfModelStateIncompatible(__func__, prev_state);
-  model_->ThrowIfModelStateIncompatible(__func__, *next_state);
+  next_state_and_schur_complement_.ReinitializeIfNeeded(*model_);
+  scratch_.ReinitializeIfNeeded(*model_);
   const VectorX<T>& unknown_variable = integrator_->GetUnknowns(prev_state);
+  FemState<T>* next_state =
+      next_state_and_schur_complement_.state.get_mutable();
   integrator_->AdvanceOneTimeStep(prev_state, unknown_variable, next_state);
+  if (model_->is_linear()) {
+    return SolveLinearModel(nonparticipating_vertices);
+  }
   /* Run Newton-Raphson iterations. */
-  return SolveWithInitialGuess(next_state, data);
+  const int iterations = SolveNonlinearModel(nonparticipating_vertices);
+  if (iterations == -1) {
+    throw std::runtime_error(
+        "FemSolver::AdvanceOneTimeStep() failed to converge on a nonlinear FEM "
+        "model. Consider using a smaller timestep or reduce the stiffness of "
+        "the material.");
+  }
+  return iterations;
 }
 
 template <typename T>
@@ -54,35 +99,43 @@ bool FemSolver<T>::solver_converged(const T& residual_norm,
 }
 
 template <typename T>
-int FemSolver<T>::SolveWithInitialGuess(FemState<T>* state,
-                                        FemSolverData<T>* data) const {
-  VectorX<T>& b = data->b_;
-  VectorX<T>& dz = data->dz_;
-  contact_solvers::internal::Block3x3SparseSymmetricMatrix& tangent_matrix =
-      *data->tangent_matrix_;
-  contact_solvers::internal::SchurComplement& schur_complement =
-      data->schur_complement_;
+int FemSolver<T>::SolveLinearModel(
+    const std::unordered_set<int>& nonparticipating_vertices) {
+  DRAKE_DEMAND(model_->is_linear());
+  FemState<T>& state = *next_state_and_schur_complement_.state;
+  VectorX<T>& b = scratch_.b;
+  VectorX<T>& dz = scratch_.dz;
+  Block3x3SparseSymmetricMatrix& tangent_matrix = *scratch_.tangent_matrix;
 
-  model_->ApplyBoundaryCondition(state);
-  model_->CalcResidual(*state, &b);
+  model_->ApplyBoundaryCondition(&state);
+  model_->CalcResidual(state, &b);
   T residual_norm = b.norm();
-  const T initial_residual_norm = residual_norm;
-  /* Immediately return if at steady state. This is true iff residual_norm <
-   absolute_tolerance_. */
-  if (solver_converged(residual_norm, initial_residual_norm)) {
+  model_->CalcTangentMatrix(state, integrator_->GetWeights(), &tangent_matrix);
+  next_state_and_schur_complement_.schur_complement =
+      contact_solvers::internal::SchurComplement(tangent_matrix,
+                                                 nonparticipating_vertices);
+  if (residual_norm < absolute_tolerance_) {
     return 0;
   }
-  /* If the model is linear, we know that we only need one Newton iteration to
-   converge. */
-  if (model_->is_linear()) {
-    model_->CalcTangentMatrix(*state, integrator_->GetWeights(),
-                              &tangent_matrix);
-    schur_complement = contact_solvers::internal::SchurComplement(
-        tangent_matrix, data->nonparticipating_vertices());
-    dz = schur_complement.Solve(-b);
-    integrator_->UpdateStateFromChangeInUnknowns(dz, state);
-    return 1;
-  }
+  dz = next_state_and_schur_complement_.schur_complement.Solve(-b);
+  integrator_->UpdateStateFromChangeInUnknowns(dz, &state);
+  return 1;
+}
+
+template <typename T>
+int FemSolver<T>::SolveNonlinearModel(
+    const std::unordered_set<int>& nonparticipating_vertices) {
+  DRAKE_DEMAND(!model_->is_linear());
+  VectorX<T>& b = scratch_.b;
+  VectorX<T>& dz = scratch_.dz;
+  Block3x3SparseSymmetricMatrix& tangent_matrix = *scratch_.tangent_matrix;
+  LinearSolver& linear_solver = scratch_.linear_solver;
+  FemState<T>& state = *next_state_and_schur_complement_.state;
+
+  model_->ApplyBoundaryCondition(&state);
+  model_->CalcResidual(state, &b);
+  T residual_norm = b.norm();
+  const T initial_residual_norm = residual_norm;
   int iter = 0;
   /* For non-linear FEM models, the system of equations is non-linear and we use
    a Newton-Raphson solver. We iterate until any of the following is true:
@@ -90,12 +143,13 @@ int FemSolver<T>::SolveWithInitialGuess(FemState<T>* state,
    2. The norm of the residual is smaller than the absolute tolerance.
    3. The relative error (the norm of the residual divided by the norm of the
       initial residual) is smaller than the dimensionless relative tolerance. */
-  while (iter < kMaxIterations_ &&
+  while (iter < max_iterations_ &&
+         /* On first iteration, this is equivalent to residual_norm < abs_tol */
          !solver_converged(residual_norm, initial_residual_norm)) {
-    model_->CalcTangentMatrix(*state, integrator_->GetWeights(),
+    model_->CalcTangentMatrix(state, integrator_->GetWeights(),
                               &tangent_matrix);
-    data->linear_solver_.UpdateMatrix(tangent_matrix);
-    const bool factored = data->linear_solver_.Factor();
+    linear_solver.UpdateMatrix(tangent_matrix);
+    const bool factored = linear_solver.Factor();
     if (!factored) {
       throw std::runtime_error(
           "Tangent matrix factorization failed in FemSolver because the FEM "
@@ -103,9 +157,9 @@ int FemSolver<T>::SolveWithInitialGuess(FemState<T>* state,
           "be triggered by a combination of a stiff nonlinear constitutive "
           "model and a large time step.");
     }
-    dz = data->linear_solver_.Solve(-b);
-    integrator_->UpdateStateFromChangeInUnknowns(dz, state);
-    model_->CalcResidual(*state, &b);
+    dz = linear_solver.Solve(-b);
+    integrator_->UpdateStateFromChangeInUnknowns(dz, &state);
+    model_->CalcResidual(state, &b);
     residual_norm = b.norm();
     ++iter;
   }
@@ -114,9 +168,10 @@ int FemSolver<T>::SolveWithInitialGuess(FemState<T>* state,
     return -1;
   }
   /* Build the Schur complement after the Newton iterations have converged. */
-  model_->CalcTangentMatrix(*state, integrator_->GetWeights(), &tangent_matrix);
-  schur_complement = contact_solvers::internal::SchurComplement(
-      tangent_matrix, data->nonparticipating_vertices());
+  model_->CalcTangentMatrix(state, integrator_->GetWeights(), &tangent_matrix);
+  next_state_and_schur_complement_.schur_complement =
+      contact_solvers::internal::SchurComplement(tangent_matrix,
+                                                 nonparticipating_vertices);
   return iter;
 }
 
@@ -125,5 +180,4 @@ int FemSolver<T>::SolveWithInitialGuess(FemState<T>* state,
 }  // namespace multibody
 }  // namespace drake
 
-template class drake::multibody::fem::internal::FemSolverData<double>;
 template class drake::multibody::fem::internal::FemSolver<double>;

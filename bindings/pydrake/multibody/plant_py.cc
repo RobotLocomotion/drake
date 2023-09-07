@@ -637,6 +637,16 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("CalcGravityGeneralizedForces",
             &Class::CalcGravityGeneralizedForces, py::arg("context"),
             cls_doc.CalcGravityGeneralizedForces.doc)
+        .def(
+            "CalcGeneralizedForces",
+            [](const Class* self, const Context<T>& context,
+                const MultibodyForces<T>& forces) {
+              VectorX<T> tau(self->num_velocities());
+              self->CalcGeneralizedForces(context, forces, &tau);
+              return tau;
+            },
+            py::arg("context"), py::arg("forces"),
+            cls_doc.CalcGeneralizedForces.doc)
         .def("MakeActuationMatrix", &Class::MakeActuationMatrix,
             cls_doc.MakeActuationMatrix.doc)
         .def(

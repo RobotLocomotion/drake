@@ -84,6 +84,9 @@ class LinearModelPredictiveController : public LeafSystem<T> {
  private:
   void CalcControl(const Context<T>& context, BasicVector<T>* control) const;
 
+  EventStatus DoNothingButPretendItWasSomething(const Context<T>&,
+                                                DiscreteValues<T>*) const;
+
   // Sets up a DirectTranscription problem and solves for the current control
   // input.
   VectorX<T> SetupAndSolveQp(const Context<T>& base_context,

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <optional>
+
 #include "drake/planning/collision_checker.h"
 
 namespace drake {
@@ -34,19 +36,24 @@ namespace internal {
                             to zero will only consider collisions and not nearby
                             objects. As the value increases, more and more
                             distant objects will influence the calculation.
- @param context             An optional collision checker context. If none is
-                            provided, the checker's context for the current
-                            thread is used.
+ @param context_number      An optional context number to specify the implicit
+                            context to use.
+ @param context             An optional collision checker context.
+ @note Either a context, a context number, or neither may be provided. If
+       neither is provided, the implicit context corresponding to the current
+       OpenMP thread is used.
  @pre q.size() == checker.GetZeroConfiguration().size().
  @pre max_penetration <= 0.
  @pre max_clearance >= 0.
  @pre max_clearance > max_penetration.
  @pre if context != nullptr, it is a context managed by checker.
+ @pre context != nullptr and context_number != nullopt cannot be combined.
 
  @ingroup planning_collision_checker */
 Eigen::VectorXd ComputeCollisionAvoidanceDisplacement(
     const CollisionChecker& checker, const Eigen::VectorXd& q,
     double max_penetration, double max_clearance,
+    std::optional<int> context_number = std::nullopt,
     CollisionCheckerContext* context = nullptr);
 
 // TODO(jwnimmer-tri) Before we promote the above function out of the internal

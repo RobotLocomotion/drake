@@ -1407,10 +1407,6 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertEqual(result.get_solution_result(),
                          mp.SolutionResult.kSolutionResultNotSet)
 
-    def test_solution_result_deprecation(self):
-        self.assertEqual(mp.SolutionResult.kUnknownError,
-                         mp.SolutionResult.kSolverSpecificError)
-
 
 class DummySolverInterface(SolverInterface):
 
