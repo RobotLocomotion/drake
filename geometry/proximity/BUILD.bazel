@@ -831,9 +831,9 @@ drake_cc_library(
     ],
     deps = [
         "@fmt",
-        "@vtk//:vtkCommonCore",
-        "@vtk//:vtkCommonDataModel",
-        "@vtk//:vtkIOLegacy",
+        "@vtk_internal//:vtkCommonCore",
+        "@vtk_internal//:vtkCommonDataModel",
+        "@vtk_internal//:vtkIOLegacy",
     ],
 )
 
