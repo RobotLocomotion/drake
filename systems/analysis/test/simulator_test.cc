@@ -2561,6 +2561,35 @@ GTEST_TEST(SimulatorTest, EventStatusReturnHandling_Initialize) {
       fmt::format("Simulator returned early.*time.*{} because.*"
                   "my_event_system.*message.*publish0 terminated.*",
                   early_return_time)));
+
+  // 1st publish event reports failure. All events should still execute
+  // but an error should be thrown.
+  clear();
+  system.set_publish_severity(0, EventStatus::kFailed);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      sim.Initialize(),
+      fmt::format("Simulator stopped.*time.*{} because.*"
+                  "my_event_system.*message.*publish0 failed.*",
+                  early_return_time));
+  system.check_counts({1, 1, 1, 1, 2, 2});
+  EXPECT_EQ(sim.get_num_unrestricted_updates(), 1);
+  EXPECT_EQ(sim.get_num_discrete_updates(), 1);
+  EXPECT_EQ(sim.get_num_publishes(), 0);  // Shouldn't count failed dispatch.
+
+  // Both publish events fail. All events should still execute but an error
+  // should be thrown reporting the _first_ publish event's failure.
+  clear();
+  system.set_publish_severity(0, EventStatus::kFailed);
+  system.set_publish_severity(1, EventStatus::kFailed);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      sim.Initialize(),
+      fmt::format("Simulator stopped.*time.*{} because.*"
+                  "my_event_system.*message.*publish0 failed.*",
+                  early_return_time));
+  system.check_counts({1, 1, 1, 1, 2, 2});
+  EXPECT_EQ(sim.get_num_unrestricted_updates(), 1);
+  EXPECT_EQ(sim.get_num_discrete_updates(), 1);
+  EXPECT_EQ(sim.get_num_publishes(), 0);  // Shouldn't count failed dispatch.
 }
 
 GTEST_TEST(SimulatorTest, EventStatusReturnHandling_AdvanceTo) {
@@ -2686,6 +2715,37 @@ GTEST_TEST(SimulatorTest, EventStatusReturnHandling_AdvanceTo) {
   EXPECT_EQ(sim.get_num_unrestricted_updates(), 1);
   EXPECT_EQ(sim.get_num_discrete_updates(), 0);
   EXPECT_EQ(sim.get_num_publishes(), 1);  // the one at 0.5 (end of 1st step)
+
+  // First publish event fails. The second one should still be handled, then
+  // AdvanceTo() should throw reporting the failure. That's at the end of the
+  // first step (that ended at 0.5s) so we won't get to the unrestricted and
+  // discrete updates that would have occurred at the start of the 2nd step.
+  clear();
+  system.set_publish_severity(0, EventStatus::kFailed);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      status = sim.AdvanceTo(boundary_time),
+      fmt::format("Simulator stopped.*time.*{} because.*"
+                  "my_event_system.*message.*publish0 failed.*",
+                  early_return_time));
+  system.check_counts({0, 0, 0, 0, 2, 2});
+  EXPECT_EQ(sim.get_num_unrestricted_updates(), 0);
+  EXPECT_EQ(sim.get_num_discrete_updates(), 0);
+  EXPECT_EQ(sim.get_num_publishes(), 0);  // Shouldn't count failed dispatch.
+
+  // Same, but now both publishes failed. We should still report the failure
+  // of the first one that failed, i.e. publish0.
+  clear();
+  system.set_publish_severity(0, EventStatus::kFailed);
+  system.set_publish_severity(1, EventStatus::kFailed);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      status = sim.AdvanceTo(boundary_time),
+      fmt::format("Simulator stopped.*time.*{} because.*"
+                  "my_event_system.*message.*publish0 failed.*",
+                  early_return_time));
+  system.check_counts({0, 0, 0, 0, 2, 2});
+  EXPECT_EQ(sim.get_num_unrestricted_updates(), 0);
+  EXPECT_EQ(sim.get_num_discrete_updates(), 0);
+  EXPECT_EQ(sim.get_num_publishes(), 0);  // Shouldn't count failed dispatch.
 }
 
 // Simulator::Initialize() called at time t temporarily moves time back to
