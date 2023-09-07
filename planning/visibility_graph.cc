@@ -10,6 +10,7 @@
 #endif
 
 using common_robotics_utilities::openmp_helpers::GetContextOmpThreadNum;
+using common_robotics_utilities::openmp_helpers::IsOmpEnabledInBuild;
 
 namespace drake {
 namespace planning {
@@ -113,7 +114,9 @@ Eigen::SparseMatrix<bool> VisibilityGraph(
   DRAKE_THROW_UNLESS(checker.plant().num_positions() == points.rows());
 
   const int num_points = points.cols();
-  const int num_threads_to_use = checker.GetNumberOfThreads(parallelize);
+  const int num_threads_to_use = (IsOmpEnabledInBuild() && parallelize)
+                                     ? checker.num_allocated_contexts()
+                                     : 1;
   drake::log()->debug("Generating VisibilityGraph using {} threads",
                       num_threads_to_use);
 

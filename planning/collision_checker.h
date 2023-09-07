@@ -1124,12 +1124,6 @@ class CollisionChecker {
    @returns true if parallel checking is supported. */
   bool SupportsParallelChecking() const { return supports_parallel_checking_; }
 
-  /** Gets the number of threads that may be used in an OpenMP-parallelized
-   loop, which is the lesser of (a) the number of implicit contexts or (b) the
-   number of threads specified by `parallelize`. If OpenMP is not available,
-   returns 1. */
-  int GetNumberOfThreads(Parallelism parallelize) const;
-
  protected:
   /** Derived classes declare upon construction whether they support parallel
    checking (see SupportsParallelChecking()). If a derived class does not
@@ -1313,6 +1307,12 @@ class CollisionChecker {
    found. */
   std::string CriticizePaddingMatrix(const Eigen::MatrixXd& padding,
                                      const char* func) const;
+
+  /* Gets the number of threads that may be used in an OpenMP-parallelized
+   loop, which is the lesser of (a) the number of implicit contexts or (b) the
+   number of threads specified by `parallelize`. If OpenMP is not available,
+   returns 1. */
+  int GetNumberOfThreads(Parallelism parallelize) const;
 
   /* @returns a generalized position vector, sized according to the full model,
    whose values come from the plant's default context. */

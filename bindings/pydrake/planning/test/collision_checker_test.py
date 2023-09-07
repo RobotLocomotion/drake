@@ -417,11 +417,7 @@ class TestCollisionChecker(unittest.TestCase):
         dut.ClassifyBodyCollisions(q=q, context_number=1)
         dut.ClassifyContextBodyCollisions(model_context=ccc, q=q)
 
-        # Remove this assert if we ever need to test a collision checker that
-        # doesn't support parallel checking.
-        self.assertEqual(dut.SupportsParallelChecking(), True)
-        self.assertEqual(dut.GetNumberOfThreads(parallelize=False), 1)
-        self.assertGreaterEqual(dut.GetNumberOfThreads(parallelize=True), 1)
+        self.assertIsInstance(dut.SupportsParallelChecking(), bool)
 
         provider = dut.distance_and_interpolation_provider()
         self.assertIsInstance(provider, mut.DistanceAndInterpolationProvider)
