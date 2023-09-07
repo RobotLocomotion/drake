@@ -50,6 +50,11 @@ struct Node {
    the graph. */
   void UpdateExternalDegree(const std::vector<Node>& nodes);
 
+  /* Approximates and updates the external degree of `this` node given all nodes
+   in the graph. */
+  void ApproximateExternalDegree(int p, int Lp_size,
+                                 const std::vector<Node>& nodes);
+
   /* See [Amestoy 1996] and [Davis 2006] for definitions of "supervariable",
    "element", "external degree", etc. */
   int degree{0};  // The external degree of the supervaiable. Note that this is
@@ -69,6 +74,8 @@ struct Node {
   // non-empty at a given time.
   std::vector<int> L;  // Adjacent supervariables when `this` node is an
                        // element, empty otherwise.
+  int weight;  // Weight of this node (`w` in Algorithm 2 in [Amestoy 1996])
+               // when this node is an element, -1 otherwise.
 };
 
 /* A simplified version of Node used in a minimum priority queue of that only
@@ -94,7 +101,7 @@ inline bool operator<(const SimplifiedNode& a, const SimplifiedNode& b) {
  0, and 2. In other words, this is a permutation mapping from new block indices
  to original block indices. */
 std::vector<int> ComputeMinimumDegreeOrdering(
-    const BlockSparsityPattern& block_sparsity_pattern);
+    const BlockSparsityPattern& block_sparsity_pattern, bool use_amd = false);
 
 /* Similar to the one argument overload but eliminates elements in
 `priority_elements` first.
@@ -105,7 +112,7 @@ std::vector<int> ComputeMinimumDegreeOrdering(
  @pre all entries in `priority_elements` are in {0, 1, ..., n-1}. */
 std::vector<int> ComputeMinimumDegreeOrdering(
     const BlockSparsityPattern& block_sparsity_pattern,
-    const std::unordered_set<int>& priority_elements);
+    const std::unordered_set<int>& priority_elements, bool use_amd = false);
 
 /* Given the block sparsity pattern of a symmetric block sparse matrix, computes
  the block sparsity pattern of the lower triangular matrix resulting from a

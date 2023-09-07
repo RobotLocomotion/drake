@@ -175,6 +175,9 @@ GTEST_TEST(MinimumDegreeOrderingTest, ComputeMinimumDegreeOrdering2) {
   BlockSparsityPattern block_pattern(block_sizes, sparsity);
   std::vector<int> result = ComputeMinimumDegreeOrdering(block_pattern);
   EXPECT_EQ(result, std::vector<int>({0, 1, 2, 3, 4, 5, 6, 7, 8, 9}));
+
+  result = ComputeMinimumDegreeOrdering(block_pattern, true);
+  EXPECT_EQ(result, std::vector<int>({0, 1, 2, 3, 4, 5, 6, 7, 8, 9}));
 }
 
 /* Here we use the same initial sparsity pattern as the example from Figure 1 in

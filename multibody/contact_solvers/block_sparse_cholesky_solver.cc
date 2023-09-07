@@ -19,7 +19,7 @@ void BlockSparseCholeskySolver<BlockType>::SetMatrix(const SymmetricMatrix& A) {
   const BlockSparsityPattern& A_block_pattern = A.sparsity_pattern();
   /* Compute the elimination ordering using Minimum Degree algorithm. */
   const std::vector<int> elimination_ordering =
-      ComputeMinimumDegreeOrdering(A_block_pattern);
+      ComputeMinimumDegreeOrdering(A_block_pattern, /* use amd */ true);
   BlockSparsityPattern L_block_pattern =
       SymbolicFactor(A, elimination_ordering);
   SetMatrixImpl(A, elimination_ordering, std::move(L_block_pattern));
@@ -63,8 +63,8 @@ BlockSparseCholeskySolver<BlockType>::FactorAndCalcSchurComplement(
    associated with `eliminated_blocks` are eliminated first. There are
    many ordering that satisfy this requirement, and we look for one that reduces
    fill-in. */
-  const std::vector<int> elimination_ordering =
-      ComputeMinimumDegreeOrdering(A.sparsity_pattern(), eliminated_blocks);
+  const std::vector<int> elimination_ordering = ComputeMinimumDegreeOrdering(
+      A.sparsity_pattern(), eliminated_blocks, /* use amd */ true);
   SetMatrixImpl(A, elimination_ordering,
                 SymbolicFactor(A, elimination_ordering));
 
