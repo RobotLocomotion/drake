@@ -604,7 +604,7 @@ GTEST_TEST(ActuationPortsTest, CheckActuation) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant.CalcTimeDerivatives(*context, continuous_state.get()),
       "Actuation input port for model instance .* must "
-          "be connected.");
+      "be connected or PD gains must be specified for each actuator.");
 
   // Verify that derivatives can be computed after fixing the acrobot actuation
   // input port.
