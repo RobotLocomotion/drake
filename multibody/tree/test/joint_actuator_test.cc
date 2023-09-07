@@ -43,6 +43,14 @@ GTEST_TEST(JointActuatorTest, JointActuatorLimitTest) {
   const auto& actuator1 = tree.GetJointActuatorByName("act1");
   EXPECT_EQ(actuator1.effort_limit(), kPositiveEffortLimit);
 
+  // Unit test PD controller APIs.
+  EXPECT_FALSE(actuator1.has_controller());
+  JointActuator<double>& mutable_actuator1 =
+      tree.get_mutable_joint_actuator(actuator1.index());
+  PdControllerGains gains{.p = 1000, .d = 100};
+  mutable_actuator1.set_controller_gains(gains);
+  EXPECT_TRUE(actuator1.has_controller());
+
   // Throw if the effort limit is set to 0.
   const Joint<double>& body2_body1 =
       tree.AddJoint(std::make_unique<PrismaticJoint<double>>(
