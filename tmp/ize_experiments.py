@@ -12,7 +12,7 @@ from pydrake.systems.framework import DiagramBuilder, LeafSystem
 from pydrake.visualization import ApplyVisualizationConfig, VisualizationConfig
 
 
-# Create a rigid-hydroelastic table top
+# Create a table top
 table_top_sdf = """<?xml version="1.0"?>
 <sdf version="1.7">
   <model name="TableTop">
