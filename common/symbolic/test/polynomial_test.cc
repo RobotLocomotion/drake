@@ -210,6 +210,18 @@ TEST_F(SymbolicPolynomialTest, ConstructorFromExpressionAndIndeterminates3) {
   EXPECT_TRUE(p1.monomial_to_coefficient_map().empty());
 }
 
+TEST_F(SymbolicPolynomialTest, ConstructFromVariable) {
+  // Variable -------------------> Polynomial
+  //     | Expression()                    | .ToExpression()
+  //    \/                                 \/
+  // Expanded Expression     ==      Expression
+  for (const Variable& v : var_xyz_) {
+    const Expression expr{v};
+    const Expression expr_from_polynomial{Polynomial{v}.ToExpression()};
+    EXPECT_PRED2(ExprEqual, expr, expr_from_polynomial);
+  }
+}
+
 TEST_F(SymbolicPolynomialTest, IndeterminatesAndDecisionVariables) {
   // p = 3ab²*x²y -bc*z³
   const Polynomial p{
