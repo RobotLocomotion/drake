@@ -1088,6 +1088,8 @@ class CollisionChecker {
       CollisionCheckerContext* model_context, const Eigen::VectorXd& q,
       double influence_distance) const;
 
+  // TODO(calderpg-tri) Improve MaxNumDistances to use the prototype context
+  // instead, and deprecate context-specific forms.
   /** Returns an upper bound on the number of distances returned by
    CalcRobotClearance(), using the current thread's associated context.
    @param context_number Optional implicit context number.
