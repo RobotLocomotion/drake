@@ -138,6 +138,7 @@ drake_cc_googletest(
                 "RenderEngineVtkTest.PreservePropertyTexturesOverClone",
                 "RenderEngineVtkTest.RemoveVisual",
                 "RenderEngineVtkTest.SimpleClone",
+                "RenderEngineVtkTest.SingleLight",
                 "RenderEngineVtkTest.SphereTest",
                 "RenderEngineVtkTest.TerrainTest",
             ]),
