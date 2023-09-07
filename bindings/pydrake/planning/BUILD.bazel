@@ -66,6 +66,7 @@ drake_py_unittest(
         "//multibody:models",
         "//planning/test_utilities:collision_ground_plane.sdf",
     ],
+    num_threads = 2,
     deps = [
         ":planning",
         "//bindings/pydrake/common/test_utilities:numpy_compare_py",
