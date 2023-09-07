@@ -393,7 +393,7 @@ void SceneGraph<T>::SetDefaultParameters(const Context<T>& context,
     internal::Hydroelastize(&value, config_);
   }
   parameters->template get_mutable_abstract_parameter<GeometryState<T>>(
-      geometry_state_index_) = value;
+      geometry_state_index_) = std::move(value);
 }
 
 template <typename T>
