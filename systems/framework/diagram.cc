@@ -1195,7 +1195,9 @@ EventStatus Diagram<T>::DispatchPublishHandler(
       const EventStatus per_subsystem_status =
           registered_systems_[i]->Publish(subcontext, subinfo);
       overall_status.KeepMoreSevere(per_subsystem_status);
-      if (overall_status.failed()) break;
+      // Unlike the discrete & unrestricted event policy, we don't stop handling
+      // publish events when one fails; we just report the first failure after
+      // all the publishes are done.
     }
   }
   return overall_status;
@@ -1230,7 +1232,7 @@ EventStatus Diagram<T>::DispatchDiscreteVariableUpdateHandler(
           registered_systems_[i]->CalcDiscreteVariableUpdate(
           subcontext, subevents, &subdiscrete);
       overall_status.KeepMoreSevere(per_subsystem_status);
-      if (overall_status.failed()) break;
+      if (overall_status.failed()) break;  // Stop at the first disaster.
     }
   }
   return overall_status;
@@ -1290,7 +1292,7 @@ EventStatus Diagram<T>::DispatchUnrestrictedUpdateHandler(
           registered_systems_[i]->CalcUnrestrictedUpdate(subcontext, subevents,
                                                          &substate);
       overall_status.KeepMoreSevere(per_subsystem_status);
-      if (overall_status.failed()) break;
+      if (overall_status.failed()) break;  // Stop at the first disaster.
     }
   }
   return overall_status;

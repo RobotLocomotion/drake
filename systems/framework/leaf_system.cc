@@ -905,7 +905,9 @@ EventStatus LeafSystem<T>::DispatchPublishHandler(
   for (const PublishEvent<T>* event : leaf_events.get_events()) {
     const EventStatus per_event_status = event->handle(*this, context);
     overall_status.KeepMoreSevere(per_event_status);
-    if (overall_status.failed()) break;  // Stop at the first disaster.
+    // Unlike the discrete & unrestricted event policy, we don't stop
+    // handling publish events when one fails; we just report the first failure
+    // after all the publishes are done.
   }
   return overall_status;
 }

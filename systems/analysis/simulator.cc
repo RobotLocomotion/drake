@@ -77,14 +77,15 @@ SimulatorStatus Simulator<T>::Initialize(const InitializeParams& params) {
   // Restore default values.
   ResetStatistics();
 
-  // Process all the initialization events.
+  // Collect all the initialization events for processing below.
   merged_events_ = system_.AllocateCompositeEventCollection();
   if (!params.suppress_initialization_events) {
     system_.GetInitializationEvents(*context_, merged_events_.get());
   }
 
-  // Event status uses a "first worst" strategy and gives up if some event
-  // handler reports failure.
+  // Event status uses a "first worst" strategy but gives up immediately if a
+  // state-modifying event reports failure. However, all publish events are
+  // invoked even if one fails, prior to reporting the failure.
 
   // Do unrestricted updates first.
   EventStatus accumulated_event_status = HandleUnrestrictedUpdate(
@@ -154,22 +155,15 @@ SimulatorStatus Simulator<T>::Initialize(const InitializeParams& params) {
 
     // At this point merged_events_ has any publish events we need to handle
     // now (including initialization, per-step, and time now-triggered).
+    // Defer throwing on failure until all publish events are handled.
 
     event_status = HandlePublish(merged_events_->get_publish_events());
     accumulated_event_status.KeepMoreSevere(event_status);
-    if (CheckForEventFailureAndMaybeThrow(accumulated_event_status,
-                                          true /*throw on failure*/,
-                                          &initialize_status))
-      return initialize_status;
 
     // If requested, do a force-publish before the simulation starts.
     if (publish_at_initialization_) {
       event_status = HandlePublish(system_.get_forced_publish_events());
       accumulated_event_status.KeepMoreSevere(event_status);
-      if (CheckForEventFailureAndMaybeThrow(accumulated_event_status,
-                                            true /*throw on failure*/,
-                                            &initialize_status))
-        return initialize_status;
     }
 
     // Invoke the monitor() if there is one. This is logically like a
@@ -177,11 +171,12 @@ SimulatorStatus Simulator<T>::Initialize(const InitializeParams& params) {
     if (get_monitor()) {
       event_status = get_monitor()(*context_);
       accumulated_event_status.KeepMoreSevere(event_status);
-      if (CheckForEventFailureAndMaybeThrow(accumulated_event_status,
-                                            true /*throw on failure*/,
-                                            &initialize_status))
-        return initialize_status;
     }
+
+    if (CheckForEventFailureAndMaybeThrow(accumulated_event_status,
+                                          true /*throw on failure*/,
+                                          &initialize_status))
+      return initialize_status;
   }
 
   // If we get here, none of the event handlers reported failure, but we may
@@ -301,7 +296,10 @@ SimulatorStatus Simulator<T>::AdvanceTo(const T& boundary_time) {
     // "violence" to the state, i.e. unrestricted -> discrete -> continuous ->
     // publish. The "timed" actions happen before the "per step" ones.
     // Event status is accumulated in a "first worst" manner -- we keep going
-    // until something fails.
+    // until something fails. Failure from state-updating events (discrete or
+    // unrestricted) halts processing immediately. Failure from a publish event
+    // still allows the remaining publish events to be handled prior to
+    // reporting the failure.
 
     // Do unrestricted updates first.
     EventStatus accumulated_event_status = HandleUnrestrictedUpdate(
@@ -388,22 +386,14 @@ SimulatorStatus Simulator<T>::AdvanceTo(const T& boundary_time) {
 
       // At this point merged_events_ has any publish events we need to handle
       // now (including per-step, witnessed, and time-triggered). These are
-      // simultaneous so all will be invoked unless there is a failure.
+      // simultaneous and all will be handled even if there is a failure.
 
       event_status = HandlePublish(merged_events_->get_publish_events());
       accumulated_event_status.KeepMoreSevere(event_status);
-      if (CheckForEventFailureAndMaybeThrow(accumulated_event_status,
-                                            true /*throw on failure*/,
-                                            &simulator_status))
-        return simulator_status;
 
       if (get_publish_every_time_step()) {
         event_status = HandlePublish(system_.get_forced_publish_events());
         accumulated_event_status.KeepMoreSevere(event_status);
-        if (CheckForEventFailureAndMaybeThrow(accumulated_event_status,
-                                              true /*throw on failure*/,
-                                              &simulator_status))
-          return simulator_status;
       }
 
       // Invoke the monitor() if there is one. This is logically like a
@@ -411,11 +401,13 @@ SimulatorStatus Simulator<T>::AdvanceTo(const T& boundary_time) {
       if (get_monitor()) {
         event_status = get_monitor()(*context_);
         accumulated_event_status.KeepMoreSevere(event_status);
-        if (CheckForEventFailureAndMaybeThrow(accumulated_event_status,
-                                              true /*throw on failure*/,
-                                              &simulator_status))
-          return simulator_status;
       }
+
+      // If any of the publish event handlers failed, stop now.
+      if (CheckForEventFailureAndMaybeThrow(accumulated_event_status,
+                                            true /*throw on failure*/,
+                                            &simulator_status))
+        return simulator_status;
     }
 
     // If we get here, none of the event handlers reported failure, but we may

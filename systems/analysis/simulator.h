@@ -119,10 +119,13 @@ been defined.
 
 Updates, publishes, and the monitor can report errors or detect a
 termination condition; that is not shown in the pseudocode below. We follow
-this policy: a "failed" return from any computation terminates the step
-immediately with no further processing. A "reached termination" return permits
-further processing of simultaneous events and is superseded if a failure
-occurs but doesn't permit time to advance any further.
+this policy: a "failed" return from any potentially state-updating computation
+(i.e. discrete or unrestricted update) terminates the step immediately with no
+further processing. On the other hand, if a publish event fails we continue
+handling the remaining simultaneous publish events before reporting the error.
+A "reached termination" status from any event handler permits further processing
+of simultaneous events (superseded if a failure occurs) but doesn't permit time
+to advance any further.
 
 The pseudocode will clarify the effects on time and state of each of the update
 stages above. This algorithm is given a starting Context value `{tₛ, x⁻(tₛ)}`
@@ -296,9 +299,9 @@ class Simulator {
   /// constraints -- it is up to you to make sure that constraints are
   /// satisfied by the initial conditions.
   ///
-  /// This method will throw `std::exception` if the combination of options
-  /// doesn't make sense. Other failures are possible from the System and
-  /// integrator in use.
+  /// @throws std::exception if the combination of options doesn't make sense
+  /// or if any handled event reports failure. Other error conditions are
+  /// possible from the System and integrator in use.
   ///
   /// @param params (optional) a parameter structure (@see InitializeParams).
   ///
@@ -309,10 +312,7 @@ class Simulator {
   SimulatorStatus Initialize(const InitializeParams& params = {});
 
   /// Advances the System's trajectory until `boundary_time` is reached in
-  /// the Context or some other termination condition occurs. A variety of
-  /// `std::exception` conditions are possible here, as well as error
-  /// conditions that may be thrown by the System when it is asked to perform
-  /// computations.
+  /// the Context or some other termination condition occurs.
   ///
   /// We recommend that you call Initialize() prior to making the first call
   /// to AdvanceTo(). However, if you don't it will be called for you the first
@@ -326,6 +326,9 @@ class Simulator {
   ///
   /// @note You can track simulation progress to terminate on arbitrary
   /// conditions using a _monitor_ function; see set_monitor().
+  ///
+  /// @throws std::exception if any handled event reports failure. Other error
+  /// conditions are possible from the System and integrator in use.
   ///
   /// @param boundary_time The maximum time to which the trajectory will be
   ///     advanced by this call to %AdvanceTo(). The method may return earlier
@@ -357,6 +360,8 @@ class Simulator {
   /// pending events, nothing happens except possibly a final per-step publish
   /// call (if enabled) followed by a call to the monitor() function (if one
   /// has been provided).
+  ///
+  /// @throws std::exception if any handled event reports failure.
   ///
   /// @retval status A SimulatorStatus object indicating success, termination,
   ///                or an error condition as reported by event handlers or
@@ -593,13 +598,14 @@ class Simulator {
 
   /// Gets the number of publish dispatcher calls made since the last
   /// Initialize() or ResetStatistics() call. Note that a single dispatcher
-  /// call may handle multiple publish events. Does not count calls that fail
-  /// or return "did nothing".
+  /// call may handle multiple publish events. Does not count calls where _any_
+  /// of the publish events fails or _all_ the publish events return
+  /// "did nothing".
   int64_t get_num_publishes() const { return num_publishes_; }
 
-  /// Gets the number of steps since the last Initialize() call. (We're
-  /// not counting the Initialize() 0-length "step".) Note that every
-  /// AdvanceTo() call can potentially take many steps.
+  /// Gets the number of steps since the last Initialize() or ResetStatistics()
+  /// call. (We're not counting the Initialize() 0-length "step".) Note that
+  /// every AdvanceTo() call can potentially take many steps.
   int64_t get_num_steps_taken() const { return num_steps_taken_; }
 
   /// Gets the number of discrete variable update dispatcher calls since the
