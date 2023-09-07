@@ -35,10 +35,10 @@ int GetAmbientDimension(const ConvexSets& sets) {
 Intersection::Intersection() : Intersection(ConvexSets{}) {}
 
 Intersection::Intersection(const ConvexSets& sets)
-    : ConvexSet(GetAmbientDimension(sets)), sets_(sets) {}
+    : ConvexSet(GetAmbientDimension(sets), false), sets_(sets) {}
 
 Intersection::Intersection(const ConvexSet& setA, const ConvexSet& setB)
-    : ConvexSet(setA.ambient_dimension()) {
+    : ConvexSet(setA.ambient_dimension(), false) {
   DRAKE_THROW_UNLESS(setB.ambient_dimension() == setA.ambient_dimension());
   sets_.emplace_back(setA.Clone());
   sets_.emplace_back(setB.Clone());

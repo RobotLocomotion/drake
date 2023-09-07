@@ -2,8 +2,11 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/limit_malloc.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
+#include "drake/geometry/optimization/hyperellipsoid.h"
+#include "drake/geometry/optimization/hyperrectangle.h"
 #include "drake/geometry/optimization/point.h"
 
 namespace drake {
@@ -11,6 +14,9 @@ namespace geometry {
 namespace optimization {
 namespace {
 
+using Eigen::Matrix;
+using Eigen::Matrix3d;
+using Eigen::MatrixXd;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
 using test::LimitMalloc;
@@ -102,6 +108,133 @@ GTEST_TEST(MakeConvexSetsTest, NoExtraCopying) {
     LimitMalloc guard({.max_num_allocations = num, .min_num_allocations = num});
     MakeConvexSets(box);
   }
+}
+
+// Minimum implementation of a ConvexSet.
+class DummyVolumeSet : public ConvexSet {
+ public:
+  explicit DummyVolumeSet(int dim, bool can_calc_volume)
+      : ConvexSet(dim, can_calc_volume) {}
+
+ protected:
+  std::unique_ptr<ConvexSet> DoClone() const override { return nullptr; }
+  bool DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>&,
+                    double) const override {
+    return false;
+  }
+  std::pair<VectorX<symbolic::Variable>,
+            std::vector<solvers::Binding<solvers::Constraint>>>
+  DoAddPointInSetConstraints(
+      solvers::MathematicalProgram*,
+      const Eigen::Ref<const solvers::VectorXDecisionVariable>&)
+      const override {
+    return {{}, {}};
+  }
+  std::vector<solvers::Binding<solvers::Constraint>>
+  DoAddPointInNonnegativeScalingConstraints(
+      solvers::MathematicalProgram*,
+      const Eigen::Ref<const solvers::VectorXDecisionVariable>&,
+      const symbolic::Variable&) const override {
+    return {};
+  }
+  std::vector<solvers::Binding<solvers::Constraint>>
+  DoAddPointInNonnegativeScalingConstraints(
+      solvers::MathematicalProgram*, const Eigen::Ref<const Eigen::MatrixXd>&,
+      const Eigen::Ref<const Eigen::VectorXd>&,
+      const Eigen::Ref<const Eigen::VectorXd>&, double,
+      const Eigen::Ref<const solvers::VectorXDecisionVariable>&,
+      const Eigen::Ref<const solvers::VectorXDecisionVariable>&)
+      const override {
+    return {};
+  }
+  std::pair<std::unique_ptr<Shape>, math::RigidTransformd> DoToShapeWithPose()
+      const override {
+    return {nullptr, math::RigidTransformd()};
+  }
+};
+
+// A convex set that doesn't implement DoCalcVolume but can erroneously report
+// that it can compute an exact volume.
+class NoImplSet final : public DummyVolumeSet {
+ public:
+  explicit NoImplSet(int dim, bool can_calc_volume)
+      : DummyVolumeSet(dim, can_calc_volume) {}
+};
+
+// A convex set that has implemented DoCalcVolume(), but can arbitrarily
+// indicate whether it has an exact volume. The value returned by DoCalcVolume()
+// depends on whether the constructor's `can_calc_volume` is true or false.
+// If true, `DoCalcVolume()` returns a positive value, if `false`, a negative
+// value. We should never get a negative value because CalcVolume() should throw
+// base on `has_exact_value()`.
+class HasImplSet final : public DummyVolumeSet {
+ public:
+  explicit HasImplSet(int dim, bool can_calc_volume)
+      : DummyVolumeSet(dim, can_calc_volume),
+        can_calc_volume_(can_calc_volume) {}
+
+ private:
+  double DoCalcVolume() const final { return can_calc_volume_ ? 1.5 : -1; }
+  bool can_calc_volume_{};
+};
+
+// Confirms that CalcVolume() respects has_exact_volume() and the ambient
+// dimension before invoking DoCalcVolume() and that errors in derived classes
+// are detected and reported.
+GTEST_TEST(ConvexSetTest, CalcVolume) {
+  // CalcVolume() correctly avoids calling DoCalcVolume().
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      NoImplSet(1, false).CalcVolume(),
+      ".*NoImplSet reports that it cannot report an exact volume.*");
+
+  // CalcVolume() calls DoCalcVolume(), revealing the class has lied.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      NoImplSet(1, true).CalcVolume(),
+      ".*NoImplSet has a defect -- has_exact_volume.. is reporting true.*");
+
+  // CalcVolume() correctly avoids calling the implemented DoCalcVolume().
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      HasImplSet(1, false).CalcVolume(),
+      ".*HasImplSet reports that it cannot report an exact volume.*");
+
+  // CalcVolume() called DoCalcVolume() correctly, and it returned a positive
+  // value.
+  EXPECT_GT(HasImplSet(1, true).CalcVolume(), 0);
+
+  // In the case of zero dimension, the exception happens after checking
+  // has_exact_volume.
+  DRAKE_EXPECT_THROWS_MESSAGE(NoImplSet(0, false).CalcVolume(),
+                              ".*an exact volume.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(NoImplSet(0, true).CalcVolume(),
+                              ".*NoImplSet is a zero-dimensional set.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(HasImplSet(0, false).CalcVolume(),
+                              ".*an exact volume.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(HasImplSet(0, true).CalcVolume(),
+                              ".*HasImplSet is a zero-dimensional set.*");
+}
+
+// Compute the value of pi via sampling the unit circle.
+GTEST_TEST(ConvexSetTest, CalcVolumeViaSampling) {
+  Hyperellipsoid unit_circle = Hyperellipsoid::MakeUnitBall(2);
+  RandomGenerator generator(1234);
+  const double desired_rel_accuracy = 1e-3;
+  // We need 250K hits, which means about 318K samples. Most likely will not
+  // achieve this with 100K samples.
+  const int max_num_samples_low = 1e5;
+  const int max_num_samples_high = 1e6;
+  const SampledVolume bad_result = unit_circle.CalcVolumeViaSampling(
+      &generator, desired_rel_accuracy, max_num_samples_low);
+  const SampledVolume good_result = unit_circle.CalcVolumeViaSampling(
+      &generator, desired_rel_accuracy, max_num_samples_high);
+  EXPECT_GT(bad_result.rel_accuracy, desired_rel_accuracy);
+  EXPECT_LE(good_result.rel_accuracy, desired_rel_accuracy);
+  // We must get close enough to pi with good estimate
+  EXPECT_FALSE(std::abs(bad_result.volume - M_PI) / M_PI <
+               desired_rel_accuracy);
+  EXPECT_NEAR(good_result.volume, M_PI, M_PI * desired_rel_accuracy);
+  // We reach the max_num_samples in the bad estimate, but not in the good one.
+  EXPECT_EQ(bad_result.num_samples, max_num_samples_low);
+  EXPECT_LT(good_result.num_samples, max_num_samples_high);
 };
 
 }  // namespace

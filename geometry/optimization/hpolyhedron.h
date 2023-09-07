@@ -221,6 +221,9 @@ class HPolyhedron final : public ConvexSet {
     CheckInvariants();
   }
 
+  /** @throws  Not implemented. */
+  using ConvexSet::CalcVolume;
+
  private:
   /* @pre other.ambient_dimension() == this->ambient_dimension() */
   [[nodiscard]] HPolyhedron DoIntersectionNoChecks(

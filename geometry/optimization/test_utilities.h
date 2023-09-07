@@ -10,7 +10,6 @@
 namespace drake {
 namespace geometry {
 namespace optimization {
-
 namespace internal {
 
 // Constructs a SceneGraph containing only the requested shape as geometry G,
