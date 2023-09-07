@@ -27,8 +27,8 @@ list(APPEND ALL_PROJECTS lz4)
 
 # xz
 set(xz_version 5.2.5)
-set(xz_url "https://tukaani.org/xz/xz-${xz_version}.tar.gz")
-set(xz_md5 "0d270c997aff29708c74d53f599ef717")
+set(xz_url "https://github.com/tukaani-project/xz/archive/refs/tags/v${xz_version}.tar.gz")
+set(xz_md5 "1380da72b651c2e96f76958e29c1fa68")
 list(APPEND ALL_PROJECTS xz)
 
 # libjpeg-turbo
