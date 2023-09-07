@@ -41,7 +41,7 @@ namespace internal {
  @param context             An optional collision checker context.
  @note Either a context, a context number, or neither may be provided. If
        neither is provided, the implicit context corresponding to the current
-       OpenMP hread is used.
+       OpenMP thread is used.
  @pre q.size() == checker.GetZeroConfiguration().size().
  @pre max_penetration <= 0.
  @pre max_clearance >= 0.

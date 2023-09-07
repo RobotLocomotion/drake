@@ -93,7 +93,7 @@ namespace planning {
  - no two or more threads simultaneously use the same context number
 
  Methods supporting implicit context parallelism are noted below by having a
- reference to this section; as a rule of thumb, any method that takes a
+ reference to this section; as a rule of thumb, any public method that takes a
  `context_number` argument uses implicit context parallelism.
 
  Users of this class (derived classes and others) can write their own parallel
@@ -132,7 +132,7 @@ namespace planning {
  contexts, whether explicit or implicit.
 
  Methods supporting explicit context parallelism are noted below by having a
- reference to this section; as a rule of thumb, any method that takes a
+ reference to this section; as a rule of thumb, any public method that takes a
  `model_context` first argument uses explicit context parallelism.
 
  In practice, multi-threaded collision checking with explicit contexts may look
@@ -268,7 +268,7 @@ class CollisionChecker {
    context pool owned by this collision checker.
    @param context_number Optional implicit context number.
    @returns a `const` reference to the multibody plant sub-context within
-   the context given  by the `context_number`, or when nullopt the context to be
+   the context given by the `context_number`, or when nullopt the context to be
    used with the current OpenMP thread.
    @see @ref ccb_implicit_contexts "Implicit Context Parallelism". */
   const systems::Context<double>& plant_context(
