@@ -19,11 +19,12 @@ class HydroelastizeBenchmark : public benchmark::Fixture {
     auto frame_id =
         scene_graph_->RegisterFrame(source_id, GeometryFrame{"frame0"});
     for (int k = 0; k < num_geoms; ++k) {
-      scene_graph_->RegisterGeometry(
+      auto geom_id = scene_graph_->RegisterGeometry(
           source_id, frame_id,
           std::make_unique<GeometryInstance>(math::RigidTransformd(),
                                              Sphere(1000.0),
                                              fmt::format("sphere{}", k)));
+      scene_graph_->AssignRole(source_id, geom_id, ProximityProperties());
     }
   }
 
