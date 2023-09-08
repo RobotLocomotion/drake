@@ -246,14 +246,14 @@ drake_cc_googletest(
     deps = [
         ":convex_set",
         "//common/test_utilities:expect_throws_message",
-        "//common/test_utilities:limit_malloc",
     ],
 )
 
 drake_cc_googletest(
-    name = "convex_set_solving_test",
+    name = "convex_set_limit_malloc_test",
     deps = [
         ":convex_set",
+        "//common/test_utilities:limit_malloc",
     ],
 )
 
