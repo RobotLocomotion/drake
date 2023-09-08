@@ -19,7 +19,7 @@ using Eigen::MatrixXd;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
 
-// N.B. See also convex_set_solving_test for additional unit test cases.
+// N.B. See also convex_set_limit_malloc_test for additional unit test cases.
 
 GTEST_TEST(ConvexSetsTest, BasicTest) {
   ConvexSets sets;
