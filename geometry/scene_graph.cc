@@ -145,6 +145,7 @@ SceneGraph<T>::~SceneGraph() = default;
 
 template <typename T>
 SourceId SceneGraph<T>::RegisterSource(const std::string& name) {
+  hydroelastized_model_.reset();
   SourceId source_id = model_.RegisterNewSource(name);
   MakeSourcePorts(source_id);
   return source_id;
@@ -173,6 +174,7 @@ const InputPort<T>& SceneGraph<T>::get_source_configuration_port(
 template <typename T>
 FrameId SceneGraph<T>::RegisterFrame(SourceId source_id,
                                      const GeometryFrame& frame) {
+  hydroelastized_model_.reset();
   return model_.RegisterFrame(source_id, frame);
 }
 
@@ -184,6 +186,7 @@ FrameId SceneGraph<T>::RegisterFrame(SourceId source_id, FrameId parent_id,
 
 template <typename T>
 void SceneGraph<T>::RenameFrame(FrameId frame_id, const std::string& name) {
+  hydroelastized_model_.reset();
   return model_.RenameFrame(frame_id, name);
 }
 
@@ -191,6 +194,7 @@ template <typename T>
 GeometryId SceneGraph<T>::RegisterGeometry(
     SourceId source_id, FrameId frame_id,
     std::unique_ptr<GeometryInstance> geometry) {
+  hydroelastized_model_.reset();
   return model_.RegisterGeometry(source_id, frame_id, std::move(geometry));
 }
 
@@ -205,6 +209,7 @@ GeometryId SceneGraph<T>::RegisterGeometry(
 template <typename T>
 GeometryId SceneGraph<T>::RegisterAnchoredGeometry(
     SourceId source_id, std::unique_ptr<GeometryInstance> geometry) {
+  hydroelastized_model_.reset();
   return model_.RegisterAnchoredGeometry(source_id, std::move(geometry));
 }
 
@@ -212,6 +217,7 @@ template <typename T>
 GeometryId SceneGraph<T>::RegisterDeformableGeometry(
     SourceId source_id, FrameId frame_id,
     std::unique_ptr<GeometryInstance> geometry, double resolution_hint) {
+  hydroelastized_model_.reset();
   return model_.RegisterDeformableGeometry(
       source_id, frame_id, std::move(geometry), resolution_hint);
 }
@@ -228,6 +234,7 @@ GeometryId SceneGraph<T>::RegisterDeformableGeometry(
 template <typename T>
 void SceneGraph<T>::RenameGeometry(GeometryId geometry_id,
                                    const std::string& name) {
+  hydroelastized_model_.reset();
   return model_.RenameGeometry(geometry_id, name);
 }
 
@@ -235,6 +242,7 @@ template <typename T>
 void SceneGraph<T>::ChangeShape(
     SourceId source_id, GeometryId geometry_id, const Shape& shape,
     std::optional<math::RigidTransform<double>> X_FG) {
+  hydroelastized_model_.reset();
   return model_.ChangeShape(source_id, geometry_id, shape, X_FG);
 }
 
@@ -248,6 +256,7 @@ void SceneGraph<T>::ChangeShape(
 
 template <typename T>
 void SceneGraph<T>::RemoveGeometry(SourceId source_id, GeometryId geometry_id) {
+  hydroelastized_model_.reset();
   model_.RemoveGeometry(source_id, geometry_id);
 }
 
@@ -261,6 +270,7 @@ void SceneGraph<T>::RemoveGeometry(Context<T>* context, SourceId source_id,
 template <typename T>
 void SceneGraph<T>::AddRenderer(
     std::string name, std::unique_ptr<render::RenderEngine> renderer) {
+  hydroelastized_model_.reset();
   return model_.AddRenderer(std::move(name), std::move(renderer));
 }
 
@@ -293,6 +303,7 @@ template <typename T>
 void SceneGraph<T>::AssignRole(SourceId source_id, GeometryId geometry_id,
                                ProximityProperties properties,
                                RoleAssign assign) {
+  hydroelastized_model_.reset();
   model_.AssignRole(source_id, geometry_id, std::move(properties), assign);
 }
 
@@ -309,6 +320,7 @@ template <typename T>
 void SceneGraph<T>::AssignRole(SourceId source_id, GeometryId geometry_id,
                                PerceptionProperties properties,
                                RoleAssign assign) {
+  hydroelastized_model_.reset();
   model_.AssignRole(source_id, geometry_id, std::move(properties), assign);
 }
 
@@ -325,6 +337,7 @@ template <typename T>
 void SceneGraph<T>::AssignRole(SourceId source_id, GeometryId geometry_id,
                                IllustrationProperties properties,
                                RoleAssign assign) {
+  hydroelastized_model_.reset();
   model_.AssignRole(source_id, geometry_id, std::move(properties), assign);
 }
 
@@ -345,6 +358,7 @@ void SceneGraph<T>::AssignRole(Context<T>* context, SourceId source_id,
 
 template <typename T>
 int SceneGraph<T>::RemoveRole(SourceId source_id, FrameId frame_id, Role role) {
+  hydroelastized_model_.reset();
   return model_.RemoveRole(source_id, frame_id, role);
 }
 
@@ -358,6 +372,7 @@ int SceneGraph<T>::RemoveRole(Context<T>* context, SourceId source_id,
 template <typename T>
 int SceneGraph<T>::RemoveRole(SourceId source_id, GeometryId geometry_id,
                               Role role) {
+  hydroelastized_model_.reset();
   return model_.RemoveRole(source_id, geometry_id, role);
 }
 
@@ -375,6 +390,7 @@ const SceneGraphInspector<T>& SceneGraph<T>::model_inspector() const {
 
 template <typename T>
 CollisionFilterManager SceneGraph<T>::collision_filter_manager() {
+  hydroelastized_model_.reset();
   return model_.collision_filter_manager();;
 }
 
@@ -388,12 +404,16 @@ template <typename T>
 void SceneGraph<T>::SetDefaultParameters(const Context<T>& context,
                                          Parameters<T>* parameters) const {
   LeafSystem<T>::SetDefaultParameters(context, parameters);
-  GeometryState<T> value = model_;
+  GeometryState<T>* from = &model_;
   if (config_.hydroelastize) {
-    internal::Hydroelastize(&value, config_);
+    if (hydroelastized_model_ == nullptr) {
+      hydroelastized_model_ = std::make_unique<GeometryState<T>>(model_);
+      internal::Hydroelastize(hydroelastized_model_.get(), config_);
+    }
+    from = hydroelastized_model_.get();
   }
   parameters->template get_mutable_abstract_parameter<GeometryState<T>>(
-      geometry_state_index_) = std::move(value);
+      geometry_state_index_) = *from;
 }
 
 template <typename T>

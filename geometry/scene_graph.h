@@ -1119,6 +1119,8 @@ class SceneGraph final : public systems::LeafSystem<T> {
   systems::CacheIndex configuration_update_index_{};
 
   SceneGraphConfig config_;
+  // A cache.
+  mutable std::unique_ptr<GeometryState<T>> hydroelastized_model_;
 };
 
 }  // namespace geometry
