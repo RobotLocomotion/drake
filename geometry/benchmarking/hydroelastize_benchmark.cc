@@ -1,6 +1,7 @@
 #include <benchmark/benchmark.h>
 #include <fmt/format.h>
 
+#include "drake/geometry/proximity_properties.h"
 #include "drake/geometry/scene_graph.h"
 
 namespace drake {
@@ -12,6 +13,18 @@ class HydroelastizeBenchmark : public benchmark::Fixture {
   void SetupScene(const benchmark::State& state) {
     SceneGraphConfig scene_graph_config;
     scene_graph_config.hydroelastize = state.range(0);
+    ProximityProperties props;
+    if (scene_graph_config.hydroelastize == false) {
+      // Simulate a manually annotated model.
+      props.UpdateProperty(kHydroGroup, kComplianceType,
+                           HydroelasticType::kSoft);
+      props.UpdateProperty(
+          kHydroGroup, kElastic,
+          scene_graph_config.hydroelastize_default_hydroelastic_modulus);
+      props.UpdateProperty(
+          kHydroGroup, kRezHint,
+          scene_graph_config.hydroelastize_default_resolution_hint);
+    }
     int num_geoms = state.range(1);
     scene_graph_ = std::make_unique<SceneGraph<double>>(scene_graph_config);
 
@@ -22,9 +35,9 @@ class HydroelastizeBenchmark : public benchmark::Fixture {
       auto geom_id = scene_graph_->RegisterGeometry(
           source_id, frame_id,
           std::make_unique<GeometryInstance>(math::RigidTransformd(),
-                                             Sphere(1000.0),
-                                             fmt::format("sphere{}", k)));
-      scene_graph_->AssignRole(source_id, geom_id, ProximityProperties());
+                                             Box(1.0, 1.0, 1.0),
+                                             fmt::format("box{}", k)));
+      scene_graph_->AssignRole(source_id, geom_id, props);
     }
   }
 
@@ -41,10 +54,11 @@ BENCHMARK_DEFINE_F(HydroelastizeBenchmark, CreateDefaultContext)
 }
 
 BENCHMARK_REGISTER_F(HydroelastizeBenchmark, CreateDefaultContext)
+    ->Unit(benchmark::kMillisecond)
     ->Args({false, 1})
     ->Args({true, 1})
-    ->Args({false, 4})
-    ->Args({true, 4});
+    ->Args({false, 100})
+    ->Args({true, 100});
 
 }  // namespace internal
 }  // namespace geometry
