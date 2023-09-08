@@ -36,35 +36,15 @@ int SumAmbientDimensions(const ConvexSets& sets) {
   return dim;
 }
 
-bool HasExactVolume(const std::vector<const ConvexSet*>& sets) {
-  for (const auto* set : sets) {
-    if (!set->has_exact_volume()) {
-      return false;
-    }
-  }
-  return true;
-}
-
-bool HasExactVolume(const ConvexSets& sets) {
-  for (const auto& set : sets) {
-    if (!set->has_exact_volume()) {
-      return false;
-    }
-  }
-  return true;
-}
-
 }  // namespace
 
 CartesianProduct::CartesianProduct() : CartesianProduct(ConvexSets{}) {}
 
 CartesianProduct::CartesianProduct(const ConvexSets& sets)
-    : ConvexSet(SumAmbientDimensions(sets), HasExactVolume(sets)),
-      sets_(sets) {}
+    : ConvexSet(SumAmbientDimensions(sets)), sets_(sets) {}
 
 CartesianProduct::CartesianProduct(const ConvexSet& setA, const ConvexSet& setB)
-    : ConvexSet(setA.ambient_dimension() + setB.ambient_dimension(),
-                HasExactVolume(std::vector{&setA, &setB})) {
+    : ConvexSet(setA.ambient_dimension() + setB.ambient_dimension()) {
   sets_.emplace_back(setA.Clone());
   sets_.emplace_back(setB.Clone());
 }
@@ -72,7 +52,7 @@ CartesianProduct::CartesianProduct(const ConvexSet& setA, const ConvexSet& setB)
 CartesianProduct::CartesianProduct(const ConvexSets& sets,
                                    const Eigen::Ref<const MatrixXd>& A,
                                    const Eigen::Ref<const VectorXd>& b)
-    : ConvexSet(A.cols(), HasExactVolume(sets)),
+    : ConvexSet(A.cols()),
       sets_(sets),
       A_(A),
       b_(b),
@@ -89,7 +69,7 @@ CartesianProduct::CartesianProduct(const ConvexSets& sets,
 CartesianProduct::CartesianProduct(const QueryObject<double>& query_object,
                                    GeometryId geometry_id,
                                    std::optional<FrameId> reference_frame)
-    : ConvexSet(3, false) {
+    : ConvexSet(3) {
   Cylinder cylinder(1., 1.);
   query_object.inspector().GetShape(geometry_id).Reify(this, &cylinder);
 
@@ -97,8 +77,6 @@ CartesianProduct::CartesianProduct(const QueryObject<double>& query_object,
   sets_.emplace_back(
       Hyperellipsoid::MakeHypersphere(cylinder.radius(), Vector2d::Zero())
           .Clone());
-  // ToDo(@sadraddini) use MakeBox out of a future zonotope class instead so
-  // that we can compute the volume exactly.
   sets_.emplace_back(HPolyhedron::MakeBox(Vector1d{-cylinder.length() / 2.0},
                                           Vector1d{cylinder.length() / 2.0})
                          .Clone());
@@ -354,24 +332,6 @@ CartesianProduct::DoToShapeWithPose() const {
   // TODO(russt): Consider handling Cylinder as a (very) special case.
   throw std::runtime_error(
       "ToShapeWithPose is not implemented yet for CartesianProduct.");
-}
-
-double CartesianProduct::DoCalcVolume() const {
-  DRAKE_DEMAND(sets_.size() > 0);
-  double volume = 1.0;
-  for (const auto& set : sets_) {
-    volume *= set->CalcVolume();
-  }
-  if (A_.has_value()) {
-    // Note: The constructor enforces that A_ is full column rank.
-    if (A_decomp_->rank() < A_->rows()) {
-      volume *= 0.0;
-    } else {
-      // the determinant of a triangular matrix is the product of the diagonal
-      volume *= std::abs(A_decomp_->matrixQR().diagonal().prod());
-    }
-  }
-  return volume;
 }
 
 void CartesianProduct::ImplementGeometry(const Cylinder& cylinder, void* data) {

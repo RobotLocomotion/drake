@@ -42,9 +42,6 @@ class Intersection final : public ConvexSet {
   intersection. */
   const ConvexSet& element(int i) const;
 
-  /** @throws  Not implemented. */
-  using ConvexSet::CalcVolume;
-
  private:
   std::unique_ptr<ConvexSet> DoClone() const final;
 

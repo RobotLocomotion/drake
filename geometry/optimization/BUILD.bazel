@@ -38,7 +38,6 @@ drake_cc_library(
         "convex_set.cc",
         "hpolyhedron.cc",
         "hyperellipsoid.cc",
-        "hyperrectangle.cc",
         "intersection.cc",
         "minkowski_sum.cc",
         "point.cc",
@@ -51,7 +50,6 @@ drake_cc_library(
         "convex_set.h",
         "hpolyhedron.h",
         "hyperellipsoid.h",
-        "hyperrectangle.h",
         "intersection.h",
         "minkowski_sum.h",
         "point.h",
@@ -245,7 +243,6 @@ drake_cc_googletest(
     name = "convex_set_test",
     deps = [
         ":convex_set",
-        "//common/test_utilities:expect_throws_message",
         "//common/test_utilities:limit_malloc",
     ],
 )
@@ -407,17 +404,6 @@ drake_cc_googletest(
         "//common/yaml",
         "//geometry:meshcat",
         "//geometry/test_utilities:meshcat_environment",
-    ],
-)
-
-drake_cc_googletest(
-    name = "hyperrectangle_test",
-    deps = [
-        ":convex_set",
-        ":test_utilities",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//common/test_utilities:expect_throws_message",
-        "//common/yaml",
     ],
 )
 

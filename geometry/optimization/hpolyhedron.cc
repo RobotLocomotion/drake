@@ -102,18 +102,18 @@ bool IsRedundant(const Eigen::Ref<const MatrixXd>& c, double d,
 
 }  // namespace
 
-HPolyhedron::HPolyhedron() : ConvexSet(0, false) {}
+HPolyhedron::HPolyhedron() : ConvexSet(0) {}
 
 HPolyhedron::HPolyhedron(const Eigen::Ref<const MatrixXd>& A,
                          const Eigen::Ref<const VectorXd>& b)
-    : ConvexSet(A.cols(), false), A_(A), b_(b) {
+    : ConvexSet(A.cols()), A_(A), b_(b) {
   CheckInvariants();
 }
 
 HPolyhedron::HPolyhedron(const QueryObject<double>& query_object,
                          GeometryId geometry_id,
                          std::optional<FrameId> reference_frame)
-    : ConvexSet(3, false) {
+    : ConvexSet(3) {
   std::pair<MatrixXd, VectorXd> Ab_G;
   query_object.inspector().GetShape(geometry_id).Reify(this, &Ab_G);
 
@@ -128,7 +128,7 @@ HPolyhedron::HPolyhedron(const QueryObject<double>& query_object,
 }
 
 HPolyhedron::HPolyhedron(const VPolytope& vpoly)
-    : ConvexSet(vpoly.ambient_dimension(), false) {
+    : ConvexSet(vpoly.ambient_dimension()) {
   // First, handle the case where the VPolytope is empty.
   if (vpoly.IsEmpty()) {
     if (vpoly.ambient_dimension() == 0) {

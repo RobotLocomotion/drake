@@ -78,10 +78,6 @@ class CartesianProduct final : public ConvexSet {
   set implementations. */
   using ConvexSet::PointInSet;
 
-  /** @throws  if `set.has_exact_volume() == false` for any of the sets in the
-  product. */
-  using ConvexSet::CalcVolume;
-
  private:
   std::unique_ptr<ConvexSet> DoClone() const final;
 
@@ -145,8 +141,6 @@ class CartesianProduct final : public ConvexSet {
   // a scene graph cylinder sets A_, it does not set A_decomp_.
   std::optional<Eigen::ColPivHouseholderQR<Eigen::MatrixXd>> A_decomp_{
       std::nullopt};
-
-  double DoCalcVolume() const final;
 };
 
 }  // namespace optimization
