@@ -3321,6 +3321,104 @@ GTEST_TEST(DiagramEventEvaluation, Propagation) {
   EXPECT_EQ(sys2->publish_count(), 1);
 }
 
+// A System that has one of each kind of event, with independently settable
+// return statuses. We'll use this to test whether Diagrams properly
+// implement our policy for handling error returns for simultaneous events.
+class EventStatusTestSystem : public LeafSystem<double> {
+ public:
+  EventStatusTestSystem() {
+    DeclarePerStepUnrestrictedUpdateEvent(
+        &EventStatusTestSystem::UnrestrictedHandler);
+    DeclarePerStepDiscreteUpdateEvent(&EventStatusTestSystem::DiscreteHandler);
+    DeclarePerStepPublishEvent(&EventStatusTestSystem::PublishHandler);
+  }
+
+  void set_unrestricted_severity(EventStatus::Severity severity) {
+    unrestricted_severity_ = severity;
+  }
+  void set_discrete_severity(EventStatus::Severity severity) {
+    discrete_severity_ = severity;
+  }
+  void set_publish_severity(EventStatus::Severity severity) {
+    publish_severity_ = severity;
+  }
+
+  void set_all_did_nothing() {
+    set_unrestricted_severity(EventStatus::kDidNothing);
+    set_discrete_severity(EventStatus::kDidNothing);
+    set_publish_severity(EventStatus::kDidNothing);
+  }
+
+  int unrestricted_count() const { return unrestricted_count_; }
+  int discrete_count() const { return discrete_count_; }
+  int publish_count() const { return publish_count_; }
+
+  void reset() {
+    unrestricted_severity_ = discrete_severity_ = publish_severity_ =
+        EventStatus::kSucceeded;
+    unrestricted_count_ = discrete_count_ = publish_count_ = 0;
+  }
+
+  // Expected number of event executions of each event.
+  void check_counts(const std::array<int, 3> expected) const {
+    EXPECT_EQ(unrestricted_count_, expected[0]);
+    EXPECT_EQ(discrete_count_, expected[1]);
+    EXPECT_EQ(publish_count_, expected[2]);
+  }
+
+ private:
+  EventStatus MakeStatus(std::string id, EventStatus::Severity severity) const {
+    switch (severity) {
+      case EventStatus::kDidNothing:
+        return EventStatus::DidNothing();
+      case EventStatus::kSucceeded:
+        return EventStatus::Succeeded();
+      case EventStatus::kReachedTermination:
+        return EventStatus::ReachedTermination(
+            this, fmt::format("{} terminated", id));
+      case EventStatus::kFailed:
+        return EventStatus::Failed(this, fmt::format("{} failed", id));
+    }
+    DRAKE_UNREACHABLE();
+  }
+
+  EventStatus UnrestrictedHandler(const Context<double>&,
+                                  State<double>*) const {
+    ++unrestricted_count_;
+    return MakeStatus("unrestricted", unrestricted_severity_);
+  }
+  EventStatus DiscreteHandler(const Context<double>&,
+                              DiscreteValues<double>*) const {
+    ++discrete_count_;
+    return MakeStatus("discrete", discrete_severity_);
+  }
+  EventStatus PublishHandler(const Context<double>&) const {
+    ++publish_count_;
+    return MakeStatus("publish", publish_severity_);
+  }
+
+  // The corresponding handlers return whatever status is set here.
+  EventStatus::Severity unrestricted_severity_{EventStatus::kSucceeded};
+  EventStatus::Severity discrete_severity_{EventStatus::kSucceeded};
+  EventStatus::Severity publish_severity_{EventStatus::kSucceeded};
+
+  mutable int unrestricted_count_{0};
+  mutable int discrete_count_{0};
+  mutable int publish_count_{0};
+};
+
+// Policy to verify:
+//   - events are handled in the order the subsystems were added
+//   - if all events do nothing, all get executed and we return did_nothing
+//   - if all events succeed, all get executed and return succeeded
+//   - if an unrestricted or discrete update fails, we fail immediately and
+//     return a message correctly attributing the error to the right subsystem
+//   - if a publish event fails, we continue to handle remaining publish events
+//     and then finally report the correct message for the first failure
+GTEST_TEST(DiagramEventEvaluation, EventStatusHandling) {
+  // TODO(sherm1) WIP
+}
+
 class MyEventTestSystem : public LeafSystem<double> {
  public:
   // If p > 0, declares a periodic publish event with p. Otherwise, declares

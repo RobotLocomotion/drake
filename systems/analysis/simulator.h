@@ -921,7 +921,7 @@ T GetPreviousNormalizedValue(const T& value) {
   // There are three distinct cases to be handled:
   //     -∞        -10⁻³⁰⁸  0      10⁻³⁰⁸      ∞
   //     |-----------|------|------|----------|
-  // (a) ^           ^              ^         ^   [-∞, 10⁻³⁰⁸] ∪ (10³⁰⁸, ∞]
+  // (a) ^           ^              ^         ^   [-∞, 10⁻³⁰⁸] ∪ (10⁻³⁰⁸, ∞]
   // (b)              ^           ^               (-10⁻³⁰⁸, 10⁻³⁰⁸)
   // (c)                           ^              10⁻³⁰⁸
 

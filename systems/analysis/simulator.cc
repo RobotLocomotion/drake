@@ -180,6 +180,9 @@ SimulatorStatus Simulator<T>::Initialize(const InitializeParams& params) {
       return initialize_status;
   }
 
+  // Allow for interrupt in Python.
+  if (python_monitor_ != nullptr) python_monitor_();
+
   // If we get here, none of the event handlers reported failure, but we may
   // have reached early termination.
 
@@ -410,6 +413,9 @@ SimulatorStatus Simulator<T>::AdvanceTo(const T& boundary_time) {
                                             &simulator_status))
         return simulator_status;
     }
+
+    // Allow for interrupt in Python.
+    if (python_monitor_ != nullptr) python_monitor_();
 
     // If we get here, none of the event handlers reported failure, but we may
     // have reached early termination.
