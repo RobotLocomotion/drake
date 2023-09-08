@@ -43,8 +43,8 @@ BENCHMARK_DEFINE_F(HydroelastizeBenchmark, CreateDefaultContext)
 BENCHMARK_REGISTER_F(HydroelastizeBenchmark, CreateDefaultContext)
     ->Args({false, 1})
     ->Args({true, 1})
-    ->Args({false, 1000})
-    ->Args({true, 1000});
+    ->Args({false, 4})
+    ->Args({true, 4});
 
 }  // namespace internal
 }  // namespace geometry
