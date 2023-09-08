@@ -10,6 +10,7 @@
 
 #include <Eigen/Dense>
 #include <fmt/format.h>
+#include <gflags/gflags.h>
 #include <gtest/gtest.h>
 
 // To ease build system upkeep, we annotate VTK includes with their deps.
@@ -28,6 +29,14 @@
 #include "drake/math/rotation_matrix.h"
 #include "drake/systems/sensors/image.h"
 #include "drake/systems/sensors/test_utilities/image_compare.h"
+
+/* Note: enabling this causes failures with two tests. Try running as:
+
+ bazel test //geometry/render_vtk:internal_render_engine_vtk_test \
+    --test_filter=-*DifferentCameras:*Intrinsics*
+
+ to get past the aberrant tests; they *should* pass with this disabled. */
+DEFINE_bool(show_window, false, "Display render windows locally for debugging");
 
 namespace drake {
 namespace geometry {
@@ -69,13 +78,6 @@ const double kClipFar = 100.0;
 const double kZNear = 0.5;
 const double kZFar = 5.;
 const double kFovY = M_PI_4;
-/* Note: enabling this causes failures with two tests. Try running as:
-
- bazel test //geometry/render_vtk:internal_render_engine_vtk_test \
-    --test_filter=-*DifferentCameras:*Intrinsics*
-
- to get past the aberrant tests; they *should* pass with this disabled. */
-const bool kShowWindow = false;
 
 // The following tolerance is used due to a precision difference between Ubuntu
 // Linux and Mac OSX.
@@ -234,7 +236,8 @@ class RenderEngineVtkTest : public ::testing::Test {
     if (!renderer) renderer = renderer_.get();
     const DepthRenderCamera& depth_camera =
         camera_in ? *camera_in : depth_camera_;
-    const ColorRenderCamera color_camera(depth_camera.core(), kShowWindow);
+    const ColorRenderCamera color_camera(depth_camera.core(),
+                                         FLAGS_show_window);
     ImageRgba8U* color = color_out ? color_out : &color_;
     ImageDepth32F* depth = depth_out ? depth_out : &depth_;
     ImageLabel16I* label = label_out ? label_out : &label_;
@@ -499,7 +502,8 @@ class RenderEngineVtkTest : public ::testing::Test {
   RgbaColor default_color_{kDefaultVisualColor, 255};
 
   // We store a reference depth camera; we can always derive a color camera
-  // from it; they have the same intrinsics and we grab the global kShowWindow.
+  // from it; they have the same intrinsics and we grab the global
+  // FLAGS_show_window.
   const DepthRenderCamera depth_camera_{
       {"unused", {kWidth, kHeight, kFovY}, {kClipNear, kClipFar}, {}},
       {kZNear, kZFar}};
@@ -583,7 +587,7 @@ TEST_F(RenderEngineVtkTest, HorizonTest) {
                                        AngleAxisd(M_PI_2, Vector3d::UnitY())}};
   Init(X_WR, true);
 
-  const ColorRenderCamera camera(depth_camera_.core(), kShowWindow);
+  const ColorRenderCamera camera(depth_camera_.core(), FLAGS_show_window);
   const auto& intrinsics = camera.core().intrinsics();
   // Returns y in [0, camera.height), index of horizon location in image
   // coordinate system under several assumptions:
@@ -736,7 +740,7 @@ TEST_F(RenderEngineVtkTest, TransparentSphereTest) {
   const int int_alpha = 128;
   default_color_ = RgbaColor(kDefaultVisualColor, int_alpha);
   PopulateSphereTest(&renderer);
-  const ColorRenderCamera camera(depth_camera_.core(), kShowWindow);
+  const ColorRenderCamera camera(depth_camera_.core(), FLAGS_show_window);
   const auto& intrinsics = camera.core().intrinsics();
   ImageRgba8U color(intrinsics.width(), intrinsics.height());
   renderer.RenderColorImage(camera, &color);
@@ -987,7 +991,7 @@ TEST_F(RenderEngineVtkTest, GltfTextureOrientation) {
                             false /* needs update */);
   ImageRgba8U image(64, 64);
   const ColorRenderCamera camera(
-      {"unused", {64, 64, kFovY / 2}, {0.01, 10}, {}}, kShowWindow);
+      {"unused", {64, 64, kFovY / 2}, {0.01, 10}, {}}, FLAGS_show_window);
   renderer_->RenderColorImage(camera, &image);
 
   ImageRgba8U expected_image;
@@ -1123,7 +1127,7 @@ TEST_F(RenderEngineVtkTest, UnsupportedMeshConvex) {
 // uint16 image is loaded to prove the existence of the conversion, but this
 // test doesn't guarantee universal conversion success.
 TEST_F(RenderEngineVtkTest, NonUcharChannelTextures) {
-  const ColorRenderCamera camera(depth_camera_.core(), kShowWindow);
+  const ColorRenderCamera camera(depth_camera_.core(), FLAGS_show_window);
   const auto& intrinsics = camera.core().intrinsics();
   const Box box(1.999, 0.55, 0.75);
   expected_label_ = RenderLabel(1);
@@ -1582,7 +1586,7 @@ TEST_F(RenderEngineVtkTest, FallbackLight) {
   props.AddProperty("phong", "diffuse", test_color);  // match the plane.
   props.AddProperty("label", "id", dummy_label);
   const RigidTransformd X_WB(Vector3d(0, 0, 3));
-  const ColorRenderCamera camera(depth_camera_.core(), kShowWindow);
+  const ColorRenderCamera camera(depth_camera_.core(), FLAGS_show_window);
   ImageRgba8U image(camera.core().intrinsics().width(),
                     camera.core().intrinsics().height());
   renderer.RegisterVisual(GeometryId::get_new_id(), box, props, X_WB,
@@ -1666,7 +1670,7 @@ TEST_F(RenderEngineVtkTest, SingleLight) {
   };
 
   // 45-degree vertical field of view.
-  const ColorRenderCamera camera(depth_camera_.core(), kShowWindow);
+  const ColorRenderCamera camera(depth_camera_.core(), FLAGS_show_window);
   // The camera's position is p_WC = [0, 0, 3]. The ground plane lies on the
   // world's x-y plane. So, the ground is 3.0 meters away from the camera. This
   // will inform attenuation calculations.
@@ -1783,7 +1787,7 @@ TEST_F(RenderEngineVtkTest, SingleLight) {
 // lights than RenderEngineGl allows for to confirm that RenderEngineVtk doesn't
 // share the limit.
 TEST_F(RenderEngineVtkTest, MultiLights) {
-  const ColorRenderCamera camera(depth_camera_.core(), kShowWindow);
+  const ColorRenderCamera camera(depth_camera_.core(), FLAGS_show_window);
   const RigidTransformd X_WR(RotationMatrixd::MakeXRotation(M_PI),
                              Vector3d(0, 0, 3));
   ImageRgba8U image(camera.core().intrinsics().width(),
@@ -1939,7 +1943,7 @@ TEST_F(RenderEngineVtkTest, IntrinsicsAndRenderProperties) {
 
   const CameraInfo ref_intrinsics{w, h, fx, fy, cx, cy};
   const ColorRenderCamera ref_color_camera{
-      {"n/a", ref_intrinsics, {clip_n, clip_f}, {}}, kShowWindow};
+      {"n/a", ref_intrinsics, {clip_n, clip_f}, {}}, FLAGS_show_window};
   const DepthRenderCamera ref_depth_camera{
       {"n/a", ref_intrinsics, {clip_n, clip_f}, {}}, {min_depth, max_depth}};
 
@@ -1987,7 +1991,7 @@ TEST_F(RenderEngineVtkTest, IntrinsicsAndRenderProperties) {
     const double cy2 = h2 / 2.0 + 0.5 + offset_y;
     const CameraInfo intrinsics{w2, h2, fx2, fy2, cx2, cy2};
     const ColorRenderCamera color_camera{
-        {"n/a", intrinsics, {clip_n, clip_f}, {}}, kShowWindow};
+        {"n/a", intrinsics, {clip_n, clip_f}, {}}, FLAGS_show_window};
     const DepthRenderCamera depth_camera{
         {"n/a", intrinsics, {clip_n, clip_f}, {}}, {min_depth, max_depth}};
 
@@ -2046,7 +2050,7 @@ TEST_F(RenderEngineVtkTest, IntrinsicsAndRenderProperties) {
     const double n_alt = expected_object_depth_ * 0.1;
     const double f_alt = expected_object_depth_ * 0.9;
     const ColorRenderCamera color_camera{
-        {"n/a", ref_intrinsics, {n_alt, f_alt}, {}}, kShowWindow};
+        {"n/a", ref_intrinsics, {n_alt, f_alt}, {}}, FLAGS_show_window};
     // Set depth range to clipping range so we don't take a chance with the
     // depth range lying outside the clipping range.
     const DepthRenderCamera depth_camera{
@@ -2070,7 +2074,7 @@ TEST_F(RenderEngineVtkTest, IntrinsicsAndRenderProperties) {
     const double n_alt = expected_object_depth_ + 2.1;
     const double f_alt = expected_object_depth_ + 4.1;
     const ColorRenderCamera color_camera{
-        {"n/a", ref_intrinsics, {n_alt, f_alt}, {}}, kShowWindow};
+        {"n/a", ref_intrinsics, {n_alt, f_alt}, {}}, FLAGS_show_window};
     // Set depth range to clipping range so we don't take a chance with the
     // depth range lying outside the clipping range.
     const DepthRenderCamera depth_camera{

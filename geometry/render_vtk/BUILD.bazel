@@ -115,32 +115,15 @@ drake_cc_library(
 drake_cc_googletest(
     name = "internal_render_engine_vtk_test",
     args = select({
-        # We have disabled the test cases that fail on Mac Arm CI.
-        # TODO(#19424) Try to re-enable the tests.
+        # Most test cases do not run correctly on macOS arm64 CI. We have
+        # selectively enabled the few test cases that actually pass.
+        # TODO(#19424) Try to re-enable all of the tests.
         "@platforms//cpu:arm64": [
-            "--gtest_filter=-" + ":".join([
-                "RenderEngineVtkTest.BoxTest",
-                "RenderEngineVtkTest.CapsuleRotatedTest",
-                "RenderEngineVtkTest.CapsuleTest",
-                "RenderEngineVtkTest.CloneIndependence",
-                "RenderEngineVtkTest.ClonePersistence",
-                "RenderEngineVtkTest.CylinderTest",
-                "RenderEngineVtkTest.DefaultProperties_RenderLabel",
-                "RenderEngineVtkTest.DifferentCameras",
-                "RenderEngineVtkTest.EllipsoidTest",
-                "RenderEngineVtkTest.FallbackLight",
-                "RenderEngineVtkTest.GltfSupport",
-                "RenderEngineVtkTest.GltfTextureOrientation",
-                "RenderEngineVtkTest.HorizonTest",
-                "RenderEngineVtkTest.IntrinsicsAndRenderProperties",
-                "RenderEngineVtkTest.MeshTest",
-                "RenderEngineVtkTest.NonUcharChannelTextures",
-                "RenderEngineVtkTest.PreservePropertyTexturesOverClone",
-                "RenderEngineVtkTest.RemoveVisual",
-                "RenderEngineVtkTest.SimpleClone",
-                "RenderEngineVtkTest.SingleLight",
-                "RenderEngineVtkTest.SphereTest",
-                "RenderEngineVtkTest.TerrainTest",
+            "--gtest_filter=" + ":".join([
+                "RenderEngineVtkTest.ControlBackgroundColor",
+                "RenderEngineVtkTest.NoBodyTest",
+                "RenderEngineVtkTest.TransparentSphereTest",
+                "RenderEngineVtkTest.UnsupportedMeshConvex",
             ]),
         ],
         "//conditions:default": [],
