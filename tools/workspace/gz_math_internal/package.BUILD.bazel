@@ -226,6 +226,7 @@ _SRCS = [
     "src/Helpers.cc",
     "src/Kmeans.cc",
     "src/Material.cc",
+    "src/MecanumDriveOdometry.cc",
     "src/MovingWindowFilter.cc",
     "src/PID.cc",
     "src/Rand.cc",
