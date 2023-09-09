@@ -116,14 +116,6 @@ class Polynomial {
   /// @throws std::exception if @p e is not a polynomial.
   explicit Polynomial(const Expression& e);
 
-  /// Constructs a polynomial from a varaible @p v. Note that v is considered an
-  /// indeterminate.
-  //
-  // Note that this implicit conversion is desirable to have a dot product of
-  // two Eigen::Vector<Variable>s return a Polynomial.
-  // NOLINTNEXTLINE(runtime/explicit)
-  explicit Polynomial(const Variable& v);
-
   /// Constructs a polynomial from an expression @p e by decomposing it with
   /// respect to @p indeterminates.
   ///

@@ -10,7 +10,7 @@ from pydrake.common.test_utilities import meta, numpy_compare
 from pydrake.symbolic import (
     Expression,
     MakeMatrixContinuousVariable,
-    Monomial
+    Monomial,
     Polynomial,
     Variable,
 )
