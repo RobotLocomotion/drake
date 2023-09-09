@@ -122,12 +122,12 @@ MatrixXd GetConvexHullFromObjFile(const std::string& filename,
 VPolytope::VPolytope() : VPolytope(MatrixXd(0, 0)) {}
 
 VPolytope::VPolytope(const Eigen::Ref<const MatrixXd>& vertices)
-    : ConvexSet(vertices.rows()), vertices_(vertices) {}
+    : ConvexSet(vertices.rows(), true), vertices_(vertices) {}
 
 VPolytope::VPolytope(const QueryObject<double>& query_object,
                      GeometryId geometry_id,
                      std::optional<FrameId> reference_frame)
-    : ConvexSet(3) {
+    : ConvexSet(3, true) {
   Matrix3Xd vertices;
   query_object.inspector().GetShape(geometry_id).Reify(this, &vertices);
 
@@ -140,7 +140,7 @@ VPolytope::VPolytope(const QueryObject<double>& query_object,
 }
 
 VPolytope::VPolytope(const HPolyhedron& hpoly, const double tol)
-    : ConvexSet(hpoly.ambient_dimension()) {
+    : ConvexSet(hpoly.ambient_dimension(), true) {
   // First, assert that the HPolyhedron is bounded (since a VPolytope cannot
   // be used to represent an unbounded set).
   DRAKE_THROW_UNLESS(hpoly.IsBounded());
@@ -377,28 +377,6 @@ VPolytope VPolytope::GetMinimalRepresentation() const {
   return VPolytope(minimal_vertices);
 }
 
-double VPolytope::CalcVolume() const {
-  if (ambient_dimension() == 0) {
-    return 0.0;
-  }
-  orgQhull::Qhull qhull;
-  try {
-    qhull.runQhull("", ambient_dimension(), vertices_.cols(), vertices_.data(),
-                   "");
-  } catch (const orgQhull::QhullError& e) {
-    if (e.errorCode() == qh_ERRsingular) {
-      // The convex hull is singular. It has 0 volume.
-      return 0;
-    }
-  }
-  if (qhull.qhullStatus() != 0) {
-    throw std::runtime_error(
-        fmt::format("Qhull terminated with status {} and  message:\n{}",
-                    qhull.qhullStatus(), qhull.qhullMessage()));
-  }
-  return qhull.volume();
-}
-
 void VPolytope::WriteObj(const std::filesystem::path& filename) const {
   DRAKE_THROW_UNLESS(ambient_dimension() == 3);
 
@@ -597,6 +575,25 @@ VPolytope::DoToShapeWithPose() const {
       "ToShapeWithPose is not implemented yet for VPolytope.  Implementing "
       "this will likely require additional support from the Convex shape "
       "class (to support in-memory mesh data, or file I/O).");
+}
+
+double VPolytope::DoCalcVolume() const {
+  orgQhull::Qhull qhull;
+  try {
+    qhull.runQhull("", ambient_dimension(), vertices_.cols(), vertices_.data(),
+                   "");
+  } catch (const orgQhull::QhullError& e) {
+    if (e.errorCode() == qh_ERRsingular) {
+      // The convex hull is singular. It has 0 volume.
+      return 0;
+    }
+  }
+  if (qhull.qhullStatus() != 0) {
+    throw std::runtime_error(
+        fmt::format("Qhull terminated with status {} and  message:\n{}",
+                    qhull.qhullStatus(), qhull.qhullMessage()));
+  }
+  return qhull.volume();
 }
 
 void VPolytope::ImplementGeometry(const Box& box, void* data) {

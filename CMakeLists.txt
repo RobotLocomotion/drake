@@ -107,7 +107,11 @@ endif()
 # The version passed to find_package(Bazel) should match the
 # minimum_bazel_version value in the call to versions.check() in WORKSPACE.
 set(MINIMUM_BAZEL_VERSION 4.0)
-find_package(Bazel ${MINIMUM_BAZEL_VERSION} MODULE REQUIRED)
+find_package(Bazel ${MINIMUM_BAZEL_VERSION} MODULE)
+if(NOT Bazel_FOUND)
+  set(Bazel_EXECUTABLE "${PROJECT_SOURCE_DIR}/third_party/com_github_bazelbuild_bazelisk/bazelisk.py")
+  message(STATUS "Using Bazelisk as Bazel_EXECUTABLE to fetch Bazel on demand")
+endif()
 
 get_filename_component(C_COMPILER_REALPATH "${CMAKE_C_COMPILER}" REALPATH)
 get_filename_component(C_COMPILER_NAME "${C_COMPILER_REALPATH}" NAME)
@@ -454,7 +458,7 @@ set(BAZEL_CONFIG)
 option(WITH_GUROBI "Build with support for Gurobi" OFF)
 
 if(WITH_GUROBI)
-  find_package(Gurobi 9.5 EXACT MODULE REQUIRED)
+  find_package(Gurobi 10.0 EXACT MODULE REQUIRED)
 
   string(APPEND BAZEL_CONFIG " --config=gurobi")
 
@@ -581,6 +585,7 @@ endforeach()
 # name `drake_build_cwd` isn't important, it just needs to be unique.
 configure_file(cmake/bazel.rc.in drake_build_cwd/.bazelrc @ONLY)
 configure_file(cmake/WORKSPACE.in drake_build_cwd/WORKSPACE.bazel @ONLY)
+file(CREATE_LINK "${PROJECT_SOURCE_DIR}/.bazeliskrc" drake_build_cwd/.bazeliskrc SYMBOLIC)
 
 include(ExternalProject)
 

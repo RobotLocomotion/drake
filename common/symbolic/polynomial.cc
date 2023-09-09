@@ -400,6 +400,11 @@ Polynomial::Polynomial(const Monomial& m)
   DRAKE_ASSERT(decision_variables().empty());
 }
 
+Polynomial::Polynomial(const Variable& v) : Polynomial{v, {v}} {
+  // No need to call CheckInvariant() because the following should hold.
+  DRAKE_ASSERT(decision_variables().empty());
+}
+
 Polynomial::Polynomial(const Expression& e) : Polynomial{e, e.GetVariables()} {
   // No need to call CheckInvariant() because the following should hold.
   DRAKE_ASSERT(decision_variables().empty());

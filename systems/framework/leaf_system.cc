@@ -415,16 +415,30 @@ void LeafSystem<T>::GetGraphvizFragment(
   // Append input ports to the label.
   *dot << "{";
   for (int i = 0; i < this->num_input_ports(); ++i) {
+    const InputPortBase& input_port_base = this->GetInputPortBaseOrThrow(
+        __func__, i, /* warn_deprecated = */ false);
+    const auto& port = dynamic_cast<const InputPort<T>&>(input_port_base);
     if (i != 0) *dot << "|";
-    *dot << "<u" << i << ">" << this->get_input_port(i).get_name();
+    *dot << "<u" << i << ">" << port.get_name();
+    if (port.get_deprecation().has_value()) {
+      // Add a unicode headstone (🪦).
+      *dot << "\xF0\x9F\xAA\xA6";
+    }
   }
   *dot << "}";
 
   // Append output ports to the label.
   *dot << " | {";
   for (int i = 0; i < this->num_output_ports(); ++i) {
+    const OutputPortBase& output_port_base = this->GetOutputPortBaseOrThrow(
+        __func__, i, /* warn_deprecated = */ false);
+    const auto& port = dynamic_cast<const OutputPort<T>&>(output_port_base);
     if (i != 0) *dot << "|";
-    *dot << "<y" << i << ">" << this->get_output_port(i).get_name();
+    *dot << "<y" << i << ">" << port.get_name();
+    if (port.get_deprecation().has_value()) {
+      // Add a unicode headstone (🪦).
+      *dot << "\xF0\x9F\xAA\xA6";
+    }
   }
   *dot << "}";
 

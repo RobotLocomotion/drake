@@ -26,10 +26,12 @@ import typing
 from pydrake.common import RandomGenerator
 from pydrake.common.yaml import yaml_load_typed
 from pydrake.lcm import DrakeLcmParams
-from pydrake.manipulation import ApplyDriverConfigs
-from pydrake.manipulation.kuka_iiwa import IiwaDriver
-from pydrake.manipulation.schunk_wsg import SchunkWsgDriver
-from pydrake.manipulation.util import ZeroForceDriver
+from pydrake.manipulation import (
+    ApplyDriverConfigs,
+    IiwaDriver,
+    SchunkWsgDriver,
+    ZeroForceDriver,
+)
 from pydrake.multibody.plant import (
     AddMultibodyPlant,
     MultibodyPlantConfig,

@@ -68,13 +68,13 @@ class SymbolicPolynomialMatrixTest : public ::testing::Test {
     M_double_static_ << -2.0,  4.0,   // [-2.0   4.0]
                          5.0, -9.0;   // [ 5.0  -9.0]
 
-    // [0        cos(x + y)]
+    // [x        cos(x + y)]
     // [sin(2 + xy)   z    ]
     M_expression_dynamic_ << Expression{var_x_},
                              symbolic::cos(var_x_ + var_y_),
                              symbolic::sin(2 + var_x_ * var_y_),
                              Expression{var_z_};
-    // [0        cos(x + y)]
+    // [x        cos(x + y)]
     // [sin(2 + xy)   z    ]
     M_expression_static_ << Expression{var_x_},
                             symbolic::cos(var_x_ + var_y_),
@@ -163,22 +163,87 @@ template <typename Matrix1, typename Matrix2>
       M1.template cast<Expression>() * M2.template cast<Expression>());
 }
 
+// Given two vectors with arbitrary types, computes their dot product as a
+// Polynomial and then checks that the result is identical to the dot product
+// after casting v1 and v2 to Expressions (i.e., using Expression's `operator+`
+// and `operator*` as an oracle).
 template <typename Vector1, typename Vector2>
 bool CheckDotProductResPoly(const Vector1& v1, const Vector2& v2) {
-  const Expression e1{v1.dot(v2).ToExpression().Expand()};
+  const Polynomial dot = v1.dot(v2);
+  const Expression e1{dot.ToExpression().Expand()};
   const Expression e2{v1.template cast<Expression>()
                           .dot(v2.template cast<Expression>())
                           .Expand()};
   return e1.EqualTo(e2);
 }
 
+// Given two vectors with arbitrary types, computes their dot product as an
+// Expression and then checks that the result is identical to the dot product
+// after casting v1 and v2 to Expressions (i.e., using Expression's `operator+`
+// and `operator*` as an oracle).
 template <typename Vector1, typename Vector2>
 bool CheckDotProductResExpr(const Vector1& v1, const Vector2& v2) {
-  const Expression e1{v1.dot(v2).Expand()};
+  const Expression dot = v1.dot(v2);
+  const Expression e1{dot.Expand()};
   const Expression e2{v1.template cast<Expression>()
                           .dot(v2.template cast<Expression>())
                           .Expand()};
   return e1.EqualTo(e2);
+}
+
+TEST_F(SymbolicPolynomialMatrixTest, ExpressionPolynomial) {
+  // Checks Dynamic op Dynamic where op = {+, -, *, ·}.
+  EXPECT_TRUE(CheckAddition(M_expression_dynamic_, M_poly_dynamic_));
+  EXPECT_TRUE(CheckSubtraction(M_expression_dynamic_, M_poly_dynamic_));
+  EXPECT_TRUE(CheckMultiplication(M_expression_dynamic_, M_poly_dynamic_));
+  EXPECT_TRUE(CheckDotProductResExpr(v_expression_dynamic_, v_poly_dynamic_));
+
+  // Checks Static op Dynamic where op = {+, -, *, ·}.
+  EXPECT_TRUE(CheckAddition(M_expression_static_, M_poly_dynamic_));
+  EXPECT_TRUE(CheckSubtraction(M_expression_static_, M_poly_dynamic_));
+  EXPECT_TRUE(CheckMultiplication(M_expression_static_, M_poly_dynamic_));
+  EXPECT_TRUE(CheckDotProductResExpr(v_expression_static_, v_poly_dynamic_));
+
+  // Checks Dynamic op Static where op = {+, -, *, ·}.
+  EXPECT_TRUE(CheckAddition(M_expression_dynamic_, M_poly_static_));
+  EXPECT_TRUE(CheckSubtraction(M_expression_dynamic_, M_poly_static_));
+  EXPECT_TRUE(CheckMultiplication(M_expression_dynamic_, M_poly_static_));
+  EXPECT_TRUE(CheckDotProductResExpr(v_expression_dynamic_, v_poly_static_));
+
+  // Checks Static op Static where op = {+, -, *, ·}.
+  EXPECT_TRUE(CheckAddition(M_expression_static_, M_poly_static_));
+  EXPECT_TRUE(CheckSubtraction(M_expression_static_, M_poly_static_));
+  EXPECT_TRUE(CheckMultiplication(M_expression_static_, M_poly_static_));
+  EXPECT_TRUE(CheckDotProductResExpr(v_expression_static_, v_poly_static_));
+}
+
+TEST_F(SymbolicPolynomialMatrixTest, ExpressionMonomial) {
+  // Checks Dynamic op Dynamic where op = {+, -, *, ·}.
+  EXPECT_TRUE(CheckAddition(M_expression_dynamic_, M_monomial_dynamic_));
+  EXPECT_TRUE(CheckSubtraction(M_expression_dynamic_, M_monomial_dynamic_));
+  EXPECT_TRUE(CheckMultiplication(M_expression_dynamic_, M_monomial_dynamic_));
+  EXPECT_TRUE(
+      CheckDotProductResExpr(v_expression_dynamic_, v_monomial_dynamic_));
+
+  // Checks Static op Dynamic where op = {+, -, *, ·}.
+  EXPECT_TRUE(CheckAddition(M_expression_static_, M_monomial_dynamic_));
+  EXPECT_TRUE(CheckSubtraction(M_expression_static_, M_monomial_dynamic_));
+  EXPECT_TRUE(CheckMultiplication(M_expression_static_, M_monomial_dynamic_));
+  EXPECT_TRUE(
+      CheckDotProductResExpr(v_expression_static_, v_monomial_dynamic_));
+
+  // Checks Dynamic op Static where op = {+, -, *, ·}.
+  EXPECT_TRUE(CheckAddition(M_expression_dynamic_, M_monomial_static_));
+  EXPECT_TRUE(CheckSubtraction(M_expression_dynamic_, M_monomial_static_));
+  EXPECT_TRUE(CheckMultiplication(M_expression_dynamic_, M_monomial_static_));
+  EXPECT_TRUE(
+      CheckDotProductResExpr(v_expression_dynamic_, v_monomial_static_));
+
+  // Checks Static op Static where op = {+, -, *, ·}.
+  EXPECT_TRUE(CheckAddition(M_expression_static_, M_monomial_static_));
+  EXPECT_TRUE(CheckSubtraction(M_expression_static_, M_monomial_static_));
+  EXPECT_TRUE(CheckMultiplication(M_expression_static_, M_monomial_static_));
+  EXPECT_TRUE(CheckDotProductResExpr(v_expression_static_, v_monomial_static_));
 }
 
 TEST_F(SymbolicPolynomialMatrixTest, PolynomialPolynomial) {
@@ -194,7 +259,7 @@ TEST_F(SymbolicPolynomialMatrixTest, PolynomialPolynomial) {
   EXPECT_TRUE(CheckMultiplication(M_poly_static_, M_poly_dynamic_));
   EXPECT_TRUE(CheckDotProductResPoly(v_poly_static_, v_poly_dynamic_));
 
-  // Checks Dynamic op Static where op = {+, -, *}.
+  // Checks Dynamic op Static where op = {+, -, *, ·}.
   EXPECT_TRUE(CheckAddition(M_poly_dynamic_, M_poly_static_));
   EXPECT_TRUE(CheckSubtraction(M_poly_dynamic_, M_poly_static_));
   EXPECT_TRUE(CheckMultiplication(M_poly_dynamic_, M_poly_static_));
@@ -220,7 +285,7 @@ TEST_F(SymbolicPolynomialMatrixTest, PolynomialMonomial) {
   EXPECT_TRUE(CheckMultiplication(M_poly_static_, M_monomial_dynamic_));
   EXPECT_TRUE(CheckDotProductResPoly(v_poly_static_, v_monomial_dynamic_));
 
-  // Checks Dynamic op Static where op = {+, -, *}.
+  // Checks Dynamic op Static where op = {+, -, *, ·}.
   EXPECT_TRUE(CheckAddition(M_poly_dynamic_, M_monomial_static_));
   EXPECT_TRUE(CheckSubtraction(M_poly_dynamic_, M_monomial_static_));
   EXPECT_TRUE(CheckMultiplication(M_poly_dynamic_, M_monomial_static_));
@@ -246,7 +311,7 @@ TEST_F(SymbolicPolynomialMatrixTest, PolynomialDouble) {
   EXPECT_TRUE(CheckMultiplication(M_poly_static_, M_double_dynamic_));
   EXPECT_TRUE(CheckDotProductResPoly(v_poly_static_, v_double_dynamic_));
 
-  // Checks Dynamic op Static where op = {+, -, *}.
+  // Checks Dynamic op Static where op = {+, -, *, ·}.
   EXPECT_TRUE(CheckAddition(M_poly_dynamic_, M_double_static_));
   EXPECT_TRUE(CheckSubtraction(M_poly_dynamic_, M_double_static_));
   EXPECT_TRUE(CheckMultiplication(M_poly_dynamic_, M_double_static_));
@@ -272,7 +337,7 @@ TEST_F(SymbolicPolynomialMatrixTest, PolynomialVariable) {
   EXPECT_TRUE(CheckMultiplication(M_poly_static_, M_variable_dynamic_));
   EXPECT_TRUE(CheckDotProductResPoly(v_poly_static_, v_variable_dynamic_));
 
-  // Checks Dynamic op Static where op = {+, -, *}.
+  // Checks Dynamic op Static where op = {+, -, *, ·}.
   EXPECT_TRUE(CheckAddition(M_poly_dynamic_, M_variable_static_));
   EXPECT_TRUE(CheckSubtraction(M_poly_dynamic_, M_variable_static_));
   EXPECT_TRUE(CheckMultiplication(M_poly_dynamic_, M_variable_static_));
@@ -298,7 +363,7 @@ TEST_F(SymbolicPolynomialMatrixTest, PolynomialExpression) {
   EXPECT_TRUE(CheckMultiplication(M_poly_static_, M_expression_dynamic_));
   EXPECT_TRUE(CheckDotProductResExpr(v_poly_static_, v_expression_dynamic_));
 
-  // Checks Dynamic op Static where op = {+, -, *}.
+  // Checks Dynamic op Static where op = {+, -, *, ·}.
   EXPECT_TRUE(CheckAddition(M_poly_dynamic_, M_expression_static_));
   EXPECT_TRUE(CheckSubtraction(M_poly_dynamic_, M_expression_static_));
   EXPECT_TRUE(CheckMultiplication(M_poly_dynamic_, M_expression_static_));
@@ -324,7 +389,7 @@ TEST_F(SymbolicPolynomialMatrixTest, MonomialPolynomial) {
   EXPECT_TRUE(CheckMultiplication(M_monomial_static_, M_poly_dynamic_));
   EXPECT_TRUE(CheckDotProductResPoly(v_monomial_static_, v_poly_dynamic_));
 
-  // Checks Dynamic op Static where op = {+, -, *}.
+  // Checks Dynamic op Static where op = {+, -, *, ·}.
   EXPECT_TRUE(CheckAddition(M_monomial_dynamic_, M_poly_static_));
   EXPECT_TRUE(CheckSubtraction(M_monomial_dynamic_, M_poly_static_));
   EXPECT_TRUE(CheckMultiplication(M_monomial_dynamic_, M_poly_static_));
@@ -350,7 +415,7 @@ TEST_F(SymbolicPolynomialMatrixTest, MonomialMonomial) {
   EXPECT_TRUE(CheckMultiplication(M_monomial_static_, M_monomial_dynamic_));
   EXPECT_TRUE(CheckDotProductResPoly(v_monomial_static_, v_monomial_dynamic_));
 
-  // Checks Dynamic op Static where op = {+, -, *}.
+  // Checks Dynamic op Static where op = {+, -, *, ·}.
   EXPECT_TRUE(CheckAddition(M_monomial_dynamic_, M_monomial_static_));
   EXPECT_TRUE(CheckSubtraction(M_monomial_dynamic_, M_monomial_static_));
   EXPECT_TRUE(CheckMultiplication(M_monomial_dynamic_, M_monomial_static_));
@@ -376,7 +441,7 @@ TEST_F(SymbolicPolynomialMatrixTest, MonomialVariable) {
   EXPECT_TRUE(CheckMultiplication(M_monomial_static_, M_variable_dynamic_));
   EXPECT_TRUE(CheckDotProductResPoly(v_monomial_static_, v_variable_dynamic_));
 
-  // Checks Dynamic op Static where op = {+, -, *}.
+  // Checks Dynamic op Static where op = {+, -, *, ·}.
   EXPECT_TRUE(CheckAddition(M_monomial_dynamic_, M_variable_static_));
   EXPECT_TRUE(CheckSubtraction(M_monomial_dynamic_, M_variable_static_));
   EXPECT_TRUE(CheckMultiplication(M_monomial_dynamic_, M_variable_static_));
@@ -404,7 +469,7 @@ TEST_F(SymbolicPolynomialMatrixTest, MonomialExpression) {
   EXPECT_TRUE(
       CheckDotProductResExpr(v_monomial_static_, v_expression_dynamic_));
 
-  // Checks Dynamic op Static where op = {+, -, *,·}.
+  // Checks Dynamic op Static where op = {+, -, *, ·}.
   EXPECT_TRUE(CheckAddition(M_monomial_dynamic_, M_expression_static_));
   EXPECT_TRUE(CheckSubtraction(M_monomial_dynamic_, M_expression_static_));
   EXPECT_TRUE(CheckMultiplication(M_monomial_dynamic_, M_expression_static_));
@@ -431,7 +496,7 @@ TEST_F(SymbolicPolynomialMatrixTest, MonomialDouble) {
   EXPECT_TRUE(CheckMultiplication(M_monomial_static_, M_double_dynamic_));
   EXPECT_TRUE(CheckDotProductResPoly(v_monomial_static_, v_double_dynamic_));
 
-  // Checks Dynamic op Static where op = {+, -, *,·}.
+  // Checks Dynamic op Static where op = {+, -, *, ·}.
   EXPECT_TRUE(CheckAddition(M_monomial_dynamic_, M_double_static_));
   EXPECT_TRUE(CheckSubtraction(M_monomial_dynamic_, M_double_static_));
   EXPECT_TRUE(CheckMultiplication(M_monomial_dynamic_, M_double_static_));
@@ -444,7 +509,59 @@ TEST_F(SymbolicPolynomialMatrixTest, MonomialDouble) {
   EXPECT_TRUE(CheckDotProductResPoly(v_monomial_static_, v_double_static_));
 }
 
-TEST_F(SymbolicPolynomialMatrixTest, doublePolynomial) {
+TEST_F(SymbolicPolynomialMatrixTest, VariablePolynomial) {
+  // Checks Dynamic op Dynamic where op = {+, -, *, ·}.
+  EXPECT_TRUE(CheckAddition(M_variable_dynamic_, M_poly_dynamic_));
+  EXPECT_TRUE(CheckSubtraction(M_variable_dynamic_, M_poly_dynamic_));
+  EXPECT_TRUE(CheckMultiplication(M_variable_dynamic_, M_poly_dynamic_));
+  EXPECT_TRUE(CheckDotProductResPoly(v_variable_dynamic_, v_poly_dynamic_));
+
+  // Checks Static op Dynamic where op = {+, -, *, ·}.
+  EXPECT_TRUE(CheckAddition(M_variable_static_, M_poly_dynamic_));
+  EXPECT_TRUE(CheckSubtraction(M_variable_static_, M_poly_dynamic_));
+  EXPECT_TRUE(CheckMultiplication(M_variable_static_, M_poly_dynamic_));
+  EXPECT_TRUE(CheckDotProductResPoly(v_variable_static_, v_poly_dynamic_));
+
+  // Checks Dynamic op Static where op = {+, -, *, ·}.
+  EXPECT_TRUE(CheckAddition(M_variable_dynamic_, M_poly_static_));
+  EXPECT_TRUE(CheckSubtraction(M_variable_dynamic_, M_poly_static_));
+  EXPECT_TRUE(CheckMultiplication(M_variable_dynamic_, M_poly_static_));
+  EXPECT_TRUE(CheckDotProductResPoly(v_variable_dynamic_, v_poly_static_));
+
+  // Checks Static op Static where op = {+, -, *, ·}.
+  EXPECT_TRUE(CheckAddition(M_variable_static_, M_poly_static_));
+  EXPECT_TRUE(CheckSubtraction(M_variable_static_, M_poly_static_));
+  EXPECT_TRUE(CheckMultiplication(M_variable_static_, M_poly_static_));
+  EXPECT_TRUE(CheckDotProductResPoly(v_variable_static_, v_poly_static_));
+}
+
+TEST_F(SymbolicPolynomialMatrixTest, VariableMonomial) {
+  // Checks Dynamic op Dynamic where op = {+, -, *, ·}.
+  EXPECT_TRUE(CheckAddition(M_variable_dynamic_, M_monomial_dynamic_));
+  EXPECT_TRUE(CheckSubtraction(M_variable_dynamic_, M_monomial_dynamic_));
+  EXPECT_TRUE(CheckMultiplication(M_variable_dynamic_, M_monomial_dynamic_));
+  EXPECT_TRUE(CheckDotProductResPoly(v_variable_dynamic_, v_monomial_dynamic_));
+
+  // Checks Static op Dynamic where op = {+, -, *, ·}.
+  EXPECT_TRUE(CheckAddition(M_variable_static_, M_monomial_dynamic_));
+  EXPECT_TRUE(CheckSubtraction(M_variable_static_, M_monomial_dynamic_));
+  EXPECT_TRUE(CheckMultiplication(M_variable_static_, M_monomial_dynamic_));
+  EXPECT_TRUE(CheckDotProductResPoly(v_variable_static_, v_monomial_dynamic_));
+
+  // Checks Dynamic op Static where op = {+, -, *, ·}.
+  EXPECT_TRUE(CheckAddition(M_variable_dynamic_, M_monomial_static_));
+  EXPECT_TRUE(CheckSubtraction(M_variable_dynamic_, M_monomial_static_));
+  EXPECT_TRUE(CheckMultiplication(M_variable_dynamic_, M_monomial_static_));
+  EXPECT_TRUE(CheckDotProductResPoly(v_variable_dynamic_, v_monomial_static_));
+
+  // Checks Static op Static where op = {+, -, *, ·}.
+  EXPECT_TRUE(CheckAddition(M_variable_static_, M_monomial_static_));
+  EXPECT_TRUE(CheckSubtraction(M_variable_static_, M_monomial_static_));
+  EXPECT_TRUE(CheckMultiplication(M_variable_static_, M_monomial_static_));
+  EXPECT_TRUE(CheckDotProductResPoly(v_variable_static_, v_monomial_static_));
+}
+
+TEST_F(SymbolicPolynomialMatrixTest, DoublePolynomial) {
   // Checks Dynamic op Dynamic where op = {+, -, *, ·}.
   EXPECT_TRUE(CheckAddition(M_double_dynamic_, M_poly_dynamic_));
   EXPECT_TRUE(CheckSubtraction(M_double_dynamic_, M_poly_dynamic_));
@@ -457,7 +574,7 @@ TEST_F(SymbolicPolynomialMatrixTest, doublePolynomial) {
   EXPECT_TRUE(CheckMultiplication(M_double_static_, M_poly_dynamic_));
   EXPECT_TRUE(CheckDotProductResPoly(v_double_static_, v_poly_dynamic_));
 
-  // Checks Dynamic op Static where op = {+, -, *,·}.
+  // Checks Dynamic op Static where op = {+, -, *, ·}.
   EXPECT_TRUE(CheckAddition(M_double_dynamic_, M_poly_static_));
   EXPECT_TRUE(CheckSubtraction(M_double_dynamic_, M_poly_static_));
   EXPECT_TRUE(CheckMultiplication(M_double_dynamic_, M_poly_static_));
@@ -470,7 +587,7 @@ TEST_F(SymbolicPolynomialMatrixTest, doublePolynomial) {
   EXPECT_TRUE(CheckDotProductResPoly(v_double_static_, v_poly_static_));
 }
 
-TEST_F(SymbolicPolynomialMatrixTest, doubleMonomial) {
+TEST_F(SymbolicPolynomialMatrixTest, DoubleMonomial) {
   // Checks Dynamic op Dynamic where op = {+, -, *, ·}.
   EXPECT_TRUE(CheckAddition(M_double_dynamic_, M_monomial_dynamic_));
   EXPECT_TRUE(CheckSubtraction(M_double_dynamic_, M_monomial_dynamic_));
@@ -483,7 +600,7 @@ TEST_F(SymbolicPolynomialMatrixTest, doubleMonomial) {
   EXPECT_TRUE(CheckMultiplication(M_double_static_, M_monomial_dynamic_));
   EXPECT_TRUE(CheckDotProductResPoly(v_double_static_, v_monomial_dynamic_));
 
-  // Checks Dynamic op Static where op = {+, -, *,·}.
+  // Checks Dynamic op Static where op = {+, -, *, ·}.
   EXPECT_TRUE(CheckAddition(M_double_dynamic_, M_monomial_static_));
   EXPECT_TRUE(CheckSubtraction(M_double_dynamic_, M_monomial_static_));
   EXPECT_TRUE(CheckMultiplication(M_double_dynamic_, M_monomial_static_));

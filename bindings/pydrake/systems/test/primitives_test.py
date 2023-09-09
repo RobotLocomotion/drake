@@ -5,7 +5,6 @@ import numpy as np
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common import RandomDistribution, RandomGenerator
 from pydrake.common.test_utilities import numpy_compare
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.value import Value
 from pydrake.symbolic import Expression, Variable
 from pydrake.systems.framework import (
@@ -689,11 +688,6 @@ class TestGeneral(unittest.TestCase):
         DiscreteTimeDelay(
             update_sec=0.1, delay_time_steps=5,
             abstract_model_value=Value("Hello world"))
-        with catch_drake_warnings(expected_count=2) as w:
-            DiscreteTimeDelay(update_sec=0.1, delay_timesteps=5, vector_size=2)
-            DiscreteTimeDelay(
-                update_sec=0.1, delay_timesteps=5,
-                abstract_model_value=Value("Hello world"))
 
         ZeroOrderHold(period_sec=0.1, offset_sec=0.0, vector_size=2)
         dut = ZeroOrderHold(period_sec=1.0, offset_sec=0.25,

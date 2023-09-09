@@ -10,6 +10,7 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/common/nice_type_name_override.h"
+#include "drake/common/parallelism.h"
 #include "drake/common/random.h"
 #include "drake/common/temp_directory.h"
 #include "drake/common/text_logging.h"
@@ -102,6 +103,24 @@ PYBIND11_MODULE(_module_py, m) {
 
   internal::MaybeRedirectPythonLogging();
   m.def("_use_native_cpp_logging", &internal::UseNativeCppLogging);
+
+  {
+    using Class = Parallelism;
+    constexpr auto& cls_doc = doc.Parallelism;
+    py::class_<Class> cls(m, "Parallelism", cls_doc.doc);
+    py::implicitly_convertible<bool, Class>();
+    cls  // BR
+        .def(py::init<>(), cls_doc.ctor.doc_0args)
+        .def(py::init<bool>(), py::arg("parallelize").noconvert(),
+            cls_doc.ctor.doc_1args_parallelize)
+        .def(py::init<int>(), py::arg("num_threads").noconvert(),
+            cls_doc.ctor.doc_1args_num_threads)
+        // Note that we can't bind Parallelism::None(), because `None`
+        // is a reserved word in Python.
+        .def_static("Max", &Class::Max, cls_doc.Max.doc)
+        .def("num_threads", &Class::num_threads, cls_doc.num_threads.doc);
+    DefCopyAndDeepCopy(&cls);
+  }
 
   py::enum_<drake::ToleranceType>(m, "ToleranceType", doc.ToleranceType.doc)
       .value("kAbsolute", drake::ToleranceType::kAbsolute,

@@ -203,6 +203,7 @@ drake_cc_googletest(
     name = "lcm_subscriber_system_test",
     deps = [
         ":lcm_subscriber_system",
+        "//common/test_utilities:expect_throws_message",
         "//lcm:drake_lcm",
         "//lcm:lcmt_drake_signal_utils",
     ],
@@ -213,15 +214,6 @@ drake_cc_googletest(
     deps = [
         ":serializer",
         "//lcm:lcmt_drake_signal_utils",
-    ],
-)
-
-drake_cc_googletest(
-    name = "serializer_deprecated_test",
-    copts = ["-Wno-deprecated-declarations"],
-    deps = [
-        ":serializer",
-        "//lcmtypes:drake_signal",
     ],
 )
 

@@ -101,14 +101,17 @@ class CustomVectorSystem(VectorSystem):
         self.has_called = []
 
     def DoCalcVectorOutput(self, context, u, x, y):
+        self.ValidateContext(context=context)
         y[:] = np.hstack([u, x])
         self.has_called.append("output")
 
     def DoCalcVectorTimeDerivatives(self, context, u, x, x_dot):
+        self.ValidateContext(context)
         x_dot[:] = x + u
         self.has_called.append("continuous")
 
     def DoCalcVectorDiscreteVariableUpdates(self, context, u, x, x_n):
+        self.ValidateContext(context)
         x_n[:] = x + 2*u
         self.has_called.append("discrete")
 
@@ -420,6 +423,12 @@ class TestCustom(unittest.TestCase):
                     "system reset", WitnessFunctionDirection.kCrossesZero,
                     self._guard, UnrestrictedUpdateEvent(
                         system_callback=self._system_reset))
+                self.witness_result = 1.0
+                self.getwitness_result = [
+                    self.witness,
+                    self.reset_witness,
+                    self.system_reset_witness,
+                ]
 
             def DoPublish(self, context, events):
                 # Call base method to ensure we do not get recursion.
@@ -447,8 +456,7 @@ class TestCustom(unittest.TestCase):
 
             def DoGetWitnessFunctions(self, context):
                 self.called_getwitness = True
-                return [self.witness, self.reset_witness,
-                        self.system_reset_witness]
+                return self.getwitness_result
 
             def _on_initialize(self, context, event):
                 test.assertIsInstance(context, Context)
@@ -547,7 +555,7 @@ class TestCustom(unittest.TestCase):
             def _witness(self, context):
                 test.assertIsInstance(context, Context)
                 self.called_witness = True
-                return 1.0
+                return self.witness_result
 
             def _guard(self, context):
                 test.assertIsInstance(context, Context)
@@ -670,6 +678,20 @@ class TestCustom(unittest.TestCase):
         self.assertFalse(system.called_guard)
         self.assertFalse(system.called_reset)
         self.assertFalse(system.called_system_reset)
+
+        # Test witness function error messages.
+        system = TrivialSystem()
+        system.getwitness_result = None
+        simulator = Simulator(system)
+        with self.assertRaisesRegex(TypeError, "NoneType"):
+            simulator.AdvanceTo(0.1)
+        self.assertTrue(system.called_getwitness)
+        system = TrivialSystem()
+        system.witness_result = None
+        simulator = Simulator(system)
+        with self.assertRaisesRegex(TypeError, "NoneType"):
+            simulator.AdvanceTo(0.1)
+        self.assertTrue(system.called_witness)
 
     def test_event_handler_returns_none(self):
         """Checks that a Python event handler callback function is allowed to

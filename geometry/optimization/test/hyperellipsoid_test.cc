@@ -104,7 +104,7 @@ GTEST_TEST(HyperellipsoidTest, DefaultCtor) {
   EXPECT_EQ(dut.A().rows(), 0);
   EXPECT_EQ(dut.A().cols(), 0);
   EXPECT_EQ(dut.center().size(), 0);
-  EXPECT_EQ(dut.Volume(), 0.0);
+  DRAKE_EXPECT_THROWS_MESSAGE(dut.Volume(), ".*zero.*");
   EXPECT_THROW(dut.MinimumUniformScalingToTouch(dut), std::exception);
   EXPECT_NO_THROW(dut.Clone());
   EXPECT_EQ(dut.ambient_dimension(), 0);

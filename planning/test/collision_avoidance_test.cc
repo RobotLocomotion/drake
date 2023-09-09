@@ -100,14 +100,28 @@ GTEST_TEST(ComputeCollisionAvoidanceDisplacementTest, ContextProvenance) {
   EXPECT_TRUE(CompareMatrices(
       checker.plant().GetPositions(checker.plant_context()), q1));
 
+  /* Implicit context using context number. */
+  const int context_number = 0;
+  EXPECT_FALSE(CompareMatrices(
+      checker.plant().GetPositions(checker.plant_context(context_number)), q2));
+  EXPECT_NO_THROW(
+      ComputeCollisionAvoidanceDisplacement(checker, q2, 0, 1, context_number));
+  EXPECT_TRUE(CompareMatrices(
+      checker.plant().GetPositions(checker.plant_context(context_number)), q2));
+
   /* Explicit context. */
   auto context = checker.MakeStandaloneModelContext();
   EXPECT_FALSE(CompareMatrices(
       checker.plant().GetPositions(context->plant_context()), q2));
-  EXPECT_NO_THROW(
-      ComputeCollisionAvoidanceDisplacement(checker, q2, 0, 1, context.get()));
+  EXPECT_NO_THROW(ComputeCollisionAvoidanceDisplacement(
+      checker, q2, 0, 1, std::nullopt, context.get()));
   EXPECT_TRUE(CompareMatrices(
       checker.plant().GetPositions(context->plant_context()), q2));
+
+  /* Combining implicit context number and explicit context throws. */
+  EXPECT_THROW(ComputeCollisionAvoidanceDisplacement(
+                   checker, q2, 0, 1, context_number, context.get()),
+               std::exception);
 }
 
 GTEST_TEST(ComputeCollisionAvoidanceDisplacementTest, NoDistanceMeasurements) {

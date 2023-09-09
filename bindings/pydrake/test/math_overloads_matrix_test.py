@@ -10,9 +10,9 @@ from pydrake.common.test_utilities import meta, numpy_compare
 from pydrake.symbolic import (
     Expression,
     MakeMatrixContinuousVariable,
-    Variable,
-    Polynomial,
     Monomial
+    Polynomial,
+    Variable,
 )
 
 
@@ -21,15 +21,11 @@ def _matmul_dtype_pairs():
     that operate on a pair of matrix inputs. We'll test all pairs *except* we
     won't mix autodiff with symbolic.
     """
-    # types = (float, AutoDiffXd, Variable, Expression, Polynomial, Monomial)
-    types = (float, AutoDiffXd, Variable, Expression, Polynomial)
+    types = (float, AutoDiffXd, Variable, Expression, Monomial, Polynomial)
     for T1, T2 in itertools.product(types, types):
-        has_autodiff = any([T in (AutoDiffXd,) for T in (T1, T2)])
-        has_variable = any([T in (Variable,) for T in (T1, T2)])
-        has_expr = any([T in (Expression,) for T in (T1, T2)])
-        has_polynomial = any([T in (Polynomial, Monomial) for T in (T1, T2)])
-        has_symbolic = has_variable or has_expr or has_polynomial
-        if has_autodiff and has_symbolic:
+        any_autodiff = any([T in (AutoDiffXd,) for T in (T1, T2)])
+        all_nonsymbolic = all([T in (float, AutoDiffXd) for T in (T1, T2)])
+        if any_autodiff and not all_nonsymbolic:
             continue
         yield dict(T1=T1, T2=T2)
 
@@ -50,13 +46,9 @@ class MathOverloadsMatrixTest(unittest.TestCase,
         if dtype is Variable:
             # Return a like-sized matrix of variables.
             return MakeMatrixContinuousVariable(*M.shape, name)
-        if dtype is Expression:
-            # Return a like-sized matrix of variables promoted to expressions.
-            return self._astype(M, Variable, name).astype(dtype=Expression)
-        if dtype is Polynomial:
-            return self._astype(M, Variable, name).astype(dtype=Polynomial)
-        if dtype is Monomial:
-            return self._astype(M, Variable, name).astype(dtype=Monomial)
+        if dtype in (Expression, Polynomial, Monomial):
+            # Return a like-sized matrix of variables promoted to the dtype.
+            return self._astype(M, Variable, name).astype(dtype=dtype)
         assert False
 
     @meta.run_with_multiple_values(_matmul_dtype_pairs())

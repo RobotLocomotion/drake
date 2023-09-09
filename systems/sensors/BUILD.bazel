@@ -31,6 +31,7 @@ drake_cc_package_library(
         ":color_palette",
         ":gyroscope",
         ":image",
+        ":image_file_format",
         ":image_to_lcm_image_array_t",
         ":image_writer",
         ":lcm_image_array_to_images",
@@ -159,6 +160,15 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "image_file_format",
+    srcs = ["image_file_format.cc"],
+    hdrs = ["image_file_format.h"],
+    deps = [
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
     name = "lcm_image_traits",
     srcs = [
         "lcm_image_traits.cc",
@@ -204,10 +214,10 @@ drake_cc_library(
     ],
     deps = [
         ":lcm_image_traits",
+        ":vtk_image_reader_writer",
         "//lcmtypes:image_array",
-        "@libpng",
-        "@vtk//:vtkCommonCore",
-        "@vtk//:vtkIOImage",
+        "@vtk_internal//:vtkCommonCore",
+        "@vtk_internal//:vtkIOImage",
         "@zlib",
     ],
 )
@@ -307,10 +317,13 @@ drake_cc_library(
     interface_deps = [
         ":image",
         "//common:essential",
-        "//systems/framework",
+        "//systems/framework:leaf_system",
     ],
     deps = [
-        "@vtk//:vtkIOImage",
+        ":vtk_image_reader_writer",
+        "@vtk_internal//:vtkCommonCore",
+        "@vtk_internal//:vtkCommonDataModel",
+        "@vtk_internal//:vtkIOImage",
     ],
 )
 
@@ -325,6 +338,20 @@ drake_cc_library(
         "//multibody/plant",
         "//systems/framework:diagram_builder",
         "//systems/lcm:lcm_publisher_system",
+    ],
+)
+
+drake_cc_library(
+    name = "vtk_image_reader_writer",
+    srcs = ["vtk_image_reader_writer.cc"],
+    hdrs = ["vtk_image_reader_writer.h"],
+    internal = True,
+    visibility = ["//:__subpackages__"],
+    deps = [
+        ":image_file_format",
+        "//common:unused",
+        "@vtk_internal//:vtkCommonCore",
+        "@vtk_internal//:vtkIOImage",
     ],
 )
 
@@ -393,6 +420,13 @@ drake_cc_googletest(
         ":camera_info",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "image_file_format_test",
+    deps = [
+        ":image_file_format",
     ],
 )
 
@@ -564,6 +598,18 @@ drake_cc_googletest(
         "//systems/framework:diagram_builder",
         "//systems/lcm:lcm_publisher_system",
         "@fmt",
+    ],
+)
+
+drake_cc_googletest(
+    name = "vtk_image_reader_writer_test",
+    deps = [
+        ":vtk_image_reader_writer",
+        "//common:temp_directory",
+        "//common/test_utilities:expect_throws_message",
+        "@vtk_internal//:vtkCommonCore",
+        "@vtk_internal//:vtkCommonDataModel",
+        "@vtk_internal//:vtkIOImage",
     ],
 )
 

@@ -63,8 +63,6 @@ const std::string& LookupEngineType(const std::string& class_name) {
   using Dict = std::map<std::string, std::string>;
   static const never_destroyed<Dict> type_lookup(
       std::initializer_list<Dict::value_type>{
-          {"",  // Empty string defaults to RenderEngineVtk.
-           "drake::geometry::render_vtk::internal::RenderEngineVtk"},
           {"RenderEngineVtk",
            "drake::geometry::render_vtk::internal::RenderEngineVtk"},
           {"RenderEngineGl",
@@ -139,7 +137,8 @@ void ValidateEngineAndMaybeAdd(const CameraConfig& config,
     std::visit(
         overloaded{
             [&type_name, &config](const std::string& class_name) -> void {
-              if (LookupEngineType(class_name) != type_name) {
+              if (!class_name.empty() &&
+                  LookupEngineType(class_name) != type_name) {
                 throw std::logic_error(fmt::format(
                     "Invalid camera configuration; requested renderer_name "
                     "= '{}' and renderer_class = '{}'. The name is already "
@@ -148,13 +147,12 @@ void ValidateEngineAndMaybeAdd(const CameraConfig& config,
               }
             },
             [&config](auto&&) -> void {
-              throw std::logic_error(
-                  fmt::format("Invalid camera configuration; requested "
-                              "renderer_name = '{}' with renderer parameters, "
-                              "but the named renderer already exists. Only the "
-                              "first instance of the named renderer can use "
-                              "parameters.",
-                              config.renderer_name));
+              throw std::logic_error(fmt::format(
+                  "Invalid camera configuration; requested renderer_name "
+                  " = '{}' with renderer parameters, but the named renderer "
+                  "already exists. Only the first instance of the named "
+                  "renderer can use parameters.",
+                  config.renderer_name));
             }},
         config.renderer_class);
   }

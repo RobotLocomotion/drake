@@ -23,7 +23,7 @@ AffineSubspace::AffineSubspace()
 
 AffineSubspace::AffineSubspace(const Eigen::Ref<const MatrixXd>& basis,
                                const Eigen::Ref<const VectorXd>& translation)
-    : ConvexSet(basis.rows()), basis_(basis), translation_(translation) {
+    : ConvexSet(basis.rows(), true), basis_(basis), translation_(translation) {
   DRAKE_THROW_UNLESS(basis_.rows() == translation_.size());
   DRAKE_THROW_UNLESS(basis_.rows() >= basis_.cols());
   if (basis.rows() > 0 && basis.cols() > 0) {
@@ -35,7 +35,7 @@ AffineSubspace::AffineSubspace(const Eigen::Ref<const MatrixXd>& basis,
 }
 
 AffineSubspace::AffineSubspace(const ConvexSet& set, double tol)
-    : ConvexSet(0) {
+    : ConvexSet(0, true) {
   // If the set is clearly a singleton, we can easily compute its affine hull.
   const auto singleton_maybe = set.MaybeGetPoint();
   if (singleton_maybe.has_value()) {
@@ -201,6 +201,16 @@ std::pair<std::unique_ptr<Shape>, math::RigidTransformd>
 AffineSubspace::DoToShapeWithPose() const {
   throw std::runtime_error(
       "ToShapeWithPose is not supported by AffineSubspace.");
+}
+
+double AffineSubspace::DoCalcVolume() const {
+  if (ambient_dimension() == 0 || AffineDimension() < ambient_dimension()) {
+    // An AffineSubspace has zero volume if it is zero dimensional or has a
+    // lower affine dimension than its ambient space. Otherwise, it represents
+    // the whole ambient space, and has infinite volume."
+    return 0;
+  }
+  return std::numeric_limits<double>::infinity();
 }
 
 Eigen::MatrixXd AffineSubspace::Project(

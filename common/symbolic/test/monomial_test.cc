@@ -708,6 +708,15 @@ TEST_F(MonomialTest, Multiplication) {
   const Monomial m3{{{var_x_, 1}, {var_y_, 4}, {var_z_, 5}}};
   EXPECT_EQ(m1 * m2, m3);
 
+  // m₄ = m₁ * y = xy³
+  const Monomial m4{{{var_x_, 1}, {var_y_, 3}}};
+  // Check using Monomial * Variable (and vice versa).
+  EXPECT_EQ(m1 * var_y_, m4);
+  EXPECT_EQ(var_y_ * m1, m4);
+  // Check using Monomial * Expression (and vice versa).
+  EXPECT_PRED2(ExprEqual, m1 * y_, m4.ToExpression());
+  EXPECT_PRED2(ExprEqual, y_ * m1, m4.ToExpression());
+
   Monomial m{m1};  // m = m₁
   m *= m2;         // m = m₁ * m₂
   EXPECT_EQ(m, m1 * m2);

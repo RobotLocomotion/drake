@@ -32,7 +32,10 @@ DiscreteDerivative<T>::DiscreteDerivative(int num_inputs, double time_step,
     // at time == 0.0.
     this->DeclareDiscreteState(1);
   }
-  this->DeclarePeriodicDiscreteUpdateNoHandler(time_step_);
+  this->DeclarePeriodicDiscreteUpdateEvent(
+      time_step_, 0.0, &DiscreteDerivative<T>::CalcDiscreteUpdate);
+  this->DeclareForcedDiscreteUpdateEvent(
+      &DiscreteDerivative<T>::CalcDiscreteUpdate);
 }
 
 template <typename T>
@@ -57,9 +60,8 @@ void DiscreteDerivative<T>::set_input_history(
 }
 
 template <typename T>
-void DiscreteDerivative<T>::DoCalcDiscreteVariableUpdates(
+EventStatus DiscreteDerivative<T>::CalcDiscreteUpdate(
     const drake::systems::Context<T>& context,
-    const std::vector<const drake::systems::DiscreteUpdateEvent<T>*>&,
     drake::systems::DiscreteValues<T>* state) const {
   // x₀[n+1] = u[n].
   state->set_value(0, this->get_input_port().Eval(context));
@@ -71,6 +73,8 @@ void DiscreteDerivative<T>::DoCalcDiscreteVariableUpdates(
   if (suppress_initial_transient_) {
     state->get_mutable_vector(2)[0] = context.get_discrete_state(2)[0] + 1.0;
   }
+
+  return EventStatus::Succeeded();
 }
 
 template <typename T>

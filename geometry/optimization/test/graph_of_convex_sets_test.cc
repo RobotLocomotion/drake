@@ -2039,11 +2039,88 @@ GTEST_TEST(ShortestPathTest, Figure9) {
   }
 }
 
+// A simple path planning example, where the environment is in the box (0,0)
+// to (6,6), and there is an obstacle in the box (2,2) to (4,4).
+GTEST_TEST(ShortestPathTest, SavvaBoxExample) {
+  auto add_edge_and_constraints = [](GraphOfConvexSets* gcs, Vertex* v_left,
+                                     Vertex* v_right) {
+    Edge* edge =
+        gcs->AddEdge(v_left, v_right, v_left->name() + "-" + v_right->name());
+    // Second point of left vertex is equal to first point of right vertex.
+    edge->AddConstraint(edge->xu().tail<2>() == edge->xv().head<2>());
+    return edge;
+  };
+
+  auto add_quadratic_cost_between_consecutive_points = [](Vertex* v) {
+    auto x = v->x();
+    v->AddCost((x[2] - x[0]) * (x[2] - x[0]) + (x[3] - x[1]) * (x[3] - x[1]));
+  };
+
+  // Construct a GCS.
+  GraphOfConvexSets gcs;
+
+  // Define vertices.
+  Vertex* start = gcs.AddVertex(Point(Vector2d{4, 5}), "start");
+  Vertex* target = gcs.AddVertex(Point(Vector2d{3, 0}), "target");
+
+  Vertex* v_left = gcs.AddVertex(
+      HPolyhedron::MakeBox(Vector4d{0, 0, 0, 0}, Vector4d{2, 6, 2, 6}), "left");
+  Vertex* v_above = gcs.AddVertex(
+      HPolyhedron::MakeBox(Vector4d{0, 4, 0, 4}, Vector4d{6, 6, 6, 6}),
+      "above");
+  Vertex* v_right = gcs.AddVertex(
+      HPolyhedron::MakeBox(Vector4d{4, 0, 4, 0}, Vector4d{6, 6, 6, 6}),
+      "right");
+  Vertex* v_below = gcs.AddVertex(
+      HPolyhedron::MakeBox(Vector4d{0, 0, 0, 0}, Vector4d{6, 2, 6, 2}),
+      "below");
+
+  // Add costs and constraints.
+  add_quadratic_cost_between_consecutive_points(v_left);
+  add_quadratic_cost_between_consecutive_points(v_above);
+  add_quadratic_cost_between_consecutive_points(v_right);
+  add_quadratic_cost_between_consecutive_points(v_below);
+
+  // From above you can go left or right,
+  // from left or right you can go below.
+  add_edge_and_constraints(&gcs, start, v_above);
+  add_edge_and_constraints(&gcs, v_above, v_right);
+  add_edge_and_constraints(&gcs, v_above, v_left);
+  add_edge_and_constraints(&gcs, v_right, v_below);
+  add_edge_and_constraints(&gcs, v_left, v_below);
+  add_edge_and_constraints(&gcs, v_below, target);
+
+  // Solve convex relaxation so that the flows are split.
+  GraphOfConvexSetsOptions options;
+  options.convex_relaxation = true;
+
+  auto result = gcs.SolveShortestPath(*start, *target, options);
+  ASSERT_TRUE(result.is_success());
+
+  for (auto* e : gcs.Edges()) {
+    if (e->name().find("start") == std::string::npos &&
+        e->name().find("target") == std::string::npos) {
+      // The flows are split, so recovering the solution via e->xu() does not
+      // return the expected result (it looks like the equality constraint was
+      // not enforced).
+      EXPECT_FALSE(CompareMatrices(result.GetSolution(e->xu()).tail<2>(),
+                                   result.GetSolution(e->xv()).head<2>(),
+                                   1e-4));
+      // But the underlying edge decision variables *are* equal.
+      EXPECT_TRUE(CompareMatrices(e->GetSolutionPhiXu(result).tail<2>(),
+                                  e->GetSolutionPhiXv(result).head<2>(), 1e-4));
+    }
+  }
+}
+
 GTEST_TEST(ShortestPathTest, Graphviz) {
   GraphOfConvexSets g;
   auto source = g.AddVertex(Point(Vector2d{1.0, 2.}), "source");
   auto target = g.AddVertex(Point(Vector1d{1e-5}), "target");
-  g.AddEdge(source, target, "edge");
+  g.AddEdge(source, target, "source_to_target")->AddCost(1.23);
+  auto other = g.AddVertex(Point(Vector1d{4.0}), "other");
+  g.AddEdge(source, other, "source_to_other")->AddCost(3.45);
+  g.AddEdge(other, target, "other_to_target");  // No cost from other to target.
 
   GraphOfConvexSetsOptions options;
   options.preprocessing = true;
@@ -2051,9 +2128,9 @@ GTEST_TEST(ShortestPathTest, Graphviz) {
 
   // Note: Testing the entire string against a const string is too fragile,
   // since the VertexIds are Identifier<> and increment on a global counter.
-  EXPECT_THAT(
-      g.GetGraphvizString(),
-      AllOf(HasSubstr("source"), HasSubstr("target"), HasSubstr("edge")));
+  EXPECT_THAT(g.GetGraphvizString(),
+              AllOf(HasSubstr("source"), HasSubstr("target"),
+                    HasSubstr("source_to_target")));
   auto result = g.SolveShortestPath(*source, *target, options);
   EXPECT_THAT(g.GetGraphvizString(result),
               AllOf(HasSubstr("x ="), HasSubstr("cost ="), HasSubstr("ϕ ="),
@@ -2062,6 +2139,8 @@ GTEST_TEST(ShortestPathTest, Graphviz) {
   // With a rounded result.
   options.max_rounded_paths = 1;
   result = g.SolveShortestPath(*source, *target, options);
+  // Note: The cost here only comes from the cost=0 on other_to_target until
+  // SolveConvexRestriction provides the rewritten costs.
   EXPECT_THAT(g.GetGraphvizString(result),
               AllOf(HasSubstr("x ="), HasSubstr("cost ="), HasSubstr("ϕ =")));
 

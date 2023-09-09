@@ -29,6 +29,7 @@ class SparseSystem : public LeafSystem<symbolic::Expression> {
 
     this->DeclareContinuousState(kSize);
     this->DeclareDiscreteState(kSize);
+    this->DeclareForcedDiscreteUpdateEvent(&SparseSystem::CalcDiscreteUpdate);
 
     this->DeclareEqualityConstraint(&SparseSystem::CalcConstraint, kSize,
                                     "equality constraint");
@@ -41,7 +42,9 @@ class SparseSystem : public LeafSystem<symbolic::Expression> {
     this->DeclareAbstractInputPort(kUseDefaultName, Value<std::string>{});
   }
 
-  ~SparseSystem() override {}
+  void set_discrete_update_is_affine(bool value) {
+    discrete_update_is_affine_ = value;
+  }
 
  private:
   // Calculation function for output port 0.
@@ -95,12 +98,9 @@ class SparseSystem : public LeafSystem<symbolic::Expression> {
     derivatives->SetFromVector(xdot);
   }
 
-  void DoCalcDiscreteVariableUpdates(
+  EventStatus CalcDiscreteUpdate(
       const systems::Context<symbolic::Expression>& context,
-      const std::vector<
-          const systems::DiscreteUpdateEvent<symbolic::Expression>*>&,
-      systems::DiscreteValues<symbolic::Expression>* discrete_state)
-      const override {
+      systems::DiscreteValues<symbolic::Expression>* discrete_state) const {
     const auto& u0 = this->get_input_port(0).Eval(context);
     const auto& u1 = this->get_input_port(1).Eval(context);
     const Vector2<symbolic::Expression> xd =
@@ -109,10 +109,16 @@ class SparseSystem : public LeafSystem<symbolic::Expression> {
     const Eigen::Matrix2d B1 = 8 * Eigen::Matrix2d::Identity();
     const Eigen::Matrix2d B2 = 9 * Eigen::Matrix2d::Identity();
     const Eigen::Vector2d f0(10.0, 11.0);
-    const Vector2<symbolic::Expression> next_xd =
+    Vector2<symbolic::Expression> next_xd =
         A * xd + B1 * u0 + B2 * u1 + f0;
+    if (!discrete_update_is_affine_) {
+      next_xd(0) += cos(u0(0));
+    }
     discrete_state->set_value(0, next_xd);
+    return EventStatus::Succeeded();
   }
+
+  bool discrete_update_is_affine_{true};
 };
 
 class SystemSymbolicInspectorTest : public ::testing::Test {
@@ -189,8 +195,15 @@ TEST_F(PendulumInspectorTest, IsTimeInvariant) {
   EXPECT_TRUE(inspector_->IsTimeInvariant());
 }
 
-TEST_F(SystemSymbolicInspectorTest, HasAffineDynamics) {
+TEST_F(SystemSymbolicInspectorTest, HasAffineDynamicsYes) {
   EXPECT_TRUE(inspector_->HasAffineDynamics());
+}
+
+GTEST_TEST(SystemSymbolicInspectorTest2, HasAffineDynamicsNo) {
+  SparseSystem other;
+  other.set_discrete_update_is_affine(false);
+  SystemSymbolicInspector other_inspector(other);
+  EXPECT_FALSE(other_inspector.HasAffineDynamics());
 }
 
 TEST_F(PendulumInspectorTest, HasAffineDynamics) {

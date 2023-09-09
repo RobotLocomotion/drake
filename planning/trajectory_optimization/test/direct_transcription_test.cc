@@ -52,7 +52,8 @@ class CubicPolynomialSystem final : public systems::LeafSystem<T> {
         time_step_(time_step) {
     // Zero inputs, zero outputs.
     this->DeclareDiscreteState(1);  // One state variable.
-    this->DeclarePeriodicDiscreteUpdateNoHandler(time_step);
+    this->DeclarePeriodicDiscreteUpdateEvent(
+        time_step, 0.0, &CubicPolynomialSystem<T>::CalcDiscreteUpdate);
   }
 
   // Scalar-converting copy constructor.
@@ -64,10 +65,8 @@ class CubicPolynomialSystem final : public systems::LeafSystem<T> {
 
  private:
   // x[n+1] = x³[n]
-  void DoCalcDiscreteVariableUpdates(
-      const Context<T>& context,
-      const std::vector<const DiscreteUpdateEvent<T>*>&,
-      DiscreteValues<T>* discrete_state) const final {
+  void CalcDiscreteUpdate(const Context<T>& context,
+                          DiscreteValues<T>* discrete_state) const {
     using std::pow;
     (*discrete_state)[0] =
         pow(context.get_discrete_state(0).GetAtIndex(0), 3.0);
@@ -86,7 +85,8 @@ class LinearSystemWParams final : public systems::LeafSystem<T> {
     // Zero inputs, zero outputs.
     this->DeclareDiscreteState(1);                     // One state variable.
     this->DeclareNumericParameter(BasicVector<T>(1));  // One parameter.
-    this->DeclarePeriodicDiscreteUpdateNoHandler(1.0);
+    this->DeclarePeriodicDiscreteUpdateEvent(
+        1.0, 0.0, &LinearSystemWParams<T>::CalcDiscreteUpdate);
   }
 
   // Scalar-converting copy constructor.
@@ -96,10 +96,8 @@ class LinearSystemWParams final : public systems::LeafSystem<T> {
 
  private:
   // x[n+1] = p0 * x[n]
-  void DoCalcDiscreteVariableUpdates(
-      const Context<T>& context,
-      const std::vector<const DiscreteUpdateEvent<T>*>&,
-      DiscreteValues<T>* discrete_state) const final {
+  void CalcDiscreteUpdate(const Context<T>& context,
+                          DiscreteValues<T>* discrete_state) const {
     (*discrete_state)[0] = context.get_numeric_parameter(0).GetAtIndex(0) *
                            context.get_discrete_state(0).GetAtIndex(0);
   }

@@ -87,7 +87,7 @@ GTEST_TEST(VPolytopeTest, DefaultCtor) {
   const VPolytope dut;
   EXPECT_NO_THROW(dut.GetMinimalRepresentation());
   EXPECT_EQ(dut.vertices().size(), 0);
-  EXPECT_EQ(dut.CalcVolume(), 0.0);
+  DRAKE_EXPECT_THROWS_MESSAGE(dut.CalcVolume(), ".*zero.*");
   EXPECT_NO_THROW(dut.Clone());
   EXPECT_EQ(dut.ambient_dimension(), 0);
   EXPECT_TRUE(dut.IsBounded());
@@ -654,7 +654,7 @@ GTEST_TEST(VPolytopeTest, NonnegativeScalingTest2) {
   EXPECT_FALSE(PointInTransformedScaledSet(2.01, Vector2d(0, -2.0)));
 }
 
-GTEST_TEST(VPolytopeTest, CalcVolume) {
+GTEST_TEST(VPolytopeTest, Volume) {
   const double tol{1E-6};
   EXPECT_NEAR(VPolytope::MakeUnitBox(3).CalcVolume(), 8, tol);
 

@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<sdf xmlns:drake="http://drake.mit.edu" version="1.8">
+  <!-- Test for all kinds of supported glTF textures. -->
+  <model name="fully_textured_pyramid">
+    <link name="pyramid">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>package://drake/geometry/render/test/meshes/fully_textured_pyramid.gltf</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+  </model>
+</sdf>

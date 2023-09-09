@@ -10,18 +10,19 @@ namespace internal {
 Eigen::VectorXd ComputeCollisionAvoidanceDisplacement(
     const CollisionChecker& checker, const Eigen::VectorXd& q,
     double max_penetration, double max_clearance,
-    CollisionCheckerContext* context) {
+    const std::optional<int> context_number, CollisionCheckerContext* context) {
   DRAKE_THROW_UNLESS(max_penetration <= 0.0);
   DRAKE_THROW_UNLESS(std::isfinite(max_penetration));
   DRAKE_THROW_UNLESS(max_clearance >= 0.0);
   DRAKE_THROW_UNLESS(std::isfinite(max_clearance));
   DRAKE_THROW_UNLESS(max_clearance > max_penetration);
+  DRAKE_THROW_UNLESS(context_number == std::nullopt || context == nullptr);
 
   const double penetration_range = max_clearance - max_penetration;
   // Collect the distances and Jacobians.
   const RobotClearance robot_clearance =
       context == nullptr
-          ? checker.CalcRobotClearance(q, max_clearance)
+          ? checker.CalcRobotClearance(q, max_clearance, context_number)
           : checker.CalcContextRobotClearance(context, q, max_clearance);
 
   const int num_measurements = robot_clearance.size();

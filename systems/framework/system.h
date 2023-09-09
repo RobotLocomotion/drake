@@ -1095,15 +1095,16 @@ class System : public SystemBase {
                                       /* warn_deprecated = */ true));
   }
 
-  /** Convenience method for the case of exactly one input port. */
+  /** Convenience method for the case of exactly one input port.
+  This function ignores deprecated ports, unless there is only one port in which
+  case it will return the deprecated port. */
   const InputPort<T>& get_input_port() const {
-    static constexpr char message[] =
-        "Cannot use the get_input_port() convenience method unless there is"
-        " exactly one input port. num_input_ports() = {}";
-    if (num_input_ports() != 1) {
-      throw std::logic_error(fmt::format(message, num_input_ports()));
+    // Fast path for common case.
+    if (num_input_ports() == 1) {
+      return get_input_port(0);
     }
-    return get_input_port(0);
+    // Fallback for deprecation and/or error handling case.
+    return GetSoleInputPort();
   }
 
   /** Returns the typed input port specified by the InputPortSelection or by
@@ -1137,15 +1138,16 @@ class System : public SystemBase {
                                        /* warn_deprecated = */ true));
   }
 
-  /** Convenience method for the case of exactly one output port. */
+  /** Convenience method for the case of exactly one output port.
+  This function ignores deprecated ports, unless there is only one port in which
+  case it will return the deprecated port. */
   const OutputPort<T>& get_output_port() const {
-    static constexpr char message[] =
-        "Cannot use the get_output_port() convenience method unless there is"
-        " exactly one output port. num_output_ports() = {}";
-    if (num_output_ports() != 1) {
-      throw std::logic_error(fmt::format(message, num_output_ports()));
+    // Fast path for common case.
+    if (num_output_ports() == 1) {
+      return get_output_port(0);
     }
-    return get_output_port(0);
+    // Fallback for deprecation and/or error handling case.
+    return GetSoleOutputPort();
   }
 
   /** Returns the typed output port specified by the OutputPortSelection or by
@@ -1190,6 +1192,8 @@ class System : public SystemBase {
 
   /** Returns a Graphviz string describing this System.  To render the string,
   use the Graphviz tool, ``dot``. http://www.graphviz.org/
+
+  Deprecated ports are flagged with a headstone emoji (🪦) after their name.
 
   @param max_depth Sets a limit to the depth of nested diagrams to
   visualize.  Set to zero to render a diagram as a single system block.
@@ -1966,6 +1970,12 @@ class System : public SystemBase {
   // cache entry.
   void CalcUniquePeriodicDiscreteUpdate(
       const Context<T>& context, DiscreteValues<T>* updated) const;
+
+  // The non-inline implementation of get_input_port().
+  const InputPort<T>& GetSoleInputPort() const;
+
+  // The non-inline implementation of get_output_port().
+  const OutputPort<T>& GetSoleOutputPort() const;
 
   // The constraints_ vector encompass all constraints on this system, whether
   // they were declared by a concrete subclass during construction (e.g., by

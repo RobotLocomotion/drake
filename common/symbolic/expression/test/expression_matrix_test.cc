@@ -4,6 +4,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/fmt_eigen.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/symbolic_test_util.h"
@@ -155,6 +156,17 @@ TEST_F(SymbolicExpressionMatrixTest, EigenMul4) {
                 (z_ * 2), (pi_ * 2);
   // clang-format on
   EXPECT_EQ(M, M_expected);
+}
+
+TEST_F(SymbolicExpressionMatrixTest, EigenMul5) {
+  auto const M(matrix_var_1_ * matrix_var_2_);
+  Eigen::Matrix<Expression, 2, 2> M_expected;
+  // clang-format off
+  M_expected << x_ * y_ + x_ * y_, x_ * y_ + x_ * z_,
+                y_ * z_ + x_ * x_, x_ * x_ + z_ * z_;
+  // clang-format on
+  EXPECT_TRUE(CheckStructuralEquality(M, M_expected))
+      << fmt::to_string(fmt_eigen(M));
 }
 
 TEST_F(SymbolicExpressionMatrixTest, EigenDot) {

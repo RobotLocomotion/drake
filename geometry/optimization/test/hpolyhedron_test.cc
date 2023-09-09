@@ -11,6 +11,7 @@
 #include "drake/common/yaml/yaml_io.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/meshcat.h"
+#include "drake/geometry/optimization/hyperrectangle.h"
 #include "drake/geometry/optimization/test_utilities.h"
 #include "drake/geometry/optimization/vpolytope.h"
 #include "drake/geometry/scene_graph.h"
@@ -607,7 +608,7 @@ GTEST_TEST(HPolyhedronTest, NonnegativeScalingTest) {
 
 bool PointInScaledSet(const solvers::VectorXDecisionVariable& x_vars,
                       const solvers::VectorXDecisionVariable& t_vars,
-                      const Vector2d& x, const Vector2d& t,
+                      const VectorXd& x, const VectorXd& t,
                       solvers::MathematicalProgram* prog,
                       const std::vector<Binding<Constraint>>& constraints) {
   const double tol = 0;

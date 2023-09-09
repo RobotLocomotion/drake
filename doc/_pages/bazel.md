@@ -169,23 +169,23 @@ bazel build //tools/lint:buildifier
 
 The Drake Bazel build currently supports the following proprietary solvers:
 
-* Gurobi 9.5
+* Gurobi 10.0
 * MOSEK™ 10.0
 * SNOPT 7.4
 
-## Gurobi 9.5
+## Gurobi 10.0
 
 ### Install on Ubuntu
 
 1. Register for an account on [https://www.gurobi.com](https://www.gurobi.com).
 2. Set up your Gurobi license file in accordance with Gurobi documentation.
 3. ``export GRB_LICENSE_FILE=/path/to/gurobi.lic``.
-4. Download ``gurobi9.5.2_linux64.tar.gz``. You may need to manually edit the URL to get the correct version.
-5. Unzip it.  We suggest that you use ``/opt/gurobi952`` to simplify working with Drake installations.
-6. If you unzipped into a location other than ``/opt/gurobi952``, then call ``export GUROBI_HOME=GUROBI_UNZIP_PATH/linux64`` to set the path you used, where in ``GUROBI_HOME`` folder you can find ``bin`` folder.
+4. Download ``gurobi10.0.2_linux64.tar.gz``. You may need to manually edit the URL to get the correct version.
+5. Unzip it.  We suggest that you use ``/opt/gurobi1002`` to simplify working with Drake installations.
+6. If you unzipped into a location other than ``/opt/gurobi1002``, then call ``export GUROBI_HOME=GUROBI_UNZIP_PATH/linux64`` to set the path you used, where in ``GUROBI_HOME`` folder you can find ``bin`` folder.
 
-Drake supports any patch version of Gurobi 9.5. At time of writing, the most
-recent available version was 9.5.2; if using a newer patch version, the paths
+Drake supports any patch version of Gurobi 10.0. At time of writing, the most
+recent available version was 10.0.2; if using a newer patch version, the paths
 and file names above should be adjusted accordingly.
 
 ### Install on macOS
@@ -193,7 +193,7 @@ and file names above should be adjusted accordingly.
 1. Register for an account on [http://www.gurobi.com](http://www.gurobi.com).
 2. Set up your Gurobi license file in accordance with Gurobi documentation.
 3. ``export GRB_LICENSE_FILE=/path/to/gurobi.lic``
-4. Download and install ``gurobi9.5.2_mac64.pkg``.
+4. Download and install ``gurobi10.0.2_mac64.pkg``.
 
 To confirm that your setup was successful, run the tests that require Gurobi:
 

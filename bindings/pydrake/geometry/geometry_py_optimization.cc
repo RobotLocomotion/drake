@@ -122,7 +122,8 @@ void DefineGeometryOptimization(py::module m) {
             py::arg("d"), py::arg("x"), py::arg("t"),
             cls_doc.AddPointInNonnegativeScalingConstraints.doc_7args)
         .def("ToShapeWithPose", &ConvexSet::ToShapeWithPose,
-            cls_doc.ToShapeWithPose.doc);
+            cls_doc.ToShapeWithPose.doc)
+        .def("CalcVolume", &ConvexSet::CalcVolume, cls_doc.CalcVolume.doc);
   }
 
   // AffineSubspace
@@ -263,7 +264,6 @@ void DefineGeometryOptimization(py::module m) {
             py::arg("reference_frame") = std::nullopt, cls_doc.ctor.doc_3args)
         .def("A", &Hyperellipsoid::A, cls_doc.A.doc)
         .def("center", &Hyperellipsoid::center, cls_doc.center.doc)
-        .def("Volume", &Hyperellipsoid::Volume, cls_doc.Volume.doc)
         .def("MinimumUniformScalingToTouch",
             &Hyperellipsoid::MinimumUniformScalingToTouch, py::arg("other"),
             cls_doc.MinimumUniformScalingToTouch.doc)
@@ -371,7 +371,6 @@ void DefineGeometryOptimization(py::module m) {
             py::arg("ub"), cls_doc.MakeBox.doc)
         .def_static("MakeUnitBox", &VPolytope::MakeUnitBox, py::arg("dim"),
             cls_doc.MakeUnitBox.doc)
-        .def("CalcVolume", &VPolytope::CalcVolume, cls_doc.CalcVolume.doc)
         .def("WriteObj", &VPolytope::WriteObj, py::arg("filename"),
             cls_doc.WriteObj.doc)
         .def(py::pickle([](const VPolytope& self) { return self.vertices(); },
@@ -740,7 +739,8 @@ void DefineGeometryOptimization(py::module m) {
             cls_doc.SolveShortestPath.doc)
         .def("GetSolutionPath", &GraphOfConvexSets::GetSolutionPath,
             py::arg("source"), py::arg("target"), py::arg("result"),
-            py::arg("tolerance") = 1e-3, cls_doc.GetSolutionPath.doc)
+            py::arg("tolerance") = 1e-3, py_rvp::reference_internal,
+            cls_doc.GetSolutionPath.doc)
         .def("SolveConvexRestriction",
             &GraphOfConvexSets::SolveConvexRestriction, py::arg("active_edges"),
             py::arg("options") = GraphOfConvexSetsOptions(),
