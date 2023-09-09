@@ -492,6 +492,7 @@ Eigen::Matrix<Polynomial, MatrixL::RowsAtCompileTime,
               MatrixR::ColsAtCompileTime>
 operator*(const MatrixL& lhs, const MatrixR& rhs);
 #else
+// clang-format off
 template <typename MatrixL, typename MatrixR>
 typename std::enable_if_t<
     std::is_base_of_v<Eigen::MatrixBase<MatrixL>, MatrixL> &&
@@ -518,6 +519,7 @@ Eigen::Matrix<Polynomial, MatrixL::RowsAtCompileTime,
 operator*(const MatrixL& lhs, const MatrixR& rhs) {
   return lhs.template cast<Polynomial>() * rhs.template cast<Polynomial>();
 }
+// clang-format on
 #endif
 
 /// Provides the following matrix operations:
@@ -537,6 +539,7 @@ Eigen::Matrix<Polynomial, MatrixL::RowsAtCompileTime,
               MatrixR::ColsAtCompileTime>
 operator*(const MatrixL& lhs, const MatrixR& rhs);
 #else
+// clang-format off
 template <typename MatrixL, typename MatrixR>
 typename std::enable_if_t<
     std::is_base_of_v<Eigen::MatrixBase<MatrixL>, MatrixL> &&
@@ -556,6 +559,7 @@ Eigen::Matrix<Expression, MatrixL::RowsAtCompileTime,
 operator*(const MatrixL& lhs, const MatrixR& rhs) {
   return lhs.template cast<Expression>() * rhs.template cast<Expression>();
 }
+// clang-format on
 #endif
 
 }  // namespace symbolic
@@ -714,9 +718,8 @@ EIGEN_DEVICE_FUNC inline drake::symbolic::Expression cast(
 }  // namespace internal
 namespace numext {
 template <>
-bool equal_strict(
-    const drake::symbolic::Polynomial& x,
-    const drake::symbolic::Polynomial& y);
+bool equal_strict(const drake::symbolic::Polynomial& x,
+                  const drake::symbolic::Polynomial& y);
 template <>
 EIGEN_STRONG_INLINE bool not_equal_strict(
     const drake::symbolic::Polynomial& x,
@@ -739,7 +742,9 @@ template <typename Derived>
     std::is_same_v<typename Derived::Scalar, Polynomial>,
     MatrixLikewise<double, Derived>>
 Evaluate(const Eigen::MatrixBase<Derived>& m, const Environment& env) {
-  return m.unaryExpr([&env](const Polynomial& p) { return p.Evaluate(env); });
+  return m.unaryExpr([&env](const Polynomial& p) {
+    return p.Evaluate(env);
+  });
 }
 
 /// Computes the Jacobian matrix J of the vector function @p f with respect to
@@ -791,10 +796,8 @@ CalcPolynomialWLowerTriangularPart(
 }  // namespace symbolic
 }  // namespace drake
 
-
 // TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
 namespace fmt {
 template <>
-struct formatter<drake::symbolic::Polynomial>
-    : drake::ostream_formatter {};
+struct formatter<drake::symbolic::Polynomial> : drake::ostream_formatter {};
 }  // namespace fmt
