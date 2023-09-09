@@ -80,6 +80,20 @@ GTEST_TEST(TestDual, DualSolution3) {
   }
 }
 
+GTEST_TEST(TestDual, DualSolution4) {
+  ClpSolver solver;
+  if (solver.available()) {
+    TestLPDualSolution4(solver);
+  }
+}
+
+GTEST_TEST(TestDual, DualSolution5) {
+  ClpSolver solver;
+  if (solver.available()) {
+    TestLPDualSolution5(solver);
+  }
+}
+
 GTEST_TEST(QPtest, TestUnconstrainedQP) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<3>("x");
