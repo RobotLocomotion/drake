@@ -830,6 +830,7 @@ PYBIND11_MODULE(symbolic, m) {
           doc.Polynomial.RemoveTermsWithSmallCoefficients.doc)
       .def("IsEven", &Polynomial::IsEven, doc.Polynomial.IsEven.doc)
       .def("IsOdd", &Polynomial::IsOdd, doc.Polynomial.IsOdd.doc)
+      .def("Roots", &Polynomial::Roots, doc.Polynomial.Roots.doc)
       .def("CoefficientsAlmostEqual", &Polynomial::CoefficientsAlmostEqual,
           py::arg("p"), py::arg("tolerance"),
           doc.Polynomial.CoefficientsAlmostEqual.doc)
