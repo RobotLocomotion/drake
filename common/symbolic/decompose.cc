@@ -84,9 +84,8 @@ bool IsAffine(const Eigen::Ref<const MatrixX<Expression>>& m) {
 namespace {
 void ThrowError(const string& type, const string& expression,
                 const string& additional_msg) {
-  throw runtime_error("While decomposing an expression, we detected a " +
-                      type + " expression: " + expression + additional_msg +
-                      ".");
+  throw runtime_error("While decomposing an expression, we detected a " + type +
+                      " expression: " + expression + additional_msg + ".");
 }
 
 // A helper function to implement DecomposeLinearExpressions and

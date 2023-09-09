@@ -93,9 +93,9 @@ TEST_F(SymbolicDecomposeTest, DecomposeLinearExpressionsExceptionNonLinear) {
                  x2_ * x2_;
   // clang-format on
   DRAKE_EXPECT_THROWS_MESSAGE(
-    DecomposeLinearExpressions(M_ * x_ + extra_terms_, x_,
-                               &M_expected_static_),
-    ".*we detected a non-linear expression.*");
+      DecomposeLinearExpressions(M_ * x_ + extra_terms_, x_,
+                                 &M_expected_static_),
+      ".*we detected a non-linear expression.*");
 }
 
 // Adds nonlinear terms to check if we have an exception.
@@ -107,9 +107,9 @@ TEST_F(SymbolicDecomposeTest,
                  log(x2_);
   // clang-format on
   DRAKE_EXPECT_THROWS_MESSAGE(
-    DecomposeLinearExpressions(M_ * x_ + extra_terms_, x_,
-                               &M_expected_static_),
-    ".*we detected a non-polynomial expression.*");
+      DecomposeLinearExpressions(M_ * x_ + extra_terms_, x_,
+                                 &M_expected_static_),
+      ".*we detected a non-polynomial expression.*");
 }
 
 // Adds terms with non-const coefficients to check if we have an exception.
@@ -121,9 +121,9 @@ TEST_F(SymbolicDecomposeTest,
                   c_ * x2_;
   // clang-format on
   DRAKE_EXPECT_THROWS_MESSAGE(
-    DecomposeLinearExpressions(M_ * x_ + extra_terms_, x_,
-                               &M_expected_static_),
-    ".*we detected a non-constant expression.*");
+      DecomposeLinearExpressions(M_ * x_ + extra_terms_, x_,
+                                 &M_expected_static_),
+      ".*we detected a non-constant expression.*");
 }
 
 // Adds constant terms to check if we have an exception.
