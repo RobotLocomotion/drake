@@ -344,6 +344,13 @@ class Polynomial {
   /// Note that this is different from the p.TotalDegree() being an odd number.
   [[nodiscard]] bool IsOdd() const;
 
+  /// Returns the roots of a _univariate_ polynomial with constant coefficients
+  /// as a column vector.
+  ///
+  /// @throws std::exception if `this` is not univariate with constant
+  /// coefficients.
+  [[nodiscard]] Eigen::VectorXcd Roots() const;
+
   Polynomial& operator+=(const Polynomial& p);
   Polynomial& operator+=(const Monomial& m);
   Polynomial& operator+=(double c);
