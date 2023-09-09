@@ -1054,6 +1054,43 @@ bool Polynomial::IsOdd() const {
   return IsEvenOrOdd(*this, false /* check_even=false*/);
 }
 
+Eigen::VectorXcd Polynomial::Roots() const {
+  if (indeterminates().size() != 1) {
+    throw std::runtime_error(fmt::format(
+        "{} is not a univariate polynomial; it has indeterminates {}.",
+        ToExpression().to_string(), indeterminates().to_string()));
+  }
+
+  // We find the roots by computing the eigenvalues of the companion matrix.
+  // See https://en.wikipedia.org/wiki/Polynomial_root-finding_algorithms and
+  // https://www.mathworks.com/help/matlab/ref/roots.html.
+
+  const int degree = TotalDegree();
+
+  Eigen::MatrixXd C = Eigen::MatrixXd::Zero(degree, degree);
+  for (int i = 0; i < degree - 1; ++i) {
+    C(i + 1, i) = 1;
+  }
+  double leading_coefficient = 0;
+  for (const auto& [monomial, coeff] : monomial_to_coefficient_map()) {
+    if (!is_constant(coeff)) {
+      throw std::runtime_error(
+          fmt::format("Polynomial::Roots() only supports polynomials with "
+                      "constant coefficients. This polynomial has coefficient "
+                      "{} for the monomial {}.",
+                      coeff.to_string(), monomial.ToExpression().to_string()));
+    }
+    const int power = monomial.total_degree();
+    if (power == degree) {
+      leading_coefficient = get_constant_value(coeff);
+    } else {
+      C(0, degree - power - 1) = -get_constant_value(coeff);
+    }
+  }
+  C.row(0) /= leading_coefficient;
+  return C.eigenvalues();
+}
+
 void Polynomial::CheckInvariant() const {
   // TODO(hongkai.dai and soonho.kong): improves the computation time of
   // CheckInvariant(). See github issue

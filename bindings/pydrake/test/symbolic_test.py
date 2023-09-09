@@ -1425,6 +1425,11 @@ class TestSymbolicPolynomial(unittest.TestCase):
         self.assertTrue(p.IsEven())
         self.assertTrue(p.IsOdd())
 
+    def test_roots(self):
+        p = sym.Polynomial(x**4 - 1)
+        roots = p.Roots()
+        numpy_compare.assert_allclose(np.sort_complex(roots), [-1, -1j, 1j, 1])
+
     def test_comparison(self):
         p = sym.Polynomial()
         numpy_compare.assert_equal(p, p)
