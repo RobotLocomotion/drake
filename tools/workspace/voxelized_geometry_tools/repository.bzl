@@ -8,13 +8,13 @@ def voxelized_geometry_tools_repository(
         mirrors = None):
     github_archive(
         name = name,
-        repository = "calderpg/voxelized_geometry_tools",
+        repository = "ToyotaResearchInstitute/voxelized_geometry_tools",
         upgrade_advice = """
         When updating, ensure that any new unit tests are reflected in
         package.BUILD.bazel and BUILD.bazel in drake.
         """,
-        commit = "db163d2d2f88a80d482be7fc639eb27f289ac4e4",
-        sha256 = "5309e5a65ff3197c22842f339f7ddf0524f1d27517e2ad0f8eccdb394e066e1c",  # noqa
+        commit = "0b4f4bbaa3881929045cd9157cd8ce0d9d5911af",
+        sha256 = "113014eedde0ad032a5109592ea9b6f6683f7df52d6b150e3c6bbba2aa41b646",  # noqa
         build_file = ":package.BUILD.bazel",
         mirrors = mirrors,
     )
