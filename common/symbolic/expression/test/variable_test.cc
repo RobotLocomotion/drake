@@ -59,6 +59,14 @@ TEST_F(VariableTest, DefaultConstructors) {
   const Variable v_zero(0);
   EXPECT_TRUE(v_default.is_dummy());
   EXPECT_TRUE(v_zero.is_dummy());
+  EXPECT_NE(v_default.get_name(), "");
+  EXPECT_EQ(v_default.get_type(), Variable::Type::CONTINUOUS);
+  EXPECT_EQ(v_default.get_id(), 0);
+
+  const Variable copy(v_default);
+  EXPECT_NE(copy.get_name(), "");
+  EXPECT_EQ(copy.get_type(), Variable::Type::CONTINUOUS);
+  EXPECT_EQ(copy.get_id(), 0);
 }
 
 TEST_F(VariableTest, GetId) {
