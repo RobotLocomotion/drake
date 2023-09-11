@@ -77,6 +77,12 @@ TEST_F(DrakeLcmTest, CustomUrlTest) {
   EXPECT_EQ(dut_->get_lcm_url(), kUdpmUrl);
 }
 
+TEST_F(DrakeLcmTest, BadUrlTest) {
+  // At the moment, invalid URLs print to the console but do not throw.
+  // We probably want to revisit this as some point (to fail-fast).
+  EXPECT_NO_THROW(DrakeLcm("no-such-scheme://foo"));
+}
+
 TEST_F(DrakeLcmTest, DeferThreadTest) {
   DrakeLcmParams params;
   params.lcm_url = kUdpmUrl;

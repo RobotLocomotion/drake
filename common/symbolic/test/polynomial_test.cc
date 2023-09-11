@@ -7,6 +7,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/symbolic/monomial_util.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/symbolic_test_util.h"
@@ -208,6 +209,18 @@ TEST_F(SymbolicPolynomialTest, ConstructorFromExpressionAndIndeterminates3) {
   const symbolic::Expression e1{0};
   const symbolic::Polynomial p1{e1, {var_x_}};
   EXPECT_TRUE(p1.monomial_to_coefficient_map().empty());
+}
+
+TEST_F(SymbolicPolynomialTest, ConstructFromVariable) {
+  // Variable -------------------> Polynomial
+  //     | Expression()                    | .ToExpression()
+  //    \/                                 \/
+  // Expanded Expression     ==      Expression
+  for (const Variable& v : var_xyz_) {
+    const Expression expr{v};
+    const Expression expr_from_polynomial{Polynomial{v}.ToExpression()};
+    EXPECT_PRED2(ExprEqual, expr, expr_from_polynomial);
+  }
 }
 
 TEST_F(SymbolicPolynomialTest, IndeterminatesAndDecisionVariables) {
@@ -1479,6 +1492,59 @@ TEST_F(SymbolicPolynomialTest, IsEvenOdd) {
        {Monomial{{{var_x_, 2}}}, pow(a_ + 1, 2) - a_ * a_ - 2 * a_ - 1}}};
   EXPECT_FALSE(p.IsEven());
   EXPECT_TRUE(p.IsOdd());
+}
+
+TEST_F(SymbolicPolynomialTest, Roots) {
+  symbolic::Polynomial p{0};
+  DRAKE_EXPECT_THROWS_MESSAGE(p.Roots(), ".* is not a univariate polynomial.*");
+
+  p = symbolic::Polynomial{xy_};
+  DRAKE_EXPECT_THROWS_MESSAGE(p.Roots(), ".* is not a univariate polynomial.*");
+
+  p = symbolic::Polynomial{xy_, {var_x_}};
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      p.Roots(), ".* only supports polynomials with constant coefficients.*");
+
+  p = symbolic::Polynomial{x_ - 1.23};
+  Eigen::VectorXcd roots = p.Roots();
+  EXPECT_TRUE(CompareMatrices(roots.real(), Vector1d{1.23}, 1e-14));
+  EXPECT_TRUE(CompareMatrices(roots.imag(), Vector1d::Zero(), 1e-14));
+
+  // Note: the order of the roots is not guaranteed. Sort them here by real,
+  // then imaginary.
+  auto sorted = [](const Eigen::VectorXcd& v) {
+    Eigen::VectorXcd v_sorted = v;
+    std::sort(v_sorted.data(), v_sorted.data() + v_sorted.size(),
+              [](const std::complex<double>& a, const std::complex<double>& b) {
+                if (a.real() == b.real()) {
+                  return a.imag() < b.imag();
+                }
+                return a.real() < b.real();
+              });
+    return v_sorted;
+  };
+
+  // Include a repeated root.
+  p = symbolic::Polynomial{(x_ - 1.23) * (x_ - 4.56) * (x_ - 4.56)};
+  roots = sorted(p.Roots());
+  EXPECT_TRUE(
+      CompareMatrices(roots.real(), Eigen::Vector3d{1.23, 4.56, 4.56}, 1e-7));
+  EXPECT_TRUE(CompareMatrices(roots.imag(), Eigen::Vector3d::Zero(), 1e-7));
+
+  // Complex roots.  x^4 - 1 has roots {-1, -i, i, 1}.
+  p = symbolic::Polynomial{pow(x_, 4) - 1};
+  roots = sorted(p.Roots());
+  EXPECT_TRUE(
+      CompareMatrices(roots.real(), Eigen::Vector4d{-1, 0, 0, 1}, 1e-7));
+  EXPECT_TRUE(
+      CompareMatrices(roots.imag(), Eigen::Vector4d{0, -1, 1, 0}, 1e-7));
+
+  // Leading coefficient is not 1.
+  p = symbolic::Polynomial{(2.1 * x_ - 1.23) * (x_ - 4.56)};
+  roots = sorted(p.Roots());
+  EXPECT_TRUE(
+      CompareMatrices(roots.real(), Eigen::Vector2d{1.23 / 2.1, 4.56}, 1e-7));
+  EXPECT_TRUE(CompareMatrices(roots.imag(), Eigen::Vector2d::Zero(), 1e-7));
 }
 
 TEST_F(SymbolicPolynomialTest, Expand) {

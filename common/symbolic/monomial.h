@@ -142,8 +142,8 @@ class Monomial {
 
   /** Implements the @ref hash_append concept. */
   template <class HashAlgorithm>
-  friend void hash_append(
-      HashAlgorithm& hasher, const Monomial& item) noexcept {
+  friend void hash_append(HashAlgorithm& hasher,
+                          const Monomial& item) noexcept {
     using drake::hash_append;
     // We do not send total_degree_ to the hasher, because it is already fully
     // represented by powers_ -- it is just a cached tally of the exponents.
@@ -171,8 +171,7 @@ Monomial pow(Monomial m, int p);
 namespace std {
 /* Provides std::hash<drake::symbolic::Monomial>. */
 template <>
-struct hash<drake::symbolic::Monomial>
-    : public drake::DefaultHash {};
+struct hash<drake::symbolic::Monomial> : public drake::DefaultHash {};
 }  // namespace std
 
 #if !defined(DRAKE_DOXYGEN_CXX)

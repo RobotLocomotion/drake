@@ -18,8 +18,6 @@ libjchart2d-java
 libjpeg-turbo8
 libjsoncpp1
 liblapack3
-liblz4-1
-liblzma5
 libmumps-seq-5.2.1
 libnetcdf15
 libogg0

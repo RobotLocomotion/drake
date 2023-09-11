@@ -130,7 +130,10 @@ void DefinePlanningCollisionCheckerInterfaceTypes(py::module m) {
         .def_readwrite("env_collision_padding", &Class::env_collision_padding,
             cls_doc.env_collision_padding.doc)
         .def_readwrite("self_collision_padding", &Class::self_collision_padding,
-            cls_doc.self_collision_padding.doc);
+            cls_doc.self_collision_padding.doc)
+        .def_readwrite("implicit_context_parallelism",
+            &Class::implicit_context_parallelism,
+            cls_doc.implicit_context_parallelism.doc);
     // N.B. Any time we bind new CollisionCheckerParams fields that have pointer
     // semantics (e.g., std::unique_ptr), we should revisit the CollisionChecker
     // constructor bindings (e.g., SceneGraphCollisionChecker) and fix up their

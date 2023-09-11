@@ -117,7 +117,6 @@ def build(options):
         shutil.copy2(wheel, options.output_dir)
 
     if not options.keep_build:
-        shutil.rmtree('/opt/vtk')
         shutil.rmtree('/opt/drake-dependencies')
         shutil.rmtree('/opt/drake')
         shutil.rmtree(build_root)

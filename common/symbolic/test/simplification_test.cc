@@ -270,10 +270,24 @@ TEST_F(SymbolicUnificationTest, MultiplicationFailure4) {
 
 // https://github.com/google/googletest/issues/1610
 enum UnaryTestOp {
-  Abs, Log, Exp, Sqrt, Sin, Cos, Tan, Asin, Acos, Atan, Sinh, Cosh, Tanh, Ceil,
+  Abs,
+  Log,
+  Exp,
+  Sqrt,
+  Sin,
+  Cos,
+  Tan,
+  Asin,
+  Acos,
+  Atan,
+  Sinh,
+  Cosh,
+  Tanh,
+  Ceil,
   Floor
 };
 
+// clang-format off
 std::function<Expression(const Variable& x)>UnaryOpToFunction(UnaryTestOp op) {
   switch (op) {
     case Abs:   return [](const Variable& x) { return abs(x); };
@@ -294,6 +308,7 @@ std::function<Expression(const Variable& x)>UnaryOpToFunction(UnaryTestOp op) {
   }
   DRAKE_UNREACHABLE();
 }
+// clang-format on
 
 class SymbolicUnificationTestUnary
     : public ::testing::TestWithParam<UnaryTestOp> {
@@ -312,39 +327,33 @@ TEST_P(SymbolicUnificationTestUnary, Check) {
   EXPECT_PRED2(ExprEqual, rewriter(e2), e2 /* no change */);
 }
 
-INSTANTIATE_TEST_SUITE_P(
-    UnaryCases, SymbolicUnificationTestUnary,
-    ::testing::Values(
-    Abs, Log, Exp, Sqrt, Sin, Cos, Tan, Asin, Acos, Atan, Sinh, Cosh, Tanh,
-    Ceil, Floor
-));
+INSTANTIATE_TEST_SUITE_P(UnaryCases, SymbolicUnificationTestUnary,
+                         ::testing::Values(Abs, Log, Exp, Sqrt, Sin, Cos, Tan,
+                                           Asin, Acos, Atan, Sinh, Cosh, Tanh,
+                                           Ceil, Floor));
 
 // https://github.com/google/googletest/issues/1610
-enum BinaryTestOp {
-  Pow, Div, Min, Max, Atan2
-};
+enum BinaryTestOp { Pow, Div, Min, Max, Atan2 };
 
+// clang-format off
 std::function<Expression(const Variable&, const Variable&)>
-    BinaryOpToFunction(BinaryTestOp op) {
+BinaryOpToFunction(BinaryTestOp op) {
   switch (op) {
     case Pow:
       return [](const Variable& x, const Variable& y) { return pow(x, y); };
-
     case Div:
       return [](const Variable& x, const Variable& y) { return x / y; };
-
     case Min:
       return [](const Variable& x, const Variable& y) { return min(x, y); };
-
     case Max:
       return [](const Variable& x, const Variable& y) { return max(x, y); };
-
     case Atan2:
       return [](const Variable& x, const Variable& y) { return atan2(x, y); };
   }
   // Should not be reachable.
   DRAKE_UNREACHABLE();
 }
+// clang-format on
 
 class SymbolicUnificationTestBinary
     : public ::testing::TestWithParam<BinaryTestOp> {
@@ -365,9 +374,8 @@ TEST_P(SymbolicUnificationTestBinary, Check) {
   EXPECT_PRED2(ExprEqual, rewriter(e2), e2 /* no change */);
 }
 
-INSTANTIATE_TEST_SUITE_P(
-    BinaryCases, SymbolicUnificationTestBinary,
-    ::testing::Values(Pow, Div, Min, Max, Atan2));
+INSTANTIATE_TEST_SUITE_P(BinaryCases, SymbolicUnificationTestBinary,
+                         ::testing::Values(Pow, Div, Min, Max, Atan2));
 
 TEST_F(SymbolicUnificationTest, IfThenElse) {
   // Not supported.

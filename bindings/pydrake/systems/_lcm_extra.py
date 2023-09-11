@@ -2,7 +2,6 @@
 # rationale.
 
 from pydrake.common.value import AbstractValue as _AbstractValue
-from pydrake.common.deprecation import deprecated as _deprecated
 
 
 class PySerializer(SerializerInterface):
@@ -16,13 +15,6 @@ class PySerializer(SerializerInterface):
 
     def __repr__(self):
         return f"PySerializer({self._lcm_type.__name__})"
-
-    @_deprecated(
-        "PySerializer objects are immutable, there is no need to copy nor "
-        "clone them.", date="2023-09-01")
-    def Clone(self):
-        """(Deprecated.)"""
-        return PySerializer(self._lcm_type)
 
     def CreateDefaultValue(self):
         return _AbstractValue.Make(self._lcm_type())

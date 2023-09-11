@@ -6,7 +6,6 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/value.h"
 
@@ -25,11 +24,6 @@ class SerializerInterface {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SerializerInterface)
 
   virtual ~SerializerInterface();
-
-  DRAKE_DEPRECATED(
-      "2023-09-01",
-      "Use a shared_ptr<const SerializerInterface> instead of cloning.")
-  virtual std::unique_ptr<SerializerInterface> Clone() const = 0;
 
   /**
    * Creates a value-initialized (zeroed) instance of the message object.
@@ -67,10 +61,6 @@ class Serializer : public SerializerInterface {
 
   Serializer() = default;
   ~Serializer() override = default;
-
-  std::unique_ptr<SerializerInterface> Clone() const override {
-    return std::make_unique<Serializer>();
-  }
 
   std::unique_ptr<AbstractValue> CreateDefaultValue() const override {
     // NOTE: We create the message using value-initialization ("{}") to ensure

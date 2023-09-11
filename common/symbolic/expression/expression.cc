@@ -1205,6 +1205,18 @@ void GenericGemm(const Eigen::Ref<const MatrixX<T1>, 0, StrideX>& left,
 }  // namespace
 
 template <bool reverse>
+void Gemm<reverse>::CalcVV(const MatrixRef<Variable>& A,
+                           const MatrixRef<Variable>& B,
+                           EigenPtr<MatrixX<Expression>> result) {
+  // We convert Variable => Expression up front, so the ExpressionVar cells get
+  // reused during the computation instead of creating lots of duplicates.
+  // TODO(jwnimmer-tri) If A or B contain duplicate variables (e.g., symmetric),
+  // it's possible that interning the duplicates would improve performance of
+  // subsequent operations.
+  CalcEE(A.template cast<Expression>(), B.template cast<Expression>(), result);
+}
+
+template <bool reverse>
 void Gemm<reverse>::CalcDE(const MatrixRef<double>& D,
                            const MatrixRef<Expression>& E,
                            EigenPtr<MatrixX<Expression>> result) {

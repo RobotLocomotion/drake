@@ -19,15 +19,9 @@ set(bzip2_url "https://sourceware.org/pub/bzip2/bzip2-${bzip2_version}.tar.gz")
 set(bzip2_md5 "67e051268d0c475ea773822f7500d0e5")
 list(APPEND ALL_PROJECTS bzip2)
 
-# lz4
-set(lz4_version 1.9.3)
-set(lz4_url "https://github.com/lz4/lz4/archive/v${lz4_version}/lz4-${lz4_version}.tar.gz")
-set(lz4_md5 "3a1ab1684e14fc1afc66228ce61b2db3")
-list(APPEND ALL_PROJECTS lz4)
-
 # xz
 set(xz_version 5.2.5)
-set(xz_url "https://tukaani.org/xz/xz-${xz_version}.tar.gz")
+set(xz_url "https://drake-mirror.csail.mit.edu/other/xz/xz-${xz_version}.tar.gz")
 set(xz_md5 "0d270c997aff29708c74d53f599ef717")
 list(APPEND ALL_PROJECTS xz)
 
@@ -43,6 +37,9 @@ set(png_url "https://downloads.sourceforge.net/project/libpng/libpng16/${png_ver
 set(png_md5 "122e6b7837811698563083b352bc8ca2")
 list(APPEND ALL_PROJECTS png)
 
+# TODO(jwnimmer-tri) When we purge `libtiff`, we can also purge `xz`, above.
+# The only user of `xz` is `libtiff`.
+#
 # libtiff
 set(libtiff_version 4.1.0)
 set(libtiff_url "http://download.osgeo.org/libtiff/tiff-${libtiff_version}.tar.gz")
@@ -63,12 +60,6 @@ else()
 endif()
 set(eigen_dlname "eigen-${eigen_version}.tar.gz")
 list(APPEND ALL_PROJECTS eigen)
-
-# double-conversion
-set(double-conversion_version 3.1.5)
-set(double-conversion_url "https://github.com/google/double-conversion/archive/v${double-conversion_version}/double-conversion-${double-conversion_version}.tar.gz")
-set(double-conversion_md5 "e94d3a33a417e692e5600e75019f0272")
-list(APPEND ALL_PROJECTS double-conversion)
 
 # lapack (blas)
 set(lapack_version 3.10.0)

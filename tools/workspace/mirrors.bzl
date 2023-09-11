@@ -53,6 +53,7 @@ DEFAULT_MIRRORS = {
         "https://drake-mirror.csail.mit.edu/pypi_wheel/{package}/{package}-{version}-{tag}.tar.gz",  # noqa
         "https://s3.amazonaws.com/drake-mirror/pypi_wheel/{package}/{package}-{version}-{tag}.tar.gz",  # noqa
     ],
+    # On 2024-01-01 upon completion of @vtk deprecation, remove this stanza.
     "vtk": [
         "https://drake-packages.csail.mit.edu/vtk/{archive}",
         "https://s3.amazonaws.com/drake-packages/vtk/{archive}",

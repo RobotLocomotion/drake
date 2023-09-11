@@ -241,6 +241,12 @@ class FemModel {
    corresponding to this %FemModel is linear. */
   bool is_linear() const { return do_is_linear(); }
 
+  /** Returns true if the given FEM state is compatible with `this` FEM model.
+   */
+  bool is_compatible_with(const FemState<T>& state) const {
+    return state.is_created_from_system(*fem_state_system_);
+  }
+
   /** (Internal use only) Throws std::exception to report a mismatch between
   the FEM model and state that were passed to API method `func`. */
   void ThrowIfModelStateIncompatible(const char* func,

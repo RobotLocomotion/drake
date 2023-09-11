@@ -235,7 +235,6 @@ EIGEN_DEVICE_FUNC inline drake::symbolic::Expression cast(
 }  // namespace Eigen
 #endif  // !defined(DRAKE_DOXYGEN_CXX)
 
-
 // TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
 namespace fmt {
 template <>

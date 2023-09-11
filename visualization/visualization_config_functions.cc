@@ -116,41 +116,6 @@ void ApplyVisualizationConfig(const VisualizationConfig& config,
                                builder);
 }
 
-// This is the deprecated overload.
-void ApplyVisualizationConfig(const VisualizationConfig& config,
-                              DiagramBuilder<double>* builder,
-                              const LcmBuses* lcm_buses,
-                              const MultibodyPlant<double>* plant,
-                              const SceneGraph<double>* scene_graph,
-                              std::shared_ptr<geometry::Meshcat> meshcat,
-                              DrakeLcmInterface* lcm) {
-  DRAKE_THROW_UNLESS(builder != nullptr);
-
-  // Respell the const scene_graph pointer that the user gave us into a mutable
-  // pointer instead. This is as simple as a const_cast, but first we need to
-  // confirm that the const pointer was referring to something inside `builder`
-  // to avoid any nasty surprises later on.
-  SceneGraph<double>* mutable_scene_graph = nullptr;
-  if (scene_graph != nullptr) {
-    for (System<double>* system : builder->GetMutableSystems()) {
-      DRAKE_DEMAND(system != nullptr);
-      if (system == scene_graph) {
-        mutable_scene_graph = const_cast<SceneGraph<double>*>(scene_graph);
-        break;
-      }
-    }
-    if (mutable_scene_graph == nullptr) {
-      throw std::logic_error(
-          "The const scene_graph provided to ApplyVisualizationConfig was not "
-          "a System owned by the provided builder");
-    }
-  }
-
-  // Delegate to the mutable overload.
-  ApplyVisualizationConfig(config, builder, lcm_buses, plant,
-                           mutable_scene_graph, std::move(meshcat), lcm);
-}
-
 void AddDefaultVisualization(DiagramBuilder<double>* builder,
                              std::shared_ptr<geometry::Meshcat> meshcat) {
   ApplyVisualizationConfig(VisualizationConfig{}, builder,

@@ -2,7 +2,6 @@
 
 #include <unordered_map>
 
-#include <common_robotics_utilities/openmp_helpers.hpp>
 #include <common_robotics_utilities/print.hpp>
 
 #include "drake/geometry/shape_specification.h"
@@ -144,8 +143,11 @@ TEST_P(CollisionCheckerAbstractTestSuite, AddObstacles) {
   }
 }
 
-void CollisionCheckerAbstractTestSuite::TestParallelizeableDiscreteQueries(
-    const CollisionCheckerTestParams& params) {
+// Tests "discrete" configuration and edge collision check methods. Provided
+// `parallelism` controls parallelism of parallel check methods.
+// TODO(calderpg-tri) Improve so that parallelism is exercised on all queries.
+void CollisionCheckerAbstractTestSuite::TestDiscreteQueries(
+    const CollisionCheckerTestParams& params, const Parallelism parallelism) {
   auto& checker = *params.checker;
   // Check single queries Queries we know are collision-free, given the robot
   // that MakeCollisionCheckerTestScene loads and the qs_ in the text fixture.
@@ -165,11 +167,13 @@ void CollisionCheckerAbstractTestSuite::TestParallelizeableDiscreteQueries(
 
   // Edge we know is collision-free.
   EXPECT_TRUE(checker.CheckEdgeCollisionFree(qs_.q1, qs_.q2));
-  EXPECT_TRUE(checker.CheckEdgeCollisionFreeParallel(qs_.q1, qs_.q2));
+  EXPECT_TRUE(
+      checker.CheckEdgeCollisionFreeParallel(qs_.q1, qs_.q2, parallelism));
   EXPECT_TRUE(
       checker.MeasureEdgeCollisionFree(qs_.q1, qs_.q2).completely_free());
-  EXPECT_TRUE(checker.MeasureEdgeCollisionFreeParallel(qs_.q1, qs_.q2)
-                  .completely_free());
+  EXPECT_TRUE(
+      checker.MeasureEdgeCollisionFreeParallel(qs_.q1, qs_.q2, parallelism)
+          .completely_free());
 
   // Edge we know is partially in collision.
   EXPECT_FALSE(checker.CheckEdgeCollisionFree(qs_.q2, qs_.q3));
@@ -184,28 +188,33 @@ void CollisionCheckerAbstractTestSuite::TestParallelizeableDiscreteQueries(
       checker.MeasureEdgeCollisionFree(qs_.q3, qs_.q2).partially_free());
 
   // Now repeat for the same (q2, q3) and (q3, q2) edges, but in parallel.
-  EXPECT_FALSE(checker.CheckEdgeCollisionFreeParallel(qs_.q2, qs_.q3));
-  EXPECT_FALSE(checker.CheckEdgeCollisionFreeParallel(qs_.q3, qs_.q2));
+  EXPECT_FALSE(
+      checker.CheckEdgeCollisionFreeParallel(qs_.q2, qs_.q3, parallelism));
+  EXPECT_FALSE(
+      checker.CheckEdgeCollisionFreeParallel(qs_.q3, qs_.q2, parallelism));
   const EdgeMeasure forward_parallel =
-      checker.MeasureEdgeCollisionFreeParallel(qs_.q2, qs_.q3);
+      checker.MeasureEdgeCollisionFreeParallel(qs_.q2, qs_.q3, parallelism);
   ASSERT_TRUE(forward_parallel.partially_free());
   EXPECT_FLOAT_EQ(forward.alpha(), forward_parallel.alpha());
   EXPECT_GE(forward_parallel.alpha(), 0.0);
   EXPECT_LT(forward_parallel.alpha(), 1.0);
-  EXPECT_FALSE(checker.MeasureEdgeCollisionFreeParallel(qs_.q3, qs_.q2)
-                   .partially_free());
+  EXPECT_FALSE(
+      checker.MeasureEdgeCollisionFreeParallel(qs_.q3, qs_.q2, parallelism)
+          .partially_free());
 
   // Edge we know is entirely in collision.
   EXPECT_FALSE(checker.CheckEdgeCollisionFree(qs_.q3, qs_.q4));
-  EXPECT_FALSE(checker.CheckEdgeCollisionFreeParallel(qs_.q3, qs_.q4));
+  EXPECT_FALSE(
+      checker.CheckEdgeCollisionFreeParallel(qs_.q3, qs_.q4, parallelism));
   EXPECT_FALSE(
       checker.MeasureEdgeCollisionFree(qs_.q3, qs_.q4).partially_free());
-  EXPECT_FALSE(checker.MeasureEdgeCollisionFreeParallel(qs_.q3, qs_.q4)
-                   .partially_free());
+  EXPECT_FALSE(
+      checker.MeasureEdgeCollisionFreeParallel(qs_.q3, qs_.q4, parallelism)
+          .partially_free());
 
   // Check parallel queries.
   const std::vector<uint8_t> checks =
-      checker.CheckConfigsCollisionFree(qs_.configs);
+      checker.CheckConfigsCollisionFree(qs_.configs, parallelism);
   EXPECT_TRUE(checks.size() == qs_.configs.size());
   EXPECT_EQ(checks.at(0), 1);
   EXPECT_EQ(checks.at(1), 1);
@@ -213,7 +222,7 @@ void CollisionCheckerAbstractTestSuite::TestParallelizeableDiscreteQueries(
   EXPECT_EQ(checks.at(3), 0);
 
   const std::vector<uint8_t> edge_checks =
-      checker.CheckEdgesCollisionFree(qs_.edges);
+      checker.CheckEdgesCollisionFree(qs_.edges, parallelism);
   EXPECT_TRUE(edge_checks.size() == qs_.edges.size());
   EXPECT_EQ(edge_checks.at(0), 1);
   EXPECT_EQ(edge_checks.at(1), 0);
@@ -221,7 +230,7 @@ void CollisionCheckerAbstractTestSuite::TestParallelizeableDiscreteQueries(
   EXPECT_EQ(edge_checks.at(3), 0);
 
   const std::vector<EdgeMeasure> results =
-      checker.MeasureEdgesCollisionFree(qs_.edges);
+      checker.MeasureEdgesCollisionFree(qs_.edges, parallelism);
   EXPECT_EQ(results.size(), qs_.edges.size());
   EXPECT_FLOAT_EQ(results.at(0).alpha(), 1.0);
   EXPECT_FLOAT_EQ(results.at(1).alpha(), forward.alpha());
@@ -231,24 +240,35 @@ void CollisionCheckerAbstractTestSuite::TestParallelizeableDiscreteQueries(
 
 TEST_P(CollisionCheckerAbstractTestSuite, StressParallelDiscreteQueries) {
   auto params = GetParam();
+  const auto parallelism = Parallelism::Max();
   // Since there are parallel query options, we test repeatedly to ensure that
   // tests are not flaky.
   const int iterations = params.thread_stress_iterations;
   for (int iteration = 0; iteration < iterations; ++iteration) {
-    TestParallelizeableDiscreteQueries(params);
+    TestDiscreteQueries(params, parallelism);
   }
 }
 
 TEST_P(CollisionCheckerAbstractTestSuite, ForceSerializeDiscreteQueries) {
-  common_robotics_utilities::openmp_helpers::DisableOmpWrapper disable_openmp;
   auto params = GetParam();
-  ASSERT_EQ(common_robotics_utilities::openmp_helpers::GetNumOmpThreads(), 1);
-  TestParallelizeableDiscreteQueries(params);
+  const auto parallelism = Parallelism::None();
+  TestDiscreteQueries(params, parallelism);
 }
 
-void CollisionCheckerAbstractTestSuite::TestParallelizeableGradientQueries(
-    const CollisionCheckerTestParams& params) {
+// Tests "distance" clearance and collision avoidance methods. Provided
+// `parallelism` controls parallelism of calls to `CalcRobotClearance` only.
+// TODO(calderpg-tri) Improve so that parallelism is exercised on all queries.
+void CollisionCheckerAbstractTestSuite::TestDistanceQueries(
+    const CollisionCheckerTestParams& params, const Parallelism parallelism) {
   auto& checker = *params.checker;
+
+  // Test parallel calls to CalcRobotClearance.
+#if defined(_OPENMP)
+#pragma omp parallel for num_threads(parallelism.num_threads()) schedule(static)
+#endif
+  for (int thread = 0; thread < parallelism.num_threads(); ++thread) {
+    EXPECT_NO_THROW(checker.CalcRobotClearance(qs_.q1, 0.0));
+  }
 
   // Test collision gradient:
   // q1 is not in collision, so we should have a free-space only avoidance
@@ -306,19 +326,19 @@ void CollisionCheckerAbstractTestSuite::TestParallelizeableGradientQueries(
 
 TEST_P(CollisionCheckerAbstractTestSuite, StressParallelGradientQueries) {
   auto params = GetParam();
+  const auto parallelism = Parallelism::Max();
   // Since there are parallel query options, we test repeatedly to ensure that
   // tests are not flaky.
   const int iterations = params.thread_stress_iterations;
   for (int iteration = 0; iteration < iterations; ++iteration) {
-    TestParallelizeableGradientQueries(params);
+    TestDistanceQueries(params, parallelism);
   }
 }
 
 TEST_P(CollisionCheckerAbstractTestSuite, ForceSerializeGradientQueries) {
-  common_robotics_utilities::openmp_helpers::DisableOmpWrapper disable_openmp;
   auto params = GetParam();
-  ASSERT_EQ(common_robotics_utilities::openmp_helpers::GetNumOmpThreads(), 1);
-  TestParallelizeableGradientQueries(params);
+  const auto parallelism = Parallelism::None();
+  TestDistanceQueries(params, parallelism);
 }
 
 }  // namespace test

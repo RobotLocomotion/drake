@@ -620,12 +620,6 @@ class CspaceFreePolytope : public CspaceFreePolytopeBase {
   std::vector<PlaneSeparatesGeometries> plane_geometries_;
 };
 
-DRAKE_DEPRECATED("2023-09-01", "This function was not intended for public use.")
-std::map<multibody::BodyIndex,
-         std::vector<std::unique_ptr<CIrisCollisionGeometry>>>
-GetCollisionGeometries(const multibody::MultibodyPlant<double>& plant,
-                       const geometry::SceneGraph<double>& scene_graph);
-
 }  // namespace optimization
 }  // namespace geometry
 }  // namespace drake
