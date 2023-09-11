@@ -57,8 +57,8 @@ void BuildIiwaControl(const MultibodyPlant<double>& plant,
   // Create the Iiwa command subscriber to receive desired state commands.
   auto iiwa_command_sub = builder->AddSystem(
       LcmSubscriberSystem::Make<lcmt_iiwa_command>("IIWA_COMMAND", lcm));
-  iiwa_command_sub->set_name(
-      plant.GetModelInstanceName(iiwa_instance) + "_iiwa_command_subscriber");
+  iiwa_command_sub->set_name(plant.GetModelInstanceName(iiwa_instance) +
+                             "_iiwa_command_subscriber");
   auto iiwa_command_receiver =
       builder->AddSystem<IiwaCommandReceiver>(num_iiwa_positions, control_mode);
   builder->Connect(iiwa_command_sub->get_output_port(),
@@ -69,27 +69,25 @@ void BuildIiwaControl(const MultibodyPlant<double>& plant,
 
   // Connect desired positions.
   if (has_position) {
-      builder->Connect(
-          iiwa_command_receiver->get_commanded_position_output_port(),
-          *iiwa_control_ports.commanded_positions);
+    builder->Connect(
+        iiwa_command_receiver->get_commanded_position_output_port(),
+        *iiwa_control_ports.commanded_positions);
   }
 
   // Connect desired torque.
   if (has_torque) {
-    builder->Connect(
-        iiwa_command_receiver->get_commanded_torque_output_port(),
-        *iiwa_control_ports.commanded_torque);
+    builder->Connect(iiwa_command_receiver->get_commanded_torque_output_port(),
+                     *iiwa_control_ports.commanded_torque);
   }
 
   // Create an Iiwa state sender.
-  auto iiwa_state_measured_demux =
-      builder->AddSystem<Demultiplexer>(
-          2 * num_iiwa_positions, num_iiwa_positions);
+  auto iiwa_state_measured_demux = builder->AddSystem<Demultiplexer>(
+      2 * num_iiwa_positions, num_iiwa_positions);
   auto iiwa_status_pub =
       builder->AddSystem(LcmPublisherSystem::Make<lcmt_iiwa_status>(
           "IIWA_STATUS", lcm, kIiwaLcmStatusPeriod));
-  iiwa_status_pub->set_name(
-      plant.GetModelInstanceName(iiwa_instance) + "_iiwa_status_publisher");
+  iiwa_status_pub->set_name(plant.GetModelInstanceName(iiwa_instance) +
+                            "_iiwa_status_publisher");
   auto iiwa_status_sender =
       builder->AddSystem<IiwaStatusSender>(num_iiwa_positions);
   builder->Connect(plant.get_state_output_port(iiwa_instance),
@@ -112,9 +110,8 @@ void BuildIiwaControl(const MultibodyPlant<double>& plant,
         iiwa_status_sender->get_position_commanded_input_port());
   } else {
     // If we don't supply positions, simply loopback the estimated states.
-    builder->Connect(
-        iiwa_state_measured_demux->get_output_port(0),
-        iiwa_status_sender->get_position_commanded_input_port());
+    builder->Connect(iiwa_state_measured_demux->get_output_port(0),
+                     iiwa_status_sender->get_position_commanded_input_port());
   }
 
   // Also send control torque through the Iiwa status sender.
@@ -126,9 +123,8 @@ void BuildIiwaControl(const MultibodyPlant<double>& plant,
   builder->Connect(*iiwa_control_ports.joint_torque,
                    iiwa_status_sender->get_torque_measured_input_port());
 
-  builder->Connect(
-      *iiwa_control_ports.external_torque,
-      iiwa_status_sender->get_torque_external_input_port());
+  builder->Connect(*iiwa_control_ports.external_torque,
+                   iiwa_status_sender->get_torque_external_input_port());
 }
 
 IiwaControlPorts BuildSimplifiedIiwaControl(
@@ -138,7 +134,6 @@ IiwaControlPorts BuildSimplifiedIiwaControl(
     systems::DiagramBuilder<double>* builder, double ext_joint_filter_tau,
     const std::optional<Eigen::VectorXd>& desired_kp_gains,
     IiwaControlMode control_mode) {
-
   IiwaControlPorts ports{};
   const int num_iiwa_positions = controller_plant.num_positions();
   DRAKE_THROW_UNLESS(num_iiwa_positions == 7);
@@ -146,9 +141,8 @@ IiwaControlPorts BuildSimplifiedIiwaControl(
   // Intercept desired torque so we can also send it as measured torque.
   const PassThrough<double>* torque_proxy =
       builder->AddSystem<PassThrough>(num_iiwa_positions);
-  builder->Connect(
-      torque_proxy->get_output_port(),
-      plant.get_actuation_input_port(iiwa_instance));
+  builder->Connect(torque_proxy->get_output_port(),
+                   plant.get_actuation_input_port(iiwa_instance));
 
   if (position_enabled(control_mode)) {
     VectorX<double> iiwa_kp, iiwa_kd, iiwa_ki;
@@ -157,8 +151,9 @@ IiwaControlPorts BuildSimplifiedIiwaControl(
     // TODO(EricCousineau-TRI): These seem like *very* high values for inverse
     // dynamics on a simulated plant. Investigate overshoot from
     // `robot_follow_joint_sequence`, see if it's just a timing issue.
-    iiwa_kp = desired_kp_gains.value_or((Eigen::VectorXd(7)
-        << 2000, 1500, 1500, 1500, 1500, 500, 500).finished());
+    iiwa_kp = desired_kp_gains.value_or(
+        (Eigen::VectorXd(7) << 2000, 1500, 1500, 1500, 1500, 500, 500)
+            .finished());
     DRAKE_THROW_UNLESS(iiwa_kp.size() == 7);
 
     iiwa_kd.resize(num_iiwa_positions);
@@ -201,17 +196,13 @@ IiwaControlPorts BuildSimplifiedIiwaControl(
     // Torque alone, added to gravity compensation.
     auto gravity_comp = builder->AddSystem<InverseDynamics>(
         &controller_plant, InverseDynamicsMode::kGravityCompensation);
-    builder->Connect(
-        plant.get_state_output_port(iiwa_instance),
-        gravity_comp->get_input_port_estimated_state());
+    builder->Connect(plant.get_state_output_port(iiwa_instance),
+                     gravity_comp->get_input_port_estimated_state());
     auto adder = builder->template AddSystem<Adder>(2, num_iiwa_positions);
-    builder->Connect(
-        gravity_comp->get_output_port_generalized_force(),
-        adder->get_input_port(0));
+    builder->Connect(gravity_comp->get_output_port_generalized_force(),
+                     adder->get_input_port(0));
     ports.commanded_torque = &adder->get_input_port(1);
-    builder->Connect(
-        adder->get_output_port(),
-        torque_proxy->get_input_port());
+    builder->Connect(adder->get_output_port(), torque_proxy->get_input_port());
   }
 
   // Filter for simulated external torques. Unlike the real robot, external
