@@ -412,15 +412,17 @@ drake_cc_library(
     name = "simulator",
     srcs = ["simulator.cc"],
     hdrs = ["simulator.h"],
-    deps = [
-        ":runge_kutta2_integrator",
-        ":runge_kutta3_integrator",
+    interface_deps = [
+        ":integrator_base",
         ":simulator_config",
         ":simulator_status",
         "//common:extract_double",
         "//common:name_value",
         "//systems/framework:context",
         "//systems/framework:system",
+    ],
+    deps = [
+        ":runge_kutta3_integrator",
     ],
 )
 
