@@ -14,20 +14,20 @@ using lcm::AreLcmMessagesEqual;
 using systems::BasicVector;
 using systems::CompositeEventCollection;
 using systems::Context;
-using systems::DiscreteValues;
 using systems::DiscreteUpdateEvent;
-using systems::NumericParameterIndex;
+using systems::DiscreteValues;
 using systems::kVectorValued;
+using systems::NumericParameterIndex;
 
-IiwaCommandReceiver::IiwaCommandReceiver(
-    int num_joints, IiwaControlMode control_mode)
+IiwaCommandReceiver::IiwaCommandReceiver(int num_joints,
+                                         IiwaControlMode control_mode)
     : num_joints_(num_joints), control_mode_(control_mode) {
   DRAKE_THROW_UNLESS(num_joints > 0);
 
-  message_input_ = &DeclareAbstractInputPort(
-      "lcmt_iiwa_command", Value<lcmt_iiwa_command>());
-  position_measured_input_ = &DeclareInputPort(
-      "position_measured", kVectorValued, num_joints);
+  message_input_ = &DeclareAbstractInputPort("lcmt_iiwa_command",
+                                             Value<lcmt_iiwa_command>());
+  position_measured_input_ =
+      &DeclareInputPort("position_measured", kVectorValued, num_joints);
 
   // This cache entry provides either the input (iff connected) or else zero.
   position_measured_or_zero_ = &DeclareCacheEntry(
@@ -59,16 +59,15 @@ IiwaCommandReceiver::IiwaCommandReceiver(
         {defaulted_command_->ticket()});
   }
 
-  time_output_ = &DeclareVectorOutputPort(
-      "time", 1, &IiwaCommandReceiver::CalcTimeOutput,
-      {defaulted_command_->ticket()});
+  time_output_ =
+      &DeclareVectorOutputPort("time", 1, &IiwaCommandReceiver::CalcTimeOutput,
+                               {defaulted_command_->ticket()});
 }
 
 IiwaCommandReceiver::~IiwaCommandReceiver() = default;
 
 void IiwaCommandReceiver::CalcPositionMeasuredOrZero(
-    const Context<double>& context,
-    BasicVector<double>* result) const {
+    const Context<double>& context, BasicVector<double>* result) const {
   if (position_measured_input_->HasValue(context)) {
     result->SetFromVector(position_measured_input_->Eval(context));
   } else {
@@ -77,17 +76,15 @@ void IiwaCommandReceiver::CalcPositionMeasuredOrZero(
 }
 
 void IiwaCommandReceiver::LatchInitialPosition(
-    const Context<double>& context,
-    DiscreteValues<double>* result) const {
+    const Context<double>& context, DiscreteValues<double>* result) const {
   const auto& bool_index = latched_position_measured_is_set_;
   const auto& value_index = latched_position_measured_;
   result->get_mutable_value(bool_index)[0] = 1.0;
-  result->get_mutable_vector(value_index).SetFrom(
-      position_measured_or_zero_->Eval<BasicVector<double>>(context));
+  result->get_mutable_vector(value_index)
+      .SetFrom(position_measured_or_zero_->Eval<BasicVector<double>>(context));
 }
 
-void IiwaCommandReceiver::LatchInitialPosition(
-    Context<double>* context) const {
+void IiwaCommandReceiver::LatchInitialPosition(Context<double>* context) const {
   DRAKE_THROW_UNLESS(context != nullptr);
   LatchInitialPosition(*context, &context->get_mutable_discrete_state());
 }
@@ -96,8 +93,8 @@ void IiwaCommandReceiver::LatchInitialPosition(
 // "now" event.  We should try to consolidate it with other similar uses within
 // the source tree.  Relates to #11403 somewhat.
 void IiwaCommandReceiver::DoCalcNextUpdateTime(
-    const Context<double>& context,
-    CompositeEventCollection<double>* events, double* time) const {
+    const Context<double>& context, CompositeEventCollection<double>* events,
+    double* time) const {
   if (!position_enabled(control_mode_)) {
     // No need to schedule events.
     *time = std::numeric_limits<double>::infinity();
@@ -134,12 +131,12 @@ void IiwaCommandReceiver::CalcDefaultedCommand(
   // If we haven't received a message yet, then fall back to the default
   // position.
   if (AreLcmMessagesEqual(*result, lcmt_iiwa_command{})) {
-    const BasicVector<double>& latch_is_set = context.get_discrete_state(
-        latched_position_measured_is_set_);
+    const BasicVector<double>& latch_is_set =
+        context.get_discrete_state(latched_position_measured_is_set_);
     const BasicVector<double>& default_position =
         latch_is_set[0]
-         ? context.get_discrete_state(latched_position_measured_)
-         : position_measured_or_zero_->Eval<BasicVector<double>>(context);
+            ? context.get_discrete_state(latched_position_measured_)
+            : position_measured_or_zero_->Eval<BasicVector<double>>(context);
     const VectorXd vec = default_position.CopyToVector();
     result->num_joints = vec.size();
     result->joint_position = {vec.data(), vec.data() + vec.size()};
@@ -155,12 +152,11 @@ void IiwaCommandReceiver::CalcPositionOutput(
         num_joints_, message.num_joints));
   }
   output->SetFromVector(Eigen::Map<const VectorXd>(
-      message.joint_position.data(),
-      message.joint_position.size()));
+      message.joint_position.data(), message.joint_position.size()));
 }
 
-void IiwaCommandReceiver::CalcTorqueOutput(
-    const Context<double>& context, BasicVector<double>* output) const {
+void IiwaCommandReceiver::CalcTorqueOutput(const Context<double>& context,
+                                           BasicVector<double>* output) const {
   const auto& message = defaulted_command_->Eval<lcmt_iiwa_command>(context);
   if (message.num_torques == 0) {
     // If torques were not sent, use zeros.
@@ -173,12 +169,11 @@ void IiwaCommandReceiver::CalcTorqueOutput(
         num_joints_, message.num_torques));
   }
   output->SetFromVector(Eigen::Map<const VectorXd>(
-      message.joint_torque.data(),
-      message.joint_torque.size()));
+      message.joint_torque.data(), message.joint_torque.size()));
 }
 
-void IiwaCommandReceiver::CalcTimeOutput(
-    const Context<double>& context, BasicVector<double>* output) const {
+void IiwaCommandReceiver::CalcTimeOutput(const Context<double>& context,
+                                         BasicVector<double>* output) const {
   const auto& message = defaulted_command_->Eval<lcmt_iiwa_command>(context);
   (*output)[0] = static_cast<double>(message.utime) / 1e6;
 }
