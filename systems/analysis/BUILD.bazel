@@ -408,6 +408,18 @@ drake_cc_library(
     ],
 )
 
+# N.B. This library does not have all of its dependencies declared. Instead,
+# it defines only the headers such that it can be used by `pydrake` without
+# installing the file. (If we just used `install_hdrs_exclude`, the header
+# would not make it into `//:drake_shared_library`.)
+drake_cc_library(
+    name = "simulator_python_internal_header",
+    hdrs = ["simulator_python_internal.h"],
+    install_hdrs_exclude = ["simulator_python_internal.h"],
+    tags = ["exclude_from_package"],
+    visibility = ["//bindings/pydrake/systems:__pkg__"],
+)
+
 drake_cc_library(
     name = "simulator",
     srcs = ["simulator.cc"],
@@ -423,6 +435,7 @@ drake_cc_library(
     ],
     deps = [
         ":runge_kutta3_integrator",
+        ":simulator_python_internal_header",
     ],
 )
 
@@ -492,6 +505,15 @@ drake_cc_googletest(
     name = "simulator_print_stats_test",
     deps = [
         ":simulator_print_stats",
+        "//systems/primitives:constant_vector_source",
+    ],
+)
+
+drake_cc_googletest(
+    name = "simulator_python_internal_test",
+    deps = [
+        ":simulator",
+        ":simulator_python_internal_header",
         "//systems/primitives:constant_vector_source",
     ],
 )
