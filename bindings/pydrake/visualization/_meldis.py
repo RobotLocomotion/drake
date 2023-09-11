@@ -179,7 +179,6 @@ class _ViewerApplet:
             self._should_accept_link = lambda _: True
         self._start_visible = start_visible
         self._geom_paths = []
-        self._geom_colors = []
 
         # Initialize ourself with an empty load message.
         self.on_viewer_load(message=lcmt_viewer_load_robot())
@@ -206,6 +205,7 @@ class _ViewerApplet:
         self._waiting_for_first_draw_message = True
         self._load_message = message
         self._load_message_mesh_checksum = mesh_checksum
+        self.set_alpha(self._alpha_slider._value, on_load=True)
 
     def _build_links(self):
         # Make all of our (ViewerApplet's) geometry invisible so that the
@@ -217,7 +217,6 @@ class _ViewerApplet:
 
         # Add the links and their geometries.
         self._geom_paths = []
-        self._geom_colors = []
         for link in message.link:
             if not self._should_accept_link(link.name):
                 continue
@@ -230,10 +229,8 @@ class _ViewerApplet:
                 if shape is None:
                     continue
                 self._geom_paths.append(geom_path)
-                self._geom_colors.append(rgba)
                 self._meshcat.SetObject(path=geom_path, shape=shape, rgba=rgba)
                 self._meshcat.SetTransform(path=geom_path, X_ParentPath=pose)
-        assert len(self._geom_paths) == len(self._geom_colors)
 
     def on_viewer_draw(self, message):
         """Handler for lcmt_viewer_draw."""
@@ -253,20 +250,26 @@ class _ViewerApplet:
                 self._set_visible(True)
             self.on_poll(force=True)
 
+    def set_alpha(self, value, on_load: bool):
+        """Applies the given alpha `value` to the visualized geometries."""
+        if on_load:
+            # When we're loading the geometries, we have to address each
+            # geometry individually because they may not be loaded yet in the
+            # browser.
+            for path in self._geom_paths:
+                self._meshcat.SetProperty(path, "modulated_opacity", value)
+        else:
+            # When things are truly loaded and we're reacting to changes in
+            # the slider value, we can simply set the root and let meshcat.js
+            # percolate the change through the tree.
+            self._meshcat.SetProperty(self._path, "modulated_opacity", value)
+
     def on_poll(self, force=False):
         if self._waiting_for_first_draw_message:
             return
         value, value_changed = self._alpha_slider.read()
         if force or value_changed:
-            max_alpha = max([x.a() for x in self._geom_colors], default=1.0)
-            for k in range(len(self._geom_paths)):
-                path = self._geom_paths[k]
-                new_color = copy.deepcopy(self._geom_colors[k])
-                if max_alpha == 0:
-                    new_color.update(a=value)
-                else:
-                    new_color.update(a=value * new_color.a())
-                self._meshcat.SetProperty(path, "color", new_color.rgba)
+            self.set_alpha(value, on_load=False)
 
     def on_viewer_draw_deformable(self, message):
         """Handler for lcmt_viewer_link_data."""
