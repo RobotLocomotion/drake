@@ -1,5 +1,6 @@
 #include "drake/geometry/render_gltf_client/internal_merge_gltf.h"
 
+#include <algorithm>
 #include <fstream>
 #include <map>
 #include <string>
@@ -11,6 +12,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/fmt_ostream.h"
 #include "drake/common/ssize.h"
+#include "drake/common/text_logging.h"
 
 // For more explanation of the glTF fun and games:
 // https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html
@@ -35,8 +37,8 @@ int ArraySize(const json& j, std::string_view array_name) {
 }
 
 // If the json pointed to by `j_ptr` has a child with the given `name`, its
-// integer value incremented by `offset`.
-// @pre If present (*j_ptr)[name] is an integer value.
+// integer value gets incremented by `offset`.
+// @pre If present, (*j_ptr)[name] is an integer value.
 void MaybeOffsetNamedIndex(json* j_ptr, std::string_view name, int offset) {
   json& j = *j_ptr;
   if (j.contains(name)) {
@@ -46,7 +48,7 @@ void MaybeOffsetNamedIndex(json* j_ptr, std::string_view name, int offset) {
 }
 
 // Same as MaybeOffsetNamedIndex(), but the child is an array of integers.
-// @pre If present (*j_ptr)[array_name] is an array of integers.
+// @pre If present, (*j_ptr)[array_name] is an array of integers.
 void MaybeOffsetIndexArray(json* j_ptr, std::string_view array_name,
                            int offset) {
   json& j = *j_ptr;
@@ -70,6 +72,103 @@ void MaybeOffsetNamedIndexInTree(json* j_ptr, std::string_view name,
       MaybeOffsetNamedIndexInTree(&value, name, offset);
     }
   }
+}
+
+// Merges *names* of extensions from j2 into j1 (preventing duplicates). This
+// should not be used for merging an "extensions" property which contains
+// arbitrary objects.
+void MergeExtensionNames(json* j1, json&& j2, const std::string& array_name) {
+  if (j2.contains(array_name)) {
+    json& extensions1 = (*j1)[array_name];
+    for (auto& extension2 : j2[array_name]) {
+      if (std::any_of(extensions1.begin(), extensions1.end(),
+                      [&extension2](const auto& value) {
+                        return value == extension2;
+                      })) {
+        // Don't duplicate extension names.
+        continue;
+      }
+      extensions1.push_back(std::move(extension2));
+    }
+  }
+}
+
+// Attempts to merge the key-value pairs from j2 into j1. The merging is
+// "successful" if every key-value pair in j2 is in j1 upon return. An
+// "unsuccessful" merging means j1 is unchanged. The merging will be
+// unsuccessful if any key in j2 is already present in j1, but their respective
+// values differ.
+//
+// Note: a "successful" merge could still leave j1 unchanged, because either
+// there was nothing in j2, or j2's contents were already present in j1.
+//
+// @returns true if the merge was successful.
+// @pre j1->is_object() && j2.is_object().
+bool MergeTrees(json* j1, json&& j2) {
+  DRAKE_DEMAND(j1->is_object() && j2.is_object());
+  // First confirm
+  for (auto& [key, value] : j2.items()) {
+    if (j1->contains(key)) {
+      if ((*j1)[key] != value) {
+        return false;
+      }
+    }
+  }
+  // There were no collisions, merging will now proceed and be successful by
+  // default.
+  for (auto& [key, value] : j2.items()) {
+    if (j1->contains(key)) continue;
+    (*j1)[key] = std::move(value);
+  }
+  return true;
+}
+
+// Merge user data. This can be used for merging the arbitrary collection of
+// objects contained in either "extras" or "extensions". As documented, if there
+// is a collision between the two json trees, j2's values will be omitted.
+void MergeBlobs(json* j1, json&& j2, const std::string& blob_name,
+                const char* container_type) {
+  if (j2.contains(blob_name)) {
+    json& blob2 = j2[blob_name];
+    if (blob2.is_null()) {
+      // The "blob" key existed, but nothing was stored. We do nothing.
+      return;
+    }
+    json& blob1 = (*j1)[blob_name];
+    // Merging logic. There are a limited number of cases where we can merge:
+    //  1. blob1 is null
+    //     We can simply take blob2 verbatim (whether object or primitive).
+    //  2. blobs 1 and 2 are both objects with no colliding key-value pairs.
+    //     We can simply merge 2 into 1.
+    //  3. In all other cases, merging is not possible.
+    if (blob1.is_object() && blob2.is_object()) {
+      if (!MergeTrees(&blob1, std::move(blob2))) {
+        log()->warn(
+            "Attempting to merge the \"{0}\" between two {1} objects; there "
+            "were collisions in the \"{0}\" -- same key name but different "
+            "values. The second glTF's \"{0}\" were ignored.",
+            blob_name, container_type);
+      }
+    } else if (blob1.is_null()) {
+      // j1 doesn't have the blob, go ahead and replace it with j2's.
+      blob1 = std::move(blob2);
+    } else {
+      log()->warn(
+          "Attempting to merge the \"{0}\" between two {1} objects; one "
+          "holds an object, the other a primitive. They cannot be merged. The "
+          "\"{0}\" will not be merged.",
+          blob_name, container_type);
+    }
+  }
+}
+
+// Attempts to merge the "extras" and "extensions" object blocks from j2 to to
+// j1. This only needs to be called where we're attempting to merge nodes:
+// the root glTF node and Scene nodes. All other nodes simply get concatenated
+// to lists.
+void MergeExtrasAndExtensions(json* j1, json&& j2, const char* container_type) {
+  MergeBlobs(j1, std::move(j2), "extras", container_type);
+  MergeBlobs(j1, std::move(j2), "extensions", container_type);
 }
 
 }  // namespace
@@ -125,9 +224,10 @@ void MergeScenes(json* j1, json&& j2) {
       if (scene.contains("name")) {
         const string& name = scene["name"].get<string>();
         if (names_in_1.count(name) > 0) {
+          json& j1_scene1 = j1_scenes[names_in_1[name]];
           if (scene.contains("nodes")) {
             // Merge this scene's nodes into the named scene.
-            json& nodes = j1_scenes[names_in_1[name]]["nodes"];
+            json& nodes = j1_scene1["nodes"];
             for (auto& n : scene["nodes"]) {
               nodes.push_back(std::move(n));
             }
@@ -138,6 +238,7 @@ void MergeScenes(json* j1, json&& j2) {
             // Note: where j2's scene doesn't require merging, those properties
             // are copied automatically.
           }
+          MergeExtrasAndExtensions(&j1_scene1, std::move(scene), "scene");
           // We've merged; no further required for this scene.
           continue;
         }
@@ -166,6 +267,14 @@ void MergeNodes(json* j1, json&& j2) {
       nodes.push_back(std::move(node));
     }
   }
+}
+
+void MergeExtensionsUsed(json* j1, json&& j2) {
+  MergeExtensionNames(j1, std::move(j2), "extensionsUsed");
+}
+
+void MergeExtensionsRequired(json* j1, json&& j2) {
+  MergeExtensionNames(j1, std::move(j2), "extensionsRequired");
 }
 
 void MergeMeshes(json* j1, json&& j2) {
@@ -295,9 +404,16 @@ void MergeSamplers(json* j1, json&& j2) {
 }
 
 void MergeGltf(json* j1, json&& j2) {
-  (*j1)["asset"]["generator"] = "Drake glTF merger";
-  DRAKE_DEMAND((*j1)["asset"]["version"].get<string>() == "2.0");
-  DRAKE_DEMAND(j2["asset"]["version"].get<string>() == "2.0");
+  json& asset1 = (*j1)["asset"];
+  json& asset2 = j2["asset"];
+  DRAKE_DEMAND(!(asset1.is_null() && asset2.is_null()));
+
+  asset1["generator"] = "Drake glTF merger";
+  // TODO(SeanCurtis-TRI): We're not doing anything to the copyright. Should we?
+  DRAKE_DEMAND(asset1["version"].get<string>() == "2.0");
+  DRAKE_DEMAND(asset2["version"].get<string>() == "2.0");
+  MergeExtrasAndExtensions(j1, std::move(j2), "glTF");
+  MergeExtrasAndExtensions(&asset1, std::move(asset2), "asset");
 
   // Don't change the order. Because we mutate j1 as we go, we need to make sure
   // we only mutate something after we've processed everything that depends on
@@ -314,6 +430,8 @@ void MergeGltf(json* j1, json&& j2) {
   MergeSamplers(j1, std::move(j2));
   MergeBufferViews(j1, std::move(j2));
   MergeBuffers(j1, std::move(j2));
+  MergeExtensionsUsed(j1, std::move(j2));
+  MergeExtensionsRequired(j1, std::move(j2));
 
   // NOTE: For now we're omitting skins, animations and morphs.
 }

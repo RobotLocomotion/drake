@@ -155,6 +155,9 @@ class MergeTest : public testing::TestWithParam<MergeCase> {
   /* Creates a test case where the elements of the array in question are copied
    verbatim. We don't inspect or modify the contents in any way. So, we put some
    unique garbage into the arrays to confirm that the dut really doesn't care.
+   Note: passing this test implies that esoteric tags like "extensions" or
+   "extras" will propagate through for those entities that simply get appended
+   to arrays instead of getting merged together.
 
    We make sure that the source array has multiple elements to confirm that
    we iterate through its contents.
@@ -218,6 +221,179 @@ class MergeTest : public testing::TestWithParam<MergeCase> {
          .merge = merge});
   }
 
+  static vector<MergeCase> MergeExtensionsAndExtrasCases() {
+    /* We only attempt to merge sets of "extensions" and "extras" blobs in
+     three cases: the root glTF file, the assets, and scenes that get merged.
+     These test cases test use the root glTF to test the merging logic and then
+     adds token tests to confirm that the logic is applied to the extensions and
+     extras in "asset". The scene merging is handled in the scene test. */
+    const std::string asset_prefix = R"""({"asset":{"version":"2.0"})""";
+    return vector<MergeCase>{
+        // Successful merges on extensions.
+        {.target = asset_prefix + R"""(, "extensions":{"one":1}})""",
+         .source = asset_prefix + "}",
+         .array_name = "extensions",
+         .expected = R"""({"one":1})""",
+         .description = "Source only extensions are preserved",
+         .merge = MergeGltf},
+        {.target = asset_prefix + "}",
+         .source = asset_prefix + R"""(, "extensions":{"one":1}})""",
+         .array_name = "extensions",
+         .expected = R"""({"one":1})""",
+         .description = "Target only extensions are preserved",
+         .merge = MergeGltf},
+        {.target = asset_prefix + R"""(, "extensions":{"two":2}})""",
+         .source = asset_prefix + R"""(, "extensions":{"one":1}})""",
+         .array_name = "extensions",
+         .expected = R"""({"one":1, "two":2})""",
+         .description = "Non-colliding data merges",
+         .merge = MergeGltf},
+        {.target = asset_prefix + "}",
+         .source = asset_prefix + R"""(, "extensions":2})""",
+         .array_name = "extensions",
+         .expected = R"""(2)""",
+         .description = "Target has no extensions, source is non-object",
+         .merge = MergeGltf},
+        {.target = asset_prefix + R"""(, "extensions":1})""",
+         .source = asset_prefix + "}",
+         .array_name = "extensions",
+         .expected = R"""(1)""",
+         .description = "Source has non-object extensions, target has none",
+         .merge = MergeGltf},
+        {.target = asset_prefix + R"""(, "extensions":{"one":1}})""",
+         .source = asset_prefix + R"""(, "extensions":{"one":1, "two":2}})""",
+         .array_name = "extensions",
+         .expected = R"""({"one":1, "two":2})""",
+         .description = "Source and object have shallow, non-colliding "
+                        "duplications in extensions",
+         .merge = MergeGltf},
+        {.target = asset_prefix + R"""(, "extensions":{"one":{"a":1}}})""",
+         .source =
+             asset_prefix + R"""(, "extensions":{"one":{"a":1}, "b":2}})""",
+         .array_name = "extensions",
+         .expected = R"""({"one":{"a":1}, "b":2})""",
+         .description = "Source and object have deep, non-colliding "
+                        "duplications in extensions",
+         .merge = MergeGltf},
+        // Unsuccessful merges on extensions.
+        {.target = asset_prefix + R"""(, "extensions":1})""",
+         .source = asset_prefix + R"""(, "extensions":2})""",
+         .array_name = "extensions",
+         .expected = R"""(1)""",
+         .description = "Target and source have non-object extensions",
+         .merge = MergeGltf},
+        {.target = asset_prefix + R"""(, "extensions":1})""",
+         .source = asset_prefix + R"""(, "extensions":{"one":1}})""",
+         .array_name = "extensions",
+         .expected = R"""(1)""",
+         .description = "Source has object extensions, target is non-object",
+         .merge = MergeGltf},
+        {.target = asset_prefix + R"""(, "extensions":{"one":1}})""",
+         .source = asset_prefix + R"""(, "extensions":{"one":2, "two":2}})""",
+         .array_name = "extensions",
+         .expected = R"""({"one":1})""",
+         .description = "glTFs have shallow collisions in extensions",
+         .merge = MergeGltf},
+        {.target = asset_prefix + R"""(, "extensions":{"one":{"a":1}}})""",
+         .source =
+             asset_prefix + R"""(, "extensions":{"one":{"a":3}, "b":2}})""",
+         .array_name = "extensions",
+         .expected = R"""({"one":{"a":1}})""",
+         .description = "glTFs have deep collisions in extensions",
+         .merge = MergeGltf},
+        // Evidence that extras are being merged; complex successful and
+        // unsuccessful case.
+        {.target = asset_prefix + R"""(, "extras":{"one":{"a":1}}})""",
+         .source = asset_prefix + R"""(, "extras":{"one":{"a":1}, "b":2}})""",
+         .array_name = "extras",
+         .expected = R"""({"one":{"a":1}, "b":2})""",
+         .description = "glTFs have deep, non-colliding duplications in extras",
+         .merge = MergeGltf},
+        {.target = asset_prefix + R"""(, "extras":{"one":{"a":1}}})""",
+         .source = asset_prefix + R"""(, "extras":{"one":{"a":3}, "b":2}})""",
+         .array_name = "extras",
+         .expected = R"""({"one":{"a":1}})""",
+         .description = "glTFs have deep collisions in extras",
+         .merge = MergeGltf},
+        // Evidence that extras and extensions are being merged in "assets".
+        {.target = R"""({"asset":{"version":"2.0",
+                                  "extras":{"one":{"a":1}}}})""",
+         .source = R"""({"asset":{"version":"2.0",
+                                  "extras":{"one":{"a":1}, "b":2}}})""",
+         .array_name = "asset",
+         .expected = R"""({"generator":"Drake glTF merger",
+                           "version":"2.0",
+                           "extras":{"one":{"a":1}, "b":2}})""",
+         .description =
+             "glTFs have deep, non-colliding duplications in assets[extras]",
+         .merge = MergeGltf},
+        {.target = R"""({"asset":{"version":"2.0",
+                                  "extensions":{"one":{"a":1}}}})""",
+         .source = R"""({"asset":{"version":"2.0",
+                                  "extensions":{"one":{"a":1}, "b":2}}})""",
+         .array_name = "asset",
+         .expected = R"""({"generator":"Drake glTF merger",
+                           "version":"2.0",
+                           "extensions":{"one":{"a":1}, "b":2}})""",
+         .description = "glTFs have deep, non-colliding duplications in "
+                        "assets[extensions]",
+         .merge = MergeGltf},
+        {.target = R"""({"asset":{"version":"2.0",
+                                  "extras":{"one":{"a":1}}}})""",
+         .source = R"""({"asset":{"version":"2.0",
+                                  "extras":{"one":{"a":2}, "b":2}}})""",
+         .array_name = "asset",
+         .expected = R"""({"generator":"Drake glTF merger",
+                           "version":"2.0",
+                           "extras":{"one":{"a":1}}})""",
+         .description = "glTFs have deep collisions in assets[extras]",
+         .merge = MergeGltf},
+        {.target = R"""({"asset":{"version":"2.0",
+                                  "extensions":{"one":{"a":1}}}})""",
+         .source = R"""({"asset":{"version":"2.0",
+                                  "extensions":{"one":{"a":2}, "b":2}}})""",
+         .array_name = "asset",
+         .expected = R"""({"generator":"Drake glTF merger",
+                           "version":"2.0",
+                           "extensions":{"one":{"a":1}}})""",
+         .description = "glTFs have deep collisions in assets[extensions]",
+         .merge = MergeGltf},
+    };
+  }
+
+  static vector<MergeCase> MergeExtensionsDeclarationCases() {
+    /* Both the "extensionsUsed" and "extensionsRequired" arrays use the same
+     code. We'll rigorously test one of those arrays and then provide a token
+     test for the other to make sure it gets processed correctly. */
+    return vector<MergeCase>{
+        {.target = R"""({"extensionsUsed":["A", "B"]})""",
+         .source = "{}",
+         .array_name = "extensionsUsed",
+         .expected = R"""(["A", "B"])""",
+         .description = "Source only is preserved",
+         .merge = MergeExtensionsUsed},
+        {.target = "{}",
+         .source = R"""({"extensionsUsed":["A", "B"]})""",
+         .array_name = "extensionsUsed",
+         .expected = R"""(["A", "B"])""",
+         .description = "Target only is passed through",
+         .merge = MergeExtensionsUsed},
+        {.target = R"""({"extensionsUsed":["A", "B"]})""",
+         .source = R"""({"extensionsUsed":["C", "B", "D"]})""",
+         .array_name = "extensionsUsed",
+         .expected = R"""(["A", "B", "C", "D"])""",
+         .description = "Source and target are merged without duplication",
+         .merge = MergeExtensionsUsed},
+        {.target = R"""({"extensionsRequired":["B", "A"]})""",
+         .source = R"""({"extensionsRequired":["C", "B", "D"]})""",
+         .array_name = "extensionsRequired",
+         .expected = R"""(["B", "A", "C", "D"])""",
+         .description = "Source and target are merged without duplication - "
+                        "extensionsRequired",
+         .merge = MergeExtensionsRequired},
+    };
+  }
+
   static vector<MergeCase> MergeScenesCases() {
     /* Merging scenes does extra work. A scene in the source may simply be
      concatenated to the target's "scenes" array (with the scene's node indices
@@ -268,13 +444,49 @@ class MergeTest : public testing::TestWithParam<MergeCase> {
          .expected = R"""([{"nodes":[0]}, {"nodes":[2, 4]}])""",
          .description = "Scenes with no names are both present.",
          .merge = merge},
-        {.target = R"""({"scenes":[{"name":"Scene", "nodes":[0]}],
+        {.target = R"""({"scenes":[{"name":"Scene", "nodes":[0],
+                                    "extras":{"one":{"a":1}}}],
                          "nodes":[0, 1]})""",
-         .source = R"""({"scenes":[{"name":"Scene", "nodes":[0], 
-                                    "extras":{"v":1}}], "nodes":[0]})""",
+         .source = R"""({"scenes":[{"name":"Scene", "nodes":[0],
+                                    "extras":{"v":1}}],
+                         "nodes":[0]})""",
          .array_name = "scenes",
-         .expected = R"""([{"name":"Scene", "nodes":[0, 2]}])""",
-         .description = "Merged scenes lose extras.",
+         .expected = R"""([{"name":"Scene", "nodes":[0, 2],
+                            "extras":{"v":1, "one":{"a":1}}}])""",
+         .description = "Merged scenes with non-colliding extras merge.",
+         .merge = merge},
+        {.target = R"""({"scenes":[{"name":"Scene", "nodes":[0],
+                                    "extensions":{"one":{"a":1}}}],
+                         "nodes":[0, 1]})""",
+         .source = R"""({"scenes":[{"name":"Scene", "nodes":[0],
+                                    "extensions":{"v":1}}],
+                         "nodes":[0]})""",
+         .array_name = "scenes",
+         .expected = R"""([{"name":"Scene", "nodes":[0, 2],
+                            "extensions":{"v":1, "one":{"a":1}}}])""",
+         .description = "Merged scenes with non-colliding extensions merge.",
+         .merge = merge},
+        {.target = R"""({"scenes":[{"name":"Scene", "nodes":[0],
+                                    "extras":{"one":{"a":1}}}],
+                         "nodes":[0, 1]})""",
+         .source = R"""({"scenes":[{"name":"Scene", "nodes":[0],
+                                    "extras":{"one":2, "v":1}}],
+                         "nodes":[0]})""",
+         .array_name = "scenes",
+         .expected = R"""([{"name":"Scene", "nodes":[0, 2],
+                            "extras":{"one":{"a":1}}}])""",
+         .description = "Merged scenes with colliding extras don't merge.",
+         .merge = merge},
+        {.target = R"""({"scenes":[{"name":"Scene", "nodes":[0],
+                                    "extensions":{"one":{"a":1}}}],
+                         "nodes":[0, 1]})""",
+         .source = R"""({"scenes":[{"name":"Scene", "nodes":[0],
+                                    "extensions":{"one":2, "v":1}}],
+                         "nodes":[0]})""",
+         .array_name = "scenes",
+         .expected = R"""([{"name":"Scene", "nodes":[0, 2],
+                            "extensions":{"one":{"a":1}}}])""",
+         .description = "Merged scenes with colliding extensions don't merge.",
          .merge = merge},
     };
   }
@@ -461,6 +673,12 @@ TEST_P(MergeTest, Evaluate) {
   Evaluate(GetParam());
 }
 
+INSTANTIATE_TEST_SUITE_P(
+    ExtensionsAndExtras, MergeTest,
+    testing::ValuesIn(MergeTest::MergeExtensionsAndExtrasCases()));
+INSTANTIATE_TEST_SUITE_P(
+    ExtensionDeclarations, MergeTest,
+    testing::ValuesIn(MergeTest::MergeExtensionsDeclarationCases()));
 INSTANTIATE_TEST_SUITE_P(Scenes, MergeTest,
                          testing::ValuesIn(MergeTest::MergeScenesCases()));
 INSTANTIATE_TEST_SUITE_P(Nodes, MergeTest,
