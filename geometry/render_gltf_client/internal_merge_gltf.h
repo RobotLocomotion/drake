@@ -38,6 +38,12 @@ Matrix4<double> EigenMatrixFromGltfMatrix(const nlohmann::json& matrix_json);
      be lost. */
 void MergeScenes(nlohmann::json* j1, nlohmann::json&& j2);
 
+/* Merges the "extensionsUsed" array from j2 into j1. */
+void MergeExtensionsUsed(nlohmann::json* j1, nlohmann::json&& j2);
+
+/* Merges the "extensionsRequired" array from j2 into j1. */
+void MergeExtensionsRequired(nlohmann::json* j1, nlohmann::json&& j2);
+
 /* Merges the "nodes" array from j2 into j1. */
 void MergeNodes(nlohmann::json* j1, nlohmann::json&& j2);
 
@@ -83,6 +89,22 @@ void MergeSamplers(nlohmann::json* j1, nlohmann::json&& j2);
 
  All index references in j2's elements are updated based on the number of
  indices already used by j1.
+
+ Generally, merging consists of concatenating the elements of the arrays in
+ j2 into the corresponding arrays in j1. Indices in j2 referencing those
+ elements get offset to reflect their new positions in j1's arrays. However,
+ there are some special rules for merging:
+
+ 1. Two scenes with the same non-empty name will be merged.
+ 2. The extensions and extras of "assets" will be merged (where possible), but
+    nothing else.
+ 3. The default scene is determined by j1, j2's default scene is ignored.
+
+ When merging objects (e.g., "scenes" and "assets") we attempt to merge the
+ objects' "extras" and "extensions" objects. However, if there is a collision
+ between the "extras" or "extensions" of the two objects (i.e., same key but
+ different values), then j2's colliding extras will be skipped and a warning
+ emitted; only j1s values will be present.
 
  @pre Both j1 and j2 indicate version 2.0 glTF files. */
 void MergeGltf(nlohmann::json* j1, nlohmann::json&& j2);
