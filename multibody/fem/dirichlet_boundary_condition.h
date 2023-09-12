@@ -7,7 +7,6 @@
 #include "drake/multibody/contact_solvers/block_sparse_lower_triangular_or_symmetric_matrix.h"
 #include "drake/multibody/fem/fem_indexes.h"
 #include "drake/multibody/fem/fem_state.h"
-#include "drake/multibody/fem/petsc_symmetric_block_sparse_matrix.h"
 
 namespace drake {
 namespace multibody {
@@ -67,18 +66,6 @@ class DirichletBoundaryCondition {
    @throw std::exception if any node index specified by `this` boundary
    condition is greater than or equal to the `fem_state->num_nodes()`. */
   void ApplyBoundaryConditionToState(FemState<T>* fem_state) const;
-
-  /* Modifies the given tangent matrix that arises from an FEM model into the
-   tangent matrix for the same model subject to this BC. More specifically,
-   the rows and columns corresponding to DoFs under this BC will be zeroed out
-   with the exception of the diagonal entries for those DoFs which will be set
-   to 1.
-   @pre tangent_matrix != nullptr.
-   @pre tangent_matrix->rows() == tangent_matrix->cols().
-   @throw std::exception if the index of any DoF associated with nodes subject
-   to `this` BC is greater than or equal to the `tangent_matrix->cols()`. */
-  void ApplyBoundaryConditionToTangentMatrix(
-      PetscSymmetricBlockSparseMatrix* tangent_matrix) const;
 
   /* Modifies the given tangent matrix that arises from an FEM model into the
    tangent matrix for the same model subject to this BC. More specifically,
