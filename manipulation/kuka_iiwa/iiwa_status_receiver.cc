@@ -62,9 +62,9 @@ const OutPort& IiwaStatusReceiver::get_torque_external_output_port() const {
   return LeafSystem<double>::get_output_port(6);
 }
 
-template <std::vector<double> drake::lcmt_iiwa_status::* field_ptr>
-void IiwaStatusReceiver::CalcLcmOutput(
-    const Context<double>& context, BasicVector<double>* output) const {
+template <std::vector<double> drake::lcmt_iiwa_status::*field_ptr>
+void IiwaStatusReceiver::CalcLcmOutput(const Context<double>& context,
+                                       BasicVector<double>* output) const {
   const auto& status = get_input_port().Eval<lcmt_iiwa_status>(context);
 
   // If we're using a default constructed message (i.e., we haven't received
@@ -75,8 +75,8 @@ void IiwaStatusReceiver::CalcLcmOutput(
     const auto& status_field = status.*field_ptr;
     DRAKE_THROW_UNLESS(status.num_joints == num_joints_);
     DRAKE_THROW_UNLESS(static_cast<int>(status_field.size()) == num_joints_);
-    output->get_mutable_value() = Eigen::Map<const Eigen::VectorXd>(
-        status_field.data(), num_joints_);
+    output->get_mutable_value() =
+        Eigen::Map<const Eigen::VectorXd>(status_field.data(), num_joints_);
   }
 }
 

@@ -2,6 +2,7 @@ import copy
 import inspect
 import subprocess
 import textwrap
+import time
 import unittest
 
 from pydrake.common import FindResourceOrThrow

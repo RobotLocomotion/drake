@@ -19,8 +19,8 @@ class IiwaCommandReceiverTest : public testing::Test {
 
   template <typename... Args>
   void MakeDut(Args&&... args) {
-    dut_ = std::make_unique<IiwaCommandReceiver>(
-          kIiwaArmNumJoints, std::forward<Args>(args)...);
+    dut_ = std::make_unique<IiwaCommandReceiver>(kIiwaArmNumJoints,
+                                                 std::forward<Args>(args)...);
     context_ = dut().CreateDefaultContext();
     fixed_input_ = &FixInput();
   }
@@ -31,15 +31,16 @@ class IiwaCommandReceiverTest : public testing::Test {
 
   // For use only by our constructor.
   systems::FixedInputPortValue& FixInput() {
-    return dut().get_message_input_port().FixValue(
-        &context(), lcmt_iiwa_command{});
+    return dut().get_message_input_port().FixValue(&context(),
+                                                   lcmt_iiwa_command{});
   }
 
   // Test cases should call this to set the DUT's input value.
   void SetInput(lcmt_iiwa_command message) {
     // TODO(jwnimmer-tri) This systems framework API is not very ergonomic.
-    fixed_input().GetMutableData()->
-        template get_mutable_value<lcmt_iiwa_command>() = message;
+    fixed_input()
+        .GetMutableData()
+        ->template get_mutable_value<lcmt_iiwa_command>() = message;
   }
 
   VectorXd position() {

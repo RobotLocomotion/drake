@@ -158,8 +158,9 @@ class TestAnalysis(unittest.TestCase):
         copy.copy(initialize_params)
         simulator.Initialize(params=initialize_params)
 
-        simulator.AdvanceTo(boundary_time=0.0)
+        simulator.AdvanceTo(boundary_time=0.0, interruptible=False)
         simulator.AdvancePendingEvents()
+        simulator.AdvanceTo(boundary_time=0.1, interruptible=True)
 
         monitor_called_count = 0
 
