@@ -234,8 +234,11 @@ void DeformableDriver<T>::AppendDiscreteContactPairs(
   const DeformableContact<T>& deformable_contact =
       EvalDeformableContact(context);
 
-  for (const DeformableContactSurface<double>& surface :
-       deformable_contact.contact_surfaces()) {
+  for (int surface_index = 0;
+       surface_index < ssize(deformable_contact.contact_surfaces());
+       ++surface_index) {
+    const DeformableContactSurface<T>& surface =
+        deformable_contact.contact_surfaces()[surface_index];
     /* While our discrete solvers might model constraints as compliant, an
     infinite stiffness indicates to use the stiffest approximation possible
     without sacrifycing numerical conditioning. SAP will use the "near rigid"
@@ -269,9 +272,9 @@ void DeformableDriver<T>::AppendDiscreteContactPairs(
       const T& phi0 = surface.signed_distances()[i];
       const T fn0 = NAN;  // not used.
       const T d = NAN;    // not used.
-      result->AppendDeformableData(
-          DiscreteContactPair<T>{surface.id_A(), surface.id_B(), p_WC,
-                                 nhat_BA_W, phi0, fn0, k, d, tau, mu});
+      result->AppendDeformableData(DiscreteContactPair<T>{
+          surface.id_A(), surface.id_B(), p_WC, nhat_BA_W, phi0, fn0, k, d, tau,
+          mu, surface_index, i});
     }
   }
 }
@@ -542,6 +545,113 @@ void DeformableDriver<T>::AppendDeformableRigidFixedConstraintKinematics(
                              std::move(J));
       }
     }
+  }
+}
+
+template <typename T>
+void DeformableDriver<T>::CalcDeformableContactInfo(
+    const systems::Context<T>& context,
+    std::vector<DeformableContactInfo<T>>* contact_info) const {
+  DRAKE_DEMAND(contact_info != nullptr);
+
+  const DeformableContact<T>& deformable_contact =
+      EvalDeformableContact(context);
+
+  const std::vector<DeformableContactSurface<T>>& contact_surfaces =
+      deformable_contact.contact_surfaces();
+  const int num_surfaces = contact_surfaces.size();
+
+  contact_info->clear();
+  contact_info->reserve(num_surfaces);
+
+  const DiscreteContactData<DiscreteContactPair<T>>& discrete_pairs =
+      manager_->EvalDiscreteContactPairs(context);
+  const DiscreteContactData<ContactPairKinematics<T>>& contact_kinematics =
+      manager_->EvalContactKinematics(context);
+  const contact_solvers::internal::ContactSolverResults<T>& solver_results =
+      manager_->EvalContactSolverResults(context);
+
+  const VectorX<T>& fn = solver_results.fn;
+  const VectorX<T>& ft = solver_results.ft;
+  const VectorX<T>& vt = solver_results.vt;
+  const VectorX<T>& vn = solver_results.vn;
+
+  const int num_contacts = discrete_pairs.size();
+  DRAKE_DEMAND(fn.size() == num_contacts);
+  DRAKE_DEMAND(ft.size() == 2 * num_contacts);
+  DRAKE_DEMAND(vn.size() == num_contacts);
+  DRAKE_DEMAND(vt.size() == 2 * num_contacts);
+
+  /* The spatial force on the deformable body A at the centroid of the contact
+   patch Ao, expressed in the world frame. */
+  std::vector<SpatialForce<T>> F_Ao_W_per_surface(num_surfaces,
+                                                  SpatialForce<T>::Zero());
+  std::vector<std::vector<DeformableContactPointData<T>>> contact_point_data(
+      num_surfaces);
+  for (int surface_index = 0; surface_index < num_surfaces; ++surface_index) {
+    contact_point_data[surface_index].reserve(
+        contact_surfaces[surface_index].num_contact_points());
+  }
+
+  for (int icontact = discrete_pairs.deformable_contact_start();
+       icontact < discrete_pairs.deformable_contact_start() +
+                      discrete_pairs.num_deformable_contacts();
+       ++icontact) {
+    const auto& pair = discrete_pairs[icontact];
+    /* Contact point C. */
+    const Vector3<T>& p_WC = pair.p_WC;
+    const math::RotationMatrix<T>& R_WC =
+        contact_kinematics[icontact].configuration.R_WC;
+
+    /* Contact forces applied on B at contact point point C expressed in the
+     contact frame. */
+    const Vector3<T> f_Bc_C(ft(2 * icontact), ft(2 * icontact + 1),
+                            fn(icontact));
+    /* Contact force applied on A at contact point C in the world frame. */
+    const Vector3<T> f_Ac_W = -(R_WC * f_Bc_C);
+
+    /* All deformable discrete contact pair has `surface_index` attribute. */
+    DRAKE_DEMAND(pair.surface_index.has_value());
+    const int surface_index = pair.surface_index.value();
+    const auto& s = contact_surfaces[surface_index];
+    /* Surface's centroid point O. */
+    const Vector3<T>& p_WO = s.contact_mesh_W().centroid();
+
+    /* Accumulate spatial force at the centroid of the contact patch for the
+     corresponding contact surface. */
+    const Vector3<T> p_CO_W = p_WO - p_WC;
+    const SpatialForce<T> Fc_Ao_W =
+        SpatialForce<T>(Vector3<T>::Zero(), f_Ac_W).Shift(p_CO_W);
+    F_Ao_W_per_surface[surface_index] += Fc_Ao_W;
+
+    /* Velocity of Ac relative to Bc in the tangent direction. */
+    /* N.B. Computation of contact kinematics uses the convention of computing
+     J_AcBc_C and thus J_AcBc_C * v = v_AcBc_W (i.e. it computes the relative
+     velocity of Bc with respect to Ac). Thus we flip the sign here for the
+     convention used by DeformableContactPointData, which measures the relative
+     velocity of Ac w.r.t. Bc). */
+    const Vector3<T> vt_BcAc_C(-vt(2 * icontact), -vt(2 * icontact + 1), 0);
+    const Vector3<T> vt_BcAc_W = R_WC * vt_BcAc_C;
+
+    /* Traction vector applied to body A at point Ac (Ac and Bc are coincident)
+     expressed in the world frame. */
+    DRAKE_DEMAND(pair.face_index.has_value());
+    const int face_index = pair.face_index.value();
+    const Vector3<T> traction_Ac_W =
+        f_Ac_W / s.contact_mesh_W().area(face_index);
+
+    contact_point_data[surface_index].emplace_back(p_WC, face_index, vt_BcAc_W,
+                                                   traction_Ac_W);
+  }
+  for (int surface_index = 0; surface_index < num_surfaces; ++surface_index) {
+    const DeformableContactSurface<T>& surface =
+        contact_surfaces[surface_index];
+    // TODO(xuchenhan-tri): consider avoid making a copy of the contact mesh
+    // every time DeformableContactInfo is computed.
+    contact_info->emplace_back(surface.id_A(), surface.id_B(),
+                               contact_surfaces[surface_index].contact_mesh_W(),
+                               F_Ao_W_per_surface[surface_index],
+                               std::move(contact_point_data[surface_index]));
   }
 }
 

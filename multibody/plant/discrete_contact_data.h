@@ -101,7 +101,6 @@ class DiscreteContactData {
     deformable_.clear();
   }
 
- private:
   /* The starting index of point, hydroelastic, and deformable contact data when
    stacked in that order. */
   int point_contact_start() const { return 0; }
@@ -109,6 +108,8 @@ class DiscreteContactData {
   int deformable_contact_start() const {
     return num_point_contacts() + num_hydro_contacts();
   }
+
+ private:
   std::vector<Data> point_;
   std::vector<Data> hydro_;
   std::vector<Data> deformable_;
