@@ -338,11 +338,11 @@ class SceneGraph final : public systems::LeafSystem<T> {
   //@{
 
   /** Set the hydroelastize behavior flag. See TBD for details. */
-  void set_hydroelastize(bool value) { config_.hydroelastize = value; }
+  void set_hydroelastize(bool value);
 
   /** @return the current hydroelastize behavior flag value. See TBD for
    * details. */
-  bool get_hydroelastize() const { return config_.hydroelastize; }
+  bool get_hydroelastize() const;
 
   //@}
 
@@ -1100,13 +1100,10 @@ class SceneGraph final : public systems::LeafSystem<T> {
   // The index of the output port with the QueryObject abstract value.
   int query_port_index_{-1};
 
-  // SceneGraph owns its configured model; it gets copied into the context when
-  // the context is set to its "default" state. We use unique_ptr in support of
-  // forward-declaring GeometryState<T> to reduce our #include footprint, but
-  // initialize a model_ reference to always point to the owned_model_, as a
-  // convenient shortcut in the code to treat it as if it were a direct member.
-  std::unique_ptr<GeometryState<T>> owned_model_;
-  GeometryState<T>& model_;
+  // Encapsulate some model detail to help enforce internal invariants.
+  class Hub;
+  std::unique_ptr<Hub> owned_hub_;
+  class Hub& hub_;
 
   SceneGraphInspector<T> model_inspector_;
 
@@ -1117,10 +1114,6 @@ class SceneGraph final : public systems::LeafSystem<T> {
   // The cache indices for the pose and configuration update cache entries.
   systems::CacheIndex pose_update_index_{};
   systems::CacheIndex configuration_update_index_{};
-
-  SceneGraphConfig config_;
-  // A cache.
-  mutable std::unique_ptr<GeometryState<T>> hydroelastized_model_;
 };
 
 }  // namespace geometry
