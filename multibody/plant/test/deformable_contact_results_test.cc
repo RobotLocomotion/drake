@@ -85,6 +85,7 @@ GTEST_TEST(CompliantContactManagerTest, ContactResultsWithDeformable) {
           plant_context);
   EXPECT_EQ(contact_results.num_point_pair_contacts(), 1);
   EXPECT_EQ(contact_results.num_hydroelastic_contacts(), 1);
+  EXPECT_EQ(contact_results.num_deformable_contacts(), 1);
 }
 
 }  // namespace internal

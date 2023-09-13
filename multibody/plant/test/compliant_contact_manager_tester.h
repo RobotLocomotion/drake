@@ -54,13 +54,6 @@ class CompliantContactManagerTester {
     return manager.EvalContactKinematics(context);
   }
 
-  static void DoCalcContactResults(
-      const CompliantContactManager<double>& manager,
-      const drake::systems::Context<double>& context,
-      ContactResults<double>* contact_results) {
-    return manager.DoCalcContactResults(context, contact_results);
-  }
-
   static const SapDriver<double>& sap_driver(
       const CompliantContactManager<double>& manager) {
     DRAKE_DEMAND(manager.sap_driver_ != nullptr);
