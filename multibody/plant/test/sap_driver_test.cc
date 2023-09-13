@@ -358,6 +358,19 @@ TEST_F(SpheresStackTest, SapFailureException) {
                               "The SAP solver failed to converge(.|\n)*");
 }
 
+// Test that EvalContactSolverResults gives the same answer with caching on or
+// off.
+TEST_F(SpheresStackTest, EvalContactSolverResults) {
+  SetupRigidGroundCompliantSphereAndNonHydroSphere();
+  const ContactSolverResults<double> contact_results_with_cache =
+      contact_manager_->EvalContactSolverResults(*plant_context_);
+  plant_context_->DisableCaching();
+  const ContactSolverResults<double> contact_results_without_cache =
+      contact_manager_->EvalContactSolverResults(*plant_context_);
+  EXPECT_EQ(contact_results_with_cache.v_next,
+            contact_results_without_cache.v_next);
+}
+
 // Unit test that the manager is forwarded the active status of each constraint
 // and produces a SapContactProblem with only the active constraints and
 // recalculates the cached SapContactProblem with constraint parameters change.
