@@ -21,6 +21,7 @@
 #include "drake/multibody/plant/deformable_model.h"
 #include "drake/multibody/plant/discrete_contact_data.h"
 #include "drake/multibody/plant/discrete_contact_pair.h"
+#include "drake/multibody/plant/hydroelastic_contact_info.h"
 #include "drake/multibody/plant/scalar_convertible_component.h"
 #include "drake/multibody/tree/multibody_tree.h"
 #include "drake/systems/framework/context.h"
@@ -344,10 +345,6 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
       const systems::Context<T>& context,
       internal::AccelerationKinematicsCache<T>* ac) const = 0;
 
-  virtual void DoCalcContactResults(
-      const systems::Context<T>& context,
-      ContactResults<T>* contact_results) const = 0;
-
   /* Concrete managers must implement this method to compute the total multibody
    forces applied during a discrete update. The particulars of the numerical
    scheme matter. For instance, whether we use an explicit or implicit update.
@@ -401,6 +398,7 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
     systems::CacheIndex discrete_update_multibody_forces;
     systems::CacheIndex contact_kinematics;
     systems::CacheIndex discrete_contact_pairs;
+    systems::CacheIndex hydroelastic_contact_info;
   };
 
   /* Exposes indices for the cache entries declared by this class for derived
@@ -435,7 +433,7 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   /* NVI to DoDeclareCacheEntries(). */
   void DeclareCacheEntries();
 
-  /* Calc version of EvalContactResults(), NVI to DoCalcContactResults(). */
+  /* Calc version of EvalContactResults(). */
   void CalcContactResults(const systems::Context<T>& context,
                           ContactResults<T>* contact_results) const;
 
@@ -476,6 +474,38 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   void AppendDiscreteContactPairsForHydroelasticContact(
       const systems::Context<T>& context,
       DiscreteContactData<DiscreteContactPair<T>>* pairs) const;
+
+  /* Helper method to fill in contact_results with point contact information
+   for the given state stored in `context`.
+   @param[in,out] contact_results is appended to. */
+  void AppendContactResultsForPointContact(
+      const systems::Context<T>& context,
+      ContactResults<T>* contact_results) const;
+
+  /* Helper method to fill in `contact_results` with hydroelastic contact
+   information for the given state stored in `context`.
+   @param[in,out] contact_results is appended to. */
+  void AppendContactResultsForHydroelasticContact(
+      const systems::Context<T>& context,
+      ContactResults<T>* contact_results) const;
+
+  /* Helper method to fill in `contact_results` with deformable contact
+   information for the given state stored in `context`.
+   @param[in,out] contact_results is appended to. */
+  void AppendContactResultsForDeformableContact(
+      const systems::Context<T>& context,
+      ContactResults<T>* contact_results) const;
+
+  /* Computes per-face contact information for the hydroelastic model (slip
+   velocity, traction, etc). On return contact_info->size() will equal the
+   number of faces discretizing the contact surface. */
+  void CalcHydroelasticContactInfo(
+      const systems::Context<T>& context,
+      std::vector<HydroelasticContactInfo<T>>* contact_info) const;
+
+  /* Eval version of CalcHydroelasticContactInfo() . */
+  const std::vector<HydroelasticContactInfo<T>>& EvalHydroelasticContactInfo(
+      const systems::Context<T>& context) const;
 
   const MultibodyPlant<T>* plant_{nullptr};
   MultibodyPlant<T>* mutable_plant_{nullptr};
