@@ -6,6 +6,7 @@
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/identifier_pybind.h"
+#include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/common/sorted_pair_pybind.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
@@ -872,10 +873,16 @@ void DefineGeometryOptimization(py::module m) {
             base_cls_doc.separating_planes.doc)
         .def("y_slack", &BaseClass::y_slack, base_cls_doc.y_slack.doc);
 
-    py::class_<BaseClass::Options>(
-        cspace_free_polytope_base_cls, "Options", base_cls_doc.Options.doc)
-        .def(py::init<>())
-        .def_readwrite("with_cross_y", &BaseClass::Options::with_cross_y);
+    {
+      const auto& options_cls_doc = base_cls_doc.Options;
+      py::class_<BaseClass::Options> options_cls(
+          cspace_free_polytope_base_cls, "Options", options_cls_doc.doc);
+      options_cls  // BR
+          .def(py::init<>(), options_cls_doc.ctor.doc)
+          .def_readwrite("with_cross_y", &BaseClass::Options::with_cross_y,
+              options_cls_doc.with_cross_y.doc);
+      DefReprUsingSerialize(&options_cls);
+    }
 
     using Class = CspaceFreePolytope;
     const auto& cls_doc = doc.CspaceFreePolytope;

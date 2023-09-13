@@ -11,6 +11,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/name_value.h"
 #include "drake/geometry/optimization/c_iris_collision_geometry.h"
 #include "drake/geometry/optimization/cspace_free_structs.h"
 #include "drake/geometry/optimization/cspace_separating_plane.h"
@@ -38,6 +39,13 @@ class CspaceFreePolytopeBase {
   /** Optional argument for constructing CspaceFreePolytopeBase */
   struct Options {
     Options() {}
+
+    /** Passes this object to an Archive.
+     Refer to @ref yaml_serialization "YAML Serialization" for background. */
+    template <typename Archive>
+    void Serialize(Archive* a) {
+      a->Visit(DRAKE_NVP(with_cross_y));
+    }
 
     /**
      For non-polytopic collision geometries, we will impose a matrix-sos

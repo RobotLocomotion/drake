@@ -949,6 +949,8 @@ class TestCspaceFreePolytope(unittest.TestCase):
         self.assertFalse(options.with_cross_y)
         options.with_cross_y = True
         self.assertTrue(options.with_cross_y)
+        self.assertIn("with_cross_y", repr(options))
+        self.assertNotIn("object at 0x", repr(options))
 
     def test_CspaceFreePolytope_getters_and_auxillary_structs(self):
         dut = self.cspace_free_polytope
