@@ -1,6 +1,7 @@
 #pragma once
 
 #include <filesystem>
+#include <vector>
 
 #include <Eigen/Dense>
 
@@ -22,7 +23,7 @@ namespace internal {
 
  For now, all vertex quantities (`positions`, `normals` and `uvs`) are
  guaranteed (as well as the `indices` data). In the future, `uvs` may become
- optional.  */
+ optional. */
 struct RenderMesh {
   Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> positions;
   Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> normals;
@@ -42,22 +43,16 @@ struct RenderMesh {
 // TODO(SeanCurtis-TRI): All of this explanation, and general guidance for what
 // meshes (and which features) are supported, needs to go into the trouble-
 // shooting guide.
-// TODO(SeanCurtis-TRI): Modify the API to return a *set* of RenderMesh, each
-// with a unique material.
-/* Returns a single instance of RenderMesh from the indicated obj file.
+/* Returns a set of RenderMesh instances based on the objects and materials
+ defined in the indicated obj file.
 
- The material definition will come from the obj's mtl file iff a single material
- is applied to all faces in the obj. Otherwise, it applies the fallback material
- protocol documented in MakeMeshFallbackMaterial() (the only time in which the
- `properties` and `default_diffuse` parameters are used).
-
- As long as there is a single material applied to all faces in the obj file,
- the material will be derived from the material library, even if the material
- specification is flawed. The derivation does its best to provide the "best"
- approximation of the declared material. But the fact it was declared and
- applied is respected. For example, the following are specification defects
- that nevertheless result in a RenderMaterial _based_ on the mtl material and
- _not_ on the fallback logic:
+ Each RenderMesh will be defined from the obj's mtl file as long as a material
+ was defined and applied. Even if there are errors in the material
+ specification, the algorithm does its best to provide the "best" approximation
+ of the declared material. The fact that it was declared and applied is
+ respected. For example, the following are specification defects that
+ nevertheless result in a RenderMaterial _based_ on the mtl material and _not_
+ on the fallback logic:
 
    - Referencing a non-existent or unavailable texture.
    - Failing to specify *any* material properties at all beyond its name.
@@ -72,6 +67,10 @@ struct RenderMesh {
     - Material semantics.
     - The geometric data is reconditioned to be compatible with "geometry
       buffer" applications. (See RenderMesh for details.)
+    - It supports multiple objects in the file. In fact, there may be more
+      RenderMesh instances than objects defined because a single object with
+      multiple materials will likewise be partitioned into separate RenderMesh
+      instances.
 
  If texture coordinates are assigned to vertices, it will be indicated in
  the returned RenderMesh. See RenderMesh::uv_state for more detail.
@@ -88,7 +87,16 @@ struct RenderMesh {
  @throws std::exception if a) tinyobj::LoadObj() fails, (b) there are no faces
                            or normals, c) faces fail to reference normals, or d)
                            faces fail to reference the texture coordinates if
-                           they are present.  */
+                           they are present. */
+std::vector<RenderMesh> LoadRenderMeshesFromObj(
+    const std::filesystem::path& obj_path, const GeometryProperties& properties,
+    const Rgba& default_diffuse,
+    const drake::internal::DiagnosticPolicy& policy = {});
+
+/* Legacy stub that throws if LoadRenderMeshesFromObj returns more than a single
+ RenderMesh. It merges the RenderMeshes together and replaces the material with
+ the fallback material (spewing a debug message). We'll remove this in follow up
+ PRs as the RenderEngines change to accommodate multiple RenderMeshes. */
 RenderMesh LoadRenderMeshFromObj(
     const std::filesystem::path& obj_path, const GeometryProperties& properties,
     const Rgba& default_diffuse,
