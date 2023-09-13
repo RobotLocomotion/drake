@@ -13,6 +13,7 @@
 #include "drake/multibody/fem/discrete_time_integrator.h"
 #include "drake/multibody/fem/fem_solver.h"
 #include "drake/multibody/plant/contact_pair_kinematics.h"
+#include "drake/multibody/plant/deformable_contact_info.h"
 #include "drake/multibody/plant/deformable_model.h"
 #include "drake/multibody/plant/discrete_contact_data.h"
 #include "drake/multibody/plant/discrete_contact_pair.h"
@@ -160,6 +161,13 @@ class DeformableDriver : public ScalarConvertibleComponent<T> {
       const systems::Context<T>& context,
       std::vector<contact_solvers::internal::FixedConstraintKinematics<T>>*
           result) const;
+
+  /* Computes the contact information for all deformable bodies for the given
+   `context`.
+   @pre contact_info != nullptr. */
+  void CalcDeformableContactInfo(
+      const systems::Context<T>& context,
+      std::vector<DeformableContactInfo<T>>* contact_info) const;
 
   /* Evaluates FemState at the next time step for each deformable body and
    copies the them into the corresponding DiscreteValues.
