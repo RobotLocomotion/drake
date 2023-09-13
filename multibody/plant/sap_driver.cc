@@ -778,13 +778,15 @@ template <typename T>
 void SapDriver<T>::CalcContactSolverResults(
     const systems::Context<T>& context,
     contact_solvers::internal::ContactSolverResults<T>* results) const {
-  const ContactProblemCache<T>& contact_problem_cache =
-      EvalContactProblemCache(context);
-  const SapContactProblem<T>& sap_problem = *contact_problem_cache.sap_problem;
   const SapSolverResults<T>& sap_results = EvalSapSolverResults(context);
   const std::vector<DiscreteContactPair<T>>& discrete_pairs =
       manager().EvalDiscreteContactPairs(context);
   const int num_contacts = discrete_pairs.size();
+  // The SapContactProblem unique_ptr in ContactProblemCache is reset each time
+  // the problem cache is recomputed, so here we need to make sure to Eval the
+  // problem cache immediately before the SapContactProblem is used.
+  const SapContactProblem<T>& sap_problem =
+      *EvalContactProblemCache(context).sap_problem;
   PackContactSolverResults(context, sap_problem, num_contacts, sap_results,
                            results);
 }
