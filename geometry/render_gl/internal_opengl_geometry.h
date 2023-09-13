@@ -5,6 +5,7 @@
 #include <utility>
 
 #include "drake/geometry/render/render_label.h"
+#include "drake/geometry/render/render_material.h"
 #include "drake/geometry/render_gl/internal_opengl_includes.h"
 #include "drake/geometry/render_gl/internal_shader_program_data.h"
 #include "drake/math/rigid_transform.h"
@@ -48,20 +49,19 @@ struct OpenGlGeometry {
    @param index_buffer_in       The handle to the OpenGl index buffer defining a
                                 set of triangles.
    @param index_buffer_size_in  The number of indices in the index buffer.
-   @param has_tex_coord_in      If true, the vertex buffer contains *meaningful*
-                                texture coordinates.
+   @param uv_state_in           The state of UVs assigned to the geometry.
    @param v_count_in            The number of vertices in this mesh (and, by
                                 implication, the number of normals and texture
                                 coordinates).
    @pre `index_buffer_size_in >= 0`.  */
   OpenGlGeometry(GLuint vertex_array_in, GLuint vertex_buffer_in,
                  GLuint index_buffer_in, int index_buffer_size_in,
-                 bool has_tex_coord_in, int v_count_in)
+                 geometry::internal::UvState uv_state_in, int v_count_in)
       : vertex_array{vertex_array_in},
         vertex_buffer{vertex_buffer_in},
         index_buffer{index_buffer_in},
         index_buffer_size{index_buffer_size_in},
-        has_tex_coord{has_tex_coord_in},
+        uv_state{uv_state_in},
         v_count(v_count_in) {
     if (index_buffer_size < 0) {
       throw std::logic_error("Index buffer size must be non-negative");
@@ -86,17 +86,16 @@ struct OpenGlGeometry {
 
   // TODO(SeanCurtis-TRI): This can't really be a struct; there are invariants
   // that need to be maintained: vertex_buffer is sized according to v_count,
-  // vertex_array depends on vertex_buffer, has_tex_coord needs to reflect
-  // the uv data in vertex_buffer, and index_buffer_size needs to be the actual
-  // size of index_buffer (in triangles).
+  // vertex_array depends on vertex_buffer, uv_state needs to reflect the uv
+  // data in vertex_buffer, and index_buffer_size needs to be the actual size of
+  // index_buffer (in triangles).
   GLuint vertex_array{kInvalid};
   GLuint vertex_buffer{kInvalid};
   GLuint index_buffer{kInvalid};
   int index_buffer_size{0};
 
-  /* True indicates that this has texture coordinates to support texture
-   maps. See MeshData::has_tex_coord for detail.  */
-  bool has_tex_coord{};
+  /* Reports the state of the UV data stored in the vertex buffer. */
+  geometry::internal::UvState uv_state{geometry::internal::UvState::kNone};
 
   // The number of vertices encoded in `vertex_buffer`.
   int v_count{};
