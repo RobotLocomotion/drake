@@ -1,3 +1,4 @@
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
@@ -379,10 +380,20 @@ TEST_F(DeformableDriverContactTest, AppendDiscreteContactPairs) {
   /* tau for deformable body is set to kDissipationTimeScale and is unset for
    rigid body (which then assumes the default value, dt). */
   constexpr double expected_tau = kDissipationTimeScale + kDt;
-  // Stiffness is set to infinity for deformable contact pairs.
+  /* Stiffness is set to infinity for deformable contact pairs. */
   constexpr double expected_k = std::numeric_limits<double>::infinity();
   GeometryId id0 = model_->GetGeometryId(body_id0_);
   GeometryId id1 = model_->GetGeometryId(body_id1_);
+
+  /* The set of face indices for each contact surface should be
+   {0, 1, ..., num_contact_points - 1}. */
+  std::set<int> face_indices_0;
+  std::set<int> face_indices_1;
+  std::set<int> expected_face_indices;
+  for (int i = 0; i < contact_data.contact_surfaces()[0].num_contact_points();
+       ++i) {
+    expected_face_indices.insert(i);
+  }
 
   for (int i = 0; i < contact_pairs.size(); ++i) {
     const DiscreteContactPair<double>& pair = contact_pairs[i];
@@ -395,7 +406,17 @@ TEST_F(DeformableDriverContactTest, AppendDiscreteContactPairs) {
     EXPECT_EQ(pair.stiffness, expected_k);
     EXPECT_EQ(pair.dissipation_time_scale, expected_tau);
     EXPECT_EQ(pair.friction_coefficient, 1.0);
+    ASSERT_TRUE(pair.surface_index.has_value());
+    ASSERT_TRUE(pair.face_index.has_value());
+    EXPECT_THAT(pair.surface_index.value(), testing::AnyOf(0, 1));
+    if (pair.id_A == id0) {
+      face_indices_0.insert(pair.face_index.value());
+    } else {
+      face_indices_1.insert(pair.face_index.value());
+    }
   }
+  EXPECT_EQ(face_indices_0, expected_face_indices);
+  EXPECT_EQ(face_indices_1, expected_face_indices);
 }
 
 /* Verifies that the post contact velocites for deformable bodies are as

@@ -8,7 +8,6 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/scene_graph_inspector.h"
-#include "drake/multibody/plant/contact_results.h"
 #include "drake/multibody/plant/deformable_driver.h"
 #include "drake/multibody/plant/discrete_update_manager.h"
 #include "drake/systems/framework/context.h"
@@ -116,7 +115,6 @@ class CompliantContactManager final : public DiscreteUpdateManager<T> {
   // Struct used to conglomerate the indexes of cache entries declared by the
   // manager.
   struct CacheIndexes {
-    systems::CacheIndex hydroelastic_contact_info;
     systems::CacheIndex non_constraint_forces_accelerations;
   };
 
@@ -157,22 +155,9 @@ class CompliantContactManager final : public DiscreteUpdateManager<T> {
   void DoCalcAccelerationKinematicsCache(
       const systems::Context<T>&,
       multibody::internal::AccelerationKinematicsCache<T>*) const final;
-  void DoCalcContactResults(const systems::Context<T>&,
-                            ContactResults<T>* contact_results) const final;
   void DoCalcDiscreteUpdateMultibodyForces(
       const systems::Context<T>& context,
       MultibodyForces<T>* forces) const final;
-
-  // Computes per-face contact information for the hydroelastic model (slip
-  // velocity, traction, etc). On return contact_info->size() will equal the
-  // number of faces discretizing the contact surface.
-  void CalcHydroelasticContactInfo(
-      const systems::Context<T>& context,
-      std::vector<HydroelasticContactInfo<T>>* contact_info) const;
-
-  // Eval version of CalcHydroelasticContactInfo() .
-  const std::vector<HydroelasticContactInfo<T>>& EvalHydroelasticContactInfo(
-      const systems::Context<T>& context) const;
 
   // Computes non-constraint forces and the accelerations they induce.
   void CalcAccelerationsDueToNonConstraintForcesCache(
@@ -184,20 +169,6 @@ class CompliantContactManager final : public DiscreteUpdateManager<T> {
   const multibody::internal::AccelerationKinematicsCache<T>&
   EvalAccelerationsDueToNonConstraintForcesCache(
       const systems::Context<T>& context) const;
-
-  // Helper method to fill in contact_results with point contact information
-  // for the given state stored in `context`.
-  // @param[in,out] contact_results is appended to
-  void AppendContactResultsForPointContact(
-      const systems::Context<T>& context,
-      ContactResults<T>* contact_results) const;
-
-  // Helper method to fill in `contact_results` with hydroelastic contact
-  // information for the given state stored in `context`.
-  // @param[in,out] contact_results is appended to
-  void AppendContactResultsForHydroelasticContact(
-      const systems::Context<T>& context,
-      ContactResults<T>* contact_results) const;
 
   CacheIndexes cache_indexes_;
   // Vector of joint damping coefficients, of size plant().num_velocities().

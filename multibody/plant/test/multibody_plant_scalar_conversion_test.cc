@@ -185,9 +185,6 @@ class DoubleOnlyDiscreteUpdateManager final
       const systems::Context<T>&,
       internal::AccelerationKinematicsCache<T>*) const final {}
 
-  void DoCalcContactResults(const systems::Context<T>&,
-                            ContactResults<T>*) const final {}
-
   void DoCalcDiscreteValues(const systems::Context<T>&,
                             systems::DiscreteValues<T>*) const final {}
 
