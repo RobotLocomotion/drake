@@ -778,15 +778,14 @@ template <typename T>
 void SapDriver<T>::CalcContactSolverResults(
     const systems::Context<T>& context,
     contact_solvers::internal::ContactSolverResults<T>* results) const {
-  const ContactProblemCache<T>& contact_problem_cache =
-      EvalContactProblemCache(context);
-  const SapContactProblem<T>& sap_problem = *contact_problem_cache.sap_problem;
   const SapSolverResults<T>& sap_results = EvalSapSolverResults(context);
   const std::vector<DiscreteContactPair<T>>& discrete_pairs =
       manager().EvalDiscreteContactPairs(context);
   const int num_contacts = discrete_pairs.size();
-  PackContactSolverResults(context, sap_problem, num_contacts, sap_results,
-                           results);
+  const ContactProblemCache<T>& contact_problem_cache =
+      EvalContactProblemCache(context);
+  PackContactSolverResults(context, *contact_problem_cache.sap_problem,
+                           num_contacts, sap_results, results);
 }
 
 template <typename T>
@@ -801,8 +800,6 @@ void SapDriver<T>::CalcDiscreteUpdateMultibodyForces(
   const auto v0 = x0.bottomRows(plant().num_velocities());
 
   // Next time step state.
-  const contact_solvers::internal::SapContactProblem<T>& problem =
-      *EvalContactProblemCache(context).sap_problem;
   const SapSolverResults<T>& sap_results = EvalSapSolverResults(context);
   // Generalized velocities and accelerations.
   const VectorX<T>& v = sap_results.v;
@@ -836,8 +833,10 @@ void SapDriver<T>::CalcDiscreteUpdateMultibodyForces(
   // the reporting of multibody forces is defined to be at body origins and
   // expressed in the world frame.
   // Therefore aggregation of forces per-body makes sense in this call.
-  problem.CalcConstraintMultibodyForces(gamma, &constraints_generalized_forces,
-                                        &constraint_spatial_forces);
+  const ContactProblemCache<T>& contact_problem_cache =
+      EvalContactProblemCache(context);
+  contact_problem_cache.sap_problem->CalcConstraintMultibodyForces(
+      gamma, &constraints_generalized_forces, &constraint_spatial_forces);
   generalized_forces += constraints_generalized_forces;
 
   // N.B. The CompliantContactManager indexes constraints objects with body
