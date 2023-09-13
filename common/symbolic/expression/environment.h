@@ -37,22 +37,6 @@ namespace symbolic {
  *   const double res2 = e2.Evaluate(env);  // x - y => 2.0 - 3.0 => -1.0
  *   const bool res = f.Evaluate(env);  // x + y > x - y => 5.0 >= -1.0 => True
  * \endcode
- *
- * Note that it is not allowed to have a dummy variable in an environment. It
- * throws std::exception for the attempts to create an environment with a
- * dummy variable, to insert a dummy variable to an existing environment, or to
- * take a reference to a value mapped to a dummy variable. See the following
- * examples.
- *
- * \code{.cpp}
- *   Variable    var_dummy{};           // OK to have a dummy variable
- *   Environment e1{var_dummy};         // throws exception
- *   Environment e2{{var_dummy, 1.0}};  // throws exception
- *   Environment e{};
- *   e.insert(var_dummy, 1.0);          // throws exception
- *   e[var_dummy] = 3.0;                // throws exception
- * \endcode
- *
  */
 class Environment {
  public:
