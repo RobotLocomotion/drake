@@ -39,6 +39,7 @@ from pydrake.multibody.tree import (
     LinearSpringDamper_,
     ModelInstanceIndex,
     MultibodyForces_,
+    PdControllerGains,
     PlanarJoint_,
     PrismaticJoint_,
     PrismaticSpring_,
@@ -2481,11 +2482,21 @@ class TestPlant(unittest.TestCase):
         file_name = FindResourceOrThrow(
             "drake/multibody/benchmarks/acrobot/acrobot.sdf")
         # N.B. `Parser` only supports `MultibodyPlant_[float]`.
-        plant_f = MultibodyPlant_[float](0.0)
+        # N.B. PD controllers below are only supported by discrete models.
+        plant_f = MultibodyPlant_[float](0.01)
         Parser(plant_f).AddModels(file_name)
         # Getting ready for when we set foot on Mars :-).
         gravity_vector = np.array([0.0, 0.0, -3.71])
         plant_f.mutable_gravity_field().set_gravity_vector(gravity_vector)
+
+        # Smoke test PD controllers APIs.
+        elbow = plant_f.GetJointActuatorByName("ElbowJoint")
+        mutable_elbow = plant_f.get_mutable_joint_actuator(elbow.index())
+        gains = PdControllerGains(p=2000.0, d=100.0)
+        mutable_elbow.set_controller_gains(gains)
+        self.assertTrue(mutable_elbow.has_controller())
+        mutable_elbow.get_controller_gains()
+
         plant_f.Finalize()
         plant = to_type(plant_f, T)
         context = plant.CreateDefaultContext()
