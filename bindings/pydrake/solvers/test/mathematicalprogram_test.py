@@ -916,8 +916,8 @@ class TestMathematicalProgram(unittest.TestCase):
                 binding_bad_shape.evaluator().Eval(x0)
             self.assertEqual(
                 str(cm.exception),
-                "PyFunctionCost: Output must be of .ndim = 0 (scalar) and "
-                ".size = 1. Got .ndim = 1 and .size = 1 instead.")
+                "PyFunctionCost: Return value must be of .ndim = 0 (scalar) "
+                "and .size = 1. Got .ndim = 1 and .size = 1 instead.")
 
             # Bad output dtype.
             U = self.get_different_scalar_type(T)
@@ -927,12 +927,13 @@ class TestMathematicalProgram(unittest.TestCase):
                 return U(0.)
 
             binding_bad_dtype = prog.AddCost(user_cost_bad_dtype, vars=x)
-            with self.assertRaises(RuntimeError) as cm:
+            with self.assertRaises(TypeError) as cm:
                 binding_bad_dtype.evaluator().Eval(x0)
             self.assertEqual(
                 str(cm.exception),
-                f"PyFunctionCost: Output must be of scalar type {T.__name__}. "
-                f"Got {U.__name__} instead.")
+                f"When PyFunctionCost is called with an array of type "
+                f"{T.__name__} the return value must be the same type, not "
+                f"{U.__name__}.")
 
     def test_pyconstraint_wrap_error(self):
         """Tests for checks using PyFunctionConstraint::Wrap."""
@@ -972,7 +973,7 @@ class TestMathematicalProgram(unittest.TestCase):
                 binding_bad_shape.evaluator().Eval(x0)
             self.assertEqual(
                 str(cm.exception),
-                "PyFunctionConstraint: Output must be of .ndim = 1 or 2 "
+                "PyFunctionConstraint: Return value must be of .ndim = 1 or 2 "
                 "(vector) and .size = 1. Got .ndim = 0 and .size = 1 instead.")
 
             # Bad output dtype.
@@ -984,12 +985,13 @@ class TestMathematicalProgram(unittest.TestCase):
 
             binding_bad_dtype = prog.AddConstraint(
                 user_constraint_bad_dtype, lb=[0.], ub=[2.], vars=x)
-            with self.assertRaises(RuntimeError) as cm:
+            with self.assertRaises(TypeError) as cm:
                 binding_bad_dtype.evaluator().Eval(x0)
             self.assertEqual(
                 str(cm.exception),
-                f"PyFunctionConstraint: Output must be of scalar type "
-                f"{T.__name__}. Got {U.__name__} instead.")
+                f"When PyFunctionConstraint is called with an array of type "
+                f"{T.__name__} the return value must be the same type, not "
+                f"{U.__name__}.")
 
     def test_addcost_symbolic(self):
         prog = mp.MathematicalProgram()
