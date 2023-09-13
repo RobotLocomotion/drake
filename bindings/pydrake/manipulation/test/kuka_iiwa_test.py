@@ -126,7 +126,7 @@ class TestKukaIiwa(unittest.TestCase):
             controller_plant=controller_plant, lcm=DrakeLcm(), builder=builder,
             ext_joint_filter_tau=0.12, desired_iiwa_kp_gains=np.arange(7),
             control_mode=mut.IiwaControlMode.kPositionAndTorque)
-        self.assertEqual(len(builder.GetSystems()), 12)
+        self.assertEqual(len(builder.GetSystems()), 7)
 
     def test_kuka_iiwa_driver(self):
         dut = mut.IiwaDriver()
@@ -153,4 +153,4 @@ class TestKukaIiwa(unittest.TestCase):
             driver_config=dut, model_instance_name="iiwa7",
             sim_plant=plant, models_from_directives=model_dict, lcms=lcm_bus,
             builder=builder)
-        self.assertEqual(len(builder.GetSystems()), 13)
+        self.assertEqual(len(builder.GetSystems()), 8)
