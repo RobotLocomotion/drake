@@ -51,9 +51,6 @@ namespace {
 
 namespace fs = std::filesystem;
 
-constexpr char kInternalGroup[] = "render_engine_gl_internal";
-constexpr char kHasTexCoordProperty[] = "has_tex_coord";
-
 // Data to pass through the reification process.
 struct RegistrationData {
   const GeometryId id;
@@ -456,17 +453,8 @@ class DefaultTextureColorShader final : public LightingShader {
 
     if (!texture_id.has_value()) return std::nullopt;
 
-    const bool has_tex_coord = properties.GetPropertyOrDefault(
-        kInternalGroup, kHasTexCoordProperty, RenderMesh::kHasTexCoordDefault);
-
-    if (!has_tex_coord) {
-      // TODO(eric.cousineau): How to carry mesh name along?
-      throw std::runtime_error(fmt::format(
-          "A mesh with no texture coordinates has erroneously defined the "
-          "property ('phong', 'diffuse_map') as {}. To use a diffuse texture "
-          "map, the mesh must have texture coordinates.",
-          file_name));
-    }
+    // In constructing the material with a texture map, the UVs have already
+    // been validated.
 
     const auto& scale = properties.GetPropertyOrDefault(
         "phong", "diffuse_scale", Vector2d(1, 1));
@@ -863,8 +851,6 @@ void RenderEngineGl::ImplementMesh(int geometry_index, void* user_data,
   PerceptionProperties temp_props(data.properties);
 
   const OpenGlGeometry& geometry = geometries_[geometry_index];
-  temp_props.AddProperty(kInternalGroup, kHasTexCoordProperty,
-                         geometry.has_tex_coord);
 
   const std::string file_key = GetPathKey(filename_in);
   RenderMaterial material;
@@ -873,9 +859,9 @@ void RenderEngineGl::ImplementMesh(int geometry_index, void* user_data,
   if (meshes_[file_key].mesh_material.has_value()) {
     material = meshes_[file_key].mesh_material.value();
   } else {
-    material = MakeMeshFallbackMaterial(data.properties, filename_in,
-                                        parameters_.default_diffuse,
-                                        drake::internal::DiagnosticPolicy());
+    material = MakeMeshFallbackMaterial(
+        data.properties, filename_in, parameters_.default_diffuse,
+        drake::internal::DiagnosticPolicy(), geometry.uv_state);
   }
   temp_props.UpdateProperty("phong", "diffuse_map",
                             material.diffuse_map.string());
@@ -1382,7 +1368,7 @@ int RenderEngineGl::CreateGlGeometry(const RenderMesh& mesh_data) {
 
   geometry.index_buffer_size = mesh_data.indices.size();
 
-  geometry.has_tex_coord = mesh_data.has_tex_coord;
+  geometry.uv_state = mesh_data.uv_state;
 
   geometry.v_count = v_count;
   CreateVertexArray(&geometry);

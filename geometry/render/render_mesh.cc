@@ -32,8 +32,8 @@ using std::vector;
 RenderMaterial MakeMaterialFromMtl(const tinyobj::material_t& mat,
                                    const std::filesystem::path& obj_path,
                                    const GeometryProperties& properties,
-                                   bool has_tex_coord,
-                                   const DiagnosticPolicy& policy) {
+                                   const DiagnosticPolicy& policy,
+                                   UvState uv_state) {
   RenderMaterial result;
 
   result.from_mesh_file = true;
@@ -72,13 +72,13 @@ RenderMaterial MakeMaterialFromMtl(const tinyobj::material_t& mat,
           "image: {}. The image will be omitted.",
           result.diffuse_map.string()));
       result.diffuse_map.clear();
-    }
-    if (!has_tex_coord) {
+    } else if (uv_state != UvState::kFull) {
       policy.Warning(fmt::format(
           "The OBJ file's material requested a diffuse texture image: {}. "
-          "However the mesh doesn't define texture coordinates. The image "
+          "However the mesh doesn't define {} texture coordinates. The image "
           "will be omitted.",
-          result.diffuse_map.string()));
+          result.diffuse_map.string(),
+          uv_state == UvState::kNone ? "any" : "a complete set of"));
       result.diffuse_map.clear();
     }
   }
@@ -263,7 +263,6 @@ RenderMesh LoadRenderMeshFromObj(const std::filesystem::path& obj_path,
   for (int n = 0; n < mesh_data.normals.rows(); ++n) {
     mesh_data.normals.row(n) = normals[n];
   }
-  mesh_data.has_tex_coord = has_tex_coord;
   mesh_data.uvs.resize(uvs.size(), 2);
   for (int uv = 0; uv < mesh_data.uvs.rows(); ++uv) {
     mesh_data.uvs.row(uv) = uvs[uv];
@@ -271,10 +270,11 @@ RenderMesh LoadRenderMeshFromObj(const std::filesystem::path& obj_path,
 
   // If we've only used a single material in the OBJ, use it. If the only
   // referenced material is "-1", it means there is no material.
+  mesh_data.uv_state = has_tex_coord ? UvState::kFull : UvState::kNone;
   if (referenced_materials.size() == 1 && referenced_materials.count(-1) == 0) {
     mesh_data.material =
         MakeMaterialFromMtl(reader.GetMaterials().front(), obj_path, properties,
-                            has_tex_coord, policy);
+                            policy, mesh_data.uv_state);
   } else {
     // We'll need to use the material fallback logic for meshes.
     if (referenced_materials.size() > 1) {
@@ -296,8 +296,8 @@ RenderMesh LoadRenderMeshFromObj(const std::filesystem::path& obj_path,
           obj_path.string(), referenced_materials.size(),
           fmt::join(mat_names, ", "));
     }
-    mesh_data.material =
-        MakeMeshFallbackMaterial(properties, obj_path, default_diffuse, policy);
+    mesh_data.material = MakeMeshFallbackMaterial(
+        properties, obj_path, default_diffuse, policy, mesh_data.uv_state);
   }
 
   return mesh_data;

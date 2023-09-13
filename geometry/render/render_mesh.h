@@ -29,22 +29,11 @@ struct RenderMesh {
   Eigen::Matrix<double, Eigen::Dynamic, 2, Eigen::RowMajor> uvs;
   Eigen::Matrix<unsigned int, Eigen::Dynamic, 3, Eigen::RowMajor> indices;
 
-  /* See docs for `has_tex_coord` below.  */
-  static constexpr bool kHasTexCoordDefault{true};
-
-  // TODO(SeanCurtis-TRI): this flag was necessary when materials and meshes
-  // were resolved separately. Now that we resolve materials at the same time,
-  // we should maintain the invariants that the presence of a texture map
-  // implies the presence of texture coordinates. We make no guarantees about
-  // the opposite direction -- that should only be relevant to efforts to add a
-  // texture material to a RenderMesh that didn't originally parse into having
-  // a texture material. It may or may not work. It also means that this
-  // cannot be a struct; structs don't get to maintain invariants.
-  /* This flag indicates that this mesh has texture coordinates to support maps.
-   If True, the values of `uvs` will be nontrivial.
-   If False, the values of `uvs` will be all zeros, but will still have the
-   correct size.  */
-  bool has_tex_coord{kHasTexCoordDefault};
+  /* Indicates the degree that UV coordinates have been assigned to the mesh.
+   only UvState::kFull supports texture images. No matter what, the `uvs` matrix
+   will be appropriately sized. But only for kFull will the values be
+   meaningful. */
+  UvState uv_state{UvState::kNone};
 
   /* The specification of the material associated with this mesh data. */
   RenderMaterial material;
@@ -84,8 +73,8 @@ struct RenderMesh {
     - The geometric data is reconditioned to be compatible with "geometry
       buffer" applications. (See RenderMesh for details.)
 
- If no texture coordinates are specified by the file, it will be indicated in
- the returned RenderMesh. See RenderMesh::has_tex_coord for more detail.
+ If texture coordinates are assigned to vertices, it will be indicated in
+ the returned RenderMesh. See RenderMesh::uv_state for more detail.
 
  If the material includes texture paths, they will have been confirmed to both
  exist and be accessible.

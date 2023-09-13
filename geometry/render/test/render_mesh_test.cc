@@ -532,7 +532,7 @@ TEST_F(LoadRenderMeshFromObjTest, MaterialLibraryTextureButNoUvs) {
       obj_path, empty_props(), kDefaultDiffuse, diagnostic_policy_);
   EXPECT_THAT(TakeWarning(),
               testing::MatchesRegex(".*requested a diffuse texture.*doesn't "
-                                    "define texture coordinates.*"));
+                                    "define any texture coordinates.*"));
   EXPECT_EQ(mesh.material.diffuse, Rgba(1, 1, 0));
   EXPECT_EQ(mesh.material.diffuse_map, "");
 }
