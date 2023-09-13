@@ -345,10 +345,10 @@ TEST_F(SymbolicRationalFunctionTest, Evaluate) {
       {var_y_, -5.0},
       {var_z_, -2.0},
   }};
-  const double expected_numerator{4.0 * -7.0 * -7.0 * -5.0 +
-                                   1.0 * -7.0 * -5.0 + 2.0 * -2.0};
+  const double expected_numerator{4.0 * -7.0 * -7.0 * -5.0 + 1.0 * -7.0 * -5.0 +
+                                  2.0 * -2.0};
   const double expected_denominator{4.0 * -7.0 * -2.0 + 1.0 * -5.0 * -2.0 +
-                                     2.0 * -7.0 * -5.0};
+                                    2.0 * -7.0 * -5.0};
 
   EXPECT_EQ(f.Evaluate(env), expected_numerator / expected_denominator);
 }

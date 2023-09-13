@@ -35,26 +35,6 @@ void DirichletBoundaryCondition<T>::ApplyBoundaryConditionToState(
 
 template <typename T>
 void DirichletBoundaryCondition<T>::ApplyBoundaryConditionToTangentMatrix(
-    internal::PetscSymmetricBlockSparseMatrix* tangent_matrix) const {
-  DRAKE_DEMAND(tangent_matrix != nullptr);
-  DRAKE_DEMAND(tangent_matrix->rows() == tangent_matrix->cols());
-  if (node_to_boundary_state_.empty()) return;
-  VerifyIndices(tangent_matrix->cols() / 3);
-
-  /* Zero out all rows and columns of the tangent matrix corresponding to
-   DoFs under the BC (except the diagonal entry which is set to 1). */
-  std::vector<int> dof_indices(3 * node_to_boundary_state_.size());
-  int i = 0;
-  for (const auto& it : node_to_boundary_state_) {
-    dof_indices[i++] = 3 * it.first;
-    dof_indices[i++] = 3 * it.first + 1;
-    dof_indices[i++] = 3 * it.first + 2;
-  }
-  tangent_matrix->ZeroRowsAndColumns(dof_indices, /* diagonal entry */ 1.0);
-}
-
-template <typename T>
-void DirichletBoundaryCondition<T>::ApplyBoundaryConditionToTangentMatrix(
     contact_solvers::internal::Block3x3SparseSymmetricMatrix* tangent_matrix)
     const {
   DRAKE_DEMAND(tangent_matrix != nullptr);

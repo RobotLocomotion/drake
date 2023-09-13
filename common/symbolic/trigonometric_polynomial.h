@@ -74,9 +74,8 @@ Expression Substitute(const Expression& e, const SinCosSubstitution& subs);
 /** Matrix version of sin/cos substitution.
  @pydrake_mkdoc_identifier{sincos_matrix} */
 template <typename Derived>
-MatrixLikewise<Expression, Derived>
-Substitute(const Eigen::MatrixBase<Derived>& m,
-           const SinCosSubstitution& subs) {
+MatrixLikewise<Expression, Derived> Substitute(
+    const Eigen::MatrixBase<Derived>& m, const SinCosSubstitution& subs) {
   static_assert(std::is_same_v<typename Derived::Scalar, Expression>,
                 "Substitute only accepts a matrix of symbolic::Expression.");
   // Note that the return type is written out explicitly to help gcc 5 (on

@@ -29,8 +29,7 @@ class SinCosVisitor {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SinCosVisitor)
 
-  explicit SinCosVisitor(SinCosSubstitution s)
-      : subs_{std::move(s)} {};
+  explicit SinCosVisitor(SinCosSubstitution s) : subs_{std::move(s)} {};
 
   [[nodiscard]] Expression Substitute(
       const Expression& e,
@@ -186,7 +185,7 @@ class SinCosVisitor {
       }
       auto iter = subs_.find(get_variable(x));
       if (iter == subs_.end()) {
-          throw std::runtime_error(msg);
+        throw std::runtime_error(msg);
       }
       if (iter->second.type != SinCosSubstitutionType::kAngle) {
         // Handle special case of cos(±0.5*x).

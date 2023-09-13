@@ -358,6 +358,14 @@ class Polynomial {
   /// Note that this is different from the p.TotalDegree() being an odd number.
   [[nodiscard]] bool IsOdd() const;
 
+  /// Returns the roots of a _univariate_ polynomial with constant coefficients
+  /// as a column vector. There is no specific guarantee on the order of the
+  /// returned roots.
+  ///
+  /// @throws std::exception if `this` is not univariate with constant
+  /// coefficients.
+  [[nodiscard]] Eigen::VectorXcd Roots() const;
+
   Polynomial& operator+=(const Polynomial& p);
   Polynomial& operator+=(const Monomial& m);
   Polynomial& operator+=(double c);
@@ -506,6 +514,7 @@ Eigen::Matrix<Polynomial, MatrixL::RowsAtCompileTime,
               MatrixR::ColsAtCompileTime>
 operator*(const MatrixL& lhs, const MatrixR& rhs);
 #else
+// clang-format off
 template <typename MatrixL, typename MatrixR>
 typename std::enable_if_t<
     std::is_base_of_v<Eigen::MatrixBase<MatrixL>, MatrixL> &&
@@ -532,6 +541,7 @@ Eigen::Matrix<Polynomial, MatrixL::RowsAtCompileTime,
 operator*(const MatrixL& lhs, const MatrixR& rhs) {
   return lhs.template cast<Polynomial>() * rhs.template cast<Polynomial>();
 }
+// clang-format on
 #endif
 
 /// Provides the following matrix operations:
@@ -551,6 +561,7 @@ Eigen::Matrix<Polynomial, MatrixL::RowsAtCompileTime,
               MatrixR::ColsAtCompileTime>
 operator*(const MatrixL& lhs, const MatrixR& rhs);
 #else
+// clang-format off
 template <typename MatrixL, typename MatrixR>
 typename std::enable_if_t<
     std::is_base_of_v<Eigen::MatrixBase<MatrixL>, MatrixL> &&
@@ -570,6 +581,7 @@ Eigen::Matrix<Expression, MatrixL::RowsAtCompileTime,
 operator*(const MatrixL& lhs, const MatrixR& rhs) {
   return lhs.template cast<Expression>() * rhs.template cast<Expression>();
 }
+// clang-format on
 #endif
 
 }  // namespace symbolic
@@ -752,10 +764,11 @@ template <typename Derived>
     std::is_same_v<typename Derived::Scalar, Polynomial>,
     MatrixLikewise<double, Derived>>
 Evaluate(const Eigen::MatrixBase<Derived>& m, const Environment& env) {
-  return m.unaryExpr([&env](const Polynomial &p) {
+  return m.unaryExpr([&env](const Polynomial& p) {
     return p.Evaluate(env);
   });
 }
+
 /// Partially evaluates a matrix `m` of symbolic polynomials using `env`.
 ///
 /// @returns a matrix of Polynomials whose size is the size of @p m.

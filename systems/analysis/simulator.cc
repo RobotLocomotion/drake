@@ -5,6 +5,7 @@
 #include "drake/common/extract_double.h"
 #include "drake/common/text_logging.h"
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
+#include "drake/systems/analysis/simulator_python_internal.h"
 
 namespace drake {
 namespace systems {
@@ -723,8 +724,19 @@ void Simulator<T>::ResetStatistics() {
   initial_realtime_ = Clock::now();
 }
 
+namespace internal {
+template <typename T>
+void SimulatorPythonInternal<T>::set_python_monitor(
+    Simulator<T>* simulator, void (*monitor)()) {
+  DRAKE_DEMAND(simulator != nullptr);
+  simulator->python_monitor_ = monitor;
+}
+}  // namespace internal
+
 }  // namespace systems
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
     class drake::systems::Simulator)
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class drake::systems::internal::SimulatorPythonInternal)

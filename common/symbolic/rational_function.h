@@ -313,9 +313,8 @@ DRAKE_SYMBOLIC_SCALAR_SUM_DIFF_PRODUCT_CONJ_PRODUCT_TRAITS(
 
 namespace numext {
 template <>
-bool equal_strict(
-    const drake::symbolic::RationalFunction& x,
-    const drake::symbolic::RationalFunction& y);
+bool equal_strict(const drake::symbolic::RationalFunction& x,
+                  const drake::symbolic::RationalFunction& y);
 template <>
 EIGEN_STRONG_INLINE bool not_equal_strict(
     const drake::symbolic::RationalFunction& x,
@@ -326,10 +325,9 @@ EIGEN_STRONG_INLINE bool not_equal_strict(
 }  // namespace Eigen
 #endif  // !defined(DRAKE_DOXYGEN_CXX)
 
-
 // TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
 namespace fmt {
 template <>
-struct formatter<drake::symbolic::RationalFunction>
-    : drake::ostream_formatter {};
+struct formatter<drake::symbolic::RationalFunction> : drake::ostream_formatter {
+};
 }  // namespace fmt

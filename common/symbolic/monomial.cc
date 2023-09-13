@@ -176,7 +176,9 @@ bool Monomial::operator==(const Monomial& m) const {
   return true;
 }
 
-bool Monomial::operator!=(const Monomial& m) const { return !(*this == m); }
+bool Monomial::operator!=(const Monomial& m) const {
+  return !(*this == m);
+}
 
 double Monomial::Evaluate(const Environment& env) const {
   return accumulate(
@@ -304,7 +306,9 @@ Monomial operator*(Monomial m1, const Monomial& m2) {
   return m1;
 }
 
-Monomial pow(Monomial m, const int p) { return m.pow_in_place(p); }
+Monomial pow(Monomial m, const int p) {
+  return m.pow_in_place(p);
+}
 
 }  // namespace symbolic
 }  // namespace drake

@@ -167,10 +167,6 @@ void MathematicalProgram::AddDecisionVariables(
   for (int i = 0; i < decision_variables.rows(); ++i) {
     for (int j = 0; j < decision_variables.cols(); ++j) {
       const auto& var = decision_variables(i, j);
-      if (var.is_dummy()) {
-        throw std::runtime_error(fmt::format(
-            "decision_variables({}, {}) should not be a dummy variable", i, j));
-      }
       if (decision_variable_index_.find(var.get_id()) !=
           decision_variable_index_.end()) {
         continue;
@@ -400,10 +396,6 @@ MatrixXIndeterminate MathematicalProgram::NewIndeterminates(
 
 int MathematicalProgram::AddIndeterminate(
     const symbolic::Variable& new_indeterminate) {
-  if (new_indeterminate.is_dummy()) {
-    throw std::runtime_error(
-        fmt::format("{} should not be a dummy variable.", new_indeterminate));
-  }
   if (decision_variable_index_.find(new_indeterminate.get_id()) !=
       decision_variable_index_.end()) {
     throw std::runtime_error(

@@ -11,26 +11,16 @@ without resorting to their convex hulls.
 In the source code, this example shows how to set up bodies by loading SDFormat
 files and also calling C++ APIs.
 
-![ball_plate](images/ball_plate.jpg)
+![ball_plate](../../../multibody/hydroelastics/images/drake-vis-01.png)
 
-<h2> Preliminary Step: the legacy drake_visualizer application of days past </h2>
+<h2>Preliminary step: start the visualizer </h2>
 
 ```
-bazel run //tools:drake_visualizer &
+bazel run //tools:meldis -- --open-window &
 ```
-
-In `Plugins > Contacts > Configure Hydroelastic Contact Visualization` you
-might want to set these:
-
-- Maximum pressure = 1e4
-- Vector scaling mode = Scaled
-- Global scale of all vectors = 0.05
-
-as shown here:
-
-![ball_plate](images/ball_plate_hydroelastic_contact_visualization_settings.jpg)
 
 <h2>Run with Hydroelastic</h2>
+
 By default, this example uses hydroelastic contact model.
 It is intentionally run at 0.1 realtime rate, so we can appreciate dynamics
 in the visualization. Otherwise, the simulation is too fast for human eyes.
@@ -60,27 +50,19 @@ bazel run //examples/hydroelastic/ball_plate:ball_plate_run_dynamics \
 --wz=10000
 ```
 
-![ball_plate](images/ball_plate_spin_the_ball.jpg)
-
 The example command above intentionally specifies very low real-time rate of
 0.1, so we can see it easier.
 On a good computer, it can run at real-time rate about 1.0.
 
 <h2>Use polygon or triangle contact surfaces</h2>
-By default, this example uses polygon contact surfaces that look like this:
 
-![ball_plate](images/ball_plate_contact_polygons.jpg)
-
-The option `--contact_surface_representation=triangle` specifies triangle
-contact surfaces:
+By default, this example uses polygon contact surfaces. The option
+`--contact_surface_representation=triangle` specifies triangle contact surfaces:
 ```
 bazel run //examples/hydroelastic/ball_plate:ball_plate_run_dynamics \
 -- --simulator_target_realtime_rate=0.01 \
 --contact_surface_representation=triangle
 ```
-It will look like this:
-
-![ball_plate](images/ball_plate_contact_triangles.jpg)
 
 <h2>Run with point contact model</h2>
 

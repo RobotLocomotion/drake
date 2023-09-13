@@ -167,8 +167,7 @@ TEST_F(SymbolicPolynomialBasisElementTest, Evaluate) {
   EXPECT_EQ(p1.Evaluate(env2), 9);
   // p2=xy², but env2 does not contain value for x.
   double dummy{};
-  DRAKE_EXPECT_THROWS_MESSAGE(dummy = p2.Evaluate(env2),
-                              ".* x is not in env");
+  DRAKE_EXPECT_THROWS_MESSAGE(dummy = p2.Evaluate(env2), ".* x is not in env");
   unused(dummy);
 }
 

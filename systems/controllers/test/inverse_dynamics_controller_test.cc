@@ -28,6 +28,8 @@ class InverseDynamicsControllerTest : public ::testing::Test {
   void ConfigTestAndCheck(InverseDynamicsController<double>* test_sys,
                           const VectorX<double>& kp, const VectorX<double>& ki,
                           const VectorX<double>& kd) {
+    EXPECT_EQ(test_sys->get_output_port().get_index(), 0);
+
     auto inverse_dynamics_context = test_sys->CreateDefaultContext();
     auto output = test_sys->AllocateOutput();
     const MultibodyPlant<double>& robot_plant =

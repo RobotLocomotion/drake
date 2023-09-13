@@ -23,8 +23,8 @@ class IiwaCommandSenderTest : public testing::Test {
  protected:
   template <typename... Args>
   void MakeDut(Args&&... args) {
-    dut_ = std::make_unique<IiwaCommandSender>(
-          kIiwaArmNumJoints, std::forward<Args>(args)...);
+    dut_ = std::make_unique<IiwaCommandSender>(kIiwaArmNumJoints,
+                                               std::forward<Args>(args)...);
     context_ptr_ = dut().CreateDefaultContext();
   }
 

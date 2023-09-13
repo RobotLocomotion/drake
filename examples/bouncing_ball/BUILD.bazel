@@ -26,6 +26,7 @@ drake_cc_googletest(
     name = "bouncing_ball_test",
     deps = [
         ":bouncing_ball",
+        "//systems/analysis:runge_kutta3_integrator",
         "//systems/analysis:simulator",
         "//systems/framework/test_utilities",
     ],

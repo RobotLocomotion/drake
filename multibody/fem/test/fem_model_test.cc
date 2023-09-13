@@ -99,18 +99,6 @@ GTEST_TEST(FemModelTest, CalcTangentMatrix) {
                               expected_tangent_matrix,
                               4.0 * std::numeric_limits<double>::epsilon(),
                               MatrixCompareType::relative));
-
-  /* Test the PetscSymmetricBlockSparseMatrix variant of tangent matrix. */
-  unique_ptr<internal::PetscSymmetricBlockSparseMatrix> petsc_tangent_matrix =
-      model.MakePetscSymmetricBlockSparseTangentMatrix();
-  ASSERT_EQ(petsc_tangent_matrix->rows(), model.num_dofs());
-  ASSERT_EQ(petsc_tangent_matrix->cols(), model.num_dofs());
-  model.CalcTangentMatrix(*fem_state, weights, petsc_tangent_matrix.get());
-  petsc_tangent_matrix->AssembleIfNecessary();
-  EXPECT_TRUE(CompareMatrices(petsc_tangent_matrix->MakeDenseMatrix(),
-                              expected_tangent_matrix,
-                              4.0 * std::numeric_limits<double>::epsilon(),
-                              MatrixCompareType::relative));
 }
 
 GTEST_TEST(FemModelTest, CalcTangentMatrixNoAutoDiff) {
@@ -174,16 +162,6 @@ GTEST_TEST(FemModelTest, IncompatibleModelState) {
   const Vector3d weights(0.1, 0.2, 0.3);
   DRAKE_EXPECT_THROWS_MESSAGE(
       model.CalcTangentMatrix(*fem_state, weights, tangent_matrix.get()),
-      "CalcTangentMatrix.* model and state are not compatible.");
-
-  /* Trying to calculate the petsc tangent matrix with the old state causes an
-   exception. */
-  unique_ptr<internal::PetscSymmetricBlockSparseMatrix> petsc_tangent_matrix =
-      model.MakePetscSymmetricBlockSparseTangentMatrix();
-  ASSERT_EQ(petsc_tangent_matrix->rows(), model.num_dofs());
-  ASSERT_EQ(petsc_tangent_matrix->cols(), model.num_dofs());
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      model.CalcTangentMatrix(*fem_state, weights, petsc_tangent_matrix.get()),
       "CalcTangentMatrix.* model and state are not compatible.");
 }
 
@@ -288,17 +266,15 @@ GTEST_TEST(FemModelTest, DirichletBoundaryCondition) {
     const Vector3d weights(0.1, 0.2, 0.3);
 
     unique_ptr<FemState<T>> state0 = model.MakeFemState();
-    unique_ptr<internal::PetscSymmetricBlockSparseMatrix> tangent_matrix0 =
-        model.MakePetscSymmetricBlockSparseTangentMatrix();
+    unique_ptr<contact_solvers::internal::Block3x3SparseSymmetricMatrix>
+        tangent_matrix0 = model.MakeTangentMatrix();
     model.CalcTangentMatrix(*state0, weights, tangent_matrix0.get());
-    tangent_matrix0->AssembleIfNecessary();
     const MatrixX<T> dense_tangent_matrix0 = tangent_matrix0->MakeDenseMatrix();
 
     unique_ptr<FemState<T>> state1 = model_without_bc.MakeFemState();
-    unique_ptr<internal::PetscSymmetricBlockSparseMatrix> tangent_matrix1 =
-        model.MakePetscSymmetricBlockSparseTangentMatrix();
+    unique_ptr<contact_solvers::internal::Block3x3SparseSymmetricMatrix>
+        tangent_matrix1 = model.MakeTangentMatrix();
     model_without_bc.CalcTangentMatrix(*state1, weights, tangent_matrix1.get());
-    tangent_matrix1->AssembleIfNecessary();
     MatrixX<T> dense_tangent_matrix1 = tangent_matrix1->MakeDenseMatrix();
     EXPECT_FALSE(CompareMatrices(dense_tangent_matrix0, dense_tangent_matrix1));
 

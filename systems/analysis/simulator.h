@@ -24,6 +24,13 @@
 namespace drake {
 namespace systems {
 
+#ifndef DRAKE_DOXYGEN_CXX
+namespace internal {
+template <typename T>
+class SimulatorPythonInternal;
+}  // namespace internal
+#endif
+
 /// @ingroup simulation
 /// Parameters for fine control of simulator initialization.
 /// @see Simulator<T>::Initialize().
@@ -695,6 +702,8 @@ class Simulator {
   const System<T>& get_system() const { return system_; }
 
  private:
+  template <typename> friend class internal::SimulatorPythonInternal;
+
   enum TimeOrWitnessTriggered {
     kNothingTriggered = 0b00,
     kTimeTriggered = 0b01,
@@ -723,6 +732,7 @@ class Simulator {
   // rather than throwing.
   void CallMonitorUpdateStatusAndMaybeThrow(SimulatorStatus* status) {
     DRAKE_DEMAND(status != nullptr);
+    if (python_monitor_ != nullptr) python_monitor_();
     if (!get_monitor()) return;
     const EventStatus monitor_status = get_monitor()(*context_);
     if (monitor_status.severity() == EventStatus::kReachedTermination) {
@@ -874,6 +884,9 @@ class Simulator {
 
   // Optional monitor() method to capture trajectory, terminate, or fail.
   std::function<EventStatus(const Context<T>&)> monitor_;
+
+  // Optional pydrake-internal monitor callback.
+  void (*python_monitor_)() = nullptr;
 };
 
 #ifndef DRAKE_DOXYGEN_CXX

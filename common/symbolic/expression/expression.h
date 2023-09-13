@@ -180,7 +180,7 @@ class Expression {
   }
 
   /** Constructs an expression from @p var.
-   * @pre @p var is neither a dummy nor a BOOLEAN variable.
+   * @pre @p var is not a BOOLEAN variable.
    */
   // NOLINTNEXTLINE(runtime/explicit): This conversion is desirable.
   Expression(const Variable& var);

@@ -436,7 +436,6 @@ class MathematicalProgram {
    * @param decision_variables The newly added decision_variables.
    * @pre `decision_variables` should not intersect with the existing
    * indeterminates in the optimization program.
-   * @pre Each entry in `decision_variables` should not be a dummy variable.
    * @throws std::exception if the preconditions are not satisfied.
    */
   void AddDecisionVariables(
@@ -837,7 +836,6 @@ class MathematicalProgram {
    * new_indeterminate.
    * @pre `new_indeterminate` should not intersect with the program's
    * decision variables.
-   * @pre new_indeterminate should not be dummy.
    * @pre new_indeterminate should be of CONTINUOUS type.
    */
   int AddIndeterminate(const symbolic::Variable& new_indeterminate);
@@ -849,7 +847,6 @@ class MathematicalProgram {
    * program's old indeterminates.
    * @pre `new_indeterminates` should not intersect with the program's old
    * decision variables.
-   * @pre Each entry in new_indeterminates should not be dummy.
    * @pre Each entry in new_indeterminates should be of CONTINUOUS type.
    */
   void AddIndeterminates(
@@ -862,7 +859,6 @@ class MathematicalProgram {
    * program's old indeterminates.
    * @pre `new_indeterminates` should not intersect with the program's old
    * decision variables.
-   * @pre Each entry in new_indeterminates should not be dummy.
    * @pre Each entry in new_indeterminates should be of CONTINUOUS type.
    */
   void AddIndeterminates(
@@ -2610,7 +2606,7 @@ class MathematicalProgram {
    * dominant.
    * @return M For i < j M[i][j] contains the slack variables, mentioned in
    * @ref addsdd "scaled diagonally dominant matrix constraint". For i >= j,
-   * M[i][j] contains dummy variables.
+   * M[i][j] contains default-constructed variables (with get_id() == 0).
    *
    * @pydrake_mkdoc_identifier{variable}
    */
