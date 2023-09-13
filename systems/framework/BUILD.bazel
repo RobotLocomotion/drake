@@ -358,11 +358,8 @@ drake_cc_library(
 drake_cc_library(
     name = "system_html",
     srcs = ["system_html.cc"],
-    hdrs = [
-        "system_html.h",
-    ],
+    hdrs = ["system_html.h"],
     deps = [
-        ":diagram",
         ":system",
     ],
 )
@@ -967,17 +964,6 @@ drake_cc_googletest(
         ":diagram_builder",
         ":system_visitor",
         "//systems/primitives:adder",
-    ],
-)
-
-drake_cc_googletest(
-    name = "system_html_test",
-    deps = [
-        ":diagram_builder",
-        ":system_html",
-        "//systems/primitives:adder",
-        "//systems/primitives:discrete_derivative",
-        "//systems/primitives:pass_through",
     ],
 )
 
