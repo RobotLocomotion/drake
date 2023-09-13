@@ -1197,8 +1197,6 @@ class System : public SystemBase {
 
   @param max_depth Sets a limit to the depth of nested diagrams to
   visualize.  Set to zero to render a diagram as a single system block.
-
-  @see GenerateHtml
   */
   std::string GetGraphvizString(
       int max_depth = std::numeric_limits<int>::max()) const;

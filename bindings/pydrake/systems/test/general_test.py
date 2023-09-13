@@ -12,6 +12,7 @@ import numpy as np
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common import RandomGenerator
 from pydrake.common.test_utilities import numpy_compare
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.value import AbstractValue, Value
 from pydrake.examples import PendulumPlant, RimlessWheel
 from pydrake.symbolic import Expression
@@ -844,8 +845,8 @@ class TestGeneral(unittest.TestCase):
     def test_generate_html(self):
         system = ZeroOrderHold(period_sec=0.1, vector_size=1)
         system.set_name("zoh")
-        html = GenerateHtml(system, initial_depth=2)
-        self.assertRegex(html, r'key: "zoh"')
+        with catch_drake_warnings(expected_count=1):
+            GenerateHtml(system, initial_depth=2)
 
     def test_diagram_builder_remove(self):
         builder = DiagramBuilder()

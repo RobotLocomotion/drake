@@ -1264,8 +1264,13 @@ void DoScalarIndependentDefinitions(py::module m) {
         GetPyParamList(ConversionPairs{});
   }
 
-  m.def("GenerateHtml", &GenerateHtml, py::arg("system"),
-      py::arg("initial_depth") = 1, doc.GenerateHtml.doc);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  m.def("GenerateHtml",
+      WrapDeprecated(doc.GenerateHtml.doc_deprecated, &GenerateHtml),
+      py::arg("system"), py::arg("initial_depth") = 1,
+      doc.GenerateHtml.doc_deprecated);
+#pragma GCC diagnostic pop
 }
 
 }  // namespace
