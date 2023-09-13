@@ -132,12 +132,12 @@ void MergeTrees(json* j1, json&& j2, const std::string& blob_name,
   for (auto& [key, value] : j2.items()) {
     if (j1->contains(key)) {
       if ((*j1)[key] != value) {
-        const std::string& j1_name = record->FindSourcePath(*j1);
+        const std::filesystem::path& j1_path = record->FindSourcePath(*j1);
         throw std::runtime_error(fmt::format(
             "Error in merging '{}.{}.{}'; two glTF files have different "
             "values. '{}' defines it as {}, but '{}' defines it as {}.",
-            to_string(container_type), blob_name, key, j1_name,
-            fmt_streamed((*j1)[key]), j2_path, fmt_streamed(value)));
+            to_string(container_type), blob_name, key, j1_path.string(),
+            fmt_streamed((*j1)[key]), j2_path.string(), fmt_streamed(value)));
       }
     }
   }
@@ -177,12 +177,12 @@ void MergeBlobs(json* j1, json&& j2, const std::string& blob_name,
       blob1 = std::move(blob2);
       record->AddElementTree(blob1, j2_path);
     } else {
-      const std::string& j1_name = record->FindSourcePath(blob1);
+      const std::filesystem::path& j1_path = record->FindSourcePath(blob1);
       throw std::runtime_error(fmt::format(
           "Error in merging '{}.{}'. To merge, the must both be objects. "
           "'{}' has {} and '{}' has {}.",
-          to_string(container_type), blob_name, j1_name,
-          blob1.is_object() ? "an object" : "a primitive", j2_path,
+          to_string(container_type), blob_name, j1_path.string(),
+          blob1.is_object() ? "an object" : "a primitive", j2_path.string(),
           blob2.is_object() ? "an object" : "a primitive"));
     }
   }
@@ -216,15 +216,17 @@ void MergeRecord::AddElementTree(const json& root,
                                  const std::filesystem::path& source_path) {
   const int source_index = ssize(source_paths_);
   source_paths_.push_back(source_path);
-  std::function<void(const json&)> add_tree = [&](const json& tree_root) {
-    this->merged_trees_[&tree_root] = source_index;
-    if (tree_root.is_object() || tree_root.is_array()) {
-      for (const auto& child : tree_root) {
-        add_tree(child);
+  // Recursively register all of the json elements in the tree rooted at
+  // `subtree`.
+  std::function<void(const json&)> add_tree_recurse = [&](const json& subtree) {
+    this->merged_trees_[&subtree] = source_index;
+    if (subtree.is_object() || subtree.is_array()) {
+      for (const auto& child : subtree) {
+        add_tree_recurse(child);
       }
     }
   };
-  add_tree(root);
+  add_tree_recurse(root);
 }
 
 json ReadJsonFile(const std::filesystem::path& json_path) {
