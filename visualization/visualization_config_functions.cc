@@ -48,11 +48,7 @@ void ApplyVisualizationConfigImpl(const VisualizationConfig& config,
   const std::vector<DrakeVisualizerParams> all_drake_params =
       internal::ConvertVisualizationConfigToDrakeParams(config);
   for (const DrakeVisualizerParams& params : all_drake_params) {
-    // TODO(jwnimmer-tri) At the moment, meldis cannot yet display hydroelastic
-    // geometry. So long as that's true, we should not enable it.
-    DrakeVisualizerParams oopsie = params;
-    oopsie.show_hydroelastic = false;
-    DrakeVisualizer<double>::AddToBuilder(builder, *scene_graph, lcm, oopsie);
+    DrakeVisualizer<double>::AddToBuilder(builder, *scene_graph, lcm, params);
   }
   if (config.publish_contacts) {
     ConnectContactResultsToDrakeVisualizer(builder, plant, *scene_graph, lcm,

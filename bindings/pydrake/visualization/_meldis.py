@@ -32,6 +32,8 @@ from pydrake.geometry import (
     MeshcatParams,
     Rgba,
     Sphere,
+    SurfaceTriangle,
+    TriangleSurfaceMesh,
 )
 from pydrake.lcm import (
     DrakeLcm,
@@ -229,7 +231,12 @@ class _ViewerApplet:
                 if shape is None:
                     continue
                 self._geom_paths.append(geom_path)
-                self._meshcat.SetObject(path=geom_path, shape=shape, rgba=rgba)
+                set_object_kwargs = dict(path=geom_path, rgba=rgba)
+                if isinstance(shape, TriangleSurfaceMesh):
+                    set_object_kwargs.update(mesh=shape)
+                else:
+                    set_object_kwargs.update(shape=shape)
+                self._meshcat.SetObject(**set_object_kwargs)
                 self._meshcat.SetTransform(path=geom_path, X_ParentPath=pose)
 
     def on_viewer_draw(self, message):
@@ -312,7 +319,8 @@ class _ViewerApplet:
 
     def _convert_geom(self, geom):
         """Given an lcmt_viewer_geometry_data, parses it into a tuple of
-        (Shape, Rgba, RigidTransform).
+        (Shape, Rgba, RigidTransform) or
+        (TriangleSurfaceMesh, Rgbd, RigidTransform).
         """
         shape = None
         if geom.type == lcmt_viewer_geometry_data.BOX:
@@ -335,15 +343,7 @@ class _ViewerApplet:
             shape = Mesh(filename=filename, scale=scale_x)
         elif geom.type == lcmt_viewer_geometry_data.MESH:
             assert not geom.string_data
-            # A mesh with the data inline, i.e.,
-            #   V | T | v0 | v1 | ... vN | t0 | t1 | ... | tM
-            # where
-            #   V: The number of vertices.
-            #   T: The number of triangles.
-            #   N: 3V, the number of floating point values for the V vertices.
-            #   M: 3T, the number of vertex indices for the T triangles.
-            _logger.warning("Meldis cannot yet display hydroelastic collision "
-                            "meshes; that geometry will be ignored.")
+            shape = self._make_triangle_mesh(geom.float_data)
         elif geom.type == lcmt_viewer_geometry_data.SPHERE:
             (radius,) = geom.float_data
             shape = Sphere(radius=radius)
@@ -353,6 +353,35 @@ class _ViewerApplet:
         rgba = Rgba(*geom.color)
         pose = _to_pose(geom.position, geom.quaternion)
         return (shape, rgba, pose)
+
+    @staticmethod
+    def _make_triangle_mesh(data):
+        """Returns a TriangleSurfaceMesh parsed from the given float data.
+        The data is formatted like this:
+          V | T | v0 | v1 | ... vN | t0 | t1 | ... | tM
+        where
+          V: The number of vertices.
+          T: The number of triangles.
+          N: 3V, the number of floating point values for the V vertices.
+          M: 3T, the number of vertex indices for the T triangles.
+        """
+        V = int(data[0] if len(data) > 0 else -1)
+        T = int(data[1] if len(data) > 1 else -1)
+        if len(data) != 2 + 3*V + 3*T:
+            _logger.warning("Ignoring mesh with malformed data length.")
+            return None
+        start = 2
+        vertices = []
+        for i in range(start, start + 3*V, 3):
+            vertex = np.array(data[i:i+3])
+            vertices.append(vertex)
+        start = 2 + 3*V
+        triangles = []
+        for i in range(start, start + 3*T, 3):
+            indices = [int(j) for j in data[i:i+3]]
+            triangle = SurfaceTriangle(*indices)
+            triangles.append(triangle)
+        return TriangleSurfaceMesh(triangles=triangles, vertices=vertices)
 
 
 class _ContactApplet:
