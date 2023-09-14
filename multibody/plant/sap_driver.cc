@@ -198,14 +198,14 @@ std::vector<RotationMatrix<T>> SapDriver<T>::AddContactConstraints(
   // TODO(amcastro-tri): consider exposing these parameters.
   constexpr double sigma = 1.0e-3;
 
-  const std::vector<DiscreteContactPair<T>>& contact_pairs =
+  const DiscreteContactData<DiscreteContactPair<T>>& contact_pairs =
       manager().EvalDiscreteContactPairs(context);
   const int num_contacts = contact_pairs.size();
 
   // Quick no-op exit.
   if (num_contacts == 0) return std::vector<RotationMatrix<T>>();
 
-  const std::vector<ContactPairKinematics<T>>& contact_kinematics =
+  const DiscreteContactData<ContactPairKinematics<T>>& contact_kinematics =
       manager().EvalContactKinematics(context);
 
   std::vector<RotationMatrix<T>> R_WC;
@@ -933,7 +933,7 @@ void SapDriver<T>::CalcContactSolverResults(
       EvalContactProblemCache(context);
   const SapContactProblem<T>& sap_problem = *contact_problem_cache.sap_problem;
   const SapSolverResults<T>& sap_results = EvalSapSolverResults(context);
-  const std::vector<DiscreteContactPair<T>>& discrete_pairs =
+  const DiscreteContactData<DiscreteContactPair<T>>& discrete_pairs =
       manager().EvalDiscreteContactPairs(context);
   const int num_contacts = discrete_pairs.size();
   PackContactSolverResults(context, sap_problem, num_contacts, sap_results,

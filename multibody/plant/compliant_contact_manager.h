@@ -11,6 +11,7 @@
 #include "drake/multibody/plant/contact_pair_kinematics.h"
 #include "drake/multibody/plant/contact_results.h"
 #include "drake/multibody/plant/deformable_driver.h"
+#include "drake/multibody/plant/discrete_contact_data.h"
 #include "drake/multibody/plant/discrete_update_manager.h"
 #include "drake/systems/framework/context.h"
 
@@ -85,12 +86,11 @@ struct AccelerationsDueNonConstraintForcesCache {
 //
 // @tparam_default_scalar
 template <typename T>
-class CompliantContactManager final
-    : public internal::DiscreteUpdateManager<T> {
+class CompliantContactManager final : public DiscreteUpdateManager<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CompliantContactManager)
 
-  using internal::DiscreteUpdateManager<T>::plant;
+  using DiscreteUpdateManager<T>::plant;
 
   CompliantContactManager();
 
@@ -194,26 +194,35 @@ class CompliantContactManager final
 
   // This method computes sparse kinematics information for each contact pair at
   // the given configuration stored in `context`.
-  std::vector<ContactPairKinematics<T>> CalcContactKinematics(
+  DiscreteContactData<ContactPairKinematics<T>> CalcContactKinematics(
       const systems::Context<T>& context) const;
 
   // Eval version of CalcContactKinematics().
-  const std::vector<ContactPairKinematics<T>>& EvalContactKinematics(
+  const DiscreteContactData<ContactPairKinematics<T>>& EvalContactKinematics(
       const systems::Context<T>& context) const;
+
+  // Helper function for CalcContactKinematics() that computes the contact pair
+  // kinematics for point contact and hydroelastic contact respectively,
+  // depending on the value of `type`.
+  void AppendContactKinematics(
+      const systems::Context<T>& context,
+      const std::vector<DiscreteContactPair<T>>& contact_pairs,
+      DiscreteContactType type,
+      DiscreteContactData<ContactPairKinematics<T>>* contact_kinematics) const;
 
   // Given the configuration stored in `context`, this method appends discrete
   // pairs corresponding to point contact into `pairs`.
   // @pre pairs != nullptr.
   void AppendDiscreteContactPairsForPointContact(
       const systems::Context<T>& context,
-      std::vector<internal::DiscreteContactPair<T>>* pairs) const;
+      DiscreteContactData<DiscreteContactPair<T>>* pairs) const;
 
   // Given the configuration stored in `context`, this method appends discrete
   // pairs corresponding to hydroelastic contact into `pairs`.
   // @pre pairs != nullptr.
   void AppendDiscreteContactPairsForHydroelasticContact(
       const systems::Context<T>& context,
-      std::vector<internal::DiscreteContactPair<T>>* pairs) const;
+      DiscreteContactData<DiscreteContactPair<T>>* pairs) const;
 
   // Given the configuration stored in `context`, this method computes all
   // discrete contact pairs, including point, hydroelastic, and deformable
@@ -222,10 +231,10 @@ class CompliantContactManager final
   // exception if `pairs` is nullptr.
   void CalcDiscreteContactPairs(
       const systems::Context<T>& context,
-      std::vector<internal::DiscreteContactPair<T>>* pairs) const;
+      DiscreteContactData<DiscreteContactPair<T>>* pairs) const;
 
   // Eval version of CalcDiscreteContactPairs().
-  const std::vector<internal::DiscreteContactPair<T>>& EvalDiscreteContactPairs(
+  const DiscreteContactData<DiscreteContactPair<T>>& EvalDiscreteContactPairs(
       const systems::Context<T>& context) const;
 
   // Computes per-face contact information for the hydroelastic model (slip
@@ -285,12 +294,12 @@ class CompliantContactManager final
 template <>
 void CompliantContactManager<symbolic::Expression>::CalcDiscreteContactPairs(
     const drake::systems::Context<symbolic::Expression>&,
-    std::vector<DiscreteContactPair<symbolic::Expression>>*) const;
+    DiscreteContactData<DiscreteContactPair<symbolic::Expression>>*) const;
 template <>
 void CompliantContactManager<symbolic::Expression>::
     AppendDiscreteContactPairsForHydroelasticContact(
         const drake::systems::Context<symbolic::Expression>&,
-        std::vector<DiscreteContactPair<symbolic::Expression>>*) const;
+        DiscreteContactData<DiscreteContactPair<symbolic::Expression>>*) const;
 
 }  // namespace internal
 }  // namespace multibody

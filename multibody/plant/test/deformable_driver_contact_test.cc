@@ -372,7 +372,7 @@ TEST_F(DeformableDriverContactTest, AppendLinearDynamicsMatrix) {
 TEST_F(DeformableDriverContactTest, AppendDiscreteContactPairs) {
   const Context<double>& plant_context =
       plant_->GetMyContextFromRoot(*context_);
-  std::vector<DiscreteContactPair<double>> contact_pairs;
+  DiscreteContactData<DiscreteContactPair<double>> contact_pairs;
   driver_->AppendDiscreteContactPairs(plant_context, &contact_pairs);
 
   const DeformableContact<double>& contact_data =
@@ -392,7 +392,8 @@ TEST_F(DeformableDriverContactTest, AppendDiscreteContactPairs) {
   GeometryId id0 = model_->GetGeometryId(body_id0_);
   GeometryId id1 = model_->GetGeometryId(body_id1_);
 
-  for (const DiscreteContactPair<double>& pair : contact_pairs) {
+  for (int i = 0; i < contact_pairs.size(); ++i) {
+    const DiscreteContactPair<double>& pair = contact_pairs[i];
     EXPECT_TRUE(pair.id_A == id0 || pair.id_A == id1);
     EXPECT_EQ(pair.id_B, rigid_geometry_id_);
     /* The contact point is on the z = -0.25 plane, the top surface of the rigid
