@@ -8,10 +8,10 @@ def sdformat_internal_repository(
         # This dependency is part of a "cohort" defined in
         # drake/tools/workspace/new_release.py.  When practical, all members
         # of this cohort should be updated at the same time.
-        repository = "azeey/sdformat",
-        commit = "34f71d7febd488a7558ba6d47b4aac704091bbdd",
+        repository = "gazebosim/sdformat",
+        commit = "sdformat13_13.6.0",
         build_file = ":package.BUILD.bazel",
-        sha256 = "88a5747237c68ea5b4b6391e9b8892e863be5ff1e320514779ac4821839dd02e",  # noqa
+        sha256 = "6d1d2fde6dc9d328dab6cb44037527a61b05f2ff4929641946d124d229396bd5",  # noqa
         patches = [
             ":patches/console.patch",
             ":patches/deprecation_unit_testing.patch",
