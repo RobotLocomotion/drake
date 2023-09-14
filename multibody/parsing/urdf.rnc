@@ -1,0 +1,144 @@
+# Schema for URDF as seen and used by Drake.
+# Relax NG Compact Syntax.
+#
+# An easy but runtime-slow way to validate:
+#  $ apt install jing
+#  $ jing -c urdf.rnc [ROBOT-FILE...]
+#
+# A faster way (that could maybe get linked directly into drake later):
+#   $ git clone git@github.com:hartwork/rnv.git
+#   $ cd rnv
+#   $ apt install asciidoc-base  # could skip, with some patching
+#   $ apt install libexpat1-dev
+#   $ ./bootstrap
+#   $ ./configure
+#   $ make
+#   $ ./rnv urdf.rnc [ROBOT-FILE]
+#
+# TODO proper Drake tag checking
+# TODO refine open schema tricks
+namespace drake = "http://drake.mit.edu"
+
+grammar {
+   start = Robot
+   Robot = element robot {
+      Name, attribute version { text }?,
+      (Joint* &
+         LinkE* &
+         Frame* &
+         MaterialGlobal* &
+         Transmission* &
+         DrakeE* &
+         Gazebo* &
+         Force*)
+   }
+
+   # WTF?
+   Force = element force_element { Anything }
+   # Extension back doors.
+   Gazebo = element gazebo { Anything }
+   DrakeE = element drake:* { Anything }
+   DrakeA = attribute drake:* { text }
+
+   Frame = element frame { Name, LinkA, Pose }
+   Joint = element joint {
+      Name, Type,
+      (Origin? &
+         Parent &
+         Child &
+         Axis? &
+         Calibration? &
+         Dynamics? &
+         Limit? &
+         SafetyController? &
+         Mimic?)
+   }
+   LinkE = element link {
+      Name, DrakeIgnore?,
+      (Inertial? & Visual* & Collision* & SelfCollisionChecking*)
+   }
+   MaterialGlobal = element material { Name, (Color? & Texture?) }
+   Material = element material { Name?, (Color? & Texture?) }
+   # Transmission specs seem contradictory and full of lies; best to give up.
+   Transmission = element transmission { Anything }
+
+   Origin = element origin { Pose }
+   Parent = element parent { LinkA }
+   Child = element child { LinkA }
+   Axis = element axis { attribute xyz { text }? }
+   Calibration = element calibration {
+      attribute reference_position { text }?,
+      attribute rising { text }?,
+      attribute falling { text }?
+   }
+   Dynamics = element dynamics {
+      attribute damping { text }?,
+      attribute friction { text }?
+   }
+   Limit = element limit {
+      attribute lower { text }?,
+      attribute upper { text }?,
+      attribute effort { text }?,
+      attribute velocity { text }?,
+      DrakeA*
+   }
+   SafetyController = element safety_controller {
+      attribute soft_lower_limit { text }?,
+      attribute soft_upper_limit { text }?,
+      attribute k_position { text }?,
+      attribute k_velocity { text }
+   }
+   Mimic = element mimic {
+      attribute joint { text },
+      attribute multiplier { text }?,
+      attribute offset { text }?
+   }
+
+   Inertial = element inertial {
+      (Origin? & Mass? & Inertia?)
+   }
+   Visual = element visual {
+      Name?, (Origin? & Geometry & Material? & DrakeE*)
+   }
+   Collision = element collision {
+      Name?, (Origin? & Geometry & Material? & Verbose? & DrakeE*)
+   }
+   SelfCollisionChecking = element self_collision_checking {
+      Name?, (Origin? & Geometry & Material? & Verbose?)
+   }
+
+   Geometry = element geometry {
+      # Capsule is non-standard magic: bullet has it, ROS is torn.
+      (Box | Cylinder | Sphere | Mesh | Capsule | DrakeE)
+   }
+
+   Inertia = element inertia {
+      attribute ixx { text }?,
+      attribute ixy { text }?,
+      attribute ixz { text }?,
+      attribute iyy { text }?,
+      attribute iyz { text }?,
+      attribute izz { text }?
+   }
+
+   Box = element box { attribute size { text}? }
+   Capsule = element capsule { attribute radius { text }, attribute length { text} }
+   Cylinder = element cylinder { attribute radius { text }, attribute length { text} }
+   Mesh = element mesh { attribute filename { text }, attribute scale { text }?, DrakeE* }
+   Sphere = element sphere { attribute radius { text } }
+
+   Color = element color { attribute rgba { text }? }
+   Mass = element mass { Value? }
+   Texture = element texture { attribute filename { text } }
+   Verbose = element verbose { Value }
+
+   # drake_ignore is dumb and should go away.
+   DrakeIgnore = attribute drake_ignore { text }
+   LinkA = attribute link { text }
+   Pose = attribute xyz { text }?, attribute rpy { text }?
+   Name = attribute name { text }
+   Type = attribute type { text }
+   Value = attribute value { text }
+
+   Anything = ( element * { Anything } | attribute * { text } | text )*
+}
