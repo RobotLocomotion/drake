@@ -54,34 +54,45 @@ Refer to [Quickstart](/installation.html#quickstart) for next steps.
 ## Nightly Releases
 
 Binary packages of Drake for Ubuntu 20.04 (Focal), Ubuntu 22.04 (Jammy), and
-macOS are generated nightly and are available to download at:
+macOS are generated nightly.  A [PEP 503](https://peps.python.org/pep-0503/)
+compliant extra index url is uploaded to the drake-packages s3 url
+[https://drake-packages.csail.mit.edu/whl/nightly/](https://drake-packages.csail.mit.edu/whl/nightly/).
 
-* [https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-cp38-cp38-manylinux_2_31_x86_64.whl](https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-cp38-cp38-manylinux_2_31_x86_64.whl)
-* [https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-cp39-cp39-manylinux_2_31_x86_64.whl](https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-cp39-cp39-manylinux_2_31_x86_64.whl)
-* [https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-cp310-cp310-manylinux_2_31_x86_64.whl](https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-cp310-cp310-manylinux_2_31_x86_64.whl)
-* [https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-cp311-cp311-manylinux_2_31_x86_64.whl](https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-cp311-cp311-manylinux_2_31_x86_64.whl)
-* [https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-cp311-cp311-macosx_12_0_x86_64.whl](https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-cp311-cp311-macosx_12_0_x86_64.whl)
-* [https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-cp311-cp311-macosx_12_0_arm64.whl](https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-cp311-cp311-macosx_12_0_arm64.whl)
+- Nightly wheel version numbers are created as `0.0.YYYYMMDD`, e.g.,
+  `0.0.20230914` for Septemper 14th, 2023.
+- The index is updated each morning as the final step of every successful wheel
+  build, and advertises the listing of wheels available for the last 48 days.
+  Once a nightly wheel is older than 48 days, it will not be available for
+  download in the future.  Use a stable release tag if you need something to
+  exist longer, or mirror the wheel yourself.
 
-Older packages for specific dates are available by replacing ``latest`` with an
-8-digit date, e.g., ``20230215`` for February 15th, 2023.  The version number to
-replace ``latest`` with follows the pattern ``0.0.YYYYMMDD``.
-
-* [https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20230215-cp38-cp38-manylinux_2_31_x86_64.whl](https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20230215-cp38-cp38-manylinux_2_31_x86_64.whl)
-* [https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20230215-cp39-cp39-manylinux_2_31_x86_64.whl](https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20230215-cp39-cp39-manylinux_2_31_x86_64.whl)
-* [https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20230215-cp310-cp310-manylinux_2_31_x86_64.whl](https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20230215-cp310-cp310-manylinux_2_31_x86_64.whl)
-* [https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20230215-cp311-cp311-manylinux_2_31_x86_64.whl](https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20230215-cp311-cp311-manylinux_2_31_x86_64.whl)
-* [https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20230215-cp311-cp311-macosx_12_0_x86_64.whl](https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20230215-cp311-cp311-macosx_12_0_x86_64.whl)
-* [https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20230215-cp311-cp311-macosx_12_0_arm64.whl](https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20230215-cp311-cp311-macosx_12_0_arm64.whl)
-
-Nightly wheels are retained for 56 days from their date of creation.
-
-To install nightly wheel, install from the URL directly:
+To install a nightly wheel using `pip`, replace `YYYYMMDD` with the desired
+date:
 
 ```bash
-# Example for python 3.8 (cp38-cp38).
 python3 -m venv env
 env/bin/pip install --upgrade pip
-env/bin/pip install https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-cp38-cp38-manylinux_2_31_x86_64.whl
-source env/bin/activate
+env/bin/pip install \
+    --extra-index-url https://drake-packages.csail.mit.edu/whl/nightly/ \
+    'drake==0.0.YYYYMMDD'
 ```
+
+<div class="note" markdown="1">
+Since we only host an index for `drake` artifacts, we must use
+`--extra-index-url` to enable
+`https://drake-packages.csail.mit.edu/whl/nightly/` to be considered _in
+addition to [PyPI](https://pypi.org/)_.  The version numbering chosen for
+nightly wheels accounts for this, if you want to install the latest available
+nightly wheel for your platform:
+
+```bash
+env/bin/pip install \
+    --extra-index-url https://drake-packages.csail.mit.edu/whl/nightly/ \
+    'drake<0.1'
+```
+
+If you just install `drake`, the version numbers for the stable releases
+for the [drake PyPI project](https://pypi.org/project/drake/) will be larger
+than any `0.0.YYYYMMDD` version in the extra index, and you will **not** be
+installing a nightly wheel artifact!
+</div>
