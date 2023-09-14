@@ -144,6 +144,8 @@ SceneGraph<T>::SceneGraph(SceneGraphConfig config)
   model_inspector_.set(&hub_.model());
   geometry_state_index_ =
       this->DeclareAbstractParameter(GeometryStateValue<T>());
+  scene_graph_config_index_ =
+      this->DeclareAbstractParameter(Value<SceneGraphConfig>());
 
   query_port_index_ =
       this->DeclareAbstractOutputPort("query", &SceneGraph::CalcQueryObject)
@@ -312,7 +314,11 @@ void SceneGraph<T>::ChangeShape(
     Context<T>* context, SourceId source_id, GeometryId geometry_id,
     const Shape& shape, std::optional<math::RigidTransform<double>> X_FG) {
   auto& g_state = mutable_geometry_state(context);
-  return g_state.ChangeShape(source_id, geometry_id, shape, X_FG);
+  g_state.ChangeShape(source_id, geometry_id, shape, X_FG);
+  auto& config = scene_graph_config(*context);
+  if (config.hydroelastize == true) {
+    internal::Hydroelastize(&g_state, config, geometry_id);
+  }
 }
 
 template <typename T>
@@ -375,6 +381,10 @@ void SceneGraph<T>::AssignRole(Context<T>* context, SourceId source_id,
                                RoleAssign assign) const {
   auto& g_state = mutable_geometry_state(context);
   g_state.AssignRole(source_id, geometry_id, std::move(properties), assign);
+  auto& config = scene_graph_config(*context);
+  if (assign == RoleAssign::kNew && config.hydroelastize == true) {
+    internal::Hydroelastize(&g_state, config, geometry_id);
+  }
 }
 
 template <typename T>
@@ -469,6 +479,8 @@ void SceneGraph<T>::SetDefaultParameters(const Context<T>& context,
   }
   parameters->template get_mutable_abstract_parameter<GeometryState<T>>(
       geometry_state_index_) = *from;
+  parameters->template get_mutable_abstract_parameter<SceneGraphConfig>(
+      scene_graph_config_index_) = hub_.config();
 }
 
 template <typename T>
@@ -628,6 +640,14 @@ const GeometryState<T>& SceneGraph<T>::geometry_state(
     const Context<T>& context) const {
   return context.get_parameters()
       .template get_abstract_parameter<GeometryState<T>>(geometry_state_index_);
+}
+
+template <typename T>
+const SceneGraphConfig& SceneGraph<T>::scene_graph_config(
+    const systems::Context<T>& context) const {
+  return context.get_parameters()
+      .template get_abstract_parameter<SceneGraphConfig>(
+          scene_graph_config_index_);
 }
 
 }  // namespace geometry
