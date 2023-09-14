@@ -1086,6 +1086,11 @@ class SceneGraph final : public systems::LeafSystem<T> {
   const GeometryState<T>& geometry_state(
       const systems::Context<T>& context) const;
 
+  // Extracts a reference to the underlying abstract scene graph configuration
+  // from the given context.
+  const SceneGraphConfig& scene_graph_config(
+      const systems::Context<T>& context) const;
+
   // A struct that stores the port indices for a given source.
   // TODO(SeanCurtis-TRI): Consider making these TypeSafeIndex values.
   struct SourcePorts {
@@ -1107,9 +1112,13 @@ class SceneGraph final : public systems::LeafSystem<T> {
 
   SceneGraphInspector<T> model_inspector_;
 
-  // The geometry state is stored in the Context either as a Parameter with this
+  // The geometry state is stored in the Context as a Parameter with this
   // index.
   int geometry_state_index_{-1};
+
+  // The scene graph configuration from the time the context was created is
+  // stored in the Context as a Parameter with this index.
+  int scene_graph_config_index_{-1};
 
   // The cache indices for the pose and configuration update cache entries.
   systems::CacheIndex pose_update_index_{};

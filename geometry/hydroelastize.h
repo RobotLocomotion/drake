@@ -9,11 +9,18 @@ namespace internal {
 
 /** Iterate over all of the geometries of a scene graph, ensuring that
     all geometries have hydroelastic properties.
-    @pre scene_graph is not nullptr.
+    @pre geometry_state is not nullptr.
  */
 template <typename T>
 void Hydroelastize(GeometryState<T>* geometry_state,
                    const SceneGraphConfig& config);
+
+/** Ensure that one geometry has hydroelastic properties.
+    @pre geometry_state is not nullptr.
+ */
+template <typename T>
+void Hydroelastize(GeometryState<T>* geometry_state,
+                   const SceneGraphConfig& config, GeometryId geometry_id);
 
 }  // namespace internal
 }  // namespace geometry

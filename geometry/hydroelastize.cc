@@ -138,6 +138,11 @@ class ShapeAdjuster final : public ShapeReifier {
   };
 };
 
+ShapeAdjuster* GetShapeAdjuster() {
+  static ShapeAdjuster shape_adjuster;
+  return &shape_adjuster;
+}
+
 }  // namespace
 
 template <typename T>
@@ -146,43 +151,57 @@ void Hydroelastize(GeometryState<T>* geometry_state,
   DRAKE_DEMAND(geometry_state != nullptr);
   auto gids = geometry_state->GetGeometryIds(
       GeometrySet(geometry_state->GetAllGeometryIds()), Role::kProximity);
-  auto source_ids = geometry_state->GetAllSourceIds();
-  ShapeAdjuster shape_adjuster;
   for (const auto& gid : gids) {
-    // Get current proximity properties -- some should exist, given the
-    // filtering done above.
-    ProximityProperties props(*geometry_state->GetProximityProperties(gid));
-    const HydroelasticType type = props.GetPropertyOrDefault(
-      kHydroGroup, kComplianceType, HydroelasticType::kUndefined);
-    // Update proximity properties to a suitable hydro configuration.
-    if (type == HydroelasticType::kUndefined) {
-      // Start from the assumption that the shape can be declared soft.
-      props.UpdateProperty(kHydroGroup, kComplianceType,
-                           HydroelasticType::kSoft);
-      BackfillDefaults(&props, config);
+    Hydroelastize(geometry_state, config, gid);
+  }
+}
 
-      // Shape adjuster will fix configurations that can't work.
-      bool is_too_small = shape_adjuster.MakeShapeAdjustments(
-          geometry_state->GetShape(gid), &props);
-      // Jump through pointless hoops.
-      SourceId gid_source_id;
-      for (const auto& source_id : source_ids) {
-        if (geometry_state->BelongsToSource(gid, source_id)) {
-          gid_source_id = source_id;
-        }
+template <typename T>
+void Hydroelastize(GeometryState<T>* geometry_state,
+                   const SceneGraphConfig& config, GeometryId geometry_id) {
+  DRAKE_DEMAND(geometry_state != nullptr);
+  auto gid = geometry_id;
+  auto found_props = geometry_state->GetProximityProperties(gid);
+  if (found_props == nullptr) {
+    return;
+  }
+  // Get current proximity properties -- some should exist, given the
+  // filtering done above.
+  ProximityProperties props(*found_props);
+  const HydroelasticType type = props.GetPropertyOrDefault(
+      kHydroGroup, kComplianceType, HydroelasticType::kUndefined);
+  // Update proximity properties to a suitable hydro configuration.
+  if (type == HydroelasticType::kUndefined) {
+    // Start from the assumption that the shape can be declared soft.
+    props.UpdateProperty(kHydroGroup, kComplianceType,
+                         HydroelasticType::kSoft);
+    BackfillDefaults(&props, config);
+
+    // Shape adjuster will fix configurations that can't work.
+    bool is_too_small = GetShapeAdjuster()->MakeShapeAdjustments(
+        geometry_state->GetShape(gid), &props);
+    // Jump through pointless hoops.
+    SourceId gid_source_id;
+    auto source_ids = geometry_state->GetAllSourceIds();
+    for (const auto& source_id : source_ids) {
+      if (geometry_state->BelongsToSource(gid, source_id)) {
+        gid_source_id = source_id;
       }
-      if (is_too_small) {
-        geometry_state->RemoveRole(gid_source_id, gid, Role::kProximity);
-      } else {
-        geometry_state->AssignRole(gid_source_id, gid, props,
-                                   RoleAssign::kReplace);
-      }
+    }
+    if (is_too_small) {
+      geometry_state->RemoveRole(gid_source_id, gid, Role::kProximity);
+    } else {
+      geometry_state->AssignRole(gid_source_id, gid, props,
+                                 RoleAssign::kReplace);
     }
   }
 }
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((
-    &Hydroelastize<T>
+    static_cast<void(*)(GeometryState<T>*, const SceneGraphConfig&)>(
+        &Hydroelastize<T>),
+    static_cast<void(*)(GeometryState<T>*, const SceneGraphConfig&,
+                        GeometryId)>(&Hydroelastize<T>)
 ))
 }  // namespace internal
 }  // namespace geometry
