@@ -22,6 +22,7 @@ drake_cc_package_library(
         ":contact_results",
         ":coulomb_friction",
         ":deformable_ids",
+        ":discrete_contact_data",
         ":discrete_contact_pair",
         ":externally_applied_spatial_force",
         ":externally_applied_spatial_force_multiplexer",
@@ -48,6 +49,15 @@ drake_cc_library(
     deps = [
         ":deformable_ids",
         "//multibody/tree:multibody_tree_indexes",
+    ],
+)
+
+drake_cc_library(
+    name = "discrete_contact_data",
+    srcs = [],
+    hdrs = ["discrete_contact_data.h"],
+    deps = [
+        "//common:essential",
     ],
 )
 
@@ -120,6 +130,7 @@ drake_cc_library(
         ":contact_results",
         ":coulomb_friction",
         ":deformable_ids",
+        ":discrete_contact_data",
         ":discrete_contact_pair",
         ":externally_applied_spatial_force",
         ":hydroelastic_traction",
@@ -983,6 +994,14 @@ drake_cc_googletest(
         ":multibody_plant_core",
         "//common/test_utilities:expect_throws_message",
         "//systems/framework:diagram_builder",
+    ],
+)
+
+drake_cc_googletest(
+    name = "discrete_contact_data_test",
+    deps = [
+        ":discrete_contact_data",
+        "//common/test_utilities:limit_malloc",
     ],
 )
 
