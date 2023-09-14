@@ -154,17 +154,20 @@ void CompliantContactManager<T>::DoDeclareCacheEntries() {
 }
 
 template <typename T>
-std::vector<ContactPairKinematics<T>>
+DiscreteContactData<ContactPairKinematics<T>>
 CompliantContactManager<T>::CalcContactKinematics(
     const systems::Context<T>& context) const {
-  const std::vector<DiscreteContactPair<T>>& contact_pairs =
+  const DiscreteContactData<DiscreteContactPair<T>>& contact_pairs =
       this->EvalDiscreteContactPairs(context);
+  DiscreteContactData<ContactPairKinematics<T>> contact_kinematics;
   const int num_contacts = contact_pairs.size();
-  std::vector<ContactPairKinematics<T>> contact_kinematics;
-  contact_kinematics.reserve(num_contacts);
 
   // Quick no-op exit.
   if (num_contacts == 0) return contact_kinematics;
+
+  contact_kinematics.reserve(contact_pairs.num_point_contacts(),
+                             contact_pairs.num_hydro_contacts(),
+                             contact_pairs.num_deformable_contacts());
 
   const geometry::QueryObject<T>& query_object =
       this->plant()
@@ -263,8 +266,9 @@ CompliantContactManager<T>::CalcContactKinematics(
                                           .phi = point_pair.phi0,
                                           .R_WC = R_WC};
 
-    contact_kinematics.emplace_back(std::move(jacobian_blocks),
-                                    std::move(configuration));
+    // TODO(xuchenhan-tri): Some of these should be hydro data instead.
+    contact_kinematics.AppendPointData(ContactPairKinematics<T>{
+        std::move(jacobian_blocks), std::move(configuration)});
   }
   if constexpr (std::is_same_v<T, double>) {
     if (deformable_driver_ != nullptr) {
@@ -276,18 +280,18 @@ CompliantContactManager<T>::CalcContactKinematics(
 }
 
 template <typename T>
-const std::vector<ContactPairKinematics<T>>&
+const DiscreteContactData<ContactPairKinematics<T>>&
 CompliantContactManager<T>::EvalContactKinematics(
     const systems::Context<T>& context) const {
   return plant()
       .get_cache_entry(cache_indexes_.contact_kinematics)
-      .template Eval<std::vector<ContactPairKinematics<T>>>(context);
+      .template Eval<DiscreteContactData<ContactPairKinematics<T>>>(context);
 }
 
 template <>
 void CompliantContactManager<symbolic::Expression>::CalcDiscreteContactPairs(
     const drake::systems::Context<symbolic::Expression>&,
-    std::vector<DiscreteContactPair<symbolic::Expression>>*) const {
+    DiscreteContactData<DiscreteContactPair<symbolic::Expression>>*) const {
   // Currently, the computation of contact pairs is not supported when T =
   // symbolic::Expression.
   throw std::domain_error(
@@ -298,11 +302,11 @@ void CompliantContactManager<symbolic::Expression>::CalcDiscreteContactPairs(
 template <typename T>
 void CompliantContactManager<T>::CalcDiscreteContactPairs(
     const systems::Context<T>& context,
-    std::vector<DiscreteContactPair<T>>* contact_pairs) const {
+    DiscreteContactData<DiscreteContactPair<T>>* contact_pairs) const {
   plant().ValidateContext(context);
   DRAKE_DEMAND(contact_pairs != nullptr);
 
-  contact_pairs->clear();
+  contact_pairs->Clear();
   if (plant().num_collision_geometries() == 0) return;
 
   const auto contact_model = plant().get_contact_model();
@@ -335,8 +339,7 @@ void CompliantContactManager<T>::CalcDiscreteContactPairs(
       num_quadrature_pairs += s.num_faces();
     }
   }
-  const int num_contact_pairs = num_point_pairs + num_quadrature_pairs;
-  contact_pairs->reserve(num_contact_pairs);
+  contact_pairs->reserve(num_point_pairs, num_quadrature_pairs, 0);
 
   if (contact_model == ContactModel::kPoint ||
       contact_model == ContactModel::kHydroelasticWithFallback) {
@@ -356,8 +359,8 @@ void CompliantContactManager<T>::CalcDiscreteContactPairs(
 template <typename T>
 void CompliantContactManager<T>::AppendDiscreteContactPairsForPointContact(
     const systems::Context<T>& context,
-    std::vector<DiscreteContactPair<T>>* result) const {
-  std::vector<DiscreteContactPair<T>>& contact_pairs = *result;
+    DiscreteContactData<DiscreteContactPair<T>>* result) const {
+  DiscreteContactData<DiscreteContactPair<T>>& contact_pairs = *result;
 
   const geometry::QueryObject<T>& query_object =
       this->plant()
@@ -421,18 +424,19 @@ void CompliantContactManager<T>::AppendDiscreteContactPairsForPointContact(
       const T phi0 = -pair.depth;
       const T fn0 = k * pair.depth;  // Used by TAMSI, ignored by SAP.
 
-      contact_pairs.push_back({pair.id_A,
-                               pair.id_B,
-                               p_WC,
-                               pair.nhat_BA_W,
-                               phi0,
-                               fn0,
-                               k,
-                               d,
-                               tau,
-                               mu,
-                               {} /* no surface index */,
-                               {} /* no face index */});
+      contact_pairs.AppendPointData(
+          DiscreteContactPair<T>{pair.id_A,
+                                 pair.id_B,
+                                 p_WC,
+                                 pair.nhat_BA_W,
+                                 phi0,
+                                 fn0,
+                                 k,
+                                 d,
+                                 tau,
+                                 mu,
+                                 {} /* no surface index */,
+                                 {} /* no face index */});
     }
   }
 }
@@ -441,7 +445,7 @@ template <>
 void CompliantContactManager<symbolic::Expression>::
     AppendDiscreteContactPairsForHydroelasticContact(
         const drake::systems::Context<symbolic::Expression>&,
-        std::vector<DiscreteContactPair<symbolic::Expression>>*) const {
+        DiscreteContactData<DiscreteContactPair<symbolic::Expression>>*) const {
   throw std::domain_error(
       fmt::format("This method doesn't support T = {}.",
                   NiceTypeName::Get<symbolic::Expression>()));
@@ -451,8 +455,8 @@ template <typename T>
 void CompliantContactManager<T>::
     AppendDiscreteContactPairsForHydroelasticContact(
         const systems::Context<T>& context,
-        std::vector<DiscreteContactPair<T>>* result) const {
-  std::vector<DiscreteContactPair<T>>& contact_pairs = *result;
+        DiscreteContactData<DiscreteContactPair<T>>* result) const {
+  DiscreteContactData<DiscreteContactPair<T>>& contact_pairs = *result;
 
   // N.B. For discrete hydro we use a first order quadrature rule. As such,
   // the per-face quadrature point is the face's centroid and the weight is 1.
@@ -598,8 +602,9 @@ void CompliantContactManager<T>::
           const T phi0 = -p0 / g;
 
           if (k > 0) {
-            contact_pairs.push_back({s.id_M(), s.id_N(), p_WQ, nhat_W, phi0,
-                                     fn0, k, d, tau, mu, surface_index, face});
+            contact_pairs.AppendHydroData(DiscreteContactPair<T>{
+                s.id_M(), s.id_N(), p_WQ, nhat_W, phi0, fn0, k, d, tau, mu,
+                surface_index, face});
           }
         }
       }
@@ -674,12 +679,12 @@ void CompliantContactManager<T>::CalcAccelerationsDueToNonConstraintForcesCache(
 }
 
 template <typename T>
-const std::vector<DiscreteContactPair<T>>&
+const DiscreteContactData<DiscreteContactPair<T>>&
 CompliantContactManager<T>::EvalDiscreteContactPairs(
     const systems::Context<T>& context) const {
   return plant()
       .get_cache_entry(cache_indexes_.discrete_contact_pairs)
-      .template Eval<std::vector<DiscreteContactPair<T>>>(context);
+      .template Eval<DiscreteContactData<DiscreteContactPair<T>>>(context);
 }
 
 template <typename T>
@@ -753,9 +758,9 @@ void CompliantContactManager<T>::AppendContactResultsForPointContact(
 
   const std::vector<PenetrationAsPointPair<T>>& point_pairs =
       plant().EvalPointPairPenetrations(context);
-  const std::vector<internal::DiscreteContactPair<T>>& discrete_pairs =
+  const DiscreteContactData<DiscreteContactPair<T>>& discrete_pairs =
       this->EvalDiscreteContactPairs(context);
-  const std::vector<ContactPairKinematics<T>>& contact_kinematics =
+  const DiscreteContactData<ContactPairKinematics<T>>& contact_kinematics =
       this->EvalContactKinematics(context);
   const contact_solvers::internal::ContactSolverResults<T>& solver_results =
       this->EvalContactSolverResults(context);
@@ -765,16 +770,7 @@ void CompliantContactManager<T>::AppendContactResultsForPointContact(
   const VectorX<T>& vt = solver_results.vt;
   const VectorX<T>& vn = solver_results.vn;
 
-  // N.B. Contact between two fully locked trees are filtered out of discrete
-  // pairs, therefore for purely point contact:
-  //   num_point_contacts != plant().EvalPointPairPenetrations(context).size()
-  // We find the index of the first non-point contact, whose value corresponds
-  // to num_point_contacts.
-  auto itr = std::find_if(discrete_pairs.begin(), discrete_pairs.end(),
-                          [](const auto& pair) {
-                            return pair.surface_index.has_value();
-                          });
-  const int num_point_contacts = std::distance(discrete_pairs.begin(), itr);
+  const int num_point_contacts = discrete_pairs.num_point_contacts();
 
   DRAKE_DEMAND(fn.size() >= num_point_contacts);
   DRAKE_DEMAND(ft.size() >= 2 * num_point_contacts);
@@ -846,9 +842,9 @@ void CompliantContactManager<T>::CalcHydroelasticContactInfo(
   contact_info->clear();
   contact_info->reserve(all_surfaces.size());
 
-  const std::vector<internal::DiscreteContactPair<T>>& discrete_pairs =
+  const DiscreteContactData<DiscreteContactPair<T>>& discrete_pairs =
       this->EvalDiscreteContactPairs(context);
-  const std::vector<ContactPairKinematics<T>>& contact_kinematics =
+  const DiscreteContactData<ContactPairKinematics<T>>& contact_kinematics =
       this->EvalContactKinematics(context);
 
   const contact_solvers::internal::ContactSolverResults<T>& solver_results =
@@ -866,14 +862,7 @@ void CompliantContactManager<T>::CalcHydroelasticContactInfo(
   DRAKE_DEMAND(vn.size() == num_contacts);
   DRAKE_DEMAND(vt.size() == 2 * num_contacts);
 
-  // If the point contact model is used, hydroelastic contact pairs are appended
-  // after point contact pairs. The index of the first discrete pair with a
-  // valid surface index is the first non-point contact pair.
-  auto itr = std::find_if(discrete_pairs.begin(), discrete_pairs.end(),
-                          [](const auto& pair) {
-                            return pair.surface_index.has_value();
-                          });
-  const int num_point_contacts = std::distance(discrete_pairs.begin(), itr);
+  const int num_point_contacts = discrete_pairs.num_point_contacts();
   const int num_surfaces = all_surfaces.size();
 
   std::vector<SpatialForce<T>> F_Ao_W_per_surface(num_surfaces,

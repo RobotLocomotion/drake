@@ -170,7 +170,7 @@ class SpheresStackTest : public SpheresStack, public ::testing::Test {
       return;
     }
 
-    const std::vector<DiscreteContactPair<double>>& pairs =
+    const DiscreteContactData<DiscreteContactPair<double>>& pairs =
         EvalDiscreteContactPairs(*plant_context_);
     EXPECT_EQ(pairs.size(), num_point_pairs + num_hydro_pairs);
 
@@ -230,7 +230,7 @@ class SpheresStackTest : public SpheresStack, public ::testing::Test {
 
   // Helper to provide access to private method
   // CompliantContactManager::CalcContactKinematics().
-  std::vector<ContactPairKinematics<double>> CalcContactKinematics(
+  DiscreteContactData<ContactPairKinematics<double>> CalcContactKinematics(
       const Context<double>& context) const {
     return CompliantContactManagerTester::CalcContactKinematics(
         *contact_manager_, context);
@@ -239,8 +239,8 @@ class SpheresStackTest : public SpheresStack, public ::testing::Test {
   // Helper method to test EvalContactJacobianCache().
   // Returns the Jacobian J_AcBc_W.
   MatrixXd CalcDenseJacobianMatrixInWorldFrame(
-      const std::vector<ContactPairKinematics<double>>& contact_kinematics)
-      const {
+      const DiscreteContactData<ContactPairKinematics<double>>&
+          contact_kinematics) const {
     const int nc = contact_kinematics.size();
     const MatrixXd J_AcBc_C =
         CompliantContactManagerTester::CalcDenseJacobianMatrixInContactFrame(
@@ -264,8 +264,8 @@ class SpheresStackTest : public SpheresStack, public ::testing::Test {
     return CompliantContactManagerTester::topology(*contact_manager_);
   }
 
-  const std::vector<DiscreteContactPair<double>>& EvalDiscreteContactPairs(
-      const Context<double>& context) const {
+  const DiscreteContactData<DiscreteContactPair<double>>&
+  EvalDiscreteContactPairs(const Context<double>& context) const {
     return CompliantContactManagerTester::EvalDiscreteContactPairs(
         *contact_manager_, context);
   }
@@ -290,9 +290,9 @@ TEST_F(SpheresStackTest, CalcContactKinematics) {
   SetupRigidGroundCompliantSphereAndNonHydroSphere();
   const double radius = 0.2;  // Spheres's radii in the default setup.
 
-  const std::vector<DiscreteContactPair<double>>& pairs =
+  const DiscreteContactData<DiscreteContactPair<double>>& pairs =
       EvalDiscreteContactPairs(*plant_context_);
-  const std::vector<ContactPairKinematics<double>> contact_kinematics =
+  const DiscreteContactData<ContactPairKinematics<double>> contact_kinematics =
       CalcContactKinematics(*plant_context_);
   const MatrixXd J_AcBc_W =
       CalcDenseJacobianMatrixInWorldFrame(contact_kinematics);
@@ -358,7 +358,7 @@ TEST_F(SpheresStackTest, CalcContactKinematics) {
   // We know hydroelastic pairs come after point pairs.
   {
     const Vector3d p_WS1(0, 0, radius - penetration_distance_);
-    for (size_t q = 1; q < pairs.size(); ++q) {
+    for (int q = 1; q < pairs.size(); ++q) {
       const Vector3d& p_WC = pairs[q].p_WC;
       const Vector3d p_S1C_W = p_WC - p_WS1;
       const Vector3d expected_v_WS1c = V_WS1.Shift(p_S1C_W).translational();
@@ -448,7 +448,7 @@ TEST_F(SpheresStackTest,
       plant_->EvalPointPairPenetrations(*plant_context_);
   const int num_point_pairs = point_pairs.size();
   EXPECT_EQ(num_point_pairs, 1);
-  const std::vector<DiscreteContactPair<double>>& pairs =
+  const DiscreteContactData<DiscreteContactPair<double>>& pairs =
       EvalDiscreteContactPairs(*plant_context_);
 
   const std::vector<geometry::ContactSurface<double>>& surfaces =

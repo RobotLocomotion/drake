@@ -192,9 +192,8 @@ void DeformableDriver<T>::AppendLinearDynamicsMatrix(
 template <typename T>
 void DeformableDriver<T>::AppendDiscreteContactPairs(
     const systems::Context<T>& context,
-    std::vector<DiscreteContactPair<T>>* result) const {
+    DiscreteContactData<DiscreteContactPair<T>>* result) const {
   DRAKE_DEMAND(result != nullptr);
-  std::vector<DiscreteContactPair<T>>& contact_pairs = *result;
 
   const geometry::QueryObject<T>& query_object =
       manager_->plant()
@@ -239,8 +238,9 @@ void DeformableDriver<T>::AppendDiscreteContactPairs(
       const T& phi0 = surface.signed_distances()[i];
       const T fn0 = NAN;  // not used.
       const T d = NAN;    // not used.
-      contact_pairs.push_back({surface.id_A(), surface.id_B(), p_WC, nhat_BA_W,
-                               phi0, fn0, k, d, tau, mu});
+      result->AppendDeformableData(
+          DiscreteContactPair<T>{surface.id_A(), surface.id_B(), p_WC,
+                                 nhat_BA_W, phi0, fn0, k, d, tau, mu});
     }
   }
 }
@@ -248,7 +248,7 @@ void DeformableDriver<T>::AppendDiscreteContactPairs(
 template <typename T>
 void DeformableDriver<T>::AppendContactKinematics(
     const systems::Context<T>& context,
-    std::vector<ContactPairKinematics<T>>* result) const {
+    DiscreteContactData<ContactPairKinematics<T>>* result) const {
   DRAKE_DEMAND(result != nullptr);
   /* Since v_AcBc_W = v_WBc - v_WAc the relative velocity Jacobian will be:
      Jv_v_AcBc_W = Jv_v_WBc_W - Jv_v_WAc_W.
@@ -381,8 +381,8 @@ void DeformableDriver<T>::AppendContactKinematics(
           .p_BqC_W = p_BC_W,
           .phi = surface.signed_distances()[i],
           .R_WC = R_WC};
-      result->emplace_back(std::move(jacobian_blocks),
-                           std::move(configuration));
+      result->AppendDeformableData(ContactPairKinematics<T>(
+          std::move(jacobian_blocks), std::move(configuration)));
     }
   }
 }

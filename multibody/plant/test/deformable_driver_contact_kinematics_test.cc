@@ -181,7 +181,7 @@ class DeformableDriverContactKinematicsTest : public ::testing::Test {
     /* Each discrete contact pair should create a contact kinematics pair. */
     const Context<double>& plant_context =
         plant_->GetMyContextFromRoot(*context_);
-    std::vector<ContactPairKinematics<double>> contact_kinematics;
+    DiscreteContactData<ContactPairKinematics<double>> contact_kinematics;
     driver_->AppendContactKinematics(plant_context, &contact_kinematics);
     const int num_contact_points = GetNumContactPoints(plant_context);
     ASSERT_EQ(contact_kinematics.size(), num_contact_points);
@@ -356,7 +356,7 @@ GTEST_TEST(DeformableDriverContactKinematicsWithBcTest,
   auto context = diagram->CreateDefaultContext();
 
   const Context<double>& plant_context = plant.GetMyContextFromRoot(*context);
-  std::vector<ContactPairKinematics<double>> contact_kinematics;
+  DiscreteContactData<ContactPairKinematics<double>> contact_kinematics;
   driver->AppendContactKinematics(plant_context, &contact_kinematics);
   /* The set of contact points is not empty. */
   EXPECT_GT(contact_kinematics.size(), 0);
