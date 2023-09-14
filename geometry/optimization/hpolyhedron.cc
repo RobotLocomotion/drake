@@ -10,6 +10,7 @@
 #include <tuple>
 
 #include <Eigen/Eigenvalues>
+#include <drake/solvers/binding.h>
 #include <fmt/format.h>
 #include <libqhullcpp/Coordinates.h>
 #include <libqhullcpp/Qhull.h>
@@ -20,6 +21,7 @@
 #include "drake/geometry/optimization/vpolytope.h"
 #include "drake/math/matrix_util.h"
 #include "drake/math/rotation_matrix.h"
+#include "drake/solvers/constraint.h"
 #include "drake/solvers/gurobi_solver.h"
 #include "drake/solvers/solve.h"
 
@@ -33,6 +35,8 @@ using Eigen::VectorXd;
 using math::RigidTransformd;
 using solvers::Binding;
 using solvers::Constraint;
+using solvers::LinearConstraint;
+using solvers::LinearCost;
 using solvers::MathematicalProgram;
 using solvers::MatrixXDecisionVariable;
 using solvers::VectorXDecisionVariable;
@@ -595,58 +599,33 @@ HPolyhedron HPolyhedron::ReduceInequalities(double tol) const {
 }
 
 std::set<int> HPolyhedron::FindRedundant(double tol) const {
-  const int num_inequalities = A_.rows();
-  const int num_vars = A_.cols();
-
-  std::set<int> kept_indices;
-  for (int i = 0; i < num_inequalities; ++i) {
-    kept_indices.emplace(i);
-  }
-  // TODO(hongkai.dai): create just one program and remove the redundant
-  // constraint
-  for (int excluded_index = 0; excluded_index < num_inequalities;
-       ++excluded_index) {
-    solvers::MathematicalProgram prog;
-    solvers::VectorXDecisionVariable x =
-        prog.NewContinuousVariables(num_vars, "x");
-
-    std::set<int> cur_kept_indices = kept_indices;
-    cur_kept_indices.erase(excluded_index);
-
-    // Current constraints.
-    for (const int i : cur_kept_indices) {
-      prog.AddLinearConstraint(A_.row(i), VectorXd::Constant(1, -kInf),
-                               b_.row(i), x);
-    }
-
-    // First we check whether the current index defines an empty set. If it
-    // does, then any new constraint is already redundant. This check is
-    // expected before calling IsRedundant.
-    if (std::get<0>(IsInfeasible(prog))) {
-      kept_indices.erase(excluded_index);
-    } else {
-      // Constraint to check redundant.
-      Binding<solvers::LinearConstraint> redundant_constraint_binding =
-          prog.AddLinearConstraint(
-              A_.row(excluded_index), VectorXd::Constant(1, -kInf),
-              b_.row(excluded_index) + VectorXd::Ones(1), x);
-
-      // Construct cost binding for prog.
-      Binding<solvers::LinearCost> program_cost_binding =
-          prog.AddLinearCost(-A_.row(excluded_index), 0, x);
-
-      // The current inequality is redundant.
-      if (IsRedundant(A_.row(excluded_index), b_(excluded_index), &prog,
-                      &redundant_constraint_binding, &program_cost_binding,
-                      tol)) {
-        kept_indices.erase(excluded_index);
-      }
-    }
-  }
+  // This method is based on removing each constraint and solving the resulting
+  // LP. If the optimal cost is greater than the constraint's right hand side,
+  // then the constraint is redundant.
+  // Possible future speed up: solve duals instead of primal in parallel,
+  // however this would require building num_threads mathematical programs and
+  // may not be worth it.
   std::set<int> redundant_indices;
-  for (int i = 0; i < num_inequalities; ++i) {
-    if (kept_indices.count(i) == 0) {
-      redundant_indices.emplace(i);
+  MathematicalProgram prog;
+  const int num_vars = A_.cols();
+  const int num_cons = A_.rows();
+  const auto x = prog.NewContinuousVariables(num_vars, "x");
+  std::vector<Binding<LinearConstraint>> bindings_vec;
+  for (int i = 0; i < num_cons; ++i) {
+    bindings_vec.push_back(prog.AddLinearConstraint(
+        A_.row(i), -std::numeric_limits<double>::infinity(), b_[i], x));
+  }
+  auto const_binding = prog.AddLinearCost(-A_.row(0), 0, x);
+  for (int i = 0; i < num_cons; ++i) {
+    prog.RemoveConstraint(bindings_vec.at(i));
+    const_binding.evaluator()->UpdateCoefficients(-A_.row(i), 0);
+    const auto result = Solve(prog);
+    if ((result.is_success() && -result.get_optimal_cost() > b_[i] + tol) ||
+        !result.is_success()) {
+      // bring back the constraint, it is not redundant
+      prog.AddConstraint(bindings_vec.at(i));
+    } else {
+      redundant_indices.insert(i);
     }
   }
   return redundant_indices;
