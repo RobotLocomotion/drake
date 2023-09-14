@@ -62,7 +62,7 @@
         <sphere radius="1e-7"/>
       </geometry>
     </collision>
-    <collision><origin xyz="-0.03 0.0375 0.1" rpy="0 0 0"/><geometry><sphere radius="1e-7"/></geometry>d
+    <collision><origin xyz="-0.03 0.0375 0.1" rpy="0 0 0"/><geometry><sphere radius="1e-7"/></geometry>
     </collision>
     <collision>
       <origin xyz="0.03 0.0375 0.1" rpy="0 0 0"/>
