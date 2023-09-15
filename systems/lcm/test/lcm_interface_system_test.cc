@@ -19,8 +19,8 @@ namespace lcm {
 namespace {
 
 using drake::lcm::DrakeLcm;
-using drake::lcm::DrakeLcmParams;
 using drake::lcm::DrakeLcmInterface;
+using drake::lcm::DrakeLcmParams;
 using systems::DiagramBuilder;
 
 class LcmInterfaceSystemTest : public ::testing::TestWithParam<int> {};
@@ -79,7 +79,7 @@ TEST_P(LcmInterfaceSystemTest, AcceptanceTest) {
   // Transmit a timestamp, in a background thread.
   std::atomic<int64_t> next_tx_timestamp{0};
   auto thread = std::make_unique<std::thread>(
-      [&next_tx_timestamp, &publisher_lcm, channel](){
+      [&next_tx_timestamp, &publisher_lcm, channel]() {
         while (next_tx_timestamp >= 0) {
           lcmt_drake_signal message{};
           message.timestamp = next_tx_timestamp;
@@ -138,7 +138,7 @@ TEST_F(LcmInterfaceSystemTest, NameCollisionTest) {
 }
 
 INSTANTIATE_TEST_SUITE_P(test, LcmInterfaceSystemTest,
-                        ::testing::Values(0, 1, 2, 3));
+                         ::testing::Values(0, 1, 2, 3));
 
 }  // namespace
 }  // namespace lcm

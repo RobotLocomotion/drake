@@ -77,10 +77,8 @@ class LcmPublisherSystem : public LeafSystem<double> {
    */
   template <typename LcmMessage>
   static std::unique_ptr<LcmPublisherSystem> Make(
-      const std::string& channel,
-      drake::lcm::DrakeLcmInterface* lcm,
-      double publish_period = 0.0,
-      double publish_offset = 0.0) {
+      const std::string& channel, drake::lcm::DrakeLcmInterface* lcm,
+      double publish_period = 0.0, double publish_offset = 0.0) {
     return std::make_unique<LcmPublisherSystem>(
         channel, std::make_unique<Serializer<LcmMessage>>(), lcm,
         publish_period, publish_offset);
@@ -120,11 +118,9 @@ class LcmPublisherSystem : public LeafSystem<double> {
    */
   template <typename LcmMessage>
   static std::unique_ptr<LcmPublisherSystem> Make(
-      const std::string& channel,
-      drake::lcm::DrakeLcmInterface* lcm,
+      const std::string& channel, drake::lcm::DrakeLcmInterface* lcm,
       const systems::TriggerTypeSet& publish_triggers,
-      double publish_period = 0.0,
-      double publish_offset = 0.0) {
+      double publish_period = 0.0, double publish_offset = 0.0) {
     return std::make_unique<LcmPublisherSystem>(
         channel, std::make_unique<Serializer<LcmMessage>>(), lcm,
         publish_triggers, publish_period, publish_offset);
@@ -160,8 +156,7 @@ class LcmPublisherSystem : public LeafSystem<double> {
   LcmPublisherSystem(const std::string& channel,
                      std::shared_ptr<const SerializerInterface> serializer,
                      drake::lcm::DrakeLcmInterface* lcm,
-                     double publish_period = 0.0,
-                     double publish_offset = 0.0);
+                     double publish_period = 0.0, double publish_offset = 0.0);
 
   /**
    * A constructor for an %LcmPublisherSystem that takes LCM message objects on
@@ -196,11 +191,10 @@ class LcmPublisherSystem : public LeafSystem<double> {
    * @pre publish_offset > 0 if and only if publish_triggers contains kPeriodic.
    */
   LcmPublisherSystem(const std::string& channel,
-      std::shared_ptr<const SerializerInterface> serializer,
-      drake::lcm::DrakeLcmInterface* lcm,
-      const systems::TriggerTypeSet& publish_triggers,
-      double publish_period = 0.0,
-      double publish_offset = 0.0);
+                     std::shared_ptr<const SerializerInterface> serializer,
+                     drake::lcm::DrakeLcmInterface* lcm,
+                     const systems::TriggerTypeSet& publish_triggers,
+                     double publish_period = 0.0, double publish_offset = 0.0);
 
   ~LcmPublisherSystem() override;
 

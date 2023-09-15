@@ -22,8 +22,8 @@ namespace lcm {
 namespace {
 
 using drake::lcm::CompareLcmtDrakeSignalMessages;
-using drake::lcm::DrakeLcmInterface;
 using drake::lcm::DrakeLcm;
+using drake::lcm::DrakeLcmInterface;
 
 using Subscriber = drake::lcm::Subscriber<lcmt_drake_signal>;
 
@@ -34,13 +34,13 @@ GTEST_TEST(LcmPublisherSystemTest, DefaultLcmTest) {
 
   // Provide an explicit LCM interface and check that it gets used.
   DrakeLcm interface;
-  auto dut1 = LcmPublisherSystem::Make<lcmt_drake_signal>(
-      channel_name, &interface);
+  auto dut1 =
+      LcmPublisherSystem::Make<lcmt_drake_signal>(channel_name, &interface);
   EXPECT_EQ(&(dut1->lcm()), &interface);
 
   // Now leave out the LCM interface and check that a DrakeLcm gets allocated.
-  auto dut2 = LcmPublisherSystem::Make<lcmt_drake_signal>(
-      channel_name, nullptr);
+  auto dut2 =
+      LcmPublisherSystem::Make<lcmt_drake_signal>(channel_name, nullptr);
   EXPECT_TRUE(is_dynamic_castable<DrakeLcm>(&(dut2->lcm())));
 }
 
@@ -51,16 +51,17 @@ GTEST_TEST(LcmPublisherSystemTest, TestInitializationEvent) {
   const std::string channel_name = "junk";
 
   DrakeLcm interface;
-  auto dut1 = LcmPublisherSystem::Make<lcmt_drake_signal>(
-      channel_name, &interface);
+  auto dut1 =
+      LcmPublisherSystem::Make<lcmt_drake_signal>(channel_name, &interface);
   Subscriber sub(&interface, channel_name);
 
   bool init_was_called{false};
-  dut1->AddInitializationMessage([&interface, &init_was_called](
-      const Context<double>&, DrakeLcmInterface* lcm) {
-    EXPECT_EQ(lcm, &interface);
-    init_was_called = true;
-  });
+  dut1->AddInitializationMessage(
+      [&interface, &init_was_called](const Context<double>&,
+                                     DrakeLcmInterface* lcm) {
+        EXPECT_EQ(lcm, &interface);
+        init_was_called = true;
+      });
 
   auto context = dut1->AllocateContext();
 
@@ -87,16 +88,21 @@ GTEST_TEST(LcmPublisherSystemTest, SerializerTest) {
   const std::string channel_name = "channel_name";
 
   // The "device under test".
-  auto dut = LcmPublisherSystem::Make<lcmt_drake_signal>(
-      channel_name, &interface);
+  auto dut =
+      LcmPublisherSystem::Make<lcmt_drake_signal>(channel_name, &interface);
   ASSERT_NE(dut.get(), nullptr);
 
   // Establishes the context, output, and input for the dut.
   unique_ptr<Context<double>> context = dut->CreateDefaultContext();
   unique_ptr<SystemOutput<double>> output = dut->AllocateOutput();
+  // clang-format off
   const lcmt_drake_signal sample_data{
-    2, { 1.0, 2.0, }, { "x", "y", }, 12345,
+    2,
+    { 1.0, 2.0, },
+    { "x", "y", },
+    12345,
   };
+  // clang-format on
   dut->get_input_port().FixValue(context.get(), sample_data);
 
   // Verifies that a correct message is published.
@@ -113,8 +119,8 @@ GTEST_TEST(LcmPublisherSystemTest, TestPerStepPublish) {
   Subscriber sub(&interface, channel_name);
 
   // Instantiate the "device under test" in per-step publishing mode.
-  auto dut = LcmPublisherSystem::Make<lcmt_drake_signal>(
-      channel_name, &interface);
+  auto dut =
+      LcmPublisherSystem::Make<lcmt_drake_signal>(channel_name, &interface);
   unique_ptr<Context<double>> context = dut->AllocateContext();
   dut->get_input_port().FixValue(context.get(), lcmt_drake_signal{});
 
@@ -144,8 +150,8 @@ GTEST_TEST(LcmPublisherSystemTest, TestPerStepPublishTrigger) {
   const std::string channel_name = "channel_name";
   Subscriber sub(&interface, channel_name);
 
-  auto dut = LcmPublisherSystem::Make<lcmt_drake_signal>(channel_name,
-      &interface, {TriggerType::kPerStep});
+  auto dut = LcmPublisherSystem::Make<lcmt_drake_signal>(
+      channel_name, &interface, {TriggerType::kPerStep});
 
   unique_ptr<Context<double>> context = dut->AllocateContext();
   dut->get_input_port().FixValue(context.get(), lcmt_drake_signal{});
@@ -179,8 +185,8 @@ GTEST_TEST(LcmPublisherSystemTest, TestForcedPublishTrigger) {
   int force_publish_count = 3;
   Subscriber sub(&interface, channel_name);
 
-  auto dut = LcmPublisherSystem::Make<lcmt_drake_signal>(channel_name,
-      &interface, {TriggerType::kForced});
+  auto dut = LcmPublisherSystem::Make<lcmt_drake_signal>(
+      channel_name, &interface, {TriggerType::kForced});
 
   unique_ptr<Context<double>> context = dut->AllocateContext();
   dut->get_input_port().FixValue(context.get(), lcmt_drake_signal{});
@@ -261,9 +267,9 @@ GTEST_TEST(LcmPublisherSystemTest, TestPublishPeriodTrigger) {
   Subscriber sub(&interface, channel_name);
 
   // Instantiates the "device under test".
-  auto dut = LcmPublisherSystem::Make<lcmt_drake_signal>(channel_name,
-      &interface, {TriggerType::kPeriodic},
-      kPublishPeriod, kPublishOffset);
+  auto dut = LcmPublisherSystem::Make<lcmt_drake_signal>(
+      channel_name, &interface, {TriggerType::kPeriodic}, kPublishPeriod,
+      kPublishOffset);
   EXPECT_EQ(dut->get_publish_period(), kPublishPeriod);
   EXPECT_EQ(dut->get_publish_offset(), kPublishOffset);
   unique_ptr<Context<double>> context = dut->AllocateContext();

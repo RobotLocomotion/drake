@@ -34,27 +34,25 @@ LcmBuses ApplyLcmBusConfig(
 
     // Given the systems useful names, for debugging.
     const std::string canonical_url = drake_lcm->get_lcm_url();
-    owner_system->set_name(fmt::format(
-        "DrakeLcm(bus_name={}, lcm_url={})",
-        bus_name, canonical_url));
-    pumper_system->set_name(fmt::format(
-        "LcmInterfaceSystem(bus_name={}, lcm_url={})",
-        bus_name, canonical_url));
+    owner_system->set_name(fmt::format("DrakeLcm(bus_name={}, lcm_url={})",
+                                       bus_name, canonical_url));
+    pumper_system->set_name(
+        fmt::format("LcmInterfaceSystem(bus_name={}, lcm_url={})", bus_name,
+                    canonical_url));
 
     // Display an update; provide the interface pointer to our caller.
-    drake::log()->info("LCM bus '{}' created for URL {}",
-        bus_name, canonical_url);
+    drake::log()->info("LCM bus '{}' created for URL {}", bus_name,
+                       canonical_url);
     result.Add(bus_name, pumper_system);
   }
   return result;
 }
 
-DrakeLcmInterface* FindOrCreateLcmBus(
-    DrakeLcmInterface* forced_result,
-    const LcmBuses* lcm_buses,
-    DiagramBuilder<double>* builder,
-    std::string_view description_of_caller,
-    const std::string& bus_name) {
+DrakeLcmInterface* FindOrCreateLcmBus(DrakeLcmInterface* forced_result,
+                                      const LcmBuses* lcm_buses,
+                                      DiagramBuilder<double>* builder,
+                                      std::string_view description_of_caller,
+                                      const std::string& bus_name) {
   DRAKE_THROW_UNLESS(builder != nullptr);
   if (forced_result != nullptr) {
     return forced_result;

@@ -12,8 +12,8 @@ namespace systems {
 namespace lcm {
 
 using drake::lcm::DrakeLcm;
-using drake::lcm::DrakeLcmParams;
 using drake::lcm::DrakeLcmInterface;
+using drake::lcm::DrakeLcmParams;
 using drake::lcm::DrakeSubscriptionInterface;
 
 LcmInterfaceSystem::LcmInterfaceSystem(std::string lcm_url)
@@ -27,8 +27,7 @@ LcmInterfaceSystem::LcmInterfaceSystem(std::unique_ptr<DrakeLcmInterface> owned)
   owned_lcm_ = std::move(owned);
 }
 
-LcmInterfaceSystem::LcmInterfaceSystem(DrakeLcmInterface* lcm)
-    : lcm_(lcm) {
+LcmInterfaceSystem::LcmInterfaceSystem(DrakeLcmInterface* lcm) : lcm_(lcm) {
   DRAKE_THROW_UNLESS(lcm != nullptr);
 }
 
@@ -38,9 +37,9 @@ std::string LcmInterfaceSystem::get_lcm_url() const {
   return lcm_->get_lcm_url();
 }
 
-void LcmInterfaceSystem::Publish(
-    const std::string& channel, const void* data, int data_size,
-    std::optional<double> time_sec) {
+void LcmInterfaceSystem::Publish(const std::string& channel, const void* data,
+                                 int data_size,
+                                 std::optional<double> time_sec) {
   lcm_->Publish(channel, data, data_size, time_sec);
 }
 
@@ -77,8 +76,7 @@ void LcmInterfaceSystem::OnHandleSubscriptionsError(
 // change as a direct result of this method.
 void LcmInterfaceSystem::DoCalcNextUpdateTime(
     const Context<double>& context,
-    systems::CompositeEventCollection<double>* events,
-    double* time) const {
+    systems::CompositeEventCollection<double>* events, double* time) const {
   const int timeout_millis = 0;  // Do not block.
   const int num_handled = lcm_->HandleSubscriptions(timeout_millis);
   if (num_handled > 0) {

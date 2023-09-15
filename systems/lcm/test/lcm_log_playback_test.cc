@@ -33,7 +33,7 @@ class DummySys : public LeafSystem<double> {
   DummySys() {
     DeclareAbstractInputPort("lcmt_drake_signal", Value<lcmt_drake_signal>());
     DeclarePeriodicPublishEvent(1.0 / publish_freq_, 0.0 /* no time offset */,
-        &DummySys::SaveMessage);
+                                &DummySys::SaveMessage);
   }
 
   const std::vector<lcmt_drake_signal>& get_received_msgs() const {

@@ -30,12 +30,14 @@ GTEST_TEST(SerializerTest, BasicTest) {
   EXPECT_EQ(value.timestamp, 0);
 
   // Sample data should round-trip successfully.
+  // clang-format off
   const lcmt_drake_signal sample_data{
     2,
     { 1.0, 2.0, },
     { "x", "y", },
     12345,
   };
+  // clang-format on
   std::vector<uint8_t> message_bytes;
   dut->Serialize(Value<lcmt_drake_signal>(sample_data), &message_bytes);
   dut->Deserialize(message_bytes.data(), message_bytes.size(),

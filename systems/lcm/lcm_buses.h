@@ -38,9 +38,8 @@ class LcmBuses final {
   @param description_of_caller is a noun phrase that will be used when creating
   an error message. A typical value would be something like "Camera 5", "Robot
   controller", "The default visualizer", or etc. */
-  drake::lcm::DrakeLcmInterface* Find(
-      std::string_view description_of_caller,
-      const std::string& bus_name) const;
+  drake::lcm::DrakeLcmInterface* Find(std::string_view description_of_caller,
+                                      const std::string& bus_name) const;
 
   /** Returns a list of all known bus_name keys. */
   std::vector<std::string_view> GetAllBusNames() const;
