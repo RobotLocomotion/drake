@@ -53,21 +53,17 @@ Refer to [Quickstart](/installation.html#quickstart) for next steps.
 
 ## Nightly Releases
 
-Binary packages of Drake for Ubuntu 20.04 (Focal), Ubuntu 22.04 (Jammy), and
-macOS are generated nightly.  A [PEP 503](https://peps.python.org/pep-0503/)
-compliant extra index url is uploaded to the drake-packages s3 url
+Wheel packages for Ubuntu 20.04 (Focal), Ubuntu 22.04 (Jammy), and macOS are
+published nightly at a [PEP 503](https://peps.python.org/pep-0503/) index url
 [https://drake-packages.csail.mit.edu/whl/nightly/](https://drake-packages.csail.mit.edu/whl/nightly/).
 
 - Nightly wheel version numbers are created as `0.0.YYYYMMDD`, e.g.,
   `0.0.20230914` for Septemper 14th, 2023.
-- The index is updated each morning as the final step of every successful wheel
-  build, and advertises the listing of wheels available for the last 48 days.
-  Once a nightly wheel is older than 48 days, it will not be available for
-  download in the future.  Use a stable release tag if you need something to
-  exist longer, or mirror the wheel yourself.
+- Nightly wheel packages are retained for 56 days from their date of creation,
+  and drop out of the index after 48 days.
 
-To install a nightly wheel using `pip`, replace `YYYYMMDD` with the desired
-date:
+To install a specific nightly wheel using `pip`, replace `YYYYMMDD` with the
+desired date:
 
 ```bash
 python3 -m venv env
@@ -75,24 +71,17 @@ env/bin/pip install --upgrade pip
 env/bin/pip install \
     --extra-index-url https://drake-packages.csail.mit.edu/whl/nightly/ \
     'drake==0.0.YYYYMMDD'
+source env/bin/activate
 ```
 
-<div class="note" markdown="1">
-Since we only host an index for `drake` artifacts, we must use
-`--extra-index-url` to enable
-`https://drake-packages.csail.mit.edu/whl/nightly/` to be considered _in
-addition to [PyPI](https://pypi.org/)_.  The version numbering chosen for
-nightly wheels accounts for this, if you want to install the latest available
-nightly wheel for your platform:
+Or, to install today's most recent nightly wheel using `pip`, specify `<0.1`
+instead of `==`.
 
 ```bash
+python3 -m venv env
+env/bin/pip install --upgrade pip
 env/bin/pip install \
     --extra-index-url https://drake-packages.csail.mit.edu/whl/nightly/ \
     'drake<0.1'
+source env/bin/activate
 ```
-
-If you just install `drake`, the version numbers for the stable releases
-for the [drake PyPI project](https://pypi.org/project/drake/) will be larger
-than any `0.0.YYYYMMDD` version in the extra index, and you will **not** be
-installing a nightly wheel artifact!
-</div>
