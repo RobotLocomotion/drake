@@ -13,7 +13,6 @@ namespace internal {
 namespace {
 
 using Eigen::Vector3d;
-using geometry::internal::UvState;
 using math::RigidTransformd;
 using render::RenderLabel;
 
@@ -28,44 +27,34 @@ GTEST_TEST(OpenGlGeometryTest, Construction) {
   EXPECT_EQ(default_geometry.vertex_buffer, OpenGlGeometry::kInvalid);
   EXPECT_EQ(default_geometry.index_buffer, OpenGlGeometry::kInvalid);
   EXPECT_EQ(default_geometry.index_buffer_size, 0);
-  EXPECT_EQ(default_geometry.uv_state, UvState::kNone);
   EXPECT_EQ(default_geometry.v_count, 0);
 
-  const OpenGlGeometry geometry{1, 2, 3, 4, UvState::kPartial, 7};
+  const OpenGlGeometry geometry{1, 2, 3, 4, 7};
   EXPECT_EQ(geometry.vertex_array, 1);
   EXPECT_EQ(geometry.vertex_buffer, 2);
   EXPECT_EQ(geometry.index_buffer, 3);
   EXPECT_EQ(geometry.index_buffer_size, 4);
-  EXPECT_EQ(geometry.uv_state, UvState::kPartial);
   EXPECT_EQ(geometry.v_count, 7);
 
-  DRAKE_EXPECT_THROWS_MESSAGE(OpenGlGeometry(1, 2, 3, -1, UvState::kNone, 1),
+  DRAKE_EXPECT_THROWS_MESSAGE(OpenGlGeometry(1, 2, 3, -1, 1),
                               "Index buffer size must be non-negative");
 }
 
 GTEST_TEST(OpenGlGeometryTest, IsDefined) {
   const GLuint kInvalid = OpenGlGeometry::kInvalid;
 
-  EXPECT_TRUE(OpenGlGeometry(1, 2, 3, 4, UvState::kNone, 1).is_defined());
-  EXPECT_FALSE(
-      OpenGlGeometry(kInvalid, 2, 3, 4, UvState::kNone, 1).is_defined());
-  EXPECT_FALSE(
-      OpenGlGeometry(1, kInvalid, 3, 4, UvState::kNone, 1).is_defined());
-  EXPECT_FALSE(
-      OpenGlGeometry(1, 2, kInvalid, 4, UvState::kNone, 1).is_defined());
-  EXPECT_FALSE(
-      OpenGlGeometry(kInvalid, kInvalid, 3, 4, UvState::kNone, 1).is_defined());
-  EXPECT_FALSE(
-      OpenGlGeometry(kInvalid, 2, kInvalid, 4, UvState::kNone, 1).is_defined());
-  EXPECT_FALSE(
-      OpenGlGeometry(1, kInvalid, kInvalid, 4, UvState::kNone, 1).is_defined());
-  EXPECT_FALSE(
-      OpenGlGeometry(kInvalid, kInvalid, kInvalid, 4, UvState::kNone, 1)
-          .is_defined());
+  EXPECT_TRUE(OpenGlGeometry(1, 2, 3, 4, 1).is_defined());
+  EXPECT_FALSE(OpenGlGeometry(kInvalid, 2, 3, 4, 1).is_defined());
+  EXPECT_FALSE(OpenGlGeometry(1, kInvalid, 3, 4, 1).is_defined());
+  EXPECT_FALSE(OpenGlGeometry(1, 2, kInvalid, 4, 1).is_defined());
+  EXPECT_FALSE(OpenGlGeometry(kInvalid, kInvalid, 3, 4, 1).is_defined());
+  EXPECT_FALSE(OpenGlGeometry(kInvalid, 2, kInvalid, 4, 1).is_defined());
+  EXPECT_FALSE(OpenGlGeometry(1, kInvalid, kInvalid, 4, 1).is_defined());
+  EXPECT_FALSE(OpenGlGeometry(kInvalid, kInvalid, kInvalid, 4, 1).is_defined());
 }
 
 GTEST_TEST(OpenGlGeometryTest, ThrowIfUndefined) {
-  const OpenGlGeometry valid{1, 2, 3, 4, UvState::kNone, 1};
+  const OpenGlGeometry valid{1, 2, 3, 4, 1};
   EXPECT_NO_THROW(valid.throw_if_undefined("test message"));
   DRAKE_EXPECT_THROWS_MESSAGE(
       OpenGlGeometry().throw_if_undefined("default is undefined"),
