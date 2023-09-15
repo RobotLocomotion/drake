@@ -119,20 +119,6 @@ void PidController<T>::CalcControl(const Context<T>& context,
        (ki_.array() * state_vector.array()).matrix()));
 }
 
-// Adds a simple record-based representation of the PID controller to @p dot.
-template <typename T>
-void PidController<T>::GetGraphvizFragment(int max_depth,
-                                           std::stringstream* dot) const {
-  unused(max_depth);
-  std::string name = this->get_name();
-  if (name.empty()) {
-    name = "PID Controller";
-  }
-  *dot << this->GetGraphvizId() << " [shape=record, label=\"" << name;
-  *dot << " | { {<u0> x |<u1> x_d} |<y0> y}";
-  *dot << "\"];" << std::endl;
-}
-
 }  // namespace controllers
 }  // namespace systems
 }  // namespace drake

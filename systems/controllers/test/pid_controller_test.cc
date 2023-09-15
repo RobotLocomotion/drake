@@ -106,14 +106,6 @@ TEST_F(PidControllerTest, GetterVectorKd) {
   EXPECT_THROW(controller.get_Kd_singleton(), std::runtime_error);
 }
 
-TEST_F(PidControllerTest, Graphviz) {
-  const std::string dot = controller_.GetGraphvizString();
-  EXPECT_NE(
-      std::string::npos,
-      dot.find("label=\"PID Controller | { {<u0> x |<u1> x_d} |<y0> y}\""))
-      << dot;
-}
-
 // Evaluates the output and asserts correctness.
 TEST_F(PidControllerTest, CalcOutput) {
   ASSERT_NE(nullptr, context_);
