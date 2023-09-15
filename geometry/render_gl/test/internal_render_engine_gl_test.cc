@@ -54,18 +54,26 @@ class RenderEngineGlTester {
     return *engine_.opengl_context_;
   }
 
-  const internal::OpenGlGeometry GetMesh(const std::string& filename) const {
+  // We assume that filename produces a single render mesh, return the geometry
+  // for that mesh.
+  const internal::OpenGlGeometry GetSingleMesh(
+      const std::string& filename) const {
     // A dummy registration data; we'll learn if the filename was accepted
     // by examining the data.
     RenderEngineGl::RegistrationData data{GeometryId::get_new_id(), {}, {}};
-    const int index =
-        const_cast<RenderEngineGl&>(engine_).GetMesh(filename, &data);
-    // We should have non-negative and accepted or negative and not accepted.
-    if (!((index >= 0) == data.accepted)) {
+    const std::vector<int> indices =
+        const_cast<RenderEngineGl&>(engine_).GetMeshes(filename, &data);
+    if (indices.size() != 1) {
       throw std::runtime_error(
-          "Mesh acceptance state doesn't match the returned geometry index.");
+          "GetSingleMesh() used with a file that doesn't return a single "
+          "mesh.");
     }
-    return engine_.geometries_[index];
+    if (!data.accepted) {
+      throw std::runtime_error(
+          "GetSingleMesh() returned a mesh index, but claims its not "
+          "accepted.");
+    }
+    return engine_.geometries_[indices.front()];
   }
 
  private:
@@ -221,8 +229,7 @@ class RenderEngineGlTest : public ::testing::Test {
         // Looking straight down from 3m above the ground.
         X_WR_(RotationMatrixd{AngleAxisd(M_PI, Vector3d::UnitY()) *
                               AngleAxisd(-M_PI_2, Vector3d::UnitZ())},
-              {0, 0, kDefaultDistance}),
-        geometry_id_(GeometryId::get_new_id()) {}
+              {0, 0, kDefaultDistance}) {}
 
  protected:
   // Method to allow the normal case (render with the built-in renderer against
@@ -427,12 +434,13 @@ class RenderEngineGlTest : public ::testing::Test {
     const double r = 0.5;
     Sphere sphere{r};
     expected_label_ = RenderLabel(12345);  // an arbitrary value.
-    renderer->RegisterVisual(geometry_id_, sphere, simple_material(use_texture),
+    sphere_id_ = GeometryId::get_new_id();
+    renderer->RegisterVisual(sphere_id_, sphere, simple_material(use_texture),
                              RigidTransformd::Identity(),
                              true /* needs update */);
     RigidTransformd X_WV{Vector3d{0, 0, r}};
     X_WV_.clear();
-    X_WV_.insert({geometry_id_, X_WV});
+    X_WV_.insert({sphere_id_, X_WV});
     renderer->UpdatePoses(X_WV_);
   }
 
@@ -513,7 +521,7 @@ class RenderEngineGlTest : public ::testing::Test {
   ImageDepth32F depth_;
   ImageLabel16I label_;
   RigidTransformd X_WR_;
-  GeometryId geometry_id_;
+  GeometryId sphere_id_;
 
   // The pose of the sphere created in PopulateSphereTest().
   unordered_map<GeometryId, RigidTransformd> X_WV_;
@@ -753,6 +761,10 @@ TEST_F(RenderEngineGlTest, SphereTest) {
 TEST_F(RenderEngineGlTest, TransparentSphereTest) {
   RenderEngineGlParams params;
   RenderEngineGl renderer{params};
+  // TODO(20206): This test depends on the terrain having a *smaller* geometry
+  // id than the sphere, so that it gets rendered first and is visible through
+  // the sphere. Once transparency is handled better, we should confirm we get
+  // the right result, regardless of registration order.
   InitializeRenderer(X_WR_, true /* add terrain */, &renderer);
   const int int_alpha = 128;
   // Sets the color of the sphere that will be created in PopulateSphereTest.
@@ -1000,6 +1012,104 @@ TEST_F(RenderEngineGlTest, MeshTest) {
       EXPECT_NE(gl_engine, nullptr);
       PerformCenterShapeTest(gl_engine);
     }
+  }
+}
+
+// A variant of MeshTest. Confirms the support for mesh files which contain
+// multiple materials/parts. Conceptually, the mesh file is a cube with
+// different colors on each side. We'll render the cube six times with different
+// orientations to confirm that each face renders as expected. The *structure*
+// of the mesh file tests various aspects:
+//
+//  1. Multiple objects.
+//  2. Multiple materials.
+//  3. Some materials used diffuse color, some use map.
+//  4. The texture is not vertically symmetric. So, if there's an inversion
+//     problem, we'll get a bad face.
+//
+// If all of that is processed correctly, we should get a cube with a different
+// color on each face. We'll test for those colors.
+TEST_F(RenderEngineGlTest, MultiMaterialObj) {
+  struct Face {
+    // The expected *illuminated* material color. The simple illumination model
+    // guarantees that the rendered color should be that of the material --
+    // either the given Kd value *or* the map color at the test location.
+    // TODO(20234): this will change to product of diffuse color and texture.
+    Rgba rendered_color;
+    RotationMatrixd rotation;
+    std::string name;
+  };
+  Init(X_WR_, true);
+
+  const std::string filename =
+      FindResourceOrThrow("drake/geometry/render/test/meshes/rainbow_box.obj");
+
+  Mesh mesh(filename);
+  expected_label_ = RenderLabel(3);
+  // Note: Passing diffuse color or texture to a glTF spawns a warning.
+  PerceptionProperties material;
+  material.AddProperty("label", "id", expected_label_);
+  const GeometryId id = GeometryId::get_new_id();
+  renderer_->RegisterVisual(id, mesh, material, RigidTransformd::Identity(),
+                            true /* needs update */);
+
+  const std::vector<Face> faces{
+      {.rendered_color = Rgba(0.016, 0.945, 0.129),
+       .rotation = RotationMatrixd(),
+       .name = "green"},
+      {.rendered_color = Rgba(0.8, 0.359, 0.023),
+       .rotation = RotationMatrixd::MakeXRotation(M_PI / 2),
+       .name = "orange"},
+      {.rendered_color = Rgba(0.945, 0.016, 0.016),
+       .rotation = RotationMatrixd::MakeXRotation(M_PI),
+       .name = "red"},
+      {.rendered_color = Rgba(0.098, 0.016, 0.945),
+       .rotation = RotationMatrixd::MakeXRotation(-M_PI / 2),
+       .name = "blue"},
+      {.rendered_color = Rgba(0.799, 0.8, 0),
+       .rotation = RotationMatrixd::MakeYRotation(-M_PI / 2),
+       .name = "yellow"},
+      {.rendered_color = Rgba(0.436, 0, 0.8),
+       .rotation = RotationMatrixd::MakeYRotation(M_PI / 2),
+       .name = "purple"},
+  };
+
+  // Render from the original to make sure it's complete and correct.
+  for (const auto& face : faces) {
+    SCOPED_TRACE(
+        fmt::format("multi-material test on {} face - original", face.name));
+    expected_color_ = face.rendered_color;
+
+    renderer_->UpdatePoses(unordered_map<GeometryId, RigidTransformd>{
+        {id, RigidTransformd(face.rotation)}});
+    PerformCenterShapeTest(renderer_.get());
+  }
+
+  // Repeat that from a clone to confirm that the artifacts survived cloning.
+  std::unique_ptr<RenderEngine> clone = renderer_->Clone();
+  auto* gl_clone = dynamic_cast<RenderEngineGl*>(clone.get());
+  for (const auto& face : faces) {
+    SCOPED_TRACE(
+        fmt::format("multi-material test on {} face - clone", face.name));
+    expected_color_ = face.rendered_color;
+
+    gl_clone->UpdatePoses(unordered_map<GeometryId, RigidTransformd>{
+        {id, RigidTransformd(face.rotation)}});
+    PerformCenterShapeTest(gl_clone);
+  }
+
+  // Confirm all parts get removed when removing the geometry.
+  gl_clone->RemoveGeometry(id);
+  expected_color_ = kTerrainColor;
+  expected_object_depth_ = expected_outlier_depth_;
+  expected_label_ = expected_outlier_label_;
+  for (const auto& face : faces) {
+    SCOPED_TRACE(fmt::format("multi-material test on {} face - after removal",
+                             face.name));
+
+    gl_clone->UpdatePoses(unordered_map<GeometryId, RigidTransformd>{
+        {id, RigidTransformd(face.rotation)}});
+    PerformCenterShapeTest(gl_clone);
   }
 }
 
@@ -1253,7 +1363,7 @@ TEST_F(RenderEngineGlTest, CloneIndependence) {
   RigidTransformd X_WT_new{Translation3d{0, 0, 10}};
   // This assumes that the terrain is zero-indexed.
   renderer_->UpdatePoses(
-      unordered_map<GeometryId, RigidTransformd>{{geometry_id_, X_WT_new}});
+      unordered_map<GeometryId, RigidTransformd>{{sphere_id_, X_WT_new}});
   SCOPED_TRACE("Clone independence");
   PerformCenterShapeTest(dynamic_cast<RenderEngineGl*>(clone.get()));
 }
@@ -1558,8 +1668,10 @@ TEST_F(RenderEngineGlTest, MeshGeometryReuse) {
 
   auto filename =
       FindResourceOrThrow("drake/geometry/render/test/meshes/box.obj");
-  const internal::OpenGlGeometry& initial_geometry = tester.GetMesh(filename);
-  const internal::OpenGlGeometry& second_geometry = tester.GetMesh(filename);
+  const internal::OpenGlGeometry& initial_geometry =
+      tester.GetSingleMesh(filename);
+  const internal::OpenGlGeometry& second_geometry =
+      tester.GetSingleMesh(filename);
 
   EXPECT_EQ(initial_geometry.vertex_array, second_geometry.vertex_array);
   EXPECT_EQ(initial_geometry.vertex_buffer, second_geometry.vertex_buffer);
