@@ -622,7 +622,7 @@ std::set<int> HPolyhedron::FindRedundant(double tol) const {
     const auto result = Solve(prog);
     if ((result.is_success() && -result.get_optimal_cost() > b_[i] + tol) ||
         !result.is_success()) {
-      // bring back the constraint, it is not redundant
+      // Bring back the constraint, it is not redundant.
       prog.AddConstraint(bindings_vec.at(i));
     } else {
       redundant_indices.insert(i);
