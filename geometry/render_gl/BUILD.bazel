@@ -58,7 +58,6 @@ drake_cc_library_ubuntu_only(
         ":internal_opengl_context",
         ":internal_shader_program_data",
         "//geometry/render:render_label",
-        "//geometry/render:render_material",
         "//math:geometric_transform",
     ],
 )
