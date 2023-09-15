@@ -12,17 +12,15 @@ namespace drake {
 namespace systems {
 namespace lcm {
 
-using drake::lcm::DrakeLcmInterface;
 using drake::lcm::DrakeLcm;
+using drake::lcm::DrakeLcmInterface;
 using systems::TriggerTypeSet;
 
 LcmPublisherSystem::LcmPublisherSystem(
     const std::string& channel,
     std::shared_ptr<const SerializerInterface> serializer,
-    DrakeLcmInterface* lcm,
-    const TriggerTypeSet& publish_triggers,
-    double publish_period,
-    double publish_offset)
+    DrakeLcmInterface* lcm, const TriggerTypeSet& publish_triggers,
+    double publish_period, double publish_offset)
     : channel_(channel),
       serializer_(std::move(serializer)),
       owned_lcm_(lcm ? nullptr : new DrakeLcm()),
@@ -38,16 +36,16 @@ LcmPublisherSystem::LcmPublisherSystem(
 
   // Check that publish_triggers does not contain an unsupported trigger.
   for (const auto& trigger : publish_triggers) {
-      DRAKE_THROW_UNLESS((trigger == TriggerType::kForced) ||
-        (trigger == TriggerType::kPeriodic) ||
-        (trigger == TriggerType::kPerStep));
+    DRAKE_THROW_UNLESS((trigger == TriggerType::kForced) ||
+                       (trigger == TriggerType::kPeriodic) ||
+                       (trigger == TriggerType::kPerStep));
   }
 
   // Declare a forced publish so that any time Publish(.) is called on this
   // system (or a Diagram containing it), a message is emitted.
   if (publish_triggers.find(TriggerType::kForced) != publish_triggers.end()) {
     this->DeclareForcedPublishEvent(
-      &LcmPublisherSystem::PublishInputAsLcmMessage);
+        &LcmPublisherSystem::PublishInputAsLcmMessage);
   }
 
   DeclareAbstractInputPort("lcm_message", *serializer_->CreateDefaultValue());
@@ -75,11 +73,12 @@ LcmPublisherSystem::LcmPublisherSystem(
     const std::string& channel,
     std::shared_ptr<const SerializerInterface> serializer,
     DrakeLcmInterface* lcm, double publish_period, double publish_offset)
-    : LcmPublisherSystem(channel, std::move(serializer), lcm,
-      (publish_period > 0.0) ?
-      TriggerTypeSet({TriggerType::kForced, TriggerType::kPeriodic}) :
-      TriggerTypeSet({TriggerType::kForced, TriggerType::kPerStep}),
-      publish_period, publish_offset) {}
+    : LcmPublisherSystem(
+          channel, std::move(serializer), lcm,
+          (publish_period > 0.0)
+              ? TriggerTypeSet({TriggerType::kForced, TriggerType::kPeriodic})
+              : TriggerTypeSet({TriggerType::kForced, TriggerType::kPerStep}),
+          publish_period, publish_offset) {}
 
 LcmPublisherSystem::~LcmPublisherSystem() {}
 

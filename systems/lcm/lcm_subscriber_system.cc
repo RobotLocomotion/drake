@@ -36,8 +36,8 @@ LcmSubscriberSystem::LcmSubscriberSystem(
   DRAKE_THROW_UNLESS(lcm != nullptr);
   DRAKE_THROW_UNLESS(!std::isnan(wait_for_message_on_initialization_timeout));
 
-  subscription_ = lcm->Subscribe(
-      channel_, [this](const void* buffer, int size) {
+  subscription_ =
+      lcm->Subscribe(channel_, [this](const void* buffer, int size) {
         this->HandleMessage(buffer, size);
       });
   if (subscription_) {
@@ -137,8 +137,7 @@ void LcmSubscriberSystem::DoCalcNextUpdateTime(
   EventCollection<UnrestrictedUpdateEvent<double>>& uu_events =
       events->get_mutable_unrestricted_update_events();
   uu_events.AddEvent(
-      systems::UnrestrictedUpdateEvent<double>(
-          TriggerType::kTimed, callback));
+      systems::UnrestrictedUpdateEvent<double>(TriggerType::kTimed, callback));
 }
 
 std::string LcmSubscriberSystem::make_name(const std::string& channel) {
@@ -162,9 +161,10 @@ void LcmSubscriberSystem::HandleMessage(const void* buffer, int size) {
   received_message_condition_variable_.notify_all();
 }
 
-int LcmSubscriberSystem::WaitForMessage(
-    int old_message_count, AbstractValue* message, double timeout) const {
-// NOLINTNEXTLINE(build/namespaces): The chrono literals are just so convenient.
+int LcmSubscriberSystem::WaitForMessage(int old_message_count,
+                                        AbstractValue* message,
+                                        double timeout) const {
+  // NOLINTNEXTLINE(build/namespaces) The chrono literals are very convenient.
   using namespace std::chrono_literals;
   using Clock = std::chrono::steady_clock;
   using Duration = Clock::duration;
@@ -205,8 +205,8 @@ int LcmSubscriberSystem::WaitForMessage(
   }
 
   if (message) {
-      serializer_->Deserialize(
-          received_message_.data(), received_message_.size(), message);
+    serializer_->Deserialize(received_message_.data(), received_message_.size(),
+                             message);
   }
 
   return received_message_count_;
@@ -265,4 +265,3 @@ EventStatus LcmSubscriberSystem::Initialize(const Context<double>& context,
 }  // namespace lcm
 }  // namespace systems
 }  // namespace drake
-

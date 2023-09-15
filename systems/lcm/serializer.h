@@ -34,9 +34,8 @@ class SerializerInterface {
   /**
    * Translates LCM message bytes into a drake::AbstractValue object.
    */
-  virtual void Deserialize(
-      const void* message_bytes, int message_length,
-      AbstractValue* abstract_value) const = 0;
+  virtual void Deserialize(const void* message_bytes, int message_length,
+                           AbstractValue* abstract_value) const = 0;
 
   /**
    * Translates a drake::AbstractValue object into LCM message bytes.
@@ -69,9 +68,8 @@ class Serializer : public SerializerInterface {
     return std::make_unique<Value<LcmMessage>>(LcmMessage{});
   }
 
-  void Deserialize(
-      const void* message_bytes, int message_length,
-      AbstractValue* abstract_value) const override {
+  void Deserialize(const void* message_bytes, int message_length,
+                   AbstractValue* abstract_value) const override {
     DRAKE_DEMAND(abstract_value != nullptr);
     LcmMessage& message = abstract_value->get_mutable_value<LcmMessage>();
     int consumed = message.decode(message_bytes, 0, message_length);

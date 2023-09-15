@@ -22,18 +22,17 @@ int LcmBuses::size() const {
   return buses_.size();
 }
 
-DrakeLcmInterface* LcmBuses::Find(
-    std::string_view description_of_caller,
-    const std::string& bus_name) const {
+DrakeLcmInterface* LcmBuses::Find(std::string_view description_of_caller,
+                                  const std::string& bus_name) const {
   auto iter = buses_.find(bus_name);
   if (iter != buses_.end()) {
     DrakeLcmInterface* result = iter->second;
     DRAKE_DEMAND(result != nullptr);
     return result;
   }
-  throw std::runtime_error(fmt::format(
-      "{} requested an LCM bus '{}' that does not exist",
-      description_of_caller, bus_name));
+  throw std::runtime_error(
+      fmt::format("{} requested an LCM bus '{}' that does not exist",
+                  description_of_caller, bus_name));
 }
 
 std::vector<std::string_view> LcmBuses::GetAllBusNames() const {
@@ -50,8 +49,7 @@ void LcmBuses::Add(std::string bus_name, DrakeLcmInterface* bus) {
   const bool inserted = buses_.emplace(std::move(bus_name), bus).second;
   if (!inserted) {
     throw std::runtime_error(fmt::format(
-        "An LCM bus with name '{}' has already been defined",
-        bus_name));
+        "An LCM bus with name '{}' has already been defined", bus_name));
   }
 }
 

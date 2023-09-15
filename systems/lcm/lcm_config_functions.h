@@ -50,10 +50,8 @@ DiagramBuilder or a Diagram) and is never nullptr.
 @param builder must not be null
 */
 drake::lcm::DrakeLcmInterface* FindOrCreateLcmBus(
-    drake::lcm::DrakeLcmInterface* forced_result,
-    const LcmBuses* lcm_buses,
-    DiagramBuilder<double>* builder,
-    std::string_view description_of_caller,
+    drake::lcm::DrakeLcmInterface* forced_result, const LcmBuses* lcm_buses,
+    DiagramBuilder<double>* builder, std::string_view description_of_caller,
     const std::string& bus_name);
 
 }  // namespace lcm

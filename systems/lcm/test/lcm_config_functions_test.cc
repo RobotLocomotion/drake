@@ -21,8 +21,8 @@ namespace {
 GTEST_TEST(LcmConfigFunctionsTest, Basic) {
   // We'll test using two buses.
   const std::map<std::string, DrakeLcmParams> lcm_buses{
-    {"foo", {"memq://1"}},
-    {"bar", {"memq://2"}},
+      {"foo", {"memq://1"}},
+      {"bar", {"memq://2"}},
   };
 
   // Invoke the device under test.
@@ -66,8 +66,9 @@ GTEST_TEST(LcmConfigFunctionsFindOrCreateTest, FindBus) {
 
   // It's an error to use a non-existent bus_name.
   bus_name = "missing";
-  DRAKE_EXPECT_THROWS_MESSAGE(FindOrCreateLcmBus(
-          forced_result, &lcm_buses, &builder, description, bus_name),
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      FindOrCreateLcmBus(forced_result, &lcm_buses, &builder, description,
+                         bus_name),
       ".*missing.*does not exist.*");
 }
 
@@ -86,8 +87,8 @@ GTEST_TEST(LcmConfigFunctionsFindOrCreateTest, IgnoredLcmBuses) {
 
   // The same holds true even when an lcm_buses has been provided.
   const LcmBuses empty_lcm_buses;
-  result = FindOrCreateLcmBus(
-      &forced_result, &empty_lcm_buses, &builder, description, bus_name);
+  result = FindOrCreateLcmBus(&forced_result, &empty_lcm_buses, &builder,
+                              description, bus_name);
   EXPECT_EQ(result, &forced_result);
   EXPECT_EQ(builder.GetSystems().size(), 0);
 }
@@ -109,8 +110,9 @@ GTEST_TEST(LcmConfigFunctionsFindOrCreateTest, CreateNew) {
 
   // It's an error to use a different bus_name.
   bus_name = "special";
-  DRAKE_EXPECT_THROWS_MESSAGE(FindOrCreateLcmBus(
-          forced_result, lcm_buses, &builder, description, bus_name),
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      FindOrCreateLcmBus(forced_result, lcm_buses, &builder, description,
+                         bus_name),
       ".*non-default.*special.*");
 }
 

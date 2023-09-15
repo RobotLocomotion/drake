@@ -25,12 +25,13 @@ void EvalOutputHelper(const LcmSubscriberSystem& sub, Context<double>* context,
   if (event_info->HasEvents()) {
     std::unique_ptr<State<double>> tmp_state = context->CloneState();
     if (event_info->HasDiscreteUpdateEvents()) {
-      sub.CalcDiscreteVariableUpdate(
-          *context, event_info->get_discrete_update_events(),
-          &tmp_state->get_mutable_discrete_state());
+      sub.CalcDiscreteVariableUpdate(*context,
+                                     event_info->get_discrete_update_events(),
+                                     &tmp_state->get_mutable_discrete_state());
     } else if (event_info->HasUnrestrictedUpdateEvents()) {
       sub.CalcUnrestrictedUpdate(*context,
-          event_info->get_unrestricted_update_events(), tmp_state.get());
+                                 event_info->get_unrestricted_update_events(),
+                                 tmp_state.get());
     } else {
       DRAKE_DEMAND(false);
     }
@@ -42,9 +43,8 @@ void EvalOutputHelper(const LcmSubscriberSystem& sub, Context<double>* context,
 struct SampleData {
   lcmt_drake_signal value{2, {1.0, 2.0}, {"x", "y"}, 12345};
 
-  void PublishAndHandle(
-      drake::lcm::DrakeLcmInterface* lcm,
-      const std::string& channel_name) const {
+  void PublishAndHandle(drake::lcm::DrakeLcmInterface* lcm,
+                        const std::string& channel_name) const {
     Publish(lcm, channel_name, value);
     lcm->HandleSubscriptions(0);
   }
@@ -203,7 +203,8 @@ GTEST_TEST(LcmSubscriberSystemTest, WaitTest) {
   // implementation.
   std::atomic<bool> started{};
   auto wait = [&]() {
-    while (!started.load()) {}
+    while (!started.load()) {
+    }
   };
 
   // Test explicit value.
@@ -228,8 +229,8 @@ GTEST_TEST(LcmSubscriberSystemTest, WaitTest) {
   });
   wait();
   sample_data.PublishAndHandle(&lcm, channel_name);
-  EXPECT_TRUE(CompareLcmtDrakeSignalMessages(
-      future_message.get(), sample_data.value));
+  EXPECT_TRUE(
+      CompareLcmtDrakeSignalMessages(future_message.get(), sample_data.value));
 
   // Test WaitForMessageTimeout, when no message is sent
   int old_count = dut->GetInternalMessageCount();
