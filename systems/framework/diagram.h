@@ -11,6 +11,7 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/pointer_cast.h"
 #include "drake/systems/framework/diagram_context.h"
 #include "drake/systems/framework/diagram_continuous_state.h"
@@ -232,24 +233,15 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   const State<T>& GetSubsystemState(const System<T>& subsystem,
                                     const State<T>& state) const;
 
-  //----------------------------------------------------------------------------
-  /// @name                      Graphviz methods
-  //@{
-
-  /// Returns a Graphviz fragment describing this Diagram. To obtain a complete
-  /// Graphviz graph, call System<T>::GetGraphvizString.
-  void GetGraphvizFragment(int max_depth,
-                           std::stringstream* dot) const override;
-
+  DRAKE_DEPRECATED("2024-01-01", "Use SystemBase::GraphvizFragment instead")
   void GetGraphvizInputPortToken(const InputPort<T>& port,
                                  int max_depth,
                                  std::stringstream* dot) const final;
 
+  DRAKE_DEPRECATED("2024-01-01", "Use SystemBase::GraphvizFragment instead")
   void GetGraphvizOutputPortToken(const OutputPort<T>& port,
                                   int max_depth,
                                   std::stringstream* dot) const final;
-
-  //@}
 
   /// Returns the index of the given @p sys in this diagram, or aborts if @p sys
   /// is not a member of the diagram.
@@ -374,6 +366,9 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   std::string GetUnsupportedScalarConversionMessage(
       const std::type_info& source_type,
       const std::type_info& destination_type) const final;
+
+  SystemBase::GraphvizFragment DoGetGraphvizFragment(
+      const SystemBase::GraphvizFragmentParams& params) const override;
 
  private:
   std::unique_ptr<AbstractValue> DoAllocateInput(
@@ -584,6 +579,9 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   bool NamesAreUniqueAndNonEmpty() const;
 
   int num_subsystems() const;
+
+  // Sugar to bring SystemBase::GetGraphvizPortLabels() into scope.
+  std::vector<std::string> GetGraphvizPortLabels(bool input) const;
 
   // A map from the input ports of constituent systems, to the output ports of
   // the systems from which they get their values.

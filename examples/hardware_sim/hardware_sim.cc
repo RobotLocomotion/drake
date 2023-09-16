@@ -140,8 +140,10 @@ int main() {
   Simulation sim(scenario);
   sim.Setup();
   if (!FLAGS_graphviz.empty()) {
+    std::map<std::string, std::string> options;
+    options.emplace("plant/split_in_twain", "1");
     std::ofstream out(FLAGS_graphviz);
-    out << sim.diagram().GetGraphvizString();
+    out << sim.diagram().GetGraphvizString({}, options);
   }
   sim.Simulate();
   return 0;
