@@ -152,6 +152,10 @@ class ContactVisualizer final : public systems::LeafSystem<T> {
   /* Handles the initialization event. */
   systems::EventStatus OnInitialization(const systems::Context<T>&) const;
 
+  typename systems::LeafSystem<T>::GraphvizFragment DoGetGraphvizFragment(
+      const typename systems::LeafSystem<T>::GraphvizFragmentParams& params)
+      const final;
+
   /* Meshcat is mutable because we must send messages (a non-const operation)
   from a const System (e.g., during simulation). We use shared_ptr instead of
   unique_ptr to facilitate sharing ownership through scalar conversion;

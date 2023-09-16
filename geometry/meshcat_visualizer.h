@@ -187,6 +187,10 @@ class MeshcatVisualizer final : public systems::LeafSystem<T> {
   /* Handles the initialization event. */
   systems::EventStatus OnInitialization(const systems::Context<T>&) const;
 
+  typename systems::LeafSystem<T>::GraphvizFragment DoGetGraphvizFragment(
+      const typename systems::LeafSystem<T>::GraphvizFragmentParams& params)
+      const final;
+
   /* The index of this System's QueryObject-valued input port. */
   int query_object_input_port_{};
 
