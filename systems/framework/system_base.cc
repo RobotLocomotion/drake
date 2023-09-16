@@ -2,6 +2,7 @@
 
 #include <atomic>
 #include <mutex>
+#include <regex>
 #include <stdexcept>
 #include <unordered_set>
 
@@ -27,6 +28,21 @@ SystemBase::~SystemBase() {}
 
 internal::SystemId SystemBase::get_next_id() {
   return internal::SystemId::get_new_id();
+}
+
+std::string SystemBase::GetMemoryObjectName() const {
+  // Remove the template parameter(s).
+  const std::string type_name_without_templates = std::regex_replace(
+      NiceTypeName::Get(*this), std::regex("<.*>$"), std::string());
+
+  // Replace "::" with "/" because ":" is System::GetSystemPathname's separator.
+  // TODO(sherm1) Change the separator to "/" and avoid this!
+  const std::string default_name = std::regex_replace(
+      type_name_without_templates, std::regex(":+"), std::string("/"));
+
+  // Append the address spelled like "@0123456789abcdef".
+  const uintptr_t address = reinterpret_cast<uintptr_t>(this);
+  return fmt::format("{}@{:0>16x}", default_name, address);
 }
 
 std::string SystemBase::GetSystemPathname() const {
