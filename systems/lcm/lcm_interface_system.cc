@@ -95,6 +95,24 @@ void LcmInterfaceSystem::DoCalcNextUpdateTime(
   }
 }
 
+SystemBase::GraphvizFragment LcmInterfaceSystem::DoGetGraphvizFragment(
+    const GraphvizFragmentParams& params) const {
+  const DrakeLcmInterface* const interface = this;
+  const std::string node_id = fmt::format(
+      "drakelcminterface{}", reinterpret_cast<uintptr_t>(interface));
+
+  // Set the well-known ID, enable twaining, and tack on the URL.
+  GraphvizFragmentParams new_params{params};
+  new_params.node_id = node_id;
+  new_params.options.emplace("split", "1");
+  new_params.header_lines.push_back(fmt::format("lcm_url={}", get_lcm_url()));
+  GraphvizFragment result =
+      LeafSystem<double>::DoGetGraphvizFragment(new_params);
+  result.fragments.push_back(fmt::format("{}in [color=webpurple];", node_id));
+  result.fragments.push_back(fmt::format("{}out [color=sienna];", node_id));
+  return result;
+}
+
 }  // namespace lcm
 }  // namespace systems
 }  // namespace drake

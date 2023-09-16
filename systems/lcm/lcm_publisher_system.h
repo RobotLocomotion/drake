@@ -252,6 +252,9 @@ class LcmPublisherSystem : public LeafSystem<double> {
   EventStatus Initialize(const Context<double>& context) const;
   EventStatus PublishInputAsLcmMessage(const Context<double>& context) const;
 
+  GraphvizFragment DoGetGraphvizFragment(
+      const GraphvizFragmentParams& params) const final;
+
   // The channel on which to publish LCM messages.
   const std::string channel_;
 

@@ -327,6 +327,10 @@ class DrakeVisualizer final : public systems::LeafSystem<T> {
   const std::vector<internal::DeformableMeshData>& EvalDeformableMeshData(
       const systems::Context<T>& context) const;
 
+  typename systems::LeafSystem<T>::GraphvizFragment DoGetGraphvizFragment(
+      const typename systems::LeafSystem<T>::GraphvizFragmentParams& params)
+      const final;
+
   /* DrakeVisualizer stores a "model" of what it thinks is registered in the
    receiving application. Because that application is not part of the
    Drake state, this model is likewise not part of the Drake state. It is a
