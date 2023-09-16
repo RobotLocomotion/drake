@@ -81,6 +81,9 @@ class LcmInterfaceSystem final : public LeafSystem<double>,
                             systems::CompositeEventCollection<double>*,
                             double*) const final;
 
+  GraphvizFragment DoGetGraphvizFragment(
+      const GraphvizFragmentParams& params) const final;
+
   std::unique_ptr<drake::lcm::DrakeLcmInterface> owned_lcm_;
   drake::lcm::DrakeLcmInterface* const lcm_{};
 };

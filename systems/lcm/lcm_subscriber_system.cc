@@ -4,6 +4,7 @@
 #include <utility>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/nice_type_name.h"
 #include "drake/common/text_logging.h"
 #include "drake/systems/framework/basic_vector.h"
 
@@ -31,7 +32,9 @@ LcmSubscriberSystem::LcmSubscriberSystem(
       // Only capture the lcm pointer if it is required.
       lcm_{wait_for_message_on_initialization_timeout > 0 ? lcm : nullptr},
       wait_for_message_on_initialization_timeout_{
-          wait_for_message_on_initialization_timeout} {
+          wait_for_message_on_initialization_timeout},
+      lcm_graphviz_node_id_{fmt::format("drakelcminterface{}out",
+                                        reinterpret_cast<uintptr_t>(lcm))} {
   DRAKE_THROW_UNLESS(serializer_ != nullptr);
   DRAKE_THROW_UNLESS(lcm != nullptr);
   DRAKE_THROW_UNLESS(!std::isnan(wait_for_message_on_initialization_timeout));
@@ -260,6 +263,22 @@ EventStatus LcmSubscriberSystem::Initialize(const Context<double>& context,
   // TODO(russt): Once EventStatus are actually propagated, return the status
   // instead of throwing it.
   throw std::runtime_error(result.message());
+}
+
+SystemBase::GraphvizFragment LcmSubscriberSystem::DoGetGraphvizFragment(
+    const GraphvizFragmentParams& params) const {
+  const std::string message_type = NiceTypeName::RemoveNamespaces(
+      serializer_->CreateDefaultValue()->GetNiceTypeName());
+  GraphvizFragmentParams new_params{params};
+  new_params.header_lines.push_back(fmt::format("channel={}", channel_));
+  new_params.header_lines.push_back(fmt::format("type={}", message_type));
+  GraphvizFragment result =
+      LeafSystem<double>::DoGetGraphvizFragment(new_params);
+  result.fragments.push_back(
+      fmt::format("{} -> {}:w "
+                  "[style=\"dashed\", color=\"sienna\"];\n",
+                  lcm_graphviz_node_id_, new_params.node_id));
+  return result;
 }
 
 }  // namespace lcm
