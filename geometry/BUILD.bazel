@@ -822,6 +822,10 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "hydroelastize_test",
+    data = [
+        ":test_obj_files",
+        ":test_vtk_files",
+    ],
     deps = [
         ":hydroelastize",
     ],

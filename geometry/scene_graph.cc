@@ -317,6 +317,7 @@ void SceneGraph<T>::ChangeShape(
   g_state.ChangeShape(source_id, geometry_id, shape, X_FG);
   auto& config = scene_graph_config(*context);
   if (config.hydroelastize == true) {
+    DRAKE_DEMAND(false);
     internal::Hydroelastize(&g_state, config, geometry_id);
   }
 }
@@ -383,6 +384,7 @@ void SceneGraph<T>::AssignRole(Context<T>* context, SourceId source_id,
   g_state.AssignRole(source_id, geometry_id, std::move(properties), assign);
   auto& config = scene_graph_config(*context);
   if (assign == RoleAssign::kNew && config.hydroelastize == true) {
+    DRAKE_DEMAND(false);
     internal::Hydroelastize(&g_state, config, geometry_id);
   }
 }
