@@ -43,6 +43,11 @@ void BackfillDefaults(ProximityProperties* properties,
 
 class ShapeAdjuster final : public ShapeReifier {
  public:
+  struct ReifyData {
+    ProximityProperties* props{};
+    bool is_too_small{false};
+  };
+
   // @returns true if the shape is too small to participate in hydroelastic
   // contact for this scene.
   bool MakeShapeAdjustments(const Shape& shape, ProximityProperties* props) {
@@ -51,10 +56,9 @@ class ShapeAdjuster final : public ShapeReifier {
     return data.is_too_small;
   }
 
-  void ImplementGeometry(const Box& box, void* ptr) final {
-    ReifyData* data = static_cast<ReifyData*>(ptr);
-    double max_radius =
-        std::max(box.width(), std::max(box.depth(), box.height()));
+  using ShapeReifier::ImplementGeometry;
+
+  void CheckTooSmall(ReifyData* data, double max_radius) {
     double rez_hint = data->props->GetPropertyOrDefault(
         kHydroGroup, kRezHint, 0.0);
     if (2 * max_radius < rez_hint * 1e-2) {
@@ -62,80 +66,63 @@ class ShapeAdjuster final : public ShapeReifier {
     }
   }
 
-  void ImplementGeometry(const Capsule& capsule, void* ptr) final {
-    ReifyData* data = static_cast<ReifyData*>(ptr);
-    double max_radius = capsule.length() * 0.5 + capsule.radius();
-    double rez_hint = data->props->GetPropertyOrDefault(
-        kHydroGroup, kRezHint, 0.0);
-    if (2 * max_radius < rez_hint * 1e-2) {
-      data->is_too_small = true;
-    }
-  }
-
-  void ImplementGeometry(const Convex&, void*) final {
+  void AdjustMesh(ReifyData* data, const std::string& extension) {
     // For now, let us claim that anything supplied as a mesh will likely be
     // appropriately sized to be part of the scene, and not a point-contact
     // helper shape. Therefore, too-small checking should not be
     // necessary. TODO(rpoyner-tri): Revisit this if there are
     // counter-examples.
-  }
-
-  void ImplementGeometry(const Cylinder& cylinder, void* ptr) final {
-    ReifyData* data = static_cast<ReifyData*>(ptr);
-    double max_radius = std::max(cylinder.radius(), cylinder.length() * 0.5);
-    double rez_hint = data->props->GetPropertyOrDefault(
-        kHydroGroup, kRezHint, 0.0);
-    if (2 * max_radius < rez_hint * 1e-2) {
-      data->is_too_small = true;
-    }
-  }
-
-  void ImplementGeometry(const Ellipsoid& ellipsoid, void* ptr) final {
-    ReifyData* data = static_cast<ReifyData*>(ptr);
-    double max_radius = std::max(
-        ellipsoid.a(), std::max(ellipsoid.b(), ellipsoid.c()));
-    double rez_hint = data->props->GetPropertyOrDefault(
-        kHydroGroup, kRezHint, 0.0);
-    if (2 * max_radius < rez_hint * 1e-2) {
-      data->is_too_small = true;
-    }
-  }
-
-  void ImplementGeometry(const HalfSpace&, void*) final {
-    // Halfspaces are plenty big by definition; nothing to do.
-  }
-
-  void ImplementGeometry(const MeshcatCone&, void*) final {
-    // Documented not to participate in proximity queries; nothing to do.
-  }
-
-  void ImplementGeometry(const Sphere& sphere, void* ptr) final {
-    ReifyData* data = static_cast<ReifyData*>(ptr);
-    double rez_hint = data->props->GetPropertyOrDefault(
-        kHydroGroup, kRezHint, 0.0);
-    if (2 * sphere.radius() < rez_hint * 1e-2) {
-      data->is_too_small = true;
-    }
-  }
-
-  void ImplementGeometry(const Mesh& mesh, void* ptr) final {
-    // For now, let us claim that anything supplied as a mesh will likely be
-    // appropriately sized to be part of the scene, and not a point-contact
-    // helper shape. Therefore, too-small checking should not be
-    // necessary. TODO(rpoyner-tri): Revisit this if there are
-    // counter-examples.
-    ReifyData* data = static_cast<ReifyData*>(ptr);
-    if (mesh.extension() != ".vtk") {
+    if (extension != ".vtk") {
       // We have no prayer of making a soft geometry -- avoid it.
       data->props->UpdateProperty(kHydroGroup, kComplianceType,
                                   HydroelasticType::kRigid);
     }
   }
 
-  struct ReifyData {
-    ProximityProperties* props{};
-    bool is_too_small{false};
-  };
+  void ImplementGeometry(const Box& box, void* ptr) final {
+    ReifyData* data = static_cast<ReifyData*>(ptr);
+    double max_radius =
+        std::max(box.width(), std::max(box.depth(), box.height()));
+    CheckTooSmall(data, max_radius);
+  }
+
+  void ImplementGeometry(const Capsule& capsule, void* ptr) final {
+    ReifyData* data = static_cast<ReifyData*>(ptr);
+    double max_radius = capsule.length() * 0.5 + capsule.radius();
+    CheckTooSmall(data, max_radius);
+  }
+
+  void ImplementGeometry(const Convex& convex, void* ptr) final {
+    ReifyData* data = static_cast<ReifyData*>(ptr);
+    AdjustMesh(data, convex.extension());
+  }
+
+  void ImplementGeometry(const Cylinder& cylinder, void* ptr) final {
+    ReifyData* data = static_cast<ReifyData*>(ptr);
+    double max_radius = std::max(cylinder.radius(), cylinder.length() * 0.5);
+    CheckTooSmall(data, max_radius);
+  }
+
+  void ImplementGeometry(const Ellipsoid& ellipsoid, void* ptr) final {
+    ReifyData* data = static_cast<ReifyData*>(ptr);
+    double max_radius = std::max(
+        ellipsoid.a(), std::max(ellipsoid.b(), ellipsoid.c()));
+    CheckTooSmall(data, max_radius);
+  }
+
+  void ImplementGeometry(const HalfSpace&, void*) final {
+    // Halfspaces are plenty big by definition; nothing to do.
+  }
+
+  void ImplementGeometry(const Sphere& sphere, void* ptr) final {
+    ReifyData* data = static_cast<ReifyData*>(ptr);
+    CheckTooSmall(data, sphere.radius());
+  }
+
+  void ImplementGeometry(const Mesh& mesh, void* ptr) final {
+    ReifyData* data = static_cast<ReifyData*>(ptr);
+    AdjustMesh(data, mesh.extension());
+  }
 };
 
 ShapeAdjuster* GetShapeAdjuster() {
