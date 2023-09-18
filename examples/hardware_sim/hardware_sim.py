@@ -123,7 +123,7 @@ def _load_scenario(*, filename, scenario_name, scenario_text):
     return result
 
 
-def run(*, scenario):
+def run(*, scenario, graphviz=None):
     """Runs a simulation of the given scenario.
     """
     builder = DiagramBuilder()
@@ -174,6 +174,11 @@ def run(*, scenario):
     random = RandomGenerator(scenario.random_seed)
     diagram.SetRandomContext(simulator.get_mutable_context(), random)
 
+    # Visualize the diagram, when requested.
+    if graphviz is not None:
+        with open(graphviz, "w", encoding="utf-8") as f:
+            f.write(diagram.GetGraphvizString())
+
     # Simulate.
     simulator.AdvanceTo(scenario.simulation_duration)
 
@@ -193,12 +198,16 @@ def main():
         "--scenario_text", default="{}",
         help="Additional YAML scenario text to load, in order to override "
              "values in the scenario_file, e.g., timeouts")
+    parser.add_argument(
+        "--graphviz", metavar="FILENAME",
+        help="Dump the Simulator's Diagram to this file in Graphviz format "
+             "as a debugging aid")
     args = parser.parse_args()
     scenario = _load_scenario(
         filename=args.scenario_file,
         scenario_name=args.scenario_name,
         scenario_text=args.scenario_text)
-    run(scenario=scenario)
+    run(scenario=scenario, graphviz=args.graphviz)
 
 
 if __name__ == "__main__":
