@@ -115,16 +115,11 @@ drake_cc_library(
 drake_cc_googletest(
     name = "internal_render_engine_vtk_test",
     args = select({
-        # Most test cases do not run correctly on macOS arm64 CI. We have
-        # selectively enabled the few test cases that actually pass.
-        # TODO(#19424) Try to re-enable all of the tests.
+        # Most test cases do not render correctly on macOS arm64 CI. Instead of
+        # trying to select the few that randomly happen to pass, we'll skip all
+        # of them. TODO(#19424) Re-enable the tests.
         "@platforms//cpu:arm64": [
-            "--gtest_filter=" + ":".join([
-                "RenderEngineVtkTest.ControlBackgroundColor",
-                "RenderEngineVtkTest.NoBodyTest",
-                "RenderEngineVtkTest.TransparentSphereTest",
-                "RenderEngineVtkTest.UnsupportedMeshConvex",
-            ]),
+            "--gtest_filter=-*",
         ],
         "//conditions:default": [],
     }),
