@@ -882,13 +882,13 @@ class TestGeneral(unittest.TestCase):
         graph = diagram.GetGraphvizString()
 
         # Check the desired input topology is in the graph.
-        self.assertRegex(graph, "_u0 -> .*:u0")
-        self.assertRegex(graph, "_u1 -> .*:u1")
-        self.assertRegex(graph, "_u0 -> .*:u2")
-        self.assertRegex(graph, "_u1 -> .*:u3")
-        self.assertRegex(graph, "_u0 -> .*:u4")
-        self.assertRegex(graph, "_u1 -> .*:u5")
-        self.assertRegex(graph, "_u0 -> .*:u6")
+        self.assertRegex(graph, ":0:e -> .*:u0:w")
+        self.assertRegex(graph, ":1:e -> .*:u1:w")
+        self.assertRegex(graph, ":0:e -> .*:u2:w")
+        self.assertRegex(graph, ":1:e -> .*:u3:w")
+        self.assertRegex(graph, ":0:e -> .*:u4:w")
+        self.assertRegex(graph, ":1:e -> .*:u5:w")
+        self.assertRegex(graph, ":0:e -> .*:u6:w")
 
     def test_diagram_api(self):
         def make_diagram():

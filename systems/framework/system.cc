@@ -949,40 +949,89 @@ VectorX<T> System<T>::CopyContinuousStateVector(
   return context.get_continuous_state().CopyToVector();
 }
 
-template <typename T>
-std::string System<T>::GetGraphvizString(int max_depth) const {
-  DRAKE_DEMAND(max_depth >= 0);
-  std::stringstream dot;
-  dot << "digraph _" << this->GetGraphvizId() << " {" << std::endl;
-  dot << "rankdir=LR" << std::endl;
-  GetGraphvizFragment(max_depth, &dot);
-  dot << "}" << std::endl;
-  return dot.str();
+// Remove this stanza on 2024-01-01.
+namespace {
+void WarnGraphvizDeprecation() {
+  static const logging::Warn log_once(
+      "The member functions "
+      "System<T>::GetGraphvizFragment(), ",
+      "System<T>::GetGraphvizInputPortToken(), and ",
+      "System<T>::GetGraphvizOutputPortToken() "
+      "are deprecated and will be removed from Drake on or after 2024-01-01. "
+      "Instead, you should override DoGetGraphvizFragment(), which subsumes "
+      "all three of the prior functions.");
 }
+constexpr const int kGraphvizMagicNumber = 0xFACADE;
+}  // namespace
 
+// Remove this function on 2024-01-01.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+template <typename T>
+typename System<T>::GraphvizFragment System<T>::DoGetGraphvizFragment(
+    const typename System<T>::GraphvizFragmentParams& params) const {
+  // Check to see if the user has overridden this function.
+  std::stringstream override_check;
+  GetGraphvizFragment(kGraphvizMagicNumber, &override_check);
+  if (override_check.str().empty()) {
+    return SystemBase::DoGetGraphvizFragment(params);
+  }
+
+  // Transmogrify the user's override into the return type we wnat.
+  WarnGraphvizDeprecation();
+  System<T>::GraphvizFragment result;
+  std::stringstream dot;
+  GetGraphvizFragment(params.max_depth, &dot);
+  result.fragments.push_back(dot.str());
+  for (int i = 0; i < num_input_ports(); ++i) {
+    std::stringstream temp;
+    GetGraphvizInputPortToken(get_input_port(i), params.max_depth, &temp);
+    result.input_ports.push_back(temp.str());
+  }
+  for (int i = 0; i < num_output_ports(); ++i) {
+    std::stringstream temp;
+    GetGraphvizOutputPortToken(get_output_port(i), params.max_depth, &temp);
+    result.output_ports.push_back(temp.str());
+  }
+  return result;
+}
+#pragma GCC diagnostic pop
+
+// Remove this deprecated function on 2024-01-01.
 template <typename T>
 void System<T>::GetGraphvizFragment(int max_depth,
                                     std::stringstream* dot) const {
-  unused(dot, max_depth);
+  if (max_depth == kGraphvizMagicNumber) {
+    // This is a magic value from SystemBase to indicate that it's probing for
+    // a user-provided virtual override. We should do nothing in that case.
+    return;
+  }
+  WarnGraphvizDeprecation();
+  auto result = SystemBase::GetGraphvizFragment(max_depth);
+  *dot << fmt::to_string(fmt::join(result.fragments, ""));
 }
 
+// Remove this deprecated function on 2024-01-01.
 template <typename T>
 void System<T>::GetGraphvizInputPortToken(const InputPort<T>& port,
                                           int max_depth,
                                           std::stringstream* dot) const {
+  WarnGraphvizDeprecation();
   unused(port, max_depth, dot);
 }
 
+// Remove this deprecated function on 2024-01-01.
 template <typename T>
 void System<T>::GetGraphvizOutputPortToken(const OutputPort<T>& port,
                                            int max_depth,
                                            std::stringstream* dot) const {
+  WarnGraphvizDeprecation();
   unused(port, max_depth, dot);
 }
 
 template <typename T>
 int64_t System<T>::GetGraphvizId() const {
-  return reinterpret_cast<int64_t>(this);
+  return get_system_id().get_value();
 }
 
 template <typename T>

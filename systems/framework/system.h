@@ -6,7 +6,6 @@
 #include <map>
 #include <memory>
 #include <optional>
-#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <type_traits>
@@ -18,6 +17,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_bool.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/common/pointer_cast.h"
@@ -32,6 +32,9 @@
 #include "drake/systems/framework/system_scalar_converter.h"
 #include "drake/systems/framework/system_visitor.h"
 #include "drake/systems/framework/witness_function.h"
+
+// TODO(jwnimmer-tri) Remove on 2023-04-01 upon completion of deprecation.
+#include <sstream>
 
 namespace drake {
 namespace systems {
@@ -1184,40 +1187,27 @@ class System : public SystemBase {
   /** @name                      Graphviz methods */
   //@{
 
-  /** Returns a Graphviz string describing this System.  To render the string,
-  use the Graphviz tool, ``dot``. http://www.graphviz.org/
+  // Add this base class function into this Doxygen section.
+  using SystemBase::GetGraphvizString;
 
-  Deprecated ports are flagged with a headstone emoji (🪦) after their name.
+  DRAKE_DEPRECATED("2024-01-01",
+                   "Override DoGetGraphvizFragment() instead of this function")
+  virtual void GetGraphvizFragment(int max_depth, std::stringstream* dot) const;
+  using SystemBase::GetGraphvizFragment;  // Don't shadow.
 
-  @param max_depth Sets a limit to the depth of nested diagrams to
-  visualize.  Set to zero to render a diagram as a single system block.
-  */
-  std::string GetGraphvizString(
-      int max_depth = std::numeric_limits<int>::max()) const;
-
-  /** Appends a Graphviz fragment to the @p dot stream.  The fragment must be
-  valid Graphviz when wrapped in a `digraph` or `subgraph` stanza.  Does
-  nothing by default.
-
-  @param max_depth Sets a limit to the depth of nested diagrams to
-  visualize.  Set to zero to render a diagram as a single system block. */
-  virtual void GetGraphvizFragment(int max_depth,
-                                   std::stringstream* dot) const;
-
-  /** Appends a fragment to the @p dot stream identifying the graphviz node
-  representing @p port. Does nothing by default. */
+  DRAKE_DEPRECATED("2024-01-01",
+                   "Override DoGetGraphvizFragment() instead of this function")
   virtual void GetGraphvizInputPortToken(const InputPort<T>& port,
                                          int max_depth,
                                          std::stringstream* dot) const;
 
-  /** Appends a fragment to the @p dot stream identifying the graphviz node
-  representing @p port. Does nothing by default. */
+  DRAKE_DEPRECATED("2024-01-01",
+                   "Override DoGetGraphvizFragment() instead of this function")
   virtual void GetGraphvizOutputPortToken(const OutputPort<T>& port,
                                           int max_depth,
                                           std::stringstream* dot) const;
 
-  /** Returns an opaque integer that uniquely identifies this system in the
-  Graphviz output. */
+  DRAKE_DEPRECATED("2024-01-01", "Use SystemBase::GraphvizFragment instead")
   int64_t GetGraphvizId() const;
   //@}
 
@@ -1884,6 +1874,14 @@ class System : public SystemBase {
   SystemScalarConverter& get_mutable_system_scalar_converter() {
     return system_scalar_converter_;
   }
+
+  // TODO(jwnimmer-tri) On 2024-01-01 upon completion of deprecation, there will
+  // no longer be any reason for System<T> to override this SystemBase function.
+  // At that point, we should remove this particular override.
+  /** The NVI implementation of GetGraphvizFragment() for subclasses to override
+  if desired. The default behavior should be sufficient in most cases. */
+  GraphvizFragment DoGetGraphvizFragment(
+      const GraphvizFragmentParams& params) const override;
 
  private:
   // For any T1 & T2, System<T1> considers System<T2> a friend, so that System
