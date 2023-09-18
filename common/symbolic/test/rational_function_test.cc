@@ -373,9 +373,9 @@ TEST_F(SymbolicRationalFunctionTest, SetIndetermiantes) {
   RationalFunction f{p1_, p4_};
 
   // set indeterminates requires a type Variables not Variable
-  symbolic::Variables vars_a_{var_a_};
+  Variables vars_a_{var_a_};
   f.SetIndeterminates(vars_a_);
-  EXPECT_EQ(f.numerator().indeterminates(), vars_a_);
+  EXPECT_EQ(f.numerator().indeterminates(), Variables());
   EXPECT_EQ(f.denominator().indeterminates(), vars_a_);
 
   f.SetIndeterminates(var_xy_);

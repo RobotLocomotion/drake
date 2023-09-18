@@ -404,10 +404,10 @@ Polynomial::Polynomial(const Expression& e) : Polynomial{e, e.GetVariables()} {
   DRAKE_ASSERT(decision_variables().empty());
 }
 
-Polynomial::Polynomial(const Expression& e, Variables indeterminates)
+Polynomial::Polynomial(const Expression& e, const Variables& indeterminates)
     : monomial_to_coefficient_map_{DecomposePolynomialVisitor{}.Decompose(
           e, indeterminates)},
-      indeterminates_{std::move(indeterminates)},
+      indeterminates_{GetIndeterminates(monomial_to_coefficient_map_)},
       decision_variables_{GetDecisionVariables(monomial_to_coefficient_map_)} {
   DRAKE_ASSERT_VOID(CheckInvariant());
 }
