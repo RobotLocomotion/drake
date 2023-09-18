@@ -115,15 +115,15 @@ class Polynomial {
   /// @throws std::exception if @p e is not a polynomial.
   explicit Polynomial(const Expression& e);
 
-  /// Constructs a polynomial from an expression @p e by decomposing it with
-  /// respect to @p indeterminates.
+  /// Constructs a polynomial from an expression `e` by decomposing it with
+  /// respect to `indeterminates`.
   ///
-  /// @note It collects the intersection of the variables appeared in `e` and
-  /// the provided @p indeterminates.
+  /// @note Calling `indeterminates() on the result will return the intersection
+  /// of the provided `indeterminates` and the variables in `e`; in other words,
+  /// `indeterminates()` is the subset that actually appeared in `e`.
   ///
-  /// @throws std::exception if @p e is not a polynomial in @p
-  /// indeterminates.
-  Polynomial(const Expression& e, Variables indeterminates);
+  /// @throws std::exception if `e` is not a polynomial in `indeterminates`.
+  Polynomial(const Expression& e, const Variables& indeterminates);
 
   /// Returns the indeterminates of this polynomial.
   [[nodiscard]] const Variables& indeterminates() const;

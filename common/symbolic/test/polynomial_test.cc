@@ -196,11 +196,14 @@ TEST_F(SymbolicPolynomialTest, ConstructorFromExpressionAndIndeterminates1) {
 TEST_F(SymbolicPolynomialTest, ConstructorFromExpressionAndIndeterminates2) {
   const Expression e{x_ * x_ + y_ * y_};  // e = x² + y².
   // Show that providing a set of indeterminates {x, y, z} which is a super-set
-  // of what appeared in `e`, {x, y}, doesn't change the constructed polynomial
-  // .
+  // of what appeared in `e`, {x, y}, doesn't change the constructed polynomial.
   const Polynomial p1{e, {var_x_, var_y_}};
   const Polynomial p2{e, {var_x_, var_y_, var_z_}};
   EXPECT_EQ(p1, p2);
+  EXPECT_EQ(p1.indeterminates(), var_xy_);
+  EXPECT_EQ(p1.decision_variables(), Variables());
+  EXPECT_EQ(p2.indeterminates(), var_xy_);
+  EXPECT_EQ(p2.decision_variables(), Variables());
 }
 
 TEST_F(SymbolicPolynomialTest, ConstructorFromExpressionAndIndeterminates3) {
