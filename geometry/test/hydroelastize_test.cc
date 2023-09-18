@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/proximity_properties.h"
@@ -128,13 +129,14 @@ GTEST_TEST(HydroelastizeTest, GetSoftPropsHalfSpace) {
   DoTestGetSoftProps(HalfSpace());
 }
 
-// THROW
 // Upshot: vtk-bearing meshes *have* to be annotated with hydro type.
-// GTEST_TEST(HydroelastizeTest, GetSoftPropsMesh) {
-//   DoTestGetSoftProps(
-//       Mesh(FindResourceOrThrow("drake/geometry/test/one_tetrahedron.vtk"),
-//            1.0));
-// }
+GTEST_TEST(HydroelastizeTest, GetSoftPropsMesh) {
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      DoTestGetSoftProps(
+          Mesh(FindResourceOrThrow("drake/geometry/test/one_tetrahedron.vtk"),
+               1.0)),
+      ".*non-hydroelastic.*only support .obj.*");
+}
 
 GTEST_TEST(HydroelastizeTest, GetRigidPropsMesh) {
   DoTestGetRigidProps(

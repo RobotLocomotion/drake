@@ -828,6 +828,7 @@ drake_cc_googletest(
     ],
     deps = [
         ":hydroelastize",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
