@@ -1115,7 +1115,8 @@ void DoScalarIndependentDefinitions(py::module m) {
     using Class = SystemBase;
     constexpr auto& cls_doc = doc.SystemBase;
     // TODO(eric.cousineau): Bind remaining methods.
-    py::class_<Class>(m, "SystemBase", cls_doc.doc)
+    py::class_<Class> cls(m, "SystemBase", cls_doc.doc);
+    cls  // BR
         .def("GetSystemName", &Class::GetSystemName, cls_doc.GetSystemName.doc)
         .def("GetSystemPathname", &Class::GetSystemPathname,
             cls_doc.GetSystemPathname.doc)
@@ -1140,7 +1141,7 @@ void DoScalarIndependentDefinitions(py::module m) {
             cls_doc.implicit_time_derivatives_residual_size.doc)
         .def("ValidateContext",
             overload_cast_explicit<void, const ContextBase&>(
-              &Class::ValidateContext),
+                &Class::ValidateContext),
             py::arg("context"), cls_doc.ValidateContext.doc)
         // Parameters.
         .def("num_abstract_parameters", &Class::num_abstract_parameters,
@@ -1198,16 +1199,18 @@ void DoScalarIndependentDefinitions(py::module m) {
         .def("numeric_parameter_ticket", &Class::numeric_parameter_ticket,
             py::arg("index"), cls_doc.numeric_parameter_ticket.doc)
         .def("get_cache_entry", &Class::get_cache_entry, py::arg("index"),
-            py_rvp::reference_internal, cls_doc.get_cache_entry.doc)
-        // N.B. Since this method has template overloads, we must specify the
-        // types `overload_cast_explicit`; we must also specify Class.
-        // We do not use `static_cast<>` to avoid accidental type mixing.
-        .def("DeclareCacheEntry",
-            overload_cast_explicit<CacheEntry&, std::string, ValueProducer,
-                std::set<DependencyTicket>>.operator()<Class>(
-                &SystemBasePublic::DeclareCacheEntry),
-            py_rvp::reference_internal, py::arg("description"),
-            py::arg("value_producer"),
+            py_rvp::reference_internal, cls_doc.get_cache_entry.doc);
+    // N.B. Since this method has template overloads, we must specify the types
+    // `overload_cast_explicit`; we must also specify Class. We do not use
+    // `static_cast<>` to avoid accidental type mixing.
+    // clang-format off
+    auto DeclareCacheEntry = overload_cast_explicit<
+            CacheEntry&, std::string, ValueProducer, std::set<DependencyTicket>
+        >.operator()<Class>(&SystemBasePublic::DeclareCacheEntry);
+    // clang-format on
+    cls  // BR
+        .def("DeclareCacheEntry", DeclareCacheEntry, py_rvp::reference_internal,
+            py::arg("description"), py::arg("value_producer"),
             py::arg("prerequisites_of_calc") =
                 std::set<DependencyTicket>{Class::all_sources_ticket()},
             doc.SystemBase.DeclareCacheEntry
