@@ -80,44 +80,75 @@ SapWeldConstraint<T>::MakeSapHolonomicConstraintKinematics(
       (Vector6<T>() << kinematics.a_PQ_W(), kinematics.p_PoQo_W()).finished();
   Vector6<T> b = Vector6<T>::Zero();  // Bias term.
 
-  // To write this holonomic constraint implicitly, we need to formulate
-  // g(t + dt). Typically we just make use the first-order truncation of the
-  // Taylor series for g(t):
-  //   g(t + dt) = g(0) + dt⋅ʷdg/dt + O(dt²)
-  // using vc = ʷdg/dt as the constraint velocity and accumulating a small error
-  // of O(dt²). We stray from this approach for several reasons, outlined below.
+  // The SAP formulation requires the constraint to define a convex cost ℓ(vc)
+  // that penalizes the constraint error function. The "key" to model a weld
+  // constraint is to write a frame invariant cost, so that the formulation
+  // conserves angular momentum. This is similar to the application of Noether's
+  // theorem to a continuous system.
+  // Given the SAP formulation is for a discrete system, the cost we define is
+  // an "incremental potential" that only applies to the given time step. In
+  // this setting, once the constraint velocity vc and cost ℓ(vc) are defined,
+  // impulses follow from:
+  //  γ = -dℓ/dvc
+  // and the mulitbody spatial forces modeled by this cost are inferred from the
+  // optimality conditions (the momentum balance), see
+  // DoAccumulateSpatialImpulses().
   //
-  // We can decompose constraint velocity into:
-  //   ʷdg/dt = (a_PQ_W, v_W_PoQo).
-  // First let's consider the translational component, v_W_PoQo. Choosing
-  // this quantity directly would lead to an impulse applied at Po and an equal
-  // and opposite impulse at Qo. This unfortunately does not conserve angular
-  // momentum and introduces a small error of order O(‖γ‖⋅‖p_PQ‖), where ‖γ‖ is
-  // the magnitude of the constraint impulse γ. We instead choose a velocity
-  // that leads to an impulse that conserves angular momentum.
+  // With this framework in mind, we define the constraint velocity vc as the
+  // relative velocity of instantaneously coincident points Am and Bm located at
+  // M, the midmpoint between P and Q
+  //   vc = v_AmBm  
+  // And SAP cost as:
+  //   ℓ(vc) = ℓₜ(vc) + ℓᵣ(vc)
+  // Where we split the cost into a translational contribution ℓₜ(vc) and a
+  // rotational contribution ℓᵣ(vc)
+  //   ℓₜ(vc) = 1/2||p_PQ(t) + δt⋅v_AmBm||ₜ²,  ||x||ₜ² = Rₜ||x||²
+  //   ℓᵣ(vc) = 1/2||a_PQ(t) + δt⋅w_AB||ᵣ²  ,  ||x||ᵣ² = Rᵣ||x||²
+  // were a_PQ is the axis-angle vector and, Rₜ and Rᵣ the regularization
+  // parameters determined by the SAP formulation in the "near-rigid" regime,
+  // see SapHolonomicConstraint.
+  // We can show (see below), that this formulation is an approximation to
+  //   ℓₜ(vc) = 1/2||p_PQ(t+δt)||ₜ²
+  //   ℓᵣ(vc) = 1/2||a_PQ(t+δt)||ᵣ²
+  // which penalizes a deviation of g(vc) = [a_PQ, p_PQ] from zero and enjoys
+  // from the following properties:
+  //   1. with vc frame invariant, the SAP cost is frame invariant,
+  //   2. the resulting impulses conserve angular momentum and,
+  //   3. the resulting impulses satisfy Newton's third law.
+  
+  //                            Derivation
+  // For translational component, from the SAP formulation:
+  //   γₜ = -dℓ/dvcₜ = -Rₜ(p_PQ(t) + δt⋅v_AmBm)
+  // We show below that:
+  //  p_PQ(t+δt) = p_PQ(t) + δt⋅v_AmBm + O(dt⋅‖p_PQ‖⋅‖w_WA + w_WB‖)
+  // and therefore this models a linear spring on p_PQ(t+δt) (heavilty
+  // overdamped given the time scale introduced by SAP's choice of Rₜ cannot
+  // be resolved by the discrete time step δt).
   //
-  // With M the midpoint of Po and Qo, we define Am to be a material point on A
-  // coincident with M and likewise Bm a material point on B, coincident with M.
-  // We define the translational component of our constraint velocity as:
-  //   vcₜ ≜ v_W_AmBm
-  // We can write v_W_AmBm in terms of v_W_PoQo:
-  //   v_W_AmBm = v_WBm - v_WAm
-  //            = (v_WQo + w_WB×p_QoBm_W) - (v_WPo + w_WA×p_PoAm_W)
-  //            = v_W_PoQo + (w_WB×(p_QoPo_W / 2) - w_WA×(p_PoQo_W / 2))
-  //            = v_W_PoQo + p_PoQo_W×(w_WA + w_WB)/2
-  // Then rearranging the translational component of our approximation:
-  //   gₜ(t + dt) = gₜ(0) + dt⋅v_W_PoQo + O(dt²)
-  //              = gₜ(0) + dt⋅(v_W_AmBm - p_PoQo_W×(w_WA + w_WB)/2) + O(dt²)
-  //              = gₜ(0) + dt⋅v_W_AmBm + O(dt⋅‖p_PQ‖⋅‖w_WA + w_WB‖)
+  // We can write v_W_AmBm in terms of v_W_PQ:
+  //   v_AmBm = v_WBm - v_WAm
+  //          = (v_WQ + w_WB×p_QBm_W) - (v_WP + w_WA×p_PAm_W)
+  //          = v_W_PQ + (w_WB×(p_QP_W / 2) - w_WA×(p_PQ_W / 2))
+  //          = v_W_PQ + p_PQ_W×(w_WA + w_WB)/2
+  // And therefore we arrive to the conclusion that:
+  //   p_PQ(t) + δt⋅v_AmBm ≈ p_PQ(t+δt) 
+  //                       = p_PQ(t) + δt⋅ᵂd(p_PQ)/t + O(δt²)
+  //                       = p_PQ(t) + O(dt⋅‖p_PQ‖⋅‖w_WA + w_WB‖)
+  // and thus the cost ℓₜ(vc) penalizes a first order approximation to
+  // p_PQ(t+δt).
+  // We show conservation of angular momentum in DoAccumulateSpatialImpulses().
+  
+  // For the angular component, from the SAP formulation:
+  //   γᵣ = -dℓ/dvcᵣ = -Rᵣ(a_PQ(t) + δt⋅w_AB)
+  // We show below that for small values of θ = ||a_PQ(t)||, we have that
+  //  a_PQ(t) + δt⋅w_AB ≈ a_PQ(t+δt)
+  // and therefore this cost models a linear torsionial spring that oposes
+  // deviations of a_PQ from zero.
   //
-  // Thus choosing v_W_AmBm as the translational component of vcₜ approximates
-  // gₜ(t + dt) with an error order O(dt⋅‖p_PQ‖⋅‖w_WA + w_WB‖), which we can
-  // expect to be small when the constraint is close to satisfied. We show
-  // below (in DoAccumulateSpatialImpulses()) that this choice has the
-  // additional benefit of conserving angular momentum.
-  //
-  // For the angular component:
-  //   ᴺd(a_PQ)/dt = ᴺd(θk)/dt = ᴺdθ/dt⋅k + θ⋅ᴺdk/dt
+  // To show this we start with:
+  //   ᴮd(a_PQ)/dt = ᴮd(θk)/dt = ᴮdθ/dt⋅k + θ⋅ᴮdk/dt
+  // where we made the split a_PQ = θk and, without loss of generality, we
+  // chose frame B for the time derivatives.
   // From [Mitiguy 2022, §9.2.2]:
   //   θ⋅ᴮdk/dt = θ/2⋅[(cos(θ/2)/sin(θ/2))⋅(w_AB − ᴮdθ/dt⋅k) + k×w_AB)]
   // If we make a small angle assumption θ ≈ 0 to get:
@@ -125,21 +156,15 @@ SapWeldConstraint<T>::MakeSapHolonomicConstraintKinematics(
   // Thus:
   //   ᴮd(a_PQ)/dt ≈ ᴮdθ/dt⋅k + w_AB − ᴮdθ/dt⋅k + θ/2⋅k×w_AB
   //               = w_AB + θ/2⋅k×w_AB
-  // Again making the small angle assumption and ignoring the θ dependent term:
+  // Again making the small angle assumption, we can neglect the θ dependent
+  // term
   //   ᴮd(a_PQ)/dt ≈ w_AB
-  //
-  // N.B. We had a choice of which frame to measure dk/dt, but when we make the
-  // small angle assumption the frame dependent terms drop out. Our
-  // approximation is independent of any frame between P and Q, thus we can say
-  // that measured and expressed in the world frame:
-  //   ʷd(a_PQ)/dt ≈ w_AB
-  //
-  // Then by our approximations:
-  //   vc = (ʷd(a_PQ)/dt, ʷd(p_PoQo)/dt) ≈ (w_AB_W, v_W_AmBm) = V_W_AmBm
-  //
-  // Thus the constraint Jacobian is the relative spatial velocity jacobian
-  // between P and Q in the world frame:
-  //  ġ = V_W_AmBm = J_W_AmBm ⋅ v
+  // Had we chosen frame A to measured derivatives in, the first order
+  // approximation would be the same.
+  // 
+  // With this result, we can now write
+  //   a_PQ(t+δt) ≈ a_PQ(t) + δt⋅w_AB
+  // which is the term penalized by the constraint.
   //
   // [Mitiguy 2022] Mitiguy, P., 2022. Advanced Dynamics & Motion Simulation.
 
@@ -175,7 +200,8 @@ void SapWeldConstraint<T>::DoAccumulateSpatialImpulses(
   // opposite spatial impulse γ applied on body B at Bm and shifts to Bo. Thus,
   // this constraint can be interpreted as applying an impulse γ at point Bm on
   // B and an impulse -γ at point Am on A. As a consequence the constraint
-  // impulse satisfies Newton's 3rd law and conserves angular momentum.
+  // impulse satisfies Newton's 3rd law and, since the application point is
+  // coincident, it conserves angular momentum.
   if (i == 0) {
     // Object A.
     // Spatial impulse on A, applied at point Am, expressed in the world frame.

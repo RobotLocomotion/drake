@@ -25,18 +25,23 @@ using drake::math::RigidTransform;
  R_PQ, Q's orientation in P. Let p = p_PoQo, Qo's position relative to Po. This
  constraint penalizes the full constraint function, g, to impose:
    g = (a_PQ, p_PoQo) = 0 ∈ ℝ⁶
- See MakeSapHolonomicConstraintKinematics() for the derivation of the constraint
- function's velocity.
 
- This leads to a constraint impulse γ, which is likewise composed of a
- rotational and translational component:
+ We note that this constraint enjoys the following properties: 
+   1. the formulation is frame invariant, and thus,
+   2. the resulting impulses conserve angular momentum. Moreover,
+   3. the resulting impulses satisfy Newton's third law.
+ refer to implementation notes in MakeSapHolonomicConstraintKinematics()
+ for details.
+
+ The constraint impulse γ, which is composed of a rotational and translational
+ component:
    γ = (γᵣ, γₜ) ∈ ℝ⁶
  This constraint impulse corresponds to a spatial impulse on B, applied at Bm,
- a material point of B coincident with the midpoint of P and Q:
-   Γ_BBm_N = (γᵣ, γₜ)
- and likewise a spatial impulse on A, applied at Am, a material point of B
- coincident with the midpoint of P and Q:
-   Γ_AAm_N = -(γᵣ, γₜ)
+ a point on B instantaneously coincident with midpoint M between P and Q:
+   Γ_BBm_W = (γᵣ, γₜ)
+ and likewise a spatial impulse on A, applied at Am, a point on A
+ instantaneously coincident with midpoint M between P and Q:
+   Γ_AAm_W = -(γᵣ, γₜ)
 
  N.B. See DoAccumulateSpatialImpulses() for a discussion of where this
  interpretation of γ comes from.
