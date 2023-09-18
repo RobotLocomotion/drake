@@ -546,6 +546,15 @@ class RenderEngineVtkTest : public ::testing::Test {
   unique_ptr<RenderEngineVtk> renderer_;
 };
 
+// Check for any crashes or memory errors during a typical lifecycle, but
+// without ever actually rendering everything. This is useful for testing
+// in environments without any graphics server support (i.e., w/o OpenGL).
+TEST_F(RenderEngineVtkTest, LifecycleNoRender) {
+  Init(RigidTransformd::Identity());
+  PopulateSphereTest(renderer_.get());
+  EXPECT_TRUE(renderer_->Clone() != nullptr);
+}
+
 // Tests an empty image -- confirms that it clears to the "empty" color -- no
 // use of "inlier" or "outlier" pixel locations.
 TEST_F(RenderEngineVtkTest, NoBodyTest) {
