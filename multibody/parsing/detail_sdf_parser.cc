@@ -83,8 +83,7 @@ namespace {
 // * `sdf::Root::Load` returns and Drake starts its parsing stage where it
 // populates the MultibodyPlant using the DOM objects created above (e.g.
 // AddModelsFromSpecification).
-//
-//
+
 // `ModelInstanceIndexRange` is a data structure to hold model instances that
 // were created during libsdformat's Interface API callback for handling merged
 // models. When handling merged models during libsdformat's Interface API
@@ -1796,8 +1795,6 @@ sdf::InterfaceModelPtr ParseNestedInterfaceModel(
   const bool is_urdf = EndsWithCaseInsensitive(resolved_filename, kExtUrdf);
   const bool is_xml = EndsWithCaseInsensitive(resolved_filename, kExtXml);
   if (!is_urdf && !is_xml) {
-    // TODO(rpoyner-tri): implement nesting of mujoco files; saved for another
-    // day since it requires some study of mujoco scene composition semantics.
     return nullptr;
   }
 

@@ -51,7 +51,7 @@ class ParserInterface {
       const std::optional<std::string>& parent_model_name,
       const ParsingWorkspace& workspace) = 0;
 
-  // Parses a model from the input file specified by @p data_source add all of
+  // Parses a model from the input file specified by @p data_source adds all of
   // its contents into an existing model instance specified by @p
   // model_instance. @p model_instance must already exist in @p plant.
   //
