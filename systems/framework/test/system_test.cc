@@ -597,17 +597,6 @@ TEST_F(SystemTest, SystemConstraintTest) {
   EXPECT_FALSE(system_.CheckSystemConstraintsSatisfied(*context_, tol));
 }
 
-// Tests GetMemoryObjectName.
-TEST_F(SystemTest, GetMemoryObjectName) {
-  const std::string name = system_.GetMemoryObjectName();
-
-  // The nominal value for 'name' is something like:
-  //   drake/systems/(anonymous namespace)/TestSystem@0123456789abcdef
-  // We check only some platform-agnostic portions of that.
-  EXPECT_THAT(name, ::testing::HasSubstr("drake/systems/"));
-  EXPECT_THAT(name, ::testing::ContainsRegex("/TestSystem@[0-9a-fA-F]{16}$"));
-}
-
 // Tests that by default, transmogrification fails appropriately.
 // (For testing transmogrification success, we rely on leaf_system_test.)
 TEST_F(SystemTest, TransmogrifyNotSupported) {

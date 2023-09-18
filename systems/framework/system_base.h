@@ -64,6 +64,13 @@ class SystemBase : public internal::SystemMessageInterface {
   // intent that the label could be used programmatically.
   const std::string& get_name() const { return name_; }
 
+  /** Returns a name for this %System based on a stringification of its type
+  name and memory address.  This is intended for use in diagnostic output
+  and should not be used for behavioral logic, because the stringification
+  of the type name may produce differing results across platforms and
+  because the address can vary from run to run. */
+  std::string GetMemoryObjectName() const;
+
   /** Returns a human-readable name for this system, for use in messages and
   logging. This will be the same as returned by get_name(), unless that would
   be an empty string. In that case we return a non-unique placeholder name,

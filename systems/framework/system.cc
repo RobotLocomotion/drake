@@ -1,8 +1,5 @@
 #include "drake/systems/framework/system.h"
 
-#include <iomanip>
-#include <ios>
-#include <regex>
 #include <set>
 #include <string_view>
 #include <vector>
@@ -723,28 +720,6 @@ System<T>::DoGetTargetSystemCompositeEventCollection(
     const CompositeEventCollection<T>* events) const {
   if (&target_system == this) return events;
   return nullptr;
-}
-
-template <typename T>
-std::string System<T>::GetMemoryObjectName() const {
-  using std::setfill;
-  using std::setw;
-  using std::hex;
-
-  // Remove the template parameter(s).
-  const std::string type_name_without_templates = std::regex_replace(
-      NiceTypeName::Get(*this), std::regex("<.*>$"), std::string());
-
-  // Replace "::" with "/" because ":" is System::GetSystemPathname's separator.
-  // TODO(sherm1) Change the separator to "/" and avoid this!
-  const std::string default_name = std::regex_replace(
-      type_name_without_templates, std::regex(":+"), std::string("/"));
-
-  // Append the address spelled like "@0123456789abcdef".
-  const int64_t address = GetGraphvizId();
-  std::ostringstream result;
-  result << default_name << '@' << setfill('0') << setw(16) << hex << address;
-  return result.str();
 }
 
 template <typename T>

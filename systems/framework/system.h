@@ -1070,14 +1070,8 @@ class System : public SystemBase {
   /** @name                      Utility methods */
   //@{
 
-  /** Returns a name for this %System based on a stringification of its type
-  name and memory address.  This is intended for use in diagnostic output
-  and should not be used for behavioral logic, because the stringification
-  of the type name may produce differing results across platforms and
-  because the address can vary from run to run. */
-  std::string GetMemoryObjectName() const;
-
-  // So we don't have to keep writing this->num_input_ports().
+  // Avoid `this->` boilerplate for these member functions.
+  using SystemBase::GetMemoryObjectName;
   using SystemBase::num_input_ports;
   using SystemBase::num_output_ports;
 
