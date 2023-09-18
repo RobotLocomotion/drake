@@ -92,7 +92,7 @@ void DoTestGetProps(const Shape& shape,
   ASSERT_NE(props, nullptr);
   EXPECT_EQ(props->GetProperty<HydroelasticType>(kHydroGroup, kComplianceType),
             expected_type);
-  // TODO check more props.
+  // TODO(rpoyner-tri): check more props.
 }
 
 void DoTestGetSoftProps(const Shape& shape) {
