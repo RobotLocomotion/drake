@@ -79,17 +79,31 @@ class ModelInstance : public MultibodyElement<T> {
     mobilizers_.push_back(mobilizer);
   }
 
+  // Adds an actuator to this model insance.
+  // Actuators must be added in asscending order of JointActuator index,
+  // otherwise this method throws an exception.
   void add_joint_actuator(const JointActuator<T>* joint_actuator) {
+    DRAKE_THROW_UNLESS(joint_actuator != nullptr);
     num_actuated_dofs_ += joint_actuator->joint().num_velocities();
+    // Verify the documented requirement.
+    DRAKE_THROW_UNLESS(ssize(joint_actuators_) == 0 ||
+                       joint_actuators_.back()->index() <
+                           joint_actuator->index());
     joint_actuators_.push_back(joint_actuator);
   }
 
+  // Returns a vector of JointActuatorIndex for this model instance. Within the
+  // returned vector, actuator indexes are sorted in ascending order.
   std::vector<JointActuatorIndex> GetJointActuatorIndices() const;
 
   std::vector<JointIndex> GetActuatedJointIndices() const;
 
   // Returns an Eigen vector of the actuation for `this` model instance from a
   // vector `u` of actuator forces for the entire model.
+  // @param[in] u Actuation for the full multibody model, ordered by
+  // JointActuatorIndex.
+  // @returns the per model instance actuation, indexed by increasing order of
+  // JointActuatorIndex within this model instance.
   // @throws std::exception if `u` is not of size
   //         MultibodyTree::num_actuators().
   VectorX<T> GetActuationFromArray(
@@ -101,12 +115,14 @@ class ModelInstance : public MultibodyElement<T> {
   // actuators for this model instance.
   // @param[in] u_instance Actuation values for the actuators. It must be of
   //   size equal to the number of degrees of freedom of all of the actuated
-  //   joints in this model instance.
+  //   joints in this model instance. It is indexed by increasing order of
+  //   JointActuatorIndex within this model instance.
   // @param[out] u
-  //   The vector containing the actuation values for the entire MultibodyTree
+  //   The vector containing the actuation values for the entire
   //   model to which `this` actuator belongs to. It must be of size equal to
   //   the number of degrees of freedom of all of the actuated joints in the
-  //   entire MultibodyTree model.
+  //   entire MultibodyTree model. Indexed by JointActuatorIndex. On output,
+  //   only values corresponding to this model instance are set.
   // @throws std::exception if `u_instance` is not of size equal to the
   //         number of degrees of freedom of all of the actuated joints in this
   //         model or `u` is not of size equal to the number of degrees of

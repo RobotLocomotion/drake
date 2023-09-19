@@ -847,6 +847,9 @@ void MultibodyTree<T>::CreateModelInstances() {
     }
   }
 
+  // N.B. The result of the code below is that actuators are sorted by
+  // JointActuatorIndex within each model instance. If this was not true,
+  // ModelInstance::add_joint_actuator() would throw.
   for (const auto& joint_actuator : owned_actuators_) {
     model_instances_.at(joint_actuator->model_instance())->add_joint_actuator(
         joint_actuator.get());

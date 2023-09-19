@@ -2358,7 +2358,6 @@ VectorX<T> MultibodyPlant<T>::AssembleActuationInput(
     }
     DRAKE_ASSERT(actuation_input.size() == num_actuated_dofs());
   } else {
-    int u_offset = 0;
     for (ModelInstanceIndex model_instance_index(0);
          model_instance_index < num_model_instances(); ++model_instance_index) {
       // Ignore the port if the model instance has no actuated DoFs.
@@ -2377,7 +2376,7 @@ VectorX<T> MultibodyPlant<T>::AssembleActuationInput(
                           "instance {} contains NaN.",
                           GetModelInstanceName(model_instance_index)));
         }
-        actuation_input.segment(u_offset, instance_num_dofs) = u_instance;
+        SetActuationInArray(model_instance_index, u_instance, &actuation_input);
       } else {
         // If there is PD control we do not require this actuation to be
         // connected and we assume a zero feed-forward torque.
@@ -2391,10 +2390,7 @@ VectorX<T> MultibodyPlant<T>::AssembleActuationInput(
                           GetModelInstanceName(model_instance_index)));
         }
       }
-
-      u_offset += instance_num_dofs;
     }
-    DRAKE_ASSERT(u_offset == num_actuated_dofs());
   }
 
   return actuation_input;
@@ -2439,10 +2435,12 @@ VectorX<T> MultibodyPlant<T>::AssembleDesiredStateInput(
                           "instance {} contains NaN.",
                           GetModelInstanceName(model_instance_index)));
         }
-        xd.segment(qd_offset, instance_num_u) =
-            xd_instance.head(instance_num_u);
-        xd.segment(vd_offset, instance_num_u) =
-            xd_instance.tail(instance_num_u);
+        auto qd_segment = xd.segment(qd_offset, instance_num_u);
+        const auto qd_instance = xd_instance.head(instance_num_u);
+        SetActuationInArray(model_instance_index, qd_instance, &qd_segment);
+        auto vd_segment = xd.segment(vd_offset, instance_num_u);
+        const auto vd_instance = xd_instance.tail(instance_num_u);
+        SetActuationInArray(model_instance_index, vd_instance, &vd_segment);
       } else {
         throw std::runtime_error(
             fmt::format("Desired state input port for model "
