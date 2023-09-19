@@ -566,13 +566,6 @@ class GraphOfConvexSets {
       const GraphOfConvexSetsOptions& options =
           GraphOfConvexSetsOptions()) const;
 
- private: /* Facilitates testing. */
-  friend class PreprocessShortestPathTest;
-
-  std::set<EdgeId> PreprocessShortestPath(
-      VertexId source_id, VertexId target_id,
-      const GraphOfConvexSetsOptions& options) const;
-
   // Adds a perspective constraint to the mathematical program to upper bound
   // the cost below a slack variable, ℓ. Specifically given a cost g(x) to
   // minimize, this method implements it with a slack variable and a constraint:
@@ -593,6 +586,14 @@ class GraphOfConvexSets {
       solvers::MathematicalProgram* prog,
       const solvers::Binding<solvers::Constraint>& binding,
       const solvers::VectorXDecisionVariable& vars) const;
+
+ private: /* Facilitates testing. */
+  friend class PreprocessShortestPathTest;
+
+  std::set<EdgeId> PreprocessShortestPath(
+      VertexId source_id, VertexId target_id,
+      const GraphOfConvexSetsOptions& options) const;
+
 
   // Note: we use VertexId and EdgeId (vs e.g. Vertex* and Edge*) here to
   // provide consistent ordering of the vertices/edges. This is important for

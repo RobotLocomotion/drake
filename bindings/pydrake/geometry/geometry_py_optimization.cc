@@ -706,6 +706,9 @@ void DefineGeometryOptimization(py::module m) {
                 &GraphOfConvexSets::AddEdge),
             py::arg("u"), py::arg("v"), py::arg("name") = "",
             py_rvp::reference_internal, cls_doc.AddEdge.doc)
+        .def("AddPerspectiveCost", &GraphOfConvexSets::AddPerspectiveCost,
+            py::arg("prog"), py::arg("binding"), py::arg("vars"),
+            py_rvp::reference_internal, cls_doc.AddPerspectiveCost.doc)
         .def("RemoveVertex",
             py::overload_cast<GraphOfConvexSets::Vertex*>(
                 &GraphOfConvexSets::RemoveVertex),
