@@ -791,10 +791,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const;
 
   /// Returns a constant reference to the input port for external actuations for
-  /// all actuated dofs regardless the number of model instances that have
-  /// actuated dofs. The input actuation is assumed to be ordered according to
-  /// model instances. This input port is a vector valued port, which can be set
-  /// with JointActuator::set_actuation_vector().
+  /// all actuated dofs. The input actuation is assumed to be ordered according
+  /// to JointActuatorIndex, see JointActuator::index().
   /// Refer to @ref mbp_actuation "Actuation" for further details.
   /// @pre Finalize() was already called on `this` plant.
   /// @throws std::exception if called before Finalize().
@@ -802,9 +800,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   const systems::InputPort<T>& get_actuation_input_port() const;
 
   /// Returns a constant reference to the input port for external actuation for
-  /// a specific model instance.  This input port is a vector valued port, which
-  /// can be set with JointActuator::set_actuation_vector().
-  /// Refer to @ref mbp_actuation "Actuation" for further details.
+  /// a specific model instance. This is vector valued port with entries in
+  /// ascending order of JointActuatorIndex within `model_instance`, see
+  /// SetActuationInArray() and GetActuationFromArray(). Refer to @ref
+  /// mbp_actuation "Actuation" for further details.
   ///
   /// Each model instance in `this` plant model has an actuation input port,
   /// even if zero sized (for model instance with no actuators.)
@@ -2748,8 +2747,13 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       bool add_model_instance_prefix = false) const;
 
   /// Returns a vector of actuation values for `model_instance` from a
-  /// vector `u` of actuation values for the entire model. This method throws an
-  /// exception if `u` is not of size MultibodyPlant::num_actuated_dofs().
+  /// vector `u` of actuation values for the entire model.
+  /// @param[in] u Actuation values for the entire model, in increasing order of
+  /// JointActuatorIndex.
+  /// @returns the actuation values for `model_instance`, in increasing order of
+  /// JointActuatorIndex within the model instance.
+  /// @throws std::exception if `u` is not of size
+  /// MultibodyPlant::num_actuated_dofs().
   VectorX<T> GetActuationFromArray(
       ModelInstanceIndex model_instance,
       const Eigen::Ref<const VectorX<T>>& u) const {
@@ -2763,9 +2767,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// degrees of freedom of all of the actuated joints in `model_instance`.
   /// @param[in] u_instance Actuation values for the actuators. It must be of
   ///   size equal to the number of degrees of freedom of all of the actuated
-  ///   joints in `model_instance`.
+  ///   joints in `model_instance`. Values are indexed in increasing order of
+  ///   JointActuatorIndex within the model instance.
   /// @param[out] u
-  ///   The vector containing the actuation values for the entire model.
+  ///   The vector containing the actuation values for the entire model. Indexed
+  ///   in increasing order of JointActuatorIndex. On output, only values
+  ///   corresponding to `model_instance` are set.
   void SetActuationInArray(
       ModelInstanceIndex model_instance,
       const Eigen::Ref<const VectorX<T>>& u_instance,
@@ -4492,6 +4499,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   }
 
   /// Returns a list of joint actuator indices associated with `model_instance`.
+  /// The returned vector in sorted in ascending order of JointActuatorIndex.
   /// @throws std::exception if called pre-finalize.
   std::vector<JointActuatorIndex> GetJointActuatorIndices(
       ModelInstanceIndex model_instance) const {
@@ -4839,16 +4847,17 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return internal_tree().GetAccelerationUpperLimits();
   }
 
-  /// Returns a vector of size `num_actuators()` containing the lower effort
+  /// Returns a vector of size `num_actuated_dofs()` containing the lower effort
   /// limits for every actuator. Any unbounded or unspecified limits will be
-  /// -infinity.
+  /// -infinity. The returned vector is indexed by JointActuatorIndex, see
+  /// JointActuator::index().
   /// @throws std::exception if called pre-finalize.
   VectorX<double> GetEffortLowerLimits() const {
     DRAKE_MBP_THROW_IF_NOT_FINALIZED();
     return internal_tree().GetEffortLowerLimits();
   }
 
-  /// Upper limit analog of GetAccelerationsLowerLimits(), where any unbounded
+  /// Upper limit analog of GetEffortLowerLimits(), where any unbounded
   /// or unspecified limits will be +infinity.
   /// @see GetEffortLowerLimits() for more information.
   VectorX<double> GetEffortUpperLimits() const {
@@ -5088,7 +5097,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   void EstimatePointContactParameters(double penetration_allowance);
 
   // Helper method to assemble actuation input vector from the appropriate
-  // ports.
+  // ports. The output vector is ordered by JointActuatorIndex.
   VectorX<T> AssembleActuationInput(
       const systems::Context<T>& context) const;
 

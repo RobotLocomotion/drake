@@ -2298,7 +2298,7 @@ VectorX<T> MultibodyPlant<T>::AssembleActuationInput(
 
   // Assemble the vector from the model instance input ports.
   // TODO(sherm1) Heap allocation here. Get rid of it.
-  VectorX<T> actuation_input(num_actuated_dofs());
+  VectorX<T> actuation_input = VectorX<T>::Zero(num_actuated_dofs());
 
   const auto& actuation_port = this->get_input_port(actuation_port_);
   if (actuation_port.HasValue(context)) {
@@ -2343,7 +2343,7 @@ VectorX<T> MultibodyPlant<T>::AssembleActuationInput(
                           "instance {} contains NaN.",
                           GetModelInstanceName(model_instance_index)));
         }
-        actuation_input.segment(u_offset, instance_num_dofs) = u_instance;
+        SetActuationInArray(model_instance_index, u_instance, &actuation_input);
       } else {
         // If there is PD control we do not require this actuation to be
         // connected and we assume a zero feed-forward torque.
@@ -2405,10 +2405,12 @@ VectorX<T> MultibodyPlant<T>::AssembleDesiredStateInput(
                           "instance {} contains NaN.",
                           GetModelInstanceName(model_instance_index)));
         }
-        xd.segment(qd_offset, instance_num_u) =
-            xd_instance.head(instance_num_u);
-        xd.segment(vd_offset, instance_num_u) =
-            xd_instance.tail(instance_num_u);
+        auto qd_segment = xd.segment(qd_offset, instance_num_u);
+        const auto qd_instance = xd_instance.head(instance_num_u);
+        SetActuationInArray(model_instance_index, qd_instance, &qd_segment);
+        auto vd_segment = xd.segment(vd_offset, instance_num_u);
+        const auto vd_instance = xd_instance.tail(instance_num_u);
+        SetActuationInArray(model_instance_index, vd_instance, &vd_segment);
       } else {
         throw std::runtime_error(
             fmt::format("Desired state input port for model "
