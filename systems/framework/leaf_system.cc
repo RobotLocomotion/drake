@@ -397,70 +397,29 @@ void LeafSystem<T>::DoCalcNextUpdateTime(
   }
 }
 
-template <typename T>
-void LeafSystem<T>::GetGraphvizFragment(
-    int max_depth, std::stringstream* dot) const {
-  unused(max_depth);
-
-  // Use the this pointer as a unique ID for the node in the dotfile.
-  const int64_t id = this->GetGraphvizId();
-  std::string name = this->get_name();
-  if (name.empty()) {
-    name = this->GetMemoryObjectName();
-  }
-
-  // Open the attributes and label.
-  *dot << id << " [shape=record, label=\"" << name << "|{";
-
-  // Append input ports to the label.
-  *dot << "{";
-  for (int i = 0; i < this->num_input_ports(); ++i) {
-    const InputPortBase& input_port_base = this->GetInputPortBaseOrThrow(
-        __func__, i, /* warn_deprecated = */ false);
-    const auto& port = dynamic_cast<const InputPort<T>&>(input_port_base);
-    if (i != 0) *dot << "|";
-    *dot << "<u" << i << ">" << port.get_name();
-    if (port.get_deprecation().has_value()) {
-      // Add a unicode headstone (🪦).
-      *dot << "\xF0\x9F\xAA\xA6";
-    }
-  }
-  *dot << "}";
-
-  // Append output ports to the label.
-  *dot << " | {";
-  for (int i = 0; i < this->num_output_ports(); ++i) {
-    const OutputPortBase& output_port_base = this->GetOutputPortBaseOrThrow(
-        __func__, i, /* warn_deprecated = */ false);
-    const auto& port = dynamic_cast<const OutputPort<T>&>(output_port_base);
-    if (i != 0) *dot << "|";
-    *dot << "<y" << i << ">" << port.get_name();
-    if (port.get_deprecation().has_value()) {
-      // Add a unicode headstone (🪦).
-      *dot << "\xF0\x9F\xAA\xA6";
-    }
-  }
-  *dot << "}";
-
-  // Close the label and attributes.
-  *dot << "}\"];" << std::endl;
-}
-
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 template <typename T>
 void LeafSystem<T>::GetGraphvizInputPortToken(
     const InputPort<T>& port, int max_depth, std::stringstream* dot) const {
   unused(max_depth);
   DRAKE_DEMAND(&port.get_system() == this);
+  // N.B. Calling GetGraphvizId() will print the deprecation console warning.
   *dot << this->GetGraphvizId() << ":u" << port.get_index();
 }
+#pragma GCC diagnostic pop
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 template <typename T>
 void LeafSystem<T>::GetGraphvizOutputPortToken(
     const OutputPort<T>& port, int max_depth, std::stringstream* dot) const {
   unused(max_depth);
   DRAKE_DEMAND(&port.get_system() == this);
+  // N.B. Calling GetGraphvizId() will print the deprecation console warning.
   *dot << this->GetGraphvizId() << ":y" << port.get_index();
 }
+#pragma GCC diagnostic pop
 
 template <typename T>
 std::unique_ptr<ContinuousState<T>> LeafSystem<T>::AllocateContinuousState()
