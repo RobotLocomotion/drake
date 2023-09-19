@@ -225,6 +225,42 @@ TEST_F(ActuatedIiiwaArmTest, AssembleActuationInput_NotRequiredIfPdControlled) {
       MultibodyPlantTester::AssembleActuationInput(*plant_, *context_));
 }
 
+// Verify the assembly of actuation input ports defaults to zero actuation when
+// a model instance input port is not connected.
+TEST_F(ActuatedIiiwaArmTest,
+       AssembleActuationInput_DisconnectedPortHasZeroValues) {
+  // We setup a PD controlled arm so that we can test the feed-forward term
+  // defaults to zero values when not connected.
+  SetUpModel(ModelConfiguration::kArmIsControlled);
+
+  // Desired state is required to be connected, even if values are not relevant
+  // for this test.
+  const VectorXd gripper_xd = (VectorXd(4) << 1., 2., 3, 4.).finished();
+  plant_->get_desired_state_input_port(gripper_model_)
+      .FixValue(context_.get(), gripper_xd);
+  const VectorXd arm_xd = VectorXd::LinSpaced(14, 1.0, 14.0);
+  plant_->get_desired_state_input_port(arm_model_)
+      .FixValue(context_.get(), arm_xd);
+
+  // Fix input input ports to known values.
+  const VectorXd gripper_u = (VectorXd(2) << 1., 2.).finished();
+  plant_->get_actuation_input_port(gripper_model_)
+      .FixValue(context_.get(), gripper_u);
+
+  const VectorXd full_u =
+      MultibodyPlantTester::AssembleActuationInput(*plant_, *context_);
+  const int nu = plant_->num_actuated_dofs();
+  // AssembleActuationInput() will always return a vector of size nu. It fill in
+  // values for those models with feed-forward actuation and set all other
+  // entries to zero. In this case, entries corresponding to the arm are
+  // expected to be zero.
+  const int arm_nu = plant_->num_actuated_dofs(arm_model_);
+  VectorXd expected_u =
+      (VectorXd(nu) << VectorXd::Zero(arm_nu), gripper_u).finished();
+
+  EXPECT_EQ(full_u, expected_u);
+}
+
 // Verify that MultibodyPlant::AssembleDesiredStateInput() throws an exception
 // when not all actuators in a model instance are PD controlled. Once a PD
 // controller is defined in a model instance, all actuators must use PD control.
