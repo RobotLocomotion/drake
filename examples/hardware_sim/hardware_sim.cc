@@ -140,9 +140,11 @@ int main() {
   Simulation sim(scenario);
   sim.Setup();
   if (!FLAGS_graphviz.empty()) {
-    std::ofstream out(FLAGS_graphviz);
-    out << sim.diagram().GetGraphvizString();
-    DRAKE_THROW_UNLESS(out.good());
+    std::ofstream graphviz(FLAGS_graphviz);
+    std::map<std::string, std::string> options;
+    options.emplace("plant/split", "1");
+    graphviz << sim.diagram().GetGraphvizString({}, options);
+    DRAKE_THROW_UNLESS(graphviz.good());
   }
   sim.Simulate();
   return 0;

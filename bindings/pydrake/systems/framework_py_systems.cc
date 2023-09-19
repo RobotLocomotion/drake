@@ -508,14 +508,15 @@ Note: The above is for the C++ documentation. For Python, use
         // Graphviz methods.
         .def(
             "GetGraphvizString",
-            [str_py](const System<T>* self, int max_depth) {
+            [str_py](const System<T>* self, std::optional<int> max_depth,
+                const std::map<std::string, std::string>& options) {
               // @note This is a workaround; for some reason,
               // casting this using `py::str` does not work, but directly
               // calling the Python function (`str_py`) does.
-              return str_py(self->GetGraphvizString(max_depth));
+              return str_py(self->GetGraphvizString(max_depth, options));
             },
-            py::arg("max_depth") = std::numeric_limits<int>::max(),
-            doc.System.GetGraphvizString.doc)
+            py::arg("max_depth") = py::none(), py::arg("options") = py::none(),
+            doc.SystemBase.GetGraphvizString.doc)
         // Automatic differentiation.
         .def(
             "ToAutoDiffXd",

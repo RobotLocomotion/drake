@@ -14,6 +14,7 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/unused.h"
 #include "drake/common/value.h"
@@ -157,28 +158,17 @@ class LeafSystem : public System<T> {
                             CompositeEventCollection<T>* events,
                             T* time) const override;
 
-  /** Emits a graphviz fragment for this System. Leaf systems are visualized as
-  records. For instance, a leaf system with 2 inputs and 1 output is:
-
-  @verbatim
-  123456 [shape= record, label="name | {<u0> 0 |<y0> 0} | {<u1> 1 | }"];
-  @endverbatim
-
-  which looks like:
-
-  @verbatim
-  +------------+----+
-  | name  | u0 | u1 |
-  |       | y0 |    |
-  +-------+----+----+
-  @endverbatim */
-  void GetGraphvizFragment(int max_depth,
-                           std::stringstream* dot) const override;
-
+  DRAKE_DEPRECATED(
+      "2024-01-01",
+      "Instead of calling or overriding this function, either "
+      "call GetGraphvizFragment() or override DoGetGraphvizFragment()")
   void GetGraphvizInputPortToken(const InputPort<T>& port,
                                  int max_depth,
                                  std::stringstream *dot) const final;
-
+  DRAKE_DEPRECATED(
+      "2024-01-01",
+      "Instead of calling or overriding this function, either "
+      "call GetGraphvizFragment() or override DoGetGraphvizFragment()")
   void GetGraphvizOutputPortToken(const OutputPort<T>& port,
                                   int max_depth,
                                   std::stringstream *dot) const final;
