@@ -2298,7 +2298,7 @@ VectorX<T> MultibodyPlant<T>::AssembleActuationInput(
 
   // Assemble the vector from the model instance input ports.
   // TODO(sherm1) Heap allocation here. Get rid of it.
-  VectorX<T> actuation_input(num_actuated_dofs());
+  VectorX<T> actuation_input = VectorX<T>::Zero(num_actuated_dofs());
 
   const auto& actuation_port = this->get_input_port(actuation_port_);
   if (actuation_port.HasValue(context)) {
