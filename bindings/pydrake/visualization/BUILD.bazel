@@ -69,8 +69,12 @@ drake_pybind_library(
 drake_py_binary(
     name = "meldis",
     srcs = ["meldis.py"],
+    data = [":lcm_image_array_viewer"],
     visibility = ["//tools:__pkg__"],
-    deps = [":visualization"],
+    deps = [
+        ":visualization",
+        "@bazel_tools//tools/python/runfiles",
+    ],
 )
 
 drake_py_binary(
