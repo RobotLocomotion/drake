@@ -79,6 +79,12 @@ class CustomAdder(LeafSystem):
             input_vector = self.EvalVectorInput(context=context, port_index=i)
             sum += input_vector.get_value()
 
+    def DoGetGraphvizFragment(self, params):
+        # N.B. We cannot use `header_lines.append(...)` here; the property
+        # getter returns a _copy_ of the lines, not a _reference_.
+        params.header_lines += ["hello=world"]
+        return super().DoGetGraphvizFragment(params)
+
 
 # TODO(eric.cousineau): Make this class work with custom scalar types once
 # referencing with custom dtypes lands.
@@ -133,6 +139,12 @@ class CustomDiagram(Diagram):
             builder.ExportInput(adder.get_input_port(i))
         builder.BuildInto(self)
 
+    def DoGetGraphvizFragment(self, params):
+        # N.B. We cannot use `header_lines.append(...)` here; the property
+        # getter returns a _copy_ of the lines, not a _reference_.
+        params.header_lines += ["meaning_of_life=42"]
+        return super().DoGetGraphvizFragment(params)
+
 
 class TestCustom(unittest.TestCase):
     def _create_adder_system(self):
@@ -186,6 +198,16 @@ class TestCustom(unittest.TestCase):
         value = (diagram.GetMutableSubsystemContext(zoh, context)
                  .get_discrete_state_vector().get_value())
         self.assertTrue(np.allclose([5, 7, 9], value))
+
+    def test_adder_graphviz(self):
+        system = CustomAdder(2, 3)
+        graph = system.GetGraphvizString()
+        self.assertIn("hello=world", graph)
+
+    def test_diagram_graphviz(self):
+        system = CustomDiagram(2, 3)
+        graph = system.GetGraphvizString()
+        self.assertIn("meaning_of_life=42", graph)
 
     def test_leaf_system_well_known_tickets(self):
         for func in [
