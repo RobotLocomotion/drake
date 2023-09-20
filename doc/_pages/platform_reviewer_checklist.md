@@ -35,7 +35,7 @@ Search for
 and assign an owner.  When in doubt, assign [the lead](/issues.html#component)
 associated with the issue's ``component`` label.
 
-Search for [pull requests with no assignee](https://github.com/RobotLocomotion/drake/pulls?q=is%3Aopen+is%3Apr+no%3Aassignee+-label%3A%22status%3A+do+not+review%22)
+Search for [pull requests with no assignee](https://github.com/RobotLocomotion/drake/pulls?q=is%3Aopen+is%3Apr+no%3Aassignee+-label%3A%22status%3A+do+not+review%22+draft%3Afalse)
 and assign a Drake Developer.  This is intended to make sure that
 requests from outside developers receive timely attention.  For a pull request
 by a core Drake Developer, leaving it unassigned may be acceptable when it is
