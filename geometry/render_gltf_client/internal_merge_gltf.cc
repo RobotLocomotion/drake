@@ -2,8 +2,8 @@
 
 #include <algorithm>
 #include <fstream>
+#include <functional>
 #include <map>
-#include <string>
 #include <utility>
 #include <vector>
 
@@ -93,24 +93,29 @@ void MergeExtensionNames(json* j1, json&& j2, const std::string& array_name) {
   }
 }
 
-// Attempts to merge the key-value pairs from j2 into j1. The merging is
-// "successful" if every key-value pair in j2 is in j1 upon return. An
-// "unsuccessful" merging means j1 is unchanged. The merging will be
-// unsuccessful if any key in j2 is already present in j1, but their respective
-// values differ.
+// Attempts to merge the key-value pairs from j2 into j1. To merge successfully,
+// all every key in j2 that appears in j1 must have the same value. If
+// successful, every key-value pair in j2 is in j1 upon return.
 //
 // Note: a "successful" merge could still leave j1 unchanged, because either
 // there was nothing in j2, or j2's contents were already present in j1.
 //
-// @returns true if the merge was successful.
+// @throws if merge was not successful.
 // @pre j1->is_object() && j2.is_object().
-bool MergeTrees(json* j1, json&& j2) {
+void MergeTrees(json* j1, json&& j2, const std::string& blob_name,
+                const char* container_type, const std::string& j2_name,
+                MergeRecord* record) {
   DRAKE_DEMAND(j1->is_object() && j2.is_object());
   // First confirm
   for (auto& [key, value] : j2.items()) {
     if (j1->contains(key)) {
       if ((*j1)[key] != value) {
-        return false;
+        const std::string& j1_name = record->FindSourceName(*j1);
+        throw std::runtime_error(fmt::format(
+            "Error in merging '{}.{}.{}'; two glTF files have different "
+            "values. '{}' defines it as {}, but '{}' defines it as {}.",
+            container_type, blob_name, key, j1_name, fmt_streamed((*j1)[key]),
+            j2_name, fmt_streamed(value)));
       }
     }
   }
@@ -119,15 +124,16 @@ bool MergeTrees(json* j1, json&& j2) {
   for (auto& [key, value] : j2.items()) {
     if (j1->contains(key)) continue;
     (*j1)[key] = std::move(value);
+    record->AddElementTree((*j1)[key], j2_name);
   }
-  return true;
 }
 
 // Merge user data. This can be used for merging the arbitrary collection of
 // objects contained in either "extras" or "extensions". As documented, if there
-// is a collision between the two json trees, j2's values will be omitted.
+// is a collision between the two json trees, we will throw with helpful info.
 void MergeBlobs(json* j1, json&& j2, const std::string& blob_name,
-                const char* container_type) {
+                const char* container_type, const std::string& j2_name,
+                MergeRecord* record) {
   if (j2.contains(blob_name)) {
     json& blob2 = j2[blob_name];
     if (blob2.is_null()) {
@@ -142,22 +148,18 @@ void MergeBlobs(json* j1, json&& j2, const std::string& blob_name,
     //     We can simply merge 2 into 1.
     //  3. In all other cases, merging is not possible.
     if (blob1.is_object() && blob2.is_object()) {
-      if (!MergeTrees(&blob1, std::move(blob2))) {
-        log()->warn(
-            "Attempting to merge the \"{0}\" between two {1} objects; there "
-            "were collisions in the \"{0}\" -- same key name but different "
-            "values. The second glTF's \"{0}\" were ignored.",
-            blob_name, container_type);
-      }
+      MergeTrees(&blob1, std::move(blob2), blob_name, container_type, j2_name,
+                 record);
     } else if (blob1.is_null()) {
       // j1 doesn't have the blob, go ahead and replace it with j2's.
       blob1 = std::move(blob2);
+      record->AddElementTree(blob1, j2_name);
     } else {
-      log()->warn(
-          "Attempting to merge the \"{0}\" between two {1} objects; one "
-          "holds an object, the other a primitive. They cannot be merged. The "
-          "\"{0}\" will not be merged.",
-          blob_name, container_type);
+      const std::string& j1_name = record->FindSourceName(*j1);
+      throw std::runtime_error(
+          fmt::format("Error in merging '{}.{}'. '{}' defined it as a "
+                      "primitive. '{}' defined it as an object.",
+                      container_type, blob_name, j1_name, j2_name));
     }
   }
 }
@@ -166,12 +168,36 @@ void MergeBlobs(json* j1, json&& j2, const std::string& blob_name,
 // j1. This only needs to be called where we're attempting to merge nodes:
 // the root glTF node and Scene nodes. All other nodes simply get concatenated
 // to lists.
-void MergeExtrasAndExtensions(json* j1, json&& j2, const char* container_type) {
-  MergeBlobs(j1, std::move(j2), "extras", container_type);
-  MergeBlobs(j1, std::move(j2), "extensions", container_type);
+void MergeExtrasAndExtensions(json* j1, json&& j2, const char* container_type,
+                              const std::string& j2_name, MergeRecord* record) {
+  MergeBlobs(j1, std::move(j2), "extras", container_type, j2_name, record);
+  MergeBlobs(j1, std::move(j2), "extensions", container_type, j2_name, record);
 }
 
 }  // namespace
+
+MergeRecord::MergeRecord(std::string initial_name) {
+  source_names.push_back(std::move(initial_name));
+}
+
+const std::string& MergeRecord::FindSourceName(const json& element) const {
+  const auto iter = merged_trees_.find(&element);
+  DRAKE_DEMAND(iter != merged_trees_.end());
+  return source_names.at(iter->second);
+}
+
+void MergeRecord::AddElementTree(const json& root,
+                                 const std::string& source_name) {
+  const int source_index = ssize(source_names);
+  source_names.push_back(source_name);
+  std::function<void(const json&)> add_tree = [&](const json& tree_root) {
+    this->merged_trees_[&tree_root] = source_index;
+    for (const auto& child : tree_root) {
+      add_tree(child);
+    }
+  };
+  add_tree(root);
+}
 
 json ReadJsonFile(const std::filesystem::path& json_path) {
   std::ifstream f(json_path);
@@ -201,53 +227,24 @@ Matrix4<double> EigenMatrixFromGltfMatrix(const json& matrix_json) {
   return T;
 }
 
-void MergeScenes(json* j1, json&& j2) {
-  std::map<string, int> names_in_1;
-  json& j1_scenes = (*j1)["scenes"];
-  // Identify all of the named scenes in j1. Names are optional.
-  for (int s = 0; s < ssize(j1_scenes); ++s) {
-    const json& scene = j1_scenes[s];
-    if (scene.contains("name")) {
-      names_in_1.insert({scene["name"].get<string>(), s});
-    }
-  }
-
-  // For each scene in j2, update its node values and either merge scenes or
-  // append scenes.
-  if (j2.contains("scenes")) {
+void MergeDefaultScenes(json* j1, json&& j2, const std::string& j2_name,
+                        MergeRecord* record) {
+  int index_1 = j1->contains("scene") ? (*j1)["scene"].get<int>() : 0;
+  int index_2 = j2.contains("scene") ? j2["scene"].get<int>() : 0;
+  json& scene_1 = (*j1)["scenes"][index_1];
+  json& scene_2 = j2["scenes"][index_2];
+  if (scene_2.contains("nodes")) {
     const int node_offset = ArraySize(*j1, "nodes");
-    for (auto& scene : j2["scenes"]) {
-      // Offset all node indices in this scene.
-      MaybeOffsetIndexArray(&scene, "nodes", node_offset);
-
-      // If the scene needs to be merged, merge it.
-      if (scene.contains("name")) {
-        const string& name = scene["name"].get<string>();
-        if (names_in_1.count(name) > 0) {
-          json& j1_scene1 = j1_scenes[names_in_1[name]];
-          if (scene.contains("nodes")) {
-            // Merge this scene's nodes into the named scene.
-            json& nodes = j1_scene1["nodes"];
-            for (auto& n : scene["nodes"]) {
-              nodes.push_back(std::move(n));
-            }
-            // TODO(SeanCurtis-TRI): This omits the extensions and extras that
-            // may be stored with j2's scene. Consider merging them as well.
-            // It's unclear what to do if two identically named scenes have the
-            // same extras property, but different values. Probably just throw.
-            // Note: where j2's scene doesn't require merging, those properties
-            // are copied automatically.
-          }
-          MergeExtrasAndExtensions(&j1_scene1, std::move(scene), "scene");
-          // We've merged; no further required for this scene.
-          continue;
-        }
-      }
-
-      // We didn't merge the scenes, so we just need to append.
-      j1_scenes.push_back(std::move(scene));
+    // Offset all node indices in j2's scene.
+    MaybeOffsetIndexArray(&scene_2, "nodes", node_offset);
+    // Merge j2's scene's nodes into the j1's scene's nodes.
+    json& nodes_1 = scene_1["nodes"];
+    for (auto& n : scene_2["nodes"]) {
+      nodes_1.push_back(std::move(n));
     }
   }
+  MergeExtrasAndExtensions(&scene_1, std::move(scene_2), "scene", j2_name,
+                           record);
 }
 
 void MergeNodes(json* j1, json&& j2) {
@@ -403,23 +400,25 @@ void MergeSamplers(json* j1, json&& j2) {
   }
 }
 
-void MergeGltf(json* j1, json&& j2) {
+void MergeGltf(json* j1, json&& j2, const std::string& j2_name,
+               MergeRecord* record) {
   json& asset1 = (*j1)["asset"];
   json& asset2 = j2["asset"];
-  DRAKE_DEMAND(!(asset1.is_null() && asset2.is_null()));
+  DRAKE_DEMAND(!(asset1.is_null() || asset2.is_null()));
 
   asset1["generator"] = "Drake glTF merger";
   // TODO(SeanCurtis-TRI): We're not doing anything to the copyright. Should we?
   DRAKE_DEMAND(asset1["version"].get<string>() == "2.0");
   DRAKE_DEMAND(asset2["version"].get<string>() == "2.0");
-  MergeExtrasAndExtensions(j1, std::move(j2), "glTF");
-  MergeExtrasAndExtensions(&asset1, std::move(asset2), "asset");
+  MergeExtrasAndExtensions(j1, std::move(j2), "glTF", j2_name, record);
+  MergeExtrasAndExtensions(&asset1, std::move(asset2), "asset", j2_name,
+                           record);
 
   // Don't change the order. Because we mutate j1 as we go, we need to make sure
   // we only mutate something after we've processed everything that depends on
   // it.
   // https://github.com/KhronosGroup/glTF-Tutorials/blob/master/gltfTutorial/gltfTutorial_002_BasicGltfStructure.md
-  MergeScenes(j1, std::move(j2));
+  MergeDefaultScenes(j1, std::move(j2), j2_name, record);
   MergeNodes(j1, std::move(j2));
   MergeMeshes(j1, std::move(j2));
   MergeMaterials(j1, std::move(j2));
