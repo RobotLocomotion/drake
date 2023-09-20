@@ -18,6 +18,15 @@ config_setting(
     constraint_values = ["@platforms//os:osx"],
 )
 
+# When the rules.bzl needs to declare an objc_library, it adds this to `deps`
+# to improve the error messages in case of a mis-configured build.
+cc_library(
+    name = "_on_macos_you_must_not_have_forcepic_in_your_bazelrc_file_see_drake_issue_20217",  # noqa
+    linkstatic = True,
+    features = ["-supports_pic"],
+    tags = ["manual"],
+)
+
 # Generate some source files on the fly, using Bazel re-implementations of
 # various CMake scripts.
 

@@ -150,7 +150,9 @@ def _vtk_cc_module_impl(
             defines = defines_extra,
             copts = copts,
             linkopts = linkopts,
-            deps = deps,
+            deps = deps + [
+                "//:_on_macos_you_must_not_have_forcepic_in_your_bazelrc_file_see_drake_issue_20217",  # noqa
+            ],
         )
         deps = deps + [objc_lib_name]
 
