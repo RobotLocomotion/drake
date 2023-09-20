@@ -186,6 +186,14 @@ Expression Expression::EvaluatePartial(const Environment& env) const {
   return cell().EvaluatePartial(env);
 }
 
+Eigen::SparseMatrix<Expression> EvaluatePartial(
+    const Eigen::Ref<const Eigen::SparseMatrix<Expression>>& m,
+    const Environment& env) {
+  return m.unaryExpr([&env](const Expression& e) {
+    return e.EvaluatePartial(env);
+  });
+}
+
 Expression Expression::Expand() const {
   if (is_constant(*this)) {
     return *this;

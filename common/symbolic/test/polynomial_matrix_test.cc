@@ -629,6 +629,26 @@ TEST_F(SymbolicPolynomialMatrixTest, EvaluateMatrix) {
             Evaluate(v_poly_static_.cast<Expression>(), env));
 }
 
+TEST_F(SymbolicPolynomialMatrixTest, EvaluatePartialMatrix) {
+  const Environment env{{{var_x_, 1.0}, {var_y_, 2.0}}};
+
+  CompareMatricesWithExpansion(
+      EvaluatePartial(M_poly_dynamic_, env).cast<Expression>(),
+      EvaluatePartial(M_poly_dynamic_.cast<Expression>(), env));
+
+  CompareMatricesWithExpansion(
+      EvaluatePartial(M_poly_static_, env).cast<Expression>(),
+      EvaluatePartial(M_poly_static_.cast<Expression>(), env));
+
+  CompareMatricesWithExpansion(
+      EvaluatePartial(v_poly_dynamic_, env).cast<Expression>(),
+      EvaluatePartial(v_poly_dynamic_.cast<Expression>(), env));
+
+  CompareMatricesWithExpansion(
+      EvaluatePartial(v_poly_static_, env).cast<Expression>(),
+      EvaluatePartial(v_poly_static_.cast<Expression>(), env));
+}
+
 TEST_F(SymbolicPolynomialMatrixTest, Jacobian) {
   const Vector3<Variable> vars{var_x_, var_y_, var_z_};
   {

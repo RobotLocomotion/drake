@@ -6,6 +6,7 @@
 #include <ostream>
 #include <unordered_map>
 #include <utility>
+#include <vector>
 
 #include <Eigen/Core>
 
@@ -208,10 +209,23 @@ class Polynomial {
   /// assignment is not provided by @p env.
   [[nodiscard]] double Evaluate(const Environment& env) const;
 
+  /// Evaluates this polynomial under a list of environments @p envs.
+  ///
+  /// @throws std::exception if there is a variable in this polynomial whose
+  /// assignment is not provided by at least one of the enivornments @p envs.
+  [[nodiscard]] std::vector<double> EvaluateBatch(
+      const std::vector<Environment>& envs) const;
+
   /// Partially evaluates this polynomial using an environment @p env.
   ///
   /// @throws std::exception if NaN is detected during evaluation.
   [[nodiscard]] Polynomial EvaluatePartial(const Environment& env) const;
+
+  /// Partially evaluates this polynomial for a list of environment @p envs.
+  ///
+  /// @throws std::exception if NaN is detected during evaluation.
+  [[nodiscard]] std::vector<Polynomial> EvaluatePartialBatch(
+      const std::vector<Environment>& envs) const;
 
   /// Partially evaluates this polynomial by substituting @p var with @p c.
   ///
@@ -752,6 +766,21 @@ template <typename Derived>
 Evaluate(const Eigen::MatrixBase<Derived>& m, const Environment& env) {
   return m.unaryExpr([&env](const Polynomial& p) {
     return p.Evaluate(env);
+  });
+}
+
+/// Partially evaluates a matrix `m` of symbolic polynomials using `env`.
+///
+/// @returns a matrix of Polynomials whose size is the size of @p m.
+/// @throws std::exception if NaN is detected during evaluation.
+/// @pydrake_mkdoc_identifier{polynomial}
+template <typename Derived>
+[[nodiscard]] std::enable_if_t<
+    std::is_same_v<typename Derived::Scalar, Polynomial>,
+    MatrixLikewise<Polynomial, Derived>>
+EvaluatePartial(const Eigen::MatrixBase<Derived>& m, const Environment& env) {
+  return m.unaryExpr([&env](const Polynomial& p) {
+    return p.EvaluatePartial(env);
   });
 }
 
