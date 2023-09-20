@@ -228,6 +228,11 @@ class MergeTest : public testing::TestWithParam<MergeCase> {
      also include a few token tests to confirm that the logic is applied to the
      extensions and extras in "asset". The scene merging is handled in the scene
      test. */
+    auto merge = [](json* j1, json&&j2) {
+      MergeRecord record("test_target");
+      MergeGltf(j1, std::move(j2), "test_source", &record);
+    };
+    // Note: "asset" must exist for MergeGltf to work.
     const std::string asset_prefix = R"""({"asset":{"version":"2.0"})""";
     return vector<MergeCase>{
         // Successful merges on extensions.
@@ -236,38 +241,38 @@ class MergeTest : public testing::TestWithParam<MergeCase> {
          .source = asset_prefix + "}",
          .array_name = "extensions",
          .expected = R"""({"one":1})""",
-         .merge = MergeGltf},
+         .merge = merge},
         {.description = "Source only extensions are preserved",
          .target = asset_prefix + "}",
          .source = asset_prefix + R"""(, "extensions":{"one":1}})""",
          .array_name = "extensions",
          .expected = R"""({"one":1})""",
-         .merge = MergeGltf},
+         .merge = merge},
         {.description = "Non-colliding data merges",
          .target = asset_prefix + R"""(, "extensions":{"two":2}})""",
          .source = asset_prefix + R"""(, "extensions":{"one":1}})""",
          .array_name = "extensions",
          .expected = R"""({"one":1, "two":2})""",
-         .merge = MergeGltf},
+         .merge = merge},
         {.description = "Target has no extensions, source is non-object",
          .target = asset_prefix + "}",
          .source = asset_prefix + R"""(, "extensions":2})""",
          .array_name = "extensions",
          .expected = R"""(2)""",
-         .merge = MergeGltf},
+         .merge = merge},
         {.description = "Source has non-object extensions, target has none",
          .target = asset_prefix + R"""(, "extensions":1})""",
          .source = asset_prefix + "}",
          .array_name = "extensions",
          .expected = R"""(1)""",
-         .merge = MergeGltf},
+         .merge = merge},
         {.description = "Source and object have shallow, non-colliding "
                         "duplications in extensions",
          .target = asset_prefix + R"""(, "extensions":{"one":1}})""",
          .source = asset_prefix + R"""(, "extensions":{"one":1, "two":2}})""",
          .array_name = "extensions",
          .expected = R"""({"one":1, "two":2})""",
-         .merge = MergeGltf},
+         .merge = merge},
         {.description = "Source and object have deep, non-colliding "
                         "duplications in extensions",
          .target = asset_prefix + R"""(, "extensions":{"one":{"a":1}}})""",
@@ -275,33 +280,33 @@ class MergeTest : public testing::TestWithParam<MergeCase> {
              asset_prefix + R"""(, "extensions":{"one":{"a":1}, "b":2}})""",
          .array_name = "extensions",
          .expected = R"""({"one":{"a":1}, "b":2})""",
-         .merge = MergeGltf},
+         .merge = merge},
         // Unsuccessful merges on extensions.
         {.description = "Target and source have non-object extensions",
          .target = asset_prefix + R"""(, "extensions":1})""",
          .source = asset_prefix + R"""(, "extensions":2})""",
          .array_name = "extensions",
          .expected = R"""(1)""",
-         .merge = MergeGltf},
+         .merge = merge},
         {.description = "Source has object extensions, target is non-object",
          .target = asset_prefix + R"""(, "extensions":1})""",
          .source = asset_prefix + R"""(, "extensions":{"one":1}})""",
          .array_name = "extensions",
          .expected = R"""(1)""",
-         .merge = MergeGltf},
+         .merge = merge},
         {.description = "glTFs have shallow collisions in extensions",
          .target = asset_prefix + R"""(, "extensions":{"one":1}})""",
          .source = asset_prefix + R"""(, "extensions":{"one":2, "two":2}})""",
          .array_name = "extensions",
          .expected = R"""({"one":1})""",
-         .merge = MergeGltf},
+         .merge = merge},
         {.description = "glTFs have deep collisions in extensions",
          .target = asset_prefix + R"""(, "extensions":{"one":{"a":1}}})""",
          .source =
              asset_prefix + R"""(, "extensions":{"one":{"a":3}, "b":2}})""",
          .array_name = "extensions",
          .expected = R"""({"one":{"a":1}})""",
-         .merge = MergeGltf},
+         .merge = merge},
         // Evidence that extras are being merged; complex successful and
         // unsuccessful case.
         {.description = "glTFs have deep, non-colliding duplications in extras",
@@ -309,13 +314,13 @@ class MergeTest : public testing::TestWithParam<MergeCase> {
          .source = asset_prefix + R"""(, "extras":{"one":{"a":1}, "b":2}})""",
          .array_name = "extras",
          .expected = R"""({"one":{"a":1}, "b":2})""",
-         .merge = MergeGltf},
+         .merge = merge},
         {.description = "glTFs have deep collisions in extras",
          .target = asset_prefix + R"""(, "extras":{"one":{"a":1}}})""",
          .source = asset_prefix + R"""(, "extras":{"one":{"a":3}, "b":2}})""",
          .array_name = "extras",
          .expected = R"""({"one":{"a":1}})""",
-         .merge = MergeGltf},
+         .merge = merge},
         // Evidence that extras and extensions are being merged in "assets".
         {.description =
              "glTFs have deep, non-colliding duplications in assets[extras]",
@@ -327,7 +332,7 @@ class MergeTest : public testing::TestWithParam<MergeCase> {
          .expected = R"""({"generator":"Drake glTF merger",
                            "version":"2.0",
                            "extras":{"one":{"a":1}, "b":2}})""",
-         .merge = MergeGltf},
+         .merge = merge},
         {.description = "glTFs have deep, non-colliding duplications in "
                         "assets[extensions]",
          .target = R"""({"asset":{"version":"2.0",
@@ -338,7 +343,7 @@ class MergeTest : public testing::TestWithParam<MergeCase> {
          .expected = R"""({"generator":"Drake glTF merger",
                            "version":"2.0",
                            "extensions":{"one":{"a":1}, "b":2}})""",
-         .merge = MergeGltf},
+         .merge = merge},
         {.description = "glTFs have deep collisions in assets[extras]",
          .target = R"""({"asset":{"version":"2.0",
                                   "extras":{"one":{"a":1}}}})""",
@@ -348,7 +353,7 @@ class MergeTest : public testing::TestWithParam<MergeCase> {
          .expected = R"""({"generator":"Drake glTF merger",
                            "version":"2.0",
                            "extras":{"one":{"a":1}}})""",
-         .merge = MergeGltf},
+         .merge = merge},
         {.description = "glTFs have deep collisions in assets[extensions]",
          .target = R"""({"asset":{"version":"2.0",
                                   "extensions":{"one":{"a":1}}}})""",
@@ -358,7 +363,7 @@ class MergeTest : public testing::TestWithParam<MergeCase> {
          .expected = R"""({"generator":"Drake glTF merger",
                            "version":"2.0",
                            "extensions":{"one":{"a":1}}})""",
-         .merge = MergeGltf},
+         .merge = merge},
     };
   }
 
@@ -405,7 +410,10 @@ class MergeTest : public testing::TestWithParam<MergeCase> {
      We can't use the test case APIs to test bumping node indices because the
      nodes are not direct children of a "scene" element. */
 
-    MergeFunction merge = MergeScenes;
+    MergeFunction merge = [](json* j1, json&&j2) {
+      MergeRecord record("test_target");
+      MergeDefaultScenes(j1, std::move(j2), "test_source", &record);
+    };
     return vector<MergeCase>{
         {.description = "Only target has scenes.",
          .target = R"""({"scenes":[{"name":"Scene", "nodes":[0],
@@ -710,7 +718,9 @@ GTEST_TEST(MergeGltf, Smoke) {
   json source = ReadJsonFile(FindResourceOrThrow(
       "drake/geometry/render_gltf_client/test/textured_green_box.gltf"));
 
-  EXPECT_NO_THROW(MergeGltf(&target, std::move(source)));
+  MergeRecord record("test_target");
+  EXPECT_NO_THROW(
+      MergeGltf(&target, std::move(source), "test_source", &record));
 
   /* Save the merged glTF for inspection.
    bazel-testlogs/geometry/render_gltf_client/internal_merge_gltf_test/test.outputs/output.zip.
