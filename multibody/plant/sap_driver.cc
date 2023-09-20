@@ -22,6 +22,7 @@
 #include "drake/multibody/contact_solvers/sap/sap_pd_controller_constraint.h"
 #include "drake/multibody/contact_solvers/sap/sap_solver.h"
 #include "drake/multibody/contact_solvers/sap/sap_solver_results.h"
+#include "drake/multibody/contact_solvers/sap/sap_weld_constraint.h"
 #include "drake/multibody/plant/compliant_contact_manager.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/plant/slicing_and_indexing.h"
@@ -46,6 +47,7 @@ using drake::multibody::contact_solvers::internal::SapPdControllerConstraint;
 using drake::multibody::contact_solvers::internal::SapSolver;
 using drake::multibody::contact_solvers::internal::SapSolverResults;
 using drake::multibody::contact_solvers::internal::SapSolverStatus;
+using drake::multibody::contact_solvers::internal::SapWeldConstraint;
 
 namespace drake {
 namespace multibody {
@@ -573,6 +575,100 @@ void SapDriver<T>::AddBallConstraints(
 }
 
 template <typename T>
+void SapDriver<T>::AddWeldConstraints(
+    const systems::Context<T>& context,
+    contact_solvers::internal::SapContactProblem<T>* problem) const {
+  DRAKE_DEMAND(problem != nullptr);
+
+  const int nv = plant().num_velocities();
+  Matrix6X<T> J_WAm(6, nv);
+  Matrix6X<T> J_WBm(6, nv);
+  MatrixX<T> J_W_AmBm = MatrixX<T>::Zero(6, nv);
+
+  const Frame<T>& frame_W = plant().world_frame();
+
+  for (const auto& [id, spec] : manager().weld_constraints_specs()) {
+    const Body<T>& body_A = plant().get_body(spec.body_A);
+    const Body<T>& body_B = plant().get_body(spec.body_B);
+
+    const math::RigidTransform<T>& X_WA = body_A.EvalPoseInWorld(context);
+    const math::RigidTransform<T>& X_WB = body_B.EvalPoseInWorld(context);
+    const math::RigidTransform<T> X_WP = X_WA * spec.X_AP.template cast<T>();
+    const math::RigidTransform<T> X_WQ = X_WB * spec.X_BQ.template cast<T>();
+    const Vector3<T> p_AP_W =
+        X_WA.rotation() * spec.X_AP.translation().template cast<T>();
+    const Vector3<T> p_BQ_W =
+        X_WB.rotation() * spec.X_BQ.translation().template cast<T>();
+
+    // Let M be the midpoint of P and Q.
+    const Vector3<T> p_WM = 0.5 * (X_WP.translation() + X_WQ.translation());
+    const Vector3<T> p_AM = p_WM - X_WA.translation();
+    const Vector3<T> p_BM = p_WM - X_WB.translation();
+
+    // Dense Jacobian.
+    manager().internal_tree().CalcJacobianSpatialVelocity(
+        context, JacobianWrtVariable::kV, body_A.body_frame(), p_AM, frame_W,
+        frame_W, &J_WAm);
+    manager().internal_tree().CalcJacobianSpatialVelocity(
+        context, JacobianWrtVariable::kV, body_B.body_frame(), p_BM, frame_W,
+        frame_W, &J_WBm);
+    J_W_AmBm = (J_WBm - J_WAm);
+
+    // TODO(joemasterjohn) consolidate make_jacobian for use by other
+    // constraints that need the same jacobian computed here.
+    auto make_constraint_jacobian = [this, &J_W_AmBm](const Body<T>& bodyA,
+                                                      const Body<T>& bodyB) {
+      const TreeIndex treeA_index =
+          tree_topology().body_to_tree_index(bodyA.index());
+      const TreeIndex treeB_index =
+          tree_topology().body_to_tree_index(bodyB.index());
+
+      // TODO(joemasterjohn): Move this exception up to the plant level so
+      // that it fails as fast as possible. Currently, the earliest this can
+      // happen is in MbP::Finalize() after the topology has been finalized.
+      if (!treeA_index.is_valid() && !treeB_index.is_valid()) {
+        const std::string msg = fmt::format(
+            "Creating a weld constraint between bodies '{}' and '{}' where "
+            "both are welded to the world is not allowed.",
+            bodyA.name(), bodyB.name());
+        throw std::logic_error(msg);
+      }
+
+      // Both bodies A and B belong to the same tree or one of them is the
+      // world.
+      const bool single_tree = !treeA_index.is_valid() ||
+                               !treeB_index.is_valid() ||
+                               treeA_index == treeB_index;
+
+      if (single_tree) {
+        const TreeIndex tree_index =
+            treeA_index.is_valid() ? treeA_index : treeB_index;
+        MatrixX<T> Jtree_W = J_W_AmBm.middleCols(
+            tree_topology().tree_velocities_start(tree_index),
+            tree_topology().num_tree_velocities(tree_index));
+        return SapConstraintJacobian<T>(tree_index, std::move(Jtree_W));
+      } else {
+        MatrixX<T> JA_W = J_W_AmBm.middleCols(
+            tree_topology().tree_velocities_start(treeA_index),
+            tree_topology().num_tree_velocities(treeA_index));
+        MatrixX<T> JB_W = J_W_AmBm.middleCols(
+            tree_topology().tree_velocities_start(treeB_index),
+            tree_topology().num_tree_velocities(treeB_index));
+        return SapConstraintJacobian<T>(treeA_index, std::move(JA_W),
+                                        treeB_index, std::move(JB_W));
+      }
+    };
+
+    const typename SapWeldConstraint<T>::Kinematics kinematics(
+        spec.body_A, X_WP, p_AP_W, spec.body_B, X_WQ, p_BQ_W,
+        make_constraint_jacobian(body_A, body_B));
+
+    problem->AddConstraint(
+        std::make_unique<SapWeldConstraint<T>>(std::move(kinematics)));
+  }
+}
+
+template <typename T>
 void SapDriver<T>::AddPdControllerConstraints(
     const systems::Context<T>& context, SapContactProblem<T>* problem) const {
   DRAKE_DEMAND(problem != nullptr);
@@ -646,10 +742,11 @@ void SapDriver<T>::CalcContactProblemCache(
   // Do not change this order here!
   cache->R_WC = AddContactConstraints(context, &problem);
   AddLimitConstraints(context, problem.v_star(), &problem);
+  AddPdControllerConstraints(context, &problem);
   AddCouplerConstraints(context, &problem);
   AddDistanceConstraints(context, &problem);
   AddBallConstraints(context, &problem);
-  AddPdControllerConstraints(context, &problem);
+  AddWeldConstraints(context, &problem);
 
   // Make a reduced version of the original contact problem using joint locking
   // data.

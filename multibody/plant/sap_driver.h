@@ -179,6 +179,14 @@ class SapDriver {
       const systems::Context<T>& context,
       contact_solvers::internal::SapContactProblem<T>* problem) const;
 
+  // Adds holonomic constraint equations to model weld constraints specified in
+  // the MultibodyPlant.
+  // @throws std::exception if both bodies have invalid tree indices from the
+  // tree topology (i.e. body bodies are welded to `world`).
+  void AddWeldConstraints(
+      const systems::Context<T>& context,
+      contact_solvers::internal::SapContactProblem<T>* problem) const;
+
   void AddPdControllerConstraints(
       const systems::Context<T>& context,
       contact_solvers::internal::SapContactProblem<T>* problem) const;
