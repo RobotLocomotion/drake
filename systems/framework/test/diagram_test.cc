@@ -828,43 +828,44 @@ TEST_F(DiagramTest, ValidateContext) {
 }
 
 TEST_F(DiagramTest, Graphviz) {
-  const std::string id = std::to_string(
-      reinterpret_cast<int64_t>(diagram_.get()));
-  const std::string dot = diagram_->GetGraphvizString();
+  SystemBase::GraphvizFragment fragment = diagram_->GetGraphvizFragment();
+  const std::string dot = fmt::format("{}", fmt::join(fragment.fragments, ""));
   // Check that the Diagram is labeled with its name.
-  EXPECT_NE(std::string::npos, dot.find(
-      "label=\"Unicode Snowman's Favorite Diagram!!1!☃!\";")) << dot;
-  // Check that input ports are declared in blue, and output ports in green.
-  EXPECT_NE(std::string::npos, dot.find(
-    "_" + id + "_u1[color=blue, label=\"adder0\"")) << dot;
-  EXPECT_NE(std::string::npos, dot.find(
-    "_" + id + "_y1[color=green, label=\"adder2\"")) << dot;
-  // Check that subsystem records appear.
-  EXPECT_NE(
-      std::string::npos,
-      dot.find(
-          "[shape=record, label=\"adder1|{{<u0>u0|<u1>u1} | {<y0>sum}}\"]"))
-      << dot;
+  EXPECT_THAT(dot,
+              testing::HasSubstr(
+                  "\nname=Unicode Snowman's Favorite Diagram!!1!☃!\n"));
+  // Check that ports are declared with blue and green bubbles.
+  EXPECT_THAT(dot, testing::HasSubstr(
+                       "COLOR=\"blue\" CELLSPACING=\"3\" STYLE=\"rounded\""));
+  EXPECT_THAT(dot, testing::HasSubstr(
+                       "COLOR=\"green\" CELLSPACING=\"3\" STYLE=\"rounded\""));
+  // Check that subsystems appear.
+  EXPECT_THAT(dot, testing::HasSubstr("\nname=adder1\n"));
   // Check that internal edges appear.
-  const std::string adder1_id = std::to_string(
-      reinterpret_cast<int64_t>(diagram_->adder1()));
-  const std::string adder2_id = std::to_string(
-      reinterpret_cast<int64_t>(diagram_->adder2()));
+  const SystemBase::GraphvizFragment adder1_frag =
+      diagram_->adder1()->GetGraphvizFragment();
+  const SystemBase::GraphvizFragment adder2_frag =
+      diagram_->adder2()->GetGraphvizFragment();
   // [Adder 1, output 0] -> [Adder 2, input 1]
-  EXPECT_NE(std::string::npos,
-            dot.find(adder1_id + ":y0 -> " + adder2_id + ":u1;")) << dot;
+  std::string edge = fmt::format("{}:e -> {}:w", adder1_frag.output_ports.at(0),
+                                 adder2_frag.input_ports.at(1));
+  EXPECT_THAT(dot, testing::HasSubstr(edge));
   // Check that synthetic I/O edges appear: inputs in blue, outputs in green.
   // [Diagram Input 2] -> [Adder 1, input 1]
-  EXPECT_NE(std::string::npos, dot.find(
-      "_" + id + "_u2 -> " + adder1_id + ":u1 [color=blue];")) << dot;
+  edge = fmt::format("{}:e -> {}:w [color=blue]", fragment.input_ports.at(2),
+                     adder1_frag.input_ports.at(1));
+  EXPECT_THAT(dot, testing::HasSubstr(edge));
   // [Diagram Input 2] -> [Sink, input]
-  const std::string sink_id = std::to_string(
-      reinterpret_cast<int64_t>(diagram_->sink()));
-  EXPECT_NE(std::string::npos, dot.find(
-      "_" + id + "_u2 -> " + sink_id + ":u0 [color=blue];")) << dot;
+  const SystemBase::GraphvizFragment sink_frag =
+      diagram_->sink()->GetGraphvizFragment();
+  edge = fmt::format("{}:e -> {}:w [color=blue]", fragment.input_ports.at(2),
+                     sink_frag.input_ports.at(0));
+  EXPECT_THAT(dot, testing::HasSubstr(edge));
   // [Adder 2, output 0] -> [Diagram Output 1]
-  EXPECT_NE(std::string::npos, dot.find(
-      adder2_id + ":y0 -> _" + id + "_y1 [color=green];")) << dot;
+  edge =
+      fmt::format("{}:e -> {}:w [color=green]", adder2_frag.output_ports.at(0),
+                  fragment.output_ports.at(1));
+  EXPECT_THAT(dot, testing::HasSubstr(edge));
 }
 
 // Tests that both variants of GetMutableSubsystemState do what they say on
@@ -1358,21 +1359,28 @@ TEST_F(DiagramOfDiagramsTest, ScalarConvertAndCheckContextSizes) {
 
 TEST_F(DiagramOfDiagramsTest, Graphviz) {
   const std::string dot = diagram_->GetGraphvizString();
-  // Check that both subdiagrams appear.
-  EXPECT_NE(std::string::npos, dot.find("label=\"subdiagram0\""));
-  EXPECT_NE(std::string::npos, dot.find("label=\"subdiagram1\""));
-  // Check that edges between the two subdiagrams exist.
-  const std::string id0 = std::to_string(
-      reinterpret_cast<int64_t>(subdiagram0_));
-  const std::string id1 = std::to_string(
-      reinterpret_cast<int64_t>(subdiagram1_));
-  EXPECT_NE(std::string::npos, dot.find("_" + id0 + "_y0 -> _" + id1 + "_u0"));
 
+  // Check that both subdiagrams appear.
+  const std::string needle0 = "\nname=subdiagram0\n";
+  const std::string needle1 = "\nname=subdiagram1\n";
+  EXPECT_THAT(dot, testing::HasSubstr(needle0));
+  EXPECT_THAT(dot, testing::HasSubstr(needle1));
+
+  // Check that edges between the two subdiagrams exist.
+  const SystemBase::GraphvizFragment sub0_frag =
+      subdiagram0_->GetGraphvizFragment();
+  const SystemBase::GraphvizFragment sub1_frag =
+      subdiagram1_->GetGraphvizFragment();
+  const std::string sub0_y0 = sub0_frag.output_ports.at(0);
+  const std::string sub1_u0 = sub1_frag.input_ports.at(0);
+  const std::string edge = fmt::format("{}:e -> {}:w", sub0_y0, sub1_u0);
+  EXPECT_THAT(dot, testing::HasSubstr(edge));
+
+  // Check that the subdiagrams no longer appear.
   const int max_depth = 0;
   const std::string dot_no_depth = diagram_->GetGraphvizString(max_depth);
-  // Check that the subdiagrams no longer appear.
-  EXPECT_EQ(std::string::npos, dot_no_depth.find("label=\"subdiagram0\""));
-  EXPECT_EQ(std::string::npos, dot_no_depth.find("label=\"subdiagram1\""));
+  EXPECT_THAT(dot_no_depth, testing::Not(testing::HasSubstr(needle0)));
+  EXPECT_THAT(dot_no_depth, testing::Not(testing::HasSubstr(needle1)));
 }
 
 // Tests that a diagram composed of diagrams can be evaluated, and gives
