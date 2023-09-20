@@ -9,17 +9,12 @@
 #include "drake/common/identifier.h"
 #include "drake/multibody/fem/deformable_body_config.h"
 #include "drake/multibody/fem/fem_model.h"
+#include "drake/multibody/plant/deformable_ids.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/plant/physical_model.h"
 
 namespace drake {
 namespace multibody {
-
-/** Uniquely identifies a deformable body. It is valid before and after
- Finalize(). */
-using DeformableBodyId = Identifier<class DeformableBodyTag>;
-/** Internally indexes deformable bodies, only used after Finalize(). */
-using DeformableBodyIndex = TypeSafeIndex<class DeformableBodyTag>;
 
 /** DeformableModel implements the interface in PhysicalModel and provides the
  functionalities to specify deformable bodies. Unlike rigid bodies, the shape of
