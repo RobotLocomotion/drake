@@ -4,6 +4,7 @@
 #include <fstream>
 #include <functional>
 #include <ostream>
+#include <regex>
 #include <string>
 #include <vector>
 
@@ -37,7 +38,13 @@ using MergeFunction = std::function<void(json*, json&&)>;
 
 /* Specification of a test case. Because each function under test is responsible
  for merging a particular array, each test case examines only the targeted
- array (see array_name). */
+ array (see array_name).
+
+ To make the test case instantiation more compact, we write json using ' instead
+ of ". This allows us to use simple string literals: "'key':'value'" instead of
+ raw literals: ""key":"value"". The single quotes are swapped for double
+ quotes in the Evaluate() function. This applies to `target`, `source`, and
+ `expected`. */
 struct MergeCase {
   /* A description of what is being tested -- displayed for test failure. */
   string description;
@@ -63,10 +70,13 @@ struct MergeCase {
 
 /* Evaluates a test case, confirming the merged result is as expected. */
 void Evaluate(const MergeCase& test_case) {
-  json target = json::parse(test_case.target);
-  json source = json::parse(test_case.source);
+  auto swap_quotes = [](const std::string& in) {
+    return std::regex_replace(in, std::regex("'"), std::string("\""));
+  };
+  json target = json::parse(swap_quotes(test_case.target));
+  json source = json::parse(swap_quotes(test_case.source));
   test_case.merge(&target, std::move(source));
-  const json expected = json::parse(test_case.expected);
+  const json expected = json::parse(swap_quotes(test_case.expected));
   EXPECT_EQ(target[test_case.array_name], expected) << test_case;
 }
 
@@ -116,19 +126,18 @@ class MergeTest : public testing::TestWithParam<MergeCase> {
     cases->push_back(
         {.description = fmt::format(
              "The {} {} indices get bumped - array in both.", array, index),
-         .target = fmt::format(R"""({{"{}":[10, 20], "{}":[0, 1]}})""", array,
-                               independent),
-         .source = fmt::format(R"""({{"{0}":[{{"{1}":10}}, {{"{1}":20}}]}})""",
-                               array, index),
+         .target =
+             fmt::format("{{'{}':[10, 20], '{}':[0, 1]}}", array, independent),
+         .source = fmt::format("{{'{0}':[{{'{1}':10}}, {{'{1}':20}}]}}", array,
+                               index),
          .array_name = array,
-         .expected =
-             fmt::format(R"""([10, 20, {{"{0}":12}}, {{"{0}":22}}])""", index),
+         .expected = fmt::format("[10, 20, {{'{0}':12}}, {{'{0}':22}}]", index),
          .merge = merge});
     cases->push_back(
         {.description = fmt::format(
              "The {} {} indices get bumped - array in target.", array, index),
-         .target = fmt::format(R"""({{"{}":[10, 20], "{}":[0, 1]}})""", array,
-                               independent),
+         .target =
+             fmt::format("{{'{}':[10, 20], '{}':[0, 1]}}", array, independent),
          .source = "{}",
          .array_name = array,
          .expected = "[10, 20]",
@@ -136,16 +145,16 @@ class MergeTest : public testing::TestWithParam<MergeCase> {
     cases->push_back(
         {.description = fmt::format(
              "The {} {} indices get bumped - array in source.", array, index),
-         .target = fmt::format(R"""({{"{}":[0, 1]}})""", independent),
-         .source = fmt::format(R"""({{"{0}":[{{"{1}":10}}, {{"{1}":20}}]}})""",
-                               array, index),
+         .target = fmt::format("{{'{}':[0, 1]}}", independent),
+         .source = fmt::format("{{'{0}':[{{'{1}':10}}, {{'{1}':20}}]}}", array,
+                               index),
          .array_name = array,
-         .expected = fmt::format(R"""([{{"{0}":12}}, {{"{0}":22}}])""", index),
+         .expected = fmt::format("[{{'{0}':12}}, {{'{0}':22}}]", index),
          .merge = merge});
     cases->push_back(
         {.description = fmt::format(
              "The {} {} indices get bumped - array in neither.", array, index),
-         .target = fmt::format(R"""({{"{}":[0, 1]}})""", independent),
+         .target = fmt::format("{{'{}':[0, 1]}}", independent),
          .source = "{}",
          .array_name = array,
          .expected = "null",
@@ -182,19 +191,17 @@ class MergeTest : public testing::TestWithParam<MergeCase> {
     cases->push_back(
         {.description = fmt::format(
              "The {} array contents copied verbatim - array in both.", array),
-         .target = fmt::format("{{\"{}\":[0, 1]}}", array),
+         .target = fmt::format("{{'{}':[0, 1]}}", array),
          .source = fmt::format(
-             R"""({{"{}":[{{"one":1}},
-                       {{"two":{{"arabic":2, "roman":"II"}}}}]}})""",
+             "{{'{}':[{{'one':1}}, {{'two':{{'arabic':2, 'roman':'II'}}}}]}}",
              array),
          .array_name = array,
-         .expected = R"""([0, 1, {"one":1},
-                           {"two":{"arabic":2, "roman":"II"}}])""",
+         .expected = "[0, 1, {'one':1}, {'two':{'arabic':2, 'roman':'II'}}]",
          .merge = merge});
     cases->push_back(
         {.description = fmt::format(
              "The {} array contents copied verbatim - array in target.", array),
-         .target = fmt::format("{{\"{}\":[0, 1]}}", array),
+         .target = fmt::format("{{'{}':[0, 1]}}", array),
          .source = "{}",
          .array_name = array,
          .expected = "[0, 1]",
@@ -204,11 +211,10 @@ class MergeTest : public testing::TestWithParam<MergeCase> {
              "The {} array contents copied verbatim - array in source.", array),
          .target = "{}",
          .source = fmt::format(
-             R"""({{"{}":[{{"one":1}},
-                          {{"two":{{"arabic":2, "roman":"II"}}}}]}})""",
+             "{{'{}':[{{'one':1}}, {{'two':{{'arabic':2, 'roman':'II'}}}}]}}",
              array),
          .array_name = array,
-         .expected = R"""([{"one":1}, {"two":{"arabic":2, "roman":"II"}}])""",
+         .expected = "[{'one':1}, {'two':{'arabic':2, 'roman':'II'}}]",
          .merge = merge});
     cases->push_back(
         {.description = fmt::format(
@@ -228,141 +234,131 @@ class MergeTest : public testing::TestWithParam<MergeCase> {
      also include a few token tests to confirm that the logic is applied to the
      extensions and extras in "asset". The scene merging is handled in the scene
      test. */
-    auto merge = [](json* j1, json&&j2) {
+    auto merge = [](json* j1, json&& j2) {
       MergeRecord record("test_target");
       MergeGltf(j1, std::move(j2), "test_source", &record);
     };
     // Note: "asset" must exist for MergeGltf to work.
-    const std::string asset_prefix = R"""({"asset":{"version":"2.0"})""";
+    const std::string asset_prefix = "{'asset':{'version':'2.0'}";
     return vector<MergeCase>{
         // Successful merges on extensions.
         {.description = "Target only extensions are preserved",
-         .target = asset_prefix + R"""(, "extensions":{"one":1}})""",
+         .target = asset_prefix + ", 'extensions':{'one':1}}",
          .source = asset_prefix + "}",
          .array_name = "extensions",
-         .expected = R"""({"one":1})""",
+         .expected = "{'one':1}",
          .merge = merge},
         {.description = "Source only extensions are preserved",
          .target = asset_prefix + "}",
-         .source = asset_prefix + R"""(, "extensions":{"one":1}})""",
+         .source = asset_prefix + ", 'extensions':{'one':1}}",
          .array_name = "extensions",
-         .expected = R"""({"one":1})""",
+         .expected = "{'one':1}",
          .merge = merge},
         {.description = "Non-colliding data merges",
-         .target = asset_prefix + R"""(, "extensions":{"two":2}})""",
-         .source = asset_prefix + R"""(, "extensions":{"one":1}})""",
+         .target = asset_prefix + ", 'extensions':{'two':2}}",
+         .source = asset_prefix + ", 'extensions':{'one':1}}",
          .array_name = "extensions",
-         .expected = R"""({"one":1, "two":2})""",
+         .expected = "{'one':1, 'two':2}",
          .merge = merge},
         {.description = "Target has no extensions, source is non-object",
          .target = asset_prefix + "}",
-         .source = asset_prefix + R"""(, "extensions":2})""",
+         .source = asset_prefix + ", 'extensions':2}",
          .array_name = "extensions",
-         .expected = R"""(2)""",
+         .expected = "2",
          .merge = merge},
         {.description = "Source has non-object extensions, target has none",
-         .target = asset_prefix + R"""(, "extensions":1})""",
+         .target = asset_prefix + ", 'extensions':1}",
          .source = asset_prefix + "}",
          .array_name = "extensions",
-         .expected = R"""(1)""",
+         .expected = "1",
          .merge = merge},
         {.description = "Source and object have shallow, non-colliding "
                         "duplications in extensions",
-         .target = asset_prefix + R"""(, "extensions":{"one":1}})""",
-         .source = asset_prefix + R"""(, "extensions":{"one":1, "two":2}})""",
+         .target = asset_prefix + ", 'extensions':{'one':1}}",
+         .source = asset_prefix + ", 'extensions':{'one':1, 'two':2}}",
          .array_name = "extensions",
-         .expected = R"""({"one":1, "two":2})""",
+         .expected = "{'one':1, 'two':2}",
          .merge = merge},
         {.description = "Source and object have deep, non-colliding "
                         "duplications in extensions",
-         .target = asset_prefix + R"""(, "extensions":{"one":{"a":1}}})""",
-         .source =
-             asset_prefix + R"""(, "extensions":{"one":{"a":1}, "b":2}})""",
+         .target = asset_prefix + ", 'extensions':{'one':{'a':1}}}",
+         .source = asset_prefix + ", 'extensions':{'one':{'a':1}, 'b':2}}",
          .array_name = "extensions",
-         .expected = R"""({"one":{"a":1}, "b":2})""",
+         .expected = "{'one':{'a':1}, 'b':2}",
          .merge = merge},
         // Unsuccessful merges on extensions.
         {.description = "Target and source have non-object extensions",
-         .target = asset_prefix + R"""(, "extensions":1})""",
-         .source = asset_prefix + R"""(, "extensions":2})""",
+         .target = asset_prefix + ", 'extensions':1}",
+         .source = asset_prefix + ", 'extensions':2}",
          .array_name = "extensions",
-         .expected = R"""(1)""",
+         .expected = "1",
          .merge = merge},
         {.description = "Source has object extensions, target is non-object",
-         .target = asset_prefix + R"""(, "extensions":1})""",
-         .source = asset_prefix + R"""(, "extensions":{"one":1}})""",
+         .target = asset_prefix + ", 'extensions':1}",
+         .source = asset_prefix + ", 'extensions':{'one':1}}",
          .array_name = "extensions",
-         .expected = R"""(1)""",
+         .expected = "1",
          .merge = merge},
         {.description = "glTFs have shallow collisions in extensions",
-         .target = asset_prefix + R"""(, "extensions":{"one":1}})""",
-         .source = asset_prefix + R"""(, "extensions":{"one":2, "two":2}})""",
+         .target = asset_prefix + ", 'extensions':{'one':1}}",
+         .source = asset_prefix + ", 'extensions':{'one':2, 'two':2}}",
          .array_name = "extensions",
-         .expected = R"""({"one":1})""",
+         .expected = "{'one':1}",
          .merge = merge},
         {.description = "glTFs have deep collisions in extensions",
-         .target = asset_prefix + R"""(, "extensions":{"one":{"a":1}}})""",
-         .source =
-             asset_prefix + R"""(, "extensions":{"one":{"a":3}, "b":2}})""",
+         .target = asset_prefix + ", 'extensions':{'one':{'a':1}}}",
+         .source = asset_prefix + ", 'extensions':{'one':{'a':3}, 'b':2}}",
          .array_name = "extensions",
-         .expected = R"""({"one":{"a":1}})""",
+         .expected = "{'one':{'a':1}}",
          .merge = merge},
         // Evidence that extras are being merged; complex successful and
         // unsuccessful case.
         {.description = "glTFs have deep, non-colliding duplications in extras",
-         .target = asset_prefix + R"""(, "extras":{"one":{"a":1}}})""",
-         .source = asset_prefix + R"""(, "extras":{"one":{"a":1}, "b":2}})""",
+         .target = asset_prefix + ", 'extras':{'one':{'a':1}}}",
+         .source = asset_prefix + ", 'extras':{'one':{'a':1}, 'b':2}}",
          .array_name = "extras",
-         .expected = R"""({"one":{"a":1}, "b":2})""",
+         .expected = "{'one':{'a':1}, 'b':2}",
          .merge = merge},
         {.description = "glTFs have deep collisions in extras",
-         .target = asset_prefix + R"""(, "extras":{"one":{"a":1}}})""",
-         .source = asset_prefix + R"""(, "extras":{"one":{"a":3}, "b":2}})""",
+         .target = asset_prefix + ", 'extras':{'one':{'a':1}}}",
+         .source = asset_prefix + ", 'extras':{'one':{'a':3}, 'b':2}}",
          .array_name = "extras",
-         .expected = R"""({"one":{"a":1}})""",
+         .expected = "{'one':{'a':1}}",
          .merge = merge},
         // Evidence that extras and extensions are being merged in "assets".
         {.description =
              "glTFs have deep, non-colliding duplications in assets[extras]",
-         .target = R"""({"asset":{"version":"2.0",
-                                  "extras":{"one":{"a":1}}}})""",
-         .source = R"""({"asset":{"version":"2.0",
-                                  "extras":{"one":{"a":1}, "b":2}}})""",
+         .target = "{'asset':{'version':'2.0', 'extras':{'one':{'a':1}}}}",
+         .source =
+             "{'asset':{'version':'2.0', 'extras':{'one':{'a':1}, 'b':2}}}",
          .array_name = "asset",
-         .expected = R"""({"generator":"Drake glTF merger",
-                           "version":"2.0",
-                           "extras":{"one":{"a":1}, "b":2}})""",
+         .expected = "{'generator':'Drake glTF merger', 'version':'2.0', "
+                     "'extras':{'one':{'a':1}, 'b':2}}",
          .merge = merge},
         {.description = "glTFs have deep, non-colliding duplications in "
                         "assets[extensions]",
-         .target = R"""({"asset":{"version":"2.0",
-                                  "extensions":{"one":{"a":1}}}})""",
-         .source = R"""({"asset":{"version":"2.0",
-                                  "extensions":{"one":{"a":1}, "b":2}}})""",
+         .target = "{'asset':{'version':'2.0', 'extensions':{'one':{'a':1}}}}",
+         .source =
+             "{'asset':{'version':'2.0', 'extensions':{'one':{'a':1}, 'b':2}}}",
          .array_name = "asset",
-         .expected = R"""({"generator":"Drake glTF merger",
-                           "version":"2.0",
-                           "extensions":{"one":{"a":1}, "b":2}})""",
+         .expected = "{'generator':'Drake glTF merger', 'version':'2.0', "
+                     "'extensions':{'one':{'a':1}, 'b':2}}",
          .merge = merge},
         {.description = "glTFs have deep collisions in assets[extras]",
-         .target = R"""({"asset":{"version":"2.0",
-                                  "extras":{"one":{"a":1}}}})""",
-         .source = R"""({"asset":{"version":"2.0",
-                                  "extras":{"one":{"a":2}, "b":2}}})""",
+         .target = "{'asset':{'version':'2.0', 'extras':{'one':{'a':1}}}}",
+         .source =
+             "{'asset':{'version':'2.0', 'extras':{'one':{'a':2}, 'b':2}}}",
          .array_name = "asset",
-         .expected = R"""({"generator":"Drake glTF merger",
-                           "version":"2.0",
-                           "extras":{"one":{"a":1}}})""",
+         .expected = "{'generator':'Drake glTF merger', 'version':'2.0', "
+                     "'extras':{'one':{'a':1}}}",
          .merge = merge},
         {.description = "glTFs have deep collisions in assets[extensions]",
-         .target = R"""({"asset":{"version":"2.0",
-                                  "extensions":{"one":{"a":1}}}})""",
-         .source = R"""({"asset":{"version":"2.0",
-                                  "extensions":{"one":{"a":2}, "b":2}}})""",
+         .target = "{'asset':{'version':'2.0', 'extensions':{'one':{'a':1}}}}",
+         .source =
+             "{'asset':{'version':'2.0', 'extensions':{'one':{'a':2}, 'b':2}}}",
          .array_name = "asset",
-         .expected = R"""({"generator":"Drake glTF merger",
-                           "version":"2.0",
-                           "extensions":{"one":{"a":1}}})""",
+         .expected = "{'generator':'Drake glTF merger', 'version':'2.0', "
+                     "'extensions':{'one':{'a':1}}}",
          .merge = merge},
     };
   }
@@ -373,29 +369,29 @@ class MergeTest : public testing::TestWithParam<MergeCase> {
      test for the other to make sure it gets processed correctly. */
     return vector<MergeCase>{
         {.description = "Target only is passed through",
-         .target = R"""({"extensionsUsed":["A", "B"]})""",
+         .target = "{'extensionsUsed':['A', 'B']}",
          .source = "{}",
          .array_name = "extensionsUsed",
-         .expected = R"""(["A", "B"])""",
+         .expected = "['A', 'B']",
          .merge = MergeExtensionsUsed},
         {.description = "Source only is preserved",
          .target = "{}",
-         .source = R"""({"extensionsUsed":["A", "B"]})""",
+         .source = "{'extensionsUsed':['A', 'B']}",
          .array_name = "extensionsUsed",
-         .expected = R"""(["A", "B"])""",
+         .expected = "['A', 'B']",
          .merge = MergeExtensionsUsed},
         {.description = "Source and target are merged without duplication",
-         .target = R"""({"extensionsUsed":["A", "B"]})""",
-         .source = R"""({"extensionsUsed":["C", "B", "D"]})""",
+         .target = "{'extensionsUsed':['A', 'B']}",
+         .source = "{'extensionsUsed':['C', 'B', 'D']}",
          .array_name = "extensionsUsed",
-         .expected = R"""(["A", "B", "C", "D"])""",
+         .expected = "['A', 'B', 'C', 'D']",
          .merge = MergeExtensionsUsed},
         {.description = "Source and target are merged without duplication - "
                         "extensionsRequired",
-         .target = R"""({"extensionsRequired":["B", "A"]})""",
-         .source = R"""({"extensionsRequired":["C", "B", "D"]})""",
+         .target = "{'extensionsRequired':['B', 'A']}",
+         .source = "{'extensionsRequired':['C', 'B', 'D']}",
          .array_name = "extensionsRequired",
-         .expected = R"""(["B", "A", "C", "D"])""",
+         .expected = "['B', 'A', 'C', 'D']",
          .merge = MergeExtensionsRequired},
     };
   }
@@ -410,91 +406,81 @@ class MergeTest : public testing::TestWithParam<MergeCase> {
      We can't use the test case APIs to test bumping node indices because the
      nodes are not direct children of a "scene" element. */
 
-    MergeFunction merge = [](json* j1, json&&j2) {
+    MergeFunction merge = [](json* j1, json&& j2) {
       MergeRecord record("test_target");
       MergeDefaultScenes(j1, std::move(j2), "test_source", &record);
     };
     return vector<MergeCase>{
         {.description = "Only target has scenes.",
-         .target = R"""({"scenes":[{"name":"Scene", "nodes":[0],
-                                    "extras":{"v":2}}],
-                         "nodes":[0]})""",
+         .target = "{'scenes':[{'name':'Scene', 'nodes':[0], "
+                   "'extras':{'v':2}}], 'nodes':[0]}",
          .source = "{}",
          .array_name = "scenes",
-         .expected = R"""([{"name":"Scene", "nodes":[0], "extras":{"v":2}}])""",
+         .expected = "[{'name':'Scene', 'nodes':[0], 'extras':{'v':2}}]",
          .merge = merge},
         {.description = "Only source has scenes, nodes in both.",
-         .target = R"""({"nodes":[0,1]})""",
-         .source = R"""({"scenes":[{"name":"Scene", "nodes":[0],
-                                    "extras":{"v":1}}]})""",
+         .target = "{'nodes':[0,1]}",
+         .source =
+             "{'scenes':[{'name':'Scene', 'nodes':[0], 'extras':{'v':1}}]}",
          .array_name = "scenes",
-         .expected = R"""([{"name":"Scene", "nodes":[2], "extras":{"v":1}}])""",
+         .expected = "[{'name':'Scene', 'nodes':[2], 'extras':{'v':1}}]",
          .merge = merge},
         {.description = "Scene names match.",
-         .target = R"""({"scenes":[{"name":"Scene", "nodes":[0]}],
-                         "nodes":[0, 1]})""",
-         .source = R"""({"scenes":[{"name":"Scene", "nodes":[0]}],
-                         "nodes":[0]})""",
+         .target = "{'scenes':[{'name':'Scene', 'nodes':[0]}], 'nodes':[0, 1]}",
+         .source = "{'scenes':[{'name':'Scene', 'nodes':[0]}], 'nodes':[0]}",
          .array_name = "scenes",
-         .expected = R"""([{"name":"Scene", "nodes":[0, 2]}])""",
+         .expected = "[{'name':'Scene', 'nodes':[0, 2]}]",
          .merge = merge},
         {.description = "Scene names don't match.",
-         .target = R"""({"scenes":[{"name":"SceneA", "nodes":[0]}],
-                         "nodes":[0, 1]})""",
-         .source = R"""({"scenes":[{"name":"SceneB", "nodes":[0, 2]}],
-                         "nodes":[0,1,2]})""",
+         .target =
+             "{'scenes':[{'name':'SceneA', 'nodes':[0]}], 'nodes':[0, 1]}",
+         .source =
+             "{'scenes':[{'name':'SceneB', 'nodes':[0, 2]}], 'nodes':[0,1,2]}",
          .array_name = "scenes",
-         .expected = R"""([{"name":"SceneA", "nodes":[0]},
-                           {"name":"SceneB", "nodes":[2, 4]}])""",
+         .expected = "[{'name':'SceneA', 'nodes':[0]}, {'name':'SceneB', "
+                     "'nodes':[2, 4]}]",
          .merge = merge},
         {.description = "Scenes with no names are both present.",
-         .target = R"""({"scenes":[{"nodes":[0]}], "nodes":[0, 1]})""",
-         .source = R"""({"scenes":[{"nodes":[0, 2]}], "nodes":[0, 1, 2]})""",
+         .target = "{'scenes':[{'nodes':[0]}], 'nodes':[0, 1]}",
+         .source = "{'scenes':[{'nodes':[0, 2]}], 'nodes':[0, 1, 2]}",
          .array_name = "scenes",
-         .expected = R"""([{"nodes":[0]}, {"nodes":[2, 4]}])""",
+         .expected = "[{'nodes':[0]}, {'nodes':[2, 4]}]",
          .merge = merge},
         {.description = "Merged scenes with non-colliding extras merge.",
-         .target = R"""({"scenes":[{"name":"Scene", "nodes":[0],
-                                    "extras":{"one":{"a":1}}}],
-                         "nodes":[0, 1]})""",
-         .source = R"""({"scenes":[{"name":"Scene", "nodes":[0],
-                                    "extras":{"v":1}}],
-                         "nodes":[0]})""",
+         .target = "{'scenes':[{'name':'Scene', 'nodes':[0], "
+                   "'extras':{'one':{'a':1}}}], 'nodes':[0, 1]}",
+         .source = "{'scenes':[{'name':'Scene', 'nodes':[0], "
+                   "'extras':{'v':1}}], 'nodes':[0]}",
          .array_name = "scenes",
-         .expected = R"""([{"name":"Scene", "nodes":[0, 2],
-                            "extras":{"v":1, "one":{"a":1}}}])""",
+         .expected = "[{'name':'Scene', 'nodes':[0, 2], 'extras':{'v':1, "
+                     "'one':{'a':1}}}]",
          .merge = merge},
         {.description = "Merged scenes with non-colliding extensions merge.",
-         .target = R"""({"scenes":[{"name":"Scene", "nodes":[0],
-                                    "extensions":{"one":{"a":1}}}],
-                         "nodes":[0, 1]})""",
-         .source = R"""({"scenes":[{"name":"Scene", "nodes":[0],
-                                    "extensions":{"v":1}}],
-                         "nodes":[0]})""",
+         .target = "{'scenes':[{'name':'Scene', 'nodes':[0], "
+                   "'extensions':{'one':{'a':1}}}], 'nodes':[0, 1]}",
+         .source = "{'scenes':[{'name':'Scene', 'nodes':[0], "
+                   "'extensions':{'v':1}}], 'nodes':[0]}",
          .array_name = "scenes",
-         .expected = R"""([{"name":"Scene", "nodes":[0, 2],
-                            "extensions":{"v":1, "one":{"a":1}}}])""",
+         .expected = "[{'name':'Scene', 'nodes':[0, 2], 'extensions':{'v':1, "
+                     "'one':{'a':1}}}]",
          .merge = merge},
         {.description = "Merged scenes with colliding extras don't merge.",
-         .target = R"""({"scenes":[{"name":"Scene", "nodes":[0],
-                                    "extras":{"one":{"a":1}}}],
-                         "nodes":[0, 1]})""",
-         .source = R"""({"scenes":[{"name":"Scene", "nodes":[0],
-                                    "extras":{"one":2, "v":1}}],
-                         "nodes":[0]})""",
+         .target = "{'scenes':[{'name':'Scene', 'nodes':[0], "
+                   "'extras':{'one':{'a':1}}}], 'nodes':[0, 1]}",
+         .source = "{'scenes':[{'name':'Scene', 'nodes':[0], "
+                   "'extras':{'one':2, 'v':1}}], 'nodes':[0]}",
          .array_name = "scenes",
-         .expected = R"""([{"name":"Scene", "nodes":[0, 2],
-                            "extras":{"one":{"a":1}}}])""",
+         .expected =
+             "[{'name':'Scene', 'nodes':[0, 2], 'extras':{'one':{'a':1}}}]",
          .merge = merge},
-        {.target = R"""({"scenes":[{"name":"Scene", "nodes":[0],
-                                    "extensions":{"one":{"a":1}}}],
-                         "nodes":[0, 1]})""",
-         .source = R"""({"scenes":[{"name":"Scene", "nodes":[0],
-                                    "extensions":{"one":2, "v":1}}],
-                         "nodes":[0]})""",
+        {.description = "Merged scenes with colliding extensions don't merge",
+         .target = "{'scenes':[{'name':'Scene', 'nodes':[0], "
+                   "'extensions':{'one':{'a':1}}}], 'nodes':[0, 1]}",
+         .source = "{'scenes':[{'name':'Scene', 'nodes':[0], "
+                   "'extensions':{'one':2, 'v':1}}], 'nodes':[0]}",
          .array_name = "scenes",
-         .expected = R"""([{"name":"Scene", "nodes":[0, 2],
-                            "extensions":{"one":{"a":1}}}])""",
+         .expected =
+             "[{'name':'Scene', 'nodes':[0, 2], 'extensions':{'one':{'a':1}}}]",
          .merge = merge},
     };
   }
@@ -508,20 +494,18 @@ class MergeTest : public testing::TestWithParam<MergeCase> {
      Furthermore, we explicitly confirm removal of the "skin" element. */
     vector<MergeCase> cases{
         {.description = "Nodes in target cause children in 2 to offset.",
-         .target = R"""({"nodes":[{"name":"A","children":[1]},
-                                  {"name":"B","mesh":0}],
-                         "meshes":[0, 1]})""",
-         .source = R"""({"nodes":[{"name":"C","children":[0, 1]},
-                                  {"name":"D"}]})""",
+         .target = "{'nodes':[{'name':'A','children':[1]}, "
+                   "{'name':'B','mesh':0}], 'meshes':[0, 1]}",
+         .source = "{'nodes':[{'name':'C','children':[0, 1]}, {'name':'D'}]}",
          .array_name = "nodes",
-         .expected = R"""([{"name":"A","children":[1]}, {"name":"B","mesh":0},
-                           {"name":"C","children":[2,3]}, {"name":"D"}])""",
+         .expected = "[{'name':'A','children':[1]}, {'name':'B','mesh':0}, "
+                     "{'name':'C','children':[2,3]}, {'name':'D'}]",
          .merge = merge},
-        {.description = R"""(Remove "skin" child.)""",
+        {.description = "Remove 'skin' child.",
          .target = "{}",
-         .source = R"""({"nodes":[{"name":"C","skin":1}]})""",
+         .source = "{'nodes':[{'name':'C','skin':1}]}",
          .array_name = "nodes",
-         .expected = R"""([{"name":"C"}])""",
+         .expected = "[{'name':'C'}]",
          .merge = merge},
     };
 
@@ -543,53 +527,45 @@ class MergeTest : public testing::TestWithParam<MergeCase> {
      So, these test cases get spelled out explicitly. */
     vector<MergeCase> cases{
         {.description = "Material index gets bumped.",
-         .target = R"""({"materials":[0, 1]})""",
-         .source = R"""({"meshes":[{"name":"A",
-                                    "primitives":[{"material":2}]}]})""",
+         .target = "{'materials':[0, 1]}",
+         .source = "{'meshes':[{'name':'A', 'primitives':[{'material':2}]}]}",
          .array_name = "meshes",
-         .expected = R"""([{"name":"A", "primitives":[{"material":4}]}])""",
+         .expected = "[{'name':'A', 'primitives':[{'material':4}]}]",
          .merge = merge},
         {.description = "Vertex accessor gets bumped.",
-         .target = R"""({"accessors":[0, 1]})""",
-         .source = R"""({"meshes":[{"name":"A",
-                                    "primitives":[{"indices":2}]}]})""",
+         .target = "{'accessors':[0, 1]}",
+         .source = "{'meshes':[{'name':'A', 'primitives':[{'indices':2}]}]}",
          .array_name = "meshes",
-         .expected = R"""([{"name":"A", "primitives":[{"indices":4}]}])""",
+         .expected = "[{'name':'A', 'primitives':[{'indices':4}]}]",
          .merge = merge},
         {.description = "Primitives attributes get bumped.",
-         .target = R"""({"accessors":[0, 1]})""",
-         .source = R"""({"meshes":[{"name":"A",
-                                    "primitives":[
-                                       {"attributes":{"key1":1}},
-                                       {"attributes":{"key2":3, "key4":5}}
-                                     ]}]})""",
+         .target = "{'accessors':[0, 1]}",
+         .source =
+             "{'meshes':[{'name':'A', 'primitives':[{'attributes':{'key1':1}}, "
+             "{'attributes':{'key2':3, 'key4':5}}]}]}",
          .array_name = "meshes",
-         .expected = R"""([{"name":"A",
-                            "primitives":[
-                               {"attributes":{"key1":3}},
-                               {"attributes":{"key2":5, "key4":7}}
-                             ]}])""",
+         .expected = "[{'name':'A', 'primitives':[{'attributes':{'key1':3}}, "
+                     "{'attributes':{'key2':5, 'key4':7}}]}]",
          .merge = merge},
         {.description = "Non-index primitive fields propagate.",
-         .target = R"""({"accessors":[0, 1]})""",
-         .source = R"""({"meshes":[{"primitives":[{"mode":17,
-                                                   "extras":{"v":2}}]}]})""",
+         .target = "{'accessors':[0, 1]}",
+         .source =
+             "{'meshes':[{'primitives':[{'mode':17, 'extras':{'v':2}}]}]}",
          .array_name = "meshes",
-         .expected = R"""([{"primitives":[{"mode":17,
-                                           "extras":{"v":2}}]}])""",
+         .expected = "[{'primitives':[{'mode':17, 'extras':{'v':2}}]}]",
          .merge = merge},
         {.description = "Targets get removed from primitives.",
-         .target = R"""({})""",
-         .source = R"""({"meshes":[{"primitives":[{"mode":17,
-                                                   "targets":{"v":2}}]}]})""",
+         .target = "{}",
+         .source =
+             "{'meshes':[{'primitives':[{'mode':17, 'targets':{'v':2}}]}]}",
          .array_name = "meshes",
-         .expected = R"""([{"primitives":[{"mode":17}]}])""",
+         .expected = "[{'primitives':[{'mode':17}]}]",
          .merge = merge},
         {.description = "Weights get stripped.",
-         .target = R"""({"meshes":[{"name":"A"}]})""",
-         .source = R"""({"meshes":[{"name":"B", "weights":[0, 1]}]})""",
+         .target = "{'meshes':[{'name':'A'}]}",
+         .source = "{'meshes':[{'name':'B', 'weights':[0, 1]}]}",
          .array_name = "meshes",
-         .expected = R"""([{"name":"A"}, {"name":"B"}])""",
+         .expected = "[{'name':'A'}, {'name':'B'}]",
          .merge = merge},
     };
     VerbatimCopy(&cases, "meshes", merge);
@@ -603,26 +579,20 @@ class MergeTest : public testing::TestWithParam<MergeCase> {
      we test the bump logic directly. */
     vector<MergeCase> cases{
         {.description = "Texture indices get bumped on all materials.",
-         .target = R"""({"textures":[0, 1]})""",
-         .source = R"""({"materials":[
-                           {"normalTexture":{"index":2},
-                            "occlusionTexture":{"index":3},
-                            "emissiveTexture":{"index":4},
-                            "pbrMetallicRoughness":{
-                              "baseColorTexture":{"index":5},
-                              "metallicRoughnessTexture":{"index":6}
-                            }},
-                           {"normalTexture":{"index":17}}
-                           ]})""",
+         .target = "{'textures':[0, 1]}",
+         .source =
+             "{'materials':[{'normalTexture':{'index':2}, "
+             "'occlusionTexture':{'index':3}, 'emissiveTexture':{'index':4}, "
+             "'pbrMetallicRoughness':{'baseColorTexture':{'index':5}, "
+             "'metallicRoughnessTexture':{'index':6}}}, "
+             "{'normalTexture':{'index':17}}]}",
          .array_name = "materials",
-         .expected = R"""([{"normalTexture":{"index":4},
-                            "occlusionTexture":{"index":5},
-                            "emissiveTexture":{"index":6},
-                            "pbrMetallicRoughness":{
-                              "baseColorTexture":{"index":7},
-                              "metallicRoughnessTexture":{"index":8}
-                            }},
-                            {"normalTexture":{"index":19}}])""",
+         .expected =
+             "[{'normalTexture':{'index':4}, 'occlusionTexture':{'index':5}, "
+             "'emissiveTexture':{'index':6}, "
+             "'pbrMetallicRoughness':{'baseColorTexture':{'index':7}, "
+             "'metallicRoughnessTexture':{'index':8}}}, "
+             "{'normalTexture':{'index':19}}]",
          .merge = merge},
     };
     VerbatimCopy(&cases, "materials", merge);
