@@ -100,6 +100,15 @@ void MergeSamplers(nlohmann::json* j1, nlohmann::json&& j2);
  different values), then j2's colliding extras will be skipped and a warning
  emitted; only j1s values will be present.
 
+ TODO(SeanCurtis-TRI): The previously documented merging rules are a holdover
+ from the initial implementation. In short order, we'll replace the above rules
+ with the following rules:
+   - Only the default scene (or the 0-th scene if the default scene isn't
+     explicitly indicated) get merged (although the buffers will not be
+     scrubbed).
+   - When merging extensions/extras for glTF, Scene, or Asset, any collision
+     causes a throw with information about the origin of the collision.
+
  This explicitly excludes skin data, animation, and morph target elements
  (although the underlying data contained in buffers remains).
 
