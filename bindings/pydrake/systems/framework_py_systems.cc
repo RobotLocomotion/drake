@@ -48,7 +48,13 @@ using systems::WitnessFunction;
 
 class SystemBasePublic : public SystemBase {
  public:
+  // This class is only used to expose some protected types.
+  // It is never instantiated.
+  SystemBasePublic() = delete;
+
   using SystemBase::DeclareCacheEntry;
+  using SystemBase::DoGetGraphvizFragment;
+  using SystemBase::GraphvizFragmentParams;
 };
 
 // Provides a templated 'namespace'.
@@ -185,6 +191,12 @@ struct Impl {
       }
       *witnesses = std::move(*result);
     }
+
+    SystemBase::GraphvizFragment DoGetGraphvizFragment(
+        const SystemBase::GraphvizFragmentParams& params) const override {
+      PYBIND11_OVERRIDE(SystemBase::GraphvizFragment, LeafSystem<T>,
+          DoGetGraphvizFragment, params);
+    }
   };
 
   using PyLeafSystem = PyLeafSystemBase<>;
@@ -204,6 +216,12 @@ struct Impl {
    public:
     using Base = py::wrapper<DiagramBase>;
     using Base::Base;
+
+    SystemBase::GraphvizFragment DoGetGraphvizFragment(
+        const SystemBase::GraphvizFragmentParams& params) const override {
+      PYBIND11_OVERRIDE(SystemBase::GraphvizFragment, Diagram<T>,
+          DoGetGraphvizFragment, params);
+    }
   };
 
   using PyDiagram = PyDiagramBase<>;
@@ -315,9 +333,6 @@ struct Impl {
     // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
     using namespace drake::systems;
     constexpr auto& doc = pydrake_doc.drake.systems;
-
-    // TODO(eric.cousineau): Resolve `str_py` workaround.
-    auto str_py = py::eval("str");
 
     // TODO(eric.cousineau): Show constructor, but somehow make sure `pybind11`
     // knows this is abstract?
@@ -505,17 +520,6 @@ Note: The above is for the C++ documentation. For Python, use
             doc.System.GetOutputPort.doc)
         .def("HasOutputPort", &System<T>::HasOutputPort, py::arg("port_name"),
             doc.System.HasOutputPort.doc)
-        // Graphviz methods.
-        .def(
-            "GetGraphvizString",
-            [str_py](const System<T>* self, int max_depth) {
-              // @note This is a workaround; for some reason,
-              // casting this using `py::str` does not work, but directly
-              // calling the Python function (`str_py`) does.
-              return str_py(self->GetGraphvizString(max_depth));
-            },
-            py::arg("max_depth") = std::numeric_limits<int>::max(),
-            doc.System.GetGraphvizString.doc)
         // Automatic differentiation.
         .def(
             "ToAutoDiffXd",
@@ -1116,6 +1120,29 @@ void DoScalarIndependentDefinitions(py::module m) {
     constexpr auto& cls_doc = doc.SystemBase;
     // TODO(eric.cousineau): Bind remaining methods.
     py::class_<Class> cls(m, "SystemBase", cls_doc.doc);
+    {
+      using Nested = SystemBase::GraphvizFragment;
+      constexpr auto& nested_doc = doc.SystemBase.GraphvizFragment;
+      py::class_<Nested>(cls, "GraphvizFragment", nested_doc.doc)
+          .def_readwrite(
+              "input_ports", &Nested::input_ports, nested_doc.input_ports.doc)
+          .def_readwrite("output_ports", &Nested::output_ports,
+              nested_doc.output_ports.doc)
+          .def_readwrite(
+              "fragments", &Nested::fragments, nested_doc.fragments.doc);
+    }
+    {
+      // GraphvizFragmentParams
+      using Nested = SystemBasePublic::GraphvizFragmentParams;
+      constexpr auto& nested_doc = doc.SystemBase.GraphvizFragmentParams;
+      py::class_<Nested>(cls, "GraphvizFragmentParams", nested_doc.doc)
+          .def_readwrite(
+              "max_depth", &Nested::max_depth, nested_doc.max_depth.doc)
+          .def_readwrite("options", &Nested::options, nested_doc.options.doc)
+          .def_readwrite("node_id", &Nested::node_id, nested_doc.node_id.doc)
+          .def_readwrite("header_lines", &Nested::header_lines,
+              nested_doc.header_lines.doc);
+    }
     cls  // BR
         .def("GetSystemName", &Class::GetSystemName, cls_doc.GetSystemName.doc)
         .def("GetSystemPathname", &Class::GetSystemPathname,
@@ -1124,6 +1151,15 @@ void DoScalarIndependentDefinitions(py::module m) {
         .def("get_name", &Class::get_name, cls_doc.get_name.doc)
         .def(
             "set_name", &Class::set_name, py::arg("name"), cls_doc.set_name.doc)
+        // Graphviz methods.
+        .def("GetGraphvizString", &Class::GetGraphvizString,
+            py::arg("max_depth") = py::none(), py::arg("options") = py::dict(),
+            cls_doc.GetGraphvizString.doc)
+        .def("GetGraphvizFragment", &Class::GetGraphvizFragment,
+            py::arg("max_depth") = py::none(), py::arg("options") = py::dict(),
+            cls_doc.GetGraphvizFragment.doc)
+        .def("DoGetGraphvizFragment", &SystemBasePublic::DoGetGraphvizFragment,
+            cls_doc.DoGetGraphvizFragment.doc)
         // Topology.
         .def("num_input_ports", &Class::num_input_ports,
             cls_doc.num_input_ports.doc)
