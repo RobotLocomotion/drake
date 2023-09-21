@@ -1,4 +1,4 @@
-load("@drake//tools/skylark:drake_py.bzl", "py_test_isolated")
+load("//tools/skylark:drake_py.bzl", "py_test_isolated")
 
 # Keep this constant in sync with library_lint_reporter.py.
 _TAG_EXCLUDE_FROM_PACKAGE = "exclude_from_package"

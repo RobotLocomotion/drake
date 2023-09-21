@@ -1,5 +1,5 @@
 load(
-    "@drake//tools/skylark:python_env.bzl",
+    "//tools/skylark:python_env.bzl",
     "hermetic_python_env",
 )
 

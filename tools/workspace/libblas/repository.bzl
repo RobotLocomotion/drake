@@ -1,11 +1,5 @@
-load(
-    "@drake//tools/workspace:os.bzl",
-    "determine_os",
-)
-load(
-    "@drake//tools/workspace:pkg_config.bzl",
-    "setup_pkg_config_repository",
-)
+load("//tools/workspace:os.bzl", "determine_os")
+load("//tools/workspace:pkg_config.bzl", "setup_pkg_config_repository")
 
 def _impl(repo_ctx):
     # TLDR: Use @blas instead of this repository (@libblas) in the deps of your

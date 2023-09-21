@@ -33,13 +33,13 @@ Arguments:
 """
 
 load(
-    "@drake//tools/py_toolchain:interpreter_paths.bzl",
+    "//tools/py_toolchain:interpreter_paths.bzl",
     "LINUX_INTERPRETER_PATH",
     "MACOS_ARM64_INTERPRETER_PATH",
     "MACOS_I386_INTERPRETER_PATH",
 )
-load("@drake//tools/workspace:execute.bzl", "execute_or_fail", "which")
-load("@drake//tools/workspace:os.bzl", "determine_os")
+load("//tools/workspace:execute.bzl", "execute_or_fail", "which")
+load("//tools/workspace:os.bzl", "determine_os")
 
 # The supported Python versions should match those listed in both the root
 # CMakeLists.txt and doc/_pages/from_source.md, except for the "manylinux"

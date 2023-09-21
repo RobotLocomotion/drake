@@ -1,5 +1,6 @@
 # -*- bazel -*-
 
+load("@drake//tools/skylark:cc.bzl", "cc_library")
 load(":fortran.bzl", "fortran_library")
 
 licenses(["by_exception_only"])  # SNOPT

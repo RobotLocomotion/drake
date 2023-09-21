@@ -1,10 +1,7 @@
 # -*- bazel -*-
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
-load(
-    "@drake//tools/install:install.bzl",
-    "install",
-)
+load("@drake//tools/install:install.bzl", "install")
 load(
     "@drake//tools/workspace/coinutils_internal:defs.bzl",
     "coin_cc_library",

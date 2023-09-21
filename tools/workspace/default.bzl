@@ -1,115 +1,115 @@
-load("@drake//tools/workspace:mirrors.bzl", "DEFAULT_MIRRORS")
-load("@drake//tools/workspace:os.bzl", "os_repository")
-load("@drake//tools/workspace/abseil_cpp_internal:repository.bzl", "abseil_cpp_internal_repository")  # noqa
-load("@drake//tools/workspace/bazelisk:repository.bzl", "bazelisk_repository")
-load("@drake//tools/workspace/bazel_skylib:repository.bzl", "bazel_skylib_repository")  # noqa
-load("@drake//tools/workspace/blas:repository.bzl", "blas_repository")
-load("@drake//tools/workspace/buildifier:repository.bzl", "buildifier_repository")  # noqa
-load("@drake//tools/workspace/cc:repository.bzl", "cc_repository")
-load("@drake//tools/workspace/ccd_internal:repository.bzl", "ccd_internal_repository")  # noqa
-load("@drake//tools/workspace/clang_cindex_python3_internal:repository.bzl", "clang_cindex_python3_internal_repository")  # noqa
-load("@drake//tools/workspace/clp:repository.bzl", "clp_repository")
-load("@drake//tools/workspace/clp_internal:repository.bzl", "clp_internal_repository")  # noqa
-load("@drake//tools/workspace/coinutils_internal:repository.bzl", "coinutils_internal_repository")  # noqa
-load("@drake//tools/workspace/com_jidesoft_jide_oss:repository.bzl", "com_jidesoft_jide_oss_repository")  # noqa
-load("@drake//tools/workspace/common_robotics_utilities:repository.bzl", "common_robotics_utilities_repository")  # noqa
-load("@drake//tools/workspace/commons_io:repository.bzl", "commons_io_repository")  # noqa
-load("@drake//tools/workspace/conex:repository.bzl", "conex_repository")
-load("@drake//tools/workspace/conex_internal:repository.bzl", "conex_internal_repository")  # noqa
-load("@drake//tools/workspace/csdp:repository.bzl", "csdp_repository")
-load("@drake//tools/workspace/csdp_internal:repository.bzl", "csdp_internal_repository")  # noqa
-load("@drake//tools/workspace/curl_internal:repository.bzl", "curl_internal_repository")  # noqa
-load("@drake//tools/workspace/double_conversion:repository.bzl", "double_conversion_repository")  # noqa
-load("@drake//tools/workspace/doxygen:repository.bzl", "doxygen_repository")
-load("@drake//tools/workspace/dm_control_internal:repository.bzl", "dm_control_internal_repository")  # noqa
-load("@drake//tools/workspace/drake_models:repository.bzl", "drake_models_repository")  # noqa
-load("@drake//tools/workspace/drake_visualizer:repository.bzl", "drake_visualizer_repository")  # noqa
-load("@drake//tools/workspace/eigen:repository.bzl", "eigen_repository")
-load("@drake//tools/workspace/expat:repository.bzl", "expat_repository")
-load("@drake//tools/workspace/fcl_internal:repository.bzl", "fcl_internal_repository")  # noqa
-load("@drake//tools/workspace/fmt:repository.bzl", "fmt_repository")
-load("@drake//tools/workspace/gflags:repository.bzl", "gflags_repository")
-load("@drake//tools/workspace/gfortran:repository.bzl", "gfortran_repository")
-load("@drake//tools/workspace/github3_py_internal:repository.bzl", "github3_py_internal_repository")  # noqa
-load("@drake//tools/workspace/glew:repository.bzl", "glew_repository")
-load("@drake//tools/workspace/glib:repository.bzl", "glib_repository")
-load("@drake//tools/workspace/glx:repository.bzl", "glx_repository")
-load("@drake//tools/workspace/googlebenchmark:repository.bzl", "googlebenchmark_repository")  # noqa
-load("@drake//tools/workspace/gtest:repository.bzl", "gtest_repository")
-load("@drake//tools/workspace/gurobi:repository.bzl", "gurobi_repository")
-load("@drake//tools/workspace/gym_py:repository.bzl", "gym_py_repository")
-load("@drake//tools/workspace/gymnasium_py:repository.bzl", "gymnasium_py_repository")  # noqa
-load("@drake//tools/workspace/gz_math_internal:repository.bzl", "gz_math_internal_repository")  # noqa
-load("@drake//tools/workspace/gz_utils_internal:repository.bzl", "gz_utils_internal_repository")  # noqa
-load("@drake//tools/workspace/intel_realsense_ros_internal:repository.bzl", "intel_realsense_ros_internal_repository")  # noqa
-load("@drake//tools/workspace/ipopt:repository.bzl", "ipopt_repository")
-load("@drake//tools/workspace/ipopt_internal_fromsource:repository.bzl", "ipopt_internal_fromsource_repository")  # noqa
-load("@drake//tools/workspace/ipopt_internal_pkgconfig:repository.bzl", "ipopt_internal_pkgconfig_repository")  # noqa
-load("@drake//tools/workspace/lapack:repository.bzl", "lapack_repository")
-load("@drake//tools/workspace/lcm:repository.bzl", "lcm_repository")
-load("@drake//tools/workspace/libblas:repository.bzl", "libblas_repository")
-load("@drake//tools/workspace/libcmaes:repository.bzl", "libcmaes_repository")
-load("@drake//tools/workspace/libjpeg:repository.bzl", "libjpeg_repository")
-load("@drake//tools/workspace/liblapack:repository.bzl", "liblapack_repository")  # noqa
-load("@drake//tools/workspace/liblz4:repository.bzl", "liblz4_repository")
-load("@drake//tools/workspace/liblzma:repository.bzl", "liblzma_repository")
-load("@drake//tools/workspace/libpfm:repository.bzl", "libpfm_repository")
-load("@drake//tools/workspace/libpng:repository.bzl", "libpng_repository")
-load("@drake//tools/workspace/libtiff:repository.bzl", "libtiff_repository")
-load("@drake//tools/workspace/meshcat:repository.bzl", "meshcat_repository")
-load("@drake//tools/workspace/mosek:repository.bzl", "mosek_repository")
-load("@drake//tools/workspace/msgpack_internal:repository.bzl", "msgpack_internal_repository")  # noqa
-load("@drake//tools/workspace/mumps_internal:repository.bzl", "mumps_internal_repository")  # noqa
-load("@drake//tools/workspace/mypy_extensions_internal:repository.bzl", "mypy_extensions_internal_repository")  # noqa
-load("@drake//tools/workspace/mypy_internal:repository.bzl", "mypy_internal_repository")  # noqa
-load("@drake//tools/workspace/nanoflann_internal:repository.bzl", "nanoflann_internal_repository")  # noqa
-load("@drake//tools/workspace/net_sf_jchart2d:repository.bzl", "net_sf_jchart2d_repository")  # noqa
-load("@drake//tools/workspace/nlohmann_internal:repository.bzl", "nlohmann_internal_repository")  # noqa
-load("@drake//tools/workspace/nlopt_internal:repository.bzl", "nlopt_internal_repository")  # noqa
-load("@drake//tools/workspace/openblas:repository.bzl", "openblas_repository")
-load("@drake//tools/workspace/opencl:repository.bzl", "opencl_repository")
-load("@drake//tools/workspace/opengl:repository.bzl", "opengl_repository")
-load("@drake//tools/workspace/optitrack_driver:repository.bzl", "optitrack_driver_repository")  # noqa
-load("@drake//tools/workspace/org_apache_xmlgraphics_commons:repository.bzl", "org_apache_xmlgraphics_commons_repository")  # noqa
-load("@drake//tools/workspace/osqp_internal:repository.bzl", "osqp_internal_repository")  # noqa
-load("@drake//tools/workspace/petsc:repository.bzl", "petsc_repository")
-load("@drake//tools/workspace/picosha2:repository.bzl", "picosha2_repository")
-load("@drake//tools/workspace/picosha2_internal:repository.bzl", "picosha2_internal_repository")  # noqa
-load("@drake//tools/workspace/platforms:repository.bzl", "platforms_repository")  # noqa
-load("@drake//tools/workspace/pybind11:repository.bzl", "pybind11_repository")
-load("@drake//tools/workspace/pycodestyle:repository.bzl", "pycodestyle_repository")  # noqa
-load("@drake//tools/workspace/python:repository.bzl", "python_repository")
-load("@drake//tools/workspace/qdldl_internal:repository.bzl", "qdldl_internal_repository")  # noqa
-load("@drake//tools/workspace/qhull_internal:repository.bzl", "qhull_internal_repository")  # noqa
-load("@drake//tools/workspace/ros_xacro_internal:repository.bzl", "ros_xacro_internal_repository")  # noqa
-load("@drake//tools/workspace/rules_pkg:repository.bzl", "rules_pkg_repository")  # noqa
-load("@drake//tools/workspace/rules_python:repository.bzl", "rules_python_repository")  # noqa
-load("@drake//tools/workspace/scs_internal:repository.bzl", "scs_internal_repository")  # noqa
-load("@drake//tools/workspace/sdformat_internal:repository.bzl", "sdformat_internal_repository")  # noqa
-load("@drake//tools/workspace/snopt:repository.bzl", "snopt_repository")
-load("@drake//tools/workspace/spdlog:repository.bzl", "spdlog_repository")
-load("@drake//tools/workspace/stable_baselines3_internal:repository.bzl", "stable_baselines3_internal_repository")  # noqa
-load("@drake//tools/workspace/statsjs:repository.bzl", "statsjs_repository")
-load("@drake//tools/workspace/stduuid_internal:repository.bzl", "stduuid_internal_repository")  # noqa
-load("@drake//tools/workspace/styleguide:repository.bzl", "styleguide_repository")  # noqa
-load("@drake//tools/workspace/suitesparse_internal:repository.bzl", "suitesparse_internal_repository")  # noqa
-load("@drake//tools/workspace/tinyobjloader:repository.bzl", "tinyobjloader_repository")  # noqa
-load("@drake//tools/workspace/tinyobjloader_internal:repository.bzl", "tinyobjloader_internal_repository")  # noqa
-load("@drake//tools/workspace/tinyxml2_internal:repository.bzl", "tinyxml2_internal_repository")  # noqa
-load("@drake//tools/workspace/tomli_internal:repository.bzl", "tomli_internal_repository")  # noqa
-load("@drake//tools/workspace/typing_extensions_internal:repository.bzl", "typing_extensions_internal_repository")  # noqa
-load("@drake//tools/workspace/uritemplate_py_internal:repository.bzl", "uritemplate_py_internal_repository")  # noqa
-load("@drake//tools/workspace/usockets:repository.bzl", "usockets_repository")  # noqa
-load("@drake//tools/workspace/usockets_internal:repository.bzl", "usockets_internal_repository")  # noqa
-load("@drake//tools/workspace/uwebsockets:repository.bzl", "uwebsockets_repository")  # noqa
-load("@drake//tools/workspace/uwebsockets_internal:repository.bzl", "uwebsockets_internal_repository")  # noqa
-load("@drake//tools/workspace/voxelized_geometry_tools:repository.bzl", "voxelized_geometry_tools_repository")  # noqa
-load("@drake//tools/workspace/vtk:repository.bzl", "vtk_repository")
-load("@drake//tools/workspace/vtk_internal:repository.bzl", "vtk_internal_repository")  # noqa
-load("@drake//tools/workspace/x11:repository.bzl", "x11_repository")
-load("@drake//tools/workspace/xmlrunner_py:repository.bzl", "xmlrunner_py_repository")  # noqa
-load("@drake//tools/workspace/yaml_cpp_internal:repository.bzl", "yaml_cpp_internal_repository")  # noqa
-load("@drake//tools/workspace/zlib:repository.bzl", "zlib_repository")
+load("//tools/workspace:mirrors.bzl", "DEFAULT_MIRRORS")
+load("//tools/workspace:os.bzl", "os_repository")
+load("//tools/workspace/abseil_cpp_internal:repository.bzl", "abseil_cpp_internal_repository")  # noqa
+load("//tools/workspace/bazelisk:repository.bzl", "bazelisk_repository")
+load("//tools/workspace/bazel_skylib:repository.bzl", "bazel_skylib_repository")  # noqa
+load("//tools/workspace/blas:repository.bzl", "blas_repository")
+load("//tools/workspace/buildifier:repository.bzl", "buildifier_repository")
+load("//tools/workspace/cc:repository.bzl", "cc_repository")
+load("//tools/workspace/ccd_internal:repository.bzl", "ccd_internal_repository")  # noqa
+load("//tools/workspace/clang_cindex_python3_internal:repository.bzl", "clang_cindex_python3_internal_repository")  # noqa
+load("//tools/workspace/clp:repository.bzl", "clp_repository")
+load("//tools/workspace/clp_internal:repository.bzl", "clp_internal_repository")  # noqa
+load("//tools/workspace/coinutils_internal:repository.bzl", "coinutils_internal_repository")  # noqa
+load("//tools/workspace/com_jidesoft_jide_oss:repository.bzl", "com_jidesoft_jide_oss_repository")  # noqa
+load("//tools/workspace/common_robotics_utilities:repository.bzl", "common_robotics_utilities_repository")  # noqa
+load("//tools/workspace/commons_io:repository.bzl", "commons_io_repository")
+load("//tools/workspace/conex:repository.bzl", "conex_repository")
+load("//tools/workspace/conex_internal:repository.bzl", "conex_internal_repository")  # noqa
+load("//tools/workspace/csdp:repository.bzl", "csdp_repository")
+load("//tools/workspace/csdp_internal:repository.bzl", "csdp_internal_repository")  # noqa
+load("//tools/workspace/curl_internal:repository.bzl", "curl_internal_repository")  # noqa
+load("//tools/workspace/double_conversion:repository.bzl", "double_conversion_repository")  # noqa
+load("//tools/workspace/doxygen:repository.bzl", "doxygen_repository")
+load("//tools/workspace/dm_control_internal:repository.bzl", "dm_control_internal_repository")  # noqa
+load("//tools/workspace/drake_models:repository.bzl", "drake_models_repository")  # noqa
+load("//tools/workspace/drake_visualizer:repository.bzl", "drake_visualizer_repository")  # noqa
+load("//tools/workspace/eigen:repository.bzl", "eigen_repository")
+load("//tools/workspace/expat:repository.bzl", "expat_repository")
+load("//tools/workspace/fcl_internal:repository.bzl", "fcl_internal_repository")  # noqa
+load("//tools/workspace/fmt:repository.bzl", "fmt_repository")
+load("//tools/workspace/gflags:repository.bzl", "gflags_repository")
+load("//tools/workspace/gfortran:repository.bzl", "gfortran_repository")
+load("//tools/workspace/github3_py_internal:repository.bzl", "github3_py_internal_repository")  # noqa
+load("//tools/workspace/glew:repository.bzl", "glew_repository")
+load("//tools/workspace/glib:repository.bzl", "glib_repository")
+load("//tools/workspace/glx:repository.bzl", "glx_repository")
+load("//tools/workspace/googlebenchmark:repository.bzl", "googlebenchmark_repository")  # noqa
+load("//tools/workspace/gtest:repository.bzl", "gtest_repository")
+load("//tools/workspace/gurobi:repository.bzl", "gurobi_repository")
+load("//tools/workspace/gym_py:repository.bzl", "gym_py_repository")
+load("//tools/workspace/gymnasium_py:repository.bzl", "gymnasium_py_repository")  # noqa
+load("//tools/workspace/gz_math_internal:repository.bzl", "gz_math_internal_repository")  # noqa
+load("//tools/workspace/gz_utils_internal:repository.bzl", "gz_utils_internal_repository")  # noqa
+load("//tools/workspace/intel_realsense_ros_internal:repository.bzl", "intel_realsense_ros_internal_repository")  # noqa
+load("//tools/workspace/ipopt:repository.bzl", "ipopt_repository")
+load("//tools/workspace/ipopt_internal_fromsource:repository.bzl", "ipopt_internal_fromsource_repository")  # noqa
+load("//tools/workspace/ipopt_internal_pkgconfig:repository.bzl", "ipopt_internal_pkgconfig_repository")  # noqa
+load("//tools/workspace/lapack:repository.bzl", "lapack_repository")
+load("//tools/workspace/lcm:repository.bzl", "lcm_repository")
+load("//tools/workspace/libblas:repository.bzl", "libblas_repository")
+load("//tools/workspace/libcmaes:repository.bzl", "libcmaes_repository")
+load("//tools/workspace/libjpeg:repository.bzl", "libjpeg_repository")
+load("//tools/workspace/liblapack:repository.bzl", "liblapack_repository")
+load("//tools/workspace/liblz4:repository.bzl", "liblz4_repository")
+load("//tools/workspace/liblzma:repository.bzl", "liblzma_repository")
+load("//tools/workspace/libpfm:repository.bzl", "libpfm_repository")
+load("//tools/workspace/libpng:repository.bzl", "libpng_repository")
+load("//tools/workspace/libtiff:repository.bzl", "libtiff_repository")
+load("//tools/workspace/meshcat:repository.bzl", "meshcat_repository")
+load("//tools/workspace/mosek:repository.bzl", "mosek_repository")
+load("//tools/workspace/msgpack_internal:repository.bzl", "msgpack_internal_repository")  # noqa
+load("//tools/workspace/mumps_internal:repository.bzl", "mumps_internal_repository")  # noqa
+load("//tools/workspace/mypy_extensions_internal:repository.bzl", "mypy_extensions_internal_repository")  # noqa
+load("//tools/workspace/mypy_internal:repository.bzl", "mypy_internal_repository")  # noqa
+load("//tools/workspace/nanoflann_internal:repository.bzl", "nanoflann_internal_repository")  # noqa
+load("//tools/workspace/net_sf_jchart2d:repository.bzl", "net_sf_jchart2d_repository")  # noqa
+load("//tools/workspace/nlohmann_internal:repository.bzl", "nlohmann_internal_repository")  # noqa
+load("//tools/workspace/nlopt_internal:repository.bzl", "nlopt_internal_repository")  # noqa
+load("//tools/workspace/openblas:repository.bzl", "openblas_repository")
+load("//tools/workspace/opencl:repository.bzl", "opencl_repository")
+load("//tools/workspace/opengl:repository.bzl", "opengl_repository")
+load("//tools/workspace/optitrack_driver:repository.bzl", "optitrack_driver_repository")  # noqa
+load("//tools/workspace/org_apache_xmlgraphics_commons:repository.bzl", "org_apache_xmlgraphics_commons_repository")  # noqa
+load("//tools/workspace/osqp_internal:repository.bzl", "osqp_internal_repository")  # noqa
+load("//tools/workspace/petsc:repository.bzl", "petsc_repository")
+load("//tools/workspace/picosha2:repository.bzl", "picosha2_repository")
+load("//tools/workspace/picosha2_internal:repository.bzl", "picosha2_internal_repository")  # noqa
+load("//tools/workspace/platforms:repository.bzl", "platforms_repository")
+load("//tools/workspace/pybind11:repository.bzl", "pybind11_repository")
+load("//tools/workspace/pycodestyle:repository.bzl", "pycodestyle_repository")
+load("//tools/workspace/python:repository.bzl", "python_repository")
+load("//tools/workspace/qdldl_internal:repository.bzl", "qdldl_internal_repository")  # noqa
+load("//tools/workspace/qhull_internal:repository.bzl", "qhull_internal_repository")  # noqa
+load("//tools/workspace/ros_xacro_internal:repository.bzl", "ros_xacro_internal_repository")  # noqa
+load("//tools/workspace/rules_pkg:repository.bzl", "rules_pkg_repository")
+load("//tools/workspace/rules_python:repository.bzl", "rules_python_repository")  # noqa
+load("//tools/workspace/scs_internal:repository.bzl", "scs_internal_repository")  # noqa
+load("//tools/workspace/sdformat_internal:repository.bzl", "sdformat_internal_repository")  # noqa
+load("//tools/workspace/snopt:repository.bzl", "snopt_repository")
+load("//tools/workspace/spdlog:repository.bzl", "spdlog_repository")
+load("//tools/workspace/stable_baselines3_internal:repository.bzl", "stable_baselines3_internal_repository")  # noqa
+load("//tools/workspace/statsjs:repository.bzl", "statsjs_repository")
+load("//tools/workspace/stduuid_internal:repository.bzl", "stduuid_internal_repository")  # noqa
+load("//tools/workspace/styleguide:repository.bzl", "styleguide_repository")
+load("//tools/workspace/suitesparse_internal:repository.bzl", "suitesparse_internal_repository")  # noqa
+load("//tools/workspace/tinyobjloader:repository.bzl", "tinyobjloader_repository")  # noqa
+load("//tools/workspace/tinyobjloader_internal:repository.bzl", "tinyobjloader_internal_repository")  # noqa
+load("//tools/workspace/tinyxml2_internal:repository.bzl", "tinyxml2_internal_repository")  # noqa
+load("//tools/workspace/tomli_internal:repository.bzl", "tomli_internal_repository")  # noqa
+load("//tools/workspace/typing_extensions_internal:repository.bzl", "typing_extensions_internal_repository")  # noqa
+load("//tools/workspace/uritemplate_py_internal:repository.bzl", "uritemplate_py_internal_repository")  # noqa
+load("//tools/workspace/usockets:repository.bzl", "usockets_repository")
+load("//tools/workspace/usockets_internal:repository.bzl", "usockets_internal_repository")  # noqa
+load("//tools/workspace/uwebsockets:repository.bzl", "uwebsockets_repository")
+load("//tools/workspace/uwebsockets_internal:repository.bzl", "uwebsockets_internal_repository")  # noqa
+load("//tools/workspace/voxelized_geometry_tools:repository.bzl", "voxelized_geometry_tools_repository")  # noqa
+load("//tools/workspace/vtk:repository.bzl", "vtk_repository")
+load("//tools/workspace/vtk_internal:repository.bzl", "vtk_internal_repository")  # noqa
+load("//tools/workspace/x11:repository.bzl", "x11_repository")
+load("//tools/workspace/xmlrunner_py:repository.bzl", "xmlrunner_py_repository")  # noqa
+load("//tools/workspace/yaml_cpp_internal:repository.bzl", "yaml_cpp_internal_repository")  # noqa
+load("//tools/workspace/zlib:repository.bzl", "zlib_repository")
 
 def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
     """Declares workspace repositories for all externals needed by drake (other
@@ -391,9 +391,9 @@ def add_default_toolchains(excludes = []):
         # may be used by specifying the command line option
         # --extra_toolchains=//tools/py_toolchain:linux_dbg_toolchain
         native.register_toolchains(
-            "@drake//tools/py_toolchain:linux_toolchain",
-            "@drake//tools/py_toolchain:macos_i386_toolchain",
-            "@drake//tools/py_toolchain:macos_arm64_toolchain",
+            "//tools/py_toolchain:linux_toolchain",
+            "//tools/py_toolchain:macos_i386_toolchain",
+            "//tools/py_toolchain:macos_arm64_toolchain",
         )
 
 def add_default_workspace(

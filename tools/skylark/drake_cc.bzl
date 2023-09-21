@@ -1,4 +1,5 @@
 load("@cc//:compiler.bzl", "COMPILER_ID", "COMPILER_VERSION_MAJOR")
+load("//tools/skylark:cc.bzl", "cc_binary", "cc_library", "cc_test")
 load(
     "//tools/skylark:kwargs.bzl",
     "incorporate_allow_network",
@@ -174,7 +175,7 @@ def installed_headers_for_dep(dep):
     provider associated with that library.  The returned label is appropriate
     to use in the deps of a `drake_installed_headers()` rule.
 
-    Once our rules are better able to call native rules like native.cc_binary,
+    Once our rules are better able to call native rules like native cc_binary,
     instead of having two labels we would prefer to tack a DrakeCc provider
     onto the cc_library target directly.
 
@@ -425,7 +426,7 @@ def _raw_drake_cc_library(
             fail("implementation_deps are only supported for static libraries")
         compiled_name = "_{}_compiled_cc_impl".format(name)
         compiled_visibility = ["//visibility:private"]
-    native.cc_library(
+    cc_library(
         name = compiled_name,
         srcs = srcs,
         hdrs = hdrs,
@@ -449,7 +450,7 @@ def _raw_drake_cc_library(
     # our static archive, and then squash them together to the final result.
     if implementation_deps:
         headers_name = "_{}_headers_cc_impl".format(name)
-        native.cc_library(
+        cc_library(
             name = headers_name,
             hdrs = hdrs,
             strip_include_prefix = strip_include_prefix,
@@ -468,7 +469,7 @@ def _raw_drake_cc_library(
             visibility = ["//visibility:private"],
             tags = tags,
         )
-        native.cc_library(
+        cc_library(
             name = name,
             deps = [
                 ":" + headers_name,
@@ -722,7 +723,7 @@ def drake_cc_binary(
         **kwargs
     )
 
-    native.cc_binary(
+    cc_binary(
         name = name,
         srcs = new_srcs,
         data = data,
@@ -813,7 +814,7 @@ def drake_cc_test(
         copts = new_copts,
         **kwargs
     )
-    native.cc_test(
+    cc_test(
         name = name,
         size = size,
         srcs = new_srcs,

@@ -1,5 +1,5 @@
 load("//tools/workspace:generate_file.bzl", "generate_file")
-load("@drake//tools/workspace:github.bzl", "github_archive")
+load("//tools/workspace:github.bzl", "github_archive")
 
 # Using the `drake` branch of this repository.
 _REPOSITORY = "RobotLocomotion/pybind11"

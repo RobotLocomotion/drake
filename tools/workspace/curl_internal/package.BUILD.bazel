@@ -8,10 +8,7 @@ load(
     "@drake//tools/workspace:check_lists_consistency.bzl",
     "check_lists_consistency",
 )
-load(
-    "@drake//tools/install:install.bzl",
-    "install",
-)
+load("@drake//tools/install:install.bzl", "install")
 load(
     "@drake//tools/workspace/curl_internal:cmakedefines.bzl",
     "CMAKE_DEFINES",

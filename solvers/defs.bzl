@@ -1,12 +1,5 @@
-load(
-    "@drake//tools/skylark:drake_cc.bzl",
-    "drake_cc_googletest",
-    "drake_cc_library",
-)
-load(
-    "@drake//tools/lint:cpplint.bzl",
-    "cpplint_extra",
-)
+load("//tools/skylark:drake_cc.bzl", "drake_cc_googletest", "drake_cc_library")
+load("//tools/lint:cpplint.bzl", "cpplint_extra")
 
 # This file contains macros that help abbreviate patterns that frequently
 # appear in the solvers folder.

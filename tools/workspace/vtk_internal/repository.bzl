@@ -1,9 +1,9 @@
 load(
-    "@drake//tools/workspace:github.bzl",
+    "//tools/workspace:github.bzl",
     "setup_github_repository",
 )
 load(
-    "@drake//tools/workspace:execute.bzl",
+    "//tools/workspace:execute.bzl",
     "execute_or_fail",
 )
 

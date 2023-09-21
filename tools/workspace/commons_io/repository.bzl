@@ -1,5 +1,5 @@
 load(
-    "@drake//tools/workspace:java.bzl",
+    "//tools/workspace:java.bzl",
     "drake_java_import",
 )
 

@@ -1,10 +1,10 @@
 load(
-    "@drake//tools/performance:defs.bzl",
+    "//tools/performance:defs.bzl",
     "drake_cc_googlebench_binary",
     "drake_py_experiment_binary",
 )
 load(
-    "@drake//tools/skylark:test_tags.bzl",
+    "//tools/skylark:test_tags.bzl",
     "gurobi_test_tags",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")

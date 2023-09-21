@@ -1,7 +1,4 @@
-load(
-    "@drake//tools/workspace:java.bzl",
-    "drake_java_import",
-)
+load("//tools/workspace:java.bzl", "drake_java_import")
 
 def org_apache_xmlgraphics_commons_repository(
         name,

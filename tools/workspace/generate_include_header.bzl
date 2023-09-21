@@ -1,4 +1,4 @@
-load("@drake//tools/skylark:pathutils.bzl", "output_path")
+load("//tools/skylark:pathutils.bzl", "output_path")
 
 # Generate a header that includes a set of other headers
 def _generate_include_header_impl(ctx):

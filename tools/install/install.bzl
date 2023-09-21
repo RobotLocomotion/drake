@@ -1,8 +1,8 @@
 load("//tools/skylark:py.bzl", "py_binary")
-load("@drake//tools/skylark:drake_java.bzl", "MainClassInfo")
-load("@drake//tools/skylark:drake_py.bzl", "drake_py_test")
+load("//tools/skylark:drake_java.bzl", "MainClassInfo")
+load("//tools/skylark:drake_py.bzl", "drake_py_test")
 load(
-    "@drake//tools/skylark:pathutils.bzl",
+    "//tools/skylark:pathutils.bzl",
     "dirname",
     "join_paths",
     "output_path",

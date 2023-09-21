@@ -1,14 +1,10 @@
+load("//tools/skylark:cc.bzl", "cc_library")
 load("//tools/skylark:py.bzl", "py_library")
 load(
-    "@drake//tools/workspace:generate_include_header.bzl",
+    "//tools/workspace:generate_include_header.bzl",
     "drake_generate_include_header",
 )
-load(
-    "@drake//tools/skylark:pathutils.bzl",
-    "basename",
-    "dirname",
-    "join_paths",
-)
+load("//tools/skylark:pathutils.bzl", "basename", "dirname", "join_paths")
 
 def _lcm_aggregate_hdr(
         lcm_package,
@@ -211,7 +207,7 @@ def lcm_cc_library(
     if "." not in includes:
         includes = includes + ["."]
 
-    native.cc_library(
+    cc_library(
         name = name,
         hdrs = outs,
         deps = deps,
