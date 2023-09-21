@@ -92,14 +92,6 @@ std::vector<RenderMesh> LoadRenderMeshesFromObj(
     const Rgba& default_diffuse,
     const drake::internal::DiagnosticPolicy& policy = {});
 
-/* Legacy stub. Multiple RenderMeshes get merged together with the fallback
- material applied (spewing a debug message). We'll remove this in follow up
- PRs as the RenderEngines change to accommodate multiple RenderMeshes. */
-RenderMesh LoadRenderMeshFromObj(
-    const std::filesystem::path& obj_path, const GeometryProperties& properties,
-    const Rgba& default_diffuse,
-    const drake::internal::DiagnosticPolicy& policy = {});
-
 }  // namespace internal
 }  // namespace geometry
 }  // namespace drake
