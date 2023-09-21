@@ -34,11 +34,9 @@ LcmBuses ApplyLcmBusConfig(
 
     // Given the systems useful names, for debugging.
     const std::string canonical_url = drake_lcm->get_lcm_url();
-    owner_system->set_name(fmt::format("DrakeLcm(bus_name={}, lcm_url={})",
-                                       bus_name, canonical_url));
+    owner_system->set_name(fmt::format("DrakeLcm(bus_name={})", bus_name));
     pumper_system->set_name(
-        fmt::format("LcmInterfaceSystem(bus_name={}, lcm_url={})", bus_name,
-                    canonical_url));
+        fmt::format("LcmInterfaceSystem(bus_name={})", bus_name));
 
     // Display an update; provide the interface pointer to our caller.
     drake::log()->info("LCM bus '{}' created for URL {}", bus_name,

@@ -37,6 +37,7 @@ using std::set;
 using std::vector;
 using systems::Context;
 using systems::EventStatus;
+using systems::LeafSystem;
 using systems::SystemTypeTag;
 
 namespace {
@@ -545,7 +546,7 @@ void DrakeVisualizer<T>::DispatchLoadMessage(const SceneGraph<T>& scene_graph,
 template <typename T>
 DrakeVisualizer<T>::DrakeVisualizer(lcm::DrakeLcmInterface* lcm,
                                     DrakeVisualizerParams params, bool use_lcm)
-    : systems::LeafSystem<T>(SystemTypeTag<DrakeVisualizer>{}),
+    : LeafSystem<T>(SystemTypeTag<DrakeVisualizer>{}),
       owned_lcm_((lcm || !use_lcm) ? nullptr : new lcm::DrakeLcm()),
       lcm_((lcm && use_lcm) ? lcm : owned_lcm_.get()),
       params_(std::move(params)) {
@@ -863,6 +864,22 @@ const vector<internal::DeformableMeshData>&
 DrakeVisualizer<T>::EvalDeformableMeshData(const Context<T>& context) const {
   return this->get_cache_entry(deformable_data_cache_index_)
       .template Eval<vector<internal::DeformableMeshData>>(context);
+}
+
+template <typename T>
+typename LeafSystem<T>::GraphvizFragment
+DrakeVisualizer<T>::DoGetGraphvizFragment(
+    const typename LeafSystem<T>::GraphvizFragmentParams& params) const {
+  typename LeafSystem<T>::GraphvizFragmentParams new_params{params};
+  new_params.header_lines.push_back(fmt::format(
+      "channel={}", MakeLcmChannelNameForRole("DRAKE_VIEWER_DRAW", params_)));
+  typename LeafSystem<T>::GraphvizFragment result =
+      LeafSystem<T>::DoGetGraphvizFragment(new_params);
+  result.fragments.push_back(
+      fmt::format("{}:e -> drakelcminterface{}in "
+                  "[style=\"dashed\", color=\"webpurple\"];\n",
+                  new_params.node_id, reinterpret_cast<uintptr_t>(lcm_)));
+  return result;
 }
 
 }  // namespace geometry

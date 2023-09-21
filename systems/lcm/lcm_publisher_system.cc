@@ -4,6 +4,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/nice_type_name.h"
 #include "drake/common/text_logging.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcm/drake_lcm_interface.h"
@@ -136,6 +137,22 @@ EventStatus LcmPublisherSystem::PublishInputAsLcmMessage(
                 context.get_time());
 
   return EventStatus::Succeeded();
+}
+
+SystemBase::GraphvizFragment LcmPublisherSystem::DoGetGraphvizFragment(
+    const GraphvizFragmentParams& params) const {
+  const std::string message_type = NiceTypeName::RemoveNamespaces(
+      serializer_->CreateDefaultValue()->GetNiceTypeName());
+  GraphvizFragmentParams new_params{params};
+  new_params.header_lines.push_back(fmt::format("channel={}", channel_));
+  new_params.header_lines.push_back(fmt::format("type={}", message_type));
+  GraphvizFragment result =
+      LeafSystem<double>::DoGetGraphvizFragment(new_params);
+  result.fragments.push_back(
+      fmt::format("{}:e -> drakelcminterface{}in "
+                  "[style=\"dashed\", color=\"webpurple\"];\n",
+                  new_params.node_id, reinterpret_cast<uintptr_t>(lcm_)));
+  return result;
 }
 
 }  // namespace lcm

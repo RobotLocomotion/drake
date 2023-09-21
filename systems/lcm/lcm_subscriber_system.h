@@ -156,6 +156,9 @@ class LcmSubscriberSystem : public LeafSystem<double> {
 
   EventStatus Initialize(const Context<double>&, State<double>* state) const;
 
+  GraphvizFragment DoGetGraphvizFragment(
+      const GraphvizFragmentParams& params) const final;
+
   // The channel on which to receive LCM messages.
   const std::string channel_;
 
@@ -188,6 +191,9 @@ class LcmSubscriberSystem : public LeafSystem<double> {
 
   // A timeout in seconds.
   const double wait_for_message_on_initialization_timeout_;
+
+  // The LCM URL and LCM Graphviz node ID (for debugging).
+  const std::string lcm_graphviz_node_id_;
 };
 
 }  // namespace lcm
