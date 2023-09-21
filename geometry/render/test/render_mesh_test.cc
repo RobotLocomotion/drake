@@ -634,33 +634,6 @@ TEST_F(LoadRenderMeshFromObjTest, MultipleValidIntrinsicMaterials) {
   }
 }
 
-/* The OBJ has multiple intrinsic materials *applied* to the mesh. It leads to
- multiple RenderMesh instances with the various materials. The legacy API will
- merge those into a single mesh with fallback material. */
-TEST_F(LoadRenderMeshFromObjTest, MultipleValidIntrinsicMaterialsLegacy) {
-  const fs::path obj_path = WriteFile(fmt::format(R"""(
-        mtllib {}
-        v 0 0 0
-        v 1 1 1
-        v 2 2 2
-        vn 0 1 0
-        vt 0 1
-        usemtl test_material_1
-        f 1/1/1 2/1/1 3/1/1
-        usemtl test_material_2
-        f 2//1 3//1 1//1
-        f 3//1 1//1 2//1)""",  // Distinguish meshes by triangle count.
-                                                  multi_mtl),
-                                      "too_many_usemtl.obj");
-  RenderMesh mesh = LoadRenderMeshFromObj(obj_path, empty_props(),
-                                          kDefaultDiffuse, diagnostic_policy_);
-  EXPECT_EQ(mesh.material.diffuse, kDefaultDiffuse);
-  EXPECT_EQ(mesh.material.diffuse_map, "");
-  EXPECT_EQ(mesh.indices.rows(), 3);
-  // The vertices get mindlessly duplicated.
-  EXPECT_EQ(mesh.positions.rows(), 6);
-}
-
 /* If the obj references the mtl file with an absolute path, there will be a
  warning and default material (due to tiny obj logic). */
 TEST_F(LoadRenderMeshFromObjTest, MaterialFallbackObjMtlDislocationAbsolute) {
