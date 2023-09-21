@@ -76,13 +76,14 @@ namespace geometry {
  - Perception role
     - The following notes apply to all Drake RenderEngine implementations.
     - The mesh must have surface normals (Drake throws if they are missing).
-    - Texture coordinates are not required, but if present at all, all faces
-      must have texture coordinates assigned.
+    - Texture coordinates are not required, but texture maps are only applied
+      if an entire mesh "piece" has texture coordinates.
     - The material associated with the mesh is that defined by the
       @ref geometry_materials "material heuristic".
     - In contrast to the Proximity role, the mesh *can* have multiple objects
-      (but only a single material -- see below). This requirement will be
-      relaxed in the future.
+      and multiple materials. The obj's mesh data is partitioned into disjoint
+      parts based on the applied material. The material heuristic is applied to
+      each part individually.
 
  - Proximity role
     - The material file is ignored.
@@ -101,12 +102,9 @@ namespace geometry {
       and materials as appropriate. Even if Drake doesn't complain about them
       missing, there are undefined behaviors across the set of visualizing
       technologies when they are missing.
-    - If a source .obj has multiple materials, it currently needs to be
-      converted to a single material (with varying properties "baked" into
-      textures). There are various methods for baking materials into textures
-      (such as those referenced
-      <a href="https://github.com/RobotLocomotion/drake/issues/11949#issuecomment-1492230915">here</a>).
-    - You might find it simpler to use a @ref gltf_support ".gltf" file instead.
+    - Using .obj files usually produce objects with *simpler* materials. For
+      materials with a greater fidelity, you might find it simpler to use a
+      @ref gltf_support ".gltf" file instead.
 
  @subsection gltf_support glTFᵀᴹ (.gltf)
 
