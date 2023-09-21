@@ -1,7 +1,9 @@
 #pragma once
 
 #include <filesystem>
+#include <map>
 #include <string>
+#include <vector>
 
 #include <nlohmann/json.hpp>
 
@@ -37,7 +39,7 @@ class MergeRecord {
  public:
   /* The initial merge record should be created with the name of the initial
    target glTF's source. */
-  MergeRecord(std::string initial_name);
+  explicit MergeRecord(std::string initial_name);
 
   /* Finds the source name for the given element.
    @pre element is part of this merge record. */
@@ -53,7 +55,7 @@ class MergeRecord {
   /* A map from a json pointer in the target glTF structure to the index of the
    `source_name` from which it came. The mapped values should all be valid
    indices into `source_names`.
-   
+
    Note: This works because nlohmann::json is linked-list-esque. Each node is
    allocated on the heap and they don't move just because additional children
    get included. */
@@ -63,7 +65,6 @@ class MergeRecord {
   /* The names of all sources contributing to the composition of j1. */
   std::vector<std::string> source_names;
 };
-
 
 /* Merges the default scene from j2 into j1's default scene.
 

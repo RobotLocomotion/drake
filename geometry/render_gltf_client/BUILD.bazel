@@ -361,6 +361,7 @@ drake_cc_googletest(
         ":internal_merge_gltf",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
         "@nlohmann_internal//:nlohmann",
     ],
 )

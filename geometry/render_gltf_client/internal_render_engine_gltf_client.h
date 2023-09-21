@@ -117,6 +117,8 @@ class DRAKE_NO_EXPORT RenderEngineGltfClient
   std::unique_ptr<RenderClient> render_client_;
 
   struct GltfRecord {
+    // The name of the .gltf file.
+    std::string name;
     // The contents of a glTF file registered as Mesh or Convex.
     nlohmann::json contents;
     // The root nodes of the gltf file represented as a mapping from the node's

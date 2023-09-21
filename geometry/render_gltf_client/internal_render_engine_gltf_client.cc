@@ -550,13 +550,14 @@ void RenderEngineGltfClient::ExportScene(const std::string& export_path,
   nlohmann::json gltf = nlohmann::json::parse(gltf_contents);
 
   // Merge in gltf files.
+  MergeRecord merge_record("scene_graph");
   for (const auto& [id, record] : gltfs_) {
     nlohmann::json temp = record.contents;
     if (image_type == render_vtk::internal::kLabel) {
       const ColorD color = RenderEngine::GetColorDFromLabel(record.label);
       ChangeToLabelMaterials(&temp, color);
     }
-    MergeGltf(&gltf, std::move(temp));
+    MergeGltf(&gltf, std::move(temp), record.name, &merge_record);
   }
 
   // TODO(SeanCurtis-TRI): Update materials for label images. Because the gltf
@@ -638,9 +639,10 @@ bool RenderEngineGltfClient::ImplementGltf(
   SetRootPoses(&mesh_data, root_nodes, data.X_WG, scale, true);
 
   DRAKE_DEMAND(gltfs_.count(data.id) == 0);
-  gltfs_.insert({data.id,
-                 {std::move(mesh_data), std::move(root_nodes), scale,
-                  GetRenderLabelOrThrow(data.properties)}});
+  gltfs_.insert(
+      {data.id,
+       {gltf_path.string(), std::move(mesh_data), std::move(root_nodes), scale,
+        GetRenderLabelOrThrow(data.properties)}});
   return true;
 }
 

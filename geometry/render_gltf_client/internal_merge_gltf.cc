@@ -3,9 +3,7 @@
 #include <algorithm>
 #include <fstream>
 #include <functional>
-#include <map>
 #include <utility>
-#include <vector>
 
 #include <fmt/format.h>
 
@@ -155,11 +153,13 @@ void MergeBlobs(json* j1, json&& j2, const std::string& blob_name,
       blob1 = std::move(blob2);
       record->AddElementTree(blob1, j2_name);
     } else {
-      const std::string& j1_name = record->FindSourceName(*j1);
+      const std::string& j1_name = record->FindSourceName(blob1);
       throw std::runtime_error(
-          fmt::format("Error in merging '{}.{}'. '{}' defined it as a "
-                      "primitive. '{}' defined it as an object.",
-                      container_type, blob_name, j1_name, j2_name));
+          fmt::format("Error in merging '{}.{}'. To merge, the must both be "
+                      " objects. '{}' has {} and '{}' has {}.",
+                      container_type, blob_name, j1_name,
+                      blob1.is_object() ? "an object" : "a primitive", j2_name,
+                      blob2.is_object() ? "an object" : "a primitive"));
     }
   }
 }
@@ -192,8 +192,10 @@ void MergeRecord::AddElementTree(const json& root,
   source_names.push_back(source_name);
   std::function<void(const json&)> add_tree = [&](const json& tree_root) {
     this->merged_trees_[&tree_root] = source_index;
-    for (const auto& child : tree_root) {
-      add_tree(child);
+    if (tree_root.is_object() || tree_root.is_array()) {
+      for (const auto& child : tree_root) {
+        add_tree(child);
+      }
     }
   };
   add_tree(root);
@@ -243,8 +245,8 @@ void MergeDefaultScenes(json* j1, json&& j2, const std::string& j2_name,
       nodes_1.push_back(std::move(n));
     }
   }
-  MergeExtrasAndExtensions(&scene_1, std::move(scene_2), "scene", j2_name,
-                           record);
+  MergeExtrasAndExtensions(&scene_1, std::move(scene_2), "default_scene",
+                           j2_name, record);
 }
 
 void MergeNodes(json* j1, json&& j2) {

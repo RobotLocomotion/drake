@@ -13,6 +13,7 @@
 
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 
 namespace drake {
 namespace geometry {
@@ -43,7 +44,7 @@ using MergeFunction = std::function<void(json*, json&&)>;
  To make the test case instantiation more compact, we write json using ' instead
  of ". This allows us to use simple string literals: "'key':'value'" instead of
  raw literals: ""key":"value"". The single quotes are swapped for double
- quotes in the Evaluate() function. This applies to `target`, `source`, and
+ quotes in the Evaluate() test function. This applies to `target`, `source`, and
  `expected`. */
 struct MergeCase {
   /* A description of what is being tested -- displayed for test failure. */
@@ -67,18 +68,6 @@ struct MergeCase {
     return out;
   }
 };
-
-/* Evaluates a test case, confirming the merged result is as expected. */
-void Evaluate(const MergeCase& test_case) {
-  auto swap_quotes = [](const std::string& in) {
-    return std::regex_replace(in, std::regex("'"), std::string("\""));
-  };
-  json target = json::parse(swap_quotes(test_case.target));
-  json source = json::parse(swap_quotes(test_case.source));
-  test_case.merge(&target, std::move(source));
-  const json expected = json::parse(swap_quotes(test_case.expected));
-  EXPECT_EQ(target[test_case.array_name], expected) << test_case;
-}
 
 /* The test harness for the various merge functions. This includes families of
  static functions that generate test cases.
@@ -228,18 +217,20 @@ class MergeTest : public testing::TestWithParam<MergeCase> {
   }
 
   static vector<MergeCase> MergeExtensionsAndExtrasCases() {
-    /* We only attempt to merge sets of "extensions" and "extras" blobs in
+    /* Drake attempts to merge sets of "extensions" and "extras" blobs in only
      three cases: the root glTF file, the assets, and scenes that get merged.
      These test cases primarily use the root glTF to test the merging logic but
      also include a few token tests to confirm that the logic is applied to the
      extensions and extras in "asset". The scene merging is handled in the scene
-     test. */
+     test.
+
+     Failure to merge is handled in its own test harness (MergeFailureTest). */
     auto merge = [](json* j1, json&& j2) {
       MergeRecord record("test_target");
       MergeGltf(j1, std::move(j2), "test_source", &record);
     };
     // Note: "asset" must exist for MergeGltf to work.
-    const std::string asset_prefix = "{'asset':{'version':'2.0'}";
+    const string asset_prefix = "{'asset':{'version':'2.0'}";
     return vector<MergeCase>{
         // Successful merges on extensions.
         {.description = "Target only extensions are preserved",
@@ -286,31 +277,6 @@ class MergeTest : public testing::TestWithParam<MergeCase> {
          .array_name = "extensions",
          .expected = "{'one':{'a':1}, 'b':2}",
          .merge = merge},
-        // Unsuccessful merges on extensions.
-        {.description = "Target and source have non-object extensions",
-         .target = asset_prefix + ", 'extensions':1}",
-         .source = asset_prefix + ", 'extensions':2}",
-         .array_name = "extensions",
-         .expected = "1",
-         .merge = merge},
-        {.description = "Source has object extensions, target is non-object",
-         .target = asset_prefix + ", 'extensions':1}",
-         .source = asset_prefix + ", 'extensions':{'one':1}}",
-         .array_name = "extensions",
-         .expected = "1",
-         .merge = merge},
-        {.description = "glTFs have shallow collisions in extensions",
-         .target = asset_prefix + ", 'extensions':{'one':1}}",
-         .source = asset_prefix + ", 'extensions':{'one':2, 'two':2}}",
-         .array_name = "extensions",
-         .expected = "{'one':1}",
-         .merge = merge},
-        {.description = "glTFs have deep collisions in extensions",
-         .target = asset_prefix + ", 'extensions':{'one':{'a':1}}}",
-         .source = asset_prefix + ", 'extensions':{'one':{'a':3}, 'b':2}}",
-         .array_name = "extensions",
-         .expected = "{'one':{'a':1}}",
-         .merge = merge},
         // Evidence that extras are being merged; complex successful and
         // unsuccessful case.
         {.description = "glTFs have deep, non-colliding duplications in extras",
@@ -318,12 +284,6 @@ class MergeTest : public testing::TestWithParam<MergeCase> {
          .source = asset_prefix + ", 'extras':{'one':{'a':1}, 'b':2}}",
          .array_name = "extras",
          .expected = "{'one':{'a':1}, 'b':2}",
-         .merge = merge},
-        {.description = "glTFs have deep collisions in extras",
-         .target = asset_prefix + ", 'extras':{'one':{'a':1}}}",
-         .source = asset_prefix + ", 'extras':{'one':{'a':3}, 'b':2}}",
-         .array_name = "extras",
-         .expected = "{'one':{'a':1}}",
          .merge = merge},
         // Evidence that extras and extensions are being merged in "assets".
         {.description =
@@ -343,22 +303,6 @@ class MergeTest : public testing::TestWithParam<MergeCase> {
          .array_name = "asset",
          .expected = "{'generator':'Drake glTF merger', 'version':'2.0', "
                      "'extensions':{'one':{'a':1}, 'b':2}}",
-         .merge = merge},
-        {.description = "glTFs have deep collisions in assets[extras]",
-         .target = "{'asset':{'version':'2.0', 'extras':{'one':{'a':1}}}}",
-         .source =
-             "{'asset':{'version':'2.0', 'extras':{'one':{'a':2}, 'b':2}}}",
-         .array_name = "asset",
-         .expected = "{'generator':'Drake glTF merger', 'version':'2.0', "
-                     "'extras':{'one':{'a':1}}}",
-         .merge = merge},
-        {.description = "glTFs have deep collisions in assets[extensions]",
-         .target = "{'asset':{'version':'2.0', 'extensions':{'one':{'a':1}}}}",
-         .source =
-             "{'asset':{'version':'2.0', 'extensions':{'one':{'a':2}, 'b':2}}}",
-         .array_name = "asset",
-         .expected = "{'generator':'Drake glTF merger', 'version':'2.0', "
-                     "'extensions':{'one':{'a':1}}}",
          .merge = merge},
     };
   }
@@ -397,90 +341,89 @@ class MergeTest : public testing::TestWithParam<MergeCase> {
   }
 
   static vector<MergeCase> MergeScenesCases() {
-    /* Merging scenes does extra work. A scene in the source may simply be
-     concatenated to the target's "scenes" array (with the scene's node indices
-     bumped appropriately). But where the two glTF files have scenes with
-     matching names, those scenes get merged. The merging logic requires a
-     bespoke test.
-
-     We can't use the test case APIs to test bumping node indices because the
-     nodes are not direct children of a "scene" element. */
-
+    /* In merging scenes, we need to test the following aspects:
+       - only default scenes get merged
+         - both explicit declaration and default definition of "default".
+       - When merging the target nodes get appended to the source node with
+         offset values.
+       - Extras and extensions get merged (where appropriate). Cases where
+         merging fails uses the MergeFailureTest infrastructure.
+    */
     MergeFunction merge = [](json* j1, json&& j2) {
       MergeRecord record("test_target");
       MergeDefaultScenes(j1, std::move(j2), "test_source", &record);
     };
     return vector<MergeCase>{
-        {.description = "Only target has scenes.",
-         .target = "{'scenes':[{'name':'Scene', 'nodes':[0], "
-                   "'extras':{'v':2}}], 'nodes':[0]}",
-         .source = "{}",
+        // Cases that cover respect for the default scene *and* confirm that
+        // merged nodes get appended and offset appropriately.
+        {.description = "Target and source default scenes inferred as zero.",
+         .target = "{'scenes':[{'name':'T0', 'nodes':[0]}, "
+                   "           {'name':'T1', 'nodes':[1]}], "
+                   "'nodes':[0, 1]}",  // We need nodes in target to get offset.
+         .source = "{'scenes':[{'name':'S0', 'nodes':[0]}, "
+                   "           {'name':'S1', 'nodes':[1]}]}",
          .array_name = "scenes",
-         .expected = "[{'name':'Scene', 'nodes':[0], 'extras':{'v':2}}]",
+         .expected = "[{'name':'T0', 'nodes':[0, 2]}, "
+                     " {'name':'T1', 'nodes':[1]}]",
          .merge = merge},
-        {.description = "Only source has scenes, nodes in both.",
-         .target = "{'nodes':[0,1]}",
-         .source =
-             "{'scenes':[{'name':'Scene', 'nodes':[0], 'extras':{'v':1}}]}",
+        {.description = "Target and source default scenes explicitly zero.",
+         .target = "{'scenes':[{'name':'T0', 'nodes':[0]}, "
+                   "           {'name':'T1', 'nodes':[1]}], "
+                   "'scene':0, "
+                   "'nodes':[0, 1]}",  // We need nodes in target to get offset.
+         .source = "{'scenes':[{'name':'S0', 'nodes':[0]}, "
+                   "           {'name':'S1', 'nodes':[1]}], "
+                   "'scene':0}",
          .array_name = "scenes",
-         .expected = "[{'name':'Scene', 'nodes':[2], 'extras':{'v':1}}]",
+         .expected = "[{'name':'T0', 'nodes':[0, 2]}, "
+                     " {'name':'T1', 'nodes':[1]}]",
          .merge = merge},
-        {.description = "Scene names match.",
-         .target = "{'scenes':[{'name':'Scene', 'nodes':[0]}], 'nodes':[0, 1]}",
-         .source = "{'scenes':[{'name':'Scene', 'nodes':[0]}], 'nodes':[0]}",
+        {.description = "Target scene is 0, source is non-zero.",
+         .target = "{'scenes':[{'name':'T0', 'nodes':[0]}, "
+                   "           {'name':'T1', 'nodes':[1]}], "
+                   "'scene':0, "
+                   "'nodes':[0, 1]}",  // We need nodes in target to get offset.
+         .source = "{'scenes':[{'name':'S0', 'nodes':[0]}, "
+                   "           {'name':'S1', 'nodes':[1]}], "
+                   "'scene':1}",
          .array_name = "scenes",
-         .expected = "[{'name':'Scene', 'nodes':[0, 2]}]",
+         .expected = "[{'name':'T0', 'nodes':[0, 3]}, "
+                     " {'name':'T1', 'nodes':[1]}]",
          .merge = merge},
-        {.description = "Scene names don't match.",
-         .target =
-             "{'scenes':[{'name':'SceneA', 'nodes':[0]}], 'nodes':[0, 1]}",
-         .source =
-             "{'scenes':[{'name':'SceneB', 'nodes':[0, 2]}], 'nodes':[0,1,2]}",
+        {.description = "Target scene is non-zero, source is zero.",
+         .target = "{'scenes':[{'name':'T0', 'nodes':[0]}, "
+                   "           {'name':'T1', 'nodes':[1]}], "
+                   "'scene':1, "
+                   "'nodes':[0, 1]}",  // We need nodes in target to get offset.
+         .source = "{'scenes':[{'name':'S0', 'nodes':[0]}, "
+                   "           {'name':'S1', 'nodes':[1]}], "
+                   "'scene':0}",
          .array_name = "scenes",
-         .expected = "[{'name':'SceneA', 'nodes':[0]}, {'name':'SceneB', "
-                     "'nodes':[2, 4]}]",
+         .expected = "[{'name':'T0', 'nodes':[0]}, "
+                     " {'name':'T1', 'nodes':[1, 2]}]",
          .merge = merge},
-        {.description = "Scenes with no names are both present.",
-         .target = "{'scenes':[{'nodes':[0]}], 'nodes':[0, 1]}",
-         .source = "{'scenes':[{'nodes':[0, 2]}], 'nodes':[0, 1, 2]}",
-         .array_name = "scenes",
-         .expected = "[{'nodes':[0]}, {'nodes':[2, 4]}]",
-         .merge = merge},
+        // Successful merging of extensions and extras.
         {.description = "Merged scenes with non-colliding extras merge.",
-         .target = "{'scenes':[{'name':'Scene', 'nodes':[0], "
-                   "'extras':{'one':{'a':1}}}], 'nodes':[0, 1]}",
-         .source = "{'scenes':[{'name':'Scene', 'nodes':[0], "
-                   "'extras':{'v':1}}], 'nodes':[0]}",
+         .target = "{'scenes':[{'name':'S0', 'nodes':[0], "
+                   "            'extras':{'one':{'a':1}}}],"
+                   " 'nodes':[0, 1]}",
+         .source = "{'scenes':[{'name':'T0', 'nodes':[0], "
+                   "            'extras':{'v':1}}], "
+                   " 'nodes':[0]}",
          .array_name = "scenes",
-         .expected = "[{'name':'Scene', 'nodes':[0, 2], 'extras':{'v':1, "
-                     "'one':{'a':1}}}]",
+         .expected = "[{'name':'S0', 'nodes':[0, 2], "
+                     "  'extras':{'v':1, 'one':{'a':1}}}]",
          .merge = merge},
         {.description = "Merged scenes with non-colliding extensions merge.",
-         .target = "{'scenes':[{'name':'Scene', 'nodes':[0], "
-                   "'extensions':{'one':{'a':1}}}], 'nodes':[0, 1]}",
-         .source = "{'scenes':[{'name':'Scene', 'nodes':[0], "
-                   "'extensions':{'v':1}}], 'nodes':[0]}",
+         .target = "{'scenes':[{'name':'S0', 'nodes':[0], "
+                   "            'extensions':{'one':{'a':1}}}], "
+                   " 'nodes':[0, 1]}",
+         .source = "{'scenes':[{'name':'T0', 'nodes':[0], "
+                   "            'extensions':{'v':1}}], "
+                   " 'nodes':[0]}",
          .array_name = "scenes",
-         .expected = "[{'name':'Scene', 'nodes':[0, 2], 'extensions':{'v':1, "
-                     "'one':{'a':1}}}]",
-         .merge = merge},
-        {.description = "Merged scenes with colliding extras don't merge.",
-         .target = "{'scenes':[{'name':'Scene', 'nodes':[0], "
-                   "'extras':{'one':{'a':1}}}], 'nodes':[0, 1]}",
-         .source = "{'scenes':[{'name':'Scene', 'nodes':[0], "
-                   "'extras':{'one':2, 'v':1}}], 'nodes':[0]}",
-         .array_name = "scenes",
-         .expected =
-             "[{'name':'Scene', 'nodes':[0, 2], 'extras':{'one':{'a':1}}}]",
-         .merge = merge},
-        {.description = "Merged scenes with colliding extensions don't merge",
-         .target = "{'scenes':[{'name':'Scene', 'nodes':[0], "
-                   "'extensions':{'one':{'a':1}}}], 'nodes':[0, 1]}",
-         .source = "{'scenes':[{'name':'Scene', 'nodes':[0], "
-                   "'extensions':{'one':2, 'v':1}}], 'nodes':[0]}",
-         .array_name = "scenes",
-         .expected =
-             "[{'name':'Scene', 'nodes':[0, 2], 'extensions':{'one':{'a':1}}}]",
+         .expected = "[{'name':'S0', 'nodes':[0, 2], "
+                     "  'extensions':{'v':1, 'one':{'a':1}}}]",
          .merge = merge},
     };
   }
@@ -648,7 +591,15 @@ class MergeTest : public testing::TestWithParam<MergeCase> {
 };
 
 TEST_P(MergeTest, Evaluate) {
-  Evaluate(GetParam());
+  const MergeCase& test_case = GetParam();
+  auto swap_quotes = [](const string& in) {
+    return std::regex_replace(in, std::regex("'"), string("\""));
+  };
+  json target = json::parse(swap_quotes(test_case.target));
+  json source = json::parse(swap_quotes(test_case.source));
+  test_case.merge(&target, std::move(source));
+  const json expected = json::parse(swap_quotes(test_case.expected));
+  EXPECT_EQ(target[test_case.array_name], expected) << test_case;
 }
 
 INSTANTIATE_TEST_SUITE_P(
@@ -679,6 +630,177 @@ INSTANTIATE_TEST_SUITE_P(Images, MergeTest,
                          testing::ValuesIn(MergeTest::MergeImageCases()));
 INSTANTIATE_TEST_SUITE_P(Samplers, MergeTest,
                          testing::ValuesIn(MergeTest::MergeSamplersCases()));
+
+/* Specification of a failure test case. Merging only fails if there is a
+ collision in merging "extras" or "extensions" in the glTF, "Scene", or "asset"
+ elements. These test cases are simpler.
+
+ To make the test case instantiation more compact, we write json using ' instead
+ of ". This allows us to use simple string literals: "'key':'value'" instead of
+ raw literals: ""key":"value"". The single quotes are swapped for double
+ quotes in the Evaluate() test function. This applies to `target`, `source`, and
+ `expected`. */
+struct MergeFailureCase {
+  /* A description of what is being tested -- displayed for test failure. */
+  string description;
+  /* A string representation of the json for a glTF file. This glTF will be
+   modified. */
+  string target;
+  /* A string representation of the json for a glTF file. This glTF will be
+   merged into target. */
+  string source;
+  /* A regular expression string to match against the expected exception
+   message. */
+  string expected_error;
+  /* The merge function that should be called. */
+  std::function<void(json*, json&&, const string&, MergeRecord*)> merge{};
+
+  friend std::ostream& operator<<(std::ostream& out,
+                                  const MergeFailureCase& merge_case) {
+    out << merge_case.description;
+    return out;
+  }
+};
+
+/* The test harness for the merge failure due to collisions in "extras" or
+ "extensions". This includes families of static functions that generate test
+ cases. See MergeTest documentation for further elaboration on testing strategy.
+ */
+class MergeFailureTest : public testing::TestWithParam<MergeFailureCase> {
+ public:
+  /* The minutiae of the collision logic is tested through these test cases.
+   Specifically, we test it via the "extensions" blob. We'll provide a token
+   test for "extras" for evidence that it is calling the same API.
+
+   Token tests are likewise provided in their own groups for merging scenes
+   and assets. Just enough test to show that it's exercising the same API. */
+  static vector<MergeFailureCase> MergeGltfCases() {
+    /* Note: "asset" must exist for MergeGltf to work (note the fact that we
+     have ended with the closing bracket; so extensions and extras are
+     *siblings* of "asset", and children of glTF). */
+    const string asset_prefix = "{'asset':{'version':'2.0'}";
+    return vector<MergeFailureCase>{
+        // Robust tests on extensions.
+        {.description = "Target and source have non-object extensions",
+         .target = asset_prefix + ", 'extensions':1}",
+         .source = asset_prefix + ", 'extensions':2}",
+         .expected_error =
+             ".*glTF.extensions.*has a primitive.*has a primitive.",
+         .merge = MergeGltf},
+        {.description = "Target has primitive, source has object in extensions",
+         .target = asset_prefix + ", 'extensions':1}",
+         .source = asset_prefix + ", 'extensions':{'a':1}}",
+         .expected_error = ".*glTF.extensions.*has a primitive.*has an object.",
+         .merge = MergeGltf},
+        {.description = "Target has object, source has primitive in extensions",
+         .target = asset_prefix + ", 'extensions':{'b':2}}",
+         .source = asset_prefix + ", 'extensions':1}",
+         .expected_error = ".*glTF.extensions.*has an object.*has a primitive.",
+         .merge = MergeGltf},
+        {.description = "Shallow collision between extensions",
+         .target = asset_prefix + ", 'extensions':{'b':2}}",
+         .source = asset_prefix + ", 'extensions':{'b':3}}",
+         .expected_error =
+             ".*glTF.extensions.b.*defines it as 2.*defines it as 3.",
+         .merge = MergeGltf},
+        {.description = "Deep collision between extensions",
+         .target = asset_prefix + ", 'extensions':{'b':{'a':1}}}",
+         .source = asset_prefix + ", 'extensions':{'b':{'a':2}}}",
+         .expected_error = ".*glTF.extensions.b.*defines it as "
+                           ".\"a\":1.*defines it as .\"a\":2.*",
+         .merge = MergeGltf},
+        // Token test on extras.
+        {.description = "Deep collision between extras",
+         .target = asset_prefix + ", 'extras':{'b':{'a':1}}}",
+         .source = asset_prefix + ", 'extras':{'b':{'a':2}}}",
+         .expected_error = ".*glTF.extras.b.*defines it as "
+                           ".\"a\":1.*defines it as .\"a\":2.*",
+         .merge = MergeGltf},
+    };
+  }
+
+  /* Minimum set of tests to provide evidence that merging extensions/extras in
+   the "asset" element is using the same API as tested for merging glTF. */
+  static vector<MergeFailureCase> MergeAssetCases() {
+    /* Note: "asset" must exist for MergeGltf to work (note the fact that we
+     haven't provided the closing bracket; so extensions and extras are
+     *children* of "asset"). */
+    const string asset_prefix = "{'asset':{'version':'2.0'";
+    return vector<MergeFailureCase>{
+        {.description = "Deep collision between asset.extras",
+         .target = asset_prefix + ", 'extras':{'b':{'a':1}}}}",
+         .source = asset_prefix + ", 'extras':{'b':{'a':2}}}}",
+         .expected_error = ".*asset.extras.b.*defines it as "
+                           ".\"a\":1.*defines it as .\"a\":2.*",
+         .merge = MergeGltf},
+        {.description = "Deep collision between asset.extensions",
+         .target = asset_prefix + ", 'extensions':{'b':{'a':1}}}}",
+         .source = asset_prefix + ", 'extensions':{'b':{'a':2}}}}",
+         .expected_error = ".*asset.extensions.b.*defines it as "
+                           ".\"a\":1.*defines it as .\"a\":2.*",
+         .merge = MergeGltf},
+    };
+  }
+
+  /* Minimum set of tests to provide evidence that merging extensions/extras in
+   a Scene element is using the same API as tested for merging glTF. */
+  static vector<MergeFailureCase> MergeSceneCases() {
+    return vector<MergeFailureCase>{
+        {.description = "Merged scenes with colliding extras.",
+         .target = "{'scenes':[{'name':'T0', 'nodes':[0], "
+                   "            'extras':{'one':{'a':1}}}], "
+                   " 'nodes':[0, 1]}",
+         .source = "{'scenes':[{'name':'S0', 'nodes':[0], "
+                   "            'extras':{'one':2, 'v':1}}], "
+                   " 'nodes':[0]}",
+         .expected_error = ".*default_scene.extras.one.*defines it as "
+                           ".\"a\":1.*defines it as 2.*",
+         .merge = MergeDefaultScenes},
+        {.description = "Merged scenes with colliding extensions.",
+         .target = "{'scenes':[{'name':'T0', 'nodes':[0], "
+                   "            'extensions':{'one':{'a':1}}}], "
+                   " 'nodes':[0, 1]}",
+         .source = "{'scenes':[{'name':'S0', 'nodes':[0], "
+                   "            'extensions':{'one':2, 'v':1}}], "
+                   " 'nodes':[0]}",
+         .expected_error = ".*default_scene.extensions.one.*defines it as "
+                           ".\"a\":1.*defines it as 2.*",
+         .merge = MergeDefaultScenes},
+    };
+  }
+};
+
+INSTANTIATE_TEST_SUITE_P(Gltf, MergeFailureTest,
+                         testing::ValuesIn(MergeFailureTest::MergeGltfCases()));
+INSTANTIATE_TEST_SUITE_P(
+    Asset, MergeFailureTest,
+    testing::ValuesIn(MergeFailureTest::MergeAssetCases()));
+INSTANTIATE_TEST_SUITE_P(
+    Scene, MergeFailureTest,
+    testing::ValuesIn(MergeFailureTest::MergeSceneCases()));
+
+TEST_P(MergeFailureTest, Evaluate) {
+  const MergeFailureCase& test_case = GetParam();
+  auto swap_quotes = [](const string& in) {
+    return std::regex_replace(in, std::regex("'"), string("\""));
+  };
+  json target = json::parse(swap_quotes(test_case.target));
+  json source = json::parse(swap_quotes(test_case.source));
+  const string target_name = "target_name";
+  const string source_name = "source_name";
+  // Before merging source into target, we need to register all of the target
+  // extension/extra elements with the merge record. We'll merge it into a
+  // minimal glTF and let the merging functionality record the data for us. This
+  // will allow the subsequent collisions with source to be able to author
+  // the exceptions properly.
+  MergeRecord record("from empty");
+  json merged_target{{"asset", {{"version", "2.0"}}}};
+  test_case.merge(&merged_target, std::move(target), target_name, &record);
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      test_case.merge(&merged_target, std::move(source), source_name, &record),
+      test_case.expected_error);
+}
 
 /* Simply call MergeGltf on real glTF files and makes sure it doesn't throw. */
 GTEST_TEST(MergeGltf, Smoke) {
