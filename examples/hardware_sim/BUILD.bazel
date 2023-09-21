@@ -117,6 +117,14 @@ drake_py_binary(
     ],
 )
 
+drake_py_binary(
+    name = "iiwa_commander",
+    srcs = ["iiwa_commander.py"],
+    deps = [
+        "//bindings/pydrake",
+    ],
+)
+
 # Binds the Python hardware_sim program to the data files required for the Demo
 # example scenario.
 drake_py_binary(
