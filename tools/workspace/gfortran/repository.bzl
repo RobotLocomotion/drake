@@ -1,12 +1,5 @@
-load(
-    "@drake//tools/workspace:os.bzl",
-    "determine_os",
-)
-load(
-    "@drake//tools/workspace:execute.bzl",
-    "execute_or_fail",
-    "which",
-)
+load("//tools/workspace:os.bzl", "determine_os")
+load("//tools/workspace:execute.bzl", "execute_or_fail", "which")
 
 def _find_library(repo_ctx, compiler, lib_name):
     return execute_or_fail(

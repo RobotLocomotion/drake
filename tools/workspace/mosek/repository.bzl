@@ -19,8 +19,8 @@ Argument:
     name: A unique name for this rule.
 """
 
-load("@drake//tools/workspace:execute.bzl", "which")
-load("@drake//tools/workspace:os.bzl", "determine_os")
+load("//tools/workspace:execute.bzl", "which")
+load("//tools/workspace:os.bzl", "determine_os")
 
 def _impl(repository_ctx):
     # When these values are updated:

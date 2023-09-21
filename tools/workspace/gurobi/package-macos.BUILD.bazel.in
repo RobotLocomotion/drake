@@ -1,9 +1,6 @@
 # -*- bazel -*-
 
-load(
-    "@drake//tools/install:install.bzl",
-    "install",
-)
+load("@drake//tools/install:install.bzl", "install")
 
 licenses(["by_exception_only"])  # Gurobi
 

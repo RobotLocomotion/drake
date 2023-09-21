@@ -1,5 +1,7 @@
 # -*- bazel -*-
 
+load("@drake//tools/skylark:cc.bzl", "cc_library")
+
 licenses(["notice"])  # BSD-3-Clause
 
 config_setting(

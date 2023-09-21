@@ -1,4 +1,4 @@
-load("@drake//tools/install:install.bzl", "InstallInfo")
+load("//tools/install:install.bzl", "InstallInfo")
 
 # List of exact file names of license files
 LICENSE_LITERALS = [

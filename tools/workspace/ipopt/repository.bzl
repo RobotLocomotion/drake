@@ -1,4 +1,4 @@
-load("@drake//tools/workspace:os.bzl", "os_specific_alias_repository")
+load("//tools/workspace:os.bzl", "os_specific_alias_repository")
 
 # How we build IPOPT depends on which platform we're on.
 def ipopt_repository(name):

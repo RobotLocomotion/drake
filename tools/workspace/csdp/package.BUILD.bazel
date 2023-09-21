@@ -1,5 +1,7 @@
 # -*- bazel -*-
 
+load("@drake//tools/skylark:cc.bzl", "cc_library")
+
 licenses(["notice"])  # EPL-2.0
 
 package(default_visibility = ["//visibility:private"])

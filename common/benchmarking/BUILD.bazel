@@ -1,5 +1,5 @@
 load(
-    "@drake//tools/performance:defs.bzl",
+    "//tools/performance:defs.bzl",
     "drake_cc_googlebench_binary",
     "drake_py_experiment_binary",
 )

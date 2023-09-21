@@ -1,12 +1,6 @@
-load("@drake//tools/workspace:os.bzl", "determine_os")
-load(
-    "@drake//tools/workspace:github.bzl",
-    "setup_github_repository",
-)
-load(
-    "@drake//tools/workspace:pkg_config.bzl",
-    "setup_pkg_config_repository",
-)
+load("//tools/workspace:os.bzl", "determine_os")
+load("//tools/workspace:github.bzl", "setup_github_repository")
+load("//tools/workspace:pkg_config.bzl", "setup_pkg_config_repository")
 
 def _impl(repo_ctx):
     os_result = determine_os(repo_ctx)

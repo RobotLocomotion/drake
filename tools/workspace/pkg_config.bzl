@@ -1,5 +1,5 @@
-load("@drake//tools/workspace:execute.bzl", "path", "which")
-load("@drake//tools/workspace:os.bzl", "determine_os")
+load("//tools/workspace:execute.bzl", "path", "which")
+load("//tools/workspace:os.bzl", "determine_os")
 
 _DEFAULT_TEMPLATE = Label("@drake//tools/workspace:pkg_config.BUILD.tpl")
 

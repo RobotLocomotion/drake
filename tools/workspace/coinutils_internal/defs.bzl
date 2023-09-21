@@ -1,15 +1,7 @@
-load(
-    "@drake//tools/skylark:drake_cc.bzl",
-    "cc_linkonly_library",
-)
-load(
-    "@drake//tools/workspace:cmake_configure_file.bzl",
-    "autoconf_configure_file",
-)
-load(
-    "@drake//tools/workspace:vendor_cxx.bzl",
-    "cc_library_vendored",
-)
+load("//tools/skylark:cc.bzl", "cc_library")
+load("//tools/skylark:drake_cc.bzl", "cc_linkonly_library")
+load("//tools/workspace:cmake_configure_file.bzl", "autoconf_configure_file")
+load("//tools/workspace:vendor_cxx.bzl", "cc_library_vendored")
 
 def coin_cc_library(
         *,
@@ -79,7 +71,7 @@ def coin_cc_library(
         undefines = autoconf_undefines,
         strict = True,
     )
-    native.cc_library(
+    cc_library(
         name = "_config_private",
         hdrs = [":hdr_private/" + config_h],
         strip_include_prefix = "hdr_private",
@@ -97,7 +89,7 @@ def coin_cc_library(
         outs = ["hdr_public/" + config_h],
         cmd = "cp $< $@",
     )
-    native.cc_library(
+    cc_library(
         name = "_config_public",
         hdrs = [":hdr_public/" + config_h],
         strip_include_prefix = "hdr_public",

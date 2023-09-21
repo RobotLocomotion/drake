@@ -28,7 +28,7 @@ Argument:
     name: A unique name for this rule.
 """
 
-load("@drake//tools/workspace:os.bzl", "determine_os")
+load("//tools/workspace:os.bzl", "determine_os")
 
 VTK_MAJOR_MINOR_VERSION = "9.1"
 

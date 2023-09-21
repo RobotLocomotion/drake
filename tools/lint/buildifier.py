@@ -30,7 +30,7 @@ def _make_buildifier_command():
 
 def _help(command):
     """Perform the --help operation (display output) and return an exitcode."""
-    process = Popen(command, stdout=PIPE, stderr=STDOUT)
+    process = Popen(command, stdout=PIPE, stderr=STDOUT, encoding="utf-8")
     stdout, _ = process.communicate()
     lines = stdout.splitlines()
     # Edit the first line to allow "--all" as a disjunction from "files...",

@@ -1,6 +1,7 @@
+load("//tools/skylark:cc.bzl", "cc_library")
 load("//tools/workspace:generate_file.bzl", "generate_file")
 load(
-    "@drake//tools/workspace:cmake_configure_file.bzl",
+    "//tools/workspace:cmake_configure_file.bzl",
     "cmake_configure_files",
 )
 load("@vtk_internal//:modules.bzl", "MODULES", "PLATFORM")
@@ -106,7 +107,7 @@ def _vtk_cc_module_impl(
             # TODO(jwnimmer-tri) Add opt-out config knob for strictness?
             strict = True,
         )
-        native.cc_library(
+        cc_library(
             name = module_name + "_gen_hdrs",
             hdrs = gen_hdrs,
             strip_include_prefix = "gen/" + subdir,
@@ -167,7 +168,7 @@ def _vtk_cc_module_impl(
     })
 
     # Declare the library using its upstream module name.
-    native.cc_library(
+    cc_library(
         name = module_name,
         srcs = srcs,
         hdrs = hdrs,
@@ -331,7 +332,7 @@ def generate_abi_namespace():
         defines = MODULE_SETTINGS["ABI"]["cmake_defines"],
         strict = True,
     )
-    native.cc_library(
+    cc_library(
         name = "vtkABINamespace",
         hdrs = ["CMake/vtkABINamespace.h"],
         strip_include_prefix = "CMake",

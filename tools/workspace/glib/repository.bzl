@@ -1,7 +1,4 @@
-load(
-    "@drake//tools/workspace:pkg_config.bzl",
-    "pkg_config_repository",
-)
+load("//tools/workspace:pkg_config.bzl", "pkg_config_repository")
 
 def glib_repository(
         name,
