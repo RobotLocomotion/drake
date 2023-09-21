@@ -11,6 +11,11 @@ namespace solvers {
 namespace {
 constexpr double kInf = std::numeric_limits<double>::infinity();
 
+using ValueFunctionDoubleType =
+    std::function<VectorX<double>(const VectorX<double>&, double)>;
+using ValueFunctionAutodiffType =
+    std::function<AutoDiffVecXd(const AutoDiffVecXd&, double)>;
+
 /** Computes a smooth over approximation of max(x). */
 template <typename T>
 T SmoothOverMax(const std::vector<T>& x) {
@@ -72,6 +77,94 @@ void Penalty(const AutoDiffXd& value, double minimum_value,
   *y = penalty_autodiff(0);
 }
 
+void set_penalty_function_impl(MinimumValuePenaltyFunction new_penalty_function,
+                               MinimumValuePenaltyFunction* penalty_function,
+                               double* penalty_output_scaling) {
+  *penalty_function = std::move(new_penalty_function);
+  double unscaled_penalty_at_minimum_value{};
+  (*penalty_function)(-1, &unscaled_penalty_at_minimum_value, nullptr);
+  *penalty_output_scaling = 1 / unscaled_penalty_at_minimum_value;
+}
+
+VectorX<double> Values(const Eigen::Ref<const VectorX<double>>& x,
+                       double influence_value,
+                       const ValueFunctionDoubleType& value_function_double,
+                       const ValueFunctionAutodiffType& value_function_ad) {
+  return value_function_double ? value_function_double(x, influence_value)
+                               : math::ExtractValue(value_function_ad(
+                                     x.cast<AutoDiffXd>(), influence_value));
+}
+
+AutoDiffVecXd Values(const Eigen::Ref<const AutoDiffVecXd>& x,
+                     double influence_value,
+                     const ValueFunctionDoubleType& value_function_double,
+                     const ValueFunctionAutodiffType& value_function_ad) {
+  unused(value_function_double);
+  return value_function_ad(x, influence_value);
+}
+
+// Given v, evaluate
+// smooth_fun( φ((vᵢ - v_influence)/(v_influence - bound_value)) / φ(-1) )
+template <typename T>
+void EvalPenalty(double bound_value, const VectorX<T>& values,
+                 int max_num_values, double influence_value,
+                 MinimumValuePenaltyFunction penalty_function,
+                 double penalty_output_scaling,
+                 const std::function<T(const std::vector<T>&)>& smooth_func,
+                 T* y) {
+  const int num_values = values.size();
+  std::vector<T> penalties;
+  penalties.reserve(max_num_values);
+  for (int i = 0; i < num_values; ++i) {
+    const T& value = values(i);
+    if (value < influence_value) {
+      penalties.emplace_back();
+      Penalty(value, bound_value, influence_value, penalty_function,
+              &(penalties.back()));
+      penalties.back() *= penalty_output_scaling;
+    }
+  }
+
+  if (!penalties.empty()) {
+    // Pad penalties up to max_num_values_ so that the constraint
+    // function is actually smooth.
+    penalties.resize(max_num_values, T{0.0});
+    (*y) = smooth_func(penalties);
+  }
+}
+
+template <typename T>
+void EvalGeneric(
+    double bound, int max_num_values, double y_for_empty_value,
+    double influence_value,
+    const ValueFunctionDoubleType& value_function_double,
+    const ValueFunctionAutodiffType& value_function_ad,
+    const std::function<double(const std::vector<double>&)>& smooth_func_double,
+    const std::function<T(const std::vector<T>&)>& smooth_func,
+    const MinimumValuePenaltyFunction& penalty_function,
+    double penalty_output_scaling, const Eigen::Ref<const VectorX<T>>& x,
+    VectorX<T>* y) {
+  y->resize(1);
+  // If we know that Values() will return at most zero values, then this
+  // is a non-constraint. Return zero for the lower bound constraint
+  if (max_num_values == 0) {
+    InitializeY(x, y, 0, y_for_empty_value);
+    return;
+  }
+  // Initialize y to SmoothOverMax([0,..., 0])
+  // We choose 0 because that is φ((v - v_influence)/(v_influence -
+  // bound_value)) / φ(-1) when v = v_influence.
+  InitializeY(x, y, 0,
+              smooth_func_double(std::vector<double>(max_num_values, 0.0)));
+
+  VectorX<T> values =
+      Values(x, influence_value, value_function_double, value_function_ad);
+  const int num_values = static_cast<int>(values.size());
+  DRAKE_ASSERT(num_values <= max_num_values);
+  EvalPenalty<T>(bound, values, max_num_values, influence_value,
+                 penalty_function, penalty_output_scaling, smooth_func,
+                 y->data());
+}
 }  // namespace
 
 void ExponentiallySmoothedHingeLoss(double x, double* penalty,
@@ -195,29 +288,13 @@ MinimumValueConstraint::MinimumValueConstraint(
     DRAKE_DEMAND(influence_value_ > minimum_value_upper_);
   }
   DRAKE_DEMAND(std::isfinite(influence_value_));
-  set_penalty_function(QuadraticallySmoothedHingeLoss);
+  this->set_penalty_function(QuadraticallySmoothedHingeLoss);
 }
 
 void MinimumValueConstraint::set_penalty_function(
     MinimumValuePenaltyFunction new_penalty_function) {
-  penalty_function_ = std::move(new_penalty_function);
-  double unscaled_penalty_at_minimum_value{};
-  penalty_function_(-1, &unscaled_penalty_at_minimum_value, nullptr);
-  penalty_output_scaling_ = 1 / unscaled_penalty_at_minimum_value;
-}
-
-template <>
-VectorX<double> MinimumValueConstraint::Values(
-    const Eigen::Ref<const VectorX<double>>& x) const {
-  return value_function_double_ ? value_function_double_(x, influence_value_)
-                                : math::ExtractValue(value_function_(
-                                      x.cast<AutoDiffXd>(), influence_value_));
-}
-
-template <>
-AutoDiffVecXd MinimumValueConstraint::Values(
-    const Eigen::Ref<const AutoDiffVecXd>& x) const {
-  return value_function_(x, influence_value_);
+  set_penalty_function_impl(new_penalty_function, &penalty_function_,
+                            &penalty_output_scaling_);
 }
 
 template <typename T>
@@ -226,25 +303,9 @@ void MinimumValueConstraint::EvalMaxPenalty(
     const std::function<T(const std::vector<T>&)>& smooth_func,
     VectorX<T>* y) const {
   if (y_index >= 0) {
-    const int num_values = values.size();
-    std::vector<T> penalties;
-    penalties.reserve(max_num_values_);
-    for (int i = 0; i < num_values; ++i) {
-      const T& value = values(i);
-      if (value < influence_value_) {
-        penalties.emplace_back();
-        Penalty(value, bound_value, influence_value_, penalty_function_,
-                &(penalties.back()));
-        penalties.back() *= penalty_output_scaling_;
-      }
-    }
-
-    if (!penalties.empty()) {
-      // Pad penalties up to max_num_values_ so that the constraint
-      // function is actually smooth.
-      penalties.resize(max_num_values_, T{0.0});
-      (*y)(y_index) = smooth_func(penalties);
-    }
+    EvalPenalty<T>(bound_value, values, max_num_values_, influence_value_,
+                   penalty_function_, penalty_output_scaling_, smooth_func,
+                   y->data() + y_index);
   }
 }
 
@@ -291,7 +352,8 @@ void MinimumValueConstraint::DoEvalGeneric(
                 SmoothUnderMax(std::vector<double>(max_num_values_, 0.0)));
   }
 
-  VectorX<T> values = Values(x);
+  VectorX<T> values =
+      Values(x, influence_value_, value_function_double_, value_function_);
   const int num_values = static_cast<int>(values.size());
   DRAKE_ASSERT(num_values <= max_num_values_);
   this->EvalMaxPenalty<T>(
@@ -316,6 +378,104 @@ void MinimumValueConstraint::DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
 void MinimumValueConstraint::DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
                                     AutoDiffVecXd* y) const {
   DoEvalGeneric(x, y);
+}
+
+MinimumValueLowerBoundConstraint::MinimumValueLowerBoundConstraint(
+    int num_vars, double minimum_value_lower, double influence_value_offset,
+    int max_num_values,
+    std::function<AutoDiffVecXd(const Eigen::Ref<const AutoDiffVecXd>&, double)>
+        value_function,
+    std::function<VectorX<double>(const Eigen::Ref<const VectorX<double>>&,
+                                  double)>
+        value_function_double)
+    : Constraint(1, num_vars, Vector1d(-kInf), Vector1d(1)),
+      value_function_{std::move(value_function)},
+      value_function_double_{std::move(value_function_double)},
+      minimum_value_lower_{minimum_value_lower},
+      influence_value_{influence_value_offset + minimum_value_lower},
+      max_num_values_{max_num_values} {
+  DRAKE_DEMAND(std::isfinite(minimum_value_lower_));
+  DRAKE_DEMAND(std::isfinite(influence_value_offset));
+  DRAKE_DEMAND(influence_value_offset > 0);
+  this->set_penalty_function(QuadraticallySmoothedHingeLoss);
+}
+
+void MinimumValueLowerBoundConstraint::set_penalty_function(
+    MinimumValuePenaltyFunction new_penalty_function) {
+  set_penalty_function_impl(new_penalty_function, &penalty_function_,
+                            &penalty_output_scaling_);
+}
+
+template <typename T>
+void MinimumValueLowerBoundConstraint::DoEvalGeneric(
+    const Eigen::Ref<const VectorX<T>>& x, VectorX<T>* y) const {
+  // If we know that Values() will return at most zero values, then this
+  // is a non-constraint. Set y=0 which trivially satisfies the constraint y
+  // <= 1.
+  const double y_for_empty_value = 0;
+  EvalGeneric<T>(minimum_value_lower_, max_num_values_, y_for_empty_value,
+                 influence_value_, value_function_double_, value_function_,
+                 SmoothOverMax<double>, SmoothOverMax<T>, penalty_function_,
+                 penalty_output_scaling_, x, y);
+}
+
+void MinimumValueLowerBoundConstraint::DoEval(
+    const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd* y) const {
+  DoEvalGeneric<double>(x, y);
+}
+
+void MinimumValueLowerBoundConstraint::DoEval(
+    const Eigen::Ref<const AutoDiffVecXd>& x, AutoDiffVecXd* y) const {
+  DoEvalGeneric<AutoDiffXd>(x, y);
+}
+
+MinimumValueUpperBoundConstraint::MinimumValueUpperBoundConstraint(
+    int num_vars, double minimum_value_upper, double influence_value_offset,
+    int max_num_values,
+    std::function<AutoDiffVecXd(const Eigen::Ref<const AutoDiffVecXd>&, double)>
+        value_function,
+    std::function<VectorX<double>(const Eigen::Ref<const VectorX<double>>&,
+                                  double)>
+        value_function_double)
+    : Constraint(1, num_vars, Vector1d(1), Vector1d(kInf)),
+      value_function_{std::move(value_function)},
+      value_function_double_{std::move(value_function_double)},
+      minimum_value_upper_{minimum_value_upper},
+      influence_value_{influence_value_offset + minimum_value_upper},
+      max_num_values_{max_num_values} {
+  DRAKE_DEMAND(std::isfinite(minimum_value_upper_));
+  DRAKE_DEMAND(std::isfinite(influence_value_offset));
+  DRAKE_DEMAND(influence_value_offset > 0);
+  this->set_penalty_function(QuadraticallySmoothedHingeLoss);
+}
+
+void MinimumValueUpperBoundConstraint::set_penalty_function(
+    MinimumValuePenaltyFunction new_penalty_function) {
+  set_penalty_function_impl(new_penalty_function, &penalty_function_,
+                            &penalty_output_scaling_);
+}
+
+template <typename T>
+void MinimumValueUpperBoundConstraint::DoEvalGeneric(
+    const Eigen::Ref<const VectorX<T>>& x, VectorX<T>* y) const {
+  // If we know that Values() will return at most zero values, then this
+  // is a non-constraint. Set y=2 which always satisfies the constraint is y
+  // >= 1.
+  const double y_for_empty_value = 2;
+  EvalGeneric<T>(minimum_value_upper_, max_num_values_, y_for_empty_value,
+                 influence_value_, value_function_double_, value_function_,
+                 SmoothUnderMax<double>, SmoothUnderMax<T>, penalty_function_,
+                 penalty_output_scaling_, x, y);
+}
+
+void MinimumValueUpperBoundConstraint::DoEval(
+    const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd* y) const {
+  DoEvalGeneric<double>(x, y);
+}
+
+void MinimumValueUpperBoundConstraint::DoEval(
+    const Eigen::Ref<const AutoDiffVecXd>& x, AutoDiffVecXd* y) const {
+  DoEvalGeneric<AutoDiffXd>(x, y);
 }
 }  // namespace solvers
 }  // namespace drake
