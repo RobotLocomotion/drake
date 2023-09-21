@@ -177,7 +177,8 @@ def run(*, scenario, graphviz=None):
     # Visualize the diagram, when requested.
     if graphviz is not None:
         with open(graphviz, "w", encoding="utf-8") as f:
-            f.write(diagram.GetGraphvizString())
+            options = {"plant/split": "I/O"}
+            f.write(diagram.GetGraphvizString(options=options))
 
     # Simulate.
     simulator.AdvanceTo(scenario.simulation_duration)
