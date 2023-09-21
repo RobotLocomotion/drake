@@ -18,6 +18,13 @@ SharedPointerSystem<T>::SharedPointerSystem(const SharedPointerSystem<U>& other)
 template <typename T>
 SharedPointerSystem<T>::~SharedPointerSystem() = default;
 
+template <typename T>
+LeafSystem<T>::GraphvizFragment SharedPointerSystem<T>::DoGetGraphvizFragment(
+    const LeafSystem<T>::GraphvizFragmentParams&) const {
+  // Do not show anything in Graphviz for this system.
+  return {};
+}
+
 }  // namespace systems
 }  // namespace drake
 
