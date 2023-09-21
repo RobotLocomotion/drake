@@ -18,6 +18,7 @@ from pydrake.math import RigidTransform
 from pydrake.systems.framework import LeafSystem
 from pydrake.systems.sensors import (
     CameraInfo,
+    ImageDepth16U,
     ImageDepth32F,
     ImageLabel16I,
     ImageRgba8U,
@@ -34,6 +35,7 @@ class ColorizeDepthImage(LeafSystem):
         name: ColorizeDepthImage
         input_ports:
         - depth_image_32f
+        - depth_image_16u
         output_ports:
         - color_image
 
@@ -55,9 +57,12 @@ class ColorizeDepthImage(LeafSystem):
 
     def __init__(self):
         LeafSystem.__init__(self)
-        self._depth32_input = self.DeclareAbstractInputPort(
+        self._depth32f_input = self.DeclareAbstractInputPort(
             name="depth_image_32f",
             model_value=Value(ImageDepth32F()))
+        # self._depth16u_input = self.DeclareAbstractInputPort(
+        #    name="depth_image_16u",
+        #    model_value=Value(ImageDepth16U()))
         self._color_output = self.DeclareAbstractOutputPort(
             "color_image",
             alloc=lambda: Value(ImageRgba8U()),
@@ -66,7 +71,8 @@ class ColorizeDepthImage(LeafSystem):
 
     def _calc_output(self, context, output):
         """Implements the color_image output calculation."""
-        depth = self._depth32_input.Eval(context)
+        # TODO(zachfang): Need to Eval self._depth16u_input too.
+        depth = self._depth32f_input.Eval(context)
         color = output.get_mutable_value()
         self._colorize_depth_image(depth, color)
 
@@ -84,9 +90,14 @@ class ColorizeDepthImage(LeafSystem):
         """Colorizes an np.array of depths into an np.array of rgba.
         Returns the color array.
         """
-        assert depth.dtype == np.float32
+        assert depth.dtype in [np.float32, np.uint16]
         h, w = depth.shape
-        invalid = (depth <= 0) | ~np.isfinite(depth)
+
+        if depth.dtype == np.float32:
+            invalid = (depth <= 0) | ~np.isfinite(depth)
+        else:  # depth.dtype == np.uint16
+            invalid = (depth == 0) | (depth == 2 ** 16 - 1)
+
         scale_min = np.min(depth[~invalid])
         scale_max = np.max(depth[~invalid])
         # Normalize.
@@ -97,6 +108,7 @@ class ColorizeDepthImage(LeafSystem):
         depth_rgb = 1 - depth_rgb
         # Switch to uint8 and add alpha.
         depth_rgb = (depth_rgb * 255).astype(np.uint8)
+
         alpha = np.full((h, w, 1), 255, dtype=np.uint8)
         color = np.concatenate((depth_rgb, alpha), axis=2)
         color[invalid] = self._invalid_color_pixel()
