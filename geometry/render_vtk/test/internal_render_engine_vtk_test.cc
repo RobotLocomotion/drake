@@ -1037,11 +1037,14 @@ TEST_F(RenderEngineVtkTest, GltfTextureSupport) {
   EXPECT_GE(num_acceptable / static_cast<float>(expected_image.size()), 0.8);
 }
 
-// A smaller version of MeshTest. Confirms that VTK supports glTF files as
-// Mesh and Convex. Conceptually, the glTF file is a cube with different colors
-// on each side. We'll render the cube six times with different orientations to
-// confirm that we're seeing what we expect to see. The *structure* of the glTF
-// is implicitly testing various aspects of the glTF support including:
+// Primitives result in a geometry with a single Part. However, we can load
+// meshes from .gltf or .obj files that will create multiple parts. The meshes
+// in this test are conceptually identical: a cube with different colors on each
+// face. We'll render the cube six times with different orientations to expose
+// each colored face to the camera, and confirm the observed color.
+//
+// The glTF file has been structured to further test various glTF features,
+// including:
 //
 //  1. Multiple nodes.
 //  2. Multiple root nodes.
@@ -1057,75 +1060,96 @@ TEST_F(RenderEngineVtkTest, GltfTextureSupport) {
 //
 // If all of that is processed correctly, we should get a cube with a different
 // color on each face. We'll test for those colors.
-TEST_F(RenderEngineVtkTest, GltfSupport) {
+//
+// The obj features under test are a subset of the glTF features.
+TEST_F(RenderEngineVtkTest, MultiMaterialObjects) {
+  // The name of the face we expect presented to the camera, and the rotation
+  // required to put it in front of the camera. We'll use the name to look up
+  // the expected color.
   struct Face {
-    // The expected *illuminated* material color. This color is not exactly
-    // the color in the glTF's materials or textures. The PBR shader behaves
-    // differently from the phong shader in the other tests. For now, we
-    // account for this by putting the observed color in the test. If we change
-    // the glTF (or lighting model), we'll need to update these values
-    // accordingly.
-    Rgba rendered_color;
-    RotationMatrixd rotation;
     std::string name;
+    RotationMatrixd rotation;
   };
-  Init(X_WC_, true);
 
-  const std::string filename =
-      FindResourceOrThrow("drake/geometry/render/test/meshes/rainbow_box.gltf");
+  std::vector<std::string> filenames{
+      FindResourceOrThrow("drake/geometry/render/test/meshes/rainbow_box.gltf"),
+      FindResourceOrThrow("drake/geometry/render/test/meshes/rainbow_box.obj")};
 
-  Mesh mesh(filename);
-  expected_label_ = RenderLabel(3);
-  // Note: Passing diffuse color or texture to a glTF spawns a warning.
-  PerceptionProperties material;
-  material.AddProperty("label", "id", expected_label_);
-  const GeometryId id = GeometryId::get_new_id();
-  renderer_->RegisterVisual(id, mesh, material, RigidTransformd::Identity(),
-                            true /* needs update */);
+  // The expected *illuminated* material color, keyed first by mesh extension
+  // and then by face name.
+  //
+  // For the glTF, the material/texture colors are not exactly reproduced
+  // because the lighting model associated with the PBR shader. For now, we
+  // account for this by putting the observed color in the test. If we change
+  // the glTF (or lighting model), we'll need to update these values
+  // accordingly.
+  //
+  // For the obj, it should be a reproduction of the diffuse color in the
+  // .mtl file (where there is no texture) or the product of texture color
+  // and Kd value. The red, green, and blue faces all share a common textured
+  // material with the Kd value of (0.8, 0.8, 0.8). In the map below, the first
+  // Rgba color represents the texture value, the second, the Kd value.
+  const std::map<std::string, std::map<std::string, Rgba>> rendered_color{
+      {".obj",
+       {{"green", Rgba(0.016, 0.945, 0.129) * Rgba(0.8, 0.8, 0.8)},
+        {"orange", Rgba(0.8, 0.359, 0.023)},
+        {"red", Rgba(0.945, 0.016, 0.016) * Rgba(0.8, 0.8, 0.8)},
+        {"blue", Rgba(0.098, 0.016, 0.945) * Rgba(0.8, 0.8, 0.8)},
+        {"yellow", Rgba(0.799, 0.8, 0)},
+        {"purple", Rgba(0.436, 0, 0.8)}}},
+      {".gltf",
+       {{"green", Rgba(0.078, 0.553, 0.110)},
+        {"orange", Rgba(0.529, 0.259, 0.125)},
+        {"red", Rgba(0.553, 0.078, 0.078)},
+        {"blue", Rgba(0.098, 0.078, 0.553)},
+        {"yellow", Rgba(0.529, 0.529, 0.075)},
+        {"purple", Rgba(0.310, 0.075, 0.529)}}}};
 
   const std::vector<Face> faces{
-      {.rendered_color = Rgba(0.078, 0.553, 0.110),
-       .rotation = RotationMatrixd(),
-       .name = "green"},
-      {.rendered_color = Rgba(0.529, 0.259, 0.125),
-       .rotation = RotationMatrixd::MakeXRotation(M_PI / 2),
-       .name = "orange"},
-      {.rendered_color = Rgba(0.553, 0.078, 0.078),
-       .rotation = RotationMatrixd::MakeXRotation(M_PI),
-       .name = "red"},
-      {.rendered_color = Rgba(0.098, 0.078, 0.553),
-       .rotation = RotationMatrixd::MakeXRotation(-M_PI / 2),
-       .name = "blue"},
-      {.rendered_color = Rgba(0.529, 0.529, 0.075),
-       .rotation = RotationMatrixd::MakeYRotation(-M_PI / 2),
-       .name = "yellow"},
-      {.rendered_color = Rgba(0.310, 0.075, 0.529),
-       .rotation = RotationMatrixd::MakeYRotation(M_PI / 2),
-       .name = "purple"},
+      {.name = "green", .rotation = RotationMatrixd()},
+      {.name = "orange", .rotation = RotationMatrixd::MakeXRotation(M_PI / 2)},
+      {.name = "red", .rotation = RotationMatrixd::MakeXRotation(M_PI)},
+      {.name = "blue", .rotation = RotationMatrixd::MakeXRotation(-M_PI / 2)},
+      {.name = "yellow", .rotation = RotationMatrixd::MakeYRotation(-M_PI / 2)},
+      {.name = "purple", .rotation = RotationMatrixd::MakeYRotation(M_PI / 2)},
   };
 
-  // Render from the original to make sure it's complete and correct.
-  for (const auto& face : faces) {
-    expected_color_ = face.rendered_color;
+  for (const auto& filename : filenames) {
+    Init(X_WC_, true);
+    Mesh mesh(filename);
+    expected_label_ = RenderLabel(3);
+    // Note: Passing diffuse color or texture to a glTF spawns a warning.
+    PerceptionProperties material;
+    material.AddProperty("label", "id", expected_label_);
+    const GeometryId id = GeometryId::get_new_id();
+    renderer_->RegisterVisual(id, mesh, material, RigidTransformd::Identity(),
+                              true /* needs update */);
 
-    renderer_->UpdatePoses(unordered_map<GeometryId, RigidTransformd>{
-        {id, RigidTransformd(face.rotation)}});
-    PerformCenterShapeTest(
-        renderer_.get(),
-        fmt::format("glTF test on {} face - original", face.name).c_str());
-  }
+    // Render from the original to make sure it's complete and correct.
+    for (const auto& face : faces) {
+      expected_color_ = rendered_color.at(mesh.extension()).at(face.name);
 
-  // Repeat that from a clone to confirm that the artifacts survived cloning.
-  std::unique_ptr<RenderEngine> clone = renderer_->Clone();
-  RenderEngineVtk* vtk_clone = dynamic_cast<RenderEngineVtk*>(clone.get());
-  for (const auto& face : faces) {
-    expected_color_ = face.rendered_color;
+      renderer_->UpdatePoses(unordered_map<GeometryId, RigidTransformd>{
+          {id, RigidTransformd(face.rotation)}});
+      PerformCenterShapeTest(renderer_.get(),
+                             fmt::format("{} test on {} face - original",
+                                         mesh.extension(), face.name)
+                                 .c_str());
+    }
 
-    vtk_clone->UpdatePoses(unordered_map<GeometryId, RigidTransformd>{
-        {id, RigidTransformd(face.rotation)}});
-    PerformCenterShapeTest(
-        vtk_clone,
-        fmt::format("glTF test on {} face - clone", face.name).c_str());
+    // Repeat that from a clone to confirm that the artifacts survived cloning.
+    std::unique_ptr<RenderEngine> clone = renderer_->Clone();
+    RenderEngineVtk* vtk_clone = dynamic_cast<RenderEngineVtk*>(clone.get());
+    for (const auto& face : faces) {
+      expected_color_ = rendered_color.at(mesh.extension()).at(face.name);
+
+      vtk_clone->UpdatePoses(unordered_map<GeometryId, RigidTransformd>{
+          {id, RigidTransformd(face.rotation)}});
+      PerformCenterShapeTest(
+          vtk_clone,
+          fmt::format("{} test on {} face - clone", mesh.extension(), face.name)
+              .c_str());
+    }
   }
 }
 
