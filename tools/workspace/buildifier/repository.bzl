@@ -19,9 +19,9 @@ Argument:
     name: A unique name for this rule.
 """
 
-load("@drake//tools/workspace:os.bzl", "determine_os")
+load("//tools/workspace:os.bzl", "determine_os")
 load(
-    "@drake//tools/workspace:metadata.bzl",
+    "//tools/workspace:metadata.bzl",
     "generate_repository_metadata",
 )
 

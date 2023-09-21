@@ -1,5 +1,5 @@
-load("@drake//tools/workspace:os.bzl", "determine_os")
-load("@drake//tools/workspace:metadata.bzl", "generate_repository_metadata")
+load("//tools/workspace:os.bzl", "determine_os")
+load("//tools/workspace:metadata.bzl", "generate_repository_metadata")
 
 def download_and_extract_pypi_wheel(
         repository_ctx,

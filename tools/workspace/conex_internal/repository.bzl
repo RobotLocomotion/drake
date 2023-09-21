@@ -1,4 +1,4 @@
-load("@drake//tools/workspace:github.bzl", "github_archive")
+load("//tools/workspace:github.bzl", "github_archive")
 
 def conex_internal_repository(
         name,

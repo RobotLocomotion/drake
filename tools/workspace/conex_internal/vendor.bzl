@@ -1,3 +1,4 @@
+load("//tools/skylark:cc.bzl", "cc_library")
 load("//tools/workspace:vendor_cxx.bzl", "cc_library_vendored")
 
 def conex_cc_library(
@@ -21,7 +22,7 @@ def conex_cc_library(
     # Only vendor the one library we care about. Otherwise, just emit an empty
     # library to placate Bazel.
     if name != "supernodal_solver":
-        native.cc_library(name = name, visibility = visibility)
+        cc_library(name = name, visibility = visibility)
         return
 
     # Switch one of the `deps` to be source files instead, for simplicity.

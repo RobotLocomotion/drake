@@ -1,6 +1,6 @@
-load("@drake//tools/install:install.bzl", "install")
+load("//tools/install:install.bzl", "install")
 load(
-    "@drake//tools/skylark:pybind.bzl",
+    "//tools/skylark:pybind.bzl",
     "get_pybind_package_info",
 )
 load(

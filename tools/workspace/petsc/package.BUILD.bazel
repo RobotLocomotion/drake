@@ -1,5 +1,7 @@
 # -*- bazel -*-
 
+load("@drake//tools/skylark:cc.bzl", "cc_library")
+
 licenses(["notice"])  # BSD-2-Clause AND BSD-4-Clause and MIT
 
 package(default_visibility = ["//visibility:private"])

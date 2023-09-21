@@ -2,15 +2,8 @@
 # @drake_detected_os is somewhat brittle and might present challenges
 # for users exploring novel platforms.
 
-load(
-    "@drake//tools/skylark:drake_py.bzl",
-    "drake_py_binary",
-    "drake_py_unittest",
-)
-load(
-    "@drake_detected_os//:os.bzl",
-    "UBUNTU_RELEASE",
-)
+load("//tools/skylark:drake_py.bzl", "drake_py_binary", "drake_py_unittest")
+load("@drake_detected_os//:os.bzl", "UBUNTU_RELEASE")
 
 def drake_py_binary_ubuntu_only(
         name,

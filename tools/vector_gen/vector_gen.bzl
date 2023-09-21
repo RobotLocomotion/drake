@@ -1,17 +1,6 @@
-load(
-    "@drake//tools/skylark:drake_cc.bzl",
-    "drake_cc_library",
-)
-load(
-    "@drake//tools/skylark:pathutils.bzl",
-    "basename",
-    "dirname",
-    "join_paths",
-)
-load(
-    "@drake//tools/skylark:python_env.bzl",
-    "hermetic_python_env",
-)
+load("//tools/skylark:drake_cc.bzl", "drake_cc_library")
+load("//tools/skylark:pathutils.bzl", "basename", "dirname", "join_paths")
+load("//tools/skylark:python_env.bzl", "hermetic_python_env")
 
 def _relative_dirname_basename(label):
     # When computing outs derived from srcs in a different package (i.e., when

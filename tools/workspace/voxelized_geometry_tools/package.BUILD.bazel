@@ -1,5 +1,7 @@
 # -*- bazel -*-
 
+load("@drake//tools/skylark:cc.bzl", "cc_library")
+
 package(default_visibility = ["//visibility:public"])
 
 # TODO(calderpg-tri) This file is from the OpenCL C++ bindings, and is

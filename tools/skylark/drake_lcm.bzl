@@ -5,7 +5,7 @@ load(
     "lcm_py_library",
 )
 load(
-    "@drake//tools/skylark:drake_cc.bzl",
+    "//tools/skylark:drake_cc.bzl",
     "drake_installed_headers",
     "installed_headers_for_drake_deps",
 )

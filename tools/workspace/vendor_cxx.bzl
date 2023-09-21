@@ -1,3 +1,5 @@
+load("//tools/skylark:cc.bzl", "cc_library")
+
 def cc_library_vendored(
         name,
         hdrs = None,
@@ -59,7 +61,7 @@ def cc_library_vendored(
         tags = ["manual"],
         visibility = ["//visibility:private"],
     )
-    native.cc_library(
+    cc_library(
         name = name,
         hdrs = hdrs_vendored,
         srcs = srcs_vendored,

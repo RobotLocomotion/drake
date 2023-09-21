@@ -1,5 +1,5 @@
 load(
-    "@drake//tools/skylark:drake_cc.bzl",
+    "//tools/skylark:drake_cc.bzl",
     "drake_cc_binary",
     "drake_cc_googletest",
     "drake_cc_library",
@@ -7,7 +7,7 @@ load(
     "drake_cc_test",
 )
 load(
-    "@drake//tools/skylark:drake_py.bzl",
+    "//tools/skylark:drake_py.bzl",
     "drake_py_unittest",
 )
 load(
@@ -17,7 +17,7 @@ load(
     "drake_cc_variant_library",
 )
 load(
-    "@drake//tools/skylark:test_tags.bzl",
+    "//tools/skylark:test_tags.bzl",
     "gurobi_test_tags",
     "mosek_test_tags",
 )

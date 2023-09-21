@@ -29,7 +29,7 @@ Argument:
 """
 
 load("@bazel_tools//tools/cpp:unix_cc_configure.bzl", "find_cc")
-load("@drake//tools/workspace:execute.bzl", "execute_or_fail")
+load("//tools/workspace:execute.bzl", "execute_or_fail")
 
 def _check_compiler_version(compiler_id, actual_version, supported_version):
     """

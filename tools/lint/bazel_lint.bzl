@@ -1,4 +1,4 @@
-load("@drake//tools/skylark:drake_py.bzl", "py_test_isolated")
+load("//tools/skylark:drake_py.bzl", "py_test_isolated")
 
 #------------------------------------------------------------------------------
 # Internal helper; set up test given name and list of files. Will do nothing

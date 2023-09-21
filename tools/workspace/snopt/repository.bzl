@@ -32,14 +32,8 @@ load(
     "@bazel_tools//tools/build_defs/repo:git_worker.bzl",
     "git_repo",
 )
-load(
-    "@drake//tools/workspace:os.bzl",
-    "determine_os",
-)
-load(
-    "@drake//tools/workspace:execute.bzl",
-    "execute_and_return",
-)
+load("//tools/workspace:os.bzl", "determine_os")
+load("//tools/workspace:execute.bzl", "execute_and_return")
 
 def snopt_repository(
         name,

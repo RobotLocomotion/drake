@@ -1,3 +1,5 @@
+load("@drake//tools/skylark:cc.bzl", "cc_library")
+
 def fortran_library(
         name,
         srcs = [],
@@ -46,7 +48,7 @@ def fortran_library(
 
     # Wrap the *.pic.a file into a cc_library, so that we can attach
     # linkopts and deps.
-    native.cc_library(
+    cc_library(
         name = name,
         srcs = [libname],
         linkopts = linkopts + ["-Wl,--exclude-libs=" + libname],

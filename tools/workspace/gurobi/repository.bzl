@@ -1,7 +1,7 @@
 # This is a Bazel repository_rule for the Gurobi solver.  See
 # https://www.bazel.io/versions/master/docs/skylark/repository_rules.html
 
-load("@drake//tools/workspace:os.bzl", "determine_os")
+load("//tools/workspace:os.bzl", "determine_os")
 
 # Finds the "latest" f'{path}/{prefix}*/{subdir}', where "latest" is determined
 # by converting the part that matched the '*' to an integer and taking the
