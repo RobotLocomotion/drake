@@ -8,7 +8,12 @@ from PIL import Image
 
 from drake import lcmt_image, lcmt_image_array
 from pydrake.lcm import DrakeLcm
-from pydrake.systems.sensors import ImageDepth32F, ImageLabel16I, ImageRgba8U
+from pydrake.systems.sensors import (
+    ImageDepth16U,
+    ImageDepth32F,
+    ImageLabel16I,
+    ImageRgba8U,
+)
 from pydrake.visualization import ColorizeDepthImage, ColorizeLabelImage
 
 
@@ -52,6 +57,7 @@ class LcmImageArrayViewer:
     _IMAGE_DATA_TYPE = {
         lcmt_image.CHANNEL_TYPE_UINT8: np.uint8,
         lcmt_image.CHANNEL_TYPE_INT16: np.int16,
+        lcmt_image.CHANNEL_TYPE_UINT16: np.uint16,
         lcmt_image.CHANNEL_TYPE_FLOAT32: np.float32,
     }
     """The mapping from `lcmt_image` channel_type enum to numpy data type."""
@@ -143,7 +149,14 @@ class LcmImageArrayViewer:
                 label.mutable_data[:] = np_image_data.reshape(h, w, 1)
                 self._colorized_label._colorize_label_image(label, rgba)
             elif image.pixel_format == lcmt_image.PIXEL_FORMAT_DEPTH:
-                depth = ImageDepth32F(w, h)
+                if image.channel_type == lcmt_image.CHANNEL_TYPE_UINT16:
+                    depth = ImageDepth16U(w, h)
+                elif image.channel_type == lcmt_image.CHANNEL_TYPE_FLOAT32:
+                    depth = ImageDepth32F(w, h)
+                else:
+                    raise RuntimeError(
+                        f"Unsupported depth pixel format: {image.pixel_format}"
+                    )
                 depth.mutable_data[:] = np_image_data.reshape(h, w, 1)
                 self._colorized_depth._colorize_depth_image(depth, rgba)
             rgba_images.append(rgba)

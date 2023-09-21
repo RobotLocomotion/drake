@@ -212,6 +212,7 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "video_test",
+    size = "medium",
     deps = [
         ":visualization",
         "//bindings/pydrake/common/test_utilities:numpy_compare_py",
