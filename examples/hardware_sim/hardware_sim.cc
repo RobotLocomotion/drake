@@ -142,7 +142,7 @@ int main() {
   if (!FLAGS_graphviz.empty()) {
     std::ofstream graphviz(FLAGS_graphviz);
     std::map<std::string, std::string> options;
-    options.emplace("plant/split", "1");
+    options.emplace("plant/split", "I/O");
     graphviz << sim.diagram().GetGraphvizString({}, options);
     DRAKE_THROW_UNLESS(graphviz.good());
   }

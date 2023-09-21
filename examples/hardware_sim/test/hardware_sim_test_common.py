@@ -89,4 +89,6 @@ class HardwareSimTest:
         out_file = f"{os.environ['TEST_TMPDIR']}/graph.dot"
         self.assertFalse(os.path.exists(out_file))
         self._run(self._test_scenarios, "Defaults", graphviz=out_file)
-        self.assertTrue(os.path.exists(out_file))
+        with open(out_file, encoding="utf-8") as f:
+            content = f.read()
+        self.assertIn("(split)", content)
