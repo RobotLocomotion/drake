@@ -42,7 +42,7 @@ using Eigen::Vector2d;
 using Eigen::Vector3d;
 using Eigen::Vector4d;
 using geometry::internal::DefineMaterial;
-using geometry::internal::LoadRenderMeshFromObj;
+using geometry::internal::LoadRenderMeshesFromObj;
 using geometry::internal::RenderMaterial;
 using geometry::internal::RenderMesh;
 using math::RigidTransformd;
@@ -382,28 +382,30 @@ void RenderEngineVtk::ImplementMesh(const std::string& file_name, double scale,
 
 bool RenderEngineVtk::ImplementObj(const std::string& file_name, double scale,
                                    const RegistrationData& data) {
-  RenderMesh mesh_data =
-      LoadRenderMeshFromObj(file_name, data.properties, default_diffuse_,
-                            drake::internal::DiagnosticPolicy());
-  const RenderMaterial material = mesh_data.material;
+  std::vector<RenderMesh> meshes =
+      LoadRenderMeshesFromObj(file_name, data.properties, default_diffuse_,
+                              drake::internal::DiagnosticPolicy());
+  for (auto& mesh_data : meshes) {
+    const RenderMaterial material = mesh_data.material;
 
-  vtkSmartPointer<vtkPolyDataAlgorithm> mesh_source =
-      CreateVtkMesh(std::move(mesh_data));
+    vtkSmartPointer<vtkPolyDataAlgorithm> mesh_source =
+        CreateVtkMesh(std::move(mesh_data));
 
-  if (scale == 1) {
-    ImplementPolyData(mesh_source.GetPointer(), material, data);
-    return true;
+    if (scale == 1) {
+      ImplementPolyData(mesh_source.GetPointer(), material, data);
+      continue;
+    }
+
+    vtkNew<vtkTransform> transform;
+    // TODO(SeanCurtis-TRI): Should I be allowing only isotropic scale.
+    transform->Scale(scale, scale, scale);
+    vtkNew<vtkTransformPolyDataFilter> transform_filter;
+    transform_filter->SetInputConnection(mesh_source->GetOutputPort());
+    transform_filter->SetTransform(transform.GetPointer());
+    transform_filter->Update();
+
+    ImplementPolyData(transform_filter.GetPointer(), material, data);
   }
-
-  vtkNew<vtkTransform> transform;
-  // TODO(SeanCurtis-TRI): Should I be allowing only isotropic scale.
-  transform->Scale(scale, scale, scale);
-  vtkNew<vtkTransformPolyDataFilter> transform_filter;
-  transform_filter->SetInputConnection(mesh_source->GetOutputPort());
-  transform_filter->SetTransform(transform.GetPointer());
-  transform_filter->Update();
-
-  ImplementPolyData(transform_filter.GetPointer(), material, data);
   return true;
 }
 
@@ -723,7 +725,10 @@ void RenderEngineVtk::ImplementPolyData(vtkPolyDataAlgorithm* source,
   connect_actor(ImageType::kDepth);
 
   // Take ownership of the actors.
-  props_.insert({data.id, std::move(props)});
+  for (int i = 0; i < kNumPipelines; ++i) {
+    DRAKE_DEMAND(props[i].parts.size() == 1);
+    props_[data.id][i].parts.push_back(std::move(props[i].parts[0]));
+  }
 }
 
 RenderEngineVtk::RenderingPipeline& RenderEngineVtk::get_mutable_pipeline(
