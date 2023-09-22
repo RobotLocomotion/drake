@@ -463,22 +463,33 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     ProcessGeometriesForDeformableContact(capsule, user_data);
   }
 
+  // For proximity role, a Convex surface mesh can come from a surface mesh in
+  // obj file or a tetrahedral mesh in vtk file, from which we extract its
+  // surface.
   void ImplementGeometry(const Convex& convex, void* user_data) override {
-    const ReifyData& data = *static_cast<ReifyData*>(user_data);
-    const HydroelasticType type = data.properties.GetPropertyOrDefault(
-        kHydroGroup, kComplianceType, HydroelasticType::kUndefined);
-    if (type == HydroelasticType::kUndefined && convex.extension() != ".obj") {
-      throw std::runtime_error(
-          fmt::format("ProximityEngine: Convex shapes for non-hydroelastic "
-                      "contact only support .obj files; got ({}) instead.",
-                      convex.filename()));
+    shared_ptr<const std::vector<Vector3d>> shared_verts;
+    shared_ptr<std::vector<int>> shared_faces;
+    int num_faces{0};
+    if (convex.extension() == ".obj") {
+      // Don't bother triangulating; Convex supports polygons.
+      std::tie(shared_verts, shared_faces, num_faces) =
+          ReadObjFile(convex.filename(), convex.scale(),
+                      false /* triangulate */);
+    } else if  (convex.extension() == ".vtk") {
+      auto surface_mesh = ConvertVolumeToSurfaceMesh(
+          ReadVtkToVolumeMesh(convex.filename()));
+      shared_verts = make_shared<const std::vector<Vector3d>>(
+          surface_mesh.vertices());
+      shared_faces = make_shared<std::vector<int>>();
+    } else {
+      throw std::runtime_error(fmt::format(
+          "ProximityEngine: Convex shapes only support .obj or .vtk files;"
+          " got ({}) instead.",
+          convex.filename()));
     }
-    // Don't bother triangulating; Convex supports polygons.
-    const auto [vertices, faces, num_faces] =
-        ReadObjFile(convex.filename(), convex.scale(), false /* triangulate */);
-
     // Create fcl::Convex.
-    auto fcl_convex = make_shared<fcl::Convexd>(vertices, num_faces, faces);
+    auto fcl_convex =
+        make_shared<fcl::Convexd>(shared_verts, num_faces, shared_faces);
 
     TakeShapeOwnership(fcl_convex, user_data);
     ProcessHydroelastic(convex, user_data);
@@ -536,18 +547,24 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
       shared_verts = make_shared<const std::vector<Vector3d>>(
           hydroelastic_geometries_.rigid_geometry(data.id).mesh().vertices());
     } else {
-      if (mesh.extension() != ".obj") {
-        throw std::runtime_error(
-            fmt::format("ProximityEngine: Mesh shapes for non-hydroelastic "
-                        "contact only support .obj files; got ({}) instead.",
-                        mesh.filename()));
+      if (mesh.extension() == ".vtk") {
+        // TODO(rpoyner-tri): could take convex hull here.
+        shared_verts = make_shared<const std::vector<Vector3d>>(
+            ConvertVolumeToSurfaceMesh(
+                ReadVtkToVolumeMesh(mesh.filename()))
+            .vertices());
+      } else if (mesh.extension() == ".obj") {
+        // Don't bother triangulating; we're ignoring the faces.
+        std::tie(shared_verts, std::ignore, std::ignore) =
+            ReadObjFile(mesh.filename(), mesh.scale(), false /* triangulate */);
+      } else {
+        // TODO(SeanCurtis-TRI) Add a troubleshooting entry to give more
+        //  helpful advice.
+        throw std::runtime_error(fmt::format(
+            "ProximityEngine: Mesh shapes for non-hydroelastic "
+            "contact only support .obj or .vtk files; got ({}) instead.",
+            mesh.filename()));
       }
-      // TODO(SeanCurtis-TRI) Add a troubleshooting entry to give more helpful
-      //  advice.
-
-      // Don't bother triangulating; we're ignoring the faces.
-      std::tie(shared_verts, std::ignore, std::ignore) =
-          ReadObjFile(mesh.filename(), mesh.scale(), false /* triangulate */);
     }
 
     // Note: the strategy here is to use an *invalid* fcl::Convex shape for the

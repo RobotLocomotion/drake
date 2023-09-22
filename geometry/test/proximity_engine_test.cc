@@ -231,6 +231,17 @@ GTEST_TEST(ProximityEngineTests, ProcessHydroelasticProperties) {
               HydroelasticType::kSoft);
   }
 
+  // Case: unknown mesh vtk.
+  {
+    Mesh mesh{
+        drake::FindResourceOrThrow("drake/geometry/test/non_convex_mesh.vtk"),
+        1.0 /* scale */};
+    const GeometryId mesh_id = GeometryId::get_new_id();
+    engine.AddDynamicGeometry(mesh, {}, mesh_id, ProximityProperties());
+    EXPECT_EQ(ProximityEngineTester::hydroelastic_type(mesh_id, engine),
+              HydroelasticType::kUndefined);
+  }
+
   // Case: rigid convex.
   {
     Convex convex{
@@ -240,6 +251,28 @@ GTEST_TEST(ProximityEngineTests, ProcessHydroelasticProperties) {
     engine.AddDynamicGeometry(convex, {}, convex_id, rigid_properties);
     EXPECT_EQ(ProximityEngineTester::hydroelastic_type(convex_id, engine),
               HydroelasticType::kRigid);
+  }
+
+  // Case: rigid convex vtk.
+  {
+    Convex convex{
+        drake::FindResourceOrThrow("drake/geometry/test/one_tetrahedron.vtk"),
+        edge_length};
+    const GeometryId convex_id = GeometryId::get_new_id();
+    engine.AddDynamicGeometry(convex, {}, convex_id, rigid_properties);
+    EXPECT_EQ(ProximityEngineTester::hydroelastic_type(convex_id, engine),
+              HydroelasticType::kRigid);
+  }
+
+  // Case: unknown convex vtk.
+  {
+    Convex convex{
+        drake::FindResourceOrThrow("drake/geometry/test/one_tetrahedron.vtk"),
+        edge_length};
+    const GeometryId convex_id = GeometryId::get_new_id();
+    engine.AddDynamicGeometry(convex, {}, convex_id, ProximityProperties());
+    EXPECT_EQ(ProximityEngineTester::hydroelastic_type(convex_id, engine),
+              HydroelasticType::kUndefined);
   }
 }
 
@@ -464,17 +497,6 @@ GTEST_TEST(ProximityEngineTests, MeshSupportAsConvex) {
       EXPECT_FALSE(engine.HasCollisions());
     }
   }
-}
-
-// Tests that passing VTK file in Mesh for Point contact will throw.
-GTEST_TEST(ProximityEngineTests, VtkForPointContactThrow) {
-  ProximityEngine<double> engine;
-  const Mesh vtk_mesh{
-      drake::FindResourceOrThrow("drake/geometry/test/non_convex_mesh.vtk")};
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      engine.AddAnchoredGeometry(vtk_mesh, RigidTransformd::Identity(),
-                                 GeometryId::get_new_id()),
-      ".*only support .obj files.*");
 }
 
 // Tests simple addition of anchored geometry.
