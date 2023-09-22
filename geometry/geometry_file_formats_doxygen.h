@@ -181,7 +181,19 @@ namespace geometry {
  Depending on the application (hydroelastics or deformable bodies), not every
  tetrahedralization is created equal. There are best practices for each domain
  which must be followed to get best results. More details on these best
- practices are coming. 
+ practices are coming.
+
+ In addition to specifying the tetrahedral mesh for deformable or compliant
+ hydroelastic geometries, the .vtk file can be used more generally:
+
+   - When specified as Convex without hydroelastic properties, it produces the
+     same representation for point contact as if you'd provided an .obj of
+     just the surface polygons.
+   - When specified as Mesh without hydroelastic properties, it is treated as
+     a non-convex surface mesh; its convex hull is used for point contact.
+
+  N.B. The .vtk file must still define a tetrahedral mesh and *not* a surface
+  mesh.
 
  @section geometry_materials Drake materials and the specification heuristic
 
