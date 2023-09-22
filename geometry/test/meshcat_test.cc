@@ -95,6 +95,9 @@ GTEST_TEST(MeshcatTest, TestHttp) {
   EXPECT_EQ(SystemCall({"/usr/bin/curl", "-o", "/dev/null", "--silent",
                         meshcat.web_url() + "/no-such-file"}),
             0);
+  // Note that the pydrake visualizers_test.py case test_start_meshcat() also
+  // checks the http Content-Type and page data. It's too awkward to try to
+  // do that here.
 }
 
 GTEST_TEST(MeshcatTest, ConstructMultiple) {
