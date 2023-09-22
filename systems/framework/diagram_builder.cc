@@ -423,6 +423,16 @@ bool DiagramBuilder<T>::IsConnectedOrExported(const InputPort<T>& port) const {
 }
 
 template <typename T>
+int DiagramBuilder<T>::num_input_ports() const {
+  return input_port_names_.size();
+}
+
+template <typename T>
+int DiagramBuilder<T>::num_output_ports() const {
+  return output_port_names_.size();
+}
+
+template <typename T>
 void DiagramBuilder<T>::ThrowIfAlreadyBuilt() const {
   if (already_built_) {
     throw std::logic_error(
