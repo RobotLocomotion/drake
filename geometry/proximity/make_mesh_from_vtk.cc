@@ -13,20 +13,20 @@ namespace geometry {
 namespace internal {
 
 template <typename T>
-VolumeMesh<T> MakeVolumeMeshFromVtk(const Mesh& mesh_spec) {
-  const std::string& vtk_file_name = mesh_spec.filename();
-  VolumeMesh<double> read_mesh =
-      ReadVtkToVolumeMesh(vtk_file_name, mesh_spec.scale());
+VolumeMesh<T> MakeVolumeMeshFromVtk(const std::filesystem::path& filename,
+                                    double scale) {
+  VolumeMesh<double> read_mesh = ReadVtkToVolumeMesh(filename, scale);
 
   for (int e = 0; e < read_mesh.num_elements(); ++e) {
     if (read_mesh.CalcTetrahedronVolume(e) <= 0.) {
       throw std::runtime_error(fmt::format(
-          "MakeVolumeMeshFromVtk: "
+          "MakeVolumeMeshFromVtk('{}', {}): "
           "The {}-th tetrahedron (index start at 0) with "
           "vertices {}, {}, {}, {} has non-positive volume, "
           "so you might want to switch two consecutive vertices.",
-          e, read_mesh.element(e).vertex(0), read_mesh.element(e).vertex(1),
-          read_mesh.element(e).vertex(2), read_mesh.element(e).vertex(3)));
+          filename.string(), scale, e, read_mesh.element(e).vertex(0),
+          read_mesh.element(e).vertex(1), read_mesh.element(e).vertex(2),
+          read_mesh.element(e).vertex(3)));
     }
   }
 

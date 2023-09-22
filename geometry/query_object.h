@@ -328,8 +328,9 @@ class QueryObject {
          <a href="https://docs.google.com/document/d/1VZtVsxIjOLKvgQ8SNSrF6PtWuPW5z9PP7-dQuxfmqpc/edit?usp=sharing">
          document</a> provides guidance how to generate a tetrahedral mesh
          in a VTK file from a surface mesh in an OBJ file.
-     - ᵇ For rigid Mesh, please specify a surface mesh
-         in an OBJ file in Mesh(filename).
+     - ᵇ For rigid Mesh, please specify a surface mesh in an OBJ file in
+         Mesh(filename). A tetrahedral mesh in a VTK file can also be
+         specified.
      - ᶜ For both compliant Convex and rigid Convex, please specify a surface
          mesh in an OBJ file in Convex(filename).
 

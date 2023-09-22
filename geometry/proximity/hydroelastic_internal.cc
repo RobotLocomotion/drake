@@ -272,16 +272,24 @@ std::optional<RigidGeometry> MakeRigidRepresentation(
 
 std::optional<RigidGeometry> MakeRigidRepresentation(
     const Convex& convex_spec, const ProximityProperties&) {
-  if (convex_spec.extension() != ".obj") {
-    throw std::runtime_error(fmt::format(
-        "hydroelastic::MakeRigidRepresentation(): for rigid hydroelastic "
-        "Convex shapes can only use .obj files; given: {}",
-        convex_spec.filename()));
-  }
   // Convex does not use any properties.
-  auto mesh =
-      make_unique<TriangleSurfaceMesh<double>>(ReadObjToTriangleSurfaceMesh(
-          convex_spec.filename(), convex_spec.scale()));
+  std::unique_ptr<TriangleSurfaceMesh<double>> mesh;
+
+  const std::string extension = convex_spec.extension();
+  if (extension == ".obj") {
+    mesh =
+        make_unique<TriangleSurfaceMesh<double>>(ReadObjToTriangleSurfaceMesh(
+            convex_spec.filename(), convex_spec.scale()));
+  } else if (extension == ".vtk") {
+    mesh = make_unique<TriangleSurfaceMesh<double>>(
+        ConvertVolumeToSurfaceMesh(MakeVolumeMeshFromVtk<double>(convex_spec)));
+  } else {
+    throw(std::runtime_error(
+        fmt::format("hydroelastic::MakeRigidRepresentation(): for rigid "
+                    "hydroelastic Convex "
+                    "shapes can only use .obj or .vtk files; given: {}",
+                    convex_spec.filename())));
+  }
 
   return RigidGeometry(RigidMesh(std::move(mesh)));
 }
@@ -395,6 +403,14 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
     const Convex& convex_spec, const ProximityProperties& props) {
   PositiveDouble validator("Convex", "soft");
 
+  const std::string extension = convex_spec.extension();
+  if (extension != ".obj") {
+    throw(std::runtime_error(
+        fmt::format("hydroelastic::MakeSoftRepresentation(): for compliant "
+                    "hydroelastic Convex "
+                    "shapes can only use .obj files; given: {}",
+                    convex_spec.filename())));
+  }
   auto mesh = make_unique<VolumeMesh<double>>(
       MakeConvexVolumeMesh<double>(convex_spec));
 
