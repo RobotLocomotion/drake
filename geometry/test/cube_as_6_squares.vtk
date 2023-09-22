@@ -1,0 +1,61 @@
+# vtk DataFile Version 2.0
+Cube represented by six squares from https://examples.vtk.org/site/VTKFileFormats/
+ASCII
+DATASET POLYDATA
+POINTS 8 float
+0.0 0.0 0.0
+1.0 0.0 0.0
+1.0 1.0 0.0
+0.0 1.0 0.0
+0.0 0.0 1.0
+1.0 0.0 1.0
+1.0 1.0 1.0
+0.0 1.0 1.0
+POLYGONS 6 30
+4 0 1 2 3
+4 4 5 6 7
+4 0 1 5 4
+4 2 3 7 6
+4 0 4 7 3
+4 1 2 6 5
+CELL_DATA 6
+SCALARS cell_scalars int 1
+LOOKUP_TABLE default
+0
+1
+2
+3
+4
+5
+NORMALS cell_normals float
+0 0 -1
+0 0 1
+0 -1 0
+0 1 0
+-1 0 0
+1 0 0
+FIELD FieldData 2
+cellIds 1 6 int
+0 1 2 3 4 5
+faceAttributes 2 6 float
+0.0 1.0 1.0 2.0 2.0 3.0 3.0 4.0 4.0 5.0 5.0 6.0
+POINT_DATA 8
+SCALARS sample_scalars float 1
+LOOKUP_TABLE my_table
+0.0
+1.0
+2.0
+3.0
+4.0
+5.0
+6.0
+7.0
+LOOKUP_TABLE my_table 8
+0.0 0.0 0.0 1.0
+1.0 0.0 0.0 1.0
+0.0 1.0 0.0 1.0
+1.0 1.0 0.0 1.0
+0.0 0.0 1.0 1.0
+1.0 0.0 1.0 1.0
+0.0 1.0 1.0 1.0
+1.0 1.0 1.0 1.0
