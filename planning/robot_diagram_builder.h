@@ -107,6 +107,9 @@ class RobotDiagramBuilder {
  private:
   void ThrowIfAlreadyBuilt() const;
 
+  bool ShouldExportDefaultPorts() const;
+  void ExportDefaultPorts() const;
+
   // Storage for the diagram and its plant and scene graph.
   // After Build(), the `builder_` is set to nullptr.
   std::unique_ptr<systems::DiagramBuilder<T>> builder_;
