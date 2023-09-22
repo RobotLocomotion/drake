@@ -328,10 +328,13 @@ class QueryObject {
          <a href="https://docs.google.com/document/d/1VZtVsxIjOLKvgQ8SNSrF6PtWuPW5z9PP7-dQuxfmqpc/edit?usp=sharing">
          document</a> provides guidance how to generate a tetrahedral mesh
          in a VTK file from a surface mesh in an OBJ file.
-     - ᵇ For rigid Mesh, please specify a surface mesh
-         in an OBJ file in Mesh(filename).
+     - ᵇ For rigid Mesh, please specify a surface mesh in an OBJ file in
+         Mesh(filename). A tetrahedral mesh in a VTK file can also be
+         specified, but only a derived surface mesh will be used internally.
      - ᶜ For both compliant Convex and rigid Convex, please specify a surface
-         mesh in an OBJ file in Convex(filename).
+         mesh in an OBJ file in Convex(filename). A tetrahedral mesh in a VTK
+         file can also be specified, but only a derived surface mesh will be
+         used internally.
 
      - We do not support contact between two rigid geometries. One geometry
        *must* be compliant, and the other could be rigid or compliant. If
