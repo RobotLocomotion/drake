@@ -21,6 +21,25 @@ should generally prefer to just use a Diagram, instead.
 
 Use RobotDiagramBuilder to construct a RobotDiagram.
 
+Unless the %RobotDiagramBuilder was used to customize the diagram, by default
+the ports exposed by a %RobotDiagram are the superset of all ports provided by
+the plant and scene graph (excluding any already-connected internal ports beween
+the plant and scene graph). Refer to their individual overview figures for
+details (see multibody::MultibodyPlant and geometry::SceneGraph), or see the
+full list by viewing the robot_diagram.GetGraphvizString().
+
+@system
+name: RobotDiagram
+input_ports:
+- plant_actuation
+- plant_applied_generalized_force
+- ... etc ...
+output_ports:
+- plant_state
+- scene_graph_query
+- ... etc ...
+@endsystem
+
 @tparam_default_scalar
 
 @ingroup planning_infrastructure */

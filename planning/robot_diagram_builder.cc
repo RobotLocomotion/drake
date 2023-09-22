@@ -10,6 +10,10 @@ namespace planning {
 using geometry::SceneGraph;
 using multibody::AddMultibodyPlantSceneGraph;
 using systems::DiagramBuilder;
+using systems::InputPort;
+using systems::InputPortIndex;
+using systems::OutputPort;
+using systems::OutputPortIndex;
 using systems::System;
 
 template <typename T>
@@ -28,6 +32,11 @@ std::unique_ptr<RobotDiagram<T>> RobotDiagramBuilder<T>::Build() {
   ThrowIfAlreadyBuilt();
   if (!plant().is_finalized()) {
     plant().Finalize();
+  }
+  // Unless the user has already customized the input or output ports,
+  // by default it's convenient to export everything.
+  if (builder_->num_input_ports() == 0 && builder_->num_output_ports() == 0) {
+    ExportAllPorts();
   }
   return std::unique_ptr<RobotDiagram<T>>(
       new RobotDiagram<T>(std::move(builder_)));
@@ -52,6 +61,30 @@ void RobotDiagramBuilder<T>::ThrowIfAlreadyBuilt() const {
     throw std::logic_error(
         "RobotDiagramBuilder: Build() has already been called to create a"
         " RobotDiagram; this RobotDiagramBuilder may no longer be used.");
+  }
+}
+
+template <typename T>
+void RobotDiagramBuilder<T>::ExportAllPorts() const {
+  for (const System<T>* system : builder_->GetSystems()) {
+    for (InputPortIndex i{0}; i < system->num_input_ports(); ++i) {
+      const InputPort<T>& port = system->get_input_port(i);
+      if (builder_->IsConnectedOrExported(port)) {
+        // We can't export this input because it's internally-sourced already.
+        continue;
+      }
+      if (&port.get_system() == &this->scene_graph()) {
+        // Don't export any SceneGraph input ports; they should all either be
+        // internally-sourced or else remain disconnected (e.g., the unused
+        // deformable body configuration input port).
+        continue;
+      }
+      builder_->ExportInput(port);
+    }
+    for (OutputPortIndex i{0}; i < system->num_output_ports(); ++i) {
+      const OutputPort<T>& port = system->get_output_port(i);
+      builder_->ExportOutput(port);
+    }
   }
 }
 
