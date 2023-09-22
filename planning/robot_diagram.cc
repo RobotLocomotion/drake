@@ -46,8 +46,6 @@ RobotDiagram<T>::RobotDiagram(
       scene_graph_(DowncastSubsystem<T, SceneGraph>(diagram_builder.get(),
                                                     kSceneGraphIndex)) {
   diagram_builder->BuildInto(this);
-  // TODO(jeremy.nimmer) For convenience, we should probably re-export most (or
-  // all) of the the subsytems' input and output ports here.
 }
 
 template <typename T>

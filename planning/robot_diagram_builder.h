@@ -106,6 +106,7 @@ class RobotDiagramBuilder {
 
  private:
   void ThrowIfAlreadyBuilt() const;
+  void ExportAllPorts() const;
 
   // Storage for the diagram and its plant and scene graph.
   // After Build(), the `builder_` is set to nullptr.

@@ -58,6 +58,16 @@ GTEST_TEST(RobotDiagramBuilderTest, Getters) {
   EXPECT_THAT(builder.GetSystems(), ::testing::Contains(&scene_graph));
 }
 
+// If the user has exported any port, nothing else gets exported.
+GTEST_TEST(RobotDiagramBuilderTest, CustomPortExport) {
+  std::unique_ptr<RobotDiagramBuilder<double>> dut = MakeSampleDut();
+  dut->builder().ExportOutput(dut->scene_graph().GetOutputPort("query"));
+  auto diagram = dut->Build();
+  EXPECT_EQ(diagram->num_input_ports(), 0);
+  EXPECT_EQ(diagram->num_output_ports(), 1);
+  EXPECT_NO_THROW(diagram->GetOutputPort("scene_graph_query"));
+}
+
 GTEST_TEST(RobotDiagramBuilderTest, Lifecycle) {
   std::unique_ptr<RobotDiagramBuilder<double>> dut = MakeSampleDut();
 
@@ -176,6 +186,14 @@ GTEST_TEST(RobotDiagramTest, Clone) {
 
   // The new plant is distinct from the old plant.
   EXPECT_NE(&copy->plant(), &dut->plant());
+}
+
+GTEST_TEST(RobotDiagramTest, PortNamesExist) {
+  std::unique_ptr<RobotDiagram<double>> dut = MakeSampleDut()->Build();
+  EXPECT_NO_THROW(dut->GetInputPort("plant_actuation"));
+  EXPECT_NO_THROW(dut->GetInputPort("plant_applied_generalized_force"));
+  EXPECT_NO_THROW(dut->GetOutputPort("plant_state"));
+  EXPECT_NO_THROW(dut->GetOutputPort("scene_graph_query"));
 }
 
 }  // namespace
