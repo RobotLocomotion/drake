@@ -1,0 +1,17 @@
+# vtk DataFile Version 2.0
+Example of bad one-tet mesh -- triangle mis-typed as tet
+ASCII
+DATASET UNSTRUCTURED_GRID
+POINTS 3 float
+0.0 0.0 0.0
+1.0 0.0 0.0
+0.0 1.0 0.0
+
+CELLS 1 4
+4 0 1 2
+
+CELL_TYPES 1
+10
+
+
+
