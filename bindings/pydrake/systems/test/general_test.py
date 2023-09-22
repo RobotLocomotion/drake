@@ -913,6 +913,8 @@ class TestGeneral(unittest.TestCase):
             builder.ExportInput(adder1.get_input_port(0), "in0")
             builder.ExportInput(adder1.get_input_port(1), "in1")
             builder.ExportOutput(adder2.get_output_port(), "out")
+            self.assertEqual(builder.num_input_ports(), 2)
+            self.assertEqual(builder.num_output_ports(), 1)
             self.assertTrue(builder.HasSubsystemNamed("adder1"))
             builder.GetSubsystemByName(name="adder1")
             builder.GetMutableSubsystemByName(name="adder2")

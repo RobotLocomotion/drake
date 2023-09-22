@@ -693,7 +693,11 @@ void DoScalarDependentDefinitions(py::module m) {
           // Keep alive, ownership (tr.): `target` keeps `self` alive.
           py::keep_alive<2, 1>(), doc.DiagramBuilder.BuildInto.doc)
       .def("IsConnectedOrExported", &DiagramBuilder<T>::IsConnectedOrExported,
-          py::arg("port"), doc.DiagramBuilder.IsConnectedOrExported.doc);
+          py::arg("port"), doc.DiagramBuilder.IsConnectedOrExported.doc)
+      .def("num_input_ports", &DiagramBuilder<T>::num_input_ports,
+          doc.DiagramBuilder.num_input_ports.doc)
+      .def("num_output_ports", &DiagramBuilder<T>::num_output_ports,
+          doc.DiagramBuilder.num_output_ports.doc);
 
   DefineTemplateClassWithDefault<OutputPort<T>>(
       m, "OutputPort", GetPyParam<T>(), doc.OutputPort.doc)
