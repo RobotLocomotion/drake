@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+
 #include "drake/geometry/proximity/volume_mesh.h"
 #include "drake/geometry/shape_specification.h"
 
@@ -10,7 +12,8 @@ namespace internal {
 /* Creates a VolumeMesh of a possibly non-convex object from a VTK file
  containing its tetrahedral mesh. It complements MakeConvexVolumeMesh().
 
- @param[in] mesh  The mesh specification containing VTK file name.
+ @param[in] filename  VTK file name.
+ @param[in] scale  scale parameter.
  @retval  volume_mesh
  @tparam_nonsymbolic_scalar
 
@@ -22,7 +25,15 @@ namespace internal {
         instead of a tetrahedral mesh.
  */
 template <typename T>
-VolumeMesh<T> MakeVolumeMeshFromVtk(const Mesh& mesh);
+VolumeMesh<T> MakeVolumeMeshFromVtk(const std::string& filename, double scale);
+
+/* Overload the 2-argument MakeVolumeMeshFromVtk() to take filename and scale
+   from either Mesh or Convex shape specifications.
+ */
+template <typename T, typename Shape>
+VolumeMesh<T> MakeVolumeMeshFromVtk(const Shape& shape) {
+  return MakeVolumeMeshFromVtk<T>(shape.filename(), shape.scale());
+}
 
 }  // namespace internal
 }  // namespace geometry
