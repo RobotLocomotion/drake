@@ -458,6 +458,14 @@ class DiagramBuilder {
   /// connected to another constituent system or exported as a diagram input.
   bool IsConnectedOrExported(const InputPort<T>& port) const;
 
+  /// Returns the current number of diagram input ports. The count may change
+  /// more ports are exported.
+  int num_input_ports() const;
+
+  /// Returns the current number of diagram output outputs. The count may change
+  /// more ports are exported.
+  int num_output_ports() const;
+
  private:
   // Declares a new input to the entire Diagram, using @p model_input to
   // supply the data type. @p name is an optional name for the input port; if
