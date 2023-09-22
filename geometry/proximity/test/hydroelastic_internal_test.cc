@@ -661,9 +661,23 @@ TEST_F(HydroelasticRigidGeometryTest, Mesh) {
 // is made.
 TEST_F(HydroelasticRigidGeometryTest, Convex) {
   {
-    SCOPED_TRACE("Rigid Convex");
+    SCOPED_TRACE("Rigid Convex from Obj file");
     std::string file = FindResourceOrThrow("drake/geometry/test/quad_cube.obj");
     TestRigidMeshTypeFromObj<Convex>(file);
+  }
+
+  {
+    SCOPED_TRACE("Rigid Convex from VTK file");
+    std::string file =
+        FindResourceOrThrow("drake/geometry/test/one_tetrahedron.vtk");
+    // Empty props since its contents do not matter.
+    const ProximityProperties props;
+    std::optional<RigidGeometry> geometry =
+        MakeRigidRepresentation(Convex(file), props);
+    ASSERT_NE(geometry, std::nullopt);
+    const TriangleSurfaceMesh<double>& surface_mesh = geometry->mesh();
+    EXPECT_EQ(surface_mesh.num_vertices(), 4);
+    EXPECT_EQ(surface_mesh.num_triangles(), 4);
   }
 
   {

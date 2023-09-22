@@ -68,7 +68,7 @@ GTEST_TEST(MakeVolumeMeshFromVtkTest, NegativeVolumeThrow) {
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       MakeVolumeMeshFromVtk<double>(negative_mesh_specification),
-      "MakeVolumeMeshFromVtk: .* tetrahedron.*"
+      "MakeVolumeMeshFromVtk.* tetrahedron.*"
       "with vertices .* has non-positive volume, "
       "so you might want to switch two consecutive vertices.");
 }
