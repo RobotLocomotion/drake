@@ -1,5 +1,6 @@
 #include "drake/geometry/proximity/vtk_to_volume_mesh.h"
 
+#include <sstream>
 #include <utility>
 #include <vector>
 
@@ -12,6 +13,7 @@
 #include <vtkUnstructuredGridReader.h>  // vtkIOLegacy
 
 #include "drake/common/eigen_types.h"
+#include "drake/common/scope_exit.h"
 
 namespace drake {
 namespace geometry {
@@ -24,7 +26,8 @@ VolumeMesh<double> ReadVtkToVolumeMesh(const std::string& filename,
                                        double scale) {
   if (scale <= 0.0) {
     throw std::runtime_error(fmt::format(
-        "ReadVtkToVolumeMesh: scale={} is not a positive number", scale));
+        "ReadVtkToVolumeMesh('{}', {}): scale={} is not a positive number",
+        filename, scale, scale));
   }
   vtkNew<vtkUnstructuredGridReader> reader;
   reader->SetFileName(filename.c_str());
@@ -44,8 +47,25 @@ VolumeMesh<double> ReadVtkToVolumeMesh(const std::string& filename,
   std::vector<VolumeElement> elements;
   elements.reserve(vtk_mesh->GetNumberOfCells());
   vtkCellIterator* iter = vtk_mesh->NewCellIterator();
+  ScopeExit iter_guard([iter]() {
+    iter->Delete();
+  });
   for (iter->InitTraversal(); !iter->IsDoneWithTraversal();
        iter->GoToNextCell()) {
+    if (iter->GetCellType() != VTK_TETRA) {
+      vtkGenericCell* bad_cell = vtkGenericCell::New();
+      ScopeExit cell_guard([bad_cell]() {
+        bad_cell->Delete();
+      });
+      iter->GetCell(bad_cell);
+      auto msg = fmt::format(
+          "ReadVtkToVolumeMesh('{}', {}): file contains a"
+          " non-tetrahedron(type id=10) cell with type id {}, dimension {},"
+          " and number of points {}",
+          filename, scale, bad_cell->GetCellType(),
+          bad_cell->GetCellDimension(), bad_cell->GetNumberOfPoints());
+      throw std::runtime_error(msg);
+    }
     vtkIdList* vtk_vertex_ids = iter->GetPointIds();
     // clang-format off
     elements.emplace_back(vtk_vertex_ids->GetId(0),
@@ -54,7 +74,6 @@ VolumeMesh<double> ReadVtkToVolumeMesh(const std::string& filename,
                           vtk_vertex_ids->GetId(3));
     // clang-format on
   }
-  iter->Delete();
 
   return {std::move(elements), std::move(vertices)};
 }

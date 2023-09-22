@@ -58,24 +58,54 @@ GTEST_TEST(VtkToVolumeMeshTest, BadScale) {
   const double kNegativeScale = -0.01;
   DRAKE_EXPECT_THROWS_MESSAGE(
       internal::ReadVtkToVolumeMesh(test_file, kNegativeScale),
-      "ReadVtkToVolumeMesh: scale=.* is not a positive number.*");
+      "ReadVtkToVolumeMesh.*: scale=.* is not a positive number.*");
 
   const double kZeroScale = 0.0;
   DRAKE_EXPECT_THROWS_MESSAGE(
       internal::ReadVtkToVolumeMesh(test_file, kZeroScale),
-      "ReadVtkToVolumeMesh: scale=.* is not a positive number.*");
+      "ReadVtkToVolumeMesh.*: scale=.* is not a positive number.*");
 }
 
 GTEST_TEST(VtkToVolumeMeshTest, BogusFileName) {
   const std::string bogus_filename = "bogus_filename";
-  EXPECT_THROW(internal::ReadVtkToVolumeMesh(bogus_filename), std::exception);
+  DRAKE_EXPECT_THROWS_MESSAGE(internal::ReadVtkToVolumeMesh(bogus_filename),
+                              ".*at least one tetra.*");
 }
 
 GTEST_TEST(VtkToVolumeMeshTest, WrongFileType) {
   const std::string require_vtk_but_this_is_obj =
       FindResourceOrThrow("drake/geometry/test/non_convex_mesh.obj");
-  EXPECT_THROW(internal::ReadVtkToVolumeMesh(require_vtk_but_this_is_obj),
-               std::exception);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      internal::ReadVtkToVolumeMesh(require_vtk_but_this_is_obj),
+      ".*at least one tetra.*");
+}
+
+GTEST_TEST(VtkToVolumeMeshTest, WrongFileContentsCube) {
+  const std::string cube_vtk =
+      FindResourceOrThrow("drake/geometry/test/cube.vtk");
+  DRAKE_EXPECT_THROWS_MESSAGE(internal::ReadVtkToVolumeMesh(cube_vtk),
+                              ".*at least one tetra.*");
+}
+
+GTEST_TEST(VtkToVolumeMeshTest, WrongFileContentsVolume) {
+  const std::string volume_vtk =
+      FindResourceOrThrow("drake/geometry/test/some_volume.vtk");
+  DRAKE_EXPECT_THROWS_MESSAGE(internal::ReadVtkToVolumeMesh(volume_vtk),
+                              ".*at least one tetra.*");
+}
+
+GTEST_TEST(VtkToVolumeMeshTest, WrongFileContentsUnstructured) {
+  const std::string unstructured_vtk =
+      FindResourceOrThrow("drake/geometry/test/unstructured.vtk");
+  DRAKE_EXPECT_THROWS_MESSAGE(internal::ReadVtkToVolumeMesh(unstructured_vtk),
+                              ".*non-tetra.*");
+}
+
+GTEST_TEST(VtkToVolumeMeshTest, WrongFileContentsBadTet) {
+  const std::string bad_tet_vtk =
+      FindResourceOrThrow("drake/geometry/test/bad_tet.vtk");
+  DRAKE_EXPECT_THROWS_MESSAGE(internal::ReadVtkToVolumeMesh(bad_tet_vtk),
+                              ".*at least one tetra.*");
 }
 
 }  // namespace

@@ -629,10 +629,14 @@ filegroup(
     name = "test_vtk_files",
     testonly = 1,
     srcs = [
+        "test/bad_tet.vtk",
+        "test/cube.vtk",
         "test/non_convex_mesh.vtk",
         "test/one_negative_tetrahedron.vtk",
         "test/one_tetrahedron.vtk",
+        "test/some_volume.vtk",
         "test/two_tetrahedra_with_field_variable.vtk",
+        "test/unstructured.vtk",
     ],
 )
 
