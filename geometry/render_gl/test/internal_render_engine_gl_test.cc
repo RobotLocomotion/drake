@@ -7,6 +7,7 @@
 
 #include <gflags/gflags.h>
 #include <gtest/gtest.h>
+#include <tiny_gltf.h>
 
 // To ease build system upkeep, we annotate VTK includes with their deps.
 #include <vtkImageData.h>  // vtkCommonDataModel
@@ -202,6 +203,29 @@ bool IsColorNear(const RgbaColor& expected, const RgbaColor& tested,
   return ::testing::AssertionFailure()
          << "At pixel " << p << "\n  Expected: " << expected
          << "\n  Found: " << tested << "\n  with tolerance: " << tolerance;
+}
+
+// Because we haven't bothered with tinygltf's stb_image dependency we're
+// obliged to provide our own load image callback. In this case, we provide a
+// no-op callback just to show that things work.
+bool LocalGltfLoadImage(tinygltf::Image*, const int, std::string*, std::string*,
+                        int, int, const unsigned char*, int, void*) {
+  return true;
+}
+
+// Simply confirm that we can use tinygltf to load a gltf file.
+GTEST_TEST(TinyGltf, SmokeTest) {
+  tinygltf::Model model;
+  tinygltf::TinyGLTF loader;
+  loader.SetImageLoader(LocalGltfLoadImage, nullptr);
+
+  const std::string path = FindResourceOrThrow(
+      "drake/geometry/render/test/meshes/fully_textured_pyramid.gltf");
+  const bool ret = loader.LoadASCIIFromFile(&model, nullptr /* err */,
+                                            nullptr /* warn */, path);
+
+  ASSERT_TRUE(ret);
+  ASSERT_EQ(model.nodes.size(), 1);
 }
 
 class RenderEngineGlTest : public ::testing::Test {

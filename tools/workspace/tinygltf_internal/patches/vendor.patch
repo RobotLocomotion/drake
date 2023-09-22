@@ -1,0 +1,54 @@
+Add vendoring namespace.
+
+This prevents ODR violations in case downstream code also links to json.
+
+--- tiny_gltf.h
++++ tiny_gltf.h
+@@ -77,6 +77,7 @@
+   x &operator=(const x &) = default;   \
+   x &operator=(x &&) TINYGLTF_NOEXCEPT = default;
+ 
++inline namespace drake_vendor __attribute__((visibility ("hidden"))) {
+ namespace tinygltf {
+ 
+ #define TINYGLTF_MODE_POINTS (0)
+@@ -1626,6 +1627,7 @@ class TinyGLTF {
+ #endif
+ 
+ }  // namespace tinygltf
++}  // namespace drake_vendor
+ 
+ #endif  // TINY_GLTF_H_
+ 
+@@ -1788,6 +1790,7 @@ class TinyGLTF {
+ #endif
+ #endif
+ 
++inline namespace drake_vendor __attribute__((visibility ("hidden"))) {
+ namespace tinygltf {
+ namespace detail {
+ #ifdef TINYGLTF_USE_RAPIDJSON
+@@ -1873,6 +1876,7 @@ void JsonParse(JsonDocument &doc, const char *str, size_t length,
+ }
+ }  // namespace detail
+ }  // namespace tinygltf
++}  // namespace drake_vendor
+ 
+ #ifdef __APPLE__
+ #include "TargetConditionals.h"
+@@ -1883,6 +1887,7 @@ void JsonParse(JsonDocument &doc, const char *str, size_t length,
+ #pragma clang diagnostic ignored "-Wc++98-compat"
+ #endif
+ 
++inline namespace drake_vendor __attribute__((visibility ("hidden"))) {
+ namespace tinygltf {
+ 
+ ///
+@@ -8475,6 +8480,7 @@ bool TinyGLTF::WriteGltfSceneToFile(const Model *model,
+ }
+ 
+ }  // namespace tinygltf
++}  // namespace drake_vendor
+ 
+ #ifdef __clang__
+ #pragma clang diagnostic pop
