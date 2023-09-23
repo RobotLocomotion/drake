@@ -28,9 +28,13 @@ Instead of using the full time-scaling curve, this problem uses a single
 time-scaling variable for each region. This formulation yields continuous
 trajectories, which are not differentiable at the transition times between the
 regions since non-convex continuity constraints are not supported yet. However,
-it supports continuity on the path for arbitrary degree. The resulting
-trajectories can be post-processed with e.g. Toppra in order to smooth out the
-timing rescaling.
+via a conservative formulation, it supports geometric continuity on the path for
+arbitrary degree. That means the path is geoemtrically continuous at the
+transition times between the regions, however it may not be time-continuous. See
+the paper for further details on difference between geometric and time
+continuity. https://www2.eecs.berkeley.edu/Pubs/TechRpts/1984/CSD-84-205.pdf The
+resulting trajectories can be post-processed with e.g. Toppra in order to smooth
+out the timing rescaling.
 
 The ith piece of the composite trajectory is defined as q(t) = r((t - tᵢ) /
 hᵢ). r : [0, 1] → ℝⁿ is a the path, parametrized as a Bézier curve with order
@@ -71,6 +75,12 @@ class GcsTrajectoryOptimization final {
 
     /** Returns the order of the Bézier trajectory within the region. */
     int order() const { return order_; }
+
+    /** Returns the geometric continuity order imposed at the transitions
+    between regions. */
+    int geometric_continuity_order() const {
+      return geometric_continuity_order_;
+    }
 
     /** Returns the number of vertices in the subgraph. */
     int size() const { return vertices_.size(); }
@@ -128,7 +138,8 @@ class GcsTrajectoryOptimization final {
     /* Constructs a new subgraph and copies the regions. */
     Subgraph(const geometry::optimization::ConvexSets& regions,
              const std::vector<std::pair<int, int>>& regions_to_connect,
-             int order, double h_min, double h_max, std::string name,
+             int order, double h_min, double h_max,
+             int geometric_continuity_order, std::string name,
              GcsTrajectoryOptimization* traj_opt);
 
     /* Convenience accessor, for brevity. */
@@ -145,6 +156,7 @@ class GcsTrajectoryOptimization final {
     const geometry::optimization::ConvexSets regions_;
     const int order_;
     const double h_min_;
+    const int geometric_continuity_order_;
     const std::string name_;
     GcsTrajectoryOptimization& traj_opt_;
 
@@ -264,12 +276,15 @@ class GcsTrajectoryOptimization final {
   convex for h > 0. For example the perspective quadratic cost of the path
   energy ||ṙ(s)||² / h becomes non-convex for h = 0. Otherwise h_min can be set
   to 0.
+  @param geometric_continuity_order is the order of the geometric continuity
+    constraints imposed at the transitions between regions.
   @param name is the name of the subgraph. A default name will be provided.
   */
   Subgraph& AddRegions(
       const geometry::optimization::ConvexSets& regions,
       const std::vector<std::pair<int, int>>& edges_between_regions, int order,
-      double h_min = 0, double h_max = 20, std::string name = "");
+      double h_min = 0, double h_max = 20, int geometric_continuity_order = 0,
+      std::string name = "");
 
   /** Creates a Subgraph with the given regions.
   This function will compute the edges between the regions based on the set
@@ -284,10 +299,13 @@ class GcsTrajectoryOptimization final {
   to 0.
   @param h_max is the maximum duration to spend in a region (seconds). Some
   solvers struggle numerically with large values.
+  @param geometric_continuity_order is the order of the geometric continuity
+    constraints imposed at the transitions between regions.
   @param name is the name of the subgraph. A default name will be provided.
   */
   Subgraph& AddRegions(const geometry::optimization::ConvexSets& regions,
                        int order, double h_min = 0, double h_max = 20,
+                       int geometric_continuity_order = 0,
                        std::string name = "");
 
   /** Connects two subgraphs with directed edges.
@@ -421,6 +439,9 @@ class GcsTrajectoryOptimization final {
   geometry::optimization::GraphOfConvexSets::Edge* AddEdge(
       geometry::optimization::GraphOfConvexSets::Vertex* u,
       geometry::optimization::GraphOfConvexSets::Vertex* v);
+
+  static std::vector<std::shared_ptr<solvers::LinearEqualityConstraint>>
+  MakeGeometricContinuityConstraints(int order, int dim);
 
   geometry::optimization::GraphOfConvexSets gcs_;
 

@@ -41,6 +41,7 @@ using solvers::L2NormCost;
 using solvers::LinearConstraint;
 using solvers::LinearCost;
 using solvers::LinearEqualityConstraint;
+using solvers::VariableRefList;
 using symbolic::DecomposeLinearExpressions;
 using symbolic::Expression;
 using symbolic::MakeMatrixContinuousVariable;
@@ -58,14 +59,17 @@ const double kInf = std::numeric_limits<double>::infinity();
 Subgraph::Subgraph(
     const ConvexSets& regions,
     const std::vector<std::pair<int, int>>& edges_between_regions, int order,
-    double h_min, double h_max, std::string name,
-    GcsTrajectoryOptimization* traj_opt)
+    double h_min, double h_max, int geometric_continuity_order,
+    std::string name, GcsTrajectoryOptimization* traj_opt)
     : regions_(regions),
       order_(order),
       h_min_(h_min),
+      geometric_continuity_order_(geometric_continuity_order),
       name_(std::move(name)),
       traj_opt_(*traj_opt) {
   DRAKE_THROW_UNLESS(order >= 0);
+  DRAKE_THROW_UNLESS(geometric_continuity_order_ >= 0);
+  DRAKE_THROW_UNLESS(geometric_continuity_order_ <= order_);
   DRAKE_THROW_UNLESS(!regions_.empty());
 
   // Make sure all regions have the same ambient dimension.
@@ -97,19 +101,8 @@ Subgraph::Subgraph(
   r_trajectory_ =
       BezierCurve<double>(0, 1, MatrixXd::Zero(num_positions(), order + 1));
 
-  // GetControlPoints(u).col(order) - GetControlPoints(v).col(0) = 0, via Ax =
-  // 0, A = [I, -I], x = [u_controls.col(order); v_controls.col(0)].
-  Eigen::SparseMatrix<double> A(num_positions(), 2 * num_positions());
-  std::vector<Eigen::Triplet<double>> tripletList;
-  tripletList.reserve(2 * num_positions());
-  for (int i = 0; i < num_positions(); ++i) {
-    tripletList.push_back(Eigen::Triplet<double>(i, i, 1.0));
-    tripletList.push_back(Eigen::Triplet<double>(i, num_positions() + i, -1.0));
-  }
-  A.setFromTriplets(tripletList.begin(), tripletList.end());
-  const auto path_continuity_constraint =
-      std::make_shared<LinearEqualityConstraint>(
-          A, VectorXd::Zero(num_positions()));
+  auto continuity_constraints_vec = MakeGeometricContinuityConstraints(
+      geometric_continuity_order_, num_positions());
 
   // Connect vertices with edges.
   for (const auto& [u_index, v_index] : edges_between_regions) {
@@ -121,9 +114,17 @@ Subgraph::Subgraph(
     edges_.emplace_back(uv_edge);
 
     // Add path continuity constraints.
-    uv_edge->AddConstraint(Binding<Constraint>(
-        path_continuity_constraint,
-        {GetControlPoints(*u).col(order), GetControlPoints(*v).col(0)}));
+    for (int k = 0; k < geometric_continuity_order_ + 1; ++k) {
+      VariableRefList vars_list;
+      for (int j = 0; j < k + 1; ++j) {
+        vars_list.push_back(GetControlPoints(*u).col(order - k + j));
+      }
+      for (int j = 0; j < k + 1; ++j) {
+        vars_list.push_back(GetControlPoints(*v).col(j));
+      }
+      uv_edge->AddConstraint(
+          Binding<Constraint>(continuity_constraints_vec.at(k), vars_list));
+    }
   }
 }
 
@@ -258,20 +259,12 @@ EdgesBetweenSubgraphs::EdgesBetweenSubgraphs(
   vr_trajectory_ = BezierCurve<double>(
       0, 1, MatrixXd::Zero(num_positions(), to_subgraph_order_ + 1));
 
-  // Zeroth order continuity constraints.
-  //  ur_control.col(-1) == vr_control.col(0).
-  SparseMatrix<double> A(num_positions(), 2 * num_positions());  // A = [I, -I].
-  std::vector<Eigen::Triplet<double>> tripletList;
-  tripletList.reserve(2 * num_positions());
-  for (int i = 0; i < num_positions(); ++i) {
-    tripletList.push_back(Eigen::Triplet<double>(i, i, 1.0));
-    tripletList.push_back(Eigen::Triplet<double>(i, num_positions() + i, -1.0));
-  }
-  A.setFromTriplets(tripletList.begin(), tripletList.end());
+  const auto geometric_continuity_order =
+      std::min(from_subgraph.geometric_continuity_order(),
+               to_subgraph.geometric_continuity_order());
 
-  const auto path_continuity_constraint =
-      std::make_shared<LinearEqualityConstraint>(
-          A, VectorXd::Zero(num_positions()));
+  auto continuity_constraints_vec = MakeGeometricContinuityConstraints(
+      geometric_continuity_order, num_positions());
 
   // TODO(wrangelvid) this can be parallelized.
   for (int i = 0; i < from_subgraph.size(); ++i) {
@@ -294,11 +287,18 @@ EdgesBetweenSubgraphs::EdgesBetweenSubgraphs(
         edges_.emplace_back(uv_edge);
 
         // Add path continuity constraints.
-        uv_edge->AddConstraint(Binding<LinearEqualityConstraint>(
-            path_continuity_constraint,
-            ConcatenateVariableRefList(
-                {GetControlPointsU(*uv_edge).col(from_subgraph_order_),
-                 GetControlPointsV(*uv_edge).col(0)})));
+        for (int order{0}; order < geometric_continuity_order + 1; ++order) {
+          VariableRefList vars_list;
+          for (int k{0}; k < order + 1; ++k) {
+            vars_list.push_back(GetControlPointsU(*uv_edge).col(
+                from_subgraph_order_ - order + k));
+          }
+          for (int k{0}; k < order + 1; ++k) {
+            vars_list.push_back(GetControlPointsV(*uv_edge).col(k));
+          }
+          uv_edge->AddConstraint(Binding<Constraint>(
+              continuity_constraints_vec.at(order), vars_list));
+        }
 
         if (subspace != nullptr) {
           // Add subspace constraints to the first control point of the v
@@ -466,12 +466,14 @@ GcsTrajectoryOptimization::~GcsTrajectoryOptimization() = default;
 Subgraph& GcsTrajectoryOptimization::AddRegions(
     const ConvexSets& regions,
     const std::vector<std::pair<int, int>>& edges_between_regions, int order,
-    double h_min, double h_max, std::string name) {
+    double h_min, double h_max, int geometric_continuity_order,
+    std::string name) {
   if (name.empty()) {
     name = fmt::format("Subgraph{}", subgraphs_.size());
   }
-  Subgraph* subgraph = new Subgraph(regions, edges_between_regions, order,
-                                    h_min, h_max, std::move(name), this);
+  Subgraph* subgraph =
+      new Subgraph(regions, edges_between_regions, order, h_min, h_max,
+                   geometric_continuity_order, std::move(name), this);
 
   // Add global costs to the subgraph.
   for (double weight : global_time_costs_) {
@@ -493,6 +495,7 @@ Subgraph& GcsTrajectoryOptimization::AddRegions(
 Subgraph& GcsTrajectoryOptimization::AddRegions(const ConvexSets& regions,
                                                 int order, double h_min,
                                                 double h_max,
+                                                int geometric_continuity_order,
                                                 std::string name) {
   // TODO(wrangelvid): This is O(n^2) and can be improved.
   std::vector<std::pair<int, int>> edges_between_regions;
@@ -507,7 +510,8 @@ Subgraph& GcsTrajectoryOptimization::AddRegions(const ConvexSets& regions,
   }
 
   return GcsTrajectoryOptimization::AddRegions(
-      regions, edges_between_regions, order, h_min, h_max, std::move(name));
+      regions, edges_between_regions, order, h_min, h_max,
+      geometric_continuity_order, std::move(name));
 }
 
 EdgesBetweenSubgraphs& GcsTrajectoryOptimization::AddEdges(
@@ -714,6 +718,68 @@ double GcsTrajectoryOptimization::EstimateComplexity() const {
     }
   }
   return result;
+}
+
+std::vector<std::shared_ptr<LinearEqualityConstraint>>
+GcsTrajectoryOptimization::MakeGeometricContinuityConstraints(int order,
+                                                              int dim) {
+  // Add geometric continuity constraints
+  // Goemetric constraints follow a recursive pattern due to the nature of the
+  // bezier curve. Given U_0, ..., U_d as control points of vertex U and
+  // V_0, ..., V_{N-1} as control points of vertex V, a sufficient condition for
+  // geometric continuity of order k is:
+  // Degree 0: U_d = V_0
+  // Degree 1: U_d - U_{d-1} = V_1 - V_0
+  // Degree 2: U_d - 2 * U_{d-1} + U_{d-1} = V_2 - 2 * V_1 + V_0
+  // ... and the pattern continues.
+  // Therefore, the participating control points of U and V are
+  // vars_list: = U_d, U_{d-1}, ..., U_{d-k}, V_0, V_1, ..., V_k.
+  // In matrix form, the constraint of order k can be written as
+  //
+  //             p_k ⊗ (1, -1) ⊗ I * vars_list = 0,
+  //
+  // where p is the constraint pattern vector and I is the
+  // identity matrix of size num_positions, ⊗ is the Kronecker product,
+  // and vars_list is the vertical stacking vector of participating control
+  // points. The consttaint pattern vector p_k is a vector of size (k+1) and is
+  // as such: p_0 = (1) p_1 = (1, -1) p_2 = (1, -2, 1) p_3 = (1, -3, 3, -1)
+  // ... and the pattern continues in recursive fashion by:
+  // p_{k+1} = (p_k, 0) - (0, p_k)
+  std::vector<Eigen::VectorXd> p_vec;
+  p_vec.reserve(order + 1);
+  p_vec.push_back(Eigen::VectorXd::Ones(1));
+  for (int k{1}; k < order + 1; ++k) {
+    const auto& p_k = p_vec.at(k - 1);
+    Eigen::VectorXd p_k_plus_1_up = Eigen::VectorXd::Zero(k + 1);
+    Eigen::VectorXd p_k_plus_1_down = Eigen::VectorXd::Zero(k + 1);
+    p_k_plus_1_up.head(k) = p_k;
+    p_k_plus_1_down.tail(k) = p_k;
+    p_vec.push_back(p_k_plus_1_up - p_k_plus_1_down);
+  }
+  std::vector<std::shared_ptr<LinearEqualityConstraint>>
+      continuity_constraints_vec;
+  continuity_constraints_vec.reserve(order + 1);
+  for (int k{0}; k < order + 1; ++k) {
+    Eigen::SparseMatrix<double> A(dim, 2 * (k + 1) * dim);
+    std::vector<Eigen::Triplet<double>> tripletList;
+    const auto& p = p_vec.at(k);
+    // fill the non-zero entries of p_k ⊗ (1, -1) ⊗ I
+    for (int i{0}; i < k + 1; ++i) {
+      for (int j{0}; j < dim; ++j) {
+        const auto c_left = dim * i;
+        const auto c_right = dim * i + (1 + k) * dim;
+        tripletList.push_back(
+            Eigen::Triplet<double>(j, c_left + j, static_cast<double>(p(i))));
+        tripletList.push_back(
+            Eigen::Triplet<double>(j, c_right + j, -static_cast<double>(p(i))));
+      }
+    }
+    A.setFromTriplets(tripletList.begin(), tripletList.end());
+    const auto continuity_constraint =
+        std::make_shared<LinearEqualityConstraint>(A, VectorXd::Zero(dim));
+    continuity_constraints_vec.push_back(continuity_constraint);
+  }
+  return continuity_constraints_vec;
 }
 
 }  // namespace trajectory_optimization
