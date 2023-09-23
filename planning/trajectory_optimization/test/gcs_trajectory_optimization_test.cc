@@ -792,7 +792,7 @@ TEST_F(SimpleEnv2D, DurationDelay) {
   // New added regions will inherit this cost.
   gcs.AddPathLengthCost();
 
-  Vector2d start(0.2, 0.2), goal(0.3, 0.2);
+  Vector2d start(0.2, 0.2), goal(4.8, 4.8);
   auto& regions = gcs.AddRegions(regions_, 1, kMinimumDuration);
   // Setting h_min = h_max = kStartDelay seconds will force to stay a the start
   // of the trajectory for kStartDelay seconds.

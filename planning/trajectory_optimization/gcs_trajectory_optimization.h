@@ -32,9 +32,12 @@ via a conservative formulation, it supports geometric continuity on the path for
 arbitrary degree. That means the path is geoemtrically continuous at the
 transition times between the regions, however it may not be time-continuous. See
 the paper for further details on difference between geometric and time
-continuity. https://www2.eecs.berkeley.edu/Pubs/TechRpts/1984/CSD-84-205.pdf The
-resulting trajectories can be post-processed with e.g. Toppra in order to smooth
-out the timing rescaling.
+continuity. https://www2.eecs.berkeley.edu/Pubs/TechRpts/1984/CSD-84-205.pdf
+The resulting trajectories can be post-processed with e.g. Toppra in order to
+smooth out the timing rescaling.
+It is recommended to use order > 1 + 2 * geometric_continuity_order.
+Otherwise the geometric continuity constraints will be infeasible unless
+the problem is degenerate (e.g. the whole path is one line segment.)
 
 The ith piece of the composite trajectory is defined as q(t) = r((t - tᵢ) /
 hᵢ). r : [0, 1] → ℝⁿ is a the path, parametrized as a Bézier curve with order
@@ -277,7 +280,8 @@ class GcsTrajectoryOptimization final {
   energy ||ṙ(s)||² / h becomes non-convex for h = 0. Otherwise h_min can be set
   to 0.
   @param geometric_continuity_order is the order of the geometric continuity
-    constraints imposed at the transitions between regions.
+    constraints imposed at the transitions between regions. Can not be greater
+    than order.
   @param name is the name of the subgraph. A default name will be provided.
   */
   Subgraph& AddRegions(
@@ -300,7 +304,8 @@ class GcsTrajectoryOptimization final {
   @param h_max is the maximum duration to spend in a region (seconds). Some
   solvers struggle numerically with large values.
   @param geometric_continuity_order is the order of the geometric continuity
-    constraints imposed at the transitions between regions.
+    constraints imposed at the transitions between regions. Can not be greater
+    than order.
   @param name is the name of the subgraph. A default name will be provided.
   */
   Subgraph& AddRegions(const geometry::optimization::ConvexSets& regions,
