@@ -170,7 +170,7 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, MinimumTimeVsPathLength) {
   auto& walking_regions =
       gcs.AddRegions(MakeConvexSets(HPolyhedron::MakeBox(Vector2d(-0.5, -0.5),
                                                          Vector2d(0.5, 0.5))),
-                     3, 0, 20, 0, "walking");
+                     3, 0, 20, "walking");
   // Bob can walk at 1 m/s in x and y.
   walking_regions.AddVelocityBounds(Vector2d(-kWalkingSpeed, -kWalkingSpeed),
                                     Vector2d(kWalkingSpeed, kWalkingSpeed));
@@ -180,7 +180,7 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, MinimumTimeVsPathLength) {
           HPolyhedron::MakeBox(Vector2d(-0.5, -0.5), Vector2d(-0.2, 1)),
           HPolyhedron::MakeBox(Vector2d(-0.5, 1), Vector2d(0.5, 1.5)),
           HPolyhedron::MakeBox(Vector2d(0.2, -0.5), Vector2d(0.5, 1))),
-      3, 0, 20, 0, "scooter");
+      3, 0, 20, "scooter", 0);
   // Bob can ride an e-scooter at 10 m/s in x and y.
   scooter_regions.AddVelocityBounds(Vector2d(-kScooterSpeed, -kScooterSpeed),
                                     Vector2d(kScooterSpeed, kScooterSpeed));
@@ -714,8 +714,9 @@ TEST_F(SimpleEnv2D, GeometricContinuity) {
 
     Vector2d start(4.8, 0.2), goal(4.8, 4.8);
     int kOrder = 1 + 2 * kGeometricContinuityOrder;
-    auto& regions = gcs.AddRegions(regions_, kOrder, kMinimumDuration,
-                                   kMaximumDuration, kGeometricContinuityOrder);
+    auto& regions =
+        gcs.AddRegions(regions_, kOrder, kMinimumDuration, kMaximumDuration, "",
+                       kGeometricContinuityOrder);
     auto& source = gcs.AddRegions(MakeConvexSets(Point(start)), 0);
     auto& target = gcs.AddRegions(MakeConvexSets(Point(goal)), 0);
     gcs.AddEdges(source, regions);
@@ -766,14 +767,14 @@ TEST_F(SimpleEnv2D, InvalidGeometricContinuity) {
     // geometric continuity order can not be negative
     GcsTrajectoryOptimization gcs(kDimension);
     DRAKE_EXPECT_THROWS_MESSAGE(
-        gcs.AddRegions(regions_, 2, kMinimumDuration, kMaximumDuration, -1),
+        gcs.AddRegions(regions_, 2, kMinimumDuration, kMaximumDuration, "", -1),
         ".*order.*");
   }
   {
     // geometric continuity order not be greater than the order of the subgraph
     GcsTrajectoryOptimization gcs(kDimension);
     DRAKE_EXPECT_THROWS_MESSAGE(
-        gcs.AddRegions(regions_, 1, kMinimumDuration, kMaximumDuration, 2),
+        gcs.AddRegions(regions_, 1, kMinimumDuration, kMaximumDuration, "", 2),
         ".*order.*");
   }
 }
@@ -968,8 +969,8 @@ TEST_F(SimpleEnv2D, IntermediatePoint) {
   // We can have different order subgraphs.
   // The trajectory from start to either subspace or intermidiate point will be
   // of order 3 and the trajectory from intermediate to goal will be of order 2.
-  auto& main1 = gcs.AddRegions(regions_, 3, 1e-6, 20, 0, "main1");
-  auto& main2 = gcs.AddRegions(regions_, 2, 1e-6, 20, 0, "main2");
+  auto& main1 = gcs.AddRegions(regions_, 3, 1e-6, 20, "main1");
+  auto& main2 = gcs.AddRegions(regions_, 2, 1e-6, 20, "main2");
 
   auto& source = gcs.AddRegions(MakeConvexSets(Point(start)), 0);
   auto& target = gcs.AddRegions(MakeConvexSets(Point(goal)), 0);

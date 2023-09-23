@@ -143,8 +143,8 @@ class GcsTrajectoryOptimization final {
     /* Constructs a new subgraph and copies the regions. */
     Subgraph(const geometry::optimization::ConvexSets& regions,
              const std::vector<std::pair<int, int>>& regions_to_connect,
-             int order, double h_min, double h_max,
-             int geometric_continuity_order, std::string name,
+             int order, double h_min, double h_max, std::string name,
+             int geometric_continuity_order,
              GcsTrajectoryOptimization* traj_opt);
 
     /* Convenience accessor, for brevity. */
@@ -161,8 +161,8 @@ class GcsTrajectoryOptimization final {
     const geometry::optimization::ConvexSets regions_;
     const int order_;
     const double h_min_;
-    const int geometric_continuity_order_;
     const std::string name_;
+    const int geometric_continuity_order_;
     GcsTrajectoryOptimization& traj_opt_;
 
     std::vector<geometry::optimization::GraphOfConvexSets::Vertex*> vertices_;
@@ -281,16 +281,16 @@ class GcsTrajectoryOptimization final {
   convex for h > 0. For example the perspective quadratic cost of the path
   energy ||ṙ(s)||² / h becomes non-convex for h = 0. Otherwise h_min can be set
   to 0.
+  @param name is the name of the subgraph. A default name will be provided.
   @param geometric_continuity_order is the order of the geometric continuity
     constraints imposed at the transitions between regions. Can not be greater
     than order.
-  @param name is the name of the subgraph. A default name will be provided.
   */
   Subgraph& AddRegions(
       const geometry::optimization::ConvexSets& regions,
       const std::vector<std::pair<int, int>>& edges_between_regions, int order,
-      double h_min = 0, double h_max = 20, int geometric_continuity_order = 0,
-      std::string name = "");
+      double h_min = 0, double h_max = 20, std::string name = "",
+      int geometric_continuity_order = 0);
 
   /** Creates a Subgraph with the given regions.
   This function will compute the edges between the regions based on the set
@@ -305,15 +305,15 @@ class GcsTrajectoryOptimization final {
   to 0.
   @param h_max is the maximum duration to spend in a region (seconds). Some
   solvers struggle numerically with large values.
-  @param geometric_continuity_order is the order of the geometric continuity
-    constraints imposed at the transitions between regions. Can not be greater
-    than order.
   @param name is the name of the subgraph. A default name will be provided.
+  @param geometric_continuity_order is the order of the geometric continuity
+  constraints imposed at the transitions between regions. Can not be greater
+  than order.
   */
   Subgraph& AddRegions(const geometry::optimization::ConvexSets& regions,
                        int order, double h_min = 0, double h_max = 20,
-                       int geometric_continuity_order = 0,
-                       std::string name = "");
+                       std::string name = "",
+                       int geometric_continuity_order = 0);
 
   /** Connects two subgraphs with directed edges.
   @param from_subgraph is the subgraph to connect from. Must have been created

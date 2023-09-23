@@ -60,13 +60,13 @@ const double kInf = std::numeric_limits<double>::infinity();
 Subgraph::Subgraph(
     const ConvexSets& regions,
     const std::vector<std::pair<int, int>>& edges_between_regions, int order,
-    double h_min, double h_max, int geometric_continuity_order,
-    std::string name, GcsTrajectoryOptimization* traj_opt)
+    double h_min, double h_max, std::string name,
+    int geometric_continuity_order, GcsTrajectoryOptimization* traj_opt)
     : regions_(regions),
       order_(order),
       h_min_(h_min),
-      geometric_continuity_order_(geometric_continuity_order),
       name_(std::move(name)),
+      geometric_continuity_order_(geometric_continuity_order),
       traj_opt_(*traj_opt) {
   DRAKE_THROW_UNLESS(order >= 0);
   DRAKE_THROW_UNLESS(geometric_continuity_order_ >= 0);
@@ -467,14 +467,14 @@ GcsTrajectoryOptimization::~GcsTrajectoryOptimization() = default;
 Subgraph& GcsTrajectoryOptimization::AddRegions(
     const ConvexSets& regions,
     const std::vector<std::pair<int, int>>& edges_between_regions, int order,
-    double h_min, double h_max, int geometric_continuity_order,
-    std::string name) {
+    double h_min, double h_max, std::string name,
+    int geometric_continuity_order) {
   if (name.empty()) {
     name = fmt::format("Subgraph{}", subgraphs_.size());
   }
   Subgraph* subgraph =
       new Subgraph(regions, edges_between_regions, order, h_min, h_max,
-                   geometric_continuity_order, std::move(name), this);
+                   std::move(name), geometric_continuity_order, this);
 
   // Add global costs to the subgraph.
   for (double weight : global_time_costs_) {
@@ -493,11 +493,9 @@ Subgraph& GcsTrajectoryOptimization::AddRegions(
   return *subgraphs_.emplace_back(subgraph);
 }
 
-Subgraph& GcsTrajectoryOptimization::AddRegions(const ConvexSets& regions,
-                                                int order, double h_min,
-                                                double h_max,
-                                                int geometric_continuity_order,
-                                                std::string name) {
+Subgraph& GcsTrajectoryOptimization::AddRegions(
+    const ConvexSets& regions, int order, double h_min, double h_max,
+    std::string name, int geometric_continuity_order) {
   // TODO(wrangelvid): This is O(n^2) and can be improved.
   std::vector<std::pair<int, int>> edges_between_regions;
   for (size_t i = 0; i < regions.size(); ++i) {
@@ -511,8 +509,8 @@ Subgraph& GcsTrajectoryOptimization::AddRegions(const ConvexSets& regions,
   }
 
   return GcsTrajectoryOptimization::AddRegions(
-      regions, edges_between_regions, order, h_min, h_max,
-      geometric_continuity_order, std::move(name));
+      regions, edges_between_regions, order, h_min, h_max, std::move(name),
+      geometric_continuity_order);
 }
 
 EdgesBetweenSubgraphs& GcsTrajectoryOptimization::AddEdges(
