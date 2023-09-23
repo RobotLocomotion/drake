@@ -34,7 +34,9 @@ transition times between the regions, however it may not be time-continuous. See
 the paper for further details on difference between geometric and time
 continuity. https://www2.eecs.berkeley.edu/Pubs/TechRpts/1984/CSD-84-205.pdf
 The resulting trajectories can be post-processed with e.g. Toppra in order to
-smooth out the timing rescaling.
+smooth out the timing rescaling. Note that Toppra is not currently informed
+of the piecewise nature of its input. Therefore, it is recommended to use a
+C2 geometric continuity order before using Toppra.
 It is recommended to use order > 1 + 2 * geometric_continuity_order.
 Otherwise the geometric continuity constraints will be infeasible unless
 the problem is degenerate (e.g. the whole path is one line segment.)
