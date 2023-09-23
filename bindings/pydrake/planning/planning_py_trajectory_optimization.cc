@@ -396,10 +396,11 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
             [](Class& self,
                 const std::vector<geometry::optimization::ConvexSet*>& regions,
                 const std::vector<std::pair<int, int>>& edges_between_regions,
-                int order, double h_min, double h_max,
-                std::string name) -> Class::Subgraph& {
+                int order, double h_min, double h_max, std::string name,
+                int geometric_continuity_order) -> Class::Subgraph& {
               return self.AddRegions(CloneConvexSets(regions),
-                  edges_between_regions, order, h_min, h_max, std::move(name));
+                  edges_between_regions, order, h_min, h_max, std::move(name),
+                  geometric_continuity_order);
             },
             py_rvp::reference_internal, py::arg("regions"),
             py::arg("edges_between_regions"), py::arg("order"),
@@ -410,10 +411,10 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
             "AddRegions",
             [](Class& self,
                 const std::vector<geometry::optimization::ConvexSet*>& regions,
-                int order, double h_min, double h_max,
-                std::string name) -> Class::Subgraph& {
+                int order, double h_min, double h_max, std::string name,
+                int geometric_continuity_order) -> Class::Subgraph& {
               return self.AddRegions(CloneConvexSets(regions), order, h_min,
-                  h_max, std::move(name));
+                  h_max, std::move(name), geometric_continuity_order);
             },
             py_rvp::reference_internal, py::arg("regions"), py::arg("order"),
             py::arg("h_min") = 1e-6, py::arg("h_max") = 20,
