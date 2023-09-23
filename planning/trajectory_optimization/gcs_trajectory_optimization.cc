@@ -1,5 +1,6 @@
 #include "drake/planning/trajectory_optimization/gcs_trajectory_optimization.h"
 
+#include <algorithm>
 #include <limits>
 #include <tuple>
 #include <unordered_map>
