@@ -247,6 +247,21 @@ TEST_F(BuildIiwaControlTest, PositionAndTorque) {
   }
 }
 
+TEST_F(BuildIiwaControlTest, PositionAndTorqueSkipReturnValue) {
+  const IiwaControlPorts control_ports = BuildSimplifiedIiwaControl(
+      *sim_plant_, iiwa7_info_.model_instance, *controller_plant_, &builder_,
+      0.01, {}, IiwaControlMode::kPositionAndTorque,
+      /* skip_return_value = */ true);
+  EXPECT_EQ(control_ports.commanded_positions, nullptr);
+  EXPECT_EQ(control_ports.commanded_torque, nullptr);
+  EXPECT_EQ(control_ports.position_commanded, nullptr);
+  EXPECT_EQ(control_ports.position_measured, nullptr);
+  EXPECT_EQ(control_ports.velocity_estimated, nullptr);
+  EXPECT_EQ(control_ports.joint_torque, nullptr);
+  EXPECT_EQ(control_ports.torque_measured, nullptr);
+  EXPECT_EQ(control_ports.external_torque, nullptr);
+}
+
 }  // namespace
 }  // namespace kuka_iiwa
 }  // namespace manipulation

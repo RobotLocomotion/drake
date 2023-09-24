@@ -86,8 +86,9 @@ class Scenario:
     directives: typing.List[ModelDirective] = dc.field(default_factory=list)
 
     # A map of {bus_name: lcm_params} for LCM transceivers to be used by
-    # drivers, sensors, etc.
-    lcm_buses: typing.Mapping[str, DrakeLcmParams] = dc.field(
+    # drivers, sensors, etc. Setting the `lcm_params` to `None` indicates that
+    # LCM should not be used for that `bus_name`.
+    lcm_buses: typing.Mapping[str, typing.Optional[DrakeLcmParams]] = dc.field(
         default_factory=lambda: dict(default=DrakeLcmParams()))
 
     # For actuated models, specifies where each model's actuation inputs come
@@ -181,7 +182,8 @@ def run(*, scenario, graphviz=None):
             f.write(diagram.GetGraphvizString(options=options))
 
     # Simulate.
-    simulator.AdvanceTo(scenario.simulation_duration)
+    if scenario.simulation_duration >= 0:
+        simulator.AdvanceTo(scenario.simulation_duration)
 
 
 def main():

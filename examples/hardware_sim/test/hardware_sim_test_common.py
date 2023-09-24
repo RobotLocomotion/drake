@@ -81,6 +81,16 @@ class HardwareSimTest:
         """Tests the OneOfEverything test scenario."""
         self._run(self._test_scenarios, "OneOfEverything")
 
+    def test_NoLcm(self):
+        """Tests the NoLcm test scenario."""
+        # When LCM is missing, the driver inputs are disconnected and therefore
+        # will throw an error, so we must not even initialize the Simulator.
+        extra = dict(simulation_duration=-1)
+        self._run(self._test_scenarios, "NoLcm", extra=extra)
+        # Simulating throws. This is a loose cross-check that LCM was disabled.
+        with self.assertRaises(subprocess.CalledProcessError):
+            self._run(self._test_scenarios, "NoLcm")
+
     def test_Demo(self):
         """Tests the Demo example."""
         self._run(self._example_scenarios, "Demo")

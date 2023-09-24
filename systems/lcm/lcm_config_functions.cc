@@ -24,18 +24,25 @@ LcmBuses ApplyLcmBusConfig(
   DRAKE_THROW_UNLESS(builder != nullptr);
   LcmBuses result;
   for (const auto& [bus_name, lcm_params] : lcm_buses) {
-    // Create the objects. Note that a diagram will delete its systems in the
-    // reverse of the order they were added, so the aliasing here from the
-    // pumper_system to owner_system is no problem.
+    // Create the DrakeLcm.
     auto* owner_system = builder->AddSystem<SharedPointerSystem<double>>(
         std::make_shared<DrakeLcm>(lcm_params));
     DrakeLcm* const drake_lcm = owner_system->get<DrakeLcm>();
-    auto* pumper_system = builder->AddSystem<LcmInterfaceSystem>(drake_lcm);
-
-    // Given the systems useful names, for debugging.
     const std::string canonical_url = drake_lcm->get_lcm_url();
     owner_system->set_name(fmt::format("DrakeLcm(bus_name={}, lcm_url={})",
                                        bus_name, canonical_url));
+
+    // Do not pump a null LCM.
+    if (canonical_url == LcmBuses::kLcmUrlMemqNull) {
+      drake::log()->debug("Dummy LCM bus '{}' created", bus_name);
+      result.Add(bus_name, drake_lcm);
+      continue;
+    }
+
+    // Create the LcmInterfaceSystem. Note that a diagram deletes its systems in
+    // the reverse of the order they were added, so the aliasing here from the
+    // pumper_system to owner_system is no problem.
+    auto* pumper_system = builder->AddSystem<LcmInterfaceSystem>(drake_lcm);
     pumper_system->set_name(
         fmt::format("LcmInterfaceSystem(bus_name={}, lcm_url={})", bus_name,
                     canonical_url));
@@ -46,6 +53,22 @@ LcmBuses ApplyLcmBusConfig(
     result.Add(bus_name, pumper_system);
   }
   return result;
+}
+
+LcmBuses ApplyLcmBusConfig(
+    const std::map<std::string, std::optional<DrakeLcmParams>>& lcm_buses,
+    DiagramBuilder<double>* builder) {
+  DRAKE_THROW_UNLESS(builder != nullptr);
+  std::map<std::string, drake::lcm::DrakeLcmParams> new_map;
+  for (const auto& [bus_name, lcm_params] : lcm_buses) {
+    if (lcm_params.has_value()) {
+      new_map.emplace(bus_name, *lcm_params);
+    } else {
+      new_map.emplace(bus_name,
+                      DrakeLcmParams{.lcm_url = LcmBuses::kLcmUrlMemqNull});
+    }
+  }
+  return ApplyLcmBusConfig(new_map, builder);
 }
 
 DrakeLcmInterface* FindOrCreateLcmBus(DrakeLcmInterface* forced_result,

@@ -116,6 +116,39 @@ GTEST_TEST(LcmConfigFunctionsFindOrCreateTest, CreateNew) {
       ".*non-default.*special.*");
 }
 
+// Special handling for opting-out of LCM.
+GTEST_TEST(LcmConfigFunctionsTest, Nulls) {
+  const std::map<std::string, std::optional<DrakeLcmParams>> lcm_buses{
+      {"foo", std::nullopt},
+      {"bar", DrakeLcmParams{.lcm_url = LcmBuses::kLcmUrlMemqNull}},
+  };
+
+  // Invoke the device under test.
+  DiagramBuilder<double> builder;
+  auto name_to_interface = ApplyLcmBusConfig(lcm_buses, &builder);
+  ASSERT_EQ(name_to_interface.size(), 2);
+  auto diagram = builder.Build();
+
+  // Check its results.
+  auto* interface1 = name_to_interface.Find("Nulls test", "foo");
+  auto* interface2 = name_to_interface.Find("Nulls test", "bar");
+  ASSERT_NE(interface1, nullptr);
+  ASSERT_NE(interface2, nullptr);
+
+  // Check that no unwanted systems were added.
+  std::vector<std::string> names;
+  for (const System<double>* system : diagram->GetSystems()) {
+    names.push_back(system->get_name());
+  }
+  const std::vector<std::string> expected{
+      // The two `SharedPtrSystem`s are the only things that gets added.
+      // Nnote that there are no `LcmInterfaceSystem`s anywhere here.
+      "DrakeLcm(bus_name=foo, lcm_url=memq://null)",
+      "DrakeLcm(bus_name=bar, lcm_url=memq://null)",
+  };
+  EXPECT_THAT(names, testing::UnorderedElementsAreArray(expected));
+}
+
 }  // namespace
 }  // namespace lcm
 }  // namespace systems
