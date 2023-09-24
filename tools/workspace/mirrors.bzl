@@ -21,6 +21,13 @@ DEFAULT_MIRRORS = {
         "https://s3.amazonaws.com/drake-mirror/github/bazelbuild/buildtools/releases/{version}/{filename}",  # noqa
         "https://github.com/bazelbuild/buildtools/releases/download/{version}/{filename}",  # noqa
     ],
+    "crate_universe": [
+        # This pattern instructs us to allow the crates.io URL.
+        "{default_url}",
+        # These patterns are made available as additional backups.
+        "https://drake-mirror.csail.mit.edu/crates.io/{archive}",
+        "https://s3.amazonaws.com/drake-mirror/crates.io/{archive}",
+    ],
     "director": [
         "https://drake-packages.csail.mit.edu/director/{archive}",
         "https://s3.amazonaws.com/drake-packages/director/{archive}",

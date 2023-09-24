@@ -4,10 +4,12 @@ load("//tools/workspace/abseil_cpp_internal:repository.bzl", "abseil_cpp_interna
 load("//tools/workspace/bazelisk:repository.bzl", "bazelisk_repository")
 load("//tools/workspace/bazel_skylib:repository.bzl", "bazel_skylib_repository")  # noqa
 load("//tools/workspace/blas:repository.bzl", "blas_repository")
+load("//tools/workspace/build_bazel_apple_support:repository.bzl", "build_bazel_apple_support_repository")  # noqa
 load("//tools/workspace/buildifier:repository.bzl", "buildifier_repository")
 load("//tools/workspace/cc:repository.bzl", "cc_repository")
 load("//tools/workspace/ccd_internal:repository.bzl", "ccd_internal_repository")  # noqa
 load("//tools/workspace/clang_cindex_python3_internal:repository.bzl", "clang_cindex_python3_internal_repository")  # noqa
+load("//tools/workspace/clarabel_cpp_internal:repository.bzl", "clarabel_cpp_internal_repository")  # noqa
 load("//tools/workspace/clp:repository.bzl", "clp_repository")
 load("//tools/workspace/clp_internal:repository.bzl", "clp_internal_repository")  # noqa
 load("//tools/workspace/coinutils_internal:repository.bzl", "coinutils_internal_repository")  # noqa
@@ -16,6 +18,7 @@ load("//tools/workspace/common_robotics_utilities:repository.bzl", "common_robot
 load("//tools/workspace/commons_io:repository.bzl", "commons_io_repository")
 load("//tools/workspace/conex:repository.bzl", "conex_repository")
 load("//tools/workspace/conex_internal:repository.bzl", "conex_internal_repository")  # noqa
+load("//tools/workspace/crate_universe:repository.bzl", "crate_universe_repositories")  # noqa
 load("//tools/workspace/csdp:repository.bzl", "csdp_repository")
 load("//tools/workspace/csdp_internal:repository.bzl", "csdp_internal_repository")  # noqa
 load("//tools/workspace/curl_internal:repository.bzl", "curl_internal_repository")  # noqa
@@ -84,6 +87,8 @@ load("//tools/workspace/qhull_internal:repository.bzl", "qhull_internal_reposito
 load("//tools/workspace/ros_xacro_internal:repository.bzl", "ros_xacro_internal_repository")  # noqa
 load("//tools/workspace/rules_pkg:repository.bzl", "rules_pkg_repository")
 load("//tools/workspace/rules_python:repository.bzl", "rules_python_repository")  # noqa
+load("//tools/workspace/rules_rust:repository.bzl", "rules_rust_repository")
+load("//tools/workspace/rules_rust_tinyjson:repository.bzl", "rules_rust_tinyjson_repository")  # noqa
 load("//tools/workspace/scs_internal:repository.bzl", "scs_internal_repository")  # noqa
 load("//tools/workspace/sdformat_internal:repository.bzl", "sdformat_internal_repository")  # noqa
 load("//tools/workspace/snopt:repository.bzl", "snopt_repository")
@@ -129,6 +134,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         bazel_skylib_repository(name = "bazel_skylib", mirrors = mirrors)
     if "blas" not in excludes:
         blas_repository(name = "blas")
+    if "build_bazel_apple_support" not in excludes:
+        build_bazel_apple_support_repository(name = "build_bazel_apple_support", mirrors = mirrors)  # noqa
     if "buildifier" not in excludes:
         buildifier_repository(name = "buildifier", mirrors = mirrors)
     if "cc" not in excludes:
@@ -141,6 +148,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         # The @clp external is deprecated in Drake's WORKSPACE and will be
         # removed on or after 2023-12-01.
         clp_repository(name = "clp")
+    if "clarabel_cpp_internal" not in excludes:
+        clarabel_cpp_internal_repository(name = "clarabel_cpp_internal", mirrors = mirrors)  # noqa
     if "clp_internal" not in excludes:
         clp_internal_repository(name = "clp_internal", mirrors = mirrors)
     if "coinutils_internal" not in excludes:
@@ -157,6 +166,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         conex_repository(name = "conex", mirrors = mirrors)
     if "conex_internal" not in excludes:
         conex_internal_repository(name = "conex_internal", mirrors = mirrors)
+    if "crate_universe" not in excludes:
+        crate_universe_repositories(mirrors = mirrors, excludes = excludes)
     if "csdp" not in excludes:
         # The @csdp external is deprecated in Drake's WORKSPACE and will be
         # removed on or after 2023-11-01.
@@ -316,6 +327,10 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         rules_pkg_repository(name = "rules_pkg", mirrors = mirrors)
     if "rules_python" not in excludes:
         rules_python_repository(name = "rules_python", mirrors = mirrors)
+    if "rules_rust" not in excludes:
+        rules_rust_repository(name = "rules_rust", mirrors = mirrors)
+    if "rules_rust_tinyjson" not in excludes:
+        rules_rust_tinyjson_repository(name = "rules_rust_tinyjson", mirrors = mirrors)  # noqa
     if "scs_internal" not in excludes:
         scs_internal_repository(name = "scs_internal", mirrors = mirrors)
     if "sdformat_internal" not in excludes:
