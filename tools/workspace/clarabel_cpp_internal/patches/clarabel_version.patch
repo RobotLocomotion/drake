@@ -1,0 +1,10 @@
+[Clarabel.cpp] Pin Clarabel to the Crate (not the git submodule)
+
+--- rust_wrapper/Cargo.toml
++++ rust_wrapper/Cargo.toml
+@@ -5,4 +5,4 @@
+ 
+ [dependencies]
+-clarabel = { path = "../Clarabel.rs" }
++clarabel = "0.6.0"
+ 
