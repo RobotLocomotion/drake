@@ -6,6 +6,7 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/planning/robot_diagram_builder.h"
+#include "drake/systems/primitives/shared_pointer_system.h"
 
 namespace drake {
 namespace planning {
@@ -17,6 +18,7 @@ using multibody::Parser;
 using symbolic::Expression;
 using systems::Context;
 using systems::DiagramBuilder;
+using systems::SharedPointerSystem;
 using systems::System;
 
 std::unique_ptr<RobotDiagramBuilder<double>> MakeSampleDut() {
@@ -94,6 +96,26 @@ GTEST_TEST(RobotDiagramBuilderTest, LifecycleFailFast) {
   DRAKE_EXPECT_THROWS_MESSAGE(dut->scene_graph(), error);
   DRAKE_EXPECT_THROWS_MESSAGE(const_dut->scene_graph(), error);
   DRAKE_EXPECT_THROWS_MESSAGE(dut->Build(), error);
+}
+
+GTEST_TEST(RobotDiagramBuilderTest, TooMuchSurgery) {
+  std::unique_ptr<RobotDiagramBuilder<double>> dut;
+
+  dut = MakeSampleDut();
+  dut->builder().RemoveSystem(dut->plant());
+  DRAKE_EXPECT_THROWS_MESSAGE(dut->plant(), ".*not remove.*MultibodyPlant.*");
+
+  dut = MakeSampleDut();
+  dut->builder().RemoveSystem(dut->scene_graph());
+  DRAKE_EXPECT_THROWS_MESSAGE(dut->scene_graph(), ".*not remove.*SceneGraph.*");
+}
+
+GTEST_TEST(RobotDiagramBuilderTest, AddSystem) {
+  std::unique_ptr<RobotDiagramBuilder<double>> dut = MakeSampleDut();
+  dut->builder().AddNamedSystem<SharedPointerSystem>(
+      "foo", std::make_shared<std::string>("bar"));
+  auto diagram = dut->Build();
+  EXPECT_TRUE(diagram->HasSubsystemNamed("foo"));
 }
 
 GTEST_TEST(RobotDiagramTest, SmokeTest) {
