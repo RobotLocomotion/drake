@@ -479,6 +479,15 @@ GTEST_TEST(RollPitchYaw, CalcRpyDDtFromAngularAccel) {
   }
 }
 
+GTEST_TEST(RollPitchYaw, Hash) {
+  RollPitchYaw<double> R_AB(Vector3d{0.0, 0.5, 1.0});
+  RollPitchYaw<double> R_CD = R_AB;
+  const DefaultHash hash_func;
+  EXPECT_EQ(hash_func(R_AB), hash_func(R_CD));
+  R_CD.set_roll_angle(1.0);
+  EXPECT_NE(hash_func(R_AB), hash_func(R_CD));
+}
+
 // Verify the constructor and a few key operations are compatible with
 // symbolic::Expression.  We focus only on methods that required tweaks in
 // order to compile against Expression.

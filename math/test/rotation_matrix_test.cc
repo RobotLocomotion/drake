@@ -1310,6 +1310,15 @@ GTEST_TEST(RotationMatrixTest, MakeFromOneVectorExceptions) {
   VerifyMakeFromOneUnitVector(R_AB, huge_vector.normalized(), axis_index);
 }
 
+GTEST_TEST(RotationMatrixTest, Hash) {
+  RotationMatrix<double> R_AB = RotationMatrix<double>::MakeXRotation(1.0);
+  RotationMatrix<double> R_CD = R_AB;
+  const DefaultHash hash_func;
+  EXPECT_EQ(hash_func(R_AB), hash_func(R_CD));
+  R_CD = RotationMatrix<double>::MakeXRotation(0.5);
+  EXPECT_NE(hash_func(R_AB), hash_func(R_CD));
+}
+
 class MakeClosestRotationToIdentityFromUnitZTest
     : public ::testing::TestWithParam<Vector3d> {};
 

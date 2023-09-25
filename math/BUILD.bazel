@@ -159,6 +159,7 @@ drake_cc_library(
         "//common:default_scalars",
         "//common:drake_bool",
         "//common:essential",
+        "//common:hash",
         "//common:is_approx_equal_abstol",
         "//common:unused",
         "//math:gradient",
