@@ -183,6 +183,16 @@ class ForceElement : public MultibodyElement<T> {
       const internal::VelocityKinematicsCache<T>& vc,
       MultibodyForces<T>* forces) const = 0;
 
+  /// Called by DoDeclareParameters(). Derived classes may choose to override
+  /// to declare their sub-class specific parameters.
+  virtual void DoDeclareForceElementParameters(
+      internal::MultibodyTreeSystem<T>*) {}
+
+  /// Called by DoSetDefaultParameters(). Derived classes may choose to override
+  /// to set their sub-class specific parameters.
+  virtual void DoSetDefaultForceElementParameters(
+      systems::Parameters<T>*) const {}
+
   /// @name Methods to make a clone templated on different scalar types.
   ///
   /// Specific force element subclasses must implement these to support scalar
@@ -252,6 +262,17 @@ class ForceElement : public MultibodyElement<T> {
   // At MultibodyTree::Finalize() time, each force element retrieves its
   // topology from the parent MultibodyTree.
   void DoSetTopology(const internal::MultibodyTreeTopology&) final {}
+
+  // Implementation for MultibodyElement::DoDeclareParameters().
+  void DoDeclareParameters(
+      internal::MultibodyTreeSystem<T>* tree_system) final {
+    DoDeclareForceElementParameters(tree_system);
+  }
+
+  // Implementation for MultibodyElement::DoSetDefaultParameters().
+  void DoSetDefaultParameters(systems::Parameters<T>* parameters) const final {
+    DoSetDefaultForceElementParameters(parameters);
+  }
 };
 
 }  // namespace multibody

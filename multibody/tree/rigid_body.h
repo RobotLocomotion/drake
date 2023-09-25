@@ -390,16 +390,28 @@ class RigidBody : public Body<T> {
     return TemplatedDoCloneToScalar(tree_clone);
   }
 
-  // Implementation for MultibodyElement::DoDeclareParameters().
+  // Implementation for Body::DoDeclareBodyParameters().
   // RigidBody declares a single parameter for its SpatialInertia.
-  void DoDeclareParameters(
-      internal::MultibodyTreeSystem<T>* tree_system) override {
-    // Declare parent classes' parameters
-    Body<T>::DoDeclareParameters(tree_system);
+  void DoDeclareBodyParameters(
+      internal::MultibodyTreeSystem<T>* tree_system) final {
+    // Sets model values to dummy values to indicate that the model values are
+    // not used. This class stores the the default values of the parameters.
+    // 10 numeric values are used to store mass, center of mass, moments and
+    // products of inertia packed into one basic vector.
+    spatial_inertia_parameter_index_ =
+        this->DeclareNumericParameter(tree_system, systems::BasicVector<T>(10));
+  }
 
-    spatial_inertia_parameter_index_ = this->DeclareNumericParameter(
-        tree_system, internal::parameter_conversion::ToBasicVector<T>(
-                         default_spatial_inertia_.template cast<T>()));
+  // Implementation for Body::DoSetDefaultBodyParameters().
+  void DoSetDefaultBodyParameters(
+      systems::Parameters<T>* parameters) const final {
+    // Set the default spatial inertia.
+    systems::BasicVector<T>& spatial_inertia_parameter =
+        parameters->get_mutable_numeric_parameter(
+            spatial_inertia_parameter_index_);
+    spatial_inertia_parameter.SetFrom(
+        internal::parameter_conversion::ToBasicVector<T>(
+            default_spatial_inertia_.template cast<T>()));
   }
 
  private:
