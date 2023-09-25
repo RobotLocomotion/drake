@@ -138,6 +138,7 @@ drake_cc_library(
     internal = True,
     visibility = ["//visibility:private"],
     deps = [
+        "//common:drake_export",
         "//common:essential",
         "@nlohmann_internal//:nlohmann",
     ],
@@ -361,6 +362,7 @@ drake_cc_googletest(
         ":internal_merge_gltf",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
         "@nlohmann_internal//:nlohmann",
     ],
 )
