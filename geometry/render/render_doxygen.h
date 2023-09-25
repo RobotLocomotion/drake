@@ -16,17 +16,23 @@ namespace render {
  three types of images: color, depth, and label. (For more details about the
  API, refer to the RenderEngine documentation.)
 
- Drake includes *two* implementations of that API:
+ Drake includes *three* implementations of that API:
 
    - RenderEngineVtk - A GPU-based rasterization renderer using the VTK library.
    - RenderEngineGl - A GPU-based rasterization renderer using direct calls to
                       the OpenGL API.
+   - RenderEngineGltfClient - An implementation of a client-server RPC renderer
+                              that broadcasts Drake's visual state in a glTF
+                              file.
 
  These implementations differ in many ways largely differ in performance and
  flexibility potential. RenderEngineVtk is slower but has the possibility of
  leveraging the full VTK API to provide *post hoc* customizations.
  RenderEngineGl is faster, but gains that performance boost by implementing a
- barebones rendering pipeline.
+ barebones rendering pipeline. RenderEngineGltfClient can connect to a server
+ backed by arbitrary rendering technology with the potential of producing the
+ highest fidelity images possible, but with a much higher latency on producing
+ individual images.
 
  Picking the right renderer for your simulated sensors will be based on
  considering those differences and picking the trade-off that best suits your
