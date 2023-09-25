@@ -106,6 +106,9 @@ class SharedPointerSystem final : public LeafSystem<T> {
 
   SharedPointerSystem(std::shared_ptr<void> held, std::type_index held_type);
 
+  typename LeafSystem<T>::GraphvizFragment DoGetGraphvizFragment(
+      const typename LeafSystem<T>::GraphvizFragmentParams&) const final;
+
   const std::shared_ptr<void> held_;
   const std::type_index held_type_;
 };

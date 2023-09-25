@@ -72,6 +72,13 @@ GTEST_TEST(SharedPointerSystemTest, Null) {
   auto diagram = builder->Build();
 }
 
+// Just make sure nothing crashes.
+GTEST_TEST(SharedPointerSystemTest, Graphviz) {
+  auto held = std::make_shared<std::string>("held");
+  auto dut = std::make_unique<SharedPointerSystem<double>>(std::move(held));
+  EXPECT_NO_THROW(dut->GetGraphvizString());
+}
+
 }  // namespace
 }  // namespace systems
 }  // namespace drake
