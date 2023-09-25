@@ -11,6 +11,7 @@ namespace drake {
 using systems::BasicVector;
 using systems::Context;
 using systems::LeafSystem;
+using systems::Parameters;
 using systems::State;
 
 namespace multibody {
@@ -79,6 +80,56 @@ void MultibodyTreeSystem<T>::SetDefaultState(const Context<T>& context,
                                              State<T>* state) const {
   LeafSystem<T>::SetDefaultState(context, state);
   tree_->SetDefaultState(context, state);
+}
+
+template <typename T>
+void MultibodyTreeSystem<T>::SetDefaultParameters(
+    const Context<T>& context, Parameters<T>* parameters) const {
+  LeafSystem<T>::SetDefaultParameters(context, parameters);
+
+  // Mobilizers.
+  for (MobilizerIndex mobilizer_index(0);
+       mobilizer_index < tree_->num_mobilizers(); ++mobilizer_index) {
+    mutable_tree()
+        .get_mutable_mobilizer(mobilizer_index)
+        .SetDefaultParameters(parameters);
+  }
+  // Joints.
+  for (JointIndex joint_index(0); joint_index < tree_->num_joints();
+       ++joint_index) {
+    mutable_tree()
+        .get_mutable_joint(joint_index)
+        .SetDefaultParameters(parameters);
+  }
+  // JointActuators.
+  for (JointActuatorIndex joint_actuator_index(0);
+       joint_actuator_index < tree_->num_actuators(); ++joint_actuator_index) {
+    mutable_tree()
+        .get_mutable_joint_actuator(joint_actuator_index)
+        .SetDefaultParameters(parameters);
+  }
+  // Bodies.
+  for (BodyIndex body_index(0); body_index < tree_->num_bodies();
+       ++body_index) {
+    mutable_tree()
+        .get_mutable_body(body_index)
+        .SetDefaultParameters(parameters);
+  }
+  // Frames.
+  for (FrameIndex frame_index(0); frame_index < tree_->num_frames();
+       ++frame_index) {
+    mutable_tree()
+        .get_mutable_frame(frame_index)
+        .SetDefaultParameters(parameters);
+  }
+  // Force Elements.
+  for (ForceElementIndex force_element_index(0);
+       force_element_index < tree_->num_force_elements();
+       ++force_element_index) {
+    mutable_tree()
+        .get_mutable_force_element(force_element_index)
+        .SetDefaultParameters(parameters);
+  }
 }
 
 template <typename T>

@@ -396,10 +396,26 @@ class RigidBody : public Body<T> {
       internal::MultibodyTreeSystem<T>* tree_system) override {
     // Declare parent classes' parameters
     Body<T>::DoDeclareParameters(tree_system);
-
+    // Sets model values to dummy values to indicate that the model values are
+    // not used. This class stores the the default values of the parameters.
+    // 10 numeric values are used to store mass, center of mass, moments and
+    // products of inertia packed into one basic vector.
     spatial_inertia_parameter_index_ = this->DeclareNumericParameter(
-        tree_system, internal::parameter_conversion::ToBasicVector<T>(
-                         default_spatial_inertia_.template cast<T>()));
+        tree_system, systems::BasicVector<T>(10));
+  }
+
+  // Implementation for MultibodyElement::DoSetDefaultParameters().
+  void DoSetDefaultParameters(
+      systems::Parameters<T>* parameters) const override {
+    // Set the parent classes' parameters.
+    Body<T>::DoSetDefaultParameters(parameters);
+    // Set the default spatial inertia.
+    systems::BasicVector<T>& spatial_inertia_parameter =
+        parameters->get_mutable_numeric_parameter(
+            spatial_inertia_parameter_index_);
+    spatial_inertia_parameter.SetFrom(
+        internal::parameter_conversion::ToBasicVector<T>(
+            default_spatial_inertia_.template cast<T>()));
   }
 
  private:

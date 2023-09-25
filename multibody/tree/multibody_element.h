@@ -68,6 +68,12 @@ class MultibodyElement {
   /// returned from GetParentTreeSystem()).
   void DeclareParameters(internal::MultibodyTreeSystem<T>* tree_system);
 
+  /// Sets default values of parameters belonging to each %MultibodyElement in
+  /// `parameters` at a call to MultibodyTreeSystem::SetDefaultParameters().
+  /// @param[out] parameters A mutable collections of parameters in a context.
+  /// @pre parameters != nullptr
+  void SetDefaultParameters(systems::Parameters<T>* parameters) const;
+
  protected:
   /// Default constructor made protected so that sub-classes can still declare
   /// their default constructors if they need to.
@@ -113,6 +119,12 @@ class MultibodyElement {
   /// is not a direct descendent of MultibodyElement, it must invoke its parent
   /// classes' DoDeclareParameters() before declaring its own parameters.
   virtual void DoDeclareParameters(internal::MultibodyTreeSystem<T>*);
+
+  /// Implementation of the NVI SetDefaultParameters(). MultibodyElement-derived
+  /// objects must override to set default values of their specific parameters.
+  /// If an object is not a direct descendent of MultibodyElement, it must
+  /// invoke its parent classes' DoSetDefaultParameters().
+  virtual void DoSetDefaultParameters(systems::Parameters<T>*) const;
 
   /// To be used by MultibodyElement-derived objects when declaring parameters
   /// in their implementation of DoDeclareParameters(). For an example, see
