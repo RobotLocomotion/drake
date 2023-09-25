@@ -348,13 +348,25 @@ class JointActuator final : public MultibodyElement<T> {
   // Implementation for MultibodyElement::DoDeclareParameters().
   void DoDeclareParameters(
       internal::MultibodyTreeSystem<T>* tree_system) final {
-    // Declare parent classes' parameters
-    MultibodyElement<T>::DoDeclareParameters(tree_system);
-    rotor_inertia_parameter_index_ = this->DeclareNumericParameter(
-        tree_system,
-        systems::BasicVector<T>(Vector1<T>(default_rotor_inertia_)));
-    gear_ratio_parameter_index_ = this->DeclareNumericParameter(
-        tree_system, systems::BasicVector<T>(Vector1<T>(default_gear_ratio_)));
+    // Sets model values to dummy values to indicate that the model values are
+    // not used. This class stores the the default values of the parameters.
+    rotor_inertia_parameter_index_ =
+        this->DeclareNumericParameter(tree_system, systems::BasicVector<T>(1));
+    gear_ratio_parameter_index_ =
+        this->DeclareNumericParameter(tree_system, systems::BasicVector<T>(1));
+  }
+
+  // Implementation for MultibodyElement::DoSetDefaultParameters().
+  void DoSetDefaultParameters(systems::Parameters<T>* parameters) const final {
+    // Set the default rotor inertia.
+    systems::BasicVector<T>& rotor_inertia_parameter =
+        parameters->get_mutable_numeric_parameter(
+            rotor_inertia_parameter_index_);
+    rotor_inertia_parameter.set_value(Vector1<T>(default_rotor_inertia_));
+    // Set the default gear ratio.
+    systems::BasicVector<T>& gear_ratio_parameter =
+        parameters->get_mutable_numeric_parameter(gear_ratio_parameter_index_);
+    gear_ratio_parameter.set_value(Vector1<T>(default_gear_ratio_));
   }
 
   // The actuator's unique name in the MultibodyTree model
