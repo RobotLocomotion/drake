@@ -143,8 +143,12 @@ void RenderEngineVtk::ImplementGeometry(const Box& box, void* user_data) {
 void RenderEngineVtk::ImplementGeometry(const Capsule& capsule,
                                         void* user_data) {
   const RegistrationData& data = *static_cast<RegistrationData*>(user_data);
+  // TODO(18296): When the capsule has texture coordinates, remove the UvState
+  // and let it default to UvState::kFull.
   ImplementPolyData(CreateVtkCapsule(capsule).GetPointer(),
-                    DefineMaterial(data.properties, default_diffuse_), data);
+                    DefineMaterial(data.properties, default_diffuse_, {},
+                                   geometry::internal::UvState::kNone),
+                    data);
 }
 
 void RenderEngineVtk::ImplementGeometry(const Convex& convex, void* user_data) {

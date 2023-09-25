@@ -42,7 +42,8 @@ void MaybeWarnForRedundantMaterial(const GeometryProperties& props,
 RenderMaterial MakeMeshFallbackMaterial(const GeometryProperties& props,
                                         const std::filesystem::path& mesh_path,
                                         const Rgba& default_diffuse,
-                                        const DiagnosticPolicy& policy) {
+                                        const DiagnosticPolicy& policy,
+                                        UvState uv_state) {
   // If a material is indicated *at all* in the properties, that
   // defines the material.
   if (props.HasProperty("phong", "diffuse") ||
@@ -56,7 +57,7 @@ RenderMaterial MakeMeshFallbackMaterial(const GeometryProperties& props,
     //  faithfully reproduce the texture. Obviously, if they've specified a
     //  diffuse color, that will be used. Objects that request an invalid
     //  texture will be drawn in white.
-    return DefineMaterial(props, Rgba(1, 1, 1), policy);
+    return DefineMaterial(props, Rgba(1, 1, 1), policy, uv_state);
   }
 
   // Checks for foo.png for mesh filename foo.*. This the legacy behavior we
@@ -72,8 +73,20 @@ RenderMaterial MakeMeshFallbackMaterial(const GeometryProperties& props,
     // If we find foo.png but can't access it, we'll *silently* treat it like
     // we didn't find it. No value in warning for a behavior we're cutting.
     if (std::ifstream(alt_texture_path).is_open()) {
+      if (uv_state == UvState::kFull) {
+        material.diffuse_map = alt_texture_path;
+      } else {
+        policy.Warning(fmt::format(
+            "A png file of the same name as the mesh has been found ('{}'), "
+            "but the mesh doesn't define {} texture coordinates. The map will "
+            "be omitted leaving a flat white color.",
+            alt_texture_path.string(),
+            uv_state == UvState::kNone ? "any" : "a complete set of"));
+      }
+      // A white color will leave the texture unmodulated. In the case where
+      // we couldn't apply the texture, flat white also corresponds to the
+      // warning message.
       material.diffuse = Rgba(1, 1, 1);
-      material.diffuse_map = alt_texture_path;
     }
   }
   return material;
@@ -81,7 +94,8 @@ RenderMaterial MakeMeshFallbackMaterial(const GeometryProperties& props,
 
 RenderMaterial DefineMaterial(const GeometryProperties& props,
                               const Rgba& default_diffuse,
-                              const DiagnosticPolicy& policy) {
+                              const DiagnosticPolicy& policy,
+                              UvState uv_state) {
   RenderMaterial material;
 
   material.diffuse_map =
@@ -101,6 +115,14 @@ RenderMaterial DefineMaterial(const GeometryProperties& props,
       policy.Warning(fmt::format(
           "The ('phong', 'diffuse_map') property referenced a map that "
           "could not be found: '{}'",
+          material.diffuse_map.string()));
+      material.diffuse_map.clear();
+    } else if (uv_state != UvState::kFull) {
+      policy.Warning(fmt::format(
+          "The ('phong', 'diffuse_map') property referenced a map, but the "
+          "geometry doesn't define {} texture coordinates. The map will be "
+          "omitted: '{}'.",
+          uv_state == UvState::kNone ? "any" : "a complete set of",
           material.diffuse_map.string()));
       material.diffuse_map.clear();
     }
