@@ -48,7 +48,6 @@ load("//tools/workspace/ipopt_internal_pkgconfig:repository.bzl", "ipopt_interna
 load("//tools/workspace/lapack:repository.bzl", "lapack_repository")
 load("//tools/workspace/lcm:repository.bzl", "lcm_repository")
 load("//tools/workspace/libblas:repository.bzl", "libblas_repository")
-load("//tools/workspace/libcmaes:repository.bzl", "libcmaes_repository")
 load("//tools/workspace/libjpeg:repository.bzl", "libjpeg_repository")
 load("//tools/workspace/liblapack:repository.bzl", "liblapack_repository")
 load("//tools/workspace/liblz4:repository.bzl", "liblz4_repository")
@@ -232,8 +231,6 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         lcm_repository(name = "lcm", mirrors = mirrors)
     if "libblas" not in excludes:
         libblas_repository(name = "libblas")
-    if "libcmaes" not in excludes:
-        libcmaes_repository(name = "libcmaes", mirrors = mirrors)
     if "libjpeg" not in excludes:
         libjpeg_repository(name = "libjpeg")
     if "liblapack" not in excludes:
