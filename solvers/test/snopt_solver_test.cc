@@ -527,6 +527,21 @@ GTEST_TEST(SnoptTest, TestLPDualSolution2Scaled) {
   TestLPDualSolution2Scaled(solver);
 }
 
+GTEST_TEST(SnoptTest, TestLPDualSolution3) {
+  SnoptSolver solver;
+  TestLPDualSolution3(solver);
+}
+
+GTEST_TEST(SnoptTest, TestLPDualSolution4) {
+  SnoptSolver solver;
+  TestLPDualSolution4(solver);
+}
+
+GTEST_TEST(SnoptTest, TestLPDualSolution5) {
+  SnoptSolver solver;
+  TestLPDualSolution5(solver);
+}
+
 GTEST_TEST(SnoptSolverTest, EckhardtDualSolution) {
   SnoptSolver solver;
   TestEckhardtDualSolution(solver, Eigen::Vector3d(1., 1., 5.));
