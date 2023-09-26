@@ -867,6 +867,7 @@ void CompliantContactManager<T>::CalcHydroelasticContactInfo(
   DRAKE_DEMAND(vt.size() == 2 * num_contacts);
 
   const int num_point_contacts = discrete_pairs.num_point_contacts();
+  const int num_hydro_contacts = discrete_pairs.num_hydro_contacts();
   const int num_surfaces = all_surfaces.size();
 
   std::vector<SpatialForce<T>> F_Ao_W_per_surface(num_surfaces,
@@ -881,7 +882,8 @@ void CompliantContactManager<T>::CalcHydroelasticContactInfo(
   // We only scan discrete pairs corresponding to hydroelastic quadrature
   // points. These are appended by CalcDiscreteContactPairs() at the end of the
   // point contact forces.
-  for (int icontact = num_point_contacts; icontact < num_contacts; ++icontact) {
+  for (int icontact = num_point_contacts;
+       icontact < num_point_contacts + num_hydro_contacts; ++icontact) {
     const auto& pair = discrete_pairs[icontact];
     // Quadrature point Q.
     const Vector3<T>& p_WQ = pair.p_WC;
