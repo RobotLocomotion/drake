@@ -11,4 +11,7 @@ def clang_cindex_python3_internal_repository(
         build_file = ":package.BUILD.bazel",
         mirrors = mirrors,
         patch_cmds = ["mkdir clang && mv *.py clang"],
+        patches = [
+            ":patches/clang-15.patch",
+        ],
     )

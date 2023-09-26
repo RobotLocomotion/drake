@@ -1,0 +1,14 @@
+
+For reference, for https://github.com/llvm/llvm-project here is the list of
+non-trivial changes to the clang python bindings (listed from newest to oldest):
+
+Git commit    Release  Change
+---------------------------------------------------
+c7161e73ca0a  17.0.0   Add clang_Location_isInSystemHeader
+0a51bc731bcc  17.0.0   Add clang_CXXMethod_isExplicit
+5c67cf0a7fdc  16.0.0   Add clang_CXXMethod_isMoveAssignmentOperator
+476a497f729a  16.0.0   Add clang_CXXMethod_isCopyAssignmentOperator
+bc14ed7de0f1  16.0.0   Add clang_CXXMethod_isDeleted
+bb83f8e70bd1  15.0.0   Re-define CursorKind.TRANSLATION_UNIT
+fae0dfa6421e  14.0.0   Add TypeKind.IBM128
+ccc43e337cfa  11.0.0   <baseline>
