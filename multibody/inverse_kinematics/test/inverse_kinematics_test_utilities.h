@@ -225,8 +225,8 @@ void TestKinematicConstraintEval(
     const ConstraintType& constraint_from_double,
     const ConstraintType& constraint_from_autodiff,
     const Eigen::Ref<const Eigen::VectorXd>& x_double,
-    const Eigen::Ref<const Eigen::MatrixXd>& dx, double gradient_tol) {
-  const double tol = 1000 * std::numeric_limits<double>::epsilon();
+    const Eigen::Ref<const Eigen::MatrixXd>& dx, double gradient_tol,
+    double tol = 1000 * std::numeric_limits<double>::epsilon()) {
   // condition 1.
   Eigen::VectorXd y1_left, y1_right;
   constraint_from_double.Eval(x_double, &y1_left);
