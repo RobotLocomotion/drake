@@ -34,9 +34,8 @@ void DiscreteUpdateManager<T>::DeclareCacheEntries() {
   // what we want.
   const auto& discrete_input_port_forces_cache_entry = this->DeclareCacheEntry(
       "Discrete force input port values",
-      systems::ValueProducer(
-          this, MultibodyForces<T>(plant()),
-          &DiscreteUpdateManager<T>::CopyForcesFromInputPorts),
+      systems::ValueProducer(this, InputPortForces<T>(plant()),
+                             &DiscreteUpdateManager<T>::CalcInputPortForces),
       // The cache entry is manually managed to refresh at the beginning of a
       // discrete update.
       {systems::System<T>::nothing_ticket()});
@@ -165,7 +164,8 @@ const MultibodyTree<T>& DiscreteUpdateManager<T>::internal_tree() const {
 template <typename T>
 void DiscreteUpdateManager<T>::CalcNonContactForces(
     const drake::systems::Context<T>& context,
-    bool include_joint_limit_penalty_forces, MultibodyForces<T>* forces) const {
+    bool include_joint_limit_penalty_forces, bool include_actuation_input,
+    MultibodyForces<T>* forces) const {
   plant().ValidateContext(context);
   DRAKE_DEMAND(forces != nullptr);
   DRAKE_DEMAND(forces->CheckHasRightSizeForModel(plant()));
@@ -175,9 +175,17 @@ void DiscreteUpdateManager<T>::CalcNonContactForces(
   // Compute forces applied through force elements. Note that this resets
   // forces to empty so must come first.
   CalcForceElementsContribution(context, forces);
-  forces->AddInForces(EvalDiscreteInputPortForces(context));
+
+  // Evaluate all input forces at once.
+  const InputPortForces<T>& inputs = EvalInputPortForces(context);
+
+  // Copy into `forces` as requested.
+  forces->AddInForces(inputs.externally_applied_forces);
   if (include_joint_limit_penalty_forces) {
     AddJointLimitsPenaltyForces(context, forces);
+  }
+  if (include_actuation_input) {
+    forces->mutable_generalized_forces() += inputs.actuation;
   }
 }
 
@@ -313,7 +321,6 @@ ScopeExit DiscreteUpdateManager<T>::ThrowIfNonContactForceInProgress(
       [&evaluation_in_progress]() { evaluation_in_progress = false; });
 }
 
-
 template <typename T>
 void DiscreteUpdateManager<T>::SampleDiscreteInputPortForces(
     const drake::systems::Context<T>& context) const {
@@ -332,9 +339,9 @@ void DiscreteUpdateManager<T>::SampleDiscreteInputPortForces(
   auto& cache_entry_value =
       discrete_input_forces_cache_entry.get_mutable_cache_entry_value(context);
   cache_entry_value.mark_out_of_date();
-  MultibodyForces<T>& forces =
-      cache_entry_value.template GetMutableValueOrThrow<MultibodyForces<T>>();
-  CopyForcesFromInputPorts(context, &forces);
+  InputPortForces<T>& forces =
+      cache_entry_value.template GetMutableValueOrThrow<InputPortForces<T>>();
+  CalcInputPortForces(context, &forces);
   cache_entry_value.mark_up_to_date();
 
   // Initiate a value modification event.
@@ -344,11 +351,17 @@ void DiscreteUpdateManager<T>::SampleDiscreteInputPortForces(
 }
 
 template <typename T>
-void DiscreteUpdateManager<T>::CopyForcesFromInputPorts(
-    const systems::Context<T>& context, MultibodyForces<T>* forces) const {
+void DiscreteUpdateManager<T>::CalcInputPortForces(
+    const systems::Context<T>& context, InputPortForces<T>* forces) const {
   forces->SetZero();
-  MultibodyPlantDiscreteUpdateManagerAttorney<T>::AddInForcesFromInputPorts(
-      plant(), context, forces);
+  MultibodyPlantDiscreteUpdateManagerAttorney<T>::
+      AddAppliedExternalGeneralizedForces(plant(), context,
+                                          &forces->externally_applied_forces);
+  MultibodyPlantDiscreteUpdateManagerAttorney<
+      T>::AddAppliedExternalSpatialForces(plant(), context,
+                                          &forces->externally_applied_forces);
+  MultibodyPlantDiscreteUpdateManagerAttorney<T>::AddJointActuationForces(
+      plant(), context, &forces->actuation);
 }
 
 template <typename T>

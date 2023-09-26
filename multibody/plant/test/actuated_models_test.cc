@@ -47,6 +47,7 @@ class ActuatedIiiwaArmTest : public ::testing::Test {
     kArmIsControlled,
     kArmIsNotControlled,
     kArmIsPartiallyControlled,
+    kModelWithZeroGains,
   };
 
   // - arm not controlled
@@ -56,8 +57,8 @@ class ActuatedIiiwaArmTest : public ::testing::Test {
       ModelConfiguration model_config = ModelConfiguration::kArmIsNotControlled,
       bool is_discrete = true) {
     const char kArmSdfPath[] =
-        "drake/manipulation/models/iiwa_description/sdf/"
-        "iiwa14_no_collision.sdf";
+        "drake/manipulation/models/iiwa_description/iiwa7/"
+        "iiwa7_no_collision.sdf";
 
     const char kWsg50SdfPath[] =
         "drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50.sdf";
@@ -78,10 +79,9 @@ class ActuatedIiiwaArmTest : public ::testing::Test {
     gripper_model_ = parser.AddModels(FindResourceOrThrow(kWsg50SdfPath)).at(0);
 
     // A model of a (non-actuated) plate.
-    box_model_ = parser
-                       .AddModels(FindResourceOrThrow(
-                           "drake/multibody/models/box.urdf"))
-                       .at(0);
+    box_model_ =
+        parser.AddModels(FindResourceOrThrow("drake/multibody/models/box.urdf"))
+            .at(0);
 
     const auto& base_body = plant_->GetBodyByName("iiwa_link_0", arm_model_);
     const auto& end_effector = plant_->GetBodyByName("iiwa_link_7", arm_model_);
@@ -116,6 +116,14 @@ class ActuatedIiiwaArmTest : public ::testing::Test {
       actuator1.set_controller_gains({kProportionalGain_, kDerivativeGain_});
       auto& actuator3 = plant_->get_mutable_joint_actuator(arm_actuators[3]);
       actuator3.set_controller_gains({kProportionalGain_, kDerivativeGain_});
+    } else if (model_config == ModelConfiguration::kModelWithZeroGains) {
+      for (JointActuatorIndex actuator_index(0);
+           actuator_index < plant_->num_actuators(); ++actuator_index) {
+        JointActuator<double>& actuator =
+            plant_->get_mutable_joint_actuator(actuator_index);
+        // N.B. Proportional gains must be strictly positive.
+        actuator.set_controller_gains({1.0e-10, 0.0});
+      }
     }
 
     plant_->Finalize();
@@ -206,7 +214,7 @@ TEST_F(ActuatedIiiwaArmTest, AssembleActuationInput_ActuationInputRequired) {
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       MultibodyPlantTester::AssembleActuationInput(*plant_, *context_),
-      "Actuation input port for model instance iiwa14 must be connected or PD "
+      "Actuation input port for model instance iiwa7 must be connected or PD "
       "gains must be specified for each actuator.");
 }
 
@@ -276,7 +284,7 @@ TEST_F(ActuatedIiiwaArmTest,
   // We now verify AssembleDesiredStateInput() throws for the right reason.
   DRAKE_EXPECT_THROWS_MESSAGE(
       MultibodyPlantTester::AssembleDesiredStateInput(*plant_, *context_),
-      "Model iiwa14 is partially PD controlled. .*");
+      "Model iiwa7 is partially PD controlled. .*");
 }
 
 TEST_F(ActuatedIiiwaArmTest,
@@ -353,6 +361,123 @@ TEST_F(ActuatedIiiwaArmTest,
       "Continuous model with PD controlled joint actuators. This feature is "
       "only supported for discrete models. Refer to MultibodyPlant's "
       "documentation for further details.");
+}
+
+// This unit test verifies that, when within effort limits, forces applied
+// through the generalized forces input port has the same effect as applying the
+// same forces using the actuation input port.
+TEST_F(ActuatedIiiwaArmTest,
+       WithinEffortLimitsActuationMatchesAppliedGeneralizedForces) {
+  SetUpModel(ModelConfiguration::kArmIsControlled);
+
+  const VectorXd arm_q0 = (VectorXd(7) << 0, 0, 0, -1.7, 0, 1.0, 0).finished();
+  const VectorXd arm_v0 = VectorXd::Zero(7);
+  const VectorXd arm_x0 = (VectorXd(14) << arm_q0, arm_v0).finished();
+  const VectorXd gripper_q0 = VectorXd::Zero(2);
+  const VectorXd gripper_v0 = VectorXd::Zero(2);
+  const VectorXd gripper_x0 =
+      (VectorXd(4) << gripper_q0, gripper_v0).finished();
+
+  plant_->SetPositionsAndVelocities(context_.get(), arm_model_, arm_x0);
+  plant_->SetPositionsAndVelocities(context_.get(), gripper_model_, gripper_x0);
+
+  // The desired state input ports are required to be connected.
+  // N.B. The next time step state won't match the desired state due to the
+  // typical tracking error of PD controllers. However, for the values of gains
+  // in this model, actuation still won't exert limits.
+  plant_->get_desired_state_input_port(gripper_model_)
+      .FixValue(context_.get(), gripper_x0);
+  plant_->get_desired_state_input_port(arm_model_)
+      .FixValue(context_.get(), arm_x0);
+
+  // N.B. These values of actuation are well within effort limits, for both arm
+  // and gripper.
+  const VectorXd arm_u = VectorXd::LinSpaced(7, 1.0, 7.0);
+  const VectorXd gripper_u = VectorXd::LinSpaced(2, 1.0, 2.0);
+  const VectorXd free_box = VectorXd::Zero(6);
+  const VectorXd tau = (VectorXd(15) << arm_u, gripper_u, free_box).finished();
+
+  auto updates = plant_->AllocateDiscreteVariables();
+
+  // Input through generalized forces.
+  plant_->get_applied_generalized_force_input_port().FixValue(context_.get(),
+                                                              tau);
+  plant_->CalcForcedDiscreteVariableUpdate(*context_, updates.get());
+  const VectorXd x_tau = updates->get_vector().CopyToVector();
+
+  // Input through actuation. Zero generalized forces first.
+  plant_->get_applied_generalized_force_input_port().FixValue(
+      context_.get(), VectorXd::Zero(15));
+  plant_->get_actuation_input_port(arm_model_).FixValue(context_.get(), arm_u);
+  plant_->get_actuation_input_port(gripper_model_)
+      .FixValue(context_.get(), gripper_u);
+  plant_->CalcForcedDiscreteVariableUpdate(*context_, updates.get());
+  const VectorXd x_actuation = updates->get_vector().CopyToVector();
+
+  const double kEps = std::numeric_limits<double>::epsilon();
+  EXPECT_TRUE(
+      CompareMatrices(x_actuation, x_tau, kEps, MatrixCompareType::relative));
+}
+
+// We verify that the PD controlled actuators exert effort limits.
+TEST_F(ActuatedIiiwaArmTest,
+       OutsideEffortLimitsActuationMatchesAppliedGeneralizedForces) {
+  // We use zero gains so that we can verify the feed-forward component is
+  // handled properly
+  SetUpModel(ModelConfiguration::kModelWithZeroGains);
+
+  const VectorXd arm_q0 = (VectorXd(7) << 0, 0, 0, -1.7, 0, 1.0, 0).finished();
+  const VectorXd arm_v0 = VectorXd::Zero(7);
+  const VectorXd arm_x0 = (VectorXd(14) << arm_q0, arm_v0).finished();
+  const VectorXd gripper_q0 = VectorXd::Zero(2);
+  const VectorXd gripper_v0 = VectorXd::Zero(2);
+  const VectorXd gripper_x0 =
+      (VectorXd(4) << gripper_q0, gripper_v0).finished();
+
+  plant_->SetPositionsAndVelocities(context_.get(), arm_model_, arm_x0);
+  plant_->SetPositionsAndVelocities(context_.get(), gripper_model_, gripper_x0);
+
+  // The desired state input ports are required to be connected.
+  plant_->get_desired_state_input_port(gripper_model_)
+      .FixValue(context_.get(), gripper_x0);
+  plant_->get_desired_state_input_port(arm_model_)
+      .FixValue(context_.get(), arm_x0);
+
+  // N.B. Per SDF model, effort limits are 300 Nm. We set some of the actuation
+  // values to be outside this limit.
+  const VectorXd arm_u =
+      (VectorXd(7) << 350, 400, 55, -350, -400, -450, -40).finished();
+  const VectorXd gripper_u = VectorXd::LinSpaced(2, 1.0, 2.0);
+  const VectorXd free_box = VectorXd::Zero(6);
+  // To obtain the same actuation with generalized forces, we clamp u to be
+  // within effort limits.
+  const VectorXd arm_u_clamped = arm_u.array().min(300).max(-300);
+  const VectorXd tau =
+      (VectorXd(15) << arm_u_clamped, gripper_u, free_box).finished();
+
+  auto updates = plant_->AllocateDiscreteVariables();
+
+  // Input through generalized forces.
+  plant_->get_applied_generalized_force_input_port().FixValue(context_.get(),
+                                                              tau);
+  plant_->CalcForcedDiscreteVariableUpdate(*context_, updates.get());
+  const VectorXd x_tau = updates->get_vector().CopyToVector();
+
+  // Input through actuation. Zero generalized forces first.
+  plant_->get_applied_generalized_force_input_port().FixValue(
+      context_.get(), VectorXd::Zero(15));
+  plant_->get_actuation_input_port(arm_model_).FixValue(context_.get(), arm_u);
+  plant_->get_actuation_input_port(gripper_model_)
+      .FixValue(context_.get(), gripper_u);
+  plant_->CalcForcedDiscreteVariableUpdate(*context_, updates.get());
+  const VectorXd x_actuation = updates->get_vector().CopyToVector();
+
+  // N.B. Generalized forces inputs and actuation inputs feed into the result in
+  // very different ways. Actuation input goes through the SAP solver and
+  // therefore the accuracy of the solution is affected by solver tolerances.
+  const double kTolerance = 1.0e-12;
+  EXPECT_TRUE(CompareMatrices(x_actuation, x_tau, kTolerance,
+                              MatrixCompareType::relative));
 }
 
 }  // namespace

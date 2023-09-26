@@ -54,10 +54,22 @@ class MultibodyPlantDiscreteUpdateManagerAttorney {
     plant.AddJointLimitsPenaltyForces(context, forces);
   }
 
-  static void AddInForcesFromInputPorts(
+  static void AddAppliedExternalGeneralizedForces(
       const MultibodyPlant<T>& plant, const drake::systems::Context<T>& context,
       MultibodyForces<T>* forces) {
-    plant.AddInForcesFromInputPorts(context, forces);
+    plant.AddAppliedExternalGeneralizedForces(context, forces);
+  }
+
+  static void AddAppliedExternalSpatialForces(
+      const MultibodyPlant<T>& plant, const drake::systems::Context<T>& context,
+      MultibodyForces<T>* forces) {
+    plant.AddAppliedExternalSpatialForces(context, forces);
+  }
+
+  static void AddJointActuationForces(const MultibodyPlant<T>& plant,
+                                      const drake::systems::Context<T>& context,
+                                      VectorX<T>* forces) {
+    plant.AddJointActuationForces(context, forces);
   }
 
   static void CalcForceElementsContribution(

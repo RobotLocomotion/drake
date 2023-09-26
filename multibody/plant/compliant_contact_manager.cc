@@ -622,11 +622,17 @@ void CompliantContactManager<T>::CalcAccelerationsDueToNonConstraintForcesCache(
     AccelerationsDueNonConstraintForcesCache<T>* forward_dynamics_cache) const {
   DRAKE_DEMAND(forward_dynamics_cache != nullptr);
 
+  // SAP models joint limits and actuation inputs (with effort limits) using
+  // constraints. Therefore these terms are not included here since they are
+  // included later as SAP constraints.
+  const bool include_joint_limit_penalty_forces = false;
+  const bool include_actuation_input = false;
+
   // We exclude joint limit penalties here as dictated by the contract of the
   // function. This function is used for SAP (not TAMSI) which models joint
   // limits as constraints.
-  this->CalcNonContactForces(context,
-                             /* include joint limit penalty forces */ false,
+  this->CalcNonContactForces(context, include_joint_limit_penalty_forces,
+                             include_actuation_input,
                              &forward_dynamics_cache->forces);
 
   // Our goal is to compute accelerations from the Newton-Euler equations:
