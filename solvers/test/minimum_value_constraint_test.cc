@@ -7,6 +7,8 @@
 #include "drake/common/symbolic/expression.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/autodiff_gradient.h"
+#include "drake/solvers/mathematical_program.h"
+#include "drake/solvers/solve.h"
 #include "drake/solvers/test_utilities/check_constraint_eval_nonsymbolic.h"
 
 namespace drake {
@@ -340,6 +342,26 @@ GTEST_TEST(MinimumValueConstraintTests, EvalSymbolicTest) {
   VectorX<symbolic::Expression> y;
   EXPECT_THROW(dut.Eval(x, &y), std::logic_error);
 }
+
+template <typename T>
+VectorX<T> Square(const Eigen::Ref<const VectorX<T>>& x) {
+  return x.array().square().matrix();
+}
+
+GTEST_TEST(MinimumValueUpperBoundConstraintTests, Test) {
+  int num_vars = 4;
+  const double minimum_value_upper = 0.5;
+  const double normalizer = 1;
+  MinimumValueUpperBoundConstraint dut(num_vars, minimum_value_upper,
+                                       normalizer, Square<AutoDiffXd>,
+                                       Square<double>);
+
+  Eigen::Vector4d x_good(0.1, 1.5, -0.2, 2.1);
+  EXPECT_TRUE(dut.CheckSatisfied(x_good));
+  Eigen::Vector4d x_bad(0.9, 2.1, -0.8, 1.5);
+  EXPECT_FALSE(dut.CheckSatisfied(x_bad));
+}
+
 }  // namespace
 }  // namespace solvers
 }  // namespace drake

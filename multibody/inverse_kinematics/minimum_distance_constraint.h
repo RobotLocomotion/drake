@@ -205,6 +205,10 @@ class MinimumDistanceConstraint final : public solvers::Constraint {
     return minimum_value_constraint_->influence_value();
   }
 
+  const solvers::MinimumValueConstraint& minimum_value_constraint() const {
+    return *minimum_value_constraint_;
+  }
+
  private:
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
               Eigen::VectorXd* y) const override;

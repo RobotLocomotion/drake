@@ -170,6 +170,19 @@ class MinimumValueConstraint final : public solvers::Constraint {
   /** Setter for the penalty function. */
   void set_penalty_function(MinimumValuePenaltyFunction new_penalty_function);
 
+  /** Getter for the value function (using autodiff). */
+  std::function<AutoDiffVecXd(const Eigen::Ref<const AutoDiffVecXd>&, double)>
+  value_function() const {
+    return value_function_;
+  }
+
+  /** Getter for the value function (using double). */
+  std::function<Eigen::VectorXd(const Eigen::Ref<const Eigen::VectorXd>&,
+                                double)>
+  value_function_double() const {
+    return value_function_double_;
+  }
+
  private:
   template <typename T>
   VectorX<T> Values(const Eigen::Ref<const VectorX<T>>& x) const;
@@ -213,5 +226,84 @@ class MinimumValueConstraint final : public solvers::Constraint {
   MinimumValuePenaltyFunction penalty_function_{};
 };
 
+/** Constrain min(v) <= ub. Namely at least one element of the vector returned
+by `value_function` is no larger than `ub`.
+
+The formulation of the constraint is
+
+<pre>
+SmoothOverMin(v) ≤ ub
+</pre>
+
+where vᵢ is the i-th value returned by the user-provided function, `ub` is the
+upper bound for the min(v). (Note that `ub` is NOT the upper bound of `v`).
+SmoothOverMin(v) is a smooth, over approximation of min(v) (i.e.
+SmoothOverMin(v) >= min(v) for all v). */
+class MinimumValueUpperBoundConstraint : public solvers::Constraint {
+ public:
+  /** Constructs a MinimumValueConstraint.
+   min(v) <= ub
+
+   Mathematically the constraint is
+
+   SoftOverMin((v - ub)/normalizer) <= 0
+
+  @param num_vars The number of inputs to `value_function`
+  @param minimum_value_upper The upper bound of the minimum allowed value, ub,
+  for all elements of the vector returned by `value_function`. Namely at least
+  one of the element in the vector returned by `value_function` should be
+  smaller than `minimum_value_upper`.
+  @param normalizer A normalizing constant. This should be a positive value,
+  roughly in the same magnitude of max(v) - minimum_value_upper.
+  @param value_function User-provided function that takes a `num_vars`-element
+  vector as inputs and returns a vector of a fixed size. Note that the size of
+  the `value_function` output should remain the same for any input.
+  @param value_function_double Optional user-provide function that computes the
+  same values as `value_function` but for double rather than AutoDiffXd. If
+  omitted, `value_function` will be called (and the gradients discarded) when
+  this constraint is evaluated for doubles.
+  @pre `value_function_double(ExtractValue(x) ) ==
+  ExtractValue(value_function(x))` for all x.
+  @pre normalizer is a strictly positive number.
+   */
+  MinimumValueUpperBoundConstraint(
+      int num_vars, double minimum_value_upper, double normalizer,
+      std::function<AutoDiffVecXd(const Eigen::Ref<const AutoDiffVecXd>&)>
+          value_function,
+      std::function<VectorX<double>(const Eigen::Ref<const VectorX<double>>&)>
+          value_function_double = {});
+
+  ~MinimumValueUpperBoundConstraint() override {}
+
+  double minimum_value_upper() const { return minimum_value_upper_; }
+
+ private:
+  template <typename T>
+  VectorX<T> Values(const Eigen::Ref<const VectorX<T>>& x) const;
+
+  template <typename T>
+  void DoEvalGeneric(const Eigen::Ref<const VectorX<T>>& x,
+                     VectorX<T>* y) const;
+
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+              Eigen::VectorXd* y) const override;
+
+  void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+              AutoDiffVecXd* y) const override;
+
+  void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>&,
+              VectorX<symbolic::Expression>*) const override {
+    throw std::logic_error(
+        "MinimumValueUpperBoundConstraint::DoEval() does not work for symbolic "
+        "variables.");
+  }
+
+  const double minimum_value_upper_;
+  const double normalizer_;
+
+  const std::function<AutoDiffVecXd(const AutoDiffVecXd&)> value_function_;
+  const std::function<VectorX<double>(const VectorX<double>&)>
+      value_function_double_;
+};
 }  // namespace solvers
 }  // namespace drake
