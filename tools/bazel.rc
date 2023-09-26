@@ -1,6 +1,3 @@
-# Disable native Python rules in Bazel versions before 4.0.
-build --incompatible_load_python_rules_from_bzl=yes
-
 # Default to an optimized build.
 build -c opt
 
