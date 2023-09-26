@@ -860,10 +860,10 @@ TEST_F(MujocoParserTest, Joint) {
   </default>
   <worldbody>
     <body name="freejoint" pos="1 2 3" euler="30 45 60">
-      <freejoint name="freejoint"/>
+      <freejoint name="xfreejoint"/>  <!-- ignored -->
     </body>
     <body name="free" pos="1 2 3" euler="30 45 60">
-      <joint type="free" name="free"/>
+      <joint type="free" name="xfree"/>  <!-- ignored -->
     </body>
     <body name="ball" pos="1 2 3" euler="30 45 60">
       <joint type="ball" name="ball" damping="0.1" pos=".1 .2 .3"/>
@@ -904,14 +904,18 @@ TEST_F(MujocoParserTest, Joint) {
                        Vector3d{1.0, 2.0, 3.0});
   Vector3d pos{.1, .2, .3};
 
+  // Note: for free bodies Drake ignores the given Mujoco joint name and makes
+  // its own floating joint named like the body.
   const Body<double>& freejoint_body = plant_.GetBodyByName("freejoint");
-  EXPECT_FALSE(plant_.HasJointNamed("freejoint"));
+  EXPECT_FALSE(plant_.HasJointNamed("xfreejoint"));
+  EXPECT_TRUE(plant_.HasJointNamed("freejoint"));
   EXPECT_TRUE(freejoint_body.is_floating());
   EXPECT_TRUE(plant_.GetFreeBodyPose(*context, freejoint_body)
                   .IsNearlyEqualTo(X_WB, 1e-14));
 
   const Body<double>& free_body = plant_.GetBodyByName("free");
-  EXPECT_FALSE(plant_.HasJointNamed("free"));
+  EXPECT_FALSE(plant_.HasJointNamed("xfree"));
+  EXPECT_TRUE(plant_.HasJointNamed("free"));
   EXPECT_TRUE(free_body.is_floating());
   EXPECT_TRUE(
       plant_.GetFreeBodyPose(*context, free_body).IsNearlyEqualTo(X_WB, 1e-14));
