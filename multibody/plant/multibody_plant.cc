@@ -2167,7 +2167,7 @@ void MultibodyPlant<T>::AddInForcesFromInputPorts(
   this->ValidateContext(context);
   AddAppliedExternalGeneralizedForces(context, forces);
   AddAppliedExternalSpatialForces(context, forces);
-  AddJointActuationForces(context, forces);
+  AddJointActuationForces(context, &forces->mutable_generalized_forces());
 }
 
 template<typename T>
@@ -2258,21 +2258,19 @@ void MultibodyPlant<T>::AddAppliedExternalSpatialForces(
 
 template<typename T>
 void MultibodyPlant<T>::AddJointActuationForces(
-    const systems::Context<T>& context, MultibodyForces<T>* forces) const {
+    const systems::Context<T>& context, VectorX<T>* forces) const {
   this->ValidateContext(context);
   DRAKE_DEMAND(forces != nullptr);
+  DRAKE_DEMAND(forces->size() == num_velocities());
   if (num_actuators() > 0) {
     const VectorX<T> u = AssembleActuationInput(context);
-    for (JointActuatorIndex actuator_index(0);
-         actuator_index < num_actuators(); ++actuator_index) {
-      const JointActuator<T>& actuator =
-          get_joint_actuator(actuator_index);
+    for (JointActuatorIndex actuator_index(0); actuator_index < num_actuators();
+         ++actuator_index) {
+      const JointActuator<T>& actuator = get_joint_actuator(actuator_index);
+      const Joint<T>& joint = actuator.joint();
       // We only support actuators on single dof joints for now.
-      DRAKE_DEMAND(actuator.joint().num_velocities() == 1);
-      for (int joint_dof = 0;
-           joint_dof < actuator.joint().num_velocities(); ++joint_dof) {
-        actuator.AddInOneForce(context, joint_dof, u[actuator_index], forces);
-      }
+      DRAKE_DEMAND(joint.num_velocities() == 1);
+      (*forces)[joint.velocity_start()] += u[actuator_index];
     }
   }
 }
@@ -2683,27 +2681,21 @@ void MultibodyPlant<T>::CalcAndAddSpatialContactForcesContinuous(
 template <typename T>
 void MultibodyPlant<T>::CalcNonContactForces(
     const drake::systems::Context<T>& context,
-    bool discrete,
     MultibodyForces<T>* forces) const {
   this->ValidateContext(context);
+  DRAKE_DEMAND(!is_discrete());
   DRAKE_DEMAND(forces != nullptr);
   DRAKE_DEMAND(forces->CheckHasRightSizeForModel(*this));
-  if (discrete) {
-    discrete_update_manager_->CalcNonContactForces(
-        context, /* include joint limit penalty forces */ true, forces);
-    return;
-  } else {
-    // Compute forces applied through force elements. Note that this resets
-    // forces to empty so must come first.
-    CalcForceElementsContribution(context, forces);
-    AddInForcesFromInputPorts(context, forces);
-    // Only discrete models support joint limits. We log a warning if joint
-    // limits are set.
-    auto& warning = joint_limits_parameters_.pending_warning_message;
-    if (!warning.empty()) {
-      drake::log()->warn(warning);
-      warning.clear();
-    }
+  // Compute forces applied through force elements. Note that this resets
+  // forces to empty so must come first.
+  CalcForceElementsContribution(context, forces);
+  AddInForcesFromInputPorts(context, forces);
+  // Only discrete models support joint limits. We log a warning if joint
+  // limits are set.
+  auto& warning = joint_limits_parameters_.pending_warning_message;
+  if (!warning.empty()) {
+    drake::log()->warn(warning);
+    warning.clear();
   }
 }
 
@@ -3395,7 +3387,7 @@ void MultibodyPlant<T>::CalcReactionForces(
     applied_forces =
         discrete_update_manager_->EvalDiscreteUpdateMultibodyForces(context);
   } else {
-    CalcNonContactForces(context, is_discrete(), &applied_forces);
+    CalcNonContactForces(context, &applied_forces);
     CalcAndAddSpatialContactForcesContinuous(context, &Fapplied_Bo_W_array);
   }
 

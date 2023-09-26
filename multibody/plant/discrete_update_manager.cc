@@ -34,9 +34,8 @@ void DiscreteUpdateManager<T>::DeclareCacheEntries() {
   // what we want.
   const auto& discrete_input_port_forces_cache_entry = this->DeclareCacheEntry(
       "Discrete force input port values",
-      systems::ValueProducer(
-          this, MultibodyForces<T>(plant()),
-          &DiscreteUpdateManager<T>::CopyForcesFromInputPorts),
+      systems::ValueProducer(this, InputPortForces<T>(plant()),
+                             &DiscreteUpdateManager<T>::CalcInputPortForces),
       // The cache entry is manually managed to refresh at the beginning of a
       // discrete update.
       {systems::System<T>::nothing_ticket()});
@@ -165,7 +164,8 @@ const MultibodyTree<T>& DiscreteUpdateManager<T>::internal_tree() const {
 template <typename T>
 void DiscreteUpdateManager<T>::CalcNonContactForces(
     const drake::systems::Context<T>& context,
-    bool include_joint_limit_penalty_forces, MultibodyForces<T>* forces) const {
+    bool include_joint_limit_penalty_forces, bool include_pd_controlled_input,
+    MultibodyForces<T>* forces) const {
   plant().ValidateContext(context);
   DRAKE_DEMAND(forces != nullptr);
   DRAKE_DEMAND(forces->CheckHasRightSizeForModel(plant()));
@@ -175,9 +175,19 @@ void DiscreteUpdateManager<T>::CalcNonContactForces(
   // Compute forces applied through force elements. Note that this resets
   // forces to empty so must come first.
   CalcForceElementsContribution(context, forces);
-  forces->AddInForces(EvalDiscreteInputPortForces(context));
+
+  // Evaluate all input forces at once.
+  const InputPortForces<T>& inputs = EvalInputPortForces(context);
+
+  // Copy into `forces` as requested.
+  forces->AddInForces(inputs.externally_applied_forces);
   if (include_joint_limit_penalty_forces) {
     AddJointLimitsPenaltyForces(context, forces);
+  }
+  // PD controlled actuation is included only when requested.
+  forces->mutable_generalized_forces() += inputs.actuation_wo_pd;
+  if (include_pd_controlled_input) {
+    forces->mutable_generalized_forces() += inputs.actuation_w_pd;
   }
 }
 
@@ -313,7 +323,6 @@ ScopeExit DiscreteUpdateManager<T>::ThrowIfNonContactForceInProgress(
       [&evaluation_in_progress]() { evaluation_in_progress = false; });
 }
 
-
 template <typename T>
 void DiscreteUpdateManager<T>::SampleDiscreteInputPortForces(
     const drake::systems::Context<T>& context) const {
@@ -332,9 +341,9 @@ void DiscreteUpdateManager<T>::SampleDiscreteInputPortForces(
   auto& cache_entry_value =
       discrete_input_forces_cache_entry.get_mutable_cache_entry_value(context);
   cache_entry_value.mark_out_of_date();
-  MultibodyForces<T>& forces =
-      cache_entry_value.template GetMutableValueOrThrow<MultibodyForces<T>>();
-  CopyForcesFromInputPorts(context, &forces);
+  InputPortForces<T>& forces =
+      cache_entry_value.template GetMutableValueOrThrow<InputPortForces<T>>();
+  CalcInputPortForces(context, &forces);
   cache_entry_value.mark_up_to_date();
 
   // Initiate a value modification event.
@@ -344,11 +353,44 @@ void DiscreteUpdateManager<T>::SampleDiscreteInputPortForces(
 }
 
 template <typename T>
-void DiscreteUpdateManager<T>::CopyForcesFromInputPorts(
-    const systems::Context<T>& context, MultibodyForces<T>* forces) const {
+void DiscreteUpdateManager<T>::CalcJointActuationForces(
+    const systems::Context<T>& context, VectorX<T>* actuation_w_pd,
+    VectorX<T>* actuation_wo_pd) const {
+  DRAKE_DEMAND(actuation_w_pd != nullptr);
+  DRAKE_DEMAND(actuation_w_pd->size() == plant().num_velocities());
+  DRAKE_DEMAND(actuation_wo_pd != nullptr);
+  DRAKE_DEMAND(actuation_wo_pd->size() == plant().num_velocities());
+  actuation_w_pd->setZero();
+  actuation_wo_pd->setZero();
+  if (plant().num_actuators() > 0) {
+    const VectorX<T> u = AssembleActuationInput(context);
+    for (JointActuatorIndex actuator_index(0);
+         actuator_index < plant().num_actuators(); ++actuator_index) {
+      const JointActuator<T>& actuator =
+          plant().get_joint_actuator(actuator_index);
+      const Joint<T>& joint = actuator.joint();
+      // We only support actuators on single dof joints for now.
+      DRAKE_DEMAND(joint.num_velocities() == 1);
+      const int v_index = joint.velocity_start();
+      VectorX<T>& actuation =
+          actuator.has_controller() ? *actuation_w_pd : *actuation_wo_pd;
+      actuation[v_index] = u[actuator_index];
+    }
+  }
+}
+
+template <typename T>
+void DiscreteUpdateManager<T>::CalcInputPortForces(
+    const systems::Context<T>& context, InputPortForces<T>* forces) const {
   forces->SetZero();
-  MultibodyPlantDiscreteUpdateManagerAttorney<T>::AddInForcesFromInputPorts(
-      plant(), context, forces);
+  MultibodyPlantDiscreteUpdateManagerAttorney<T>::
+      AddAppliedExternalGeneralizedForces(plant(), context,
+                                          &forces->externally_applied_forces);
+  MultibodyPlantDiscreteUpdateManagerAttorney<
+      T>::AddAppliedExternalSpatialForces(plant(), context,
+                                          &forces->externally_applied_forces);
+  CalcJointActuationForces(context, &forces->actuation_w_pd,
+                           &forces->actuation_wo_pd);
 }
 
 template <typename T>

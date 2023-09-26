@@ -676,9 +676,6 @@ void SapDriver<T>::AddPdControllerConstraints(
   // Do nothing if not PD controllers were specified.
   if (plant().num_actuators() == 0) return;
 
-  // Previous time step positions.
-  const VectorX<T> q0 = plant().GetPositions(context);
-
   // Desired positions & velocities.
   const int num_actuators = plant().num_actuators();
   // TODO(amcastro-tri): makes these EvalFoo() instead to avoid heap
@@ -698,6 +695,7 @@ void SapDriver<T>::AddPdControllerConstraints(
       const T& vd = desired_state[num_actuators + actuator.index()];
       const T& u0 = feed_forward_actuation[actuator.index()];
 
+      const T& q0 = joint.GetOnePosition(context);
       const int dof = joint.velocity_start();
       const TreeIndex tree = tree_topology().velocity_to_tree_index(dof);
       const int tree_dof = dof - tree_topology().tree_velocities_start(tree);
@@ -711,7 +709,7 @@ void SapDriver<T>::AddPdControllerConstraints(
       typename SapPdControllerConstraint<T>::Parameters parameters{
           Kp, Kd, effort_limit};
       typename SapPdControllerConstraint<T>::Configuration configuration{
-          tree, tree_dof, tree_nv, q0[dof], qd, vd, u0};
+          tree, tree_dof, tree_nv, q0, qd, vd, u0};
 
       problem->AddConstraint(std::make_unique<SapPdControllerConstraint<T>>(
           std::move(configuration), std::move(parameters)));
@@ -962,8 +960,9 @@ void SapDriver<T>::CalcDiscreteUpdateMultibodyForces(
   // Include all state dependent forces (not constraints) evaluated at t₀
   // (previous time step as stored in the context).
   const bool include_joint_limit_penalty_forces = false;
+  const bool include_pd_controlled_input = false;
   manager().CalcNonContactForces(context, include_joint_limit_penalty_forces,
-                                 forces);
+                                 include_pd_controlled_input, forces);
 
   // SAP evaluates damping terms (joint damping and reflected inertia)
   // implicitly. Therefore we must subtract the explicit term evaluated above
