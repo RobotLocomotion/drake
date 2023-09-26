@@ -1,0 +1,5 @@
+This branch contains two files which, together, list all experimental CI jobs
+that correspond to a production job, in the form of requests to execute those
+jobs on a pull request. The lists are separated into those jobs which run from
+a clean environment ("unprovisioned") and those which use an already-set-up
+build environment ("provisioned").
