@@ -38,13 +38,15 @@ class CompliantContactManagerTester {
     return manager.EvalDiscreteContactPairs(context);
   }
 
+  // N.B. Actuation input is always included, regardless of solver choice.
   static void CalcNonContactForces(
       const CompliantContactManager<double>& manager,
       const drake::systems::Context<double>& context,
       bool include_joint_limit_penalty_forces,
       MultibodyForces<double>* forces) {
+    const bool include_pd_controlled_input = true;
     manager.CalcNonContactForces(context, include_joint_limit_penalty_forces,
-                                 forces);
+                                 include_pd_controlled_input, forces);
   }
 
   static std::vector<ContactPairKinematics<double>> CalcContactKinematics(

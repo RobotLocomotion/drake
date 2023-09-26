@@ -35,6 +35,31 @@ class AccelerationKinematicsCache;
 template <typename T>
 struct JointLockingCacheData;
 
+// Struct to store MultibodyPlant input forces.
+template <typename T>
+struct InputPortForces {
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(InputPortForces);
+  // Constructs an `InputPortForces` to store input port values for the given
+  // `plant`. Values are initialized to zero at construction.
+  explicit InputPortForces(const MultibodyPlant<T>& plant)
+      : externally_applied_forces(plant),
+        actuation_w_pd(plant.num_velocities()),
+        actuation_wo_pd(plant.num_velocities()) {
+    SetZero();
+  }
+  void SetZero() {
+    externally_applied_forces.SetZero();
+    actuation_w_pd.setZero();
+    actuation_wo_pd.setZero();
+  }
+  // Externally applied generalized and body spatial forces.
+  MultibodyForces<T> externally_applied_forces;
+  // Joint actuation, indexed by DOF. We split them into actuators with and
+  // without PD control.
+  VectorX<T> actuation_w_pd;   // For actuated joints with PD control.
+  VectorX<T> actuation_wo_pd;  // For actuated joints without PD control.
+};
+
 /* This class is used to perform all calculations needed to advance state for a
  MultibodyPlant with discrete state.
 
@@ -155,6 +180,7 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   //  - (possibly) Joint limits.
   void CalcNonContactForces(const drake::systems::Context<T>& context,
                             bool include_joint_limit_penalty_forces,
+                            bool include_pd_controlled_input,
                             MultibodyForces<T>* forces) const;
 
   // TODO(amcastro-tri): Consider replacing with more specific APIs with the
@@ -225,14 +251,28 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
     return multibody_state_index_;
   }
 
+  /* Evaluates actuation input into two separate contributions: Actuation with
+   PD control and actuation without PD control. Entries with no contribution are
+   left initialized to zero.
+   @param[out] actuation_w_pd
+     Contribution for actuators with PD control. Indexed by velocity DOF.
+   @param[out] actuation_wo_pd
+     Contribution for actuators without PD control. Indexed by velocity DOF.
+   @pre The size of actuation_w_pd and actuation_wo_pd equals
+   plant().num_velocities().
+   */
+  void CalcJointActuationForces(const systems::Context<T>& context,
+                                VectorX<T>* actuation_w_pd,
+                                VectorX<T>* actuation_wo_pd) const;
+
   /* Evaluates the discretely sampled MultibodyPlant input port force values.
    This includes forces from externally applied spatial forces, externally
    applied generalized forces, and joint actuation forces.  */
-  const MultibodyForces<T>& EvalDiscreteInputPortForces(
+  const InputPortForces<T>& EvalInputPortForces(
       const drake::systems::Context<T>& context) const {
     return plant()
         .get_cache_entry(cache_indexes_.discrete_input_port_forces)
-        .template Eval<MultibodyForces<T>>(context);
+        .template Eval<InputPortForces<T>>(context);
   }
 
   /* Exposed MultibodyPlant private/protected methods.
@@ -352,8 +392,8 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
 
   // Collects the sum of all forces added to the owning MultibodyPlant and store
   // them in given `forces`. The existing values in `forces` is cleared.
-  void CopyForcesFromInputPorts(const systems::Context<T>& context,
-                                MultibodyForces<T>* forces) const;
+  void CalcInputPortForces(const systems::Context<T>& context,
+                           InputPortForces<T>* forces) const;
 
   // NVI to DoDeclareCacheEntries().
   void DeclareCacheEntries();

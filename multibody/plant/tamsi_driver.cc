@@ -71,9 +71,11 @@ void TamsiDriver<T>::CalcContactSolverResults(
   // whether an algebra loop exists but isn't detected when building the diagram
   // due to #12786. Therefore, we choose to do this before the quick exit when
   // there's no moving objects.
+  const bool include_joint_limit_penalty_forces = true;
+  const bool include_pd_controlled_input = true;
   MultibodyForces<T> forces0(plant());
-  manager().CalcNonContactForces(
-      context, /* include joint limit penalty forces */ true, &forces0);
+  manager().CalcNonContactForces(context, include_joint_limit_penalty_forces,
+                                 include_pd_controlled_input, &forces0);
 
   const int nq = plant().num_positions();
   const int nv = plant().num_velocities();
@@ -372,8 +374,9 @@ template <typename T>
 void TamsiDriver<T>::CalcDiscreteUpdateMultibodyForces(
     const systems::Context<T>& context, MultibodyForces<T>* forces) const {
   const bool include_joint_limit_penalty_forces = true;
+  const bool include_pd_controlled_input = true;
   manager().CalcNonContactForces(context, include_joint_limit_penalty_forces,
-                                 forces);
+                                 include_pd_controlled_input, forces);
   const ContactResults<T>& contact_results =
       manager().EvalContactResults(context);
   auto& Fapplied_Bo_W_array = forces->mutable_body_forces();
