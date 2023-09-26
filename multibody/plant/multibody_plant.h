@@ -5140,9 +5140,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   //  - Joint actuation.
   //  - Externally applied spatial forces.
   //  - Joint limits.
-  // May be different between continuous and discrete modes.
+  // @pre The plant is continuous.
   void CalcNonContactForces(const drake::systems::Context<T>& context,
-                            bool discrete,
                             MultibodyForces<T>* forces) const;
 
   // Collects up forces from input ports (actuator, generalized, and spatial
@@ -5284,7 +5283,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // Add contribution of external actuation forces passed in through our
   // actuation input ports (there is a separate port for each model instance).
   void AddJointActuationForces(
-      const systems::Context<T>& context, MultibodyForces<T>* forces) const;
+      const systems::Context<T>& context, VectorX<T>* forces) const;
 
   // Helper method to register geometry for a given body, either visual or
   // collision. The registration includes:
