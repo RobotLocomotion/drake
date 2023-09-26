@@ -14,6 +14,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/hash.h"
 #include "drake/common/never_destroyed.h"
 #include "drake/math/fast_pose_composition_functions.h"
 #include "drake/math/roll_pitch_yaw.h"
@@ -670,6 +671,17 @@ class RotationMatrix {
   /// (Internal use only) Constructs a RotationMatrix without initializing the
   /// underlying 3x3 matrix. For use by RigidTransform and RotationMatrix only.
   explicit RotationMatrix(internal::DoNotInitializeMemberFields) {}
+
+  /// Implements the @ref hash_append concept.
+  /// @pre T implements the hash_append concept.
+  template <class HashAlgorithm>
+  friend void hash_append(HashAlgorithm& hasher,
+                          const RotationMatrix& R) noexcept {
+    const T* begin = R.R_AB_.data();
+    const T* end = R.R_AB_.data() + R.R_AB_.size();
+    using drake::hash_append_range;
+    hash_append_range(hasher, begin, end);
+  }
 
  private:
   // Make RotationMatrix<U> templatized on any typename U be a friend of a
