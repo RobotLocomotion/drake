@@ -2906,9 +2906,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// implicitly construct a 6-dof joint, QuaternionFloatingJoint, for all free
   /// bodies at the time of Finalize(). Using Joint APIs to affect a free body
   /// (setting  state, changing parameters, etc.) has the same effect as using
-  /// the free body APIs below. Each implicitly created joint is named
-  /// "$world_<bodyname>" where "<bodyname>" is the name of the free body, given
-  /// by `Body::name()`.
+  /// the free body APIs below. Each implicitly created joint is named the same
+  /// as the free body, as reported by `Body::name()`. In the rare case that
+  /// there is already some (unrelated) joint with that name, we'll prepend
+  /// underscores to the name until it is unique.
   /// @{
 
   /// Returns the set of body indexes corresponding to the free (floating)

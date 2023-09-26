@@ -879,6 +879,20 @@ class MultibodyTree {
       std::optional<ModelInstanceIndex> model_instance = std::nullopt) const {
     static_assert(std::is_base_of_v<Joint<T>, JointType<T>>,
                   "JointType<T> must be a sub-class of Joint<T>.");
+
+    // Backwards compatibility for automatically-added floating joints whose
+    // names went from "$world_bodyname" to "bodyname". Does not attempt to
+    // support cases (rare, maybe nonexistent) where a conflict caused the new
+    // name to be prefixed by underscores. Remove this on or after 2024-02-01.
+    if (name.substr(0, 7) == "$world_") {
+      name.remove_prefix(7);
+      drake::log()->warn(
+          "GetJointByName($world_{}): Floating joint names are no longer "
+          "prefixed by '$world_'. Looking for joint {} instead. "
+          "Support for the '$world_' prefix is deprecated and will "
+          "be removed on or after 2024-02-01.", name, name);
+    }
+
     const Joint<T>& joint = GetJointByNameImpl(name, model_instance);
     const JointType<T>* const typed_joint =
         dynamic_cast<const JointType<T>*>(&joint);
