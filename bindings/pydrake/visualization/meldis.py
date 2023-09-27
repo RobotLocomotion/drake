@@ -32,6 +32,17 @@ from pydrake.common import configure_logging as _configure_logging
 from pydrake.visualization._meldis import Meldis as _Meldis
 
 
+def _available_browsers():
+    """Returns the list of known webbrowser controller names. There does not
+    appear to be a public API for this, so we best-effort call a private one.
+    """
+    try:
+        webbrowser.register_standard_browsers()
+        return sorted(webbrowser._browsers)
+    except Exception:
+        return []
+
+
 def _main():
     _configure_logging()
     parser = argparse.ArgumentParser()
@@ -53,11 +64,16 @@ def _main():
         action="store_const", const=1, default=None,
         help="Open the MeshCat display in a new browser window.")
     parser.add_argument(
+        "--browser", metavar="NAME",
+        help="When opening the MeshCat display, try to use the given browser. "
+        "When not provided, uses the $BROWSER environment variable instead. "
+        f"(Available names: {_available_browsers()})")
+    parser.add_argument(
         "--idle-timeout", metavar="TIME", type=float, default=15*60,
         help="When no web browser has been connected for this many seconds,"
         " this program will automatically exit. Set to 0 to run indefinitely.")
     parser.add_argument(
-        "--environment_map",
+        "--environment_map", metavar="PATH",
         help="Filesystem path to an image to be used as an environment map. "
              "It must be an image type normally used by your browser (e.g., "
              ".jpg, .png, etc.). HDR images are not supported yet."
@@ -67,7 +83,8 @@ def _main():
                      environment_map=args.environment_map)
     if args.browser_new is not None:
         url = meldis.meshcat.web_url()
-        webbrowser.open(url=url, new=args.browser_new)
+        controller = webbrowser.get(args.browser)
+        controller.open(url=url, new=args.browser_new)
     idle_timeout = args.idle_timeout
     if idle_timeout == 0.0:
         idle_timeout = None
