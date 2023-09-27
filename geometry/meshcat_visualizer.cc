@@ -9,6 +9,7 @@
 #include <fmt/format.h>
 
 #include "drake/common/extract_double.h"
+#include "drake/geometry/meshcat_graphviz.h"
 #include "drake/geometry/proximity/volume_to_surface_mesh.h"
 #include "drake/geometry/utilities.h"
 
@@ -283,6 +284,19 @@ systems::EventStatus MeshcatVisualizer<T>::OnInitialization(
     const systems::Context<T>&) const {
   Delete();
   return systems::EventStatus::Succeeded();
+}
+
+template <typename T>
+typename systems::LeafSystem<T>::GraphvizFragment
+MeshcatVisualizer<T>::DoGetGraphvizFragment(
+    const typename systems::LeafSystem<T>::GraphvizFragmentParams& params)
+    const {
+  internal::MeshcatGraphviz meshcat_graphviz(params_.prefix,
+                                             /* publish = */ true,
+                                             /* subscribe = */ false);
+  return meshcat_graphviz.DecorateResult(
+      systems::LeafSystem<T>::DoGetGraphvizFragment(
+          meshcat_graphviz.DecorateParams(params)));
 }
 
 }  // namespace geometry

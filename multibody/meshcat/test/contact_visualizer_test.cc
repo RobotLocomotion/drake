@@ -1,5 +1,6 @@
 #include "drake/multibody/meshcat/contact_visualizer.h"
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
@@ -244,6 +245,12 @@ TEST_F(ContactVisualizerTest, ScalarConversion) {
   // Call publish to provide code coverage for the AutoDiffXd version of
   // UpdateMeshcat.  We simply confirm that the code doesn't blow up.
   ad_diagram->ForcedPublish(*ad_context);
+}
+
+TEST_F(ContactVisualizerTest, Graphviz) {
+  SetUpDiagram();
+  EXPECT_THAT(visualizer_->GetGraphvizString(),
+              testing::HasSubstr("-> meshcat_in"));
 }
 
 }  // namespace
