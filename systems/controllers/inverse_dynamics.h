@@ -35,6 +35,10 @@ namespace controllers {
  *  τ_id = -τ_g(q).
  * </pre>
  *
+ * @note As an alternative to adding a controller to your diagram, gravity
+ * compensation can be modeled by disabling gravity for a given model instance,
+ * see MultibodyPlant::set_gravity_enabled().
+ *
  * InverseDynamicsController uses a PID controller to generate desired
  * acceleration and uses this class to compute generalized forces. Use this
  * class directly if desired acceleration is computed differently.

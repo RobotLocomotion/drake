@@ -3554,6 +3554,25 @@ MultibodyPlant<T>::FindSubgraphsOfWeldedBodies() const {
 }
 
 template <typename T>
+bool MultibodyPlant<T>::is_gravity_enabled(
+    ModelInstanceIndex model_instance) const {
+  if (model_instance >= num_model_instances()) {
+    throw std::logic_error("Model instance index is invalid.");
+  }
+  return gravity_field().is_enabled(model_instance);
+}
+
+template <typename T>
+void MultibodyPlant<T>::set_gravity_enabled(ModelInstanceIndex model_instance,
+                                            bool is_enabled) {
+  DRAKE_MBP_THROW_IF_FINALIZED();
+  if (model_instance >= num_model_instances()) {
+    throw std::logic_error("Model instance index is invalid.");
+  }
+  mutable_gravity_field().set_enabled(model_instance, is_enabled);
+}
+
+template <typename T>
 T MultibodyPlant<T>::StribeckModel::ComputeFrictionCoefficient(
     const T& speed_BcAc,
     const CoulombFriction<double>& friction) const {
