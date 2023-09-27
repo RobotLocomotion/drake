@@ -52,7 +52,7 @@ void MinimumDistanceConstraint::Initialize(
     const MultibodyPlant<T>& plant, systems::Context<T>* plant_context,
     double minimum_distance_lower, double minimum_distance_upper,
     double influence_distance,
-    MinimumDistancePenaltyFunction penalty_function) {
+    solvers::MinimumValuePenaltyFunction penalty_function) {
   CheckPlantIsConnectedToSceneGraph(plant, *plant_context);
   CheckMinimumDistanceBounds(minimum_distance_lower, minimum_distance_upper,
                              influence_distance);
@@ -64,6 +64,8 @@ void MinimumDistanceConstraint::Initialize(
           .inspector()
           .GetCollisionCandidates()
           .size();
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   minimum_value_constraint_ = std::make_unique<solvers::MinimumValueConstraint>(
       this->num_vars(), minimum_distance_lower, minimum_distance_upper,
       influence_distance, num_collision_candidates,
@@ -75,6 +77,7 @@ void MinimumDistanceConstraint::Initialize(
         return internal::Distances<T, double>(plant, plant_context, x,
                                               influence_distance_val);
       });
+#pragma GCC diagnostic pop
   this->set_bounds(minimum_value_constraint_->lower_bound(),
                    minimum_value_constraint_->upper_bound());
   if (penalty_function) {
@@ -87,9 +90,11 @@ void MinimumDistanceConstraint::Initialize(
     planning::CollisionCheckerContext* collision_checker_context,
     double minimum_distance_lower, double minimum_distance_upper,
     double influence_distance,
-    MinimumDistancePenaltyFunction penalty_function) {
+    solvers::MinimumValuePenaltyFunction penalty_function) {
   CheckMinimumDistanceBounds(minimum_distance_lower, minimum_distance_upper,
                              influence_distance);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   minimum_value_constraint_ = std::make_unique<solvers::MinimumValueConstraint>(
       collision_checker.plant().num_positions(), minimum_distance_lower,
       minimum_distance_upper, influence_distance,
@@ -106,6 +111,7 @@ void MinimumDistanceConstraint::Initialize(
                                    this->collision_checker_context_, x,
                                    influence_distance_val);
       });
+#pragma GCC diagnostic pop
   this->set_bounds(minimum_value_constraint_->lower_bound(),
                    minimum_value_constraint_->upper_bound());
   if (penalty_function) {
@@ -116,7 +122,7 @@ void MinimumDistanceConstraint::Initialize(
 MinimumDistanceConstraint::MinimumDistanceConstraint(
     const multibody::MultibodyPlant<double>* const plant,
     double minimum_distance, systems::Context<double>* plant_context,
-    MinimumDistancePenaltyFunction penalty_function,
+    solvers::MinimumValuePenaltyFunction penalty_function,
     double influence_distance_offset)
     : MinimumDistanceConstraint(plant, minimum_distance,
                                 kInf /* minimum_distance_upper */,
@@ -127,7 +133,7 @@ MinimumDistanceConstraint::MinimumDistanceConstraint(
     const multibody::MultibodyPlant<double>* const plant,
     double minimum_distance_lower, double minimum_distance_upper,
     systems::Context<double>* plant_context,
-    MinimumDistancePenaltyFunction penalty_function,
+    solvers::MinimumValuePenaltyFunction penalty_function,
     double influence_distance_offset)
     : solvers::Constraint(
           NumConstraints(minimum_distance_lower, minimum_distance_upper),
@@ -151,7 +157,7 @@ MinimumDistanceConstraint::MinimumDistanceConstraint(
 MinimumDistanceConstraint::MinimumDistanceConstraint(
     const multibody::MultibodyPlant<AutoDiffXd>* const plant,
     double minimum_distance, systems::Context<AutoDiffXd>* plant_context,
-    MinimumDistancePenaltyFunction penalty_function,
+    solvers::MinimumValuePenaltyFunction penalty_function,
     double influence_distance_offset)
     : MinimumDistanceConstraint(plant, minimum_distance,
                                 kInf /* minimum_distance_upper */,
@@ -162,7 +168,8 @@ MinimumDistanceConstraint::MinimumDistanceConstraint(
     const multibody::MultibodyPlant<AutoDiffXd>* const plant,
     double minimum_distance_lower, double minimum_distance_upper,
     systems::Context<AutoDiffXd>* plant_context,
-    MinimumDistancePenaltyFunction penalty_function, double influence_distance)
+    solvers::MinimumValuePenaltyFunction penalty_function,
+    double influence_distance)
     : solvers::Constraint(
           NumConstraints(minimum_distance_lower, minimum_distance_upper),
           RefFromPtrOrThrow(plant).num_positions(),
@@ -183,7 +190,7 @@ MinimumDistanceConstraint::MinimumDistanceConstraint(
     const planning::CollisionChecker* collision_checker,
     double minimum_distance_lower,
     planning::CollisionCheckerContext* collision_checker_context,
-    MinimumDistancePenaltyFunction penalty_function,
+    solvers::MinimumValuePenaltyFunction penalty_function,
     double influence_distance_offset)
     : MinimumDistanceConstraint(
           collision_checker, minimum_distance_lower,
@@ -195,7 +202,8 @@ MinimumDistanceConstraint::MinimumDistanceConstraint(
     const planning::CollisionChecker* collision_checker,
     double minimum_distance_lower, double minimum_distance_upper,
     planning::CollisionCheckerContext* collision_checker_context,
-    MinimumDistancePenaltyFunction penalty_function, double influence_distance)
+    solvers::MinimumValuePenaltyFunction penalty_function,
+    double influence_distance)
     : solvers::Constraint(
           NumConstraints(minimum_distance_lower, minimum_distance_upper),
           internal::PtrOrThrow(
