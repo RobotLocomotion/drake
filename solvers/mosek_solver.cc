@@ -54,7 +54,7 @@ class MosekSolver::License {
           fmt::format("Could not acquire MOSEK license: {}. See "
                       "https://docs.mosek.com/10.0/capi/"
                       "response-codes.html#mosek.rescode for details.",
-                      rescode));
+                      fmt_streamed(rescode)));
     }
   }
 
