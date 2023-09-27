@@ -5,6 +5,7 @@
 #include "drake/multibody/fem/matrix_utilities.h"
 #include "drake/multibody/plant/compliant_contact_manager.h"
 #include "drake/multibody/plant/deformable_driver.h"
+#include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/framework/diagram_builder.h"
 
 using drake::geometry::GeometryId;
@@ -29,16 +30,6 @@ using std::make_unique;
 namespace drake {
 namespace multibody {
 namespace internal {
-
-// Friend class used to provide access to a selection of private functions in
-// CompliantContactManager for testing purposes.
-class CompliantContactManagerTester {
- public:
-  static const DeformableDriver<double>* deformable_driver(
-      const CompliantContactManager<double>& manager) {
-    return manager.deformable_driver_.get();
-  }
-};
 
 /* This fixture tests DeformableDriver member functions associated with the
  concept of contact. In particular, it sets up two identical and overlapping
@@ -81,7 +72,8 @@ class DeformableDriverContactTest : public ::testing::Test {
     auto contact_manager = make_unique<CompliantContactManager<double>>();
     manager_ = contact_manager.get();
     plant_->SetDiscreteUpdateManager(std::move(contact_manager));
-    driver_ = CompliantContactManagerTester::deformable_driver(*manager_);
+    driver_ = manager_->deformable_driver();
+    DRAKE_DEMAND(driver_ != nullptr);
 
     builder.Connect(model_->vertex_positions_port(),
                     scene_graph_->get_source_configuration_port(
