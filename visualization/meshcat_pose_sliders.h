@@ -162,6 +162,10 @@ class MeshcatPoseSliders final : public systems::LeafSystem<T> {
   /* Handles the initialization event. */
   systems::EventStatus OnInitialization(const systems::Context<T>&) const;
 
+  typename systems::LeafSystem<T>::GraphvizFragment DoGetGraphvizFragment(
+      const typename systems::LeafSystem<T>::GraphvizFragmentParams& params)
+      const final;
+
   std::shared_ptr<geometry::Meshcat> meshcat_;
   mutable math::RigidTransform<double> nominal_pose_;
   std::atomic<bool> is_registered_;

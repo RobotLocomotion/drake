@@ -36,6 +36,7 @@ drake_cc_package_library(
         ":make_mesh_for_deformable",
         ":meshcat",
         ":meshcat_animation",
+        ":meshcat_graphviz",
         ":meshcat_point_cloud_visualizer",
         ":meshcat_visualizer",
         ":meshcat_visualizer_params",
@@ -543,6 +544,7 @@ drake_cc_library(
     hdrs = ["meshcat_point_cloud_visualizer.h"],
     deps = [
         ":meshcat",
+        ":meshcat_graphviz",
         ":rgba",
         ":utilities",
         "//perception:point_cloud",
@@ -558,6 +560,15 @@ drake_cc_googletest(
         "//systems/analysis:simulator",
         "//systems/framework:diagram_builder",
         "//systems/primitives:constant_value_source",
+    ],
+)
+
+drake_cc_library(
+    name = "meshcat_graphviz",
+    srcs = ["meshcat_graphviz.cc"],
+    hdrs = ["meshcat_graphviz.h"],
+    deps = [
+        "//systems/framework:system_base",
     ],
 )
 
@@ -578,6 +589,7 @@ drake_cc_library(
     deps = [
         ":geometry_roles",
         ":meshcat",
+        ":meshcat_graphviz",
         ":meshcat_visualizer_params",
         ":rgba",
         ":scene_graph",
