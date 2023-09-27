@@ -73,7 +73,8 @@ void TamsiDriver<T>::CalcContactSolverResults(
   // there's no moving objects.
   MultibodyForces<T> forces0(plant());
   manager().CalcNonContactForces(
-      context, /* include joint limit penalty forces */ true, &forces0);
+      context, /* include_joint_limit_penalty_forces */ true,
+      /* include_pd_controlled_input */ true, &forces0);
 
   const int nq = plant().num_positions();
   const int nv = plant().num_velocities();
@@ -371,8 +372,9 @@ void TamsiDriver<T>::CalcAndAddSpatialContactForcesFromContactResults(
 template <typename T>
 void TamsiDriver<T>::CalcDiscreteUpdateMultibodyForces(
     const systems::Context<T>& context, MultibodyForces<T>* forces) const {
-  const bool include_joint_limit_penalty_forces = true;
-  manager().CalcNonContactForces(context, include_joint_limit_penalty_forces,
+  manager().CalcNonContactForces(context,
+                                 /* include_joint_limit_penalty_forces */ true,
+                                 /* include_pd_controlled_input */ true,
                                  forces);
   const ContactResults<T>& contact_results =
       manager().EvalContactResults(context);
