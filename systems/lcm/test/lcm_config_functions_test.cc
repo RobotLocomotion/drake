@@ -6,10 +6,12 @@
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcm/drake_lcm_params.h"
+#include "drake/lcmt_drake_signal.hpp"
 
 using drake::lcm::DrakeLcm;
 using drake::lcm::DrakeLcmInterface;
 using drake::lcm::DrakeLcmParams;
+using drake::lcm::Subscriber;
 using drake::systems::DiagramBuilder;
 
 namespace drake {
@@ -114,6 +116,50 @@ GTEST_TEST(LcmConfigFunctionsFindOrCreateTest, CreateNew) {
       FindOrCreateLcmBus(forced_result, lcm_buses, &builder, description,
                          bus_name),
       ".*non-default.*special.*");
+}
+
+// Special handling for opting-out of LCM.
+GTEST_TEST(LcmConfigFunctionsTest, Nulls) {
+  const std::map<std::string, std::optional<DrakeLcmParams>> lcm_buses{
+      {"foo", std::nullopt},
+      {"bar", DrakeLcmParams{.lcm_url = LcmBuses::kLcmUrlMemqNull}},
+  };
+
+  // Invoke the device under test.
+  DiagramBuilder<double> builder;
+  auto name_to_interface = ApplyLcmBusConfig(lcm_buses, &builder);
+  ASSERT_EQ(name_to_interface.size(), 2);
+  auto diagram = builder.Build();
+
+  // Check its results.
+  DrakeLcmInterface* interface1 = name_to_interface.Find("Nulls test", "foo");
+  DrakeLcmInterface* interface2 = name_to_interface.Find("Nulls test", "bar");
+  ASSERT_NE(interface1, nullptr);
+  ASSERT_NE(interface2, nullptr);
+
+  // Check that no unwanted systems were added.
+  std::vector<std::string> names;
+  for (const System<double>* system : diagram->GetSystems()) {
+    names.push_back(system->get_name());
+  }
+  const std::vector<std::string> expected{
+      // The two `SharedPtrSystem`s are the only things that gets added.
+      // Note that there are no `LcmInterfaceSystem`s anywhere here.
+      "DrakeLcm(bus_name=foo, lcm_url=memq://null)",
+      "DrakeLcm(bus_name=bar, lcm_url=memq://null)",
+  };
+  EXPECT_THAT(names, testing::UnorderedElementsAreArray(expected));
+
+  // The interface is inert -- it does not pass messges.
+  const std::string channel{"lcm_config_functions_test"};
+  Subscriber<lcmt_drake_signal> subscriber1(interface1, channel);
+  Subscriber<lcmt_drake_signal> subscriber2(interface2, channel);
+  Publish(interface1, channel, lcmt_drake_signal{});
+  Publish(interface2, channel, lcmt_drake_signal{});
+  interface1->HandleSubscriptions(10);
+  interface2->HandleSubscriptions(10);
+  EXPECT_EQ(subscriber1.count(), 0);
+  EXPECT_EQ(subscriber2.count(), 0);
 }
 
 }  // namespace

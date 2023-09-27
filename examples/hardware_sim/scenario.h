@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <limits>
 #include <map>
+#include <optional>
 #include <string>
 #include <variant>
 #include <vector>
@@ -65,8 +66,10 @@ struct Scenario {
   std::vector<multibody::parsing::ModelDirective> directives;
 
   /* A map of {bus_name: lcm_params} for LCM transceivers to be used by drivers,
-  sensors, etc. */
-  std::map<std::string, lcm::DrakeLcmParams> lcm_buses{{"default", {}}};
+  sensors, etc. Setting the `lcm_params` to `std::nullopt` indicates that LCM
+  should not be used for that `bus_name`. */
+  std::map<std::string, std::optional<lcm::DrakeLcmParams>> lcm_buses{
+      {"default", lcm::DrakeLcmParams{}}};
 
   /* For actuated models, specifies where each model's actuation inputs come
   from, keyed on the ModelInstance name. */

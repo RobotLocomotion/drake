@@ -102,7 +102,7 @@ drake_py_unittest(
         "test/test_scenarios.yaml",
         ":demo_cc",
     ],
-    shard_count = 4,
+    shard_count = 5,
     deps = [
         ":hardware_sim_test_common",
     ],

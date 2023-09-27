@@ -131,7 +131,9 @@ void Simulation::Setup() {
 }
 
 void Simulation::Simulate() {
-  simulator_->AdvanceTo(scenario_.simulation_duration);
+  if (scenario_.simulation_duration >= 0) {
+    simulator_->AdvanceTo(scenario_.simulation_duration);
+  }
 }
 
 int main() {
