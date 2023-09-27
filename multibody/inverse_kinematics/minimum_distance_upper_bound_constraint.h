@@ -53,7 +53,7 @@ class MinimumDistanceUpperBoundConstraint final : public solvers::Constraint {
   based nonlinear optimization. This is because a geometry pair with distance
   larger than `influence_distance` is ignored, so is its gradient; hence the
   gradient-based optimizer doesn't know to actively reduce the distance between
-  that pair. @default 1 meter.
+  that pair.
   We strongly suggest to use a different (and larger)
   `influence_distance_offset` as the one used in
   MinimumValueLowerBoundConstraint.
@@ -61,39 +61,39 @@ class MinimumDistanceUpperBoundConstraint final : public solvers::Constraint {
   a SceneGraph object.
   @throws std::exception if influence_distance_offset = ∞.
   @throws std::exception if influence_distance_offset ≤ 0.
-  @pydrake_mkdoc_identifier{double_no_upper_bound}
+  @pydrake_mkdoc_identifier{double_mbp}
   */
   MinimumDistanceUpperBoundConstraint(
       const multibody::MultibodyPlant<double>* const plant,
       double minimum_distance_upper, systems::Context<double>* plant_context,
-      solvers::MinimumValuePenaltyFunction penalty_function = {},
-      double influence_distance_offset = 1);
+      double influence_distance_offset,
+      solvers::MinimumValuePenaltyFunction penalty_function = {});
 
   /**
   Overloaded constructor.
   Constructs the constraint using MultibodyPlant<AutoDiffXd>.
-  @pydrake_mkdoc_identifier{autodiff_no_upper_bound}
+  @pydrake_mkdoc_identifier{autodiff_mbp}
   */
   MinimumDistanceUpperBoundConstraint(
       const multibody::MultibodyPlant<AutoDiffXd>* const plant,
       double minimum_distance_upper,
       systems::Context<AutoDiffXd>* plant_context,
-      solvers::MinimumValuePenaltyFunction penalty_function = {},
-      double influence_distance_offset = 1);
+      double influence_value_offset,
+      solvers::MinimumValuePenaltyFunction penalty_function = {});
 
   /** Overloaded constructor.
   Constructs the constraint with CollisionChecker instead of MultibodyPlant.
   @param collision_checker collision_checker must outlive this constraint.
   @param collision_checker_context The context for the collision checker. See
   CollisionChecker class for more details.
-  @pydrake_mkdoc_identifier{collision_checker_no_upper_bound}
+  @pydrake_mkdoc_identifier{collision_checker}
   */
   MinimumDistanceUpperBoundConstraint(
       const planning::CollisionChecker* collision_checker,
       double minimum_distance_upper,
       planning::CollisionCheckerContext* collision_checker_context,
-      solvers::MinimumValuePenaltyFunction penalty_function = {},
-      double influence_distance_offset = 1);
+      double influence_distance_offset,
+      solvers::MinimumValuePenaltyFunction penalty_function = {});
 
   ~MinimumDistanceUpperBoundConstraint() override {}
 

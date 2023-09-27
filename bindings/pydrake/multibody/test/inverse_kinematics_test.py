@@ -414,6 +414,43 @@ class TestInverseKinematics(unittest.TestCase):
         self.assertTrue(result.is_success())
         self.assertTrue(np.allclose(result.GetSolution(ik.q()), q_val))
 
+    def test_AddMinimumDistanceLowerBoundConstraint(self):
+        ik = self.ik_two_bodies
+        W = self.plant.world_frame()
+        B1 = self.body1_frame
+        B2 = self.body2_frame
+
+        min_distance_lower = 0.1
+        tol = 1e-2
+        radius1 = 0.1
+        radius2 = 0.2
+
+        ik.AddMinimumDistanceLowerBoundConstraint(
+            minimum_distance_lower=min_distance_lower)
+        context = self.plant.CreateDefaultContext()
+        self.plant.SetFreeBodyPose(
+            context, B1.body(), RigidTransform([0, 0, 0.01]))
+        self.plant.SetFreeBodyPose(
+            context, B2.body(), RigidTransform([0, 0, -0.01]))
+
+        def get_min_distance_actual():
+            X = partial(self.plant.CalcRelativeTransform, context)
+            distance = np.linalg.norm(
+                X(W, B1).translation() - X(W, B2).translation())
+            return distance - radius1 - radius2
+
+        self.assertLess(get_min_distance_actual(), min_distance_lower - tol)
+        self.prog.SetInitialGuess(ik.q(), self.plant.GetPositions(context))
+        result = mp.Solve(self.prog)
+        self.assertTrue(result.is_success())
+        q_val = result.GetSolution(ik.q())
+        self.plant.SetPositions(context, q_val)
+        self.assertGreater(get_min_distance_actual(), min_distance_lower - tol)
+
+        result = mp.Solve(self.prog)
+        self.assertTrue(result.is_success())
+        self.assertTrue(np.allclose(result.GetSolution(ik.q()), q_val))
+
     def test_AddDistanceConstraint(self):
         ik = self.ik_two_bodies
         W = self.plant.world_frame()
@@ -604,6 +641,87 @@ class TestConstraints(unittest.TestCase):
             plant=variables.plant, minimum_distance_lower=0.1,
             minimum_distance_upper=1, plant_context=variables.plant_context,
             penalty_function=None, influence_distance=3)
+        self.assertIsInstance(constraint, mp.Constraint)
+        y_default_penalty = constraint.Eval(q)
+
+    @check_type_variables
+    def test_minimum_distance_lower_bound_constraint(self, variables):
+        constraint = ik.MinimumDistanceLowerBoundConstraint(
+            plant=variables.plant,
+            minimum_distance_lower=0.1,
+            plant_context=variables.plant_context)
+        self.assertIsInstance(constraint, mp.Constraint)
+
+        # Now set the new penalty function
+        def penalty_fun(x: float, compute_grad: bool) \
+                -> typing.Tuple[float, typing.Optional[float]]:
+            if x < 0:
+                if compute_grad:
+                    return x**2, 2 * x
+                else:
+                    return x**2, None
+            else:
+                if compute_grad:
+                    return 0., 0.
+                else:
+                    return 0., None
+
+        constraint = ik.MinimumDistanceLowerBoundConstraint(
+            plant=variables.plant, minimum_distance_lower=0.1,
+            plant_context=variables.plant_context,
+            penalty_function=penalty_fun, influence_distance_offset=3)
+        self.assertIsInstance(constraint, mp.Constraint)
+
+        q = variables.plant.GetPositions(variables.plant_context)
+        y = constraint.Eval(q)
+
+        # Now test the case with penalty_function=None. It will use the
+        # default penalty function.
+        constraint = ik.MinimumDistanceLowerBoundConstraint(
+            plant=variables.plant, minimum_distance_lower=0.1,
+            plant_context=variables.plant_context,
+            penalty_function=None, influence_distance_offset=3)
+        self.assertIsInstance(constraint, mp.Constraint)
+        y_default_penalty = constraint.Eval(q)
+
+    @check_type_variables
+    def test_minimum_distance_upper_bound_constraint(self, variables):
+        constraint = ik.MinimumDistanceUpperBoundConstraint(
+            plant=variables.plant,
+            minimum_distance_upper=0.1,
+            influence_distance_offset=1,
+            plant_context=variables.plant_context)
+        self.assertIsInstance(constraint, mp.Constraint)
+
+        # Now set the new penalty function
+        def penalty_fun(x: float, compute_grad: bool) \
+                -> typing.Tuple[float, typing.Optional[float]]:
+            if x < 0:
+                if compute_grad:
+                    return x**2, 2 * x
+                else:
+                    return x**2, None
+            else:
+                if compute_grad:
+                    return 0., 0.
+                else:
+                    return 0., None
+
+        constraint = ik.MinimumDistanceUpperBoundConstraint(
+            plant=variables.plant, minimum_distance_upper=0.1,
+            plant_context=variables.plant_context, influence_distance_offset=3,
+            penalty_function=penalty_fun)
+        self.assertIsInstance(constraint, mp.Constraint)
+
+        q = variables.plant.GetPositions(variables.plant_context)
+        y = constraint.Eval(q)
+
+        # Now test the case with penalty_function=None. It will use the
+        # default penalty function.
+        constraint = ik.MinimumDistanceUpperBoundConstraint(
+            plant=variables.plant, minimum_distance_upper=0.1,
+            plant_context=variables.plant_context, influence_distance_offset=3,
+            penalty_function=None)
         self.assertIsInstance(constraint, mp.Constraint)
         y_default_penalty = constraint.Eval(q)
 

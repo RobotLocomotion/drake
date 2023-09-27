@@ -82,8 +82,8 @@ void MinimumDistanceUpperBoundConstraint::Initialize(
 MinimumDistanceUpperBoundConstraint::MinimumDistanceUpperBoundConstraint(
     const multibody::MultibodyPlant<double>* const plant,
     double minimum_distance_upper, systems::Context<double>* plant_context,
-    solvers::MinimumValuePenaltyFunction penalty_function,
-    double influence_distance_offset)
+    double influence_distance_offset,
+    solvers::MinimumValuePenaltyFunction penalty_function)
     : solvers::Constraint(1, RefFromPtrOrThrow(plant).num_positions(),
                           Vector1d(0), Vector1d(0)),
       /* The lower and upper bounds will be set to correct value later in
@@ -100,8 +100,8 @@ MinimumDistanceUpperBoundConstraint::MinimumDistanceUpperBoundConstraint(
 MinimumDistanceUpperBoundConstraint::MinimumDistanceUpperBoundConstraint(
     const multibody::MultibodyPlant<AutoDiffXd>* const plant,
     double minimum_distance_lower, systems::Context<AutoDiffXd>* plant_context,
-    solvers::MinimumValuePenaltyFunction penalty_function,
-    double influence_distance_offset)
+    double influence_distance_offset,
+    solvers::MinimumValuePenaltyFunction penalty_function)
     : solvers::Constraint(1, RefFromPtrOrThrow(plant).num_positions(),
                           Vector1d(0), Vector1d(0)),
       plant_double_{nullptr},
@@ -117,8 +117,8 @@ MinimumDistanceUpperBoundConstraint::MinimumDistanceUpperBoundConstraint(
     const planning::CollisionChecker* collision_checker,
     double minimum_distance_upper,
     planning::CollisionCheckerContext* collision_checker_context,
-    solvers::MinimumValuePenaltyFunction penalty_function,
-    double influence_distance_offset)
+    double influence_distance_offset,
+    solvers::MinimumValuePenaltyFunction penalty_function)
     : solvers::Constraint(
           1,
           internal::PtrOrThrow(collision_checker,
