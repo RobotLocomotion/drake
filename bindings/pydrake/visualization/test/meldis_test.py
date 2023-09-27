@@ -63,7 +63,7 @@ from pydrake.systems.framework import (
 from pydrake.systems.lcm import (
     LcmPublisherSystem,
 )
-
+import pydrake.visualization.meldis
 
 # https://bugs.launchpad.net/ubuntu/+source/u-msgpack-python/+bug/1979549
 #
@@ -625,3 +625,10 @@ class TestMeldis(unittest.TestCase):
         dut._invoke_subscriptions()
         # After the handlers are called, we have the expected meshcat path.
         self.assertEqual(dut.meshcat.HasPath(meshcat_path), True)
+
+    def test_command_line_browser_names(self):
+        """Sanity checks our webbrowser names logic. The objective is to return
+        some kind of a list, without crashing.
+        """
+        names = pydrake.visualization.meldis._available_browsers()
+        self.assertIsInstance(names, list)
