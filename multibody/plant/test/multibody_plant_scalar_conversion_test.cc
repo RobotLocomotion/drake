@@ -3,6 +3,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/multibody/plant/discrete_contact_data.h"
 #include "drake/multibody/plant/discrete_update_manager.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/plant/test/dummy_model.h"
@@ -193,6 +194,16 @@ class DoubleOnlyDiscreteUpdateManager final
   void DoCalcDiscreteUpdateMultibodyForces(
       const systems::Context<T>& context,
       MultibodyForces<T>* forces) const final {}
+
+  void DoCalcDiscreteContactPairs(
+      const systems::Context<T>&,
+      internal::DiscreteContactData<internal::DiscreteContactPair<T>>*)
+      const final {}
+
+  void DoCalcContactKinematics(
+      const systems::Context<T>&,
+      internal::DiscreteContactData<internal::ContactPairKinematics<T>>*)
+      const final {}
 };
 
 // This test verifies that adding external components that do not support some
@@ -259,7 +270,7 @@ GTEST_TEST(ScalarConversionTest, CouplerConstraintSpec) {
   constexpr double kGearRatio = 1.2;
   constexpr double kOffset = 0.3;
   const internal::CouplerConstraintSpec reference_spec{j0, j1, kGearRatio,
-                                                        kOffset};
+                                                       kOffset};
 
   // Directly add dummy constraint specs through the tester so that we don't
   // need to actually add any joints.

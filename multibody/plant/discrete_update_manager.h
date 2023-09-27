@@ -14,8 +14,10 @@
 #include "drake/multibody/contact_solvers/contact_solver_results.h"
 #include "drake/multibody/plant/constraint_specs.h"
 #include "drake/multibody/plant/contact_jacobians.h"
+#include "drake/multibody/plant/contact_pair_kinematics.h"
 #include "drake/multibody/plant/contact_results.h"
 #include "drake/multibody/plant/coulomb_friction.h"
+#include "drake/multibody/plant/discrete_contact_data.h"
 #include "drake/multibody/plant/discrete_contact_pair.h"
 #include "drake/multibody/plant/scalar_convertible_component.h"
 #include "drake/multibody/tree/multibody_tree.h"
@@ -198,6 +200,17 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   const MultibodyForces<T>& EvalDiscreteUpdateMultibodyForces(
       const systems::Context<T>& context) const;
 
+  // Evaluates sparse kinematics information for each contact pair at
+  // the given configuration stored in `context`.
+  const DiscreteContactData<ContactPairKinematics<T>>& EvalContactKinematics(
+      const systems::Context<T>& context) const;
+
+  // Given the configuration stored in `context`, evalutates all discrete
+  // contact pairs, including point, hydroelastic, and deformable contact, into
+  // `pairs`.
+  const DiscreteContactData<DiscreteContactPair<T>>& EvalDiscreteContactPairs(
+      const systems::Context<T>& context) const;
+
   /* Publicly exposed MultibodyPlant private/protected methods.
    @{ */
 
@@ -333,6 +346,14 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
       const systems::Context<T>& context,
       systems::DiscreteValues<T>* updates) const = 0;
 
+  virtual void DoCalcContactKinematics(
+      const systems::Context<T>& context,
+      DiscreteContactData<ContactPairKinematics<T>>* result) const = 0;
+
+  virtual void DoCalcDiscreteContactPairs(
+      const systems::Context<T>& context,
+      DiscreteContactData<DiscreteContactPair<T>>* result) const = 0;
+
   /* Concrete managers must implement this method to compute contact results
    according to the underlying formulation of contact. */
   virtual void DoCalcContactResults(
@@ -366,6 +387,8 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
     systems::CacheIndex non_contact_forces_evaluation_in_progress;
     systems::CacheIndex contact_results;
     systems::CacheIndex discrete_update_multibody_forces;
+    systems::CacheIndex contact_kinematics;
+    systems::CacheIndex discrete_contact_pairs;
   };
 
   // Exposes indices for the cache entries declared by this class for derived
@@ -408,6 +431,17 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   // DoCalcDiscreteUpdateMultibodyForces.
   void CalcDiscreteUpdateMultibodyForces(const systems::Context<T>& context,
                                          MultibodyForces<T>* forces) const;
+
+  // Calc version of EvalContactKinematics(), NVI to DoCalcContactKinematics.
+  void CalcContactKinematics(
+      const systems::Context<T>& context,
+      DiscreteContactData<ContactPairKinematics<T>>* result) const;
+
+  // Calc version of EvalDiscreteContactPairs(), NVI to
+  // DoCalcDiscreteContactPairs.
+  void CalcDiscreteContactPairs(
+      const systems::Context<T>& context,
+      DiscreteContactData<DiscreteContactPair<T>>* result) const;
 
   const MultibodyPlant<T>* plant_{nullptr};
   MultibodyPlant<T>* mutable_plant_{nullptr};

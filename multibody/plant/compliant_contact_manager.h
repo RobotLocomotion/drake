@@ -8,10 +8,8 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/scene_graph_inspector.h"
-#include "drake/multibody/plant/contact_pair_kinematics.h"
 #include "drake/multibody/plant/contact_results.h"
 #include "drake/multibody/plant/deformable_driver.h"
-#include "drake/multibody/plant/discrete_contact_data.h"
 #include "drake/multibody/plant/discrete_update_manager.h"
 #include "drake/systems/framework/context.h"
 
@@ -121,8 +119,6 @@ class CompliantContactManager final : public DiscreteUpdateManager<T> {
   // Struct used to conglomerate the indexes of cache entries declared by the
   // manager.
   struct CacheIndexes {
-    systems::CacheIndex contact_kinematics;
-    systems::CacheIndex discrete_contact_pairs;
     systems::CacheIndex hydroelastic_contact_info;
     systems::CacheIndex non_constraint_forces_accelerations;
   };
@@ -191,15 +187,12 @@ class CompliantContactManager final : public DiscreteUpdateManager<T> {
   void DoCalcDiscreteUpdateMultibodyForces(
       const systems::Context<T>& context,
       MultibodyForces<T>* forces) const final;
-
-  // This method computes sparse kinematics information for each contact pair at
-  // the given configuration stored in `context`.
-  DiscreteContactData<ContactPairKinematics<T>> CalcContactKinematics(
-      const systems::Context<T>& context) const;
-
-  // Eval version of CalcContactKinematics().
-  const DiscreteContactData<ContactPairKinematics<T>>& EvalContactKinematics(
-      const systems::Context<T>& context) const;
+  void DoCalcContactKinematics(
+      const systems::Context<T>& context,
+      DiscreteContactData<ContactPairKinematics<T>>* result) const final;
+  void DoCalcDiscreteContactPairs(
+      const systems::Context<T>& context,
+      DiscreteContactData<DiscreteContactPair<T>>* result) const final;
 
   // Helper function for CalcContactKinematics() that computes the contact pair
   // kinematics for point contact and hydroelastic contact respectively,
@@ -223,19 +216,6 @@ class CompliantContactManager final : public DiscreteUpdateManager<T> {
   void AppendDiscreteContactPairsForHydroelasticContact(
       const systems::Context<T>& context,
       DiscreteContactData<DiscreteContactPair<T>>* pairs) const;
-
-  // Given the configuration stored in `context`, this method computes all
-  // discrete contact pairs, including point, hydroelastic, and deformable
-  // contact, into `pairs`. Contact pairs including deformable bodies are
-  // guaranteed to come after point and hydroelastic contact pairs. Throws an
-  // exception if `pairs` is nullptr.
-  void CalcDiscreteContactPairs(
-      const systems::Context<T>& context,
-      DiscreteContactData<DiscreteContactPair<T>>* pairs) const;
-
-  // Eval version of CalcDiscreteContactPairs().
-  const DiscreteContactData<DiscreteContactPair<T>>& EvalDiscreteContactPairs(
-      const systems::Context<T>& context) const;
 
   // Computes per-face contact information for the hydroelastic model (slip
   // velocity, traction, etc). On return contact_info->size() will equal the
@@ -292,7 +272,7 @@ class CompliantContactManager final : public DiscreteUpdateManager<T> {
 // N.B. These geometry queries are not supported when T = symbolic::Expression
 // and therefore their implementation throws.
 template <>
-void CompliantContactManager<symbolic::Expression>::CalcDiscreteContactPairs(
+void CompliantContactManager<symbolic::Expression>::DoCalcDiscreteContactPairs(
     const drake::systems::Context<symbolic::Expression>&,
     DiscreteContactData<DiscreteContactPair<symbolic::Expression>>*) const;
 template <>

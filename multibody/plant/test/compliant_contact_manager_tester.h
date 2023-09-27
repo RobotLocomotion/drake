@@ -52,7 +52,7 @@ class CompliantContactManagerTester {
   static DiscreteContactData<ContactPairKinematics<double>>
   CalcContactKinematics(const CompliantContactManager<double>& manager,
                         const drake::systems::Context<double>& context) {
-    return manager.CalcContactKinematics(context);
+    return manager.EvalContactKinematics(context);
   }
 
   static void DoCalcContactResults(

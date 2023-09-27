@@ -167,6 +167,18 @@ class DummyDiscreteUpdateManager final : public DiscreteUpdateManager<T> {
     throw std::logic_error("Must implement if needed for these tests.");
   }
 
+  void DoCalcDiscreteContactPairs(
+      const systems::Context<T>&,
+      DiscreteContactData<DiscreteContactPair<T>>*) const final {
+    throw std::logic_error("Must implement if needed for these tests.");
+  }
+
+  void DoCalcContactKinematics(
+      const systems::Context<T>&,
+      DiscreteContactData<ContactPairKinematics<T>>*) const final {
+    throw std::logic_error("Must implement if needed for these tests.");
+  }
+
  private:
   systems::DiscreteStateIndex additional_state_index_;
   systems::CacheIndex cache_index_;
@@ -179,8 +191,7 @@ class DiscreteUpdateManagerTest : public ::testing::Test {
  protected:
   void SetUp() override {
     // To avoid unnecessary warnings/errors, use a non-zero spatial inertia.
-    plant_.AddRigidBody("rigid body",
-        SpatialInertia<double>::MakeUnitary());
+    plant_.AddRigidBody("rigid body", SpatialInertia<double>::MakeUnitary());
     auto dummy_model = std::make_unique<DummyModel<double>>();
     dummy_model_ = dummy_model.get();
     plant_.AddPhysicalModel(std::move(dummy_model));

@@ -76,12 +76,31 @@ void DiscreteUpdateManager<T>::DeclareCacheEntries() {
 
   const auto& contact_results_cache_entry = DeclareCacheEntry(
       "Contact results (discrete)",
-      systems::ValueProducer(
-          this,
-          &DiscreteUpdateManager<T>::CalcContactResults),
+      systems::ValueProducer(this,
+                             &DiscreteUpdateManager<T>::CalcContactResults),
       {systems::System<T>::xd_ticket(),
        systems::System<T>::all_parameters_ticket()});
   cache_indexes_.contact_results = contact_results_cache_entry.cache_index();
+
+  // Cache discrete contact pairs.
+  const auto& discrete_contact_pairs_cache_entry = this->DeclareCacheEntry(
+      "Discrete contact pairs.",
+      systems::ValueProducer(
+          this, &DiscreteUpdateManager<T>::CalcDiscreteContactPairs),
+      {systems::System<T>::xd_ticket(),
+       systems::System<T>::all_parameters_ticket()});
+  cache_indexes_.discrete_contact_pairs =
+      discrete_contact_pairs_cache_entry.cache_index();
+
+  // Cache contact kinematics.
+  const auto& contact_kinematics_cache_entry = this->DeclareCacheEntry(
+      "Contact kinematics.",
+      systems::ValueProducer(this,
+                             &DiscreteUpdateManager::CalcContactKinematics),
+      {systems::System<T>::xd_ticket(),
+       systems::System<T>::all_parameters_ticket()});
+  cache_indexes_.contact_kinematics =
+      contact_kinematics_cache_entry.cache_index();
 
   // Allow derived classes to declare their own cache entries.
   DoDeclareCacheEntries();
@@ -293,7 +312,8 @@ template <typename T>
 ScopeExit DiscreteUpdateManager<T>::ThrowIfNonContactForceInProgress(
     const systems::Context<T>& context) const {
   systems::CacheEntryValue& value =
-      plant().get_cache_entry(
+      plant()
+          .get_cache_entry(
               cache_indexes_.non_contact_forces_evaluation_in_progress)
           .get_mutable_cache_entry_value(context);
   bool& evaluation_in_progress = value.GetMutableValueOrThrow<bool>();
@@ -319,8 +339,9 @@ ScopeExit DiscreteUpdateManager<T>::ThrowIfNonContactForceInProgress(
   // If the exception above is triggered, we will leave this method and the
   // computation will no longer be "in progress". We use a scoped guard so
   // that we have a chance to mark it as such when we leave this scope.
-  return ScopeExit(
-      [&evaluation_in_progress]() { evaluation_in_progress = false; });
+  return ScopeExit([&evaluation_in_progress]() {
+    evaluation_in_progress = false;
+  });
 }
 
 template <typename T>
@@ -412,6 +433,24 @@ void DiscreteUpdateManager<T>::CalcDiscreteUpdateMultibodyForces(
 }
 
 template <typename T>
+void DiscreteUpdateManager<T>::CalcContactKinematics(
+    const systems::Context<T>& context,
+    DiscreteContactData<ContactPairKinematics<T>>* result) const {
+  plant().ValidateContext(context);
+  DRAKE_DEMAND(result != nullptr);
+  DoCalcContactKinematics(context, result);
+}
+
+template <typename T>
+void DiscreteUpdateManager<T>::CalcDiscreteContactPairs(
+    const systems::Context<T>& context,
+    DiscreteContactData<DiscreteContactPair<T>>* result) const {
+  plant().ValidateContext(context);
+  DRAKE_DEMAND(result != nullptr);
+  DoCalcDiscreteContactPairs(context, result);
+}
+
+template <typename T>
 const MultibodyForces<T>&
 DiscreteUpdateManager<T>::EvalDiscreteUpdateMultibodyForces(
     const systems::Context<T>& context) const {
@@ -426,6 +465,24 @@ const ContactResults<T>& DiscreteUpdateManager<T>::EvalContactResults(
   return plant()
       .get_cache_entry(cache_indexes_.contact_results)
       .template Eval<ContactResults<T>>(context);
+}
+
+template <typename T>
+const DiscreteContactData<ContactPairKinematics<T>>&
+DiscreteUpdateManager<T>::EvalContactKinematics(
+    const systems::Context<T>& context) const {
+  return plant()
+      .get_cache_entry(cache_indexes_.contact_kinematics)
+      .template Eval<DiscreteContactData<ContactPairKinematics<T>>>(context);
+}
+
+template <typename T>
+const DiscreteContactData<DiscreteContactPair<T>>&
+DiscreteUpdateManager<T>::EvalDiscreteContactPairs(
+    const systems::Context<T>& context) const {
+  return plant()
+      .get_cache_entry(cache_indexes_.discrete_contact_pairs)
+      .template Eval<DiscreteContactData<DiscreteContactPair<T>>>(context);
 }
 
 }  // namespace internal

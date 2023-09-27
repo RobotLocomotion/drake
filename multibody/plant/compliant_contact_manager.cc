@@ -88,16 +88,6 @@ void CompliantContactManager<T>::DoDeclareCacheEntries() {
   // Therefore if we make it dependent on q_ticket() the Jacobian only
   // gets evaluated once at the start of the simulation.
 
-  // Cache discrete contact pairs.
-  const auto& discrete_contact_pairs_cache_entry = this->DeclareCacheEntry(
-      "Discrete contact pairs.",
-      systems::ValueProducer(
-          this, &CompliantContactManager<T>::CalcDiscreteContactPairs),
-      {systems::System<T>::xd_ticket(),
-       systems::System<T>::all_parameters_ticket()});
-  cache_indexes_.discrete_contact_pairs =
-      discrete_contact_pairs_cache_entry.cache_index();
-
   // Cache hydroelastic contact info.
   const auto& hydroelastic_contact_info_cache_entry = this->DeclareCacheEntry(
       "Hydroelastic contact info.",
@@ -109,16 +99,6 @@ void CompliantContactManager<T>::DoDeclareCacheEntries() {
        systems::System<T>::all_parameters_ticket()});
   cache_indexes_.hydroelastic_contact_info =
       hydroelastic_contact_info_cache_entry.cache_index();
-
-  // Cache contact kinematics.
-  const auto& contact_kinematics_cache_entry = this->DeclareCacheEntry(
-      "Contact kinematics.",
-      systems::ValueProducer(this,
-                             &CompliantContactManager::CalcContactKinematics),
-      {systems::System<T>::xd_ticket(),
-       systems::System<T>::all_parameters_ticket()});
-  cache_indexes_.contact_kinematics =
-      contact_kinematics_cache_entry.cache_index();
 
   // Accelerations due to non-constraint forces.
   // We cache non-contact forces, ABA forces and accelerations into an
@@ -154,31 +134,29 @@ void CompliantContactManager<T>::DoDeclareCacheEntries() {
 }
 
 template <typename T>
-DiscreteContactData<ContactPairKinematics<T>>
-CompliantContactManager<T>::CalcContactKinematics(
-    const systems::Context<T>& context) const {
+void CompliantContactManager<T>::DoCalcContactKinematics(
+    const systems::Context<T>& context,
+    DiscreteContactData<ContactPairKinematics<T>>* result) const {
+  result->Clear();
   const DiscreteContactData<DiscreteContactPair<T>>& contact_pairs =
       this->EvalDiscreteContactPairs(context);
-  DiscreteContactData<ContactPairKinematics<T>> contact_kinematics;
   const int num_contacts = contact_pairs.size();
 
   // Quick no-op exit.
-  if (num_contacts == 0) return contact_kinematics;
+  if (num_contacts == 0) return;
 
-  contact_kinematics.Reserve(contact_pairs.num_point_contacts(),
-                             contact_pairs.num_hydro_contacts(),
-                             contact_pairs.num_deformable_contacts());
+  result->Reserve(contact_pairs.num_point_contacts(),
+                  contact_pairs.num_hydro_contacts(),
+                  contact_pairs.num_deformable_contacts());
   AppendContactKinematics(context, contact_pairs.point_contact_data(),
-                          DiscreteContactType::kPoint, &contact_kinematics);
+                          DiscreteContactType::kPoint, result);
   AppendContactKinematics(context, contact_pairs.hydro_contact_data(),
-                          DiscreteContactType::kHydroelastic,
-                          &contact_kinematics);
+                          DiscreteContactType::kHydroelastic, result);
   if constexpr (std::is_same_v<T, double>) {
     if (deformable_driver_ != nullptr) {
-      deformable_driver_->AppendContactKinematics(context, &contact_kinematics);
+      deformable_driver_->AppendContactKinematics(context, result);
     }
   }
-  return contact_kinematics;
 }
 
 template <typename T>
@@ -292,17 +270,8 @@ void CompliantContactManager<T>::AppendContactKinematics(
   }
 }
 
-template <typename T>
-const DiscreteContactData<ContactPairKinematics<T>>&
-CompliantContactManager<T>::EvalContactKinematics(
-    const systems::Context<T>& context) const {
-  return plant()
-      .get_cache_entry(cache_indexes_.contact_kinematics)
-      .template Eval<DiscreteContactData<ContactPairKinematics<T>>>(context);
-}
-
 template <>
-void CompliantContactManager<symbolic::Expression>::CalcDiscreteContactPairs(
+void CompliantContactManager<symbolic::Expression>::DoCalcDiscreteContactPairs(
     const drake::systems::Context<symbolic::Expression>&,
     DiscreteContactData<DiscreteContactPair<symbolic::Expression>>*) const {
   // Currently, the computation of contact pairs is not supported when T =
@@ -313,7 +282,7 @@ void CompliantContactManager<symbolic::Expression>::CalcDiscreteContactPairs(
 }
 
 template <typename T>
-void CompliantContactManager<T>::CalcDiscreteContactPairs(
+void CompliantContactManager<T>::DoCalcDiscreteContactPairs(
     const systems::Context<T>& context,
     DiscreteContactData<DiscreteContactPair<T>>* contact_pairs) const {
   plant().ValidateContext(context);
@@ -692,15 +661,6 @@ void CompliantContactManager<T>::CalcAccelerationsDueToNonConstraintForcesCache(
 }
 
 template <typename T>
-const DiscreteContactData<DiscreteContactPair<T>>&
-CompliantContactManager<T>::EvalDiscreteContactPairs(
-    const systems::Context<T>& context) const {
-  return plant()
-      .get_cache_entry(cache_indexes_.discrete_contact_pairs)
-      .template Eval<DiscreteContactData<DiscreteContactPair<T>>>(context);
-}
-
-template <typename T>
 const multibody::internal::AccelerationKinematicsCache<T>&
 CompliantContactManager<T>::EvalAccelerationsDueToNonConstraintForcesCache(
     const systems::Context<T>& context) const {
@@ -917,7 +877,7 @@ void CompliantContactManager<T>::CalcHydroelasticContactInfo(
     F_Ao_W_per_surface[surface_index] += Fq_Ao_W;
 
     // Velocity of Aq relative to Bq in the tangent direction.
-    // N.B. CompliantContactManager<T>::CalcContactKinematics() uses the
+    // N.B. DiscreteUpdateManager<T>::CalcContactKinematics() uses the
     // convention of computing J_AcBc_C and thus J_AcBc_C * v = v_AcBc_W (i.e.
     // relative velocity of Bc with respect to Ac). Thus we flip the sign here
     // for the convention used by HydroelasticQuadratureData.
