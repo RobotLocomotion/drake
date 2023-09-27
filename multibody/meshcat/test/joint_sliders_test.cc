@@ -1,5 +1,6 @@
 #include "drake/multibody/meshcat/joint_sliders.h"
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
@@ -428,6 +429,13 @@ TEST_F(JointSlidersTest, SetPositionsKukaIiwaRobot) {
   EXPECT_THROW(meshcat_->GetSliderValue(kKukaIiwaJoint5), std::exception);
   EXPECT_THROW(meshcat_->GetSliderValue(kKukaIiwaJoint6), std::exception);
   EXPECT_THROW(meshcat_->GetSliderValue(kKukaIiwaJoint7), std::exception);
+}
+
+TEST_F(JointSlidersTest, Graphviz) {
+  AddAcrobot();
+  const JointSliders<double> dut(meshcat_, &plant_);
+  EXPECT_THAT(dut.GetGraphvizString(),
+              testing::HasSubstr("meshcat_out ->"));
 }
 
 }  // namespace

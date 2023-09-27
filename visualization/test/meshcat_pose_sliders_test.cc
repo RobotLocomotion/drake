@@ -1,5 +1,6 @@
 #include "drake/visualization/meshcat_pose_sliders.h"
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
@@ -287,6 +288,12 @@ GTEST_TEST(MeshcatPoseSlidersTest, RunWithFixedInputPort) {
       dut.get_output_port().Eval<RigidTransformd>(*context).IsExactlyEqualTo(
           X));
   EXPECT_TRUE(X_out.IsExactlyEqualTo(X));
+}
+
+GTEST_TEST(MeshcatPoseSlidersTest, Graphviz) {
+  auto meshcat = geometry::GetTestEnvironmentMeshcat();
+  MeshcatPoseSliders<double> dut(meshcat);
+  EXPECT_THAT(dut.GetGraphvizString(), testing::HasSubstr("meshcat_out ->"));
 }
 
 }  // namespace
