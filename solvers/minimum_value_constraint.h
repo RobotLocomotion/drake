@@ -77,7 +77,12 @@ at -1, where it is required to have a non-zero gradient. The user-provided
 function may return a vector with up to `max_num_values` elements. If it returns
 a vector with fewer than `max_num_values` elements, the remaining elements are
 assumed to be greater than the "influence value". */
-class MinimumValueConstraint final : public solvers::Constraint {
+class DRAKE_DEPRECATED(
+    "2024-02-01",
+    "Use MinimumValueLowerBoundConstraint if you want to constrain the minimum "
+    "value from below, and MinimumValueUpperBoundConstraint if you want to "
+    "constrain the minimum value from above.") MinimumValueConstraint final
+    : public solvers::Constraint {
  public:
   /** Constructs a MinimumValueConstraint.
   min(v) >= lb
