@@ -14,11 +14,10 @@ using internal::RefFromPtrOrThrow;
 template <typename T>
 void MinimumDistanceUpperBoundConstraint::Initialize(
     const MultibodyPlant<T>& plant, systems::Context<T>* plant_context,
-    double minimum_distance_upper, double influence_distance_offset,
+    double bound, double influence_distance_offset,
     const solvers::MinimumValuePenaltyFunction& penalty_function) {
   CheckPlantIsConnectedToSceneGraph(plant, *plant_context);
-  CheckBounds(minimum_distance_upper,
-              minimum_distance_upper + influence_distance_offset);
+  CheckBounds(bound, bound + influence_distance_offset);
   const auto& query_port = plant.get_geometry_query_input_port();
   // Maximum number of SignedDistancePairs returned by calls to
   // ComputeSignedDistancePairwiseClosestPoints().
@@ -29,7 +28,7 @@ void MinimumDistanceUpperBoundConstraint::Initialize(
           .size();
   minimum_value_constraint_ =
       std::make_unique<solvers::MinimumValueUpperBoundConstraint>(
-          this->num_vars(), minimum_distance_upper, influence_distance_offset,
+          this->num_vars(), bound, influence_distance_offset,
           num_collision_candidates,
           [&plant, plant_context](const auto& x,
                                   double influence_distance_val) {
@@ -50,14 +49,13 @@ void MinimumDistanceUpperBoundConstraint::Initialize(
 
 void MinimumDistanceUpperBoundConstraint::Initialize(
     const planning::CollisionChecker& collision_checker,
-    planning::CollisionCheckerContext* collision_checker_context,
-    double minimum_distance_upper, double influence_distance_offset,
+    planning::CollisionCheckerContext* collision_checker_context, double bound,
+    double influence_distance_offset,
     const solvers::MinimumValuePenaltyFunction& penalty_function) {
-  CheckBounds(minimum_distance_upper,
-              minimum_distance_upper + influence_distance_offset);
+  CheckBounds(bound, bound + influence_distance_offset);
   minimum_value_constraint_ =
       std::make_unique<solvers::MinimumValueUpperBoundConstraint>(
-          collision_checker.plant().num_positions(), minimum_distance_upper,
+          collision_checker.plant().num_positions(), bound,
           influence_distance_offset,
           collision_checker.MaxContextNumDistances(*collision_checker_context),
           [this](const Eigen::Ref<const AutoDiffVecXd>& x,
@@ -80,10 +78,9 @@ void MinimumDistanceUpperBoundConstraint::Initialize(
 }
 
 MinimumDistanceUpperBoundConstraint::MinimumDistanceUpperBoundConstraint(
-    const multibody::MultibodyPlant<double>* const plant,
-    double minimum_distance_upper, systems::Context<double>* plant_context,
-    solvers::MinimumValuePenaltyFunction penalty_function,
-    double influence_distance_offset)
+    const multibody::MultibodyPlant<double>* const plant, double bound,
+    systems::Context<double>* plant_context, double influence_distance_offset,
+    solvers::MinimumValuePenaltyFunction penalty_function)
     : solvers::Constraint(1, RefFromPtrOrThrow(plant).num_positions(),
                           Vector1d(0), Vector1d(0)),
       /* The lower and upper bounds will be set to correct value later in
@@ -93,15 +90,15 @@ MinimumDistanceUpperBoundConstraint::MinimumDistanceUpperBoundConstraint(
       plant_autodiff_{nullptr},
       plant_context_autodiff_{nullptr},
       collision_checker_{nullptr} {
-  Initialize(*plant_double_, plant_context_double_, minimum_distance_upper,
+  Initialize(*plant_double_, plant_context_double_, bound,
              influence_distance_offset, penalty_function);
 }
 
 MinimumDistanceUpperBoundConstraint::MinimumDistanceUpperBoundConstraint(
     const multibody::MultibodyPlant<AutoDiffXd>* const plant,
     double minimum_distance_lower, systems::Context<AutoDiffXd>* plant_context,
-    solvers::MinimumValuePenaltyFunction penalty_function,
-    double influence_distance_offset)
+    double influence_distance_offset,
+    solvers::MinimumValuePenaltyFunction penalty_function)
     : solvers::Constraint(1, RefFromPtrOrThrow(plant).num_positions(),
                           Vector1d(0), Vector1d(0)),
       plant_double_{nullptr},
@@ -114,11 +111,10 @@ MinimumDistanceUpperBoundConstraint::MinimumDistanceUpperBoundConstraint(
 }
 
 MinimumDistanceUpperBoundConstraint::MinimumDistanceUpperBoundConstraint(
-    const planning::CollisionChecker* collision_checker,
-    double minimum_distance_upper,
+    const planning::CollisionChecker* collision_checker, double bound,
     planning::CollisionCheckerContext* collision_checker_context,
-    solvers::MinimumValuePenaltyFunction penalty_function,
-    double influence_distance_offset)
+    double influence_distance_offset,
+    solvers::MinimumValuePenaltyFunction penalty_function)
     : solvers::Constraint(
           1,
           internal::PtrOrThrow(collision_checker,
@@ -133,25 +129,23 @@ MinimumDistanceUpperBoundConstraint::MinimumDistanceUpperBoundConstraint(
       plant_context_autodiff_{nullptr},
       collision_checker_{collision_checker},
       collision_checker_context_{collision_checker_context} {
-  Initialize(*collision_checker_, collision_checker_context_,
-             minimum_distance_upper, influence_distance_offset,
-             penalty_function);
+  Initialize(*collision_checker_, collision_checker_context_, bound,
+             influence_distance_offset, penalty_function);
 }
 
 void MinimumDistanceUpperBoundConstraint::CheckBounds(
-    double minimum_distance_upper, double influence_distance) const {
+    double bound, double influence_distance) const {
   if (!std::isfinite(influence_distance)) {
     throw std::invalid_argument(
         "MinimumDistanceUpperBoundConstraint: influence_distance must be "
         "finite.");
   }
-  if (influence_distance <= minimum_distance_upper) {
+  if (influence_distance <= bound) {
     throw std::invalid_argument(fmt::format(
         "MinimumDistanceUpperBoundConstraint: influence_distance={}, must be "
-        "larger than minimum_distance_upper={}; equivalently, "
+        "larger than bound={}; equivalently, "
         "influence_distance_offset={}, but it needs to be positive.",
-        influence_distance, minimum_distance_upper,
-        influence_distance - minimum_distance_upper));
+        influence_distance, bound, influence_distance - bound));
   }
 }
 

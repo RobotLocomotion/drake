@@ -71,9 +71,8 @@ GTEST_TEST(InverseKinematicsTest, ConstructorWithJointLimits) {
   // the joint limits are imposed when with_joint_limits=true, and the joint
   // limits are ignored when with_joint_limits=false.
   auto plant = ConstructIiwaPlant(
-      FindResourceOrThrow(
-          "drake/manipulation/models/iiwa_description/sdf/"
-          "iiwa14_no_collision.sdf"),
+      FindResourceOrThrow("drake/manipulation/models/iiwa_description/sdf/"
+                          "iiwa14_no_collision.sdf"),
       0.01);
 
   InverseKinematics ik_with_joint_limits(*plant);
@@ -139,8 +138,8 @@ TEST_F(TwoFreeBodiesTest, ConstructorAddsUnitQuaterionConstraints) {
   InverseKinematics ik2(*two_bodies_plant_, context.get());
   ik2.get_mutable_prog()->SetInitialGuess(ik2.q().head<4>(),
                                           Eigen::Vector4d(1, 2, 3, 4));
-  ik2.get_mutable_prog()->SetInitialGuess(
-      ik2.q().segment<4>(7), Eigen::Vector4d(.1, .2, .3, .4));
+  ik2.get_mutable_prog()->SetInitialGuess(ik2.q().segment<4>(7),
+                                          Eigen::Vector4d(.1, .2, .3, .4));
   const auto result2 = Solve(ik2.prog());
   EXPECT_TRUE(result2.is_success());
   q = result2.GetSolution(ik2.q());
@@ -521,6 +520,8 @@ TEST_F(TwoFreeBodiesTest, PolyhedronConstraint) {
   }
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 TEST_F(TwoFreeSpheresTest, MinimumDistanceConstraintTest) {
   const double min_distance = 0.1;
 
@@ -568,6 +569,114 @@ TEST_F(TwoFreeSpheresTest, MinimumDistanceConstraintTest) {
   ik.get_mutable_prog()->SetInitialGuess(
       ik.q().tail<3>(), ik.prog().initial_guess().segment<3>(4));
   solve_and_check();
+}
+#pragma GCC diagnostic pop
+
+TEST_F(TwoFreeSpheresTest, MinimumDistanceLowerBoundConstraintTest) {
+  const double min_distance_lower = 0.1;
+
+  InverseKinematics ik(*plant_double_, plant_context_double_);
+
+  auto constraint =
+      ik.AddMinimumDistanceLowerBoundConstraint(min_distance_lower);
+
+  // The two spheres are colliding in the initial guess.
+  ik.get_mutable_prog()->SetInitialGuess(ik.q().head<4>(),
+                                         Eigen::Vector4d(1, 0, 0, 0));
+  ik.get_mutable_prog()->SetInitialGuess(ik.q().segment<3>(4),
+                                         Eigen::Vector3d(0, 0, 0.01));
+  ik.get_mutable_prog()->SetInitialGuess(ik.q().segment<4>(7),
+                                         Eigen::Vector4d(1, 0, 0, 0));
+  ik.get_mutable_prog()->SetInitialGuess(ik.q().tail<3>(),
+                                         Eigen::Vector3d(0, 0, -0.01));
+
+  auto solve_and_check = [&]() {
+    const solvers::MathematicalProgramResult result = Solve(ik.prog());
+    EXPECT_TRUE(result.is_success());
+
+    const Eigen::Vector3d p_WB1 = result.GetSolution(ik.q().segment<3>(4));
+    const Eigen::Quaterniond quat_WB1(
+        result.GetSolution(ik.q()(0)), result.GetSolution(ik.q()(1)),
+        result.GetSolution(ik.q()(2)), result.GetSolution(ik.q()(3)));
+    const Eigen::Vector3d p_WB2 = result.GetSolution(ik.q().tail<3>());
+    const Eigen::Quaterniond quat_WB2(
+        result.GetSolution(ik.q()(7)), result.GetSolution(ik.q()(8)),
+        result.GetSolution(ik.q()(9)), result.GetSolution(ik.q()(10)));
+    const Eigen::Vector3d p_WS1 =
+        p_WB1 + quat_WB1.toRotationMatrix() * X_B1S1_.translation();
+    const Eigen::Vector3d p_WS2 =
+        p_WB2 + quat_WB2.toRotationMatrix() * X_B2S2_.translation();
+    // This large error is due to the derivative of the penalty function(i.e.,
+    // the gradient ∂penalty/∂distance) being small near minimum_distance. Hence
+    // a small violation on the penalty leads to a large violation on the
+    // minimum_distance.
+    const double tol = 2e-4;
+    EXPECT_GE((p_WS1 - p_WS2).norm() - radius1_ - radius2_,
+              min_distance_lower - tol);
+  };
+
+  solve_and_check();
+
+  // Now set the two spheres to coincide at the initial guess, and solve again.
+  ik.get_mutable_prog()->SetInitialGuess(
+      ik.q().tail<3>(), ik.prog().initial_guess().segment<3>(4));
+  solve_and_check();
+}
+
+TEST_F(TwoFreeSpheresTest, MinimumDistanceUpperBoundConstraintTest) {
+  const double min_distance_upper = 0.5;
+  const double influence_distance_offset = 1;
+
+  InverseKinematics ik(*plant_double_, plant_context_double_);
+
+  auto constraint = ik.AddMinimumDistanceUpperBoundConstraint(
+      min_distance_upper, influence_distance_offset);
+
+  // The two spheres are colliding in the initial guess.
+  ik.get_mutable_prog()->SetInitialGuess(ik.q().head<4>(),
+                                         Eigen::Vector4d(1, 0, 0, 0));
+  ik.get_mutable_prog()->SetInitialGuess(ik.q().segment<3>(4),
+                                         Eigen::Vector3d(0, 0, 0.01));
+  ik.get_mutable_prog()->SetInitialGuess(ik.q().segment<4>(7),
+                                         Eigen::Vector4d(1, 0, 0, 0));
+  ik.get_mutable_prog()->SetInitialGuess(ik.q().tail<3>(),
+                                         Eigen::Vector3d(0, 0, -0.01));
+
+  auto solve_and_check = [&]() {
+    const solvers::MathematicalProgramResult result = Solve(ik.prog());
+    EXPECT_TRUE(result.is_success());
+
+    const Eigen::Vector3d p_WB1 = result.GetSolution(ik.q().segment<3>(4));
+    const Eigen::Quaterniond quat_WB1(
+        result.GetSolution(ik.q()(0)), result.GetSolution(ik.q()(1)),
+        result.GetSolution(ik.q()(2)), result.GetSolution(ik.q()(3)));
+    const Eigen::Vector3d p_WB2 = result.GetSolution(ik.q().tail<3>());
+    const Eigen::Quaterniond quat_WB2(
+        result.GetSolution(ik.q()(7)), result.GetSolution(ik.q()(8)),
+        result.GetSolution(ik.q()(9)), result.GetSolution(ik.q()(10)));
+    const Eigen::Vector3d p_WS1 =
+        p_WB1 + quat_WB1.toRotationMatrix() * X_B1S1_.translation();
+    const Eigen::Vector3d p_WS2 =
+        p_WB2 + quat_WB2.toRotationMatrix() * X_B2S2_.translation();
+    // This large error is due to the derivative of the penalty function(i.e.,
+    // the gradient ∂penalty/∂distance) being small near minimum_distance. Hence
+    // a small violation on the penalty leads to a large violation on the
+    // minimum_distance.
+    const double tol = 2e-4;
+    EXPECT_LE((p_WS1 - p_WS2).norm() - radius1_ - radius2_,
+              min_distance_upper + tol);
+  };
+
+  solve_and_check();
+
+  // Now set the two spheres to coincide at the initial guess, and solve again.
+  ik.get_mutable_prog()->SetInitialGuess(
+      ik.q().tail<3>(), ik.prog().initial_guess().segment<3>(4));
+  solve_and_check();
+
+  // Now set the two spheres separated at the initial guess, and solve again.
+  // TODO(hongkai.dai): SNOPT can solve the problem but IPOPT doesn't. I need to
+  // investigate into it.
 }
 }  // namespace multibody
 }  // namespace drake

@@ -40,65 +40,60 @@ class MinimumDistanceUpperBoundConstraint final : public solvers::Constraint {
 
   /** Constructs a MinimumDistanceUpperBoundConstraint.
   @param plant The multibody system on which the constraint will be evaluated.
-  @param minimum_distance_upper `ub` in the class documentation. The upper bound
+  @param bound `ub` in the class documentation. The upper bound
   minimum signed distance between any candidate pair of geometries.
   @param penalty_function The penalty function formulation.
   @default QuadraticallySmoothedHinge
   @param influence_distance_offset The difference (in meters) between the
   influence distance, d_influence, and the minimum distance_upper, ub (see class
-  documentation), namely influence_distance = minimum_distance_upper +
-  influence_distance_offset. This value must be finite and strictly positive, as
-  it is used to scale the signed distances between pairs of geometries. Larger
-  value might increase the possibility of finding a solution through gradient
-  based nonlinear optimization. This is because a geometry pair with distance
-  larger than `influence_distance` is ignored, so is its gradient; hence the
-  gradient-based optimizer doesn't know to actively reduce the distance between
-  that pair. @default 1 meter.
-  We strongly suggest to use a different (and larger)
-  `influence_distance_offset` as the one used in
-  MinimumValueLowerBoundConstraint.
+  documentation), namely influence_distance = bound + influence_distance_offset.
+  This value must be finite and strictly positive, as it is used to scale the
+  signed distances between pairs of geometries. Larger value might increase the
+  possibility of finding a solution through gradient based nonlinear
+  optimization. This is because a geometry pair with distance larger than
+  `influence_distance` is ignored, so is its gradient; hence the gradient-based
+  optimizer doesn't know to actively reduce the distance between that pair. We
+  strongly suggest to use a different (and larger) `influence_distance_offset`
+  as the one used in MinimumValueLowerBoundConstraint.
   @throws std::exception if `plant` has not registered its geometry with
   a SceneGraph object.
   @throws std::exception if influence_distance_offset = ∞.
   @throws std::exception if influence_distance_offset ≤ 0.
-  @pydrake_mkdoc_identifier{double_no_upper_bound}
+  @pydrake_mkdoc_identifier{double_mbp}
   */
   MinimumDistanceUpperBoundConstraint(
-      const multibody::MultibodyPlant<double>* const plant,
-      double minimum_distance_upper, systems::Context<double>* plant_context,
-      solvers::MinimumValuePenaltyFunction penalty_function = {},
-      double influence_distance_offset = 1);
+      const multibody::MultibodyPlant<double>* const plant, double bound,
+      systems::Context<double>* plant_context, double influence_distance_offset,
+      solvers::MinimumValuePenaltyFunction penalty_function = {});
 
   /**
   Overloaded constructor.
   Constructs the constraint using MultibodyPlant<AutoDiffXd>.
-  @pydrake_mkdoc_identifier{autodiff_no_upper_bound}
+  @pydrake_mkdoc_identifier{autodiff_mbp}
   */
   MinimumDistanceUpperBoundConstraint(
-      const multibody::MultibodyPlant<AutoDiffXd>* const plant,
-      double minimum_distance_upper,
+      const multibody::MultibodyPlant<AutoDiffXd>* const plant, double bound,
       systems::Context<AutoDiffXd>* plant_context,
-      solvers::MinimumValuePenaltyFunction penalty_function = {},
-      double influence_distance_offset = 1);
+      double influence_value_offset,
+      solvers::MinimumValuePenaltyFunction penalty_function = {});
 
   /** Overloaded constructor.
   Constructs the constraint with CollisionChecker instead of MultibodyPlant.
   @param collision_checker collision_checker must outlive this constraint.
   @param collision_checker_context The context for the collision checker. See
   CollisionChecker class for more details.
-  @pydrake_mkdoc_identifier{collision_checker_no_upper_bound}
+  @pydrake_mkdoc_identifier{collision_checker}
   */
   MinimumDistanceUpperBoundConstraint(
-      const planning::CollisionChecker* collision_checker,
-      double minimum_distance_upper,
+      const planning::CollisionChecker* collision_checker, double bound,
       planning::CollisionCheckerContext* collision_checker_context,
-      solvers::MinimumValuePenaltyFunction penalty_function = {},
-      double influence_distance_offset = 1);
+      double influence_distance_offset,
+      solvers::MinimumValuePenaltyFunction penalty_function = {});
 
   ~MinimumDistanceUpperBoundConstraint() override {}
 
   /** Getter for the upper bound of the minimum distance. */
-  double minimum_distance_upper() const {
+  double distance_bound() const {
     return minimum_value_constraint_->minimum_value_upper();
   }
 
@@ -125,21 +120,18 @@ class MinimumDistanceUpperBoundConstraint final : public solvers::Constraint {
   void DoEvalGeneric(const Eigen::Ref<const VectorX<T>>& x,
                      VectorX<T>* y) const;
 
-  void CheckBounds(double minimum_distance_upper,
-                   double influence_distance) const;
+  void CheckBounds(double bound, double influence_distance) const;
 
   template <typename T>
   void Initialize(const MultibodyPlant<T>& plant,
-                  systems::Context<T>* plant_context,
-                  double minimum_distance_upper,
+                  systems::Context<T>* plant_context, double bound,
                   double influence_distance_offset,
                   const solvers::MinimumValuePenaltyFunction& penalty_function);
 
   // Overload Initialize with CollisionChecker instead of MultibodyPlant.
   void Initialize(const planning::CollisionChecker& collision_checker,
                   planning::CollisionCheckerContext* collision_checker_context,
-                  double minimum_distance_upper,
-                  double influence_distance_offset,
+                  double bound, double influence_distance_offset,
                   const solvers::MinimumValuePenaltyFunction& penalty_function);
 
   const multibody::MultibodyPlant<double>* const plant_double_{};

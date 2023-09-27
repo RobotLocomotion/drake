@@ -238,6 +238,7 @@ drake_py_unittest(
     name = "evaluators_test",
     deps = [
         ":solvers",
+        "//bindings/pydrake/common/test_utilities",
         "//bindings/pydrake/common/test_utilities:scipy_stub_py",
     ],
 )
