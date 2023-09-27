@@ -20,6 +20,8 @@ const double kInf = std::numeric_limits<double>::infinity();
 constexpr int kNumPositionsForTwoFreeBodies{14};
 }  // namespace
 
+using solvers::ExponentiallySmoothedHingeLoss;
+using solvers::QuadraticallySmoothedHingeLoss;
 using solvers::test::CheckConstraintEvalNonsymbolic;
 
 template <typename T>
@@ -32,7 +34,8 @@ Vector3<T> ComputeCollisionSphereCenterPosition(
 
 class TwoFreeSpheresMinimumDistanceTest : public TwoFreeSpheresTest {
  public:
-  // TODO(hongkai.dai): deprecate this.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   void CheckConstraintBounds(
       const MinimumDistanceConstraint& constraint) const {
     int num_constraints = 0;
@@ -64,6 +67,7 @@ class TwoFreeSpheresMinimumDistanceTest : public TwoFreeSpheresTest {
         Eigen::Map<Eigen::VectorXd>(upper_bound_expected.data(),
                                     upper_bound_expected.size())));
   }
+#pragma GCC diagnostic pop
 
   void CheckConstraintBounds(
       const MinimumDistanceLowerBoundConstraint& constraint) const {
@@ -121,7 +125,8 @@ class TwoFreeSpheresMinimumDistanceTest : public TwoFreeSpheresTest {
     CheckConstraintEvalNonsymbolic(constraint, q_autodiff, 1E-12);
   }
 
-  // TODO(hongkai.dai): deprecate this.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   void CheckConstraintEvalBetweenMinimumUpperAndInfluenceDistance(
       const MinimumDistanceConstraint& constraint, const Eigen::Vector3d& p_WB1,
       const Eigen::Vector3d p_WB2) const {
@@ -144,6 +149,7 @@ class TwoFreeSpheresMinimumDistanceTest : public TwoFreeSpheresTest {
                  y_double(1) <= constraint.upper_bound()(1));
     CheckConstraintEvalNonsymbolic(constraint, q_autodiff, 1E-12);
   }
+#pragma GCC diagnostic pop
 
   void CheckConstraintEvalBetweenMinimumUpperAndInfluenceDistance(
       const MinimumDistanceUpperBoundConstraint& constraint,
@@ -163,7 +169,8 @@ class TwoFreeSpheresMinimumDistanceTest : public TwoFreeSpheresTest {
     CheckConstraintEvalNonsymbolic(constraint, q_autodiff, 1E-12);
   }
 
-  // TODO(hongkai.dai): deprecate this.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   void CheckConstraintEvalBetweenMinimumLowerAndUpperDistance(
       const MinimumDistanceConstraint& constraint, const Eigen::Vector3d& p_WB1,
       const Eigen::Vector3d& p_WB2) const {
@@ -181,6 +188,7 @@ class TwoFreeSpheresMinimumDistanceTest : public TwoFreeSpheresTest {
     EXPECT_TRUE(constraint.CheckSatisfied(q_autodiff));
     CheckConstraintEvalNonsymbolic(constraint, q_autodiff, 1E-12);
   }
+#pragma GCC diagnostic pop
 
   void CheckConstraintEvalBetweenMinimumLowerAndInfluenceDistance(
       const MinimumDistanceLowerBoundConstraint& constraint,
@@ -199,7 +207,8 @@ class TwoFreeSpheresMinimumDistanceTest : public TwoFreeSpheresTest {
     CheckConstraintEvalNonsymbolic(constraint, q_autodiff, 1E-12);
   }
 
-  // TODO(hongkai.dai): deprecate this
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   void CheckConstraintEvalSmallerThanMinimumLowerDistance(
       const MinimumDistanceConstraint& constraint, const Eigen::Vector3d& p_WB1,
       const Eigen::Vector3d& p_WB2) const {
@@ -219,6 +228,7 @@ class TwoFreeSpheresMinimumDistanceTest : public TwoFreeSpheresTest {
     EXPECT_FALSE(constraint.CheckSatisfied(q_autodiff));
     CheckConstraintEvalNonsymbolic(constraint, q_autodiff, 1E-12);
   }
+#pragma GCC diagnostic pop
 
   void CheckConstraintEvalSmallerThanMinimumLowerDistance(
       const MinimumDistanceLowerBoundConstraint& constraint,
@@ -252,7 +262,8 @@ class TwoFreeSpheresMinimumDistanceTest : public TwoFreeSpheresTest {
     CheckConstraintEvalNonsymbolic(constraint, q_autodiff, 1E-12);
   }
 
-  // TODO(hongkai.dai): deprecate this.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   void CheckConstraintEval(const MinimumDistanceConstraint& constraint) {
     // Distance between the spheres is larger than influence_distance
     Eigen::Vector3d p_WB1(0.2, 1.2, 0.3);
@@ -294,6 +305,7 @@ class TwoFreeSpheresMinimumDistanceTest : public TwoFreeSpheresTest {
     CheckConstraintEvalSmallerThanMinimumLowerDistance(constraint, p_WB1,
                                                        p_WB2);
   }
+#pragma GCC diagnostic pop
 
   void CheckConstraintEval(
       const MinimumDistanceLowerBoundConstraint& constraint) const {
@@ -368,6 +380,8 @@ class TwoFreeSpheresMinimumDistanceTest : public TwoFreeSpheresTest {
   }
 };
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 TEST_F(TwoFreeSpheresMinimumDistanceTest, ExponentialPenalty) {
   const double minimum_distance_lower{0.1};
   const double minimum_distance_upper{0.2};
@@ -380,7 +394,10 @@ TEST_F(TwoFreeSpheresMinimumDistanceTest, ExponentialPenalty) {
 
   CheckConstraintEval(constraint);
 }
+#pragma GCC diagnostic pop
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 TEST_F(TwoFreeSpheresMinimumDistanceTest, QuadraticallySmoothedHingePenalty) {
   const double minimum_distance_lower{0.1};
   const double minimum_distance_upper{0.2};
@@ -395,7 +412,10 @@ TEST_F(TwoFreeSpheresMinimumDistanceTest, QuadraticallySmoothedHingePenalty) {
 
   CheckConstraintEval(constraint);
 }
+#pragma GCC diagnostic pop
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 GTEST_TEST(MinimumDistanceConstraintTest,
            MultibodyPlantWithouthGeometrySource) {
   auto plant = ConstructTwoFreeBodiesPlant<double>();
@@ -407,7 +427,10 @@ GTEST_TEST(MinimumDistanceConstraintTest,
       "AddMultibodyPlantSceneGraph on how to connect MultibodyPlant to "
       "SceneGraph.");
 }
+#pragma GCC diagnostic pop
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 GTEST_TEST(MinimumDistanceConstraintTest, MultibodyPlantWithoutCollisionPairs) {
   // Make sure MinimumDistanceConstraint evaluation works when
   // no collisions are possible in an MBP with no collision geometry.
@@ -431,7 +454,10 @@ GTEST_TEST(MinimumDistanceConstraintTest, MultibodyPlantWithoutCollisionPairs) {
   AutoDiffVecXd y_autodiff(1);
   constraint.Eval(q_autodiff, &y_autodiff);
 }
+#pragma GCC diagnostic pop
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 TEST_F(TwoFreeSpheresTest, NonpositiveInfluenceDistanceOffset) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       MinimumDistanceConstraint(plant_double_, 0.1, plant_context_double_, {},
@@ -447,7 +473,10 @@ TEST_F(TwoFreeSpheresTest, NonpositiveInfluenceDistanceOffset) {
                                          plant_context_double_, {}, 0.0),
                std::exception);
 }
+#pragma GCC diagnostic pop
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 TEST_F(TwoFreeSpheresTest, NonfiniteInfluenceDistanceOffset) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       MinimumDistanceConstraint(plant_double_, 0.1, plant_context_double_, {},
@@ -458,6 +487,7 @@ TEST_F(TwoFreeSpheresTest, NonfiniteInfluenceDistanceOffset) {
                                 std::numeric_limits<double>::quiet_NaN()),
       "MinimumDistanceConstraint: influence_distance must be finite.");
 }
+#pragma GCC diagnostic pop
 
 template <typename T>
 T BoxSphereSignedDistance(const Eigen::Vector3d& box_size, double radius,
@@ -471,9 +501,11 @@ T BoxSphereSignedDistance(const Eigen::Vector3d& box_size, double radius,
   return BoxSphereSignedDistance(box_size, radius, X_WB, X_WS);
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 TEST_F(BoxSphereTest, TestDeprecate) {
   const double minimum_distance = 0.01;
-  for (MinimumDistancePenaltyFunction penalty_function :
+  for (solvers::MinimumValuePenaltyFunction penalty_function :
        {QuadraticallySmoothedHingeLoss, ExponentiallySmoothedHingeLoss}) {
     MinimumDistanceConstraint constraint(plant_double_, minimum_distance,
                                          plant_context_double_,
@@ -551,6 +583,7 @@ TEST_F(BoxSphereTest, TestDeprecate) {
                                 gradient_tol);
   }
 }
+#pragma GCC diagnostic pop
 
 /**
  Constructs a diagram that contains N free-floating spheres.
@@ -611,6 +644,8 @@ class NFreeSpheresModel {
   std::unique_ptr<systems::Context<T>> diagram_context_;
 };
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 GTEST_TEST(ThreeSpheresTest, SomeLargerThanInfluenceSomeSmallerThanMinimum) {
   // Test the case with three spheres. Some pair of spheres have distance >
   // d_influence, and some pairs have distance < d_min.
@@ -635,7 +670,7 @@ GTEST_TEST(ThreeSpheresTest, SomeLargerThanInfluenceSomeSmallerThanMinimum) {
   ASSERT_GT((q.segment<3>(kSpheres[2]) - q.segment<3>(kSpheres[0])).norm() -
                 2 * three_spheres.radius(),
             d_influence);
-  for (MinimumDistancePenaltyFunction penalty_function :
+  for (solvers::MinimumValuePenaltyFunction penalty_function :
        {QuadraticallySmoothedHingeLoss, ExponentiallySmoothedHingeLoss}) {
     MinimumDistanceConstraint dut(&(three_spheres.plant()), d_min,
                                   &(three_spheres.get_mutable_plant_context()),
@@ -646,7 +681,10 @@ GTEST_TEST(ThreeSpheresTest, SomeLargerThanInfluenceSomeSmallerThanMinimum) {
                 (y_val.array() > dut.upper_bound().array()).any());
   }
 }
+#pragma GCC diagnostic pop
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 TEST_F(SpheresAndWallsTest, TestWithCollisionChecker) {
   // Test MinimumDistanceConstraint constructed with CollisionChecker.
   planning::CollisionCheckerParams params;
@@ -772,6 +810,7 @@ TEST_F(SpheresAndWallsTest, TestWithCollisionChecker) {
         Eigen::Vector3d(1.1 * minimum_distance + 2 * radius_, 0, 0), true);
   }
 }
+#pragma GCC diagnostic pop
 
 TEST_F(TwoFreeSpheresMinimumDistanceTest, ExponentialPenaltyLowerBound) {
   const double minimum_distance_lower{0.1};
@@ -937,7 +976,7 @@ TEST_F(BoxSphereTest, Test) {
   const double minimum_distance_upper = 0.1;
   const double influence_distance_offset1 = 1;
   const double influence_distance_offset2 = 2;
-  for (MinimumDistancePenaltyFunction penalty_function :
+  for (solvers::MinimumValuePenaltyFunction penalty_function :
        {QuadraticallySmoothedHingeLoss, ExponentiallySmoothedHingeLoss}) {
     MinimumDistanceLowerBoundConstraint lower_bound_constraint(
         plant_double_, minimum_distance_lower, plant_context_double_,
@@ -1054,7 +1093,7 @@ GTEST_TEST(ThreeSpheresTest, SomeLargerThanInfluenceSomeSmallerThanLowerBound) {
   ASSERT_GT((q.segment<3>(kSpheres[2]) - q.segment<3>(kSpheres[0])).norm() -
                 2 * three_spheres.radius(),
             d_influence);
-  for (MinimumDistancePenaltyFunction penalty_function :
+  for (solvers::MinimumValuePenaltyFunction penalty_function :
        {QuadraticallySmoothedHingeLoss, ExponentiallySmoothedHingeLoss}) {
     MinimumDistanceLowerBoundConstraint dut(
         &(three_spheres.plant()), minimum_distance_lower,
@@ -1091,7 +1130,7 @@ GTEST_TEST(ThreeSpheresTest, SomeLargerThanInfluenceSomeSmallerThanUpperBound) {
   ASSERT_GT((q.segment<3>(kSpheres[2]) - q.segment<3>(kSpheres[0])).norm() -
                 2 * three_spheres.radius(),
             d_influence);
-  for (MinimumDistancePenaltyFunction penalty_function :
+  for (solvers::MinimumValuePenaltyFunction penalty_function :
        {QuadraticallySmoothedHingeLoss, ExponentiallySmoothedHingeLoss}) {
     MinimumDistanceUpperBoundConstraint dut(
         &(three_spheres.plant()), minimum_distance_upper,

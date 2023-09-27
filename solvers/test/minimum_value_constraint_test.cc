@@ -48,6 +48,8 @@ VectorX<T> ReturnNoValues(const Eigen::Ref<const VectorX<T>>&, double) {
 }
 
 // Verify that the constructor works as expected.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 GTEST_TEST(MinimumValueConstraintTests, ConstructorTest1) {
   // Constructor with only minimum_value_lower
   int expected_num_vars{5};
@@ -340,6 +342,7 @@ GTEST_TEST(MinimumValueConstraintTests, EvalSymbolicTest) {
   VectorX<symbolic::Expression> y;
   EXPECT_THROW(dut.Eval(x, &y), std::logic_error);
 }
+#pragma GCC diagnostic pop
 
 // Verify that the constructor works as expected.
 GTEST_TEST(MinimumValueLowerBoundConstraintTests, ConstructorTest) {

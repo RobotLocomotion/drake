@@ -61,7 +61,7 @@ class MinimumDistanceUpperBoundConstraint final : public solvers::Constraint {
   a SceneGraph object.
   @throws std::exception if influence_distance_offset = ∞.
   @throws std::exception if influence_distance_offset ≤ 0.
-  @pydrake_mkdoc_identifier{double_no_upper_bound}
+  @pydrake_mkdoc_identifier{double_mbp}
   */
   MinimumDistanceUpperBoundConstraint(
       const multibody::MultibodyPlant<double>* const plant,
@@ -72,7 +72,7 @@ class MinimumDistanceUpperBoundConstraint final : public solvers::Constraint {
   /**
   Overloaded constructor.
   Constructs the constraint using MultibodyPlant<AutoDiffXd>.
-  @pydrake_mkdoc_identifier{autodiff_no_upper_bound}
+  @pydrake_mkdoc_identifier{autodiff_mbp}
   */
   MinimumDistanceUpperBoundConstraint(
       const multibody::MultibodyPlant<AutoDiffXd>* const plant,
@@ -86,7 +86,7 @@ class MinimumDistanceUpperBoundConstraint final : public solvers::Constraint {
   @param collision_checker collision_checker must outlive this constraint.
   @param collision_checker_context The context for the collision checker. See
   CollisionChecker class for more details.
-  @pydrake_mkdoc_identifier{collision_checker_no_upper_bound}
+  @pydrake_mkdoc_identifier{collision_checker}
   */
   MinimumDistanceUpperBoundConstraint(
       const planning::CollisionChecker* collision_checker,
