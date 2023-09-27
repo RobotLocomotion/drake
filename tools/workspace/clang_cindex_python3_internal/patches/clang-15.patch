@@ -1,0 +1,15 @@
+[clang_cindex] Support pre- and post-Clang 15 cursor kinds
+
+--- cindex.py
++++ cindex.py
+@@ -1313,5 +1313,9 @@
+ # The translation unit cursor exists primarily to act as the root cursor for
+ # traversing the contents of a translation unit.
+-CursorKind.TRANSLATION_UNIT = CursorKind(300)
++# DRAKE EDIT BEGIN
++# As of Clang 15, the number assigned here changed from 300 to 350.
++CursorKind.TRANSLATION_UNIT_300 = CursorKind(300)
++CursorKind.TRANSLATION_UNIT_350 = CursorKind(350)
++# DRAKE EDIT END
+ 
+ ###
