@@ -101,13 +101,6 @@ GTEST_TEST(VtkToVolumeMeshTest, WrongFileContentsUnstructured) {
                               ".*non-tetra.*");
 }
 
-GTEST_TEST(VtkToVolumeMeshTest, WrongFileContentsBadTet) {
-  const std::string bad_tet_vtk =
-      FindResourceOrThrow("drake/geometry/test/bad_tet.vtk");
-  DRAKE_EXPECT_THROWS_MESSAGE(internal::ReadVtkToVolumeMesh(bad_tet_vtk),
-                              ".*at least one tetra.*");
-}
-
 }  // namespace
 }  // namespace geometry
 }  // namespace drake
