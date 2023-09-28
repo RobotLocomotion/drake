@@ -10,7 +10,7 @@
 #include "drake/common/nice_type_name.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/geometry_state.h"
-#include "drake/geometry/hydroelastize.h"
+#include "drake/geometry/hydroelasticate.h"
 #include "drake/systems/framework/context.h"
 
 namespace drake {
@@ -83,7 +83,7 @@ class GeometryStateValue final : public Value<GeometryState<T>> {
 }  // namespace
 
 
-/* (Better Name TBD): Enforce the invariants for hydroelastized model caching
+/* (Better Name TBD): Enforce the invariants for hydroelasticated model caching
    in one place, with otherwise unrestricted access to models and
    configuration.
 
@@ -107,32 +107,32 @@ class SceneGraph<T>::Hub {
   const GeometryState<T>& model() const { return model_; }
 
   GeometryState<T>& mutable_model() {
-    hydroelastized_model_.reset();
+    hydroelasticated_model_.reset();
     return model_;
   }
 
-  const GeometryState<T>& hydroelastized_model() const {
-    EnsureHydroelastizedModel();
-    return *hydroelastized_model_;
+  const GeometryState<T>& hydroelasticated_model() const {
+    EnsureHydroelasticatedModel();
+    return *hydroelasticated_model_;
   }
 
-  GeometryState<T>& mutable_hydroelastized_model() {
-    EnsureHydroelastizedModel();
-    return *hydroelastized_model_;
+  GeometryState<T>& mutable_hydroelasticated_model() {
+    EnsureHydroelasticatedModel();
+    return *hydroelasticated_model_;
   }
 
  private:
-  void EnsureHydroelastizedModel() const {
-    if (!hydroelastized_model_) {
-      hydroelastized_model_ = std::make_unique<GeometryState<T>>(model_);
-      internal::Hydroelastize(hydroelastized_model_.get(), config_);
+  void EnsureHydroelasticatedModel() const {
+    if (!hydroelasticated_model_) {
+      hydroelasticated_model_ = std::make_unique<GeometryState<T>>(model_);
+      internal::Hydroelasticate(hydroelasticated_model_.get(), config_);
     }
   }
 
   SceneGraphConfig config_;
   GeometryState<T> model_;
   // A cache.
-  mutable std::unique_ptr<GeometryState<T>> hydroelastized_model_;
+  mutable std::unique_ptr<GeometryState<T>> hydroelasticated_model_;
 };
 
 template <typename T>
@@ -208,13 +208,13 @@ SourceId SceneGraph<T>::RegisterSource(const std::string& name) {
 }
 
 template <typename T>
-void SceneGraph<T>::set_hydroelastize(bool value) {
-  hub_.mutable_config().hydroelastize = value;
+void SceneGraph<T>::set_config(const SceneGraphConfig& config) {
+  hub_.mutable_config() = config;
 }
 
 template <typename T>
-bool SceneGraph<T>::get_hydroelastize() const {
-  return hub_.config().hydroelastize;
+SceneGraphConfig SceneGraph<T>::get_config() const {
+  return hub_.config();
 }
 
 template <typename T>
@@ -316,9 +316,9 @@ void SceneGraph<T>::ChangeShape(
   auto& g_state = mutable_geometry_state(context);
   g_state.ChangeShape(source_id, geometry_id, shape, X_FG);
   auto& config = scene_graph_config(*context);
-  if (config.hydroelastize == true) {
+  if (config.hydroelastication.enabled == true) {
     DRAKE_DEMAND(false);
-    internal::Hydroelastize(&g_state, config, geometry_id);
+    internal::Hydroelasticate(&g_state, config, geometry_id);
   }
 }
 
@@ -383,9 +383,9 @@ void SceneGraph<T>::AssignRole(Context<T>* context, SourceId source_id,
   auto& g_state = mutable_geometry_state(context);
   g_state.AssignRole(source_id, geometry_id, std::move(properties), assign);
   auto& config = scene_graph_config(*context);
-  if (assign == RoleAssign::kNew && config.hydroelastize == true) {
+  if (assign == RoleAssign::kNew && config.hydroelastication.enabled == true) {
     DRAKE_DEMAND(false);
-    internal::Hydroelastize(&g_state, config, geometry_id);
+    internal::Hydroelasticate(&g_state, config, geometry_id);
   }
 }
 
@@ -476,8 +476,8 @@ void SceneGraph<T>::SetDefaultParameters(const Context<T>& context,
                                          Parameters<T>* parameters) const {
   LeafSystem<T>::SetDefaultParameters(context, parameters);
   const GeometryState<T>* from = &hub_.model();
-  if (hub_.config().hydroelastize) {
-    from = &hub_.hydroelastized_model();
+  if (hub_.config().hydroelastication.enabled) {
+    from = &hub_.hydroelasticated_model();
   }
   parameters->template get_mutable_abstract_parameter<GeometryState<T>>(
       geometry_state_index_) = *from;

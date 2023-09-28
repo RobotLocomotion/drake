@@ -5,7 +5,7 @@ namespace geometry {
 
 void ApplySceneGraphConfig(const SceneGraphConfig& config,
                            SceneGraph<double>* scene_graph) {
-  scene_graph->set_hydroelastize(config.hydroelastize);
+  scene_graph->set_config(config);
 }
 
 }  // namespace geometry

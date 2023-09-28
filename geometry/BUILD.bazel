@@ -30,7 +30,7 @@ drake_cc_package_library(
         ":geometry_set",
         ":geometry_state",
         ":geometry_version",
-        ":hydroelastize",
+        ":hydroelasticate",
         ":internal_frame",
         ":internal_geometry",
         ":kinematics_vector",
@@ -254,9 +254,9 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "hydroelastize",
-    srcs = ["hydroelastize.cc"],
-    hdrs = ["hydroelastize.h"],
+    name = "hydroelasticate",
+    srcs = ["hydroelasticate.cc"],
+    hdrs = ["hydroelasticate.h"],
     deps = [
         ":geometry_state",
         ":scene_graph_config",
@@ -314,7 +314,7 @@ drake_cc_library(
     ],
     deps = [
         ":geometry_state",
-        ":hydroelastize",
+        ":hydroelasticate",
         ":scene_graph_config",
         ":scene_graph_inspector",
         "//common:essential",
@@ -789,6 +789,18 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "hydroelasticate_test",
+    data = [
+        ":test_obj_files",
+        ":test_vtk_files",
+    ],
+    deps = [
+        ":hydroelasticate",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
     name = "make_mesh_for_deformable_test",
     data = [
         ":test_vtk_files",
@@ -817,18 +829,6 @@ drake_cc_googletest(
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
         "//geometry/proximity:make_sphere_mesh",
-    ],
-)
-
-drake_cc_googletest(
-    name = "hydroelastize_test",
-    data = [
-        ":test_obj_files",
-        ":test_vtk_files",
-    ],
-    deps = [
-        ":hydroelastize",
-        "//common/test_utilities:expect_throws_message",
     ],
 )
 

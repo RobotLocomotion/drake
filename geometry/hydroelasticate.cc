@@ -1,4 +1,4 @@
-#include "drake/geometry/hydroelastize.h"
+#include "drake/geometry/hydroelasticate.h"
 
 #include <algorithm>
 #include <string>
@@ -23,20 +23,20 @@ void BackfillDefaults(ProximityProperties* properties,
   };
 
   backfill(kHydroGroup, kElastic,
-           config.hydroelastize_default_hydroelastic_modulus);
+           config.hydroelastication.default_hydroelastic_modulus);
   backfill(kHydroGroup, kRezHint,
-           config.hydroelastize_default_resolution_hint);
+           config.hydroelastication.default_resolution_hint);
   backfill(kHydroGroup, kSlabThickness,
-           config.hydroelastize_default_slab_thickness);
+           config.hydroelastication.default_slab_thickness);
 
   backfill(kMaterialGroup, kHcDissipation,
-           config.hydroelastize_default_hunt_crossley_dissipation);
+           config.hydroelastication.default_hunt_crossley_dissipation);
   // Obey the documented law of CoulombFriction:
   // static friction >= dynamic friction.
   multibody::CoulombFriction friction{
-    std::max(config.hydroelastize_default_dynamic_friction,
-             config.hydroelastize_default_static_friction),
-    config.hydroelastize_default_dynamic_friction,
+    std::max(config.hydroelastication.default_dynamic_friction,
+             config.hydroelastication.default_static_friction),
+    config.hydroelastication.default_dynamic_friction,
   };
   backfill(kMaterialGroup, kFriction, friction);
 }
@@ -133,18 +133,18 @@ ShapeAdjuster* GetShapeAdjuster() {
 }  // namespace
 
 template <typename T>
-void Hydroelastize(GeometryState<T>* geometry_state,
+void Hydroelasticate(GeometryState<T>* geometry_state,
                    const SceneGraphConfig& config) {
   DRAKE_DEMAND(geometry_state != nullptr);
   auto gids = geometry_state->GetGeometryIds(
       GeometrySet(geometry_state->GetAllGeometryIds()), Role::kProximity);
   for (const auto& gid : gids) {
-    Hydroelastize(geometry_state, config, gid);
+    Hydroelasticate(geometry_state, config, gid);
   }
 }
 
 template <typename T>
-void Hydroelastize(GeometryState<T>* geometry_state,
+void Hydroelasticate(GeometryState<T>* geometry_state,
                    const SceneGraphConfig& config, GeometryId geometry_id) {
   DRAKE_DEMAND(geometry_state != nullptr);
   auto gid = geometry_id;
@@ -186,9 +186,9 @@ void Hydroelastize(GeometryState<T>* geometry_state,
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((
     static_cast<void(*)(GeometryState<T>*, const SceneGraphConfig&)>(
-        &Hydroelastize<T>),
+        &Hydroelasticate<T>),
     static_cast<void(*)(GeometryState<T>*, const SceneGraphConfig&,
-                        GeometryId)>(&Hydroelastize<T>)
+                        GeometryId)>(&Hydroelasticate<T>)
 ))
 }  // namespace internal
 }  // namespace geometry

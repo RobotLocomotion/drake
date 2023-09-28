@@ -337,12 +337,11 @@ class SceneGraph final : public systems::LeafSystem<T> {
    */
   //@{
 
-  /** Set the hydroelastize behavior flag. See TBD for details. */
-  void set_hydroelastize(bool value);
+  /** Set the configuration. */
+  void set_config(const SceneGraphConfig& config);
 
-  /** @return the current hydroelastize behavior flag value. See TBD for
-   * details. */
-  bool get_hydroelastize() const;
+  /** @return the current configuration. */
+  SceneGraphConfig get_config() const;
 
   //@}
 

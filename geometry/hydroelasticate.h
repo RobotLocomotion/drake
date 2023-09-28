@@ -12,14 +12,14 @@ namespace internal {
     @pre geometry_state is not nullptr.
  */
 template <typename T>
-void Hydroelastize(GeometryState<T>* geometry_state,
+void Hydroelasticate(GeometryState<T>* geometry_state,
                    const SceneGraphConfig& config);
 
 /** Ensure that one geometry has hydroelastic properties.
     @pre geometry_state is not nullptr.
  */
 template <typename T>
-void Hydroelastize(GeometryState<T>* geometry_state,
+void Hydroelasticate(GeometryState<T>* geometry_state,
                    const SceneGraphConfig& config, GeometryId geometry_id);
 
 }  // namespace internal

@@ -1,4 +1,4 @@
-#include "drake/geometry/hydroelastize.h"
+#include "drake/geometry/hydroelasticate.h"
 
 #include <gtest/gtest.h>
 
@@ -14,14 +14,14 @@ namespace geometry {
 namespace internal {
 namespace {
 
-GTEST_TEST(HydroelastizeTest, TrivialGeometryState) {
+GTEST_TEST(HydroelasticateTest, TrivialGeometryState) {
   // Feeding in an a empty scene graph does not crash.
   GeometryState<double> geometry_state;
   SceneGraphConfig config;
-  EXPECT_NO_THROW(internal::Hydroelastize(&geometry_state, config));
+  EXPECT_NO_THROW(internal::Hydroelasticate(&geometry_state, config));
 }
 
-GTEST_TEST(HydroelastizeTest, NoProximityRole) {
+GTEST_TEST(HydroelasticateTest, NoProximityRole) {
   // A geometry with no proximity role does not get any proximity properties.
   GeometryState<double> geometry_state;
   auto source_id = geometry_state.RegisterNewSource("test");
@@ -34,7 +34,7 @@ GTEST_TEST(HydroelastizeTest, NoProximityRole) {
   auto geom_id = geometry_state.RegisterGeometry(
       source_id, frame_id, std::move(instance));
   SceneGraphConfig config;
-  EXPECT_NO_THROW(internal::Hydroelastize(&geometry_state, config, geom_id));
+  EXPECT_NO_THROW(internal::Hydroelasticate(&geometry_state, config, geom_id));
   EXPECT_EQ(geometry_state.GetProximityProperties(geom_id), nullptr);
 }
 
@@ -50,27 +50,27 @@ void DoTestRemoveTooSmall(const Shape& shape) {
   auto geom_id = geometry_state.RegisterGeometry(
       source_id, frame_id, std::move(instance));
   SceneGraphConfig config;
-  EXPECT_NO_THROW(internal::Hydroelastize(&geometry_state, config, geom_id));
+  EXPECT_NO_THROW(internal::Hydroelasticate(&geometry_state, config, geom_id));
   EXPECT_EQ(geometry_state.GetProximityProperties(geom_id), nullptr);
 }
 
-GTEST_TEST(HydroelastizeTest, RemoveTooSmallBox) {
+GTEST_TEST(HydroelasticateTest, RemoveTooSmallBox) {
   DoTestRemoveTooSmall(Box(1e-5, 1e-5, 1e-5));
 }
 
-GTEST_TEST(HydroelastizeTest, RemoveTooSmallCapsule) {
+GTEST_TEST(HydroelasticateTest, RemoveTooSmallCapsule) {
   DoTestRemoveTooSmall(Capsule(1e-5, 1e-5));
 }
 
-GTEST_TEST(HydroelastizeTest, RemoveTooSmallCylinder) {
+GTEST_TEST(HydroelasticateTest, RemoveTooSmallCylinder) {
   DoTestRemoveTooSmall(Cylinder(1e-5, 1e-5));
 }
 
-GTEST_TEST(HydroelastizeTest, RemoveTooSmallEllipsoid) {
+GTEST_TEST(HydroelasticateTest, RemoveTooSmallEllipsoid) {
   DoTestRemoveTooSmall(Ellipsoid(1e-5, 1e-5, 1e-5));
 }
 
-GTEST_TEST(HydroelastizeTest, RemoveTooSmallSphere) {
+GTEST_TEST(HydroelasticateTest, RemoveTooSmallSphere) {
   DoTestRemoveTooSmall(Sphere(1e-5));
 }
 
@@ -87,7 +87,7 @@ void DoTestGetProps(const Shape& shape,
   auto geom_id = geometry_state.RegisterGeometry(
       source_id, frame_id, std::move(instance));
   SceneGraphConfig config;
-  EXPECT_NO_THROW(internal::Hydroelastize(&geometry_state, config, geom_id));
+  EXPECT_NO_THROW(internal::Hydroelasticate(&geometry_state, config, geom_id));
   auto* props = geometry_state.GetProximityProperties(geom_id);
   ASSERT_NE(props, nullptr);
   EXPECT_EQ(props->GetProperty<HydroelasticType>(kHydroGroup, kComplianceType),
@@ -103,34 +103,34 @@ void DoTestGetRigidProps(const Shape& shape) {
   DoTestGetProps(shape, internal::HydroelasticType::kRigid);
 }
 
-GTEST_TEST(HydroelastizeTest, GetSoftPropsBox) {
+GTEST_TEST(HydroelasticateTest, GetSoftPropsBox) {
   DoTestGetSoftProps(Box(1, 1, 1));
 }
 
-GTEST_TEST(HydroelastizeTest, GetSoftPropsCapsule) {
+GTEST_TEST(HydroelasticateTest, GetSoftPropsCapsule) {
   DoTestGetSoftProps(Capsule(0.1, 0.1));
 }
 
-GTEST_TEST(HydroelastizeTest, GetRigidPropsConvex) {
+GTEST_TEST(HydroelasticateTest, GetRigidPropsConvex) {
   DoTestGetRigidProps(
       Convex(FindResourceOrThrow("drake/geometry/test/convex.obj"), 1.0));
 }
 
-GTEST_TEST(HydroelastizeTest, GetSoftPropsCylinder) {
+GTEST_TEST(HydroelasticateTest, GetSoftPropsCylinder) {
   DoTestGetSoftProps(Cylinder(0.1, 0.1));
 }
 
-GTEST_TEST(HydroelastizeTest, GetSoftPropsEllipsoid) {
+GTEST_TEST(HydroelasticateTest, GetSoftPropsEllipsoid) {
   DoTestGetSoftProps(Ellipsoid(0.1, 0.1, 0.1));
 }
 
 // WARNING
-GTEST_TEST(HydroelastizeTest, GetSoftPropsHalfSpace) {
+GTEST_TEST(HydroelasticateTest, GetSoftPropsHalfSpace) {
   DoTestGetSoftProps(HalfSpace());
 }
 
 // Upshot: vtk-bearing meshes *have* to be annotated with hydro type.
-GTEST_TEST(HydroelastizeTest, GetSoftPropsMesh) {
+GTEST_TEST(HydroelasticateTest, GetSoftPropsMesh) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       DoTestGetSoftProps(
           Mesh(FindResourceOrThrow("drake/geometry/test/one_tetrahedron.vtk"),
@@ -138,12 +138,12 @@ GTEST_TEST(HydroelastizeTest, GetSoftPropsMesh) {
       ".*non-hydroelastic.*only support .obj.*");
 }
 
-GTEST_TEST(HydroelastizeTest, GetRigidPropsMesh) {
+GTEST_TEST(HydroelasticateTest, GetRigidPropsMesh) {
   DoTestGetRigidProps(
       Mesh(FindResourceOrThrow("drake/geometry/test/convex.obj"), 1.0));
 }
 
-GTEST_TEST(HydroelastizeTest, GetSoftPropsSphere) {
+GTEST_TEST(HydroelasticateTest, GetSoftPropsSphere) {
   DoTestGetSoftProps(Sphere(0.1));
 }
 
