@@ -375,7 +375,6 @@ RenderMesh LoadRenderMeshFromObj(
     mesh_data.positions.block(vert_row, 0, local_v_count, 3) = mesh.positions;
     mesh_data.normals.block(vert_row, 0, local_v_count, 3) = mesh.normals;
     mesh_data.uvs.block(vert_row, 0, local_v_count, 2) = mesh.uvs;
-    vert_row += local_v_count;
 
     // Triangles.
     using indices_uint_t = decltype(mesh_data.indices)::Scalar;
@@ -385,6 +384,7 @@ RenderMesh LoadRenderMeshFromObj(
       mesh_data.indices.row(++tri_row) =
           mesh.indices.row(t) + v_offset.transpose();
     }
+    vert_row += local_v_count;
   }
 
   // More than one material means we replace it with the fallback.

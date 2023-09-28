@@ -659,6 +659,14 @@ TEST_F(LoadRenderMeshFromObjTest, MultipleValidIntrinsicMaterialsLegacy) {
   EXPECT_EQ(mesh.indices.rows(), 3);
   // The vertices get mindlessly duplicated.
   EXPECT_EQ(mesh.positions.rows(), 6);
+  EXPECT_EQ(mesh.normals.rows(), 6);
+  EXPECT_EQ(mesh.uvs.rows(), 6);
+  // Confirm the triangle index values have been remapped appropriately.
+  for (int t = 0; t < mesh.indices.rows(); ++t) {
+    for (int v = 0; v < 3; ++v) {
+      ASSERT_LT(mesh.indices(t, v), mesh.positions.rows());
+    }
+  }
 }
 
 /* If the obj references the mtl file with an absolute path, there will be a
