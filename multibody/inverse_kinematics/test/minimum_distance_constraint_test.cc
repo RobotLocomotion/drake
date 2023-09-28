@@ -5,6 +5,8 @@
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/math/compute_numerical_gradient.h"
 #include "drake/math/rigid_transform.h"
+#include "drake/multibody/inverse_kinematics/minimum_distance_lower_bound_constraint.h"
+#include "drake/multibody/inverse_kinematics/minimum_distance_upper_bound_constraint.h"
 #include "drake/multibody/inverse_kinematics/test/inverse_kinematics_test_utilities.h"
 #include "drake/planning/scene_graph_collision_checker.h"
 #include "drake/solvers/minimum_value_constraint.h"
