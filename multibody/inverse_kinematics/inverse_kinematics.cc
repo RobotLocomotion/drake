@@ -8,6 +8,8 @@
 #include "drake/multibody/inverse_kinematics/distance_constraint.h"
 #include "drake/multibody/inverse_kinematics/gaze_target_constraint.h"
 #include "drake/multibody/inverse_kinematics/minimum_distance_constraint.h"
+#include "drake/multibody/inverse_kinematics/minimum_distance_lower_bound_constraint.h"
+#include "drake/multibody/inverse_kinematics/minimum_distance_upper_bound_constraint.h"
 #include "drake/multibody/inverse_kinematics/orientation_constraint.h"
 #include "drake/multibody/inverse_kinematics/orientation_cost.h"
 #include "drake/multibody/inverse_kinematics/point_to_line_distance_constraint.h"
