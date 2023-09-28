@@ -434,7 +434,7 @@ TEST_F(KukaIiwaArmTests, LimitConstraints) {
   SetArbitraryStateWithLimitsSpecification(plant_, limits_specification,
                                            context_.get());
 
-  const std::vector<DiscreteContactPair<double>>& discrete_pairs =
+  const DiscreteContactData<DiscreteContactPair<double>>& discrete_pairs =
       CompliantContactManagerTester::EvalDiscreteContactPairs(*manager_,
                                                               *context_);
   const int num_contacts = discrete_pairs.size();
@@ -574,7 +574,7 @@ TEST_F(KukaIiwaArmTests, CouplerConstraints) {
                                            context_.get());
 
   // We are assuming there is no contact. Assert this.
-  const std::vector<DiscreteContactPair<double>>& discrete_pairs =
+  const DiscreteContactData<DiscreteContactPair<double>>& discrete_pairs =
       CompliantContactManagerTester::EvalDiscreteContactPairs(*manager_,
                                                               *context_);
   const int num_contacts = discrete_pairs.size();

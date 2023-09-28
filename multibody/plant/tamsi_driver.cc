@@ -29,7 +29,7 @@ TamsiDriver<T>::TamsiDriver(const CompliantContactManager<T>* manager)
 template <typename T>
 internal::ContactJacobians<T> TamsiDriver<T>::CalcContactJacobians(
     const systems::Context<T>& context) const {
-  const std::vector<ContactPairKinematics<T>>& contact_kinematics =
+  const DiscreteContactData<ContactPairKinematics<T>>& contact_kinematics =
       manager().EvalContactKinematics(context);
 
   const int nc = contact_kinematics.size();
@@ -110,7 +110,7 @@ void TamsiDriver<T>::CalcContactSolverResults(
 
   // Compute all contact pairs, including both penetration pairs and quadrature
   // pairs for discrete hydroelastic.
-  const std::vector<internal::DiscreteContactPair<T>>& contact_pairs =
+  const DiscreteContactData<DiscreteContactPair<T>>& contact_pairs =
       manager().EvalDiscreteContactPairs(context);
   const int num_contacts = contact_pairs.size();
 
@@ -120,10 +120,9 @@ void TamsiDriver<T>::CalcContactSolverResults(
 
   // Get friction coefficient into a single vector.
   VectorX<T> mu(num_contacts);
-  std::transform(contact_pairs.begin(), contact_pairs.end(), mu.data(),
-                 [](const internal::DiscreteContactPair<T>& pair) {
-                   return pair.friction_coefficient;
-                 });
+  for (int i = 0; i < num_contacts; ++i) {
+    mu[i] = contact_pairs[i].friction_coefficient;
+  }
 
   // Fill in data as required by our discrete solver.
   VectorX<T> fn0(num_contacts);

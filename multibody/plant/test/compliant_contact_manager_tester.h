@@ -32,7 +32,7 @@ class CompliantContactManagerTester {
     return manager.EvalContactSurfaces(context);
   }
 
-  static const std::vector<DiscreteContactPair<double>>&
+  static const DiscreteContactData<DiscreteContactPair<double>>&
   EvalDiscreteContactPairs(const CompliantContactManager<double>& manager,
                            const drake::systems::Context<double>& context) {
     return manager.EvalDiscreteContactPairs(context);
@@ -49,9 +49,9 @@ class CompliantContactManagerTester {
                                  include_pd_controlled_input, forces);
   }
 
-  static std::vector<ContactPairKinematics<double>> CalcContactKinematics(
-      const CompliantContactManager<double>& manager,
-      const drake::systems::Context<double>& context) {
+  static DiscreteContactData<ContactPairKinematics<double>>
+  CalcContactKinematics(const CompliantContactManager<double>& manager,
+                        const drake::systems::Context<double>& context) {
     return manager.CalcContactKinematics(context);
   }
 
@@ -84,7 +84,8 @@ class CompliantContactManagerTester {
   // Jacobian matrix.
   static Eigen::MatrixXd CalcDenseJacobianMatrixInContactFrame(
       const CompliantContactManager<double>& manager,
-      const std::vector<ContactPairKinematics<double>>& contact_kinematics) {
+      const DiscreteContactData<ContactPairKinematics<double>>&
+          contact_kinematics) {
     const int nc = contact_kinematics.size();
     Eigen::MatrixXd J_AcBc_C(3 * nc, manager.plant().num_velocities());
     J_AcBc_C.setZero();

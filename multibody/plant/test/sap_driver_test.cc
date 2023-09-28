@@ -123,13 +123,13 @@ class SpheresStackTest : public SpheresStack, public ::testing::Test {
     return CompliantContactManagerTester::topology(*contact_manager_);
   }
 
-  const std::vector<DiscreteContactPair<double>>& EvalDiscreteContactPairs(
-      const Context<double>& context) const {
+  const DiscreteContactData<DiscreteContactPair<double>>&
+  EvalDiscreteContactPairs(const Context<double>& context) const {
     return CompliantContactManagerTester::EvalDiscreteContactPairs(
         *contact_manager_, context);
   }
 
-  std::vector<ContactPairKinematics<double>> CalcContactKinematics(
+  DiscreteContactData<ContactPairKinematics<double>> CalcContactKinematics(
       const Context<double>& context) const {
     return CompliantContactManagerTester::CalcContactKinematics(
         *contact_manager_, context);
@@ -146,7 +146,7 @@ TEST_F(SpheresStackTest, EvalContactProblemCache) {
   const std::vector<drake::math::RotationMatrix<double>>& R_WC =
       problem_cache.R_WC;
 
-  const std::vector<DiscreteContactPair<double>>& pairs =
+  const DiscreteContactData<DiscreteContactPair<double>>& pairs =
       EvalDiscreteContactPairs(*plant_context_);
   const int num_contacts = pairs.size();
 
@@ -165,9 +165,9 @@ TEST_F(SpheresStackTest, EvalContactProblemCache) {
   EXPECT_EQ(problem.dynamics_matrix(), A);
 
   // Verify each of the contact constraints.
-  const std::vector<ContactPairKinematics<double>> contact_kinematics =
+  const DiscreteContactData<ContactPairKinematics<double>> contact_kinematics =
       CalcContactKinematics(*plant_context_);
-  for (size_t i = 0; i < contact_kinematics.size(); ++i) {
+  for (int i = 0; i < contact_kinematics.size(); ++i) {
     const DiscreteContactPair<double>& discrete_pair = pairs[i];
     const ContactPairKinematics<double>& pair_kinematics =
         contact_kinematics[i];
@@ -305,7 +305,7 @@ TEST_F(SpheresStackTest, PackContactSolverResults) {
 
   // We form an arbitrary set of SAP results consistent with the contact
   // kinematics for the configuration of our model.
-  const std::vector<ContactPairKinematics<double>> contact_kinematics =
+  const DiscreteContactData<ContactPairKinematics<double>> contact_kinematics =
       CalcContactKinematics(*plant_context_);
   const int num_contacts = contact_kinematics.size();
   const int nv = plant_->num_velocities();
