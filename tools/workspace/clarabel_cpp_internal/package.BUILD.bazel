@@ -1,0 +1,42 @@
+# -*- bazel -*-
+
+load("@drake//tools/skylark:cc.bzl", "cc_library")
+load("@drake//tools/workspace/crate_universe:defs.bzl", "all_crate_deps")
+load("@rules_rust//rust:defs.bzl", "rust_static_library")
+
+package(default_visibility = ["//visibility:private"])
+
+licenses(["notice"])  # Apache-2.0
+
+exports_files([
+    "LICENSE.md",
+    "rust_wrapper/Cargo.toml",
+])
+
+cc_library(
+    name = "hdrs",
+    hdrs = glob(["include/**"], allow_empty = False),
+    includes = ["include"],
+)
+
+rust_static_library(
+    name = "clarabel_cpp_rust_wrapper",
+    edition = "2021",
+    srcs = glob(["rust_wrapper/src/**/*.rs"], allow_empty = False),
+    deps = all_crate_deps(),
+)
+
+# Combine the public headers with the object code.
+cc_library(
+    name = "clarabel_cpp",
+    linkstatic = True,
+    deps = [
+        ":hdrs",
+        ":clarabel_cpp_rust_wrapper",
+        "@eigen",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+# TODO(jwnimmer-tri) Prior to using Clarabel as part of libdrake.so, we'll need
+# to add the license-install rule here.

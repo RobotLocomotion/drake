@@ -12,3 +12,5 @@ WORKSPACE diff=bazel
 *.vtp -diff
 # Scalable vector graphics.
 *.svg -diff
+# Rust crate auto-generated files.
+/tools/workspace/crate_universe/lock/details/** -diff
