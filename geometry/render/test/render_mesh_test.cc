@@ -28,14 +28,14 @@ using std::vector;
 
 namespace fs = std::filesystem;
 
-/* The tests for the function LoadRenderMeshesFromObj are partitioned into two
+/* The tests for the function LoadRenderMeshFromObj are partitioned into two
  broad categories indicated by prefix:
 
    - Geometry: evaluation of the geometry produced.
      - The tests confirm that the data gets processed as expected, including
        expected error conditions.
    - Material: evaluation of the material generation logic.
-     - LoadRenderMeshesFromObj is responsible for defining a material from a
+     - LoadRenderMeshFromObj is responsible for defining a material from a
        material library where possible and, failing that, creating a fallback
        material using the RenderMaterial functions.
      - There are many ways in which the library has problems, but we still get
@@ -127,8 +127,8 @@ TEST_F(LoadRenderMeshFromObjTest, GeometryErrorModes) {
     // is simply for the file to not exist. Any other conditions that tinyobj
     // considers a parse failure will get treated the same.
     DRAKE_EXPECT_THROWS_MESSAGE(
-        LoadRenderMeshesFromObj("__garbage_doesn't_exist__.obj", empty_props(),
-                                kDefaultDiffuse, diagnostic_policy_),
+        LoadRenderMeshFromObj("__garbage_doesn't_exist__.obj", empty_props(),
+                              kDefaultDiffuse, diagnostic_policy_),
         "Failed parsing the obj file[^]*");
   }
   {
@@ -136,8 +136,8 @@ TEST_F(LoadRenderMeshFromObjTest, GeometryErrorModes) {
     const fs::path obj_path =
         WriteFile("v 1 2 3", fmt::format("error{}.obj", ++error));
     DRAKE_EXPECT_THROWS_MESSAGE(
-        LoadRenderMeshesFromObj(obj_path, empty_props(), kDefaultDiffuse,
-                                diagnostic_policy_),
+        LoadRenderMeshFromObj(obj_path, empty_props(), kDefaultDiffuse,
+                              diagnostic_policy_),
         "The OBJ data appears to have no faces.*");
   }
   {
@@ -146,8 +146,8 @@ TEST_F(LoadRenderMeshFromObjTest, GeometryErrorModes) {
         WriteFile("Not an obj\njust some\nmeaningles text.\n",
                   fmt::format("error{}.obj", ++error));
     DRAKE_EXPECT_THROWS_MESSAGE(
-        LoadRenderMeshesFromObj(obj_path, empty_props(), kDefaultDiffuse,
-                                diagnostic_policy_),
+        LoadRenderMeshFromObj(obj_path, empty_props(), kDefaultDiffuse,
+                              diagnostic_policy_),
         "The OBJ data appears to have no faces.* might not be an OBJ file.+");
   }
   {
@@ -155,8 +155,8 @@ TEST_F(LoadRenderMeshFromObjTest, GeometryErrorModes) {
     const fs::path obj_path =
         WriteFile("v 1 2 3\nf 1 1 1\n", fmt::format("error{}.obj", ++error));
     DRAKE_EXPECT_THROWS_MESSAGE(
-        LoadRenderMeshesFromObj(obj_path, empty_props(), kDefaultDiffuse,
-                                diagnostic_policy_),
+        LoadRenderMeshFromObj(obj_path, empty_props(), kDefaultDiffuse,
+                              diagnostic_policy_),
         "OBJ has no normals.+");
   }
   {
@@ -170,15 +170,29 @@ f 1//1 1//1 1//1
 )""",
                                         fmt::format("error{}.obj", ++error));
     DRAKE_EXPECT_THROWS_MESSAGE(
-        LoadRenderMeshesFromObj(obj_path, empty_props(), kDefaultDiffuse,
-                                diagnostic_policy_),
+        LoadRenderMeshFromObj(obj_path, empty_props(), kDefaultDiffuse,
+                              diagnostic_policy_),
         "Not all faces reference normals.+");
+  }
+  {
+    // Case: Not all faces reference uvs.
+    const fs::path obj_path = WriteFile(R"""(
+v 1 2 3
+vn 0 0 1
+vt 0 0
+f 1//1 1//1 1//1
+)""",
+                                        fmt::format("error{}.obj", ++error));
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        LoadRenderMeshFromObj(obj_path, empty_props(), kDefaultDiffuse,
+                              diagnostic_policy_),
+        "Not all faces reference texture.+");
   }
 }
 
-/* Confirms that non-triangular faces get triangulated. This also confirms that
- duplication occurs due to associations of vertex positions with multiple
- normals or texture coordinates. */
+// Confirms that non-triangular faces get triangulated. This also confirms that
+// duplication occurs due to associations of vertex positions with multiple
+// normals or texture coordinates.
 TEST_F(LoadRenderMeshFromObjTest, GeometryTriangulatePolygons) {
   /*
              o 4
@@ -254,8 +268,8 @@ TEST_F(LoadRenderMeshFromObjTest, GeometryTriangulatePolygons) {
     SCOPED_TRACE(params.name);
     const fs::path obj_path = WriteFile(
         fmt::format("{}{}", positions, params.obj_spec), params.name + ".obj");
-    const RenderMesh mesh_data = LoadRenderMeshesFromObj(
-        obj_path, empty_props(), kDefaultDiffuse, diagnostic_policy_)[0];
+    const RenderMesh mesh_data = LoadRenderMeshFromObj(
+        obj_path, empty_props(), kDefaultDiffuse, diagnostic_policy_);
     EXPECT_EQ(mesh_data.positions.rows(), params.position_count);
     EXPECT_EQ(mesh_data.normals.rows(), params.position_count);
     EXPECT_EQ(mesh_data.uvs.rows(), params.position_count);
@@ -287,9 +301,9 @@ TEST_F(LoadRenderMeshFromObjTest, GeometryTriangulatePolygons) {
   }
 }
 
-/* Geometry already triangulated gets preserved. This doesn't do variations on
- whether vertex positions need copying due to associations with multiple
- normals/uvs. It relies on `TriangulatePolygons` to handle that. */
+// Geometry already triangulated gets preserved. This doesn't do variations on
+// whether vertex positions need copying due to associations with multiple
+// normals/uvs. It relies on `TriangulatePolygons` to handle that.
 TEST_F(LoadRenderMeshFromObjTest, GeometryPreserveTriangulation) {
   /*
              o 4
@@ -324,17 +338,17 @@ TEST_F(LoadRenderMeshFromObjTest, GeometryPreserveTriangulation) {
   )""",
                                       "preserve_triangulation.obj");
 
-  const RenderMesh mesh_data = LoadRenderMeshesFromObj(
-      obj_path, empty_props(), kDefaultDiffuse, diagnostic_policy_)[0];
+  const RenderMesh mesh_data = LoadRenderMeshFromObj(
+      obj_path, empty_props(), kDefaultDiffuse, diagnostic_policy_);
   EXPECT_EQ(mesh_data.positions.rows(), 7);
   EXPECT_EQ(mesh_data.normals.rows(), 7);
   EXPECT_EQ(mesh_data.uvs.rows(), 7);
   EXPECT_EQ(mesh_data.indices.rows(), 5);
 }
 
-/* The RenderMesh produces *new* vertices from what was in the OBJ based on what
- vertex gets referenced by which faces. A vertex that doesn't get referenced
- gets omitted. */
+// The RenderMesh produces *new* vertices from what was in the OBJ based on what
+// vertex gets referenced by which faces. A vertex that doesn't get referenced
+// gets omitted.
 TEST_F(LoadRenderMeshFromObjTest, GeometryRemoveUnreferencedVertices) {
   /*
 
@@ -358,16 +372,16 @@ TEST_F(LoadRenderMeshFromObjTest, GeometryRemoveUnreferencedVertices) {
   f 6/1/1 3/1/1 4/1/1
   )""",
                                       "unreferenced_vertices.obj");
-  const RenderMesh mesh_data = LoadRenderMeshesFromObj(
-      obj_path, empty_props(), kDefaultDiffuse, diagnostic_policy_)[0];
+  const RenderMesh mesh_data = LoadRenderMeshFromObj(
+      obj_path, empty_props(), kDefaultDiffuse, diagnostic_policy_);
   EXPECT_EQ(mesh_data.positions.rows(), 5);
   EXPECT_EQ(mesh_data.normals.rows(), 5);
   EXPECT_EQ(mesh_data.uvs.rows(), 5);
   EXPECT_EQ(mesh_data.indices.rows(), 2);
 }
 
-/* The OBJ has a single intrinsic material which only defines diffuse color.
- Only a single mesh is created and its material is the defined color. */
+/* The OBJ has a single intrinsic material which only defines diffuse color. The
+ resulting material is the defined color. */
 TEST_F(LoadRenderMeshFromObjTest, MaterialLibraryColorOnly) {
   const fs::path obj_path = WriteFile(fmt::format(R"""(
         mtllib {}
@@ -379,17 +393,15 @@ TEST_F(LoadRenderMeshFromObjTest, MaterialLibraryColorOnly) {
         f 1//1 2//1 3//1)""",
                                                   basic_mtl),
                                       "intrinsic_color_mat.obj");
-  vector<RenderMesh> result = LoadRenderMeshesFromObj(
+  const RenderMesh mesh = LoadRenderMeshFromObj(
       obj_path, empty_props(), kDefaultDiffuse, diagnostic_policy_);
-  ASSERT_EQ(result.size(), 1);
-  const RenderMesh& mesh = result[0];
   EXPECT_EQ(mesh.material.diffuse, Rgba(0.5, 1, 1));
   EXPECT_EQ(mesh.material.diffuse_map, "");
 }
 
 /* The OBJ has a single intrinsic material which only defines diffuse texture.
- The texture is in the same directory as the .mtl file. Only a single mesh is
- created and its material has a white diffuse color and the named texture. */
+ The texture is in the same directory as the .mtl file. The resulting material
+ has a white diffuse color and the named texture. */
 TEST_F(LoadRenderMeshFromObjTest, MaterialLibraryTextureOnly) {
   const fs::path obj_path = WriteFile(fmt::format(R"""(
         mtllib {}
@@ -402,17 +414,15 @@ TEST_F(LoadRenderMeshFromObjTest, MaterialLibraryTextureOnly) {
         f 1/1/1 2/1/1 3/1/1)""",
                                                   texture_only_mtl),
                                       "intrinsic_texture_mat.obj");
-  vector<RenderMesh> result = LoadRenderMeshesFromObj(
+  const RenderMesh mesh = LoadRenderMeshFromObj(
       obj_path, empty_props(), kDefaultDiffuse, diagnostic_policy_);
-  ASSERT_EQ(result.size(), 1);
-  const RenderMesh& mesh = result[0];
   EXPECT_EQ(mesh.material.diffuse, Rgba(1, 1, 1));
   EXPECT_THAT(mesh.material.diffuse_map,
               testing::EndsWith("diag_gradient.png"));
 }
 
-/* The OBJ has a single intrinsic material which defines color and texture. Only
- a single mesh is created and its material includes both color and texture. */
+/* The OBJ has a single intrinsic material which defines color and texture. The
+ resulting material includes both color and texture. */
 TEST_F(LoadRenderMeshFromObjTest, MaterialLibraryColorAndTexture) {
   const fs::path obj_path = WriteFile(fmt::format(R"""(
         mtllib {}
@@ -425,10 +435,8 @@ TEST_F(LoadRenderMeshFromObjTest, MaterialLibraryColorAndTexture) {
         f 1/1/1 2/1/1 3/1/1)""",
                                                   texture_mtl),
                                       "intrinsic_full_diffuse_mat.obj");
-  vector<RenderMesh> result = LoadRenderMeshesFromObj(
+  const RenderMesh mesh = LoadRenderMeshFromObj(
       obj_path, empty_props(), kDefaultDiffuse, diagnostic_policy_);
-  ASSERT_EQ(result.size(), 1);
-  const RenderMesh& mesh = result[0];
   EXPECT_EQ(mesh.material.diffuse, Rgba(1, 1, 0));
   EXPECT_THAT(mesh.material.diffuse_map,
               testing::EndsWith("diag_gradient.png"));
@@ -436,9 +444,8 @@ TEST_F(LoadRenderMeshFromObjTest, MaterialLibraryColorAndTexture) {
 
 /* The OBJ has a single intrinsic material which defines a diffuse texture.
  The texture is in a *different* directory from the mtl file. But the mtl must
- be in the same directory as the obj. (See notes in implementation.)  Only a
- single mesh is created and its material has a *white* diffuse color and the
- named texture. */
+ be in the same directory as the obj. (See notes in implementation.)
+ The resulting material has a *white* diffuse color and the named texture. */
 TEST_F(LoadRenderMeshFromObjTest, MaterialLibraryDislocatedTexture) {
   const fs::path obj_dir = temp_dir() / "dis_texture";
   fs::create_directory(obj_dir);
@@ -458,10 +465,8 @@ TEST_F(LoadRenderMeshFromObjTest, MaterialLibraryDislocatedTexture) {
     d 1
     map_Kd ../diag_gradient.png)""",
             "my.mtl", obj_dir);
-  vector<RenderMesh> result = LoadRenderMeshesFromObj(
+  const RenderMesh mesh = LoadRenderMeshFromObj(
       obj_path, empty_props(), kDefaultDiffuse, diagnostic_policy_);
-  ASSERT_EQ(result.size(), 1);
-  const RenderMesh& mesh = result[0];
   EXPECT_EQ(mesh.material.diffuse, Rgba(1, 1, 1));
   EXPECT_EQ(mesh.material.diffuse_map, (temp_dir() / "diag_gradient.png"));
 }
@@ -480,10 +485,8 @@ TEST_F(LoadRenderMeshFromObjTest, MaterialLibraryMultipleDefinedIntrinsic) {
         f 1/1/1 2/1/1 3/1/1)""",
                                                   multi_mtl),
                                       "use_only_one_material.obj");
-  vector<RenderMesh> result = LoadRenderMeshesFromObj(
+  const RenderMesh mesh = LoadRenderMeshFromObj(
       obj_path, empty_props(), kDefaultDiffuse, diagnostic_policy_);
-  ASSERT_EQ(result.size(), 1);
-  const RenderMesh& mesh = result[0];
   EXPECT_EQ(mesh.material.diffuse, Rgba(1, 0, 1));
   EXPECT_EQ(mesh.material.diffuse_map, "");
 }
@@ -503,10 +506,8 @@ TEST_F(LoadRenderMeshFromObjTest, MaterialLibraryColorAndBadTexture) {
         usemtl test_material
         f 1/1/1 2/1/1 3/1/1)""",
                                       "missing_texture.obj");
-  vector<RenderMesh> result = LoadRenderMeshesFromObj(
+  const RenderMesh mesh = LoadRenderMeshFromObj(
       obj_path, empty_props(), kDefaultDiffuse, diagnostic_policy_);
-  ASSERT_EQ(result.size(), 1);
-  const RenderMesh& mesh = result[0];
   EXPECT_EQ(mesh.material.diffuse, Rgba(1, 0.5, 1));
   EXPECT_EQ(mesh.material.diffuse_map, "");
   EXPECT_THAT(
@@ -527,39 +528,11 @@ TEST_F(LoadRenderMeshFromObjTest, MaterialLibraryTextureButNoUvs) {
         f 1//1 2//1 3//1)""",
                                                   texture_mtl),
                                       "no_uvs_with_texture.obj");
-  vector<RenderMesh> result = LoadRenderMeshesFromObj(
+  const RenderMesh mesh = LoadRenderMeshFromObj(
       obj_path, empty_props(), kDefaultDiffuse, diagnostic_policy_);
-  ASSERT_EQ(result.size(), 1);
-  const RenderMesh& mesh = result[0];
   EXPECT_THAT(TakeWarning(),
               testing::MatchesRegex(".*requested a diffuse texture.*doesn't "
                                     "define any texture coordinates.*"));
-  EXPECT_EQ(mesh.material.diffuse, Rgba(1, 1, 0));
-  EXPECT_EQ(mesh.material.diffuse_map, "");
-}
-
-/* The OBJ has a single intrinsic material with a texture but no uvs. The
- resulting material has *only* the color value (and a warning is dispatched). */
-TEST_F(LoadRenderMeshFromObjTest, MaterialLibraryTextureButPartialUvs) {
-  const fs::path obj_path = WriteFile(fmt::format(R"""(
-        mtllib {}
-        v 0 0 0
-        v 1 1 1
-        v 2 2 2
-        vn 0 1 0
-        vt 0 1
-        usemtl test_material
-        f 1/1/1 2/1/1 3//1)""",  // Note: final vertex has no uv index.
-                                                  texture_mtl),
-                                      "partial_uvs_with_texture.obj");
-  vector<RenderMesh> result = LoadRenderMeshesFromObj(
-      obj_path, empty_props(), kDefaultDiffuse, diagnostic_policy_);
-  ASSERT_EQ(result.size(), 1);
-  const RenderMesh& mesh = result[0];
-  EXPECT_THAT(
-      TakeWarning(),
-      testing::MatchesRegex(".*requested a diffuse texture.*doesn't define a "
-                            "complete set of texture coordinates.*"));
   EXPECT_EQ(mesh.material.diffuse, Rgba(1, 1, 0));
   EXPECT_EQ(mesh.material.diffuse_map, "");
 }
@@ -584,10 +557,8 @@ TEST_F(LoadRenderMeshFromObjTest, MaterialLibraryObjMtlDislocation) {
         f 1/1/1 2/1/1 3/1/1)""",
                                                   texture_mtl),
                                       "mtl_elsewhere.obj", obj_dir);
-  vector<RenderMesh> result = LoadRenderMeshesFromObj(
+  const RenderMesh mesh = LoadRenderMeshFromObj(
       obj_path, empty_props(), kDefaultDiffuse, diagnostic_policy_);
-  ASSERT_EQ(result.size(), 1);
-  const RenderMesh& mesh = result[0];
   EXPECT_EQ(mesh.material.diffuse, Rgba(1, 1, 0));
   EXPECT_EQ(mesh.material.diffuse_map, "");
   // Because of our limited access to parsing information, this will look like
@@ -597,12 +568,10 @@ TEST_F(LoadRenderMeshFromObjTest, MaterialLibraryObjMtlDislocation) {
       testing::HasSubstr("requested an unavailable diffuse texture image"));
 }
 
-/* The OBJ has multiple intrinsic materials *applied* to the mesh. It leads to
- multiple RenderMesh instances with the various materials. We'll confirm the
- partitioning of the geometry and the resulting materials. This test provides
- token coverage of the partitioning -- it only considers the number of triangles
- in each partition -- real bugs would be obvious in the rendered results. */
-TEST_F(LoadRenderMeshFromObjTest, MultipleValidIntrinsicMaterials) {
+/* The OBJ has multiple intrinsic materials *applied* to the mesh. The material
+ should be the fallback material and should be accompanied by a warning. When
+ we expand material support, this test can and should change. */
+TEST_F(LoadRenderMeshFromObjTest, MaterialFallbackMultipleAppliedIntrinsic) {
   const fs::path obj_path = WriteFile(fmt::format(R"""(
         mtllib {}
         v 0 0 0
@@ -612,53 +581,15 @@ TEST_F(LoadRenderMeshFromObjTest, MultipleValidIntrinsicMaterials) {
         usemtl test_material_1
         f 1//1 2//1 3//1
         usemtl test_material_2
-        f 2//1 3//1 1//1
-        f 3//1 1//1 2//1)""",  // Distinguish meshes by triangle count.
+        f 1//1 2//1 3//1)""",
                                                   multi_mtl),
                                       "too_many_usemtl.obj");
-  vector<RenderMesh> meshes = LoadRenderMeshesFromObj(
+  const RenderMesh mesh = LoadRenderMeshFromObj(
       obj_path, empty_props(), kDefaultDiffuse, diagnostic_policy_);
-  ASSERT_EQ(meshes.size(), 2);
-  for (const auto& mesh : meshes) {
-    if (mesh.indices.rows() == 1) {
-      // test_material_1 applied to a single triangle.
-      EXPECT_EQ(mesh.material.diffuse, Rgba(1, 0, 1));
-      EXPECT_EQ(mesh.material.diffuse_map, "");
-    } else if (mesh.indices.rows() == 2) {
-      // test_material_2 applied to two triangles.
-      EXPECT_EQ(mesh.material.diffuse, Rgba(1, 0, 0));
-      EXPECT_EQ(mesh.material.diffuse_map, "");
-    } else {
-      DRAKE_UNREACHABLE();
-    }
-  }
-}
-
-/* The OBJ has multiple intrinsic materials *applied* to the mesh. It leads to
- multiple RenderMesh instances with the various materials. The legacy API will
- merge those into a single mesh with fallback material. */
-TEST_F(LoadRenderMeshFromObjTest, MultipleValidIntrinsicMaterialsLegacy) {
-  const fs::path obj_path = WriteFile(fmt::format(R"""(
-        mtllib {}
-        v 0 0 0
-        v 1 1 1
-        v 2 2 2
-        vn 0 1 0
-        vt 0 1
-        usemtl test_material_1
-        f 1/1/1 2/1/1 3/1/1
-        usemtl test_material_2
-        f 2//1 3//1 1//1
-        f 3//1 1//1 2//1)""",  // Distinguish meshes by triangle count.
-                                                  multi_mtl),
-                                      "too_many_usemtl.obj");
-  RenderMesh mesh = LoadRenderMeshFromObj(obj_path, empty_props(),
-                                          kDefaultDiffuse, diagnostic_policy_);
   EXPECT_EQ(mesh.material.diffuse, kDefaultDiffuse);
   EXPECT_EQ(mesh.material.diffuse_map, "");
-  EXPECT_EQ(mesh.indices.rows(), 3);
-  // The vertices get mindlessly duplicated.
-  EXPECT_EQ(mesh.positions.rows(), 6);
+  // N.B. We do not test the `log()->debug()` message output for correctness.
+  // Checking for the diffuse material is enough to prove that the code was run.
 }
 
 /* If the obj references the mtl file with an absolute path, there will be a
@@ -680,19 +611,16 @@ TEST_F(LoadRenderMeshFromObjTest, MaterialFallbackObjMtlDislocationAbsolute) {
         f 1/1/1 2/1/1 3/1/1)""",
                                                   mtl_path.string()),
                                       "mtl_elsewhere.obj", obj_dir);
-  vector<RenderMesh> result = LoadRenderMeshesFromObj(
+  const RenderMesh mesh = LoadRenderMeshFromObj(
       obj_path, empty_props(), kDefaultDiffuse, diagnostic_policy_);
-  ASSERT_EQ(result.size(), 1);
-  const RenderMesh& mesh = result[0];
   EXPECT_EQ(mesh.material.diffuse, kDefaultDiffuse);
   EXPECT_EQ(mesh.material.diffuse_map, "");
   // The tinyobj warning that the material library can't be found.
   EXPECT_THAT(TakeWarning(), testing::HasSubstr("not found in a path"));
 }
 
-/* The obj explicitly applies a material to *some* of the faces. This is
- implicitly two materials (the default material being applied to the otherwise
- unspecified faces). Two meshes are created. */
+/* The obj explicitly applies a material to *some* of the faces. The material
+ gets defaulted and a warning given. */
 TEST_F(LoadRenderMeshFromObjTest, MaterialFallbackDefaultedFaces) {
   const fs::path obj_path = WriteFile(fmt::format(R"""(
         mtllib {}
@@ -702,26 +630,15 @@ TEST_F(LoadRenderMeshFromObjTest, MaterialFallbackDefaultedFaces) {
         vn 0 1 0
         f 1//1 2//1 3//1
         usemtl test_material
-        f 1//1 2//1 3//1
-        f 1//1 2//1 3//1)""",  // Distinguish meshes by triangle count.
+        f 1//1 2//1 3//1)""",
                                                   basic_mtl),
                                       "default_material_faces.obj");
-  vector<RenderMesh> meshes = LoadRenderMeshesFromObj(
+  const RenderMesh mesh = LoadRenderMeshFromObj(
       obj_path, empty_props(), kDefaultDiffuse, diagnostic_policy_);
-  ASSERT_EQ(meshes.size(), 2);
-  for (const auto& mesh : meshes) {
-    if (mesh.indices.rows() == 1) {
-      // default material applied to a single triangle.
-      EXPECT_EQ(mesh.material.diffuse, kDefaultDiffuse);
-      EXPECT_EQ(mesh.material.diffuse_map, "");
-    } else if (mesh.indices.rows() == 2) {
-      // test_material applied to two triangles.
-      EXPECT_EQ(mesh.material.diffuse, Rgba(0.5, 1, 1));
-      EXPECT_EQ(mesh.material.diffuse_map, "");
-    } else {
-      DRAKE_UNREACHABLE();
-    }
-  }
+  EXPECT_EQ(mesh.material.diffuse, kDefaultDiffuse);
+  EXPECT_EQ(mesh.material.diffuse_map, "");
+  // N.B. We do not test the `log()->debug()` message output for correctness.
+  // Checking for the diffuse material is enough to prove that the code was run.
 }
 
 /* If the obj references an invalid material name, there will be a warning and
@@ -737,10 +654,8 @@ TEST_F(LoadRenderMeshFromObjTest, MaterialFallbackBadMaterialName) {
         f 1//1 2//1 3//1)""",
                                                   texture_mtl),
                                       "bad_material_name.obj");
-  vector<RenderMesh> result = LoadRenderMeshesFromObj(
+  const RenderMesh mesh = LoadRenderMeshFromObj(
       obj_path, empty_props(), kDefaultDiffuse, diagnostic_policy_);
-  ASSERT_EQ(result.size(), 1);
-  const RenderMesh& mesh = result[0];
   EXPECT_EQ(mesh.material.diffuse, kDefaultDiffuse);
   EXPECT_EQ(mesh.material.diffuse_map, "");
   EXPECT_THAT(TakeWarning(),
@@ -759,10 +674,8 @@ TEST_F(LoadRenderMeshFromObjTest, MaterialFallbackMissingMtl) {
         usemtl test_material
         f 1//1 2//1 3//1)""",
                                       "non_existent_mtl.obj");
-  vector<RenderMesh> result = LoadRenderMeshesFromObj(
+  const RenderMesh mesh = LoadRenderMeshFromObj(
       obj_path, empty_props(), kDefaultDiffuse, diagnostic_policy_);
-  ASSERT_EQ(result.size(), 1);
-  const RenderMesh& mesh = result[0];
   EXPECT_EQ(mesh.material.diffuse, kDefaultDiffuse);
   EXPECT_EQ(mesh.material.diffuse_map, "");
   EXPECT_THAT(
@@ -782,10 +695,8 @@ TEST_F(LoadRenderMeshFromObjTest, MaterialFallbackNoAppliedMaterial) {
         f 1//1 2//1 3//1)""",
                                                   basic_mtl),
                                       "no_usemtl.obj");
-  vector<RenderMesh> result = LoadRenderMeshesFromObj(
+  const RenderMesh mesh = LoadRenderMeshFromObj(
       obj_path, empty_props(), kDefaultDiffuse, diagnostic_policy_);
-  ASSERT_EQ(result.size(), 1);
-  const RenderMesh& mesh = result[0];
   EXPECT_EQ(mesh.material.diffuse, kDefaultDiffuse);
   EXPECT_EQ(mesh.material.diffuse_map, "");
 }
@@ -800,10 +711,8 @@ TEST_F(LoadRenderMeshFromObjTest, MaterialFallbackNoMaterialLibrary) {
         vn 0 1 0
         f 1//1 2//1 3//1)""",
                                       "no_mtllib.obj");
-  vector<RenderMesh> result = LoadRenderMeshesFromObj(
+  const RenderMesh mesh = LoadRenderMeshFromObj(
       obj_path, empty_props(), kDefaultDiffuse, diagnostic_policy_);
-  ASSERT_EQ(result.size(), 1);
-  const RenderMesh& mesh = result[0];
   EXPECT_EQ(mesh.material.diffuse, kDefaultDiffuse);
   EXPECT_EQ(mesh.material.diffuse_map, "");
 }
@@ -828,46 +737,14 @@ TEST_F(LoadRenderMeshFromObjTest, RedundantMaterialWarnings) {
 
   PerceptionProperties props;
   props.AddProperty("phong", "diffuse", Rgba(0.1, 0.2, 0.3, 0.4));
-  vector<RenderMesh> result = LoadRenderMeshesFromObj(
+  const RenderMesh mesh = LoadRenderMeshFromObj(
       obj_path, props, kDefaultDiffuse, diagnostic_policy_);
-  ASSERT_EQ(result.size(), 1);
-  const RenderMesh& mesh = result[0];
   // We still get the intrinsic material.
   EXPECT_EQ(mesh.material.diffuse, Rgba(0.5, 1, 1));
   EXPECT_EQ(mesh.material.diffuse_map, "");
   EXPECT_THAT(
       TakeWarning(),
       testing::MatchesRegex(".*has its own materials.*'phong', 'diffuse'.*"));
-}
-
-/* We need evidence that the uv state is passed to the fallback material. So,
- we'll create an obj with partial UVs and a valid ("phong", "diffuse_map"). We
- should get the RenderMaterial warning. */
-TEST_F(LoadRenderMeshFromObjTest, UvStatePassedToFallback) {
-  // We just need an obj with *any* intrinsic material; we'll do color only.
-  const fs::path obj_path = WriteFile(R"""(
-        v 0 0 0
-        v 1 1 1
-        v 2 2 2
-        vn 0 1 0
-        vt 0 1
-        f 1/1/1 2/1/1 3//1)""",
-                                      "partial_uvs_fallback_texture.obj");
-
-  PerceptionProperties props;
-  const std::string tex_name =
-      FindResourceOrThrow("drake/geometry/render/test/diag_gradient.png");
-  props.AddProperty("phong", "diffuse_map", tex_name);
-  vector<RenderMesh> result = LoadRenderMeshesFromObj(
-      obj_path, props, kDefaultDiffuse, diagnostic_policy_);
-  ASSERT_EQ(result.size(), 1);
-  const RenderMesh& mesh = result[0];
-  // Inability to apply a valid texture leaves the material flat white.
-  EXPECT_EQ(mesh.material.diffuse, Rgba(1, 1, 1));
-  EXPECT_EQ(mesh.material.diffuse_map, "");
-  EXPECT_THAT(TakeWarning(),
-              testing::MatchesRegex(
-                  ".*'diffuse_map'.* doesn't define a complete set of.*"));
 }
 
 /* Tests if the `from_mesh_file` flag is correctly propagated. */
@@ -881,8 +758,8 @@ TEST_F(LoadRenderMeshFromObjTest, PropagateFromMeshFileFlag) {
             : FindResourceOrThrow(
                   "drake/geometry/render/test/meshes/box_no_mtl.obj");
 
-    const RenderMesh mesh_data = LoadRenderMeshesFromObj(
-        filename, empty_props(), kDefaultDiffuse, diagnostic_policy_)[0];
+    const RenderMesh mesh_data = LoadRenderMeshFromObj(
+        filename, empty_props(), kDefaultDiffuse, diagnostic_policy_);
     const RenderMaterial material = mesh_data.material;
     EXPECT_EQ(from_mesh_file, material.from_mesh_file);
   }
