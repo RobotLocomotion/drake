@@ -27,7 +27,7 @@ class MGIntegrator {
 
  protected:
   // Pure virtual methods that must be overridden in derived class.
-  virtual const char*  MGeqns( double t, double VAR[], double VARp[], bool isIntegratorBoundary ) = 0;
+  virtual const char*  MGeqns( double t, double VAR[myNumberOfODEs], double VARp[myNumberOfODEs], bool isIntegratorBoundary ) = 0;
 
   // Numerical integration constructor and methods that are only called by derived class.
            MGIntegrator() { SetErrorMessagesToNull(); }
@@ -75,14 +75,14 @@ class MGChaoticBabyboot : public MGIntegrator {
 
  protected:
   // Override pure virtual methods in base class MGIntegrator.
-  const char*  MGeqns( double t, double VAR[], double VARp[], bool isIntegratorBoundary );
+  const char*  MGeqns( double t, double VAR[myNumberOfODEs], double VARp[myNumberOfODEs], bool isIntegratorBoundary );
 
  private:
   // Private methods for simulation.
   void  SetInputValues();
-  void  SetArrayFromVariables( double VAR[] );
-  void  SetDerivativeArray( double VARp[] );
-  void  SetVariablesFromArray( const double VAR[] );
+  void  SetArrayFromVariables( double VAR[myNumberOfODEs] );
+  void  SetDerivativeArray( double VARp[myNumberOfODEs] );
+  void  SetVariablesFromArray( const double VAR[myNumberOfODEs] );
   void  CalculateQuantitiesThatDependOnTXEtc( double t, bool isIntegratorBoundary );
   void  CalculateOutput( double t );
 
