@@ -1,0 +1,12 @@
+This folder contains a model of the Z1 Arm from Unitree.
+
+This model was originally taken from:
+https://github.com/unitreerobotics/z1_ros
+SHA 40ee65e9648c950a49b87a0b08da50ba6992f17d.
+
+The license for these files is the BSD 3-Clause "New" or "Revised" License
+https://github.com/unitreerobotics/z1_ros/blob/noetic/LICENSE
+
+As a result, `urdf/*.urdf` are covered by the BSD 3-Clause. The remaining
+files (README, unit test, BUILD, etc.) are covered by Drake's license terms
+(see LICENSE.TXT in Drake's root folder).

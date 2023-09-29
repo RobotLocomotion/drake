@@ -1,0 +1,40 @@
+z1_gazebo:
+    # Publish all joint states -----------------------------------
+    joint_state_controller:
+        type: joint_state_controller/JointStateController
+        publish_rate: 1000  
+
+    Joint01_controller:
+        type: unitree_legged_control/UnitreeJointController
+        joint: joint1
+        pid: {p: 300.0, i: 0.0, d: 5.0}
+
+    Joint02_controller:
+        type: unitree_legged_control/UnitreeJointController
+        joint: joint2
+        pid: {p: 300.0, i: 0.0, d: 5.0}
+
+    Joint03_controller:
+        type: unitree_legged_control/UnitreeJointController
+        joint: joint3
+        pid: {p: 300.0, i: 0.0, d: 5.0}
+
+    Joint04_controller:
+        type: unitree_legged_control/UnitreeJointController
+        joint: joint4
+        pid: {p: 300.0, i: 0.0, d: 5.0}
+
+    Joint05_controller:
+        type: unitree_legged_control/UnitreeJointController
+        joint: joint5
+        pid: {p: 300.0, i: 0.0, d: 5.0}
+
+    Joint06_controller:
+        type: unitree_legged_control/UnitreeJointController
+        joint: joint6
+        pid: {p: 300.0, i: 0.0, d: 5.0}
+
+    gripper_controller:
+        type: unitree_legged_control/UnitreeJointController
+        joint: jointGripper
+        pid: {p: 300.0, i: 0.0, d: 5.0}

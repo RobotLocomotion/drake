@@ -1,0 +1,72 @@
+load(
+    "//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+)
+load("//tools/install:install_data.bzl", "install_data")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/workspace/ros_xacro_internal:defs.bzl", "xacro_file")
+
+package(default_visibility = ["//visibility:public"])
+
+xacro_file(
+    name = "xacro/z1.urdf",
+    src = "xacro/robot.xacro",
+    data = [
+        "xacro/transmission.xacro",
+        "xacro/robot.xacro",
+    ],
+)
+
+filegroup(
+    name = "glob_models",
+    srcs = [
+        "xacro/z1.urdf",
+    ],
+    visibility = ["//visibility:private"],
+)
+
+install_data(
+    name = "install_data",
+    data = [":glob_models"],
+)
+
+filegroup(
+    name = "models",
+    srcs = [
+        ":glob_models",
+        "@drake_models//:z1_description/meshes/visual/z1_Link01.dae",
+        "@drake_models//:z1_description/meshes/visual/z1_Link03.dae",
+        "@drake_models//:z1_description/meshes/visual/z1_Link02.dae",
+        "@drake_models//:z1_description/meshes/visual/z1_Link04.dae",
+        "@drake_models//:z1_description/meshes/visual/z1_Link05.dae",
+        "@drake_models//:z1_description/meshes/visual/z1_Link00.dae",
+        "@drake_models//:z1_description/meshes/visual/z1_Link06.dae",
+        "@drake_models//:z1_description/meshes/visual/z1_GripperMover.dae",
+        "@drake_models//:z1_description/meshes/visual/z1_GripperStator.dae",
+        "@drake_models//:z1_description/meshes/collision/z1_Link01.STL",
+        "@drake_models//:z1_description/meshes/collision/z1_Link03.STL",
+        "@drake_models//:z1_description/meshes/collision/z1_Link02.STL",
+        "@drake_models//:z1_description/meshes/collision/z1_Link04.STL",
+        "@drake_models//:z1_description/meshes/collision/z1_Link05.STL",
+        "@drake_models//:z1_description/meshes/collision/z1_Link00.STL",
+        "@drake_models//:z1_description/meshes/collision/z1_Link06.STL",
+        "@drake_models//:z1_description/meshes/collision/z1_GripperMover.STL",
+        "@drake_models//:z1_description/meshes/collision/z1_GripperStator.STL",
+    ],
+)
+
+# === test/ ===
+
+drake_cc_googletest(
+    name = "parse_test",
+    srcs = ["test/parse_test.cc"],
+    data = [
+        ":models",
+    ],
+    deps = [
+        "//common:find_resource",
+        "//multibody/parsing",
+    ],
+)
+
+add_lint_tests()

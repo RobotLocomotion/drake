@@ -14,6 +14,7 @@ install(
         "//manipulation/models/ur3e:install_data",
         "//manipulation/models/wsg_50_description:install_data",
         "//manipulation/models/ycb:install_data",
+        "//manipulation/models/z1_description:install_data",
     ],
 )
 
