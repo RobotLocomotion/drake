@@ -98,6 +98,7 @@ drake_py_library(
 
 drake_py_unittest(
     name = "hardware_sim_cc_test",
+    allow_network = ["lcm:meshcat"],
     data = [
         "test/test_scenarios.yaml",
         ":demo_cc",
@@ -137,6 +138,7 @@ drake_py_binary(
 
 drake_py_unittest(
     name = "hardware_sim_py_test",
+    allow_network = ["lcm:meshcat"],
     data = [
         "test/test_scenarios.yaml",
         ":demo_py",
@@ -147,6 +149,26 @@ drake_py_unittest(
     shard_count = 4,
     deps = [
         ":hardware_sim_test_common",
+    ],
+)
+
+drake_py_binary(
+    name = "robot_commander",
+    srcs = ["robot_commander.py"],
+    deps = [
+        "//bindings/pydrake",
+    ],
+)
+
+drake_py_unittest(
+    name = "robot_commander_test",
+    allow_network = ["lcm:meshcat"],
+    data = [
+        ":example_scenarios.yaml",
+        ":robot_commander",
+    ],
+    deps = [
+        ":robot_commander",
     ],
 )
 
