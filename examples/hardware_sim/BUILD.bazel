@@ -98,6 +98,9 @@ drake_py_library(
 
 drake_py_unittest(
     name = "hardware_sim_cc_test",
+    # Note: It's safe to use lcm in the test because it uses a non-default URL
+    # and only transmits status messages.
+    allow_network = ["lcm:meshcat"],
     data = [
         "test/test_scenarios.yaml",
         ":demo_cc",
@@ -137,6 +140,9 @@ drake_py_binary(
 
 drake_py_unittest(
     name = "hardware_sim_py_test",
+    # Note: It's safe to use lcm in the test because it uses a non-default URL
+    # and only transmits status messages.
+    allow_network = ["lcm:meshcat"],
     data = [
         "test/test_scenarios.yaml",
         ":demo_py",
@@ -147,6 +153,24 @@ drake_py_unittest(
     shard_count = 4,
     deps = [
         ":hardware_sim_test_common",
+    ],
+)
+
+drake_py_binary(
+    name = "robot_commander",
+    srcs = ["robot_commander.py"],
+    deps = [
+        "//bindings/pydrake",
+    ],
+)
+
+drake_py_unittest(
+    name = "robot_commander_test",
+    data = [
+        ":example_scenarios.yaml",
+    ],
+    deps = [
+        ":robot_commander",
     ],
 )
 
