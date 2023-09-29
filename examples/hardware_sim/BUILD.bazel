@@ -98,9 +98,11 @@ drake_py_library(
 
 drake_py_unittest(
     name = "hardware_sim_cc_test",
+    allow_network = ["lcm:meshcat"],
     data = [
         "test/test_scenarios.yaml",
         ":demo_cc",
+        ":iiwa_commander",
     ],
     shard_count = 4,
     deps = [
@@ -137,9 +139,11 @@ drake_py_binary(
 
 drake_py_unittest(
     name = "hardware_sim_py_test",
+    allow_network = ["lcm:meshcat"],
     data = [
         "test/test_scenarios.yaml",
         ":demo_py",
+        ":iiwa_commander",
     ],
     env = {
         "_DRAKE_DEPRECATION_IS_ERROR": "1",
@@ -147,6 +151,14 @@ drake_py_unittest(
     shard_count = 4,
     deps = [
         ":hardware_sim_test_common",
+    ],
+)
+
+drake_py_binary(
+    name = "iiwa_commander",
+    srcs = ["iiwa_commander.py"],
+    deps = [
+        "//bindings/pydrake",
     ],
 )
 
