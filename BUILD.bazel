@@ -67,6 +67,7 @@ filegroup(
         "//manipulation/models/wsg_50_description:models",
         "//manipulation/models/ycb:models",
         "//multibody/benchmarks/acrobot:models",
+        "//manipulation/models/z1_description:models",
     ],
     visibility = ["//:__subpackages__"],
 )
