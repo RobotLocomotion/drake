@@ -43,6 +43,8 @@ class HardwareSimTest:
             # For our smoke test, exit fairly quickly.
             "simulation_duration": 0.0625,
         }
+        self._iiwa_commander = self._find_resource(
+            "drake/examples/hardware_sim/iiwa_commander")
 
     def _dict_to_single_line_yaml(self, *, data):
         """Given a dictionary, returns it as a YAML one-liner."""
@@ -92,3 +94,8 @@ class HardwareSimTest:
         with open(out_file, encoding="utf-8") as f:
             content = f.read()
         self.assertIn("(split)", content)
+
+    def test_iiwa_commander(self):
+        """Runs `iiwa_commander` to send command once and checks it doesn't
+        crash."""
+        subprocess.run([self._iiwa_commander, "--unit_test"], check=True)

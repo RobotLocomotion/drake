@@ -10,9 +10,10 @@ messages and simulated camera image messages.
 
 The same demo is implemented in both Python and C++, for reference.
 
-Note that the demo is pretty boring on its own! The robot is uncommanded, so
-nothing is happening. All you'll see is the scene geometry, along with a display
-of the contact forces (green arrows).
+Note that the demo contains only static scene by default. The robot is
+uncommanded and nothing is happening; all you'll see is the scene geometry along
+with a display of the contact forces (green arrows). You can run another program
+`iiwa_command.py` to actuate the robot with a simple motion.
 
 
 ## Running the Python demo from a Drake binary release
@@ -47,6 +48,12 @@ python3 hardware_sim.py --scenario_file=example_scenarios.yaml \
   --scenario_name=Demo --scenario_text='{ simulation_duration: 60 }'
 ```
 
+(5) (Optional) Send IIWA actuation commands.
+
+```
+python3 iiwa_commander.py
+```
+
 If you didn't launch the visualizer in step (3), look for a log message like
 ``Meshcat listening for connections at http://localhost:7000`` and click on that
 link to open a temporary visualizer (that will disappear when you close the
@@ -71,4 +78,9 @@ Run these commands:
 $ cd drake
 $ bazel run //tools:meldis -- -w &
 $ bazel run //examples/hardware_sim:demo_cc
+```
+
+Additionally, to actuate the robot:
+```
+$ bazel run //examples/hardware_sim:iiwa_commander
 ```
