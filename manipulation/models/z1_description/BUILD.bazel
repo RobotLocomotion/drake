@@ -9,7 +9,7 @@ load("//tools/workspace/ros_xacro_internal:defs.bzl", "xacro_file")
 package(default_visibility = ["//visibility:public"])
 
 xacro_file(
-    name = "xacro/z1.urdf",
+    name = "xacro/z1_update.urdf",
     src = "xacro/robot.xacro",
     data = [
         "xacro/transmission.xacro",
