@@ -57,6 +57,7 @@ load("//tools/workspace/liblz4:repository.bzl", "liblz4_repository")
 load("//tools/workspace/liblzma:repository.bzl", "liblzma_repository")
 load("//tools/workspace/libpfm:repository.bzl", "libpfm_repository")
 load("//tools/workspace/libpng:repository.bzl", "libpng_repository")
+load("//tools/workspace/libpng_internal:repository.bzl", "libpng_internal_repository")  # noqa
 load("//tools/workspace/libtiff:repository.bzl", "libtiff_repository")
 load("//tools/workspace/meshcat:repository.bzl", "meshcat_repository")
 load("//tools/workspace/mosek:repository.bzl", "mosek_repository")
@@ -257,7 +258,11 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
     if "libpfm" not in excludes:
         libpfm_repository(name = "libpfm")
     if "libpng" not in excludes:
+        # The @libpng external is deprecated in Drake's WORKSPACE and will be
+        # removed on or after 2024-02-01.
         libpng_repository(name = "libpng")
+    if "libpng_internal" not in excludes:
+        libpng_internal_repository(name = "libpng_internal", mirrors = mirrors)
     if "libtiff" not in excludes:
         libtiff_repository(name = "libtiff")
     if "meshcat" not in excludes:

@@ -19,7 +19,6 @@ libmumps-seq-5.4
 libnetcdf19
 libogg0
 libopengl0
-libpng16-16
 libpython3.10
 libqt5core5a
 libqt5gui5
