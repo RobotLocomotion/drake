@@ -146,6 +146,10 @@ class JointSliders final : public systems::LeafSystem<T> {
  private:
   void CalcOutput(const systems::Context<T>&, systems::BasicVector<T>*) const;
 
+  typename systems::LeafSystem<T>::GraphvizFragment DoGetGraphvizFragment(
+      const typename systems::LeafSystem<T>::GraphvizFragmentParams& params)
+      const final;
+
   std::shared_ptr<geometry::Meshcat> meshcat_;
   const MultibodyPlant<T>* const plant_;
   const std::map<int, std::string> position_names_;

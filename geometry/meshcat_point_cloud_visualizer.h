@@ -85,6 +85,10 @@ class MeshcatPointCloudVisualizer final : public systems::LeafSystem<T> {
   /* The periodic event handler which publishes the cloud to Meshcat.  */
   systems::EventStatus UpdateMeshcat(const systems::Context<T>& context) const;
 
+  typename systems::LeafSystem<T>::GraphvizFragment DoGetGraphvizFragment(
+      const typename systems::LeafSystem<T>::GraphvizFragmentParams& params)
+      const final;
+
   /* Input ports. */
   int cloud_input_port_{};
   int pose_input_port_{};

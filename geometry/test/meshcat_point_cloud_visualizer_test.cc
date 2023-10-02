@@ -1,5 +1,6 @@
 #include "drake/geometry/meshcat_point_cloud_visualizer.h"
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/expect_throws_message.h"
@@ -118,7 +119,11 @@ TEST_F(MeshcatPointCloudVisualizerTest, ScalarConversion) {
   ad_diagram->ForcedPublish(*ad_context);
 }
 
-
+TEST_F(MeshcatPointCloudVisualizerTest, Graphviz) {
+  SetUpDiagram();
+  EXPECT_THAT(visualizer_->GetGraphvizString(),
+              testing::HasSubstr("-> meshcat_in"));
+}
 
 }  // namespace
 }  // namespace geometry

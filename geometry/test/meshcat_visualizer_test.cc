@@ -2,6 +2,7 @@
 
 #include <thread>
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <msgpack.hpp>
 
@@ -620,6 +621,12 @@ GTEST_TEST(MeshcatVisualizerTest, RealtimeRate) {
   // kernel's details of process scheduling, or else we could be flaky.)
   simulator.AdvanceTo(0.005);
   EXPECT_NE(meshcat->GetRealtimeRate(), slow_rate);
+}
+
+TEST_F(MeshcatVisualizerWithIiwaTest, Graphviz) {
+  SetUpDiagram();
+  EXPECT_THAT(visualizer_->GetGraphvizString(),
+              testing::HasSubstr("-> meshcat_in"));
 }
 
 }  // namespace
