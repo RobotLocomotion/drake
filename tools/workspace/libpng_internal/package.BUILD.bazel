@@ -1,0 +1,111 @@
+# -*- bazel -*-
+
+load("@drake//tools/install:install.bzl", "install")
+load("@drake//tools/skylark:cc.bzl", "cc_library")
+
+licenses(["notice"])  # libpng-2.0
+
+package(default_visibility = ["//visibility:private"])
+
+# Allow Drake's linter cross-checks to use the headers.
+exports_files(glob(["*.h"]))
+
+# This setting governs when we'll compile with Intel SIMD enabled. We don't use
+# Intel SIMD on macOS (even for Apple hardware that supports it) to reduce our
+# test matrix burden for the deprecated architecture.
+config_setting(
+    name = "build_intel",
+    constraint_values = [
+        "@platforms//cpu:x86_64",
+        "@platforms//os:linux",
+    ],
+)
+
+_PUBLIC_HDRS = [
+    "png.h",
+    "pngconf.h",
+    ":pnglibconf.h",
+]
+
+_PRIVATE_HDRS = [
+    "pngdebug.h",
+    "pnginfo.h",
+    "pngstruct.h",
+    "pngpriv.h",
+]
+
+_SRCS = [
+    "png.c",
+    "pngerror.c",
+    "pngget.c",
+    "pngmem.c",
+    "pngpread.c",
+    "pngread.c",
+    "pngrio.c",
+    "pngrtran.c",
+    "pngrutil.c",
+    "pngset.c",
+    "pngtrans.c",
+    "pngwio.c",
+    "pngwrite.c",
+    "pngwtran.c",
+    "pngwutil.c",
+]
+
+_SRCS_INTEL = [
+    "intel/filter_sse2_intrinsics.c",
+    "intel/intel_init.c",
+]
+
+genrule(
+    name = "_pnglibconf.h",
+    srcs = [
+        "scripts/pnglibconf.h.prebuilt",
+        "@drake//tools/workspace/libpng_internal:png_drake_vendor.h",
+    ],
+    outs = ["pnglibconf.h"],
+    cmd = "cat $(SRCS) > $@",
+)
+
+cc_library(
+    name = "libpng",
+    hdrs = _PUBLIC_HDRS,
+    srcs = _SRCS + _PRIVATE_HDRS + select({
+        ":build_intel": _SRCS_INTEL,
+        "//conditions:default": [],
+    }),
+    includes = ["."],
+    copts = [
+        "-fvisibility=hidden",
+        "-w",
+        # Turn off <config.h> guessing. It should be implicitly off by default,
+        # but it would be a disaster if the default somehow didn't work.
+        "-DPNG_NO_CONFIG_H=1",
+        # Don't allow the pngpriv.h auto-sensing of Neon to take effect.
+        "-DPNG_ARM_NEON_OPT=0",
+        "-DPNG_ARM_NEON_IMPLEMENTATION=0",
+    ] + select({
+        ":build_intel": [
+            # Use SSE4.1 (or earlier) SIMD instructions.
+            "-msse4.1",
+            "-DPNG_INTEL_SSE_OPT=1",
+            "-DPNG_INTEL_SSE_IMPLEMENTATION=3",
+        ],
+        "//conditions:default": [
+            "-DPNG_INTEL_SSE_OPT=0",
+            "-DPNG_INTEL_SSE_IMPLEMENTATION=0",
+        ],
+    }),
+    linkopts = ["-lm"],
+    linkstatic = True,
+    deps = [
+        "@zlib",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+install(
+    name = "install",
+    docs = ["LICENSE"],
+    visibility = ["//visibility:public"],
+)
