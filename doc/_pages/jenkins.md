@@ -56,6 +56,13 @@ For example:
 * ``@drake-jenkins-bot mac-x86-monterey-clang-bazel-experimental-release please.``
 * ``@drake-jenkins-bot linux-focal-clang-bazel-experimental-valgrind-memcheck please``
 
+A list of Jenkins bot commands that cover the full set of continuous, nightly
+and weekly production jobs are available for
+[provisioned](https://github.com/RobotLocomotion/drake/blob/jenkins-jobs-experimental/request-jobs-provisioned.txt)
+and
+[unprovisioned](https://github.com/RobotLocomotion/drake/blob/jenkins-jobs-experimental/request-jobs-unprovisioned.txt)
+builds.
+
 ## Scheduling Builds via the Jenkins User Interface
 
 Alternatively, to schedule a build of an open pull request or arbitrary commit
