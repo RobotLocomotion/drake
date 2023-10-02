@@ -30,9 +30,9 @@ drake_cc_package_library(
         ":geometry_set",
         ":geometry_state",
         ":geometry_version",
-        ":hydroelasticate",
         ":internal_frame",
         ":internal_geometry",
+        ":internal_hydroelasticate",
         ":kinematics_vector",
         ":make_mesh_for_deformable",
         ":meshcat",
@@ -254,9 +254,9 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "hydroelasticate",
-    srcs = ["hydroelasticate.cc"],
-    hdrs = ["hydroelasticate.h"],
+    name = "internal_hydroelasticate",
+    srcs = ["internal_hydroelasticate.cc"],
+    hdrs = ["internal_hydroelasticate.h"],
     deps = [
         ":geometry_state",
         ":scene_graph_config",
@@ -314,7 +314,7 @@ drake_cc_library(
     ],
     deps = [
         ":geometry_state",
-        ":hydroelasticate",
+        ":internal_hydroelasticate",
         ":scene_graph_config",
         ":scene_graph_inspector",
         "//common:essential",
@@ -789,13 +789,13 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "hydroelasticate_test",
+    name = "internal_hydroelasticate_test",
     data = [
         ":test_obj_files",
         ":test_vtk_files",
     ],
     deps = [
-        ":hydroelasticate",
+        ":internal_hydroelasticate",
         "//common/test_utilities:expect_throws_message",
     ],
 )

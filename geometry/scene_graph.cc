@@ -10,7 +10,7 @@
 #include "drake/common/nice_type_name.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/geometry_state.h"
-#include "drake/geometry/hydroelasticate.h"
+#include "drake/geometry/internal_hydroelasticate.h"
 #include "drake/systems/framework/context.h"
 
 namespace drake {

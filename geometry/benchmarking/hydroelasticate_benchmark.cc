@@ -8,7 +8,7 @@ namespace drake {
 namespace geometry {
 namespace internal {
 
-class HydroelastizeBenchmark : public benchmark::Fixture {
+class HydroelasticateBenchmark : public benchmark::Fixture {
  public:
   void SetupScene(const benchmark::State& state) {
     SceneGraphConfig scene_graph_config;
@@ -44,7 +44,7 @@ class HydroelastizeBenchmark : public benchmark::Fixture {
   std::unique_ptr<SceneGraph<double>> scene_graph_;
 };
 
-BENCHMARK_DEFINE_F(HydroelastizeBenchmark, CreateDefaultContext)
+BENCHMARK_DEFINE_F(HydroelasticateBenchmark, CreateDefaultContext)
 // NOLINTNEXTLINE(runtime/references)
 (benchmark::State& state) {
   SetupScene(state);
@@ -53,7 +53,7 @@ BENCHMARK_DEFINE_F(HydroelastizeBenchmark, CreateDefaultContext)
   }
 }
 
-BENCHMARK_REGISTER_F(HydroelastizeBenchmark, CreateDefaultContext)
+BENCHMARK_REGISTER_F(HydroelasticateBenchmark, CreateDefaultContext)
     ->Unit(benchmark::kMillisecond)
     ->Args({false, 1})
     ->Args({true, 1})

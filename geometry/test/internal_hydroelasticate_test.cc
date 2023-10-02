@@ -1,4 +1,4 @@
-#include "drake/geometry/hydroelasticate.h"
+#include "drake/geometry/internal_hydroelasticate.h"
 
 #include <gtest/gtest.h>
 

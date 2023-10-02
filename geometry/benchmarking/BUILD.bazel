@@ -83,8 +83,8 @@ drake_py_experiment_binary(
 )
 
 drake_cc_googlebench_binary(
-    name = "hydroelastize_benchmark",
-    srcs = ["hydroelastize_benchmark.cc"],
+    name = "hydroelasticate_benchmark",
+    srcs = ["hydroelasticate_benchmark.cc"],
     add_test_rule = True,
     deps = [
         "//geometry:scene_graph",
@@ -94,8 +94,8 @@ drake_cc_googlebench_binary(
 )
 
 drake_py_experiment_binary(
-    name = "hydroelastize_experiment",
-    googlebench_binary = ":hydroelastize_benchmark",
+    name = "hydroelasticate_experiment",
+    googlebench_binary = ":hydroelasticate_benchmark",
 )
 
 add_lint_tests()
