@@ -7,6 +7,7 @@
 #include <fmt/format.h>
 
 #include "drake/common/extract_double.h"
+#include "drake/geometry/meshcat_graphviz.h"
 #include "drake/geometry/utilities.h"
 #include "drake/perception/point_cloud.h"
 
@@ -70,6 +71,17 @@ systems::EventStatus MeshcatPointCloudVisualizer<T>::UpdateMeshcat(
   meshcat_->SetTransform(path_, X_ParentCloud);
 
   return systems::EventStatus::Succeeded();
+}
+
+template <typename T>
+typename systems::LeafSystem<T>::GraphvizFragment
+MeshcatPointCloudVisualizer<T>::DoGetGraphvizFragment(
+    const typename systems::LeafSystem<T>::GraphvizFragmentParams& params)
+    const {
+  internal::MeshcatGraphviz meshcat_graphviz(path_, /* subscribe = */ false);
+  return meshcat_graphviz.DecorateResult(
+      systems::LeafSystem<T>::DoGetGraphvizFragment(
+          meshcat_graphviz.DecorateParams(params)));
 }
 
 }  // namespace geometry
