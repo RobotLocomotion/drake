@@ -6,6 +6,7 @@
 #include <fmt/format.h>
 
 #include "drake/common/extract_double.h"
+#include "drake/geometry/meshcat_graphviz.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/meshcat/hydroelastic_contact_visualizer.h"
 #include "drake/multibody/meshcat/point_contact_visualizer.h"
@@ -322,6 +323,18 @@ template <typename T>
 EventStatus ContactVisualizer<T>::OnInitialization(const Context<T>&) const {
   Delete();
   return EventStatus::Succeeded();
+}
+
+template <typename T>
+typename systems::LeafSystem<T>::GraphvizFragment
+ContactVisualizer<T>::DoGetGraphvizFragment(
+    const typename systems::LeafSystem<T>::GraphvizFragmentParams& params)
+    const {
+  geometry::internal::MeshcatGraphviz meshcat_graphviz(params_.prefix,
+                                                       /* subscribe = */ false);
+  return meshcat_graphviz.DecorateResult(
+      systems::LeafSystem<T>::DoGetGraphvizFragment(
+          meshcat_graphviz.DecorateParams(params)));
 }
 
 }  // namespace meshcat

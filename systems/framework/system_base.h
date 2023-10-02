@@ -198,6 +198,28 @@ class SystemBase : public internal::SystemMessageInterface {
       const std::map<std::string, std::string>& options = {}) const;
   //@}
 
+  /** (Advanced) The arguments to the protected method DoGetGraphvizFragment().
+  This struct typically is only used by subclasses of LeafSystem that need to
+  customize their Graphviz representation. These parameters constitute a polite
+  request; a user's %System's implementation of DoGetGraphvizFragment() is not
+  strictly required to honor any of these parameters, but generally should
+  attempt to honor as many as possible. */
+  struct GraphvizFragmentParams {
+    /** As per GetGraphvizString(). */
+    int max_depth{};
+
+    /** As per GetGraphvizString(). */
+    std::map<std::string, std::string> options;
+
+    /** The Graphviz ID to use for this node. */
+    std::string node_id;
+
+    /** The header line(s) to use for this Graphviz node's table. The strings in
+    `header_lines` should not contain newlines; those are added automatically,
+    along with `<BR/>` breaks between lines. */
+    std::vector<std::string> header_lines;
+  };
+
   //----------------------------------------------------------------------------
   /** @name            Input port evaluation (deprecated)
   These _deprecated_ methods provide scalar type-independent evaluation of a
@@ -1267,26 +1289,6 @@ class SystemBase : public internal::SystemMessageInterface {
   /** (Internal) Gets the id used to tag context data as being created by this
   system. See @ref system_compatibility. */
   internal::SystemId get_system_id() const { return system_id_; }
-
-  /** The arguments to DoGetGraphvizFragment(). These parameters constitute a
-  polite request; a user's %System's implementation of DoGetGraphvizFragment()
-  is not strictly required to honor any of these parameters, but generally
-  should attempt to honor as many as possible. */
-  struct GraphvizFragmentParams {
-    /** As per GetGraphvizString(). */
-    int max_depth{};
-
-    /** As per GetGraphvizString(). */
-    std::map<std::string, std::string> options;
-
-    /** The Graphviz ID to use for this node. */
-    std::string node_id;
-
-    /** The header line(s) to use for this Graphviz node's table. The strings in
-    `header_lines` should not contain newlines; those are added automatically,
-    along with `<BR/>` breaks between lines. */
-    std::vector<std::string> header_lines;
-  };
 
   /** The NVI implementation of GetGraphvizFragment() for subclasses to override
   if desired. The default behavior should be sufficient in most cases. */
