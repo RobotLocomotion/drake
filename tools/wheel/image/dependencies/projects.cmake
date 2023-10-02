@@ -31,12 +31,6 @@ set(libjpeg-turbo_url "https://github.com/libjpeg-turbo/libjpeg-turbo/archive/re
 set(libjpeg-turbo_md5 "357dc26a802c34387512a42697846d16")
 list(APPEND ALL_PROJECTS libjpeg-turbo)
 
-# png
-set(png_version 1.6.38)
-set(png_url "https://downloads.sourceforge.net/project/libpng/libpng16/${png_version}/libpng-${png_version}.tar.xz")
-set(png_md5 "122e6b7837811698563083b352bc8ca2")
-list(APPEND ALL_PROJECTS png)
-
 # TODO(jwnimmer-tri) When we purge `libtiff`, we can also purge `xz`, above.
 # The only user of `xz` is `libtiff`.
 #

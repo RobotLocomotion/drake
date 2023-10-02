@@ -13,7 +13,6 @@ libjpeg-turbo8-dev
 liblapack-dev
 libmumps-seq-dev
 libopengl-dev
-libpng-dev
 libtiff-dev
 libtinyxml-dev
 libtool
