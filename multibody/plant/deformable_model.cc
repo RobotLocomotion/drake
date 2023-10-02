@@ -147,6 +147,12 @@ MultibodyConstraintId DeformableModel<T>::AddFixedConstraint(
     }
     ++vertex_index;
   }
+  // TODO(xuchenhan-tri): consider adding an option to allow empty constraint.
+  if (spec.vertices.size() == 0) {
+    throw std::runtime_error(
+        "No constraint has been added. Remove the call to "
+        "AddFixedConstraint() if this is intended.");
+  }
   body_id_to_constraint_ids_[body_A_id].push_back(constraint_id);
   fixed_constraint_specs_[constraint_id] = std::move(spec);
   return constraint_id;

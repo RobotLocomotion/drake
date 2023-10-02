@@ -124,7 +124,9 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
            shapes include Box, Capsule, Cylinder, Ellipsoid, HalfSpace, and
            Sphere.
    @throws std::exception if Finalize() has been called on the multibody plant
-           owning this deformable model. */
+           owning this deformable model.
+   @throws std::exception if no constraint is added (i.e. no vertex of the
+           deformable body is inside the given `shape` with the given poses). */
   MultibodyConstraintId AddFixedConstraint(
       DeformableBodyId body_A_id, const Body<T>& body_B,
       const math::RigidTransform<double>& X_BA, const geometry::Shape& shape,
