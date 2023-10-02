@@ -1,6 +1,6 @@
 import time
 from pydrake.common.value import Value
-from pydrake.geometry import StartMeshcat
+from pydrake.geometry import StartMeshcat, SceneGraphConfig
 from pydrake.math import RigidTransform
 from pydrake.multibody.meshcat import (
     ContactVisualizer, ContactVisualizerParams)
@@ -80,7 +80,9 @@ def add_scene(time_step=1e-3, solver="tamsi", free_body_name="compliant_box"):
 
     # Finalize the plant after loading the scene.
     plant.set_contact_model(ContactModel.kHydroelastic)
-    scene_graph.set_hydroelastize(True)
+    config = SceneGraphConfig()
+    config.hydroelastication.enabled = True
+    scene_graph.set_config(config)
     plant.Finalize()
 
     # Set how high the center of the compliant box is from the world's origin.
