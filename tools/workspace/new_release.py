@@ -205,6 +205,10 @@ def _check_for_upgrades(gh, args, metadata):
         key = data["repository_rule_type"]
         if key == "github":
             old_commit, new_commit = _handle_github(workspace_name, gh, data)
+        elif key == "crate_universe":
+            # For details, see drake/tools/workspace/crate_universe/README.md.
+            print(f"Ignoring {workspace_name} from rules_rust")
+            continue
         elif key in ["pypi", "pypi_wheel"]:
             # TODO(jwnimmer-tri) Implement for real.
             print("{} version {} needs manual inspection".format(
