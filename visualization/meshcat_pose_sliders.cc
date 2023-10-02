@@ -10,6 +10,7 @@
 
 #include "drake/common/scope_exit.h"
 #include "drake/common/unused.h"
+#include "drake/geometry/meshcat_graphviz.h"
 
 namespace drake {
 namespace visualization {
@@ -183,6 +184,19 @@ systems::EventStatus MeshcatPoseSliders<T>::OnInitialization(
     return systems::EventStatus::Succeeded();
   }
   return systems::EventStatus::DidNothing();
+}
+
+template <typename T>
+typename systems::LeafSystem<T>::GraphvizFragment
+MeshcatPoseSliders<T>::DoGetGraphvizFragment(
+    const typename systems::LeafSystem<T>::GraphvizFragmentParams& params)
+    const {
+  geometry::internal::MeshcatGraphviz meshcat_graphviz(
+      /* path = */ std::nullopt,
+      /* subscribe = */ true);
+  return meshcat_graphviz.DecorateResult(
+      systems::LeafSystem<T>::DoGetGraphvizFragment(
+          meshcat_graphviz.DecorateParams(params)));
 }
 
 template <typename T>

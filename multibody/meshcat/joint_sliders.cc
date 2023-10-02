@@ -11,6 +11,7 @@
 #include "drake/common/autodiff_overloads.h"
 #include "drake/common/scope_exit.h"
 #include "drake/common/unused.h"
+#include "drake/geometry/meshcat_graphviz.h"
 
 namespace {
 // Boilerplate for std::visit.
@@ -246,6 +247,19 @@ void JointSliders<T>::CalcOutput(
       (*output)[position_index] = meshcat_->GetSliderValue(slider_name);
     }
   }
+}
+
+template <typename T>
+typename systems::LeafSystem<T>::GraphvizFragment
+JointSliders<T>::DoGetGraphvizFragment(
+    const typename systems::LeafSystem<T>::GraphvizFragmentParams& params)
+    const {
+  geometry::internal::MeshcatGraphviz meshcat_graphviz(
+      /* path = */ std::nullopt,
+      /* subscribe = */ true);
+  return meshcat_graphviz.DecorateResult(
+      systems::LeafSystem<T>::DoGetGraphvizFragment(
+          meshcat_graphviz.DecorateParams(params)));
 }
 
 template <typename T>
