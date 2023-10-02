@@ -45,13 +45,15 @@ class ShapeAdjuster final : public ShapeReifier {
  public:
   struct ReifyData {
     ProximityProperties* props{};
+    const SceneGraphConfig& config;
     bool is_too_small{false};
   };
 
   // @returns true if the shape is too small to participate in hydroelastic
   // contact for this scene.
-  bool MakeShapeAdjustments(const Shape& shape, ProximityProperties* props) {
-    ReifyData data = {props, false};
+  bool MakeShapeAdjustments(const Shape& shape, const SceneGraphConfig& config,
+                            ProximityProperties* props) {
+    ReifyData data = {props, config, false};
     shape.Reify(this, &data);
     return data.is_too_small;
   }
@@ -59,9 +61,8 @@ class ShapeAdjuster final : public ShapeReifier {
   using ShapeReifier::ImplementGeometry;
 
   void CheckTooSmall(ReifyData* data, double max_radius) {
-    double rez_hint = data->props->GetPropertyOrDefault(
-        kHydroGroup, kRezHint, 0.0);
-    if (2 * max_radius < rez_hint * 1e-2) {
+    if (2 * max_radius <
+        data->config.hydroelastication.minimum_primitive_size) {
       data->is_too_small = true;
     }
   }
@@ -166,7 +167,7 @@ void Hydroelasticate(GeometryState<T>* geometry_state,
 
     // Shape adjuster will fix configurations that can't work.
     bool is_too_small = GetShapeAdjuster()->MakeShapeAdjustments(
-        geometry_state->GetShape(gid), &props);
+        geometry_state->GetShape(gid), config, &props);
     // Jump through pointless hoops.
     SourceId gid_source_id;
     auto source_ids = geometry_state->GetAllSourceIds();

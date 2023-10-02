@@ -28,6 +28,11 @@ struct HydroelasticationConfig {
   /// If true, hydroelastication will be applied to scene graph model data when
   /// new default contexts are created.
   bool enabled;
+  /// Configures the minimum primitive geometry size to consider for
+  /// hydroelastic contact. Primitives smaller than this size will have their
+  /// proximity role removed. Mesh geometries are not affected by this
+  /// setting. TODO(rpoyner-tri): explain size estimation rules.
+  double minimum_primitive_size{1e-4};
   /// Configures the default hydroelastic modulus to use when hydroelastication
   /// is active.
   double default_hydroelastic_modulus{1e7};
