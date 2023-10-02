@@ -48,16 +48,13 @@ constexpr double kDt = 1e-2;
                              |              |
                              -------/|\------
                                    / | \
-                                  /  |  \
-                                 /___|___\  deformable
-                                 \   |   /
-                                  \  |  /
-                                   \ | /
-                             -------\|/------
-                             |              |
-                             |              |
+                             -----/--|--\----
+                             |   /___|___\  | deformable
+                             |   \   |   /  |
+                             |    \  |  /   |
+                             |     \ | /    |
+                             |      \|/     |
                              | dynamic rigid|
-                             |              |
                              |              |
                              ----------------
 
@@ -100,9 +97,9 @@ class DeformableFixedConstraintTest : public ::testing::Test {
     plant_->RegisterVisualGeometry(box_body, RigidTransformd::Identity(), box,
                                    "box_visual", illustration_props);
 
-    /* Pose the deformable body in the rigid body's frame so that the bottom
-     vertex is under fixed constraint. */
-    const RigidTransformd X_RD(Vector3d(0, 0, 0.19));
+    /* Pose the deformable body in the rigid body's frame so that all vertices
+     except the top vertex are under fixed constraint. */
+    const RigidTransformd X_RD(Vector3d(0, 0, 0.09));
     model_->AddFixedConstraint(deformable_body_id_, box_body, X_RD, box,
                                RigidTransformd::Identity());
 

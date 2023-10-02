@@ -278,9 +278,8 @@ TEST_F(DeformableModelTest, AddFixedConstraint) {
                                                 box, X_BG);
 
   EXPECT_TRUE(deformable_model_ptr_->HasConstraint(deformable_id));
-  EXPECT_EQ(
-      deformable_model_ptr_->fixed_constraint_ids(deformable_id).size(),
-      1);
+  EXPECT_EQ(deformable_model_ptr_->fixed_constraint_ids(deformable_id).size(),
+            1);
   const DeformableRigidFixedConstraintSpec& spec =
       deformable_model_ptr_->fixed_constraint_spec(constraint_id);
   EXPECT_EQ(spec.body_A, deformable_id);
@@ -318,6 +317,11 @@ TEST_F(DeformableModelTest, AddFixedConstraint) {
   EXPECT_THROW(deformable_model_ptr_->AddFixedConstraint(
                    deformable_id, rigid_body, X_BA, mesh, X_BG),
                std::exception);
+  /* No constraint is added . */
+  DRAKE_EXPECT_THROWS_MESSAGE(deformable_model_ptr_->AddFixedConstraint(
+                                  deformable_id, rigid_body, X_BA, box,
+                                  RigidTransformd(Vector3d(100, 100, 100))),
+                              "No constraint has been added.*box.*");
   /* Adding constraint after finalize. */
   plant_->Finalize();
   EXPECT_THROW(deformable_model_ptr_->AddFixedConstraint(
