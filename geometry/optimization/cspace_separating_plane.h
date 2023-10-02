@@ -11,7 +11,6 @@
 
 #include <utility>
 
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/symbolic/polynomial.h"
 #include "drake/geometry/optimization/c_iris_collision_geometry.h"
 
@@ -60,19 +59,6 @@ struct CSpaceSeparatingPlane {
         expressed_body{m_expressed_body},
         plane_degree{m_plane_degree},
         decision_variables{m_decision_variables} {}
-
-  DRAKE_DEPRECATED("2023-10-01",
-                   "The overload without plane_degree will be removed.")
-  CSpaceSeparatingPlane(
-      Vector3<symbolic::Polynomial> m_a, symbolic::Polynomial m_b,
-      const CIrisCollisionGeometry* m_positive_side_geometry,
-      const CIrisCollisionGeometry* m_negative_side_geometry,
-      multibody::BodyIndex m_expressed_body,
-      const Eigen::Ref<const VectorX<T>>& m_decision_variables)
-      : CSpaceSeparatingPlane(std::move(m_a), std::move(m_b),
-                              m_positive_side_geometry,
-                              m_negative_side_geometry, m_expressed_body,
-                              1 /* plane_degree */, m_decision_variables) {}
 
   /// Return the geometry on the specified side.
   [[nodiscard]] const CIrisCollisionGeometry* geometry(
