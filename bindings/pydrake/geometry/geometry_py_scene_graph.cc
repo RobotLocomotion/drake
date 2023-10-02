@@ -170,17 +170,13 @@ void DoScalarDependentDefinitions(py::module m, T) {
     cls  // BR
         .def(py::init<SceneGraphConfig>(),
             py::arg("config") = SceneGraphConfig{}, cls_doc.ctor.doc)
+        .def("set_config", &Class::set_config, cls_doc.set_config.doc)
+        .def("get_config", &Class::get_config, cls_doc.get_config.doc)
         .def("get_source_pose_port", &Class::get_source_pose_port,
             py_rvp::reference_internal, cls_doc.get_source_pose_port.doc)
         .def("get_source_configuration_port",
             &Class::get_source_configuration_port, py_rvp::reference_internal,
             cls_doc.get_source_configuration_port.doc);
-
-    cls  // BR
-        .def("set_hydroelastize", &Class::set_hydroelastize, py::arg("value"),
-            cls_doc.set_hydroelastize.doc)
-        .def("get_hydroelastize", &Class::get_hydroelastize,
-            cls_doc.get_hydroelastize.doc);
 
     cls  // BR
         .def("get_query_output_port", &Class::get_query_output_port,
@@ -608,6 +604,17 @@ void DoScalarDependentDefinitions(py::module m, T) {
 void DefineGeometrySceneGraph(py::module m) {
   py::module::import("pydrake.systems.framework");
   constexpr auto& doc = pydrake_doc.drake.geometry;
+  {
+    using Class = geometry::HydroelasticationConfig;
+    constexpr auto& cls_doc = doc.HydroelasticationConfig;
+    py::class_<Class> cls(m, "HydroelasticationConfig", cls_doc.doc);
+    cls  // BR
+        .def(ParamInit<Class>());
+    DefAttributesUsingSerialize(&cls, cls_doc);
+    DefReprUsingSerialize(&cls);
+    DefCopyAndDeepCopy(&cls);
+  }
+
   {
     using Class = geometry::SceneGraphConfig;
     constexpr auto& cls_doc = doc.SceneGraphConfig;

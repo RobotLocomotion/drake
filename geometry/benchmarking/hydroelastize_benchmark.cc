@@ -12,18 +12,18 @@ class HydroelastizeBenchmark : public benchmark::Fixture {
  public:
   void SetupScene(const benchmark::State& state) {
     SceneGraphConfig scene_graph_config;
-    scene_graph_config.hydroelastize = state.range(0);
+    scene_graph_config.hydroelastication.enabled = state.range(0);
     ProximityProperties props;
-    if (scene_graph_config.hydroelastize == false) {
+    if (scene_graph_config.hydroelastication.enabled == false) {
       // Simulate a manually annotated model.
       props.UpdateProperty(kHydroGroup, kComplianceType,
                            HydroelasticType::kSoft);
       props.UpdateProperty(
           kHydroGroup, kElastic,
-          scene_graph_config.hydroelastize_default_hydroelastic_modulus);
+          scene_graph_config.hydroelastication.default_hydroelastic_modulus);
       props.UpdateProperty(
           kHydroGroup, kRezHint,
-          scene_graph_config.hydroelastize_default_resolution_hint);
+          scene_graph_config.hydroelastication.default_resolution_hint);
     }
     int num_geoms = state.range(1);
     scene_graph_ = std::make_unique<SceneGraph<double>>(scene_graph_config);

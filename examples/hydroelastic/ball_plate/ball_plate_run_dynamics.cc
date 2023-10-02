@@ -81,7 +81,7 @@ int do_main() {
   plant_config.contact_surface_representation =
       FLAGS_contact_surface_representation;
   geometry::SceneGraphConfig scene_graph_config;
-  scene_graph_config.hydroelastize = true;
+  scene_graph_config.hydroelastication.enabled = true;
   auto [plant, scene_graph] = AddMultibodyPlant(
       plant_config, scene_graph_config, &builder);
 
