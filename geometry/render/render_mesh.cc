@@ -3,16 +3,16 @@
 #include <algorithm>
 #include <fstream>
 #include <map>
-#include <set>
 #include <string>
 #include <tuple>
-#include <vector>
+#include <utility>
 
 #include <fmt/format.h>
 #include <tiny_obj_loader.h>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/ssize.h"
 #include "drake/common/text_logging.h"
 
 namespace drake {
@@ -92,10 +92,9 @@ RenderMaterial MakeMaterialFromMtl(const tinyobj::material_t& mat,
 // TODO(SeanCurtis-TRI): Add troubleshooting entry on OBJ support and
 // reference it in these errors/warnings.
 
-RenderMesh LoadRenderMeshFromObj(const std::filesystem::path& obj_path,
-                                 const GeometryProperties& properties,
-                                 const Rgba& default_diffuse,
-                                 const DiagnosticPolicy& policy) {
+vector<RenderMesh> LoadRenderMeshesFromObj(
+    const std::filesystem::path& obj_path, const GeometryProperties& properties,
+    const Rgba& default_diffuse, const DiagnosticPolicy& policy) {
   tinyobj::ObjReaderConfig config;
   config.triangulate = true;
   config.vertex_color = false;
@@ -129,9 +128,6 @@ RenderMesh LoadRenderMeshFromObj(const std::filesystem::path& obj_path,
   }
 
   const tinyobj::attrib_t& attrib = reader.GetAttrib();
-
-  // All of the materials referenced by faces.
-  std::set<int> referenced_materials;
 
   /* The parsed product needs to be further processed. The RenderMesh assumes
    that all vertex quantities (positions, normals, texture coordinates) are
@@ -175,6 +171,11 @@ RenderMesh LoadRenderMeshFromObj(const std::filesystem::path& obj_path,
   vector<Vector2d> uvs;
   vector<Vector3<int>> triangles;
 
+  /* A map from the index of a material that was referenced to the indices of
+   the faces to which it is applied. The face indices are not indices into
+   the original obj, but into the `triangles` data. */
+  map<int, vector<int>> material_triangles;
+
   // TODO(SeanCurtis-TRI) Revisit how we handle normals:
   //   1. If normals are absent, generate normals so that we get faceted meshes.
   //   2. Make use of smoothing groups.
@@ -183,7 +184,21 @@ RenderMesh LoadRenderMeshFromObj(const std::filesystem::path& obj_path,
         fmt::format("OBJ has no normals: {}", obj_path.string()));
   }
 
-  bool has_tex_coord{attrib.texcoords.size() > 0};
+  /* Each triangle consists of three vertices. Any of those vertices may be
+   associated with a corresponding UV value. For each material, we'll count the
+   number of vertices with associated UVs. If the value is zero, no UVs were
+   assigned at all. If it is equal to 3T (T = num triangles), UVs are assigned
+   to all vertices. Any number in between means incomplete assignment. This
+   will result in the following behavior:
+
+     - fewer than 3T UVs: if the material references texture maps
+                            - the map will be omitted,
+                            - a warning will be dispatched.
+                            - the RenderMesh will report no UVs (although it
+                              will hold a full complement of zero-valued UVs).
+     - 3T UVs: The RenderMesh will report it has UVs and the material will not
+               be hampered in any way. */
+  map<int, int> material_uvs;
 
   for (const auto& shape : shapes) {
     /* Each face is a sequence of indices. All of the face indices are
@@ -198,6 +213,7 @@ RenderMesh LoadRenderMeshFromObj(const std::filesystem::path& obj_path,
     const int num_faces = static_cast<int>(shape_mesh.num_face_vertices.size());
     for (int f = 0; f < num_faces; ++f) {
       DRAKE_DEMAND(shape_mesh.num_face_vertices[f] == 3);
+      const int mat_index = shape_mesh.material_ids[f];
       /* Captures the [i0, i1, i2] new index values for the face.  */
       int face_vertices[3] = {-1, -1, -1};
       for (int i = 0; i < 3; ++i) {
@@ -208,17 +224,15 @@ RenderMesh LoadRenderMeshFromObj(const std::filesystem::path& obj_path,
           throw std::runtime_error(fmt::format(
               "Not all faces reference normals: {}", obj_path.string()));
         }
-        if (has_tex_coord) {
-          if (uv_index < 0) {
-            throw std::runtime_error(
-                fmt::format("Not all faces reference texture coordinates: {}",
-                            obj_path.string()));
-          }
-        } else {
-          DRAKE_DEMAND(uv_index < 0);
-        }
         const auto obj_indices =
             make_tuple(position_index, norm_index, uv_index);
+        if (uv_index >= 0) {
+          // If this vertex has a UV coordinate, we need to count it, even if
+          // the "meta" vertex isn't unique.
+          // Note: the map's value gets zero initialized so we can blindly
+          // increment it without worry.
+          ++material_uvs[mat_index];
+        }
         if (obj_vertex_to_new_vertex.count(obj_indices) == 0) {
           obj_vertex_to_new_vertex[obj_indices] =
               static_cast<int>(positions.size());
@@ -231,7 +245,7 @@ RenderMesh LoadRenderMeshFromObj(const std::filesystem::path& obj_path,
           normals.emplace_back(attrib.normals[3 * norm_index],
                                attrib.normals[3 * norm_index + 1],
                                attrib.normals[3 * norm_index + 2]);
-          if (has_tex_coord) {
+          if (uv_index >= 0) {
             uvs.emplace_back(attrib.texcoords[2 * uv_index],
                              attrib.texcoords[2 * uv_index + 1]);
           } else {
@@ -241,64 +255,141 @@ RenderMesh LoadRenderMeshFromObj(const std::filesystem::path& obj_path,
         face_vertices[i] = obj_vertex_to_new_vertex[obj_indices];
         ++v_index;
       }
+      material_triangles[mat_index].push_back(ssize(triangles));
       triangles.emplace_back(&face_vertices[0]);
-      referenced_materials.insert(shape_mesh.material_ids[f]);
     }
   }
 
   DRAKE_DEMAND(positions.size() == normals.size());
   DRAKE_DEMAND(positions.size() == uvs.size());
 
-  RenderMesh mesh_data;
-  using indices_uint_t = decltype(mesh_data.indices)::Scalar;
-  mesh_data.indices.resize(triangles.size(), 3);
-  for (int t = 0; t < mesh_data.indices.rows(); ++t) {
-    mesh_data.indices.row(t) = triangles[t].cast<indices_uint_t>();
-  }
-  mesh_data.positions.resize(positions.size(), 3);
-  for (int v = 0; v < mesh_data.positions.rows(); ++v) {
-    mesh_data.positions.row(v) = positions[v];
-  }
-  mesh_data.normals.resize(normals.size(), 3);
-  for (int n = 0; n < mesh_data.normals.rows(); ++n) {
-    mesh_data.normals.row(n) = normals[n];
-  }
-  mesh_data.uvs.resize(uvs.size(), 2);
-  for (int uv = 0; uv < mesh_data.uvs.rows(); ++uv) {
-    mesh_data.uvs.row(uv) = uvs[uv];
+  /* Now we need to partition the prepped geometry data. Each material used
+   will lead to a unique `RenderMesh` and `RenderMaterial`. Note: the obj may
+   have declared distinct *objects*. We are erasing that distinction as
+   irrelevant for rendering the mesh as a rigid structure. */
+  vector<RenderMesh> meshes;
+  for (const auto& [mat_index, tri_indices] : material_triangles) {
+    RenderMesh mesh_data;
+
+    /* Create the material for set of triangles. */
+    mesh_data.uv_state = material_uvs[mat_index] == 0 ? UvState::kNone
+                         : material_uvs[mat_index] == ssize(tri_indices) * 3
+                             ? UvState::kFull
+                             : UvState::kPartial;
+    if (mat_index == -1) {
+      /* This is the default material. No material was assigned to the faces.
+       We'll apply the fallback logic. */
+      mesh_data.material = MakeMeshFallbackMaterial(
+          properties, obj_path, default_diffuse, policy, mesh_data.uv_state);
+    } else {
+      mesh_data.material =
+          MakeMaterialFromMtl(reader.GetMaterials().at(mat_index), obj_path,
+                              properties, policy, mesh_data.uv_state);
+    }
+
+    /* Partition the data into distinct RenderMeshes. The triangles in one
+     render mesh can reference vertex indices from all over the original vertex
+     buffer. However, in the new render mesh, they must be compactly enumerated
+     from [0, N-1]. This map provides the mapping from the original index value
+     in the full buffer, to the vertex buffer in this RenderMesh. At the same
+     time, convert them to the unsigned type required by RenderMesh. */
+    using indices_uint_t = decltype(mesh_data.indices)::Scalar;
+    map<int, indices_uint_t> vertex_index_full_to_part;
+    for (const auto& t : tri_indices) {
+      const auto& tri = triangles[t];
+      for (int i = 0; i < 3; ++i) {
+        if (vertex_index_full_to_part.count(tri[i]) == 0) {
+          vertex_index_full_to_part[tri(i)] =
+              static_cast<indices_uint_t>(vertex_index_full_to_part.size());
+        }
+      }
+    }
+    mesh_data.indices.resize(ssize(tri_indices), 3);
+    int row = -1;
+    for (const int t : tri_indices) {
+      const Vector3<int>& source_tri = triangles[t];
+      auto mapped_tri = mesh_data.indices.row(++row);
+      /* Each vertex maps independently. */
+      for (int i = 0; i < 3; ++i) {
+        mapped_tri[i] = vertex_index_full_to_part[source_tri[i]];
+      }
+    }
+
+    const int vertex_count = ssize(vertex_index_full_to_part);
+    mesh_data.positions.resize(vertex_count, 3);
+    mesh_data.normals.resize(vertex_count, 3);
+    mesh_data.uvs.resize(vertex_count, 2);
+    for (const auto [full_index, part_index] : vertex_index_full_to_part) {
+      mesh_data.positions.row(part_index) = positions[full_index];
+      mesh_data.normals.row(part_index) = normals[full_index];
+      mesh_data.uvs.row(part_index) = uvs[full_index];
+    }
+    meshes.push_back(std::move(mesh_data));
   }
 
-  // If we've only used a single material in the OBJ, use it. If the only
-  // referenced material is "-1", it means there is no material.
-  mesh_data.uv_state = has_tex_coord ? UvState::kFull : UvState::kNone;
-  if (referenced_materials.size() == 1 && referenced_materials.count(-1) == 0) {
-    mesh_data.material =
-        MakeMaterialFromMtl(reader.GetMaterials().front(), obj_path, properties,
-                            policy, mesh_data.uv_state);
-  } else {
-    // We'll need to use the material fallback logic for meshes.
-    if (referenced_materials.size() > 1) {
-      vector<std::string> mat_names;
-      // If the referenced material is < 0 (typically -1), it represents the
-      // *unnamed* default material. We need to detect it and provide *some*
-      // name for the error. We choose __default__ as being conspicuous but with
-      // a low probability that it was actually chosen by the user.
-      std::transform(
-          referenced_materials.begin(), referenced_materials.end(),
-          std::back_inserter(mat_names), [&reader](int i) {
-            return i < 0 ? std::string("__default__")
-                         : fmt::format("'{}'", reader.GetMaterials()[i].name);
-          });
-      log()->debug(
-          "Drake currently only supports OBJs that use a single material "
-          "across the whole mesh; for {}, {} materials were used: {}. The "
-          "parsed materials will not be used.",
-          obj_path.string(), referenced_materials.size(),
-          fmt::join(mat_names, ", "));
-    }
-    mesh_data.material = MakeMeshFallbackMaterial(
-        properties, obj_path, default_diffuse, policy, mesh_data.uv_state);
+  return meshes;
+}
+
+RenderMesh LoadRenderMeshFromObj(
+    const std::filesystem::path& obj_path, const GeometryProperties& properties,
+    const Rgba& default_diffuse,
+    const drake::internal::DiagnosticPolicy& policy) {
+  vector<RenderMesh> meshes =
+      LoadRenderMeshesFromObj(obj_path, properties, default_diffuse, policy);
+
+  if (meshes.size() == 1) {
+    return std::move(meshes[0]);
   }
+
+  log()->debug(
+      "Drake currently only supports OBJs that use a single material across "
+      "the whole mesh; for {}, {} materials were used. The parsed materials "
+      "will not be used.",
+      obj_path.string(), meshes.size());
+
+  RenderMesh mesh_data;
+
+  // Merge the geometry.
+  int vert_count = 0;
+  int tri_count = 0;
+  int encoded_uv_count = 0;  // Add 1 for partial and 2 for full.
+  for (const auto& mesh : meshes) {
+    vert_count += mesh.positions.rows();
+    tri_count += mesh.indices.rows();
+    encoded_uv_count += mesh.uv_state == UvState::kFull      ? 2
+                        : mesh.uv_state == UvState::kPartial ? 1
+                                                             : 0;
+  }
+  mesh_data.uv_state = encoded_uv_count == ssize(meshes) * 2 ? UvState::kFull
+                       : encoded_uv_count > 0                ? UvState::kPartial
+                                                             : UvState::kNone;
+  mesh_data.indices.resize(tri_count, 3);
+  mesh_data.positions.resize(vert_count, 3);
+  mesh_data.normals.resize(vert_count, 3);
+  mesh_data.uvs.resize(vert_count, 2);
+  int tri_row = -1;  // Always pre-increment.
+  int vert_row = 0;  // We'll increment in blocks.
+  for (const auto& mesh : meshes) {
+    // Vertex data.
+    const int local_v_count = mesh.positions.rows();
+    mesh_data.positions.block(vert_row, 0, local_v_count, 3) = mesh.positions;
+    mesh_data.normals.block(vert_row, 0, local_v_count, 3) = mesh.normals;
+    mesh_data.uvs.block(vert_row, 0, local_v_count, 2) = mesh.uvs;
+
+    // Triangles.
+    using indices_uint_t = decltype(mesh_data.indices)::Scalar;
+    Vector3<indices_uint_t> v_offset =
+        Vector3<indices_uint_t>::Constant(vert_row);
+    for (int t = 0; t < mesh.indices.rows(); ++t) {
+      mesh_data.indices.row(++tri_row) =
+          mesh.indices.row(t) + v_offset.transpose();
+    }
+    vert_row += local_v_count;
+  }
+
+  // More than one material means we replace it with the fallback.
+  mesh_data.material = MakeMeshFallbackMaterial(
+      properties, obj_path, default_diffuse, policy, mesh_data.uv_state);
 
   return mesh_data;
 }
