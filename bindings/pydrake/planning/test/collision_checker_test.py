@@ -79,7 +79,7 @@ class TestCollisionChecker(unittest.TestCase):
 
         mut.LinearDistanceAndInterpolationProvider(plant=plant)
 
-        box_joint_index = plant.GetJointByName("$world_box").index()
+        box_joint_index = plant.GetJointByName("box").index()
         box_joint_weights = np.array([1.0, 0.0, 0.0, 0.0, 2.0, 3.0, 4.0])
         joint_distance_weights = {box_joint_index: box_joint_weights}
         mut.LinearDistanceAndInterpolationProvider(

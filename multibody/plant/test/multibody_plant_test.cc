@@ -1216,11 +1216,11 @@ GTEST_TEST(MultibodyPlantTest, Graphviz) {
 
   // Check that the two floating joints created at Finalize() exist.
   const size_t pos_finalized =
-      dot_finalized.find("world_uniformSolidCylinder [quaternion_floating]");
+      dot_finalized.find("uniformSolidCylinder [quaternion_floating]");
   EXPECT_NE(std::string::npos, pos_finalized) << dot_finalized;
   EXPECT_NE(
       std::string::npos,
-      dot_finalized.find("world_uniformSolidCylinder [quaternion_floating]",
+      dot_finalized.find("uniformSolidCylinder [quaternion_floating]",
                          pos_finalized + 1));
 }
 
@@ -3508,7 +3508,7 @@ GTEST_TEST(SetRandomTest, SetDefaultWhenNoDistributionSpecified) {
   // explicitly added).
   const Body<double>& body1 =
       plant.AddRigidBody("free body 1", SpatialInertia<double>::MakeUnitary());
-  plant.AddJoint<QuaternionFloatingJoint>("$world_" + body1.name(),
+  plant.AddJoint<QuaternionFloatingJoint>("" + body1.name(),
                                           plant.world_body(), {}, body1, {});
   const std::string acrobot_file_name =
       "drake/multibody/benchmarks/acrobot/acrobot.sdf";
@@ -4387,10 +4387,10 @@ GTEST_TEST(MultibodyPlantTest, GetNames) {
   names = plant->GetPositionNames(iiwa1_instance);
   EXPECT_THAT(names,
               testing::ElementsAreArray(
-                  {"$world_iiwa_link_0_qw", "$world_iiwa_link_0_qx",
-                   "$world_iiwa_link_0_qy", "$world_iiwa_link_0_qz",
-                   "$world_iiwa_link_0_x", "$world_iiwa_link_0_y",
-                   "$world_iiwa_link_0_z", "iiwa_joint_1_q", "iiwa_joint_2_q",
+                  {"iiwa_link_0_qw", "iiwa_link_0_qx",
+                   "iiwa_link_0_qy", "iiwa_link_0_qz",
+                   "iiwa_link_0_x", "iiwa_link_0_y",
+                   "iiwa_link_0_z", "iiwa_joint_1_q", "iiwa_joint_2_q",
                    "iiwa_joint_3_q", "iiwa_joint_4_q", "iiwa_joint_5_q",
                    "iiwa_joint_6_q", "iiwa_joint_7_q"}));
 
@@ -4403,13 +4403,13 @@ GTEST_TEST(MultibodyPlantTest, GetNames) {
                                          "iiwa0::iiwa14_iiwa_joint_5_q",
                                          "iiwa0::iiwa14_iiwa_joint_6_q",
                                          "iiwa0::iiwa14_iiwa_joint_7_q",
-                                         "iiwa1::iiwa14_$world_iiwa_link_0_qw",
-                                         "iiwa1::iiwa14_$world_iiwa_link_0_qx",
-                                         "iiwa1::iiwa14_$world_iiwa_link_0_qy",
-                                         "iiwa1::iiwa14_$world_iiwa_link_0_qz",
-                                         "iiwa1::iiwa14_$world_iiwa_link_0_x",
-                                         "iiwa1::iiwa14_$world_iiwa_link_0_y",
-                                         "iiwa1::iiwa14_$world_iiwa_link_0_z",
+                                         "iiwa1::iiwa14_iiwa_link_0_qw",
+                                         "iiwa1::iiwa14_iiwa_link_0_qx",
+                                         "iiwa1::iiwa14_iiwa_link_0_qy",
+                                         "iiwa1::iiwa14_iiwa_link_0_qz",
+                                         "iiwa1::iiwa14_iiwa_link_0_x",
+                                         "iiwa1::iiwa14_iiwa_link_0_y",
+                                         "iiwa1::iiwa14_iiwa_link_0_z",
                                          "iiwa1::iiwa14_iiwa_joint_1_q",
                                          "iiwa1::iiwa14_iiwa_joint_2_q",
                                          "iiwa1::iiwa14_iiwa_joint_3_q",
@@ -4424,10 +4424,10 @@ GTEST_TEST(MultibodyPlantTest, GetNames) {
                          {"iiwa_joint_1",          "iiwa_joint_2",
                           "iiwa_joint_3",          "iiwa_joint_4",
                           "iiwa_joint_5",          "iiwa_joint_6",
-                          "iiwa_joint_7",          "$world_iiwa_link_0_qw",
-                          "$world_iiwa_link_0_qx", "$world_iiwa_link_0_qy",
-                          "$world_iiwa_link_0_qz", "$world_iiwa_link_0_x",
-                          "$world_iiwa_link_0_y",  "$world_iiwa_link_0_z",
+                          "iiwa_joint_7",          "iiwa_link_0_qw",
+                          "iiwa_link_0_qx", "iiwa_link_0_qy",
+                          "iiwa_link_0_qz", "iiwa_link_0_x",
+                          "iiwa_link_0_y",  "iiwa_link_0_z",
                           "iiwa_joint_1",          "iiwa_joint_2",
                           "iiwa_joint_3",          "iiwa_joint_4",
                           "iiwa_joint_5",          "iiwa_joint_6",
@@ -4478,9 +4478,9 @@ GTEST_TEST(MultibodyPlantTest, GetNames) {
 
   names = plant->GetVelocityNames(iiwa1_instance);
   EXPECT_THAT(names, testing::ElementsAreArray(
-                         {"$world_iiwa_link_0_wx", "$world_iiwa_link_0_wy",
-                          "$world_iiwa_link_0_wz", "$world_iiwa_link_0_vx",
-                          "$world_iiwa_link_0_vy", "$world_iiwa_link_0_vz",
+                         {"iiwa_link_0_wx", "iiwa_link_0_wy",
+                          "iiwa_link_0_wz", "iiwa_link_0_vx",
+                          "iiwa_link_0_vy", "iiwa_link_0_vz",
                           "iiwa_joint_1_w", "iiwa_joint_2_w", "iiwa_joint_3_w",
                           "iiwa_joint_4_w", "iiwa_joint_5_w", "iiwa_joint_6_w",
                           "iiwa_joint_7_w"}));
@@ -4494,12 +4494,12 @@ GTEST_TEST(MultibodyPlantTest, GetNames) {
                                          "iiwa0::iiwa14_iiwa_joint_5_w",
                                          "iiwa0::iiwa14_iiwa_joint_6_w",
                                          "iiwa0::iiwa14_iiwa_joint_7_w",
-                                         "iiwa1::iiwa14_$world_iiwa_link_0_wx",
-                                         "iiwa1::iiwa14_$world_iiwa_link_0_wy",
-                                         "iiwa1::iiwa14_$world_iiwa_link_0_wz",
-                                         "iiwa1::iiwa14_$world_iiwa_link_0_vx",
-                                         "iiwa1::iiwa14_$world_iiwa_link_0_vy",
-                                         "iiwa1::iiwa14_$world_iiwa_link_0_vz",
+                                         "iiwa1::iiwa14_iiwa_link_0_wx",
+                                         "iiwa1::iiwa14_iiwa_link_0_wy",
+                                         "iiwa1::iiwa14_iiwa_link_0_wz",
+                                         "iiwa1::iiwa14_iiwa_link_0_vx",
+                                         "iiwa1::iiwa14_iiwa_link_0_vy",
+                                         "iiwa1::iiwa14_iiwa_link_0_vz",
                                          "iiwa1::iiwa14_iiwa_joint_1_w",
                                          "iiwa1::iiwa14_iiwa_joint_2_w",
                                          "iiwa1::iiwa14_iiwa_joint_3_w",
@@ -4514,10 +4514,10 @@ GTEST_TEST(MultibodyPlantTest, GetNames) {
                          {"iiwa_joint_1",          "iiwa_joint_2",
                           "iiwa_joint_3",          "iiwa_joint_4",
                           "iiwa_joint_5",          "iiwa_joint_6",
-                          "iiwa_joint_7",          "$world_iiwa_link_0_wx",
-                          "$world_iiwa_link_0_wy", "$world_iiwa_link_0_wz",
-                          "$world_iiwa_link_0_vx", "$world_iiwa_link_0_vy",
-                          "$world_iiwa_link_0_vz", "iiwa_joint_1",
+                          "iiwa_joint_7",          "iiwa_link_0_wx",
+                          "iiwa_link_0_wy", "iiwa_link_0_wz",
+                          "iiwa_link_0_vx", "iiwa_link_0_vy",
+                          "iiwa_link_0_vz", "iiwa_joint_1",
                           "iiwa_joint_2",          "iiwa_joint_3",
                           "iiwa_joint_4",          "iiwa_joint_5",
                           "iiwa_joint_6",          "iiwa_joint_7"}));
@@ -4552,13 +4552,13 @@ GTEST_TEST(MultibodyPlantTest, GetNames) {
                                          "iiwa0::iiwa14_iiwa_joint_5_q",
                                          "iiwa0::iiwa14_iiwa_joint_6_q",
                                          "iiwa0::iiwa14_iiwa_joint_7_q",
-                                         "iiwa1::iiwa14_$world_iiwa_link_0_qw",
-                                         "iiwa1::iiwa14_$world_iiwa_link_0_qx",
-                                         "iiwa1::iiwa14_$world_iiwa_link_0_qy",
-                                         "iiwa1::iiwa14_$world_iiwa_link_0_qz",
-                                         "iiwa1::iiwa14_$world_iiwa_link_0_x",
-                                         "iiwa1::iiwa14_$world_iiwa_link_0_y",
-                                         "iiwa1::iiwa14_$world_iiwa_link_0_z",
+                                         "iiwa1::iiwa14_iiwa_link_0_qw",
+                                         "iiwa1::iiwa14_iiwa_link_0_qx",
+                                         "iiwa1::iiwa14_iiwa_link_0_qy",
+                                         "iiwa1::iiwa14_iiwa_link_0_qz",
+                                         "iiwa1::iiwa14_iiwa_link_0_x",
+                                         "iiwa1::iiwa14_iiwa_link_0_y",
+                                         "iiwa1::iiwa14_iiwa_link_0_z",
                                          "iiwa1::iiwa14_iiwa_joint_1_q",
                                          "iiwa1::iiwa14_iiwa_joint_2_q",
                                          "iiwa1::iiwa14_iiwa_joint_3_q",
@@ -4573,12 +4573,12 @@ GTEST_TEST(MultibodyPlantTest, GetNames) {
                                          "iiwa0::iiwa14_iiwa_joint_5_w",
                                          "iiwa0::iiwa14_iiwa_joint_6_w",
                                          "iiwa0::iiwa14_iiwa_joint_7_w",
-                                         "iiwa1::iiwa14_$world_iiwa_link_0_wx",
-                                         "iiwa1::iiwa14_$world_iiwa_link_0_wy",
-                                         "iiwa1::iiwa14_$world_iiwa_link_0_wz",
-                                         "iiwa1::iiwa14_$world_iiwa_link_0_vx",
-                                         "iiwa1::iiwa14_$world_iiwa_link_0_vy",
-                                         "iiwa1::iiwa14_$world_iiwa_link_0_vz",
+                                         "iiwa1::iiwa14_iiwa_link_0_wx",
+                                         "iiwa1::iiwa14_iiwa_link_0_wy",
+                                         "iiwa1::iiwa14_iiwa_link_0_wz",
+                                         "iiwa1::iiwa14_iiwa_link_0_vx",
+                                         "iiwa1::iiwa14_iiwa_link_0_vy",
+                                         "iiwa1::iiwa14_iiwa_link_0_vz",
                                          "iiwa1::iiwa14_iiwa_joint_1_w",
                                          "iiwa1::iiwa14_iiwa_joint_2_w",
                                          "iiwa1::iiwa14_iiwa_joint_3_w",
@@ -4593,10 +4593,10 @@ GTEST_TEST(MultibodyPlantTest, GetNames) {
                          {"iiwa_joint_1_q",        "iiwa_joint_2_q",
                           "iiwa_joint_3_q",        "iiwa_joint_4_q",
                           "iiwa_joint_5_q",        "iiwa_joint_6_q",
-                          "iiwa_joint_7_q",        "$world_iiwa_link_0_qw",
-                          "$world_iiwa_link_0_qx", "$world_iiwa_link_0_qy",
-                          "$world_iiwa_link_0_qz", "$world_iiwa_link_0_x",
-                          "$world_iiwa_link_0_y",  "$world_iiwa_link_0_z",
+                          "iiwa_joint_7_q",        "iiwa_link_0_qw",
+                          "iiwa_link_0_qx", "iiwa_link_0_qy",
+                          "iiwa_link_0_qz", "iiwa_link_0_x",
+                          "iiwa_link_0_y",  "iiwa_link_0_z",
                           "iiwa_joint_1_q",        "iiwa_joint_2_q",
                           "iiwa_joint_3_q",        "iiwa_joint_4_q",
                           "iiwa_joint_5_q",        "iiwa_joint_6_q",
@@ -4604,9 +4604,9 @@ GTEST_TEST(MultibodyPlantTest, GetNames) {
                           "iiwa_joint_2_w",        "iiwa_joint_3_w",
                           "iiwa_joint_4_w",        "iiwa_joint_5_w",
                           "iiwa_joint_6_w",        "iiwa_joint_7_w",
-                          "$world_iiwa_link_0_wx", "$world_iiwa_link_0_wy",
-                          "$world_iiwa_link_0_wz", "$world_iiwa_link_0_vx",
-                          "$world_iiwa_link_0_vy", "$world_iiwa_link_0_vz",
+                          "iiwa_link_0_wx", "iiwa_link_0_wy",
+                          "iiwa_link_0_wz", "iiwa_link_0_vx",
+                          "iiwa_link_0_vy", "iiwa_link_0_vz",
                           "iiwa_joint_1_w",        "iiwa_joint_2_w",
                           "iiwa_joint_3_w",        "iiwa_joint_4_w",
                           "iiwa_joint_5_w",        "iiwa_joint_6_w",
@@ -4645,6 +4645,52 @@ GTEST_TEST(MultibodyPlantTest, GetNames) {
                           "iiwa_joint_7", "iiwa_joint_1", "iiwa_joint_2",
                           "iiwa_joint_3", "iiwa_joint_4", "iiwa_joint_5",
                           "iiwa_joint_6", "iiwa_joint_7"}));
+}
+
+GTEST_TEST(MultibodyPlantTest, FloatingJointNames) {
+  {
+    MultibodyPlant<double> plant(0.0);
+    plant.AddRigidBody("free_body", default_model_instance(),
+                       SpatialInertia<double>::MakeUnitary());
+    plant.Finalize();
+    EXPECT_NO_THROW(plant.GetJointByName("free_body"));
+
+    // Deprecated; remove after 2024-02-01.
+    // Previously floating joint names were prefixed with $world_.
+    // GetJointByName() removes that and logs a deprecation warning.
+    EXPECT_NO_THROW(plant.GetJointByName("$world_free_body"));
+  }
+
+  // Verify that in case of a name conflict, we prepend with underscores
+  // until the floating joint name is unique.
+  {
+    MultibodyPlant<double> plant(0.0);
+    const Body<double>& base_body =
+        plant.AddRigidBody("base_body", default_model_instance(),
+                           SpatialInertia<double>::MakeUnitary());
+    const Body<double>& body2 =
+        plant.AddRigidBody("body2", default_model_instance(),
+                           SpatialInertia<double>::MakeUnitary());
+    const Body<double>& body3 =
+        plant.AddRigidBody("body3", default_model_instance(),
+                           SpatialInertia<double>::MakeUnitary());
+
+    // Add joints with very unfortunate names.
+    plant.AddJoint<RevoluteJoint>("base_body", base_body, {}, body2, {},
+                                  Vector3<double>(0, 0, 1));
+    plant.AddJoint<RevoluteJoint>("_base_body", base_body, {}, body3, {},
+                                  Vector3<double>(0, 0, 1));
+    plant.Finalize();
+
+    EXPECT_NO_THROW(plant.GetJointByName("__base_body"));
+
+    // We do not have deprecation support for this case. Previously the
+    // added joint would have been named "$world_base_body". During the
+    // deprecation period, GetJointByName("$world_base_body") will strip
+    // "$world_" and incorrectly return the unrelated joint unfortunately named
+    // "base_body". However a warning will be logged noting that. (remove
+    // comment 2024-02-01)
+  }
 }
 
 GTEST_TEST(MultibodyPlantTest, GetMutableSceneGraphPreFinalize) {
