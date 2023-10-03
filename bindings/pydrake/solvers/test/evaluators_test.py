@@ -6,6 +6,7 @@ import typing
 import pydrake.solvers as mp
 import pydrake.symbolic as sym
 from pydrake.autodiffutils import InitializeAutoDiff
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 
 
 class TestCost(unittest.TestCase):
@@ -205,11 +206,12 @@ def value_function(x: np.ndarray, v_influence: float) -> np.ndarray:
 class TestMinimumValueConstraint(unittest.TestCase):
     def test_without_minimum_value_upper(self):
         # Test the constructor with value_function_double explicitly specified.
-        dut = mp.MinimumValueConstraint(
-            num_vars=1, minimum_value=0.,
-            influence_value_offset=1., max_num_values=3,
-            value_function=value_function,
-            value_function_double=value_function)
+        with catch_drake_warnings(expected_count=1):
+            dut = mp.MinimumValueConstraint(
+                num_vars=1, minimum_value=0.,
+                influence_value_offset=1., max_num_values=3,
+                value_function=value_function,
+                value_function_double=value_function)
         self.assertEqual(dut.num_vars(), 1)
         self.assertEqual(dut.num_constraints(), 1)
         self.assertTrue(dut.CheckSatisfied(np.array([1.])))
@@ -221,20 +223,22 @@ class TestMinimumValueConstraint(unittest.TestCase):
         self.assertEqual(dut.influence_value(), 1.)
 
         # Test the constructor with default value_function_double.
-        dut = mp.MinimumValueConstraint(
-            num_vars=1, minimum_value=0.,
-            influence_value_offset=1., max_num_values=3,
-            value_function=value_function)
+        with catch_drake_warnings(expected_count=1):
+            dut = mp.MinimumValueConstraint(
+                num_vars=1, minimum_value=0.,
+                influence_value_offset=1., max_num_values=3,
+                value_function=value_function)
         self.assertTrue(dut.CheckSatisfied(np.array([1.])))
         self.assertFalse(dut.CheckSatisfied(np.array([-5.])))
 
     def test_with_minimum_value_upper(self):
         # Test the constructor with value_function_double explicitly specified.
-        dut = mp.MinimumValueConstraint(
-            num_vars=1, minimum_value_lower=0., minimum_value_upper=1.5,
-            influence_value=3., max_num_values=3,
-            value_function=value_function,
-            value_function_double=value_function)
+        with catch_drake_warnings(expected_count=1):
+            dut = mp.MinimumValueConstraint(
+                num_vars=1, minimum_value_lower=0., minimum_value_upper=1.5,
+                influence_value=3., max_num_values=3,
+                value_function=value_function,
+                value_function_double=value_function)
         self.assertEqual(dut.num_vars(), 1)
         self.assertEqual(dut.num_constraints(), 2)
         self.assertTrue(dut.CheckSatisfied(np.array([1.])))
@@ -243,17 +247,74 @@ class TestMinimumValueConstraint(unittest.TestCase):
         y = dut.Eval(InitializeAutoDiff(np.array([1.])))
 
         # Test the constructor with default value_function_double.
-        dut = mp.MinimumValueConstraint(
-            num_vars=1, minimum_value_lower=0., minimum_value_upper=1.5,
-            influence_value=3., max_num_values=3,
+        with catch_drake_warnings(expected_count=1):
+            dut = mp.MinimumValueConstraint(
+                num_vars=1, minimum_value_lower=0., minimum_value_upper=1.5,
+                influence_value=3., max_num_values=3,
+                value_function=value_function)
+        self.assertTrue(dut.CheckSatisfied(np.array([1.])))
+        self.assertFalse(dut.CheckSatisfied(np.array([-5.])))
+
+    def test_set_penalty_function(self):
+        with catch_drake_warnings(expected_count=1):
+            dut = mp.MinimumValueConstraint(
+                num_vars=1, minimum_value_lower=0., minimum_value_upper=1.5,
+                influence_value=3., max_num_values=3,
+                value_function=value_function,
+                value_function_double=value_function)
+
+        # Now set the new penalty function
+        def penalty(x: float, compute_grad: bool)\
+                -> typing.Tuple[float, typing.Optional[float]]:
+            if x < 0:
+                if compute_grad:
+                    return x**2, 2 * x
+                else:
+                    return x**2, None
+            else:
+                if compute_grad:
+                    return 0., 0.
+                else:
+                    return 0., None
+
+        dut.set_penalty_function(new_penalty_function=penalty)
+        self.assertTrue(dut.CheckSatisfied(np.array([1.])))
+        self.assertFalse(dut.CheckSatisfied(np.array([-5.])))
+        self.assertTrue(
+            dut.CheckSatisfied(InitializeAutoDiff(np.array([1.]))))
+        self.assertFalse(
+            dut.CheckSatisfied(InitializeAutoDiff(np.array([5.]))))
+
+
+class TestMinimumValueLowerBoundConstraint(unittest.TestCase):
+    def test_constructor(self):
+        # Test the constructor with value_function_double explicitly specified.
+        dut = mp.MinimumValueLowerBoundConstraint(
+            num_vars=1, minimum_value_lower=0.,
+            influence_value_offset=1., max_num_values=3,
+            value_function=value_function,
+            value_function_double=value_function)
+        self.assertEqual(dut.num_vars(), 1)
+        self.assertEqual(dut.num_constraints(), 1)
+        self.assertTrue(dut.CheckSatisfied(np.array([1.])))
+        self.assertFalse(dut.CheckSatisfied(np.array([-5.])))
+        # Evaluate with autodiff.
+        y = dut.Eval(InitializeAutoDiff(np.array([1.])))
+        self.assertEqual(dut.minimum_value_lower(), 0.)
+        self.assertEqual(dut.influence_value(), 1.)
+
+        # Test the constructor with default value_function_double.
+        dut = mp.MinimumValueLowerBoundConstraint(
+            num_vars=1, minimum_value_lower=0.,
+            influence_value_offset=1., max_num_values=3,
             value_function=value_function)
         self.assertTrue(dut.CheckSatisfied(np.array([1.])))
         self.assertFalse(dut.CheckSatisfied(np.array([-5.])))
 
     def test_set_penalty_function(self):
-        dut = mp.MinimumValueConstraint(
-            num_vars=1, minimum_value_lower=0., minimum_value_upper=1.5,
-            influence_value=3., max_num_values=3,
+        dut = mp.MinimumValueLowerBoundConstraint(
+            num_vars=1, minimum_value_lower=0.,
+            influence_value_offset=3., max_num_values=3,
             value_function=value_function,
             value_function_double=value_function)
 
@@ -274,6 +335,61 @@ class TestMinimumValueConstraint(unittest.TestCase):
         dut.set_penalty_function(new_penalty_function=penalty)
         self.assertTrue(dut.CheckSatisfied(np.array([1.])))
         self.assertFalse(dut.CheckSatisfied(np.array([-5.])))
+        self.assertTrue(
+            dut.CheckSatisfied(InitializeAutoDiff(np.array([1.]))))
+        self.assertFalse(
+            dut.CheckSatisfied(InitializeAutoDiff(np.array([-2]))))
+
+
+class TestMinimumValueUpperBoundConstraint(unittest.TestCase):
+    def test_constructor(self):
+        # Test the constructor with value_function_double explicitly specified.
+        dut = mp.MinimumValueUpperBoundConstraint(
+            num_vars=1, minimum_value_upper=2.,
+            influence_value_offset=1., max_num_values=3,
+            value_function=value_function,
+            value_function_double=value_function)
+        self.assertEqual(dut.num_vars(), 1)
+        self.assertEqual(dut.num_constraints(), 1)
+        self.assertTrue(dut.CheckSatisfied(np.array([1.])))
+        self.assertFalse(dut.CheckSatisfied(np.array([5.])))
+        # Evaluate with autodiff.
+        y = dut.Eval(InitializeAutoDiff(np.array([1.])))
+        self.assertEqual(dut.minimum_value_upper(), 2)
+        self.assertEqual(dut.influence_value(), 3)
+
+        # Test the constructor with default value_function_double.
+        dut = mp.MinimumValueUpperBoundConstraint(
+            num_vars=1, minimum_value_upper=2.,
+            influence_value_offset=1., max_num_values=3,
+            value_function=value_function)
+        self.assertTrue(dut.CheckSatisfied(np.array([1.])))
+        self.assertFalse(dut.CheckSatisfied(np.array([5.])))
+
+    def test_set_penalty_function(self):
+        dut = mp.MinimumValueUpperBoundConstraint(
+            num_vars=1, minimum_value_upper=1.5,
+            influence_value_offset=3., max_num_values=3,
+            value_function=value_function,
+            value_function_double=value_function)
+
+        # Now set the new penalty function
+        def penalty(x: float, compute_grad: bool)\
+                -> typing.Tuple[float, typing.Optional[float]]:
+            if x < 0:
+                if compute_grad:
+                    return x**2, 2 * x
+                else:
+                    return x**2, None
+            else:
+                if compute_grad:
+                    return 0., 0.
+                else:
+                    return 0., None
+
+        dut.set_penalty_function(new_penalty_function=penalty)
+        self.assertTrue(dut.CheckSatisfied(np.array([1.])))
+        self.assertTrue(dut.CheckSatisfied(np.array([-5.])))
         self.assertTrue(
             dut.CheckSatisfied(InitializeAutoDiff(np.array([1.]))))
         self.assertFalse(
