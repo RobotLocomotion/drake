@@ -110,8 +110,8 @@ class RigidBodyOnCompliantGround
     // between body_ and the ground will be kStiffness_, by the combination rule
     // in GetCombinedPointContactStiffness().
     geometry::ProximityProperties body_props;
-    geometry::AddContactMaterial(
-        0.0, 1e40, CoulombFriction<double>(kMu_, kMu_), &body_props);
+    geometry::AddContactMaterial(0.0, 1e40, CoulombFriction<double>(kMu_, kMu_),
+                                 &body_props);
 
     if (config.point_contact) {
       plant_->RegisterCollisionGeometry(

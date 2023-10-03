@@ -20,8 +20,8 @@ using systems::BasicVector;
 using systems::Context;
 using systems::Diagram;
 using systems::DiagramBuilder;
-using systems::RadauIntegrator;
 using systems::IntegratorBase;
+using systems::RadauIntegrator;
 using systems::Simulator;
 
 namespace multibody {
@@ -84,15 +84,15 @@ TEST_P(InclinedPlaneTest, RollingSphereTest) {
   const double muK_sphere = 0.5;          // Coefficient kinetic friction.
   const CoulombFriction<double> coefficient_friction_inclined_plane(
       muS_inclined_plane, muK_inclined_plane);
-  const CoulombFriction<double> coefficient_friction_sphere(
-      muS_sphere, muK_sphere);
+  const CoulombFriction<double> coefficient_friction_sphere(muS_sphere,
+                                                            muK_sphere);
 
   MultibodyPlant<double>& plant = AddMultibodyPlantSceneGraph(
       &builder, std::make_unique<MultibodyPlant<double>>(time_step_));
   benchmarks::inclined_plane::AddInclinedPlaneWithSphereToPlant(
       gravity, inclined_plane_angle, std::nullopt,
-      coefficient_friction_inclined_plane, coefficient_friction_sphere,
-      mass, radius, &plant);
+      coefficient_friction_inclined_plane, coefficient_friction_sphere, mass,
+      radius, &plant);
 
   // We should be able to set the penetration allowance pre- and post-finalize.
   // For this test we decide to set it pre-finalize.
@@ -126,7 +126,7 @@ TEST_P(InclinedPlaneTest, RollingSphereTest) {
   // Wx, Wy, Wz is described in AddInclinedPlaneAndGravityToPlant().
   const Vector3<double> p_WoBo_A_initial(0, 0, radius);
   const RotationMatrix<double> R_WA =
-    RotationMatrix<double>::MakeYRotation(inclined_plane_angle);
+      RotationMatrix<double>::MakeYRotation(inclined_plane_angle);
   const Vector3<double> p_WoBo_W_initial = R_WA * p_WoBo_A_initial;
   const RigidTransform<double> X_WB_initial(p_WoBo_W_initial);
   plant.SetFreeBodyPoseInWorldFrame(&plant_context, ball, X_WB_initial);
@@ -139,7 +139,7 @@ TEST_P(InclinedPlaneTest, RollingSphereTest) {
   simulator.reset_integrator<RadauIntegrator<double, 2>>();
 
   IntegratorBase<double>& integrator = simulator.get_mutable_integrator();
-  integrator.set_maximum_step_size(1e-3);    // Reasonable for this problem.
+  integrator.set_maximum_step_size(1e-3);  // Reasonable for this problem.
   integrator.set_target_accuracy(target_accuracy);
   simulator.set_publish_every_time_step(true);
   simulator.Initialize();
@@ -162,8 +162,8 @@ TEST_P(InclinedPlaneTest, RollingSphereTest) {
   const Vector3<double> p_Wo_Bo_W = X_WB.translation();
   const double h_initial = p_WoBo_W_initial.z();
   const double h_actual = p_Wo_Bo_W.z();
-  const double h = h_initial - h_actual;                  // Positive number.
-  const double pe_change = -mass * gravity * h;           // Negative number.
+  const double h = h_initial - h_actual;         // Positive number.
+  const double pe_change = -mass * gravity * h;  // Negative number.
 
   // Sphere's moment of inertia about its centroid is 2/5 * mass * radius^2,
   // so the sphere's unit-mass inertia is 2/5 * radius^2
@@ -217,9 +217,8 @@ TEST_P(InclinedPlaneTest, RollingSphereTest) {
 
 // Instantiate the tests.
 INSTANTIATE_TEST_SUITE_P(ContinuousAndTimeSteppingTest, InclinedPlaneTest,
-                        ::testing::Bool());
+                         ::testing::Bool());
 
 }  // namespace
 }  // namespace multibody
 }  // namespace drake
-

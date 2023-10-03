@@ -138,7 +138,8 @@ class ContactResultsToLcmSystem final : public systems::LeafSystem<T> {
 
   // Allow different specializations to access each other's private data for
   // scalar conversion.
-  template <typename U> friend class ContactResultsToLcmSystem;
+  template <typename U>
+  friend class ContactResultsToLcmSystem;
 
   // Special constructor that handles configuring ports. Used by both public
   // constructor and scalar-converting copy constructor.

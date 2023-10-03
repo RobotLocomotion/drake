@@ -10,9 +10,9 @@ namespace multibody {
 using Eigen::Vector3d;
 using geometry::ContactSurface;
 using geometry::GeometryId;
+using geometry::PenetrationAsPointPair;
 using geometry::PolygonSurfaceMesh;
 using geometry::PolygonSurfaceMeshFieldLinear;
-using geometry::PenetrationAsPointPair;
 
 class ContactResultsTest : public ::testing::Test {
  public:
@@ -156,9 +156,8 @@ TEST_F(ContactResultsTest, SelectHydroelastic) {
       one_hydro_contact.hydroelastic_contact_info(0).contact_surface().id_M(),
       my_hydroelastic_contact_info_->contact_surface().id_M());
   // Verify the deep copy by checking for different memory address.
-  EXPECT_NE(
-      &one_hydro_contact.hydroelastic_contact_info(0),
-      my_hydroelastic_contact_info_.get());
+  EXPECT_NE(&one_hydro_contact.hydroelastic_contact_info(0),
+            my_hydroelastic_contact_info_.get());
 }
 
 }  // namespace multibody

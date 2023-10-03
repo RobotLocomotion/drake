@@ -162,7 +162,7 @@ GTEST_TEST(MultibodyPlantIntrospection, NonUniqueBaseBody) {
   // free.
   // To avoid unnecessary warnings/errors, use a non-zero spatial inertia.
   plant.AddRigidBody("free_body", default_model_instance(),
-      SpatialInertia<double>::MakeUnitary());
+                     SpatialInertia<double>::MakeUnitary());
   const Body<double>& fixed_body = plant.AddRigidBody(
       "fixed_body", default_model_instance(), SpatialInertia<double>());
   plant.WeldFrames(plant.world_frame(), fixed_body.body_frame());
