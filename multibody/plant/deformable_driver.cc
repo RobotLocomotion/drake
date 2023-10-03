@@ -436,7 +436,6 @@ void DeformableDriver<T>::AppendDeformableRigidFixedConstraintKinematics(
    and rigid bodies are mutually exclusive, and Jv_v_WAp = 0 for rigid dofs
    and Jv_v_WBq = 0 for deformable dofs. */
   const int nv = manager_->plant().num_velocities();
-  Matrix3X<T> Jv_v_WBq(3, nv);
   const MultibodyTreeTopology& tree_topology =
       manager_->internal_tree().get_topology();
   const auto& configurations =
@@ -502,7 +501,10 @@ void DeformableDriver<T>::AppendDeformableRigidFixedConstraintKinematics(
         p_WQs.template segment<3>(3 * v) = X_WB * spec.p_BQs[v].cast<T>();
       }
       negative_Jv_v_WAp.SetFromTriplets(jacobian_triplets);
-      MatrixBlock<T> jacobian_block_A(std::move(negative_Jv_v_WAp));
+      // TODO(xuchenhan-tri): Use the sparse Jacobian when we support
+      // multiplication of sparse jacobians with weight matrices that are not
+      // 3x3 in size. See MatrixBlock::LeftMultiplyByBlockDiagonal().
+      MatrixBlock<T> jacobian_block_A(negative_Jv_v_WAp.MakeDenseMatrix());
 
       /* Positions of fixed vertices of the deformable body in the deformable
        body's frame which is always assumed to be the world frame. */
@@ -522,6 +524,7 @@ void DeformableDriver<T>::AppendDeformableRigidFixedConstraintKinematics(
         /* Rigid body is not welded to world. */
         const int clique_index_B = tree_index;
         const Frame<T>& frame_W = manager_->plant().world_frame();
+        MatrixX<T> Jv_v_WBq(3 * num_vertices_in_constraint, nv);
         manager_->internal_tree().CalcJacobianTranslationalVelocity(
             context, JacobianWrtVariable::kV, rigid_body.body_frame(), frame_W,
             Eigen::Map<const Matrix3X<T>>(p_WQs.data(), 3, p_WQs.size() / 3),
