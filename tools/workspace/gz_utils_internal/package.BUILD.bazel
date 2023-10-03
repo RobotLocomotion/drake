@@ -45,6 +45,7 @@ _MOST_PUBLIC_HDRS = [
     "include/gz/utils/Environment.hh",
     "include/gz/utils/ImplPtr.hh",
     "include/gz/utils/NeverDestroyed.hh",
+    "include/gz/utils/Subprocess.hh",
     "include/gz/utils/SuppressWarning.hh",
     "include/gz/utils/detail/DefaultOps.hh",
     "include/gz/utils/detail/ImplPtr.hh",
@@ -110,7 +111,6 @@ cc_library_vendored(
 install(
     name = "install",
     docs = [
-        "COPYING",
         "LICENSE",
     ],
     visibility = ["//visibility:public"],
