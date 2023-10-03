@@ -169,10 +169,18 @@ class RgbdSensorTest : public ::testing::Test {
   RgbdSensorTest()
       : ::testing::Test(),
         // N.B. This is using arbitrary yet different intrinsics for color vs.
-        // depth.
-        color_camera_({kRendererName, {640, 480, M_PI / 4}, {0.1, 10.0}, {}},
+        // depth. The pose of the sensor in the camera body frame is *not* the
+        // identity. We want to make sure that the RgbdSensor doesn't make use
+        // of it.
+        color_camera_({kRendererName,
+                       {640, 480, M_PI / 4},
+                       {0.1, 10.0},
+                       RigidTransformd{Vector3d{1, 0, 0}}},
                       false),
-        depth_camera_({kRendererName, {320, 240, M_PI / 6}, {0.1, 10.0}, {}},
+        depth_camera_({kRendererName,
+                       {320, 240, M_PI / 6},
+                       {0.1, 10.0},
+                       RigidTransformd{Vector3d{-1, 0, 0}}},
                       {0.1, 10}) {}
 
  protected:
@@ -231,11 +239,14 @@ class RgbdSensorTest : public ::testing::Test {
     result = Compare(sensor_->depth_render_camera(), depth_camera_);
     if (!result) return result;
 
-    // By default, frames B, C, and D are aligned and coincident.
-    EXPECT_TRUE(CompareMatrices(sensor_->X_BC().GetAsMatrix4(),
-                                RigidTransformd().GetAsMatrix4()));
-    EXPECT_TRUE(CompareMatrices(sensor_->X_BD().GetAsMatrix4(),
-                                RigidTransformd().GetAsMatrix4()));
+    // The poses of color and depth frames w.r.t. the camera body are defined
+    // by the render cameras; RgbdSensor merely exposes those values.
+    EXPECT_TRUE(CompareMatrices(
+        sensor_->X_BC().GetAsMatrix4(),
+        color_camera_.core().sensor_pose_in_camera_body().GetAsMatrix4()));
+    EXPECT_TRUE(CompareMatrices(
+        sensor_->X_BD().GetAsMatrix4(),
+        depth_camera_.core().sensor_pose_in_camera_body().GetAsMatrix4()));
 
     // Confirm the pose used by the renderer is the expected X_WC pose. We do
     // this by invoking a render (the dummy render engine will cache the last
@@ -244,7 +255,7 @@ class RgbdSensorTest : public ::testing::Test {
     sensor_->color_image_output_port().Eval<ImageRgba8U>(*sensor_context_);
     EXPECT_TRUE(
         CompareMatrices(render_engine_->last_updated_X_WC().GetAsMatrix4(),
-                        X_WC_expected.GetAsMatrix4()));
+                        X_WC_expected.GetAsMatrix4(), 1e-15));
 
     return result;
   }
