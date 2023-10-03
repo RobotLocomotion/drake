@@ -75,18 +75,14 @@ class AcrobotGravityCompensator : public systems::LeafSystem<double> {
     // Construct position vectors from L1o to L1q and from L1o to L1r,
     // all expressed in link1 frame. Do the same for position vectors on link2.
     const Vector3<double> up_W(0, 0, 1);
-    const SpatialForce<double> F_L1q_W(
-        Vector3<double>::Zero() /* no torque */,
-        link1.default_mass() * g / 2 * up_W);
-    const SpatialForce<double> F_L1r_W(
-        Vector3<double>::Zero() /* no torque */,
-        link1.default_mass() * g / 2 * up_W);
-    const SpatialForce<double> F_L2q_W(
-        Vector3<double>::Zero() /* no torque */,
-        link2.default_mass() * g / 2 * up_W);
-    const SpatialForce<double> F_L2r_W(
-        Vector3<double>::Zero() /* no torque */,
-        link2.default_mass() * g / 2 * up_W);
+    const SpatialForce<double> F_L1q_W(Vector3<double>::Zero() /* no torque */,
+                                       link1.default_mass() * g / 2 * up_W);
+    const SpatialForce<double> F_L1r_W(Vector3<double>::Zero() /* no torque */,
+                                       link1.default_mass() * g / 2 * up_W);
+    const SpatialForce<double> F_L2q_W(Vector3<double>::Zero() /* no torque */,
+                                       link2.default_mass() * g / 2 * up_W);
+    const SpatialForce<double> F_L2r_W(Vector3<double>::Zero() /* no torque */,
+                                       link2.default_mass() * g / 2 * up_W);
 
     output->resize(4 /* number of forces */);
     (*output)[0].body_index = BodyIndex(1);

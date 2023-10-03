@@ -16,10 +16,9 @@ namespace {
 using ListType = std::vector<ExternallyAppliedSpatialForce<double>>;
 
 ExternallyAppliedSpatialForce<double> MakeDummyForce(BodyIndex body_index) {
-  return {
-      .body_index = body_index,
-      .p_BoBq_B = Eigen::Vector3d::Zero(),
-      .F_Bq_W = SpatialForce<double>::Zero()};
+  return {.body_index = body_index,
+          .p_BoBq_B = Eigen::Vector3d::Zero(),
+          .F_Bq_W = SpatialForce<double>::Zero()};
 }
 
 class ExternallyAppliedSpatialForceMultiplexerTest : public ::testing::Test {
@@ -54,9 +53,8 @@ TEST_F(ExternallyAppliedSpatialForceMultiplexerTest, Topology) {
   EXPECT_EQ(systems::kAbstractValued, output_port.get_data_type());
 }
 
-void AssertEqual(
-    const ExternallyAppliedSpatialForce<double>& lhs,
-    const ExternallyAppliedSpatialForce<double>& rhs) {
+void AssertEqual(const ExternallyAppliedSpatialForce<double>& lhs,
+                 const ExternallyAppliedSpatialForce<double>& rhs) {
   ASSERT_EQ(lhs.body_index, rhs.body_index);
   ASSERT_EQ(lhs.p_BoBq_B, rhs.p_BoBq_B);
   ASSERT_EQ(lhs.F_Bq_W.get_coeffs(), rhs.F_Bq_W.get_coeffs());
@@ -76,10 +74,8 @@ TEST_F(ExternallyAppliedSpatialForceMultiplexerTest, ConcatenateTwoVectors) {
   system_->get_input_port(0).FixValue(context_.get(), input0_);
   system_->get_input_port(1).FixValue(context_.get(), input1_);
   const ListType expected = {
-      MakeDummyForce(BodyIndex{0}),
-      MakeDummyForce(BodyIndex{1}),
-      MakeDummyForce(BodyIndex{1}),
-      MakeDummyForce(BodyIndex{2})};
+      MakeDummyForce(BodyIndex{0}), MakeDummyForce(BodyIndex{1}),
+      MakeDummyForce(BodyIndex{1}), MakeDummyForce(BodyIndex{2})};
   const ListType actual = system_->get_output_port().Eval<ListType>(*context_);
   AssertEqual(actual, expected);
 }

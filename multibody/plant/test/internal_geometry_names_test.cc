@@ -24,13 +24,13 @@ class GeometryNamesTest : public ::testing::Test {
  public:
   void SetUp() override {
     DiagramBuilder<double> builder;
-    std::tie(plant_, scene_graph_) = AddMultibodyPlantSceneGraph(
-        &builder, 0.001);
+    std::tie(plant_, scene_graph_) =
+        AddMultibodyPlantSceneGraph(&builder, 0.001);
     Parser parser(plant_);
 
     // A single model, single body, single geometry.
-    const std::string box = FindResourceOrThrow(
-        "drake/multibody/models/box.urdf");
+    const std::string box =
+        FindResourceOrThrow("drake/multibody/models/box.urdf");
     parser.AddModels(box);
 
     // A single model, single body, multiple geometries.
@@ -49,9 +49,7 @@ class GeometryNamesTest : public ::testing::Test {
     diagram_ = builder.Build();
   }
 
-  const MultibodyPlant<double>& plant() const {
-    return *plant_;
-  }
+  const MultibodyPlant<double>& plant() const { return *plant_; }
 
   const SceneGraphInspector<double>& inspector() const {
     return scene_graph_->model_inspector();
