@@ -16,7 +16,8 @@ namespace drake {
 namespace multibody {
 
 #ifndef DRAKE_DOXYGEN_CXX
-template <typename T> class MultibodyPlant;
+template <typename T>
+class MultibodyPlant;
 #endif
 
 /**
@@ -69,9 +70,9 @@ class ContactResults {
   ContactResults<T> SelectHydroelastic(
       std::function<bool(const HydroelasticContactInfo<T>&)> selector) const;
 
-  // The following methods should only be called by MultibodyPlant and testing
-  // fixtures and are undocumented rather than being made private with friends.
-  #ifndef DRAKE_DOXYGEN_CXX
+// The following methods should only be called by MultibodyPlant and testing
+// fixtures and are undocumented rather than being made private with friends.
+#ifndef DRAKE_DOXYGEN_CXX
   /* Sets the plant that produced these contact results. */
   void set_plant(const MultibodyPlant<T>* plant);
 
@@ -89,7 +90,7 @@ class ContactResults {
    pointer must remain valid for the lifetime of this object. */
   void AddContactInfo(
       const HydroelasticContactInfo<T>* hydroelastic_contact_info);
-  #endif
+#endif
 
  private:
   enum OwnershipMode { kAliasedPointers, kOwnsCopies };

@@ -45,14 +45,14 @@ class CompliantContactManagerTester {
 };
 
 /* Deformable body parameters.  */
-constexpr double kYoungsModulus = 1e5;       // unit: N/m²
-constexpr double kPoissonsRatio = 0.4;       // unitless.
-constexpr double kMassDensity = 1e3;         // unit: kg/m³
-constexpr double kStiffnessDamping = 0.01;   // unit: s
+constexpr double kYoungsModulus = 1e5;      // unit: N/m²
+constexpr double kPoissonsRatio = 0.4;      // unitless.
+constexpr double kMassDensity = 1e3;        // unit: kg/m³
+constexpr double kStiffnessDamping = 0.01;  // unit: s
 /* Time step (seconds). */
 constexpr double kDt = 1e-2;
 /* Contact parameters. */
-const double kSlopeAngle = M_PI / 12.0;             // unit: radian
+const double kSlopeAngle = M_PI / 12.0;  // unit: radian
 /* The friction coefficient has to be greater than or equal to tan(θ) to hold
  objects on a slope with an incline angle θ in stiction.
  Here we choose 0.4 > tan(π/12) ≈ 0.27. */
@@ -181,7 +181,7 @@ TEST_F(DeformableIntegrationTest, SteadyState) {
       plant_->GetMyContextFromRoot(diagram_context);
   const FemState<double>& fem_state =
       EvalFemState(plant_context, DeformableBodyIndex(0));
-  constexpr double kVelocityThreshold = 2e-5;  // unit: m/s.
+  constexpr double kVelocityThreshold = 2e-5;      // unit: m/s.
   constexpr double kAccelerationThreshold = 1e-6;  // unit: m/s².
   const VectorXd& v = fem_state.GetVelocities();
   EXPECT_TRUE(CompareMatrices(v, VectorXd::Zero(v.size()), kVelocityThreshold));

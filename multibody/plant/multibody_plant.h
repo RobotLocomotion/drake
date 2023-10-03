@@ -524,13 +524,15 @@ geometry::ProximityProperties by geometry::SceneGraph. These properties can
 be obtained before or after context creation through
 geometry::SceneGraphInspector APIs as outlined below. %MultibodyPlant expects
 the following properties for point contact modeling:
-
+ 
+<!-- clang-format off -->
 | Group name |   Property Name  | Required |    Property Type   | Property Description |
 | :--------: | :--------------: | :------: | :----------------: | :------------------- |
 |  material  | coulomb_friction |   yes¹   | CoulombFriction<T> | Static and Dynamic friction. |
 |  material  | point_contact_stiffness |  no²  | T | Penalty method stiffness. |
 |  material  | hunt_crossley_dissipation |  no²⁴  | T | Penalty method dissipation. |
 |  material  | relaxation_time |  yes³⁴  | T | Parameter for a linear Kelvin–Voigt model of dissipation. |
+<!-- clang-format on -->
 
 
 ¹ Collision geometry is required to be registered with a
@@ -1120,8 +1122,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// and _child_ bodies. The parent/child ordering defines the sign conventions
   /// for the generalized coordinates and the coordinate ordering for multi-DOF
   /// joints.
+  ///
   /// <!-- NOLINTNEXTLINE(whitespace/line_length) -->
   /// @image html drake/multibody/plant/images/BodyParentChildJointCM.png width=50%
+  ///
   /// Note: The previous figure also shows Pcm which is body P's center of mass
   /// and point Bcm which is body B's center of mass.
   ///

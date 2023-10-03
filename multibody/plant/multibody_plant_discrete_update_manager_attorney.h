@@ -78,15 +78,13 @@ class MultibodyPlantDiscreteUpdateManagerAttorney {
     return plant.CalcForceElementsContribution(context, forces);
   }
 
-  static VectorX<T> AssembleActuationInput(
-      const MultibodyPlant<T>& plant,
-      const systems::Context<T>& context) {
+  static VectorX<T> AssembleActuationInput(const MultibodyPlant<T>& plant,
+                                           const systems::Context<T>& context) {
     return plant.AssembleActuationInput(context);
   }
 
   static VectorX<T> AssembleDesiredStateInput(
-      const MultibodyPlant<T>& plant,
-      const systems::Context<T>& context) {
+      const MultibodyPlant<T>& plant, const systems::Context<T>& context) {
     return plant.AssembleDesiredStateInput(context);
   }
 
@@ -112,9 +110,8 @@ class MultibodyPlantDiscreteUpdateManagerAttorney {
     return plant.geometry_id_to_body_index_;
   }
 
-  static const internal::JointLockingCacheData<T>&
-  EvalJointLockingCache(const MultibodyPlant<T>& plant,
-                                       const systems::Context<T>& context) {
+  static const internal::JointLockingCacheData<T>& EvalJointLockingCache(
+      const MultibodyPlant<T>& plant, const systems::Context<T>& context) {
     return plant.EvalJointLockingCache(context);
   }
 
@@ -139,9 +136,8 @@ class MultibodyPlantDiscreteUpdateManagerAttorney {
     return plant.weld_constraints_specs_;
   }
 
-  static const std::map<MultibodyConstraintId, bool>&
-  GetConstraintActiveStatus(const systems::Context<T>& context,
-                               const MultibodyPlant<T>& plant) {
+  static const std::map<MultibodyConstraintId, bool>& GetConstraintActiveStatus(
+      const systems::Context<T>& context, const MultibodyPlant<T>& plant) {
     return plant.GetConstraintActiveStatus(context);
   }
 

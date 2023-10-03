@@ -86,10 +86,10 @@ GTEST_TEST(MultibodyPlantConfigFunctionsTest, YamlTest) {
 
 GTEST_TEST(MultibodyPlantConfigFunctionsTest, ContactModelTest) {
   std::vector<std::pair<const char*, ContactModel>> known_values{
-    std::pair("point", ContactModel::kPointContactOnly),
-    std::pair("hydroelastic", ContactModel::kHydroelasticsOnly),
-    std::pair("hydroelastic_with_fallback",
-        ContactModel::kHydroelasticWithFallback),
+      std::pair("point", ContactModel::kPointContactOnly),
+      std::pair("hydroelastic", ContactModel::kHydroelasticsOnly),
+      std::pair("hydroelastic_with_fallback",
+                ContactModel::kHydroelasticWithFallback),
   };
 
   for (const auto& [name, value] : known_values) {
@@ -104,8 +104,8 @@ GTEST_TEST(MultibodyPlantConfigFunctionsTest, ContactModelTest) {
 GTEST_TEST(MultibodyPlantConfigFunctionsTest, ContactRepresentationTest) {
   using ContactRep = geometry::HydroelasticContactRepresentation;
   std::vector<std::pair<const char*, ContactRep>> known_values{
-    std::pair("triangle", ContactRep::kTriangle),
-    std::pair("polygon", ContactRep::kPolygon),
+      std::pair("triangle", ContactRep::kTriangle),
+      std::pair("polygon", ContactRep::kPolygon),
   };
 
   for (const auto& [name, value] : known_values) {

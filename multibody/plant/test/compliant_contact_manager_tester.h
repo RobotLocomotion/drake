@@ -21,8 +21,7 @@ class CompliantContactManagerTester {
   }
 
   static BodyIndex FindBodyByGeometryId(
-      const CompliantContactManager<double>& manager,
-      geometry::GeometryId id) {
+      const CompliantContactManager<double>& manager, geometry::GeometryId id) {
     return manager.FindBodyByGeometryId(id);
   }
 

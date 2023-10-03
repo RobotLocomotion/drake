@@ -109,7 +109,9 @@ class DeformableDriverTest : public ::testing::Test {
 namespace {
 
 /* Verifies that a DeformableDriver has been successfully created. */
-TEST_F(DeformableDriverTest, Constructor) { ASSERT_NE(driver_, nullptr); }
+TEST_F(DeformableDriverTest, Constructor) {
+  ASSERT_NE(driver_, nullptr);
+}
 
 TEST_F(DeformableDriverTest, ScalarConversion) {
   EXPECT_FALSE(driver_->is_cloneable_to_double());

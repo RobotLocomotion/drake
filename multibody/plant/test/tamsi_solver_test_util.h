@@ -21,10 +21,10 @@ namespace test {
 // where `x₊ = max(x, 0)` and k and d are the stiffness and
 // dissipation coefficients for a given contact point, respectively.
 template <typename U>
-VectorX<U> CalcNormalForces(
-    const VectorX<U>& x,
-    const VectorX<double>& stiffness, const VectorX<double>& dissipation,
-    double dt, const VectorX<U>& vn) {
+VectorX<U> CalcNormalForces(const VectorX<U>& x,
+                            const VectorX<double>& stiffness,
+                            const VectorX<double>& dissipation, double dt,
+                            const VectorX<U>& vn) {
   int nc = x.size();
 
   // Compute normal force at t^{n+1}
@@ -40,10 +40,9 @@ VectorX<U> CalcNormalForces(
 // Returns the friction forces ft as a function of the tangential velocity vt,
 // for given friction coefficient mu and normal force fn.
 template <typename U>
-VectorX<U> CalcFrictionForces(
-    double v_stiction, double epsilon_v,
-    const VectorX<double> mu,
-    const VectorX<U>& vt, const VectorX<U>& fn) {
+VectorX<U> CalcFrictionForces(double v_stiction, double epsilon_v,
+                              const VectorX<double> mu, const VectorX<U>& vt,
+                              const VectorX<U>& fn) {
   using std::sqrt;
 
   const int nc = mu.size();  // Number of contact points.
@@ -105,19 +104,15 @@ VectorX<U> CalcFrictionForces(
 // When two_way_coupling = true fn_data is not used.
 // When two_way_coupling = false x0, stiffness and dissipation are not used.
 template <typename U>
-VectorX<U> CalcResidual(
-    const MatrixX<double>& M,
-    const MatrixX<double>& Jn,
-    const MatrixX<double>& Jt,
-    const VectorX<double>& p_star,
-    const VectorX<double>& x0,
-    const VectorX<double>& mu,
-    const VectorX<double>& fn_data,
-    const VectorX<double>& stiffness,
-    const VectorX<double>& dissipation,
-    double dt, double v_stiction, double epsilon_v,
-    bool two_way_coupling,
-    const VectorX<U>& v) {
+VectorX<U> CalcResidual(const MatrixX<double>& M, const MatrixX<double>& Jn,
+                        const MatrixX<double>& Jt,
+                        const VectorX<double>& p_star,
+                        const VectorX<double>& x0, const VectorX<double>& mu,
+                        const VectorX<double>& fn_data,
+                        const VectorX<double>& stiffness,
+                        const VectorX<double>& dissipation, double dt,
+                        double v_stiction, double epsilon_v,
+                        bool two_way_coupling, const VectorX<U>& v) {
   // Separation velocities vₙˢ⁺¹ ( = vn in code below).
   VectorX<U> vn = Jn * v;
 
@@ -151,50 +146,38 @@ VectorX<U> CalcResidual(
 // Computes the Jacobian J = ∇ᵥR of the residual for the two-way coupled scheme
 // of TamsiSolver using automatic differentiation.
 MatrixX<double> CalcTwoWayCoupledJacobianWithAutoDiff(
-    const MatrixX<double>& M,
-    const MatrixX<double>& Jn,
-    const MatrixX<double>& Jt,
-    const VectorX<double>& p_star,
-    const VectorX<double>& x0,
-    const VectorX<double>& mu,
-    const VectorX<double>& stiffness,
-    const VectorX<double>& dissipation,
-    double dt, double v_stiction, double epsilon_v,
-    const VectorX<double>& v) {
+    const MatrixX<double>& M, const MatrixX<double>& Jn,
+    const MatrixX<double>& Jt, const VectorX<double>& p_star,
+    const VectorX<double>& x0, const VectorX<double>& mu,
+    const VectorX<double>& stiffness, const VectorX<double>& dissipation,
+    double dt, double v_stiction, double epsilon_v, const VectorX<double>& v) {
   VectorX<AutoDiffXd> v_autodiff(v.size());
   math::InitializeAutoDiff(v, &v_autodiff);
   // Empty vector for data not used by the two-way coupled scheme.
   const VectorX<double> not_used;
-  VectorX<AutoDiffXd> residual = CalcResidual(
-      M, Jn, Jt, p_star, x0, mu, not_used, stiffness, dissipation,
-      dt, v_stiction, epsilon_v, true,
-      v_autodiff);
+  VectorX<AutoDiffXd> residual =
+      CalcResidual(M, Jn, Jt, p_star, x0, mu, not_used, stiffness, dissipation,
+                   dt, v_stiction, epsilon_v, true, v_autodiff);
   return math::ExtractGradient(residual);
 }
 
 // Computes the Jacobian J = ∇ᵥR of the residual for the one-way coupled scheme
 // of TamsiSolver using automatic differentiation.
 MatrixX<double> CalcOneWayCoupledJacobianWithAutoDiff(
-    const MatrixX<double>& M,
-    const MatrixX<double>& Jn,
-    const MatrixX<double>& Jt,
-    const VectorX<double>& p_star,
-    const VectorX<double>& mu,
-    const VectorX<double>& fn,
-    double dt, double v_stiction, double epsilon_v,
-    const VectorX<double>& v) {
+    const MatrixX<double>& M, const MatrixX<double>& Jn,
+    const MatrixX<double>& Jt, const VectorX<double>& p_star,
+    const VectorX<double>& mu, const VectorX<double>& fn, double dt,
+    double v_stiction, double epsilon_v, const VectorX<double>& v) {
   VectorX<AutoDiffXd> v_autodiff(v.size());
   math::InitializeAutoDiff(v, &v_autodiff);
   // Empty vector for data not used by the one-way coupled scheme.
   const VectorX<double> not_used;
-  VectorX<AutoDiffXd> residual = CalcResidual(
-      M, Jn, Jt, p_star, not_used, mu, fn, not_used, not_used,
-      dt, v_stiction, epsilon_v, false,
-      v_autodiff);
+  VectorX<AutoDiffXd> residual =
+      CalcResidual(M, Jn, Jt, p_star, not_used, mu, fn, not_used, not_used, dt,
+                   v_stiction, epsilon_v, false, v_autodiff);
   return math::ExtractGradient(residual);
 }
 
 }  // namespace test
 }  // namespace multibody
 }  // namespace drake
-

@@ -259,7 +259,7 @@ GTEST_TEST(ScalarConversionTest, CouplerConstraintSpec) {
   constexpr double kGearRatio = 1.2;
   constexpr double kOffset = 0.3;
   const internal::CouplerConstraintSpec reference_spec{j0, j1, kGearRatio,
-                                                        kOffset};
+                                                       kOffset};
 
   // Directly add dummy constraint specs through the tester so that we don't
   // need to actually add any joints.

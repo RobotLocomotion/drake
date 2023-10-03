@@ -126,7 +126,9 @@ frame C with origin at `Co`. The C frame's z-axis is aligned along the normal n�
 we limit our discussion to the force `f` acting on `A` at `Co` (such that `-f`
 acts on `B` at `Co`).
 
+<!-- clang-format off -->
 @image html drake/multibody/plant/images/simple_contact.png "Figure 1: Illustration of contact between two spheres."
+<!-- clang-format on -->
 
 The computation of the contact force is most naturally discussed in the
 contact frame `C` (shown in Figure 1).
@@ -236,9 +238,9 @@ Next topic: @ref contact_engineering
  for @ref drake::multibody::TamsiSolver "TamsiSolver" and in
  [Castro et al., 2019].
 
- [Castro et al., 2019] Castro, A.M, Qu, A., Kuppuswamy, N., Alspach, A., Sherman,
-   M.A., 2019. A Transition-Aware Method for the Simulation of Compliant Contact
-   with Regularized Friction. arXiv:1909.05700 [cs.RO].
+ [Castro et al., 2019] Castro, A.M, Qu, A., Kuppuswamy, N., Alspach, A.,
+ Sherman, M.A., 2019. A Transition-Aware Method for the Simulation of Compliant
+ Contact with Regularized Friction. arXiv:1909.05700 [cs.RO].
 
  @note For better numerical stability, the discrete model assumes
  both static and kinetic coefficients of friction to be equal, the static
@@ -343,7 +345,9 @@ Next topic: @ref contact_engineering
                       fₚ
       Figure 2: Idealized Stiction/Sliding Friction Model
  -->
+ <!-- clang-format off -->
  @image html drake/multibody/plant/images/ideal_stiction.png "Figure 2: Idealized Stiction/Sliding Friction Model"
+ <!-- clang-format on -->
 
  In _idealized_ stiction, tangent force `fₜ` is equal and opposite
  to the pushing force `fₚ` up to the point where that force is sufficient to
@@ -379,7 +383,9 @@ Next topic: @ref contact_engineering
 
    Figure 3: Stribeck function for stiction.
  -->
+ <!-- clang-format off -->
  @image html drake/multibody/plant/images/stribeck.png "Figure 3: Stribeck function for stiction"
+ <!-- clang-format on -->
 
  The Stribeck model is a variation of Coulomb friction, where the frictional
  (aka _tangential_) force is proportional to the normal force as:
