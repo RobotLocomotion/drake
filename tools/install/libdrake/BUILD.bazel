@@ -243,6 +243,19 @@ drake_cc_googletest(
 )
 
 drake_py_unittest(
+    name = "exported_symbols_test",
+    args = select({
+        # Don't run the test on Debug builds. They have a lot more symbols
+        # (no dead code elimination) so are too much work to tidy up.
+        "//tools/cc_toolchain:debug": ["--help"],
+        "//conditions:default": [],
+    }),
+    data = [
+        ":libdrake.so",
+    ],
+)
+
+drake_py_unittest(
     name = "header_dependency_test",
     args = [
         "$(rootpaths :libdrake_headers)",
