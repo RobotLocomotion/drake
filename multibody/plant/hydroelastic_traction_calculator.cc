@@ -88,9 +88,10 @@ void HydroelasticTractionCalculator<T>::
 
 template <class T>
 void HydroelasticTractionCalculator<T>::
-    ShiftSpatialForcesAtCentroidToBodyOrigins(
-        const Data& data, const SpatialForce<T>& F_Ac_W,
-        SpatialForce<T>* F_Ao_W, SpatialForce<T>* F_Bo_W) const {
+    ShiftSpatialForcesAtCentroidToBodyOrigins(const Data& data,
+                                              const SpatialForce<T>& F_Ac_W,
+                                              SpatialForce<T>* F_Ao_W,
+                                              SpatialForce<T>* F_Bo_W) const {
   DRAKE_DEMAND(F_Ao_W && F_Bo_W);
 
   // The spatial force on body A was accumulated at the surface centroid C. We
@@ -119,10 +120,10 @@ void HydroelasticTractionCalculator<T>::
 //         Body A resulting from the given traction at Q. (Body A is the one
 //         to which `surface.M_id()` is fixed.)
 template <typename T>
-SpatialForce<T> HydroelasticTractionCalculator<T>::
-    ComputeSpatialTractionAtAcFromTractionAtAq(
-        const Data& data, const Vector3<T>& p_WQ,
-        const Vector3<T>& traction_Aq_W) const {
+SpatialForce<T>
+HydroelasticTractionCalculator<T>::ComputeSpatialTractionAtAcFromTractionAtAq(
+    const Data& data, const Vector3<T>& p_WQ,
+    const Vector3<T>& traction_Aq_W) const {
   // Find the vector from Q to C.
   const Vector3<T> p_QC_W = data.p_WC - p_WQ;
 

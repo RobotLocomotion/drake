@@ -32,8 +32,7 @@ class EnergyAndPowerTester : public ::testing::Test {
 
     // We want a free body with a general inertia matrix.
     body_ = &plant_.AddRigidBody(
-        "Lumpy",
-        SpatialInertia<double>(body_mass_, p_BBcm_, G_BBo_));
+        "Lumpy", SpatialInertia<double>(body_mass_, p_BBcm_, G_BBo_));
 
     spring_damper_ = &plant_.AddForceElement<LinearSpringDamper>(
         plant_.world_body(), p_WP_, *body_, p_BQ_, free_length_, stiffness_,

@@ -9,8 +9,7 @@ template <typename T>
 ContactResults<T>::ContactResults() {
   // Make this hold pointers at first (see comment on
   // hydroelastic_contact_info_).
-  hydroelastic_contact_info_ =
-      std::vector<const HydroelasticContactInfo<T>*>();
+  hydroelastic_contact_info_ = std::vector<const HydroelasticContactInfo<T>*>();
 }
 
 template <typename T>
@@ -75,15 +74,15 @@ void ContactResults<T>::Clear() {
 }
 
 template <typename T>
-const PointPairContactInfo<T>&
-ContactResults<T>::point_pair_contact_info(int i) const {
+const PointPairContactInfo<T>& ContactResults<T>::point_pair_contact_info(
+    int i) const {
   DRAKE_DEMAND(i >= 0 && i < num_point_pair_contacts());
   return point_pairs_info_[i];
 }
 
 template <typename T>
-const HydroelasticContactInfo<T>&
-ContactResults<T>::hydroelastic_contact_info(int i) const {
+const HydroelasticContactInfo<T>& ContactResults<T>::hydroelastic_contact_info(
+    int i) const {
   DRAKE_DEMAND(i >= 0 && i < num_hydroelastic_contacts());
   if (hydroelastic_contact_vector_ownership_mode() == kAliasedPointers) {
     return *hydroelastic_contact_vector_of_pointers()[i];

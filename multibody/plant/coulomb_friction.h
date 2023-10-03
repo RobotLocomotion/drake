@@ -58,7 +58,7 @@ namespace multibody {
 /// from the ones stated above.
 ///
 /// @tparam_default_scalar
-template<typename T>
+template <typename T>
 class CoulombFriction {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CoulombFriction)
@@ -119,7 +119,7 @@ class CoulombFriction {
 ///   Surface properties for surface 2. Specified as an individual set of
 ///   Coulomb's law coefficients of friction.
 /// @returns the combined friction coefficients for the interacting surfaces.
-template<typename T>
+template <typename T>
 CoulombFriction<T> CalcContactFrictionFromSurfaceProperties(
     const CoulombFriction<T>& surface_properties1,
     const CoulombFriction<T>& surface_properties2) {
@@ -132,12 +132,10 @@ CoulombFriction<T> CalcContactFrictionFromSurfaceProperties(
     return denom == 0.0 ? 0.0 : num / denom;
   };
   return CoulombFriction<T>(
-      safe_divide(
-          2 * s1.static_friction() * s2.static_friction(),
-          s1.static_friction() + s2.static_friction()),
-      safe_divide(
-          2 * s1.dynamic_friction() * s2.dynamic_friction(),
-          s1.dynamic_friction() + s2.dynamic_friction()));
+      safe_divide(2 * s1.static_friction() * s2.static_friction(),
+                  s1.static_friction() + s2.static_friction()),
+      safe_divide(2 * s1.dynamic_friction() * s2.dynamic_friction(),
+                  s1.dynamic_friction() + s2.dynamic_friction()));
 }
 
 }  // namespace multibody

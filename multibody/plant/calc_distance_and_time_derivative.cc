@@ -60,9 +60,9 @@ SignedDistanceWithTimeDerivative CalcDistanceAndTimeDerivative(
       inspector.GetPoseInFrame(signed_distance_pair.id_A) * p_GaCa;
   Eigen::Matrix<double, 3, Eigen::Dynamic> Jv_v_BCa_W(3,
                                                       plant.num_velocities());
-  plant.CalcJacobianTranslationalVelocity(
-      context, JacobianWrtVariable::kV, frameA, p_ACa, frameB,
-      plant.world_frame(), &Jv_v_BCa_W);
+  plant.CalcJacobianTranslationalVelocity(context, JacobianWrtVariable::kV,
+                                          frameA, p_ACa, frameB,
+                                          plant.world_frame(), &Jv_v_BCa_W);
   ret.distance_time_derivative = signed_distance_pair.nhat_BA_W.dot(
       Jv_v_BCa_W * plant.GetVelocities(context));
   return ret;

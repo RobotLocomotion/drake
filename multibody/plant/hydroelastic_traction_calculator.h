@@ -34,15 +34,16 @@ class HydroelasticTractionCalculator {
   // Documentation for parameter names (minus the `_in`
   // suffixes) can be found in the corresponding member documentation.
   struct Data {
-    Data(
-        const math::RigidTransform<T>& X_WA_in,
-        const math::RigidTransform<T>& X_WB_in,
-        const SpatialVelocity<T>& V_WA_in,
-        const SpatialVelocity<T>& V_WB_in,
-        const geometry::ContactSurface<T>* surface_in) :
-            X_WA(X_WA_in), X_WB(X_WB_in), V_WA(V_WA_in), V_WB(V_WB_in),
-            surface(*surface_in),
-            p_WC(surface_in->centroid()) {
+    Data(const math::RigidTransform<T>& X_WA_in,
+         const math::RigidTransform<T>& X_WB_in,
+         const SpatialVelocity<T>& V_WA_in, const SpatialVelocity<T>& V_WB_in,
+         const geometry::ContactSurface<T>* surface_in)
+        : X_WA(X_WA_in),
+          X_WB(X_WB_in),
+          V_WA(V_WA_in),
+          V_WB(V_WB_in),
+          surface(*surface_in),
+          p_WC(surface_in->centroid()) {
       DRAKE_DEMAND(surface_in != nullptr);
     }
 
@@ -106,8 +107,7 @@ class HydroelasticTractionCalculator {
    */
   void ComputeSpatialForcesAtCentroidFromHydroelasticModel(
       const Data& data, double dissipation, double mu_coulomb,
-      std::vector<HydroelasticQuadraturePointData<T>>*
-          quadrature_point_data,
+      std::vector<HydroelasticQuadraturePointData<T>>* quadrature_point_data,
       multibody::SpatialForce<T>* F_Ac_W) const;
 
   /*
@@ -125,9 +125,10 @@ class HydroelasticTractionCalculator {
    @param[output] F_Bo_W the spatial force on Body B, applied at the origin of
                   B's frame, on return.
    */
-  void ShiftSpatialForcesAtCentroidToBodyOrigins(
-      const Data& data, const SpatialForce<T>& F_Ac_W, SpatialForce<T>* F_Ao_W,
-      SpatialForce<T>* F_Bo_W) const;
+  void ShiftSpatialForcesAtCentroidToBodyOrigins(const Data& data,
+                                                 const SpatialForce<T>& F_Ac_W,
+                                                 SpatialForce<T>* F_Ao_W,
+                                                 SpatialForce<T>* F_Bo_W) const;
 
  private:
   // TODO(edrumwri): Consider methods that expose inner structures of
@@ -147,8 +148,8 @@ class HydroelasticTractionCalculator {
       double dissipation, double mu_coulomb) const;
 
   HydroelasticQuadraturePointData<T> CalcTractionAtCentroid(
-      const Data& data, int face_index,
-      double dissipation, double mu_coulomb) const;
+      const Data& data, int face_index, double dissipation,
+      double mu_coulomb) const;
 
   HydroelasticQuadraturePointData<T> CalcTractionAtQHelper(
       const Data& data, int face_index, const T& e, const Vector3<T>& nhat_W,
