@@ -111,7 +111,6 @@ cc_library_vendored(
 install(
     name = "install",
     docs = [
-        "COPYING",
         "LICENSE",
     ],
     visibility = ["//visibility:public"],
