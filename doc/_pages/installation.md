@@ -42,7 +42,7 @@ that Conda is involved.
 
 ⁽³⁾ The Python version shown in the table is supported for all installation
 channels. Additionally, on Ubuntu when installing via ``pip`` Python versions
-3.8 through 3.11 (inclusive) are supported.
+3.8 through 3.12 (inclusive) are supported.
 Refer to [OS Support](/stable.html#os-support) for details on our "end of life"
 timeline for changing which Python versions are supported.
 
