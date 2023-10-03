@@ -27,8 +27,8 @@ TEST_F(KukaIiwaModelTests, ExternalBodyForces) {
 
   // An arbitrary spatial force applied at point P on the end effector,
   // expressed in the end effector frame E.
-  const SpatialForce<double> F_Ep_E(
-      Vector3<double>(1.0, 2.0, 3.0), Vector3<double>(-5.0, -4.0, -2.0));
+  const SpatialForce<double> F_Ep_E(Vector3<double>(1.0, 2.0, 3.0),
+                                    Vector3<double>(-5.0, -4.0, -2.0));
 
   int nv = plant_->num_velocities();
 
@@ -37,13 +37,13 @@ TEST_F(KukaIiwaModelTests, ExternalBodyForces) {
 
   // Compute inverse dynamics with an externally applied force.
   MultibodyForces<double> forces(*plant_);
-  end_effector_link_->AddInForce(
-      *context_, p_EP, F_Ep_E, end_effector_link_->body_frame(), &forces);
+  end_effector_link_->AddInForce(*context_, p_EP, F_Ep_E,
+                                 end_effector_link_->body_frame(), &forces);
   const VectorX<double> tau_id =
       plant_->CalcInverseDynamics(*context_, vdot, forces);
-  { // Repeat the computation to confirm the heap behavior.  We allow the
+  {  // Repeat the computation to confirm the heap behavior.  We allow the
     // method to heap-allocate 2 temporaries and 1 return value.
-    drake::test::LimitMalloc guard({ .max_num_allocations = 3 });
+    drake::test::LimitMalloc guard({.max_num_allocations = 3});
     auto dummy = plant_->CalcInverseDynamics(*context_, vdot, forces);
     unused(dummy);
   }
@@ -57,10 +57,9 @@ TEST_F(KukaIiwaModelTests, ExternalBodyForces) {
   // Frame Jacobian for point p_EP.
   MatrixX<double> Jv_WEp(6, nv);
   const Frame<double>& frame_W = plant_->world_frame();
-  plant_->CalcJacobianSpatialVelocity(*context_,
-                                      multibody::JacobianWrtVariable::kV,
-                                      end_effector_link_->body_frame(), p_EP,
-                                      frame_W, frame_W, &Jv_WEp);
+  plant_->CalcJacobianSpatialVelocity(
+      *context_, multibody::JacobianWrtVariable::kV,
+      end_effector_link_->body_frame(), p_EP, frame_W, frame_W, &Jv_WEp);
 
   // Compute the expected value of inverse dynamics when external forcing is
   // considered.
@@ -74,9 +73,8 @@ TEST_F(KukaIiwaModelTests, ExternalBodyForces) {
   // Error loss is expected in both forward kinematics and inverse dynamics
   // computations since errors accumulate during inboard/outboard passes.
   const double kTolerance = 50 * std::numeric_limits<double>::epsilon();
-  EXPECT_TRUE(CompareMatrices(
-      tau_id, tau_id_expected,
-      kTolerance, MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(tau_id, tau_id_expected, kTolerance,
+                              MatrixCompareType::relative));
 }
 
 TEST_F(KukaIiwaModelTests, BodyForceApi) {
@@ -90,9 +88,8 @@ TEST_F(KukaIiwaModelTests, BodyForceApi) {
       end_effector_link_->GetForceInWorld(*context_, forces).get_coeffs(),
       F_expected));
   // Test frame-specfic, and ensure we accumulate.
-  end_effector_link_->AddInForce(
-      *context_, Vector3<double>::Zero(), F_Bo_W, plant_->world_frame(),
-      &forces);
+  end_effector_link_->AddInForce(*context_, Vector3<double>::Zero(), F_Bo_W,
+                                 plant_->world_frame(), &forces);
   EXPECT_TRUE(CompareMatrices(
       end_effector_link_->GetForceInWorld(*context_, forces).get_coeffs(),
       2 * F_expected));

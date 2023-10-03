@@ -54,9 +54,8 @@ class SpringMassSystemTest : public ::testing::Test {
                                                std::nullopt, body, std::nullopt,
                                                Vector3<double>::UnitX());
     plant_.AddForceElement<LinearSpringDamper>(
-        plant_.world_body(), Vector3<double>::Zero(),
-        body, Vector3<double>::Zero(),
-        free_length_, stiffness, damping);
+        plant_.world_body(), Vector3<double>::Zero(), body,
+        Vector3<double>::Zero(), free_length_, stiffness, damping);
     plant_.Finalize();
   }
 
@@ -66,9 +65,8 @@ class SpringMassSystemTest : public ::testing::Test {
   // `t = 0`.
   // This method cannot compute the solution for damping_ratio = 1, i.e. the
   // critically damped system.
-  double CalcAnalyticSolution(
-      double period, double damping_ratio,
-      double x0, double v0, double time) {
+  double CalcAnalyticSolution(double period, double damping_ratio, double x0,
+                              double v0, double time) {
     DRAKE_DEMAND(damping_ratio != 1.0);
     using std::abs;
     using std::complex;
@@ -102,8 +100,7 @@ class SpringMassSystemTest : public ::testing::Test {
 
     // Compute x(t) = c₁⋅exp(λ₁⋅t) + c₂⋅exp(λ₂⋅t)
     const complex<double> x =
-        constants(0) * exp(lambda1 * time) +
-        constants(1) *  exp(lambda2 * time);
+        constants(0) * exp(lambda1 * time) + constants(1) * exp(lambda2 * time);
 
     // For real initial conditions the imaginary part of the solution should
     // remain zero at all times.
@@ -123,10 +120,10 @@ class SpringMassSystemTest : public ::testing::Test {
 // Verify the solution for an undamped system, ζ = 0.
 TEST_F(SpringMassSystemTest, UnDampedCase) {
   // Plant's parameters.
-  const double mass = 1.0;             // Mass of the body, [kg].
-  const double period = 1.0;           // Period of oscillation, [s].
-  const double damping_ratio = 0.0;    // Damping ratio, dimensionless.
-  const double amplitude = 0.5;        // Initial amplitude, [m].
+  const double mass = 1.0;           // Mass of the body, [kg].
+  const double period = 1.0;         // Period of oscillation, [s].
+  const double damping_ratio = 0.0;  // Damping ratio, dimensionless.
+  const double amplitude = 0.5;      // Initial amplitude, [m].
 
   // Length of the simulation, in seconds.
   const double simulation_time = 0.2;
@@ -137,7 +134,7 @@ TEST_F(SpringMassSystemTest, UnDampedCase) {
   MakeSpringMassSystem(mass, period, damping_ratio);
 
   Simulator<double> simulator(plant_);
-  Context<double> &context = simulator.get_mutable_context();
+  Context<double>& context = simulator.get_mutable_context();
   slider_->set_translation(&context, free_length_ + amplitude);
   slider_->set_translation_rate(&context, 0.0);
   simulator.Initialize();
@@ -147,17 +144,17 @@ TEST_F(SpringMassSystemTest, UnDampedCase) {
   const double x_analytic = CalcAnalyticSolution(
       period, damping_ratio, amplitude, 0.0, simulation_time);
 
-  EXPECT_NEAR(
-      slider_->get_translation(context), x_analytic, integration_accuracy);
+  EXPECT_NEAR(slider_->get_translation(context), x_analytic,
+              integration_accuracy);
 }
 
 // Verify the solution for an uderdamped system, ζ < 1.
 TEST_F(SpringMassSystemTest, UnderDampedCase) {
   // Plant's parameters.
-  const double mass = 1.0;             // Mass of the body, [kg].
-  const double period = 1.0;           // Period of oscillation, [s].
-  const double damping_ratio = 0.1;    // Damping ratio, dimensionless.
-  const double amplitude = 0.5;        // Initial amplitude, [m].
+  const double mass = 1.0;           // Mass of the body, [kg].
+  const double period = 1.0;         // Period of oscillation, [s].
+  const double damping_ratio = 0.1;  // Damping ratio, dimensionless.
+  const double amplitude = 0.5;      // Initial amplitude, [m].
 
   // Length of the simulation, in seconds.
   const double simulation_time = 0.2;
@@ -178,17 +175,17 @@ TEST_F(SpringMassSystemTest, UnderDampedCase) {
   const double x_analytic = CalcAnalyticSolution(
       period, damping_ratio, amplitude, 0.0, simulation_time);
 
-  EXPECT_NEAR(
-      slider_->get_translation(context), x_analytic, integration_accuracy);
+  EXPECT_NEAR(slider_->get_translation(context), x_analytic,
+              integration_accuracy);
 }
 
 // Verify the solution for an overdamped system, ζ > 1.
 TEST_F(SpringMassSystemTest, OverDampedCase) {
   // Plant's parameters.
-  const double mass = 1.0;             // Mass of the body, [kg].
-  const double period = 1.0;           // Period of oscillation, [s].
-  const double damping_ratio = 1.5;    // Damping ratio, dimensionless.
-  const double amplitude = 0.5;        // Initial amplitude, [m].
+  const double mass = 1.0;           // Mass of the body, [kg].
+  const double period = 1.0;         // Period of oscillation, [s].
+  const double damping_ratio = 1.5;  // Damping ratio, dimensionless.
+  const double amplitude = 0.5;      // Initial amplitude, [m].
 
   // Length of the simulation, in seconds.
   const double simulation_time = 0.2;
@@ -209,15 +206,15 @@ TEST_F(SpringMassSystemTest, OverDampedCase) {
   const double x_analytic = CalcAnalyticSolution(
       period, damping_ratio, amplitude, 0.0, simulation_time);
 
-  EXPECT_NEAR(
-      slider_->get_translation(context), x_analytic, integration_accuracy);
+  EXPECT_NEAR(slider_->get_translation(context), x_analytic,
+              integration_accuracy);
 }
 
 TEST_F(SpringMassSystemTest, Symbolic) {
   // Make the double-valued system.
-  const double mass = 1.0;             // Mass of the body, [kg].
-  const double period = 1.0;           // Period of oscillation, [s].
-  const double damping_ratio = 0.0;    // Damping ratio, dimensionless.
+  const double mass = 1.0;           // Mass of the body, [kg].
+  const double period = 1.0;         // Period of oscillation, [s].
+  const double damping_ratio = 0.0;  // Damping ratio, dimensionless.
   MakeSpringMassSystem(mass, period, damping_ratio);
   ASSERT_TRUE(is_symbolic_convertible(plant_));
 
@@ -242,4 +239,3 @@ TEST_F(SpringMassSystemTest, Symbolic) {
 }  // namespace
 }  // namespace multibody
 }  // namespace drake
-

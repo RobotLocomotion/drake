@@ -33,9 +33,9 @@ using Eigen::Matrix3d;
 using Eigen::Quaterniond;
 using Eigen::Vector3d;
 using Eigen::Vector4d;
+using internal::MultibodyTreeTester;
 using systems::Context;
 using systems::RungeKutta3Integrator;
-using internal::MultibodyTreeTester;
 
 GTEST_TEST(QuaternionFloatingMobilizer, Simulation) {
   const double kEpsilon = std::numeric_limits<double>::epsilon();
@@ -60,9 +60,8 @@ GTEST_TEST(QuaternionFloatingMobilizer, Simulation) {
 
   // Instantiate a benchmark object with analytical solution for comparison with
   // our numerical solution.
-  FreeBody benchmark_(
-      Quaterniond::Identity(), Vector3d::Zero(),
-      p0_WBcm, v0_WBcm, gravity_W);
+  FreeBody benchmark_(Quaterniond::Identity(), Vector3d::Zero(), p0_WBcm,
+                      v0_WBcm, gravity_W);
 
   // Instantiate the model for the free body in space.
   AxiallySymmetricFreeBodyPlant<double> free_body_plant(
@@ -87,57 +86,52 @@ GTEST_TEST(QuaternionFloatingMobilizer, Simulation) {
 
   // Unit test QuaternionFloatingMobilizer context dependent setters/getters.
   mobilizer.set_angular_velocity(&context, 2.0 * w0_WB_expected);
-  EXPECT_TRUE(CompareMatrices(
-      mobilizer.get_angular_velocity(context), 2.0 * w0_WB_expected,
-      kEpsilon, MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(mobilizer.get_angular_velocity(context),
+                              2.0 * w0_WB_expected, kEpsilon,
+                              MatrixCompareType::relative));
   mobilizer.set_translational_velocity(&context, -3.5 * v0_WB_expected);
-  EXPECT_TRUE(CompareMatrices(
-      mobilizer.get_translational_velocity(context), -3.5 * v0_WB_expected,
-      kEpsilon, MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(mobilizer.get_translational_velocity(context),
+                              -3.5 * v0_WB_expected, kEpsilon,
+                              MatrixCompareType::relative));
 
   // Unit test QuaternionFloatingMobilizer::SetFromRotationMatrix().
-  const Vector3d axis =
-      (1.5 * Vector3d::UnitX() +
-       2.0 * Vector3d::UnitY() +
-       3.0 * Vector3d::UnitZ()).normalized();
+  const Vector3d axis = (1.5 * Vector3d::UnitX() + 2.0 * Vector3d::UnitY() +
+                         3.0 * Vector3d::UnitZ())
+                            .normalized();
   const math::RotationMatrixd R_WB_test(AngleAxisd(M_PI / 3.0, axis));
   mobilizer.SetFromRotationMatrix(&context, R_WB_test);
   // Verify we get the right quaternion.
   const Quaterniond q_WB_test = mobilizer.get_quaternion(context);
   const Quaterniond q_WB_test_expected = R_WB_test.ToQuaternion();
-  EXPECT_TRUE(CompareMatrices(
-      q_WB_test.coeffs(), q_WB_test_expected.coeffs(),
-      5 * kEpsilon, MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(q_WB_test.coeffs(), q_WB_test_expected.coeffs(),
+                              5 * kEpsilon, MatrixCompareType::relative));
 
   // Unit test QuaternionFloatingMobilizer quaternion setters/getters.
   const math::RotationMatrixd R_WB_test2(AngleAxisd(M_PI / 5.0, axis));
   const Quaterniond q_WB_test2 = R_WB_test2.ToQuaternion();
   mobilizer.set_quaternion(&context, q_WB_test2);
-  EXPECT_TRUE(CompareMatrices(
-      mobilizer.get_quaternion(context).coeffs(), q_WB_test2.coeffs(),
-      kEpsilon, MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(mobilizer.get_quaternion(context).coeffs(),
+                              q_WB_test2.coeffs(), kEpsilon,
+                              MatrixCompareType::relative));
   const Vector3d p_WB_test(1, 2, 3);
   mobilizer.set_position(&context, p_WB_test);
-  EXPECT_TRUE(CompareMatrices(
-      mobilizer.get_position(context), p_WB_test,
-      kEpsilon, MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(mobilizer.get_position(context), p_WB_test,
+                              kEpsilon, MatrixCompareType::relative));
 
   // Reset state to that initially set by
   // AxiallySymmetricFreeBodyPlant::SetDefaultState().
   free_body_plant.SetDefaultState(context, &context.get_mutable_state());
-  EXPECT_TRUE(CompareMatrices(
-      mobilizer.get_angular_velocity(context), w0_WB_expected,
-      kEpsilon, MatrixCompareType::relative));
-  EXPECT_TRUE(CompareMatrices(
-      mobilizer.get_translational_velocity(context), v0_WB_expected,
-      kEpsilon, MatrixCompareType::relative));
-  EXPECT_TRUE(CompareMatrices(
-      mobilizer.get_quaternion(context).coeffs(),
-      Quaterniond::Identity().coeffs(),
-      kEpsilon, MatrixCompareType::relative));
-  EXPECT_TRUE(CompareMatrices(
-      mobilizer.get_position(context), Vector3d::Zero(),
-      kEpsilon, MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(mobilizer.get_angular_velocity(context),
+                              w0_WB_expected, kEpsilon,
+                              MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(mobilizer.get_translational_velocity(context),
+                              v0_WB_expected, kEpsilon,
+                              MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(mobilizer.get_quaternion(context).coeffs(),
+                              Quaterniond::Identity().coeffs(), kEpsilon,
+                              MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(mobilizer.get_position(context), Vector3d::Zero(),
+                              kEpsilon, MatrixCompareType::relative));
 
   EXPECT_EQ(context.num_continuous_states(), 13);
 
@@ -156,7 +150,7 @@ GTEST_TEST(QuaternionFloatingMobilizer, Simulation) {
 
   simulator.Initialize();
   RungeKutta3Integrator<double>& integrator =
-          simulator.reset_integrator<RungeKutta3Integrator<double>>();
+      simulator.reset_integrator<RungeKutta3Integrator<double>>();
   integrator.set_maximum_step_size(kMaxDt);
   EXPECT_FALSE(integrator.get_fixed_step_mode());
   EXPECT_TRUE(integrator.supports_error_estimation());
@@ -232,10 +226,10 @@ GTEST_TEST(QuaternionFloatingMobilizer, Simulation) {
   // The time derivative of the quaternion component can only be expected to be
   // accurate within kTolerance due to the loss of normalization in the
   // quaternion.
-  EXPECT_TRUE(CompareMatrices(DtW_quat, quatDt_WB_exact,
-      kTolerance, MatrixCompareType::relative));
-  EXPECT_TRUE(CompareMatrices(DtW_p_WBcm, v_WB, kEpsilon,
-      MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(DtW_quat, quatDt_WB_exact, kTolerance,
+                              MatrixCompareType::relative));
+  EXPECT_TRUE(
+      CompareMatrices(DtW_p_WBcm, v_WB, kEpsilon, MatrixCompareType::relative));
 
   // Verify MultibodyTree::MapQDotToVelocity() does indeed map back to the
   // original generalized velocities.
@@ -244,13 +238,12 @@ GTEST_TEST(QuaternionFloatingMobilizer, Simulation) {
   // result to be within kTolerance accurate.
   VectorX<double> v_back(model.num_velocities());
   model.MapQDotToVelocity(context, qdot_from_v, &v_back);
-  EXPECT_TRUE(CompareMatrices(v_back, v, kTolerance,
-                              MatrixCompareType::relative));
+  EXPECT_TRUE(
+      CompareMatrices(v_back, v, kTolerance, MatrixCompareType::relative));
 
   // TODO(amcastro-tri): Verify angular momentum is conserved.
   // TODO(amcastro-tri): Verify total energy is conserved.
 }
-
 
 // For a free body modeled with a QuaternionFloatingMobilizer, this unit test
 // verifies that converting from generalized velocities to time derivatives of
@@ -266,8 +259,8 @@ GTEST_TEST(QuaternionFloatingMobilizer, MapVelocityToQDotAndBack) {
   const double kGravity = 9.81;
 
   // Instantiate the model for the free body in space.
-  AxiallySymmetricFreeBodyPlant<double> free_body_plant(
-      kMass, kInertia, kInertia, kGravity);
+  AxiallySymmetricFreeBodyPlant<double> free_body_plant(kMass, kInertia,
+                                                        kInertia, kGravity);
   const internal::MultibodyTree<double>& model =
       internal::GetInternalTree(free_body_plant);
 
@@ -277,9 +270,9 @@ GTEST_TEST(QuaternionFloatingMobilizer, MapVelocityToQDotAndBack) {
   // Set the pose of the body.
   const Vector3d p_WB(1, 2, 3);  // Position in world.
   const Vector3d axis_W =        // Orientation in world.
-      (1.5 * Vector3d::UnitX() +
-      2.0 * Vector3d::UnitY() +
-      3.0 * Vector3d::UnitZ()).normalized();
+      (1.5 * Vector3d::UnitX() + 2.0 * Vector3d::UnitY() +
+       3.0 * Vector3d::UnitZ())
+          .normalized();
   const Quaterniond q_WB(AngleAxisd(M_PI / 3.0, axis_W));
 
   // Verify we are using a proper unit quaternion or otherwise errors would
@@ -293,9 +286,8 @@ GTEST_TEST(QuaternionFloatingMobilizer, MapVelocityToQDotAndBack) {
   // Set velocities.
   const Vector3d w_WB(1.0, 2.0, 3.0);
   const Vector3d v_WB(-1.0, 4.0, -0.5);
-  DRAKE_EXPECT_NO_THROW(
-      model.SetFreeBodySpatialVelocityOrThrow(
-          free_body_plant.body(), {w_WB, v_WB}, context.get()));
+  DRAKE_EXPECT_NO_THROW(model.SetFreeBodySpatialVelocityOrThrow(
+      free_body_plant.body(), {w_WB, v_WB}, context.get()));
 
   // Map generalized velocities to time derivatives of generalized positions.
   EXPECT_FALSE(model.IsVelocityEqualToQDot());
@@ -319,8 +311,8 @@ GTEST_TEST(QuaternionFloatingMobilizer, MapVelocityToQDotAndBack) {
   // original generalized velocities.
   VectorX<double> v_back(model.num_velocities());
   model.MapQDotToVelocity(*context, qdot_from_v, &v_back);
-  EXPECT_TRUE(CompareMatrices(v_back, v, 10 * kEpsilon,
-                              MatrixCompareType::relative));
+  EXPECT_TRUE(
+      CompareMatrices(v_back, v, 10 * kEpsilon, MatrixCompareType::relative));
 }
 
 // This test verifies that locking the free body sets its spatial velocities to
@@ -335,8 +327,7 @@ GTEST_TEST(QuaternionFloatingMobilizer, InboardJointLocking) {
 
   // Instantiate the model for the free body in space.
   AxiallySymmetricFreeBodyPlant<double> free_body_plant(
-      kMass, kInertia, kInertia, kGravity,
-      0.001/* time_step */);
+      kMass, kInertia, kInertia, kGravity, 0.001 /* time_step */);
   const internal::MultibodyTree<double>& model =
       internal::GetInternalTree(free_body_plant);
 
@@ -347,9 +338,8 @@ GTEST_TEST(QuaternionFloatingMobilizer, InboardJointLocking) {
   const Vector3d w_WB(1.0, 2.0, 3.0);
   const Vector3d v_WB(-1.0, 4.0, -0.5);
   const auto& free_body = free_body_plant.body();
-  DRAKE_EXPECT_NO_THROW(
-      model.SetFreeBodySpatialVelocityOrThrow(
-          free_body, {w_WB, v_WB}, &context));
+  DRAKE_EXPECT_NO_THROW(model.SetFreeBodySpatialVelocityOrThrow(
+      free_body, {w_WB, v_WB}, &context));
 
   free_body.Lock(&context);
   EXPECT_TRUE(free_body.is_locked(context));
@@ -376,8 +366,8 @@ GTEST_TEST(QuaternionFloatingMobilizer, ExceptionMessageForInvalidQuaternion) {
   const double kMass = 1.0;
   const double kInertia = 0.04;
   const double kGravity = 9.8;
-  AxiallySymmetricFreeBodyPlant<double> free_body_plant(
-    kMass, kInertia, kInertia, kGravity);
+  AxiallySymmetricFreeBodyPlant<double> free_body_plant(kMass, kInertia,
+                                                        kInertia, kGravity);
 
   // Simulator will create a Context by calling this system's
   // CreateDefaultContext(). This in turn will initialize its state by making a
@@ -397,7 +387,7 @@ GTEST_TEST(QuaternionFloatingMobilizer, ExceptionMessageForInvalidQuaternion) {
   const Quaterniond bad_quat(0, 0, 0, 0);  // Invalid quaternion.
   Eigen::Matrix<double, 13, 1> state_initial;
   state_initial << bad_quat.w(), bad_quat.x(), bad_quat.y(), bad_quat.z(),
-                   p0_WBcm_W, w0_WB_W, v0_WBcm_W;
+      p0_WBcm_W, w0_WB_W, v0_WBcm_W;
   context.SetContinuousState(state_initial);
 
   // A zero quaternion should throw an exception.

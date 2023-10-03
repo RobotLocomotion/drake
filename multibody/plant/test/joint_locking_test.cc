@@ -268,9 +268,8 @@ TEST_P(JointLockingTest, JointLockingIndicesTest) {
     EXPECT_THAT(
         unlocked_velocity_indices,
         testing::UnorderedElementsAreArray(expected_unlocked_velocity_indices));
-    EXPECT_THAT(
-        locked_velocity_indices,
-        testing::UnorderedElementsAreArray(expected_locked_velocity_indices));
+    EXPECT_THAT(locked_velocity_indices, testing::UnorderedElementsAreArray(
+                                             expected_locked_velocity_indices));
 
     const std::vector<std::vector<int>>
         expected_unlocked_velocity_indices_per_tree = {{0, 1}, {6}};

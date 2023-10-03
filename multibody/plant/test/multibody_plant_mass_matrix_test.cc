@@ -45,7 +45,7 @@ class MultibodyPlantMassMatrixTests : public ::testing::Test {
   void LoadIiwaWithGripper() {
     const char kArmSdfPath[] =
         "drake/manipulation/models/iiwa_description/sdf/"
-            "iiwa14_no_collision.sdf";
+        "iiwa14_no_collision.sdf";
 
     const char kWsg50SdfPath[] =
         "drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50.sdf";
@@ -133,7 +133,6 @@ TEST_F(MultibodyPlantMassMatrixTests, AtlasRobot) {
   VerifyMassMatrixComputation(*context);
 }
 
-
 // Verify that optimizations over fixed (weld) joints don't cause trouble.
 // This is to prevent a repeat of the bug introduced in PR #13933 (fixed in
 // #13953).
@@ -176,7 +175,7 @@ TEST_F(MultibodyPlantMassMatrixTests, IiwaWithWeldedGripper) {
       // Arbitrary non-zero angle.
       revolute_joint.set_angle(context.get(), 0.5 * joint_index);
     } else if (joint.type_name() == PrismaticJoint<double>::kTypeName) {
-       const PrismaticJoint<double>& prismatic_joint =
+      const PrismaticJoint<double>& prismatic_joint =
           dynamic_cast<const PrismaticJoint<double>&>(joint);
       // Arbitrary non-zero joint translation.
       prismatic_joint.set_translation(context.get(), 0.5 * joint_index);
