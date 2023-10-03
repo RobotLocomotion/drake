@@ -6,8 +6,8 @@ def yaml_cpp_internal_repository(
     github_archive(
         name = name,
         repository = "jbeder/yaml-cpp",
-        commit = "yaml-cpp-0.7.0",
-        sha256 = "43e6a9fcb146ad871515f0d0873947e5d497a1c9c60c58cb102a97b47208b7c3",  # noqa
+        commit = "0.8.0",
+        sha256 = "fbe74bbdcee21d656715688706da3c8becfd946d92cd44705cc6098bb23b3a16",  # noqa
         build_file = ":package.BUILD.bazel",
         patches = [
             ":patches/emit-local-tag.patch",
