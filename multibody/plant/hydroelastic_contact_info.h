@@ -104,9 +104,7 @@ class HydroelasticContactInfo {
          original was constructed using a raw pointer referencing an existing
          ContactSurface.
    */
-  HydroelasticContactInfo(const HydroelasticContactInfo& info) {
-    *this = info;
-  }
+  HydroelasticContactInfo(const HydroelasticContactInfo& info) { *this = info; }
 
   /** Clones this object in the same manner as the copy constructor.
    @see HydroelasticContactInfo(const HydroelasticContactInfo&)
@@ -131,8 +129,8 @@ class HydroelasticContactInfo {
             contact_surface_)) {
       return *std::get<const geometry::ContactSurface<T>*>(contact_surface_);
     } else {
-      return *std::get<std::unique_ptr<geometry::ContactSurface<T>>>
-                  (contact_surface_);
+      return *std::get<std::unique_ptr<geometry::ContactSurface<T>>>(
+          contact_surface_);
     }
   }
 
@@ -152,14 +150,14 @@ class HydroelasticContactInfo {
  private:
   // Note that the mesh of the contact surface is defined in the world frame.
   std::variant<const geometry::ContactSurface<T>*,
-                 std::unique_ptr<geometry::ContactSurface<T>>> contact_surface_;
+               std::unique_ptr<geometry::ContactSurface<T>>>
+      contact_surface_;
 
   // The spatial force applied at the centroid (Point C) of the surface mesh.
   SpatialForce<T> F_Ac_W_;
 
   // The traction and slip velocity evaluated at each quadrature point.
-  std::vector<HydroelasticQuadraturePointData<T>>
-      quadrature_point_data_;
+  std::vector<HydroelasticQuadraturePointData<T>> quadrature_point_data_;
 };
 
 }  // namespace multibody

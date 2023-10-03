@@ -5,8 +5,8 @@
 #include "drake/common/eigen_types.h"
 
 using Eigen::MatrixXd;
-using Eigen::VectorXd;
 using Eigen::Vector3d;
+using Eigen::VectorXd;
 
 namespace drake {
 namespace multibody {

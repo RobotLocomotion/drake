@@ -66,8 +66,7 @@ class DeformableIntegrationTest : public ::testing::Test {
 
     auto deformable_model = make_unique<DeformableModel<double>>(plant_);
     body_id_ = RegisterDeformableBall(deformable_model.get(), "deformable");
-    deformable_model->SetWallBoundaryCondition(
-        body_id_, p_WQ_, n_W_);
+    deformable_model->SetWallBoundaryCondition(body_id_, p_WQ_, n_W_);
     model_ = deformable_model.get();
     plant_->AddPhysicalModel(std::move(deformable_model));
     plant_->set_discrete_contact_solver(DiscreteContactSolver::kSap);
