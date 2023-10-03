@@ -10,10 +10,10 @@
 namespace drake {
 namespace multibody {
 
+using Eigen::Vector3d;
 using geometry::GeometryId;
 using geometry::SceneGraphInspector;
 using internal::FullBodyName;
-using Eigen::Vector3d;
 using systems::Context;
 
 namespace internal {
@@ -114,8 +114,8 @@ ContactResultsToLcmSystem<T>::ContactResultsToLcmSystem(
       const int collision_count =
           static_cast<int>(plant.GetCollisionGeometriesForBody(body).size());
       geometry_id_to_body_name_map_[geometry_id] = {
-          model_name, body.name(), namer(geometry_id),
-          body_name_is_unique, collision_count};
+          model_name, body.name(), namer(geometry_id), body_name_is_unique,
+          collision_count};
     }
   }
 }
@@ -292,8 +292,7 @@ systems::lcm::LcmPublisherSystem* ConnectWithNameLookup(
     const MultibodyPlant<double>& multibody_plant,
     const systems::OutputPort<double>& contact_results_port,
     const geometry::SceneGraph<double>& scene_graph,
-    lcm::DrakeLcmInterface* lcm,
-    std::optional<double> publish_period) {
+    lcm::DrakeLcmInterface* lcm, std::optional<double> publish_period) {
   DRAKE_DEMAND(builder != nullptr);
 
   const SceneGraphInspector<double>& inspector = scene_graph.model_inspector();
@@ -313,8 +312,8 @@ systems::lcm::LcmPublisherSystem* ConnectWithNameLookup(
   const double default_publish_period = 1.0 / 64;
   auto contact_results_publisher = builder->AddSystem(
       systems::lcm::LcmPublisherSystem::Make<lcmt_contact_results_for_viz>(
-          "CONTACT_RESULTS", lcm, publish_period.value_or(
-              default_publish_period)));
+          "CONTACT_RESULTS", lcm,
+          publish_period.value_or(default_publish_period)));
   contact_results_publisher->set_name("contact_results_publisher");
 
   builder->Connect(contact_results_port,
@@ -328,12 +327,11 @@ systems::lcm::LcmPublisherSystem* ConnectContactResultsToDrakeVisualizer(
     systems::DiagramBuilder<double>* builder,
     const MultibodyPlant<double>& multibody_plant,
     const geometry::SceneGraph<double>& scene_graph,
-    lcm::DrakeLcmInterface* lcm,
-    std::optional<double> publish_period) {
+    lcm::DrakeLcmInterface* lcm, std::optional<double> publish_period) {
   return ConnectWithNameLookup(
       builder, multibody_plant,
-      multibody_plant.get_contact_results_output_port(),
-      scene_graph, lcm, publish_period);
+      multibody_plant.get_contact_results_output_port(), scene_graph, lcm,
+      publish_period);
 }
 
 systems::lcm::LcmPublisherSystem* ConnectContactResultsToDrakeVisualizer(
@@ -341,12 +339,9 @@ systems::lcm::LcmPublisherSystem* ConnectContactResultsToDrakeVisualizer(
     const MultibodyPlant<double>& multibody_plant,
     const geometry::SceneGraph<double>& scene_graph,
     const systems::OutputPort<double>& contact_results_port,
-    lcm::DrakeLcmInterface* lcm,
-    const std::optional<double> publish_period) {
-  return ConnectWithNameLookup(
-      builder, multibody_plant,
-      contact_results_port,
-      scene_graph, lcm, publish_period);
+    lcm::DrakeLcmInterface* lcm, const std::optional<double> publish_period) {
+  return ConnectWithNameLookup(builder, multibody_plant, contact_results_port,
+                               scene_graph, lcm, publish_period);
 }
 
 }  // namespace multibody

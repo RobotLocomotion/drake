@@ -48,8 +48,8 @@ class ExternallyAppliedSpatialForceMultiplexer final
   using ListType = std::vector<ValueType>;
 
   // This is the calculator for the output port.
-  void CombineInputsToOutput(
-      const systems::Context<T>& context, ListType* output) const;
+  void CombineInputsToOutput(const systems::Context<T>& context,
+                             ListType* output) const;
 };
 
 }  // namespace multibody

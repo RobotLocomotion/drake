@@ -24,9 +24,9 @@ namespace {
 // the actual names that the user specified. Hopefully the MbP is repaired in
 // the future to stop screwing up the geometry names.
 template <typename T>
-std::string_view UndoGetScopedName(
-    const MultibodyPlant<T>& plant, ModelInstanceIndex model,
-    std::string_view geometry_name) {
+std::string_view UndoGetScopedName(const MultibodyPlant<T>& plant,
+                                   ModelInstanceIndex model,
+                                   std::string_view geometry_name) {
   if (model != world_model_instance() && model != default_model_instance()) {
     const std::string_view prefix = plant.GetModelInstanceName(model);
     if (geometry_name.substr(0, prefix.size()) == prefix) {
@@ -64,16 +64,15 @@ void ResetHelper(
     prototype.body_name = body.name();
     prototype.body_name_is_unique_within_plant =
         (plant.NumBodiesWithName(body.name()) == 1);
-    prototype.is_sole_geometry_within_body =
-        (geometry_ids.size() == 1);
+    prototype.is_sole_geometry_within_body = (geometry_ids.size() == 1);
 
     // Add an Entry for each collision geometry.
     for (const auto& geometry_id : geometry_ids) {
       GeometryNames::Entry entry = prototype;
       std::optional<std::string_view> geometry_name = lookup(geometry_id);
       if (geometry_name.has_value()) {
-        geometry_name = UndoGetScopedName(
-            plant, body.model_instance(), *geometry_name);
+        geometry_name =
+            UndoGetScopedName(plant, body.model_instance(), *geometry_name);
       }
       entry.geometry_name = geometry_name;
       entries->insert({geometry_id, entry});
@@ -84,12 +83,11 @@ void ResetHelper(
 }  // namespace
 
 template <typename T>
-void GeometryNames::ResetFull(
-    const MultibodyPlant<T>& plant,
-    const SceneGraphInspector<T>& inspector) {
+void GeometryNames::ResetFull(const MultibodyPlant<T>& plant,
+                              const SceneGraphInspector<T>& inspector) {
   DRAKE_THROW_UNLESS(plant.is_finalized());
-  std::function lookup = [&inspector](GeometryId id)
-      -> std::optional<std::string_view> {
+  std::function lookup =
+      [&inspector](GeometryId id) -> std::optional<std::string_view> {
     return inspector.GetName(id);
   };
   ResetHelper(plant, lookup, &entries_);
@@ -98,8 +96,7 @@ void GeometryNames::ResetFull(
 template <typename T>
 void GeometryNames::ResetBasic(const MultibodyPlant<T>& plant) {
   DRAKE_THROW_UNLESS(plant.is_finalized());
-  std::function lookup = [](GeometryId)
-      -> std::optional<std::string_view> {
+  std::function lookup = [](GeometryId) -> std::optional<std::string_view> {
     return std::nullopt;
   };
   ResetHelper(plant, lookup, &entries_);
@@ -113,8 +110,8 @@ const GeometryNames::Entry& GeometryNames::Find(GeometryId id) const {
   throw std::logic_error("GeometryNames::Find could not find the given id");
 }
 
-std::string GeometryNames::GetFullName(
-    GeometryId id, std::string_view sep) const {
+std::string GeometryNames::GetFullName(GeometryId id,
+                                       std::string_view sep) const {
   const Entry& entry = Find(id);
 
   // We'll join these at the end.
@@ -142,13 +139,11 @@ std::string GeometryNames::GetFullName(
   return fmt::format("{}", fmt::join(tokens, sep));
 }
 
-DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS((
-    &GeometryNames::ResetFull<T>
-))
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    (&GeometryNames::ResetFull<T>))
 
-DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((
-    &GeometryNames::ResetBasic<T>
-))
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    (&GeometryNames::ResetBasic<T>))
 
 }  // namespace internal
 }  // namespace multibody

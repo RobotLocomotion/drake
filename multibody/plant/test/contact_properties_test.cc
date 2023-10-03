@@ -119,7 +119,6 @@ class ContactPropertiesTest : public ::testing::Test {
     return result;
   }
 
-
  private:
   SceneGraph<double> scene_graph_{};
   std::unique_ptr<SceneGraph<AutoDiffXd>> scene_graph_ad_{};
