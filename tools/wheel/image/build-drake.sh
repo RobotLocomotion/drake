@@ -7,7 +7,9 @@ set -eu -o pipefail
 
 cd /opt/drake-wheel-build/drake
 
-git apply < /image/pip-drake.patch
+# TODO(jwnimmer-tri) Switch to using the CMake for wheel builds so that we can
+# use the canonical `-DPython_EXECUTABLE` instead.
+export _DRAKE_WHEEL_BUILD_PYTHON_INTERPRETER_PATH=/usr/local/bin/python
 
 # Store downloads in the build cache to speed up rebuilds.
 export BAZELISK_HOME=/var/cache/bazel/bazelisk

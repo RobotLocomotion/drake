@@ -78,6 +78,10 @@ fi
 
 cd "$git_root"
 
+# TODO(jwnimmer-tri) Switch to using the CMake for wheel builds so that we can
+# use the canonical `-DPython_EXECUTABLE` instead.
+export _DRAKE_WHEEL_BUILD_PYTHON_INTERPRETER_PATH=/opt/drake-wheel-build/python/bin/python3
+
 export SNOPT_PATH=git
 
 declare -a bazel_args=(
