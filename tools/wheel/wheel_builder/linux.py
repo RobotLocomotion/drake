@@ -48,6 +48,12 @@ targets = (
         test_platform=Platform('ubuntu', '22.04', 'jammy'),
         python_version_tuple=(3, 11, 1),
         python_sha='85879192f2cffd56cb16c092905949ebf3e5e394b7f764723529637901dfb58f'),  # noqa
+    Target(
+        build_platform=Platform('ubuntu', '20.04', 'focal'),
+        # TODO(jwnimmer-tri) Switch the test to 24.04 once that's available.
+        test_platform=Platform('ubuntu', '23.10', 'mantic'),
+        python_version_tuple=(3, 12, 0),
+        python_sha='795c34f44df45a0e9b9710c8c71c15c671871524cd412ca14def212e8ccb155d'),  # noqa
 )
 glibc_versions = {
     'focal': '2_31',
@@ -155,6 +161,10 @@ def _create_source_tar(path):
         # Exclude host-generated setup files; we want the container-relevant
         # setup file (already added atop this function).
         if f == 'gen':
+            continue
+
+        # Never add our output (wheel files) back in as input.
+        if f.endswith(".whl"):
             continue
 
         print('.', end='', flush=True)
