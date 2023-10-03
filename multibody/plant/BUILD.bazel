@@ -21,6 +21,7 @@ drake_cc_package_library(
         ":contact_properties",
         ":contact_results",
         ":coulomb_friction",
+        ":deformable_contact_info",
         ":deformable_ids",
         ":discrete_contact_data",
         ":discrete_contact_pair",
@@ -213,6 +214,23 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "deformable_contact_info",
+    srcs = [
+        "deformable_contact_info.cc",
+    ],
+    hdrs = [
+        "deformable_contact_info.h",
+    ],
+    deps = [
+        ":hydroelastic_quadrature_point_data",
+        "//common:default_scalars",
+        "//geometry:geometry_ids",
+        "//geometry/proximity:polygon_surface_mesh",
+        "//multibody/math",
+    ],
+)
+
+drake_cc_library(
     name = "hydroelastic_contact_info",
     srcs = [
         "hydroelastic_contact_info.cc",
@@ -248,6 +266,7 @@ drake_cc_library(
         "contact_results.h",
     ],
     deps = [
+        ":deformable_contact_info",
         ":hydroelastic_contact_info",
         ":point_pair_contact_info",
         "//common:default_scalars",
@@ -950,6 +969,14 @@ drake_cc_googletest(
         ":multibody_plant_core",
         "//geometry:scene_graph",
         "//systems/framework:diagram_builder",
+    ],
+)
+
+drake_cc_googletest(
+    name = "deformable_contact_info_test",
+    deps = [
+        ":deformable_contact_info",
+        "//common:essential",
     ],
 )
 
