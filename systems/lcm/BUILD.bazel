@@ -147,6 +147,7 @@ drake_cc_googletest(
         ":lcm_config_functions",
         "//common/test_utilities:expect_throws_message",
         "//lcm:drake_lcm",
+        "//lcmtypes:drake_signal",
     ],
 )
 

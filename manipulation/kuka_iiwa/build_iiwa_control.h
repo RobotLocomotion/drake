@@ -95,6 +95,20 @@ IiwaControlPorts BuildSimplifiedIiwaControl(
     const std::optional<Eigen::VectorXd>& desired_iiwa_kp_gains = std::nullopt,
     IiwaControlMode control_mode = IiwaControlMode::kPositionAndTorque);
 
+namespace internal {
+
+// Adds a SimIiwaDriver system to the given `builder` and connects its plant-
+// related input and output ports to `plant`. Returns the newly-added System.
+// This is indirectly unit tested via BuildSimplifiedIiwaControl.
+const systems::System<double>& AddSimIiwaDriver(
+    const multibody::MultibodyPlant<double>& plant,
+    const multibody::ModelInstanceIndex iiwa_instance,
+    const multibody::MultibodyPlant<double>& controller_plant,
+    systems::DiagramBuilder<double>* builder, double ext_joint_filter_tau,
+    const std::optional<Eigen::VectorXd>& desired_iiwa_kp_gains,
+    IiwaControlMode control_mode);
+
+}  // namespace internal
 }  // namespace kuka_iiwa
 }  // namespace manipulation
 }  // namespace drake
