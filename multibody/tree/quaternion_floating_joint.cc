@@ -64,7 +64,7 @@ QuaternionFloatingJoint<T>::MakeImplementationBlueprint() const {
           this->frame_on_parent(), this->frame_on_child());
   quaternion_floating_mobilizer->set_default_position(
       this->default_positions());
-  blue_print->mobilizers_.push_back(std::move(quaternion_floating_mobilizer));
+  blue_print->mobilizer = std::move(quaternion_floating_mobilizer);
   return blue_print;
 }
 

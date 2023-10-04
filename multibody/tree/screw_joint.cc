@@ -98,7 +98,7 @@ ScrewJoint<T>::MakeImplementationBlueprint() const {
       this->frame_on_parent(), this->frame_on_child(), this->screw_axis(),
       screw_pitch_);
   screw_mobilizer->set_default_position(this->default_positions());
-  blue_print->mobilizers_.push_back(std::move(screw_mobilizer));
+  blue_print->mobilizer = std::move(screw_mobilizer);
   return blue_print;
 }
 

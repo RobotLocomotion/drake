@@ -65,7 +65,7 @@ PlanarJoint<T>::MakeImplementationBlueprint() const {
   auto planar_mobilizer = std::make_unique<internal::PlanarMobilizer<T>>(
       this->frame_on_parent(), this->frame_on_child());
   planar_mobilizer->set_default_position(this->default_positions());
-  blue_print->mobilizers_.push_back(std::move(planar_mobilizer));
+  blue_print->mobilizer = std::move(planar_mobilizer);
   return blue_print;
 }
 

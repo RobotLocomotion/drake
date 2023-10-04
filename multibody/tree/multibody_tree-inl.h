@@ -214,7 +214,7 @@ const MobilizerType<T>& MultibodyTree<T>::AddMobilizer(
   }
 
   // TODO(amcastro-tri): consider not depending on setting this pointer at
-  // all. Consider also removing MultibodyElement altogether.
+  //  all. Consider also removing MultibodyElement altogether.
   mobilizer->set_parent_tree(this, mobilizer_index);
 
   // Mark free bodies as needed.
