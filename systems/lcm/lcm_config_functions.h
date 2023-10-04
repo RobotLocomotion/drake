@@ -1,6 +1,7 @@
 #pragma once
 
 #include <map>
+#include <optional>
 #include <string>
 
 #include "drake/lcm/drake_lcm_interface.h"
@@ -12,9 +13,9 @@ namespace drake {
 namespace systems {
 namespace lcm {
 
-/** Given LCM bus names and parameters, adds an LcmInterfaceSystem for each bus
-within the given diagram builder, and returns an LcmBuses object that provides
-access to the DrakeLcmInterface objects that were created.
+/** Given LCM bus names and parameters, adds an LcmInterfaceSystem within the
+given diagram builder for each bus, and returns an LcmBuses object that provides
+access to the drake::lcm::DrakeLcmInterface objects that were created.
 
 Because the interfaces live within the builder (and so eventually, the diagram),
 the diagram will pump the interfaces when it's used with a simulator. Refer to
@@ -24,9 +25,36 @@ The interface pointers remain owned by the builder; the LcmBuses object merely
 aliases into the builder (and then eventually, the diagram).
 
 @param lcm_buses A map of {bus_name: params} for LCM transceivers, to be used
-used by drivers, sensors, etc. */
+by drivers, sensors, etc.
+
+@exclude_from_pydrake_mkdoc{Cannot overload on dict value type.} */
 LcmBuses ApplyLcmBusConfig(
     const std::map<std::string, drake::lcm::DrakeLcmParams>& lcm_buses,
+    systems::DiagramBuilder<double>* builder);
+
+/** Given LCM bus names and (nullable) parameters, adds an LcmInterfaceSystem
+within the given diagram builder for each bus, and returns an LcmBuses object
+that provides access to the drake::lcm::DrakeLcmInterface objects that were
+created.
+
+Because the interfaces live within the builder (and so eventually, the diagram),
+the diagram will pump the interfaces when it's used with a simulator. Refer to
+the LcmInterfaceSystem documentation for details.
+
+The interface pointers remain owned by the builder; the LcmBuses object merely
+aliases into the builder (and then eventually, the diagram).
+
+As a special case, the user can opt-out of LCM either by passing `nullopt` as
+the drake::lcm::DrakeLcmParams, or by setting the URL within the DrakeLcmParams
+to LcmBuses::kLcmUrlMemqNull. In that case, only a drake::lcm::DrakeLcmInterface
+object will be created (not a full LcmInterfaceSystem), and the LCM messages
+will _not_ be pumped.
+
+@param lcm_buses A map of {bus_name: params} for LCM transceivers, to be used
+by drivers, sensors, etc. */
+LcmBuses ApplyLcmBusConfig(
+    const std::map<std::string, std::optional<drake::lcm::DrakeLcmParams>>&
+        lcm_buses,
     systems::DiagramBuilder<double>* builder);
 
 /** (Advanced) Returns an LCM interface based on a convenient set of heuristics.
