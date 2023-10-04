@@ -112,6 +112,7 @@ class TestSystemsLcm(unittest.TestCase):
                 use_cpp_serializer=True)
 
     def test_buses(self):
+        self.assertIsInstance(mut.LcmBuses.kLcmUrlMemqNull, str)
         dut = mut.LcmBuses()
         dut.Add("default", DrakeLcm())
         self.assertEqual(dut.size(), 1)
