@@ -93,7 +93,7 @@ RevoluteJoint<T>::MakeImplementationBlueprint() const {
   auto revolute_mobilizer = std::make_unique<internal::RevoluteMobilizer<T>>(
       this->frame_on_parent(), this->frame_on_child(), axis_);
   revolute_mobilizer->set_default_position(this->default_positions());
-  blue_print->mobilizers_.push_back(std::move(revolute_mobilizer));
+  blue_print->mobilizer = std::move(revolute_mobilizer);
   return blue_print;
 }
 

@@ -56,9 +56,8 @@ template <typename T>
 std::unique_ptr<typename Joint<T>::BluePrint>
 WeldJoint<T>::MakeImplementationBlueprint() const {
   auto blue_print = std::make_unique<typename Joint<T>::BluePrint>();
-  blue_print->mobilizers_.push_back(
-      std::make_unique<internal::WeldMobilizer<T>>(
-          this->frame_on_parent(), this->frame_on_child(), X_FM_));
+  blue_print->mobilizer = std::make_unique<internal::WeldMobilizer<T>>(
+      this->frame_on_parent(), this->frame_on_child(), X_FM_);
   return blue_print;
 }
 

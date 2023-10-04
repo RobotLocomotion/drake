@@ -231,13 +231,13 @@ class Joint : public MultibodyElement<T> {
     return do_get_num_positions();
   }
 
-  /// Returns true if this joint's mobilizers allow relative rotation of the
+  /// Returns true if this joint's mobility allows relative rotation of the
   /// two frames associated with this joint.
   /// @pre the MultibodyPlant must be finalized.
   /// @see can_translate()
   bool can_rotate() const;
 
-  /// Returns true if this joint's mobilizers allow relative translation of the
+  /// Returns true if this joint's mobility allows relative translation of the
   /// two frames associated with this joint.
   /// @pre the MultibodyPlant must be finalized.
   /// @see can_rotate()
@@ -341,25 +341,20 @@ class Joint : public MultibodyElement<T> {
   /// Lock the joint. Its generalized velocities will be 0 until it is
   /// unlocked.
   void Lock(systems::Context<T>* context) const {
-    for (internal::Mobilizer<T>* mobilizer : implementation_->mobilizers_) {
-      mobilizer->Lock(context);
-    }
+    DRAKE_DEMAND(implementation_->has_mobilizer());
+    implementation_->mobilizer->Lock(context);
   }
 
   /// Unlock the joint.
   void Unlock(systems::Context<T>* context) const {
-    for (internal::Mobilizer<T>* mobilizer : implementation_->mobilizers_) {
-      mobilizer->Unlock(context);
-    }
+    DRAKE_DEMAND(implementation_->has_mobilizer());
+    implementation_->mobilizer->Unlock(context);
   }
 
   /// @return true if the joint is locked, false otherwise.
   bool is_locked(const systems::Context<T>& context) const {
-    bool locked = false;
-    for (internal::Mobilizer<T>* mobilizer : implementation_->mobilizers_) {
-      locked |= mobilizer->is_locked(context);
-    }
-    return locked;
+    DRAKE_DEMAND(implementation_->has_mobilizer());
+    return implementation_->mobilizer->is_locked(context);
   }
 
   /// @name Methods to get and set the limits of `this` joint. For position
@@ -506,9 +501,9 @@ class Joint : public MultibodyElement<T> {
   }
 
   const internal::Mobilizer<T>& GetMobilizerInUse() const {
-    // This implementation should only have one mobilizer.
-    DRAKE_DEMAND(get_implementation().num_mobilizers() == 1);
-    return *get_implementation().mobilizers_[0];
+    // Currently we model each joint with a mobilizer.
+    DRAKE_DEMAND(get_implementation().has_mobilizer());
+    return *get_implementation().mobilizer;
   }
 #endif
   // End of hidden Doxygen section.
@@ -519,16 +514,16 @@ class Joint : public MultibodyElement<T> {
   /// %Joint creates a BluePrint of its implementation with MakeModelBlueprint()
   /// so that MultibodyTree can build an implementation for it.
   struct BluePrint {
-    std::vector<std::unique_ptr<internal::Mobilizer<T>>> mobilizers_;
-    // TODO(amcastro-tri): add force elements, constraints, bodies.
+    std::unique_ptr<internal::Mobilizer<T>> mobilizer;
+    // TODO(sherm1): add constraints and force elements as needed.
   };
 
-  /// (Advanced) A Joint is implemented in terms of MultibodyTree elements such
-  /// as bodies, mobilizers, force elements and constraints. This object
-  /// contains the internal details of the MultibodyTree implementation for a
-  /// joint. The implementation does not own the MBT elements, it just keeps
-  /// references to them.
-  /// This is intentionally made a protected member so that derived classes have
+  /// (Advanced) A Joint is implemented in terms of MultibodyTree elements,
+  /// typically a Mobilizer. However, some Joints may be better modeled with
+  /// constraints or force elements. This object contains the internal details
+  /// of the MultibodyTree implementation for a joint. The implementation does
+  /// not own the MbT elements, it just keeps references to them. This is
+  /// intentionally made a protected member so that derived classes have
   /// access to its definition.
   struct JointImplementation {
     /// Default constructor to create an empty implementation. Used by
@@ -538,15 +533,13 @@ class Joint : public MultibodyElement<T> {
     /// This constructor creates an implementation for `this` joint from the
     /// blueprint provided.
     explicit JointImplementation(const BluePrint& blue_print) {
-      DRAKE_DEMAND(static_cast<int>(blue_print.mobilizers_.size()) != 0);
-      for (const auto& mobilizer : blue_print.mobilizers_) {
-        mobilizers_.push_back(mobilizer.get());
-      }
+      DRAKE_DEMAND(blue_print.mobilizer != nullptr);
+      mobilizer = blue_print.mobilizer.get();
     }
 
-    /// Returns the number of mobilizers in this implementation.
-    int num_mobilizers() const {
-      return static_cast<int>(mobilizers_.size());
+    /// Returns `true` if the implementation of this Joint uses a Mobilizer.
+    int has_mobilizer() const {
+      return mobilizer != nullptr;
     }
 
     // Hide the following section from Doxygen.
@@ -558,20 +551,17 @@ class Joint : public MultibodyElement<T> {
     CloneToScalar(internal::MultibodyTree<ToScalar>* tree_clone) const {
       auto implementation_clone =
           std::make_unique<typename Joint<ToScalar>::JointImplementation>();
-      for (const internal::Mobilizer<T>* mobilizer : mobilizers_) {
-        internal::Mobilizer<ToScalar>* mobilizer_clone =
-            &tree_clone->get_mutable_variant(*mobilizer);
-        implementation_clone->mobilizers_.push_back(mobilizer_clone);
-      }
+      internal::Mobilizer<ToScalar>* mobilizer_clone =
+          &tree_clone->get_mutable_variant(*mobilizer);
+      implementation_clone->mobilizer = mobilizer_clone;
       return implementation_clone;
     }
 #endif
     // End of hidden Doxygen section.
 
-    /// References (raw pointers) to the mobilizers that make part of this
-    /// implementation.
-    std::vector<internal::Mobilizer<T>*> mobilizers_;
-    // TODO(amcastro-tri): add force elements, constraints, bodies, etc.
+    /// Reference (raw pointer) to the mobilizer implementing this Joint.
+    internal::Mobilizer<T>* mobilizer{};
+    // TODO(sherm1): add constraints and force elements as needed.
   };
 
   /// Implementation of the NVI velocity_start(), see velocity_start() for
