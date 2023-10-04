@@ -1391,29 +1391,18 @@ ModelInstanceIndex AddModelInstanceIfReusable(
 // assume that Drake custom parsers do not support nested models.
 // TODO(azeey) If any of Drakes custom parsers start supporting nested models,
 // this needs to be updated to keep track of them.
-struct InterfaceModelHelper {
-  const MultibodyPlant<double>& plant;
-  bool is_merged;
-  ModelInstanceIndex model_instance;
-  std::string name;
-  std::vector<BodyIndex> body_indices;
-  std::vector<FrameIndex> frame_indices;
-  std::vector<JointIndex> joint_indices;
-  std::vector<ModelInstanceIndex> model_instance_indices;
-  std::string model_frame_name = "__model__";
-
-  bool have_snapshot{false};
-
-  InterfaceModelHelper(const MultibodyPlant<double>& pt, bool merged)
-      : plant(pt), is_merged(merged) {}
+class InterfaceModelHelper {
+ public:
+  explicit InterfaceModelHelper(const MultibodyPlant<double>& pt)
+      : plant_(pt) {}
 
   std::vector<ModelInstanceIndex> GetChildModelInstanceIndices() const {
     std::vector<ModelInstanceIndex> output;
 
-    for (ModelInstanceIndex mi(model_instance + 1);
-         mi < plant.num_model_instances(); ++mi) {
-      if (multibody::ScopedName::Parse(plant.GetModelInstanceName(mi))
-              .get_element() == name) {
+    for (ModelInstanceIndex mi(model_instance_ + 1);
+         mi < plant_.num_model_instances(); ++mi) {
+      if (multibody::ScopedName::Parse(plant_.GetModelInstanceName(mi))
+              .get_element() == name_) {
         output.push_back(mi);
       }
     }
@@ -1423,12 +1412,12 @@ struct InterfaceModelHelper {
   // Take a snapshot of the current contents of a model instance so that we
   // later on do a diff
   void TakeSnapShot(ModelInstanceIndex model_instance_index) {
-    model_instance = model_instance_index;
-    name = plant.GetModelInstanceName(model_instance);
-    body_indices = plant.GetBodyIndices(model_instance);
-    frame_indices = plant.GetFrameIndices(model_instance);
-    joint_indices = plant.GetJointIndices(model_instance);
-    model_instance_indices = GetChildModelInstanceIndices();
+    model_instance_ = model_instance_index;
+    name_ = plant_.GetModelInstanceName(model_instance_);
+    body_indices_ = plant_.GetBodyIndices(model_instance_);
+    frame_indices_ = plant_.GetFrameIndices(model_instance_);
+    joint_indices_ = plant_.GetJointIndices(model_instance_);
+    model_instance_indices_ = GetChildModelInstanceIndices();
     have_snapshot = true;
   }
 
@@ -1445,15 +1434,41 @@ struct InterfaceModelHelper {
   // snapshot.
   void ComputeDiffFromSnapshot() {
     DRAKE_DEMAND(have_snapshot);
-    body_indices =
-      GetVectorDiff(plant.GetBodyIndices(model_instance), body_indices);
-    frame_indices =
-      GetVectorDiff(plant.GetFrameIndices(model_instance), frame_indices);
-    joint_indices =
-      GetVectorDiff(plant.GetJointIndices(model_instance), joint_indices);
-    model_instance_indices =
-      GetVectorDiff(GetChildModelInstanceIndices(), model_instance_indices);
+    body_indices_ =
+      GetVectorDiff(plant_.GetBodyIndices(model_instance_), body_indices_);
+    frame_indices_ =
+      GetVectorDiff(plant_.GetFrameIndices(model_instance_), frame_indices_);
+    joint_indices_ =
+      GetVectorDiff(plant_.GetJointIndices(model_instance_), joint_indices_);
+    model_instance_indices_ =
+      GetVectorDiff(GetChildModelInstanceIndices(), model_instance_indices_);
   }
+
+  ModelInstanceIndex model_instance() const { return model_instance_; }
+
+  const std::vector<JointIndex>& joint_indices() const {
+    return joint_indices_;
+  }
+  const std::vector<FrameIndex>& frame_indices() const {
+    return frame_indices_;
+  }
+  const std::vector<BodyIndex>& body_indices() const { return body_indices_; }
+  const std::string& model_frame_name() const { return model_frame_name_; }
+  void set_model_frame_name(const std::string& model_frame_name) {
+    model_frame_name_ = model_frame_name;
+  }
+
+ private:
+  const MultibodyPlant<double>& plant_;
+  ModelInstanceIndex model_instance_;
+  std::string name_;
+  std::vector<BodyIndex> body_indices_;
+  std::vector<FrameIndex> frame_indices_;
+  std::vector<JointIndex> joint_indices_;
+  std::vector<ModelInstanceIndex> model_instance_indices_;
+  std::string model_frame_name_ = "__model__";
+
+  bool have_snapshot{false};
 };
 
 // Helper method to add a model to a MultibodyPlant given an sdf::Model
@@ -1737,7 +1752,7 @@ sdf::InterfaceModelPtr ConvertToInterfaceModel(
     MultibodyPlant<double>* plant, std::string model_name,
     const InterfaceModelHelper& interface_model_helper, sdf::Errors* errors,
     RigidTransformd X_WP = RigidTransformd::Identity()) {
-  auto model_instance = interface_model_helper.model_instance;
+  auto model_instance = interface_model_helper.model_instance();
   sdf::RepostureFunction reposture_model =
       [plant, model_instance,
        errors](const sdf::InterfaceModelPoseGraph& graph) {
@@ -1754,7 +1769,7 @@ sdf::InterfaceModelPtr ConvertToInterfaceModel(
       };
 
   const auto& model_frame = plant->GetFrameByName(
-      interface_model_helper.model_frame_name, model_instance);
+      interface_model_helper.model_frame_name(), model_instance);
   const std::string canonical_link_name =
       GetRelativeBodyName(model_frame.body(), model_instance, *plant);
   const RigidTransformd X_WM = GetDefaultFramePose(*plant, model_frame);
@@ -1765,15 +1780,15 @@ sdf::InterfaceModelPtr ConvertToInterfaceModel(
       ToIgnitionPose3d(X_PM));
 
   AddBodiesToInterfaceModel(*plant, interface_model,
-                            interface_model_helper.body_indices,
+                            interface_model_helper.body_indices(),
                             X_WM.inverse());
 
   AddFramesToInterfaceModel(*plant, model_instance, interface_model,
-                            interface_model_helper.frame_indices,
-                            interface_model_helper.model_frame_name);
+                            interface_model_helper.frame_indices(),
+                            interface_model_helper.model_frame_name());
 
   AddJointsToInterfaceModel(*plant, interface_model,
-                            interface_model_helper.joint_indices);
+                            interface_model_helper.joint_indices());
 
   return interface_model;
 }
@@ -1822,7 +1837,7 @@ sdf::InterfaceModelPtr ParseNestedInterfaceModel(
   // New instances will have indices starting from cur_num_models
   const bool is_merge_include = include.IsMerge().value_or(false);
 
-  InterfaceModelHelper interface_model_helper(*plant, is_merge_include);
+  InterfaceModelHelper interface_model_helper(*plant);
   ParsingWorkspace subworkspace{options, package_map, subdiagnostic, plant,
     collision_resolver, parser_selector};
 
@@ -1842,7 +1857,7 @@ sdf::InterfaceModelPtr ParseNestedInterfaceModel(
     interface_model_helper.ComputeDiffFromSnapshot();
 
     model_frame_name = sdf::computeMergedModelProxyFrameName(model_name);
-    interface_model_helper.model_frame_name = model_frame_name;
+    interface_model_helper.set_model_frame_name(model_frame_name);
 
     main_model_instance = parent_model_instance;
   } else {
