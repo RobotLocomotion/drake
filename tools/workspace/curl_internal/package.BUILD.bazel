@@ -55,8 +55,8 @@ _SRCS = [
     "lib/cookie.c",
     "lib/curl_addrinfo.c",
     "lib/curl_get_line.c",
-    "lib/curl_log.c",
     "lib/curl_memrchr.c",
+    "lib/curl_trc.c",
     "lib/doh.c",
     "lib/dynbuf.c",
     "lib/dynhds.c",
@@ -128,6 +128,7 @@ _SRCS = [
 
 # The build flags for the library only (not passed on to downstream code).
 _COPTS = [
+    "-w",
     # Our build of curl should be private.
     "-fvisibility=hidden",
     # To match CMakeLists.txt.
