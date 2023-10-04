@@ -501,10 +501,7 @@ void DeformableDriver<T>::AppendDeformableRigidFixedConstraintKinematics(
         p_WQs.template segment<3>(3 * v) = X_WB * spec.p_BQs[v].cast<T>();
       }
       negative_Jv_v_WAp.SetFromTriplets(jacobian_triplets);
-      // TODO(xuchenhan-tri): Use the sparse Jacobian when we support
-      // multiplication of sparse jacobians with weight matrices that are not
-      // 3x3 in size. See MatrixBlock::LeftMultiplyByBlockDiagonal().
-      MatrixBlock<T> jacobian_block_A(negative_Jv_v_WAp.MakeDenseMatrix());
+      MatrixBlock<T> jacobian_block_A(std::move(negative_Jv_v_WAp));
 
       /* Positions of fixed vertices of the deformable body in the deformable
        body's frame which is always assumed to be the world frame. */

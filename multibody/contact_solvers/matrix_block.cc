@@ -108,31 +108,74 @@ MatrixBlock<T> MatrixBlock<T>::LeftMultiplyByBlockDiagonal(
   DRAKE_DEMAND(end >= start);
   DRAKE_DEMAND(static_cast<int>(Gs.size()) > end);
   /* Verify that the sizes of G and M is compatible. */
-  int G_rows = 0;
+  std::vector<int>
+      row_starts;  // starting row index for each diagonal block in G
+  row_starts.reserve(end - start + 1);
+  int row = 0;
   for (int i = start; i <= end; ++i) {
     DRAKE_DEMAND(Gs[i].rows() == Gs[i].cols());
-    G_rows += Gs[i].rows();
+    row_starts.emplace_back(row);
+    row += Gs[i].rows();
     if (!is_dense_) {
-      DRAKE_DEMAND(Gs[i].rows() == 3);
+      DRAKE_DEMAND(Gs[i].rows() % 3 == 0);
     }
   }
-  DRAKE_DEMAND(G_rows == rows());
+  DRAKE_DEMAND(row == rows());
 
   if (is_dense_) {
     const MatrixX<T>& M_dense = std::get<MatrixX<T>>(data_);
     MatrixX<T> GM(rows(), cols());
-    int row_offset = 0;
     for (int i = start; i <= end; ++i) {
       const int rows = Gs[i].rows();
-      GM.middleRows(row_offset, rows).noalias() =
-          Gs[i] * M_dense.middleRows(row_offset, rows);
-      row_offset += rows;
+      const int row_start = row_starts[i - start];
+      GM.middleRows(row_start, rows).noalias() =
+          Gs[i] * M_dense.middleRows(row_start, rows);
     }
     return MatrixBlock<T>(std::move(GM));
   }
 
   const Block3x3SparseMatrix<T>& M_sparse =
       std::get<Block3x3SparseMatrix<T>>(data_);
+  /* At this point, we know that M is block 3x3 sparse and G is block diagonal,
+   with each diagonal block being 3n * 3n for some positive integer n.
+   Therefore, all quantities in the computation of A = G * M can be represented
+   as 3x3 blocks. We use Aᵢⱼ to represent the i,j-th 3x3 block of the matrix A.
+
+   To compute Aᵢⱼ = ∑ₖ Gᵢₖ * Mₖⱼ, we loop over k and j to find non-zero blocks
+   of Mₖⱼ. For a each pair of k and j, we grab all i's such that Gᵢₖ is a
+   non-zero 3x3 block and add the product Gᵢₖ * Mₖⱼ to Aᵢⱼ. We name such sets
+   Nₖ = {i : Gᵢₖ is a nonzero block}.
+
+   Because G is block diagonal, each Nₖ is a contiguous set of integers, and its
+   size is given by the rows() (or cols()) of the corresponding diagonal block
+   divided by 3. As a preprocess, for each k, we store the minimum of Nₖ, and
+   call it `min_N`. */
+  std::vector<int> min_N(M_sparse.block_rows());
+  /* For each k, we also store the index into `Gs` that gives us the correct
+   diagonal block of G to get the data from. */
+  std::vector<int> G_indices(M_sparse.block_rows());
+  {
+    /* Note that min(N₀) = start, and min(Nₖ) is a step function of k that
+     increases by the number of columns in the diagonal block G divided by 3
+     every time k moves up to associate with a new diagonal block. */
+    int i = 0;
+    int g = start;
+    for (int k = 0; k < M_sparse.block_rows(); ++k) {
+      if (3 * k >= row_starts[g - start] + Gs[g].rows()) {
+        i += Gs[g].cols() / 3;
+        ++g;
+      }
+      min_N[k] = i;
+      G_indices[k] = g;
+    }
+  }
+  /* We also record, for each k, the block column index into the corresponding
+   non-zero diagonal block. */
+  std::vector<int> local_block_cols(M_sparse.block_rows());
+  for (int k = 0; k < M_sparse.block_rows(); ++k) {
+    local_block_cols[k] = k - min_N[k];
+  }
+
   Block3x3SparseMatrix<T> GM(M_sparse.block_rows(), M_sparse.block_cols());
   using Triplet = typename Block3x3SparseMatrix<T>::Triplet;
   const std::vector<std::vector<Triplet>>& M_triplets = M_sparse.get_triplets();
@@ -140,11 +183,18 @@ MatrixBlock<T> MatrixBlock<T>::LeftMultiplyByBlockDiagonal(
   GM_triplets.reserve(M_sparse.num_blocks());
   for (const auto& row_data : M_triplets) {
     for (const Triplet& t : row_data) {
-      const int block_row = std::get<0>(t);
-      const int block_col = std::get<1>(t);
+      const int k = std::get<0>(t);
+      const int j = std::get<1>(t);
       const Matrix3<T>& M_block = std::get<2>(t);
-      GM_triplets.emplace_back(block_row, block_col,
-                               Gs[start + block_row] * M_block);
+      const int g = G_indices[k];
+      /* Loop over the set Nₖ with index l. */
+      for (int l = 0; 3 * l < Gs[g].cols(); ++l) {
+        const int i = min_N[k] + l;
+        GM_triplets.emplace_back(
+            i, j,
+            Gs[g].template block<3, 3>(3 * l, 3 * local_block_cols[k]) *
+                M_block);
+      }
     }
   }
   GM.SetFromTriplets(GM_triplets);
