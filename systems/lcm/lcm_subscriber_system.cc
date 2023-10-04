@@ -4,8 +4,10 @@
 #include <utility>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/nice_type_name.h"
 #include "drake/common/text_logging.h"
 #include "drake/systems/framework/basic_vector.h"
+#include "drake/systems/lcm/lcm_system_graphviz.h"
 
 namespace drake {
 namespace systems {
@@ -31,7 +33,14 @@ LcmSubscriberSystem::LcmSubscriberSystem(
       // Only capture the lcm pointer if it is required.
       lcm_{wait_for_message_on_initialization_timeout > 0 ? lcm : nullptr},
       wait_for_message_on_initialization_timeout_{
-          wait_for_message_on_initialization_timeout} {
+          wait_for_message_on_initialization_timeout},
+      // Usually we'd create LcmSystemGraphviz inside DoGetGraphvizFragment,
+      // but we might not have access to the `lcm` pointer anymore by then.
+      graphviz_{std::make_unique<internal::LcmSystemGraphviz>(
+          *lcm, channel_,
+          &serializer_->CreateDefaultValue()->static_type_info(),
+          /* publish = */ false,
+          /* subscribe = */ true)} {
   DRAKE_THROW_UNLESS(serializer_ != nullptr);
   DRAKE_THROW_UNLESS(lcm != nullptr);
   DRAKE_THROW_UNLESS(!std::isnan(wait_for_message_on_initialization_timeout));
@@ -260,6 +269,12 @@ EventStatus LcmSubscriberSystem::Initialize(const Context<double>& context,
   // TODO(russt): Once EventStatus are actually propagated, return the status
   // instead of throwing it.
   throw std::runtime_error(result.message());
+}
+
+LeafSystem<double>::GraphvizFragment LcmSubscriberSystem::DoGetGraphvizFragment(
+    const GraphvizFragmentParams& params) const {
+  return graphviz_->DecorateResult(LeafSystem<double>::DoGetGraphvizFragment(
+      graphviz_->DecorateParams(params)));
 }
 
 }  // namespace lcm

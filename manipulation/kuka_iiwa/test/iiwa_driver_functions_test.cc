@@ -124,7 +124,7 @@ GTEST_TEST(IiwaDriverFunctionsTest, ApplyDriverConfigNoLcm) {
       // This one SharedPtrSystem is the only remnant of LCM that gets added.
       // It is a DrakeLcmInterface that is never pumped (note that there is
       // no LcmInterfaceSystem anywhere in this list of `expected` systems.
-      "DrakeLcm(bus_name=default, lcm_url=memq://null)",
+      "DrakeLcm(bus_name=default)",
   };
   EXPECT_THAT(names, testing::UnorderedElementsAreArray(expected));
 }

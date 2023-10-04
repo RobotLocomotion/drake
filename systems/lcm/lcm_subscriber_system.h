@@ -18,6 +18,12 @@ namespace drake {
 namespace systems {
 namespace lcm {
 
+#ifndef DRAKE_DOXYGEN_CXX
+namespace internal {
+class LcmSystemGraphviz;
+}  // namespace internal
+#endif
+
 /**
  * Receives LCM messages from a given channel and outputs them to a
  * System<double>'s port. This class stores the most recently processed LCM
@@ -156,6 +162,10 @@ class LcmSubscriberSystem : public LeafSystem<double> {
 
   EventStatus Initialize(const Context<double>&, State<double>* state) const;
 
+  typename LeafSystem<double>::GraphvizFragment DoGetGraphvizFragment(
+      const typename LeafSystem<double>::GraphvizFragmentParams& params)
+      const final;
+
   // The channel on which to receive LCM messages.
   const std::string channel_;
 
@@ -188,6 +198,9 @@ class LcmSubscriberSystem : public LeafSystem<double> {
 
   // A timeout in seconds.
   const double wait_for_message_on_initialization_timeout_;
+
+  // Graphviz support (for DoGetGraphvizFragment).
+  const std::unique_ptr<internal::LcmSystemGraphviz> graphviz_;
 };
 
 }  // namespace lcm
