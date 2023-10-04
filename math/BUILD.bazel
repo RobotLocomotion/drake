@@ -178,12 +178,17 @@ drake_cc_library(
 
 drake_cc_library(
     name = "vector3_util",
-    srcs = ["cross_product.cc"],
+    srcs = [
+        "cross_product.cc",
+        "unit_vector.cc",
+    ],
     hdrs = [
         "convert_time_derivative.h",
         "cross_product.h",
+        "unit_vector.h",
     ],
     deps = [
+        "//common:default_scalars",
         "//common:essential",
     ],
 )
@@ -575,6 +580,15 @@ drake_cc_googletest(
         ":soft_min_max",
         "//common/test_utilities:eigen_matrix_compare",
         "@eigen",
+    ],
+)
+
+drake_cc_googletest(
+    name = "unit_vector_test",
+    deps = [
+        ":vector3_util",
+        "//common/test_utilities:expect_no_throw",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
