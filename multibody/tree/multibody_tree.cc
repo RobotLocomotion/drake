@@ -44,20 +44,18 @@ template <typename T>
 class JointImplementationBuilder {
  public:
   JointImplementationBuilder() = delete;
-  static std::vector<Mobilizer<T>*> Build(
+  static Mobilizer<T>* Build(
       Joint<T>* joint, MultibodyTree<T>* tree) {
-    std::vector<Mobilizer<T>*> mobilizers;
+    Mobilizer<T>* mobilizer;
     std::unique_ptr<JointBluePrint> blue_print =
         joint->MakeImplementationBlueprint();
     auto implementation = std::make_unique<JointImplementation>(*blue_print);
-    DRAKE_DEMAND(implementation->num_mobilizers() != 0);
-    for (auto& mobilizer : blue_print->mobilizers_) {
-      mobilizers.push_back(mobilizer.get());
-      tree->AddMobilizer(std::move(mobilizer));
-    }
+    DRAKE_DEMAND(implementation->has_mobilizer());
+    mobilizer = blue_print->mobilizer.get();
+    tree->AddMobilizer(std::move(blue_print->mobilizer));
     // TODO(amcastro-tri): add force elements, bodies, constraints, etc.
     joint->OwnImplementation(std::move(implementation));
-    return mobilizers;
+    return mobilizer;
   }
 
  private:
@@ -656,17 +654,11 @@ void MultibodyTree<T>::CreateJointImplementations() {
   joint_to_mobilizer_.resize(num_joints());
   for (int i = num_joints_pre_floating_joints; i < num_joints(); ++i) {
     auto& joint = owned_joints_[i];
-    std::vector<Mobilizer<T>*> mobilizers =
+    Mobilizer<T>* mobilizer =
         internal::JointImplementationBuilder<T>::Build(joint.get(), this);
-    // Below we assume a single mobilizer per joint, which is  true
-    // for all joint types currently implemented. This may change in the future
-    // when closed topologies are supported.
-    DRAKE_DEMAND(mobilizers.size() == 1);
-    for (Mobilizer<T>* mobilizer : mobilizers) {
-      mobilizer->set_model_instance(joint->model_instance());
-      // Record the joint to mobilizer map.
-      joint_to_mobilizer_[joint->index()] = mobilizer->index();
-    }
+    mobilizer->set_model_instance(joint->model_instance());
+    // Record the joint to mobilizer map.
+    joint_to_mobilizer_[joint->index()] = mobilizer->index();
   }
 }
 
