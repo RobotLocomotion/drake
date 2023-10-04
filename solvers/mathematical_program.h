@@ -861,8 +861,7 @@ class MathematicalProgram {
    * decision variables.
    * @pre Each entry in new_indeterminates should be of CONTINUOUS type.
    */
-  void AddIndeterminates(
-      const symbolic::Variables& new_indeterminates);
+  void AddIndeterminates(const symbolic::Variables& new_indeterminates);
 
   /**
    * Adds a callback method to visualize intermediate results of the
@@ -2559,6 +2558,32 @@ class MathematicalProgram {
       const Eigen::Ref<const MatrixX<symbolic::Expression>>& X);
 
   /**
+   * Adds the constraint that a symmetric matrix is in the dual cone of the
+   * diagonally dominant matrices which is denoted DD*. The set DD* is an outer
+   * approximation to the PSD cone.
+   *
+   * A symmetric matrix X is in DD* if and only if vᵢᵀXvᵢ ≥ 0 for all vᵢ,
+   * where vᵢ is a non-zero vector with at most two entries set to ±1 and all
+   * other entries set to 0. There are 4 * (n choose 2) + 2 * n of these
+   * vectors, but notice that vᵢᵀXvᵢ = (-vᵢ)ᵀX(vᵢ) and so we only need to add
+   * all choices with different partities of which there are 2 * (n choose 2) +
+   * n = n². Therefore, if X is a matrix of size n x n, this function adds
+   * exactly n² linear constraints.
+   *
+   * This is a consequence of the characterization of DD given in "Cones
+   * of diagonally dominant matrices" by Barker and Carlson which can be found
+   * at https://msp.org/pjm/1975/57-1/p03.xhtml.
+   *
+   * @param X The matrix X. We will use 0.5(X+Xᵀ) as the "symmetric version" of
+   * X.
+   * @pre X(i, j) should be a linear expression of decision variables.
+   * @return A vector of linear constraints of length n² encoding vᵢᵀXvᵢ ≥ 0
+   */
+  std::vector<Binding<LinearConstraint>>
+  AddPositiveDiagonallyDominantDualConeMatrixConstraint(
+      const Eigen::Ref<const MatrixX<symbolic::Expression>>& X);
+
+  /**
    * @anchor addsdd
    * @name     scaled diagonally dominant matrix constraint
    * Adds the constraint that a symmetric matrix is scaled diagonally dominant
@@ -2614,6 +2639,32 @@ class MathematicalProgram {
   AddScaledDiagonallyDominantMatrixConstraint(
       const Eigen::Ref<const MatrixX<symbolic::Variable>>& X);
   //@}
+
+  /**
+   * Adds the constraint that a symmetric matrix is in the dual cone of the
+   * scaled diagonally dominant matrices which is denoted SDD*. The set SDD* is
+   * an outer approximation to the PSD cone that is tighter than DD*.
+   *
+   * A symmetric matrix X is in SDD* if and only if VᵢⱼᵀXVᵢⱼ is psd for all Vᵢⱼ,
+   * where Vᵢⱼ is an n x 2 matrix where each column contains exactly one
+   * non-zero element equal to 1. There are n choose 2 of these matrices
+   * producing unique products, namely those such that i ≥ j. This can be
+   * encoded using 1/2 * n * (n-3) RotateLorentzCone constraints which we return
+   * in this function.
+   *
+   * This characterization can be found in Section 3.3 of "Sum of Squares Basis
+   * Pursuit with Linear and Second Order Cone Programming" by Ahmadi and Hall
+   * with arXiv link https://arxiv.org/abs/1510.01597
+   *
+   * @param X The matrix X. We will use 0.5(X+Xᵀ) as the "symmetric version" of
+   * X.
+   * @pre X(i, j) should be a linear expression of decision variables.
+   * @return A vector of RotatedLorentzConeConstraint constraints of length 1/2
+   * * n * (n-3) encoding VᵢⱼᵀXVᵢⱼ is psd
+   */
+  std::vector<Binding<RotatedLorentzConeConstraint>>
+  AddScaledDiagonallyDominantDualConeMatrixConstraint(
+      const Eigen::Ref<const MatrixX<symbolic::Expression>>& X);
 
   /**
    * Adds constraints that a given polynomial @p p is a sums-of-squares (SOS),

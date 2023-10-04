@@ -1209,6 +1209,35 @@ void AddSlackVariableForScaledDiagonallyDominantMatrixConstraint(
 }
 }  // namespace
 
+std::vector<Binding<LinearConstraint>>
+MathematicalProgram::AddPositiveDiagonallyDominantDualConeMatrixConstraint(
+    const Eigen::Ref<const MatrixX<symbolic::Expression>>& X) {
+  const int n = X.rows();
+  DRAKE_DEMAND(X.cols() == n);
+  std::vector<Binding<LinearConstraint>> ret;
+  ret.reserve(n * n);
+
+  // vᵢᵀXvᵢ ≥ 0 is equivalent to Xᵢᵢ ≥ 0 when vᵢ is a vector with exactly one
+  // entry equal to 1.
+  for (int i = 0; i < n; ++i) {
+    ret.push_back(AddLinearConstraint(X(i, i) >= 0));
+  }
+
+  // When vᵢ is a vector with two non-zero at entries k and j, we can choose
+  // without loss of generality that the jth entry to be 1, and the kth entry be
+  // either +1 or -1. This enumerates over all the parities of vᵢ. Under this
+  // choice vᵢᵀXvᵢ = Xₖₖ + sign(vᵢ(k))* (Xₖⱼ+ Xⱼₖ) +  Xⱼⱼ
+  for (int j = 0; j < n; ++j) {
+    for (int k = j + 1; k < n; ++k) {
+      ret.push_back(
+          AddLinearConstraint(X(k, k) + X(k, j) + X(j, k) + X(j, j) >= 0));
+      ret.push_back(
+          AddLinearConstraint(X(k, k) - X(k, j) - X(j, k) + X(j, j) >= 0));
+    }
+  }
+  return ret;
+}
+
 std::vector<std::vector<Matrix2<symbolic::Expression>>>
 MathematicalProgram::AddScaledDiagonallyDominantMatrixConstraint(
     const Eigen::Ref<const MatrixX<symbolic::Expression>>& X) {
@@ -1286,6 +1315,32 @@ MathematicalProgram::AddScaledDiagonallyDominantMatrixConstraint(
   AddLinearEqualityConstraint(A_diagonal_sum, Eigen::VectorXd::Zero(n),
                               diagonal_sum_var);
   return M;
+}
+
+std::vector<Binding<RotatedLorentzConeConstraint>>
+MathematicalProgram::AddScaledDiagonallyDominantDualConeMatrixConstraint(
+    const Eigen::Ref<const MatrixX<symbolic::Expression>>& X) {
+  const int n = X.rows();
+  DRAKE_DEMAND(X.cols() == n);
+  std::vector<Binding<RotatedLorentzConeConstraint>> ret;
+  ret.reserve(n);
+
+  // if i ≥ j
+  for (int i = 0; i < n; ++i) {
+    // VᵢⱼᵀXVᵢⱼ = [[Xᵢᵢ, Xᵢⱼ],[Xᵢⱼ,Xⱼⱼ]] and this matrix is PSD if an only if
+    // Xᵢᵢ ≥ 0, Xⱼⱼ ≥ 0, and XᵢᵢXⱼⱼ - XᵢⱼXᵢⱼ >= 0. Notice that if i == j, this
+    // is simply that Xᵢᵢ ≥ 0 and so we don't need to include the Xᵢᵢ ≥ 0 as it
+    // is already added when i ≠ j.
+    AddLinearConstraint(X(i, i) >= 0);
+    for (int j = i + 1; j < n; ++j) {
+      // VᵢⱼᵀXVᵢⱼ = [[Xᵢᵢ, Xᵢⱼ],[Xᵢⱼ,Xⱼⱼ]]. Since we already imposed that Xᵢᵢ ≥
+      // 0 and Xⱼⱼ ≥ 0, we only have to impose that XᵢᵢXⱼⱼ - XᵢⱼXᵢⱼ >= 0 which
+      // can be
+     ret.push_back(AddRotatedLorentzConeConstraint(Vector3<symbolic::Expression>(
+          X(i, i), X(j, j), 0.5 * (X(i, j) + X(j, i)))));
+    }
+  }
+  return ret;
 }
 
 Binding<ExponentialConeConstraint> MathematicalProgram::AddConstraint(
