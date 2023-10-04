@@ -45,15 +45,24 @@ void ApplyDriverConfig(
       lcms.Find("Driver for " + arm_name, driver_config.lcm_bus);
   MultibodyPlant<double>* controller_plant =
       SharedPointerSystem<double>::AddToBuilder(
-          builder,
-          internal::MakeArmControllerModel(sim_plant, arm_model, hand_model));
+          builder, manipulation::internal::MakeArmControllerModel(
+                       sim_plant, arm_model, hand_model));
+  builder->GetMutableSystems().back()->set_name(
+      fmt::format("{}_controller_plant", arm_name));
   // TODO(jwnimmer-tri) Make desired_iiwa_kp_gains configurable.
   std::optional<Eigen::VectorXd> desired_iiwa_kp_gains;
   const IiwaControlMode control_mode =
       ParseIiwaControlMode(driver_config.control_mode);
-  BuildIiwaControl(sim_plant, arm_model.model_instance, *controller_plant, lcm,
-                   builder, driver_config.ext_joint_filter_tau,
-                   desired_iiwa_kp_gains, control_mode);
+  if (lcm->get_lcm_url() == LcmBuses::kLcmUrlMemqNull) {
+    internal::AddSimIiwaDriver(sim_plant, arm_model.model_instance,
+                               *controller_plant, builder,
+                               driver_config.ext_joint_filter_tau,
+                               desired_iiwa_kp_gains, control_mode);
+  } else {
+    BuildIiwaControl(sim_plant, arm_model.model_instance, *controller_plant,
+                     lcm, builder, driver_config.ext_joint_filter_tau,
+                     desired_iiwa_kp_gains, control_mode);
+  }
 }
 
 }  // namespace kuka_iiwa

@@ -67,7 +67,8 @@ class BuildIiwaControlTest : public ::testing::Test {
     sim_plant_->Finalize();
 
     controller_plant_ = SharedPointerSystem<double>::AddToBuilder(
-        &builder_, internal::MakeArmControllerModel(*sim_plant_, iiwa7_info_));
+        &builder_, manipulation::internal::MakeArmControllerModel(*sim_plant_,
+                                                                  iiwa7_info_));
   }
 
   DiagramBuilder<double> builder_;

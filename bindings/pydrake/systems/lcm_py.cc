@@ -20,6 +20,7 @@ namespace pydrake {
 
 using lcm::DrakeLcm;
 using lcm::DrakeLcmInterface;
+using lcm::DrakeLcmParams;
 using pysystems::pylcm::BindCppSerializers;
 using systems::lcm::SerializerInterface;
 
@@ -154,6 +155,12 @@ PYBIND11_MODULE(lcm, m) {
     constexpr auto& cls_doc = doc.LcmBuses;
     py::class_<Class> cls(m, "LcmBuses");
     cls  // BR
+        .def_readonly_static("kLcmUrlMemqNull", &Class::kLcmUrlMemqNull
+            // TODO(jwnimmer-tri) The `cls_doc.kLcmUrlMemqNull.doc` docstring
+            // constant is absent for some unknown reason, but it wouldn't help
+            // anyway because pybind11 throws away docs on static constants:
+            // https://github.com/pybind/pybind11/issues/1111
+            )
         .def(py::init(), cls_doc.ctor.doc)
         .def("size", &Class::size, cls_doc.size.doc)
         .def("Find", &Class::Find, py::arg("description_of_caller"),
@@ -165,8 +172,11 @@ PYBIND11_MODULE(lcm, m) {
             py::keep_alive<1, 3>(), cls_doc.Add.doc);
   }
 
-  m.def("ApplyLcmBusConfig", &ApplyLcmBusConfig, py::arg("lcm_buses"),
-      py::arg("builder"), doc.ApplyLcmBusConfig.doc);
+  m.def("ApplyLcmBusConfig",
+      py::overload_cast<
+          const std::map<std::string, std::optional<DrakeLcmParams>>&,
+          systems::DiagramBuilder<double>*>(&ApplyLcmBusConfig),
+      py::arg("lcm_buses"), py::arg("builder"), doc.ApplyLcmBusConfig.doc);
 
   {
     using Class = LcmPublisherSystem;
