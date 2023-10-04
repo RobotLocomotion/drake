@@ -219,6 +219,7 @@ drake_cc_googletest(
         ":build_schunk_wsg_control",
         ":schunk_wsg_lcm",
         "//common:find_resource",
+        "//lcm",
         "//multibody/parsing:parser",
         "//multibody/plant",
         "//systems/analysis:simulator",

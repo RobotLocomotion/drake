@@ -297,6 +297,7 @@ drake_cc_binary(
         "//geometry:drake_visualizer",
         "//geometry:scene_graph",
         "//geometry/render_vtk",
+        "//lcm",
         "//multibody/parsing",
         "//multibody/plant",
         "//systems/analysis:simulator",

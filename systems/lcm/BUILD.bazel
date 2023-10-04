@@ -38,10 +38,13 @@ drake_cc_library(
     name = "lcm_publisher_system",
     srcs = ["lcm_publisher_system.cc"],
     hdrs = ["lcm_publisher_system.h"],
-    deps = [
+    interface_deps = [
         ":serializer",
-        "//lcm:drake_lcm",
+        "//lcm:interface",
         "//systems/framework:leaf_system",
+    ],
+    deps = [
+        "//lcm:drake_lcm",
     ],
 )
 
@@ -62,10 +65,13 @@ drake_cc_library(
     name = "lcm_subscriber_system",
     srcs = ["lcm_subscriber_system.cc"],
     hdrs = ["lcm_subscriber_system.h"],
-    deps = [
+    interface_deps = [
         ":serializer",
-        "//lcm:drake_lcm",
+        "//lcm:interface",
         "//systems/framework:leaf_system",
+    ],
+    deps = [
+        "//lcm:drake_lcm",
     ],
 )
 
