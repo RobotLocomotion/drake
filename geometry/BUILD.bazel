@@ -117,16 +117,19 @@ drake_cc_library(
     name = "drake_visualizer",
     srcs = ["drake_visualizer.cc"],
     hdrs = ["drake_visualizer.h"],
-    deps = [
+    interface_deps = [
         ":drake_visualizer_params",
         ":geometry_roles",
         ":geometry_version",
         ":scene_graph",
         "//common:essential",
-        "//lcm:drake_lcm",
-        "//lcmtypes:viewer",
+        "//lcm:interface",
         "//systems/framework:context",
         "//systems/framework:leaf_system",
+    ],
+    deps = [
+        "//lcm:drake_lcm",
+        "//lcmtypes:viewer",
     ],
 )
 
@@ -689,6 +692,8 @@ drake_cc_googletest(
         ":drake_visualizer",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
+        "//lcm",
+        "//lcmtypes:viewer",
         "//systems/analysis:simulator",
     ],
 )

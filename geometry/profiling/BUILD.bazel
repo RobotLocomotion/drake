@@ -25,6 +25,7 @@ drake_cc_binary(
         "//common",
         "//geometry:drake_visualizer",
         "//geometry:scene_graph",
+        "//lcm",
         "//lcmtypes:contact_results_for_viz",
         "//systems/analysis:explicit_euler_integrator",
         "//systems/analysis:simulator",

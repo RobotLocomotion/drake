@@ -41,6 +41,7 @@ drake_cc_binary(
         "//geometry:drake_visualizer",
         "//geometry:scene_graph",
         "//geometry/render_vtk",
+        "//lcm",
         "//systems/analysis:simulator",
         "//systems/framework:diagram",
         "//systems/lcm:lcm_pubsub_system",
@@ -61,6 +62,7 @@ drake_cc_binary(
     deps = [
         "//geometry:drake_visualizer",
         "//geometry:scene_graph",
+        "//lcm",
         "//lcmtypes:contact_results_for_viz",
         "//systems/analysis:simulator",
         "//systems/framework:diagram",
@@ -107,6 +109,7 @@ drake_cc_binary(
         ":solar_system",
         "//geometry:drake_visualizer",
         "//geometry:scene_graph",
+        "//lcm",
         "//systems/analysis:simulator",
         "//systems/framework:diagram",
         "//systems/primitives:constant_vector_source",

@@ -18,6 +18,7 @@ drake_cc_binary(
     ],
     deps = [
         "//common:add_text_logging_gflags",
+        "//lcm",
         "//multibody/benchmarks/inclined_plane",
         "//multibody/plant:contact_results_to_lcm",
         "//systems/analysis:simulator",

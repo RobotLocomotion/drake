@@ -199,6 +199,7 @@ drake_cc_googletest(
         ":build_iiwa_control",
         ":iiwa_constants",
         "//common:find_resource",
+        "//lcm",
         "//manipulation/util:make_arm_controller_model",
         "//multibody/parsing:model_instance_info",
         "//multibody/parsing:parser",
