@@ -37,8 +37,8 @@ T ThrowUnlessVectorIsMagnitudeOne(const Vector3<T>& unit_vector,
 /// writes a warning to the log file (only writes one warning per process).
 /// Note: 1E-14 ≈ 2^5.5 * std::numeric_limits<double>::epsilon();
 /// @param[in] unit_vector a vector which is allegedly a unit vector.
-/// @param[in] function_name name of the function that is to appear in the
-/// warning message (if ‖unit_vector‖ is not within tolerance of 1.0).
+/// @param[in] function_name name of the function that appears in the message
+/// written to the log file (if ‖unit_vector‖ is not within tolerance of 1.0).
 /// @retval ‖unit_vector‖² which is exactly 1.0 for a perfect unit_vector.
 /// @note: When type T is symbolic::Expression, this function is a no-op that
 /// returns 1.
