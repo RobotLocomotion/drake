@@ -73,28 +73,6 @@ if [[ -n "$build_deps" ]]; then
 fi
 
 # -----------------------------------------------------------------------------
-# Build and "install" Drake.
-# -----------------------------------------------------------------------------
-
-cd "$git_root"
-
-export SNOPT_PATH=git
-
-declare -a bazel_args=(
-    --repo_env=DRAKE_OS=macos_wheel
-    --define=NO_DRAKE_VISUALIZER=ON
-    --define=WITH_MOSEK=ON
-    --define=WITH_SNOPT=ON
-    # See tools/wheel/wheel_builder/macos.py for more on this env variable.
-    --macos_minimum_os="${MACOSX_DEPLOYMENT_TARGET}"
-)
-
-bazel build "${bazel_args[@]}" //tools/wheel:strip_rpath
-bazel build "${bazel_args[@]}" //tools/wheel:change_lpath
-
-bazel run "${bazel_args[@]}" //:install -- /opt/drake
-
-# -----------------------------------------------------------------------------
 # Set up a Python virtual environment with the latest setuptools.
 # -----------------------------------------------------------------------------
 
@@ -118,6 +96,32 @@ ln -s \
 ln -s \
     "$git_root/bazel-bin/tools/wheel/change_lpath" \
     "/opt/drake-wheel-build/python/bin/change_lpath"
+
+# -----------------------------------------------------------------------------
+# Build and "install" Drake.
+# -----------------------------------------------------------------------------
+
+cd "$git_root"
+
+# TODO(jwnimmer-tri) Switch to using the CMake for wheel builds so that we can
+# use the canonical `-DPython_EXECUTABLE` instead.
+export _DRAKE_WHEEL_BUILD_PYTHON_INTERPRETER_PATH=/opt/drake-wheel-build/python/bin/python3
+
+export SNOPT_PATH=git
+
+declare -a bazel_args=(
+    --repo_env=DRAKE_OS=macos_wheel
+    --define=NO_DRAKE_VISUALIZER=ON
+    --define=WITH_MOSEK=ON
+    --define=WITH_SNOPT=ON
+    # See tools/wheel/wheel_builder/macos.py for more on this env variable.
+    --macos_minimum_os="${MACOSX_DEPLOYMENT_TARGET}"
+)
+
+bazel build "${bazel_args[@]}" //tools/wheel:strip_rpath
+bazel build "${bazel_args[@]}" //tools/wheel:change_lpath
+
+bazel run "${bazel_args[@]}" //:install -- /opt/drake
 
 # -----------------------------------------------------------------------------
 # Build the Drake wheel.

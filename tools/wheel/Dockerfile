@@ -43,7 +43,6 @@ RUN /image/provision-python.sh ${PYTHON} ${PYTHON_SHA}
 # -----------------------------------------------------------------------------
 
 ADD image/build-drake.sh /image/
-ADD image/pip-drake.patch /image/
 ADD image/drake-src.tar.xz /opt/drake-wheel-build/drake/
 
 # -----------------------------------------------------------------------------
