@@ -147,16 +147,26 @@ class FixedOffsetFrame final : public Frame<T> {
   /// @}
 
  private:
-  // Implementation for MultibodyElement::DoDeclareParameters().
+  // Implementation for Frame::DoDeclareFrameParameters().
   // FixedOffsetFrame declares a single parameter for its RigidTransform.
-  void DoDeclareParameters(
+  void DoDeclareFrameParameters(
       internal::MultibodyTreeSystem<T>* tree_system) final {
-    // Declare parent classes' parameters
-    Frame<T>::DoDeclareParameters(tree_system);
-    X_PF_parameter_index_ = this->DeclareNumericParameter(
-        tree_system,
-        systems::BasicVector<T>(Eigen::Map<const VectorX<T>>(
-            X_PF_.template cast<T>().GetAsMatrix34().data(), 12, 1)));
+    // Model value of this transform is set to a dummy value to indicate that
+    // the model value is not used. This class stores the default value and
+    // sets it in DoSetDefaultFrameParameters().
+    X_PF_parameter_index_ =
+        this->DeclareNumericParameter(tree_system, systems::BasicVector<T>(12));
+  }
+
+  // Implementation for Frame::DoSetDefaultFrameParameters().
+  // FixedOffsetFrame sets a single parameter for its RigidTransform.
+  void DoSetDefaultFrameParameters(
+      systems::Parameters<T>* parameters) const final {
+    // Set default rigid transform between P and F.
+    systems::BasicVector<T>& X_PF_parameter =
+        parameters->get_mutable_numeric_parameter(X_PF_parameter_index_);
+    X_PF_parameter.set_value(Eigen::Map<const VectorX<T>>(
+        X_PF_.template cast<T>().GetAsMatrix34().data(), 12, 1));
   }
 
   // Helper method to make a clone templated on ToScalar.
