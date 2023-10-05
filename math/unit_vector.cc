@@ -11,13 +11,23 @@
 namespace drake {
 namespace math {
 
-// The implementation logic underlying ThrowUnlessVectorIsMagnitudeOne(), but
-// instead of throwing, returns the exception message as an extra return value.
-// When there are no errors, the error_message will be empty.
-// @retval {‖unit_vector‖², error_message} as a pair.
-template <typename T>
+namespace {
+// Checks if ‖unit_vector‖ is within 1E-14 (≈ 5.5 bits) of 1.0.
+// Note: 1E-14 ≈ 2^5.5 * std::numeric_limits<double>::epsilon();
+// @param[in] unit_vector a vector which is allegedly a unit vector.
+// @param[in] function_name function name that appears in the pair of return
+// values if ‖unit_vector‖ is not within tolerance of 1.0.
+// @retval {‖unit_vector‖², error_message} as a pair. The return value is
+// {‖unit_vector‖², {}} for a unit_vector within tolerance (i.e., error_message
+// is empty). Otherwise error_message contains a message that can be
+// subsequently used as an exception message or to write to a log file.
+// @note: When type T is symbolic::Expression, this function is a no-op that
+// returns {1.0, {}}.
+// @note: This is a helper function used by ThrowUnlessVectorIsMagnitudeOne(),
+// but instead of throwing an exception, it returns the exception message.
+template<typename T>
 std::pair<T, std::string> CheckVectorIsMagnitudeOne(
-    const Vector3<T>& unit_vector, std::string_view function_name) {
+    const Vector3<T> &unit_vector, std::string_view function_name) {
   DRAKE_DEMAND(!function_name.empty());
   if constexpr (scalar_predicate<T>::is_bool) {
     using std::abs;
@@ -47,6 +57,8 @@ std::pair<T, std::string> CheckVectorIsMagnitudeOne(
   return {1.0, {}};
 }
 
+}  // namespace
+
 template <typename T>
 T ThrowUnlessVectorIsMagnitudeOne(const Vector3<T>& unit_vector,
                                   std::string_view function_name) {
@@ -59,8 +71,6 @@ T ThrowUnlessVectorIsMagnitudeOne(const Vector3<T>& unit_vector,
   return result;
 }
 
-// Like ThrowUnlessVectorIsMagnitudeOne(), but warns (once per process) instead
-// of throwing.
 template <typename T>
 T WarnUnlessVectorIsMagnitudeOne(const Vector3<T>& unit_vector,
                                  std::string_view function_name) {
