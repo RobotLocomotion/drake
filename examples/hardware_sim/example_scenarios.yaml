@@ -50,11 +50,41 @@ Demo:
       # Use a non-default LCM url to communicate with the robot.
       lcm_url: udpm://239.241.129.92:20185?ttl=0
   cameras:
-    oracular_view:
+    camera_0:
       name: camera_0
+      name: vtk_camera
+      renderer_name: vtk
+      renderer_class: !RenderEngineVtkParams {}
+      width: 640
+      height: 480
+      depth: True
+      fps: 10.0
       X_PB:
         translation: [1.5, 0.8, 1.25]
         rotation: !Rpy { deg: [-120, 5, 125] }
+    camera_1:
+      name: camera_1
+      name: gl_camera_front
+      renderer_name: gl
+      renderer_class: !RenderEngineGlParams {}
+      width: 1000
+      height: 1000
+      depth: True
+      fps: 10.0
+      X_PB:
+        translation: [0, 1.5, 0.5]
+        rotation: !Rpy { deg: [90, 180, 0] }
+    camera_2:
+      name: camera_2
+      name: vtk_camera_top
+      renderer_name: vtk
+      width: 480
+      height: 320
+      depth: True
+      fps: 15.0
+      X_PB:
+        translation: [0, -1.0, 2.0]
+        rotation: !Rpy { deg: [180, 0, 0] }
   model_drivers:
     iiwa: !IiwaDriver
       hand_model_name: wsg
