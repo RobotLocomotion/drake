@@ -4,9 +4,6 @@ build --force_pic
 build --fission=dbg
 build --features=per_object_debug_info
 
-build:_drd --extra_toolchains=//tools/py_toolchain:linux_dbg_toolchain
-build:_helgrind --extra_toolchains=//tools/py_toolchain:linux_dbg_toolchain
-
 # Configure ${PATH} for actions.
 # N.B. Ensure this is consistent with `execute.bzl`.
 build --action_env=PATH=/usr/bin:/bin
