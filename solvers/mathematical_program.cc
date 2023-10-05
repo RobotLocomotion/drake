@@ -1331,13 +1331,13 @@ MathematicalProgram::AddScaledDiagonallyDominantDualConeMatrixConstraint(
     // Xᵢᵢ ≥ 0, Xⱼⱼ ≥ 0, and XᵢᵢXⱼⱼ - XᵢⱼXᵢⱼ >= 0. Notice that if i == j, this
     // is simply that Xᵢᵢ ≥ 0 and so we don't need to include the Xᵢᵢ ≥ 0 as it
     // is already added when i ≠ j.
-    AddLinearConstraint(X(i, i) >= 0);
     for (int j = i + 1; j < n; ++j) {
       // VᵢⱼᵀXVᵢⱼ = [[Xᵢᵢ, Xᵢⱼ],[Xᵢⱼ,Xⱼⱼ]]. Since we already imposed that Xᵢᵢ ≥
       // 0 and Xⱼⱼ ≥ 0, we only have to impose that XᵢᵢXⱼⱼ - XᵢⱼXᵢⱼ >= 0 which
       // can be
-     ret.push_back(AddRotatedLorentzConeConstraint(Vector3<symbolic::Expression>(
-          X(i, i), X(j, j), 0.5 * (X(i, j) + X(j, i)))));
+      ret.push_back(
+          AddRotatedLorentzConeConstraint(Vector3<symbolic::Expression>(
+              X(i, i), X(j, j), 0.5 * (X(i, j) + X(j, i)))));
     }
   }
   return ret;

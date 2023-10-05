@@ -1784,7 +1784,6 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "scaled_diagonally_dominant_dual_cone_matrix_test",
-    tags = gurobi_test_tags() + mosek_test_tags(),
     deps = [
         ":mathematical_program",
         ":solve",

@@ -1,13 +1,9 @@
-
-#include <iostream>
 #include <vector>
 
-#include <fmt/format.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/solvers/mathematical_program.h"
-#include "drake/solvers/snopt_solver.h"
 #include "drake/solvers/solve.h"
 
 namespace drake {
@@ -51,7 +47,8 @@ int TestIn3by3DiagonallyDominantDualCone(const Eigen::Matrix3d& X) {
 }  // namespace
 
 GTEST_TEST(DiagonallyDominantMatrixDualConeConstraint, SizeOfReturnTest) {
-  // Test the returned variables Y.
+  // Test the number of constraints added to the program. This should be n * n
+  // for any choice of matrix X of size n.
   MathematicalProgram prog;
   auto X = prog.NewSymmetricContinuousVariables<5>();
   auto dual_cone_constraints =
@@ -61,7 +58,7 @@ GTEST_TEST(DiagonallyDominantMatrixDualConeConstraint, SizeOfReturnTest) {
 }
 
 GTEST_TEST(DiagonallyDominantMatrixDualConeConstraint, FeasibilityCheck2by2) {
-  // Test the returned variables Y.
+  // Test that DD* matrices are feasible.
   MathematicalProgram prog;
   auto X = prog.NewSymmetricContinuousVariables<2>();
   auto dual_cone_constraints =
@@ -78,8 +75,6 @@ GTEST_TEST(DiagonallyDominantMatrixDualConeConstraint, FeasibilityCheck2by2) {
     return Eigen::Matrix2d({{x_upper_triangle(0), x_upper_triangle(1)},
                             {x_upper_triangle(1), x_upper_triangle(2)}});
   };
-
-  std::vector<Eigen::Matrix2d> example_dd_matrices;
 
   // [1, 0.9; 0.9 2] is in DD* and DD.
   set_X_value(Eigen::Vector3d(1, 0.9, 2));

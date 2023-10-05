@@ -861,7 +861,8 @@ class MathematicalProgram {
    * decision variables.
    * @pre Each entry in new_indeterminates should be of CONTINUOUS type.
    */
-  void AddIndeterminates(const symbolic::Variables& new_indeterminates);
+  void AddIndeterminates(
+      const symbolic::Variables& new_indeterminates);
 
   /**
    * Adds a callback method to visualize intermediate results of the
@@ -2560,7 +2561,7 @@ class MathematicalProgram {
   /**
    * Adds the constraint that a symmetric matrix is in the dual cone of the
    * diagonally dominant matrices which is denoted DD*. The set DD* is an outer
-   * approximation to the PSD cone.
+   * approximation to the PSD cone since DD ⊆ PSD = PSD* ⊆ DD*
    *
    * A symmetric matrix X is in DD* if and only if vᵢᵀXvᵢ ≥ 0 for all vᵢ,
    * where vᵢ is a non-zero vector with at most two entries set to ±1 and all
@@ -2643,7 +2644,8 @@ class MathematicalProgram {
   /**
    * Adds the constraint that a symmetric matrix is in the dual cone of the
    * scaled diagonally dominant matrices which is denoted SDD*. The set SDD* is
-   * an outer approximation to the PSD cone that is tighter than DD*.
+   * an outer approximation to the PSD cone that is tighter than DD*. This
+   * follows from the fact that DD ⊆ SDD ⊆ PSD = PSD* ⊆ SDD* ⊆ DD*
    *
    * A symmetric matrix X is in SDD* if and only if VᵢⱼᵀXVᵢⱼ is psd for all Vᵢⱼ,
    * where Vᵢⱼ is an n x 2 matrix where each column contains exactly one
