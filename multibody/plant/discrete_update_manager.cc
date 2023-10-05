@@ -76,9 +76,8 @@ void DiscreteUpdateManager<T>::DeclareCacheEntries() {
 
   const auto& contact_results_cache_entry = DeclareCacheEntry(
       "Contact results (discrete)",
-      systems::ValueProducer(
-          this,
-          &DiscreteUpdateManager<T>::CalcContactResults),
+      systems::ValueProducer(this,
+                             &DiscreteUpdateManager<T>::CalcContactResults),
       {systems::System<T>::xd_ticket(),
        systems::System<T>::all_parameters_ticket()});
   cache_indexes_.contact_results = contact_results_cache_entry.cache_index();
@@ -293,7 +292,8 @@ template <typename T>
 ScopeExit DiscreteUpdateManager<T>::ThrowIfNonContactForceInProgress(
     const systems::Context<T>& context) const {
   systems::CacheEntryValue& value =
-      plant().get_cache_entry(
+      plant()
+          .get_cache_entry(
               cache_indexes_.non_contact_forces_evaluation_in_progress)
           .get_mutable_cache_entry_value(context);
   bool& evaluation_in_progress = value.GetMutableValueOrThrow<bool>();
@@ -319,8 +319,9 @@ ScopeExit DiscreteUpdateManager<T>::ThrowIfNonContactForceInProgress(
   // If the exception above is triggered, we will leave this method and the
   // computation will no longer be "in progress". We use a scoped guard so
   // that we have a chance to mark it as such when we leave this scope.
-  return ScopeExit(
-      [&evaluation_in_progress]() { evaluation_in_progress = false; });
+  return ScopeExit([&evaluation_in_progress]() {
+    evaluation_in_progress = false;
+  });
 }
 
 template <typename T>
