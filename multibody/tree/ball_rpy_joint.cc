@@ -66,7 +66,7 @@ BallRpyJoint<T>::MakeImplementationBlueprint() const {
   auto ballrpy_mobilizer = std::make_unique<internal::SpaceXYZMobilizer<T>>(
       this->frame_on_parent(), this->frame_on_child());
   ballrpy_mobilizer->set_default_position(this->default_positions());
-  blue_print->mobilizers_.push_back(std::move(ballrpy_mobilizer));
+  blue_print->mobilizer = std::move(ballrpy_mobilizer);
   return blue_print;
 }
 

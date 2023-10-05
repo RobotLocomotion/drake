@@ -5,22 +5,14 @@ namespace multibody {
 
 template <typename T>
 bool Joint<T>::can_rotate() const {
-  const std::vector<internal::Mobilizer<T>*>& mobilizers =
-      get_implementation().mobilizers_;
-  for (const internal::Mobilizer<T>* mobilizer : mobilizers) {
-    if (mobilizer->can_rotate()) return true;
-  }
-  return false;
+  DRAKE_DEMAND(this->get_implementation().has_mobilizer());
+  return get_implementation().mobilizer->can_rotate();
 }
 
 template <typename T>
 bool Joint<T>::can_translate() const {
-  const std::vector<internal::Mobilizer<T>*>& mobilizers =
-      get_implementation().mobilizers_;
-  for (const internal::Mobilizer<T>* mobilizer : mobilizers) {
-    if (mobilizer->can_translate()) return true;
-  }
-  return false;
+  DRAKE_DEMAND(this->get_implementation().has_mobilizer());
+  return get_implementation().mobilizer->can_translate();
 }
 
 }  // namespace multibody
