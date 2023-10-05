@@ -486,8 +486,7 @@ drake_cc_binary(
     testonly = True,
     srcs = ["test/meshcat_manual_test.cc"],
     data = [
-        ":test/env_256_brick_room.jpg",
-        ":test/env_256_cornell_box.png",
+        ":environment_maps",
         "//examples/kuka_iiwa_arm:models",
         "//geometry/render:test_models",
         "//manipulation/models/iiwa_description:models",
@@ -518,8 +517,8 @@ drake_py_binary(
 drake_cc_googletest(
     name = "meshcat_test",
     data = [
+        ":environment_maps",
         ":meshcat_websocket_client",
-        ":test/env_256_cornell_box.png",
         "//geometry/render:test_models",
     ],
     tags = [
@@ -668,6 +667,17 @@ filegroup(
     testonly = 1,
     srcs = [
         "test/quad_cube.stl",
+    ],
+)
+
+filegroup(
+    name = "environment_maps",
+    testonly = 1,
+    srcs = [
+        "test/env_256_brick_room.jpg",
+        "test/env_256_cornell_box.png",
+        "test/env_256_six_color_room.hdr",
+        "test/env_256_six_color_room.png",
     ],
 )
 

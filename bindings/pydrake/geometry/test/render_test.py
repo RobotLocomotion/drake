@@ -49,13 +49,42 @@ class TestGeometryRender(unittest.TestCase):
         self.assertIn("spot", repr(light))
         copy.copy(light)
 
+    def test_equirectangular_map(self):
+        # A default constructor exists.
+        mut.EquirectangularMap()
+
+        # The kwarg constructor also works.
+        map = mut.EquirectangularMap(path="test.hdr")
+        self.assertEqual(map.path, "test.hdr")
+
+        self.assertIn("path", repr(map))
+        copy.copy(map)
+
+    def test_environment_map(self):
+        # A default constructor exists.
+        mut.EnvironmentMap()
+
+        # The kwarg constructor also works.
+        params = mut.EnvironmentMap(skybox=False)
+        self.assertFalse(params.skybox)
+        self.assertIsInstance(params.texture, mut.NullTexture)
+
+        params = mut.EnvironmentMap(
+            texture=mut.EquirectangularMap(path="test.hdr"))
+        self.assertIn("EquirectangularMap", repr(params))
+        copy.copy(params)
+
     def test_render_engine_vtk_params(self):
         # Confirm default construction of params.
         params = mut.RenderEngineVtkParams()
         self.assertEqual(params.default_diffuse, None)
 
         diffuse = np.array((1.0, 0.0, 0.0, 0.0))
-        params = mut.RenderEngineVtkParams(default_diffuse=diffuse)
+        params = mut.RenderEngineVtkParams(
+            default_diffuse=diffuse,
+            environment_map=mut.EnvironmentMap(
+                skybox=False,
+                texture=mut.EquirectangularMap(path="local.hdr")))
         self.assertTrue((params.default_diffuse == diffuse).all())
 
         self.assertIn("default_diffuse", repr(params))
