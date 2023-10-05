@@ -242,12 +242,23 @@ drake_cc_googletest(
     ],
 )
 
+# The exported_symbols_test is skipped in some build configurations.
+selects.config_setting_group(
+    name = "skip_exported_symbols_test",
+    match_any = [
+        # Debug builds have a lot more symbols (no dead code elimination) so
+        # are too much work to tidy up.
+        "//tools/cc_toolchain:debug",
+        # Rust symbols (from Clarabel) have the wrong visibility; this is a
+        # known issue with a TODO in the Clarabel BUILD file.
+        "//tools:with_clarabel",
+    ],
+)
+
 drake_py_unittest(
     name = "exported_symbols_test",
-    args = select({
-        # Don't run the test on Debug builds. They have a lot more symbols
-        # (no dead code elimination) so are too much work to tidy up.
-        "//tools/cc_toolchain:debug": ["--help"],
+    args = selects.with_or({
+        ":skip_exported_symbols_test": ["--help"],
         "//conditions:default": [],
     }),
     data = [

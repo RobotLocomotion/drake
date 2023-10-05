@@ -40,3 +40,7 @@ cc_library(
 
 # TODO(jwnimmer-tri) Prior to using Clarabel as part of libdrake.so, we'll need
 # to add the license-install rule here.
+
+# TODO(jwnimmer-tri) Prior to using Clarabel as part of libdrake.so, we'll need
+# to un-nerf exported_symbols_test when Clarabel is enabled (and figure out how
+# to set Rust code to use hidden visibility).
