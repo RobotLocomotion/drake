@@ -1,94 +1,21 @@
+load("@python//:version.bzl", "PYTHON_BIN_PATH")
 load("@rules_python//python:defs.bzl", "py_runtime", "py_runtime_pair")
 load("//tools/lint:lint.bzl", "add_lint_tests")
-load(
-    ":interpreter_paths.bzl",
-    "LINUX_DBG_INTERPRETER_PATH",
-    "LINUX_INTERPRETER_PATH",
-    "MACOS_ARM64_INTERPRETER_PATH",
-    "MACOS_I386_INTERPRETER_PATH",
-)
 
-# The value of interpreter_path must match the value of linux_interpreter_path
-# used when declaring the @python repository.
 py_runtime(
-    name = "linux_py3_runtime",
-    interpreter_path = LINUX_INTERPRETER_PATH,
+    name = "runtime",
+    interpreter_path = PYTHON_BIN_PATH,
     python_version = "PY3",
 )
 
 py_runtime_pair(
-    name = "linux_py_runtime_pair",
-    py3_runtime = ":linux_py3_runtime",
+    name = "runtime_pair",
+    py3_runtime = ":runtime",
 )
 
 toolchain(
-    name = "linux_toolchain",
-    target_compatible_with = ["@platforms//os:linux"],
-    toolchain = ":linux_py_runtime_pair",
-    toolchain_type = "@rules_python//python:toolchain_type",
-)
-
-py_runtime(
-    name = "linux_dbg_py3_runtime",
-    interpreter_path = LINUX_DBG_INTERPRETER_PATH,
-    python_version = "PY3",
-)
-
-py_runtime_pair(
-    name = "linux_dbg_py_runtime_pair",
-    py3_runtime = ":linux_dbg_py3_runtime",
-)
-
-# Typically this toolchain would be loaded manually using the
-# --extra_toolchains command line option.
-toolchain(
-    name = "linux_dbg_toolchain",
-    target_compatible_with = ["@platforms//os:linux"],
-    toolchain = ":linux_dbg_py_runtime_pair",
-    toolchain_type = "@rules_python//python:toolchain_type",
-)
-
-# The value of interpreter_path must match the value of macos_interpreter_path
-# used when declaring the @python repository.
-py_runtime(
-    name = "macos_i386_py3_runtime",
-    interpreter_path = MACOS_I386_INTERPRETER_PATH,
-    python_version = "PY3",
-)
-
-py_runtime(
-    name = "macos_arm64_py3_runtime",
-    interpreter_path = MACOS_ARM64_INTERPRETER_PATH,
-    python_version = "PY3",
-)
-
-py_runtime_pair(
-    name = "macos_i386_py_runtime_pair",
-    py3_runtime = ":macos_i386_py3_runtime",
-)
-
-py_runtime_pair(
-    name = "macos_arm64_py_runtime_pair",
-    py3_runtime = ":macos_arm64_py3_runtime",
-)
-
-toolchain(
-    name = "macos_i386_toolchain",
-    target_compatible_with = [
-        "@platforms//cpu:x86_64",
-        "@platforms//os:osx",
-    ],
-    toolchain = ":macos_i386_py_runtime_pair",
-    toolchain_type = "@rules_python//python:toolchain_type",
-)
-
-toolchain(
-    name = "macos_arm64_toolchain",
-    target_compatible_with = [
-        "@platforms//cpu:arm64",
-        "@platforms//os:osx",
-    ],
-    toolchain = ":macos_arm64_py_runtime_pair",
+    name = "toolchain",
+    toolchain = ":runtime_pair",
     toolchain_type = "@rules_python//python:toolchain_type",
 )
 
