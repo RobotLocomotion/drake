@@ -228,7 +228,9 @@ class DRAKE_NO_EXPORT RenderEngineVtk : public render::RenderEngine,
   // Initializes the VTK pipelines.
   void InitializePipelines();
 
-  // Performs the common setup for all shape types.
+  // Performs the common setup for all shape types. Note, this can be called
+  // multiple times for a single value of data.id. It will simply accumulate
+  // multiple parts in the Prop associated with the geometry id.
   void ImplementPolyData(vtkPolyDataAlgorithm* source,
                          const geometry::internal::RenderMaterial& material,
                          const RegistrationData& data);
