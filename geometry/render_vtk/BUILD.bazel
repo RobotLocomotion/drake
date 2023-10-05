@@ -124,6 +124,7 @@ drake_cc_googletest(
         "//conditions:default": [],
     }),
     data = [
+        "//geometry:environment_maps",
         "//geometry/render:test_models",
     ],
     tags = vtk_test_tags(),

@@ -37,6 +37,7 @@
 
  to get past the aberrant tests; they *should* pass with this disabled. */
 DEFINE_bool(show_window, false, "Display render windows locally for debugging");
+DEFINE_double(sleep, 0, "Seconds to sleep between renders");
 
 namespace drake {
 namespace geometry {
@@ -270,6 +271,7 @@ class RenderEngineVtkTest : public ::testing::Test {
     EXPECT_NO_THROW(renderer->RenderDepthImage(depth_camera, depth));
     EXPECT_NO_THROW(renderer->RenderLabelImage(color_camera, label));
     EXPECT_NO_THROW(renderer->RenderColorImage(color_camera, color));
+    if (FLAGS_sleep > 0) sleep(FLAGS_sleep);
   }
 
   // Confirms that all pixels in the member color image have the same value.
@@ -1117,6 +1119,12 @@ TEST_F(RenderEngineVtkTest, MultiMaterialObjects) {
   for (const auto& filename : filenames) {
     Init(X_WC_, true);
     Mesh mesh(filename);
+    // When we add a glTF file, the terrain's material color gets promoted to
+    // PBR (to match). Therefore, the expected outlier color needs to shift
+    // to account for the material change.
+    expected_outlier_color_ = mesh.extension() == ".gltf"
+                                  ? RgbaColor(Rgba(0.4392, 0.4392, 0.4745))
+                                  : RgbaColor{kTerrainColorI, 255};
     expected_label_ = RenderLabel(3);
     // Note: Passing diffuse color or texture to a glTF spawns a warning.
     PerceptionProperties material;
@@ -1897,6 +1905,232 @@ TEST_F(RenderEngineVtkTest, MultiLights) {
   EXPECT_TRUE(IsColorNear(test_color, expected_color))
       << "  test color: " << test_color << "\n"
       << "  expected color: " << expected_color;
+}
+
+// Confirms that the environment maps gets parsed and instantiated correctly.
+// The texture map is of a box-like room where each surface is a different
+// light-emitting color (in high- and low-dynamic range representations).
+//
+// When the environment map is provided, it illuminates the sphere, whether we
+// draw the map in a skybox or not. What we see in the *background* depends on
+// whether we request use of the skybox. Either way, the sphere will be the
+// same.
+//
+// The sphere is white and is not illuminated like it would be with a simple
+// virtual light. The environment tints the sphere (a function of how much
+// light energy is in the environment map). If the camera is looking in the +Wx
+// direction, the visible center of the sphere is most reflecting the
+// environment color from the -Wy. The colors encoded in the test below reflect
+// this.
+//
+// We want to catch any regression changes that suggest the environment map
+// is being registered in the world differently from what is expected. To that
+// end, we'll render three different angles, confirming the background and
+// sphere illumination values.
+//
+// Under xvfb, these renderings are *expensive*. So, we'll be very judicious
+// in the renderings we do. We'll do one rendering using the high-dynamic range
+// map in all three directions with sky box enabled. We'll have one more test
+// for each of the following:
+//
+//    - the skybox property (turning it on and off).
+//    - confirming that it survives cloning (do we still see the effects of the
+//      environment map).
+//    - that low-dynamic range image (we'll assume if it appears as expected
+//      from one view, that it's aligned the same as the HDR image).
+TEST_F(RenderEngineVtkTest, EnvironmentMap) {
+  struct Config {
+    std::string description;
+    RotationMatrixd R_WC;
+    Rgba bg_color;
+    Rgba sphere_color;
+    std::string map_path;
+    bool show_map{true};
+    bool render_clone{false};
+  };
+
+  const Vector3d clear_rgb = RenderEngineVtkParams().default_clear_color;
+  const Rgba clear_color(clear_rgb(0), clear_rgb(1), clear_rgb(2));
+  const std::string hdr_path =
+      FindResourceOrThrow("drake/geometry/test/env_256_six_color_room.hdr");
+  const std::string ldr_path =
+      FindResourceOrThrow("drake/geometry/test/env_256_six_color_room.png");
+
+  // 45-degree vertical field of view.
+  const ColorRenderCamera camera(depth_camera_.core(), FLAGS_show_window);
+  // The camera is three meters removed from the sphere. As we change camera
+  // orientation, we'll rotate the camera around the origin at this fixed
+  // distance.
+  const Vector3d p_WC_C(0, 0, -3);
+
+  ImageRgba8U image(camera.core().intrinsics().width(),
+                    camera.core().intrinsics().height());
+  // Center pixel -- middle of the sphere.
+  const int cx = image.width() / 2;
+  const int cy = image.height() / 2;
+  // Edge pixel -- so we can see the background.
+  const int ex = 10;
+  const int ey = 10;
+
+  // Add a white sphere to reflect the environment map's illumination.
+  Sphere sphere{0.5};
+  PerceptionProperties material;
+  material.AddProperty("label", "id", RenderLabel::kDontCare);
+  material.AddProperty("phong", "diffuse", Rgba(1, 1, 1));
+
+  // The expected colors are the *observed* colors. Perform the rendering, look
+  // at the result, confirm it's what we expect to see, and encode those
+  // colors here. We don't have a closed-form solution for predicting the
+  // expected colors.
+  //
+  // Furthermore, the expected background varies between LDR and HDR for a
+  // couple of reasons:
+  //   1. The HDR image gets tone mapped.
+  //   2. The PBR illumination model isn't as simplistic as the phong, so
+  //      material colors seldom get reproduced verbatim.
+  // This is why it is necessary to empirically define the "expected" colors.
+  const std::vector<Config> configs{
+      {.description = "Facing +Wz, toward the blue face, magenta behind; HDR",
+       .R_WC = RotationMatrixd(),
+       .bg_color = Rgba(0, 0, 1),
+       .sphere_color = Rgba(0.9882, 0.6353, 0.9098),  // magenta-ish
+       .map_path = hdr_path},
+      {.description = "Facing blue; testing the skybox",
+       .R_WC = RotationMatrixd(),
+       .bg_color = Rgba(0, 0, 1),
+       .sphere_color = Rgba(0.9882, 0.6353, 0.9098),  // magenta-ish
+       .map_path = hdr_path,
+       .show_map = false},
+      {.description = "Facing blue; testing the clone",
+       .R_WC = RotationMatrixd(),
+       .bg_color = Rgba(0, 0, 1),
+       .sphere_color = Rgba(0.9882, 0.6353, 0.9098),  // magenta-ish
+       .map_path = hdr_path,
+       .render_clone = true},
+      {.description = "Facing +Wy, toward the green face, yellow behind; HDR",
+       .R_WC = RotationMatrixd::MakeXRotation(M_PI / 2),
+       .bg_color = Rgba(0, 1, 0),
+       .sphere_color = Rgba(0.9843, 0.9098, 0.6353),  // yellow-ish
+       .map_path = hdr_path},
+      {.description = "Facing +Wx, toward the red face, cyan behind; HDR",
+       .R_WC = RotationMatrixd::MakeYRotation(M_PI / 2),
+       .bg_color = Rgba(1, 0, 0),
+       .sphere_color = Rgba(0.5177, 0.9804, 0.9765),  // cyan-ish
+       .map_path = hdr_path},
+      {.description = "Facing +Wz, toward the blue face, magenta behind; LDR",
+       .R_WC = RotationMatrixd(),
+       .bg_color = Rgba(0.0588, 0.0588, 0.9255),
+       .sphere_color = Rgba(0.7255, 0.4275, 0.6275),  // magenta-ish
+       .map_path = ldr_path},
+  };
+
+  for (const auto& config : configs) {
+    SCOPED_TRACE(config.description);
+    const RenderEngineVtkParams params{
+        .environment_map = EnvironmentMap{
+            .skybox = config.show_map,
+            .texture = EquirectangularMap{.path = config.map_path}}};
+    RenderEngineVtk renderer(params);
+
+    const RigidTransformd X_WR(config.R_WC, config.R_WC * p_WC_C);
+    InitializeRenderer(X_WR, false /* add terrain */, &renderer);
+
+    renderer.RegisterVisual(geometry_id_, sphere, material,
+                            RigidTransformd::Identity(),
+                            false /* needs update */);
+
+    RenderEngine* renderer_ptr = &renderer;
+    std::unique_ptr<RenderEngine> clone{};
+    if (config.render_clone) {
+      clone = renderer.Clone();
+      renderer_ptr = clone.get();
+    }
+    EXPECT_NO_THROW(renderer_ptr->RenderColorImage(camera, &image));
+
+    // We're using a rather loose pixel tolerance to accommodate vagaries
+    // of CI. The value of 20 is required by focal; we can shrink it when we
+    // eliminate focal. 10 should be more than enough.
+    constexpr int tolerance = 20;
+
+    // Test the center (illumination on the sphere).
+    const RgbaColor center_color(image.at(cx, cy));
+    EXPECT_TRUE(IsColorNear(center_color, config.sphere_color, tolerance))
+        << "  test color: " << center_color << "\n"
+        << "  expected sphere color: " << config.sphere_color;
+
+    // Test the background (we see the right part of the environment map
+    // or none at all, if we're not using the sky box).
+    const RgbaColor edge_color(image.at(ex, ey));
+    const RgbaColor bg_color = config.show_map ? config.bg_color : clear_color;
+    EXPECT_TRUE(IsColorNear(edge_color, bg_color, tolerance))
+        << "  test bg color: " << edge_color << "\n"
+        << "  expected bg color: " << bg_color;
+  }
+}
+
+// RenderEngineVtk promotes all materials to be PBR materials on two conditions:
+//
+//  1. Any geometry with intrinsic PBR materials is introduced (e.g., a glTF)
+//  2. An environment map is introduced.
+//
+// (1) has been shown in TEST_F(RenderEngineVtkTest, EnvironmentMap). The
+// sphere there has a typical phong material and the fact that it gets
+// illuminated based on the environment shows PBR promotion.
+//
+// This test we'll simply confirm that the introduction of a glTF shows an
+// illumination change without any other step (indicating material promotion).
+TEST_F(RenderEngineVtkTest, PbrMaterialPromotion) {
+  auto test_sphere_color = [this](bool matches_default,
+                                  RenderEngineVtk* renderer) {
+    const ColorRenderCamera camera(depth_camera_.core(), FLAGS_show_window);
+    ImageRgba8U image(camera.core().intrinsics().width(),
+                      camera.core().intrinsics().height());
+    // Center pixel -- middle of the sphere.
+    const int cx = image.width() / 2;
+    const int cy = image.height() / 2;
+
+    renderer->RenderColorImage(camera, &image);
+
+    const RgbaColor sampled_color(image.at(cx, cy));
+    EXPECT_EQ(IsColorNear(sampled_color, default_color_), matches_default)
+        << "  rendered color: " << sampled_color << "\n"
+        << "  expected color: " << default_color_;
+  };
+
+  // Baseline test; sphere only reproduces the phong color at the center.
+  // We'll also use this to confirm that defining an EnvironmentMap with a
+  // NullTexture has no effect: no exception and it renders like no map was
+  // specified at all.
+  {
+    SCOPED_TRACE("Baseline");
+    const Vector3d bg_rgb{kBgColor.r / 255., kBgColor.g / 255.,
+                          kBgColor.b / 255.};
+    const RenderEngineVtkParams params{.default_clear_color = bg_rgb,
+                                       .environment_map = EnvironmentMap()};
+    auto renderer = make_unique<RenderEngineVtk>(params);
+    InitializeRenderer(X_WC_, /* add_terrain = */ true, renderer.get());
+    PopulateSphereTest(renderer.get());
+    test_sphere_color(/* matches_default = */ true, renderer.get());
+  }
+
+  // Add a glTF file; material promoted to PBR no longer matches Phong color.
+  {
+    SCOPED_TRACE("glTF added");
+    Init(X_WC_, true);
+    PopulateSphereTest(renderer_.get());
+
+    // Place a glTF mesh far away from the origin; we can't see it but it
+    // should still change how things render.
+    const Mesh mesh(FindResourceOrThrow(
+        "drake/geometry/render/test/meshes/rainbow_box.gltf"));
+    PerceptionProperties material;
+    material.AddProperty("label", "id", RenderLabel::kDontCare);
+    renderer_->RegisterVisual(GeometryId::get_new_id(), mesh, material,
+                              RigidTransformd(Vector3d(30, 0, 0)),
+                              false /* needs update */);
+
+    test_sphere_color(/* matches_default = */ false, renderer_.get());
+  }
 }
 
 namespace {

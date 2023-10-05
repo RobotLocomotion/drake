@@ -85,6 +85,7 @@ filegroup(
         "//geometry:test_obj_files",
         "//geometry:test_stl_files",
         "//geometry:test_vtk_files",
+        "//geometry:environment_maps",
     ],
     visibility = ["//tools:__pkg__"],
 )
