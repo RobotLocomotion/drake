@@ -374,7 +374,9 @@ MODULE_SETTINGS = {
         # default srcs glob, and instead just specify what Drake needs.
         "srcs_glob_exclude": ["**"],
         "srcs_extra": [
+            "IO/Image/vtkHDRReader.cxx",
             "IO/Image/vtkImageExport.cxx",
+            "IO/Image/vtkImageReader.cxx",
             "IO/Image/vtkImageReader2.cxx",
             "IO/Image/vtkImageReader2Collection.cxx",
             "IO/Image/vtkImageReader2Factory.cxx",
