@@ -139,7 +139,7 @@ def _create_source_tar(path):
     Creates a tarball of the repository working tree.
     """
     print('[-] Creating source archive', end='', flush=True)
-    out = tarfile.open(path, 'w:xz')
+    out = tarfile.open(path, 'w')
 
     # Add an rcfile that's compatible with our Dockerfile base.
     rc_lines = [
@@ -337,7 +337,7 @@ def build(options):
     identifier = f'{time}-{salt}'
 
     # Generate the repository source archive.
-    source_tar = os.path.join(resource_root, 'image', 'drake-src.tar.xz')
+    source_tar = os.path.join(resource_root, 'image', 'drake-src.tar')
     _files_to_remove.append(source_tar)
     _create_source_tar(source_tar)
 
