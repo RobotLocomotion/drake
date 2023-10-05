@@ -72,8 +72,10 @@ GTEST_TEST(DiagonallyDominantMatrixDualConeConstraint, FeasibilityCheck2by2) {
   auto set_X_value = [&X_constraint](const Eigen::Vector3d& x_upper_triangle) {
     X_constraint.evaluator()->UpdateLowerBound(x_upper_triangle);
     X_constraint.evaluator()->UpdateUpperBound(x_upper_triangle);
-    return Eigen::Matrix2d({{x_upper_triangle(0), x_upper_triangle(1)},
-                            {x_upper_triangle(1), x_upper_triangle(2)}});
+    Eigen::Matrix2d ret;
+    ret << x_upper_triangle(0), x_upper_triangle(1), x_upper_triangle(1),
+        x_upper_triangle(2);
+    return ret;
   };
 
   // [1, 0.9; 0.9 2] is in DD* and DD.
