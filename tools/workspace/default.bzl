@@ -404,13 +404,8 @@ def add_default_toolchains(excludes = []):
     """
 
     if "py" not in excludes:
-        # The Python debug toolchain on Linux is not loaded automatically, but
-        # may be used by specifying the command line option
-        # --extra_toolchains=//tools/py_toolchain:linux_dbg_toolchain
         native.register_toolchains(
-            "//tools/py_toolchain:linux_toolchain",
-            "//tools/py_toolchain:macos_i386_toolchain",
-            "//tools/py_toolchain:macos_arm64_toolchain",
+            "//tools/py_toolchain:toolchain",
         )
 
 def add_default_workspace(

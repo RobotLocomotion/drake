@@ -69,18 +69,10 @@ def create_temporary_dir(name='tmp'):
 
 
 def get_python_executable():
-    """Use appropriate Python executable
-
-    Call python3.11 on macOS to force using the Python executable from the
-    python@3.11 formula. Calling a different Python executable would result in
-    a crash since pydrake was not built against the Python library
-    corresponding to that executable. On other systems, it will just fall back
-    to the current Python executable.
+    """Use the same Python executable as this test program. Especially on
+    macOS, we must use Bazel (Homebrew) Python -- not Apple Python.
     """
-    if sys.platform == "darwin":
-        return "python3.11"
-    else:
-        return sys.executable
+    return sys.executable
 
 
 def run_and_kill(cmd, timeout=2.0, from_install_dir=True):

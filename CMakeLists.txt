@@ -396,13 +396,6 @@ macro(override_repository NAME)
   list(APPEND BAZEL_WORKSPACE_EXCLUDES "${NAME}")
 endmacro()
 
-# For Python, always override Drake's default with the CMake selection instead.
-generate_external_repository_file(cmake_python/WORKSPACE)
-configure_file(
-  cmake/external/workspace/cmake_python/BUILD.bazel.in
-  external/workspace/cmake_python/BUILD.bazel @ONLY)
-override_repository(cmake_python)
-
 option(WITH_USER_EIGEN "Use user-provided Eigen3" OFF)
 
 if(WITH_USER_EIGEN)

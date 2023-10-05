@@ -22,22 +22,13 @@ Example:
 
 Arguments:
     name: A unique name for this rule.
-    linux_interpreter_path: Optional interpreter path for the Python runtime in
-        the registered Python toolchain on the @platforms//os:linux platform.
-        Defaults to the value of LINUX_INTERPRETER_PATH in
-        //tools/py_toolchain:interpreter_paths.bzl.
-    macos_interpreter_path: Optional interpreter path for the Python runtime in
-        the registered Python toolchain on the @platforms//os:osx (macOS)
-        platform. Defaults to the value of MACOS_{I386,ARM64}_INTERPRETER_PATH
-        in //tools/py_toolchain:interpreter_paths.bzl.
+    linux_interpreter_path: (Optional) Interpreter path for the Python runtime,
+        when running on Linux.
+    macos_interpreter_path: (Optional) Interpreter path for the Python runtime,
+        when running on macOS. The format substitution "{homebrew_prefix}" is
+        available for use in this string.
 """
 
-load(
-    "//tools/py_toolchain:interpreter_paths.bzl",
-    "LINUX_INTERPRETER_PATH",
-    "MACOS_ARM64_INTERPRETER_PATH",
-    "MACOS_I386_INTERPRETER_PATH",
-)
 load("//tools/workspace:execute.bzl", "execute_or_fail", "which")
 load("//tools/workspace:os.bzl", "determine_os")
 
@@ -75,20 +66,11 @@ def repository_python_info(repository_ctx):
     versions_supported = _VERSION_SUPPORT_MATRIX[os_key]
 
     if os_result.is_macos or os_result.is_macos_wheel:
-        # This value must match the interpreter_path in
-        # @drake//tools/py_toolchain:macos_py3_runtime
         python = repository_ctx.attr.macos_interpreter_path
-        if not python:
-            if os_result.macos_arch_result == "arm64":
-                python = MACOS_ARM64_INTERPRETER_PATH
-            else:
-                python = MACOS_I386_INTERPRETER_PATH
+        if "{homebrew_prefix}" in python:
+            python = python.format(homebrew_prefix = os_result.homebrew_prefix)
     else:
-        # This value must match the interpreter_path in
-        # @drake//tools/py_toolchain:linux_py3_runtime
         python = repository_ctx.attr.linux_interpreter_path
-        if not python:
-            python = LINUX_INTERPRETER_PATH
 
     version = execute_or_fail(
         repository_ctx,
@@ -278,14 +260,12 @@ cc_library(
     )
 
 interpreter_path_attrs = {
-    # The value of this argument should match the interpreter_path for
-    # the py_runtime in the registered Python toolchain on the
-    # @platforms//os:linux platform.
-    "linux_interpreter_path": attr.string(),
-    # The value of this argument should match the interpreter_path for
-    # the py_runtime in the registered Python toolchain on the
-    # @platforms//os:osx platform.
-    "macos_interpreter_path": attr.string(),
+    "linux_interpreter_path": attr.string(
+        default = "/usr/bin/python3",
+    ),
+    "macos_interpreter_path": attr.string(
+        default = "{homebrew_prefix}/bin/python3.11",
+    ),
 }
 
 python_repository = repository_rule(
