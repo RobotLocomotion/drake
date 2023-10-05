@@ -80,6 +80,10 @@ cd "$git_root"
 
 export SNOPT_PATH=git
 
+# TODO(jwnimmer-tri) To make it easier to build a macOS wheel for a different
+# Python, we should to switch to using CMake for this step so that we can use
+# use the canonical `-DPython_EXECUTABLE`.
+
 declare -a bazel_args=(
     --repo_env=DRAKE_OS=macos_wheel
     --define=NO_DRAKE_VISUALIZER=ON
