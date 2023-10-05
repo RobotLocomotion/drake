@@ -1,16 +1,14 @@
 
+#include <iostream>
 #include <vector>
 
+#include <fmt/format.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/snopt_solver.h"
 #include "drake/solvers/solve.h"
-#include <iostream>
-#include <fmt/format.h>
-
-
 
 namespace drake {
 namespace solvers {
@@ -112,7 +110,7 @@ GTEST_TEST(DiagonallyDominantMatrixDualConeConstraint,
   // A = [a+b 2 a+c]
   //     [b+c a+c 3]
   // be in DD*. These vertices are
-  // ±(-1,-0.5,3), ±(0.5,1,1.5), ±(-3,1.5,1), ±(1.5, -3, 0.5)
+  // ±(0.5, 1, 3), ±(1,0.5,1.5), ±(1.5,-3,1), ±(1.5, -3, 0.5)
   // By optimizing the LP
   // min nᵀ* (a, b, c)
   // s.t   A is in DD*
@@ -120,30 +118,27 @@ GTEST_TEST(DiagonallyDominantMatrixDualConeConstraint,
   // the optimal solution to this LP.
   MathematicalProgram prog;
   auto X = prog.NewSymmetricContinuousVariables<3>();
+  auto a = prog.NewContinuousVariables<1>("a")(0);
+  auto b = prog.NewContinuousVariables<1>("b")(0);
+  auto c = prog.NewContinuousVariables<1>("c")(0);
+  prog.AddLinearEqualityConstraint(X(0, 1) - (a + b), 0);
+  prog.AddLinearEqualityConstraint(X(0, 2) - (b + c), 0);
+  prog.AddLinearEqualityConstraint(X(1, 2) - (a + c), 0);
+
   prog.AddBoundingBoxConstraint(Eigen::Vector3d(1, 2, 3),
                                 Eigen::Vector3d(1, 2, 3), X.diagonal());
   prog.AddPositiveDiagonallyDominantDualConeMatrixConstraint(
       X.cast<symbolic::Expression>());
 
-  auto cost =
-      prog.AddLinearCost(Eigen::Vector3d::Zero(), 0,
-                         VectorDecisionVariable<3>(X(0, 1), X(0, 2), X(1, 2)));
-
-  auto solve_and_check = [&prog, &X](const Eigen::Vector3d &sol_expected,
-                                                        double tol) {
-
+  auto cost = prog.AddLinearCost(Eigen::Vector3d::Zero(), 0,
+                                 VectorDecisionVariable<3>(a, b, c));
+  auto solve_and_check = [&prog, &X, &a, &b, &c](
+                             const Eigen::Vector3d& sol_expected, double tol) {
     const auto result = Solve(prog);
-
     EXPECT_TRUE(result.is_success());
-    EXPECT_TRUE(CompareMatrices(result.GetSolution(VectorDecisionVariable<3>(
-                                    X(0, 1), X(0, 2), X(1, 2))),
-                                sol_expected, tol));
-//    if(CompareMatrices(result.GetSolution(VectorDecisionVariable<3>(
-//                                    X(0, 1), X(0, 2), X(1, 2))),
-//                                sol_expected, tol))
-//    {
-//      std::cout << "USE COST " << r<< std::endl;
-//    }
+    EXPECT_TRUE(
+        CompareMatrices(result.GetSolution(VectorDecisionVariable<3>(a, b, c)),
+                        sol_expected, tol));
     // The matrix should be positive in DD*.
     const Eigen::Matrix3d X_sol = result.GetSolution(X);
     EXPECT_EQ(TestIn3by3DiagonallyDominantDualCone(X_sol), -1);
@@ -151,21 +146,26 @@ GTEST_TEST(DiagonallyDominantMatrixDualConeConstraint,
 
   const double tol{1E-6};
 
-  cost.evaluator()->UpdateCoefficients(Eigen::Vector3d(1,1,-3.5/2.5));
-  solve_and_check(Eigen::Vector3d(-1, -0.5, 3), tol);
-  solve_and_check(-Eigen::Vector3d(-1, -0.5, 3), tol);
+  // The costs are chosen to make the optimal solution visit each vertex.
+  cost.evaluator()->UpdateCoefficients(Eigen::Vector3d(1, 1, -0.5));
+  solve_and_check(Eigen::Vector3d(-0.5, -1, 3), tol);
+  cost.evaluator()->UpdateCoefficients(Eigen::Vector3d(0.33, 0.33, 1.33));
+  solve_and_check(Eigen::Vector3d(0.5, 1, -3), tol);
 
+  cost.evaluator()->UpdateCoefficients(Eigen::Vector3d(-0.53, -0.58, -0.45));
+  solve_and_check(Eigen::Vector3d(1, 0.5, 1.5), tol);
+  cost.evaluator()->UpdateCoefficients(Eigen::Vector3d(0.82, 0.82, 0.82));
+  solve_and_check(Eigen::Vector3d(-1, -0.5, -1.5), tol);
 
+  cost.evaluator()->UpdateCoefficients(Eigen::Vector3d(0.44, 1.27, 0.44));
+  solve_and_check(Eigen::Vector3d(1.5, -3, 1), tol);
+  cost.evaluator()->UpdateCoefficients(Eigen::Vector3d(0.87, -0.58, 0.95));
+  solve_and_check(Eigen::Vector3d(-1.5, 3, -1), tol);
 
-//
-//  update_cost_solve_and_check(Eigen::Vector3d(0.5, 1, 1.5), tol);
-//  update_cost_solve_and_check(-Eigen::Vector3d(0.5, 1, 1.5), tol);
-//
-//  update_cost_solve_and_check(Eigen::Vector3d(-3, 1.5, 1), tol);
-//  update_cost_solve_and_check(-Eigen::Vector3d(-3, 1.5, 1), tol);
-//
-//  update_cost_solve_and_check(Eigen::Vector3d(1.5, -3, 0.5), tol);
-//  update_cost_solve_and_check(-Eigen::Vector3d(1.5, -3, 0.5), tol);
+  cost.evaluator()->UpdateCoefficients(Eigen::Vector3d(-0.53, 0.86, 1.0));
+  solve_and_check(Eigen::Vector3d(3, -1.5, -0.5), tol);
+  cost.evaluator()->UpdateCoefficients(Eigen::Vector3d(1.29, 0.40, 0.40));
+  solve_and_check(Eigen::Vector3d(-3, 1.5, 0.5), tol);
 }
 
 }  // namespace solvers
