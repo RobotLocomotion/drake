@@ -458,8 +458,11 @@ GTEST_TEST(ProximityEngineTests, MeshSupportAsConvex) {
   for (double radius : {0.25, 0.75}) {
     ProximityEngine<double> engine;
     // The actual non-convex mesh. Used in all queries.
-    const Mesh mesh{
-        drake::FindResourceOrThrow("drake/geometry/test/extruded_u.obj"),
+    // const Mesh mesh{
+    //     drake::FindResourceOrThrow("drake/geometry/test/extruded_u.obj"),
+    //     1.0 /* scale */};
+    const Mesh mesh{drake::FindResourceOrThrow(
+        "drake/geometry/test/extruded_u_refined.vtk"),
         1.0 /* scale */};
     const auto& [mesh_id, X_WM] =
         AddShape(&engine, mesh, true /* is_anchored */, false /* is_soft */,
