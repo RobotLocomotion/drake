@@ -509,26 +509,17 @@ class LeafSystem : public System<T> {
   void DeclarePeriodicPublishNoHandler(double period_sec,
                                        double offset_sec = 0);
 
-  /** (Advanced) Declares a periodic discrete update event with no handler
-  function. When triggered, the event will invoke the
-  DoCalcDiscreteVariableUpdates() dispatcher, but no other processing will occur
-  unless you have overridden the dispatcher (not recommended). Otherwise the
-  only visible effect will be that a Simulator step will end exactly at the
-  publish time.
-
-  Prefer DeclarePeriodicDiscreteUpdateEvent() where you can supply a handler. */
+  DRAKE_DEPRECATED(
+      "2024-02-01",
+      "Overriding DoCalcDiscreteVariableUpdates is no longer allowed. "
+      "Use DeclarePeriodicDiscreteUpdateEvent() instead.")
   void DeclarePeriodicDiscreteUpdateNoHandler(double period_sec,
                                               double offset_sec = 0);
 
-  /** (Advanced) Declares a periodic unrestricted update event with no handler
-  function. When triggered, the event will invoke the
-  DoCalcUnrestrictedUpdate() dispatcher, but no other processing will occur
-  unless you have overridden the dispatcher (not recommended). Otherwise the
-  only visible effect will be that a Simulator step will end exactly at the
-  publish time.
-
-  Prefer DeclarePeriodicUnrestrictedUpdateEvent() where you can supply a
-  handler. */
+  DRAKE_DEPRECATED(
+      "2024-02-01",
+      "Overriding DoCalcUnrestrictedUpdate is no longer allowed. "
+      "Use DeclarePeriodicUnrestrictedUpdateEvent() instead.")
   void DeclarePeriodicUnrestrictedUpdateNoHandler(double period_sec,
                                                   double offset_sec = 0);
   //@}
@@ -1833,10 +1824,9 @@ class LeafSystem : public System<T> {
       const Context<T>& context,
       const std::vector<const PublishEvent<T>*>& events) const;
 
-  // TODO(sherm1) This virtual implementation of CalcDiscreteVariableUpdate()
-  //  uses the plural "Updates" instead for unfortunate historical reasons.
-  //  Consider whether it is worth changing.
-
+  DRAKE_DEPRECATED(
+      "2024-02-01",
+      "Overriding DoCalcDiscreteVariableUpdates is no longer allowed")
   /** Derived-class event dispatcher for all simultaneous discrete update
   events. Override this in your derived LeafSystem only if you require
   behavior other than the default dispatch behavior (not common).
@@ -1876,6 +1866,9 @@ class LeafSystem : public System<T> {
   //              note just the changes since usually only a small subset will
   //              be changed by this method.
 
+  DRAKE_DEPRECATED(
+      "2024-02-01",
+      "Overriding DoCalcUnrestrictedUpdate is no longer allowed")
   /** Derived-class event dispatcher for all simultaneous unrestricted update
   events. Override this in your derived LeafSystem only if you require
   behavior other than the default dispatch behavior (not common).
@@ -1942,7 +1935,7 @@ class LeafSystem : public System<T> {
       const Context<T>& context,
       const EventCollection<PublishEvent<T>>& events) const final;
 
-  // Calls DoCalcDiscreteVariableUpdates.
+  // Calls DoCalcDiscreteVariableUpdates (deprcated 2024-02-01).
   // Assumes @p events is an instance of LeafEventCollection, throws
   // std::bad_cast otherwise.
   // Assumes @p events is not empty. Aborts otherwise.
@@ -1958,7 +1951,7 @@ class LeafSystem : public System<T> {
       const EventCollection<DiscreteUpdateEvent<T>>& events,
       DiscreteValues<T>* discrete_state, Context<T>* context) const final;
 
-  // Calls DoCalcUnrestrictedUpdate.
+  // Calls DoCalcUnrestrictedUpdate (deprecated 2024-02-01).
   // Assumes @p events is an instance of LeafEventCollection, throws
   // std::bad_cast otherwise.
   // Assumes @p events is not empty. Aborts otherwise.

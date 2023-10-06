@@ -2462,7 +2462,8 @@ TEST_F(ForcedPublishingSystemDiagramTest, ForcedPublish) {
 class SystemWithAbstractState : public LeafSystem<double> {
  public:
   SystemWithAbstractState(int id, double update_period) : id_(id) {
-    DeclarePeriodicUnrestrictedUpdateNoHandler(update_period, 0);
+    DeclarePeriodicUnrestrictedUpdateEvent(
+        update_period, 0, &SystemWithAbstractState::CalcUnrestrictedUpdate);
     DeclareAbstractState(Value<double>(id_));
 
     // Verify that no periodic discrete updates are registered.
@@ -2471,11 +2472,13 @@ class SystemWithAbstractState : public LeafSystem<double> {
 
   ~SystemWithAbstractState() override {}
 
+  int get_id() const { return id_; }
+
+ private:
   // Abstract state is set to input state value + time.
-  void DoCalcUnrestrictedUpdate(
+  void CalcUnrestrictedUpdate(
       const Context<double>& context,
-      const std::vector<const UnrestrictedUpdateEvent<double>*>& events,
-      State<double>* state) const override {
+      State<double>* state) const {
     double& state_num = state->get_mutable_abstract_state()
                             .get_mutable_value(0)
                             .get_mutable_value<double>();
@@ -2485,9 +2488,6 @@ class SystemWithAbstractState : public LeafSystem<double> {
     state_num += context.get_time();
   }
 
-  int get_id() const { return id_; }
-
- private:
   int id_{0};
 };
 

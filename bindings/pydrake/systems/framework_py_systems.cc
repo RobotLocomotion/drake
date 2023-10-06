@@ -94,7 +94,6 @@ struct Impl {
     using Base::DeclareDiscreteState;
     using Base::DeclareInitializationEvent;
     using Base::DeclareNumericParameter;
-    using Base::DeclarePeriodicDiscreteUpdateNoHandler;
     using Base::DeclarePeriodicEvent;
     using Base::DeclarePeriodicPublishNoHandler;
     using Base::DeclarePeriodicUnrestrictedUpdateEvent;
@@ -112,9 +111,12 @@ struct Impl {
     // access.
     // (Otherwise, we get an error about inaccessible downcasting when trying to
     // bind `PyLeafSystem::DoPublish` to `py::class_<LeafSystem<T>, ...>`.
-    using Base::DoCalcDiscreteVariableUpdates;
     using Base::DoCalcTimeDerivatives;
     using Base::DoPublish;
+
+    // To be removed with deprecation on 2024-02-01.
+    using Base::DeclarePeriodicDiscreteUpdateNoHandler;
+    using Base::DoCalcDiscreteVariableUpdates;
   };
 
   // Provide flexible inheritance to leverage prior binding information, per
@@ -152,9 +154,6 @@ struct Impl {
       Base::DoCalcTimeDerivatives(context, derivatives);
     }
 
-    // TODO(sherm): This overload should be deprecated and removed; the
-    // preferred workflow is to register callbacks with
-    // Declare*DiscreteUpdateEvent.
     void DoCalcDiscreteVariableUpdates(const Context<T>& context,
         const std::vector<const DiscreteUpdateEvent<T>*>& events,
         DiscreteValues<T>* discrete_state) const override {
@@ -162,7 +161,10 @@ struct Impl {
       PYBIND11_OVERLOAD_INT(void, LeafSystem<T>,
           "DoCalcDiscreteVariableUpdates", &context, events, discrete_state);
       // If the macro did not return, use default functionality.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
       Base::DoCalcDiscreteVariableUpdates(context, events, discrete_state);
+#pragma GCC diagnostic pop
     }
 
     // This actually changes the signature of DoGetWitnessFunction,
@@ -760,10 +762,6 @@ Note: The above is for the C++ documentation. For Python, use
             &LeafSystemPublic::DeclarePeriodicPublishNoHandler,
             py::arg("period_sec"), py::arg("offset_sec") = 0.,
             doc.LeafSystem.DeclarePeriodicPublishNoHandler.doc)
-        .def("DeclarePeriodicDiscreteUpdateNoHandler",
-            &LeafSystemPublic::DeclarePeriodicDiscreteUpdateNoHandler,
-            py::arg("period_sec"), py::arg("offset_sec") = 0.,
-            doc.LeafSystem.DeclarePeriodicDiscreteUpdateNoHandler.doc)
         .def("DeclarePeriodicPublishEvent",
             WrapCallbacks(
                 [](PyLeafSystem* self, double period_sec, double offset_sec,
@@ -979,14 +977,29 @@ Note: The above is for the C++ documentation. For Python, use
             py::arg("num_state_variables"),
             doc.LeafSystem.DeclareDiscreteState.doc_1args_num_state_variables)
         .def("DoCalcTimeDerivatives", &LeafSystemPublic::DoCalcTimeDerivatives)
-        .def("DoCalcDiscreteVariableUpdates",
-            &LeafSystemPublic::DoCalcDiscreteVariableUpdates,
-            doc.LeafSystem.DoCalcDiscreteVariableUpdates.doc)
         // Abstract state.
         .def("DeclareAbstractState",
             py::overload_cast<const AbstractValue&>(
                 &LeafSystemPublic::DeclareAbstractState),
             py::arg("model_value"), doc.LeafSystem.DeclareAbstractState.doc);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    leaf_system_cls  // BR
+        .def("DeclarePeriodicDiscreteUpdateNoHandler",
+            WrapDeprecated(doc.LeafSystem.DeclarePeriodicDiscreteUpdateNoHandler
+                               .doc_deprecated,
+                &LeafSystemPublic::DeclarePeriodicDiscreteUpdateNoHandler),
+            py::arg("period_sec"), py::arg("offset_sec") = 0.,
+            doc.LeafSystem.DeclarePeriodicDiscreteUpdateNoHandler
+                .doc_deprecated)
+        .def("DoCalcDiscreteVariableUpdates",
+            WrapDeprecated(
+                "Directly calling DoCalcDiscreteVariableUpdates() is no longer "
+                "allowed. Use CalcForcedDiscreteVariableUpdate() instead. "
+                "This function will be removed from Drake on 2024-02-01.",
+                &LeafSystemPublic::DoCalcDiscreteVariableUpdates),
+            doc.LeafSystem.DoCalcDiscreteVariableUpdates.doc);
+#pragma GCC diagnostic pop
 
     DefineTemplateClassWithDefault<Diagram<T>, PyDiagram, System<T>>(
         m, "Diagram", GetPyParam<T>(), doc.Diagram.doc)
