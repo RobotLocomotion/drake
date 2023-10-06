@@ -883,6 +883,25 @@ drake_cc_library(
 )
 
 drake_cc_binary(
+    name = "refine_mesh",
+    testonly = 1,
+    srcs = ["refine_mesh.cc"],
+    add_test_rule = 1,
+    data = ["//geometry:test_vtk_files"],
+    test_rule_args = [
+        "geometry/test/one_tetrahedron.vtk",
+        "refined.vtk",
+    ],
+    deps = [
+        ":mesh_to_vtk",
+        ":volume_mesh_refiner",
+        ":vtk_to_volume_mesh",
+        "//common:add_text_logging_gflags",
+        "@gflags",
+    ],
+)
+
+drake_cc_binary(
     name = "zero_simplex_manual_test",
     testonly = 1,
     srcs = ["test/zero_simplex_manual_test.cc"],
