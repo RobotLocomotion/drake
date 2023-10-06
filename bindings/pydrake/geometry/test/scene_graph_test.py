@@ -84,6 +84,15 @@ class TestGeometrySceneGraph(unittest.TestCase):
         self.assertTrue(scene_graph.HasRenderer("test_renderer"))
         self.assertEqual(scene_graph.RendererCount(), 1)
 
+        scene_graph.RemoveRenderer("test_renderer")
+        self.assertFalse(scene_graph.HasRenderer("test_renderer"))
+        self.assertEqual(scene_graph.RendererCount(), 0)
+
+        # Now add the renderer back.
+        scene_graph.AddRenderer("test_renderer",
+                                mut.MakeRenderEngineVtk(
+                                    mut.RenderEngineVtkParams()))
+
         # Test SceneGraphInspector API
         inspector = scene_graph.model_inspector()
         self.assertEqual(inspector.num_sources(), 2)

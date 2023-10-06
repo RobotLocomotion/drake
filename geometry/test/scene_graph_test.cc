@@ -534,6 +534,22 @@ TEST_F(SceneGraphTest, GetRendererTypeName) {
             NiceTypeName::Get<DummyRenderEngine>());
 }
 
+TEST_F(SceneGraphTest, RemoveRenderer) {
+  const std::string kRendererName = "bob";
+
+  scene_graph_.AddRenderer(kRendererName, make_unique<DummyRenderEngine>());
+
+  EXPECT_TRUE(scene_graph_.HasRenderer(kRendererName));
+
+  scene_graph_.RemoveRenderer(kRendererName);
+
+  EXPECT_FALSE(scene_graph_.HasRenderer(kRendererName));
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      scene_graph_.RemoveRenderer("bad_name"),
+      ".* A renderer with the name 'bad_name' does not exist");
+}
+
 // SceneGraph provides a thin wrapper on the GeometryState role manipulation
 // code. These tests are just smoke tests that the functions work. It relies on
 // GeometryState to properly unit test the full behavior.

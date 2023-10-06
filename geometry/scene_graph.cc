@@ -263,6 +263,11 @@ void SceneGraph<T>::AddRenderer(
 }
 
 template <typename T>
+void SceneGraph<T>::RemoveRenderer(const std::string& name) {
+  return model_.RemoveRenderer(name);
+}
+
+template <typename T>
 bool SceneGraph<T>::HasRenderer(const std::string& name) const {
   return model_.HasRenderer(name);
 }

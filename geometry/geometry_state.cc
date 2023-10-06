@@ -1267,6 +1267,17 @@ void GeometryState<T>::AddRenderer(
 }
 
 template <typename T>
+void GeometryState<T>::RemoveRenderer(const std::string& name) {
+  if (render_engines_.count(name) == 0) {
+    throw std::logic_error(fmt::format(
+        "RemoveRenderer(): A renderer with the name '{}' does not exist",
+        name));
+  }
+  render_engines_.erase(name);
+  geometry_version_.modify_perception();
+}
+
+template <typename T>
 std::vector<std::string> GeometryState<T>::RegisteredRendererNames() const {
   std::vector<std::string> names;
   names.reserve(render_engines_.size());
