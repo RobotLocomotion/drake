@@ -199,6 +199,7 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "model_visualizer_camera_test",
+    data = ["//geometry:environment_maps"],
     flaky = True,
     deps = [
         ":model_visualizer",
