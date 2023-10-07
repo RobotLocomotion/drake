@@ -244,6 +244,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.collision_filter_manager.doc_0args)
         .def("AddRenderer", &Class::AddRenderer, py::arg("name"),
             py::arg("renderer"), cls_doc.AddRenderer.doc)
+        .def("RemoveRenderer", &Class::RemoveRenderer, py::arg("name"),
+            cls_doc.RemoveRenderer.doc)
         .def("HasRenderer", &Class::HasRenderer, py::arg("name"),
             cls_doc.HasRenderer.doc)
         .def("RendererCount", &Class::RendererCount, cls_doc.RendererCount.doc)

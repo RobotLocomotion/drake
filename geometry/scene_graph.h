@@ -705,6 +705,12 @@ class SceneGraph final : public systems::LeafSystem<T> {
   void AddRenderer(std::string name,
                    std::unique_ptr<render::RenderEngine> renderer);
 
+  /** Removes an existing renderer from this %SceneGraph
+   @param name The unique name of the renderer to be removed.
+   @throws std::exception if this %SceneGraph doesn't have a renderer with the
+   specified name. */
+  void RemoveRenderer(const std::string& name);
+
   /** Reports true if this %SceneGraph has a renderer registered with the given
    name. */
   bool HasRenderer(const std::string& name) const;

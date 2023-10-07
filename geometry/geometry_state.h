@@ -565,6 +565,9 @@ class GeometryState {
   void AddRenderer(std::string name,
                    std::unique_ptr<render::RenderEngine> renderer);
 
+  /** Implementation of SceneGraph::RemoveRenderer(). */
+  void RemoveRenderer(const std::string& name);
+
   /** Implementation of SceneGraph::HasRenderer().  */
   bool HasRenderer(const std::string& name) const {
     return render_engines_.count(name) > 0;
