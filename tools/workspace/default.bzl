@@ -89,6 +89,7 @@ load("//tools/workspace/rules_pkg:repository.bzl", "rules_pkg_repository")
 load("//tools/workspace/rules_python:repository.bzl", "rules_python_repository")  # noqa
 load("//tools/workspace/rules_rust:repository.bzl", "rules_rust_repository")
 load("//tools/workspace/rules_rust_tinyjson:repository.bzl", "rules_rust_tinyjson_repository")  # noqa
+load("//tools/workspace/rust_toolchain:repository.bzl", "register_rust_toolchains", "rust_toolchain_repositories")  # noqa
 load("//tools/workspace/scs_internal:repository.bzl", "scs_internal_repository")  # noqa
 load("//tools/workspace/sdformat_internal:repository.bzl", "sdformat_internal_repository")  # noqa
 load("//tools/workspace/snopt:repository.bzl", "snopt_repository")
@@ -333,6 +334,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         rules_rust_repository(name = "rules_rust", mirrors = mirrors)
     if "rules_rust_tinyjson" not in excludes:
         rules_rust_tinyjson_repository(name = "rules_rust_tinyjson", mirrors = mirrors)  # noqa
+    if "rust_toolchain" not in excludes:
+        rust_toolchain_repositories(mirrors = mirrors, excludes = excludes)
     if "scs_internal" not in excludes:
         scs_internal_repository(name = "scs_internal", mirrors = mirrors)
     if "sdformat_internal" not in excludes:
@@ -407,6 +410,8 @@ def add_default_toolchains(excludes = []):
         native.register_toolchains(
             "//tools/py_toolchain:toolchain",
         )
+    if "rust" not in excludes:
+        register_rust_toolchains()
 
 def add_default_workspace(
         repository_excludes = [],
