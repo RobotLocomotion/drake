@@ -81,8 +81,7 @@ LcmBuses ApplyLcmBusConfig(
     // of the eventual Diagram).
     auto* owner_system =
         builder->AddSystem<SharedPointerSystem<double>>(drake_lcm);
-    owner_system->set_name(fmt::format("DrakeLcm(bus_name={}, lcm_url={})",
-                                       bus_name, canonical_url));
+    owner_system->set_name(fmt::format("DrakeLcm(bus_name={})", bus_name));
 
     // We should not pump a null LCM, so we should return early now.
     if (is_noop) {
@@ -97,8 +96,7 @@ LcmBuses ApplyLcmBusConfig(
     auto* pumper_system =
         builder->AddSystem<LcmInterfaceSystem>(drake_lcm.get());
     pumper_system->set_name(
-        fmt::format("LcmInterfaceSystem(bus_name={}, lcm_url={})", bus_name,
-                    canonical_url));
+        fmt::format("LcmInterfaceSystem(bus_name={})", bus_name));
 
     // Display an update; provide the interface pointer to our caller.
     drake::log()->info("LCM bus '{}' created for URL {}", bus_name,

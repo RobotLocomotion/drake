@@ -130,6 +130,7 @@ drake_cc_library(
     deps = [
         "//lcm:drake_lcm",
         "//lcmtypes:viewer",
+        "//systems/lcm:lcm_system_graphviz",
     ],
 )
 

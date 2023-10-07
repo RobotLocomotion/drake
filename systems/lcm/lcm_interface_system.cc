@@ -6,6 +6,7 @@
 #include <fmt/format.h>
 
 #include "drake/lcm/drake_lcm.h"
+#include "drake/systems/lcm/lcm_system_graphviz.h"
 
 namespace drake {
 namespace systems {
@@ -93,6 +94,24 @@ void LcmInterfaceSystem::DoCalcNextUpdateTime(
   } else {
     *time = std::numeric_limits<double>::infinity();
   }
+}
+
+LeafSystem<double>::GraphvizFragment LcmInterfaceSystem::DoGetGraphvizFragment(
+    const GraphvizFragmentParams& params) const {
+  const std::string node_id = internal::LcmSystemGraphviz::get_node_id(*this);
+
+  // Set the well-known ID, enable twaining, and tack on the URL.
+  GraphvizFragmentParams new_params{params};
+  new_params.node_id = node_id;
+  new_params.options.emplace("split", "I/O");
+  new_params.header_lines.push_back(fmt::format("lcm_url={}", get_lcm_url()));
+  GraphvizFragment result =
+      LeafSystem<double>::DoGetGraphvizFragment(new_params);
+  result.fragments.push_back(fmt::format(
+      "{}in [color={}];", node_id, internal::LcmSystemGraphviz::get_color()));
+  result.fragments.push_back(fmt::format(
+      "{}out [color={}];", node_id, internal::LcmSystemGraphviz::get_color()));
+  return result;
 }
 
 }  // namespace lcm

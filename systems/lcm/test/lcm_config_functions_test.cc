@@ -142,6 +142,8 @@ GTEST_TEST(LcmConfigFunctionsTest, Nulls) {
   DrakeLcmInterface* interface2 = name_to_interface.Find("Nulls test", "bar");
   ASSERT_NE(interface1, nullptr);
   ASSERT_NE(interface2, nullptr);
+  EXPECT_EQ(interface1->get_lcm_url(), "memq://null");
+  EXPECT_EQ(interface2->get_lcm_url(), "memq://null");
 
   // Check that no unwanted systems were added.
   std::vector<std::string> names;
@@ -151,8 +153,8 @@ GTEST_TEST(LcmConfigFunctionsTest, Nulls) {
   const std::vector<std::string> expected{
       // The two `SharedPtrSystem`s are the only things that get added.
       // Note that there are no `LcmInterfaceSystem`s anywhere here.
-      "DrakeLcm(bus_name=foo, lcm_url=memq://null)",
-      "DrakeLcm(bus_name=bar, lcm_url=memq://null)",
+      "DrakeLcm(bus_name=foo)",
+      "DrakeLcm(bus_name=bar)",
   };
   EXPECT_THAT(names, testing::UnorderedElementsAreArray(expected));
 
