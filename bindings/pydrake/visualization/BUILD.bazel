@@ -176,10 +176,22 @@ drake_py_unittest(
     timeout = "moderate",
     data = [
         ":model_visualizer",
-        "//geometry:meshcat_websocket_client",
         "//manipulation/util:test_models",
         "//multibody/benchmarks/acrobot:models",
     ],
+    deps = [
+        ":model_visualizer",
+    ],
+)
+
+drake_py_unittest(
+    name = "model_visualizer_reload_test",
+    data = [
+        ":model_visualizer",
+        "//geometry:meshcat_websocket_client",
+        "//multibody/benchmarks/acrobot:models",
+    ],
+    flaky = True,
     deps = [
         ":model_visualizer",
     ],
