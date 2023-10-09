@@ -1091,9 +1091,30 @@ const Frame<double>* ParseFrame(const SDFormatDiagnostic& diagnostic,
     return nullptr;
   }
 
+  // Support references to frames in nested models. Note: only downward nested
+  // references are permitted.  See
+  // http://sdformat.org/tutorials?tut=composition#composition
+  const std::string current_model_name =
+      plant->GetModelInstanceName(model_instance);
   const std::string frame_name = node->Get<std::string>(element_name);
+  auto absolute_scoped_name = ScopedName::Join(current_model_name, frame_name);
 
-  if (!plant->HasFrameNamed(frame_name, model_instance)) {
+  const std::string search_model_name(absolute_scoped_name.get_namespace());
+  if (!plant->HasModelInstanceNamed(search_model_name)) {
+    std::string message = fmt::format(
+          "<{}>: Model instance name '{}' (implied by frame name '{}' in <{}>"
+          " within model instance '{}') does not exist in the model.",
+          node->GetName(), search_model_name, frame_name, element_name,
+          current_model_name);
+    diagnostic.Error(node, std::move(message));
+    return nullptr;
+  }
+
+  ModelInstanceIndex search_model_instance =
+      plant->GetModelInstanceByName(search_model_name);
+  const std::string search_frame_name(absolute_scoped_name.get_element());
+
+  if (!plant->HasFrameNamed(search_frame_name, search_model_instance)) {
     std::string message = fmt::format(
           "<{}>: Frame '{}' specified for <{}> does not exist in the model.",
           node->GetName(), frame_name, element_name);
@@ -1101,7 +1122,7 @@ const Frame<double>* ParseFrame(const SDFormatDiagnostic& diagnostic,
     return nullptr;
   }
 
-  return &plant->GetFrameByName(frame_name, model_instance);
+  return &plant->GetFrameByName(search_frame_name, search_model_instance);
 }
 
 const Body<double>* ParseBody(const SDFormatDiagnostic& diagnostic,
