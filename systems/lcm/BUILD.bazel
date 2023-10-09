@@ -20,6 +20,7 @@ drake_cc_package_library(
         ":lcm_pubsub_system",
         ":lcm_scope_system",
         ":lcm_subscriber_system",
+        ":lcm_system_graphviz",
         ":serializer",
     ],
 )
@@ -35,6 +36,16 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "lcm_system_graphviz",
+    srcs = ["lcm_system_graphviz.cc"],
+    hdrs = ["lcm_system_graphviz.h"],
+    deps = [
+        "//lcm:interface",
+        "//systems/framework:system_base",
+    ],
+)
+
+drake_cc_library(
     name = "lcm_publisher_system",
     srcs = ["lcm_publisher_system.cc"],
     hdrs = ["lcm_publisher_system.h"],
@@ -44,6 +55,7 @@ drake_cc_library(
         "//systems/framework:leaf_system",
     ],
     deps = [
+        ":lcm_system_graphviz",
         "//lcm:drake_lcm",
     ],
 )
@@ -71,6 +83,7 @@ drake_cc_library(
         "//systems/framework:leaf_system",
     ],
     deps = [
+        ":lcm_system_graphviz",
         "//lcm:drake_lcm",
     ],
 )
@@ -84,6 +97,7 @@ drake_cc_library(
         "//systems/framework:leaf_system",
     ],
     deps = [
+        ":lcm_system_graphviz",
         "//lcm:drake_lcm",
     ],
 )
@@ -203,6 +217,16 @@ drake_cc_googletest(
         "//systems/framework:diagram",
         "//systems/framework:diagram_builder",
         "//systems/primitives:sine",
+    ],
+)
+
+drake_cc_googletest(
+    name = "lcm_system_graphviz_test",
+    deps = [
+        ":lcm_system_graphviz",
+        "//lcm:drake_lcm",
+        "//lcmtypes:drake_signal",
+        "@abseil_cpp_internal//absl/strings",
     ],
 )
 
