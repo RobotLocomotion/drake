@@ -104,7 +104,7 @@ class JointActuator final : public MultibodyElement<T> {
       MultibodyForces<T>* forces) const;
 
   /// Gets the actuation values for `this` actuator from the actuation vector u
-  /// for the entire model.
+  /// for the entire plant model.
   /// @return a reference to a nv-dimensional vector, where nv is the number
   ///         of velocity variables of joint().
   const Eigen::Ref<const VectorX<T>> get_actuation_vector(
@@ -113,24 +113,25 @@ class JointActuator final : public MultibodyElement<T> {
     return u.segment(topology_.actuator_index_start, joint().num_velocities());
   }
 
-  /// Given the actuation values u_instance for `this` actuator, this method
-  /// sets the actuation vector u for the entire MultibodyTree model
-  /// to which this actuator belongs to.
-  /// @param[in] u_instance
+  /// Given the actuation values `u_actuator` for `this` actuator, updates the
+  /// actuation vector `u` for the entire multibody model to which this actuator
+  /// belongs to.
+  /// @param[in] u_actuator
   ///   Actuation values for `this` actuator. It must be of size equal to the
   ///   number of degrees of freedom of the actuated Joint, see
   ///   Joint::num_velocities(). For units and sign conventions refer to the
   ///   specific Joint sub-class documentation.
-  /// @param[out] u
-  ///   The vector containing the actuation values for the entire MultibodyTree
-  ///   model to which `this` actuator belongs to.
+  /// @param[in,out] u
+  ///   Actuation values for the entire plant model to which `this` actuator
+  ///   belongs to, indexed by JointActuatorIndex. Only values corresponding to
+  ///   this actuator are changed.
   /// @throws std::exception if
-  ///   `u_instance.size() != this->joint().num_velocities()`.
+  ///   `u_actuator.size() != this->joint().num_velocities()`.
   /// @throws std::exception if u is nullptr.
   /// @throws std::exception if
-  ///   `u.size() != this->get_parent_tree().num_actuated_dofs()`.
+  ///   `u.size() != this->GetParentPlant().num_actuated_dofs()`.
   void set_actuation_vector(
-      const Eigen::Ref<const VectorX<T>>& u_instance,
+      const Eigen::Ref<const VectorX<T>>& u_actuator,
       EigenPtr<VectorX<T>> u) const;
 
   /// Returns the index to the first element for this joint actuator / within

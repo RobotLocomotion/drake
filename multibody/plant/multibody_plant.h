@@ -325,17 +325,57 @@ externally applied body forces, constraint forces, and contact forces.
                 ### Actuation
 
 In a %MultibodyPlant model an actuator can be added as a JointActuator, see
-AddJointActuator(). For models with actuators, the plant will declare an
-actuation input port to provide feedforward actuation, see
-get_actuation_input_port(). Actuation ports can be requested for each individual
-@ref model_instances "model instance" in the %MultibodyPlant.
+AddJointActuator(). The plant declares actuation input ports to provide
+feedforward actuation, both for the %MultibodyPlant as a whole (see
+get_actuation_input_port()) and for each individual @ref model_instances
+"model instance" in the %MultibodyPlant (see
+@ref get_actuation_input_port(ModelInstanceIndex)const
+"get_actuation_input_port(ModelInstanceIndex)").
+Any actuation input ports not connected are assumed to be zero. Actuation values
+from the full %MultibodyPlant model port (get_actuation_input_port()) and from
+the per model-instance ports (
+@ref get_actuation_input_port(ModelInstanceIndex)const
+"get_actuation_input_port(ModelInstanceIndex)") are summed up.
 
-Unless PD controllers are defined
-(see @ref pd_controllers "PD controlled actuators" next), actuation input ports
-are required to be connected.
+@note The vector data supplied to %MultibodyPlant's actuation input ports should
+be ordered by @ref JointActuatorIndex. For the get_actuation_input_port() that
+covers all actuators, the iᵗʰ vector element corresponds to
+`JointActuatorIndex(i)`. For the
+@ref get_actuation_input_port(ModelInstanceIndex)const
+"get_actuation_input_port(ModelInstanceIndex)" specific to a model index, the
+vector data is ordered by monotonically increasing @ref JointActuatorIndex for
+the actuators within that model instance: the 0ᵗʰ vector element
+corresponds to the lowest-numbered %JointActuatorIndex of that instance, the 1ˢᵗ
+vector element corresponds to the second-lowest-numbered %JointActuatorIndex of
+that instance, etc.
+
+@note The following snippet shows how per model instance actuation can be set:
+```
+ModelInstanceIndex model_instance_index = ...;
+VectorX<T> u_instance(plant.num_actuated_dofs(model_instance_index));
+int offset = 0;
+for (JointActuatorIndex joint_actuator_index :
+         plant.GetJointActuatorIndices(model_instance_index)) {
+  const JointActuator<T>& actuator = plant.get_joint_actuator(
+      joint_actuator_index);
+  const Joint<T>& joint = actuator.joint();
+  VectorX<T> u_joint = ... my_actuation_logic_for(joint) ...;
+  ASSERT(u_joint.size() == joint_actuator.num_inputs());
+  u_instance.segment(offset, u_joint.size()) = u_joint;
+  offset += u_joint.size();
+}
+plant.get_actuation_input_port(model_instance_index).FixValue(
+    plant_context, u_instance);
+```
+
+@note To inter-operate between the whole plant actuation vector and sets of
+per-model instance actuation vectors, see SetActuationInArray() to gather the
+model instance vectors into a whole plant vector and GetActuationFromArray() to
+scatter the whole plant vector into per-model instance vectors.
 
 @warning Effort limits (JointActuator::effort_limit()) are not enforced, unless
-PD controllers are defined. See @ref pd_controllers "PD controlled actuators".
+PD controllers are defined.
+See @ref pd_controllers "Using PD controlled actuators".
 
 <!-- TODO(amcastro-tri): Consider enforcing effort limits whether PD controllers
      are defined or not. -->
@@ -531,7 +571,6 @@ the following properties for point contact modeling:
 |material|point_contact_stiffness|no²|T| Penalty method stiffness.|
 |material|hunt_crossley_dissipation |no²⁴|T| Penalty method dissipation.|
 |material|relaxation_time|yes³⁴|T|Linear Kelvin–Voigt model parameter.|
-
 
 ¹ Collision geometry is required to be registered with a
   geometry::ProximityProperties object that contains the
@@ -790,40 +829,25 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   const systems::OutputPort<T>& get_body_spatial_accelerations_output_port()
       const;
 
-  /// Returns a constant reference to the input port for external actuations for
-  /// all actuated dofs regardless the number of model instances that have
-  /// actuated dofs. The input actuation is assumed to be ordered according to
-  /// model instances. This input port is a vector valued port, which can be set
-  /// with JointActuator::set_actuation_vector().
+  /// Returns a constant reference to the input port for external actuation for
+  /// all actuated dofs. This input port is a vector valued port indexed by
+  /// @ref JointActuatorIndex, see JointActuator::index(), and can be set with
+  /// JointActuator::set_actuation_vector().
   /// Refer to @ref mbp_actuation "Actuation" for further details.
   /// @pre Finalize() was already called on `this` plant.
   /// @throws std::exception if called before Finalize().
-  /// @throws std::exception if individual actuation ports are connected.
   const systems::InputPort<T>& get_actuation_input_port() const;
 
   /// Returns a constant reference to the input port for external actuation for
-  /// a specific model instance.  This input port is a vector valued port, which
-  /// can be set with JointActuator::set_actuation_vector().
-  /// Refer to @ref mbp_actuation "Actuation" for further details.
+  /// a specific model instance. This is a vector valued port with entries
+  /// ordered by monotonically increasing @ref JointActuatorIndex within
+  /// `model_instance`. Refer to @ref mbp_actuation "Actuation" for further
+  /// details.
   ///
-  /// Each model instance in `this` plant model has an actuation input port,
-  /// even if zero sized (for model instance with no actuators.)
+  /// Every model instance in `this` plant model has an actuation input port,
+  /// even if zero sized (for model instance with no actuators).
   ///
   /// @see GetJointActuatorIndices(), GetActuatedJointIndices().
-  ///
-  /// @note This is a vector valued port of size num_actuators(model_instance)
-  /// (where we assume only 1-DOF joints are actuated.)
-  ///
-  /// @warning It is required to connect this input port unless the model
-  /// instance has PD controllers defined, see get_desired_state_input_port(),
-  /// or if the full multibody version of this port is connected. For models
-  /// with PD controllers, actuation defaults to zero. This allows the modeler
-  /// to use PD controllers only, without the need to provide feed-forward
-  /// torques.
-  ///
-  /// @warning This port cannot be used together with get_actuation_input_port()
-  /// for the full multibody system. Either use the port for the full multibody
-  /// system or the port per model instance, never both.
   ///
   /// @pre Finalize() was already called on `this` plant.
   /// @throws std::exception if called before Finalize().
@@ -2778,25 +2802,33 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       ModelInstanceIndex model_instance,
       bool add_model_instance_prefix = false) const;
 
-  /// Returns a vector of actuation values for `model_instance` from a
-  /// vector `u` of actuation values for the entire model. This method throws an
-  /// exception if `u` is not of size MultibodyPlant::num_actuated_dofs().
+  /// Returns a vector of actuation values for `model_instance` from a vector
+  /// `u` of actuation values for the entire plant model. Refer to @ref
+  /// mbp_actuation "Actuation" for further details.
+  /// @param[in] u Actuation values for the entire model, indexed by
+  /// @ref JointActuatorIndex.
+  /// @returns Actuation values for `model_instance`, ordered by monotonically
+  /// increasing @ref JointActuatorIndex.
+  /// @throws std::exception if `u` is not of size
+  /// MultibodyPlant::num_actuated_dofs().
   VectorX<T> GetActuationFromArray(
       ModelInstanceIndex model_instance,
       const Eigen::Ref<const VectorX<T>>& u) const {
     return internal_tree().GetActuationFromArray(model_instance, u);
   }
 
-  /// Given the actuation values `u_instance` for all actuators in
-  /// `model_instance`, this method sets the actuation vector u for the entire
-  /// model to which this actuator belongs to. This method throws
-  /// an exception if the size of `u_instance` is not equal to the number of
-  /// degrees of freedom of all of the actuated joints in `model_instance`.
-  /// @param[in] u_instance Actuation values for the actuators. It must be of
-  ///   size equal to the number of degrees of freedom of all of the actuated
-  ///   joints in `model_instance`.
-  /// @param[out] u
-  ///   The vector containing the actuation values for the entire model.
+  /// Given actuation values `u_instance` for the actuators in `model_instance`,
+  /// update the actuation vector u for the entire plant model to which this
+  /// actuator belongs to. Refer to @ref mbp_actuation "Actuation" for further
+  /// details.
+  /// @param[in] u_instance Actuation values for the model instance. Values are
+  ///   ordered by monotonically increasing @ref JointActuatorIndex within the
+  ///   model instance.
+  /// @param[in,out] u Actuation values for the entire plant model, indexed by
+  ///   @ref JointActuatorIndex. Only values corresponding to `model_instance`
+  ///   are changed.
+  /// @throws std::exeption if the size of `u_instance` is not equal to the
+  ///   number of actuation inputs for the joints of `model_instance`.
   void SetActuationInArray(ModelInstanceIndex model_instance,
                            const Eigen::Ref<const VectorX<T>>& u_instance,
                            EigenPtr<VectorX<T>> u) const {
@@ -4495,6 +4527,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   }
 
   /// Returns a list of joint actuator indices associated with `model_instance`.
+  /// The list is sorted in ascending order of @ref JointActuatorIndex.
   /// @throws std::exception if called pre-finalize.
   std::vector<JointActuatorIndex> GetJointActuatorIndices(
       ModelInstanceIndex model_instance) const {
@@ -4852,18 +4885,23 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return internal_tree().GetAccelerationUpperLimits();
   }
 
-  /// Returns a vector of size `num_actuators()` containing the lower effort
+  /// Returns a vector of size `num_actuated_dofs()` containing the lower effort
   /// limits for every actuator. Any unbounded or unspecified limits will be
-  /// -infinity.
+  /// -∞. The returned vector is indexed by @ref JointActuatorIndex, see
+  /// JointActuator::index().
+  /// @see GetEffortUpperLimits()
   /// @throws std::exception if called pre-finalize.
   VectorX<double> GetEffortLowerLimits() const {
     DRAKE_MBP_THROW_IF_NOT_FINALIZED();
     return internal_tree().GetEffortLowerLimits();
   }
 
-  /// Upper limit analog of GetAccelerationsLowerLimits(), where any unbounded
-  /// or unspecified limits will be +infinity.
-  /// @see GetEffortLowerLimits() for more information.
+  /// Returns a vector of size `num_actuated_dofs()` containing the upper effort
+  /// limits for every actuator. Any unbounded or unspecified limits will be
+  /// +∞. The returned vector is indexed by @ref JointActuatorIndex, see
+  /// JointActuator::index().
+  /// @see GetEffortLowerLimits()
+  /// @throws std::exception if called pre-finalize.
   VectorX<double> GetEffortUpperLimits() const {
     DRAKE_MBP_THROW_IF_NOT_FINALIZED();
     return internal_tree().GetEffortUpperLimits();
@@ -5095,12 +5133,14 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   void EstimatePointContactParameters(double penetration_allowance);
 
   // Helper method to assemble actuation input vector from the appropriate
-  // ports.
+  // ports. The return value is indexed by JointActuatorIndex.
   VectorX<T> AssembleActuationInput(const systems::Context<T>& context) const;
 
   // For models with joint actuators with PD control, this method helps to
   // assemble desired states for the full model from the input ports for
   // individual model instances.
+  // The return stacks desired state as xd = [qd, vd], with both qd and vd
+  // indexed by JointActuatorIndex (it is assumed that qd.size() == vd.size()).
   VectorX<T> AssembleDesiredStateInput(
       const systems::Context<T>& context) const;
 
