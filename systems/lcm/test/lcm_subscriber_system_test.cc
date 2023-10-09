@@ -3,6 +3,7 @@
 #include <array>
 #include <future>
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/expect_throws_message.h"
@@ -259,6 +260,16 @@ GTEST_TEST(LcmSubscriberSystemTest, WaitTest) {
   wait();
   sample_data.PublishAndHandle(&lcm, channel_name);
   EXPECT_GE(second_timeout_count.get(), old_count + 1);
+}
+
+// The Graphviz should have an arrow pointing from DrakeLcmInterface to our
+// system, plus some extra metadata.
+GTEST_TEST(LcmSubscriberSystemTest, Graphviz) {
+  drake::lcm::DrakeLcm interface;
+  auto dut = LcmSubscriberSystem::Make<lcmt_drake_signal>("SIGNAL", &interface);
+  EXPECT_THAT(dut->GetGraphvizString(),
+              testing::ContainsRegex("drakelcm[a-z0-9]* -> "));
+  EXPECT_THAT(dut->GetGraphvizString(), testing::HasSubstr("channel=SIGNAL"));
 }
 
 }  // namespace

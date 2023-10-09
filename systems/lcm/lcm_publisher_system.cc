@@ -4,9 +4,11 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/nice_type_name.h"
 #include "drake/common/text_logging.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcm/drake_lcm_interface.h"
+#include "drake/systems/lcm/lcm_system_graphviz.h"
 
 namespace drake {
 namespace systems {
@@ -136,6 +138,17 @@ EventStatus LcmPublisherSystem::PublishInputAsLcmMessage(
                 context.get_time());
 
   return EventStatus::Succeeded();
+}
+
+LeafSystem<double>::GraphvizFragment LcmPublisherSystem::DoGetGraphvizFragment(
+    const GraphvizFragmentParams& params) const {
+  internal::LcmSystemGraphviz lcm_system_graphviz(
+      *lcm_, channel_, &serializer_->CreateDefaultValue()->static_type_info(),
+      /* publish = */ true,
+      /* subscribe = */ false);
+  return lcm_system_graphviz.DecorateResult(
+      LeafSystem<double>::DoGetGraphvizFragment(
+          lcm_system_graphviz.DecorateParams(params)));
 }
 
 }  // namespace lcm

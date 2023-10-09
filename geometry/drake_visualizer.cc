@@ -22,6 +22,7 @@
 #include "drake/lcmt_viewer_load_robot.hpp"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
+#include "drake/systems/lcm/lcm_system_graphviz.h"
 
 namespace drake {
 namespace geometry {
@@ -37,7 +38,9 @@ using std::set;
 using std::vector;
 using systems::Context;
 using systems::EventStatus;
+using systems::LeafSystem;
 using systems::SystemTypeTag;
+using systems::lcm::internal::LcmSystemGraphviz;
 
 namespace {
 
@@ -545,7 +548,7 @@ void DrakeVisualizer<T>::DispatchLoadMessage(const SceneGraph<T>& scene_graph,
 template <typename T>
 DrakeVisualizer<T>::DrakeVisualizer(lcm::DrakeLcmInterface* lcm,
                                     DrakeVisualizerParams params, bool use_lcm)
-    : systems::LeafSystem<T>(SystemTypeTag<DrakeVisualizer>{}),
+    : LeafSystem<T>(SystemTypeTag<DrakeVisualizer>{}),
       owned_lcm_((lcm || !use_lcm) ? nullptr : new lcm::DrakeLcm()),
       lcm_((lcm && use_lcm) ? lcm : owned_lcm_.get()),
       params_(std::move(params)) {
@@ -863,6 +866,21 @@ const vector<internal::DeformableMeshData>&
 DrakeVisualizer<T>::EvalDeformableMeshData(const Context<T>& context) const {
   return this->get_cache_entry(deformable_data_cache_index_)
       .template Eval<vector<internal::DeformableMeshData>>(context);
+}
+
+template <typename T>
+typename LeafSystem<T>::GraphvizFragment
+DrakeVisualizer<T>::DoGetGraphvizFragment(
+    const typename LeafSystem<T>::GraphvizFragmentParams& params) const {
+  LcmSystemGraphviz lcm_system_graphviz(
+      *lcm_, MakeLcmChannelNameForRole("DRAKE_VIEWER_DRAW", params_),
+      // We omit the message_type because it's implicit from our class name.
+      /* message_type = */ nullptr,
+      /* publish = */ true,
+      /* subscribe = */ false);
+  return lcm_system_graphviz.DecorateResult(
+      LeafSystem<T>::DoGetGraphvizFragment(
+          lcm_system_graphviz.DecorateParams(params)));
 }
 
 }  // namespace geometry
