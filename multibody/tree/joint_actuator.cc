@@ -49,13 +49,13 @@ void JointActuator<T>::AddInOneForce(
 
 template <typename T>
 void JointActuator<T>::set_actuation_vector(
-    const Eigen::Ref<const VectorX<T>>& u_instance,
+    const Eigen::Ref<const VectorX<T>>& u_actuator,
     EigenPtr<VectorX<T>> u) const {
   DRAKE_DEMAND(u != nullptr);
   DRAKE_DEMAND(u->size() == this->get_parent_tree().num_actuated_dofs());
-  DRAKE_DEMAND(u_instance.size() == joint().num_velocities());
+  DRAKE_DEMAND(u_actuator.size() == joint().num_velocities());
   u->segment(topology_.actuator_index_start, joint().num_velocities()) =
-      u_instance;
+      u_actuator;
 }
 
 template <typename T>

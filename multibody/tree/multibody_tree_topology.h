@@ -308,7 +308,8 @@ struct JointActuatorTopology {
   JointActuatorIndex index{0};
   // For an actuator in a MultibodyTree model, this index corresponds to the
   // first entry in the global array u containing all actuation values for the
-  // entire model.
+  // entire model. Actuator indexes are assigned in the order actuators are
+  // added to the model, that is, in the order of JointActuatorIndex.
   int actuator_index_start{-1};
   // The number of dofs actuated by this actuator.
   int num_dofs{-1};

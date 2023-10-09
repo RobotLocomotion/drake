@@ -456,6 +456,7 @@ drake_cc_googletest(
         "//manipulation/models/iiwa_description:models",
         "//manipulation/models/wsg_50_description:models",
         "//multibody:models",
+        "//multibody/benchmarks/acrobot:models",
     ],
     deps = [
         ":plant",
