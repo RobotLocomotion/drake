@@ -108,7 +108,7 @@ int FemSolver<T>::SolveLinearModel(
   Block3x3SparseSymmetricMatrix& tangent_matrix = *scratch_.tangent_matrix;
 
   model_->ApplyBoundaryCondition(&state);
-  model_->CalcResidual(state, &b);
+  model_->CalcResidual(state, external_force_or_null(), &b);
   T residual_norm = b.norm();
   model_->CalcTangentMatrix(state, integrator_->GetWeights(), &tangent_matrix);
   next_state_and_schur_complement_.schur_complement =
@@ -133,7 +133,7 @@ int FemSolver<T>::SolveNonlinearModel(
   FemState<T>& state = *next_state_and_schur_complement_.state;
 
   model_->ApplyBoundaryCondition(&state);
-  model_->CalcResidual(state, &b);
+  model_->CalcResidual(state, external_force_or_null(), &b);
   T residual_norm = b.norm();
   const T initial_residual_norm = residual_norm;
   int iter = 0;
@@ -159,7 +159,7 @@ int FemSolver<T>::SolveNonlinearModel(
     }
     dz = linear_solver.Solve(-b);
     integrator_->UpdateStateFromChangeInUnknowns(dz, &state);
-    model_->CalcResidual(state, &b);
+    model_->CalcResidual(state, external_force_or_null(), &b);
     residual_norm = b.norm();
     ++iter;
   }

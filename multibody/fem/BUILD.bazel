@@ -213,6 +213,7 @@ drake_cc_library(
         ":fem_indexes",
         ":fem_state",
         "//common:essential",
+        "//multibody/plant:external_force_field",
     ],
 )
 
@@ -232,6 +233,7 @@ drake_cc_library(
         ":fem_state",
         "//common:essential",
         "//multibody/contact_solvers:block_sparse_lower_triangular_or_symmetric_matrix",  # noqa
+        "//multibody/plant:external_force_field",
     ],
 )
 

@@ -72,6 +72,7 @@ class FemModelImpl : public FemModel<typename Element::T> {
 
  private:
   void DoCalcResidual(const FemState<T>& fem_state,
+                      const std::optional<ExternalForceField<T>>& force_field,
                       EigenPtr<VectorX<T>> residual) const final {
     /* The values are accumulated in the residual, so it is important to clear
      the old data. */
@@ -92,6 +93,10 @@ class FemModelImpl : public FemModel<typename Element::T> {
           element_data[e], -1.0, this->gravity_vector(), &element_residual);
       const std::array<FemNodeIndex, Element::num_nodes>& element_node_indices =
           elements_[e].node_indices();
+      if (force_field.has_value()) {
+        elements_[e].AddScaledExternalForce(element_data[e], -1.0, *force_field,
+                                            &element_residual);
+      }
       for (int a = 0; a < Element::num_nodes; ++a) {
         const int global_node = element_node_indices[a];
         residual->template segment<kDim>(global_node * kDim) +=

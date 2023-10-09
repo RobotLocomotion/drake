@@ -77,6 +77,14 @@ class FemSolver {
   /* Returns the FEM model that this solver solves for. */
   const FemModel<T>& model() const { return *model_; }
 
+  void set_external_force_field(const ExternalForceField<T>* external_force) {
+    external_force_ = external_force;
+  }
+
+  const ExternalForceField<T>* external_force_field() const {
+    return external_force_;
+  }
+
   /* Returns the discrete time integrator that this solver uses. */
   const DiscreteTimeIntegrator<T>& integrator() const { return *integrator_; }
 
@@ -176,6 +184,12 @@ class FemSolver {
   int SolveLinearModel(
       const std::unordered_set<int>& nonparticipating_vertices);
 
+  std::optional<ExternalForceField<T>> external_force_or_null() const {
+    return external_force_ == nullptr
+               ? std::nullopt
+               : std::optional<ExternalForceField<T>>(*external_force_);
+  }
+
   /* The FEM model being solved by `this` solver. */
   const FemModel<T>* model_{nullptr};
   /* The discrete time integrator the solver uses. */
@@ -191,6 +205,7 @@ class FemSolver {
   int max_iterations_{100};
   FemStateAndSchurComplement next_state_and_schur_complement_;
   Scratch scratch_;
+  const ExternalForceField<T>* external_force_{nullptr};
 };
 
 }  // namespace internal

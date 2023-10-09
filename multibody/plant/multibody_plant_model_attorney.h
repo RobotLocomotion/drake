@@ -56,6 +56,13 @@ class MultibodyPlantModelAttorney {
         std::move(prerequisites_of_calc));
   }
 
+  static systems::InputPort<T>& DeclareAbstractInputPort(
+      MultibodyPlant<T>* plant, std::string name,
+      const AbstractValue& model_value) {
+    DRAKE_DEMAND(plant != nullptr);
+    return plant->DeclareAbstractInputPort(std::move(name), model_value);
+  }
+
   static systems::LeafOutputPort<T>& DeclareVectorOutputPort(
       MultibodyPlant<T>* plant, std::string name,
       const systems::BasicVector<T>& model_vector,

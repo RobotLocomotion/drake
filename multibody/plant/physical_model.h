@@ -176,6 +176,10 @@ class PhysicalModel : public internal::ScalarConvertibleComponent<T> {
       std::set<systems::DependencyTicket> prerequisites_of_calc = {
           systems::System<T>::all_sources_ticket()});
 
+  static systems::InputPort<T>& DeclareAbstractInputPort(
+      MultibodyPlant<T>* plant, std::string name,
+      const AbstractValue& model_value);
+
   static systems::LeafOutputPort<T>& DeclareVectorOutputPort(
       MultibodyPlant<T>* plant, std::string name,
       const systems::BasicVector<T>& model_vector,

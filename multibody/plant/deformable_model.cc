@@ -323,6 +323,12 @@ void DeformableModel<T>::DoDeclareSystemResources(MultibodyPlant<T>* plant) {
               {systems::System<double>::xd_ticket()})
           .get_index();
 
+  external_force_field_port_index_ =
+      this->DeclareAbstractInputPort(
+              plant, "external force field",
+              Value<std::map<DeformableBodyId, ExternalForceField<T>>>())
+          .get_index();
+
   std::sort(body_ids_.begin(), body_ids_.end());
   for (DeformableBodyIndex i(0); i < static_cast<int>(body_ids_.size()); ++i) {
     DeformableBodyId id = body_ids_[i];

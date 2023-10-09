@@ -12,6 +12,7 @@
 #include "drake/multibody/fem/fem_model.h"
 #include "drake/multibody/plant/constraint_specs.h"
 #include "drake/multibody/plant/deformable_ids.h"
+#include "drake/multibody/plant/external_force_field.h"
 #include "drake/multibody/plant/physical_model.h"
 #include "drake/multibody/tree/body.h"
 
@@ -211,6 +212,11 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
     return plant_->get_output_port(vertex_positions_port_index_);
   }
 
+  const systems::InputPort<T>& external_force_field_port() const {
+    this->ThrowIfSystemResourcesNotDeclared(__func__);
+    return plant_->get_input_port(external_force_field_port_index_);
+  }
+
  private:
   PhysicalModelPointerVariant<T> DoToPhysicalModelPointerVariant() const final {
     return PhysicalModelPointerVariant<T>(this);
@@ -266,6 +272,7 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
   std::map<MultibodyConstraintId, internal::DeformableRigidFixedConstraintSpec>
       fixed_constraint_specs_;
   systems::OutputPortIndex vertex_positions_port_index_;
+  systems::InputPortIndex external_force_field_port_index_;
 };
 
 }  // namespace multibody

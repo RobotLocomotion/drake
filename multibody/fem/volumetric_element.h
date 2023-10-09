@@ -61,6 +61,8 @@ struct VolumetricElementData {
   Vector<T, num_dofs> element_q0;
   Vector<T, num_dofs> element_v;
   Vector<T, num_dofs> element_a;
+  /* The current locations of the quadrature points. */
+  std::array<Vector<T, 3>, num_quadrature_points> quadrature_locations;
   typename ConstitutiveModelType::Data deformation_gradient_data;
   /* The elastic energy density evaluated at quadrature points. Note that this
    is energy per unit of "reference" volume. */
@@ -416,6 +418,13 @@ class VolumetricElement
         this->ExtractElementDofs(state.GetPreviousStepPositions());
     data.element_v = this->ExtractElementDofs(state.GetVelocities());
     data.element_a = this->ExtractElementDofs(state.GetAccelerations());
+    const auto& element_q_reshaped =
+        Eigen::Map<const Eigen::Matrix<T, 3, num_nodes>>(data.element_q.data(),
+                                                         3, num_nodes);
+    data.quadrature_locations =
+        isoparametric_element_.template InterpolateNodalValues<3>(
+            element_q_reshaped);
+
     data.deformation_gradient_data.UpdateData(
         CalcDeformationGradient(data.element_q),
         CalcDeformationGradient(data.element_q0));
@@ -426,6 +435,22 @@ class VolumetricElement
     this->constitutive_model().CalcFirstPiolaStressDerivative(
         data.deformation_gradient_data, &data.dPdF);
     return data;
+  }
+
+  void DoAddScaledExternalForce(const Data& data, const T& scale,
+                                const ExternalForceField<T>& force_field,
+                                EigenPtr<Vector<T, num_dofs>> result) const {
+    const std::array<Vector<T, 3>, num_quadrature_points>&
+        quadrature_locations = data.quadrature_locations;
+    const std::array<Vector<T, num_nodes>, num_quadrature_points>& S =
+        isoparametric_element_.GetShapeFunctions();
+    for (int q = 0; q < num_quadrature_points; ++q) {
+      for (int n = 0; n < num_nodes; ++n) {
+        result->template segment<3>(3 * n) +=
+            scale * force_field.Eval(quadrature_locations[q]) *
+            reference_volume_[q] * S[q](n);
+      }
+    }
   }
 
   /* Calculates the deformation gradient at all quadrature points in this

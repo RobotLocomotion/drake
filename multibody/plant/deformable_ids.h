@@ -10,6 +10,8 @@ namespace multibody {
  Finalize(). */
 using DeformableBodyId = Identifier<class DeformableBodyTag>;
 
+using ExternalForceId = Identifier<class ExternalForceTag>;
+
 /** (Internal use only) Indexes deformable bodies, only used after Finalize().
  */
 using DeformableBodyIndex = TypeSafeIndex<class DeformableBodyTag>;
