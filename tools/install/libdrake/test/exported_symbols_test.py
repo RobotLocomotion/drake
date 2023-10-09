@@ -1,5 +1,6 @@
 from collections import namedtuple
 from pathlib import Path
+import re
 import subprocess
 import sys
 import unittest
@@ -101,6 +102,9 @@ _KNOWN_BAD_SYMBOLS_SUBSTR = [
 
 class ExportedSymbolsTest(unittest.TestCase):
 
+    def setUp(self):
+        self._readelf_repair_pattern = None
+
     @unittest.skipIf(sys.platform == "darwin", "Ubuntu only")
     def test_exported_symbols(self):
         """Confirms that the symbols exported by libdrake.so are only:
@@ -132,6 +136,7 @@ class ExportedSymbolsTest(unittest.TestCase):
             # Skip over useless lines.
             if not line or line.startswith("Symbol table"):
                 continue
+            line = self._repair_readelf_output(line)
             values = line.split()
             # Deal with the table header row.
             if line.strip().startswith("Num:"):
@@ -170,6 +175,27 @@ class ExportedSymbolsTest(unittest.TestCase):
             print(f" {row.Name}")
             print()
         self.assertEqual(len(bad_rows), 0)
+
+    def _repair_readelf_output(self, line):
+        # Mop up any "<OS specific>: %d" or "<processor specific>: # %d" output
+        # that could occur in the symbol binding or type columns.
+        #
+        # Sometimes, instead of getting line like:
+        #  990: 00000000036827b0     8 OBJECT  UNIQUE DEFAULT   16 _ZN5drake...
+        #
+        # Instead, we get
+        #  990: 00000000036827b0     8 OBJECT  <OS specific>: 10 DEFAULT   16 _ZN5drake...  #noqa
+        #
+        # This method performs a substitution to get rid of the unusual output,
+        # so the returned result looks like this:
+        #  990: 00000000036827b0     8 OBJECT  SPECIFIC DEFAULT   16 _ZN5drake...  #noqa
+        #
+        # This type of output was noticed using the `mold` linker, see issue:
+        # https://github.com/rui314/mold/issues/651
+        if self._readelf_repair_pattern is None:
+            self._readelf_repair_pattern = re.compile(r'<\w+ specific>: \d+')
+        return self._readelf_repair_pattern.sub('SPECIFIC', line)
+
 
     @staticmethod
     def _is_symbol_ok(row):
