@@ -19,26 +19,11 @@ set(bzip2_url "https://sourceware.org/pub/bzip2/bzip2-${bzip2_version}.tar.gz")
 set(bzip2_md5 "67e051268d0c475ea773822f7500d0e5")
 list(APPEND ALL_PROJECTS bzip2)
 
-# xz
-set(xz_version 5.2.5)
-set(xz_url "https://drake-mirror.csail.mit.edu/other/xz/xz-${xz_version}.tar.gz")
-set(xz_md5 "0d270c997aff29708c74d53f599ef717")
-list(APPEND ALL_PROJECTS xz)
-
 # libjpeg-turbo
 set(libjpeg-turbo_version 2.1.4)
 set(libjpeg-turbo_url "https://github.com/libjpeg-turbo/libjpeg-turbo/archive/refs/tags/${libjpeg-turbo_version}.tar.gz")
 set(libjpeg-turbo_md5 "357dc26a802c34387512a42697846d16")
 list(APPEND ALL_PROJECTS libjpeg-turbo)
-
-# TODO(jwnimmer-tri) When we purge `libtiff`, we can also purge `xz`, above.
-# The only user of `xz` is `libtiff`.
-#
-# libtiff
-set(libtiff_version 4.1.0)
-set(libtiff_url "http://download.osgeo.org/libtiff/tiff-${libtiff_version}.tar.gz")
-set(libtiff_md5 "2165e7aba557463acc0664e71a3ed424")
-list(APPEND ALL_PROJECTS libtiff)
 
 # eigen
 if(APPLE)
