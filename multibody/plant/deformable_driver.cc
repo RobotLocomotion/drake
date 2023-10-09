@@ -2,6 +2,7 @@
 
 #include <array>
 #include <limits>
+#include <map>
 #include <memory>
 #include <set>
 #include <string>
@@ -16,6 +17,7 @@
 #include "drake/multibody/fem/fem_model.h"
 #include "drake/multibody/fem/velocity_newmark_scheme.h"
 #include "drake/multibody/plant/contact_properties.h"
+#include "drake/multibody/plant/force_density_field.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/framework/context.h"
 
@@ -766,7 +768,12 @@ void DeformableDriver<T>::CalcFreeMotionFemSolver(
       nonparticipating_vertices.insert(v);
     }
   }
-  fem_solver->AdvanceOneTimeStep(fem_state, nonparticipating_vertices);
+  /* Collect all external forces affecting this body and store them into the
+   FemPlantData for the associated FEM model. */
+  const fem::FemPlantData<T> plant_data{
+      context, deformable_model_->GetExternalForces(body_id)};
+  fem_solver->AdvanceOneTimeStep(fem_state, plant_data,
+                                 nonparticipating_vertices);
 }
 
 template <typename T>

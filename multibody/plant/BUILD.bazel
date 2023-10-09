@@ -27,6 +27,7 @@ drake_cc_package_library(
         ":discrete_contact_pair",
         ":externally_applied_spatial_force",
         ":externally_applied_spatial_force_multiplexer",
+        ":force_density_field",
         ":hydroelastic_contact_info",
         ":hydroelastic_quadrature_point_data",
         ":hydroelastic_traction",
@@ -295,6 +296,22 @@ drake_cc_library(
         "//lcmtypes:point_pair_contact_info_for_viz",
         "//systems/framework:diagram_builder",
         "//systems/lcm:lcm_pubsub_system",
+    ],
+)
+
+drake_cc_library(
+    name = "force_density_field",
+    srcs = [
+        "force_density_field.cc",
+    ],
+    hdrs = [
+        "force_density_field.h",
+    ],
+    deps = [
+        "//common:default_scalars",
+        "//common:essential",
+        "//multibody/tree",
+        "//systems/framework:context",
     ],
 )
 
