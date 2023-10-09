@@ -1,5 +1,6 @@
 from collections import namedtuple
 from pathlib import Path
+import re
 import subprocess
 import sys
 import unittest
@@ -128,10 +129,18 @@ class ExportedSymbolsTest(unittest.TestCase):
         # After that, each row of data will be parsed into that namedtuple.
         Row = None
         symbols = []
+        # Prepare to mop up any "<OS specific>: %d" or "<processor specific>:
+        # %d" output that could occur in the symbol binding or type
+        # columns. See (for example):
+        # https://github.com/bminor/binutils-gdb/blob/binutils-2_40/binutils/readelf.c#L12695-L12704  # noqa
+        # This type of output was noticed using the `mold` linker, see issue:
+        # https://github.com/rui314/mold/issues/651
+        specific = re.compile(r'<\w+ specific>: \d+')
         for i, line in enumerate(lines):
             # Skip over useless lines.
             if not line or line.startswith("Symbol table"):
                 continue
+            line = specific.sub('SPECIFIC', line)
             values = line.split()
             # Deal with the table header row.
             if line.strip().startswith("Num:"):
