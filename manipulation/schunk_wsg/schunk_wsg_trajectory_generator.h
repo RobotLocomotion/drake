@@ -10,7 +10,6 @@ namespace drake {
 namespace manipulation {
 namespace schunk_wsg {
 
-
 // TODO(sam.creasey) Right now this class just outputs a position
 // which is not going to be sufficient to capture the entire control
 // state of the gripper (particularly the maximum force).
