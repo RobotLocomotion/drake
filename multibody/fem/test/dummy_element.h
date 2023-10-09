@@ -147,6 +147,14 @@ class DummyElement final : public FemElement<DummyElement<is_linear>> {
       EigenPtr<Eigen::Matrix<T, kNumDofs, kNumDofs>> M) const {
     *M += scale * mass_matrix();
   }
+
+  /* Implements FemElement::AddScaledExternalForce(). */
+  void DoAddScaledExternalForce(
+      const Data&, const T& scale,
+      const std::function<Vector3<T>(const Vector3<T>)>& force_density_field,
+      EigenPtr<Vector<T, kNumDofs>> result) const {
+    result->head(3) += scale * force_density_field(Vector3<T>::Zero());
+  }
 };
 
 }  // namespace internal

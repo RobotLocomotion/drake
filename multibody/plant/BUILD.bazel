@@ -25,6 +25,7 @@ drake_cc_package_library(
         ":deformable_ids",
         ":discrete_contact_data",
         ":discrete_contact_pair",
+        ":external_force_field",
         ":externally_applied_spatial_force",
         ":externally_applied_spatial_force_multiplexer",
         ":hydroelastic_contact_info",
@@ -295,6 +296,20 @@ drake_cc_library(
         "//lcmtypes:point_pair_contact_info_for_viz",
         "//systems/framework:diagram_builder",
         "//systems/lcm:lcm_pubsub_system",
+    ],
+)
+
+drake_cc_library(
+    name = "external_force_field",
+    srcs = [
+        "external_force_field.cc",
+    ],
+    hdrs = [
+        "external_force_field.h",
+    ],
+    deps = [
+        "//common:default_scalars",
+        "//common:essential",
     ],
 )
 

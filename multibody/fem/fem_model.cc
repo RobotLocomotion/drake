@@ -28,11 +28,12 @@ std::unique_ptr<FemState<T>> FemModel<T>::MakeFemState() const {
 
 template <typename T>
 void FemModel<T>::CalcResidual(const FemState<T>& fem_state,
+                               const std::optional<ExternalForceField<T>>& force_field,
                                EigenPtr<VectorX<T>> residual) const {
   DRAKE_DEMAND(residual != nullptr);
   DRAKE_DEMAND(residual->size() == num_dofs());
   ThrowIfModelStateIncompatible(__func__, fem_state);
-  DoCalcResidual(fem_state, residual);
+  DoCalcResidual(fem_state, force_field, residual);
   dirichlet_bc_.ApplyHomogeneousBoundaryCondition(residual);
 }
 
