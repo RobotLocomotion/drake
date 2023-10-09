@@ -15,6 +15,7 @@ namespace drake {
 namespace examples {
 namespace multibody {
 namespace cylinder_with_multicontact {
+namespace kcov339_avoidance_magic {
 namespace {
 
 DEFINE_double(target_realtime_rate, 0.5,
@@ -114,6 +115,7 @@ int do_main() {
 }
 
 }  // namespace
+}  // namespace kcov339_avoidance_magic
 }  // namespace cylinder_with_multicontact
 }  // namespace multibody
 }  // namespace examples
