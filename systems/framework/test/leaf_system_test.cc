@@ -148,7 +148,8 @@ class TestSystem : public LeafSystem<T> {
   void AddPeriodicUpdate() {
     const double period = 10.0;
     const double offset = 5.0;
-    this->DeclarePeriodicDiscreteUpdateNoHandler(period, offset);
+    this->DeclarePeriodicDiscreteUpdateEvent(
+        period, offset, &TestSystem<T>::NoopDiscreteUpdate);
     std::optional<PeriodicEventData> periodic_attr =
         this->GetUniquePeriodicDiscreteUpdateAttribute();
     ASSERT_TRUE(periodic_attr);
@@ -158,24 +159,38 @@ class TestSystem : public LeafSystem<T> {
 
   void AddPeriodicUpdate(double period) {
     const double offset = 0.0;
-    this->DeclarePeriodicDiscreteUpdateNoHandler(period, offset);
+    this->DeclarePeriodicDiscreteUpdateEvent(
+        period, offset, &TestSystem<T>::NoopDiscreteUpdate);
     std::optional<PeriodicEventData> periodic_attr =
-       this->GetUniquePeriodicDiscreteUpdateAttribute();
+        this->GetUniquePeriodicDiscreteUpdateAttribute();
     ASSERT_TRUE(periodic_attr);
     EXPECT_EQ(periodic_attr.value().period_sec(), period);
     EXPECT_EQ(periodic_attr.value().offset_sec(), offset);
   }
 
   void AddPeriodicUpdate(double period, double offset) {
-    this->DeclarePeriodicDiscreteUpdateNoHandler(period, offset);
+    this->DeclarePeriodicDiscreteUpdateEvent(
+        period, offset, &TestSystem<T>::NoopDiscreteUpdate);
+  }
+
+  EventStatus NoopDiscreteUpdate(const Context<T>&, DiscreteValues<T>*) const {
+    return EventStatus::DidNothing();
   }
 
   void AddPeriodicUnrestrictedUpdate(double period, double offset) {
-    this->DeclarePeriodicUnrestrictedUpdateNoHandler(period, offset);
+    this->DeclarePeriodicUnrestrictedUpdateEvent(
+        period, offset, &TestSystem<T>::NoopUnrestritedUpdate);
+  }
+
+  EventStatus NoopUnrestritedUpdate(const Context<T>&, State<T>*) const {
+    return EventStatus::DidNothing();
   }
 
   void AddPublish(double period) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     this->DeclarePeriodicPublishNoHandler(period);
+#pragma GCC diagnostic pop
   }
 
   void DoCalcTimeDerivatives(const Context<T>& context,
@@ -2483,6 +2498,8 @@ class DoPublishOverrideSystem : public LeafSystem<double> {
   }
 
  private:
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   void DoPublish(
       const Context<double>& context,
       const std::vector<const PublishEvent<double>*>& events) const override {
@@ -2490,6 +2507,7 @@ class DoPublishOverrideSystem : public LeafSystem<double> {
     if (!ignore_events_)
       LeafSystem<double>::DoPublish(context, events);
   }
+#pragma GCC diagnostic pop
 
   // If true, DoPublish ignores events, calls LeafSystem::DoPublish() if false.
   bool ignore_events_{false};

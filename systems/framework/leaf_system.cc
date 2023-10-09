@@ -852,7 +852,10 @@ EventStatus LeafSystem<T>::DispatchPublishHandler(
   // Determine whether the derived System overloaded DoPublish(). If so, this
   // flag will remain false; the default implementation sets it to true.
   context.set_use_default_implementation(false);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   this->DoPublish(context, leaf_events.get_events());
+#pragma GCC diagnostic pop
   if (!context.get_use_default_implementation()) {
     // Derived system overrode the dispatcher and did not invoke the base class
     // implementation so there is nothing else to do.
@@ -889,9 +892,15 @@ EventStatus LeafSystem<T>::DispatchDiscreteVariableUpdateHandler(
   // DoCalcDiscreteVariableUpdates(). If so, this flag will remain false; the
   // default implementation sets it to true.
   context.set_use_default_implementation(false);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   this->DoCalcDiscreteVariableUpdates(context, leaf_events.get_events(),
       discrete_state);  // in/out
+#pragma GCC diagnostic pop
   if (!context.get_use_default_implementation()) {
+    static const logging::Warn log_once(
+        "Overriding LeafSystem::DoCalcDiscreteVariableUpdates is deprecated "
+        "and will be removed from Drake on or after 2024-02-01.");
     // Derived system overrode the dispatcher and did not invoke the base class
     // implementation so there is nothing else to do.
     return EventStatus::Succeeded();
@@ -938,9 +947,15 @@ EventStatus LeafSystem<T>::DispatchUnrestrictedUpdateHandler(
   // DoCalcUnrestrictedUpdate(). If so, this flag will remain false; the
   // default implementation sets it to true.
   context.set_use_default_implementation(false);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   this->DoCalcUnrestrictedUpdate(context, leaf_events.get_events(),
                                         state);  // in/out
+#pragma GCC diagnostic pop
   if (!context.get_use_default_implementation()) {
+    static const logging::Warn log_once(
+        "Overriding LeafSystem::DoCalcUnrestrictedUpdate is deprecated "
+        "and will be removed from Drake on or after 2024-02-01.");
     // Derived system overrode the dispatcher and did not invoke the base class
     // implementation so there is nothing else to do.
     return EventStatus::Succeeded();

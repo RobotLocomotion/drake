@@ -401,8 +401,16 @@ TEST_F(VectorSystemTest, NoInputContinuousTimeSystemTest) {
 
 class NoInputNoOutputDiscreteTimeSystem : public VectorSystem<double> {
  public:
-  NoInputNoOutputDiscreteTimeSystem() : VectorSystem<double>(0, 0) {
-    this->DeclarePeriodicDiscreteUpdateNoHandler(1.0);
+  explicit NoInputNoOutputDiscreteTimeSystem(bool use_deprecated)
+      : VectorSystem<double>(0, 0) {
+    if (use_deprecated) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+      this->DeclarePeriodicDiscreteUpdateNoHandler(1.0);
+#pragma GCC diagnostic pop
+    } else {
+      this->DeclarePeriodicDiscreteUpdate(1.0, 0.0);
+    }
     this->DeclareDiscreteState(1);
   }
 
@@ -420,7 +428,22 @@ class NoInputNoOutputDiscreteTimeSystem : public VectorSystem<double> {
 // Discrete updates still work when input size is zero.
 // No output ports are created when the output size is zero.
 TEST_F(VectorSystemTest, NoInputNoOutputDiscreteTimeSystemTest) {
-  NoInputNoOutputDiscreteTimeSystem dut;
+  NoInputNoOutputDiscreteTimeSystem dut(/* deprecated = */ false);
+  auto context = dut.CreateDefaultContext();
+  context->get_mutable_discrete_state().get_mutable_vector().SetFromVector(
+      Vector1d::Constant(2.0));
+
+  auto discrete_updates = dut.AllocateDiscreteVariables();
+  dut.CalcForcedDiscreteVariableUpdate(*context, discrete_updates.get());
+  EXPECT_EQ(discrete_updates->get_vector(0)[0], 8.0);
+
+  EXPECT_EQ(dut.num_output_ports(), 0);
+}
+
+// Discrete updates still work when input size is zero.
+// No output ports are created when the output size is zero.
+TEST_F(VectorSystemTest, NoInputNoOutputDiscreteTimeSystemTestDeprecated) {
+  NoInputNoOutputDiscreteTimeSystem dut(/* deprecated = */ true);
   auto context = dut.CreateDefaultContext();
   context->get_mutable_discrete_state().get_mutable_vector().SetFromVector(
       Vector1d::Constant(2.0));
@@ -545,7 +568,7 @@ TEST_F(VectorSystemTest, MissingMethodsContinuousTimeSystemTest) {
 class MissingMethodsDiscreteTimeSystem : public VectorSystem<double> {
  public:
   MissingMethodsDiscreteTimeSystem() : VectorSystem<double>(0, 1) {
-    this->DeclarePeriodicDiscreteUpdateNoHandler(1.0);
+    this->DeclarePeriodicDiscreteUpdate(1.0, 0.0);
     this->DeclareDiscreteState(1);
   }
 };
