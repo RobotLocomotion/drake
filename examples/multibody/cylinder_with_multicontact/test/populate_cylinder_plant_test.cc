@@ -13,6 +13,7 @@ namespace drake {
 namespace examples {
 namespace multibody {
 namespace cylinder_with_multicontact {
+namespace kcov339_avoidance_magic {
 namespace {
 
 using drake::multibody::AddMultibodyPlantSceneGraph;
@@ -84,6 +85,7 @@ GTEST_TEST(PopulateCylinderPlant, VerifyPlant) {
 }
 
 }  // namespace
+}  // namespace kcov339_avoidance_magic
 }  // namespace cylinder_with_multicontact
 }  // namespace multibody
 }  // namespace examples
