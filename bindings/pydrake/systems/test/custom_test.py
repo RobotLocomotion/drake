@@ -376,10 +376,13 @@ class TestCustom(unittest.TestCase):
                 self.called_reset = False
                 self.called_system_reset = False
                 # Ensure we have desired overloads.
-                self.DeclarePeriodicPublishNoHandler(1.0)
-                self.DeclarePeriodicPublishNoHandler(1.0, 0)
-                self.DeclarePeriodicPublishNoHandler(
-                    period_sec=1.0, offset_sec=0)
+                with catch_drake_warnings(expected_count=1):
+                    self.DeclarePeriodicPublishNoHandler(1.0)
+                with catch_drake_warnings(expected_count=1):
+                    self.DeclarePeriodicPublishNoHandler(1.0, 0)
+                with catch_drake_warnings(expected_count=1):
+                    self.DeclarePeriodicPublishNoHandler(
+                        period_sec=1.0, offset_sec=0)
                 self.DeclareInitializationPublishEvent(
                     publish=self._on_initialize_publish)
                 self.DeclareInitializationDiscreteUpdateEvent(
@@ -390,8 +393,9 @@ class TestCustom(unittest.TestCase):
                     event=PublishEvent(
                         trigger_type=TriggerType.kInitialization,
                         callback=self._on_initialize))
-                self.DeclarePeriodicDiscreteUpdateNoHandler(
-                    period_sec=1.0, offset_sec=0.)
+                with catch_drake_warnings(expected_count=1):
+                    self.DeclarePeriodicDiscreteUpdateNoHandler(
+                        period_sec=1.0, offset_sec=0.)
                 self.DeclarePeriodicPublishEvent(
                     period_sec=1.0,
                     offset_sec=0,
@@ -463,7 +467,8 @@ class TestCustom(unittest.TestCase):
 
             def DoPublish(self, context, events):
                 # Call base method to ensure we do not get recursion.
-                LeafSystem.DoPublish(self, context, events)
+                with catch_drake_warnings(expected_count=1):
+                    LeafSystem.DoPublish(self, context, events)
                 # N.B. We do not test for a singular call to `DoPublish`
                 # (checking `assertFalse(self.called_publish)` first) because
                 # the above `_DeclareInitializationEvent` will call both its
@@ -481,8 +486,9 @@ class TestCustom(unittest.TestCase):
             def DoCalcDiscreteVariableUpdates(
                     self, context, events, discrete_state):
                 # Call base method to ensure we do not get recursion.
-                LeafSystem.DoCalcDiscreteVariableUpdates(
-                    self, context, events, discrete_state)
+                with catch_drake_warnings(expected_count=1):
+                    LeafSystem.DoCalcDiscreteVariableUpdates(
+                        self, context, events, discrete_state)
                 self.called_discrete = True
 
             def DoGetWitnessFunctions(self, context):
