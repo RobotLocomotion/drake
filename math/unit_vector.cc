@@ -17,7 +17,7 @@ namespace {
 // (2² = 4) * std::numeric_limits<double>::epsilon() ≈ 8.88E-16.
 // @param[in] unit_vector a vector which is allegedly a unit vector.
 // @retval {‖unit_vector‖², is_ok_unit_vector} as a pair. The return value is
-// {‖unit_vector‖², true} for ‖unit_vector‖ within 3 bits of 1, otherwise return
+// {‖unit_vector‖², true} for ‖unit_vector‖ within 2 bits of 1, otherwise return
 // {‖unit_vector‖², false}.
 // @note: When type T is symbolic::Expression, this function is a no-op that
 // returns {1.0, {}}.
