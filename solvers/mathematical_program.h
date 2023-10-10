@@ -20,7 +20,6 @@
 #include <Eigen/Core>
 #include <Eigen/SparseCore>
 
-
 #include "drake/common/autodiff.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
@@ -1459,19 +1458,17 @@ class MathematicalProgram {
     return AddLinearConstraint(A, lb, ub, ConcatenateVariableRefList(vars));
   }
 
-
-   /**
+  /**
    * Adds sparse linear constraints referencing potentially a subset
    * of the decision variables (defined in the vars parameter).
    */
-//  Binding<LinearConstraint> AddLinearConstraint(
-//      const Eigen::Ref<const Eigen::SparseMatrix<double>>& A,
-//      const Eigen::Ref<const Eigen::VectorXd>& lb,
-//      const Eigen::Ref<const Eigen::VectorXd>& ub,
-//      const VariableRefList& vars) {
-//    return AddLinearConstraint(A, lb, ub, ConcatenateVariableRefList(vars));
-//  }
-
+  Binding<LinearConstraint> AddLinearConstraint(
+      const Eigen::Ref<const Eigen::SparseMatrix<double>>& A,
+      const Eigen::Ref<const Eigen::VectorXd>& lb,
+      const Eigen::Ref<const Eigen::VectorXd>& ub,
+      const VariableRefList& vars) {
+    return AddLinearConstraint(A, lb, ub, ConcatenateVariableRefList(vars));
+  }
 
   /**
    * Adds linear constraints referencing potentially a subset
@@ -1487,12 +1484,11 @@ class MathematicalProgram {
    * Adds sparse linear constraints referencing potentially a subset
    * of the decision variables (defined in the vars parameter).
    */
-//  Binding<LinearConstraint> AddLinearConstraint(
-//      const Eigen::Ref<const Eigen::SparseMatrix<double>>& A,
-//      const Eigen::Ref<const Eigen::VectorXd>& lb,
-//      const Eigen::Ref<const Eigen::VectorXd>& ub,
-//      const Eigen::Ref<const VectorXDecisionVariable>& vars);
-
+  Binding<LinearConstraint> AddLinearConstraint(
+      const Eigen::Ref<const Eigen::SparseMatrix<double>>& A,
+      const Eigen::Ref<const Eigen::VectorXd>& lb,
+      const Eigen::Ref<const Eigen::VectorXd>& ub,
+      const Eigen::Ref<const VectorXDecisionVariable>& vars);
 
   /**
    * Adds one row of linear constraint referencing potentially a
@@ -1523,7 +1519,9 @@ class MathematicalProgram {
   Binding<LinearConstraint> AddLinearConstraint(
       const Eigen::Ref<const Eigen::RowVectorXd>& a, double lb, double ub,
       const Eigen::Ref<const VectorXDecisionVariable>& vars) {
-    return AddLinearConstraint(a, Vector1d(lb), Vector1d(ub), vars);
+    return AddLinearConstraint(
+        Eigen::Map<const Eigen::MatrixXd>(a.data(), 1, a.size()), Vector1d(lb),
+        Vector1d(ub), vars);
   }
 
   /**
@@ -1757,6 +1755,11 @@ class MathematicalProgram {
       const Eigen::Ref<const Eigen::VectorXd>& beq,
       const Eigen::Ref<const VectorXDecisionVariable>& vars);
 
+  Binding<LinearEqualityConstraint> AddLinearEqualityConstraint(
+      const Eigen::Ref<const Eigen::SparseMatrix<double>>& Aeq,
+      const Eigen::Ref<const Eigen::VectorXd>& beq,
+      const Eigen::Ref<const VectorXDecisionVariable>& vars);
+
   /**
    * Adds one row of linear equality constraint referencing potentially a subset
    * of decision variables.
@@ -1791,7 +1794,9 @@ class MathematicalProgram {
   Binding<LinearEqualityConstraint> AddLinearEqualityConstraint(
       const Eigen::Ref<const Eigen::RowVectorXd>& a, double beq,
       const Eigen::Ref<const VectorXDecisionVariable>& vars) {
-    return AddLinearEqualityConstraint(a, Vector1d(beq), vars);
+    return AddLinearEqualityConstraint(
+        Eigen::Map<const Eigen::MatrixXd>(a.data(), 1, a.size()), Vector1d(beq),
+        vars);
   }
 
   /**
