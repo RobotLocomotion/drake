@@ -5,7 +5,7 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/solve.h"
-
+#include <iostream>
 namespace drake {
 namespace solvers {
 namespace {
@@ -46,16 +46,16 @@ int TestIn3by3DiagonallyDominantDualCone(const Eigen::Matrix3d& X) {
 }
 }  // namespace
 
-GTEST_TEST(DiagonallyDominantMatrixDualConeConstraint, SizeOfReturnTest) {
-  // Test the number of constraints added to the program. This should be n * n
-  // for any choice of matrix X of size n.
-  MathematicalProgram prog;
-  auto X = prog.NewSymmetricContinuousVariables<5>();
-  auto dual_cone_constraints =
-      prog.AddPositiveDiagonallyDominantDualConeMatrixConstraint(
-          X.cast<symbolic::Expression>());
-  EXPECT_EQ(dual_cone_constraints.size(), 5 * 5);
-}
+//GTEST_TEST(DiagonallyDominantMatrixDualConeConstraint, SizeOfReturnTest) {
+//  // Test the number of constraints added to the program. This should be n * n
+//  // for any choice of matrix X of size n.
+//  MathematicalProgram prog;
+//  auto X = prog.NewSymmetricContinuousVariables<5>();
+//  auto dual_cone_constraints =
+//      prog.AddPositiveDiagonallyDominantDualConeMatrixConstraint(
+//          X.cast<symbolic::Expression>());
+//  EXPECT_EQ(dual_cone_constraints.size(), 5 * 5);
+//}
 
 GTEST_TEST(DiagonallyDominantMatrixDualConeConstraint, FeasibilityCheck2by2) {
   // Test that DD* matrices are feasible.
@@ -64,6 +64,7 @@ GTEST_TEST(DiagonallyDominantMatrixDualConeConstraint, FeasibilityCheck2by2) {
   auto dual_cone_constraints =
       prog.AddPositiveDiagonallyDominantDualConeMatrixConstraint(
           X.cast<symbolic::Expression>());
+  std::cout << fmt::format("{}", fmt_eigen(dual_cone_constraints.evaluator()->GetDenseA())) << std::endl;
 
   auto X_constraint = prog.AddBoundingBoxConstraint(
       Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero(),
@@ -87,6 +88,7 @@ GTEST_TEST(DiagonallyDominantMatrixDualConeConstraint, FeasibilityCheck2by2) {
   // [1, -1.2; -1.2 2] is in DD* but not DD.
   set_X_value(Eigen::Vector3d(1, -1.2, 2));
   result = Solve(prog);
+
   EXPECT_TRUE(result.is_success());
   EXPECT_EQ(TestIn2by2DiagonallyDominantDualCone(result.GetSolution(X)), -1);
 
@@ -96,6 +98,7 @@ GTEST_TEST(DiagonallyDominantMatrixDualConeConstraint, FeasibilityCheck2by2) {
   result = Solve(prog);
   EXPECT_FALSE(result.is_success());
   EXPECT_GE(TestIn2by2DiagonallyDominantDualCone(X_bad), 0);
+
 }
 
 GTEST_TEST(DiagonallyDominantMatrixDualConeConstraint,

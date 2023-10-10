@@ -861,8 +861,7 @@ class MathematicalProgram {
    * decision variables.
    * @pre Each entry in new_indeterminates should be of CONTINUOUS type.
    */
-  void AddIndeterminates(
-      const symbolic::Variables& new_indeterminates);
+  void AddIndeterminates(const symbolic::Variables& new_indeterminates);
 
   /**
    * Adds a callback method to visualize intermediate results of the
@@ -2559,6 +2558,8 @@ class MathematicalProgram {
       const Eigen::Ref<const MatrixX<symbolic::Expression>>& X);
 
   /**
+   * @anchor add_dd_dual
+   * @name diagonally dominant dual cone constraint
    * Adds the constraint that a symmetric matrix is in the dual cone of the
    * diagonally dominant matrices which is denoted DD*. The set DD* is an outer
    * approximation to the PSD cone since DD ⊆ PSD = PSD* ⊆ DD*
@@ -2574,19 +2575,39 @@ class MathematicalProgram {
    * This is a consequence of the characterization of DD given in "Cones
    * of diagonally dominant matrices" by Barker and Carlson which can be found
    * at https://msp.org/pjm/1975/57-1/p03.xhtml.
-   *
+   */
+  //@{
+  /**
+   * This is an overloaded variant of @ref add_dd_dual
+   * "diagonally dominant dual cone constraint"
    * @param X The matrix X. We will use 0.5(X+Xᵀ) as the "symmetric version" of
    * X.
    * @pre X(i, j) should be a linear expression of decision variables.
    * @return A vector of linear constraints of length n² encoding vᵢᵀXvᵢ ≥ 0
+   *
+   * @pydrake_mkdoc_identifier{expression}
    */
-  std::vector<Binding<LinearConstraint>>
+//  std::vector<Binding<LinearConstraint>>
+//  AddPositiveDiagonallyDominantDualConeMatrixConstraint(
+//      const Eigen::Ref<const MatrixX<symbolic::Expression>>& X);
+
+   Binding<LinearConstraint>
   AddPositiveDiagonallyDominantDualConeMatrixConstraint(
       const Eigen::Ref<const MatrixX<symbolic::Expression>>& X);
 
+  /**
+   * This is an overloaded variant of @ref add_dd_dual
+   * "diagonally dominant dual cone constraint"
+   * @param X The matrix X. We will use 0.5(X+Xᵀ) as the "symmetric version" of
+   * X.
+   * @return A vector of linear constraints of length n² encoding vᵢᵀXvᵢ ≥ 0
+   *
+   * @pydrake_mkdoc_identifier{variable}
+   */
   Binding<LinearConstraint>
   AddPositiveDiagonallyDominantDualConeMatrixConstraint(
       const Eigen::Ref<const MatrixX<symbolic::Variable>>& X);
+  //@}
 
   /**
    * @anchor addsdd

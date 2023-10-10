@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <iostream>
 #include <limits>
 #include <memory>
 #include <ostream>
@@ -1209,34 +1210,88 @@ void AddSlackVariableForScaledDiagonallyDominantMatrixConstraint(
 }
 }  // namespace
 
-std::vector<Binding<LinearConstraint>>
+// std::vector<Binding<LinearConstraint>>
+// MathematicalProgram::AddPositiveDiagonallyDominantDualConeMatrixConstraint(
+//    const Eigen::Ref<const MatrixX<symbolic::Expression>>& X) {
+//  const int n = X.rows();
+//  DRAKE_DEMAND(X.cols() == n);
+//  std::vector<Binding<LinearConstraint>> ret;
+//  ret.reserve(n * n);
+//
+//  // vᵢᵀXvᵢ ≥ 0 is equivalent to Xᵢᵢ ≥ 0 when vᵢ is a vector with exactly one
+//  // entry equal to 1.
+//  for (int i = 0; i < n; ++i) {
+//    ret.push_back(AddLinearConstraint(X(i, i) >= 0));
+//  }
+//
+//  // When vᵢ is a vector with two non-zero at entries k and j, we can choose
+//  // without loss of generality that the jth entry to be 1, and the kth entry
+//  //  be
+//  // either +1 or -1. This enumerates over all the parities of vᵢ. Under
+//  // this choice vᵢᵀXvᵢ = Xₖₖ + sign(vᵢ(k))* (Xₖⱼ+ Xⱼₖ) +  Xⱼⱼ
+//  for (int j = 0; j < n; ++j) {
+//    for (int k = j + 1; k < n; ++k) {
+//      ret.push_back(
+//          AddLinearConstraint(X(k, k) + X(k, j) + X(j, k) + X(j, j) >= 0));
+//      ret.push_back(
+//          AddLinearConstraint(X(k, k) - X(k, j) - X(j, k) + X(j, j) >= 0));
+//    }
+//  }
+//  return ret;
+//}
+
+Binding<LinearConstraint>
 MathematicalProgram::AddPositiveDiagonallyDominantDualConeMatrixConstraint(
     const Eigen::Ref<const MatrixX<symbolic::Expression>>& X) {
   const int n = X.rows();
   DRAKE_DEMAND(X.cols() == n);
-  std::vector<Binding<LinearConstraint>> ret;
-  ret.reserve(n * n);
 
+  // Return the index of Xᵢⱼ in the vector created by stacking the column of X
+  // into a vector.
+  auto compute_flat_index = [&n](int i, int j) {
+    return i + n * j;
+  };
+
+  Eigen::MatrixXd A_expr;
+  Eigen::VectorXd b_expr;
+  VectorX<Variable> variables;
+  symbolic::DecomposeAffineExpressions(
+      Eigen::Map<const VectorX<symbolic::Expression>>(X.data(), X.size()),
+      &A_expr, &b_expr, &variables);
+
+  // TODO(Alexandre.Amice) Make A an Eigen::Sparse when AddLinearConstraint
+  // supports adding sparse A matrices.
+  Eigen::MatrixXd A = Eigen::MatrixXd::Zero(n * n, n * n);
+  Eigen::VectorXd lb = Eigen::VectorXd::Zero(n * n);
+  Eigen::VectorXd ub = kInf * Eigen::VectorXd::Ones(n * n);
   // vᵢᵀXvᵢ ≥ 0 is equivalent to Xᵢᵢ ≥ 0 when vᵢ is a vector with exactly one
   // entry equal to 1.
   for (int i = 0; i < n; ++i) {
-    ret.push_back(AddLinearConstraint(X(i, i) >= 0));
+    // Variable Xᵢᵢ is in position i*(n+1)
+    A(i, compute_flat_index(i, i)) = 1;
   }
-
   // When vᵢ is a vector with two non-zero at entries k and j, we can choose
-  // without loss of generality that the jth entry to be 1, and the kth entry
-//  be
-      // either +1 or -1. This enumerates over all the parities of vᵢ. Under
-      // this choice vᵢᵀXvᵢ = Xₖₖ + sign(vᵢ(k))* (Xₖⱼ+ Xⱼₖ) +  Xⱼⱼ
-      for (int j = 0; j < n; ++j) {
+  // without loss of generality that the jth entry to be 1, and the kth entry be
+  // either +1 or -1. This enumerates over all the parities of vᵢ. Under this
+  // choice vᵢᵀXvᵢ = Xₖₖ + sign(vᵢ(k))* (Xₖⱼ+ Xⱼₖ) +  Xⱼⱼ
+  int row_ctr = n;
+  for (int j = 0; j < n; ++j) {
     for (int k = j + 1; k < n; ++k) {
-      ret.push_back(
-          AddLinearConstraint(X(k, k) + X(k, j) + X(j, k) + X(j, j) >= 0));
-      ret.push_back(
-          AddLinearConstraint(X(k, k) - X(k, j) - X(j, k) + X(j, j) >= 0));
+      // X(k, k) + X(k, j) + X(j, k) + X(j, j)
+      A(row_ctr, compute_flat_index(k, k)) = 1;
+      A(row_ctr, compute_flat_index(j, j)) = 1;
+      A(row_ctr, compute_flat_index(k, j)) = 1;
+      A(row_ctr, compute_flat_index(j, k)) = 1;
+      ++row_ctr;
+      // X(k, k) - X(k, j) - X(j, k) + X(j, j)
+      A(row_ctr, compute_flat_index(k, k)) = 1;
+      A(row_ctr, compute_flat_index(j, j)) = 1;
+      A(row_ctr, compute_flat_index(k, j)) = -1;
+      A(row_ctr, compute_flat_index(j, k)) = -1;
+      ++row_ctr;
     }
   }
-  return ret;
+  return AddLinearConstraint(A * A_expr, lb - A * b_expr, ub, variables);
 }
 
 Binding<LinearConstraint>
@@ -1244,14 +1299,11 @@ MathematicalProgram::AddPositiveDiagonallyDominantDualConeMatrixConstraint(
     const Eigen::Ref<const MatrixX<symbolic::Variable>>& X) {
   const int n = X.rows();
   DRAKE_DEMAND(X.cols() == n);
-
+  // TODO(Alexandre.Amice) Make A an Eigen::Sparse when AddLinearConstraint
+  // supports adding sparse A matrices.
+  Eigen::MatrixXd A = Eigen::MatrixXd::Zero(n * n, n);
   Eigen::VectorXd lb = Eigen::VectorXd::Zero(n * n);
   Eigen::VectorXd ub = kInf * Eigen::VectorXd::Ones(n * n);
-
-  // The DD dual cone constraint is a sparse linear constraint. We instantiate
-  // the A matrix using this triplet list.
-  std::vector<Eigen::Triplet<double>> A_triplet_list;
-  A_triplet_list.reserve(n * n);
 
   // Return the index of Xᵢⱼ in the vector created by stacking the column of X
   // into a vector.
@@ -1263,34 +1315,22 @@ MathematicalProgram::AddPositiveDiagonallyDominantDualConeMatrixConstraint(
   // entry equal to 1.
   for (int i = 0; i < n; ++i) {
     // Variable Xᵢᵢ is in position i*(n+1)
-    A_triplet_list.emplace_back(i, compute_flat_index(i, i), 1);
+    A(i, compute_flat_index(i, i)) = 1;
   }
   // When vᵢ is a vector with two non-zero at entries k and j, we can choose
   // without loss of generality that the jth entry to be 1, and the kth entry be
   // either +1 or -1. This enumerates over all the parities of vᵢ. Under this
   // choice vᵢᵀXvᵢ = Xₖₖ + sign(vᵢ(k))* (Xₖⱼ+ Xⱼₖ) +  Xⱼⱼ
-  int row_ctr = A_triplet_list.size();
-
-  Eigen::MatrixXd A = Eigen::MatrixXd(n * n, n);
+  int row_ctr = n;
   for (int j = 0; j < n; ++j) {
     for (int k = j + 1; k < n; ++k) {
       // X(k, k) + X(k, j) + X(j, k) + X(j, j)
-      A_triplet_list.emplace_back(row_ctr, compute_flat_index(k, k), 1);
-      A_triplet_list.emplace_back(row_ctr, compute_flat_index(j, j), 1);
-      A_triplet_list.emplace_back(row_ctr, compute_flat_index(j, k), 1);
-      A_triplet_list.emplace_back(row_ctr, compute_flat_index(k, j), 1);
-
       A(row_ctr, compute_flat_index(k, k)) = 1;
       A(row_ctr, compute_flat_index(j, j)) = 1;
       A(row_ctr, compute_flat_index(k, j)) = 1;
       A(row_ctr, compute_flat_index(j, k)) = 1;
       ++row_ctr;
       // X(k, k) - X(k, j) - X(j, k) + X(j, j)
-      A_triplet_list.emplace_back(row_ctr, compute_flat_index(k, k), 1);
-      A_triplet_list.emplace_back(row_ctr, compute_flat_index(j, j), 1);
-      A_triplet_list.emplace_back(row_ctr, compute_flat_index(j, k), -1);
-      A_triplet_list.emplace_back(row_ctr, compute_flat_index(k, j), -1);
-
       A(row_ctr, compute_flat_index(k, k)) = 1;
       A(row_ctr, compute_flat_index(j, j)) = 1;
       A(row_ctr, compute_flat_index(k, j)) = -1;
@@ -1298,16 +1338,8 @@ MathematicalProgram::AddPositiveDiagonallyDominantDualConeMatrixConstraint(
       ++row_ctr;
     }
   }
-  Eigen::SparseMatrix<double> A_spares(n * n, n);
-  A_spares.setFromTriplets(A_triplet_list.begin(), A_triplet_list.end());
-
-  VectorXDecisionVariable x_flat(n * n);
-  for (int i = 0; i < n; ++i) {
-    for (int j = 0; j < n; ++j) {
-      x_flat(compute_flat_index(i, j)) = X(i, j);
-    }
-  }
-  return AddLinearConstraint(A, lb, ub, x_flat);
+  return AddLinearConstraint(
+      A, lb, ub, Eigen::Map<const VectorXDecisionVariable>(X.data(), X.size()));
 }
 
 std::vector<std::vector<Matrix2<symbolic::Expression>>>
