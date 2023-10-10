@@ -30,7 +30,6 @@ libqt5widgets5
 libspdlog-dev
 libsqlite3-0
 libtheora0
-libtiff5
 libx11-6
 libxml2
 libxt6

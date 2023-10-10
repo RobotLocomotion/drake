@@ -90,6 +90,7 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "ipopt",
     "lcm",
     "libpng_internal",
+    "libtiff_internal",
     "meshcat",
     "msgpack_internal",
     "net_sf_jchart2d",

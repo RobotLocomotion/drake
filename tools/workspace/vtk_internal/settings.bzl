@@ -558,10 +558,7 @@ MODULE_SETTINGS = {
             "VTK_MODULE_USE_EXTERNAL_vtktiff=1",
         ],
         "deps_extra": [
-            # TODO(jwnimmer-tri) VTK is the only user of this library.
-            # We should write our own WORKSPACE rule to build it sensibly,
-            # or switch to VTK's vendored version.
-            "@libtiff",
+            "@libtiff_internal//:libtiff",
         ],
     },
     "VTK::zlib": {
