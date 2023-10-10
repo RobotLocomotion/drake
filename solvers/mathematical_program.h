@@ -18,6 +18,8 @@
 #include <vector>
 
 #include <Eigen/Core>
+#include <Eigen/SparseCore>
+
 
 #include "drake/common/autodiff.h"
 #include "drake/common/drake_assert.h"
@@ -1458,6 +1460,20 @@ class MathematicalProgram {
     return AddLinearConstraint(A, lb, ub, ConcatenateVariableRefList(vars));
   }
 
+
+   /**
+   * Adds sparse linear constraints referencing potentially a subset
+   * of the decision variables (defined in the vars parameter).
+   */
+//  Binding<LinearConstraint> AddLinearConstraint(
+//      const Eigen::Ref<const Eigen::SparseMatrix<double>>& A,
+//      const Eigen::Ref<const Eigen::VectorXd>& lb,
+//      const Eigen::Ref<const Eigen::VectorXd>& ub,
+//      const VariableRefList& vars) {
+//    return AddLinearConstraint(A, lb, ub, ConcatenateVariableRefList(vars));
+//  }
+
+
   /**
    * Adds linear constraints referencing potentially a subset
    * of the decision variables (defined in the vars parameter).
@@ -1467,6 +1483,17 @@ class MathematicalProgram {
       const Eigen::Ref<const Eigen::VectorXd>& lb,
       const Eigen::Ref<const Eigen::VectorXd>& ub,
       const Eigen::Ref<const VectorXDecisionVariable>& vars);
+
+  /**
+   * Adds sparse linear constraints referencing potentially a subset
+   * of the decision variables (defined in the vars parameter).
+   */
+//  Binding<LinearConstraint> AddLinearConstraint(
+//      const Eigen::Ref<const Eigen::SparseMatrix<double>>& A,
+//      const Eigen::Ref<const Eigen::VectorXd>& lb,
+//      const Eigen::Ref<const Eigen::VectorXd>& ub,
+//      const Eigen::Ref<const VectorXDecisionVariable>& vars);
+
 
   /**
    * Adds one row of linear constraint referencing potentially a
