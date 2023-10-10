@@ -17,6 +17,12 @@ def fortran_library(
     # Compile *.f* files to *.pic.o files.
     # Mark all symbols as private externs (aka hidden visibility).
     compiler = "@gfortran//:compiler"
+    compiler_args = [
+        "-fopenmp",
+        "-fPIC",
+        # We need this for SNOPT 7.6 which has non-conforming code.
+        "-fallow-argument-mismatch",
+    ]
     private_objs = []
     for src in srcs:
         public_obj = "default_" + src + ".pic.o"
@@ -25,7 +31,10 @@ def fortran_library(
             srcs = [src],
             outs = [public_obj],
             tools = [compiler],
-            cmd = "$(location {}) -fopenmp -fPIC -c $< -o $@".format(compiler),
+            cmd = "$(location {}) {} -c $< -o $@".format(
+                compiler,
+                " ".join(compiler_args),
+            ),
             visibility = ["//visibility:private"],
         )
         private_obj = "hidden_" + src + ".pic.o"
