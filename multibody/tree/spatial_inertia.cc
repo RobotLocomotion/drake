@@ -122,7 +122,7 @@ SpatialInertia<T> SpatialInertia<T>::SolidCapsuleWithDensity(
   ThrowUnlessValueIsPositiveFinite(density, "density", __func__);
   ThrowUnlessValueIsPositiveFinite(radius, "radius", __func__);
   ThrowUnlessValueIsPositiveFinite(length, "length", __func__);
-  math::ThrowIfNotUnitVector(unit_vector, __func__);
+  math::internal::ThrowIfNotUnitVector(unit_vector, __func__);
 
   // Volume = π r² L + 4/3 π r³
   const T pi_r_squared = M_PI * radius * radius;
@@ -138,7 +138,7 @@ SpatialInertia<T> SpatialInertia<T>::SolidCapsuleWithMass(
   ThrowUnlessValueIsPositiveFinite(mass, "mass", __func__);
   ThrowUnlessValueIsPositiveFinite(radius, "radius", __func__);
   ThrowUnlessValueIsPositiveFinite(length, "length", __func__);
-  math::ThrowIfNotUnitVector(unit_vector, __func__);
+  math::internal::ThrowIfNotUnitVector(unit_vector, __func__);
   const Vector3<T> p_BoBcm_B = Vector3<T>::Zero();
   const UnitInertia<T> G_BBo_B =
       UnitInertia<T>::SolidCapsule(radius, length, unit_vector);
@@ -152,7 +152,7 @@ SpatialInertia<T> SpatialInertia<T>::SolidCylinderWithDensity(
   ThrowUnlessValueIsPositiveFinite(density, "density", __func__);
   ThrowUnlessValueIsPositiveFinite(radius, "radius", __func__);
   ThrowUnlessValueIsPositiveFinite(length, "length", __func__);
-  math::ThrowIfNotUnitVector(unit_vector, __func__);
+  math::internal::ThrowIfNotUnitVector(unit_vector, __func__);
   const T volume = M_PI * radius * radius * length;  // π r² l
   const T mass = density * volume;
   return SolidCylinderWithMass(mass, radius, length, unit_vector);
@@ -165,7 +165,7 @@ SpatialInertia<T> SpatialInertia<T>::SolidCylinderWithMass(
   ThrowUnlessValueIsPositiveFinite(mass, "mass", __func__);
   ThrowUnlessValueIsPositiveFinite(radius, "radius", __func__);
   ThrowUnlessValueIsPositiveFinite(length, "length", __func__);
-  math::ThrowIfNotUnitVector(unit_vector, __func__);
+  math::internal::ThrowIfNotUnitVector(unit_vector, __func__);
   const Vector3<T> p_BoBcm_B = Vector3<T>::Zero();
   const UnitInertia<T> G_BBo_B =
       UnitInertia<T>::SolidCylinder(radius, length, unit_vector);
@@ -179,7 +179,7 @@ SpatialInertia<T> SpatialInertia<T>::SolidCylinderWithDensityAboutEnd(
   ThrowUnlessValueIsPositiveFinite(density, "density", __func__);
   ThrowUnlessValueIsPositiveFinite(radius, "radius", __func__);
   ThrowUnlessValueIsPositiveFinite(length, "length", __func__);
-  math::ThrowIfNotUnitVector(unit_vector, __func__);
+  math::internal::ThrowIfNotUnitVector(unit_vector, __func__);
   const T volume = M_PI * radius * radius * length;  // π r² l
   const T mass = density * volume;
   return SolidCylinderWithMassAboutEnd(mass, radius, length, unit_vector);
@@ -192,7 +192,7 @@ SpatialInertia<T> SpatialInertia<T>::SolidCylinderWithMassAboutEnd(
   ThrowUnlessValueIsPositiveFinite(mass, "mass", __func__);
   ThrowUnlessValueIsPositiveFinite(radius, "radius", __func__);
   ThrowUnlessValueIsPositiveFinite(length, "length", __func__);
-  math::ThrowIfNotUnitVector(unit_vector, __func__);
+  math::internal::ThrowIfNotUnitVector(unit_vector, __func__);
   const Vector3<T> p_BpBcm_B = 0.5 * length * unit_vector;
   const UnitInertia<T> G_BBp_B =
       UnitInertia<T>::SolidCylinderAboutEnd(radius, length, unit_vector);
@@ -204,7 +204,7 @@ SpatialInertia<T> SpatialInertia<T>::ThinRodWithMass(
     const T& mass, const T& length, const Vector3<T>& unit_vector) {
   ThrowUnlessValueIsPositiveFinite(mass, "mass", __func__);
   ThrowUnlessValueIsPositiveFinite(length, "length", __func__);
-  math::ThrowIfNotUnitVector(unit_vector, __func__);
+  math::internal::ThrowIfNotUnitVector(unit_vector, __func__);
   const UnitInertia<T> G_BBcm_B =
       UnitInertia<T>::ThinRod(length, unit_vector);
   const Vector3<T> p_BoBcm_B = Vector3<T>::Zero();
@@ -216,7 +216,7 @@ SpatialInertia<T> SpatialInertia<T>::ThinRodWithMassAboutEnd(
     const T& mass, const T& length, const Vector3<T>& unit_vector) {
   ThrowUnlessValueIsPositiveFinite(mass, "mass", __func__);
   ThrowUnlessValueIsPositiveFinite(length, "length", __func__);
-  math::ThrowIfNotUnitVector(unit_vector, __func__);
+  math::internal::ThrowIfNotUnitVector(unit_vector, __func__);
   SpatialInertia<T> M_BBcm_B =
       SpatialInertia<T>::ThinRodWithMass(mass, length, unit_vector);
   const Vector3<T> p_BcmBp_B = -0.5 * length * unit_vector;
