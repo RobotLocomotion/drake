@@ -17,6 +17,8 @@
 #include "drake/multibody/plant/contact_pair_kinematics.h"
 #include "drake/multibody/plant/contact_results.h"
 #include "drake/multibody/plant/coulomb_friction.h"
+#include "drake/multibody/plant/deformable_driver.h"
+#include "drake/multibody/plant/deformable_model.h"
 #include "drake/multibody/plant/discrete_contact_data.h"
 #include "drake/multibody/plant/discrete_contact_pair.h"
 #include "drake/multibody/plant/scalar_convertible_component.h"
@@ -116,10 +118,7 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
 
   /* Returns the MultibodyPlant that owns this DiscreteUpdateManager.
    @pre SetOwningMultibodyPlant() has been successfully invoked. */
-  const MultibodyPlant<T>& plant() const {
-    DRAKE_DEMAND(plant_ != nullptr);
-    return *plant_;
-  }
+  const MultibodyPlant<T>& plant() const;
 
   /* (Internal) Sets the given `plant` as the MultibodyPlant owning this
    DiscreteUpdateManager. This method is meant to be called by
@@ -164,13 +163,7 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   /* MultibodyPlant invokes this method to perform the discrete variables
    update. */
   void CalcDiscreteValues(const systems::Context<T>& context,
-                          systems::DiscreteValues<T>* updates) const {
-    // The discrete sampling of input ports needs to be the first step of a
-    // discrete update.
-    SampleDiscreteInputPortForces(context);
-    DRAKE_DEMAND(updates != nullptr);
-    DoCalcDiscreteValues(context, updates);
-  }
+                          systems::DiscreteValues<T>* updates) const;
 
   /* Evaluates the contact results used in CalcDiscreteValues() to advance the
    discrete update from the state stored in `context`. */
@@ -206,8 +199,7 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
       const systems::Context<T>& context) const;
 
   // Given the configuration stored in `context`, evalutates all discrete
-  // contact pairs, including point, hydroelastic, and deformable contact, into
-  // `pairs`.
+  // contact pairs, including point, hydroelastic, and deformable contact.
   const DiscreteContactData<DiscreteContactPair<T>>& EvalDiscreteContactPairs(
       const systems::Context<T>& context) const;
 
@@ -231,6 +223,16 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
 
   /* @} */
 
+  const MultibodyTreeTopology& tree_topology() const {
+    return internal::GetInternalTree(this->plant()).get_topology();
+  }
+
+  /* Returns the pointer to the DeformableDriver owned by `this` manager if one
+   exists. Otherwise, returns nullptr. */
+  const DeformableDriver<double>* deformable_driver() const {
+    return deformable_driver_.get();
+  }
+
  protected:
   /* Derived classes that support making a clone that uses double as a scalar
    type must implement this so that it creates a copy of the object with double
@@ -252,9 +254,9 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   virtual std::unique_ptr<DiscreteUpdateManager<symbolic::Expression>>
   CloneToSymbolic() const;
 
-  /* Derived DiscreteUpdateManager should override this method to extract
+  /* Derived DiscreteUpdateManager can override this method to extract
    information from the owning MultibodyPlant. */
-  virtual void ExtractModelInfo() {}
+  virtual void DoExtractModelInfo() {}
 
   /* Derived classes can implement this method if they wish to declare their own
    cache entries. It defaults to a no-op. */
@@ -342,32 +344,42 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
       const systems::Context<T>& context,
       internal::AccelerationKinematicsCache<T>* ac) const = 0;
 
-  virtual void DoCalcDiscreteValues(
-      const systems::Context<T>& context,
-      systems::DiscreteValues<T>* updates) const = 0;
-
-  virtual void DoCalcContactKinematics(
-      const systems::Context<T>& context,
-      DiscreteContactData<ContactPairKinematics<T>>* result) const = 0;
-
-  virtual void DoCalcDiscreteContactPairs(
-      const systems::Context<T>& context,
-      DiscreteContactData<DiscreteContactPair<T>>* result) const = 0;
-
-  /* Concrete managers must implement this method to compute contact results
-   according to the underlying formulation of contact. */
   virtual void DoCalcContactResults(
       const systems::Context<T>& context,
       ContactResults<T>* contact_results) const = 0;
 
-  /* Concrete managers must implement this method to compute the total multibody
-   forces applied during a discrete update. The particulars of the numerical
-   scheme matter. For instance, whether we use an explicit or implicit update.
-   Therefore only concrete managers know how to perform this computation in
-   accordance to the schemes they implement. See
-   EvalDiscreteUpdateMultibodyForces(). */
+  // Concrete managers must implement this method to compute the total multibody
+  // forces applied during a discrete update. The particulars of the numerical
+  // scheme matter. For instance, whether we use an explicit or implicit update.
+  // Therefore only concrete managers know how to perform this computation in
+  // accordance to the schemes they implement. See
+  // EvalDiscreteUpdateMultibodyForces().
   virtual void DoCalcDiscreteUpdateMultibodyForces(
       const systems::Context<T>& context, MultibodyForces<T>* forces) const = 0;
+
+  // Performs discrete updates for rigid DoFs in the system. Defaults to
+  // symplectic Euler updates. Derived classes may choose to override the
+  // implemention to provide a different update scheme.
+  virtual void DoCalcDiscreteValues(const systems::Context<T>& context,
+                                    systems::DiscreteValues<T>* updates) const;
+
+  // Extracts information from all PhysicalModels that are added to the
+  // MultibodyPlant associated with this discrete update manager.
+  void ExtractModelInfo();
+
+  // Associates the given `DeformableModel` with `this` manager. The discrete
+  // states of the deformable bodies registered in the given `model` will be
+  // advanced by this manager. This manager holds onto the given pointer and
+  // therefore the model must outlive the manager.
+  // @throws std::exception if a deformable model has already been registered.
+  // @pre model != nullptr.
+  void ExtractConcreteModel(const DeformableModel<T>* model);
+
+  // For testing purposes only, we provide a default no-op implementation on
+  // arbitrary models of unknown concrete model type. Otherwise, for the closed
+  // list of models forward declared in physical_model.h, we must provide a
+  // function that extracts the particular variant of the physical model.
+  void ExtractConcreteModel(std::monostate) {}
 
   // Struct used to conglomerate the indexes of cache entries declared by the
   // manager.
@@ -432,22 +444,59 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   void CalcDiscreteUpdateMultibodyForces(const systems::Context<T>& context,
                                          MultibodyForces<T>* forces) const;
 
-  // Calc version of EvalContactKinematics(), NVI to DoCalcContactKinematics.
+  // Calc version of EvalContactKinematics().
   void CalcContactKinematics(
       const systems::Context<T>& context,
       DiscreteContactData<ContactPairKinematics<T>>* result) const;
 
-  // Calc version of EvalDiscreteContactPairs(), NVI to
-  // DoCalcDiscreteContactPairs.
+  // Helper function for CalcContactKinematics() that computes the contact pair
+  // kinematics for point contact and hydroelastic contact respectively,
+  // depending on the value of `type`.
+  void AppendContactKinematics(
+      const systems::Context<T>& context,
+      const std::vector<DiscreteContactPair<T>>& contact_pairs,
+      DiscreteContactType type,
+      DiscreteContactData<ContactPairKinematics<T>>* contact_kinematics) const;
+
+  // Calc version of EvalDiscreteContactPairs().
   void CalcDiscreteContactPairs(
       const systems::Context<T>& context,
       DiscreteContactData<DiscreteContactPair<T>>* result) const;
+
+  // Given the configuration stored in `context`, this method appends discrete
+  // pairs corresponding to point contact into `pairs`.
+  // @pre pairs != nullptr.
+  void AppendDiscreteContactPairsForPointContact(
+      const systems::Context<T>& context,
+      DiscreteContactData<DiscreteContactPair<T>>* pairs) const;
+
+  // Given the configuration stored in `context`, this method appends discrete
+  // pairs corresponding to hydroelastic contact into `pairs`.
+  // @pre pairs != nullptr.
+  void AppendDiscreteContactPairsForHydroelasticContact(
+      const systems::Context<T>& context,
+      DiscreteContactData<DiscreteContactPair<T>>* pairs) const;
 
   const MultibodyPlant<T>* plant_{nullptr};
   MultibodyPlant<T>* mutable_plant_{nullptr};
   systems::DiscreteStateIndex multibody_state_index_;
   CacheIndexes cache_indexes_;
+  // deformable_driver_ computes the information on all deformable bodies needed
+  // to advance the discrete states.
+  std::unique_ptr<DeformableDriver<double>> deformable_driver_;
 };
+
+// N.B. These geometry queries are not supported when T = symbolic::Expression
+// and therefore their implementation throws.
+template <>
+void DiscreteUpdateManager<symbolic::Expression>::CalcDiscreteContactPairs(
+    const drake::systems::Context<symbolic::Expression>&,
+    DiscreteContactData<DiscreteContactPair<symbolic::Expression>>*) const;
+template <>
+void DiscreteUpdateManager<symbolic::Expression>::
+    AppendDiscreteContactPairsForHydroelasticContact(
+        const drake::systems::Context<symbolic::Expression>&,
+        DiscreteContactData<DiscreteContactPair<symbolic::Expression>>*) const;
 
 }  // namespace internal
 }  // namespace multibody

@@ -6,7 +6,7 @@
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/proximity_properties.h"
 #include "drake/multibody/plant/compliant_contact_manager.h"
-#include "drake/multibody/plant/test/compliant_contact_manager_tester.h"
+#include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram_builder.h"
 
@@ -44,7 +44,8 @@ class DeformableDriverTest : public ::testing::Test {
     auto contact_manager = make_unique<CompliantContactManager<double>>();
     manager_ = contact_manager.get();
     plant_->SetDiscreteUpdateManager(std::move(contact_manager));
-    driver_ = CompliantContactManagerTester::deformable_driver(*manager_);
+    driver_ = manager_->deformable_driver();
+    DRAKE_DEMAND(driver_ != nullptr);
 
     builder.Connect(model_->vertex_positions_port(),
                     scene_graph_->get_source_configuration_port(
@@ -109,7 +110,9 @@ class DeformableDriverTest : public ::testing::Test {
 namespace {
 
 /* Verifies that a DeformableDriver has been successfully created. */
-TEST_F(DeformableDriverTest, Constructor) { ASSERT_NE(driver_, nullptr); }
+TEST_F(DeformableDriverTest, Constructor) {
+  ASSERT_NE(driver_, nullptr);
+}
 
 TEST_F(DeformableDriverTest, ScalarConversion) {
   EXPECT_FALSE(driver_->is_cloneable_to_double());

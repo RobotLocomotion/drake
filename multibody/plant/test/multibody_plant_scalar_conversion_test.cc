@@ -185,25 +185,15 @@ class DoubleOnlyDiscreteUpdateManager final
       const systems::Context<T>&,
       internal::AccelerationKinematicsCache<T>*) const final {}
 
-  void DoCalcDiscreteValues(const systems::Context<T>&,
-                            systems::DiscreteValues<T>*) const final {}
-
   void DoCalcContactResults(const systems::Context<T>&,
                             ContactResults<T>*) const final {}
+
+  void DoCalcDiscreteValues(const systems::Context<T>&,
+                            systems::DiscreteValues<T>*) const final {}
 
   void DoCalcDiscreteUpdateMultibodyForces(
       const systems::Context<T>& context,
       MultibodyForces<T>* forces) const final {}
-
-  void DoCalcDiscreteContactPairs(
-      const systems::Context<T>&,
-      internal::DiscreteContactData<internal::DiscreteContactPair<T>>*)
-      const final {}
-
-  void DoCalcContactKinematics(
-      const systems::Context<T>&,
-      internal::DiscreteContactData<internal::ContactPairKinematics<T>>*)
-      const final {}
 };
 
 // This test verifies that adding external components that do not support some

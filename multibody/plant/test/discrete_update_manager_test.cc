@@ -11,7 +11,6 @@
 #include "drake/systems/framework/abstract_value_cloner.h"
 #include "drake/systems/primitives/pass_through.h"
 #include "drake/systems/primitives/zero_order_hold.h"
-
 namespace drake {
 namespace multibody {
 namespace internal {
@@ -91,7 +90,7 @@ class DummyDiscreteUpdateManager final : public DiscreteUpdateManager<T> {
 
   /* Extracts information about the additional discrete state that
    DummyModel declares if one exists in the owning MultibodyPlant. */
-  void ExtractModelInfo() final {
+  void DoExtractModelInfo() final {
     /* For unit testing we verify there is a single physical model of type
      DummyModel. */
     DRAKE_DEMAND(this->plant().physical_models().size() == 1);
@@ -164,18 +163,6 @@ class DummyDiscreteUpdateManager final : public DiscreteUpdateManager<T> {
   // Not used in these tests.
   void DoCalcDiscreteUpdateMultibodyForces(const systems::Context<T>&,
                                            MultibodyForces<T>*) const final {
-    throw std::logic_error("Must implement if needed for these tests.");
-  }
-
-  void DoCalcDiscreteContactPairs(
-      const systems::Context<T>&,
-      DiscreteContactData<DiscreteContactPair<T>>*) const final {
-    throw std::logic_error("Must implement if needed for these tests.");
-  }
-
-  void DoCalcContactKinematics(
-      const systems::Context<T>&,
-      DiscreteContactData<ContactPairKinematics<T>>*) const final {
     throw std::logic_error("Must implement if needed for these tests.");
   }
 

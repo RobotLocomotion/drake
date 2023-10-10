@@ -12,11 +12,14 @@
 #include "drake/multibody/fem/fem_model.h"
 #include "drake/multibody/plant/constraint_specs.h"
 #include "drake/multibody/plant/deformable_ids.h"
-#include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/plant/physical_model.h"
+#include "drake/multibody/tree/body.h"
 
 namespace drake {
 namespace multibody {
+
+template <typename T>
+class MultibodyPlant;
 
 /** DeformableModel implements the interface in PhysicalModel and provides the
  functionalities to specify deformable bodies. Unlike rigid bodies, the shape of
@@ -34,10 +37,7 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
   /** Constructs a DeformableModel to be owned by the given MultibodyPlant.
    @pre plant != nullptr.
    @pre Finalize() has not been called on `plant`. */
-  explicit DeformableModel(MultibodyPlant<T>* plant) : plant_(plant) {
-    DRAKE_DEMAND(plant_ != nullptr);
-    DRAKE_DEMAND(!plant_->is_finalized());
-  }
+  explicit DeformableModel(MultibodyPlant<T>* plant);
 
   /** Returns the number of deformable bodies registered with this
    DeformableModel. */
