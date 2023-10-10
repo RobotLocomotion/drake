@@ -3,6 +3,7 @@
 #include <chrono>
 #include <thread>
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/text_logging.h"
@@ -135,6 +136,14 @@ TEST_F(LcmInterfaceSystemTest, NameCollisionTest) {
   builder.AddSystem<LcmInterfaceSystem>();
   builder.AddSystem<LcmInterfaceSystem>();
   builder.Build();
+}
+
+// The Graphviz should have split nodes (sub vs pub) show some useful metadata.
+TEST_F(LcmInterfaceSystemTest, Graphviz) {
+  LcmInterfaceSystem dut;
+  EXPECT_THAT(dut.GetGraphvizString(), testing::HasSubstr("in [shape"));
+  EXPECT_THAT(dut.GetGraphvizString(), testing::HasSubstr("out [shape"));
+  EXPECT_THAT(dut.GetGraphvizString(), testing::HasSubstr("lcm_url=memq://"));
 }
 
 INSTANTIATE_TEST_SUITE_P(test, LcmInterfaceSystemTest,

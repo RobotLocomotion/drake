@@ -20,7 +20,7 @@ Parent::GraphvizFragment MySystem::DoGetGraphvizFragment(
     const Parent::GraphvizFragmentParams& params) const override {
   MeshcatGraphviz helper(...);
   return helper.DecorateResult(
-      Parent::DoGetGraphvizFragment(helper.DecorateParams(paraams)));
+      Parent::DoGetGraphvizFragment(helper.DecorateParams(params)));
 }
 ```
 

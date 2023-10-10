@@ -319,7 +319,7 @@ vector<RenderMesh> LoadRenderMeshesFromObj(
     mesh_data.positions.resize(vertex_count, 3);
     mesh_data.normals.resize(vertex_count, 3);
     mesh_data.uvs.resize(vertex_count, 2);
-    for (const auto [full_index, part_index] : vertex_index_full_to_part) {
+    for (const auto& [full_index, part_index] : vertex_index_full_to_part) {
       mesh_data.positions.row(part_index) = positions[full_index];
       mesh_data.normals.row(part_index) = normals[full_index];
       mesh_data.uvs.row(part_index) = uvs[full_index];

@@ -7,6 +7,7 @@
 #include <vector>
 
 #include <fmt/format.h>
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
@@ -1201,6 +1202,13 @@ GTEST_TEST(DrakeVisualizerdTest, Transmogrify) {
       "DrakeVisualizer can only be scalar converted if it owns its "
       "DrakeLcmInterface instance.");
 }
+
+// The Graphviz should have an arrow pointing to the DrakeLcmInterface.
+GTEST_TEST(DrakeVisualizerdTest, Graphviz) {
+  DrakeVisualizerd dut;
+  EXPECT_THAT(dut.GetGraphvizString(), testing::HasSubstr(" -> drakelcm"));
+}
+
 }  // namespace
 }  // namespace geometry
 }  // namespace drake
