@@ -2583,15 +2583,11 @@ class MathematicalProgram {
    * @param X The matrix X. We will use 0.5(X+Xᵀ) as the "symmetric version" of
    * X.
    * @pre X(i, j) should be a linear expression of decision variables.
-   * @return A vector of linear constraints of length n² encoding vᵢᵀXvᵢ ≥ 0
+   * @return A linear constraint of size n² encoding vᵢᵀXvᵢ ≥ 0
    *
    * @pydrake_mkdoc_identifier{expression}
    */
-//  std::vector<Binding<LinearConstraint>>
-//  AddPositiveDiagonallyDominantDualConeMatrixConstraint(
-//      const Eigen::Ref<const MatrixX<symbolic::Expression>>& X);
-
-   Binding<LinearConstraint>
+  Binding<LinearConstraint>
   AddPositiveDiagonallyDominantDualConeMatrixConstraint(
       const Eigen::Ref<const MatrixX<symbolic::Expression>>& X);
 
@@ -2600,7 +2596,7 @@ class MathematicalProgram {
    * "diagonally dominant dual cone constraint"
    * @param X The matrix X. We will use 0.5(X+Xᵀ) as the "symmetric version" of
    * X.
-   * @return A vector of linear constraints of length n² encoding vᵢᵀXvᵢ ≥ 0
+   * @return A linear constraint of size n² encoding vᵢᵀXvᵢ ≥ 0
    *
    * @pydrake_mkdoc_identifier{variable}
    */

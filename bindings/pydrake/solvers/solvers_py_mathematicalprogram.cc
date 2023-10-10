@@ -1106,11 +1106,23 @@ void BindMathematicalProgram(py::module m) {
           doc.MathematicalProgram.AddPositiveDiagonallyDominantMatrixConstraint
               .doc)
       .def("AddPositiveDiagonallyDominantDualConeMatrixConstraint",
-          &MathematicalProgram::
-              AddPositiveDiagonallyDominantDualConeMatrixConstraint,
+          static_cast<Binding<LinearConstraint> (MathematicalProgram::*)(
+              const Eigen::Ref<const MatrixX<symbolic::Expression>>&)>(
+              &MathematicalProgram::
+                  AddPositiveDiagonallyDominantDualConeMatrixConstraint),
           py::arg("X"),
           doc.MathematicalProgram
-              .AddPositiveDiagonallyDominantDualConeMatrixConstraint.doc)
+              .AddPositiveDiagonallyDominantDualConeMatrixConstraint
+              .doc_expression)
+      .def("AddPositiveDiagonallyDominantDualConeMatrixConstraint",
+          static_cast<Binding<LinearConstraint> (MathematicalProgram::*)(
+              const Eigen::Ref<const MatrixX<symbolic::Variable>>&)>(
+              &MathematicalProgram::
+                  AddPositiveDiagonallyDominantDualConeMatrixConstraint),
+          py::arg("X"),
+          doc.MathematicalProgram
+              .AddPositiveDiagonallyDominantDualConeMatrixConstraint
+              .doc_variable)
       .def("AddScaledDiagonallyDominantMatrixConstraint",
           static_cast<std::vector<std::vector<Matrix2<symbolic::Expression>>> (
               MathematicalProgram::*)(

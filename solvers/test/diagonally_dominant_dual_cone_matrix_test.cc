@@ -5,7 +5,6 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/solve.h"
-#include <iostream>
 namespace drake {
 namespace solvers {
 namespace {
@@ -46,25 +45,13 @@ int TestIn3by3DiagonallyDominantDualCone(const Eigen::Matrix3d& X) {
 }
 }  // namespace
 
-//GTEST_TEST(DiagonallyDominantMatrixDualConeConstraint, SizeOfReturnTest) {
-//  // Test the number of constraints added to the program. This should be n * n
-//  // for any choice of matrix X of size n.
-//  MathematicalProgram prog;
-//  auto X = prog.NewSymmetricContinuousVariables<5>();
-//  auto dual_cone_constraints =
-//      prog.AddPositiveDiagonallyDominantDualConeMatrixConstraint(
-//          X.cast<symbolic::Expression>());
-//  EXPECT_EQ(dual_cone_constraints.size(), 5 * 5);
-//}
-
-GTEST_TEST(DiagonallyDominantMatrixDualConeConstraint, FeasibilityCheck2by2) {
+GTEST_TEST(DiagonallyDominantMatrixDualConeConstraint,
+           FeasibilityVariableCheck2by2) {
   // Test that DD* matrices are feasible.
   MathematicalProgram prog;
   auto X = prog.NewSymmetricContinuousVariables<2>();
   auto dual_cone_constraints =
-      prog.AddPositiveDiagonallyDominantDualConeMatrixConstraint(
-          X.cast<symbolic::Expression>());
-  std::cout << fmt::format("{}", fmt_eigen(dual_cone_constraints.evaluator()->GetDenseA())) << std::endl;
+      prog.AddPositiveDiagonallyDominantDualConeMatrixConstraint(X);
 
   auto X_constraint = prog.AddBoundingBoxConstraint(
       Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero(),
@@ -98,11 +85,63 @@ GTEST_TEST(DiagonallyDominantMatrixDualConeConstraint, FeasibilityCheck2by2) {
   result = Solve(prog);
   EXPECT_FALSE(result.is_success());
   EXPECT_GE(TestIn2by2DiagonallyDominantDualCone(X_bad), 0);
-
 }
 
 GTEST_TEST(DiagonallyDominantMatrixDualConeConstraint,
-           three_by_three_vertices) {
+           FeasibilityExpressionCheck2by2) {
+  // Test that DD* matrices are feasible.
+  MathematicalProgram prog;
+  auto X = prog.NewSymmetricContinuousVariables<2>();
+  auto Y = prog.NewSymmetricContinuousVariables<2>();
+  Eigen::MatrixX<symbolic::Expression> Z(2, 2);
+  Z = 2. * X + 3. * Y;
+
+  auto GetZResult =
+      [&X, &Y](const MathematicalProgramResult& result) -> Eigen::MatrixXd {
+    const Eigen::MatrixXd X_res{result.GetSolution(X)};
+    const Eigen::MatrixXd Y_res{result.GetSolution(Y)};
+    return 2. * X_res + 3. * Y_res;
+  };
+
+  auto dual_cone_constraints =
+      prog.AddPositiveDiagonallyDominantDualConeMatrixConstraint(Z);
+
+  Eigen::VectorX<symbolic::Expression> z_upper(3);
+  z_upper << Z(0, 0), Z(0, 1), Z(1, 1);
+  auto Z_constraint =
+      prog.AddLinearEqualityConstraint(z_upper, Eigen::Vector3d::Zero());
+
+  auto set_Z_value = [&Z_constraint](const Eigen::Vector3d& z_upper_triangle) {
+    Z_constraint.evaluator()->UpdateLowerBound(z_upper_triangle);
+    Z_constraint.evaluator()->UpdateUpperBound(z_upper_triangle);
+    Eigen::Matrix2d ret;
+    ret << z_upper_triangle(0), z_upper_triangle(1), z_upper_triangle(1),
+        z_upper_triangle(2);
+    return ret;
+  };
+
+  // [1, 0.9; 0.9 2] is in DD* and DD.
+  set_Z_value(Eigen::Vector3d(1, 0.9, 2));
+  MathematicalProgramResult result = Solve(prog);
+  EXPECT_TRUE(result.is_success());
+  EXPECT_EQ(TestIn2by2DiagonallyDominantDualCone(GetZResult(result)), -1);
+
+  // [1, -1.2; -1.2 2] is in DD* but not DD.
+  set_Z_value(Eigen::Vector3d(1, -1.2, 2));
+  result = Solve(prog);
+  EXPECT_TRUE(result.is_success());
+  EXPECT_EQ(TestIn2by2DiagonallyDominantDualCone(GetZResult(result)), -1);
+
+  // Z_num = [2, -4; -4, 3] is not in DD*. The matrix Y = [1, 0.75; 0.75, 0.9]
+  // is in DD, but 〈 X, Y 〉< 0
+  const Eigen::Matrix2d Z_bad = set_Z_value(Eigen::Vector3d(2, -4, 3));
+  result = Solve(prog);
+  EXPECT_FALSE(result.is_success());
+  EXPECT_GE(TestIn2by2DiagonallyDominantDualCone(Z_bad), 0);
+}
+
+GTEST_TEST(DiagonallyDominantMatrixDualConeConstraint,
+           ThreeByThreeVerticesVariable) {
   // For a matrix to be in DD*, we have to have that Xₖₖ + Xⱼⱼ ≥ 2|Xₖⱼ+ Xⱼₖ|
   // I can manually compute the vertices of the polytope of (a, b, c)
   // to make
@@ -127,8 +166,7 @@ GTEST_TEST(DiagonallyDominantMatrixDualConeConstraint,
 
   prog.AddBoundingBoxConstraint(Eigen::Vector3d(1, 2, 3),
                                 Eigen::Vector3d(1, 2, 3), X.diagonal());
-  prog.AddPositiveDiagonallyDominantDualConeMatrixConstraint(
-      X.cast<symbolic::Expression>());
+  prog.AddPositiveDiagonallyDominantDualConeMatrixConstraint(X);
 
   auto cost = prog.AddLinearCost(Eigen::Vector3d::Zero(), 0,
                                  VectorDecisionVariable<3>(a, b, c));
@@ -142,6 +180,82 @@ GTEST_TEST(DiagonallyDominantMatrixDualConeConstraint,
     // The matrix should be positive in DD*.
     const Eigen::Matrix3d X_sol = result.GetSolution(X);
     EXPECT_EQ(TestIn3by3DiagonallyDominantDualCone(X_sol), -1);
+  };
+
+  const double tol{1E-6};
+
+  // The costs are chosen to make the optimal solution visit each vertex.
+  cost.evaluator()->UpdateCoefficients(Eigen::Vector3d(1, 1, -0.5));
+  solve_and_check(Eigen::Vector3d(-0.5, -1, 3), tol);
+  cost.evaluator()->UpdateCoefficients(Eigen::Vector3d(0.33, 0.33, 1.33));
+  solve_and_check(Eigen::Vector3d(0.5, 1, -3), tol);
+
+  cost.evaluator()->UpdateCoefficients(Eigen::Vector3d(-0.53, -0.58, -0.45));
+  solve_and_check(Eigen::Vector3d(1, 0.5, 1.5), tol);
+  cost.evaluator()->UpdateCoefficients(Eigen::Vector3d(0.82, 0.82, 0.82));
+  solve_and_check(Eigen::Vector3d(-1, -0.5, -1.5), tol);
+
+  cost.evaluator()->UpdateCoefficients(Eigen::Vector3d(0.44, 1.27, 0.44));
+  solve_and_check(Eigen::Vector3d(1.5, -3, 1), tol);
+  cost.evaluator()->UpdateCoefficients(Eigen::Vector3d(0.87, -0.58, 0.95));
+  solve_and_check(Eigen::Vector3d(-1.5, 3, -1), tol);
+
+  cost.evaluator()->UpdateCoefficients(Eigen::Vector3d(-0.53, 0.86, 1.0));
+  solve_and_check(Eigen::Vector3d(3, -1.5, -0.5), tol);
+  cost.evaluator()->UpdateCoefficients(Eigen::Vector3d(1.29, 0.40, 0.40));
+  solve_and_check(Eigen::Vector3d(-3, 1.5, 0.5), tol);
+}
+
+GTEST_TEST(DiagonallyDominantMatrixDualConeConstraint,
+           ThreeByThreeVerticesExpression) {
+  // For a matrix to be in DD*, we have to have that Xₖₖ + Xⱼⱼ ≥ 2|Xₖⱼ+ Xⱼₖ|
+  // I can manually compute the vertices of the polytope of (a, b, c)
+  // to make
+  //     [1 a+b b+c]
+  // A = [a+b 2 a+c]
+  //     [b+c a+c 3]
+  // be in DD*. These vertices are
+  // ±(0.5, 1, 3), ±(1,0.5,1.5), ±(1.5,-3,1), ±(1.5, -3, 0.5)
+  // By optimizing the LP
+  // min nᵀ* (a, b, c)
+  // s.t   A is in DD*
+  // with different vector n, we can recover the vertices of the polytope as
+  // the optimal solution to this LP.
+  MathematicalProgram prog;
+  auto X = prog.NewSymmetricContinuousVariables<3>();
+  auto Y = prog.NewSymmetricContinuousVariables<3>();
+  Eigen::MatrixX<symbolic::Expression> Z(3, 3);
+  Z = 2. * X + 3. * Y;
+
+  auto GetZResult =
+      [&X, &Y](const MathematicalProgramResult& result) -> Eigen::MatrixXd {
+    const Eigen::MatrixXd X_res{result.GetSolution(X)};
+    const Eigen::MatrixXd Y_res{result.GetSolution(Y)};
+    return 2. * X_res + 3. * Y_res;
+  };
+
+  auto a = prog.NewContinuousVariables<1>("a")(0);
+  auto b = prog.NewContinuousVariables<1>("b")(0);
+  auto c = prog.NewContinuousVariables<1>("c")(0);
+  prog.AddLinearEqualityConstraint(Z(0, 1) - (a + b), 0);
+  prog.AddLinearEqualityConstraint(Z(0, 2) - (b + c), 0);
+  prog.AddLinearEqualityConstraint(Z(1, 2) - (a + c), 0);
+
+  prog.AddLinearEqualityConstraint(Z.diagonal(), Eigen::Vector3d(1, 2, 3));
+  prog.AddPositiveDiagonallyDominantDualConeMatrixConstraint(Z);
+
+  auto cost = prog.AddLinearCost(Eigen::Vector3d::Zero(), 0,
+                                 VectorDecisionVariable<3>(a, b, c));
+  auto solve_and_check = [&prog, &GetZResult, &a, &b, &c](
+                             const Eigen::Vector3d& sol_expected, double tol) {
+    const auto result = Solve(prog);
+    EXPECT_TRUE(result.is_success());
+    EXPECT_TRUE(
+        CompareMatrices(result.GetSolution(VectorDecisionVariable<3>(a, b, c)),
+                        sol_expected, tol));
+    // The matrix should be positive in DD*.
+    const Eigen::Matrix3d Z_sol = GetZResult(result);
+    EXPECT_EQ(TestIn3by3DiagonallyDominantDualCone(Z_sol), -1);
   };
 
   const double tol{1E-6};

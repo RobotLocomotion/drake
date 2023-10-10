@@ -545,6 +545,7 @@ class TestMathematicalProgram(unittest.TestCase):
         prog.AddPositiveSemidefiniteConstraint(S+S)
         prog.AddPositiveDiagonallyDominantMatrixConstraint(X=S)
         prog.AddPositiveDiagonallyDominantDualConeMatrixConstraint(X=S)
+        prog.AddPositiveDiagonallyDominantDualConeMatrixConstraint(X=S + S)
         prog.AddScaledDiagonallyDominantMatrixConstraint(X=S)
         prog.AddScaledDiagonallyDominantMatrixConstraint(X=S + S)
         prog.AddScaledDiagonallyDominantDualConeMatrixConstraint(X=S + S)
