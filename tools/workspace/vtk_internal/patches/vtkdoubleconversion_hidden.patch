@@ -1,0 +1,31 @@
+[vtk] Use a custom hidden namespace for vtkdoubleconversion
+
+This situation is unique to Drake, so we won't to upstream this patch.
+
+--- IO/Core/vtkNumberToString.cxx
++++ IO/Core/vtkNumberToString.cxx
+@@ -28,9 +28,9 @@ template <typename TagT>
+ inline ostream& ToString(ostream& stream, const TagT& tag)
+ {
+   char buf[256];
+-  const double_conversion::DoubleToStringConverter& converter =
+-    double_conversion::DoubleToStringConverter::EcmaScriptConverter();
+-  double_conversion::StringBuilder builder(buf, sizeof(buf));
++  const drake_vendor_double_conversion::DoubleToStringConverter& converter =
++    drake_vendor_double_conversion::DoubleToStringConverter::EcmaScriptConverter();
++  drake_vendor_double_conversion::StringBuilder builder(buf, sizeof(buf));
+   builder.Reset();
+   converter.ToShortest(tag.Value, &builder);
+   stream << builder.Finalize();
+
+--- ThirdParty/doubleconversion/vtkdoubleconversion/double-conversion/utils.h
++++ ThirdParty/doubleconversion/vtkdoubleconversion/double-conversion/utils.h
+@@ -31,7 +31,7 @@
+ // XXX(kitware): // include exports header
+ #include "vtkdoubleconversion_export.h"
+ // mangle the double_conversion namespace
+-#define double_conversion vtkdouble_conversion
++#define double_conversion drake_vendor_double_conversion __attribute__((visibility("hidden")))
+ 
+ #include <cstdlib>
+ #include <cstring>

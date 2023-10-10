@@ -1,0 +1,22 @@
+[vtk] Use a custom hidden inline namespace for vtkpugixml
+
+This situation is unique to Drake, so we won't to upstream this patch.
+
+--- ThirdParty/pugixml/vtkpugixml/src/pugixml.hpp
++++ ThirdParty/pugixml/vtkpugixml/src/pugixml.hpp
+@@ -142,6 +142,7 @@
+ #	define PUGIXML_CHAR char
+ #endif
+ 
++inline namespace drake_vendor {
+ namespace pugi
+ {
+ 	// Character type used for all internal storage and operations; depends on PUGIXML_WCHAR_MODE
+@@ -1456,6 +1459,7 @@ namespace pugi
+ 	allocation_function PUGIXML_FUNCTION get_memory_allocation_function();
+ 	deallocation_function PUGIXML_FUNCTION get_memory_deallocation_function();
+ }
++}  // namespace drake_vendor
+ 
+ #if !defined(PUGIXML_NO_STL) && (defined(_MSC_VER) || defined(__ICC))
+ namespace std

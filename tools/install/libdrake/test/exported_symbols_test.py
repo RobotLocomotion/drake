@@ -41,8 +41,7 @@ _GOOD_SYMBOLS_SUBSTR = [
     "NK6spdlog",
     # Symbols from Drake's vendored externals are fine. (It would be better
     # for performance if they could be hidden, but they are not hazardous.)
-    "N12drake_vendor",
-    "NK12drake_vendor",
+    "drake_vendor",
 ]
 
 # Any symbols whose name contains one of these are undesirable, but for now
@@ -89,9 +88,6 @@ _KNOWN_BAD_SYMBOLS_SUBSTR = [
     "slack_value",
     "sortOnOther",
     "usage",
-    "vtkdouble_conversion",
-    "vtkglew",
-    "vtkpugixml",
     "wrapper",
     # This fix is pending a deprecation removal (#20115) 2024-01-01.
     "N3lcm",
