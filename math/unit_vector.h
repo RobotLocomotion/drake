@@ -6,6 +6,7 @@
 
 namespace drake {
 namespace math {
+namespace internal {
 
 /// Throws unless ‖unit_vector‖ is within 2 bits (= 4ε ≈ 8.88E-16) of 1.0, where
 /// 2 bits = 2²ε = 4ε and ε = std::numeric_limits<double>::epsilon().
@@ -53,5 +54,6 @@ template <typename T>
 T WarnIfNotUnitVector(const Vector3<T>& unit_vector,
                       std::string_view function_name);
 
+}  // namespace internal
 }  // namespace math
 }  // namespace drake
