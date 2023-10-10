@@ -275,7 +275,7 @@ class RotationMatrix {
   /// @retval R_AB the rotation matrix with properties as described above.
   static RotationMatrix<T> MakeClosestRotationToIdentityFromUnitZ(
       const Vector3<T>& u_A) {
-    math::ThrowIfNotUnitVector(u_A, __func__);
+    internal::ThrowIfNotUnitVector(u_A, __func__);
     const Vector3<T>& Bz = u_A;
     const Vector3<T> Az = Vector3<T>(0, 0, 1);
     // The rotation axis of the Axis-Angle representation of the resulting

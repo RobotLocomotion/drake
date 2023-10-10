@@ -128,7 +128,7 @@ UnitInertia<T> UnitInertia<T>::SolidCylinder(
     const T& radius, const T& length, const Vector3<T>& unit_vector) {
   DRAKE_THROW_UNLESS(radius >= 0);
   DRAKE_THROW_UNLESS(length >= 0);
-  math::WarnIfNotUnitVector(unit_vector, __func__);
+  math::internal::WarnIfNotUnitVector(unit_vector, __func__);
   const T rsq = radius * radius;
   const T lsq = length * length;
   const T J = 0.5 * rsq;                // Axial moment of inertia J = ½ r².
@@ -141,7 +141,7 @@ UnitInertia<T> UnitInertia<T>::SolidCylinderAboutEnd(
     const T& radius, const T& length, const Vector3<T>& unit_vector) {
   DRAKE_THROW_UNLESS(radius >= 0);
   DRAKE_THROW_UNLESS(length >= 0);
-  math::ThrowIfNotUnitVector(unit_vector, __func__);
+  math::internal::ThrowIfNotUnitVector(unit_vector, __func__);
   const T rsq = radius * radius;
   const T lsq = length * length;
   const T J = 0.5 * rsq;                // Axial moment of inertia J = ½ r².
@@ -170,7 +170,8 @@ UnitInertia<T> UnitInertia<T>::AxiallySymmetric(const T& moment_parallel,
   // TODO(Mitiguy) consider a "trust_me" type of parameter that can skip
   //  normalizing the unit_vector (it frequently is perfect on entry).
   using std::sqrt;
-  const T mag_squared = math::WarnIfNotUnitVector(unit_vector, __func__);
+  const T mag_squared =
+      math::internal::WarnIfNotUnitVector(unit_vector, __func__);
   const Vector3<T> uvec =
       (mag_squared == 1.0) ? unit_vector : unit_vector / sqrt(mag_squared);
 
@@ -186,7 +187,7 @@ template <typename T>
 UnitInertia<T> UnitInertia<T>::StraightLine(const T& moment_perpendicular,
     const Vector3<T>& unit_vector) {
   DRAKE_THROW_UNLESS(moment_perpendicular > 0.0);
-  math::WarnIfNotUnitVector(unit_vector, __func__);
+  math::internal::WarnIfNotUnitVector(unit_vector, __func__);
   return AxiallySymmetric(0.0, moment_perpendicular, unit_vector);
 }
 
@@ -194,7 +195,7 @@ template <typename T>
 UnitInertia<T> UnitInertia<T>::ThinRod(const T& length,
     const Vector3<T>& unit_vector) {
   DRAKE_THROW_UNLESS(length > 0.0);
-  math::WarnIfNotUnitVector(unit_vector, __func__);
+  math::internal::WarnIfNotUnitVector(unit_vector, __func__);
   return StraightLine(length * length / 12.0, unit_vector);
 }
 
@@ -214,7 +215,7 @@ UnitInertia<T> UnitInertia<T>::SolidCapsule(const T& radius, const T& length,
     const Vector3<T>& unit_vector) {
   DRAKE_THROW_UNLESS(radius >= 0);
   DRAKE_THROW_UNLESS(length >= 0);
-  math::ThrowIfNotUnitVector(unit_vector, __func__);
+  math::internal::ThrowIfNotUnitVector(unit_vector, __func__);
 
   // A special case is required for radius = 0 because it creates a zero volume
   // capsule (and we divide by volume later on). No special case for length = 0

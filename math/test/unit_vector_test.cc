@@ -7,6 +7,7 @@
 
 namespace drake {
 namespace math {
+namespace internal {
 namespace {
 
 GTEST_TEST(UnitVectorTest, ThrowOrWarnIfNotUnitVector) {
@@ -65,5 +66,6 @@ GTEST_TEST(UnitVectorTest, ThrowOrWarnIfNotUnitVector) {
 }
 
 }  // namespace
+}  // namespace internal
 }  // namespace math
 }  // namespace drake

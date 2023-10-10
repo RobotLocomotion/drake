@@ -11,6 +11,7 @@
 
 namespace drake {
 namespace math {
+namespace internal {
 
 namespace {
 // Checks if ‖unit_vector‖ is within 2 bits of 1.0, where 2 bits is
@@ -112,5 +113,6 @@ DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((
     &WarnIfNotUnitVector<T>
 ))
 
+}  // namespace internal
 }  // namespace math
 }  // namespace drake
