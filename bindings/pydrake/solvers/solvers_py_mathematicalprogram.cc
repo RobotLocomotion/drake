@@ -1142,11 +1142,24 @@ void BindMathematicalProgram(py::module m) {
           doc.MathematicalProgram.AddScaledDiagonallyDominantMatrixConstraint
               .doc_variable)
       .def("AddScaledDiagonallyDominantDualConeMatrixConstraint",
-          &MathematicalProgram::
-              AddScaledDiagonallyDominantDualConeMatrixConstraint,
+          static_cast<std::vector<Binding<RotatedLorentzConeConstraint>>(
+              MathematicalProgram::*)(
+              const Eigen::Ref<const MatrixX<symbolic::Expression>>&) >
+              (&MathematicalProgram::
+                      AddScaledDiagonallyDominantDualConeMatrixConstraint),
           py::arg("X"),
           doc.MathematicalProgram
-              .AddScaledDiagonallyDominantDualConeMatrixConstraint.doc)
+              .AddScaledDiagonallyDominantDualConeMatrixConstraint
+              .doc_expression)
+      .def("AddScaledDiagonallyDominantDualConeMatrixConstraint",
+          static_cast<std::vector<Binding<RotatedLorentzConeConstraint>>(
+              MathematicalProgram::*)(
+              const Eigen::Ref<const MatrixX<symbolic::Variable>>&) >
+              (&MathematicalProgram::
+                      AddScaledDiagonallyDominantDualConeMatrixConstraint),
+          py::arg("X"),
+          doc.MathematicalProgram
+              .AddScaledDiagonallyDominantDualConeMatrixConstraint.doc_variable)
       .def("AddSosConstraint",
           static_cast<MatrixXDecisionVariable (MathematicalProgram::*)(
               const Polynomial&, const Eigen::Ref<const VectorX<Monomial>>&,

@@ -1398,6 +1398,13 @@ MathematicalProgram::AddScaledDiagonallyDominantDualConeMatrixConstraint(
   return ret;
 }
 
+std::vector<Binding<RotatedLorentzConeConstraint>>
+MathematicalProgram::AddScaledDiagonallyDominantDualConeMatrixConstraint(
+    const Eigen::Ref<const MatrixX<symbolic::Variable>>& X) {
+  return AddScaledDiagonallyDominantDualConeMatrixConstraint(
+      X.cast<Expression>());
+}
+
 Binding<ExponentialConeConstraint> MathematicalProgram::AddConstraint(
     const Binding<ExponentialConeConstraint>& binding) {
   DRAKE_DEMAND(CheckBinding(binding));

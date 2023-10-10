@@ -548,6 +548,7 @@ class TestMathematicalProgram(unittest.TestCase):
         prog.AddPositiveDiagonallyDominantDualConeMatrixConstraint(X=S + S)
         prog.AddScaledDiagonallyDominantMatrixConstraint(X=S)
         prog.AddScaledDiagonallyDominantMatrixConstraint(X=S + S)
+        prog.AddScaledDiagonallyDominantDualConeMatrixConstraint(X=S)
         prog.AddScaledDiagonallyDominantDualConeMatrixConstraint(X=S + S)
         prog.AddLinearCost(np.trace(S))
         result = mp.Solve(prog)

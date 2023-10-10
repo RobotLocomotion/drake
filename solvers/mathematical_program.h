@@ -2663,6 +2663,8 @@ class MathematicalProgram {
   //@}
 
   /**
+   * @anchor add_sdd_dual
+   * @name scaled diagonally dominant dual cone constraint
    * Adds the constraint that a symmetric matrix is in the dual cone of the
    * scaled diagonally dominant matrices which is denoted SDD*. The set SDD* is
    * an outer approximation to the PSD cone that is tighter than DD*. This
@@ -2678,16 +2680,35 @@ class MathematicalProgram {
    * This characterization can be found in Section 3.3 of "Sum of Squares Basis
    * Pursuit with Linear and Second Order Cone Programming" by Ahmadi and Hall
    * with arXiv link https://arxiv.org/abs/1510.01597
-   *
+   */
+  //@{
+  /**
+   * This is an overloaded variant of @ref add_sdd_dual
+   * "scaled diagonally dominant dual cone constraint"
    * @param X The matrix X. We will use 0.5(X+Xᵀ) as the "symmetric version" of
    * X.
    * @pre X(i, j) should be a linear expression of decision variables.
-   * @return A vector of RotatedLorentzConeConstraint constraints of length 1/2
-   * * n * (n-3) encoding VᵢⱼᵀXVᵢⱼ is psd
+   * @return A vector of RotatedLorentzConeConstraint constraints of length
+   *  1/2 * n * (n-3) encoding VᵢⱼᵀXVᵢⱼ is psd
+   *  @pydrake_mkdoc_identifier{expression}
+   */
+    std::vector<Binding<RotatedLorentzConeConstraint>>
+    AddScaledDiagonallyDominantDualConeMatrixConstraint(
+        const Eigen::Ref<const MatrixX<symbolic::Expression>>& X);
+
+  /**
+   * This is an overloaded variant of @ref add_sdd_dual
+   * "scaled diagonally dominant dual cone constraint"
+   * @param X The matrix X. We will use 0.5(X+Xᵀ) as the "symmetric version" of
+   * X.
+   * @return A vector of RotatedLorentzConeConstraint constraints of length
+   * 1/2 * n * (n-3) encoding VᵢⱼᵀXVᵢⱼ is psd
+   * @pydrake_mkdoc_identifier{variable}
    */
   std::vector<Binding<RotatedLorentzConeConstraint>>
   AddScaledDiagonallyDominantDualConeMatrixConstraint(
-      const Eigen::Ref<const MatrixX<symbolic::Expression>>& X);
+      const Eigen::Ref<const MatrixX<symbolic::Variable>>& X);
+  //@}
 
   /**
    * Adds constraints that a given polynomial @p p is a sums-of-squares (SOS),

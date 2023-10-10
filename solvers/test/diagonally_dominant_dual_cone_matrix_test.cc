@@ -93,20 +93,20 @@ GTEST_TEST(DiagonallyDominantMatrixDualConeConstraint,
   MathematicalProgram prog;
   auto X = prog.NewSymmetricContinuousVariables<2>();
   auto Y = prog.NewSymmetricContinuousVariables<2>();
-  Eigen::MatrixX<symbolic::Expression> Z(2, 2);
+  MatrixX<symbolic::Expression> Z(2, 2);
   Z = 2. * X + 3. * Y;
 
   auto GetZResult =
-      [&X, &Y](const MathematicalProgramResult& result) -> Eigen::MatrixXd {
-    const Eigen::MatrixXd X_res{result.GetSolution(X)};
-    const Eigen::MatrixXd Y_res{result.GetSolution(Y)};
-    return 2. * X_res + 3. * Y_res;
+      [&Z](const MathematicalProgramResult& result) -> Eigen::MatrixXd {
+    return result.GetSolution(Z).unaryExpr([](const symbolic::Expression& x) {
+      return x.Evaluate();
+    });
   };
 
   auto dual_cone_constraints =
       prog.AddPositiveDiagonallyDominantDualConeMatrixConstraint(Z);
 
-  Eigen::VectorX<symbolic::Expression> z_upper(3);
+  VectorX<symbolic::Expression> z_upper(3);
   z_upper << Z(0, 0), Z(0, 1), Z(1, 1);
   auto Z_constraint =
       prog.AddLinearEqualityConstraint(z_upper, Eigen::Vector3d::Zero());
@@ -224,14 +224,14 @@ GTEST_TEST(DiagonallyDominantMatrixDualConeConstraint,
   MathematicalProgram prog;
   auto X = prog.NewSymmetricContinuousVariables<3>();
   auto Y = prog.NewSymmetricContinuousVariables<3>();
-  Eigen::MatrixX<symbolic::Expression> Z(3, 3);
+  MatrixX<symbolic::Expression> Z(3, 3);
   Z = 2. * X + 3. * Y;
 
   auto GetZResult =
-      [&X, &Y](const MathematicalProgramResult& result) -> Eigen::MatrixXd {
-    const Eigen::MatrixXd X_res{result.GetSolution(X)};
-    const Eigen::MatrixXd Y_res{result.GetSolution(Y)};
-    return 2. * X_res + 3. * Y_res;
+      [&Z](const MathematicalProgramResult& result) -> Eigen::MatrixXd {
+    return result.GetSolution(Z).unaryExpr([](const symbolic::Expression& x) {
+      return x.Evaluate();
+    });
   };
 
   auto a = prog.NewContinuousVariables<1>("a")(0);
