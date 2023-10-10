@@ -1,4 +1,5 @@
 load("@drake//tools/skylark:cc.bzl", "cc_library")
+load("@gfortran//:version.bzl", COMPILER_MAJOR = "MAJOR")
 
 def fortran_library(
         name,
@@ -18,6 +19,13 @@ def fortran_library(
 
     # Compile *.f* files to *.pic.o files.
     compiler = "@gfortran//:compiler"
+    compiler_args = [
+        "-fopenmp",
+        "-fPIC",
+    ]
+    if COMPILER_MAJOR >= 10:
+        # We need this for SNOPT 7.6 which has non-conforming code.
+        compiler_args.append("-fallow-argument-mismatch")
     objs = []
     for src in srcs:
         obj = src + ".pic.o"
@@ -27,7 +35,10 @@ def fortran_library(
             srcs = [src],
             outs = [obj],
             tools = [compiler],
-            cmd = "$(location {}) -fopenmp -fPIC -c $< -o $@".format(compiler),
+            cmd = "$(location {}) {} -c $< -o $@".format(
+                compiler,
+                " ".join(compiler_args),
+            ),
             visibility = ["//visibility:private"],
         )
 
