@@ -368,18 +368,18 @@ GTEST_TEST(SpatialInertia, SolidCylinderWithDensityOrMass) {
   const Vector3<double> bad_vec(1, 0.1, 0);
   DRAKE_EXPECT_THROWS_MESSAGE(
       SpatialInertia<double>::SolidCylinderWithDensity(density, r, l, bad_vec),
-      "[^]* The unit_vector argument .* is not a unit vector.");
+      "[^]* The unit_vector argument .* is not a unit vector.[^]*");
   DRAKE_EXPECT_THROWS_MESSAGE(
       SpatialInertia<double>::SolidCylinderWithMass(mass, r, l, bad_vec),
-      "[^]* The unit_vector argument .* is not a unit vector.");
+      "[^]* The unit_vector argument .* is not a unit vector.[^]*");
   DRAKE_EXPECT_THROWS_MESSAGE(
       SpatialInertia<double>::SolidCylinderWithDensityAboutEnd(
           density, r, l, bad_vec),
-      "[^]* The unit_vector argument .* is not a unit vector.");
+      "[^]* The unit_vector argument .* is not a unit vector.[^]*");
   DRAKE_EXPECT_THROWS_MESSAGE(
       SpatialInertia<double>::SolidCylinderWithMassAboutEnd(
           mass, r, l, bad_vec),
-      "[^]* The unit_vector argument .* is not a unit vector.");
+      "[^]* The unit_vector argument .* is not a unit vector.[^]*");
 }
 
 // Tests the static method for the spatial inertia of a thin rod.
@@ -442,7 +442,7 @@ GTEST_TEST(SpatialInertia, ThinRodWithMass) {
   const Vector3<double> bad_vec(1, 0.1, 0);
   DRAKE_EXPECT_THROWS_MESSAGE(
       SpatialInertia<double>::ThinRodWithMass(mass, length, bad_vec),
-      "[^]* The unit_vector argument .* is not a unit vector.");
+      "[^]* The unit_vector argument .* is not a unit vector.[^]*");
 }
 
 // Tests the static method for the spatial inertia of a solid ellipsoid.
