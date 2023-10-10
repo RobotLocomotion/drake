@@ -21,7 +21,7 @@ namespace {
 // {‖unit_vector‖², true} for ‖unit_vector‖ within 2 bits of 1, otherwise return
 // {‖unit_vector‖², false}.
 // @note: When type T is symbolic::Expression, this function is a no-op that
-// returns {1.0, {}}.
+// returns {1.0, {true}}.
 // @note The use of 2 bits was determined empirically, is well within the
 // tolerance achieved by normalizing a vast range of non-zero vectors, and
 // seems to provide a valid RotationMatrix() (see RotationMatrix::IsValid()).
@@ -53,27 +53,29 @@ std::pair<T, bool> IsUnitVector(const Vector3<T> &unit_vector) {
 }
 
 // Returns an error message that ‖unit_vector‖ ≠ 1.
-// @param[in] unit_vector a vector which is allegedly a unit vector.
+// @param[in] bad_unit_vector a vector which is not a unit vector because
+// ‖bad_unit_vector‖ ≠ 1, which may be due to NaN or infinity elements.
 // @param[in] function_name function name that appears in the error_message
 // returned by this function.
 // @retval error_message string that can be subsequently used as an exception
 // message or to write to a log file.
+// @pre ‖bad_unit_vector‖ is not a valid unit vector.
 // @note: This helper function only creates an error message. It does not verify
-// ‖unit_vector‖ ≠ 1. This helper function is used by ThrowIfNotUnitVector().
+// ‖bad_unit_vector‖ ≠ 1. It is used by ThrowIfNotUnitVector().
 template <typename T>
-std::string ErrorMessageNotUnitVector(const Vector3<T>& unit_vector,
+std::string ErrorMessageNotUnitVector(const Vector3<T>& bad_unit_vector,
                                       std::string_view function_name) {
   if constexpr (scalar_predicate<T>::is_bool) {
     DRAKE_DEMAND(!function_name.empty());
     using std::abs;
-    const T norm = unit_vector.norm();
+    const T norm = bad_unit_vector.norm();
     const T norm_diff = abs(1.0 - norm);
     constexpr double kTolerance = 4 * std::numeric_limits<double>::epsilon();
     const std::string error_message =
       fmt::format("{}(): The unit_vector argument {} is not a unit vector.\n"
                   "|unit_vector| = {}\n"
                   "||unit_vector| - 1| = {} is greater than {}.",
-                  function_name, fmt_eigen(unit_vector.transpose()),
+                  function_name, fmt_eigen(bad_unit_vector.transpose()),
                   norm, norm_diff, kTolerance);
     return error_message;
   }

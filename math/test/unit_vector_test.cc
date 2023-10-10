@@ -14,7 +14,7 @@ GTEST_TEST(UnitVectorTest, ThrowOrWarnIfNotUnitVector) {
   double vector_magSquared;
 
   // Verify that no exception is thrown for a valid unit vector.
-  const Vector3<double> unit_vector(1.0, 0.0, 0.0);
+  Vector3<double> unit_vector(1.0, 0.0, 0.0);
   DRAKE_EXPECT_NO_THROW(vector_magSquared =
       ThrowIfNotUnitVector(unit_vector, "UnusedFunctionName"));
   EXPECT_EQ(vector_magSquared, unit_vector.squaredNorm());
@@ -22,6 +22,20 @@ GTEST_TEST(UnitVectorTest, ThrowOrWarnIfNotUnitVector) {
   // No message should be written to the log file for a valid unit vector.
   vector_magSquared = WarnIfNotUnitVector(unit_vector, "UnusedFunctionName");
   EXPECT_EQ(vector_magSquared, unit_vector.squaredNorm());
+
+  // Verify that no exception is thrown for a valid or near valid unit vector.
+  unit_vector = Vector3<double>(4.321, M_PI, 97531.2468).normalized();
+  DRAKE_EXPECT_NO_THROW(vector_magSquared =
+      ThrowIfNotUnitVector(unit_vector, "UnusedFunctionName"));
+  EXPECT_EQ(vector_magSquared, unit_vector.squaredNorm());
+
+  // Verify that no exception is thrown when |unit_vector| is nearly 1.0.
+  constexpr double kepsilon = std::numeric_limits<double>::epsilon();
+  unit_vector += 2 * Vector3<double>(kepsilon, kepsilon, kepsilon);
+  DRAKE_EXPECT_NO_THROW(vector_magSquared =
+      ThrowIfNotUnitVector(unit_vector, "UnusedFunctionName"));
+  EXPECT_EQ(vector_magSquared, unit_vector.squaredNorm());
+  EXPECT_NE(vector_magSquared, 1.0);
 
   // Verify an exception is thrown for an invalid unit vector.
   Vector3<double> not_unit_vector(1.0, 2.0, 3.0);
