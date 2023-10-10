@@ -131,7 +131,7 @@ RotationMatrix<T> RotationMatrix<T>::MakeFromOneUnitVector(
     const Vector3<T>& u_A, int axis_index) {
   // In Debug builds, verify axis_index is 0 or 1 or 2 and u_A is unit length.
   DRAKE_ASSERT(axis_index >= 0 && axis_index <= 2);
-  DRAKE_ASSERT(math::internal::ThrowIfNotUnitVector(u_A, __func__) > 0);
+  math::internal::ThrowIfNotUnitVector(u_A, __func__);
 
   // This method forms a right-handed orthonormal basis with u_A and two
   // internally-constructed unit vectors v_A and w_A.
