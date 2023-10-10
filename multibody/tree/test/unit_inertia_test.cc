@@ -297,7 +297,7 @@ GTEST_TEST(UnitInertia, SolidCylinderAboutEnd) {
   const Vector3<double> bad_vec(1, 0.1, 0);
   DRAKE_EXPECT_THROWS_MESSAGE(
       UnitInertia<double>::SolidCylinderAboutEnd(r, L, bad_vec),
-      "[^]* The unit_vector argument .* is not a unit vector.");
+      "[^]* The unit_vector argument .* is not a unit vector.[^]*");
 }
 
 #pragma GCC diagnostic push
@@ -403,7 +403,7 @@ GTEST_TEST(UnitInertia, SolidCapsule) {
   const Vector3<double> bad_uvec(1, 0.1, 0);
   DRAKE_EXPECT_THROWS_MESSAGE(
       UnitInertia<double>::SolidCapsule(r, L, bad_uvec),
-      "[^]* The unit_vector argument .* is not a unit vector.");
+      "[^]* The unit_vector argument .* is not a unit vector.[^]*");
 }
 
 // Tests a degenerate capsule (into sphere) has the same unit inertia as a

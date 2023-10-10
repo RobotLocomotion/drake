@@ -18,6 +18,7 @@
 #include "drake/common/never_destroyed.h"
 #include "drake/math/fast_pose_composition_functions.h"
 #include "drake/math/roll_pitch_yaw.h"
+#include "drake/math/unit_vector.h"
 
 namespace drake {
 namespace math {
@@ -276,7 +277,7 @@ class RotationMatrix {
   /// @retval R_AB the rotation matrix with properties as described above.
   static RotationMatrix<T> MakeClosestRotationToIdentityFromUnitZ(
       const Vector3<T>& u_A) {
-    ThrowIfNotUnitLength(u_A, __func__);
+    math::ThrowIfNotUnitVector(u_A, __func__);
     const Vector3<T>& Bz = u_A;
     const Vector3<T> Az = Vector3<T>(0, 0, 1);
     // The rotation axis of the Axis-Angle representation of the resulting
@@ -919,17 +920,6 @@ class RotationMatrix {
   // are infinity or NaN.
   static Matrix3<T> QuaternionToRotationMatrix(
       const Eigen::Quaternion<T>& quaternion, const T& two_over_norm_squared);
-
-  // Throws an exception if the vector v does not have a measurable magnitude
-  // within 4ε of 1 (where machine epsilon ε ≈ 2.22E-16).
-  // @param[in] v The vector to test.
-  // @param[in] function_name The name of the calling function; included in the
-  //   exception message.
-  // @throws std::exception if |v| cannot be verified to be within 4ε of 1.
-  //   An exception is thrown if v contains nonfinite numbers (NaN or infinity).
-  // @note no exception is thrown if v is a symbolic type.
-  static void ThrowIfNotUnitLength(const Vector3<T>& v,
-                                   const char* function_name);
 
   // Returns the unit vector in the direction of v or throws an exception if v
   // cannot be "safely" normalized.
