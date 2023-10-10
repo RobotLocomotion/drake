@@ -154,7 +154,10 @@ void DefineGeometryOptimization(py::module m) {
         .def("ContainedIn", &AffineSubspace::ContainedIn, py::arg("other"),
             py::arg("tol") = 1e-15, cls_doc.ContainedIn.doc)
         .def("IsNearlyEqualTo", &AffineSubspace::IsNearlyEqualTo,
-            py::arg("other"), py::arg("tol") = 1e-15, cls_doc.ContainedIn.doc);
+            py::arg("other"), py::arg("tol") = 1e-15, cls_doc.ContainedIn.doc)
+        .def("OrthogonalComplementBasis",
+            &AffineSubspace::OrthogonalComplementBasis,
+            cls_doc.OrthogonalComplementBasis.doc);
     DefClone(&cls);
   }
 
