@@ -52,6 +52,7 @@ load("//tools/workspace/lapack:repository.bzl", "lapack_repository")
 load("//tools/workspace/lcm:repository.bzl", "lcm_repository")
 load("//tools/workspace/libblas:repository.bzl", "libblas_repository")
 load("//tools/workspace/libjpeg:repository.bzl", "libjpeg_repository")
+load("//tools/workspace/libjpeg_turbo_internal:repository.bzl", "libjpeg_turbo_internal_repository")  # noqa
 load("//tools/workspace/liblapack:repository.bzl", "liblapack_repository")
 load("//tools/workspace/liblz4:repository.bzl", "liblz4_repository")
 load("//tools/workspace/liblzma:repository.bzl", "liblzma_repository")
@@ -67,6 +68,7 @@ load("//tools/workspace/mumps_internal:repository.bzl", "mumps_internal_reposito
 load("//tools/workspace/mypy_extensions_internal:repository.bzl", "mypy_extensions_internal_repository")  # noqa
 load("//tools/workspace/mypy_internal:repository.bzl", "mypy_internal_repository")  # noqa
 load("//tools/workspace/nanoflann_internal:repository.bzl", "nanoflann_internal_repository")  # noqa
+load("//tools/workspace/nasm:repository.bzl", "nasm_repository")
 load("//tools/workspace/net_sf_jchart2d:repository.bzl", "net_sf_jchart2d_repository")  # noqa
 load("//tools/workspace/nlohmann_internal:repository.bzl", "nlohmann_internal_repository")  # noqa
 load("//tools/workspace/nlopt_internal:repository.bzl", "nlopt_internal_repository")  # noqa
@@ -245,7 +247,11 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
     if "libblas" not in excludes:
         libblas_repository(name = "libblas")
     if "libjpeg" not in excludes:
+        # The @libjpeg external is deprecated in Drake's WORKSPACE and will be
+        # removed on or after 2024-02-01.
         libjpeg_repository(name = "libjpeg")
+    if "libjpeg_turbo_internal" not in excludes:
+        libjpeg_turbo_internal_repository(name = "libjpeg_turbo_internal", mirrors = mirrors)  # noqa
     if "liblapack" not in excludes:
         liblapack_repository(name = "liblapack")
     if "liblz4" not in excludes:
@@ -284,6 +290,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         mypy_internal_repository(name = "mypy_internal", mirrors = mirrors)
     if "nanoflann_internal" not in excludes:
         nanoflann_internal_repository(name = "nanoflann_internal", mirrors = mirrors)  # noqa
+    if "nasm" not in excludes:
+        nasm_repository(name = "nasm")
     if "net_sf_jchart2d" not in excludes:
         net_sf_jchart2d_repository(name = "net_sf_jchart2d", mirrors = mirrors)
     if "nlohmann_internal" not in excludes:
