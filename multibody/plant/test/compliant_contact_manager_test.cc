@@ -87,7 +87,7 @@ class SapDriverTest {
 // cause a DeformableDriver to be instantiated in the manager.
 GTEST_TEST(CompliantContactManagerTest, ExtractModelInfo) {
   CompliantContactManager<double> manager;
-  EXPECT_EQ(CompliantContactManagerTester::deformable_driver(manager), nullptr);
+  EXPECT_EQ(manager.MaybeGetDeformableDriver(), nullptr);
   MultibodyPlant<double> plant(0.01);
   auto deformable_model = std::make_unique<DeformableModel<double>>(&plant);
   plant.AddPhysicalModel(std::move(deformable_model));
@@ -98,9 +98,7 @@ GTEST_TEST(CompliantContactManagerTest, ExtractModelInfo) {
   const CompliantContactManager<double>* contact_manager_ptr =
       contact_manager.get();
   plant.SetDiscreteUpdateManager(std::move(contact_manager));
-  EXPECT_NE(
-      CompliantContactManagerTester::deformable_driver(*contact_manager_ptr),
-      nullptr);
+  EXPECT_NE(contact_manager_ptr->MaybeGetDeformableDriver(), nullptr);
 }
 
 // TODO(DamrongGuoy): Simplify the test fixture somehow (need discussion

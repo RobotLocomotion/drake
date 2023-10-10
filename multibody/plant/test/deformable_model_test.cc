@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/framework/diagram_builder.h"
 
 namespace drake {
@@ -278,9 +279,8 @@ TEST_F(DeformableModelTest, AddFixedConstraint) {
                                                 box, X_BG);
 
   EXPECT_TRUE(deformable_model_ptr_->HasConstraint(deformable_id));
-  EXPECT_EQ(
-      deformable_model_ptr_->fixed_constraint_ids(deformable_id).size(),
-      1);
+  EXPECT_EQ(deformable_model_ptr_->fixed_constraint_ids(deformable_id).size(),
+            1);
   const DeformableRigidFixedConstraintSpec& spec =
       deformable_model_ptr_->fixed_constraint_spec(constraint_id);
   EXPECT_EQ(spec.body_A, deformable_id);

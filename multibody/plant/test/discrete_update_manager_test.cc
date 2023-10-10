@@ -22,7 +22,6 @@ using systems::BasicVector;
 using systems::Context;
 using systems::ContextBase;
 using systems::DiscreteStateIndex;
-using systems::DiscreteValues;
 using systems::OutputPortIndex;
 // Dummy state data.
 constexpr int kNumRigidDofs = 6;
@@ -91,7 +90,7 @@ class DummyDiscreteUpdateManager final : public DiscreteUpdateManager<T> {
 
   /* Extracts information about the additional discrete state that
    DummyModel declares if one exists in the owning MultibodyPlant. */
-  void ExtractModelInfo() final {
+  void DoExtractModelInfo() final {
     /* For unit testing we verify there is a single physical model of type
      DummyModel. */
     DRAKE_DEMAND(this->plant().physical_models().size() == 1);
@@ -142,20 +141,6 @@ class DummyDiscreteUpdateManager final : public DiscreteUpdateManager<T> {
     vdot = VectorX<T>::Ones(vdot.size()) * kDummyVdot;
   }
 
-  /* Increments the discrete rigid dofs by 1 and additional discrete state by 2
-   if there is any. */
-  void DoCalcDiscreteValues(const Context<T>& context,
-                            DiscreteValues<T>* updates) const final {
-    auto multibody_data =
-        updates->get_mutable_value(this->multibody_state_index());
-    multibody_data += VectorX<T>::Ones(multibody_data.size());
-    if (additional_state_index_.is_valid()) {
-      auto additional_data =
-          updates->get_mutable_value(additional_state_index_);
-      additional_data += 2.0 * VectorX<T>::Ones(additional_data.size());
-    }
-  }
-
   // TODO(joemasterjohn): Add a unit test here for when the contact results
   // calculated by the manager are hooked up to MultibodyPlant.
   void DoCalcContactResults(const systems::Context<T>& context,
@@ -164,18 +149,6 @@ class DummyDiscreteUpdateManager final : public DiscreteUpdateManager<T> {
   // Not used in these tests.
   void DoCalcDiscreteUpdateMultibodyForces(const systems::Context<T>&,
                                            MultibodyForces<T>*) const final {
-    throw std::logic_error("Must implement if needed for these tests.");
-  }
-
-  void DoCalcDiscreteContactPairs(
-      const systems::Context<T>&,
-      DiscreteContactData<DiscreteContactPair<T>>*) const final {
-    throw std::logic_error("Must implement if needed for these tests.");
-  }
-
-  void DoCalcContactKinematics(
-      const systems::Context<T>&,
-      DiscreteContactData<ContactPairKinematics<T>>*) const final {
     throw std::logic_error("Must implement if needed for these tests.");
   }
 
@@ -218,28 +191,6 @@ class DiscreteUpdateManagerTest : public ::testing::Test {
   DummyDiscreteUpdateManager<double>* dummy_manager_{nullptr};
 };
 
-/* Tests that the CalcDiscrete() method is correctly wired to MultibodyPlant and
- that the CacheEntry is properly evaluated. */
-TEST_F(DiscreteUpdateManagerTest, CalcDiscreteState) {
-  auto context = plant_.CreateDefaultContext();
-  auto simulator = systems::Simulator<double>(plant_, std::move(context));
-  const int time_steps = 2;
-  simulator.AdvanceTo(time_steps * kDt);
-  const VectorXd final_additional_state =
-      dummy_model_->get_vector_output_port().Eval(simulator.get_context());
-  EXPECT_EQ(final_additional_state.size(), kNumAdditionalDofs);
-  EXPECT_TRUE(
-      CompareMatrices(final_additional_state,
-                      dummy_discrete_state() +
-                          2.0 * VectorXd::Ones(kNumAdditionalDofs) * time_steps,
-                      std::numeric_limits<double>::epsilon()));
-  /* Verifies that the cache value is twice the addition state value. */
-  const VectorXd& cache_value =
-      dummy_manager_->EvalCacheEntry(simulator.get_context());
-  EXPECT_TRUE(CompareMatrices(2.0 * final_additional_state, cache_value,
-                              std::numeric_limits<double>::epsilon()));
-}
-
 /* Tests that the CalcContactSolverResults() method is correctly wired to
  MultibodyPlant. */
 TEST_F(DiscreteUpdateManagerTest, CalcContactSolverResults) {
@@ -275,22 +226,6 @@ TEST_F(DiscreteUpdateManagerTest, ScalarConversion) {
       dynamic_cast<const DummyModel<AutoDiffXd>*>(
           autodiff_plant->physical_models()[0]);
   ASSERT_NE(model, nullptr);
-
-  const int time_steps = 2;
-  simulator.AdvanceTo(time_steps * kDt);
-
-  /* Verify that the discrete state is updated as expected by the
-   DummyDiscreteUpdateManager. */
-  const VectorX<AutoDiffXd> final_additional_state_autodiff =
-      model->get_vector_output_port().Eval(simulator.get_context());
-  const VectorXd final_additional_state =
-      math::ExtractValue(final_additional_state_autodiff);
-  EXPECT_EQ(final_additional_state.size(), kNumAdditionalDofs);
-  EXPECT_TRUE(
-      CompareMatrices(final_additional_state,
-                      dummy_discrete_state() +
-                          2.0 * VectorXd::Ones(kNumAdditionalDofs) * time_steps,
-                      std::numeric_limits<double>::epsilon()));
 }
 
 // DiscreteUpdateManager implements a workaround for issue #12786 which might

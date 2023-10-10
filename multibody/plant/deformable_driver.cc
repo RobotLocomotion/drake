@@ -16,6 +16,7 @@
 #include "drake/multibody/fem/fem_model.h"
 #include "drake/multibody/fem/velocity_newmark_scheme.h"
 #include "drake/multibody/plant/contact_properties.h"
+#include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/framework/context.h"
 
 using drake::geometry::GeometryId;

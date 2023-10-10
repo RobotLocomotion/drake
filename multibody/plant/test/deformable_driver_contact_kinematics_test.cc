@@ -5,6 +5,7 @@
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/multibody/plant/compliant_contact_manager.h"
 #include "drake/multibody/plant/deformable_driver.h"
+#include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/framework/diagram_builder.h"
 
 using drake::geometry::GeometryId;
@@ -29,16 +30,6 @@ using std::make_unique;
 namespace drake {
 namespace multibody {
 namespace internal {
-
-/* Friend class used to provide access to a selection of private functions in
- CompliantContactManager for testing purposes. */
-class CompliantContactManagerTester {
- public:
-  static const DeformableDriver<double>* deformable_driver(
-      const CompliantContactManager<double>& manager) {
-    return manager.deformable_driver_.get();
-  }
-};
 
 /* Registers a deformable octrahedron with the given `name` and pose in the
  world to the given `model`.
@@ -156,7 +147,8 @@ class DeformableDriverContactKinematicsTest
     auto contact_manager = make_unique<CompliantContactManager<double>>();
     manager_ = contact_manager.get();
     plant_->SetDiscreteUpdateManager(std::move(contact_manager));
-    driver_ = CompliantContactManagerTester::deformable_driver(*manager_);
+    driver_ = manager_->MaybeGetDeformableDriver();
+    DRAKE_DEMAND(driver_ != nullptr);
 
     builder.Connect(model_->vertex_positions_port(),
                     scene_graph_->get_source_configuration_port(
@@ -443,8 +435,8 @@ GTEST_TEST(DeformableDriverContactKinematicsWithBcTest,
   auto contact_manager = make_unique<CompliantContactManager<double>>();
   const CompliantContactManager<double>* manager = contact_manager.get();
   plant.SetDiscreteUpdateManager(std::move(contact_manager));
-  const DeformableDriver<double>* driver =
-      CompliantContactManagerTester::deformable_driver(*manager);
+  const DeformableDriver<double>* driver = manager->MaybeGetDeformableDriver();
+  ASSERT_NE(driver, nullptr);
 
   builder.Connect(
       model->vertex_positions_port(),
@@ -499,8 +491,8 @@ GTEST_TEST(DeformableDriverConstraintParticipation, ConstraintWithoutContact) {
   auto contact_manager = make_unique<CompliantContactManager<double>>();
   const CompliantContactManager<double>* manager = contact_manager.get();
   plant.SetDiscreteUpdateManager(std::move(contact_manager));
-  const DeformableDriver<double>* driver =
-      CompliantContactManagerTester::deformable_driver(*manager);
+  const DeformableDriver<double>* driver = manager->MaybeGetDeformableDriver();
+  ASSERT_NE(driver, nullptr);
   // TODO(xuchenhan-tri): AddMultibodyPlant and AddMultibodyPlantSceneGraph
   // should connect this port automatically.
   builder.Connect(
