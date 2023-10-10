@@ -387,10 +387,11 @@ GTEST_TEST(GeometriesTest, ComputeDeformableContact) {
       GeometriesTester::get_rigid_geometry(geometries, rigid_id);
   DeformableContact<double> expected_contact_data;
   expected_contact_data.RegisterDeformableGeometry(deformable_id, num_vertices);
-  AddDeformableRigidContactSurface(deformable_geometry, deformable_id, rigid_id,
-                                   rigid_geometry.rigid_mesh().mesh(),
-                                   rigid_geometry.rigid_mesh().bvh(), X_DR,
-                                   &expected_contact_data);
+  AddDeformableRigidContactSurface(
+      deformable_geometry.CalcSignedDistanceField(),
+      deformable_geometry.deformable_mesh(), deformable_id, rigid_id,
+      rigid_geometry.rigid_mesh().mesh(), rigid_geometry.rigid_mesh().bvh(),
+      X_DR, &expected_contact_data);
 
   /* Verify that the contact data is the same as expected by checking a subset
    of all data fields. */
