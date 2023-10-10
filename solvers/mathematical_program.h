@@ -2584,6 +2584,10 @@ class MathematicalProgram {
   AddPositiveDiagonallyDominantDualConeMatrixConstraint(
       const Eigen::Ref<const MatrixX<symbolic::Expression>>& X);
 
+  Binding<LinearConstraint>
+  AddPositiveDiagonallyDominantDualConeMatrixConstraint(
+      const Eigen::Ref<const MatrixX<symbolic::Variable>>& X);
+
   /**
    * @anchor addsdd
    * @name     scaled diagonally dominant matrix constraint
