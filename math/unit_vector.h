@@ -16,12 +16,10 @@ namespace math {
 /// @retval ‖unit_vector‖² which is exactly 1.0 for a perfect unit_vector.
 /// @note: When type T is symbolic::Expression, this function is a no-op that
 /// does not throw an exception and returns 1.0.
-/// @note Although this function uses a tolerance of 4ε to determine if
-/// unit_vector is acceptable, unit_vector can be normalized for more accurate
-/// calculations (e.g., so ‖unit_vector‖ is less than ε ≈ 2.22E-16 of 1.0).
-/// Frequently ‖unit_vector‖ is exactly 1.0 (e.g., when unit_vector is an x or
-/// y or z coordinate axis direction). If not, the calling function should
-/// consider normalizing unit_vector even if it passes this test, e.g. as
+/// @note Frequently ‖unit_vector‖ is exactly 1.0 (e.g., when unit_vector is an
+/// x or y or z coordinate axis direction). If not, the calling function should
+/// consider normalizing unit_vector even if it passes this test so that
+/// ‖unit_vector‖ is less than ε ≈ 2.22E-16 of 1.0, e.g., as
 /// @code{.cpp}
 ///  using std::sqrt;
 ///  const T mag_squared = math::ThrowIfNotUnitVector(unit_vector, __func__);
@@ -41,12 +39,10 @@ T ThrowIfNotUnitVector(const Vector3<T>& unit_vector,
 /// @retval ‖unit_vector‖² which is exactly 1.0 for a perfect unit_vector.
 /// @note: When type T is symbolic::Expression, this function is a no-op that
 /// does not write to the log file and returns 1.0.
-/// @note Although this function uses a tolerance of 4ε to determine if
-/// unit_vector is acceptable, unit_vector can be normalized for more accurate
-/// calculations (e.g., so ‖unit_vector‖ is less than ε ≈ 2.22E-16 of 1.0).
-/// Frequently ‖unit_vector‖ is exactly 1.0 (e.g., when unit_vector is an x or
-/// y or z coordinate axis direction). If not, the calling function should
-/// consider normalizing unit_vector even if it passes this test, e.g. as
+/// @note Frequently ‖unit_vector‖ is exactly 1.0 (e.g., when unit_vector is an
+/// x or y or z coordinate axis direction). If not, the calling function should
+/// consider normalizing unit_vector even if it passes this test so that
+/// ‖unit_vector‖ is less than ε ≈ 2.22E-16 of 1.0, e.g., as
 /// @code{.cpp}
 ///  using std::sqrt;
 ///  const T mag_squared = math::ThrowIfNotUnitVector(unit_vector, __func__);
