@@ -705,15 +705,33 @@ class SceneGraph final : public systems::LeafSystem<T> {
   void AddRenderer(std::string name,
                    std::unique_ptr<render::RenderEngine> renderer);
 
+  /** systems::Context-modifying variant of AddRenderer(). Rather than
+   modifying %SceneGraph's model, it modifies the copy of the model stored in
+   the provided context.  */
+  void AddRenderer(systems::Context<T>* context, std::string name,
+                   std::unique_ptr<render::RenderEngine> renderer) const;
+
   /** Removes an existing renderer from this %SceneGraph
    @param name The unique name of the renderer to be removed.
    @throws std::exception if this %SceneGraph doesn't have a renderer with the
    specified name. */
   void RemoveRenderer(const std::string& name);
 
+  /** systems::Context-modifying variant of RemoveRenderer(). Rather than
+   modifying %SceneGraph's model, it modifies the copy of the model stored in
+   the provided context.  */
+  void RemoveRenderer(systems::Context<T>* context,
+                      const std::string& name) const;
+
   /** Reports true if this %SceneGraph has a renderer registered with the given
    name. */
   bool HasRenderer(const std::string& name) const;
+
+  /** systems::Context-query variant of HasRenderer(). Rather than querying
+   %SceneGraph's model, it queries the copy of the model stored in the
+   provided context.  */
+  bool HasRenderer(const systems::Context<T>& context,
+                   const std::string& name) const;
 
   /** Reports the type name for the RenderEngine registered with the given
    `name`.
@@ -723,11 +741,28 @@ class SceneGraph final : public systems::LeafSystem<T> {
             registered with the given `name`. */
   std::string GetRendererTypeName(const std::string& name) const;
 
+  /** systems::Context-query variant of GetRendererTypeName(). Rather than
+   querying %SceneGraph's model, it queries the copy of the model stored in the
+   provided context.  */
+  std::string GetRendererTypeName(const systems::Context<T>& context,
+                                  const std::string& name) const;
+
   /** Reports the number of renderers registered to this %SceneGraph.  */
   int RendererCount() const;
 
+  /** systems::Context-query variant of RendererCount(). Rather than querying
+   %SceneGraph's model, it queries the copy of the model stored in the
+   provided context.  */
+  int RendererCount(const systems::Context<T>& context) const;
+
   /** Reports the names of all registered renderers.  */
   std::vector<std::string> RegisteredRendererNames() const;
+
+  /** systems::Context-query variant of RegisteredRendererNames(). Rather than
+   querying %SceneGraph's model, it queries the copy of the model stored in the
+   provided context.  */
+  std::vector<std::string> RegisteredRendererNames(
+      const systems::Context<T>& context) const;
 
   //@}
 
