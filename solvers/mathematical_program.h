@@ -2561,8 +2561,10 @@ class MathematicalProgram {
    * @anchor add_dd_dual
    * @name diagonally dominant dual cone constraint
    * Adds the constraint that a symmetric matrix is in the dual cone of the
-   * diagonally dominant matrices which is denoted DD*. The set DD* is an outer
-   * approximation to the PSD cone since DD ⊆ PSD = PSD* ⊆ DD*
+   * diagonally dominant matrices which is denoted DD*. This set is a polyhedral
+   * (linear) outer approximation to the PSD cone. This follows from the fact
+   * that since DD ⊆ PSD, then PSD* ⊆ DD*, and since PSD is self-dual, we have
+   * that PSD = PSD* and so DD ⊆ PSD = PSD* ⊆ DD*.
    *
    * A symmetric matrix X is in DD* if and only if vᵢᵀXvᵢ ≥ 0 for all vᵢ,
    * where vᵢ is a non-zero vector with at most two entries set to ±1 and all
@@ -2671,11 +2673,21 @@ class MathematicalProgram {
    * follows from the fact that DD ⊆ SDD ⊆ PSD = PSD* ⊆ SDD* ⊆ DD*
    *
    * A symmetric matrix X is in SDD* if and only if VᵢⱼᵀXVᵢⱼ is psd for all Vᵢⱼ,
-   * where Vᵢⱼ is an n x 2 matrix where each column contains exactly one
-   * non-zero element equal to 1. There are n choose 2 of these matrices
-   * producing unique products, namely those such that i ≥ j. This can be
-   * encoded using 1/2 * n * (n-3) RotateLorentzCone constraints which we return
+   * where Vᵢⱼ is the n x 2 matrix such that Vᵢⱼ(i, 0) = 1, V(j, 1) = 1, namely
+   Vᵢⱼ = [eᵢ eⱼ].
+   * This can be encoded using 1/2 * n * (n-3) RotatedLorentzCone constraints
+   which we return
    * in this function.
+   *
+   * This can be seen by noting that
+   * VᵢⱼᵀXVᵢⱼ = ⌈ Xᵢᵢ Xᵢⱼ⌉
+                ⌊ Xⱼᵢ Xⱼⱼ⌋
+   * is psd if and only if VⱼᵢᵀXVⱼᵢ as they are simply permutations of each
+   * other. Therefore, it suffices to only add the constraint for i ≥ j.
+   *  Moreover, notice that VᵢᵢᵀXVᵢᵢ = ⌈ Xᵢᵢ 0⌉ ⌊ 0   0⌋ is psd if and only if
+   *  Xᵢᵢ ≥ 0. This linear constraint is already implied by VᵢⱼᵀXVᵢⱼ is psd for
+   *  every i ≠ j and so is redundant. Therefore, we only add
+   * RotatedLorentzConeConstraints for i > j.
    *
    * This characterization can be found in Section 3.3 of "Sum of Squares Basis
    * Pursuit with Linear and Second Order Cone Programming" by Ahmadi and Hall
@@ -2692,9 +2704,9 @@ class MathematicalProgram {
    *  1/2 * n * (n-3) encoding VᵢⱼᵀXVᵢⱼ is psd
    *  @pydrake_mkdoc_identifier{expression}
    */
-    std::vector<Binding<RotatedLorentzConeConstraint>>
-    AddScaledDiagonallyDominantDualConeMatrixConstraint(
-        const Eigen::Ref<const MatrixX<symbolic::Expression>>& X);
+  std::vector<Binding<RotatedLorentzConeConstraint>>
+  AddScaledDiagonallyDominantDualConeMatrixConstraint(
+      const Eigen::Ref<const MatrixX<symbolic::Expression>>& X);
 
   /**
    * This is an overloaded variant of @ref add_sdd_dual

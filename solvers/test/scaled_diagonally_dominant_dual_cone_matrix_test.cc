@@ -137,7 +137,7 @@ GTEST_TEST(ScaledDiagonallyDominantMatrixDualConeConstraint,
   MathematicalProgram prog;
   auto X = prog.NewSymmetricContinuousVariables<3>();
   auto Y = prog.NewSymmetricContinuousVariables<3>();
-  MatrixX<symbolic::Expression> Z;
+  MatrixX<symbolic::Expression> Z(3, 3);
   Z = 2. * X + 3. * Y;
   auto GetZResult =
       [&Z](const MathematicalProgramResult& result) -> Eigen::MatrixXd {
@@ -233,13 +233,15 @@ GTEST_TEST(ScaledDiagonallyDominantMatrixDualConeConstraint,
   // The optimal solution should be A(i,j) = √(A(i,i)*A(j,j))
   auto TestIdx = [](int i, int j) {
     MathematicalProgram prog;
-    auto X = prog.NewSymmetricContinuousVariables<4>();
-    auto Y = prog.NewSymmetricContinuousVariables<4>();
-    MatrixX<symbolic::Expression> Z;
+    auto X = prog.NewSymmetricContinuousVariables<4>("X");
+    auto Y = prog.NewSymmetricContinuousVariables<4>("Y");
+    MatrixX<symbolic::Expression> Z(4, 4);
     Z = 2. * X + 3. * Y;
 
     prog.AddBoundingBoxConstraint(Eigen::Vector4d(1, 2, 3, 4),
                                   Eigen::Vector4d(1, 2, 3, 4), X.diagonal());
+    // Y is constrained to be 0 so we can control the value of Z.
+    prog.AddLinearEqualityConstraint(Y == Eigen::Matrix4d::Zero());
 
     auto dual_cone_constraints =
         prog.AddScaledDiagonallyDominantDualConeMatrixConstraint(X);
@@ -247,7 +249,7 @@ GTEST_TEST(ScaledDiagonallyDominantMatrixDualConeConstraint,
         prog.AddScaledDiagonallyDominantDualConeMatrixConstraint(Z);
     for (int r = 0; r < X.rows(); ++r) {
       for (int c = r + 1; c < X.cols(); ++c) {
-        if (r != i && c != j) {
+        if (r != i || c != j) {
           prog.AddLinearEqualityConstraint(X(r, c) == 0);
         }
       }
@@ -255,24 +257,24 @@ GTEST_TEST(ScaledDiagonallyDominantMatrixDualConeConstraint,
     prog.AddLinearCost(-X(i, j));
     MathematicalProgramResult result = Solve(prog);
     EXPECT_TRUE(result.is_success());
-
     Eigen::Matrix4d X_res = result.GetSolution(X);
     Eigen::Matrix4d Z_res =
         result.GetSolution(Z).unaryExpr([](const symbolic::Expression& x) {
           return x.Evaluate();
         });
-    unused(Z_res);
     Eigen::Matrix4d X_expected = Eigen::Matrix4d::Zero();
     X_expected.diagonal() = Eigen::Vector4d(1, 2, 3, 4);
     X_expected(i, j) = sqrt(X_expected(i, i) * X_expected(j, j));
+    X_expected(j, i) = X_expected(i, j);
     EXPECT_TRUE(CompareMatrices(X_res, X_expected, 1e-8));
-    EXPECT_TRUE(CompareMatrices(Z_res, X_expected, 1e-8));
+    // Y is constrained to be 0 so we expect the value of Z = 2*X.
+    EXPECT_TRUE(CompareMatrices(Z_res, 2 * X_expected, 1e-8));
     EXPECT_EQ(TestInDualConeByGenerators(X_res), -1);
-    EXPECT_EQ(TestInDualConeByGenerators(Z_res), -1);
+        EXPECT_EQ(TestInDualConeByGenerators(Z_res), -1);
   };
 
   for (int i = 0; i < 4; ++i) {
-    for (int j = j + 1; j < 4; ++j) {
+    for (int j = i + 1; j < 4; ++j) {
       TestIdx(i, j);
     }
   }

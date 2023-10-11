@@ -1174,6 +1174,9 @@ MathematicalProgram::AddPositiveDiagonallyDominantMatrixConstraint(
 
 namespace {
 
+// Constructs the matrices A, lb, ub for the linear constraint lb <= A * X <= ub
+// encoding that X is in DD* for a matrix of size n. Returns the tuple
+// (A, lb, ub).
 std::tuple<Eigen::MatrixXd, Eigen::VectorXd, Eigen::VectorXd>
 ConstructPositiveDiagonallyDominantDualConeConstraintMatricesForN(const int n) {
   // Return the index of Xᵢⱼ in the vector created by stacking the column of X
