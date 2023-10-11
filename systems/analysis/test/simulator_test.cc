@@ -2115,11 +2115,16 @@ GTEST_TEST(SimulatorTest, Initialization) {
           });
       DeclareInitializationEvent(pub_event);
 
-      DeclareInitializationEvent(DiscreteUpdateEvent<double>{});
-      DeclareInitializationEvent(UnrestrictedUpdateEvent<double>{});
+      DeclareInitializationDiscreteUpdateEvent(
+          &InitializationTestSystem::InitializationDiscreteUpdateHandler);
+      DeclareInitializationUnrestrictedUpdateEvent(
+          &InitializationTestSystem::InitializationUnrestrictedUpdateHandler);
 
-      DeclarePeriodicDiscreteUpdateNoHandler(0.1);
-      DeclarePerStepEvent(UnrestrictedUpdateEvent<double>{});
+      DeclarePeriodicDiscreteUpdateEvent(
+          0.1, 0.0,
+          &InitializationTestSystem::PeriodicDiscreteUpdateHandler);
+      DeclarePerStepUnrestrictedUpdateEvent(
+          &InitializationTestSystem::PerStepUnrestrictedUpdateHandler);
     }
 
     bool get_pub_init() const { return pub_init_; }
@@ -2140,28 +2145,28 @@ GTEST_TEST(SimulatorTest, Initialization) {
       pub_init_ = true;
     }
 
-    void DoCalcDiscreteVariableUpdates(
-        const Context<double>& context,
-        const std::vector<const DiscreteUpdateEvent<double>*>& events,
-        DiscreteValues<double>*) const final {
-      EXPECT_EQ(events.size(), 1);
-      if (events.front()->get_trigger_type() ==
-          TriggerType::kInitialization) {
-        EXPECT_EQ(context.get_time(), 0);
-        dis_update_init_ = true;
-      }
+    EventStatus InitializationDiscreteUpdateHandler(
+        const Context<double>& context, DiscreteValues<double>*) const {
+      EXPECT_EQ(context.get_time(), 0);
+      dis_update_init_ = true;
+      return EventStatus::Succeeded();
     }
 
-    void DoCalcUnrestrictedUpdate(
-        const Context<double>& context,
-        const std::vector<const UnrestrictedUpdateEvent<double>*>& events,
-        State<double>*) const final {
-      EXPECT_EQ(events.size(), 1);
-      if (events.front()->get_trigger_type() ==
-          TriggerType::kInitialization) {
-        EXPECT_EQ(context.get_time(), 0);
-        unres_update_init_ = true;
-      }
+    EventStatus PeriodicDiscreteUpdateHandler(const Context<double>&,
+                                              DiscreteValues<double>*) const {
+      return EventStatus::DidNothing();
+    }
+
+    EventStatus InitializationUnrestrictedUpdateHandler(
+        const Context<double>& context, State<double>*) const {
+      EXPECT_EQ(context.get_time(), 0);
+      unres_update_init_ = true;
+      return EventStatus::Succeeded();
+    }
+
+    EventStatus PerStepUnrestrictedUpdateHandler(const Context<double>& context,
+                                                 State<double>*) const {
+      return EventStatus::DidNothing();
     }
 
     mutable bool pub_init_{false};
