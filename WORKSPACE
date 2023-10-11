@@ -7,13 +7,6 @@ load("//tools/workspace:default.bzl", "add_default_workspace")
 
 add_default_workspace()
 
-# TODO(jwnimmer-tri) Before we enable Clarabel by default, we need to figure
-# out how to provide the Rust toolchains as part of `default.bzl`. For now,
-# we'll work around it by adding the toolchain definition to our WORKSPACE.
-load("@rules_rust//rust:repositories.bzl", "rust_register_toolchains")
-
-rust_register_toolchains()
-
 # Add some special heuristic logic for using CLion with Drake.
 load("//tools/clion:repository.bzl", "drake_clion_environment")
 

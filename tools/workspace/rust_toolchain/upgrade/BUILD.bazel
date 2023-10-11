@@ -1,0 +1,2 @@
+# Bazel still requires a BUILD file to run `bazel sync`, even though we don't
+# need to declare any targets.
