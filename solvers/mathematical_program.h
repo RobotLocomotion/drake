@@ -2669,15 +2669,15 @@ class MathematicalProgram {
    * @name scaled diagonally dominant dual cone constraint
    * Adds the constraint that a symmetric matrix is in the dual cone of the
    * scaled diagonally dominant matrices which is denoted SDD*. The set SDD* is
-   * an outer approximation to the PSD cone that is tighter than DD*. This
-   * follows from the fact that DD ⊆ SDD ⊆ PSD = PSD* ⊆ SDD* ⊆ DD*
+   * an SOCP outer approximation to the PSD cone that is tighter than DD*. This
+   * follows from the fact that DD ⊆ SDD ⊆ PSD = PSD* ⊆ SDD* ⊆ DD*.
    *
-   * A symmetric matrix X is in SDD* if and only if VᵢⱼᵀXVᵢⱼ is psd for all Vᵢⱼ,
-   * where Vᵢⱼ is the n x 2 matrix such that Vᵢⱼ(i, 0) = 1, V(j, 1) = 1, namely
-   Vᵢⱼ = [eᵢ eⱼ].
-   * This can be encoded using 1/2 * n * (n-3) RotatedLorentzCone constraints
-   which we return
-   * in this function.
+   * A symmetric matrix X is in SDD* if and only if all 2 x 2 principal minors
+   * of X are psd. This can be encoded by ensuring that VᵢⱼᵀXVᵢⱼ is psd for all
+   * Vᵢⱼ, where Vᵢⱼ is the n x 2 matrix such that Vᵢⱼ(i, 0) = 1, V(j, 1) = 1,
+   * namely Vᵢⱼ = [eᵢ eⱼ].
+   * This can be encoded using 1/2 * n * (n-1) RotatedLorentzCone constraints
+   * which we return in this function.
    *
    * This can be seen by noting that
    * VᵢⱼᵀXVᵢⱼ = ⌈ Xᵢᵢ Xᵢⱼ⌉
@@ -2714,7 +2714,7 @@ class MathematicalProgram {
    * @param X The matrix X. We will use 0.5(X+Xᵀ) as the "symmetric version" of
    * X.
    * @return A vector of RotatedLorentzConeConstraint constraints of length
-   * 1/2 * n * (n-3) encoding VᵢⱼᵀXVᵢⱼ is psd
+   * 1/2 * n * (n-1) encoding VᵢⱼᵀXVᵢⱼ is psd
    * @pydrake_mkdoc_identifier{variable}
    */
   std::vector<Binding<RotatedLorentzConeConstraint>>
