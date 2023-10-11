@@ -312,7 +312,6 @@ MODULE_SETTINGS = {
     "VTK::IOCore": {
         "srcs_glob_exclude": [
             # Skip code we don't need.
-            "**/*Codec*",
             "**/*Glob*",
             "**/*Particle*",
             "**/*Java*",
@@ -321,10 +320,13 @@ MODULE_SETTINGS = {
             "**/*LZ4*",
             # Skip this to avoid a dependency on lzma.
             "**/*LZMA*",
+            # Skip this to avoid a dependency on utf8.
+            "**/*Codec*",
         ],
         "module_deps_ignore": [
             "VTK::lz4",
             "VTK::lzma",
+            "VTK::utf8",
         ],
     },
     "VTK::IOExport": {
@@ -347,6 +349,7 @@ MODULE_SETTINGS = {
             "VTK::RenderingFreeType",
             "VTK::RenderingVtkJS",
             "VTK::libharu",
+            "VTK::utf8",
         ],
     },
     "VTK::IOGeometry": {
@@ -631,11 +634,6 @@ MODULE_SETTINGS = {
         },
         "srcs_glob_extra": [
             "ThirdParty/pugixml/**/*.cpp",
-        ],
-    },
-    "VTK::utf8": {
-        "cmake_undefines": [
-            "VTK_MODULE_USE_EXTERNAL_vtkutf8",
         ],
     },
 }
