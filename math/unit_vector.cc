@@ -1,7 +1,6 @@
 #include "drake/math/unit_vector.h"
 
 #include <cmath>
-#include <limits>
 #include <string>
 #include <utility>
 
@@ -14,17 +13,12 @@ namespace math {
 namespace internal {
 
 namespace {
-// Checks if ‖unit_vector‖ is within 2 bits of 1.0, where 2 bits is
-// (2² = 4) * std::numeric_limits<double>::epsilon() ≈ 8.88E-16.
+// Checks if ‖unit_vector‖ is within kTolerance_unit_vector_norm of 1.0.
 // @param[in] unit_vector a vector which is allegedly a unit vector.
-// @retval {‖unit_vector‖², is_ok_unit_vector} as a pair. The return value is
-// {‖unit_vector‖², true} for ‖unit_vector‖ within 2 bits of 1, otherwise return
-// {‖unit_vector‖², false}.
+// @retval {‖unit_vector‖², is_ok_unit_vector} as pair. If ‖unit_vector‖ is OK,
+// returns {‖unit_vector‖², true}, otherwise returns {‖unit_vector‖², false}.
 // @note: When type T is symbolic::Expression, this function is a no-op that
 // returns {1.0, {true}}.
-// @note The use of 2 bits was determined empirically, is well within the
-// tolerance achieved by normalizing a vast range of non-zero vectors, and
-// seems to provide a valid RotationMatrix() (see RotationMatrix::IsValid()).
 template<typename T>
 std::pair<T, bool> IsUnitVector(const Vector3<T> &unit_vector) {
   if constexpr (scalar_predicate<T>::is_bool) {
@@ -37,13 +31,14 @@ std::pair<T, bool> IsUnitVector(const Vector3<T> &unit_vector) {
     // 𝐯⋅𝐯 ≤ 1 + 2 ε + ε²  and 𝐯⋅𝐯 ≥ 1 - 2 ε + ε². Since ε² ≪ 2 ε, this gives
     // 𝐯⋅𝐯 - 1 ≤ 2 ε   and 𝐯⋅𝐯 - 1 ≥ -2 ε  or  |𝐯⋅𝐯 − 1| ≤ 2 ε
     // -------------------------------------------------------------
-    // Hence the following test that requires √ is replaced by an efficient one.
-    // constexpr double kTolerance = 4 * std::numeric_limits<double>::epsilon();
-    // is_ok_unit_vector = (abs(unit_vector.norm() - 1) <=  Tolerance;
+    // Hence the following test with norm() that uses an extra √, e.g., as
+    // sqrt(squaredNorm()), is replaced by one that only uses squaredNorm().
+    // is_ok_unit_vector =
+    //     (abs(unit_vector.norm() - 1) <=  kTolerance_unit_vector_norm;
     // -------------------------------------------------------------
     using std::abs;
     using std::isfinite;
-    constexpr double kTolerance2 = 8 * std::numeric_limits<double>::epsilon();
+    constexpr double kTolerance2 = 2 * kTolerance_unit_vector_norm;
     const T uvec_squared = unit_vector.squaredNorm();
     const bool is_ok_unit_vector = isfinite(uvec_squared) &&
         abs(uvec_squared - 1) <= kTolerance2;
@@ -61,7 +56,7 @@ std::pair<T, bool> IsUnitVector(const Vector3<T> &unit_vector) {
 // message or to write to a log file.
 // @pre ‖bad_unit_vector‖ is not a valid unit vector.
 // @note: This helper function only creates an error message. It does not verify
-// ‖bad_unit_vector‖ ≠ 1. It is used by ThrowIfNotUnitVector().
+// ‖bad_unit_vector‖ ≠ 1.
 template <typename T>
 std::string ErrorMessageNotUnitVector(const Vector3<T>& bad_unit_vector,
                                       std::string_view function_name) {
