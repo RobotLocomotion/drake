@@ -117,6 +117,7 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "conex_internal",
     "drake_visualizer",
     "gflags",
+    "libjpeg_turbo_internal",
     "optitrack_driver",
 ]] + select({
     "//conditions:default": ["@csdp_internal//:install"],

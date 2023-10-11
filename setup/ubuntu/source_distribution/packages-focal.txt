@@ -10,13 +10,13 @@ libexpat1-dev
 libgl-dev
 libglib2.0-dev
 libglx-dev
-libjpeg-turbo8-dev
 liblapack-dev
 libmumps-seq-dev
 libopengl-dev
 libtinyxml-dev
 libtool
 libx11-dev
+nasm
 ocl-icd-opencl-dev
 opencl-headers
 openssh-client

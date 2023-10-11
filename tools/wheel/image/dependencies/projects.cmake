@@ -19,12 +19,6 @@ set(bzip2_url "https://sourceware.org/pub/bzip2/bzip2-${bzip2_version}.tar.gz")
 set(bzip2_md5 "67e051268d0c475ea773822f7500d0e5")
 list(APPEND ALL_PROJECTS bzip2)
 
-# libjpeg-turbo
-set(libjpeg-turbo_version 2.1.4)
-set(libjpeg-turbo_url "https://github.com/libjpeg-turbo/libjpeg-turbo/archive/refs/tags/${libjpeg-turbo_version}.tar.gz")
-set(libjpeg-turbo_md5 "357dc26a802c34387512a42697846d16")
-list(APPEND ALL_PROJECTS libjpeg-turbo)
-
 # eigen
 if(APPLE)
     # This version mimics homebrew.

@@ -15,7 +15,6 @@ libglx0
 libgomp1
 libhdf5-103
 libjchart2d-java
-libjpeg-turbo8
 libjsoncpp1
 liblapack3
 libmumps-seq-5.2.1

@@ -2,5 +2,6 @@
 # Drake itself. We assume that Drake's own prerequisites are already installed.
 brew 'bash'
 brew 'coreutils'
+brew 'nasm'
 brew 'ninja'
 brew 'yasm'
