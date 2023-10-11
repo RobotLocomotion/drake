@@ -1,5 +1,6 @@
 load(
     "//tools/skylark:drake_cc.bzl",
+    "drake_cc_binary",
     "drake_cc_googletest",
     "drake_cc_library",
     "drake_cc_package_library",
@@ -834,6 +835,26 @@ drake_cc_library(
         "@vtk_internal//:vtkCommonCore",
         "@vtk_internal//:vtkCommonDataModel",
         "@vtk_internal//:vtkIOLegacy",
+    ],
+)
+
+drake_cc_binary(
+    name = "zero_simplex_manual_test",
+    testonly = 1,
+    srcs = ["test/zero_simplex_manual_test.cc"],
+    add_test_rule = 1,
+    data = [
+        "//geometry:test_vtk_files",
+    ],
+    test_rule_args = [
+        "--expect_fail",
+        "geometry/test/one_tetrahedron.vtk",
+    ],
+    deps = [
+        ":detect_zero_simplex",
+        ":vtk_to_volume_mesh",
+        "//common:add_text_logging_gflags",
+        "@gflags",
     ],
 )
 
