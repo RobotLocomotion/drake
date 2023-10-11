@@ -228,7 +228,7 @@ namespace solvers {
    <a href="https://docs.mosek.com/latest/licensing/client-setup.html">upstream documentation</a>)
  - <b>OMP_NUM_THREADS</b> (see
    <a href="https://www.openmp.org/spec-html/5.0/openmpse50.html">upstream documentation</a>)
- - <b>\ref drake::multibody::PackageMap::PopulateFromRosPackagePath() "ROS_PACKAGE_PATH"</b> (see also
+ - <b>\ref drake::PackageMap::PopulateFromRosPackagePath() "ROS_PACKAGE_PATH"</b> (see also
    <a href="http://wiki.ros.org/ROS/EnvironmentVariables">upstream documentation)</a>
  - <b>RUNFILES_DIR</b> (see
    <a href="https://github.com/bazelbuild/bazel/blob/6.1.1/tools/python/runfiles/runfiles.py#L77">upstream documentation)</a>

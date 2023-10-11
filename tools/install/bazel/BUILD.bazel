@@ -36,7 +36,7 @@ drake_py_binary(
     srcs = ["repo_gen.py"],
     data = [
         "repo_template.bzl",
-        "//multibody/parsing:drake_models.json",
+        "//common:drake_models.json",
     ],
     deps = [
         "@bazel_tools//tools/python/runfiles",

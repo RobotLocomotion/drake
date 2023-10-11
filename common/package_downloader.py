@@ -1,5 +1,5 @@
 """Downloads, verifies, and extracts a remote archive file. Do not run this
-program by hand; it is used by drake/multibody/parsing/package_map.cc to fetch
+program by hand; it is used by drake/common/package_map.cc to fetch
 remote packages on demand into a per-user local cache (e.g., ~/.cache/...).
 
 For example, with an output_dir of `~/.cache/drake/package_map/foo` this

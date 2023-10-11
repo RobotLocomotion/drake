@@ -9,12 +9,12 @@
 #include <sdf/Visual.hh>
 
 #include "drake/common/diagnostic_policy.h"
+#include "drake/common/package_map.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/parsing/detail_sdf_diagnostic.h"
-#include "drake/multibody/parsing/package_map.h"
 #include "drake/multibody/plant/coulomb_friction.h"
 
 namespace drake {

@@ -4,9 +4,9 @@
 #include <string>
 #include <vector>
 
+#include "drake/common/package_map.h"
 #include "drake/multibody/parsing/detail_common.h"
 #include "drake/multibody/parsing/detail_parsing_workspace.h"
-#include "drake/multibody/parsing/package_map.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
 

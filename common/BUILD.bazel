@@ -9,9 +9,14 @@ load(
 load(
     "//tools/skylark:drake_py.bzl",
     "drake_py_binary",
+    "drake_py_library",
     "drake_py_unittest",
 )
-load("//tools/install:install.bzl", "install")
+load(
+    "//tools/install:install.bzl",
+    "install",
+    "install_files",
+)
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
@@ -44,6 +49,7 @@ drake_cc_package_library(
         ":name_value",
         ":network_policy",
         ":nice_type_name",
+        ":package_map",
         ":parallelism",
         ":pointer_cast",
         ":polynomial",
@@ -392,6 +398,47 @@ drake_cc_library(
     ],
     deps = [
         ":nice_type_name_override_header",
+    ],
+)
+
+drake_py_library(
+    name = "package_downloader_lib",
+    testonly = True,
+    srcs = ["package_downloader.py"],
+)
+
+genrule(
+    name = "drake_models_json",
+    srcs = ["@drake_models//:drake_repository_metadata.json"],
+    outs = ["drake_models.json"],
+    cmd = "cp $< $@",
+    visibility = ["//visibility:public"],
+)
+
+drake_cc_library(
+    name = "package_map",
+    srcs = ["package_map.cc"],
+    hdrs = ["package_map.h"],
+    data = [
+        ":drake_models.json",
+        ":package_downloader.py",
+        "//:package.xml",
+        "@drake_models//:package.xml",
+    ],
+    visibility = ["//visibility:public"],
+    interface_deps = [
+        ":essential",
+        ":name_value",
+    ],
+    deps = [
+        ":find_cache",
+        ":find_resource",
+        ":find_runfiles",
+        ":network_policy",
+        ":scope_exit",
+        "//common/yaml",
+        "@picosha2_internal//:picosha2",
+        "@tinyxml2_internal//:tinyxml2",
     ],
 )
 
@@ -1020,6 +1067,47 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "package_map_test",
+    data = [
+        "//multibody/parsing:test_models",
+    ],
+    deps = [
+        ":find_resource",
+        ":package_map",
+        ":scope_exit",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_py_unittest(
+    name = "package_downloader_test",
+    deps = [
+        ":package_downloader_lib",
+    ],
+)
+
+drake_py_unittest(
+    name = "package_downloader_stress_test",
+    data = ["package_downloader.py"],
+    tags = ["cpu:8"],
+)
+
+drake_cc_googletest(
+    name = "package_map_remote_test",
+    data = [
+        "//multibody/parsing:test_models",
+    ],
+    deps = [
+        ":find_cache",
+        ":find_resource",
+        ":package_map",
+        ":scope_exit",
+        "//common/test_utilities:expect_throws_message",
+        "@picosha2_internal//:picosha2",
+    ],
+)
+
+drake_cc_googletest(
     name = "parallelism_test",
     num_threads = 2,
     deps = [
@@ -1193,6 +1281,16 @@ drake_cc_googletest(
         ":extract_double",
         "//common/symbolic:expression",
     ],
+)
+
+install_files(
+    name = "install_package_dependencies",
+    dest = "share/drake/multibody/parsing",
+    files = [
+        "drake_models.json",
+        "package_downloader.py",
+    ],
+    visibility = ["//visibility:public"],
 )
 
 add_lint_tests(
