@@ -17,6 +17,7 @@ libopengl-dev
 libtinyxml-dev
 libtool
 libx11-dev
+nasm
 ocl-icd-opencl-dev
 opencl-headers
 openssh-client
