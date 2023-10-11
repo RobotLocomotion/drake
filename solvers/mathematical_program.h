@@ -2701,7 +2701,7 @@ class MathematicalProgram {
    * X.
    * @pre X(i, j) should be a linear expression of decision variables.
    * @return A vector of RotatedLorentzConeConstraint constraints of length
-   *  1/2 * n * (n-3) encoding VᵢⱼᵀXVᵢⱼ is psd
+   *  1/2 * n * (n-1) encoding VᵢⱼᵀXVᵢⱼ is psd
    *  @pydrake_mkdoc_identifier{expression}
    */
   std::vector<Binding<RotatedLorentzConeConstraint>>
