@@ -11,7 +11,7 @@ namespace internal {
 
 // Tolerance for ‖unit_vector‖ is 3 bits (= 8ε ≈ 1.78E-15) of 1.0, where
 // 3 bits = 2³ε = 8ε and ε = std::numeric_limits<double>::epsilon().
-// @note The use of 2 bits was determined empirically, is well within the
+// @note The use of 3 bits was determined empirically, is well within the
 // tolerance achieved by normalizing a vast range of non-zero vectors, and
 // seems to provide a valid RotationMatrix() (see RotationMatrix::IsValid()).
 constexpr double kTolerance_unit_vector_norm =
