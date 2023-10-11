@@ -1,0 +1,73 @@
+[vtk] Use a custom hidden inline namespace for vtkpugixml
+
+This situation is unique to Drake, so we won't to upstream this patch.
+
+--- ThirdParty/pugixml/vtkpugixml/src/pugixml.hpp
++++ ThirdParty/pugixml/vtkpugixml/src/pugixml.hpp
+@@ -142,6 +142,7 @@
+ #	define PUGIXML_CHAR char
+ #endif
+ 
++inline namespace drake_vendor {
+ namespace pugi
+ {
+ 	// Character type used for all internal storage and operations; depends on PUGIXML_WCHAR_MODE
+@@ -1456,6 +1459,7 @@ namespace pugi
+ 	allocation_function PUGIXML_FUNCTION get_memory_allocation_function();
+ 	deallocation_function PUGIXML_FUNCTION get_memory_deallocation_function();
+ }
++}  // namespace drake_vendor
+ 
+ #if !defined(PUGIXML_NO_STL) && (defined(_MSC_VER) || defined(__ICC))
+ namespace std
+
+--- ThirdParty/pugixml/vtkpugixml/src/pugixml.cpp
++++ ThirdParty/pugixml/vtkpugixml/src/pugixml.cpp
+@@ -1089,6 +1089,7 @@ namespace pugi
+ 	};
+ }
+ #else
++inline namespace drake_vendor {
+ namespace pugi
+ {
+ 	struct xml_attribute_struct
+@@ -1129,6 +1130,7 @@ namespace pugi
+ 		xml_attribute_struct* first_attribute;
+ 	};
+ }
++}  // namespace drake_vendor
+ #endif
+ 
+ PUGI__NS_BEGIN
+@@ -5067,6 +5069,7 @@ PUGI__NS_BEGIN
+ 	};
+ PUGI__NS_END
+ 
++inline namespace drake_vendor {
+ namespace pugi
+ {
+ 	PUGI__FN xml_writer_file::xml_writer_file(void* file_): file(file_)
+@@ -7351,6 +7354,7 @@ namespace pugi
+ 		return impl::xml_memory::deallocate;
+ 	}
+ }
++} // namespace drake_vendor
+ 
+ #if !defined(PUGIXML_NO_STL) && (defined(_MSC_VER) || defined(__ICC))
+ namespace std
+@@ -12162,6 +12166,7 @@ PUGI__NS_BEGIN
+ 	}
+ PUGI__NS_END
+ 
++inline namespace drake_vendor {
+ namespace pugi
+ {
+ #ifndef PUGIXML_NO_EXCEPTIONS
+@@ -12944,6 +12949,7 @@ namespace pugi
+ 		return query.evaluate_node(*this);
+ 	}
+ }
++}  // namespace drake_vendor
+ 
+ #endif
+ 
