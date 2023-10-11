@@ -106,6 +106,8 @@ class VectorSystem : public LeafSystem<T> {
           kUseDefaultName, output_size,
           &VectorSystem::CalcVectorOutput, std::move(prerequisites_of_calc));
     }
+    this->DeclareForcedDiscreteUpdateEvent(
+        &VectorSystem<T>::CalcDiscreteUpdate);
   }
 
   /// Causes the vector-valued input port to become up-to-date, and returns
@@ -167,36 +169,6 @@ class VectorSystem : public LeafSystem<T> {
     // Delegate to subclass.
     DoCalcVectorTimeDerivatives(context, input_block, state_block,
                                 &derivatives_block);
-  }
-
-  /// Converts the parameters to Eigen::VectorBlock form, then delegates to
-  /// DoCalcVectorDiscreteVariableUpdates().
-  void DoCalcDiscreteVariableUpdates(
-      const Context<T>& context,
-      const std::vector<const DiscreteUpdateEvent<T>*>&,
-      DiscreteValues<T>* discrete_state) const final {
-    // Short-circuit when there's no work to do.
-    if (discrete_state->num_groups() == 0) {
-      return;
-    }
-
-    const VectorX<T>& input_vector = EvalVectorInput(context);
-    const auto input_block = input_vector.head(input_vector.rows());
-
-    // Obtain the block form of xd before the update (i.e., the prior state).
-    DRAKE_ASSERT(context.has_only_discrete_state());
-    const VectorX<T>& state_vector = context.get_discrete_state(0).value();
-    const Eigen::VectorBlock<const VectorX<T>> state_block =
-        state_vector.head(state_vector.rows());
-
-    // Obtain the block form of xd after the update (i.e., the next state).
-    DRAKE_ASSERT(discrete_state != nullptr);
-    Eigen::VectorBlock<VectorX<T>> discrete_update_block =
-        discrete_state->get_mutable_value();
-
-    // Delegate to subclass.
-    DoCalcVectorDiscreteVariableUpdates(context, input_block, state_block,
-                                        &discrete_update_block);
   }
 
   /// Converts the parameters to Eigen::VectorBlock form, then delegates to
@@ -309,6 +281,20 @@ class VectorSystem : public LeafSystem<T> {
     DRAKE_THROW_UNLESS(derivatives->size() == 0);
   }
 
+  DRAKE_DEPRECATED("2024-02-01",
+      "Use DeclarePeriodicDiscreteUpdate() instead.")
+  void DeclarePeriodicDiscreteUpdateNoHandler(double period_sec,
+                                              double offset_sec = 0.0) {
+    this->DeclarePeriodicDiscreteUpdate(period_sec, offset_sec);
+  }
+
+  /// Declares a discrete update rate. You must override
+  /// DoCalcVectorDiscreteVariableUpdates() to handle the update.
+  void DeclarePeriodicDiscreteUpdate(double period_sec, double offset_sec) {
+    this->DeclarePeriodicDiscreteUpdateEvent(
+        period_sec, offset_sec, &VectorSystem<T>::CalcDiscreteUpdate);
+  }
+
   /// Provides a convenience method for %VectorSystem subclasses.  This
   /// method performs the same logical operation as
   /// System::DoCalcDiscreteVariableUpdates but provides VectorBlocks to
@@ -352,6 +338,11 @@ class VectorSystem : public LeafSystem<T> {
     DRAKE_THROW_UNLESS(num_discrete_groups <= 1);
     DRAKE_THROW_UNLESS((continuous_size == 0) || (num_discrete_groups == 0));
   }
+
+  // Converts the parameters to Eigen::VectorBlock form, then delegates to
+  // DoCalcVectorDiscreteVariableUpdates().
+  EventStatus CalcDiscreteUpdate(const Context<T>& context,
+                                 DiscreteValues<T>* discrete_state) const;
 };
 
 }  // namespace systems

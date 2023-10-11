@@ -143,6 +143,7 @@ vtk_internal_repository = repository_rule(
         ),
         "patches": attr.label_list(
             default = [
+                "@drake//tools/workspace/vtk_internal:patches/common_core_noutf8.patch",  # noqa
                 "@drake//tools/workspace/vtk_internal:patches/common_core_version.patch",  # noqa
                 "@drake//tools/workspace/vtk_internal:patches/common_core_vs_data_model_cycle.patch",  # noqa
                 "@drake//tools/workspace/vtk_internal:patches/common_core_warnings.patch",  # noqa
@@ -150,6 +151,9 @@ vtk_internal_repository = repository_rule(
                 "@drake//tools/workspace/vtk_internal:patches/io_image_formats.patch",  # noqa
                 "@drake//tools/workspace/vtk_internal:patches/io_legacy_data_reader_uninit.patch",  # noqa
                 "@drake//tools/workspace/vtk_internal:patches/rendering_opengl2_nobacktrace.patch",  # noqa
+                "@drake//tools/workspace/vtk_internal:patches/vtkdoubleconversion_hidden.patch",  # noqa
+                "@drake//tools/workspace/vtk_internal:patches/vtkglew_hidden.patch",  # noqa
+                "@drake//tools/workspace/vtk_internal:patches/vtkpugixml_hidden.patch",  # noqa
                 "@drake//tools/workspace/vtk_internal:patches/vtksys_hidden.patch",  # noqa
             ],
         ),

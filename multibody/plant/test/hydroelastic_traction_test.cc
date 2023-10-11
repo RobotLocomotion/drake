@@ -206,12 +206,12 @@ class MultibodyPlantHydroelasticTractionTests
 
   // Sets all kinematic quantities (contact surface will be left untouched).
   // Note: see Data constructor for description of these parameters.
-  void set_calculator_data(
-      const RigidTransform<double>& X_WA, const RigidTransform<double>& X_WB,
-      const SpatialVelocity<double>& V_WA,
-      const SpatialVelocity<double>& V_WB) {
-    calculator_data_ = std::make_unique<HydroelasticTractionCalculator<double>::
-        Data>(
+  void set_calculator_data(const RigidTransform<double>& X_WA,
+                           const RigidTransform<double>& X_WB,
+                           const SpatialVelocity<double>& V_WA,
+                           const SpatialVelocity<double>& V_WB) {
+    calculator_data_ =
+        std::make_unique<HydroelasticTractionCalculator<double>::Data>(
             X_WA, X_WB, V_WA, V_WB, &contact_surface());
   }
 
@@ -279,20 +279,21 @@ class MultibodyPlantHydroelasticTractionTests
   }
 
   void SetBoxTranslationalVelocity(const Vector3<double>& v) {
-    plant_->SetFreeBodySpatialVelocity(plant_context_,
-        plant_->GetBodyByName("box"),
+    plant_->SetFreeBodySpatialVelocity(
+        plant_context_, plant_->GetBodyByName("box"),
         SpatialVelocity<double>(Vector3<double>::Zero(), v));
   }
 
   void UpdateCalculatorData() {
     // Get the bodies that the two geometries are affixed to. We'll call these
     // A and B.
-    const auto& query_object = plant_->get_geometry_query_input_port().
-        template Eval<geometry::QueryObject<double>>(*plant_context_);
-    const geometry::FrameId frameM_id = query_object.inspector().GetFrameId(
-        contact_surface_->id_M());
-    const geometry::FrameId frameN_id = query_object.inspector().GetFrameId(
-        contact_surface_->id_N());
+    const auto& query_object =
+        plant_->get_geometry_query_input_port()
+            .template Eval<geometry::QueryObject<double>>(*plant_context_);
+    const geometry::FrameId frameM_id =
+        query_object.inspector().GetFrameId(contact_surface_->id_M());
+    const geometry::FrameId frameN_id =
+        query_object.inspector().GetFrameId(contact_surface_->id_N());
     const Body<double>& bodyA = *plant_->GetBodyFromFrameId(frameM_id);
     const Body<double>& bodyB = *plant_->GetBodyFromFrameId(frameN_id);
 
@@ -303,18 +304,18 @@ class MultibodyPlantHydroelasticTractionTests
         plant_->EvalBodyPoseInWorld(*plant_context_, bodyB);
 
     // Get the spatial velocities for the two bodies (at the body frames).
-    const SpatialVelocity<double> V_WA = plant_->EvalBodySpatialVelocityInWorld(
-        *plant_context_, bodyA);
-    const SpatialVelocity<double> V_WB = plant_->EvalBodySpatialVelocityInWorld(
-        *plant_context_, bodyB);
+    const SpatialVelocity<double> V_WA =
+        plant_->EvalBodySpatialVelocityInWorld(*plant_context_, bodyA);
+    const SpatialVelocity<double> V_WB =
+        plant_->EvalBodySpatialVelocityInWorld(*plant_context_, bodyB);
 
     // (Re)-initialize the traction calculator data.
     set_calculator_data(X_WA, X_WB, V_WA, V_WB);
   }
 
   void ComputeSpatialForcesAtBodyOriginsFromHydroelasticModel(
-      double dissipation, double mu_coulomb,
-      SpatialForce<double>* F_Ao_W, SpatialForce<double>* F_Bo_W) {
+      double dissipation, double mu_coulomb, SpatialForce<double>* F_Ao_W,
+      SpatialForce<double>* F_Bo_W) {
     UpdateCalculatorData();
 
     SpatialForce<double> F_Ac_W;
@@ -371,8 +372,8 @@ class MultibodyPlantHydroelasticTractionTests
   systems::Context<double>* plant_context_;
   std::unique_ptr<ContactSurface<double>> contact_surface_;
   HydroelasticTractionCalculator<double> traction_calculator_;
-  std::unique_ptr<
-      HydroelasticTractionCalculator<double>::Data> calculator_data_;
+  std::unique_ptr<HydroelasticTractionCalculator<double>::Data>
+      calculator_data_;
 };
 
 // Tests the traction calculation without any frictional or dissipation
@@ -412,8 +413,8 @@ TEST_P(MultibodyPlantHydroelasticTractionTests, VanillaTraction) {
 
   // The translational components of the two wrenches should be equal and
   // opposite.
-  EXPECT_NEAR((Ft_Bo_W.translational() + Ft_Ao_W.translational()).norm(),
-      0, tol());
+  EXPECT_NEAR((Ft_Bo_W.translational() + Ft_Ao_W.translational()).norm(), 0,
+              tol());
 }
 
 // Tests the traction calculation with friction but without dissipation
@@ -469,8 +470,8 @@ TEST_P(MultibodyPlantHydroelasticTractionTests, TractionWithFriction) {
 
   // The translational components of the two wrenches should be equal and
   // opposite.
-  EXPECT_NEAR((Ft_Bo_W.translational() + Ft_Ao_W.translational()).norm(),
-      0, tol());
+  EXPECT_NEAR((Ft_Bo_W.translational() + Ft_Ao_W.translational()).norm(), 0,
+              tol());
 }
 
 // Tests the traction calculation with dissipation tractions but without
@@ -484,15 +485,15 @@ TEST_P(MultibodyPlantHydroelasticTractionTests, TractionWithDissipation) {
   const math::RotationMatrix<double>& R_WY = GetPose().rotation();
   const double separating_velocity = -1.0;
   SetBoxTranslationalVelocity(R_WY *
-      Vector3<double>(0, 0, separating_velocity));
+                              Vector3<double>(0, 0, separating_velocity));
 
   // Compute the magnitude of the normal traction. Note that the damping
   // constant at each point will be field value * dissipation coefficient.
-  const double field_value = 0.5;  // in N/m².
+  const double field_value = 0.5;              // in N/m².
   const double c = field_value * dissipation;  // N/m² * s/m = Ns/m³.
   const double damping_traction_magnitude = c * -separating_velocity;  // N/m².
-  const double normal_traction_magnitude = field_value +
-      damping_traction_magnitude;
+  const double normal_traction_magnitude =
+      field_value + damping_traction_magnitude;
 
   // Compute the spatial tractions at the origins of the body frames.
   multibody::SpatialForce<double> Ft_Ao_W, Ft_Bo_W;
@@ -525,8 +526,8 @@ TEST_P(MultibodyPlantHydroelasticTractionTests, TractionWithDissipation) {
 
   // The translational components of the two wrenches should be equal and
   // opposite.
-  EXPECT_NEAR((Ft_Bo_W.translational() + Ft_Ao_W.translational()).norm(),
-      0, tol());
+  EXPECT_NEAR((Ft_Bo_W.translational() + Ft_Ao_W.translational()).norm(), 0,
+              tol());
 }
 
 // Tests the traction calculation over an entire contact patch without
@@ -606,7 +607,7 @@ TEST_P(MultibodyPlantHydroelasticTractionTests, FrictionalTractionOverPatch) {
 // Tests the traction calculation over an entire contact patch without
 // friction butwith dissipation effecting the traction.
 TEST_P(MultibodyPlantHydroelasticTractionTests,
-    TractionOverPatchWithDissipation) {
+       TractionOverPatchWithDissipation) {
   const double dissipation = 1.0;  // Units: s/m.
   const double mu_coulomb = 0.0;
 
@@ -615,7 +616,7 @@ TEST_P(MultibodyPlantHydroelasticTractionTests,
   const math::RotationMatrix<double>& R_WY = GetPose().rotation();
   const double separating_velocity = -1.0;
   SetBoxTranslationalVelocity(R_WY *
-      Vector3<double>(0, 0, separating_velocity));
+                              Vector3<double>(0, 0, separating_velocity));
 
   // Compute the spatial forces at the origins of the body frames.
   multibody::SpatialForce<double> F_Ao_W, F_Bo_W;
@@ -628,11 +629,11 @@ TEST_P(MultibodyPlantHydroelasticTractionTests,
 
   // Compute the magnitude of the normal traction. Note that the damping
   // constant at each point will be field value * dissipation coefficient.
-  const double field_value = 0.5;  // in N/m².
+  const double field_value = 0.5;              // in N/m².
   const double c = field_value * dissipation;  // N/m² * s/m = Ns/m³.
   const double damping_traction_magnitude = c * -separating_velocity;  // N/m².
-  const double normal_traction_magnitude = field_value +
-      damping_traction_magnitude;
+  const double normal_traction_magnitude =
+      field_value + damping_traction_magnitude;
 
   // Check the spatial force. We know that geometry M is the halfspace,
   // so we'll check the spatial force for geometry N instead.
@@ -837,7 +838,7 @@ class HydroelasticReportingTests
     : public ::testing::TestWithParam<RigidTransform<double>> {
  public:
   const ContactSurface<double>& contact_surface() const {
-      return *contact_surface_;
+    return *contact_surface_;
   }
 
   // Returns the default numerical tolerance.
@@ -893,10 +894,10 @@ class HydroelasticReportingTests
     // along the normal to the contact surface. That will let us verify that the
     // velocity at the centroid of the contact surface is zero.
     const double spin_rate = 1.0;  // m/s.
-    const SpatialVelocity<double> V_YA(
-        Vector3<double>(0, 0, spin_rate), Vector3<double>::Zero());
-    const SpatialVelocity<double> V_YB(
-        Vector3<double>::Zero(), Vector3<double>::Zero());
+    const SpatialVelocity<double> V_YA(Vector3<double>(0, 0, spin_rate),
+                                       Vector3<double>::Zero());
+    const SpatialVelocity<double> V_YB(Vector3<double>::Zero(),
+                                       Vector3<double>::Zero());
 
     // Convert all quantities to the world frame.
     const RigidTransform<double> X_WA = X_WY * X_YA;
@@ -905,8 +906,8 @@ class HydroelasticReportingTests
     const SpatialVelocity<double> V_WB = X_WY.rotation() * V_YB;
 
     // Set the calculator data.
-    calculator_data_ = std::make_unique<
-        HydroelasticTractionCalculator<double>::Data>(
+    calculator_data_ =
+        std::make_unique<HydroelasticTractionCalculator<double>::Data>(
             X_WA, X_WB, V_WA, V_WB, contact_surface_.get());
   }
 
@@ -920,10 +921,8 @@ class HydroelasticReportingTests
 // to allow changing the absolute (but not relative) poses of the two bodies.
 const RigidTransform<double> poses[] = {
     RigidTransform<double>::Identity(),
-    RigidTransform<double>(
-        math::RotationMatrix<double>::MakeYRotation(M_PI_4),
-        drake::Vector3<double>(1, 2, 3))
-};
+    RigidTransform<double>(math::RotationMatrix<double>::MakeYRotation(M_PI_4),
+                           drake::Vector3<double>(1, 2, 3))};
 
 const geometry::HydroelasticContactRepresentation representations[] = {
     geometry::HydroelasticContactRepresentation::kTriangle,
@@ -960,12 +959,12 @@ HydroelasticContactInfo<double> CreateContactInfo(
   // pose; pose and geometry IDs are irrelevant for this test.
   GeometryId arbitrary_id = GeometryId::get_new_id();
   *contact_surface = CreateContactSurface(arbitrary_id, arbitrary_id,
-          RigidTransform<double>::Identity());
+                                          RigidTransform<double>::Identity());
 
   // Create the HydroelasticContactInfo using particular spatial force and
   // quadrature point data.
-  std::vector<HydroelasticQuadraturePointData<double>>
-      quadrature_point_data = GetQuadraturePointData();
+  std::vector<HydroelasticQuadraturePointData<double>> quadrature_point_data =
+      GetQuadraturePointData();
   return HydroelasticContactInfo<double>(contact_surface->get(),
                                          MakeSpatialForce(),
                                          std::move(quadrature_point_data));

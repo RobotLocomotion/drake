@@ -10,6 +10,7 @@ gcc
 g++
 gfortran
 libgfortran-7-dev
+nasm
 yasm
 # Clang (for mkdoc).
 libclang-12-dev

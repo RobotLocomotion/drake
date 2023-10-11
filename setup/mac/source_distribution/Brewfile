@@ -2,3 +2,4 @@
 # vi: set ft=ruby :
 
 brew 'bazelisk'
+brew 'nasm'
