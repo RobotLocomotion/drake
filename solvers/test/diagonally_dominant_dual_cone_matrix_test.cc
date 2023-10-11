@@ -15,11 +15,11 @@ int TestIn2by2DiagonallyDominantDualCone(const Eigen::Matrix2d& X) {
   // These are the extreme rays of the diagonally dominant matrices of size 2
   // (minus the extreme points with the same parity).
   Eigen::MatrixXd extreme_rays(2, 4);
-  extreme_rays << Eigen::Matrix2d::Identity(), Eigen::Vector2d::Ones(),
+  extreme_rays << Eigen::Matrix2d::Identity(2,2), Eigen::Vector2d::Ones(),
       Eigen::Vector2d(1, -1);
 
-  for (int c = 0; c < extreme_rays.size(); ++c) {
-    if (extreme_rays.col(c).transpose() * X * extreme_rays.col(c) < 0) {
+  for (int c = 0; c < extreme_rays.cols(); ++c) {
+    if (extreme_rays.col(c).transpose() * X * extreme_rays.col(c)< 0) {
       return c;
     }
   }
