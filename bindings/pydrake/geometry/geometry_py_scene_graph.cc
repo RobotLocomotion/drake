@@ -242,13 +242,39 @@ void DoScalarDependentDefinitions(py::module m, T) {
             overload_cast_explicit<CollisionFilterManager>(
                 &Class::collision_filter_manager),
             cls_doc.collision_filter_manager.doc_0args)
-        .def("AddRenderer", &Class::AddRenderer, py::arg("name"),
-            py::arg("renderer"), cls_doc.AddRenderer.doc)
-        .def("RemoveRenderer", &Class::RemoveRenderer, py::arg("name"),
-            cls_doc.RemoveRenderer.doc)
-        .def("HasRenderer", &Class::HasRenderer, py::arg("name"),
-            cls_doc.HasRenderer.doc)
-        .def("RendererCount", &Class::RendererCount, cls_doc.RendererCount.doc)
+        .def("AddRenderer",
+            overload_cast_explicit<void, std::string,
+                std::unique_ptr<render::RenderEngine>>(&Class::AddRenderer),
+            py::arg("name"), py::arg("renderer"), cls_doc.AddRenderer.doc_2args)
+        .def("AddRenderer",
+            overload_cast_explicit<void, systems::Context<T>*, std::string,
+                std::unique_ptr<render::RenderEngine>>(&Class::AddRenderer),
+            py::arg("context"), py::arg("name"), py::arg("renderer"),
+            cls_doc.AddRenderer.doc_3args)
+        .def("RemoveRenderer",
+            overload_cast_explicit<void, const std::string&>(
+                &Class::RemoveRenderer),
+            py::arg("name"), cls_doc.RemoveRenderer.doc_1args)
+        .def("RemoveRenderer",
+            overload_cast_explicit<void, systems::Context<T>*,
+                const std::string&>(&Class::RemoveRenderer),
+            py::arg("context"), py::arg("name"),
+            cls_doc.RemoveRenderer.doc_2args)
+        .def("HasRenderer",
+            overload_cast_explicit<bool, const std::string&>(
+                &Class::HasRenderer),
+            py::arg("name"), cls_doc.HasRenderer.doc_1args)
+        .def("HasRenderer",
+            overload_cast_explicit<bool, const systems::Context<T>&,
+                const std::string&>(&Class::HasRenderer),
+            py::arg("context"), py::arg("name"), cls_doc.HasRenderer.doc_2args)
+        .def("RendererCount",
+            overload_cast_explicit<int>(&Class::RendererCount),
+            cls_doc.RendererCount.doc_0args)
+        .def("RendererCount",
+            overload_cast_explicit<int, const systems::Context<T>&>(
+                &Class::RendererCount),
+            py::arg("context"), cls_doc.RendererCount.doc_1args)
         // - Begin: AssignRole Overloads.
         // - - Proximity.
         .def(

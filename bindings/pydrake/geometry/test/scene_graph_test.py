@@ -328,6 +328,25 @@ class TestGeometrySceneGraph(unittest.TestCase):
                 1 if i == 0 else 0)
 
     @numpy_compare.check_all_types
+    def test_scene_graph_renderer_with_context(self, T):
+        SceneGraph = mut.SceneGraph_[T]
+        scene_graph = SceneGraph()
+        context = scene_graph.CreateDefaultContext()
+        self.assertEqual(scene_graph.RendererCount(context), 0)
+        render_params = mut.RenderEngineVtkParams()
+        renderer_name = "test_renderer"
+        self.assertFalse(
+            scene_graph.HasRenderer(context=context, name=renderer_name))
+        scene_graph.AddRenderer(
+            context=context, name=renderer_name,
+            renderer=mut.MakeRenderEngineVtk(params=render_params))
+        self.assertEqual(scene_graph.RendererCount(context=context), 1)
+        self.assertTrue(
+            scene_graph.HasRenderer(context=context, name=renderer_name))
+        scene_graph.RemoveRenderer(context=context, name=renderer_name)
+        self.assertEqual(scene_graph.RendererCount(context=context), 0)
+
+    @numpy_compare.check_all_types
     def test_scene_graph_register_geometry(self, T):
         SceneGraph = mut.SceneGraph_[T]
         scene_graph = SceneGraph()
