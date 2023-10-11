@@ -274,8 +274,8 @@ TEST_F(TwoDofPlanarPendulumTest, CalcSpatialInertia) {
   const SpatialInertia<double> M_SWo_W =
       plant_.CalcSpatialInertia(*context_, frame_W, body_indexes);
   Matrix6<double> M6_expected = Matrix6<double>::Zero();
-  EXPECT_TRUE(CompareMatrices(M_SWo_W.CopyToFullMatrix6(), M6_expected,
-      kEpsilon));
+  EXPECT_TRUE(
+      CompareMatrices(M_SWo_W.CopyToFullMatrix6(), M6_expected, kEpsilon));
 
   // Verify spatial inertia for body_indexes is the spatial inertia of just
   // body A if body_indexes contains the world body and body A.
