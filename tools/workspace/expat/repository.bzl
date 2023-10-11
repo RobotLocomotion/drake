@@ -58,6 +58,7 @@ cc_library(
     includes = ["include"],
     linkopts = ["-lexpat"],
     visibility = ["//visibility:public"],
+    deprecation = "The @expat external is deprecated in Drake's WORKSPACE and will be removed on or after 2024-02-01.",  # noqa
 )
 """
 
@@ -76,6 +77,7 @@ expat_repository = repository_rule(
     # TODO(jamiesnape): Pass down licenses to setup_pkg_config_repository.
     attrs = {
         "modname": attr.string(default = "expat"),
+        "extra_deprecation": attr.string(default = "The @expat external is deprecated in Drake's WORKSPACE and will be removed on or after 2024-02-01."),  # noqa
     },
     local = True,
     configure = True,

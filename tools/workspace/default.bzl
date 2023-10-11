@@ -195,6 +195,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
     if "eigen" not in excludes:
         eigen_repository(name = "eigen")
     if "expat" not in excludes:
+        # The @expat external is deprecated in Drake's WORKSPACE and will be
+        # removed on or after 2024-02-01.
         expat_repository(name = "expat")
     if "fcl_internal" not in excludes:
         fcl_internal_repository(name = "fcl_internal", mirrors = mirrors)

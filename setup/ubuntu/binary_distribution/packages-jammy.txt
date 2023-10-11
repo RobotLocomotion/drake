@@ -4,7 +4,6 @@ jupyter-notebook
 libblas-dev
 libbz2-1.0
 libeigen3-dev
-libexpat1
 libgfortran5
 libglib2.0-0
 libglu1-mesa
