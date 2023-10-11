@@ -12,7 +12,6 @@ readonly SHA=$3
 apt-get -y update
 apt-get -y install --no-install-recommends \
     build-essential \
-    libbz2-dev \
     libc6-dev \
     libssl-dev
 

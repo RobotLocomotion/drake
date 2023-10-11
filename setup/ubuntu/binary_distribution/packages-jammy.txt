@@ -2,7 +2,6 @@ coinor-libcoinutils3v5
 default-jre
 jupyter-notebook
 libblas-dev
-libbz2-1.0
 libeigen3-dev
 libexpat1
 libgfortran5
