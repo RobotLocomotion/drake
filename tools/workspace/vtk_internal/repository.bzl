@@ -149,6 +149,7 @@ vtk_internal_repository = repository_rule(
                 "@drake//tools/workspace/vtk_internal:patches/common_data_model_warnings.patch",  # noqa
                 "@drake//tools/workspace/vtk_internal:patches/io_image_formats.patch",  # noqa
                 "@drake//tools/workspace/vtk_internal:patches/io_legacy_data_reader_uninit.patch",  # noqa
+                "@drake//tools/workspace/vtk_internal:patches/rendering_opengl2_nobacktrace.patch",  # noqa
                 "@drake//tools/workspace/vtk_internal:patches/vtksys_hidden.patch",  # noqa
             ],
         ),

@@ -1,0 +1,16 @@
+[vtk] Remove stack trace printing in Rendering::OpenGL2
+
+Generically printing a stack trace induces a whole lot of complicated
+support code that Drake neither wants nor needs.
+
+--- Rendering/OpenGL2/vtkOpenGLState.cxx
++++ Rendering/OpenGL2/vtkOpenGLState.cxx
+@@ -539,6 +539,8 @@
+     vtkGenericWarningMacro(
+       "A vtkOpenGLFramebufferObject is currently bound but a hardware draw buffer was requested.");
++#if 0
+     std::string msg = vtksys::SystemInformation::GetProgramStack(0, 0);
+     vtkGenericWarningMacro("at stack loc\n" << msg);
++#endif
+   }
+ 

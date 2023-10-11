@@ -33,21 +33,23 @@ MODULE_SETTINGS = {
         # exceptions noted inline below).
         "srcs_glob_exclude": ["**"],
         "srcs_extra": [
-            "Utilities/KWSys/vtksys/Base64.c",
-            # CommandLineArguments.cxx is unused in Drake, so is omitted here.
+            # These files are enabled by default upstream, but Drake doesn't
+            # need them:
+            #  Base64.c
+            #  CommandLineArguments.cxx
+            #  EncodingC.c
+            #  EncodingCXX.cxx
+            #  FStream.cxx
+            #  Glob.cxx
+            #  ProcessUNIX.c
+            #  String.c
+            #  System.c
+            #  SystemInformation.cxx
             "Utilities/KWSys/vtksys/Directory.cxx",
             "Utilities/KWSys/vtksys/DynamicLoader.cxx",
-            "Utilities/KWSys/vtksys/EncodingC.c",
-            "Utilities/KWSys/vtksys/EncodingCXX.cxx",
-            "Utilities/KWSys/vtksys/FStream.cxx",
-            # Glob.cxx is unused in Drake, so is omitted here.
             "Utilities/KWSys/vtksys/MD5.c",
-            "Utilities/KWSys/vtksys/ProcessUNIX.c",
             "Utilities/KWSys/vtksys/RegularExpression.cxx",
-            "Utilities/KWSys/vtksys/String.c",
             "Utilities/KWSys/vtksys/Status.cxx",
-            "Utilities/KWSys/vtksys/System.c",
-            "Utilities/KWSys/vtksys/SystemInformation.cxx",
             "Utilities/KWSys/vtksys/SystemTools.cxx",
         ],
         "cmake_defines": [
@@ -556,10 +558,7 @@ MODULE_SETTINGS = {
             "VTK_MODULE_USE_EXTERNAL_vtktiff=1",
         ],
         "deps_extra": [
-            # TODO(jwnimmer-tri) VTK is the only user of this library.
-            # We should write our own WORKSPACE rule to build it sensibly,
-            # or switch to VTK's vendored version.
-            "@libtiff",
+            "@libtiff_internal//:libtiff",
         ],
     },
     "VTK::zlib": {

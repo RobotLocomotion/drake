@@ -46,6 +46,7 @@ ContactResults<T>& ContactResults<T>::operator=(
   }
 
   point_pairs_info_ = contact_results.point_pairs_info_;
+  deformable_contact_info_ = contact_results.deformable_contact_info_;
   plant_ = contact_results.plant_;
 
   return *this;
@@ -70,25 +71,33 @@ void ContactResults<T>::Clear() {
   } else {
     hydroelastic_contact_vector_of_unique_ptrs().clear();
   }
+  deformable_contact_info_.clear();
   plant_ = nullptr;
 }
 
 template <typename T>
 const PointPairContactInfo<T>& ContactResults<T>::point_pair_contact_info(
     int i) const {
-  DRAKE_DEMAND(i >= 0 && i < num_point_pair_contacts());
+  DRAKE_THROW_UNLESS(i >= 0 && i < num_point_pair_contacts());
   return point_pairs_info_[i];
 }
 
 template <typename T>
 const HydroelasticContactInfo<T>& ContactResults<T>::hydroelastic_contact_info(
     int i) const {
-  DRAKE_DEMAND(i >= 0 && i < num_hydroelastic_contacts());
+  DRAKE_THROW_UNLESS(i >= 0 && i < num_hydroelastic_contacts());
   if (hydroelastic_contact_vector_ownership_mode() == kAliasedPointers) {
     return *hydroelastic_contact_vector_of_pointers()[i];
   } else {
     return *hydroelastic_contact_vector_of_unique_ptrs()[i];
   }
+}
+
+template <typename T>
+const DeformableContactInfo<T>& ContactResults<T>::deformable_contact_info(
+    int i) const {
+  DRAKE_THROW_UNLESS(i >= 0 && i < num_deformable_contacts());
+  return deformable_contact_info_[i];
 }
 
 template <typename T>
@@ -129,6 +138,9 @@ ContactResults<T> ContactResults<T>::SelectHydroelastic(
   ContactResults<T> output_unique_pointers = selected_alias_pointers;
   // Deep copy of the point pair contact info.
   output_unique_pointers.point_pairs_info_ = this->point_pairs_info_;
+  // Deep copy of the deformable contact info.
+  output_unique_pointers.deformable_contact_info_ =
+      this->deformable_contact_info_;
 
   return output_unique_pointers;
 }
