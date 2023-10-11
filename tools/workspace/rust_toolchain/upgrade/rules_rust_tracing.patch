@@ -1,0 +1,56 @@
+[rules_rust] Adjust and instrument the toolchain downloads
+
+When downloading toolchain binaries, summarize to a json file.
+Opt-out of unnecessary default toolchains (Windows and FreeBSD).
+
+--- rust/private/repository_utils.bzl
++++ rust/private/repository_utils.bzl
+@@ -727,21 +727,33 @@ def load_arbitrary_tool(ctx, tool_name, tool_subdirectories, version, iso_date,
+ 
+     sha256 = lookup_tool_sha256(ctx, tool_name, target_triple, version, iso_date, sha256)
+ 
++    downloads = []
+     for subdirectory in tool_subdirectories:
+         # As long as the sha256 value is consistent accross calls here the
+         # cost of downloading an artifact is negated as by Bazel's caching.
++        stripPrefix = "{}/{}".format(tool_path, subdirectory)
+         result = ctx.download_and_extract(
+             urls,
+             sha256 = sha256,
+             auth = _make_auth_dict(ctx, urls),
+-            stripPrefix = "{}/{}".format(tool_path, subdirectory),
++            stripPrefix = stripPrefix,
+         )
++        downloads.append(dict(
++            url = urls,
++            sha256 = sha256,
++            stripPrefix = stripPrefix,
++        ))
+ 
+         # In the event no sha256 was provided, set it to the value of the first
+         # downloaded item so subsequent downloads use a cached artifact.
+         if not sha256:
+             sha256 = result.sha256
+ 
++    json_path = ctx.path("download_and_extract.json")
++    if json_path.exists:
++        downloads = json.decode(ctx.read(json_path)) + downloads
++    ctx.file(json_path, json.encode(downloads))
++
+ def _make_auth_dict(ctx, urls):
+     auth = getattr(ctx.attr, "auth", {})
+     if not auth:
+--- rust/repositories.bzl
++++ rust/repositories.bzl
+@@ -37,11 +37,8 @@ load_arbitrary_tool = _load_arbitrary_tool
+ # Note: Code in `.github/workflows/crate_universe.yaml` looks for this line, if you remove it or change its format, you will also need to update that code.
+ DEFAULT_TOOLCHAIN_TRIPLES = {
+     "aarch64-apple-darwin": "rust_darwin_aarch64",
+-    "aarch64-pc-windows-msvc": "rust_windows_aarch64",
+     "aarch64-unknown-linux-gnu": "rust_linux_aarch64",
+     "x86_64-apple-darwin": "rust_darwin_x86_64",
+-    "x86_64-pc-windows-msvc": "rust_windows_x86_64",
+-    "x86_64-unknown-freebsd": "rust_freebsd_x86_64",
+     "x86_64-unknown-linux-gnu": "rust_linux_x86_64",
+ }
+ 
