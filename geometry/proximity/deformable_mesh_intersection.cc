@@ -75,7 +75,8 @@ class DeformableSurfaceVolumeIntersector
 };
 
 void AddDeformableRigidContactSurface(
-    const deformable::DeformableGeometry& deformable_D,
+    const VolumeMeshFieldLinear<double, double>& deformable_sdf,
+    const DeformableVolumeMesh<double>& deformable_mesh,
     const GeometryId deformable_id, const GeometryId rigid_id,
     const TriangleSurfaceMesh<double>& rigid_mesh_R,
     const Bvh<Obb, TriangleSurfaceMesh<double>>& rigid_bvh_R,
@@ -85,8 +86,7 @@ void AddDeformableRigidContactSurface(
 
   DeformableSurfaceVolumeIntersector intersect;
   intersect.SampleVolumeFieldOnSurface(
-      deformable_D.CalcSignedDistanceField(),
-      deformable_D.deformable_mesh().bvh(), rigid_mesh_R, rigid_bvh_R, X_DR,
+      deformable_sdf, deformable_mesh.bvh(), rigid_mesh_R, rigid_bvh_R, X_DR,
       false /* don't filter face normal along field gradient */);
 
   if (intersect.has_intersection()) {
@@ -107,7 +107,7 @@ void AddDeformableRigidContactSurface(
           signed_distance_field.EvaluateCartesian(i, contact_points_W);
     }
 
-    const VolumeMesh<double>& mesh = deformable_D.deformable_mesh().mesh();
+    const VolumeMesh<double>& mesh = deformable_mesh.mesh();
     // Each contact polygon generates one "participating tetrahedron". Hence
     // `participating_tetrahedra` contains duplicated entries when a tetrahedron
     // covers multiple contact polygons.
