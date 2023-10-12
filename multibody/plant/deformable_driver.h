@@ -15,7 +15,7 @@
 #include "drake/multibody/plant/contact_pair_kinematics.h"
 #include "drake/multibody/plant/deformable_model.h"
 #include "drake/multibody/plant/discrete_contact_data.h"
-#include "drake/multibody/plant/discrete_update_manager.h"
+#include "drake/multibody/plant/discrete_contact_pair.h"
 #include "drake/systems/framework/context.h"
 
 namespace drake {
@@ -68,6 +68,9 @@ class Multiplexer {
   /* The sum over `sizes_`. */
   int num_entries_{0};
 };
+
+template <typename T>
+class DiscreteUpdateManager;
 
 /* DeformableDriver is responsible for computing dynamics information about
  all deformable bodies. It works in tandem with a DeformableModel and a
