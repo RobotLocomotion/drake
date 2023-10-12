@@ -61,7 +61,6 @@ _KNOWN_BAD_SYMBOLS_SUBSTR = [
     "MessageHandler",
     "N3uWS",
     "N5ofats10any_detail",
-    "N7tinyobj",
     "Realpath",
     "WindowsError",
     "action",
@@ -87,7 +86,6 @@ _KNOWN_BAD_SYMBOLS_SUBSTR = [
     "setupForSolve",
     "slack_value",
     "sortOnOther",
-    "usage",
     "wrapper",
     # This fix is pending a deprecation removal (#20115) 2024-01-01.
     "N3lcm",

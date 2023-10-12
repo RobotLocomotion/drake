@@ -54,6 +54,7 @@ drake_py_binary(
         "@nlopt_internal//:__subpackages__",
         "@qhull_internal//:__subpackages__",
         "@sdformat_internal//:__subpackages__",
+        "@tinyobjloader_internal//:__subpackages__",
         "@yaml_cpp_internal//:__subpackages__",
     ],
     deps = [":module_py"],
