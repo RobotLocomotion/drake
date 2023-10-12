@@ -2684,9 +2684,9 @@ class MathematicalProgram {
                 ⌊ Xⱼᵢ Xⱼⱼ⌋
    * is psd if and only if VⱼᵢᵀXVⱼᵢ as they are simply permutations of each
    * other. Therefore, it suffices to only add the constraint for i ≥ j.
-   *  Moreover, notice that VᵢᵢᵀXVᵢᵢ = ⌈ Xᵢᵢ 0⌉ ⌊ 0   0⌋ is psd if and only if
-   *  Xᵢᵢ ≥ 0. This linear constraint is already implied by VᵢⱼᵀXVᵢⱼ is psd for
-   *  every i ≠ j and so is redundant. Therefore, we only add
+   * Moreover, notice that VᵢᵢᵀXVᵢᵢ = ⌈ Xᵢᵢ 0⌉ ⌊ 0   0⌋ is psd if and only if
+   * Xᵢᵢ ≥ 0. This linear constraint is already implied by VᵢⱼᵀXVᵢⱼ is psd for
+   * every i ≠ j and so is redundant. Therefore, we only add
    * RotatedLorentzConeConstraints for i > j.
    *
    * This characterization can be found in Section 3.3 of "Sum of Squares Basis
