@@ -68,10 +68,10 @@ GTEST_TEST(ScaledDiagonallyDominantMatrixDualConeConstraint,
   auto X = prog.NewSymmetricContinuousVariables<3>();
   auto dual_cone_constraints =
       prog.AddScaledDiagonallyDominantDualConeMatrixConstraint(X);
+  VectorXDecisionVariable x_flat(6);
+  x_flat << X(0, 0), X(0, 1), X(0, 2), X(1, 1), X(1, 2), X(2, 2);
   auto X_constraint = prog.AddBoundingBoxConstraint(
-      Eigen::VectorXd::Zero(6), Eigen::VectorXd::Zero(6),
-      VectorDecisionVariable<6>(X(0, 0), X(0, 1), X(0, 2), X(1, 1), X(1, 2),
-                                X(2, 2)));
+      Eigen::VectorXd::Zero(6), Eigen::VectorXd::Zero(6), x_flat);
   auto set_X_value = [&X_constraint](const Eigen::Matrix3d& X_val) {
     Eigen::VectorXd x_upper_triangle(6);
     x_upper_triangle << X_val(0, 0), X_val(0, 1), X_val(0, 2), X_val(1, 1),
@@ -123,10 +123,11 @@ GTEST_TEST(ScaledDiagonallyDominantMatrixDualConeConstraint,
   test3_flat << test3(0, 0), test3(0, 1), test3(0, 2), test3(1, 1), test3(1, 2),
       test3(2, 2);
 
+  VectorXDecisionVariable x_dd_flat(6);
+  x_dd_flat << X_dd(0, 0), X_dd(0, 1), X_dd(0, 2), X_dd(1, 1), X_dd(1, 2),
+      X_dd(2, 2);
   auto X_dd_constraint = prog_dd.AddBoundingBoxConstraint(
-      test3_flat, test3_flat,
-      VectorDecisionVariable<6>(X_dd(0, 0), X_dd(0, 1), X_dd(0, 2), X_dd(1, 1),
-                                X_dd(1, 2), X_dd(2, 2)));
+      test3_flat, test3_flat,x_dd_flat);
   auto result_dd = Solve(prog_dd);
   EXPECT_TRUE(result_dd.is_success());
 }
@@ -205,11 +206,11 @@ GTEST_TEST(ScaledDiagonallyDominantMatrixDualConeConstraint,
   Eigen::VectorXd test3_flat(6);
   test3_flat << test3(0, 0), test3(0, 1), test3(0, 2), test3(1, 1), test3(1, 2),
       test3(2, 2);
-
-  auto X_dd_constraint = prog_dd.AddBoundingBoxConstraint(
-      test3_flat, test3_flat,
-      VectorDecisionVariable<6>(X_dd(0, 0), X_dd(0, 1), X_dd(0, 2), X_dd(1, 1),
-                                X_dd(1, 2), X_dd(2, 2)));
+  VectorXDecisionVariable x_dd_flat(6);
+  x_dd_flat << X_dd(0, 0), X_dd(0, 1), X_dd(0, 2), X_dd(1, 1), X_dd(1, 2),
+      X_dd(2, 2);
+  auto X_dd_constraint =
+      prog_dd.AddBoundingBoxConstraint(test3_flat, test3_flat, x_dd_flat);
   auto result_dd = Solve(prog_dd);
   EXPECT_TRUE(result_dd.is_success());
 }
@@ -271,7 +272,7 @@ GTEST_TEST(ScaledDiagonallyDominantMatrixDualConeConstraint,
     // Y is constrained to be 0 so we expect the value of Z = 2*X.
     EXPECT_TRUE(CompareMatrices(Z_res, 2 * X_expected, 1e-8));
     EXPECT_EQ(TestInDualConeByGenerators(X_res), -1);
-        EXPECT_EQ(TestInDualConeByGenerators(Z_res), -1);
+    EXPECT_EQ(TestInDualConeByGenerators(Z_res), -1);
   };
 
   for (int i = 0; i < 4; ++i) {
