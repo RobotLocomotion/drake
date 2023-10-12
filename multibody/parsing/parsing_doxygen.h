@@ -504,7 +504,7 @@ built-in tag, i.e., `//robot/material/texture` or
 `//robot/link/visual/material/texture`, to specify a diffuse texture map for a
 link.
 
-@see drake::geometry::PerceptionProperties, drake::multibody::PackageMap,
+@see drake::geometry::PerceptionProperties, drake::PackageMap,
 @ref render_engine_vtk_properties "Geometry perception properties"
 
 @subsection tag_drake_ellipsoid drake:ellipsoid

@@ -11,9 +11,9 @@
 #include <tinyxml2.h>
 
 #include "drake/common/diagnostic_policy.h"
+#include "drake/common/parsing/package_map.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/multibody/parsing/detail_tinyxml2_diagnostic.h"
-#include "drake/multibody/parsing/package_map.h"
 #include "drake/multibody/plant/coulomb_friction.h"
 
 namespace drake {

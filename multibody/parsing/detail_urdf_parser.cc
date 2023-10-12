@@ -16,6 +16,7 @@
 #include <fmt/format.h>
 #include <tinyxml2.h>
 
+#include "drake/common/parsing/package_map.h"
 #include "drake/common/sorted_pair.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/parsing/detail_make_model_name.h"
@@ -23,7 +24,6 @@
 #include "drake/multibody/parsing/detail_tinyxml.h"
 #include "drake/multibody/parsing/detail_tinyxml2_diagnostic.h"
 #include "drake/multibody/parsing/detail_urdf_geometry.h"
-#include "drake/multibody/parsing/package_map.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/ball_rpy_joint.h"
 #include "drake/multibody/tree/fixed_offset_frame.h"

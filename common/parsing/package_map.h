@@ -10,7 +10,6 @@
 #include "drake/common/name_value.h"
 
 namespace drake {
-namespace multibody {
 
 /** Maps ROS package names to their full path on the local file system. It is
 used by the SDF and URDF parsers when parsing files that reference ROS packages
@@ -224,11 +223,10 @@ into the RemoteParams structure needed by PackageMap. */
 PackageMap::RemoteParams GetDrakeModelsRemoteParams();
 
 }  // namespace internal
-}  // namespace multibody
 }  // namespace drake
 
 // TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
 namespace fmt {
 template <>
-struct formatter<drake::multibody::PackageMap> : drake::ostream_formatter {};
+struct formatter<drake::PackageMap> : drake::ostream_formatter {};
 }  // namespace fmt

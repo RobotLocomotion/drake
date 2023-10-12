@@ -2,7 +2,7 @@
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
-#include "drake/multibody/parsing/package_map.h"
+#include "drake/common/parsing/package_map.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/parsing/process_model_directives.h"
 #include "drake/multibody/parsing/scoped_names.h"

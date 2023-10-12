@@ -7,12 +7,11 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/find_cache.h"
 #include "drake/common/find_resource.h"
+#include "drake/common/parsing/package_map.h"
 #include "drake/common/scope_exit.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
-#include "drake/multibody/parsing/package_map.h"
 
 namespace drake {
-namespace multibody {
 namespace {
 
 namespace fs = std::filesystem;
@@ -314,5 +313,4 @@ TEST_F(PackageMapRemoteTest, DrakeModelsDefaults) {
 }
 
 }  // namespace
-}  // namespace multibody
 }  // namespace drake

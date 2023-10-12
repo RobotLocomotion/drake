@@ -54,7 +54,7 @@ class StressTestDownloader(unittest.TestCase):
             while (len(children) + 1 < cpus) and (launch_count < N):
                 error_filename = scratch_dir / f"error-{launch_count:03}.txt"
                 children.append(subprocess.Popen([
-                    sys.executable, "multibody/parsing/package_downloader.py",
+                    sys.executable, "common/parsing/package_downloader.py",
                     kwargs, error_filename, "UNUSED_ARGUMENT"]))
                 launch_count += 1
             # Reap completed processes.
