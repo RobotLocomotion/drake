@@ -31,7 +31,7 @@ GTEST_TEST(UnitVectorTest, ThrowOrWarnIfNotUnitVector) {
 
   // Verify that no exception is thrown when |unit_vector| is nearly 1.0.
   constexpr double kepsilon = std::numeric_limits<double>::epsilon();
-  unit_vector += 2 * Vector3<double>(kepsilon, kepsilon, kepsilon);
+  unit_vector = Vector3<double>(1 + kepsilon, 0, 0);
   DRAKE_EXPECT_NO_THROW(vector_magSquared =
       ThrowIfNotUnitVector(unit_vector, "UnusedFunctionName"));
   EXPECT_EQ(vector_magSquared, unit_vector.squaredNorm());
