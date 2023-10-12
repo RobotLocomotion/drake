@@ -1449,6 +1449,8 @@ class MathematicalProgram {
   /**
    * Adds linear constraints referencing potentially a subset
    * of the decision variables (defined in the vars parameter).
+   *
+   * @exclude_from_pydrake_mkdoc{Not bound in pydrake.}
    */
   Binding<LinearConstraint> AddLinearConstraint(
       const Eigen::Ref<const Eigen::MatrixXd>& A,
@@ -1461,6 +1463,8 @@ class MathematicalProgram {
   /**
    * Adds sparse linear constraints referencing potentially a subset
    * of the decision variables (defined in the vars parameter).
+   *
+   * @pydrake_mkdoc_identifier{4args_A_lb_ub_dense}
    */
   Binding<LinearConstraint> AddLinearConstraint(
       const Eigen::Ref<const Eigen::SparseMatrix<double>>& A,
@@ -1473,6 +1477,8 @@ class MathematicalProgram {
   /**
    * Adds linear constraints referencing potentially a subset
    * of the decision variables (defined in the vars parameter).
+   *
+   * @exclude_from_pydrake_mkdoc{Not bound in pydrake.}
    */
   Binding<LinearConstraint> AddLinearConstraint(
       const Eigen::Ref<const Eigen::MatrixXd>& A,
@@ -1483,6 +1489,8 @@ class MathematicalProgram {
   /**
    * Adds sparse linear constraints referencing potentially a subset
    * of the decision variables (defined in the vars parameter).
+   *
+   * @pydrake_mkdoc_identifier{4args_A_lb_ub_sparse}
    */
   Binding<LinearConstraint> AddLinearConstraint(
       const Eigen::Ref<const Eigen::SparseMatrix<double>>& A,
@@ -1734,6 +1742,20 @@ class MathematicalProgram {
   /** AddLinearEqualityConstraint
    *
    * Adds linear equality constraints referencing potentially a subset of
+   * the decision variables using a sparse A matrix.
+   * @exclude_from_pydrake_mkdoc{Not bound in pydrake.}
+   */
+  Binding<LinearEqualityConstraint> AddLinearEqualityConstraint(
+      const Eigen::Ref<const Eigen::SparseMatrix<double>>& Aeq,
+      const Eigen::Ref<const Eigen::VectorXd>& beq,
+      const VariableRefList& vars) {
+    return AddLinearEqualityConstraint(Aeq, beq,
+                                       ConcatenateVariableRefList(vars));
+  }
+
+  /** AddLinearEqualityConstraint
+   *
+   * Adds linear equality constraints referencing potentially a subset of
    * the decision variables.
    *
    * Example: to add two equality constraints which only depend on two of the
@@ -1749,12 +1771,20 @@ class MathematicalProgram {
    *   //  x(0) +  x(1) = 3
    *   prog.AddLinearEqualityConstraint(Aeq, beq, x.head<2>());
    * @endcode
+   *
+   * @pydrake_mkdoc_identifier{3args_A_b_dense}
    */
   Binding<LinearEqualityConstraint> AddLinearEqualityConstraint(
       const Eigen::Ref<const Eigen::MatrixXd>& Aeq,
       const Eigen::Ref<const Eigen::VectorXd>& beq,
       const Eigen::Ref<const VectorXDecisionVariable>& vars);
 
+  /** AddLinearEqualityConstraint
+   *
+   * Adds linear equality constraints referencing potentially a subset of
+   * the decision variables using a sparse A matrix.
+   * @pydrake_mkdoc_identifier{3args_A_b_sparse}
+   */
   Binding<LinearEqualityConstraint> AddLinearEqualityConstraint(
       const Eigen::Ref<const Eigen::SparseMatrix<double>>& Aeq,
       const Eigen::Ref<const Eigen::VectorXd>& beq,
