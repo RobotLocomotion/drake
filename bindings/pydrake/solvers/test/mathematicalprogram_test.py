@@ -776,8 +776,7 @@ class TestMathematicalProgram(unittest.TestCase):
         ub = [1., 1.]
 
         A_sparse = scipy.sparse.csc_matrix(
-            (np.array([2, 1., 3]), np.array([0, 1, 0]),
-             np.array([0, 2, 2, 3])), shape=(2, 3))
+            (np.array([2, 1., 3]), ([0,0,1],[0,1,0])))
 
         prog.AddBoundingBoxConstraint(lb, ub, x)
         prog.AddBoundingBoxConstraint(0., 1., x[0])
