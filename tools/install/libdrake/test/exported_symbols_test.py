@@ -48,7 +48,6 @@ _GOOD_SYMBOLS_SUBSTR = [
 # will not cause this test to fail.
 _KNOWN_BAD_SYMBOLS_SUBSTR = [
     "5bazel5tools3cpp8runfiles",
-    "AbslInternal",
     "Ampl",
     "BitVector128",
     "Clp",
