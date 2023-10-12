@@ -32,7 +32,15 @@ _SRCS = glob(
         "Clp/src/*.cpp",
     ],
     exclude = [
+        # We only want libClp, not libClpSolver nor the main program.
+        "**/MyEventHandler*",
+        "**/MyMessageHandler*",
+        "**/CbcOrClpParam*",
         "**/ClpMain*",
+        "**/ClpSolver*",
+        "**/Clp_C_Interface*",
+        "**/Clp_ampl*",
+        "**/unitTest*",
         # We treat COIN_HAS_ABC as OFF.
         "**/Abc*",
         "**/CoinAbc*",

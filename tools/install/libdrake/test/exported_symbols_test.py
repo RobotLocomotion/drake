@@ -87,7 +87,6 @@ _KNOWN_BAD_SYMBOLS_SUBSTR = [
     "setupForSolve",
     "slack_value",
     "sortOnOther",
-    "usage",
     "wrapper",
     # This fix is pending a deprecation removal (#20115) 2024-01-01.
     "N3lcm",
