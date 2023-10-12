@@ -34,6 +34,7 @@ drake_cc_package_library(
         ":binding",
         ":branch_and_bound",
         ":choose_best_solver",
+        ":clarabel_solver",
         ":clp_solver",
         ":constraint",
         ":cost",
@@ -587,6 +588,7 @@ drake_cc_library(
     srcs = ["test/optimization_examples.cc"],
     hdrs = ["test/optimization_examples.h"],
     deps = [
+        ":clarabel_solver",
         ":clp_solver",
         ":gurobi_solver",
         ":ipopt_solver",
@@ -949,6 +951,28 @@ drake_cc_variant_library(
     deps_enabled = [
         "//math:eigen_sparse_triplet",
         "@osqp_internal//:osqp",
+    ],
+)
+
+drake_cc_variant_library(
+    name = "clarabel_solver",
+    opt_in_condition = "//tools:with_clarabel",
+    srcs_always = ["clarabel_solver_common.cc"],
+    srcs_enabled = ["clarabel_solver.cc"],
+    srcs_disabled = ["no_clarabel.cc"],
+    hdrs = ["clarabel_solver.h"],
+    interface_deps = [
+        ":solver_base",
+        "//common:essential",
+    ],
+    deps_always = [
+        ":aggregate_costs_constraints",
+        ":mathematical_program",
+        "//math:quadratic_form",
+    ],
+    deps_enabled = [
+        "//math:eigen_sparse_triplet",
+        "@clarabel_cpp_internal//:clarabel_cpp",
     ],
 )
 
@@ -1628,6 +1652,19 @@ drake_cc_googletest(
         ":mixed_integer_rotation_constraint",
         ":rotation_constraint",
         "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "clarabel_solver_test",
+    deps = [
+        ":clarabel_solver",
+        ":exponential_cone_program_examples",
+        ":linear_program_examples",
+        ":mathematical_program",
+        ":mathematical_program_test_util",
+        ":quadratic_program_examples",
+        ":second_order_cone_program_examples",
     ],
 )
 
