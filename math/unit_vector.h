@@ -13,7 +13,7 @@ namespace internal {
 // 2 bits corresponds to 2²ε and ε = std::numeric_limits<double>::epsilon().
 // @note The use of 2 bits was determined empirically by checking a vast range
 // of vectors that were normalized and noting many had ‖unit_vector‖ = 1
-// (exactly), and all (for the computer being used) were ≤1 bit of 1.0.
+// (exactly), and all (for the computer being used) were ≤ 1 bit of 1.0.
 // Alleged unit vectors that are more than 2 bits from 1.0 should be normalized.
 constexpr double kTolerance_unit_vector_norm =
     4 * std::numeric_limits<double>::epsilon();
