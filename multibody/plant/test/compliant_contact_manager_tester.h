@@ -51,7 +51,7 @@ class CompliantContactManagerTester {
   static DiscreteContactData<ContactPairKinematics<double>>
   CalcContactKinematics(const CompliantContactManager<double>& manager,
                         const drake::systems::Context<double>& context) {
-    return manager.CalcContactKinematics(context);
+    return manager.EvalContactKinematics(context);
   }
 
   static void DoCalcContactResults(
@@ -59,11 +59,6 @@ class CompliantContactManagerTester {
       const drake::systems::Context<double>& context,
       ContactResults<double>* contact_results) {
     return manager.DoCalcContactResults(context, contact_results);
-  }
-
-  static const DeformableDriver<double>* deformable_driver(
-      const CompliantContactManager<double>& manager) {
-    return manager.deformable_driver_.get();
   }
 
   static const SapDriver<double>& sap_driver(

@@ -11,6 +11,7 @@
 #include "drake/multibody/fem/linear_simplex_element.h"
 #include "drake/multibody/fem/simplex_gaussian_quadrature.h"
 #include "drake/multibody/fem/volumetric_model.h"
+#include "drake/multibody/plant/multibody_plant.h"
 
 namespace drake {
 namespace multibody {
@@ -24,6 +25,12 @@ using geometry::SourceId;
 
 using fem::DeformableBodyConfig;
 using fem::MaterialModel;
+
+template <typename T>
+DeformableModel<T>::DeformableModel(MultibodyPlant<T>* plant) : plant_(plant) {
+  DRAKE_DEMAND(plant_ != nullptr);
+  DRAKE_DEMAND(!plant_->is_finalized());
+}
 
 template <typename T>
 DeformableBodyId DeformableModel<T>::RegisterDeformableBody(

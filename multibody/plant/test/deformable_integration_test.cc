@@ -34,16 +34,6 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
-/* Provides access to a selection of private functions in
- CompliantContactManager for testing purposes. */
-class CompliantContactManagerTester {
- public:
-  static const DeformableDriver<double>* deformable_driver(
-      const CompliantContactManager<double>& manager) {
-    return manager.deformable_driver_.get();
-  }
-};
-
 /* Deformable body parameters.  */
 constexpr double kYoungsModulus = 1e5;      // unit: N/m²
 constexpr double kPoissonsRatio = 0.4;      // unitless.
@@ -101,7 +91,8 @@ class DeformableIntegrationTest : public ::testing::Test {
     auto contact_manager = make_unique<CompliantContactManager<double>>();
     manager_ = contact_manager.get();
     plant_->SetDiscreteUpdateManager(std::move(contact_manager));
-    driver_ = CompliantContactManagerTester::deformable_driver(*manager_);
+    driver_ = manager_->deformable_driver();
+    DRAKE_DEMAND(driver_ != nullptr);
     /* Connect visualizer. Useful for when this test is used for debugging. */
     geometry::DrakeVisualizerd::AddToBuilder(&builder, *scene_graph_);
 
