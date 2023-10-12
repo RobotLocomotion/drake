@@ -89,6 +89,8 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertTrue(dut.PointInSet(dut.MaybeGetFeasiblePoint()))
         self.assertTrue(dut.IntersectsWith(dut))
         self.assertEqual(dut.AffineDimension(), 2)
+        complement_basis = dut.OrthogonalComplementBasis()
+        self.assertEqual(complement_basis.shape, (3, 1))
 
         test_point = np.array([43, 43, 0])
         self.assertFalse(dut.PointInSet(test_point))
