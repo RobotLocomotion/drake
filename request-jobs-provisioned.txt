@@ -1,7 +1,6 @@
 @drake-jenkins-bot linux-focal-clang-bazel-experimental-debug please
 @drake-jenkins-bot linux-focal-clang-bazel-experimental-everything-debug please
 @drake-jenkins-bot linux-focal-clang-bazel-experimental-everything-release please
-@drake-jenkins-bot linux-focal-clang-bazel-experimental-everything-release please
 @drake-jenkins-bot linux-focal-clang-bazel-experimental-gurobi-release please
 @drake-jenkins-bot linux-focal-clang-bazel-experimental-mosek-release please
 @drake-jenkins-bot linux-focal-clang-bazel-experimental-release please
@@ -15,6 +14,7 @@
 @drake-jenkins-bot linux-focal-gcc-cmake-experimental-release please
 @drake-jenkins-bot linux-jammy-clang-bazel-experimental-coverage please
 @drake-jenkins-bot linux-jammy-clang-bazel-experimental-everything-coverage please
+@drake-jenkins-bot linux-jammy-clang-bazel-experimental-everything-release please
 @drake-jenkins-bot linux-jammy-clang-bazel-experimental-gurobi-address-sanitizer please
 @drake-jenkins-bot linux-jammy-clang-bazel-experimental-gurobi-coverage please
 @drake-jenkins-bot linux-jammy-clang-bazel-experimental-gurobi-debug please
