@@ -9,13 +9,14 @@ namespace drake {
 namespace math {
 namespace internal {
 
-// Tolerance for ‖unit_vector‖ is 3 bits (= 8ε ≈ 1.78E-15) of 1.0, where
-// 3 bits = 2³ε = 8ε and ε = std::numeric_limits<double>::epsilon().
-// @note The use of 3 bits was determined empirically, is well within the
-// tolerance achieved by normalizing a vast range of non-zero vectors, and
-// seems to provide a valid RotationMatrix() (see RotationMatrix::IsValid()).
+// Tolerance for ‖unit_vector‖ is 2 bits (≈ 8.88E-16) of 1.0, where
+// 2 bits corresponds to 2²ε and ε = std::numeric_limits<double>::epsilon().
+// @note The use of 2 bits was determined empirically by checking a vast range
+// of vectors that were normalized and noting many had ‖unit_vector‖ = 1
+// (exactly), and all (for the computer being used) were ≤1 bit of 1.0.
+// Alleged unit vectors that are more than 2 bits from 1.0 should be normalized.
 constexpr double kTolerance_unit_vector_norm =
-    8 * std::numeric_limits<double>::epsilon();
+    4 * std::numeric_limits<double>::epsilon();
 
 // Throws unless ‖unit_vector‖ is within kTolerance_unit_vector_norm of 1.0.
 // @param[in] unit_vector a vector which is allegedly a unit vector.
@@ -43,7 +44,7 @@ T ThrowIfNotUnitVector(const Vector3<T>& unit_vector,
 // writes a warning to the log file (only writes one warning per process).
 // @param[in] unit_vector a vector which is allegedly a unit vector.
 // @param[in] function_name name of the function that appears in the message
-// written to the log file (if ‖unit_vector‖ is not within tolerance of 1.0).
+// written to the log file (if a warning message needs to be written).
 // @retval ‖unit_vector‖² which is exactly 1.0 for a perfect unit_vector.
 // @note: When type T is symbolic::Expression, this function is a no-op that
 // does not write to the log file and returns 1.0.

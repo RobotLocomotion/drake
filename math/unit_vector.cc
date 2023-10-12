@@ -38,7 +38,7 @@ std::pair<T, bool> IsUnitVector(const Vector3<T> &unit_vector) {
     // -------------------------------------------------------------
     using std::abs;
     using std::isfinite;
-    constexpr double kTolerance2 = 2 * kTolerance_unit_vector_norm;
+    const double kTolerance2 = 2 * kTolerance_unit_vector_norm;
     const T uvec_squared = unit_vector.squaredNorm();
     const bool is_ok_unit_vector = isfinite(uvec_squared) &&
         abs(uvec_squared - 1) <= kTolerance2;
@@ -59,19 +59,18 @@ std::pair<T, bool> IsUnitVector(const Vector3<T> &unit_vector) {
 // ‖bad_unit_vector‖ ≠ 1.
 template <typename T>
 std::string ErrorMessageNotUnitVector(const Vector3<T>& bad_unit_vector,
-                                      std::string_view function_name) {
+    std::string_view function_name) {
   if constexpr (scalar_predicate<T>::is_bool) {
     DRAKE_DEMAND(!function_name.empty());
     using std::abs;
     const T norm = bad_unit_vector.norm();
     const T norm_diff = abs(1.0 - norm);
-    constexpr double kTolerance = 4 * std::numeric_limits<double>::epsilon();
     const std::string error_message =
       fmt::format("{}(): The unit_vector argument {} is not a unit vector.\n"
                   "|unit_vector| = {}\n"
                   "||unit_vector| - 1| = {} is greater than {}.",
                   function_name, fmt_eigen(bad_unit_vector.transpose()),
-                  norm, norm_diff, kTolerance);
+                  norm, norm_diff, kTolerance_unit_vector_norm);
     return error_message;
   }
   return {};
@@ -83,7 +82,7 @@ template <typename T>
 T ThrowIfNotUnitVector(const Vector3<T>& unit_vector,
                        std::string_view function_name) {
   DRAKE_DEMAND(!function_name.empty());
-  auto [unit_vector_squaredNorm, is_ok_unit_vector] = IsUnitVector(unit_vector);
+  auto[unit_vector_squaredNorm, is_ok_unit_vector] = IsUnitVector(unit_vector);
   if (!is_ok_unit_vector) {
     throw std::logic_error(
         ErrorMessageNotUnitVector(unit_vector, function_name));
