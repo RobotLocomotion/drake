@@ -2559,7 +2559,7 @@ class MathematicalProgram {
 
   /**
    * @anchor add_dd_dual
-   * @name diagonally dominant dual cone constraint
+   * @name Diagonally dominant dual cone constraint
    * Adds the constraint that a symmetric matrix is in the dual cone of the
    * diagonally dominant matrices which is denoted DD*. This set is a polyhedral
    * (linear) outer approximation to the PSD cone. This follows from the fact
@@ -2609,7 +2609,7 @@ class MathematicalProgram {
 
   /**
    * @anchor addsdd
-   * @name     scaled diagonally dominant matrix constraint
+   * @name     Scaled diagonally dominant matrix constraint
    * Adds the constraint that a symmetric matrix is scaled diagonally dominant
    * (sdd). A matrix X is sdd if there exists a diagonal matrix D, such that
    * the product DXD is diagonally dominant with non-negative diagonal entries,
@@ -2666,7 +2666,7 @@ class MathematicalProgram {
 
   /**
    * @anchor add_sdd_dual
-   * @name scaled diagonally dominant dual cone constraint
+   * @name Scaled diagonally dominant dual cone constraint
    * Adds the constraint that a symmetric matrix is in the dual cone of the
    * scaled diagonally dominant matrices which is denoted SDD*. The set SDD* is
    * an SOCP outer approximation to the PSD cone that is tighter than DD*. This
