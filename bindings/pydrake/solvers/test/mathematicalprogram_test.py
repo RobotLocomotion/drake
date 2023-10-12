@@ -778,6 +778,11 @@ class TestMathematicalProgram(unittest.TestCase):
         x = prog.NewContinuousVariables(2, 'x')
         lb = [0., 0.]
         ub = [1., 1.]
+
+        A_sparse = scipy.sparse.csc_matrix(
+            (np.array([2, 1., 3]), np.array([0, 1, 0]),
+             np.array([0, 2, 2, 3])), shape=(2, 3))
+
         prog.AddBoundingBoxConstraint(lb, ub, x)
         prog.AddBoundingBoxConstraint(0., 1., x[0])
         prog.AddBoundingBoxConstraint(0., 1., x)
@@ -789,6 +794,8 @@ class TestMathematicalProgram(unittest.TestCase):
         prog.AddLinearConstraint(f=(x[0] == 0))
 
         prog.AddLinearEqualityConstraint(np.eye(2), np.zeros(2), x)
+
+
         prog.AddLinearEqualityConstraint(x[0] == 1)
         prog.AddLinearEqualityConstraint(x[0] + x[1], 1)
         prog.AddLinearEqualityConstraint(

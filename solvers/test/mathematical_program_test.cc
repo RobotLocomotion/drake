@@ -1270,7 +1270,7 @@ GTEST_TEST(TestMathematicalProgram,
   const int n = 4;
   auto x = prog.NewContinuousVariables(n, "x");
   std::vector<Eigen::Triplet<double>> A_triplet_list;
-  A_triplet_list.reserve(3*(n-2)+4);
+  A_triplet_list.reserve(3 * (n - 2) + 4);
   double ctr = 0;
   for (int i = 0; i < n; ++i) {
     for (int j = std::max(0, i - 1); j < std::min(n, i + 1); ++j) {
@@ -1295,6 +1295,90 @@ GTEST_TEST(TestMathematicalProgram,
 
   EXPECT_TRUE(MatrixExprAllEqual((A * x - lb), Ax - lb_in_ctr));
   EXPECT_TRUE(MatrixExprAllEqual((A * x - ub), Ax - ub_in_ctr));
+}
+
+GTEST_TEST(TestMathematicalProgram,
+           AddLinearConstraintSparseMatrixVariableRefListTest) {
+  MathematicalProgram prog;
+  const int n = 4;
+  auto x = prog.NewContinuousVariables(1, "x");
+  auto y = prog.NewContinuousVariables(n - 1, "y");
+  VariableRefList vars{x, y};
+  VectorXDecisionVariable vars_as_vec{ConcatenateVariableRefList(vars)};
+
+  std::vector<Eigen::Triplet<double>> A_triplet_list;
+  A_triplet_list.reserve(3 * (n - 2) + 4);
+  double ctr = 0;
+  for (int i = 0; i < n; ++i) {
+    for (int j = std::max(0, i - 1); j < std::min(n, i + 1); ++j) {
+      A_triplet_list.emplace_back(i, j, ctr);
+    }
+  }
+
+  Eigen::SparseMatrix<double> A(n, n);
+  A.setFromTriplets(A_triplet_list.begin(), A_triplet_list.end());
+  const Vector4d lb{-10, -11, -12, -13};
+  const Vector4d ub{3, 7, 11, 17};
+  const auto binding = prog.AddLinearConstraint(A, lb, ub, vars);
+
+  // Check if the binding includes the correct linear constraint.
+  const VectorXDecisionVariable& var_vec{binding.variables()};
+  const auto constraint_ptr = binding.evaluator();
+  EXPECT_EQ(constraint_ptr->num_constraints(), 4);
+
+  const MatrixX<Expression> Ax{(constraint_ptr->GetDenseA() * var_vec)};
+  const VectorX<Expression> lb_in_ctr{constraint_ptr->lower_bound()};
+  const VectorX<Expression> ub_in_ctr{constraint_ptr->upper_bound()};
+
+  EXPECT_TRUE(MatrixExprAllEqual((A * vars_as_vec - lb), Ax - lb_in_ctr));
+  EXPECT_TRUE(MatrixExprAllEqual((A * vars_as_vec - ub), Ax - ub_in_ctr));
+}
+
+GTEST_TEST(TestMathematicalProgram,
+           AddLinearConstraintRowVectorVectorVariablesTest) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables(4, "x");
+  const Eigen::RowVectorXd a{{1, 2, 3, 4}};
+  const double lb = -10;
+  const double ub = 3;
+  const auto binding = prog.AddLinearConstraint(a, lb, ub, x);
+
+  // Check if the binding includes the correct linear constraint.
+  const VectorXDecisionVariable& var_vec{binding.variables()};
+  const auto constraint_ptr = binding.evaluator();
+  EXPECT_EQ(constraint_ptr->num_constraints(), 1);
+
+  const MatrixX<Expression> ax{(constraint_ptr->GetDenseA() * var_vec)};
+  const VectorX<Expression> lb_in_ctr{constraint_ptr->lower_bound()};
+  const VectorX<Expression> ub_in_ctr{constraint_ptr->upper_bound()};
+
+  EXPECT_TRUE((a * x - lb).EqualTo((ax - lb_in_ctr)(0)));
+  EXPECT_TRUE((a * x - ub).EqualTo((ax - ub_in_ctr)(0)));
+}
+
+GTEST_TEST(TestMathematicalProgram,
+           AddLinearConstraintRowVectorVariableRefListTest) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables(1, "x");
+  auto y = prog.NewContinuousVariables(3, "y");
+  VariableRefList vars{x, y};
+  VectorXDecisionVariable vars_as_vec{ConcatenateVariableRefList(vars)};
+
+  const Eigen::RowVectorXd a{{1, 2, 3, 4}};
+  const double lb = -10;
+  const double ub = 3;
+  const auto binding = prog.AddLinearConstraint(a, lb, ub, vars);
+
+  // Check if the binding includes the correct linear constraint.
+  const VectorXDecisionVariable& var_vec{binding.variables()};
+  const auto constraint_ptr = binding.evaluator();
+  EXPECT_EQ(constraint_ptr->num_constraints(), 1);
+
+  const MatrixX<Expression> ax{(constraint_ptr->GetDenseA() * var_vec)};
+  const VectorX<Expression> lb_in_ctr{constraint_ptr->lower_bound()};
+  const VectorX<Expression> ub_in_ctr{constraint_ptr->upper_bound()};
+  EXPECT_TRUE((a * vars_as_vec - lb).EqualTo((ax - lb_in_ctr)(0)));
+  EXPECT_TRUE((a * vars_as_vec - ub).EqualTo((ax - ub_in_ctr)(0)));
 }
 
 GTEST_TEST(TestMathematicalProgram, AddLinearConstraintSymbolic1) {
@@ -2094,6 +2178,102 @@ void CheckAddedNonSymmetricSymbolicLinearEqualityConstraint(
       prog, Vector1<Expression>(e), Vector1d(b));
 }
 }  // namespace
+
+GTEST_TEST(TestMathematicalProgram,
+           AddLinearEqualityConstraintMatrixVectorVariablesTest) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables(4, "x");
+  const Matrix4d A{
+      {1, 2, 3, 4}, {5, 6, 7, 8}, {-9, -10, -11, -12}, {13, 14, 15, 16}};
+  const Vector4d b{-10, -11, -12, -13};
+  const auto binding = prog.AddLinearEqualityConstraint(A, b, x);
+  CheckAddedLinearEqualityConstraintCommon(binding, prog, 0);
+}
+
+GTEST_TEST(TestMathematicalProgram,
+           AddLinearEqualityConstraintMatrixVariableRefListTest) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables(1, "x");
+  auto y = prog.NewContinuousVariables(3, "y");
+  VariableRefList vars{x, y};
+  const Matrix4d A{
+      {1, 2, 3, 4}, {5, 6, 7, 8}, {-9, -10, -11, -12}, {13, 14, 15, 16}};
+  const Vector4d b{-10, -11, -12, -13};
+  const auto binding = prog.AddLinearEqualityConstraint(A, b, vars);
+  CheckAddedLinearEqualityConstraintCommon(binding, prog, 0);
+}
+
+GTEST_TEST(TestMathematicalProgram,
+           AddLinearEqualityConstrainSparseMatrixVectorVariablesTest) {
+  MathematicalProgram prog;
+  const int n = 4;
+  auto x = prog.NewContinuousVariables(1, "x");
+  auto y = prog.NewContinuousVariables(3, "y");
+  VariableRefList vars{x, y};
+
+  std::vector<Eigen::Triplet<double>> A_triplet_list;
+  A_triplet_list.reserve(3 * (n - 2) + 4);
+  double ctr = 0;
+  for (int i = 0; i < n; ++i) {
+    for (int j = std::max(0, i - 1); j < std::min(n, i + 1); ++j) {
+      A_triplet_list.emplace_back(i, j, ctr);
+    }
+  }
+
+  Eigen::SparseMatrix<double> A(n, n);
+  A.setFromTriplets(A_triplet_list.begin(), A_triplet_list.end());
+  const Vector4d b{-10, -11, -12, -13};
+
+  const auto binding = prog.AddLinearEqualityConstraint(A, b, vars);
+  CheckAddedLinearEqualityConstraintCommon(binding, prog, 0);
+}
+
+GTEST_TEST(TestMathematicalProgram,
+           AddLinearEqualityConstrainSparseMatriVariableRefListTest) {
+  MathematicalProgram prog;
+  const int n = 4;
+  auto x = prog.NewContinuousVariables(n, "x");
+  std::vector<Eigen::Triplet<double>> A_triplet_list;
+  A_triplet_list.reserve(3 * (n - 2) + 4);
+  double ctr = 0;
+  for (int i = 0; i < n; ++i) {
+    for (int j = std::max(0, i - 1); j < std::min(n, i + 1); ++j) {
+      A_triplet_list.emplace_back(i, j, ctr);
+    }
+  }
+
+  Eigen::SparseMatrix<double> A(n, n);
+  A.setFromTriplets(A_triplet_list.begin(), A_triplet_list.end());
+  const Vector4d b{-10, -11, -12, -13};
+
+  const auto binding = prog.AddLinearEqualityConstraint(A, b, x);
+  CheckAddedLinearEqualityConstraintCommon(binding, prog, 0);
+}
+
+
+GTEST_TEST(TestMathematicalProgram,
+           AddLinearEqualityConstraintRowVectorVectorVariablesTest) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables(4, "x");
+  const Eigen::RowVectorXd a{{1, 2, 3, 4}};
+  const double b = -10;
+  const auto binding = prog.AddLinearEqualityConstraint(a, b, x);
+  CheckAddedLinearEqualityConstraintCommon(binding, prog, 0);
+}
+
+GTEST_TEST(TestMathematicalProgram,
+           AddLinearConstraintRowVectorVariableRefListTest) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables(1, "x");
+  auto y = prog.NewContinuousVariables(3, "y");
+  VariableRefList vars{x, y};
+  VectorXDecisionVariable vars_as_vec{ConcatenateVariableRefList(vars)};
+
+  const Eigen::RowVectorXd a{{1, 2, 3, 4}};
+  const double b = -10;
+  const auto binding = prog.AddLinearEqualityConstraint(a, b, x);
+  CheckAddedLinearEqualityConstraintCommon(binding, prog, 0);
+}
 
 GTEST_TEST(TestMathematicalProgram, AddSymbolicLinearEqualityConstraint1) {
   // Checks the single row linear equality constraint one by one:
