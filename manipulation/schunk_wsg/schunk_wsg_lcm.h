@@ -65,7 +65,6 @@ class SchunkWsgCommandReceiver : public systems::LeafSystem<double> {
   const double initial_force_{};
 };
 
-
 /// Send lcmt_schunk_wsg_command messages for a Schunk WSG gripper.  Has
 /// two input ports: one for the commanded finger position represented as the
 /// desired signed distance between the fingers in meters, and one for the
@@ -91,13 +90,11 @@ class SchunkWsgCommandSender : public systems::LeafSystem<double> {
 
   explicit SchunkWsgCommandSender(double default_force_limit = 40.0);
 
-  const systems::InputPort<double>& get_position_input_port()
-  const {
+  const systems::InputPort<double>& get_position_input_port() const {
     return this->get_input_port(position_input_port_);
   }
 
-  const systems::InputPort<double>& get_force_limit_input_port()
-  const {
+  const systems::InputPort<double>& get_force_limit_input_port() const {
     return this->get_input_port(force_limit_input_port_);
   }
 
@@ -106,16 +103,14 @@ class SchunkWsgCommandSender : public systems::LeafSystem<double> {
   }
 
  private:
-  void CalcCommandOutput(
-      const systems::Context<double>& context,
-      lcmt_schunk_wsg_command* output) const;
+  void CalcCommandOutput(const systems::Context<double>& context,
+                         lcmt_schunk_wsg_command* output) const;
 
  private:
   const systems::InputPortIndex position_input_port_{};
   const systems::InputPortIndex force_limit_input_port_{};
   const double default_force_limit_;
 };
-
 
 /// Handles lcmt_schunk_wsg_status messages from a LcmSubscriberSystem.  Has
 /// two output ports: one for the measured state of the gripper, represented as
@@ -142,30 +137,25 @@ class SchunkWsgStatusReceiver : public systems::LeafSystem<double> {
     return this->get_input_port(0);
   }
 
-  const systems::OutputPort<double>& get_state_output_port()
-  const {
+  const systems::OutputPort<double>& get_state_output_port() const {
     return this->get_output_port(state_output_port_);
   }
 
-  const systems::OutputPort<double>& get_force_output_port()
-  const {
+  const systems::OutputPort<double>& get_force_output_port() const {
     return this->get_output_port(force_output_port_);
   }
 
  private:
-  void CopyStateOut(
-      const systems::Context<double>& context,
-      systems::BasicVector<double>* output) const;
+  void CopyStateOut(const systems::Context<double>& context,
+                    systems::BasicVector<double>* output) const;
 
-  void CopyForceOut(
-      const systems::Context<double>& context,
-      systems::BasicVector<double>* output) const;
+  void CopyForceOut(const systems::Context<double>& context,
+                    systems::BasicVector<double>* output) const;
 
  private:
   const systems::OutputPortIndex state_output_port_{};
   const systems::OutputPortIndex force_output_port_{};
 };
-
 
 /// Sends lcmt_schunk_wsg_status messages for a Schunk WSG.  This
 /// system has one input port for the current state of the WSG, and one

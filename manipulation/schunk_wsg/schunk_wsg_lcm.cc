@@ -27,8 +27,7 @@ SchunkWsgCommandReceiver::SchunkWsgCommandReceiver(double initial_position,
 
   lcmt_schunk_wsg_command uninitialized_message{};
   this->DeclareAbstractInputPort(
-      "command_message",
-      Value<lcmt_schunk_wsg_command>(uninitialized_message));
+      "command_message", Value<lcmt_schunk_wsg_command>(uninitialized_message));
 }
 
 void SchunkWsgCommandReceiver::CalcPositionOutput(
@@ -119,12 +118,14 @@ void SchunkWsgStatusReceiver::CopyForceOut(
 }
 
 SchunkWsgStatusSender::SchunkWsgStatusSender() {
-  state_input_port_ = this->DeclareInputPort(
-      systems::kUseDefaultName, systems::kVectorValued, 2).get_index();
-  force_input_port_ = this->DeclareInputPort(
-      systems::kUseDefaultName, systems::kVectorValued, 1).get_index();
-  this->DeclareAbstractOutputPort(
-      systems::kUseDefaultName, &SchunkWsgStatusSender::OutputStatus);
+  state_input_port_ = this->DeclareInputPort(systems::kUseDefaultName,
+                                             systems::kVectorValued, 2)
+                          .get_index();
+  force_input_port_ = this->DeclareInputPort(systems::kUseDefaultName,
+                                             systems::kVectorValued, 1)
+                          .get_index();
+  this->DeclareAbstractOutputPort(systems::kUseDefaultName,
+                                  &SchunkWsgStatusSender::OutputStatus);
 }
 
 void SchunkWsgStatusSender::OutputStatus(const Context<double>& context,
