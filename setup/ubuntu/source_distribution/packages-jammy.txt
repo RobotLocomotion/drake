@@ -3,7 +3,6 @@ default-jdk
 file
 gfortran
 git
-libbz2-dev
 libclang-12-dev
 libgl-dev
 libglib2.0-dev

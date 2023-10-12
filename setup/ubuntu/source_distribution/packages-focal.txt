@@ -4,7 +4,6 @@ file
 gfortran
 git
 libblas-dev
-libbz2-dev
 libclang-12-dev
 libgl-dev
 libglib2.0-dev

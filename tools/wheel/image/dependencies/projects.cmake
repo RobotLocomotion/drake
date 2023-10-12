@@ -13,12 +13,6 @@ set(zlib_md5 "9d6a627693163bbbf3f26403a3a0b0b1")
 set(zlib_dlname "zlib-${zlib_version}.zip")
 list(APPEND ALL_PROJECTS zlib)
 
-# bzip2
-set(bzip2_version 1.0.8)
-set(bzip2_url "https://sourceware.org/pub/bzip2/bzip2-${bzip2_version}.tar.gz")
-set(bzip2_md5 "67e051268d0c475ea773822f7500d0e5")
-list(APPEND ALL_PROJECTS bzip2)
-
 # libjpeg-turbo
 set(libjpeg-turbo_version 2.1.4)
 set(libjpeg-turbo_url "https://github.com/libjpeg-turbo/libjpeg-turbo/archive/refs/tags/${libjpeg-turbo_version}.tar.gz")
