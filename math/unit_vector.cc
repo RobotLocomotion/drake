@@ -38,7 +38,7 @@ std::pair<T, bool> IsUnitVector(const Vector3<T> &unit_vector) {
     // -------------------------------------------------------------
     using std::abs;
     using std::isfinite;
-    const double kTolerance2 = 2 * kTolerance_unit_vector_norm;
+    constexpr double kTolerance2 = 2 * kTolerance_unit_vector_norm;
     const T uvec_squared = unit_vector.squaredNorm();
     const bool is_ok_unit_vector = isfinite(uvec_squared) &&
         abs(uvec_squared - 1) <= kTolerance2;
@@ -59,7 +59,7 @@ std::pair<T, bool> IsUnitVector(const Vector3<T> &unit_vector) {
 // ‖bad_unit_vector‖ ≠ 1.
 template <typename T>
 std::string ErrorMessageNotUnitVector(const Vector3<T>& bad_unit_vector,
-    std::string_view function_name) {
+                                      std::string_view function_name) {
   if constexpr (scalar_predicate<T>::is_bool) {
     DRAKE_DEMAND(!function_name.empty());
     using std::abs;
