@@ -1218,8 +1218,13 @@ GTEST_TEST(TestMathematicalProgram,
            AddLinearConstraintMatrixVectorVariablesTest) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables(4, "x");
-  const Matrix4d A{
-      {1, 2, 3, 4}, {5, 6, 7, 8}, {-9, -10, -11, -12}, {13, 14, 15, 16}};
+  Matrix4d A;
+  // clang-format off
+  A << 1, 2, 3, 4,
+       5, 6, 7, 8,
+       -9, -10, -11, -12,
+       13, 14, 15, 16;
+  // clang-format on
   const Vector4d lb{-10, -11, -12, -13};
   const Vector4d ub{3, 7, 11, 17};
   const auto binding = prog.AddLinearConstraint(A, lb, ub, x);
@@ -1245,8 +1250,13 @@ GTEST_TEST(TestMathematicalProgram,
   VariableRefList vars{x, y};
   VectorXDecisionVariable vars_as_vec{ConcatenateVariableRefList(vars)};
 
-  const Matrix4d A{
-      {1, 2, 3, 4}, {5, 6, 7, 8}, {-9, -10, -11, -12}, {13, 14, 15, 16}};
+  Matrix4d A;
+  // clang-format off
+  A << 1, 2, 3, 4,
+       5, 6, 7, 8,
+       -9, -10, -11, -12,
+       13, 14, 15, 16;
+  // clang-format on
   const Vector4d lb{-10, -11, -12, -13};
   const Vector4d ub{3, 7, 11, 17};
   const auto binding = prog.AddLinearConstraint(A, lb, ub, vars);
@@ -1338,7 +1348,7 @@ GTEST_TEST(TestMathematicalProgram,
            AddLinearConstraintRowVectorVectorVariablesTest) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables(4, "x");
-  const Eigen::RowVectorXd a{{1, 2, 3, 4}};
+  const Eigen::RowVector4d a{1, 2, 3, 4};
   const double lb = -10;
   const double ub = 3;
   const auto binding = prog.AddLinearConstraint(a, lb, ub, x);
@@ -1364,7 +1374,7 @@ GTEST_TEST(TestMathematicalProgram,
   VariableRefList vars{x, y};
   VectorXDecisionVariable vars_as_vec{ConcatenateVariableRefList(vars)};
 
-  const Eigen::RowVectorXd a{{1, 2, 3, 4}};
+  const Eigen::RowVector4d a{1, 2, 3, 4};
   const double lb = -10;
   const double ub = 3;
   const auto binding = prog.AddLinearConstraint(a, lb, ub, vars);
@@ -2181,8 +2191,13 @@ GTEST_TEST(TestMathematicalProgram,
            AddLinearEqualityConstraintMatrixVectorVariablesTest) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables(4, "x");
-  const Matrix4d A{
-      {1, 2, 3, 4}, {5, 6, 7, 8}, {-9, -10, -11, -12}, {13, 14, 15, 16}};
+  Matrix4d A;
+  // clang-format off
+  A << 1, 2, 3, 4,
+       5, 6, 7, 8,
+       -9, -10, -11, -12,
+       13, 14, 15, 16;
+  // clang-format on
   const Vector4d b{-10, -11, -12, -13};
   const auto binding = prog.AddLinearEqualityConstraint(A, b, x);
   CheckAddedLinearEqualityConstraintCommon(binding, prog, 0);
@@ -2194,8 +2209,13 @@ GTEST_TEST(TestMathematicalProgram,
   auto x = prog.NewContinuousVariables(1, "x");
   auto y = prog.NewContinuousVariables(3, "y");
   VariableRefList vars{x, y};
-  const Matrix4d A{
-      {1, 2, 3, 4}, {5, 6, 7, 8}, {-9, -10, -11, -12}, {13, 14, 15, 16}};
+  Matrix4d A;
+  // clang-format off
+  A << 1, 2, 3, 4,
+       5, 6, 7, 8,
+       -9, -10, -11, -12,
+       13, 14, 15, 16;
+  // clang-format on
   const Vector4d b{-10, -11, -12, -13};
   const auto binding = prog.AddLinearEqualityConstraint(A, b, vars);
   CheckAddedLinearEqualityConstraintCommon(binding, prog, 0);
@@ -2253,23 +2273,23 @@ GTEST_TEST(TestMathematicalProgram,
            AddLinearEqualityConstraintRowVectorVectorVariablesTest) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables(4, "x");
-  const Eigen::RowVectorXd a{{1, 2, 3, 4}};
+  const Eigen::RowVector4d a{1, 2, 3, 4};
   const double b = -10;
   const auto binding = prog.AddLinearEqualityConstraint(a, b, x);
   CheckAddedLinearEqualityConstraintCommon(binding, prog, 0);
 }
 
 GTEST_TEST(TestMathematicalProgram,
-           AddLinearConstraintRowVectorVariableRefListTest) {
+           AddLinearEqualityConstraintRowVectorVariableRefListTest) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables(1, "x");
   auto y = prog.NewContinuousVariables(3, "y");
   VariableRefList vars{x, y};
   VectorXDecisionVariable vars_as_vec{ConcatenateVariableRefList(vars)};
 
-  const Eigen::RowVectorXd a{{1, 2, 3, 4}};
+  const Eigen::RowVector4d a{1, 2, 3, 4};
   const double b = -10;
-  const auto binding = prog.AddLinearEqualityConstraint(a, b, x);
+  const auto binding = prog.AddLinearEqualityConstraint(a, b, vars);
   CheckAddedLinearEqualityConstraintCommon(binding, prog, 0);
 }
 
