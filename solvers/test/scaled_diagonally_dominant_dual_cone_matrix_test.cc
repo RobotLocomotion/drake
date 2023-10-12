@@ -81,10 +81,11 @@ GTEST_TEST(ScaledDiagonallyDominantMatrixDualConeConstraint,
   };
 
   // This matrix is in both PSD and SDD*
+  Eigen::Matrix3d test1;
   // clang-format off
-  const Eigen::Matrix3d test1{{2, 1, 1},
-                              {1, 3, 1},
-                              {1, 1, 4}};
+  test1 << 2., 1., 1.,
+           1., 3., 1.,
+           1., 1., 4.;
 
   // clang-format on
   set_X_value(test1);
@@ -93,10 +94,11 @@ GTEST_TEST(ScaledDiagonallyDominantMatrixDualConeConstraint,
   EXPECT_EQ(TestInDualConeByGenerators(result.GetSolution(X)), -1);
 
   // This matrix is in both SDD* but not is not PSD.
+  Eigen::Matrix3d test2;
   // clang-format off
-  const Eigen::Matrix3d test2{{32, 8, 0},
-                              {8, 2, 3},
-                              {0, 3, 8}};
+  test2 << 32., 8., 0.,
+           8., 2., 3.,
+           0., 3., 8.;
   // clang-format on
   set_X_value(test2);
   result = Solve(prog);
@@ -104,10 +106,11 @@ GTEST_TEST(ScaledDiagonallyDominantMatrixDualConeConstraint,
   EXPECT_EQ(TestInDualConeByGenerators(result.GetSolution(X)), -1);
 
   // This matrix is in DD* but not SDD*.
+  Eigen::Matrix3d test3;
   // clang-format off
-  const Eigen::Matrix3d test3{{32, 9, 0},
-                              {9, 2, 3},
-                              {0, 3, 8}};
+  test3 << 32., 9., 0.,
+            9., 2., 3.,
+            0., 3., 8.;
   // clang-format on
   set_X_value(test3);
   result = Solve(prog);
@@ -126,8 +129,8 @@ GTEST_TEST(ScaledDiagonallyDominantMatrixDualConeConstraint,
   VectorXDecisionVariable x_dd_flat(6);
   x_dd_flat << X_dd(0, 0), X_dd(0, 1), X_dd(0, 2), X_dd(1, 1), X_dd(1, 2),
       X_dd(2, 2);
-  auto X_dd_constraint = prog_dd.AddBoundingBoxConstraint(
-      test3_flat, test3_flat,x_dd_flat);
+  auto X_dd_constraint =
+      prog_dd.AddBoundingBoxConstraint(test3_flat, test3_flat, x_dd_flat);
   auto result_dd = Solve(prog_dd);
   EXPECT_TRUE(result_dd.is_success());
 }
@@ -165,10 +168,11 @@ GTEST_TEST(ScaledDiagonallyDominantMatrixDualConeConstraint,
   };
 
   // This matrix is in both PSD and SDD*
+  Eigen::Matrix3d test1;
   // clang-format off
-  const Eigen::Matrix3d test1{{2, 1, 1},
-                              {1, 3, 1},
-                              {1, 1, 4}};
+  test1 << 2., 1., 1.,
+           1., 3., 1.,
+           1., 1., 4.;
   // clang-format on
   set_Z_value(test1);
   MathematicalProgramResult result = Solve(prog);
@@ -176,10 +180,12 @@ GTEST_TEST(ScaledDiagonallyDominantMatrixDualConeConstraint,
   EXPECT_EQ(TestInDualConeByGenerators(GetZResult(result)), -1);
 
   // This matrix is in both SDD* but not is not PSD.
+  Eigen::Matrix3d test2;
+
   // clang-format off
-  const Eigen::Matrix3d test2{{32, 8, 0},
-                              {8, 2, 3},
-                              {0, 3, 8}};
+  test2 << 32., 8., 0.,
+           8., 2., 3.,
+           0., 3., 8.;
   // clang-format on
   set_Z_value(test2);
   result = Solve(prog);
@@ -187,10 +193,11 @@ GTEST_TEST(ScaledDiagonallyDominantMatrixDualConeConstraint,
   EXPECT_EQ(TestInDualConeByGenerators(GetZResult(result)), -1);
 
   // This matrix is in DD* but not SDD*.
+  Eigen::Matrix3d test3;
   // clang-format off
-  const Eigen::Matrix3d test3{{32, 9, 0},
-                              {9, 2, 3},
-                              {0, 3, 8}};
+  test3 << 32., 9., 0.,
+           9., 2., 3.,
+           0., 3., 8.;
   // clang-format on
   set_Z_value(test3);
   result = Solve(prog);
