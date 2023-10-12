@@ -5,6 +5,11 @@
 #include "drake/bindings/pydrake/common/cpp_param_pybind.h"
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_pybind.h"
+
+
+#include "drake/bindings/pydrake/common/wrap_function.h"
+#include "drake/bindings/pydrake/common/wrap_pybind.h"
+
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
@@ -884,16 +889,17 @@ void BindMathematicalProgram(py::module m) {
               &MathematicalProgram::AddLinearConstraint),
           py::arg("A"), py::arg("lb"), py::arg("ub"), py::arg("vars"),
           doc.MathematicalProgram.AddLinearConstraint.doc_4args_A_lb_ub_dense)
-      .def("AddLinearConstraint",
-          static_cast<Binding<LinearConstraint> (MathematicalProgram::*)(
-              const Eigen::Ref<const Eigen::SparseMatrix<double>>&,
-              const Eigen::Ref<const Eigen::VectorXd>&,
-              const Eigen::Ref<const Eigen::VectorXd>&,
-              const Eigen::Ref<const VectorXDecisionVariable>&)>(
-              &MathematicalProgram::AddLinearConstraint),
-          py::arg("A"), py::arg("lb"), py::arg("ub"), py::arg("vars")
-          ,doc.MathematicalProgram.AddLinearConstraint.doc_4args_A_lb_ub_sparse
-          )
+      .def(
+          "AddLinearConstraint",
+          [](MathematicalProgram* self,
+              const Eigen::SparseMatrix<double>& A,
+              const Eigen::Ref<const Eigen::VectorXd>& lb,
+              const Eigen::Ref<const Eigen::VectorXd>& ub,
+              const Eigen::Ref<const VectorXDecisionVariable>& vars) {
+            return self->AddLinearConstraint(A, lb, ub, vars);
+          },
+          py::arg("A"), py::arg("lb"), py::arg("ub"), py::arg("vars"),
+          doc.MathematicalProgram.AddLinearConstraint.doc_4args_A_lb_ub_sparse)
       .def("AddLinearConstraint",
           static_cast<Binding<LinearConstraint> (MathematicalProgram::*)(
               const Eigen::Ref<const Eigen::RowVectorXd>&, double, double,
@@ -937,12 +943,12 @@ void BindMathematicalProgram(py::module m) {
           doc.MathematicalProgram.AddLinearEqualityConstraint
               .doc_3args_A_b_dense)
       .def("AddLinearEqualityConstraint",
-          static_cast<Binding<LinearEqualityConstraint> (
-              MathematicalProgram::*)(
-              const Eigen::Ref<const Eigen::SparseMatrix<double>>&,
-              const Eigen::Ref<const Eigen::VectorXd>&,
-              const Eigen::Ref<const VectorXDecisionVariable>&)>(
-              &MathematicalProgram::AddLinearEqualityConstraint),
+          [](MathematicalProgram* self,
+              const Eigen::SparseMatrix<double>& Aeq,
+              const Eigen::Ref<const Eigen::VectorXd>& beq,
+              const Eigen::Ref<const VectorXDecisionVariable>& vars) {
+            return self->AddLinearEqualityConstraint(Aeq, beq, vars);
+          },
           py::arg("Aeq"), py::arg("beq"), py::arg("vars"),
           doc.MathematicalProgram.AddLinearEqualityConstraint
               .doc_3args_A_b_sparse)
