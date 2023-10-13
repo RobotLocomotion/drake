@@ -884,6 +884,15 @@ void BindMathematicalProgram(py::module m) {
               &MathematicalProgram::AddLinearConstraint),
           py::arg("A"), py::arg("lb"), py::arg("ub"), py::arg("vars"),
           doc.MathematicalProgram.AddLinearConstraint.doc_4args_A_lb_ub_dense)
+      .def("AddLinearConstraint",
+          static_cast<Binding<LinearConstraint> (MathematicalProgram::*)(
+              const Eigen::Ref<const Eigen::RowVectorXd>&, double, double,
+              const Eigen::Ref<const VectorXDecisionVariable>&)>(
+              &MathematicalProgram::AddLinearConstraint),
+          py::arg("a"), py::arg("lb"), py::arg("ub"), py::arg("vars"),
+          doc.MathematicalProgram.AddLinearConstraint.doc_4args_a_lb_ub_vars)
+      // Ensure that the sparse version is bound last as otherwise the lambda
+      // captures the MatrixX and RowVectorX cases.
       .def(
           "AddLinearConstraint",
           [](MathematicalProgram* self, const Eigen::SparseMatrix<double>& A,
@@ -894,13 +903,6 @@ void BindMathematicalProgram(py::module m) {
           },
           py::arg("A"), py::arg("lb"), py::arg("ub"), py::arg("vars"),
           doc.MathematicalProgram.AddLinearConstraint.doc_4args_A_lb_ub_sparse)
-      .def("AddLinearConstraint",
-          static_cast<Binding<LinearConstraint> (MathematicalProgram::*)(
-              const Eigen::Ref<const Eigen::RowVectorXd>&, double, double,
-              const Eigen::Ref<const VectorXDecisionVariable>&)>(
-              &MathematicalProgram::AddLinearConstraint),
-          py::arg("a"), py::arg("lb"), py::arg("ub"), py::arg("vars"),
-          doc.MathematicalProgram.AddLinearConstraint.doc_4args_a_lb_ub_vars)
       .def("AddLinearConstraint",
           static_cast<Binding<LinearConstraint> (MathematicalProgram::*)(
               const Expression&, double, double)>(
@@ -936,6 +938,16 @@ void BindMathematicalProgram(py::module m) {
           py::arg("Aeq"), py::arg("beq"), py::arg("vars"),
           doc.MathematicalProgram.AddLinearEqualityConstraint
               .doc_3args_A_b_dense)
+      .def("AddLinearEqualityConstraint",
+          static_cast<Binding<LinearEqualityConstraint> (
+              MathematicalProgram::*)(
+              const Eigen::Ref<const Eigen::RowVectorXd>&, double,
+              const Eigen::Ref<const VectorXDecisionVariable>&)>(
+              &MathematicalProgram::AddLinearEqualityConstraint),
+          py::arg("a"), py::arg("beq"), py::arg("vars"),
+          doc.MathematicalProgram.AddLinearConstraint.doc_4args_a_lb_ub_vars)
+      // Ensure that the sparse version is bound last as otherwise the lambda
+      // captures the MatrixX and RowVectorX cases.
       .def(
           "AddLinearEqualityConstraint",
           [](MathematicalProgram* self, const Eigen::SparseMatrix<double>& Aeq,
@@ -946,14 +958,6 @@ void BindMathematicalProgram(py::module m) {
           py::arg("Aeq"), py::arg("beq"), py::arg("vars"),
           doc.MathematicalProgram.AddLinearEqualityConstraint
               .doc_3args_A_b_sparse)
-      .def("AddLinearEqualityConstraint",
-          static_cast<Binding<LinearEqualityConstraint> (
-              MathematicalProgram::*)(
-              const Eigen::Ref<const Eigen::RowVectorXd>&, double,
-              const Eigen::Ref<const VectorXDecisionVariable>&)>(
-              &MathematicalProgram::AddLinearEqualityConstraint),
-          py::arg("a"), py::arg("beq"), py::arg("vars"),
-          doc.MathematicalProgram.AddLinearConstraint.doc_4args_a_lb_ub_vars)
       .def("AddLinearEqualityConstraint",
           static_cast<Binding<LinearEqualityConstraint> (
               MathematicalProgram::*)(const Expression&, double)>(

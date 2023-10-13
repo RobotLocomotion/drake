@@ -799,7 +799,7 @@ class TestMathematicalProgram(unittest.TestCase):
                                          vars=x)
         prog.AddLinearEqualityConstraint(Aeq=A_sparse, beq=np.zeros(2),
                                          vars=x)
-        prog.AddLinearConstraint(a=[1, 1], beq=0, vars=x)
+        prog.AddLinearEqualityConstraint(a=[1, 1], beq=0, vars=x)
         prog.AddLinearEqualityConstraint(f=x[0] == 1)
         prog.AddLinearEqualityConstraint(e=x[0] + x[1], b=1)
         prog.AddLinearEqualityConstraint(
