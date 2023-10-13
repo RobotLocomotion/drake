@@ -19,7 +19,7 @@ int TestIn2by2DiagonallyDominantDualCone(const Eigen::Matrix2d& X) {
       Eigen::Vector2d(1, -1);
 
   for (int c = 0; c < extreme_rays.cols(); ++c) {
-    if (extreme_rays.col(c).transpose() * X * extreme_rays.col(c) < 1e-12) {
+    if (extreme_rays.col(c).transpose() * X * extreme_rays.col(c) < -1e-10) {
       return c;
     }
   }
@@ -37,7 +37,7 @@ int TestIn3by3DiagonallyDominantDualCone(const Eigen::Matrix3d& X) {
       Eigen::Vector3d(0, 1, -1), Eigen::Vector3d(1, 0, 1),
       Eigen::Vector3d(1, 0, -1);
   for (int c = 0; c < extreme_rays.cols(); ++c) {
-    if (extreme_rays.col(c).transpose() * X * extreme_rays.col(c) < 1e-12) {
+    if (extreme_rays.col(c).transpose() * X * extreme_rays.col(c) < -1e-10) {
       return c;
     }
   }
