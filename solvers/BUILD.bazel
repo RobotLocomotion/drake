@@ -1762,28 +1762,8 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "diagonally_dominant_dual_cone_matrix_test",
-    deps = [
-        ":mathematical_program",
-        ":snopt_solver",
-        ":solve",
-        "//common/test_utilities:eigen_matrix_compare",
-    ],
-)
-
-drake_cc_googletest(
     name = "scaled_diagonally_dominant_matrix_test",
     tags = gurobi_test_tags() + mosek_test_tags(),
-    deps = [
-        ":mathematical_program",
-        ":solve",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//common/test_utilities:symbolic_test_util",
-    ],
-)
-
-drake_cc_googletest(
-    name = "scaled_diagonally_dominant_dual_cone_matrix_test",
     deps = [
         ":mathematical_program",
         ":solve",
