@@ -862,8 +862,7 @@ class MathematicalProgram {
    * decision variables.
    * @pre Each entry in new_indeterminates should be of CONTINUOUS type.
    */
-  void AddIndeterminates(
-      const symbolic::Variables& new_indeterminates);
+  void AddIndeterminates(const symbolic::Variables& new_indeterminates);
 
   /**
    * Adds a callback method to visualize intermediate results of the
