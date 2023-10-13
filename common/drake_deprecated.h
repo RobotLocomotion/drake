@@ -1,5 +1,10 @@
 #pragma once
 
+#include <string>
+#include <string_view>
+
+#include "drake/common/fmt.h"
+
 /** @file
 Provides a portable macro for use in generating compile-time warnings for
 use of code that is permitted but discouraged. */
@@ -62,3 +67,42 @@ Sample uses: @code
                " on or after " removal_date ".")]]
 
 #endif  // DRAKE_DOXYGEN_CXX
+
+namespace drake {
+namespace internal {
+
+/* When constructed, logs a deprecation message; the destructor is guaranteed
+to be trivial. This is useful for declaring an instance of this class as a
+function-static global, so that a warning is logged the first time the program
+encounters some code, but does not repeat the warning on subsequent encounters
+within the same process.
+
+For example:
+<pre>
+void OldCalc(double data) {
+  static const drake::internal::WarnDeprecated warn_once(
+      "2038-01-19", "The method {} has been renamed to {}.",
+      "OldCalc()", "NewCalc()");
+  return NewCalc(data);
+}
+</pre> */
+class[[maybe_unused]] WarnDeprecated {
+ public:
+  /* The removal_date must be in the form YYYY-MM-DD. */
+  template <typename... Args>
+  WarnDeprecated(std::string_view removal_date, const char* a,
+                 const Args&... b) {
+    // TODO(jwnimmer-tri) Ideally we would compile-time check our format string
+    // `a` without using fmt_runtime here, but I haven't figured out how to
+    // forward the arguments properly for all versions of fmt.
+    const std::string message = fmt::format(drake::fmt_runtime(a), b...);
+    DoWarnDeprecated(removal_date, message);
+  }
+
+ private:
+  static void DoWarnDeprecated(std::string_view removal_date,
+                               std::string_view message);
+};
+
+}  // namespace internal
+}  // namespace drake
