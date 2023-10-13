@@ -40,10 +40,10 @@ std::pair<T, bool> IsUnitVector(const Vector3<T> &unit_vector,
     // -------------------------------------------------------------
     using std::abs;
     using std::isfinite;
-    const double kTolerance2 = 2 * tolerance_unit_vector_norm;
+    const double tolerance2 = 2 * tolerance_unit_vector_norm;
     const T uvec_squared = unit_vector.squaredNorm();
     const bool is_ok_unit_vector = isfinite(uvec_squared) &&
-        abs(uvec_squared - 1) <= kTolerance2;
+        abs(uvec_squared - 1) <= tolerance2;
     return {uvec_squared, is_ok_unit_vector};
   }
   return {1.0, true};
