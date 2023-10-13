@@ -781,7 +781,7 @@ class TestMathematicalProgram(unittest.TestCase):
 
         A_sparse = scipy.sparse.csc_matrix(
             (np.array([2, 1., 3]), np.array([0, 1, 0]),
-             np.array([0, 2, 2, 3])), shape=(2,2))
+             np.array([0, 2, 2, 3])), shape=(2, 2))
 
         prog.AddBoundingBoxConstraint(lb, ub, x)
         prog.AddBoundingBoxConstraint(0., 1., x[0])
@@ -796,13 +796,14 @@ class TestMathematicalProgram(unittest.TestCase):
         prog.AddLinearConstraint(f=(x[0] == 0))
 
         prog.AddLinearEqualityConstraint(Aeq=np.eye(2), beq=np.zeros(2),
-                                 vars=x)
+                                         vars=x)
         prog.AddLinearEqualityConstraint(Aeq=A_sparse, beq=np.zeros(2),
                                          vars=x)
+        prog.AddLinearConstraint(a=[1, 1], beq=0, vars=x)
         prog.AddLinearEqualityConstraint(f=x[0] == 1)
         prog.AddLinearEqualityConstraint(e=x[0] + x[1], b=1)
         prog.AddLinearEqualityConstraint(
-            v=2 * x[:2] + np.array([0, 1]),b= np.array([3, 2]))
+            v=2 * x[:2] + np.array([0, 1]), b=np.array([3, 2]))
 
     def test_constraint_set_bounds(self):
         prog = mp.MathematicalProgram()

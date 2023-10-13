@@ -1465,7 +1465,7 @@ class MathematicalProgram {
    * Adds sparse linear constraints referencing potentially a subset
    * of the decision variables (defined in the vars parameter).
    *
-   * @pydrake_mkdoc_identifier{Not bound in pydrake.}
+   * @exclude_from_pydrake_mkdoc{Not bound in pydrake.}
    */
   Binding<LinearConstraint> AddLinearConstraint(
       const Eigen::Ref<const Eigen::SparseMatrix<double>>& A,
@@ -1479,7 +1479,7 @@ class MathematicalProgram {
    * Adds linear constraints referencing potentially a subset
    * of the decision variables (defined in the vars parameter).
    *
-   * @exclude_from_pydrake_mkdoc{4args_A_lb_ub_dense}
+   * @pydrake_mkdoc_identifier{4args_A_lb_ub_dense}
    */
   Binding<LinearConstraint> AddLinearConstraint(
       const Eigen::Ref<const Eigen::MatrixXd>& A,
@@ -1819,8 +1819,6 @@ class MathematicalProgram {
    * @param a A row vector.
    * @param beq A scalar.
    * @param vars The decision variables on which the constraint is imposed.
-   *
-   * @exclude_from_pydrake_mkdoc{Not bound in pydrake.}
    */
   Binding<LinearEqualityConstraint> AddLinearEqualityConstraint(
       const Eigen::Ref<const Eigen::RowVectorXd>& a, double beq,
