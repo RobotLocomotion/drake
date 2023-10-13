@@ -259,8 +259,8 @@ class RotationMatrix {
   /// @pre axis_index is 0 or 1 or 2.
   /// @throws std::exception if u_A is not a unit vector, i.e., |u_A| is not
   /// within a tolerance of 4ε ≈ 8.88E-16 to 1.0.
-  /// @note This method is designed for maximum performance and does not verify
-  ///  u_A as a unit vector. Altentatively, consider MakeFromOneVector().
+  /// @note This method is designed for speed and does not normalize u_A to
+  ///  ensure it is a unit vector. Alternatively, consider MakeFromOneVector().
   /// @retval R_AB the rotation matrix whose properties are described in
   /// MakeFromOneVector().
   static RotationMatrix<T> MakeFromOneUnitVector(const Vector3<T>& u_A,
