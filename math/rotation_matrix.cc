@@ -133,7 +133,11 @@ RotationMatrix<T> RotationMatrix<T>::MakeFromOneUnitVector(
     const Vector3<T>& u_A, int axis_index) {
   // In Debug builds, verify axis_index is 0 or 1 or 2 and u_A is unit length.
   DRAKE_ASSERT(axis_index >= 0 && axis_index <= 2);
-  math::internal::ThrowIfNotUnitVector(u_A, __func__);
+
+  // The following value of kTolerance was determined empirically and
+  // seems to guarantee a valid RotationMatrix() (see IsValid()).
+  constexpr double kTolerance = 4 * std::numeric_limits<double>::epsilon();
+  math::internal::ThrowIfNotUnitVector(u_A, __func__, kTolerance);
 
   // This method forms a right-handed orthonormal basis with u_A and two
   // internally-constructed unit vectors v_A and w_A.

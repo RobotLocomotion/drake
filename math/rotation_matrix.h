@@ -257,10 +257,10 @@ class RotationMatrix {
   /// @param[in] axis_index The index ∈ {0, 1, 2} of the unit vector associated
   ///  with u_A, 0 means u_A is Bx, 1 means u_A is By, and 2 means u_A is Bz.
   /// @pre axis_index is 0 or 1 or 2.
-  /// @throws std::exception in Debug builds if u_A is not a unit vector, i.e.,
-  /// |u_A| is not within a tolerance of 4ε ≈ 8.88E-16 to 1.0.
+  /// @throws std::exception if u_A is not a unit vector, i.e., |u_A| is not
+  /// within a tolerance of 4ε ≈ 8.88E-16 to 1.0.
   /// @note This method is designed for maximum performance and does not verify
-  ///  u_A as a unit vector in Release builds.  Consider MakeFromOneVector().
+  ///  u_A as a unit vector. Altentatively, consider MakeFromOneVector().
   /// @retval R_AB the rotation matrix whose properties are described in
   /// MakeFromOneVector().
   static RotationMatrix<T> MakeFromOneUnitVector(const Vector3<T>& u_A,
