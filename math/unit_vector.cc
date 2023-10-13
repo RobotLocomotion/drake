@@ -7,20 +7,22 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/fmt_eigen.h"
 #include "drake/common/text_logging.h"
+#include "drake/common/unused.h"
 
 namespace drake {
 namespace math {
 namespace internal {
 
 namespace {
-// Checks if ‖unit_vector‖ is within kTolerance_unit_vector_norm of 1.0.
+// Checks if ‖unit_vector‖ is within tolerance_unit_vector_norm of 1.0.
 // @param[in] unit_vector a vector which is allegedly a unit vector.
 // @retval {‖unit_vector‖², is_ok_unit_vector} as pair. If ‖unit_vector‖ is OK,
 // returns {‖unit_vector‖², true}, otherwise returns {‖unit_vector‖², false}.
 // @note: When type T is symbolic::Expression, this function is a no-op that
 // returns {1.0, {true}}.
 template<typename T>
-std::pair<T, bool> IsUnitVector(const Vector3<T> &unit_vector) {
+std::pair<T, bool> IsUnitVector(const Vector3<T> &unit_vector,
+    const double tolerance_unit_vector_norm) {
   if constexpr (scalar_predicate<T>::is_bool) {
     // A test that a unit vector's magnitude is within a very small ε of 1 is
     // |√(𝐯⋅𝐯) − 1| ≤ ε. To avoid an unnecessary square-root, notice that this
@@ -34,11 +36,11 @@ std::pair<T, bool> IsUnitVector(const Vector3<T> &unit_vector) {
     // Hence the following test with norm() that uses an extra √, e.g., as
     // sqrt(squaredNorm()), is replaced by one that only uses squaredNorm().
     // is_ok_unit_vector =
-    //     (abs(unit_vector.norm() - 1) <=  kTolerance_unit_vector_norm;
+    //     (abs(unit_vector.norm() - 1) <=  tolerance_unit_vector_norm;
     // -------------------------------------------------------------
     using std::abs;
     using std::isfinite;
-    constexpr double kTolerance2 = 2 * kTolerance_unit_vector_norm;
+    const double kTolerance2 = 2 * tolerance_unit_vector_norm;
     const T uvec_squared = unit_vector.squaredNorm();
     const bool is_ok_unit_vector = isfinite(uvec_squared) &&
         abs(uvec_squared - 1) <= kTolerance2;
@@ -59,7 +61,8 @@ std::pair<T, bool> IsUnitVector(const Vector3<T> &unit_vector) {
 // ‖bad_unit_vector‖ ≠ 1.
 template <typename T>
 std::string ErrorMessageNotUnitVector(const Vector3<T>& bad_unit_vector,
-                                      std::string_view function_name) {
+                                      std::string_view function_name,
+                                      const double tolerance_unit_vector_norm) {
   if constexpr (scalar_predicate<T>::is_bool) {
     DRAKE_DEMAND(!function_name.empty());
     using std::abs;
@@ -70,9 +73,10 @@ std::string ErrorMessageNotUnitVector(const Vector3<T>& bad_unit_vector,
                   "|unit_vector| = {}\n"
                   "||unit_vector| - 1| = {} is greater than {}.",
                   function_name, fmt_eigen(bad_unit_vector.transpose()),
-                  norm, norm_diff, kTolerance_unit_vector_norm);
+                  norm, norm_diff, tolerance_unit_vector_norm);
     return error_message;
   }
+  unused(tolerance_unit_vector_norm);
   return {};
 }
 
@@ -80,28 +84,32 @@ std::string ErrorMessageNotUnitVector(const Vector3<T>& bad_unit_vector,
 
 template <typename T>
 T ThrowIfNotUnitVector(const Vector3<T>& unit_vector,
-                       std::string_view function_name) {
+                       std::string_view function_name,
+                       double tolerance_unit_vector_norm) {
   DRAKE_DEMAND(!function_name.empty());
-  auto[unit_vector_squaredNorm, is_ok_unit_vector] = IsUnitVector(unit_vector);
+  auto[unit_vector_squared_norm, is_ok_unit_vector]=
+      IsUnitVector(unit_vector, tolerance_unit_vector_norm);
   if (!is_ok_unit_vector) {
-    throw std::logic_error(
-        ErrorMessageNotUnitVector(unit_vector, function_name));
+    throw std::logic_error(ErrorMessageNotUnitVector(
+        unit_vector, function_name, tolerance_unit_vector_norm));
   }
-  return unit_vector_squaredNorm;
+  return unit_vector_squared_norm;
 }
 
 template <typename T>
 T WarnIfNotUnitVector(const Vector3<T>& unit_vector,
     std::string_view function_name) {
   DRAKE_DEMAND(!function_name.empty());
-  auto [unit_vector_squaredNorm, is_ok_unit_vector] = IsUnitVector(unit_vector);
+  auto [unit_vector_squared_norm, is_ok_unit_vector] =
+      IsUnitVector(unit_vector, kToleranceUnitVectorNorm);
   if (!is_ok_unit_vector) {
     static const logging::Warn log_once(
         "{}\nImplicit normalization is deprecated; on or after 2023-12-01 this "
         "will become an exception.",
-        ErrorMessageNotUnitVector(unit_vector, function_name));
+        ErrorMessageNotUnitVector(
+            unit_vector, function_name, kToleranceUnitVectorNorm));
   }
-  return unit_vector_squaredNorm;
+  return unit_vector_squared_norm;
 }
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((
