@@ -9,16 +9,11 @@ namespace drake {
 namespace math {
 namespace internal {
 
-// Tolerance for ‖unit_vector‖ is 2 bits (≈ 8.88E-16) of 1.0, where
-// 2 bits corresponds to 2²ε and ε = std::numeric_limits<double>::epsilon().
-// @note The use of 2 bits was determined empirically by checking a vast range
-// of vectors that were normalized and noting many had ‖unit_vector‖ = 1
-// (exactly), and all (for the computer being used) were ≤ 1 bit of 1.0.
-// Alleged unit vectors that are more than 2 bits from 1.0 should be normalized.
-constexpr double kTolerance_unit_vector_norm =
-    4 * std::numeric_limits<double>::epsilon();
+// Tolerance for ‖unit_vector‖ is 1E-14 (≈ 5.5 bits) of 1.0.
+// Note: 1E-14 ≈ 2^5.5 * std::numeric_limits<double>::epsilon();
+constexpr double kToleranceUnitVectorNorm = 1.0E-14;
 
-// Throws unless ‖unit_vector‖ is within kTolerance_unit_vector_norm of 1.0.
+// Throws unless ‖unit_vector‖ is within tolerance_unit_vector_norm of 1.0.
 // @param[in] unit_vector a vector which is allegedly a unit vector.
 // @param[in] function_name name of the function that is to appear in the
 // exception message (if an exception is thrown).
@@ -38,9 +33,10 @@ constexpr double kTolerance_unit_vector_norm =
 // @endcode
 template <typename T>
 T ThrowIfNotUnitVector(const Vector3<T>& unit_vector,
-                       std::string_view function_name);
+    std::string_view function_name,
+    double tolerance_unit_vector_norm = kToleranceUnitVectorNorm);
 
-// If ‖unit_vector‖ is not within kTolerance_unit_vector_norm of 1.0,
+// If ‖unit_vector‖ is not within kToleranceUnitVectorNorm of 1.0,
 // writes a warning to the log file (only writes one warning per process).
 // @param[in] unit_vector a vector which is allegedly a unit vector.
 // @param[in] function_name name of the function that appears in the message
@@ -59,6 +55,13 @@ T ThrowIfNotUnitVector(const Vector3<T>& unit_vector,
 //  if (mag_squared != 1.0) unit_vector /= sqrt(mag_squared);
 // @endcode
 // TODO(2023-12-01) Change calls to this function to ThrowIfNotUnitVector().
+//  If this function does not have utility past that date, consider also
+//  deleting this function. Alternatively, consider updating this function to
+//  address concerns from Jeremy. "This function is not suitable to be used
+//  from multiple call sites.  It only warns once per process, instead of once
+//  per date or once per class or once per function. Once per process is not
+//  sufficient to give users enough feedback when they have non-unit vectors
+//  reaching multiple points of entry."
 template <typename T>
 T WarnIfNotUnitVector(const Vector3<T>& unit_vector,
                       std::string_view function_name);
