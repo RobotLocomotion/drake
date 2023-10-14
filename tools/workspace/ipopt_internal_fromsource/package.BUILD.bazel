@@ -91,7 +91,6 @@ _HDRS_PUBLIC = [
     "src/Interfaces/IpReturnCodes.h",
     "src/Interfaces/IpReturnCodes.hpp",
     "src/Interfaces/IpReturnCodes_inc.h",
-    "src/Interfaces/IpReturnCodes.inc",
     "src/Interfaces/IpSolveStatistics.hpp",
     "src/Interfaces/IpStdCInterface.h",
     "src/Interfaces/IpTNLP.hpp",

@@ -1,7 +1,12 @@
+[qhull] Remove problematic friendship
+
 For private access within the module, don't use out-of-namespace friendship with
 an `extern "C"` function. This doesn't work with drake's namespace vendoring.
 
 Instead, just make the fields public.
+
+The Qhull license requires us to publish the author, date, and reason
+for changes: Author: Jeremy Nimmer; Date: Jun 2, 2022.
 
 --- src/libqhullcpp/QhullQh.h.orig
 +++ src/libqhullcpp/QhullQh.h

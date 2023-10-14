@@ -1,7 +1,11 @@
 load("//tools/skylark:cc.bzl", "cc_library")
 load("//tools/skylark:drake_cc.bzl", "cc_linkonly_library")
 load("//tools/workspace:cmake_configure_file.bzl", "autoconf_configure_file")
-load("//tools/workspace:vendor_cxx.bzl", "cc_library_vendored")
+load(
+    "//tools/workspace:vendor_cxx.bzl",
+    "cc_library_vendored",
+    "generate_vendor_patch",
+)
 
 def coin_cc_library(
         *,
@@ -152,41 +156,17 @@ def coin_cc_library(
 
     # Optionally, create a patch with all of our source code edits. Sometimes,
     # LICENSE conditions require us to redistribute our source code changes.
-    if output_vendoring_patch == None:
-        return
-
-    diff_inputs = [
-        (config_h_private, "hdr_private/" + config_h),
-    ] + zip(
-        srcs + hdrs_private,
-        [
-            x.replace("src/", "drake_src/")
-            for x in srcs + hdrs_private
-        ],
-    )
-
-    for upstream_src, vendor_src in diff_inputs:
-        native.genrule(
-            name = "_genrule_{}_patch".format(vendor_src),
-            srcs = [upstream_src, vendor_src],
-            outs = [vendor_src + ".patch"],
-            cmd = " ".join([
-                "(diff -U0",
-                "--label={upstream_src} $(execpath {upstream_src})",
-                "--label={vendor_src} $(execpath {vendor_src})",
-                "> $@ || [[ $$? == 1 ]])",
-            ]).format(
-                upstream_src = upstream_src,
-                vendor_src = vendor_src,
-            ),
+    if output_vendoring_patch:
+        before = [config_h_private]
+        after = ["hdr_private/" + config_h]
+        for file in srcs + hdrs_private + hdrs_public:
+            if file not in before:
+                before.append(file)
+                after.append(file.replace("src/", "drake_src/"))
+        generate_vendor_patch(
+            name = output_vendoring_patch,
+            srcs = before,
+            srcs_vendored = after,
+            extra_prologue = """
+This patch also shows the config.h settings used by Drake.""",
         )
-
-    native.genrule(
-        name = "_genrule_full_patch",
-        srcs = [
-            vendor_src + ".patch"
-            for (_, vendor_src) in diff_inputs
-        ],
-        outs = [output_vendoring_patch],
-        cmd = "cat $(SRCS) > $@",
-    )
