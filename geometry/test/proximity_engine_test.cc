@@ -231,6 +231,17 @@ GTEST_TEST(ProximityEngineTests, ProcessHydroelasticProperties) {
               HydroelasticType::kSoft);
   }
 
+  // Case: rigid mesh vtk.
+  {
+    Mesh mesh{
+        drake::FindResourceOrThrow("drake/geometry/test/non_convex_mesh.vtk"),
+        1.0 /* scale */};
+    const GeometryId mesh_id = GeometryId::get_new_id();
+    engine.AddDynamicGeometry(mesh, {}, mesh_id, rigid_properties);
+    EXPECT_EQ(ProximityEngineTester::hydroelastic_type(mesh_id, engine),
+              HydroelasticType::kRigid);
+  }
+
   // Case: rigid convex.
   {
     Convex convex{
@@ -240,6 +251,67 @@ GTEST_TEST(ProximityEngineTests, ProcessHydroelasticProperties) {
     engine.AddDynamicGeometry(convex, {}, convex_id, rigid_properties);
     EXPECT_EQ(ProximityEngineTester::hydroelastic_type(convex_id, engine),
               HydroelasticType::kRigid);
+  }
+
+  // Case: rigid convex vtk.
+  {
+    Convex convex{
+        drake::FindResourceOrThrow("drake/geometry/test/one_tetrahedron.vtk"),
+        edge_length};
+    const GeometryId convex_id = GeometryId::get_new_id();
+    engine.AddDynamicGeometry(convex, {}, convex_id, rigid_properties);
+    EXPECT_EQ(ProximityEngineTester::hydroelastic_type(convex_id, engine),
+              HydroelasticType::kRigid);
+  }
+}
+
+// We don't support this combination; make sure the error message is suggestive.
+GTEST_TEST(ProximityEngineTests, ProcessVtkConvexSoftHydro) {
+  ProximityEngine<double> engine;
+  ProximityProperties soft_properties;
+  AddCompliantHydroelasticProperties(0.5, 1e8, &soft_properties);
+
+  // Case: compliant convex vtk.
+  {
+    Convex convex{
+        drake::FindResourceOrThrow("drake/geometry/test/one_tetrahedron.vtk"),
+        1.0};
+    const GeometryId convex_id = GeometryId::get_new_id();
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        engine.AddDynamicGeometry(convex, {}, convex_id, soft_properties),
+        ".*can only use .obj files.*");
+  }
+}
+
+// Test a combination that used to throw an exception.
+GTEST_TEST(ProximityEngineTests, ProcessVtkMeshUndefHydro) {
+  ProximityEngine<double> engine;
+
+  // Case: mesh vtk, no hydro type annotation.
+  {
+    Mesh mesh{
+        drake::FindResourceOrThrow("drake/geometry/test/non_convex_mesh.vtk"),
+        1.0 /* scale */};
+    const GeometryId mesh_id = GeometryId::get_new_id();
+    engine.AddDynamicGeometry(mesh, {}, mesh_id, ProximityProperties());
+    EXPECT_EQ(ProximityEngineTester::hydroelastic_type(mesh_id, engine),
+              HydroelasticType::kUndefined);
+  }
+}
+
+// Test a combination that used to throw an exception.
+GTEST_TEST(ProximityEngineTests, ProcessVtkConvexUndefHydro) {
+  ProximityEngine<double> engine;
+
+  // Case: convex vtk, no hydro type annotation.
+  {
+    Convex convex{
+        drake::FindResourceOrThrow("drake/geometry/test/one_tetrahedron.vtk"),
+        1.0 /* scale */};
+    const GeometryId convex_id = GeometryId::get_new_id();
+    engine.AddDynamicGeometry(convex, {}, convex_id, ProximityProperties());
+    EXPECT_EQ(ProximityEngineTester::hydroelastic_type(convex_id, engine),
+              HydroelasticType::kUndefined);
   }
 }
 
@@ -358,21 +430,25 @@ GTEST_TEST(ProximityEngineTest, ComputeContactSurfacesAutodiffSupport) {
   }
 }
 
-// Meshes are treated specially in proximity engine. Proximity queries on
-// non-convex meshes are not yet supported. A Mesh specification is treated
-// implicitly as the convex hull of the mesh. This is implemented by
-// instantiating an "invalid" fcl::Convex (see
-// ProximityEngine::Impl::ImplementGeometry(Mesh) for details). For test
-// purposes, we'll confirm that the associated fcl object *is* a Convex
-// shape. Furthermore, we'll use a regression test to confirm the expected
-// behavior, to wit:
-//
-//   - A concave mesh queries penetration and distance like its convex hull.
-//   - A concave mesh queries hydroelastic based on the actual mesh.
-//
-// The test doesn't depend on the mesh representation type.
-GTEST_TEST(ProximityEngineTests, MeshSupportAsConvex) {
-  /* This mesh looks like this:
+/*
+ Meshes are treated specially in proximity engine. Proximity queries on
+ non-convex meshes are not yet supported. A Mesh specification is treated
+ implicitly as the convex hull of the mesh. This is implemented by
+ instantiating an "invalid" fcl::Convex (see
+ ProximityEngine::Impl::ImplementGeometry(Mesh) for details). For test
+ purposes, we'll confirm that the associated fcl object *is* a Convex
+ shape. Furthermore, we'll use a regression test to confirm the expected
+ behavior, to wit:
+
+   - A concave mesh queries penetration and distance like its convex hull.
+   - A concave mesh queries hydroelastic based on the actual mesh.
+
+ This test function makes assumptions about the mesh surface geometry, but it
+ doesn't depend on the mesh representation type. It may be either a surface
+ mesh or a volume mesh, and may be passed using either the Mesh or the Convex
+ shape specification type.
+
+ The mesh is expected to look like this:
                          +z
            -2     -1     ┆     +1    +2
     +0.5 ┈┈┈┏━━━━━━┓┉┉┉┉┉┼┉┉┉┉┉┏━━━━━━┓
@@ -386,13 +462,15 @@ GTEST_TEST(ProximityEngineTests, MeshSupportAsConvex) {
       -2 ┈┈┈┗━━━━━━━━━━━━┿━━━━━━━━━━━━┛
                          ┆
 
-    - We'll place a sphere at the origin with radius R.
-    - The nearest point to the sphere on the *concave* geometry is shown as
-      point P. Its distance is 0.5 - R.
-    - The signed distance to the *convex region* will be -(0.5 + R).
-    - If R < 0.5, there is *no* hydroelastic contact surface.
-    - if R > 0.5, there will be one.
-  */
+   - We'll place a sphere at the origin with radius R.
+   - The nearest point to the sphere on the *concave* geometry is shown as
+     point P. Its distance is 0.5 - R.
+   - The signed distance to the *convex region* will be -(0.5 + R).
+   - If R < 0.5, there is *no* hydroelastic contact surface.
+   - if R > 0.5, there will be one.
+*/
+template <typename MeshType>
+void EvaluateMeshShapeAsConvex(const MeshType& mesh) {
   /* Because we're using the general convexity algorithm for distance and
    penetration, we'll lose a great deal of precision in the answer. Empirically,
    for this test case, even sqrt(eps) was insufficient. This value appears to
@@ -403,10 +481,6 @@ GTEST_TEST(ProximityEngineTests, MeshSupportAsConvex) {
 
   for (double radius : {0.25, 0.75}) {
     ProximityEngine<double> engine;
-    // The actual non-convex mesh. Used in all queries.
-    const Mesh mesh{
-        drake::FindResourceOrThrow("drake/geometry/test/extruded_u.obj"),
-        1.0 /* scale */};
     const auto& [mesh_id, X_WM] =
         AddShape(&engine, mesh, true /* is_anchored */, false /* is_soft */,
                  Vector3d::Zero());
@@ -466,15 +540,41 @@ GTEST_TEST(ProximityEngineTests, MeshSupportAsConvex) {
   }
 }
 
-// Tests that passing VTK file in Mesh for Point contact will throw.
-GTEST_TEST(ProximityEngineTests, VtkForPointContactThrow) {
-  ProximityEngine<double> engine;
-  const Mesh vtk_mesh{
-      drake::FindResourceOrThrow("drake/geometry/test/non_convex_mesh.vtk")};
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      engine.AddAnchoredGeometry(vtk_mesh, RigidTransformd::Identity(),
-                                 GeometryId::get_new_id()),
-      ".*only support .obj files.*");
+// The next few test cases below evaluate artisanally crafted concave meshes
+// using the test function defined above. The volume mesh
+// "extruded_u_volume_mesh.vtk" was derived from the surface mesh
+// "extruded_u.obj", and both have the expected exterior shape described above.
+//
+// It is not expected or encouraged to pass non-convex geometry using the
+// Convex shape specification type, but the evaluation implemented above will
+// yield the same result as for the Mesh type.
+
+GTEST_TEST(ProximityEngineTests, MeshSupportAsConvexObjSurface) {
+  const Mesh mesh{
+    drake::FindResourceOrThrow("drake/geometry/test/extruded_u.obj"),
+    1.0 /* scale */};
+  EvaluateMeshShapeAsConvex(mesh);
+}
+
+GTEST_TEST(ProximityEngineTests, MeshSupportAsConvexVtkVolume) {
+  const Mesh mesh{drake::FindResourceOrThrow(
+      "drake/geometry/test/extruded_u_volume_mesh.vtk"),
+    1.0 /* scale */};
+  EvaluateMeshShapeAsConvex(mesh);
+}
+
+GTEST_TEST(ProximityEngineTests, ConvexSupportAsConvexObjSurface) {
+  const Convex convex{
+    drake::FindResourceOrThrow("drake/geometry/test/extruded_u.obj"),
+    1.0 /* scale */};
+  EvaluateMeshShapeAsConvex(convex);
+}
+
+GTEST_TEST(ProximityEngineTests, ConvexSupportAsConvexVtkVolume) {
+  const Convex convex{drake::FindResourceOrThrow(
+      "drake/geometry/test/extruded_u_volume_mesh.vtk"),
+    1.0 /* scale */};
+  EvaluateMeshShapeAsConvex(convex);
 }
 
 // Tests simple addition of anchored geometry.
