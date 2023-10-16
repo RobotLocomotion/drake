@@ -1,0 +1,12 @@
+//
+// Created by amice on 10/16/23.
+//
+
+#ifndef DRAKE_PLANNING_GRAPH_ALGORITHMS_CLIQUE_COVER_H_
+#define DRAKE_PLANNING_GRAPH_ALGORITHMS_CLIQUE_COVER_H_
+
+class clique_cover {
+
+};
+
+#endif //DRAKE_PLANNING_GRAPH_ALGORITHMS_CLIQUE_COVER_H_
