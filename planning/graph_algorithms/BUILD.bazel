@@ -41,6 +41,7 @@ drake_cc_library(
     deps = [
         "//solvers:mathematical_program",
         "//solvers:mathematical_program_result",
+        ":max_stable_set",
         "//solvers:mosek_solver",
         "//solvers:gurobi_solver",
         "//solvers:solve",

@@ -23,6 +23,8 @@ class MaxCliqueSolverBase {
  public:
   MaxCliqueSolverBase() {}
 
+  virtual ~MaxStableSetSolverBase() {}
+
   virtual VectorX<bool> SolveMaxClique(SparseMatrix<bool> adjacency_matrix) = 0;
 
  protected:
@@ -44,19 +46,22 @@ class MaxCliqueSolverViaMIP final : public MaxCliqueSolverBase {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MaxCliqueSolverViaMIP);
   MaxCliqueSolverViaMIP(
-      const solvers::SolverId& solver_id = solvers::GurobiSolver::id());
+      const solvers::SolverId& solver_id = solvers::GurobiSolver::id(),
+      const solvers::SolverOptions& options = solvers::SolverOptions());
 
   VectorX<bool> SolveMaxClique(SparseMatrix<bool> adjacency_matrix);
 
  private:
   solvers::SolverId solver_id_;
+  solvers::SolverOptions options_;
 };
 
 struct MaxCliqueOptions {
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MaxCliqueOptions)
-  MaxCliqueOptions() = default;
-  ~MaxCliqueOptions() = default;
-  MaxCliqueSolverBase solver = MaxCliqueSolverViaMIP();
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MaxStableSetOptions)
+  MaxStableSetOptions(const MaxStableSetSolverBase* m_solver =
+                              new MaxStableSetSolverViaMIP());
+  ~MaxStableSetOptions() = default;
+  MaxStableSetSolverBase* solver;
 };
 
 /**
