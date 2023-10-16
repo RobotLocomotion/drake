@@ -674,6 +674,8 @@ class LinearConstraint : public Constraint {
   using Constraint::UpdateUpperBound;
 
  protected:
+
+
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
               Eigen::VectorXd* y) const override;
 
@@ -691,6 +693,10 @@ class LinearConstraint : public Constraint {
   internal::SparseAndDenseMatrix A_;
 
  private:
+  // Forward declaration of a tester class. This tester class will expose the
+  // private members of LinearConstraintTester for unit tests.
+  friend class LinearConstraintTester;
+
   template <typename DerivedX, typename ScalarY>
   void DoEvalGeneric(const Eigen::MatrixBase<DerivedX>& x,
                      VectorX<ScalarY>* y) const;
