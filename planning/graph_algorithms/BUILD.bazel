@@ -28,6 +28,7 @@ drake_cc_library(
         "//solvers:mosek_solver",
         "//solvers:gurobi_solver",
         "//solvers:solve",
+        "//solvers:choose_best_solver"
     ],
 )
 
@@ -56,3 +57,6 @@ drake_cc_library(
         ":max_clique"
     ],
 )
+
+
+add_lint_tests()

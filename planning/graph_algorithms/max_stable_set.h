@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 #include <Eigen/Sparse>
 
 #include "drake/common/ssize.h"
@@ -23,6 +25,8 @@ class MaxStableSetSolverBase {
  public:
   MaxStableSetSolverBase() {}
 
+  virtual ~MaxStableSetSolverBase() {}
+
   virtual VectorX<bool> SolveMaxStableSet(
       SparseMatrix<bool> adjacency_matrix) = 0;
 
@@ -45,19 +49,22 @@ class MaxStableSetSolverViaMIP final : public MaxStableSetSolverBase {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MaxStableSetSolverViaMIP);
   MaxStableSetSolverViaMIP(
-      const solvers::SolverId& solver_id = solvers::GurobiSolver::id());
+      const solvers::SolverId& solver_id = solvers::GurobiSolver::id(),
+      const solvers::SolverOptions& options = solvers::SolverOptions());
 
   VectorX<bool> SolveMaxStableSet(SparseMatrix<bool> adjacency_matrix);
 
  private:
   solvers::SolverId solver_id_;
+  solvers::SolverOptions options_;
 };
 
 struct MaxStableSetOptions {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MaxStableSetOptions)
-  MaxStableSetOptions() = default;
+  MaxStableSetOptions(const MaxStableSetSolverBase* m_solver =
+                              new MaxStableSetSolverViaMIP());
   ~MaxStableSetOptions() = default;
-  MaxStableSetSolverBase solver = MaxStableSetSolverViaMIP();
+  MaxStableSetSolverBase* solver;
 };
 
 /**
@@ -74,7 +81,7 @@ struct MaxStableSetOptions {
  * 1 indicating membership in the stable set.
  */
 VectorX<bool> MaxStableSet(SparseMatrix<bool> adjacency_matrix,
-                           MaxStableSetOptions& options){};
+                           MaxStableSetOptions& options);
 
 }  // namespace planning
 }  // namespace drake
