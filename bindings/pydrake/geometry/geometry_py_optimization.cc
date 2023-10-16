@@ -15,6 +15,7 @@
 #include "drake/bindings/pydrake/polynomial_types_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/common/yaml/yaml_io.h"
+#include "drake/geometry/optimization/affine_ball.h"
 #include "drake/geometry/optimization/affine_subspace.h"
 #include "drake/geometry/optimization/c_iris_collision_geometry.h"
 #include "drake/geometry/optimization/cartesian_product.h"
@@ -125,6 +126,27 @@ void DefineGeometryOptimization(py::module m) {
         .def("ToShapeWithPose", &ConvexSet::ToShapeWithPose,
             cls_doc.ToShapeWithPose.doc)
         .def("CalcVolume", &ConvexSet::CalcVolume, cls_doc.CalcVolume.doc);
+  }
+
+  // AffineBall
+  {
+    const auto& cls_doc = doc.AffineBall;
+    py::class_<AffineBall, ConvexSet> cls(m, "AffineBall", cls_doc.doc);
+    cls  // BR
+        .def(py::init<>(), cls_doc.ctor.doc_0args)
+        .def(py::init<const Eigen::Ref<const Eigen::MatrixXd>&,
+                 const Eigen::Ref<const Eigen::VectorXd>&>(),
+            py::arg("B"), py::arg("center"), cls_doc.ctor.doc_2args)
+        .def("B", &AffineBall::B, py_rvp::reference_internal, cls_doc.B.doc)
+        .def("center", &AffineBall::center, py_rvp::reference_internal,
+            cls_doc.center.doc)
+        .def_static("MakeAxisAligned", &AffineBall::MakeAxisAligned,
+            py::arg("radius"), py::arg("center"), cls_doc.MakeAxisAligned.doc)
+        .def_static("MakeHypersphere", &AffineBall::MakeHypersphere,
+            py::arg("radius"), py::arg("center"), cls_doc.MakeHypersphere.doc)
+        .def_static("MakeUnitBall", &AffineBall::MakeUnitBall, py::arg("dim"),
+            cls_doc.MakeUnitBall.doc);
+    DefClone(&cls);
   }
 
   // AffineSubspace

@@ -19,7 +19,8 @@ only that the matrix AᵀA is positive semi-definite.
 Compare this with an alternative (very useful) parameterization of the
 ellipsoid: `{Bu + center | |u|₂ ≤ 1}`, which is an affine scaling of the unit
 ball.  This is related to the quadratic form by `B = A⁻¹`, when `A` is
-invertible, but the quadratic form can also represent unbounded sets.
+invertible, but the quadratic form can also represent unbounded sets. The affine
+scaling of the unit ball representation is available via the AffineBall class.
 
 Note: the name Hyperellipsoid was taken here to avoid conflicting with
 geometry::Ellipsoid and to distinguish that this class supports N dimensions.
