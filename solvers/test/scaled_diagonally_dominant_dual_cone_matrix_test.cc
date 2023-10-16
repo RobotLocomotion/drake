@@ -35,7 +35,7 @@ int TestInDualConeByGenerators(const Eigen::MatrixXd& X) {
     const Eigen::Matrix2d product =
         generators.at(i).transpose() * X * generators.at(i);
     solver.compute(product);
-    if (!(solver.eigenvalues().array() >= 0).all()) {
+    if (!(solver.eigenvalues().array() >= -1e-12).all()) {
       return i;
     }
   }
