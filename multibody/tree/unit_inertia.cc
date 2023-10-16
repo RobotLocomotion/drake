@@ -1,6 +1,5 @@
 #include "drake/multibody/tree/unit_inertia.h"
 
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/fmt_eigen.h"
 #include "drake/common/text_logging.h"
 #include "drake/math/unit_vector.h"
