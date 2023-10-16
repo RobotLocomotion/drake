@@ -147,7 +147,7 @@ the main body of the document:
    sure that the nightly build git sha from the prior steps matches the
    ``newest_commit`` whose changes are enumerated in the notes.  Some dates
    are YYYYMMDD format, some are YYYY-MM-DD format; be sure to manually fix
-   them all.
+   them all. There is also a dummy date 2099-12-31 that should also be changed.
    1. Update the github links within ``doc/_pages/from_binary.md`` to reflect
       the upcoming v1.N.0 and YYYYMMDD.
 4. Re-enable CI by reverting the commit you added way up above in step 3 of **Prior to release**.
