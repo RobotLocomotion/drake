@@ -1467,7 +1467,6 @@ class MathematicalProgram {
    * @exclude_from_pydrake_mkdoc{Not bound in pydrake.}
    */
   Binding<LinearConstraint> AddLinearConstraint(
-//      const Eigen::Ref<const Eigen::SparseMatrix<double>>& A,
       const Eigen::SparseMatrix<double>& A,
       const Eigen::Ref<const Eigen::VectorXd>& lb,
       const Eigen::Ref<const Eigen::VectorXd>& ub,
@@ -1530,7 +1529,6 @@ class MathematicalProgram {
       const Eigen::Ref<const VectorXDecisionVariable>& vars) {
     return AddLinearConstraint(a, Vector1d(lb), Vector1d(ub), vars);
   }
-
 
   /**
    * Adds one row of linear constraint lb <= e <= ub where @p e is a symbolic
@@ -1746,7 +1744,7 @@ class MathematicalProgram {
    * @exclude_from_pydrake_mkdoc{Not bound in pydrake.}
    */
   Binding<LinearEqualityConstraint> AddLinearEqualityConstraint(
-      const Eigen::Ref<const Eigen::SparseMatrix<double>>& Aeq,
+      const Eigen::SparseMatrix<double>& Aeq,
       const Eigen::Ref<const Eigen::VectorXd>& beq,
       const VariableRefList& vars) {
     return AddLinearEqualityConstraint(Aeq, beq,
@@ -1786,7 +1784,7 @@ class MathematicalProgram {
    * @pydrake_mkdoc_identifier{3args_A_b_sparse}
    */
   Binding<LinearEqualityConstraint> AddLinearEqualityConstraint(
-      const Eigen::Ref<const Eigen::SparseMatrix<double>>& Aeq,
+      const Eigen::SparseMatrix<double>& Aeq,
       const Eigen::Ref<const Eigen::VectorXd>& beq,
       const Eigen::Ref<const VectorXDecisionVariable>& vars);
 
@@ -1822,9 +1820,7 @@ class MathematicalProgram {
   Binding<LinearEqualityConstraint> AddLinearEqualityConstraint(
       const Eigen::Ref<const Eigen::RowVectorXd>& a, double beq,
       const Eigen::Ref<const VectorXDecisionVariable>& vars) {
-    return AddLinearEqualityConstraint(
-        Eigen::Map<const Eigen::MatrixXd>(a.data(), 1, a.size()), Vector1d(beq),
-        vars);
+    return AddLinearEqualityConstraint(a, Vector1d(beq), vars);
   }
 
   /**

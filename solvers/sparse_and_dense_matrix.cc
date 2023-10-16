@@ -28,7 +28,7 @@ SparseAndDenseMatrix& SparseAndDenseMatrix::operator=(
 SparseAndDenseMatrix::~SparseAndDenseMatrix() {}
 
 const Eigen::MatrixXd& SparseAndDenseMatrix::GetAsDense() const {
-  if (dense_.size() != 0) {
+  if (dense_is_constructed()) {
     return dense_;
   } else {
     // Modifies the dense_ field. For thread-safety, use a std::mutex.
@@ -47,6 +47,10 @@ bool SparseAndDenseMatrix::IsFinite() const {
     }
   }
   return true;
+}
+
+bool SparseAndDenseMatrix::dense_is_constructed() const {
+  return dense_.size() != 0;
 }
 
 }  // namespace internal

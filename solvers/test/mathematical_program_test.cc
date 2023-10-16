@@ -2243,6 +2243,7 @@ GTEST_TEST(TestMathematicalProgram,
   const Vector4d b{-10, -11, -12, -13};
 
   const auto binding = prog.AddLinearEqualityConstraint(A, b, vars);
+  EXPECT_TRUE(binding.evaluator()->)
   CheckAddedLinearEqualityConstraintCommon(binding, prog, 0);
 }
 

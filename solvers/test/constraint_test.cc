@@ -47,6 +47,7 @@ Environment BuildEnvironment(const VectorX<Variable>& vars,
   return env;
 }
 
+
 GTEST_TEST(TestConstraint, BoundSizeCheck) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       LinearConstraint(Eigen::Matrix3d::Identity(), Eigen::Vector2d(1., 2),
