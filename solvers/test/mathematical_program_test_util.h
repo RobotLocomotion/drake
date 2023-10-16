@@ -62,6 +62,12 @@ template <typename Constraint>
   }
   return ::testing::AssertionSuccess() << " Same bindings.";
 }
+
+bool A_dense_is_constructed(const LinearConstraint& constraint)
+{
+  return constraint.A_.dense_is_constructed();
+}
+
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

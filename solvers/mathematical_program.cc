@@ -920,7 +920,7 @@ MathematicalProgram::AddLinearEqualityConstraint(
 
 Binding<LinearEqualityConstraint>
 MathematicalProgram::AddLinearEqualityConstraint(
-    const Eigen::Ref<const Eigen::SparseMatrix<double>>& Aeq,
+    const Eigen::SparseMatrix<double>& Aeq,
     const Eigen::Ref<const Eigen::VectorXd>& beq,
     const Eigen::Ref<const VectorXDecisionVariable>& vars) {
   return AddConstraint(make_shared<LinearEqualityConstraint>(Aeq, beq), vars);

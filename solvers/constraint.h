@@ -687,12 +687,8 @@ class LinearConstraint : public Constraint {
   std::string DoToLatex(const VectorX<symbolic::Variable>&, int) const override;
 
   internal::SparseAndDenseMatrix A_;
-
  private:
-  // Forward declaration of a tester class. This tester class will expose the
-  // private members of LinearConstraintTester for unit tests.
-  friend class LinearConstraintTester;
-
+  friend bool A_dense_is_constructed(const LinearConstraint& constraint);
   template <typename DerivedX, typename ScalarY>
   void DoEvalGeneric(const Eigen::MatrixBase<DerivedX>& x,
                      VectorX<ScalarY>* y) const;

@@ -47,6 +47,42 @@ Environment BuildEnvironment(const VectorX<Variable>& vars,
   return env;
 }
 
+// A derived class used to test certain private members of LinearConstraint
+class LinearConstraintTester : public LinearConstraint {
+ public:
+  LinearConstraintTester(const Eigen::Ref<const Eigen::MatrixXd>& A,
+                         const Eigen::Ref<const Eigen::VectorXd>& lb,
+                         const Eigen::Ref<const Eigen::VectorXd>& ub)
+      : LinearConstraint(A, lb, ub){};
+
+  LinearConstraintTester(const Eigen::SparseMatrix<double>& A,
+                         const Eigen::Ref<const Eigen::VectorXd>& lb,
+                         const Eigen::Ref<const Eigen::VectorXd>& ub)
+      : LinearConstraint(A, lb, ub){};
+
+  // Returns the value of A_.dense_is_constructed(). This is used to check
+  // whether the sparse variant of the LinearConstraint constructor has been
+  // called.
+  bool get_dense_is_constructed() { return A_.dense_is_constructed(); }
+};
+
+// A derived class used to test certain private members of
+// LinearEqualityConstraint
+class LinearEqualityConstraintTester : public LinearEqualityConstraint {
+ public:
+  LinearEqualityConstraintTester(const Eigen::Ref<const Eigen::MatrixXd>& Aeq,
+                         const Eigen::Ref<const Eigen::VectorXd>& beq)
+      : LinearEqualityConstraint(Aeq, beq){};
+
+  LinearEqualityConstraintTester(const Eigen::SparseMatrix<double>& Aeq,
+                         const Eigen::Ref<const Eigen::VectorXd>& beq)
+      : LinearEqualityConstraint(Aeq, beq){};
+
+  // Returns the value of A_.dense_is_constructed(). This is used to check
+  // whether the sparse variant of the LinearConstraint constructor has been
+  // called.
+  bool get_dense_is_constructed() { return A_.dense_is_constructed(); }
+};
 
 GTEST_TEST(TestConstraint, BoundSizeCheck) {
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -65,13 +101,18 @@ GTEST_TEST(TestConstraint, LinearConstraintSparse) {
   A_sparse.setFromTriplets(A_triplets.begin(), A_triplets.end());
   Eigen::Vector2d lb(0, 1);
   Eigen::Vector2d ub(1, 2);
-  LinearConstraint dut(A_sparse, lb, ub);
+  LinearConstraintTester dut(A_sparse, lb, ub);
   EXPECT_EQ(dut.num_vars(), 3);
   EXPECT_EQ(dut.num_constraints(), 2);
+  // We expect the sparse constructor to not construct the dense A matrix.
+  EXPECT_FALSE(dut.get_dense_is_constructed());
   EXPECT_EQ(dut.get_sparse_A().nonZeros(), A_sparse.nonZeros());
   EXPECT_TRUE(
       CompareMatrices(dut.get_sparse_A().toDense(), A_sparse.toDense()));
   EXPECT_TRUE(CompareMatrices(dut.GetDenseA(), A_sparse.toDense()));
+  // Now that the dense version of A has been accessed, we expect A to have been
+  // constructed.
+  EXPECT_TRUE(dut.get_dense_is_constructed());
   EXPECT_TRUE(CompareMatrices(dut.lower_bound(), lb));
   EXPECT_TRUE(CompareMatrices(dut.upper_bound(), ub));
 
@@ -97,11 +138,16 @@ GTEST_TEST(TestConstraint, LinearEqualityConstraintSparse) {
   Eigen::SparseMatrix<double> A_sparse(2, 3);
   A_sparse.setFromTriplets(A_triplets.begin(), A_triplets.end());
   Eigen::Vector2d bound(0, 1);
-  LinearEqualityConstraint dut(A_sparse, bound);
+  LinearEqualityConstraintTester dut(A_sparse, bound);
+  // We expect the sparse constructor to not construct the dense A matrix.
+  EXPECT_FALSE(dut.get_dense_is_constructed());
   EXPECT_EQ(dut.get_sparse_A().nonZeros(), A_sparse.nonZeros());
   EXPECT_TRUE(
       CompareMatrices(dut.get_sparse_A().toDense(), A_sparse.toDense()));
   EXPECT_TRUE(CompareMatrices(dut.GetDenseA(), A_sparse.toDense()));
+  // Now that the dense version of A has been accessed, we expect A to have been
+  // constructed.
+  EXPECT_TRUE(dut.get_dense_is_constructed());
   EXPECT_TRUE(CompareMatrices(dut.lower_bound(), bound));
   EXPECT_TRUE(CompareMatrices(dut.upper_bound(), bound));
 }
@@ -153,7 +199,7 @@ GTEST_TEST(testConstraint, testRemoveTinyCoefficient) {
   // clang-format on
   Eigen::Vector2d lb(-0.1 * tol, 0);
   Eigen::Vector2d ub(2, 0.1 * tol);
-  LinearConstraint dut(A, lb, ub);
+  LinearConstraintTester dut(A, lb, ub);
   dut.RemoveTinyCoefficient(tol);
   Eigen::Matrix<double, 2, 3> A_expected;
   // clang-format off
@@ -915,8 +961,8 @@ GTEST_TEST(ToLatex, PolynomialConstraint) {
   const Polynomiald x("x");
   const Polynomiald y("y");
   const Polynomiald poly = (x - 1) * (x - 1) + (y + 2) * (y + 2);
-  const std::vector<Polynomiald::VarType> var_mapping = {
-      x.GetSimpleVariable(), y.GetSimpleVariable()};
+  const std::vector<Polynomiald::VarType> var_mapping = {x.GetSimpleVariable(),
+                                                         y.GetSimpleVariable()};
   PolynomialConstraint c(Vector1<Polynomiald>(poly), var_mapping, Vector1d{-1},
                          Vector1d{1});
   c.set_description("test");
