@@ -32,10 +32,8 @@ GTEST_TEST(SchunkWsgLcmTest, SchunkWsgCommandReceiverTest) {
   const systems::InputPort<double>& message_input_port =
       dut.GetInputPort("command_message");
   message_input_port.FixValue(context.get(), initial_command);
-  EXPECT_EQ(dut.get_position_output_port().Eval(*context)[0],
-            initial_position);
-  EXPECT_EQ(dut.get_force_limit_output_port().Eval(*context)[0],
-            initial_force);
+  EXPECT_EQ(dut.get_position_output_port().Eval(*context)[0], initial_position);
+  EXPECT_EQ(dut.get_force_limit_output_port().Eval(*context)[0], initial_force);
 
   // Start off with the gripper closed (zero) and a command to open to
   // 100mm.
@@ -43,10 +41,8 @@ GTEST_TEST(SchunkWsgLcmTest, SchunkWsgCommandReceiverTest) {
   initial_command.target_position_mm = 100;
   initial_command.force = 40;
   message_input_port.FixValue(context.get(), initial_command);
-  EXPECT_EQ(dut.get_position_output_port().Eval(*context)[0],
-            0.1);
-  EXPECT_EQ(dut.get_force_limit_output_port().Eval(*context)[0],
-            40);
+  EXPECT_EQ(dut.get_position_output_port().Eval(*context)[0], 0.1);
+  EXPECT_EQ(dut.get_force_limit_output_port().Eval(*context)[0], 40);
 }
 
 GTEST_TEST(SchunkWsgLcmTest, SchunkWsgCommandSenderTest) {
@@ -85,8 +81,7 @@ GTEST_TEST(SchunkWsgLcmTest, SchunkWsgStatusReceiverTest) {
   dut.get_input_port(0).FixValue(context.get(), status);
   EXPECT_TRUE(CompareMatrices(dut.get_state_output_port().Eval(*context),
                               Vector2d::Zero()));
-  EXPECT_EQ(dut.get_force_output_port().Eval(*context)[0],
-            0.0);
+  EXPECT_EQ(dut.get_force_output_port().Eval(*context)[0], 0.0);
 
   // Check that we can read out valid input.
   status.utime = 0;
@@ -96,8 +91,7 @@ GTEST_TEST(SchunkWsgLcmTest, SchunkWsgStatusReceiverTest) {
   dut.get_input_port(0).FixValue(context.get(), status);
   EXPECT_TRUE(CompareMatrices(dut.get_state_output_port().Eval(*context),
                               Vector2d(.1, .324)));
-  EXPECT_EQ(dut.get_force_output_port().Eval(*context)[0],
-            40.0);
+  EXPECT_EQ(dut.get_force_output_port().Eval(*context)[0], 40.0);
 }
 
 GTEST_TEST(SchunkWsgLcmTest, SchunkWsgStatusSenderTest) {

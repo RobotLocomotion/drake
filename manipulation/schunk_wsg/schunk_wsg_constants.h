@@ -50,12 +50,11 @@ VectorX<T> GetSchunkWsgOpenPosition() {
 /// of the plant model which pretends the two fingers are independent.
 /// @ingroup manipulation_systems
 template <typename T>
-std::unique_ptr<systems::MatrixGain<T>>
-MakeMultibodyStateToWsgStateSystem() {
+std::unique_ptr<systems::MatrixGain<T>> MakeMultibodyStateToWsgStateSystem() {
   Eigen::Matrix<double, 2, 4> D;
   // clang-format off
-  D << -1, 1, 0,  0,
-      0,  0, -1, 1;
+  D << -1, 1,  0, 0,
+        0, 0, -1, 1;
   // clang-format on
   return std::make_unique<systems::MatrixGain<T>>(D);
 }
@@ -85,11 +84,10 @@ class MultibodyForceToWsgForceSystem : public systems::VectorSystem<T> {
       const MultibodyForceToWsgForceSystem<U>&)
       : MultibodyForceToWsgForceSystem<T>() {}
 
-  void DoCalcVectorOutput(
-      const systems::Context<T>&,
-      const Eigen::VectorBlock<const VectorX<T>>& input,
-      const Eigen::VectorBlock<const VectorX<T>>& state,
-    Eigen::VectorBlock<VectorX<T>>* output) const {
+  void DoCalcVectorOutput(const systems::Context<T>&,
+                          const Eigen::VectorBlock<const VectorX<T>>& input,
+                          const Eigen::VectorBlock<const VectorX<T>>& state,
+                          Eigen::VectorBlock<VectorX<T>>* output) const {
     unused(state);
     // gripper force = abs(-finger0 + finger1).
     using std::abs;
@@ -100,11 +98,9 @@ class MultibodyForceToWsgForceSystem : public systems::VectorSystem<T> {
 /// Helper method to create a MultibodyForceToWsgForceSystem.
 /// @ingroup manipulation_systems
 template <typename T>
-std::unique_ptr<systems::VectorSystem<T>>
-MakeMultibodyForceToWsgForceSystem() {
+std::unique_ptr<systems::VectorSystem<T>> MakeMultibodyForceToWsgForceSystem() {
   return std::make_unique<MultibodyForceToWsgForceSystem<T>>();
 }
-
 
 }  // namespace schunk_wsg
 }  // namespace manipulation

@@ -18,8 +18,7 @@ GTEST_TEST(SchunkWsgTrajectoryGeneratorTest, BasicTest) {
   SchunkWsgTrajectoryGenerator dut(1, 0);
   std::unique_ptr<systems::Context<double>> context =
       dut.CreateDefaultContext();
-  std::unique_ptr<systems::SystemOutput<double>> output =
-      dut.AllocateOutput();
+  std::unique_ptr<systems::SystemOutput<double>> output = dut.AllocateOutput();
 
   // Start off with the gripper closed (zero) and a command to open to
   // 100mm.

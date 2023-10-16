@@ -2,7 +2,11 @@
 
 load("@drake//tools/skylark:cc.bzl", "cc_library")
 load("@drake//tools/install:install.bzl", "install")
-load("@drake//tools/workspace:vendor_cxx.bzl", "cc_library_vendored")
+load(
+    "@drake//tools/workspace:vendor_cxx.bzl",
+    "cc_library_vendored",
+    "generate_vendor_patch",
+)
 
 licenses(["notice"])  # Qhull
 
@@ -62,28 +66,55 @@ cc_library(
     linkstatic = 1,
 )
 
+_HDRS_CPP_VENDORED = [
+    x.replace("src/libqhullcpp/", "drake_hdr/libqhullcpp/")
+    for x in _HDRS_CPP
+]
+
+_SRCS_CPP_VENDORED = [
+    x.replace("src/", "drake_src/")
+    for x in _SRCS_CPP
+]
+
 cc_library_vendored(
     name = "qhull",
     hdrs = _HDRS_CPP,
-    hdrs_vendored = [
-        x.replace("src/libqhullcpp/", "drake_hdr/libqhullcpp/")
-        for x in _HDRS_CPP
-    ],
+    hdrs_vendored = _HDRS_CPP_VENDORED,
     includes = ["drake_hdr"],
     srcs = _SRCS_CPP,
-    srcs_vendored = [
-        x.replace("src/", "drake_src/")
-        for x in _SRCS_CPP
-    ],
+    srcs_vendored = _SRCS_CPP_VENDORED,
     copts = ["-w"],
     linkstatic = 1,
     visibility = ["//visibility:public"],
     deps = [":qhull_r"],
 )
 
+generate_vendor_patch(
+    name = "drake_qhull.patch",
+    srcs = _HDRS_CPP + _SRCS_CPP,
+    srcs_vendored = _HDRS_CPP_VENDORED + _SRCS_CPP_VENDORED,
+    extra_prologue = """
+The vendor_cxx tool was created by Jeremy Nimmer and the patch file is
+contemporaneous with whichever release of Drake it accompanies.""",
+)
+
 # Install the license file.
 install(
     name = "install",
-    docs = ["COPYING.txt"],
+    docs = [
+        "COPYING.txt",
+        # We must redistribute our code changes, per the Qhull license:
+        # ...
+        # 3. If you modify Qhull, you must include a notice giving the
+        #    name of the person performing the modification, the date of
+        #    modification, and the reason for such modification.
+        # ...
+        ":drake_qhull.patch",
+        "@drake//tools/workspace/qhull_internal:patches",
+    ],
+    allowed_externals = [
+        "@drake//tools/workspace/qhull_internal:patches",
+    ],
+    doc_strip_prefix = ["patches"],
     visibility = ["//visibility:public"],
 )

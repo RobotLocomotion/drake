@@ -1,5 +1,10 @@
-Don't try to compile functions that require sources files
-that we've omitted from the build.
+[qhull] Remove some unwanted code
+
+Don't try to compile functions that require source files that we've
+omitted from the build.
+
+The Qhull license requires us to publish the author, date, and reason
+for changes: Author: Jeremy Nimmer; Date: Jun 2, 2022.
 
 --- src/libqhullcpp/Qhull.cpp.orig	2020-09-03 19:33:16.000000000 -0700
 +++ src/libqhullcpp/Qhull.cpp	2022-05-18 20:26:48.858174235 -0700
