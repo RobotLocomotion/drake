@@ -9,6 +9,7 @@
 #include <fmt/format.h>
 
 #include "drake/common/diagnostic_policy.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/pointer_cast.h"
 #include "drake/common/scope_exit.h"
 #include "drake/common/ssize.h"
@@ -708,9 +709,9 @@ RenderEngineGl::RenderEngineGl(RenderEngineGlParams params)
       texture_library_(make_shared<TextureLibrary>()),
       parameters_(CleanupLights(std::move(params))) {
   if (params.default_label != RenderLabel::kDontCare) {
-    static const logging::Warn log_once(
-        "RenderEngineGl(): the default_label configuration option is "
-        "deprecated and will be removed from Drake on or after 2023-12-01.");
+    static const drake::internal::WarnDeprecated warn_once(
+        "2023-12-01",
+        "RenderEngineGl(): the default_label option is deprecated.");
   }
 
   // The default light parameters have been crafted to create the default
