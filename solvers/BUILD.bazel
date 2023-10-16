@@ -418,7 +418,9 @@ drake_cc_library(
         ":binding",
         ":mathematical_program",
     ],
-    deps = [],
+    deps = [
+        "//math:eigen_sparse_triplet",
+    ],
 )
 
 drake_cc_library(
