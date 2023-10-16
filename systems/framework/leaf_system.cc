@@ -5,6 +5,7 @@
 
 #include "absl/container/inlined_vector.h"
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/pointer_cast.h"
 #include "drake/systems/framework/system_symbolic_inspector.h"
 #include "drake/systems/framework/value_checker.h"
@@ -857,9 +858,9 @@ EventStatus LeafSystem<T>::DispatchPublishHandler(
   this->DoPublish(context, leaf_events.get_events());
 #pragma GCC diagnostic pop
   if (!context.get_use_default_implementation()) {
-    static const logging::Warn log_once(
-        "Overriding LeafSystem::DoPublish is deprecated "
-        "and will be removed from Drake on or after 2024-02-01.");
+    static const drake::internal::WarnDeprecated warn_once(
+        "2024-02-01",
+        "Overriding LeafSystem::DoPublish is deprecated.");
     // Derived system overrode the dispatcher and did not invoke the base class
     // implementation so there is nothing else to do.
     return EventStatus::Succeeded();
@@ -901,9 +902,9 @@ EventStatus LeafSystem<T>::DispatchDiscreteVariableUpdateHandler(
       discrete_state);  // in/out
 #pragma GCC diagnostic pop
   if (!context.get_use_default_implementation()) {
-    static const logging::Warn log_once(
-        "Overriding LeafSystem::DoCalcDiscreteVariableUpdates is deprecated "
-        "and will be removed from Drake on or after 2024-02-01.");
+    static const drake::internal::WarnDeprecated warn_once(
+        "2024-02-01",
+        "Overriding LeafSystem::DoCalcDiscreteVariableUpdates is deprecated.");
     // Derived system overrode the dispatcher and did not invoke the base class
     // implementation so there is nothing else to do.
     return EventStatus::Succeeded();
@@ -956,9 +957,9 @@ EventStatus LeafSystem<T>::DispatchUnrestrictedUpdateHandler(
                                         state);  // in/out
 #pragma GCC diagnostic pop
   if (!context.get_use_default_implementation()) {
-    static const logging::Warn log_once(
-        "Overriding LeafSystem::DoCalcUnrestrictedUpdate is deprecated "
-        "and will be removed from Drake on or after 2024-02-01.");
+    static const drake::internal::WarnDeprecated warn_once(
+        "2024-02-01",
+        "Overriding LeafSystem::DoCalcUnrestrictedUpdate is deprecated.");
     // Derived system overrode the dispatcher and did not invoke the base class
     // implementation so there is nothing else to do.
     return EventStatus::Succeeded();
