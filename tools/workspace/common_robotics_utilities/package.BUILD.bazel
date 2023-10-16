@@ -56,6 +56,7 @@ cc_library(
     ],
 )
 
+# N.B. This test uses two threads even when OpenMP is not available.
 cc_test(
     name = "hausdorff_distance_test",
     srcs = ["test/hausdorff_distance_test.cpp"],
