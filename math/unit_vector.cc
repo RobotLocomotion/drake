@@ -5,6 +5,7 @@
 #include <utility>
 
 #include "drake/common/default_scalars.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/fmt_eigen.h"
 #include "drake/common/text_logging.h"
 #include "drake/common/unused.h"
@@ -105,15 +106,10 @@ T WarnIfNotUnitVector(const Vector3<T>& unit_vector,
   if (!is_ok_unit_vector) {
     const std::string msg_not_unit_vector = ErrorMessageNotUnitVector(
         unit_vector, function_name, kToleranceUnitVectorNorm);
-    static const logging::Warn log_once(
-        "{}\nImplicit normalization is deprecated; on or after 2023-12-01 this "
-        "will become an exception.", msg_not_unit_vector);
-
-    // TODO(Mitiguy) see if previous code can be replaced by something like
-    //  static const internal::WarnDeprecated warn_once(
-    //     "2023-12-01",
-    //     fmt::format("{} Implicit normalization is deprecated.",
-    //        msg_not_unit_vector));
+    static const drake::internal::WarnDeprecated warn_once(
+       "2023-12-01",
+       fmt::format("{} Implicit normalization is deprecated.",
+           msg_not_unit_vector));
   }
   return unit_vector_squared_norm;
 }
