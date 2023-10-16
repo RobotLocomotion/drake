@@ -2005,8 +2005,11 @@ class TestPlant(unittest.TestCase):
                 u = np.array([0.1])
                 numpy_compare.assert_float_equal(
                     actuator.get_actuation_vector(u=u), [0.1])
+                with catch_drake_warnings(expected_count=1):
+                    actuator.set_actuation_vector(
+                        u_instance=np.array([0.2]), u=u)
                 actuator.set_actuation_vector(
-                    u_instance=np.array([0.2]), u=u)
+                    u_actuator=np.array([0.2]), u=u)
                 numpy_compare.assert_float_equal(u, [0.2])
                 self.assertIsInstance(actuator.rotor_inertia(context), float)
                 self.assertIsInstance(actuator.gear_ratio(context), float)

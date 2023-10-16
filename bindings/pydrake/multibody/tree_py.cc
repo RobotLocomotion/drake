@@ -825,7 +825,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
             },
             py::arg("u"), cls_doc.get_actuation_vector.doc)
         .def("set_actuation_vector", &Class::set_actuation_vector,
-            py::arg("u_instance"), py::arg("u"),
+            py::arg("u_actuator"), py::arg("u"),
             cls_doc.set_actuation_vector.doc)
         .def("input_start", &Class::input_start, cls_doc.input_start.doc)
         .def("num_inputs", &Class::num_inputs, cls_doc.num_inputs.doc)
@@ -856,6 +856,14 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("gains"), cls_doc.set_controller_gains.doc)
         .def("has_controller", &Class::has_controller,
             cls_doc.has_controller.doc);
+    constexpr char doc_deprecated_set_actuation_vector[] =
+        "The kwarg name 'u_instance' is deprecated and will be removed on "
+        "2024-02-01. Spell the argument name as 'u_actuator' instead.";
+    cls.def("set_actuation_vector",
+        WrapDeprecated(
+            doc_deprecated_set_actuation_vector, &Class::set_actuation_vector),
+        py::arg("u_instance"), py::arg("u"),
+        doc_deprecated_set_actuation_vector);
   }
 
   // Force Elements.

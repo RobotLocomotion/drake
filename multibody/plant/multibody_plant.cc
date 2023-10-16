@@ -260,19 +260,6 @@ std::string GetScopedName(const MultibodyPlant<T>& plant,
   }
 }
 
-// Helper that returns `true` when all actuators in `model_instance` have PD
-// gains defined.
-template <typename T>
-bool AllActuatorsHavePdControl(const MultibodyPlant<T>& plant,
-                               ModelInstanceIndex model_instance) {
-  for (JointActuatorIndex actuator_index :
-       plant.GetJointActuatorIndices(model_instance)) {
-    if (!plant.get_joint_actuator(actuator_index).has_controller())
-      return false;
-  }
-  return true;
-}
-
 // Helper that returns `true` iff any joint actuator in the model is PD
 // controlled.
 template <typename T>
@@ -2319,69 +2306,43 @@ VectorX<T> MultibodyPlant<T>::AssembleActuationInput(
 
   // Assemble the vector from the model instance input ports.
   // TODO(sherm1) Heap allocation here. Get rid of it.
+  // We initialize to zero. Actuation inputs are assumed to have zero values if
+  // not connected.
   VectorX<T> actuation_input = VectorX<T>::Zero(num_actuated_dofs());
 
+  // Contribution from the per model-instance input ports.
+  for (ModelInstanceIndex model_instance_index(0);
+       model_instance_index < num_model_instances(); ++model_instance_index) {
+    // Ignore the port if the model instance has no actuated DoFs.
+    const int instance_num_dofs = num_actuated_dofs(model_instance_index);
+    if (instance_num_dofs == 0) continue;
+
+    const auto& input_port =
+        this->get_input_port(instance_actuation_ports_[model_instance_index]);
+
+    if (input_port.HasValue(context)) {
+      const auto& u_instance = input_port.Eval(context);
+      if (u_instance.hasNaN()) {
+        throw std::runtime_error(
+            fmt::format("Actuation input port for model "
+                        "instance {} contains NaN.",
+                        GetModelInstanceName(model_instance_index)));
+      }
+      SetActuationInArray(model_instance_index, u_instance, &actuation_input);
+    }
+  }
+
+  // Contribution from the port for the full MultibodyPlant model.
+  // Contributions are additive.
   const auto& actuation_port = this->get_input_port(actuation_port_);
   if (actuation_port.HasValue(context)) {
-    // The port for all instances and the actuation ports for individual
-    // instances should not be connected at the same time.
-    for (ModelInstanceIndex model_instance_index(0);
-         model_instance_index < num_model_instances(); ++model_instance_index) {
-      const auto& per_instance_actuation_port =
-          this->get_input_port(instance_actuation_ports_[model_instance_index]);
-      if (per_instance_actuation_port.HasValue(context)) {
-        throw std::logic_error(fmt::format(
-            "Actuation input port for model instance {} and the "
-            "actuation port for all instances are both connected. At most "
-            "one of these ports should be connected.",
-            GetModelInstanceName(model_instance_index)));
-      }
-    }
-    // TODO(amcastro-tri): It'd be nice to avoid the copy here.
-    actuation_input = actuation_port.Eval(context);
-    if (actuation_input.hasNaN()) {
+    const auto& u = actuation_port.Eval(context);
+    if (u.hasNaN()) {
       throw std::runtime_error(
           "Detected NaN in the actuation input port for all instances.");
     }
-    DRAKE_ASSERT(actuation_input.size() == num_actuated_dofs());
-  } else {
-    int u_offset = 0;
-    for (ModelInstanceIndex model_instance_index(0);
-         model_instance_index < num_model_instances(); ++model_instance_index) {
-      // Ignore the port if the model instance has no actuated DoFs.
-      const int instance_num_dofs = num_actuated_dofs(model_instance_index);
-      if (instance_num_dofs == 0) continue;
-
-      // The user can apply an external feed-forward torque using an actuator.
-      const auto& input_port =
-          this->get_input_port(instance_actuation_ports_[model_instance_index]);
-
-      if (input_port.HasValue(context)) {
-        const auto& u_instance = input_port.Eval(context);
-        if (u_instance.hasNaN()) {
-          throw std::runtime_error(
-              fmt::format("Actuation input port for model "
-                          "instance {} contains NaN.",
-                          GetModelInstanceName(model_instance_index)));
-        }
-        actuation_input.segment(u_offset, instance_num_dofs) = u_instance;
-      } else {
-        // If there is PD control we do not require this actuation to be
-        // connected and we assume a zero feed-forward torque.
-        // However, if there is no PD controller, we require the actuation input
-        // port to be connected.
-        if (!AllActuatorsHavePdControl(*this, model_instance_index)) {
-          throw std::logic_error(
-              fmt::format("Actuation input port for model instance {} must "
-                          "be connected or PD gains must be specified for "
-                          "each actuator.",
-                          GetModelInstanceName(model_instance_index)));
-        }
-      }
-
-      u_offset += instance_num_dofs;
-    }
-    DRAKE_ASSERT(u_offset == num_actuated_dofs());
+    // Contribution is added to the per model-instance contribution.
+    actuation_input += u;
   }
 
   return actuation_input;
@@ -2397,17 +2358,14 @@ VectorX<T> MultibodyPlant<T>::AssembleDesiredStateInput(
   // Desired states of size 2 * num_actuators() for the full model packed as xd
   // = [qd, vd].
   VectorX<T> xd = VectorX<T>::Zero(2 * num_actuated_dofs());
+  auto qd = xd.head(num_actuated_dofs());
+  auto vd = xd.tail(num_actuated_dofs());
 
-  int qd_offset = 0;
-  int vd_offset = num_actuators();
   for (ModelInstanceIndex model_instance_index(0);
        model_instance_index < num_model_instances(); ++model_instance_index) {
     // Ignore the port if the model instance has no actuated DoFs.
     const int instance_num_u = num_actuated_dofs(model_instance_index);
     const int instance_num_xd = 2 * instance_num_u;
-
-    // N.B. The desired state port is always declared, though it is zero sized
-    // for models with no PD controllers.
     if (instance_num_xd == 0) continue;
 
     const auto& xd_input_port =
@@ -2415,6 +2373,7 @@ VectorX<T> MultibodyPlant<T>::AssembleDesiredStateInput(
 
     const int num_pd_controlled_actuators =
         NumOfPdControlledActuators(*this, model_instance_index);
+    DRAKE_DEMAND(num_pd_controlled_actuators <= instance_num_u);
 
     // Desired states input port is ignored for models without PD controllers.
     if (num_pd_controlled_actuators == instance_num_u) {
@@ -2426,10 +2385,10 @@ VectorX<T> MultibodyPlant<T>::AssembleDesiredStateInput(
                           "instance {} contains NaN.",
                           GetModelInstanceName(model_instance_index)));
         }
-        xd.segment(qd_offset, instance_num_u) =
-            xd_instance.head(instance_num_u);
-        xd.segment(vd_offset, instance_num_u) =
-            xd_instance.tail(instance_num_u);
+        const auto qd_instance = xd_instance.head(instance_num_u);
+        SetActuationInArray(model_instance_index, qd_instance, &qd);
+        const auto vd_instance = xd_instance.tail(instance_num_u);
+        SetActuationInArray(model_instance_index, vd_instance, &vd);
       } else {
         throw std::runtime_error(
             fmt::format("Desired state input port for model "
@@ -2444,11 +2403,7 @@ VectorX<T> MultibodyPlant<T>::AssembleDesiredStateInput(
           "instance, all of its actuators must have gains defined.",
           GetModelInstanceName(model_instance_index)));
     }
-    qd_offset += instance_num_u;
-    vd_offset += instance_num_u;
   }
-  DRAKE_ASSERT(qd_offset == num_actuators());
-  DRAKE_ASSERT(vd_offset == 2 * num_actuators());
 
   return xd;
 }
