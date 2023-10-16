@@ -1,0 +1,58 @@
+load(
+    "//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+    "drake_cc_package_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:public"])
+
+drake_cc_package_library(
+    name = "graph_algorithms",
+    visibility = ["//visibility:public"],
+    deps = [
+
+    ],
+)
+
+drake_cc_library(
+    name = "max_stable_set",
+    srcs = ["max_stable_set.cc"],
+    hdrs = [
+        "max_stable_set.h",
+    ],
+    deps = [
+        "//solvers:mathematical_program",
+        "//solvers:mathematical_program_result",
+        "//solvers:mosek_solver",
+        "//solvers:gurobi_solver",
+        "//solvers:solve",
+    ],
+)
+
+drake_cc_library(
+    name = "max_clique",
+    srcs = ["max_clique.cc"],
+    hdrs = [
+        "max_clique.h",
+    ],
+    deps = [
+        "//solvers:mathematical_program",
+        "//solvers:mathematical_program_result",
+        "//solvers:mosek_solver",
+        "//solvers:gurobi_solver",
+        "//solvers:solve",
+    ],
+)
+
+drake_cc_library(
+    name = "clique_cover",
+    srcs = ["clique_cover.cc"],
+    hdrs = [
+        "clique_cover.h",
+    ],
+    deps = [
+        ":max_clique"
+    ],
+)
