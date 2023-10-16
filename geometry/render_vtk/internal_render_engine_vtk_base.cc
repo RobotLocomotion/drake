@@ -5,17 +5,19 @@
 #include <vector>
 
 #include <fmt/format.h>
-#include <vtkCapsuleSource.h>
-#include <vtkCellArray.h>
-#include <vtkFloatArray.h>
-#include <vtkInformation.h>
-#include <vtkInformationVector.h>
-#include <vtkObjectFactory.h>
-#include <vtkPointData.h>
-#include <vtkPoints.h>
-#include <vtkPolyData.h>
-#include <vtkPolyDataAlgorithm.h>
-#include <vtkStreamingDemandDrivenPipeline.h>
+
+// To ease build system upkeep, we annotate VTK includes with their deps.
+#include <vtkCapsuleSource.h>                  // vtkFiltersSources
+#include <vtkCellArray.h>                      // vtkCommonDataModel
+#include <vtkFloatArray.h>                     // vtkCommonCore
+#include <vtkInformation.h>                    // vtkCommonCore
+#include <vtkInformationVector.h>              // vtkCommonCore
+#include <vtkObjectFactory.h>                  // vtkCommonCore
+#include <vtkPointData.h>                      // vtkCommonDataModel
+#include <vtkPoints.h>                         // vtkCommonCore
+#include <vtkPolyData.h>                       // vtkCommonDataModel
+#include <vtkPolyDataAlgorithm.h>              // vtkCommonExecutionModel
+#include <vtkStreamingDemandDrivenPipeline.h>  // vtkCommonExecutionModel
 
 #include "drake/common/fmt_eigen.h"
 #include "drake/common/scope_exit.h"

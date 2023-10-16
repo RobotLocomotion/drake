@@ -1,11 +1,7 @@
 load("//tools/skylark:py.bzl", "py_library")
-load("@drake//tools/install:check_licenses.bzl", "check_licenses")
-load("@drake//tools/install:install.bzl", "install")
-load(
-    "@drake//tools/skylark:drake_py.bzl",
-    "drake_py_binary",
-    "drake_py_test",
-)
+load("//tools/install:check_licenses.bzl", "check_licenses")
+load("//tools/install:install.bzl", "install")
+load("//tools/skylark:drake_py.bzl", "drake_py_binary", "drake_py_test")
 load(
     "@drake_visualizer//:defs.bzl",
     _DRAKE_VISUALIZER_ENABLED = "ENABLED",
@@ -58,6 +54,7 @@ drake_py_binary(
         "@nlopt_internal//:__subpackages__",
         "@qhull_internal//:__subpackages__",
         "@sdformat_internal//:__subpackages__",
+        "@tinyobjloader_internal//:__subpackages__",
         "@yaml_cpp_internal//:__subpackages__",
     ],
     deps = [":module_py"],
@@ -93,6 +90,8 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "gz_utils_internal",
     "ipopt",
     "lcm",
+    "libpng_internal",
+    "libtiff_internal",
     "meshcat",
     "msgpack_internal",
     "net_sf_jchart2d",
@@ -100,7 +99,6 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "nlohmann_internal",
     "nlopt_internal",
     "org_apache_xmlgraphics_commons",
-    "petsc",
     "picosha2_internal",
     "pybind11",
     "qhull_internal",
@@ -113,7 +111,7 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "tinyxml2_internal",
     "usockets_internal",
     "uwebsockets_internal",
-    "vtk",
+    "vtk_internal",
     "yaml_cpp_internal",
 ]] + ["//tools/workspace/%s:install" % p for p in [
     "abseil_cpp_internal",

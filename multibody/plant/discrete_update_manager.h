@@ -14,8 +14,12 @@
 #include "drake/multibody/contact_solvers/contact_solver_results.h"
 #include "drake/multibody/plant/constraint_specs.h"
 #include "drake/multibody/plant/contact_jacobians.h"
+#include "drake/multibody/plant/contact_pair_kinematics.h"
 #include "drake/multibody/plant/contact_results.h"
 #include "drake/multibody/plant/coulomb_friction.h"
+#include "drake/multibody/plant/deformable_driver.h"
+#include "drake/multibody/plant/deformable_model.h"
+#include "drake/multibody/plant/discrete_contact_data.h"
 #include "drake/multibody/plant/discrete_contact_pair.h"
 #include "drake/multibody/plant/scalar_convertible_component.h"
 #include "drake/multibody/tree/multibody_tree.h"
@@ -34,6 +38,33 @@ class AccelerationKinematicsCache;
 
 template <typename T>
 struct JointLockingCacheData;
+
+/* Struct to store MultibodyPlant input forces. */
+template <typename T>
+struct InputPortForces {
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(InputPortForces);
+  /* Constructs an `InputPortForces` to store input port values for the given
+   `plant`. Values are initialized to zero at construction. */
+  explicit InputPortForces(const MultibodyPlant<T>& plant)
+      : externally_applied_forces(plant),
+        actuation_w_pd(plant.num_velocities()),
+        actuation_wo_pd(plant.num_velocities()) {
+    SetZero();
+  }
+  void SetZero() {
+    externally_applied_forces.SetZero();
+    actuation_w_pd.setZero();
+    actuation_wo_pd.setZero();
+  }
+  /* Externally applied generalized and body spatial forces. */
+  MultibodyForces<T> externally_applied_forces;
+  /* Joint actuation, indexed by DOF. We split them into actuators with and
+   without PD control. Both have size equal to the number of generalized
+   velocities. Entries with no contribution are zero. In other words, the
+   total actuation equals actuation_w_pd + actuation_wo_pd. */
+  VectorX<T> actuation_w_pd;   // For actuated joints with PD control.
+  VectorX<T> actuation_wo_pd;  // For actuated joints without PD control.
+};
 
 /* This class is used to perform all calculations needed to advance state for a
  MultibodyPlant with discrete state.
@@ -87,10 +118,7 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
 
   /* Returns the MultibodyPlant that owns this DiscreteUpdateManager.
    @pre SetOwningMultibodyPlant() has been successfully invoked. */
-  const MultibodyPlant<T>& plant() const {
-    DRAKE_DEMAND(plant_ != nullptr);
-    return *plant_;
-  }
+  const MultibodyPlant<T>& plant() const;
 
   /* (Internal) Sets the given `plant` as the MultibodyPlant owning this
    DiscreteUpdateManager. This method is meant to be called by
@@ -135,26 +163,21 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   /* MultibodyPlant invokes this method to perform the discrete variables
    update. */
   void CalcDiscreteValues(const systems::Context<T>& context,
-                          systems::DiscreteValues<T>* updates) const {
-    // The discrete sampling of input ports needs to be the first step of a
-    // discrete update.
-    SampleDiscreteInputPortForces(context);
-    DRAKE_DEMAND(updates != nullptr);
-    DoCalcDiscreteValues(context, updates);
-  }
+                          systems::DiscreteValues<T>* updates) const;
 
   /* Evaluates the contact results used in CalcDiscreteValues() to advance the
    discrete update from the state stored in `context`. */
   const ContactResults<T>& EvalContactResults(
       const systems::Context<T>& context) const;
 
-  // Computes all non-contact applied forces including:
-  //  - Force elements.
-  //  - Discretely sampled joint actuation.
-  //  - Discretely sampled externally applied spatial forces.
-  //  - (possibly) Joint limits.
+  /* Computes all non-contact applied forces including:
+     - Force elements.
+     - Discretely sampled joint actuation.
+     - Discretely sampled externally applied spatial forces.
+     - (possibly) Joint limits. */
   void CalcNonContactForces(const drake::systems::Context<T>& context,
                             bool include_joint_limit_penalty_forces,
+                            bool include_pd_controlled_input,
                             MultibodyForces<T>* forces) const;
 
   // TODO(amcastro-tri): Consider replacing with more specific APIs with the
@@ -170,11 +193,21 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   const MultibodyForces<T>& EvalDiscreteUpdateMultibodyForces(
       const systems::Context<T>& context) const;
 
+  /* Evaluates sparse kinematics information for each contact pair at
+   the given configuration stored in `context`. */
+  const DiscreteContactData<ContactPairKinematics<T>>& EvalContactKinematics(
+      const systems::Context<T>& context) const;
+
+  /* Given the configuration stored in `context`, evalutates all discrete
+   contact pairs, including point, hydroelastic, and deformable contact. */
+  const DiscreteContactData<DiscreteContactPair<T>>& EvalDiscreteContactPairs(
+      const systems::Context<T>& context) const;
+
   /* Publicly exposed MultibodyPlant private/protected methods.
    @{ */
 
-  // N.B. Keep the spelling and order of declarations here identical to the
-  // MultibodyPlantDiscreteUpdateManagerAttorney spelling and order of same.
+  /* N.B. Keep the spelling and order of declarations here identical to the
+   MultibodyPlantDiscreteUpdateManagerAttorney spelling and order of same. */
 
   const MultibodyTree<T>& internal_tree() const;
 
@@ -189,6 +222,16 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   geometry_id_to_body_index() const;
 
   /* @} */
+
+  const MultibodyTreeTopology& tree_topology() const {
+    return internal::GetInternalTree(this->plant()).get_topology();
+  }
+
+  /* Returns the pointer to the DeformableDriver owned by `this` manager if one
+   exists. Otherwise, returns nullptr. */
+  const DeformableDriver<double>* deformable_driver() const {
+    return deformable_driver_.get();
+  }
 
  protected:
   /* Derived classes that support making a clone that uses double as a scalar
@@ -211,9 +254,9 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   virtual std::unique_ptr<DiscreteUpdateManager<symbolic::Expression>>
   CloneToSymbolic() const;
 
-  /* Derived DiscreteUpdateManager should override this method to extract
+  /* Derived DiscreteUpdateManager can override this method to extract
    information from the owning MultibodyPlant. */
-  virtual void ExtractModelInfo() {}
+  virtual void DoExtractModelInfo() {}
 
   /* Derived classes can implement this method if they wish to declare their own
    cache entries. It defaults to a no-op. */
@@ -225,21 +268,35 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
     return multibody_state_index_;
   }
 
+  /* Evaluates actuation input into two separate contributions: Actuation with
+   PD control and actuation without PD control. Entries with no contribution are
+   left initialized to zero.
+   @param[out] actuation_w_pd
+     Contribution for actuators with PD control. Indexed by velocity DOF.
+   @param[out] actuation_wo_pd
+     Contribution for actuators without PD control. Indexed by velocity DOF.
+   @pre The size of actuation_w_pd and actuation_wo_pd equals
+   plant().num_velocities().
+   */
+  void CalcJointActuationForces(const systems::Context<T>& context,
+                                VectorX<T>* actuation_w_pd,
+                                VectorX<T>* actuation_wo_pd) const;
+
   /* Evaluates the discretely sampled MultibodyPlant input port force values.
    This includes forces from externally applied spatial forces, externally
    applied generalized forces, and joint actuation forces.  */
-  const MultibodyForces<T>& EvalDiscreteInputPortForces(
+  const InputPortForces<T>& EvalInputPortForces(
       const drake::systems::Context<T>& context) const {
     return plant()
         .get_cache_entry(cache_indexes_.discrete_input_port_forces)
-        .template Eval<MultibodyForces<T>>(context);
+        .template Eval<InputPortForces<T>>(context);
   }
 
   /* Exposed MultibodyPlant private/protected methods.
    @{ */
 
-  // N.B. Keep the spelling and order of declarations here identical to the
-  // MultibodyPlantDiscreteUpdateManagerAttorney spelling and order of same.
+  /* N.B. Keep the spelling and order of declarations here identical to the
+   MultibodyPlantDiscreteUpdateManagerAttorney spelling and order of same. */
 
   const std::vector<geometry::ContactSurface<T>>& EvalContactSurfaces(
       const systems::Context<T>& context) const;
@@ -250,8 +307,12 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   void CalcForceElementsContribution(const drake::systems::Context<T>& context,
                                      MultibodyForces<T>* forces) const;
 
-  const internal::JointLockingCacheData<T>&
-  EvalJointLockingCache(
+  const internal::JointLockingCacheData<T>& EvalJointLockingCache(
+      const systems::Context<T>& context) const;
+
+  VectorX<T> AssembleActuationInput(const systems::Context<T>& context) const;
+
+  VectorX<T> AssembleDesiredStateInput(
       const systems::Context<T>& context) const;
 
   const std::map<MultibodyConstraintId, internal::CouplerConstraintSpec>&
@@ -262,6 +323,9 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
 
   const std::map<MultibodyConstraintId, internal::BallConstraintSpec>&
   ball_constraints_specs() const;
+
+  const std::map<MultibodyConstraintId, internal::WeldConstraintSpec>&
+  weld_constraints_specs() const;
 
   const std::map<MultibodyConstraintId, bool>& GetConstraintActiveStatus(
       const systems::Context<T>& context) const;
@@ -280,12 +344,6 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
       const systems::Context<T>& context,
       internal::AccelerationKinematicsCache<T>* ac) const = 0;
 
-  virtual void DoCalcDiscreteValues(
-      const systems::Context<T>& context,
-      systems::DiscreteValues<T>* updates) const = 0;
-
-  /* Concrete managers must implement this method to compute contact results
-   according to the underlying formulation of contact. */
   virtual void DoCalcContactResults(
       const systems::Context<T>& context,
       ContactResults<T>* contact_results) const = 0;
@@ -299,72 +357,146 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   virtual void DoCalcDiscreteUpdateMultibodyForces(
       const systems::Context<T>& context, MultibodyForces<T>* forces) const = 0;
 
-  // Struct used to conglomerate the indexes of cache entries declared by the
-  // manager.
+  /* Performs discrete updates for rigid DoFs in the system. Defaults to
+   symplectic Euler updates. Derived classes may choose to override the
+   implemention to provide a different update scheme. */
+  virtual void DoCalcDiscreteValues(const systems::Context<T>& context,
+                                    systems::DiscreteValues<T>* updates) const;
+
+  /* Extracts information from all PhysicalModels that are added to the
+   MultibodyPlant associated with this discrete update manager. */
+  void ExtractModelInfo();
+
+  /* Associates the given `DeformableModel` with `this` manager. The discrete
+   states of the deformable bodies registered in the given `model` will be
+   advanced by this manager. This manager holds onto the given pointer and
+   therefore the model must outlive the manager.
+   @throws std::exception if a deformable model has already been registered.
+   @pre model != nullptr. */
+  void ExtractConcreteModel(const DeformableModel<T>* model);
+
+  /* For testing purposes only, we provide a default no-op implementation on
+   arbitrary models of unknown concrete model type. Otherwise, for the closed
+   list of models forward declared in physical_model.h, we must provide a
+   function that extracts the particular variant of the physical model. */
+  void ExtractConcreteModel(std::monostate) {}
+
+  /* Struct used to conglomerate the indexes of cache entries declared by the
+   manager. */
   struct CacheIndexes {
-    // Manually managed cache entry that mimics a discrete sampling of forces
-    // added to the owning MbP via input ports (see issue #12786). This cache
-    // entry is manually marked out-of-date, updated, and immediately marked
-    // up-to-date at the beginning of each discrete update. So when caching is
-    // enabled, it is always up-to-date as long as any discrete update has
-    // happened. The only time this cache entry may be updated automatically via
-    // the caching mechanism is when a downstream cache entry that depends on
-    // this cache entry requests its value before any discrete update has
-    // happened. Evaluating this cache entry when caching is disabled throws an
-    // exception.
+    /* Manually managed cache entry that mimics a discrete sampling of forces
+     added to the owning MbP via input ports (see issue #12786). This cache
+     entry is manually marked out-of-date, updated, and immediately marked
+     up-to-date at the beginning of each discrete update. So when caching is
+     enabled, it is always up-to-date as long as any discrete update has
+     happened. The only time this cache entry may be updated automatically via
+     the caching mechanism is when a downstream cache entry that depends on
+     this cache entry requests its value before any discrete update has
+     happened. Evaluating this cache entry when caching is disabled throws an
+     exception. */
     systems::CacheIndex discrete_input_port_forces;
     systems::CacheIndex contact_solver_results;
     systems::CacheIndex non_contact_forces_evaluation_in_progress;
     systems::CacheIndex contact_results;
     systems::CacheIndex discrete_update_multibody_forces;
+    systems::CacheIndex contact_kinematics;
+    systems::CacheIndex discrete_contact_pairs;
   };
 
-  // Exposes indices for the cache entries declared by this class for derived
-  // classes to depend on.
+  /* Exposes indices for the cache entries declared by this class for derived
+   classes to depend on. */
   CacheIndexes cache_indexes() const { return cache_indexes_; }
 
  private:
-  // Due to issue #12786, we cannot mark the calculation of non-contact forces
-  // (and the acceleration it induces) dependent on the discrete
-  // MultibodyPlant's inputs, as it should. However, by removing this
-  // dependency, we run the risk of an undetected algebraic loop. We use this
-  // function to guard against such algebraic loop. In particular, calling this
-  // function immediately upon entering the calculation of non-contact forces
-  // sets a flag indicating the calculation of non-contact forces is in
-  // progress. Then, this function returns a ScopeExit which turns off the flag
-  // when going out of scope at the end of the non-contact forces calculation.
-  // If this function is called again while the flag is on, it means that an
-  // algebraic loop exists and an exception is thrown.
+  /* Due to issue #12786, we cannot mark the calculation of non-contact forces
+   (and the acceleration it induces) dependent on the discrete
+   MultibodyPlant's inputs, as it should. However, by removing this
+   dependency, we run the risk of an undetected algebraic loop. We use this
+   function to guard against such algebraic loop. In particular, calling this
+   function immediately upon entering the calculation of non-contact forces
+   sets a flag indicating the calculation of non-contact forces is in
+   progress. Then, this function returns a ScopeExit which turns off the flag
+   when going out of scope at the end of the non-contact forces calculation.
+   If this function is called again while the flag is on, it means that an
+   algebraic loop exists and an exception is thrown. */
   [[nodiscard]] ScopeExit ThrowIfNonContactForceInProgress(
       const systems::Context<T>& context) const;
 
-  // Updates the discrete_input_forces cache entry. This should only be called
-  // at the beginning of each discrete update.
-  // @throws std::exception if caching is disabled for the given `context`.
+  /* Updates the discrete_input_forces cache entry. This should only be called
+   at the beginning of each discrete update.
+   @throws std::exception if caching is disabled for the given `context`. */
   void SampleDiscreteInputPortForces(const systems::Context<T>& context) const;
 
-  // Collects the sum of all forces added to the owning MultibodyPlant and store
-  // them in given `forces`. The existing values in `forces` is cleared.
-  void CopyForcesFromInputPorts(const systems::Context<T>& context,
-                                MultibodyForces<T>* forces) const;
+  /* Collects the sum of all forces added to the owning MultibodyPlant and store
+   them in given `forces`. The existing values in `forces` is cleared. */
+  void CalcInputPortForces(const systems::Context<T>& context,
+                           InputPortForces<T>* forces) const;
 
-  // NVI to DoDeclareCacheEntries().
+  /* NVI to DoDeclareCacheEntries(). */
   void DeclareCacheEntries();
 
   /* Calc version of EvalContactResults(), NVI to DoCalcContactResults(). */
   void CalcContactResults(const systems::Context<T>& context,
                           ContactResults<T>* contact_results) const;
 
-  // Calc version of EvalDiscreteUpdateMultibodyForces, NVI to
-  // DoCalcDiscreteUpdateMultibodyForces.
+  /* Calc version of EvalDiscreteUpdateMultibodyForces, NVI to
+   DoCalcDiscreteUpdateMultibodyForces. */
   void CalcDiscreteUpdateMultibodyForces(const systems::Context<T>& context,
                                          MultibodyForces<T>* forces) const;
+
+  /* Calc version of EvalContactKinematics(). */
+  void CalcContactKinematics(
+      const systems::Context<T>& context,
+      DiscreteContactData<ContactPairKinematics<T>>* result) const;
+
+  /* Helper function for CalcContactKinematics() that computes the contact pair
+   kinematics for point contact and hydroelastic contact respectively,
+   depending on the value of `type`. */
+  void AppendContactKinematics(
+      const systems::Context<T>& context,
+      const std::vector<DiscreteContactPair<T>>& contact_pairs,
+      DiscreteContactType type,
+      DiscreteContactData<ContactPairKinematics<T>>* contact_kinematics) const;
+
+  /* Calc version of EvalDiscreteContactPairs(). */
+  void CalcDiscreteContactPairs(
+      const systems::Context<T>& context,
+      DiscreteContactData<DiscreteContactPair<T>>* result) const;
+
+  /* Given the configuration stored in `context`, this method appends discrete
+   pairs corresponding to point contact into `pairs`.
+   @pre pairs != nullptr. */
+  void AppendDiscreteContactPairsForPointContact(
+      const systems::Context<T>& context,
+      DiscreteContactData<DiscreteContactPair<T>>* pairs) const;
+
+  /* Given the configuration stored in `context`, this method appends discrete
+   pairs corresponding to hydroelastic contact into `pairs`.
+   @pre pairs != nullptr. */
+  void AppendDiscreteContactPairsForHydroelasticContact(
+      const systems::Context<T>& context,
+      DiscreteContactData<DiscreteContactPair<T>>* pairs) const;
 
   const MultibodyPlant<T>* plant_{nullptr};
   MultibodyPlant<T>* mutable_plant_{nullptr};
   systems::DiscreteStateIndex multibody_state_index_;
   CacheIndexes cache_indexes_;
+  /* deformable_driver_ computes the information on all deformable bodies needed
+   to advance the discrete states. */
+  std::unique_ptr<DeformableDriver<double>> deformable_driver_;
 };
+
+/* N.B. These geometry queries are not supported when T = symbolic::Expression
+ and therefore their implementation throws. */
+template <>
+void DiscreteUpdateManager<symbolic::Expression>::CalcDiscreteContactPairs(
+    const drake::systems::Context<symbolic::Expression>&,
+    DiscreteContactData<DiscreteContactPair<symbolic::Expression>>*) const;
+template <>
+void DiscreteUpdateManager<symbolic::Expression>::
+    AppendDiscreteContactPairsForHydroelasticContact(
+        const drake::systems::Context<symbolic::Expression>&,
+        DiscreteContactData<DiscreteContactPair<symbolic::Expression>>*) const;
 
 }  // namespace internal
 }  // namespace multibody

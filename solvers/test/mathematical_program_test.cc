@@ -446,19 +446,10 @@ GTEST_TEST(TestAddDecisionVariables, AddVariable3) {
 GTEST_TEST(TestAddDecisionVariables, AddVariableError) {
   // Test the error inputs.
   MathematicalProgram prog;
-  auto y = prog.NewContinuousVariables<3>("y");
-  const Variable x0("x0", Variable::Type::CONTINUOUS);
-  const Variable x1("x1", Variable::Type::CONTINUOUS);
-  // The newly added variables contain a dummy variable.
-  Variable dummy;
-  EXPECT_TRUE(dummy.is_dummy());
-  EXPECT_THROW(
-      prog.AddDecisionVariables(VectorDecisionVariable<3>(x0, x1, dummy)),
-      std::runtime_error);
   auto z = prog.NewIndeterminates<2>("z");
   // Call AddDecisionVariables on a program that has some indeterminates, and
-  // the new
-  // variables intersects with the indeterminates.
+  // the new variables intersects with the indeterminates.
+  const Variable x0("x0", Variable::Type::CONTINUOUS);
   EXPECT_THROW(prog.AddDecisionVariables(VectorDecisionVariable<2>(x0, z(0))),
                std::runtime_error);
 
@@ -601,10 +592,6 @@ GTEST_TEST(TestAddIndeterminate, AddIndeterminateError) {
   // Call AddIndeterminate with an input of type BINARY.
   DRAKE_EXPECT_THROWS_MESSAGE(prog.AddIndeterminate(z),
                               ".*should be of type CONTINUOUS.*");
-  // Call AddIndeterminate with a dummy variable.
-  Variable dummy;
-  DRAKE_EXPECT_THROWS_MESSAGE(prog.AddIndeterminate(dummy),
-                              ".*should not be a dummy variable.*");
 }
 
 GTEST_TEST(TestAddIndeterminates, AddIndeterminatesVec1) {
@@ -683,11 +670,6 @@ GTEST_TEST(TestAddIndeterminates, AddIndeterminatesVecError) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       prog.AddIndeterminates(VectorIndeterminate<2>(x1, x0)),
       ".*should be of type CONTINUOUS.*");
-  // Call AddIndeterminates with a dummy variable.
-  Variable dummy;
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      prog.AddIndeterminates(VectorIndeterminate<2>(dummy, x0)),
-      ".*should not be a dummy variable.*");
 }
 
 GTEST_TEST(TestAddIndeterminates, AddIndeterminatesVars1) {
@@ -774,11 +756,6 @@ GTEST_TEST(TestAddIndeterminates, AddIndeterminatesVarsError) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       prog.AddIndeterminates(symbolic::Variables({x0, x1})),
       ".*should be of type CONTINUOUS.*");
-  // Call AddIndeterminates with a dummy variable.
-  Variable dummy;
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      prog.AddIndeterminates(symbolic::Variables({x0, dummy})),
-      ".*should not be a dummy variable.*");
 }
 
 GTEST_TEST(TestAddIndeterminates, MatrixInput) {

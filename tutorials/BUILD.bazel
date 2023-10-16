@@ -1,6 +1,6 @@
 load("//tools/skylark:drake_py.bzl", "drake_py_test")
 load("//tools/jupyter:jupyter_py.bzl", "drake_jupyter_py_binary")
-load("@drake//tools/install:install.bzl", "install", "install_files")
+load("//tools/install:install.bzl", "install", "install_files")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 drake_jupyter_py_binary(

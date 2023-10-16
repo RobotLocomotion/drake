@@ -11,6 +11,7 @@
 #include "drake/common/yaml/yaml_io.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/meshcat.h"
+#include "drake/geometry/optimization/hyperrectangle.h"
 #include "drake/geometry/optimization/test_utilities.h"
 #include "drake/geometry/optimization/vpolytope.h"
 #include "drake/geometry/scene_graph.h"
@@ -607,7 +608,7 @@ GTEST_TEST(HPolyhedronTest, NonnegativeScalingTest) {
 
 bool PointInScaledSet(const solvers::VectorXDecisionVariable& x_vars,
                       const solvers::VectorXDecisionVariable& t_vars,
-                      const Vector2d& x, const Vector2d& t,
+                      const VectorXd& x, const VectorXd& t,
                       solvers::MathematicalProgram* prog,
                       const std::vector<Binding<Constraint>>& constraints) {
   const double tol = 0;
@@ -879,14 +880,15 @@ GTEST_TEST(HPolyhedronTest, ReduceL1LInfBallIntersection) {
   A_int.bottomRows(Linfty_ball.A().rows()) = Linfty_ball.A();
   b_int.bottomRows(Linfty_ball.b().rows()) = Linfty_ball.b();
   HPolyhedron polyhedron_to_reduce(A_int, b_int);
-  const auto redundant_indices = polyhedron_to_reduce.FindRedundant();
+  const double tol = 1E-7;
+  const auto redundant_indices = polyhedron_to_reduce.FindRedundant(tol);
   // Removed Linfty_ball.
   std::set<int> redundant_indices_expected;
   for (int i = 0; i < Linfty_ball.A().rows(); ++i) {
     redundant_indices_expected.emplace(i + L1_ball.A().rows());
   }
   EXPECT_EQ(redundant_indices, redundant_indices_expected);
-  HPolyhedron reduced_polyhedron = polyhedron_to_reduce.ReduceInequalities();
+  HPolyhedron reduced_polyhedron = polyhedron_to_reduce.ReduceInequalities(tol);
 
   EXPECT_TRUE(CompareMatrices(reduced_polyhedron.A(), L1_ball.A()));
   EXPECT_TRUE(CompareMatrices(reduced_polyhedron.b(), L1_ball.b()));

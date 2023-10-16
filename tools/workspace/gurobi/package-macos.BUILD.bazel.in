@@ -1,9 +1,7 @@
 # -*- bazel -*-
 
-load(
-    "@drake//tools/install:install.bzl",
-    "install",
-)
+load("@drake//tools/install:install.bzl", "install")
+load("@drake//tools/skylark:cc.bzl", "cc_library")
 
 licenses(["by_exception_only"])  # Gurobi
 
@@ -11,7 +9,7 @@ licenses(["by_exception_only"])  # Gurobi
 genrule(
     name = "error-message",
     outs = ["error-message.h"],
-    cmd = "echo 'error: Gurobi 9.5 is not installed at {gurobi_home}' && false",  # noqa
+    cmd = "echo 'error: Gurobi 10.0 is not installed at {gurobi_home}' && false",  # noqa
     visibility = ["//visibility:private"],
 )
 
@@ -30,7 +28,7 @@ cc_library(
     includes = ["gurobi-distro/include"],
     linkopts = [
         "-L{gurobi_home}/lib",
-        "-lgurobi95",
+        "-lgurobi100",
         "-Wl,-rpath,{gurobi_home}/lib",
     ],
     visibility = ["//visibility:public"],
@@ -42,7 +40,7 @@ cc_library(
     includes = ["gurobi-distro/include"],
     linkopts = [
         "-L{gurobi_home}/lib",
-        "-lgurobi95",
+        "-lgurobi100",
         "-lgurobi_stdc++",
         "-Wl,-rpath,{gurobi_home}/lib",
     ],

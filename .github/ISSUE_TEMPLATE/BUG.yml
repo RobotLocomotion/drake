@@ -35,6 +35,7 @@ body:
         - Ubuntu 20.04
         - Ubuntu 22.04
         - macOS 12 (Monterey)
+        - macOS 13 (Ventura)
         - Other
   - type: dropdown
     attributes:

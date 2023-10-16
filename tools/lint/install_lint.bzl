@@ -1,4 +1,4 @@
-load("@drake//tools/skylark:drake_py.bzl", "py_test_isolated")
+load("//tools/skylark:drake_py.bzl", "py_test_isolated")
 
 def install_lint(
         existing_rules = None):

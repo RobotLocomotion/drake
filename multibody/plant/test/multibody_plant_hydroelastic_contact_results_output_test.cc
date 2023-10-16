@@ -32,9 +32,9 @@ class HydroelasticContactResultsOutputTester : public ::testing::Test {
 
     // Set some reasonable, but arbitrary, parameters: none of these will
     // affect the test results.
-    const double mass = 2.0;                           // kg.
-    const double hydroelastic_modulus = 1e7;           // Pascals.
-    const Vector3<double> gravity_W(0, 0, -9.8);       // m/s^2.
+    const double mass = 2.0;                      // kg.
+    const double hydroelastic_modulus = 1e7;      // Pascals.
+    const Vector3<double> gravity_W(0, 0, -9.8);  // m/s^2.
 
     // Create the plant.
     systems::DiagramBuilder<double> builder;
@@ -43,9 +43,8 @@ class HydroelasticContactResultsOutputTester : public ::testing::Test {
     // TODO(SeanCurtis-TRI): This should _not_ be using code from the examples/
     //  directory. Examples code shouldn't feed back into other code.
     examples::multibody::bouncing_ball::PopulateBallPlant(
-            radius, mass, hydroelastic_modulus, dissipation,
-            friction, gravity_W, false /* rigid_sphere */,
-            false /* compliant_ground */, plant_);
+        radius, mass, hydroelastic_modulus, dissipation, friction, gravity_W,
+        false /* rigid_sphere */, false /* compliant_ground */, plant_);
     plant_->set_contact_model(ContactModel::kHydroelastic);
     plant_->Finalize();
 
@@ -123,11 +122,11 @@ TEST_F(HydroelasticContactResultsOutputTester, SpatialForceAtCentroid) {
   // translational component of the spatial force to be positive; otherwise
   // we expect it to be negative.
   const std::vector<geometry::GeometryId> ball_collision_geometries =
-      plant_->GetCollisionGeometriesForBody(
-          plant_->GetBodyByName("Ball"));
-  const bool body_A_is_ball = (std::find(
-      ball_collision_geometries.begin(), ball_collision_geometries.end(),
-      results.contact_surface().id_M()) != ball_collision_geometries.end());
+      plant_->GetCollisionGeometriesForBody(plant_->GetBodyByName("Ball"));
+  const bool body_A_is_ball = (std::find(ball_collision_geometries.begin(),
+                                         ball_collision_geometries.end(),
+                                         results.contact_surface().id_M()) !=
+                               ball_collision_geometries.end());
   const double sign_scalar = (body_A_is_ball) ? 1.0 : -1.0;
   ASSERT_GT(sign_scalar * F_Ac_W.translational()[2], 0);
 
@@ -165,11 +164,11 @@ TEST_F(HydroelasticContactResultsOutputTester, SlipVelocity) {
   // be +x. Otherwise, it should be -x.
   const Vector3d x(1, 0, 0);
   const std::vector<geometry::GeometryId> ball_collision_geometries =
-      plant_->GetCollisionGeometriesForBody(
-          plant_->GetBodyByName("Ball"));
-  const bool body_A_is_ball = (std::find(
-      ball_collision_geometries.begin(), ball_collision_geometries.end(),
-      results.contact_surface().id_M()) != ball_collision_geometries.end());
+      plant_->GetCollisionGeometriesForBody(plant_->GetBodyByName("Ball"));
+  const bool body_A_is_ball = (std::find(ball_collision_geometries.begin(),
+                                         ball_collision_geometries.end(),
+                                         results.contact_surface().id_M()) !=
+                               ball_collision_geometries.end());
   const Vector3d expected_slip = body_A_is_ball ? x : -x;
 
   // Check that value of the slip velocity field points to +x.
@@ -191,9 +190,10 @@ TEST_F(HydroelasticContactResultsOutputTester, Traction) {
   const Vector3d z(0, 0, 1);
   const std::vector<geometry::GeometryId> ball_collision_geometries =
       plant_->GetCollisionGeometriesForBody(plant_->GetBodyByName("Ball"));
-  const bool body_A_is_ball = (std::find(
-      ball_collision_geometries.begin(), ball_collision_geometries.end(),
-      results.contact_surface().id_M()) != ball_collision_geometries.end());
+  const bool body_A_is_ball = (std::find(ball_collision_geometries.begin(),
+                                         ball_collision_geometries.end(),
+                                         results.contact_surface().id_M()) !=
+                               ball_collision_geometries.end());
   const Vector3d expected_traction_direction = body_A_is_ball ? z : -z;
 
   // Check the traction.

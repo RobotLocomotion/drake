@@ -30,6 +30,7 @@ using Eigen::Vector3d;
 using Eigen::Vector4d;
 using Eigen::VectorXd;
 using drake::systems::analysis_test::StatelessSystem;
+using testing::ElementsAreArray;
 
 namespace drake {
 namespace systems {
@@ -51,13 +52,18 @@ class EmptySystem : public LeafSystem<T> {
   void AddPeriodicDiscreteUpdate() {
     const double default_period = 1.125;
     const double default_offset = 2.25;
-    this->DeclarePeriodicDiscreteUpdateNoHandler(default_period,
-                                                 default_offset);
+    this->DeclarePeriodicDiscreteUpdateEvent(default_period, default_offset,
+                                             &EmptySystem::Noop);
   }
 
   // Adds a specific periodic discrete update.
   void AddPeriodicDiscreteUpdate(double period, double offset) {
-    this->DeclarePeriodicDiscreteUpdateNoHandler(period, offset);
+    this->DeclarePeriodicDiscreteUpdateEvent(period, offset,
+                                             &EmptySystem::Noop);
+  }
+
+  EventStatus Noop(const Context<T>&, DiscreteValues<T>*) const {
+    return EventStatus::DidNothing();
   }
 };
 
@@ -823,43 +829,44 @@ TEST_F(DiagramTest, ValidateContext) {
 }
 
 TEST_F(DiagramTest, Graphviz) {
-  const std::string id = std::to_string(
-      reinterpret_cast<int64_t>(diagram_.get()));
-  const std::string dot = diagram_->GetGraphvizString();
+  SystemBase::GraphvizFragment fragment = diagram_->GetGraphvizFragment();
+  const std::string dot = fmt::format("{}", fmt::join(fragment.fragments, ""));
   // Check that the Diagram is labeled with its name.
-  EXPECT_NE(std::string::npos, dot.find(
-      "label=\"Unicode Snowman's Favorite Diagram!!1!☃!\";")) << dot;
-  // Check that input ports are declared in blue, and output ports in green.
-  EXPECT_NE(std::string::npos, dot.find(
-    "_" + id + "_u1[color=blue, label=\"adder0\"")) << dot;
-  EXPECT_NE(std::string::npos, dot.find(
-    "_" + id + "_y1[color=green, label=\"adder2\"")) << dot;
-  // Check that subsystem records appear.
-  EXPECT_NE(
-      std::string::npos,
-      dot.find(
-          "[shape=record, label=\"adder1|{{<u0>u0|<u1>u1} | {<y0>sum}}\"]"))
-      << dot;
+  EXPECT_THAT(dot,
+              testing::HasSubstr(
+                  "\nname=Unicode Snowman's Favorite Diagram!!1!☃!\n"));
+  // Check that ports are declared with blue and green bubbles.
+  EXPECT_THAT(dot, testing::HasSubstr(
+                       "COLOR=\"blue\" CELLSPACING=\"3\" STYLE=\"rounded\""));
+  EXPECT_THAT(dot, testing::HasSubstr(
+                       "COLOR=\"green\" CELLSPACING=\"3\" STYLE=\"rounded\""));
+  // Check that subsystems appear.
+  EXPECT_THAT(dot, testing::HasSubstr("\nname=adder1\n"));
   // Check that internal edges appear.
-  const std::string adder1_id = std::to_string(
-      reinterpret_cast<int64_t>(diagram_->adder1()));
-  const std::string adder2_id = std::to_string(
-      reinterpret_cast<int64_t>(diagram_->adder2()));
+  const SystemBase::GraphvizFragment adder1_frag =
+      diagram_->adder1()->GetGraphvizFragment();
+  const SystemBase::GraphvizFragment adder2_frag =
+      diagram_->adder2()->GetGraphvizFragment();
   // [Adder 1, output 0] -> [Adder 2, input 1]
-  EXPECT_NE(std::string::npos,
-            dot.find(adder1_id + ":y0 -> " + adder2_id + ":u1;")) << dot;
+  std::string edge = fmt::format("{}:e -> {}:w", adder1_frag.output_ports.at(0),
+                                 adder2_frag.input_ports.at(1));
+  EXPECT_THAT(dot, testing::HasSubstr(edge));
   // Check that synthetic I/O edges appear: inputs in blue, outputs in green.
   // [Diagram Input 2] -> [Adder 1, input 1]
-  EXPECT_NE(std::string::npos, dot.find(
-      "_" + id + "_u2 -> " + adder1_id + ":u1 [color=blue];")) << dot;
+  edge = fmt::format("{}:e -> {}:w [color=blue]", fragment.input_ports.at(2),
+                     adder1_frag.input_ports.at(1));
+  EXPECT_THAT(dot, testing::HasSubstr(edge));
   // [Diagram Input 2] -> [Sink, input]
-  const std::string sink_id = std::to_string(
-      reinterpret_cast<int64_t>(diagram_->sink()));
-  EXPECT_NE(std::string::npos, dot.find(
-      "_" + id + "_u2 -> " + sink_id + ":u0 [color=blue];")) << dot;
+  const SystemBase::GraphvizFragment sink_frag =
+      diagram_->sink()->GetGraphvizFragment();
+  edge = fmt::format("{}:e -> {}:w [color=blue]", fragment.input_ports.at(2),
+                     sink_frag.input_ports.at(0));
+  EXPECT_THAT(dot, testing::HasSubstr(edge));
   // [Adder 2, output 0] -> [Diagram Output 1]
-  EXPECT_NE(std::string::npos, dot.find(
-      adder2_id + ":y0 -> _" + id + "_y1 [color=green];")) << dot;
+  edge =
+      fmt::format("{}:e -> {}:w [color=green]", adder2_frag.output_ports.at(0),
+                  fragment.output_ports.at(1));
+  EXPECT_THAT(dot, testing::HasSubstr(edge));
 }
 
 // Tests that both variants of GetMutableSubsystemState do what they say on
@@ -984,7 +991,9 @@ TEST_F(DiagramTest, GetSubsystemByName) {
   EXPECT_FALSE(diagram_->HasSubsystemNamed("not_a_subsystem"));
   DRAKE_EXPECT_THROWS_MESSAGE(
       diagram_->GetSubsystemByName("not_a_subsystem"),
-      "System .* does not have a subsystem named not_a_subsystem");
+      "System .* does not have a subsystem named not_a_subsystem. The existing "
+      "subsystems are named \\{adder0, adder1, adder2, stateless, integrator0, "
+      "integrator1, sink, kitchen_sink\\}.");
 }
 
 TEST_F(DiagramTest, GetDowncastSubsystemByName) {
@@ -998,7 +1007,9 @@ TEST_F(DiagramTest, GetDowncastSubsystemByName) {
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       diagram_->GetDowncastSubsystemByName<StatelessSystem>("not_a_subsystem"),
-      "System .* does not have a subsystem named not_a_subsystem");
+      "System .* does not have a subsystem named not_a_subsystem. The existing "
+      "subsystems are named \\{adder0, adder1, adder2, stateless, integrator0, "
+      "integrator1, sink, kitchen_sink\\}.");
 
   // Now downcast a non-templatized system (invokes a different overload).
   // This will only compile if the subsystem's scalar type matches the
@@ -1349,21 +1360,28 @@ TEST_F(DiagramOfDiagramsTest, ScalarConvertAndCheckContextSizes) {
 
 TEST_F(DiagramOfDiagramsTest, Graphviz) {
   const std::string dot = diagram_->GetGraphvizString();
-  // Check that both subdiagrams appear.
-  EXPECT_NE(std::string::npos, dot.find("label=\"subdiagram0\""));
-  EXPECT_NE(std::string::npos, dot.find("label=\"subdiagram1\""));
-  // Check that edges between the two subdiagrams exist.
-  const std::string id0 = std::to_string(
-      reinterpret_cast<int64_t>(subdiagram0_));
-  const std::string id1 = std::to_string(
-      reinterpret_cast<int64_t>(subdiagram1_));
-  EXPECT_NE(std::string::npos, dot.find("_" + id0 + "_y0 -> _" + id1 + "_u0"));
 
+  // Check that both subdiagrams appear.
+  const std::string needle0 = "\nname=subdiagram0\n";
+  const std::string needle1 = "\nname=subdiagram1\n";
+  EXPECT_THAT(dot, testing::HasSubstr(needle0));
+  EXPECT_THAT(dot, testing::HasSubstr(needle1));
+
+  // Check that edges between the two subdiagrams exist.
+  const SystemBase::GraphvizFragment sub0_frag =
+      subdiagram0_->GetGraphvizFragment();
+  const SystemBase::GraphvizFragment sub1_frag =
+      subdiagram1_->GetGraphvizFragment();
+  const std::string sub0_y0 = sub0_frag.output_ports.at(0);
+  const std::string sub1_u0 = sub1_frag.input_ports.at(0);
+  const std::string edge = fmt::format("{}:e -> {}:w", sub0_y0, sub1_u0);
+  EXPECT_THAT(dot, testing::HasSubstr(edge));
+
+  // Check that the subdiagrams no longer appear.
   const int max_depth = 0;
   const std::string dot_no_depth = diagram_->GetGraphvizString(max_depth);
-  // Check that the subdiagrams no longer appear.
-  EXPECT_EQ(std::string::npos, dot_no_depth.find("label=\"subdiagram0\""));
-  EXPECT_EQ(std::string::npos, dot_no_depth.find("label=\"subdiagram1\""));
+  EXPECT_THAT(dot_no_depth, testing::Not(testing::HasSubstr(needle0)));
+  EXPECT_THAT(dot_no_depth, testing::Not(testing::HasSubstr(needle1)));
 }
 
 // Tests that a diagram composed of diagrams can be evaluated, and gives
@@ -1883,7 +1901,6 @@ class TestPublishingSystem final : public LeafSystem<double> {
   TestPublishingSystem() {
     this->DeclarePeriodicPublishEvent(
         kTestPublishPeriod, 0.0, &TestPublishingSystem::HandlePeriodPublish);
-    this->DeclarePeriodicPublishNoHandler(kTestPublishPeriod);
 
     // Verify that no periodic discrete updates are registered.
     EXPECT_FALSE(this->GetUniquePeriodicDiscreteUpdateAttribute());
@@ -2058,8 +2075,9 @@ TEST_F(DiscreteStateTest, UpdateDiscreteVariables) {
 
   // Fast forward to 9.0 sec and do the update.
   context_->SetTime(9.0);
-  diagram_.CalcDiscreteVariableUpdate(
+  EventStatus status = diagram_.CalcDiscreteVariableUpdate(
       *context_, events->get_discrete_update_events(), updates.get());
+  EXPECT_TRUE(status.succeeded());
 
   // Note that non-participating hold1's state should not have been
   // copied (if it had been it would be 1001.0).
@@ -2083,8 +2101,9 @@ TEST_F(DiscreteStateTest, UpdateDiscreteVariables) {
 
   // Fast forward to 12.0 sec and do the update again.
   context_->SetTime(12.0);
-  diagram_.CalcDiscreteVariableUpdate(
+  status = diagram_.CalcDiscreteVariableUpdate(
       *context_, events->get_discrete_update_events(), updates.get());
+  EXPECT_TRUE(status.succeeded());
   EXPECT_EQ(17.0, updates1[0]);
   EXPECT_EQ(23.0, updates2[0]);
 }
@@ -2128,8 +2147,9 @@ TEST_F(DiscreteStateTest, DiscreteUpdateNotificationsAreLocalized) {
 
   // Fast forward to 2.0 sec and collect the update.
   context_->SetTime(2.0);
-  diagram_.CalcDiscreteVariableUpdate(
+  const EventStatus status = diagram_.CalcDiscreteVariableUpdate(
       *context_, discrete_events, updates.get());
+  EXPECT_TRUE(status.succeeded());
 
   // Of course nothing should have been notified since nothing's changed yet.
   EXPECT_EQ(num_notifications(ctx1), notifications_1);
@@ -2294,8 +2314,9 @@ GTEST_TEST(DiscreteStateDiagramTest, CalcDiscreteVariableUpdate) {
   // Fast forward to the event time, and record it for the test below.
   double time = 2.0;
   context->SetTime(time);
-  diagram.CalcDiscreteVariableUpdate(
+  EventStatus status = diagram.CalcDiscreteVariableUpdate(
       *context, events->get_discrete_update_events(), x_buf.get());
+  EXPECT_TRUE(status.succeeded());
 
   // The non-participating sys2 state shouldn't have been copied (if it had
   // it would now be 2). sys1's state should have been copied, replacing the
@@ -2323,8 +2344,9 @@ GTEST_TEST(DiscreteStateDiagramTest, CalcDiscreteVariableUpdate) {
   // Fast forward to the new event time, and record it for the tests below.
   time = 6.0;
   context->SetTime(time);
-  diagram.CalcDiscreteVariableUpdate(
+  status = diagram.CalcDiscreteVariableUpdate(
       *context, events->get_discrete_update_events(), x_buf.get());
+  EXPECT_TRUE(status.succeeded());
   // Both sys1 and sys2's discrete data should be updated.
   diagram.ApplyDiscreteVariableUpdate(events->get_discrete_update_events(),
                                       x_buf.get(), context.get());
@@ -2406,7 +2428,10 @@ TEST_F(DiscreteStateTest, Publish) {
   // Fast forward to 19.0 sec and do the publish.
   EXPECT_EQ(false, diagram_.publisher()->published());
   context_->SetTime(19.0);
-  diagram_.Publish(*context_, events->get_publish_events());
+  const EventStatus status =
+      diagram_.Publish(*context_, events->get_publish_events());
+  EXPECT_TRUE(status.succeeded());
+
   // Check that publication occurred.
   EXPECT_EQ(true, diagram_.publisher()->published());
 }
@@ -2436,7 +2461,8 @@ TEST_F(ForcedPublishingSystemDiagramTest, ForcedPublish) {
 class SystemWithAbstractState : public LeafSystem<double> {
  public:
   SystemWithAbstractState(int id, double update_period) : id_(id) {
-    DeclarePeriodicUnrestrictedUpdateNoHandler(update_period, 0);
+    DeclarePeriodicUnrestrictedUpdateEvent(
+        update_period, 0, &SystemWithAbstractState::CalcUnrestrictedUpdate);
     DeclareAbstractState(Value<double>(id_));
 
     // Verify that no periodic discrete updates are registered.
@@ -2445,11 +2471,13 @@ class SystemWithAbstractState : public LeafSystem<double> {
 
   ~SystemWithAbstractState() override {}
 
+  int get_id() const { return id_; }
+
+ private:
   // Abstract state is set to input state value + time.
-  void DoCalcUnrestrictedUpdate(
+  void CalcUnrestrictedUpdate(
       const Context<double>& context,
-      const std::vector<const UnrestrictedUpdateEvent<double>*>& events,
-      State<double>* state) const override {
+      State<double>* state) const {
     double& state_num = state->get_mutable_abstract_state()
                             .get_mutable_value(0)
                             .get_mutable_value<double>();
@@ -2459,9 +2487,6 @@ class SystemWithAbstractState : public LeafSystem<double> {
     state_num += context.get_time();
   }
 
-  int get_id() const { return id_; }
-
- private:
   int id_{0};
 };
 
@@ -2556,8 +2581,9 @@ TEST_F(AbstractStateDiagramTest, CalcUnrestrictedUpdate) {
 
   double time = 2.0;
   context_->SetTime(time);
-  diagram_.CalcUnrestrictedUpdate(
+  EventStatus status = diagram_.CalcUnrestrictedUpdate(
       *context_, events->get_unrestricted_update_events(), x_buf.get());
+  EXPECT_TRUE(status.succeeded());
 
   // The non-participating sys2 state shouldn't have been copied (if it had
   // it would now be kSys2Id). sys1's state should have been copied, replacing
@@ -2589,8 +2615,9 @@ TEST_F(AbstractStateDiagramTest, CalcUnrestrictedUpdate) {
 
   time = 6.0;
   context_->SetTime(time);
-  diagram_.CalcUnrestrictedUpdate(
+  status = diagram_.CalcUnrestrictedUpdate(
       *context_, events->get_unrestricted_update_events(), x_buf.get());
+  EXPECT_TRUE(status.succeeded());
   // Both sys1 and sys2's abstract data should be updated.
   diagram_.ApplyUnrestrictedUpdate(events->get_unrestricted_update_events(),
                                    x_buf.get(), context_.get());
@@ -2644,8 +2671,9 @@ TEST_F(AbstractStateDiagramTest, UnrestrictedUpdateNotificationsAreLocalized) {
 
   // Fast forward to 2.0 sec and collect the update.
   context_->SetTime(next_time);
-  diagram_.CalcUnrestrictedUpdate(
+  const EventStatus status = diagram_.CalcUnrestrictedUpdate(
       *context_, unrestricted_events, updates.get());
+  EXPECT_TRUE(status.succeeded());
 
   // Of course nothing should have been notified since nothing's changed yet.
   EXPECT_EQ(num_notifications(ctx1), notifications_1);
@@ -3222,9 +3250,9 @@ class PerStepActionTestSystem : public LeafSystem<double> {
 // trigger doesn't matter.
 GTEST_TEST(DiagramEventEvaluation, Propagation) {
   std::unique_ptr<Diagram<double>> sub_diagram;
-  PerStepActionTestSystem* sys0;
-  PerStepActionTestSystem* sys1;
-  PerStepActionTestSystem* sys2;
+  PerStepActionTestSystem* sys0{};
+  PerStepActionTestSystem* sys1{};
+  PerStepActionTestSystem* sys2{};
 
   // Sub diagram. Has sys0, and sys1.
   // sys0 does not have any per step actions.
@@ -3262,18 +3290,20 @@ GTEST_TEST(DiagramEventEvaluation, Propagation) {
   ASSERT_TRUE(events->HasEvents());
 
   // Does unrestricted update first.
-  diagram->CalcUnrestrictedUpdate(
+  EventStatus status = diagram->CalcUnrestrictedUpdate(
       *context, events->get_unrestricted_update_events(), tmp_state.get());
+  EXPECT_TRUE(status.succeeded());
   context->get_mutable_state().SetFrom(*tmp_state);
 
   // Does discrete updates second.
-  diagram->CalcDiscreteVariableUpdate(*context,
-                                      events->get_discrete_update_events(),
-                                      tmp_discrete_state.get());
+  status = diagram->CalcDiscreteVariableUpdate(
+      *context, events->get_discrete_update_events(), tmp_discrete_state.get());
+  EXPECT_TRUE(status.succeeded());
   context->get_mutable_discrete_state().SetFrom(*tmp_discrete_state);
 
   // Publishes last.
-  diagram->Publish(*context, events->get_publish_events());
+  status = diagram->Publish(*context, events->get_publish_events());
+  EXPECT_TRUE(status.succeeded());
 
   // Only sys2 published once.
   EXPECT_EQ(sys0->publish_count(), 0);
@@ -3297,6 +3327,252 @@ GTEST_TEST(DiagramEventEvaluation, Propagation) {
   EXPECT_EQ(sys2_context.get_discrete_state(0)[0], 0);
   EXPECT_EQ(sys2_context.get_abstract_state<std::string>(0), "wow0");
   EXPECT_EQ(sys2->publish_count(), 1);
+}
+
+// A System that has one of each kind of event, with independently settable
+// return statuses. We'll use this to test whether Diagrams properly
+// implement our policy for handling error returns for simultaneous events.
+class EventStatusTestSystem : public LeafSystem<double> {
+ public:
+  EventStatusTestSystem() {
+    DeclareForcedUnrestrictedUpdateEvent(
+        &EventStatusTestSystem::UnrestrictedHandler);
+    DeclareForcedDiscreteUpdateEvent(&EventStatusTestSystem::DiscreteHandler);
+    DeclareForcedPublishEvent(&EventStatusTestSystem::PublishHandler);
+  }
+
+  void set_unrestricted_severity(EventStatus::Severity severity) {
+    unrestricted_severity_ = severity;
+  }
+  void set_discrete_severity(EventStatus::Severity severity) {
+    discrete_severity_ = severity;
+  }
+  void set_publish_severity(EventStatus::Severity severity) {
+    publish_severity_ = severity;
+  }
+
+  // Returns the list of events handled by all EventStatusTestSystem instances,
+  // and clears the list back to empty.
+  static std::vector<std::string> take_static_events() {
+    std::vector<std::string> result = events_singleton();
+    events_singleton().clear();
+    return result;
+  }
+
+ private:
+  static std::vector<std::string>& events_singleton() {
+    static never_destroyed<std::vector<std::string>> global(
+        std::vector<std::string>{});
+    return global.access();
+  }
+
+  EventStatus MakeStatus(std::string id, EventStatus::Severity severity) const {
+    events_singleton().push_back(fmt::format("{} {}", this->get_name(), id));
+    switch (severity) {
+      case EventStatus::kDidNothing:
+        return EventStatus::DidNothing();
+      case EventStatus::kSucceeded:
+        return EventStatus::Succeeded();
+      case EventStatus::kReachedTermination:
+        return EventStatus::ReachedTermination(
+            this, fmt::format("{} terminated", id));
+      case EventStatus::kFailed:
+        return EventStatus::Failed(this, fmt::format("{} failed", id));
+    }
+    DRAKE_UNREACHABLE();
+  }
+
+  EventStatus UnrestrictedHandler(const Context<double>&,
+                                  State<double>*) const {
+    return MakeStatus("unrestricted", unrestricted_severity_);
+  }
+  EventStatus DiscreteHandler(const Context<double>&,
+                              DiscreteValues<double>*) const {
+    return MakeStatus("discrete", discrete_severity_);
+  }
+  EventStatus PublishHandler(const Context<double>&) const {
+    return MakeStatus("publish", publish_severity_);
+  }
+
+  // The corresponding handlers return whatever status is set here.
+  EventStatus::Severity unrestricted_severity_{EventStatus::kSucceeded};
+  EventStatus::Severity discrete_severity_{EventStatus::kSucceeded};
+  EventStatus::Severity publish_severity_{EventStatus::kSucceeded};
+};
+
+// Policy to verify:
+//   1 events are handled in the order the subsystems were added
+//   2 if all events succeed, all get executed and return succeeded
+// 3ab if all events do nothing (a), all get executed and we return did_nothing;
+//     a mix of succeeded & did nothing (b) returns succeeded
+// 4ab if an unrestricted (a) or discrete (b) update fails, we fail immediately
+//     and return a message attributing the error to the right subsystem
+//   5 if a publish event fails, we continue to handle remaining publish events
+//     and then finally report the correct message for the first failure
+// 6ab a reached_termination status doesn't prevent execution but reports
+//     the first detection (a), but is superseded by a later failure (b)
+GTEST_TEST(DiagramEventEvaluation, EventStatusHandling) {
+  std::unique_ptr<Diagram<double>> sub_diagram0;
+  std::unique_ptr<Diagram<double>> sub_diagram1;
+  EventStatusTestSystem* sys[5] = {};
+
+  {  // Sub diagram 0 has sys0 & sys1.
+    DiagramBuilder<double> builder;
+    sys[0] = builder.AddSystem<EventStatusTestSystem>();
+    sys[0]->set_name("sys0");
+    sys[1] = builder.AddSystem<EventStatusTestSystem>();
+    sys[1]->set_name("sys1");
+    sub_diagram0 = builder.Build();
+    sub_diagram0->set_name("sub_diagram0");
+  }
+
+  {  // Sub diagram 1 has sys3 & sys4.
+    DiagramBuilder<double> builder;
+    sys[3] = builder.AddSystem<EventStatusTestSystem>();
+    sys[3]->set_name("sys3");
+    sys[4] = builder.AddSystem<EventStatusTestSystem>();
+    sys[4]->set_name("sys4");
+    sub_diagram1 = builder.Build();
+    sub_diagram1->set_name("sub_diagram1");
+  }
+
+  // Now build the diagram consisting of the two subdiagrams separated by
+  // one more leaf system:
+  //                                diagram
+  //                   sub_diagram0  sys2  sub_diagram1
+  //                    sys0  sys1          sys3  sys4
+  //
+  DiagramBuilder<double> builder;
+  builder.AddSystem(std::move(sub_diagram0));
+  sys[2] = builder.AddSystem<EventStatusTestSystem>();
+  sys[2]->set_name("sys2");
+  builder.AddSystem(std::move(sub_diagram1));
+  auto diagram = builder.Build();
+  diagram->set_name("diagram");
+
+  // We aren't looking for state updates; we just need a place to put the
+  // (ignored) outputs. We just need to know who got called when.
+  auto context = diagram->CreateDefaultContext();
+  State<double>& state = context->get_mutable_state();
+  DiscreteValues<double>& discrete_state = state.get_mutable_discrete_state();
+
+  auto calc_unrestricted_update = [&context, &state](const auto& dut) {
+    return dut->CalcUnrestrictedUpdate(
+        *context, *dut->AllocateForcedUnrestrictedUpdateEventCollection(),
+        &state);
+  };
+  auto calc_discrete_variable_update = [&context,
+                                        &discrete_state](const auto& dut) {
+    return dut->CalcDiscreteVariableUpdate(
+        *context, *dut->AllocateForcedDiscreteUpdateEventCollection(),
+        &discrete_state);
+  };
+  auto publish = [&context](const auto& dut) {
+    return dut->Publish(*context, *dut->AllocateForcedPublishEventCollection());
+  };
+
+  // The event logs should have these strings in this order, when everything
+  // succeeds. When failure cuts execution short, we still expect to see a
+  // prefix of the full arrays.
+  const std::string all_unrestricted[] = {
+      "sys0 unrestricted", "sys1 unrestricted", "sys2 unrestricted",
+      "sys3 unrestricted", "sys4 unrestricted"};
+  const std::string all_discrete[] = {
+      "sys0 discrete", "sys1 discrete", "sys2 discrete",
+      "sys3 discrete", "sys4 discrete"};
+  const std::string all_publish[] = {
+      "sys0 publish", "sys1 publish", "sys2 publish",
+      "sys3 publish", "sys4 publish"};
+
+  // Sets all events in all systems to the same severity.
+  auto reset_severity = [sys](EventStatus::Severity severity) {
+    for (EventStatusTestSystem* item : sys) {
+      item->set_unrestricted_severity(severity);
+      item->set_discrete_severity(severity);
+      item->set_publish_severity(severity);
+    }
+  };
+  auto take_static_events = &EventStatusTestSystem::take_static_events;
+
+  // Policy 1 & 2: Every handler returns success and should be invoked in order.
+  EventStatus unrestricted_status = calc_unrestricted_update(diagram);
+  EXPECT_TRUE(unrestricted_status.succeeded());
+  EXPECT_THAT(take_static_events(), ElementsAreArray(all_unrestricted));
+  EventStatus discrete_status = calc_discrete_variable_update(diagram);
+  EXPECT_TRUE(discrete_status.succeeded());
+  EXPECT_THAT(take_static_events(), ElementsAreArray(all_discrete));
+  EventStatus publish_status = publish(diagram);
+  EXPECT_TRUE(publish_status.succeeded());
+  EXPECT_THAT(take_static_events(), ElementsAreArray(all_publish));
+
+  // Policy 3ab: Unrestricted & publish handlers all return did_nothing, so
+  // their final status should be did_nothing. One of the discrete handlers
+  // succeeds so its final status should be succeeded. Order unchanged from
+  // above.
+  reset_severity(EventStatus::kDidNothing);
+  sys[3]->set_discrete_severity(EventStatus::kSucceeded);
+  unrestricted_status = calc_unrestricted_update(diagram);
+  EXPECT_TRUE(unrestricted_status.did_nothing());
+  EXPECT_THAT(take_static_events(), ElementsAreArray(all_unrestricted));
+  discrete_status = calc_discrete_variable_update(diagram);
+  EXPECT_TRUE(discrete_status.succeeded());
+  EXPECT_THAT(take_static_events(), ElementsAreArray(all_discrete));
+  publish_status = publish(diagram);
+  EXPECT_TRUE(publish_status.did_nothing());
+  EXPECT_THAT(take_static_events(), ElementsAreArray(all_publish));
+
+  // Policy 4a: sys[1] unrestricted fails. Nothing after should execute.
+  reset_severity(EventStatus::kSucceeded);
+  sys[1]->set_unrestricted_severity(EventStatus::kFailed);
+  unrestricted_status = calc_unrestricted_update(diagram);
+  EXPECT_TRUE(unrestricted_status.failed());
+  EXPECT_EQ(unrestricted_status.system(), sys[1]);
+  EXPECT_EQ(unrestricted_status.message(), "unrestricted failed");
+  EXPECT_THAT(take_static_events(),
+              ElementsAreArray(all_unrestricted, /* count = */ 2));
+
+  // Policy 4b: sys[2] discrete fails. Nothing after should execute.
+  reset_severity(EventStatus::kSucceeded);
+  sys[2]->set_discrete_severity(EventStatus::kFailed);
+  discrete_status = calc_discrete_variable_update(diagram);
+  EXPECT_TRUE(discrete_status.failed());
+  EXPECT_EQ(discrete_status.system(), sys[2]);
+  EXPECT_EQ(discrete_status.message(), "discrete failed");
+  EXPECT_THAT(take_static_events(),
+              ElementsAreArray(all_discrete, /* count = */ 3));
+
+  // Policy 5: sys[0] publish fails. All other publishes should execute
+  // but then the returned status is the sys[0] failure.
+  reset_severity(EventStatus::kSucceeded);
+  sys[0]->set_publish_severity(EventStatus::kFailed);
+  publish_status = publish(diagram);
+  EXPECT_TRUE(publish_status.failed());
+  EXPECT_EQ(publish_status.system(), sys[0]);
+  EXPECT_EQ(publish_status.message(), "publish failed");
+  EXPECT_THAT(take_static_events(), ElementsAreArray(all_publish));
+
+  // Policy 6a: sys[1] unrestricted and sys[3] unrestricted report termination.
+  // Everything executes and the sys[1] termination return is reported.
+  reset_severity(EventStatus::kSucceeded);
+  sys[1]->set_unrestricted_severity(EventStatus::kReachedTermination);
+  sys[3]->set_unrestricted_severity(EventStatus::kReachedTermination);
+  unrestricted_status = calc_unrestricted_update(diagram);
+  EXPECT_TRUE(unrestricted_status.reached_termination());
+  EXPECT_EQ(unrestricted_status.system(), sys[1]);
+  EXPECT_EQ(unrestricted_status.message(), "unrestricted terminated");
+  EXPECT_THAT(take_static_events(), ElementsAreArray(all_unrestricted));
+
+  // Policy 6b: sys[1] discrete reports termination, sys[3] fails.
+  // sys[4] is not executed, and the sys[3] failure is reported.
+  reset_severity(EventStatus::kSucceeded);
+  sys[1]->set_discrete_severity(EventStatus::kReachedTermination);
+  sys[3]->set_discrete_severity(EventStatus::kFailed);
+  discrete_status = calc_discrete_variable_update(diagram);
+  EXPECT_TRUE(discrete_status.failed());
+  EXPECT_EQ(discrete_status.system(), sys[3]);
+  EXPECT_EQ(discrete_status.message(), "discrete failed");
+  EXPECT_THAT(take_static_events(),
+              ElementsAreArray(all_discrete, /* count = */ 4));
 }
 
 class MyEventTestSystem : public LeafSystem<double> {
@@ -3352,7 +3628,9 @@ GTEST_TEST(MyEventTest, MyEventTestLeaf) {
     dut.GetPerStepEvents(*context, per_step_events.get());
     events->AddToEnd(*periodic_events);
     events->AddToEnd(*per_step_events);
-    dut.Publish(*context, events->get_publish_events());
+    const EventStatus status =
+        dut.Publish(*context, events->get_publish_events());
+    EXPECT_TRUE(status.succeeded());
 
     EXPECT_EQ(dut.get_periodic_count(), period > 0 ? 1 : 0);
     EXPECT_EQ(dut.get_per_step_count(), period > 0 ? 0 : 1);
@@ -3400,7 +3678,8 @@ GTEST_TEST(MyEventTest, MyEventTestDiagram) {
 
   // FYI time not actually needed here; events to handle already selected.
   context->SetTime(time);
-  dut->Publish(*context, events->get_publish_events());
+  EventStatus status = dut->Publish(*context, events->get_publish_events());
+  EXPECT_TRUE(status.succeeded());
 
   // Sys0's period is larger, so it doesn't get evaluated.
   EXPECT_EQ(sys[0]->get_periodic_count(), 0);
@@ -3426,7 +3705,8 @@ GTEST_TEST(MyEventTest, MyEventTestDiagram) {
   // it doesn't contain the ones leftover from the CalcNextUpdateTime() call.
   // (If it doesn't get cleared some of the counts will be incremented twice.)
   dut->GetPeriodicEvents(*context, periodic_events.get());
-  dut->Publish(*context, periodic_events->get_publish_events());
+  status = dut->Publish(*context, periodic_events->get_publish_events());
+  EXPECT_TRUE(status.succeeded());
 
   EXPECT_EQ(sys[0]->get_periodic_count(), 1);
   EXPECT_EQ(sys[0]->get_per_step_count(), 0);

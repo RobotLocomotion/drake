@@ -1,0 +1,162 @@
+# -*- bazel -*-
+
+load("@drake//tools/install:install.bzl", "install")
+load("@drake//tools/skylark:cc.bzl", "cc_library")
+load(
+    "@drake//tools/workspace:cmake_configure_file.bzl",
+    "cmake_configure_files",
+)
+
+licenses(["notice"])  # libtiff
+
+package(default_visibility = ["//visibility:private"])
+
+_CONFIG_HDRS = [
+    "libtiff/tif_config.h",
+    "libtiff/tiffconf.h",
+    "libtiff/tiffvers.h",
+]
+
+cmake_configure_files(
+    name = "_config_hdrs",
+    srcs = [x + ".cmake.in" for x in _CONFIG_HDRS],
+    outs = _CONFIG_HDRS,
+    defines = [
+        # From configure.ac.
+        "LIBTIFF_VERSION=4.6.0",
+        "LIBTIFF_MAJOR_VERSION=4",
+        "LIBTIFF_MINOR_VERSION=6",
+        "LIBTIFF_MICRO_VERSION=0",
+        # From RELEASE-DATE.
+        "LIBTIFF_RELEASE_DATE=20230908",
+        # Opt-in to compression algorithms that we do want. These are the
+        # built-in algorithms (i.e., no external dependencies) that are
+        # plausible to use on Drake's depth camera images (which are the
+        # only place we use TIFF images).
+        "LOGLUV_SUPPORT=1",
+        "LZW_SUPPORT=1",
+        "PACKBITS_SUPPORT=1",
+        "ZIP_SUPPORT=1",
+        # This is a no-op in tiff 4.6.0, but in case it's ever not a no-op we
+        # should probably leave it enabled.
+        "SUBIFD_SUPPORT=1",
+        # Match the upstream defaults.
+        "DEFAULT_EXTRASAMPLE_AS_ALPHA=1",
+        "STRIPCHOP_DEFAULT=1",
+        "STRIP_SIZE_DEFAULT=8192",
+        # Drake doesn't use directory searching.
+        "TIFF_MAX_DIR_COUNT=1",
+        # Our standard library is just fine, thanks.
+        "TIFF_INT8_T=int8_t",
+        "TIFF_INT16_T=int16_t",
+        "TIFF_INT32_T=int32_t",
+        "TIFF_INT64_T=int64_t",
+        "TIFF_UINT8_T=uint8_t",
+        "TIFF_UINT16_T=uint16_t",
+        "TIFF_UINT32_T=uint32_t",
+        "TIFF_UINT64_T=uint64_t",
+        "TIFF_SSIZE_T=ptrdiff_t",
+        # Drake only supports 64-bit, little-endian hardware.
+        "HOST_BIG_ENDIAN=0",
+        "SIZEOF_SIZE_T=8",
+        # Platform stuff.
+        "HAVE_ASSERT_H=1",
+        "HAVE_FCNTL_H=1",
+        "HAVE_FSEEKO=1",
+        "HAVE_IEEEFP=1",
+        "HAVE_MMAP=1",
+        "HAVE_STRINGS_H=1",
+        "HAVE_SYS_TYPES_H=1",
+        "HAVE_UNISTD_H=1",
+    ],
+    undefines = [
+        # Platform stuff that we don't have or don't want.
+        "CXX_SUPPORT",
+        "HAVE_IO_H",
+        "HAVE_SETMODE",
+        "USE_WIN32_FILEIO",
+        # Opt-out of useless compression algorithms.
+        "CCITT_SUPPORT",
+        "MDI_SUPPORT",
+        "NEXT_SUPPORT",
+        "OJPEG_SUPPORT",
+        "PIXARLOG_SUPPORT",
+        "THUNDER_SUPPORT",
+        # Opt-out of compression algorithms that require external libraries.
+        "HAVE_JBG_NEWLEN",
+        "JBIG_SUPPORT",
+        "LERC_SUPPORT",
+        "LIBDEFLATE_SUPPORT",
+        "LIBJPEG_12_PATH",
+        "LZMA_SUPPORT",
+        "WEBP_SUPPORT",
+        "ZSTD_SUPPORT",
+        # Opt-out of JPEG support. We don't want lossy compression.
+        "CHECK_JPEG_YCBCR_SUBSAMPLING",
+        "CHUNKY_STRIP_READ_SUPPORT",
+        "JPEG_DUAL_MODE_8_12",
+        "JPEG_SUPPORT",
+        # Match the upstream defaults.
+        "DEFER_STRILE_LOAD",
+        # Dead code (unused).
+        "PACKAGE_BUGREPORT",
+        "PACKAGE_NAME",
+        "PACKAGE_TARNAME",
+        "PACKAGE_URL",
+        # We don't use the getopt-based tools.
+        "HAVE_GETOPT",
+        "HAVE_DECL_OPTARG",
+        # Ignore stray @VAR@ in comments.
+        "VAR",
+    ],
+    strict = True,
+)
+
+_PUBLIC_HDRS = [
+    "libtiff/tiff.h",
+    "libtiff/tiffio.h",
+    ":libtiff/tiffvers.h",
+    ":libtiff/tiffconf.h",
+]
+
+_PRIVATE_HDRS = [
+    "libtiff/t4.h",
+    "libtiff/tif_dir.h",
+    "libtiff/tif_fax3.h",
+    "libtiff/tif_hash_set.h",
+    "libtiff/tif_predict.h",
+    "libtiff/tiffiop.h",
+    "libtiff/uvcode.h",
+    ":libtiff/tif_config.h",
+]
+
+_SRCS = glob(
+    [
+        "libtiff/tif*.c",
+    ],
+    exclude = [
+        "**/*win32*",
+    ],
+)
+
+cc_library(
+    name = "libtiff",
+    hdrs = _PUBLIC_HDRS,
+    srcs = _SRCS + _PRIVATE_HDRS,
+    includes = ["libtiff"],
+    copts = [
+        "-fvisibility=hidden",
+        "-w",
+    ],
+    linkstatic = True,
+    deps = [
+        "@zlib",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+install(
+    name = "install",
+    docs = ["LICENSE.md"],
+    visibility = ["//visibility:public"],
+)

@@ -22,9 +22,9 @@ GTEST_TEST(ScopeTest, Acceptance) {
   DiagramBuilder<double> builder;
   auto lcm = builder.AddSystem<LcmInterfaceSystem>();
   auto source = builder.AddSystem<Sine>(
-      Eigen::Vector2d(1.0,        2.0),          // amplitudes
-      Eigen::Vector2d(2.0 * M_PI, 2 * M_PI),     // frequencies = 1 rev / sec
-      Eigen::Vector2d(0.0,        0.5 * M_PI));  // phases
+      Eigen::Vector2d(1.0, 2.0),              // amplitudes
+      Eigen::Vector2d(2.0 * M_PI, 2 * M_PI),  // frequencies = 1 rev / sec
+      Eigen::Vector2d(0.0, 0.5 * M_PI));      // phases
   auto [scope, publisher] = LcmScopeSystem::AddToBuilder(
       &builder, lcm, source->get_output_port(0), channel, publish_period);
   ASSERT_NE(scope, nullptr);

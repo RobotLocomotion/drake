@@ -1,5 +1,5 @@
 load(
-    "@drake//tools/install:install.bzl",
+    "//tools/install:install.bzl",
     "install",
     "install_cmake_config",
     "install_files",

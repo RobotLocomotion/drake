@@ -11,7 +11,6 @@
 #include "drake/systems/framework/abstract_value_cloner.h"
 #include "drake/systems/primitives/pass_through.h"
 #include "drake/systems/primitives/zero_order_hold.h"
-
 namespace drake {
 namespace multibody {
 namespace internal {
@@ -91,7 +90,7 @@ class DummyDiscreteUpdateManager final : public DiscreteUpdateManager<T> {
 
   /* Extracts information about the additional discrete state that
    DummyModel declares if one exists in the owning MultibodyPlant. */
-  void ExtractModelInfo() final {
+  void DoExtractModelInfo() final {
     /* For unit testing we verify there is a single physical model of type
      DummyModel. */
     DRAKE_DEMAND(this->plant().physical_models().size() == 1);
@@ -179,8 +178,7 @@ class DiscreteUpdateManagerTest : public ::testing::Test {
  protected:
   void SetUp() override {
     // To avoid unnecessary warnings/errors, use a non-zero spatial inertia.
-    plant_.AddRigidBody("rigid body",
-        SpatialInertia<double>::MakeUnitary());
+    plant_.AddRigidBody("rigid body", SpatialInertia<double>::MakeUnitary());
     auto dummy_model = std::make_unique<DummyModel<double>>();
     dummy_model_ = dummy_model.get();
     plant_.AddPhysicalModel(std::move(dummy_model));

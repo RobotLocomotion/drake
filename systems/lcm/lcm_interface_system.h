@@ -37,8 +37,8 @@ namespace lcm {
  *
  * @ingroup message_passing
  */
-class LcmInterfaceSystem final
-    : public LeafSystem<double>, public drake::lcm::DrakeLcmInterface {
+class LcmInterfaceSystem final : public LeafSystem<double>,
+                                 public drake::lcm::DrakeLcmInterface {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LcmInterfaceSystem)
 
@@ -77,10 +77,13 @@ class LcmInterfaceSystem final
 
   void OnHandleSubscriptionsError(const std::string&) final;
 
-  void DoCalcNextUpdateTime(
-      const Context<double>&,
-      systems::CompositeEventCollection<double>*,
-      double*) const final;
+  void DoCalcNextUpdateTime(const Context<double>&,
+                            systems::CompositeEventCollection<double>*,
+                            double*) const final;
+
+  typename LeafSystem<double>::GraphvizFragment DoGetGraphvizFragment(
+      const typename LeafSystem<double>::GraphvizFragmentParams& params)
+      const final;
 
   std::unique_ptr<drake::lcm::DrakeLcmInterface> owned_lcm_;
   drake::lcm::DrakeLcmInterface* const lcm_{};

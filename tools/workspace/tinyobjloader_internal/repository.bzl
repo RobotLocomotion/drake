@@ -1,4 +1,4 @@
-load("@drake//tools/workspace:github.bzl", "github_archive")
+load("//tools/workspace:github.bzl", "github_archive")
 
 def tinyobjloader_internal_repository(
         name,
@@ -6,8 +6,8 @@ def tinyobjloader_internal_repository(
     github_archive(
         name = name,
         repository = "tinyobjloader/tinyobjloader",
-        commit = "f5569db1ffb3b0222663ba38a7a9b3f6a461c469",
-        sha256 = "f0a0f5ee4e1c7cc573fba9044c1dbed2f547b3ff058840fc8f83c6b7b79f2391",  # noqa
+        commit = "ee45fb41db95bf9563f2a41bc63adfa18475c2ee",
+        sha256 = "10347059b35739d13b37ea40febc38dfe1c482e623026ee35771ab08c3e03883",  # noqa
         build_file = ":package.BUILD.bazel",
         mirrors = mirrors,
         patches = [

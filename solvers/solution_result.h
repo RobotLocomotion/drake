@@ -29,10 +29,7 @@ enum SolutionResult {
   kDualInfeasible = -7,
   /** The initial (invalid) solution result. This value should be overwritten by
   the solver during Solve(). */
-  kSolutionResultNotSet = -8,
-  // clang-format off
-  kUnknownError [[deprecated("DRAKE DEPRECATED: This has been renamed to kSolverSpecificError; for details, see https://github.com/RobotLocomotion/drake/pull/19450. The deprecated code will be removed from Drake on or after 2023-09-01.")]] = kSolverSpecificError // NOLINT
-  // clang-format on
+  kSolutionResultNotSet = -8
 };
 
 std::string to_string(SolutionResult solution_result);

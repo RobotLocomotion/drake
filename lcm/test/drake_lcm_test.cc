@@ -13,6 +13,15 @@
 
 namespace drake {
 namespace lcm {
+// Provides friend access to the underlying LCM object.
+class DrakeLcmTester {
+ public:
+  DrakeLcmTester() = delete;
+  static ::lcm::LCM* get_native(DrakeLcm* dut) {
+    DRAKE_DEMAND(dut != nullptr);
+    return dut->get_native();
+  }
+};
 namespace {
 
 // A udpm URL that is not the default.  We'll transmit here in our tests.
@@ -50,6 +59,8 @@ class DrakeLcmTest : public ::testing::Test {
     EXPECT_TRUE(message_was_received);
   }
 
+  ::lcm::LCM* get_native() { return DrakeLcmTester::get_native(dut_.get()); }
+
   // The device under test.
   std::unique_ptr<DrakeLcm> dut_ = std::make_unique<DrakeLcm>();
 
@@ -64,6 +75,12 @@ TEST_F(DrakeLcmTest, DefaultUrlTest) {
 TEST_F(DrakeLcmTest, CustomUrlTest) {
   dut_ = std::make_unique<DrakeLcm>(kUdpmUrl);
   EXPECT_EQ(dut_->get_lcm_url(), kUdpmUrl);
+}
+
+TEST_F(DrakeLcmTest, BadUrlTest) {
+  // At the moment, invalid URLs print to the console but do not throw.
+  // We probably want to revisit this as some point (to fail-fast).
+  EXPECT_NO_THROW(DrakeLcm("no-such-scheme://foo"));
 }
 
 TEST_F(DrakeLcmTest, DeferThreadTest) {
@@ -88,7 +105,7 @@ TEST_F(DrakeLcmTest, EmptyChannelTest) {
 // Tests DrakeLcm's ability to publish an LCM message.
 // We subscribe using the native LCM APIs.
 TEST_F(DrakeLcmTest, PublishTest) {
-  ::lcm::LCM* const native_lcm = dut_->get_lcm_instance();
+  ::lcm::LCM* const native_lcm = get_native();
   const std::string channel_name = "DrakeLcmTest.PublishTest";
 
   lcmt_drake_signal received{};
@@ -109,7 +126,7 @@ TEST_F(DrakeLcmTest, PublishTest) {
 // Tests DrakeLcm's ability to subscribe to an LCM message.
 // We publish using the native LCM APIs.
 TEST_F(DrakeLcmTest, SubscribeTest) {
-  ::lcm::LCM* const native_lcm = dut_->get_lcm_instance();
+  ::lcm::LCM* const native_lcm = get_native();
   const std::string channel_name = "DrakeLcmTest.SubscribeTest";
 
   lcmt_drake_signal received{};
@@ -129,7 +146,7 @@ TEST_F(DrakeLcmTest, SubscribeTest) {
 
 // Repeats the above test, but with explicit opt-out of unsubscribe.
 TEST_F(DrakeLcmTest, SubscribeTest2) {
-  ::lcm::LCM* const native_lcm = dut_->get_lcm_instance();
+  ::lcm::LCM* const native_lcm = get_native();
   const std::string channel_name = "DrakeLcmTest.SubscribeTest2";
 
   lcmt_drake_signal received{};
@@ -150,7 +167,7 @@ TEST_F(DrakeLcmTest, SubscribeTest2) {
 
 // Repeat SubscribeTest for SubscribeAllChannels.
 TEST_F(DrakeLcmTest, SubscribeAllTest) {
-  ::lcm::LCM* const native_lcm = dut_->get_lcm_instance();
+  ::lcm::LCM* const native_lcm = get_native();
   const std::string channel_name = "DrakeLcmTest.SubscribeAllTest";
 
   lcmt_drake_signal received{};
@@ -172,7 +189,7 @@ TEST_F(DrakeLcmTest, SubscribeAllTest) {
 
 // Repeat SubscribeTest2 for SubscribeAllChannels.
 TEST_F(DrakeLcmTest, SubscribeAllTest2) {
-  ::lcm::LCM* const native_lcm = dut_->get_lcm_instance();
+  ::lcm::LCM* const native_lcm = get_native();
   const std::string channel_name = "DrakeLcmTest.SubscribeAllTest2";
 
   lcmt_drake_signal received{};
@@ -352,7 +369,7 @@ TEST_F(DrakeLcmTest, Suffix) {
   DrakeLcmParams params;
   params.channel_suffix = "_SUFFIX";
   dut_ = std::make_unique<DrakeLcm>(params);
-  ::lcm::LCM* const native_lcm = dut_->get_lcm_instance();
+  ::lcm::LCM* const native_lcm = get_native();
 
   // Subscribe using native LCM (with the fully-qualified channel name).
   lcmt_drake_signal received_native{};
@@ -422,7 +439,7 @@ TEST_F(DrakeLcmTest, SuffixInSubscribeAllChannels) {
 
 // Confirm that SubscribeMultichannel ignores mismatched channel names.
 TEST_F(DrakeLcmTest, SubscribeMultiTest) {
-  ::lcm::LCM* const native_lcm = dut_->get_lcm_instance();
+  ::lcm::LCM* const native_lcm = get_native();
   const std::string channel_name = "DrakeLcmTest.SubscribeMultiTest";
 
   lcmt_drake_signal received{};
@@ -443,6 +460,16 @@ TEST_F(DrakeLcmTest, SubscribeMultiTest) {
   });
   EXPECT_EQ(total, 1);
 }
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+TEST_F(DrakeLcmTest, DeprecatedGetter) {
+  ::lcm::LCM* const deprecated = dut_->get_lcm_instance();
+  EXPECT_TRUE(deprecated != nullptr);
+  ::lcm::LCM* native = get_native();
+  EXPECT_TRUE(native == deprecated);
+}
+#pragma GCC diagnostic pop
 
 }  // namespace
 }  // namespace lcm

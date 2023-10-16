@@ -179,6 +179,18 @@ void DoScalarIndependentDefinitions(py::module m) {
         });
     DefCopyAndDeepCopy(&cls);
   }
+
+  {
+    using Class = PdControllerGains;
+    constexpr auto& cls_doc = doc.PdControllerGains;
+    py::class_<Class> cls(m, "PdControllerGains", cls_doc.doc);
+    cls  // BR
+        .def(ParamInit<Class>());
+    cls  // BR
+        .def_readwrite("p", &Class::p, cls_doc.p.doc)
+        .def_readwrite("d", &Class::d, cls_doc.d.doc);
+    DefCopyAndDeepCopy(&cls);
+  }
 }
 
 /**
@@ -837,7 +849,13 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("SetGearRatio", &Class::SetGearRatio, py::arg("context"),
             py::arg("gear_ratio"), cls_doc.SetGearRatio.doc)
         .def("calc_reflected_inertia", &Class::calc_reflected_inertia,
-            py::arg("context"), cls_doc.calc_reflected_inertia.doc);
+            py::arg("context"), cls_doc.calc_reflected_inertia.doc)
+        .def("get_controller_gains", &Class::get_controller_gains,
+            cls_doc.get_controller_gains.doc)
+        .def("set_controller_gains", &Class::set_controller_gains,
+            py::arg("gains"), cls_doc.set_controller_gains.doc)
+        .def("has_controller", &Class::has_controller,
+            cls_doc.has_controller.doc);
   }
 
   // Force Elements.
@@ -916,6 +934,10 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.gravity_vector.doc)
         .def("set_gravity_vector", &Class::set_gravity_vector,
             cls_doc.set_gravity_vector.doc)
+        .def("set_enabled", &Class::set_enabled, py::arg("model_instance"),
+            py::arg("is_enabled"), cls_doc.set_enabled.doc)
+        .def("is_enabled", &Class::is_enabled, py::arg("model_instance"),
+            cls_doc.is_enabled.doc)
         .def("CalcGravityGeneralizedForces",
             &Class::CalcGravityGeneralizedForces, py::arg("context"),
             cls_doc.CalcGravityGeneralizedForces.doc);

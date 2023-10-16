@@ -51,8 +51,18 @@ def process_comment(comment):
     # TODO (betsymcphail): Not tested
     s = remove_html_comments(s)
 
-    # Markdown to reStructuredText.
-    s = markdown_to_restructuredtext(s)
+    # Markdown to reStructuredText (but don't process literal blocks).
+    in_code_segment = False
+    rst_fragments = []
+    for x in re.split(r'(```|@code|@endcode)', s):
+        if x == '```' or x == '@code' or x == '@endcode':
+            rst_fragments.append(x)
+            in_code_segment = not in_code_segment
+        elif in_code_segment:
+            rst_fragments.append(x)
+        else:
+            rst_fragments.append(markdown_to_restructuredtext(x))
+    s = ''.join(rst_fragments)
 
     # HTML tags. Support both lowercase and uppercase tags.
     # TODO (betsymcphail): Not tested
@@ -253,12 +263,21 @@ def process_doxygen_commands(s):
     # TODO (betsymcphail): Not tested
     s = re.sub(r'[@\\]ref\s+', r'', s)
 
+    # Convert from
+    #  @code{.foo}
+    #  stuff
+    #  @endcode
+    # to
+    #  ```foo
+    #  stuff
+    #  ```
     for start_, end_ in (
         ('code', 'endcode'),
         ('verbatim', 'endverbatim')
     ):
-        s = re.sub(r'[@\\]%s(?:\{\.\w+\})?\s?(.*?)\s?[@\\]%s' % (start_, end_),
-                   r"```\n\1\n```\n", s, flags=re.DOTALL)
+        s = re.sub(r'[@\\]%s(?:\{\.(\w+)\})?\s?(.*?)\s?[@\\]%s' % (
+                       start_, end_),
+                   r"```\1\n\2\n```\n", s, flags=re.DOTALL)
 
     s = process_doxygen_to_sphinx(s)
 
@@ -290,6 +309,9 @@ def process_doxygen_commands(s):
     # TODO (betsymcphail): Not tested
     s = re.sub(r'[@\\]default\s+', r'\n$*Default:* ', s)
     s = re.sub(r'[@\\]experimental\s+', '\n\n$Warning:\n\nThis feature is considered to be **experimental** and may change or be removed at any time, without any deprecation notice ahead of time.\n\n', s)  # noqa
+    # In pydrake docs, "python details" are not actually details; erase the
+    # markers for `<detail>` so that it is always shown.
+    s = re.sub(r'[@\\]python_details_(?:begin|end)', r'', s)
 
     # Omit tparam scalar type boilerplate; the python documentation already
     # presents this information in a more useful manner.
@@ -496,14 +518,44 @@ def reflow(s):
     wrapper.width = 70
     wrapper.initial_indent = wrapper.subsequent_indent = ''
 
+    # The mapping from the "ext" token in @code{.ext} to the Pygments
+    # lexer name (listed at https://pygments.org/docs/lexers/).
+    file_ext_to_lang = {
+        "": "c++",
+        "c++": "c++",
+        "cc": "c++",
+        "cpp": "c++",
+        "python": "python",
+        "py": "python",
+    }
+
     result = ''
     in_code_segment = False
-    for x in re.split(r'(```)', s):
-        if x == '```':
+    code_segment_lang = None
+    for x in re.split(r'(```[A-Za-z0-9_+]*)', s):
+        if x.startswith('```'):
             if not in_code_segment:
-                result += '\n::\n'
+                file_ext = x[3:]
+                code_segment_lang = file_ext_to_lang[file_ext]
+                if code_segment_lang == "c++":
+                    # In pydrake docs, C++ code snippets should be collapsed
+                    # under an HTML <details> element, to avoid clutter.
+                    result += (
+                        '\n.. raw:: html\n\n    '
+                        '<details>'
+                        '<summary>Click to expand C++ code...</summary>'
+                        '\n'
+                    )
+                result += f'\n.. code-block:: {code_segment_lang}\n'
             else:
                 result += '\n\n'
+                if code_segment_lang == "c++":
+                    result += (
+                        '.. raw:: html\n\n    '
+                        '</details>'
+                        '\n\n'
+                    )
+                code_segment_lang = None
             in_code_segment = not in_code_segment
         elif in_code_segment:
             result += '    '.join(('\n' + x.strip()).splitlines(True))

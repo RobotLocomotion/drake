@@ -105,9 +105,9 @@ GTEST_TEST(WingTest, FallingFlatPlate) {
     plant->SetFreeBodySpatialVelocity(&plant_context, body, V_WB);
 
     Vector6<double> vdot_expected = vdot_gravity_only;
-    Vector3<double> v_WindBody_Wing  = R_WB.transpose()*V_WB.translational();
+    Vector3<double> v_WindBody_Wing = R_WB.transpose() * V_WB.translational();
     const double longitudinal_velocity_norm =
-      Eigen::Vector2d(v_WindBody_Wing[0], v_WindBody_Wing[2]).norm();
+        Eigen::Vector2d(v_WindBody_Wing[0], v_WindBody_Wing[2]).norm();
     vdot_expected.tail<3>() +=
         R_WB * Vector3d{0, 0,
                         -kRho * kSurfaceArea * v_WindBody_Wing[2] *
@@ -197,8 +197,7 @@ GTEST_TEST(WingTest, DerivativesAtZeroVelocity) {
       plant_ad->EvalTimeDerivatives(plant_context_ad)
           .get_generalized_velocity()
           .CopyToVector();
-  EXPECT_TRUE(CompareMatrices(vdot,
-                              vdot_gravity_only, 1e-14));
+  EXPECT_TRUE(CompareMatrices(vdot, vdot_gravity_only, 1e-14));
   // This next line would fail before the fix:
   EXPECT_FALSE(math::ExtractGradient(vdot).hasNaN());
 }

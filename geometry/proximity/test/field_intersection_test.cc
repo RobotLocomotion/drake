@@ -108,9 +108,9 @@ TEST_F(FieldIntersectionLowLevelTest, CalcEquilibriumPlaneIdenticalFrames) {
 //     mesh0_F <--> mesh0_M  <--M=N--> mesh1_N <--> mesh1_G
 //
 TEST_F(FieldIntersectionLowLevelTest, CalcEquilibriumPlaneComplexTransform) {
-  const auto X_FG = RigidTransformd(RollPitchYawd(M_PI_4, M_PI/3, M_PI_2),
+  const auto X_FG = RigidTransformd(RollPitchYawd(M_PI_4, M_PI / 3, M_PI_2),
                                     Vector3d(-1., -2., -3.));
-  const auto X_FM = RigidTransformd(RollPitchYawd(M_PI, M_PI_2, M_PI/3),
+  const auto X_FM = RigidTransformd(RollPitchYawd(M_PI, M_PI_2, M_PI / 3),
                                     Vector3d(2, -6, 4));
   // From the previous test, we know that identifying frame M with frame N
   // will give a simple expression of the expected equilibrium plane in frame M.
@@ -512,8 +512,8 @@ TEST_F(FieldIntersectionHighLevelTest,
     SCOPED_TRACE("Request triangles.");
     std::unique_ptr<ContactSurface<double>> contact_patch_W =
         ComputeContactSurfaceFromCompliantVolumes(
-            first_id, box_field0_M_, box_bvh0_M_, X_WM,
-            second_id, octahedron_field1_N_, octahedron_bvh1_N_, X_WN,
+            first_id, box_field0_M_, box_bvh0_M_, X_WM, second_id,
+            octahedron_field1_N_, octahedron_bvh1_N_, X_WN,
             HydroelasticContactRepresentation::kTriangle);
     ASSERT_NE(contact_patch_W.get(), nullptr);
     EXPECT_EQ(contact_patch_W->representation(),
@@ -523,8 +523,8 @@ TEST_F(FieldIntersectionHighLevelTest,
     SCOPED_TRACE("Request polygons.");
     std::unique_ptr<ContactSurface<double>> contact_patch_W =
         ComputeContactSurfaceFromCompliantVolumes(
-            first_id, box_field0_M_, box_bvh0_M_, X_WM,
-            second_id, octahedron_field1_N_, octahedron_bvh1_N_, X_WN,
+            first_id, box_field0_M_, box_bvh0_M_, X_WM, second_id,
+            octahedron_field1_N_, octahedron_bvh1_N_, X_WN,
             HydroelasticContactRepresentation::kPolygon);
     ASSERT_NE(contact_patch_W.get(), nullptr);
     EXPECT_EQ(contact_patch_W->representation(),
@@ -546,16 +546,16 @@ TEST_F(FieldIntersectionHighLevelTest,
     SCOPED_TRACE("Request triangles.");
     std::unique_ptr<ContactSurface<AutoDiffXd>> contact_patch_W =
         ComputeContactSurfaceFromCompliantVolumes(
-            first_id, box_field0_M_, box_bvh0_M_, X_WM,
-            second_id, octahedron_field1_N_, octahedron_bvh1_N_, X_WN,
+            first_id, box_field0_M_, box_bvh0_M_, X_WM, second_id,
+            octahedron_field1_N_, octahedron_bvh1_N_, X_WN,
             HydroelasticContactRepresentation::kTriangle);
   }
   {
     SCOPED_TRACE("Request polygons.");
     std::unique_ptr<ContactSurface<AutoDiffXd>> contact_patch_W =
         ComputeContactSurfaceFromCompliantVolumes(
-            first_id, box_field0_M_, box_bvh0_M_, X_WM,
-            second_id, octahedron_field1_N_, octahedron_bvh1_N_, X_WN,
+            first_id, box_field0_M_, box_bvh0_M_, X_WM, second_id,
+            octahedron_field1_N_, octahedron_bvh1_N_, X_WN,
             HydroelasticContactRepresentation::kPolygon);
   }
 }

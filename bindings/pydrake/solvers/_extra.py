@@ -20,18 +20,18 @@ def _resolve_array_type(x):
         return None
 
 
-def _check_array_type(var_name, x, expected_type):
-    # Used by CheckArrayType in C++.
-    if x.size == 0:
+def _check_returned_array_type(cls_name, y, expected_type):
+    # Used by CheckReturnedArrayType in C++.
+    if y.size == 0:
         return
-    actual_type = _resolve_array_type(x)
+    actual_type = _resolve_array_type(y)
     expected_name = expected_type.__name__
     if actual_type is None:
-        raise RuntimeError(
-            f"{var_name} must be of scalar type {expected_name}, but unable "
-            f"to infer scalar type.")
+        raise TypeError(
+            f"When {cls_name} is called with an array of type {expected_name} "
+            f"the return value must be the same type.")
     if actual_type is not expected_type:
         actual_name = actual_type.__name__
-        raise RuntimeError(
-            f"{var_name} must be of scalar type {expected_name}. Got "
-            f"{actual_name} instead.")
+        raise TypeError(
+            f"When {cls_name} is called with an array of type {expected_name} "
+            f"the return value must be the same type, not {actual_name}.")

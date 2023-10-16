@@ -1,7 +1,5 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
-tap 'robotlocomotion/director'
-
 brew 'bazelisk'
-brew 'robotlocomotion/director/clang-format@12'
+brew 'nasm'

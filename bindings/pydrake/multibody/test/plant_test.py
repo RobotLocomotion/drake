@@ -39,6 +39,7 @@ from pydrake.multibody.tree import (
     LinearSpringDamper_,
     ModelInstanceIndex,
     MultibodyForces_,
+    PdControllerGains,
     PlanarJoint_,
     PrismaticJoint_,
     PrismaticSpring_,
@@ -69,6 +70,7 @@ from pydrake.multibody.math import (
 from pydrake.multibody.plant import (
     AddMultibodyPlant,
     AddMultibodyPlantSceneGraph,
+    ApplyMultibodyPlantConfig,
     CalcContactFrictionFromSurfaceProperties,
     ConnectContactResultsToDrakeVisualizer,
     ContactModel,
@@ -264,9 +266,16 @@ class TestPlant(unittest.TestCase):
         copy.copy(config)
 
         builder = DiagramBuilder_[float]()
-        plant, scene_graph = AddMultibodyPlant(config, builder)
+        plant, scene_graph = AddMultibodyPlant(config=config, builder=builder)
         self.assertIsNotNone(plant)
         self.assertIsNotNone(scene_graph)
+
+        self.assertNotEqual(plant.get_contact_model(),
+                            ContactModel.kHydroelasticsOnly)
+        config.contact_model = "hydroelastic"
+        ApplyMultibodyPlantConfig(config=config, plant=plant)
+        self.assertEqual(plant.get_contact_model(),
+                         ContactModel.kHydroelasticsOnly)
 
     @numpy_compare.check_all_types
     def test_get_bodies_welded_to_keep_alive(self, T):
@@ -1317,9 +1326,11 @@ class TestPlant(unittest.TestCase):
         numpy_compare.assert_float_allclose(
             plant.GetPositionsAndVelocities(context), x0)
 
-        # Test SetDefaultPositions
+        # Test Get/SetDefaultPositions
         plant.SetDefaultPositions(q=q0)
+        plant.GetDefaultPositions()
         plant.SetDefaultPositions(model_instance=instance, q_instance=q0)
+        plant.GetDefaultPositions(model_instance=instance)
 
         # Test existence of context resetting methods.
         plant.SetDefaultState(context, state=context.get_mutable_state())
@@ -2463,6 +2474,27 @@ class TestPlant(unittest.TestCase):
             plant.GetConstraintActiveStatus(context=context, id=ball_id))
 
     @numpy_compare.check_all_types
+    def test_weld_constraint_api(self, T):
+        plant = MultibodyPlant_[T](0.01)
+        plant.set_discrete_contact_solver(DiscreteContactSolver.kSap)
+
+        # Add weld constraint. Since we won't be performing dynamics
+        # computations, using garbage inertia is ok for this test.
+        M = SpatialInertia_[float]()
+        body_A = plant.AddRigidBody(name="A", M_BBo_B=M)
+        body_B = plant.AddRigidBody(name="B", M_BBo_B=M)
+        X_AP = RigidTransform_[float]()
+        X_BQ = RigidTransform_[float]()
+        plant.AddWeldConstraint(
+            body_A=body_A, X_AP=X_AP, body_B=body_B, X_BQ=X_BQ)
+
+        # We are done creating the model.
+        plant.Finalize()
+
+        # Verify the constraint was added.
+        self.assertEqual(plant.num_constraints(), 1)
+
+    @numpy_compare.check_all_types
     def test_multibody_dynamics(self, T):
         MultibodyPlant = MultibodyPlant_[T]
         MultibodyForces = MultibodyForces_[T]
@@ -2471,11 +2503,34 @@ class TestPlant(unittest.TestCase):
         file_name = FindResourceOrThrow(
             "drake/multibody/benchmarks/acrobot/acrobot.sdf")
         # N.B. `Parser` only supports `MultibodyPlant_[float]`.
-        plant_f = MultibodyPlant_[float](0.0)
-        Parser(plant_f).AddModels(file_name)
+        # N.B. PD controllers below are only supported by discrete models.
+        plant_f = MultibodyPlant_[float](0.01)
+        model_instance, = Parser(plant_f).AddModels(file_name)
         # Getting ready for when we set foot on Mars :-).
         gravity_vector = np.array([0.0, 0.0, -3.71])
         plant_f.mutable_gravity_field().set_gravity_vector(gravity_vector)
+
+        # MultibodyPlant APIs to enable/disable gravity.
+        self.assertTrue(plant_f.is_gravity_enabled(model_instance))
+        plant_f.set_gravity_enabled(model_instance, is_enabled=False)
+        self.assertFalse(plant_f.is_gravity_enabled(model_instance))
+        plant_f.set_gravity_enabled(model_instance, is_enabled=True)
+
+        # UniformGravityField APIs to enable/disable gravity.
+        gravity = plant_f.gravity_field()
+        self.assertTrue(gravity.is_enabled(model_instance))
+        gravity.set_enabled(model_instance, is_enabled=False)
+        self.assertFalse(gravity.is_enabled(model_instance))
+        gravity.set_enabled(model_instance, is_enabled=True)
+
+        # Smoke test PD controllers APIs.
+        elbow = plant_f.GetJointActuatorByName("ElbowJoint")
+        mutable_elbow = plant_f.get_mutable_joint_actuator(elbow.index())
+        gains = PdControllerGains(p=2000.0, d=100.0)
+        mutable_elbow.set_controller_gains(gains)
+        self.assertTrue(mutable_elbow.has_controller())
+        mutable_elbow.get_controller_gains()
+
         plant_f.Finalize()
         plant = to_type(plant_f, T)
         context = plant.CreateDefaultContext()
@@ -2532,6 +2587,8 @@ class TestPlant(unittest.TestCase):
 
         forces = MultibodyForces(plant=plant)
         plant.CalcForceElementsContribution(context=context, forces=forces)
+        tau = plant.CalcGeneralizedForces(context=context, forces=forces)
+        self.assertEqual(tau.shape, (2,))
         copy.copy(forces)
 
         # Test generalized forces.
@@ -2542,6 +2599,8 @@ class TestPlant(unittest.TestCase):
             np.testing.assert_equal(forces.generalized_forces(), 1)
             forces.SetZero()
             np.testing.assert_equal(forces.generalized_forces(), 0)
+            tau = plant.CalcGeneralizedForces(context=context, forces=forces)
+            np.testing.assert_equal(tau, [0, 0])
 
         # Test standalone construction.
         standalone_forces = MultibodyForces(nb=1, nv=2)

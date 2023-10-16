@@ -10,6 +10,10 @@ namespace drake {
 namespace geometry {
 namespace internal {
 
+/* Reports how UVs have been assigned to the mesh receiving a material. Textures
+ should only be applied to meshes with *fully* assigned UVs. */
+enum class UvState { kNone, kFull, kPartial };
+
 /* Specifies a mesh material as currently supported by Drake. We expect this
  definition to grow with time. */
 struct RenderMaterial {
@@ -47,14 +51,15 @@ void MaybeWarnForRedundantMaterial(
    - Finally, a diffuse material is created with the given default_diffuse
      color value.
 
- References to textures will be included in the material iff they can be read.
+ References to textures will be included in the material iff they can be read
+ and the `uv_state` is full. Otherwise, a warning will be dispatched.
 
  @pre The mesh (named by `mesh_filename`) is a valid mesh and did not have an
       acceptable material definition). */
 RenderMaterial MakeMeshFallbackMaterial(
     const GeometryProperties& props, const std::filesystem::path& mesh_path,
     const Rgba& default_diffuse,
-    const drake::internal::DiagnosticPolicy& policy);
+    const drake::internal::DiagnosticPolicy& policy, UvState uv_state);
 
 /* Creates a RenderMaterial from the given set of geometry properties. If no
  material properties exist, a material with the given default diffuse color is
@@ -69,7 +74,8 @@ RenderMaterial MakeMeshFallbackMaterial(
 RenderMaterial DefineMaterial(
     const GeometryProperties& props,
     const Rgba& default_diffuse = Rgba(1, 1, 1),
-    const drake::internal::DiagnosticPolicy& policy = {});
+    const drake::internal::DiagnosticPolicy& policy = {},
+    UvState uv_state = UvState::kFull);
 
 }  // namespace internal
 }  // namespace geometry

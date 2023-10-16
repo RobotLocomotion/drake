@@ -1,0 +1,92 @@
+[vtk] Set vtksys to hidden visibility
+
+The vtksys library doesn't obey the VTK_ABI_NAMESPACE macros, so it's
+an ODR hazard versus other non-Drake builds of VTK. Switch it to use
+hidden visibility to help mitigate the risk.
+
+--- Utilities/KWSys/vtksys/Configure.h.in
++++ Utilities/KWSys/vtksys/Configure.h.in
+@@ -39,7 +39,7 @@
+ #    define @KWSYS_NAMESPACE@_EXPORT
+ #  endif
+ #else
+-#  define @KWSYS_NAMESPACE@_EXPORT
++#  define @KWSYS_NAMESPACE@_EXPORT __attribute__((visibility("hidden")))
+ #endif
+ 
+ /* Enable warnings that are off by default but are useful.  */
+
+--- Utilities/KWSys/vtksys/Directory.cxx
++++ Utilities/KWSys/vtksys/Directory.cxx
+@@ -36,7 +36,7 @@
+ 
+ namespace KWSYS_NAMESPACE {
+ 
+-class DirectoryInternals
++class __attribute__((visibility("hidden"))) DirectoryInternals
+ {
+ public:
+   struct FileData
+
+--- Utilities/KWSys/vtksys/RegularExpression.cxx
++++ Utilities/KWSys/vtksys/RegularExpression.cxx
+@@ -290,7 +290,7 @@ static char* const regdummyptr = &regdummy;
+ /*
+  * Utility class for RegularExpression::compile().
+  */
+-class RegExpCompile
++class __attribute__((visibility("hidden"))) RegExpCompile
+ {
+ public:
+   const char* regparse; // Input-scan pointer.
+@@ -841,7 +841,7 @@ void RegExpCompile::regoptail(char* p, const char* val)
+ /*
+  * Utility class for RegularExpression::find().
+  */
+-class RegExpFind
++class __attribute__((visibility("hidden"))) RegExpFind
+ {
+ public:
+   const char* reginput;   // String-input pointer.
+
+--- Utilities/KWSys/vtksys/SystemInformation.cxx
++++ Utilities/KWSys/vtksys/SystemInformation.cxx
+@@ -266,7 +266,7 @@ using SigAction = void (*)(int, siginfo_t*, void*);
+ //  Define SystemInformationImplementation class
+ using DELAY_FUNC = void (*)(unsigned int);
+ 
+-class SystemInformationImplementation
++class __attribute__((visibility("hidden"))) SystemInformationImplementation
+ {
+ public:
+   SystemInformationImplementation();
+@@ -1202,7 +1202,7 @@ void StacktraceSignalHandler(int sigNo, siginfo_t* sigInfo,
+ // Description:
+ // A container for symbol properties. Each instance
+ // must be Initialized.
+-class SymbolProperties
++class __attribute__((visibility("hidden"))) SymbolProperties
+ {
+ public:
+   SymbolProperties();
+
+--- Utilities/KWSys/vtksys/SystemTools.cxx
++++ Utilities/KWSys/vtksys/SystemTools.cxx
+@@ -475,7 +475,7 @@ struct kwsysEnvCompare
+   }
+ };
+ 
+-class kwsysEnvSet : public std::set<const envchar*, kwsysEnvCompare>
++class __attribute__((visibility("hidden"))) kwsysEnvSet : public std::set<const envchar*, kwsysEnvCompare>
+ {
+ public:
+   class Free
+@@ -524,7 +524,7 @@ struct SystemToolsPathCaseCmp
+ /**
+  * SystemTools static variables singleton class.
+  */
+-class SystemToolsStatic
++class __attribute__((visibility("hidden"))) SystemToolsStatic
+ {
+ public:
+   using StringMap = std::map<std::string, std::string>;

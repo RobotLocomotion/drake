@@ -50,9 +50,7 @@ class SurfaceTriangle {
   /** Reverses the order of the vertex indices -- this essentially flips the
    triangle normal based on the right-handed normal rule.
    */
-  void ReverseWinding() {
-    std::swap(vertex_[0], vertex_[1]);
-  }
+  void ReverseWinding() { std::swap(vertex_[0], vertex_[1]); }
 
  private:
   // The vertices of this triangle.
@@ -61,11 +59,13 @@ class SurfaceTriangle {
 
 namespace internal {
 // Forward declaration for friend declaration.
-template <typename> class MeshDeformer;
+template <typename>
+class MeshDeformer;
 }  // namespace internal
 
 // Forward declaration of TriangleSurfaceMeshTester<T> for friend access.
-template <typename T> class TriangleSurfaceMeshTester;
+template <typename T>
+class TriangleSurfaceMeshTester;
 
 // TODO(DamrongGuoy): mention interesting properties of the mesh, e.g., open
 //  meshes, meshes with holes, non-manifold surface.
@@ -485,7 +485,7 @@ void TriangleSurfaceMesh<T>::CalcAreasNormalsAndCentroid() {
     //  For example, the code that creates ContactSurface by
     //  triangle-tetrahedron intersection can set more reliable normal vectors
     //  for the skinny intersecting triangles.  Related to issue# 12110.
-    face_normals_[f] = (norm != T(0.0))? cross / norm : cross;
+    face_normals_[f] = (norm != T(0.0)) ? cross / norm : cross;
 
     // Accumulate area-weighted surface centroid; must be divided by 3X the
     // total area afterwards.
@@ -493,8 +493,7 @@ void TriangleSurfaceMesh<T>::CalcAreasNormalsAndCentroid() {
   }
 
   // Finalize centroid.
-  if (total_area_ != T(0.))
-    p_MSc_ /= (3. * total_area_);
+  if (total_area_ != T(0.)) p_MSc_ /= (3. * total_area_);
 }
 
 template <typename T>

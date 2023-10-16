@@ -1,0 +1,38 @@
+# Drake maintainers use this repository to instrument the rust_toolchain
+# downloads. It is only used by the `../upgrade.sh` script run by Drake
+# toolchain maintainers, not by general Drake developers nor users.
+
+workspace(name = "upgrade")
+
+# Load Drake's version of bazel_skylib.
+
+local_repository(name = "drake", path = "../../../..")
+
+load("@drake//tools/workspace/bazel_skylib:repository.bzl", "bazel_skylib_repository")  # noqa
+load("@drake//tools/workspace:mirrors.bzl", "DEFAULT_MIRRORS")
+
+bazel_skylib_repository(
+    name = "bazel_skylib",
+    mirrors = DEFAULT_MIRRORS,
+)
+
+# Load Drake's version of rules_rust, with a patch to instrument the downloads.
+
+load("@drake//tools/workspace/rules_rust:repository.bzl", "rules_rust_repository")
+
+rules_rust_repository(
+    name = "rules_rust",
+    mirrors = DEFAULT_MIRRORS,
+    extra_patches = ["@upgrade//:rules_rust_tracing.patch"],
+)
+
+# Register the default toolchains from rules_rust.
+
+load("@rules_rust//rust:defs.bzl", "rust_common")
+load("@rules_rust//rust:repositories.bzl", "rust_register_toolchains")
+
+rust_register_toolchains(
+    rustfmt_version = rust_common.default_version,
+    versions = [rust_common.default_version],
+    extra_target_triples = [],
+)

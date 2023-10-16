@@ -36,9 +36,10 @@ class AffineBall final : public ConvexSet {
   /** Constructs a default (zero-dimensional, nonempty) set. */
   AffineBall();
 
-  /** Constructs the ellipsoid. Note that the IsPositiveDefinite check enforces
-  that B is symmetric, and only enforces positive semi-definiteness with the
-  default tolerance of 0.
+  /** Constructs the ellipsoid from a transformation matrix B and translation
+  center. B describes the linear transformation that is applied to the unit ball
+  in order to produce the ellipsoid, and center describes the translation of the
+  center of the ellipsoid from the origin.
   @pre B.rows() == B.cols().
   @pre B.cols() == center.size(). */
   AffineBall(const Eigen::Ref<const Eigen::MatrixXd>& B,
@@ -56,21 +57,22 @@ class AffineBall final : public ConvexSet {
   /** Returns the center of the ellipsoid. */
   const Eigen::VectorXd& center() const { return center_; }
 
-  /** Returns the volume of the AffineBall (in Euclidean space). */
-  double Volume() const;
-
-  /** Constructs the an axis-aligned AffineBall with the implicit form
+  /** Constructs an axis-aligned AffineBall with the implicit form
   (x₀-c₀)²/r₀² + (x₁-c₁)²/r₁² + ... + (x_N - c_N)²/r_N² ≤ 1, where c is
-  shorthand for `center` and r is shorthand for `radius`. */
+  shorthand for `center` and r is shorthand for `radius`.
+  @pre radius.size() == center.size().
+  @pre radius[i] >= 0, for all i. */
   static AffineBall MakeAxisAligned(
       const Eigen::Ref<const Eigen::VectorXd>& radius,
       const Eigen::Ref<const Eigen::VectorXd>& center);
 
-  /** Constructs a hypersphere with `radius` and `center`. */
+  /** Constructs a hypersphere with `radius` and `center`.
+  @pre radius >= 0. */
   static AffineBall MakeHypersphere(
       double radius, const Eigen::Ref<const Eigen::VectorXd>& center);
 
-  /** Constructs the L₂-norm unit ball in `dim` dimensions, {x | |x|₂ <= 1 }. */
+  /** Constructs the L₂-norm unit ball in `dim` dimensions, {x | |x|₂ <= 1 }.
+  @pre dim >= 0. */
   static AffineBall MakeUnitBall(int dim);
 
   /** Passes this object to an Archive.
@@ -92,7 +94,7 @@ class AffineBall final : public ConvexSet {
   /* AffineBall can only represent nonempty sets. */
   bool DoIsEmpty() const final { return false; };
 
-  /* DoMaybeGetPoint only succeeds if C is a matrix of all zeros. */
+  /* DoMaybeGetPoint only succeeds if B is a matrix of all zeros. */
   std::optional<Eigen::VectorXd> DoMaybeGetPoint() const final;
 
   /* Returns the center, which is always feasible. */
@@ -129,6 +131,8 @@ class AffineBall final : public ConvexSet {
       const final;
 
   void CheckInvariants() const;
+
+  double DoCalcVolume() const final;
 
   Eigen::MatrixXd B_{};
   Eigen::VectorXd center_{};

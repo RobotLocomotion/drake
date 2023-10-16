@@ -23,7 +23,8 @@ namespace geometry {
 namespace internal {
 
 /* Forward declaration to enable Bvh for deformable meshes. */
-template <typename> class BvhUpdater;
+template <typename>
+class BvhUpdater;
 
 template <class MeshType>
 struct MeshTraits;
@@ -100,9 +101,7 @@ class BvNode {
   }
 
   /* Returns whether this is a leaf node as opposed to a branch node.  */
-  bool is_leaf() const {
-    return std::holds_alternative<LeafData>(child_);
-  }
+  bool is_leaf() const { return std::holds_alternative<LeafData>(child_); }
 
   /* Compares this node with the given node in a strictly *topological* manner.
    For them to be considered "equal leaves", both nodes must be leaves and must
@@ -131,7 +130,8 @@ class BvNode {
   }
 
  private:
-  template <typename> friend class BvhUpdater;
+  template <typename>
+  friend class BvhUpdater;
 
   /* Provide disciplined access to BvhUpdater to a mutable child node. */
   BvNode<BvType, MeshType>& left() {
@@ -172,10 +172,7 @@ class BvNode {
 /* Resulting instruction from performing the bounding volume tree traversal
  (BVTT) callback on two potentially colliding pairs. Note that this is not the
  mathematical result but information on how the traversal should proceed.  */
-enum BvttCallbackResult {
-  Continue,
-  Terminate
-};
+enum BvttCallbackResult { Continue, Terminate };
 
 /* Bounding volume tree traversal (BVTT) callback. Returns a BvttCallbackResult
  for further action, e.g. deciding whether to exit early. The parameters are
@@ -221,9 +218,8 @@ class Bvh {
    @param callback        The callback to invoke on each unculled pair.
    @tparam OtherBvhType   The type of Bvh to collide against this.  */
   template <class OtherBvhType>
-  void Collide(
-      const OtherBvhType& bvh_B, const math::RigidTransformd& X_AB,
-      BvttCallback callback) const {
+  void Collide(const OtherBvhType& bvh_B, const math::RigidTransformd& X_AB,
+               BvttCallback callback) const {
     using NodePair =
         std::pair<const NodeType&, const typename OtherBvhType::NodeType&>;
     std::stack<NodePair, std::vector<NodePair>> node_pairs;
@@ -343,7 +339,8 @@ class Bvh {
   // Convenience class for testing.
   friend class BvhTester;
 
-  template <typename> friend class BvhUpdater;
+  template <typename>
+  friend class BvhUpdater;
 
   NodeType& mutable_root_node() { return *root_node_; }
 

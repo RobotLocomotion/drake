@@ -53,7 +53,9 @@ class PyPlotVisualizer(LeafSystem):
 
         self.set_name('pyplot_visualization')
         self.time_step = draw_period or default_draw_period
-        self.DeclarePeriodicPublishNoHandler(self.time_step, 0.0)
+        self.DeclareForcedPublishEvent(self._on_any_publish)
+        self.DeclarePeriodicPublishEvent(
+            self.time_step, 0.0, self._on_any_publish)
 
         if ax is None:
             self.fig = self._plt.figure(facecolor=facecolor, figsize=figsize)
@@ -79,25 +81,14 @@ class PyPlotVisualizer(LeafSystem):
         self._is_recording = False
         self._recorded_contexts = []
 
-        def on_initialize(context, event):
+        def on_initialize(context):
             if self._show:
                 self.fig.show()
 
-        self.DeclareInitializationEvent(
-            event=PublishEvent(
-                trigger_type=TriggerType.kInitialization,
-                callback=on_initialize))
+        self.DeclareInitializationPublishEvent(on_initialize)
+        self.DeclareInitializationPublishEvent(self._on_any_publish)
 
-    def DoPublish(self, context, event):
-        # TODO(SeanCurtis-TRI) We want to be able to use this visualizer to
-        # draw without having it part of a Simulator. That means we'd like
-        # vis.Publish(context) to work. Currently, pydrake offers no mechanism
-        # to declare a forced event. However, by overriding DoPublish and
-        # putting the forced event callback code in the override, we can
-        # simulate it.
-        # We need to bind a mechanism for declaring forced events so we don't
-        # have to resort to overriding the dispatcher.
-        LeafSystem.DoPublish(self, context, event)
+    def _on_any_publish(self, context):
         if self._show:
             self.draw(context)
             self.fig.canvas.draw()

@@ -32,7 +32,7 @@ EXAMPLE_INPUT = """\
 # accepted.
 
 EXPECTED_OUTPUT = """\
-<sdf version='1.10'>
+<sdf version='1.11'>
   <model name='simple_test'>
     <link name='L1'/>
     <joint name='J1' type='revolute'>

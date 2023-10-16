@@ -32,6 +32,8 @@ from pydrake.geometry import (
     MeshcatParams,
     Rgba,
     Sphere,
+    SurfaceTriangle,
+    TriangleSurfaceMesh,
 )
 from pydrake.lcm import (
     DrakeLcm,
@@ -179,7 +181,6 @@ class _ViewerApplet:
             self._should_accept_link = lambda _: True
         self._start_visible = start_visible
         self._geom_paths = []
-        self._geom_colors = []
 
         # Initialize ourself with an empty load message.
         self.on_viewer_load(message=lcmt_viewer_load_robot())
@@ -206,6 +207,7 @@ class _ViewerApplet:
         self._waiting_for_first_draw_message = True
         self._load_message = message
         self._load_message_mesh_checksum = mesh_checksum
+        self.set_alpha(self._alpha_slider._value, on_load=True)
 
     def _build_links(self):
         # Make all of our (ViewerApplet's) geometry invisible so that the
@@ -217,7 +219,6 @@ class _ViewerApplet:
 
         # Add the links and their geometries.
         self._geom_paths = []
-        self._geom_colors = []
         for link in message.link:
             if not self._should_accept_link(link.name):
                 continue
@@ -230,10 +231,13 @@ class _ViewerApplet:
                 if shape is None:
                     continue
                 self._geom_paths.append(geom_path)
-                self._geom_colors.append(rgba)
-                self._meshcat.SetObject(path=geom_path, shape=shape, rgba=rgba)
+                set_object_kwargs = dict(path=geom_path, rgba=rgba)
+                if isinstance(shape, TriangleSurfaceMesh):
+                    set_object_kwargs.update(mesh=shape)
+                else:
+                    set_object_kwargs.update(shape=shape)
+                self._meshcat.SetObject(**set_object_kwargs)
                 self._meshcat.SetTransform(path=geom_path, X_ParentPath=pose)
-        assert len(self._geom_paths) == len(self._geom_colors)
 
     def on_viewer_draw(self, message):
         """Handler for lcmt_viewer_draw."""
@@ -253,20 +257,26 @@ class _ViewerApplet:
                 self._set_visible(True)
             self.on_poll(force=True)
 
+    def set_alpha(self, value, on_load: bool):
+        """Applies the given alpha `value` to the visualized geometries."""
+        if on_load:
+            # When we're loading the geometries, we have to address each
+            # geometry individually because they may not be loaded yet in the
+            # browser.
+            for path in self._geom_paths:
+                self._meshcat.SetProperty(path, "modulated_opacity", value)
+        else:
+            # When things are truly loaded and we're reacting to changes in
+            # the slider value, we can simply set the root and let meshcat.js
+            # percolate the change through the tree.
+            self._meshcat.SetProperty(self._path, "modulated_opacity", value)
+
     def on_poll(self, force=False):
         if self._waiting_for_first_draw_message:
             return
         value, value_changed = self._alpha_slider.read()
         if force or value_changed:
-            max_alpha = max([x.a() for x in self._geom_colors], default=1.0)
-            for k in range(len(self._geom_paths)):
-                path = self._geom_paths[k]
-                new_color = copy.deepcopy(self._geom_colors[k])
-                if max_alpha == 0:
-                    new_color.update(a=value)
-                else:
-                    new_color.update(a=value * new_color.a())
-                self._meshcat.SetProperty(path, "color", new_color.rgba)
+            self.set_alpha(value, on_load=False)
 
     def on_viewer_draw_deformable(self, message):
         """Handler for lcmt_viewer_link_data."""
@@ -309,7 +319,8 @@ class _ViewerApplet:
 
     def _convert_geom(self, geom):
         """Given an lcmt_viewer_geometry_data, parses it into a tuple of
-        (Shape, Rgba, RigidTransform).
+        (Shape, Rgba, RigidTransform) or
+        (TriangleSurfaceMesh, Rgbd, RigidTransform).
         """
         shape = None
         if geom.type == lcmt_viewer_geometry_data.BOX:
@@ -332,15 +343,7 @@ class _ViewerApplet:
             shape = Mesh(filename=filename, scale=scale_x)
         elif geom.type == lcmt_viewer_geometry_data.MESH:
             assert not geom.string_data
-            # A mesh with the data inline, i.e.,
-            #   V | T | v0 | v1 | ... vN | t0 | t1 | ... | tM
-            # where
-            #   V: The number of vertices.
-            #   T: The number of triangles.
-            #   N: 3V, the number of floating point values for the V vertices.
-            #   M: 3T, the number of vertex indices for the T triangles.
-            _logger.warning("Meldis cannot yet display hydroelastic collision "
-                            "meshes; that geometry will be ignored.")
+            shape = self._make_triangle_mesh(geom.float_data)
         elif geom.type == lcmt_viewer_geometry_data.SPHERE:
             (radius,) = geom.float_data
             shape = Sphere(radius=radius)
@@ -350,6 +353,35 @@ class _ViewerApplet:
         rgba = Rgba(*geom.color)
         pose = _to_pose(geom.position, geom.quaternion)
         return (shape, rgba, pose)
+
+    @staticmethod
+    def _make_triangle_mesh(data):
+        """Returns a TriangleSurfaceMesh parsed from the given float data.
+        The data is formatted like this:
+          V | T | v0 | v1 | ... vN | t0 | t1 | ... | tM
+        where
+          V: The number of vertices.
+          T: The number of triangles.
+          N: 3V, the number of floating point values for the V vertices.
+          M: 3T, the number of vertex indices for the T triangles.
+        """
+        V = int(data[0] if len(data) > 0 else -1)
+        T = int(data[1] if len(data) > 1 else -1)
+        if len(data) != 2 + 3*V + 3*T:
+            _logger.warning("Ignoring mesh with malformed data length.")
+            return None
+        start = 2
+        vertices = []
+        for i in range(start, start + 3*V, 3):
+            vertex = np.array(data[i:i+3])
+            vertices.append(vertex)
+        start = 2 + 3*V
+        triangles = []
+        for i in range(start, start + 3*T, 3):
+            indices = [int(j) for j in data[i:i+3]]
+            triangle = SurfaceTriangle(*indices)
+            triangles.append(triangle)
+        return TriangleSurfaceMesh(triangles=triangles, vertices=vertices)
 
 
 class _ContactApplet:

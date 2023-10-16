@@ -1,4 +1,4 @@
-load("@drake//tools/skylark:drake_py.bzl", "py_test_isolated")
+load("//tools/skylark:drake_py.bzl", "py_test_isolated")
 
 # N.B. Copied from `DEFAULT_IGNORE` in `pycodestyle.py`.
 PYTHON_LINT_IGNORE_DEFAULT = "E121,E123,E126,E226,E24,E704,W503".split(",")

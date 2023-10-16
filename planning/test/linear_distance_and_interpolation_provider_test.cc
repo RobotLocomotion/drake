@@ -358,7 +358,7 @@ directives:
     joint_weights[get_index("iiwa_joint_5")] = Vector1d(5.0);
     joint_weights[get_index("iiwa_joint_6")] = Vector1d(6.0);
     joint_weights[get_index("iiwa_joint_7")] = Vector1d(7.0);
-    joint_weights[get_index("$world_flying_robot_base")] =
+    joint_weights[get_index("flying_robot_base")] =
         (Eigen::VectorXd(7) << 11, 0, 0, 0, 12, 13, 14).finished();
 
     const LinearDistanceAndInterpolationProvider provider(model->plant(),
@@ -384,7 +384,7 @@ directives:
   // Invalid weights (map).
   {
     std::map<JointIndex, Eigen::VectorXd> invalid_quat_weights;
-    invalid_quat_weights[get_index("$world_flying_robot_base")] =
+    invalid_quat_weights[get_index("flying_robot_base")] =
         (Eigen::VectorXd(7) << 1, 2, 3, 4, 5, 6, 7).finished();
     DRAKE_EXPECT_THROWS_MESSAGE(
         LinearDistanceAndInterpolationProvider(model->plant(),

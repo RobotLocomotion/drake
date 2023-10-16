@@ -65,7 +65,7 @@ UniversalJoint<T>::MakeImplementationBlueprint() const {
   auto univeral_mobilizer = std::make_unique<internal::UniversalMobilizer<T>>(
       this->frame_on_parent(), this->frame_on_child());
   univeral_mobilizer->set_default_position(this->default_positions());
-  blue_print->mobilizers_.push_back(std::move(univeral_mobilizer));
+  blue_print->mobilizer = std::move(univeral_mobilizer);
   return blue_print;
 }
 

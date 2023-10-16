@@ -2,6 +2,7 @@ import pydrake.geometry as mut
 
 import copy
 import unittest
+import urllib.request
 
 import numpy as np
 
@@ -170,6 +171,9 @@ class TestGeometryVisualizers(unittest.TestCase):
         meshcat.Set2dRenderMode(
             X_WC=RigidTransform(), xmin=-1, xmax=1, ymin=-1, ymax=1)
         meshcat.ResetRenderMode()
+        meshcat.SetCameraTarget(target_in_world=[1, 2, 3])
+        meshcat.SetCameraPose(camera_in_world=[3, 4, 5],
+                              target_in_world=[1, 1, 1])
         meshcat.AddButton(name="button", keycode="KeyB")
         self.assertEqual(meshcat.GetButtonClicks(name="button"), 0)
         meshcat.DeleteButton(name="button")
@@ -337,6 +341,13 @@ class TestGeometryVisualizers(unittest.TestCase):
 
     def test_start_meshcat(self):
         # StartMeshcat only performs interesting work on cloud notebook hosts.
-        # Here we simply ensure that it runs.
+        # Here we simply ensure that it runs and is available.
         meshcat = mut.StartMeshcat()
         self.assertIsInstance(meshcat, mut.Meshcat)
+        with urllib.request.urlopen(meshcat.web_url()) as response:
+            content_type = response.getheader("Content-Type")
+            some_data = response.read(4096)
+        # This also serves as a regresion test of the C++ code, where parsing
+        # the Content-Type is difficult within its unit test infrastructure.
+        self.assertIn("text/html", content_type)
+        self.assertIn("DOCTYPE html", some_data.decode("utf-8"))

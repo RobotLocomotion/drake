@@ -1,11 +1,16 @@
 #include "drake/planning/robot_diagram.h"
 
+#include <cstdlib>
+#include <filesystem>
+#include <fstream>
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/planning/robot_diagram_builder.h"
+#include "drake/systems/primitives/shared_pointer_system.h"
 
 namespace drake {
 namespace planning {
@@ -17,6 +22,7 @@ using multibody::Parser;
 using symbolic::Expression;
 using systems::Context;
 using systems::DiagramBuilder;
+using systems::SharedPointerSystem;
 using systems::System;
 
 std::unique_ptr<RobotDiagramBuilder<double>> MakeSampleDut() {
@@ -58,6 +64,54 @@ GTEST_TEST(RobotDiagramBuilderTest, Getters) {
   EXPECT_THAT(builder.GetSystems(), ::testing::Contains(&scene_graph));
 }
 
+// If the user has exported an input port, nothing else gets exported.
+GTEST_TEST(RobotDiagramBuilderTest, NoDefaultExportCustomInputPort) {
+  std::unique_ptr<RobotDiagramBuilder<double>> dut = MakeSampleDut();
+  dut->plant().Finalize();
+  dut->builder().ExportInput(dut->plant().GetInputPort("actuation"));
+  auto diagram = dut->Build();
+  EXPECT_EQ(diagram->num_input_ports(), 1);
+  EXPECT_EQ(diagram->num_output_ports(), 0);
+  EXPECT_NO_THROW(diagram->GetInputPort("plant_actuation"));
+}
+
+// If the user has exported an output port, nothing else gets exported.
+GTEST_TEST(RobotDiagramBuilderTest, NoDefaultExportCustomOutputPort) {
+  std::unique_ptr<RobotDiagramBuilder<double>> dut = MakeSampleDut();
+  dut->builder().ExportOutput(dut->scene_graph().GetOutputPort("query"));
+  auto diagram = dut->Build();
+  EXPECT_EQ(diagram->num_input_ports(), 0);
+  EXPECT_EQ(diagram->num_output_ports(), 1);
+  EXPECT_NO_THROW(diagram->GetOutputPort("scene_graph_query"));
+}
+
+// If the user has added an extra system or renamed any system then nothing gets
+// exported.
+GTEST_TEST(RobotDiagramBuilderTest, NoDefaultExportCustomSystems) {
+  std::unique_ptr<RobotDiagramBuilder<double>> dut;
+
+  std::array<std::function<void()>, 3> edits = {
+      [&dut]() {
+        dut->builder().AddSystem<SharedPointerSystem>(std::shared_ptr<void>());
+      },
+      [&dut]() {
+        dut->plant().set_name("foo");
+      },
+      [&dut]() {
+        dut->scene_graph().set_name("foo");
+      },
+  };
+
+  for (size_t i = 0; i < edits.size(); ++i) {
+    SCOPED_TRACE(fmt::format("i = {}", i));
+    dut = MakeSampleDut();
+    edits[i]();
+    auto diagram = dut->Build();
+    EXPECT_EQ(diagram->num_input_ports(), 0);
+    EXPECT_EQ(diagram->num_output_ports(), 0);
+  }
+}
+
 GTEST_TEST(RobotDiagramBuilderTest, Lifecycle) {
   std::unique_ptr<RobotDiagramBuilder<double>> dut = MakeSampleDut();
 
@@ -94,6 +148,26 @@ GTEST_TEST(RobotDiagramBuilderTest, LifecycleFailFast) {
   DRAKE_EXPECT_THROWS_MESSAGE(dut->scene_graph(), error);
   DRAKE_EXPECT_THROWS_MESSAGE(const_dut->scene_graph(), error);
   DRAKE_EXPECT_THROWS_MESSAGE(dut->Build(), error);
+}
+
+GTEST_TEST(RobotDiagramBuilderTest, TooMuchSurgery) {
+  std::unique_ptr<RobotDiagramBuilder<double>> dut;
+
+  dut = MakeSampleDut();
+  dut->builder().RemoveSystem(dut->plant());
+  DRAKE_EXPECT_THROWS_MESSAGE(dut->plant(), ".*not remove.*MultibodyPlant.*");
+
+  dut = MakeSampleDut();
+  dut->builder().RemoveSystem(dut->scene_graph());
+  DRAKE_EXPECT_THROWS_MESSAGE(dut->scene_graph(), ".*not remove.*SceneGraph.*");
+}
+
+GTEST_TEST(RobotDiagramBuilderTest, AddSystem) {
+  std::unique_ptr<RobotDiagramBuilder<double>> dut = MakeSampleDut();
+  dut->builder().AddNamedSystem<SharedPointerSystem>(
+      "foo", std::make_shared<std::string>("bar"));
+  auto diagram = dut->Build();
+  EXPECT_TRUE(diagram->HasSubsystemNamed("foo"));
 }
 
 GTEST_TEST(RobotDiagramTest, SmokeTest) {
@@ -176,6 +250,29 @@ GTEST_TEST(RobotDiagramTest, Clone) {
 
   // The new plant is distinct from the old plant.
   EXPECT_NE(&copy->plant(), &dut->plant());
+}
+
+GTEST_TEST(RobotDiagramTest, PortNamesExist) {
+  std::unique_ptr<RobotDiagram<double>> dut = MakeSampleDut()->Build();
+
+  // Write the Graphviz output for offline debugging.
+  if (const char* dir = std::getenv("TEST_UNDECLARED_OUTPUTS_DIR")) {
+    std::ofstream out(std::filesystem::path(dir) / "iiwa14.dot");
+    out << dut->GetGraphvizString();
+    EXPECT_TRUE(out.good());
+  }
+
+  // Check the names mentioned in the class overview comment.
+  EXPECT_NO_THROW(dut->GetInputPort("plant_actuation"));
+  EXPECT_NO_THROW(dut->GetInputPort("plant_applied_generalized_force"));
+  EXPECT_NO_THROW(dut->GetOutputPort("plant_state"));
+  EXPECT_NO_THROW(dut->GetOutputPort("scene_graph_query"));
+
+  // The scene graph should not export any inputs.
+  for (int i = 0; i < dut->num_input_ports(); ++i) {
+    EXPECT_THAT(dut->get_input_port(i).get_name(),
+                ::testing::StartsWith("plant_"));
+  }
 }
 
 }  // namespace

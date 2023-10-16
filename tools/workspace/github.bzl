@@ -1,8 +1,5 @@
 load("@bazel_tools//tools/build_defs/repo:utils.bzl", "patch")
-load(
-    "@drake//tools/workspace:metadata.bzl",
-    "generate_repository_metadata",
-)
+load("//tools/workspace:metadata.bzl", "generate_repository_metadata")
 
 def github_archive(
         name,

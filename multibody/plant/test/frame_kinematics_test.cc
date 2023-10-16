@@ -35,7 +35,8 @@ TEST_F(KukaIiwaModelTests, FramesKinematics) {
   const RigidTransformd X_HH =
       plant_->CalcRelativeTransform(*context_, *frame_H_, *frame_H_);
   EXPECT_TRUE(CompareMatrices(X_HH.rotation().matrix(),
-      Matrix3<double>::Identity(), kTolerance, MatrixCompareType::relative));
+                              Matrix3<double>::Identity(), kTolerance,
+                              MatrixCompareType::relative));
   EXPECT_TRUE(CompareMatrices(X_HH.translation(), Vector3<double>::Zero(),
                               kTolerance, MatrixCompareType::relative));
 
@@ -49,9 +50,9 @@ TEST_F(KukaIiwaModelTests, FramesKinematics) {
       end_effector_link_->EvalPoseInWorld(*context_);
   const RigidTransform<double> X_WH = frame_H_->CalcPoseInWorld(*context_);
   const RigidTransform<double> X_WH_expected = X_WE * X_EH_;
-  EXPECT_TRUE(CompareMatrices(
-      X_WH.GetAsMatrix34(), X_WH_expected.GetAsMatrix34(),
-      kTolerance, MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(X_WH.GetAsMatrix34(),
+                              X_WH_expected.GetAsMatrix34(), kTolerance,
+                              MatrixCompareType::relative));
 
   // Alternatively, we can get the pose X_WE using the plant's output port for
   // poses.
@@ -61,9 +62,9 @@ TEST_F(KukaIiwaModelTests, FramesKinematics) {
   ASSERT_EQ(X_WB_all.size(), plant_->num_bodies());
   const RigidTransform<double>& X_WE_from_port =
       X_WB_all[end_effector_link_->index()];
-  EXPECT_TRUE(CompareMatrices(
-      X_WE.GetAsMatrix34(), X_WE_from_port.GetAsMatrix34(),
-      kTolerance, MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(X_WE.GetAsMatrix34(),
+                              X_WE_from_port.GetAsMatrix34(), kTolerance,
+                              MatrixCompareType::relative));
 
   // Verify the invariance X_WB_all[0] = RigidTransform<double>::Identity().
   EXPECT_TRUE(
@@ -82,9 +83,9 @@ TEST_F(KukaIiwaModelTests, FramesKinematics) {
   const RigidTransform<double> X_HL3 = frame_L3.CalcPose(*context_, *frame_H_);
   const RigidTransform<double> X_WL3 = frame_L3.CalcPoseInWorld(*context_);
   const RigidTransform<double> X_HL3_expected = X_WH.InvertAndCompose(X_WL3);
-  EXPECT_TRUE(CompareMatrices(
-      X_HL3.GetAsMatrix34(), X_HL3_expected.GetAsMatrix34(),
-      kTolerance, MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(X_HL3.GetAsMatrix34(),
+                              X_HL3_expected.GetAsMatrix34(), kTolerance,
+                              MatrixCompareType::relative));
 
   const RotationMatrix<double> R_HL3 =
       frame_L3.CalcRotationMatrix(*context_, *frame_H_);
@@ -103,9 +104,8 @@ TEST_F(KukaIiwaModelTests, FramesKinematics) {
   const RotationMatrix<double>& R_WE = X_WE.rotation();
   const Vector3<double> p_EH_W = R_WE * p_EH;
   const SpatialVelocity<double> V_WH_expected = V_WE.Shift(p_EH_W);
-  EXPECT_TRUE(CompareMatrices(
-      V_WH.get_coeffs(), V_WH_expected.get_coeffs(),
-      kTolerance, MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(V_WH.get_coeffs(), V_WH_expected.get_coeffs(),
+                              kTolerance, MatrixCompareType::relative));
 
   // Alternatively, we can get the spatial velocity V_WE using the plant's
   // output port for spatial velocities.
@@ -133,9 +133,9 @@ TEST_F(KukaIiwaModelTests, FramesKinematics) {
   // V_WL3_E = V_WH_E.Shift(p_HL3_E) + V_HL3_E
   const SpatialVelocity<double> V_HL3_E_expected =
       V_WL3_E - V_WH_E.Shift(p_HL3_E);
-  EXPECT_TRUE(CompareMatrices(
-      V_HL3_E.get_coeffs(), V_HL3_E_expected.get_coeffs(),
-      kTolerance, MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(V_HL3_E.get_coeffs(),
+                              V_HL3_E_expected.get_coeffs(), kTolerance,
+                              MatrixCompareType::relative));
 
   // For frame H (which is a fixed offset frame fixed to end-effector E),
   // verify that the rotational and translational parts of frame H's spatial
@@ -156,18 +156,17 @@ TEST_F(KukaIiwaModelTests, FrameAngularVelocity) {
   const Frame<double>& frame_E = end_effector_link_->body_frame();
   const Vector3<double> w_EH_E =
       frame_H.CalcAngularVelocity(*context_, frame_E, frame_E);
-  EXPECT_TRUE(CompareMatrices(w_EH_E, Vector3<double>::Zero(),
-      kTolerance, MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(w_EH_E, Vector3<double>::Zero(), kTolerance,
+                              MatrixCompareType::relative));
 
   // Verify the direct calculation of ω_WE_W (frame H's angular velocity in
   // world W, expressed in W) by comparing it to the rotational part of V_WE_W
   // (frame H's spatial velocity in world W, expressed in W).
-  const Vector3<double>& w_WH_W =
-      frame_H.EvalAngularVelocityInWorld(*context_);
+  const Vector3<double>& w_WH_W = frame_H.EvalAngularVelocityInWorld(*context_);
   const SpatialVelocity<double> V_WH_W =
       frame_H.CalcSpatialVelocityInWorld(*context_);
-  EXPECT_TRUE(CompareMatrices(w_WH_W, V_WH_W.rotational(),
-      kTolerance, MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(w_WH_W, V_WH_W.rotational(), kTolerance,
+                              MatrixCompareType::relative));
 
   // Verify CalcAngularVelocity() against EvalAngularVelocityInWorld().
   const Body<double>& link3 = plant_->GetBodyByName("iiwa_link_3");
@@ -177,8 +176,8 @@ TEST_F(KukaIiwaModelTests, FrameAngularVelocity) {
       frame_L3.CalcAngularVelocity(*context_, frame_W, frame_W);
   const Vector3<double> w_WL3_W_expected =
       frame_L3.EvalAngularVelocityInWorld(*context_);
-  EXPECT_TRUE(CompareMatrices(w_WL3_W, w_WL3_W_expected,
-      kTolerance, MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(w_WL3_W, w_WL3_W_expected, kTolerance,
+                              MatrixCompareType::relative));
 
   // Verify CalcAngularVelocity() is consistent with the negation property for
   // angular velocities, e.g., ω_AB = -ω_BA or specifically ω_L3H = -ω_EL3.
@@ -187,8 +186,8 @@ TEST_F(KukaIiwaModelTests, FrameAngularVelocity) {
   const Vector3<double> w_EL3_H =
       frame_L3.CalcAngularVelocity(*context_, frame_E, frame_H);
   EXPECT_NE(w_L3E_H, Vector3<double>::Zero());
-  EXPECT_TRUE(CompareMatrices(w_L3E_H, -w_EL3_H,
-      kTolerance, MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(w_L3E_H, -w_EL3_H, kTolerance,
+                              MatrixCompareType::relative));
 
   // Verify CalcAngularVelocity() produces the same results as
   // CalcSpatialVelocity().rotational() and handles the expressed-in frame.
@@ -219,8 +218,8 @@ TEST_F(KukaIiwaModelTests, FrameAngularVelocity) {
   const Vector3<double> w_L3E_W =
       frame_E.CalcAngularVelocity(*context_, frame_L3, frame_W);
   const Vector3<double> w_WE_W = w_WH_W + w_HL3_W + w_L3E_W;
-  EXPECT_TRUE(CompareMatrices(w_WE_W_expected, w_WE_W,
-      kTolerance, MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(w_WE_W_expected, w_WE_W, kTolerance,
+                              MatrixCompareType::relative));
 
   // Verify CalcAngularVelocity() handles the expressed-in frame.
   const RotationMatrix<double> R_WE =
@@ -229,8 +228,8 @@ TEST_F(KukaIiwaModelTests, FrameAngularVelocity) {
   const Vector3<double> w_WE_E_expected = R_EW * w_WE_W_expected;
   const Vector3<double> w_WE_E =
       frame_E.CalcAngularVelocity(*context_, frame_W, frame_E);
-  EXPECT_TRUE(CompareMatrices(w_WE_E_expected, w_WE_E,
-      kTolerance, MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(w_WE_E_expected, w_WE_E, kTolerance,
+                              MatrixCompareType::relative));
 }
 
 TEST_F(KukaIiwaModelTests, FramesCalcRelativeSpatialVelocity) {
@@ -250,25 +249,24 @@ TEST_F(KukaIiwaModelTests, FramesCalcRelativeSpatialVelocity) {
   const SpatialVelocity<double> V_WH_W =
       frame_H.CalcSpatialVelocityInWorld(*context_);
   const SpatialVelocity<double> V_W_L3H_W_expected = V_WH_W - V_WL3_W;
-  EXPECT_TRUE(CompareMatrices(
-      V_W_L3H_W.get_coeffs(), V_W_L3H_W_expected.get_coeffs(),
-      kTolerance, MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(V_W_L3H_W.get_coeffs(),
+                              V_W_L3H_W_expected.get_coeffs(), kTolerance,
+                              MatrixCompareType::relative));
 
   // Also verify that frame H's spatial velocity relative to frame L3 is the
   // negative of frame L3's spatial velocity relative to frame H.
   const SpatialVelocity<double> V_W_HL3_W =
       frame_L3.CalcRelativeSpatialVelocityInWorld(*context_, frame_H);
-  EXPECT_TRUE(CompareMatrices(
-      V_W_L3H_W.get_coeffs(), -V_W_HL3_W.get_coeffs(),
-      kTolerance, MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(V_W_L3H_W.get_coeffs(), -V_W_HL3_W.get_coeffs(),
+                              kTolerance, MatrixCompareType::relative));
 
   // Also verify that the rotational part of V_W_L3H_W is simply ω_L3H_W.
   const Frame<double>& frame_W = plant_->world_frame();
   const Vector3<double>& w_L3H_W = V_W_L3H_W.rotational();
   const Vector3<double> w_L3H_W_expected =
       frame_H.CalcSpatialVelocity(*context_, frame_L3, frame_W).rotational();
-  EXPECT_TRUE(CompareMatrices(w_L3H_W, w_L3H_W_expected,
-      kTolerance, MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(w_L3H_W, w_L3H_W_expected, kTolerance,
+                              MatrixCompareType::relative));
 
   // Verify that relative spatial velocity is the same as absolute spatial if
   // the "relative-to" frame is the same as the "measured-in" frame.
@@ -278,13 +276,13 @@ TEST_F(KukaIiwaModelTests, FramesCalcRelativeSpatialVelocity) {
       frame_H.CalcRelativeSpatialVelocityInWorld(*context_, frame_W);
   const SpatialVelocity<double> V_W_WH_W_expected =
       frame_H.CalcSpatialVelocityInWorld(*context_);
-  EXPECT_TRUE(CompareMatrices(
-      V_W_WH_W.get_coeffs(), V_W_WH_W_expected.get_coeffs(),
-      kTolerance, MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(V_W_WH_W.get_coeffs(),
+                              V_W_WH_W_expected.get_coeffs(), kTolerance,
+                              MatrixCompareType::relative));
 
   const SpatialVelocity<double> V_L3_L3H_W =
       frame_H.CalcRelativeSpatialVelocity(*context_, frame_L3, frame_L3,
-          frame_W);
+                                          frame_W);
   const SpatialVelocity<double> V_L3_L3H_W_expected =
       frame_H.CalcSpatialVelocity(*context_, frame_L3, frame_W);
   EXPECT_TRUE(CompareMatrices(V_L3_L3H_W.get_coeffs(),
@@ -307,8 +305,8 @@ TEST_F(KukaIiwaModelTests, FramesCalcRelativeSpatialVelocity) {
       frame_E.CalcRotationMatrixInWorld(*context_);
   const Vector3<double> p_EoHo_W = R_WE * p_EoHo_E;
   const Vector3<double> w_cross_p = w_WE_W.cross(p_EoHo_W);
-  EXPECT_TRUE(CompareMatrices(V_W_EH_W.translational(), w_cross_p,
-                              kTolerance, MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(V_W_EH_W.translational(), w_cross_p, kTolerance,
+                              MatrixCompareType::relative));
 
   // Verify that the calculation of separation speed (1ˢᵗ time-derivative of
   // separation distance) between Ho (frame H's origin) and L3o (frame L3's
@@ -339,13 +337,14 @@ TEST_F(KukaIiwaModelTests, CalcSpatialAcceleration) {
   const SpatialAcceleration<double> A_WE_W =
       frame_E.CalcSpatialAccelerationInWorld(*context_);
   const SpatialAcceleration<double> A_WE_W_expected1 =
-     plant_->EvalBodySpatialAccelerationInWorld(*context_, *end_effector_link_);
+      plant_->EvalBodySpatialAccelerationInWorld(*context_,
+                                                 *end_effector_link_);
   EXPECT_EQ(A_WE_W.get_coeffs(), A_WE_W_expected1.get_coeffs());
 
   // Also verify A_WE_W against Body::EvalSpatialAccelerationInWorld().
   const SpatialAcceleration<double> A_WE_W_expected2 =
       end_effector_link_->EvalSpatialAccelerationInWorld(*context_);
-  EXPECT_EQ(A_WE_W.get_coeffs(),  A_WE_W_expected2.get_coeffs());
+  EXPECT_EQ(A_WE_W.get_coeffs(), A_WE_W_expected2.get_coeffs());
 
   // Also verify A_WE_W from the plant's output port for spatial acceleration.
   const auto& A_WB_all =
@@ -361,11 +360,10 @@ TEST_F(KukaIiwaModelTests, CalcSpatialAcceleration) {
   const SpatialAcceleration<double> A_WH_W =
       frame_H_->CalcSpatialAccelerationInWorld(*context_);
   const Frame<double>& frame_W = plant_->world_frame();
-  const SpatialAcceleration<double> A_WH_W_expected = test_utilities::
-      CalcSpatialAccelerationViaAutomaticDifferentiation(
+  const SpatialAcceleration<double> A_WH_W_expected =
+      test_utilities::CalcSpatialAccelerationViaAutomaticDifferentiation(
           *plant_, *context_, *frame_H_, frame_W, frame_W);
-  EXPECT_TRUE(CompareMatrices(A_WH_W.get_coeffs(),
-                              A_WH_W_expected.get_coeffs(),
+  EXPECT_TRUE(CompareMatrices(A_WH_W.get_coeffs(), A_WH_W_expected.get_coeffs(),
                               kTolerance, MatrixCompareType::relative));
 
   // -------------- Start of CalcSpatialAcceleration() tests ----------------
@@ -385,21 +383,21 @@ TEST_F(KukaIiwaModelTests, CalcSpatialAcceleration) {
       frame_L3.CalcSpatialAcceleration(*context_, frame_W, frame_W);
   const SpatialAcceleration<double> A_WL3_W_expected =
       frame_L3.CalcSpatialAccelerationInWorld(*context_);
-  EXPECT_TRUE(CompareMatrices(
-      A_WL3_W.get_coeffs(), A_WL3_W_expected.get_coeffs(),
-      kTolerance, MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(A_WL3_W.get_coeffs(),
+                              A_WL3_W_expected.get_coeffs(), kTolerance,
+                              MatrixCompareType::relative));
 
   // Verify special case of frame_L3.CalcSpatialAcceleration() when the
   // measured-in frame is world W and the expressed-in frame is end-effector E.
   const SpatialAcceleration<double> A_WL3_E =
       frame_L3.CalcSpatialAcceleration(*context_, frame_W, frame_E);
   const RotationMatrix<double> R_WE =
-        frame_E.CalcRotationMatrixInWorld(*context_);
+      frame_E.CalcRotationMatrixInWorld(*context_);
   const RotationMatrix<double> R_EW = R_WE.inverse();
   const SpatialAcceleration<double> A_WL3_E_expected = R_EW * A_WL3_W_expected;
-  EXPECT_TRUE(CompareMatrices(
-      A_WL3_E.get_coeffs(), A_WL3_E_expected.get_coeffs(),
-      kTolerance, MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(A_WL3_E.get_coeffs(),
+                              A_WL3_E_expected.get_coeffs(), kTolerance,
+                              MatrixCompareType::relative));
 
   // ------ Start of weird/useful CalcSpatialVelocity() test for V_HW_E. ------
   // This is a "warm-up" for the CalcSpatialAcceleration() test for A_HW_E that
@@ -414,8 +412,8 @@ TEST_F(KukaIiwaModelTests, CalcSpatialAcceleration) {
   const SpatialVelocity<double> V_WH_W =
       frame_H_->CalcSpatialVelocityInWorld(*context_);
   const Vector3<double>& w_WH_W = V_WH_W.rotational();
-  EXPECT_TRUE(CompareMatrices(V_HW_E.rotational(), R_EW * (-w_WH_W),
-      kTolerance, MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(V_HW_E.rotational(), R_EW * (-w_WH_W), kTolerance,
+                              MatrixCompareType::relative));
 
   // Verify the translational part of V_HW_E via the following calculations.
   //   v_WHo =  DtW(p_WoHo)                    Definition of Ho's velocity in W.
@@ -428,7 +426,7 @@ TEST_F(KukaIiwaModelTests, CalcSpatialAcceleration) {
   const Vector3<double>& p_WoHo_W = X_WH.translation();
   const Vector3<double> v_HWo_W_expected = -v_WHo_W + w_WH_W.cross(p_WoHo_W);
   EXPECT_TRUE(CompareMatrices(V_HW_E.translational(), R_EW * v_HWo_W_expected,
-      kTolerance, MatrixCompareType::relative));
+                              kTolerance, MatrixCompareType::relative));
   // ------ End of weird/useful CalcSpatialVelocity() test for V_HW_E. --------
 
   // Verify the weird/useful calculation of A_HW_E, which is the world frame W's
@@ -443,7 +441,7 @@ TEST_F(KukaIiwaModelTests, CalcSpatialAcceleration) {
   // Verify the rotational part of A_HW_E via the relationship α_HW = -α_WH.
   const Vector3<double>& alpha_WH_W = A_WH_W.rotational();
   EXPECT_TRUE(CompareMatrices(A_HW_E.rotational(), R_EW * (-alpha_WH_W),
-      kTolerance, MatrixCompareType::relative));
+                              kTolerance, MatrixCompareType::relative));
 
   // Verify translational part with by-hand calculations.
   // Verify the translational part of A_HW_E via the following calculations.
@@ -465,7 +463,7 @@ TEST_F(KukaIiwaModelTests, CalcSpatialAcceleration) {
   const Vector3<double> twowv = 2 * w_WH_W.cross(v_WHo_W);
   const Vector3<double> a_HWo_W_expected = -a_WHo_W + alf_r - wwr + twowv;
   EXPECT_TRUE(CompareMatrices(A_HW_E.translational(), R_EW * a_HWo_W_expected,
-      kTolerance, MatrixCompareType::relative));
+                              kTolerance, MatrixCompareType::relative));
 }
 
 TEST_F(KukaIiwaModelTests, FramesCalcRelativeSpatialAcceleration) {
@@ -477,9 +475,8 @@ TEST_F(KukaIiwaModelTests, FramesCalcRelativeSpatialAcceleration) {
   const FixedOffsetFrame<double>& frame_H = *frame_H_;
   const SpatialAcceleration<double> A_W_HH_W =
       frame_H.CalcRelativeSpatialAccelerationInWorld(*context_, frame_H);
-  EXPECT_TRUE(CompareMatrices(
-      A_W_HH_W.get_coeffs(), Vector6<double>::Zero(),
-      kTolerance, MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(A_W_HH_W.get_coeffs(), Vector6<double>::Zero(),
+                              kTolerance, MatrixCompareType::relative));
 
   // Verify frame_H's relative spatial acceleration to itself (frame_H),
   // measured in frame_L3 is zero.
@@ -489,9 +486,8 @@ TEST_F(KukaIiwaModelTests, FramesCalcRelativeSpatialAcceleration) {
   const SpatialAcceleration<double> A_L3_HH_W =
       frame_H.CalcRelativeSpatialAcceleration(*context_, frame_H, frame_L3,
                                               frame_W);
-  EXPECT_TRUE(CompareMatrices(
-      A_L3_HH_W.get_coeffs(), Vector6<double>::Zero(),
-      kTolerance, MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(A_L3_HH_W.get_coeffs(), Vector6<double>::Zero(),
+                              kTolerance, MatrixCompareType::relative));
 
   // To ensure the previous test is not degenerate, ensure frame_H's rotational
   // and translational velocities and accelerations in frame_L3 are non-zero.
@@ -499,18 +495,14 @@ TEST_F(KukaIiwaModelTests, FramesCalcRelativeSpatialAcceleration) {
       frame_H.CalcSpatialVelocity(*context_, frame_L3, frame_W);
   const SpatialAcceleration<double> A_L3H_W =
       frame_H.CalcSpatialAcceleration(*context_, frame_L3, frame_W);
-  EXPECT_FALSE(CompareMatrices(
-      V_L3H_W.rotational(), Vector3<double>::Zero(),
-      kTolerance, MatrixCompareType::absolute));
-  EXPECT_FALSE(CompareMatrices(
-      V_L3H_W.translational(), Vector3<double>::Zero(),
-      kTolerance, MatrixCompareType::absolute));
-  EXPECT_FALSE(CompareMatrices(
-      A_L3H_W.rotational(), Vector3<double>::Zero(),
-      kTolerance, MatrixCompareType::absolute));
-  EXPECT_FALSE(CompareMatrices(
-      A_L3H_W.translational(), Vector3<double>::Zero(),
-      kTolerance, MatrixCompareType::absolute));
+  EXPECT_FALSE(CompareMatrices(V_L3H_W.rotational(), Vector3<double>::Zero(),
+                               kTolerance, MatrixCompareType::absolute));
+  EXPECT_FALSE(CompareMatrices(V_L3H_W.translational(), Vector3<double>::Zero(),
+                               kTolerance, MatrixCompareType::absolute));
+  EXPECT_FALSE(CompareMatrices(A_L3H_W.rotational(), Vector3<double>::Zero(),
+                               kTolerance, MatrixCompareType::absolute));
+  EXPECT_FALSE(CompareMatrices(A_L3H_W.translational(), Vector3<double>::Zero(),
+                               kTolerance, MatrixCompareType::absolute));
 
   // Verify that relative spatial acceleration is the same as absolute spatial
   // acceleration if the "relative-to" frame is the "measured-in" frame.
@@ -520,16 +512,14 @@ TEST_F(KukaIiwaModelTests, FramesCalcRelativeSpatialAcceleration) {
       frame_H.CalcRelativeSpatialAccelerationInWorld(*context_, frame_W);
   const SpatialAcceleration<double> A_WH_W =
       frame_H.CalcSpatialAccelerationInWorld(*context_);
-  EXPECT_TRUE(CompareMatrices(
-      A_W_WH_W.get_coeffs(), A_WH_W.get_coeffs(),
-      kTolerance, MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(A_W_WH_W.get_coeffs(), A_WH_W.get_coeffs(),
+                              kTolerance, MatrixCompareType::relative));
 
   const SpatialAcceleration<double> A_L3_L3H_W =
       frame_H.CalcRelativeSpatialAcceleration(*context_, frame_L3, frame_L3,
-          frame_W);
-  EXPECT_TRUE(CompareMatrices(A_L3_L3H_W.get_coeffs(),
-                              A_L3H_W.get_coeffs(), kTolerance,
-                              MatrixCompareType::relative));
+                                              frame_W);
+  EXPECT_TRUE(CompareMatrices(A_L3_L3H_W.get_coeffs(), A_L3H_W.get_coeffs(),
+                              kTolerance, MatrixCompareType::relative));
 
   // Verify the Frame class's function to calculate A_W_L3H_W (frame H's spatial
   // acceleration relative to frame L3, measured and expressed in the world
@@ -539,9 +529,9 @@ TEST_F(KukaIiwaModelTests, FramesCalcRelativeSpatialAcceleration) {
   const SpatialAcceleration<double> A_WL3_W =
       frame_L3.CalcSpatialAccelerationInWorld(*context_);
   const SpatialAcceleration<double> A_W_L3H_W_expected = A_WH_W - A_WL3_W;
-  EXPECT_TRUE(CompareMatrices(
-      A_W_L3H_W.get_coeffs(), A_W_L3H_W_expected.get_coeffs(),
-      kTolerance, MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(A_W_L3H_W.get_coeffs(),
+                              A_W_L3H_W_expected.get_coeffs(), kTolerance,
+                              MatrixCompareType::relative));
 
   // Verify the Frame class's function to calculate A_W_L3H_E (frame H's spatial
   // acceleration relative to frame L3, measured in the world frame W and
@@ -555,18 +545,17 @@ TEST_F(KukaIiwaModelTests, FramesCalcRelativeSpatialAcceleration) {
       frame_W.CalcRotationMatrix(*context_, frame_E);
   const SpatialAcceleration<double> A_W_L3H_E_expected =
       R_EW * A_W_L3H_W_expected;
-  EXPECT_TRUE(CompareMatrices(
-      A_W_L3H_E.get_coeffs(), A_W_L3H_E_expected.get_coeffs(),
-      kTolerance, MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(A_W_L3H_E.get_coeffs(),
+                              A_W_L3H_E_expected.get_coeffs(), kTolerance,
+                              MatrixCompareType::relative));
 
   // With the measured-in-frame being the world frame W, verify that
   // frame H's spatial acceleration relative to frame L3 is the negative of
   // frame L3's spatial acceleration relative to frame H.
   const SpatialAcceleration<double> A_W_HL3_W =
       frame_L3.CalcRelativeSpatialAccelerationInWorld(*context_, frame_H);
-  EXPECT_TRUE(CompareMatrices(
-      A_W_L3H_W.get_coeffs(), -A_W_HL3_W.get_coeffs(),
-      kTolerance, MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(A_W_L3H_W.get_coeffs(), -A_W_HL3_W.get_coeffs(),
+                              kTolerance, MatrixCompareType::relative));
 
   // With the measured-in-frame being the end-effector frame E, verify that
   // frame H's spatial acceleration relative to frame L3 is the negative of
@@ -585,8 +574,8 @@ TEST_F(KukaIiwaModelTests, FramesCalcRelativeSpatialAcceleration) {
   // of frame_H's angular velocity in frame L3, expressed in frame W).
   const Vector3<double>& DtW_w_L3H_W = A_W_L3H_W.rotational();
   const Vector3<double>& alpha_L3H_W = A_L3H_W.rotational();
-  EXPECT_FALSE(CompareMatrices(DtW_w_L3H_W, alpha_L3H_W,
-      kTolerance, MatrixCompareType::relative));
+  EXPECT_FALSE(CompareMatrices(DtW_w_L3H_W, alpha_L3H_W, kTolerance,
+                               MatrixCompareType::relative));
 
   // Verify that the rotational part of A_W_L3H_W is:
   // DtW(ω_L3H)_W = α_L3H_W + ω_L3H_W x ω_L3H_W.
@@ -596,7 +585,7 @@ TEST_F(KukaIiwaModelTests, FramesCalcRelativeSpatialAcceleration) {
       frame_L3.EvalAngularVelocityInWorld(*context_);
   const Vector3<double> cross_product_term = w_WL3_W.cross(w_L3H_W);
   EXPECT_TRUE(CompareMatrices(DtW_w_L3H_W, alpha_L3H_W + cross_product_term,
-      kTolerance, MatrixCompareType::relative));
+                              kTolerance, MatrixCompareType::relative));
 
   // For frame H (which is a fixed offset frame fixed to end-effector E), verify
   // that the rotational part of frame H's spatial acceleration relative to
@@ -616,8 +605,8 @@ TEST_F(KukaIiwaModelTests, FramesCalcRelativeSpatialAcceleration) {
   const Vector3<double> alpha_WE_W =
       frame_E.CalcSpatialAccelerationInWorld(*context_).rotational();
   const Vector3<double> alphar = alpha_WE_W.cross(p_EoHo_W);
-  EXPECT_TRUE(CompareMatrices(a_W_EoHo_W, alphar + wwr,
-      kTolerance, MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(a_W_EoHo_W, alphar + wwr, kTolerance,
+                              MatrixCompareType::relative));
 
   // Verify that the calculation of separation acceleration (2ⁿᵈ time-derivative
   // of separation distance) between Ho (frame H's origin) and L3o (frame L3's
@@ -639,21 +628,26 @@ TEST_F(KukaIiwaModelTests, FramesCalcRelativeSpatialAcceleration) {
 
   // Form the 2ⁿᵈ time-derivative of distance with measured-in frame_W.
   const Vector3<double>& a_W_L3H_W = A_W_L3H_W.translational();
-  const Vector3<double> v_W_L3H_W = frame_H.CalcRelativeSpatialVelocityInWorld(
-      *context_, frame_L3).translational();
+  const Vector3<double> v_W_L3H_W =
+      frame_H.CalcRelativeSpatialVelocityInWorld(*context_, frame_L3)
+          .translational();
   const double separation_speed = v_W_L3H_W.dot(u_L3oHo_W);
   const double separation_speed_squared = separation_speed * separation_speed;
   const double v_W_L3H_W_magSquared = v_W_L3H_W.dot(v_W_L3H_W);
-  const double separation_acceleration1 = a_W_L3H_W.dot(u_L3oHo_W)
-      + 1.0 / distance * (v_W_L3H_W_magSquared - separation_speed_squared);
+  const double separation_acceleration1 =
+      a_W_L3H_W.dot(u_L3oHo_W) +
+      1.0 / distance * (v_W_L3H_W_magSquared - separation_speed_squared);
 
   // Form the 2ⁿᵈ time-derivative of distance with measured_in frame_L3.
   const Vector3<double>& a_L3_L3H_W = A_L3_L3H_W.translational();
-  const Vector3<double> v_L3_L3H_W = frame_H.CalcRelativeSpatialVelocity(
-      *context_, frame_L3, frame_L3, frame_W).translational();
+  const Vector3<double> v_L3_L3H_W =
+      frame_H
+          .CalcRelativeSpatialVelocity(*context_, frame_L3, frame_L3, frame_W)
+          .translational();
   const double v_L3_L3H_W_magSquared = v_L3_L3H_W.dot(v_L3_L3H_W);
-  const double separation_acceleration2 = a_L3_L3H_W.dot(u_L3oHo_W)
-      + 1.0 / distance * (v_L3_L3H_W_magSquared - separation_speed_squared);
+  const double separation_acceleration2 =
+      a_L3_L3H_W.dot(u_L3oHo_W) +
+      1.0 / distance * (v_L3_L3H_W_magSquared - separation_speed_squared);
   EXPECT_NEAR(separation_acceleration1, separation_acceleration2, kTolerance);
 }
 

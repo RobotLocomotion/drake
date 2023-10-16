@@ -67,7 +67,8 @@ class BuildIiwaControlTest : public ::testing::Test {
     sim_plant_->Finalize();
 
     controller_plant_ = SharedPointerSystem<double>::AddToBuilder(
-        &builder_, internal::MakeArmControllerModel(*sim_plant_, iiwa7_info_));
+        &builder_, manipulation::internal::MakeArmControllerModel(*sim_plant_,
+                                                                  iiwa7_info_));
   }
 
   DiagramBuilder<double> builder_;
@@ -120,13 +121,27 @@ TEST_F(BuildIiwaControlTest, PositionOnly) {
       0.01, {}, IiwaControlMode::kPositionOnly);
   const auto diagram = builder_.Build();
 
-  EXPECT_NE(control_ports.commanded_positions, nullptr);
+  // Expect position as input.
+  ASSERT_NE(control_ports.commanded_positions, nullptr);
   EXPECT_EQ(control_ports.commanded_positions->size(), N);
-  // Should be nullptr if enable_feedforward_torque is false.
+
+  // No torque input. Should be nullptr if enable_feedforward_torque is false.
   EXPECT_EQ(control_ports.commanded_torque, nullptr);
-  EXPECT_NE(control_ports.joint_torque, nullptr);
+
+  // Check that outputs are never null.
+  ASSERT_NE(control_ports.position_commanded, nullptr);
+  ASSERT_NE(control_ports.position_measured, nullptr);
+  ASSERT_NE(control_ports.velocity_estimated, nullptr);
+  ASSERT_NE(control_ports.joint_torque, nullptr);
+  ASSERT_NE(control_ports.torque_measured, nullptr);
+  ASSERT_NE(control_ports.external_torque, nullptr);
+
+  // Check output sizes.
+  EXPECT_EQ(control_ports.position_commanded->size(), N);
+  EXPECT_EQ(control_ports.position_measured->size(), N);
+  EXPECT_EQ(control_ports.velocity_estimated->size(), N);
   EXPECT_EQ(control_ports.joint_torque->size(), N);
-  EXPECT_NE(control_ports.external_torque, nullptr);
+  EXPECT_EQ(control_ports.torque_measured->size(), N);
   EXPECT_EQ(control_ports.external_torque->size(), N);
 }
 
@@ -137,12 +152,27 @@ TEST_F(BuildIiwaControlTest, TorqueOnly) {
       0.01, {}, IiwaControlMode::kTorqueOnly);
   const auto diagram = builder_.Build();
 
-  EXPECT_EQ(control_ports.commanded_positions, nullptr);
-  EXPECT_NE(control_ports.commanded_torque, nullptr);
+  // Expect torque as input.
+  ASSERT_NE(control_ports.commanded_torque, nullptr);
   EXPECT_EQ(control_ports.commanded_torque->size(), N);
-  EXPECT_NE(control_ports.joint_torque, nullptr);
+
+  // No position input.
+  EXPECT_EQ(control_ports.commanded_positions, nullptr);
+
+  // Check that outputs are never null.
+  ASSERT_NE(control_ports.position_commanded, nullptr);
+  ASSERT_NE(control_ports.position_measured, nullptr);
+  ASSERT_NE(control_ports.velocity_estimated, nullptr);
+  ASSERT_NE(control_ports.joint_torque, nullptr);
+  ASSERT_NE(control_ports.torque_measured, nullptr);
+  ASSERT_NE(control_ports.external_torque, nullptr);
+
+  // Check output sizes.
+  EXPECT_EQ(control_ports.position_commanded->size(), N);
+  EXPECT_EQ(control_ports.position_measured->size(), N);
+  EXPECT_EQ(control_ports.velocity_estimated->size(), N);
   EXPECT_EQ(control_ports.joint_torque->size(), N);
-  EXPECT_NE(control_ports.external_torque, nullptr);
+  EXPECT_EQ(control_ports.torque_measured->size(), N);
   EXPECT_EQ(control_ports.external_torque->size(), N);
 }
 
@@ -168,14 +198,26 @@ TEST_F(BuildIiwaControlTest, PositionAndTorque) {
                    *control_ports.commanded_torque);
   auto diagram = builder_.Build();
 
-  // Check all the ports of `control_ports` are set up properly.
-  EXPECT_NE(control_ports.commanded_positions, nullptr);
+  // Check that both inputs exist.
+  ASSERT_NE(control_ports.commanded_positions, nullptr);
+  ASSERT_NE(control_ports.commanded_torque, nullptr);
   EXPECT_EQ(control_ports.commanded_positions->size(), N);
-  EXPECT_NE(control_ports.commanded_torque, nullptr);
   EXPECT_EQ(control_ports.commanded_torque->size(), N);
-  EXPECT_NE(control_ports.joint_torque, nullptr);
+
+  // Check that outputs are never null.
+  ASSERT_NE(control_ports.position_commanded, nullptr);
+  ASSERT_NE(control_ports.position_measured, nullptr);
+  ASSERT_NE(control_ports.velocity_estimated, nullptr);
+  ASSERT_NE(control_ports.joint_torque, nullptr);
+  ASSERT_NE(control_ports.torque_measured, nullptr);
+  ASSERT_NE(control_ports.external_torque, nullptr);
+
+  // Check output sizes.
+  EXPECT_EQ(control_ports.position_commanded->size(), N);
+  EXPECT_EQ(control_ports.position_measured->size(), N);
+  EXPECT_EQ(control_ports.velocity_estimated->size(), N);
   EXPECT_EQ(control_ports.joint_torque->size(), N);
-  EXPECT_NE(control_ports.external_torque, nullptr);
+  EXPECT_EQ(control_ports.torque_measured->size(), N);
   EXPECT_EQ(control_ports.external_torque->size(), N);
 
   systems::Simulator<double> simulator(*diagram);

@@ -18,8 +18,7 @@ namespace {
 // If `value` is an integer multiple of `famous_constant_value`, returns the
 // latex for the multiplied constant `{int_coeff}{famous_constant_latex}`.
 std::optional<string> multiple_of_famous_constant(
-    double value, double famous_constant_value,
-    string famous_constant_latex) {
+    double value, double famous_constant_value, string famous_constant_latex) {
   const double epsilon = 1e-14;
   if (std::abs(value) < epsilon) {  // Handle zero.
     return std::nullopt;
@@ -115,7 +114,9 @@ class LatexVisitor {
       print_space = true;
     }
     for (const auto& [e_1, e_2] : base_to_exponent_map) {
-      if (print_space) { oss << " "; }
+      if (print_space) {
+        oss << " ";
+      }
       if (is_one(e_2)) {
         oss << Latex(e_1);
       } else {
@@ -254,38 +255,32 @@ class LatexVisitor {
   }
   [[nodiscard]] std::string VisitEqualTo(const Formula& f,
                                          const bool polarity) const {
-    return Latex(get_lhs_expression(f)) +
-           (polarity ? " = " : " \\neq ") +
+    return Latex(get_lhs_expression(f)) + (polarity ? " = " : " \\neq ") +
            Latex(get_rhs_expression(f));
   }
   [[nodiscard]] std::string VisitNotEqualTo(const Formula& f,
                                             const bool polarity) const {
-    return Latex(get_lhs_expression(f)) +
-           (polarity ? " \\neq " : " = ") +
+    return Latex(get_lhs_expression(f)) + (polarity ? " \\neq " : " = ") +
            Latex(get_rhs_expression(f));
   }
   [[nodiscard]] std::string VisitGreaterThan(const Formula& f,
                                              const bool polarity) const {
-    return Latex(get_lhs_expression(f)) +
-           (polarity ? " > " : " \\le ") +
+    return Latex(get_lhs_expression(f)) + (polarity ? " > " : " \\le ") +
            Latex(get_rhs_expression(f));
   }
   [[nodiscard]] std::string VisitGreaterThanOrEqualTo(
       const Formula& f, const bool polarity) const {
-    return Latex(get_lhs_expression(f)) +
-           (polarity ? " \\ge " : " < ") +
+    return Latex(get_lhs_expression(f)) + (polarity ? " \\ge " : " < ") +
            Latex(get_rhs_expression(f));
   }
   [[nodiscard]] std::string VisitLessThan(const Formula& f,
                                           const bool polarity) const {
-    return Latex(get_lhs_expression(f)) +
-           (polarity ? " < " : " \\ge ") +
+    return Latex(get_lhs_expression(f)) + (polarity ? " < " : " \\ge ") +
            Latex(get_rhs_expression(f));
   }
   [[nodiscard]] std::string VisitLessThanOrEqualTo(const Formula& f,
                                                    const bool polarity) const {
-    return Latex(get_lhs_expression(f)) +
-           (polarity ? " \\le " : " > ") +
+    return Latex(get_lhs_expression(f)) + (polarity ? " \\le " : " > ") +
            Latex(get_rhs_expression(f));
   }
   [[nodiscard]] std::string VisitConjunction(const Formula& f,
@@ -326,7 +321,9 @@ class LatexVisitor {
     // ∃v₁...vₙ. (¬f). However, we do not have a representation
     // FormulaExists(∃) yet. Revisit this when we add FormulaExists.
     ostringstream oss;
-    if (!polarity) { oss << "\\neg "; }
+    if (!polarity) {
+      oss << "\\neg ";
+    }
     oss << "\\forall " << VisitVariables(get_quantified_variables(f)) << ": "
         << get_quantified_formula(f);
     return oss.str();
@@ -335,7 +332,9 @@ class LatexVisitor {
   [[nodiscard]] std::string VisitIsnan(const Formula& f,
                                        const bool polarity) const {
     ostringstream oss;
-    if (!polarity) { oss << "\\neg "; }
+    if (!polarity) {
+      oss << "\\neg ";
+    }
     oss << "\\text{isnan}(" << Latex(get_unary_expression(f)) << ")";
     return oss.str();
   }
@@ -353,7 +352,9 @@ class LatexVisitor {
     ostringstream oss;
     bool delimiter = false;
     for (const auto& v : vars) {
-      if (delimiter) { oss << ", "; }
+      if (delimiter) {
+        oss << ", ";
+      }
       oss << VisitVariable(v);
       delimiter = true;
     }
@@ -395,8 +396,7 @@ string ToLatex(double val, int precision) {
           multiple_of_famous_constant(val, M_PI, "\\pi")) {
     return *result;
   }
-  if (optional<string> result =
-          multiple_of_famous_constant(val, M_E, "e")) {
+  if (optional<string> result = multiple_of_famous_constant(val, M_E, "e")) {
     return *result;
   }
   double intpart;

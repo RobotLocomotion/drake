@@ -172,9 +172,7 @@ class PolyMeshBuilder {
 
   /* Expose the accumulated vertices measured and expressed in the
    builder's frame B. */
-  const std::vector<Vector3<T>>& vertices() const {
-    return vertices_B_;
-  }
+  const std::vector<Vector3<T>>& vertices() const { return vertices_B_; }
 
  private:
   /* The number of polygons that have been added. It can't simply be inferred
@@ -259,7 +257,7 @@ void AddPolygonToTriangleMeshData(const std::vector<int>& polygon,
 
 /* Adds a polygon (defined by indices into a set of vertices) into the polygon
  face data (as defined by PolygonSurfaceMesh).
- 
+
  This is similar to AddPolygonToTriangleMeshData() in that the specified polygon
  is added to some representation of mesh faces. It's different in the following
  ways:

@@ -1,0 +1,15 @@
+[vtk] Remove a spurious dependency on VTK::utf8
+
+We should upstream this patch. Nothing in vtkCommonCore uses VTK::utf8.
+
+--- Common/Core/vtk.module
++++ Common/Core/vtk.module
+@@ -11,8 +11,6 @@ GROUPS
+ DEPENDS
+   VTK::kwiml
+   VTK::vtksys
+-PRIVATE_DEPENDS
+-  VTK::utf8
+ OPTIONAL_DEPENDS
+   VTK::loguru
+ TEST_DEPENDS

@@ -1,7 +1,7 @@
 package(default_visibility = ["//visibility:private"])
 
 load(
-    "@drake//tools/skylark:drake_cc.bzl",
+    "//tools/skylark:drake_cc.bzl",
     "drake_cc_binary",
     "drake_cc_library",
 )

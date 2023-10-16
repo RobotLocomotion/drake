@@ -3,8 +3,8 @@ Use an inline namespace for Abseil.
 This prevents Drake's build of Abseil from interfering with a user's
 downstream build of Abseil when the user is using static linking.
 
---- absl/base/options.h.orig	2022-03-08 13:01:16.000000000 -0800
-+++ absl/base/options.h	2022-03-13 13:44:21.385254191 -0700
+--- absl/base/options.h
++++ absl/base/options.h
 @@ -205,8 +205,8 @@
  // be changed to a new, unique identifier name.  In particular "head" is not
  // allowed.
@@ -16,3 +16,18 @@ downstream build of Abseil when the user is using static linking.
  
  // ABSL_OPTION_HARDENED
  //
+
+--- absl/debugging/symbolize_elf.inc
++++ absl/debugging/symbolize_elf.inc
+@@ -1653,9 +1653,11 @@
+ ABSL_NAMESPACE_END
+ }  // namespace absl
+ 
++#if 0  // This (dead) code disobeys the drake_vendor inline namespace.
+ extern "C" bool AbslInternalGetFileMappingHint(const void **start,
+                                                const void **end, uint64_t *offset,
+                                                const char **filename) {
+   return absl::debugging_internal::GetFileMappingHint(start, end, offset,
+                                                       filename);
+ }
++#endif

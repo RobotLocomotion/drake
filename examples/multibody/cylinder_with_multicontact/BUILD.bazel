@@ -1,5 +1,5 @@
 load(
-    "@drake//tools/skylark:drake_cc.bzl",
+    "//tools/skylark:drake_cc.bzl",
     "drake_cc_binary",
     "drake_cc_googletest",
     "drake_cc_library",
@@ -57,6 +57,7 @@ drake_cc_binary(
     deps = [
         ":populate_cylinder_plant",
         "//common:add_text_logging_gflags",
+        "//lcm",
         "//systems/analysis:simulator",
         "//systems/framework:diagram",
         "//systems/lcm:lcm_pubsub_system",

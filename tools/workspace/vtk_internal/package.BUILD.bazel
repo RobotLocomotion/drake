@@ -1,0 +1,69 @@
+# -*- bazel -*-
+
+load("@drake//tools/skylark:cc.bzl", "cc_library")
+load("@drake//tools/install:install.bzl", "install")
+load(
+    "@drake//tools/workspace/vtk_internal:rules.bzl",
+    "compile_all_modules",
+    "generate_abi_namespace",
+    "generate_common_core_sources",
+    "generate_rendering_opengl2_sources",
+    "vtk_cc_module",
+)
+
+config_setting(
+    name = "osx",
+    constraint_values = ["@platforms//os:osx"],
+)
+
+# When the rules.bzl needs to declare an objc_library, it adds this to `deps`
+# to improve the error messages in case of a mis-configured build.
+cc_library(
+    name = "_on_macos_you_must_not_have_forcepic_in_your_bazelrc_file_see_drake_issue_20217",  # noqa
+    linkstatic = True,
+    features = ["-supports_pic"],
+    tags = ["manual"],
+)
+
+# Generate some source files on the fly, using Bazel re-implementations of
+# various CMake scripts.
+
+generate_abi_namespace()
+
+generate_common_core_sources()
+
+generate_rendering_opengl2_sources()
+
+# Help solve a circular dependency between CommonCore <=> CommonDataModel.
+# This library inter-operates with both the VTK::CommonCore in settings.bzl
+# and the repository patch file patches/common_core_vs_data_model_cycle.patch.
+
+cc_library(
+    name = "VTK__CommonDataModel_vtkDataObject",
+    hdrs = [
+        "Common/DataModel/vtkCommonDataModelModule.h",
+        "Common/DataModel/vtkDataObject.h",
+    ],
+    strip_include_prefix = "Common/DataModel",
+    linkstatic = True,
+)
+
+# Add a cc_library rule for all modules in settings.bzl that are marked with
+# non-default visibility, and also add private cc_library rules for all of
+# their required transitive dependency modules (per the vtk.module metadata).
+
+compile_all_modules()
+
+# Install any license notices.
+
+install(
+    name = "install",
+    docs = [
+        "Copyright.txt",
+        "ThirdParty/doubleconversion/vtkdoubleconversion/COPYING",
+        "ThirdParty/glew/vtkglew/LICENSE.txt",
+        "ThirdParty/pugixml/vtkpugixml/LICENSE.md",
+        "ThirdParty/utf8/vtkutf8/LICENSE",
+    ],
+    visibility = ["//visibility:public"],
+)

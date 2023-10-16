@@ -25,7 +25,7 @@ Demo:
       name: iiwa_on_world
       X_PF:
         base_frame: world
-        translation: [0, -0.7, 0]
+        translation: [0, -0.7, 0.1]
         rotation: !Rpy { deg: [0, 0, 90] }
   - add_weld:
       parent: iiwa_on_world
@@ -45,6 +45,10 @@ Demo:
   - add_weld:
       parent: wsg_on_iiwa
       child: wsg::body
+  lcm_buses:
+    driver_traffic:
+      # Use a non-default LCM url to communicate with the robot.
+      lcm_url: udpm://239.241.129.92:20185?ttl=0
   cameras:
     oracular_view:
       name: camera_0
@@ -54,4 +58,6 @@ Demo:
   model_drivers:
     iiwa: !IiwaDriver
       hand_model_name: wsg
-    wsg: !SchunkWsgDriver {}
+      lcm_bus: driver_traffic
+    wsg: !SchunkWsgDriver
+      lcm_bus: driver_traffic

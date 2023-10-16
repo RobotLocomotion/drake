@@ -8,7 +8,6 @@
 #include <vector>
 
 #include <common_robotics_utilities/dynamic_spatial_hashed_voxel_grid.hpp>
-#include <common_robotics_utilities/openmp_helpers.hpp>
 #include <common_robotics_utilities/voxel_grid.hpp>
 #include <fmt/format.h>
 #include <nanoflann.hpp>
@@ -19,8 +18,6 @@
 
 using Eigen::Map;
 using Eigen::NoChange;
-using common_robotics_utilities::openmp_helpers::DegreeOfParallelism;
-using common_robotics_utilities::openmp_helpers::GetNumOmpThreads;
 using common_robotics_utilities::voxel_grid::DSHVGSetType;
 using common_robotics_utilities::voxel_grid::DynamicSpatialHashedVoxelGrid;
 using common_robotics_utilities::voxel_grid::GridIndex;
@@ -473,7 +470,7 @@ PointCloud Concatenate(const std::vector<PointCloud>& clouds) {
 }
 
 PointCloud PointCloud::VoxelizedDownSample(
-    const double voxel_size, const bool parallelize) const {
+    const double voxel_size, const Parallelism parallelize) const {
   DRAKE_THROW_UNLESS(has_xyzs());
   DRAKE_THROW_UNLESS(voxel_size > 0);
 
@@ -557,9 +554,13 @@ PointCloud PointCloud::VoxelizedDownSample(
   };
 
   // Since the parallel form imposes additional overhead, only use it when
-  // multiple OpenMP threads are available.
-  const bool can_execute_in_parallel = GetNumOmpThreads() > 1;
-  const bool operate_in_parallel = parallelize && can_execute_in_parallel;
+  // we are supposed to parallelize.
+  [[maybe_unused]] const int num_threads = parallelize.num_threads();
+#if defined(_OPENMP)
+  const bool operate_in_parallel = num_threads > 1;
+#else
+  constexpr bool operate_in_parallel = false;
+#endif
 
   // Since we specify chunks contain a single voxel, a chunk's lone voxel can be
   // retrieved with index (0, 0, 0).
@@ -581,7 +582,7 @@ PointCloud PointCloud::VoxelizedDownSample(
 
     // Process voxel cells in parallel.
 #if defined(_OPENMP)
-#pragma omp parallel for
+#pragma omp parallel for num_threads(num_threads)
 #endif
     for (int index_in_down_sampled = 0;
          index_in_down_sampled < static_cast<int>(voxel_indices.size());
@@ -605,7 +606,8 @@ PointCloud PointCloud::VoxelizedDownSample(
 }
 
 bool PointCloud::EstimateNormals(
-    const double radius, const int num_closest, const bool parallelize) {
+    const double radius, const int num_closest,
+    [[maybe_unused]] const Parallelism parallelize) {
   DRAKE_DEMAND(radius > 0);
   DRAKE_DEMAND(num_closest >= 3);
   DRAKE_THROW_UNLESS(has_xyzs());
@@ -624,12 +626,9 @@ bool PointCloud::EstimateNormals(
   // Iterate through all points and compute their normals.
   std::atomic<bool> all_points_have_at_least_three_neighbors(true);
 
-  // TODO(calderpg-tri) Expose more control over degree of parallelism.
-  const auto parallelism =
-      parallelize ? DegreeOfParallelism::FromOmp()
-                  : DegreeOfParallelism::None();
-
-  CRU_OMP_PARALLEL_FOR_DEGREE(parallelism)
+#if defined(_OPENMP)
+#pragma omp parallel for num_threads(parallelize.num_threads())
+#endif
   for (int i = 0; i < size(); ++i) {
     VectorX<Eigen::Index> indices(num_closest);
     Eigen::VectorXf distances(num_closest);

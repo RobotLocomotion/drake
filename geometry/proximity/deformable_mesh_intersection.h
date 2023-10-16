@@ -15,9 +15,12 @@ namespace internal {
 
 /* Computes the contact surface between a deformable geometry and a rigid
  geometry and appends it to existing data.
- @param[in] deformable_D
-     A deformable geometry expressed in frame D. It provides the
-     deformed tetrahedral mesh and the approximated signed distance field.
+ @param[in] deformable_sdf_D
+     The approximated signed distance field for the deformable geometry in the
+     deformable geometry's frame D.
+ @param[in] deformable_mesh_D
+     The deformable geometry's mesh expressed in the deformable geometry's frame
+     D.
  @param[in] deformable_id
      Id of the deformable geometry.
  @param[in] rigid_id
@@ -35,7 +38,8 @@ namespace internal {
      The deformable contact data to be appended to.
  @pre deformable_contact != nullptr. */
 void AddDeformableRigidContactSurface(
-    const deformable::DeformableGeometry& deformable_D,
+    const VolumeMeshFieldLinear<double, double>& deformable_sdf,
+    const DeformableVolumeMesh<double>& deformable_mesh,
     GeometryId deformable_id, GeometryId rigid_id,
     const TriangleSurfaceMesh<double>& rigid_mesh_R,
     const Bvh<Obb, TriangleSurfaceMesh<double>>& rigid_bvh_R,

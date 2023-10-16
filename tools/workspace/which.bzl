@@ -1,4 +1,4 @@
-load("@drake//tools/workspace:execute.bzl", "path", "which")
+load("//tools/workspace:execute.bzl", "path", "which")
 
 def _impl(repository_ctx):
     command = repository_ctx.attr.command

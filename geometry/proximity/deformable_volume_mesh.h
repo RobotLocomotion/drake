@@ -95,7 +95,7 @@ class DeformableVolumeMesh {
   // I have not been able to create a constructor that supports both optional
   // and maintains semantics. So, the mesh-only constructor defines its own
   // initialization.
-  DeformableVolumeMesh(VolumeMesh<T> mesh_M, Bvh<Aabb, VolumeMesh<T>> bvh_M )
+  DeformableVolumeMesh(VolumeMesh<T> mesh_M, Bvh<Aabb, VolumeMesh<T>> bvh_M)
       : mesh_(std::move(mesh_M)),
         deformer_(&mesh_),
         bvh_(std::move(bvh_M)),

@@ -263,8 +263,35 @@ void SceneGraph<T>::AddRenderer(
 }
 
 template <typename T>
+void SceneGraph<T>::AddRenderer(
+    Context<T>* context, std::string name,
+    std::unique_ptr<render::RenderEngine> renderer) const {
+  auto& g_state = mutable_geometry_state(context);
+  g_state.AddRenderer(std::move(name), std::move(renderer));
+}
+
+template <typename T>
+void SceneGraph<T>::RemoveRenderer(const std::string& name) {
+  return model_.RemoveRenderer(name);
+}
+
+template <typename T>
+void SceneGraph<T>::RemoveRenderer(Context<T>* context,
+                                   const std::string& name) const {
+  auto& g_state = mutable_geometry_state(context);
+  g_state.RemoveRenderer(name);
+}
+
+template <typename T>
 bool SceneGraph<T>::HasRenderer(const std::string& name) const {
   return model_.HasRenderer(name);
+}
+
+template <typename T>
+bool SceneGraph<T>::HasRenderer(const Context<T>& context,
+                                const std::string& name) const {
+  const auto& g_state = geometry_state(context);
+  return g_state.HasRenderer(name);
 }
 
 template <typename T>
@@ -278,13 +305,38 @@ std::string SceneGraph<T>::GetRendererTypeName(const std::string& name) const {
 }
 
 template <typename T>
+std::string SceneGraph<T>::GetRendererTypeName(const Context<T>& context,
+                                               const std::string& name) const {
+  const auto& g_state = geometry_state(context);
+  const render::RenderEngine* engine = g_state.GetRenderEngineByName(name);
+  if (engine == nullptr) {
+    return {};
+  }
+
+  return NiceTypeName::Get(*engine);
+}
+
+template <typename T>
 int SceneGraph<T>::RendererCount() const {
   return model_.RendererCount();
 }
 
 template <typename T>
+int SceneGraph<T>::RendererCount(const Context<T>& context) const {
+  const auto& g_state = geometry_state(context);
+  return g_state.RendererCount();
+}
+
+template <typename T>
 vector<std::string> SceneGraph<T>::RegisteredRendererNames() const {
   return model_.RegisteredRendererNames();
+}
+
+template <typename T>
+vector<std::string> SceneGraph<T>::RegisteredRendererNames(
+    const Context<T>& context) const {
+  const auto& g_state = geometry_state(context);
+  return g_state.RegisteredRendererNames();
 }
 
 template <typename T>

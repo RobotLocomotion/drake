@@ -1,5 +1,5 @@
 load(
-    "@drake//tools/skylark:drake_cc.bzl",
+    "//tools/skylark:drake_cc.bzl",
     "drake_cc_binary",
     "drake_cc_googletest",
     "drake_cc_library",
@@ -36,6 +36,7 @@ drake_cc_library(
     interface_deps = [
         ":point_cloud_flags",
         "//common:essential",
+        "//common:parallelism",
     ],
     deps = [
         "//common:unused",

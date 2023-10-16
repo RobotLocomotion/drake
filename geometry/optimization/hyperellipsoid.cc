@@ -36,14 +36,14 @@ Hyperellipsoid::Hyperellipsoid()
 
 Hyperellipsoid::Hyperellipsoid(const Eigen::Ref<const MatrixXd>& A,
                                const Eigen::Ref<const VectorXd>& center)
-    : ConvexSet(center.size()), A_(A), center_(center) {
+    : ConvexSet(center.size(), true), A_(A), center_(center) {
   CheckInvariants();
 }
 
 Hyperellipsoid::Hyperellipsoid(const QueryObject<double>& query_object,
                                GeometryId geometry_id,
                                std::optional<FrameId> reference_frame)
-    : ConvexSet(3) {
+    : ConvexSet(3, true) {
   Eigen::Matrix3d A_G;
   query_object.inspector().GetShape(geometry_id).Reify(this, &A_G);
   // p_GG_varᵀ * A_Gᵀ * A_G * p_GG_var ≤ 1
@@ -61,7 +61,7 @@ Hyperellipsoid::Hyperellipsoid(const QueryObject<double>& query_object,
 }
 
 Hyperellipsoid::Hyperellipsoid(const AffineBall& ellipsoid)
-    : ConvexSet(ellipsoid.ambient_dimension()) {
+    : ConvexSet(ellipsoid.ambient_dimension(), true) {
   const auto B_QR = Eigen::ColPivHouseholderQR<MatrixXd>(ellipsoid.B());
   DRAKE_THROW_UNLESS(B_QR.isInvertible());
   center_ = ellipsoid.center();
@@ -90,17 +90,6 @@ double volume_of_unit_sphere(int dim) {
 }
 
 }  // namespace
-
-double Hyperellipsoid::Volume() const {
-  if (ambient_dimension() == 0) {
-    return 0.0;
-  }
-  if (A_.rows() < A_.cols()) {
-    return std::numeric_limits<double>::infinity();
-  }
-  // Note: this will (correctly) return infinity if the determinant is zero.
-  return volume_of_unit_sphere(ambient_dimension()) / A_.determinant();
-}
 
 std::pair<double, VectorXd> Hyperellipsoid::MinimumUniformScalingToTouch(
     const ConvexSet& other) const {
@@ -377,6 +366,17 @@ Hyperellipsoid::DoToShapeWithPose() const {
                                            1.0 / sqrt(solver.eigenvalues()[1]),
                                            1.0 / sqrt(solver.eigenvalues()[2]));
   return std::make_pair(std::move(shape), X_WG);
+}
+
+double Hyperellipsoid::DoCalcVolume() const {
+  if (ambient_dimension() == 0) {
+    return 0.0;
+  }
+  if (A_.rows() < A_.cols()) {
+    return std::numeric_limits<double>::infinity();
+  }
+  // Note: this will (correctly) return infinity if the determinant is zero.
+  return volume_of_unit_sphere(ambient_dimension()) / A_.determinant();
 }
 
 void Hyperellipsoid::CheckInvariants() const {

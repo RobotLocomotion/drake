@@ -8,4 +8,3 @@ template class MeshFieldLinear<AutoDiffXd, PolygonSurfaceMesh<AutoDiffXd>>;
 
 }  // namespace geometry
 }  // namespace drake
-

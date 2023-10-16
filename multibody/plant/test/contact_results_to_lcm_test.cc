@@ -271,15 +271,14 @@ class ContactResultsToLcmTest : public ::testing::Test {
    @param ref_name      A reference FullBodyName which has already defined
                         .geometry_count and .body_name_is_unique.
    @pre `model_index` is a valid model instance index. */
-  void AddBody(const std::string& body_name,
-                     ModelInstanceIndex model_index,
-                     const function<string(GeometryId)>& namer,
-                     MultibodyPlant<T>* plant, vector<string>* body_names,
-                     unordered_map<GeometryId, FullBodyName>* id_to_body,
-                     FullBodyName ref_name) {
+  void AddBody(const std::string& body_name, ModelInstanceIndex model_index,
+               const function<string(GeometryId)>& namer,
+               MultibodyPlant<T>* plant, vector<string>* body_names,
+               unordered_map<GeometryId, FullBodyName>* id_to_body,
+               FullBodyName ref_name) {
     // To avoid unnecessary warnings/errors, use a non-zero spatial inertia.
-    const auto& body = plant->AddRigidBody(body_name, model_index,
-        SpatialInertia<double>::MakeUnitary());
+    const auto& body = plant->AddRigidBody(
+        body_name, model_index, SpatialInertia<double>::MakeUnitary());
     /* The expected format based on knowledge of the ContactResultToLcmSystem's
      implementation. */
     body_names->push_back(fmt::format("{}({})", body_name, model_index));
@@ -851,8 +850,8 @@ class ConnectVisualizerTest : public ::testing::Test {
     scene_graph_ = &system_pair.scene_graph;
 
     // To avoid unnecessary warnings/errors, use a non-zero spatial inertia.
-    const auto& body = plant_->AddRigidBody("link",
-        SpatialInertia<double>::MakeUnitary());
+    const auto& body =
+        plant_->AddRigidBody("link", SpatialInertia<double>::MakeUnitary());
     plant_->RegisterCollisionGeometry(body, {}, Sphere(1.0), kGeoName,
                                       CoulombFriction<double>{});
     plant_->Finalize();

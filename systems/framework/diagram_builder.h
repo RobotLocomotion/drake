@@ -365,6 +365,8 @@ class DiagramBuilder {
 
   /// Declares that sole input port on the @p dest system is connected to sole
   /// output port on the @p src system.
+  /// This function ignores deprecated ports, unless there is only one port in
+  /// which case it will use the deprecated port.
   /// @note The connection created between @p src and @p dest via a call to
   /// this method can be effectively overridden by any subsequent call to
   /// InputPort::FixValue(). That is, calling InputPort::FixValue() on an
@@ -455,6 +457,14 @@ class DiagramBuilder {
   /// Returns true iff the given input @p port of a constituent system is either
   /// connected to another constituent system or exported as a diagram input.
   bool IsConnectedOrExported(const InputPort<T>& port) const;
+
+  /// Returns the current number of diagram input ports. The count may change
+  /// as more ports are exported.
+  int num_input_ports() const;
+
+  /// Returns the current number of diagram output outputs. The count may change
+  /// as more ports are exported.
+  int num_output_ports() const;
 
  private:
   // Declares a new input to the entire Diagram, using @p model_input to

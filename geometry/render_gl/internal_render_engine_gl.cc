@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <filesystem>
 #include <optional>
+#include <unordered_set>
 #include <utility>
 
 #include <fmt/format.h>
@@ -21,10 +22,11 @@ namespace internal {
 
 using Eigen::Vector2d;
 using Eigen::Vector3d;
-using geometry::internal::LoadRenderMeshFromObj;
+using geometry::internal::LoadRenderMeshesFromObj;
 using geometry::internal::MakeMeshFallbackMaterial;
 using geometry::internal::RenderMaterial;
 using geometry::internal::RenderMesh;
+using geometry::internal::UvState;
 using math::RigidTransformd;
 using render::ColorRenderCamera;
 using render::DepthRenderCamera;
@@ -34,6 +36,7 @@ using render::RenderEngine;
 using render::RenderLabel;
 using std::make_shared;
 using std::make_unique;
+using std::set;
 using std::shared_ptr;
 using std::string;
 using std::unique_ptr;
@@ -50,9 +53,6 @@ using systems::sensors::PixelType;
 namespace {
 
 namespace fs = std::filesystem;
-
-constexpr char kInternalGroup[] = "render_engine_gl_internal";
-constexpr char kHasTexCoordProperty[] = "has_tex_coord";
 
 // Data to pass through the reification process.
 struct RegistrationData {
@@ -456,17 +456,8 @@ class DefaultTextureColorShader final : public LightingShader {
 
     if (!texture_id.has_value()) return std::nullopt;
 
-    const bool has_tex_coord = properties.GetPropertyOrDefault(
-        kInternalGroup, kHasTexCoordProperty, RenderMesh::kHasTexCoordDefault);
-
-    if (!has_tex_coord) {
-      // TODO(eric.cousineau): How to carry mesh name along?
-      throw std::runtime_error(fmt::format(
-          "A mesh with no texture coordinates has erroneously defined the "
-          "property ('phong', 'diffuse_map') as {}. To use a diffuse texture "
-          "map, the mesh must have texture coordinates.",
-          file_name));
-    }
+    // In constructing the material with a texture map, the UVs have already
+    // been validated.
 
     const auto& scale = properties.GetPropertyOrDefault(
         "phong", "diffuse_scale", Vector2d(1, 1));
@@ -509,6 +500,8 @@ void main() {
   //  unsightly visual artifacts when a texture is supposed to exactly align
   //  with a triangle edge, but there are floating point errors in interpolation
   //  which cause the texture to be sampled on the other side.
+  // TODO(20234): To get parity with our other renderings, the diffuse *color*
+  // should modulate the texture for the final diffuse color.
   vec4 map_rgba = texture(diffuse_map, fract(tex_coord * diffuse_map_scale));
   color = GetIlluminatedColor(map_rgba);
 })""";
@@ -788,20 +781,20 @@ void RenderEngineGl::ImplementGeometry(const Box& box, void* user_data) {
 void RenderEngineGl::ImplementGeometry(const Capsule& capsule,
                                        void* user_data) {
   const int resolution = 50;
-  RenderMesh mesh_data =
+  RenderMesh render_mesh =
       MakeCapsule(resolution, capsule.radius(), capsule.length());
 
-  const int geometry = CreateGlGeometry(mesh_data);
+  const int geometry = CreateGlGeometry(render_mesh);
 
   AddGeometryInstance(geometry, user_data, Vector3d::Ones());
 }
 
 void RenderEngineGl::ImplementGeometry(const Convex& convex, void* user_data) {
   RegistrationData* data = static_cast<RegistrationData*>(user_data);
-  const int geometry = GetMesh(convex.filename(), data);
+  GetMeshes(convex.filename(), data);
   if (data->accepted) {
-    ImplementMesh(geometry, user_data, Vector3d(1, 1, 1) * convex.scale(),
-                  convex.filename());
+    ImplementMeshesForFile(user_data, Vector3d(1, 1, 1) * convex.scale(),
+                           convex.filename());
   }
 }
 
@@ -827,10 +820,10 @@ void RenderEngineGl::ImplementGeometry(const HalfSpace&, void* user_data) {
 
 void RenderEngineGl::ImplementGeometry(const Mesh& mesh, void* user_data) {
   RegistrationData* data = static_cast<RegistrationData*>(user_data);
-  const int geometry = GetMesh(mesh.filename(), data);
+  GetMeshes(mesh.filename(), data);
   if (data->accepted) {
-    ImplementMesh(geometry, user_data, Vector3d(1, 1, 1) * mesh.scale(),
-                  mesh.filename());
+    ImplementMeshesForFile(user_data, Vector3d(1, 1, 1) * mesh.scale(),
+                           mesh.filename());
   }
 }
 
@@ -856,32 +849,31 @@ void RenderEngineGl::InitGlState() {
   glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE);
 }
 
-void RenderEngineGl::ImplementMesh(int geometry_index, void* user_data,
-                                   const Vector3<double>& scale,
-                                   const std::string& filename_in) {
+void RenderEngineGl::ImplementMeshesForFile(void* user_data,
+                                            const Vector3<double>& scale,
+                                            const std::string& filename) {
   const RegistrationData& data = *static_cast<RegistrationData*>(user_data);
-  PerceptionProperties temp_props(data.properties);
+  const std::string file_key = GetPathKey(filename);
+  for (const auto& gl_mesh : meshes_.at(file_key)) {
+    PerceptionProperties temp_props(data.properties);
 
-  const OpenGlGeometry& geometry = geometries_[geometry_index];
-  temp_props.AddProperty(kInternalGroup, kHasTexCoordProperty,
-                         geometry.has_tex_coord);
-
-  const std::string file_key = GetPathKey(filename_in);
-  RenderMaterial material;
-  // If there is a material associated with the mesh, we will use it. Otherwise,
-  // we recreate the fallback material based on user data and defaults.
-  if (meshes_[file_key].mesh_material.has_value()) {
-    material = meshes_[file_key].mesh_material.value();
-  } else {
-    material = MakeMeshFallbackMaterial(data.properties, filename_in,
-                                        parameters_.default_diffuse,
-                                        drake::internal::DiagnosticPolicy());
+    RenderMaterial material;
+    // If there is a material associated with the mesh, we will use it.
+    // Otherwise, we recreate the fallback material based on user data and
+    // defaults.
+    if (gl_mesh.mesh_material.has_value()) {
+      material = gl_mesh.mesh_material.value();
+    } else {
+      material = MakeMeshFallbackMaterial(
+          data.properties, filename, parameters_.default_diffuse,
+          drake::internal::DiagnosticPolicy(), gl_mesh.uv_state);
+    }
+    temp_props.UpdateProperty("phong", "diffuse_map",
+                              material.diffuse_map.string());
+    temp_props.UpdateProperty("phong", "diffuse", material.diffuse);
+    RegistrationData temp_data{data.id, data.X_WG, temp_props};
+    AddGeometryInstance(gl_mesh.mesh_index, &temp_data, scale);
   }
-  temp_props.UpdateProperty("phong", "diffuse_map",
-                            material.diffuse_map.string());
-  temp_props.UpdateProperty("phong", "diffuse", material.diffuse);
-  RegistrationData temp_data{data.id, data.X_WG, temp_props};
-  AddGeometryInstance(geometry_index, &temp_data, scale);
 }
 
 bool RenderEngineGl::DoRegisterVisual(GeometryId id, const Shape& shape,
@@ -895,35 +887,44 @@ bool RenderEngineGl::DoRegisterVisual(GeometryId id, const Shape& shape,
 
 void RenderEngineGl::DoUpdateVisualPose(GeometryId id,
                                         const RigidTransformd& X_WG) {
-  visuals_.at(id).X_WG = X_WG;
+  for (auto& part : visuals_.at(id).parts) {
+    if (part.T_GN.has_value()) {
+      part.instance.X_WG = X_WG * part.T_GN.value();
+    } else {
+      part.instance.X_WG = X_WG;
+    }
+  }
 }
 
 bool RenderEngineGl::DoRemoveGeometry(GeometryId id) {
   auto iter = visuals_.find(id);
   if (iter != visuals_.end()) {
+    // Multiple parts may have the same shader. We don't want to attempt
+    // removing the geometry id from the corresponding family redundantly.
+    std::unordered_set<ShaderId> visited_families;
     // Remove from the shader families to which it belongs!
-    auto remove_from_family = [this](GeometryId g_id, const auto& shader_data,
-                                     RenderType render_type) {
-      const ShaderId s_id = shader_data[render_type].shader_id();
-      auto& geometries = shader_families_[render_type].at(s_id);
-      for (size_t i = 0; i < geometries.size(); ++i) {
-        if (geometries[i] == g_id) {
-          std::swap(geometries[i], geometries.back());
-          geometries.pop_back();
-          return;
-        }
-      }
-      DRAKE_UNREACHABLE();
-    };
-    const OpenGlInstance& instance = iter->second;
-    remove_from_family(id, instance.shader_data, RenderType::kColor);
-    remove_from_family(id, instance.shader_data, RenderType::kDepth);
-    remove_from_family(id, instance.shader_data, RenderType::kLabel);
+    auto maybe_remove_from_family =
+        [this, &visited_families](GeometryId g_id, const auto& shader_data,
+                                  RenderType render_type) {
+          const ShaderId s_id = shader_data[render_type].shader_id();
+          if (visited_families.count(s_id) > 0) {
+            return;
+          }
+          visited_families.insert(s_id);
+          auto& geometries = shader_families_[render_type].at(s_id);
+          auto num_removed = geometries.erase(g_id);
+          DRAKE_DEMAND(num_removed == 1);
+        };
+    for (const auto& part : iter->second.parts) {
+      const OpenGlInstance& instance = part.instance;
+      maybe_remove_from_family(id, instance.shader_data, RenderType::kColor);
+      maybe_remove_from_family(id, instance.shader_data, RenderType::kDepth);
+      maybe_remove_from_family(id, instance.shader_data, RenderType::kLabel);
+    }
     visuals_.erase(iter);
     return true;
-  } else {
-    return false;
   }
+  return false;
 }
 
 unique_ptr<RenderEngine> RenderEngineGl::DoClone() const {
@@ -968,20 +969,26 @@ void RenderEngineGl::RenderAt(const ShaderProgram& shader_program,
 
   for (const GeometryId& g_id :
        shader_families_.at(render_type).at(shader_program.shader_id())) {
-    const OpenGlInstance& instance = visuals_.at(g_id);
-    const OpenGlGeometry& geometry = geometries_[instance.geometry];
-    glBindVertexArray(geometry.vertex_array);
+    for (const auto& part : visuals_.at(g_id).parts) {
+      const OpenGlInstance& instance = part.instance;
+      if (instance.shader_data.at(render_type).shader_id() !=
+          shader_program.shader_id()) {
+        continue;
+      }
+      const OpenGlGeometry& geometry = geometries_[instance.geometry];
+      glBindVertexArray(geometry.vertex_array);
 
-    shader_program.SetInstanceParameters(instance.shader_data[render_type]);
-    // TODO(SeanCurtis-TRI): Consider storing the float-valued pose in the
-    //  OpenGl instance to avoid the conversion every time it is rendered.
-    //  Generally, this wouldn't expect much savings; an instance is only
-    //  rendered once per image type. So, for three image types, I'd cast three
-    //  times. Stored, I'd cast once.
-    shader_program.SetModelViewMatrix(X_CW, instance.X_WG, instance.scale);
+      shader_program.SetInstanceParameters(instance.shader_data[render_type]);
+      // TODO(SeanCurtis-TRI): Consider storing the float-valued pose in the
+      //  OpenGl instance to avoid the conversion every time it is rendered.
+      //  Generally, this wouldn't expect much savings; an instance is only
+      //  rendered once per image type. So, for three image types, I'd cast
+      //  three times. Stored, I'd cast once.
+      shader_program.SetModelViewMatrix(X_CW, instance.X_WG, instance.scale);
 
-    glDrawElements(GL_TRIANGLES, geometry.index_buffer_size, GL_UNSIGNED_INT,
-                   0);
+      glDrawElements(GL_TRIANGLES, geometry.index_buffer_size, GL_UNSIGNED_INT,
+                     0);
+    }
   }
   // Unbind the vertex array back to the default of 0.
   glBindVertexArray(0);
@@ -1119,16 +1126,14 @@ void RenderEngineGl::AddGeometryInstance(int geometry_index, void* user_data,
   DRAKE_DEMAND(color_data.has_value() && depth_data.has_value() &&
                label_data.has_value());
 
-  visuals_.emplace(data.id,
-                   OpenGlInstance(geometry_index, data.X_WG, scale, *color_data,
-                                  *depth_data, *label_data));
+  visuals_[data.id].parts.push_back(
+      {.instance = OpenGlInstance(geometry_index, data.X_WG, scale, *color_data,
+                                  *depth_data, *label_data),
+       .T_GN = std::nullopt});
 
-  shader_families_[RenderType::kColor][color_data->shader_id()].push_back(
-      data.id);
-  shader_families_[RenderType::kDepth][depth_data->shader_id()].push_back(
-      data.id);
-  shader_families_[RenderType::kLabel][label_data->shader_id()].push_back(
-      data.id);
+  shader_families_[RenderType::kColor][color_data->shader_id()].insert(data.id);
+  shader_families_[RenderType::kDepth][depth_data->shader_id()].insert(data.id);
+  shader_families_[RenderType::kLabel][label_data->shader_id()].insert(data.id);
 }
 
 int RenderEngineGl::GetSphere() {
@@ -1136,10 +1141,10 @@ int RenderEngineGl::GetSphere() {
     const int kLatitudeBands = 50;
     const int kLongitudeBands = 50;
 
-    RenderMesh mesh_data =
+    RenderMesh render_mesh =
         MakeLongLatUnitSphere(kLongitudeBands, kLatitudeBands);
 
-    sphere_ = CreateGlGeometry(mesh_data);
+    sphere_ = CreateGlGeometry(render_mesh);
   }
 
   geometries_[sphere_].throw_if_undefined(
@@ -1154,8 +1159,8 @@ int RenderEngineGl::GetCylinder() {
 
     // For long skinny cylinders, it would be better to offer some subdivisions
     // along the length. For now, we'll simply save the triangles.
-    RenderMesh mesh_data = MakeUnitCylinder(kLongitudeBands, 1);
-    cylinder_ = CreateGlGeometry(mesh_data);
+    RenderMesh render_mesh = MakeUnitCylinder(kLongitudeBands, 1);
+    cylinder_ = CreateGlGeometry(render_mesh);
   }
 
   geometries_[cylinder_].throw_if_undefined(
@@ -1172,8 +1177,8 @@ int RenderEngineGl::GetHalfSpace() {
     // TODO(SeanCurtis-TRI): For vertex-lighting (as opposed to fragment
     //  lighting), this will render better with tighter resolution. Consider
     //  making this configurable.
-    RenderMesh mesh_data = MakeSquarePatch(kMeasure, 1);
-    half_space_ = CreateGlGeometry(mesh_data);
+    RenderMesh render_mesh = MakeSquarePatch(kMeasure, 1);
+    half_space_ = CreateGlGeometry(render_mesh);
   }
 
   geometries_[half_space_].throw_if_undefined(
@@ -1184,8 +1189,8 @@ int RenderEngineGl::GetHalfSpace() {
 
 int RenderEngineGl::GetBox() {
   if (box_ < 0) {
-    RenderMesh mesh_data = MakeUnitBox();
-    box_ = CreateGlGeometry(mesh_data);
+    RenderMesh render_mesh = MakeUnitBox();
+    box_ = CreateGlGeometry(render_mesh);
   }
 
   geometries_[box_].throw_if_undefined("Built-in box has some invalid objects");
@@ -1193,8 +1198,9 @@ int RenderEngineGl::GetBox() {
   return box_;
 }
 
-int RenderEngineGl::GetMesh(const string& filename_in, RegistrationData* data) {
-  int mesh_index = -1;
+vector<int> RenderEngineGl::GetMeshes(const string& filename_in,
+                                      RegistrationData* data) {
+  vector<int> mesh_indices;
 
   // We're checking the input filename in case the user specified name has the
   // desired extension but is a symlink to some arbitrarily named cached file.
@@ -1204,32 +1210,45 @@ int RenderEngineGl::GetMesh(const string& filename_in, RegistrationData* data) {
         ".obj files. Mesh specifications using other mesh types (e.g., "
         ".gltf, .stl, .dae, etc.) will be ignored.");
     data->accepted = false;
-    return -1;
+    return mesh_indices;
   }
 
   const std::string file_key = GetPathKey(filename_in);
+
   if (meshes_.count(file_key) == 0) {
-    const RenderMesh mesh_data = LoadRenderMeshFromObj(
+    const vector<RenderMesh> meshes = LoadRenderMeshesFromObj(
         filename_in, PerceptionProperties(), parameters_.default_diffuse,
         drake::internal::DiagnosticPolicy());
-    mesh_index = CreateGlGeometry(mesh_data);
-    const RenderMaterial material = mesh_data.material;
+    vector<RenderGlMesh> file_meshes;
+    for (const auto& render_mesh : meshes) {
+      int mesh_index = CreateGlGeometry(render_mesh);
+      DRAKE_DEMAND(mesh_index >= 0);
+      const RenderMaterial& material = render_mesh.material;
 
-    meshes_.insert({file_key, {.mesh_index = mesh_index}});
-    // We will also update RenderGlMesh's `mesh_material` if the material is
-    // defined by the mesh itself. By that, the material will be used every time
-    // the mesh is instantiated.
-    if (material.from_mesh_file) {
-      meshes_[file_key].mesh_material = material;
+      file_meshes.push_back(
+          {.mesh_index = mesh_index, .uv_state = render_mesh.uv_state});
+      // If the material in render_mesh was defined by the file, we store it
+      // with the RenderGlMesh (so it's used for every instance). Otherwise, we
+      // leave it undefined so instance properties will define the material
+      // instead.
+      if (material.from_mesh_file) {
+        file_meshes.back().mesh_material = material;
+      }
+      mesh_indices.push_back(mesh_index);
     }
+    meshes_[file_key] = std::move(file_meshes);
   } else {
-    mesh_index = meshes_[file_key].mesh_index;
+    for (const auto& gl_mesh : meshes_[file_key]) {
+      mesh_indices.push_back(gl_mesh.mesh_index);
+    }
   }
 
-  geometries_[mesh_index].throw_if_undefined(
-      fmt::format("Error creating object for mesh {}", filename_in).c_str());
+  for (const auto& index : mesh_indices) {
+    geometries_[index].throw_if_undefined(
+        fmt::format("Error creating object for mesh {}", filename_in).c_str());
+  }
 
-  return mesh_index;
+  return mesh_indices;
 }
 
 std::tuple<GLint, GLenum, GLenum> RenderEngineGl::get_texture_format(
@@ -1337,7 +1356,7 @@ RenderTarget RenderEngineGl::GetRenderTarget(const RenderCameraCore& camera,
   return target;
 }
 
-int RenderEngineGl::CreateGlGeometry(const RenderMesh& mesh_data) {
+int RenderEngineGl::CreateGlGeometry(const RenderMesh& render_mesh) {
   // Confirm that the context is allocated.
   DRAKE_ASSERT(opengl_context_->IsCurrent());
 
@@ -1349,9 +1368,9 @@ int RenderEngineGl::CreateGlGeometry(const RenderMesh& mesh_data) {
   // We're representing the vertex data as a concatenation of positions,
   // normals, and texture coordinates (i.e., (VVVNNNUU)). There should be an
   // equal number of vertices, normals, and texture coordinates.
-  DRAKE_DEMAND(mesh_data.positions.rows() == mesh_data.normals.rows());
-  DRAKE_DEMAND(mesh_data.positions.rows() == mesh_data.uvs.rows());
-  const int v_count = mesh_data.positions.rows();
+  DRAKE_DEMAND(render_mesh.positions.rows() == render_mesh.normals.rows());
+  DRAKE_DEMAND(render_mesh.positions.rows() == render_mesh.uvs.rows());
+  const int v_count = render_mesh.positions.rows();
   vector<GLfloat> vertex_data;
   // 3 floats each for position and normal, 2 for texture coordinates.
   const int kFloatsPerPosition = 3;
@@ -1361,28 +1380,27 @@ int RenderEngineGl::CreateGlGeometry(const RenderMesh& mesh_data) {
                       (kFloatsPerPosition + kFloatsPerNormal + kFloatsPerUv));
   // N.B. we are implicitly converting from double to float by inserting them
   // into the vector.
-  vertex_data.insert(vertex_data.end(), mesh_data.positions.data(),
-                     mesh_data.positions.data() + v_count * kFloatsPerPosition);
-  vertex_data.insert(vertex_data.end(), mesh_data.normals.data(),
-                     mesh_data.normals.data() + v_count * kFloatsPerNormal);
-  vertex_data.insert(vertex_data.end(), mesh_data.uvs.data(),
-                     mesh_data.uvs.data() + v_count * kFloatsPerUv);
+  vertex_data.insert(
+      vertex_data.end(), render_mesh.positions.data(),
+      render_mesh.positions.data() + v_count * kFloatsPerPosition);
+  vertex_data.insert(vertex_data.end(), render_mesh.normals.data(),
+                     render_mesh.normals.data() + v_count * kFloatsPerNormal);
+  vertex_data.insert(vertex_data.end(), render_mesh.uvs.data(),
+                     render_mesh.uvs.data() + v_count * kFloatsPerUv);
   glNamedBufferStorage(geometry.vertex_buffer,
                        vertex_data.size() * sizeof(GLfloat), vertex_data.data(),
                        0);
 
   // Create the index buffer object (IBO).
-  using indices_uint_t = decltype(mesh_data.indices)::Scalar;
+  using indices_uint_t = decltype(render_mesh.indices)::Scalar;
   static_assert(sizeof(GLuint) == sizeof(indices_uint_t),
                 "If this fails, cast from unsigned int to GLuint");
   glCreateBuffers(1, &geometry.index_buffer);
   glNamedBufferStorage(geometry.index_buffer,
-                       mesh_data.indices.size() * sizeof(GLuint),
-                       mesh_data.indices.data(), 0);
+                       render_mesh.indices.size() * sizeof(GLuint),
+                       render_mesh.indices.data(), 0);
 
-  geometry.index_buffer_size = mesh_data.indices.size();
-
-  geometry.has_tex_coord = mesh_data.has_tex_coord;
+  geometry.index_buffer_size = render_mesh.indices.size();
 
   geometry.v_count = v_count;
   CreateVertexArray(&geometry);
@@ -1482,7 +1500,7 @@ void RenderEngineGl::SetWindowVisibility(const RenderCameraCore& camera,
 ShaderId RenderEngineGl::AddShader(std::unique_ptr<ShaderProgram> program,
                                    RenderType render_type) {
   const ShaderId shader_id = program->shader_id();
-  shader_families_[render_type].insert({shader_id, vector<GeometryId>()});
+  shader_families_[render_type].insert({shader_id, set<GeometryId>()});
   shader_programs_[render_type][shader_id] = std::move(program);
   return shader_id;
 }

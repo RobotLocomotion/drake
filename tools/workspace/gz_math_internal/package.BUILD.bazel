@@ -12,14 +12,8 @@ load(
     "@drake//tools/workspace:check_lists_consistency.bzl",
     "check_lists_consistency",
 )
-load(
-    "@drake//tools/install:install.bzl",
-    "install",
-)
-load(
-    "@drake//tools/workspace:vendor_cxx.bzl",
-    "cc_library_vendored",
-)
+load("@drake//tools/install:install.bzl", "install")
+load("@drake//tools/workspace:vendor_cxx.bzl", "cc_library_vendored")
 load("@drake//tools/workspace:generate_file.bzl", "generate_file")
 
 licenses(["notice"])  # Apache-2.0
@@ -82,6 +76,7 @@ _MOST_HDRS = [
     "include/gz/math/Matrix3.hh",
     "include/gz/math/Matrix4.hh",
     "include/gz/math/Matrix6.hh",
+    "include/gz/math/MecanumDriveOdometry.hh",
     "include/gz/math/MovingWindowFilter.hh",
     "include/gz/math/OrientedBox.hh",
     "include/gz/math/PID.hh",
@@ -162,6 +157,7 @@ check_lists_consistency(
         "include/ignition/math/Matrix3.hh",
         "include/ignition/math/Matrix4.hh",
         "include/ignition/math/Matrix6.hh",
+        "include/ignition/math/MecanumDriveOdometry.hh",
         "include/ignition/math/MovingWindowFilter.hh",
         "include/ignition/math/OrientedBox.hh",
         "include/ignition/math/PID.hh",
@@ -224,6 +220,7 @@ _SRCS = [
     "src/Helpers.cc",
     "src/Kmeans.cc",
     "src/Material.cc",
+    "src/MecanumDriveOdometry.cc",
     "src/MovingWindowFilter.cc",
     "src/PID.cc",
     "src/Rand.cc",

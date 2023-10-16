@@ -12,6 +12,7 @@ import numpy as np
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common import RandomGenerator
 from pydrake.common.test_utilities import numpy_compare
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.value import AbstractValue, Value
 from pydrake.examples import PendulumPlant, RimlessWheel
 from pydrake.symbolic import Expression
@@ -844,8 +845,8 @@ class TestGeneral(unittest.TestCase):
     def test_generate_html(self):
         system = ZeroOrderHold(period_sec=0.1, vector_size=1)
         system.set_name("zoh")
-        html = GenerateHtml(system, initial_depth=2)
-        self.assertRegex(html, r'key: "zoh"')
+        with catch_drake_warnings(expected_count=1):
+            GenerateHtml(system, initial_depth=2)
 
     def test_diagram_builder_remove(self):
         builder = DiagramBuilder()
@@ -875,19 +876,29 @@ class TestGeneral(unittest.TestCase):
                              input=adder.get_input_port(5))
         builder.ConnectToSame(exemplar=adder.get_input_port(2),
                               dest=adder.get_input_port(6))
-
         diagram = builder.Build()
-        diagram.set_name("fan_out_diagram")
-        graph = diagram.GetGraphvizString()
 
         # Check the desired input topology is in the graph.
-        self.assertRegex(graph, "_u0 -> .*:u0")
-        self.assertRegex(graph, "_u1 -> .*:u1")
-        self.assertRegex(graph, "_u0 -> .*:u2")
-        self.assertRegex(graph, "_u1 -> .*:u3")
-        self.assertRegex(graph, "_u0 -> .*:u4")
-        self.assertRegex(graph, "_u1 -> .*:u5")
-        self.assertRegex(graph, "_u0 -> .*:u6")
+        graph = diagram.GetGraphvizString()
+        self.assertRegex(graph, ":0:e -> .*:u0:w")
+        self.assertRegex(graph, ":1:e -> .*:u1:w")
+        self.assertRegex(graph, ":0:e -> .*:u2:w")
+        self.assertRegex(graph, ":1:e -> .*:u3:w")
+        self.assertRegex(graph, ":0:e -> .*:u4:w")
+        self.assertRegex(graph, ":1:e -> .*:u5:w")
+        self.assertRegex(graph, ":0:e -> .*:u6:w")
+
+        # Check that fragment struct is a subset of the whole graph.
+        fragment_struct = diagram.GetGraphvizFragment()
+        self.assertEqual(len(fragment_struct.input_ports), 2)
+        self.assertEqual(len(fragment_struct.output_ports), 1)
+        fragment_text = "".join(fragment_struct.fragments)
+        self.assertGreater(len(fragment_text), 0)
+        self.assertIn(fragment_text, graph)
+
+        # Check that max_depth has an effect.
+        small_graph = diagram.GetGraphvizString(max_depth=0)
+        self.assertLess(len(small_graph), len(graph))
 
     def test_diagram_api(self):
         def make_diagram():
@@ -902,6 +913,8 @@ class TestGeneral(unittest.TestCase):
             builder.ExportInput(adder1.get_input_port(0), "in0")
             builder.ExportInput(adder1.get_input_port(1), "in1")
             builder.ExportOutput(adder2.get_output_port(), "out")
+            self.assertEqual(builder.num_input_ports(), 2)
+            self.assertEqual(builder.num_output_ports(), 1)
             self.assertTrue(builder.HasSubsystemNamed("adder1"))
             builder.GetSubsystemByName(name="adder1")
             builder.GetMutableSubsystemByName(name="adder2")

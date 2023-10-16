@@ -15,17 +15,20 @@ namespace geometry {
 namespace optimization {
 
 using Eigen::MatrixXd;
+using Eigen::Vector2d;
 using Eigen::Vector3d;
 using Eigen::Vector4d;
 using Eigen::VectorXd;
 using internal::CheckAddPointInSetConstraints;
+using std::sqrt;
 
 GTEST_TEST(AffineBallTest, DefaultCtor) {
   const AffineBall dut;
   EXPECT_EQ(dut.B().rows(), 0);
   EXPECT_EQ(dut.B().cols(), 0);
   EXPECT_EQ(dut.center().size(), 0);
-  EXPECT_EQ(dut.Volume(), 0.0);
+  EXPECT_TRUE(dut.has_exact_volume());
+  EXPECT_THROW(dut.CalcVolume(), std::exception);
   EXPECT_NO_THROW(dut.Clone());
   EXPECT_EQ(dut.ambient_dimension(), 0);
   EXPECT_TRUE(dut.IntersectsWith(dut));
@@ -107,7 +110,7 @@ GTEST_TEST(AffineBallTest, UnitBall6DTest) {
   ASSERT_TRUE(ab.MaybeGetFeasiblePoint().has_value());
   EXPECT_TRUE(ab.PointInSet(ab.MaybeGetFeasiblePoint().value()));
 
-  EXPECT_EQ(ab.Volume(), std::pow(M_PI, 3) / 6);
+  EXPECT_EQ(ab.CalcVolume(), std::pow(M_PI, 3) / 6);
 }
 
 GTEST_TEST(AffineBallTest, CloneTest) {
@@ -124,7 +127,10 @@ GTEST_TEST(AffineBallTest, MakeUnitBallTest) {
   AffineBall ab = AffineBall::MakeUnitBall(4);
   EXPECT_TRUE(CompareMatrices(ab.B(), MatrixXd::Identity(4, 4)));
   EXPECT_TRUE(CompareMatrices(ab.center(), VectorXd::Zero(4)));
-  EXPECT_EQ(ab.Volume(), 0.5 * std::pow(M_PI, 2));
+  EXPECT_EQ(ab.CalcVolume(), 0.5 * std::pow(M_PI, 2));
+
+  EXPECT_NO_THROW(AffineBall::MakeUnitBall(0));
+  EXPECT_THROW(AffineBall::MakeUnitBall(-1), std::exception);
 }
 
 GTEST_TEST(AffineBallTest, MakeHypersphereTest) {
@@ -134,9 +140,15 @@ GTEST_TEST(AffineBallTest, MakeHypersphereTest) {
   AffineBall ab = AffineBall::MakeHypersphere(kRadius, center);
   EXPECT_TRUE(CompareMatrices(ab.B(), MatrixXd::Identity(4, 4) * kRadius));
   EXPECT_TRUE(CompareMatrices(ab.center(), center));
-  const Vector4d xvec = Eigen::MatrixXd::Identity(4, 1);
-  EXPECT_TRUE(ab.PointInSet(center + kRadius * xvec, 1e-16));
-  EXPECT_FALSE(ab.PointInSet(center + 1.1 * kRadius * xvec, 1e-16));
+
+  EXPECT_NO_THROW(AffineBall::MakeHypersphere(kRadius, VectorXd::Zero(2)));
+  EXPECT_NO_THROW(AffineBall::MakeHypersphere(kRadius, VectorXd::Zero(0)));
+  EXPECT_NO_THROW(AffineBall::MakeHypersphere(0, VectorXd::Zero(2)));
+  EXPECT_NO_THROW(AffineBall::MakeHypersphere(0, VectorXd::Zero(0)));
+  EXPECT_THROW(AffineBall::MakeHypersphere(-1, VectorXd::Zero(2)),
+               std::exception);
+  EXPECT_THROW(AffineBall::MakeHypersphere(-1, VectorXd::Zero(0)),
+               std::exception);
 }
 
 GTEST_TEST(AffineBallTest, MakeAxisAlignedTest) {
@@ -145,28 +157,76 @@ GTEST_TEST(AffineBallTest, MakeAxisAlignedTest) {
   AffineBall ab = AffineBall::MakeAxisAligned(Vector3d{a, b, c}, center);
   EXPECT_EQ(ab.ambient_dimension(), 3);
 
-  EXPECT_TRUE(ab.PointInSet(center + Vector3d(0, 0, 0)));
-  EXPECT_TRUE(ab.PointInSet(center + Vector3d(a, 0, 0)));
-  EXPECT_TRUE(ab.PointInSet(center + Vector3d(-a, 0, 0)));
-  EXPECT_TRUE(ab.PointInSet(center + Vector3d(0, b, 0)));
-  EXPECT_TRUE(ab.PointInSet(center + Vector3d(0, -b, 0)));
-  EXPECT_TRUE(ab.PointInSet(center + Vector3d(0, 0, c)));
-  EXPECT_TRUE(ab.PointInSet(center + Vector3d(0, 0, -c)));
+  Eigen::MatrixXd B_expected(3, 3);
+  // clang-format off
+  B_expected << a, 0, 0,
+                0, b, 0,
+                0, 0, c;
+  // clang-format on
+  EXPECT_TRUE(CompareMatrices(ab.B(), B_expected));
+  EXPECT_TRUE(CompareMatrices(ab.center(), center));
 
-  EXPECT_FALSE(ab.PointInSet(center + Vector3d(a, b, 0)));
-  EXPECT_FALSE(ab.PointInSet(center + Vector3d(a, -b, 0)));
-  EXPECT_FALSE(ab.PointInSet(center + Vector3d(-a, b, 0)));
-  EXPECT_FALSE(ab.PointInSet(center + Vector3d(-a, -b, 0)));
-  EXPECT_FALSE(ab.PointInSet(center + Vector3d(a, 0, c)));
-  EXPECT_FALSE(ab.PointInSet(center + Vector3d(a, 0, -c)));
-  EXPECT_FALSE(ab.PointInSet(center + Vector3d(-a, 0, c)));
-  EXPECT_FALSE(ab.PointInSet(center + Vector3d(-a, 0, -c)));
-  EXPECT_FALSE(ab.PointInSet(center + Vector3d(0, b, c)));
-  EXPECT_FALSE(ab.PointInSet(center + Vector3d(0, -b, c)));
-  EXPECT_FALSE(ab.PointInSet(center + Vector3d(0, b, -c)));
-  EXPECT_FALSE(ab.PointInSet(center + Vector3d(0, -b, -c)));
+  EXPECT_NO_THROW(
+      AffineBall::MakeAxisAligned(VectorXd::Zero(0), VectorXd::Zero(0)));
+  EXPECT_THROW(
+      AffineBall::MakeAxisAligned(VectorXd::Zero(0), VectorXd::Zero(1)),
+      std::exception);
+  EXPECT_THROW(
+      AffineBall::MakeAxisAligned(VectorXd::Zero(1), VectorXd::Zero(0)),
+      std::exception);
+  EXPECT_THROW(AffineBall::MakeAxisAligned(Vector2d(-1, 1), VectorXd::Zero(2)),
+               std::exception);
+}
 
-  EXPECT_EQ(ab.Volume(), a * b * c * 4 * M_PI / 3);
+GTEST_TEST(AffineBallTest, NotAxisAligned) {
+  // Tests an example of an ellipsoid whose principal axes are
+  // not aligned with the coordinate axes.
+  const double one_over_sqrt_two = 1 / sqrt(2);
+  // Construct B1 to rotate by 45 degrees, and double the length
+  // of one axis.
+  Eigen::Matrix2d B1;
+  // clang-format off
+  B1 << 2 * one_over_sqrt_two, -1 * one_over_sqrt_two,
+        2 * one_over_sqrt_two,     one_over_sqrt_two;
+  // clang-format on
+  Eigen::Vector2d center(1, 1);
+  AffineBall ab1(B1, center);
+
+  EXPECT_FALSE(ab1.MaybeGetPoint().has_value());
+  ASSERT_TRUE(ab1.MaybeGetFeasiblePoint().has_value());
+  EXPECT_TRUE(ab1.PointInSet(ab1.MaybeGetFeasiblePoint().value()));
+
+  const double kTol = 1e-12;
+  EXPECT_NEAR(ab1.CalcVolume(), M_PI * 2, kTol);
+  // This point would be in the set if it wasn't rotated properly.
+  EXPECT_FALSE(ab1.PointInSet(Vector2d{3, 1}, kTol));
+  // With the rotation, this point should be in the set.
+  EXPECT_TRUE(ab1.PointInSet(
+      center + Vector2d{2 * one_over_sqrt_two, 2 * one_over_sqrt_two}, kTol));
+
+  // Same as B1, but one of the axes is dropped. This makes it just a line
+  // segment from (1-2/sqrt(2), 1-2/sqrt(2)) to (1+2/sqrt(2), 1+2/sqrt(2)).
+  Eigen::Matrix2d B2;
+  // clang-format off
+  B2 << 2 * one_over_sqrt_two, 0,
+        2 * one_over_sqrt_two, 0;
+  // clang-format on
+  AffineBall ab2(B2, center);
+
+  EXPECT_FALSE(ab2.MaybeGetPoint().has_value());
+  ASSERT_TRUE(ab2.MaybeGetFeasiblePoint().has_value());
+  EXPECT_TRUE(ab2.PointInSet(ab2.MaybeGetFeasiblePoint().value(), kTol));
+
+  EXPECT_EQ(ab2.CalcVolume(), 0);
+
+  EXPECT_TRUE(ab2.PointInSet(
+      center + Vector2d{2 * one_over_sqrt_two, 2 * one_over_sqrt_two}, kTol));
+  EXPECT_TRUE(ab2.PointInSet(
+      center - Vector2d{2 * one_over_sqrt_two, 2 * one_over_sqrt_two}, kTol));
+  EXPECT_FALSE(ab2.PointInSet(center + Vector2d{kTol * 2, 0}, kTol));
+  EXPECT_FALSE(ab2.PointInSet(center + Vector2d{-kTol * 2, 0}, kTol));
+  EXPECT_FALSE(ab2.PointInSet(center + Vector2d{0, kTol * 2}, kTol));
+  EXPECT_FALSE(ab2.PointInSet(center + Vector2d{0, -kTol * 2}, kTol));
 }
 
 GTEST_TEST(AffineBallTest, LowerDimensionalEllipsoids) {
@@ -179,6 +239,11 @@ GTEST_TEST(AffineBallTest, LowerDimensionalEllipsoids) {
   AffineBall ab1 = AffineBall::MakeAxisAligned(Vector3d{0, 0, c}, center);
   AffineBall ab2 = AffineBall::MakeAxisAligned(Vector3d{0, b, c}, center);
   AffineBall ab3 = AffineBall::MakeAxisAligned(Vector3d{a, b, c}, center);
+
+  EXPECT_EQ(ab0.CalcVolume(), 0);
+  EXPECT_EQ(ab1.CalcVolume(), 0);
+  EXPECT_EQ(ab2.CalcVolume(), 0);
+  EXPECT_EQ(ab3.CalcVolume(), a * b * c * 4 * M_PI / 3);
 
   AffineSubspace as0(ab0, kAffineHullTol);
   AffineSubspace as1(ab1, kAffineHullTol);

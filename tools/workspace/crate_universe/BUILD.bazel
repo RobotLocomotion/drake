@@ -1,0 +1,19 @@
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load("@rules_rust//crate_universe:defs.bzl", "crates_vendor")
+
+exports_files(glob(["lock/**"]))
+
+# This is a maintainer-only tool for Drake Developers to manage our Rust
+# dependencies. See README.md for instructions on how to run `upgrade.sh`.
+crates_vendor(
+    name = "crate",
+    cargo_lockfile = ":lock/Cargo.toml.lock",
+    manifests = [
+        "@clarabel_cpp_internal//:rust_wrapper/Cargo.toml",
+    ],
+    mode = "remote",
+    tags = ["manual"],
+    vendor_path = "lock/details",
+)
+
+add_lint_tests()

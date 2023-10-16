@@ -18,7 +18,7 @@ using ScalarTypes = ::testing::Types<double, AutoDiffXd>;
 TYPED_TEST_SUITE(MakeVolumeMeshPressureFieldTest, ScalarTypes);
 
 template <typename T>
- class MakeVolumeMeshPressureFieldTest : public ::testing::Test {};
+class MakeVolumeMeshPressureFieldTest : public ::testing::Test {};
 
 // Tests that we can make a pressure field from a non-convex tetrahedral mesh.
 TYPED_TEST(MakeVolumeMeshPressureFieldTest, PressureOnNonConvexMesh) {

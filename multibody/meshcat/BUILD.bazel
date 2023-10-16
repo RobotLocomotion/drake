@@ -1,5 +1,5 @@
 load(
-    "@drake//tools/skylark:drake_cc.bzl",
+    "//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
     "drake_cc_library",
     "drake_cc_package_library",
@@ -37,6 +37,7 @@ drake_cc_library(
         ":point_contact_visualizer",
         "//common:essential",
         "//geometry:meshcat",
+        "//geometry:meshcat_graphviz",
         "//math:geometric_transform",
         "//multibody/plant",
         "//systems/framework:context",
@@ -85,6 +86,7 @@ drake_cc_library(
     deps = [
         "//common:scope_exit",
         "//geometry:meshcat",
+        "//geometry:meshcat_graphviz",
         "//multibody/plant",
     ],
 )

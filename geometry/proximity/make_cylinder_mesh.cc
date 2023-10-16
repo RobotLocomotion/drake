@@ -270,12 +270,10 @@ std::vector<VolumeElement> CalcShortCylinderVolumeMeshWithMa(
   const double scale_cylinder_radius_to_medial_circle =
       medial_radius / cylinder.radius();
   for (int i = 0; i < num_vertices_per_circle; ++i) {
-    const double x =
-        ExtractDoubleOrThrow(mesh_vertices->at(bottom[i]).x()) *
-        scale_cylinder_radius_to_medial_circle;
-    const double y =
-        ExtractDoubleOrThrow(mesh_vertices->at(bottom[i]).y()) *
-        scale_cylinder_radius_to_medial_circle;
+    const double x = ExtractDoubleOrThrow(mesh_vertices->at(bottom[i]).x()) *
+                     scale_cylinder_radius_to_medial_circle;
+    const double y = ExtractDoubleOrThrow(mesh_vertices->at(bottom[i]).y()) *
+                     scale_cylinder_radius_to_medial_circle;
     medial[i] = static_cast<int>(mesh_vertices->size());
     mesh_vertices->emplace_back(x, y, 0);
   }
@@ -425,9 +423,8 @@ VolumeMesh<T> MakeCylinderVolumeMeshWithMa(const Cylinder& cylinder,
   return {std::move(mesh_elements), std::move(mesh_vertices)};
 }
 
-DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS((
-    &MakeCylinderVolumeMeshWithMa<T>
-))
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    (&MakeCylinderVolumeMeshWithMa<T>))
 
 }  // namespace internal
 }  // namespace geometry

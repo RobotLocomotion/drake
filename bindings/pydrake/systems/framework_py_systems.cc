@@ -48,7 +48,13 @@ using systems::WitnessFunction;
 
 class SystemBasePublic : public SystemBase {
  public:
+  // This class is only used to expose some protected types.
+  // It is never instantiated.
+  SystemBasePublic() = delete;
+
   using SystemBase::DeclareCacheEntry;
+  using SystemBase::DoGetGraphvizFragment;
+  using SystemBase::GraphvizFragmentParams;
 };
 
 // Provides a templated 'namespace'.
@@ -88,9 +94,7 @@ struct Impl {
     using Base::DeclareDiscreteState;
     using Base::DeclareInitializationEvent;
     using Base::DeclareNumericParameter;
-    using Base::DeclarePeriodicDiscreteUpdateNoHandler;
     using Base::DeclarePeriodicEvent;
-    using Base::DeclarePeriodicPublishNoHandler;
     using Base::DeclarePeriodicUnrestrictedUpdateEvent;
     using Base::DeclarePerStepEvent;
     using Base::DeclareStateOutputPort;
@@ -101,13 +105,17 @@ struct Impl {
     using Base::get_mutable_forced_unrestricted_update_events;
     using Base::MakeWitnessFunction;
 
-    // Because `LeafSystem<T>::DoPublish` is protected, and we had to override
-    // this method in `PyLeafSystem`, expose the method here for direct(-ish)
-    // access.
-    // (Otherwise, we get an error about inaccessible downcasting when trying to
-    // bind `PyLeafSystem::DoPublish` to `py::class_<LeafSystem<T>, ...>`.
-    using Base::DoCalcDiscreteVariableUpdates;
+    // Because `LeafSystem<T>::DoCalcTimeDerivatives` is protected, and we had
+    // to override this method in `PyLeafSystem`, expose the method here for
+    // direct(-ish) access. (Otherwise, we get an error about inaccessible
+    // downcasting when trying to bind `PyLeafSystem::DoCalcTimeDerivatives` to
+    // `py::class_<LeafSystem<T>, ...>`.
     using Base::DoCalcTimeDerivatives;
+
+    // To be removed with deprecation on 2024-02-01.
+    using Base::DeclarePeriodicDiscreteUpdateNoHandler;
+    using Base::DeclarePeriodicPublishNoHandler;
+    using Base::DoCalcDiscreteVariableUpdates;
     using Base::DoPublish;
   };
 
@@ -122,41 +130,40 @@ struct Impl {
 
     // Trampoline virtual methods.
 
-    // TODO(sherm): This overload should be deprecated and removed; the
-    // preferred workflow is to register callbacks with Declare*PublishEvent.
     void DoPublish(const Context<T>& context,
         const vector<const PublishEvent<T>*>& events) const override {
+      PYBIND11_OVERLOAD_INT(void, LeafSystem<T>, "DoPublish", &context, events);
+      // If the macro did not return, use default functionality.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+      Base::DoPublish(context, events);
+#pragma GCC diagnostic pop
+    }
+
+    void DoCalcTimeDerivatives(const Context<T>& context,
+        ContinuousState<T>* derivatives) const override {
       // Yuck! We have to dig in and use internals :(
       // We must ensure that pybind only sees pointers, since this method may
       // be called from C++, and pybind will not have seen these objects yet.
       // @see https://github.com/pybind/pybind11/issues/1241
       // TODO(eric.cousineau): Figure out how to supply different behavior,
       // possibly using function wrapping.
-      PYBIND11_OVERLOAD_INT(void, LeafSystem<T>, "DoPublish", &context, events);
-      // If the macro did not return, use default functionality.
-      Base::DoPublish(context, events);
-    }
-
-    void DoCalcTimeDerivatives(const Context<T>& context,
-        ContinuousState<T>* derivatives) const override {
-      // See `DoPublish` for explanation.
       PYBIND11_OVERLOAD_INT(
           void, LeafSystem<T>, "DoCalcTimeDerivatives", &context, derivatives);
       // If the macro did not return, use default functionality.
       Base::DoCalcTimeDerivatives(context, derivatives);
     }
 
-    // TODO(sherm): This overload should be deprecated and removed; the
-    // preferred workflow is to register callbacks with
-    // Declare*DiscreteUpdateEvent.
     void DoCalcDiscreteVariableUpdates(const Context<T>& context,
         const std::vector<const DiscreteUpdateEvent<T>*>& events,
         DiscreteValues<T>* discrete_state) const override {
-      // See `DoPublish` for explanation.
       PYBIND11_OVERLOAD_INT(void, LeafSystem<T>,
           "DoCalcDiscreteVariableUpdates", &context, events, discrete_state);
       // If the macro did not return, use default functionality.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
       Base::DoCalcDiscreteVariableUpdates(context, events, discrete_state);
+#pragma GCC diagnostic pop
     }
 
     // This actually changes the signature of DoGetWitnessFunction,
@@ -166,15 +173,30 @@ struct Impl {
     // trampoline if this is needed outside of LeafSystem.
     void DoGetWitnessFunctions(const Context<T>& context,
         std::vector<const WitnessFunction<T>*>* witnesses) const override {
-      auto wrapped = [&]() -> std::vector<const WitnessFunction<T>*> {
-        PYBIND11_OVERLOAD_INT(std::vector<const WitnessFunction<T>*>,
+      auto wrapped =
+          [&]() -> std::optional<std::vector<const WitnessFunction<T>*>> {
+        PYBIND11_OVERLOAD_INT(
+            std::optional<std::vector<const WitnessFunction<T>*>>,
             LeafSystem<T>, "DoGetWitnessFunctions", &context);
         std::vector<const WitnessFunction<T>*> result;
         // If the macro did not return, use default functionality.
         Base::DoGetWitnessFunctions(context, &result);
-        return result;
+        return {result};
       };
-      *witnesses = wrapped();
+      auto result = wrapped();
+      if (!result.has_value()) {
+        // Give a good error message in case the user forgot to return anything.
+        throw py::type_error(
+            "Overrides of DoGetWitnessFunctions() must return "
+            "List[WitnessFunction], not NoneType.");
+      }
+      *witnesses = std::move(*result);
+    }
+
+    SystemBase::GraphvizFragment DoGetGraphvizFragment(
+        const SystemBase::GraphvizFragmentParams& params) const override {
+      PYBIND11_OVERRIDE(SystemBase::GraphvizFragment, LeafSystem<T>,
+          DoGetGraphvizFragment, params);
     }
   };
 
@@ -195,6 +217,12 @@ struct Impl {
    public:
     using Base = py::wrapper<DiagramBase>;
     using Base::Base;
+
+    SystemBase::GraphvizFragment DoGetGraphvizFragment(
+        const SystemBase::GraphvizFragmentParams& params) const override {
+      PYBIND11_OVERRIDE(SystemBase::GraphvizFragment, Diagram<T>,
+          DoGetGraphvizFragment, params);
+    }
   };
 
   using PyDiagram = PyDiagramBase<>;
@@ -226,11 +254,13 @@ struct Impl {
         const vector<const PublishEvent<T>*>& events) const override {
       // Copied from above, since we cannot use `PyLeafSystemBase` due to final
       // overrides of some methods.
-      // TODO(eric.cousineau): Make this more granular?
       PYBIND11_OVERLOAD_INT(
           void, VectorSystem<T>, "DoPublish", &context, events);
       // If the macro did not return, use default functionality.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
       Base::DoPublish(context, events);
+#pragma GCC diagnostic pop
     }
 
     void DoCalcVectorOutput(const Context<T>& context,
@@ -306,9 +336,6 @@ struct Impl {
     // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
     using namespace drake::systems;
     constexpr auto& doc = pydrake_doc.drake.systems;
-
-    // TODO(eric.cousineau): Resolve `str_py` workaround.
-    auto str_py = py::eval("str");
 
     // TODO(eric.cousineau): Show constructor, but somehow make sure `pybind11`
     // knows this is abstract?
@@ -496,17 +523,6 @@ Note: The above is for the C++ documentation. For Python, use
             doc.System.GetOutputPort.doc)
         .def("HasOutputPort", &System<T>::HasOutputPort, py::arg("port_name"),
             doc.System.HasOutputPort.doc)
-        // Graphviz methods.
-        .def(
-            "GetGraphvizString",
-            [str_py](const System<T>* self, int max_depth) {
-              // @note This is a workaround; for some reason,
-              // casting this using `py::str` does not work, but directly
-              // calling the Python function (`str_py`) does.
-              return str_py(self->GetGraphvizString(max_depth));
-            },
-            py::arg("max_depth") = std::numeric_limits<int>::max(),
-            doc.System.GetGraphvizString.doc)
         // Automatic differentiation.
         .def(
             "ToAutoDiffXd",
@@ -743,14 +759,6 @@ Note: The above is for the C++ documentation. For Python, use
               self->DeclareInitializationEvent(event);
             },
             py::arg("event"), doc.LeafSystem.DeclareInitializationEvent.doc)
-        .def("DeclarePeriodicPublishNoHandler",
-            &LeafSystemPublic::DeclarePeriodicPublishNoHandler,
-            py::arg("period_sec"), py::arg("offset_sec") = 0.,
-            doc.LeafSystem.DeclarePeriodicPublishNoHandler.doc)
-        .def("DeclarePeriodicDiscreteUpdateNoHandler",
-            &LeafSystemPublic::DeclarePeriodicDiscreteUpdateNoHandler,
-            py::arg("period_sec"), py::arg("offset_sec") = 0.,
-            doc.LeafSystem.DeclarePeriodicDiscreteUpdateNoHandler.doc)
         .def("DeclarePeriodicPublishEvent",
             WrapCallbacks(
                 [](PyLeafSystem* self, double period_sec, double offset_sec,
@@ -894,10 +902,20 @@ Note: The above is for the C++ documentation. For Python, use
         .def("MakeWitnessFunction",
             WrapCallbacks([](PyLeafSystem* self, const std::string& description,
                               const WitnessFunctionDirection& direction_type,
-                              std::function<T(const Context<T>&)> calc)
-                              -> std::unique_ptr<WitnessFunction<T>> {
-              return self->MakeWitnessFunction(
-                  description, direction_type, calc);
+                              std::function<std::optional<T>(const Context<T>&)>
+                                  calc) -> std::unique_ptr<WitnessFunction<T>> {
+              return self->MakeWitnessFunction(description, direction_type,
+                  [calc](const Context<T>& context) -> T {
+                    const std::optional<T> result = calc(context);
+                    if (!result.has_value()) {
+                      // Give a good error message in case the user forgot to
+                      // return anything.
+                      throw py::type_error(
+                          "The MakeWitnessFunction() calc callback must return "
+                          "a floating point value, not NoneType.");
+                    }
+                    return *result;
+                  });
             }),
             py_rvp::reference_internal, py::arg("description"),
             py::arg("direction_type"), py::arg("calc"),
@@ -914,8 +932,6 @@ Note: The above is for the C++ documentation. For Python, use
             py_rvp::reference_internal, py::arg("description"),
             py::arg("direction_type"), py::arg("calc"), py::arg("e"),
             doc.LeafSystem.MakeWitnessFunction.doc_4args)
-        .def("DoPublish", &LeafSystemPublic::DoPublish,
-            doc.LeafSystem.DoPublish.doc)
         // Continuous state.
         .def("DeclareContinuousState",
             py::overload_cast<int>(&LeafSystemPublic::DeclareContinuousState),
@@ -956,14 +972,42 @@ Note: The above is for the C++ documentation. For Python, use
             py::arg("num_state_variables"),
             doc.LeafSystem.DeclareDiscreteState.doc_1args_num_state_variables)
         .def("DoCalcTimeDerivatives", &LeafSystemPublic::DoCalcTimeDerivatives)
-        .def("DoCalcDiscreteVariableUpdates",
-            &LeafSystemPublic::DoCalcDiscreteVariableUpdates,
-            doc.LeafSystem.DoCalcDiscreteVariableUpdates.doc)
         // Abstract state.
         .def("DeclareAbstractState",
             py::overload_cast<const AbstractValue&>(
                 &LeafSystemPublic::DeclareAbstractState),
             py::arg("model_value"), doc.LeafSystem.DeclareAbstractState.doc);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    leaf_system_cls  // BR
+        .def("DeclarePeriodicPublishNoHandler",
+            WrapDeprecated(
+                doc.LeafSystem.DeclarePeriodicPublishNoHandler.doc_deprecated,
+                &LeafSystemPublic::DeclarePeriodicPublishNoHandler),
+            py::arg("period_sec"), py::arg("offset_sec") = 0.,
+            doc.LeafSystem.DeclarePeriodicPublishNoHandler.doc_deprecated)
+        .def("DeclarePeriodicDiscreteUpdateNoHandler",
+            WrapDeprecated(doc.LeafSystem.DeclarePeriodicDiscreteUpdateNoHandler
+                               .doc_deprecated,
+                &LeafSystemPublic::DeclarePeriodicDiscreteUpdateNoHandler),
+            py::arg("period_sec"), py::arg("offset_sec") = 0.,
+            doc.LeafSystem.DeclarePeriodicDiscreteUpdateNoHandler
+                .doc_deprecated)
+        .def("DoPublish",
+            WrapDeprecated(
+                "Directly calling DoPublish() is no longer allowed. Use "
+                "ForcedPublish() instead. "
+                "This function will be removed from Drake on 2024-02-01.",
+                &LeafSystemPublic::DoPublish),
+            doc.LeafSystem.DoPublish.doc)
+        .def("DoCalcDiscreteVariableUpdates",
+            WrapDeprecated(
+                "Directly calling DoCalcDiscreteVariableUpdates() is no longer "
+                "allowed. Use CalcForcedDiscreteVariableUpdate() instead. "
+                "This function will be removed from Drake on 2024-02-01.",
+                &LeafSystemPublic::DoCalcDiscreteVariableUpdates),
+            doc.LeafSystem.DoCalcDiscreteVariableUpdates.doc);
+#pragma GCC diagnostic pop
 
     DefineTemplateClassWithDefault<Diagram<T>, PyDiagram, System<T>>(
         m, "Diagram", GetPyParam<T>(), doc.Diagram.doc)
@@ -1096,7 +1140,31 @@ void DoScalarIndependentDefinitions(py::module m) {
     using Class = SystemBase;
     constexpr auto& cls_doc = doc.SystemBase;
     // TODO(eric.cousineau): Bind remaining methods.
-    py::class_<Class>(m, "SystemBase", cls_doc.doc)
+    py::class_<Class> cls(m, "SystemBase", cls_doc.doc);
+    {
+      using Nested = SystemBase::GraphvizFragment;
+      constexpr auto& nested_doc = doc.SystemBase.GraphvizFragment;
+      py::class_<Nested>(cls, "GraphvizFragment", nested_doc.doc)
+          .def_readwrite(
+              "input_ports", &Nested::input_ports, nested_doc.input_ports.doc)
+          .def_readwrite("output_ports", &Nested::output_ports,
+              nested_doc.output_ports.doc)
+          .def_readwrite(
+              "fragments", &Nested::fragments, nested_doc.fragments.doc);
+    }
+    {
+      // GraphvizFragmentParams
+      using Nested = SystemBasePublic::GraphvizFragmentParams;
+      constexpr auto& nested_doc = doc.SystemBase.GraphvizFragmentParams;
+      py::class_<Nested>(cls, "GraphvizFragmentParams", nested_doc.doc)
+          .def_readwrite(
+              "max_depth", &Nested::max_depth, nested_doc.max_depth.doc)
+          .def_readwrite("options", &Nested::options, nested_doc.options.doc)
+          .def_readwrite("node_id", &Nested::node_id, nested_doc.node_id.doc)
+          .def_readwrite("header_lines", &Nested::header_lines,
+              nested_doc.header_lines.doc);
+    }
+    cls  // BR
         .def("GetSystemName", &Class::GetSystemName, cls_doc.GetSystemName.doc)
         .def("GetSystemPathname", &Class::GetSystemPathname,
             cls_doc.GetSystemPathname.doc)
@@ -1104,6 +1172,15 @@ void DoScalarIndependentDefinitions(py::module m) {
         .def("get_name", &Class::get_name, cls_doc.get_name.doc)
         .def(
             "set_name", &Class::set_name, py::arg("name"), cls_doc.set_name.doc)
+        // Graphviz methods.
+        .def("GetGraphvizString", &Class::GetGraphvizString,
+            py::arg("max_depth") = py::none(), py::arg("options") = py::dict(),
+            cls_doc.GetGraphvizString.doc)
+        .def("GetGraphvizFragment", &Class::GetGraphvizFragment,
+            py::arg("max_depth") = py::none(), py::arg("options") = py::dict(),
+            cls_doc.GetGraphvizFragment.doc)
+        .def("DoGetGraphvizFragment", &SystemBasePublic::DoGetGraphvizFragment,
+            cls_doc.DoGetGraphvizFragment.doc)
         // Topology.
         .def("num_input_ports", &Class::num_input_ports,
             cls_doc.num_input_ports.doc)
@@ -1119,6 +1196,10 @@ void DoScalarIndependentDefinitions(py::module m) {
         .def("implicit_time_derivatives_residual_size",
             &Class::implicit_time_derivatives_residual_size,
             cls_doc.implicit_time_derivatives_residual_size.doc)
+        .def("ValidateContext",
+            overload_cast_explicit<void, const ContextBase&>(
+                &Class::ValidateContext),
+            py::arg("context"), cls_doc.ValidateContext.doc)
         // Parameters.
         .def("num_abstract_parameters", &Class::num_abstract_parameters,
             cls_doc.num_abstract_parameters.doc)
@@ -1175,16 +1256,18 @@ void DoScalarIndependentDefinitions(py::module m) {
         .def("numeric_parameter_ticket", &Class::numeric_parameter_ticket,
             py::arg("index"), cls_doc.numeric_parameter_ticket.doc)
         .def("get_cache_entry", &Class::get_cache_entry, py::arg("index"),
-            py_rvp::reference_internal, cls_doc.get_cache_entry.doc)
-        // N.B. Since this method has template overloads, we must specify the
-        // types `overload_cast_explicit`; we must also specify Class.
-        // We do not use `static_cast<>` to avoid accidental type mixing.
-        .def("DeclareCacheEntry",
-            overload_cast_explicit<CacheEntry&, std::string, ValueProducer,
-                std::set<DependencyTicket>>.operator()<Class>(
-                &SystemBasePublic::DeclareCacheEntry),
-            py_rvp::reference_internal, py::arg("description"),
-            py::arg("value_producer"),
+            py_rvp::reference_internal, cls_doc.get_cache_entry.doc);
+    // N.B. Since this method has template overloads, we must specify the types
+    // `overload_cast_explicit`; we must also specify Class. We do not use
+    // `static_cast<>` to avoid accidental type mixing.
+    // clang-format off
+    auto DeclareCacheEntry = overload_cast_explicit<
+            CacheEntry&, std::string, ValueProducer, std::set<DependencyTicket>
+        >.operator()<Class>(&SystemBasePublic::DeclareCacheEntry);
+    // clang-format on
+    cls  // BR
+        .def("DeclareCacheEntry", DeclareCacheEntry, py_rvp::reference_internal,
+            py::arg("description"), py::arg("value_producer"),
             py::arg("prerequisites_of_calc") =
                 std::set<DependencyTicket>{Class::all_sources_ticket()},
             doc.SystemBase.DeclareCacheEntry
@@ -1241,8 +1324,13 @@ void DoScalarIndependentDefinitions(py::module m) {
         GetPyParamList(ConversionPairs{});
   }
 
-  m.def("GenerateHtml", &GenerateHtml, py::arg("system"),
-      py::arg("initial_depth") = 1, doc.GenerateHtml.doc);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  m.def("GenerateHtml",
+      WrapDeprecated(doc.GenerateHtml.doc_deprecated, &GenerateHtml),
+      py::arg("system"), py::arg("initial_depth") = 1,
+      doc.GenerateHtml.doc_deprecated);
+#pragma GCC diagnostic pop
 }
 
 }  // namespace

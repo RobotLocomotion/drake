@@ -478,6 +478,14 @@ class Body : public MultibodyElement<T> {
         name_(internal::DeprecateWhenEmptyName(name, "Body")),
         body_frame_(*this) {}
 
+  /// Called by DoDeclareParameters(). Derived classes may choose to override
+  /// to declare their sub-class specific parameters.
+  virtual void DoDeclareBodyParameters(internal::MultibodyTreeSystem<T>*) {}
+
+  /// Called by DoSetDefaultParameters(). Derived classes may choose to override
+  /// to set their sub-class specific parameters.
+  virtual void DoSetDefaultBodyParameters(systems::Parameters<T>*) const {}
+
   /// @name Methods to make a clone templated on different scalar types.
   ///
   /// These methods are meant to be called by MultibodyTree::CloneToScalar()
@@ -531,6 +539,17 @@ class Body : public MultibodyElement<T> {
       const internal::MultibodyTreeTopology& tree_topology) final {
     topology_ = tree_topology.get_body(this->index());
     body_frame_.SetTopology(tree_topology);
+  }
+
+  // Implementation for MultibodyElement::DoDeclareParameters().
+  void DoDeclareParameters(
+      internal::MultibodyTreeSystem<T>* tree_system) final {
+    DoDeclareBodyParameters(tree_system);
+  }
+
+  // Implementation for MultibodyElement::DoSetDefaultParameters().
+  void DoSetDefaultParameters(systems::Parameters<T>* parameters) const final {
+    DoSetDefaultBodyParameters(parameters);
   }
 
   // MultibodyTree has access to the mutable BodyFrame through BodyAttorney.

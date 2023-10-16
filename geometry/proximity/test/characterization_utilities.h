@@ -44,8 +44,7 @@ class DistanceCallback {
    responsible for calling ClearResults() if it wants the results of this
    invocation to be distinct from other invocations. */
   virtual bool Invoke(
-      fcl::CollisionObjectd*, fcl::CollisionObjectd*,
-      const CollisionFilter*,
+      fcl::CollisionObjectd*, fcl::CollisionObjectd*, const CollisionFilter*,
       const std::unordered_map<GeometryId, math::RigidTransform<T>>*) = 0;
 
   /* Forces all results to be cleared. */
@@ -295,8 +294,7 @@ class CharacterizeResultTest : public ::testing::Test {
    "unsupported operation" type exception message. */
   void RunCallback(
       const QueryInstance& query, fcl::CollisionObjectd* obj_A,
-      fcl::CollisionObjectd* obj_B,
-      const CollisionFilter* collision_filter,
+      fcl::CollisionObjectd* obj_B, const CollisionFilter* collision_filter,
       const std::unordered_map<GeometryId, math::RigidTransform<T>>* X_WGs)
       const;
 
@@ -449,6 +447,6 @@ struct formatter<drake::geometry::internal::GeometryType>
 }  // namespace fmt
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-  class ::drake::geometry::internal::CharacterizeResultTest)
+    class ::drake::geometry::internal::CharacterizeResultTest)
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-  class ::drake::geometry::internal::ShapeConfigurations)
+    class ::drake::geometry::internal::ShapeConfigurations)

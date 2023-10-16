@@ -75,8 +75,10 @@ class IpoptLintTest(unittest.TestCase):
 
     def test_hdrs_public(self):
         """Checks that _HDRS_PUBLIC matches includeipopt_HEADERS."""
+        make_sources = self._parse_make("includeipopt_HEADERS")
+        make_sources.remove("src/Interfaces/IpReturnCodes.inc")
         self.assertSetEqual(self._parse_build("_HDRS_PUBLIC"),
-                            self._parse_make("includeipopt_HEADERS"))
+                            make_sources)
 
     def test_srcs_initial(self):
         """Checks that _SRCS_INITIAL matches libipopt_la_SOURCES, except for

@@ -16,17 +16,6 @@ effective status after a series of handler executions due to dispatching of
 simultaneous events. Drake API users will typically use only the four factory
 methods below to return status, and optionally a human-readable message, from
 their event handlers. */
-
-// TODO(sherm1) Add the following text to the above doxygen comment when
-// EventStatus is propagated up from the handlers.
-/* (Advanced) In case you are writing an event dispatcher (that is, you are
-overriding LeafSystem::DoPublish(), LeafSystem::DoCalcDiscreteVariableUpdates(),
-or LeafSystem::DoCalcUnrestrictedUpdate()), the dispatcher's return
-status should be the returned status of highest severity in a series of event
-handlers invoked for simultaneous events. In case of multiple returns at the
-same severity, the first one should win. Simultaneous event handler dispatching
-should only return early (without processing all events), if an event handler
-returns EventStatus::kFailed. */
 class EventStatus {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(EventStatus)
@@ -38,7 +27,8 @@ class EventStatus {
     kDidNothing = 0,
     /** Handler executed successfully; state may have been updated. */
     kSucceeded = 1,
-    /** Handler succeeded but detected a termination condition (has message). */
+    /** Handler succeeded but detected a normal termination condition (has
+    message). Intended primarily for internal use by the Simulator. */
     kReachedTermination = 2,
     /** Handler was unable to perform its job (has message). */
     kFailed = 3
@@ -50,6 +40,10 @@ class EventStatus {
   /** Returns "succeeded" status, with no message. */
   static EventStatus Succeeded() { return EventStatus(kSucceeded); }
 
+  // TODO(sherm1) Requiring user code to supply the System explicitly
+  //  is asking for trouble. The code that invoked the event handler
+  //  will be in a better position to fill in the correct System.
+
   /** Returns "reached termination" status, with a message explaining why. */
   static EventStatus ReachedTermination(const SystemBase* system,
                                         std::string message) {
@@ -60,6 +54,21 @@ class EventStatus {
   static EventStatus Failed(const SystemBase* system, std::string message) {
     return EventStatus(kFailed, system, std::move(message));
   }
+
+  /** Returns `true` if the status is DidNothing. */
+  bool did_nothing() const { return severity() == kDidNothing; }
+
+  /** Returns `true` if the status is Succeeded. "Did nothing" can
+  also be viewed as successful but you have to check for that separately. */
+  bool succeeded() const { return severity() == kSucceeded; }
+
+  /** Returns `true` if the status is ReachedTermination. There will also be
+  a message() with more detail. */
+  bool reached_termination() const { return severity() == kReachedTermination; }
+
+  /** Returns `true` if the status is Failed. There will also be a message()
+  with more detail. */
+  bool failed() const { return severity() == kFailed; }
 
   /** Returns the severity of the current status. */
   Severity severity() const { return severity_; }
@@ -73,6 +82,11 @@ class EventStatus {
   event handler that produced the current status. Returns an empty string if
   no message was provided. */
   const std::string& message() const { return message_; }
+
+  /** If failed(), throws an std::exception with a human-readable message.
+  @param function_name The name of the user-callable API that encountered
+                       the failure. Don't include "()". */
+  void ThrowOnFailure(const char* function_name) const;
 
   /** (Advanced) Replaces the contents of `this` with the more-severe status
   if `candidate` is a more severe status than `this` one. Does nothing if

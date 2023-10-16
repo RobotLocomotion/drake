@@ -3,6 +3,7 @@
 #include <memory>
 #include <string>
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/expect_no_throw.h"
@@ -118,6 +119,18 @@ GTEST_TEST(SystemBaseTest, NameAndMessageSupport) {
       system.ValidateCreatedForThisSystem(disconnected_context),
       ".*MyContextBase.*was not associated.*should have been "
       "created for.*MySystemBase.*any_name_will_do.*");
+}
+
+// Tests GetMemoryObjectName.
+GTEST_TEST(SystemBaseTest, GetMemoryObjectName) {
+  const MySystemBase system;
+  const std::string name = system.GetMemoryObjectName();
+
+  // The nominal value for 'name' is something like:
+  //   drake/systems/(anonymous namespace)/MySystemBase@0123456789abcdef
+  // We check only some platform-agnostic portions of that.
+  EXPECT_THAT(name, ::testing::HasSubstr("drake/systems/"));
+  EXPECT_THAT(name, ::testing::ContainsRegex("/MySystemBase@[0-9a-fA-F]{16}$"));
 }
 
 }  // namespace system_base_test_internal

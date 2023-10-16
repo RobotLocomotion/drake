@@ -1,13 +1,7 @@
 # -*- bazel -*-
 
-load(
-    "@drake//tools/install:install.bzl",
-    "install",
-)
-load(
-    "@drake//tools/workspace/coinutils_internal:defs.bzl",
-    "coin_cc_library",
-)
+load("@drake//tools/install:install.bzl", "install")
+load("@drake//tools/workspace/coinutils_internal:defs.bzl", "coin_cc_library")
 
 licenses(["reciprocal"])  # EPL-2.0
 
@@ -139,6 +133,10 @@ coin_cc_library(
     srcs = _SRCS,
     vendor_tool_args = ["--no-inline-namespace"],
     output_vendoring_patch = "drake_coinutils.patch",
+    deps = [
+        "@blas",
+        "@lapack",
+    ],
     visibility = ["//visibility:public"],
 )
 

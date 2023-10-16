@@ -21,3 +21,7 @@ cat > "${bazelrc}" <<EOF
 import %workspace%/tools/ubuntu.bazelrc
 import %workspace%/tools/ubuntu-${codename}.bazelrc
 EOF
+
+# Prefetch the bazelisk download of bazel.
+# This is especially helpful for the "Provisioned" images in CI.
+(cd "${workspace_dir}" && ./third_party/com_github_bazelbuild_bazelisk/bazelisk.py version) > /dev/null

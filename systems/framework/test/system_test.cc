@@ -105,10 +105,11 @@ class TestSystemBase : public System<T> {
     ADD_FAILURE() << "A test called a method that was expected to be unused.";
   }
 
-  void DispatchUnrestrictedUpdateHandler(
+  EventStatus DispatchUnrestrictedUpdateHandler(
       const Context<T>&, const EventCollection<UnrestrictedUpdateEvent<T>>&,
       State<T>*) const final {
     ADD_FAILURE() << "A test called a method that was expected to be unused.";
+    return EventStatus::DidNothing();
   }
 
   void DoApplyUnrestrictedUpdate(
@@ -140,17 +141,19 @@ class TestSystemBase : public System<T> {
     ADD_FAILURE() << "A test called a method that was expected to be unused.";
   }
 
-  void DispatchPublishHandler(
+  EventStatus DispatchPublishHandler(
       const Context<T>& context,
       const EventCollection<PublishEvent<T>>& event_info) const override {
     ADD_FAILURE() << "A test called a method that was expected to be unused.";
+    return EventStatus::DidNothing();
   }
 
-  void DispatchDiscreteVariableUpdateHandler(
+  EventStatus DispatchDiscreteVariableUpdateHandler(
       const Context<T>& context,
       const EventCollection<DiscreteUpdateEvent<T>>& event_info,
       DiscreteValues<T>* discrete_state) const override {
     ADD_FAILURE() << "A test called a method that was expected to be unused.";
+    return EventStatus::DidNothing();
   }
 
   std::multimap<int, int> GetDirectFeedthroughs() const override {
@@ -228,17 +231,19 @@ class TestSystem : public TestSystemBase<double> {
   }
 
  protected:
-  void DispatchPublishHandler(
+  EventStatus DispatchPublishHandler(
       const Context<double>& context,
       const EventCollection<PublishEvent<double>>& events) const final {
     const LeafEventCollection<PublishEvent<double>>& leaf_events =
        dynamic_cast<const LeafEventCollection<PublishEvent<double>>&>(events);
     if (leaf_events.HasEvents()) {
       this->MyPublish(context, leaf_events.get_events());
+      return EventStatus::Succeeded();
     }
+    return EventStatus::DidNothing();
   }
 
-  void DispatchDiscreteVariableUpdateHandler(
+  EventStatus DispatchDiscreteVariableUpdateHandler(
       const Context<double>& context,
       const EventCollection<DiscreteUpdateEvent<double>>& events,
       DiscreteValues<double>* discrete_state) const final {
@@ -248,7 +253,9 @@ class TestSystem : public TestSystemBase<double> {
     if (leaf_events.HasEvents()) {
       this->MyCalcDiscreteVariableUpdates(context, leaf_events.get_events(),
           discrete_state);
+      return EventStatus::Succeeded();
     }
+    return EventStatus::DidNothing();
   }
 
   // Sets up an arbitrary mapping from the current time to the next discrete
@@ -362,7 +369,9 @@ TEST_F(SystemTest, DiscretePublish) {
   EXPECT_EQ(events.front()->get_trigger_type(),
             TriggerType::kPeriodic);
 
-  system_.Publish(*context_, event_info->get_publish_events());
+  const EventStatus status =
+      system_.Publish(*context_, event_info->get_publish_events());
+  EXPECT_TRUE(status.succeeded());
   EXPECT_EQ(1, system_.get_publish_count());
 }
 
@@ -376,8 +385,9 @@ TEST_F(SystemTest, DiscreteUpdate) {
 
   std::unique_ptr<DiscreteValues<double>> update =
       system_.AllocateDiscreteVariables();
-  system_.CalcDiscreteVariableUpdate(
+  const EventStatus status = system_.CalcDiscreteVariableUpdate(
       *context_, event_info->get_discrete_update_events(), update.get());
+  EXPECT_TRUE(status.succeeded());
   EXPECT_EQ(1, system_.get_update_count());
 }
 
@@ -402,28 +412,72 @@ TEST_F(SystemTest, PortReferencesAreStable) {
   EXPECT_EQ(kAbstractValued, first_output.get_data_type());
 }
 
-// Tests the convenience methods for the case when we have exactly one input or
-// output port.
-TEST_F(SystemTest, ExactlyOnePortConvenience) {
+// Tests the convenience method for the case when we have exactly one port.
+TEST_F(SystemTest, ExactlyOneInputPortConvenience) {
+  // No ports: fail.
   DRAKE_EXPECT_THROWS_MESSAGE(system_.get_input_port(),
-                              ".*num_input_ports\\(\\) = 0");
+                              ".*does not have any inputs");
 
+  // One port: pass.
   system_.DeclareInputPort("one", kVectorValued, 2);
   EXPECT_EQ(&system_.get_input_port(), &system_.get_input_port(0));
 
+  // One deprecated port: pass.
+  const_cast<InputPort<double>&>(system_.get_input_port(0))
+      .set_deprecation("deprecated");
+  EXPECT_EQ(&system_.get_input_port(), &system_.get_input_port(0));
+
+  // Two ports (one non-deprecated): pass.
   system_.DeclareInputPort("two", kVectorValued, 2);
-  DRAKE_EXPECT_THROWS_MESSAGE(system_.get_input_port(),
-                              ".*num_input_ports\\(\\) = 2");
+  EXPECT_EQ(&system_.get_input_port(), &system_.get_input_port(1));
 
+  // Three ports (two non-deprecated): fail.
+  system_.DeclareInputPort("three", kVectorValued, 2);
+  DRAKE_EXPECT_THROWS_MESSAGE(system_.get_input_port(), ".*has 3 inputs.*");
+
+  // Three ports (one non-deprecated): pass.
+  const_cast<InputPort<double>&>(system_.get_input_port(1))
+      .set_deprecation("deprecated");
+  EXPECT_EQ(&system_.get_input_port(), &system_.get_input_port(2));
+
+  // Three deprecated ports: fail
+  const_cast<InputPort<double>&>(system_.get_input_port(2))
+      .set_deprecation("deprecated");
+  DRAKE_EXPECT_THROWS_MESSAGE(system_.get_input_port(), ".*has 3 inputs.*");
+}
+
+// Tests the convenience method for the case when we have exactly one port.
+TEST_F(SystemTest, ExactlyOneOutputPortConvenience) {
+  // No ports: fail.
   DRAKE_EXPECT_THROWS_MESSAGE(system_.get_output_port(),
-                              ".*num_output_ports\\(\\) = 0");
+                              ".*does not have any outputs");
 
+  // One port: pass.
   system_.AddAbstractOutputPort();
   EXPECT_EQ(&system_.get_output_port(), &system_.get_output_port(0));
 
+  // One deprecated port: pass.
+  const_cast<OutputPort<double>&>(system_.get_output_port(0))
+      .set_deprecation("deprecated");
+  EXPECT_EQ(&system_.get_output_port(), &system_.get_output_port(0));
+
+  // Two ports (one non-deprecated): pass.
   system_.AddAbstractOutputPort();
-  DRAKE_EXPECT_THROWS_MESSAGE(system_.get_output_port(),
-                              ".*num_output_ports\\(\\) = 2");
+  EXPECT_EQ(&system_.get_output_port(), &system_.get_output_port(1));
+
+  // Three ports (two non-deprecated): fail.
+  system_.AddAbstractOutputPort();
+  DRAKE_EXPECT_THROWS_MESSAGE(system_.get_output_port(), ".*has 3 outputs.*");
+
+  // Three ports (one non-deprecated): pass.
+  const_cast<OutputPort<double>&>(system_.get_output_port(1))
+      .set_deprecation("deprecated");
+  EXPECT_EQ(&system_.get_output_port(), &system_.get_output_port(2));
+
+  // Three deprecated ports: fail.
+  const_cast<OutputPort<double>&>(system_.get_output_port(2))
+      .set_deprecation("deprecated");
+  DRAKE_EXPECT_THROWS_MESSAGE(system_.get_output_port(), ".*has 3 outputs.*");
 }
 
 TEST_F(SystemTest, PortNameTest) {
@@ -551,17 +605,6 @@ TEST_F(SystemTest, SystemConstraintTest) {
       &system_, calc_false, SystemConstraintBounds(Vector1d(0), Vector1d(kInf)),
       "bad constraint"));
   EXPECT_FALSE(system_.CheckSystemConstraintsSatisfied(*context_, tol));
-}
-
-// Tests GetMemoryObjectName.
-TEST_F(SystemTest, GetMemoryObjectName) {
-  const std::string name = system_.GetMemoryObjectName();
-
-  // The nominal value for 'name' is something like:
-  //   drake/systems/(anonymous namespace)/TestSystem@0123456789abcdef
-  // We check only some platform-agnostic portions of that.
-  EXPECT_THAT(name, ::testing::HasSubstr("drake/systems/"));
-  EXPECT_THAT(name, ::testing::ContainsRegex("/TestSystem@[0-9a-fA-F]{16}$"));
 }
 
 // Tests that by default, transmogrification fails appropriately.

@@ -59,6 +59,18 @@ TEST_F(VariableTest, DefaultConstructors) {
   const Variable v_zero(0);
   EXPECT_TRUE(v_default.is_dummy());
   EXPECT_TRUE(v_zero.is_dummy());
+
+  // We don't especially care exactly what the name is, just that its non-empty.
+  // For clarity, we'll check for an exact name here but it's OK for us to
+  // change the name as we develop; the API doesn't promise any particular name.
+  EXPECT_EQ(v_default.get_name(), "𝑥");
+  EXPECT_EQ(v_default.get_type(), Variable::Type::CONTINUOUS);
+  EXPECT_EQ(v_default.get_id(), 0);
+
+  const Variable copy(v_default);
+  EXPECT_EQ(copy.get_name(), "𝑥");
+  EXPECT_EQ(copy.get_type(), Variable::Type::CONTINUOUS);
+  EXPECT_EQ(copy.get_id(), 0);
 }
 
 TEST_F(VariableTest, GetId) {
@@ -75,16 +87,36 @@ TEST_F(VariableTest, GetName) {
   EXPECT_EQ(x_.get_name(), x_prime.get_name());
 }
 
-TEST_F(VariableTest, MoveCopyPreserveId) {
+TEST_F(VariableTest, Copy) {
+  const Variable x{"x"};
+  const size_t x_id{x.get_id()};
+  const size_t x_hash{get_std_hash(x)};
+  const std::string x_name{x.get_name()};
+
+  // The copied object has the same value.
+  const Variable x_copied{x};
+  EXPECT_EQ(x_copied.get_id(), x_id);
+  EXPECT_EQ(get_std_hash(x_copied), x_hash);
+  EXPECT_EQ(x_copied.get_name(), x_name);
+}
+
+TEST_F(VariableTest, Move) {
   Variable x{"x"};
   const size_t x_id{x.get_id()};
   const size_t x_hash{get_std_hash(x)};
-  const Variable x_copied{x};
+  const std::string x_name{x.get_name()};
+
+  // The moved-to object has the same value.
   const Variable x_moved{std::move(x)};
-  EXPECT_EQ(x_id, x_copied.get_id());
-  EXPECT_EQ(x_hash, get_std_hash(x_copied));
-  EXPECT_EQ(x_id, x_moved.get_id());
-  EXPECT_EQ(x_hash, get_std_hash(x_moved));
+  EXPECT_EQ(x_moved.get_id(), x_id);
+  EXPECT_EQ(get_std_hash(x_moved), x_hash);
+  EXPECT_EQ(x_moved.get_name(), x_name);
+
+  // The moved-from object matches a default-constructed Variable.
+  const Variable expected;
+  EXPECT_EQ(x.get_id(), expected.get_id());
+  EXPECT_EQ(get_std_hash(x), get_std_hash(expected));
+  EXPECT_EQ(x.get_name(), expected.get_name());
 }
 
 TEST_F(VariableTest, Less) {

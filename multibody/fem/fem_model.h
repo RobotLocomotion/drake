@@ -12,7 +12,6 @@
 #include "drake/multibody/contact_solvers/block_sparse_lower_triangular_or_symmetric_matrix.h"
 #include "drake/multibody/fem/dirichlet_boundary_condition.h"
 #include "drake/multibody/fem/fem_state.h"
-#include "drake/multibody/fem/petsc_symmetric_block_sparse_matrix.h"
 
 namespace drake {
 namespace multibody {
@@ -143,39 +142,6 @@ class FemModel {
   void CalcResidual(const FemState<T>& fem_state,
                     EigenPtr<VectorX<T>> residual) const;
 
-  /** Calculates an approximated tangent matrix evaluated at the given FEM state
-   (or an approximation thereof). The tangent matrix is given by a weighted sum
-   of stiffness matrix (∂G/∂x), damping matrix (∂G/∂v), and mass matrix (∂G/∂a).
-   The corresponding row and column for a degree of freedom with Dirichlet
-   boundary condition in the tangent matrix is set to zero with the exception of
-   the diagonal entry which is set to 1.
-   @param[in] fem_state        The FemState used to evaluate the tangent
-                               matrix.
-   @param[in] weights          The weights used to combine stiffness, damping,
-                               and mass matrices (in that order) into the
-                               tangent matrix.
-   @param[out] tangent_matrix  The output tangent_matrix.
-   @pre tangent_matrix != nullptr.
-   @pre The size of `tangent_matrix` is `num_dofs()` * `num_dofs()`.
-   @pre All nonzero entries in the resulting tangent matrix have been
-   allocated. See MakePetscSymmetricBlockSparseMatrix().
-   @warning This function sometimes makes simplifying approximations to avoid
-   taking overly complicated derivatives. As such, the resulting tangent
-   matrix is usually an approximation of the actual value.
-   @throws std::exception if the FEM state is incompatible with this model.
-   @throws std::exception if T is not double. */
-  void CalcTangentMatrix(
-      const FemState<T>& fem_state, const Vector3<T>& weights,
-      internal::PetscSymmetricBlockSparseMatrix* tangent_matrix) const;
-
-  /** Creates a PetscSymmetricBlockSparseMatrix that has the sparsity pattern
-   of the tangent matrix of this FEM model. In particular, the size of the
-   tangent matrix is `num_dofs()` by `num_dofs()`. All entries are initialized
-   to zero.
-   @throws std::exception if T is not double. */
-  std::unique_ptr<internal::PetscSymmetricBlockSparseMatrix>
-  MakePetscSymmetricBlockSparseTangentMatrix() const;
-
   /** Calculates an approximated tangent matrix evaluated at the given FEM
    state. The tangent matrix is given by a weighted sum of stiffness matrix
    (∂G/∂x), damping matrix (∂G/∂v), and mass matrix (∂G/∂a). The corresponding
@@ -237,6 +203,16 @@ class FemModel {
     return dirichlet_bc_;
   }
 
+  /** Returns true the equation G(x, v, a) = 0 (see class documentation)
+   corresponding to this %FemModel is linear. */
+  bool is_linear() const { return do_is_linear(); }
+
+  /** Returns true if the given FEM state is compatible with `this` FEM model.
+   */
+  bool is_compatible_with(const FemState<T>& state) const {
+    return state.is_created_from_system(*fem_state_system_);
+  }
+
   /** (Internal use only) Throws std::exception to report a mismatch between
   the FEM model and state that were passed to API method `func`. */
   void ThrowIfModelStateIncompatible(const char* func,
@@ -262,19 +238,6 @@ class FemModel {
    guaranteed to be non-null and properly sized. */
   virtual void DoCalcTangentMatrix(
       const FemState<T>& fem_state, const Vector3<T>& weights,
-      internal::PetscSymmetricBlockSparseMatrix* tangent_matrix) const = 0;
-
-  /** FemModelImpl must override this method to provide an implementation for
-   the NVI MakePetscSymmetricBlockSparseTangentMatrix(). */
-  virtual std::unique_ptr<internal::PetscSymmetricBlockSparseMatrix>
-  DoMakePetscSymmetricBlockSparseTangentMatrix() const = 0;
-
-  /** FemModelImpl must override this method to provide an implementation for
-   the NVI CalcTangentMatrix(). The input `fem_state` is guaranteed to be
-   compatible with `this` FEM model, and the input `tangent_matrix` is
-   guaranteed to be non-null and properly sized. */
-  virtual void DoCalcTangentMatrix(
-      const FemState<T>& fem_state, const Vector3<T>& weights,
       contact_solvers::internal::Block3x3SparseSymmetricMatrix* tangent_matrix)
       const = 0;
 
@@ -293,6 +256,10 @@ class FemModel {
    the given `fem_state_system`. */
   virtual void DeclareCacheEntries(
       internal::FemStateSystem<T>* fem_state_system) = 0;
+
+  /** Derived classes should override this method to indicate if the model is
+   linear. */
+  virtual bool do_is_linear() const = 0;
 
   /** Returns the FemStateSystem that manages the states and cache entries in
    this %FemModel. */

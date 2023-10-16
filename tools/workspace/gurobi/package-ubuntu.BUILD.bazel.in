@@ -1,10 +1,7 @@
 # -*- bazel -*-
 
-load(
-    "@drake//tools/install:install.bzl",
-    "install",
-    "install_files",
-)
+load("@drake//tools/install:install.bzl", "install", "install_files")
+load("@drake//tools/skylark:cc.bzl", "cc_library")
 
 licenses(["by_exception_only"])  # Gurobi
 
@@ -12,7 +9,7 @@ licenses(["by_exception_only"])  # Gurobi
 genrule(
     name = "error-message",
     outs = ["error-message.h"],
-    cmd = "echo 'error: Gurobi 9.5 is not installed at {gurobi_home}, export GUROBI_HOME to the correct value' && false",  # noqa
+    cmd = "echo 'error: Gurobi 10.0 is not installed at {gurobi_home}, export GUROBI_HOME to the correct value' && false",  # noqa
     visibility = ["//visibility:private"],
 )
 
@@ -25,25 +22,25 @@ GUROBI_CXX_HDRS = glob([
     "gurobi-distro/include/gurobi_c++.h",
 ]) or [":error-message.h"]
 
-# In the Gurobi package, libgurobi95.so is a symlink to libgurobi.so.9.5.*.
-# However, if we use libgurobi.so.9.5.* in srcs, executables that link this
+# In the Gurobi package, libgurobi100.so is a symlink to libgurobi.so.10.0.*.
+# However, if we use libgurobi.so.10.0.* in srcs, executables that link this
 # library will be unable to find it at runtime in the Bazel sandbox,
 # because the NEEDED statements in the executable will not square with the
 # RPATH statements.  I don't really know why this happens, but I suspect it
 # might be a Bazel bug.
 
 GUROBI_C_SRCS = glob([
-    "gurobi-distro/lib/libgurobi95.so",
+    "gurobi-distro/lib/libgurobi100.so",
 ]) or [":error-message.h"]
 
 GUROBI_CXX_SRCS = glob([
-    "gurobi-distro/lib/libgurobi95.so",
+    "gurobi-distro/lib/libgurobi100.so",
     "gurobi-distro/lib/libgurobi_g++5.2.a",
 ]) or [":error-message.h"]
 
 GUROBI_INSTALL_LIBRARIES = glob([
-    "gurobi-distro/lib/libgurobi.so.9.5.*",
-    "gurobi-distro/lib/libgurobi95.so",
+    "gurobi-distro/lib/libgurobi.so.10.0.*",
+    "gurobi-distro/lib/libgurobi100.so",
 ]) or [":error-message.h"]
 
 GUROBI_DOCS = glob([

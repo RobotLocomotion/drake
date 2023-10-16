@@ -87,22 +87,21 @@ class IiwaCommandReceiver final : public systems::LeafSystem<double> {
   //@}
 
  private:
-  void DoCalcNextUpdateTime(
-      const systems::Context<double>&,
-      systems::CompositeEventCollection<double>*, double*) const final;
-  void CalcPositionMeasuredOrZero(
-      const systems::Context<double>&, systems::BasicVector<double>*) const;
-  void LatchInitialPosition(
-      const systems::Context<double>&,
-      systems::DiscreteValues<double>*) const;
-  void CalcDefaultedCommand(
-      const systems::Context<double>&, lcmt_iiwa_command*) const;
-  void CalcPositionOutput(
-      const systems::Context<double>&, systems::BasicVector<double>*) const;
-  void CalcTorqueOutput(
-      const systems::Context<double>&, systems::BasicVector<double>*) const;
-  void CalcTimeOutput(
-      const systems::Context<double>&, systems::BasicVector<double>*) const;
+  void DoCalcNextUpdateTime(const systems::Context<double>&,
+                            systems::CompositeEventCollection<double>*,
+                            double*) const final;
+  void CalcPositionMeasuredOrZero(const systems::Context<double>&,
+                                  systems::BasicVector<double>*) const;
+  void LatchInitialPosition(const systems::Context<double>&,
+                            systems::DiscreteValues<double>*) const;
+  void CalcDefaultedCommand(const systems::Context<double>&,
+                            lcmt_iiwa_command*) const;
+  void CalcPositionOutput(const systems::Context<double>&,
+                          systems::BasicVector<double>*) const;
+  void CalcTorqueOutput(const systems::Context<double>&,
+                        systems::BasicVector<double>*) const;
+  void CalcTimeOutput(const systems::Context<double>&,
+                      systems::BasicVector<double>*) const;
 
   const int num_joints_{};
   const IiwaControlMode control_mode_{IiwaControlMode::kPositionAndTorque};

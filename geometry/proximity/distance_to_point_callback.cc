@@ -154,10 +154,12 @@ void ComputeDistanceToPrimitive(const fcl::Capsuled& capsule,
   }
 }
 
+// clang-format off
 #define INSTANTIATE_DISTANCE_TO_PRIMITIVE(Shape, S)                         \
 template void ComputeDistanceToPrimitive<S>(                                \
     const fcl::Shape&, const math::RigidTransform<S>&, const Vector3<S>&,   \
     Vector3<S>*, S*, Vector3<S>*)
+// clang-format on
 
 // INSTANTIATE_DISTANCE_TO_PRIMITIVE(Sphered, double);
 // INSTANTIATE_DISTANCE_TO_PRIMITIVE(Sphered, AutoDiffXd);
@@ -302,7 +304,8 @@ SignedDistanceToPoint<T> DistanceToPoint<T>::operator()(
   if constexpr (std::is_same_v<T, double>) {
     // TODO(SeanCurtis-TRI): Replace this short-term hack with something that
     //  provides higher precision. Can an iterative method provide derivatives?
-    //  See: https://www.geometrictools.com/Documentation/DistancePointEllipseEllipsoid.pdf
+    //  See:
+    //  https://www.geometrictools.com/Documentation/DistancePointEllipseEllipsoid.pdf
 
     // For now, we'll simply use FCL's sphere-ellipsoid algorithm to compute
     // the signed distance for a zero-radius sphere. (Note: this uses the
@@ -319,9 +322,9 @@ SignedDistanceToPoint<T> DistanceToPoint<T>::operator()(
     // world frame.
     fcl::DistanceResultd result_W;
 
-    fcl::distance(&ellipsoid, X_WG_.GetAsIsometry3(),
-                  &sphere_Q, math::RigidTransformd(p_WQ_).GetAsIsometry3(),
-                  request, result_W);
+    fcl::distance(&ellipsoid, X_WG_.GetAsIsometry3(), &sphere_Q,
+                  math::RigidTransformd(p_WQ_).GetAsIsometry3(), request,
+                  result_W);
 
     const Vector3d& p_WN = result_W.nearest_points[0];
     const Vector3d p_GN = X_WG_.inverse() * p_WN;
@@ -376,7 +379,6 @@ SignedDistanceToPoint<T> DistanceToPoint<T>::operator()(
 
   return SignedDistanceToPoint<T>{geometry_id_, p_GN_G, distance, grad_W};
 }
-
 
 template <typename T>
 template <int dim, typename U>
@@ -576,9 +578,7 @@ bool Callback(fcl::CollisionObjectd* object_A_ptr,
   return false;  // Returning false tells fcl to continue to other objects.
 }
 
-DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((
-    &Callback<T>
-))
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((&Callback<T>))
 
 }  // namespace point_distance
 }  // namespace internal

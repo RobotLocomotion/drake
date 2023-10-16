@@ -46,8 +46,7 @@ struct CallbackData {
    @param distances_in[out]   The output results. Aliased.
    */
   CallbackData(
-      fcl::CollisionObjectd* query_in,
-      const double threshold_in,
+      fcl::CollisionObjectd* query_in, const double threshold_in,
       const Vector3<T>& p_WQ_W_in,
       const std::unordered_map<GeometryId, math::RigidTransform<T>>* X_WGs_in,
       std::vector<SignedDistanceToPoint<T>>* distances_in)
@@ -143,10 +142,9 @@ class DistanceToPoint {
    @param id    The id of the geometry G,
    @param X_WG  The pose of the G in world frame,
    @param p_WQ  The position of the query point Q in world frame.  */
-  DistanceToPoint(const GeometryId id,
-                  const math::RigidTransform<T>& X_WG,
-                  const Vector3<T>& p_WQ) :
-      geometry_id_(id), X_WG_(X_WG), p_WQ_(p_WQ) {}
+  DistanceToPoint(const GeometryId id, const math::RigidTransform<T>& X_WG,
+                  const Vector3<T>& p_WQ)
+      : geometry_id_(id), X_WG_(X_WG), p_WQ_(p_WQ) {}
 
   // TODO(DamrongGuoy): Revisit computation over operator() overloads as per
   //  issue: https://github.com/RobotLocomotion/drake/issues/11227
@@ -173,7 +171,9 @@ class DistanceToPoint {
    @tparam U  Templated to allow DistanceToPoint<AutoDiffXd> to still compute
               Sign<double> or Sign<AutoDiffXd> as needed.  */
   template <typename U = T>
-  static U Sign(const U& x) { return (x < U(0.0)) ? U(-1.0) : U(1.0); }
+  static U Sign(const U& x) {
+    return (x < U(0.0)) ? U(-1.0) : U(1.0);
+  }
 
   /* Picks the axis i whose coordinate p(i) is closest to the boundary value
    ±bounds(i). If there are ties, we prioritize according to an arbitrary
@@ -271,7 +271,9 @@ bool Callback(fcl::CollisionObjectd* object_A_ptr,
               // NOLINTNEXTLINE
               void* callback_data, double& threshold);
 
+// clang-format off
 }  // namespace point_distance
+// clang-format on
 }  // namespace internal
 }  // namespace geometry
 }  // namespace drake

@@ -284,190 +284,190 @@ class GenericPolynomial {
  * https://github.com/robotlocomotion/drake/pull/14053#pullrequestreview-488744679
  */
 template <typename BasisElement>
-using GenericPolynomialEnable = std::enable_if_t<
-    std::is_base_of_v<PolynomialBasisElement, BasisElement>,
-    GenericPolynomial<BasisElement>>;
+using GenericPolynomialEnable =
+    std::enable_if_t<std::is_base_of_v<PolynomialBasisElement, BasisElement>,
+                     GenericPolynomial<BasisElement>>;
 
 template <typename BasisElement>
-GenericPolynomialEnable<BasisElement>
-operator-(const GenericPolynomial<BasisElement>& p) {
+GenericPolynomialEnable<BasisElement> operator-(
+    const GenericPolynomial<BasisElement>& p) {
   return -1. * p;
 }
 
 template <typename BasisElement>
-GenericPolynomialEnable<BasisElement>
-operator+(GenericPolynomial<BasisElement> p1,
-          const GenericPolynomial<BasisElement>& p2) {
+GenericPolynomialEnable<BasisElement> operator+(
+    GenericPolynomial<BasisElement> p1,
+    const GenericPolynomial<BasisElement>& p2) {
   return p1 += p2;
 }
 
 template <typename BasisElement>
-GenericPolynomialEnable<BasisElement>
-operator+(GenericPolynomial<BasisElement> p, const BasisElement& m) {
+GenericPolynomialEnable<BasisElement> operator+(
+    GenericPolynomial<BasisElement> p, const BasisElement& m) {
   return p += m;
 }
 
 template <typename BasisElement>
-GenericPolynomialEnable<BasisElement>
-operator+(GenericPolynomial<BasisElement> p, double c) {
+GenericPolynomialEnable<BasisElement> operator+(
+    GenericPolynomial<BasisElement> p, double c) {
   return p += c;
 }
 
 template <typename BasisElement>
-GenericPolynomialEnable<BasisElement>
-operator+(const BasisElement& m, GenericPolynomial<BasisElement> p) {
+GenericPolynomialEnable<BasisElement> operator+(
+    const BasisElement& m, GenericPolynomial<BasisElement> p) {
   return p += m;
 }
 
 template <typename BasisElement>
-GenericPolynomialEnable<BasisElement>
-operator+(const BasisElement& m1, const BasisElement& m2) {
+GenericPolynomialEnable<BasisElement> operator+(const BasisElement& m1,
+                                                const BasisElement& m2) {
   return GenericPolynomial<BasisElement>(m1) + m2;
 }
 
 template <typename BasisElement>
-GenericPolynomialEnable<BasisElement>
-operator+(const BasisElement& m, double c) {
+GenericPolynomialEnable<BasisElement> operator+(const BasisElement& m,
+                                                double c) {
   return GenericPolynomial<BasisElement>(m) + c;
 }
 
 template <typename BasisElement>
-GenericPolynomialEnable<BasisElement>
-operator+(double c, GenericPolynomial<BasisElement> p) {
+GenericPolynomialEnable<BasisElement> operator+(
+    double c, GenericPolynomial<BasisElement> p) {
   return p += c;
 }
 
 template <typename BasisElement>
-GenericPolynomialEnable<BasisElement>
-operator+(double c, const BasisElement& m) {
+GenericPolynomialEnable<BasisElement> operator+(double c,
+                                                const BasisElement& m) {
   return GenericPolynomial<BasisElement>(m) + c;
 }
 
 template <typename BasisElement>
-GenericPolynomialEnable<BasisElement>
-operator+(GenericPolynomial<BasisElement> p, const Variable& v) {
+GenericPolynomialEnable<BasisElement> operator+(
+    GenericPolynomial<BasisElement> p, const Variable& v) {
   return p += v;
 }
 
 template <typename BasisElement>
-GenericPolynomialEnable<BasisElement>
-operator+(const Variable& v, GenericPolynomial<BasisElement> p) {
+GenericPolynomialEnable<BasisElement> operator+(
+    const Variable& v, GenericPolynomial<BasisElement> p) {
   return p += v;
 }
 
 template <typename BasisElement>
-GenericPolynomialEnable<BasisElement>
-operator-(GenericPolynomial<BasisElement> p1,
-          const GenericPolynomial<BasisElement>& p2) {
+GenericPolynomialEnable<BasisElement> operator-(
+    GenericPolynomial<BasisElement> p1,
+    const GenericPolynomial<BasisElement>& p2) {
   return p1 -= p2;
 }
 
 template <typename BasisElement>
-GenericPolynomialEnable<BasisElement>
-operator-(GenericPolynomial<BasisElement> p, const BasisElement& m) {
+GenericPolynomialEnable<BasisElement> operator-(
+    GenericPolynomial<BasisElement> p, const BasisElement& m) {
   return p -= m;
 }
 
 template <typename BasisElement>
-GenericPolynomialEnable<BasisElement>
-operator-(GenericPolynomial<BasisElement> p, double c) {
+GenericPolynomialEnable<BasisElement> operator-(
+    GenericPolynomial<BasisElement> p, double c) {
   return p -= c;
 }
 
 template <typename BasisElement>
-GenericPolynomialEnable<BasisElement>
-operator-(const BasisElement& m, GenericPolynomial<BasisElement> p) {
+GenericPolynomialEnable<BasisElement> operator-(
+    const BasisElement& m, GenericPolynomial<BasisElement> p) {
   return p = -1 * p + m;
 }
 
 template <typename BasisElement>
-GenericPolynomialEnable<BasisElement>
-operator-(const BasisElement& m1, const BasisElement& m2) {
+GenericPolynomialEnable<BasisElement> operator-(const BasisElement& m1,
+                                                const BasisElement& m2) {
   return GenericPolynomial<BasisElement>(m1) - m2;
 }
 
 template <typename BasisElement>
-GenericPolynomialEnable<BasisElement>
-operator-(const BasisElement& m, double c) {
+GenericPolynomialEnable<BasisElement> operator-(const BasisElement& m,
+                                                double c) {
   return GenericPolynomial<BasisElement>(m) - c;
 }
 
 template <typename BasisElement>
-GenericPolynomialEnable<BasisElement>
-operator-(double c, GenericPolynomial<BasisElement> p) {
+GenericPolynomialEnable<BasisElement> operator-(
+    double c, GenericPolynomial<BasisElement> p) {
   return p = -p + c;
 }
 
 template <typename BasisElement>
-GenericPolynomialEnable<BasisElement>
-operator-(double c, const BasisElement& m) {
+GenericPolynomialEnable<BasisElement> operator-(double c,
+                                                const BasisElement& m) {
   return c - GenericPolynomial<BasisElement>(m);
 }
 
 template <typename BasisElement>
-GenericPolynomialEnable<BasisElement>
-operator-(GenericPolynomial<BasisElement> p, const Variable& v) {
+GenericPolynomialEnable<BasisElement> operator-(
+    GenericPolynomial<BasisElement> p, const Variable& v) {
   return p -= v;
 }
 
 template <typename BasisElement>
-GenericPolynomialEnable<BasisElement>
-operator-(const Variable& v, GenericPolynomial<BasisElement> p) {
+GenericPolynomialEnable<BasisElement> operator-(
+    const Variable& v, GenericPolynomial<BasisElement> p) {
   return GenericPolynomial<BasisElement>(v, p.indeterminates()) - p;
 }
 
 template <typename BasisElement>
-GenericPolynomialEnable<BasisElement>
-operator*(GenericPolynomial<BasisElement> p1,
-          const GenericPolynomial<BasisElement>& p2) {
+GenericPolynomialEnable<BasisElement> operator*(
+    GenericPolynomial<BasisElement> p1,
+    const GenericPolynomial<BasisElement>& p2) {
   return p1 *= p2;
 }
 
 template <typename BasisElement>
-GenericPolynomialEnable<BasisElement>
-operator*(GenericPolynomial<BasisElement> p, const BasisElement& m) {
+GenericPolynomialEnable<BasisElement> operator*(
+    GenericPolynomial<BasisElement> p, const BasisElement& m) {
   return p *= m;
 }
 
 template <typename BasisElement>
-GenericPolynomialEnable<BasisElement>
-operator*(GenericPolynomial<BasisElement> p, double c) {
+GenericPolynomialEnable<BasisElement> operator*(
+    GenericPolynomial<BasisElement> p, double c) {
   return p *= c;
 }
 
 template <typename BasisElement>
-GenericPolynomialEnable<BasisElement>
-operator*(const BasisElement& m, GenericPolynomial<BasisElement> p) {
+GenericPolynomialEnable<BasisElement> operator*(
+    const BasisElement& m, GenericPolynomial<BasisElement> p) {
   return p *= m;
 }
 
 template <typename BasisElement>
-GenericPolynomialEnable<BasisElement>
-operator*(const BasisElement& m, double c) {
+GenericPolynomialEnable<BasisElement> operator*(const BasisElement& m,
+                                                double c) {
   return GenericPolynomial<BasisElement>(m) * c;
 }
 
 template <typename BasisElement>
-GenericPolynomialEnable<BasisElement>
-operator*(double c, GenericPolynomial<BasisElement> p) {
+GenericPolynomialEnable<BasisElement> operator*(
+    double c, GenericPolynomial<BasisElement> p) {
   return p *= c;
 }
 
 template <typename BasisElement>
-GenericPolynomialEnable<BasisElement>
-operator*(double c, const BasisElement& m) {
+GenericPolynomialEnable<BasisElement> operator*(double c,
+                                                const BasisElement& m) {
   return GenericPolynomial<BasisElement>(m) * c;
 }
 
 template <typename BasisElement>
-GenericPolynomialEnable<BasisElement>
-operator*(GenericPolynomial<BasisElement> p, const Variable& v) {
+GenericPolynomialEnable<BasisElement> operator*(
+    GenericPolynomial<BasisElement> p, const Variable& v) {
   return p *= v;
 }
 
 template <typename BasisElement>
-GenericPolynomialEnable<BasisElement>
-operator*(const Variable& v, GenericPolynomial<BasisElement> p) {
+GenericPolynomialEnable<BasisElement> operator*(
+    const Variable& v, GenericPolynomial<BasisElement> p) {
   return p *= v;
 }
 
@@ -559,7 +559,6 @@ struct NumTraits<
 };
 }  // namespace Eigen
 #endif  // !defined(DRAKE_DOXYGEN_CXX)
-
 
 // TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
 namespace fmt {

@@ -288,7 +288,7 @@ class PrismaticJoint final : public Joint<T> {
         std::make_unique<internal::PrismaticMobilizer<T>>(
             this->frame_on_parent(), this->frame_on_child(), axis_);
     prismatic_mobilizer->set_default_position(this->default_positions());
-    blue_print->mobilizers_.push_back(std::move(prismatic_mobilizer));
+    blue_print->mobilizer = std::move(prismatic_mobilizer);
     return blue_print;
   }
 
@@ -310,20 +310,20 @@ class PrismaticJoint final : public Joint<T> {
   // The internal implementation of this joint could change in a future version.
   // However its public API should remain intact.
   const internal::PrismaticMobilizer<T>* get_mobilizer() const {
-    // This implementation should only have one mobilizer.
-    DRAKE_DEMAND(this->get_implementation().num_mobilizers() == 1);
+    // This implementation should always use a mobilizer.
+    DRAKE_DEMAND(this->get_implementation().has_mobilizer());
     const internal::PrismaticMobilizer<T>* mobilizer =
         dynamic_cast<const internal::PrismaticMobilizer<T>*>(
-            this->get_implementation().mobilizers_[0]);
+            this->get_implementation().mobilizer);
     DRAKE_DEMAND(mobilizer != nullptr);
     return mobilizer;
   }
 
   internal::PrismaticMobilizer<T>* get_mutable_mobilizer() {
-    // This implementation should only have one mobilizer.
-    DRAKE_DEMAND(this->get_implementation().num_mobilizers() == 1);
+    // This implementation should always use a mobilizer.
+    DRAKE_DEMAND(this->get_implementation().has_mobilizer());
     auto* mobilizer = dynamic_cast<internal::PrismaticMobilizer<T>*>(
-        this->get_implementation().mobilizers_[0]);
+        this->get_implementation().mobilizer);
     DRAKE_DEMAND(mobilizer != nullptr);
     return mobilizer;
   }

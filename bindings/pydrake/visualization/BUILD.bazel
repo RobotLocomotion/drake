@@ -1,19 +1,19 @@
-load("@drake//tools/install:install.bzl", "install", "install_files")
+load("//tools/install:install.bzl", "install", "install_files")
 load(
-    "@drake//tools/skylark:pybind.bzl",
+    "//tools/skylark:pybind.bzl",
     "drake_pybind_library",
     "get_drake_py_installs",
     "get_pybind_package_info",
 )
 load(
-    "@drake//tools/skylark:drake_py.bzl",
+    "//tools/skylark:drake_py.bzl",
     "drake_py_binary",
     "drake_py_library",
     "drake_py_unittest",
 )
 load("@python//:version.bzl", "PYTHON_SITE_PACKAGES_RELPATH")
 load(
-    "@drake//tools/workspace:cmake_configure_file.bzl",
+    "//tools/workspace:cmake_configure_file.bzl",
     "cmake_configure_file",
 )
 load("//bindings/pydrake:pydrake.bzl", "add_lint_tests_pydrake")
@@ -176,10 +176,22 @@ drake_py_unittest(
     timeout = "moderate",
     data = [
         ":model_visualizer",
-        "//geometry:meshcat_websocket_client",
         "//manipulation/util:test_models",
         "//multibody/benchmarks/acrobot:models",
     ],
+    deps = [
+        ":model_visualizer",
+    ],
+)
+
+drake_py_unittest(
+    name = "model_visualizer_reload_test",
+    data = [
+        ":model_visualizer",
+        "//geometry:meshcat_websocket_client",
+        "//multibody/benchmarks/acrobot:models",
+    ],
+    flaky = True,
     deps = [
         ":model_visualizer",
     ],
@@ -212,6 +224,7 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "video_test",
+    size = "medium",
     deps = [
         ":visualization",
         "//bindings/pydrake/common/test_utilities:numpy_compare_py",

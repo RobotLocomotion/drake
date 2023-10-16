@@ -10,6 +10,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/fmt_ostream.h"
+#include "drake/common/hash.h"
 
 namespace drake {
 namespace math {
@@ -411,6 +412,17 @@ class RollPitchYaw {
   /// of these pitch angles, i.e., when `cos(p) ≈ 0`.
   Vector3<T> CalcRpyDDtFromAngularAccelInChild(
       const Vector3<T>& rpyDt, const Vector3<T>& alpha_AD_D) const;
+
+  /// Implements the @ref hash_append concept.
+  /// @pre T implements the hash_append concept.
+  template <class HashAlgorithm>
+  friend void hash_append(HashAlgorithm& hasher,
+                          const RollPitchYaw& rpy) noexcept {
+    const T* begin = rpy.roll_pitch_yaw_.data();
+    const T* end = rpy.roll_pitch_yaw_.data() + rpy.roll_pitch_yaw_.size();
+    using drake::hash_append_range;
+    hash_append_range(hasher, begin, end);
+  }
 
  private:
   // Throws an exception if rpy is not a valid %RollPitchYaw.

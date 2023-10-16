@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/framework/diagram_builder.h"
 
 namespace drake {
@@ -10,6 +11,7 @@ namespace multibody {
 namespace internal {
 namespace {
 
+using Eigen::Vector3d;
 using geometry::GeometryInstance;
 using geometry::SceneGraph;
 using geometry::SceneGraphInspector;
@@ -34,9 +36,11 @@ class DeformableModelTest : public ::testing::Test {
   MultibodyPlant<double>* plant_{nullptr};
   SceneGraph<double>* scene_graph_{nullptr};
 
-  DeformableBodyId RegisterSphere(double resolution_hint) {
-    auto geometry = make_unique<GeometryInstance>(
-        RigidTransformd(), make_unique<Sphere>(1), "sphere");
+  /* Registers a deformable sphere with the given initial pose in world. */
+  DeformableBodyId RegisterSphere(double resolution_hint,
+                                  RigidTransformd X_WS = RigidTransformd()) {
+    auto geometry =
+        make_unique<GeometryInstance>(X_WS, make_unique<Sphere>(1), "sphere");
     DeformableBodyId body_id = deformable_model_ptr_->RegisterDeformableBody(
         std::move(geometry), default_body_config_, resolution_hint);
     return body_id;
@@ -255,6 +259,75 @@ TEST_F(DeformableModelTest, VertexPositionsOutputPort) {
    this case should be the reference positions. */
   EXPECT_EQ(configurations.value(geometry_id),
             deformable_model_ptr_->GetReferencePositions(body_id));
+}
+
+TEST_F(DeformableModelTest, AddFixedConstraint) {
+  RigidTransformd X_WA(math::RollPitchYawd(1, 2, 3),
+                       Vector3d(1.23, 4.56, 7.89));
+  /* Register a deformable sphere with radius 1.0 and a large resolution hint so
+   that it is discretized as an octahedron. Give it an arbitrary initial pose.
+  */
+  DeformableBodyId deformable_id = RegisterSphere(100, X_WA);
+  ASSERT_EQ(deformable_model_ptr_->GetFemModel(deformable_id).num_nodes(), 7);
+  const Body<double>& rigid_body =
+      plant_->AddRigidBody("box", SpatialInertia<double>());
+  geometry::Box box(1.0, 1.0, 1.0);
+  const RigidTransformd X_BA(Vector3d(-2, 0, 0));
+  const RigidTransformd X_BG(Vector3d(-1, 0, 0));
+  const MultibodyConstraintId constraint_id =
+      deformable_model_ptr_->AddFixedConstraint(deformable_id, rigid_body, X_BA,
+                                                box, X_BG);
+
+  EXPECT_TRUE(deformable_model_ptr_->HasConstraint(deformable_id));
+  EXPECT_EQ(deformable_model_ptr_->fixed_constraint_ids(deformable_id).size(),
+            1);
+  const DeformableRigidFixedConstraintSpec& spec =
+      deformable_model_ptr_->fixed_constraint_spec(constraint_id);
+  EXPECT_EQ(spec.body_A, deformable_id);
+  EXPECT_EQ(spec.body_B, rigid_body.index());
+  /* Only the right-most deformable body vertex (with world position (1, 0, 0))
+   is under constraint. */
+  ASSERT_EQ(spec.vertices.size(), 1);
+  const int vertex_index = spec.vertices[0];
+  const Vector3d p_WPi =
+      deformable_model_ptr_->GetReferencePositions(deformable_id)
+          .segment<3>(3 * vertex_index);
+  const Vector3d p_APi(1, 0, 0);
+  EXPECT_EQ(p_WPi, X_WA * p_APi);
+  /* Qi should be coincident with Pi. */
+  ASSERT_EQ(spec.p_BQs.size(), 1);
+  const Vector3d p_BQi = spec.p_BQs[0];
+  EXPECT_EQ(X_BA * p_APi, p_BQi);
+
+  /* Throw conditions */
+  /* Non-existant deformable body. */
+  DeformableBodyId fake_deformable_id = DeformableBodyId::get_new_id();
+  EXPECT_THROW(deformable_model_ptr_->AddFixedConstraint(
+                   fake_deformable_id, rigid_body, X_BA, box, X_BG),
+               std::exception);
+  /* Non-existant rigid body (registered with a different MbP). */
+  MultibodyPlant<double> other_plant(0.0);
+  const Body<double>& wrong_rigid_body =
+      other_plant.AddRigidBody("wrong body", SpatialInertia<double>());
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      deformable_model_ptr_->AddFixedConstraint(deformable_id, wrong_rigid_body,
+                                                X_BA, box, X_BG),
+      ".*rigid body.*not registered.*");
+  /* Unsupported shape. */
+  const geometry::Mesh mesh("fake_mesh.vtk");
+  EXPECT_THROW(deformable_model_ptr_->AddFixedConstraint(
+                   deformable_id, rigid_body, X_BA, mesh, X_BG),
+               std::exception);
+  /* No constraint is added . */
+  DRAKE_EXPECT_THROWS_MESSAGE(deformable_model_ptr_->AddFixedConstraint(
+                                  deformable_id, rigid_body, X_BA, box,
+                                  RigidTransformd(Vector3d(100, 100, 100))),
+                              "No constraint has been added.*box.*");
+  /* Adding constraint after finalize. */
+  plant_->Finalize();
+  EXPECT_THROW(deformable_model_ptr_->AddFixedConstraint(
+                   deformable_id, rigid_body, X_BA, box, X_BG),
+               std::exception);
 }
 
 }  // namespace

@@ -2,6 +2,9 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/systems/framework/leaf_system.h"
+
 namespace drake {
 namespace systems {
 namespace {
@@ -56,6 +59,38 @@ GTEST_TEST(EventStatusTest, ConstructionAndRetrieval) {
   EXPECT_TRUE(equal_status(status, failed));
   status.KeepMoreSevere(failed2);  // Should not update (same severity).
   EXPECT_TRUE(equal_status(status, failed));
+}
+
+class TestSystem : public LeafSystem<double> {
+ public:
+  TestSystem() {
+    this->set_name("my_system");
+  }
+};
+
+// Check that the ThrowOnFailure() function formats correctly.
+GTEST_TEST(EventStatusTest, ThrowOnFailure) {
+  TestSystem test_system;
+  const EventStatus success = EventStatus::Succeeded();
+  const EventStatus did_nothing = EventStatus::DidNothing();
+  const EventStatus terminated = EventStatus::ReachedTermination(
+      &test_system, "this shouldn't throw");
+  const EventStatus failed_no_system =
+      EventStatus::Failed(nullptr, "error from somewhere");
+  const EventStatus failed_with_system =
+      EventStatus::Failed(&test_system, "error from test system");
+
+
+  EXPECT_NO_THROW(success.ThrowOnFailure("ApiName"));
+  EXPECT_NO_THROW(did_nothing.ThrowOnFailure("ApiName"));
+  EXPECT_NO_THROW(terminated.ThrowOnFailure("ApiName"));
+  DRAKE_EXPECT_THROWS_MESSAGE(failed_no_system.ThrowOnFailure("ApiName"),
+                              "ApiName\\(\\):.*event handler in System "
+                              "failed with message.*error from somewhere.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(failed_with_system.ThrowOnFailure("ApiName"),
+                              "ApiName\\(\\):.*event handler in.*TestSystem.*"
+                              "my_system.*failed with message.*error from "
+                              "test system.*");
 }
 
 }  // namespace

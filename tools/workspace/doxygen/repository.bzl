@@ -1,8 +1,5 @@
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
-load(
-    "@drake//tools/workspace:os.bzl",
-    "determine_os",
-)
+load("//tools/workspace:os.bzl", "determine_os")
 
 def _impl(repo_ctx):
     os_result = determine_os(repo_ctx)

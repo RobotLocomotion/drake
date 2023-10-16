@@ -1,5 +1,5 @@
 load(
-    "@drake//tools/skylark:drake_cc.bzl",
+    "//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
     "drake_cc_library",
     "drake_cc_package_library",
@@ -22,6 +22,7 @@ drake_cc_package_library(
         ":iiwa_driver_functions",
         ":iiwa_status_receiver",
         ":iiwa_status_sender",
+        ":sim_iiwa_driver",
     ],
 )
 
@@ -114,6 +115,23 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "sim_iiwa_driver",
+    srcs = ["sim_iiwa_driver.cc"],
+    hdrs = ["sim_iiwa_driver.h"],
+    deps = [
+        ":iiwa_constants",
+        "//common:essential",
+        "//multibody/plant",
+        "//systems/controllers:inverse_dynamics_controller",
+        "//systems/framework:diagram_builder",
+        "//systems/primitives:adder",
+        "//systems/primitives:demultiplexer",
+        "//systems/primitives:discrete_derivative",
+        "//systems/primitives:first_order_low_pass_filter",
+    ],
+)
+
+drake_cc_library(
     name = "build_iiwa_control",
     srcs = ["build_iiwa_control.cc"],
     hdrs = ["build_iiwa_control.h"],
@@ -121,14 +139,11 @@ drake_cc_library(
         ":iiwa_command_receiver",
         ":iiwa_constants",
         ":iiwa_status_sender",
+        ":sim_iiwa_driver",
         "//multibody/plant",
-        "//systems/controllers:inverse_dynamics_controller",
         "//systems/framework:diagram_builder",
         "//systems/lcm",
-        "//systems/primitives:adder",
         "//systems/primitives:demultiplexer",
-        "//systems/primitives:discrete_derivative",
-        "//systems/primitives:first_order_low_pass_filter",
         "//systems/primitives:gain",
         "@eigen",
     ],
@@ -184,6 +199,7 @@ drake_cc_googletest(
         ":build_iiwa_control",
         ":iiwa_constants",
         "//common:find_resource",
+        "//lcm",
         "//manipulation/util:make_arm_controller_model",
         "//multibody/parsing:model_instance_info",
         "//multibody/parsing:parser",
@@ -218,4 +234,18 @@ drake_cc_googletest(
     ],
 )
 
-add_lint_tests(enable_clang_format_lint = False)
+drake_cc_googletest(
+    name = "sim_iiwa_driver_test",
+    data = [
+        "//manipulation/models/iiwa_description:models",
+    ],
+    deps = [
+        ":iiwa_constants",
+        ":sim_iiwa_driver",
+        "//multibody/parsing",
+        "//multibody/plant",
+        "//systems/framework/test_utilities:scalar_conversion",
+    ],
+)
+
+add_lint_tests()

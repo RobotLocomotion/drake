@@ -1,26 +1,26 @@
-load("@drake//tools/install:install.bzl", "install")
+load("//tools/install:install.bzl", "install")
 load(
-    "@drake//tools/skylark:test_tags.bzl",
+    "//tools/skylark:test_tags.bzl",
     "gurobi_test_tags",
     "mosek_test_tags",
 )
 load(
-    "@drake//tools/skylark:drake_cc.bzl",
+    "//tools/skylark:drake_cc.bzl",
     "drake_cc_library",
 )
 load(
-    "@drake//tools/skylark:pybind.bzl",
+    "//tools/skylark:pybind.bzl",
     "drake_pybind_library",
     "get_drake_py_installs",
     "get_pybind_package_info",
 )
 load(
-    "@drake//tools/skylark:drake_py.bzl",
+    "//tools/skylark:drake_py.bzl",
     "drake_py_library",
     "drake_py_unittest",
 )
 load(
-    "@drake//tools/skylark:alias.bzl",
+    "//tools/skylark:alias.bzl",
     "drake_py_library_aliases",
 )
 load("//bindings/pydrake:pydrake.bzl", "add_lint_tests_pydrake")
@@ -238,6 +238,7 @@ drake_py_unittest(
     name = "evaluators_test",
     deps = [
         ":solvers",
+        "//bindings/pydrake/common/test_utilities",
         "//bindings/pydrake/common/test_utilities:scipy_stub_py",
     ],
 )

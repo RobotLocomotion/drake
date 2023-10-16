@@ -1,17 +1,6 @@
-load(
-    "@drake//tools/skylark:drake_cc.bzl",
-    "drake_cc_library",
-)
-load(
-    "@drake//tools/skylark:pathutils.bzl",
-    "basename",
-    "dirname",
-    "join_paths",
-)
-load(
-    "@drake//tools/skylark:python_env.bzl",
-    "hermetic_python_env",
-)
+load("//tools/skylark:drake_cc.bzl", "drake_cc_library")
+load("//tools/skylark:pathutils.bzl", "basename", "dirname", "join_paths")
+load("//tools/skylark:python_env.bzl", "hermetic_python_env")
 
 def _relative_dirname_basename(label):
     # When computing outs derived from srcs in a different package (i.e., when
@@ -152,6 +141,7 @@ def cc_vector_gen(
 def drake_cc_vector_gen_library(
         name,
         srcs = [],
+        tags = [],
         deps = [],
         **kwargs):
     """Given *_named_vector.yaml files in `srcs`, declare a drake_cc_library
@@ -165,6 +155,7 @@ def drake_cc_vector_gen_library(
     generated = cc_vector_gen(
         name = name + "_codegen",
         srcs = srcs,
+        tags = tags,
         include_prefix = "drake",
         drake_workspace_name = "",
         visibility = [],
@@ -173,6 +164,7 @@ def drake_cc_vector_gen_library(
         name = name,
         srcs = generated.srcs,
         hdrs = generated.hdrs,
+        tags = tags + ["nolint"],
         deps = deps + generated.deps,
         **kwargs
     )

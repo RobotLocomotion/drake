@@ -218,6 +218,13 @@ GTEST_TEST(TestLPDualSolution4, Test) {
   }
 }
 
+GTEST_TEST(TestLPDualSolution5, Test) {
+  ScsSolver solver;
+  if (solver.available()) {
+    TestLPDualSolution5(solver, kTol);
+  }
+}
+
 TEST_P(TestEllipsoidsSeparation, TestSOCP) {
   ScsSolver scs_solver;
   if (scs_solver.available()) {

@@ -68,9 +68,8 @@ void WriteVtkUnstructuredGrid(std::ofstream& out, const Mesh& mesh) {
 /*
  @tparam Mesh  VolumeMesh<double> or TriangleSurfaceMesh<double>
  */
-template<typename Mesh>
-void WriteMeshToVtk(const std::string& file_name,
-                    const Mesh& mesh,
+template <typename Mesh>
+void WriteMeshToVtk(const std::string& file_name, const Mesh& mesh,
                     const std::string& title) {
   std::ofstream file(file_name);
   if (file.fail()) {
@@ -86,9 +85,8 @@ void WriteMeshToVtk(const std::string& file_name,
                TriangleSurfaceMeshFieldLinear<double, double>
  */
 template <typename Field>
-void WriteVtkScalarField(
-    std::ofstream& out, std::string name,
-    const Field& field) {
+void WriteVtkScalarField(std::ofstream& out, std::string name,
+                         const Field& field) {
   out << fmt::format("POINT_DATA {}\n", field.values().size());
   // VTK doesn't like space ' ' in the name of the scalar field.
   // Replace space ' ' with underscore '_'.

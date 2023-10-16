@@ -48,11 +48,7 @@ void ApplyVisualizationConfigImpl(const VisualizationConfig& config,
   const std::vector<DrakeVisualizerParams> all_drake_params =
       internal::ConvertVisualizationConfigToDrakeParams(config);
   for (const DrakeVisualizerParams& params : all_drake_params) {
-    // TODO(jwnimmer-tri) At the moment, meldis cannot yet display hydroelastic
-    // geometry. So long as that's true, we should not enable it.
-    DrakeVisualizerParams oopsie = params;
-    oopsie.show_hydroelastic = false;
-    DrakeVisualizer<double>::AddToBuilder(builder, *scene_graph, lcm, oopsie);
+    DrakeVisualizer<double>::AddToBuilder(builder, *scene_graph, lcm, params);
   }
   if (config.publish_contacts) {
     ConnectContactResultsToDrakeVisualizer(builder, plant, *scene_graph, lcm,
@@ -114,41 +110,6 @@ void ApplyVisualizationConfig(const VisualizationConfig& config,
   }
   ApplyVisualizationConfigImpl(config, lcm, meshcat, *plant, scene_graph,
                                builder);
-}
-
-// This is the deprecated overload.
-void ApplyVisualizationConfig(const VisualizationConfig& config,
-                              DiagramBuilder<double>* builder,
-                              const LcmBuses* lcm_buses,
-                              const MultibodyPlant<double>* plant,
-                              const SceneGraph<double>* scene_graph,
-                              std::shared_ptr<geometry::Meshcat> meshcat,
-                              DrakeLcmInterface* lcm) {
-  DRAKE_THROW_UNLESS(builder != nullptr);
-
-  // Respell the const scene_graph pointer that the user gave us into a mutable
-  // pointer instead. This is as simple as a const_cast, but first we need to
-  // confirm that the const pointer was referring to something inside `builder`
-  // to avoid any nasty surprises later on.
-  SceneGraph<double>* mutable_scene_graph = nullptr;
-  if (scene_graph != nullptr) {
-    for (System<double>* system : builder->GetMutableSystems()) {
-      DRAKE_DEMAND(system != nullptr);
-      if (system == scene_graph) {
-        mutable_scene_graph = const_cast<SceneGraph<double>*>(scene_graph);
-        break;
-      }
-    }
-    if (mutable_scene_graph == nullptr) {
-      throw std::logic_error(
-          "The const scene_graph provided to ApplyVisualizationConfig was not "
-          "a System owned by the provided builder");
-    }
-  }
-
-  // Delegate to the mutable overload.
-  ApplyVisualizationConfig(config, builder, lcm_buses, plant,
-                           mutable_scene_graph, std::move(meshcat), lcm);
 }
 
 void AddDefaultVisualization(DiagramBuilder<double>* builder,

@@ -14,13 +14,13 @@ notebooks. See the [Tutorials](/index.html#tutorials) page for details.
 The following table shows the configurations and platforms that Drake
 officially supports:
 
-| Operating System ⁽¹⁾               | Architecture | Python ⁽²⁾ |
-|------------------------------------|--------------|------------|
-| Ubuntu 20.04 LTS (Focal Fossa)     | x86_64       | 3.8 ⁽³⁾    |
-| Ubuntu 22.04 LTS (Jammy Jellyfish) | x86_64       | 3.10 ⁽³⁾   |
-| macOS Monterey (12)                | x86_64       | 3.11       |
-| macOS Monterey (12)                | arm64        | 3.11       |
-| macOS Ventura (13)                 | arm64        | 3.11       |
+| Operating System ⁽¹⁾               | Architecture | Python ⁽²⁾ | End of life ⁽⁴⁾ |
+|------------------------------------|--------------|------------|-----------------|
+| Ubuntu 20.04 LTS (Focal Fossa)     | x86_64       | 3.8 ⁽³⁾    | March 2024      |
+| Ubuntu 22.04 LTS (Jammy Jellyfish) | x86_64       | 3.10 ⁽³⁾   | March 2026      |
+| macOS Monterey (12)                | x86_64       | 3.11       | October 2023    |
+| macOS Monterey (12)                | arm64        | 3.11       | October 2023    |
+| macOS Ventura (13)                 | arm64        | 3.11       | October 2024    |
 
 "Official support" means that we have Continuous Integration test coverage to
 notice regressions, so if it doesn't work for you then please file a bug report.
@@ -42,7 +42,12 @@ that Conda is involved.
 
 ⁽³⁾ The Python version shown in the table is supported for all installation
 channels. Additionally, on Ubuntu when installing via ``pip`` Python versions
-3.8 through 3.11 (inclusive) are supported.
+3.8 through 3.12 (inclusive) are supported.
+Refer to [OS Support](/stable.html#os-support) for details on our "end of life"
+timeline for changing which Python versions are supported.
+
+⁽⁴⁾ These end-of-life dates are estimates.
+Refer to [OS Support](/stable.html#os-support) for details.
 
 Additionally, if you are compiling your own C++ code against Drake's C++ code
 and are using Drake's pre-compiled binaries, then you must use the same

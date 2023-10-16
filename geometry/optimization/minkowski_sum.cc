@@ -45,10 +45,10 @@ int GetAmbientDimension(const ConvexSets& sets) {
 MinkowskiSum::MinkowskiSum() : MinkowskiSum(ConvexSets{}) {}
 
 MinkowskiSum::MinkowskiSum(const ConvexSets& sets)
-    : ConvexSet(GetAmbientDimension(sets)), sets_(sets) {}
+    : ConvexSet(GetAmbientDimension(sets), false), sets_(sets) {}
 
 MinkowskiSum::MinkowskiSum(const ConvexSet& setA, const ConvexSet& setB)
-    : ConvexSet(setA.ambient_dimension()) {
+    : ConvexSet(setA.ambient_dimension(), false) {
   DRAKE_THROW_UNLESS(setB.ambient_dimension() == setA.ambient_dimension());
   sets_.emplace_back(setA.Clone());
   sets_.emplace_back(setB.Clone());
@@ -57,7 +57,7 @@ MinkowskiSum::MinkowskiSum(const ConvexSet& setA, const ConvexSet& setB)
 MinkowskiSum::MinkowskiSum(const QueryObject<double>& query_object,
                            GeometryId geometry_id,
                            std::optional<FrameId> reference_frame)
-    : ConvexSet(3) {
+    : ConvexSet(3, false) {
   Capsule capsule(1., 1.);
   query_object.inspector().GetShape(geometry_id).Reify(this, &capsule);
 

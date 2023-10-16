@@ -60,7 +60,9 @@ struct MosekSolverDetails {
  * parameters in
  * https://docs.mosek.com/10.0/capi/param-groups.html#doc-param-groups. On top
  * of these parameters, we also provide the following additional parameters
- * 1. "writedata", set to a file name so that MOSEK™ solver will write the
+ *
+ * - "writedata"
+ *    set to a file name so that MOSEK™ solver will write the
  *    optimization model to this file. check
  *    https://docs.mosek.com/10.0/capi/solver-io.html#saving-a-problem-to-a-file
  *    for more details. The supported file extensions are listed in

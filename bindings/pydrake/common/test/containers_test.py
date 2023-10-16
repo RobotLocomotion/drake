@@ -133,19 +133,19 @@ class TestNamedView(unittest.TestCase):
 
     def test_name_sanitation(self):
         MyView = namedview("MyView",
-                           ["$world_base", "iiwa::iiwa", "no spaces", "2vär"])
+                           ["$xyz_base", "iiwa::iiwa", "no spaces", "2vär"])
         self.assertEqual(MyView.get_fields(),
-                         ("_world_base", "iiwa_iiwa", "no_spaces", "_2vär"))
+                         ("_xyz_base", "iiwa_iiwa", "no_spaces", "_2vär"))
         view = MyView.Zero()
-        view._world_base = 3
+        view._xyz_base = 3
         view.iiwa_iiwa = 4
         view.no_spaces = 5
         view._2vär = 6
         np.testing.assert_equal(view[:], [3, 4, 5, 6])
 
-        MyView = namedview("MyView", ["$world_base", "iiwa::iiwa"],
+        MyView = namedview("MyView", ["$xyz_base", "iiwa::iiwa"],
                            sanitize_field_names=False)
-        self.assertEqual(MyView.get_fields(), ("$world_base", "iiwa::iiwa"))
+        self.assertEqual(MyView.get_fields(), ("$xyz_base", "iiwa::iiwa"))
 
     def test_uniqueness(self):
         with self.assertRaisesRegex(AssertionError, ".*must be unique.*"):

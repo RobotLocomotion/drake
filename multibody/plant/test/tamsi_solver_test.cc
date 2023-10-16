@@ -17,8 +17,7 @@ class TamsiSolverTester {
  public:
   static MatrixX<double> CalcJacobian(
       const TamsiSolver<double>& solver,
-      const Eigen::Ref<const VectorX<double>>& v,
-      double dt) {
+      const Eigen::Ref<const VectorX<double>>& v, double dt) {
     const int nv = solver.nv_;
 
     // Problem data.
@@ -82,7 +81,7 @@ class DirectionLimiter : public ::testing::Test {
   }
 
   // Limiter parameters. See TalsLimiter for further details.
-  const double v_stiction = 1.0e-4;  // m/s
+  const double v_stiction = 1.0e-4;     // m/s
   const double theta_max = M_PI / 6.0;  // radians.
   const double cos_min = std::cos(theta_max);
   const double tolerance = 0.01;  // Dimensionless. A factor of v_stiction.
@@ -95,7 +94,8 @@ TEST_F(DirectionLimiter, ZeroVandZeroDv) {
   const Vector2<double> vt = Vector2<double>::Zero();
   const Vector2<double> dvt = Vector2<double>::Zero();
   const double alpha = internal::TalsLimiter<double>::CalcAlpha(
-      vt, dvt, cos_min, v_stiction, tolerance).value();
+                           vt, dvt, cos_min, v_stiction, tolerance)
+                           .value();
   EXPECT_NEAR(alpha, 1.0, kTolerance);
 }
 
@@ -105,7 +105,8 @@ TEST_F(DirectionLimiter, ZeroVtoWithinStictionRegion) {
   const Vector2<double> vt = Vector2<double>::Zero();
   const Vector2<double> dvt = Vector2<double>(-0.5, 0.7) * v_stiction;
   const double alpha = internal::TalsLimiter<double>::CalcAlpha(
-      vt, dvt, cos_min, v_stiction, tolerance).value();
+                           vt, dvt, cos_min, v_stiction, tolerance)
+                           .value();
   EXPECT_NEAR(alpha, 1.0, kTolerance);
 }
 
@@ -114,11 +115,12 @@ TEST_F(DirectionLimiter, ZeroVtoSlidingRegion) {
   const Vector2<double> vt = Vector2<double>::Zero();
   const Vector2<double> dvt = Vector2<double>(0.3, -0.1);
   const double alpha = internal::TalsLimiter<double>::CalcAlpha(
-      vt, dvt, cos_min, v_stiction, tolerance).value();
+                           vt, dvt, cos_min, v_stiction, tolerance)
+                           .value();
   const Vector2<double> vt_alpha_expected = dvt.normalized() * v_stiction / 2.0;
   const Vector2<double> vt_alpha = vt + alpha * dvt;
-  EXPECT_TRUE(CompareMatrices(
-      vt_alpha, vt_alpha_expected, kTolerance, MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(vt_alpha, vt_alpha_expected, kTolerance,
+                              MatrixCompareType::relative));
 }
 
 // Sliding to perfect stiction with vt = 0.
@@ -126,7 +128,8 @@ TEST_F(DirectionLimiter, SlidingRegiontoZero) {
   const Vector2<double> vt = Vector2<double>(0.3, -0.1);
   const Vector2<double> dvt = -vt;
   const double alpha = internal::TalsLimiter<double>::CalcAlpha(
-      vt, dvt, cos_min, v_stiction, tolerance).value();
+                           vt, dvt, cos_min, v_stiction, tolerance)
+                           .value();
   // TalsLimiter does not allow changes from outside the stiction region
   // (where friction is constant) to exactly zero velocity, since this
   // would imply leaving the solver in a state where gradients are negligible
@@ -135,8 +138,8 @@ TEST_F(DirectionLimiter, SlidingRegiontoZero) {
   // iterative process even more.
   const Vector2<double> vt_alpha = vt + alpha * dvt;
   const Vector2<double> vt_alpha_expected = vt.normalized() * v_stiction / 2.0;
-  EXPECT_TRUE(CompareMatrices(
-      vt_alpha, vt_alpha_expected, kTolerance, MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(vt_alpha, vt_alpha_expected, kTolerance,
+                              MatrixCompareType::relative));
 }
 
 // A vt that lies outside the stiction region lies somewhere within the circle
@@ -148,7 +151,8 @@ TEST_F(DirectionLimiter, SlidingRegionToStictionRegion) {
       Vector2<double>(-0.3, 0.45) * v_stiction;
   const Vector2<double> dvt = vt_alpha_expected - vt;
   const double alpha = internal::TalsLimiter<double>::CalcAlpha(
-      vt, dvt, cos_min, v_stiction, tolerance).value();
+                           vt, dvt, cos_min, v_stiction, tolerance)
+                           .value();
   EXPECT_NEAR(alpha, 1.0, kTolerance);
 }
 
@@ -159,7 +163,8 @@ TEST_F(DirectionLimiter, WithinStictionRegionToSlidingRegion) {
   const Vector2<double> vt = Vector2<double>(-0.5, 0.7) * v_stiction;
   const Vector2<double> dvt = Vector2<double>(0.9, -0.3);
   const double alpha = internal::TalsLimiter<double>::CalcAlpha(
-      vt, dvt, cos_min, v_stiction, tolerance).value();
+                           vt, dvt, cos_min, v_stiction, tolerance)
+                           .value();
   EXPECT_NEAR(alpha, 1.0, kTolerance);
 }
 
@@ -171,7 +176,8 @@ TEST_F(DirectionLimiter, StictionToSliding) {
   const Vector2<double> dvt(0.3, 0.15);
 
   const double alpha = internal::TalsLimiter<double>::CalcAlpha(
-      vt, dvt, cos_min, v_stiction, tolerance).value();
+                           vt, dvt, cos_min, v_stiction, tolerance)
+                           .value();
 
   // For this case TalsLimiter neglects the very small initial vt
   // (since we always have tolerance << 1.0) so that:
@@ -188,7 +194,8 @@ TEST_F(DirectionLimiter, VerySmallDeltaV) {
   const Vector2<double> dvt =
       Vector2<double>(-0.5, 0.3) * v_stiction * tolerance;
   const double alpha = internal::TalsLimiter<double>::CalcAlpha(
-      vt, dvt, cos_min, v_stiction, tolerance).value();
+                           vt, dvt, cos_min, v_stiction, tolerance)
+                           .value();
   EXPECT_NEAR(alpha, 1.0, kTolerance);
 }
 
@@ -200,7 +207,8 @@ TEST_F(DirectionLimiter, StraightCrossThroughZero) {
   const Vector2<double> dvt(-0.3, -0.15);  // dvt = -3 * vt.
 
   const double alpha = internal::TalsLimiter<double>::CalcAlpha(
-      vt, dvt, cos_min, v_stiction, tolerance).value();
+                           vt, dvt, cos_min, v_stiction, tolerance)
+                           .value();
 
   // Since the change crosses zero exactly, we expect
   // v_alpha = v + alpha * dv = v/‖v‖⋅vₛ/2.
@@ -208,8 +216,8 @@ TEST_F(DirectionLimiter, StraightCrossThroughZero) {
 
   const Vector2<double> vt_alpha = vt + alpha * dvt;
 
-  EXPECT_TRUE(CompareMatrices(
-      vt_alpha, vt_alpha_expected, kTolerance, MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(vt_alpha, vt_alpha_expected, kTolerance,
+                              MatrixCompareType::relative));
 }
 
 // Test a direction change from vt to v1 = vt + dvt that crosses through the
@@ -238,12 +246,13 @@ TEST_F(DirectionLimiter, CrossStictionRegionFromTheOutside) {
   const Vector2<double> dvt = v1 - vt;
 
   const double alpha = internal::TalsLimiter<double>::CalcAlpha(
-      vt, dvt, cos_min, v_stiction, tolerance).value();
+                           vt, dvt, cos_min, v_stiction, tolerance)
+                           .value();
 
   // Verify the result from the limiter.
   const Vector2<double> vt_alpha = vt + alpha * dvt;
-  EXPECT_TRUE(CompareMatrices(
-      vt_alpha, vt_alpha_expected, kTolerance, MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(vt_alpha, vt_alpha_expected, kTolerance,
+                              MatrixCompareType::relative));
 }
 
 // Tests the limiter for a case in which both vt and v1 = vt + dvt are both
@@ -263,7 +272,8 @@ TEST_F(DirectionLimiter, ChangesWithinTheSlidingRegion) {
   const Vector2<double> dvt = v1 - vt;
 
   const double alpha = internal::TalsLimiter<double>::CalcAlpha(
-      vt, dvt, cos_min, v_stiction, tolerance).value();
+                           vt, dvt, cos_min, v_stiction, tolerance)
+                           .value();
 
   EXPECT_NEAR(alpha, 1.0, kTolerance);
 }
@@ -289,12 +299,13 @@ TEST_F(DirectionLimiter, ChangesWithinTheSlidingRegion_LargeTheta) {
   const Vector2<double> dvt = v1 - vt;
 
   const double alpha = internal::TalsLimiter<double>::CalcAlpha(
-      vt, dvt, cos_min, v_stiction, tolerance).value();
+                           vt, dvt, cos_min, v_stiction, tolerance)
+                           .value();
 
   const Vector2<double> vt_alpha = vt + alpha * dvt;
 
   // Compute the angle between vt_alpha and vt.
-  double cos_theta = vt.dot(vt_alpha)/vt.norm()/vt_alpha.norm();
+  double cos_theta = vt.dot(vt_alpha) / vt.norm() / vt_alpha.norm();
   double theta = std::acos(cos_theta);
 
   // Verify the result was limited to form an angle theta_max.
@@ -322,12 +333,13 @@ TEST_F(DirectionLimiter, ChangesWithinTheSlidingRegion_VeryLargeTheta) {
   const Vector2<double> dvt = v1 - vt;
 
   const double alpha = internal::TalsLimiter<double>::CalcAlpha(
-      vt, dvt, cos_min, v_stiction, tolerance).value();
+                           vt, dvt, cos_min, v_stiction, tolerance)
+                           .value();
 
   const Vector2<double> vt_alpha = vt + alpha * dvt;
 
   // Compute the angle between vt_alpha and vt.
-  double cos_theta = vt.dot(vt_alpha)/vt.norm()/vt_alpha.norm();
+  double cos_theta = vt.dot(vt_alpha) / vt.norm() / vt_alpha.norm();
   double theta = std::acos(cos_theta);
 
   // Verify the result was limited to form an angle theta_max.
@@ -351,16 +363,17 @@ TEST_F(DirectionLimiter, ChangesWithinTheSlidingRegion_SingleSolution) {
   // Before proceeding with the test, assert that we are in a case where theta1
   // is larger than theta_max.
   const Vector2<double> v1 = vt + dvt;
-  double theta1 = std::cos(vt.dot(v1)/vt.norm()/v1.norm());
+  double theta1 = std::cos(vt.dot(v1) / vt.norm() / v1.norm());
   ASSERT_GT(theta1, theta_max);
 
   const double alpha = internal::TalsLimiter<double>::CalcAlpha(
-      vt, dvt, cos_min, v_stiction, tolerance).value();
+                           vt, dvt, cos_min, v_stiction, tolerance)
+                           .value();
 
   const Vector2<double> vt_alpha = vt + alpha * dvt;
 
   // Compute the angle between vt_alpha and vt.
-  double cos_theta = vt.dot(vt_alpha)/vt.norm()/vt_alpha.norm();
+  double cos_theta = vt.dot(vt_alpha) / vt.norm() / vt_alpha.norm();
   double theta = std::acos(cos_theta);
 
   // Verify the result was limited to form an angle theta_max.
@@ -416,9 +429,11 @@ class PizzaSaver : public ::testing::Test {
     //   Mv̇ = τ + Dᵀ fₜ
     // where τ =[Fx, Fy, Mz] contains the external force in x, the external
     // force in y and the external moment about z (out of plane).
+    // clang-format off
     M_ << m_,  0,  0,
            0, m_,  0,
            0,  0,  I_;
+    // clang-format on
   }
 
   MatrixX<double> ComputeTangentialJacobian(double theta) {
@@ -428,8 +443,10 @@ class PizzaSaver : public ::testing::Test {
 
     // 2D rotation matrix of the body frame B in the world frame W.
     Matrix2<double> R_WB;
-    R_WB <<  c, s,
-            -s, c;
+    // clang-format off
+    R_WB << c, s,
+           -s, c;
+    // clang-format on
 
     // Position of each contact point in the body frame B.
     const Vector2<double> p_BoA(-sqrt(3) / 2.0, -0.5);
@@ -442,16 +459,22 @@ class PizzaSaver : public ::testing::Test {
     const Vector2<double> p_BoC_W = R_WB * p_BoC;
 
     // Point A
+    // clang-format off
     Jt.block(0, 0, 2, nv_) << 1, 0, -p_BoA_W.y(),
-        0, 1,  p_BoA_W.x();
+                              0, 1,  p_BoA_W.x();
+    // clang-format on
 
     // Point B
+    // clang-format off
     Jt.block(2, 0, 2, nv_) << 1, 0, -p_BoB_W.y(),
-        0, 1,  p_BoB_W.x();
+                              0, 1,  p_BoB_W.x();
+    // clang-format on
 
     // Point C
+    // clang-format off
     Jt.block(4, 0, 2, nv_) << 1, 0, -p_BoC_W.y(),
-        0, 1,  p_BoC_W.x();
+                               0, 1, p_BoC_W.x();
+    // clang-format on
 
     return Jt;
   }
@@ -477,8 +500,7 @@ class PizzaSaver : public ::testing::Test {
   }
 
   void SetNoContactProblem(const Vector3<double>& v0,
-                           const Vector3<double>& tau,
-                           double dt) {
+                           const Vector3<double>& tau, double dt) {
     // Next time step generalized momentum if there are no friction forces.
     p_star_ = M_ * v0 + dt * tau;
 
@@ -562,7 +584,7 @@ TEST_F(PizzaSaver, SmallAppliedMoment) {
   const double vt_tolerance =
       // Dimensionless relative (to the stiction tolerance) tolerance.
       solver_.get_solver_parameters().relative_tolerance *
-          solver_.get_solver_parameters().stiction_tolerance;
+      solver_.get_solver_parameters().stiction_tolerance;
   EXPECT_TRUE(stats.vt_residual() < vt_tolerance);
 
   // For this problem we expect the x and y components of the forces due to
@@ -605,8 +627,7 @@ TEST_F(PizzaSaver, SmallAppliedMoment) {
 
   // Compute the Newton-Raphson Jacobian of the residual J = ∇ᵥR using the
   // solver's internal implementation.
-  MatrixX<double> J =
-      TamsiSolverTester::CalcJacobian(solver_, v, dt);
+  MatrixX<double> J = TamsiSolverTester::CalcJacobian(solver_, v, dt);
 
   // Compute the same Newton-Raphson Jacobian of the residual J = ∇ᵥR but with
   // a completely separate implementation using automatic differentiation.
@@ -616,13 +637,12 @@ TEST_F(PizzaSaver, SmallAppliedMoment) {
       M_, Jn_, Jt_, p_star_, mu_, fn_, dt, v_stiction, epsilon_v, v);
 
   // We use a tolerance scaled by the norm and size of the matrix.
-  const double J_tolerance =
-      J_expected.rows() * J_expected.norm() *
-          std::numeric_limits<double>::epsilon();
+  const double J_tolerance = J_expected.rows() * J_expected.norm() *
+                             std::numeric_limits<double>::epsilon();
 
   // Verify the result.
-  EXPECT_TRUE(CompareMatrices(
-      J, J_expected, J_tolerance, MatrixCompareType::absolute));
+  EXPECT_TRUE(
+      CompareMatrices(J, J_expected, J_tolerance, MatrixCompareType::absolute));
 }
 
 // Exactly the same problem as in PizzaSaver::SmallAppliedMoment but with an
@@ -633,7 +653,7 @@ TEST_F(PizzaSaver, SmallAppliedMoment) {
 TEST_F(PizzaSaver, LargeAppliedMoment) {
   const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
   const double dt = 1.0e-3;  // time step in seconds.
-  const double mu = 0.5;  // Friction coefficient.
+  const double mu = 0.5;     // Friction coefficient.
 
   // Some arbitrary orientation. This particular case has symmetry of
   // revolution.
@@ -664,7 +684,7 @@ TEST_F(PizzaSaver, LargeAppliedMoment) {
   const double vt_tolerance =
       // Dimensionless relative (to the stiction tolerance) tolerance.
       solver_.get_solver_parameters().relative_tolerance *
-          solver_.get_solver_parameters().stiction_tolerance;
+      solver_.get_solver_parameters().stiction_tolerance;
   EXPECT_TRUE(stats.vt_residual() < vt_tolerance);
 
   // For this problem we expect the x and y components of the forces due to
@@ -711,8 +731,7 @@ TEST_F(PizzaSaver, LargeAppliedMoment) {
 
   // Compute the Newton-Raphson Jacobian of the residual J = ∇ᵥR using the
   // solver's internal implementation.
-  MatrixX<double> J =
-      TamsiSolverTester::CalcJacobian(solver_, v, dt);
+  MatrixX<double> J = TamsiSolverTester::CalcJacobian(solver_, v, dt);
 
   // Compute the same Newton-Raphson Jacobian of the residual J = ∇ᵥR but with
   // a completely separate implementation using automatic differentiation.
@@ -723,11 +742,11 @@ TEST_F(PizzaSaver, LargeAppliedMoment) {
 
   // We use a tolerance scaled by the norm and size of the matrix.
   const double J_tolerance = J_expected.rows() * J_expected.norm() *
-      std::numeric_limits<double>::epsilon();
+                             std::numeric_limits<double>::epsilon();
 
   // Verify the result.
-  EXPECT_TRUE(CompareMatrices(
-      J, J_expected, J_tolerance, MatrixCompareType::absolute));
+  EXPECT_TRUE(
+      CompareMatrices(J, J_expected, J_tolerance, MatrixCompareType::absolute));
 }
 
 // Verify the solver behaves correctly when the problem data contains no
@@ -823,9 +842,11 @@ class RollingCylinder : public ::testing::Test {
   void SetUp() override {
     // Mass matrix corresponding to free (in 2D) cylinder.
     // Generalized velocities are v = [vx, vy, ω].
+    // clang-format off
     M_ << m_,  0,  0,
            0, m_,  0,
            0,  0,  I_;
+    // clang-format on
   }
 
   // Computes tangential velocity Jacobian s.t. vt = Jt * v.
@@ -836,7 +857,7 @@ class RollingCylinder : public ::testing::Test {
   MatrixX<double> ComputeTangentialJacobian() {
     MatrixX<double> D(2, nv_);
     // vt = vx + w * R = [1, 0, R] * v
-    D << 1.0, 0.0, R_,   // Along the x axis
+    D << 1.0, 0.0, R_,  // Along the x axis
         0.0, 0.0, 0.0;  // Along the z axis out of the plane.
     return D;
   }
@@ -906,18 +927,18 @@ class RollingCylinder : public ::testing::Test {
   // with pn = −m vy = m sqrt(2 g h0) and vx_transition determined from
   // vx_transition =  μ (1 + m R²/I) pn/m as described in the documentation of
   // this test fixture.
-  const double m_{1.0};   // Mass of the cylinder, kg.
-  const double R_{1.0};   // Radius of the cylinder, m.
-  const double g_{9.0};   // Acceleration of gravity, m/s².
+  const double m_{1.0};  // Mass of the cylinder, kg.
+  const double R_{1.0};  // Radius of the cylinder, m.
+  const double g_{9.0};  // Acceleration of gravity, m/s².
   // For a thin cylindrical shell the moment of inertia is I = m R². We use this
   // inertia so that numbers are simpler for debugging purposes
   // (I = 1.0 kg m² in this case).
   const double I_{R_ * R_ * m_};  // kg m².
-  const double mu_{0.1};  // Coefficient of friction, dimensionless.
+  const double mu_{0.1};          // Coefficient of friction, dimensionless.
 
   // Problem sizes.
   const int nv_{3};  // number of generalized velocities.
-  int nc_{1};  // number of contact points.
+  int nc_{1};        // number of contact points.
 
   // Mass matrix.
   MatrixX<double> M_{nv_, nv_};
@@ -938,14 +959,14 @@ class RollingCylinder : public ::testing::Test {
 
   // Additional solver data that must outlive solver_ during solution.
   VectorX<double> p_star_{nv_};  // Generalized momentum.
-  VectorX<double> mu_vector_;  // Friction at each contact point.
+  VectorX<double> mu_vector_;    // Friction at each contact point.
 };
 
 TEST_F(RollingCylinder, StictionAfterImpact) {
   const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
 
   const double dt = 1.0e-3;  // time step in seconds.
-  const double mu = 0.1;  // Friction coefficient.
+  const double mu = 0.1;     // Friction coefficient.
 
   // Other than normal contact forces, external forcing for this problem
   // includes gravity.
@@ -1071,7 +1092,7 @@ TEST_F(RollingCylinder, SlidingAfterImpact) {
 
   const double vt_tolerance =
       solver_.get_solver_parameters().relative_tolerance *
-          solver_.get_solver_parameters().stiction_tolerance;
+      solver_.get_solver_parameters().stiction_tolerance;
   EXPECT_TRUE(stats.vt_residual() < vt_tolerance);
 
   // Friction should only act horizontally.
@@ -1101,25 +1122,23 @@ TEST_F(RollingCylinder, SlidingAfterImpact) {
 
   // Compute the Newton-Raphson Jacobian of the (two-way coupled)
   // residual J = ∇ᵥR using the solver's internal implementation.
-  MatrixX<double> J =
-      TamsiSolverTester::CalcJacobian(solver_, v, dt);
+  MatrixX<double> J = TamsiSolverTester::CalcJacobian(solver_, v, dt);
 
   // Compute the same Newton-Raphson Jacobian of the residual J = ∇ᵥR but with
   // a completely separate implementation using automatic differentiation.
   const double v_stiction = parameters.stiction_tolerance;
   const double epsilon_v = v_stiction * parameters.relative_tolerance;
   MatrixX<double> J_expected = test::CalcTwoWayCoupledJacobianWithAutoDiff(
-      M_, Jn_, Jt_, p_star_, x0_, mu_vector_,
-      stiffness_, dissipation_, dt, v_stiction, epsilon_v, v);
+      M_, Jn_, Jt_, p_star_, x0_, mu_vector_, stiffness_, dissipation_, dt,
+      v_stiction, epsilon_v, v);
 
   // We use a tolerance scaled by the norm and size of the matrix.
-  const double J_tolerance =
-      J_expected.rows() * J_expected.norm() *
-          std::numeric_limits<double>::epsilon();
+  const double J_tolerance = J_expected.rows() * J_expected.norm() *
+                             std::numeric_limits<double>::epsilon();
 
   // Verify the result.
-  EXPECT_TRUE(CompareMatrices(
-      J, J_expected, J_tolerance, MatrixCompareType::absolute));
+  EXPECT_TRUE(
+      CompareMatrices(J, J_expected, J_tolerance, MatrixCompareType::absolute));
 }
 
 GTEST_TEST(EmptyWorld, Solve) {
@@ -1137,4 +1156,3 @@ GTEST_TEST(EmptyWorld, Solve) {
 }  // namespace
 }  // namespace multibody
 }  // namespace drake
-

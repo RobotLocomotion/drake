@@ -6,20 +6,17 @@ load(
     "PYTHON_SITE_PACKAGES_RELPATH",
     "PYTHON_VERSION",
 )
+load("//tools/install:install.bzl", "install", "install_cmake_config")
+load("//tools/skylark:cc.bzl", "cc_binary", "cc_library")
 load(
-    "@drake//tools/install:install.bzl",
-    "install",
-    "install_cmake_config",
-)
-load(
-    "@drake//tools/skylark:drake_cc.bzl",
+    "//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
     "drake_cc_library",
     "drake_cc_test",
     "drake_transitive_installed_hdrs_filegroup",
 )
 load(
-    "@drake//tools/skylark:drake_py.bzl",
+    "//tools/skylark:drake_py.bzl",
     "drake_py_unittest",
 )
 load(":header_lint.bzl", "cc_check_allowed_headers")
@@ -165,28 +162,6 @@ cc_library(
     }),
 )
 
-# Depend on the subset of VTK's shared libraries that Drake uses.
-cc_library(
-    name = "vtk_deps",
-    deps = [
-        # TODO(jwnimmer-tri) This duplicates the list of VTK libraries needed
-        # by //sensors.  We should find a way for ":drake_shared_library" to be
-        # declared without having to repeat this list here.
-        "@vtk//:vtkCommonCore",
-        "@vtk//:vtkCommonDataModel",
-        "@vtk//:vtkCommonExecutionModel",
-        "@vtk//:vtkCommonTransforms",
-        "@vtk//:vtkFiltersGeneral",
-        "@vtk//:vtkFiltersSources",
-        "@vtk//:vtkIOExport",
-        "@vtk//:vtkIOGeometry",
-        "@vtk//:vtkIOImage",
-        "@vtk//:vtkIOImport",
-        "@vtk//:vtkRenderingCore",
-        "@vtk//:vtkRenderingOpenGL2",
-    ],
-)
-
 # Depend on X11 iff on Ubuntu and not MacOS.
 cc_library(
     name = "x11_deps",
@@ -229,7 +204,6 @@ cc_library(
         ":gurobi_deps",
         ":ipopt_deps",
         ":mosek_deps",
-        ":vtk_deps",
         ":x11_deps",
         "//common:drake_marker_shared_library",
         "@lcm",
@@ -265,6 +239,30 @@ drake_cc_googletest(
     tags = ["no_kcov"],  # See #10788.
     deps = [
         "//:drake_shared_library",
+    ],
+)
+
+# The exported_symbols_test is skipped in some build configurations.
+selects.config_setting_group(
+    name = "skip_exported_symbols_test",
+    match_any = [
+        # Debug builds have a lot more symbols (no dead code elimination) so
+        # are too much work to tidy up.
+        "//tools/cc_toolchain:debug",
+        # Rust symbols (from Clarabel) have the wrong visibility; this is a
+        # known issue with a TODO in the Clarabel BUILD file.
+        "//tools:with_clarabel",
+    ],
+)
+
+drake_py_unittest(
+    name = "exported_symbols_test",
+    args = selects.with_or({
+        ":skip_exported_symbols_test": ["--help"],
+        "//conditions:default": [],
+    }),
+    data = [
+        ":libdrake.so",
     ],
 )
 

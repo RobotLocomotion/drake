@@ -1,4 +1,4 @@
-load("@drake//tools/workspace:github.bzl", "github_archive")
+load("//tools/workspace:github.bzl", "github_archive")
 
 def gymnasium_py_repository(
         name,
@@ -6,8 +6,8 @@ def gymnasium_py_repository(
     github_archive(
         name = name,
         repository = "Farama-Foundation/Gymnasium",
-        commit = "v0.29.0",
-        sha256 = "3a108018cf50dc327bfc66e479c280b8112de597804ceeaa3cc50860a2905115",  # noqa
+        commit = "v0.29.1",
+        sha256 = "0bff5ff33335ffe170f9ccba544f7c4d78e7b4dd883337f2ee00f8ba3c6d85b5",  # noqa
         build_file = ":package.BUILD.bazel",
         mirrors = mirrors,
     )

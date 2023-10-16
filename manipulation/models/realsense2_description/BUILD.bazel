@@ -1,12 +1,12 @@
-load("@drake//tools/lint:lint.bzl", "add_lint_tests")
-load("@drake//tools/install:install_data.bzl", "install_data")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/install:install_data.bzl", "install_data")
 load(
-    "@drake//tools/skylark:drake_cc.bzl",
+    "//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
 )
-load("@drake//tools/workspace:forward_files.bzl", "forward_files")
+load("//tools/workspace:forward_files.bzl", "forward_files")
 load(
-    "@drake//tools/workspace/intel_realsense_ros_internal:files.bzl",
+    "//tools/workspace/intel_realsense_ros_internal:files.bzl",
     "realsense2_description_files",
 )
 

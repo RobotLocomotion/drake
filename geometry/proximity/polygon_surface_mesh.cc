@@ -9,8 +9,8 @@ using math::RigidTransform;
 using std::vector;
 
 std::unique_ptr<SurfacePolygon> SurfacePolygon::copy_to_unique() const {
-  return std::unique_ptr<SurfacePolygon>(new SurfacePolygon(
-      &mesh_face_data_, index_));
+  return std::unique_ptr<SurfacePolygon>(
+      new SurfacePolygon(&mesh_face_data_, index_));
 }
 
 template <typename T>
@@ -25,7 +25,7 @@ PolygonSurfaceMesh<T>::PolygonSurfaceMesh(vector<int> face_data,
   while (i < static_cast<int>(face_data_.size())) {
     poly_indices_.push_back(i);
     CalcAreaNormalAndCentroid(++poly_count);
-    i += face_data_[i] + 1;  /* Jump to the next polygon. */
+    i += face_data_[i] + 1; /* Jump to the next polygon. */
   }
   DRAKE_DEMAND(poly_indices_.size() == areas_.size());
   DRAKE_DEMAND(poly_indices_.size() == face_normals_.size());

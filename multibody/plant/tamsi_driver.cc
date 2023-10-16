@@ -29,8 +29,8 @@ TamsiDriver<T>::TamsiDriver(const CompliantContactManager<T>* manager)
 template <typename T>
 internal::ContactJacobians<T> TamsiDriver<T>::CalcContactJacobians(
     const systems::Context<T>& context) const {
-  const std::vector<ContactPairKinematics<T>> contact_kinematics =
-      manager().CalcContactKinematics(context);
+  const DiscreteContactData<ContactPairKinematics<T>>& contact_kinematics =
+      manager().EvalContactKinematics(context);
 
   const int nc = contact_kinematics.size();
   const int nv = manager().plant().num_velocities();
@@ -73,7 +73,8 @@ void TamsiDriver<T>::CalcContactSolverResults(
   // there's no moving objects.
   MultibodyForces<T> forces0(plant());
   manager().CalcNonContactForces(
-      context, /* include joint limit penalty forces */ true, &forces0);
+      context, /* include_joint_limit_penalty_forces */ true,
+      /* include_pd_controlled_input */ true, &forces0);
 
   const int nq = plant().num_positions();
   const int nv = plant().num_velocities();
@@ -109,7 +110,7 @@ void TamsiDriver<T>::CalcContactSolverResults(
 
   // Compute all contact pairs, including both penetration pairs and quadrature
   // pairs for discrete hydroelastic.
-  const std::vector<internal::DiscreteContactPair<T>>& contact_pairs =
+  const DiscreteContactData<DiscreteContactPair<T>>& contact_pairs =
       manager().EvalDiscreteContactPairs(context);
   const int num_contacts = contact_pairs.size();
 
@@ -119,10 +120,9 @@ void TamsiDriver<T>::CalcContactSolverResults(
 
   // Get friction coefficient into a single vector.
   VectorX<T> mu(num_contacts);
-  std::transform(contact_pairs.begin(), contact_pairs.end(), mu.data(),
-                 [](const internal::DiscreteContactPair<T>& pair) {
-                   return pair.friction_coefficient;
-                 });
+  for (int i = 0; i < num_contacts; ++i) {
+    mu[i] = contact_pairs[i].friction_coefficient;
+  }
 
   // Fill in data as required by our discrete solver.
   VectorX<T> fn0(num_contacts);
@@ -371,8 +371,9 @@ void TamsiDriver<T>::CalcAndAddSpatialContactForcesFromContactResults(
 template <typename T>
 void TamsiDriver<T>::CalcDiscreteUpdateMultibodyForces(
     const systems::Context<T>& context, MultibodyForces<T>* forces) const {
-  const bool include_joint_limit_penalty_forces = true;
-  manager().CalcNonContactForces(context, include_joint_limit_penalty_forces,
+  manager().CalcNonContactForces(context,
+                                 /* include_joint_limit_penalty_forces */ true,
+                                 /* include_pd_controlled_input */ true,
                                  forces);
   const ContactResults<T>& contact_results =
       manager().EvalContactResults(context);

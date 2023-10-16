@@ -18,7 +18,6 @@ using std::string;
 // Provides common variables that are used by the following tests.
 class EnvironmentTest : public ::testing::Test {
  protected:
-  const Variable var_dummy_{};
   const Variable var_x_{"x"};
   const Variable var_y_{"y"};
   const Variable var_z_{"z"};
@@ -53,13 +52,6 @@ TEST_F(EnvironmentTest, InitWithMap) {
   m.emplace(var_y_, 4.0);
   const Expression e{var_x_ + var_y_};
   EXPECT_EQ(e.Evaluate(Environment{m}), 7.0);
-}
-
-TEST_F(EnvironmentTest, InitWithMapExceptionDummyVariable) {
-  Environment::map m;
-  const Variable dummy;
-  m.emplace(dummy, 3.0);
-  EXPECT_THROW(Environment{m}, runtime_error);
 }
 
 TEST_F(EnvironmentTest, InitWithMapExceptionNan) {
@@ -130,16 +122,6 @@ TEST_F(EnvironmentTest, ToString) {
   EXPECT_TRUE(out.find("z -> 3") != string::npos);
 }
 
-TEST_F(EnvironmentTest, DummyVariable1) {
-  EXPECT_THROW(Environment({var_dummy_, var_x_}), runtime_error);
-  EXPECT_THROW(Environment({{var_dummy_, 1.0}, {var_x_, 2}}), runtime_error);
-}
-
-TEST_F(EnvironmentTest, DummyVariable2) {
-  Environment env{{var_x_, 2}, {var_y_, 3}, {var_z_, 3}};
-  EXPECT_THROW(env.insert(var_dummy_, 0.0), runtime_error);
-}
-
 TEST_F(EnvironmentTest, LookupOperator) {
   Environment env{{var_x_, 2}};
   const Environment const_env{{var_x_, 2}};
@@ -149,8 +131,6 @@ TEST_F(EnvironmentTest, LookupOperator) {
   EXPECT_THROW(const_env[var_y_], runtime_error);
   EXPECT_EQ(env.size(), 2u);
   EXPECT_EQ(const_env.size(), 1u);
-  EXPECT_THROW(env[var_dummy_], runtime_error);
-  EXPECT_THROW(const_env[var_dummy_], runtime_error);
 }
 
 TEST_F(EnvironmentTest, PopulateRandomVariables) {

@@ -1,25 +1,25 @@
-load("@drake//tools/install:install.bzl", "install", "install_files")
+load("//tools/install:install.bzl", "install", "install_files")
 load(
-    "@drake//tools/skylark:pybind.bzl",
+    "//tools/skylark:pybind.bzl",
     "drake_pybind_library",
     "get_drake_py_installs",
     "get_pybind_package_info",
 )
 load(
-    "@drake//tools/skylark:drake_py.bzl",
+    "//tools/skylark:drake_py.bzl",
     "drake_py_binary",
     "drake_py_library",
     "drake_py_unittest",
 )
 load(
-    "@drake//tools/skylark:alias.bzl",
+    "//tools/skylark:alias.bzl",
     "drake_py_library_aliases",
 )
 load("//bindings/pydrake:pydrake.bzl", "add_lint_tests_pydrake")
 load("//tools/jupyter:jupyter_py.bzl", "drake_jupyter_py_binary")
 load("@python//:version.bzl", "PYTHON_SITE_PACKAGES_RELPATH")
 load(
-    "@drake//tools/workspace:cmake_configure_file.bzl",
+    "//tools/workspace:cmake_configure_file.bzl",
     "cmake_configure_file",
 )
 
@@ -157,6 +157,7 @@ drake_pybind_library(
     name = "parsing_py",
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake/common:deprecation_pybind",
         "//bindings/pydrake/common:serialize_pybind",
     ],
     cc_srcs = ["parsing_py.cc"],
@@ -190,6 +191,7 @@ drake_pybind_library(
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake/common:default_scalars_pybind",
+        "//bindings/pydrake/common:deprecation_pybind",
         "//bindings/pydrake/common:sorted_pair_pybind",
     ],
     cc_srcs = [

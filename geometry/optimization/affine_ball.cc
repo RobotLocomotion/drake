@@ -21,12 +21,12 @@ AffineBall::AffineBall() : AffineBall(MatrixXd(0, 0), VectorXd(0)) {}
 
 AffineBall::AffineBall(const Eigen::Ref<const MatrixXd>& B,
                        const Eigen::Ref<const VectorXd>& center)
-    : ConvexSet(center.size()), B_(B), center_(center) {
+    : ConvexSet(center.size(), true), B_(B), center_(center) {
   CheckInvariants();
 }
 
 AffineBall::AffineBall(const Hyperellipsoid& ellipsoid)
-    : ConvexSet(ellipsoid.ambient_dimension()) {
+    : ConvexSet(ellipsoid.ambient_dimension(), true) {
   DRAKE_THROW_UNLESS(ellipsoid.IsBounded());
   B_ = ellipsoid.A().inverse();
   center_ = ellipsoid.center();
@@ -37,11 +37,10 @@ AffineBall::~AffineBall() = default;
 namespace {
 
 double volume_of_unit_sphere(int dim) {
+  DRAKE_DEMAND(dim >= 0);
   // Formula from https://en.wikipedia.org/wiki/Volume_of_an_n-ball .
   // Note: special case n≤3 only because they are common and simple.
   switch (dim) {
-    case 0:
-      return 1.0;
     case 1:
       return 2.0;
     case 2:
@@ -55,10 +54,7 @@ double volume_of_unit_sphere(int dim) {
 
 }  // namespace
 
-double AffineBall::Volume() const {
-  if (ambient_dimension() == 0) {
-    return 0.0;
-  }
+double AffineBall::DoCalcVolume() const {
   return volume_of_unit_sphere(ambient_dimension()) * B_.determinant();
 }
 
@@ -78,7 +74,7 @@ AffineBall AffineBall::MakeHypersphere(
 }
 
 AffineBall AffineBall::MakeUnitBall(int dim) {
-  DRAKE_THROW_UNLESS(dim > 0);
+  DRAKE_THROW_UNLESS(dim >= 0);
   return AffineBall(MatrixXd::Identity(dim, dim), VectorXd::Zero(dim));
 }
 
@@ -96,18 +92,19 @@ std::optional<VectorXd> AffineBall::DoMaybeGetPoint() const {
 bool AffineBall::DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
                               double tol) const {
   // Check that x is in the column space of B_, then find a y such that By+d =
-  // x, and see if y
+  // x, and see if y is in the unit ball.
   const auto B_QR = Eigen::ColPivHouseholderQR<MatrixXd>(B_);
   VectorXd y = B_QR.solve(x - center_);
   if ((B_ * y).isApprox(x - center_, tol)) {
-    return y.dot(y) <= 1;
+    return y.dot(y) <= 1 + tol;
   }
   return false;
 }
 
 std::pair<std::unique_ptr<Shape>, math::RigidTransformd>
 AffineBall::DoToShapeWithPose() const {
-  throw std::runtime_error("ToShapeWithPose is not supported by AffineBall.");
+  throw std::runtime_error(
+      "ToShapeWithPose is not yet supported by AffineBall.");
 }
 
 std::pair<VectorX<Variable>, std::vector<Binding<Constraint>>>
@@ -120,7 +117,7 @@ AffineBall::DoAddPointInSetConstraints(
   // ||y||^2 <= 1, represented as 0.5yᵀIy + 0ᵀy + (-0.5) <= 0.
   new_constraints.push_back(prog->AddQuadraticAsRotatedLorentzConeConstraint(
       MatrixXd::Identity(n, n), VectorXd::Zero(n), -0.5, y));
-  // x = By + d, represented as [I, -B_] * [x; y] = center_
+  // x = By + center_, represented as [I, -B_] * [x; y] = center_
   MatrixXd equality_constraint_A(n, 2 * n);
   equality_constraint_A.leftCols(n) = MatrixXd::Identity(n, n);
   equality_constraint_A.rightCols(n) = -B_;

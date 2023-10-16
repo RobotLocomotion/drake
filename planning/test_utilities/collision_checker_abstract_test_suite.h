@@ -67,8 +67,10 @@ std::ostream& operator<<(std::ostream& out,
 class CollisionCheckerAbstractTestSuite
     : public testing::TestWithParam<CollisionCheckerTestParams> {
  protected:
-  void TestParallelizeableDiscreteQueries(const CollisionCheckerTestParams&);
-  void TestParallelizeableGradientQueries(const CollisionCheckerTestParams&);
+  void TestDiscreteQueries(const CollisionCheckerTestParams& params,
+                           Parallelism parallelism);
+  void TestDistanceQueries(const CollisionCheckerTestParams& params,
+                           Parallelism parallelism);
   const CollisionCheckerTestConfigurationData qs_;
 };
 

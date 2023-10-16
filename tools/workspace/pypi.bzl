@@ -2,7 +2,7 @@ load(
     "@bazel_tools//tools/build_defs/repo:utils.bzl",
     "workspace_and_buildfile",
 )
-load("@drake//tools/workspace:metadata.bzl", "generate_repository_metadata")
+load("//tools/workspace:metadata.bzl", "generate_repository_metadata")
 
 def pypi_archive(
         name,

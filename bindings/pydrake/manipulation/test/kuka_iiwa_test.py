@@ -120,13 +120,13 @@ class TestKukaIiwa(unittest.TestCase):
             controller_plant.GetFrameByName("iiwa_link_0"), RigidTransform())
         controller_plant.Finalize()
 
-        self.assertEqual(len(builder.GetSystems()), 1)
+        tare = len(builder.GetSystems())
         mut.BuildIiwaControl(
             plant=plant, iiwa_instance=plant.GetModelInstanceByName("iiwa7"),
             controller_plant=controller_plant, lcm=DrakeLcm(), builder=builder,
             ext_joint_filter_tau=0.12, desired_iiwa_kp_gains=np.arange(7),
             control_mode=mut.IiwaControlMode.kPositionAndTorque)
-        self.assertEqual(len(builder.GetSystems()), 12)
+        self.assertGreater(len(builder.GetSystems()), tare)
 
     def test_kuka_iiwa_driver(self):
         dut = mut.IiwaDriver()
@@ -148,9 +148,9 @@ class TestKukaIiwa(unittest.TestCase):
         lcm_bus = LcmBuses()
         lcm_bus.Add("test", DrakeLcm())
 
-        self.assertEqual(len(builder.GetSystems()), 1)
+        tare = len(builder.GetSystems())
         mut.ApplyDriverConfig(
             driver_config=dut, model_instance_name="iiwa7",
             sim_plant=plant, models_from_directives=model_dict, lcms=lcm_bus,
             builder=builder)
-        self.assertEqual(len(builder.GetSystems()), 13)
+        self.assertGreater(len(builder.GetSystems()), tare)

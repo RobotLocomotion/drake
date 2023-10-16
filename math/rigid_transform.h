@@ -10,6 +10,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/fmt_ostream.h"
+#include "drake/common/hash.h"
 #include "drake/common/never_destroyed.h"
 #include "drake/math/rotation_matrix.h"
 
@@ -617,6 +618,19 @@ class RigidTransform {
       p_AoQ_A.col(i) = translation() + p_BoQ_A.col(i);
 
     return p_AoQ_A;
+  }
+
+  /// Implements the @ref hash_append concept.
+  /// @pre T implements the hash_append concept.
+  template <class HashAlgorithm>
+  friend void hash_append(HashAlgorithm& hasher,
+                          const RigidTransform& X) noexcept {
+    using drake::hash_append;
+    hash_append(hasher, X.R_AB_);
+    const T* begin = X.p_AoBo_A_.data();
+    const T* end = X.p_AoBo_A_.data() + X.p_AoBo_A_.size();
+    using drake::hash_append_range;
+    hash_append_range(hasher, begin, end);
   }
 
  private:

@@ -8,6 +8,8 @@
 
 #include <fmt/format.h>
 
+#include "drake/common/fmt_eigen.h"
+
 namespace drake {
 namespace symbolic {
 
@@ -80,9 +82,10 @@ bool IsAffine(const Eigen::Ref<const MatrixX<Expression>>& m) {
 }
 
 namespace {
-void ThrowError(const string& type, const string& expression) {
-  throw runtime_error("While decomposing an expression, we detects that a " +
-                      type + " expression: " + expression + ".");
+void ThrowError(const string& type, const string& expression,
+                const string& additional_msg) {
+  throw runtime_error("While decomposing an expression, we detected a " + type +
+                      " expression: " + expression + additional_msg + ".");
 }
 
 // A helper function to implement DecomposeLinearExpressions and
@@ -102,7 +105,7 @@ void FindCoefficientAndFill(const Polynomial::MapType& map, const Monomial& m,
   if (it != map.end()) {
     // m should have a constant coefficient.
     if (!is_constant(it->second)) {
-      ThrowError("non-constant", it->second.to_string());
+      ThrowError("non-constant", it->second.to_string(), "");
     }
     M_dummy(i) = get_constant_value(it->second);
   } else {
@@ -122,16 +125,25 @@ void DecomposeLinearExpressions(
   for (int i = 0; i < expressions.size(); ++i) {
     const Expression& e{expressions(i)};
     if (!e.is_polynomial()) {
-      ThrowError("non-polynomial", e.to_string());  // e should be a polynomial.
+      ThrowError("non-polynomial", e.to_string(),
+                 "");  // e should be a polynomial.
     }
     const Polynomial p{e, Variables{vars}};
     if (p.TotalDegree() > 1) {
-      ThrowError("non-linear", e.to_string());  // e should be linear.
+      ThrowError(
+          "non-linear", e.to_string(),
+          fmt::format(" of indeterminates {}",
+                      fmt_eigen(vars.transpose())));  // e should be linear.
     }
     const Polynomial::MapType& map{p.monomial_to_coefficient_map()};
     if (map.count(Monomial{}) > 0) {
       // e should not have a constant term.
-      ThrowError("non-linear", e.to_string());
+      ThrowError(
+          "non-linear", e.to_string(),
+          fmt::format(" of indeterminates {}, with a constant term {}. "
+                      "This is an affine expression; a linear should have no "
+                      "constant terms.",
+                      fmt_eigen(vars.transpose()), map.at(Monomial{})));
     }
     // Fill M(i, j).
     for (int j = 0; j < vars.size(); ++j) {
@@ -150,11 +162,15 @@ void DecomposeAffineExpressions(
   for (int i = 0; i < expressions.size(); ++i) {
     const Expression& e{expressions(i)};
     if (!e.is_polynomial()) {
-      ThrowError("non-polynomial", e.to_string());  // e should be a polynomial.
+      ThrowError("non-polynomial", e.to_string(),
+                 "");  // e should be a polynomial.
     }
     const Polynomial p{e, Variables{vars}};
     if (p.TotalDegree() > 1) {
-      ThrowError("non-linear", e.to_string());  // e should be linear.
+      ThrowError(
+          "non-linear", e.to_string(),
+          fmt::format(" of indeterminates {}",
+                      fmt_eigen(vars.transpose())));  // e should be linear.
     }
     const Polynomial::MapType& map{p.monomial_to_coefficient_map()};
     // Fill M(i, j).
@@ -606,7 +622,7 @@ DecomposeLumpedParameters(
 
   VectorX<Expression> w0(f.size());
   for (int i = 0; i < f.size(); i++) {
-    auto const[w, alpha, this_w0] =
+    const auto [w, alpha, this_w0] =
         visitor.Decompose(f[i], Variables(parameters));
     w0[i] = this_w0;
     for (int j = 0; j < alpha.size(); j++) {

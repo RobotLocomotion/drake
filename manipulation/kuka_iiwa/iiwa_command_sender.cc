@@ -4,21 +4,20 @@ namespace drake {
 namespace manipulation {
 namespace kuka_iiwa {
 
-IiwaCommandSender::IiwaCommandSender(
-    int num_joints, IiwaControlMode control_mode)
+IiwaCommandSender::IiwaCommandSender(int num_joints,
+                                     IiwaControlMode control_mode)
     : num_joints_(num_joints), control_mode_(control_mode) {
   if (position_enabled(control_mode_)) {
     position_input_port_ = &this->DeclareInputPort(
         "position", systems::kVectorValued, num_joints_);
   }
   if (torque_enabled(control_mode_)) {
-    torque_input_port_ = &this->DeclareInputPort(
-        "torque", systems::kVectorValued, num_joints_);
+    torque_input_port_ =
+        &this->DeclareInputPort("torque", systems::kVectorValued, num_joints_);
   }
-  time_input_port_ = &this->DeclareInputPort(
-      "time", systems::kVectorValued, 1);
-  this->DeclareAbstractOutputPort(
-      "lcmt_iiwa_command", &IiwaCommandSender::CalcOutput);
+  time_input_port_ = &this->DeclareInputPort("time", systems::kVectorValued, 1);
+  this->DeclareAbstractOutputPort("lcmt_iiwa_command",
+                                  &IiwaCommandSender::CalcOutput);
 }
 
 IiwaCommandSender::~IiwaCommandSender() = default;
@@ -41,12 +40,11 @@ const InPort& IiwaCommandSender::get_time_input_port() const {
   return *time_input_port_;
 }
 
-void IiwaCommandSender::CalcOutput(
-    const systems::Context<double>& context, lcmt_iiwa_command* output) const {
-  const double message_time =
-      get_time_input_port().HasValue(context)
-          ? get_time_input_port().Eval(context)[0]
-          : context.get_time();
+void IiwaCommandSender::CalcOutput(const systems::Context<double>& context,
+                                   lcmt_iiwa_command* output) const {
+  const double message_time = get_time_input_port().HasValue(context)
+                                  ? get_time_input_port().Eval(context)[0]
+                                  : context.get_time();
 
   const bool has_position = position_enabled(control_mode_);
   bool has_torque = false;

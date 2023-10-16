@@ -9,6 +9,8 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/ssize.h"
+#include "drake/multibody/plant/deformable_contact_info.h"
 #include "drake/multibody/plant/hydroelastic_contact_info.h"
 #include "drake/multibody/plant/point_pair_contact_info.h"
 
@@ -16,7 +18,8 @@ namespace drake {
 namespace multibody {
 
 #ifndef DRAKE_DOXYGEN_CXX
-template <typename T> class MultibodyPlant;
+template <typename T>
+class MultibodyPlant;
 #endif
 
 /**
@@ -44,15 +47,25 @@ class ContactResults {
   /** Returns the number of hydroelastic contacts. */
   int num_hydroelastic_contacts() const;
 
+  /** Returns the number of deformable contacts. */
+  int num_deformable_contacts() const {
+    return ssize(deformable_contact_info_);
+  }
+
   /** Retrieves the ith PointPairContactInfo instance. The input index i
-   must be in the range [0, `num_point_pair_contacts()` - 1] or this method
-   aborts. */
+   must be in the range [0, `num_point_pair_contacts()`) or this method
+   throws. */
   const PointPairContactInfo<T>& point_pair_contact_info(int i) const;
 
   /** Retrieves the ith HydroelasticContactInfo instance. The input index i
-   must be in the range [0, `num_hydroelastic_contacts()` - 1] or this
-   method aborts. */
+   must be in the range [0, `num_hydroelastic_contacts()`) or this
+   method throws. */
   const HydroelasticContactInfo<T>& hydroelastic_contact_info(int i) const;
+
+  /** Retrieves the ith DeformableContactInfo instance. The input index i
+   must be in the range [0, `num_deformable_contacts()`) or this method
+   throws. */
+  const DeformableContactInfo<T>& deformable_contact_info(int i) const;
 
   /** Returns the plant that produced these contact results. In most cases the
   result will be non-null, but default-constructed results might have nulls. */
@@ -69,9 +82,9 @@ class ContactResults {
   ContactResults<T> SelectHydroelastic(
       std::function<bool(const HydroelasticContactInfo<T>&)> selector) const;
 
-  // The following methods should only be called by MultibodyPlant and testing
-  // fixtures and are undocumented rather than being made private with friends.
-  #ifndef DRAKE_DOXYGEN_CXX
+// The following methods should only be called by MultibodyPlant and testing
+// fixtures and are undocumented rather than being made private with friends.
+#ifndef DRAKE_DOXYGEN_CXX
   /* Sets the plant that produced these contact results. */
   void set_plant(const MultibodyPlant<T>* plant);
 
@@ -79,17 +92,22 @@ class ContactResults {
    invalid. This includes clearing the `plant` back to nullptr. */
   void Clear();
 
-  /* Add a new contact pair result to `this`. */
+  /* Adds a new contact pair result to `this`. */
   void AddContactInfo(const PointPairContactInfo<T>& point_pair_info) {
     point_pairs_info_.push_back(point_pair_info);
   }
 
-  /* Add a new hydroelastic contact to `this`, assuming that `this` is not the
+  /* Adds a new hydroelastic contact to `this`, assuming that `this` is not the
    result of a copy operation (AddContactInfo() asserts that is the case). The
    pointer must remain valid for the lifetime of this object. */
   void AddContactInfo(
       const HydroelasticContactInfo<T>* hydroelastic_contact_info);
-  #endif
+
+  /* Adds a new deformable contact result to `this`. */
+  void AddContactInfo(DeformableContactInfo<T> deformable_contact_info) {
+    deformable_contact_info_.push_back(std::move(deformable_contact_info));
+  }
+#endif
 
  private:
   enum OwnershipMode { kAliasedPointers, kOwnsCopies };
@@ -145,6 +163,8 @@ class ContactResults {
   std::variant<std::vector<const HydroelasticContactInfo<T>*>,
                std::vector<std::unique_ptr<HydroelasticContactInfo<T>>>>
       hydroelastic_contact_info_;
+
+  std::vector<DeformableContactInfo<T>> deformable_contact_info_;
 
   const MultibodyPlant<T>* plant_{nullptr};
 };

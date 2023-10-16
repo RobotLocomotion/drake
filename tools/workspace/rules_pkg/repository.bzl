@@ -1,4 +1,4 @@
-load("@drake//tools/workspace:github.bzl", "github_archive")
+load("//tools/workspace:github.bzl", "github_archive")
 
 # Note that for rules_pkg, we do NOT install its LICENSE file as part of the
 # Drake install, because rules_pkg is a build-time tool only.

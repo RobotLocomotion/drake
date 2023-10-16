@@ -6,6 +6,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 
 namespace drake {
 namespace symbolic {
@@ -91,9 +92,10 @@ TEST_F(SymbolicDecomposeTest, DecomposeLinearExpressionsExceptionNonLinear) {
                  x1_ * x1_,
                  x2_ * x2_;
   // clang-format on
-  EXPECT_THROW(DecomposeLinearExpressions(M_ * x_ + extra_terms_, x_,
-                                          &M_expected_static_),
-               runtime_error);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      DecomposeLinearExpressions(M_ * x_ + extra_terms_, x_,
+                                 &M_expected_static_),
+      ".*we detected a non-linear expression.*");
 }
 
 // Adds nonlinear terms to check if we have an exception.
@@ -104,9 +106,10 @@ TEST_F(SymbolicDecomposeTest,
                  cos(x1_),
                  log(x2_);
   // clang-format on
-  EXPECT_THROW(DecomposeLinearExpressions(M_ * x_ + extra_terms_, x_,
-                                          &M_expected_static_),
-               runtime_error);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      DecomposeLinearExpressions(M_ * x_ + extra_terms_, x_,
+                                 &M_expected_static_),
+      ".*we detected a non-polynomial expression.*");
 }
 
 // Adds terms with non-const coefficients to check if we have an exception.
@@ -117,9 +120,10 @@ TEST_F(SymbolicDecomposeTest,
                   b_ * x1_,
                   c_ * x2_;
   // clang-format on
-  EXPECT_THROW(DecomposeLinearExpressions(M_ * x_ + extra_terms_, x_,
-                                          &M_expected_static_),
-               runtime_error);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      DecomposeLinearExpressions(M_ * x_ + extra_terms_, x_,
+                                 &M_expected_static_),
+      ".*we detected a non-constant expression.*");
 }
 
 // Adds constant terms to check if we have an exception.

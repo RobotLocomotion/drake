@@ -67,7 +67,7 @@ struct MeshcatParams {
   bool show_stats_plot{true};
 };
 
-/** Provides an interface to %Meshcat (https://github.com/rdeits/meshcat).
+/** Provides an interface to %Meshcat (https://github.com/meshcat-dev/meshcat).
 
 Each instance of this class spawns a thread which runs an http/websocket server.
 Users can navigate their browser to the hosted URL to visualize the Meshcat
@@ -81,7 +81,7 @@ supported. We may generalize this in the future.
 
 @section meshcat_path Meshcat paths and the scene tree
 
-https://github.com/rdeits/meshcat#api provides a nice introduction to the
+https://github.com/meshcat-dev/meshcat#api provides a nice introduction to the
 websocket API that we wrap with this class.  One of the core concepts is the
 "scene tree" -- a directory-like structure of objects, transforms, and
 properties. The scene tree is viewable in the browser by clicking on "Open
@@ -112,8 +112,8 @@ properties.
 The root directory contains a number of elements that are set up automatically
 in the browser.  These include "/Background", "/Lights", "/Grid", and
 "/Cameras".  To find more details please see the @link
-https://github.com/rdeits/meshcat#api meshcat documentation @endlink and the
-@link https://threejs.org/docs/index.html three.js documentation @endlink.
+https://github.com/meshcat-dev/meshcat#api meshcat documentation @endlink and
+the @link https://threejs.org/docs/index.html three.js documentation @endlink.
 - You can modify these elements, create new lights/cameras, and even delete
 these elements (one at a time).
 - Delete("/") is not allowed.  It will be silently ignored.
@@ -432,9 +432,52 @@ class Meshcat {
                        double xmin = -1, double xmax = 1, double ymin = -1,
                        double ymax = 1);
 
-  /** Resets the default camera, background, grid lines, and axes to their
-   default settings. */
+  /** Resets the default camera, camera target, background, grid lines, and axes
+   to their default settings. */
   void ResetRenderMode();
+
+  // TODO(SeanCurtis-TRI): Once meshcat supports animation of camera target,
+  // add the ability to animate this and SetCameraPose().
+
+  /** Positions the camera's view target point T to the location in
+   `target_in_world` (`p_WT`).
+
+   If the camera is orthographic (i.e., by calling Set2DRenderMode() or
+   SetCamera(OrthographicCamera)), this will have no effect.
+
+   @warning Setting the target position to be coincident with the camera
+   position will lead to undefined behavior.
+
+   @param target_in_world the position of the target point T in Drake's z-up
+               world frame (p_WT). */
+  void SetCameraTarget(const Eigen::Vector3d& target_in_world);
+
+  /** A convenience function for positioning the camera and its view target
+   in the world frame. The camera is placed at `camera_in_world` and looks
+   toward `target_in_world`. The camera is oriented around this view direction
+   so that the camera's up vector points in the positive Wz direction as much
+   as possible.
+
+   Unlike SetCameraTarget() this can be used to orient orthographic cameras
+   as well.
+
+   @note This is Drake's z-up world frame and not the three.js world frame
+   you'd have to use if you set the "position" on the camera directly.
+
+   @warning The behavior is undefined if camera and target positions are
+   coincident.
+
+   @param camera_in_world the position of the camera's origin C in Drake's z-up
+               world frame (p_WC).
+   @param target_in_world the position of the target point T in Drake's z-up
+               world frame (p_WT). */
+  void SetCameraPose(const Eigen::Vector3d& camera_in_world,
+                     const Eigen::Vector3d& target_in_world);
+
+  // TODO(SeanCurtis-TRI): Consider the API:
+  //  void SetCameraPose(const RigidTransformd& X_WC, bool target_distance = 1);
+  // We'll have to confirm that picking arbitrary rotations R_WC doesn't
+  // fight badly with the camera controller.
 
   /** Set the RigidTransform for a given path in the scene tree relative to its
   parent path. An object's pose is the concatenation of all of the transforms

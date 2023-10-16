@@ -1,6 +1,8 @@
 #pragma once
 
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/planning/collision_checker.h"
+#include "drake/planning/collision_checker_context.h"
 #include "drake/systems/framework/context.h"
 
 namespace drake {
@@ -83,6 +85,24 @@ void CheckPlantIsConnectedToSceneGraph(
         "SceneGraph.");
   }
 }
+
+// Compute all the distance of a plant for a given configuration q and the
+// influence_distance.
+template <typename T, typename S>
+VectorX<S> Distances(const MultibodyPlant<T>& plant,
+                     systems::Context<T>* context,
+                     const Eigen::Ref<const VectorX<S>>& q,
+                     double influence_distance);
+
+Eigen::VectorXd Distances(
+    const planning::CollisionChecker& collision_checker,
+    planning::CollisionCheckerContext* collision_checker_context,
+    const Eigen::Ref<const Eigen::VectorXd>& x, double influence_distance_val);
+
+AutoDiffVecXd Distances(
+    const planning::CollisionChecker& collision_checker,
+    planning::CollisionCheckerContext* collision_checker_context,
+    const Eigen::Ref<const AutoDiffVecXd>& x, double influence_distance_val);
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake

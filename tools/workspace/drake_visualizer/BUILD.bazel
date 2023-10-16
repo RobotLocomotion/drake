@@ -2,9 +2,9 @@ load("//tools/skylark:drake_py.bzl", "drake_py_unittest")
 load("//tools/skylark:py.bzl", "py_library")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load("@python//:version.bzl", "PYTHON_SITE_PACKAGES_RELPATH")
-load("@drake//tools/install:install.bzl", "install", "install_files")
+load("//tools/install:install.bzl", "install", "install_files")
 load(
-    "@drake//tools/workspace:cmake_configure_file.bzl",
+    "//tools/workspace:cmake_configure_file.bzl",
     "cmake_configure_file",
 )
 load("//tools/skylark:test_tags.bzl", "vtk_test_tags")

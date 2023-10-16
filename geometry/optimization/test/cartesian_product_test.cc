@@ -10,6 +10,7 @@
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
+#include "drake/geometry/optimization/hyperrectangle.h"
 #include "drake/geometry/optimization/point.h"
 #include "drake/geometry/optimization/test_utilities.h"
 #include "drake/geometry/optimization/vpolytope.h"
@@ -65,6 +66,10 @@ GTEST_TEST(CartesianProductTest, BasicTest) {
   ASSERT_TRUE(S.MaybeGetFeasiblePoint().has_value());
   EXPECT_TRUE(S.PointInSet(S.MaybeGetFeasiblePoint().value()));
 
+  // Test Volume
+  EXPECT_TRUE(S.has_exact_volume());
+  EXPECT_EQ(S.CalcVolume(), 0);
+
   // Test ConvexSets constructor.
   ConvexSets sets;
   sets.emplace_back(P1);
@@ -92,6 +97,8 @@ GTEST_TEST(CartesianProductTest, DefaultCtor) {
   ASSERT_TRUE(dut.MaybeGetFeasiblePoint().has_value());
   EXPECT_TRUE(dut.PointInSet(dut.MaybeGetFeasiblePoint().value()));
   EXPECT_TRUE(dut.PointInSet(Eigen::VectorXd::Zero(0)));
+  EXPECT_TRUE(dut.has_exact_volume());
+  DRAKE_EXPECT_THROWS_MESSAGE(dut.CalcVolume(), ".*zero.*");
 }
 
 GTEST_TEST(CartesianProductTest, Move) {
@@ -149,6 +156,7 @@ GTEST_TEST(CartesianProductTest, FromSceneGraph) {
 
   ASSERT_TRUE(S.MaybeGetFeasiblePoint().has_value());
   EXPECT_TRUE(S.PointInSet(S.MaybeGetFeasiblePoint().value(), kTol));
+  EXPECT_FALSE(S.has_exact_volume());
 
   // Test reference_frame frame.
   SourceId source_id = scene_graph->RegisterSource("F");
@@ -539,6 +547,79 @@ GTEST_TEST(CartesianProductTest, EmptyInput) {
   CartesianProduct S(P, V);
   EXPECT_TRUE(S.IsEmpty());
   EXPECT_FALSE(S.MaybeGetFeasiblePoint().has_value());
+}
+
+// Test volume methods.
+GTEST_TEST(CartesianProductTest, Volume) {
+  // HPolyhedron = box (but not supported because it is a
+  // HPolyhedron object, and treated as a generic one)
+  HPolyhedron H = HPolyhedron::MakeBox(Vector2d{1, 1}, Vector2d{2, 2});
+  // VPolytope = triangle (area = 3/2)
+  Eigen::Matrix<double, 2, 3> vertices;
+  // clang-format off
+  vertices << 0, 1, 0,
+              0, 0, 3;
+  // clang-format on
+  VPolytope V = VPolytope(vertices);
+  // Hyperrectangle (volume = 6)
+  Hyperrectangle R = Hyperrectangle(Vector2d::Zero(), Vector2d(3, 2));
+  // Hyperellipsoid (volume = 3.14159)
+  Hyperellipsoid E =
+      Hyperellipsoid(Eigen::MatrixXd::Identity(2, 2), Vector2d(1, 2));
+  // CartesianProduct of H, V, R, E
+  CartesianProduct S1(MakeConvexSets(H, V, R, E));
+  EXPECT_FALSE(S1.has_exact_volume());
+  // CartesianProduct of V, R, E
+  CartesianProduct S2(MakeConvexSets(V, R, E));
+  EXPECT_TRUE(S2.has_exact_volume());
+  EXPECT_NEAR(S2.CalcVolume(), M_PI * 6 * 3 / 2, 1e-3);
+  // CartesianProduct of R, E
+  CartesianProduct S3(MakeConvexSets(R, E));
+  EXPECT_TRUE(S3.has_exact_volume());
+  EXPECT_NEAR(S3.CalcVolume(), M_PI * 6, 1e-3);
+  // CartesianProduct of R, E, different constructor
+  CartesianProduct S4(R, E);
+  EXPECT_TRUE(S4.has_exact_volume());
+  EXPECT_NEAR(S4.CalcVolume(), M_PI * 6, 1e-3);
+  // CartesianProduct of H, V
+  CartesianProduct S5(MakeConvexSets(H, V));
+  EXPECT_FALSE(S5.has_exact_volume());
+  // CartesianProduct of H, V, different constructor
+  CartesianProduct S6(H, V);
+  EXPECT_FALSE(S6.has_exact_volume());
+}
+
+GTEST_TEST(CartesianProductTest, ScaledVolume) {
+  // A triangle with vertices (0,0), (1,0), (0,3) has area 3/2.
+  Eigen::Matrix<double, 2, 3> vertices;
+  vertices << 0, 1, 0, 0, 0, 3;
+  VPolytope V = VPolytope(vertices);
+  Eigen::Matrix2d A1;
+  A1 << 2, 3, 2, -1;
+  Eigen::Vector2d b(0, 0);
+  CartesianProduct S1(MakeConvexSets(V), A1, b);
+  EXPECT_TRUE(S1.has_exact_volume());
+  // the determinent of A1 is -8, so the volume is 3/2 * 8 = 12
+  EXPECT_NEAR(S1.CalcVolume(), 12, 1e-6);
+  Eigen::MatrixXd A2(2, 1);
+  A2 << 1, 2;
+  CartesianProduct S2(MakeConvexSets(V), A2, b);
+  EXPECT_TRUE(S2.has_exact_volume());
+  // A2 is not full dimensional, so the volume is 0.
+  EXPECT_NEAR(S2.CalcVolume(), 0, 1e-6);
+  // A line segment from (0,0) to (10,0) has length 10.
+  Hyperrectangle L = Hyperrectangle(Vector1d::Zero(), Vector1d(10));
+  // 3D case
+  Eigen::MatrixXd A3(3, 3);
+  // clang-format off
+  A3 << 1, 0, 3,
+        5, 1, 4,
+        -2, 0, 1;
+  // clang-format on
+  // the determinent of A3 is 7, so the volume is 10 * 7 * 3/2= 105
+  CartesianProduct S3(MakeConvexSets(V, L), A3, Eigen::Vector3d::Zero());
+  EXPECT_TRUE(S3.has_exact_volume());
+  EXPECT_NEAR(S3.CalcVolume(), 105, 1e-6);
 }
 
 }  // namespace optimization

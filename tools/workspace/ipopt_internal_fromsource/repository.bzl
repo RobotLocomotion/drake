@@ -1,7 +1,4 @@
-load(
-    "@drake//tools/workspace:github.bzl",
-    "github_archive",
-)
+load("//tools/workspace:github.bzl", "github_archive")
 
 def ipopt_internal_fromsource_repository(
         name,

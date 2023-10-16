@@ -10,4 +10,3 @@ DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
 
 }  // namespace geometry
 }  // namespace drake
-

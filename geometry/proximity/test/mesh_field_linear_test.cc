@@ -18,28 +18,28 @@ namespace drake {
 namespace geometry {
 namespace {
 
+using Eigen::Vector3d;
 using math::RigidTransformd;
 using math::RollPitchYawd;
-using Eigen::Vector3d;
 
 template <typename T>
 std::unique_ptr<TriangleSurfaceMesh<T>> GenerateMesh() {
-// A simple surface mesh consists of two right triangles that make a square.
-//
-//   y
-//   |
-//   |
-//   |
-//   v3(0,1,0)  v2(1,1,0)
-//   +-----------+
-//   |         . |
-//   |  f1  . .  |
-//   |    . .    |
-//   | . .   f0  |
-//   |.          |
-//   +-----------+---------- x
-//   v0(0,0,0)  v1(1,0,0)
-//
+  // A simple surface mesh consists of two right triangles that make a square.
+  //
+  //   y
+  //   |
+  //   |
+  //   |
+  //   v3(0,1,0)  v2(1,1,0)
+  //   +-----------+
+  //   |         . |
+  //   |  f1  . .  |
+  //   |    . .    |
+  //   | . .   f0  |
+  //   |.          |
+  //   +-----------+---------- x
+  //   v0(0,0,0)  v1(1,0,0)
+  //
   const int face_data[2][3] = {{0, 1, 2}, {2, 3, 0}};
   std::vector<SurfaceTriangle> faces;
   for (int f = 0; f < 2; ++f) faces.emplace_back(face_data[f]);
@@ -139,8 +139,7 @@ GTEST_TEST(MeshFieldLinearTest, TestEvaluateGradientThrow) {
       std::make_unique<MeshFieldLinear<double, TriangleSurfaceMesh<double>>>(
           std::move(e_values), mesh.get(), calculate_gradient);
 
-  EXPECT_THROW(mesh_field->EvaluateGradient(0),
-               std::runtime_error);
+  EXPECT_THROW(mesh_field->EvaluateGradient(0), std::runtime_error);
 }
 
 // Tests the transformation of the field when calling Transform(). As

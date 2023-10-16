@@ -258,13 +258,10 @@ VolumeMesh<T> MakeBoxVolumeMeshWithMa(const Box& box) {
         // m[1][j][k], m[i][1][k], or m[i][j][1] must be preceded already by
         // the assignment of m[0][j][k], m[i][0][k], or m[i][j][0],
         // respectively. There is no uninitialized-memory read of m[][][].
-        m[i][j][k] = duplicate_in_i
-                         ? m[0][j][k]
-                         : duplicate_in_j
-                               ? m[i][0][k]
-                               : duplicate_in_k
-                                     ? m[i][j][0]
-                                     : static_cast<int>(mesh_vertices.size());
+        m[i][j][k] = duplicate_in_i   ? m[0][j][k]
+                     : duplicate_in_j ? m[i][0][k]
+                     : duplicate_in_k ? m[i][j][0]
+                                      : static_cast<int>(mesh_vertices.size());
         if (!duplicate_in_i && !duplicate_in_j && !duplicate_in_k) {
           mesh_vertices.emplace_back(x, y, z);
         }
@@ -335,8 +332,8 @@ int CalcSequentialIndex(int i, int j, int k, const Vector3<int>& num_vertices) {
 }
 
 template <typename T>
-std::vector<Vector3<T>> GenerateVertices(
-    const Box& box, const Vector3<int>& num_vertices) {
+std::vector<Vector3<T>> GenerateVertices(const Box& box,
+                                         const Vector3<int>& num_vertices) {
   const T half_x = box.width() / T(2);
   const T half_y = box.depth() / T(2);
   const T half_z = box.height() / T(2);
@@ -448,10 +445,8 @@ VolumeMesh<T> MakeBoxVolumeMesh(const Box& box, double resolution_hint) {
   return VolumeMesh<T>(std::move(elements), std::move(vertices));
 }
 
-DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS((
-    &MakeBoxVolumeMesh<T>,
-    &MakeBoxVolumeMeshWithMa<T>
-))
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    (&MakeBoxVolumeMesh<T>, &MakeBoxVolumeMeshWithMa<T>))
 
 }  // namespace internal
 }  // namespace geometry

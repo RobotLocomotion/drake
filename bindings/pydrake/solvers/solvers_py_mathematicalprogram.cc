@@ -91,9 +91,9 @@ void CheckArrayShape(
 
 // Checks array type, provides user-friendly message if it fails.
 template <typename T>
-void CheckArrayType(py::str var_name, py::array x) {
+void CheckReturnedArrayType(py::str cls_name, py::array y) {
   py::module m = py::module::import("pydrake.solvers._extra");
-  m.attr("_check_array_type")(var_name, x, GetPyParam<T>()[0]);
+  m.attr("_check_returned_array_type")(cls_name, y, GetPyParam<T>()[0]);
 }
 
 // Wraps user function to provide better user-friendliness.
@@ -114,9 +114,9 @@ Func WrapUserFunc(py::str cls_name, py::function func, int num_vars,
     // (numpy scalar) to `T` (object), at least for AutoDiffXd.
     py::object y = func(x);
     // Check output.
-    CheckArrayShape(
-        py::str("{}: Output").format(cls_name), y, output_shape, num_outputs);
-    CheckArrayType<T>(py::str("{}: Output").format(cls_name), y);
+    CheckArrayShape(py::str("{}: Return value").format(cls_name), y,
+        output_shape, num_outputs);
+    CheckReturnedArrayType<T>(cls_name, y);
     return y;
   };
   return wrapped.cast<Func>();
@@ -1105,6 +1105,24 @@ void BindMathematicalProgram(py::module m) {
           py::arg("X"),
           doc.MathematicalProgram.AddPositiveDiagonallyDominantMatrixConstraint
               .doc)
+      .def("AddPositiveDiagonallyDominantDualConeMatrixConstraint",
+          static_cast<Binding<LinearConstraint> (MathematicalProgram::*)(
+              const Eigen::Ref<const MatrixX<symbolic::Expression>>&)>(
+              &MathematicalProgram::
+                  AddPositiveDiagonallyDominantDualConeMatrixConstraint),
+          py::arg("X"),
+          doc.MathematicalProgram
+              .AddPositiveDiagonallyDominantDualConeMatrixConstraint
+              .doc_expression)
+      .def("AddPositiveDiagonallyDominantDualConeMatrixConstraint",
+          static_cast<Binding<LinearConstraint> (MathematicalProgram::*)(
+              const Eigen::Ref<const MatrixX<symbolic::Variable>>&)>(
+              &MathematicalProgram::
+                  AddPositiveDiagonallyDominantDualConeMatrixConstraint),
+          py::arg("X"),
+          doc.MathematicalProgram
+              .AddPositiveDiagonallyDominantDualConeMatrixConstraint
+              .doc_variable)
       .def("AddScaledDiagonallyDominantMatrixConstraint",
           static_cast<std::vector<std::vector<Matrix2<symbolic::Expression>>> (
               MathematicalProgram::*)(
@@ -1123,6 +1141,25 @@ void BindMathematicalProgram(py::module m) {
           py::arg("X"),
           doc.MathematicalProgram.AddScaledDiagonallyDominantMatrixConstraint
               .doc_variable)
+      .def("AddScaledDiagonallyDominantDualConeMatrixConstraint",
+          static_cast<std::vector<Binding<RotatedLorentzConeConstraint>> (
+              MathematicalProgram::*)(
+              const Eigen::Ref<const MatrixX<symbolic::Expression>>&)>(
+              &MathematicalProgram::
+                  AddScaledDiagonallyDominantDualConeMatrixConstraint),
+          py::arg("X"),
+          doc.MathematicalProgram
+              .AddScaledDiagonallyDominantDualConeMatrixConstraint
+              .doc_expression)
+      .def("AddScaledDiagonallyDominantDualConeMatrixConstraint",
+          static_cast<std::vector<Binding<RotatedLorentzConeConstraint>> (
+              MathematicalProgram::*)(
+              const Eigen::Ref<const MatrixX<symbolic::Variable>>&)>(
+              &MathematicalProgram::
+                  AddScaledDiagonallyDominantDualConeMatrixConstraint),
+          py::arg("X"),
+          doc.MathematicalProgram
+              .AddScaledDiagonallyDominantDualConeMatrixConstraint.doc_variable)
       .def("AddSosConstraint",
           static_cast<MatrixXDecisionVariable (MathematicalProgram::*)(
               const Polynomial&, const Eigen::Ref<const VectorX<Monomial>>&,
@@ -1504,14 +1541,6 @@ for every column of ``prog_var_vals``. )""")
           doc.SolutionResult.kDualInfeasible.doc)
       .value("kSolutionResultNotSet", SolutionResult::kSolutionResultNotSet,
           doc.SolutionResult.kSolutionResultNotSet.doc);
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  solution_result_enum.value("kUnknownError", SolutionResult::kUnknownError,
-      "Deprecated. This has been renamed to kSolverSpecificError; for details, "
-      "see https://github.com/RobotLocomotion/drake/pull/19450. The deprecated "
-      "code will be removed from Drake on or after 2023-09-01.");
-#pragma GCC diagnostic pop
 }  // NOLINT(readability/fn_size)
 
 void BindPyFunctionConstraint(py::module m) {

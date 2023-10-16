@@ -18,21 +18,23 @@ programs for the glTF Render Client-Server integration test. */
 #include <string>
 
 #include <gflags/gflags.h>
-#include <vtkActorCollection.h>
-#include <vtkAutoInit.h>
-#include <vtkCamera.h>
-#include <vtkGLTFImporter.h>
-#include <vtkImageExport.h>
-#include <vtkLight.h>
-#include <vtkMatrix4x4.h>
-#include <vtkOpenGLPolyDataMapper.h>
-#include <vtkOpenGLShaderProperty.h>
-#include <vtkPNGWriter.h>
-#include <vtkProperty.h>
-#include <vtkRenderWindow.h>
-#include <vtkRenderer.h>
-#include <vtkTIFFWriter.h>
-#include <vtkWindowToImageFilter.h>
+
+// To ease build system upkeep, we annotate VTK includes with their deps.
+#include <vtkActorCollection.h>       // vtkRenderingCore
+#include <vtkAutoInit.h>              // vtkCommonCore
+#include <vtkCamera.h>                // vtkRenderingCore
+#include <vtkGLTFImporter.h>          // vtkIOImport
+#include <vtkImageExport.h>           // vtkIOImage
+#include <vtkLight.h>                 // vtkRenderingCore
+#include <vtkMatrix4x4.h>             // vtkCommonMath
+#include <vtkOpenGLPolyDataMapper.h>  // vtkRenderingOpenGL2
+#include <vtkOpenGLShaderProperty.h>  // vtkRenderingOpenGL2
+#include <vtkPNGWriter.h>             // vtkIOImage
+#include <vtkProperty.h>              // vtkRenderingCore
+#include <vtkRenderWindow.h>          // vtkRenderingCore
+#include <vtkRenderer.h>              // vtkRenderingCore
+#include <vtkTIFFWriter.h>            // vtkIOImage
+#include <vtkWindowToImageFilter.h>   // vtkRenderingCore
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/text_logging.h"

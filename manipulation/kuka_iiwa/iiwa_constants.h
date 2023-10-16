@@ -18,11 +18,7 @@ VectorX<double> get_iiwa_max_joint_velocities();
 extern const double kIiwaLcmStatusPeriod;
 
 /** Enumeration for control modes. */
-enum class IiwaControlMode {
-    kPositionOnly,
-    kTorqueOnly,
-    kPositionAndTorque
-};
+enum class IiwaControlMode { kPositionOnly, kTorqueOnly, kPositionAndTorque };
 
 /** Reports if the given control `mode` includes positions. */
 constexpr inline bool position_enabled(IiwaControlMode control_mode) {

@@ -24,6 +24,7 @@ class TriangleSurfaceMeshTester {
   Vector3<T> CalcGradBarycentric(int f, int i) const {
     return mesh_.CalcGradBarycentric(f, i);
   }
+
  private:
   const TriangleSurfaceMesh<T>& mesh_;
 };
@@ -59,16 +60,16 @@ std::unique_ptr<TriangleSurfaceMesh<T>> GenerateTwoTriangleMesh() {
   faces.emplace_back(0, 1, 2);
   faces.emplace_back(2, 3, 0);
 
-  return std::make_unique<TriangleSurfaceMesh<T>>(
-      std::move(faces), std::move(vertices));
+  return std::make_unique<TriangleSurfaceMesh<T>>(std::move(faces),
+                                                  std::move(vertices));
 }
 
 // Generates an empty mesh.
 std::unique_ptr<TriangleSurfaceMesh<double>> GenerateEmptyMesh() {
   std::vector<Vector3d> vertices;
   std::vector<SurfaceTriangle> faces;
-  return std::make_unique<TriangleSurfaceMesh<double>>(
-      std::move(faces), std::move(vertices));
+  return std::make_unique<TriangleSurfaceMesh<double>>(std::move(faces),
+                                                       std::move(vertices));
 }
 
 // Generates a zero-area mesh.
@@ -77,22 +78,21 @@ std::unique_ptr<TriangleSurfaceMesh<double>> GenerateZeroAreaMesh() {
 
   // Create the vertices.
   std::vector<Vector3d> vertices;
-  for (int i = 0; i < 4; ++i)
-    vertices.emplace_back(Vector3<double>::Zero());
+  for (int i = 0; i < 4; ++i) vertices.emplace_back(Vector3<double>::Zero());
 
   // Create the two triangles.
   std::vector<SurfaceTriangle> faces;
   faces.emplace_back(0, 1, 2);
   faces.emplace_back(2, 3, 0);
 
-  return std::make_unique<TriangleSurfaceMesh<double>>(
-      std::move(faces), std::move(vertices));
+  return std::make_unique<TriangleSurfaceMesh<double>>(std::move(faces),
+                                                       std::move(vertices));
 }
 
 // Test instantiation of TriangleSurfaceMesh of a surface M and inspecting its
 // components. By default, the vertex positions are expressed in M's frame.
 // The optional parameter X_WM will change the vertex positions to W's frame.
-template<typename T>
+template <typename T>
 std::unique_ptr<TriangleSurfaceMesh<T>> TestSurfaceMesh(
     const math::RigidTransform<T> X_WM = math::RigidTransform<T>::Identity()) {
   // A simple surface mesh comprises of two co-planar triangles with vertices on
@@ -213,7 +213,7 @@ GTEST_TEST(SurfaceMeshTest, TestSurfaceMeshAutoDiffXd) {
   auto surface_mesh = TestSurfaceMesh<AutoDiffXd>();
 }
 
-template<typename T>
+template <typename T>
 void TestCalcBarycentric() {
   const math::RigidTransform<T> X_WM(
       math::RollPitchYaw<T>(M_PI / 6.0, 2.0 * M_PI / 3.0, 7.0 * M_PI / 4.0),
@@ -352,8 +352,7 @@ GTEST_TEST(SurfaceMeshTest, TestCalcGradBarycentricAutoDiffXd) {
 GTEST_TEST(SurfaceMeshTest, TestCalcGradBarycentricZeroAreaTriangle) {
   std::unique_ptr<TriangleSurfaceMesh<double>> mesh = GenerateZeroAreaMesh();
   const TriangleSurfaceMeshTester<double> tester(*mesh);
-  EXPECT_THROW(tester.CalcGradBarycentric(0, 0),
-               std::runtime_error);
+  EXPECT_THROW(tester.CalcGradBarycentric(0, 0), std::runtime_error);
 }
 
 template <typename T>
@@ -388,8 +387,7 @@ void TestCalcGradientVectorOfLinearField() {
       {Vector3<T>(v0_M), Vector3<T>(v1_M), Vector3<T>(v2_M)});
   const std::array<T, 3> f{2., 3., 4.};
 
-  const Vector3<T> gradf_M =
-      mesh_M.CalcGradientVectorOfLinearField(f, 0);
+  const Vector3<T> gradf_M = mesh_M.CalcGradientVectorOfLinearField(f, 0);
 
   // This function
   //       f(x,y,z) = -x + z + 3
@@ -448,7 +446,7 @@ GTEST_TEST(SurfaceMeshTest, ReverseFaceWinding) {
         break;
       }
     }
-    if (ref_first == -1)  return false;
+    if (ref_first == -1) return false;
 
     // We now have a common vertex: v at indices r and t, for the ref face and
     // test face, respectively. Confirm that ref[r + 1] == test[t - 1]
@@ -456,10 +454,10 @@ GTEST_TEST(SurfaceMeshTest, ReverseFaceWinding) {
     // we know at compile time that t - 1 = 2 and t - 2 = 1 (via circular
     // indexing). So, we only need to find r as (r + i) % 3.
     bool winding_is_valid = true;
-    winding_is_valid &= ref_face.vertex((ref_first + 1) % 3) ==
-        test_face.vertex(2);
-    winding_is_valid &= ref_face.vertex((ref_first + 2) % 3) ==
-        test_face.vertex(1);
+    winding_is_valid &=
+        ref_face.vertex((ref_first + 1) % 3) == test_face.vertex(2);
+    winding_is_valid &=
+        ref_face.vertex((ref_first + 2) % 3) == test_face.vertex(1);
     return winding_is_valid;
   };
 
@@ -468,7 +466,7 @@ GTEST_TEST(SurfaceMeshTest, ReverseFaceWinding) {
   }
 
   for (int i : {0, 1}) {
-    EXPECT_EQ(ref_mesh->face_normal(i), - test_mesh->face_normal(i));
+    EXPECT_EQ(ref_mesh->face_normal(i), -test_mesh->face_normal(i));
   }
 }
 

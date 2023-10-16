@@ -2,7 +2,7 @@
 # OSX it won't conflict with a build artifacts directory named "build".
 
 load("//tools/skylark:py.bzl", "py_library")
-load("@drake//tools/install:install.bzl", "install", "install_test")
+load("//tools/install:install.bzl", "install", "install_test")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(
@@ -69,6 +69,24 @@ filegroup(
         "//multibody/benchmarks/acrobot:models",
     ],
     visibility = ["//:__subpackages__"],
+)
+
+# A manually-curated collection of some test model files in Drake, for use by
+# //tools:model_visualizer_private.
+filegroup(
+    name = "some_test_models",
+    testonly = True,
+    data = [
+        # It's okay to add more items to this list, as needed.
+        "//geometry/render:test_models",
+        "//manipulation/util:test_models",
+        "//manipulation/util:test_directives",
+        "//multibody/parsing:test_models",
+        "//geometry:test_obj_files",
+        "//geometry:test_stl_files",
+        "//geometry:test_vtk_files",
+    ],
+    visibility = ["//tools:__pkg__"],
 )
 
 # To create a manifest of all installed files for use by drake_bazel_installed,

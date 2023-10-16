@@ -10,6 +10,8 @@ from pydrake.common.test_utilities import meta, numpy_compare
 from pydrake.symbolic import (
     Expression,
     MakeMatrixContinuousVariable,
+    Monomial,
+    Polynomial,
     Variable,
 )
 
@@ -19,11 +21,11 @@ def _matmul_dtype_pairs():
     that operate on a pair of matrix inputs. We'll test all pairs *except* we
     won't mix autodiff with symbolic.
     """
-    types = (float, AutoDiffXd, Variable, Expression)
+    types = (float, AutoDiffXd, Variable, Expression, Monomial, Polynomial)
     for T1, T2 in itertools.product(types, types):
-        has_autodiff = any([T in (AutoDiffXd,) for T in (T1, T2)])
-        has_symbolic = any([T in (Variable, Expression) for T in (T1, T2)])
-        if has_autodiff and has_symbolic:
+        any_autodiff = any([T in (AutoDiffXd,) for T in (T1, T2)])
+        all_nonsymbolic = all([T in (float, AutoDiffXd) for T in (T1, T2)])
+        if any_autodiff and not all_nonsymbolic:
             continue
         yield dict(T1=T1, T2=T2)
 
@@ -44,9 +46,9 @@ class MathOverloadsMatrixTest(unittest.TestCase,
         if dtype is Variable:
             # Return a like-sized matrix of variables.
             return MakeMatrixContinuousVariable(*M.shape, name)
-        if dtype is Expression:
-            # Return a like-sized matrix of variables promoted to expressions.
-            return self._astype(M, Variable, name).astype(dtype=Expression)
+        if dtype in (Expression, Polynomial, Monomial):
+            # Return a like-sized matrix of variables promoted to the dtype.
+            return self._astype(M, Variable, name).astype(dtype=dtype)
         assert False
 
     @meta.run_with_multiple_values(_matmul_dtype_pairs())

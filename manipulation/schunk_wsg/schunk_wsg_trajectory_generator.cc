@@ -10,6 +10,7 @@ namespace schunk_wsg {
 using systems::BasicVector;
 using systems::Context;
 using systems::DiscreteValues;
+using systems::EventStatus;
 
 SchunkWsgTrajectoryGenerator::SchunkWsgTrajectoryGenerator(int input_size,
                                                            int position_index)
@@ -29,11 +30,13 @@ SchunkWsgTrajectoryGenerator::SchunkWsgTrajectoryGenerator(int input_size,
                                      systems::kUseDefaultName, 1,
                                      &SchunkWsgTrajectoryGenerator::OutputForce)
                                  .get_index()) {
-  this->DeclareDiscreteState(
-      SchunkWsgTrajectoryGeneratorStateVector<double>());
+  this->DeclareDiscreteState(SchunkWsgTrajectoryGeneratorStateVector<double>());
   // The update period below matches the polling rate from
   // drake-schunk-driver.
-  this->DeclarePeriodicDiscreteUpdateNoHandler(0.05);
+  this->DeclarePeriodicDiscreteUpdateEvent(
+      0.05, 0.0, &SchunkWsgTrajectoryGenerator::CalcDiscreteUpdate);
+  this->DeclareForcedDiscreteUpdateEvent(
+      &SchunkWsgTrajectoryGenerator::CalcDiscreteUpdate);
 }
 
 void SchunkWsgTrajectoryGenerator::OutputTarget(
@@ -59,9 +62,8 @@ void SchunkWsgTrajectoryGenerator::OutputForce(
   output->get_mutable_value() = Vector1d(traj_state->max_force());
 }
 
-void SchunkWsgTrajectoryGenerator::DoCalcDiscreteVariableUpdates(
+EventStatus SchunkWsgTrajectoryGenerator::CalcDiscreteUpdate(
     const Context<double>& context,
-    const std::vector<const systems::DiscreteUpdateEvent<double>*>&,
     DiscreteValues<double>* discrete_state) const {
   const double desired_position =
       get_desired_position_input_port().Eval(context)[0];
@@ -97,6 +99,8 @@ void SchunkWsgTrajectoryGenerator::DoCalcDiscreteVariableUpdates(
     new_traj_state->set_trajectory_start_time(
         last_traj_state->trajectory_start_time());
   }
+
+  return EventStatus::Succeeded();
 }
 
 void SchunkWsgTrajectoryGenerator::UpdateTrajectory(

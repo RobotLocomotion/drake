@@ -1,19 +1,10 @@
+load("//tools/skylark:cc.bzl", "cc_binary")
 load("//tools/skylark:py.bzl", "py_library")
 load("@cc//:compiler.bzl", "COMPILER_ID")
 load("@python//:version.bzl", "PYTHON_EXTENSION_SUFFIX")
-
-# @see bazelbuild/bazel#3493 for needing `@drake//` when loading `install`.
-load("@drake//tools/install:install.bzl", "install")
-load(
-    "@drake//tools/skylark:drake_cc.bzl",
-    "drake_cc_binary",
-    "drake_cc_googletest",
-)
-load(
-    "@drake//tools/skylark:drake_py.bzl",
-    "drake_py_library",
-    "drake_py_test",
-)
+load("//tools/install:install.bzl", "install")
+load("//tools/skylark:drake_cc.bzl", "drake_cc_binary", "drake_cc_googletest")
+load("//tools/skylark:drake_py.bzl", "drake_py_library", "drake_py_test")
 
 def pybind_py_library(
         name,
@@ -21,7 +12,7 @@ def pybind_py_library(
         cc_deps = [],
         cc_copts = [],
         cc_so_name = None,
-        cc_binary_rule = native.cc_binary,
+        cc_binary_rule = cc_binary,
         py_srcs = [],
         py_deps = [],
         py_imports = [],
@@ -117,6 +108,7 @@ def _check_cc_deps(*, cc_deps, testonly):
         # The dep is a header-only library with no dependencies (unless those
         # dependencies are also header-only).
         "//common:nice_type_name_override_header",
+        "//systems/analysis:simulator_python_internal_header",
     ]
     if testonly:
         allowed_prefix.extend([

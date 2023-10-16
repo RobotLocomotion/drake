@@ -4,6 +4,7 @@ namespace drake {
 namespace multibody {
 
 using internal::MultibodyTreeSystem;
+using systems::Parameters;
 
 template <typename T>
 MultibodyElement<T>::~MultibodyElement() {}
@@ -16,6 +17,13 @@ void MultibodyElement<T>::DeclareParameters(
 }
 
 template <typename T>
+void MultibodyElement<T>::SetDefaultParameters(
+    systems::Parameters<T>* parameters) const {
+  DRAKE_DEMAND(parameters != nullptr);
+  DoSetDefaultParameters(parameters);
+}
+
+template <typename T>
 MultibodyElement<T>::MultibodyElement() {}
 
 template <typename T>
@@ -24,6 +32,9 @@ MultibodyElement<T>::MultibodyElement(ModelInstanceIndex model_instance)
 
 template <typename T>
 void MultibodyElement<T>::DoDeclareParameters(MultibodyTreeSystem<T>*) {}
+
+template <typename T>
+void MultibodyElement<T>::DoSetDefaultParameters(Parameters<T>*) const {}
 
 template <typename T>
 systems::NumericParameterIndex MultibodyElement<T>::DeclareNumericParameter(

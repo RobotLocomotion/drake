@@ -1,0 +1,32 @@
+[qhull] Remove problematic friendship
+
+For private access within the module, don't use out-of-namespace friendship with
+an `extern "C"` function. This doesn't work with drake's namespace vendoring.
+
+Instead, just make the fields public.
+
+The Qhull license requires us to publish the author, date, and reason
+for changes: Author: Jeremy Nimmer; Date: Jun 2, 2022.
+
+--- src/libqhullcpp/QhullQh.h.orig
++++ src/libqhullcpp/QhullQh.h
+@@ -58,7 +58,7 @@
+ #//!\name Constants
+ 
+ #//!\name Fields
+-private:
++public:
+     int                 qhull_status;   //!< qh_ERRnone if valid
+     std::string         qhull_message;  //!< Returned messages from libqhull_r
+     std::ostream *      error_stream;   //!< overrides errorMessage, use appendQhullMessage()
+@@ -66,8 +66,9 @@
+     double              factor_epsilon; //!< Factor to increase ANGLEround and DISTround for hyperplane equality
+     bool                use_output_stream; //!< True if using output_stream
+ 
++private:
+     //! modified by qh_fprintf in QhullUser.cpp
+-    friend void         ::qh_fprintf(qhT *qh, FILE *fp, int msgcode, const char *fmt, ... );
++    //friend void         ::qh_fprintf(qhT *qh, FILE *fp, int msgcode, const char *fmt, ... );
+ 
+     static const double default_factor_epsilon;  //!< Default factor_epsilon is 1.0, never updated
+ 

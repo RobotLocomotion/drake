@@ -16,11 +16,14 @@
 #include "drake/multibody/contact_solvers/sap/sap_contact_problem.h"
 #include "drake/multibody/contact_solvers/sap/sap_coupler_constraint.h"
 #include "drake/multibody/contact_solvers/sap/sap_distance_constraint.h"
+#include "drake/multibody/contact_solvers/sap/sap_fixed_constraint.h"
 #include "drake/multibody/contact_solvers/sap/sap_friction_cone_constraint.h"
 #include "drake/multibody/contact_solvers/sap/sap_holonomic_constraint.h"
 #include "drake/multibody/contact_solvers/sap/sap_limit_constraint.h"
+#include "drake/multibody/contact_solvers/sap/sap_pd_controller_constraint.h"
 #include "drake/multibody/contact_solvers/sap/sap_solver.h"
 #include "drake/multibody/contact_solvers/sap/sap_solver_results.h"
+#include "drake/multibody/contact_solvers/sap/sap_weld_constraint.h"
 #include "drake/multibody/plant/compliant_contact_manager.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/plant/slicing_and_indexing.h"
@@ -31,6 +34,7 @@ using drake::multibody::contact_solvers::internal::ContactConfiguration;
 using drake::multibody::contact_solvers::internal::ContactSolverResults;
 using drake::multibody::contact_solvers::internal::ExtractNormal;
 using drake::multibody::contact_solvers::internal::ExtractTangent;
+using drake::multibody::contact_solvers::internal::FixedConstraintKinematics;
 using drake::multibody::contact_solvers::internal::MatrixBlock;
 using drake::multibody::contact_solvers::internal::SapBallConstraint;
 using drake::multibody::contact_solvers::internal::SapConstraint;
@@ -38,12 +42,15 @@ using drake::multibody::contact_solvers::internal::SapConstraintJacobian;
 using drake::multibody::contact_solvers::internal::SapContactProblem;
 using drake::multibody::contact_solvers::internal::SapCouplerConstraint;
 using drake::multibody::contact_solvers::internal::SapDistanceConstraint;
+using drake::multibody::contact_solvers::internal::SapFixedConstraint;
 using drake::multibody::contact_solvers::internal::SapFrictionConeConstraint;
 using drake::multibody::contact_solvers::internal::SapHolonomicConstraint;
 using drake::multibody::contact_solvers::internal::SapLimitConstraint;
+using drake::multibody::contact_solvers::internal::SapPdControllerConstraint;
 using drake::multibody::contact_solvers::internal::SapSolver;
 using drake::multibody::contact_solvers::internal::SapSolverResults;
 using drake::multibody::contact_solvers::internal::SapSolverStatus;
+using drake::multibody::contact_solvers::internal::SapWeldConstraint;
 
 namespace drake {
 namespace multibody {
@@ -144,8 +151,8 @@ void SapDriver<T>::CalcLinearDynamicsMatrix(const systems::Context<T>& context,
   }
 
   if constexpr (std::is_same_v<T, double>) {
-    if (manager().deformable_driver_ != nullptr) {
-      manager().deformable_driver_->AppendLinearDynamicsMatrix(context, A);
+    if (manager().deformable_driver() != nullptr) {
+      manager().deformable_driver()->AppendLinearDynamicsMatrix(context, A);
     }
   }
 }
@@ -167,9 +174,9 @@ void SapDriver<T>::CalcFreeMotionVelocities(const systems::Context<T>& context,
       context.get_discrete_state(manager().multibody_state_index()).value();
   const auto v0 = x0.bottomRows(this->plant().num_velocities());
   if constexpr (std::is_same_v<T, double>) {
-    if (manager().deformable_driver_ != nullptr) {
+    if (manager().deformable_driver() != nullptr) {
       const VectorX<T>& deformable_v_star =
-          manager().deformable_driver_->EvalParticipatingFreeMotionVelocities(
+          manager().deformable_driver()->EvalParticipatingFreeMotionVelocities(
               context);
       const int rigid_dofs = v0.size();
       const int deformable_dofs = deformable_v_star.size();
@@ -194,15 +201,15 @@ std::vector<RotationMatrix<T>> SapDriver<T>::AddContactConstraints(
   // TODO(amcastro-tri): consider exposing these parameters.
   constexpr double sigma = 1.0e-3;
 
-  const std::vector<DiscreteContactPair<T>>& contact_pairs =
+  const DiscreteContactData<DiscreteContactPair<T>>& contact_pairs =
       manager().EvalDiscreteContactPairs(context);
   const int num_contacts = contact_pairs.size();
 
   // Quick no-op exit.
   if (num_contacts == 0) return std::vector<RotationMatrix<T>>();
 
-  std::vector<ContactPairKinematics<T>> contact_kinematics =
-      manager().CalcContactKinematics(context);
+  const DiscreteContactData<ContactPairKinematics<T>>& contact_kinematics =
+      manager().EvalContactKinematics(context);
 
   std::vector<RotationMatrix<T>> R_WC;
   R_WC.reserve(num_contacts);
@@ -212,7 +219,7 @@ std::vector<RotationMatrix<T>> SapDriver<T>::AddContactConstraints(
     const T stiffness = discrete_pair.stiffness;
     const T dissipation_time_scale = discrete_pair.dissipation_time_scale;
     const T friction = discrete_pair.friction_coefficient;
-    ContactConfiguration<T>& configuration =
+    const ContactConfiguration<T>& configuration =
         contact_kinematics[icontact].configuration;
     const auto& jacobian_blocks = contact_kinematics[icontact].jacobian;
 
@@ -234,13 +241,13 @@ std::vector<RotationMatrix<T>> SapDriver<T>::AddContactConstraints(
       SapConstraintJacobian<T> J(jacobian_blocks[0].tree,
                                  std::move(jacobian_blocks[0].J));
       problem->AddConstraint(std::make_unique<SapFrictionConeConstraint<T>>(
-          std::move(configuration), std::move(J), std::move(parameters)));
+          configuration, std::move(J), std::move(parameters)));
     } else {
       SapConstraintJacobian<T> J(
           jacobian_blocks[0].tree, std::move(jacobian_blocks[0].J),
           jacobian_blocks[1].tree, std::move(jacobian_blocks[1].J));
       problem->AddConstraint(std::make_unique<SapFrictionConeConstraint<T>>(
-          std::move(configuration), std::move(J), std::move(parameters)));
+          configuration, std::move(J), std::move(parameters)));
     }
   }
   return R_WC;
@@ -571,6 +578,171 @@ void SapDriver<T>::AddBallConstraints(
 }
 
 template <typename T>
+void SapDriver<T>::AddWeldConstraints(
+    const systems::Context<T>& context,
+    contact_solvers::internal::SapContactProblem<T>* problem) const {
+  DRAKE_DEMAND(problem != nullptr);
+
+  const int nv = plant().num_velocities();
+  Matrix6X<T> J_WAm(6, nv);
+  Matrix6X<T> J_WBm(6, nv);
+  MatrixX<T> J_W_AmBm = MatrixX<T>::Zero(6, nv);
+
+  const Frame<T>& frame_W = plant().world_frame();
+
+  for (const auto& [id, spec] : manager().weld_constraints_specs()) {
+    const Body<T>& body_A = plant().get_body(spec.body_A);
+    const Body<T>& body_B = plant().get_body(spec.body_B);
+
+    const math::RigidTransform<T>& X_WA = body_A.EvalPoseInWorld(context);
+    const math::RigidTransform<T>& X_WB = body_B.EvalPoseInWorld(context);
+    const math::RigidTransform<T> X_WP = X_WA * spec.X_AP.template cast<T>();
+    const math::RigidTransform<T> X_WQ = X_WB * spec.X_BQ.template cast<T>();
+    const Vector3<T> p_AP_W =
+        X_WA.rotation() * spec.X_AP.translation().template cast<T>();
+    const Vector3<T> p_BQ_W =
+        X_WB.rotation() * spec.X_BQ.translation().template cast<T>();
+
+    // Let M be the midpoint of P and Q.
+    const Vector3<T> p_WM = 0.5 * (X_WP.translation() + X_WQ.translation());
+    const Vector3<T> p_AM = p_WM - X_WA.translation();
+    const Vector3<T> p_BM = p_WM - X_WB.translation();
+
+    // Dense Jacobian.
+    manager().internal_tree().CalcJacobianSpatialVelocity(
+        context, JacobianWrtVariable::kV, body_A.body_frame(), p_AM, frame_W,
+        frame_W, &J_WAm);
+    manager().internal_tree().CalcJacobianSpatialVelocity(
+        context, JacobianWrtVariable::kV, body_B.body_frame(), p_BM, frame_W,
+        frame_W, &J_WBm);
+    J_W_AmBm = (J_WBm - J_WAm);
+
+    // TODO(joemasterjohn) consolidate make_jacobian for use by other
+    // constraints that need the same jacobian computed here.
+    auto make_constraint_jacobian = [this, &J_W_AmBm](const Body<T>& bodyA,
+                                                      const Body<T>& bodyB) {
+      const TreeIndex treeA_index =
+          tree_topology().body_to_tree_index(bodyA.index());
+      const TreeIndex treeB_index =
+          tree_topology().body_to_tree_index(bodyB.index());
+
+      // TODO(joemasterjohn): Move this exception up to the plant level so
+      // that it fails as fast as possible. Currently, the earliest this can
+      // happen is in MbP::Finalize() after the topology has been finalized.
+      if (!treeA_index.is_valid() && !treeB_index.is_valid()) {
+        const std::string msg = fmt::format(
+            "Creating a weld constraint between bodies '{}' and '{}' where "
+            "both are welded to the world is not allowed.",
+            bodyA.name(), bodyB.name());
+        throw std::logic_error(msg);
+      }
+
+      // Both bodies A and B belong to the same tree or one of them is the
+      // world.
+      const bool single_tree = !treeA_index.is_valid() ||
+                               !treeB_index.is_valid() ||
+                               treeA_index == treeB_index;
+
+      if (single_tree) {
+        const TreeIndex tree_index =
+            treeA_index.is_valid() ? treeA_index : treeB_index;
+        MatrixX<T> Jtree_W = J_W_AmBm.middleCols(
+            tree_topology().tree_velocities_start(tree_index),
+            tree_topology().num_tree_velocities(tree_index));
+        return SapConstraintJacobian<T>(tree_index, std::move(Jtree_W));
+      } else {
+        MatrixX<T> JA_W = J_W_AmBm.middleCols(
+            tree_topology().tree_velocities_start(treeA_index),
+            tree_topology().num_tree_velocities(treeA_index));
+        MatrixX<T> JB_W = J_W_AmBm.middleCols(
+            tree_topology().tree_velocities_start(treeB_index),
+            tree_topology().num_tree_velocities(treeB_index));
+        return SapConstraintJacobian<T>(treeA_index, std::move(JA_W),
+                                        treeB_index, std::move(JB_W));
+      }
+    };
+
+    const typename SapWeldConstraint<T>::Kinematics kinematics(
+        spec.body_A, X_WP, p_AP_W, spec.body_B, X_WQ, p_BQ_W,
+        make_constraint_jacobian(body_A, body_B));
+
+    problem->AddConstraint(
+        std::make_unique<SapWeldConstraint<T>>(std::move(kinematics)));
+  }
+}
+
+template <typename T>
+void SapDriver<T>::AddPdControllerConstraints(
+    const systems::Context<T>& context, SapContactProblem<T>* problem) const {
+  DRAKE_DEMAND(problem != nullptr);
+
+  // Do nothing if not PD controllers were specified.
+  if (plant().num_actuators() == 0) return;
+
+  // Desired positions & velocities.
+  const int num_actuators = plant().num_actuators();
+  // TODO(amcastro-tri): makes these EvalFoo() instead to avoid heap
+  // allocations.
+  const VectorX<T> desired_state = manager_->AssembleDesiredStateInput(context);
+  const VectorX<T> feed_forward_actuation =
+      manager_->AssembleActuationInput(context);
+
+  for (JointActuatorIndex actuator_index(0);
+       actuator_index < plant().num_actuators(); ++actuator_index) {
+    const JointActuator<T>& actuator =
+        plant().get_joint_actuator(actuator_index);
+    if (actuator.has_controller()) {
+      const Joint<T>& joint = actuator.joint();
+      const double effort_limit = actuator.effort_limit();
+      const T& qd = desired_state[actuator.index()];
+      const T& vd = desired_state[num_actuators + actuator.index()];
+      const T& u0 = feed_forward_actuation[actuator.index()];
+
+      const T& q0 = joint.GetOnePosition(context);
+      const int dof = joint.velocity_start();
+      const TreeIndex tree = tree_topology().velocity_to_tree_index(dof);
+      const int tree_dof = dof - tree_topology().tree_velocities_start(tree);
+      const int tree_nv = tree_topology().num_tree_velocities(tree);
+
+      // Controller gains.
+      const PdControllerGains& gains = actuator.get_controller_gains();
+      const T& Kp = gains.p;
+      const T& Kd = gains.d;
+
+      typename SapPdControllerConstraint<T>::Parameters parameters{
+          Kp, Kd, effort_limit};
+      typename SapPdControllerConstraint<T>::Configuration configuration{
+          tree, tree_dof, tree_nv, q0, qd, vd, u0};
+
+      problem->AddConstraint(std::make_unique<SapPdControllerConstraint<T>>(
+          std::move(configuration), std::move(parameters)));
+    }
+  }
+}
+
+template <typename T>
+void SapDriver<T>::AddFixedConstraints(
+    const systems::Context<T>& context,
+    contact_solvers::internal::SapContactProblem<T>* problem) const {
+  DRAKE_DEMAND(problem != nullptr);
+  if constexpr (std::is_same_v<T, double>) {
+    if (manager().deformable_driver() != nullptr) {
+      std::vector<FixedConstraintKinematics<T>> kinematics;
+      manager()
+          .deformable_driver()
+          ->AppendDeformableRigidFixedConstraintKinematics(context,
+                                                           &kinematics);
+      for (FixedConstraintKinematics<T>& k : kinematics) {
+        problem->AddConstraint(
+            std::make_unique<SapFixedConstraint<T>>(std::move(k)));
+      }
+    }
+  } else {
+    unused(context, problem);
+  }
+}
+
+template <typename T>
 void SapDriver<T>::CalcContactProblemCache(
     const systems::Context<T>& context, ContactProblemCache<T>* cache) const {
   std::vector<MatrixX<T>> A;
@@ -579,9 +751,9 @@ void SapDriver<T>::CalcContactProblemCache(
   CalcFreeMotionVelocities(context, &v_star);
   const int num_rigid_bodies = plant().num_bodies();
   const int num_deformable_bodies =
-      (manager().deformable_driver_ == nullptr)
+      (manager().deformable_driver() == nullptr)
           ? 0
-          : manager().deformable_driver_->num_deformable_bodies();
+          : manager().deformable_driver()->num_deformable_bodies();
   const int num_objects = num_rigid_bodies + num_deformable_bodies;
   cache->sap_problem = std::make_unique<SapContactProblem<T>>(
       plant().time_step(), std::move(A), std::move(v_star));
@@ -593,9 +765,12 @@ void SapDriver<T>::CalcContactProblemCache(
   // Do not change this order here!
   cache->R_WC = AddContactConstraints(context, &problem);
   AddLimitConstraints(context, problem.v_star(), &problem);
+  AddPdControllerConstraints(context, &problem);
   AddCouplerConstraints(context, &problem);
   AddDistanceConstraints(context, &problem);
   AddBallConstraints(context, &problem);
+  AddWeldConstraints(context, &problem);
+  AddFixedConstraints(context, &problem);
 
   // Make a reduced version of the original contact problem using joint locking
   // data.
@@ -677,7 +852,7 @@ void SapDriver<T>::AddCliqueContribution(
     EigenPtr<VectorX<T>> values) const {
   if (clique >= tree_topology().num_trees()) {
     const DeformableDriver<double>* deformable_driver =
-        manager().deformable_driver_.get();
+        manager().deformable_driver();
     DRAKE_THROW_UNLESS(deformable_driver != nullptr);
     if constexpr (std::is_same_v<T, double>) {
       const int num_deformable_dofs = values->size() - plant().num_velocities();
@@ -722,9 +897,9 @@ void SapDriver<T>::CalcSapSolverResults(
   }
 
   if constexpr (std::is_same_v<T, double>) {
-    if (manager().deformable_driver_ != nullptr) {
+    if (manager().deformable_driver() != nullptr) {
       const VectorX<double> deformable_v0 =
-          manager().deformable_driver_->EvalParticipatingVelocities(context);
+          manager().deformable_driver()->EvalParticipatingVelocities(context);
       const int rigid_dofs = v0.size();
       const int deformable_dofs = deformable_v0.size();
       v0.conservativeResize(rigid_dofs + deformable_dofs);
@@ -778,15 +953,14 @@ template <typename T>
 void SapDriver<T>::CalcContactSolverResults(
     const systems::Context<T>& context,
     contact_solvers::internal::ContactSolverResults<T>* results) const {
-  const ContactProblemCache<T>& contact_problem_cache =
-      EvalContactProblemCache(context);
-  const SapContactProblem<T>& sap_problem = *contact_problem_cache.sap_problem;
   const SapSolverResults<T>& sap_results = EvalSapSolverResults(context);
-  const std::vector<DiscreteContactPair<T>>& discrete_pairs =
+  const DiscreteContactData<DiscreteContactPair<T>>& discrete_pairs =
       manager().EvalDiscreteContactPairs(context);
   const int num_contacts = discrete_pairs.size();
-  PackContactSolverResults(context, sap_problem, num_contacts, sap_results,
-                           results);
+  const ContactProblemCache<T>& contact_problem_cache =
+      EvalContactProblemCache(context);
+  PackContactSolverResults(context, *contact_problem_cache.sap_problem,
+                           num_contacts, sap_results, results);
 }
 
 template <typename T>
@@ -801,8 +975,6 @@ void SapDriver<T>::CalcDiscreteUpdateMultibodyForces(
   const auto v0 = x0.bottomRows(plant().num_velocities());
 
   // Next time step state.
-  const contact_solvers::internal::SapContactProblem<T>& problem =
-      *EvalContactProblemCache(context).sap_problem;
   const SapSolverResults<T>& sap_results = EvalSapSolverResults(context);
   // Generalized velocities and accelerations.
   const VectorX<T>& v = sap_results.v;
@@ -810,8 +982,9 @@ void SapDriver<T>::CalcDiscreteUpdateMultibodyForces(
 
   // Include all state dependent forces (not constraints) evaluated at t₀
   // (previous time step as stored in the context).
-  const bool include_joint_limit_penalty_forces = false;
-  manager().CalcNonContactForces(context, include_joint_limit_penalty_forces,
+  manager().CalcNonContactForces(context,
+                                 /* include_joint_limit_penalty_forces */ false,
+                                 /* include_pd_controlled_input */ false,
                                  forces);
 
   // SAP evaluates damping terms (joint damping and reflected inertia)
@@ -822,7 +995,7 @@ void SapDriver<T>::CalcDiscreteUpdateMultibodyForces(
 
   // Include the contribution from constraints.
   // TODO(amcastro-tri): Consider deformables.
-  if (manager().deformable_driver_ != nullptr) {
+  if (manager().deformable_driver() != nullptr) {
     throw std::logic_error(
         "The computation of MultibodyForces must be updated to include "
         "deformable objects.");
@@ -836,8 +1009,10 @@ void SapDriver<T>::CalcDiscreteUpdateMultibodyForces(
   // the reporting of multibody forces is defined to be at body origins and
   // expressed in the world frame.
   // Therefore aggregation of forces per-body makes sense in this call.
-  problem.CalcConstraintMultibodyForces(gamma, &constraints_generalized_forces,
-                                        &constraint_spatial_forces);
+  const ContactProblemCache<T>& contact_problem_cache =
+      EvalContactProblemCache(context);
+  contact_problem_cache.sap_problem->CalcConstraintMultibodyForces(
+      gamma, &constraints_generalized_forces, &constraint_spatial_forces);
   generalized_forces += constraints_generalized_forces;
 
   // N.B. The CompliantContactManager indexes constraints objects with body

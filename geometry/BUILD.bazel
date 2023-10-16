@@ -1,15 +1,15 @@
 load(
-    "@drake//tools/skylark:drake_cc.bzl",
+    "//tools/skylark:drake_cc.bzl",
     "drake_cc_binary",
     "drake_cc_googletest",
     "drake_cc_library",
     "drake_cc_package_library",
 )
 load(
-    "@drake//tools/skylark:drake_py.bzl",
+    "//tools/skylark:drake_py.bzl",
     "drake_py_binary",
 )
-load("@drake//tools/install:install.bzl", "install", "install_files")
+load("//tools/install:install.bzl", "install", "install_files")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
@@ -36,6 +36,7 @@ drake_cc_package_library(
         ":make_mesh_for_deformable",
         ":meshcat",
         ":meshcat_animation",
+        ":meshcat_graphviz",
         ":meshcat_point_cloud_visualizer",
         ":meshcat_visualizer",
         ":meshcat_visualizer_params",
@@ -116,16 +117,20 @@ drake_cc_library(
     name = "drake_visualizer",
     srcs = ["drake_visualizer.cc"],
     hdrs = ["drake_visualizer.h"],
-    deps = [
+    interface_deps = [
         ":drake_visualizer_params",
         ":geometry_roles",
         ":geometry_version",
         ":scene_graph",
         "//common:essential",
-        "//lcm:drake_lcm",
-        "//lcmtypes:viewer",
+        "//lcm:interface",
         "//systems/framework:context",
         "//systems/framework:leaf_system",
+    ],
+    deps = [
+        "//lcm:drake_lcm",
+        "//lcmtypes:viewer",
+        "//systems/lcm:lcm_system_graphviz",
     ],
 )
 
@@ -469,7 +474,6 @@ drake_cc_library(
         "//common:find_resource",
         "//common:network_policy",
         "//common:scope_exit",
-        "//common:unused",
         "@common_robotics_utilities",
         "@msgpack_internal//:msgpack",
         "@stduuid_internal//:stduuid",
@@ -544,6 +548,7 @@ drake_cc_library(
     hdrs = ["meshcat_point_cloud_visualizer.h"],
     deps = [
         ":meshcat",
+        ":meshcat_graphviz",
         ":rgba",
         ":utilities",
         "//perception:point_cloud",
@@ -559,6 +564,22 @@ drake_cc_googletest(
         "//systems/analysis:simulator",
         "//systems/framework:diagram_builder",
         "//systems/primitives:constant_value_source",
+    ],
+)
+
+drake_cc_library(
+    name = "meshcat_graphviz",
+    srcs = ["meshcat_graphviz.cc"],
+    hdrs = ["meshcat_graphviz.h"],
+    deps = [
+        "//systems/framework:system_base",
+    ],
+)
+
+drake_cc_googletest(
+    name = "meshcat_graphviz_test",
+    deps = [
+        ":meshcat_graphviz",
     ],
 )
 
@@ -579,6 +600,7 @@ drake_cc_library(
     deps = [
         ":geometry_roles",
         ":meshcat",
+        ":meshcat_graphviz",
         ":meshcat_visualizer_params",
         ":rgba",
         ":scene_graph",
@@ -630,10 +652,13 @@ filegroup(
     name = "test_vtk_files",
     testonly = 1,
     srcs = [
+        "test/cube_as_6_squares.vtk",
         "test/non_convex_mesh.vtk",
         "test/one_negative_tetrahedron.vtk",
         "test/one_tetrahedron.vtk",
+        "test/some_volume.vtk",
         "test/two_tetrahedra_with_field_variable.vtk",
+        "test/unstructured.vtk",
     ],
 )
 
@@ -668,6 +693,8 @@ drake_cc_googletest(
         ":drake_visualizer",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
+        "//lcm",
+        "//lcmtypes:viewer",
         "//systems/analysis:simulator",
     ],
 )

@@ -109,7 +109,9 @@ class DummyModel final : public PhysicalModel<T> {
     /* Declare output ports. */
     abstract_output_port_ = &this->DeclareAbstractOutputPort(
         plant, "dummy_abstract_output_port",
-        [=]() { return AbstractValue::Make(model_state); },
+        [=]() {
+          return AbstractValue::Make(model_state);
+        },
         [this](const Context<T>& context, AbstractValue* output) {
           VectorX<T>& data = output->get_mutable_value<VectorX<T>>();
           data = context.get_discrete_state(discrete_state_index_).get_value();

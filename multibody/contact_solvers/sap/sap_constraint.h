@@ -240,8 +240,8 @@ class SapConstraint {
    @param[in] o The o-th object of index object(o).
    @param[in] gamma Impulses for this constraint, of size
    num_constraint_equations().
-   @param[out] F On output this function will accumulate the spatial
-   impulse applied by this constraint on the o-th object.
+   @param[out] F On output this function will accumulate the spatial impulse
+   applied by this constraint on the o-th object.
 
    @throws if o < 0 or if o >= num_objects().
    @throws if gamma.size() != num_constraint_equations().

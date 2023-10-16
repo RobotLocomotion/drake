@@ -38,8 +38,14 @@ namespace controllers {
  * - desired_state
  * - <span style="color:gray">desired_acceleration</span>
  * output_ports:
- * - force
+ * - generalized_force
  * @endsystem
+ *
+ * @note As an alternative to adding a separate controller system to your
+ * diagram, you can model gravity compensation with PD controllers using
+ * MultibodyPlant APIs. Refer to MultibodyPlat::set_gravity_enabled() as an
+ * alternative to modeling gravity compensation. To model PD controlled
+ * actuators, refer to @ref mbp_actuation "Actuation".
  *
  * The desired acceleration port shown in <span style="color:gray">gray</span>
  * may be absent, depending on the arguments passed to the constructor.
@@ -121,30 +127,30 @@ class InverseDynamicsController final
    * Returns the input port for the reference acceleration.
    */
   const InputPort<T>& get_input_port_desired_acceleration() const {
-    DRAKE_DEMAND(has_reference_acceleration_);
-    DRAKE_DEMAND(input_port_index_desired_acceleration_ >= 0);
-    return Diagram<T>::get_input_port(input_port_index_desired_acceleration_);
+    DRAKE_THROW_UNLESS(has_reference_acceleration_);
+    DRAKE_DEMAND(desired_acceleration_.is_valid());
+    return Diagram<T>::get_input_port(desired_acceleration_);
   }
 
   /**
    * Returns the input port for the estimated state.
    */
   const InputPort<T>& get_input_port_estimated_state() const final {
-    return this->get_input_port(input_port_index_estimated_state_);
+    return this->get_input_port(estimated_state_);
   }
 
   /**
    * Returns the input port for the desired state.
    */
   const InputPort<T>& get_input_port_desired_state() const final {
-    return this->get_input_port(input_port_index_desired_state_);
+    return this->get_input_port(desired_state_);
   }
 
   /**
    * Returns the output port for computed control.
    */
   const OutputPort<T>& get_output_port_control() const final {
-    return this->get_output_port(output_port_index_control_);
+    return this->get_output_port(generalized_force_);
   }
 
   /**
@@ -162,10 +168,10 @@ class InverseDynamicsController final
   const multibody::MultibodyPlant<T>* multibody_plant_for_control_{nullptr};
   PidController<T>* pid_{nullptr};
   const bool has_reference_acceleration_{false};
-  InputPortIndex input_port_index_estimated_state_;
-  InputPortIndex input_port_index_desired_state_;
-  InputPortIndex input_port_index_desired_acceleration_;
-  OutputPortIndex output_port_index_control_;
+  InputPortIndex estimated_state_;
+  InputPortIndex desired_state_;
+  InputPortIndex desired_acceleration_;
+  OutputPortIndex generalized_force_;
 };
 
 }  // namespace controllers

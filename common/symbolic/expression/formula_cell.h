@@ -172,7 +172,7 @@ class FormulaFalse : public FormulaCell {
 class FormulaVar : public FormulaCell {
  public:
   /** Constructs a formula from @p var.
-   * @pre @p var is of BOOLEAN type and not a dummy variable.
+   * @pre @p var is of BOOLEAN type.
    */
   explicit FormulaVar(Variable v);
   void HashAppendDetail(DelegatingHasher*) const override;

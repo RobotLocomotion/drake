@@ -38,14 +38,14 @@ class RobotDiagramBuilder {
   Do not call Build() on the return value; instead, call Build() on this.
   @throws exception when IsDiagramBuilt() already. */
   systems::DiagramBuilder<T>& builder() {
-    ThrowIfAlreadyBuilt();
+    ThrowIfAlreadyBuiltOrCorrupted();
     return *builder_;
   }
 
   /** Gets the contained DiagramBuilder (readonly).
   @throws exception when IsDiagramBuilt() already. */
   const systems::DiagramBuilder<T>& builder() const {
-    ThrowIfAlreadyBuilt();
+    ThrowIfAlreadyBuiltOrCorrupted();
     return *builder_;
   }
 
@@ -54,7 +54,7 @@ class RobotDiagramBuilder {
   template <typename T1 = T,
             typename std::enable_if_t<std::is_same_v<T1, double>>* = nullptr>
   multibody::Parser& parser() {
-    ThrowIfAlreadyBuilt();
+    ThrowIfAlreadyBuiltOrCorrupted();
     return parser_;
   }
 
@@ -63,35 +63,35 @@ class RobotDiagramBuilder {
   template <typename T1 = T,
             typename std::enable_if_t<std::is_same_v<T1, double>>* = nullptr>
   const multibody::Parser& parser() const {
-    ThrowIfAlreadyBuilt();
+    ThrowIfAlreadyBuiltOrCorrupted();
     return parser_;
   }
 
   /** Gets the contained plant (mutable).
   @throws exception when IsDiagramBuilt() already. */
   multibody::MultibodyPlant<T>& plant() {
-    ThrowIfAlreadyBuilt();
+    ThrowIfAlreadyBuiltOrCorrupted();
     return plant_;
   }
 
   /** Gets the contained plant (readonly).
   @throws exception when IsDiagramBuilt() already. */
   const multibody::MultibodyPlant<T>& plant() const {
-    ThrowIfAlreadyBuilt();
+    ThrowIfAlreadyBuiltOrCorrupted();
     return plant_;
   }
 
   /** Gets the contained scene graph (mutable).
   @throws exception when IsDiagramBuilt() already. */
   geometry::SceneGraph<T>& scene_graph() {
-    ThrowIfAlreadyBuilt();
+    ThrowIfAlreadyBuiltOrCorrupted();
     return scene_graph_;
   }
 
   /** Gets the contained scene graph (readonly).
   @throws exception when IsDiagramBuilt() already. */
   const geometry::SceneGraph<T>& scene_graph() const {
-    ThrowIfAlreadyBuilt();
+    ThrowIfAlreadyBuiltOrCorrupted();
     return scene_graph_;
   }
 
@@ -105,7 +105,10 @@ class RobotDiagramBuilder {
   std::unique_ptr<RobotDiagram<T>> Build();
 
  private:
-  void ThrowIfAlreadyBuilt() const;
+  void ThrowIfAlreadyBuiltOrCorrupted() const;
+
+  bool ShouldExportDefaultPorts() const;
+  void ExportDefaultPorts() const;
 
   // Storage for the diagram and its plant and scene graph.
   // After Build(), the `builder_` is set to nullptr.

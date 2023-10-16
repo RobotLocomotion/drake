@@ -1,10 +1,12 @@
 #include "drake/geometry/render_vtk/internal_vtk_util.h"
 
 #include <Eigen/Dense>
-#include <vtkNew.h>
-#include <vtkPlaneSource.h>
-#include <vtkSmartPointer.h>
-#include <vtkTransform.h>
+
+// To ease build system upkeep, we annotate VTK includes with their deps.
+#include <vtkNew.h>           // vtkCommonCore
+#include <vtkPlaneSource.h>   // vtkFiltersSources
+#include <vtkSmartPointer.h>  // vtkCommonCore
+#include <vtkTransform.h>     // vtkCommonTransforms
 
 #include "drake/math/rotation_matrix.h"
 
@@ -27,12 +29,12 @@ vtkSmartPointer<vtkPlaneSource> CreateSquarePlane(double size) {
 }
 
 vtkSmartPointer<vtkTransform> ConvertToVtkTransform(
-    const math::RigidTransformd& transform) {
+    const math::RigidTransformd& transform, double scale) {
   vtkNew<vtkMatrix4x4> vtk_mat;
   for (int i = 0; i < 3; ++i) {
     const auto& row = transform.rotation().row(i);
     for (int j = 0; j < 3; ++j) {
-      vtk_mat->SetElement(i, j, row(j));
+      vtk_mat->SetElement(i, j, row(j) * scale);
     }
     vtk_mat->SetElement(i, 3, transform.translation()(i));
   }

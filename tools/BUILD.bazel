@@ -1,7 +1,8 @@
+load("//tools/skylark:drake_py.bzl", "drake_py_binary")
 load("//tools/skylark:py.bzl", "py_binary", "py_library")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
-    "@drake//tools/skylark:drake_runfiles_binary.bzl",
+    "//tools/skylark:drake_runfiles_binary.bzl",
     "drake_runfiles_binary",
 )
 load(
@@ -56,6 +57,15 @@ alias(
     actual = "//bindings/pydrake/visualization:model_visualizer",
 )
 
+drake_py_binary(
+    name = "model_visualizer_private",
+    testonly = True,
+    srcs = ["model_visualizer_private.py"],
+    data = ["//:some_test_models"],
+    visibility = ["//visibility:private"],
+    deps = ["//bindings/pydrake/visualization:model_visualizer"],
+)
+
 alias(
     name = "mesh_to_model",
     actual = "//bindings/pydrake/multibody:mesh_to_model",
@@ -73,6 +83,13 @@ alias(
 config_setting(
     name = "drake_werror",
     values = {"define": "DRAKE_WERROR=ON"},
+)
+
+# We hope to enable Clarabel by default, but for the moment it is opt-in.
+# Use `--define=WITH_CLARABEL=ON` on the bazel command line to enable it.
+config_setting(
+    name = "with_clarabel",
+    values = {"define": "WITH_CLARABEL=ON"},
 )
 
 config_setting(

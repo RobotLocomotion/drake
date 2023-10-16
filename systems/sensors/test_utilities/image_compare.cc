@@ -2,10 +2,12 @@
 
 #include <string>
 
-#include <vtkImageExport.h>
-#include <vtkPNGReader.h>
-#include <vtkSmartPointer.h>
-#include <vtkTIFFReader.h>
+// To ease build system upkeep, we annotate VTK includes with their deps.
+#include <vtkImageExport.h>   // vtkIOImage
+#include <vtkNew.h>           // vtkCommonCore
+#include <vtkPNGReader.h>     // vtkIOImage
+#include <vtkSmartPointer.h>  // vtkCommonCore
+#include <vtkTIFFReader.h>    // vtkIOImage
 
 namespace drake {
 namespace systems {

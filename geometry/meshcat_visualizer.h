@@ -178,11 +178,18 @@ class MeshcatVisualizer final : public systems::LeafSystem<T> {
   void SetTransforms(const systems::Context<T>& context,
                      const QueryObject<T>& query_object) const;
 
-  /* Makes calls to Meshcat::SetProperty to update color alphas. */
-  void SetColorAlphas(bool is_first_call) const;
+  /* Makes calls to Meshcat::SetProperty to update geometry alphas. During
+   initialization, it is necessary to explicitly configure each geometry
+   individually due to race conditions between declaring the geometry and
+   configuring it. Once the geometry is loaded, they can be updated en masse. */
+  void SetAlphas(bool initializing) const;
 
   /* Handles the initialization event. */
   systems::EventStatus OnInitialization(const systems::Context<T>&) const;
+
+  typename systems::LeafSystem<T>::GraphvizFragment DoGetGraphvizFragment(
+      const typename systems::LeafSystem<T>::GraphvizFragmentParams& params)
+      const final;
 
   /* The index of this System's QueryObject-valued input port. */
   int query_object_input_port_{};
@@ -212,11 +219,8 @@ class MeshcatVisualizer final : public systems::LeafSystem<T> {
    new geometry version appears that does not contain them. */
   mutable std::map<GeometryId, std::string> geometries_{};
 
-  /* A store of the original colors for the objects in geometries_. */
-  mutable std::map<GeometryId, Rgba> colors_{};
-
   /* The last alpha value applied to the objects in geometries_; used to avoid
-   * unnecessary updates to geometry colors. */
+   unnecessary updates to geometry opacities. */
   mutable double alpha_value_{1.0};
 
   /* The parameters for the visualizer.  */

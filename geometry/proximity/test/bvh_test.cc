@@ -54,7 +54,7 @@ class BvhTester {
     const RigidTransformd X_BM = X_MB.inverse();
     for (auto it = start; it != end; ++it) {
       const auto& element = mesh_M.element(it->first);
-      for (int i=0; i < MeshType::kVertexPerElement; ++i) {
+      for (int i = 0; i < MeshType::kVertexPerElement; ++i) {
         const Vector3d p_MV = mesh_M.vertex(element.vertex(i));
         const Vector3d p_BV = X_BM * p_MV;
         if ((p_BV.array() > bv_M.half_width().array()).any()) {
@@ -86,8 +86,8 @@ GTEST_TEST(BvNodeTest, TestEqualLeaf) {
   EXPECT_FALSE(leaf_of_one_element.EqualLeaf(leaf_of_two_elements));
 
   // Second element is different.
-  BvNode<Obb, TriangleSurfaceMesh<double>> leaf_with_a_different_element(bv,
-                                                                 {2, {0, 2}});
+  BvNode<Obb, TriangleSurfaceMesh<double>> leaf_with_a_different_element(
+      bv, {2, {0, 2}});
   EXPECT_FALSE(leaf_of_two_elements.EqualLeaf(leaf_with_a_different_element));
 
   // All elements are the same.
@@ -145,8 +145,7 @@ int ComputeHeight(const BvNodeType& root) {
   if (root.is_leaf()) {
     return 0;
   }
-  return 1 + std::max(ComputeHeight(root.left()),
-                      ComputeHeight(root.right()));
+  return 1 + std::max(ComputeHeight(root.left()), ComputeHeight(root.right()));
 }
 
 // Test fixture class for testing Bvh. Uses a coarse sphere, i.e. an
@@ -406,14 +405,13 @@ TYPED_TEST(BvhTest, TestCollideSurfaceVolume) {
   // Confirm the expected topology (one leaf with two tris).
   ASSERT_EQ(CountLeafNodes(bvh_S.root_node()), 1);
 
-  std::vector<Vector3d> vertices_V{
-      {Vector3d(1, 0, 1),     // A
-       Vector3d(1, 0, -1),    // B
-       Vector3d(1, 1, 0),     // C
-       Vector3d(0, 0, 0),     // D
-       Vector3d(-1, 0, 1),    // E
-       Vector3d(-1, 0, -1),   // F
-       Vector3d(-1, 1, 0)}};  // G
+  std::vector<Vector3d> vertices_V{{Vector3d(1, 0, 1),     // A
+                                    Vector3d(1, 0, -1),    // B
+                                    Vector3d(1, 1, 0),     // C
+                                    Vector3d(0, 0, 0),     // D
+                                    Vector3d(-1, 0, 1),    // E
+                                    Vector3d(-1, 0, -1),   // F
+                                    Vector3d(-1, 1, 0)}};  // G
   std::vector<VolumeElement> tets_V{{0, 2, 1, 3}, {4, 5, 6, 3}};
   const VolumeMesh<double> mesh_V(std::move(tets_V), std::move(vertices_V));
   const Bvh<BvType, VolumeMesh<double>> bvh_V(mesh_V);
@@ -458,12 +456,11 @@ TYPED_TEST(BvhTest, TestCollidePrimitive) {
       std::vector<int> candidates;
       // We pose the plane to pass through a plane of symmetry of the
       // octahedron, so we should get all 8 triangles.
-      this->bvh_.Collide(
-          plane_P, RigidTransformd::Identity(),
-          [&candidates](int f) -> BvttCallbackResult {
-            candidates.push_back(f);
-            return BvttCallbackResult::Continue;
-          });
+      this->bvh_.Collide(plane_P, RigidTransformd::Identity(),
+                         [&candidates](int f) -> BvttCallbackResult {
+                           candidates.push_back(f);
+                           return BvttCallbackResult::Continue;
+                         });
       int num_candidates = candidates.size();
       EXPECT_EQ(num_candidates, 8);
     }
@@ -471,12 +468,11 @@ TYPED_TEST(BvhTest, TestCollidePrimitive) {
     // First collision candidate then terminate early.
     {
       std::vector<int> candidates;
-      this->bvh_.Collide(
-          plane_P, RigidTransformd::Identity(),
-          [&candidates](int f) -> BvttCallbackResult {
-            candidates.push_back(f);
-            return BvttCallbackResult::Terminate;
-          });
+      this->bvh_.Collide(plane_P, RigidTransformd::Identity(),
+                         [&candidates](int f) -> BvttCallbackResult {
+                           candidates.push_back(f);
+                           return BvttCallbackResult::Terminate;
+                         });
       int num_candidates = candidates.size();
       EXPECT_EQ(num_candidates, 1);
     }
@@ -485,12 +481,11 @@ TYPED_TEST(BvhTest, TestCollidePrimitive) {
     {
       std::vector<int> candidates;
       // We pose the plane far from the mesh.
-      this->bvh_.Collide(
-          plane_P, RigidTransformd(Vector3d(10, 0, 0)),
-          [&candidates](int f) -> BvttCallbackResult {
-            candidates.push_back(f);
-            return BvttCallbackResult::Continue;
-          });
+      this->bvh_.Collide(plane_P, RigidTransformd(Vector3d(10, 0, 0)),
+                         [&candidates](int f) -> BvttCallbackResult {
+                           candidates.push_back(f);
+                           return BvttCallbackResult::Continue;
+                         });
       int num_candidates = candidates.size();
       EXPECT_EQ(num_candidates, 0);
     }
@@ -557,8 +552,7 @@ TYPED_TEST(BvhTest, TestEqual) {
         Vector3d::UnitZ()};
     const VolumeElement element(0, 1, 2, 3);
     const VolumeMesh<double> one_tetrahedron(
-        std::vector<VolumeElement>{element},
-        std::vector<Vector3d>(vertices));
+        std::vector<VolumeElement>{element}, std::vector<Vector3d>(vertices));
     const Bvh<BvType, VolumeMesh<double>> one_node(one_tetrahedron);
     const VolumeMesh<double> duplicated_tetrahedra(
         // Both elements are the same tetrahedron, so every Bvh node will have

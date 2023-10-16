@@ -1,5 +1,6 @@
 #pragma once
 
+#include <limits>
 #include <memory>
 #include <optional>
 #include <utility>
@@ -166,6 +167,8 @@ class AffineSubspace final : public ConvexSet {
 
   std::pair<std::unique_ptr<Shape>, math::RigidTransformd> DoToShapeWithPose()
       const final;
+
+  double DoCalcVolume() const final;
 
   // Note, we store the original basis as given, plus the QR decomposition, for
   // later use in many of the associated methods. We do not store this if

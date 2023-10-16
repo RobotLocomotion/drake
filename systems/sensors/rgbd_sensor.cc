@@ -106,17 +106,15 @@ const OutputPort<double>& RgbdSensor::image_time_output_port() const {
 void RgbdSensor::CalcColorImage(const Context<double>& context,
                                 ImageRgba8U* color_image) const {
   const QueryObject<double>& query_object = get_query_object(context);
-  query_object.RenderColorImage(
-      color_camera_, parent_frame_id_,
-      X_PB_ * color_camera_.core().sensor_pose_in_camera_body(), color_image);
+  query_object.RenderColorImage(color_camera_, parent_frame_id_, X_PB_,
+                                color_image);
 }
 
 void RgbdSensor::CalcDepthImage32F(const Context<double>& context,
                                    ImageDepth32F* depth_image) const {
   const QueryObject<double>& query_object = get_query_object(context);
-  query_object.RenderDepthImage(
-      depth_camera_, parent_frame_id_,
-      X_PB_ * depth_camera_.core().sensor_pose_in_camera_body(), depth_image);
+  query_object.RenderDepthImage(depth_camera_, parent_frame_id_, X_PB_,
+                                depth_image);
 }
 
 void RgbdSensor::CalcDepthImage16U(const Context<double>& context,
@@ -129,9 +127,8 @@ void RgbdSensor::CalcDepthImage16U(const Context<double>& context,
 void RgbdSensor::CalcLabelImage(const Context<double>& context,
                                 ImageLabel16I* label_image) const {
   const QueryObject<double>& query_object = get_query_object(context);
-  query_object.RenderLabelImage(
-      color_camera_, parent_frame_id_,
-      X_PB_ * color_camera_.core().sensor_pose_in_camera_body(), label_image);
+  query_object.RenderLabelImage(color_camera_, parent_frame_id_, X_PB_,
+                                label_image);
 }
 
 void RgbdSensor::CalcX_WB(const Context<double>& context,

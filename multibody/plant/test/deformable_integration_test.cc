@@ -34,25 +34,15 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
-/* Provides access to a selection of private functions in
- CompliantContactManager for testing purposes. */
-class CompliantContactManagerTester {
- public:
-  static const DeformableDriver<double>* deformable_driver(
-      const CompliantContactManager<double>& manager) {
-    return manager.deformable_driver_.get();
-  }
-};
-
 /* Deformable body parameters.  */
-constexpr double kYoungsModulus = 1e5;       // unit: N/m²
-constexpr double kPoissonsRatio = 0.4;       // unitless.
-constexpr double kMassDensity = 1e3;         // unit: kg/m³
-constexpr double kStiffnessDamping = 0.01;   // unit: s
+constexpr double kYoungsModulus = 1e5;      // unit: N/m²
+constexpr double kPoissonsRatio = 0.4;      // unitless.
+constexpr double kMassDensity = 1e3;        // unit: kg/m³
+constexpr double kStiffnessDamping = 0.01;  // unit: s
 /* Time step (seconds). */
 constexpr double kDt = 1e-2;
 /* Contact parameters. */
-const double kSlopeAngle = M_PI / 12.0;             // unit: radian
+const double kSlopeAngle = M_PI / 12.0;  // unit: radian
 /* The friction coefficient has to be greater than or equal to tan(θ) to hold
  objects on a slope with an incline angle θ in stiction.
  Here we choose 0.4 > tan(π/12) ≈ 0.27. */
@@ -101,7 +91,8 @@ class DeformableIntegrationTest : public ::testing::Test {
     auto contact_manager = make_unique<CompliantContactManager<double>>();
     manager_ = contact_manager.get();
     plant_->SetDiscreteUpdateManager(std::move(contact_manager));
-    driver_ = CompliantContactManagerTester::deformable_driver(*manager_);
+    driver_ = manager_->deformable_driver();
+    DRAKE_DEMAND(driver_ != nullptr);
     /* Connect visualizer. Useful for when this test is used for debugging. */
     geometry::DrakeVisualizerd::AddToBuilder(&builder, *scene_graph_);
 
@@ -181,7 +172,7 @@ TEST_F(DeformableIntegrationTest, SteadyState) {
       plant_->GetMyContextFromRoot(diagram_context);
   const FemState<double>& fem_state =
       EvalFemState(plant_context, DeformableBodyIndex(0));
-  constexpr double kVelocityThreshold = 2e-5;  // unit: m/s.
+  constexpr double kVelocityThreshold = 2e-5;      // unit: m/s.
   constexpr double kAccelerationThreshold = 1e-6;  // unit: m/s².
   const VectorXd& v = fem_state.GetVelocities();
   EXPECT_TRUE(CompareMatrices(v, VectorXd::Zero(v.size()), kVelocityThreshold));

@@ -28,6 +28,8 @@ class InverseDynamicsControllerTest : public ::testing::Test {
   void ConfigTestAndCheck(InverseDynamicsController<double>* test_sys,
                           const VectorX<double>& kp, const VectorX<double>& ki,
                           const VectorX<double>& kd) {
+    EXPECT_EQ(test_sys->get_output_port().get_index(), 0);
+
     auto inverse_dynamics_context = test_sys->CreateDefaultContext();
     auto output = test_sys->AllocateOutput();
     const MultibodyPlant<double>& robot_plant =
@@ -81,6 +83,11 @@ class InverseDynamicsControllerTest : public ::testing::Test {
 
     // Checks the expected and computed gravity torque.
     const BasicVector<double>* output_vector = output->get_vector_data(0);
+    EXPECT_TRUE(CompareMatrices(expected_torque, output_vector->get_value(),
+                                1e-10, MatrixCompareType::absolute));
+
+    // Ditto check the deprecated output port.
+    output_vector = output->get_vector_data(1);
     EXPECT_TRUE(CompareMatrices(expected_torque, output_vector->get_value(),
                                 1e-10, MatrixCompareType::absolute));
   }

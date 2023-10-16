@@ -9,6 +9,7 @@
 #include <fmt/format.h>
 
 #include "drake/common/extract_double.h"
+#include "drake/geometry/meshcat_graphviz.h"
 #include "drake/geometry/proximity/volume_to_surface_mesh.h"
 #include "drake/geometry/utilities.h"
 
@@ -135,7 +136,7 @@ systems::EventStatus MeshcatVisualizer<T>::UpdateMeshcat(
   if (!version_.has_value() ||
       !version_->IsSameAs(current_version, params_.role)) {
     SetObjects(query_object.inspector());
-    SetColorAlphas(/* is_first_call = */ true);
+    SetAlphas(/* initializing = */ true);
     version_ = current_version;
   }
   SetTransforms(context, query_object);
@@ -143,7 +144,7 @@ systems::EventStatus MeshcatVisualizer<T>::UpdateMeshcat(
     double new_alpha_value = meshcat_->GetSliderValue(alpha_slider_name_);
     if (new_alpha_value != alpha_value_) {
       alpha_value_ = new_alpha_value;
-      SetColorAlphas(/* is_first_call = */ false);
+      SetAlphas(/* initializing = */ false);
     }
   }
   std::optional<double> rate = realtime_rate_calculator_.UpdateAndRecalculate(
@@ -158,8 +159,6 @@ systems::EventStatus MeshcatVisualizer<T>::UpdateMeshcat(
 template <typename T>
 void MeshcatVisualizer<T>::SetObjects(
     const SceneGraphInspector<T>& inspector) const {
-  colors_.clear();
-
   // Frames registered previously that are not set again here should be deleted.
   std::map <FrameId, std::string> frames_to_delete{};
   dynamic_frames_.swap(frames_to_delete);
@@ -231,7 +230,6 @@ void MeshcatVisualizer<T>::SetObjects(
       }
       meshcat_->SetTransform(path, inspector.GetPoseInFrame(geom_id));
       geometries_[geom_id] = path;
-      colors_[geom_id] = rgba;
       geometries_to_delete.erase(geom_id);  // Don't delete this one.
       frame_has_any_geometry = true;
     }
@@ -265,26 +263,19 @@ void MeshcatVisualizer<T>::SetTransforms(
 }
 
 template <typename T>
-void MeshcatVisualizer<T>::SetColorAlphas(bool is_first_call) const {
-  double max_alpha = 0.0;
-  for (const auto& [geom_id, path] : geometries_) {
-    max_alpha = std::max(max_alpha, colors_[geom_id].a());
-  }
-
-  if (is_first_call && alpha_value_ == 1.0 && max_alpha > 0.0) {
-    // We can skip all of the no-op calls to SetProperty.
-    return;
-  }
-
-  for (const auto& [geom_id, path] : geometries_) {
-    Rgba color = colors_[geom_id];
-    if (max_alpha == 0.0) {
-      color.update({}, {}, {}, alpha_value_);
-    } else {
-      color.update({}, {}, {}, alpha_value_ * color.a());
+void MeshcatVisualizer<T>::SetAlphas(bool initializing) const {
+  if (initializing) {
+    for (const auto& [_, geo_path] : geometries_) {
+      meshcat_->SetProperty(geo_path, "modulated_opacity", alpha_value_);
     }
-    meshcat_->SetProperty(path, "color",
-                          {color.r(), color.g(), color.b(), color.a()});
+  } else {
+    // The geometries visualized by this visualizer (stored in geometries_) all
+    // have a common prefix and for a well-configured visualizer, it is a
+    // *unique* prefix. So, we can rely on meshcat's behavior to update all
+    // materials in a tree with a single invocation on the root path. This
+    // requires that all object instantiations are complete in the visualizer
+    // instance.
+    meshcat_->SetProperty(params_.prefix, "modulated_opacity", alpha_value_);
   }
 }
 
@@ -293,6 +284,18 @@ systems::EventStatus MeshcatVisualizer<T>::OnInitialization(
     const systems::Context<T>&) const {
   Delete();
   return systems::EventStatus::Succeeded();
+}
+
+template <typename T>
+typename systems::LeafSystem<T>::GraphvizFragment
+MeshcatVisualizer<T>::DoGetGraphvizFragment(
+    const typename systems::LeafSystem<T>::GraphvizFragmentParams& params)
+    const {
+  internal::MeshcatGraphviz meshcat_graphviz(params_.prefix,
+                                             /* subscribe = */ false);
+  return meshcat_graphviz.DecorateResult(
+      systems::LeafSystem<T>::DoGetGraphvizFragment(
+          meshcat_graphviz.DecorateParams(params)));
 }
 
 }  // namespace geometry

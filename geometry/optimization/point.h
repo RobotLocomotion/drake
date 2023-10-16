@@ -85,6 +85,8 @@ class Point final : public ConvexSet {
   std::pair<std::unique_ptr<Shape>, math::RigidTransformd> DoToShapeWithPose()
       const final;
 
+  double DoCalcVolume() const final { return 0.0; }
+
   // Implement support shapes for the ShapeReifier interface.
   using ShapeReifier::ImplementGeometry;
   void ImplementGeometry(const Sphere& sphere, void* data) final;

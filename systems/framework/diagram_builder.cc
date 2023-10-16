@@ -234,9 +234,7 @@ void DiagramBuilder<T>::Connect(
 template <typename T>
 void DiagramBuilder<T>::Connect(const System<T>& src, const System<T>& dest) {
   ThrowIfAlreadyBuilt();
-  DRAKE_THROW_UNLESS(src.num_output_ports() == 1);
-  DRAKE_THROW_UNLESS(dest.num_input_ports() == 1);
-  Connect(src.get_output_port(0), dest.get_input_port(0));
+  Connect(src.get_output_port(), dest.get_input_port());
 }
 
 template <typename T>
@@ -422,6 +420,16 @@ bool DiagramBuilder<T>::IsConnectedOrExported(const InputPort<T>& port) const {
     return true;
   }
   return false;
+}
+
+template <typename T>
+int DiagramBuilder<T>::num_input_ports() const {
+  return input_port_names_.size();
+}
+
+template <typename T>
+int DiagramBuilder<T>::num_output_ports() const {
+  return output_port_names_.size();
 }
 
 template <typename T>

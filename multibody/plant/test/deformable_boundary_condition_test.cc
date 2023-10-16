@@ -29,16 +29,6 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
-/* Provides access to a selection of private functions in
- CompliantContactManager for testing purposes. */
-class CompliantContactManagerTester {
- public:
-  static const DeformableDriver<double>* deformable_driver(
-      const CompliantContactManager<double>& manager) {
-    return manager.deformable_driver_.get();
-  }
-};
-
 /* Deformable body parameters.  */
 constexpr double kRadius = 0.1;             // unit: m
 constexpr double kYoungsModulus = 2e3;      // unit: N/m²
@@ -66,8 +56,7 @@ class DeformableIntegrationTest : public ::testing::Test {
 
     auto deformable_model = make_unique<DeformableModel<double>>(plant_);
     body_id_ = RegisterDeformableBall(deformable_model.get(), "deformable");
-    deformable_model->SetWallBoundaryCondition(
-        body_id_, p_WQ_, n_W_);
+    deformable_model->SetWallBoundaryCondition(body_id_, p_WQ_, n_W_);
     model_ = deformable_model.get();
     plant_->AddPhysicalModel(std::move(deformable_model));
     plant_->set_discrete_contact_solver(DiscreteContactSolver::kSap);
@@ -86,7 +75,8 @@ class DeformableIntegrationTest : public ::testing::Test {
     auto contact_manager = make_unique<CompliantContactManager<double>>();
     manager_ = contact_manager.get();
     plant_->SetDiscreteUpdateManager(std::move(contact_manager));
-    driver_ = CompliantContactManagerTester::deformable_driver(*manager_);
+    driver_ = manager_->deformable_driver();
+    DRAKE_DEMAND(driver_ != nullptr);
     /* Connect visualizer. Useful for when this test is used for debugging. */
     geometry::DrakeVisualizerd::AddToBuilder(&builder, *scene_graph_);
 

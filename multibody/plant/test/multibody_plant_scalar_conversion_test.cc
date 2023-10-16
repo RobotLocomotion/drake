@@ -3,6 +3,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/multibody/plant/discrete_contact_data.h"
 #include "drake/multibody/plant/discrete_update_manager.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/plant/test/dummy_model.h"
@@ -184,11 +185,11 @@ class DoubleOnlyDiscreteUpdateManager final
       const systems::Context<T>&,
       internal::AccelerationKinematicsCache<T>*) const final {}
 
-  void DoCalcDiscreteValues(const systems::Context<T>&,
-                            systems::DiscreteValues<T>*) const final {}
-
   void DoCalcContactResults(const systems::Context<T>&,
                             ContactResults<T>*) const final {}
+
+  void DoCalcDiscreteValues(const systems::Context<T>&,
+                            systems::DiscreteValues<T>*) const final {}
 
   void DoCalcDiscreteUpdateMultibodyForces(
       const systems::Context<T>& context,
@@ -259,7 +260,7 @@ GTEST_TEST(ScalarConversionTest, CouplerConstraintSpec) {
   constexpr double kGearRatio = 1.2;
   constexpr double kOffset = 0.3;
   const internal::CouplerConstraintSpec reference_spec{j0, j1, kGearRatio,
-                                                        kOffset};
+                                                       kOffset};
 
   // Directly add dummy constraint specs through the tester so that we don't
   // need to actually add any joints.

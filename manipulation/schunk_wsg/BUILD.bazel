@@ -1,11 +1,11 @@
 load(
-    "@drake//tools/skylark:drake_cc.bzl",
+    "//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
     "drake_cc_library",
     "drake_cc_package_library",
 )
 load(
-    "@drake//tools/vector_gen:vector_gen.bzl",
+    "//tools/vector_gen:vector_gen.bzl",
     "drake_cc_vector_gen_library",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
@@ -219,6 +219,7 @@ drake_cc_googletest(
         ":build_schunk_wsg_control",
         ":schunk_wsg_lcm",
         "//common:find_resource",
+        "//lcm",
         "//multibody/parsing:parser",
         "//multibody/plant",
         "//systems/analysis:simulator",
@@ -244,4 +245,4 @@ drake_cc_googletest(
     ],
 )
 
-add_lint_tests(enable_clang_format_lint = False)
+add_lint_tests()
