@@ -586,35 +586,50 @@ GTEST_TEST(ActuationPortsTest, CheckActuation) {
   DRAKE_EXPECT_NO_THROW(plant.get_actuation_input_port(acrobot_instance));
   DRAKE_EXPECT_NO_THROW(plant.get_actuation_input_port(cylinder_instance));
 
-  // Try to compute the derivatives without connecting the acrobot_instance
-  // port.
+  // Compute the derivatives without connecting the acrobot_instance port.
+  // Actuation defaults to zero.
   std::unique_ptr<Context<double>> context = plant.CreateDefaultContext();
-  std::unique_ptr<ContinuousState<double>> continuous_state =
+  std::unique_ptr<ContinuousState<double>> xdot_no_input =
       plant.AllocateTimeDerivatives();
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      plant.CalcTimeDerivatives(*context, continuous_state.get()),
-      "Actuation input port for model instance .* must "
-      "be connected or PD gains must be specified for each actuator.");
+  plant.CalcTimeDerivatives(*context, xdot_no_input.get());
 
-  // Verify that derivatives can be computed after fixing the acrobot actuation
-  // input port.
+  // Compute derivatives after fixing the acrobot actuation input port
+  // explicitly to a zero value of actuation.
   plant.get_actuation_input_port(acrobot_instance).FixValue(context.get(), 0.0);
-  DRAKE_EXPECT_NO_THROW(
-      plant.CalcTimeDerivatives(*context, continuous_state.get()));
+  std::unique_ptr<ContinuousState<double>> xdot_zero_input =
+      plant.AllocateTimeDerivatives();
+  plant.CalcTimeDerivatives(*context, xdot_zero_input.get());
+
+  // Verify that both derivatives are the same since no input defaults to zero
+  // actuation.
+  constexpr double kEps = std::numeric_limits<double>::epsilon();
+  EXPECT_TRUE(CompareMatrices(xdot_no_input->CopyToVector(),
+                              xdot_zero_input->CopyToVector(), kEps,
+                              MatrixCompareType::relative));
 
   // Verify that derivatives can be computed after fixing the cylinder actuation
   // input port with an empty vector.
   plant.get_actuation_input_port(cylinder_instance)
       .FixValue(context.get(), VectorXd(0));
-  DRAKE_EXPECT_NO_THROW(
-      plant.CalcTimeDerivatives(*context, continuous_state.get()));
+  std::unique_ptr<ContinuousState<double>> xdot =
+      plant.AllocateTimeDerivatives();
+  plant.CalcTimeDerivatives(*context, xdot.get());
 
-  // Verify that connecting both the actuation ports for all instances and the
-  // individual model actuation input ports throws.
-  plant.get_actuation_input_port().FixValue(context.get(), 0.0);
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      plant.CalcTimeDerivatives(*context, continuous_state.get()),
-      "Actuation.*model instance.*for all instances.*both connected.*");
+  // Non-zero actuation for the acrobot.
+  plant.get_actuation_input_port(acrobot_instance).FixValue(context.get(), 5.0);
+  plant.CalcTimeDerivatives(*context, xdot.get());
+
+  // Distribute the actuation value of 5.0 between the two input ports.
+  plant.get_actuation_input_port(acrobot_instance).FixValue(context.get(), 3.5);
+  plant.get_actuation_input_port().FixValue(context.get(), 1.5);
+  std::unique_ptr<ContinuousState<double>> xdot_sum =
+      plant.AllocateTimeDerivatives();
+  plant.CalcTimeDerivatives(*context, xdot_sum.get());
+
+  // Verify that the contribution from per model instance actuation and full
+  // plant actuation is additive.
+  EXPECT_TRUE(CompareMatrices(xdot_sum->CopyToVector(), xdot->CopyToVector(),
+                              kEps, MatrixCompareType::relative));
 }
 
 GTEST_TEST(MultibodyPlant, UniformGravityFieldElementTest) {
