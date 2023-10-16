@@ -468,6 +468,10 @@ void LinearConstraint::RemoveTinyCoefficient(double tol) {
   UpdateCoefficients(new_A, lower_bound(), upper_bound());
 }
 
+bool LinearConstraint::HasDenseA() const {
+  return A_.dense_is_constructed();
+}
+
 template <typename DerivedX, typename ScalarY>
 void LinearConstraint::DoEvalGeneric(const Eigen::MatrixBase<DerivedX>& x,
                                      VectorX<ScalarY>* y) const {

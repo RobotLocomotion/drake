@@ -1294,6 +1294,10 @@ GTEST_TEST(TestMathematicalProgram,
   const Vector4d ub{3, 7, 11, 17};
   const auto binding = prog.AddLinearConstraint(A, lb, ub, x);
 
+  // Check if the binding called the sparse matrix constructor by checking that
+  // a dense A has not been computed yet.
+  EXPECT_FALSE(binding.evaluator()->HasDenseA());
+
   // Check if the binding includes the correct linear constraint.
   const VectorXDecisionVariable& var_vec{binding.variables()};
   const auto constraint_ptr = binding.evaluator();
@@ -1330,6 +1334,10 @@ GTEST_TEST(TestMathematicalProgram,
   const Vector4d lb{-10, -11, -12, -13};
   const Vector4d ub{3, 7, 11, 17};
   const auto binding = prog.AddLinearConstraint(A, lb, ub, vars);
+
+  // Check if the binding called the sparse matrix constructor by checking that
+  // a dense A has not been computed yet.
+  EXPECT_FALSE(binding.evaluator()->HasDenseA());
 
   // Check if the binding includes the correct linear constraint.
   const VectorXDecisionVariable& var_vec{binding.variables()};
@@ -2243,6 +2251,11 @@ GTEST_TEST(TestMathematicalProgram,
   const Vector4d b{-10, -11, -12, -13};
 
   const auto binding = prog.AddLinearEqualityConstraint(A, b, vars);
+
+  // Check if the binding called the sparse matrix constructor by checking that
+  // a dense A has not been computed yet.
+  EXPECT_FALSE(binding.evaluator()->HasDenseA());
+
   CheckAddedLinearEqualityConstraintCommon(binding, prog, 0);
 }
 
@@ -2265,9 +2278,13 @@ GTEST_TEST(TestMathematicalProgram,
   const Vector4d b{-10, -11, -12, -13};
 
   const auto binding = prog.AddLinearEqualityConstraint(A, b, x);
+
+  // Check if the binding called the sparse matrix constructor by checking that
+  // a dense A has not been computed yet.
+  EXPECT_FALSE(binding.evaluator()->HasDenseA());
+
   CheckAddedLinearEqualityConstraintCommon(binding, prog, 0);
 }
-
 
 GTEST_TEST(TestMathematicalProgram,
            AddLinearEqualityConstraintRowVectorVectorVariablesTest) {

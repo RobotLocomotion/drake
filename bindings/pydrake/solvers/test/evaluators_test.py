@@ -7,7 +7,7 @@ import pydrake.solvers as mp
 import pydrake.symbolic as sym
 from pydrake.autodiffutils import InitializeAutoDiff
 from pydrake.common.test_utilities.deprecation import catch_drake_warnings
-
+import scipy.sparse
 
 class TestCost(unittest.TestCase):
     def test_linear_cost(self):
@@ -100,6 +100,31 @@ class TestConstraints(unittest.TestCase):
             constraint.lower_bound(), np.array([1., 2.]))
         np.testing.assert_array_equal(
             constraint.upper_bound(), np.array([2., 3.]))
+
+
+    def test_linear_constraint(self):
+        A_sparse = scipy.sparse.csc_matrix(
+            (np.array([2, 1., 3]), np.array([0, 1, 0]),
+             np.array([0, 2, 2, 3])), shape=(2, 2))
+        lb = -np.ones(2)
+        ub = np.ones(2)
+
+        constraints = []
+        constraints.append(mp.LinearConstraint(A=np.eye(2), lb=lb, ub=ub))
+        constraints.append(mp.LinearConstraint(A=A_sparse, lb=lb, ub=ub))
+        constraints.append(mp.LinearConstraint(a=[1, 1], lb=-1, ub=1))
+
+        for c in constraints:
+            self.assertEqual(c.GetDenseA().shape[1],2)
+            self.assertEqual(c.get_sparse_A().shape[1],2)
+            r, c = c.GetDenseA.shape
+            c.UpdateCoefficients(new_A=np.ones_like(c.GetDenseA()),
+                                 new_lb=np.ones(r),
+                                 new_ub=np.ones(r))
+            c.UpdateCoefficients(new_A=c.get_sparse_A(),
+                                 new_lb=np.ones(r),
+                                 new_ub=np.ones(r))
+
 
     def test_quadratic_constraint(self):
         hessian_type = mp.QuadraticConstraint.HessianType.kPositiveSemidefinite

@@ -261,6 +261,7 @@ void BindEvaluatorsAndBindings(py::module m) {
           doc.LinearConstraint.UpdateCoefficients.doc_sparse_A)
       .def("RemoveTinyCoefficient", &LinearConstraint::RemoveTinyCoefficient,
           py::arg("tol"), doc.LinearConstraint.RemoveTinyCoefficient.doc)
+      .def("HasDenseA", &LinearConstraint::HasDenseA, doc.LinearConstraint.HasDenseA.doc)
       .def(
           "UpdateLowerBound",
           [](LinearConstraint& self, const Eigen::VectorXd& new_lb) {

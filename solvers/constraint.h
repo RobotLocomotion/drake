@@ -665,13 +665,15 @@ class LinearConstraint : public Constraint {
    */
   void RemoveTinyCoefficient(double tol);
 
+  /** Returns true iff this constraint already has a dense representation, i.e,
+   * if GetDenseA() will be cheap. */
+  bool HasDenseA() const;
+
   using Constraint::set_bounds;
   using Constraint::UpdateLowerBound;
   using Constraint::UpdateUpperBound;
 
  protected:
-
-
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
               Eigen::VectorXd* y) const override;
 
@@ -687,8 +689,8 @@ class LinearConstraint : public Constraint {
   std::string DoToLatex(const VectorX<symbolic::Variable>&, int) const override;
 
   internal::SparseAndDenseMatrix A_;
+
  private:
-  friend bool A_dense_is_constructed(const LinearConstraint& constraint);
   template <typename DerivedX, typename ScalarY>
   void DoEvalGeneric(const Eigen::MatrixBase<DerivedX>& x,
                      VectorX<ScalarY>* y) const;
