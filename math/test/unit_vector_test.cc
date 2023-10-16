@@ -20,7 +20,8 @@ GTEST_TEST(UnitVectorTest, ThrowOrWarnIfNotUnitVector) {
   EXPECT_EQ(vector_mag_squared, unit_vector.squaredNorm());
 
   // No message should be written to the log file for a valid unit vector.
-  vector_mag_squared = WarnIfNotUnitVector(unit_vector, "UnusedFunctionName");
+  vector_mag_squared =
+      math::internal::WarnIfNotUnitVector(unit_vector, "UnusedFunctionName");
   EXPECT_EQ(vector_mag_squared, unit_vector.squaredNorm());
 
   // Verify that no exception is thrown for a valid or near valid unit vector.
@@ -49,7 +50,8 @@ GTEST_TEST(UnitVectorTest, ThrowOrWarnIfNotUnitVector) {
       expected_message);
 
   // A message should be written to the log file for an invalid unit vector.
-  vector_mag_squared = WarnIfNotUnitVector(not_unit_vector, "SomeFunctionName");
+  vector_mag_squared =
+      math::internal::WarnIfNotUnitVector(not_unit_vector, "SomeFunctionName");
   EXPECT_EQ(vector_mag_squared, not_unit_vector.squaredNorm());
 
   // Verify an exception is thrown for a unit vector with NAN elements.
