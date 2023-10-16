@@ -1,5 +1,6 @@
 #include "drake/multibody/tree/unit_inertia.h"
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/fmt_eigen.h"
 #include "drake/common/text_logging.h"
 
@@ -82,10 +83,9 @@ T WarnUnlessVectorIsMagnitudeOne(const Vector3<T>& unit_vector,
   auto [result, error_message] =
       CheckVectorIsMagnitudeOne(unit_vector, function_name);
   if (!error_message.empty()) {
-    static const logging::Warn log_once(
-        "{} Implicit normalization is deprecated; on or after 2023-12-01 this "
-        "will become an exception.",
-        error_message);
+    static const internal::WarnDeprecated warn_once(
+        "2023-12-01",
+        fmt::format("{} Implicit normalization is deprecated.", error_message));
   }
   return result;
 }

@@ -6,6 +6,7 @@
 
 #include <fmt/format.h>
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/unused.h"
 #include "drake/systems/framework/system_visitor.h"
 
@@ -965,13 +966,14 @@ VectorX<T> System<T>::CopyContinuousStateVector(
 // Remove this stanza on 2024-01-01.
 namespace {
 void WarnGraphvizDeprecation() {
-  static const logging::Warn log_once(
+  static const drake::internal::WarnDeprecated warn_once(
+      "2024-02-01",
       "The member functions "
       "System<T>::GetGraphvizFragment(), "
       "System<T>::GetGraphvizInputPortToken(), "
       "System<T>::GetGraphvizOutputPortToken(), and "
       "System<T>::GetGraphvizId() "
-      "are deprecated and will be removed from Drake on or after 2024-01-01. "
+      "are deprecated. "
       "Instead, either call GetGraphvizFragment() or "
       "override DoGetGraphvizFragment().");
 }

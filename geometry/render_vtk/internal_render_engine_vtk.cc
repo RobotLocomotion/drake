@@ -111,9 +111,9 @@ RenderEngineVtk::RenderEngineVtk(const RenderEngineVtkParams& parameters)
                   make_unique<RenderingPipeline>(),
                   make_unique<RenderingPipeline>()}} {
   if (parameters.default_label.has_value()) {
-    static const logging::Warn log_once(
-        "RenderEngineVtk(): the default_label configuration option is "
-        "deprecated and will be removed from Drake on or after 2023-12-01.");
+    static const drake::internal::WarnDeprecated warn_once(
+        "2023-12-01",
+        "RenderEngineVtk(): the default_label option is deprecated.");
   }
   if (parameters.default_diffuse) {
     default_diffuse_.set(*parameters.default_diffuse);
