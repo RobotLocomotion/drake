@@ -228,9 +228,9 @@ drake_py_unittest(
     tags = gurobi_test_tags(gurobi_required = False),
     deps = [
         ":solvers",
-        "//bindings/pydrake:math_py",
         "//bindings/pydrake/common/test_utilities",
         "//bindings/pydrake/common/test_utilities:scipy_stub_py",
+        "//bindings/pydrake/math",
     ],
 )
 
@@ -247,8 +247,8 @@ drake_py_unittest(
     name = "branch_and_bound_test",
     deps = [
         ":solvers",
-        "//bindings/pydrake:math_py",
         "//bindings/pydrake/common/test_utilities",
+        "//bindings/pydrake/math",
     ],
 )
 
@@ -256,8 +256,8 @@ drake_py_unittest(
     name = "mixed_integer_optimization_util_test",
     deps = [
         ":solvers",
-        "//bindings/pydrake:math_py",
         "//bindings/pydrake/common/test_utilities",
+        "//bindings/pydrake/math",
     ],
 )
 
@@ -265,8 +265,8 @@ drake_py_unittest(
     name = "mixed_integer_rotation_constraint_test",
     deps = [
         ":solvers",
-        "//bindings/pydrake:math_py",
         "//bindings/pydrake/common/test_utilities",
+        "//bindings/pydrake/math",
     ],
 )
 

@@ -65,7 +65,7 @@ drake_pybind_library(
     py_deps = [
         ":module_py",
         "//bindings/pydrake:autodiffutils_py",
-        "//bindings/pydrake:math_py",
+        "//bindings/pydrake/math",
         "//bindings/pydrake:symbolic_py",
         "//bindings/pydrake/common:cpp_template_py",
         "//bindings/pydrake/common:deprecation_py",
@@ -131,7 +131,7 @@ drake_pybind_library(
         ":framework_py",
         ":module_py",
         ":primitives_py",
-        "//bindings/pydrake:math_py",
+        "//bindings/pydrake/math",
         "//bindings/pydrake:symbolic_py",
         "//bindings/pydrake/multibody:plant_py",
     ],
@@ -237,8 +237,8 @@ drake_py_library(
     deps = [
         ":framework_py",
         ":module_py",
-        "//bindings/pydrake:math_py",
         "//bindings/pydrake/common:jupyter_py",
+        "//bindings/pydrake/math",
     ],
 )
 
@@ -249,8 +249,8 @@ drake_py_library(
     deps = [
         ":framework_py",
         ":module_py",
-        "//bindings/pydrake:math_py",
         "//bindings/pydrake:perception_py",
+        "//bindings/pydrake/math",
     ],
 )
 
@@ -464,8 +464,8 @@ drake_py_unittest(
         ":analysis_py",
         ":framework_py",
         ":perception_py",
-        "//bindings/pydrake:math_py",
         "//bindings/pydrake:perception_py",
+        "//bindings/pydrake/math",
     ],
 )
 
