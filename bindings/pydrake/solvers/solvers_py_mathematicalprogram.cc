@@ -891,22 +891,9 @@ void BindMathematicalProgram(py::module m) {
               &MathematicalProgram::AddLinearConstraint),
           py::arg("a"), py::arg("lb"), py::arg("ub"), py::arg("vars"),
           doc.MathematicalProgram.AddLinearConstraint.doc_4args_a_lb_ub_vars)
-      // Ensure that the sparse version is bound last as otherwise the lambda
-      // captures the MatrixX and RowVectorX cases.
-//      .def(
-//          "AddLinearConstraint",
-//          [](MathematicalProgram* self, const Eigen::SparseMatrix<double>& A,
-//              const Eigen::Ref<const Eigen::VectorXd>& lb,
-//              const Eigen::Ref<const Eigen::VectorXd>& ub,
-//              const Eigen::Ref<const VectorXDecisionVariable>& vars) {
-//            return self->AddLinearConstraint(A, lb, ub, vars);
-//          },
-//          py::arg("A"), py::arg("lb"), py::arg("ub"), py::arg("vars"),
-//          doc.MathematicalProgram.AddLinearConstraint.doc_4args_A_lb_ub_sparse)
-      .def(
-          "AddLinearConstraint",
+      .def("AddLinearConstraint",
           static_cast<Binding<LinearConstraint> (MathematicalProgram::*)(
-              const Eigen::SparseMatrix&,
+              const Eigen::SparseMatrix<double>&,
               const Eigen::Ref<const Eigen::VectorXd>&,
               const Eigen::Ref<const Eigen::VectorXd>&,
               const Eigen::Ref<const VectorXDecisionVariable>&)>(

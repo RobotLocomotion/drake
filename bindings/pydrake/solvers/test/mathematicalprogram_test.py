@@ -788,8 +788,12 @@ class TestMathematicalProgram(unittest.TestCase):
         prog.AddBoundingBoxConstraint(0., 1., x)
         prog.AddLinearConstraint(A=np.eye(2), lb=np.zeros(2), ub=np.ones(2),
                                  vars=x)
-        prog.AddLinearConstraint(A=A_sparse, lb=np.zeros(2), ub=np.ones(2),
-                                 vars=x)
+        c1 = prog.AddLinearConstraint(A=A_sparse,
+                                      lb=np.zeros(2),
+                                      ub=np.ones(2),
+                                      vars=x)
+        # Ensure that the sparse version of the binding has been called.
+        self.assertFalse(c1.evaluator().HasDenseA())
         prog.AddLinearConstraint(a=[1, 1], lb=0, ub=0, vars=x)
         prog.AddLinearConstraint(e=x[0], lb=0, ub=1)
         prog.AddLinearConstraint(v=x, lb=[0, 0], ub=[1, 1])
@@ -797,8 +801,10 @@ class TestMathematicalProgram(unittest.TestCase):
 
         prog.AddLinearEqualityConstraint(Aeq=np.eye(2), beq=np.zeros(2),
                                          vars=x)
-        prog.AddLinearEqualityConstraint(Aeq=A_sparse, beq=np.zeros(2),
-                                         vars=x)
+        c2 = prog.AddLinearEqualityConstraint(Aeq=A_sparse, beq=np.zeros(2),
+                                              vars=x)
+        # Ensure that the sparse version of the binding has been called.
+        self.assertFalse(c2.evaluator().HasDenseA())
         prog.AddLinearEqualityConstraint(a=[1, 1], beq=0, vars=x)
         prog.AddLinearEqualityConstraint(f=x[0] == 1)
         prog.AddLinearEqualityConstraint(e=x[0] + x[1], b=1)
