@@ -45,9 +45,12 @@ std::pair<T, bool> IsUnitVector(const Vector3<T> &unit_vector,
     const T uvec_squared = unit_vector.squaredNorm();
     const bool is_ok_unit_vector = isfinite(uvec_squared) &&
         abs(uvec_squared - 1) <= tolerance2;
+
     return {uvec_squared, is_ok_unit_vector};
+  } else {
+    unused(unit_vector, tolerance_unit_vector_norm);
+    return {1.0, true};
   }
-  return {1.0, true};
 }
 
 // Returns an error message that ‖unit_vector‖ ≠ 1.
@@ -70,15 +73,16 @@ std::string ErrorMessageNotUnitVector(const Vector3<T>& bad_unit_vector,
     const T norm = bad_unit_vector.norm();
     const T norm_diff = abs(1.0 - norm);
     const std::string error_message =
-      fmt::format("{}(): The unit_vector argument {} is not a unit vector.\n"
-                  "|unit_vector| = {}\n"
-                  "||unit_vector| - 1| = {} is greater than {}.",
-                  function_name, fmt_eigen(bad_unit_vector.transpose()),
-                  norm, norm_diff, tolerance_unit_vector_norm);
+        fmt::format("{}(): The unit_vector argument {} is not a unit vector.\n"
+                    "|unit_vector| = {}\n"
+                    "||unit_vector| - 1| = {} is greater than {}.",
+                    function_name, fmt_eigen(bad_unit_vector.transpose()),
+                    norm, norm_diff, tolerance_unit_vector_norm);
     return error_message;
+  } else {
+    unused(bad_unit_vector, function_name, tolerance_unit_vector_norm);
+    return {};
   }
-  unused(tolerance_unit_vector_norm);
-  return {};
 }
 
 }  // namespace
@@ -86,7 +90,7 @@ std::string ErrorMessageNotUnitVector(const Vector3<T>& bad_unit_vector,
 template <typename T>
 T ThrowIfNotUnitVector(const Vector3<T>& unit_vector,
                        std::string_view function_name,
-                       double tolerance_unit_vector_norm) {
+                       const double tolerance_unit_vector_norm) {
   DRAKE_DEMAND(!function_name.empty());
   auto[unit_vector_squared_norm, is_ok_unit_vector]=
       IsUnitVector(unit_vector, tolerance_unit_vector_norm);
