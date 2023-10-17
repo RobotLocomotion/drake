@@ -13,7 +13,7 @@ Eigen::SparseMatrix<bool> ComplementaryAdjacencyMatrix(
   // Create an identity matrix of
   Eigen::SparseMatrix<bool> identityMatrix(adjacency_matrix.rows(),
                                            adjacency_matrix.cols());
-  for (int i = 0; i < rows; ++i) {
+  for (int i = 0; i < adjacency_matrix.rows(); ++i) {
     identityMatrix.insert(i, i) = true;
   }
   identityMatrix.makeCompressed();

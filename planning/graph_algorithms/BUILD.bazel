@@ -14,7 +14,6 @@ drake_cc_package_library(
     deps = [
         ":max_stable_set",
         ":max_clique",
-        ":clique_cover",
     ],
 )
 
@@ -51,23 +50,13 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "clique_cover",
-    srcs = ["clique_cover.cc"],
-    hdrs = [
-        "clique_cover.h",
-    ],
-    deps = [
-        ":max_clique"
-    ],
-)
-
-
-
-drake_cc_library(
     name="graph_algorithms_internal",
     srcs = ["graph_algorithms_internal.cc"],
     hdrs = [
         "graph_algorithms_internal.h",
+    ],
+    deps = [
+        "@eigen"
     ]
 )
 
