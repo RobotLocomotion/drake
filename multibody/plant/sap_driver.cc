@@ -442,18 +442,19 @@ void SapDriver<T>::AddDistanceConstraints(const systems::Context<T>& context,
                                                        BodyIndex bodyB) {
       const TreeIndex treeA_index = tree_topology().body_to_tree_index(bodyA);
       const TreeIndex treeB_index = tree_topology().body_to_tree_index(bodyB);
-      // Sanity check at least one body is not the world.
-      DRAKE_DEMAND(treeA_index.is_valid() || treeB_index.is_valid());
+      const bool treeA_has_dofs = tree_topology().tree_has_dofs(treeA_index);
+      const bool treeB_has_dofs = tree_topology().tree_has_dofs(treeB_index);
+
+      // Sanity check at least one body is not World or anchored to World.
+      DRAKE_DEMAND(treeA_has_dofs || treeB_has_dofs);
 
       // Both bodies A and B belong to the same tree or one of them is the
       // world.
-      const bool single_tree = !treeA_index.is_valid() ||
-                               !treeB_index.is_valid() ||
-                               treeA_index == treeB_index;
+      const bool single_tree =
+          !treeA_has_dofs || !treeB_has_dofs || treeA_index == treeB_index;
 
       if (single_tree) {
-        const TreeIndex tree_index =
-            treeA_index.is_valid() ? treeA_index : treeB_index;
+        const TreeIndex tree_index = treeA_has_dofs ? treeA_index : treeB_index;
         MatrixX<T> Jtree = Jv_ApBq_W.middleCols(
             tree_topology().tree_velocities_start(tree_index),
             tree_topology().num_tree_velocities(tree_index));
@@ -531,11 +532,13 @@ void SapDriver<T>::AddBallConstraints(
           tree_topology().body_to_tree_index(body_A.index());
       const TreeIndex treeB_index =
           tree_topology().body_to_tree_index(body_B.index());
+      const bool treeA_has_dofs = tree_topology().tree_has_dofs(treeA_index);
+      const bool treeB_has_dofs = tree_topology().tree_has_dofs(treeB_index);
 
       // TODO(joemasterjohn): Move this exception up to the plant level so that
       // it fails as fast as possible. Currently, the earliest this can happen
       // is in MbP::Finalize() after the topology has been finalized.
-      if (!treeA_index.is_valid() && !treeB_index.is_valid()) {
+      if (!treeA_has_dofs && !treeB_has_dofs) {
         const std::string msg = fmt::format(
             "Creating a ball Constraint between bodies '{}' and '{}' where "
             "both are welded to the world is not allowed.",
@@ -545,13 +548,11 @@ void SapDriver<T>::AddBallConstraints(
 
       // Both bodies A and B belong to the same tree or one of them is the
       // world.
-      const bool single_tree = !treeA_index.is_valid() ||
-                               !treeB_index.is_valid() ||
-                               treeA_index == treeB_index;
+      const bool single_tree =
+          !treeA_has_dofs || !treeB_has_dofs || treeA_index == treeB_index;
 
       if (single_tree) {
-        const TreeIndex tree_index =
-            treeA_index.is_valid() ? treeA_index : treeB_index;
+        const TreeIndex tree_index = treeA_has_dofs ? treeA_index : treeB_index;
         MatrixX<T> Jtree = Jv_ApBq_W.middleCols(
             tree_topology().tree_velocities_start(tree_index),
             tree_topology().num_tree_velocities(tree_index));
@@ -625,11 +626,13 @@ void SapDriver<T>::AddWeldConstraints(
           tree_topology().body_to_tree_index(bodyA.index());
       const TreeIndex treeB_index =
           tree_topology().body_to_tree_index(bodyB.index());
+      const bool treeA_has_dofs = tree_topology().tree_has_dofs(treeA_index);
+      const bool treeB_has_dofs = tree_topology().tree_has_dofs(treeB_index);
 
       // TODO(joemasterjohn): Move this exception up to the plant level so
       // that it fails as fast as possible. Currently, the earliest this can
       // happen is in MbP::Finalize() after the topology has been finalized.
-      if (!treeA_index.is_valid() && !treeB_index.is_valid()) {
+      if (!treeA_has_dofs && !treeB_has_dofs) {
         const std::string msg = fmt::format(
             "Creating a weld constraint between bodies '{}' and '{}' where "
             "both are welded to the world is not allowed.",
@@ -639,13 +642,11 @@ void SapDriver<T>::AddWeldConstraints(
 
       // Both bodies A and B belong to the same tree or one of them is the
       // world.
-      const bool single_tree = !treeA_index.is_valid() ||
-                               !treeB_index.is_valid() ||
-                               treeA_index == treeB_index;
+      const bool single_tree =
+          !treeA_has_dofs || !treeB_has_dofs || treeA_index == treeB_index;
 
       if (single_tree) {
-        const TreeIndex tree_index =
-            treeA_index.is_valid() ? treeA_index : treeB_index;
+        const TreeIndex tree_index = treeA_has_dofs ? treeA_index : treeB_index;
         MatrixX<T> Jtree_W = J_W_AmBm.middleCols(
             tree_topology().tree_velocities_start(tree_index),
             tree_topology().num_tree_velocities(tree_index));

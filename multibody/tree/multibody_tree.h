@@ -648,7 +648,7 @@ class MultibodyTree {
   // frames. Therefore, this method does not count kinematic cycles, which
   // could only be considered in the model using constraints.
   int tree_height() const {
-    return topology_.tree_height();
+    return topology_.forest_height();
   }
 
   // Returns a constant reference to the *world* body.

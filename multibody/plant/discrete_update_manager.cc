@@ -676,14 +676,16 @@ void DiscreteUpdateManager<T>::CalcHydroelasticContactInfo(
 
     const TreeIndex& treeA_index = topology.body_to_tree_index(bodyA_index);
     const TreeIndex& treeB_index = topology.body_to_tree_index(bodyB_index);
+    const bool treeA_has_dofs = topology.tree_has_dofs(treeA_index);
+    const bool treeB_has_dofs = topology.tree_has_dofs(treeB_index);
 
     //  For joint locking, filter out contacts between bodies who belong to
     //  trees with 0 degrees of freedom. For a contact to remain in
     //  consideration, at least one of the trees involved has to be valid and
     //  have a non-zero number of DOFs.
-    if ((treeA_index.is_valid() &&
+    if ((treeA_has_dofs &&
          per_tree_unlocked_indices[treeA_index].size() != 0) ||
-        (treeB_index.is_valid() &&
+        (treeB_has_dofs &&
          per_tree_unlocked_indices[treeB_index].size() != 0)) {
       contact_info->emplace_back(&all_surfaces[surface_index],
                                  F_Ao_W_per_surface[surface_index],
@@ -814,12 +816,15 @@ void DiscreteUpdateManager<T>::AppendContactKinematics(
     math::RotationMatrix<T> R_WC =
         math::RotationMatrix<T>::MakeFromOneVector(nhat_W, 2);
 
-    const TreeIndex& treeA_index =
+    const TreeIndex treeA_index =
         tree_topology().body_to_tree_index(bodyA_index);
-    const TreeIndex& treeB_index =
+    const TreeIndex treeB_index =
         tree_topology().body_to_tree_index(bodyB_index);
-    // Sanity check, at least one must be valid.
-    DRAKE_DEMAND(treeA_index.is_valid() || treeB_index.is_valid());
+    const bool treeA_has_dofs = tree_topology().tree_has_dofs(treeA_index);
+    const bool treeB_has_dofs = tree_topology().tree_has_dofs(treeB_index);
+
+    // Sanity check at least one body is not World or anchored to World.
+    DRAKE_DEMAND(treeA_has_dofs || treeB_has_dofs);
 
     // We have at most two blocks per contact.
     std::vector<typename ContactPairKinematics<T>::JacobianTreeBlock>
@@ -827,7 +832,7 @@ void DiscreteUpdateManager<T>::AppendContactKinematics(
     jacobian_blocks.reserve(2);
 
     // Tree A contribution to contact Jacobian Jv_W_AcBc_C.
-    if (treeA_index.is_valid()) {
+    if (treeA_has_dofs) {
       Matrix3X<T> J = R_WC.matrix().transpose() *
                       Jv_AcBc_W.middleCols(
                           tree_topology().tree_velocities_start(treeA_index),
@@ -837,8 +842,8 @@ void DiscreteUpdateManager<T>::AppendContactKinematics(
 
     // Tree B contribution to contact Jacobian Jv_W_AcBc_C.
     // This contribution must be added only if B is different from A.
-    if ((treeB_index.is_valid() && !treeA_index.is_valid()) ||
-        (treeB_index.is_valid() && treeB_index != treeA_index)) {
+    if ((treeB_has_dofs && !treeA_has_dofs) ||
+        (treeB_has_dofs && treeB_index != treeA_index)) {
       Matrix3X<T> J = R_WC.matrix().transpose() *
                       Jv_AcBc_W.middleCols(
                           tree_topology().tree_velocities_start(treeB_index),
@@ -964,16 +969,18 @@ void DiscreteUpdateManager<T>::AppendDiscreteContactPairsForPointContact(
     const BodyIndex body_B_index = geometry_id_to_body_index().at(pair.id_B);
     const Body<T>& body_B = plant().get_body(body_B_index);
 
-    const TreeIndex& treeA_index = topology.body_to_tree_index(body_A_index);
-    const TreeIndex& treeB_index = topology.body_to_tree_index(body_B_index);
+    const TreeIndex treeA_index = topology.body_to_tree_index(body_A_index);
+    const TreeIndex treeB_index = topology.body_to_tree_index(body_B_index);
+    const bool treeA_has_dofs = topology.tree_has_dofs(treeA_index);
+    const bool treeB_has_dofs = topology.tree_has_dofs(treeB_index);
 
     //  For joint locking, filter out contacts between bodies who belong to
     //  trees with 0 degrees of freedom. For a contact to remain in
     //  consideration, at least one of the trees involved has to be valid and
     //  have a non-zero number of DOFs.
-    if ((treeA_index.is_valid() &&
+    if ((treeA_has_dofs &&
          per_tree_unlocked_indices[treeA_index].size() != 0) ||
-        (treeB_index.is_valid() &&
+        (treeB_has_dofs &&
          per_tree_unlocked_indices[treeB_index].size() != 0)) {
       const T kA = GetPointContactStiffness(
           pair.id_A, default_contact_stiffness(), inspector);
