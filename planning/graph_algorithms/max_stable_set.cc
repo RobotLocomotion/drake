@@ -1,9 +1,10 @@
 #include "drake/planning/graph_algorithms/max_stable_set.h"
-#include "drake/solvers/choose_best_solver.h"
 
+#include "drake/solvers/choose_best_solver.h"
 
 namespace drake {
 namespace planning {
+namespace graph_algorithms {
 
 MaxStableSetSolverViaMIP::MaxStableSetSolverViaMIP(
     const solvers::SolverId& solver_id, const solvers::SolverOptions& options)
@@ -25,16 +26,14 @@ VectorX<bool> MaxStableSetSolverViaMIP::SolveMaxStableSet(
   // Maximize ∑ᵢ xᵢ
   prog.AddLinearCost(-Eigen::VectorXd::Ones(x.rows()), 0, x);
   // Constraint xᵢ + xⱼ ≤ 1
-  // TODO(AlexandreAmice) Remove toDense()
-  prog.AddLinearConstraint(adjacency_matrix.cast<double>().toDense(),
+  prog.AddLinearConstraint(adjacency_matrix.cast<double>(),
                            Eigen::VectorXd::Zero(x.rows()),
                            Eigen::VectorXd::Ones(x.rows()), x);
   solvers::MathematicalProgramResult result;
-  solvers::MakeSolver(solver_id_)
-      ->Solve(prog, std::nullopt, options_, &result);
+  solvers::MakeSolver(solver_id_)->Solve(prog, std::nullopt, options_, &result);
 
   return result.GetSolution(x).cast<bool>();
 }
-
+}  // namespace graph_algorithms
 }  // namespace planning
 }  // namespace drake
