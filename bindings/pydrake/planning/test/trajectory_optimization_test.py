@@ -1,6 +1,7 @@
 import math
 import unittest
 import warnings
+import weakref
 
 import numpy as np
 
@@ -214,6 +215,23 @@ class TestTrajectoryOptimization(unittest.TestCase):
         dirtran = DirectTranscription(
             plant, context, num_time_samples=21,
             fixed_time_step=DirectTranscription.TimeStep(0.1))
+
+    def test_shared_ptr_lost(self):
+        trajopt = KinematicTrajectoryOptimization(num_positions=2,
+                                                  num_control_points=10,
+                                                  spline_order=3,
+                                                  duration=2.0)
+        b = np.zeros((2, 1))
+        con_ref = None
+
+        def add_con():
+            nonlocal con_ref
+            con = mp.LinearConstraint(np.eye(2), lb=b, ub=b)
+            trajopt.AddPathPositionConstraint(con, 0)
+            con_ref = weakref.ref(con)
+
+        add_con()
+        assert con_ref() is not None
 
     def test_kinematic_trajectory_optimization(self):
         trajopt = KinematicTrajectoryOptimization(num_positions=2,
