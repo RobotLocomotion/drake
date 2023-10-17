@@ -164,6 +164,7 @@ drake_pybind_library(
     package_info = PACKAGE_INFO,
     py_deps = [
         ":module_py",
+        "//bindings/pydrake/common:parsing_py",
         "//bindings/pydrake/common:schema_py",
     ],
 )
@@ -411,6 +412,7 @@ drake_py_unittest(
     deps = [
         ":parsing_py",
         ":plant_py",
+        "//bindings/pydrake/common:parsing_py",
         "//bindings/pydrake/common/test_utilities",
     ],
 )

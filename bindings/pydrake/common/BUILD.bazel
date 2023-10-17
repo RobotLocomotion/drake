@@ -170,6 +170,31 @@ drake_pybind_library(
     py_srcs = ["_value_extra.py"],
 )
 
+drake_pybind_library(
+    name = "parsing_py",
+    cc_deps = [
+        "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake/common:serialize_pybind",
+    ],
+    cc_srcs = ["parsing_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":module_py",
+        ":schema_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "parsing_test",
+    data = [
+        "//multibody/parsing:test_models",
+    ],
+    deps = [
+        ":parsing_py",
+        "//bindings/pydrake/common/test_utilities",
+    ],
+)
+
 # N.B. Any C++ libraries that include this must include `cpp_template_py` when
 # being used in Python.
 drake_cc_library(
@@ -455,6 +480,7 @@ PY_LIBRARIES_WITH_INSTALL = [
     ":_init_py",
     ":eigen_geometry_py",
     ":schema_py",
+    ":parsing_py",
     ":value_py",
 ]
 
