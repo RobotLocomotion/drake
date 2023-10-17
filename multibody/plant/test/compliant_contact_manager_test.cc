@@ -181,7 +181,7 @@ class SpheresStackTest : public SpheresStack, public ::testing::Test {
     for (int i = 0; i < static_cast<int>(pairs.size()); ++i) {
       const DiscreteContactPair<double>& point_pair = pairs[i];
 
-      if (i == 0) {
+      if (i < num_point_pairs) {
         // Unit tests for point contact only.
         // Here we use our knowledge that we always place point contact pairs
         // followed by hydroelastic contact pairs.
@@ -204,6 +204,19 @@ class SpheresStackTest : public SpheresStack, public ::testing::Test {
         const double pz_WC = -k2 / (k1 + k2) * penetration_distance_ + pz_WS1 +
                              sphere1_params.radius;
         EXPECT_NEAR(point_pair.p_WC.z(), pz_WC, 1.0e-14);
+
+        // Check the optional parameters are set correctly for point contact.
+        // The index into `point_pair_penetrations` should match the index into
+        // `pairs`.
+        EXPECT_TRUE(point_pair.point_pair_index.has_value());
+        EXPECT_EQ(point_pair.point_pair_index.value(), i);
+        EXPECT_FALSE(point_pair.surface_index.has_value());
+        EXPECT_FALSE(point_pair.face_index.has_value());
+      } else {
+        // Check the optional parameters are set correctly for hydro.
+        EXPECT_FALSE(point_pair.point_pair_index.has_value());
+        EXPECT_TRUE(point_pair.surface_index.has_value());
+        EXPECT_TRUE(point_pair.face_index.has_value());
       }
 
       // Unit tests for both point and hydroelastic discrete pairs.
