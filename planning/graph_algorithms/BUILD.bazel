@@ -12,7 +12,9 @@ drake_cc_package_library(
     name = "graph_algorithms",
     visibility = ["//visibility:public"],
     deps = [
-
+        ":max_stable_set",
+        ":max_clique",
+        ":clique_cover",
     ],
 )
 
@@ -59,5 +61,37 @@ drake_cc_library(
     ],
 )
 
+
+
+drake_cc_library(
+    name="graph_algorithms_internal",
+    srcs = ["graph_algorithms_internal.cc"],
+    hdrs = [
+        "graph_algorithms_internal.h",
+    ]
+)
+
+
+# === test/ ===
+
+drake_cc_library(
+    name = "common_graphs",
+    testonly = True,
+    srcs = ["test/common_graphs.cc"],
+    hdrs = ["test/common_graphs.h"],
+    visibility = ["//visibility:private"],
+    deps = [
+        "@eigen",
+    ],
+)
+
+drake_cc_googletest(
+    name = "max_stable_set_test",
+    srcs = ["test/max_stable_set_test.cc"],
+    deps = [
+        ":common_graphs",
+        ":max_stable_set"
+    ],
+)
 
 add_lint_tests()

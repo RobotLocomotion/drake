@@ -6,12 +6,14 @@
 
 #include "drake/common/ssize.h"
 #include "drake/solvers/gurobi_solver.h"
+#include "drake/solvers/mosek_solver.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/mathematical_program_result.h"
 #include "drake/solvers/solve.h"
 
 namespace drake {
 namespace planning {
+namespace graph_algorithms {
 
 using Eigen::SparseMatrix;
 
@@ -49,7 +51,7 @@ class MaxStableSetSolverViaMIP final : public MaxStableSetSolverBase {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MaxStableSetSolverViaMIP);
   MaxStableSetSolverViaMIP(
-      const solvers::SolverId& solver_id = solvers::GurobiSolver::id(),
+      const solvers::SolverId& solver_id = solvers::MosekSolver::id(),
       const solvers::SolverOptions& options = solvers::SolverOptions());
 
   VectorX<bool> SolveMaxStableSet(SparseMatrix<bool> adjacency_matrix);
@@ -61,8 +63,8 @@ class MaxStableSetSolverViaMIP final : public MaxStableSetSolverBase {
 
 struct MaxStableSetOptions {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MaxStableSetOptions)
-  MaxStableSetOptions(const MaxStableSetSolverBase* m_solver =
-                              new MaxStableSetSolverViaMIP());
+  MaxStableSetOptions(
+      const MaxStableSetSolverBase* m_solver = new MaxStableSetSolverViaMIP());
   ~MaxStableSetOptions() = default;
   MaxStableSetSolverBase* solver;
 };
@@ -82,6 +84,6 @@ struct MaxStableSetOptions {
  */
 VectorX<bool> MaxStableSet(SparseMatrix<bool> adjacency_matrix,
                            MaxStableSetOptions& options);
-
+}  // namespace graph_algorithms
 }  // namespace planning
 }  // namespace drake
