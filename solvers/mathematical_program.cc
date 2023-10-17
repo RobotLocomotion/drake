@@ -860,7 +860,7 @@ Binding<LinearConstraint> MathematicalProgram::AddConstraint(
   } else {
     // TODO(eric.cousineau): This is a good assertion... But seems out of place,
     // possibly redundant w.r.t. the binding infrastructure.
-    DRAKE_ASSERT(binding.evaluator()->GetDenseA().cols() ==
+    DRAKE_ASSERT(binding.evaluator()->get_sparse_A().cols() ==
                  static_cast<int>(binding.GetNumElements()));
     if (!CheckBinding(binding)) {
       return binding;
@@ -879,9 +879,17 @@ Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
   return AddConstraint(make_shared<LinearConstraint>(A, lb, ub), vars);
 }
 
+Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
+    const Eigen::SparseMatrix<double>& A,
+    const Eigen::Ref<const Eigen::VectorXd>& lb,
+    const Eigen::Ref<const Eigen::VectorXd>& ub,
+    const Eigen::Ref<const VectorXDecisionVariable>& vars) {
+  return AddConstraint(make_shared<LinearConstraint>(A, lb, ub), vars);
+}
+
 Binding<LinearEqualityConstraint> MathematicalProgram::AddConstraint(
     const Binding<LinearEqualityConstraint>& binding) {
-  DRAKE_ASSERT(binding.evaluator()->GetDenseA().cols() ==
+  DRAKE_ASSERT(binding.evaluator()->get_sparse_A().cols() ==
                static_cast<int>(binding.GetNumElements()));
   if (!CheckBinding(binding)) {
     return binding;
@@ -905,6 +913,14 @@ MathematicalProgram::AddLinearEqualityConstraint(const Formula& f) {
 Binding<LinearEqualityConstraint>
 MathematicalProgram::AddLinearEqualityConstraint(
     const Eigen::Ref<const Eigen::MatrixXd>& Aeq,
+    const Eigen::Ref<const Eigen::VectorXd>& beq,
+    const Eigen::Ref<const VectorXDecisionVariable>& vars) {
+  return AddConstraint(make_shared<LinearEqualityConstraint>(Aeq, beq), vars);
+}
+
+Binding<LinearEqualityConstraint>
+MathematicalProgram::AddLinearEqualityConstraint(
+    const Eigen::SparseMatrix<double>& Aeq,
     const Eigen::Ref<const Eigen::VectorXd>& beq,
     const Eigen::Ref<const VectorXDecisionVariable>& vars) {
   return AddConstraint(make_shared<LinearEqualityConstraint>(Aeq, beq), vars);

@@ -726,6 +726,7 @@ void GraphOfConvexSets::AddPerspectiveConstraint(
       // Then do nothing.
     } else {
       // Need to go constraint by constraint.
+      // TODO(Alexandre.Amice) make this only access the sparse matrix.
       const Eigen::MatrixXd& A = lc->GetDenseA();
       RowVectorXd a(vars.size());
       for (int i = 0; i < A.rows(); ++i) {

@@ -564,9 +564,9 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
     };
     auto HandleLinearConstraints = [&](const auto& bindings) {
       for (const auto& binding : bindings) {
-        AddConstraint(binding.evaluator()->GetDenseA(),
+        AddConstraint(binding.evaluator()->get_sparse_A(),
                       binding.evaluator()->upper_bound(), binding.variables());
-        AddConstraint(-binding.evaluator()->GetDenseA(),
+        AddConstraint(-binding.evaluator()->get_sparse_A(),
                       -binding.evaluator()->lower_bound(), binding.variables());
         auto pos = std::find(additional_constraint_bindings.begin(),
                              additional_constraint_bindings.end(), binding);

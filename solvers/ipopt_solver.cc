@@ -229,7 +229,7 @@ size_t EvaluateConstraint(const MathematicalProgram& prog,
   // constraints.
   if constexpr (std::is_same_v<ConstraintType, LinearEqualityConstraint> ||
                 std::is_same_v<ConstraintType, LinearConstraint>) {
-    auto A = static_cast<ConstraintType*>(c)->GetDenseA();
+    auto A = static_cast<ConstraintType*>(c)->get_sparse_A();
     // Verify that A has the proper size.
     DRAKE_ASSERT(A.rows() == c->num_constraints());
     DRAKE_ASSERT(A.cols() == binding.variables().rows());

@@ -18,6 +18,7 @@
 #include <vector>
 
 #include <Eigen/Core>
+#include <Eigen/SparseCore>
 
 #include "drake/common/autodiff.h"
 #include "drake/common/drake_assert.h"
@@ -1448,6 +1449,8 @@ class MathematicalProgram {
   /**
    * Adds linear constraints referencing potentially a subset
    * of the decision variables (defined in the vars parameter).
+   *
+   * @exclude_from_pydrake_mkdoc{Not bound in pydrake.}
    */
   Binding<LinearConstraint> AddLinearConstraint(
       const Eigen::Ref<const Eigen::MatrixXd>& A,
@@ -1458,11 +1461,39 @@ class MathematicalProgram {
   }
 
   /**
+   * Adds sparse linear constraints referencing potentially a subset
+   * of the decision variables (defined in the vars parameter).
+   *
+   * @exclude_from_pydrake_mkdoc{Not bound in pydrake.}
+   */
+  Binding<LinearConstraint> AddLinearConstraint(
+      const Eigen::SparseMatrix<double>& A,
+      const Eigen::Ref<const Eigen::VectorXd>& lb,
+      const Eigen::Ref<const Eigen::VectorXd>& ub,
+      const VariableRefList& vars) {
+    return AddLinearConstraint(A, lb, ub, ConcatenateVariableRefList(vars));
+  }
+
+  /**
    * Adds linear constraints referencing potentially a subset
    * of the decision variables (defined in the vars parameter).
+   *
+   * @pydrake_mkdoc_identifier{4args_A_lb_ub_dense}
    */
   Binding<LinearConstraint> AddLinearConstraint(
       const Eigen::Ref<const Eigen::MatrixXd>& A,
+      const Eigen::Ref<const Eigen::VectorXd>& lb,
+      const Eigen::Ref<const Eigen::VectorXd>& ub,
+      const Eigen::Ref<const VectorXDecisionVariable>& vars);
+
+  /**
+   * Adds sparse linear constraints referencing potentially a subset
+   * of the decision variables (defined in the vars parameter).
+   *
+   * @pydrake_mkdoc_identifier{4args_A_lb_ub_sparse}
+   */
+  Binding<LinearConstraint> AddLinearConstraint(
+      const Eigen::SparseMatrix<double>& A,
       const Eigen::Ref<const Eigen::VectorXd>& lb,
       const Eigen::Ref<const Eigen::VectorXd>& ub,
       const Eigen::Ref<const VectorXDecisionVariable>& vars);
@@ -1709,6 +1740,20 @@ class MathematicalProgram {
   /** AddLinearEqualityConstraint
    *
    * Adds linear equality constraints referencing potentially a subset of
+   * the decision variables using a sparse A matrix.
+   * @exclude_from_pydrake_mkdoc{Not bound in pydrake.}
+   */
+  Binding<LinearEqualityConstraint> AddLinearEqualityConstraint(
+      const Eigen::SparseMatrix<double>& Aeq,
+      const Eigen::Ref<const Eigen::VectorXd>& beq,
+      const VariableRefList& vars) {
+    return AddLinearEqualityConstraint(Aeq, beq,
+                                       ConcatenateVariableRefList(vars));
+  }
+
+  /** AddLinearEqualityConstraint
+   *
+   * Adds linear equality constraints referencing potentially a subset of
    * the decision variables.
    *
    * Example: to add two equality constraints which only depend on two of the
@@ -1724,9 +1769,22 @@ class MathematicalProgram {
    *   //  x(0) +  x(1) = 3
    *   prog.AddLinearEqualityConstraint(Aeq, beq, x.head<2>());
    * @endcode
+   *
+   * @pydrake_mkdoc_identifier{3args_Aeq_beq_dense}
    */
   Binding<LinearEqualityConstraint> AddLinearEqualityConstraint(
       const Eigen::Ref<const Eigen::MatrixXd>& Aeq,
+      const Eigen::Ref<const Eigen::VectorXd>& beq,
+      const Eigen::Ref<const VectorXDecisionVariable>& vars);
+
+  /** AddLinearEqualityConstraint
+   *
+   * Adds linear equality constraints referencing potentially a subset of
+   * the decision variables using a sparse A matrix.
+   * @pydrake_mkdoc_identifier{3args_Aeq_beq_sparse}
+   */
+  Binding<LinearEqualityConstraint> AddLinearEqualityConstraint(
+      const Eigen::SparseMatrix<double>& Aeq,
       const Eigen::Ref<const Eigen::VectorXd>& beq,
       const Eigen::Ref<const VectorXDecisionVariable>& vars);
 
@@ -1745,8 +1803,8 @@ class MathematicalProgram {
   Binding<LinearEqualityConstraint> AddLinearEqualityConstraint(
       const Eigen::Ref<const Eigen::RowVectorXd>& a, double beq,
       const VariableRefList& vars) {
-    return AddConstraint(std::make_shared<LinearEqualityConstraint>(a, beq),
-                         ConcatenateVariableRefList(vars));
+    return AddLinearEqualityConstraint(a, beq,
+                                       ConcatenateVariableRefList(vars));
   }
 
   /**
@@ -1758,8 +1816,6 @@ class MathematicalProgram {
    * @param a A row vector.
    * @param beq A scalar.
    * @param vars The decision variables on which the constraint is imposed.
-   *
-   * @exclude_from_pydrake_mkdoc{Not bound in pydrake.}
    */
   Binding<LinearEqualityConstraint> AddLinearEqualityConstraint(
       const Eigen::Ref<const Eigen::RowVectorXd>& a, double beq,

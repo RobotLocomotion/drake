@@ -1,7 +1,8 @@
 import unittest
+import typing
 
 import numpy as np
-import typing
+import scipy.sparse
 
 import pydrake.solvers as mp
 import pydrake.symbolic as sym
@@ -100,6 +101,39 @@ class TestConstraints(unittest.TestCase):
             constraint.lower_bound(), np.array([1., 2.]))
         np.testing.assert_array_equal(
             constraint.upper_bound(), np.array([2., 3.]))
+
+    def test_linear_constraint(self):
+        A_sparse = scipy.sparse.csc_matrix(
+            (np.array([2, 1, 3]), np.array([0, 1, 0]),
+             np.array([0, 2, 2, 3])), shape=(2, 2))
+        lb = -np.ones(2)
+        ub = np.ones(2)
+
+        constraints = []
+        constraints.append(mp.LinearConstraint(A=np.eye(2), lb=lb, ub=ub))
+        self.assertTrue(constraints[-1].is_dense_A_constructed())
+        constraints.append(mp.LinearConstraint(A=A_sparse, lb=lb, ub=ub))
+        self.assertFalse(constraints[-1].is_dense_A_constructed())
+
+        for c in constraints:
+            self.assertEqual(c.GetDenseA().shape[1], 2)
+            self.assertEqual(c.get_sparse_A().shape[1], 2)
+            r = c.GetDenseA().shape[0]
+            new_A = np.ones_like(c.GetDenseA())
+            new_A[1, 1] = 1e-20
+
+            c.UpdateCoefficients(new_A=new_A,
+                                 new_lb=np.ones(r),
+                                 new_ub=np.ones(r))
+            c.RemoveTinyCoefficient(tol=1e-10)
+            self.assertEqual(c.GetDenseA()[1, 1], 0)
+            c.UpdateCoefficients(new_A=c.get_sparse_A(),
+                                 new_lb=np.ones(r),
+                                 new_ub=np.ones(r))
+
+            c.UpdateLowerBound(new_lb=-2*np.ones(r))
+            c.UpdateUpperBound(new_ub=2*np.ones(r))
+            c.set_bounds(new_lb=-3*np.ones(r), new_ub=3*np.ones(r))
 
     def test_quadratic_constraint(self):
         hessian_type = mp.QuadraticConstraint.HessianType.kPositiveSemidefinite
