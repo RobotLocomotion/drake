@@ -1201,9 +1201,11 @@ ConstructPositiveDiagonallyDominantDualConeConstraintMatricesForN(const int n) {
     return i + n * j;
   };
 
-  // TODO(Alexandre.Amice) Make A an Eigen::Sparse when AddLinearConstraint
-  // supports adding sparse A matrices.
-  Eigen::MatrixXd A = Eigen::MatrixXd::Zero(n * n, n * n);
+  // The DD dual cone constraint is a sparse linear constraint. We instantiate
+  // the A matrix using this triplet list.
+  std::vector<Eigen::Triplet<double>> A_triplet_list;
+  A_triplet_list.reserve(n * n);
+
   Eigen::VectorXd lb = Eigen::VectorXd::Zero(n * n);
   Eigen::VectorXd ub = kInf * Eigen::VectorXd::Ones(n * n);
 
@@ -1211,7 +1213,7 @@ ConstructPositiveDiagonallyDominantDualConeConstraintMatricesForN(const int n) {
   // entry equal to 1.
   for (int i = 0; i < n; ++i) {
     // Variable Xᵢᵢ is in position i*(n+1)
-    A(i, compute_flat_index(i, i)) = 1;
+    A_triplet_list.emplace_back(i, compute_flat_index(i, i), 1);
   }
   // When vᵢ is a vector with two non-zero at entries k and j, we can choose
   // without loss of generality that the jth entry to be 1, and the kth entry be
@@ -1221,19 +1223,22 @@ ConstructPositiveDiagonallyDominantDualConeConstraintMatricesForN(const int n) {
   for (int j = 0; j < n; ++j) {
     for (int k = j + 1; k < n; ++k) {
       // X(k, k) + X(k, j) + X(j, k) + X(j, j)
-      A(row_ctr, compute_flat_index(k, k)) = 1;
-      A(row_ctr, compute_flat_index(j, j)) = 1;
-      A(row_ctr, compute_flat_index(k, j)) = 1;
-      A(row_ctr, compute_flat_index(j, k)) = 1;
+      A_triplet_list.emplace_back(row_ctr, compute_flat_index(k, k), 1);
+      A_triplet_list.emplace_back(row_ctr, compute_flat_index(j, j), 1);
+      A_triplet_list.emplace_back(row_ctr, compute_flat_index(j, k), 1);
+      A_triplet_list.emplace_back(row_ctr, compute_flat_index(k, j), 1);
       ++row_ctr;
+
       // X(k, k) - X(k, j) - X(j, k) + X(j, j)
-      A(row_ctr, compute_flat_index(k, k)) = 1;
-      A(row_ctr, compute_flat_index(j, j)) = 1;
-      A(row_ctr, compute_flat_index(k, j)) = -1;
-      A(row_ctr, compute_flat_index(j, k)) = -1;
+      A_triplet_list.emplace_back(row_ctr, compute_flat_index(k, k), 1);
+      A_triplet_list.emplace_back(row_ctr, compute_flat_index(j, j), 1);
+      A_triplet_list.emplace_back(row_ctr, compute_flat_index(j, k), -1);
+      A_triplet_list.emplace_back(row_ctr, compute_flat_index(k, j), -1);
       ++row_ctr;
     }
   }
+  Eigen::SparseMatrix<double> A(n * n, n * n);
+  A.setFromTriplets(A_triplet_list.begin(), A_triplet_list.end());
   return std::make_tuple(A, lb, ub);
 }
 }  // namespace
