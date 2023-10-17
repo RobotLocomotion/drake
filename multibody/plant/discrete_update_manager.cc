@@ -525,7 +525,8 @@ void DiscreteUpdateManager<T>::AppendContactResultsForPointContact(
 
   for (int icontact = 0; icontact < num_point_contacts; ++icontact) {
     const auto& discrete_pair = discrete_pairs[icontact];
-    const auto& point_pair = point_pairs[icontact];
+    const auto& point_pair =
+        point_pairs[discrete_pair.point_pair_index.value()];
 
     const GeometryId geometryA_id = discrete_pair.id_A;
     const GeometryId geometryB_id = discrete_pair.id_B;
@@ -958,7 +959,9 @@ void DiscreteUpdateManager<T>::AppendDiscreteContactPairsForPointContact(
   // Fill in the point contact pairs.
   const std::vector<PenetrationAsPointPair<T>>& point_pairs =
       plant().EvalPointPairPenetrations(context);
-  for (const PenetrationAsPointPair<T>& pair : point_pairs) {
+  for (int point_pair_index = 0; point_pair_index < ssize(point_pairs);
+       ++point_pair_index) {
+    const PenetrationAsPointPair<T>& pair = point_pairs[point_pair_index];
     const BodyIndex body_A_index = geometry_id_to_body_index().at(pair.id_A);
     const Body<T>& body_A = plant().get_body(body_A_index);
     const BodyIndex body_B_index = geometry_id_to_body_index().at(pair.id_B);
@@ -1017,7 +1020,8 @@ void DiscreteUpdateManager<T>::AppendDiscreteContactPairsForPointContact(
                                  tau,
                                  mu,
                                  {} /* no surface index */,
-                                 {} /* no face index */});
+                                 {} /* no face index */,
+                                 point_pair_index});
     }
   }
 }
@@ -1180,9 +1184,20 @@ void DiscreteUpdateManager<T>::AppendDiscreteContactPairsForHydroelasticContact(
           const T phi0 = -p0 / g;
 
           if (k > 0) {
-            contact_pairs.AppendHydroData(DiscreteContactPair<T>{
-                s.id_M(), s.id_N(), p_WQ, nhat_W, phi0, fn0, k, d, tau, mu,
-                surface_index, face});
+            contact_pairs.AppendHydroData(
+                DiscreteContactPair<T>{s.id_M(),
+                                       s.id_N(),
+                                       p_WQ,
+                                       nhat_W,
+                                       phi0,
+                                       fn0,
+                                       k,
+                                       d,
+                                       tau,
+                                       mu,
+                                       surface_index,
+                                       face,
+                                       {} /* no point pair index */});
           }
         }
       }

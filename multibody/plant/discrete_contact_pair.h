@@ -53,6 +53,10 @@ struct DiscreteContactPair {
    * surface_index this discrete pair corresponds to. No value if the pair does
    * not correspond to mesh contact. */
   std::optional<int> face_index{};
+  /* For point contact, the index of the point pair collision data this discrete
+   * pair corresponds to. No value if the pair does not correspond to point
+   * contact. */
+  std::optional<int> point_pair_index{};
 };
 
 }  // namespace internal
