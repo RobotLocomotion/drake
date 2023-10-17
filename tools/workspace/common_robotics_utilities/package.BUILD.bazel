@@ -88,7 +88,6 @@ cc_test(
     timeout = "moderate",
     deps = [
         ":common_robotics_utilities",
-        "@eigen",
         "@gtest//:without_main",
     ],
 )
