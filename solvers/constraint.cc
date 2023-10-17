@@ -468,8 +468,8 @@ void LinearConstraint::RemoveTinyCoefficient(double tol) {
   UpdateCoefficients(new_A, lower_bound(), upper_bound());
 }
 
-bool LinearConstraint::HasDenseA() const {
-  return A_.dense_is_constructed();
+bool LinearConstraint::is_dense_A_constructed() const {
+  return A_.is_dense_constructed();
 }
 
 template <typename DerivedX, typename ScalarY>

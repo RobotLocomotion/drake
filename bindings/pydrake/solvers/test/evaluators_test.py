@@ -1,13 +1,13 @@
 import unittest
+import typing
 
 import numpy as np
-import typing
+import scipy.sparse
 
 import pydrake.solvers as mp
 import pydrake.symbolic as sym
 from pydrake.autodiffutils import InitializeAutoDiff
 from pydrake.common.test_utilities.deprecation import catch_drake_warnings
-import scipy.sparse
 
 
 class TestCost(unittest.TestCase):
@@ -104,16 +104,16 @@ class TestConstraints(unittest.TestCase):
 
     def test_linear_constraint(self):
         A_sparse = scipy.sparse.csc_matrix(
-            (np.array([2, 1., 3]), np.array([0, 1, 0]),
+            (np.array([2, 1, 3]), np.array([0, 1, 0]),
              np.array([0, 2, 2, 3])), shape=(2, 2))
         lb = -np.ones(2)
         ub = np.ones(2)
 
         constraints = []
         constraints.append(mp.LinearConstraint(A=np.eye(2), lb=lb, ub=ub))
-        self.assertTrue(constraints[-1].HasDenseA())
+        self.assertTrue(constraints[-1].is_dense_A_constructed())
         constraints.append(mp.LinearConstraint(A=A_sparse, lb=lb, ub=ub))
-        self.assertFalse(constraints[-1].HasDenseA())
+        self.assertFalse(constraints[-1].is_dense_A_constructed())
 
         for c in constraints:
             self.assertEqual(c.GetDenseA().shape[1], 2)

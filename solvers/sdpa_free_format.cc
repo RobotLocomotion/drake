@@ -390,6 +390,7 @@ void SdpaFreeFormat::AddLinearConstraintsHelper(
     X_entries.reserve(1);
     std::vector<int> s_indices;
     for (int j = 0; j < linear_constraint.variables().rows(); ++j) {
+      // TODO(Alexandre.Amice) fix this to only access the sparse version of A.
       if (linear_constraint.evaluator()->GetDenseA()(i, j) != 0) {
         a.push_back(linear_constraint.evaluator()->GetDenseA()(i, j));
         decision_var_indices_in_X.push_back(var_indices[j]);

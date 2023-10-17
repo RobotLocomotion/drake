@@ -1281,10 +1281,11 @@ GTEST_TEST(TestMathematicalProgram,
   auto x = prog.NewContinuousVariables(n, "x");
   std::vector<Eigen::Triplet<double>> A_triplet_list;
   A_triplet_list.reserve(3 * (n - 2) + 4);
-  double ctr = 0;
+  double ctr = 1;
   for (int i = 0; i < n; ++i) {
     for (int j = std::max(0, i - 1); j < std::min(n, i + 1); ++j) {
       A_triplet_list.emplace_back(i, j, ctr);
+      ++ctr;
     }
   }
 
@@ -1296,7 +1297,7 @@ GTEST_TEST(TestMathematicalProgram,
 
   // Check if the binding called the sparse matrix constructor by checking that
   // a dense A has not been computed yet.
-  EXPECT_FALSE(binding.evaluator()->HasDenseA());
+  EXPECT_FALSE(binding.evaluator()->is_dense_A_constructed());
 
   // Check if the binding includes the correct linear constraint.
   const VectorXDecisionVariable& var_vec{binding.variables()};
@@ -1322,10 +1323,11 @@ GTEST_TEST(TestMathematicalProgram,
 
   std::vector<Eigen::Triplet<double>> A_triplet_list;
   A_triplet_list.reserve(3 * (n - 2) + 4);
-  double ctr = 0;
+  double ctr = 1;
   for (int i = 0; i < n; ++i) {
     for (int j = std::max(0, i - 1); j < std::min(n, i + 1); ++j) {
       A_triplet_list.emplace_back(i, j, ctr);
+      ++ctr;
     }
   }
 
@@ -1337,7 +1339,7 @@ GTEST_TEST(TestMathematicalProgram,
 
   // Check if the binding called the sparse matrix constructor by checking that
   // a dense A has not been computed yet.
-  EXPECT_FALSE(binding.evaluator()->HasDenseA());
+  EXPECT_FALSE(binding.evaluator()->is_dense_A_constructed());
 
   // Check if the binding includes the correct linear constraint.
   const VectorXDecisionVariable& var_vec{binding.variables()};
@@ -2230,7 +2232,7 @@ GTEST_TEST(TestMathematicalProgram,
 }
 
 GTEST_TEST(TestMathematicalProgram,
-           AddLinearEqualityConstraintSparseMatrixVectorVariablesTest) {
+           AddLinearEqualityConstraintSparseMatrixVariableRefListTest) {
   MathematicalProgram prog;
   const int n = 4;
   auto x = prog.NewContinuousVariables(1, "x");
@@ -2239,10 +2241,11 @@ GTEST_TEST(TestMathematicalProgram,
 
   std::vector<Eigen::Triplet<double>> A_triplet_list;
   A_triplet_list.reserve(3 * (n - 2) + 4);
-  double ctr = 0;
+  double ctr = 1;
   for (int i = 0; i < n; ++i) {
     for (int j = std::max(0, i - 1); j < std::min(n, i + 1); ++j) {
       A_triplet_list.emplace_back(i, j, ctr);
+      ++ctr;
     }
   }
 
@@ -2254,22 +2257,23 @@ GTEST_TEST(TestMathematicalProgram,
 
   // Check if the binding called the sparse matrix constructor by checking that
   // a dense A has not been computed yet.
-  EXPECT_FALSE(binding.evaluator()->HasDenseA());
+  EXPECT_FALSE(binding.evaluator()->is_dense_A_constructed());
 
   CheckAddedLinearEqualityConstraintCommon(binding, prog, 0);
 }
 
 GTEST_TEST(TestMathematicalProgram,
-           AddLinearEqualityConstraintSparseMatriVariableRefListTest) {
+           AddLinearEqualityConstraintSparseMatrixVectorVariablesTest) {
   MathematicalProgram prog;
   const int n = 4;
   auto x = prog.NewContinuousVariables(n, "x");
   std::vector<Eigen::Triplet<double>> A_triplet_list;
   A_triplet_list.reserve(3 * (n - 2) + 4);
-  double ctr = 0;
+  double ctr = 1;
   for (int i = 0; i < n; ++i) {
     for (int j = std::max(0, i - 1); j < std::min(n, i + 1); ++j) {
       A_triplet_list.emplace_back(i, j, ctr);
+      ++ctr;
     }
   }
 
@@ -2281,7 +2285,7 @@ GTEST_TEST(TestMathematicalProgram,
 
   // Check if the binding called the sparse matrix constructor by checking that
   // a dense A has not been computed yet.
-  EXPECT_FALSE(binding.evaluator()->HasDenseA());
+  EXPECT_FALSE(binding.evaluator()->is_dense_A_constructed());
 
   CheckAddedLinearEqualityConstraintCommon(binding, prog, 0);
 }

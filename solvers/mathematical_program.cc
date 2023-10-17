@@ -860,7 +860,7 @@ Binding<LinearConstraint> MathematicalProgram::AddConstraint(
   } else {
     // TODO(eric.cousineau): This is a good assertion... But seems out of place,
     // possibly redundant w.r.t. the binding infrastructure.
-    DRAKE_ASSERT(binding.evaluator()->GetDenseA().cols() ==
+    DRAKE_ASSERT(binding.evaluator()->get_sparse_A().cols() ==
                  static_cast<int>(binding.GetNumElements()));
     if (!CheckBinding(binding)) {
       return binding;
@@ -889,7 +889,7 @@ Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
 
 Binding<LinearEqualityConstraint> MathematicalProgram::AddConstraint(
     const Binding<LinearEqualityConstraint>& binding) {
-  DRAKE_ASSERT(binding.evaluator()->GetDenseA().cols() ==
+  DRAKE_ASSERT(binding.evaluator()->get_sparse_A().cols() ==
                static_cast<int>(binding.GetNumElements()));
   if (!CheckBinding(binding)) {
     return binding;

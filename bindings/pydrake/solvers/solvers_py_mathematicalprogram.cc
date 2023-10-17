@@ -934,7 +934,7 @@ void BindMathematicalProgram(py::module m) {
               &MathematicalProgram::AddLinearEqualityConstraint),
           py::arg("Aeq"), py::arg("beq"), py::arg("vars"),
           doc.MathematicalProgram.AddLinearEqualityConstraint
-              .doc_3args_A_b_dense)
+              .doc_3args_Aeq_beq_dense)
       .def("AddLinearEqualityConstraint",
           static_cast<Binding<LinearEqualityConstraint> (
               MathematicalProgram::*)(
@@ -942,19 +942,17 @@ void BindMathematicalProgram(py::module m) {
               const Eigen::Ref<const VectorXDecisionVariable>&)>(
               &MathematicalProgram::AddLinearEqualityConstraint),
           py::arg("a"), py::arg("beq"), py::arg("vars"),
-          doc.MathematicalProgram.AddLinearConstraint.doc_4args_a_lb_ub_vars)
-      // Ensure that the sparse version is bound last as otherwise the lambda
-      // captures the MatrixX and RowVectorX cases.
-      .def(
-          "AddLinearEqualityConstraint",
-          [](MathematicalProgram* self, const Eigen::SparseMatrix<double>& Aeq,
-              const Eigen::Ref<const Eigen::VectorXd>& beq,
-              const Eigen::Ref<const VectorXDecisionVariable>& vars) {
-            return self->AddLinearEqualityConstraint(Aeq, beq, vars);
-          },
+          doc.MathematicalProgram.AddLinearEqualityConstraint
+              .doc_3args_a_beq_vars)
+      .def("AddLinearEqualityConstraint",
+          static_cast<Binding<LinearEqualityConstraint> (
+              MathematicalProgram::*)(const Eigen::SparseMatrix<double>&,
+              const Eigen::Ref<const Eigen::VectorXd>&,
+              const Eigen::Ref<const VectorXDecisionVariable>&)>(
+              &MathematicalProgram::AddLinearEqualityConstraint),
           py::arg("Aeq"), py::arg("beq"), py::arg("vars"),
           doc.MathematicalProgram.AddLinearEqualityConstraint
-              .doc_3args_A_b_sparse)
+              .doc_3args_Aeq_beq_sparse)
       .def("AddLinearEqualityConstraint",
           static_cast<Binding<LinearEqualityConstraint> (
               MathematicalProgram::*)(const Expression&, double)>(

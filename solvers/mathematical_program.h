@@ -1770,7 +1770,7 @@ class MathematicalProgram {
    *   prog.AddLinearEqualityConstraint(Aeq, beq, x.head<2>());
    * @endcode
    *
-   * @pydrake_mkdoc_identifier{3args_A_b_dense}
+   * @pydrake_mkdoc_identifier{3args_Aeq_beq_dense}
    */
   Binding<LinearEqualityConstraint> AddLinearEqualityConstraint(
       const Eigen::Ref<const Eigen::MatrixXd>& Aeq,
@@ -1781,7 +1781,7 @@ class MathematicalProgram {
    *
    * Adds linear equality constraints referencing potentially a subset of
    * the decision variables using a sparse A matrix.
-   * @pydrake_mkdoc_identifier{3args_A_b_sparse}
+   * @pydrake_mkdoc_identifier{3args_Aeq_beq_sparse}
    */
   Binding<LinearEqualityConstraint> AddLinearEqualityConstraint(
       const Eigen::SparseMatrix<double>& Aeq,

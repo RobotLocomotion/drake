@@ -43,7 +43,7 @@ class SparseAndDenseMatrix {
   [[nodiscard]] bool IsFinite() const;
 
   // Returns true if the dense matrix has been constructed.
-  [[nodiscard]] bool dense_is_constructed() const;
+  [[nodiscard]] bool is_dense_constructed() const;
 
  private:
   Eigen::SparseMatrix<double> sparse_;

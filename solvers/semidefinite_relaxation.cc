@@ -228,6 +228,7 @@ std::unique_ptr<MathematicalProgram> MakeSemidefiniteRelaxation(
     // Add the constraints one column at a time:
     // Ayx_j - bx_j = 0.
     MatrixX<double> Ab(binding.evaluator()->num_constraints(), N + 1);
+    // TODO(Alexandre.Amice) make this only access the sparse matrix.
     Ab.leftCols(N) = binding.evaluator()->GetDenseA();
     Ab.col(N) = -binding.evaluator()->lower_bound();
     for (int j = 0; j < static_cast<int>(x.size()); ++j) {

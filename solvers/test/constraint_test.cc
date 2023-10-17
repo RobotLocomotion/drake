@@ -68,14 +68,14 @@ GTEST_TEST(TestConstraint, LinearConstraintSparse) {
   EXPECT_EQ(dut.num_vars(), 3);
   EXPECT_EQ(dut.num_constraints(), 2);
   // We expect the sparse constructor to not construct the dense A matrix.
-  EXPECT_FALSE(dut.HasDenseA());
+  EXPECT_FALSE(dut.is_dense_A_constructed());
   EXPECT_EQ(dut.get_sparse_A().nonZeros(), A_sparse.nonZeros());
   EXPECT_TRUE(
       CompareMatrices(dut.get_sparse_A().toDense(), A_sparse.toDense()));
   EXPECT_TRUE(CompareMatrices(dut.GetDenseA(), A_sparse.toDense()));
   // Now that the dense version of A has been accessed, we expect A to have been
   // constructed.
-  EXPECT_TRUE(dut.HasDenseA());
+  EXPECT_TRUE(dut.is_dense_A_constructed());
   EXPECT_TRUE(CompareMatrices(dut.lower_bound(), lb));
   EXPECT_TRUE(CompareMatrices(dut.upper_bound(), ub));
 
@@ -103,14 +103,14 @@ GTEST_TEST(TestConstraint, LinearEqualityConstraintSparse) {
   Eigen::Vector2d bound(0, 1);
   LinearEqualityConstraint dut(A_sparse, bound);
   // We expect the sparse constructor to not construct the dense A matrix.
-  EXPECT_FALSE(dut.HasDenseA());
+  EXPECT_FALSE(dut.is_dense_A_constructed());
   EXPECT_EQ(dut.get_sparse_A().nonZeros(), A_sparse.nonZeros());
   EXPECT_TRUE(
       CompareMatrices(dut.get_sparse_A().toDense(), A_sparse.toDense()));
   EXPECT_TRUE(CompareMatrices(dut.GetDenseA(), A_sparse.toDense()));
   // Now that the dense version of A has been accessed, we expect a dense A to
   // be available.
-  EXPECT_TRUE(dut.HasDenseA());
+  EXPECT_TRUE(dut.is_dense_A_constructed());
   EXPECT_TRUE(CompareMatrices(dut.lower_bound(), bound));
   EXPECT_TRUE(CompareMatrices(dut.upper_bound(), bound));
 }

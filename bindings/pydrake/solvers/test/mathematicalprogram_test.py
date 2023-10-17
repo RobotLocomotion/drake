@@ -780,7 +780,7 @@ class TestMathematicalProgram(unittest.TestCase):
         ub = [1., 1.]
 
         A_sparse = scipy.sparse.csc_matrix(
-            (np.array([2, 1., 3]), np.array([0, 1, 0]),
+            (np.array([2, 1, 3]), np.array([0, 1, 0]),
              np.array([0, 2, 2, 3])), shape=(2, 2))
 
         prog.AddBoundingBoxConstraint(lb, ub, x)
@@ -793,7 +793,7 @@ class TestMathematicalProgram(unittest.TestCase):
                                       ub=np.ones(2),
                                       vars=x)
         # Ensure that the sparse version of the binding has been called.
-        self.assertFalse(c1.evaluator().HasDenseA())
+        self.assertFalse(c1.evaluator().is_dense_A_constructed())
         prog.AddLinearConstraint(a=[1, 1], lb=0, ub=0, vars=x)
         prog.AddLinearConstraint(e=x[0], lb=0, ub=1)
         prog.AddLinearConstraint(v=x, lb=[0, 0], ub=[1, 1])
@@ -804,7 +804,7 @@ class TestMathematicalProgram(unittest.TestCase):
         c2 = prog.AddLinearEqualityConstraint(Aeq=A_sparse, beq=np.zeros(2),
                                               vars=x)
         # Ensure that the sparse version of the binding has been called.
-        self.assertFalse(c2.evaluator().HasDenseA())
+        self.assertFalse(c2.evaluator().is_dense_A_constructed())
         prog.AddLinearEqualityConstraint(a=[1, 1], beq=0, vars=x)
         prog.AddLinearEqualityConstraint(f=x[0] == 1)
         prog.AddLinearEqualityConstraint(e=x[0] + x[1], b=1)
