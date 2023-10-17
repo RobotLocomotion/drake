@@ -588,6 +588,7 @@ drake_cc_googletest(
     name = "unit_vector_test",
     deps = [
         ":vector3_util",
+        "//common/symbolic:expression",
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
     ],
