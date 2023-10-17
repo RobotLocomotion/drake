@@ -6,16 +6,14 @@
 
 #include "drake/common/ssize.h"
 #include "drake/solvers/gurobi_solver.h"
-#include "drake/solvers/mosek_solver.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/mathematical_program_result.h"
+#include "drake/solvers/mosek_solver.h"
 #include "drake/solvers/solve.h"
 
 namespace drake {
 namespace planning {
 namespace graph_algorithms {
-
-using Eigen::SparseMatrix;
 
 /**
  * The problem of finding the maximum clique in a graph is known to a
@@ -30,7 +28,7 @@ class MaxStableSetSolverBase {
   virtual ~MaxStableSetSolverBase() {}
 
   virtual VectorX<bool> SolveMaxStableSet(
-      SparseMatrix<bool> adjacency_matrix) = 0;
+      const Eigen::SparseMatrix<bool>& adjacency_matrix) = 0;
 
  protected:
   // We put the copy/move/assignment constructors as protected to avoid copy
@@ -54,7 +52,12 @@ class MaxStableSetSolverViaMIP final : public MaxStableSetSolverBase {
       const solvers::SolverId& solver_id = solvers::MosekSolver::id(),
       const solvers::SolverOptions& options = solvers::SolverOptions());
 
-  VectorX<bool> SolveMaxStableSet(SparseMatrix<bool> adjacency_matrix);
+  VectorX<bool> SolveMaxStableSet(
+      const Eigen::SparseMatrix<bool>& adjacency_matrix);
+
+  solvers::SolverId solver_id() { return solver_id_; }
+
+  solvers::SolverOptions options() { return options_; }
 
  private:
   solvers::SolverId solver_id_;
@@ -82,8 +85,9 @@ struct MaxStableSetOptions {
  * @return A binary vector with the samee indexing as the adjacency matrix, with
  * 1 indicating membership in the stable set.
  */
-VectorX<bool> MaxStableSet(SparseMatrix<bool> adjacency_matrix,
-                           MaxStableSetOptions& options);
+VectorX<bool> MaxStableSet(
+    const Eigen::SparseMatrix<bool>& adjacency_matrix,
+    MaxStableSetOptions& options);
 }  // namespace graph_algorithms
 }  // namespace planning
 }  // namespace drake
