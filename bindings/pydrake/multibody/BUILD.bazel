@@ -541,9 +541,9 @@ drake_py_unittest(
     ],
     deps = [
         ":mesh_model_maker_py",
+        ":parsing_py",
+        ":plant_py",
         "//bindings/pydrake/common",
-        "//bindings/pydrake/multibody:parsing_py",
-        "//bindings/pydrake/multibody:plant_py",
         "//bindings/pydrake/systems:framework_py",
     ],
 )
@@ -562,11 +562,11 @@ drake_py_unittest(
     ],
     deps = [
         ":inertia_fixer_py",
+        ":parsing_py",
+        ":plant_py",
         "//bindings/pydrake/common",
         "//bindings/pydrake/common/test_utilities:numpy_compare_py",
         "//bindings/pydrake/geometry",
-        "//bindings/pydrake/multibody:parsing_py",
-        "//bindings/pydrake/multibody:plant_py",
     ],
 )
 
