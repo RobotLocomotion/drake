@@ -25,6 +25,7 @@ cc_library(
         "include/common_robotics_utilities/math.hpp",
         "include/common_robotics_utilities/maybe.hpp",
         "include/common_robotics_utilities/openmp_helpers.hpp",
+        "include/common_robotics_utilities/parallelism.hpp",
         "include/common_robotics_utilities/path_processing.hpp",
         "include/common_robotics_utilities/print.hpp",
         "include/common_robotics_utilities/random_rotation_generator.hpp",
@@ -55,6 +56,7 @@ cc_library(
     ],
 )
 
+# N.B. This test uses two threads even when OpenMP is not available.
 cc_test(
     name = "hausdorff_distance_test",
     srcs = ["test/hausdorff_distance_test.cpp"],
@@ -73,6 +75,19 @@ cc_test(
     deps = [
         ":common_robotics_utilities",
         "@eigen",
+        "@gtest//:without_main",
+    ],
+)
+
+# N.B. This test uses two threads even when OpenMP is not available.
+cc_test(
+    name = "parallelism_test",
+    srcs = ["test/parallelism_test.cpp"],
+    env = {"OMP_NUM_THREADS": "2"},
+    tags = ["cpu:2"],
+    timeout = "moderate",
+    deps = [
+        ":common_robotics_utilities",
         "@gtest//:without_main",
     ],
 )
@@ -126,6 +141,7 @@ test_suite(
     tests = [
         "hausdorff_distance_test",
         "maybe_test",
+        "parallelism_test",
         "planning_test",
         "task_planning_test",
         "utility_test",
