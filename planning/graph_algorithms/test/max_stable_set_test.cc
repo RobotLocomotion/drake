@@ -10,6 +10,7 @@
 namespace drake {
 namespace planning {
 namespace graph_algorithms {
+namespace {
 
 // Test maximum stable set solved via mip. Compare against the expected size of
 // the solution and ensure that the result is one of the true maximum stable
@@ -54,6 +55,7 @@ GTEST_TEST(MaxStableSetTest, BullGraph) {
   TestStableSetViaMIP(BullGraph(), 2, possible_solutions);
 }
 
+}  // namespace
 }  // namespace graph_algorithms
 }  // namespace planning
 }  // namespace drake
