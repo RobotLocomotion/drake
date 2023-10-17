@@ -2,6 +2,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/symbolic/expression.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 
@@ -20,9 +21,8 @@ GTEST_TEST(UnitVectorTest, ThrowOrWarnIfNotUnitVector) {
   EXPECT_EQ(vector_mag_squared, unit_vector.squaredNorm());
 
   // No message should be written to the log file for a valid unit vector.
-  vector_mag_squared =
-      math::internal::WarnIfNotUnitVector(unit_vector, "UnusedFunctionName");
-  EXPECT_EQ(vector_mag_squared, unit_vector.squaredNorm());
+  vector_mag_squared = WarnIfNotUnitVector(unit_vector, "UnusedFunctionName");
+  EXPECT_EQ(vector_mag_squared, 1.0);
 
   // Verify that no exception is thrown for a valid or near valid unit vector.
   unit_vector = Vector3<double>(4.321, M_PI, 97531.2468).normalized();
@@ -38,6 +38,13 @@ GTEST_TEST(UnitVectorTest, ThrowOrWarnIfNotUnitVector) {
   EXPECT_EQ(vector_mag_squared, unit_vector.squaredNorm());
   EXPECT_NE(vector_mag_squared, 1.0);
 
+  // Verify that no exception is thrown when unit_vector is symbolic.
+  const Vector3<symbolic::Expression> unit_vector_symbolic(1, 2, 3);
+  symbolic::Expression vector_mag_squared_symbolic;
+  DRAKE_EXPECT_NO_THROW(vector_mag_squared_symbolic =
+      ThrowIfNotUnitVector(unit_vector_symbolic, "TestSymbolicFunctionName"));
+  EXPECT_EQ(vector_mag_squared_symbolic, 1.0);
+
   // Verify an exception is thrown for an invalid unit vector.
   Vector3<double> not_unit_vector(1.0, 2.0, 3.0);
   std::string expected_message =
@@ -49,10 +56,20 @@ GTEST_TEST(UnitVectorTest, ThrowOrWarnIfNotUnitVector) {
       ThrowIfNotUnitVector(not_unit_vector, "SomeFunctionName"),
       expected_message);
 
+  // Verify no warning is written to the log file for a near valid unit vector.
+  vector_mag_squared = WarnIfNotUnitVector(unit_vector, "TestFunctionName");
+  EXPECT_EQ(vector_mag_squared, unit_vector.squaredNorm());
+  EXPECT_NE(vector_mag_squared, 1.0);  // For unit_vector = [1 + kepsilon, 0, 0]
+
   // A message should be written to the log file for an invalid unit vector.
-  vector_mag_squared =
-      math::internal::WarnIfNotUnitVector(not_unit_vector, "SomeFunctionName");
+  vector_mag_squared = WarnIfNotUnitVector(not_unit_vector, "SomeFunctionName");
   EXPECT_EQ(vector_mag_squared, not_unit_vector.squaredNorm());
+  EXPECT_NE(vector_mag_squared, 1.0);
+
+  // Verify no message is written to the log file for a symbolic unit_vector.
+  vector_mag_squared_symbolic = WarnIfNotUnitVector(unit_vector_symbolic,
+          "TestSymbolicFunctionName");
+  EXPECT_EQ(vector_mag_squared_symbolic, 1.0);
 
   // Verify an exception is thrown for a unit vector with NAN elements.
   not_unit_vector = Vector3<double>(NAN, NAN, NAN);

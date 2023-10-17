@@ -18,7 +18,7 @@ constexpr double kToleranceUnitVectorNorm = 1.0E-14;
 // @param[in] function_name name of the function that is to appear in the
 // exception message (if an exception is thrown).
 // @param[in] tolerance_unit_vector_norm allowable tolerance for ‖unit_vector‖
-// within 1.0. The default value is kToleranceUnitVectorNorm.
+// from 1.0. The default value is kToleranceUnitVectorNorm.
 // exception message (if an exception is thrown).
 // @throws std::exception if ‖unit_vector‖ is not within tolerance of 1.0.
 // @retval ‖unit_vector‖² which is exactly 1.0 for a perfect unit_vector.
