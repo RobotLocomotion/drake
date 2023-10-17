@@ -804,7 +804,7 @@ void ExpectBadVar(MathematicalProgram* prog, int num_var, Args&&... args) {
                               ".*is not a decision variable.*");
 }
 
-// Return True if all the elements of the matrix m1 and m2 are EqualTo as
+// Returns True if all the elements of the matrix m1 and m2 are EqualTo as
 // Expressions.
 bool MatrixExprAllEqual(const MatrixX<Expression>& m1,
                         const MatrixX<Expression>& m2) {
@@ -1235,11 +1235,11 @@ GTEST_TEST(TestMathematicalProgram,
   EXPECT_EQ(constraint_ptr->num_constraints(), 4);
 
   const MatrixX<Expression> Ax{(constraint_ptr->GetDenseA() * var_vec)};
-  const VectorX<Expression> lb_in_ctr{constraint_ptr->lower_bound()};
-  const VectorX<Expression> ub_in_ctr{constraint_ptr->upper_bound()};
+  const VectorX<Expression> lb_in_constraint{constraint_ptr->lower_bound()};
+  const VectorX<Expression> ub_in_constraint{constraint_ptr->upper_bound()};
 
-  EXPECT_TRUE(MatrixExprAllEqual(A * x - lb, Ax - lb_in_ctr));
-  EXPECT_TRUE(MatrixExprAllEqual(A * x - ub, Ax - ub_in_ctr));
+  EXPECT_TRUE(MatrixExprAllEqual(A * x - lb, Ax - lb_in_constraint));
+  EXPECT_TRUE(MatrixExprAllEqual(A * x - ub, Ax - ub_in_constraint));
 }
 
 GTEST_TEST(TestMathematicalProgram,
@@ -1267,11 +1267,11 @@ GTEST_TEST(TestMathematicalProgram,
   EXPECT_EQ(constraint_ptr->num_constraints(), 4);
 
   const MatrixX<Expression> Ax{(constraint_ptr->GetDenseA() * var_vec)};
-  const VectorX<Expression> lb_in_ctr{constraint_ptr->lower_bound()};
-  const VectorX<Expression> ub_in_ctr{constraint_ptr->upper_bound()};
+  const VectorX<Expression> lb_in_constraint{constraint_ptr->lower_bound()};
+  const VectorX<Expression> ub_in_constraint{constraint_ptr->upper_bound()};
 
-  EXPECT_TRUE(MatrixExprAllEqual(A * vars_as_vec - lb, Ax - lb_in_ctr));
-  EXPECT_TRUE(MatrixExprAllEqual(A * vars_as_vec - ub, Ax - ub_in_ctr));
+  EXPECT_TRUE(MatrixExprAllEqual(A * vars_as_vec - lb, Ax - lb_in_constraint));
+  EXPECT_TRUE(MatrixExprAllEqual(A * vars_as_vec - ub, Ax - ub_in_constraint));
 }
 
 GTEST_TEST(TestMathematicalProgram,
@@ -1281,11 +1281,11 @@ GTEST_TEST(TestMathematicalProgram,
   auto x = prog.NewContinuousVariables(n, "x");
   std::vector<Eigen::Triplet<double>> A_triplet_list;
   A_triplet_list.reserve(3 * (n - 2) + 4);
-  double ctr = 1;
+  double count = 1;
   for (int i = 0; i < n; ++i) {
     for (int j = std::max(0, i - 1); j < std::min(n, i + 1); ++j) {
-      A_triplet_list.emplace_back(i, j, ctr);
-      ++ctr;
+      A_triplet_list.emplace_back(i, j, count);
+      ++count;
     }
   }
 
@@ -1305,11 +1305,11 @@ GTEST_TEST(TestMathematicalProgram,
   EXPECT_EQ(constraint_ptr->num_constraints(), 4);
 
   const MatrixX<Expression> Ax{(constraint_ptr->GetDenseA() * var_vec)};
-  const VectorX<Expression> lb_in_ctr{constraint_ptr->lower_bound()};
-  const VectorX<Expression> ub_in_ctr{constraint_ptr->upper_bound()};
+  const VectorX<Expression> lb_in_constraint{constraint_ptr->lower_bound()};
+  const VectorX<Expression> ub_in_constraint{constraint_ptr->upper_bound()};
 
-  EXPECT_TRUE(MatrixExprAllEqual((A * x - lb), Ax - lb_in_ctr));
-  EXPECT_TRUE(MatrixExprAllEqual((A * x - ub), Ax - ub_in_ctr));
+  EXPECT_TRUE(MatrixExprAllEqual((A * x - lb), Ax - lb_in_constraint));
+  EXPECT_TRUE(MatrixExprAllEqual((A * x - ub), Ax - ub_in_constraint));
 }
 
 GTEST_TEST(TestMathematicalProgram,
@@ -1323,11 +1323,11 @@ GTEST_TEST(TestMathematicalProgram,
 
   std::vector<Eigen::Triplet<double>> A_triplet_list;
   A_triplet_list.reserve(3 * (n - 2) + 4);
-  double ctr = 1;
+  double count = 1;
   for (int i = 0; i < n; ++i) {
     for (int j = std::max(0, i - 1); j < std::min(n, i + 1); ++j) {
-      A_triplet_list.emplace_back(i, j, ctr);
-      ++ctr;
+      A_triplet_list.emplace_back(i, j, count);
+      ++count;
     }
   }
 
@@ -1347,11 +1347,13 @@ GTEST_TEST(TestMathematicalProgram,
   EXPECT_EQ(constraint_ptr->num_constraints(), 4);
 
   const MatrixX<Expression> Ax{(constraint_ptr->GetDenseA() * var_vec)};
-  const VectorX<Expression> lb_in_ctr{constraint_ptr->lower_bound()};
-  const VectorX<Expression> ub_in_ctr{constraint_ptr->upper_bound()};
+  const VectorX<Expression> lb_in_constraint{constraint_ptr->lower_bound()};
+  const VectorX<Expression> ub_in_constraint{constraint_ptr->upper_bound()};
 
-  EXPECT_TRUE(MatrixExprAllEqual((A * vars_as_vec - lb), Ax - lb_in_ctr));
-  EXPECT_TRUE(MatrixExprAllEqual((A * vars_as_vec - ub), Ax - ub_in_ctr));
+  EXPECT_TRUE(
+      MatrixExprAllEqual((A * vars_as_vec - lb), Ax - lb_in_constraint));
+  EXPECT_TRUE(
+      MatrixExprAllEqual((A * vars_as_vec - ub), Ax - ub_in_constraint));
 }
 
 GTEST_TEST(TestMathematicalProgram,
@@ -1369,11 +1371,11 @@ GTEST_TEST(TestMathematicalProgram,
   EXPECT_EQ(constraint_ptr->num_constraints(), 1);
 
   const MatrixX<Expression> ax{(constraint_ptr->GetDenseA() * var_vec)};
-  const VectorX<Expression> lb_in_ctr{constraint_ptr->lower_bound()};
-  const VectorX<Expression> ub_in_ctr{constraint_ptr->upper_bound()};
+  const VectorX<Expression> lb_in_constraint{constraint_ptr->lower_bound()};
+  const VectorX<Expression> ub_in_constraint{constraint_ptr->upper_bound()};
 
-  EXPECT_TRUE((a * x - lb).EqualTo((ax - lb_in_ctr)(0)));
-  EXPECT_TRUE((a * x - ub).EqualTo((ax - ub_in_ctr)(0)));
+  EXPECT_TRUE((a * x - lb).EqualTo((ax - lb_in_constraint)(0)));
+  EXPECT_TRUE((a * x - ub).EqualTo((ax - ub_in_constraint)(0)));
 }
 
 GTEST_TEST(TestMathematicalProgram,
@@ -1395,10 +1397,10 @@ GTEST_TEST(TestMathematicalProgram,
   EXPECT_EQ(constraint_ptr->num_constraints(), 1);
 
   const MatrixX<Expression> ax{(constraint_ptr->GetDenseA() * var_vec)};
-  const VectorX<Expression> lb_in_ctr{constraint_ptr->lower_bound()};
-  const VectorX<Expression> ub_in_ctr{constraint_ptr->upper_bound()};
-  EXPECT_TRUE((a * vars_as_vec - lb).EqualTo((ax - lb_in_ctr)(0)));
-  EXPECT_TRUE((a * vars_as_vec - ub).EqualTo((ax - ub_in_ctr)(0)));
+  const VectorX<Expression> lb_in_constraint{constraint_ptr->lower_bound()};
+  const VectorX<Expression> ub_in_constraint{constraint_ptr->upper_bound()};
+  EXPECT_TRUE((a * vars_as_vec - lb).EqualTo((ax - lb_in_constraint)(0)));
+  EXPECT_TRUE((a * vars_as_vec - ub).EqualTo((ax - ub_in_constraint)(0)));
 }
 
 GTEST_TEST(TestMathematicalProgram, AddLinearConstraintSymbolic1) {
@@ -1416,10 +1418,10 @@ GTEST_TEST(TestMathematicalProgram, AddLinearConstraintSymbolic1) {
   const auto constraint_ptr = binding.evaluator();
   EXPECT_EQ(constraint_ptr->num_constraints(), 1);
   const Expression Ax{(constraint_ptr->GetDenseA() * var_vec)(0, 0)};
-  const Expression lb_in_ctr{constraint_ptr->lower_bound()[0]};
-  const Expression ub_in_ctr{constraint_ptr->upper_bound()[0]};
-  EXPECT_TRUE((e - lb).EqualTo(Ax - lb_in_ctr));
-  EXPECT_TRUE((e - ub).EqualTo(Ax - ub_in_ctr));
+  const Expression lb_in_constraint{constraint_ptr->lower_bound()[0]};
+  const Expression ub_in_constraint{constraint_ptr->upper_bound()[0]};
+  EXPECT_TRUE((e - lb).EqualTo(Ax - lb_in_constraint));
+  EXPECT_TRUE((e - ub).EqualTo(Ax - ub_in_constraint));
 }
 
 GTEST_TEST(TestMathematicalProgram, AddLinearConstraintSymbolic2) {
@@ -1440,10 +1442,10 @@ GTEST_TEST(TestMathematicalProgram, AddLinearConstraintSymbolic2) {
   // Check if the binding includes the correct linear constraint.
   const VectorXDecisionVariable& var_vec{binding.variables()};
   const Expression Ax{(constraint_ptr->GetDenseA() * var_vec)(0, 0)};
-  const Expression lb_in_ctr{constraint_ptr->lower_bound()[0]};
-  const Expression ub_in_ctr{constraint_ptr->upper_bound()[0]};
-  EXPECT_TRUE((e - -10).EqualTo(Ax - lb_in_ctr));
-  EXPECT_TRUE((e - 10).EqualTo(Ax - ub_in_ctr));
+  const Expression lb_in_constraint{constraint_ptr->lower_bound()[0]};
+  const Expression ub_in_constraint{constraint_ptr->upper_bound()[0]};
+  EXPECT_TRUE((e - -10).EqualTo(Ax - lb_in_constraint));
+  EXPECT_TRUE((e - 10).EqualTo(Ax - ub_in_constraint));
 }
 
 GTEST_TEST(TestMathematicalProgram, AddLinearConstraintSymbolic3) {
@@ -1494,12 +1496,12 @@ GTEST_TEST(TestMathematicalProgram, AddLinearConstraintSymbolic3) {
   const auto constraint_ptr = binding.evaluator();
   EXPECT_EQ(constraint_ptr->num_constraints(), 5);
   const auto Ax = constraint_ptr->GetDenseA() * var_vec;
-  const auto lb_in_ctr = constraint_ptr->lower_bound();
-  const auto ub_in_ctr = constraint_ptr->upper_bound();
+  const auto lb_in_constraint = constraint_ptr->lower_bound();
+  const auto ub_in_constraint = constraint_ptr->upper_bound();
 
   for (int i = 0; i < M_e.size(); ++i) {
-    EXPECT_PRED2(ExprEqual, M_e(i) - M_lb(i), Ax(i) - lb_in_ctr(i));
-    EXPECT_PRED2(ExprEqual, M_e(i) - M_ub(i), Ax(i) - ub_in_ctr(i));
+    EXPECT_PRED2(ExprEqual, M_e(i) - M_lb(i), Ax(i) - lb_in_constraint(i));
+    EXPECT_PRED2(ExprEqual, M_e(i) - M_ub(i), Ax(i) - ub_in_constraint(i));
   }
 }
 
@@ -1897,16 +1899,16 @@ GTEST_TEST(TestMathematicalProgram, AddLinearConstraintSymbolicFormulaAnd1) {
   EXPECT_TRUE(is_dynamic_castable<LinearEqualityConstraint>(constraint_ptr));
   EXPECT_EQ(constraint_ptr->num_constraints(), b.size());
   const auto Ax = constraint_ptr->GetDenseA() * var_vec;
-  const auto lb_in_ctr = constraint_ptr->lower_bound();
-  const auto ub_in_ctr = constraint_ptr->upper_bound();
+  const auto lb_in_constraint = constraint_ptr->lower_bound();
+  const auto ub_in_constraint = constraint_ptr->upper_bound();
 
   set<Expression> constraint_set;
   constraint_set.emplace(x(0) + 2 * x(1) - 5);
   constraint_set.emplace(3 * x(0) + 4 * x(1) - 6);
-  EXPECT_EQ(constraint_set.count(Ax(0) - lb_in_ctr(0)), 1);
-  EXPECT_EQ(constraint_set.count(Ax(0) - ub_in_ctr(0)), 1);
-  EXPECT_EQ(constraint_set.count(Ax(1) - lb_in_ctr(1)), 1);
-  EXPECT_EQ(constraint_set.count(Ax(1) - ub_in_ctr(1)), 1);
+  EXPECT_EQ(constraint_set.count(Ax(0) - lb_in_constraint(0)), 1);
+  EXPECT_EQ(constraint_set.count(Ax(0) - ub_in_constraint(0)), 1);
+  EXPECT_EQ(constraint_set.count(Ax(1) - lb_in_constraint(1)), 1);
+  EXPECT_EQ(constraint_set.count(Ax(1) - ub_in_constraint(1)), 1);
 }
 
 GTEST_TEST(TestMathematicalProgram, AddLinearConstraintSymbolicFormulaAnd2) {
@@ -1933,24 +1935,24 @@ GTEST_TEST(TestMathematicalProgram, AddLinearConstraintSymbolicFormulaAnd2) {
   EXPECT_FALSE(is_dynamic_castable<LinearEqualityConstraint>(constraint_ptr));
   EXPECT_EQ(constraint_ptr->num_constraints(), 3);
   const auto Ax = constraint_ptr->GetDenseA() * var_vec;
-  const auto lb_in_ctr = constraint_ptr->lower_bound();
-  const auto ub_in_ctr = constraint_ptr->upper_bound();
+  const auto lb_in_constraint = constraint_ptr->lower_bound();
+  const auto ub_in_constraint = constraint_ptr->upper_bound();
 
   set<Expression> constraint_set;
   constraint_set.emplace(e11 - e12);
   constraint_set.emplace(e21 - e22);
   constraint_set.emplace(e31 - e32);
   for (int i = 0; i < 3; ++i) {
-    if (!std::isinf(lb_in_ctr(i))) {
+    if (!std::isinf(lb_in_constraint(i))) {
       // Either `Ax - lb` or `-(Ax - lb)` should be in the constraint set.
-      EXPECT_EQ(constraint_set.count(Ax(i) - lb_in_ctr(i)) +
-                    constraint_set.count(-(Ax(i) - lb_in_ctr(i))),
+      EXPECT_EQ(constraint_set.count(Ax(i) - lb_in_constraint(i)) +
+                    constraint_set.count(-(Ax(i) - lb_in_constraint(i))),
                 1);
     }
-    if (!std::isinf(ub_in_ctr(i))) {
+    if (!std::isinf(ub_in_constraint(i))) {
       // Either `Ax - ub` or `-(Ax - ub)` should be in the constraint set.
-      EXPECT_EQ(constraint_set.count(Ax(i) - ub_in_ctr(i)) +
-                    constraint_set.count(-(Ax(i) - ub_in_ctr(i))),
+      EXPECT_EQ(constraint_set.count(Ax(i) - ub_in_constraint(i)) +
+                    constraint_set.count(-(Ax(i) - ub_in_constraint(i))),
                 1);
     }
   }
@@ -2015,18 +2017,18 @@ GTEST_TEST(TestMathematicalProgram, AddLinearConstraintSymbolicArrayFormula1) {
   const auto constraint_ptr = binding.evaluator();
   EXPECT_EQ(constraint_ptr->num_constraints(), 5);
   const auto Ax = constraint_ptr->GetDenseA() * var_vec;
-  const auto lb_in_ctr = constraint_ptr->lower_bound();
-  const auto ub_in_ctr = constraint_ptr->upper_bound();
+  const auto lb_in_constraint = constraint_ptr->lower_bound();
+  const auto ub_in_constraint = constraint_ptr->upper_bound();
   for (int i{0}; i < M_f.size(); ++i) {
-    if (!std::isinf(lb_in_ctr(i))) {
+    if (!std::isinf(lb_in_constraint(i))) {
       EXPECT_PRED2(ExprEqual,
                    get_lhs_expression(M_f(i)) - get_rhs_expression(M_f(i)),
-                   Ax(i) - lb_in_ctr(i));
+                   Ax(i) - lb_in_constraint(i));
     }
-    if (!std::isinf(ub_in_ctr(i))) {
+    if (!std::isinf(ub_in_constraint(i))) {
       EXPECT_PRED2(ExprEqual,
                    get_lhs_expression(M_f(i)) - get_rhs_expression(M_f(i)),
-                   Ax(i) - ub_in_ctr(i));
+                   Ax(i) - ub_in_constraint(i));
     }
   }
 }
@@ -2064,12 +2066,13 @@ GTEST_TEST(TestMathematicalProgram, AddLinearConstraintSymbolicArrayFormula2) {
   const auto constraint_ptr = binding.evaluator();
   EXPECT_EQ(constraint_ptr->num_constraints(), M_e.rows() * M_e.cols());
   const auto Ax = constraint_ptr->GetDenseA() * var_vec;
-  const auto lb_in_ctr = constraint_ptr->lower_bound();
-  const auto ub_in_ctr = constraint_ptr->upper_bound();
+  const auto lb_in_constraint = constraint_ptr->lower_bound();
+  const auto ub_in_constraint = constraint_ptr->upper_bound();
   int k{0};
   for (int j{0}; j < M_e.cols(); ++j) {
     for (int i{0}; i < M_e.rows(); ++i) {
-      EXPECT_PRED2(ExprEqual, M_e(i, j) - M_lb(i, j), Ax(k) - lb_in_ctr(k));
+      EXPECT_PRED2(ExprEqual, M_e(i, j) - M_lb(i, j),
+                   Ax(k) - lb_in_constraint(k));
       ++k;
     }
   }
@@ -2103,10 +2106,10 @@ GTEST_TEST(TestMathematicalProgram, AddLinearConstraintSymbolicArrayFormula3) {
   const auto constraint_ptr = binding.evaluator();
   EXPECT_EQ(constraint_ptr->num_constraints(), b.size());
   const auto Ax = constraint_ptr->GetDenseA() * var_vec;
-  const auto lb_in_ctr = constraint_ptr->lower_bound();
-  const auto ub_in_ctr = constraint_ptr->upper_bound();
-  EXPECT_PRED2(ExprEqual, x(0) + 2 * x(1) - 5, Ax(0) - lb_in_ctr(0));
-  EXPECT_PRED2(ExprEqual, 3 * x(0) + 4 * x(1) - 6, Ax(1) - lb_in_ctr(1));
+  const auto lb_in_constraint = constraint_ptr->lower_bound();
+  const auto ub_in_constraint = constraint_ptr->upper_bound();
+  EXPECT_PRED2(ExprEqual, x(0) + 2 * x(1) - 5, Ax(0) - lb_in_constraint(0));
+  EXPECT_PRED2(ExprEqual, 3 * x(0) + 4 * x(1) - 6, Ax(1) - lb_in_constraint(1));
 }
 
 // Checks AddLinearConstraint function which takes an Eigen::Array<Formula>.
@@ -2241,11 +2244,11 @@ GTEST_TEST(TestMathematicalProgram,
 
   std::vector<Eigen::Triplet<double>> A_triplet_list;
   A_triplet_list.reserve(3 * (n - 2) + 4);
-  double ctr = 1;
+  double count = 1;
   for (int i = 0; i < n; ++i) {
     for (int j = std::max(0, i - 1); j < std::min(n, i + 1); ++j) {
-      A_triplet_list.emplace_back(i, j, ctr);
-      ++ctr;
+      A_triplet_list.emplace_back(i, j, count);
+      ++count;
     }
   }
 
@@ -2269,11 +2272,11 @@ GTEST_TEST(TestMathematicalProgram,
   auto x = prog.NewContinuousVariables(n, "x");
   std::vector<Eigen::Triplet<double>> A_triplet_list;
   A_triplet_list.reserve(3 * (n - 2) + 4);
-  double ctr = 1;
+  double count = 1;
   for (int i = 0; i < n; ++i) {
     for (int j = std::max(0, i - 1); j < std::min(n, i + 1); ++j) {
-      A_triplet_list.emplace_back(i, j, ctr);
-      ++ctr;
+      A_triplet_list.emplace_back(i, j, count);
+      ++count;
     }
   }
 
