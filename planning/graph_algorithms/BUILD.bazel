@@ -56,7 +56,8 @@ drake_cc_library(
         "graph_algorithms_internal.h",
     ],
     deps = [
-        "@eigen"
+        "@eigen",
+        "//common:essential",
     ]
 )
 
@@ -71,6 +72,7 @@ drake_cc_library(
     visibility = ["//visibility:private"],
     deps = [
         "@eigen",
+        ":graph_algorithms_internal"
     ],
 )
 
@@ -80,6 +82,16 @@ drake_cc_googletest(
     deps = [
         ":common_graphs",
         ":max_stable_set"
+    ],
+)
+
+drake_cc_googletest(
+    name = "graph_algorithms_internal_test",
+    srcs = ["test/graph_algorithms_internal_test.cc"],
+    deps = [
+        ":common_graphs",
+        ":graph_algorithms_internal",
+        "//common/test_utilities:eigen_matrix_compare"
     ],
 )
 
