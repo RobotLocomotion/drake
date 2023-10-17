@@ -2230,7 +2230,7 @@ GTEST_TEST(TestMathematicalProgram,
 }
 
 GTEST_TEST(TestMathematicalProgram,
-           AddLinearEqualityConstrainSparseMatrixVectorVariablesTest) {
+           AddLinearEqualityConstraintSparseMatrixVectorVariablesTest) {
   MathematicalProgram prog;
   const int n = 4;
   auto x = prog.NewContinuousVariables(1, "x");
@@ -2260,7 +2260,7 @@ GTEST_TEST(TestMathematicalProgram,
 }
 
 GTEST_TEST(TestMathematicalProgram,
-           AddLinearEqualityConstrainSparseMatriVariableRefListTest) {
+           AddLinearEqualityConstraintSparseMatriVariableRefListTest) {
   MathematicalProgram prog;
   const int n = 4;
   auto x = prog.NewContinuousVariables(n, "x");
