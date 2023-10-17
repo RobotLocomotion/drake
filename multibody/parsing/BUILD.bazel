@@ -49,6 +49,36 @@ drake_cc_package_library(
     ],
 )
 
+# PackageMap has moved to common/parsing. During the transition (including
+# deprecation), this stub will allow access to multibody::parsing::PackageMap
+# without colliding with git history. After deprecation, it can simply be
+# removed.
+genrule(
+    name = "_cp_package_map.h",
+    srcs = ["stub/package_map.h"],
+    outs = ["package_map.h"],
+    cmd = "cp $< $@",
+    tags = ["nolint"],
+    visibility = ["//visibility:private"],
+)
+
+drake_cc_library(
+    name = "package_map",
+    hdrs = ["package_map.h"],
+    tags = [
+        "manual",
+        "nolint",
+    ],
+    deps = [
+        "//common/parsing:package_map",
+    ]
+)
+
+drake_cc_googletest(
+    name = "package_map_stub_test",
+    deps = [":package_map"],
+)
+
 # For simplicity in dependency management (e.g., prevent exposing `sdformat`),
 # we make all `detail_*` libraries private. For more info, see #7451.
 
