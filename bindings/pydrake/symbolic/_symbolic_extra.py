@@ -37,7 +37,7 @@ def to_sympy(
     """Converts a pydrake object to the corresponding SymPy Expr.
 
     Certain expressions are not supported and will raise NotImplementedError.
-    (Most actutely, note that `int` is not yet supported.)
+    (Most acutely, note that `int` is not yet supported.)
 
     This function aims to support the latest contemporaneous version of SymPy
     as of Drake's release date.
