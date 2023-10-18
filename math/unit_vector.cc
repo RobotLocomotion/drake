@@ -4,28 +4,18 @@
 #include <string>
 #include <utility>
 
-#include "drake/common/autodiff.h"
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/fmt_eigen.h"
 #include "drake/common/text_logging.h"
 #include "drake/common/unused.h"
+#include "drake/math/autodiff.h"
 
 namespace drake {
 namespace math {
 namespace internal {
 
 namespace {
-
-// No need to make a copy of a Vector3<double>, just return its reference.
-inline const Vector3<double>& convert_to_double(const Vector3<double>& v) {
-  return v;
-}
-
-// Return a copy of the non-derivative portion of a Vector3<double>.
-inline const Vector3<double> convert_to_double(const Vector3<AutoDiffXd>& v) {
-  return ExtractDoubleOrThrow(v);
-}
 
 // Checks if ‖unit_vector‖ is within tolerance_unit_vector_norm of 1.0.
 // @param[in] unit_vector a vector which is allegedly a unit vector.
@@ -56,8 +46,8 @@ std::pair<T, bool> IsUnitVector(const Vector3<T>& unit_vector,
     const double tolerance2 = 2 * tolerance_unit_vector_norm;
 
     // In calculating ‖unit_vector‖² for AutoDiff type <T>, there is no need to
-    // calculate derivatives. Use convert_to_double() to skip that calculation.
-    const double uvec_squared = convert_to_double(unit_vector).squaredNorm();
+    // calculate derivatives. Use DiscardGradient() to skip that calculation.
+    const double uvec_squared = DiscardGradient(unit_vector).squaredNorm();
     const bool is_ok_unit_vector =
         isfinite(uvec_squared) && abs(uvec_squared - 1) <= tolerance2;
 
