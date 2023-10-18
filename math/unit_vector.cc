@@ -15,6 +15,17 @@ namespace math {
 namespace internal {
 
 namespace {
+
+// No need to make a copy of a Vector3<double>, just return its reference.
+inline const Vector3<double>& convert_to_double(const Vector3<double>& v) {
+  return v;
+}
+
+// Return a copy of the non-derivative portion of a Vector3<double>.
+inline const Vector3<double> convert_to_double(const Vector3<AutoDiffXd>& v) {
+  return ExtractDoubleOrThrow(v);
+}
+
 // Checks if ‖unit_vector‖ is within tolerance_unit_vector_norm of 1.0.
 // @param[in] unit_vector a vector which is allegedly a unit vector.
 // @retval {‖unit_vector‖², is_ok_unit_vector} as pair. If ‖unit_vector‖ is OK,
@@ -43,10 +54,9 @@ std::pair<T, bool> IsUnitVector(const Vector3<T>& unit_vector,
     using std::isfinite;
     const double tolerance2 = 2 * tolerance_unit_vector_norm;
 
-    // TODO(Mitiguy) In calculating ‖unit_vector‖² for AutoDiff type <T>, there
-    //  is no need to calculate derivative, so perhaps skip it with:
-    //  double uvec_squared = ExtractDoubleOrThrow(unit_vector).squaredNorm();
-    const T uvec_squared = unit_vector.squaredNorm();
+    // In calculating ‖unit_vector‖² for AutoDiff type <T>, there is no need to
+    // calculate derivatives. Use convert_to_double() to skip that calculation.
+    const double uvec_squared = convert_to_double(unit_vector).squaredNorm();
     const bool is_ok_unit_vector =
         isfinite(uvec_squared) && abs(uvec_squared - 1) <= tolerance2;
 
