@@ -7,7 +7,7 @@
 
 #include "drake/common/diagnostic_policy.h"
 #include "drake/common/drake_deprecated.h"
-#include "drake/multibody/parsing/package_map.h"
+#include "drake/common/parsing/package_map.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
 

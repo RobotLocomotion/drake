@@ -1,4 +1,4 @@
-#include "drake/multibody/parsing/package_map.h"
+#include "drake/common/parsing/package_map.h"
 
 #include <algorithm>
 #include <filesystem>
@@ -14,7 +14,6 @@ using std::map;
 using std::string;
 
 namespace drake {
-namespace multibody {
 namespace {
 
 namespace fs = std::filesystem;
@@ -449,5 +448,4 @@ GTEST_TEST(PackageMapTest, TestDeprecation) {
 }
 
 }  // namespace
-}  // namespace multibody
 }  // namespace drake

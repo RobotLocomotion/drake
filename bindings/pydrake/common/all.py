@@ -8,6 +8,7 @@ from .eigen_geometry import *
 from .schema import *
 from .yaml import *
 from .value import *
+from .parsing import *
 # N.B. Since this is generic and relatively scoped, we import the module as a
 # symbol.
 from . import pybind11_version

@@ -101,11 +101,11 @@ install(
     deps = [
         "//bindings/pydrake:install",
         "//common:install",
+        "//common/parsing:install",
         "//examples:install",
         "//geometry:install",
         "//lcmtypes:install",
         "//manipulation/models:install_data",
-        "//multibody/parsing:install",
         "//setup:install",
         "//tools/install/libdrake:install",
         "//tools/workspace:install_external_packages",

@@ -17,7 +17,7 @@ networking is allowed.
 The component values supported by Drake are:
 - <b>lcm</b> (see drake::lcm::DrakeLcm)
 - <b>meshcat</b> (see drake::geometry::Meshcat)
-- <b>package_map</b> (see drake::multibody::PackageMap)
+- <b>package_map</b> (see drake::PackageMap)
 - <b>render_gltf_client</b> (see drake::geometry::MakeRenderEngineVtk())
 
 ... as well as the special value <b>none</b>.

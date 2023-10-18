@@ -127,7 +127,7 @@ FindResourceOrThrow("drake/examples/pendulum/Pendulum.urdf")
     with open(join(scratch_dir, "package_map_test.py"), "w") as f:
         f.write("""
 from pydrake.common import _set_log_level
-from pydrake.multibody.parsing import PackageMap
+from pydrake.common.parsing import PackageMap
 _set_log_level("trace")
 PackageMap().GetPath("drake_models")
 """)

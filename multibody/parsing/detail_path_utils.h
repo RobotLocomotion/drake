@@ -3,7 +3,7 @@
 #include <string>
 
 #include "drake/common/diagnostic_policy.h"
-#include "drake/multibody/parsing/package_map.h"
+#include "drake/common/parsing/package_map.h"
 
 namespace drake {
 namespace multibody {

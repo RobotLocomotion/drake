@@ -10,6 +10,7 @@
 
 #include "drake/common/find_resource.h"
 #include "drake/common/fmt_eigen.h"
+#include "drake/common/parsing/package_map.h"
 #include "drake/common/test_utilities/diagnostic_policy_test_base.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
@@ -19,7 +20,6 @@
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/parsing/detail_common.h"
 #include "drake/multibody/parsing/detail_path_utils.h"
-#include "drake/multibody/parsing/package_map.h"
 
 namespace drake {
 namespace multibody {
@@ -392,7 +392,7 @@ class UrdfGeometryTest : public test::DiagnosticPolicyTestBase {
   }
 
   XMLDocument xml_doc_;
-  multibody::PackageMap package_map_;
+  PackageMap package_map_;
   MaterialMap materials_;
   std::string file_name_;
   std::string contents_;

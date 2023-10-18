@@ -164,7 +164,11 @@ drake_pybind_library(
     package_info = PACKAGE_INFO,
     py_deps = [
         ":module_py",
+        "//bindings/pydrake/common:parsing",
         "//bindings/pydrake/common:schema_py",
+    ],
+    py_srcs = [
+        "_parsing_extra.py",
     ],
 )
 

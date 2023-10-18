@@ -103,6 +103,8 @@ class TestAll(unittest.TestCase):
             # - eigen_geometry
             "Isometry3",
             "Quaternion",
+            # - parsers
+            "PackageMap",
             # forwarddiff
             "jacobian",
             "sin",
@@ -132,8 +134,6 @@ class TestAll(unittest.TestCase):
             "JointSliders",
             # - parsing
             "Parser",
-            # - parsers
-            "PackageMap",
             # - plant
             "MultibodyPlant",
             # - tree

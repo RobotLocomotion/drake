@@ -1,4 +1,4 @@
-#include "drake/multibody/parsing/package_map.h"
+#include "drake/common/parsing/package_map.h"
 
 #include <unistd.h>
 
@@ -31,7 +31,6 @@
 #include "drake/common/yaml/yaml_io.h"
 
 namespace drake {
-namespace multibody {
 
 namespace fs = std::filesystem;
 
@@ -360,7 +359,7 @@ const std::string& PackageData::GetPathWithAutomaticFetching(
 
   // Shell out to the downloader to fetch the package.
   const std::string downloader =
-      FindResourceOrThrow("drake/multibody/parsing/package_downloader.py");
+      FindResourceOrThrow("drake/common/parsing/package_downloader.py");
   const std::string command =
       fmt::format("/usr/bin/python3 {} {} {} {}", downloader, json_filename,
                   error_filename, "--disable-drake-valgrind-tracing");
@@ -508,7 +507,7 @@ namespace internal {
 
 PackageMap::RemoteParams GetDrakeModelsRemoteParams() {
   const std::string json_filename =
-      FindResourceOrThrow("drake/multibody/parsing/drake_models.json");
+      FindResourceOrThrow("drake/common/parsing/drake_models.json");
   const yaml::LoadYamlOptions options{
       // Ignore any data that we don't need.
       .allow_yaml_with_no_cpp = true,
@@ -956,5 +955,4 @@ std::ostream& operator<<(std::ostream& out, const PackageMap& package_map) {
   return out;
 }
 
-}  // namespace multibody
 }  // namespace drake

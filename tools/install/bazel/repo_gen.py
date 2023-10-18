@@ -56,7 +56,7 @@ def main():
 
     # This will provide @@MODELS_...@@ substitutions.
     drake_models_metadata = json.loads(_read(runfiles.Create().Rlocation(
-        "drake/multibody/parsing/drake_models.json")))
+        "drake/common/parsing/drake_models.json")))
 
     # The repo.bzl output is based on repo_template.bzl, with a few
     # programmatic alterations.
