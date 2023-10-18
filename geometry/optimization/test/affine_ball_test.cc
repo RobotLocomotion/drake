@@ -97,8 +97,8 @@ GTEST_TEST(AffineBallTest, UnitBall6DTest) {
   EXPECT_EQ(ab.ambient_dimension(), 6);
 
   const double kScale = sqrt(1.0 / 6.0);
-  Vector6d in1_W{Vector6d::Constant(-.99 * kScale)},
-      in2_W{Vector6d::Constant(.99 * kScale)},
+  Vector6d in1_W{Vector6d::Constant(-0.99 * kScale)},
+      in2_W{Vector6d::Constant(0.99 * kScale)},
       out1_W{Vector6d::Constant(-1.01 * kScale)},
       out2_W{Vector6d::Constant(1.01 * kScale)};
 

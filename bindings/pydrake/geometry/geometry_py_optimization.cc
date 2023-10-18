@@ -127,6 +127,10 @@ void DefineGeometryOptimization(py::module m) {
             cls_doc.ToShapeWithPose.doc)
         .def("CalcVolume", &ConvexSet::CalcVolume, cls_doc.CalcVolume.doc);
   }
+  // There is a dependency cycle between Hyperellipsoid and AffineBall, so we
+  // need to "forward declare" the Hyperellipsoid class here.
+  py::class_<Hyperellipsoid, ConvexSet> hyperellipsoid_cls(
+      m, "Hyperellipsoid", doc.Hyperellipsoid.doc);
 
   // AffineBall
   {
@@ -137,6 +141,8 @@ void DefineGeometryOptimization(py::module m) {
         .def(py::init<const Eigen::Ref<const Eigen::MatrixXd>&,
                  const Eigen::Ref<const Eigen::VectorXd>&>(),
             py::arg("B"), py::arg("center"), cls_doc.ctor.doc_2args)
+        .def(py::init<const Hyperellipsoid&>(), py::arg("ellipsoid"),
+            cls_doc.ctor.doc_1args)
         .def("B", &AffineBall::B, py_rvp::reference_internal, cls_doc.B.doc)
         .def("center", &AffineBall::center, py_rvp::reference_internal,
             cls_doc.center.doc)
@@ -279,7 +285,7 @@ void DefineGeometryOptimization(py::module m) {
   // Hyperellipsoid
   {
     const auto& cls_doc = doc.Hyperellipsoid;
-    py::class_<Hyperellipsoid, ConvexSet>(m, "Hyperellipsoid", cls_doc.doc)
+    hyperellipsoid_cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc_0args)
         .def(py::init<const Eigen::Ref<const Eigen::MatrixXd>&,
                  const Eigen::Ref<const Eigen::VectorXd>&>(),
@@ -288,6 +294,8 @@ void DefineGeometryOptimization(py::module m) {
                  std::optional<FrameId>>(),
             py::arg("query_object"), py::arg("geometry_id"),
             py::arg("reference_frame") = std::nullopt, cls_doc.ctor.doc_3args)
+        .def(py::init<const AffineBall&>(), py::arg("ellipsoid"),
+            cls_doc.ctor.doc_1args)
         .def("A", &Hyperellipsoid::A, cls_doc.A.doc)
         .def("center", &Hyperellipsoid::center, cls_doc.center.doc)
         .def("MinimumUniformScalingToTouch",
