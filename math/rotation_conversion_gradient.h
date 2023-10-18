@@ -51,23 +51,20 @@ dquat2rotmat(const Eigen::MatrixBase<Derived>& quaternion) {
  *   G(2,j) is the gradient of yaw w.r.t x(j)
  */
 template <typename DerivedR, typename DerivedDR>
-typename drake::math::Gradient<
-    Eigen::Matrix<typename DerivedR::Scalar, 3, 1>,
-    DerivedDR::ColsAtCompileTime>::type
+typename drake::math::Gradient<Eigen::Matrix<typename DerivedR::Scalar, 3, 1>,
+                               DerivedDR::ColsAtCompileTime>::type
 drotmat2rpy(const Eigen::MatrixBase<DerivedR>& R,
             const Eigen::MatrixBase<DerivedDR>& dR) {
   EIGEN_STATIC_ASSERT_MATRIX_SPECIFIC_SIZE(Eigen::MatrixBase<DerivedR>, 3, 3);
 
-  EIGEN_STATIC_ASSERT(
-      Eigen::MatrixBase<DerivedDR>::RowsAtCompileTime == 9,
-      THIS_METHOD_IS_ONLY_FOR_MATRICES_OF_A_SPECIFIC_SIZE);
+  EIGEN_STATIC_ASSERT(Eigen::MatrixBase<DerivedDR>::RowsAtCompileTime == 9,
+                      THIS_METHOD_IS_ONLY_FOR_MATRICES_OF_A_SPECIFIC_SIZE);
 
   typename DerivedDR::Index nq = dR.cols();
   typedef typename DerivedR::Scalar Scalar;
-  typedef
-      typename drake::math::Gradient<Eigen::Matrix<Scalar, 3, 1>,
-                                     DerivedDR::ColsAtCompileTime>::type
-          ReturnType;
+  typedef typename drake::math::Gradient<Eigen::Matrix<Scalar, 3, 1>,
+                                         DerivedDR::ColsAtCompileTime>::type
+      ReturnType;
   ReturnType drpy(3, nq);
 
   auto dR11_dq =
@@ -112,21 +109,19 @@ drotmat2rpy(const Eigen::MatrixBase<DerivedR>& R,
  *   G(3,j) is the gradient of z w.r.t x_var(j)
  */
 template <typename DerivedR, typename DerivedDR>
-typename drake::math::Gradient<
-    Eigen::Matrix<typename DerivedR::Scalar, 4, 1>,
-    DerivedDR::ColsAtCompileTime>::type
+typename drake::math::Gradient<Eigen::Matrix<typename DerivedR::Scalar, 4, 1>,
+                               DerivedDR::ColsAtCompileTime>::type
 drotmat2quat(const Eigen::MatrixBase<DerivedR>& R,
              const Eigen::MatrixBase<DerivedDR>& dR) {
   EIGEN_STATIC_ASSERT_MATRIX_SPECIFIC_SIZE(Eigen::MatrixBase<DerivedR>, 3, 3);
 
-  EIGEN_STATIC_ASSERT(
-      Eigen::MatrixBase<DerivedDR>::RowsAtCompileTime == 9,
-      THIS_METHOD_IS_ONLY_FOR_MATRICES_OF_A_SPECIFIC_SIZE);
+  EIGEN_STATIC_ASSERT(Eigen::MatrixBase<DerivedDR>::RowsAtCompileTime == 9,
+                      THIS_METHOD_IS_ONLY_FOR_MATRICES_OF_A_SPECIFIC_SIZE);
 
   typedef typename DerivedR::Scalar Scalar;
-  typedef typename drake::math::Gradient<
-      Eigen::Matrix<Scalar, 4, 1>,
-      DerivedDR::ColsAtCompileTime>::type ReturnType;
+  typedef typename drake::math::Gradient<Eigen::Matrix<Scalar, 4, 1>,
+                                         DerivedDR::ColsAtCompileTime>::type
+      ReturnType;
   typename DerivedDR::Index nq = dR.cols();
 
   auto dR11_dq =

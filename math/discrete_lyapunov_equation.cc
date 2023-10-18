@@ -17,7 +17,9 @@ using Eigen::VectorXcd;
 
 namespace {
 const double kTolerance = 5 * std::numeric_limits<double>::epsilon();
-bool is_zero(double x, double eps = 1e-10) { return std::fabs(x) < eps; }
+bool is_zero(double x, double eps = 1e-10) {
+  return std::fabs(x) < eps;
+}
 // TODO(weiqiao.han): figure out what the tolerance ε ought to be.
 }  // namespace
 
@@ -195,8 +197,7 @@ MatrixXd SolveReducedRealDiscreteLyapunovEquation(
     //
 
     MatrixXd lhs(2 * (m - 2), 2 * (m - 2));
-    lhs << s_11(0, 0) * S_1.transpose() -
-               MatrixXd::Identity(m - 2, m - 2),
+    lhs << s_11(0, 0) * S_1.transpose() - MatrixXd::Identity(m - 2, m - 2),
         s_11(1, 0) * S_1.transpose(), s_11(0, 1) * S_1.transpose(),
         s_11(1, 1) * S_1.transpose() - MatrixXd::Identity(m - 2, m - 2);
 

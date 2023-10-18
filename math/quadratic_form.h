@@ -91,10 +91,9 @@ Eigen::MatrixXd DecomposePSDmatrixIntoXtransposeTimesX(
  *      3. `tol` is non-negative.
  * @throws std::exception if the precondition is not satisfied.
  */
-std::pair<Eigen::MatrixXd, Eigen::MatrixXd>
-DecomposePositiveQuadraticForm(const Eigen::Ref<const Eigen::MatrixXd>& Q,
-                               const Eigen::Ref<const Eigen::VectorXd>& b,
-                               double c, double tol = 0);
+std::pair<Eigen::MatrixXd, Eigen::MatrixXd> DecomposePositiveQuadraticForm(
+    const Eigen::Ref<const Eigen::MatrixXd>& Q,
+    const Eigen::Ref<const Eigen::VectorXd>& b, double c, double tol = 0);
 
 /** Given two quadratic forms, x'Sx > 0 and x'Px, (with P symmetric and full
  * rank), finds a change of variables x = Ty, which simultaneously diagonalizes

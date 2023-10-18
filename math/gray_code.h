@@ -10,7 +10,7 @@ namespace math {
  * GrayCodesMatrix::type returns an Eigen matrix of integers. The size of this
  * matrix is determined by the number of digits in the Gray code.
  */
-template<int NumDigits>
+template <int NumDigits>
 struct GrayCodesMatrix {
   static_assert(NumDigits >= 0 && NumDigits <= 30, "NumDigits out of range.");
   typedef typename Eigen::Matrix<int, NumDigits == 0 ? 0 : 1 << NumDigits,
@@ -18,7 +18,7 @@ struct GrayCodesMatrix {
       type;
 };
 
-template<>
+template <>
 struct GrayCodesMatrix<Eigen::Dynamic> {
   typedef typename Eigen::MatrixXi type;
 };
@@ -30,9 +30,9 @@ struct GrayCodesMatrix<Eigen::Dynamic> {
  * @return M. M is a matrix of size 2ᵏ x k, where `k` is `num_digits`.
  * M.row(i) is the Gray code for integer i.
  */
-template<int NumDigits = Eigen::Dynamic>
-typename GrayCodesMatrix<NumDigits>::type
-CalculateReflectedGrayCodes(int num_digits = NumDigits) {
+template <int NumDigits = Eigen::Dynamic>
+typename GrayCodesMatrix<NumDigits>::type CalculateReflectedGrayCodes(
+    int num_digits = NumDigits) {
   DRAKE_DEMAND(num_digits >= 0);
   int num_codes = num_digits <= 0 ? 0 : 1 << num_digits;
   typename GrayCodesMatrix<NumDigits>::type gray_codes(num_codes, num_digits);

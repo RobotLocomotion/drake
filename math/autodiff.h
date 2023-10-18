@@ -42,8 +42,8 @@ zero. drake::ExtractDoubleOrThrow() has many specializations, including one for
 
 @see DiscardGradient(), drake::ExtractDoubleOrThrow() */
 template <typename Derived>
-MatrixLikewise<typename Derived::Scalar::Scalar, Derived>
-ExtractValue(const Eigen::MatrixBase<Derived>& auto_diff_matrix) {
+MatrixLikewise<typename Derived::Scalar::Scalar, Derived> ExtractValue(
+    const Eigen::MatrixBase<Derived>& auto_diff_matrix) {
   MatrixLikewise<typename Derived::Scalar::Scalar, Derived> value(
       auto_diff_matrix.rows(), auto_diff_matrix.cols());
   for (int i = 0; i < auto_diff_matrix.rows(); ++i) {
@@ -135,18 +135,17 @@ void InitializeAutoDiff(const Eigen::MatrixBase<Derived>& value,
 
 @exclude_from_pydrake_mkdoc{Not bound in pydrake.} */
 template <typename Derived, typename DerivedAutoDiff>
-void InitializeAutoDiff(
-    const Eigen::MatrixBase<Derived>& value,
-    Eigen::MatrixBase<DerivedAutoDiff>* auto_diff_matrix) {
+void InitializeAutoDiff(const Eigen::MatrixBase<Derived>& value,
+                        Eigen::MatrixBase<DerivedAutoDiff>* auto_diff_matrix) {
   InitializeAutoDiff(value, {}, {}, auto_diff_matrix);
 }
 
 /** The appropriate AutoDiffScalar matrix type given the value type and the
 number of derivatives at compile time. */
 template <typename Derived, int nq>
-using AutoDiffMatrixType = MatrixLikewise<
-    Eigen::AutoDiffScalar<Vector<typename Derived::Scalar, nq>>,
-    Derived>;
+using AutoDiffMatrixType =
+    MatrixLikewise<Eigen::AutoDiffScalar<Vector<typename Derived::Scalar, nq>>,
+                   Derived>;
 
 /** Initializes a single AutoDiff matrix given the corresponding value matrix.
 
@@ -203,10 +202,9 @@ template <typename... Deriveds>
 auto InitializeAutoDiffTuple(const Eigen::MatrixBase<Deriveds>&... args) {
   // Compute the total compile-time size of all args (or Dynamic, if unknown).
   // Refer to https://en.cppreference.com/w/cpp/language/fold for the syntax.
-  constexpr int nq =
-      ((Deriveds::SizeAtCompileTime != Eigen::Dynamic) && ...)
-          ? (static_cast<int>(Deriveds::SizeAtCompileTime) + ...)
-          : Eigen::Dynamic;
+  constexpr int nq = ((Deriveds::SizeAtCompileTime != Eigen::Dynamic) && ...)
+                         ? (static_cast<int>(Deriveds::SizeAtCompileTime) + ...)
+                         : Eigen::Dynamic;
 
   // Compute each deriv_num_start value and then the total runtime size.
   constexpr size_t N = sizeof...(args);
@@ -224,13 +222,12 @@ auto InitializeAutoDiffTuple(const Eigen::MatrixBase<Deriveds>&... args) {
   // Set the values and gradients of the result using InitializeAutoDiff from
   // each Matrix in 'args...'. This is a "constexpr for" loop for 0 <= I < N.
   auto args_tuple = std::forward_as_tuple(args...);
-  [&]<size_t... I>(std::integer_sequence<size_t, I...>&&) {
-    (InitializeAutoDiff(
-        std::get<I>(args_tuple),
-        num_derivatives,
-        std::get<I>(deriv_num_starts),
-        &std::get<I>(result)), ...);
-  }(std::make_index_sequence<N>{});
+  [&]<size_t... I>(std::integer_sequence<size_t, I...> &&) {
+    (InitializeAutoDiff(std::get<I>(args_tuple), num_derivatives,
+                        std::get<I>(deriv_num_starts), &std::get<I>(result)),
+     ...);
+  }
+  (std::make_index_sequence<N>{});
 
   return result;
 }

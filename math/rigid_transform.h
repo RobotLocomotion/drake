@@ -246,9 +246,10 @@ class RigidTransform {
       set_rotation(RotationMatrix<T>(pose.template block<3, 3>(0, 0)));
       set_translation(pose.template block<3, 1>(0, 3));
     } else {
-      throw std::logic_error("Error: RigidTransform constructor argument is "
-                             "not an Eigen expression that can resolve to"
-                             "a Vector3 or 3x4 matrix or 4x4 matrix.");
+      throw std::logic_error(
+          "Error: RigidTransform constructor argument is not an Eigen "
+          "expression that can resolve to a Vector3 or 3x4 matrix or 4x4 "
+          "matrix.");
     }
   }
 
@@ -405,7 +406,7 @@ class RigidTransform {
   boolean<T> IsNearlyIdentity(double translation_tolerance) const {
     const T max_component = translation().template lpNorm<Eigen::Infinity>();
     return max_component <= translation_tolerance &&
-        rotation().IsNearlyIdentity();
+           rotation().IsNearlyIdentity();
   }
 
   /// Returns true if `this` is exactly equal to `other`.
@@ -536,7 +537,7 @@ class RigidTransform {
   /// to the rotation matrix in `X_AqB`.  `X_AB` and `X_AqB` only differ by
   /// origin location.
   friend RigidTransform<T> operator*(const Eigen::Translation<T, 3>& X_AAq,
-      const RigidTransform<T>& X_AqB) {
+                                     const RigidTransform<T>& X_AqB) {
     const Vector3<T>& p_AAq_A = X_AAq.translation();
     const Vector3<T>& p_AqB_A = X_AqB.translation();
     const Vector3<T>& p_AB_A = p_AAq_A + p_AqB_A;
@@ -604,7 +605,7 @@ class RigidTransform {
           "Error: Inner dimension for matrix multiplication is not 3.");
     }
     // Express position vectors in terms of frame A as p_BoQ_A = R_AB * p_BoQ_B.
-    const RotationMatrix<typename Derived::Scalar> &R_AB = rotation();
+    const RotationMatrix<typename Derived::Scalar>& R_AB = rotation();
     const Eigen::Matrix<typename Derived::Scalar, 3, Derived::ColsAtCompileTime>
         p_BoQ_A = R_AB * p_BoQ_B;
 
@@ -614,7 +615,7 @@ class RigidTransform {
         p_AoQ_A(3, number_of_position_vectors);
 
     // Create each returned position vector as p_AoQi_A = p_AoBo_A + p_BoQi_A.
-    for (int i = 0;  i < number_of_position_vectors;  ++i)
+    for (int i = 0; i < number_of_position_vectors; ++i)
       p_AoQ_A.col(i) = translation() + p_BoQ_A.col(i);
 
     return p_AoQ_A;
@@ -644,7 +645,7 @@ class RigidTransform {
   // Declares the allowable tolerance (small multiplier of double-precision
   // epsilon) used to check whether or not a matrix is homogeneous.
   static constexpr double kInternalToleranceForHomogeneousCheck{
-      4 * std::numeric_limits<double>::epsilon() };
+      4 * std::numeric_limits<double>::epsilon()};
 
   // Constructs a RigidTransform without initializing the underlying 3x4 matrix.
   explicit RigidTransform(internal::DoNotInitializeMemberFields)
@@ -658,8 +659,8 @@ class RigidTransform {
   static void ThrowIfInvalidBottomRow(const Eigen::MatrixBase<Derived>& pose) {
     const int num_rows = pose.rows(), num_cols = pose.cols();
     DRAKE_DEMAND(num_rows == 4 && num_cols == 4);
-    if (pose(3, 0) != 0 || pose(3, 1) != 0 ||
-        pose(3, 2) != 0 || pose(3, 3) != 1) {
+    if (pose(3, 0) != 0 || pose(3, 1) != 0 || pose(3, 2) != 0 ||
+        pose(3, 3) != 1) {
       throw std::logic_error(fmt::format(
           "Error: Bottom row of 4x4 matrix differs from [0, 0, 0, 1]"));
     }
@@ -685,8 +686,8 @@ class RigidTransform {
 // in memory in the same order as they are declared.  Implementation alignment
 // requirements can cause an alignment gap in memory between adjacent members.
 static_assert(sizeof(RigidTransform<double>) == 12 * sizeof(double),
-    "Low-level optimizations depend on RigidTransform<double> being "
-    "stored as 12 sequential doubles in memory.");
+              "Low-level optimizations depend on RigidTransform<double> being "
+              "stored as 12 sequential doubles in memory.");
 
 /// Stream insertion operator to write an instance of RigidTransform into a
 /// `std::ostream`. Especially useful for debugging.
@@ -705,8 +706,7 @@ using RigidTransformd = RigidTransform<double>;
 // TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
 namespace fmt {
 template <typename T>
-struct formatter<drake::math::RigidTransform<T>>
-    : drake::ostream_formatter {};
+struct formatter<drake::math::RigidTransform<T>> : drake::ostream_formatter {};
 }  // namespace fmt
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(

@@ -28,6 +28,5 @@ T1 wrap_to(const T1& value, const T2& low, const T2& high) {
   // return if_then_else(rem >= T1(0), low + rem, high + rem);
 }
 
-
 }  // namespace math
 }  // namespace drake

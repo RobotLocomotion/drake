@@ -17,8 +17,9 @@ namespace math {
 template <typename Scalar, int Options, typename StorageIndex>
 std::vector<Eigen::Triplet<Scalar>> SparseMatrixToTriplets(
     const Eigen::SparseMatrix<Scalar, Options, StorageIndex>& matrix) {
-  using InnerIterator = typename Eigen::SparseMatrix<
-      Scalar, Options, StorageIndex>::InnerIterator;
+  using InnerIterator =
+      typename Eigen::SparseMatrix<Scalar, Options,
+                                   StorageIndex>::InnerIterator;
   std::vector<Eigen::Triplet<Scalar>> triplets;
   triplets.reserve(matrix.nonZeros());
   for (int i = 0; i < matrix.outerSize(); i++) {

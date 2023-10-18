@@ -182,6 +182,5 @@ MatrixX<T> StdVectorToEigen(const std::vector<MatrixX<T>>& vec) {
   return mat;
 }
 
-
 }  // namespace math
 }  // namespace drake

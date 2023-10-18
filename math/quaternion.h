@@ -29,12 +29,14 @@ namespace math {
  * Returns a unit quaternion that represents the same orientation as `quat2`,
  * and has the "shortest" geodesic distance on the unit sphere to `quat1`.
  */
-template <typename Scalar> Eigen::Quaternion<Scalar> ClosestQuaternion(
+template <typename Scalar>
+Eigen::Quaternion<Scalar> ClosestQuaternion(
     const Eigen::Quaternion<Scalar>& quat1,
     const Eigen::Quaternion<Scalar>& quat2) {
   Eigen::Quaternion<Scalar> q = quat2;
-  if (quat1.dot(q) < 0)
+  if (quat1.dot(q) < 0) {
     q.coeffs() *= -1;
+  }
   q.normalize();
   return q;
 }
@@ -120,11 +122,10 @@ typename Derived1::Scalar quatDiffAxisInvar(
  *   Note: quat is analogous to the rotation matrix R_AB.
  * @return `true` if quat.w() is nonnegative (in canonical form), else `false`.
  */
-template<typename T>
+template <typename T>
 boolean<T> is_quaternion_in_canonical_form(const Eigen::Quaternion<T>& quat) {
   return quat.w() >= 0.0;
 }
-
 
 /**
  * This function returns a quaternion in its "canonical form" meaning that
@@ -138,13 +139,13 @@ boolean<T> is_quaternion_in_canonical_form(const Eigen::Quaternion<T>& quat) {
  *   is returned or a quaternion representing the same orientation but with
  *   negated [w, x, y, z], to ensure a positive w in returned quaternion.
  */
-template<typename T>
+template <typename T>
 Eigen::Quaternion<T> QuaternionToCanonicalForm(
-    const Eigen::Quaternion<T>& quat ) {
-  return is_quaternion_in_canonical_form(quat) ? quat :
-         Eigen::Quaternion<T>(-quat.w(), -quat.x(), -quat.y(), -quat.z());
+    const Eigen::Quaternion<T>& quat) {
+  return is_quaternion_in_canonical_form(quat)
+             ? quat
+             : Eigen::Quaternion<T>(-quat.w(), -quat.x(), -quat.y(), -quat.z());
 }
-
 
 /**
  * This function tests whether two quaternions represent the same orientation.
@@ -160,11 +161,10 @@ Eigen::Quaternion<T> QuaternionToCanonicalForm(
  * @return `true` if quat1 and quat2 represent the same orientation (to within
  * tolerance), otherwise `false`.
  */
-template<typename T>
-boolean<T> AreQuaternionsEqualForOrientation(
-    const Eigen::Quaternion<T>& quat1,
-    const Eigen::Quaternion<T>& quat2,
-    const T tolerance) {
+template <typename T>
+boolean<T> AreQuaternionsEqualForOrientation(const Eigen::Quaternion<T>& quat1,
+                                             const Eigen::Quaternion<T>& quat2,
+                                             const T tolerance) {
   const Eigen::Quaternion<T> quat1_canonical = QuaternionToCanonicalForm(quat1);
   const Eigen::Quaternion<T> quat2_canonical = QuaternionToCanonicalForm(quat2);
   return (quat1_canonical.coeffs() - quat2_canonical.coeffs())
@@ -187,21 +187,20 @@ boolean<T> AreQuaternionsEqualForOrientation(
  * @param w_AB_B  B's angular velocity in A, expressed in B.
  * @retval quatDt Time-derivative of quat_AB, i.e., [ẇ, ẋ, ẏ, ż].
  */
-template<typename T>
+template <typename T>
 Vector4<T> CalculateQuaternionDtFromAngularVelocityExpressedInB(
-    const Eigen::Quaternion<T>& quat_AB,  const Vector3<T>& w_AB_B ) {
-  const T e0 = quat_AB.w(),  e1 = quat_AB.x(),
-      e2 = quat_AB.y(),  e3 = quat_AB.z();
+    const Eigen::Quaternion<T>& quat_AB, const Vector3<T>& w_AB_B) {
+  const T e0 = quat_AB.w(), e1 = quat_AB.x(), e2 = quat_AB.y(),
+          e3 = quat_AB.z();
   const T wx = w_AB_B[0], wy = w_AB_B[1], wz = w_AB_B[2];
 
-  const T e0Dt = (-e1*wx - e2*wy - e3*wz) / 2;
-  const T e1Dt =  (e0*wx - e3*wy + e2*wz) / 2;
-  const T e2Dt =  (e3*wx + e0*wy - e1*wz) / 2;
-  const T e3Dt = (-e2*wx + e1*wy + e0*wz) / 2;
+  const T e0Dt = (-e1 * wx - e2 * wy - e3 * wz) / 2;
+  const T e1Dt = (e0 * wx - e3 * wy + e2 * wz) / 2;
+  const T e2Dt = (e3 * wx + e0 * wy - e1 * wz) / 2;
+  const T e3Dt = (-e2 * wx + e1 * wy + e0 * wz) / 2;
 
   return Vector4<T>(e0Dt, e1Dt, e2Dt, e3Dt);
 }
-
 
 // Note: To avoid dependence on Eigen's internal ordering of elements in its
 // Quaternion class, herein we use `e0 = quat.w()', `e1 = quat.x()`, etc.
@@ -222,18 +221,17 @@ Vector4<T> CalculateQuaternionDtFromAngularVelocityExpressedInB(
 template <typename T>
 Vector3<T> CalculateAngularVelocityExpressedInBFromQuaternionDt(
     const Eigen::Quaternion<T>& quat_AB, const Vector4<T>& quatDt) {
-  const T e0 = quat_AB.w(), e1 = quat_AB.x(),
-      e2 = quat_AB.y(), e3 = quat_AB.z();
-  const T e0Dt = quatDt[0], e1Dt = quatDt[1],
-      e2Dt = quatDt[2], e3Dt = quatDt[3];
+  const T e0 = quat_AB.w(), e1 = quat_AB.x(), e2 = quat_AB.y(),
+          e3 = quat_AB.z();
+  const T e0Dt = quatDt[0], e1Dt = quatDt[1], e2Dt = quatDt[2],
+          e3Dt = quatDt[3];
 
-  const T wx = 2*(-e1*e0Dt + e0*e1Dt + e3*e2Dt - e2*e3Dt);
-  const T wy = 2*(-e2*e0Dt - e3*e1Dt + e0*e2Dt + e1*e3Dt);
-  const T wz = 2*(-e3*e0Dt + e2*e1Dt - e1*e2Dt + e0*e3Dt);
+  const T wx = 2 * (-e1 * e0Dt + e0 * e1Dt + e3 * e2Dt - e2 * e3Dt);
+  const T wy = 2 * (-e2 * e0Dt - e3 * e1Dt + e0 * e2Dt + e1 * e3Dt);
+  const T wz = 2 * (-e3 * e0Dt + e2 * e1Dt - e1 * e2Dt + e0 * e3Dt);
 
   return Vector3<T>(wx, wy, wz);
 }
-
 
 /** This function calculates how well a quaternion and its time-derivative
  * satisfy the quaternion time-derivative constraint specified in [Kane, 1983]
@@ -257,8 +255,9 @@ template <typename T>
 T CalculateQuaternionDtConstraintViolation(const Eigen::Quaternion<T>& quat,
                                            const Vector4<T>& quatDt) {
   const T w = quat.w(), x = quat.x(), y = quat.y(), z = quat.z();
-  const T wDt = quatDt[0], xDt = quatDt[1],  yDt = quatDt[2], zDt = quatDt[3];
-  const T quaternionDt_constraint_violation = 2*(w*wDt + x*xDt + y*yDt + z*zDt);
+  const T wDt = quatDt[0], xDt = quatDt[1], yDt = quatDt[2], zDt = quatDt[3];
+  const T quaternionDt_constraint_violation =
+      2 * (w * wDt + x * xDt + y * yDt + z * zDt);
   return quaternionDt_constraint_violation;
 }
 
@@ -279,12 +278,11 @@ T CalculateQuaternionDtConstraintViolation(const Eigen::Quaternion<T>& quat,
  */
 template <typename T>
 boolean<T> IsQuaternionValid(const Eigen::Quaternion<T>& quat,
-                       const double tolerance) {
+                             const double tolerance) {
   using std::abs;
   const T quat_norm_error = abs(1.0 - quat.norm());
   return (quat_norm_error <= tolerance);
 }
-
 
 /** This function tests if a quaternion satisfies the time-derivative constraint
  * specified in [Kane, 1983] Section 1.13, equation 13, page 59.  A quaternion
@@ -306,19 +304,18 @@ boolean<T> IsQuaternionValid(const Eigen::Quaternion<T>& quat,
  */
 template <typename T>
 boolean<T> IsBothQuaternionAndQuaternionDtOK(const Eigen::Quaternion<T>& quat,
-                                       const Vector4<T>& quatDt,
-                                       const double tolerance) {
+                                             const Vector4<T>& quatDt,
+                                             const double tolerance) {
   using std::abs;
 
   if constexpr (scalar_predicate<T>::is_bool) {
     // For an accurate test, the quaternion should be reasonably accurate.
-    if ( !IsQuaternionValid(quat, tolerance) ) return false;
+    if (!IsQuaternionValid(quat, tolerance)) return false;
   }
 
   const T quatDt_test = CalculateQuaternionDtConstraintViolation(quat, quatDt);
   return abs(quatDt_test) <= tolerance;
 }
-
 
 /** This function tests if a quaternion and a quaternion's time derivative
  * can calculate and match an angular velocity to within a tolerance.
@@ -337,16 +334,14 @@ boolean<T> IsBothQuaternionAndQuaternionDtOK(const Eigen::Quaternion<T>& quat,
  */
 template <typename T>
 bool IsQuaternionAndQuaternionDtEqualAngularVelocityExpressedInB(
-                                       const Eigen::Quaternion<T>& quat,
-                                       const Vector4<T>& quatDt,
-                                       const Vector3<T>& w_B,
-                                       const double tolerance) {
+    const Eigen::Quaternion<T>& quat, const Vector4<T>& quatDt,
+    const Vector3<T>& w_B, const double tolerance) {
   // Ensure time-derivative of quaternion satisfies quarternionDt test.
-  if ( !math::IsBothQuaternionAndQuaternionDtOK(quat, quatDt, tolerance) )
+  if (!math::IsBothQuaternionAndQuaternionDtOK(quat, quatDt, tolerance))
     return false;
 
   const Eigen::Vector3d w_from_quatDt =
-       math::CalculateAngularVelocityExpressedInBFromQuaternionDt(quat, quatDt);
+      math::CalculateAngularVelocityExpressedInBFromQuaternionDt(quat, quatDt);
   return is_approx_equal_abstol(w_from_quatDt, w_B, tolerance);
 }
 
@@ -383,9 +378,9 @@ Eigen::AngleAxis<T> QuaternionToAngleAxisLikeEigen(
   const boolean<T> is_sin_angle_zero = sin_half_angle_abs == 0.0;
   const boolean<T> is_w_negative = quaternion.w() < 0.0;
   const T axis_sign = if_then_else(is_w_negative, -1.0, 1.0);
-  result.axis() = if_then_else(
-      is_sin_angle_zero, unit_axis,
-      (axis_sign * quaternion.vec() / sin_half_angle_abs).eval());
+  result.axis() =
+      if_then_else(is_sin_angle_zero, unit_axis,
+                   (axis_sign * quaternion.vec() / sin_half_angle_abs).eval());
   return result;
 }
 }  // namespace internal

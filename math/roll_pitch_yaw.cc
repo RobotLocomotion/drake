@@ -112,9 +112,9 @@ Vector3<T> CalcRollPitchYawFromQuaternionAndRotationMatrix(
     const Eigen::Quaternion<T>& quaternion, const Matrix3<T>& R) {
   // TODO(14927) This method needs testing with symbolic template type T.
   //  Check if it works or throw a nice exception message.
+  using std::abs;
   using std::atan2;
   using std::sqrt;
-  using std::abs;
 
   // Calculate q2 using lots of information in the rotation matrix.
   // Rsum = abs( cos(q2) ) is inherently non-negative.
@@ -226,7 +226,7 @@ Vector3<T> RollPitchYaw<T>::CalcRpyDDtFromAngularAccelInChild(
   const T pDt_yDt = pDt * yDt;
   const T rDt_pDt = rDt * pDt;
   const Vector3<T> remainder(tanp * rDt_pDt + one_over_cp * pDt_yDt,
-                              -cp * rDt * yDt,
+                             -cp * rDt * yDt,
                              tanp * pDt_yDt + one_over_cp * rDt_pDt);
 
   // Combine terms that contains alpha with remainder terms.
@@ -237,13 +237,13 @@ Vector3<T> RollPitchYaw<T>::CalcRpyDDtFromAngularAccelInChild(
 
 template <typename T>
 void RollPitchYaw<T>::CalcRotationMatrixDrDpDy(Matrix3<T>* R_r, Matrix3<T>* R_p,
-                                Matrix3<T>* R_y) const {
+                                               Matrix3<T>* R_y) const {
   DRAKE_ASSERT(R_r != nullptr && R_p != nullptr && R_y != nullptr);
   const T& r = roll_angle();
   const T& p = pitch_angle();
   const T& y = yaw_angle();
-  using std::sin;
   using std::cos;
+  using std::sin;
   const T c0 = cos(r), c1 = cos(p), c2 = cos(y);
   const T s0 = sin(r), s1 = sin(p), s2 = sin(y);
   const T c2_s1 = c2 * s1, s2_s1 = s2 * s1, s2_s0 = s2 * s0, s2_c0 = s2 * c0;
@@ -398,7 +398,8 @@ void RollPitchYaw<T>::SetFromQuaternionAndRotationMatrix(
   constexpr double tolerance = 20 * kEpsilon;
   if (scalar_predicate<T>::is_bool &&
       !R_quaternion.IsNearlyEqualTo(R, tolerance)) {
-    std::string message = fmt::format("RollPitchYaw::{}():"
+    std::string message = fmt::format(
+        "RollPitchYaw::{}():"
         " An element of the RotationMatrix R passed to this method differs by"
         " more than {:G} from the corresponding element of the RotationMatrix"
         " formed by the Quaternion passed to this method.  To avoid this"
@@ -437,18 +438,18 @@ boolean<T> RollPitchYaw<T>::IsNearlySameOrientation(
 template <typename T>
 void RollPitchYaw<T>::ThrowPitchAngleViolatesGimbalLockTolerance(
     const char* function_name, const T& pitch_angle) {
-    const double pitch_radians = ExtractDoubleOrThrow(pitch_angle);
-    const double cos_pitch_angle = std::cos(pitch_radians);
-    DRAKE_ASSERT(DoesCosPitchAngleViolateGimbalLockTolerance(cos_pitch_angle));
-    const double tolerance_degrees =
-        GimbalLockPitchAngleTolerance() * 180 / M_PI;
-    std::string message = fmt::format("RollPitchYaw::{}():"
-        " Pitch angle p = {:G} degrees is within {:G} degrees of gimbal-lock."
-        " There is a divide-by-zero error (singularity) at gimbal-lock.  Pitch"
-        " angles near gimbal-lock cause numerical inaccuracies.  To avoid this"
-        " orientation singularity, use a quaternion -- not RollPitchYaw.",
-        function_name, pitch_radians * 180 / M_PI, tolerance_degrees);
-    throw std::runtime_error(message);
+  const double pitch_radians = ExtractDoubleOrThrow(pitch_angle);
+  const double cos_pitch_angle = std::cos(pitch_radians);
+  DRAKE_ASSERT(DoesCosPitchAngleViolateGimbalLockTolerance(cos_pitch_angle));
+  const double tolerance_degrees = GimbalLockPitchAngleTolerance() * 180 / M_PI;
+  std::string message = fmt::format(
+      "RollPitchYaw::{}():"
+      " Pitch angle p = {:G} degrees is within {:G} degrees of gimbal-lock."
+      " There is a divide-by-zero error (singularity) at gimbal-lock.  Pitch"
+      " angles near gimbal-lock cause numerical inaccuracies.  To avoid this"
+      " orientation singularity, use a quaternion -- not RollPitchYaw.",
+      function_name, pitch_radians * 180 / M_PI, tolerance_degrees);
+  throw std::runtime_error(message);
 }
 
 template <typename T>
@@ -469,10 +470,12 @@ std::ostream& operator<<(std::ostream& out, const RollPitchYaw<T>& rpy) {
   return out;
 }
 
+// clang-format off
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((
     static_cast<std::ostream&(*)(std::ostream&, const RollPitchYaw<T>&)>(
         &operator<< )
 ))
+// clang-format on
 
 }  // namespace math
 }  // namespace drake

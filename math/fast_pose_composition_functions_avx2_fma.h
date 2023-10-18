@@ -45,10 +45,9 @@ Here we calculate `R_AC = R_AB * R_BC`. It is OK for R_AC to overlap
 with one or both inputs.
 
 Note: if AVX2 is not supported, calling this function will crash the program. */
-void ComposeRRAvx(
-    const RotationMatrix<double>& R_AB,
-    const RotationMatrix<double>& R_BC,
-    RotationMatrix<double>* R_AC);
+void ComposeRRAvx(const RotationMatrix<double>& R_AB,
+                  const RotationMatrix<double>& R_BC,
+                  RotationMatrix<double>* R_AC);
 
 /* Composes the inverse of a drake::math::RotationMatrix<double> object with
 another (non-inverted) drake::math::RotationMatrix<double> as quickly as
@@ -62,10 +61,9 @@ Here we calculate `R_AC = R_BA⁻¹ * R_BC`. It is OK for R_AC to overlap
 with one or both inputs.
 
 Note: if AVX2 is not supported, calling this function will crash the program. */
-void ComposeRinvRAvx(
-    const RotationMatrix<double>& R_BA,
-    const RotationMatrix<double>& R_BC,
-    RotationMatrix<double>* R_AC);
+void ComposeRinvRAvx(const RotationMatrix<double>& R_BA,
+                     const RotationMatrix<double>& R_BC,
+                     RotationMatrix<double>* R_AC);
 
 /** Composes two drake::math::RigidTransform<double> objects as quickly as
 possible, resulting in a new RigidTransform.
@@ -77,10 +75,9 @@ Here we calculate `X_AC = X_AB * X_BC`. It is OK for X_AC to overlap
 with one or both inputs.
 
 Note: if AVX2 is not supported, calling this function will crash the program. */
-void ComposeXXAvx(
-    const RigidTransform<double>& X_AB,
-    const RigidTransform<double>& X_BC,
-    RigidTransform<double>* X_AC);
+void ComposeXXAvx(const RigidTransform<double>& X_AB,
+                  const RigidTransform<double>& X_BC,
+                  RigidTransform<double>* X_AC);
 
 /** Composes the inverse of a drake::math::RigidTransform<double> object with
 another (non-inverted) drake::math::RigidTransform<double> as quickly as
@@ -93,10 +90,9 @@ Here we calculate `X_AC = X_BA⁻¹ * X_BC`. It is OK for X_AC to overlap
 with one or both inputs.
 
 Note: if AVX2 is not supported, calling this function will crash the program. */
-void ComposeXinvXAvx(
-    const RigidTransform<double>& X_BA,
-    const RigidTransform<double>& X_BC,
-    RigidTransform<double>* X_AC);
+void ComposeXinvXAvx(const RigidTransform<double>& X_BA,
+                     const RigidTransform<double>& X_BC,
+                     RigidTransform<double>* X_AC);
 
 }  // namespace internal
 }  // namespace math
