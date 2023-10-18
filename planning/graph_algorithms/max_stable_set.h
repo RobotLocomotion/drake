@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 
 #include <Eigen/Sparse>
 
@@ -49,18 +50,18 @@ class MaxStableSetSolverViaMIP final : public MaxStableSetSolverBase {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MaxStableSetSolverViaMIP);
   MaxStableSetSolverViaMIP(
-      const solvers::SolverId& solver_id = solvers::MosekSolver::id(),
+      const std::optional<solvers::SolverId> solver_id = std::nullopt,
       const solvers::SolverOptions& options = solvers::SolverOptions());
 
   VectorX<bool> SolveMaxStableSet(
       const Eigen::SparseMatrix<bool>& adjacency_matrix);
 
-  solvers::SolverId solver_id() { return solver_id_; }
+  std::optional<solvers::SolverId> solver_id() { return solver_id_; }
 
   solvers::SolverOptions options() { return options_; }
 
  private:
-  solvers::SolverId solver_id_;
+  std::optional<solvers::SolverId> solver_id_;
   solvers::SolverOptions options_;
 };
 

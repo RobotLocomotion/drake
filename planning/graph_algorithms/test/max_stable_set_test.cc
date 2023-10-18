@@ -3,6 +3,8 @@
 #include <gtest/gtest.h>
 
 #include "drake/planning/graph_algorithms/test/common_graphs.h"
+#include "drake/solvers/choose_best_solver.h"
+
 namespace drake {
 namespace planning {
 namespace graph_algorithms {
@@ -15,41 +17,47 @@ void TestMaxStableSetViaMIP(
     const Eigen::Ref<const Eigen::SparseMatrix<bool>>& adjacency_matrix,
     const int expected_size,
     const std::vector<VectorX<bool>>& possible_solutions) {
-  MaxStableSetSolverViaMIP solver;
-  MaxStableSetOptions options(&solver);
-  VectorX<bool> stable_set_inds = MaxStableSet(adjacency_matrix, options);
-  EXPECT_EQ(stable_set_inds.cast<int>().sum(), expected_size);
-  bool solution_match_found = false;
-  for (const auto& possible_solution : possible_solutions) {
-    bool all_equal = true;
-    for (int i = 0; i < stable_set_inds.rows(); ++i) {
-      if (stable_set_inds(i) != possible_solution(i)) {
-        all_equal = false;
-        break;
+  for (const auto& solver_id :
+       {solvers::MosekSolver::id(), solvers::GurobiSolver::id()}) {
+    if (solvers::MakeSolver(solver_id)->available() &&
+        solvers::MakeSolver(solver_id)->enabled()) {
+      MaxStableSetSolverViaMIP solver(solver_id);
+      MaxStableSetOptions options(&solver);
+      VectorX<bool> stable_set_inds = MaxStableSet(adjacency_matrix, options);
+      EXPECT_EQ(stable_set_inds.cast<int>().sum(), expected_size);
+      bool solution_match_found = false;
+      for (const auto& possible_solution : possible_solutions) {
+        bool all_equal = true;
+        for (int i = 0; i < stable_set_inds.rows(); ++i) {
+          if (stable_set_inds(i) != possible_solution(i)) {
+            all_equal = false;
+            break;
+          }
+        }
+        if (all_equal) {
+          solution_match_found = true;
+          break;
+        }
       }
-    }
-    if (all_equal) {
-      solution_match_found = true;
-      break;
+      EXPECT_TRUE(solution_match_found);
     }
   }
-  EXPECT_TRUE(solution_match_found);
 }
 
 GTEST_TEST(MaxStableSetSolverViaMIPTest, TestConstructor) {
   // Test the default constructor.
   MaxStableSetSolverViaMIP solver1;
-  EXPECT_EQ(solver1.solver_id(), solvers::MosekSolver::id());
+  EXPECT_FALSE(solver1.solver_id().has_value());
 
   // Test the constructor with only the solver id passed
   MaxStableSetSolverViaMIP solver2{solvers::GurobiSolver::id()};
-  EXPECT_EQ(solver2.solver_id(), solvers::GurobiSolver::id());
+  EXPECT_EQ(solver2.solver_id().value(), solvers::GurobiSolver::id());
 
   // Test the constructor with the solver id and some options passed
   solvers::SolverOptions options;
   options.SetOption(solvers::CommonSolverOption::kPrintToConsole, 1);
   MaxStableSetSolverViaMIP solver3{solvers::GurobiSolver::id(), options};
-  EXPECT_EQ(solver3.solver_id(), solvers::GurobiSolver::id());
+  EXPECT_EQ(solver3.solver_id().value(), solvers::GurobiSolver::id());
 }
 
 GTEST_TEST(MaxStableSetSolverViaMIPTest, CompleteGraph) {

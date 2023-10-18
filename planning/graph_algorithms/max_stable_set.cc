@@ -1,5 +1,6 @@
 #include "drake/planning/graph_algorithms/max_stable_set.h"
 
+#include <optional>
 #include <utility>
 #include <vector>
 
@@ -12,7 +13,8 @@ namespace graph_algorithms {
 using Eigen::SparseMatrix;
 
 MaxStableSetSolverViaMIP::MaxStableSetSolverViaMIP(
-    const solvers::SolverId& solver_id, const solvers::SolverOptions& options)
+    const std::optional<solvers::SolverId> solver_id,
+    const solvers::SolverOptions& options)
     : solver_id_(solver_id), options_(options) {}
 
 MaxStableSetOptions::MaxStableSetOptions(const MaxStableSetSolverBase* m_solver)
@@ -45,7 +47,8 @@ VectorX<bool> MaxStableSetSolverViaMIP::SolveMaxStableSet(
   prog.AddLinearConstraint(A, Eigen::VectorXd::Zero(A.rows()),
                            Eigen::VectorXd::Ones(A.rows()), x);
   solvers::MathematicalProgramResult result;
-  solvers::MakeSolver(solver_id_)->Solve(prog, std::nullopt, options_, &result);
+  solvers::MakeSolver(solver_id_.value_or(solvers::ChooseBestSolver(prog)))
+      ->Solve(prog, std::nullopt, options_, &result);
   return result.GetSolution(x).cast<bool>();
 }
 
