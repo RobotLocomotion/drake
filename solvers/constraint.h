@@ -674,8 +674,6 @@ class LinearConstraint : public Constraint {
   using Constraint::UpdateUpperBound;
 
  protected:
-
-
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
               Eigen::VectorXd* y) const override;
 
@@ -693,7 +691,6 @@ class LinearConstraint : public Constraint {
   internal::SparseAndDenseMatrix A_;
 
  private:
-  friend bool A_dense_is_constructed(const LinearConstraint& constraint);
   template <typename DerivedX, typename ScalarY>
   void DoEvalGeneric(const Eigen::MatrixBase<DerivedX>& x,
                      VectorX<ScalarY>* y) const;
