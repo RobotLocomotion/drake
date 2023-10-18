@@ -4,6 +4,7 @@
 #include <string>
 #include <utility>
 
+#include "drake/common/autodiff.h"
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/fmt_eigen.h"

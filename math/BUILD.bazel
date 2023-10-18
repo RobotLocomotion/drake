@@ -188,6 +188,7 @@ drake_cc_library(
         "unit_vector.h",
     ],
     deps = [
+        "//common:autodiff",
         "//common:default_scalars",
         "//common:essential",
         "//common:unused",
