@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "drake/common/name_value.h"
+#include "drake/geometry/optimization/affine_ball.h"
 #include "drake/geometry/optimization/convex_set.h"
 
 namespace drake {
@@ -49,6 +50,10 @@ class Hyperellipsoid final : public ConvexSet {
   Hyperellipsoid(const QueryObject<double>& query_object,
                  GeometryId geometry_id,
                  std::optional<FrameId> reference_frame = std::nullopt);
+
+  /** Constructs a Hyperellipsoid from an AffineBall.
+  @pre ellipsoid.B() is invertible. */
+  explicit Hyperellipsoid(const AffineBall& ellipsoid);
 
   ~Hyperellipsoid() final;
 

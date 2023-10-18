@@ -2,6 +2,7 @@
 
 #include <vector>
 
+#include "drake/geometry/optimization/hyperellipsoid.h"
 #include "drake/solvers/solve.h"
 
 namespace drake {
@@ -24,17 +25,25 @@ AffineBall::AffineBall(const Eigen::Ref<const MatrixXd>& B,
   CheckInvariants();
 }
 
+namespace {
+const Hyperellipsoid& CheckBounded(const Hyperellipsoid& ellipsoid) {
+  DRAKE_THROW_UNLESS(ellipsoid.IsBounded());
+  return ellipsoid;
+}
+}  // namespace
+
+AffineBall::AffineBall(const Hyperellipsoid& ellipsoid)
+    : AffineBall(CheckBounded(ellipsoid).A().inverse(), ellipsoid.center()) {}
+
 AffineBall::~AffineBall() = default;
 
 namespace {
 
 double volume_of_unit_sphere(int dim) {
-  DRAKE_DEMAND(dim >= 0);
+  DRAKE_DEMAND(dim >= 1);
   // Formula from https://en.wikipedia.org/wiki/Volume_of_an_n-ball .
   // Note: special case n≤3 only because they are common and simple.
   switch (dim) {
-    case 0:
-      return 1.0;
     case 1:
       return 2.0;
     case 2:

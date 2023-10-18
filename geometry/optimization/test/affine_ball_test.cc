@@ -7,6 +7,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/geometry/optimization/affine_subspace.h"
+#include "drake/geometry/optimization/hyperellipsoid.h"
 #include "drake/geometry/optimization/test_utilities.h"
 
 namespace drake {
@@ -91,6 +92,27 @@ GTEST_TEST(AffineBallTest, Move) {
   EXPECT_NO_THROW(orig.Clone());
 }
 
+GTEST_TEST(AffineBallTest, UnitBall6DTest) {
+  AffineBall ab = AffineBall::MakeUnitBall(6);
+  EXPECT_EQ(ab.ambient_dimension(), 6);
+
+  const double kScale = sqrt(1.0 / 6.0);
+  Vector6d in1_W{Vector6d::Constant(-0.99 * kScale)},
+      in2_W{Vector6d::Constant(0.99 * kScale)},
+      out1_W{Vector6d::Constant(-1.01 * kScale)},
+      out2_W{Vector6d::Constant(1.01 * kScale)};
+
+  EXPECT_TRUE(ab.PointInSet(in1_W));
+  EXPECT_TRUE(ab.PointInSet(in2_W));
+  EXPECT_FALSE(ab.PointInSet(out1_W));
+  EXPECT_FALSE(ab.PointInSet(out2_W));
+
+  ASSERT_TRUE(ab.MaybeGetFeasiblePoint().has_value());
+  EXPECT_TRUE(ab.PointInSet(ab.MaybeGetFeasiblePoint().value()));
+
+  EXPECT_EQ(ab.CalcVolume(), std::pow(M_PI, 3) / 6);
+}
+
 GTEST_TEST(AffineBallTest, CloneTest) {
   AffineBall ab(Eigen::Matrix<double, 6, 6>::Identity(), Vector6d::Zero());
   std::unique_ptr<ConvexSet> clone = ab.Clone();
@@ -134,6 +156,7 @@ GTEST_TEST(AffineBallTest, MakeAxisAlignedTest) {
   const Vector3d center{3.4, -2.3, 7.4};
   AffineBall ab = AffineBall::MakeAxisAligned(Vector3d{a, b, c}, center);
   EXPECT_EQ(ab.ambient_dimension(), 3);
+
   Eigen::MatrixXd B_expected(3, 3);
   // clang-format off
   B_expected << a, 0, 0,
@@ -250,6 +273,15 @@ GTEST_TEST(AffineBallTest, LowerDimensionalEllipsoids) {
   AffineBall ab7(B, center);
   AffineSubspace as7(ab7, kAffineHullTol);
   EXPECT_EQ(as7.AffineDimension(), 2);
+}
+
+GTEST_TEST(HyperellipsoidTest, FromHyperellipsoid) {
+  Hyperellipsoid E1(MatrixXd::Identity(3, 3), Vector3d::Zero());
+  EXPECT_TRUE(E1.IsBounded());
+  EXPECT_NO_THROW(AffineBall{E1});
+  Hyperellipsoid E2(MatrixXd::Identity(2, 3), Vector3d::Zero());
+  EXPECT_FALSE(E2.IsBounded());
+  EXPECT_THROW(AffineBall{E2}, std::exception);
 }
 
 }  // namespace optimization
