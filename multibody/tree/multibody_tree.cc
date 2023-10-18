@@ -729,7 +729,7 @@ void MultibodyTree<T>::FinalizeInternals() {
     actuator->SetTopology(topology_);
   }
 
-  body_node_levels_.resize(topology_.tree_height());
+  body_node_levels_.resize(topology_.forest_height());
   for (BodyNodeIndex body_node_index(1);
        body_node_index < topology_.get_num_body_nodes(); ++body_node_index) {
     const BodyNodeTopology& node_topology =

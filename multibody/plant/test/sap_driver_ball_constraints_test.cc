@@ -140,10 +140,11 @@ TEST_P(TwoBodiesTest, ConfirmConstraintProperties) {
   // One clique if body A is anchored, two if not.
   const int expected_num_cliques = config.bodyA_anchored ? 1 : 2;
   EXPECT_EQ(constraint->num_cliques(), expected_num_cliques);
-  EXPECT_EQ(constraint->first_clique(), 0);
   if (expected_num_cliques == 1) {
+    EXPECT_EQ(constraint->first_clique(), 1);  // i.e., bodyB's tree
     EXPECT_THROW(constraint->second_clique(), std::exception);
   } else {
+    EXPECT_EQ(constraint->first_clique(), 0);
     EXPECT_EQ(constraint->second_clique(), 1);
   }
 
