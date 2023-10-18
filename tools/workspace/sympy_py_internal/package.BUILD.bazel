@@ -1,0 +1,22 @@
+# -*- bazel -*-
+
+load("@drake//tools/skylark:py.bzl", "py_library")
+
+licenses(["notice"])  # BSD-3-Clause, MIT
+
+package(
+    default_visibility = ["//visibility:public"],
+)
+
+py_library(
+    name = "sympy_py",
+    srcs = glob([
+        "sympy/**/*.py",
+    ], allow_empty = False),
+    data = glob([
+        "sympy/**",
+    ], exclude = [
+        "sympy/**/*.py",
+    ], allow_empty = False),
+    imports = ["."],
+)
