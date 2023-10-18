@@ -1193,7 +1193,7 @@ namespace {
 // Constructs the matrices A, lb, ub for the linear constraint lb <= A * X <= ub
 // encoding that X is in DD* for a matrix of size n. Returns the tuple
 // (A, lb, ub).
-std::tuple<Eigen::MatrixXd, Eigen::VectorXd, Eigen::VectorXd>
+std::tuple<Eigen::SparseMatrix<double>, Eigen::VectorXd, Eigen::VectorXd>
 ConstructPositiveDiagonallyDominantDualConeConstraintMatricesForN(const int n) {
   // Return the index of Xᵢⱼ in the vector created by stacking the column of X
   // into a vector.
@@ -1204,7 +1204,10 @@ ConstructPositiveDiagonallyDominantDualConeConstraintMatricesForN(const int n) {
   // The DD dual cone constraint is a sparse linear constraint. We instantiate
   // the A matrix using this triplet list.
   std::vector<Eigen::Triplet<double>> A_triplet_list;
-  A_triplet_list.reserve(n * n);
+  // There are n rows with one non-zero entry in the row, and 2 * (n choose 2)
+  // rows with 4 non-zero entries in the row. This requires 4*n*n-3*n non-zero
+  // entries.
+  A_triplet_list.reserve(4 * n * n - 3 * n);
 
   Eigen::VectorXd lb = Eigen::VectorXd::Zero(n * n);
   Eigen::VectorXd ub = kInf * Eigen::VectorXd::Ones(n * n);
@@ -1237,7 +1240,9 @@ ConstructPositiveDiagonallyDominantDualConeConstraintMatricesForN(const int n) {
       ++row_ctr;
     }
   }
-  Eigen::SparseMatrix<double> A(n * n, n * n);
+  DRAKE_ASSERT(row_ctr == n * n);
+  DRAKE_ASSERT(static_cast<int>(A_triplet_list.size()) == 4 * n * n - 3 * n);
+  Eigen::SparseMatrix<double> A(row_ctr, n * n);
   A.setFromTriplets(A_triplet_list.begin(), A_triplet_list.end());
   return std::make_tuple(A, lb, ub);
 }
@@ -1254,11 +1259,12 @@ MathematicalProgram::AddPositiveDiagonallyDominantDualConeMatrixConstraint(
   symbolic::DecomposeAffineExpressions(
       Eigen::Map<const VectorX<symbolic::Expression>>(X.data(), X.size()),
       &A_expr, &b_expr, &variables);
-  const std::tuple<Eigen::MatrixXd, Eigen::VectorXd, Eigen::VectorXd>
+  const std::tuple<Eigen::SparseMatrix<double>, Eigen::VectorXd,
+                   Eigen::VectorXd>
       constraint_mats{
           ConstructPositiveDiagonallyDominantDualConeConstraintMatricesForN(n)};
   return AddLinearConstraint(
-      std::get<0>(constraint_mats) * A_expr,  // A * A_expr
+      (std::get<0>(constraint_mats) * A_expr).sparseView(),  // A * A_expr
       std::get<1>(constraint_mats) -
           std::get<0>(constraint_mats) * b_expr,  // lb - A * b_expr
       std::get<2>(constraint_mats),  // ub - A * b_expr, but since ub is kInf no
@@ -1271,7 +1277,8 @@ MathematicalProgram::AddPositiveDiagonallyDominantDualConeMatrixConstraint(
     const Eigen::Ref<const MatrixX<symbolic::Variable>>& X) {
   const int n = X.rows();
   DRAKE_DEMAND(X.cols() == n);
-  const std::tuple<Eigen::MatrixXd, Eigen::VectorXd, Eigen::VectorXd>
+  const std::tuple<Eigen::SparseMatrix<double>, Eigen::VectorXd,
+                   Eigen::VectorXd>
       constraint_mats{
           ConstructPositiveDiagonallyDominantDualConeConstraintMatricesForN(n)};
   return AddLinearConstraint(
