@@ -50,8 +50,20 @@ GTEST_TEST(DiagonallyDominantMatrixDualConeConstraint,
   // Test that DD* matrices are feasible.
   MathematicalProgram prog;
   auto X = prog.NewSymmetricContinuousVariables<2>();
-  auto dual_cone_constraints =
+  auto dual_cone_constraint =
       prog.AddPositiveDiagonallyDominantDualConeMatrixConstraint(X);
+  // The dual cone constraint should be a single linear constraint with n²
+  // inequalities where n is the number of rows in X.
+  EXPECT_EQ(dual_cone_constraint.evaluator()->get_sparse_A().rows(),
+            X.rows() * X.rows());
+  // There are n rows with one non-zero entry in the row, and 2 * (n choose 2)
+  // rows with 4 non-zero entries in the row. This requires 4*n*n-3*n non-zero
+  // entries.
+  EXPECT_EQ(dual_cone_constraint.evaluator()->get_sparse_A().nonZeros(),
+            4 * X.rows() * X.rows() - 3 * X.rows());
+
+  // Ensure that a sparse constraint is constructed.
+  EXPECT_FALSE(dual_cone_constraint.evaluator()->is_dense_A_constructed());
 
   auto X_constraint = prog.AddBoundingBoxConstraint(
       Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero(),
@@ -103,8 +115,14 @@ GTEST_TEST(DiagonallyDominantMatrixDualConeConstraint,
     });
   };
 
-  auto dual_cone_constraints =
+  auto dual_cone_constraint =
       prog.AddPositiveDiagonallyDominantDualConeMatrixConstraint(Z);
+  // The dual cone constraint should be a single linear constraint with n²
+  // inequalities where n is the number of rows in Z.
+  EXPECT_EQ(dual_cone_constraint.evaluator()->get_sparse_A().rows(),
+            Z.rows() * Z.rows());
+  // Ensure that a sparse constraint is constructed.
+  EXPECT_FALSE(dual_cone_constraint.evaluator()->is_dense_A_constructed());
 
   VectorX<symbolic::Expression> z_upper(3);
   z_upper << Z(0, 0), Z(0, 1), Z(1, 1);
@@ -166,7 +184,20 @@ GTEST_TEST(DiagonallyDominantMatrixDualConeConstraint,
 
   prog.AddBoundingBoxConstraint(Eigen::Vector3d(1, 2, 3),
                                 Eigen::Vector3d(1, 2, 3), X.diagonal());
-  prog.AddPositiveDiagonallyDominantDualConeMatrixConstraint(X);
+  auto dual_cone_constraint =
+      prog.AddPositiveDiagonallyDominantDualConeMatrixConstraint(X);
+  // The dual cone constraint should be a single linear constraint with n²
+  // inequalities where n is the number of rows in X.
+  EXPECT_EQ(dual_cone_constraint.evaluator()->get_sparse_A().rows(),
+            X.rows() * X.rows());
+  // There are n rows with one non-zero entry in the row, and 2 * (n choose 2)
+  // rows with 4 non-zero entries in the row. This requires 4*n*n-3*n non-zero
+  // entries.
+  EXPECT_EQ(dual_cone_constraint.evaluator()->get_sparse_A().nonZeros(),
+            4 * X.rows() * X.rows() - 3 * X.rows());
+
+  // Ensure that a sparse constraint is constructed.
+  EXPECT_FALSE(dual_cone_constraint.evaluator()->is_dense_A_constructed());
 
   auto cost = prog.AddLinearCost(Eigen::Vector3d::Zero(), 0,
                                  VectorDecisionVariable<3>(a, b, c));
@@ -242,7 +273,14 @@ GTEST_TEST(DiagonallyDominantMatrixDualConeConstraint,
   prog.AddLinearEqualityConstraint(Z(1, 2) - (a + c), 0);
 
   prog.AddLinearEqualityConstraint(Z.diagonal(), Eigen::Vector3d(1, 2, 3));
-  prog.AddPositiveDiagonallyDominantDualConeMatrixConstraint(Z);
+  auto dual_cone_constraint =
+      prog.AddPositiveDiagonallyDominantDualConeMatrixConstraint(Z);
+  // The dual cone constraint should be a single linear constraint with n²
+  // inequalities where n is the number of rows in X.
+  EXPECT_EQ(dual_cone_constraint.evaluator()->get_sparse_A().rows(),
+            Z.rows() * Z.rows());
+  // Ensure that a sparse constraint is constructed.
+  EXPECT_FALSE(dual_cone_constraint.evaluator()->is_dense_A_constructed());
 
   auto cost = prog.AddLinearCost(Eigen::Vector3d::Zero(), 0,
                                  VectorDecisionVariable<3>(a, b, c));
