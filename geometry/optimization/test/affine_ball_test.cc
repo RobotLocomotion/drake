@@ -21,6 +21,10 @@ using Eigen::Vector4d;
 using Eigen::VectorXd;
 using internal::CheckAddPointInSetConstraints;
 using std::sqrt;
+using Eigen::Matrix3d;
+using math::RigidTransformd;
+using math::RollPitchYawd;
+using math::RotationMatrixd;
 
 GTEST_TEST(AffineBallTest, DefaultCtor) {
   const AffineBall dut;
@@ -276,7 +280,7 @@ GTEST_TEST(AffineBallTest, LowerDimensionalEllipsoids) {
   EXPECT_EQ(as7.AffineDimension(), 2);
 }
 
-GTEST_TEST(HyperellipsoidTest, FromHyperellipsoid) {
+GTEST_TEST(AffineBallTest, FromHyperellipsoid) {
   Hyperellipsoid E1(MatrixXd::Identity(3, 3), Vector3d::Zero());
   EXPECT_TRUE(E1.IsBounded());
   EXPECT_NO_THROW(AffineBall{E1});
@@ -284,6 +288,121 @@ GTEST_TEST(HyperellipsoidTest, FromHyperellipsoid) {
   EXPECT_FALSE(E2.IsBounded());
   EXPECT_THROW(AffineBall{E2}, std::exception);
 }
+
+
+// TODO: TEST MinimumVolumeCircumscribedEllipsoid
+
+
+// GTEST_TEST(HyperellipsoidTest, MinimumVolumeCircumscribedEllipsoid) {
+//   Eigen::Matrix3Xd p_FA(3, 6);
+//   // clang-format off
+//   p_FA << 1, 0, 0, -1,  0,  0,
+//           0, 2, 0,  0, -2,  0,
+//           0, 0, 3,  0,  0, -3;
+//   // clang-format on
+//   Hyperellipsoid E_F =
+//       Hyperellipsoid::MinimumVolumeCircumscribedEllipsoid(p_FA);
+
+//   const double kTol = 1e-3;
+//   Matrix3d A_expected;
+//   // clang-format off
+//   A_expected << 1,         0,         0,
+//                 0, 1.0 / 2.0,         0,
+//                 0,         0, 1.0 / 3.0;
+//   // clang-format on
+//   Vector3d center_expected = Vector3d::Zero();
+//   EXPECT_TRUE(CompareMatrices(E_F.A(), A_expected, kTol));
+//   EXPECT_TRUE(CompareMatrices(E_F.center(), center_expected, kTol));
+
+//   const RigidTransformd X_GF{RollPitchYawd(.1, .2, 3), Vector3d{.5, .87, .1}};
+//   Eigen::Matrix3Xd p_GA = X_GF * p_FA;
+
+//   Hyperellipsoid E_G =
+//       Hyperellipsoid::MinimumVolumeCircumscribedEllipsoid(p_GA);
+
+//   // The bases are not necessarily the transformed bases, but the norm of the
+//   // transformed points should be 1.
+//   for (int i = 0; i < p_FA.cols(); ++i) {
+//     EXPECT_NEAR((E_G.A() * (X_GF * p_FA.col(i) - E_G.center())).norm(), 1,
+//                 kTol);
+//   }
+// }
+
+// // This tests the case when we have too few points to define a full-dimensional
+// // ellipsoid.
+// GTEST_TEST( MinimumVolumeCircumscribedEllipsoid2) {
+//   Eigen::Matrix2Xd points(2, 2);
+//   // clang-format off
+//   points << 2, -2,
+//             0,  0;
+//   // clang-format on
+//   MatrixXd A_expected(1, 2);
+//   A_expected << 0.5, 0;
+
+//   const double kTol = 1e-6;
+//   Hyperellipsoid E =
+//       Hyperellipsoid::MinimumVolumeCircumscribedEllipsoid(points);
+//   EXPECT_TRUE(CompareMatrices(E.A().cwiseAbs(), A_expected, kTol));
+//   EXPECT_TRUE(CompareMatrices(E.center(), Vector2d::Zero(), kTol));
+
+//   // Points that *almost* lie on a manifold, but with a large rank tolerance.
+//   points.resize(2, 3);
+//   // clang-format off
+//   points <<    2,      0,    -2,
+//             1e-3,  -1e-3,  1e-3;
+//   // clang-format on
+//   Hyperellipsoid::MinimumVolumeCircumscribedEllipsoid(points, 1e-2);
+//   EXPECT_TRUE(CompareMatrices(E.A().cwiseAbs(), A_expected, kTol));
+//   EXPECT_TRUE(CompareMatrices(E.center(), Vector2d::Zero(), kTol));
+
+//   // Default rank tolerance.
+//   E = Hyperellipsoid::MinimumVolumeCircumscribedEllipsoid(points);
+//   EXPECT_EQ(E.A().rows(), 2);
+//   EXPECT_EQ(E.A().cols(), 2);
+
+//   // Cause the solver to fail with an extremely thin ellipsoid and an extremely
+//   // low rank tolerance.
+
+//   // clang-format off
+//   points <<    2,      0,    -2,
+//             1e-13,  -1e-13,  1e-13;
+//   // clang-format on
+//   if (solvers::MosekSolver::is_available() &&
+//       solvers::MosekSolver::is_enabled()) {
+//     // SCS claims success because it solves to a low tolerance. It's sufficient
+//     // here to demonstrate that we give an appropriate message when any one
+//     // solver fails (we choose Mosek).
+//     DRAKE_EXPECT_THROWS_MESSAGE(
+//         Hyperellipsoid::MinimumVolumeCircumscribedEllipsoid(points, 1e-14),
+//         ".*Consider adjusting rank_tol.*");
+//   }
+
+//   // However the default rank_tol works.
+//   E = Hyperellipsoid::MinimumVolumeCircumscribedEllipsoid(points);
+//   EXPECT_TRUE(CompareMatrices(E.A().cwiseAbs(), A_expected, kTol));
+//   EXPECT_TRUE(CompareMatrices(E.center(), Vector2d::Zero(), kTol));
+// }
+
+// // Test a one-dimensional "ball" in a five-dimensional space
+// GTEST_TEST(HyperellipsoidTest, MinimumVolumeCircumscribedEllipsoid3) {
+//   MatrixXd point(5, 2);
+//   // clang-format off
+//   point << 0.1, -0.1,
+//            0.2, -0.2,
+//            0.3, -0.3,
+//            0.4, -0.4,
+//            0.5, -0.5;
+//   // clang-format on
+//   VectorXd center(5);
+//   center << 0.123, 0.435, 2.3, -0.2, 0.75;
+//   point.colwise() += center;
+
+//   const double kTol = 1e-6;
+//   Hyperellipsoid E = Hyperellipsoid::MinimumVolumeCircumscribedEllipsoid(point);
+//   EXPECT_EQ(E.A().rows(), 1);
+//   EXPECT_EQ(E.A().cols(), 5);
+//   EXPECT_TRUE(CompareMatrices(E.center(), center, kTol));
+// }
 
 }  // namespace optimization
 }  // namespace geometry

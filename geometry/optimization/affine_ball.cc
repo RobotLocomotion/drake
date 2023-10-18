@@ -103,11 +103,14 @@ AffineBall AffineBall::MinimumVolumeCircumscribedEllipsoid(const Eigen::Ref<cons
   // there is a PSD constraint, but we are maximizing the eigenvalues of A and
   // the convex hull of the points is guaranteed to be bounded.
   const VectorXd c = A_sol.llt().solve(-b_sol);
+  const Hyperellipsoid hyperellipsoid_local(A_sol, c);
+  const AffineBall affineball_local(hyperellipsoid_local);
 
   // Lift the ellipsoid to the original coordinate system
-  const MatrixXd A_global = ah.ToGlobalCoordinates(A_sol);
-  const VectorXd c_global = ah.ToGlobalCoordinates(c);
-  return AffineBall(A_global, c_global);
+  Eigen::MatrixXd A_full = Eigen::MatrixXd::Zero(dim, dim);
+  A_full.leftCols(rank) = ah.basis() * affineball_local.B();
+  Eigen::VectorXd center_full = ah.ToGlobalCoordinates(affineball_local.center());
+  return AffineBall(A_full, center_full);
 
   // // Check the numerical rank of the data matrix.
   // std::optional<Eigen::MatrixXd> U;
