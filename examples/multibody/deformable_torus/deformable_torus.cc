@@ -45,11 +45,13 @@ using drake::multibody::DeformableBodyId;
 using drake::multibody::DeformableModel;
 using drake::multibody::ExternalForceField;
 using drake::multibody::ModelInstanceIndex;
+using drake::multibody::MultibodyPlant;
 using drake::multibody::MultibodyPlantConfig;
 using drake::multibody::Parser;
 using drake::multibody::PrismaticJoint;
 using drake::multibody::SpatialInertia;
 using drake::multibody::fem::DeformableBodyConfig;
+using drake::multibody::internal::MultibodyTreeSystem;
 using drake::systems::BasicVector;
 using drake::systems::Context;
 using Eigen::Vector2d;
@@ -60,6 +62,73 @@ using Eigen::VectorXd;
 namespace drake {
 namespace examples {
 namespace {
+
+class PointSourceForceField : public ExternalForceField<double> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PointSourceForceField)
+
+  PointSourceForceField(const MultibodyPlant<double>& plant,
+                        const Body<double>& body, const Vector3<double>& p_BC,
+                        double max_value, double distance, double pick_time,
+                        double drop_time)
+      : plant_(&plant),
+        body_(&body),
+        p_BC_(p_BC),
+        max_value_(max_value),
+        distance_(distance),
+        pick_time_(pick_time),
+        drop_time_(drop_time) {}
+
+ private:
+  Vector3<double> CalcPointSource(
+      const systems::Context<double>& context) const {
+    return plant_->EvalBodyPoseInWorld(context, *body_).translation() + p_BC_;
+  }
+
+  Vector3<double> DoEvaluateAt(const systems::Context<double>& context,
+                               const Vector3<double>& p_WQ) const final {
+    if (!GetStatus(context)) return Vector3d::Zero();
+    const Vector3<double>& p_WC = EvalPointSource(context);
+    Vector3<double> p_QC = p_WC - p_WQ;
+    const double dist = p_QC.norm();
+    if (dist == 0 || dist > distance_) {
+      return Vector3<double>::Zero();
+    }
+    const double magnitude = (distance_ - dist) * max_value_ / distance_;
+    return magnitude * p_QC / p_QC.norm();
+  }
+
+  void DoDeclareCacheEntries(MultibodyTreeSystem<double>* tree_system) final {
+    point_source_position_cache_index_ =
+        this->DeclareCacheEntry(
+                tree_system, "point source of the force field",
+                systems::ValueProducer(this,
+                                       &PointSourceForceField::CalcPointSource),
+                {systems::System<double>::xd_ticket()})
+            .cache_index();
+  }
+
+  const Vector3<double>& EvalPointSource(
+      const systems::Context<double>& context) const {
+    return tree_system()
+        .get_cache_entry(point_source_position_cache_index_)
+        .template Eval<Vector3<double>>(context);
+  }
+
+  bool GetStatus(const systems::Context<double>& context) const {
+    const double t = context.get_time();
+    return pick_time_ <= t && t <= drop_time_;
+  }
+
+  const MultibodyPlant<double>* plant_;
+  const Body<double>* body_;
+  Vector3<double> p_BC_;
+  double max_value_{};
+  double distance_{};
+  double pick_time_{};
+  double drop_time_{};
+  systems::CacheIndex point_source_position_cache_index_;
+};
 
 class SuctionCup : public systems::LeafSystem<double> {
  public:
@@ -88,64 +157,18 @@ class SuctionCup : public systems::LeafSystem<double> {
         travel_time_(travel_time),
         lift_time_(lift_time),
         drop_time_(drop_time) {
-    suction_port_index_ =
-        DeclareAbstractOutputPort(
-            "suction_force_field",
-            std::map<DeformableBodyId, ExternalForceField<double>>(),
-            &SuctionCup::CalcForceField)
-            .get_index();
-
-    actual_state_port_index_ =
-        DeclareVectorInputPort("actual state",
-                               drake::systems::BasicVector<double>(2))
-            .get_index();
-
     desired_state_port_index_ =
-        DeclareVectorOutputPort(
-            "desired state", drake::systems::BasicVector<double>(2),
-            &SuctionCup::CalcDesiredState, {all_input_ports_ticket()})
+        DeclareVectorOutputPort("desired state",
+                                drake::systems::BasicVector<double>(2),
+                                &SuctionCup::CalcDesiredState)
             .get_index();
   };
-
-  const drake::systems::InputPort<double>& actual_state_input_port() const {
-    return get_input_port(actual_state_port_index_);
-  }
-
-  const drake::systems::OutputPort<double>& suction_output_port() const {
-    return get_output_port(suction_port_index_);
-  }
 
   const drake::systems::OutputPort<double>& desired_state_output_port() const {
     return get_output_port(desired_state_port_index_);
   }
 
  private:
-  bool GetStatus(const systems::Context<double>& context) const {
-    const double t = context.get_time();
-    return pick_time_ <= t && t <= drop_time_;
-  }
-
-  void CalcForceField(
-      const systems::Context<double>& context,
-      std::map<DeformableBodyId, ExternalForceField<double>>* output) const {
-    output->clear();
-    bool is_on = GetStatus(context);
-    if (!is_on) return;
-
-    const double z = actual_state_input_port().Eval(context)[0];
-    const Vector3d center(0, 0, z - 0.1 / 2);
-    auto f = [center, this](const Vector3d& p_WQ) -> Vector3d {
-      const double dist = (p_WQ - center).norm();
-      if (dist == 0 || dist > max_suction_dist_) {
-        return Vector3d::Zero();
-      }
-      const double magnitude =
-          (max_suction_dist_ - dist) * source_pressure_ / max_suction_dist_;
-      return Vector3d(magnitude * (center - p_WQ).normalized());
-    };
-    (*output)[body_id_] = ExternalForceField<double>({f});
-  }
-
   void CalcDesiredState(const systems::Context<double>& context,
                         systems::BasicVector<double>* desired_state) const {
     const double t = context.get_time();
@@ -180,9 +203,7 @@ class SuctionCup : public systems::LeafSystem<double> {
   double lift_time_{};
   double drop_time_{};
 
-  int suction_port_index_{};
   int desired_state_port_index_{};
-  int actual_state_port_index_{};
 };
 
 int do_main() {
@@ -259,7 +280,7 @@ int do_main() {
   const double kL = 0.09 * scale;
   /* Set the initial pose of the torus such that its bottom face is touching
    the ground. */
-  const RigidTransformd X_WB(Vector3<double>(0.0, 0.0, kL / 2.0));
+  const RigidTransformd X_WB(Vector3<double>(0.06, 0.0, kL / 2.0));
   auto torus_instance = std::make_unique<GeometryInstance>(
       X_WB, std::move(torus_mesh), "deformable_torus");
 
@@ -281,29 +302,31 @@ int do_main() {
       std::move(torus_instance), deformable_config, unused_resolution_hint);
   const DeformableModel<double>* deformable_model =
       owned_deformable_model.get();
+
+  const double kInitialHeight = 0.5;
+  const double kStartSuctionHeight =
+      0.15;                        // The height at which to turn on suction.
+  const double kWaitTime = 3.0;    // Time to start the action
+  const double kTravelTime = 1.0;  // Time to raise the object to top.
+  const double kStartSuctionTime = 3.0;  // Time to turn on suction.
+  const double kPickUpTime = 6.0;  // Time to finish picking up the object.
+  const double kDropTime = 9.0;    // Time to turn off suction.
+
+  owned_deformable_model->AddExternalForce(
+      std::make_unique<PointSourceForceField>(
+          plant, body, Vector3d(0, 0, -0.05), FLAGS_max_suction_force_density,
+          FLAGS_suction_radius, kStartSuctionTime, kDropTime));
   plant.AddPhysicalModel(std::move(owned_deformable_model));
 
   /* All rigid and deformable models have been added. Finalize the plant. */
   plant.Finalize();
 
-  const double kInitialHeight = 0.5;
-  const double kStartSuctionHeight =
-      0.15;                        // The height at which to turn on suction.
-  const double kWaitTime = 3.0;    // Time to start picking up the object.
-  const double kTravelTime = 1.0;  // Time to raise the object to top.
-  const double kPickUpTime = 6.0;  // Time to finish picking up the object.
-  const double kDropTime = 9.0;    // Time to turn off suction.
-
   const auto& suction = *builder.AddSystem<SuctionCup>(
       body_id, kInitialHeight, kStartSuctionHeight,
       FLAGS_max_suction_force_density, FLAGS_suction_radius, kWaitTime,
       kTravelTime, kPickUpTime, kDropTime);
-  builder.Connect(plant.get_state_output_port(),
-                  suction.actual_state_input_port());
   builder.Connect(suction.desired_state_output_port(),
                   plant.get_desired_state_input_port(model_instance));
-  builder.Connect(suction.suction_output_port(),
-                  deformable_model->external_force_field_port());
 
   /* It's essential to connect the vertex position port in DeformableModel to
    the source configuration port in SceneGraph when deformable bodies are

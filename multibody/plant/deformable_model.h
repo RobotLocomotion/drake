@@ -140,6 +140,10 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
    model. */
   systems::DiscreteStateIndex GetDiscreteStateIndex(DeformableBodyId id) const;
 
+  void AddExternalForce(std::unique_ptr<ExternalForceField<T>> force_field) {
+    fem_external_forces_.emplace_back(std::move(force_field));
+  }
+
   /** Returns the FemModel for the body with `id`.
    @throws exception if no deformable body with `id` is registered with `this`
    %DeformableModel. */
@@ -212,11 +216,6 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
     return plant_->get_output_port(vertex_positions_port_index_);
   }
 
-  const systems::InputPort<T>& external_force_field_port() const {
-    this->ThrowIfSystemResourcesNotDeclared(__func__);
-    return plant_->get_input_port(external_force_field_port_index_);
-  }
-
  private:
   PhysicalModelPointerVariant<T> DoToPhysicalModelPointerVariant() const final {
     return PhysicalModelPointerVariant<T>(this);
@@ -265,14 +264,15 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
       geometry_id_to_body_id_;
   std::unordered_map<DeformableBodyId, std::unique_ptr<fem::FemModel<T>>>
       fem_models_;
+  std::vector<std::unique_ptr<ExternalForceField<T>>> fem_external_forces_;
   std::unordered_map<DeformableBodyId, std::vector<MultibodyConstraintId>>
       body_id_to_constraint_ids_;
+  std::unordered_map<DeformableBodyId, T> body_id_to_density_prefinalize_;
   std::unordered_map<DeformableBodyId, DeformableBodyIndex> body_id_to_index_;
   std::vector<DeformableBodyId> body_ids_;
   std::map<MultibodyConstraintId, internal::DeformableRigidFixedConstraintSpec>
       fixed_constraint_specs_;
   systems::OutputPortIndex vertex_positions_port_index_;
-  systems::InputPortIndex external_force_field_port_index_;
 };
 
 }  // namespace multibody

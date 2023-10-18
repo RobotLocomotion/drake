@@ -768,22 +768,7 @@ void DeformableDriver<T>::CalcFreeMotionFemSolver(
       nonparticipating_vertices.insert(v);
     }
   }
-
-  const auto& external_force_port =
-      deformable_model_->external_force_field_port();
-  if (external_force_port.HasValue(context)) {
-    const auto& external_forces =
-        external_force_port
-            .template Eval<std::map<DeformableBodyId, ExternalForceField<T>>>(
-                context);
-    if (external_forces.count(body_id) > 0) {
-      const ExternalForceField<T>& f = external_forces.at(body_id);
-      fem_solver->set_external_force_field(&f);
-    } else {
-      fem_solver->set_external_force_field(nullptr);
-    }
-  }
-  fem_solver->AdvanceOneTimeStep(fem_state, nonparticipating_vertices);
+  fem_solver->AdvanceOneTimeStep(context, fem_state, nonparticipating_vertices);
 }
 
 template <typename T>

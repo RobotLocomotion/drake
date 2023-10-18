@@ -574,6 +574,15 @@ class MultibodyTreeSystemElementAttorney {
     return systems::AbstractParameterIndex{
         tree_system->DeclareAbstractParameter(model_value)};
   }
+
+  static systems::CacheEntry& DeclareCacheEntry(
+      MultibodyTreeSystem<T>* tree_system, std::string description,
+      systems::ValueProducer value_producer,
+      std::set<systems::DependencyTicket> prerequisites_of_calc) {
+    return tree_system->DeclareCacheEntry(std::move(description),
+                                          std::move(value_producer),
+                                          std::move(prerequisites_of_calc));
+  }
 };
 }  // namespace internal
 }  // namespace multibody

@@ -56,6 +56,7 @@ class FemSolver {
    @throws std::exception if the input `prev_state` is incompatible with the FEM
    model solved by this solver. */
   int AdvanceOneTimeStep(
+      const systems::Context<T>& context,
       const FemState<T>& prev_state,
       const std::unordered_set<int>& nonparticipating_vertices);
 
@@ -76,14 +77,6 @@ class FemSolver {
 
   /* Returns the FEM model that this solver solves for. */
   const FemModel<T>& model() const { return *model_; }
-
-  void set_external_force_field(const ExternalForceField<T>* external_force) {
-    external_force_ = external_force;
-  }
-
-  const ExternalForceField<T>* external_force_field() const {
-    return external_force_;
-  }
 
   /* Returns the discrete time integrator that this solver uses. */
   const DiscreteTimeIntegrator<T>& integrator() const { return *integrator_; }
@@ -169,6 +162,7 @@ class FemSolver {
    @returns the number of iterations it takes for the solver to converge or -1
    if the solver fails to converge. */
   int SolveNonlinearModel(
+      const systems::Context<T>& context,
       const std::unordered_set<int>& nonparticipating_vertices);
 
   /* For a linear FEM model, solves for the equilibrium FEM state z such that
@@ -182,13 +176,8 @@ class FemSolver {
    @returns 0 if the `input` state is already at equilibrium, 1 otherwise.
    @pre the FEM model is linear. */
   int SolveLinearModel(
+      const systems::Context<T>& context,
       const std::unordered_set<int>& nonparticipating_vertices);
-
-  std::optional<ExternalForceField<T>> external_force_or_null() const {
-    return external_force_ == nullptr
-               ? std::nullopt
-               : std::optional<ExternalForceField<T>>(*external_force_);
-  }
 
   /* The FEM model being solved by `this` solver. */
   const FemModel<T>* model_{nullptr};
@@ -205,7 +194,6 @@ class FemSolver {
   int max_iterations_{100};
   FemStateAndSchurComplement next_state_and_schur_complement_;
   Scratch scratch_;
-  const ExternalForceField<T>* external_force_{nullptr};
 };
 
 }  // namespace internal

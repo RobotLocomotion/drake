@@ -437,7 +437,8 @@ class VolumetricElement
     return data;
   }
 
-  void DoAddScaledExternalForce(const Data& data, const T& scale,
+  void DoAddScaledExternalForce(const systems::Context<T>& context,
+                                const Data& data, const T& scale,
                                 const ExternalForceField<T>& force_field,
                                 EigenPtr<Vector<T, num_dofs>> result) const {
     const std::array<Vector<T, 3>, num_quadrature_points>&
@@ -447,7 +448,7 @@ class VolumetricElement
     for (int q = 0; q < num_quadrature_points; ++q) {
       for (int n = 0; n < num_nodes; ++n) {
         result->template segment<3>(3 * n) +=
-            scale * force_field.Eval(quadrature_locations[q]) *
+            scale * force_field.EvaluateAt(context, quadrature_locations[q]) *
             reference_volume_[q] * S[q](n);
       }
     }

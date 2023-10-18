@@ -72,7 +72,6 @@ class FemModelImpl : public FemModel<typename Element::T> {
 
  private:
   void DoCalcResidual(const FemState<T>& fem_state,
-                      const std::optional<ExternalForceField<T>>& force_field,
                       EigenPtr<VectorX<T>> residual) const final {
     /* The values are accumulated in the residual, so it is important to clear
      the old data. */
@@ -93,10 +92,42 @@ class FemModelImpl : public FemModel<typename Element::T> {
           element_data[e], -1.0, this->gravity_vector(), &element_residual);
       const std::array<FemNodeIndex, Element::num_nodes>& element_node_indices =
           elements_[e].node_indices();
-      if (force_field.has_value()) {
-        elements_[e].AddScaledExternalForce(element_data[e], -1.0, *force_field,
+      for (int a = 0; a < Element::num_nodes; ++a) {
+        const int global_node = element_node_indices[a];
+        residual->template segment<kDim>(global_node * kDim) +=
+            element_residual.template segment<kDim>(a * kDim);
+      }
+    }
+  }
+
+  void DoCalcResidual(const systems::Context<T>& context,
+                      const FemState<T>& fem_state,
+                      EigenPtr<VectorX<T>> residual) const final {
+    /* The values are accumulated in the residual, so it is important to clear
+     the old data. */
+    residual->setZero();
+    constexpr int kDim = 3;
+    /* Scratch space to store the contribution to the residual from each
+     element. */
+    Vector<T, Element::num_dofs> element_residual;
+    const std::vector<Data>& element_data =
+        fem_state.template EvalElementData<Data>(element_data_index_);
+    for (int e = 0; e < num_elements(); ++e) {
+      /* residual = Ma-fₑ(x)-fᵥ(x, v)-fₑₓₜ. */
+      /* The Ma-fₑ(x)-fᵥ(x, v) term. */
+      elements_[e].CalcInverseDynamics(element_data[e], &element_residual);
+      /* The -fₑₓₜ term. */
+      for (const ExternalForceField<T>* f : this->external_forces()) {
+        elements_[e].AddScaledExternalForce(context, element_data[e], -1.0, *f,
                                             &element_residual);
       }
+      for (const std::unique_ptr<ExternalForceField<T>>& f :
+           this->owned_external_forces()) {
+        elements_[e].AddScaledExternalForce(context, element_data[e], -1.0, *f,
+                                            &element_residual);
+      }
+      const std::array<FemNodeIndex, Element::num_nodes>& element_node_indices =
+          elements_[e].node_indices();
       for (int a = 0; a < Element::num_nodes; ++a) {
         const int global_node = element_node_indices[a];
         residual->template segment<kDim>(global_node * kDim) +=

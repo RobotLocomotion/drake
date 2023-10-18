@@ -141,10 +141,9 @@ class FemModel {
    metric for the error on the boundary condition.
    @pre residual != nullptr.
    @throws std::exception if the FEM state is incompatible with this model. */
-  void CalcResidual(const FemState<T>& fem_state,
-                    EigenPtr<VectorX<T>> residual) const {
-    CalcResidual(fem_state, {}, residual);
-  }
+  void CalcResidual(const systems::Context<T>& context,
+                    const FemState<T>& fem_state,
+                    EigenPtr<VectorX<T>> residual) const;
 
   /** Calculates the residual G(x, v, a) (see class doc) evaluated at the
    given FEM state. The residual for degrees of freedom with Dirichlet boundary
@@ -153,7 +152,6 @@ class FemModel {
    @pre residual != nullptr.
    @throws std::exception if the FEM state is incompatible with this model. */
   void CalcResidual(const FemState<T>& fem_state,
-                    const std::optional<ExternalForceField<T>>& force_field,
                     EigenPtr<VectorX<T>> residual) const;
 
   /** Calculates an approximated tangent matrix evaluated at the given FEM
@@ -232,6 +230,23 @@ class FemModel {
   void ThrowIfModelStateIncompatible(const char* func,
                                      const FemState<T>& fem_state) const;
 
+  void AddExternalForce(const ExternalForceField<T>*f) {
+    external_forces_.emplace_back(f);
+  }
+
+  void AddExternalForce(std::unique_ptr<ExternalForceField<T>> f) {
+    owned_external_forces_.emplace_back(std::move(f));
+  }
+
+  const std::vector<const ExternalForceField<T>*>& external_forces() const {
+    return external_forces_;
+  }
+
+  const std::vector<std::unique_ptr<ExternalForceField<T>>>&
+  owned_external_forces() const {
+    return owned_external_forces_;
+  }
+
  protected:
   /** Constructs an empty FEM model. */
   FemModel();
@@ -243,10 +258,16 @@ class FemModel {
    for the NVI CalcResidual(). The input `fem_state` is guaranteed to be
    compatible with `this` FEM model, and the input `residual` is guaranteed to
    be non-null and properly sized. */
-  virtual void DoCalcResidual(
-      const FemState<T>& fem_state,
-      const std::optional<ExternalForceField<T>>& force_field,
-      EigenPtr<VectorX<T>> residual) const = 0;
+  virtual void DoCalcResidual(const FemState<T>& fem_state,
+                              EigenPtr<VectorX<T>> residual) const = 0;
+
+  /** FemModelImpl must override this method to provide an implementation
+   for the NVI CalcResidual(). The input `fem_state` is guaranteed to be
+   compatible with `this` FEM model, and the input `residual` is guaranteed to
+   be non-null and properly sized. */
+  virtual void DoCalcResidual(const systems::Context<T>& context,
+                              const FemState<T>& fem_state,
+                              EigenPtr<VectorX<T>> residual) const = 0;
 
   /** FemModelImpl must override this method to provide an implementation for
    the NVI CalcTangentMatrix(). The input `fem_state` is guaranteed to be
@@ -290,8 +311,8 @@ class FemModel {
   Vector3<T> gravity_{0, 0, -9.81};
   /* The Dirichlet boundary condition that the model is subject to. */
   internal::DirichletBoundaryCondition<T> dirichlet_bc_;
-  std::vector<std::function<Vector3<T>(const Vector3<T>&)>>
-      external_force_density_fields_;
+  std::vector<const ExternalForceField<T>*> external_forces_;
+  std::vector<std::unique_ptr<ExternalForceField<T>>> owned_external_forces_;
 };
 
 }  // namespace fem
