@@ -75,12 +75,12 @@ class AffineBall final : public ConvexSet {
   @pre dim >= 0. */
   static AffineBall MakeUnitBall(int dim);
 
-  /** Constructs the minimum-volume ellipsoid which contains all of the given points.
-  This is commonly referred to as the outer Löwner-John ellipsoid.
+  /** Constructs the minimum-volume ellipsoid which contains all of the given
+  points. This is commonly referred to as the outer Löwner-John ellipsoid.
 
   If all of the points lie along a proper affine subspace, this method
-  instead computes the minimum-n-volume ellipsoid, where n is the affine dimension
-  of the convex hull of `points`.
+  instead computes the minimum-n-volume ellipsoid, where n is the affine
+  dimension of the convex hull of `points`.
 
   @param points is a d-by-n matrix, where d is the ambient dimension and each
   column represents one point.
@@ -93,8 +93,10 @@ class AffineBall final : public ConvexSet {
   were to happen (due to numerical issues), then increasing `rank_tol` should
   provide a mitigation.
   @throw std::exception if points includes NaNs or infinite values.
-  */
-  static AffineBall MinimumVolumeCircumscribedEllipsoid(const Eigen::Ref<const Eigen::MatrixXd>& points, double rank_tol = 1e-6);
+  @pre points.rows() >= 1.
+  @pre points.cols() >= 1. */
+  static AffineBall MinimumVolumeCircumscribedEllipsoid(
+      const Eigen::Ref<const Eigen::MatrixXd>& points, double rank_tol = 1e-6);
 
   /** Passes this object to an Archive.
   Refer to @ref yaml_serialization "YAML Serialization" for background. */

@@ -1,9 +1,10 @@
 #include "drake/geometry/optimization/affine_ball.h"
 
+#include <iostream>
 #include <vector>
 
-#include "drake/geometry/optimization/hyperellipsoid.h"
 #include "drake/geometry/optimization/affine_subspace.h"
+#include "drake/geometry/optimization/hyperellipsoid.h"
 #include "drake/geometry/optimization/vpolytope.h"
 #include "drake/solvers/solve.h"
 
@@ -17,9 +18,9 @@ using solvers::Binding;
 using solvers::Constraint;
 using solvers::MathematicalProgram;
 using solvers::VectorXDecisionVariable;
-using symbolic::Variable;
-using symbolic::Expression;
 using std::sqrt;
+using symbolic::Expression;
+using symbolic::Variable;
 
 AffineBall::AffineBall() : AffineBall(MatrixXd(0, 0), VectorXd(0)) {}
 
@@ -61,15 +62,36 @@ double volume_of_unit_sphere(int dim) {
 
 }  // namespace
 
-AffineBall AffineBall::MinimumVolumeCircumscribedEllipsoid(const Eigen::Ref<const Eigen::MatrixXd>& points, double rank_tol) {
+AffineBall AffineBall::MinimumVolumeCircumscribedEllipsoid(
+    const Eigen::Ref<const Eigen::MatrixXd>& points, double rank_tol) {
   DRAKE_THROW_UNLESS(points.allFinite());
+  DRAKE_THROW_UNLESS(points.rows() >= 1);
+  DRAKE_THROW_UNLESS(points.cols() >= 1);
   const int dim = points.rows();
   const int n = points.cols();
 
   AffineSubspace ah(VPolytope(points), rank_tol);
   const int rank = ah.AffineDimension();
-  Eigen::MatrixXd points_local = ah.Project(points);
-  
+  Eigen::MatrixXd points_local = ah.ToLocalCoordinates(points);
+
+  std::cout << std::endl;
+  for (int i = 0; i < points.rows(); ++i) {
+    for (int j = 0; j < points.cols(); ++j) {
+      std::cout << points(i, j) << " ";
+    }
+    std::cout << std::endl;
+  }
+  std::cout << std::endl;
+
+  std::cout << std::endl;
+  for (int i = 0; i < points_local.rows(); ++i) {
+    for (int j = 0; j < points_local.cols(); ++j) {
+      std::cout << points_local(i, j) << " ";
+    }
+    std::cout << std::endl;
+  }
+  std::cout << std::endl;
+
   // Compute circumscribed ellipsoid in local coordinates
   MathematicalProgram prog;
   solvers::MatrixXDecisionVariable A =
@@ -103,11 +125,30 @@ AffineBall AffineBall::MinimumVolumeCircumscribedEllipsoid(const Eigen::Ref<cons
   // there is a PSD constraint, but we are maximizing the eigenvalues of A and
   // the convex hull of the points is guaranteed to be bounded.
   const VectorXd c = A_sol.llt().solve(-b_sol);
+  const Hyperellipsoid hyperellipsoid_local(A_sol, c);
+  const AffineBall affineball_local(hyperellipsoid_local);
 
   // Lift the ellipsoid to the original coordinate system
-  const MatrixXd A_global = ah.ToGlobalCoordinates(A_sol);
-  const VectorXd c_global = ah.ToGlobalCoordinates(c);
-  return AffineBall(A_global, c_global);
+  Eigen::MatrixXd A_full = Eigen::MatrixXd::Zero(dim, dim);
+  A_full.leftCols(rank) = ah.basis() * affineball_local.B();
+  Eigen::VectorXd center_full =
+      ah.ToGlobalCoordinates(affineball_local.center());
+
+  std::cout << std::endl;
+  for (int i = 0; i < ah.translation().size(); ++i) {
+    std::cout << ah.translation()[i] << " ";
+  }
+  std::cout << std::endl;
+  for (int i = 0; i < affineball_local.center().size(); ++i) {
+    std::cout << affineball_local.center()[i] << " ";
+  }
+  std::cout << std::endl;
+  for (int i = 0; i < center_full.size(); ++i) {
+    std::cout << center_full[i] << " ";
+  }
+  std::cout << std::endl << std::endl;
+
+  return AffineBall(A_full, center_full);
 
   // // Check the numerical rank of the data matrix.
   // std::optional<Eigen::MatrixXd> U;
@@ -118,8 +159,8 @@ AffineBall AffineBall::MinimumVolumeCircumscribedEllipsoid(const Eigen::Ref<cons
   //   // returned in decreasing order.
   //   if (svd.singularValues()[0] < rank_tol) {
   //     throw std::runtime_error(fmt::format(
-  //         "The numerical rank of the points appears to be zero. (The largest "
-  //         "singular value is {}, which is below rank_tol = {})",
+  //         "The numerical rank of the points appears to be zero. (The largest
+  //         " "singular value is {}, which is below rank_tol = {})",
   //         svd.singularValues()[0], rank_tol));
   //   }
   //   svd.setThreshold(rank_tol);
@@ -133,7 +174,8 @@ AffineBall AffineBall::MinimumVolumeCircumscribedEllipsoid(const Eigen::Ref<cons
   // solvers::MatrixXDecisionVariable A =
   //     prog.NewSymmetricContinuousVariables(rank, "A");
   // prog.AddMaximizeLogDeterminantCost(A.cast<Expression>());
-  // solvers::VectorXDecisionVariable b = prog.NewContinuousVariables(rank, "b");
+  // solvers::VectorXDecisionVariable b = prog.NewContinuousVariables(rank,
+  // "b");
   // TODO(russt): Avoid the symbolic computation here and write A_lorentz
   // directly, s.t. v = A_lorentz * vars + b_lorentz, where A=Aᵀ and b are the
   // vars.
@@ -154,17 +196,19 @@ AffineBall AffineBall::MinimumVolumeCircumscribedEllipsoid(const Eigen::Ref<cons
   // solvers::MathematicalProgramResult result = Solve(prog);
   // if (!result.is_success()) {
   //   throw std::runtime_error(
-  //       fmt::format("The MathematicalProgram was not solved successfully. The "
-  //                   "ambient dimension is {} and the data rank is {}, computed "
-  //                   "using rank_tol={}. Consider adjusting rank_tol.",
-  //                   dim, rank, rank_tol));
+  //       fmt::format("The MathematicalProgram was not solved successfully. The
+  //       "
+  //                   "ambient dimension is {} and the data rank is {},
+  //                   computed " "using rank_tol={}. Consider adjusting
+  //                   rank_tol.", dim, rank, rank_tol));
   // }
 
   // Ax + b => A(x-c) = Ax - Ac => c = -A^{-1}b
   // const MatrixXd A_sol = result.GetSolution(A);
   // const VectorXd b_sol = result.GetSolution(b);
   // // Note: We can use llt() because know that A will be positive definite;
-  // // there is a PSD constraint, but we are maximizing the eigenvalues of A and
+  // // there is a PSD constraint, but we are maximizing the eigenvalues of A
+  // and
   // // the convex hull of the points is guaranteed to be bounded.
   // const VectorXd c = A_sol.llt().solve(-b_sol);
 
