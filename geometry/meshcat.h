@@ -129,6 +129,37 @@ in the visualizer.
 Delete(). You are welcome to use absolute paths to organize your data, but the
 burden on tracking and cleaning them up lie on you.
 
+@section meshcat_url_parameters Parameters for the hosted Meshcat page
+
+%Meshcat has an *experimental* AR/VR option (using WebXR). It can be enabled
+through url parameters. For example, for a meshcat url `http://localhost:7000`,
+the following will enable the VR mode:
+
+    http://localhost:7000?webxr=vr
+
+To to use augmented reality (where the meshcat background is replaced with your
+device's camera image), use:
+
+    http://localhost:7000?webxr=ar
+
+If augmented reality is not available, it will fallback to VR mode.
+
+Some notes on using the AR/VR modes:
+
+  - Before starting the WebXR session, position the interactive camera to be
+    approximately where you want the origin of the head set's origin to be.
+  - The meshcat scene controls are disabled while the WebXR session is active.
+  - WebXR sessions can only be run with *perspective* cameras.
+  - The controllers can be *visualized* but currently can't interact with the
+    Drake simulation physically. To visualize the controllers append the
+    additional url parameter `controller=on` as in
+    `http://localhost:7000?webxr=vr&controller=on`.
+
+If you do not have AR/VR hardware, you can use an emulator in your browser to
+experiment with the mode. Use an browser plugin like WebXR API Emulator (i.e.,
+for [Chrome](https://chrome.google.com/webstore/detail/webxr-api-emulator/mjddjgeghkdijejnciaefnkjmkafnnje)
+or [Firefox](https://addons.mozilla.org/en-US/firefox/addon/webxr-api-emulator/)).
+
 @section network_access Network access
 
 See MeshcatParams for options to control the hostname and port to bind to.
