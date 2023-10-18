@@ -77,7 +77,7 @@ GTEST_TEST(TestComplementaryProblem, flp2) {
        0, 0, 0, 0,
        8.0 / 3, 2, 2, 8.0/3,
        2, 5.0/4, 5.0/4, 2;
-  // clang-format off;
+  // clang-format on
   Eigen::Vector4d q(0, 0, -36, -25);
   prog.AddLinearComplementarityConstraint(M, q, {x, y});
   prog.AddBoundingBoxConstraint(0, 10, x);
