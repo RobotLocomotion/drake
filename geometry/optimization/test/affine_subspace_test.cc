@@ -1073,7 +1073,7 @@ GTEST_TEST(AffineSubspaceTest, EqualityTest) {
   basis1 << 1, 0,
             0, 1,
             0, 0;
-  // clang- format on
+  // clang-format on
   Eigen::VectorXd translation1(3);
   translation1 << 0, 0, 1;
 
@@ -1112,13 +1112,13 @@ GTEST_TEST(AffineSubspaceTest, EqualityTest2) {
   basis1 << -1,  0.5,
             0.5, -1,
             0.5, 0.5;
-  // clang- format on
+  // clang-format on
   Eigen::Matrix<double, 3, 2> basis2;
   // clang-format off
   basis2 << 1,  0,
             -1, 1,
             0, -1;
-  // clang- format on
+  // clang-format on
   Eigen::VectorXd translation1(3);
   translation1 << 0, 0, 1;
   Eigen::VectorXd translation2(3);

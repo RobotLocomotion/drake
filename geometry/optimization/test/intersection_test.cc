@@ -256,7 +256,7 @@ GTEST_TEST(IntersectionTest, EmptyIntersectionTest1) {
        0, 1, -1,
        0, 0, -1;
   b << 1, -1, -1, -1, 0;
-  // clang-format off
+  // clang-format on
 
   HPolyhedron H1{A, b};
   const Point P1(Vector3d{0.1, 1.2, 0.3});

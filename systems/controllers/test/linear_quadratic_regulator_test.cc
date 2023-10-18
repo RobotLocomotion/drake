@@ -248,9 +248,7 @@ GTEST_TEST(TestLqr, ConstrainedLinearSystem) {
        3, 10;
   // clang-format on
   Eigen::Matrix<double, 3, 2> N;
-  // clang-format on
   N << 1, 0.5, 0.5, -1, 0, 1;
-  // clang-format off
 
   TestLqrWithHjb(A, B, Q, R);
   TestLqrWithHjb(A, B, Q, R, N);
