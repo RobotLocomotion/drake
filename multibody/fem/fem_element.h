@@ -200,11 +200,12 @@ class FemElement {
    will be added.
    @pre external_force != nullptr */
   void AddScaledExternalForce(
+      const systems::Context<T>& context,
       const Data& data, const T& scale,
       const ExternalForceField<T>& force_field,
       EigenPtr<Vector<T, num_dofs>> external_force) const {
     DRAKE_ASSERT(external_force != nullptr);
-    static_cast<const DerivedElement*>(this)->DoAddScaledExternalForce(
+    static_cast<const DerivedElement*>(this)->DoAddScaledExternalForce(context,
         data, scale, force_field, external_force);
   }
 

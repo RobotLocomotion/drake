@@ -69,6 +69,7 @@ DeformableBodyId DeformableModel<T>::RegisterDeformableBody(
   body_id_to_geometry_id_.emplace(body_id, geometry_id);
   geometry_id_to_body_id_.emplace(geometry_id, body_id);
   body_ids_.emplace_back(body_id);
+  body_id_to_density_prefinalize_.emplace(body_id, config.mass_density());
   return body_id;
 }
 
@@ -308,6 +309,24 @@ void DeformableModel<T>::DoDeclareSystemResources(MultibodyPlant<T>* plant) {
         deformable_id, this->DeclareDiscreteState(plant, model_state));
   }
 
+  /* Add external force fields to FEM models. */
+  for (const auto& [deformable_id, fem_model] : fem_models_) {
+    for (const std::unique_ptr<ExternalForceField<T>>& external_force :
+         fem_external_forces_) {
+      fem_model->AddExternalForce(external_force.get());
+    }
+    const T& density = body_id_to_density_prefinalize_[deformable_id];
+    const Vector3<T>& gravity = plant->gravity_field().gravity_vector();
+    fem_model->AddExternalForce(
+        std::make_unique<GravityForceField<T>>(gravity, density));
+  }
+  for (std::unique_ptr<ExternalForceField<T>>& external_force :
+       fem_external_forces_) {
+    external_force->DeclareCacheEntries(plant_);
+  }
+
+  body_id_to_density_prefinalize_.clear();
+
   /* Declare the vertex position output port. */
   vertex_positions_port_index_ =
       this->DeclareAbstractOutputPort(
@@ -321,12 +340,6 @@ void DeformableModel<T>::DoDeclareSystemResources(MultibodyPlant<T>* plant) {
                 this->CopyVertexPositions(context, output);
               },
               {systems::System<double>::xd_ticket()})
-          .get_index();
-
-  external_force_field_port_index_ =
-      this->DeclareAbstractInputPort(
-              plant, "external force field",
-              Value<std::map<DeformableBodyId, ExternalForceField<T>>>())
           .get_index();
 
   std::sort(body_ids_.begin(), body_ids_.end());

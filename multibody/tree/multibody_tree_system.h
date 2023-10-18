@@ -547,6 +547,8 @@ namespace multibody {
 // Forward declaration of MultibodyElement for attorney-client.
 template <typename T>
 class MultibodyElement;
+template <typename T>
+class ExternalForceField;
 
 namespace internal {
 
@@ -562,6 +564,9 @@ class MultibodyTreeSystemElementAttorney {
   template <typename U>
   friend class drake::multibody::MultibodyElement;
 
+  template <typename U>
+  friend class drake::multibody::ExternalForceField;
+
   static systems::NumericParameterIndex DeclareNumericParameter(
       MultibodyTreeSystem<T>* tree_system,
       const systems::BasicVector<T>& model_vector) {
@@ -573,6 +578,15 @@ class MultibodyTreeSystemElementAttorney {
       MultibodyTreeSystem<T>* tree_system, const AbstractValue& model_value) {
     return systems::AbstractParameterIndex{
         tree_system->DeclareAbstractParameter(model_value)};
+  }
+
+  static systems::CacheEntry& DeclareCacheEntry(
+      MultibodyTreeSystem<T>* tree_system, std::string description,
+      systems::ValueProducer value_producer,
+      std::set<systems::DependencyTicket> prerequisites_of_calc) {
+    return tree_system->DeclareCacheEntry(std::move(description),
+                                          std::move(value_producer),
+                                          std::move(prerequisites_of_calc));
   }
 };
 }  // namespace internal
