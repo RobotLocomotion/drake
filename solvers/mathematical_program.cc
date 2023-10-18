@@ -1209,8 +1209,8 @@ ConstructPositiveDiagonallyDominantDualConeConstraintMatricesForN(const int n) {
   // entries.
   A_triplet_list.reserve(4 * n * n - 3 * n);
 
-  Eigen::VectorXd lb = Eigen::VectorXd::Zero(n * n);
-  Eigen::VectorXd ub = kInf * Eigen::VectorXd::Ones(n * n);
+  const Eigen::VectorXd lb = Eigen::VectorXd::Zero(n * n);
+  const Eigen::VectorXd ub = kInf * Eigen::VectorXd::Ones(n * n);
 
   // vᵢᵀXvᵢ ≥ 0 is equivalent to Xᵢᵢ ≥ 0 when vᵢ is a vector with exactly one
   // entry equal to 1.
@@ -1241,10 +1241,10 @@ ConstructPositiveDiagonallyDominantDualConeConstraintMatricesForN(const int n) {
     }
   }
   DRAKE_ASSERT(row_ctr == n * n);
-  DRAKE_ASSERT(static_cast<int>(A_triplet_list.size()) == 4 * n * n - 3 * n);
+  DRAKE_ASSERT(ssize(A_triplet_list) == 4 * n * n - 3 * n);
   Eigen::SparseMatrix<double> A(row_ctr, n * n);
   A.setFromTriplets(A_triplet_list.begin(), A_triplet_list.end());
-  return std::make_tuple(A, lb, ub);
+  return std::make_tuple(std::move(A), std::move(lb), std::move(ub));
 }
 }  // namespace
 
