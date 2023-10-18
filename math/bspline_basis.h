@@ -58,13 +58,13 @@ class BsplineBasis final {
   explicit BsplineBasis(const BsplineBasis<double>& other);
 #else
   template <typename U = T>
-  explicit BsplineBasis(const BsplineBasis<double>& other,
-               /* Prevents ambiguous declarations between default copy
-               constructor on double and conversion constructor on T = double.
-               The conversion constructor for T = double will fail to be
-               instantiated because the second, "hidden" parameter will fail to
-               be defined for U = double. */
-               typename std::enable_if_t<!std::is_same_v<U, double>>* = {})
+  explicit BsplineBasis(
+      const BsplineBasis<double>& other,
+      /* Prevents ambiguous declarations between default copy constructor on
+      double and conversion constructor on T = double. The conversion
+      constructor for T = double will fail to be instantiated because the
+      second, "hidden" parameter will fail to be defined for U = double. */
+      typename std::enable_if_t<!std::is_same_v<U, double> >* = {})
       : order_(other.order()) {
     knots_.reserve(other.knots().size());
     for (const auto& knot : other.knots()) {
@@ -196,7 +196,7 @@ class BsplineBasis final {
 #else
   // Restrict this method to T = double only; we must mix "Archive" into the
   // conditional type for SFINAE to work, so we just check it against void.
-  std::enable_if_t<std::is_same_v<T, double> && !std::is_void_v<Archive>>
+  std::enable_if_t<std::is_same_v<T, double> && !std::is_void_v<Archive> >
 #endif
   Serialize(Archive* a) {
     a->Visit(MakeNameValue("order", &order_));

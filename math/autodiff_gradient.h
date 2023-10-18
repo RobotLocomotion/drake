@@ -106,11 +106,9 @@ matrix.
 @exclude_from_pydrake_mkdoc{Not bound in pydrake.} */
 template <typename DerivedValue, typename DerivedGradient,
           typename DerivedAutoDiff>
-void InitializeAutoDiff(
-    const Eigen::MatrixBase<DerivedValue>& value,
-    const Eigen::MatrixBase<DerivedGradient>& gradient,
-    Eigen::MatrixBase<DerivedAutoDiff>* auto_diff_matrix) {
-
+void InitializeAutoDiff(const Eigen::MatrixBase<DerivedValue>& value,
+                        const Eigen::MatrixBase<DerivedGradient>& gradient,
+                        Eigen::MatrixBase<DerivedAutoDiff>* auto_diff_matrix) {
   // Any fixed-size dimensions of the parameters must be consistent in
   // corresponding dimensions. Any dynamic-size dimensions must be dynamic
   // in any corresponding dimensions.
@@ -143,7 +141,7 @@ void InitializeAutoDiff(
   DerivedAutoDiff& auto_diff = auto_diff_matrix->derived();
   auto_diff.resize(value.rows(), value.cols());
   for (Eigen::Index row = 0; row < auto_diff.size(); ++row) {
-    auto_diff(row) = { value(row), gradient.row(row).transpose() };
+    auto_diff(row) = {value(row), gradient.row(row).transpose()};
   }
 }
 
@@ -159,9 +157,8 @@ matrix.
 @pydrake_mkdoc_identifier{value_and_gradient} */
 template <typename DerivedValue, typename DerivedGradient>
 AutoDiffMatrixType<DerivedValue, DerivedGradient::ColsAtCompileTime>
-InitializeAutoDiff(
-    const Eigen::MatrixBase<DerivedValue>& value,
-    const Eigen::MatrixBase<DerivedGradient>& gradient) {
+InitializeAutoDiff(const Eigen::MatrixBase<DerivedValue>& value,
+                   const Eigen::MatrixBase<DerivedGradient>& gradient) {
   AutoDiffMatrixType<DerivedValue, DerivedGradient::ColsAtCompileTime>
       auto_diff_matrix(value.rows(), value.cols());
   InitializeAutoDiff(value, gradient, &auto_diff_matrix);

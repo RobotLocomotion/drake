@@ -150,7 +150,7 @@ SIMD floating point instructions (3 multiplies and 6 fused-multiply-adds).
 It is OK if the result R_AC overlaps one or both of the inputs. */
 void ComposeRRAvx(const double* R_AB, const double* R_BC, double* R_AC) {
   constexpr uint64_t yes = uint64_t(1ull << 63);
-  constexpr uint64_t no  = uint64_t(0);
+  constexpr uint64_t no = uint64_t(0);
   const __m256i mask = _mm256_setr_epi64x(yes, yes, yes, no);
 
   // Load the input.
@@ -246,7 +246,7 @@ SIMD floating point instructions (3 multiplies and 6 fused-multiply-adds).
 It is OK if the result R_AC overlaps one or both of the inputs. */
 void ComposeRinvRAvx(const double* R_BA, const double* R_BC, double* R_AC) {
   constexpr uint64_t yes = uint64_t(1ull << 63);
-  constexpr uint64_t no  = uint64_t(0);
+  constexpr uint64_t no = uint64_t(0);
   const __m256i mask = _mm256_setr_epi64x(yes, yes, yes, no);
 
   // Load the input. Loads columns of R_AB (rows of the given R_BA) into
@@ -379,7 +379,7 @@ SIMD floating point instructions (3 multiplies and 9 fused-multiply-adds).
 It is OK if the result X_AC overlaps one or both of the inputs. */
 void ComposeXXAvx(const double* X_AB, const double* X_BC, double* X_AC) {
   constexpr uint64_t yes = uint64_t(1ull << 63);
-  constexpr uint64_t no  = uint64_t(0);
+  constexpr uint64_t no = uint64_t(0);
   const __m256i mask = _mm256_setr_epi64x(yes, yes, yes, no);
 
   // Load the input.
@@ -515,7 +515,7 @@ them. However, we only issue 13 SIMD floating point instructions (4 multiplies,
 8 fused-multiply-adds, and 1 subtraction). */
 void ComposeXinvXAvx(const double* X_BA, const double* X_BC, double* X_AC) {
   constexpr uint64_t yes = uint64_t(1ull << 63);
-  constexpr uint64_t no  = uint64_t(0);
+  constexpr uint64_t no = uint64_t(0);
   const __m256i mask = _mm256_setr_epi64x(yes, yes, yes, no);
 
   // Load the input. Loads columns of R_AB (rows of the given R_BA) into
@@ -524,14 +524,14 @@ void ComposeXinvXAvx(const double* X_BA, const double* X_BC, double* X_AC) {
   const __m256d efgh = _mm256_loadu_pd(X_BA + 4);
   const __m256d eb_h = _mm256_blend_pd(abcd, efgh, 0b1101);
   const __m256d beh_ = _mm256_permute_pd(eb_h, 0b0101);
-  const __m256d cdg_ = _mm256_permute2f128_pd(abcd, efgh,  0b00110001);
+  const __m256d cdg_ = _mm256_permute2f128_pd(abcd, efgh, 0b00110001);
   const __m256d adg_ = _mm256_blend_pd(abcd, cdg_, 0b1110);
   const __m256d fghi = _mm256_loadu_pd(X_BA + 5);
   const __m256d _fi_ = _mm256_permute_pd(fghi, 0b0100);
   const __m256d cfi_ = _mm256_blend_pd(cdg_, _fi_, 0b0110);
   const __m256d _xyz = _mm256_loadu_pd(X_BA + 8);
   const __m256d IXYZ = _mm256_loadu_pd(X_BC + 8);  // (_XYZ is a reserved word.)
-  const __m256d subtract_XYZ_xyz  = IXYZ - _xyz;
+  const __m256d subtract_XYZ_xyz = IXYZ - _xyz;
   const double A = X_BC[0];
   const double B = X_BC[1];
   const double C = X_BC[2];
@@ -566,10 +566,10 @@ void ComposeXinvXAvx(const double* X_BA, const double* X_BC, double* X_AC) {
   pqr_ = _mm256_fmadd_pd(cfi_, four(I), pqr_);  // +cI +fI +iI  _
 
   // Store the result.
-  _mm256_storeu_pd(X_AC, jkl_);  // 4-wide write temporarily overwrites m
+  _mm256_storeu_pd(X_AC, jkl_);      // 4-wide write temporarily overwrites m
   _mm256_storeu_pd(X_AC + 3, mno_);  // 4-wide write temporarily overwrites p
   _mm256_storeu_pd(X_AC + 6, pqr_);  // 4-wide write temporarily overwrites s
-  _mm256_maskstore_pd(X_AC + 9, mask, stu_);   // 3-wide write to stay in bounds
+  _mm256_maskstore_pd(X_AC + 9, mask, stu_);  // 3-wide write to stay in bounds
 
   // The compiler will generate a vzeroupper instruction if needed.
 }
@@ -618,29 +618,27 @@ void AbortNotEnabledInBuild(const char* func) {
 }
 }  // namespace
 
-bool AvxSupported() { return false; }
+bool AvxSupported() {
+  return false;
+}
 
-void ComposeRRAvx(const RotationMatrix<double>&,
-                  const RotationMatrix<double>&,
+void ComposeRRAvx(const RotationMatrix<double>&, const RotationMatrix<double>&,
                   RotationMatrix<double>*) {
   AbortNotEnabledInBuild(__func__);
 }
 
 void ComposeRinvRAvx(const RotationMatrix<double>&,
-                     const RotationMatrix<double>&,
-                     RotationMatrix<double>*) {
+                     const RotationMatrix<double>&, RotationMatrix<double>*) {
   AbortNotEnabledInBuild(__func__);
 }
 
-void ComposeXXAvx(const RigidTransform<double>&,
-                  const RigidTransform<double>&,
+void ComposeXXAvx(const RigidTransform<double>&, const RigidTransform<double>&,
                   RigidTransform<double>*) {
   AbortNotEnabledInBuild(__func__);
 }
 
 void ComposeXinvXAvx(const RigidTransform<double>&,
-                     const RigidTransform<double>&,
-                     RigidTransform<double>*) {
+                     const RigidTransform<double>&, RigidTransform<double>*) {
   AbortNotEnabledInBuild(__func__);
 }
 #endif

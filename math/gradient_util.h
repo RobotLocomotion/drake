@@ -32,8 +32,9 @@ struct MatGradMultMat {
                DerivedB::ColsAtCompileTime == Eigen::Dynamic
            ? Eigen::Dynamic
            : static_cast<int>(DerivedA::RowsAtCompileTime) *
-             static_cast<int>(DerivedB::ColsAtCompileTime)),
-      DerivedDA::ColsAtCompileTime> type;
+                 static_cast<int>(DerivedB::ColsAtCompileTime)),
+      DerivedDA::ColsAtCompileTime>
+      type;
 };
 
 /*
@@ -47,9 +48,10 @@ struct MatGradMult {
                DerivedB::SizeAtCompileTime == Eigen::Dynamic
            ? Eigen::Dynamic
            : static_cast<int>(DerivedDA::RowsAtCompileTime) /
-             static_cast<int>(DerivedB::RowsAtCompileTime) *
-             static_cast<int>(DerivedB::ColsAtCompileTime)),
-      DerivedDA::ColsAtCompileTime> type;
+                 static_cast<int>(DerivedB::RowsAtCompileTime) *
+                 static_cast<int>(DerivedB::ColsAtCompileTime)),
+      DerivedDA::ColsAtCompileTime>
+      type;
 };
 
 /*
@@ -62,7 +64,8 @@ struct GetSubMatrixGradientArray {
   typedef typename Eigen::Matrix<typename Derived::Scalar, (NRows * NCols),
                                  ((QSubvectorSize == Eigen::Dynamic)
                                       ? Derived::ColsAtCompileTime
-                                      : QSubvectorSize)> type;
+                                      : QSubvectorSize)>
+      type;
 };
 
 /*
@@ -73,7 +76,8 @@ struct GetSubMatrixGradientSingleElement {
   typedef typename Eigen::Block<const Derived, 1,
                                 ((QSubvectorSize == Eigen::Dynamic)
                                      ? Derived::ColsAtCompileTime
-                                     : QSubvectorSize)> type;
+                                     : QSubvectorSize)>
+      type;
 };
 
 /*
@@ -114,17 +118,16 @@ typename MatGradMultMat<DerivedA, DerivedB, DerivedDA>::type matGradMultMat(
         col * A.rows(), 0, A.rows(), dA.cols());
 
     // A * dB part:
-    block.noalias() = A *
-                      dB.template block<DerivedA::ColsAtCompileTime,
-                                        DerivedDA::ColsAtCompileTime>(
-                          col * A.cols(), 0, A.cols(), dA.cols());
+    block.noalias() = A * dB.template block<DerivedA::ColsAtCompileTime,
+                                            DerivedDA::ColsAtCompileTime>(
+                              col * A.cols(), 0, A.cols(), dA.cols());
 
     for (int row = 0; row < B.rows(); row++) {
       // B * dA part:
-      block.noalias() += B(row, col) *
-                         dA.template block<DerivedA::RowsAtCompileTime,
-                                           DerivedDA::ColsAtCompileTime>(
-                             row * A.rows(), 0, A.rows(), dA.cols());
+      block.noalias() +=
+          B(row, col) * dA.template block<DerivedA::RowsAtCompileTime,
+                                          DerivedDA::ColsAtCompileTime>(
+                            row * A.rows(), 0, A.rows(), dA.cols());
     }
   }
   return ret;
@@ -157,10 +160,10 @@ typename MatGradMult<DerivedDA, DerivedB>::type matGradMult(
         col * A_rows, 0, A_rows, dA.cols());
     for (int row = 0; row < B.rows(); row++) {
       // B * dA part:
-      block.noalias() += B(row, col) *
-                         dA.template block<A_rows_at_compile_time,
-                                           DerivedDA::ColsAtCompileTime>(
-                             row * A_rows, 0, A_rows, dA.cols());
+      block.noalias() +=
+          B(row, col) * dA.template block<A_rows_at_compile_time,
+                                          DerivedDA::ColsAtCompileTime>(
+                            row * A_rows, 0, A_rows, dA.cols());
     }
   }
   return ret;
@@ -203,8 +206,8 @@ getSubMatrixGradient(
     q_subvector_size = dM.cols() - q_start;
   }
   Eigen::Matrix<typename Derived::Scalar, NRows * NCols,
-                Derived::ColsAtCompileTime> dM_submatrix(NRows * NCols,
-                                                         q_subvector_size);
+                Derived::ColsAtCompileTime>
+      dM_submatrix(NRows * NCols, q_subvector_size);
   int index = 0;
   for (typename std::array<int, NCols>::const_iterator col = cols.begin();
        col != cols.end(); ++col) {
