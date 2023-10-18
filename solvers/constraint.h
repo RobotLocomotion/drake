@@ -691,6 +691,7 @@ class LinearConstraint : public Constraint {
   std::string DoToLatex(const VectorX<symbolic::Variable>&, int) const override;
 
   internal::SparseAndDenseMatrix A_;
+
  private:
   friend bool A_dense_is_constructed(const LinearConstraint& constraint);
   template <typename DerivedX, typename ScalarY>
