@@ -10,6 +10,8 @@
 namespace drake {
 namespace geometry {
 namespace optimization {
+// Forward-declare Hyperellipsoid.
+class Hyperellipsoid;
 
 /** Implements an ellipsoidal convex set represented as an affine scaling of the
 unit ball {Bu + center | |u|₂ ≤ 1}. B must be a square matrix.
@@ -42,6 +44,10 @@ class AffineBall final : public ConvexSet {
   @pre B.cols() == center.size(). */
   AffineBall(const Eigen::Ref<const Eigen::MatrixXd>& B,
              const Eigen::Ref<const Eigen::VectorXd>& center);
+
+  /** Constructs an AffineBall from a Hyperellipsoid.
+  @pre ellipsoid.IsBounded(). */
+  explicit AffineBall(const Hyperellipsoid& ellipsoid);
 
   ~AffineBall() final;
 
