@@ -2614,6 +2614,19 @@ class MathematicalProgram {
       const Eigen::Ref<const MatrixX<symbolic::Expression>>& X);
 
   /**
+   * Replaces the positive semidefinite constraint @p with a diagonally dominant
+   * constraint. This provides an polyhedral (i.e. linear) sufficient, but not
+   * necessary condition to be positive semidefinite
+   * @see AddPositiveDiagonallyDominantMatrixConstraint
+   * @p constraint
+   * @return The return of AddPositiveDiagonallyDominantMatrixConstraint applied
+   * to the variables in @p constraint
+   */
+  MatrixX<symbolic::Expression>
+  TightenPSDConstraintToDDConstraint(
+      const Binding<PositiveSemidefiniteConstraint>& constraint);
+
+  /**
    * @anchor add_dd_dual
    * @name Diagonally dominant dual cone constraint
    * Adds the constraint that a symmetric matrix is in the dual cone of the
@@ -2662,6 +2675,19 @@ class MathematicalProgram {
   AddPositiveDiagonallyDominantDualConeMatrixConstraint(
       const Eigen::Ref<const MatrixX<symbolic::Variable>>& X);
   //@}
+
+  /**
+   * Replaces the positive semidefinite constraint @p with a diagonally dominant
+   * dual cone constraint. This provides an polyhedral (i.e. linear) necessary,
+   * but not sufficient condition to be positive semidefinite
+   * @see AddPositiveDiagonallyDominantDualConeMatrixConstraint
+   * @p constraint
+   * @return The return of AddPositiveDiagonallyDominantDualConeMatrixConstraint
+   * applied to the variables in @p constraint
+   */
+  Binding<LinearConstraint>
+  RelaxPSDConstraintToDDDualConeConstraint(
+      const Binding<PositiveSemidefiniteConstraint>& constraint);
 
   /**
    * @anchor addsdd
@@ -2721,6 +2747,20 @@ class MathematicalProgram {
   //@}
 
   /**
+   * Replaces the positive semidefinite constraint @p with a scaled diagonally
+   * dominant constraint. This provides a second-order cone sufficient, but not
+   * necessary condition to be positive semidefinite
+   * @see AddScaledDiagonallyDominantMatrixConstraint
+   * @p constraint
+   * @return The return of AddScaledDiagonallyDominantMatrixConstraint applied
+   * to the variables in @p constraint
+   */
+  std::vector<std::vector<Matrix2<symbolic::Variable>>>
+  TightenPSDConstraintToSDDConstraint(
+      const Binding<PositiveSemidefiniteConstraint>& constraint);
+
+
+  /**
    * @anchor add_sdd_dual
    * @name Scaled diagonally dominant dual cone constraint
    * Adds the constraint that a symmetric matrix is in the dual cone of the
@@ -2777,6 +2817,19 @@ class MathematicalProgram {
   AddScaledDiagonallyDominantDualConeMatrixConstraint(
       const Eigen::Ref<const MatrixX<symbolic::Variable>>& X);
   //@}
+
+  /**
+   * Replaces the positive semidefinite constraint @p with a scaled diagonally
+   * dominant dual cone constraint. This provides an second-order cone
+   * necessary, but not sufficient condition to be positive semidefinite
+   * @see AddScaledDiagonallyDominantDualConeMatrixConstraint
+   * @p constraint
+   * @return The return of AddScaledDiagonallyDominantDualConeMatrixConstraint
+   * applied to the variables in @p constraint
+   */
+  std::vector<Binding<RotatedLorentzConeConstraint>>
+  RelaxPSDConstraintToSDDDualConeConstraint(
+      const Binding<PositiveSemidefiniteConstraint>& constraint);
 
   /**
    * Adds constraints that a given polynomial @p p is a sums-of-squares (SOS),

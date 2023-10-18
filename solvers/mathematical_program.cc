@@ -1188,6 +1188,21 @@ MathematicalProgram::AddPositiveDiagonallyDominantMatrixConstraint(
   return Y;
 }
 
+MatrixX<symbolic::Expression> MathematicalProgram::
+    TightenPSDConstraintToDDConstraint(
+        const Binding<PositiveSemidefiniteConstraint>& constraint) {
+  RemoveConstraint(constraint);
+  // Variables are flattened by the Flatten method, which flattens in
+  // column-major order. This is the same convention as Eigen, so we can use the
+  // map methods.
+  const int n = constraint.evaluator()->matrix_rows();
+  const MatrixXDecisionVariable mat_vars =
+      Eigen::Map<const MatrixXDecisionVariable>(constraint.variables().data(),
+                                                n, n);
+  return AddPositiveDiagonallyDominantMatrixConstraint(
+      mat_vars.cast<Expression>());
+}
+
 namespace {
 
 // Constructs the matrices A, lb, ub for the linear constraint lb <= A * X <= ub
@@ -1285,6 +1300,21 @@ MathematicalProgram::AddPositiveDiagonallyDominantDualConeMatrixConstraint(
       std::get<0>(constraint_mats), std::get<1>(constraint_mats),
       std::get<2>(constraint_mats),
       Eigen::Map<const VectorXDecisionVariable>(X.data(), X.size()));
+}
+
+Binding<LinearConstraint> MathematicalProgram::
+    RelaxPSDConstraintToDDDualConeConstraint(
+        const Binding<PositiveSemidefiniteConstraint>& constraint) {
+  RemoveConstraint(constraint);
+  // Variables are flattened by the Flatten method, which flattens in
+  // column-major order. This is the same convention as Eigen, so we can use the
+  // map methods.
+  const int n = constraint.evaluator()->matrix_rows();
+  const MatrixXDecisionVariable mat_vars =
+      Eigen::Map<const MatrixXDecisionVariable>(constraint.variables().data(),
+                                                n, n);
+  return AddPositiveDiagonallyDominantDualConeMatrixConstraint(
+      mat_vars);
 }
 
 namespace {
@@ -1403,6 +1433,20 @@ MathematicalProgram::AddScaledDiagonallyDominantMatrixConstraint(
   return M;
 }
 
+std::vector<std::vector<Matrix2<symbolic::Variable>>> MathematicalProgram::
+    TightenPSDConstraintToSDDConstraint(
+        const Binding<PositiveSemidefiniteConstraint>& constraint) {
+  RemoveConstraint(constraint);
+  // Variables are flattened by the Flatten method, which flattens in
+  // column-major order. This is the same convention as Eigen, so we can use the
+  // map methods.
+  const int n = constraint.evaluator()->matrix_rows();
+  const MatrixXDecisionVariable mat_vars =
+      Eigen::Map<const MatrixXDecisionVariable>(constraint.variables().data(),
+                                                n, n);
+  return AddScaledDiagonallyDominantMatrixConstraint(mat_vars);
+}
+
 std::vector<Binding<RotatedLorentzConeConstraint>>
 MathematicalProgram::AddScaledDiagonallyDominantDualConeMatrixConstraint(
     const Eigen::Ref<const MatrixX<symbolic::Expression>>& X) {
@@ -1434,6 +1478,21 @@ MathematicalProgram::AddScaledDiagonallyDominantDualConeMatrixConstraint(
     const Eigen::Ref<const MatrixX<symbolic::Variable>>& X) {
   return AddScaledDiagonallyDominantDualConeMatrixConstraint(
       X.cast<Expression>());
+}
+
+std::vector<Binding<RotatedLorentzConeConstraint>> MathematicalProgram::
+    RelaxPSDConstraintToSDDDualConeConstraint(
+        const Binding<PositiveSemidefiniteConstraint>& constraint) {
+  RemoveConstraint(constraint);
+  // Variables are flattened by the Flatten method, which flattens in
+  // column-major order. This is the same convention as Eigen, so we can use the
+  // map methods.
+  const int n = constraint.evaluator()->matrix_rows();
+  const MatrixXDecisionVariable mat_vars =
+      Eigen::Map<const MatrixXDecisionVariable>(constraint.variables().data(),
+                                                n, n);
+  return AddScaledDiagonallyDominantDualConeMatrixConstraint(
+      mat_vars);
 }
 
 Binding<ExponentialConeConstraint> MathematicalProgram::AddConstraint(
