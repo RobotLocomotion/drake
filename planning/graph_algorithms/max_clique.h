@@ -6,12 +6,12 @@
 #include "drake/solvers/gurobi_solver.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/mathematical_program_result.h"
+#include "drake/solvers/mosek_solver.h"
 #include "drake/solvers/solve.h"
 
 namespace drake {
 namespace planning {
-
-using Eigen::SparseMatrix;
+namespace graph_algorithms {
 
 /**
  * The problem of finding the maximum clique in a graph is known to a
@@ -23,9 +23,10 @@ class MaxCliqueSolverBase {
  public:
   MaxCliqueSolverBase() {}
 
-  virtual ~MaxStableSetSolverBase() {}
+  virtual ~MaxCliqueSolverBase() {}
 
-  virtual VectorX<bool> SolveMaxClique(SparseMatrix<bool> adjacency_matrix) = 0;
+  virtual VectorX<bool> SolveMaxClique(
+      const Eigen::SparseMatrix<bool>& adjacency_matrix) = 0;
 
  protected:
   // We put the copy/move/assignment constructors as protected to avoid copy
@@ -46,10 +47,15 @@ class MaxCliqueSolverViaMIP final : public MaxCliqueSolverBase {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MaxCliqueSolverViaMIP);
   MaxCliqueSolverViaMIP(
-      const solvers::SolverId& solver_id = solvers::GurobiSolver::id(),
+      const solvers::SolverId& solver_id = solvers::MosekSolver::id(),
       const solvers::SolverOptions& options = solvers::SolverOptions());
 
-  VectorX<bool> SolveMaxClique(SparseMatrix<bool> adjacency_matrix);
+  VectorX<bool> SolveMaxClique(
+      const Eigen::SparseMatrix<bool>& adjacency_matrix);
+
+  solvers::SolverId solver_id() { return solver_id_; }
+
+  solvers::SolverOptions options() { return options_; }
 
  private:
   solvers::SolverId solver_id_;
@@ -57,11 +63,11 @@ class MaxCliqueSolverViaMIP final : public MaxCliqueSolverBase {
 };
 
 struct MaxCliqueOptions {
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MaxStableSetOptions)
-  MaxStableSetOptions(const MaxStableSetSolverBase* m_solver =
-                              new MaxStableSetSolverViaMIP());
-  ~MaxStableSetOptions() = default;
-  MaxStableSetSolverBase* solver;
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MaxCliqueOptions)
+  MaxCliqueOptions(
+      const MaxCliqueSolverBase* m_solver = new MaxCliqueSolverViaMIP());
+  ~MaxCliqueOptions() = default;
+  MaxCliqueSolverBase* solver;
 };
 
 /**
@@ -77,8 +83,9 @@ struct MaxCliqueOptions {
  * @param options options for solving the max-clique problem.
  * @return
  */
-VectorX<bool> MaxClique(SparseMatrix<bool> adjacency_matrix,
-                        MaxCliqueOptions& options){};
+VectorX<bool> MaxClique(const Eigen::SparseMatrix<bool>& adjacency_matrix,
+                        const MaxCliqueOptions& options);
 
+}  // namespace graph_algorithms
 }  // namespace planning
 }  // namespace drake

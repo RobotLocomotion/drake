@@ -1,3 +1,7 @@
+#include "drake/planning/graph_algorithms/test/common_graphs.h"
+
+#include <vector>
+
 #include <Eigen/Sparse>
 
 #include "drake/planning/graph_algorithms/graph_algorithms_internal.h"
@@ -29,7 +33,7 @@ Eigen::SparseMatrix<bool> BullGraph() {
   Eigen::SparseMatrix<bool> ret(5, 5);
   ret.setFromTriplets(triplets.begin(), triplets.end());
   return ret;
-};
+}
 
 Eigen::SparseMatrix<bool> ButterflyGraph() {
   std::vector<Triplet<bool>> triplets;

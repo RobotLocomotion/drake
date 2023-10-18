@@ -85,9 +85,8 @@ struct MaxStableSetOptions {
  * @return A binary vector with the samee indexing as the adjacency matrix, with
  * 1 indicating membership in the stable set.
  */
-VectorX<bool> MaxStableSet(
-    const Eigen::SparseMatrix<bool>& adjacency_matrix,
-    MaxStableSetOptions& options);
+VectorX<bool> MaxStableSet(const Eigen::SparseMatrix<bool>& adjacency_matrix,
+                           const MaxStableSetOptions& options);
 }  // namespace graph_algorithms
 }  // namespace planning
 }  // namespace drake

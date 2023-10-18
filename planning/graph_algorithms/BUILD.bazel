@@ -12,8 +12,9 @@ drake_cc_package_library(
     name = "graph_algorithms",
     visibility = ["//visibility:public"],
     deps = [
-        ":max_stable_set",
+        ":graph_algorithms_internal",
         ":max_clique",
+        ":max_stable_set",
     ],
 )
 
@@ -24,12 +25,12 @@ drake_cc_library(
         "max_stable_set.h",
     ],
     deps = [
+        "//solvers:choose_best_solver",
+        "//solvers:gurobi_solver",
         "//solvers:mathematical_program",
         "//solvers:mathematical_program_result",
         "//solvers:mosek_solver",
-        "//solvers:gurobi_solver",
         "//solvers:solve",
-        "//solvers:choose_best_solver"
     ],
 )
 
@@ -40,27 +41,27 @@ drake_cc_library(
         "max_clique.h",
     ],
     deps = [
+        ":graph_algorithms_internal",
+        ":max_stable_set",
+        "//solvers:gurobi_solver",
         "//solvers:mathematical_program",
         "//solvers:mathematical_program_result",
-        ":max_stable_set",
         "//solvers:mosek_solver",
-        "//solvers:gurobi_solver",
         "//solvers:solve",
     ],
 )
 
 drake_cc_library(
-    name="graph_algorithms_internal",
+    name = "graph_algorithms_internal",
     srcs = ["graph_algorithms_internal.cc"],
     hdrs = [
         "graph_algorithms_internal.h",
     ],
     deps = [
-        "@eigen",
         "//common:essential",
-    ]
+        "@eigen",
+    ],
 )
-
 
 # === test/ ===
 
@@ -71,8 +72,8 @@ drake_cc_library(
     hdrs = ["test/common_graphs.h"],
     visibility = ["//visibility:private"],
     deps = [
+        ":graph_algorithms_internal",
         "@eigen",
-        ":graph_algorithms_internal"
     ],
 )
 
@@ -81,7 +82,16 @@ drake_cc_googletest(
     srcs = ["test/max_stable_set_test.cc"],
     deps = [
         ":common_graphs",
-        ":max_stable_set"
+        ":max_stable_set",
+    ],
+)
+
+drake_cc_googletest(
+    name = "max_clique_test",
+    srcs = ["test/max_clique_test.cc"],
+    deps = [
+        ":common_graphs",
+        ":max_clique",
     ],
 )
 
@@ -91,7 +101,7 @@ drake_cc_googletest(
     deps = [
         ":common_graphs",
         ":graph_algorithms_internal",
-        "//common/test_utilities:eigen_matrix_compare"
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 

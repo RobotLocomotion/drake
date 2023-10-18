@@ -1,7 +1,6 @@
 #include "drake/planning/graph_algorithms/graph_algorithms_internal.h"
 
 #include "drake/common/drake_assert.h"
-
 namespace drake {
 namespace planning {
 namespace graph_algorithms {
@@ -29,16 +28,17 @@ Eigen::SparseMatrix<bool> ComplementaryAdjacencyMatrix(
   ret.setFromTriplets(complementary_entries.begin(),
                       complementary_entries.end());
   return ret;
-};
+}
 
 // Given a list of triplets, add the symmetric component to the triplet list.
 // This is useful when constructing adjacency matrices.
-void SymmetrizeTripletList(std::vector<Eigen::Triplet<bool>>* expected_entries) {
-  expected_entries->reserve(static_cast<int>(2*expected_entries->size()));
-  for(const auto& elt: *expected_entries) {
+void SymmetrizeTripletList(
+    std::vector<Eigen::Triplet<bool>>* expected_entries) {
+  expected_entries->reserve(static_cast<int>(2 * expected_entries->size()));
+  for (const auto& elt : *expected_entries) {
     expected_entries->emplace_back(elt.col(), elt.row(), elt.value());
   }
-};
+}
 
 }  // namespace internal
 }  // namespace graph_algorithms

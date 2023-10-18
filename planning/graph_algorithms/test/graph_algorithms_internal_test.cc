@@ -1,10 +1,7 @@
 #include "drake/planning/graph_algorithms/graph_algorithms_internal.h"
 
-#include <iostream>
-
 #include <gtest/gtest.h>
 
-#include "drake/common/fmt_eigen.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/planning/graph_algorithms/test/common_graphs.h"
 
