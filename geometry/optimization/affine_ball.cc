@@ -25,19 +25,22 @@ AffineBall::AffineBall(const Eigen::Ref<const MatrixXd>& B,
   CheckInvariants();
 }
 
-AffineBall::AffineBall(const Hyperellipsoid& ellipsoid)
-    : ConvexSet(ellipsoid.ambient_dimension(), true) {
+namespace {
+const Hyperellipsoid& CheckBounded(const Hyperellipsoid& ellipsoid) {
   DRAKE_THROW_UNLESS(ellipsoid.IsBounded());
-  B_ = ellipsoid.A().inverse();
-  center_ = ellipsoid.center();
+  return ellipsoid;
 }
+}  // namespace
+
+AffineBall::AffineBall(const Hyperellipsoid& ellipsoid)
+    : AffineBall(CheckBounded(ellipsoid).A().inverse(), ellipsoid.center()) {}
 
 AffineBall::~AffineBall() = default;
 
 namespace {
 
 double volume_of_unit_sphere(int dim) {
-  DRAKE_DEMAND(dim >= 0);
+  DRAKE_DEMAND(dim >= 1);
   // Formula from https://en.wikipedia.org/wiki/Volume_of_an_n-ball .
   // Note: special case n≤3 only because they are common and simple.
   switch (dim) {

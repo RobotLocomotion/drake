@@ -86,10 +86,12 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertTrue(E.PointInSet(E.MaybeGetFeasiblePoint()))
         self.assertTrue(E.IntersectsWith(E))
 
-        mut.Hyperellipsoid.MakeAxisAligned(
+        mut.AffineBall.MakeAxisAligned(
             radius=np.ones(3), center=np.zeros(3))
-        mut.Hyperellipsoid.MakeHypersphere(radius=2, center=np.zeros(3))
-        mut.Hyperellipsoid.MakeUnitBall(dim=2)
+        mut.AffineBall.MakeHypersphere(radius=2, center=np.zeros(3))
+        mut.AffineBall.MakeUnitBall(dim=2)
+
+        mut.AffineBall(ellipsoid=mut.Hyperellipsoid.MakeUnitBall(dim=1))
 
     def test_affine_subspace(self):
         dut = mut.AffineSubspace()
@@ -326,6 +328,7 @@ class TestGeometryOptimization(unittest.TestCase):
             points=points, rank_tol=1e-2)
         e_lowner_john = mut.Hyperellipsoid.MinimumVolumeCircumscribedEllipsoid(
             points=points)
+        mut.Hyperellipsoid(ellipsoid=mut.AffineBall.MakeUnitBall(dim=1))
 
     def test_minkowski_sum(self):
         mut.MinkowskiSum()

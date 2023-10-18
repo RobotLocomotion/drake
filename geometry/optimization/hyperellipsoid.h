@@ -52,7 +52,7 @@ class Hyperellipsoid final : public ConvexSet {
                  std::optional<FrameId> reference_frame = std::nullopt);
 
   /** Constructs a Hyperellipsoid from an AffineBall.
-  @pre ellipsoid.B() is invertible.*/
+  @pre ellipsoid.B() is invertible. */
   explicit Hyperellipsoid(const AffineBall& ellipsoid);
 
   ~Hyperellipsoid() final;
