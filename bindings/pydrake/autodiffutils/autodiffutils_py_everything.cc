@@ -16,21 +16,12 @@ using std::sin;
 
 namespace drake {
 namespace pydrake {
+namespace internal {
 
-PYBIND11_MODULE(autodiffutils, m) {
-  m.doc() = "Bindings for Eigen AutoDiff Scalars";
-
+void DefineAutodiffutils(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::math;
   constexpr auto& doc = pydrake_doc.drake.math;
-
-  py::module::import("pydrake.common");
-
-  // Install NumPy warning filtres.
-  // N.B. This may interfere with other code, but until that is a confirmed
-  // issue, we should aggressively try to avoid these warnings.
-  py::module::import("pydrake.common.deprecation")
-      .attr("install_numpy_warning_filters")();
 
   // TODO(m-chaturvedi) Add Pybind11 documentation.
   py::class_<AutoDiffXd> autodiff(m, "AutoDiffXd");
@@ -143,9 +134,8 @@ PYBIND11_MODULE(autodiffutils, m) {
         return ExtractGradient(auto_diff_matrix);
       },
       py::arg("auto_diff_matrix"), doc.ExtractGradient.doc);
-
-  ExecuteExtraPythonCode(m);
 }
 
+}  // namespace internal
 }  // namespace pydrake
 }  // namespace drake

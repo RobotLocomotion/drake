@@ -1,4 +1,4 @@
-#include "drake/bindings/pydrake/symbolic_py_unapply.h"
+#include "drake/bindings/pydrake/symbolic/symbolic_py_unapply.h"
 
 #include <fmt/format.h>
 

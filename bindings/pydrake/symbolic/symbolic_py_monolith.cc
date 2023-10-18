@@ -7,7 +7,7 @@
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/math_operators_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
-#include "drake/bindings/pydrake/symbolic_py_unapply.h"
+#include "drake/bindings/pydrake/symbolic/symbolic_py_unapply.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
 #include "drake/common/symbolic/decompose.h"
 #include "drake/common/symbolic/latex.h"
@@ -17,31 +17,16 @@
 
 namespace drake {
 namespace pydrake {
+namespace internal {
 
 using std::map;
 using std::string;
 
 // TODO(eric.cousineau): Use py::self for operator overloads?
-PYBIND11_MODULE(symbolic, m) {
+void DefineSymbolicMonolith(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::symbolic;
   constexpr auto& doc = pydrake_doc.drake.symbolic;
-
-  py::module::import("pydrake.common");
-
-  // Install NumPy warning filtres.
-  // N.B. This may interfere with other code, but until that is a confirmed
-  // issue, we should aggressively try to avoid these warnings.
-  py::module::import("pydrake.common.deprecation")
-      .attr("install_numpy_warning_filters")();
-
-  // Install NumPy formatters patch.
-  py::module::import("pydrake.common.compatibility")
-      .attr("maybe_patch_numpy_formatters")();
-
-  m.doc() =
-      "Symbolic variable, variables, monomial, expression, polynomial, and "
-      "formula";
 
   // TODO(m-chaturvedi) Add Pybind11 documentation for operator overloads, etc.
   py::class_<Variable> var_cls(m, "Variable", doc.Variable.doc);
@@ -1094,8 +1079,6 @@ PYBIND11_MODULE(symbolic, m) {
   py::implicitly_convertible<drake::symbolic::Monomial,
       drake::symbolic::Polynomial>();
 
-  ExecuteExtraPythonCode(m);
-
   // Bind the free functions in symbolic/decompose.h
   m  // BR
       .def(
@@ -1181,5 +1164,6 @@ PYBIND11_MODULE(symbolic, m) {
 
   // NOLINTNEXTLINE(readability/fn_size)
 }
+}  // namespace internal
 }  // namespace pydrake
 }  // namespace drake

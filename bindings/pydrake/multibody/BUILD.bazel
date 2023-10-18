@@ -92,7 +92,7 @@ drake_pybind_library(
         ":module_py",
         "//bindings/pydrake/common:cpp_template_py",
         "//bindings/pydrake/common:value_py",
-        "//bindings/pydrake:math_py",
+        "//bindings/pydrake/math",
     ],
     py_srcs = ["_math_extra.py"],
 )
@@ -250,8 +250,8 @@ drake_py_library(
     imports = PACKAGE_INFO.py_imports,
     deps = [
         ":tree_py",
-        "//bindings/pydrake:math_py",
         "//bindings/pydrake/geometry",
+        "//bindings/pydrake/math",
     ],
 )
 
