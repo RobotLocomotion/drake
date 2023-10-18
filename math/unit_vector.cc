@@ -21,9 +21,9 @@ namespace {
 // returns {‖unit_vector‖², true}, otherwise returns {‖unit_vector‖², false}.
 // @note: When type T is symbolic::Expression, this function is a no-op that
 // returns {1.0, {true}}.
-template<typename T>
-std::pair<T, bool> IsUnitVector(const Vector3<T> &unit_vector,
-    const double tolerance_unit_vector_norm) {
+template <typename T>
+std::pair<T, bool> IsUnitVector(const Vector3<T>& unit_vector,
+                                const double tolerance_unit_vector_norm) {
   if constexpr (scalar_predicate<T>::is_bool) {
     // A test that a unit vector's magnitude is within a very small ε of 1 is
     // |√(𝐯⋅𝐯) − 1| ≤ ε. To avoid an unnecessary square-root, notice that this
@@ -42,9 +42,13 @@ std::pair<T, bool> IsUnitVector(const Vector3<T> &unit_vector,
     using std::abs;
     using std::isfinite;
     const double tolerance2 = 2 * tolerance_unit_vector_norm;
+
+    // TODO(Mitiguy) In calculating ‖unit_vector‖² for AutoDiff type <T>, there
+    //  is no need to calculate derivative, so perhaps skip it with:
+    //  double uvec_squared = ExtractDoubleOrThrow(unit_vector).squaredNorm();
     const T uvec_squared = unit_vector.squaredNorm();
-    const bool is_ok_unit_vector = isfinite(uvec_squared) &&
-        abs(uvec_squared - 1) <= tolerance2;
+    const bool is_ok_unit_vector =
+        isfinite(uvec_squared) && abs(uvec_squared - 1) <= tolerance2;
 
     return {uvec_squared, is_ok_unit_vector};
   } else {
@@ -72,12 +76,12 @@ std::string ErrorMessageNotUnitVector(const Vector3<T>& bad_unit_vector,
     using std::abs;
     const T norm = bad_unit_vector.norm();
     const T norm_diff = abs(1.0 - norm);
-    const std::string error_message =
-        fmt::format("{}(): The unit_vector argument {} is not a unit vector.\n"
-                    "|unit_vector| = {}\n"
-                    "||unit_vector| - 1| = {} is greater than {}.",
-                    function_name, fmt_eigen(bad_unit_vector.transpose()),
-                    norm, norm_diff, tolerance_unit_vector_norm);
+    const std::string error_message = fmt::format(
+        "{}(): The unit_vector argument {} is not a unit vector.\n"
+        "|unit_vector| = {}\n"
+        "||unit_vector| - 1| = {} is greater than {}.",
+        function_name, fmt_eigen(bad_unit_vector.transpose()), norm, norm_diff,
+        tolerance_unit_vector_norm);
     return error_message;
   } else {
     unused(bad_unit_vector, function_name, tolerance_unit_vector_norm);
@@ -92,7 +96,7 @@ T ThrowIfNotUnitVector(const Vector3<T>& unit_vector,
                        std::string_view function_name,
                        const double tolerance_unit_vector_norm) {
   DRAKE_DEMAND(!function_name.empty());
-  auto[unit_vector_squared_norm, is_ok_unit_vector]=
+  auto [unit_vector_squared_norm, is_ok_unit_vector] =
       IsUnitVector(unit_vector, tolerance_unit_vector_norm);
   if (!is_ok_unit_vector) {
     throw std::logic_error(ErrorMessageNotUnitVector(
@@ -103,7 +107,7 @@ T ThrowIfNotUnitVector(const Vector3<T>& unit_vector,
 
 template <typename T>
 T WarnIfNotUnitVector(const Vector3<T>& unit_vector,
-    std::string_view function_name) {
+                      std::string_view function_name) {
   DRAKE_DEMAND(!function_name.empty());
   auto [unit_vector_squared_norm, is_ok_unit_vector] =
       IsUnitVector(unit_vector, kToleranceUnitVectorNorm);
@@ -111,18 +115,14 @@ T WarnIfNotUnitVector(const Vector3<T>& unit_vector,
     const std::string msg_not_unit_vector = ErrorMessageNotUnitVector(
         unit_vector, function_name, kToleranceUnitVectorNorm);
     static const drake::internal::WarnDeprecated warn_once(
-       "2023-12-01",
-       fmt::format("{} Implicit normalization is deprecated.",
-           msg_not_unit_vector));
+        "2023-12-01", fmt::format("{} Implicit normalization is deprecated.",
+                                  msg_not_unit_vector));
   }
   return unit_vector_squared_norm;
 }
 
-
-DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((
-    &ThrowIfNotUnitVector<T>,
-    &WarnIfNotUnitVector<T>
-))
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    (&ThrowIfNotUnitVector<T>, &WarnIfNotUnitVector<T>))
 
 }  // namespace internal
 }  // namespace math

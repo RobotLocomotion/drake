@@ -1,6 +1,5 @@
 #pragma once
 
-#include <limits>
 #include <string>
 
 #include "drake/common/eigen_types.h"
@@ -35,8 +34,8 @@ constexpr double kToleranceUnitVectorNorm = 1.0E-14;
 //  if (mag_squared != 1.0) unit_vector /= sqrt(mag_squared);
 // @endcode
 template <typename T>
-T ThrowIfNotUnitVector(const Vector3<T>& unit_vector,
-    std::string_view function_name,
+T ThrowIfNotUnitVector(
+    const Vector3<T>& unit_vector, std::string_view function_name,
     double tolerance_unit_vector_norm = kToleranceUnitVectorNorm);
 
 // If ‖unit_vector‖ is not within kToleranceUnitVectorNorm of 1.0,
