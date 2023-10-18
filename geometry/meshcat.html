@@ -170,6 +170,117 @@
     make_connection(url, reconnect_ms);
     <!-- CONNECTION BLOCK END -->
 
+    /*
+      Setting up NGINX with Drake for HTTPS Support using Self-Signed Certificate
+
+      1. Install NGINX:
+        - Download and install NGINX from the official NGINX website or use a
+          package manager depending on your OS.
+        - On Ubuntu:
+          ```
+          sudo apt update
+          sudo apt install nginx
+          ```
+
+      2. Create a Self-Signed Certificate:
+        - First, create the ssl directory:
+          ```
+          sudo mkdir -p /etc/nginx/ssl
+          ```
+        - Now, generate the certificate and key:
+          ```
+          sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/nginx/ssl/nginx.key -out /etc/nginx/ssl/nginx.crt
+          ```
+        - Fill out the prompts. You can use your IP as the Common Name.
+
+      3. Configure NGINX for Drake:
+        - Create a new configuration file for Drake:
+          ```
+          sudo nano /etc/nginx/sites-available/drake
+          ```
+        - Add the following server block (replace <your.ip> with the IP of the device
+            on which Meshcat is launched):
+          ```
+          server {
+              listen 443 ssl;
+              server_name <your.ip>;
+              ssl_certificate /etc/nginx/ssl/nginx.crt;
+              ssl_certificate_key /etc/nginx/ssl/nginx.key;
+
+              location / {
+                  proxy_pass http://<your.ip>:7000;
+                  proxy_http_version 1.1;
+                  proxy_set_header Upgrade $http_upgrade;
+                  proxy_set_header Connection 'upgrade';
+                  proxy_set_header Host $host;
+                  proxy_cache_bypass $http_upgrade;
+              }
+          }
+          ```
+        - Save and exit the file.
+        - Create a symbolic link to enable the site:
+          ```
+          sudo ln -s /etc/nginx/sites-available/drake /etc/nginx/sites-enabled/
+          ```
+        - Test the NGINX configuration and reload NGINX:
+          ```
+          sudo nginx -t
+          sudo systemctl reload nginx
+          ```
+
+      4. Access Drake using HTTPS:
+        - With NGINX running and configured, access Drake at https://<your.ip>
+        - VR is accessed at https://<your.ip>?webxr=vr&controller=on
+          - Alternatively, use ?webxr=ar
+          - Leave out &controller=on if you don't want the controllers visualized.
+        - Due to the self-signed nature of the certificate, browsers will give a
+          warning.
+
+      5. Managing NGINX:
+        - To stop NGINX: sudo systemctl stop nginx
+        - To start NGINX: sudo systemctl start nginx
+        - To restart NGINX: sudo systemctl restart nginx
+
+      Notes:
+      - Ensure your firewall allows traffic on port 443.
+      - For production use we will probably modify
+        pydrake/geometry/_geometry_extra.py
+        and add https support.
+    */
+
+
+    // Function to retrieve URL parameters.
+    function getURLParameter(name) {
+        return decodeURIComponent((
+          new RegExp('[?|&]' + name + '=' +
+          '([^&;]+?)(&|#|;|$)').exec(location.search) ||
+          [null, ''])[1].replace(/\+/g, '%20')) || null;
+    }
+
+    const webxrMode = getURLParameter('webxr');
+    if(webxrMode) {
+        if(webxrMode === "vr") {
+            viewer.handle_command({
+                type: "enable_webxr",
+                mode: "vr"
+            });
+        } else if(webxrMode === "ar") {
+            viewer.handle_command({
+                type: "enable_webxr",
+                mode: "ar"
+            });
+        }
+    }
+
+    const controllerMode = getURLParameter('controller');
+    if (controllerMode && controllerMode === "on") {
+        viewer.handle_command({
+            type: "visualize_vr_controller"
+        });
+    }
+
+
+
   </script>
 
   <style>
