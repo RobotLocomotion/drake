@@ -571,7 +571,7 @@ class TestMathematicalProgram(unittest.TestCase):
             X = prog.NewSymmetricContinuousVariables(3)
             psd_constraint = prog.AddPositiveSemidefiniteConstraint(X)
             self.assertEqual(len(prog.positive_semidefinite_constraints()), 1)
-            method(constraint = psd_constraint)
+            method(constraint=psd_constraint)
             self.assertEqual(len(prog.positive_semidefinite_constraints()), 0)
 
     def test_sos_polynomial(self):
