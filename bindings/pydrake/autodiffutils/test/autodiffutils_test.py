@@ -15,8 +15,11 @@ import unittest
 import numpy as np
 import pydrake.math as drake_math
 
-from pydrake.test.algebra_test_util import ScalarAlgebra, VectorizedAlgebra
-from pydrake.test.autodiffutils_test_util import (
+from pydrake.math.test.algebra_test_util import (
+    ScalarAlgebra,
+    VectorizedAlgebra,
+)
+from pydrake.autodiffutils.test.autodiffutils_test_util import (
     autodiff_scalar_pass_through,
     autodiff_vector_pass_through,
     autodiff_vector3_pass_through,

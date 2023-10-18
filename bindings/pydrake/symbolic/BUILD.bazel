@@ -1,0 +1,67 @@
+load("//tools/install:install.bzl", "install")
+load(
+    "//tools/skylark:drake_py.bzl",
+    "drake_py_unittest",
+)
+load(
+    "//tools/skylark:pybind.bzl",
+    "drake_pybind_library",
+    "get_drake_py_installs",
+    "get_pybind_package_info",
+)
+load("//bindings/pydrake:pydrake.bzl", "add_lint_tests_pydrake")
+
+package(default_visibility = [
+    "//bindings:__subpackages__",
+])
+
+# This determines how `PYTHONPATH` is configured, and how to install the
+# bindings.
+PACKAGE_INFO = get_pybind_package_info("//bindings")
+
+drake_pybind_library(
+    name = "symbolic",
+    cc_deps = [
+        "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake:math_operators_pybind",
+        "//bindings/pydrake:symbolic_types_pybind",
+        "//bindings/pydrake/common:eigen_pybind",
+    ],
+    cc_so_name = "__init__",
+    cc_srcs = [
+        "symbolic_py.h",
+        "symbolic_py.cc",
+        "symbolic_py_unapply.h",
+        "symbolic_py_unapply.cc",
+        # TODO(jwnimmer-tri) Split the monolith into pieces.
+        "symbolic_py_monolith.cc",
+    ],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        "//bindings/pydrake:module_py",
+        "//bindings/pydrake/common:compatibility_py",
+    ],
+    py_srcs = [
+        "_symbolic_extra.py",
+    ],
+)
+
+install(
+    name = "install",
+    targets = [":symbolic"],
+    py_dest = PACKAGE_INFO.py_dest,
+    deps = get_drake_py_installs([":symbolic"]),
+)
+
+drake_py_unittest(
+    name = "symbolic_test",
+    deps = [
+        ":symbolic",
+        "//bindings/pydrake/common:containers_py",
+        "//bindings/pydrake/common/test_utilities",
+        "//bindings/pydrake/common/test_utilities:numpy_compare_py",
+        "//bindings/pydrake/math:algebra_test_util_py",
+    ],
+)
+
+add_lint_tests_pydrake()

@@ -7,6 +7,7 @@
 #include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
+#include "drake/bindings/pydrake/math/math_py.h"
 #include "drake/bindings/pydrake/math_operators_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
@@ -31,6 +32,7 @@
 
 namespace drake {
 namespace pydrake {
+namespace internal {
 
 using symbolic::Expression;
 using symbolic::Monomial;
@@ -719,14 +721,7 @@ void DefineHeterogeneousMatmul(py::module m) {
 
 }  // namespace
 
-PYBIND11_MODULE(math, m) {
-  // N.B. Docstring contained in `_math_extra.py`.
-
-  py::module::import("pydrake.common");
-  py::module::import("pydrake.autodiffutils");
-  py::module::import("pydrake.common.eigen_geometry");
-  py::module::import("pydrake.symbolic");
-
+void DefineMathMonolith(py::module m) {
   // Define math operations for all three scalar types.
   // See TODO in corresponding header file - these should be removed soon!
   pydrake::internal::BindMathOperators<double>(&m);
@@ -740,9 +735,8 @@ PYBIND11_MODULE(math, m) {
 
   type_visit([m](auto dummy) { DoNonsymbolicScalarDefinitions(m, dummy); },
       NonSymbolicScalarPack{});
-
-  ExecuteExtraPythonCode(m);
 }
 
+}  // namespace internal
 }  // namespace pydrake
 }  // namespace drake

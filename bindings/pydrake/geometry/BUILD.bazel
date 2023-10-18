@@ -61,7 +61,7 @@ drake_pybind_library(
         "//setup:deepnote",
     ],
     py_deps = [
-        "//bindings/pydrake:math_py",
+        "//bindings/pydrake/math",
         "//bindings/pydrake:module_py",
         "//bindings/pydrake/solvers",
         "//bindings/pydrake/systems:framework_py",
@@ -112,9 +112,9 @@ drake_py_unittest(
     name = "optimization_test",
     deps = [
         ":geometry",
-        "//bindings/pydrake:math_py",
         "//bindings/pydrake/common/test_utilities:deprecation_py",
         "//bindings/pydrake/common/test_utilities:pickle_compare_py",
+        "//bindings/pydrake/math",
         "//bindings/pydrake/multibody:inverse_kinematics_py",
         "//bindings/pydrake/multibody:parsing_py",
         "//bindings/pydrake/multibody:plant_py",

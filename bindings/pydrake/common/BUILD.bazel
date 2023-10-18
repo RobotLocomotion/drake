@@ -222,8 +222,8 @@ drake_pybind_library(
         ":module_py",
         ":cpp_template_py",
         ":value_py",
-        "//bindings/pydrake:autodiffutils_py",
-        "//bindings/pydrake:symbolic_py",
+        "//bindings/pydrake/autodiffutils",
+        "//bindings/pydrake/symbolic",
     ],
     py_srcs = ["_eigen_geometry_extra.py"],
 )
@@ -439,7 +439,7 @@ drake_pybind_library(
     package_info = PACKAGE_INFO,
     py_deps = [
         ":module_py",
-        "//bindings/pydrake:math_py",
+        "//bindings/pydrake/math",
     ],
 )
 
@@ -497,7 +497,7 @@ drake_py_unittest(
     num_threads = 2,
     deps = [
         ":module_py",
-        "//bindings/pydrake:autodiffutils_py",
+        "//bindings/pydrake/autodiffutils",
     ],
 )
 
