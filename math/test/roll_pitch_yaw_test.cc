@@ -14,8 +14,8 @@ namespace drake {
 namespace math {
 namespace {
 
-using Eigen::Vector3d;
 using Eigen::Matrix3d;
+using Eigen::Vector3d;
 using symbolic::Expression;
 using symbolic::Variable;
 
@@ -33,8 +33,8 @@ GTEST_TEST(RollPitchYaw, testConstructorsAndIsNearlyEqualTo) {
   const RollPitchYaw<double> c(Vector3d(0.1, 0.2, -0.3));
   EXPECT_FALSE(a.IsNearlyEqualTo(b, kEpsilon));
   EXPECT_TRUE(a.IsNearlyEqualTo(c, kEpsilon));
-  EXPECT_FALSE(a.IsNearlyEqualTo(b, 0.1 - 10*kEpsilon));
-  EXPECT_TRUE(a.IsNearlyEqualTo(b, 0.1 + 10*kEpsilon));
+  EXPECT_FALSE(a.IsNearlyEqualTo(b, 0.1 - 10 * kEpsilon));
+  EXPECT_TRUE(a.IsNearlyEqualTo(b, 0.1 + 10 * kEpsilon));
 
   // Test additional constructors.
   const RotationMatrix<double> R = a.ToRotationMatrix();
@@ -90,9 +90,10 @@ GTEST_TEST(RollPitchYaw, testAccessSetGetMethods) {
 GTEST_TEST(RollPitchYaw, ToRotationMatrix) {
   const double r(0.5), p(0.4), y(0.3);
   const RollPitchYaw<double> rpy(r, p, y);
-  const Matrix3d m_eigen = (Eigen::AngleAxisd(y, Vector3d::UnitZ())
-                          * Eigen::AngleAxisd(p, Vector3d::UnitY())
-                          * Eigen::AngleAxisd(r, Vector3d::UnitX())).matrix();
+  const Matrix3d m_eigen = (Eigen::AngleAxisd(y, Vector3d::UnitZ()) *
+                            Eigen::AngleAxisd(p, Vector3d::UnitY()) *
+                            Eigen::AngleAxisd(r, Vector3d::UnitX()))
+                               .matrix();
   const RotationMatrix<double> R_eigen(m_eigen);
   const RotationMatrix<double> R_rpy = rpy.ToRotationMatrix();
   EXPECT_TRUE(R_rpy.IsNearlyEqualTo(R_eigen, kEpsilon));
@@ -158,10 +159,11 @@ GTEST_TEST(RollPitchYaw, OrdinaryDerivativeRotationMatrixRollPitchYaw) {
   const double r = rpy.roll_angle();
   const double p = rpy.pitch_angle();
   const double y = rpy.yaw_angle();
-  const double c0 = cos(r),  c1 = cos(p),  c2 = cos(y);
-  const double s0 = sin(r),  s1 = sin(p),  s2 = sin(y);
+  const double c0 = cos(r), c1 = cos(p), c2 = cos(y);
+  const double s0 = sin(r), s1 = sin(p), s2 = sin(y);
   const double rDt = rpyDt(0), pDt = rpyDt(1), yDt = rpyDt(2);
   Matrix3d MDt;
+  // clang-format off
   MDt << -s1*c2*pDt - s2*c1*yDt,
       s0*s2*rDt + s1*c0*c2*rDt + s0*c1*c2*pDt - c0*c2*yDt - s1*s0*s2*yDt,
       s0*c2*yDt + s2*c0*rDt + c1*c0*c2*pDt - s1*s0*c2*rDt - s1*s2*c0*yDt,
@@ -171,9 +173,10 @@ GTEST_TEST(RollPitchYaw, OrdinaryDerivativeRotationMatrixRollPitchYaw) {
       -c1*pDt,
       c1*c0*rDt - s1*s0*pDt,
       -s1*c0*pDt - s0*c1*rDt;
+  // clang-format on
 
-  EXPECT_TRUE(CompareMatrices(RDt, MDt, 16 * kEpsilon,
-                              MatrixCompareType::absolute));
+  EXPECT_TRUE(
+      CompareMatrices(RDt, MDt, 16 * kEpsilon, MatrixCompareType::absolute));
 }
 
 // For a RollPitchYaw R_AD(rpy) that relates frame D's orientation to frame A,
@@ -189,8 +192,8 @@ GTEST_TEST(RollPitchYaw, CalcAngularVelocityFromRpyDtAndViceVersa) {
   const Vector3d w_AD_A = rpy.CalcAngularVelocityInParentFromRpyDt(rpyDt);
   const Vector3d w_AD_D = rpy.CalcAngularVelocityInChildFromRpyDt(rpyDt);
   const RotationMatrix<double> R_AD(rpy);
-  EXPECT_TRUE(CompareMatrices(w_AD_A, R_AD * w_AD_D,
-                              4 * kEpsilon, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(w_AD_A, R_AD * w_AD_D, 4 * kEpsilon,
+                              MatrixCompareType::absolute));
 
   // Form the matrix Np relating ṙ, ṗ, ẏ to ωx, ωy, ωz, where frame D's angular
   // velocity in A, expressed in "parent" A is `w_AD_A = ωx Ax + ωy Ay + ωz Az`.
@@ -261,9 +264,9 @@ GTEST_TEST(RollPitchYaw, CalcAngularVelocityFromRpyDtAndViceVersa) {
   const Vector3d rpyDt_calculated_from_child =
       rpy.CalcRpyDtFromAngularVelocityInChild(w_AD_D);
   EXPECT_TRUE(CompareMatrices(rpyDt_calculated_from_parent, rpyDt,
-      16 * kEpsilon, MatrixCompareType::absolute));
-  EXPECT_TRUE(CompareMatrices(rpyDt_calculated_from_child, rpyDt,
-      16 * kEpsilon, MatrixCompareType::absolute));
+                              16 * kEpsilon, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(rpyDt_calculated_from_child, rpyDt, 16 * kEpsilon,
+                              MatrixCompareType::absolute));
 
   // Check that CalcRpyDtFromAngularVelocityInParent() and
   // CalcRpyDtFromAngularVelocityInChild() throw near gimbal lock.
@@ -338,9 +341,10 @@ GTEST_TEST(RollPitchYaw, PrecisionOfAngularVelocityFromRpyDtAndViceVersa) {
       expected_message =
           "RollPitchYaw::CalcRpyDDtFromRpyDtAndAngularAccelInParent()"
           ".*gimbal-lock.*";
-      DRAKE_EXPECT_THROWS_MESSAGE(rpyDDt =
-        rpy.CalcRpyDDtFromRpyDtAndAngularAccelInParent(rpyDt, alphaA),
-        expected_message);
+      DRAKE_EXPECT_THROWS_MESSAGE(
+          rpyDDt =
+              rpy.CalcRpyDDtFromRpyDtAndAngularAccelInParent(rpyDt, alphaA),
+          expected_message);
     } else {
       ++number_of_precise_cases;
       rpyDt = rpy.CalcRpyDtFromAngularVelocityInParent(wA);
@@ -365,8 +369,7 @@ GTEST_TEST(RollPitchYaw, PrecisionOfAngularVelocityFromRpyDtAndViceVersa) {
 
       // Compare the given and calculated angular velocities.
       const Vector3d w_diff = wB - wA;
-      const Vector3d w_error(w_diff(0) / wA(0),
-                             w_diff(1) / wA(1),
+      const Vector3d w_error(w_diff(0) / wA(0), w_diff(1) / wA(1),
                              w_diff(2) / wA(2));
       const double max_error = w_diff.template lpNorm<Eigen::Infinity>();
 
@@ -378,7 +381,7 @@ GTEST_TEST(RollPitchYaw, PrecisionOfAngularVelocityFromRpyDtAndViceVersa) {
       EXPECT_LE(max_error, 256 * kEpsilon);  // Up to 8 bits lost.
     }
   }
-  EXPECT_TRUE(number_of_precise_cases > 0  &&  number_of_imprecise_cases > 0);
+  EXPECT_TRUE(number_of_precise_cases > 0 && number_of_imprecise_cases > 0);
 }
 
 // For a RollPitchYaw rpy that relates orientation of a frame A to a frame D,
@@ -396,7 +399,7 @@ GTEST_TEST(RollPitchYaw, CalcAngularVelocityInChildFromRpyDt) {
   using std::cos;
   using std::sin;
   const double wx = rDt - sin(p) * yDt;
-  const double wy = cos(r)*pDt + sin(r) * cos(p) *yDt;
+  const double wy = cos(r) * pDt + sin(r) * cos(p) * yDt;
   const double wz = cos(p) * cos(r) * yDt - sin(r) * pDt;
   const Vector3d w_AD_D_expected(wx, wy, wz);
 
@@ -418,7 +421,7 @@ GTEST_TEST(RollPitchYaw, CalcRpyDDtFromAngularAccel) {
   const double tol = 64 * kEpsilon * M_PI;
   const double deg = M_PI / 180;
   for (double roll = -M_PI; roll <= M_PI + tol; roll += 10 * deg) {
-    for (double pitch = -M_PI/2; pitch <= M_PI/2 + tol; pitch += 2 * deg) {
+    for (double pitch = -M_PI / 2; pitch <= M_PI / 2 + tol; pitch += 2 * deg) {
       for (double yaw = -M_PI; yaw <= M_PI + tol; yaw += 10 * deg) {
         const RollPitchYaw<double> rpy(roll, pitch, yaw);
 
@@ -433,19 +436,22 @@ GTEST_TEST(RollPitchYaw, CalcRpyDDtFromAngularAccel) {
           const char* expected_message =
               "RollPitchYaw::CalcRpyDDtFromRpyDtAndAngularAccelInParent()"
               ".*gimbal-lock.*";
-          DRAKE_EXPECT_THROWS_MESSAGE(rpyDDt =
-             rpy.CalcRpyDDtFromRpyDtAndAngularAccelInParent(rpyDt, alpha_AD_A),
-             expected_message);
-          expected_message = "RollPitchYaw::CalcRpyDDtFromAngularAccelInChild()"
-                             ".*gimbal-lock.*";
-          DRAKE_EXPECT_THROWS_MESSAGE(rpyDDt_verify =
-             rpy.CalcRpyDDtFromAngularAccelInChild(rpyDt, alpha_AD_D),
-             expected_message);
+          DRAKE_EXPECT_THROWS_MESSAGE(
+              rpyDDt = rpy.CalcRpyDDtFromRpyDtAndAngularAccelInParent(
+                  rpyDt, alpha_AD_A),
+              expected_message);
+          expected_message =
+              "RollPitchYaw::CalcRpyDDtFromAngularAccelInChild()"
+              ".*gimbal-lock.*";
+          DRAKE_EXPECT_THROWS_MESSAGE(
+              rpyDDt_verify =
+                  rpy.CalcRpyDDtFromAngularAccelInChild(rpyDt, alpha_AD_D),
+              expected_message);
           continue;
         }
 
         rpyDDt =
-          rpy.CalcRpyDDtFromRpyDtAndAngularAccelInParent(rpyDt, alpha_AD_A);
+            rpy.CalcRpyDDtFromRpyDtAndAngularAccelInParent(rpyDt, alpha_AD_A);
         rpyDDt_verify =
             rpy.CalcRpyDDtFromAngularAccelInChild(rpyDt, alpha_AD_D);
 
@@ -465,15 +471,17 @@ GTEST_TEST(RollPitchYaw, CalcRpyDDtFromAngularAccel) {
         const double alfAx = alpha_AD_A(0);
         const double alfAy = alpha_AD_A(1);
         const double alfAz = alpha_AD_A(2);
-        const double rDDt = (alfAx * cos(y) + alfAy * sin(y)
-                          + pDt * yDt + sin(p) * pDt * rDt) / cos(p);
-        const double pDDt =  alfAy * cos(y) - alfAx * sin(y)
-                          - cos(p) * rDt * yDt;
-        const double yDDt = alfAz + cos(p) * pDt * rDt + tan(p) *
-             (alfAx * cos(y) + alfAy * sin(y) + pDt * yDt + sin(p) * pDt * rDt);
+        const double rDDt =
+            (alfAx * cos(y) + alfAy * sin(y) + pDt * yDt + sin(p) * pDt * rDt) /
+            cos(p);
+        const double pDDt =
+            alfAy * cos(y) - alfAx * sin(y) - cos(p) * rDt * yDt;
+        const double yDDt = alfAz + cos(p) * pDt * rDt +
+                            tan(p) * (alfAx * cos(y) + alfAy * sin(y) +
+                                      pDt * yDt + sin(p) * pDt * rDt);
         const Vector3d rpyDDt_expected(rDDt, pDDt, yDDt);
         EXPECT_TRUE(CompareMatrices(rpyDDt, rpyDDt_expected, tolerance,
-                              MatrixCompareType::absolute));
+                                    MatrixCompareType::absolute));
       }
     }
   }
@@ -501,64 +509,60 @@ GTEST_TEST(RollPitchYaw, SymbolicTest) {
   const RollPitchYaw<Expression> dut1(r1, p1, y1);
   const RollPitchYaw<Expression> dut2(r2, p2, y2);
 
-  EXPECT_EQ(
-      dut1.IsNearlyEqualTo(dut2, 1e-3).to_string(),
-      fmt::format(
-          "(max({}, max({}, {})) <= 0.001)",
-          "abs((r1 - r2))",
-          "abs((p1 - p2))",
-          "abs((y1 - y2))"));
+  EXPECT_EQ(dut1.IsNearlyEqualTo(dut2, 1e-3).to_string(),
+            fmt::format("(max({}, max({}, {})) <= 0.001)", "abs((r1 - r2))",
+                        "abs((p1 - p2))", "abs((y1 - y2))"));
 
-  EXPECT_THAT(
-      dut1.IsNearlySameOrientation(dut2, 1e-3).to_string(),
-      testing::MatchesRegex("\\(max.* <= 0.001\\)"));
+  EXPECT_THAT(dut1.IsNearlySameOrientation(dut2, 1e-3).to_string(),
+              testing::MatchesRegex("\\(max.* <= 0.001\\)"));
 
-  EXPECT_THAT(
-      dut1.IsRollPitchYawInCanonicalRange().to_string(),
-      testing::MatchesRegex(".*(and.*){5}"));
+  EXPECT_THAT(dut1.IsRollPitchYawInCanonicalRange().to_string(),
+              testing::MatchesRegex(".*(and.*){5}"));
 
   EXPECT_THAT(
       RollPitchYaw<Expression>::DoesCosPitchAngleViolateGimbalLockTolerance(
-          cos(p1)).to_string(),
+          cos(p1))
+          .to_string(),
       testing::StartsWith("(abs(cos(p1)) < 0.008"));
 
   const Vector3<Expression> vec(r1, p1, y1);
-  EXPECT_THAT(
-      RollPitchYaw<Expression>::IsValid(vec).to_string(),
-      testing::MatchesRegex(".*inf.*(and.*inf.*){5}"));
+  EXPECT_THAT(RollPitchYaw<Expression>::IsValid(vec).to_string(),
+              testing::MatchesRegex(".*inf.*(and.*inf.*){5}"));
 }
-
 
 // Test the stream insertion operator to write into a stream.
 GTEST_TEST(RollPitchYaw, StreamInsertionOperator) {
   // Test stream insertion for RollPitchYaw<double>.
   const RollPitchYaw<double> rpy_double(0.2, 0.3, 0.4);
-  std::stringstream streamA;  streamA << rpy_double;
+  std::stringstream streamA;
+  streamA << rpy_double;
   std::string rpy_expected_string = "rpy = 0.2 0.3 0.4";
   EXPECT_EQ(rpy_expected_string, streamA.str());
 
   // Test stream insertion for RollPitchYaw<AutoDiffXd>.
   const RollPitchYaw<AutoDiffXd> rpy_autodiff(0.5, 0.6, 0.7);
-  std::stringstream streamB;  streamB << rpy_autodiff;
+  std::stringstream streamB;
+  streamB << rpy_autodiff;
   rpy_expected_string = "rpy = 0.5 0.6 0.7";
   EXPECT_EQ(rpy_expected_string, streamB.str());
 
   // Test stream insertion for RollPitchYaw<symbolic::Expression>.
   const symbolic::Variable r("foo"), p("bar"), y("baz");
   const RollPitchYaw<Expression> rpy_symbolic(r, p, y);
-  std::stringstream streamC;  streamC << rpy_symbolic;
+  std::stringstream streamC;
+  streamC << rpy_symbolic;
   rpy_expected_string = "rpy = foo bar baz";
   EXPECT_EQ(rpy_expected_string, streamC.str());
 
   // When the expression strings are very long, they will be truncated.
   const Expression big_expr = sqrt(pow(r, 2) + pow(p, 2) + pow(y, 2));
-  const RollPitchYaw<symbolic::Expression> rpy_symbolic_huge(
-      big_expr, big_expr, big_expr);
-  std::stringstream streamD;  streamD << rpy_symbolic_huge;
+  const RollPitchYaw<symbolic::Expression> rpy_symbolic_huge(big_expr, big_expr,
+                                                             big_expr);
+  std::stringstream streamD;
+  streamD << rpy_symbolic_huge;
   rpy_expected_string = "rpy = <symbolic> <symbolic> <symbolic>";
   EXPECT_EQ(rpy_expected_string, streamD.str());
 }
-
 
 }  // namespace
 }  // namespace math

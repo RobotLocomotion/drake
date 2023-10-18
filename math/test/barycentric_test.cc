@@ -16,11 +16,11 @@ namespace math {
 namespace {
 
 using Eigen::MatrixXd;
-using Eigen::VectorXd;
-using Eigen::VectorXi;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
 using Eigen::Vector3i;
+using Eigen::VectorXd;
+using Eigen::VectorXi;
 
 GTEST_TEST(BarycentricTest, GetMeshPoints) {
   // Create a mesh in 3 (input) dimensions, with the second dimension being a
@@ -140,8 +140,8 @@ GTEST_TEST(BarycentricTest, EvalSymbolicTest) {
   BarycentricMesh<double> bary{{{0.0, 1.0},  // BR
                                 {0.0, 1.0}}};
 
-  using symbolic::Variable;
   using symbolic::Expression;
+  using symbolic::Variable;
   Variable a{"a"}, b{"b"}, c{"c"}, d{"d"};
   RowVector4<Expression> mesh;
   mesh << a, b, c, d;
@@ -211,8 +211,9 @@ GTEST_TEST(BarycentricTest, FromLambda) {
 
   BarycentricMesh<double> bary({x_values});
 
-  MatrixXd mesh_values = bary.MeshValuesFrom(
-      [](const auto& x) { return Vector1d(std::sin(x[0])); });
+  MatrixXd mesh_values = bary.MeshValuesFrom([](const auto& x) {
+    return Vector1d(std::sin(x[0]));
+  });
 
   // Check that it evaluates correctly on the grid (the interpolation is
   // verified with the other tests).

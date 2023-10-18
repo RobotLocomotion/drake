@@ -11,12 +11,12 @@
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/math/autodiff_gradient.h"
 
+using Eigen::AutoDiffScalar;
 using Eigen::Matrix2d;
 using Eigen::MatrixXd;
-using Eigen::VectorXd;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
-using Eigen::AutoDiffScalar;
+using Eigen::VectorXd;
 using Vector5d = Eigen::Matrix<double, 5, 1>;
 
 namespace drake {
@@ -136,7 +136,8 @@ TEST_F(AutodiffTest, ExtractGradient) {
   EXPECT_NO_THROW(ExtractGradient(mixed_good, 3));
 
   // But we should fail if the specified size doesn't match actual.
-  DRAKE_EXPECT_THROWS_MESSAGE(ExtractGradient(mixed_good, 19),
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      ExtractGradient(mixed_good, 19),
       "ExtractGradient..: Input matrix has 3.*but.*specified.*19.*"
       "should have zero.*or.*should match.*");
 
@@ -145,7 +146,8 @@ TEST_F(AutodiffTest, ExtractGradient) {
   mixed_bad(0) = AutoDiffXd(1.0, VectorXd::Zero(3));
   mixed_bad(1) = AutoDiffXd(2.0, VectorXd());
   mixed_bad(2) = AutoDiffXd(3.0, VectorXd::Zero(2));
-  DRAKE_EXPECT_THROWS_MESSAGE(ExtractGradient(mixed_bad),
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      ExtractGradient(mixed_bad),
       "ExtractGradient..: Input matrix.*inconsistent.*3 and 2.*");
 }
 
@@ -158,16 +160,15 @@ TEST_F(AutodiffTest, ExtractGradient) {
 // In some cases we also need to verify that the template meta programming
 // yields the expected types, since that is part of the function documentation.
 GTEST_TEST(AdditionalAutodiffTest, InitializeNoGradientMatrix) {
-  const auto value = (Eigen::Matrix2d() <<  1.0, 2.0,
-                                            3.0, 4.0).finished();
+  const auto value = (Eigen::Matrix2d() << 1.0, 2.0, 3.0, 4.0).finished();
 
   // Fixed-size value, fixed-size gradient.
   Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Vector4d>, 2, 2> autodiff2;
   // This is the general method. All the other no-gradient-methods call it.
   InitializeAutoDiff(value, {}, {}, &autodiff2);
   EXPECT_TRUE(CompareMatrices(ExtractValue(autodiff2), value));
-  EXPECT_TRUE(CompareMatrices(ExtractGradient(autodiff2),
-      Eigen::Matrix4d::Identity()));
+  EXPECT_TRUE(
+      CompareMatrices(ExtractGradient(autodiff2), Eigen::Matrix4d::Identity()));
 
   // Cursory check of overload that defaults the middle two parameters, exactly
   // equivalent to the more-general signature as invoked above.
@@ -175,7 +176,7 @@ GTEST_TEST(AdditionalAutodiffTest, InitializeNoGradientMatrix) {
   InitializeAutoDiff(2 * value, &autodiff22);
   EXPECT_TRUE(CompareMatrices(ExtractValue(autodiff22), 2 * value));
   EXPECT_TRUE(CompareMatrices(ExtractGradient(autodiff22),
-      Eigen::Matrix4d::Identity()));
+                              Eigen::Matrix4d::Identity()));
 
   // Even simpler overload that defaults the middle parameters and puts the
   // result in the return value. Derivatives are fixed size if a size is
@@ -203,16 +204,18 @@ GTEST_TEST(AdditionalAutodiffTest, InitializeNoGradientMatrix) {
   // Row-major order is preserved through InitializeAutoDiff and
   // ExtractGradient.
   Eigen::Matrix<double, 2, 3, Eigen::RowMajor> value_rowmajor;
+  // clang-format off
   value_rowmajor <<
       1.0, 2.0, 3.0,
       4.0, 5.0, 6.0;
+  // clang-format on
   const auto adXT_return = InitializeAutoDiff(value_rowmajor);
   EXPECT_TRUE(decltype(adXT_return)::IsRowMajor);
   EXPECT_EQ(decltype(adXT_return)::RowsAtCompileTime, 2);
   EXPECT_EQ(decltype(adXT_return)::ColsAtCompileTime, 3);
   EXPECT_TRUE(CompareMatrices(ExtractValue(adXT_return), value_rowmajor));
-  EXPECT_TRUE(CompareMatrices(ExtractGradient(adXT_return),
-                              MatrixXd::Identity(6, 6)));
+  EXPECT_TRUE(
+      CompareMatrices(ExtractGradient(adXT_return), MatrixXd::Identity(6, 6)));
 
   // Fixed-size value, variable-size gradient.
   Eigen::Matrix<AutoDiffXd, 2, 2> autodiffX;
@@ -252,8 +255,8 @@ GTEST_TEST(AdditionalAutodiffTest, InitializeNoGradientMatrix) {
 // most-general method takes an output argument for the result; a sugar method
 // uses that to give the result as the function return.
 GTEST_TEST(AdditionalAutodiffTest, InitializeWithGradientMatrix) {
-  const Eigen::Matrix2d value = (Eigen::Matrix2d() <<  1.0, 2.0,
-                                                       3.0, 4.0).finished();
+  const Eigen::Matrix2d value =
+      (Eigen::Matrix2d() << 1.0, 2.0, 3.0, 4.0).finished();
   const Eigen::Matrix4d gradient = 2 * Eigen::Matrix4d::Identity();
 
   // Fixed-size value, fixed-size gradient.
@@ -481,4 +484,3 @@ GTEST_TEST(AutoDiffEqual, AreAutoDiffVecXdEqualTest) {
 }  // namespace
 }  // namespace math
 }  // namespace drake
-

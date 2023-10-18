@@ -22,7 +22,7 @@ GTEST_TEST(TestGrayCode, TestCalculateGrayCodes) {
     EXPECT_EQ(test_code.cols(), i);
     EXPECT_EQ(test_code.rows(), i == 0 ? 0 : 1 << i);
     // Each code should differ by only one bit from the previous code.
-    for (int j = 1; j < test_code.rows(); j ++) {
+    for (int j = 1; j < test_code.rows(); j++) {
       EXPECT_EQ((test_code.row(j) - test_code.row(j - 1)).cwiseAbs().sum(), 1);
     }
   }
@@ -32,9 +32,8 @@ template <int NumDigits, int NumCodes>
 void TestGrayCode(const Eigen::Ref<const Eigen::MatrixXi>& gray_codes) {
   auto gray_codes_dynamic = CalculateReflectedGrayCodes(NumDigits);
   auto gray_codes_static = CalculateReflectedGrayCodes<NumDigits>();
-  static_assert(
-      std::is_same_v<decltype(gray_codes_dynamic), Eigen::MatrixXi>,
-      "Should be a dynamic sized matrix");
+  static_assert(std::is_same_v<decltype(gray_codes_dynamic), Eigen::MatrixXi>,
+                "Should be a dynamic sized matrix");
   static_assert(std::is_same_v<decltype(gray_codes_static),
                                Eigen::Matrix<int, NumCodes, NumDigits>>,
                 "Should be a static sized matrix");
