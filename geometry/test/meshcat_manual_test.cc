@@ -508,6 +508,41 @@ Open up your browser to the URL above.
     }
   }
 
+  std::cout << "\n";
+  std::cout << "Now we'll test the WebXR functionality.\n";
+  std::cout << "In a new browser window, open the URL:\n  "
+            << meshcat->web_url() << "?webxr=vr&controller=on\n";
+  std::cout << "If you don't have VR hardware installed on your machine, "
+               "you'll have to install the WebXR API emulator appropriate to "
+               "your browser. E.g., for Google Chrome "
+               "see:\n  https://chrome.google.com/webstore/detail/"
+               "webxr-api-emulator/mjddjgeghkdijejnciaefnkjmkafnnje\n";
+  std::cout << "\nIf the emulator is installed properly, you should see a "
+               "button at the bottom that says \"Enter VR\".\n";
+  std::cout << "Open the window showing the WebXR emulator and select a VR "
+               "device with controllers (e.g., Oculus Quest). Click the "
+               "\"Enter VR\" button. You should see the following:\n"
+            << "  - The rendering screen is now split into two images.\n"
+            << "  - The meshcat controls are gone (there is a message in the "
+               "console informing you of this).\n"
+            << "  - You should be able to manipulate the view in the WebXR "
+               "emulator to affect what you see."
+            << "When you're done, close the browser window.\n\n";
+
+  MaybePauseForUser();
+
+  std::cout << "\nNow we'll try it again with *augmented* reality.\n"
+            << "In yet another browser window, open:\n"
+            << meshcat->web_url() << "?webxr=ar&controller=on\n"
+            << "This should be the same as before but with two differences:\n"
+            << "  - The button reads \"Enter XR\"\n"
+            << "  - When you click the button, the background becomes white. "
+               "If you have an actual AR device, you should see the camera's "
+               "image as the background.\n"
+            << "When you're done, close the browser window.\n\n";
+
+  MaybePauseForUser();
+
   std::cout << "Exiting..." << std::endl;
   return 0;
 }
