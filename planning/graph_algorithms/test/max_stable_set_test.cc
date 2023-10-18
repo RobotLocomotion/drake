@@ -1,10 +1,7 @@
 #include "drake/planning/graph_algorithms/max_stable_set.h"
 
-#include <iostream>
-
 #include <gtest/gtest.h>
 
-#include "drake/common/fmt_eigen.h"
 #include "drake/planning/graph_algorithms/test/common_graphs.h"
 namespace drake {
 namespace planning {
@@ -14,7 +11,7 @@ namespace {
 // Test maximum stable set solved via mip. Compare against the expected size of
 // the solution and ensure that the result is one of the true maximum stable
 // sets in the graph.
-void TestStableSetViaMIP(
+void TestMaxStableSetViaMIP(
     const Eigen::Ref<const Eigen::SparseMatrix<bool>>& adjacency_matrix,
     const int expected_size,
     const std::vector<VectorX<bool>>& possible_solutions) {
@@ -22,7 +19,6 @@ void TestStableSetViaMIP(
   MaxStableSetOptions options(&solver);
   VectorX<bool> stable_set_inds = MaxStableSet(adjacency_matrix, options);
   EXPECT_EQ(stable_set_inds.cast<int>().sum(), expected_size);
-  std::cout << fmt::format("x = {}", fmt_eigen(stable_set_inds)) << std::endl;
   bool solution_match_found = false;
   for (const auto& possible_solution : possible_solutions) {
     bool all_equal = true;
@@ -40,7 +36,7 @@ void TestStableSetViaMIP(
   EXPECT_TRUE(solution_match_found);
 }
 
-GTEST_TEST(MaxStableSetSolverViaMIP, TestConstructor) {
+GTEST_TEST(MaxStableSetSolverViaMIPTest, TestConstructor) {
   // Test the default constructor.
   MaxStableSetSolverViaMIP solver1;
   EXPECT_EQ(solver1.solver_id(), solvers::MosekSolver::id());
@@ -56,7 +52,7 @@ GTEST_TEST(MaxStableSetSolverViaMIP, TestConstructor) {
   EXPECT_EQ(solver3.solver_id(), solvers::GurobiSolver::id());
 }
 
-GTEST_TEST(MaxStableSetTest, CompleteGraph) {
+GTEST_TEST(MaxStableSetSolverViaMIPTest, CompleteGraph) {
   for (const auto n : {3, 8}) {
     std::vector<VectorX<bool>> possible_solutions;
     // The largest stable set is any singleton in the graph
@@ -66,19 +62,19 @@ GTEST_TEST(MaxStableSetTest, CompleteGraph) {
       possible_solutions.push_back(sol);
     }
     Eigen::SparseMatrix<bool> graph = Kn(n);
-    TestStableSetViaMIP(Kn(n), 1, possible_solutions);
+    TestMaxStableSetViaMIP(Kn(n), 1, possible_solutions);
   }
 }
 
-GTEST_TEST(MaxStableSetTest, BullGraph) {
+GTEST_TEST(MaxStableSetSolverViaMIPTest, BullGraph) {
   VectorX<bool> solution(5);
   // The largest stable set is (0,3,4)
   solution << true, false, true, false, true;
   std::vector<VectorX<bool>> possible_solutions{solution};
-  TestStableSetViaMIP(BullGraph(), 3, possible_solutions);
+  TestMaxStableSetViaMIP(BullGraph(), 3, possible_solutions);
 }
 
-GTEST_TEST(MaxStableSetTest, ButterflyGraph) {
+GTEST_TEST(MaxStableSetSolverViaMIPTest, ButterflyGraph) {
   VectorX<bool> solution1(5);
   VectorX<bool> solution2(5);
   VectorX<bool> solution3(5);
@@ -91,10 +87,10 @@ GTEST_TEST(MaxStableSetTest, ButterflyGraph) {
 
   std::vector<VectorX<bool>> possible_solutions{solution1, solution2, solution3,
                                                 solution4};
-  TestStableSetViaMIP(ButterflyGraph(), 2, possible_solutions);
+  TestMaxStableSetViaMIP(ButterflyGraph(), 2, possible_solutions);
 }
 
-GTEST_TEST(MaxStableSetTest, PetersenGraph) {
+GTEST_TEST(MaxStableSetSolverViaMIPTest, PetersenGraph) {
   VectorX<bool> solution1 = VectorX<bool>::Constant(10, false);
   VectorX<bool> solution2 = VectorX<bool>::Constant(10, false);
   VectorX<bool> solution3 = VectorX<bool>::Constant(10, false);
@@ -111,7 +107,7 @@ GTEST_TEST(MaxStableSetTest, PetersenGraph) {
       possible_solutions.back()(ind) = true;
     }
   }
-  TestStableSetViaMIP(PetersenGraph(), 4, possible_solutions);
+  TestMaxStableSetViaMIP(PetersenGraph(), 4, possible_solutions);
 }
 
 }  // namespace

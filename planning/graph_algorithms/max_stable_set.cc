@@ -1,6 +1,9 @@
 #include "drake/planning/graph_algorithms/max_stable_set.h"
-#include "drake/solvers/choose_best_solver.h"
 
+#include <utility>
+#include <vector>
+
+#include "drake/solvers/choose_best_solver.h"
 
 namespace drake {
 namespace planning {
@@ -10,7 +13,7 @@ using Eigen::SparseMatrix;
 
 MaxStableSetSolverViaMIP::MaxStableSetSolverViaMIP(
     const solvers::SolverId& solver_id, const solvers::SolverOptions& options)
-    : solver_id_(solver_id), options_(options){};
+    : solver_id_(solver_id), options_(options) {}
 
 MaxStableSetOptions::MaxStableSetOptions(const MaxStableSetSolverBase* m_solver)
     : solver{const_cast<MaxStableSetSolverBase*>(std::move(m_solver))} {};
@@ -47,7 +50,7 @@ VectorX<bool> MaxStableSetSolverViaMIP::SolveMaxStableSet(
 }
 
 VectorX<bool> MaxStableSet(const Eigen::SparseMatrix<bool>& adjacency_matrix,
-                           MaxStableSetOptions& options) {
+                           const MaxStableSetOptions& options) {
   return options.solver->SolveMaxStableSet(adjacency_matrix);
 }
 }  // namespace graph_algorithms
