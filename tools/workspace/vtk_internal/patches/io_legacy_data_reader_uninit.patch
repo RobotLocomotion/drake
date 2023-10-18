@@ -1,0 +1,32 @@
+[vtk] Work around memcheck false positives in IO::Legacy
+
+These false positive Cond errors are flagged by valgrind memcheck
+on Ubuntu 20.04 ("Focal").
+
+TODO(#20251) Once our Memcheck builds use Ubuntu 22.04 ("Jammy"),
+we should drop this patch.
+
+
+--- IO/Legacy/vtkDataReader.cxx
++++ IO/Legacy/vtkDataReader.cxx
+@@ -877,7 +877,7 @@ int vtkDataReader::ReadCellData(vtkDataSet* ds, vtkIdType numCells)
+ // no geometry was defined).
+ int vtkDataReader::ReadPointData(vtkDataSet* ds, vtkIdType numPts)
+ {
+-  char line[256];
++  char line[256] = "";
+   vtkDataSetAttributes* a = ds->GetPointData();
+ 
+   vtkDebugMacro(<< "Reading vtk point data");
+@@ -2215,7 +2215,7 @@ int vtkDataReader::ReadCoordinates(vtkRectilinearGrid* rg, int axes, int numCoor
+ // Read scalar point attributes. Return 0 if error.
+ int vtkDataReader::ReadScalarData(vtkDataSetAttributes* a, vtkIdType numPts)
+ {
+-  char line[256], name[256], key[256], tableName[256];
++  char line[256], name[256], key[256] = "", tableName[256];
+   int skipScalar = 0;
+   vtkDataArray* data;
+   int numComp = 1;
+-- 
+2.34.1
+

@@ -15,9 +15,9 @@
 
 namespace drake {
 
+using multibody::Parser;
 using systems::Context;
 using systems::Simulator;
-using multibody::Parser;
 
 namespace multibody {
 namespace {
@@ -68,8 +68,7 @@ GTEST_TEST(JointLimitsTest, PrismaticJointConvergenceTest) {
 
   for (double time_step : {2.5e-4, 5.0e-4, 1.0e-3}) {
     MultibodyPlant<double> plant(time_step);
-    plant.mutable_gravity_field().set_gravity_vector(
-        Vector3<double>::Zero());
+    plant.mutable_gravity_field().set_gravity_vector(Vector3<double>::Zero());
     const SpatialInertia<double> M_B =
         SpatialInertia<double>::SolidCubeWithMass(mass, box_size);
     const RigidBody<double>& body = plant.AddRigidBody("Body", M_B);
@@ -232,10 +231,8 @@ GTEST_TEST(JointLimitsTest, KukaArm) {
 
   MultibodyPlant<double> plant(time_step);
   Parser(&plant).AddModels(FindResourceOrThrow(kIiwaFilePath));
-  plant.WeldFrames(plant.world_frame(),
-                   plant.GetFrameByName("iiwa_link_0"));
-  plant.mutable_gravity_field().set_gravity_vector(
-      Vector3<double>::Zero());
+  plant.WeldFrames(plant.world_frame(), plant.GetFrameByName("iiwa_link_0"));
+  plant.mutable_gravity_field().set_gravity_vector(Vector3<double>::Zero());
   SetReflectedInertiaToZero(&plant);
   plant.Finalize();
 
@@ -249,10 +246,10 @@ GTEST_TEST(JointLimitsTest, KukaArm) {
   // Verify the joint limits were correctly parsed.
   const VectorX<double> lower_limits_expected = KukaPositionLowerLimits();
   const VectorX<double> upper_limits_expected = KukaPositionUpperLimits();
-  EXPECT_TRUE(CompareMatrices(lower_limits_expected,
-                              plant.GetPositionLowerLimits()));
-  EXPECT_TRUE(CompareMatrices(upper_limits_expected,
-                              plant.GetPositionUpperLimits()));
+  EXPECT_TRUE(
+      CompareMatrices(lower_limits_expected, plant.GetPositionLowerLimits()));
+  EXPECT_TRUE(
+      CompareMatrices(upper_limits_expected, plant.GetPositionUpperLimits()));
 
   // Duplicate checks for `GetPosition*Limits`, but using joint names.
   for (int joint_number = 1; joint_number <= nq; ++joint_number) {
@@ -316,13 +313,13 @@ GTEST_TEST(JointLimitsTest, KukaArmFloating) {
   VectorX<double> lower_limits_expected(nq);
   lower_limits_expected.head(nq_floating).setConstant(-inf);
   lower_limits_expected.tail(nq_arm) = KukaPositionLowerLimits();
-  EXPECT_TRUE(CompareMatrices(lower_limits_expected,
-                              plant.GetPositionLowerLimits()));
+  EXPECT_TRUE(
+      CompareMatrices(lower_limits_expected, plant.GetPositionLowerLimits()));
   VectorX<double> upper_limits_expected(nq);
   upper_limits_expected.head(nq_floating).setConstant(inf);
   upper_limits_expected.tail(nq_arm) = KukaPositionUpperLimits();
-  EXPECT_TRUE(CompareMatrices(upper_limits_expected,
-                              plant.GetPositionUpperLimits()));
+  EXPECT_TRUE(
+      CompareMatrices(upper_limits_expected, plant.GetPositionUpperLimits()));
 }
 
 // Invokes a method that putatively uses joint limits, but which are ignored
@@ -333,7 +330,7 @@ GTEST_TEST(JointLimitsTest, ContinuousLimitsDoNotFault) {
   plant.Finalize();
   auto context = plant.CreateDefaultContext();
   plant.get_actuation_input_port().FixValue(context.get(),
-      Eigen::VectorXd::Zero(7));
+                                            Eigen::VectorXd::Zero(7));
 
   // The reaction forces putatively use joint limits, and will log a warning.
   plant.get_reaction_forces_output_port().Eval<AbstractValue>(*context);

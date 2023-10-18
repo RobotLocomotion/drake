@@ -18,6 +18,12 @@ namespace drake {
 namespace systems {
 namespace lcm {
 
+#ifndef DRAKE_DOXYGEN_CXX
+namespace internal {
+class LcmSystemGraphviz;
+}  // namespace internal
+#endif
+
 /**
  * Receives LCM messages from a given channel and outputs them to a
  * System<double>'s port. This class stores the most recently processed LCM
@@ -57,30 +63,55 @@ class LcmSubscriberSystem : public LeafSystem<double> {
    *
    * @param[in] channel The LCM channel on which to subscribe.
    *
-   * @param lcm A non-null pointer to the LCM subsystem to subscribe on.
+   * @param lcm A non-null pointer to the LCM subsystem to subscribe on. If
+   * `wait_for_message_on_initialization_timeout > 0`, then the pointer must
+   * remain valid for the lifetime of the returned system.
+   *
+   * @param wait_for_message_on_initialization_timeout Configures the behavior
+   * of initialization events (see System::ExecuteInitializationEvents() and
+   * Simulator::Initialize()) by specifying the number of seconds (wall-clock
+   * elapsed time) to wait for a new message. If this timeout is <= 0,
+   * initialization will copy any already-received messages into the Context but
+   * will not process any new messages. If this timeout is > 0, initialization
+   * will call lcm->HandleSubscriptions() until at least one message is received
+   * or until the timeout. Pass ∞ to wait indefinitely.
    */
   template <typename LcmMessage>
   static std::unique_ptr<LcmSubscriberSystem> Make(
-      const std::string& channel, drake::lcm::DrakeLcmInterface* lcm) {
+      const std::string& channel, drake::lcm::DrakeLcmInterface* lcm,
+      double wait_for_message_on_initialization_timeout = 0.0) {
     return std::make_unique<LcmSubscriberSystem>(
-        channel, std::make_unique<Serializer<LcmMessage>>(), lcm);
+        channel, std::make_unique<Serializer<LcmMessage>>(), lcm,
+        wait_for_message_on_initialization_timeout);
   }
 
   /**
    * Constructor that returns a subscriber System that provides message objects
-   * on its sole abstract-valued output port.  The type of the message object is
-   * determined by the @p serializer.
+   * on its sole abstract-valued output port.  The type of the message object
+   * is determined by the @p serializer.
    *
    * @param[in] channel The LCM channel on which to subscribe.
    *
    * @param[in] serializer The serializer that converts between byte vectors
    * and LCM message objects. Cannot be null.
    *
-   * @param lcm A non-null pointer to the LCM subsystem to subscribe on.
+   * @param lcm A non-null pointer to the LCM subsystem to subscribe on. If
+   * `wait_for_message_on_initialization_timeout > 0`, then the pointer must
+   * remain valid for the lifetime of the returned system.
+   *
+   * @param wait_for_message_on_initialization_timeout Configures the behavior
+   * of initialization events (see System::ExecuteInitializationEvents() and
+   * Simulator::Initialize()) by specifying the number of seconds (wall-clock
+   * elapsed time) to wait for a new message. If this timeout is <= 0,
+   * initialization will copy any already-received messages into the Context but
+   * will not process any new messages. If this timeout is > 0, initialization
+   * will call lcm->HandleSubscriptions() until at least one message is received
+   * or until the timeout. Pass ∞ to wait indefinitely.
    */
   LcmSubscriberSystem(const std::string& channel,
                       std::shared_ptr<const SerializerInterface> serializer,
-                      drake::lcm::DrakeLcmInterface* lcm);
+                      drake::lcm::DrakeLcmInterface* lcm,
+                      double wait_for_message_on_initialization_timeout = 0.0);
 
   ~LcmSubscriberSystem() override;
 
@@ -126,8 +157,14 @@ class LcmSubscriberSystem : public LeafSystem<double> {
                             systems::CompositeEventCollection<double>* events,
                             double* time) const final;
 
-  systems::EventStatus ProcessMessageAndStoreToAbstractState(
-      const Context<double>&, State<double>* state) const;
+  EventStatus ProcessMessageAndStoreToAbstractState(const Context<double>&,
+                                                    State<double>* state) const;
+
+  EventStatus Initialize(const Context<double>&, State<double>* state) const;
+
+  typename LeafSystem<double>::GraphvizFragment DoGetGraphvizFragment(
+      const typename LeafSystem<double>::GraphvizFragmentParams& params)
+      const final;
 
   // The channel on which to receive LCM messages.
   const std::string channel_;
@@ -154,6 +191,16 @@ class LcmSubscriberSystem : public LeafSystem<double> {
 
   // A little hint to help catch use-after-free.
   int magic_number_{};
+
+  // The lcm interface is (maybe) used to handle subscriptions during
+  // Initialization.
+  drake::lcm::DrakeLcmInterface* const lcm_;
+
+  // A timeout in seconds.
+  const double wait_for_message_on_initialization_timeout_;
+
+  // Graphviz support (for DoGetGraphvizFragment).
+  const std::unique_ptr<internal::LcmSystemGraphviz> graphviz_;
 };
 
 }  // namespace lcm

@@ -1,5 +1,6 @@
 # -*- bazel -*-
 
+load("@drake//tools/skylark:cc.bzl", "cc_library")
 load(":vars.bzl", "LIBDIR")
 
 licenses(["notice"])  # IJG

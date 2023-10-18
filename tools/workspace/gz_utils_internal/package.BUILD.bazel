@@ -8,14 +8,8 @@ load(
     "@drake//tools/workspace:check_lists_consistency.bzl",
     "check_lists_consistency",
 )
-load(
-    "@drake//tools/install:install.bzl",
-    "install",
-)
-load(
-    "@drake//tools/workspace:vendor_cxx.bzl",
-    "cc_library_vendored",
-)
+load("@drake//tools/install:install.bzl", "install")
+load("@drake//tools/workspace:vendor_cxx.bzl", "cc_library_vendored")
 load("@drake//tools/workspace:generate_file.bzl", "generate_file")
 
 licenses(["notice"])  # Apache-2.0
@@ -51,6 +45,7 @@ _MOST_PUBLIC_HDRS = [
     "include/gz/utils/Environment.hh",
     "include/gz/utils/ImplPtr.hh",
     "include/gz/utils/NeverDestroyed.hh",
+    "include/gz/utils/Subprocess.hh",
     "include/gz/utils/SuppressWarning.hh",
     "include/gz/utils/detail/DefaultOps.hh",
     "include/gz/utils/detail/ImplPtr.hh",
@@ -116,7 +111,6 @@ cc_library_vendored(
 install(
     name = "install",
     docs = [
-        "COPYING",
         "LICENSE",
     ],
     visibility = ["//visibility:public"],

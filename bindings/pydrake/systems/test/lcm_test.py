@@ -13,7 +13,6 @@ import numpy as np
 from drake import lcmt_header, lcmt_quaternion
 import drake as drake_lcmtypes
 
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.value import Value
 from pydrake.lcm import DrakeLcm, DrakeLcmParams, Subscriber
 from pydrake.systems.analysis import Simulator
@@ -78,11 +77,6 @@ class TestSystemsLcm(unittest.TestCase):
         raw = dut.Serialize(value)
         reconstruct = lcmt_quaternion.decode(raw)
         self.assert_lcm_equal(reconstruct, model_message)
-        # Check cloning.
-        with catch_drake_warnings(expected_count=1):
-            cloned_dut = dut.Clone()
-        fresh_value = dut.CreateDefaultValue().get_value()
-        self.assertIsInstance(fresh_value, lcmt_quaternion)
 
     def test_serializer_cpp(self):
         # Tests relevant portions of API.
@@ -90,11 +84,6 @@ class TestSystemsLcm(unittest.TestCase):
         model_value = self._model_value_cpp()
         self.assert_lcm_equal(
             self._cpp_value_to_py_message(model_value), model_message)
-
-    def test_serializer_cpp_clone(self):
-        serializer = mut._Serializer_[lcmt_quaternion]()
-        with catch_drake_warnings(expected_count=1):
-            serializer.Clone().CreateDefaultValue()
 
     def test_all_serializers_exist(self):
         """Checks that all of Drake's Python LCM messages have a matching C++
@@ -123,6 +112,7 @@ class TestSystemsLcm(unittest.TestCase):
                 use_cpp_serializer=True)
 
     def test_buses(self):
+        self.assertIsInstance(mut.LcmBuses.kLcmUrlMemqNull, str)
         dut = mut.LcmBuses()
         dut.Add("default", DrakeLcm())
         self.assertEqual(dut.size(), 1)
@@ -130,13 +120,17 @@ class TestSystemsLcm(unittest.TestCase):
         self.assertEqual(len(dut.GetAllBusNames()), 1)
 
     def test_bus_config(self):
-        bus_config = {"foo": DrakeLcmParams(), "bar": DrakeLcmParams()}
+        bus_config = {
+            "foo": DrakeLcmParams(),
+            "bar": DrakeLcmParams(),
+            "quux": None,
+        }
         bus_config["foo"].lcm_url = "memq://1"
         bus_config["bar"].lcm_url = "memq://2"
 
         builder = DiagramBuilder()
         buses = mut.ApplyLcmBusConfig(bus_config, builder)
-        self.assertEqual(buses.size(), 2)
+        self.assertEqual(buses.size(), 3)
         self.assertIsInstance(buses.Find("Config test", "foo"),
                               mut.LcmInterfaceSystem)
 
@@ -151,7 +145,8 @@ class TestSystemsLcm(unittest.TestCase):
     def test_subscriber(self):
         lcm = DrakeLcm()
         dut = mut.LcmSubscriberSystem.Make(
-            channel="TEST_CHANNEL", lcm_type=lcmt_quaternion, lcm=lcm)
+            channel="TEST_CHANNEL", lcm_type=lcmt_quaternion, lcm=lcm,
+            wait_for_message_on_initialization_timeout=0.0)
         model_message = self._model_message()
         lcm.Publish(channel="TEST_CHANNEL", buffer=model_message.encode())
         lcm.HandleSubscriptions(0)
@@ -172,7 +167,8 @@ class TestSystemsLcm(unittest.TestCase):
         lcm = DrakeLcm()
         dut = mut.LcmSubscriberSystem.Make(
             channel="TEST_CHANNEL", lcm_type=lcmt_quaternion, lcm=lcm,
-            use_cpp_serializer=True)
+            use_cpp_serializer=True,
+            wait_for_message_on_initialization_timeout=0.0)
         model_message = self._model_message()
         lcm.Publish(channel="TEST_CHANNEL", buffer=model_message.encode())
         lcm.HandleSubscriptions(0)
@@ -288,6 +284,12 @@ class TestSystemsLcm(unittest.TestCase):
             publish_period=0.001)
         self.assertIsInstance(scope, mut.LcmScopeSystem)
         self.assertIsInstance(publisher, mut.LcmPublisherSystem)
+
+    def test_lcm_interface_system_getters(self):
+        lcm = DrakeLcm()
+        lcm_system = mut.LcmInterfaceSystem(lcm=lcm)
+        self.assertIsInstance(lcm_system.get_lcm_url(), str)
+        self.assertEqual(lcm_system.HandleSubscriptions(timeout_millis=10), 0)
 
     def test_lcm_interface_system_diagram(self):
         # First, check the class doc.

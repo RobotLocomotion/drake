@@ -1,5 +1,5 @@
 load(
-    "@drake//tools/skylark:drake_cc.bzl",
+    "//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
     "drake_cc_library",
     "drake_cc_package_library",
@@ -301,6 +301,7 @@ drake_cc_googletest(
         ":free_rotating_body_plant",
         "//common/test_utilities:eigen_matrix_compare",
         "//multibody/benchmarks/free_body",
+        "//systems/analysis:runge_kutta3_integrator",
         "//systems/analysis:simulator",
     ],
 )

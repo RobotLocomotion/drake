@@ -63,7 +63,7 @@ from pydrake.systems.framework import (
 from pydrake.systems.lcm import (
     LcmPublisherSystem,
 )
-
+import pydrake.visualization.meldis
 
 # https://bugs.launchpad.net/ubuntu/+source/u-msgpack-python/+bug/1979549
 #
@@ -385,12 +385,15 @@ class TestMeldis(unittest.TestCase):
         meshcat.SetSliderValue("Viewer α", new_alpha)
         dut._invoke_poll()
 
-        # Confirm the new color of the box.
-        path = "/DRAKE_VIEWER/2/plant/box/box/0"
+        # Confirm the new (modulated) opacity of the box. Note: this doesn't
+        # actually test the resulting opacity of the box, merely that we
+        # called set_property("/DRAKE_VIEWER", "modulated_opacity", new_alpha).
+        # We rely on meshcat to do the "right" thing in response.
+        path = "/DRAKE_VIEWER"
         self.assertEqual(meshcat.HasPath(path), True)
-        message = meshcat._GetPackedProperty(path, "color")
+        message = meshcat._GetPackedProperty(path, "modulated_opacity")
         parsed = umsgpack.unpackb(message)
-        self.assertListEqual(parsed['value'], rgb + [new_alpha])
+        self.assertEqual(parsed['value'], new_alpha)
 
     def test_inertia_geometry(self):
         url = "package://drake/examples/manipulation_station/models/sphere.sdf"
@@ -622,3 +625,10 @@ class TestMeldis(unittest.TestCase):
         dut._invoke_subscriptions()
         # After the handlers are called, we have the expected meshcat path.
         self.assertEqual(dut.meshcat.HasPath(meshcat_path), True)
+
+    def test_command_line_browser_names(self):
+        """Sanity checks our webbrowser names logic. The objective is to return
+        some kind of a list, without crashing.
+        """
+        names = pydrake.visualization.meldis._available_browsers()
+        self.assertIsInstance(names, list)

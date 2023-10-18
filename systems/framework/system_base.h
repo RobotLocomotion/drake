@@ -64,6 +64,13 @@ class SystemBase : public internal::SystemMessageInterface {
   // intent that the label could be used programmatically.
   const std::string& get_name() const { return name_; }
 
+  /** Returns a name for this %System based on a stringification of its type
+  name and memory address.  This is intended for use in diagnostic output
+  and should not be used for behavioral logic, because the stringification
+  of the type name may produce differing results across platforms and
+  because the address can vary from run to run. */
+  std::string GetMemoryObjectName() const;
+
   /** Returns a human-readable name for this system, for use in messages and
   logging. This will be the same as returned by get_name(), unless that would
   be an empty string. In that case we return a non-unique placeholder name,
@@ -102,6 +109,116 @@ class SystemBase : public internal::SystemMessageInterface {
 
     return context;
   }
+
+  //----------------------------------------------------------------------------
+  /** @name                      Graphviz methods */
+  //@{
+
+  /** Returns a Graphviz string describing this %System. To render the string,
+  use the <a href="http://www.graphviz.org/">Graphviz</a> tool, ``dot``.
+
+  Notes about the display conventions:
+
+  - The nodes of the graph are systems, and the solid edges are connections
+    between system input and output ports.
+
+  - The class name of a %System is shown in <b>Bold</b> atop the node.
+
+  - Under the class name, if a %System has been given a name via set_name(),
+    it will be displayed as `name=...`.
+
+  - Systems can elect to display additional properties besides their name;
+    see GraphvizFragmentParams::header_lines for implementation details.
+
+  - A Diagram's input ports are shown with a
+    <span style="border:2px solid blue;border-radius:4px">blue border</span>
+    and output ports are shown with a
+    <span style="border:2px solid green;border-radius:4px">green border</span>.
+
+  - Zero-sized ports are <span style="color:grey">greyed out</span>.
+
+  - Deprecated ports are <strike>struck through</strike> and flagged with a
+    headstone emoji (🪦) after their name.
+
+  <!-- TODO(jwnimmer-tri) Add rendering of network connections.
+  - Connections other than input-output ports (e.g., network message passing)
+    are shown with dashed lines.
+  -->
+
+  @param max_depth Sets a limit to the depth of nested diagrams to visualize.
+  Use zero to render a diagram as a single system block.
+
+  @param options Arbitrary strings to request alterations to the output. Options
+  that are unknown will be silently skipped. These options are often bespoke
+  flags that are only understood by particular systems, but Drake has one
+  built-in flag that is generally applicable: `"split"`. When set to `"I/O"`,
+  the system will be added as two nodes with all inputs on one node and all
+  outputs on the other; this is useful for systems that might otherwise cause
+  problematic visual cycles.
+
+  Options are applied only to this immediate system; they are not inherited by
+  the subsystems of a %Diagram. To specify an option for a %Diagram's subsystem,
+  prefix the option name with the subsystem's path, e.g., use
+  `"plant/split"="I/O"` to set the `"split"` option on the subsystem named
+  `"plant"`. */
+  std::string GetGraphvizString(
+      std::optional<int> max_depth = {},
+      const std::map<std::string, std::string>& options = {}) const;
+
+  /** (Advanced) The return type of GetGraphvizFragment(). */
+  struct GraphvizFragment {
+    /** The Graphviz IDs for this %System's input ports, to be used for adding
+    Graphviz edges. The i'th element is the ID for `get_input_port(i)`. For a
+    typical LeafSystem these will look like "s123:u0", "s123:u1", … but for
+    diagrams and other special cases they might vary. */
+    std::vector<std::string> input_ports;
+
+    /** The Graphviz IDs for this %System's output ports, to be used for adding
+    Graphviz edges. The i'th element is the ID for `get_output_port(i)`. For a
+    typical LeafSystem these will look like "s123:y0", "s123:y1", … but for
+    diagrams and other special cases they might vary. */
+    std::vector<std::string> output_ports;
+
+    /** The Graphviz content for this %System. The fragments must be a valid
+    Graphviz figure when concatenated and then wrapped in a `digraph { … }` or
+    `subgraph { … }` stanza. During concatenation, no extra newlines or any
+    other kind of whitespace should be inserted. (This is a list of strings,
+    rather than a single string, to avoid redundant string concatenation until
+    the last moment when we return the final GetGraphvizString().) */
+    std::vector<std::string> fragments;
+  };
+
+  /** (Advanced) Like GetGraphvizString() but does not wrap the string in a
+  `digraph { … }`. This is useful when merging the fragment into another
+  graph, and is how %Diagram obtains the Graphviz content for its subsystems.
+  The parameters are identical to GetGraphvizString(). The return value contains
+  additional metadata beyond the Graphviz content, to better support merging. */
+  GraphvizFragment GetGraphvizFragment(
+      std::optional<int> max_depth = {},
+      const std::map<std::string, std::string>& options = {}) const;
+  //@}
+
+  /** (Advanced) The arguments to the protected method DoGetGraphvizFragment().
+  This struct typically is only used by subclasses of LeafSystem that need to
+  customize their Graphviz representation. These parameters constitute a polite
+  request; a user's %System's implementation of DoGetGraphvizFragment() is not
+  strictly required to honor any of these parameters, but generally should
+  attempt to honor as many as possible. */
+  struct GraphvizFragmentParams {
+    /** As per GetGraphvizString(). */
+    int max_depth{};
+
+    /** As per GetGraphvizString(). */
+    std::map<std::string, std::string> options;
+
+    /** The Graphviz ID to use for this node. */
+    std::string node_id;
+
+    /** The header line(s) to use for this Graphviz node's table. The strings in
+    `header_lines` should not contain newlines; those are added automatically,
+    along with `<BR/>` breaks between lines. */
+    std::vector<std::string> header_lines;
+  };
 
   //----------------------------------------------------------------------------
   /** @name            Input port evaluation (deprecated)
@@ -618,7 +735,8 @@ class SystemBase : public internal::SystemMessageInterface {
   /** Checks whether the given context was created for this system.
   @note This method is sufficiently fast for performance sensitive code.
   @throws std::exception if the System Ids don't match.
-  @throws std::exception if `context` is null. */
+  @throws std::exception if `context` is null.
+  @exclude_from_pydrake_mkdoc{This overload is not bound.} */
   void ValidateContext(const ContextBase* context) const {
     DRAKE_THROW_UNLESS(context != nullptr);
     ValidateContext(*context);
@@ -1172,6 +1290,11 @@ class SystemBase : public internal::SystemMessageInterface {
   system. See @ref system_compatibility. */
   internal::SystemId get_system_id() const { return system_id_; }
 
+  /** The NVI implementation of GetGraphvizFragment() for subclasses to override
+  if desired. The default behavior should be sufficient in most cases. */
+  virtual GraphvizFragment DoGetGraphvizFragment(
+      const GraphvizFragmentParams& params) const;
+
  private:
   void CreateSourceTrackers(ContextBase*) const;
 
@@ -1221,6 +1344,12 @@ class SystemBase : public internal::SystemMessageInterface {
   // Given a deprecated input or output port (as determined by `input`), logs
   // a warning (just once per process) about the deprecation.
   void WarnPortDeprecation(bool is_input, int port_index) const;
+
+  // Returns the names of all input (or output) ports, styled for Graphviz using
+  // its subset of HTML. For example, this handles the markup for deprecated or
+  // size-0 ports as documented in GetGraphvizString(). The return value is in
+  // port-index order -- the i'th element is the i'th input (or output) port.
+  std::vector<std::string> GetGraphvizPortLabels(bool input) const;
 
   // Ports and cache entries hold their own DependencyTickets. Note that the
   // addresses of the elements are stable even if the std::vectors are resized.
@@ -1321,6 +1450,9 @@ class DiagramSystemBaseAttorney {
 
   static std::string GetUnsupportedScalarConversionMessage(
       const SystemBase&, const std::type_info&, const std::type_info&);
+
+  static std::vector<std::string> GetGraphvizPortLabels(const SystemBase&,
+                                                        bool input);
 };
 }  // namespace internal
 #endif

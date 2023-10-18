@@ -16,11 +16,11 @@ namespace internal {
 
 /* Configures the obj->mesh parsing operation. */
 struct ObjParseConfig {
-    /* The policy for handling warnings and errors. */
-    drake::internal::DiagnosticPolicy diagnostic;
-    /* Defines the maximum number of unique shapes in the file for a strictly
-     positive value. For any non-positive value, there is no limit. */
-    int allowed_shape_count{-1};
+  /* The policy for handling warnings and errors. */
+  drake::internal::DiagnosticPolicy diagnostic;
+  /* Defines the maximum number of unique shapes in the file for a strictly
+   positive value. For any non-positive value, there is no limit. */
+  int allowed_shape_count{-1};
 };
 
 /* Creates a triangle mesh from the obj data contained in the `input_stream`.
@@ -53,8 +53,7 @@ std::optional<TriangleSurfaceMesh<double>> DoReadObjToSurfaceMesh(
  @return surface mesh
  */
 TriangleSurfaceMesh<double> ReadObjToTriangleSurfaceMesh(
-    const std::string& filename,
-    double scale = 1.0,
+    const std::string& filename, double scale = 1.0,
     std::function<void(std::string_view)> on_warning = {});
 
 /**
@@ -62,8 +61,7 @@ TriangleSurfaceMesh<double> ReadObjToTriangleSurfaceMesh(
  the Wavefront .obj file given in std::istream.
  */
 TriangleSurfaceMesh<double> ReadObjToTriangleSurfaceMesh(
-    std::istream* input_stream,
-    double scale = 1.0,
+    std::istream* input_stream, double scale = 1.0,
     std::function<void(std::string_view)> on_warning = {});
 
 }  // namespace geometry

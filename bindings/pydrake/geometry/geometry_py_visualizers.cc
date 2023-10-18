@@ -270,6 +270,10 @@ void DoScalarIndependentDefinitions(py::module m) {
             cls_doc.Set2dRenderMode.doc)
         .def("ResetRenderMode", &Class::ResetRenderMode,
             cls_doc.ResetRenderMode.doc)
+        .def("SetCameraTarget", &Class::SetCameraTarget,
+            py::arg("target_in_world"), cls_doc.SetCameraTarget.doc)
+        .def("SetCameraPose", &Class::SetCameraPose, py::arg("camera_in_world"),
+            py::arg("target_in_world"), cls_doc.SetCameraPose.doc)
         .def("SetTransform",
             py::overload_cast<std::string_view, const math::RigidTransformd&,
                 const std::optional<double>&>(&Class::SetTransform),

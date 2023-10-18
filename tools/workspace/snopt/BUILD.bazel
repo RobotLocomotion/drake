@@ -1,7 +1,7 @@
 # This file exists to make our directory into a Bazel package, so that our
 # neighboring *.bzl file can be loaded elsewhere.
 
-load("@drake//tools/install:install.bzl", "install")
+load("//tools/install:install.bzl", "install")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 # Install our (custom) license file.

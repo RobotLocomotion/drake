@@ -21,7 +21,7 @@ class SnoptVisibilityTest(unittest.TestCase):
         self.assertTrue(os.path.exists(libdrake))
 
         # Dump the symbol names to an output string.
-        if sys.platform == "linux2":
+        if sys.platform == "linux":
             command = ["readelf", "--wide", "--symbols"]
             undefined_marker = " UND "
         else:

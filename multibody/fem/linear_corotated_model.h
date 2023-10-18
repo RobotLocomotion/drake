@@ -15,6 +15,7 @@ template <typename T, int num_locations>
 struct LinearCorotatedModelTraits {
   using Scalar = T;
   using Data = LinearCorotatedModelData<T, num_locations>;
+  static constexpr bool is_linear = true;
 };
 
 /* Implements the linear corotated constitutive model as described in

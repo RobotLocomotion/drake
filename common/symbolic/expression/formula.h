@@ -128,7 +128,7 @@ class Formula {
   explicit Formula(std::shared_ptr<const FormulaCell> ptr);
 
   /** Constructs a formula from @p var.
-   * @pre @p var is of BOOLEAN type and not a dummy variable.
+   * @pre @p var is of BOOLEAN type.
    */
   explicit Formula(const Variable& var);
 

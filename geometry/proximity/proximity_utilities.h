@@ -63,14 +63,10 @@ class EncodedData {
       : data_(reinterpret_cast<ValueType>(fcl_object.getUserData())) {}
 
   /* Constructs encoded data for the given id identified as dynamic.  */
-  static EncodedData encode_dynamic(GeometryId id) {
-    return {id, true};
-  }
+  static EncodedData encode_dynamic(GeometryId id) { return {id, true}; }
 
   /* Constructs encoded data for the given id identified as anchored.  */
-  static EncodedData encode_anchored(GeometryId id) {
-    return {id, false};
-  }
+  static EncodedData encode_anchored(GeometryId id) { return {id, false}; }
 
   /* Sets the encoded data to be dynamic.  */
   void set_dynamic() { data_ |= kIsDynamicMask; }
@@ -118,7 +114,7 @@ class EncodedData {
   // pack the encoding into a void*. So, we set the bit mask as the highest
   // order bit of something pointer sized.
   static const ValueType kIsDynamicMask = ValueType{1}
-      << (sizeof(void*) * 8 - 1);
+                                          << (sizeof(void*) * 8 - 1);
 
   // The encoded data - id and mobility type masked together.
   ValueType data_{};
@@ -162,6 +158,8 @@ using Eigen::Vector3d;
  for points *inside* the capsule, positive value for points outside.  */
 double CalcDistanceToSurface(const Capsule& capsule, const Vector3d& p_CP);
 
+// clang-format off
 }  // namespace internal
+// clang-format on
 }  // namespace geometry
 }  // namespace drake

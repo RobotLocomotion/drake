@@ -19,14 +19,16 @@ struct Gradient {
            ? Eigen::Dynamic
            : Gradient<Derived, nq,
                       derivative_order - 1>::type::SizeAtCompileTime),
-      nq> type;
+      nq>
+      type;
 };
 
 /** Base case for recursively defined gradient template. */
 template <typename Derived, int nq>
 struct Gradient<Derived, nq, 1> {
   typedef typename Eigen::Matrix<typename Derived::Scalar,
-                                 Derived::SizeAtCompileTime, nq> type;
+                                 Derived::SizeAtCompileTime, nq>
+      type;
 };
 
 }  // namespace math

@@ -5,6 +5,7 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/framework/leaf_system.h"
 
@@ -34,6 +35,10 @@ namespace controllers {
  *  τ_id = -τ_g(q).
  * </pre>
  *
+ * @note As an alternative to adding a controller to your diagram, gravity
+ * compensation can be modeled by disabling gravity for a given model instance,
+ * see MultibodyPlant::set_gravity_enabled().
+ *
  * InverseDynamicsController uses a PID controller to generate desired
  * acceleration and uses this class to compute generalized forces. Use this
  * class directly if desired acceleration is computed differently.
@@ -41,15 +46,15 @@ namespace controllers {
  * @system
  * name: InverseDynamics
  * input_ports:
- * - u0 (estimated state)
- * - <span style="color:gray">u1</span> (desired accelerations)
+ * - estimated_state
+ * - <span style="color:gray">desired_acceleration</span>
  * output_ports:
- * - y0 (force)
+ * - generalized_force
  * @endsystem
  *
- * Port `u0` accepts system estimated state; port `y0` emits generalized
- * forces. Port `u1` is only present when the `mode` at construction is not
- * `kGravityCompensation`. When present, `u1` accepts desired accelerations.
+ * The desired acceleration port shown in <span style="color:gray">gray</span>
+ * is only present when the `mode` at construction is not
+ * `kGravityCompensation`.
  *
  * @tparam_default_scalar
  * @ingroup control_systems
@@ -100,15 +105,15 @@ class InverseDynamics final : public LeafSystem<T> {
    * Returns the input port for the estimated state.
    */
   const InputPort<T>& get_input_port_estimated_state() const {
-    return this->get_input_port(input_port_index_state_);
+    return this->get_input_port(estimated_state_);
   }
 
   /**
    * Returns the input port for the desired acceleration.
    */
   const InputPort<T>& get_input_port_desired_acceleration() const {
-    DRAKE_DEMAND(!this->is_pure_gravity_compensation());
-    return this->get_input_port(input_port_index_desired_acceleration_);
+    DRAKE_THROW_UNLESS(!this->is_pure_gravity_compensation());
+    return this->get_input_port(desired_acceleration_);
   }
 
   /**
@@ -116,8 +121,14 @@ class InverseDynamics final : public LeafSystem<T> {
    * acceleration. The dimension of that force vector will be identical to the
    * dimensionality of the generalized velocities.
    */
+  const OutputPort<T>& get_output_port_generalized_force() const {
+    return this->get_output_port(generalized_force_);
+  }
+
+  DRAKE_DEPRECATED("2024-01-01",
+                   "Use get_output_port_generalized_force() instead.")
   const OutputPort<T>& get_output_port_force() const {
-    return this->get_output_port(output_port_index_force_);
+    return this->get_output_port(generalized_force_);
   }
 
   bool is_pure_gravity_compensation() const {
@@ -147,17 +158,17 @@ class InverseDynamics final : public LeafSystem<T> {
   // Mode dictates whether to do inverse dynamics or just gravity compensation.
   const InverseDynamicsMode mode_;
 
-  int input_port_index_state_{0};
-  int input_port_index_desired_acceleration_{0};
-  int output_port_index_force_{0};
+  InputPortIndex estimated_state_;
+  InputPortIndex desired_acceleration_;
+  OutputPortIndex generalized_force_;
 
-  const int q_dim_{0};
-  const int v_dim_{0};
+  const int q_dim_;
+  const int v_dim_;
 
   // Note: unused in gravity compensation mode.
-  drake::systems::CacheIndex external_forces_cache_index_;
+  CacheIndex external_forces_cache_index_;
 
-  drake::systems::CacheIndex plant_context_cache_index_;
+  CacheIndex plant_context_cache_index_;
 };
 
 }  // namespace controllers

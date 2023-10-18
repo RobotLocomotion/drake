@@ -15,8 +15,8 @@ namespace internal {
 template <typename T>
 std::optional<T> TalsLimiter<T>::CalcAlpha(
     const Eigen::Ref<const Vector2<T>>& v,
-    const Eigen::Ref<const Vector2<T>>& dv,
-    double cos_theta_max, double v_stiction, double relative_tolerance) {
+    const Eigen::Ref<const Vector2<T>>& dv, double cos_theta_max,
+    double v_stiction, double relative_tolerance) {
   DRAKE_ASSERT(v_stiction > 0);
   DRAKE_ASSERT(relative_tolerance > 0);
   DRAKE_ASSERT(dv.size() == v.size());
@@ -37,7 +37,7 @@ std::optional<T> TalsLimiter<T>::CalcAlpha(
 
   const T v_norm = v.norm();
   const T v1_norm = v1.norm();
-  const T x = v_norm / v_stiction;    // Dimensionless slip v and v1.
+  const T x = v_norm / v_stiction;  // Dimensionless slip v and v1.
   const T x1 = v1_norm / v_stiction;
   // From Case I, we know dv_norm > epsilon_v.
   const T dv_norm = sqrt(dv_norm2);
@@ -95,8 +95,8 @@ std::optional<T> TalsLimiter<T>::CalcAlpha(
     // to the origin.
     T alpha;
     const T v_dot_dv = v.dot(dv);
-    if (CrossesTheStictionRegion(
-        v, dv, v_dot_dv, dv_norm, dv_norm2, epsilon_v, v_stiction, &alpha)) {
+    if (CrossesTheStictionRegion(v, dv, v_dot_dv, dv_norm, dv_norm2, epsilon_v,
+                                 v_stiction, &alpha)) {
       return alpha;
     }
 
@@ -168,15 +168,14 @@ std::optional<T> TalsLimiter<T>::CalcAlpha(
 template <typename T>
 bool TalsLimiter<T>::CrossesTheStictionRegion(
     const Eigen::Ref<const Vector2<T>>& v,
-    const Eigen::Ref<const Vector2<T>>& dv,
-    const T& v_dot_dv,  const T& dv_norm, const T& dv_norm2,
-    double epsilon_v, double v_stiction, T* alpha_out) {
+    const Eigen::Ref<const Vector2<T>>& dv, const T& v_dot_dv, const T& dv_norm,
+    const T& dv_norm2, double epsilon_v, double v_stiction, T* alpha_out) {
   DRAKE_ASSERT(dv_norm > 0);
   DRAKE_ASSERT(dv_norm2 > 0);
   DRAKE_ASSERT(epsilon_v > 0);
   DRAKE_ASSERT(v_stiction > 0);
   T& alpha = *alpha_out;
-  if (v_dot_dv < 0.0) {  // Moving towards the origin.
+  if (v_dot_dv < 0.0) {            // Moving towards the origin.
     alpha = -v_dot_dv / dv_norm2;  // alpha > 0
     if (alpha < 1.0) {  // The update might be crossing the stiction region.
       const Vector2<T> v_alpha = v + alpha * dv;  // Note: v_alpha.dot(dv) = 0.
@@ -258,22 +257,21 @@ std::optional<T> TalsLimiter<T>::SolveQuadraticForTheSmallestPositiveRoot(
 }  // namespace internal
 
 template <typename T>
-TamsiSolver<T>::TamsiSolver(int nv) :
-    nv_(nv),
-    fixed_size_workspace_(nv),
-    // Provide an initial (arbitrarily large enough for most applications)
-    // workspace size so that we avoid re-allocations afterwards as much as we
-    // can.
-    variable_size_workspace_(128, nv) {
+TamsiSolver<T>::TamsiSolver(int nv)
+    : nv_(nv),
+      fixed_size_workspace_(nv),
+      // Provide an initial (arbitrarily large enough for most applications)
+      // workspace size so that we avoid re-allocations afterwards as much as we
+      // can.
+      variable_size_workspace_(128, nv) {
   // We allow empty worlds, with a trivial solution.
   DRAKE_THROW_UNLESS(nv >= 0);
 }
 
 template <typename T>
 void TamsiSolver<T>::SetOneWayCoupledProblemData(
-    EigenPtr<const MatrixX<T>> M,
-    EigenPtr<const MatrixX<T>> Jn, EigenPtr<const MatrixX<T>> Jt,
-    EigenPtr<const VectorX<T>> p_star,
+    EigenPtr<const MatrixX<T>> M, EigenPtr<const MatrixX<T>> Jn,
+    EigenPtr<const MatrixX<T>> Jt, EigenPtr<const VectorX<T>> p_star,
     EigenPtr<const VectorX<T>> fn, EigenPtr<const VectorX<T>> mu) {
   DRAKE_DEMAND(M && Jn && Jt && p_star && fn && mu);
   nc_ = fn->size();
@@ -293,8 +291,8 @@ void TamsiSolver<T>::SetTwoWayCoupledProblemData(
     EigenPtr<const MatrixX<T>> Jt, EigenPtr<const VectorX<T>> p_star,
     EigenPtr<const VectorX<T>> fn0, EigenPtr<const VectorX<T>> stiffness,
     EigenPtr<const VectorX<T>> dissipation, EigenPtr<const VectorX<T>> mu) {
-  DRAKE_DEMAND(M && Jn && Jt && p_star && fn0 && stiffness && dissipation
-                   && mu);
+  DRAKE_DEMAND(M && Jn && Jt && p_star && fn0 && stiffness && dissipation &&
+               mu);
   nc_ = fn0->size();
   DRAKE_THROW_UNLESS(p_star->size() == nv_);
   DRAKE_THROW_UNLESS(M->rows() == nv_ && M->cols() == nv_);
@@ -310,13 +308,12 @@ void TamsiSolver<T>::SetTwoWayCoupledProblemData(
 }
 
 template <typename T>
-void TamsiSolver<T>::CalcFrictionForces(
-    const Eigen::Ref<const VectorX<T>>& vt,
-    const Eigen::Ref<const VectorX<T>>& fn,
-    EigenPtr<VectorX<T>> v_slip_ptr,
-    EigenPtr<VectorX<T>> t_hat_ptr,
-    EigenPtr<VectorX<T>> mu_regularized_ptr,
-    EigenPtr<VectorX<T>> ft) const {
+void TamsiSolver<T>::CalcFrictionForces(const Eigen::Ref<const VectorX<T>>& vt,
+                                        const Eigen::Ref<const VectorX<T>>& fn,
+                                        EigenPtr<VectorX<T>> v_slip_ptr,
+                                        EigenPtr<VectorX<T>> t_hat_ptr,
+                                        EigenPtr<VectorX<T>> mu_regularized_ptr,
+                                        EigenPtr<VectorX<T>> ft) const {
   using std::sqrt;
 
   const int nc = nc_;  // Number of contact points.
@@ -392,7 +389,6 @@ void TamsiSolver<T>::CalcFrictionForcesGradient(
     const Eigen::Ref<const VectorX<T>>& t_hat,
     const Eigen::Ref<const VectorX<T>>& v_slip,
     std::vector<Matrix2<T>>* dft_dvt_ptr) const {
-
   const int nc = nc_;  // Number of contact points.
 
   // Problem data.
@@ -470,12 +466,10 @@ void TamsiSolver<T>::CalcFrictionForcesGradient(
 template <typename T>
 void TamsiSolver<T>::CalcNormalForces(
     const Eigen::Ref<const VectorX<T>>& vn,
-    const Eigen::Ref<const MatrixX<T>>& Jn,
-    double dt,
+    const Eigen::Ref<const MatrixX<T>>& Jn, double dt,
     // We change from fn/Gn in the header to fn_ptr, Gn_ptr here to avoid name
     // clashes with local variables.
-    EigenPtr<VectorX<T>> fn_ptr,
-    EigenPtr<MatrixX<T>> Gn_ptr) const {
+    EigenPtr<VectorX<T>> fn_ptr, EigenPtr<MatrixX<T>> Gn_ptr) const {
   using std::max;
   const int nc = nc_;  // Number of contact points.
 
@@ -530,15 +524,14 @@ void TamsiSolver<T>::CalcNormalForces(
 }
 
 template <typename T>
-void TamsiSolver<T>::CalcJacobian(
-    const Eigen::Ref<const MatrixX<T>>& M,
-    const Eigen::Ref<const MatrixX<T>>& Jn,
-    const Eigen::Ref<const MatrixX<T>>& Jt,
-    const Eigen::Ref<const MatrixX<T>>& Gn,
-    const std::vector<Matrix2<T>>& dft_dvt,
-    const Eigen::Ref<const VectorX<T>>& t_hat,
-    const Eigen::Ref<const VectorX<T>>& mu_vt, double dt,
-    EigenPtr<MatrixX<T>> J) const {
+void TamsiSolver<T>::CalcJacobian(const Eigen::Ref<const MatrixX<T>>& M,
+                                  const Eigen::Ref<const MatrixX<T>>& Jn,
+                                  const Eigen::Ref<const MatrixX<T>>& Jt,
+                                  const Eigen::Ref<const MatrixX<T>>& Gn,
+                                  const std::vector<Matrix2<T>>& dft_dvt,
+                                  const Eigen::Ref<const VectorX<T>>& t_hat,
+                                  const Eigen::Ref<const VectorX<T>>& mu_vt,
+                                  double dt, EigenPtr<MatrixX<T>> J) const {
   // Problem sizes.
   const int nv = nv_;  // Number of generalized velocities.
   const int nc = nc_;  // Number of contact points.
@@ -569,17 +562,16 @@ void TamsiSolver<T>::CalcJacobian(
   // Compute Gt = −∇ᵥfₜ (gradient of the friction forces with respect to the
   // generalized velocities) as Gt = −diag(dft_dvt) Jt and use the fact that
   // diag(dft_dvt) is block diagonal.
-  MatrixX<T> Gt(nf, nv);  // −∇ᵥfₜ
+  MatrixX<T> Gt(nf, nv);             // −∇ᵥfₜ
   for (int ic = 0; ic < nc; ++ic) {  // Index ic scans contact points.
     const int ik = 2 * ic;  // Index ik scans contact vector quantities.
-    Gt.block(ik, 0, 2, nv) =
-        -dft_dvt[ic] * Jt.block(ik, 0, 2, nv);
+    Gt.block(ik, 0, 2, nv) = -dft_dvt[ic] * Jt.block(ik, 0, 2, nv);
 
     // Add Contribution from Gn = ∇ᵥfₙ(xˢ⁺¹, vₙˢ⁺¹). Only for the two-way
     // coupled scheme.
     if (has_two_way_coupling()) {
       auto& t_hat_ic = t_hat.template segment<2>(ik);
-      Gt.block(ik    , 0, 1, nv) -=
+      Gt.block(ik, 0, 1, nv) -=
           mu_vt(ic) * t_hat_ic(0) * Gn.block(ic, 0, 1, nv);
       Gt.block(ik + 1, 0, 1, nv) -=
           mu_vt(ic) * t_hat_ic(1) * Gn.block(ic, 0, 1, nv);
@@ -788,8 +780,7 @@ T TamsiSolver<T>::RegularizedFriction(const T& s, const T& mu) {
 }
 
 template <typename T>
-T TamsiSolver<T>::RegularizedFrictionDerivative(
-    const T& s, const T& mu) {
+T TamsiSolver<T>::RegularizedFrictionDerivative(const T& s, const T& mu) {
   DRAKE_ASSERT(s >= 0);
   if (s >= 1) {
     return 0;

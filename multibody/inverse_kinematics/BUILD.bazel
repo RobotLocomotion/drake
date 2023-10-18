@@ -1,12 +1,12 @@
 load(
-    "@drake//tools/skylark:drake_cc.bzl",
+    "//tools/skylark:drake_cc.bzl",
     "drake_cc_binary",
     "drake_cc_googletest",
     "drake_cc_library",
     "drake_cc_package_library",
     "drake_cc_test",
 )
-load("@drake//tools/skylark:test_tags.bzl", "gurobi_test_tags")
+load("//tools/skylark:test_tags.bzl", "gurobi_test_tags")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
@@ -71,6 +71,8 @@ drake_cc_library(
         "gaze_target_constraint.cc",
         "kinematic_evaluator_utilities.cc",
         "minimum_distance_constraint.cc",
+        "minimum_distance_lower_bound_constraint.cc",
+        "minimum_distance_upper_bound_constraint.cc",
         "orientation_constraint.cc",
         "orientation_cost.cc",
         "point_to_line_distance_constraint.cc",
@@ -90,6 +92,8 @@ drake_cc_library(
         "gaze_target_constraint.h",
         "kinematic_evaluator_utilities.h",
         "minimum_distance_constraint.h",
+        "minimum_distance_lower_bound_constraint.h",
+        "minimum_distance_upper_bound_constraint.h",
         "orientation_constraint.h",
         "orientation_cost.h",
         "point_to_line_distance_constraint.h",
@@ -371,6 +375,8 @@ drake_cc_library(
         "//multibody/parsing",
         "//multibody/plant",
         "//multibody/tree",
+        "//solvers:ipopt_solver",
+        "//solvers:snopt_solver",
         "//solvers:solve",
         "@gtest//:without_main",
     ],

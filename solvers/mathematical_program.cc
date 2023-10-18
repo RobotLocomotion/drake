@@ -167,10 +167,6 @@ void MathematicalProgram::AddDecisionVariables(
   for (int i = 0; i < decision_variables.rows(); ++i) {
     for (int j = 0; j < decision_variables.cols(); ++j) {
       const auto& var = decision_variables(i, j);
-      if (var.is_dummy()) {
-        throw std::runtime_error(fmt::format(
-            "decision_variables({}, {}) should not be a dummy variable", i, j));
-      }
       if (decision_variable_index_.find(var.get_id()) !=
           decision_variable_index_.end()) {
         continue;
@@ -400,10 +396,6 @@ MatrixXIndeterminate MathematicalProgram::NewIndeterminates(
 
 int MathematicalProgram::AddIndeterminate(
     const symbolic::Variable& new_indeterminate) {
-  if (new_indeterminate.is_dummy()) {
-    throw std::runtime_error(
-        fmt::format("{} should not be a dummy variable.", new_indeterminate));
-  }
   if (decision_variable_index_.find(new_indeterminate.get_id()) !=
       decision_variable_index_.end()) {
     throw std::runtime_error(
@@ -868,7 +860,7 @@ Binding<LinearConstraint> MathematicalProgram::AddConstraint(
   } else {
     // TODO(eric.cousineau): This is a good assertion... But seems out of place,
     // possibly redundant w.r.t. the binding infrastructure.
-    DRAKE_ASSERT(binding.evaluator()->GetDenseA().cols() ==
+    DRAKE_ASSERT(binding.evaluator()->get_sparse_A().cols() ==
                  static_cast<int>(binding.GetNumElements()));
     if (!CheckBinding(binding)) {
       return binding;
@@ -887,9 +879,17 @@ Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
   return AddConstraint(make_shared<LinearConstraint>(A, lb, ub), vars);
 }
 
+Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
+    const Eigen::SparseMatrix<double>& A,
+    const Eigen::Ref<const Eigen::VectorXd>& lb,
+    const Eigen::Ref<const Eigen::VectorXd>& ub,
+    const Eigen::Ref<const VectorXDecisionVariable>& vars) {
+  return AddConstraint(make_shared<LinearConstraint>(A, lb, ub), vars);
+}
+
 Binding<LinearEqualityConstraint> MathematicalProgram::AddConstraint(
     const Binding<LinearEqualityConstraint>& binding) {
-  DRAKE_ASSERT(binding.evaluator()->GetDenseA().cols() ==
+  DRAKE_ASSERT(binding.evaluator()->get_sparse_A().cols() ==
                static_cast<int>(binding.GetNumElements()));
   if (!CheckBinding(binding)) {
     return binding;
@@ -913,6 +913,14 @@ MathematicalProgram::AddLinearEqualityConstraint(const Formula& f) {
 Binding<LinearEqualityConstraint>
 MathematicalProgram::AddLinearEqualityConstraint(
     const Eigen::Ref<const Eigen::MatrixXd>& Aeq,
+    const Eigen::Ref<const Eigen::VectorXd>& beq,
+    const Eigen::Ref<const VectorXDecisionVariable>& vars) {
+  return AddConstraint(make_shared<LinearEqualityConstraint>(Aeq, beq), vars);
+}
+
+Binding<LinearEqualityConstraint>
+MathematicalProgram::AddLinearEqualityConstraint(
+    const Eigen::SparseMatrix<double>& Aeq,
     const Eigen::Ref<const Eigen::VectorXd>& beq,
     const Eigen::Ref<const VectorXDecisionVariable>& vars) {
   return AddConstraint(make_shared<LinearEqualityConstraint>(Aeq, beq), vars);
@@ -1181,6 +1189,105 @@ MathematicalProgram::AddPositiveDiagonallyDominantMatrixConstraint(
 }
 
 namespace {
+
+// Constructs the matrices A, lb, ub for the linear constraint lb <= A * X <= ub
+// encoding that X is in DD* for a matrix of size n. Returns the tuple
+// (A, lb, ub).
+std::tuple<Eigen::SparseMatrix<double>, Eigen::VectorXd, Eigen::VectorXd>
+ConstructPositiveDiagonallyDominantDualConeConstraintMatricesForN(const int n) {
+  // Return the index of Xᵢⱼ in the vector created by stacking the column of X
+  // into a vector.
+  auto compute_flat_index = [&n](int i, int j) {
+    return i + n * j;
+  };
+
+  // The DD dual cone constraint is a sparse linear constraint. We instantiate
+  // the A matrix using this triplet list.
+  std::vector<Eigen::Triplet<double>> A_triplet_list;
+  // There are n rows with one non-zero entry in the row, and 2 * (n choose 2)
+  // rows with 4 non-zero entries in the row. This requires 4*n*n-3*n non-zero
+  // entries.
+  A_triplet_list.reserve(4 * n * n - 3 * n);
+
+  const Eigen::VectorXd lb = Eigen::VectorXd::Zero(n * n);
+  const Eigen::VectorXd ub = kInf * Eigen::VectorXd::Ones(n * n);
+
+  // vᵢᵀXvᵢ ≥ 0 is equivalent to Xᵢᵢ ≥ 0 when vᵢ is a vector with exactly one
+  // entry equal to 1.
+  for (int i = 0; i < n; ++i) {
+    // Variable Xᵢᵢ is in position i*(n+1)
+    A_triplet_list.emplace_back(i, compute_flat_index(i, i), 1);
+  }
+  // When vᵢ is a vector with two non-zero at entries k and j, we can choose
+  // without loss of generality that the jth entry to be 1, and the kth entry be
+  // either +1 or -1. This enumerates over all the parities of vᵢ. Under this
+  // choice vᵢᵀXvᵢ = Xₖₖ + sign(vᵢ(k))* (Xₖⱼ+ Xⱼₖ) +  Xⱼⱼ
+  int row_ctr = n;
+  for (int j = 0; j < n; ++j) {
+    for (int k = j + 1; k < n; ++k) {
+      // X(k, k) + X(k, j) + X(j, k) + X(j, j)
+      A_triplet_list.emplace_back(row_ctr, compute_flat_index(k, k), 1);
+      A_triplet_list.emplace_back(row_ctr, compute_flat_index(j, j), 1);
+      A_triplet_list.emplace_back(row_ctr, compute_flat_index(j, k), 1);
+      A_triplet_list.emplace_back(row_ctr, compute_flat_index(k, j), 1);
+      ++row_ctr;
+
+      // X(k, k) - X(k, j) - X(j, k) + X(j, j)
+      A_triplet_list.emplace_back(row_ctr, compute_flat_index(k, k), 1);
+      A_triplet_list.emplace_back(row_ctr, compute_flat_index(j, j), 1);
+      A_triplet_list.emplace_back(row_ctr, compute_flat_index(j, k), -1);
+      A_triplet_list.emplace_back(row_ctr, compute_flat_index(k, j), -1);
+      ++row_ctr;
+    }
+  }
+  DRAKE_ASSERT(row_ctr == n * n);
+  DRAKE_ASSERT(ssize(A_triplet_list) == 4 * n * n - 3 * n);
+  Eigen::SparseMatrix<double> A(row_ctr, n * n);
+  A.setFromTriplets(A_triplet_list.begin(), A_triplet_list.end());
+  return std::make_tuple(std::move(A), std::move(lb), std::move(ub));
+}
+}  // namespace
+
+Binding<LinearConstraint>
+MathematicalProgram::AddPositiveDiagonallyDominantDualConeMatrixConstraint(
+    const Eigen::Ref<const MatrixX<symbolic::Expression>>& X) {
+  const int n = X.rows();
+  DRAKE_DEMAND(X.cols() == n);
+  Eigen::MatrixXd A_expr;
+  Eigen::VectorXd b_expr;
+  VectorX<Variable> variables;
+  symbolic::DecomposeAffineExpressions(
+      Eigen::Map<const VectorX<symbolic::Expression>>(X.data(), X.size()),
+      &A_expr, &b_expr, &variables);
+  const std::tuple<Eigen::SparseMatrix<double>, Eigen::VectorXd,
+                   Eigen::VectorXd>
+      constraint_mats{
+          ConstructPositiveDiagonallyDominantDualConeConstraintMatricesForN(n)};
+  return AddLinearConstraint(
+      (std::get<0>(constraint_mats) * A_expr).sparseView(),  // A * A_expr
+      std::get<1>(constraint_mats) -
+          std::get<0>(constraint_mats) * b_expr,  // lb - A * b_expr
+      std::get<2>(constraint_mats),  // ub - A * b_expr, but since ub is kInf no
+                                     // need to do the operations
+      variables);
+}
+
+Binding<LinearConstraint>
+MathematicalProgram::AddPositiveDiagonallyDominantDualConeMatrixConstraint(
+    const Eigen::Ref<const MatrixX<symbolic::Variable>>& X) {
+  const int n = X.rows();
+  DRAKE_DEMAND(X.cols() == n);
+  const std::tuple<Eigen::SparseMatrix<double>, Eigen::VectorXd,
+                   Eigen::VectorXd>
+      constraint_mats{
+          ConstructPositiveDiagonallyDominantDualConeConstraintMatricesForN(n)};
+  return AddLinearConstraint(
+      std::get<0>(constraint_mats), std::get<1>(constraint_mats),
+      std::get<2>(constraint_mats),
+      Eigen::Map<const VectorXDecisionVariable>(X.data(), X.size()));
+}
+
+namespace {
 // Add the slack variable for scaled diagonally dominant matrix constraint. In
 // AddScaledDiagonallyDominantMatrixConstraint, we should add the constraint
 // that the diagonal terms in the sdd matrix should match the summation of
@@ -1294,6 +1401,39 @@ MathematicalProgram::AddScaledDiagonallyDominantMatrixConstraint(
   AddLinearEqualityConstraint(A_diagonal_sum, Eigen::VectorXd::Zero(n),
                               diagonal_sum_var);
   return M;
+}
+
+std::vector<Binding<RotatedLorentzConeConstraint>>
+MathematicalProgram::AddScaledDiagonallyDominantDualConeMatrixConstraint(
+    const Eigen::Ref<const MatrixX<symbolic::Expression>>& X) {
+  const int n = X.rows();
+  DRAKE_DEMAND(X.cols() == n);
+  std::vector<Binding<RotatedLorentzConeConstraint>> ret;
+  ret.reserve(n);
+
+  // if i ≥ j
+  for (int i = 0; i < n; ++i) {
+    // VᵢⱼᵀXVᵢⱼ = [[Xᵢᵢ, Xᵢⱼ],[Xᵢⱼ,Xⱼⱼ]] and this matrix is PSD if an only if
+    // Xᵢᵢ ≥ 0, Xⱼⱼ ≥ 0, and XᵢᵢXⱼⱼ - XᵢⱼXᵢⱼ >= 0. Notice that if i == j, this
+    // is simply that Xᵢᵢ ≥ 0 and so we don't need to include the Xᵢᵢ ≥ 0 as it
+    // is already added when i ≠ j.
+    for (int j = i + 1; j < n; ++j) {
+      // VᵢⱼᵀXVᵢⱼ = [[Xᵢᵢ, Xᵢⱼ],[Xᵢⱼ,Xⱼⱼ]]. Since we already imposed that Xᵢᵢ ≥
+      // 0 and Xⱼⱼ ≥ 0, we only have to impose that XᵢᵢXⱼⱼ - XᵢⱼXᵢⱼ >= 0 which
+      // can be
+      ret.push_back(
+          AddRotatedLorentzConeConstraint(Vector3<symbolic::Expression>(
+              X(i, i), X(j, j), 0.5 * (X(i, j) + X(j, i)))));
+    }
+  }
+  return ret;
+}
+
+std::vector<Binding<RotatedLorentzConeConstraint>>
+MathematicalProgram::AddScaledDiagonallyDominantDualConeMatrixConstraint(
+    const Eigen::Ref<const MatrixX<symbolic::Variable>>& X) {
+  return AddScaledDiagonallyDominantDualConeMatrixConstraint(
+      X.cast<Expression>());
 }
 
 Binding<ExponentialConeConstraint> MathematicalProgram::AddConstraint(

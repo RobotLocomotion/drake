@@ -1,10 +1,7 @@
 # -*- bazel -*-
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
-load(
-    "@drake//tools/install:install.bzl",
-    "install",
-)
+load("@drake//tools/install:install.bzl", "install")
 load(
     "@drake//tools/workspace/coinutils_internal:defs.bzl",
     "coin_cc_library",
@@ -94,7 +91,6 @@ _HDRS_PUBLIC = [
     "src/Interfaces/IpReturnCodes.h",
     "src/Interfaces/IpReturnCodes.hpp",
     "src/Interfaces/IpReturnCodes_inc.h",
-    "src/Interfaces/IpReturnCodes.inc",
     "src/Interfaces/IpSolveStatistics.hpp",
     "src/Interfaces/IpStdCInterface.h",
     "src/Interfaces/IpTNLP.hpp",

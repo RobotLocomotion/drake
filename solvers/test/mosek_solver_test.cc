@@ -492,6 +492,11 @@ GTEST_TEST(MosekTest, LPDualSolution4) {
   }
 }
 
+GTEST_TEST(MosekTest, LPDualSolution5) {
+  MosekSolver solver;
+  TestLPDualSolution5(solver, 1E-8);
+}
+
 GTEST_TEST(MosekTest, QPDualSolution1) {
   MosekSolver solver;
   if (solver.available()) {

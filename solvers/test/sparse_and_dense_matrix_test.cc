@@ -42,8 +42,10 @@ GTEST_TEST(SparseAndDenseMatrix, constructor_sparse) {
   sparse.setFromTriplets(triplets.begin(), triplets.end());
   const SparseAndDenseMatrix dut(sparse);
   EXPECT_EQ(dut.get_as_sparse().nonZeros(), sparse.nonZeros());
+  EXPECT_FALSE(dut.is_dense_constructed());
   EXPECT_TRUE(CompareMatrices(dut.get_as_sparse().toDense(), sparse.toDense()));
   EXPECT_TRUE(CompareMatrices(dut.GetAsDense(), sparse.toDense()));
+  EXPECT_TRUE(dut.is_dense_constructed());
   CheckGetDenseThread(dut, sparse.toDense());
 }
 
@@ -54,6 +56,7 @@ GTEST_TEST(SparseAndDenseMatrix, constructor_dense) {
   dense(1, 0) = 1;
   const SparseAndDenseMatrix dut(dense);
   EXPECT_EQ(dut.get_as_sparse().nonZeros(), 2);
+  EXPECT_TRUE(dut.is_dense_constructed());
   EXPECT_TRUE(CompareMatrices(dut.get_as_sparse().toDense(), dense));
   EXPECT_TRUE(CompareMatrices(dut.GetAsDense(), dense));
   CheckGetDenseThread(dut, dense);

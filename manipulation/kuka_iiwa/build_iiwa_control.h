@@ -66,23 +66,26 @@ void BuildIiwaControl(
     const std::optional<Eigen::VectorXd>& desired_iiwa_kp_gains = std::nullopt,
     IiwaControlMode control_mode = IiwaControlMode::kPositionAndTorque);
 
-/// The return type of BuildSimplifiedIiwaControl().
+/// The return type of BuildSimplifiedIiwaControl(). Depending on the
+/// `control_mode`, some of the input ports might be null. The output ports are
+/// never null.
 struct IiwaControlPorts {
+  /// This will be non-null iff the control_mode denotes commanded positions.
   const systems::InputPort<double>* commanded_positions{};
+  /// This will be non-null iff the control_mode denotes commanded torques.
   const systems::InputPort<double>* commanded_torque{};
-  const systems::OutputPort<double>* joint_torque{};
-  const systems::OutputPort<double>* external_torque{};
+
+  const systems::OutputPort<double>* position_commanded{};
+  const systems::OutputPort<double>* position_measured{};
+  const systems::OutputPort<double>* velocity_estimated{};
+  const systems::OutputPort<double>* joint_torque{};  // aka torque_commanded
+  const systems::OutputPort<double>* torque_measured{};
+  const systems::OutputPort<double>* external_torque{};  // aka torque_external
 };
 
 /// A simplified Iiwa controller builder to construct an
-/// InverseDynamicsController without connecting with LCM I/O systems.
+/// InverseDynamicsController without adding LCM I/O systems.
 /// @sa BuildIiwaControl()
-///
-/// @return an IiwaControlPorts struct containing the commanded positions
-/// and/or commanded torques ports of the installed control, depending on
-/// @p control_mode, as well as output ports for the joint and external
-/// torques. If a port is not present due to specified @p control mode, its
-/// pointer will be nullptr.
 IiwaControlPorts BuildSimplifiedIiwaControl(
     const multibody::MultibodyPlant<double>& plant,
     const multibody::ModelInstanceIndex iiwa_instance,
@@ -92,6 +95,20 @@ IiwaControlPorts BuildSimplifiedIiwaControl(
     const std::optional<Eigen::VectorXd>& desired_iiwa_kp_gains = std::nullopt,
     IiwaControlMode control_mode = IiwaControlMode::kPositionAndTorque);
 
+namespace internal {
+
+// Adds a SimIiwaDriver system to the given `builder` and connects its plant-
+// related input and output ports to `plant`. Returns the newly-added System.
+// This is indirectly unit tested via BuildSimplifiedIiwaControl.
+const systems::System<double>& AddSimIiwaDriver(
+    const multibody::MultibodyPlant<double>& plant,
+    const multibody::ModelInstanceIndex iiwa_instance,
+    const multibody::MultibodyPlant<double>& controller_plant,
+    systems::DiagramBuilder<double>* builder, double ext_joint_filter_tau,
+    const std::optional<Eigen::VectorXd>& desired_iiwa_kp_gains,
+    IiwaControlMode control_mode);
+
+}  // namespace internal
 }  // namespace kuka_iiwa
 }  // namespace manipulation
 }  // namespace drake

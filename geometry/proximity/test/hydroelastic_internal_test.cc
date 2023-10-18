@@ -356,8 +356,7 @@ GTEST_TEST(Hydroelastic, GeometriesPopulationAndQuery) {
 
   // Once added, they report the appropriate type.
   geometries.MaybeAddGeometry(Sphere(0.5), soft_id, soft_properties);
-  EXPECT_EQ(geometries.hydroelastic_type(soft_id),
-            HydroelasticType::kSoft);
+  EXPECT_EQ(geometries.hydroelastic_type(soft_id), HydroelasticType::kSoft);
   geometries.MaybeAddGeometry(Sphere(0.5), rigid_id, rigid_properties);
   EXPECT_EQ(geometries.hydroelastic_type(rigid_id), HydroelasticType::kRigid);
 
@@ -428,8 +427,7 @@ class HydroelasticRigidGeometryTest : public ::testing::Test {
 //  UnsupportedSofthapes).
 // Smoke test for shapes that are *known* to be unsupported as rigid objects.
 // NOTE: This will spew warnings to the log.
-TEST_F(HydroelasticRigidGeometryTest, UnsupportedRigidShapes) {
-}
+TEST_F(HydroelasticRigidGeometryTest, UnsupportedRigidShapes) {}
 
 // Confirm support for a rigid half space. Tests that a hydroelastic
 // representation is made, and samples the representation to look for evidence
@@ -496,7 +494,9 @@ TEST_F(HydroelasticRigidGeometryTest, Box) {
 }
 
 template <typename T>
-std::array<T, 3> unpack(Vector3<T> x) { return {x(0), x(1), x(2) }; }
+std::array<T, 3> unpack(Vector3<T> x) {
+  return {x(0), x(1), x(2)};
+}
 
 // Confirm support for a rigid Cylinder. Tests that a hydroelastic
 // representation is made, and samples the representation to look for
@@ -661,9 +661,23 @@ TEST_F(HydroelasticRigidGeometryTest, Mesh) {
 // is made.
 TEST_F(HydroelasticRigidGeometryTest, Convex) {
   {
-    SCOPED_TRACE("Rigid Convex");
+    SCOPED_TRACE("Rigid Convex from Obj file");
     std::string file = FindResourceOrThrow("drake/geometry/test/quad_cube.obj");
     TestRigidMeshTypeFromObj<Convex>(file);
+  }
+
+  {
+    SCOPED_TRACE("Rigid Convex from VTK file");
+    std::string file =
+        FindResourceOrThrow("drake/geometry/test/one_tetrahedron.vtk");
+    // Empty props since its contents do not matter.
+    const ProximityProperties props;
+    std::optional<RigidGeometry> geometry =
+        MakeRigidRepresentation(Convex(file), props);
+    ASSERT_NE(geometry, std::nullopt);
+    const TriangleSurfaceMesh<double>& surface_mesh = geometry->mesh();
+    EXPECT_EQ(surface_mesh.num_vertices(), 4);
+    EXPECT_EQ(surface_mesh.num_triangles(), 4);
   }
 
   {
@@ -847,7 +861,7 @@ REGISTER_TYPED_TEST_SUITE_P(HydroelasticRigidGeometryErrorTests,
 typedef ::testing::Types<Sphere, Capsule, Cylinder, Ellipsoid>
     RigidErrorShapeTypes;
 INSTANTIATE_TYPED_TEST_SUITE_P(My, HydroelasticRigidGeometryErrorTests,
-                              RigidErrorShapeTypes);
+                               RigidErrorShapeTypes);
 
 class HydroelasticSoftGeometryTest : public ::testing::Test {
  protected:
@@ -885,9 +899,8 @@ TEST_F(HydroelasticSoftGeometryTest, HalfSpace) {
       MakeSoftRepresentation(HalfSpace(), properties);
   ASSERT_NE(half_space, std::nullopt);
   EXPECT_TRUE(half_space->is_half_space());
-  EXPECT_EQ(
-      half_space->pressure_scale(),
-      properties.GetProperty<double>(kHydroGroup, kElastic) / thickness);
+  EXPECT_EQ(half_space->pressure_scale(),
+            properties.GetProperty<double>(kHydroGroup, kElastic) / thickness);
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       half_space->mesh(),
@@ -896,8 +909,7 @@ TEST_F(HydroelasticSoftGeometryTest, HalfSpace) {
       half_space->pressure_field(),
       "SoftGeometry::pressure.* cannot be invoked .* half space");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      half_space->bvh(),
-      "SoftGeometry::bvh.* cannot be invoked .* half space");
+      half_space->bvh(), "SoftGeometry::bvh.* cannot be invoked .* half space");
 }
 
 // Test construction of a soft sphere. Confirms that the edge length has
@@ -942,8 +954,7 @@ TEST_F(HydroelasticSoftGeometryTest, Sphere) {
   ASSERT_NEAR(max_distance, kRadius, 1e-15);
 
   // Confirm pressure field is as specified in the properties.
-  const double E =
-      properties1.GetPropertyOrDefault(kHydroGroup, kElastic, 1e8);
+  const double E = properties1.GetPropertyOrDefault(kHydroGroup, kElastic, 1e8);
   // We assume that the sphere's pressure is defined as E * (1 - r/R).
   auto pressure = [E, kRadius](const Vector3d& r_MV) {
     return E * (1.0 - r_MV.norm() / kRadius);
@@ -961,15 +972,15 @@ TEST_F(HydroelasticSoftGeometryTest, Sphere) {
   // Confirm that it respects the ("hydroelastic", "tessellation_strategy")
   // property in the following ways:
   {
-      // It defaults to single-interior-vertex if nothing is defined.
+    // It defaults to single-interior-vertex if nothing is defined.
 
-      // Sphere 1 and sphere 2 have resolution hints that differ by a factor
-      // of two --> sphere 2's level of refinement is one greater than sphere
-      // 1's. Both are missing the "tessellation_strategy" property so it should
-      // default to kSingleInteriorVertex. So, sphere 2 must have 4X the
-      // tetrahedra as sphere 1.
-      EXPECT_EQ(sphere1->mesh().num_elements() * 4,
-                sphere2->mesh().num_elements());
+    // Sphere 1 and sphere 2 have resolution hints that differ by a factor
+    // of two --> sphere 2's level of refinement is one greater than sphere
+    // 1's. Both are missing the "tessellation_strategy" property so it should
+    // default to kSingleInteriorVertex. So, sphere 2 must have 4X the
+    // tetrahedra as sphere 1.
+    EXPECT_EQ(sphere1->mesh().num_elements() * 4,
+              sphere2->mesh().num_elements());
   }
 
   {
@@ -1024,8 +1035,7 @@ TEST_F(HydroelasticSoftGeometryTest, Box) {
   // the generators of the mesh and the pressure field.
   const int expected_num_vertices = 12;
   EXPECT_EQ(box->mesh().num_vertices(), expected_num_vertices);
-  const double E =
-      properties.GetPropertyOrDefault(kHydroGroup, kElastic, 1e8);
+  const double E = properties.GetPropertyOrDefault(kHydroGroup, kElastic, 1e8);
   for (int v = 0; v < box->mesh().num_vertices(); ++v) {
     const double pressure = box->pressure_field().EvaluateAtVertex(v);
     EXPECT_GE(pressure, 0);
@@ -1050,8 +1060,7 @@ TEST_F(HydroelasticSoftGeometryTest, Cylinder) {
   // the generators of the mesh and the pressure field.
   const int expected_num_vertices = 9;
   EXPECT_EQ(cylinder->mesh().num_vertices(), expected_num_vertices);
-  const double E =
-      properties.GetPropertyOrDefault(kHydroGroup, kElastic, 1e8);
+  const double E = properties.GetPropertyOrDefault(kHydroGroup, kElastic, 1e8);
   for (int v = 0; v < cylinder->mesh().num_vertices(); ++v) {
     const double pressure = cylinder->pressure_field().EvaluateAtVertex(v);
     EXPECT_GE(pressure, 0);
@@ -1078,8 +1087,7 @@ TEST_F(HydroelasticSoftGeometryTest, Capsule) {
   EXPECT_EQ(capsule->mesh().num_vertices(), expected_num_vertices);
   // TODO(joemasterjohn): Change all instances of `GetPropertyOrDefault` to
   // `GetProperty` variant.
-  const double E =
-      properties.GetPropertyOrDefault(kHydroGroup, kElastic, 1e8);
+  const double E = properties.GetPropertyOrDefault(kHydroGroup, kElastic, 1e8);
   for (int v = 0; v < capsule->mesh().num_vertices(); ++v) {
     const double pressure = capsule->pressure_field().EvaluateAtVertex(v);
     EXPECT_GE(pressure, 0);
@@ -1107,8 +1115,7 @@ TEST_F(HydroelasticSoftGeometryTest, Ellipsoid) {
   // the generators of the mesh and the pressure field.
   const int expected_num_vertices = 7;
   EXPECT_EQ(ellipsoid->mesh().num_vertices(), expected_num_vertices);
-  const double E =
-      properties.GetPropertyOrDefault(kHydroGroup, kElastic, 1e8);
+  const double E = properties.GetPropertyOrDefault(kHydroGroup, kElastic, 1e8);
   for (int v = 0; v < ellipsoid->mesh().num_vertices(); ++v) {
     const double pressure = ellipsoid->pressure_field().EvaluateAtVertex(v);
     EXPECT_GE(pressure, 0);
@@ -1178,8 +1185,7 @@ TEST_F(HydroelasticSoftGeometryTest, Convex) {
   // the generators of the mesh and the pressure field.
   const int expected_num_vertices = 9;
   EXPECT_EQ(convex->mesh().num_vertices(), expected_num_vertices);
-  const double E =
-      properties.GetPropertyOrDefault(kHydroGroup, kElastic, 1e8);
+  const double E = properties.GetPropertyOrDefault(kHydroGroup, kElastic, 1e8);
   for (int v = 0; v < convex->mesh().num_vertices(); ++v) {
     const double pressure = convex->pressure_field().EvaluateAtVertex(v);
     EXPECT_GE(pressure, 0);

@@ -91,7 +91,9 @@ class Sample final : public drake::systems::BasicVector<T> {
     this->set_unset(symbolic::Variable("unset"));
   }
 
-  [[nodiscard]] Sample<T>* DoClone() const final { return new Sample; }
+  [[nodiscard]] Sample<T>* DoClone() const final {
+    return new Sample;
+  }
 
   /// @name Getters and Setters
   //@{
@@ -114,8 +116,7 @@ class Sample final : public drake::systems::BasicVector<T> {
     result.set_x(x);
     return result;
   }
-  /// A very long documentation string that will certainly flow across multiple
-  /// lines of C++
+  /// A very long documentation string that exceeds the typical C++ line length of 80 characters
   /// @note @c two_word has a limited domain of [-Inf, 2.0].
   const T& two_word() const {
     ThrowIfEmpty();

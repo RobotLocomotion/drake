@@ -5,11 +5,13 @@
 #include <filesystem>
 
 #include <fmt/format.h>
-#include <vtkImageCast.h>
-#include <vtkImageData.h>
-#include <vtkImageExport.h>
-#include <vtkNew.h>
-#include <vtkPNGReader.h>
+
+// To ease build system upkeep, we annotate VTK includes with their deps.
+#include <vtkImageCast.h>    // vtkImagingCore
+#include <vtkImageData.h>    // vtkCommonDataModel
+#include <vtkImageExport.h>  // vtkIOImage
+#include <vtkNew.h>          // vtkCommonCore
+#include <vtkPNGReader.h>    // vtkIOImage
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/text_logging.h"

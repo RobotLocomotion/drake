@@ -1,7 +1,10 @@
 #include "drake/systems/framework/system_base.h"
 
+#include <algorithm>
 #include <atomic>
+#include <limits>
 #include <mutex>
+#include <regex>
 #include <stdexcept>
 #include <unordered_set>
 
@@ -29,12 +32,210 @@ internal::SystemId SystemBase::get_next_id() {
   return internal::SystemId::get_new_id();
 }
 
+std::string SystemBase::GetMemoryObjectName() const {
+  // Remove the template parameter(s).
+  const std::string type_name_without_templates = std::regex_replace(
+      NiceTypeName::Get(*this), std::regex("<.*>$"), std::string());
+
+  // Replace "::" with "/" because ":" is System::GetSystemPathname's separator.
+  // TODO(sherm1) Change the separator to "/" and avoid this!
+  const std::string default_name = std::regex_replace(
+      type_name_without_templates, std::regex(":+"), std::string("/"));
+
+  // Append the address spelled like "@0123456789abcdef".
+  const uintptr_t address = reinterpret_cast<uintptr_t>(this);
+  return fmt::format("{}@{:0>16x}", default_name, address);
+}
+
 std::string SystemBase::GetSystemPathname() const {
   const std::string parent_path =
       get_parent_service() ? get_parent_service()->GetParentPathname()
                            : std::string();
   return parent_path + internal::SystemMessageInterface::path_separator() +
          GetSystemName();
+}
+
+std::string SystemBase::GetGraphvizString(
+    std::optional<int> max_depth,
+    const std::map<std::string, std::string>& options) const {
+  const GraphvizFragment result = GetGraphvizFragment(max_depth, options);
+  return fmt::format(
+      "digraph _{} {{\n"
+      "rankdir=LR\n"
+      "{}"
+      "}}\n",
+      system_id_, fmt::join(result.fragments, ""));
+}
+
+SystemBase::GraphvizFragment SystemBase::GetGraphvizFragment(
+    std::optional<int> max_depth,
+    const std::map<std::string, std::string>& options) const {
+  DRAKE_THROW_UNLESS(max_depth.value_or(0) >= 0);
+
+  GraphvizFragmentParams params;
+  params.max_depth = max_depth.value_or(std::numeric_limits<int>::max());
+  params.options = options;
+  params.node_id = fmt::format("s{}", system_id_.get_value());
+
+  // The header opens with our class name, sans namespaces and templates.
+  const std::string system_type = std::regex_replace(
+      NiceTypeName::RemoveNamespaces(NiceTypeName::Get(*this)),
+      std::regex("<.*>$"), std::string());
+  params.header_lines.push_back(fmt::format("<B>{}</B>", system_type));
+
+  // If we have a name, then add it to the header.
+  const std::string system_name = this->get_name();
+  if (!system_name.empty() && system_name != this->GetMemoryObjectName()) {
+    params.header_lines.push_back(fmt::format("name={}", system_name));
+  }
+
+  return DoGetGraphvizFragment(params);
+}
+
+SystemBase::GraphvizFragment SystemBase::DoGetGraphvizFragment(
+    const GraphvizFragmentParams& params) const {
+  GraphvizFragment result;
+
+  // Unpack the options.
+  const bool split_in_twain = [&params]() {
+    auto iter = params.options.find("split");
+    return (iter != params.options.end()) && (iter->second == "I/O");
+  }();
+  const std::string node_id_input =
+      split_in_twain ? params.node_id + "in" : params.node_id;
+  const std::string node_id_output =
+      split_in_twain ? params.node_id + "out" : params.node_id;
+
+  // Prepare some helpful constants.
+  const int num_inputs = num_input_ports();
+  const int num_outputs = num_output_ports();
+  const int min_num_inputs_outputs = std::min(num_inputs, num_outputs);
+  const int max_num_inputs_outputs = std::max(num_inputs, num_outputs);
+  result.input_ports.reserve(num_inputs);
+  result.output_ports.reserve(num_outputs);
+
+  // Prepare a table of port labels. Input ports are on the left (col 0), and
+  // output ports are on the right (col 1). A nullopt label indicates that the
+  // <TD> cell should not be emitted. This is also a convenient time to populate
+  // our result's list of port identifiers.
+  MatrixX<std::optional<std::string>> port_labels(max_num_inputs_outputs, 2);
+  {
+    std::vector<std::string> labels_input =
+        GetGraphvizPortLabels(/* input= */ true);
+    std::vector<std::string> labels_output =
+        GetGraphvizPortLabels(/* input= */ false);
+    for (int i = 0; i < num_inputs; ++i) {
+      port_labels(i, 0) = std::move(labels_input[i]);
+      result.input_ports.push_back(fmt::format("{}:u{}", node_id_input, i));
+    }
+    for (int i = 0; i < num_outputs; ++i) {
+      port_labels(i, 1) = std::move(labels_output[i]);
+      result.output_ports.push_back(fmt::format("{}:y{}", node_id_output, i));
+    }
+  }
+
+  // Prepare the table's styling. We'll expand the shorter of the two columns to
+  // match the other, longer column.
+  MatrixX<std::string> port_styles(max_num_inputs_outputs, 2);
+  if (num_inputs != num_outputs) {
+    const int shorter_col = num_inputs < num_outputs ? 0 : 1;
+    if (min_num_inputs_outputs == 1) {
+      // When the shorter column is just a single port, expand that port to fill
+      // the entire column.
+      port_styles(0, shorter_col) =
+          fmt::format("ROWSPAN=\"{}\"", max_num_inputs_outputs);
+    } else {
+      // Otherwise, use a (single) greyed-out cell to fill up the remainder.
+      const int filler_row = min_num_inputs_outputs;
+      const int remainder = max_num_inputs_outputs - min_num_inputs_outputs;
+      port_labels(filler_row, shorter_col) = "";
+      port_styles(filler_row, shorter_col) =
+          fmt::format("COLOR=\"grey\" ROWSPAN=\"{}\" SIDES=\"{}\"", remainder,
+                      shorter_col == 0 ? "BL" : "BR");
+    }
+  }
+
+  // When in split_in_twain mode, we'll emit two nodes (the input node, then the
+  // output node); otherwise we'll emit just one node.
+  const int num_nodes = split_in_twain ? 2 : 1;
+  for (int node = 0; node < num_nodes; ++node) {
+    DRAKE_DEMAND(split_in_twain || node_id_input == node_id_output);
+    const std::string& node_id = (node == 0) ? node_id_input : node_id_output;
+    const int node_num_rows =
+        (split_in_twain && node == 0)   ? num_inputs
+        : (split_in_twain && node == 1) ? num_outputs
+                                        : max_num_inputs_outputs;
+
+    // Open the node, along with its label table and the table's header row.
+    result.fragments.push_back(fmt::format(
+        R"""({} [shape=none, border=0, label=<
+<TABLE BORDER="0" CELLSPACING="0">
+<TR><TD BORDER="1" COLSPAN="2">
+{}
+</TD></TR>
+)""",
+        node_id, fmt::join(params.header_lines, "<BR/>\n")));
+
+    // Print the input and/or output port rows.
+    for (int i = 0; i < node_num_rows; ++i) {
+      result.fragments.push_back("<TR>\n");
+      for (int j = 0; j < 2; ++j) {
+        if (split_in_twain && j != node) {
+          // The dead column of a twained node is just a single dotted box.
+          if (i == 0) {
+            result.fragments.push_back(fmt::format(
+                R"""(<TD BORDER="1" STYLE="dotted" COLOR="cadetblue" ROWSPAN="{}">
+<FONT COLOR="cadetblue">(split)</FONT>
+</TD>
+)""",
+                (j == 0) ? num_outputs : num_inputs));
+          }
+          continue;
+        }
+        if (port_labels(i, j).has_value()) {
+          result.fragments.push_back(fmt::format(
+              R"""(<TD PORT="{}{}" BORDER="1" {}>{}</TD>
+)""",
+              (j == 0 ? 'u' : 'y'), i, port_styles(i, j), *port_labels(i, j)));
+        }
+      }
+      result.fragments.push_back("</TR>\n");
+    }
+
+    // Close the table, label, attributes, and node.
+    result.fragments.push_back(
+        R"""(</TABLE>
+>];
+)""");
+  }
+
+  return result;
+}
+
+std::vector<std::string> SystemBase::GetGraphvizPortLabels(bool input) const {
+  const int num_ports = input ? num_input_ports() : num_output_ports();
+  std::vector<std::string> result;
+  result.reserve(num_ports);
+  for (int i = 0; i < num_ports; ++i) {
+    const PortBase& port = [&]() -> const PortBase& {
+      if (input)
+        return GetInputPortBaseOrThrow("", i, /* warn_deprecated = */ false);
+      else
+        return GetOutputPortBaseOrThrow("", i, /* warn_deprecated = */ false);
+    }();
+    std::string label = port.get_name();
+    // For deprecated ports, use strikethrough and a unicode headstone (🪦).
+    if (port.get_deprecation().has_value()) {
+      label = fmt::format("<S>{}</S>\xF0\x9F\xAA\xA6", label);
+    }
+    // For ports that cannot carry any data, grey out the name.
+    if (port.get_data_type() == PortDataType::kVectorValued &&
+        port.size() == 0) {
+      label = fmt::format(R"""(<FONT COLOR="grey">{}</FONT>)""", label);
+    }
+    result.push_back(std::move(label));
+  }
+  return result;
 }
 
 CacheEntry& SystemBase::DeclareCacheEntry(
@@ -398,6 +599,11 @@ std::string DiagramSystemBaseAttorney::GetUnsupportedScalarConversionMessage(
     const std::type_info& destination_type) {
   return system.GetUnsupportedScalarConversionMessage(
       source_type, destination_type);
+}
+
+std::vector<std::string> DiagramSystemBaseAttorney::GetGraphvizPortLabels(
+    const SystemBase& system, bool input) {
+  return system.GetGraphvizPortLabels(input);
 }
 
 }  // namespace internal

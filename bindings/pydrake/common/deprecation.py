@@ -308,6 +308,8 @@ def _forward_callables_as_deprecated(var_dict, m_new, date):
 
 if os.environ.get("_DRAKE_DEPRECATION_IS_ERROR") == "1":
     # This is used for testing Jupyter notebooks in `jupyter_bazel`.
+    # Note that the same literal string name for the environment variable is
+    # used for both C++ code and Python code, so keep the two in sync.
     warnings.simplefilter('error', DrakeDeprecationWarning)
 else:
     warnings.simplefilter('once', DrakeDeprecationWarning)

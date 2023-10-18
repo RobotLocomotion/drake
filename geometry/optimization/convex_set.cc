@@ -4,6 +4,7 @@
 #include <limits>
 #include <memory>
 
+#include "drake/geometry/optimization/hyperrectangle.h"
 #include "drake/solvers/solution_result.h"
 #include "drake/solvers/solve.h"
 
@@ -19,8 +20,9 @@ using solvers::MathematicalProgram;
 using solvers::VariableRefList;
 using solvers::VectorXDecisionVariable;
 
-ConvexSet::ConvexSet(int ambient_dimension)
-    : ambient_dimension_(ambient_dimension) {
+ConvexSet::ConvexSet(int ambient_dimension, bool has_exact_volume)
+    : ambient_dimension_(ambient_dimension),
+      has_exact_volume_(has_exact_volume) {
   DRAKE_THROW_UNLESS(ambient_dimension >= 0);
 }
 
@@ -189,6 +191,94 @@ ConvexSet::HandleZeroAmbientDimensionConstraints(
     return new_vars[0];
   }
   return std::nullopt;
+}
+
+double ConvexSet::CalcVolume() const {
+  if (!has_exact_volume()) {
+    throw std::runtime_error(
+        fmt::format("The class {} reports that it cannot report an exact "
+                    "volume. Use CalcVolumeViaSampling() instead.",
+                    NiceTypeName::Get(*this)));
+  }
+  if (ambient_dimension() == 0) {
+    throw std::runtime_error(
+        fmt::format("The instance defined from {} is a zero-dimensional set. "
+                    "The volume is not well defined.",
+                    NiceTypeName::Get(*this)));
+  }
+  return DoCalcVolume();
+}
+
+SampledVolume ConvexSet::CalcVolumeViaSampling(
+    RandomGenerator* generator, const double desired_rel_accuracy,
+    const int max_num_samples) const {
+  if (ambient_dimension() == 0) {
+    throw std::runtime_error(
+        fmt::format("Attempting to calculate the volume of a zero-dimensional "
+                    "set {}. This is not well-defined.",
+                    NiceTypeName::Get(*this)));
+  }
+  if (!IsBounded()) {
+    // return infinity, nan, 0 samples.
+    return {.volume = std::numeric_limits<double>::infinity(),
+            .rel_accuracy = std::numeric_limits<double>::quiet_NaN(),
+            .num_samples = 0};
+  }
+  DRAKE_THROW_UNLESS(desired_rel_accuracy <= 1.0);
+  DRAKE_THROW_UNLESS(desired_rel_accuracy >= 0);
+  DRAKE_THROW_UNLESS(max_num_samples > 0);
+  const auto aabb_opt = Hyperrectangle::MaybeCalcAxisAlignedBoundingBox(*this);
+  // if aabb_opt is nullopt and the set is not infinity, then we have
+  // a problem with the solver.
+  DRAKE_DEMAND(aabb_opt.has_value());
+  const Hyperrectangle& aabb = aabb_opt.value();
+  int num_samples = 0;
+  int num_hits = 0;
+  double relative_accuracy_ub_squared = 1.0;
+  const double desired_rel_accuracy_squared = std::pow(desired_rel_accuracy, 2);
+  while (relative_accuracy_ub_squared > desired_rel_accuracy_squared &&
+         num_samples < max_num_samples) {
+    auto point = aabb.UniformSample(generator);
+    ++num_samples;
+    if (this->PointInSet(point)) {
+      ++num_hits;
+    }
+    // p is the probability of hitting the set = num_hits/num_samples.
+    if (num_hits > 0) {
+      // Let p be the real probability of hitting the set. We are estimating p.
+      // The standard deviation of the MonteCarlo estimate is sigma/sqrt(n),
+      // where sigma is the standard deviation of the Bernoulli distribution.
+      // The standard deviation of the Bernoulli distribution is sqrt((1-p)*p),
+      // where p is the probability of success.  Therefore, the standard
+      // deviation of the estimate is sqrt((1-p)*p/n). We don't know p, but the
+      // max value of (1-p)*p is 1/4, which occurs at p = 1/2.
+      // https://people.math.umass.edu/~lr7q/ps_files/teaching/math456/Chapter6.pdf
+      // The standard deviation divided by the mean, so the error is
+      // upper-bounded by sqrt(1/(4*n)). Therefore, the
+      // relative_accuracy_squared < 1/(4*n*p) or simply 1/ (4 * num_hits).
+      relative_accuracy_ub_squared = static_cast<double>(1) / (4 * num_hits);
+    }
+  }
+  if (relative_accuracy_ub_squared > desired_rel_accuracy_squared) {
+    drake::log()->warn(
+        "Volume calculation did not converge to desired relative accuracy {}."
+        "The tightest upper bound on relative accuracy achieved: {}",
+        desired_rel_accuracy, std::sqrt(relative_accuracy_ub_squared));
+  }
+  const auto estimated_volume = aabb.CalcVolume() *
+                                static_cast<double>(num_hits) /
+                                static_cast<double>(num_samples);
+  const auto relative_accuracy_ub = std::sqrt(relative_accuracy_ub_squared);
+  return {.volume = estimated_volume,
+          .rel_accuracy = relative_accuracy_ub,
+          .num_samples = num_samples};
+}
+
+double ConvexSet::DoCalcVolume() const {
+  throw std::runtime_error(
+      fmt::format("The class {} has a defect -- has_exact_volume() is "
+                  "reporting true, but DoCalcVolume has not been implemented.",
+                  NiceTypeName::Get(*this)));
 }
 
 }  // namespace optimization

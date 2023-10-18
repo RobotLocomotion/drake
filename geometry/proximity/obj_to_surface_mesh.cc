@@ -115,13 +115,11 @@ void TinyObjToSurfaceFaces(const tinyobj::mesh_t& mesh,
 
 namespace internal {
 std::optional<TriangleSurfaceMesh<double>> DoReadObjToSurfaceMesh(
-    std::istream* input_stream,
-    const double scale,
+    std::istream* input_stream, const double scale,
     const std::optional<std::string>& mtl_basedir,
     const ObjParseConfig& config) {
-
-  tinyobj::attrib_t attrib;  // Used for vertices.
-  std::vector<tinyobj::shape_t> shapes;  // Used for triangles.
+  tinyobj::attrib_t attrib;                    // Used for vertices.
+  std::vector<tinyobj::shape_t> shapes;        // Used for triangles.
   std::vector<tinyobj::material_t> materials;  // Not used.
   std::string warn;
   std::string err;
@@ -132,9 +130,8 @@ std::optional<TriangleSurfaceMesh<double>> DoReadObjToSurfaceMesh(
   // triangulate non-triangle faces.
   bool triangulate = true;
 
-  bool ret = tinyobj::LoadObj(
-      &attrib, &shapes, &materials, &warn, &err, input_stream, readMatFn.get(),
-      triangulate);
+  bool ret = tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err,
+                              input_stream, readMatFn.get(), triangulate);
   if (!ret || !err.empty()) {
     const std::string err_message =
         fmt::format("Error parsing Wavefront obj data : {}", err);
@@ -188,12 +185,11 @@ std::optional<TriangleSurfaceMesh<double>> DoReadObjToSurfaceMesh(
 }  // namespace internal
 
 TriangleSurfaceMesh<double> ReadObjToTriangleSurfaceMesh(
-    const std::string& filename,
-    const double scale,
+    const std::string& filename, const double scale,
     std::function<void(std::string_view)> on_warning) {
   std::ifstream input_stream(filename);
   if (!input_stream.is_open()) {
-    throw std::runtime_error("Cannot open file '" + filename +"'");
+    throw std::runtime_error("Cannot open file '" + filename + "'");
   }
   const std::string mtl_basedir =
       std::filesystem::path(filename).parent_path().string() + "/";

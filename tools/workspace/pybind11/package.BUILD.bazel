@@ -1,10 +1,7 @@
 # -*- bazel -*-
 
-load(
-    "@drake//tools/install:install.bzl",
-    "install",
-    "install_files",
-)
+load("@drake//tools/skylark:cc.bzl", "cc_library")
+load("@drake//tools/install:install.bzl", "install", "install_files")
 load(
     "@drake//tools/workspace:check_lists_consistency.bzl",
     "check_lists_consistency",

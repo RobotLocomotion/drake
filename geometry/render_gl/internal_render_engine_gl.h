@@ -4,6 +4,7 @@
 #include <map>
 #include <memory>
 #include <optional>
+#include <set>
 #include <string>
 #include <tuple>
 #include <unordered_map>
@@ -140,16 +141,14 @@ class RenderEngineGl final : public render::RenderEngine {
     bool accepted{true};
   };
 
-  // Mangles the mesh data before adding it to the engine to support the
-  // legacy behavior of mapping mesh.obj -> mesh.png, applying it as a diffuse
-  // texture, if found. When we eliminate that behavior, we can eliminate this
-  // method.
+  // Adds the mesh data associated with the given filename to geometries_.
+  // Before adding it outright, it resolves the material heuristic. If the
+  // mesh data has no intrinsic material, then considers the geometry properties
+  // or existence of an identically named png file.
   //
-  // @param geometry_index   The index into geometries_ of the mesh's
-  //                         OpenGlGeometry.
-  void ImplementMesh(int geometry_index, void* user_data,
-                     const Vector3<double>& scale,
-                     const std::string& filename_in);
+  // @pre GetMeshes() has already been invoked on `filename`.
+  void ImplementMeshesForFile(void* user_data, const Vector3<double>& scale,
+                              const std::string& filename);
 
   // @see RenderEngine::DoRegisterVisual().
   bool DoRegisterVisual(GeometryId id, const Shape& shape,
@@ -217,10 +216,12 @@ class RenderEngineGl final : public render::RenderEngine {
   int GetCylinder();
   int GetHalfSpace();
   int GetBox();
-  // Returns the index of the OpenGlGeometry for a mesh with the given filename.
+  // For the given mesh filename, returns the indices of the OpenGlGeometries
+  // defined in the file.
   // If the filename represents an unsupported file type, no geometry is added,
-  // data->accepted is set to false, and the return value is a meaningless -1.
-  int GetMesh(const std::string& filename, RegistrationData* data);
+  // data->accepted is set to false, and the returned vector is empty.
+  std::vector<int> GetMeshes(const std::string& filename,
+                             RegistrationData* data);
 
   // Given the render type, returns the texture configuration for that render
   // type. These are the key arguments for glTexImage2D based on the render
@@ -337,7 +338,7 @@ class RenderEngineGl final : public render::RenderEngine {
   // A "shader family" is all of the shaders used to produce a particular image
   // type. Each unique shader is associated with the geometries to which it
   // applies.
-  using ShaderFamily = std::map<ShaderId, std::vector<GeometryId>>;
+  using ShaderFamily = std::map<ShaderId, std::set<GeometryId>>;
 
   // Three shader families -- one for each output type.
   std::array<ShaderFamily, RenderType::kTypeCount> shader_families_;
@@ -366,19 +367,26 @@ class RenderEngineGl final : public render::RenderEngine {
   // re-use the same geometry. For example, if we tracked them by "aspect ratio"
   // and allowed deviation within a small tolerance, then we could reuse them.
 
+  // TODO(SeanCurtis-TRI): The relationships between OpenGlInstance,
+  // OpenGlGeometry, RenderGlMesh, Part, and Prop are probably overly opaque.
+  // I need a succinct summary of how all of these moving pieces work together
+  // with clear delineation of roles.
+
   // A data struct that includes the index into geometries_ containing the
   // OpenGlGeometry representation and an optional material definition of the
   // mesh. `mesh_material` will have a value *only* when the mesh provides its
   // own material definition; otherwise, it will remain std::nullopt and the
   // material will be determined during mesh instantiation.
   struct RenderGlMesh {
+    // Index into geometries_ containing the instance for a RenderMesh.
     int mesh_index{};
+    geometry::internal::UvState uv_state{};
     std::optional<geometry::internal::RenderMaterial> mesh_material{
         std::nullopt};
   };
 
-  // Mapping from the obj's canonical filename to RenderGlMesh.
-  std::unordered_map<std::string, RenderGlMesh> meshes_;
+  // Mapping from the obj's canonical filename to RenderGlMeshes.
+  std::unordered_map<std::string, std::vector<RenderGlMesh>> meshes_;
 
   // These are caches of reusable RenderTargets. There is a unique render target
   // for each unique image size (BufferDim) and output image type. The
@@ -396,12 +404,39 @@ class RenderEngineGl final : public render::RenderEngine {
                      RenderType::kTypeCount>
       frame_buffers_;
 
+  // A geometry is modeled with one or more "parts". A part consists of an
+  // instance N and its optional pose in the geometry frame G: T_GN. If the
+  // pose is not provided, then T_GN = I. Posing the instance using the
+  // geometry's world pose X_WG is simply: T_WN = X_WG * T_GN.
+  // For primitives and meshes from file types like obj, T_GN will always be
+  // nullopt. In those representations, the definition of the geometry is
+  // uniquely given in the geometry frame. But for other file types (e.g., glTF)
+  // geometry instances can be defined with arbitrary internal transforms. So,
+  // in those cases T_GN will contain the transform between the mesh definition
+  // and its instantiation within the file (and, therefore, in the geometry
+  // frame).
+  struct Part {
+    OpenGlInstance instance;
+    // TODO(SeanCurtis-TRI): When we get to glTF support, this will have to
+    // become Matrix4 along with the value in OpenGlInstance.
+    std::optional<math::RigidTransformd> T_GN;
+  };
+
+  // Some geometries are represented by multiple parts (such as when importing
+  // a complex .obj file). A "prop" is the collection of parts which constitute
+  // one visual geometry associated with a GeometryId.
+  //
+  // For simple Drake primitives, there will be a single "part".
+  struct Prop {
+    std::vector<Part> parts;
+  };
+
   // Mapping from GeometryId to the visual data associated with that geometry.
   // When copying the render engine, this data is copied verbatim allowing the
   // copied render engine access to the same OpenGL objects in the OpenGL
   // context. However, each independent copy is allowed to independently
   // modify their copy of visuals_ (adding and removing geometries).
-  std::unordered_map<GeometryId, OpenGlInstance> visuals_;
+  std::unordered_map<GeometryId, Prop> visuals_;
 
   // Lights can be defined in the engine parameters. If no lights are defined,
   // we use the fallback_lights. Otherwise, we use the parameter lights.

@@ -283,12 +283,20 @@ class GraphOfConvexSets {
 
     /** Returns the continuous decision variables associated with vertex `u`.
     This can be used for constructing symbolic::Expression costs and
-    constraints.*/
+    constraints.
+
+    See also GetSolutionPhiXu(); using `result.GetSolution(xu())` may not
+    be what you want.
+    */
     const VectorX<symbolic::Variable>& xu() const { return u_->x(); }
 
     /** Returns the continuous decision variables associated with vertex `v`.
     This can be used for constructing symbolic::Expression costs and
-    constraints.*/
+    constraints.
+
+    See also GetSolutionPhiXv(); using `result.GetSolution(xv())` may not
+    be what you want.
+    */
     const VectorX<symbolic::Variable>& xv() const { return v_->x(); }
 
     /** Adds a cost to this edge, described by a symbolic::Expression @p e
@@ -373,13 +381,17 @@ class GraphOfConvexSets {
     double GetSolutionCost(
         const solvers::MathematicalProgramResult& result) const;
 
-    /** Returns the vector value of the slack variables associated with ϕxᵤ in a
-    solvers::MathematicalProgramResult. */
+    /** Returns the vector value of the slack variables associated with ϕxᵤ in
+    a solvers::MathematicalProgramResult. This can obtain a different value
+    than `result.GetSolution(edge->xu())`, which is equivalent to
+    `result.GetSolution(edge->u()->x())`; in the case of a loose convex
+    relaxation `result.GetSolution(edge->xu())` will be the *averaged* value of
+    the edge slacks for all non-zero-flow edges. */
     Eigen::VectorXd GetSolutionPhiXu(
         const solvers::MathematicalProgramResult& result) const;
 
     /** Returns the vector value of the slack variables associated with ϕxᵥ in
-    a solvers::MathematicalProgramResult. */
+    a solvers::MathematicalProgramResult. See GetSolutionPhiXu(). */
     Eigen::VectorXd GetSolutionPhiXv(
         const solvers::MathematicalProgramResult& result) const;
 

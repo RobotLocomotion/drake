@@ -57,333 +57,519 @@ bool CheckCpuForAvxSupport() {
   return __builtin_cpu_supports("avx2");
 }
 
-// Turn d into d d d d.
+/* =============================================================================
+   Notation conventions used in this file
+================================================================================
+
+In comments, we'll use "<....>" to indicate a 256-bit AVX register containing 4
+lanes of doubles, so e.g. <abcd> denotes the array of doubles [a, b, c, d]. We
+use both lowercase and uppercase letters for naming lanes. In variable names,
+we leave out the <> marker so the variable name would be just "abcd".
+
+The lower order lanes are spelled on the left, so for example if YMM0 = <abcd>
+then we have XMM0 = <ab>. Note that even though we spell lanes from lowest to
+highest, bitwise constants end up being written highest to lowest (as is typical
+for numbers) so we have blend(<abcd>, <ABCD>, 0b0101) as <AbCd>.
+
+Sometimes we don't need to give a name to a lane (because we don't care what its
+value is). In that case we use the canonical "_" to indicate "don't care", e.g.,
+<abc_> indicates the array of doubles [a, b, c, _] where we only care about the
+first three lanes. This leads to variables named e.g. "abc_" which look like C++
+member fields, but are not.
+
+For details about the various SIMD instructions, see:
+
+ https://www.intel.com/content/www/us/en/docs/intrinsics-guide/index.html
+
+ https://www.agner.org/optimize/instruction_tables.pdf
+
+For inspecting the machine code, see Godbolt and in particular the LLVM-MCA tool
+(available under the "Add Tool" menu).
+
+ https://godbolt.org/
+
+============================================================================= */
+
+// Turns d into <dddd>.
 __m256d four(double d) {
   return _mm256_set1_pd(d);
 }
 
 /* Composition of rotation matrices R_AC = R_AB * R_BC.
-Each matrix is 9 consecutive doubles in column order.
 
-We want to perform this 3x3 matrix multiply:
+Each matrix is 9 consecutive doubles in column-major order.
 
-     R_AC    R_AB    R_BC
+  R_AB = abcdefghi
+  R_BC = ABCDEFGHI
+  R_AC = jklmnopqr
 
-    r u x   a d g   A D G
-    s v y = b e h * B E H     All column ordered in memory.
-    t w z   c f i   C F I
+We want to perform this 3x3 matrix multiplication:
 
-Strategy: compute column rst in parallel, then uvw, then xyz.
-r = aA+dB+gC
-s = bA+eB+hC  etc.
-t = cA+fB+iC
+   R_AC      R_AB      R_BC
 
-Load columns from left matrix, duplicate elements from right. Perform 4
-operations in parallel but ignore the 4th result. Be careful not to load or
-store past the last element.
+  j m p     a d g     A D G
+  k n q  =  b e h  @  B E H
+  l o r     c f i     C F I
 
-This requires 45 flops (9 dot products) but we're doing 60 here and throwing
-away 15 of them. However, we only issue 9 floating point instructions. */
+Writing that out longhand, we have:
+
+  j = aA + dB + gC
+  k = bA + eB + hC
+  l = cA + fB + iC
+
+  m = aD + dE + gF
+  n = bD + eE + hF
+  o = cD + fE + iF
+
+  p = aG + dH + gI
+  q = bG + eH + hI
+  r = cG + fH + iI
+
+Strategy: compute jkl in parallel, then mno, then pqr.
+
+  <jkl_> =   <abc_> * <AAA_>
+           + <def_> * <BBB_>
+           + <ghi_> * <CCC_>
+
+  <mno_> =   <abc_> * <DDD_>
+           + <def_> * <EEE_>
+           + <ghi_> * <FFF_>
+
+  <pqr_> =   <abc_> * <GGG_>
+           + <def_> * <HHH_>
+           + <ghi_> * <III_>
+
+We load columns from left matrix and broadcast elements from right, performing
+4 operations in parallel but ignoring the 4th result. We must be careful not to
+load or store past the last element.
+
+Rotation matrix composition requires 45 flops (27 multiplies and 18 additions)
+but we're doing 60 here and throwing away 15 of them. However, we only issue 9
+SIMD floating point instructions (3 multiplies and 6 fused-multiply-adds).
+
+It is OK if the result R_AC overlaps one or both of the inputs. */
 void ComposeRRAvx(const double* R_AB, const double* R_BC, double* R_AC) {
   constexpr uint64_t yes = uint64_t(1ull << 63);
-  constexpr uint64_t no  = uint64_t(0);
+  constexpr uint64_t no = uint64_t(0);
   const __m256i mask = _mm256_setr_epi64x(yes, yes, yes, no);
 
-  // Aliases for readability (named after first entries in comment above).
-  const double* a = R_AB; const double* A = R_BC; double* r = R_AC;
+  // Load the input.
+  const __m256d abc_ = _mm256_loadu_pd(R_AB);      // (d is loaded but unused)
+  const __m256d def_ = _mm256_loadu_pd(R_AB + 3);  // (g is loaded but unused)
+  const __m256d ghi_ = _mm256_maskload_pd(R_AB + 6, mask);
+  const double A = R_BC[0];
+  const double B = R_BC[1];
+  const double C = R_BC[2];
+  const double D = R_BC[3];
+  const double E = R_BC[4];
+  const double F = R_BC[5];
+  const double G = R_BC[6];
+  const double H = R_BC[7];
+  const double I = R_BC[8];
 
-  const __m256d col0 = _mm256_loadu_pd(a);             // a b c (d)  d unused
-  const __m256d col1 = _mm256_loadu_pd(a+3);           // d e f (g)  g unused
-  const __m256d col2 = _mm256_maskload_pd(a+6, mask);  // g h i (0)
+  // Column jkl:                                    j   k   l   _  =
+  __m256d jkl_ = _mm256_mul_pd(abc_, four(A));  //  aA  bA  cA  _
+  jkl_ = _mm256_fmadd_pd(def_, four(B), jkl_);  // +dB +eB +fB  _
+  jkl_ = _mm256_fmadd_pd(ghi_, four(C), jkl_);  // +gC +hC +iC  _
 
-  const __m256d ABCD = _mm256_loadu_pd(A);             // A B C D
-  const __m256d EFGH = _mm256_loadu_pd(A+4);           // E F G H
-  const double I = *(A+8);                             // I
+  // Column mno:                                    m   n   o   _  =
+  __m256d mno_ = _mm256_mul_pd(abc_, four(D));  //  aD  bD  cD  _
+  mno_ = _mm256_fmadd_pd(def_, four(E), mno_);  // +dE +eE +fE  _
+  mno_ = _mm256_fmadd_pd(ghi_, four(F), mno_);  // +gF +hF +iF  _
 
-  __m256d res;
+  // Column pqr:                                    p   q   r   _  =
+  __m256d pqr_ = _mm256_mul_pd(abc_, four(G));  //  aG  bG  cG  _
+  pqr_ = _mm256_fmadd_pd(def_, four(H), pqr_);  // +dH +eH +fH  _
+  pqr_ = _mm256_fmadd_pd(ghi_, four(I), pqr_);  // +gI +hI +iI  _
 
-  // Column rst                                         r   s   t   (-)
-  res = _mm256_mul_pd(col0, four(ABCD[0]));         //  aA  bA  cA ( dA)
-  res = _mm256_fmadd_pd(col1, four(ABCD[1]), res);  // +dB +eB +fB (+gB)
-  res = _mm256_fmadd_pd(col2, four(ABCD[2]), res);  // +gC +hC +iC (+0C)
-  _mm256_storeu_pd(r, res);  // r s t (u)  we will overwrite u
-
-  // Column uvw                                         u   v   w   (-)
-  res = _mm256_mul_pd(col0, four(ABCD[3]));         //  aD  bD  cD ( dD)
-  res = _mm256_fmadd_pd(col1, four(EFGH[0]), res);  // +dE +eE +fE (+gE)
-  res = _mm256_fmadd_pd(col2, four(EFGH[1]), res);  // +gF +hF +iF (+0F)
-  _mm256_storeu_pd(r+3, res);  // u v w (x)  we will overwrite x
-
-  // Column xyz                                         x   y   z   (-)
-  res = _mm256_mul_pd(col0, four(EFGH[2]));         //  aG  bG  cG ( dG)
-  res = _mm256_fmadd_pd(col1, four(EFGH[3]), res);  // +dH +eH +fH (+gH)
-  res = _mm256_fmadd_pd(col2, four(I), res);        // +gI +hI +iI (+0I)
-  _mm256_maskstore_pd(r+6, mask, res);  // x y z
+  // Store the output.
+  _mm256_storeu_pd(R_AC, jkl_);      // 4-wide write temporarily overwrites m
+  _mm256_storeu_pd(R_AC + 3, mno_);  // 4-wide write temporarily overwrites p
+  _mm256_maskstore_pd(R_AC + 6, mask, pqr_);  // 3-wide write to stay in bounds
 
   // The compiler will generate a vzeroupper instruction if needed.
 }
 
 /* Composition of rotation matrices R_AC = R_BA⁻¹ * R_BC.
-Each matrix is 9 consecutive doubles in column order.
 
-We want to perform this 3x3 matrix multiply:
+Each matrix is 9 consecutive doubles in column-major order.
 
-     R_AC    R_BA⁻¹  R_BC
+  R_BA = abcdefghi
+  R_BC = ABCDEFGHI
+  R_AC = jklmnopqr
 
-    r u x   a b c   A D G
-    s v y = d e f * B E H     R_BA⁻¹ is row ordered; R_BC col ordered
-    t w z   g h i   C F I
+We want to perform this 3x3 matrix multiplication:
 
-This is 45 flops altogether.
+   R_AC      R_BA⁻¹    R_BC
 
-Strategy: compute column rst in parallel, then uvw, then xyz.
-r = aA+bB+cC
-s = dA+eB+fC  etc.
-t = gA+hB+iC
+  j m p     a b c     A D G          Note that R_BA⁻¹ (aka R_AB) is in effect
+  k n q  =  d e f  @  B E H          stored in row-major order, since our
+  l o r     g h i     C F I          argument R_BA was in column-major order.
 
-Load columns from left matrix, duplicate elements from right. (Tricky here since
-the inverse is row ordered -- we pull in the rows and then shuffle things.)
-Perform 4 operations in parallel but ignore the 4th result. Be careful not to
-load or store past the last element.
+Writing that out longhand, we have:
 
-We end up doing 3*4 + 6*8 = 60 flops to get 45 useful ones. However, we do that
-in only 9 floating point instructions (3 packed multiplies, 6 packed
-fused-multiply-adds).
+  j = aA + bB + cC
+  k = dA + eB + fC
+  l = gA + hB + iC
+
+  m = aD + bE + cF
+  n = dD + eE + fF
+  o = gD + hE + iF
+
+  p = aG + bH + cI
+  q = dG + eH + fI
+  r = gG + hH + iI
+
+Strategy: compute jkl in parallel, then mno, then pqr.
+
+  <jkl_> =   <adg_> * <AAA_>
+           + <beh_> * <BBB_>
+           + <cfi_> * <CCC_>
+
+  <mno_> =   <adg_> * <DDD_>
+           + <beh_> * <EEE_>
+           + <cfi_> * <FFF_>
+
+  <pqr_> =   <adg_> * <GGG_>
+           + <beh_> * <HHH_>
+           + <cfi_> * <III_>
+
+We load columns from left matrix (tricky here since the inverse is row-major --
+we'll pull in contiguous words and then shuffle) and broadcast elements from
+right, performing 4 operations in parallel but ignoring the 4th result. We must
+be careful not to load or store past the last element.
+
+Rotation matrix composition requires 45 flops (27 multiplies and 18 additions)
+but we're doing 60 here and throwing away 15 of them. However, we only issue 9
+SIMD floating point instructions (3 multiplies and 6 fused-multiply-adds).
 
 It is OK if the result R_AC overlaps one or both of the inputs. */
 void ComposeRinvRAvx(const double* R_BA, const double* R_BC, double* R_AC) {
   constexpr uint64_t yes = uint64_t(1ull << 63);
-  constexpr uint64_t no  = uint64_t(0);
+  constexpr uint64_t no = uint64_t(0);
   const __m256i mask = _mm256_setr_epi64x(yes, yes, yes, no);
 
-  // Aliases for readability (named after first entries in comment above).
-  const double* a = R_BA; const double* A = R_BC; double* r = R_AC;
+  // Load the input. Loads columns of R_AB (rows of the given R_BA) into
+  // registers via a series of loads, blends, and permutes.
+  const __m256d abcd = _mm256_loadu_pd(R_BA);
+  const __m256d efgh = _mm256_loadu_pd(R_BA + 4);
+  const __m256d eb_h = _mm256_blend_pd(abcd, efgh, 0b1101);
+  const __m256d beh_ = _mm256_permute_pd(eb_h, 0b0101);
+  const __m256d cdg_ = _mm256_permute2f128_pd(abcd, efgh, 0b00110001);
+  const __m256d adg_ = _mm256_blend_pd(abcd, cdg_, 0b1110);
+  const __m256d fghi = _mm256_loadu_pd(R_BA + 5);
+  const __m256d _fi_ = _mm256_permute_pd(fghi, 0b0100);
+  const __m256d cfi_ = _mm256_blend_pd(cdg_, _fi_, 0b0110);
+  const double A = R_BC[0];
+  const double B = R_BC[1];
+  const double C = R_BC[2];
+  const double D = R_BC[3];
+  const double E = R_BC[4];
+  const double F = R_BC[5];
+  const double G = R_BC[6];
+  const double H = R_BC[7];
+  const double I = R_BC[8];
 
-  __m256d a0, a1, a2;  // Accumulators.
+  // Column jkl:                                    j   k   l   _  =
+  __m256d jkl_ = _mm256_mul_pd(adg_, four(A));  //  aA  dA  gA  _
+  jkl_ = _mm256_fmadd_pd(beh_, four(B), jkl_);  // +bB +eB +hB  _
+  jkl_ = _mm256_fmadd_pd(cfi_, four(C), jkl_);  // +cC +fC +iC  _
 
-  // Load columns of R_AB (rows of the given R_BA) into registers via a
-  // series of loads, blends, and permutes. See above for the meaning of these
-  // element names.
-  const __m256d abcd = _mm256_loadu_pd(a);                   // a b c d
-  const __m256d efgh = _mm256_loadu_pd(a+4);                 // e f g h
-  const __m256d ebgh = _mm256_blend_pd(abcd, efgh, 0b1101);  // e b g h
-  const __m256d behg = _mm256_permute_pd(ebgh, 0b0101);      // b e h (g) col1
+  // Column mno:                                    m   n   o   _  =
+  __m256d mno_ = _mm256_mul_pd(adg_, four(D));  //  aD  dD  gD  _
+  mno_ = _mm256_fmadd_pd(beh_, four(E), mno_);  // +bE +eE +hE  _
+  mno_ = _mm256_fmadd_pd(cfi_, four(F), mno_);  // +cF +fF +iF  _
 
-  const __m256d cdgh = _mm256_permute2f128_pd(abcd, efgh,
-                                              0b00110001);   // c d g h
-  const __m256d adgh = _mm256_blend_pd(abcd, cdgh, 0b1110);  // a d g (h) col0
+  // Column pqr:                                    p   q   r   _  =
+  __m256d pqr_ = _mm256_mul_pd(adg_, four(G));  //  aG  dG  gG  _
+  pqr_ = _mm256_fmadd_pd(beh_, four(H), pqr_);  // +bH +eH +hH  _
+  pqr_ = _mm256_fmadd_pd(cfi_, four(I), pqr_);  // +cI +fI +iI  _
 
-  const __m256d fghi = _mm256_loadu_pd(a+5);                 // f g h i
-  const __m256d ffih = _mm256_permute_pd(fghi, 0b0100);      // f f i h
-  const __m256d cfih = _mm256_blend_pd(cdgh, ffih, 0b0110);  // c f i (h) col2
-
-  const __m256d ABCD = _mm256_loadu_pd(A);     // A B C D
-  const __m256d EFGH = _mm256_loadu_pd(A+4);   // E F G H
-  const double I = *(A+8);                     // I
-
-  a0 = _mm256_mul_pd(adgh, four(ABCD[0]));   // aA dA gA (hA)
-  a1 = _mm256_mul_pd(adgh, four(ABCD[3]));   // aD dD gD (hD)
-  a2 = _mm256_mul_pd(adgh, four(EFGH[2]));   // aG dG gG (hG)
-
-  a0 = _mm256_fmadd_pd(behg, four(ABCD[1]), a0);  // aA+bB dA+eB gA+hB (hA+gB)
-  a1 = _mm256_fmadd_pd(behg, four(EFGH[0]), a1);  // aD+bE dD+eE gD+hE (hD+gE)
-  a2 = _mm256_fmadd_pd(behg, four(EFGH[3]), a2);  // aG+bH dG+eH gG+hH (hG+gH)
-
-  a0 = _mm256_fmadd_pd(cfih, four(ABCD[2]), a0);  // aA+bB+cC dA+eB+fC gA+hB+iC
-                                                  //                  (hA+cB+hC)
-  _mm256_storeu_pd(r, a0);                        // r s t (u) will overwrite u
-
-  a1 = _mm256_fmadd_pd(cfih, four(EFGH[1]), a1);  // aD+bE+cF dD+eE+fF gD+hE+iF
-                                                  //                  (hD+cE+hF)
-  _mm256_storeu_pd(r+3, a1);                      // u v w (x) will overwrite x
-
-  a2 = _mm256_fmadd_pd(cfih, four(I), a2);        // aG+bH+cI dG+eH+fI gG+hH+iI
-                                                  //                  (hG+cH+hI)
-  _mm256_maskstore_pd(r+6, mask, a2);             // x y z
+  // Store the output.
+  _mm256_storeu_pd(R_AC, jkl_);      // 4-wide write temporarily overwrites m
+  _mm256_storeu_pd(R_AC + 3, mno_);  // 4-wide write temporarily overwrites p
+  _mm256_maskstore_pd(R_AC + 6, mask, pqr_);  // 3-wide write to stay in bounds
 
   // The compiler will generate a vzeroupper instruction if needed.
 }
 
 /* Composition of transforms X_AC = X_AB * X_BC.
-The rotation matrix and offset vector occupy 12 consecutive doubles.
 
-For the code below, consider the elements of these 3x4 matrices to be named
-as follows:
+Each matrix is 12 consecutive doubles in column-major order.
 
-       X_AC       X_AB      X_BC
-    r u x' xx   a d g x   A D G X
-    s v y' yy   b e h y   B E H Y    All column ordered in memory.
-    t w z' zz   c f i z   C F I Z
+  X_AB = abcdefghixyz
+  X_BC = ABCDEFGHIXYZ
+  X_AC = jklmnopqrstu
 
-(Sorry about the ugly symbols on the left -- I ran out of letters.)
+We want to perform this 4x4 matrix multiplication:
 
-We will handle the rotation matrix and offset vector separately.
+      X_AC        X_AB        X_BC
+    j m p s     a d g x     A D G X
+    k n q t  =  b e h y  @  B E H Y
+    l o r u     c f i z     C F I Z
+    0 0 0 1     0 0 0 1     0 0 0 1
 
-We want to perform this 3x3 matrix multiply:
+(Note that the "0 0 0 1" is only an illustration of the math; our transform
+matrix does not actually store that row.)
 
-     R_AC    R_AB    R_BC
+Instead of calculating the full 4x4 multiply, we can take advantage of the
+implicit constants in the last row to handle the rotation matrix and translation
+vector separately.
 
-    r u x'   a d g   A D G
-    s v y' = b e h * B E H     All column ordered in memory.
-    t w z'   c f i   C F I
+We'll perform this 3x3 matrix multiplication:
 
-and    xx   x   a d g   X
-       yy = y + b e h * Y
-       zz   z   c f i   Z
+     R_AC      R_AB      R_BC
 
-This is 63 flops altogether.
+    j m p     a d g     A D G
+    k n q  =  b e h  @  B E H
+    l o r     c f i     C F I
 
-Strategy: compute column rst in parallel, then uvw, then xyz.
-r = aA+dB+gC          xx = x + aX + dY + gZ
-s = bA+eB+hC  etc.    yy = y + bX + eY + hZ
-t = cA+fB+iC          zz = z + cX + fY + iZ
+and this translation vector multiply-accumulate:
 
-Load columns from left matrix, duplicate elements from right.
-Perform 4 operations in parallel but ignore the 4th result.
-Be careful not to load or store past the last element.
+    s     x     a d g     X
+    t  =  y  +  b e h  @  Y
+    u     z     c f i     Z
 
-We end up doing 3*4 + 9*8 = 84 flops to get 63 useful ones.
-However, we do that in only 12 floating point instructions
-(three packed multiplies, nine packed fused-multiply-adds). */
+Writing that out longhand, we have:
+
+  j = aA + dB + gC
+  k = bA + eB + hC
+  l = cA + fB + iC
+
+  m = aD + dE + gF
+  n = bD + eE + hF
+  o = cD + fE + iF
+
+  p = aG + dH + gI
+  q = bG + eH + hI
+  r = cG + fH + iI
+
+  s = x + aX + dY + gZ
+  t = y + bX + eY + hZ
+  u = z + cX + fY + iZ
+
+Strategy: compute stu in parallel, then jkl parallel, then mno, then pqr.
+The <stu_> vector has the deepest pipeline, so we get it going first.
+
+  <stu_> =   <xyz_>
+           + <abc_> * <XXX_>
+           + <def_> * <YYY_>
+           + <ghi_> * <ZZZ_>
+
+  <jkl_> =   <adg_> * <AAA_>
+           + <beh_> * <BBB_>
+           + <cfi_> * <CCC_>
+
+  <mno_> =   <adg_> * <DDD_>
+           + <beh_> * <EEE_>
+           + <cfi_> * <FFF_>
+
+  <pqr_> =   <adg_> * <GGG_>
+           + <beh_> * <HHH_>
+           + <cfi_> * <III_>
+
+We load columns from left matrix and broadcast elements from right, performing
+4 operations in parallel but ignoring the 4th result. We must be careful not to
+load or store past the last element.
+
+Rigid transform composition requires 63 flops (36 multiplies and 27 additions)
+but we're doing 84 here and throwing away 21 of them. However, we only issue 12
+SIMD floating point instructions (3 multiplies and 9 fused-multiply-adds).
+
+It is OK if the result X_AC overlaps one or both of the inputs. */
 void ComposeXXAvx(const double* X_AB, const double* X_BC, double* X_AC) {
   constexpr uint64_t yes = uint64_t(1ull << 63);
-  constexpr uint64_t no  = uint64_t(0);
+  constexpr uint64_t no = uint64_t(0);
   const __m256i mask = _mm256_setr_epi64x(yes, yes, yes, no);
 
-  // Aliases for readability (named after first entries in comment above).
-  const double* a = X_AB; const double* A = X_BC; double* r = X_AC;
+  // Load the input.
+  const __m256d abc_ = _mm256_loadu_pd(X_AB);      // (d is loaded but unused)
+  const __m256d def_ = _mm256_loadu_pd(X_AB + 3);  // (g is loaded but unused)
+  const __m256d ghi_ = _mm256_loadu_pd(X_AB + 6);  // (x is loaded but unused)
+  const __m256d xyz_ = _mm256_maskload_pd(X_AB + 9, mask);
+  const double A = X_BC[0];
+  const double B = X_BC[1];
+  const double C = X_BC[2];
+  const double D = X_BC[3];
+  const double E = X_BC[4];
+  const double F = X_BC[5];
+  const double G = X_BC[6];
+  const double H = X_BC[7];
+  const double I = X_BC[8];
+  const double X = X_BC[9];
+  const double Y = X_BC[10];
+  const double Z = X_BC[11];
 
-  const __m256d abcd = _mm256_loadu_pd(a);             // a b c (d)  d unused
-  const __m256d xyz0 = _mm256_maskload_pd(a+9, mask);  // x y z (0)
+  // Column stu:                                    s   t   u   _  =
+  __m256d stu_ = xyz_;                          //  x   y   z   _
+  stu_ = _mm256_fmadd_pd(abc_, four(X), stu_);  // +aX +bX +cX  _
+  stu_ = _mm256_fmadd_pd(def_, four(Y), stu_);  // +dY +eY +fY  _
+  stu_ = _mm256_fmadd_pd(ghi_, four(Z), stu_);  // +gZ +hZ +iZ  _
 
-  const __m256d ABCD = _mm256_loadu_pd(A);             // A B C D
-  const __m256d EFGH = _mm256_loadu_pd(A+4);           // E F G H
-  const __m256d IXYZ = _mm256_loadu_pd(A+8);           // I X Y Z
+  // Column jkl:                                    j   k   l   _  =
+  __m256d jkl_ = _mm256_mul_pd(abc_, four(A));  //  aA  bA  cA  _
+  jkl_ = _mm256_fmadd_pd(def_, four(B), jkl_);  // +dB +eB +fB  _
+  jkl_ = _mm256_fmadd_pd(ghi_, four(C), jkl_);  // +gC +hC +iC  _
 
-  __m256d a0, a1, a2, a3;  // Accumulators.
+  // Column mno:                                    m   n   o   _  =
+  __m256d mno_ = _mm256_mul_pd(abc_, four(D));  //  aD  bD  cD  _
+  mno_ = _mm256_fmadd_pd(def_, four(E), mno_);  // +dE +eE +fE  _
+  mno_ = _mm256_fmadd_pd(ghi_, four(F), mno_);  // +gF +hF +iF  _
 
-  a0 = _mm256_mul_pd(abcd, four(ABCD[0]));          // aA bA cA (dA)
-  a1 = _mm256_mul_pd(abcd, four(ABCD[3]));          // aD bD cD (dD)
-  a2 = _mm256_mul_pd(abcd, four(EFGH[2]));          // aG bG cG (dG)
-  a3 = _mm256_fmadd_pd(abcd, four(IXYZ[1]), xyz0);  // x+aX y+bX z+cX (0+dX)
+  // Column pqr:                                    p   q   r   _  =
+  __m256d pqr_ = _mm256_mul_pd(abc_, four(G));  //  aG  bG  cG  _
+  pqr_ = _mm256_fmadd_pd(def_, four(H), pqr_);  // +dH +eH +fH  _
+  pqr_ = _mm256_fmadd_pd(ghi_, four(I), pqr_);  // +gI +hI +iI  _
 
-  const __m256d defg = _mm256_loadu_pd(a+3);      // d e f (g)  g is unused
-  a0 = _mm256_fmadd_pd(defg, four(ABCD[1]), a0);  // aA+dB bA+eB cA+fB (dA+gB)
-  a1 = _mm256_fmadd_pd(defg, four(EFGH[0]), a1);  // aD+dE bD+eE cD+fE (dD+gE)
-  a2 = _mm256_fmadd_pd(defg, four(EFGH[3]), a2);  // aG+dH bG+eH cG+fH (dG+gH)
-  a3 = _mm256_fmadd_pd(defg, four(IXYZ[2]), a3);  // x+aX+dY y+bX+eY z+cX+fY
-                                                  //                   (0+dX+gY)
-
-  const __m256d ghix = _mm256_loadu_pd(a+6);      // g h i (x)
-  a0 = _mm256_fmadd_pd(ghix, four(ABCD[2]), a0);  // aA+dB+gC bA+eB+hC cA+fB+iC
-                                                  //                  (dA+gB+xC)
-  _mm256_storeu_pd(r, a0);                        // r s t (u) will overwrite u
-
-  a1 = _mm256_fmadd_pd(ghix, four(EFGH[1]), a1);  // aD+dE+gF bD+eE+hF cD+fE+iF
-                                                  //                  (dD+gE+0F)
-  _mm256_storeu_pd(r+3, a1);                      // u v w (x) will overwrite x
-
-  a2 = _mm256_fmadd_pd(ghix, four(IXYZ[0]), a2);  // aG+dH+gI bG+eH+hI cG+fH+iI
-                                                  //                  (dG+gH+0I)
-  _mm256_storeu_pd(r+6, a2);                      // x' y' z' (xx)
-                                                  //           will overwrite xx
-
-  a3 = _mm256_fmadd_pd(ghix, four(IXYZ[3]), a3);  // x+aX+dY+gZ y+bX+eY+hZ
-                                                  //     z+cX+fY+iZ (0+dX+gY+xZ)
-  _mm256_maskstore_pd(r+9, mask, a3);             // xx yy zz
+  // Store the output.
+  _mm256_storeu_pd(X_AC, jkl_);      // 4-wide write temporarily overwrites m
+  _mm256_storeu_pd(X_AC + 3, mno_);  // 4-wide write temporarily overwrites p
+  _mm256_storeu_pd(X_AC + 6, pqr_);  // 4-wide write temporarily overwrites s
+  _mm256_maskstore_pd(X_AC + 9, mask, stu_);  // 3-wide write to stay in bounds
 
   // The compiler will generate a vzeroupper instruction if needed.
 }
 
 /* Composition of transforms X_AC = X_BA⁻¹ * X_BC.
-The rotation matrix and offset vector occupy 12 consecutive doubles. See
-previous method for notation used here.
 
-We want to perform this 3x3 matrix multiply:
+Each matrix is 12 consecutive doubles in column-major order.
 
-     R_AC    R_BA⁻¹  R_BC
+  X_BA = abcdefghixyz
+  X_BC = ABCDEFGHIXYZ
+  X_AC = jklmnopqrstu
 
-    r u x'   a b c   A D G
-    s v y' = d e f * B E H     R_BA⁻¹ is row ordered; R_BC col ordered
-    t w z'   g h i   C F I
+We want to perform this 4x4 matrix multiplication:
 
-and    xx   a b c     X   x
-       yy = d e f * ( Y − y )
-       zz   g h i     Z   z
+      X_AC        X_BA⁻¹              X_BC
+    j m p s     a b c -x(a+b+c)     A D G X
+    k n q t  =  d e f -y(d+e+f)  @  B E H Y
+    l o r u     g h i -z(g+h+i)     C F I Z
+    0 0 0 1     0 0 0 -1            0 0 0 1
 
-This is 63 flops altogether.
+(Note that the "0 0 0 1" is only an illustration of the math; our transform
+matrix does not actually store that row.)
 
-Strategy: compute column rst in parallel, then uvw, then xyz.
-Let PQR=XYZ-xyz.
-r = aA+bB+cC          xx = aP + bQ + cR
-s = dA+eB+fC  etc.    yy = dP + eQ + fR
-t = gA+hB+iC          zz = gP + hQ + iR
+Instead of calculating the full 4x4 multiply, we can take advantage of the
+implicit constants in the last row to handle the rotation matrix and translation
+vector separately.
 
-Load columns from left matrix, duplicate elements from right.
-(Tricky here since the inverse is row ordered -- we pull in
-the rows and then shuffle things.)
-Perform 4 operations in parallel but ignore the 4th result.
-Be careful not to load or store past the last element.
+We'll perform this 3x3 matrix multiplication:
 
-We end up doing 5*4 + 8*8 = 84 flops to get 63 useful ones.
-However, we do that in only 13 floating point instructions
-(4 packed multiplies, 1 packed subtract, 8 packed fused-multiply-adds).
-*/
+   R_AC      R_BA⁻¹    R_BC
+
+  j m p     a b c     A D G          Note that R_BA⁻¹ (aka R_AB) is in effect
+  k n q  =  d e f  @  B E H          stored in row-major order, since our
+  l o r     g h i     C F I          argument R_BA was in column-major order.
+
+and this translation vector subtraction and matrix multiplication:
+
+  s     a b c       X   x
+  t  =  d e f  @  ( Y − y )
+  u     g h i       Z   z
+
+Writing that out longhand, we have:
+
+  j = aA + bB + cC
+  k = dA + eB + fC
+  l = gA + hB + iC
+
+  m = aD + bE + cF
+  n = dD + eE + fF
+  o = gD + hE + iF
+
+  p = aG + bH + cI
+  q = dG + eH + fI
+  r = gG + hH + iI
+
+  s = a(X-x) + b(Y-y) + c(Z-z)
+  t = d(X-x) + e(Y-y) + f(Z-z)
+  u = g(X-x) + h(Y-y) + i(Z-z)
+
+Strategy: compute stu in parallel, then jkl, then mno, then pqr.
+The <stu_> vector has the deepest pipeline, so we get it going first.
+
+  <stu_> =   <adg_> * (<XXX_> - <xxx_>)
+           + <beh_> * (<YYY_> - <yyy_>)
+           + <cfi_> * (<ZZZ_> - <zzz_>)
+
+  <jkl_> =   <adg_> * <AAA_>
+           + <beh_> * <BBB_>
+           + <cfi_> * <CCC_>
+
+  <mno_> =   <adg_> * <DDD_>
+           + <beh_> * <EEE_>
+           + <cfi_> * <FFF_>
+
+  <pqr_> =   <adg_> * <GGG_>
+           + <beh_> * <HHH_>
+           + <cfi_> * <III_>
+
+We load columns from left matrix (tricky here since the inverse is row-major --
+we'll pull in contiguous words and then shuffle) and broadcast elements from
+right, performing 4 operations in parallel but ignoring the 4th result. We must
+be careful not to load or store past the last element.
+
+Rigid transform inverse composition requires 63 flops (36 multiplies, 24
+additions, and 3 subtractions) but we're doing 84 here and throwing away 21 of
+them. However, we only issue 13 SIMD floating point instructions (4 multiplies,
+8 fused-multiply-adds, and 1 subtraction). */
 void ComposeXinvXAvx(const double* X_BA, const double* X_BC, double* X_AC) {
   constexpr uint64_t yes = uint64_t(1ull << 63);
-  constexpr uint64_t no  = uint64_t(0);
+  constexpr uint64_t no = uint64_t(0);
   const __m256i mask = _mm256_setr_epi64x(yes, yes, yes, no);
 
-  // Aliases for readability (named after first entries in comment above).
-  const double* a = X_BA; const double* A = X_BC; double* r = X_AC;
+  // Load the input. Loads columns of R_AB (rows of the given R_BA) into
+  // registers via a series of loads, blends, and permutes.
+  const __m256d abcd = _mm256_loadu_pd(X_BA);
+  const __m256d efgh = _mm256_loadu_pd(X_BA + 4);
+  const __m256d eb_h = _mm256_blend_pd(abcd, efgh, 0b1101);
+  const __m256d beh_ = _mm256_permute_pd(eb_h, 0b0101);
+  const __m256d cdg_ = _mm256_permute2f128_pd(abcd, efgh, 0b00110001);
+  const __m256d adg_ = _mm256_blend_pd(abcd, cdg_, 0b1110);
+  const __m256d fghi = _mm256_loadu_pd(X_BA + 5);
+  const __m256d _fi_ = _mm256_permute_pd(fghi, 0b0100);
+  const __m256d cfi_ = _mm256_blend_pd(cdg_, _fi_, 0b0110);
+  const __m256d _xyz = _mm256_loadu_pd(X_BA + 8);
+  const __m256d IXYZ = _mm256_loadu_pd(X_BC + 8);  // (_XYZ is a reserved word.)
+  const __m256d subtract_XYZ_xyz = IXYZ - _xyz;
+  const double A = X_BC[0];
+  const double B = X_BC[1];
+  const double C = X_BC[2];
+  const double D = X_BC[3];
+  const double E = X_BC[4];
+  const double F = X_BC[5];
+  const double G = X_BC[6];
+  const double H = X_BC[7];
+  const double I = X_BC[8];
 
-  const __m256d abcd = _mm256_loadu_pd(a);                   // a b c d
-  const __m256d efgh = _mm256_loadu_pd(a+4);                 // e f g h
-  const __m256d ebgh = _mm256_blend_pd(abcd, efgh, 0b1101);  // e b g h
-  const __m256d behg = _mm256_permute_pd(ebgh, 0b0101);      // b e h (g) col1
+  const double subXx = subtract_XYZ_xyz[1];
+  const double subYy = subtract_XYZ_xyz[2];
+  const double subZz = subtract_XYZ_xyz[3];
+  // Column stu:                                         s       t       u     =
+  __m256d stu_ = _mm256_mul_pd(adg_, four(subXx));  //  a(X-x)  d(X-x)  g(X-x)
+  stu_ = _mm256_fmadd_pd(beh_, four(subYy), stu_);  // +b(Y-y) +e(Y-y) +h(Y-y)
+  stu_ = _mm256_fmadd_pd(cfi_, four(subZz), stu_);  // +c(Z-z) +f(Z-z) +i(Z-z)
 
-  const __m256d cdgh = _mm256_permute2f128_pd(abcd, efgh,
-                                              0b00110001);   // c d g h
-  const __m256d adgh = _mm256_blend_pd(abcd, cdgh, 0b1110);  // a d g (h) col0
+  // Column jkl:                                    j   k   l   _  =
+  __m256d jkl_ = _mm256_mul_pd(adg_, four(A));  //  aA  dA  gA  _
+  jkl_ = _mm256_fmadd_pd(beh_, four(B), jkl_);  // +bB +eB +hB  _
+  jkl_ = _mm256_fmadd_pd(cfi_, four(C), jkl_);  // +cC +fC +iC  _
 
-  const __m256d fghi = _mm256_loadu_pd(a+5);
-  const __m256d ffih = _mm256_permute_pd(fghi, 0b0100);      // f f i h
-  const __m256d cfih = _mm256_blend_pd(cdgh, ffih, 0b0110);  // c f i (h) col2
+  // Column mno:                                    m   n   o  _  =
+  __m256d mno_ = _mm256_mul_pd(adg_, four(D));  //  aD  dD  gD _
+  mno_ = _mm256_fmadd_pd(beh_, four(E), mno_);  // +bE +eE +hE _
+  mno_ = _mm256_fmadd_pd(cfi_, four(F), mno_);  // +cF +fF +iF _
 
-  const __m256d IXYZ = _mm256_loadu_pd(A+8);       // I X Y Z
-  const __m256d ixyz = _mm256_loadu_pd(a+8);       // i x y z
-  const __m256d _PQR = _mm256_sub_pd(IXYZ, ixyz);  // _PQR = (I)XYZ − (i)xyz
-  const __m256d ABCD = _mm256_loadu_pd(A);         // A B C D
-  const __m256d EFGH = _mm256_loadu_pd(A+4);       // E F G H
+  // Column pqr:                                    p   q   r   _  =
+  __m256d pqr_ = _mm256_mul_pd(adg_, four(G));  //  aG  dG  gG  _
+  pqr_ = _mm256_fmadd_pd(beh_, four(H), pqr_);  // +bH +eH +hH  _
+  pqr_ = _mm256_fmadd_pd(cfi_, four(I), pqr_);  // +cI +fI +iI  _
 
-  __m256d a0, a1, a2, a3;  // Accumulators.
-
-  a0 = _mm256_mul_pd(adgh, four(ABCD[0]));        // aA dA gA (hA)
-  a1 = _mm256_mul_pd(adgh, four(ABCD[3]));        // aD dD gD (hD)
-  a2 = _mm256_mul_pd(adgh, four(EFGH[2]));        // aG dG gG (hG)
-  a3 = _mm256_mul_pd(adgh, four(_PQR[1]));        // aP dP gP (hP)
-
-  a0 = _mm256_fmadd_pd(behg, four(ABCD[1]), a0);  // aA+bB dA+eB gA+hB (hA+gB)
-  a1 = _mm256_fmadd_pd(behg, four(EFGH[0]), a1);  // aD+bE dD+eE gD+hE (hD+gE)
-  a2 = _mm256_fmadd_pd(behg, four(EFGH[3]), a2);  // aG+bH dG+eH gG+hH (hG+gH)
-  a3 = _mm256_fmadd_pd(behg, four(_PQR[2]), a3);  // aP+bQ dP+eQ gP+hQ (hP+gQ)
-
-  a0 = _mm256_fmadd_pd(cfih, four(ABCD[2]), a0);  // aA+bB+cC dA+eB+fC gA+hB+iC
-                                                  //                  (hA+cB+hC)
-  _mm256_storeu_pd(r, a0);                        // r s t (u) will overwrite u
-
-  a1 = _mm256_fmadd_pd(cfih, four(EFGH[1]), a1);  // aD+bE+cF dD+eE+fF gD+hE+iF
-                                                  //                  (hD+cE+hF)
-  _mm256_storeu_pd(r+3, a1);                      // u v w (x) will overwrite x
-
-  a2 = _mm256_fmadd_pd(cfih, four(IXYZ[0]), a2);  // aG+bH+cI dG+eH+fI gG+hH+iI
-                                                  //                  (hG+cH+hI)
-  _mm256_storeu_pd(r+6, a2);                      // x' y' z' (xx)
-                                                  //           will overwrite xx
-
-  a3 = _mm256_fmadd_pd(cfih, four(_PQR[3]), a3);  // aP+bQ+cR dP+eQ+fR gP+hQ+iR
-                                                  //                  (hP+cQ+hR)
-  _mm256_maskstore_pd(r+9, mask, a3);             // xx yy zz
+  // Store the result.
+  _mm256_storeu_pd(X_AC, jkl_);      // 4-wide write temporarily overwrites m
+  _mm256_storeu_pd(X_AC + 3, mno_);  // 4-wide write temporarily overwrites p
+  _mm256_storeu_pd(X_AC + 6, pqr_);  // 4-wide write temporarily overwrites s
+  _mm256_maskstore_pd(X_AC + 9, mask, stu_);  // 3-wide write to stay in bounds
 
   // The compiler will generate a vzeroupper instruction if needed.
 }
@@ -432,29 +618,27 @@ void AbortNotEnabledInBuild(const char* func) {
 }
 }  // namespace
 
-bool AvxSupported() { return false; }
+bool AvxSupported() {
+  return false;
+}
 
-void ComposeRRAvx(const RotationMatrix<double>&,
-                  const RotationMatrix<double>&,
+void ComposeRRAvx(const RotationMatrix<double>&, const RotationMatrix<double>&,
                   RotationMatrix<double>*) {
   AbortNotEnabledInBuild(__func__);
 }
 
 void ComposeRinvRAvx(const RotationMatrix<double>&,
-                     const RotationMatrix<double>&,
-                     RotationMatrix<double>*) {
+                     const RotationMatrix<double>&, RotationMatrix<double>*) {
   AbortNotEnabledInBuild(__func__);
 }
 
-void ComposeXXAvx(const RigidTransform<double>&,
-                  const RigidTransform<double>&,
+void ComposeXXAvx(const RigidTransform<double>&, const RigidTransform<double>&,
                   RigidTransform<double>*) {
   AbortNotEnabledInBuild(__func__);
 }
 
 void ComposeXinvXAvx(const RigidTransform<double>&,
-                     const RigidTransform<double>&,
-                     RigidTransform<double>*) {
+                     const RigidTransform<double>&, RigidTransform<double>*) {
   AbortNotEnabledInBuild(__func__);
 }
 #endif

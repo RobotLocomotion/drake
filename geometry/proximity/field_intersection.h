@@ -74,9 +74,9 @@ bool CalcEquilibriumPlane(int element0,
  */
 template <typename T>
 std::vector<Vector3<T>> IntersectTetrahedra(
-    int element0, const VolumeMesh<double>& mesh0_M,
-    int element1, const VolumeMesh<double>& mesh1_N,
-    const math::RigidTransform<T>& X_MN, const Plane<T>& equilibrium_plane_M);
+    int element0, const VolumeMesh<double>& mesh0_M, int element1,
+    const VolumeMesh<double>& mesh1_N, const math::RigidTransform<T>& X_MN,
+    const Plane<T>& equilibrium_plane_M);
 
 // TODO(DamrongGuoy): Move IsPlaneNormalAlongPressureGradient() into
 //  contact_surface_utility for code reuse if and when we work on compliant
@@ -136,18 +136,17 @@ bool IsPlaneNormalAlongPressureGradient(
  @pre The MeshType and the MeshBuilder must be consistent.
  */
 template <class MeshType, class MeshBuilder,
-    typename T = typename MeshType::ScalarType,
-    class FieldType = MeshFieldLinear<T, MeshType>>
-void IntersectFields(
-    const VolumeMeshFieldLinear<double, double>& field0_M,
-    const Bvh<Obb, VolumeMesh<double>>& bvh0_M,
-    const VolumeMeshFieldLinear<double, double>& field1_N,
-    const Bvh<Obb, VolumeMesh<double>>& bvh1_N,
-    const math::RigidTransform<T>& X_MN,
-    std::unique_ptr<MeshType>* surface_01_M,
-    std::unique_ptr<FieldType>* e_01_M,
-    std::vector<Vector3<T>>* grad_e0_Ms,
-    std::vector<Vector3<T>>* grad_e1_Ms);
+          typename T = typename MeshType::ScalarType,
+          class FieldType = MeshFieldLinear<T, MeshType>>
+void IntersectFields(const VolumeMeshFieldLinear<double, double>& field0_M,
+                     const Bvh<Obb, VolumeMesh<double>>& bvh0_M,
+                     const VolumeMeshFieldLinear<double, double>& field1_N,
+                     const Bvh<Obb, VolumeMesh<double>>& bvh1_N,
+                     const math::RigidTransform<T>& X_MN,
+                     std::unique_ptr<MeshType>* surface_01_M,
+                     std::unique_ptr<FieldType>* e_01_M,
+                     std::vector<Vector3<T>>* grad_e0_Ms,
+                     std::vector<Vector3<T>>* grad_e1_Ms);
 
 /* Computes the contact surface between two compliant hydroelastic geometries
  given a specific mesh-builder instance. The output contact surface is posed
@@ -183,8 +182,8 @@ template <class MeshType, class MeshBuilder,
 std::unique_ptr<ContactSurface<T>> IntersectCompliantVolumes(
     GeometryId id0, const VolumeMeshFieldLinear<double, double>& field0_F,
     const Bvh<Obb, VolumeMesh<double>>& bvh0_F,
-    const math::RigidTransform<T>& X_WF,
-    GeometryId id1, const VolumeMeshFieldLinear<double, double>& field1_G,
+    const math::RigidTransform<T>& X_WF, GeometryId id1,
+    const VolumeMeshFieldLinear<double, double>& field1_G,
     const Bvh<Obb, VolumeMesh<double>>& bvh1_G,
     const math::RigidTransform<T>& X_WG);
 
@@ -219,15 +218,14 @@ std::unique_ptr<ContactSurface<T>> IntersectCompliantVolumes(
  the definition of the relative position of the two meshes.
 */
 template <typename T>
-std::unique_ptr<ContactSurface<T>>
-ComputeContactSurfaceFromCompliantVolumes(
-  GeometryId id0, const VolumeMeshFieldLinear<double, double>& field0_F,
-  const Bvh<Obb, VolumeMesh<double>>& bvh0_F,
-  const math::RigidTransform<T>& X_WF,
-  GeometryId id1, const VolumeMeshFieldLinear<double, double>& field1_G,
-  const Bvh<Obb, VolumeMesh<double>>& bvh1_G,
-  const math::RigidTransform<T>& X_WG,
-  HydroelasticContactRepresentation representation);
+std::unique_ptr<ContactSurface<T>> ComputeContactSurfaceFromCompliantVolumes(
+    GeometryId id0, const VolumeMeshFieldLinear<double, double>& field0_F,
+    const Bvh<Obb, VolumeMesh<double>>& bvh0_F,
+    const math::RigidTransform<T>& X_WF, GeometryId id1,
+    const VolumeMeshFieldLinear<double, double>& field1_G,
+    const Bvh<Obb, VolumeMesh<double>>& bvh1_G,
+    const math::RigidTransform<T>& X_WG,
+    HydroelasticContactRepresentation representation);
 
 }  // namespace internal
 }  // namespace geometry

@@ -44,20 +44,18 @@ template <typename T>
 class JointImplementationBuilder {
  public:
   JointImplementationBuilder() = delete;
-  static std::vector<Mobilizer<T>*> Build(
+  static Mobilizer<T>* Build(
       Joint<T>* joint, MultibodyTree<T>* tree) {
-    std::vector<Mobilizer<T>*> mobilizers;
+    Mobilizer<T>* mobilizer;
     std::unique_ptr<JointBluePrint> blue_print =
         joint->MakeImplementationBlueprint();
     auto implementation = std::make_unique<JointImplementation>(*blue_print);
-    DRAKE_DEMAND(implementation->num_mobilizers() != 0);
-    for (auto& mobilizer : blue_print->mobilizers_) {
-      mobilizers.push_back(mobilizer.get());
-      tree->AddMobilizer(std::move(mobilizer));
-    }
+    DRAKE_DEMAND(implementation->has_mobilizer());
+    mobilizer = blue_print->mobilizer.get();
+    tree->AddMobilizer(std::move(blue_print->mobilizer));
     // TODO(amcastro-tri): add force elements, bodies, constraints, etc.
     joint->OwnImplementation(std::move(implementation));
-    return mobilizers;
+    return mobilizer;
   }
 
  private:
@@ -614,17 +612,11 @@ void MultibodyTree<T>::CreateJointImplementations() {
   joint_to_mobilizer_.resize(num_joints_pre_floating_joints);
   for (int i = 0; i < num_joints_pre_floating_joints; ++i) {
     auto& joint = owned_joints_[i];
-    std::vector<Mobilizer<T>*> mobilizers =
+    Mobilizer<T>* mobilizer =
         internal::JointImplementationBuilder<T>::Build(joint.get(), this);
-    // Below we assume a single mobilizer per joint, which is  true
-    // for all joint types currently implemented. This may change in the future
-    // when closed topologies are supported.
-    DRAKE_DEMAND(mobilizers.size() == 1);
-    for (Mobilizer<T>* mobilizer : mobilizers) {
-      mobilizer->set_model_instance(joint->model_instance());
-      // Record the joint to mobilizer map.
-      joint_to_mobilizer_[joint->index()] = mobilizer->index();
-    }
+    mobilizer->set_model_instance(joint->model_instance());
+    // Record the joint to mobilizer map.
+    joint_to_mobilizer_[joint->index()] = mobilizer->index();
   }
   // It is VERY important to add joints to free bodies only AFTER joints had a
   // chance to get implemented with mobilizers. This is because above added
@@ -633,30 +625,34 @@ void MultibodyTree<T>::CreateJointImplementations() {
   // will get a 6-dof joint with world as its parent. Therefore, do not change
   // this order!
 
+  // We'll try to name the new floating joint the same as the base body it
+  // mobilizes. This can fail if there is already a Joint in this model instance
+  // with that name (unlikely). In that case we prepend "_" to the body name
+  // until the name is unique. See issue #19164.
+
   // Skip the world.
   for (BodyIndex body_index(1); body_index < num_bodies(); ++body_index) {
     const Body<T>& body = get_body(body_index);
     const BodyTopology& body_topology = get_topology().get_body(body.index());
-    if (!body_topology.inboard_mobilizer.is_valid()) {
-      this->AddJoint<QuaternionFloatingJoint>("$world_" + body.name(),
-                                              world_body(), {}, body, {});
-    }
+    if (body_topology.inboard_mobilizer.is_valid()) continue;
+    std::string floating_joint_name = body.name();
+    // Loop must terminate since there are only a finite number of joints.
+    while (HasJointNamed(floating_joint_name, body.model_instance()))
+      floating_joint_name = "_" + floating_joint_name;
+
+    // The joint's model instance will be the same as body's.
+    this->AddJoint<QuaternionFloatingJoint>(floating_joint_name, world_body(),
+                                            {}, body, {});
   }
 
   joint_to_mobilizer_.resize(num_joints());
   for (int i = num_joints_pre_floating_joints; i < num_joints(); ++i) {
     auto& joint = owned_joints_[i];
-    std::vector<Mobilizer<T>*> mobilizers =
+    Mobilizer<T>* mobilizer =
         internal::JointImplementationBuilder<T>::Build(joint.get(), this);
-    // Below we assume a single mobilizer per joint, which is  true
-    // for all joint types currently implemented. This may change in the future
-    // when closed topologies are supported.
-    DRAKE_DEMAND(mobilizers.size() == 1);
-    for (Mobilizer<T>* mobilizer : mobilizers) {
-      mobilizer->set_model_instance(joint->model_instance());
-      // Record the joint to mobilizer map.
-      joint_to_mobilizer_[joint->index()] = mobilizer->index();
-    }
+    mobilizer->set_model_instance(joint->model_instance());
+    // Record the joint to mobilizer map.
+    joint_to_mobilizer_[joint->index()] = mobilizer->index();
   }
 }
 
@@ -733,7 +729,7 @@ void MultibodyTree<T>::FinalizeInternals() {
     actuator->SetTopology(topology_);
   }
 
-  body_node_levels_.resize(topology_.tree_height());
+  body_node_levels_.resize(topology_.forest_height());
   for (BodyNodeIndex body_node_index(1);
        body_node_index < topology_.get_num_body_nodes(); ++body_node_index) {
     const BodyNodeTopology& node_topology =
@@ -847,6 +843,9 @@ void MultibodyTree<T>::CreateModelInstances() {
     }
   }
 
+  // N.B. The result of the code below is that actuators are sorted by
+  // JointActuatorIndex within each model instance. If this was not true,
+  // ModelInstance::add_joint_actuator() would throw.
   for (const auto& joint_actuator : owned_actuators_) {
     model_instances_.at(joint_actuator->model_instance())->add_joint_actuator(
         joint_actuator.get());

@@ -1,5 +1,5 @@
 load(
-    "@drake//tools/skylark:drake_cc.bzl",
+    "//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
     "drake_cc_library",
     "drake_cc_package_library",
@@ -62,11 +62,16 @@ drake_cc_library(
         "//geometry/render_vtk:render_engine_vtk_params",
         "//systems/sensors:color_palette",
         "@eigen",
-        "@vtk//:vtkIOGeometry",
-        "@vtk//:vtkIOImage",
-        "@vtk//:vtkIOImport",
-        "@vtk//:vtkRenderingCore",
-        "@vtk//:vtkRenderingOpenGL2",
+        "@vtk_internal//:vtkCommonCore",
+        "@vtk_internal//:vtkCommonExecutionModel",
+        "@vtk_internal//:vtkCommonTransforms",
+        "@vtk_internal//:vtkFiltersSources",
+        "@vtk_internal//:vtkIOGeometry",
+        "@vtk_internal//:vtkIOImage",
+        "@vtk_internal//:vtkIOImport",
+        "@vtk_internal//:vtkImagingCore",
+        "@vtk_internal//:vtkRenderingCore",
+        "@vtk_internal//:vtkRenderingOpenGL2",
     ],
 )
 
@@ -82,8 +87,12 @@ drake_cc_library(
         "//geometry:shape_specification",
         "//geometry/render:render_material",
         "//geometry/render:render_mesh",
-        "@vtk//:vtkCommonCore",
-        "@vtk//:vtkFiltersSources",
+        "@vtk_internal//:vtkCommonCore",
+        "@vtk_internal//:vtkCommonDataModel",
+        "@vtk_internal//:vtkCommonExecutionModel",
+        "@vtk_internal//:vtkCommonTransforms",
+        "@vtk_internal//:vtkFiltersGeneral",
+        "@vtk_internal//:vtkFiltersSources",
     ],
 )
 
@@ -97,40 +106,20 @@ drake_cc_library(
         "//common:essential",
         "//math:geometric_transform",
         "@eigen",
-        "@vtk//:vtkCommonCore",
-        "@vtk//:vtkCommonTransforms",
-        "@vtk//:vtkFiltersSources",
+        "@vtk_internal//:vtkCommonCore",
+        "@vtk_internal//:vtkCommonTransforms",
+        "@vtk_internal//:vtkFiltersSources",
     ],
 )
 
 drake_cc_googletest(
     name = "internal_render_engine_vtk_test",
     args = select({
-        # We have disabled the test cases that fail on Mac Arm CI.
-        # TODO(#19424) Try to re-enable the tests.
+        # Most test cases do not render correctly on macOS arm64 CI. Instead of
+        # trying to select the few that randomly happen to pass, we'll skip all
+        # of them. TODO(#19424) Re-enable the tests.
         "@platforms//cpu:arm64": [
-            "--gtest_filter=-" + ":".join([
-                "RenderEngineVtkTest.BoxTest",
-                "RenderEngineVtkTest.CapsuleRotatedTest",
-                "RenderEngineVtkTest.CapsuleTest",
-                "RenderEngineVtkTest.CloneIndependence",
-                "RenderEngineVtkTest.ClonePersistence",
-                "RenderEngineVtkTest.CylinderTest",
-                "RenderEngineVtkTest.DefaultProperties_RenderLabel",
-                "RenderEngineVtkTest.DifferentCameras",
-                "RenderEngineVtkTest.EllipsoidTest",
-                "RenderEngineVtkTest.FallbackLight",
-                "RenderEngineVtkTest.GltfSupport",
-                "RenderEngineVtkTest.HorizonTest",
-                "RenderEngineVtkTest.IntrinsicsAndRenderProperties",
-                "RenderEngineVtkTest.MeshTest",
-                "RenderEngineVtkTest.NonUcharChannelTextures",
-                "RenderEngineVtkTest.PreservePropertyTexturesOverClone",
-                "RenderEngineVtkTest.RemoveVisual",
-                "RenderEngineVtkTest.SimpleClone",
-                "RenderEngineVtkTest.SphereTest",
-                "RenderEngineVtkTest.TerrainTest",
-            ]),
+            "--gtest_filter=-*",
         ],
         "//conditions:default": [],
     }),
@@ -144,7 +133,10 @@ drake_cc_googletest(
         "//common/test_utilities",
         "//geometry/test_utilities:dummy_render_engine",
         "//math:geometric_transform",
-        "@vtk//:vtkIOImage",
+        "//systems/sensors/test_utilities:image_compare",
+        "@vtk_internal//:vtkIOImage",
+        "@vtk_internal//:vtkRenderingCore",
+        "@vtk_internal//:vtkRenderingOpenGL2",
     ],
 )
 
@@ -152,6 +144,9 @@ drake_cc_googletest(
     name = "internal_vtk_util_test",
     deps = [
         ":internal_vtk_util",
+        "@vtk_internal//:vtkCommonCore",
+        "@vtk_internal//:vtkCommonDataModel",
+        "@vtk_internal//:vtkFiltersSources",
     ],
 )
 

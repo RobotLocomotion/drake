@@ -13,12 +13,14 @@ namespace multibody {
 namespace fem {
 namespace internal {
 
-/* A dummy FEM model for testing purpose only. */
-class DummyModel final : public FemModelImpl<DummyElement> {
+/* A dummy FEM model for testing purpose only.
+ @tparam is_linear If true, is_linear() returns true. */
+template <bool is_linear>
+class DummyModel final : public FemModelImpl<DummyElement<is_linear>> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DummyModel);
-  using Traits = FemElementTraits<DummyElement>;
-  using T = Traits::T;
+  using Traits = FemElementTraits<DummyElement<is_linear>>;
+  using T = typename Traits::T;
   static constexpr double kMassDamping = 0.01;
   static constexpr double kStiffnessDamping = 0.02;
   static constexpr double kYoungsModulus = 5e4;
@@ -46,7 +48,7 @@ class DummyModel final : public FemModelImpl<DummyElement> {
     void DoBuild() final;
 
     DummyModel* model_{nullptr};
-    std::vector<DummyElement> elements_;
+    std::vector<DummyElement<is_linear>> elements_;
     VectorX<T> reference_positions_;
   };
 

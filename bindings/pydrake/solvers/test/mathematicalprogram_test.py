@@ -544,8 +544,12 @@ class TestMathematicalProgram(unittest.TestCase):
             matrix_rows(), 3)
         prog.AddPositiveSemidefiniteConstraint(S+S)
         prog.AddPositiveDiagonallyDominantMatrixConstraint(X=S)
+        prog.AddPositiveDiagonallyDominantDualConeMatrixConstraint(X=S)
+        prog.AddPositiveDiagonallyDominantDualConeMatrixConstraint(X=S+S)
         prog.AddScaledDiagonallyDominantMatrixConstraint(X=S)
         prog.AddScaledDiagonallyDominantMatrixConstraint(X=S+S)
+        prog.AddScaledDiagonallyDominantDualConeMatrixConstraint(X=S)
+        prog.AddScaledDiagonallyDominantDualConeMatrixConstraint(X=S+S)
         prog.AddLinearCost(np.trace(S))
         result = mp.Solve(prog)
         self.assertTrue(result.is_success())
@@ -774,21 +778,38 @@ class TestMathematicalProgram(unittest.TestCase):
         x = prog.NewContinuousVariables(2, 'x')
         lb = [0., 0.]
         ub = [1., 1.]
+
+        A_sparse = scipy.sparse.csc_matrix(
+            (np.array([2, 1, 3]), np.array([0, 1, 0]),
+             np.array([0, 2, 2, 3])), shape=(2, 2))
+
         prog.AddBoundingBoxConstraint(lb, ub, x)
         prog.AddBoundingBoxConstraint(0., 1., x[0])
         prog.AddBoundingBoxConstraint(0., 1., x)
         prog.AddLinearConstraint(A=np.eye(2), lb=np.zeros(2), ub=np.ones(2),
                                  vars=x)
+        c1 = prog.AddLinearConstraint(A=A_sparse,
+                                      lb=np.zeros(2),
+                                      ub=np.ones(2),
+                                      vars=x)
+        # Ensure that the sparse version of the binding has been called.
+        self.assertFalse(c1.evaluator().is_dense_A_constructed())
         prog.AddLinearConstraint(a=[1, 1], lb=0, ub=0, vars=x)
         prog.AddLinearConstraint(e=x[0], lb=0, ub=1)
         prog.AddLinearConstraint(v=x, lb=[0, 0], ub=[1, 1])
         prog.AddLinearConstraint(f=(x[0] == 0))
 
-        prog.AddLinearEqualityConstraint(np.eye(2), np.zeros(2), x)
-        prog.AddLinearEqualityConstraint(x[0] == 1)
-        prog.AddLinearEqualityConstraint(x[0] + x[1], 1)
+        prog.AddLinearEqualityConstraint(Aeq=np.eye(2), beq=np.zeros(2),
+                                         vars=x)
+        c2 = prog.AddLinearEqualityConstraint(Aeq=A_sparse, beq=np.zeros(2),
+                                              vars=x)
+        # Ensure that the sparse version of the binding has been called.
+        self.assertFalse(c2.evaluator().is_dense_A_constructed())
+        prog.AddLinearEqualityConstraint(a=[1, 1], beq=0, vars=x)
+        prog.AddLinearEqualityConstraint(f=x[0] == 1)
+        prog.AddLinearEqualityConstraint(e=x[0] + x[1], b=1)
         prog.AddLinearEqualityConstraint(
-            2 * x[:2] + np.array([0, 1]), np.array([3, 2]))
+            v=2 * x[:2] + np.array([0, 1]), b=np.array([3, 2]))
 
     def test_constraint_set_bounds(self):
         prog = mp.MathematicalProgram()
@@ -916,8 +937,8 @@ class TestMathematicalProgram(unittest.TestCase):
                 binding_bad_shape.evaluator().Eval(x0)
             self.assertEqual(
                 str(cm.exception),
-                "PyFunctionCost: Output must be of .ndim = 0 (scalar) and "
-                ".size = 1. Got .ndim = 1 and .size = 1 instead.")
+                "PyFunctionCost: Return value must be of .ndim = 0 (scalar) "
+                "and .size = 1. Got .ndim = 1 and .size = 1 instead.")
 
             # Bad output dtype.
             U = self.get_different_scalar_type(T)
@@ -927,12 +948,13 @@ class TestMathematicalProgram(unittest.TestCase):
                 return U(0.)
 
             binding_bad_dtype = prog.AddCost(user_cost_bad_dtype, vars=x)
-            with self.assertRaises(RuntimeError) as cm:
+            with self.assertRaises(TypeError) as cm:
                 binding_bad_dtype.evaluator().Eval(x0)
             self.assertEqual(
                 str(cm.exception),
-                f"PyFunctionCost: Output must be of scalar type {T.__name__}. "
-                f"Got {U.__name__} instead.")
+                f"When PyFunctionCost is called with an array of type "
+                f"{T.__name__} the return value must be the same type, not "
+                f"{U.__name__}.")
 
     def test_pyconstraint_wrap_error(self):
         """Tests for checks using PyFunctionConstraint::Wrap."""
@@ -972,7 +994,7 @@ class TestMathematicalProgram(unittest.TestCase):
                 binding_bad_shape.evaluator().Eval(x0)
             self.assertEqual(
                 str(cm.exception),
-                "PyFunctionConstraint: Output must be of .ndim = 1 or 2 "
+                "PyFunctionConstraint: Return value must be of .ndim = 1 or 2 "
                 "(vector) and .size = 1. Got .ndim = 0 and .size = 1 instead.")
 
             # Bad output dtype.
@@ -984,12 +1006,13 @@ class TestMathematicalProgram(unittest.TestCase):
 
             binding_bad_dtype = prog.AddConstraint(
                 user_constraint_bad_dtype, lb=[0.], ub=[2.], vars=x)
-            with self.assertRaises(RuntimeError) as cm:
+            with self.assertRaises(TypeError) as cm:
                 binding_bad_dtype.evaluator().Eval(x0)
             self.assertEqual(
                 str(cm.exception),
-                f"PyFunctionConstraint: Output must be of scalar type "
-                f"{T.__name__}. Got {U.__name__} instead.")
+                f"When PyFunctionConstraint is called with an array of type "
+                f"{T.__name__} the return value must be the same type, not "
+                f"{U.__name__}.")
 
     def test_addcost_symbolic(self):
         prog = mp.MathematicalProgram()
@@ -1406,10 +1429,6 @@ class TestMathematicalProgram(unittest.TestCase):
         result = MathematicalProgramResult()
         self.assertEqual(result.get_solution_result(),
                          mp.SolutionResult.kSolutionResultNotSet)
-
-    def test_solution_result_deprecation(self):
-        self.assertEqual(mp.SolutionResult.kUnknownError,
-                         mp.SolutionResult.kSolverSpecificError)
 
 
 class DummySolverInterface(SolverInterface):

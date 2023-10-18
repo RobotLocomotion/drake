@@ -114,7 +114,9 @@ RationalFunction& RationalFunction::operator-=(const Monomial& m) {
   return *this;
 }
 
-RationalFunction& RationalFunction::operator-=(double c) { return *this += -c; }
+RationalFunction& RationalFunction::operator-=(double c) {
+  return *this += -c;
+}
 
 RationalFunction& RationalFunction::operator*=(const RationalFunction& f) {
   numerator_ *= f.numerator();
@@ -201,9 +203,13 @@ RationalFunction operator+(const Monomial& m, RationalFunction f) {
   return f += m;
 }
 
-RationalFunction operator+(RationalFunction f, double c) { return f += c; }
+RationalFunction operator+(RationalFunction f, double c) {
+  return f += c;
+}
 
-RationalFunction operator+(double c, RationalFunction f) { return f += c; }
+RationalFunction operator+(double c, RationalFunction f) {
+  return f += c;
+}
 
 RationalFunction operator-(RationalFunction f1, const RationalFunction& f2) {
   return f1 -= f2;
@@ -225,9 +231,13 @@ RationalFunction operator-(const Monomial& m, RationalFunction f) {
   return -f + m;
 }
 
-RationalFunction operator-(RationalFunction f, double c) { return f -= c; }
+RationalFunction operator-(RationalFunction f, double c) {
+  return f -= c;
+}
 
-RationalFunction operator-(double c, RationalFunction f) { return f = -f + c; }
+RationalFunction operator-(double c, RationalFunction f) {
+  return f = -f + c;
+}
 
 RationalFunction operator*(RationalFunction f1, const RationalFunction& f2) {
   return f1 *= f2;
@@ -249,9 +259,13 @@ RationalFunction operator*(const Monomial& m, RationalFunction f) {
   return f *= m;
 }
 
-RationalFunction operator*(RationalFunction f, double c) { return f *= c; }
+RationalFunction operator*(RationalFunction f, double c) {
+  return f *= c;
+}
 
-RationalFunction operator*(double c, RationalFunction f) { return f *= c; }
+RationalFunction operator*(double c, RationalFunction f) {
+  return f *= c;
+}
 
 RationalFunction operator/(RationalFunction f1, const RationalFunction& f2) {
   return f1 /= f2;
@@ -279,7 +293,9 @@ RationalFunction operator/(const Monomial& m, RationalFunction f) {
   return {m * f.denominator(), f.numerator()};
 }
 
-RationalFunction operator/(RationalFunction f, double c) { return f /= c; }
+RationalFunction operator/(RationalFunction f, double c) {
+  return f /= c;
+}
 
 RationalFunction operator/(double c, const RationalFunction& f) {
   if (f.numerator().monomial_to_coefficient_map().empty()) {
@@ -311,9 +327,8 @@ void RationalFunction::SetIndeterminates(const Variables& new_indeterminates) {
 namespace Eigen {
 namespace numext {
 template <>
-bool equal_strict(
-    const drake::symbolic::RationalFunction& x,
-    const drake::symbolic::RationalFunction& y) {
+bool equal_strict(const drake::symbolic::RationalFunction& x,
+                  const drake::symbolic::RationalFunction& y) {
   return static_cast<bool>(x == y);
 }
 }  // namespace numext

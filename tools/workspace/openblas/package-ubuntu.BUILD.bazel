@@ -1,5 +1,7 @@
 # -*- bazel -*-
 
+load("@drake//tools/skylark:cc.bzl", "cc_library")
+
 package(default_visibility = ["//visibility:public"])
 
 # On Ubuntu, no targets should depend on @openblas.

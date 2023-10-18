@@ -1,5 +1,5 @@
 load(
-    "@drake//tools/skylark:drake_cc.bzl",
+    "//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
     "drake_cc_library",
     "drake_cc_package_library",
@@ -109,9 +109,11 @@ drake_cc_library(
     srcs = ["discrete_algebraic_riccati_equation.cc"],
     hdrs = ["discrete_algebraic_riccati_equation.h"],
     deps = [
-        ":autodiff",
         "//common:essential",
         "//common:is_approx_equal_abstol",
+        # TODO(jwnimmer-tri) Move this code into //math to avoid the circular
+        # dependency.
+        "//systems/primitives:linear_system_internal",
     ],
 )
 
@@ -157,6 +159,7 @@ drake_cc_library(
         "//common:default_scalars",
         "//common:drake_bool",
         "//common:essential",
+        "//common:hash",
         "//common:is_approx_equal_abstol",
         "//common:unused",
         "//math:gradient",

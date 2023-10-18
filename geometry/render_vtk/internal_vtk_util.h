@@ -3,10 +3,12 @@
 #include <array>
 
 #include <Eigen/Dense>
-#include <vtkNew.h>
-#include <vtkPlaneSource.h>
-#include <vtkSmartPointer.h>
-#include <vtkTransform.h>
+
+// To ease build system upkeep, we annotate VTK includes with their deps.
+#include <vtkNew.h>           // vtkCommonCore
+#include <vtkPlaneSource.h>   // vtkFiltersSources
+#include <vtkSmartPointer.h>  // vtkCommonCore
+#include <vtkTransform.h>     // vtkCommonTransforms
 
 #include "drake/common/drake_copyable.h"
 #include "drake/math/rigid_transform.h"
@@ -31,9 +33,14 @@ using vtkPointerArray = std::array<vtkSmartPointer<T>, N>;
 // @param size The size of the plane.
 vtkSmartPointer<vtkPlaneSource> CreateSquarePlane(double size);
 
-// Converts the provided `transform` to a vtkTransform.
+// Converts the provided `transform` to a vtkTransform. The rigid transform is
+// the concatenation of a translation operation T and rotation operation R
+// (X = T * R). We turn it into a general transform by also concatenating a
+// scale matrix: T * R * S, where where S is I * `scale` (i.e., a diagonal
+// matrix with `scale` on the diagonal). This is the standard transform matrix
+// for graphics.
 vtkSmartPointer<vtkTransform> ConvertToVtkTransform(
-    const math::RigidTransformd& transform);
+    const math::RigidTransformd& transform, double scale = 1.0);
 
 // Makes vtkPointerArray from one or multiple pointer(s) for VTK objects
 // wrapped by vtkNew.

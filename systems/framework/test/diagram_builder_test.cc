@@ -33,6 +33,8 @@ GTEST_TEST(DiagramBuilderTest, Empty) {
   DiagramBuilder<double> builder;
   const DiagramBuilder<double>& const_builder = builder;
   EXPECT_TRUE(const_builder.empty());
+  EXPECT_EQ(const_builder.num_input_ports(), 0);
+  EXPECT_EQ(const_builder.num_output_ports(), 0);
   builder.AddSystem<Adder>(1 /* inputs */, 1 /* size */);
   EXPECT_FALSE(const_builder.empty());
 }
@@ -758,6 +760,11 @@ TEST_F(DiagramBuilderSolePortsTest, TooFewDestInputs) {
 TEST_F(DiagramBuilderSolePortsTest, TooManyDestInputs) {
   using std::exception;
   EXPECT_THROW(builder_.Connect(*out1_, *in2out1_), std::exception);
+
+  // However, if all but one input port were deprecated, then it succeeds.
+  const_cast<InputPort<double>&>(in2out1_->get_input_port(1))
+      .set_deprecation("deprecated");
+  EXPECT_NO_THROW(builder_.Connect(*out1_, *in2out1_));
 }
 
 // A diagram of Sink->Gain is has too few src inputs.
@@ -770,6 +777,11 @@ TEST_F(DiagramBuilderSolePortsTest, TooFewSrcInputs) {
 TEST_F(DiagramBuilderSolePortsTest, TooManySrcInputs) {
   using std::exception;
   EXPECT_THROW(builder_.Connect(*in1out2_, *in1out1_), std::exception);
+
+  // However, if all but one output port were deprecated, then it succeeds.
+  const_cast<OutputPort<double>&>(in1out2_->get_output_port(1))
+      .set_deprecation("deprecated");
+  EXPECT_NO_THROW(builder_.Connect(*in1out2_, *in1out1_));
 }
 
 // Test for GetSystems and GetMutableSystems.
@@ -876,10 +888,16 @@ GTEST_TEST(DiagramBuilderTest, ExportInputOutputIndex) {
   EXPECT_EQ(builder.ExportInput(
         adder1->get_input_port(1)), 1 /* exported input port id */);
 
+  EXPECT_EQ(builder.num_input_ports(), 2);
+  EXPECT_EQ(builder.num_output_ports(), 0);
+
   EXPECT_EQ(builder.ExportOutput(
         adder1->get_output_port()), 0 /* exported output port id */);
   EXPECT_EQ(builder.ExportOutput(
         adder2->get_output_port()), 1 /* exported output port id */);
+
+  EXPECT_EQ(builder.num_input_ports(), 2);
+  EXPECT_EQ(builder.num_output_ports(), 2);
 }
 
 class DtorTraceSystem final : public LeafSystem<double> {

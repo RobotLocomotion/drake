@@ -9,11 +9,13 @@
 #include <string_view>
 #include <utility>
 
-#include <vtkCamera.h>
-#include <vtkGLTFExporter.h>
-#include <vtkMatrix4x4.h>
-#include <vtkVersionMacros.h>
+// To ease build system upkeep, we annotate VTK includes with their deps.
+#include <vtkCamera.h>         // vtkRenderingCore
+#include <vtkGLTFExporter.h>   // vtkIOExport
+#include <vtkMatrix4x4.h>      // vtkCommonMath
+#include <vtkVersionMacros.h>  // vtkCommonCore
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/never_destroyed.h"
 #include "drake/common/ssize.h"
 #include "drake/common/text_logging.h"
@@ -315,9 +317,9 @@ RenderEngineGltfClient::RenderEngineGltfClient(
     : RenderEngineVtk({.default_label = parameters.default_label}),
       render_client_{std::make_unique<RenderClient>(parameters)} {
   if (parameters.default_label.has_value()) {
-    static const logging::Warn log_once(
-        "RenderEngineGltfClient(): the default_label configuration option is "
-        "deprecated and will be removed from Drake on or after 2023-12-01.");
+    static const drake::internal::WarnDeprecated warn_once(
+        "2023-12-01",
+        "RenderEngineGltfClient(): the default_label option is deprecated.");
   }
 }
 
@@ -548,14 +550,17 @@ void RenderEngineGltfClient::ExportScene(const std::string& export_path,
   const std::string gltf_contents = gltf_exporter->WriteToString();
   nlohmann::json gltf = nlohmann::json::parse(gltf_contents);
 
-  // Merge in gltf files.
+  // Merge in gltf files. The path below is an imaginary path that should not
+  // appear in any error messages -- unless we start using extensions/extras in
+  // RenderEngineVtk and VTK starts exporting those values into a glTF file.
+  MergeRecord merge_record("scene_graph.gltf");
   for (const auto& [id, record] : gltfs_) {
     nlohmann::json temp = record.contents;
     if (image_type == render_vtk::internal::kLabel) {
       const ColorD color = RenderEngine::GetColorDFromLabel(record.label);
       ChangeToLabelMaterials(&temp, color);
     }
-    MergeGltf(&gltf, std::move(temp));
+    MergeGltf(&gltf, std::move(temp), record.path.string(), &merge_record);
   }
 
   // TODO(SeanCurtis-TRI): Update materials for label images. Because the gltf
@@ -638,7 +643,7 @@ bool RenderEngineGltfClient::ImplementGltf(
 
   DRAKE_DEMAND(gltfs_.count(data.id) == 0);
   gltfs_.insert({data.id,
-                 {std::move(mesh_data), std::move(root_nodes), scale,
+                 {gltf_path, std::move(mesh_data), std::move(root_nodes), scale,
                   GetRenderLabelOrThrow(data.properties)}});
   return true;
 }

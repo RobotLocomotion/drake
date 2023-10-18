@@ -27,7 +27,7 @@ Argument:
 """
 
 load("@bazel_tools//tools/build_defs/repo:utils.bzl", "patch")
-load("@drake//tools/workspace:os.bzl", "determine_os")
+load("//tools/workspace:os.bzl", "determine_os")
 
 def _impl(repository_ctx):
     os_result = determine_os(repository_ctx)

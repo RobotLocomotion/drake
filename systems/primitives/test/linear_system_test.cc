@@ -355,15 +355,10 @@ TEST_F(TestLinearizeFromAffine, DiscreteAtNonEquilibrium) {
 class TestNonPeriodicSystem : public LeafSystem<double> {
  public:
   TestNonPeriodicSystem() {
-    this->DeclareDiscreteState(1);
     this->DeclarePerStepEvent(PublishEvent<double>());
-  }
 
-  void DoCalcDiscreteVariableUpdates(
-      const Context<double>& context,
-      const std::vector<const DiscreteUpdateEvent<double>*>&,
-      DiscreteValues<double>* discrete_state) const override {
-    (*discrete_state)[0] = context.get_discrete_state(0).GetAtIndex(0) + 1;
+    // State with no update event is sufficient to be non-periodic.
+    this->DeclareDiscreteState(1);
   }
 };
 
@@ -803,7 +798,8 @@ class MimoSystem final : public LeafSystem<T> {
 
     if (is_discrete) {
       this->DeclareDiscreteState(2);
-      this->DeclarePeriodicDiscreteUpdateNoHandler(0.1, 0.0);
+      this->DeclarePeriodicDiscreteUpdateEvent(0.1, 0.0,
+                                               &MimoSystem::CalcDiscreteUpdate);
     } else {
       this->DeclareContinuousState(2);
     }
@@ -841,10 +837,8 @@ class MimoSystem final : public LeafSystem<T> {
     derivatives->SetFromVector(A_ * x + B0_ * u0 + B1_ * u1);
   }
 
-  void DoCalcDiscreteVariableUpdates(
-      const Context<T>& context,
-      const std::vector<const DiscreteUpdateEvent<T>*>&,
-      DiscreteValues<T>* discrete_state) const final {
+  void CalcDiscreteUpdate(const Context<T>& context,
+                          DiscreteValues<T>* discrete_state) const {
     Vector1<T> u0 = this->get_input_port(0).Eval(context);
     Vector3<T> u1 = this->get_input_port(1).Eval(context);
     Vector2<T> x = get_state_vector(context);
@@ -857,7 +851,7 @@ class MimoSystem final : public LeafSystem<T> {
     Vector3<T> u1 = this->get_input_port(1).Eval(context);
     Vector2<T> x = get_state_vector(context);
 
-    output->SetFromVector(C0_ * x + D00_ * u0 + D01_ * u1);
+    output->SetFromVector(Vector1<T>(C0_ * x + D00_ * u0 + D01_ * u1));
   }
 
   void CalcOutput1(const Context<T>& context, BasicVector<T>* output) const {

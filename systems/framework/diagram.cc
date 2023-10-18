@@ -369,9 +369,16 @@ const System<T>& Diagram<T>::GetSubsystemByName(std::string_view name) const {
       return *child;
     }
   }
+  std::vector<std::string> subsystem_names;
+  subsystem_names.reserve(registered_systems_.size());
+  for (const auto& child : registered_systems_) {
+    subsystem_names.emplace_back(child->get_name());
+  }
+
   throw std::logic_error(fmt::format(
-      "System {} does not have a subsystem named {}",
-      this->GetSystemName(), name));
+      "System {} does not have a subsystem named {}. The existing subsystems "
+      "are named {{{}}}.",
+      this->GetSystemName(), name, fmt::join(subsystem_names, ", ")));
 }
 
 template <typename T>
@@ -445,154 +452,192 @@ const State<T>& Diagram<T>::GetSubsystemState(const System<T>& subsystem,
   return *ret;
 }
 
+namespace {
+// Filter the options per the subsystem's name.
+std::map<std::string, std::string> FilterGraphvizOptions(
+    const std::map<std::string, std::string>& diagram_options,
+    const SystemBase& subsystem) {
+  const std::string key_prefix = subsystem.get_name() + "/";
+  const size_t key_prefix_size = key_prefix.size();
+  std::map<std::string, std::string> result;
+  for (const auto& [key, value] : diagram_options) {
+    if (key.substr(0, key_prefix_size) == key_prefix) {
+      result.emplace(key.substr(key_prefix_size), value);
+    }
+  }
+  return result;
+}
+}  // namespace
+
 template <typename T>
-void Diagram<T>::GetGraphvizFragment(int max_depth,
-                                     std::stringstream* dot) const {
-  const int64_t id = this->GetGraphvizId();
-  std::string name = this->get_name();
-  if (name.empty()) name = std::to_string(id);
+typename Diagram<T>::GraphvizFragment Diagram<T>::DoGetGraphvizFragment(
+    const GraphvizFragmentParams& params) const {
+  // If we've reached max depth, treat us like a leaf system.
+  if (params.max_depth <= 0) {
+    return System<T>::DoGetGraphvizFragment(params);
+  }
 
-  if (max_depth == 0) {
-    // Open the attributes and label.
-    *dot << id << " [shape=record, label=\"" << name << "|{";
+  // Recursively assemble the subsystems' fragments.
+  std::map<const System<T>*, GraphvizFragment> subsystem_fragments;
+  for (const auto& subsystem : registered_systems_) {
+    subsystem_fragments.emplace(
+        subsystem.get(),
+        subsystem->GetGraphvizFragment(
+            params.max_depth - 1,
+            FilterGraphvizOptions(params.options, *subsystem)));
+  }
 
-    // Append input ports to the label.
-    *dot << "{";
-    for (int i = 0; i < this->num_input_ports(); ++i) {
-      if (i != 0) *dot << "|";
-      *dot << "<u" << i << ">" << this->get_input_port(i).get_name();
+  // Assemble our fragments into a subgraph.
+  GraphvizFragment result;
+  const int64_t id = this->get_system_id().get_value();
+
+  // Open the diagram, with its label.
+  result.fragments.push_back(fmt::format(
+      R"""(subgraph cluster{}diagram {{
+color=black
+concentrate=true
+label=<<TABLE BORDER="0"><TR><TD>
+{}
+</TD></TR></TABLE>>;
+)""",
+      id, fmt::join(params.header_lines, "<BR/>\n")));
+
+  // Add clusters for input and output ports. This helper function is called up
+  // to twice (once for input ports, if any; once for output ports, if any).
+  // It appends the graphviz content to `fragments` and port IDs to `port_ids`.
+  // The node that holds the ports will use ID `ports_node_id`.
+  auto print_ports = [](std::vector<std::string>* fragments,
+                        std::vector<std::string>* port_ids,
+                        const std::string& kind /* "input" or "output" */,
+                        const std::string& ports_node_id,
+                        const std::string& color,
+                        const std::vector<std::string>& labels) {
+    fragments->push_back(fmt::format(
+        R"""(subgraph cluster{} {{
+rank=same
+color=lightgrey
+style=filled
+label="{} ports"
+{} [shape=none, label=<
+<TABLE BORDER="0" COLOR="{}" CELLSPACING="3" STYLE="rounded">
+)""",
+        ports_node_id, kind, ports_node_id, color));
+    for (int i = 0; i < ssize(labels); ++i) {
+      fragments->push_back(
+          fmt::format(R"""(<TR><TD BORDER="1" PORT="{}">{}</TD></TR>
+)""",
+                      i, labels[i]));
+      port_ids->push_back(fmt::format("{}:{}", ports_node_id, i));
     }
-    *dot << "}";
-
-    // Append output ports to the label.
-    *dot << " | {";
-    for (int i = 0; i < this->num_output_ports(); ++i) {
-      if (i != 0) *dot << "|";
-      *dot << "<y" << i << ">" << this->get_output_port(i).get_name();
-    }
-    *dot << "}";
-
-    // Close the label and attributes.
-    *dot << "}\"];" << std::endl;
-
-    return;
+    fragments->push_back(R"""(</TABLE>
+>];
+}
+)""");
+  };
+  if (this->num_input_ports() > 0) {
+    std::string inputs_node_id = fmt::format("{}in", params.node_id);
+    print_ports(&result.fragments, &result.input_ports, "input", inputs_node_id,
+                "blue", GetGraphvizPortLabels(/* input= */ true));
+  }
+  if (this->num_output_ports() > 0) {
+    std::string outputs_node_id = fmt::format("{}out", params.node_id);
+    print_ports(&result.fragments, &result.output_ports, "output",
+                outputs_node_id, "green",
+                GetGraphvizPortLabels(/* input= */ false));
   }
 
-  // Open the Diagram.
-  *dot << "subgraph cluster" << id << "diagram" " {" << std::endl;
-  *dot << "color=black" << std::endl;
-  *dot << "concentrate=true" << std::endl;
-  *dot << "label=\"" << name << "\";" << std::endl;
+  // Open a cluster for the subsystems.
+  result.fragments.push_back(fmt::format(
+      R"""(subgraph cluster{}subsystems {{
+color=white
+label=""
+)""",
+      id));
 
-  // Add a cluster for the input port nodes.
-  *dot << "subgraph cluster" << id << "inputports" << " {" << std::endl;
-  *dot << "rank=same" << std::endl;
-  *dot << "color=lightgrey" << std::endl;
-  *dot << "style=filled" << std::endl;
-  *dot << "label=\"input ports\"" << std::endl;
-  for (int i = 0; i < this->num_input_ports(); ++i) {
-    this->GetGraphvizInputPortToken(this->get_input_port(i), max_depth,
-                                    dot);
-    *dot << "[color=blue, label=\"" << this->get_input_port(i).get_name()
-         << "\"];" << std::endl;
-  }
-  *dot << "}" << std::endl;
-
-  // Add a cluster for the output port nodes.
-  *dot << "subgraph cluster" << id << "outputports" << " {" << std::endl;
-  *dot << "rank=same" << std::endl;
-  *dot << "color=lightgrey" << std::endl;
-  *dot << "style=filled" << std::endl;
-  *dot << "label=\"output ports\"" << std::endl;
-  for (int i = 0; i < this->num_output_ports(); ++i) {
-    this->GetGraphvizOutputPortToken(this->get_output_port(i), max_depth,
-                                     dot);
-    *dot << "[color=green, label=\"" << this->get_output_port(i).get_name()
-         << "\"];" << std::endl;
-  }
-  *dot << "}" << std::endl;
-
-  // Add a cluster for the subsystems.
-  *dot << "subgraph cluster" << id << "subsystems" << " {" << std::endl;
-  *dot << "color=white" << std::endl;
-  *dot << "label=\"\"" << std::endl;
   // -- Add the subsystems themselves.
   for (const auto& subsystem : registered_systems_) {
-    subsystem->GetGraphvizFragment(max_depth - 1, dot);
+    GraphvizFragment& sub_frag = subsystem_fragments.at(subsystem.get());
+    std::move(sub_frag.fragments.begin(), sub_frag.fragments.end(),
+              std::back_inserter(result.fragments));
   }
+
   // -- Add the connections as edges.
   for (const auto& edge : connection_map_) {
-    const OutputPortLocator& src = edge.second;
-    const System<T>* src_sys = src.first;
-    const InputPortLocator& dest = edge.first;
-    const System<T>* dest_sys = dest.first;
-    src_sys->GetGraphvizOutputPortToken(src_sys->get_output_port(src.second),
-                                        max_depth - 1, dot);
-    *dot << " -> ";
-    dest_sys->GetGraphvizInputPortToken(dest_sys->get_input_port(dest.second),
-                                        max_depth - 1, dot);
-    *dot << ";" << std::endl;
+    const System<T>* src_sys = edge.second.first;
+    const OutputPortIndex src_index = edge.second.second;
+    const System<T>* dest_sys = edge.first.first;
+    const InputPortIndex dest_index = edge.first.second;
+    result.fragments.push_back(fmt::format(
+        "{}:e -> {}:w\n",
+        subsystem_fragments.at(src_sys).output_ports.at(src_index),
+        subsystem_fragments.at(dest_sys).input_ports.at(dest_index)));
   }
 
   // -- Add edges from the input and output port nodes to the subsystems that
-  //    actually service that port.  These edges are highlighted in blue
+  //    actually service that port. These edges are highlighted in blue
   //    (input) and green (output), matching the port nodes.
   for (int i = 0; i < this->num_input_ports(); ++i) {
     for (const auto& port_id : GetInputPortLocators(InputPortIndex(i))) {
-      this->GetGraphvizInputPortToken(this->get_input_port(i), max_depth,
-                                      dot);
-      *dot << " -> ";
-      port_id.first->GetGraphvizInputPortToken(
-          port_id.first->get_input_port(port_id.second), max_depth - 1, dot);
-      *dot << " [color=blue];" << std::endl;
+      const System<T>* sub_sys = port_id.first;
+      const InputPortIndex sub_index = port_id.second;
+      const std::string& from = result.input_ports.at(i);
+      const std::string& to =
+          subsystem_fragments.at(sub_sys).input_ports.at(sub_index);
+      result.fragments.push_back(
+          fmt::format("{}:e -> {}:w [color=blue];\n", from, to));
     }
   }
-
   for (int i = 0; i < this->num_output_ports(); ++i) {
-    const auto& port_id = output_port_ids_[i];
-    port_id.first->GetGraphvizOutputPortToken(
-        port_id.first->get_output_port(port_id.second), max_depth - 1, dot);
-    *dot << " -> ";
-    this->GetGraphvizOutputPortToken(this->get_output_port(i),
-                                     max_depth, dot);
-    *dot << " [color=green];" << std::endl;
+    const auto& port_id = output_port_ids_.at(i);
+    const System<T>* sub_sys = port_id.first;
+    const OutputPortIndex sub_index = port_id.second;
+    const std::string& from =
+        subsystem_fragments.at(sub_sys).output_ports.at(sub_index);
+    const std::string& to = result.output_ports.at(i);
+    result.fragments.push_back(
+        fmt::format("{}:e -> {}:w [color=green];\n", from, to));
   }
-  *dot << "}" << std::endl;
 
-  // Close the diagram.
-  *dot << "}" << std::endl;
+  // Close the cluster for subsystems and then the diagram.
+  result.fragments.push_back("}\n}\n");
+
+  return result;
 }
 
+template <typename T>
+std::vector<std::string> Diagram<T>::GetGraphvizPortLabels(bool input) const {
+  return internal::DiagramSystemBaseAttorney::GetGraphvizPortLabels(*this,
+                                                                    input);
+}
+
+// Remove this deprecated function on 2024-01-01.
 template <typename T>
 void Diagram<T>::GetGraphvizInputPortToken(const InputPort<T>& port,
                                            int max_depth,
                                            std::stringstream* dot) const {
   DRAKE_DEMAND(&port.get_system() == this);
-  // Note: ports are rendered in a fundamentally different way depending on
-  // max_depth.
-  if (max_depth > 0) {
-    // Ports are rendered as nodes in the "input ports" subgraph.
-    *dot << "_" << this->GetGraphvizId() << "_u" << port.get_index();
-  } else {
-    // Ports are rendered as a part of the system label.
-    *dot << this->GetGraphvizId() << ":u" << port.get_index();
-  }
+  *dot << fmt::format("s{}{}:u{}", this->get_system_id().get_value(),
+                      (max_depth > 0) ? "in" : 0, port.get_index());
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  // Call the base class to trigger the console log warning.
+  System<T>::GetGraphvizInputPortToken(port, max_depth, dot);
+#pragma GCC diagnostic pop
 }
 
+// Remove this deprecated function on 2024-01-01.
 template <typename T>
 void Diagram<T>::GetGraphvizOutputPortToken(const OutputPort<T>& port,
                                             int max_depth,
                                             std::stringstream* dot) const {
   DRAKE_DEMAND(&port.get_system() == this);
-  // Note: ports are rendered in a fundamentally different way depending on
-  // max_depth.
-  if (max_depth > 0) {
-    // Ports are rendered as nodes in the "input ports" subgraph.
-    *dot << "_" << this->GetGraphvizId() << "_y" << port.get_index();
-  } else {
-    // Ports are rendered as a part of the system label.
-    *dot << this->GetGraphvizId() << ":y" << port.get_index();
-  }
+  *dot << fmt::format("s{}{}:u{}", this->get_system_id().get_value(),
+                      (max_depth > 0) ? "out" : 0, port.get_index());
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  // Call the base class to trigger the console log warning.
+  System<T>::GetGraphvizOutputPortToken(port, max_depth, dot);
+#pragma GCC diagnostic pop
 }
 
 template <typename T>
@@ -1170,28 +1215,34 @@ Diagram<T>::AllocateForcedEventCollection(
 }
 
 template <typename T>
-void Diagram<T>::DispatchPublishHandler(
+EventStatus Diagram<T>::DispatchPublishHandler(
     const Context<T>& context,
     const EventCollection<PublishEvent<T>>& event_info) const {
   auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
   DRAKE_DEMAND(diagram_context != nullptr);
   const DiagramEventCollection<PublishEvent<T>>& info =
-      dynamic_cast<const DiagramEventCollection<PublishEvent<T>>&>(
-          event_info);
+      dynamic_cast<const DiagramEventCollection<PublishEvent<T>>&>(event_info);
 
+  EventStatus overall_status = EventStatus::DidNothing();
   for (SubsystemIndex i(0); i < num_subsystems(); ++i) {
     const EventCollection<PublishEvent<T>>& subinfo =
         info.get_subevent_collection(i);
 
     if (subinfo.HasEvents()) {
       const Context<T>& subcontext = diagram_context->GetSubsystemContext(i);
-      registered_systems_[i]->Publish(subcontext, subinfo);
+      const EventStatus per_subsystem_status =
+          registered_systems_[i]->Publish(subcontext, subinfo);
+      overall_status.KeepMoreSevere(per_subsystem_status);
+      // Unlike the discrete & unrestricted event policy, we don't stop handling
+      // publish events when one fails; we just report the first failure after
+      // all the publishes are done.
     }
   }
+  return overall_status;
 }
 
 template <typename T>
-void Diagram<T>::DispatchDiscreteVariableUpdateHandler(
+EventStatus Diagram<T>::DispatchDiscreteVariableUpdateHandler(
     const Context<T>& context,
     const EventCollection<DiscreteUpdateEvent<T>>& events,
     DiscreteValues<T>* discrete_state) const {
@@ -1205,6 +1256,7 @@ void Diagram<T>::DispatchDiscreteVariableUpdateHandler(
       dynamic_cast<const DiagramEventCollection<DiscreteUpdateEvent<T>>&>(
           events);
 
+  EventStatus overall_status = EventStatus::DidNothing();
   for (SubsystemIndex i(0); i < num_subsystems(); ++i) {
     const EventCollection<DiscreteUpdateEvent<T>>& subevents =
         diagram_events.get_subevent_collection(i);
@@ -1214,10 +1266,14 @@ void Diagram<T>::DispatchDiscreteVariableUpdateHandler(
       DiscreteValues<T>& subdiscrete =
           diagram_discrete->get_mutable_subdiscrete(i);
 
-      registered_systems_[i]->CalcDiscreteVariableUpdate(
+      const EventStatus per_subsystem_status =
+          registered_systems_[i]->CalcDiscreteVariableUpdate(
           subcontext, subevents, &subdiscrete);
+      overall_status.KeepMoreSevere(per_subsystem_status);
+      if (overall_status.failed()) break;  // Stop at the first disaster.
     }
   }
+  return overall_status;
 }
 
 template <typename T>
@@ -1248,7 +1304,7 @@ void Diagram<T>::DoApplyDiscreteVariableUpdate(
 }
 
 template <typename T>
-void Diagram<T>::DispatchUnrestrictedUpdateHandler(
+EventStatus Diagram<T>::DispatchUnrestrictedUpdateHandler(
     const Context<T>& context,
     const EventCollection<UnrestrictedUpdateEvent<T>>& events,
     State<T>* state) const {
@@ -1261,6 +1317,7 @@ void Diagram<T>::DispatchUnrestrictedUpdateHandler(
       dynamic_cast<const DiagramEventCollection<UnrestrictedUpdateEvent<T>>&>(
           events);
 
+  EventStatus overall_status = EventStatus::DidNothing();
   for (SubsystemIndex i(0); i < num_subsystems(); ++i) {
     const EventCollection<UnrestrictedUpdateEvent<T>>& subevents =
         diagram_events.get_subevent_collection(i);
@@ -1269,10 +1326,14 @@ void Diagram<T>::DispatchUnrestrictedUpdateHandler(
       const Context<T>& subcontext = diagram_context->GetSubsystemContext(i);
       State<T>& substate = diagram_state->get_mutable_substate(i);
 
-      registered_systems_[i]->CalcUnrestrictedUpdate(subcontext, subevents,
-                                                     &substate);
+      const EventStatus per_subsystem_status =
+          registered_systems_[i]->CalcUnrestrictedUpdate(subcontext, subevents,
+                                                         &substate);
+      overall_status.KeepMoreSevere(per_subsystem_status);
+      if (overall_status.failed()) break;  // Stop at the first disaster.
     }
   }
+  return overall_status;
 }
 
 template <typename T>

@@ -3,8 +3,10 @@
 #include <array>
 #include <future>
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcm/lcmt_drake_signal_utils.h"
 #include "drake/lcmt_drake_signal.hpp"
@@ -24,12 +26,15 @@ void EvalOutputHelper(const LcmSubscriberSystem& sub, Context<double>* context,
   if (event_info->HasEvents()) {
     std::unique_ptr<State<double>> tmp_state = context->CloneState();
     if (event_info->HasDiscreteUpdateEvents()) {
-      sub.CalcDiscreteVariableUpdate(
+      const EventStatus status = sub.CalcDiscreteVariableUpdate(
           *context, event_info->get_discrete_update_events(),
           &tmp_state->get_mutable_discrete_state());
+      EXPECT_TRUE(status.succeeded());
     } else if (event_info->HasUnrestrictedUpdateEvents()) {
-      sub.CalcUnrestrictedUpdate(*context,
-          event_info->get_unrestricted_update_events(), tmp_state.get());
+      const EventStatus status = sub.CalcUnrestrictedUpdate(
+          *context, event_info->get_unrestricted_update_events(),
+          tmp_state.get());
+      EXPECT_TRUE(status.succeeded());
     } else {
       DRAKE_DEMAND(false);
     }
@@ -41,9 +46,8 @@ void EvalOutputHelper(const LcmSubscriberSystem& sub, Context<double>* context,
 struct SampleData {
   lcmt_drake_signal value{2, {1.0, 2.0}, {"x", "y"}, 12345};
 
-  void PublishAndHandle(
-      drake::lcm::DrakeLcmInterface* lcm,
-      const std::string& channel_name) const {
+  void PublishAndHandle(drake::lcm::DrakeLcmInterface* lcm,
+                        const std::string& channel_name) const {
     Publish(lcm, channel_name, value);
     lcm->HandleSubscriptions(0);
   }
@@ -102,6 +106,92 @@ GTEST_TEST(LcmSubscriberSystemTest, ReceiveTest) {
   EXPECT_TRUE(CompareLcmtDrakeSignalMessages(value, sample_data.value));
 }
 
+// Tests LcmSubscriberSystem using a Serializer.
+GTEST_TEST(LcmSubscriberSystemTest, InitializationNoWaitTest) {
+  drake::lcm::DrakeLcm lcm;
+  const std::string channel_name = "channel_name";
+
+  // The "device under test".
+  auto dut = LcmSubscriberSystem::Make<lcmt_drake_signal>(channel_name, &lcm);
+
+  // Establish the context and output for the dut.
+  std::unique_ptr<Context<double>> context = dut->CreateDefaultContext();
+  std::unique_ptr<SystemOutput<double>> output = dut->AllocateOutput();
+
+  // Produce a sample message.
+  SampleData sample_data;
+  // Publish, but do not call handle.
+  Publish(&lcm, channel_name, sample_data.value);
+
+  // Fire the initialization event. It should NOT process the message.
+  dut->ExecuteInitializationEvents(context.get());
+  dut->CalcOutput(*context, output.get());
+  const AbstractValue* abstract_value = output->get_data(0);
+  ASSERT_NE(abstract_value, nullptr);
+  auto value = abstract_value->get_value<lcmt_drake_signal>();
+  EXPECT_TRUE(CompareLcmtDrakeSignalMessages(value, lcmt_drake_signal{}));
+
+  // Receive the message.
+  lcm.HandleSubscriptions(0);
+
+  // Now the initialization event should process the message.
+  dut->ExecuteInitializationEvents(context.get());
+  dut->CalcOutput(*context, output.get());
+  abstract_value = output->get_data(0);
+  ASSERT_NE(abstract_value, nullptr);
+  value = abstract_value->get_value<lcmt_drake_signal>();
+  EXPECT_TRUE(CompareLcmtDrakeSignalMessages(value, sample_data.value));
+}
+
+GTEST_TEST(LcmSubscriberSystemTest, InitializationWithWaitTest) {
+  drake::lcm::DrakeLcm lcm;
+  const std::string channel_name = "channel_name";
+  const double wait_for_message_on_initialization_timeout{0.01};
+
+  // The "device under test".
+  auto dut = LcmSubscriberSystem::Make<lcmt_drake_signal>(
+      channel_name, &lcm, wait_for_message_on_initialization_timeout);
+
+  // Establish the context and output for the dut.
+  std::unique_ptr<Context<double>> context = dut->CreateDefaultContext();
+  std::unique_ptr<SystemOutput<double>> output = dut->AllocateOutput();
+
+  // The initialization event will fail (timeout) if no message is received.
+  DRAKE_EXPECT_THROWS_MESSAGE(dut->ExecuteInitializationEvents(context.get()),
+                              "Timed out without receiving any message on "
+                              "channel channel_name at url.*");
+
+  // Produce a sample message.
+  SampleData sample_data;
+  // Publish, but do not call handle.
+  Publish(&lcm, channel_name, sample_data.value);
+
+  // Now the initialization event calls handle and obtains the message.
+  dut->ExecuteInitializationEvents(context.get());
+  dut->CalcOutput(*context, output.get());
+  const AbstractValue* abstract_value = output->get_data(0);
+  ASSERT_NE(abstract_value, nullptr);
+  auto value = abstract_value->get_value<lcmt_drake_signal>();
+  EXPECT_TRUE(CompareLcmtDrakeSignalMessages(value, sample_data.value));
+
+  // A second initialization event will fail (timeout) with no *new* message.
+  DRAKE_EXPECT_THROWS_MESSAGE(dut->ExecuteInitializationEvents(context.get()),
+                              "Timed out without receiving any message on "
+                              "channel channel_name at url.*");
+
+  // Publish, but do not call handle, with a new message.
+  sample_data.value.timestamp += 1;
+  Publish(&lcm, channel_name, sample_data.value);
+
+  // Now the initialization event calls handle and obtains the message.
+  dut->ExecuteInitializationEvents(context.get());
+  dut->CalcOutput(*context, output.get());
+  abstract_value = output->get_data(0);
+  ASSERT_NE(abstract_value, nullptr);
+  value = abstract_value->get_value<lcmt_drake_signal>();
+  EXPECT_TRUE(CompareLcmtDrakeSignalMessages(value, sample_data.value));
+}
+
 GTEST_TEST(LcmSubscriberSystemTest, WaitTest) {
   // Ensure that `WaitForMessage` works as expected.
   drake::lcm::DrakeLcm lcm;
@@ -116,7 +206,8 @@ GTEST_TEST(LcmSubscriberSystemTest, WaitTest) {
   // implementation.
   std::atomic<bool> started{};
   auto wait = [&]() {
-    while (!started.load()) {}
+    while (!started.load()) {
+    }
   };
 
   // Test explicit value.
@@ -141,8 +232,8 @@ GTEST_TEST(LcmSubscriberSystemTest, WaitTest) {
   });
   wait();
   sample_data.PublishAndHandle(&lcm, channel_name);
-  EXPECT_TRUE(CompareLcmtDrakeSignalMessages(
-      future_message.get(), sample_data.value));
+  EXPECT_TRUE(
+      CompareLcmtDrakeSignalMessages(future_message.get(), sample_data.value));
 
   // Test WaitForMessageTimeout, when no message is sent
   int old_count = dut->GetInternalMessageCount();
@@ -169,6 +260,16 @@ GTEST_TEST(LcmSubscriberSystemTest, WaitTest) {
   wait();
   sample_data.PublishAndHandle(&lcm, channel_name);
   EXPECT_GE(second_timeout_count.get(), old_count + 1);
+}
+
+// The Graphviz should have an arrow pointing from DrakeLcmInterface to our
+// system, plus some extra metadata.
+GTEST_TEST(LcmSubscriberSystemTest, Graphviz) {
+  drake::lcm::DrakeLcm interface;
+  auto dut = LcmSubscriberSystem::Make<lcmt_drake_signal>("SIGNAL", &interface);
+  EXPECT_THAT(dut->GetGraphvizString(),
+              testing::ContainsRegex("drakelcm[a-z0-9]* -> "));
+  EXPECT_THAT(dut->GetGraphvizString(), testing::HasSubstr("channel=SIGNAL"));
 }
 
 }  // namespace

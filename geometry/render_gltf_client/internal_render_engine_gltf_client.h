@@ -106,23 +106,19 @@ class DRAKE_NO_EXPORT RenderEngineGltfClient
    Returns true if added, false if ignored (for whatever reason).
 
    Note: Even though RenderEngineVtk supports consuming and rendering glTF
-   files, GltfClient handles glTF files in its own way for the following
-   reasons:
-
-      1. vtkGLTFExporter doesn't handle assemblies correctly yet. So, the
-         vtkAssembly at the root of each loaded glTF file *renders* correctly
-         but won't export correctly. See:
-         https://discourse.vtk.org/t/bug-in-vtkgltfexporter/12052.
-      2. vtkGLTFExporter has limited support for glTF extensions. Useful, common
-         extensions. So, by injecting the files directly into the exported
-         glTF file, we maintain whatever declarations the source glTF had
-         without the lossy filter implied by VTK. */
+   files, GltfClient handles glTF files in its own way because vtkGLTFImporter
+   and vtkGLTFExporter have limited support for glTF extensions -- useful,
+   common extensions. So, by injecting the files directly into the exported glTF
+   file, we maintain whatever declarations the source glTF had without the lossy
+   filter provided by VTK. */
   bool ImplementGltf(const std::filesystem::path& gltf_path, double scale,
                      const RenderEngineVtk::RegistrationData& data);
 
   std::unique_ptr<RenderClient> render_client_;
 
   struct GltfRecord {
+    // The path for the .gltf file.
+    std::filesystem::path path;
     // The contents of a glTF file registered as Mesh or Convex.
     nlohmann::json contents;
     // The root nodes of the gltf file represented as a mapping from the node's

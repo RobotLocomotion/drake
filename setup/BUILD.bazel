@@ -1,4 +1,4 @@
-load("@drake//tools/install:install.bzl", "install_files")
+load("//tools/install:install.bzl", "install_files")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])

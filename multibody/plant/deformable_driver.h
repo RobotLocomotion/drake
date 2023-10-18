@@ -8,10 +8,15 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/contact_solvers/sap/partial_permutation.h"
+#include "drake/multibody/contact_solvers/sap/sap_fixed_constraint.h"
+#include "drake/multibody/contact_solvers/schur_complement.h"
 #include "drake/multibody/fem/discrete_time_integrator.h"
+#include "drake/multibody/fem/fem_solver.h"
 #include "drake/multibody/plant/contact_pair_kinematics.h"
+#include "drake/multibody/plant/deformable_contact_info.h"
 #include "drake/multibody/plant/deformable_model.h"
-#include "drake/multibody/plant/discrete_update_manager.h"
+#include "drake/multibody/plant/discrete_contact_data.h"
+#include "drake/multibody/plant/discrete_contact_pair.h"
 #include "drake/systems/framework/context.h"
 
 namespace drake {
@@ -64,6 +69,9 @@ class Multiplexer {
   /* The sum over `sizes_`. */
   int num_entries_{0};
 };
+
+template <typename T>
+class DiscreteUpdateManager;
 
 /* DeformableDriver is responsible for computing dynamics information about
  all deformable bodies. It works in tandem with a DeformableModel and a
@@ -137,14 +145,29 @@ class DeformableDriver : public ScalarConvertibleComponent<T> {
    @pre pairs != nullptr. */
   void AppendDiscreteContactPairs(
       const systems::Context<T>& context,
-      std::vector<DiscreteContactPair<T>>* pairs) const;
+      DiscreteContactData<DiscreteContactPair<T>>* pairs) const;
 
   /* Appends the contact kinematics information for each contact pair where at
    least one of the body in contact is deformable.
    @pre result != nullptr. */
   void AppendContactKinematics(
       const systems::Context<T>& context,
-      std::vector<ContactPairKinematics<T>>* result) const;
+      DiscreteContactData<ContactPairKinematics<T>>* result) const;
+
+  /* Appends the constraint kinematics information for each deformable rigid
+   fixed constraint.
+   @pre result != nullptr. */
+  void AppendDeformableRigidFixedConstraintKinematics(
+      const systems::Context<T>& context,
+      std::vector<contact_solvers::internal::FixedConstraintKinematics<T>>*
+          result) const;
+
+  /* Computes the contact information for all deformable bodies for the given
+   `context`.
+   @pre contact_info != nullptr. */
+  void CalcDeformableContactInfo(
+      const systems::Context<T>& context,
+      std::vector<DeformableContactInfo<T>>* contact_info) const;
 
   /* Evaluates FemState at the next time step for each deformable body and
    copies the them into the corresponding DiscreteValues.
@@ -157,6 +180,11 @@ class DeformableDriver : public ScalarConvertibleComponent<T> {
   const Multiplexer<T>& EvalParticipatingVelocityMultiplexer(
       const systems::Context<T>& context) const;
 
+  /* Evaluates the constraint participation information of the deformable body
+   with the given `index`. See geometry::internal::ContactParticipation. */
+  const geometry::internal::ContactParticipation& EvalConstraintParticipation(
+      const systems::Context<T>& context, DeformableBodyIndex index) const;
+
  private:
   friend class DeformableDriverTest;
   friend class DeformableDriverContactTest;
@@ -168,19 +196,16 @@ class DeformableDriver : public ScalarConvertibleComponent<T> {
   struct CacheIndexes {
     /* Per body cache entries indexed by DeformableBodyIndex. */
     std::vector<systems::CacheIndex> fem_states;
-    std::vector<systems::CacheIndex> free_motion_fem_states;
+    std::vector<systems::CacheIndex> fem_solvers;
     std::vector<systems::CacheIndex> next_fem_states;
-    std::vector<systems::CacheIndex> fem_solver_scratches;
     systems::CacheIndex deformable_contact;
+    std::vector<systems::CacheIndex> constraint_participations;
     std::vector<systems::CacheIndex> dof_permutations;
     std::unordered_map<geometry::GeometryId, systems::CacheIndex>
         vertex_permutations;
     systems::CacheIndex participating_velocity_mux;
     systems::CacheIndex participating_velocities;
     systems::CacheIndex participating_free_motion_velocities;
-    std::vector<systems::CacheIndex> free_motion_tangent_matrices;
-    std::vector<systems::CacheIndex>
-        free_motion_tangent_matrix_schur_complements;
   };
   /* Copies the state of the deformable body with `id` in the given `context`
    to the `fem_state`.
@@ -197,16 +222,24 @@ class DeformableDriver : public ScalarConvertibleComponent<T> {
 
   /* Given the state of the deformable body with `index` in the given `context`,
    computes its "free motion" state (the state the body would have at the next
-   time step in the absence of contact or constraints).
-   @pre fem_state_star != nullptr and is compatible with the state of the
-   deformable body with the given `index`. */
-  void CalcFreeMotionFemState(const systems::Context<T>& context,
-                              DeformableBodyIndex index,
-                              fem::FemState<T>* fem_state_star) const;
+   time step in the absence of contact or constraints) and the dependent
+   Schur complement of the tangent matrix of the FEM model.
+   @pre state_and_data != nullptr and is compatible with the FemModel associated
+   with the deformable body with the given `index`. */
+  void CalcFreeMotionFemSolver(const systems::Context<T>& context,
+                               DeformableBodyIndex index,
+                               fem::internal::FemSolver<T>* fem_solver) const;
 
   /* Eval version of CalcFreeMotionFemState(). */
+  const fem::internal::FemSolver<T>& EvalFreeMotionFemSolver(
+      const systems::Context<T>& context, DeformableBodyIndex index) const;
+
   const fem::FemState<T>& EvalFreeMotionFemState(
       const systems::Context<T>& context, DeformableBodyIndex index) const;
+
+  const contact_solvers::internal::SchurComplement&
+  EvalFreeMotionTangentMatrixSchurComplement(const systems::Context<T>& context,
+                                             DeformableBodyIndex index) const;
 
   /* Given the state of the deformable body with `index` in the given `context`,
    computes the state of the deformable body at the next time step.
@@ -236,6 +269,12 @@ class DeformableDriver : public ScalarConvertibleComponent<T> {
   /* Eval version of CalcDeformableContact(). */
   const geometry::internal::DeformableContact<T>& EvalDeformableContact(
       const systems::Context<T>& context) const;
+
+  /* Calc version of EvalConstraintParticipation.
+   @pre constraint_participation != nullptr. */
+  void CalcConstraintParticipation(
+      const systems::Context<T>& context, DeformableBodyIndex index,
+      geometry::internal::ContactParticipation* constraint_participation) const;
 
   /* Computes the partial permutation that maps degrees of freedom of the
    deformable body with the given `index` to degrees of freedom that belong to
@@ -274,34 +313,6 @@ class DeformableDriver : public ScalarConvertibleComponent<T> {
    @pre result != nullptr. */
   void CalcParticipatingFreeMotionVelocities(const systems::Context<T>& context,
                                              VectorX<T>* result) const;
-
-  /* Computes the tangent matrix of the momentum balance equation for the
-   deformable body with the given `index` at the free motion state.
-   @pre tangent_matrix != nullptr. */
-  void CalcFreeMotionTangentMatrix(
-      const systems::Context<T>& context, DeformableBodyIndex index,
-      fem::internal::PetscSymmetricBlockSparseMatrix* tangent_matrix) const;
-
-  /* Eval version of CalcFreeMotionTangentMatrix(). */
-  const fem::internal::PetscSymmetricBlockSparseMatrix&
-  EvalFreeMotionTangentMatrix(const systems::Context<T>& context,
-                              DeformableBodyIndex index) const;
-
-  /* Computes the Schur complement of the tangent matrix of the deformable body
-   with the given `index` at the free motion state (see
-   EvalFreeMotionTangentMatrix()) based on contact participation. The dofs not
-   participating in contact are eliminated in favor of those that do
-   participate in contact. If no dof is participating, `result` is set to be
-   empty and invalid for efficiency.
-   @pre result != nullptr. */
-  void CalcFreeMotionTangentMatrixSchurComplement(
-      const systems::Context<T>& context, DeformableBodyIndex index,
-      fem::internal::SchurComplement<T>* result) const;
-
-  /* Eval version of CalcFreeMotionTangentMatrixSchurComplement(). */
-  const fem::internal::SchurComplement<T>&
-  EvalFreeMotionTangentMatrixSchurComplement(const systems::Context<T>& context,
-                                             DeformableBodyIndex index) const;
 
   CacheIndexes cache_indexes_;
   /* Modeling information about all deformable bodies. */

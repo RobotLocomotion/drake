@@ -284,16 +284,19 @@ class CspaceFreePolytope : public CspaceFreePolytopeBase {
       return certified_polytope_;
     }
 
+    /** Each plane index is mapped to a vector of polynomials. */
     [[nodiscard]] const std::unordered_map<int, Vector3<symbolic::Polynomial>>&
     a() const {
       return a_;
     }
 
+    /** Each plane index is mapped to a polynomial, */
     [[nodiscard]] const std::unordered_map<int, symbolic::Polynomial>& b()
         const {
       return b_;
     }
 
+    /** The number of iterations taken to search for the result. */
     [[nodiscard]] int num_iter() const { return num_iter_; }
 
    private:
@@ -616,12 +619,6 @@ class CspaceFreePolytope : public CspaceFreePolytopeBase {
   // We have the invariant plane_geometries_[i].plane_index == i.
   std::vector<PlaneSeparatesGeometries> plane_geometries_;
 };
-
-DRAKE_DEPRECATED("2023-09-01", "This function was not intended for public use.")
-std::map<multibody::BodyIndex,
-         std::vector<std::unique_ptr<CIrisCollisionGeometry>>>
-GetCollisionGeometries(const multibody::MultibodyPlant<double>& plant,
-                       const geometry::SceneGraph<double>& scene_graph);
 
 }  // namespace optimization
 }  // namespace geometry

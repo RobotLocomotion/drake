@@ -1,6 +1,5 @@
 #pragma once
 
-#include <sstream>
 #include <stdexcept>
 
 #include "drake/common/drake_copyable.h"
@@ -182,14 +181,6 @@ class PidController : public LeafSystem<T>,
   }
 
  protected:
-  /**
-   * Appends to @p dot a simplified Graphviz representation of the PID
-   * controller, since the internal wiring is unimportant and hard for human
-   * viewers to parse.
-   */
-  void GetGraphvizFragment(int max_depth,
-                           std::stringstream* dot) const override;
-
   void DoCalcTimeDerivatives(const Context<T>& context,
                              ContinuousState<T>* derivatives) const override;
 

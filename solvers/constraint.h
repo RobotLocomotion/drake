@@ -665,6 +665,10 @@ class LinearConstraint : public Constraint {
    */
   void RemoveTinyCoefficient(double tol);
 
+  /** Returns true iff this constraint already has a dense representation, i.e,
+   * if GetDenseA() will be cheap. */
+  bool is_dense_A_constructed() const;
+
   using Constraint::set_bounds;
   using Constraint::UpdateLowerBound;
   using Constraint::UpdateUpperBound;
@@ -707,7 +711,8 @@ class LinearEqualityConstraint : public LinearConstraint {
    */
   LinearEqualityConstraint(const Eigen::Ref<const Eigen::MatrixXd>& Aeq,
                            const Eigen::Ref<const Eigen::VectorXd>& beq)
-      : LinearConstraint(Aeq, beq, beq) {}
+      : LinearConstraint(Aeq, beq, beq) {
+  }
 
   /**
    * Overloads the constructor with a sparse matrix Aeq.
@@ -715,7 +720,8 @@ class LinearEqualityConstraint : public LinearConstraint {
    */
   LinearEqualityConstraint(const Eigen::SparseMatrix<double>& Aeq,
                            const Eigen::Ref<const Eigen::VectorXd>& beq)
-      : LinearConstraint(Aeq, beq, beq) {}
+      : LinearConstraint(Aeq, beq, beq) {
+  }
 
   /**
    * Constructs the linear equality constraint a.dot(x) = beq

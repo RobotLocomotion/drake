@@ -70,17 +70,6 @@ if [[ -n "$build_deps" ]]; then
         "/opt/drake-wheel-build/dependencies/src"
 
     "$resource_root/image/build-dependencies.sh"
-
-    rm -rf /opt/vtk
-
-    rm -rf "/opt/drake-wheel-build/vtk"
-    mkdir -p "/opt/drake-wheel-build/vtk"
-
-    cp \
-        "$resource_root/image/vtk-args" \
-        "/opt/drake-wheel-build/vtk/vtk-args"
-
-    "$resource_root/image/build-vtk.sh"
 fi
 
 # -----------------------------------------------------------------------------
@@ -90,6 +79,10 @@ fi
 cd "$git_root"
 
 export SNOPT_PATH=git
+
+# TODO(jwnimmer-tri) To make it easier to build a macOS wheel for a different
+# Python, we should to switch to using CMake for this step so that we can use
+# use the canonical `-DPython_EXECUTABLE`.
 
 declare -a bazel_args=(
     --repo_env=DRAKE_OS=macos_wheel

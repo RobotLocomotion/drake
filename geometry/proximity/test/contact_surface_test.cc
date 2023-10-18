@@ -166,11 +166,11 @@ ContactSurface<typename MeshType::ScalarType> TestContactSurface(
       EXPECT_FALSE(contact_surface.is_triangle());
       EXPECT_EQ(&surface_mesh_ref, &contact_surface.poly_mesh_W());
       EXPECT_EQ(contact_surface.poly_e_MN().EvaluateCartesian(
-                      0, contact_surface.centroid(0)),
-                  (e0 + e1 + e2) / 3);
+                    0, contact_surface.centroid(0)),
+                (e0 + e1 + e2) / 3);
       EXPECT_EQ(contact_surface.poly_e_MN().EvaluateCartesian(
-                      1, contact_surface.centroid(1)),
-                  (e2 + e3 + e0) / 3);
+                    1, contact_surface.centroid(1)),
+                (e2 + e3 + e0) / 3);
     }
   }
 

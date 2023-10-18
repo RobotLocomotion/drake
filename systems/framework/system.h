@@ -6,7 +6,6 @@
 #include <map>
 #include <memory>
 #include <optional>
-#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <type_traits>
@@ -18,6 +17,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_bool.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/common/pointer_cast.h"
@@ -32,6 +32,9 @@
 #include "drake/systems/framework/system_scalar_converter.h"
 #include "drake/systems/framework/system_visitor.h"
 #include "drake/systems/framework/witness_function.h"
+
+// TODO(jwnimmer-tri) Remove on 2024-01-01 upon completion of deprecation.
+#include <sstream>
 
 namespace drake {
 namespace systems {
@@ -252,8 +255,9 @@ class System : public SystemBase {
   so that a step begins exactly at the next publication time. In the latter
   case the change in step size may affect the numerical result somewhat
   since a smaller integrator step produces a more accurate solution. */
-  void Publish(const Context<T>& context,
-               const EventCollection<PublishEvent<T>>& events) const;
+  [[nodiscard]] EventStatus Publish(
+      const Context<T>& context,
+      const EventCollection<PublishEvent<T>>& events) const;
 
   /** (Advanced) Manually triggers any PublishEvent that has trigger
   type kForced. Invokes the publish event dispatcher on this %System with the
@@ -270,6 +274,9 @@ class System : public SystemBase {
   The Simulator can be configured to call this in Simulator::Initialize() and at
   the start of each continuous integration step. See the Simulator API for more
   details.
+
+  @throws std::exception if it invokes an event handler that returns status
+                         indicating failure.
 
   @see Publish(), CalcForcedDiscreteVariableUpdate(),
        CalcForcedUnrestrictedUpdate() */
@@ -583,7 +590,7 @@ class System : public SystemBase {
   variables `xd(n)` in @p context and outputs the results to @p
   discrete_state. See documentation for
   DispatchDiscreteVariableUpdateHandler() for more details. */
-  void CalcDiscreteVariableUpdate(
+  [[nodiscard]] EventStatus CalcDiscreteVariableUpdate(
       const Context<T>& context,
       const EventCollection<DiscreteUpdateEvent<T>>& events,
       DiscreteValues<T>* discrete_state) const;
@@ -622,6 +629,9 @@ class System : public SystemBase {
   associated handler. By default that will do nothing when triggered, but that
   behavior can be changed by overriding the dispatcher (not recommended).
 
+  @throws std::exception if it invokes an event handler that returns status
+                         indicating failure.
+
   @see CalcDiscreteVariableUpdate(), CalcForcedUnrestrictedUpdate() */
   void CalcForcedDiscreteVariableUpdate(
       const Context<T>& context, DiscreteValues<T>* discrete_state) const;
@@ -635,7 +645,7 @@ class System : public SystemBase {
 
   @throws std::exception if the dimensionality of the state variables
           changes in the callback. */
-  void CalcUnrestrictedUpdate(
+  [[nodiscard]] EventStatus CalcUnrestrictedUpdate(
       const Context<T>& context,
       const EventCollection<UnrestrictedUpdateEvent<T>>& events,
       State<T>* state) const;
@@ -672,6 +682,9 @@ class System : public SystemBase {
   @note There will always be at least one force-triggered event, though with no
   associated handler. By default that will do nothing when triggered, but that
   behavior can be changed by overriding the dispatcher (not recommended).
+
+  @throws std::exception if it invokes an event handler that returns status
+                         indicating failure.
 
   @see CalcUnrestrictedUpdate() */
   void CalcForcedUnrestrictedUpdate(const Context<T>& context,
@@ -737,7 +750,11 @@ class System : public SystemBase {
 
   Note that this is not fully equivalent to Simulator::Initialize() because
   _only_ initialization events are handled here, while Simulator::Initialize()
-  also processes other events associated with time zero. */
+  also processes other events associated with time zero. Also, "reached
+  termination" returns are ignored here.
+
+  @throws std::exception if it invokes an event handler that returns status
+                         indicating failure. */
   void ExecuteInitializationEvents(Context<T>* context) const;
 
   /** Determines whether there exists a unique periodic timing (offset and
@@ -810,6 +827,9 @@ class System : public SystemBase {
 
   @throws std::exception if there is not exactly one periodic timing in this
   %System (which may be a Diagram) that triggers discrete update events.
+
+  @throws std::exception if it invokes an event handler that returns status
+  indicating failure.
 
   @par Implementation
   If recalculation is needed, copies the current discrete state values into
@@ -1070,14 +1090,8 @@ class System : public SystemBase {
   /** @name                      Utility methods */
   //@{
 
-  /** Returns a name for this %System based on a stringification of its type
-  name and memory address.  This is intended for use in diagnostic output
-  and should not be used for behavioral logic, because the stringification
-  of the type name may produce differing results across platforms and
-  because the address can vary from run to run. */
-  std::string GetMemoryObjectName() const;
-
-  // So we don't have to keep writing this->num_input_ports().
+  // Avoid `this->` boilerplate for these member functions.
+  using SystemBase::GetMemoryObjectName;
   using SystemBase::num_input_ports;
   using SystemBase::num_output_ports;
 
@@ -1095,15 +1109,16 @@ class System : public SystemBase {
                                       /* warn_deprecated = */ true));
   }
 
-  /** Convenience method for the case of exactly one input port. */
+  /** Convenience method for the case of exactly one input port.
+  This function ignores deprecated ports, unless there is only one port in which
+  case it will return the deprecated port. */
   const InputPort<T>& get_input_port() const {
-    static constexpr char message[] =
-        "Cannot use the get_input_port() convenience method unless there is"
-        " exactly one input port. num_input_ports() = {}";
-    if (num_input_ports() != 1) {
-      throw std::logic_error(fmt::format(message, num_input_ports()));
+    // Fast path for common case.
+    if (num_input_ports() == 1) {
+      return get_input_port(0);
     }
-    return get_input_port(0);
+    // Fallback for deprecation and/or error handling case.
+    return GetSoleInputPort();
   }
 
   /** Returns the typed input port specified by the InputPortSelection or by
@@ -1137,15 +1152,16 @@ class System : public SystemBase {
                                        /* warn_deprecated = */ true));
   }
 
-  /** Convenience method for the case of exactly one output port. */
+  /** Convenience method for the case of exactly one output port.
+  This function ignores deprecated ports, unless there is only one port in which
+  case it will return the deprecated port. */
   const OutputPort<T>& get_output_port() const {
-    static constexpr char message[] =
-        "Cannot use the get_output_port() convenience method unless there is"
-        " exactly one output port. num_output_ports() = {}";
-    if (num_output_ports() != 1) {
-      throw std::logic_error(fmt::format(message, num_output_ports()));
+    // Fast path for common case.
+    if (num_output_ports() == 1) {
+      return get_output_port(0);
     }
-    return get_output_port(0);
+    // Fallback for deprecation and/or error handling case.
+    return GetSoleOutputPort();
   }
 
   /** Returns the typed output port specified by the OutputPortSelection or by
@@ -1188,40 +1204,33 @@ class System : public SystemBase {
   /** @name                      Graphviz methods */
   //@{
 
-  /** Returns a Graphviz string describing this System.  To render the string,
-  use the Graphviz tool, ``dot``. http://www.graphviz.org/
+  // Add this base class function into this Doxygen section.
+  using SystemBase::GetGraphvizString;
 
-  @param max_depth Sets a limit to the depth of nested diagrams to
-  visualize.  Set to zero to render a diagram as a single system block.
+  DRAKE_DEPRECATED(
+      "2024-01-01",
+      "Instead of calling or overriding this function, either "
+      "call GetGraphvizFragment() or override DoGetGraphvizFragment()")
+  virtual void GetGraphvizFragment(int max_depth, std::stringstream* dot) const;
+  using SystemBase::GetGraphvizFragment;  // Don't shadow.
 
-  @see GenerateHtml
-  */
-  std::string GetGraphvizString(
-      int max_depth = std::numeric_limits<int>::max()) const;
-
-  /** Appends a Graphviz fragment to the @p dot stream.  The fragment must be
-  valid Graphviz when wrapped in a `digraph` or `subgraph` stanza.  Does
-  nothing by default.
-
-  @param max_depth Sets a limit to the depth of nested diagrams to
-  visualize.  Set to zero to render a diagram as a single system block. */
-  virtual void GetGraphvizFragment(int max_depth,
-                                   std::stringstream* dot) const;
-
-  /** Appends a fragment to the @p dot stream identifying the graphviz node
-  representing @p port. Does nothing by default. */
+  DRAKE_DEPRECATED(
+      "2024-01-01",
+      "Instead of calling or overriding this function, either "
+      "call GetGraphvizFragment() or override DoGetGraphvizFragment()")
   virtual void GetGraphvizInputPortToken(const InputPort<T>& port,
                                          int max_depth,
                                          std::stringstream* dot) const;
 
-  /** Appends a fragment to the @p dot stream identifying the graphviz node
-  representing @p port. Does nothing by default. */
+  DRAKE_DEPRECATED(
+      "2024-01-01",
+      "Instead of calling or overriding this function, either "
+      "call GetGraphvizFragment() or override DoGetGraphvizFragment()")
   virtual void GetGraphvizOutputPortToken(const OutputPort<T>& port,
                                           int max_depth,
                                           std::stringstream* dot) const;
 
-  /** Returns an opaque integer that uniquely identifies this system in the
-  Graphviz output. */
+  DRAKE_DEPRECATED("2024-01-01", "Call GetGraphvizFragment() instead")
   int64_t GetGraphvizId() const;
   //@}
 
@@ -1463,6 +1472,19 @@ class System : public SystemBase {
 
   // Don't promote output_port_ticket() since it is for internal use only.
 
+#ifndef DRAKE_DOXYGEN_CXX
+  // For unfortunate historical reasons the Drake Simulator needs access to
+  // forced publish events to implement its optional publish_every_time_step
+  // feature. Now we have PerStep events that serve the same purpose.
+  // Move this to protected with the other forced events when the Simulator
+  // feature is removed.
+  const EventCollection<PublishEvent<T>>&
+  get_forced_publish_events() const {
+    DRAKE_DEMAND(forced_publish_events_ != nullptr);
+    return *forced_publish_events_;
+  }
+#endif
+
  protected:
   // Promote these frequently-used methods so users (and tutorial examples)
   // don't need "this->" everywhere when in templated derived classes.
@@ -1496,14 +1518,17 @@ class System : public SystemBase {
       std::vector<const WitnessFunction<T>*>*) const;
 
   //----------------------------------------------------------------------------
-  /** @name                 Event handler dispatch mechanism
-  For a LeafSystem (or user implemented equivalent classes), these functions
-  need to call the appropriate LeafSystem::DoX event handler. E.g.
-  LeafSystem::DispatchPublishHandler() calls LeafSystem::DoPublish(). User
-  supplied custom event callbacks embedded in each individual event need to
-  be further dispatched in the LeafSystem::DoX handlers if desired. For a
-  LeafSystem, the pseudo code of the complete default publish event handler
-  dispatching is roughly:
+  /** @name  (Internal use only) Event handler dispatch mechanism
+  The pure virtuals declared here are intended to be implemented only by
+  Drake's LeafSystem and Diagram (plus a few unit tests) and those
+  implementations must be `final`.
+
+  For a LeafSystem, these functions need to call the appropriate LeafSystem::DoX
+  event dispatcher. E.g. LeafSystem::DispatchPublishHandler() calls
+  LeafSystem::DoPublish(). User supplied custom event callbacks embedded in each
+  individual event need to be invoked in the LeafSystem::DoX handlers if
+  desired. For a LeafSystem, the pseudo code of the complete default publish
+  event handler dispatching is roughly:
   <pre>
     leaf_sys.Publish(context, event_collection)
     -> leaf_sys.DispatchPublishHandler(context, event_collection)
@@ -1513,46 +1538,57 @@ class System : public SystemBase {
                  event.handler(context)
   </pre>
   Discrete update events and unrestricted update events are dispatched
-  similarly for a LeafSystem.
+  similarly for a LeafSystem. EventStatus is propagated upwards from the
+  individual event handlers with the first worst retained.
 
-  For a Diagram (or user implemented equivalent classes), these functions
-  must iterate through all subsystems, extract their corresponding
-  subcontext and subevent collections from @p context and @p events,
-  and pass those to the subsystems' public non-virtual event handlers if
-  the subevent collection is nonempty (e.g. System::Publish() for publish
-  events).
+  For a Diagram, these functions must iterate through all subsystems, extract
+  their corresponding subcontext and subevent collections from `context` and
+  `events`, and pass those to the subsystems' public non-virtual event
+  dispatchers if the subevent collection is nonempty (e.g. System::Publish()
+  for publish events).
 
   All of these functions are only called from their corresponding public
-  non-virtual event dispatchers, where @p context is error checked. The
-  derived implementations can assume that @p context is valid. See, e.g.,
+  non-virtual event dispatchers, where `context` is error checked. The
+  derived implementations can assume that `context` is valid. See, e.g.,
   LeafSystem::DispatchPublishHandler() and Diagram::DispatchPublishHandler()
   for more details. */
   //@{
 
-  /** This function dispatches all publish events to the appropriate
-  handlers. */
-  virtual void DispatchPublishHandler(
+  /** (Internal use only) This function dispatches all publish events to the
+  appropriate handlers. Only LeafSystem and Diagram (and some unit test code)
+  provide implementations and those must be `final`. */
+  [[nodiscard]] virtual EventStatus DispatchPublishHandler(
       const Context<T>& context,
       const EventCollection<PublishEvent<T>>& events) const = 0;
 
-  /** This function dispatches all discrete update events to the appropriate
-  handlers. @p discrete_state cannot be null. */
-  virtual void DispatchDiscreteVariableUpdateHandler(
+  /** (Internal use only) This function dispatches all discrete update events to
+  the appropriate handlers. @p discrete_state cannot be null. Only LeafSystem
+  and Diagram (and some unit test code) provide implementations and those
+  must be `final`. */
+  [[nodiscard]] virtual EventStatus DispatchDiscreteVariableUpdateHandler(
       const Context<T>& context,
       const EventCollection<DiscreteUpdateEvent<T>>& events,
       DiscreteValues<T>* discrete_state) const = 0;
 
+  /** (Internal use only) Updates the given `context` with the results returned
+  from a previous call to DispatchDiscreteVariableUpdateHandler() that handled
+  the given `events`. */
   virtual void DoApplyDiscreteVariableUpdate(
       const EventCollection<DiscreteUpdateEvent<T>>& events,
       DiscreteValues<T>* discrete_state, Context<T>* context) const = 0;
 
-  /** This function dispatches all unrestricted update events to the appropriate
-  handlers. @p state cannot be null. */
-  virtual void DispatchUnrestrictedUpdateHandler(
+  /** (Internal use only) This function dispatches all unrestricted update
+  events to the appropriate handlers. @p state cannot be null. Only LeafSystem
+  and Diagram (and some unit test code) provide implementations and those must
+  be `final`. */
+  [[nodiscard]] virtual EventStatus DispatchUnrestrictedUpdateHandler(
       const Context<T>& context,
       const EventCollection<UnrestrictedUpdateEvent<T>>& events,
       State<T>* state) const = 0;
 
+  /** (Internal use only) Updates the given `context` with the results returned
+  from a previous call to DispatchUnrestrictedUpdateHandler() that handled
+  the given `events`. */
   virtual void DoApplyUnrestrictedUpdate(
       const EventCollection<UnrestrictedUpdateEvent<T>>& events,
       State<T>* state, Context<T>* context) const = 0;
@@ -1681,6 +1717,11 @@ class System : public SystemBase {
   virtual std::map<PeriodicEventData, std::vector<const Event<T>*>,
                    PeriodicEventDataComparator>
   DoMapPeriodicEventsByTiming(const Context<T>& context) const = 0;
+
+  // TODO(sherm1) Move these three functions adjacent to the event
+  //  dispatching functions and note that they are to be implemented only
+  //  in Diagram and LeafSystem with `final` implementations. Make corresponding
+  //  changes in Diagram and LeafSystem.
 
   /** Implement this method to return any periodic events. @p events is cleared
   in the public non-virtual GetPeriodicEvents(). You may assume that
@@ -1851,12 +1892,6 @@ class System : public SystemBase {
     return *forced_unrestricted_update_events_;
   }
 
-  const EventCollection<PublishEvent<T>>&
-  get_forced_publish_events() const {
-    DRAKE_DEMAND(forced_publish_events_ != nullptr);
-    return *forced_publish_events_;
-  }
-
   const EventCollection<DiscreteUpdateEvent<T>>&
   get_forced_discrete_update_events() const {
     DRAKE_DEMAND(forced_discrete_update_events_ != nullptr);
@@ -1888,6 +1923,15 @@ class System : public SystemBase {
   SystemScalarConverter& get_mutable_system_scalar_converter() {
     return system_scalar_converter_;
   }
+
+  // TODO(jwnimmer-tri) On 2024-01-01 upon completion of deprecation, there will
+  // no longer be any reason for System<T> to override this SystemBase function.
+  // At that point, we should remove this particular override.
+  /** The NVI implementation of SystemBase::GetGraphvizFragment() for subclasses
+  to override if desired. The default behavior should be sufficient in most
+  cases. */
+  GraphvizFragment DoGetGraphvizFragment(
+      const GraphvizFragmentParams& params) const override;
 
  private:
   // For any T1 & T2, System<T1> considers System<T2> a friend, so that System
@@ -1963,9 +2007,15 @@ class System : public SystemBase {
       const std::vector<ExternalSystemConstraint>& constraints);
 
   // This is the computation function for EvalUniquePeriodicDiscreteUpdate()'s
-  // cache entry.
+  // cache entry. Throws if an event handler fails.
   void CalcUniquePeriodicDiscreteUpdate(
       const Context<T>& context, DiscreteValues<T>* updated) const;
+
+  // The non-inline implementation of get_input_port().
+  const InputPort<T>& GetSoleInputPort() const;
+
+  // The non-inline implementation of get_output_port().
+  const OutputPort<T>& GetSoleOutputPort() const;
 
   // The constraints_ vector encompass all constraints on this system, whether
   // they were declared by a concrete subclass during construction (e.g., by

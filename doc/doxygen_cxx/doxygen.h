@@ -217,6 +217,7 @@ namespace solvers {
  This section provides an inventory of environment variables relevant to Drake.
 
  - <b>\ref allow_network "DRAKE_ALLOW_NETWORK"</b>
+ - <b>\ref drake::Parallelism "DRAKE_NUM_THREADS"</b>
  - <b>\ref pydrake_python_logging "DRAKE_PYTHON_LOGGING"</b>
  - <b>\ref drake::common::FindResource() "DRAKE_RESOURCE_ROOT"</b>
  - <b>\ref drake::solvers::GurobiSolver "GRB_LICENSE_FILE"</b> (see also 

@@ -13,8 +13,10 @@ namespace geometry {
 namespace internal {
 
 // Forward declarations.
-template <typename> class AabbMaker;
-template <typename> class BvhUpdater;
+template <typename>
+class AabbMaker;
+template <typename>
+class BvhUpdater;
 class Obb;
 
 /* Axis-aligned bounding box. The box is defined in a canonical frame B such
@@ -126,13 +128,13 @@ class Aabb {
    the same frame. */
   bool Equal(const Aabb& other) const {
     if (this == &other) return true;
-    return center_ == other.center_ &&
-           half_width_ == other.half_width_;
+    return center_ == other.center_ && half_width_ == other.half_width_;
   }
 
  private:
   // Allow the BvhUpdater access to set_bounds().
-  template <typename> friend class BvhUpdater;
+  template <typename>
+  friend class BvhUpdater;
 
   // Provides access to the BvhUpdater to refit the Aabb. Sets the extents of
   // the bounding box based on a box spanned by the given `lower` and `upper`

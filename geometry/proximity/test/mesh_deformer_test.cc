@@ -74,7 +74,7 @@ class MeshDeformerTest : public ::testing::Test {
 
     const int q_size = q_.rows();
 
-    const VectorX<T> too_small(q_size- 1);
+    const VectorX<T> too_small(q_size - 1);
     DRAKE_EXPECT_THROWS_MESSAGE(
         deformer_.SetAllPositions(too_small),
         ".+SetAllPositions.+ \\d+ vertices with data for \\d+ vertices");
@@ -127,5 +127,3 @@ TYPED_TEST(SurfaceMeshDeformerTest, SetAllPositions) {
 }  // namespace internal
 }  // namespace geometry
 }  // namespace drake
-
-

@@ -1,5 +1,5 @@
 load(
-    "@drake//tools/skylark:drake_cc.bzl",
+    "//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
     "drake_cc_library",
     "drake_cc_package_library",
@@ -192,7 +192,10 @@ drake_cc_library_ubuntu_only(
         ":internal_opengl_context",
     ],
     deps = [
-        "@vtk//:vtkIOImage",
+        "@vtk_internal//:vtkCommonCore",
+        "@vtk_internal//:vtkCommonDataModel",
+        "@vtk_internal//:vtkIOImage",
+        "@vtk_internal//:vtkImagingCore",
     ],
 )
 
@@ -239,7 +242,9 @@ drake_cc_googletest_ubuntu_only(
         "//common/test_utilities:expect_throws_message",
         "//geometry/render:render_label",
         "//systems/sensors:color_palette",
-        "@vtk//:vtkIOImage",
+        "@vtk_internal//:vtkCommonCore",
+        "@vtk_internal//:vtkCommonDataModel",
+        "@vtk_internal//:vtkIOImage",
     ],
 )
 

@@ -51,10 +51,8 @@ class LcmScopeSystem final : public LeafSystem<double> {
   If the period is zero, the LcmPublisherSystem will publish every step. */
   static std::tuple<LcmScopeSystem*, LcmPublisherSystem*> AddToBuilder(
       systems::DiagramBuilder<double>* builder,
-      drake::lcm::DrakeLcmInterface* lcm,
-      const OutputPort<double>& signal,
-      const std::string& channel,
-      double publish_period);
+      drake::lcm::DrakeLcmInterface* lcm, const OutputPort<double>& signal,
+      const std::string& channel, double publish_period);
 };
 
 }  // namespace lcm

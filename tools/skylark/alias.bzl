@@ -1,8 +1,6 @@
-load("//tools/skylark:py.bzl", "py_library")
-load(
-    "@drake//tools/skylark:drake_cc.bzl",
-    "drake_cc_library",
-)
+load("//tools/skylark:cc.bzl", "cc_library")
+load("//tools/skylark:py.bzl", "py_binary", "py_library")
+load("//tools/skylark:drake_cc.bzl", "drake_cc_library")
 load("//tools/workspace:generate_file.bzl", "generate_file")
 
 def _combine_relative_labels(arg_list, arg_map):
@@ -110,7 +108,7 @@ def drake_cc_library_aliases(
             deprecation = ("Use the label " + actual_full_label)
         else:
             deprecation = None
-        native.cc_library(
+        cc_library(
             name = stub_relative_label[1:],
             deps = deps + [actual_full_label],
             tags = tags + ["nolint"],

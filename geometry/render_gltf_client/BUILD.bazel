@@ -1,12 +1,12 @@
 load(
-    "@drake//tools/skylark:drake_cc.bzl",
+    "//tools/skylark:drake_cc.bzl",
     "drake_cc_binary",
     "drake_cc_googletest",
     "drake_cc_library",
     "drake_cc_package_library",
 )
 load(
-    "@drake//tools/skylark:drake_py.bzl",
+    "//tools/skylark:drake_py.bzl",
     "drake_py_binary",
     "drake_py_unittest",
 )
@@ -98,8 +98,11 @@ drake_cc_library(
         "//geometry/render:render_camera",
         "//geometry/render:render_engine",
         "//systems/sensors:image",
+        "//systems/sensors:vtk_image_reader_writer",
         "@picosha2_internal//:picosha2",
-        "@vtk//:vtkIOImage",
+        "@vtk_internal//:vtkCommonCore",
+        "@vtk_internal//:vtkCommonDataModel",
+        "@vtk_internal//:vtkIOImage",
     ],
 )
 
@@ -121,7 +124,10 @@ drake_cc_library(
         "//geometry/render_vtk:internal_render_engine_vtk",
         "//systems/sensors:image",
         "@nlohmann_internal//:nlohmann",
-        "@vtk//:vtkIOExport",
+        "@vtk_internal//:vtkCommonCore",
+        "@vtk_internal//:vtkCommonMath",
+        "@vtk_internal//:vtkIOExport",
+        "@vtk_internal//:vtkRenderingCore",
     ],
 )
 
@@ -132,6 +138,7 @@ drake_cc_library(
     internal = True,
     visibility = ["//visibility:private"],
     deps = [
+        "//common:drake_export",
         "//common:essential",
         "@nlohmann_internal//:nlohmann",
     ],
@@ -240,6 +247,8 @@ drake_cc_googletest(
         "//common/test_utilities:expect_throws_message",
         "//systems/sensors/test_utilities:image_compare",
         "@nlohmann_internal//:nlohmann",
+        "@vtk_internal//:vtkCommonMath",
+        "@vtk_internal//:vtkRenderingCore",
     ],
 )
 
@@ -265,10 +274,12 @@ drake_cc_binary(
         "//systems/sensors:color_palette",
         "//systems/sensors:image",
         "@gflags",
-        "@vtk//:vtkIOImage",
-        "@vtk//:vtkIOImport",
-        "@vtk//:vtkRenderingCore",
-        "@vtk//:vtkRenderingOpenGL2",
+        "@vtk_internal//:vtkCommonCore",
+        "@vtk_internal//:vtkCommonMath",
+        "@vtk_internal//:vtkIOImage",
+        "@vtk_internal//:vtkIOImport",
+        "@vtk_internal//:vtkRenderingCore",
+        "@vtk_internal//:vtkRenderingOpenGL2",
     ],
 )
 
@@ -286,6 +297,7 @@ drake_cc_binary(
         "//geometry:drake_visualizer",
         "//geometry:scene_graph",
         "//geometry/render_vtk",
+        "//lcm",
         "//multibody/parsing",
         "//multibody/plant",
         "//systems/analysis:simulator",
@@ -351,6 +363,7 @@ drake_cc_googletest(
         ":internal_merge_gltf",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
         "@nlohmann_internal//:nlohmann",
     ],
 )

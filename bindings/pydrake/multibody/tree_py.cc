@@ -179,6 +179,18 @@ void DoScalarIndependentDefinitions(py::module m) {
         });
     DefCopyAndDeepCopy(&cls);
   }
+
+  {
+    using Class = PdControllerGains;
+    constexpr auto& cls_doc = doc.PdControllerGains;
+    py::class_<Class> cls(m, "PdControllerGains", cls_doc.doc);
+    cls  // BR
+        .def(ParamInit<Class>());
+    cls  // BR
+        .def_readwrite("p", &Class::p, cls_doc.p.doc)
+        .def_readwrite("d", &Class::d, cls_doc.d.doc);
+    DefCopyAndDeepCopy(&cls);
+  }
 }
 
 /**
@@ -813,7 +825,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
             },
             py::arg("u"), cls_doc.get_actuation_vector.doc)
         .def("set_actuation_vector", &Class::set_actuation_vector,
-            py::arg("u_instance"), py::arg("u"),
+            py::arg("u_actuator"), py::arg("u"),
             cls_doc.set_actuation_vector.doc)
         .def("input_start", &Class::input_start, cls_doc.input_start.doc)
         .def("num_inputs", &Class::num_inputs, cls_doc.num_inputs.doc)
@@ -837,7 +849,21 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("SetGearRatio", &Class::SetGearRatio, py::arg("context"),
             py::arg("gear_ratio"), cls_doc.SetGearRatio.doc)
         .def("calc_reflected_inertia", &Class::calc_reflected_inertia,
-            py::arg("context"), cls_doc.calc_reflected_inertia.doc);
+            py::arg("context"), cls_doc.calc_reflected_inertia.doc)
+        .def("get_controller_gains", &Class::get_controller_gains,
+            cls_doc.get_controller_gains.doc)
+        .def("set_controller_gains", &Class::set_controller_gains,
+            py::arg("gains"), cls_doc.set_controller_gains.doc)
+        .def("has_controller", &Class::has_controller,
+            cls_doc.has_controller.doc);
+    constexpr char doc_deprecated_set_actuation_vector[] =
+        "The kwarg name 'u_instance' is deprecated and will be removed on "
+        "2024-02-01. Spell the argument name as 'u_actuator' instead.";
+    cls.def("set_actuation_vector",
+        WrapDeprecated(
+            doc_deprecated_set_actuation_vector, &Class::set_actuation_vector),
+        py::arg("u_instance"), py::arg("u"),
+        doc_deprecated_set_actuation_vector);
   }
 
   // Force Elements.
@@ -916,6 +942,10 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.gravity_vector.doc)
         .def("set_gravity_vector", &Class::set_gravity_vector,
             cls_doc.set_gravity_vector.doc)
+        .def("set_enabled", &Class::set_enabled, py::arg("model_instance"),
+            py::arg("is_enabled"), cls_doc.set_enabled.doc)
+        .def("is_enabled", &Class::is_enabled, py::arg("model_instance"),
+            cls_doc.is_enabled.doc)
         .def("CalcGravityGeneralizedForces",
             &Class::CalcGravityGeneralizedForces, py::arg("context"),
             cls_doc.CalcGravityGeneralizedForces.doc);

@@ -62,7 +62,7 @@ TEST_F(UnboundedLinearProgramTest0, TestGurobiUnbounded) {
     EXPECT_EQ(result.get_solution_result(),
               SolutionResult::kInfeasibleOrUnbounded);
     // This code is defined in
-    // https://www.gurobi.com/documentation/9.5/refman/optimization_status_codes.html
+    // https://www.gurobi.com/documentation/10.0/refman/optimization_status_codes.html
     const int GRB_INF_OR_UNBD = 4;
     EXPECT_EQ(result.get_solver_details<GurobiSolver>().optimization_status,
               GRB_INF_OR_UNBD);
@@ -72,7 +72,7 @@ TEST_F(UnboundedLinearProgramTest0, TestGurobiUnbounded) {
     EXPECT_FALSE(result.is_success());
     EXPECT_EQ(result.get_solution_result(), SolutionResult::kUnbounded);
     // This code is defined in
-    // https://www.gurobi.com/documentation/9.5/refman/optimization_status_codes.html
+    // https://www.gurobi.com/documentation/10.0/refman/optimization_status_codes.html
     const int GRB_UNBOUNDED = 5;
     EXPECT_EQ(result.get_solver_details<GurobiSolver>().optimization_status,
               GRB_UNBOUNDED);
@@ -610,6 +610,11 @@ GTEST_TEST(GurobiTest, LPDualSolution4) {
   TestLPDualSolution4(solver);
 }
 
+GTEST_TEST(GurobiTest, LPDualSolution5) {
+  GurobiSolver solver;
+  TestLPDualSolution5(solver);
+}
+
 GTEST_TEST(GurobiTest, SOCPDualSolution1) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>();
@@ -709,7 +714,7 @@ GTEST_TEST(GurobiTest, TestIterationLimit) {
     const auto result = solver.Solve(prog, std::nullopt, solver_options);
     const auto solver_details = result.get_solver_details<GurobiSolver>();
     // This code is defined in
-    // https://www.gurobi.com/documentation/9.5/refman/optimization_status_codes.html
+    // https://www.gurobi.com/documentation/10.0/refman/optimization_status_codes.html
     const int ITERATION_LIMIT = 7;
     EXPECT_EQ(solver_details.optimization_status, ITERATION_LIMIT);
     EXPECT_TRUE(std::isfinite(result.get_optimal_cost()));

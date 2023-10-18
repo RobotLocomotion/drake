@@ -24,6 +24,7 @@ import re
 import unittest
 
 from pydrake.common import FindResourceOrThrow
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.geometry import SceneGraph
 from pydrake.multibody.tree import (
     ModelInstanceIndex,
@@ -100,6 +101,21 @@ class TestParsing(unittest.TestCase):
             "drake/multibody/benchmarks/acrobot/acrobot.sdf")
         urdf_file = FindResourceOrThrow(
             "drake/multibody/benchmarks/acrobot/acrobot.urdf")
+        for dut, file_name in (
+                (Parser.AddModels, sdf_file),
+                (Parser.AddModels, urdf_file),
+                ):
+            plant = MultibodyPlant(time_step=0.01)
+            parser = Parser(plant=plant)
+            result = dut(parser, file_name=file_name)
+            self.assertIsInstance(result, list)
+            self.assertIsInstance(result[0], ModelInstanceIndex)
+
+    def test_parser_file_deprecated(self):
+        sdf_file = FindResourceOrThrow(
+            "drake/multibody/benchmarks/acrobot/acrobot.sdf")
+        urdf_file = FindResourceOrThrow(
+            "drake/multibody/benchmarks/acrobot/acrobot.urdf")
         for dut, file_name, model_name, result_dim in (
                 (Parser.AddModelFromFile, sdf_file, None, int),
                 (Parser.AddModelFromFile, sdf_file, "", int),
@@ -109,16 +125,16 @@ class TestParsing(unittest.TestCase):
                 (Parser.AddModelFromFile, urdf_file, "a", int),
                 (Parser.AddAllModelsFromFile, sdf_file, None, list),
                 (Parser.AddAllModelsFromFile, urdf_file, None, list),
-                (Parser.AddModels, sdf_file, None, list),
-                (Parser.AddModels, urdf_file, None, list),
                 ):
             plant = MultibodyPlant(time_step=0.01)
             parser = Parser(plant=plant)
-            if model_name is None:
-                result = dut(parser, file_name=file_name)
-            else:
-                result = dut(parser, file_name=file_name,
-                             model_name=model_name)
+
+            with catch_drake_warnings(expected_count=1):
+                if model_name is None:
+                    result = dut(parser, file_name=file_name)
+                else:
+                    result = dut(parser, file_name=file_name,
+                                 model_name=model_name)
             if result_dim is int:
                 self.assertIsInstance(result, ModelInstanceIndex)
             else:

@@ -27,8 +27,8 @@ void ThrowIfAllElementsInQuaternionAreZero(
     const Eigen::Quaternion<T>& quaternion, const char* function_name) {
   if constexpr (scalar_predicate<T>::is_bool) {
     if (IsQuaternionZero(quaternion)) {
-      std::string message = fmt::format("{}():"
-        " All the elements in a quaternion are zero.", function_name);
+      std::string message = fmt::format(
+          "{}(): All the elements in a quaternion are zero.", function_name);
       throw std::logic_error(message);
     }
   } else {
@@ -41,9 +41,9 @@ void ThrowIfAnyElementInQuaternionIsInfinityOrNaN(
     const Eigen::Quaternion<T>& quaternion, const char* function_name) {
   if constexpr (scalar_predicate<T>::is_bool) {
     if (!quaternion.coeffs().allFinite()) {
-      std::string message = fmt::format("{}():"
-        " Quaternion contains an element that is infinity or NaN.",
-        function_name);
+      std::string message = fmt::format(
+          "{}(): Quaternion contains an element that is infinity or NaN.",
+          function_name);
       throw std::logic_error(message);
     }
   } else {
@@ -107,8 +107,8 @@ RotationMatrix<T>::RotationMatrix(const RollPitchYaw<T>& rpy) {
   const T& r = rpy.roll_angle();
   const T& p = rpy.pitch_angle();
   const T& y = rpy.yaw_angle();
-  using std::sin;
   using std::cos;
+  using std::sin;
   const T c0 = cos(r), c1 = cos(p), c2 = cos(y);
   const T s0 = sin(r), s1 = sin(p), s2 = sin(y);
   const T c2_s1 = c2 * s1, s2_s1 = s2 * s1;
@@ -121,9 +121,11 @@ RotationMatrix<T>::RotationMatrix(const RollPitchYaw<T>& rpy) {
   const T Rzx = -s1;
   const T Rzy = c1 * s0;
   const T Rzz = c1 * c0;
+  // clang-format off
   SetFromOrthonormalRows(Vector3<T>(Rxx, Rxy, Rxz),
                          Vector3<T>(Ryx, Ryy, Ryz),
                          Vector3<T>(Rzx, Rzy, Rzz));
+  // clang-format on
 }
 
 template <typename T>
@@ -295,7 +297,8 @@ void RotationMatrix<T>::ThrowIfNotValid(const Matrix3<T>& R) {
           " expensive (but not necessarily closest) rotation matrix, use"
           " RotationMatrix<T>(RotationMatrix<T>::ToQuaternion<T>(your_matrix))."
           " Alternatively, if using quaternions, ensure the quaternion is"
-          " normalized.", measure);
+          " normalized.",
+          measure);
       throw std::logic_error(message);
     }
     if (R.determinant() < 0) {
@@ -317,7 +320,7 @@ Matrix3<T> RotationMatrix<T>::ProjectMatrix3ToOrthonormalMatrix3(
     const auto singular_values = svd.singularValues();
     const T s_max = singular_values(0);  // maximum singular value.
     const T s_min = singular_values(2);  // minimum singular value.
-    const T s_f = (s_max != 0.0 && s_min < 1.0/s_max) ? s_min : s_max;
+    const T s_f = (s_max != 0.0 && s_min < 1.0 / s_max) ? s_min : s_max;
     const T det = M.determinant();
     const double sign_det = (det > 0.0) ? 1 : ((det < 0.0) ? -1 : 0);
     *quality_factor = s_f * sign_det;
@@ -421,20 +424,20 @@ Vector3<T> RotationMatrix<T>::NormalizeOrThrow(const Vector3<T>& v,
     // Normalize the vector v if norm is finite and sufficiently large.
     // Throw an exception if norm is non-finite (NaN or infinity) or too small.
     if (std::isfinite(norm) && norm >= kMinMagnitude) {
-      u = v/norm;
+      u = v / norm;
     } else {
       const double vx = ExtractDoubleOrThrow(v.x());
       const double vy = ExtractDoubleOrThrow(v.y());
       const double vz = ExtractDoubleOrThrow(v.z());
-      throw std::logic_error(
-        fmt::format("RotationMatrix::{}() cannot normalize the given vector.\n"
-                    "   v: {} {} {}\n"
-                    " |v|: {}\n"
-                    " The measures must be finite and the vector must have a"
-                    " magnitude of at least {} to automatically normalize. If"
-                    " you are confident that v's direction is meaningful, pass"
-                    " v.normalized() in place of v.",
-                    function_name, vx, vy, vz, norm, kMinMagnitude));
+      throw std::logic_error(fmt::format(
+          "RotationMatrix::{}() cannot normalize the given vector.\n"
+          "   v: {} {} {}\n"
+          " |v|: {}\n"
+          " The measures must be finite and the vector must have a"
+          " magnitude of at least {} to automatically normalize. If"
+          " you are confident that v's direction is meaningful, pass"
+          " v.normalized() in place of v.",
+          function_name, vx, vy, vz, norm, kMinMagnitude));
     }
   } else {
     // Do not use u = v.normalized() with an underlying symbolic type since

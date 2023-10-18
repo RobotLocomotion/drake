@@ -1,7 +1,9 @@
 #include "drake/multibody/plant/deformable_driver.h"
 
+#include <array>
 #include <limits>
 #include <memory>
+#include <set>
 #include <string>
 #include <unordered_set>
 #include <utility>
@@ -12,9 +14,9 @@
 #include "drake/multibody/contact_solvers/contact_configuration.h"
 #include "drake/multibody/fem/dirichlet_boundary_condition.h"
 #include "drake/multibody/fem/fem_model.h"
-#include "drake/multibody/fem/fem_solver.h"
 #include "drake/multibody/fem/velocity_newmark_scheme.h"
 #include "drake/multibody/plant/contact_properties.h"
+#include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/framework/context.h"
 
 using drake::geometry::GeometryId;
@@ -24,15 +26,15 @@ using drake::geometry::internal::DeformableContactSurface;
 using drake::multibody::contact_solvers::internal::Block3x3SparseMatrix;
 using drake::multibody::contact_solvers::internal::ContactConfiguration;
 using drake::multibody::contact_solvers::internal::ContactSolverResults;
+using drake::multibody::contact_solvers::internal::FixedConstraintKinematics;
 using drake::multibody::contact_solvers::internal::MatrixBlock;
 using drake::multibody::contact_solvers::internal::PartialPermutation;
+using drake::multibody::contact_solvers::internal::SapConstraintJacobian;
+using drake::multibody::contact_solvers::internal::SchurComplement;
 using drake::multibody::fem::FemModel;
 using drake::multibody::fem::FemState;
 using drake::multibody::fem::internal::DirichletBoundaryCondition;
 using drake::multibody::fem::internal::FemSolver;
-using drake::multibody::fem::internal::FemSolverScratchData;
-using drake::multibody::fem::internal::PetscSymmetricBlockSparseMatrix;
-using drake::multibody::fem::internal::SchurComplement;
 using drake::systems::Context;
 
 namespace drake {
@@ -67,34 +69,11 @@ void DeformableDriver<T>::DeclareCacheEntries(
   cache_indexes_.deformable_contact =
       deformable_contact_cache_entry.cache_index();
 
-  const auto& participating_velocity_mux_cache_entry =
-      manager->DeclareCacheEntry(
-          "multiplexer for participating velocities",
-          systems::ValueProducer(
-              this, &DeformableDriver<T>::CalcParticipatingVelocityMultiplexer),
-          {deformable_contact_cache_entry.ticket()});
-  cache_indexes_.participating_velocity_mux =
-      participating_velocity_mux_cache_entry.cache_index();
-
-  const auto& participating_velocities_cache_entry = manager->DeclareCacheEntry(
-      "participating velocities for all bodies",
-      systems::ValueProducer(this,
-                             &DeformableDriver<T>::CalcParticipatingVelocities),
-      {deformable_contact_cache_entry.ticket(),
-       systems::System<T>::xd_ticket()});
-  cache_indexes_.participating_velocities =
-      participating_velocities_cache_entry.cache_index();
-
-  const auto& participating_free_motion_velocities_cache_entry =
-      manager->DeclareCacheEntry(
-          fmt::format("participating free motion velocities for all bodies"),
-          systems::ValueProducer(
-              this,
-              &DeformableDriver<T>::CalcParticipatingFreeMotionVelocities),
-          {deformable_contact_cache_entry.ticket(),
-           systems::System<T>::xd_ticket()});
-  cache_indexes_.participating_free_motion_velocities =
-      participating_free_motion_velocities_cache_entry.cache_index();
+  /* The collection of constraint participation tickets for *all* deformable
+    bodies to be filled out in the loop below. */
+  std::set<systems::DependencyTicket> constraint_participation_tickets;
+  constraint_participation_tickets.emplace(
+      deformable_contact_cache_entry.ticket());
 
   for (DeformableBodyIndex i(0); i < deformable_model_->num_bodies(); ++i) {
     const DeformableBodyId id = deformable_model_->GetBodyId(i);
@@ -112,20 +91,6 @@ void DeformableDriver<T>::DeclareCacheEntries(
         {systems::System<T>::xd_ticket()});
     cache_indexes_.fem_states.emplace_back(fem_state_cache_entry.cache_index());
 
-    /* Cache entry for free motion FEM state. */
-    const auto& free_motion_fem_state_cache_entry = manager->DeclareCacheEntry(
-        fmt::format("free motion FEM state for body with index {}", i),
-        systems::ValueProducer(
-            *model_state,
-            std::function<void(const systems::Context<T>&, fem::FemState<T>*)>{
-                [this, i](const systems::Context<T>& context,
-                          fem::FemState<T>* free_motion_state) {
-                  this->CalcFreeMotionFemState(context, i, free_motion_state);
-                }}),
-        {fem_state_cache_entry.ticket()});
-    cache_indexes_.free_motion_fem_states.emplace_back(
-        free_motion_fem_state_cache_entry.cache_index());
-
     /* Cache entry for FEM state at next time step. */
     const auto& next_fem_state_cache_entry = manager->DeclareCacheEntry(
         fmt::format("FEM state for body with index {} at next time step", i),
@@ -140,50 +105,23 @@ void DeformableDriver<T>::DeclareCacheEntries(
     cache_indexes_.next_fem_states.emplace_back(
         next_fem_state_cache_entry.cache_index());
 
-    /* Scratch data for FEM solver. */
-    FemSolverScratchData scratch(fem_model);
-    const auto& scratch_entry = manager->DeclareCacheEntry(
-        fmt::format("FEM solver scratch workspace for body with index {}", i),
-        systems::ValueProducer(scratch, &systems::ValueProducer::NoopCalc),
-        {systems::SystemBase::nothing_ticket()});
-    cache_indexes_.fem_solver_scratches.emplace_back(
-        scratch_entry.cache_index());
-
-    /* Cache entry for the tangent matrix at free motion state. */
-    std::unique_ptr<PetscSymmetricBlockSparseMatrix> model_tangent_matrix =
-        fem_model.MakePetscSymmetricBlockSparseTangentMatrix();
-    model_tangent_matrix->AssembleIfNecessary();
-    const auto& free_motion_tangent_matrix_cache_entry =
+    /* Constraint participation information for each body. */
+    ContactParticipation empty_contact_participation(fem_model.num_nodes());
+    const auto& constraint_participation_cache_entry =
         manager->DeclareCacheEntry(
-            fmt::format("free motion tangent matrix for body with index {}", i),
+            fmt::format("constraint participation of body {}", i),
             systems::ValueProducer(
-                *model_tangent_matrix,
-                std::function<void(const systems::Context<T>&,
-                                   PetscSymmetricBlockSparseMatrix*)>{
-                    [this, i](const systems::Context<T>& context,
-                              PetscSymmetricBlockSparseMatrix* tangent_matrix) {
-                      this->CalcFreeMotionTangentMatrix(context, i,
-                                                        tangent_matrix);
+                empty_contact_participation,
+                std::function<void(const Context<T>&, ContactParticipation*)>{
+                    [this, i](const Context<T>& context,
+                              ContactParticipation* result) {
+                      this->CalcConstraintParticipation(context, i, result);
                     }}),
-            {free_motion_fem_state_cache_entry.ticket()});
-    cache_indexes_.free_motion_tangent_matrices.emplace_back(
-        free_motion_tangent_matrix_cache_entry.cache_index());
-
-    const auto& schur_complement_cache_entry = manager->DeclareCacheEntry(
-        fmt::format("free motion tangent matrix Schur complement for body "
-                    "with index {}",
-                    i),
-        systems::ValueProducer(std::function<void(const systems::Context<T>&,
-                                                  SchurComplement<T>*)>{
-            [this, i](const systems::Context<T>& context,
-                      SchurComplement<T>* schur_complement) {
-              this->CalcFreeMotionTangentMatrixSchurComplement(
-                  context, i, schur_complement);
-            }}),
-        {free_motion_tangent_matrix_cache_entry.ticket(),
-         deformable_contact_cache_entry.ticket()});
-    cache_indexes_.free_motion_tangent_matrix_schur_complements.emplace_back(
-        schur_complement_cache_entry.cache_index());
+            {deformable_contact_cache_entry.ticket()});
+    cache_indexes_.constraint_participations.emplace_back(
+        constraint_participation_cache_entry.cache_index());
+    constraint_participation_tickets.emplace(
+        constraint_participation_cache_entry.ticket());
 
     /* Permutation for participating dofs for each body. */
     const auto& dof_permutation_cache_entry = manager->DeclareCacheEntry(
@@ -196,7 +134,7 @@ void DeformableDriver<T>::DeclareCacheEntries(
                           PartialPermutation* result) {
                   this->CalcDofPermutation(context, i, result);
                 }}),
-        {deformable_contact_cache_entry.ticket()});
+        {constraint_participation_cache_entry.ticket()});
     cache_indexes_.dof_permutations.emplace_back(
         dof_permutation_cache_entry.cache_index());
 
@@ -213,10 +151,57 @@ void DeformableDriver<T>::DeclareCacheEntries(
                              PartialPermutation* result) {
                   this->CalcVertexPermutation(context, g_id, result);
                 }}),
-        {deformable_contact_cache_entry.ticket()});
+        {constraint_participation_cache_entry.ticket()});
     cache_indexes_.vertex_permutations.emplace(
         g_id, vertex_permutation_cache_entry.cache_index());
+
+    FemSolver<T> model_fem_solver(&fem_model, integrator_.get());
+    /* Cache entry for free motion FEM state and data. */
+    const auto& fem_solver_cache_entry = manager->DeclareCacheEntry(
+        fmt::format("FEM solver and data for body with index {}", i),
+        systems::ValueProducer(
+            model_fem_solver,
+            std::function<void(const systems::Context<T>&, FemSolver<T>*)>{
+                [this, i](const systems::Context<T>& context,
+                          FemSolver<T>* fem_solver) {
+                  this->CalcFreeMotionFemSolver(context, i, fem_solver);
+                }}),
+        {fem_state_cache_entry.ticket(),
+         vertex_permutation_cache_entry.ticket()});
+    cache_indexes_.fem_solvers.emplace_back(
+        fem_solver_cache_entry.cache_index());
   }
+
+  const auto& participating_velocity_mux_cache_entry =
+      manager->DeclareCacheEntry(
+          "multiplexer for participating velocities",
+          systems::ValueProducer(
+              this, &DeformableDriver<T>::CalcParticipatingVelocityMultiplexer),
+          constraint_participation_tickets);
+  cache_indexes_.participating_velocity_mux =
+      participating_velocity_mux_cache_entry.cache_index();
+
+  auto constraint_participation_and_xd_tickets =
+      constraint_participation_tickets;
+  constraint_participation_and_xd_tickets.insert(
+      systems::System<T>::xd_ticket());
+  const auto& participating_velocities_cache_entry = manager->DeclareCacheEntry(
+      "participating velocities for all bodies",
+      systems::ValueProducer(this,
+                             &DeformableDriver<T>::CalcParticipatingVelocities),
+      constraint_participation_and_xd_tickets);
+  cache_indexes_.participating_velocities =
+      participating_velocities_cache_entry.cache_index();
+
+  const auto& participating_free_motion_velocities_cache_entry =
+      manager->DeclareCacheEntry(
+          fmt::format("participating free motion velocities for all bodies"),
+          systems::ValueProducer(
+              this,
+              &DeformableDriver<T>::CalcParticipatingFreeMotionVelocities),
+          constraint_participation_and_xd_tickets);
+  cache_indexes_.participating_free_motion_velocities =
+      participating_free_motion_velocities_cache_entry.cache_index();
 }
 
 template <typename T>
@@ -225,18 +210,21 @@ void DeformableDriver<T>::AppendLinearDynamicsMatrix(
   DRAKE_DEMAND(A != nullptr);
   const int num_bodies = deformable_model_->num_bodies();
   for (DeformableBodyIndex index(0); index < num_bodies; ++index) {
-    const SchurComplement<T>& schur_complement =
+    const SchurComplement& schur_complement =
         EvalFreeMotionTangentMatrixSchurComplement(context, index);
-    A->emplace_back(schur_complement.get_D_complement());
+    /* The schur complement is of the tangent matrix of the force balance
+     * whereas the linear dyanmics matrix requires the tangnet matrix of the
+     * momentum balance. Hence, we scale by dt here. */
+    A->push_back(schur_complement.get_D_complement() *
+                 manager_->plant().time_step());
   }
 }
 
 template <typename T>
 void DeformableDriver<T>::AppendDiscreteContactPairs(
     const systems::Context<T>& context,
-    std::vector<DiscreteContactPair<T>>* result) const {
+    DiscreteContactData<DiscreteContactPair<T>>* result) const {
   DRAKE_DEMAND(result != nullptr);
-  std::vector<DiscreteContactPair<T>>& contact_pairs = *result;
 
   const geometry::QueryObject<T>& query_object =
       manager_->plant()
@@ -246,8 +234,11 @@ void DeformableDriver<T>::AppendDiscreteContactPairs(
   const DeformableContact<T>& deformable_contact =
       EvalDeformableContact(context);
 
-  for (const DeformableContactSurface<double>& surface :
-       deformable_contact.contact_surfaces()) {
+  for (int surface_index = 0;
+       surface_index < ssize(deformable_contact.contact_surfaces());
+       ++surface_index) {
+    const DeformableContactSurface<T>& surface =
+        deformable_contact.contact_surfaces()[surface_index];
     /* While our discrete solvers might model constraints as compliant, an
     infinite stiffness indicates to use the stiffest approximation possible
     without sacrifycing numerical conditioning. SAP will use the "near rigid"
@@ -281,8 +272,9 @@ void DeformableDriver<T>::AppendDiscreteContactPairs(
       const T& phi0 = surface.signed_distances()[i];
       const T fn0 = NAN;  // not used.
       const T d = NAN;    // not used.
-      contact_pairs.push_back({surface.id_A(), surface.id_B(), p_WC, nhat_BA_W,
-                               phi0, fn0, k, d, tau, mu});
+      result->AppendDeformableData(DiscreteContactPair<T>{
+          surface.id_A(), surface.id_B(), p_WC, nhat_BA_W, phi0, fn0, k, d, tau,
+          mu, surface_index, i});
     }
   }
 }
@@ -290,7 +282,7 @@ void DeformableDriver<T>::AppendDiscreteContactPairs(
 template <typename T>
 void DeformableDriver<T>::AppendContactKinematics(
     const systems::Context<T>& context,
-    std::vector<ContactPairKinematics<T>>* result) const {
+    DiscreteContactData<ContactPairKinematics<T>>* result) const {
   DRAKE_DEMAND(result != nullptr);
   /* Since v_AcBc_W = v_WBc - v_WAc the relative velocity Jacobian will be:
      Jv_v_AcBc_W = Jv_v_WBc_W - Jv_v_WAc_W.
@@ -317,7 +309,7 @@ void DeformableDriver<T>::AppendContactKinematics(
         deformable_model_->GetBodyIndex(deformable_model_->GetBodyId(id_A));
     const TreeIndex clique_index_A(tree_topology.num_trees() + index_A);
     const ContactParticipation& participation =
-        deformable_contact.contact_participation(id_A);
+        EvalConstraintParticipation(context, index_A);
     const PartialPermutation& vertex_permutation =
         EvalVertexPermutation(context, id_A);
     /* For now, body B is guaranteed to be rigid. */
@@ -423,9 +415,243 @@ void DeformableDriver<T>::AppendContactKinematics(
           .p_BqC_W = p_BC_W,
           .phi = surface.signed_distances()[i],
           .R_WC = R_WC};
-      result->emplace_back(std::move(jacobian_blocks),
-                           std::move(configuration));
+      result->AppendDeformableData(ContactPairKinematics<T>(
+          std::move(jacobian_blocks), std::move(configuration)));
     }
+  }
+}
+
+template <typename T>
+void DeformableDriver<T>::AppendDeformableRigidFixedConstraintKinematics(
+    const systems::Context<T>& context,
+    std::vector<FixedConstraintKinematics<T>>* result) const {
+  DRAKE_DEMAND(result != nullptr);
+  /* For a fixed constraint between a point p on a deformable body A and a point
+   q on a rigid body B, we define the velocity difference as
+
+     v_ApBq_W = v_WBq - v_WAp.
+
+   The relative velocity Jacobian is then:
+
+     Jv_v_W_ApBq = Jv_v_WBq - Jv_v_WAp.
+
+   We encode the jacobian as two jacobian blocks, each with its own sparsity
+   pattern, by exploiting the fact that the set of DoFs for deformable bodies
+   and rigid bodies are mutually exclusive, and Jv_v_WAp = 0 for rigid dofs
+   and Jv_v_WBq = 0 for deformable dofs. */
+  const int nv = manager_->plant().num_velocities();
+  const MultibodyTreeTopology& tree_topology =
+      manager_->internal_tree().get_topology();
+  const auto& configurations =
+      deformable_model_->vertex_positions_port()
+          .template Eval<geometry::GeometryConfigurationVector<T>>(context);
+  for (DeformableBodyIndex index(0); index < deformable_model_->num_bodies();
+       ++index) {
+    DeformableBodyId body_id = deformable_model_->GetBodyId(index);
+    if (!deformable_model_->HasConstraint(body_id)) continue;
+
+    const FemModel<T>& fem_model = deformable_model_->GetFemModel(body_id);
+    const DirichletBoundaryCondition<T>& bc =
+        fem_model.dirichlet_boundary_condition();
+
+    /* Returns true iff for the deformable body with `body_id`, the given vertex
+     index is under boundary condition. */
+    auto is_under_bc = [&](int vertex_index) {
+      return bc.index_to_boundary_state().count(
+                 multibody::fem::FemNodeIndex(vertex_index)) > 0;
+    };
+
+    const ContactParticipation& participation =
+        EvalConstraintParticipation(context, index);
+    // Each deformable body forms its own clique and are indexed in inceasing
+    // DeformableBodyIndex order and placed after all rigid cliques.
+    const TreeIndex clique_index_A(tree_topology.num_trees() + index);
+    GeometryId geometry_id = deformable_model_->GetGeometryId(body_id);
+    const PartialPermutation& vertex_permutation =
+        EvalVertexPermutation(context, geometry_id);
+    const VectorX<T>& p_WVs = configurations.value(geometry_id);
+
+    for (const MultibodyConstraintId& constraint_id :
+         deformable_model_->fixed_constraint_ids(body_id)) {
+      const DeformableRigidFixedConstraintSpec& spec =
+          deformable_model_->fixed_constraint_spec(constraint_id);
+      const int num_vertices_in_constraint = ssize(spec.vertices);
+      /* The Jacobian block for the deformable body A. */
+      Block3x3SparseMatrix<T> negative_Jv_v_WAp(
+          num_vertices_in_constraint, participation.num_vertices_in_contact());
+      std::vector<typename Block3x3SparseMatrix<T>::Triplet> jacobian_triplets;
+      jacobian_triplets.reserve(num_vertices_in_constraint);
+      /* The Jacobian block for the rigid body B. */
+      const BodyIndex index_B = spec.body_B;
+      const TreeIndex tree_index = tree_topology.body_to_tree_index(index_B);
+      const Body<T>& rigid_body = manager_->plant().get_body(index_B);
+      const math::RigidTransform<T>& X_WB =
+          manager_->plant().EvalBodyPoseInWorld(context, rigid_body);
+      /* The positions of the anchor points on the rigid body in world frame. */
+      VectorX<T> p_WQs(3 * num_vertices_in_constraint);
+      /* The positions of the anchor points on the rigid body in rigid body's
+       frame. */
+      VectorX<T> p_BQs(3 * num_vertices_in_constraint);
+      for (int v = 0; v < num_vertices_in_constraint; ++v) {
+        /* The Jacobian for the deformable body is identity for a free vertex
+         and zero otherwise. */
+        if (!is_under_bc(spec.vertices[v])) {
+          const int permuted_vertex_index =
+              vertex_permutation.permuted_index(spec.vertices[v]);
+          jacobian_triplets.emplace_back(v, permuted_vertex_index,
+                                         -Matrix3<T>::Identity());
+        }
+        p_BQs.template segment<3>(3 * v) = spec.p_BQs[v].cast<T>();
+        p_WQs.template segment<3>(3 * v) = X_WB * spec.p_BQs[v].cast<T>();
+      }
+      negative_Jv_v_WAp.SetFromTriplets(jacobian_triplets);
+      MatrixBlock<T> jacobian_block_A(std::move(negative_Jv_v_WAp));
+
+      /* Positions of fixed vertices of the deformable body in the deformable
+       body's frame which is always assumed to be the world frame. */
+      VectorX<T> p_WPs(3 * spec.vertices.size());
+      for (int v = 0; v < ssize(spec.vertices); ++v) {
+        p_WPs.template segment<3>(3 * v) =
+            p_WVs.template segment<3>(3 * spec.vertices[v]);
+      }
+      VectorX<T> p_PQs_W = p_WQs - p_WPs;
+      // By convention, deformable bodies are assigned object indexes after all
+      // rigid bodies.
+      const int object_A =
+          index + manager_->plant().num_bodies();  // Deformable body.
+      const int object_B = index_B;                // Rigid body.
+
+      if (tree_index.is_valid()) {
+        /* Rigid body is not welded to world. */
+        const int clique_index_B = tree_index;
+        const Frame<T>& frame_W = manager_->plant().world_frame();
+        MatrixX<T> Jv_v_WBq(3 * num_vertices_in_constraint, nv);
+        manager_->internal_tree().CalcJacobianTranslationalVelocity(
+            context, JacobianWrtVariable::kV, rigid_body.body_frame(), frame_W,
+            Eigen::Map<const Matrix3X<T>>(p_WQs.data(), 3, p_WQs.size() / 3),
+            frame_W, frame_W, &Jv_v_WBq);
+        MatrixBlock<T> jacobian_block_B(
+            Jv_v_WBq.middleCols(tree_topology.tree_velocities_start(tree_index),
+                                tree_topology.num_tree_velocities(tree_index)));
+        SapConstraintJacobian<T> J(clique_index_A, std::move(jacobian_block_A),
+                                   clique_index_B, std::move(jacobian_block_B));
+        result->emplace_back(object_A, std::move(p_WPs), object_B,
+                             std::move(p_BQs), std::move(p_PQs_W),
+                             std::move(J));
+      } else {
+        /* Rigid body is welded to world. */
+        SapConstraintJacobian<T> J(clique_index_A, std::move(jacobian_block_A));
+        result->emplace_back(object_A, std::move(p_WPs), std::move(p_PQs_W),
+                             std::move(J));
+      }
+    }
+  }
+}
+
+template <typename T>
+void DeformableDriver<T>::CalcDeformableContactInfo(
+    const systems::Context<T>& context,
+    std::vector<DeformableContactInfo<T>>* contact_info) const {
+  DRAKE_DEMAND(contact_info != nullptr);
+
+  const DeformableContact<T>& deformable_contact =
+      EvalDeformableContact(context);
+
+  const std::vector<DeformableContactSurface<T>>& contact_surfaces =
+      deformable_contact.contact_surfaces();
+  const int num_surfaces = contact_surfaces.size();
+
+  contact_info->clear();
+  contact_info->reserve(num_surfaces);
+
+  const DiscreteContactData<DiscreteContactPair<T>>& discrete_pairs =
+      manager_->EvalDiscreteContactPairs(context);
+  const DiscreteContactData<ContactPairKinematics<T>>& contact_kinematics =
+      manager_->EvalContactKinematics(context);
+  const contact_solvers::internal::ContactSolverResults<T>& solver_results =
+      manager_->EvalContactSolverResults(context);
+
+  const VectorX<T>& fn = solver_results.fn;
+  const VectorX<T>& ft = solver_results.ft;
+  const VectorX<T>& vt = solver_results.vt;
+  const VectorX<T>& vn = solver_results.vn;
+
+  const int num_contacts = discrete_pairs.size();
+  DRAKE_DEMAND(fn.size() == num_contacts);
+  DRAKE_DEMAND(ft.size() == 2 * num_contacts);
+  DRAKE_DEMAND(vn.size() == num_contacts);
+  DRAKE_DEMAND(vt.size() == 2 * num_contacts);
+
+  /* The spatial force on the deformable body A at the centroid of the contact
+   patch Ao, expressed in the world frame. */
+  std::vector<SpatialForce<T>> F_Ao_W_per_surface(num_surfaces,
+                                                  SpatialForce<T>::Zero());
+  std::vector<std::vector<DeformableContactPointData<T>>> contact_point_data(
+      num_surfaces);
+  for (int surface_index = 0; surface_index < num_surfaces; ++surface_index) {
+    contact_point_data[surface_index].reserve(
+        contact_surfaces[surface_index].num_contact_points());
+  }
+
+  for (int icontact = discrete_pairs.deformable_contact_start();
+       icontact < discrete_pairs.deformable_contact_start() +
+                      discrete_pairs.num_deformable_contacts();
+       ++icontact) {
+    const auto& pair = discrete_pairs[icontact];
+    /* Contact point C. */
+    const Vector3<T>& p_WC = pair.p_WC;
+    const math::RotationMatrix<T>& R_WC =
+        contact_kinematics[icontact].configuration.R_WC;
+
+    /* Contact forces applied on B at contact point point C expressed in the
+     contact frame. */
+    const Vector3<T> f_Bc_C(ft(2 * icontact), ft(2 * icontact + 1),
+                            fn(icontact));
+    /* Contact force applied on A at contact point C in the world frame. */
+    const Vector3<T> f_Ac_W = -(R_WC * f_Bc_C);
+
+    /* All deformable discrete contact pair has `surface_index` attribute. */
+    DRAKE_DEMAND(pair.surface_index.has_value());
+    const int surface_index = pair.surface_index.value();
+    const auto& s = contact_surfaces[surface_index];
+    /* Surface's centroid point O. */
+    const Vector3<T>& p_WO = s.contact_mesh_W().centroid();
+
+    /* Accumulate spatial force at the centroid of the contact patch for the
+     corresponding contact surface. */
+    const Vector3<T> p_CO_W = p_WO - p_WC;
+    const SpatialForce<T> Fc_Ao_W =
+        SpatialForce<T>(Vector3<T>::Zero(), f_Ac_W).Shift(p_CO_W);
+    F_Ao_W_per_surface[surface_index] += Fc_Ao_W;
+
+    /* Velocity of Ac relative to Bc in the tangent direction. */
+    /* N.B. Computation of contact kinematics uses the convention of computing
+     J_AcBc_C and thus J_AcBc_C * v = v_AcBc_W (i.e. it computes the relative
+     velocity of Bc with respect to Ac). Thus we flip the sign here for the
+     convention used by DeformableContactPointData, which measures the relative
+     velocity of Ac w.r.t. Bc). */
+    const Vector3<T> vt_BcAc_C(-vt(2 * icontact), -vt(2 * icontact + 1), 0);
+    const Vector3<T> vt_BcAc_W = R_WC * vt_BcAc_C;
+
+    /* Traction vector applied to body A at point Ac (Ac and Bc are coincident)
+     expressed in the world frame. */
+    DRAKE_DEMAND(pair.face_index.has_value());
+    const int face_index = pair.face_index.value();
+    const Vector3<T> traction_Ac_W =
+        f_Ac_W / s.contact_mesh_W().area(face_index);
+
+    contact_point_data[surface_index].emplace_back(p_WC, face_index, vt_BcAc_W,
+                                                   traction_Ac_W);
+  }
+  for (int surface_index = 0; surface_index < num_surfaces; ++surface_index) {
+    const DeformableContactSurface<T>& surface =
+        contact_surfaces[surface_index];
+    // TODO(xuchenhan-tri): consider avoid making a copy of the contact mesh
+    // every time DeformableContactInfo is computed.
+    contact_info->emplace_back(surface.id_A(), surface.id_B(),
+                               contact_surfaces[surface_index].contact_mesh_W(),
+                               F_Ao_W_per_surface[surface_index],
+                               std::move(contact_point_data[surface_index]));
   }
 }
 
@@ -524,42 +750,55 @@ const FemState<T>& DeformableDriver<T>::EvalFemState(
 }
 
 template <typename T>
-void DeformableDriver<T>::CalcFreeMotionFemState(
+void DeformableDriver<T>::CalcFreeMotionFemSolver(
     const systems::Context<T>& context, DeformableBodyIndex index,
-    FemState<T>* fem_state_star) const {
+    FemSolver<T>* fem_solver) const {
+  const DeformableBodyId body_id = deformable_model_->GetBodyId(index);
+  const GeometryId geometry_id = deformable_model_->GetGeometryId(body_id);
   const FemState<T>& fem_state = EvalFemState(context, index);
-  const DeformableBodyId id = deformable_model_->GetBodyId(index);
-  const FemModel<T>& model = deformable_model_->GetFemModel(id);
-  // TODO(xuchenhan-tri): We should expose an API to set the solver tolerance
-  // here.
-  const FemSolver<T> solver(&model, integrator_.get());
-  FemSolverScratchData<T>& scratch =
-      manager_->plant()
-          .get_cache_entry(cache_indexes_.fem_solver_scratches.at(index))
-          .get_mutable_cache_entry_value(context)
-          .template GetMutableValueOrThrow<FemSolverScratchData<T>>();
-  solver.AdvanceOneTimeStep(fem_state, fem_state_star, &scratch);
+  /* Write the non-participating vertices. */
+  std::unordered_set<int> nonparticipating_vertices;
+  const PartialPermutation& permutation =
+      EvalVertexPermutation(context, geometry_id);
+  DRAKE_DEMAND(3 * permutation.domain_size() == fem_state.num_dofs());
+  for (int v = 0; v < permutation.domain_size(); ++v) {
+    if (!permutation.participates(v)) {
+      nonparticipating_vertices.insert(v);
+    }
+  }
+  fem_solver->AdvanceOneTimeStep(fem_state, nonparticipating_vertices);
+}
+
+template <typename T>
+const FemSolver<T>& DeformableDriver<T>::EvalFreeMotionFemSolver(
+    const systems::Context<T>& context, DeformableBodyIndex index) const {
+  return manager_->plant()
+      .get_cache_entry(cache_indexes_.fem_solvers.at(index))
+      .template Eval<FemSolver<T>>(context);
 }
 
 template <typename T>
 const FemState<T>& DeformableDriver<T>::EvalFreeMotionFemState(
     const systems::Context<T>& context, DeformableBodyIndex index) const {
-  return manager_->plant()
-      .get_cache_entry(cache_indexes_.free_motion_fem_states.at(index))
-      .template Eval<FemState<T>>(context);
+  const FemSolver<T>& fem_solver = EvalFreeMotionFemSolver(context, index);
+  return fem_solver.next_fem_state();
+}
+
+template <typename T>
+const SchurComplement&
+DeformableDriver<T>::EvalFreeMotionTangentMatrixSchurComplement(
+    const systems::Context<T>& context, DeformableBodyIndex index) const {
+  const FemSolver<T>& fem_solver = EvalFreeMotionFemSolver(context, index);
+  return fem_solver.next_schur_complement();
 }
 
 template <typename T>
 void DeformableDriver<T>::CalcNextFemState(const systems::Context<T>& context,
                                            DeformableBodyIndex index,
                                            FemState<T>* next_fem_state) const {
-  const DeformableContact<T>& contact_data = EvalDeformableContact(context);
-  const GeometryId g_id =
-      deformable_model_->GetGeometryId(deformable_model_->GetBodyId(index));
   const ContactParticipation& participation =
-      contact_data.contact_participation(g_id);
+      EvalConstraintParticipation(context, index);
   if (participation.num_vertices_in_contact() == 0) {
-    // TODO(xuchenhan-tri): Account for constraints when we support them.
     /* The next states are the free motion states if no vertex of the
      deformable body participates in contact. */
     const FemState<T>& free_motion_state =
@@ -589,10 +828,10 @@ void DeformableDriver<T>::CalcNextFemState(const systems::Context<T>& context,
         body_participating_v_next - body_participating_v_star;
     /* Compute the value of the post-constraint non-participating
      velocities using Schur complement. */
-    const SchurComplement<T>& schur_complement =
+    const SchurComplement& schur_complement =
         EvalFreeMotionTangentMatrixSchurComplement(context, index);
     const VectorX<T> body_nonparticipating_dv =
-        schur_complement.SolveForY(body_participating_dv);
+        schur_complement.SolveForX(body_participating_dv);
     /* Concatenate the participating and non-participating velocities and
      then apply the inverse permutation to put the dofs in their original
      order. */
@@ -626,7 +865,33 @@ void DeformableDriver<T>::CalcDeformableContact(
       manager_->plant()
           .get_geometry_query_input_port()
           .template Eval<geometry::QueryObject<T>>(context);
+  /* Compute the DeformableContact from the geometry engine. */
   query_object.ComputeDeformableContact(result);
+
+  /* Complete the result with information on constraints other than contact. */
+  for (DeformableBodyIndex body_index(0);
+       body_index < deformable_model_->num_bodies(); ++body_index) {
+    DeformableBodyId body_id = deformable_model_->GetBodyId(body_index);
+    /* Add in constraints. */
+    if (deformable_model_->HasConstraint(body_id)) {
+      std::unordered_set<int> fixed_vertices;
+      for (const MultibodyConstraintId& constraint_id :
+           deformable_model_->fixed_constraint_ids(body_id)) {
+        const DeformableRigidFixedConstraintSpec& spec =
+            deformable_model_->fixed_constraint_spec(constraint_id);
+        fixed_vertices.insert(spec.vertices.begin(), spec.vertices.end());
+      }
+      /* Register the geometry in case it hasn't been registered because it's
+       not participating in contact but is participating in other types of
+       constraints. */
+      GeometryId geometry_id = deformable_model_->GetGeometryId(body_id);
+      if (!result->IsRegistered(geometry_id)) {
+        result->RegisterDeformableGeometry(
+            geometry_id, deformable_model_->GetFemModel(body_id).num_nodes());
+      }
+      result->Participate(geometry_id, fixed_vertices);
+    }
+  }
 }
 
 template <typename T>
@@ -638,14 +903,31 @@ const DeformableContact<T>& DeformableDriver<T>::EvalDeformableContact(
 }
 
 template <typename T>
+void DeformableDriver<T>::CalcConstraintParticipation(
+    const systems::Context<T>& context, DeformableBodyIndex index,
+    geometry::internal::ContactParticipation* constraint_participation) const {
+  DRAKE_DEMAND(constraint_participation != nullptr);
+  const DeformableBodyId body_id = deformable_model_->GetBodyId(index);
+  const GeometryId geometry_id = deformable_model_->GetGeometryId(body_id);
+  const DeformableContact<T>& contact_data = EvalDeformableContact(context);
+  DRAKE_DEMAND(contact_data.IsRegistered(geometry_id));
+  *constraint_participation = contact_data.contact_participation(geometry_id);
+}
+
+template <typename T>
+const ContactParticipation& DeformableDriver<T>::EvalConstraintParticipation(
+    const Context<T>& context, DeformableBodyIndex index) const {
+  return manager_->plant()
+      .get_cache_entry(cache_indexes_.constraint_participations.at(index))
+      .template Eval<ContactParticipation>(context);
+}
+
+template <typename T>
 void DeformableDriver<T>::CalcDofPermutation(const Context<T>& context,
                                              DeformableBodyIndex index,
                                              PartialPermutation* result) const {
-  const DeformableBodyId body_id = deformable_model_->GetBodyId(index);
-  const GeometryId geometry_id = deformable_model_->GetGeometryId(body_id);
-  *result = EvalDeformableContact(context)
-                .contact_participation(geometry_id)
-                .CalcDofPartialPermutation();
+  *result =
+      EvalConstraintParticipation(context, index).CalcDofPartialPermutation();
 }
 
 template <typename T>
@@ -660,8 +942,9 @@ template <typename T>
 void DeformableDriver<T>::CalcVertexPermutation(
     const Context<T>& context, GeometryId id,
     PartialPermutation* result) const {
-  *result = EvalDeformableContact(context)
-                .contact_participation(id)
+  const DeformableBodyIndex index =
+      deformable_model_->GetBodyIndex(deformable_model_->GetBodyId(id));
+  *result = EvalConstraintParticipation(context, index)
                 .CalcVertexPartialPermutation();
 }
 
@@ -740,75 +1023,6 @@ const VectorX<T>& DeformableDriver<T>::EvalParticipatingFreeMotionVelocities(
   return manager_->plant()
       .get_cache_entry(cache_indexes_.participating_free_motion_velocities)
       .template Eval<VectorX<T>>(context);
-}
-
-template <typename T>
-void DeformableDriver<T>::CalcFreeMotionTangentMatrix(
-    const systems::Context<T>& context, DeformableBodyIndex index,
-    PetscSymmetricBlockSparseMatrix* tangent_matrix) const {
-  DRAKE_DEMAND(tangent_matrix != nullptr);
-  const DeformableBodyId id = deformable_model_->GetBodyId(index);
-  const FemModel<T>& fem_model = deformable_model_->GetFemModel(id);
-  const FemState<T>& fem_state_star = EvalFreeMotionFemState(context, index);
-  /* Multiply by dt because we need the tangent matrix of the momentum balance
-   instead of the force balance. */
-  fem_model.CalcTangentMatrix(
-      fem_state_star, manager_->plant().time_step() * integrator_->GetWeights(),
-      tangent_matrix);
-  tangent_matrix->AssembleIfNecessary();
-}
-
-template <typename T>
-const PetscSymmetricBlockSparseMatrix&
-DeformableDriver<T>::EvalFreeMotionTangentMatrix(
-    const systems::Context<T>& context, DeformableBodyIndex index) const {
-  return manager_->plant()
-      .get_cache_entry(cache_indexes_.free_motion_tangent_matrices.at(index))
-      .template Eval<PetscSymmetricBlockSparseMatrix>(context);
-}
-
-template <typename T>
-void DeformableDriver<T>::CalcFreeMotionTangentMatrixSchurComplement(
-    const systems::Context<T>& context, DeformableBodyIndex index,
-    SchurComplement<T>* result) const {
-  DRAKE_DEMAND(result != nullptr);
-  const DeformableContact<T>& contact_data = EvalDeformableContact(context);
-  const DeformableBodyId body_id = deformable_model_->GetBodyId(index);
-  const GeometryId geometry_id = deformable_model_->GetGeometryId(body_id);
-  /* Avoid the expensive tangent matrix and Schur complement calculation if
-   there's no contact at all. */
-  const ContactParticipation& body_contact_participation =
-      contact_data.contact_participation(geometry_id);
-  if (body_contact_participation.num_vertices_in_contact() == 0) {
-    *result = SchurComplement<T>();
-    return;
-  }
-  const PetscSymmetricBlockSparseMatrix& tangent_matrix =
-      EvalFreeMotionTangentMatrix(context, index);
-  std::vector<int> participating_vertices;
-  std::vector<int> non_participating_vertices;
-  const PartialPermutation& permutation =
-      EvalVertexPermutation(context, geometry_id);
-  DRAKE_DEMAND(3 * permutation.domain_size() == tangent_matrix.cols());
-  for (int v = 0; v < permutation.domain_size(); ++v) {
-    if (permutation.participates(v)) {
-      participating_vertices.emplace_back(v);
-    } else {
-      non_participating_vertices.emplace_back(v);
-    }
-  }
-  *result = tangent_matrix.CalcSchurComplement(non_participating_vertices,
-                                               participating_vertices);
-}
-
-template <typename T>
-const SchurComplement<T>&
-DeformableDriver<T>::EvalFreeMotionTangentMatrixSchurComplement(
-    const systems::Context<T>& context, DeformableBodyIndex index) const {
-  return manager_->plant()
-      .get_cache_entry(
-          cache_indexes_.free_motion_tangent_matrix_schur_complements.at(index))
-      .template Eval<SchurComplement<T>>(context);
 }
 
 template class DeformableDriver<double>;

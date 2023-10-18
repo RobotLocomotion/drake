@@ -333,7 +333,7 @@ __attribute__((unused)) bool HasCorrectNumberOfVariables(
 // constraints stored in the gurobi model.
 // @return error as an integer. The full set of error values are
 // described here :
-// https://www.gurobi.com/documentation/9.5/refman/error_codes.html
+// https://www.gurobi.com/documentation/10.0/refman/error_codes.html
 // This function assumes `vars` doesn't contain duplicate variables.
 int AddLinearConstraintNoDuplication(
     const MathematicalProgram& prog, GRBmodel* model,
@@ -387,7 +387,7 @@ int AddLinearConstraintNoDuplication(
 
   // The matrix A_gurobi is stored in Compressed Sparse Row (CSR) format, using
   // three vectors cbeg, cind and cval. Please refer to
-  // https://www.gurobi.com/documentation/9.5/refman/c_addconstrs.html for the
+  // https://www.gurobi.com/documentation/10.0/refman/c_addconstrs.html for the
   // meaning of these three vectors. The non-zero entries in the i'th row of
   // A_gurobi is stored in the chunk cind[cbeg[i]:cbeg[i+1]] and
   // cval[cbeg[i]:cbeg[i+1]]
@@ -540,7 +540,7 @@ int AddSecondOrderConeConstraints(
 
     // Gurobi uses a matrix Q to differentiate Lorentz cone and rotated Lorentz
     // cone constraint.
-    // https://www.gurobi.com/documentation/9.5/refman/c_grbaddqconstr.html
+    // https://www.gurobi.com/documentation/10.0/refman/c_addqconstr.html
     // For Lorentz cone constraint,
     // Q = [-1 0 0 ... 0]
     //     [ 0 1 0 ... 0]

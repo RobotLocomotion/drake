@@ -1,8 +1,10 @@
 #include <gflags/gflags.h>
-#include <vtkDecimatePro.h>
-#include <vtkOBJWriter.h>
-#include <vtkSTLReader.h>
-#include <vtkTriangleFilter.h>
+
+// To ease build system upkeep, we annotate VTK includes with their deps.
+#include <vtkDecimatePro.h>     // vtkFiltersCore
+#include <vtkOBJWriter.h>       // vtkIOGeometry
+#include <vtkSTLReader.h>       // vtkIOGeometry
+#include <vtkTriangleFilter.h>  // vtkFiltersCore
 
 #include "drake/common/drake_throw.h"
 #include "drake/common/text_logging.h"

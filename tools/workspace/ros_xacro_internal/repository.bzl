@@ -1,4 +1,4 @@
-load("@drake//tools/workspace:github.bzl", "github_archive")
+load("//tools/workspace:github.bzl", "github_archive")
 
 def ros_xacro_internal_repository(
         name,

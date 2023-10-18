@@ -51,7 +51,7 @@ class HardwareSimTest:
         result = re.sub(r"  *", " ", result)
         return result
 
-    def _run(self, scenario_file, scenario_name, extra=None):
+    def _run(self, scenario_file, scenario_name, extra=None, graphviz=None):
         """Runs the given scenario for 1 second, checking that it does not
         crash. Allows overriding scenario options using the optional `extra`
         dictionary"""
@@ -64,6 +64,8 @@ class HardwareSimTest:
             f"--scenario_name={scenario_name}",
             f"--scenario_text={scenario_text}",
         ]
+        if graphviz is not None:
+            args.append(f"--graphviz={graphviz}")
         printable_args = " ".join([
             shlex.quote(re.sub(r"[^=]*\.runfiles/", "", x))
             for x in args
@@ -82,3 +84,11 @@ class HardwareSimTest:
     def test_Demo(self):
         """Tests the Demo example."""
         self._run(self._example_scenarios, "Demo")
+
+    def test_graphviz(self):
+        out_file = f"{os.environ['TEST_TMPDIR']}/graph.dot"
+        self.assertFalse(os.path.exists(out_file))
+        self._run(self._test_scenarios, "Defaults", graphviz=out_file)
+        with open(out_file, encoding="utf-8") as f:
+            content = f.read()
+        self.assertIn("(split)", content)

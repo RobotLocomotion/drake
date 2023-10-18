@@ -813,6 +813,15 @@ GTEST_TEST(RigidTransform, TestMemoryLayoutOfRigidTransformDouble) {
   EXPECT_EQ(sizeof(X), 12 * sizeof(double));
 }
 
+GTEST_TEST(RigidTransform, Hash) {
+  RigidTransform<double> X_AB(Vector3d{0.0, 0.5, 1.0});
+  RigidTransform<double> X_CD = X_AB;
+  const DefaultHash hash_func;
+  EXPECT_EQ(hash_func(X_AB), hash_func(X_CD));
+  X_CD.set_translation(Vector3d{1.0, 0.0, 0.0});
+  EXPECT_NE(hash_func(X_AB), hash_func(X_CD));
+}
+
 // This utility function helps verify the output string from RigidTransform's
 // stream insertion operator <<.  Specifically, it does the following:
 // 1. Verifies the output string has form: "rpy = 0.125 0.25 0.5 xyz = 7 6 5";

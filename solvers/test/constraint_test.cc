@@ -67,10 +67,15 @@ GTEST_TEST(TestConstraint, LinearConstraintSparse) {
   LinearConstraint dut(A_sparse, lb, ub);
   EXPECT_EQ(dut.num_vars(), 3);
   EXPECT_EQ(dut.num_constraints(), 2);
+  // We expect the sparse constructor to not construct the dense A matrix.
+  EXPECT_FALSE(dut.is_dense_A_constructed());
   EXPECT_EQ(dut.get_sparse_A().nonZeros(), A_sparse.nonZeros());
   EXPECT_TRUE(
       CompareMatrices(dut.get_sparse_A().toDense(), A_sparse.toDense()));
   EXPECT_TRUE(CompareMatrices(dut.GetDenseA(), A_sparse.toDense()));
+  // Now that the dense version of A has been accessed, we expect A to have been
+  // constructed.
+  EXPECT_TRUE(dut.is_dense_A_constructed());
   EXPECT_TRUE(CompareMatrices(dut.lower_bound(), lb));
   EXPECT_TRUE(CompareMatrices(dut.upper_bound(), ub));
 
@@ -97,10 +102,15 @@ GTEST_TEST(TestConstraint, LinearEqualityConstraintSparse) {
   A_sparse.setFromTriplets(A_triplets.begin(), A_triplets.end());
   Eigen::Vector2d bound(0, 1);
   LinearEqualityConstraint dut(A_sparse, bound);
+  // We expect the sparse constructor to not construct the dense A matrix.
+  EXPECT_FALSE(dut.is_dense_A_constructed());
   EXPECT_EQ(dut.get_sparse_A().nonZeros(), A_sparse.nonZeros());
   EXPECT_TRUE(
       CompareMatrices(dut.get_sparse_A().toDense(), A_sparse.toDense()));
   EXPECT_TRUE(CompareMatrices(dut.GetDenseA(), A_sparse.toDense()));
+  // Now that the dense version of A has been accessed, we expect a dense A to
+  // be available.
+  EXPECT_TRUE(dut.is_dense_A_constructed());
   EXPECT_TRUE(CompareMatrices(dut.lower_bound(), bound));
   EXPECT_TRUE(CompareMatrices(dut.upper_bound(), bound));
 }
@@ -914,8 +924,8 @@ GTEST_TEST(ToLatex, PolynomialConstraint) {
   const Polynomiald x("x");
   const Polynomiald y("y");
   const Polynomiald poly = (x - 1) * (x - 1) + (y + 2) * (y + 2);
-  const std::vector<Polynomiald::VarType> var_mapping = {
-      x.GetSimpleVariable(), y.GetSimpleVariable()};
+  const std::vector<Polynomiald::VarType> var_mapping = {x.GetSimpleVariable(),
+                                                         y.GetSimpleVariable()};
   PolynomialConstraint c(Vector1<Polynomiald>(poly), var_mapping, Vector1d{-1},
                          Vector1d{1});
   c.set_description("test");

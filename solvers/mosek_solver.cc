@@ -50,7 +50,11 @@ class MosekSolver::License {
     }
 
     if (rescode != MSK_RES_OK) {
-      throw std::runtime_error("Could not acquire MOSEK license.");
+      throw std::runtime_error(
+          fmt::format("Could not acquire MOSEK license: {}. See "
+                      "https://docs.mosek.com/10.0/capi/"
+                      "response-codes.html#mosek.rescode for details.",
+                      fmt_streamed(rescode)));
     }
   }
 

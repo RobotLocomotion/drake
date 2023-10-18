@@ -6,14 +6,15 @@
 #include <fmt/format.h>
 
 #include "drake/lcm/drake_lcm.h"
+#include "drake/systems/lcm/lcm_system_graphviz.h"
 
 namespace drake {
 namespace systems {
 namespace lcm {
 
 using drake::lcm::DrakeLcm;
-using drake::lcm::DrakeLcmParams;
 using drake::lcm::DrakeLcmInterface;
+using drake::lcm::DrakeLcmParams;
 using drake::lcm::DrakeSubscriptionInterface;
 
 LcmInterfaceSystem::LcmInterfaceSystem(std::string lcm_url)
@@ -27,8 +28,7 @@ LcmInterfaceSystem::LcmInterfaceSystem(std::unique_ptr<DrakeLcmInterface> owned)
   owned_lcm_ = std::move(owned);
 }
 
-LcmInterfaceSystem::LcmInterfaceSystem(DrakeLcmInterface* lcm)
-    : lcm_(lcm) {
+LcmInterfaceSystem::LcmInterfaceSystem(DrakeLcmInterface* lcm) : lcm_(lcm) {
   DRAKE_THROW_UNLESS(lcm != nullptr);
 }
 
@@ -38,9 +38,9 @@ std::string LcmInterfaceSystem::get_lcm_url() const {
   return lcm_->get_lcm_url();
 }
 
-void LcmInterfaceSystem::Publish(
-    const std::string& channel, const void* data, int data_size,
-    std::optional<double> time_sec) {
+void LcmInterfaceSystem::Publish(const std::string& channel, const void* data,
+                                 int data_size,
+                                 std::optional<double> time_sec) {
   lcm_->Publish(channel, data, data_size, time_sec);
 }
 
@@ -77,8 +77,7 @@ void LcmInterfaceSystem::OnHandleSubscriptionsError(
 // change as a direct result of this method.
 void LcmInterfaceSystem::DoCalcNextUpdateTime(
     const Context<double>& context,
-    systems::CompositeEventCollection<double>* events,
-    double* time) const {
+    systems::CompositeEventCollection<double>* events, double* time) const {
   const int timeout_millis = 0;  // Do not block.
   const int num_handled = lcm_->HandleSubscriptions(timeout_millis);
   if (num_handled > 0) {
@@ -95,6 +94,24 @@ void LcmInterfaceSystem::DoCalcNextUpdateTime(
   } else {
     *time = std::numeric_limits<double>::infinity();
   }
+}
+
+LeafSystem<double>::GraphvizFragment LcmInterfaceSystem::DoGetGraphvizFragment(
+    const GraphvizFragmentParams& params) const {
+  const std::string node_id = internal::LcmSystemGraphviz::get_node_id(*this);
+
+  // Set the well-known ID, enable twaining, and tack on the URL.
+  GraphvizFragmentParams new_params{params};
+  new_params.node_id = node_id;
+  new_params.options.emplace("split", "I/O");
+  new_params.header_lines.push_back(fmt::format("lcm_url={}", get_lcm_url()));
+  GraphvizFragment result =
+      LeafSystem<double>::DoGetGraphvizFragment(new_params);
+  result.fragments.push_back(fmt::format(
+      "{}in [color={}];", node_id, internal::LcmSystemGraphviz::get_color()));
+  result.fragments.push_back(fmt::format(
+      "{}out [color={}];", node_id, internal::LcmSystemGraphviz::get_color()));
+  return result;
 }
 
 }  // namespace lcm

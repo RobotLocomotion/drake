@@ -10,6 +10,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/fmt_ostream.h"
+#include "drake/common/hash.h"
 
 namespace drake {
 namespace math {
@@ -146,15 +147,15 @@ class RollPitchYaw {
 
   /// Set the roll-angle underlying `this` %RollPitchYaw.
   /// @param[in] r roll angle (in units of radians).
-  void set_roll_angle(const T& r)  { roll_pitch_yaw_(0) = r; }
+  void set_roll_angle(const T& r) { roll_pitch_yaw_(0) = r; }
 
   /// Set the pitch-angle underlying `this` %RollPitchYaw.
   /// @param[in] p pitch angle (in units of radians).
-  void set_pitch_angle(const T& p)  { roll_pitch_yaw_(1) = p; }
+  void set_pitch_angle(const T& p) { roll_pitch_yaw_(1) = p; }
 
   /// Set the yaw-angle underlying `this` %RollPitchYaw.
   /// @param[in] y yaw angle (in units of radians).
-  void  set_yaw_angle(const T& y) { roll_pitch_yaw_(2) = y; }
+  void set_yaw_angle(const T& y) { roll_pitch_yaw_(2) = y; }
 
   /// Returns a quaternion representation of `this` %RollPitchYaw.
   Eigen::Quaternion<T> ToQuaternion() const;
@@ -175,8 +176,8 @@ class RollPitchYaw {
   /// @param[in] tolerance maximum allowable absolute difference between the
   /// matrix elements in `this` and `other`.
   /// @returns `true` if `‖this - other‖∞ <= tolerance`.
-  boolean<T> IsNearlyEqualTo(
-      const RollPitchYaw<T>& other, double tolerance) const {
+  boolean<T> IsNearlyEqualTo(const RollPitchYaw<T>& other,
+                             double tolerance) const {
     const Vector3<T> difference = vector() - other.vector();
     return difference.template lpNorm<Eigen::Infinity>() <= tolerance;
   }
@@ -197,7 +198,7 @@ class RollPitchYaw {
     const T& p = pitch_angle();
     const T& y = yaw_angle();
     return (-M_PI <= r && r <= M_PI) && (-M_PI / 2 <= p && p <= M_PI / 2) &&
-        (-M_PI <= y && y <= M_PI);
+           (-M_PI <= y && y <= M_PI);
   }
 
   /// Returns true if the pitch-angle `p` is close to gimbal-lock, which means
@@ -309,8 +310,8 @@ class RollPitchYaw {
     // In other words, `rpyDt = M * w_AD_A`.
     // TODO(Mitiguy) Improve speed -- last column of M is (0, 0, 1).
     // TODO(Mitiguy) Improve accuracy when `cos(p) ≈ 0`.
-    const Matrix3<T> M = CalcMatrixRelatingRpyDtToAngularVelocityInParent(
-        __func__);
+    const Matrix3<T> M =
+        CalcMatrixRelatingRpyDtToAngularVelocityInParent(__func__);
     return M * w_AD_A;
   }
 
@@ -329,8 +330,8 @@ class RollPitchYaw {
     // In other words, `rpyDt = M * w_AD_D`.
     // TODO(Mitiguy) Improve speed -- first column of M is (1, 0, 0).
     // TODO(Mitiguy) Improve accuracy when `cos(p) ≈ 0`.
-    const Matrix3<T> M = CalcMatrixRelatingRpyDtToAngularVelocityInChild(
-        __func__);
+    const Matrix3<T> M =
+        CalcMatrixRelatingRpyDtToAngularVelocityInChild(__func__);
     return M * w_AD_D;
   }
 
@@ -353,8 +354,8 @@ class RollPitchYaw {
   /// of these pitch angles, i.e., when `cos(p) ≈ 0`.
   /// @see CalcMatrixRelatingRpyDtToAngularVelocityInChild()
   const Matrix3<T> CalcMatrixRelatingRpyDtToAngularVelocityInParent() const {
-    const Matrix3<T> M = CalcMatrixRelatingRpyDtToAngularVelocityInParent(
-        __func__);
+    const Matrix3<T> M =
+        CalcMatrixRelatingRpyDtToAngularVelocityInParent(__func__);
     return M;
   }
 
@@ -377,8 +378,8 @@ class RollPitchYaw {
   /// of these pitch angles, i.e., when `cos(p) ≈ 0`.
   /// @see CalcMatrixRelatingRpyDtToAngularVelocityInParent()
   const Matrix3<T> CalcMatrixRelatingRpyDtToAngularVelocityInChild() const {
-    const Matrix3<T> M = CalcMatrixRelatingRpyDtToAngularVelocityInChild(
-        __func__);
+    const Matrix3<T> M =
+        CalcMatrixRelatingRpyDtToAngularVelocityInChild(__func__);
     return M;
   }
 
@@ -412,6 +413,17 @@ class RollPitchYaw {
   Vector3<T> CalcRpyDDtFromAngularAccelInChild(
       const Vector3<T>& rpyDt, const Vector3<T>& alpha_AD_D) const;
 
+  /// Implements the @ref hash_append concept.
+  /// @pre T implements the hash_append concept.
+  template <class HashAlgorithm>
+  friend void hash_append(HashAlgorithm& hasher,
+                          const RollPitchYaw& rpy) noexcept {
+    const T* begin = rpy.roll_pitch_yaw_.data();
+    const T* end = rpy.roll_pitch_yaw_.data() + rpy.roll_pitch_yaw_.size();
+    using drake::hash_append_range;
+    hash_append_range(hasher, begin, end);
+  }
+
  private:
   // Throws an exception if rpy is not a valid %RollPitchYaw.
   // @param[in] rpy an allegedly valid rotation matrix.
@@ -422,7 +434,8 @@ class RollPitchYaw {
   ThrowIfNotValid(const Vector3<T>& rpy) {
     if (!RollPitchYaw<T>::IsValid(rpy)) {
       throw std::logic_error(
-       "Error: One (or more) of the roll-pitch-yaw angles is infinity or NaN.");
+          "Error: One (or more) of the roll-pitch-yaw angles is infinity or "
+          "NaN.");
     }
   }
 
@@ -437,7 +450,7 @@ class RollPitchYaw {
   // @param[in] pitch_angle pitch angle `p` (in radians).
   // @throws std::exception with a message that `p` is too near gimbal-lock.
   static void ThrowPitchAngleViolatesGimbalLockTolerance(
-    const char* function_name, const T& pitch_angle);
+      const char* function_name, const T& pitch_angle);
 
   // Uses a quaternion and its associated rotation matrix `R` to accurately
   // and efficiently set the roll-pitch-yaw angles (SpaceXYZ Euler angles)
@@ -565,8 +578,7 @@ using RollPitchYawd = RollPitchYaw<double>;
 // TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
 namespace fmt {
 template <typename T>
-struct formatter<drake::math::RollPitchYaw<T>>
-    : drake::ostream_formatter {};
+struct formatter<drake::math::RollPitchYaw<T>> : drake::ostream_formatter {};
 }  // namespace fmt
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(

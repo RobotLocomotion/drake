@@ -79,7 +79,7 @@ class TestCollisionChecker(unittest.TestCase):
 
         mut.LinearDistanceAndInterpolationProvider(plant=plant)
 
-        box_joint_index = plant.GetJointByName("$world_box").index()
+        box_joint_index = plant.GetJointByName("box").index()
         box_joint_weights = np.array([1.0, 0.0, 0.0, 0.0, 2.0, 3.0, 4.0])
         joint_distance_weights = {box_joint_index: box_joint_weights}
         mut.LinearDistanceAndInterpolationProvider(
@@ -272,9 +272,15 @@ class TestCollisionChecker(unittest.TestCase):
         self.assertGreater(dut.num_allocated_contexts(), 0)
         self.assertIsInstance(dut.model_context(), mut.CollisionCheckerContext)
         self.assertIsInstance(dut.plant_context(), Context)
+        self.assertIsInstance(
+            dut.model_context(context_number=1), mut.CollisionCheckerContext)
+        self.assertIsInstance(dut.plant_context(context_number=1), Context)
 
         q = np.array([0.25] * 7)
         self.assertIs(dut.UpdatePositions(q=q), dut.plant_context())
+        self.assertIs(
+            dut.UpdatePositions(q=q, context_number=1),
+            dut.plant_context(context_number=1))
         ccc = dut.MakeStandaloneModelContext()  # ... a CollisionCheckerContext
         self.assertIsInstance(dut.UpdateContextPositions(
             model_context=ccc, q=q), Context)
@@ -341,6 +347,7 @@ class TestCollisionChecker(unittest.TestCase):
         dut.SetCollisionFilteredWithAllBodies(body=body)
 
         dut.CheckConfigCollisionFree(q=q)
+        dut.CheckConfigCollisionFree(q=q, context_number=1)
         dut.CheckContextConfigCollisionFree(model_context=ccc, q=q)
         self.assertEqual(
             len(dut.CheckConfigsCollisionFree(
@@ -373,8 +380,9 @@ class TestCollisionChecker(unittest.TestCase):
         dut.edge_step_size()
         dut.set_edge_step_size(edge_step_size=0.2)
         dut.CheckEdgeCollisionFree(q1=q, q2=q)
+        dut.CheckEdgeCollisionFree(q1=q, q2=q, context_number=1)
         dut.CheckContextEdgeCollisionFree(model_context=ccc, q1=q, q2=q)
-        dut.CheckEdgeCollisionFreeParallel(q1=q, q2=q)
+        dut.CheckEdgeCollisionFreeParallel(q1=q, q2=q, parallelize=False)
         self.assertEqual(
             len(dut.CheckEdgesCollisionFree(
                 edges=[(q, q)]*4,
@@ -383,8 +391,9 @@ class TestCollisionChecker(unittest.TestCase):
         dut.CheckEdgesCollisionFree([(q, q)])  # Omit the defaulted arg.
 
         dut.MeasureEdgeCollisionFree(q1=q, q2=q)
+        dut.MeasureEdgeCollisionFree(q1=q, q2=q, context_number=1)
         dut.MeasureContextEdgeCollisionFree(model_context=ccc, q1=q, q2=q)
-        dut.MeasureEdgeCollisionFreeParallel(q1=q, q2=q)
+        dut.MeasureEdgeCollisionFreeParallel(q1=q, q2=q, parallelize=False)
         measures = dut.MeasureEdgesCollisionFree(
             edges=[(q, q)]*4, parallelize=False)
         self.assertEqual(len(measures), 4)
@@ -393,18 +402,22 @@ class TestCollisionChecker(unittest.TestCase):
 
         clearance = dut.CalcRobotClearance(q=q, influence_distance=10)
         self.assertIsInstance(clearance, mut.RobotClearance)
+        clearance = dut.CalcRobotClearance(
+            q=q, influence_distance=10, context_number=1)
+        self.assertIsInstance(clearance, mut.RobotClearance)
         clearance = dut.CalcContextRobotClearance(
             model_context=ccc, q=q, influence_distance=10)
         self.assertIsInstance(clearance, mut.RobotClearance)
 
         dut.MaxNumDistances()
+        dut.MaxNumDistances(context_number=1)
         dut.MaxContextNumDistances(model_context=ccc)
 
         dut.ClassifyBodyCollisions(q=q)
+        dut.ClassifyBodyCollisions(q=q, context_number=1)
         dut.ClassifyContextBodyCollisions(model_context=ccc, q=q)
 
         self.assertIsInstance(dut.SupportsParallelChecking(), bool)
-        self.assertEqual(dut.GetNumberOfThreads(parallelize=True), 1)
 
         provider = dut.distance_and_interpolation_provider()
         self.assertIsInstance(provider, mut.DistanceAndInterpolationProvider)

@@ -147,7 +147,7 @@ the main body of the document:
    sure that the nightly build git sha from the prior steps matches the
    ``newest_commit`` whose changes are enumerated in the notes.  Some dates
    are YYYYMMDD format, some are YYYY-MM-DD format; be sure to manually fix
-   them all.
+   them all. There is also a dummy date 2099-12-31 that should also be changed.
    1. Update the github links within ``doc/_pages/from_binary.md`` to reflect
       the upcoming v1.N.0 and YYYYMMDD.
 4. Re-enable CI by reverting the commit you added way up above in step 3 of **Prior to release**.
@@ -174,11 +174,11 @@ the main body of the document:
       appropriate edits as follows:
       * The version number
    5. Click the box labeled "Attach binaries by dropping them here or selecting
-      them." and then choose for upload the 36 release files from
+      them." and then choose for upload the 39 release files from
       ``/tmp/drake-release/v1.N.0/...``:
       - 12: 4 `.tar.gz` + 8 checksums
       - 6: 2 `.deb` + 4 checksums
-      - 12: 4 linux `.whl` + 8 checksums
+      - 15: 5 linux `.whl` + 10 checksums
       - 3: 1 macOS x86 `.whl` + 2 checksums
       - 3: 1 macOS arm `.whl` + 2 checksums
       * Note that on Jammy with `snap` provided Firefox, drag-and-drop from

@@ -1,6 +1,3 @@
-# Disable native Python rules in Bazel versions before 4.0.
-build --incompatible_load_python_rules_from_bzl=yes
-
 # Default to an optimized build.
 build -c opt
 
@@ -49,7 +46,7 @@ build:everything --test_tag_filters=-no_everything
 # -- to the location of the Gurobi license key file. On Ubuntu, the GUROBI_HOME
 # -- environment variable must be set to the linux64 directory of the extracted
 # -- archive downloaded from gurobi.com when the installation was not at the
-# -- default location of /opt/gurobi951/linux64.
+# -- default location of /opt/gurobi1002/linux64.
 #
 # -- To run tests where Gurobi is used, ensure that you include
 # -- "gurobi_test_tags()" from //tools/skylark:test_tags.bzl.
@@ -81,3 +78,13 @@ build:everything --define=WITH_MOSEK=ON
 build:snopt --define=WITH_SNOPT=ON
 build:packaging --define=WITH_SNOPT=ON
 build:everything --define=WITH_SNOPT=ON
+
+# TODO(jwnimmer-tri) We hope to enable Clarabel by default, but for the moment
+# it is opt-in.
+build:everything --define=WITH_CLARABEL=ON
+build:asan_everything --define=WITH_CLARABEL=ON
+build:kcov_everything --define=WITH_CLARABEL=ON
+build:lsan_everything --define=WITH_CLARABEL=ON
+build:memcheck_everything --define=WITH_CLARABEL=ON
+build:tsan_everything --define=WITH_CLARABEL=ON
+build:ubsan_everything --define=WITH_CLARABEL=ON

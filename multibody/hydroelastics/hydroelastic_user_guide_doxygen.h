@@ -326,72 +326,37 @@ modulus value.
 
 @subsection hug_visualizing Visualizing hydroelastic contact
 
-Currently we can only visualize the contact surface using the legacy
-``drake_visualizer`` application of days past; however, it will be replaced by
-[MeshCat](https://github.com/rdeits/meshcat) in the future.
+Start Meldis by:
 
-Start Drake Visualizer by:
-
-    $ bazel run //tools:drake_visualizer &
+    $ bazel run //tools:meldis -- --open-window &
 
 Run a simulation with hydroelastic contact model; for example,
 
     $ bazel run //examples/hydroelastic/ball_plate:ball_plate_run_dynamics -- \
-       --mbp_dt=0.001 --simulator_publish_every_time_step --x0=0.10 --z0=0.15 \
-       --simulation_time=0.015 --simulator_target_realtime_rate=0.05 --vz=-7.0
+       --mbp_dt=0.001 --x0=0.10 --z0=0.15 --vz=-7.0 \
+       --simulation_time=0.015 --simulator_publish_every_time_step
 
-By default, at the time of this writing, Drake Visualizer will look like this:
+At the time of this writing, the Meldis view of this example looks like this:
 
-<!-- N.B. Do not attempt to line wrap this table. -->
-|  |  |
-| :-: | :-: |
-| @image html "multibody/hydroelastics/images/drake-vis-01.png" width=90% | @image html "multibody/hydroelastics/images/drake-vis-02.png" width=95% |
+@image html "multibody/hydroelastics/images/drake-vis-01.png" width=90%
 
-In the above pictures, we see two red force vectors acting at the centroids of
-the two contact surfaces and also the blue moment vector. One contact surface
-represents the ball pushing the dinner plate down. The other contact surface
-represents the rectangular floor pushing the dinner plate up. Gravity forces
-are not shown.
+In the above picture, we see two red force vectors acting at the centroids of
+the two contact surfaces and also the two blue moment vectors. One contact
+surface represents the ball pushing the dinner plate down. The other contact
+surface represents the rectangular floor pushing the dinner plate up. (Gravity
+forces are not shown, nor is the contact between the ball and the floor.) Notice
+that only approximately half of the bottom of the plate makes contact with the
+floor.
 
-In the next picture, we zoom-in and rotate to show the contact surface between
-the dinner plate and the floor better. The ball is pushing one side of the
-plate downward enough that only half of the bottom of the plate makes contact
-with the floor.
+The Scene panel can toggle on/off many different aspects of the visualization
+using checkboxes, including: which contacts are shown, whether to view the
+illustration (visual) geometry and/or collision (proximity) geometry and/or the
+bodies' inertia, as well as sliders for controlling transparency to better view
+overlapping shapes.
 
-@image html "multibody/hydroelastics/images/drake-vis-03.png"
-
-The Scene Browser lists all the hydroelastic contacts. We can turn off the
-plate-ball contact keeping only the plate-floor contact for clarity. Use the
-“eye” icon to toggle off the ball-plate contact as shown in the following
-picture. We can also make the dinner plate transparent too.
-
-@image html "multibody/hydroelastics/images/drake-vis-04.png"
-
-To customize the contact visualization, go to the following menu:
-
-    Plugins` > `Contacts` > `Configure Hydroelastic Contact Visualization
-
-@image html "multibody/hydroelastics/images/drake-vis-05.png"
-
-You can set `Maximum pressure` to what is observed (5e4 Pa in this example,
-default 1e8 Pa), so the shading of the contact surface looks more reasonable in
-the following picture:
-
-@image html "multibody/hydroelastics/images/drake-vis-06.png"
-
-You can set `Edge width` of the white meshes of the contact surface with
-options to toggle the pressure shading (`Render contact surface with pressure`)
-and the contact mesh (`Render contact surface edges`).
-
-By default, the force vectors are drawn at fixed length. We can draw each force
-according to its magnitude by `Vector scaling mode` and `Global scale of all
-vectors`. The following picture shows that the floor-plate contact force is
-slightly stronger than the floor-ball contact force to compensate for gravity.
-
-    Vector scaling mode = Scaled (default Fixed Length)
-    Global scale of all vectors = 0.001 (default 0.300)
-
-@image html "multibody/hydroelastics/images/drake-vis-07.png"
+When viewing collisions, note that red arrows indicate a hydroelastic contact,
+with an associated contact patch. Green arrows indicate point contact, which
+does not have any contact patch.
 
 @subsection hug_pitfalls Pitfalls/Troubleshooting
 

@@ -323,9 +323,6 @@ double BinaryExpressionCell::Evaluate(const Environment& env) const {
 
 ExpressionVar::ExpressionVar(Variable v)
     : ExpressionCell{ExpressionKind::Var, true, true}, var_{std::move(v)} {
-  // Dummy symbolic variable (ID = 0) should not be used in constructing
-  // symbolic expressions.
-  DRAKE_DEMAND(!var_.is_dummy());
   // Boolean symbolic variable should not be used in constructing symbolic
   // expressions.
   DRAKE_DEMAND(var_.get_type() != Variable::Type::BOOLEAN);

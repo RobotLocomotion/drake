@@ -95,7 +95,7 @@ void  MGChaoticBabyboot::SetVariablesFromArray( const double VAR[myNumberOfODEs]
 
 
 // -----------------------------------------------------------------------------
-const char*  MGChaoticBabyboot::MGeqns( double t, double VAR[], double VARp[], bool isIntegratorBoundary )
+const char*  MGChaoticBabyboot::MGeqns( double t, double VAR[myNumberOfODEs], double VARp[myNumberOfODEs], bool isIntegratorBoundary )
 {
   // Keep track of number of calls to this method.
   ++myNumberOfCallsToMGeqns;

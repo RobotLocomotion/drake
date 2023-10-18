@@ -2,6 +2,7 @@
 
 #include <limits>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -18,6 +19,15 @@ namespace multibody {
 
 // Forward declaration for JointActuator<T>.
 template<typename T> class Joint;
+
+/// PD controller gains. This enables the modeling of a simple low level PD
+/// controllers, see JointActuator::set_controller_gains().
+struct PdControllerGains {
+  // Proportional gain of the controller.
+  double p{0.0};
+  // Derivative gain of the controller.
+  double d{0.0};
+};
 
 /// The %JointActuator class is mostly a simple bookkeeping structure to
 /// represent an actuator acting on a given Joint.
@@ -74,7 +84,7 @@ class JointActuator final : public MultibodyElement<T> {
   ///   `this` joint belongs.
   /// @param[in] joint_dof
   ///   Index specifying one of the degrees of freedom for this joint. The index
-  ///   must be in the range `0 <= joint_dof < num_velocities()` or otherwise
+  ///   must be in the range `0 <= joint_dof < num_inputs()` or otherwise
   ///   this method will throw an exception.
   /// @param[in] joint_tau
   ///   Generalized force corresponding to the degree of freedom indicated by
@@ -94,7 +104,7 @@ class JointActuator final : public MultibodyElement<T> {
       MultibodyForces<T>* forces) const;
 
   /// Gets the actuation values for `this` actuator from the actuation vector u
-  /// for the entire model.
+  /// for the entire plant model.
   /// @return a reference to a nv-dimensional vector, where nv is the number
   ///         of velocity variables of joint().
   const Eigen::Ref<const VectorX<T>> get_actuation_vector(
@@ -103,24 +113,24 @@ class JointActuator final : public MultibodyElement<T> {
     return u.segment(topology_.actuator_index_start, joint().num_velocities());
   }
 
-  /// Given the actuation values u_instance for `this` actuator, this method
-  /// sets the actuation vector u for the entire MultibodyTree model
-  /// to which this actuator belongs to.
-  /// @param[in] u_instance
-  ///   Actuation values for `this` actuator. It must be of size equal to the
-  ///   number of degrees of freedom of the actuated Joint, see
-  ///   Joint::num_velocities(). For units and sign conventions refer to the
-  ///   specific Joint sub-class documentation.
-  /// @param[out] u
-  ///   The vector containing the actuation values for the entire MultibodyTree
-  ///   model to which `this` actuator belongs to.
+  /// Given the actuation values `u_actuator` for `this` actuator, updates the
+  /// actuation vector `u` for the entire multibody model to which this actuator
+  /// belongs to.
+  /// @param[in] u_actuator
+  ///   Actuation values for `this` actuator. It must be of size equal to
+  ///   num_inputs(). For units and sign conventions refer to the specific Joint
+  ///   sub-class documentation.
+  /// @param[in,out] u
+  ///   Actuation values for the entire plant model to which `this` actuator
+  ///   belongs to, indexed by JointActuatorIndex. Only values corresponding to
+  ///   this actuator are changed.
   /// @throws std::exception if
-  ///   `u_instance.size() != this->joint().num_velocities()`.
+  ///   `u_actuator.size() != this->num_inputs()`.
   /// @throws std::exception if u is nullptr.
   /// @throws std::exception if
-  ///   `u.size() != this->get_parent_tree().num_actuated_dofs()`.
+  ///   `u.size() != this->GetParentPlant().num_actuated_dofs()`.
   void set_actuation_vector(
-      const Eigen::Ref<const VectorX<T>>& u_instance,
+      const Eigen::Ref<const VectorX<T>>& u_actuator,
       EigenPtr<VectorX<T>> u) const;
 
   /// Returns the index to the first element for this joint actuator / within
@@ -251,6 +261,46 @@ class JointActuator final : public MultibodyElement<T> {
   }
   /// @} <!-- Reflected Inertia -->
 
+  /// @anchor pd_controlled_joint_actuator
+  /// @name                 PD Controlled Actuators
+  ///
+  /// Refer to @ref mbp_actuation "Actuation" for further details on the
+  /// modeling of PD controlled actuators.
+  ///@{
+
+  // TODO(amcastro-tri): Place gains in the context as parameters to allow
+  // changing them post-finalize.
+  /// Set controller gains for this joint actuator.
+  /// This enables the modeling of a simple PD controller of the form:
+  ///   ũ = -Kp⋅(q − qd) - Kd⋅(v − vd) + u_ff
+  ///   u = max(−e, min(e, ũ))
+  /// where qd and vd are the desired configuration and velocity for joint(), Kp
+  /// and Kd are the proportional and derivative gains specified in `gains`,
+  /// u_ff is the feedforward actuation and `e` corresponds to effort_limit().
+  ///
+  /// For simulation, feedforward actuation can be provided through
+  /// MultibodyPlant::get_actuation_input_port(). Desired configuration and
+  /// velocity are specified through
+  /// MultibodyPlant::get_desired_state_input_port().
+  ///
+  /// @throws iff the proportional gain is not strictly positive or if the
+  /// derivative gain is negative.
+  /// @throws iff the owning MultibodyPlant is finalized. See
+  /// MultibodyPlant::Finalize().
+  void set_controller_gains(PdControllerGains gains);
+
+  /// Returns `true` if controller gains have been specified with a call to
+  /// set_controller_gains().
+  bool has_controller() const { return pd_controller_gains_.has_value(); }
+
+  /// Returns a reference to the controller gains for this actuator.
+  /// @pre has_controller() is `true`.
+  const PdControllerGains& get_controller_gains() const {
+    DRAKE_DEMAND(has_controller());
+    return *pd_controller_gains_;
+  }
+  /// @} <!-- PD Controlled Actuators -->
+
   /// @cond
   // For internal use only.
   // NVI to DoCloneToScalar() templated on the scalar type of the new clone to
@@ -298,13 +348,25 @@ class JointActuator final : public MultibodyElement<T> {
   // Implementation for MultibodyElement::DoDeclareParameters().
   void DoDeclareParameters(
       internal::MultibodyTreeSystem<T>* tree_system) final {
-    // Declare parent classes' parameters
-    MultibodyElement<T>::DoDeclareParameters(tree_system);
-    rotor_inertia_parameter_index_ = this->DeclareNumericParameter(
-        tree_system,
-        systems::BasicVector<T>(Vector1<T>(default_rotor_inertia_)));
-    gear_ratio_parameter_index_ = this->DeclareNumericParameter(
-        tree_system, systems::BasicVector<T>(Vector1<T>(default_gear_ratio_)));
+    // Sets model values to dummy values to indicate that the model values are
+    // not used. This class stores the the default values of the parameters.
+    rotor_inertia_parameter_index_ =
+        this->DeclareNumericParameter(tree_system, systems::BasicVector<T>(1));
+    gear_ratio_parameter_index_ =
+        this->DeclareNumericParameter(tree_system, systems::BasicVector<T>(1));
+  }
+
+  // Implementation for MultibodyElement::DoSetDefaultParameters().
+  void DoSetDefaultParameters(systems::Parameters<T>* parameters) const final {
+    // Set the default rotor inertia.
+    systems::BasicVector<T>& rotor_inertia_parameter =
+        parameters->get_mutable_numeric_parameter(
+            rotor_inertia_parameter_index_);
+    rotor_inertia_parameter.set_value(Vector1<T>(default_rotor_inertia_));
+    // Set the default gear ratio.
+    systems::BasicVector<T>& gear_ratio_parameter =
+        parameters->get_mutable_numeric_parameter(gear_ratio_parameter_index_);
+    gear_ratio_parameter.set_value(Vector1<T>(default_gear_ratio_));
   }
 
   // The actuator's unique name in the MultibodyTree model
@@ -335,6 +397,8 @@ class JointActuator final : public MultibodyElement<T> {
 
   // The topology of this actuator. Only valid post- MultibodyTree::Finalize().
   internal::JointActuatorTopology topology_;
+
+  std::optional<PdControllerGains> pd_controller_gains_{std::nullopt};
 };
 
 }  // namespace multibody

@@ -1,11 +1,5 @@
-load(
-    "@drake//tools/skylark:pathutils.bzl",
-    "basename",
-)
-load(
-    "@drake//tools/workspace:os.bzl",
-    "determine_os",
-)
+load("//tools/skylark:pathutils.bzl", "basename")
+load("//tools/workspace:os.bzl", "determine_os")
 load(
     "@bazel_tools//tools/build_defs/repo:java.bzl",
     "java_import_external",

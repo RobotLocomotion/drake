@@ -1,7 +1,4 @@
-load(
-    "@drake//tools/workspace:pkg_config.bzl",
-    "pkg_config_repository",
-)
+load("//tools/workspace:pkg_config.bzl", "pkg_config_repository")
 
 def liblz4_repository(
         name,
@@ -15,5 +12,6 @@ def liblz4_repository(
         licenses = licenses,
         modname = modname,
         pkg_config_paths = pkg_config_paths,
+        extra_deprecation = "The @liblz4 external is deprecated in Drake's WORKSPACE and will be removed on or after 2024-01-01.",  # noqa
         **kwargs
     )

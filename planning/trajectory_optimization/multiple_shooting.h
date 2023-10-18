@@ -66,11 +66,6 @@ class MultipleShooting {
     return h_vars_.segment<1>(index);
   }
 
-  DRAKE_DEPRECATED("2023-09-01", "Use time_step() instead.")
-  const solvers::VectorDecisionVariable<1> timestep(int index) const {
-    return time_step(index);
-  }
-
   /// Returns a placeholder decision variable (not actually declared as a
   /// decision variable in the MathematicalProgram) associated with the time, t.
   /// This variable will be substituted for real decision variables at
@@ -396,9 +391,6 @@ class MultipleShooting {
     return fixed_time_step_;
   }
 
-  DRAKE_DEPRECATED("2023-09-01", "Use fixed_time_step() instead.")
-  double fixed_timestep() const { return fixed_time_step(); }
-
  protected:
   /// Constructs a MultipleShooting instance with fixed sample times. It creates
   /// new placeholder variables for input and state.
@@ -494,12 +486,6 @@ class MultipleShooting {
   int N() const { return N_; }
 
   bool time_steps_are_decision_variables() const {
-    return time_steps_are_decision_variables_;
-  }
-
-  DRAKE_DEPRECATED("2023-09-01",
-                   "Use time_steps_are_decision_variables() instead.")
-  bool timesteps_are_decision_variables() const {
     return time_steps_are_decision_variables_;
   }
 

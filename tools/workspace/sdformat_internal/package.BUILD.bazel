@@ -16,14 +16,8 @@ load(
     "@drake//tools/workspace:check_lists_consistency.bzl",
     "check_lists_consistency",
 )
-load(
-    "@drake//tools/install:install.bzl",
-    "install",
-)
-load(
-    "@drake//tools/workspace:vendor_cxx.bzl",
-    "cc_library_vendored",
-)
+load("@drake//tools/install:install.bzl", "install")
+load("@drake//tools/workspace:vendor_cxx.bzl", "cc_library_vendored")
 load("@drake//tools/workspace:generate_file.bzl", "generate_file")
 
 licenses(["notice"])  # Apache-2.0 AND BSD-3-Clause AND BSL-1.0
@@ -80,6 +74,7 @@ _MOST_HDRS = [
     "include/sdf/Capsule.hh",
     "include/sdf/Collision.hh",
     "include/sdf/Console.hh",
+    "include/sdf/CustomInertiaCalcProperties.hh",
     "include/sdf/Cylinder.hh",
     "include/sdf/Element.hh",
     "include/sdf/Ellipsoid.hh",
@@ -178,6 +173,7 @@ _SRCS = [
     "src/Console.cc",
     "src/Converter.cc",
     "src/Converter.hh",
+    "src/CustomInertiaCalcProperties.cc",
     "src/Cylinder.cc",
     "src/Element.cc",
     "src/Ellipsoid.cc",

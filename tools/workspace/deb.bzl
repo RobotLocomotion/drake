@@ -1,5 +1,5 @@
 load(
-    "@drake//tools/workspace:execute.bzl",
+    "//tools/workspace:execute.bzl",
     "execute_and_return",
 )
 

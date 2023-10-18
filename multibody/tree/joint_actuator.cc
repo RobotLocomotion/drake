@@ -19,6 +19,18 @@ JointActuator<T>::JointActuator(const std::string& name, const Joint<T>& joint,
 }
 
 template <typename T>
+void JointActuator<T>::set_controller_gains(PdControllerGains gains) {
+  if (topology_.actuator_index_start >= 0) {
+    throw std::runtime_error(
+        "JointActuator::set_controller_gains() must be called before "
+        "MultibodyPlant::Finalize(). ");
+  }
+  DRAKE_THROW_UNLESS(gains.p > 0);
+  DRAKE_THROW_UNLESS(gains.d >= 0);
+  pd_controller_gains_ = gains;
+}
+
+template <typename T>
 const Joint<T>& JointActuator<T>::joint() const {
   return this->get_parent_tree().get_joint(joint_index_);
 }
@@ -30,20 +42,20 @@ void JointActuator<T>::AddInOneForce(
     const T& joint_tau,
     MultibodyForces<T>* forces) const {
   DRAKE_DEMAND(forces != nullptr);
-  DRAKE_DEMAND(0 <= joint_dof && joint_dof < joint().num_velocities());
+  DRAKE_DEMAND(0 <= joint_dof && joint_dof < num_inputs());
   DRAKE_DEMAND(forces->CheckHasRightSizeForModel(this->get_parent_tree()));
   joint().AddInOneForce(context, joint_dof, joint_tau, forces);
 }
 
 template <typename T>
 void JointActuator<T>::set_actuation_vector(
-    const Eigen::Ref<const VectorX<T>>& u_instance,
+    const Eigen::Ref<const VectorX<T>>& u_actuator,
     EigenPtr<VectorX<T>> u) const {
-  DRAKE_DEMAND(u != nullptr);
-  DRAKE_DEMAND(u->size() == this->get_parent_tree().num_actuated_dofs());
-  DRAKE_DEMAND(u_instance.size() == joint().num_velocities());
-  u->segment(topology_.actuator_index_start, joint().num_velocities()) =
-      u_instance;
+  DRAKE_THROW_UNLESS(u != nullptr);
+  DRAKE_THROW_UNLESS(u->size() == this->get_parent_tree().num_actuated_dofs());
+  DRAKE_THROW_UNLESS(u_actuator.size() == num_inputs());
+  u->segment(topology_.actuator_index_start, num_inputs()) =
+      u_actuator;
 }
 
 template <typename T>

@@ -9,7 +9,6 @@ import subprocess
 
 import yaml
 
-from drake.tools.lint.clang_format import get_clang_format_path
 from drake.tools.lint.find_data import find_data
 
 
@@ -25,7 +24,7 @@ struct %(indices)s {
 
   // The index of each individual coordinate.
 """
-INDICES_FIELD = """static const int %(kname)s = %(kvalue)d;"""
+INDICES_FIELD = """  static const int %(kname)s = %(kvalue)d;"""
 INDICES_FIELD_STORAGE = """const int %(indices)s::%(kname)s;"""
 
 
@@ -89,8 +88,8 @@ const std::vector<std::string>& %(camel)sIndices::GetCoordinateNames() {
   static const drake::never_destroyed<std::vector<std::string>> coordinates(
       std::vector<std::string>{
 """
-INDICES_NAMES_ACCESSOR_IMPL_MID = """    \"%(name)s\",  // BR"""
-INDICES_NAMES_ACCESSOR_IMPL_END = """  });
+INDICES_NAMES_ACCESSOR_IMPL_MID = """          \"%(name)s\","""
+INDICES_NAMES_ACCESSOR_IMPL_END = """      });
   return coordinates.access();
 }"""
 
@@ -128,7 +127,7 @@ DEFAULT_CTOR_CUSTOM_FIELD_BODY = """
     this->set_%(field)s(%(default_value)s);
 """
 DEFAULT_CTOR_CUSTOM_END = """
-}
+  }
 """
 DEFAULT_CTOR_FIELD_DUMMY_TOKEN = 'dummy'
 DEFAULT_CTOR_FIELD_UNKNOWN_DOC_UNITS = 'unknown'
@@ -194,7 +193,7 @@ def generate_copy_and_assign(hh, caller_context):
 SET_TO_NAMED_VARIABLES_BEGIN = """
   /// Create a symbolic::Variable for each element with the known variable
   /// name.  This is only available for T == symbolic::Expression.
-  template <typename U=T>
+  template <typename U = T>
   typename std::enable_if_t<std::is_same_v<U, symbolic::Expression>>
   SetToNamedVariables() {
 """
@@ -202,7 +201,7 @@ SET_TO_NAMED_VARIABLES_BODY = """
     this->set_%(field)s(symbolic::Variable("%(field)s"));
 """
 SET_TO_NAMED_VARIABLES_END = """
-}
+  }
 """
 
 
@@ -251,8 +250,7 @@ ACCESSOR_FIELD_METHODS = """
   }
   /// Fluent setter that matches %(field)s().
   /// Returns a copy of `this` with %(field)s set to a new value.
-  [[nodiscard]] %(camel)s<T>
-  with_%(field)s(const T& %(field)s) const {
+  [[nodiscard]] %(camel)s<T> with_%(field)s(const T& %(field)s) const {
     %(camel)s<T> result(*this);
     result.set_%(field)s(%(field)s);
     return result;
@@ -309,10 +307,10 @@ def generate_serialize(hh, caller_context, fields):
 
 
 GET_COORDINATE_NAMES = """
-    /// See %(camel)sIndices::GetCoordinateNames().
-    static const std::vector<std::string>& GetCoordinateNames() {
-      return %(camel)sIndices::GetCoordinateNames();
-   }
+  /// See %(camel)sIndices::GetCoordinateNames().
+  static const std::vector<std::string>& GetCoordinateNames() {
+    return %(camel)sIndices::GetCoordinateNames();
+  }
 """
 
 # TODO(russt): Resolve names differences across the codebase. The vector gen
@@ -401,8 +399,8 @@ VECTOR_HH_PREAMBLE = """
 #include <limits>
 #include <stdexcept>
 #include <string>
-#include <vector>
 #include <utility>
+#include <vector>
 
 #include <Eigen/Core>
 
@@ -517,7 +515,7 @@ def generate_code(
 
     # The C++ namespace open & close dance is as requested in the
     # `*.named_vector.yaml` specification.
-    opening_namespace = "".join(["namespace " + x + "{\n"
+    opening_namespace = "".join(["namespace " + x + " {\n"
                                  for x in namespace_list])
     closing_namespace = "".join(["}  // namespace " + x + "\n"
                                  for x in reversed(namespace_list)])
@@ -577,18 +575,6 @@ def generate_code(
                 put(lcm, "  double {};  // {}".format(field['name'],
                                                       field['doc']), 1)
             put(lcm, LCMTYPE_POSTAMBLE % context, 1)
-
-    if cxx_names:
-        # Run clang-format over all C++ files.  Inserting a .clang-format
-        # settings file is problematic when formatting within bazel-genfiles,
-        # so instead we pass its contents on the command line.
-        with open(find_data(".clang-format"), "r") as f:
-            yaml_data = yaml.safe_load(f)
-            style = str(yaml_data)
-            # For some reason, clang-format really wants lowercase booleans.
-            style = style.replace("False", "false").replace("True", "true")
-        subprocess.check_call(
-            [get_clang_format_path(), "--style=" + style, "-i"] + cxx_names)
 
 
 def generate_all_code(args):

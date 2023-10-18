@@ -21,8 +21,7 @@ class CompliantContactManagerTester {
   }
 
   static BodyIndex FindBodyByGeometryId(
-      const CompliantContactManager<double>& manager,
-      geometry::GeometryId id) {
+      const CompliantContactManager<double>& manager, geometry::GeometryId id) {
     return manager.FindBodyByGeometryId(id);
   }
 
@@ -32,37 +31,27 @@ class CompliantContactManagerTester {
     return manager.EvalContactSurfaces(context);
   }
 
-  static const std::vector<DiscreteContactPair<double>>&
+  static const DiscreteContactData<DiscreteContactPair<double>>&
   EvalDiscreteContactPairs(const CompliantContactManager<double>& manager,
                            const drake::systems::Context<double>& context) {
     return manager.EvalDiscreteContactPairs(context);
   }
 
+  // N.B. Actuation input is always included, regardless of solver choice.
   static void CalcNonContactForces(
       const CompliantContactManager<double>& manager,
       const drake::systems::Context<double>& context,
       bool include_joint_limit_penalty_forces,
       MultibodyForces<double>* forces) {
+    const bool include_pd_controlled_input = true;
     manager.CalcNonContactForces(context, include_joint_limit_penalty_forces,
-                                 forces);
+                                 include_pd_controlled_input, forces);
   }
 
-  static std::vector<ContactPairKinematics<double>> CalcContactKinematics(
-      const CompliantContactManager<double>& manager,
-      const drake::systems::Context<double>& context) {
-    return manager.CalcContactKinematics(context);
-  }
-
-  static void DoCalcContactResults(
-      const CompliantContactManager<double>& manager,
-      const drake::systems::Context<double>& context,
-      ContactResults<double>* contact_results) {
-    return manager.DoCalcContactResults(context, contact_results);
-  }
-
-  static const DeformableDriver<double>* deformable_driver(
-      const CompliantContactManager<double>& manager) {
-    return manager.deformable_driver_.get();
+  static DiscreteContactData<ContactPairKinematics<double>>
+  CalcContactKinematics(const CompliantContactManager<double>& manager,
+                        const drake::systems::Context<double>& context) {
+    return manager.EvalContactKinematics(context);
   }
 
   static const SapDriver<double>& sap_driver(
@@ -82,7 +71,8 @@ class CompliantContactManagerTester {
   // Jacobian matrix.
   static Eigen::MatrixXd CalcDenseJacobianMatrixInContactFrame(
       const CompliantContactManager<double>& manager,
-      const std::vector<ContactPairKinematics<double>>& contact_kinematics) {
+      const DiscreteContactData<ContactPairKinematics<double>>&
+          contact_kinematics) {
     const int nc = contact_kinematics.size();
     Eigen::MatrixXd J_AcBc_C(3 * nc, manager.plant().num_velocities());
     J_AcBc_C.setZero();

@@ -601,6 +601,14 @@ class Frame : public FrameBase<T> {
         name_(internal::DeprecateWhenEmptyName(name, "Frame")),
         body_(body) {}
 
+  /// Called by DoDeclareParameters(). Derived classes may choose to override
+  /// to declare their sub-class specific parameters.
+  virtual void DoDeclareFrameParameters(internal::MultibodyTreeSystem<T>*) {}
+
+  /// Called by DoSetDefaultParameters(). Derived classes may choose to override
+  /// to set their sub-class specific parameters.
+  virtual void DoSetDefaultFrameParameters(systems::Parameters<T>*) const {}
+
   /// @name Methods to make a clone templated on different scalar types.
   ///
   /// These methods are meant to be called by MultibodyTree::CloneToScalar()
@@ -631,6 +639,17 @@ class Frame : public FrameBase<T> {
   final {
     topology_ = tree_topology.get_frame(this->index());
     DRAKE_ASSERT(topology_.index == this->index());
+  }
+
+  // Implementation for MultibodyElement::DoDeclareParameters().
+  void DoDeclareParameters(
+      internal::MultibodyTreeSystem<T>* tree_system) final {
+    DoDeclareFrameParameters(tree_system);
+  }
+
+  // Implementation for MultibodyElement::DoSetDefaultParameters().
+  void DoSetDefaultParameters(systems::Parameters<T>* parameters) const final {
+    DoSetDefaultFrameParameters(parameters);
   }
 
   const std::string name_;

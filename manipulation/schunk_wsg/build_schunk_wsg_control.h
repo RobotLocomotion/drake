@@ -18,8 +18,8 @@ namespace schunk_wsg {
 /// can be used to override the default sim PID gains.
 void BuildSchunkWsgControl(
     const multibody::MultibodyPlant<double>& plant,
-    multibody::ModelInstanceIndex wsg_instance,
-    lcm::DrakeLcmInterface* lcm, systems::DiagramBuilder<double>* builder,
+    multibody::ModelInstanceIndex wsg_instance, lcm::DrakeLcmInterface* lcm,
+    systems::DiagramBuilder<double>* builder,
     const std::optional<Eigen::Vector3d>& pid_gains = {});
 
 }  // namespace schunk_wsg

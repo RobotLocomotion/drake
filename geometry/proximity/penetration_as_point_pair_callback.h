@@ -67,7 +67,9 @@ template <typename T>
 bool Callback(fcl::CollisionObjectd* fcl_object_A_ptr,
               fcl::CollisionObjectd* fcl_object_B_ptr, void* callback_data);
 
+// clang-format off
 }  // namespace penetration_as_point_pair
+// clang-format on
 }  // namespace internal
 }  // namespace geometry
 }  // namespace drake

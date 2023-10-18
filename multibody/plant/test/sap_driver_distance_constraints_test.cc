@@ -122,98 +122,93 @@ class TwoBodiesTest : public ::testing::TestWithParam<TestConfig> {
 // examines the newly added constraint to confirm that its instantiation
 // reflects the specification.
 TEST_P(TwoBodiesTest, ConfirmConstraintProperties) {
-    const TestConfig& config = GetParam();
+  const TestConfig& config = GetParam();
 
-    MakeModel(config.bodyA_anchored, config.hard_constraint);
+  MakeModel(config.bodyA_anchored, config.hard_constraint);
 
-    const int expected_num_velocities = config.bodyA_anchored ? 6 : 12;
-    EXPECT_EQ(plant_.num_velocities(), expected_num_velocities);
+  const int expected_num_velocities = config.bodyA_anchored ? 6 : 12;
+  EXPECT_EQ(plant_.num_velocities(), expected_num_velocities);
 
-    // Place Bo at known distance from Ao; this does *not* satisfy the
-    // constraint. We'll observe a non-zero value when evaluating the constraint
-    // function.
-    const double kDistanceAoBo = 2.0;
-    plant_.SetFreeBodyPoseInWorldFrame(
-        context_.get(), *bodyB_,
-        RigidTransformd(Vector3d(kDistanceAoBo, 0.0, 0.0)));
+  // Place Bo at known distance from Ao; this does *not* satisfy the
+  // constraint. We'll observe a non-zero value when evaluating the constraint
+  // function.
+  const double kDistanceAoBo = 2.0;
+  plant_.SetFreeBodyPoseInWorldFrame(
+      context_.get(), *bodyB_,
+      RigidTransformd(Vector3d(kDistanceAoBo, 0.0, 0.0)));
 
-    const ContactProblemCache<double>& problem_cache =
-        SapDriverTest::EvalContactProblemCache(sap_driver(), *context_);
-    const SapContactProblem<double>& problem = *problem_cache.sap_problem;
+  const ContactProblemCache<double>& problem_cache =
+      SapDriverTest::EvalContactProblemCache(sap_driver(), *context_);
+  const SapContactProblem<double>& problem = *problem_cache.sap_problem;
 
-    // Verify the expected number of constraints and equations for a single
-    // distance constraint.
-    EXPECT_EQ(problem.num_constraints(), 1);
-    EXPECT_EQ(problem.num_constraint_equations(), 1);
+  // Verify the expected number of constraints and equations for a single
+  // distance constraint.
+  EXPECT_EQ(problem.num_constraints(), 1);
+  EXPECT_EQ(problem.num_constraint_equations(), 1);
 
-    const auto* constraint =
-        dynamic_cast<const SapHolonomicConstraint<double>*>(
-            &problem.get_constraint(0));
-    // Verify it is a SapHolonomicConstraint as expected.
-    ASSERT_NE(constraint, nullptr);
+  const auto* constraint = dynamic_cast<const SapHolonomicConstraint<double>*>(
+      &problem.get_constraint(0));
+  // Verify it is a SapHolonomicConstraint as expected.
+  ASSERT_NE(constraint, nullptr);
 
-    // One clique if body A is anchored, two if not.
-    const int expected_num_cliques = config.bodyA_anchored ? 1 : 2;
-    EXPECT_EQ(constraint->num_cliques(), expected_num_cliques);
+  // One clique if body A is anchored, two if not.
+  const int expected_num_cliques = config.bodyA_anchored ? 1 : 2;
+  EXPECT_EQ(constraint->num_cliques(), expected_num_cliques);
+  if (expected_num_cliques == 1) {
+    EXPECT_EQ(constraint->first_clique(), 1);  // i.e. body B's tree
+    EXPECT_THROW(constraint->second_clique(), std::exception);
+  } else {
     EXPECT_EQ(constraint->first_clique(), 0);
-    if (expected_num_cliques == 1) {
-      EXPECT_THROW(constraint->second_clique(), std::exception);
-    } else {
-      EXPECT_EQ(constraint->second_clique(), 1);
-    }
-
-    // Verify parameters.
-    const SapHolonomicConstraint<double>::Parameters p =
-        constraint->parameters();
-    EXPECT_EQ(p.num_constraint_equations(), 1);
-    // bi-lateral constraint with no impulse bounds.
-    EXPECT_EQ(p.impulse_lower_limits(), Vector1d(-kInfinity));
-    EXPECT_EQ(p.impulse_upper_limits(), Vector1d(kInfinity));
-    if (config.hard_constraint) {
-      EXPECT_EQ(p.stiffnesses(), Vector1d(kInfinity));
-      // For a finite dissipation, the dissipation time scale will be zero.
-      EXPECT_EQ(p.relaxation_times(), Vector1d(0.0));
-    } else {
-      EXPECT_EQ(p.stiffnesses(), Vector1d(kStiffness_));
-      EXPECT_EQ(p.relaxation_times(), Vector1d(kDissipation_ / kStiffness_));
-    }
-
-    // This value is hard-coded in the source. This test serves as a brake to
-    // prevent the value changing without notification. Changing this value
-    // would lead to a behavior change and shouldn't happen silently.
-    EXPECT_EQ(p.beta(), 0.1);
-
-    // The constraint function for a distance constraint is defined as:
-    //   g = |p_PQ| - kDistance.
-    // We verify its value.
-    const VectorXd& g = constraint->constraint_function();
-    const Vector1d g_expected(kDistanceAoBo - p_AP_.x() + p_BQ_.x() -
-                              kDistance_);
-    EXPECT_TRUE(CompareMatrices(g, g_expected));
-
-    // Verify the constraint Jacobians (based on number of cliques).
-    // We exploit internal knowledge of the fact that the state stores angular
-    // velocities first, followed by translational velocities (and the
-    // relative positions of the bodies).
-    if (expected_num_cliques == 1) {
-      const MatrixXd& J = constraint->first_clique_jacobian().MakeDenseMatrix();
-      const MatrixXd J_expected =
-          (MatrixXd(1, 6) << 0, 0, 0, 1, 0, 0).finished();
-      EXPECT_TRUE(CompareMatrices(J, J_expected));
-    } else {
-      const MatrixXd& Ja =
-          constraint->first_clique_jacobian().MakeDenseMatrix();
-      const MatrixXd Ja_expected =
-          (MatrixXd(1, 6) << 0, 0, 0, -1, 0, 0).finished();
-      EXPECT_TRUE(CompareMatrices(Ja, Ja_expected));
-
-      const MatrixXd& Jb =
-          constraint->second_clique_jacobian().MakeDenseMatrix();
-      const MatrixXd Jb_expected =
-          (MatrixXd(1, 6) << 0, 0, 0, 1, 0, 0).finished();
-      EXPECT_TRUE(CompareMatrices(Jb, Jb_expected));
-    }
+    EXPECT_EQ(constraint->second_clique(), 1);
   }
+
+  // Verify parameters.
+  const SapHolonomicConstraint<double>::Parameters p = constraint->parameters();
+  EXPECT_EQ(p.num_constraint_equations(), 1);
+  // bi-lateral constraint with no impulse bounds.
+  EXPECT_EQ(p.impulse_lower_limits(), Vector1d(-kInfinity));
+  EXPECT_EQ(p.impulse_upper_limits(), Vector1d(kInfinity));
+  if (config.hard_constraint) {
+    EXPECT_EQ(p.stiffnesses(), Vector1d(kInfinity));
+    // For a finite dissipation, the dissipation time scale will be zero.
+    EXPECT_EQ(p.relaxation_times(), Vector1d(0.0));
+  } else {
+    EXPECT_EQ(p.stiffnesses(), Vector1d(kStiffness_));
+    EXPECT_EQ(p.relaxation_times(), Vector1d(kDissipation_ / kStiffness_));
+  }
+
+  // This value is hard-coded in the source. This test serves as a brake to
+  // prevent the value changing without notification. Changing this value
+  // would lead to a behavior change and shouldn't happen silently.
+  EXPECT_EQ(p.beta(), 0.1);
+
+  // The constraint function for a distance constraint is defined as:
+  //   g = |p_PQ| - kDistance.
+  // We verify its value.
+  const VectorXd& g = constraint->constraint_function();
+  const Vector1d g_expected(kDistanceAoBo - p_AP_.x() + p_BQ_.x() - kDistance_);
+  EXPECT_TRUE(CompareMatrices(g, g_expected));
+
+  // Verify the constraint Jacobians (based on number of cliques).
+  // We exploit internal knowledge of the fact that the state stores angular
+  // velocities first, followed by translational velocities (and the
+  // relative positions of the bodies).
+  if (expected_num_cliques == 1) {
+    const MatrixXd& J = constraint->first_clique_jacobian().MakeDenseMatrix();
+    const MatrixXd J_expected = (MatrixXd(1, 6) << 0, 0, 0, 1, 0, 0).finished();
+    EXPECT_TRUE(CompareMatrices(J, J_expected));
+  } else {
+    const MatrixXd& Ja = constraint->first_clique_jacobian().MakeDenseMatrix();
+    const MatrixXd Ja_expected =
+        (MatrixXd(1, 6) << 0, 0, 0, -1, 0, 0).finished();
+    EXPECT_TRUE(CompareMatrices(Ja, Ja_expected));
+
+    const MatrixXd& Jb = constraint->second_clique_jacobian().MakeDenseMatrix();
+    const MatrixXd Jb_expected =
+        (MatrixXd(1, 6) << 0, 0, 0, 1, 0, 0).finished();
+    EXPECT_TRUE(CompareMatrices(Jb, Jb_expected));
+  }
+}
 
 std::vector<TestConfig> MakeTestCases() {
   return std::vector<TestConfig>{
@@ -232,10 +227,9 @@ std::vector<TestConfig> MakeTestCases() {
   };
 }
 
-INSTANTIATE_TEST_SUITE_P(
-    SapDistanceConstraintTests, TwoBodiesTest,
-    testing::ValuesIn(MakeTestCases()),
-    testing::PrintToStringParamName());
+INSTANTIATE_TEST_SUITE_P(SapDistanceConstraintTests, TwoBodiesTest,
+                         testing::ValuesIn(MakeTestCases()),
+                         testing::PrintToStringParamName());
 
 GTEST_TEST(DistanceConstraintsTests, VerifyIdMapping) {
   MultibodyPlant<double> plant{0.1};
@@ -280,6 +274,7 @@ GTEST_TEST(DistanceConstraintsTests, VerifyIdMapping) {
   // Throw on id to wrong constraint specs type.
   EXPECT_THROW(plant.get_coupler_constraint_specs(distance_id), std::exception);
   EXPECT_THROW(plant.get_ball_constraint_specs(distance_id), std::exception);
+  EXPECT_THROW(plant.get_weld_constraint_specs(distance_id), std::exception);
 }
 
 GTEST_TEST(DistanceConstraintTests, FailOnTAMSI) {

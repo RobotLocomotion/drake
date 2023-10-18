@@ -41,11 +41,16 @@ class BouncingBall final : public systems::LeafSystem<T> {
     this->DeclareStateOutputPort(systems::kUseDefaultName, state_index);
 
     // Declare the witness function.
+    systems::UnrestrictedUpdateEvent<T> event(
+        systems::TriggerType::kWitness,
+        [this](const systems::System<T>&, const systems::Context<T>& context,
+               const systems::Event<T>&, systems::State<T>* next_state) {
+          return this->HandleImpact(context, next_state);
+        });
     signed_distance_witness_ = this->MakeWitnessFunction(
         "Signed distance",
         systems::WitnessFunctionDirection::kPositiveThenNonPositive,
-        &BouncingBall::CalcSignedDistance,
-        systems::UnrestrictedUpdateEvent<T>());
+        &BouncingBall::CalcSignedDistance, event);
   }
 
   /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
@@ -99,9 +104,8 @@ class BouncingBall final : public systems::LeafSystem<T> {
   // Updates the velocity discontinuously to reverse direction. This method
   // is called by the Simulator when the signed distance witness function
   // triggers.
-  void DoCalcUnrestrictedUpdate(const systems::Context<T>& context,
-      const std::vector<const systems::UnrestrictedUpdateEvent<T>*>&,
-      systems::State<T>* next_state) const override {
+  systems::EventStatus HandleImpact(
+      const systems::Context<T>& context, systems::State<T>* next_state) const {
     systems::VectorBase<T>& next_cstate =
         next_state->get_mutable_continuous_state().get_mutable_vector();
 
@@ -124,6 +128,8 @@ class BouncingBall final : public systems::LeafSystem<T> {
     //                 body collisions. J. Appl. Mech., 58:1049-1055, 1991.
     next_cstate.SetAtIndex(
         1, cstate.GetAtIndex(1) * restitution_coef_ * -1.);
+
+    return systems::EventStatus::Succeeded();
   }
 
   // The signed distance witness function is always active and, hence, always

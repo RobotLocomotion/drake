@@ -1,5 +1,5 @@
 load(
-    "@drake//tools/skylark:drake_cc.bzl",
+    "//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
     "drake_cc_library",
     "drake_cc_package_library",
@@ -65,6 +65,7 @@ drake_cc_library(
         ":robot_collision_type",
         ":robot_diagram",
         "//common:essential",
+        "//common:parallelism",
         "//geometry",
         "//multibody/plant",
     ],
@@ -90,6 +91,7 @@ drake_cc_library(
     deps = [
         ":distance_and_interpolation_provider",
         ":robot_diagram",
+        "//common:parallelism",
         "//multibody/tree:multibody_tree_indexes",
     ],
 )
@@ -303,6 +305,7 @@ drake_cc_googletest(
         ":robot_diagram",
         ":robot_diagram_builder",
         "//common/test_utilities:expect_throws_message",
+        "//systems/primitives:shared_pointer_system",
     ],
 )
 

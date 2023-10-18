@@ -1,5 +1,6 @@
 # -*- bazel -*-
 
+load("@drake//tools/skylark:cc.bzl", "cc_library")
 load(":vars.bzl", "LIBDIR")
 
 licenses(["notice"])  # BSD-3-Clause
@@ -14,4 +15,5 @@ cc_library(
         "-ldouble-conversion",
     ],
     visibility = ["//visibility:public"],
+    deprecation = "The @double_conversion external is deprecated in Drake's WORKSPACE and will be removed on or after 2024-01-01.",  # noqa
 )

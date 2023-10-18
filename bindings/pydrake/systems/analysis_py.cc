@@ -5,6 +5,7 @@
 #include "drake/bindings/pydrake/common/wrap_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
+#include "drake/common/scope_exit.h"
 #include "drake/systems/analysis/integrator_base.h"
 #include "drake/systems/analysis/monte_carlo.h"
 #include "drake/systems/analysis/region_of_attraction.h"
@@ -14,11 +15,24 @@
 #include "drake/systems/analysis/simulator_config.h"
 #include "drake/systems/analysis/simulator_config_functions.h"
 #include "drake/systems/analysis/simulator_print_stats.h"
+#include "drake/systems/analysis/simulator_python_internal.h"
 
 using std::unique_ptr;
 
 namespace drake {
 namespace pydrake {
+
+namespace {
+// Checks for Ctrl-C (and other signals) and invokes the Python handler,
+// but only when called on the main interpreter thread. For details, see:
+// https://docs.python.org/3/c-api/exceptions.html#c.PyErr_CheckSignals
+// https://pybind11.readthedocs.io/en/stable/faq.html#how-can-i-properly-handle-ctrl-c-in-long-running-functions
+void ThrowIfPythonHasPendingSignals() {
+  if (PyErr_CheckSignals() != 0) {
+    throw py::error_already_set();
+  }
+}
+}  // namespace
 
 PYBIND11_MODULE(analysis, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
@@ -209,8 +223,40 @@ PYBIND11_MODULE(analysis, m) {
         .def("Initialize", &Simulator<T>::Initialize,
             doc.Simulator.Initialize.doc,
             py::arg("params") = InitializeParams{})
-        .def("AdvanceTo", &Simulator<T>::AdvanceTo, py::arg("boundary_time"),
-            doc.Simulator.AdvanceTo.doc)
+        .def(
+            "AdvanceTo",
+            [](Simulator<T>* self, const T& boundary_time, bool interruptible) {
+              if (!interruptible) {
+                return self->AdvanceTo(boundary_time);
+              }
+              // Enable the interrupt monitor.
+              using systems::internal::SimulatorPythonInternal;
+              SimulatorPythonInternal<T>::set_python_monitor(
+                  self, &ThrowIfPythonHasPendingSignals);
+              ScopeExit guard([self]() {
+                SimulatorPythonInternal<T>::set_python_monitor(self, nullptr);
+              });
+              return self->AdvanceTo(boundary_time);
+            },
+            py::arg("boundary_time"), py::arg("interruptible") = true,
+            // Amend the docstring with the additional parameter.
+            []() {
+              std::string new_doc = doc.Simulator.AdvanceTo.doc;
+              auto found = new_doc.find("\nReturns");
+              DRAKE_DEMAND(found != std::string::npos);
+              new_doc.insert(found + 1, R"""(
+Parameter ``interruptible``:
+    When True, the simulator will check for ``KeyboardInterrupt``
+    signals (Ctrl-C) during the call to AdvanceTo(). When False,
+    the AdvanceTo() may or may not be interruptible, depending on
+    what systems and/or monitors have been added to the simulator.
+    The check has a very minor runtime performance cost, so can be
+    disabled by passing ``False``. This is a Python-only parameter
+    (not available in the C++ API).
+)""");
+              return new_doc;
+            }()
+                .c_str())
         .def("AdvancePendingEvents", &Simulator<T>::AdvancePendingEvents,
             doc.Simulator.AdvancePendingEvents.doc)
         .def("set_monitor",

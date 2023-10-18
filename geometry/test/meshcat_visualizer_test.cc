@@ -2,6 +2,7 @@
 
 #include <thread>
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <msgpack.hpp>
 
@@ -206,7 +207,9 @@ TEST_F(MeshcatVisualizerWithIiwaTest, DeletePrefixOnInitialization) {
   {  // Send an initialization event.
     auto events = diagram_->AllocateCompositeEventCollection();
     diagram_->GetInitializationEvents(*context_, events.get());
-    diagram_->Publish(*context_, events->get_publish_events());
+    const systems::EventStatus status =
+        diagram_->Publish(*context_, events->get_publish_events());
+    EXPECT_TRUE(status.succeeded());
   }
   // Confirm that my scribble was deleted.
   EXPECT_FALSE(meshcat_->HasPath("/drake/visualizer/my_random_path"));
@@ -219,7 +222,9 @@ TEST_F(MeshcatVisualizerWithIiwaTest, DeletePrefixOnInitialization) {
   {  // Send an initialization event.
     auto events = diagram_->AllocateCompositeEventCollection();
     diagram_->GetInitializationEvents(*context_, events.get());
-    diagram_->Publish(*context_, events->get_publish_events());
+    const systems::EventStatus status =
+        diagram_->Publish(*context_, events->get_publish_events());
+    EXPECT_TRUE(status.did_nothing());
   }
   // Confirm that my scribble remains.
   EXPECT_TRUE(meshcat_->HasPath("/drake/visualizer/my_random_path"));
@@ -497,121 +502,84 @@ TEST_F(MeshcatVisualizerWithIiwaTest, AlphaSlidersSystemCheck) {
   diagram_->ForcedPublish(*context_);
 }
 
-// Checks whether the given path has been set to a new color beyond it's initial
-// color. If so, returns the new color; otherwise, returns nullopt.
-std::optional<Rgba> GetColorProperty(const Meshcat& meshcat,
-                                     const std::string& path) {
-  std::string bytes = meshcat.GetPackedProperty(path, "color");
+// Tests to see if the given meshcat instance has had the "modulated_opacity"
+// set for the given path. Returns the value if so, nullopt otherwise.
+std::optional<double> GetOpacityProperty(const Meshcat& meshcat,
+                                         const std::string& path) {
+  const std::string bytes =
+      meshcat.GetPackedProperty(path, "modulated_opacity");
   if (bytes.empty()) {
     return {};
   }
   msgpack::object_handle oh = msgpack::unpack(bytes.data(), bytes.size());
-  auto decoded = oh.get().as<internal::SetPropertyData<std::vector<double>>>();
-  EXPECT_EQ(decoded.property, "color");
-  EXPECT_EQ(decoded.value.size(), 4);
-  if (decoded.value.size() != 4) {
-    return {};
-  }
-  return Rgba(decoded.value[0], decoded.value[1], decoded.value[2],
-              decoded.value[3]);
+  auto decoded = oh.get().as<internal::SetPropertyData<double>>();
+  return decoded.value;
 }
 
-// Check the effect that changing alpha sliders has on geometry color.
+// Check the effect that changing alpha sliders has on geometry opacity.
+// MeshcatVisualizer now has limited logic for controlling alpha based on slider
+// value -- the majority of the heavy lifting is done by meshcat.js.
+// MeshcatVisualizer is responsible for initializing all of the initial alphas
+// and efficiently updating after the fact. We'll be checking that the expected
+// messages have been sent.
 GTEST_TEST(MeshcatVisualizerTest, AlphaSliderCheckResults) {
-  struct Scenario {
-    double geometry_alpha{};
-    double slider_value{};
-    double expected_value{};
-  };
+  // Load a simple model with one geometry.
+  auto meshcat = std::make_shared<Meshcat>();
+  systems::DiagramBuilder<double> builder;
+  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.001);
+  multibody::Parser(&plant).AddModelsFromUrl(
+      "package://drake/geometry/render/test/box.sdf");
+  plant.Finalize();
 
-  std::vector<Scenario> scenarios{
-    // For geometry that is not fully transparent, the alpha set by the slider
-    // is geometry alpha * slider value.
-    {1.0, 0.6, 0.6},
-    {1.0, 1.0, 1.0},
-    {0.5, 0.6, 0.6 * 0.5},
-    {0.5, 1.0, 0.5},
+  // Get the geometry id so we can create the path for the geometry.
+  auto& inspector = scene_graph.model_inspector();
+  const FrameId body_frame =
+      plant.GetBodyFrameIdOrThrow(plant.GetBodyByName("box").index());
+  const auto geom_ids =
+      inspector.GetGeometries(body_frame, Role::kIllustration);
+  DRAKE_DEMAND(geom_ids.size() == 1);
+  const GeometryId geom_id = *geom_ids.begin();
+  const std::string geom_path =
+      fmt::format("visualizer/box/box/{}", geom_id.get_value());
 
-    // For fully-transparent geometry, the alpha set by the slider is the
-    // slider's value.
-    {0.0, 0.6, 0.6},
-    {0.0, 1.0, 1.0},
+  // Create the visualizer.
+  MeshcatVisualizerParams params;
+  params.prefix = "visualizer";
+  params.enable_alpha_slider = true;
+  MeshcatVisualizer<double>::AddToBuilder(&builder, scene_graph, meshcat,
+                                          params);
+  auto diagram = builder.Build();
+  auto context = diagram->CreateDefaultContext();
 
-    // Note that we do not test setting sliders to 0.0 because that's outside
-    // the slider range and is also orthogonal to the logic we're testing.
-  };
+  // After instantiation, the first publish should initialize the modulated
+  // opacity for each geometry individually with the initial value of 1.
+  diagram->ForcedPublish(*context);
+  const std::optional<double> init_alpha =
+      GetOpacityProperty(*meshcat, geom_path);
+  ASSERT_TRUE(init_alpha.has_value());
+  EXPECT_EQ(*init_alpha, 1.0);
 
-  for (auto scenario : scenarios) {
-    // Load a simple model with one geometry.
-    auto meshcat = std::make_shared<Meshcat>();
-    systems::DiagramBuilder<double> builder;
-    auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.001);
-    multibody::Parser(&plant).AddModelsFromUrl(
-        "package://drake/geometry/render/test/box.sdf");
-    plant.Finalize();
+  // The opacity value started as one, attempting to redundantly "change" it to
+  // the same value will do nothing.
+  meshcat->SetSliderValue("visualizer α", 1.0);
+  diagram->ForcedPublish(*context);
+  ASSERT_FALSE(GetOpacityProperty(*meshcat, params.prefix).has_value());
 
-    // Update the single geometry's alpha to scenario.geometry_alpha.
-    auto& inspector = scene_graph.model_inspector();
-    const FrameId body_frame =
-        plant.GetBodyFrameIdOrThrow(plant.GetBodyByName("box").index());
-    const auto geom_ids =
-        inspector.GetGeometries(body_frame, Role::kIllustration);
-    DRAKE_DEMAND(geom_ids.size() == 1);
-    const GeometryId geom_id = *geom_ids.begin();
-    const IllustrationProperties* old_props =
-        scene_graph.model_inspector().GetIllustrationProperties(geom_id);
-    DRAKE_DEMAND(old_props != nullptr);
-    IllustrationProperties new_props(*old_props);
-    new_props.UpdateProperty("phong", "diffuse", Rgba{1.0, 1.0, 1.0,
-                             scenario.geometry_alpha});
-    scene_graph.AssignRole(*plant.get_source_id(), geom_id, new_props,
-                           RoleAssign::kReplace);
-
-    // Create the visualizer.
-    MeshcatVisualizerParams params;
-    params.prefix = "visualizer";
-    params.enable_alpha_slider = true;
-    MeshcatVisualizer<double>::AddToBuilder(&builder, scene_graph, meshcat,
-                                            params);
-    auto diagram = builder.Build();
-    auto context = diagram->CreateDefaultContext();
-
-    // Publish the initial geometry. The alpha slider remains at its default
-    // value of 100%.
-    const std::string geom_path =
-        fmt::format("visualizer/box/box/{}", geom_id.get_value());
+  // For a somewhat arbitrary sequence of opacity values, we're confirming that
+  // the slider value is always set to the "modulating_opacity" property.
+  // These values must be integer multiples of 0.02 between 0.02 and 1 -- this
+  // is how the slider is configured -- and 1 must not come first -- because
+  // the slider value started as one, and setting it redundantly is ignored.
+  for (const double slider_value : {0.2, 0.76, 1.0, 0.02}) {
+    meshcat->SetSliderValue("visualizer α", slider_value);
     diagram->ForcedPublish(*context);
 
-    // If the geometry had a zero alpha, it's promoted to the default (100%).
-    // If the geometry already had a non-zero alpha, it remains unchanged.
-    const std::optional<Rgba> init_color =
-        GetColorProperty(*meshcat, geom_path);
-    if (scenario.geometry_alpha == 0.0) {
-      EXPECT_TRUE(init_color.has_value());
-      EXPECT_EQ(init_color.value_or(Rgba{}).a(), 1.0);
-    } else {
-      EXPECT_FALSE(init_color.has_value());
-    }
-
-    // If the test case specifies a <100% alpha, move the slider and republish.
-    if (scenario.slider_value != 1.0) {
-      meshcat->SetSliderValue("visualizer α", scenario.slider_value);
-      diagram->ForcedPublish(*context);
-    }
-
-    // Check to see whether the visualizer adjusted the alpha value with a
-    // SetProperty call subsequent to the original SetObject call.
-    const bool requires_alpha_update =
-        scenario.geometry_alpha != scenario.expected_value;
-    const std::optional<Rgba> final_color =
-        GetColorProperty(*meshcat, geom_path);
-    EXPECT_EQ(final_color.has_value(), requires_alpha_update);
-    if (final_color.has_value()) {
-      EXPECT_EQ(final_color->r(), 1.0);
-      EXPECT_EQ(final_color->g(), 1.0);
-      EXPECT_EQ(final_color->b(), 1.0);
-      EXPECT_EQ(final_color->a(), scenario.expected_value);
-    }
+    // We should have dispatched a set property on the *visualizer root* with
+    // the given slider value.
+    const std::optional<double> mod_opacity_value =
+        GetOpacityProperty(*meshcat, params.prefix);
+    ASSERT_TRUE(mod_opacity_value.has_value());
+    EXPECT_EQ(*mod_opacity_value, slider_value);
   }
 }
 
@@ -657,6 +625,12 @@ GTEST_TEST(MeshcatVisualizerTest, RealtimeRate) {
   // kernel's details of process scheduling, or else we could be flaky.)
   simulator.AdvanceTo(0.005);
   EXPECT_NE(meshcat->GetRealtimeRate(), slow_rate);
+}
+
+TEST_F(MeshcatVisualizerWithIiwaTest, Graphviz) {
+  SetUpDiagram();
+  EXPECT_THAT(visualizer_->GetGraphvizString(),
+              testing::HasSubstr("-> meshcat_in"));
 }
 
 }  // namespace

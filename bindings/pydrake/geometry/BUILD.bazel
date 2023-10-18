@@ -1,14 +1,14 @@
-load("@drake//tools/install:install.bzl", "install")
+load("//tools/install:install.bzl", "install")
 load(
-    "@drake//tools/skylark:drake_cc.bzl",
+    "//tools/skylark:drake_cc.bzl",
     "drake_cc_library",
 )
 load(
-    "@drake//tools/skylark:drake_py.bzl",
+    "//tools/skylark:drake_py.bzl",
     "drake_py_unittest",
 )
 load(
-    "@drake//tools/skylark:pybind.bzl",
+    "//tools/skylark:pybind.bzl",
     "drake_pybind_library",
     "get_drake_py_installs",
     "get_pybind_package_info",
@@ -34,11 +34,13 @@ drake_pybind_library(
     cc_deps = [
         ":optimization_pybind",
         "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake:polynomial_types_pybind",
         "//bindings/pydrake/common:default_scalars_pybind",
         "//bindings/pydrake/common:deprecation_pybind",
         "//bindings/pydrake/common:identifier_pybind",
         "//bindings/pydrake/common:monostate_pybind",
         "//bindings/pydrake/common:serialize_pybind",
+        "//bindings/pydrake/common:sorted_pair_pybind",
         "//bindings/pydrake/common:type_pack",
         "//bindings/pydrake/common:type_safe_index_pybind",
         "//bindings/pydrake/common:value_pybind",
@@ -59,7 +61,7 @@ drake_pybind_library(
         "//setup:deepnote",
     ],
     py_deps = [
-        "//bindings/pydrake:math_py",
+        "//bindings/pydrake/math",
         "//bindings/pydrake:module_py",
         "//bindings/pydrake/solvers",
         "//bindings/pydrake/systems:framework_py",
@@ -110,9 +112,9 @@ drake_py_unittest(
     name = "optimization_test",
     deps = [
         ":geometry",
-        "//bindings/pydrake:math_py",
         "//bindings/pydrake/common/test_utilities:deprecation_py",
         "//bindings/pydrake/common/test_utilities:pickle_compare_py",
+        "//bindings/pydrake/math",
         "//bindings/pydrake/multibody:inverse_kinematics_py",
         "//bindings/pydrake/multibody:parsing_py",
         "//bindings/pydrake/multibody:plant_py",

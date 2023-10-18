@@ -353,20 +353,18 @@ class ScrewJoint final : public Joint<T> {
   // The internal implementation of this joint could change in a future version.
   // However its public API should remain intact.
   const internal::ScrewMobilizer<T>* get_mobilizer() const {
-    // This implementation should only have one mobilizer.
-    DRAKE_DEMAND(this->get_implementation().num_mobilizers() == 1);
+    DRAKE_DEMAND(this->get_implementation().has_mobilizer());
     const internal::ScrewMobilizer<T>* mobilizer =
         dynamic_cast<const internal::ScrewMobilizer<T>*>(
-            this->get_implementation().mobilizers_[0]);
+            this->get_implementation().mobilizer);
     DRAKE_DEMAND(mobilizer != nullptr);
     return mobilizer;
   }
 
   internal::ScrewMobilizer<T>* get_mutable_mobilizer() {
-    // This implementation should only have one mobilizer.
-    DRAKE_DEMAND(this->get_implementation().num_mobilizers() == 1);
+    DRAKE_DEMAND(this->get_implementation().has_mobilizer());
     auto* mobilizer = dynamic_cast<internal::ScrewMobilizer<T>*>(
-        this->get_implementation().mobilizers_[0]);
+        this->get_implementation().mobilizer);
     DRAKE_DEMAND(mobilizer != nullptr);
     return mobilizer;
   }

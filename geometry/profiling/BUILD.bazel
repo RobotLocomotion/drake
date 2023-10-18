@@ -1,9 +1,9 @@
 load(
-    "@drake//tools/skylark:drake_cc.bzl",
+    "//tools/skylark:drake_cc.bzl",
     "drake_cc_binary",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
-load("@drake//tools/workspace:forward_files.bzl", "forward_files")
+load("//tools/workspace:forward_files.bzl", "forward_files")
 
 _EVO_MESH = forward_files(
     srcs = ["@drake_models//:dishes/bowls/evo_bowl_no_mtl.obj"],
@@ -25,6 +25,7 @@ drake_cc_binary(
         "//common",
         "//geometry:drake_visualizer",
         "//geometry:scene_graph",
+        "//lcm",
         "//lcmtypes:contact_results_for_viz",
         "//systems/analysis:explicit_euler_integrator",
         "//systems/analysis:simulator",

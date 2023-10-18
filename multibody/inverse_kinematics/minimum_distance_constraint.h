@@ -19,7 +19,9 @@ penalty functions must meet the following criteria:
 2. dφ(x)/dx ≤ 0 ∀ x ∈ ℝ.
 3.     φ(x) = 0 ∀ x ≥ 0.
 4. dφ(x)/dx < 0 ∀ x < 0. */
-using MinimumDistancePenaltyFunction = solvers::MinimumValuePenaltyFunction;
+using MinimumDistancePenaltyFunction DRAKE_DEPRECATED(
+    "2024-02-01", "Use solvers::MinimumValuePenaltyFunction.") =
+    solvers::MinimumValuePenaltyFunction;
 
 /** A hinge loss function smoothed by exponential function. This loss
 function is differentiable everywhere. The formulation is described in
@@ -63,7 +65,7 @@ The formulation of the constraint is
 where dᵢ(q) is the signed distance of the i-th pair, lb is the minimum
 allowable distance, d_influence is the "influence distance" (the distance below
 which a pair of geometries influences the constraint), φ is a
-multibody::MinimumDistancePenaltyFunction. SmoothOverMax(d) and
+solvers::MinimumValuePenaltyFunction. SmoothOverMax(d) and
 SmoothUnderMax(d) is smooth over and under approximation of max(d). We require
 that lb < d_influence. The input scaling (dᵢ(q) - d_influence)/(d_influence -
 lb) ensures that at the boundary of the feasible set (when dᵢ(q) == lb), we
@@ -72,7 +74,12 @@ gradient.
 
 @ingroup solver_evaluators
 */
-class MinimumDistanceConstraint final : public solvers::Constraint {
+class DRAKE_DEPRECATED(
+    "2024-02-01",
+    "Use MinimumDistanceLowerBoundConstraint if you want the smallest distance "
+    "to be lower bounded, or MinimumDistanceUpperBoundConstraint if you want "
+    "the smallest distance to be upper bounded.")
+    MinimumDistanceConstraint final : public solvers::Constraint {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MinimumDistanceConstraint)
 
@@ -105,7 +112,7 @@ class MinimumDistanceConstraint final : public solvers::Constraint {
   MinimumDistanceConstraint(
       const multibody::MultibodyPlant<double>* const plant,
       double minimum_distance, systems::Context<double>* plant_context,
-      MinimumDistancePenaltyFunction penalty_function = {},
+      solvers::MinimumValuePenaltyFunction penalty_function = {},
       double influence_distance_offset = 1);
 
   /**
@@ -121,7 +128,7 @@ class MinimumDistanceConstraint final : public solvers::Constraint {
       const multibody::MultibodyPlant<double>* const plant,
       double minimum_distance_lower, double minimum_distance_upper,
       systems::Context<double>* plant_context,
-      MinimumDistancePenaltyFunction penalty_function,
+      solvers::MinimumValuePenaltyFunction penalty_function,
       double influence_distance);
 
   /**
@@ -132,7 +139,7 @@ class MinimumDistanceConstraint final : public solvers::Constraint {
   MinimumDistanceConstraint(
       const multibody::MultibodyPlant<AutoDiffXd>* const plant,
       double minimum_distance, systems::Context<AutoDiffXd>* plant_context,
-      MinimumDistancePenaltyFunction penalty_function = {},
+      solvers::MinimumValuePenaltyFunction penalty_function = {},
       double influence_distance_offset = 1);
 
   /**
@@ -151,7 +158,7 @@ class MinimumDistanceConstraint final : public solvers::Constraint {
       const multibody::MultibodyPlant<AutoDiffXd>* const plant,
       double minimum_distance_lower, double minimum_distance_upper,
       systems::Context<AutoDiffXd>* plant_context,
-      MinimumDistancePenaltyFunction penalty_function,
+      solvers::MinimumValuePenaltyFunction penalty_function,
       double influence_distance);
 
   /** Overloaded constructor.
@@ -165,7 +172,7 @@ class MinimumDistanceConstraint final : public solvers::Constraint {
       const planning::CollisionChecker* collision_checker,
       double minimum_distance,
       planning::CollisionCheckerContext* collision_checker_context,
-      MinimumDistancePenaltyFunction penalty_function = {},
+      solvers::MinimumValuePenaltyFunction penalty_function = {},
       double influence_distance_offset = 1);
 
   /** Overloaded constructor.
@@ -179,7 +186,7 @@ class MinimumDistanceConstraint final : public solvers::Constraint {
       const planning::CollisionChecker* collision_checker,
       double minimum_distance_lower, double minimum_distance_upper,
       planning::CollisionCheckerContext* collision_checker_context,
-      MinimumDistancePenaltyFunction penalty_function,
+      solvers::MinimumValuePenaltyFunction penalty_function,
       double influence_distance);
 
   ~MinimumDistanceConstraint() override {}
@@ -228,14 +235,14 @@ class MinimumDistanceConstraint final : public solvers::Constraint {
                   systems::Context<T>* plant_context,
                   double minimum_distance_lower, double minimum_distance_upper,
                   double influence_distance,
-                  MinimumDistancePenaltyFunction penalty_function);
+                  solvers::MinimumValuePenaltyFunction penalty_function);
 
   // Overload Initialize with CollisionChecker instead of MultibodyPlant.
   void Initialize(const planning::CollisionChecker& collision_checker,
                   planning::CollisionCheckerContext* collision_checker_context,
                   double minimum_distance_lower, double minimum_distance_upper,
                   double influence_distance,
-                  MinimumDistancePenaltyFunction penalty_function);
+                  solvers::MinimumValuePenaltyFunction penalty_function);
 
   void CheckMinimumDistanceBounds(double minimum_distance_lower,
                                   double minimum_distance_upper,
@@ -243,7 +250,10 @@ class MinimumDistanceConstraint final : public solvers::Constraint {
 
   const multibody::MultibodyPlant<double>* const plant_double_;
   systems::Context<double>* const plant_context_double_;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   std::unique_ptr<solvers::MinimumValueConstraint> minimum_value_constraint_;
+#pragma GCC diagnostic pop
   const multibody::MultibodyPlant<AutoDiffXd>* const plant_autodiff_;
   systems::Context<AutoDiffXd>* const plant_context_autodiff_;
 

@@ -7,8 +7,8 @@ template <typename T>
 Propeller<T>::Propeller(const BodyIndex& body_index,
                         const math::RigidTransform<double>& X_BP,
                         double thrust_ratio, double moment_ratio)
-    : Propeller({PropellerInfo(body_index, X_BP, thrust_ratio,
-                               moment_ratio)}) {}
+    : Propeller({PropellerInfo(body_index, X_BP, thrust_ratio, moment_ratio)}) {
+}
 
 template <typename T>
 Propeller<T>::Propeller(const std::vector<PropellerInfo>& propeller_info)

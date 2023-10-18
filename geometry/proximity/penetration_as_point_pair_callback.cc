@@ -391,8 +391,8 @@ bool Callback(fcl::CollisionObjectd* fcl_object_A_ptr,
   const GeometryId id_A = encoding_A.id();
   const GeometryId id_B = encoding_B.id();
 
-  const bool can_collide = data.collision_filter.CanCollideWith(
-      encoding_A.id(), encoding_B.id());
+  const bool can_collide =
+      data.collision_filter.CanCollideWith(encoding_A.id(), encoding_B.id());
 
   // NOTE: Here and below, false is returned regardless of whether collision
   // is detected or not because true tells the broadphase manager to terminate.
@@ -428,9 +428,7 @@ bool Callback(fcl::CollisionObjectd* fcl_object_A_ptr,
   return false;
 }
 
-DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((
-    &Callback<T>
-))
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((&Callback<T>))
 
 }  // namespace penetration_as_point_pair
 }  // namespace internal

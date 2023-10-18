@@ -1,6 +1,6 @@
 load("//tools/skylark:py.bzl", "py_library")
 load("//tools/lint:lint.bzl", "add_lint_tests")
-load("@drake//tools/install:install.bzl", "install")
+load("//tools/install:install.bzl", "install")
 
 py_library(
     name = "module_py",

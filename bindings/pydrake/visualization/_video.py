@@ -18,6 +18,7 @@ from pydrake.math import RigidTransform
 from pydrake.systems.framework import LeafSystem
 from pydrake.systems.sensors import (
     CameraInfo,
+    ImageDepth16U,
     ImageDepth32F,
     ImageLabel16I,
     ImageRgba8U,
@@ -27,13 +28,15 @@ from pydrake.systems.sensors import (
 
 # TODO(jwnimmer-tri) Move this system to C++ so everyone can use it.
 class ColorizeDepthImage(LeafSystem):
-    """Converts a depth image to a color image.
+    """Converts a depth image, either 32F or 16U, to a color image. One input
+    port, and only one, must be connected.
 
     .. pydrake_system::
 
         name: ColorizeDepthImage
         input_ports:
         - depth_image_32f
+        - depth_image_16u
         output_ports:
         - color_image
 
@@ -55,9 +58,12 @@ class ColorizeDepthImage(LeafSystem):
 
     def __init__(self):
         LeafSystem.__init__(self)
-        self._depth32_input = self.DeclareAbstractInputPort(
+        self._depth32f_input = self.DeclareAbstractInputPort(
             name="depth_image_32f",
             model_value=Value(ImageDepth32F()))
+        self._depth16u_input = self.DeclareAbstractInputPort(
+            name="depth_image_16u",
+            model_value=Value(ImageDepth16U()))
         self._color_output = self.DeclareAbstractOutputPort(
             "color_image",
             alloc=lambda: Value(ImageRgba8U()),
@@ -66,13 +72,20 @@ class ColorizeDepthImage(LeafSystem):
 
     def _calc_output(self, context, output):
         """Implements the color_image output calculation."""
-        depth = self._depth32_input.Eval(context)
+        has_depth32f = self._depth32f_input.HasValue(context)
+        has_depth16u = self._depth16u_input.HasValue(context)
+        # Only one of the input ports should have value (not both or neither).
+        assert has_depth32f != has_depth16u
+        if has_depth32f:
+            depth = self._depth32f_input.Eval(context)
+        else:
+            depth = self._depth16u_input.Eval(context)
         color = output.get_mutable_value()
         self._colorize_depth_image(depth, color)
 
     def _colorize_depth_image(self, depth, color):
-        """Colorizes an ImageDepth32F into an ImageRgba8U.
-        The color is an output argument; there is no return value.
+        """Colorizes a depth (ImageDepth32F or ImageDepth16U) into an
+        ImageRgba8U. The color is an output argument; there is no return value.
         """
         if not all([color.width() == depth.width(),
                     color.height() == depth.height()]):
@@ -81,12 +94,17 @@ class ColorizeDepthImage(LeafSystem):
         color.mutable_data[:] = self._colorize_depth_array(depth_array)
 
     def _colorize_depth_array(self, depth):
-        """Colorizes an np.array of depths into an np.array of rgba.
-        Returns the color array.
+        """Colorizes an np.array of depths into an np.array of rgba. Returns
+        the color array.
         """
-        assert depth.dtype == np.float32
+        assert depth.dtype in [np.float32, np.uint16]
         h, w = depth.shape
-        invalid = (depth <= 0) | ~np.isfinite(depth)
+
+        if depth.dtype == np.float32:
+            invalid = (depth <= 0) | ~np.isfinite(depth)
+        else:  # depth.dtype == np.uint16
+            invalid = (depth == 0) | (depth == np.iinfo(np.uint16).max)
+
         scale_min = np.min(depth[~invalid])
         scale_max = np.max(depth[~invalid])
         # Normalize.
@@ -429,8 +447,8 @@ class VideoWriter(LeafSystem):
             elif kind == "depth":
                 converter = builder.AddSystem(ColorizeDepthImage())
                 builder.Connect(
-                    sensor.GetOutputPort(f"depth_image_32f"),
-                    converter.get_input_port())
+                    sensor.GetOutputPort("depth_image_32f"),
+                    converter.GetInputPort("depth_image_32f"))
                 image_sources.append(converter.get_output_port())
             elif kind == "label":
                 converter = builder.AddSystem(ColorizeLabelImage())

@@ -1,5 +1,5 @@
 load(
-    "@drake//tools/skylark:drake_cc.bzl",
+    "//tools/skylark:drake_cc.bzl",
     "drake_cc_library",
     "drake_cc_package_library",
 )
@@ -24,7 +24,8 @@ drake_cc_library(
     deps = [
         "//systems/sensors:image",
         "@gtest//:without_main",
-        "@vtk//:vtkIOImage",
+        "@vtk_internal//:vtkCommonCore",
+        "@vtk_internal//:vtkIOImage",
     ],
 )
 

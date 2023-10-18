@@ -180,7 +180,7 @@ class Expression {
   }
 
   /** Constructs an expression from @p var.
-   * @pre @p var is neither a dummy nor a BOOLEAN variable.
+   * @pre @p var is not a BOOLEAN variable.
    */
   // NOLINTNEXTLINE(runtime/explicit): This conversion is desirable.
   Expression(const Variable& var);
@@ -1368,6 +1368,11 @@ struct Gemm {
   // When reverse == true, sets result to V * D.
   static void CalcDV(const MatrixRef<double>& D, const MatrixRef<Variable>& V,
                      EigenPtr<MatrixX<Expression>> result);
+  // Matrix product for Variable, Variable.
+  // When reverse == false, sets result to A * B.
+  // When reverse == true, sets result to B * A.
+  static void CalcVV(const MatrixRef<Variable>& A, const MatrixRef<Variable>& B,
+                     EigenPtr<MatrixX<Expression>> result);
   // Matrix product for double, Expression.
   // When reverse == false, sets result to D * E.
   // When reverse == true, sets result to E * D.
@@ -1389,10 +1394,14 @@ struct Gemm {
 
 /* Eigen promises "automatic conversion of the inner product to a scalar", so
 when we calculate an inner product we need to return this magic type that acts
-like both a Matrix1<Expression> and an Expression. */
-struct ExpressionInnerProduct : public Eigen::Matrix<Expression, 1, 1> {
-  using Eigen::Matrix<Expression, 1, 1>::Matrix;
-  operator const Expression() const { return this->coeff(0, 0); }
+like both a Matrix1<Expression> and an Expression. There does not appear to be
+any practical way to mimic what Eigen does, other than multiple inheritance. */
+class ExpressionInnerProduct
+    : public Expression,
+      public Eigen::Map<Eigen::Matrix<Expression, 1, 1>> {
+ public:
+  ExpressionInnerProduct() : Map(this) {}
+  void resize(int rows, int cols) { DRAKE_ASSERT(rows == 1 && cols == 1); }
 };
 
 /* Helper to look up the return type we'll use for an Expression matmul. */
@@ -1505,6 +1514,23 @@ operator*(const MatrixL& lhs, const MatrixR& rhs) {
   result.resize(lhs.rows(), rhs.cols());
   constexpr bool reverse = false;
   internal::Gemm<reverse>::CalcDV(lhs, rhs, &result);
+  return result;
+}
+
+// Matrix<Variable> * Matrix<Variable> => Matrix<Expression>
+template <typename MatrixL, typename MatrixR>
+typename std::enable_if_t<
+    std::is_base_of_v<Eigen::MatrixBase<MatrixL>, MatrixL> &&
+        std::is_base_of_v<Eigen::MatrixBase<MatrixR>, MatrixR> &&
+        std::is_same_v<typename MatrixL::Scalar, Variable> &&
+        std::is_same_v<typename MatrixR::Scalar, Variable>,
+    internal::ExpressionMatMulResult<MatrixL, MatrixR>>
+operator*(const MatrixL& lhs, const MatrixR& rhs) {
+  DRAKE_THROW_UNLESS(lhs.cols() == rhs.rows());
+  internal::ExpressionMatMulResult<MatrixL, MatrixR> result;
+  result.resize(lhs.rows(), rhs.cols());
+  constexpr bool reverse = false;
+  internal::Gemm<reverse>::CalcVV(lhs, rhs, &result);
   return result;
 }
 

@@ -5,6 +5,8 @@ def _impl(repo_ctx):
     py_aliases = repo_ctx.attr.py_aliases
     aliases = repo_ctx.attr.aliases
 
+    build = "load(\"@drake//tools/skylark:cc.bzl\", \"cc_library\")\n"
+    build += "load(\"@drake//tools/skylark:py.bzl\", \"py_library\")\n"
     build = "package(default_visibility = [\"//visibility:public\"])\n"
     deprecation = "".join([
         "DRAKE DEPRECATED: The @{} external is deprecated".format(name),

@@ -1,4 +1,4 @@
-load("@drake//tools/workspace:github.bzl", "github_archive")
+load("//tools/workspace:github.bzl", "github_archive")
 
 def gym_py_repository(
         name,

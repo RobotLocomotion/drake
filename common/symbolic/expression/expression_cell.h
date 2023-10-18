@@ -177,7 +177,7 @@ class BinaryExpressionCell : public ExpressionCell {
 class ExpressionVar : public ExpressionCell {
  public:
   /** Constructs an expression from @p var.
-   * @pre @p var is neither a dummy nor a BOOLEAN variable.
+   * @pre @p var is not a BOOLEAN variable.
    */
   void HashAppendDetail(DelegatingHasher*) const override;
   explicit ExpressionVar(Variable v);

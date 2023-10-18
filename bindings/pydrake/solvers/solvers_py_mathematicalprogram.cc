@@ -91,9 +91,9 @@ void CheckArrayShape(
 
 // Checks array type, provides user-friendly message if it fails.
 template <typename T>
-void CheckArrayType(py::str var_name, py::array x) {
+void CheckReturnedArrayType(py::str cls_name, py::array y) {
   py::module m = py::module::import("pydrake.solvers._extra");
-  m.attr("_check_array_type")(var_name, x, GetPyParam<T>()[0]);
+  m.attr("_check_returned_array_type")(cls_name, y, GetPyParam<T>()[0]);
 }
 
 // Wraps user function to provide better user-friendliness.
@@ -114,9 +114,9 @@ Func WrapUserFunc(py::str cls_name, py::function func, int num_vars,
     // (numpy scalar) to `T` (object), at least for AutoDiffXd.
     py::object y = func(x);
     // Check output.
-    CheckArrayShape(
-        py::str("{}: Output").format(cls_name), y, output_shape, num_outputs);
-    CheckArrayType<T>(py::str("{}: Output").format(cls_name), y);
+    CheckArrayShape(py::str("{}: Return value").format(cls_name), y,
+        output_shape, num_outputs);
+    CheckReturnedArrayType<T>(cls_name, y);
     return y;
   };
   return wrapped.cast<Func>();
@@ -883,7 +883,7 @@ void BindMathematicalProgram(py::module m) {
               const Eigen::Ref<const VectorXDecisionVariable>&)>(
               &MathematicalProgram::AddLinearConstraint),
           py::arg("A"), py::arg("lb"), py::arg("ub"), py::arg("vars"),
-          doc.MathematicalProgram.AddLinearConstraint.doc_4args_A_lb_ub_vars)
+          doc.MathematicalProgram.AddLinearConstraint.doc_4args_A_lb_ub_dense)
       .def("AddLinearConstraint",
           static_cast<Binding<LinearConstraint> (MathematicalProgram::*)(
               const Eigen::Ref<const Eigen::RowVectorXd>&, double, double,
@@ -891,6 +891,15 @@ void BindMathematicalProgram(py::module m) {
               &MathematicalProgram::AddLinearConstraint),
           py::arg("a"), py::arg("lb"), py::arg("ub"), py::arg("vars"),
           doc.MathematicalProgram.AddLinearConstraint.doc_4args_a_lb_ub_vars)
+      .def("AddLinearConstraint",
+          static_cast<Binding<LinearConstraint> (MathematicalProgram::*)(
+              const Eigen::SparseMatrix<double>&,
+              const Eigen::Ref<const Eigen::VectorXd>&,
+              const Eigen::Ref<const Eigen::VectorXd>&,
+              const Eigen::Ref<const VectorXDecisionVariable>&)>(
+              &MathematicalProgram::AddLinearConstraint),
+          py::arg("A"), py::arg("lb"), py::arg("ub"), py::arg("vars"),
+          doc.MathematicalProgram.AddLinearConstraint.doc_4args_A_lb_ub_sparse)
       .def("AddLinearConstraint",
           static_cast<Binding<LinearConstraint> (MathematicalProgram::*)(
               const Expression&, double, double)>(
@@ -925,7 +934,25 @@ void BindMathematicalProgram(py::module m) {
               &MathematicalProgram::AddLinearEqualityConstraint),
           py::arg("Aeq"), py::arg("beq"), py::arg("vars"),
           doc.MathematicalProgram.AddLinearEqualityConstraint
-              .doc_3args_Aeq_beq_vars)
+              .doc_3args_Aeq_beq_dense)
+      .def("AddLinearEqualityConstraint",
+          static_cast<Binding<LinearEqualityConstraint> (
+              MathematicalProgram::*)(
+              const Eigen::Ref<const Eigen::RowVectorXd>&, double,
+              const Eigen::Ref<const VectorXDecisionVariable>&)>(
+              &MathematicalProgram::AddLinearEqualityConstraint),
+          py::arg("a"), py::arg("beq"), py::arg("vars"),
+          doc.MathematicalProgram.AddLinearEqualityConstraint
+              .doc_3args_a_beq_vars)
+      .def("AddLinearEqualityConstraint",
+          static_cast<Binding<LinearEqualityConstraint> (
+              MathematicalProgram::*)(const Eigen::SparseMatrix<double>&,
+              const Eigen::Ref<const Eigen::VectorXd>&,
+              const Eigen::Ref<const VectorXDecisionVariable>&)>(
+              &MathematicalProgram::AddLinearEqualityConstraint),
+          py::arg("Aeq"), py::arg("beq"), py::arg("vars"),
+          doc.MathematicalProgram.AddLinearEqualityConstraint
+              .doc_3args_Aeq_beq_sparse)
       .def("AddLinearEqualityConstraint",
           static_cast<Binding<LinearEqualityConstraint> (
               MathematicalProgram::*)(const Expression&, double)>(
@@ -1105,6 +1132,24 @@ void BindMathematicalProgram(py::module m) {
           py::arg("X"),
           doc.MathematicalProgram.AddPositiveDiagonallyDominantMatrixConstraint
               .doc)
+      .def("AddPositiveDiagonallyDominantDualConeMatrixConstraint",
+          static_cast<Binding<LinearConstraint> (MathematicalProgram::*)(
+              const Eigen::Ref<const MatrixX<symbolic::Expression>>&)>(
+              &MathematicalProgram::
+                  AddPositiveDiagonallyDominantDualConeMatrixConstraint),
+          py::arg("X"),
+          doc.MathematicalProgram
+              .AddPositiveDiagonallyDominantDualConeMatrixConstraint
+              .doc_expression)
+      .def("AddPositiveDiagonallyDominantDualConeMatrixConstraint",
+          static_cast<Binding<LinearConstraint> (MathematicalProgram::*)(
+              const Eigen::Ref<const MatrixX<symbolic::Variable>>&)>(
+              &MathematicalProgram::
+                  AddPositiveDiagonallyDominantDualConeMatrixConstraint),
+          py::arg("X"),
+          doc.MathematicalProgram
+              .AddPositiveDiagonallyDominantDualConeMatrixConstraint
+              .doc_variable)
       .def("AddScaledDiagonallyDominantMatrixConstraint",
           static_cast<std::vector<std::vector<Matrix2<symbolic::Expression>>> (
               MathematicalProgram::*)(
@@ -1123,6 +1168,25 @@ void BindMathematicalProgram(py::module m) {
           py::arg("X"),
           doc.MathematicalProgram.AddScaledDiagonallyDominantMatrixConstraint
               .doc_variable)
+      .def("AddScaledDiagonallyDominantDualConeMatrixConstraint",
+          static_cast<std::vector<Binding<RotatedLorentzConeConstraint>> (
+              MathematicalProgram::*)(
+              const Eigen::Ref<const MatrixX<symbolic::Expression>>&)>(
+              &MathematicalProgram::
+                  AddScaledDiagonallyDominantDualConeMatrixConstraint),
+          py::arg("X"),
+          doc.MathematicalProgram
+              .AddScaledDiagonallyDominantDualConeMatrixConstraint
+              .doc_expression)
+      .def("AddScaledDiagonallyDominantDualConeMatrixConstraint",
+          static_cast<std::vector<Binding<RotatedLorentzConeConstraint>> (
+              MathematicalProgram::*)(
+              const Eigen::Ref<const MatrixX<symbolic::Variable>>&)>(
+              &MathematicalProgram::
+                  AddScaledDiagonallyDominantDualConeMatrixConstraint),
+          py::arg("X"),
+          doc.MathematicalProgram
+              .AddScaledDiagonallyDominantDualConeMatrixConstraint.doc_variable)
       .def("AddSosConstraint",
           static_cast<MatrixXDecisionVariable (MathematicalProgram::*)(
               const Polynomial&, const Eigen::Ref<const VectorX<Monomial>>&,
@@ -1504,14 +1568,6 @@ for every column of ``prog_var_vals``. )""")
           doc.SolutionResult.kDualInfeasible.doc)
       .value("kSolutionResultNotSet", SolutionResult::kSolutionResultNotSet,
           doc.SolutionResult.kSolutionResultNotSet.doc);
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  solution_result_enum.value("kUnknownError", SolutionResult::kUnknownError,
-      "Deprecated. This has been renamed to kSolverSpecificError; for details, "
-      "see https://github.com/RobotLocomotion/drake/pull/19450. The deprecated "
-      "code will be removed from Drake on or after 2023-09-01.");
-#pragma GCC diagnostic pop
 }  // NOLINT(readability/fn_size)
 
 void BindPyFunctionConstraint(py::module m) {

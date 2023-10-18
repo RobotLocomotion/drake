@@ -18,6 +18,7 @@
 #include <vector>
 
 #include <Eigen/Core>
+#include <Eigen/SparseCore>
 
 #include "drake/common/autodiff.h"
 #include "drake/common/drake_assert.h"
@@ -436,7 +437,6 @@ class MathematicalProgram {
    * @param decision_variables The newly added decision_variables.
    * @pre `decision_variables` should not intersect with the existing
    * indeterminates in the optimization program.
-   * @pre Each entry in `decision_variables` should not be a dummy variable.
    * @throws std::exception if the preconditions are not satisfied.
    */
   void AddDecisionVariables(
@@ -837,7 +837,6 @@ class MathematicalProgram {
    * new_indeterminate.
    * @pre `new_indeterminate` should not intersect with the program's
    * decision variables.
-   * @pre new_indeterminate should not be dummy.
    * @pre new_indeterminate should be of CONTINUOUS type.
    */
   int AddIndeterminate(const symbolic::Variable& new_indeterminate);
@@ -849,7 +848,6 @@ class MathematicalProgram {
    * program's old indeterminates.
    * @pre `new_indeterminates` should not intersect with the program's old
    * decision variables.
-   * @pre Each entry in new_indeterminates should not be dummy.
    * @pre Each entry in new_indeterminates should be of CONTINUOUS type.
    */
   void AddIndeterminates(
@@ -862,11 +860,9 @@ class MathematicalProgram {
    * program's old indeterminates.
    * @pre `new_indeterminates` should not intersect with the program's old
    * decision variables.
-   * @pre Each entry in new_indeterminates should not be dummy.
    * @pre Each entry in new_indeterminates should be of CONTINUOUS type.
    */
-  void AddIndeterminates(
-      const symbolic::Variables& new_indeterminates);
+  void AddIndeterminates(const symbolic::Variables& new_indeterminates);
 
   /**
    * Adds a callback method to visualize intermediate results of the
@@ -1453,6 +1449,8 @@ class MathematicalProgram {
   /**
    * Adds linear constraints referencing potentially a subset
    * of the decision variables (defined in the vars parameter).
+   *
+   * @exclude_from_pydrake_mkdoc{Not bound in pydrake.}
    */
   Binding<LinearConstraint> AddLinearConstraint(
       const Eigen::Ref<const Eigen::MatrixXd>& A,
@@ -1463,11 +1461,39 @@ class MathematicalProgram {
   }
 
   /**
+   * Adds sparse linear constraints referencing potentially a subset
+   * of the decision variables (defined in the vars parameter).
+   *
+   * @exclude_from_pydrake_mkdoc{Not bound in pydrake.}
+   */
+  Binding<LinearConstraint> AddLinearConstraint(
+      const Eigen::SparseMatrix<double>& A,
+      const Eigen::Ref<const Eigen::VectorXd>& lb,
+      const Eigen::Ref<const Eigen::VectorXd>& ub,
+      const VariableRefList& vars) {
+    return AddLinearConstraint(A, lb, ub, ConcatenateVariableRefList(vars));
+  }
+
+  /**
    * Adds linear constraints referencing potentially a subset
    * of the decision variables (defined in the vars parameter).
+   *
+   * @pydrake_mkdoc_identifier{4args_A_lb_ub_dense}
    */
   Binding<LinearConstraint> AddLinearConstraint(
       const Eigen::Ref<const Eigen::MatrixXd>& A,
+      const Eigen::Ref<const Eigen::VectorXd>& lb,
+      const Eigen::Ref<const Eigen::VectorXd>& ub,
+      const Eigen::Ref<const VectorXDecisionVariable>& vars);
+
+  /**
+   * Adds sparse linear constraints referencing potentially a subset
+   * of the decision variables (defined in the vars parameter).
+   *
+   * @pydrake_mkdoc_identifier{4args_A_lb_ub_sparse}
+   */
+  Binding<LinearConstraint> AddLinearConstraint(
+      const Eigen::SparseMatrix<double>& A,
       const Eigen::Ref<const Eigen::VectorXd>& lb,
       const Eigen::Ref<const Eigen::VectorXd>& ub,
       const Eigen::Ref<const VectorXDecisionVariable>& vars);
@@ -1714,6 +1740,20 @@ class MathematicalProgram {
   /** AddLinearEqualityConstraint
    *
    * Adds linear equality constraints referencing potentially a subset of
+   * the decision variables using a sparse A matrix.
+   * @exclude_from_pydrake_mkdoc{Not bound in pydrake.}
+   */
+  Binding<LinearEqualityConstraint> AddLinearEqualityConstraint(
+      const Eigen::SparseMatrix<double>& Aeq,
+      const Eigen::Ref<const Eigen::VectorXd>& beq,
+      const VariableRefList& vars) {
+    return AddLinearEqualityConstraint(Aeq, beq,
+                                       ConcatenateVariableRefList(vars));
+  }
+
+  /** AddLinearEqualityConstraint
+   *
+   * Adds linear equality constraints referencing potentially a subset of
    * the decision variables.
    *
    * Example: to add two equality constraints which only depend on two of the
@@ -1729,9 +1769,22 @@ class MathematicalProgram {
    *   //  x(0) +  x(1) = 3
    *   prog.AddLinearEqualityConstraint(Aeq, beq, x.head<2>());
    * @endcode
+   *
+   * @pydrake_mkdoc_identifier{3args_Aeq_beq_dense}
    */
   Binding<LinearEqualityConstraint> AddLinearEqualityConstraint(
       const Eigen::Ref<const Eigen::MatrixXd>& Aeq,
+      const Eigen::Ref<const Eigen::VectorXd>& beq,
+      const Eigen::Ref<const VectorXDecisionVariable>& vars);
+
+  /** AddLinearEqualityConstraint
+   *
+   * Adds linear equality constraints referencing potentially a subset of
+   * the decision variables using a sparse A matrix.
+   * @pydrake_mkdoc_identifier{3args_Aeq_beq_sparse}
+   */
+  Binding<LinearEqualityConstraint> AddLinearEqualityConstraint(
+      const Eigen::SparseMatrix<double>& Aeq,
       const Eigen::Ref<const Eigen::VectorXd>& beq,
       const Eigen::Ref<const VectorXDecisionVariable>& vars);
 
@@ -1750,8 +1803,8 @@ class MathematicalProgram {
   Binding<LinearEqualityConstraint> AddLinearEqualityConstraint(
       const Eigen::Ref<const Eigen::RowVectorXd>& a, double beq,
       const VariableRefList& vars) {
-    return AddConstraint(std::make_shared<LinearEqualityConstraint>(a, beq),
-                         ConcatenateVariableRefList(vars));
+    return AddLinearEqualityConstraint(a, beq,
+                                       ConcatenateVariableRefList(vars));
   }
 
   /**
@@ -1763,8 +1816,6 @@ class MathematicalProgram {
    * @param a A row vector.
    * @param beq A scalar.
    * @param vars The decision variables on which the constraint is imposed.
-   *
-   * @exclude_from_pydrake_mkdoc{Not bound in pydrake.}
    */
   Binding<LinearEqualityConstraint> AddLinearEqualityConstraint(
       const Eigen::Ref<const Eigen::RowVectorXd>& a, double beq,
@@ -2563,8 +2614,58 @@ class MathematicalProgram {
       const Eigen::Ref<const MatrixX<symbolic::Expression>>& X);
 
   /**
+   * @anchor add_dd_dual
+   * @name Diagonally dominant dual cone constraint
+   * Adds the constraint that a symmetric matrix is in the dual cone of the
+   * diagonally dominant matrices which is denoted DD*. This set is a polyhedral
+   * (linear) outer approximation to the PSD cone. This follows from the fact
+   * that since DD ⊆ PSD, then PSD* ⊆ DD*, and since PSD is self-dual, we have
+   * that PSD = PSD* and so DD ⊆ PSD = PSD* ⊆ DD*.
+   *
+   * A symmetric matrix X is in DD* if and only if vᵢᵀXvᵢ ≥ 0 for all vᵢ,
+   * where vᵢ is a non-zero vector with at most two entries set to ±1 and all
+   * other entries set to 0. There are 4 * (n choose 2) + 2 * n of these
+   * vectors, but notice that vᵢᵀXvᵢ = (-vᵢ)ᵀX(vᵢ) and so we only need to add
+   * all choices with different partities of which there are 2 * (n choose 2) +
+   * n = n². Therefore, if X is a matrix of size n x n, this function adds
+   * exactly n² linear constraints.
+   *
+   * This is a consequence of the characterization of DD given in "Cones
+   * of diagonally dominant matrices" by Barker and Carlson which can be found
+   * at https://msp.org/pjm/1975/57-1/p03.xhtml.
+   */
+  //@{
+  /**
+   * This is an overloaded variant of @ref add_dd_dual
+   * "diagonally dominant dual cone constraint"
+   * @param X The matrix X. We will use 0.5(X+Xᵀ) as the "symmetric version" of
+   * X.
+   * @pre X(i, j) should be a linear expression of decision variables.
+   * @return A linear constraint of size n² encoding vᵢᵀXvᵢ ≥ 0
+   *
+   * @pydrake_mkdoc_identifier{expression}
+   */
+  Binding<LinearConstraint>
+  AddPositiveDiagonallyDominantDualConeMatrixConstraint(
+      const Eigen::Ref<const MatrixX<symbolic::Expression>>& X);
+
+  /**
+   * This is an overloaded variant of @ref add_dd_dual
+   * "diagonally dominant dual cone constraint"
+   * @param X The matrix X. We will use 0.5(X+Xᵀ) as the "symmetric version" of
+   * X.
+   * @return A linear constraint of size n² encoding vᵢᵀXvᵢ ≥ 0
+   *
+   * @pydrake_mkdoc_identifier{variable}
+   */
+  Binding<LinearConstraint>
+  AddPositiveDiagonallyDominantDualConeMatrixConstraint(
+      const Eigen::Ref<const MatrixX<symbolic::Variable>>& X);
+  //@}
+
+  /**
    * @anchor addsdd
-   * @name     scaled diagonally dominant matrix constraint
+   * @name     Scaled diagonally dominant matrix constraint
    * Adds the constraint that a symmetric matrix is scaled diagonally dominant
    * (sdd). A matrix X is sdd if there exists a diagonal matrix D, such that
    * the product DXD is diagonally dominant with non-negative diagonal entries,
@@ -2610,12 +2711,70 @@ class MathematicalProgram {
    * dominant.
    * @return M For i < j M[i][j] contains the slack variables, mentioned in
    * @ref addsdd "scaled diagonally dominant matrix constraint". For i >= j,
-   * M[i][j] contains dummy variables.
+   * M[i][j] contains default-constructed variables (with get_id() == 0).
    *
    * @pydrake_mkdoc_identifier{variable}
    */
   std::vector<std::vector<Matrix2<symbolic::Variable>>>
   AddScaledDiagonallyDominantMatrixConstraint(
+      const Eigen::Ref<const MatrixX<symbolic::Variable>>& X);
+  //@}
+
+  /**
+   * @anchor add_sdd_dual
+   * @name Scaled diagonally dominant dual cone constraint
+   * Adds the constraint that a symmetric matrix is in the dual cone of the
+   * scaled diagonally dominant matrices which is denoted SDD*. The set SDD* is
+   * an SOCP outer approximation to the PSD cone that is tighter than DD*. This
+   * follows from the fact that DD ⊆ SDD ⊆ PSD = PSD* ⊆ SDD* ⊆ DD*.
+   *
+   * A symmetric matrix X is in SDD* if and only if all 2 x 2 principal minors
+   * of X are psd. This can be encoded by ensuring that VᵢⱼᵀXVᵢⱼ is psd for all
+   * Vᵢⱼ, where Vᵢⱼ is the n x 2 matrix such that Vᵢⱼ(i, 0) = 1, V(j, 1) = 1,
+   * namely Vᵢⱼ = [eᵢ eⱼ].
+   * This can be encoded using 1/2 * n * (n-1) RotatedLorentzCone constraints
+   * which we return in this function.
+   *
+   * This can be seen by noting that
+   * VᵢⱼᵀXVᵢⱼ = ⌈ Xᵢᵢ Xᵢⱼ⌉
+                ⌊ Xⱼᵢ Xⱼⱼ⌋
+   * is psd if and only if VⱼᵢᵀXVⱼᵢ as they are simply permutations of each
+   * other. Therefore, it suffices to only add the constraint for i ≥ j.
+   * Moreover, notice that VᵢᵢᵀXVᵢᵢ = ⌈ Xᵢᵢ 0⌉ ⌊ 0   0⌋ is psd if and only if
+   * Xᵢᵢ ≥ 0. This linear constraint is already implied by VᵢⱼᵀXVᵢⱼ is psd for
+   * every i ≠ j and so is redundant. Therefore, we only add
+   * RotatedLorentzConeConstraints for i > j.
+   *
+   * This characterization can be found in Section 3.3 of "Sum of Squares Basis
+   * Pursuit with Linear and Second Order Cone Programming" by Ahmadi and Hall
+   * with arXiv link https://arxiv.org/abs/1510.01597
+   */
+  //@{
+  /**
+   * This is an overloaded variant of @ref add_sdd_dual
+   * "scaled diagonally dominant dual cone constraint"
+   * @param X The matrix X. We will use 0.5(X+Xᵀ) as the "symmetric version" of
+   * X.
+   * @pre X(i, j) should be a linear expression of decision variables.
+   * @return A vector of RotatedLorentzConeConstraint constraints of length
+   *  1/2 * n * (n-1) encoding VᵢⱼᵀXVᵢⱼ is psd
+   *  @pydrake_mkdoc_identifier{expression}
+   */
+  std::vector<Binding<RotatedLorentzConeConstraint>>
+  AddScaledDiagonallyDominantDualConeMatrixConstraint(
+      const Eigen::Ref<const MatrixX<symbolic::Expression>>& X);
+
+  /**
+   * This is an overloaded variant of @ref add_sdd_dual
+   * "scaled diagonally dominant dual cone constraint"
+   * @param X The matrix X. We will use 0.5(X+Xᵀ) as the "symmetric version" of
+   * X.
+   * @return A vector of RotatedLorentzConeConstraint constraints of length
+   * 1/2 * n * (n-1) encoding VᵢⱼᵀXVᵢⱼ is psd
+   * @pydrake_mkdoc_identifier{variable}
+   */
+  std::vector<Binding<RotatedLorentzConeConstraint>>
+  AddScaledDiagonallyDominantDualConeMatrixConstraint(
       const Eigen::Ref<const MatrixX<symbolic::Variable>>& X);
   //@}
 

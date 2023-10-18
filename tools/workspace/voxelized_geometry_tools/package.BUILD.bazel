@@ -1,5 +1,7 @@
 # -*- bazel -*-
 
+load("@drake//tools/skylark:cc.bzl", "cc_library")
+
 package(default_visibility = ["//visibility:public"])
 
 # TODO(calderpg-tri) This file is from the OpenCL C++ bindings, and is
@@ -32,6 +34,7 @@ cc_library(
         "include/voxelized_geometry_tools/signed_distance_field_generation.hpp",  # noqa
         "include/voxelized_geometry_tools/tagged_object_collision_map.hpp",
         "include/voxelized_geometry_tools/topology_computation.hpp",
+        "include/voxelized_geometry_tools/vgt_namespace.hpp",
     ],
     includes = ["include"],
     linkstatic = True,
@@ -50,6 +53,7 @@ cc_library(
     hdrs = [
         "include/voxelized_geometry_tools/cuda_voxelization_helpers.h",
         "include/voxelized_geometry_tools/device_voxelization_interface.hpp",
+        "include/voxelized_geometry_tools/vgt_namespace.hpp",
     ],
     includes = ["include"],
     linkstatic = True,
@@ -67,6 +71,7 @@ cc_library(
     hdrs = [
         "include/voxelized_geometry_tools/device_voxelization_interface.hpp",
         "include/voxelized_geometry_tools/opencl_voxelization_helpers.h",
+        "include/voxelized_geometry_tools/vgt_namespace.hpp",
     ],
     includes = ["include"],
     linkstatic = True,
@@ -110,7 +115,10 @@ cc_test(
     name = "pointcloud_voxelization_test",
     srcs = ["test/pointcloud_voxelization_test.cpp"],
     env = {"OMP_NUM_THREADS": "2"},
-    tags = ["cpu:2"],
+    tags = [
+        "cpu:2",
+        "no_kcov",
+    ],
     deps = [
         ":voxelized_geometry_tools",
         ":cuda_voxelization_helpers",
@@ -121,11 +129,31 @@ cc_test(
     ],
 )
 
+# N.B. This test uses two threads even when OpenMP is not available.
 cc_test(
     name = "mesh_rasterization_test",
     srcs = ["test/mesh_rasterization_test.cpp"],
     env = {"OMP_NUM_THREADS": "2"},
-    tags = ["cpu:2"],
+    tags = [
+        "cpu:2",
+        "no_kcov",
+    ],
+    deps = [
+        ":voxelized_geometry_tools",
+        "@common_robotics_utilities",
+        "@gtest//:without_main",
+    ],
+)
+
+# N.B. This test uses two threads even when OpenMP is not available.
+cc_test(
+    name = "sdf_generation_test",
+    srcs = ["test/sdf_generation_test.cpp"],
+    env = {"OMP_NUM_THREADS": "2"},
+    tags = [
+        "cpu:2",
+        "no_kcov",
+    ],
     deps = [
         ":voxelized_geometry_tools",
         "@common_robotics_utilities",
@@ -138,5 +166,6 @@ test_suite(
     tests = [
         ":mesh_rasterization_test",
         ":pointcloud_voxelization_test",
+        ":sdf_generation_test",
     ],
 )

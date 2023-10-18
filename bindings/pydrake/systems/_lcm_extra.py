@@ -2,7 +2,6 @@
 # rationale.
 
 from pydrake.common.value import AbstractValue as _AbstractValue
-from pydrake.common.deprecation import deprecated as _deprecated
 
 
 class PySerializer(SerializerInterface):
@@ -16,13 +15,6 @@ class PySerializer(SerializerInterface):
 
     def __repr__(self):
         return f"PySerializer({self._lcm_type.__name__})"
-
-    @_deprecated(
-        "PySerializer objects are immutable, there is no need to copy nor "
-        "clone them.", date="2023-09-01")
-    def Clone(self):
-        """(Deprecated.)"""
-        return PySerializer(self._lcm_type)
 
     def CreateDefaultValue(self):
         return _AbstractValue.Make(self._lcm_type())
@@ -39,7 +31,12 @@ class PySerializer(SerializerInterface):
 
 
 @staticmethod
-def _make_lcm_subscriber(channel, lcm_type, lcm, use_cpp_serializer=False):
+def _make_lcm_subscriber(channel,
+                         lcm_type,
+                         lcm,
+                         use_cpp_serializer=False,
+                         *,
+                         wait_for_message_on_initialization_timeout=0.0):
     """Convenience to create an LCM subscriber system with a concrete type.
 
     Args:
@@ -48,7 +45,16 @@ def _make_lcm_subscriber(channel, lcm_type, lcm, use_cpp_serializer=False):
         lcm: LCM service instance.
         use_cpp_serializer: Use C++ serializer to interface with LCM converter
             systems that are implemented in C++. LCM types must be registered
-            in C++ via `BindCppSerializer`.
+            in C++ via ``BindCppSerializer``.
+        wait_for_message_on_initialization_timeout: Configures the behavior of
+            initialization events (see ``System.ExecuteInitializationEvents``
+            and ``Simulator.Initialize``) by specifying the number of seconds
+            (wall-clock elapsed time) to wait for a new message. If this
+            timeout is <= 0, initialization will copy any already-received
+            messages into the Context but will not process any new messages.
+            If this timeout is > 0, initialization will call
+            ``lcm.HandleSubscriptions()`` until at least one message is
+            received or until the timeout. Pass ∞ to wait indefinitely.
     """
     # TODO(eric.cousineau): Make `use_cpp_serializer` be kwarg-only.
     # N.B. This documentation is actually public, as it is assigned to classes
@@ -57,7 +63,8 @@ def _make_lcm_subscriber(channel, lcm_type, lcm, use_cpp_serializer=False):
         serializer = PySerializer(lcm_type)
     else:
         serializer = _Serializer_[lcm_type]()
-    return LcmSubscriberSystem(channel, serializer, lcm)
+    return LcmSubscriberSystem(channel, serializer, lcm,
+                               wait_for_message_on_initialization_timeout)
 
 
 @staticmethod

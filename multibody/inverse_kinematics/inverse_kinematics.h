@@ -196,8 +196,7 @@ class InverseKinematics {
       const Frame<double>& frameAbar,
       const math::RotationMatrix<double>& R_AbarA,
       const Frame<double>& frameBbar,
-      const math::RotationMatrix<double>& R_BbarB,
-      double c);
+      const math::RotationMatrix<double>& R_BbarB, double c);
 
   /**
    * Constrains a target point T to be within a cone K. The point T ("T" stands
@@ -280,8 +279,7 @@ class InverseKinematics {
       const Frame<double>& frameA,
       const Eigen::Ref<const Eigen::Vector3d>& na_A,
       const Frame<double>& frameB,
-      const Eigen::Ref<const Eigen::Vector3d>& nb_B,
-      double c);
+      const Eigen::Ref<const Eigen::Vector3d>& nb_B, double c);
 
   // TODO(hongkai.dai): remove this documentation.
   /**
@@ -299,14 +297,57 @@ class InverseKinematics {
    * distances between pairs of geometries. Smaller values may improve
    * performance, as fewer pairs of geometries need to be considered in each
    * constraint evaluation. @default 1 meter
-   * @see MinimumDistanceConstraint for more details on the %constraint
+   * @see MinimumDistanceConstraint for more details on the constraint
    * formulation.
    * @pre The MultibodyPlant passed to the constructor of `this` has registered
    * its geometry with a SceneGraph.
    * @pre 0 < `influence_distance_offset` < ∞
    */
+  DRAKE_DEPRECATED("2024-02-01",
+                   "Use AddMinimumDistanceLowerBoundConstraint() instead. The "
+                   "default value for influence_distance_offset has *changed*. "
+                   "It changes from 1 m to 0.01 m. If you're relying on the "
+                   "1 m default value, make sure to pass that value explicitly "
+                   "when calling AddMinimumDistanceLowerBoundConstraint().")
   solvers::Binding<solvers::Constraint> AddMinimumDistanceConstraint(
       double minimum_distance, double influence_distance_offset = 1);
+
+  /**
+   * Adds the constraint that the pairwise distance between objects should be no
+   * smaller than `bound`. We consider the distance between
+   * pairs of
+   * 1. Anchored (static) object and a dynamic object.
+   * 2. A dynamic object and another dynamic object, if one is not the parent
+   * link of the other.
+   * @param bound The minimum allowed value, dₘᵢₙ, of the signed
+   * distance between any candidate pair of geometries.
+   * @param influence_distance_offset See MinimumDistanceLowerBoundConstraint
+   * for explanation.
+   * @pre The MultibodyPlant passed to the constructor of `this` has registered
+   * its geometry with a SceneGraph.
+   * @pre 0 < `influence_distance_offset` < ∞
+   */
+  solvers::Binding<solvers::Constraint> AddMinimumDistanceLowerBoundConstraint(
+      double bound, double influence_distance_offset = 0.01);
+
+  /**
+   Adds the constraint that at least one pair of geometries has distance no
+   larger than `bound`. We consider the distance between pairs
+   of
+   1. Anchored (static) object and a dynamic object.
+   2. A dynamic object and another dynamic object, if one is not the parent
+   link of the other.
+   @param bound The upper bound of the minimum signed distance
+   between any candidate pair of geometries. Notice this is NOT the upper bound
+   of every distance, but the upper bound of the smallest distance.
+   @param influence_distance_offset  See MinimumDistanceUpperBoundConstraint
+   for more details on influence_distance_offset.
+   @pre The MultibodyPlant passed to the constructor of `this` has registered
+   its geometry with a SceneGraph.
+   @pre 0 < `influence_distance_offset` < ∞
+   */
+  solvers::Binding<solvers::Constraint> AddMinimumDistanceUpperBoundConstraint(
+      double bound, double influence_distance_offset);
 
   /**
    * Adds the constraint that the distance between a pair of geometries is

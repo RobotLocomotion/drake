@@ -1,8 +1,13 @@
 #pragma once
 
 #include <memory>
+#include <unordered_set>
+#include <utility>
 
 #include "drake/common/eigen_types.h"
+#include "drake/multibody/contact_solvers/block_sparse_cholesky_solver.h"
+#include "drake/multibody/contact_solvers/block_sparse_lower_triangular_or_symmetric_matrix.h"
+#include "drake/multibody/contact_solvers/schur_complement.h"
 #include "drake/multibody/fem/discrete_time_integrator.h"
 #include "drake/multibody/fem/fem_model.h"
 #include "drake/multibody/fem/fem_state.h"
@@ -12,59 +17,17 @@ namespace multibody {
 namespace fem {
 namespace internal {
 
-/* Holds the scratch data used in the solver to avoid unnecessary
- reallocation.
- @tparam_double_only */
-template <typename T>
-class FemSolverScratchData {
- public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FemSolverScratchData);
-
-  /* Constructs a scratch data that is compatible with the given model. */
-  explicit FemSolverScratchData(const FemModel<T>& model) { Resize(model); }
-
-  /* Resizes scratch data to have sizes compatible with the given `model`. */
-  void Resize(const FemModel<T>& model);
-
-  std::unique_ptr<FemSolverScratchData<T>> Clone() const;
-
-  int num_dofs() const { return b_.size(); }
-
-  /* Returns the residual of the model. */
-  const VectorX<T>& b() const { return b_; }
-  /* Returns the solution to A * dz = -b, where A is the tangent matrix. */
-  const VectorX<T>& dz() const { return dz_; }
-  const internal::PetscSymmetricBlockSparseMatrix& tangent_matrix() const {
-    return *tangent_matrix_;
-  }
-
-  VectorX<T>& mutable_b() { return b_; }
-  VectorX<T>& mutable_dz() { return dz_; }
-  internal::PetscSymmetricBlockSparseMatrix& mutable_tangent_matrix() {
-    return *tangent_matrix_;
-  }
-
- private:
-  /* Private default constructor to facilitate cloning. */
-  FemSolverScratchData() = default;
-
-  std::unique_ptr<internal::PetscSymmetricBlockSparseMatrix> tangent_matrix_;
-  VectorX<T> b_;
-  VectorX<T> dz_;
-};
-
 /* FemSolver solves discrete dynamic elasticity problems. The governing PDE of
  the dynamics is spatially discretized in FemModel and temporally discretized by
  DiscreteTimeIntegrator. FemSolver provides the `AdvanceOneTimeStep()` function
  that advances the free-motion states (i.e. without considering contacts or
  constraints) of the spatially discretized FEM model by one time step according
- to the prescribed discrete time integration scheme using a Newton-Raphson
- solver.
+ to the prescribed discrete time integration scheme.
  @tparam_double_only */
 template <typename T>
 class FemSolver {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FemSolver);
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(FemSolver);
 
   /* Constructs a new FemSolver that solves the given `model` with the
    `integrator` provided to advance time.
@@ -75,25 +38,41 @@ class FemSolver {
   FemSolver(const FemModel<T>* model,
             const DiscreteTimeIntegrator<T>* integrator);
 
+  ~FemSolver();
+
   /* Advances the state of the FEM model by one time step with the integrator
-   prescribed at construction.
-   @param[in] prev_state    The state of the FEM model evaluated at the previous
-                            time step.
-   @param[out] next_state   The state of the FEM model evaluated at the next
-                            time step.
-   @param[in, out] scratch  A scratch pad for storing intermediary data used in
-                            the computation. We use this scratch only to avoid
-                            memory allocation. The actual value of scratch is
-                            unused. The size of scratch will be set to be
-                            compatible with the model referenced by this solver
-                            on output if it's not already appropriately sized.
-   @returns the number of Newton-Raphson iterations the solver takes to
-   converge if the solver converges or -1 if the solver fails to converge.
-   @pre next_state != nullptr.
-   @throws std::exception if the input `prev_state` or `next_state` is
-   incompatible with the FEM model solved by this solver. */
-  int AdvanceOneTimeStep(const FemState<T>& prev_state, FemState<T>* next_state,
-                         FemSolverScratchData<T>* scratch) const;
+   prescribed at construction and computes the Schur complement of the tangent
+   matrix of the model at the next time step.
+   @param[in] prev_state
+     The state of the FEM model evaluated at the previous time step.
+   @param[in] nonparticipating_vertices
+     The vertices of the FEM model that participate in constraint computation,
+     used to compute the Schur complement of the tangent matrix of the FEM
+     model.
+   @returns  the number of solver iterations the solver takes to converge if the
+   solver converges or -1 if the solver fails to converge.
+   @pre All entries in `nonparticipating_vertices` are in
+   [0, prev_state.num_nodes()).
+   @throws std::exception if the input `prev_state` is incompatible with the FEM
+   model solved by this solver. */
+  int AdvanceOneTimeStep(
+      const FemState<T>& prev_state,
+      const std::unordered_set<int>& nonparticipating_vertices);
+
+  /* Returns the state of the FEM model after last invocation of
+   `AdvanceOneTimeStep()`. If `AdvanceOneTimeStep()` has never been called,
+   returns the default FEM state. */
+  const FemState<T>& next_fem_state() const {
+    return *next_state_and_schur_complement_.state;
+  }
+
+  /* Returns the Schur complement of the tangent matrix for the FEM model after
+   last invocation of `AdvanceOneTimeStep()`. If `AdvanceOneTimeStep()` has
+   never been called, returns an empty Schur complement. */
+  const contact_solvers::internal::SchurComplement& next_schur_complement()
+      const {
+    return next_state_and_schur_complement_.schur_complement;
+  }
 
   /* Returns the FEM model that this solver solves for. */
   const FemModel<T>& model() const { return *model_; }
@@ -117,34 +96,85 @@ class FemSolver {
 
   double absolute_tolerance() const { return absolute_tolerance_; }
 
-  /* The solver is considered as converged if ‖r‖ <= max(εᵣ * ‖r₀‖, εₐ) where r
+  /* The solver is considered as converged if ‖r‖ < max(εᵣ * ‖r₀‖, εₐ) where r
    and r₀ are `residual_norm` and `initial_residual_norm` respectively, and εᵣ
    and εₐ are relative and absolute tolerance respectively. */
   bool solver_converged(const T& residual_norm,
                         const T& initial_residual_norm) const;
 
  private:
-  /* Uses a Newton-Raphson solver to solve for the unknown z such that the
-   residual is zero, i.e. b(z) = 0, up to the specified tolerances. The input
-   FEM state is non-null and is guaranteed to be compatible with the FEM model.
+  template <typename U>
+  friend class FemSolverTest;
 
-   @param[in, out] state  As input, `state` provides an initial guess of
-   the solution. As output, `state` reports the equilibrium state.
+  struct FemStateAndSchurComplement {
+    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(FemStateAndSchurComplement);
+
+    /* Constructs an FemStateAndSchurComplement that's compatible with the given
+     FEM model. */
+    explicit FemStateAndSchurComplement(const FemModel<T>& model);
+
+    ~FemStateAndSchurComplement();
+
+    /* Reinitializes `this` data structure if it's incompatible with the given
+     FEM model. */
+    void ReinitializeIfNeeded(const FemModel<T>& model) {
+      if (!model.is_compatible_with(*state)) {
+        state = model.MakeFemState();
+        schur_complement = contact_solvers::internal::SchurComplement{};
+      }
+    }
+
+    copyable_unique_ptr<FemState<T>> state;
+    contact_solvers::internal::SchurComplement schur_complement;
+  };
+
+  struct Scratch {
+    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Scratch);
+
+    /* Constructs a FemSolverScratch that is compatible with the given model. */
+    explicit Scratch(const FemModel<T>& model);
+
+    ~Scratch();
+
+    /* Reinitializes `this` scratch if it's incompatible with the given FEM
+     model. */
+    void ReinitializeIfNeeded(const FemModel<T>& model);
+
+    copyable_unique_ptr<
+        contact_solvers::internal::Block3x3SparseSymmetricMatrix>
+        tangent_matrix;
+    contact_solvers::internal::BlockSparseCholeskySolver<Matrix3<T>>
+        linear_solver;
+    VectorX<T> b;
+    VectorX<T> dz;
+  };
+
+  /* Uses a Newton-Raphson solver to solve for the equilibrium FEM state z
+   such that the residual is zero, i.e. b(z) = 0, up to the specified
+   tolerances. In addition, computes the Schur complement of the tangent
+   matrix of the FEM model at that state z. The results are written to the
+   member variable `next_state_and_schur_complement_`.
+   @param[in] nonparticipating_vertices
+     The vertices of the FEM model that participate in the constraint
+     computation, used to compute the Schur complement of the tangent matrix.
+   @pre the FEM model is nonlinear.
    @returns the number of iterations it takes for the solver to converge or -1
    if the solver fails to converge. */
-  int SolveWithInitialGuess(FemState<T>* state,
-                            FemSolverScratchData<T>* scratch) const;
+  int SolveNonlinearModel(
+      const std::unordered_set<int>& nonparticipating_vertices);
 
-  /* Returns the relative tolerance for the linear solver used in the
-   Newton-Raphson iterations based on the residual norm if the linear solver
-   is iterative. More specifically, it is set to
-   tol = min(k * εᵣ, ‖r‖ / max(‖r₀‖, εₐ)),
-   where k is a constant scaling factor < 1, εᵣ and εₐ are the relative and
-   absolute tolerances for newton iterations (see set_relative_tolerance() and
-   set_absolute_tolerance()), and ‖r‖ and ‖r₀‖ are `residual_norm` and
-   `initial_residual_norm`. */
-  double linear_solve_tolerance(const T& residual_norm,
-                                const T& initial_residual_norm) const;
+  /* For a linear FEM model, solves for the equilibrium FEM state z such that
+   the residual is zero, i.e. b(z) = 0. In addition, computes the Schur
+   complement of the tangent matrix of the FEM model at that state z. The
+   results are written to the member variable
+   `next_state_and_schur_complement_`.
+   @param[in] nonparticipating_vertices
+     The vertices of the FEM model that participate in constraint computation,
+     used to compute the Schur complement of the tangent matrix.
+   @returns 0 if the `input` state is already at equilibrium, 1 otherwise.
+   @pre the FEM model is linear. */
+  int SolveLinearModel(
+      const std::unordered_set<int>& nonparticipating_vertices);
 
   /* The FEM model being solved by `this` solver. */
   const FemModel<T>* model_{nullptr};
@@ -152,10 +182,15 @@ class FemSolver {
   const DiscreteTimeIntegrator<T>* integrator_{nullptr};
   /* Tolerance for convergence. */
   double relative_tolerance_{1e-4};  // unitless.
+  // TODO(xuchenhan-tri): Consider using an absolute tolerance with velocity
+  // unit so that how stiff the material is doesn't affect the convergence
+  // criterion.
   double absolute_tolerance_{1e-6};  // unit N.
   /* Max number of Newton-Raphson iterations the solver takes before it gives
    up. */
-  int kMaxIterations_{100};
+  int max_iterations_{100};
+  FemStateAndSchurComplement next_state_and_schur_complement_;
+  Scratch scratch_;
 };
 
 }  // namespace internal

@@ -11,24 +11,31 @@ namespace multibody {
 
 using AddResult = AddMultibodyPlantSceneGraphResult<double>;
 
-AddResult AddMultibodyPlant(
-    const MultibodyPlantConfig& config,
-    systems::DiagramBuilder<double>* builder) {
+AddResult AddMultibodyPlant(const MultibodyPlantConfig& config,
+                            systems::DiagramBuilder<double>* builder) {
   AddResult result = AddMultibodyPlantSceneGraph(builder, config.time_step);
-  result.plant.set_penetration_allowance(config.penetration_allowance);
-  result.plant.set_stiction_tolerance(config.stiction_tolerance);
-  result.plant.set_contact_model(
+  ApplyMultibodyPlantConfig(config, &result.plant);
+  return result;
+}
+
+void ApplyMultibodyPlantConfig(const MultibodyPlantConfig& config,
+                               MultibodyPlant<double>* plant) {
+  DRAKE_THROW_UNLESS(plant != nullptr);
+  // TODO(russt): Add MultibodyPlant.set_time_step() and use it here.
+  DRAKE_THROW_UNLESS(plant->time_step() == config.time_step);
+  plant->set_penetration_allowance(config.penetration_allowance);
+  plant->set_stiction_tolerance(config.stiction_tolerance);
+  plant->set_contact_model(
       internal::GetContactModelFromString(config.contact_model));
-  result.plant.set_discrete_contact_solver(
+  plant->set_discrete_contact_solver(
       internal::GetDiscreteContactSolverFromString(
           config.discrete_contact_solver));
-  result.plant.set_sap_near_rigid_threshold(config.sap_near_rigid_threshold);
-  result.plant.set_contact_surface_representation(
+  plant->set_sap_near_rigid_threshold(config.sap_near_rigid_threshold);
+  plant->set_contact_surface_representation(
       internal::GetContactSurfaceRepresentationFromString(
           config.contact_surface_representation));
-  result.plant.set_adjacent_bodies_collision_filters(
+  plant->set_adjacent_bodies_collision_filters(
       config.adjacent_bodies_collision_filters);
-  return result;
 }
 
 namespace internal {
@@ -80,26 +87,25 @@ struct NamedEnum {
   // An implicit conversion here enables the convenient initializer_list syntax
   // that's used below, so we'll say NOLINTNEXTLINE(runtime/explicit).
   constexpr NamedEnum(Enum value_in)
-      : value(value_in),
-        name(EnumToChars(value_in)) {}
+      : value(value_in), name(EnumToChars(value_in)) {}
   const Enum value;
   const char* const name;
 };
 
 constexpr std::array<NamedEnum<ContactModel>, 3> kContactModels{{
-  {ContactModel::kPointContactOnly},
-  {ContactModel::kHydroelasticsOnly},
-  {ContactModel::kHydroelasticWithFallback},
+    {ContactModel::kPointContactOnly},
+    {ContactModel::kHydroelasticsOnly},
+    {ContactModel::kHydroelasticWithFallback},
 }};
 
 constexpr std::array<NamedEnum<DiscreteContactSolver>, 2> kContactSolvers{{
-  {DiscreteContactSolver::kTamsi},
-  {DiscreteContactSolver::kSap},
+    {DiscreteContactSolver::kTamsi},
+    {DiscreteContactSolver::kSap},
 }};
 
 constexpr std::array<NamedEnum<ContactRep>, 2> kContactReps{{
-  {ContactRep::kTriangle},
-  {ContactRep::kPolygon},
+    {ContactRep::kTriangle},
+    {ContactRep::kPolygon},
 }};
 
 }  // namespace
@@ -110,8 +116,8 @@ ContactModel GetContactModelFromString(std::string_view contact_model) {
       return value;
     }
   }
-  throw std::logic_error(fmt::format(
-      "Unknown contact_model: '{}'", contact_model));
+  throw std::logic_error(
+      fmt::format("Unknown contact_model: '{}'", contact_model));
 }
 
 std::string GetStringFromContactModel(ContactModel contact_model) {
@@ -130,9 +136,8 @@ DiscreteContactSolver GetDiscreteContactSolverFromString(
       return value;
     }
   }
-  throw std::logic_error(
-      fmt::format("Unknown discrete_contact_solver: '{}'",
-                  discrete_contact_solver));
+  throw std::logic_error(fmt::format("Unknown discrete_contact_solver: '{}'",
+                                     discrete_contact_solver));
 }
 
 std::string GetStringFromDiscreteContactSolver(
@@ -152,9 +157,9 @@ ContactRep GetContactSurfaceRepresentationFromString(
       return value;
     }
   }
-  throw std::logic_error(fmt::format(
-      "Unknown hydroelastic contact representation: '{}'",
-      contact_representation));
+  throw std::logic_error(
+      fmt::format("Unknown hydroelastic contact representation: '{}'",
+                  contact_representation));
 }
 
 std::string GetStringFromContactSurfaceRepresentation(

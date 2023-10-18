@@ -36,14 +36,14 @@ Hyperellipsoid::Hyperellipsoid()
 
 Hyperellipsoid::Hyperellipsoid(const Eigen::Ref<const MatrixXd>& A,
                                const Eigen::Ref<const VectorXd>& center)
-    : ConvexSet(center.size()), A_(A), center_(center) {
+    : ConvexSet(center.size(), true), A_(A), center_(center) {
   CheckInvariants();
 }
 
 Hyperellipsoid::Hyperellipsoid(const QueryObject<double>& query_object,
                                GeometryId geometry_id,
                                std::optional<FrameId> reference_frame)
-    : ConvexSet(3) {
+    : ConvexSet(3, true) {
   Eigen::Matrix3d A_G;
   query_object.inspector().GetShape(geometry_id).Reify(this, &A_G);
   // p_GG_varᵀ * A_Gᵀ * A_G * p_GG_var ≤ 1
@@ -59,14 +59,16 @@ Hyperellipsoid::Hyperellipsoid(const QueryObject<double>& query_object,
   A_ = A_G * X_GE.rotation().matrix();
   center_ = X_GE.inverse().translation();
 }
-
-Hyperellipsoid::Hyperellipsoid(const AffineBall& ellipsoid)
-    : ConvexSet(ellipsoid.ambient_dimension()) {
+namespace {
+MatrixXd CalcQuadraticFormA(const AffineBall& ellipsoid) {
   const auto B_QR = Eigen::ColPivHouseholderQR<MatrixXd>(ellipsoid.B());
   DRAKE_THROW_UNLESS(B_QR.isInvertible());
-  center_ = ellipsoid.center();
-  A_ = B_QR.inverse();
+  return B_QR.inverse();
 }
+}  // namespace
+
+Hyperellipsoid::Hyperellipsoid(const AffineBall& ellipsoid)
+    : Hyperellipsoid(CalcQuadraticFormA(ellipsoid), ellipsoid.center()) {}
 
 Hyperellipsoid::~Hyperellipsoid() = default;
 
@@ -90,17 +92,6 @@ double volume_of_unit_sphere(int dim) {
 }
 
 }  // namespace
-
-double Hyperellipsoid::Volume() const {
-  if (ambient_dimension() == 0) {
-    return 0.0;
-  }
-  if (A_.rows() < A_.cols()) {
-    return std::numeric_limits<double>::infinity();
-  }
-  // Note: this will (correctly) return infinity if the determinant is zero.
-  return volume_of_unit_sphere(ambient_dimension()) / A_.determinant();
-}
 
 std::pair<double, VectorXd> Hyperellipsoid::MinimumUniformScalingToTouch(
     const ConvexSet& other) const {
@@ -184,6 +175,80 @@ Hyperellipsoid Hyperellipsoid::MakeHypersphere(
 Hyperellipsoid Hyperellipsoid::MakeUnitBall(int dim) {
   DRAKE_THROW_UNLESS(dim > 0);
   return Hyperellipsoid(MatrixXd::Identity(dim, dim), VectorXd::Zero(dim));
+}
+
+Hyperellipsoid Hyperellipsoid::MinimumVolumeCircumscribedEllipsoid(
+    const Eigen::Ref<const MatrixXd>& points, double rank_tol) {
+  DRAKE_THROW_UNLESS(points.allFinite());
+  const int dim = points.rows();
+  int rank;
+  const int n = points.cols();
+
+  // Check the numerical rank of the data matrix.
+  std::optional<Eigen::MatrixXd> U;
+  Eigen::VectorXd mean = points.rowwise().mean();
+  {
+    auto svd = (points.colwise() - mean).bdcSvd(Eigen::ComputeThinU);
+    // Eigen's SVD rank never returns zero, and their singular values are
+    // returned in decreasing order.
+    if (svd.singularValues()[0] < rank_tol) {
+      throw std::runtime_error(fmt::format(
+          "The numerical rank of the points appears to be zero. (The largest "
+          "singular value is {}, which is below rank_tol = {})",
+          svd.singularValues()[0], rank_tol));
+    }
+    svd.setThreshold(rank_tol);
+    rank = svd.rank();
+    if (rank < dim) {
+      U = svd.matrixU().leftCols(rank);
+    }
+  }
+
+  MathematicalProgram prog;
+  solvers::MatrixXDecisionVariable A =
+      prog.NewSymmetricContinuousVariables(rank, "A");
+  prog.AddMaximizeLogDeterminantCost(A.cast<Expression>());
+  solvers::VectorXDecisionVariable b = prog.NewContinuousVariables(rank, "b");
+  // TODO(russt): Avoid the symbolic computation here and write A_lorentz
+  // directly, s.t. v = A_lorentz * vars + b_lorentz, where A=Aᵀ and b are the
+  // vars.
+  VectorX<Expression> v(rank + 1);
+  v[0] = 1;
+  for (int i = 0; i < n; ++i) {
+    if (U) {  // rank < dim
+      // |AUᵀ(x-mean) + b|₂ <= 1, written as a Lorentz cone with v = [1;
+      // AUᵀ(x-mean) + b].
+      v.tail(rank) = A * U->transpose() * (points.col(i) - mean) + b;
+    } else {  // rank == dim
+      // |Ax + b|₂ <= 1, written as a Lorentz cone with v = [1; A * x + b].
+      v.tail(rank) = A * points.col(i) + b;
+    }
+    prog.AddLorentzConeConstraint(v);
+  }
+
+  solvers::MathematicalProgramResult result = Solve(prog);
+  if (!result.is_success()) {
+    throw std::runtime_error(
+        fmt::format("The MathematicalProgram was not solved successfully. The "
+                    "ambient dimension is {} and the data rank is {}, computed "
+                    "using rank_tol={}. Consider adjusting rank_tol.",
+                    dim, rank, rank_tol));
+  }
+
+  // Ax + b => A(x-c) = Ax - Ac => c = -A^{-1}b
+  const MatrixXd A_sol = result.GetSolution(A);
+  const VectorXd b_sol = result.GetSolution(b);
+  // Note: We can use llt() because know that A will be positive definite;
+  // there is a PSD constraint, but we are maximizing the eigenvalues of A and
+  // the convex hull of the points is guaranteed to be bounded.
+  const VectorXd c = A_sol.llt().solve(-b_sol);
+
+  if (U) {
+    // AUᵀ(x-mean) + b => AUᵀ(x - center), so center = -UA⁻¹b + mean.
+    return Hyperellipsoid(A_sol * U->transpose(), (*U) * c + mean);
+  } else {
+    return Hyperellipsoid(A_sol, c);
+  }
 }
 
 std::unique_ptr<ConvexSet> Hyperellipsoid::DoClone() const {
@@ -303,6 +368,17 @@ Hyperellipsoid::DoToShapeWithPose() const {
                                            1.0 / sqrt(solver.eigenvalues()[1]),
                                            1.0 / sqrt(solver.eigenvalues()[2]));
   return std::make_pair(std::move(shape), X_WG);
+}
+
+double Hyperellipsoid::DoCalcVolume() const {
+  if (ambient_dimension() == 0) {
+    return 0.0;
+  }
+  if (A_.rows() < A_.cols()) {
+    return std::numeric_limits<double>::infinity();
+  }
+  // Note: this will (correctly) return infinity if the determinant is zero.
+  return volume_of_unit_sphere(ambient_dimension()) / A_.determinant();
 }
 
 void Hyperellipsoid::CheckInvariants() const {

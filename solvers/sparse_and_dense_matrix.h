@@ -42,6 +42,9 @@ class SparseAndDenseMatrix {
   // Returns true if all element in the matrix is finite. False otherwise.
   [[nodiscard]] bool IsFinite() const;
 
+  // Returns true if the dense matrix has been constructed.
+  [[nodiscard]] bool is_dense_constructed() const;
+
  private:
   Eigen::SparseMatrix<double> sparse_;
   // If dense_.size() == 0, then we only use sparse_;

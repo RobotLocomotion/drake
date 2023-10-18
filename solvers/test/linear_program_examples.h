@@ -258,6 +258,10 @@ void TestLPDualSolution3(const SolverInterface& solver, double tol = 1e-6);
 /** This LP has only linear equality constraints. */
 void TestLPDualSolution4(const SolverInterface& solver, double tol = 1E-6);
 
+/** Test LP with BoundingBoxConstraint, with some lower bounds equal to the
+ * upper bounds. */
+void TestLPDualSolution5(const SolverInterface& solver, double tol = 1E-6);
+
 /** This test confirms that the solver can solve problems with poorly scaled
  * data. See github issue https://github.com/RobotLocomotion/drake/issues/15341
  * for more discussion. Mathematically this program finds the point with the

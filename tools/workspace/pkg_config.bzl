@@ -1,5 +1,5 @@
-load("@drake//tools/workspace:execute.bzl", "path", "which")
-load("@drake//tools/workspace:os.bzl", "determine_os")
+load("//tools/workspace:execute.bzl", "path", "which")
+load("//tools/workspace:os.bzl", "determine_os")
 
 _DEFAULT_TEMPLATE = Label("@drake//tools/workspace:pkg_config.BUILD.tpl")
 
@@ -302,7 +302,7 @@ def _impl(repository_ctx):
                  result.error,
              ))
 
-pkg_config_repository = repository_rule(
+_do_pkg_config_repository = repository_rule(
     # TODO(jamiesnape): Make licenses mandatory.
     # TODO(jamiesnape): Use of this rule may cause additional transitive
     # dependencies to be linked and their licenses must also be enumerated.
@@ -332,55 +332,65 @@ pkg_config_repository = repository_rule(
     implementation = _impl,
 )
 
-"""Creates a repository that contains a single library target, based on the
-results of invoking pkg-config.
+def pkg_config_repository(**kwargs):
+    """Creates a repository that contains a single library target, based on the
+    results of invoking pkg-config.
 
-The pkg_config_repository flavor of this rule is intended to be called directly
-from the WORKSPACE file, or from a macro that was called by the WORKSPACE file.
-The setup_pkg_config_repository flavor of this rule is intended to be called by
-other repository_rule implementation functions.
+    The pkg_config_repository flavor of this rule is intended to be called
+    directly from the WORKSPACE file, or from a macro that was called by the
+    WORKSPACE file.  The setup_pkg_config_repository flavor of this rule is
+    intended to be called by other repository_rule implementation functions.
 
-Example:
-    WORKSPACE:
-        load("@drake//tools/workspace:pkg_config.bzl", "pkg_config_repository")
-        pkg_config_repository(
-            name = "foo",
-            modname = "foo-2.0",
-        )
+    Example:
+        WORKSPACE:
+            load("@drake//tools/workspace:pkg_config.bzl", "pkg_config_repository")  # noqa
+            pkg_config_repository(
+                name = "foo",
+                modname = "foo-2.0",
+            )
 
-    BUILD:
-        cc_library(
-            name = "foobar",
-            deps = ["@foo"],
-            srcs = ["bar.cc"],
-        )
+        BUILD:
+            cc_library(
+                name = "foobar",
+                deps = ["@foo"],
+                srcs = ["bar.cc"],
+            )
 
-Args:
-    name: A unique name for this rule.
-    licenses: Licenses of the library. Valid license types include restricted,
-              reciprocal, notice, permissive, and unencumbered. See
-              https://docs.bazel.build/versions/master/be/functions.html#licenses_args
-              for more information.
-    modname: The library name as known to pkg-config.
-    atleast_version: (Optional) The --atleast-version to pkg-config.
-    static: (Optional) Add linkopts for static linking to the library target.
-    build_file_template: (Optional) (Advanced) Override the BUILD template.
-    extra_srcs: (Optional) Extra items to add to the library target.
-    extra_hdrs: (Optional) Extra items to add to the library target.
-    extra_copts: (Optional) Extra items to add to the library target.
-    extra_defines: (Optional) Extra items to add to the library target.
-    extra_includes: (Optional) Extra items to add to the library target.
-    extra_linkopts: (Optional) Extra items to add to the library target.
-    extra_deps: (Optional) Extra items to add to the library target.
-    build_epilog: (Optional) Extra text to add to the generated BUILD.bazel.
-    pkg_config_paths: (Optional) Paths to find pkg-config files (.pc). Note
-                      that we ignore the environment variable PKG_CONFIG_PATH
-                      set by the user.
-    homebrew_subdir: (Optional) If running on macOS, then this path under the
-                     homebrew prefix will also be searched. For example,
-                     homebrew_subdir = "opt/libpng/lib/pkgconfig" would search
-                     "/usr/local/opt/libpng/lib/pkgconfig" or
-                     "/opt/homebrew/opt/libpng/lib/pkgconfig".
-    extra_deprecation: (Optional) Add a deprecation message to the library
-                       BUILD target.
-"""
+    Args:
+        name: A unique name for this rule.
+
+        licenses: Licenses of the library. Valid license types include
+                  restricted, reciprocal, notice, permissive, and
+                  unencumbered. See
+                  https://docs.bazel.build/versions/master/be/functions.html#licenses_args
+                  for more information.
+
+        modname: The library name as known to pkg-config.
+        atleast_version: (Optional) The --atleast-version to pkg-config.
+        static: (Optional) Add linkopts for static linking to the library
+                target.
+        build_file_template: (Optional) (Advanced) Override the BUILD template.
+        extra_srcs: (Optional) Extra items to add to the library target.
+        extra_hdrs: (Optional) Extra items to add to the library target.
+        extra_copts: (Optional) Extra items to add to the library target.
+        extra_defines: (Optional) Extra items to add to the library target.
+        extra_includes: (Optional) Extra items to add to the library target.
+        extra_linkopts: (Optional) Extra items to add to the library target.
+        extra_deps: (Optional) Extra items to add to the library target.
+        build_epilog: (Optional) Extra text to add to the generated
+                      BUILD.bazel.
+        pkg_config_paths: (Optional) Paths to find pkg-config files (.pc). Note
+                          that we ignore the environment variable
+                          PKG_CONFIG_PATH set by the user.
+        homebrew_subdir: (Optional) If running on macOS, then this path under
+                         the homebrew prefix will also be searched. For
+                         example, homebrew_subdir = "opt/libpng/lib/pkgconfig"
+                         would search "/usr/local/opt/libpng/lib/pkgconfig" or
+                         "/opt/homebrew/opt/libpng/lib/pkgconfig".
+        extra_deprecation: (Optional) Add a deprecation message to the library
+                           BUILD target.
+    """
+    if "deprecation" in kwargs:
+        fail("When calling pkg_config_repository, don't use deprecation=str " +
+             "to deprecate a library; instead use extra_deprecation=str.")
+    _do_pkg_config_repository(**kwargs)

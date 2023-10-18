@@ -1,5 +1,6 @@
 #pragma once
 
+#include <map>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -9,17 +10,16 @@
 #include "drake/common/identifier.h"
 #include "drake/multibody/fem/deformable_body_config.h"
 #include "drake/multibody/fem/fem_model.h"
-#include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/plant/constraint_specs.h"
+#include "drake/multibody/plant/deformable_ids.h"
 #include "drake/multibody/plant/physical_model.h"
+#include "drake/multibody/tree/body.h"
 
 namespace drake {
 namespace multibody {
 
-/** Uniquely identifies a deformable body. It is valid before and after
- Finalize(). */
-using DeformableBodyId = Identifier<class DeformableBodyTag>;
-/** Internally indexes deformable bodies, only used after Finalize(). */
-using DeformableBodyIndex = TypeSafeIndex<class DeformableBodyTag>;
+template <typename T>
+class MultibodyPlant;
 
 /** DeformableModel implements the interface in PhysicalModel and provides the
  functionalities to specify deformable bodies. Unlike rigid bodies, the shape of
@@ -37,10 +37,7 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
   /** Constructs a DeformableModel to be owned by the given MultibodyPlant.
    @pre plant != nullptr.
    @pre Finalize() has not been called on `plant`. */
-  explicit DeformableModel(MultibodyPlant<T>* plant) : plant_(plant) {
-    DRAKE_DEMAND(plant_ != nullptr);
-    DRAKE_DEMAND(!plant_->is_finalized());
-  }
+  explicit DeformableModel(MultibodyPlant<T>* plant);
 
   /** Returns the number of deformable bodies registered with this
    DeformableModel. */
@@ -91,6 +88,50 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
   void SetWallBoundaryCondition(DeformableBodyId id, const Vector3<T>& p_WQ,
                                 const Vector3<T>& n_W);
 
+  /** Defines a fixed constraint between a deformable body A and a rigid body B.
+   Such a fixed constraint is modeled as distance holonomic constraints:
+
+     p_PᵢQᵢ(q) = 0 for each constrained vertex Pᵢ
+
+   where Pᵢ is the i-th vertex of the deformable body under constraint and Qᵢ is
+   a point rigidly affixed to the rigid body B. To specify the constraint, we
+   put the reference mesh M of the deformable body A in B's body frame with the
+   given pose `X_BA` and prescribe a shape G with pose `X_BG` in B's body
+   frame. All vertices Pᵢ in M that are inside (or on the surface of) G are
+   subject to the fixed constraints with Qᵢ being coincident with Pᵢ when M is
+   in pose X_BA. p_PᵢQᵢ(q) denotes the relative position of point Qᵢ with
+   respect to point Pᵢ as a function of the configuration of the model q.
+   Imposing this constraint forces Pᵢ and Qᵢ to be coincident for each vertex i
+   of the deformable body specified to be under constraint.
+
+   @param[in] body_A_id    The unique id of the deformable body under the fixed
+                           constraint.
+   @param[in] body_B       The rigid body under constraint.
+   @param[in] X_BA         The pose of deformable body A's reference mesh in B's
+                           body frame
+   @param[in] shape        The prescribed geometry shape, attached to rigid body
+                           B, used to determine which vertices of the deformable
+                           body A is under constraint.
+   @param[in] X_BG         The fixed pose of the geometry frame of the given
+                           `shape` in body B's frame.
+   @returns the unique id of the newly added constraint.
+   @throws std::exception if no deformable body with the given `body_A_id`
+           has been registered.
+   @throws std::exception unless `body_B` is registered with the same multibody
+           plant owning this deformable model.
+   @throws std::exception if shape is not supported by
+           QueryObject::ComputeSignedDistanceToPoint(). Currently, supported
+           shapes include Box, Capsule, Cylinder, Ellipsoid, HalfSpace, and
+           Sphere.
+   @throws std::exception if Finalize() has been called on the multibody plant
+           owning this deformable model.
+   @throws std::exception if no constraint is added (i.e. no vertex of the
+           deformable body is inside the given `shape` with the given poses). */
+  MultibodyConstraintId AddFixedConstraint(
+      DeformableBodyId body_A_id, const Body<T>& body_B,
+      const math::RigidTransform<double>& X_BA, const geometry::Shape& shape,
+      const math::RigidTransform<double>& X_BG);
+
   /** Returns the discrete state index of the deformable body identified by the
    given `id`.
    @throws std::exception if MultibodyPlant::Finalize() has not been called yet.
@@ -139,6 +180,28 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
    deformable body registered with this model. */
   DeformableBodyId GetBodyId(geometry::GeometryId geometry_id) const;
 
+  /** (Internal use only) Returns the true iff the deformable body with the
+   given `id` has constraints associated with it. */
+  bool HasConstraint(DeformableBodyId id) const {
+    return body_id_to_constraint_ids_.count(id) > 0;
+  }
+
+  /** (Internal use only) Returns the fixed constraint specification
+   corresponding to the given `id`.
+   @throws if `id` is not a valid identifier for a fixed constraint. */
+  const internal::DeformableRigidFixedConstraintSpec& fixed_constraint_spec(
+      MultibodyConstraintId id) const {
+    DRAKE_THROW_UNLESS(fixed_constraint_specs_.count(id) > 0);
+    return fixed_constraint_specs_.at(id);
+  }
+
+  /** (Internal use only) Returns a reference to the all ids of fixed
+   constraints registered with the deformable body with the given `id`. */
+  const std::vector<MultibodyConstraintId>& fixed_constraint_ids(
+      DeformableBodyId id) const {
+    return body_id_to_constraint_ids_.at(id);
+  }
+
   /** Returns the output port of the vertex positions for all registered
    deformable bodies.
    @throws std::exception if MultibodyPlant::Finalize() has not been called yet.
@@ -149,8 +212,7 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
   }
 
  private:
-  PhysicalModelPointerVariant<T> DoToPhysicalModelPointerVariant()
-      const final {
+  PhysicalModelPointerVariant<T> DoToPhysicalModelPointerVariant() const final {
     return PhysicalModelPointerVariant<T>(this);
   }
 
@@ -197,8 +259,12 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
       geometry_id_to_body_id_;
   std::unordered_map<DeformableBodyId, std::unique_ptr<fem::FemModel<T>>>
       fem_models_;
-  std::vector<DeformableBodyId> body_ids_;
+  std::unordered_map<DeformableBodyId, std::vector<MultibodyConstraintId>>
+      body_id_to_constraint_ids_;
   std::unordered_map<DeformableBodyId, DeformableBodyIndex> body_id_to_index_;
+  std::vector<DeformableBodyId> body_ids_;
+  std::map<MultibodyConstraintId, internal::DeformableRigidFixedConstraintSpec>
+      fixed_constraint_specs_;
   systems::OutputPortIndex vertex_positions_port_index_;
 };
 

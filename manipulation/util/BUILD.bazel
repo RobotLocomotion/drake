@@ -1,12 +1,12 @@
 load(
-    "@drake//tools/skylark:drake_cc.bzl",
+    "//tools/skylark:drake_cc.bzl",
     "drake_cc_binary",
     "drake_cc_googletest",
     "drake_cc_library",
     "drake_cc_package_library",
 )
 load(
-    "@drake//tools/skylark:drake_py.bzl",
+    "//tools/skylark:drake_py.bzl",
     "drake_py_binary",
     "drake_py_library",
     "drake_py_unittest",
@@ -151,7 +151,8 @@ drake_cc_binary(
         "//common:add_text_logging_gflags",
         "//common:essential",
         "@gflags",
-        "@vtk//:vtkIOGeometry",
+        "@vtk_internal//:vtkFiltersCore",
+        "@vtk_internal//:vtkIOGeometry",
     ],
 )
 
@@ -245,6 +246,7 @@ filegroup(
 
 filegroup(
     name = "test_models",
+    testonly = True,
     srcs = [
         ":test/simple_nested_model.sdf",
         ":test/simple_world_with_two_models.sdf",

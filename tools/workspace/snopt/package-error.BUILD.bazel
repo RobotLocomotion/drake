@@ -6,6 +6,8 @@
 # reporting until after the loading phase, so that `bazel query` commands will
 # still work even with SNOPT missing.
 
+load("@drake//tools/skylark:cc.bzl", "cc_library")
+
 genrule(
     name = "error-message",
     srcs = ["error.txt"],

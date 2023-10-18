@@ -369,7 +369,6 @@ class ProximityEngineTester {
   }
 };
 
-
 ::testing::AssertionResult MeshIsConvex() {
   // Create a small obj in a temp directory.
   const std::string obj_path = temp_directory() + "/tri.obj";
@@ -446,8 +445,7 @@ template <typename T>
 void CharacterizeResultTest<T>::RunCallback(
     const QueryInstance& query, fcl::CollisionObjectd* obj_A,
     fcl::CollisionObjectd* obj_B, const CollisionFilter* collision_filter,
-    const std::unordered_map<GeometryId, RigidTransform<T>>* X_WGs)
-    const {
+    const std::unordered_map<GeometryId, RigidTransform<T>>* X_WGs) const {
   callback_->ClearResults();
   ASSERT_EQ(callback_->GetNumResults(), 0);
   switch (query.outcome) {
@@ -715,15 +713,14 @@ Sphere CharacterizeResultTest<T>::sphere(bool) {
   return Sphere(kDistance * 100);
 }
 
-DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((
-    &AlignPlanes<T>
-))
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    (&AlignPlanes<T>))
 
 }  // namespace internal
 }  // namespace geometry
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-  class ::drake::geometry::internal::CharacterizeResultTest)
+    class ::drake::geometry::internal::CharacterizeResultTest)
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-  class ::drake::geometry::internal::ShapeConfigurations)
+    class ::drake::geometry::internal::ShapeConfigurations)

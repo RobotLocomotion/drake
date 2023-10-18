@@ -182,8 +182,7 @@ void CollisionFilter::AddFilteredPair(GeometryId id_A, GeometryId id_B,
                                       bool is_invariant,
                                       FilterState* state_out) {
   FilterState& filter_state = *state_out;
-  DRAKE_DEMAND(filter_state.count(id_A) == 1 &&
-               filter_state.count(id_B) == 1);
+  DRAKE_DEMAND(filter_state.count(id_A) == 1 && filter_state.count(id_B) == 1);
 
   if (id_A == id_B) return;
   PairRelationship& pair_relation =
@@ -195,8 +194,7 @@ void CollisionFilter::AddFilteredPair(GeometryId id_A, GeometryId id_B,
 void CollisionFilter::RemoveFilteredPair(GeometryId id_A, GeometryId id_B,
                                          FilterState* state_out) {
   FilterState& filter_state = *state_out;
-  DRAKE_DEMAND(filter_state.count(id_A) == 1 &&
-               filter_state.count(id_B) == 1);
+  DRAKE_DEMAND(filter_state.count(id_A) == 1 && filter_state.count(id_B) == 1);
   if (id_A == id_B) return;
   PairRelationship& pair_relation =
       id_A < id_B ? filter_state[id_A][id_B] : filter_state[id_B][id_A];

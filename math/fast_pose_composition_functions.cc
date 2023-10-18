@@ -97,8 +97,7 @@ void ComposeXXNoAlias(const double* X_AB, const double* X_BC, double* X_AC) {
 }
 
 /* @pre X_AC is disjoint in memory from the inputs. */
-void ComposeXinvXNoAlias(const double* X_BA, const double* X_BC,
-                          double* X_AC) {
+void ComposeXinvXNoAlias(const double* X_BA, const double* X_BC, double* X_AC) {
   const double* p_BA = X_BA + 9;  // Make some nice aliases.
   const double* p_BC = X_BC + 9;
   double* p_AC = X_AC + 9;
@@ -107,8 +106,7 @@ void ComposeXinvXNoAlias(const double* X_BA, const double* X_BC,
   //               = [ (R_BA⁻¹ * R_BC); (R_BA⁻¹ * (p_BC - p_BA)) ]
 
   ComposeRinvRNoAlias(X_BA, X_BC, X_AC);  // Just works with first 9 elements.
-  const double p_AC_B[3] = {p_BC[0] - p_BA[0],
-                            p_BC[1] - p_BA[1],
+  const double p_AC_B[3] = {p_BC[0] - p_BA[0], p_BC[1] - p_BA[1],
                             p_BC[2] - p_BA[2]};
   p_AC[0] = col_x_col(&X_BA[0], p_AC_B);  // Note that R_BA⁻¹ = R_BAᵀ so we
   p_AC[1] = col_x_col(&X_BA[3], p_AC_B);  // just need to use columns here
@@ -189,25 +187,21 @@ class PoseCompositionFunctionsHelper {
   }
 
  private:
-  void (*compose_rr_)(
-      const RotationMatrix<double>&,
-      const RotationMatrix<double>&,
-      RotationMatrix<double>*) = nullptr;
+  void (*compose_rr_)(const RotationMatrix<double>&,
+                      const RotationMatrix<double>&,
+                      RotationMatrix<double>*) = nullptr;
 
-  void (*compose_rinvr_)(
-      const RotationMatrix<double>&,
-      const RotationMatrix<double>&,
-      RotationMatrix<double>*) = nullptr;
+  void (*compose_rinvr_)(const RotationMatrix<double>&,
+                         const RotationMatrix<double>&,
+                         RotationMatrix<double>*) = nullptr;
 
-  void (*compose_xx_)(
-      const RigidTransform<double>&,
-      const RigidTransform<double>&,
-      RigidTransform<double>*) = nullptr;
+  void (*compose_xx_)(const RigidTransform<double>&,
+                      const RigidTransform<double>&,
+                      RigidTransform<double>*) = nullptr;
 
-  void (*compose_xinvx_)(
-      const RigidTransform<double>&,
-      const RigidTransform<double>&,
-      RigidTransform<double>*) = nullptr;
+  void (*compose_xinvx_)(const RigidTransform<double>&,
+                         const RigidTransform<double>&,
+                         RigidTransform<double>*) = nullptr;
 
   bool is_using_portable_functions_ = false;
 };

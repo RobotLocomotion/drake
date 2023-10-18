@@ -3,6 +3,7 @@
 #include <chrono>
 #include <thread>
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/text_logging.h"
@@ -19,8 +20,8 @@ namespace lcm {
 namespace {
 
 using drake::lcm::DrakeLcm;
-using drake::lcm::DrakeLcmParams;
 using drake::lcm::DrakeLcmInterface;
+using drake::lcm::DrakeLcmParams;
 using systems::DiagramBuilder;
 
 class LcmInterfaceSystemTest : public ::testing::TestWithParam<int> {};
@@ -79,7 +80,7 @@ TEST_P(LcmInterfaceSystemTest, AcceptanceTest) {
   // Transmit a timestamp, in a background thread.
   std::atomic<int64_t> next_tx_timestamp{0};
   auto thread = std::make_unique<std::thread>(
-      [&next_tx_timestamp, &publisher_lcm, channel](){
+      [&next_tx_timestamp, &publisher_lcm, channel]() {
         while (next_tx_timestamp >= 0) {
           lcmt_drake_signal message{};
           message.timestamp = next_tx_timestamp;
@@ -137,8 +138,16 @@ TEST_F(LcmInterfaceSystemTest, NameCollisionTest) {
   builder.Build();
 }
 
+// The Graphviz should have split nodes (sub vs pub) show some useful metadata.
+TEST_F(LcmInterfaceSystemTest, Graphviz) {
+  LcmInterfaceSystem dut;
+  EXPECT_THAT(dut.GetGraphvizString(), testing::HasSubstr("in [shape"));
+  EXPECT_THAT(dut.GetGraphvizString(), testing::HasSubstr("out [shape"));
+  EXPECT_THAT(dut.GetGraphvizString(), testing::HasSubstr("lcm_url=memq://"));
+}
+
 INSTANTIATE_TEST_SUITE_P(test, LcmInterfaceSystemTest,
-                        ::testing::Values(0, 1, 2, 3));
+                         ::testing::Values(0, 1, 2, 3));
 
 }  // namespace
 }  // namespace lcm

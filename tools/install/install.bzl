@@ -1,8 +1,8 @@
 load("//tools/skylark:py.bzl", "py_binary")
-load("@drake//tools/skylark:drake_java.bzl", "MainClassInfo")
-load("@drake//tools/skylark:drake_py.bzl", "drake_py_test")
+load("//tools/skylark:drake_java.bzl", "MainClassInfo")
+load("//tools/skylark:drake_py.bzl", "drake_py_test")
 load(
-    "@drake//tools/skylark:pathutils.bzl",
+    "//tools/skylark:pathutils.bzl",
     "dirname",
     "join_paths",
     "output_path",
@@ -838,6 +838,8 @@ def install_test(
             "//tools/install:install_test_helper",
             "//tools/install:otool",
         ],
+        # Several install tests need some network access.
+        allow_network = ["meshcat", "package_map"],
         # The commands in our "list of commands" use unittest themselves, so we
         # do the same for our own test rig.  That means that both our rig and
         # the "list of commands" python programs must have a __main__ clause

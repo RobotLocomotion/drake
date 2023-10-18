@@ -59,6 +59,8 @@ GTEST_TEST(AffineSubspaceTest, DefaultCtor) {
   EXPECT_TRUE(dut.ContainedIn(AffineSubspace()));
   EXPECT_TRUE(dut.IsNearlyEqualTo(AffineSubspace()));
   CheckOrthogonalComplementBasis(dut);
+  EXPECT_TRUE(dut.has_exact_volume());
+  EXPECT_THROW(dut.CalcVolume(), std::exception);
 }
 
 GTEST_TEST(AffineSubspaceTest, Point) {
@@ -82,6 +84,7 @@ GTEST_TEST(AffineSubspaceTest, Point) {
   EXPECT_TRUE(as.IntersectsWith(as));
   EXPECT_TRUE(as.PointInSet(as.Project(Eigen::VectorXd::Zero(3))));
   CheckOrthogonalComplementBasis(as);
+  EXPECT_EQ(as.CalcVolume(), 0);
 
   // Should throw because the ambient dimension is wrong.
   EXPECT_THROW(as.Project(Eigen::VectorXd::Zero(1)), std::exception);
@@ -128,6 +131,7 @@ GTEST_TEST(AffineSubspaceTest, Line) {
   EXPECT_TRUE(as.IntersectsWith(as));
   EXPECT_TRUE(as.PointInSet(as.Project(Eigen::VectorXd::Zero(3)), kTol));
   CheckOrthogonalComplementBasis(as);
+  EXPECT_EQ(as.CalcVolume(), 0);
 
   // Test local coordinates
   EXPECT_EQ(as.AffineDimension(), 1);
@@ -179,6 +183,7 @@ GTEST_TEST(AffineSubspaceTest, Plane) {
   EXPECT_TRUE(as.IntersectsWith(as));
   EXPECT_TRUE(as.PointInSet(as.Project(Eigen::VectorXd::Zero(3))));
   CheckOrthogonalComplementBasis(as);
+  EXPECT_EQ(as.CalcVolume(), 0);
 
   // Test local coordinates
   EXPECT_EQ(as.AffineDimension(), 2);
@@ -230,6 +235,7 @@ GTEST_TEST(AffineSubspaceTest, VolumeInR3) {
   EXPECT_TRUE(as.IntersectsWith(as));
   EXPECT_TRUE(as.PointInSet(as.Project(Eigen::VectorXd::Zero(3))));
   CheckOrthogonalComplementBasis(as);
+  EXPECT_EQ(as.CalcVolume(), std::numeric_limits<double>::infinity());
 
   // Test local coordinates
   EXPECT_EQ(as.AffineDimension(), 3);
@@ -282,6 +288,7 @@ GTEST_TEST(AffineSubspaceTest, VolumeInR4) {
   EXPECT_TRUE(as.IntersectsWith(as));
   EXPECT_TRUE(as.PointInSet(as.Project(Eigen::VectorXd::Zero(4))));
   CheckOrthogonalComplementBasis(as);
+  EXPECT_EQ(as.CalcVolume(), 0);
 
   // Test local coordinates
   EXPECT_EQ(as.AffineDimension(), 3);
@@ -1066,7 +1073,7 @@ GTEST_TEST(AffineSubspaceTest, EqualityTest) {
   basis1 << 1, 0,
             0, 1,
             0, 0;
-  // clang- format on
+  // clang-format on
   Eigen::VectorXd translation1(3);
   translation1 << 0, 0, 1;
 
@@ -1105,13 +1112,13 @@ GTEST_TEST(AffineSubspaceTest, EqualityTest2) {
   basis1 << -1,  0.5,
             0.5, -1,
             0.5, 0.5;
-  // clang- format on
+  // clang-format on
   Eigen::Matrix<double, 3, 2> basis2;
   // clang-format off
   basis2 << 1,  0,
             -1, 1,
             0, -1;
-  // clang- format on
+  // clang-format on
   Eigen::VectorXd translation1(3);
   translation1 << 0, 0, 1;
   Eigen::VectorXd translation2(3);

@@ -66,7 +66,7 @@ bool IsStabilizable(const Ref<const MatrixXd>& A, const Ref<const MatrixXd>& B,
   // eigenvalues.
   DRAKE_DEMAND(A.rows() == A.cols());
   DRAKE_DEMAND(A.rows() == B.rows());
-  Eigen::EigenSolver<MatrixXd> es(A);
+  Eigen::EigenSolver<MatrixXd> es(A, false);
   DRAKE_DEMAND(es.info() == Eigen::Success);
   for (int i = 0; i < es.eigenvalues().size(); ++i) {
     bool stable_mode = false;

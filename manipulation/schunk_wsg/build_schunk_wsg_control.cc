@@ -27,10 +27,10 @@ void BuildSchunkWsgControl(const MultibodyPlant<double>& plant,
   auto wsg_command_sub =
       builder->AddSystem(LcmSubscriberSystem::Make<lcmt_schunk_wsg_command>(
           "SCHUNK_WSG_COMMAND", lcm));
-  wsg_command_sub->set_name(
-      plant.GetModelInstanceName(wsg_instance) + "_wsg_command_subscriber");
-  Eigen::Vector3d desired_pid_gains = pid_gains.value_or(
-    Eigen::Vector3d(7200.0, 0.0, 5.0));
+  wsg_command_sub->set_name(plant.GetModelInstanceName(wsg_instance) +
+                            "_wsg_command_subscriber");
+  Eigen::Vector3d desired_pid_gains =
+      pid_gains.value_or(Eigen::Vector3d(7200.0, 0.0, 5.0));
   auto wsg_controller = builder->AddSystem<SchunkWsgController>(
       desired_pid_gains(0), desired_pid_gains(1), desired_pid_gains(2));
   builder->Connect(wsg_command_sub->get_output_port(),
@@ -42,8 +42,8 @@ void BuildSchunkWsgControl(const MultibodyPlant<double>& plant,
   auto wsg_status_pub =
       builder->AddSystem(LcmPublisherSystem::Make<lcmt_schunk_wsg_status>(
           "SCHUNK_WSG_STATUS", lcm, kSchunkWsgLcmStatusPeriod));
-  wsg_status_pub->set_name(
-      plant.GetModelInstanceName(wsg_instance) + "_wsg_status_publisher");
+  wsg_status_pub->set_name(plant.GetModelInstanceName(wsg_instance) +
+                           "_wsg_status_publisher");
   auto wsg_status_sender = builder->AddSystem<SchunkWsgStatusSender>();
   builder->Connect(*wsg_status_sender, *wsg_status_pub);
 

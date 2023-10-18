@@ -922,6 +922,65 @@ TEST_F(SdfParserTest, DrakeJointUnrecognizedTypeError) {
       " 'type' attribute: nonetype.*"));
 }
 
+// drake:joint/drake:{parent,child} can refer to nested models.
+TEST_F(SdfParserTest, DrakeJointNestedParentChild) {
+  ParseTestString(R"""(
+<model name='good'>
+  <model name='nested'>
+    <link name='a'/>
+    <link name='b'/>
+  </model>
+  <drake:joint type='planar' name='joint_name'>
+    <drake:parent>nested::a</drake:parent>
+    <drake:child>nested::b</drake:child>
+    <drake:damping>0.1 0.1 0.1</drake:damping>
+  </drake:joint>
+</model>
+)""");
+}
+
+// drake:joint/drake:parent yields an error on bad nested model name.
+TEST_F(SdfParserTest, DrakeJointNestedParentBad) {
+  ParseTestString(R"""(
+<model name='good'>
+  <model name='nested'>
+    <link name='a'/>
+    <link name='b'/>
+  </model>
+  <drake:joint type='planar' name='joint_name'>
+    <drake:parent>nesQQQted::a</drake:parent>
+    <drake:child>nested::b</drake:child>
+    <drake:damping>0.1 0.1 0.1</drake:damping>
+  </drake:joint>
+</model>
+)""");
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+      ".*<drake:joint>: Model instance name 'good::nesQQQted' .*implied by"
+      " frame name 'nesQQQted::a' in <drake:parent> within model instance"
+      " 'good'.* does not exist.*"));
+}
+
+// drake:joint/drake:child yields an error on bad nested model name.
+TEST_F(SdfParserTest, DrakeJointNestedChildBad) {
+  ParseTestString(R"""(
+<model name='good'>
+  <model name='nested'>
+    <link name='a'/>
+    <link name='b'/>
+  </model>
+  <drake:joint type='planar' name='joint_name'>
+    <drake:parent>nested::a</drake:parent>
+    <drake:child>nesQQQted::b</drake:child>
+    <drake:damping>0.1 0.1 0.1</drake:damping>
+  </drake:joint>
+</model>
+)""");
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+      ".*<drake:joint>: Model instance name 'good::nesQQQted' .*implied by"
+      " frame name 'nesQQQted::b' in <drake:child> within model instance"
+      " 'good'.* does not exist.*"));
+}
+
 // Verify error when no model is found.
 TEST_F(SdfParserTest, AddModelFromSdfNoModelError) {
   const std::string sdf_string = R"""(

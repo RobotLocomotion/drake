@@ -622,6 +622,44 @@ void TestLPDualSolution4(const SolverInterface& solver, double tol) {
   }
 }
 
+void TestLPDualSolution5(const SolverInterface& solver, double tol) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>();
+  // 1 <= x(1) <= 3
+  // 2 <= x(2) <= 2
+  auto bbcon1 = prog.AddBoundingBoxConstraint(
+      Eigen::Vector2d(1, 2), Eigen::Vector2d(3, 2), x.tail<2>());
+  // -1 <= x(0) <= -1
+  // -2 <= x(1) <= 1
+  //
+  // Note that after aggregating all bounds, the bounds on x(1) are 1 <= x(1) <=
+  // 1, but its lower bound comes from bbcon1, while its upper bound comes from
+  // bbcon2. This will have implication on its dual solution, as we explain
+  // later.
+  auto bbcon2 = prog.AddBoundingBoxConstraint(
+      Eigen::Vector2d(-1, -2), Eigen::Vector2d(-1, 1), x.head<2>());
+  prog.AddLinearCost(x(0) + 2 * x(1) + 3 * x(2));
+  MathematicalProgramResult result;
+  if (solver.available()) {
+    solver.Solve(prog, std::nullopt, std::nullopt, &result);
+    EXPECT_TRUE(result.is_success());
+    EXPECT_TRUE(
+        CompareMatrices(result.GetSolution(x), Eigen::Vector3d(-1, 1, 2), tol));
+    const Eigen::Vector2d bbcon1_dual_sol = result.GetDualSolution(bbcon1);
+    const Eigen::Vector2d bbcon2_dual_sol = result.GetDualSolution(bbcon2);
+    // The dual solution is the coefficient of the variable in the cost.
+    EXPECT_NEAR(bbcon1_dual_sol(1), 3, tol);
+    EXPECT_NEAR(bbcon2_dual_sol(0), 1, tol);
+    // The dual solution for the constraint x(1) >= 1 is bbcon1_dual_sol(0), the
+    // dual solution for the constraint x(1) <= 1 is bbcon2_dual_sol(1). 1 <=
+    // x(1) <= 1 is equivalent to x(1) = 1. We know the dual solution for x(1) =
+    // 1 is 2. The dual solution for x(1) >= 1 and x(1) <= 1 is not unique, but
+    // it will have the invariance that the sum of their dual solution is
+    // equivalent to the dual solution of x(1) = 1, which is 2.
+    EXPECT_NEAR(bbcon1_dual_sol(0) + bbcon2_dual_sol(1), 2, tol);
+  }
+}
+
 void TestLPPoorScaling1(const SolverInterface& solver, bool expect_success,
                         double tol,
                         const std::optional<SolverOptions>& options) {

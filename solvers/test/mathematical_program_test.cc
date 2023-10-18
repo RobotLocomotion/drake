@@ -446,19 +446,10 @@ GTEST_TEST(TestAddDecisionVariables, AddVariable3) {
 GTEST_TEST(TestAddDecisionVariables, AddVariableError) {
   // Test the error inputs.
   MathematicalProgram prog;
-  auto y = prog.NewContinuousVariables<3>("y");
-  const Variable x0("x0", Variable::Type::CONTINUOUS);
-  const Variable x1("x1", Variable::Type::CONTINUOUS);
-  // The newly added variables contain a dummy variable.
-  Variable dummy;
-  EXPECT_TRUE(dummy.is_dummy());
-  EXPECT_THROW(
-      prog.AddDecisionVariables(VectorDecisionVariable<3>(x0, x1, dummy)),
-      std::runtime_error);
   auto z = prog.NewIndeterminates<2>("z");
   // Call AddDecisionVariables on a program that has some indeterminates, and
-  // the new
-  // variables intersects with the indeterminates.
+  // the new variables intersects with the indeterminates.
+  const Variable x0("x0", Variable::Type::CONTINUOUS);
   EXPECT_THROW(prog.AddDecisionVariables(VectorDecisionVariable<2>(x0, z(0))),
                std::runtime_error);
 
@@ -601,10 +592,6 @@ GTEST_TEST(TestAddIndeterminate, AddIndeterminateError) {
   // Call AddIndeterminate with an input of type BINARY.
   DRAKE_EXPECT_THROWS_MESSAGE(prog.AddIndeterminate(z),
                               ".*should be of type CONTINUOUS.*");
-  // Call AddIndeterminate with a dummy variable.
-  Variable dummy;
-  DRAKE_EXPECT_THROWS_MESSAGE(prog.AddIndeterminate(dummy),
-                              ".*should not be a dummy variable.*");
 }
 
 GTEST_TEST(TestAddIndeterminates, AddIndeterminatesVec1) {
@@ -683,11 +670,6 @@ GTEST_TEST(TestAddIndeterminates, AddIndeterminatesVecError) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       prog.AddIndeterminates(VectorIndeterminate<2>(x1, x0)),
       ".*should be of type CONTINUOUS.*");
-  // Call AddIndeterminates with a dummy variable.
-  Variable dummy;
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      prog.AddIndeterminates(VectorIndeterminate<2>(dummy, x0)),
-      ".*should not be a dummy variable.*");
 }
 
 GTEST_TEST(TestAddIndeterminates, AddIndeterminatesVars1) {
@@ -774,11 +756,6 @@ GTEST_TEST(TestAddIndeterminates, AddIndeterminatesVarsError) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       prog.AddIndeterminates(symbolic::Variables({x0, x1})),
       ".*should be of type CONTINUOUS.*");
-  // Call AddIndeterminates with a dummy variable.
-  Variable dummy;
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      prog.AddIndeterminates(symbolic::Variables({x0, dummy})),
-      ".*should not be a dummy variable.*");
 }
 
 GTEST_TEST(TestAddIndeterminates, MatrixInput) {
@@ -825,6 +802,18 @@ void ExpectBadVar(MathematicalProgram* prog, int num_var, Args&&... args) {
   // ensure that we are capturing the correct error.
   DRAKE_EXPECT_THROWS_MESSAGE(AddItem(prog, CreateBinding(c, x)),
                               ".*is not a decision variable.*");
+}
+
+// Returns True if all the elements of the matrix m1 and m2 are EqualTo as
+// Expressions.
+bool MatrixExprAllEqual(const MatrixX<Expression>& m1,
+                        const MatrixX<Expression>& m2) {
+  return m1
+      .binaryExpr(m2,
+                  [](const Expression& u, const Expression& v) {
+                    return u.EqualTo(v);
+                  })
+      .all();
 }
 
 }  // namespace
@@ -1225,6 +1214,195 @@ GTEST_TEST(TestMathematicalProgram, AddLinearCostSymbolic) {
   CheckAddedSymbolicLinearCost(&prog, x(1) * x(1) + x(0) - x(1) * x(1));
 }
 
+GTEST_TEST(TestMathematicalProgram,
+           AddLinearConstraintMatrixVectorVariablesTest) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables(4, "x");
+  Matrix4d A;
+  // clang-format off
+  A << 1, 2, 3, 4,
+       5, 6, 7, 8,
+       -9, -10, -11, -12,
+       13, 14, 15, 16;
+  // clang-format on
+  const Vector4d lb{-10, -11, -12, -13};
+  const Vector4d ub{3, 7, 11, 17};
+  const auto binding = prog.AddLinearConstraint(A, lb, ub, x);
+
+  // Check if the binding includes the correct linear constraint.
+  const VectorXDecisionVariable& var_vec{binding.variables()};
+  const auto constraint_ptr = binding.evaluator();
+  EXPECT_EQ(constraint_ptr->num_constraints(), 4);
+
+  const MatrixX<Expression> Ax{(constraint_ptr->GetDenseA() * var_vec)};
+  const VectorX<Expression> lb_in_constraint{constraint_ptr->lower_bound()};
+  const VectorX<Expression> ub_in_constraint{constraint_ptr->upper_bound()};
+
+  EXPECT_TRUE(MatrixExprAllEqual(A * x - lb, Ax - lb_in_constraint));
+  EXPECT_TRUE(MatrixExprAllEqual(A * x - ub, Ax - ub_in_constraint));
+}
+
+GTEST_TEST(TestMathematicalProgram,
+           AddLinearConstraintMatrixVariableRefListTest) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables(1, "x");
+  auto y = prog.NewContinuousVariables(3, "y");
+  VariableRefList vars{x, y};
+  VectorXDecisionVariable vars_as_vec{ConcatenateVariableRefList(vars)};
+
+  Matrix4d A;
+  // clang-format off
+  A << 1, 2, 3, 4,
+       5, 6, 7, 8,
+       -9, -10, -11, -12,
+       13, 14, 15, 16;
+  // clang-format on
+  const Vector4d lb{-10, -11, -12, -13};
+  const Vector4d ub{3, 7, 11, 17};
+  const auto binding = prog.AddLinearConstraint(A, lb, ub, vars);
+
+  // Check if the binding includes the correct linear constraint.
+  const VectorXDecisionVariable& var_vec{binding.variables()};
+  const auto constraint_ptr = binding.evaluator();
+  EXPECT_EQ(constraint_ptr->num_constraints(), 4);
+
+  const MatrixX<Expression> Ax{(constraint_ptr->GetDenseA() * var_vec)};
+  const VectorX<Expression> lb_in_constraint{constraint_ptr->lower_bound()};
+  const VectorX<Expression> ub_in_constraint{constraint_ptr->upper_bound()};
+
+  EXPECT_TRUE(MatrixExprAllEqual(A * vars_as_vec - lb, Ax - lb_in_constraint));
+  EXPECT_TRUE(MatrixExprAllEqual(A * vars_as_vec - ub, Ax - ub_in_constraint));
+}
+
+GTEST_TEST(TestMathematicalProgram,
+           AddLinearConstraintSparseMatrixVectorVariablesTest) {
+  MathematicalProgram prog;
+  const int n = 4;
+  auto x = prog.NewContinuousVariables(n, "x");
+  std::vector<Eigen::Triplet<double>> A_triplet_list;
+  A_triplet_list.reserve(3 * (n - 2) + 4);
+  double count = 1;
+  for (int i = 0; i < n; ++i) {
+    for (int j = std::max(0, i - 1); j < std::min(n, i + 1); ++j) {
+      A_triplet_list.emplace_back(i, j, count);
+      ++count;
+    }
+  }
+
+  Eigen::SparseMatrix<double> A(n, n);
+  A.setFromTriplets(A_triplet_list.begin(), A_triplet_list.end());
+  const Vector4d lb{-10, -11, -12, -13};
+  const Vector4d ub{3, 7, 11, 17};
+  const auto binding = prog.AddLinearConstraint(A, lb, ub, x);
+
+  // Check if the binding called the sparse matrix constructor by checking that
+  // a dense A has not been computed yet.
+  EXPECT_FALSE(binding.evaluator()->is_dense_A_constructed());
+
+  // Check if the binding includes the correct linear constraint.
+  const VectorXDecisionVariable& var_vec{binding.variables()};
+  const auto constraint_ptr = binding.evaluator();
+  EXPECT_EQ(constraint_ptr->num_constraints(), 4);
+
+  const MatrixX<Expression> Ax{(constraint_ptr->GetDenseA() * var_vec)};
+  const VectorX<Expression> lb_in_constraint{constraint_ptr->lower_bound()};
+  const VectorX<Expression> ub_in_constraint{constraint_ptr->upper_bound()};
+
+  EXPECT_TRUE(MatrixExprAllEqual((A * x - lb), Ax - lb_in_constraint));
+  EXPECT_TRUE(MatrixExprAllEqual((A * x - ub), Ax - ub_in_constraint));
+}
+
+GTEST_TEST(TestMathematicalProgram,
+           AddLinearConstraintSparseMatrixVariableRefListTest) {
+  MathematicalProgram prog;
+  const int n = 4;
+  auto x = prog.NewContinuousVariables(1, "x");
+  auto y = prog.NewContinuousVariables(n - 1, "y");
+  VariableRefList vars{x, y};
+  VectorXDecisionVariable vars_as_vec{ConcatenateVariableRefList(vars)};
+
+  std::vector<Eigen::Triplet<double>> A_triplet_list;
+  A_triplet_list.reserve(3 * (n - 2) + 4);
+  double count = 1;
+  for (int i = 0; i < n; ++i) {
+    for (int j = std::max(0, i - 1); j < std::min(n, i + 1); ++j) {
+      A_triplet_list.emplace_back(i, j, count);
+      ++count;
+    }
+  }
+
+  Eigen::SparseMatrix<double> A(n, n);
+  A.setFromTriplets(A_triplet_list.begin(), A_triplet_list.end());
+  const Vector4d lb{-10, -11, -12, -13};
+  const Vector4d ub{3, 7, 11, 17};
+  const auto binding = prog.AddLinearConstraint(A, lb, ub, vars);
+
+  // Check if the binding called the sparse matrix constructor by checking that
+  // a dense A has not been computed yet.
+  EXPECT_FALSE(binding.evaluator()->is_dense_A_constructed());
+
+  // Check if the binding includes the correct linear constraint.
+  const VectorXDecisionVariable& var_vec{binding.variables()};
+  const auto constraint_ptr = binding.evaluator();
+  EXPECT_EQ(constraint_ptr->num_constraints(), 4);
+
+  const MatrixX<Expression> Ax{(constraint_ptr->GetDenseA() * var_vec)};
+  const VectorX<Expression> lb_in_constraint{constraint_ptr->lower_bound()};
+  const VectorX<Expression> ub_in_constraint{constraint_ptr->upper_bound()};
+
+  EXPECT_TRUE(
+      MatrixExprAllEqual((A * vars_as_vec - lb), Ax - lb_in_constraint));
+  EXPECT_TRUE(
+      MatrixExprAllEqual((A * vars_as_vec - ub), Ax - ub_in_constraint));
+}
+
+GTEST_TEST(TestMathematicalProgram,
+           AddLinearConstraintRowVectorVectorVariablesTest) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables(4, "x");
+  const Eigen::RowVector4d a{1, 2, 3, 4};
+  const double lb = -10;
+  const double ub = 3;
+  const auto binding = prog.AddLinearConstraint(a, lb, ub, x);
+
+  // Check if the binding includes the correct linear constraint.
+  const VectorXDecisionVariable& var_vec{binding.variables()};
+  const auto constraint_ptr = binding.evaluator();
+  EXPECT_EQ(constraint_ptr->num_constraints(), 1);
+
+  const MatrixX<Expression> ax{(constraint_ptr->GetDenseA() * var_vec)};
+  const VectorX<Expression> lb_in_constraint{constraint_ptr->lower_bound()};
+  const VectorX<Expression> ub_in_constraint{constraint_ptr->upper_bound()};
+
+  EXPECT_TRUE((a * x - lb).EqualTo((ax - lb_in_constraint)(0)));
+  EXPECT_TRUE((a * x - ub).EqualTo((ax - ub_in_constraint)(0)));
+}
+
+GTEST_TEST(TestMathematicalProgram,
+           AddLinearConstraintRowVectorVariableRefListTest) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables(1, "x");
+  auto y = prog.NewContinuousVariables(3, "y");
+  VariableRefList vars{x, y};
+  VectorXDecisionVariable vars_as_vec{ConcatenateVariableRefList(vars)};
+
+  const Eigen::RowVector4d a{1, 2, 3, 4};
+  const double lb = -10;
+  const double ub = 3;
+  const auto binding = prog.AddLinearConstraint(a, lb, ub, vars);
+
+  // Check if the binding includes the correct linear constraint.
+  const VectorXDecisionVariable& var_vec{binding.variables()};
+  const auto constraint_ptr = binding.evaluator();
+  EXPECT_EQ(constraint_ptr->num_constraints(), 1);
+
+  const MatrixX<Expression> ax{(constraint_ptr->GetDenseA() * var_vec)};
+  const VectorX<Expression> lb_in_constraint{constraint_ptr->lower_bound()};
+  const VectorX<Expression> ub_in_constraint{constraint_ptr->upper_bound()};
+  EXPECT_TRUE((a * vars_as_vec - lb).EqualTo((ax - lb_in_constraint)(0)));
+  EXPECT_TRUE((a * vars_as_vec - ub).EqualTo((ax - ub_in_constraint)(0)));
+}
+
 GTEST_TEST(TestMathematicalProgram, AddLinearConstraintSymbolic1) {
   // Add linear constraint: -10 <= 3 - 5*x0 + 10*x2 - 7*y1 <= 10
   MathematicalProgram prog;
@@ -1240,10 +1418,10 @@ GTEST_TEST(TestMathematicalProgram, AddLinearConstraintSymbolic1) {
   const auto constraint_ptr = binding.evaluator();
   EXPECT_EQ(constraint_ptr->num_constraints(), 1);
   const Expression Ax{(constraint_ptr->GetDenseA() * var_vec)(0, 0)};
-  const Expression lb_in_ctr{constraint_ptr->lower_bound()[0]};
-  const Expression ub_in_ctr{constraint_ptr->upper_bound()[0]};
-  EXPECT_TRUE((e - lb).EqualTo(Ax - lb_in_ctr));
-  EXPECT_TRUE((e - ub).EqualTo(Ax - ub_in_ctr));
+  const Expression lb_in_constraint{constraint_ptr->lower_bound()[0]};
+  const Expression ub_in_constraint{constraint_ptr->upper_bound()[0]};
+  EXPECT_TRUE((e - lb).EqualTo(Ax - lb_in_constraint));
+  EXPECT_TRUE((e - ub).EqualTo(Ax - ub_in_constraint));
 }
 
 GTEST_TEST(TestMathematicalProgram, AddLinearConstraintSymbolic2) {
@@ -1264,10 +1442,10 @@ GTEST_TEST(TestMathematicalProgram, AddLinearConstraintSymbolic2) {
   // Check if the binding includes the correct linear constraint.
   const VectorXDecisionVariable& var_vec{binding.variables()};
   const Expression Ax{(constraint_ptr->GetDenseA() * var_vec)(0, 0)};
-  const Expression lb_in_ctr{constraint_ptr->lower_bound()[0]};
-  const Expression ub_in_ctr{constraint_ptr->upper_bound()[0]};
-  EXPECT_TRUE((e - -10).EqualTo(Ax - lb_in_ctr));
-  EXPECT_TRUE((e - 10).EqualTo(Ax - ub_in_ctr));
+  const Expression lb_in_constraint{constraint_ptr->lower_bound()[0]};
+  const Expression ub_in_constraint{constraint_ptr->upper_bound()[0]};
+  EXPECT_TRUE((e - -10).EqualTo(Ax - lb_in_constraint));
+  EXPECT_TRUE((e - 10).EqualTo(Ax - ub_in_constraint));
 }
 
 GTEST_TEST(TestMathematicalProgram, AddLinearConstraintSymbolic3) {
@@ -1318,12 +1496,12 @@ GTEST_TEST(TestMathematicalProgram, AddLinearConstraintSymbolic3) {
   const auto constraint_ptr = binding.evaluator();
   EXPECT_EQ(constraint_ptr->num_constraints(), 5);
   const auto Ax = constraint_ptr->GetDenseA() * var_vec;
-  const auto lb_in_ctr = constraint_ptr->lower_bound();
-  const auto ub_in_ctr = constraint_ptr->upper_bound();
+  const auto lb_in_constraint = constraint_ptr->lower_bound();
+  const auto ub_in_constraint = constraint_ptr->upper_bound();
 
   for (int i = 0; i < M_e.size(); ++i) {
-    EXPECT_PRED2(ExprEqual, M_e(i) - M_lb(i), Ax(i) - lb_in_ctr(i));
-    EXPECT_PRED2(ExprEqual, M_e(i) - M_ub(i), Ax(i) - ub_in_ctr(i));
+    EXPECT_PRED2(ExprEqual, M_e(i) - M_lb(i), Ax(i) - lb_in_constraint(i));
+    EXPECT_PRED2(ExprEqual, M_e(i) - M_ub(i), Ax(i) - ub_in_constraint(i));
   }
 }
 
@@ -1721,16 +1899,16 @@ GTEST_TEST(TestMathematicalProgram, AddLinearConstraintSymbolicFormulaAnd1) {
   EXPECT_TRUE(is_dynamic_castable<LinearEqualityConstraint>(constraint_ptr));
   EXPECT_EQ(constraint_ptr->num_constraints(), b.size());
   const auto Ax = constraint_ptr->GetDenseA() * var_vec;
-  const auto lb_in_ctr = constraint_ptr->lower_bound();
-  const auto ub_in_ctr = constraint_ptr->upper_bound();
+  const auto lb_in_constraint = constraint_ptr->lower_bound();
+  const auto ub_in_constraint = constraint_ptr->upper_bound();
 
   set<Expression> constraint_set;
   constraint_set.emplace(x(0) + 2 * x(1) - 5);
   constraint_set.emplace(3 * x(0) + 4 * x(1) - 6);
-  EXPECT_EQ(constraint_set.count(Ax(0) - lb_in_ctr(0)), 1);
-  EXPECT_EQ(constraint_set.count(Ax(0) - ub_in_ctr(0)), 1);
-  EXPECT_EQ(constraint_set.count(Ax(1) - lb_in_ctr(1)), 1);
-  EXPECT_EQ(constraint_set.count(Ax(1) - ub_in_ctr(1)), 1);
+  EXPECT_EQ(constraint_set.count(Ax(0) - lb_in_constraint(0)), 1);
+  EXPECT_EQ(constraint_set.count(Ax(0) - ub_in_constraint(0)), 1);
+  EXPECT_EQ(constraint_set.count(Ax(1) - lb_in_constraint(1)), 1);
+  EXPECT_EQ(constraint_set.count(Ax(1) - ub_in_constraint(1)), 1);
 }
 
 GTEST_TEST(TestMathematicalProgram, AddLinearConstraintSymbolicFormulaAnd2) {
@@ -1757,24 +1935,24 @@ GTEST_TEST(TestMathematicalProgram, AddLinearConstraintSymbolicFormulaAnd2) {
   EXPECT_FALSE(is_dynamic_castable<LinearEqualityConstraint>(constraint_ptr));
   EXPECT_EQ(constraint_ptr->num_constraints(), 3);
   const auto Ax = constraint_ptr->GetDenseA() * var_vec;
-  const auto lb_in_ctr = constraint_ptr->lower_bound();
-  const auto ub_in_ctr = constraint_ptr->upper_bound();
+  const auto lb_in_constraint = constraint_ptr->lower_bound();
+  const auto ub_in_constraint = constraint_ptr->upper_bound();
 
   set<Expression> constraint_set;
   constraint_set.emplace(e11 - e12);
   constraint_set.emplace(e21 - e22);
   constraint_set.emplace(e31 - e32);
   for (int i = 0; i < 3; ++i) {
-    if (!std::isinf(lb_in_ctr(i))) {
+    if (!std::isinf(lb_in_constraint(i))) {
       // Either `Ax - lb` or `-(Ax - lb)` should be in the constraint set.
-      EXPECT_EQ(constraint_set.count(Ax(i) - lb_in_ctr(i)) +
-                    constraint_set.count(-(Ax(i) - lb_in_ctr(i))),
+      EXPECT_EQ(constraint_set.count(Ax(i) - lb_in_constraint(i)) +
+                    constraint_set.count(-(Ax(i) - lb_in_constraint(i))),
                 1);
     }
-    if (!std::isinf(ub_in_ctr(i))) {
+    if (!std::isinf(ub_in_constraint(i))) {
       // Either `Ax - ub` or `-(Ax - ub)` should be in the constraint set.
-      EXPECT_EQ(constraint_set.count(Ax(i) - ub_in_ctr(i)) +
-                    constraint_set.count(-(Ax(i) - ub_in_ctr(i))),
+      EXPECT_EQ(constraint_set.count(Ax(i) - ub_in_constraint(i)) +
+                    constraint_set.count(-(Ax(i) - ub_in_constraint(i))),
                 1);
     }
   }
@@ -1839,18 +2017,18 @@ GTEST_TEST(TestMathematicalProgram, AddLinearConstraintSymbolicArrayFormula1) {
   const auto constraint_ptr = binding.evaluator();
   EXPECT_EQ(constraint_ptr->num_constraints(), 5);
   const auto Ax = constraint_ptr->GetDenseA() * var_vec;
-  const auto lb_in_ctr = constraint_ptr->lower_bound();
-  const auto ub_in_ctr = constraint_ptr->upper_bound();
+  const auto lb_in_constraint = constraint_ptr->lower_bound();
+  const auto ub_in_constraint = constraint_ptr->upper_bound();
   for (int i{0}; i < M_f.size(); ++i) {
-    if (!std::isinf(lb_in_ctr(i))) {
+    if (!std::isinf(lb_in_constraint(i))) {
       EXPECT_PRED2(ExprEqual,
                    get_lhs_expression(M_f(i)) - get_rhs_expression(M_f(i)),
-                   Ax(i) - lb_in_ctr(i));
+                   Ax(i) - lb_in_constraint(i));
     }
-    if (!std::isinf(ub_in_ctr(i))) {
+    if (!std::isinf(ub_in_constraint(i))) {
       EXPECT_PRED2(ExprEqual,
                    get_lhs_expression(M_f(i)) - get_rhs_expression(M_f(i)),
-                   Ax(i) - ub_in_ctr(i));
+                   Ax(i) - ub_in_constraint(i));
     }
   }
 }
@@ -1888,12 +2066,13 @@ GTEST_TEST(TestMathematicalProgram, AddLinearConstraintSymbolicArrayFormula2) {
   const auto constraint_ptr = binding.evaluator();
   EXPECT_EQ(constraint_ptr->num_constraints(), M_e.rows() * M_e.cols());
   const auto Ax = constraint_ptr->GetDenseA() * var_vec;
-  const auto lb_in_ctr = constraint_ptr->lower_bound();
-  const auto ub_in_ctr = constraint_ptr->upper_bound();
+  const auto lb_in_constraint = constraint_ptr->lower_bound();
+  const auto ub_in_constraint = constraint_ptr->upper_bound();
   int k{0};
   for (int j{0}; j < M_e.cols(); ++j) {
     for (int i{0}; i < M_e.rows(); ++i) {
-      EXPECT_PRED2(ExprEqual, M_e(i, j) - M_lb(i, j), Ax(k) - lb_in_ctr(k));
+      EXPECT_PRED2(ExprEqual, M_e(i, j) - M_lb(i, j),
+                   Ax(k) - lb_in_constraint(k));
       ++k;
     }
   }
@@ -1927,10 +2106,10 @@ GTEST_TEST(TestMathematicalProgram, AddLinearConstraintSymbolicArrayFormula3) {
   const auto constraint_ptr = binding.evaluator();
   EXPECT_EQ(constraint_ptr->num_constraints(), b.size());
   const auto Ax = constraint_ptr->GetDenseA() * var_vec;
-  const auto lb_in_ctr = constraint_ptr->lower_bound();
-  const auto ub_in_ctr = constraint_ptr->upper_bound();
-  EXPECT_PRED2(ExprEqual, x(0) + 2 * x(1) - 5, Ax(0) - lb_in_ctr(0));
-  EXPECT_PRED2(ExprEqual, 3 * x(0) + 4 * x(1) - 6, Ax(1) - lb_in_ctr(1));
+  const auto lb_in_constraint = constraint_ptr->lower_bound();
+  const auto ub_in_constraint = constraint_ptr->upper_bound();
+  EXPECT_PRED2(ExprEqual, x(0) + 2 * x(1) - 5, Ax(0) - lb_in_constraint(0));
+  EXPECT_PRED2(ExprEqual, 3 * x(0) + 4 * x(1) - 6, Ax(1) - lb_in_constraint(1));
 }
 
 // Checks AddLinearConstraint function which takes an Eigen::Array<Formula>.
@@ -2020,6 +2199,123 @@ void CheckAddedNonSymmetricSymbolicLinearEqualityConstraint(
       prog, Vector1<Expression>(e), Vector1d(b));
 }
 }  // namespace
+
+GTEST_TEST(TestMathematicalProgram,
+           AddLinearEqualityConstraintMatrixVectorVariablesTest) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables(4, "x");
+  Matrix4d A;
+  // clang-format off
+  A << 1, 2, 3, 4,
+       5, 6, 7, 8,
+       -9, -10, -11, -12,
+       13, 14, 15, 16;
+  // clang-format on
+  const Vector4d b{-10, -11, -12, -13};
+  const auto binding = prog.AddLinearEqualityConstraint(A, b, x);
+  CheckAddedLinearEqualityConstraintCommon(binding, prog, 0);
+}
+
+GTEST_TEST(TestMathematicalProgram,
+           AddLinearEqualityConstraintMatrixVariableRefListTest) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables(1, "x");
+  auto y = prog.NewContinuousVariables(3, "y");
+  VariableRefList vars{x, y};
+  Matrix4d A;
+  // clang-format off
+  A << 1, 2, 3, 4,
+       5, 6, 7, 8,
+       -9, -10, -11, -12,
+       13, 14, 15, 16;
+  // clang-format on
+  const Vector4d b{-10, -11, -12, -13};
+  const auto binding = prog.AddLinearEqualityConstraint(A, b, vars);
+  CheckAddedLinearEqualityConstraintCommon(binding, prog, 0);
+}
+
+GTEST_TEST(TestMathematicalProgram,
+           AddLinearEqualityConstraintSparseMatrixVariableRefListTest) {
+  MathematicalProgram prog;
+  const int n = 4;
+  auto x = prog.NewContinuousVariables(1, "x");
+  auto y = prog.NewContinuousVariables(3, "y");
+  VariableRefList vars{x, y};
+
+  std::vector<Eigen::Triplet<double>> A_triplet_list;
+  A_triplet_list.reserve(3 * (n - 2) + 4);
+  double count = 1;
+  for (int i = 0; i < n; ++i) {
+    for (int j = std::max(0, i - 1); j < std::min(n, i + 1); ++j) {
+      A_triplet_list.emplace_back(i, j, count);
+      ++count;
+    }
+  }
+
+  Eigen::SparseMatrix<double> A(n, n);
+  A.setFromTriplets(A_triplet_list.begin(), A_triplet_list.end());
+  const Vector4d b{-10, -11, -12, -13};
+
+  const auto binding = prog.AddLinearEqualityConstraint(A, b, vars);
+
+  // Check if the binding called the sparse matrix constructor by checking that
+  // a dense A has not been computed yet.
+  EXPECT_FALSE(binding.evaluator()->is_dense_A_constructed());
+
+  CheckAddedLinearEqualityConstraintCommon(binding, prog, 0);
+}
+
+GTEST_TEST(TestMathematicalProgram,
+           AddLinearEqualityConstraintSparseMatrixVectorVariablesTest) {
+  MathematicalProgram prog;
+  const int n = 4;
+  auto x = prog.NewContinuousVariables(n, "x");
+  std::vector<Eigen::Triplet<double>> A_triplet_list;
+  A_triplet_list.reserve(3 * (n - 2) + 4);
+  double count = 1;
+  for (int i = 0; i < n; ++i) {
+    for (int j = std::max(0, i - 1); j < std::min(n, i + 1); ++j) {
+      A_triplet_list.emplace_back(i, j, count);
+      ++count;
+    }
+  }
+
+  Eigen::SparseMatrix<double> A(n, n);
+  A.setFromTriplets(A_triplet_list.begin(), A_triplet_list.end());
+  const Vector4d b{-10, -11, -12, -13};
+
+  const auto binding = prog.AddLinearEqualityConstraint(A, b, x);
+
+  // Check if the binding called the sparse matrix constructor by checking that
+  // a dense A has not been computed yet.
+  EXPECT_FALSE(binding.evaluator()->is_dense_A_constructed());
+
+  CheckAddedLinearEqualityConstraintCommon(binding, prog, 0);
+}
+
+GTEST_TEST(TestMathematicalProgram,
+           AddLinearEqualityConstraintRowVectorVectorVariablesTest) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables(4, "x");
+  const Eigen::RowVector4d a{1, 2, 3, 4};
+  const double b = -10;
+  const auto binding = prog.AddLinearEqualityConstraint(a, b, x);
+  CheckAddedLinearEqualityConstraintCommon(binding, prog, 0);
+}
+
+GTEST_TEST(TestMathematicalProgram,
+           AddLinearEqualityConstraintRowVectorVariableRefListTest) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables(1, "x");
+  auto y = prog.NewContinuousVariables(3, "y");
+  VariableRefList vars{x, y};
+  VectorXDecisionVariable vars_as_vec{ConcatenateVariableRefList(vars)};
+
+  const Eigen::RowVector4d a{1, 2, 3, 4};
+  const double b = -10;
+  const auto binding = prog.AddLinearEqualityConstraint(a, b, vars);
+  CheckAddedLinearEqualityConstraintCommon(binding, prog, 0);
+}
 
 GTEST_TEST(TestMathematicalProgram, AddSymbolicLinearEqualityConstraint1) {
   // Checks the single row linear equality constraint one by one:
@@ -2370,9 +2666,7 @@ TEST_F(SymbolicLorentzConeTest, Test3) {
   // [               x(2)]
   // [  -x(1)            ]
   Matrix<Expression, 4, 1> e;
-  // clang-format on
   e << 2 * x_(0) + 3 * x_(2), -x_(0) + 2 * x_(2), +x_(2), -x_(1);
-  // clang-format off;
   CheckParsedSymbolicLorentzConeConstraint(&prog_, e);
 }
 

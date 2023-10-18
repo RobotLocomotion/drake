@@ -1,5 +1,6 @@
 #pragma once
 
+#include <limits>
 #include <memory>
 #include <optional>
 #include <utility>
@@ -55,6 +56,19 @@ The geometry::optimization tools support:
 
 @ingroup geometry
 @ingroup solvers */
+
+/** The result of a volume calculation from CalcVolumeViaSampling(). */
+struct SampledVolume {
+  /** The estimated volume of the set. */
+  double volume{};
+
+  /** An upper bound for the relative accuracy of the volume estimate. When not
+  evaluated, this value is NaN. */
+  double rel_accuracy{};
+
+  /** The number of samples used to compute the volume estimate. */
+  int num_samples{};
+};
 
 /** Abstract base class for defining a convex set.
 @ingroup geometry_optimization */
@@ -230,11 +244,53 @@ class ConvexSet : public ShapeReifier {
   // TODO(russt): Consider adding a set_solver() method here, which determines
   // the solver that any derived class uses if it solves an optimization.
 
+  /** Computes the exact volume for the convex set.
+  @note Not every convex set can report an exact volume. In that case, use
+  CalcVolumeViaSampling() instead.
+  @throws std::exception if `has_exact_volume()` returns `false`.
+  @throws if ambient_dimension() == 0. */
+  double CalcVolume() const;
+
+  /** Calculates an estimate of the volume of the convex set using sampling and
+  performing Monte Carlo integration.
+  @note this method is intended to be used for low to moderate dimensions
+  (d<15). For larger dimensions, a telescopic product approach has yet to be
+  implemented. See, e.g.,
+  https://proceedings.mlr.press/v151/chevallier22a/chevallier22a.pdf
+  @param generator a random number generator.
+  @param desired_rel_accuracy the desired relative accuracy of the volume
+  estimate in the sense that the estimated volume is likely to be within the
+  interval defined by (1±2*desired_rel_accuracy)*true_volume with probability of
+  *at least* 0.95 according to the Law of Large Numbers.
+  https://people.math.umass.edu/~lr7q/ps_files/teaching/math456/Chapter6.pdf
+  The computation will terminate when the relative error is less than
+  rel_accuracy or when the maximum number of samples is reached.
+  @param max_num_samples the maximum number of samples to use.
+  @pre `desired_rel_accuracy` is in the range [0,1].
+  @return a pair the estimated volume of the set and an upper bound for the
+  relative accuracy
+  @throws if ambient_dimension() == 0.
+  @throws if the minimum axis-aligned bounding box of the set cannot be
+  computed. */
+  SampledVolume CalcVolumeViaSampling(RandomGenerator* generator,
+                                      const double desired_rel_accuracy = 1e-2,
+                                      const int max_num_samples = 1e4) const;
+
+  /** Returns true if the exact volume can be computed for this convex set
+  instance.
+  @note This value reasons about to the generic case of the convex set class
+  rather than the specific instance of the convex set. For example, the exact
+  volume of a box is trivival to compute, but if the box is created as a
+  HPolyhedron, then the exact volume cannot be computed. */
+  bool has_exact_volume() const { return has_exact_volume_; }
+
  protected:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ConvexSet)
 
-  /** For use by derived classes to construct a %ConvexSet. */
-  explicit ConvexSet(int ambient_dimension);
+  /** For use by derived classes to construct a %ConvexSet.
+  @param has_exact_volume Derived classes should pass `true` if they've
+  implemented DoCalcVolume() to return a value (at least sometimes). */
+  explicit ConvexSet(int ambient_dimension, bool has_exact_volume);
 
   /** Implements non-virtual base class serialization. */
   template <typename Archive>
@@ -323,6 +379,10 @@ class ConvexSet : public ShapeReifier {
   virtual std::pair<std::unique_ptr<Shape>, math::RigidTransformd>
   DoToShapeWithPose() const = 0;
 
+  /** Non-virtual interface implementation for CalcVolume(). This will *only* be
+  called if has_exact_volume() returns true and ambient_dimension() > 0 */
+  virtual double DoCalcVolume() const;
+
   /** Instances of subclasses such as CartesianProduct and MinkowskiSum can
   have constituent sets with zero ambient dimension, which much be handled in a
   special manner when calling methods such as DoAddPointInSetConstraints. If the
@@ -357,6 +417,8 @@ class ConvexSet : public ShapeReifier {
   // an invariant like `∑(set.size() for set in sets_) == ambient_dimension_`,
   // we need to zero the dimension when `sets_` is moved-from.
   reset_after_move<int> ambient_dimension_;
+
+  bool has_exact_volume_{false};
 };
 
 /** Provides the recommended container for passing a collection of ConvexSet

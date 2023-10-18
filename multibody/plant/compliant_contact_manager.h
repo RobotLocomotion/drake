@@ -8,8 +8,6 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/scene_graph_inspector.h"
-#include "drake/multibody/plant/contact_pair_kinematics.h"
-#include "drake/multibody/plant/contact_results.h"
 #include "drake/multibody/plant/deformable_driver.h"
 #include "drake/multibody/plant/discrete_update_manager.h"
 #include "drake/systems/framework/context.h"
@@ -69,9 +67,6 @@ struct AccelerationsDueNonConstraintForcesCache {
 // where p₀ is the object-centric virtual pressure field introduced by the
 // hydroelastic model.
 //
-// TODO(amcastro-tri): Retire code from MultibodyPlant as this contact manager
-// replaces all the contact related capabilities, per #16106.
-//
 // @warning Scalar support on T = symbolic::Expression is only limited,
 // conditional to the solver in use:
 //   - For TAMSI. Discrete updates are only supported when there is no contact
@@ -85,12 +80,11 @@ struct AccelerationsDueNonConstraintForcesCache {
 //
 // @tparam_default_scalar
 template <typename T>
-class CompliantContactManager final
-    : public internal::DiscreteUpdateManager<T> {
+class CompliantContactManager final : public DiscreteUpdateManager<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CompliantContactManager)
 
-  using internal::DiscreteUpdateManager<T>::plant;
+  using DiscreteUpdateManager<T>::plant;
 
   CompliantContactManager();
 
@@ -121,9 +115,6 @@ class CompliantContactManager final
   // Struct used to conglomerate the indexes of cache entries declared by the
   // manager.
   struct CacheIndexes {
-    systems::CacheIndex contact_kinematics;
-    systems::CacheIndex discrete_contact_pairs;
-    systems::CacheIndex hydroelastic_contact_info;
     systems::CacheIndex non_constraint_forces_accelerations;
   };
 
@@ -135,33 +126,13 @@ class CompliantContactManager final
   // Provide private access for unit testing only.
   friend class CompliantContactManagerTester;
 
-  const MultibodyTreeTopology& tree_topology() const {
-    return internal::GetInternalTree(this->plant()).get_topology();
-  }
-
   std::unique_ptr<DiscreteUpdateManager<double>> CloneToDouble() const final;
   std::unique_ptr<DiscreteUpdateManager<AutoDiffXd>> CloneToAutoDiffXd()
       const final;
   std::unique_ptr<DiscreteUpdateManager<symbolic::Expression>> CloneToSymbolic()
       const final;
 
-  // Extracts non state dependent model information from MultibodyPlant. See
-  // DiscreteUpdateManager for details.
-  void ExtractModelInfo() final;
-
-  // Associates the given `DeformableModel` with `this` manager. The discrete
-  // states of the deformable bodies registered in the given `model` will be
-  // advanced by this manager. This manager holds onto the given pointer and
-  // therefore the model must outlive the manager.
-  // @throws std::exception if a deformable model has already been registered.
-  // @pre model != nullptr.
-  void ExtractConcreteModel(const DeformableModel<T>* model);
-
-  // For testing purposes only, we provide a default no-op implementation on
-  // arbitrary models of unknown concrete model type. Otherwise, for the closed
-  // list of models forward declared in physical_model.h, we must provide a
-  // function that extracts the particular variant of the physical model.
-  void ExtractConcreteModel(std::monostate) {}
+  void DoExtractModelInfo() final;
 
   void DoDeclareCacheEntries() final;
 
@@ -181,63 +152,12 @@ class CompliantContactManager final
   void DoCalcContactSolverResults(
       const systems::Context<T>&,
       contact_solvers::internal::ContactSolverResults<T>*) const final;
-  void DoCalcDiscreteValues(const systems::Context<T>&,
-                            systems::DiscreteValues<T>*) const final;
   void DoCalcAccelerationKinematicsCache(
       const systems::Context<T>&,
       multibody::internal::AccelerationKinematicsCache<T>*) const final;
-  void DoCalcContactResults(const systems::Context<T>&,
-                            ContactResults<T>* contact_results) const final;
   void DoCalcDiscreteUpdateMultibodyForces(
       const systems::Context<T>& context,
       MultibodyForces<T>* forces) const final;
-
-  // This method computes sparse kinematics information for each contact pair at
-  // the given configuration stored in `context`.
-  std::vector<ContactPairKinematics<T>> CalcContactKinematics(
-      const systems::Context<T>& context) const;
-
-  // Eval version of CalcContactKinematics().
-  const std::vector<ContactPairKinematics<T>>& EvalContactKinematics(
-      const systems::Context<T>& context) const;
-
-  // Given the configuration stored in `context`, this method appends discrete
-  // pairs corresponding to point contact into `pairs`.
-  // @pre pairs != nullptr.
-  void AppendDiscreteContactPairsForPointContact(
-      const systems::Context<T>& context,
-      std::vector<internal::DiscreteContactPair<T>>* pairs) const;
-
-  // Given the configuration stored in `context`, this method appends discrete
-  // pairs corresponding to hydroelastic contact into `pairs`.
-  // @pre pairs != nullptr.
-  void AppendDiscreteContactPairsForHydroelasticContact(
-      const systems::Context<T>& context,
-      std::vector<internal::DiscreteContactPair<T>>* pairs) const;
-
-  // Given the configuration stored in `context`, this method computes all
-  // discrete contact pairs, including point, hydroelastic, and deformable
-  // contact, into `pairs`. Contact pairs including deformable bodies are
-  // guaranteed to come after point and hydroelastic contact pairs. Throws an
-  // exception if `pairs` is nullptr.
-  void CalcDiscreteContactPairs(
-      const systems::Context<T>& context,
-      std::vector<internal::DiscreteContactPair<T>>* pairs) const;
-
-  // Eval version of CalcDiscreteContactPairs().
-  const std::vector<internal::DiscreteContactPair<T>>& EvalDiscreteContactPairs(
-      const systems::Context<T>& context) const;
-
-  // Computes per-face contact information for the hydroelastic model (slip
-  // velocity, traction, etc). On return contact_info->size() will equal the
-  // number of faces discretizing the contact surface.
-  void CalcHydroelasticContactInfo(
-      const systems::Context<T>& context,
-      std::vector<HydroelasticContactInfo<T>>* contact_info) const;
-
-  // Eval version of CalcHydroelasticContactInfo() .
-  const std::vector<HydroelasticContactInfo<T>>& EvalHydroelasticContactInfo(
-      const systems::Context<T>& context) const;
 
   // Computes non-constraint forces and the accelerations they induce.
   void CalcAccelerationsDueToNonConstraintForcesCache(
@@ -250,28 +170,10 @@ class CompliantContactManager final
   EvalAccelerationsDueToNonConstraintForcesCache(
       const systems::Context<T>& context) const;
 
-  // Helper method to fill in contact_results with point contact information
-  // for the given state stored in `context`.
-  // @param[in,out] contact_results is appended to
-  void AppendContactResultsForPointContact(
-      const systems::Context<T>& context,
-      ContactResults<T>* contact_results) const;
-
-  // Helper method to fill in `contact_results` with hydroelastic contact
-  // information for the given state stored in `context`.
-  // @param[in,out] contact_results is appended to
-  void AppendContactResultsForHydroelasticContact(
-      const systems::Context<T>& context,
-      ContactResults<T>* contact_results) const;
-
   CacheIndexes cache_indexes_;
   // Vector of joint damping coefficients, of size plant().num_velocities().
   // This information is extracted during the call to ExtractModelInfo().
   VectorX<T> joint_damping_;
-
-  // deformable_driver_ computes the information on all deformable bodies needed
-  // to advance the discrete states.
-  std::unique_ptr<DeformableDriver<double>> deformable_driver_;
 
   // Specific contact solver drivers are created at ExtractModelInfo() time,
   // when the manager retrieves modeling information from MultibodyPlant.
@@ -279,18 +181,6 @@ class CompliantContactManager final
   std::unique_ptr<SapDriver<T>> sap_driver_;
   std::unique_ptr<TamsiDriver<T>> tamsi_driver_;
 };
-
-// N.B. These geometry queries are not supported when T = symbolic::Expression
-// and therefore their implementation throws.
-template <>
-void CompliantContactManager<symbolic::Expression>::CalcDiscreteContactPairs(
-    const drake::systems::Context<symbolic::Expression>&,
-    std::vector<DiscreteContactPair<symbolic::Expression>>*) const;
-template <>
-void CompliantContactManager<symbolic::Expression>::
-    AppendDiscreteContactPairsForHydroelasticContact(
-        const drake::systems::Context<symbolic::Expression>&,
-        std::vector<DiscreteContactPair<symbolic::Expression>>*) const;
 
 }  // namespace internal
 }  // namespace multibody

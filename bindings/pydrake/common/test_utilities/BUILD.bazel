@@ -1,9 +1,9 @@
 load(
-    "@drake//tools/skylark:pybind.bzl",
+    "//tools/skylark:pybind.bzl",
     "get_pybind_package_info",
 )
 load(
-    "@drake//tools/skylark:drake_py.bzl",
+    "//tools/skylark:drake_py.bzl",
     "drake_py_library",
     "drake_py_unittest",
 )
@@ -53,9 +53,9 @@ drake_py_library(
     srcs = ["numpy_compare.py"],
     deps = [
         ":module_py",
-        "//bindings/pydrake:autodiffutils_py",
         "//bindings/pydrake:polynomial_py",
-        "//bindings/pydrake:symbolic_py",
+        "//bindings/pydrake/autodiffutils",
+        "//bindings/pydrake/symbolic",
     ],
 )
 
@@ -66,7 +66,7 @@ drake_py_library(
     deps = [
         ":module_py",
         ":numpy_compare_py",
-        "//bindings/pydrake:symbolic_py",
+        "//bindings/pydrake/symbolic",
     ],
 )
 

@@ -16,6 +16,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/fmt_ostream.h"
 #include "drake/common/hash.h"
+#include "drake/common/reset_after_move.h"
 
 namespace drake {
 namespace symbolic {
@@ -50,16 +51,12 @@ class Variable {
 
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Variable)
 
-  /** Default constructor. Constructs a dummy variable of CONTINUOUS type. This
-   *  is needed to have Eigen::Matrix<Variable>. The objects created by the
-   *  default constructor share the same ID, zero. As a result, they all are
-   *  identified as a single variable by equality operator (==). They all have
-   *  the same hash value as well.
-   *
-   *  It is allowed to construct a dummy variable but it should not be used to
-   *  construct a symbolic expression.
+  /** Constructs a default variable of type CONTINUOUS with an `Id` of zero.
+   * All default-constructed variables are considered the same variable by the
+   * equality operator (==). Similarly, a moved-from variable is also identical
+   * to a default-constructed variable (in both its `name` and its `Id`).
    */
-  Variable() : name_{std::make_shared<std::string>()} {}
+  Variable() = default;
 
   /** Constructs a default value.  This overload is used by Eigen when
    * EIGEN_INITIALIZE_MATRICES_BY_ZERO is enabled.
@@ -70,14 +67,13 @@ class Variable {
    * type by default.*/
   explicit Variable(std::string name, Type type = Type::CONTINUOUS);
 
-  /** Checks if this is a dummy variable (ID = 0) which is created by
-   *  the default constructor. */
+  /** Checks if this is the variable created by the default constructor. */
   [[nodiscard]] bool is_dummy() const { return get_id() == 0; }
   [[nodiscard]] Id get_id() const { return id_; }
   [[nodiscard]] Type get_type() const {
     // We store the 1-byte Type enum in the upper byte of id_.
     // See get_next_id() in the cc file for more details.
-    return static_cast<Type>(id_ >> (7 * 8));
+    return static_cast<Type>(Id{id_} >> (7 * 8));
   }
   [[nodiscard]] std::string get_name() const;
   [[nodiscard]] std::string to_string() const;
@@ -97,7 +93,7 @@ class Variable {
   friend void hash_append(HashAlgorithm& hasher,
                           const Variable& item) noexcept {
     using drake::hash_append;
-    hash_append(hasher, item.id_);
+    hash_append(hasher, Id{item.id_});
     // We do not send the name_ to the hasher, because the id_ is already unique
     // across all instances, so two Variable instances with matching id_ will
     // always have identical names.
@@ -108,7 +104,7 @@ class Variable {
  private:
   // Unique identifier for this Variable. The high-order byte stores the Type.
   // See get_next_id() in the cc file for more details.
-  Id id_{};
+  reset_after_move<Id> id_;
 
   // Variable class has shared_ptr<const string> instead of string to be
   // drake::test::IsMemcpyMovable.

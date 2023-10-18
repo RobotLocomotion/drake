@@ -3,6 +3,7 @@
 #include "drake/bindings/pydrake/autodiff_types_pybind.h"
 #include "drake/bindings/pydrake/common/cpp_param_pybind.h"
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_pybind.h"
 #include "drake/bindings/pydrake/common/wrap_function.h"
 #include "drake/bindings/pydrake/common/wrap_pybind.h"
@@ -38,7 +39,12 @@ using solvers::LinearEqualityConstraint;
 using solvers::LinearMatrixInequalityConstraint;
 using solvers::LInfNormCost;
 using solvers::LorentzConeConstraint;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 using solvers::MinimumValueConstraint;
+#pragma GCC diagnostic pop
+using solvers::MinimumValueLowerBoundConstraint;
+using solvers::MinimumValueUpperBoundConstraint;
 using solvers::PerspectiveQuadraticCost;
 using solvers::PositiveSemidefiniteConstraint;
 using solvers::QuadraticConstraint;
@@ -255,6 +261,8 @@ void BindEvaluatorsAndBindings(py::module m) {
           doc.LinearConstraint.UpdateCoefficients.doc_sparse_A)
       .def("RemoveTinyCoefficient", &LinearConstraint::RemoveTinyCoefficient,
           py::arg("tol"), doc.LinearConstraint.RemoveTinyCoefficient.doc)
+      .def("is_dense_A_constructed", &LinearConstraint::is_dense_A_constructed,
+          doc.LinearConstraint.is_dense_A_constructed.doc)
       .def(
           "UpdateLowerBound",
           [](LinearConstraint& self, const Eigen::VectorXd& new_lb) {
@@ -472,10 +480,19 @@ void BindEvaluatorsAndBindings(py::module m) {
           // dtype = object arrays must be copied, and cannot be referenced.
           py_rvp::copy, doc.ExpressionConstraint.vars.doc);
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  const std::string dep_message =
+      "MinimumValueConstraint is deprecated. Use "
+      "MinimumValueLowerBoundConstraint if you want the smallest value to be "
+      "lower bounded, or MinimumValueUpperBoundConstraint if you want the "
+      "smallest value to be upper bounded. The deprecated code will be removed "
+      "from Drake on or after 2024-02-01.\n\n";
   py::class_<MinimumValueConstraint, Constraint,
       std::shared_ptr<MinimumValueConstraint>>(
-      m, "MinimumValueConstraint", doc.MinimumValueConstraint.doc)
-      .def(py::init(
+      m, "MinimumValueConstraint", doc.MinimumValueConstraint.doc_deprecated)
+      .def(py_init_deprecated(
+               dep_message + doc.MinimumValueConstraint.ctor.doc_6args,
                [](int num_vars, double minimum_value,
                    double influence_value_offset, int max_num_values,
                    // If I pass in const Eigen::Ref<const AutoDiffVecXd>& here
@@ -496,7 +513,8 @@ void BindEvaluatorsAndBindings(py::module m) {
           py::arg("value_function_double") = std::function<Eigen::VectorXd(
               const Eigen::Ref<const Eigen::VectorXd>&, double)>{},
           doc.MinimumValueConstraint.ctor.doc_6args)
-      .def(py::init(
+      .def(py_init_deprecated(
+               dep_message + doc.MinimumValueConstraint.ctor.doc_7args,
                [](int num_vars, double minimum_value_lower,
                    double minimum_value_upper, double influence_value,
                    int max_num_values,
@@ -547,6 +565,117 @@ void BindEvaluatorsAndBindings(py::module m) {
           "compute_grad=True, or [penalty_value, None] when "
           "compute_grad=False. See minimum_value_constraint.h on the "
           "requirement on MinimumValuePenaltyFunction.");
+#pragma GCC diagnostic pop
+
+  py::class_<MinimumValueLowerBoundConstraint, Constraint,
+      std::shared_ptr<MinimumValueLowerBoundConstraint>>(m,
+      "MinimumValueLowerBoundConstraint",
+      doc.MinimumValueLowerBoundConstraint.doc)
+      .def(py::init(
+               [](int num_vars, double minimum_value_lower,
+                   double influence_value_offset, int max_num_values,
+                   // If I pass in const Eigen::Ref<const AutoDiffVecXd>& here
+                   // then I got the RuntimeError: dtype=object arrays must be
+                   // copied, and cannot be referenced.
+                   std::function<AutoDiffVecXd(const AutoDiffVecXd&, double)>
+                       value_function,
+                   std::function<Eigen::VectorXd(
+                       const Eigen::Ref<const Eigen::VectorXd>&, double)>
+                       value_function_double) {
+                 return std::make_unique<MinimumValueLowerBoundConstraint>(
+                     num_vars, minimum_value_lower, influence_value_offset,
+                     max_num_values, value_function, value_function_double);
+               }),
+          py::arg("num_vars"), py::arg("minimum_value_lower"),
+          py::arg("influence_value_offset"), py::arg("max_num_values"),
+          py::arg("value_function"),
+          py::arg("value_function_double") = std::function<Eigen::VectorXd(
+              const Eigen::Ref<const Eigen::VectorXd>&, double)>{},
+          doc.MinimumValueLowerBoundConstraint.ctor.doc)
+      .def("minimum_value_lower",
+          &MinimumValueLowerBoundConstraint::minimum_value_lower,
+          doc.MinimumValueLowerBoundConstraint.minimum_value_lower.doc)
+      .def("influence_value",
+          &MinimumValueLowerBoundConstraint::influence_value,
+          doc.MinimumValueLowerBoundConstraint.influence_value.doc)
+      .def(
+          "set_penalty_function",
+          [](MinimumValueLowerBoundConstraint* self,
+              std::function<py::tuple(double, bool)> new_penalty_function) {
+            auto penalty_fun = [new_penalty_function](double x, double* penalty,
+                                   double* dpenalty) {
+              py::tuple penalty_tuple(2);
+              penalty_tuple = new_penalty_function(x, dpenalty != nullptr);
+              *penalty = penalty_tuple[0].cast<double>();
+              if (dpenalty) {
+                *dpenalty = penalty_tuple[1].cast<double>();
+              }
+            };
+            self->set_penalty_function(penalty_fun);
+          },
+          py::arg("new_penalty_function"),
+          "Setter for the penalty function. The penalty function "
+          "new_penalty_function(x: float, compute_grad: bool) -> tuple[float, "
+          "Optional[float]] "
+          "returns [penalty_value, penalty_gradient] when "
+          "compute_grad=True, or [penalty_value, None] when "
+          "compute_grad=False. See minimum_value_constraint.h on the "
+          "requirement on MinimumValuePenaltyFunction.");
+
+  py::class_<MinimumValueUpperBoundConstraint, Constraint,
+      std::shared_ptr<MinimumValueUpperBoundConstraint>>(m,
+      "MinimumValueUpperBoundConstraint",
+      doc.MinimumValueUpperBoundConstraint.doc)
+      .def(py::init(
+               [](int num_vars, double minimum_value_upper,
+                   double influence_value_offset, int max_num_values,
+                   // If I pass in const Eigen::Ref<const AutoDiffVecXd>& here
+                   // then I got the RuntimeError: dtype=object arrays must be
+                   // copied, and cannot be referenced.
+                   std::function<AutoDiffVecXd(const AutoDiffVecXd&, double)>
+                       value_function,
+                   std::function<Eigen::VectorXd(
+                       const Eigen::Ref<const Eigen::VectorXd>&, double)>
+                       value_function_double) {
+                 return std::make_unique<MinimumValueUpperBoundConstraint>(
+                     num_vars, minimum_value_upper, influence_value_offset,
+                     max_num_values, value_function, value_function_double);
+               }),
+          py::arg("num_vars"), py::arg("minimum_value_upper"),
+          py::arg("influence_value_offset"), py::arg("max_num_values"),
+          py::arg("value_function"),
+          py::arg("value_function_double") = std::function<Eigen::VectorXd(
+              const Eigen::Ref<const Eigen::VectorXd>&, double)>{},
+          doc.MinimumValueUpperBoundConstraint.ctor.doc)
+      .def("minimum_value_upper",
+          &MinimumValueUpperBoundConstraint::minimum_value_upper,
+          doc.MinimumValueUpperBoundConstraint.minimum_value_upper.doc)
+      .def("influence_value",
+          &MinimumValueUpperBoundConstraint::influence_value,
+          doc.MinimumValueUpperBoundConstraint.influence_value.doc)
+      .def(
+          "set_penalty_function",
+          [](MinimumValueUpperBoundConstraint* self,
+              std::function<py::tuple(double, bool)> new_penalty_function) {
+            auto penalty_fun = [new_penalty_function](double x, double* penalty,
+                                   double* dpenalty) {
+              py::tuple penalty_tuple(2);
+              penalty_tuple = new_penalty_function(x, dpenalty != nullptr);
+              *penalty = penalty_tuple[0].cast<double>();
+              if (dpenalty) {
+                *dpenalty = penalty_tuple[1].cast<double>();
+              }
+            };
+            self->set_penalty_function(penalty_fun);
+          },
+          py::arg("new_penalty_function"),
+          "Setter for the penalty function. The penalty function "
+          "new_penalty_function(x: float, compute_grad: bool) -> tuple[float, "
+          "Optional[float]] "
+          "returns [penalty_value, penalty_gradient] when "
+          "compute_grad=True, or [penalty_value, None] when "
+          "compute_grad=False. See minimum_value_constraint.h on the "
+          "requirement on MinimumValuePenaltyFunction.");
 
   auto constraint_binding = RegisterBinding<Constraint>(&m);
   DefBindingCastConstructor<Constraint>(&constraint_binding);
@@ -560,7 +689,12 @@ void BindEvaluatorsAndBindings(py::module m) {
   RegisterBinding<LinearMatrixInequalityConstraint>(&m);
   RegisterBinding<LinearComplementarityConstraint>(&m);
   RegisterBinding<ExponentialConeConstraint>(&m);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   RegisterBinding<MinimumValueConstraint>(&m);
+#pragma GCC diagnostic pop
+  RegisterBinding<MinimumValueLowerBoundConstraint>(&m);
+  RegisterBinding<MinimumValueUpperBoundConstraint>(&m);
   // TODO(russt): PolynomialConstraint currently uses common::Polynomial, not
   // symbolic::Polynomial. Decide whether we want to bind the current c++
   // implementation as is, or convert it to symbolic::Polynomial first.

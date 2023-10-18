@@ -1,7 +1,4 @@
-load(
-    "@drake//tools/workspace:github.bzl",
-    "github_archive",
-)
+load("//tools/workspace:github.bzl", "github_archive")
 
 def voxelized_geometry_tools_repository(
         name,
@@ -13,8 +10,11 @@ def voxelized_geometry_tools_repository(
         When updating, ensure that any new unit tests are reflected in
         package.BUILD.bazel and BUILD.bazel in drake.
         """,
-        commit = "37122a2d1c7da410965ab0d800b1dbc1c3ffd5fa",
-        sha256 = "80046ffe33f6dea3f4dd1b107e1d76a9ed76d21fc18cc9f8337ce641e9dc20cf",  # noqa
+        commit = "daa34feecf983a6b10b07add4a51a7e1c499b913",
+        sha256 = "ba62cb041ea05239196fd032bfde02e5cd2db2ad64d53dc6610218f8d8080742",  # noqa
         build_file = ":package.BUILD.bazel",
+        patches = [
+            ":patches/vendor.patch",
+        ],
         mirrors = mirrors,
     )

@@ -308,7 +308,8 @@ struct JointActuatorTopology {
   JointActuatorIndex index{0};
   // For an actuator in a MultibodyTree model, this index corresponds to the
   // first entry in the global array u containing all actuation values for the
-  // entire model.
+  // entire model. Actuator indexes are assigned in the order actuators are
+  // added to the model, that is, in the order of JointActuatorIndex.
   int actuator_index_start{-1};
   // The number of dofs actuated by this actuator.
   int num_dofs{-1};
@@ -449,7 +450,7 @@ class MultibodyTreeTopology {
   // members of `other`.
   bool operator==(const MultibodyTreeTopology& other) const {
     if (is_valid_ != other.is_valid_) return false;
-    if (tree_height_ != other.tree_height_) return false;
+    if (forest_height_ != other.forest_height_) return false;
 
     if (num_positions_ != other.num_positions_) return false;
     if (num_velocities_ != other.num_velocities_) return false;
@@ -497,9 +498,9 @@ class MultibodyTreeTopology {
     return ssize(joint_actuators_);
   }
 
-  // Returns the number of tree levels in the topology.
-  int tree_height() const {
-    return tree_height_;
+  // Returns the number of levels in the forest topology.
+  int forest_height() const {
+    return forest_height_;
   }
 
   // Returns a constant reference to the corresponding FrameTopology given the
@@ -586,6 +587,14 @@ class MultibodyTreeTopology {
   TreeIndex velocity_to_tree_index(int v) const {
     DRAKE_ASSERT(0 <= v && v < num_velocities());
     return velocity_to_tree_index_[v];
+  }
+
+  // Given a tree index, returns `true` if that tree has any degrees of freedom
+  // (ignoring joint locking). An invalid tree index is treated as World's
+  // "tree", which has no dofs.
+  bool tree_has_dofs(TreeIndex tree_index) const {
+    if (!tree_index.is_valid()) return false;  // World doesn't have a Tree.
+    return num_tree_velocities(tree_index) > 0;
   }
 
   // Creates and adds a new BodyTopology to this MultibodyTreeTopology.
@@ -790,7 +799,7 @@ class MultibodyTreeTopology {
     // For each body, assign a body node in a depth first traversal order.
     std::stack<BodyIndex> stack;
     stack.push(BodyIndex(0));  // Starts at the root.
-    tree_height_ = 1;  // At least one level with the world body at the root.
+    forest_height_ = 1;  // At least one level with the world body at the root.
     body_nodes_.reserve(num_bodies());
     while (!stack.empty()) {
       const BodyNodeIndex node(get_num_body_nodes());
@@ -809,7 +818,7 @@ class MultibodyTreeTopology {
       // Updates body levels.
       bodies_[current].level = level;
       // Keep track of the number of levels, the deepest (i.e. max) level.
-      tree_height_ = std::max(tree_height_, level + 1);
+      forest_height_ = std::max(forest_height_, level + 1);
 
       // Since we are doing a DFT, it is valid to ask for the parent node,
       // unless we are at the root.
@@ -1193,20 +1202,18 @@ class MultibodyTreeTopology {
     for (const BodyNodeIndex& root_child_index : root.child_nodes) {
       const BodyNodeTopology& root_child = get_body_node(root_child_index);
       const int nt = CalcNumberOfOutboardVelocities(root_child);
-      if (nt > 0) {
-        const TreeIndex tree_index(num_trees());
-        num_tree_velocities_.push_back(nt);
-        TraverseOutboardNodes(root_child, [&](const BodyNodeTopology& node) {
-          // We recurse all bodies in this tree (with tree_index) to fill in the
-          // maps from body index to tree index and from velocity index to tree
-          // index.
-          body_to_tree_index_[node.body] = tree_index;
-          for (int i = 0; i < node.num_mobilizer_velocities; ++i) {
-            const int v = node.mobilizer_velocities_start_in_v + i;
-            velocity_to_tree_index_[v] = tree_index;
-          }
-        });
-      }
+      const TreeIndex tree_index(num_trees());
+      num_tree_velocities_.push_back(nt);
+      TraverseOutboardNodes(root_child, [&](const BodyNodeTopology& node) {
+        // We recurse all bodies in this tree (with tree_index) to fill in the
+        // maps from body index to tree index and from velocity index to tree
+        // index.
+        body_to_tree_index_[node.body] = tree_index;
+        for (int i = 0; i < node.num_mobilizer_velocities; ++i) {
+          const int v = node.mobilizer_velocities_start_in_v + i;
+          velocity_to_tree_index_[v] = tree_index;
+        }
+      });
     }
 
     // N.B. For trees with no generalized velocities, this code sets
@@ -1234,9 +1241,9 @@ class MultibodyTreeTopology {
 
   // is_valid is set to `true` after a successful Finalize().
   bool is_valid_{false};
-  // Number of levels (or generations) in the tree topology. After Finalize()
+  // Number of levels (or generations) in the forest topology. After Finalize()
   // there will be at least one level (level = 0) with the world body.
-  int tree_height_{-1};
+  int forest_height_{-1};
 
   // Topological elements:
   std::vector<FrameTopology> frames_;

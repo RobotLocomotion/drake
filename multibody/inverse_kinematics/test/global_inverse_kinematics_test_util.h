@@ -38,13 +38,11 @@ class KukaTest : public ::testing::Test {
    * @param info_expected Expected return status from nonlinear IK
    * @return The nonlinear IK solution.
    */
-  Eigen::VectorXd CheckNonlinearIK(const Eigen::Vector3d& ee_pos_lb_W,
-                                   const Eigen::Vector3d& ee_pos_ub_W,
-                                   const Eigen::Quaterniond& ee_orient,
-                                   double angle_tol,
-                                   const Eigen::Matrix<double, 7, 1>& q_guess,
-                                   const Eigen::Matrix<double, 7, 1>& q_nom,
-                                   bool ik_success_expected) const;
+  Eigen::VectorXd CheckNonlinearIK(
+      const Eigen::Vector3d& ee_pos_lb_W, const Eigen::Vector3d& ee_pos_ub_W,
+      const Eigen::Quaterniond& ee_orient, double angle_tol,
+      const std::vector<Eigen::Matrix<double, 7, 1>>& q_guess,
+      const Eigen::Matrix<double, 7, 1>& q_nom, bool ik_success_expected) const;
 
  protected:
   std::unique_ptr<MultibodyPlant<double>> plant_;

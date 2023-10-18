@@ -70,7 +70,8 @@ FUNCTION_KINDS = [
 
 
 RECURSE_LIST = [
-    CursorKind.TRANSLATION_UNIT,
+    CursorKind.TRANSLATION_UNIT_300,
+    CursorKind.TRANSLATION_UNIT_350,
     CursorKind.NAMESPACE,
     CursorKind.CLASS_DECL,
     CursorKind.STRUCT_DECL,
@@ -256,7 +257,7 @@ def get_name_chain(cursor):
     name = cursor.spelling
     name_chain = [name]
     p = cursor.semantic_parent
-    while p and p.kind != CursorKind.TRANSLATION_UNIT:
+    while p and not p.kind.is_translation_unit():
         piece = p.spelling
         name_chain.insert(0, piece)
         p = p.semantic_parent
@@ -306,7 +307,7 @@ def extract(include_file_map, cursor, symbol_tree, deprecations=None):
     """
     Extracts libclang cursors and add to a symbol tree.
     """
-    if cursor.kind == CursorKind.TRANSLATION_UNIT:
+    if cursor.kind.is_translation_unit():
         deprecations = []
         for i in cursor.get_children():
             if i.kind == CursorKind.MACRO_DEFINITION:

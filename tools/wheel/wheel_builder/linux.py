@@ -48,6 +48,12 @@ targets = (
         test_platform=Platform('ubuntu', '22.04', 'jammy'),
         python_version_tuple=(3, 11, 1),
         python_sha='85879192f2cffd56cb16c092905949ebf3e5e394b7f764723529637901dfb58f'),  # noqa
+    Target(
+        build_platform=Platform('ubuntu', '20.04', 'focal'),
+        # TODO(jwnimmer-tri) Switch the test to 24.04 once that's available.
+        test_platform=Platform('ubuntu', '23.10', 'mantic'),
+        python_version_tuple=(3, 12, 0),
+        python_sha='795c34f44df45a0e9b9710c8c71c15c671871524cd412ca14def212e8ccb155d'),  # noqa
 )
 glibc_versions = {
     'focal': '2_31',
@@ -133,17 +139,7 @@ def _create_source_tar(path):
     Creates a tarball of the repository working tree.
     """
     print('[-] Creating source archive', end='', flush=True)
-    out = tarfile.open(path, 'w:xz')
-
-    # Add an rcfile that's compatible with our Dockerfile base.
-    rc_lines = [
-        'import %workspace%/tools/ubuntu.bazelrc',
-        'import %workspace%/tools/ubuntu-focal.bazelrc',
-    ]
-    rc_bytes = '\n'.join(rc_lines).encode('utf-8')
-    tarinfo = tarfile.TarInfo('gen/environment.bazelrc')
-    tarinfo.size = len(rc_bytes)
-    out.addfile(tarinfo, io.BytesIO(rc_bytes))
+    out = tarfile.open(path, 'w')
 
     # Walk the git root and archive almost every file we find.
     repo_dir = _git_root(resource_root)
@@ -152,9 +148,12 @@ def _create_source_tar(path):
         if f == '.git' or f == 'user.bazelrc' or f.startswith('bazel-'):
             continue
 
-        # Exclude host-generated setup files; we want the container-relevant
-        # setup file (already added atop this function).
+        # Exclude host-generated setup files.
         if f == 'gen':
+            continue
+
+        # Never add our output (wheel files) back in as input.
+        if f.endswith(".whl"):
             continue
 
         print('.', end='', flush=True)
@@ -327,7 +326,7 @@ def build(options):
     identifier = f'{time}-{salt}'
 
     # Generate the repository source archive.
-    source_tar = os.path.join(resource_root, 'image', 'drake-src.tar.xz')
+    source_tar = os.path.join(resource_root, 'image', 'drake-src.tar')
     _files_to_remove.append(source_tar)
     _create_source_tar(source_tar)
 

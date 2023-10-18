@@ -1,5 +1,5 @@
 load(
-    "@drake//tools/skylark:drake_cc.bzl",
+    "//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
     "drake_cc_library",
     "drake_cc_package_library",
@@ -38,6 +38,7 @@ drake_cc_package_library(
         ":trajectory_affine_system",
         ":trajectory_linear_system",
         ":trajectory_source",
+        ":transfer_function",
         ":vector_log",
         ":vector_log_sink",
         ":wrap_to_system",
@@ -286,6 +287,16 @@ drake_cc_library(
         "//common:default_scalars",
         "//math:gradient",
         "//systems/framework",
+    ],
+)
+
+drake_cc_library(
+    name = "transfer_function",
+    srcs = ["transfer_function.cc"],
+    hdrs = ["transfer_function.h"],
+    deps = [
+        "//common:essential",
+        "//common/symbolic:rational_function",
     ],
 )
 
@@ -573,6 +584,14 @@ drake_cc_googletest(
         "//math:gradient",
         "//systems/framework",
         "//systems/framework/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "transfer_function_test",
+    deps = [
+        ":transfer_function",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 

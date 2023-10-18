@@ -125,7 +125,6 @@ MeshType RexpressAsContactMesh(
   }
 }
 
-
 // TODO(SeanCurtis-TRI): All of the tests where we actually examine the mesh
 //  use a mesh with a _single_ triangle. In this case, the face-local index
 //  values are perfectly aligned with the mesh-local index values. This hides
@@ -185,9 +184,7 @@ class MeshHalfSpaceValueTest : public ::testing::Test {
   // equivalent, which we define to mean as some permutation of acceptable
   // windings for the vertices of `fb` yields vertices coincident with those of
   // `fa`.
-  bool AreFacesEquivalent(int a,
-                          const MeshType& mesh_a,
-                          int b,
+  bool AreFacesEquivalent(int a, const MeshType& mesh_a, int b,
                           const MeshType& mesh_b) {
     const auto& fa = mesh_a.element(a);
     const auto& fb = mesh_b.element(b);
@@ -289,9 +286,10 @@ class MeshHalfSpaceValueTest : public ::testing::Test {
   //           (p(V0) + p(V1)) / 2 = p((V0 + V1) / 2)
   //       In other words, we're making sure the field value on the interior is
   //       a linear function consistent with the per-vertex values.
-  ::testing::AssertionResult FieldConsistent(const MeshType& test_mesh_W,
-                    const MeshFieldLinear<Scalar, MeshType>& test_field_W,
-                    const RigidTransform<Scalar>& X_WF) {
+  ::testing::AssertionResult FieldConsistent(
+      const MeshType& test_mesh_W,
+      const MeshFieldLinear<Scalar, MeshType>& test_field_W,
+      const RigidTransform<Scalar>& X_WF) {
     using std::abs;
     const RigidTransform<Scalar> X_FW = X_WF.inverse();
 
@@ -441,10 +439,9 @@ TYPED_TEST_P(MeshHalfSpaceValueTest, InsideOrOnIntersection) {
 
   // An arbitrary relationship between Frames W and F -- avoiding additive and
   // multiplicative identities.
-  const RigidTransform<T> X_WF(
-      RotationMatrix<T>(
-          AngleAxis<T>{M_PI / 7, Vector3<T>{1, 2, 3}.normalized()}),
-      Vector3<T>{-0.25, 0.5, 0.75});
+  const RigidTransform<T> X_WF(RotationMatrix<T>(AngleAxis<T>{
+                                   M_PI / 7, Vector3<T>{1, 2, 3}.normalized()}),
+                               Vector3<T>{-0.25, 0.5, 0.75});
 
   // Case: The triangular mesh lies *completely* inside the half space.
   {
@@ -507,10 +504,9 @@ TYPED_TEST_P(MeshHalfSpaceValueTest, VertexOnHalfspaceIntersection) {
 
   // An arbitrary relationship between Frames W and F -- avoiding additive and
   // multiplicative identities.
-  const RigidTransform<T> X_WF(
-      RotationMatrix<T>(
-          AngleAxis<T>{M_PI / 7, Vector3<T>{1, 2, 3}.normalized()}),
-      Vector3<T>{-0.25, 0.5, 0.75});
+  const RigidTransform<T> X_WF(RotationMatrix<T>(AngleAxis<T>{
+                                   M_PI / 7, Vector3<T>{1, 2, 3}.normalized()}),
+                               Vector3<T>{-0.25, 0.5, 0.75});
 
   // Case: (a) one vertex on the boundary, two vertices outside.
   {
@@ -522,11 +518,11 @@ TYPED_TEST_P(MeshHalfSpaceValueTest, VertexOnHalfspaceIntersection) {
     auto [mesh_W, field_W] = this->builder_W().MakeMeshAndField();
 
     if constexpr (std::is_same_v<MeshType, TriangleSurfaceMesh<T>>) {
-        EXPECT_EQ(mesh_W->num_vertices(), 4);
-        EXPECT_EQ(mesh_W->num_elements(), 3);
+      EXPECT_EQ(mesh_W->num_vertices(), 4);
+      EXPECT_EQ(mesh_W->num_elements(), 3);
     } else {
-        EXPECT_EQ(mesh_W->num_vertices(), 3);
-        EXPECT_EQ(mesh_W->num_elements(), 1);
+      EXPECT_EQ(mesh_W->num_vertices(), 3);
+      EXPECT_EQ(mesh_W->num_elements(), 1);
     }
     // Evidence that when computing the intersecting _polygon_, we copied one
     // vertex and split two edges.
@@ -573,10 +569,9 @@ TYPED_TEST_P(MeshHalfSpaceValueTest, EdgeOnHalfspaceIntersection) {
 
   // An arbitrary relationship between Frames W and F -- avoiding additive and
   // multiplicative identities.
-  const RigidTransform<T> X_WF(
-      RotationMatrix<T>(
-          AngleAxis<T>{M_PI / 7, Vector3<T>{1, 2, 3}.normalized()}),
-      Vector3<T>{-0.25, 0.5, 0.75});
+  const RigidTransform<T> X_WF(RotationMatrix<T>(AngleAxis<T>{
+                                   M_PI / 7, Vector3<T>{1, 2, 3}.normalized()}),
+                               Vector3<T>{-0.25, 0.5, 0.75});
 
   // Case: (a) two vertices on the boundary, one outside.
   {
@@ -587,11 +582,11 @@ TYPED_TEST_P(MeshHalfSpaceValueTest, EdgeOnHalfspaceIntersection) {
     auto [mesh_W, field_W] = this->builder_W().MakeMeshAndField();
 
     if constexpr (std::is_same_v<MeshType, TriangleSurfaceMesh<T>>) {
-        EXPECT_EQ(mesh_W->num_vertices(), 5);
-        EXPECT_EQ(mesh_W->num_elements(), 4);
+      EXPECT_EQ(mesh_W->num_vertices(), 5);
+      EXPECT_EQ(mesh_W->num_elements(), 4);
     } else {
-        EXPECT_EQ(mesh_W->num_vertices(), 4);
-        EXPECT_EQ(mesh_W->num_elements(), 1);
+      EXPECT_EQ(mesh_W->num_vertices(), 4);
+      EXPECT_EQ(mesh_W->num_elements(), 1);
     }
     // Evidence that when computing the intersecting _polygon_, we copied two
     // vertices and split two edges.
@@ -656,10 +651,9 @@ TYPED_TEST_P(MeshHalfSpaceValueTest, QuadrilateralResults) {
 
   // An arbitrary relationship between Frames W and F -- avoiding additive and
   // multiplicative identities.
-  const RigidTransform<T> X_WF(
-      RotationMatrix<T>(
-          AngleAxis<T>{M_PI / 7, Vector3<T>{1, 2, 3}.normalized()}),
-      Vector3<T>{-0.25, 0.5, 0.75});
+  const RigidTransform<T> X_WF(RotationMatrix<T>(AngleAxis<T>{
+                                   M_PI / 7, Vector3<T>{1, 2, 3}.normalized()}),
+                               Vector3<T>{-0.25, 0.5, 0.75});
 
   // Construct one vertex of the triangle to lie outside the half space and the
   // other two to lie inside the half space.
@@ -705,10 +699,10 @@ TYPED_TEST_P(MeshHalfSpaceValueTest, QuadrilateralResults) {
     // default constructor.
     unique_ptr<MeshType> expected_mesh_W;
     if constexpr (std::is_same_v<MeshType, TriangleSurfaceMesh<T>>) {
-    // TODO(SeanCurtis-TRI): When we use the known polygon normal in the
-    // AddPolygonToPolygonMeshData, move this normal definition out.
-    const Vector3<T> nhat_W =
-        X_WF.rotation() * tri_mesh_F.face_normal(0).cast<T>();
+      // TODO(SeanCurtis-TRI): When we use the known polygon normal in the
+      // AddPolygonToPolygonMeshData, move this normal definition out.
+      const Vector3<T> nhat_W =
+          X_WF.rotation() * tri_mesh_F.face_normal(0).cast<T>();
       std::vector<SurfaceTriangle> expected_faces;
       AddPolygonToTriangleMeshData(polygon, nhat_W, &expected_faces,
                                    &expected_vertices_W);
@@ -896,16 +890,14 @@ TYPED_TEST_P(MeshHalfSpaceValueTest, ComputeContactSurfaceInvocation) {
 
   // An arbitrary relationship between Frames W and F -- avoiding additive and
   // multiplicative identities.
-  const RigidTransform<T> X_WF(
-      RotationMatrix<T>(
-          AngleAxis<T>{M_PI / 7, Vector3<T>{1, 2, 3}.normalized()}),
-      Vector3<T>{-0.25, 0.5, 0.75});
+  const RigidTransform<T> X_WF(RotationMatrix<T>(AngleAxis<T>{
+                                   M_PI / 7, Vector3<T>{1, 2, 3}.normalized()}),
+                               Vector3<T>{-0.25, 0.5, 0.75});
 
   // Set B to an arbitrarily chosen pose relative to F.
   RigidTransform<T> X_FB(math::RollPitchYaw<T>(M_PI_4, M_PI_4, M_PI_4),
                          Vector3<T>(1.0, 2.0, 3.0));
   RigidTransform<double> X_FB_d = convert_to_double(X_FB);
-
 
   const TriangleSurfaceMesh<double> tri_mesh_F = CreateBoxMesh(X_FB_d);
   const GeometryId mesh_id = GeometryId::get_new_id();
@@ -1339,7 +1331,7 @@ class MeshHalfSpaceDerivativesTest : public ::testing::Test {
        Finally, we'll tilt the triangle around the Sx axis to break alignment.
        */
       const RotationMatrixd R_SR_d = RotationMatrixd::MakeXRotation(-M_PI / 7) *
-                                   RotationMatrixd::MakeYRotation(M_PI / 4.5);
+                                     RotationMatrixd::MakeYRotation(M_PI / 4.5);
 
       const Vector3d p_RoV2_S = R_SR_d * mesh_R_->vertex(2);
       const Vector3d p_SV2 = p_SN + Vector3d{0, 0, -kDepth};
@@ -1673,8 +1665,8 @@ TEST_F(MeshHalfSpaceDerivativesTest, FaceNormalsWrtPosition) {
     const Matrix3<double> zero_matrix = Matrix3<double>::Zero();
     for (int t = 0; t < surface.tri_mesh_W().num_elements(); ++t) {
       const Vector3<AutoDiffXd> n_W = surface.tri_mesh_W().face_normal(t);
-      EXPECT_TRUE(CompareMatrices(math::ExtractGradient(n_W),
-                                  zero_matrix, 32 * kEps));
+      EXPECT_TRUE(
+          CompareMatrices(math::ExtractGradient(n_W), zero_matrix, 32 * kEps));
     }
   };
 
@@ -1741,8 +1733,8 @@ TEST_F(MeshHalfSpaceDerivativesTest, FaceNormalsWrtOrientation) {
       /* Precision decreases as the mesh gets closer to lying parallel to the
        half space surface. This simple switch accounts for the observed
        behavior in this test. */
-      EXPECT_TRUE(CompareMatrices(math::ExtractGradient(n),
-                                  expected_deriv, theta > 1.3 ? 1e-13 : 5e-15));
+      EXPECT_TRUE(CompareMatrices(math::ExtractGradient(n), expected_deriv,
+                                  theta > 1.3 ? 1e-13 : 5e-15));
     }
   }
 }
@@ -1760,22 +1752,21 @@ TEST_F(MeshHalfSpaceDerivativesTest, Pressure) {
 
    We've already tested the derivative of vertex position w.r.t. Ro, so we can
    make use of that to confirm that the pressure derivatives are consistent. */
-  auto evaluate_pressures = [E = this->pressure_scale_,
-                             X_WS = convert_to_double(this->X_WS_)](
-                                const ContactSurface<AutoDiffXd>& surface,
-                                const RigidTransform<AutoDiffXd>&,
-                                double theta) {
-    constexpr double kEps = std::numeric_limits<double>::epsilon();
-    const Vector3d& n_W = X_WS.rotation().col(2);
-    for (int v = 0; v < surface.tri_mesh_W().num_vertices(); ++v) {
-      const auto& p_WV = surface.tri_mesh_W().vertex(v);
-      const Matrix3<double> dV_dRo = math::ExtractGradient(p_WV);
-      const Vector3d expected_dp_dRo = -E * n_W.transpose() * dV_dRo;
-      const AutoDiffXd& p = surface.tri_e_MN().EvaluateAtVertex(v);
-      EXPECT_TRUE(
-          CompareMatrices(p.derivatives(), expected_dp_dRo, 3 * E * kEps));
-    }
-  };
+  auto evaluate_pressures =
+      [E = this->pressure_scale_, X_WS = convert_to_double(this->X_WS_)](
+          const ContactSurface<AutoDiffXd>& surface,
+          const RigidTransform<AutoDiffXd>&, double theta) {
+        constexpr double kEps = std::numeric_limits<double>::epsilon();
+        const Vector3d& n_W = X_WS.rotation().col(2);
+        for (int v = 0; v < surface.tri_mesh_W().num_vertices(); ++v) {
+          const auto& p_WV = surface.tri_mesh_W().vertex(v);
+          const Matrix3<double> dV_dRo = math::ExtractGradient(p_WV);
+          const Vector3d expected_dp_dRo = -E * n_W.transpose() * dV_dRo;
+          const AutoDiffXd& p = surface.tri_e_MN().EvaluateAtVertex(v);
+          EXPECT_TRUE(
+              CompareMatrices(p.derivatives(), expected_dp_dRo, 3 * E * kEps));
+        }
+      };
 
   TestPositionDerivative(evaluate_pressures);
 }

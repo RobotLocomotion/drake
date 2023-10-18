@@ -159,6 +159,46 @@ def _check_iostream(filename):
     return 1
 
 
+def _check_clang_format_toggles(filename):
+    """Checks that clang-format-{off,on} are correctly paired up.
+    """
+    # These are the needles we'll be looking for.
+    offs = [
+        "// clang-format off\n",
+        "// clang-format off ",
+        "/* clang-format off */",
+        "/* clang-format off to disable clang-format-includes */"
+    ]
+    ons = [
+        "// clang-format on\n",
+        "// clang-format on ",
+        "/* clang-format on */",
+    ]
+
+    with open(filename, mode='r', encoding='utf-8') as file:
+        lines = file.readlines()
+    enabled = True
+    num_errors = 0
+    for i, line in enumerate(lines):
+        line = line + "\n"
+        found_on = any([x in line for x in ons])
+        found_off = any([x in line for x in offs])
+        if found_on:
+            if enabled:
+                print(f"ERROR: {filename}:{i + 1}: "
+                      "This line is redundant; clang-format is already on")
+                num_errors += 1
+            enabled = True
+        if found_off:
+            if not enabled:
+                print(f"ERROR: {filename}:{i + 1}: "
+                      "This line is redundant; clang-format is already off")
+                num_errors += 1
+            enabled = False
+
+    return num_errors
+
+
 def main():
     """Run Drake lint checks on each path specified as a command-line argument.
     Exit 1 if any of the paths are invalid or any lint checks fail.
@@ -182,6 +222,7 @@ def main():
             total_errors += _check_includes(filename)
             total_errors += _check_unguarded_openmp_uses(filename)
             total_errors += _check_iostream(filename)
+            total_errors += _check_clang_format_toggles(filename)
 
     if total_errors == 0:
         sys.exit(0)
