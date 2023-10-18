@@ -1,0 +1,13 @@
+[vgt] Use hidden linker visibility
+
+This prevents ODR violations in case downstream code also links to VGT.
+
+--- include/voxelized_geometry_tools/vgt_namespace.hpp
++++ include/voxelized_geometry_tools/vgt_namespace.hpp
+@@ -17,5 +17,5 @@
+ 
+ #ifndef VGT_NAMESPACE_BEGIN
+-# define VGT_NAMESPACE_BEGIN inline namespace v1 {
++# define VGT_NAMESPACE_BEGIN inline namespace drake_vendor __attribute__ ((visibility ("hidden"))) {
+ #endif
+ 
