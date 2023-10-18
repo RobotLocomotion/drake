@@ -115,7 +115,10 @@ cc_test(
     name = "pointcloud_voxelization_test",
     srcs = ["test/pointcloud_voxelization_test.cpp"],
     env = {"OMP_NUM_THREADS": "2"},
-    tags = ["cpu:2"],
+    tags = [
+        "cpu:2",
+        "no_kcov",
+    ],
     deps = [
         ":voxelized_geometry_tools",
         ":cuda_voxelization_helpers",
@@ -131,7 +134,10 @@ cc_test(
     name = "mesh_rasterization_test",
     srcs = ["test/mesh_rasterization_test.cpp"],
     env = {"OMP_NUM_THREADS": "2"},
-    tags = ["cpu:2"],
+    tags = [
+        "cpu:2",
+        "no_kcov",
+    ],
     deps = [
         ":voxelized_geometry_tools",
         "@common_robotics_utilities",
@@ -144,7 +150,10 @@ cc_test(
     name = "sdf_generation_test",
     srcs = ["test/sdf_generation_test.cpp"],
     env = {"OMP_NUM_THREADS": "2"},
-    tags = ["cpu:2"],
+    tags = [
+        "cpu:2",
+        "no_kcov",
+    ],
     deps = [
         ":voxelized_geometry_tools",
         "@common_robotics_utilities",

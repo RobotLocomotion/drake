@@ -61,7 +61,10 @@ cc_test(
     name = "hausdorff_distance_test",
     srcs = ["test/hausdorff_distance_test.cpp"],
     env = {"OMP_NUM_THREADS": "2"},
-    tags = ["cpu:2"],
+    tags = [
+        "cpu:2",
+        "no_kcov",
+    ],
     deps = [
         ":common_robotics_utilities",
         "@eigen",
@@ -72,6 +75,7 @@ cc_test(
 cc_test(
     name = "maybe_test",
     srcs = ["test/maybe_test.cpp"],
+    tags = ["no_kcov"],
     deps = [
         ":common_robotics_utilities",
         "@eigen",
@@ -84,7 +88,10 @@ cc_test(
     name = "parallelism_test",
     srcs = ["test/parallelism_test.cpp"],
     env = {"OMP_NUM_THREADS": "2"},
-    tags = ["cpu:2"],
+    tags = [
+        "cpu:2",
+        "no_kcov",
+    ],
     timeout = "moderate",
     deps = [
         ":common_robotics_utilities",
@@ -97,7 +104,10 @@ cc_test(
     name = "planning_test",
     srcs = ["test/planning_test.cpp"],
     env = {"OMP_NUM_THREADS": "2"},
-    tags = ["cpu:2"],
+    tags = [
+        "cpu:2",
+        "no_kcov",
+    ],
     deps = [
         ":common_robotics_utilities",
         "@eigen",
@@ -110,6 +120,7 @@ cc_test(
 cc_test(
     name = "task_planning_test",
     srcs = ["test/task_planning_test.cpp"],
+    tags = ["no_kcov"],
     deps = [
         ":common_robotics_utilities",
         "@gtest//:without_main",
@@ -119,6 +130,7 @@ cc_test(
 cc_test(
     name = "utility_test",
     srcs = ["test/utility_test.cpp"],
+    tags = ["no_kcov"],
     deps = [
         ":common_robotics_utilities",
         "@eigen",
@@ -129,6 +141,7 @@ cc_test(
 cc_test(
     name = "voxel_grid_test",
     srcs = ["test/voxel_grid_test.cpp"],
+    tags = ["no_kcov"],
     deps = [
         ":common_robotics_utilities",
         "@eigen",
