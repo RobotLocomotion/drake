@@ -97,7 +97,6 @@ GTEST_TEST(MaxCliqueSolverViaMIPTest, PetersenGraph) {
     }
   }
   TestMaxCliqueViaMIP(graph, 2, possible_solutions);
-  EXPECT_TRUE(false);
 }
 
 }  // namespace

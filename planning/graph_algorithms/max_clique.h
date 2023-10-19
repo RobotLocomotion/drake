@@ -4,7 +4,6 @@
 
 #include <Eigen/Sparse>
 
-#include "drake/common/ssize.h"
 #include "drake/solvers/gurobi_solver.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/mathematical_program_result.h"

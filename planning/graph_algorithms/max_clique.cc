@@ -4,6 +4,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/ssize.h"
 #include "drake/planning/graph_algorithms/graph_algorithms_internal.h"
 #include "drake/solvers/choose_best_solver.h"
 
