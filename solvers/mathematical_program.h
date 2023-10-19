@@ -2614,9 +2614,18 @@ class MathematicalProgram {
       const Eigen::Ref<const MatrixX<symbolic::Expression>>& X);
 
   /**
-   * Replaces the positive semidefinite constraint @p with a diagonally dominant
-   * constraint. This provides a polyhedral (i.e. linear) sufficient, but not
-   * necessary condition to be positive semidefinite
+   * 1. Tighten the positive semidefinite @p constraint with a psoitive
+   * diagonally dominant constraint.
+   * 2. Add the positive diagonally dominant constraint into this
+   * MathematicalProgram.
+   * 3. If the positive semidefinite @p constraint has already been registered
+   * into this MathematicalProgram, then remove it from this
+   * MathematicalProgram.
+   *
+   * This provides a polyhedral (i.e. linear) sufficient, but not
+   * necessary condition for the variables in @p constraint to be positive
+   * semidefinite.
+   *
    * @see AddPositiveDiagonallyDominantMatrixConstraint
    * @p constraint
    * @pre The decision variables contained in constraint have been registered
@@ -2678,9 +2687,18 @@ class MathematicalProgram {
   //@}
 
   /**
-   * Replaces the positive semidefinite @p constraint with a diagonally dominant
-   * dual cone constraint. This provides a polyhedral (i.e. linear) necessary,
-   * but not sufficient condition to be positive semidefinite
+   * 1. Relax the positive semidefinite @p constraint with a diagonally
+   * dominant dual cone constraint.
+   * 2. Add the diagonally dominant dual cone constraint into this
+   * MathematicalProgram.
+   * 3. If the positive semidefinite @p constraint has already been registered
+   * into this MathematicalProgram, then remove it from this
+   * MathematicalProgram.
+   *
+   * This provides a polyhedral (i.e. linear) necessary, but not
+   * sufficient condition for the variables in @p constraint to be positive
+   * semidefinite.
+   *
    * @see AddPositiveDiagonallyDominantDualConeMatrixConstraint
    * @p constraint
    * @pre The decision variables contained in constraint have been registered
@@ -2749,9 +2767,18 @@ class MathematicalProgram {
   //@}
 
   /**
-   * Replaces the positive semidefinite @p constraint with a scaled diagonally
-   * dominant constraint. This provides a second-order cone sufficient, but not
-   * necessary condition to be positive semidefinite
+   * 1. Tighten the positive semidefinite @p constraint with a scaled diagonally
+   * dominant constraint.
+   * 2. Add the scaled diagonally dominant constraint into this
+   * MathematicalProgram.
+   * 3. If the positive semidefinite @p constraint has already been registered
+   * into this MathematicalProgram, then remove it from this
+   * MathematicalProgram.
+   *
+   * This provides a second-order cone sufficient, but not
+   * necessary condition for the variables in @p constraint to be positive
+   * semidefinite.
+   *
    * @see AddScaledDiagonallyDominantMatrixConstraint
    * @p constraint
    * @pre The decision variables contained in constraint have been registered
@@ -2822,9 +2849,18 @@ class MathematicalProgram {
   //@}
 
   /**
-   * Replaces the positive semidefinite @p constraint with a scaled diagonally
-   * dominant dual cone constraint. This provides a second-order cone
-   * necessary, but not sufficient condition to be positive semidefinite
+   * 1. Relax the positive semidefinite @p constraint with a scaled diagonally
+   * dominant dual cone constraint.
+   * 2. Add the scaled diagonally dominant dual cone constraint into this
+   * MathematicalProgram.
+   * 3. If the positive semidefinite @p constraint has already been registered
+   * into this MathematicalProgram, then remove it from this
+   * MathematicalProgram.
+   *
+   * This provides a second-order cone necessary, but not
+   * sufficient condition for the variables in @p constraint to be positive
+   * semidefinite.
+   *
    * @see AddScaledDiagonallyDominantDualConeMatrixConstraint
    * @p constraint
    * @pre The decision variables contained in constraint have been registered
