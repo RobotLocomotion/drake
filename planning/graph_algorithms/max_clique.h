@@ -1,5 +1,7 @@
 #pragma once
 
+#include <optional>
+
 #include <Eigen/Sparse>
 
 #include "drake/common/ssize.h"
@@ -14,9 +16,9 @@ namespace planning {
 namespace graph_algorithms {
 
 /**
- * The problem of finding the maximum clique in a graph is known to a
+ * The problem of finding the maximum clique in a graph is known to be
  * NP-complete. This base class provides a unified interface for various
- * implementations of a solver for this problem which may be solved rigorously,
+ * implementations of a solver for this problem which may be solved rigorously
  * or via heuristics.
  */
 class MaxCliqueSolverBase {
@@ -47,18 +49,18 @@ class MaxCliqueSolverViaMIP final : public MaxCliqueSolverBase {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MaxCliqueSolverViaMIP);
   MaxCliqueSolverViaMIP(
-      const solvers::SolverId& solver_id = solvers::MosekSolver::id(),
+      const std::optional<solvers::SolverId> solver_id = std::nullopt,
       const solvers::SolverOptions& options = solvers::SolverOptions());
 
   VectorX<bool> SolveMaxClique(
       const Eigen::SparseMatrix<bool>& adjacency_matrix);
 
-  solvers::SolverId solver_id() { return solver_id_; }
+  std::optional<solvers::SolverId> solver_id() { return solver_id_; }
 
   solvers::SolverOptions options() { return options_; }
 
  private:
-  solvers::SolverId solver_id_;
+  std::optional<solvers::SolverId> solver_id_;
   solvers::SolverOptions options_;
 };
 
@@ -76,12 +78,13 @@ struct MaxCliqueOptions {
  * each pair of vertices is connected by an edge (i.e. a fully connected
  * subgraph). This problem is known to be NP-complete, and so the choice of
  * solvers in options determines whether the return of this function is the true
- * maximum clique in the subgraph (which may take very long to compute), or just
- * some large subgraph.
+ * maximum clique in the subgraph (which may take very long to compute), or only
+ * an approximate solution found via heuristics.
  * @param adjacency_matrix a symmetric (0,1)-matrix encoding the edge
  * relationship
  * @param options options for solving the max-clique problem.
- * @return
+ * @return A binary vector with the same indexing as the adjacency matrix, with
+ * 1 indicating membership in the clique.
  */
 VectorX<bool> MaxClique(const Eigen::SparseMatrix<bool>& adjacency_matrix,
                         const MaxCliqueOptions& options);

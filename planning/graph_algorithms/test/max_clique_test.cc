@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/planning/graph_algorithms/test/common_graphs.h"
+
 namespace drake {
 namespace planning {
 namespace graph_algorithms {
@@ -39,7 +40,7 @@ void TestMaxCliqueViaMIP(
 GTEST_TEST(MaxCliqueSolverViaMIPTest, TestConstructor) {
   // Test the default constructor.
   MaxCliqueSolverViaMIP solver1;
-  EXPECT_EQ(solver1.solver_id(), solvers::MosekSolver::id());
+  EXPECT_EQ(solver1.solver_id(), std::nullopt);
 
   // Test the constructor with only the solver id passed
   MaxCliqueSolverViaMIP solver2{solvers::GurobiSolver::id()};
@@ -64,7 +65,7 @@ GTEST_TEST(MaxCliquMaxCliqueSolverViaMIPTesteTest, CompleteGraph) {
 
 GTEST_TEST(MaxCliqueSolverViaMIPTest, BullGraph) {
   VectorX<bool> solution(5);
-  // The largest stable set is (1,2,3)
+  // The largest clique is (1,2,3)
   solution << false, true, true, true, false;
   std::vector<VectorX<bool>> possible_solutions{solution};
   TestMaxCliqueViaMIP(BullGraph(), 3, possible_solutions);
@@ -81,7 +82,7 @@ GTEST_TEST(MaxCliqueSolverViaMIPTest, ButterflyGraph) {
   TestMaxCliqueViaMIP(ButterflyGraph(), 3, possible_solutions);
 }
 
-GTEST_TEST(MaxStableSetSolverViaMIPTest, PetersenGraph) {
+GTEST_TEST(MaxCliqueSolverViaMIPTest, PetersenGraph) {
   // The petersen graph has a clique number of size 2, so all edges are possible
   // solutions.
   Eigen::SparseMatrix<bool> graph = PetersenGraph();
@@ -96,6 +97,7 @@ GTEST_TEST(MaxStableSetSolverViaMIPTest, PetersenGraph) {
     }
   }
   TestMaxCliqueViaMIP(graph, 2, possible_solutions);
+  EXPECT_TRUE(false);
 }
 
 }  // namespace

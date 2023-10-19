@@ -5,6 +5,11 @@ load(
     "drake_cc_package_library",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load(
+    "//tools/skylark:test_tags.bzl",
+    "gurobi_test_tags",
+    "mosek_test_tags",
+)
 
 package(default_visibility = ["//visibility:public"])
 
@@ -14,23 +19,6 @@ drake_cc_package_library(
     deps = [
         ":graph_algorithms_internal",
         ":max_clique",
-        ":max_stable_set",
-    ],
-)
-
-drake_cc_library(
-    name = "max_stable_set",
-    srcs = ["max_stable_set.cc"],
-    hdrs = [
-        "max_stable_set.h",
-    ],
-    deps = [
-        "//solvers:choose_best_solver",
-        "//solvers:gurobi_solver",
-        "//solvers:mathematical_program",
-        "//solvers:mathematical_program_result",
-        "//solvers:mosek_solver",
-        "//solvers:solve",
     ],
 )
 
@@ -42,7 +30,7 @@ drake_cc_library(
     ],
     deps = [
         ":graph_algorithms_internal",
-        ":max_stable_set",
+        "//solvers:choose_best_solver",
         "//solvers:gurobi_solver",
         "//solvers:mathematical_program",
         "//solvers:mathematical_program_result",
@@ -78,17 +66,9 @@ drake_cc_library(
 )
 
 drake_cc_googletest(
-    name = "max_stable_set_test",
-    srcs = ["test/max_stable_set_test.cc"],
-    deps = [
-        ":common_graphs",
-        ":max_stable_set",
-    ],
-)
-
-drake_cc_googletest(
     name = "max_clique_test",
     srcs = ["test/max_clique_test.cc"],
+    tags = gurobi_test_tags() + mosek_test_tags(),
     deps = [
         ":common_graphs",
         ":max_clique",
