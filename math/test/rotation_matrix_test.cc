@@ -1295,8 +1295,8 @@ GTEST_TEST(RotationMatrixTest, MakeFromOneUnitVectorExceptions) {
   tol_sqrt = 2 * std::sqrt(kEpsilon);  // Small enough to not throw.
   test_vector = Vector3<double>(1, 0, tol_sqrt);
   RotationMatrix<double> R;
-  DRAKE_EXPECT_NO_THROW(R =
-      RotationMatrix<double>::MakeFromOneUnitVector(test_vector, axis_index));
+  DRAKE_EXPECT_NO_THROW(R = RotationMatrix<double>::MakeFromOneUnitVector(
+                            test_vector, axis_index));
   EXPECT_TRUE(R.IsValid());
 }
 

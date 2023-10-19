@@ -388,7 +388,6 @@ double ProjectMatToRotMatWithAxis(const Eigen::Matrix3d& M,
   return theta;
 }
 
-
 template <typename T>
 Vector3<T> RotationMatrix<T>::NormalizeOrThrow(const Vector3<T>& v,
                                                const char* function_name) {
