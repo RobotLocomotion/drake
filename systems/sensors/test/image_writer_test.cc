@@ -553,10 +553,11 @@ TEST_F(ImageWriterTest, SingleConfiguredPort) {
   // Count gets properly initialized to zero (no images written from this port).
   EXPECT_EQ(0, tester.port_count(port.get_index()));
 
-  // Confirm a reported periodic event. The configuration parameters above are
-  // called out below in commented lines.
+  // Confirm a reported periodic event and a forced publish event. The
+  // configuration parameters above are called out below in commented lines.
   {
     auto events = writer.AllocateCompositeEventCollection();
+    auto forced_events = writer.AllocateForcedPublishEventCollection();
     auto context = writer.AllocateContext();
     context->SetTime(0.);
     double next_time = writer.CalcNextUpdateTime(*context, events.get());
@@ -567,6 +568,7 @@ TEST_F(ImageWriterTest, SingleConfiguredPort) {
     EXPECT_FALSE(events->HasDiscreteUpdateEvents());
     EXPECT_FALSE(events->HasUnrestrictedUpdateEvents());
     EXPECT_TRUE(events->HasPublishEvents());
+    EXPECT_TRUE(forced_events->HasEvents());
 
     {
       const auto& publish_events =
@@ -577,6 +579,16 @@ TEST_F(ImageWriterTest, SingleConfiguredPort) {
       const auto& event = publish_events.front();
       EXPECT_EQ(TriggerType::kPeriodic, event->get_trigger_type());
 
+      const auto& forced_publish_events =
+          dynamic_cast<const LeafEventCollection<PublishEvent<double>>&>(
+              *forced_events)
+              .get_events();
+      // The event collection should have two events: ImageWriter's explicitly
+      // declared event and the collection's built-in no-op event.
+      ASSERT_EQ(2u, forced_publish_events.size());
+      const auto& forced_event = forced_publish_events.front();
+      EXPECT_EQ(TriggerType::kForced, forced_event->get_trigger_type());
+
       // With no connection on the input port, publishing this event will result
       // in an error.
       DRAKE_EXPECT_THROWS_MESSAGE(
@@ -586,7 +598,7 @@ TEST_F(ImageWriterTest, SingleConfiguredPort) {
       // Confirms that a valid publish increments the counter.
       port.FixValue(context.get(), test_image<PixelType::kRgba8U>());
 
-      const std::string expected_name = tester.MakeFileName(
+      std::string expected_name = tester.MakeFileName(
           tester.port_format(port.get_index()), pixel_type, context->get_time(),
           port_name, tester.port_count(port.get_index()));
       fs::path expected_file(expected_name);
@@ -597,6 +609,30 @@ TEST_F(ImageWriterTest, SingleConfiguredPort) {
       EXPECT_TRUE(fs::exists(expected_file));
       EXPECT_EQ(1, tester.port_count(port.get_index()));
       add_file_for_cleanup(expected_file.string());
+
+      // Confirms that a valid forced publish increments the counter and writes
+      // an image. We keep the image saved, so that we can immediately test a
+      // redundant call to ForcedPublish() with the same context.
+      context->SetTime(1e-6);
+      expected_name = tester.MakeFileName(
+          tester.port_format(port.get_index()), pixel_type, context->get_time(),
+          port_name, tester.port_count(port.get_index()));
+      expected_file.assign(expected_name);
+      EXPECT_FALSE(fs::exists(expected_file));
+      writer.ForcedPublish(*context);
+      EXPECT_TRUE(fs::exists(expected_file));
+      EXPECT_EQ(2, tester.port_count(port.get_index()));
+
+      // Confirms that invoking ForcedPublish() a second time simply redundantly
+      // writes the image.
+      writer.ForcedPublish(*context);
+      EXPECT_TRUE(fs::exists(expected_file));
+      EXPECT_EQ(3, tester.port_count(port.get_index()));
+      add_file_for_cleanup(expected_file.string());
+
+      // Confirms resetting count to zero works.
+      writer.ResetAllImageCounts();
+      EXPECT_EQ(0, tester.port_count(port.get_index()));
     }
 
     // Confirm period is correct.
