@@ -6,6 +6,8 @@
 #include "drake/common/test_utilities/symbolic_test_util.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/solve.h"
+#include "drake/common/ssize.h"
+
 
 using drake::symbolic::test::ExprEqual;
 
