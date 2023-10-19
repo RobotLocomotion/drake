@@ -69,6 +69,7 @@ drake_cc_library(
 drake_cc_googletest(
     name = "max_clique_test",
     srcs = ["test/max_clique_test.cc"],
+    tags = gurobi_test_tags() + mosek_test_tags(),
     deps = [
         ":common_graphs",
         ":max_clique",
