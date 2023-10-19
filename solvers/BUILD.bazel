@@ -30,6 +30,7 @@ drake_cc_package_library(
     visibility = ["//visibility:public"],
     deps = [
         ":aggregate_costs_constraints",
+        ":approximate_semidefinite_program",
         ":augmented_lagrangian",
         ":binding",
         ":branch_and_bound",
@@ -91,6 +92,15 @@ drake_cc_library(
     deps = [
         ":aggregate_costs_constraints",
     ],
+)
+
+drake_cc_library(
+    name = "approximate_semidefinite_program",
+    srcs = ["approximate_semidefinite_program.cc"],
+    hdrs = ["approximate_semidefinite_program.h"],
+    interface_deps = [
+        ":mathematical_program",
+    ]
 )
 
 drake_cc_library(
