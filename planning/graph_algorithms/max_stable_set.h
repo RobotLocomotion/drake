@@ -17,7 +17,7 @@ namespace planning {
 namespace graph_algorithms {
 
 /**
- * The problem of finding the maximum clique in a graph is known to a
+ * The problem of finding the maximum stable set in a graph is known to a
  * NP-complete. This base class provides a unified interface for various
  * implementations of a solver for this problem which may be solved rigorously,
  * or via heuristics.
@@ -76,14 +76,15 @@ struct MaxStableSetOptions {
 /**
  * Given the adjacency matrix of an undirected graph, find the maximum stable
  * set within the graph. A stable set is a collection of vertices in a graph
- * such that each no pair of vertices is connected by an edge. This problem is
+ * such that no pair of vertices is connected by an edge. This problem is
  * known to be NP-complete, and so the choice of solvers in options determines
  * whether the return of this function is the true maximum stable set in the
- * subgraph (which may take very long to compute), or just some large subgraph.
+ * subgraph (which may take very long to compute), or only an approximate
+ * solution found via heuristics.
  * @param adjacency_matrix a symmetric (0,1)-matrix encoding the edge
  * relationship
  * @param options options for solving the max stable set problem.
- * @return A binary vector with the samee indexing as the adjacency matrix, with
+ * @return A binary vector with the same indexing as the adjacency matrix, with
  * 1 indicating membership in the stable set.
  */
 VectorX<bool> MaxStableSet(const Eigen::SparseMatrix<bool>& adjacency_matrix,
