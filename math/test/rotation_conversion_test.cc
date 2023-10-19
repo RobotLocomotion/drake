@@ -12,18 +12,17 @@
 #include "drake/math/quaternion.h"
 #include "drake/math/rotation_matrix.h"
 
+using Eigen::AngleAxis;
+using Eigen::AngleAxisd;
 using Eigen::Matrix;
 using Eigen::Matrix3d;
+using Eigen::Quaternion;
 using Eigen::Quaterniond;
 using Eigen::Vector3d;
 using Eigen::Vector4d;
-using Eigen::AngleAxis;
-using Eigen::AngleAxisd;
-using Eigen::Quaternion;
-using Eigen::Quaterniond;
-using std::sin;
 using std::cos;
 using std::numeric_limits;
+using std::sin;
 
 namespace drake {
 namespace math {
@@ -59,7 +58,8 @@ GTEST_TEST(EigenEulerAngleTest, BodyXYZ) {
   const Matrix3d bodyXYZ_rotmat =
       (RotationMatrix<double>::MakeXRotation(input_angles(0)) *
        RotationMatrix<double>::MakeYRotation(input_angles(1)) *
-       RotationMatrix<double>::MakeZRotation(input_angles(2))).matrix();
+       RotationMatrix<double>::MakeZRotation(input_angles(2)))
+          .matrix();
   const Vector3d output_angles = bodyXYZ_rotmat.eulerAngles(0, 1, 2);
   // input_angles.isApprox(output_angles) is a valid test (rathan than
   // comparing the converted quaternions) since all the angles are between
@@ -74,7 +74,8 @@ GTEST_TEST(EigenEulerAngleTest, SpaceXYZ) {
   const Matrix3d spaceXYZ_rotmat =
       (RotationMatrix<double>::MakeZRotation(input_angles(0)) *
        RotationMatrix<double>::MakeYRotation(input_angles(1)) *
-       RotationMatrix<double>::MakeXRotation(input_angles(2))).matrix();
+       RotationMatrix<double>::MakeXRotation(input_angles(2)))
+          .matrix();
   const Vector3d output_angles = spaceXYZ_rotmat.eulerAngles(2, 1, 0);
   // input_angles.isApprox(output_angles) is a valid test (rathan than
   // comparing the converted quaternions) since all the angles are between
@@ -89,7 +90,8 @@ GTEST_TEST(EigenEulerAngleTest, BodyZYZ) {
   const Matrix3d bodyZYZ_angles =
       (RotationMatrix<double>::MakeZRotation(input_angles(0)) *
        RotationMatrix<double>::MakeYRotation(input_angles(1)) *
-       RotationMatrix<double>::MakeZRotation(input_angles(2))).matrix();
+       RotationMatrix<double>::MakeZRotation(input_angles(2)))
+          .matrix();
   const Vector3d output_angles = bodyZYZ_angles.eulerAngles(2, 1, 2);
   // input_angles.isApprox(output_angles) is a valid test (rathan than
   // comparing the converted quaternions) since all the angles are between
@@ -167,12 +169,10 @@ class RotationConversionTest : public ::testing::Test {
     rpy_test_cases_.push_back(pitch_near_neg_half_piD);
 
     // non-singular cases
-    auto roll = Eigen::VectorXd::LinSpaced(kSweepSize,
-                                           -0.99 * M_PI, M_PI);
-    auto pitch = Eigen::VectorXd::LinSpaced(kSweepSize,
-                                            -0.49 * M_PI, 0.49 * M_PI);
-    auto yaw = Eigen::VectorXd::LinSpaced(kSweepSize,
-                                          -0.99 * M_PI, M_PI);
+    auto roll = Eigen::VectorXd::LinSpaced(kSweepSize, -0.99 * M_PI, M_PI);
+    auto pitch =
+        Eigen::VectorXd::LinSpaced(kSweepSize, -0.49 * M_PI, 0.49 * M_PI);
+    auto yaw = Eigen::VectorXd::LinSpaced(kSweepSize, -0.99 * M_PI, M_PI);
     for (int i = 0; i < roll.size(); ++i) {
       for (int j = 0; j < pitch.size(); ++j) {
         for (int k = 0; k < yaw.size(); ++k) {
@@ -274,8 +274,8 @@ class RotationConversionTest : public ::testing::Test {
     auto a_x = Eigen::VectorXd::LinSpaced(kSweepSize, -1, 1);
     auto a_y = Eigen::VectorXd::LinSpaced(kSweepSize, -1, 1);
     auto a_z = Eigen::VectorXd::LinSpaced(kSweepSize, -1, 1);
-    auto a_angle = Eigen::VectorXd::LinSpaced(kSweepSize,
-                                              -0.95 * M_PI, 0.95 * M_PI);
+    auto a_angle =
+        Eigen::VectorXd::LinSpaced(kSweepSize, -0.95 * M_PI, 0.95 * M_PI);
     for (int i = 0; i < a_x.size(); ++i) {
       for (int j = 0; j < a_y.size(); ++j) {
         for (int k = 0; k < a_z.size(); ++k) {
@@ -400,8 +400,7 @@ TEST_F(RotationConversionTest, rpy2rotmatTest) {
     // Compute rotation matrix by rotz(rpy(2))*roty(rpy(1))*rotx(rpy(0)),
     // then compare the result with RotationMatrix(RollPitchYaw).
     const RotationMatrix<double> R_from_rpy(rpyi);
-    EXPECT_TRUE(
-        R_from_rpy.IsNearlyEqualTo(R_from_quaternion, 512 * kEpsilon));
+    EXPECT_TRUE(R_from_rpy.IsNearlyEqualTo(R_from_quaternion, 512 * kEpsilon));
 
     // RollPitchYaw(RotationMatrix) is inverse of RotationMatrix(RollPitchYaw).
     const RollPitchYaw<double> rpy_expected(R_from_rpy);
@@ -421,4 +420,3 @@ TEST_F(RotationConversionTest, rpy2QuatTest) {
 }  // namespace
 }  // namespace math
 }  // namespace drake
-

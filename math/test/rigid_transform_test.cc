@@ -30,6 +30,7 @@ RotationMatrix<double> GetRotationMatrixA() {
   const double c1 = std::cos(q1), c2 = std::cos(q2), c3 = std::cos(q3);
   const double s1 = std::sin(q1), s2 = std::sin(q2), s3 = std::sin(q3);
   Matrix3d m;
+  // clang-format off
   m << c2 * c3,
        s3 * c1 + s1 * s2 * c3,
        s1 * s3 - s2 * c1 * c3,
@@ -39,6 +40,7 @@ RotationMatrix<double> GetRotationMatrixA() {
        s2,
       -s1 * c2,
        c1 * c2;
+  // clang-format on
   return RotationMatrix<double>(m);
 }
 
@@ -52,6 +54,7 @@ RotationMatrix<double> GetRotationMatrixB() {
   const double c1 = std::cos(r1), c2 = std::cos(r2), c3 = std::cos(r3);
   const double s1 = std::sin(r1), s2 = std::sin(r2), s3 = std::sin(r3);
   Matrix3d m;
+  // clang-format off
   m << c2,
        s1 * s2,
       -s2 * c1,
@@ -61,6 +64,7 @@ RotationMatrix<double> GetRotationMatrixB() {
        s2 * c3,
       -s3 * c1 - s1 * c2 * c3,
        c1 * c2 * c3 - s1 * s3;
+  // clang-format on
   return RotationMatrix<double>(m);
 }
 
@@ -69,15 +73,21 @@ Matrix3d GetBadRotationMatrix() {
   const double theta = 0.5;
   const double cos_theta = std::cos(theta), sin_theta = std::sin(theta);
   Matrix3d m;
-  m << 1, 9000*kEpsilon, 9000*kEpsilon,
-       0, cos_theta, sin_theta,
-       0, -sin_theta, cos_theta;
+  // clang-format off
+  m << 1, 9000 * kEpsilon, 9000 * kEpsilon,
+       0, cos_theta,       sin_theta,
+       0, -sin_theta,      cos_theta;
+  // clang-format on
   return m;
 }
 
 // Helper functions to create generic position vectors.
-Vector3d GetPositionVectorA() { return Vector3d(2, 3, 4); }
-Vector3d GetPositionVectorB() { return Vector3d(5, 6, 7); }
+Vector3d GetPositionVectorA() {
+  return Vector3d(2, 3, 4);
+}
+Vector3d GetPositionVectorB() {
+  return Vector3d(5, 6, 7);
+}
 
 // Helper function to create a generic RigidTransform.
 RigidTransform<double> GetRigidTransformA() {
@@ -217,11 +227,14 @@ GTEST_TEST(RigidTransform, ConstructorFromMatrix4) {
     DRAKE_EXPECT_NO_THROW(RigidTransformd Xm(pose));
     pose(3, 0) = kEpsilon;
     EXPECT_THROW(RigidTransformd Xm(pose), std::exception);
-    pose(3, 0) = 0;  pose(3, 1) = kEpsilon;
+    pose(3, 0) = 0;
+    pose(3, 1) = kEpsilon;
     EXPECT_THROW(RigidTransformd Xm(pose), std::exception);
-    pose(3, 1) = 0;  pose(3, 2) = kEpsilon;
+    pose(3, 1) = 0;
+    pose(3, 2) = kEpsilon;
     EXPECT_THROW(RigidTransformd Xm(pose), std::exception);
-    pose(3, 2) = 0;  pose(3, 3) = 1 + 2 * kEpsilon;
+    pose(3, 2) = 0;
+    pose(3, 3) = 1 + 2 * kEpsilon;
     EXPECT_THROW(RigidTransformd Xm(pose), std::exception);
   }
 }
@@ -253,11 +266,14 @@ GTEST_TEST(RigidTransform, ConstructorFromEigenExpression) {
     DRAKE_EXPECT_NO_THROW(RigidTransformd Xm(pose4 * pose4));
     pose4(3, 0) = kEpsilon;
     EXPECT_THROW(RigidTransformd Xm(pose4 * pose4), std::exception);
-    pose4(3, 0) = 0;  pose4(3, 1) = kEpsilon;
+    pose4(3, 0) = 0;
+    pose4(3, 1) = kEpsilon;
     EXPECT_THROW(RigidTransformd Xm(pose4 * pose4), std::exception);
-    pose4(3, 1) = 0;  pose4(3, 2) = kEpsilon;
+    pose4(3, 1) = 0;
+    pose4(3, 2) = kEpsilon;
     EXPECT_THROW(RigidTransformd Xm(pose4 * pose4), std::exception);
-    pose4(3, 2) = 0;  pose4(3, 3) = 1 + 2 * kEpsilon;
+    pose4(3, 2) = 0;
+    pose4(3, 3) = 1 + 2 * kEpsilon;
     EXPECT_THROW(RigidTransformd Xm(pose4 * pose4), std::exception);
   }
 
@@ -519,7 +535,7 @@ GTEST_TEST(RigidTransform, CastFromDoubleToAutoDiffXd) {
   // To avoid a (perhaps) tautological test, check element-by-element equality.
   const Matrix4<double>& m_double = T_double.GetAsMatrix4();
   const Matrix4<AutoDiffXd>& m_autodiff = T_autodiff.GetAsMatrix4();
-  for (int i = 0;  i < 4; i++) {
+  for (int i = 0; i < 4; i++) {
     for (int j = 0; j < 4; j++) {
       const double mij_double = m_double(i, j);
       const AutoDiffXd& mij_autodiff = m_autodiff(i, j);
@@ -579,9 +595,11 @@ GTEST_TEST(RigidTransform, SymbolicRigidTransformSimpleTests) {
 GTEST_TEST(RigidTransform, SymbolicRigidTransformThrowsExceptions) {
   const Variable x("x");  // Arbitrary variable.
   Matrix3<Expression> m_symbolic;
+  // clang-format off
   m_symbolic << 1, 0, 0,
                 0, 1, 0,
                 0, 0, x;  // Not necessarily an identity matrix.
+  // clang-format on
   RotationMatrix<Expression> R_symbolic(m_symbolic);
   const Vector3<Expression> p_symbolic(0, 0, 0);
   const RigidTransform<Expression> X_symbolic(R_symbolic, p_symbolic);
@@ -680,7 +698,7 @@ GTEST_TEST(RigidTransform, OperatorMultiplyByTranslation3AndViceVersa) {
   const RotationMatrixd& R_CA = X_CA.rotation();
   const RotationMatrixd& R_BA = X_BA.rotation();
   EXPECT_TRUE(R_CA.IsExactlyEqualTo(R_BA));
-  const RotationMatrixd  R_CB = RotationMatrixd::Identity();
+  const RotationMatrixd R_CB = RotationMatrixd::Identity();
 
   // Verify the translation portion of the previous multiply.
   const Vector3d& p_CoBo_C = X_CB.translation();
@@ -739,9 +757,12 @@ GTEST_TEST(RigidTransform, OperatorMultiplyByMatrix3X) {
   // Multiply the RigidTransform X_AB by 3 position vectors to test operator*
   // for a 3 x n matrix, where n = 3 is known before compilation.
   Eigen::Matrix3d p_BoQ_B;
-  const Vector3d p_BoQ1_B(-12, -9, 7);   p_BoQ_B.col(0) = p_BoQ1_B;
-  const Vector3d p_BoQ2_B(-11, -8, 10);  p_BoQ_B.col(1) = p_BoQ2_B;
-  const Vector3d p_BoQ3_B(-10, -7, 12);  p_BoQ_B.col(2) = p_BoQ3_B;
+  const Vector3d p_BoQ1_B(-12, -9, 7);
+  p_BoQ_B.col(0) = p_BoQ1_B;
+  const Vector3d p_BoQ2_B(-11, -8, 10);
+  p_BoQ_B.col(1) = p_BoQ2_B;
+  const Vector3d p_BoQ3_B(-10, -7, 12);
+  p_BoQ_B.col(2) = p_BoQ3_B;
   const auto p_AoQ_A = X_AB * p_BoQ_B;
 
   // Ensure the compiler's declared type for p_AoQ_A has the proper number of
@@ -773,18 +794,18 @@ GTEST_TEST(RigidTransform, OperatorMultiplyByMatrix3X) {
 
   // Test RigidTransform operator* can multiply an Eigen expression, namely the
   // Eigen expression arising from a 3x1 matrix multiplied by a 1x4 matrix.
-  const Eigen::MatrixXd p_AoR_A = X_AB * (Eigen::Vector3d(1, 2, 3) *
-                                          Eigen::RowVector4d(1, 2, 3, 4));
+  const Eigen::MatrixXd p_AoR_A =
+      X_AB * (Eigen::Vector3d(1, 2, 3) * Eigen::RowVector4d(1, 2, 3, 4));
   EXPECT_EQ(p_AoR_A.rows(), 3);
   EXPECT_EQ(p_AoR_A.cols(), 4);
 
   // Test RigidTransform operator* can multiply a different looking Eigen
   // expression that produces the same result.
-  const auto p_AoR_A_expected = X_AB *
-       (Eigen::MatrixXd(3, 4) << Eigen::Vector3d(1, 2, 3),
-                                 Eigen::Vector3d(2, 4, 6),
-                                 Eigen::Vector3d(3, 6, 9),
-                                 Eigen::Vector3d(4, 8, 12)).finished();
+  const auto p_AoR_A_expected =
+      X_AB * (Eigen::MatrixXd(3, 4) << Eigen::Vector3d(1, 2, 3),
+              Eigen::Vector3d(2, 4, 6), Eigen::Vector3d(3, 6, 9),
+              Eigen::Vector3d(4, 8, 12))
+                 .finished();
   EXPECT_EQ(decltype(p_AoR_A_expected)::RowsAtCompileTime, 3);
   EXPECT_EQ(p_AoR_A_expected.cols(), 4);
   EXPECT_TRUE(CompareMatrices(p_AoR_A, p_AoR_A_expected, kEpsilon));
@@ -838,7 +859,8 @@ void VerifyStreamInsertionOperator(const RigidTransform<T> X_AB,
   // to a RollPitchYaw, the input rpy_double may slightly mismatch output, so
   // stream_string may be something like
   // “rpy = 0.12499999999999997 0.25 0.4999999999999999 xyz = 4.0 3.0 2.0
-  std::stringstream stream;  stream << X_AB;
+  std::stringstream stream;
+  stream << X_AB;
   const std::string stream_string = stream.str();
   ASSERT_EQ(stream_string.find("rpy = "), 0);
   const char* cstring = stream_string.c_str() + 6;  // Start of double value.
@@ -890,7 +912,8 @@ GTEST_TEST(RigidTransform, StreamInsertionOperator) {
   const Vector3<Expression> xyz_symbolic(x, y, z);
   RollPitchYaw<Expression> rpy_symbolic(roll, pitch, yaw);
   RigidTransform<Expression> X_symbolic(rpy_symbolic, xyz_symbolic);
-  std::stringstream stream;  stream << X_symbolic;
+  std::stringstream stream;
+  stream << X_symbolic;
   const std::string expected_string =
       "rpy = <symbolic> <symbolic> <symbolic> xyz = x y z";
   EXPECT_EQ(expected_string, stream.str());

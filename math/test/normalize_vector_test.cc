@@ -6,15 +6,15 @@
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 
-using Eigen::VectorXd;
 using Eigen::MatrixXd;
+using Eigen::VectorXd;
 
 namespace drake {
 namespace math {
 namespace {
 
 // Tests the value and the gradient of NormalizeVector function.
-template<int nx>
+template <int nx>
 void NormalizeVectorTestFun(const Eigen::Matrix<double, nx, 1>& x) {
   Eigen::Matrix<double, nx, 1> x_normalized;
   typename Gradient<Eigen::Matrix<double, nx, 1>, nx, 1>::type dx_normalized;
@@ -26,12 +26,11 @@ void NormalizeVectorTestFun(const Eigen::Matrix<double, nx, 1>& x) {
   auto x_norm = x_autodiff.norm();
   auto x_normalized_autodiff = x_autodiff / x_norm;
 
-  EXPECT_TRUE(CompareMatrices(
-      x_normalized, ExtractValue(x_normalized_autodiff),
-      1E-10, MatrixCompareType::absolute));
-  EXPECT_TRUE(CompareMatrices(
-      dx_normalized, ExtractGradient(x_normalized_autodiff),
-      1E-10, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(x_normalized, ExtractValue(x_normalized_autodiff),
+                              1E-10, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(dx_normalized,
+                              ExtractGradient(x_normalized_autodiff), 1E-10,
+                              MatrixCompareType::absolute));
 }
 
 GTEST_TEST(NormalizeVectorTest, NormalizeVector) {

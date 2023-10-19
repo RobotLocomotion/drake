@@ -18,8 +18,8 @@ using Eigen::Vector3d;
 // Input parameters:
 //   w_AB: angular velocity of B in A.
 //   DtB_w_AB: Time derivative of w_AB in the B frame.
-void ConvertTimeDerivativeOfAngularVelocity(
-    const Vector3d& w_AB, const Vector3d& DtB_w_AB) {
+void ConvertTimeDerivativeOfAngularVelocity(const Vector3d& w_AB,
+                                            const Vector3d& DtB_w_AB) {
   const double kAbsoluteTolerance = 2 * std::numeric_limits<double>::epsilon();
   Vector3d DtA_w_AB = ConvertTimeDerivativeToOtherFrame(w_AB, DtB_w_AB, w_AB);
   EXPECT_TRUE(CompareMatrices(DtA_w_AB, DtB_w_AB, kAbsoluteTolerance,
@@ -28,10 +28,10 @@ void ConvertTimeDerivativeOfAngularVelocity(
 
 GTEST_TEST(ConvertTimeDerivativeToOtherFrame, OnAngularVelocity) {
   // Make a number of random tests.
-  ConvertTimeDerivativeOfAngularVelocity(
-      Vector3d(0.0, 0.0, 0.0), Vector3d(0.0, 1.0, 0.0));
-  ConvertTimeDerivativeOfAngularVelocity(
-      Vector3d(-1.0, 0.0, 2.0), Vector3d(3.0, 1.0, 4.0));
+  ConvertTimeDerivativeOfAngularVelocity(Vector3d(0.0, 0.0, 0.0),
+                                         Vector3d(0.0, 1.0, 0.0));
+  ConvertTimeDerivativeOfAngularVelocity(Vector3d(-1.0, 0.0, 2.0),
+                                         Vector3d(3.0, 1.0, 4.0));
 }
 
 // Consider a carousel rotating with angular velocity w_WC, where W is the
@@ -53,8 +53,8 @@ GTEST_TEST(ConvertTimeDerivativeToOtherFrame, OnAngularVelocity) {
 //          and C rotates according to the right-hand-rule around the z-axis.
 //   theta_dot: the rate of change of theta.
 //   swing_up_speed: the (signed) magnitude of the horse's up and down motion.
-void HorseOnCarousel(double horse_radius,
-                     double theta, double theta_dot, double swing_up_speed) {
+void HorseOnCarousel(double horse_radius, double theta, double theta_dot,
+                     double swing_up_speed) {
   using std::cos;
   using std::sin;
   const double kAbsoluteTolerance = 2 * std::numeric_limits<double>::epsilon();
@@ -70,8 +70,8 @@ void HorseOnCarousel(double horse_radius,
   // Horse velocity in the C frame.
   const Vector3d v_CHo = swing_up_speed * Vector3d::UnitZ();
 
-  const Vector3d v_WHo = ConvertTimeDerivativeToOtherFrame(
-      p_CoHo_W, v_CHo /* DtC_p_CoHo */, w_WC);
+  const Vector3d v_WHo =
+      ConvertTimeDerivativeToOtherFrame(p_CoHo_W, v_CHo /* DtC_p_CoHo */, w_WC);
 
   // Compute the expected value. Note that since rotation is only along the
   // z-axis we can directly add the contribution v_CHo_z.

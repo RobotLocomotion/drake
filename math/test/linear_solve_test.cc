@@ -121,28 +121,28 @@ TestSolveLinearSystem(const Eigen::MatrixBase<DerivedA>& A,
         x_eigen = eigen_linear_solver.solve(
             b.template cast<typename DerivedA::Scalar>());
       }
-      EXPECT_TRUE(CompareMatrices(ExtractValue(x_eigen),
-                                  ExtractValue(x),
-                                  1.0e-14));
+      EXPECT_TRUE(
+          CompareMatrices(ExtractValue(x_eigen), ExtractValue(x), 1.0e-14));
       for (int i = 0; i < b.cols(); ++i) {
         EXPECT_TRUE(CompareMatrices(ExtractGradient(x_eigen.col(i)),
                                     ExtractGradient(x.col(i)), tol));
       }
-    } else if constexpr (std::is_same_v<typename DerivedA::Scalar, double> && // NOLINT
+      // NOLINTNEXTLINE(readability/braces)
+    } else if constexpr (std::is_same_v<typename DerivedA::Scalar, double> &&
                          internal::is_autodiff_v<typename DerivedB::Scalar>) {
       const LinearSolverType<
           Eigen::Matrix<typename DerivedB::Scalar, DerivedA::RowsAtCompileTime,
                         DerivedA::ColsAtCompileTime>>
           eigen_linear_solver(A.template cast<typename DerivedB::Scalar>());
       const auto x_eigen = eigen_linear_solver.solve(b);
-      EXPECT_TRUE(CompareMatrices(ExtractValue(x_eigen),
-                                  ExtractValue(x),
-                                  1.0e-14));
+      EXPECT_TRUE(
+          CompareMatrices(ExtractValue(x_eigen), ExtractValue(x), 1.0e-14));
       for (int i = 0; i < b.cols(); ++i) {
         EXPECT_TRUE(CompareMatrices(ExtractGradient(x_eigen.col(i)),
                                     ExtractGradient(x.col(i)), tol));
       }
-    } else if constexpr (std::is_same_v<typename DerivedA::Scalar, double> &&  // NOLINT
+      // NOLINTNEXTLINE(readability/braces)
+    } else if constexpr (std::is_same_v<typename DerivedA::Scalar, double> &&
                          std::is_same_v<typename DerivedB::Scalar, double>) {
       EXPECT_TRUE(CompareMatrices(x_eigen_d, x));
     }
