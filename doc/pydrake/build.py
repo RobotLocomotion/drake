@@ -15,18 +15,8 @@ from drake.doc.defs import (
     verbose,
 )
 
-import pydrake.all
-import pydrake.gym  # The gym is not part of "pydrake.all".
-import pydrake.examples  # The examples are not part of "pydrake.all".
-import pydrake.examples.gym.play_cart_pole
-import pydrake.examples.gym.train_cart_pole
-# TODO(eric.cousineau): Indicate these as deprecated.
-from pydrake.common import (
-    cpp_param,
-    cpp_template,
-    _MangledName,
-)
-import pydrake.tutorials
+import pydrake._all_everything
+from pydrake.common import _MangledName
 
 
 def _get_submodules(name):

@@ -236,10 +236,10 @@ PY_LIBRARIES = [
 # Symbol roll-up (for user ease).
 drake_py_library(
     name = "all_py",
-    srcs = ["all.py"],
-    # pycodestyle gets confused by the top `with` statement. This should be
-    # removed once no modules with deprecation warnings are imported.
-    tags = ["nolint"],
+    srcs = [
+        "_all_everything.py",
+        "all.py",
+    ],
     deps = PY_LIBRARIES_WITH_INSTALL + PY_LIBRARIES,
 )
 
@@ -416,81 +416,47 @@ drake_py_binary(
     ],
 )
 
-# TODO(jwnimmer-tri): This list should be automatically generated.
+# TODO(jwnimmer-tri): It would be convenient if this could be automatically
+# generated. For now, we have stubgen.py that will fail-fast when this goes
+# out of date.
 PYI_FILES = [
-    "pydrake/__init__.pyi",
-    "pydrake/all.pyi",
-    "pydrake/autodiffutils/__init__.pyi",
-    "pydrake/common/__init__.pyi",
-    "pydrake/common/_module_py.pyi",
-    "pydrake/common/all.pyi",
-    "pydrake/common/compatibility.pyi",
-    "pydrake/common/containers.pyi",
-    "pydrake/common/cpp_param.pyi",
-    "pydrake/common/cpp_template.pyi",
-    "pydrake/common/deprecation.pyi",
+    "pydrake/autodiffutils.pyi",
     "pydrake/common/eigen_geometry.pyi",
-    "pydrake/common/jupyter.pyi",
-    "pydrake/common/pybind11_version.pyi",
     "pydrake/common/schema.pyi",
     "pydrake/common/value.pyi",
-    "pydrake/common/yaml.pyi",
-    "pydrake/examples/__init__.pyi",
-    "pydrake/examples/_examples_extra.pyi",
-    "pydrake/examples/gym/__init__.pyi",
-    "pydrake/examples/gym/envs/__init__.pyi",
-    "pydrake/examples/gym/envs/cart_pole.pyi",
-    "pydrake/examples/gym/named_view_helpers.pyi",
-    "pydrake/examples/gym/play_cart_pole.pyi",
-    "pydrake/examples/gym/train_cart_pole.pyi",
-    "pydrake/examples/multibody/__init__.pyi",
-    "pydrake/examples/multibody/cart_pole_passive_simulation.pyi",
-    "pydrake/examples/multibody/pendulum_lqr_monte_carlo_analysis.pyi",
-    "pydrake/examples/multibody/run_planar_scenegraph_visualizer.pyi",
-    "pydrake/forwarddiff.pyi",
+    "pydrake/examples.pyi",
     "pydrake/geometry/__init__.pyi",
-    "pydrake/gym/__init__.pyi",
+    "pydrake/geometry/all.pyi",
+    "pydrake/geometry/optimization.pyi",
     "pydrake/lcm.pyi",
-    "pydrake/manipulation/__init__.pyi",
-    "pydrake/math/__init__.pyi",
-    "pydrake/multibody/__init__.pyi",
-    "pydrake/multibody/all.pyi",
-    "pydrake/multibody/benchmarks.pyi",
+    "pydrake/manipulation.pyi",
+    "pydrake/math.pyi",
+    "pydrake/multibody/benchmarks/__init__.pyi",
+    "pydrake/multibody/benchmarks/acrobot.pyi",
+    "pydrake/multibody/benchmarks/all.pyi",
+    "pydrake/multibody/fem.pyi",
     "pydrake/multibody/inverse_kinematics.pyi",
-    "pydrake/multibody/jupyter_widgets.pyi",
     "pydrake/multibody/math.pyi",
     "pydrake/multibody/meshcat.pyi",
     "pydrake/multibody/optimization.pyi",
     "pydrake/multibody/parsing.pyi",
     "pydrake/multibody/plant.pyi",
+    "pydrake/multibody/rational.pyi",
     "pydrake/multibody/tree.pyi",
     "pydrake/perception.pyi",
     "pydrake/planning.pyi",
     "pydrake/polynomial.pyi",
-    "pydrake/solvers/__init__.pyi",
-    # "pydrake/stubgen.pyi", Don't include this; why is it even generated?
-    "pydrake/symbolic/__init__.pyi",
-    "pydrake/systems/__init__.pyi",
-    "pydrake/systems/_resample_interp1d.pyi",
-    "pydrake/systems/all.pyi",
+    "pydrake/solvers.pyi",
+    "pydrake/symbolic.pyi",
     "pydrake/systems/analysis.pyi",
     "pydrake/systems/controllers.pyi",
-    "pydrake/systems/drawing.pyi",
     "pydrake/systems/framework.pyi",
-    "pydrake/systems/jupyter_widgets.pyi",
     "pydrake/systems/lcm.pyi",
-    "pydrake/systems/perception.pyi",
-    "pydrake/systems/planar_scenegraph_visualizer.pyi",
     "pydrake/systems/primitives.pyi",
-    "pydrake/systems/pyplot_visualizer.pyi",
     "pydrake/systems/rendering.pyi",
-    "pydrake/systems/scalar_conversion.pyi",
     "pydrake/systems/sensors.pyi",
     "pydrake/trajectories.pyi",
-    "pydrake/tutorials.pyi",
-    "pydrake/visualization/__init__.pyi",
-    "pydrake/visualization/meldis.pyi",
-    "pydrake/visualization/model_visualizer.pyi",
+    "pydrake/visualization.pyi",
 ]
 
 # TODO(mwoehlke-kitware): genrule inappropriately gives execute permission to
@@ -499,7 +465,6 @@ PYI_FILES = [
 generate_python_stubs(
     name = "pydrake_pyi",
     outs = PYI_FILES,
-    package = "pydrake",
     tool = ":stubgen",
 )
 
