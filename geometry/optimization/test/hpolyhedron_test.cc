@@ -859,7 +859,6 @@ GTEST_TEST(HPolyhedronTest, IrredundantBallIntersectionContainsBothOriginal) {
   HPolyhedron L1_ball = HPolyhedron::MakeL1Ball(3);
   HPolyhedron Linfty_ball = HPolyhedron::MakeUnitBox(3);
 
-  // clang-format on
   HPolyhedron IrredL1intoLinf = Linfty_ball.Intersection(L1_ball, true);
   HPolyhedron IrredLinfintoL1 = L1_ball.Intersection(Linfty_ball, true);
 
@@ -905,7 +904,7 @@ GTEST_TEST(HPolyhedronTest, ReduceToInfeasibleSet) {
        0, 1, -1,
        0, 0, -1;
   b << 1, -1, -1, -1, 0;
-  // clang-format off
+  // clang-format on
 
   HPolyhedron H{A, b};
   HPolyhedron H_reduced = H.ReduceInequalities();
@@ -938,9 +937,9 @@ GTEST_TEST(HPolyhedronTest, IsEmptyNonMinimalInequalitySet) {
        0, 0, -1,
        1, -1, 0,
        -1, 0, 1,
-       0, 1, -1;;
-  b << 1, 0, -1, -1, -1;;
-  // clang-format off
+       0, 1, -1;
+  b << 1, 0, -1, -1, -1;
+  // clang-format on
 
   HPolyhedron H{A, b};
   EXPECT_TRUE(H.IsEmpty());
@@ -959,8 +958,6 @@ GTEST_TEST(HPolyhedronTest, IsEmptyBoundedHPolyhedron) {
   HPolyhedron H = HPolyhedron::MakeUnitBox(2);
   EXPECT_FALSE(H.IsEmpty());
 }
-
-
 
 GTEST_TEST(HPolyhedronTest, IntersectionTest) {
   HPolyhedron H_A = HPolyhedron::MakeUnitBox(2);

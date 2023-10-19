@@ -34,9 +34,8 @@ GTEST_TEST(TestFastPoseCompositionFunctions, AvxDetection) {
 // The "using portable" and "has avx" should be opposites so long as AVX is the
 // only accelerated option.
 GTEST_TEST(TestFastPoseCompositionFunctions, UsingPortable) {
-  EXPECT_NE(
-      internal::IsUsingPortableCompositionFunctions(),
-      internal::AvxSupported());
+  EXPECT_NE(internal::IsUsingPortableCompositionFunctions(),
+            internal::AvxSupported());
 }
 
 // Test the given RotationMatrix composition function for correct functionality
@@ -51,16 +50,17 @@ GTEST_TEST(TestFastPoseCompositionFunctions, UsingPortable) {
 void RawTestRxR(
     std::function<void(const double*, const double*, double*)> compose_RxR,
     bool invert_first_matrix) {
-
   // Note that M and N are not legitimate RotationMatrix values. We are just
   // testing that the correct matrix operations are performed.
   Matrix3d M, N;
+  // clang-format off
   M << 1, 5, 9,
        2, 6, 10,
        3, 7, 11;
   N << 13, 17, 21,
        14, 18, 22,
        15, 19, 23;
+  // clang-format on
   // Inverse is just transpose for a RotationMatrix.
   const Matrix3d Mx = invert_first_matrix ? M.transpose() : M;
   const Matrix3d MxM_expected = Mx * M;
@@ -78,7 +78,7 @@ void RawTestRxR(
   // Results should be perfect match with integer elements.
   compose_RxR(Mwork.data(), Nwork.data(), Mwork.data());  // Mwork=Mx*N
   EXPECT_TRUE(CompareMatrices(Mwork, MxN_expected, 0));
-  Mwork = M;  // Restore value.
+  Mwork = M;                                              // Restore value.
   compose_RxR(Mwork.data(), Nwork.data(), Nwork.data());  // Nwork=Mx*N
   EXPECT_TRUE(CompareMatrices(Nwork, MxN_expected, 0));
   compose_RxR(Mwork.data(), Mwork.data(), Mwork.data());  // Mwork=Mx*M
@@ -106,16 +106,17 @@ void TestRxR(std::function<void(const RotationMatrix<double>& R1,
 void RawTestXxX(
     std::function<void(const double*, const double*, double*)> compose_XxX,
     bool invert_first_matrix) {
-
   // Note that M and N are not legitimate RigidTransform values. We are just
   // testing that the correct matrix operations are performed.
   Matrix34d M, N;
+  // clang-format off
   M << 1, 4, 7, 10,
        2, 5, 8, 11,
        3, 6, 9, 12;
   N << 13, 16, 19, 22,
        14, 17, 20, 23,
        15, 18, 21, 24;
+  // clang-format on
 
   // Append 0001 row so we can use straight matrix operations to get the
   // result.
@@ -132,8 +133,8 @@ void RawTestXxX(
   M0inv.row(3) << 0, 0, 0, 1;
 
   const Matrix4d M0x = invert_first_matrix ? M0inv : M0;
-  const Matrix34d MxN_expected = (M0x*N0).topRows(3);
-  const Matrix34d MxM_expected = (M0x*M0).topRows(3);
+  const Matrix34d MxN_expected = (M0x * N0).topRows(3);
+  const Matrix34d MxM_expected = (M0x * M0).topRows(3);
 
   Matrix34d MxN;
   compose_XxX(M.data(), N.data(), MxN.data());
@@ -145,7 +146,7 @@ void RawTestXxX(
   Matrix34d Mwork = M, Nwork = N;
   compose_XxX(Mwork.data(), Nwork.data(), Mwork.data());  // Mwork=Mx*N
   EXPECT_TRUE(CompareMatrices(Mwork, MxN_expected, 0));
-  Mwork = M;  // Restore value.
+  Mwork = M;                                              // Restore value.
   compose_XxX(Mwork.data(), Nwork.data(), Nwork.data());  // Nwork=Mx*N
   EXPECT_TRUE(CompareMatrices(Nwork, MxN_expected, 0));
   compose_XxX(Mwork.data(), Mwork.data(), Mwork.data());  // Mwork=Mx*M

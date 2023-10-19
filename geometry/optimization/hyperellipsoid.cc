@@ -59,6 +59,16 @@ Hyperellipsoid::Hyperellipsoid(const QueryObject<double>& query_object,
   A_ = A_G * X_GE.rotation().matrix();
   center_ = X_GE.inverse().translation();
 }
+namespace {
+MatrixXd CalcQuadraticFormA(const AffineBall& ellipsoid) {
+  const auto B_QR = Eigen::ColPivHouseholderQR<MatrixXd>(ellipsoid.B());
+  DRAKE_THROW_UNLESS(B_QR.isInvertible());
+  return B_QR.inverse();
+}
+}  // namespace
+
+Hyperellipsoid::Hyperellipsoid(const AffineBall& ellipsoid)
+    : Hyperellipsoid(CalcQuadraticFormA(ellipsoid), ellipsoid.center()) {}
 
 Hyperellipsoid::~Hyperellipsoid() = default;
 

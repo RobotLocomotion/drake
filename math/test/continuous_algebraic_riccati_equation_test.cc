@@ -20,8 +20,7 @@ void SolveCAREandVerify(const Eigen::Ref<const MatrixXd>& A,
                         const Eigen::Ref<const MatrixXd>& B,
                         const Eigen::Ref<const MatrixXd>& Q,
                         const Eigen::Ref<const MatrixXd>& R, bool is_X_pd) {
-  MatrixXd X = ContinuousAlgebraicRiccatiEquation(
-      A, B, Q, R);
+  MatrixXd X = ContinuousAlgebraicRiccatiEquation(A, B, Q, R);
 
   EXPECT_TRUE(
       CompareMatrices(X, X.transpose(), 1E-10, MatrixCompareType::absolute));

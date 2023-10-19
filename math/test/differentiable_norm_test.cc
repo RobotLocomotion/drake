@@ -18,8 +18,7 @@ GTEST_TEST(TestDifferentiableNorm, test_double) {
 GTEST_TEST(TestDifferentiableNorm, test_autodiff) {
   Eigen::Matrix3Xd x_grad(3, 1);
   x_grad << 1, 2, 3;
-  Vector3<AutoDiffXd> x = InitializeAutoDiff(
-      Eigen::Vector3d(1, 0, 0), x_grad);
+  Vector3<AutoDiffXd> x = InitializeAutoDiff(Eigen::Vector3d(1, 0, 0), x_grad);
   AutoDiffXd norm = DifferentiableNorm(x);
   AutoDiffXd norm_expected = x.norm();
   EXPECT_NEAR(norm.value(), norm_expected.value(), 10 * kEps);

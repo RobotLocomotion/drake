@@ -2666,9 +2666,7 @@ TEST_F(SymbolicLorentzConeTest, Test3) {
   // [               x(2)]
   // [  -x(1)            ]
   Matrix<Expression, 4, 1> e;
-  // clang-format on
   e << 2 * x_(0) + 3 * x_(2), -x_(0) + 2 * x_(2), +x_(2), -x_(1);
-  // clang-format off;
   CheckParsedSymbolicLorentzConeConstraint(&prog_, e);
 }
 

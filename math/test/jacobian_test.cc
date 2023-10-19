@@ -83,9 +83,9 @@ class AutoDiffHessianTest : public ::testing::Test {};
 // (A x + b)^T C (D x + e)
 // from http://www.ee.ic.ac.uk/hp/staff/dmb/matrix/calculus.html#Hessian.
 TEST_F(AutoDiffHessianTest, QuadraticFunction) {
+  using Eigen::Index;
   using Eigen::MatrixXd;
   using Eigen::VectorXd;
-  using Eigen::Index;
 
   Index n = 4;
   Index m = 5;

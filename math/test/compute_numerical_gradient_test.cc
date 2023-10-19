@@ -31,7 +31,9 @@ GTEST_TEST(ComputeNumericalGradientTest, TestAffineFunction) {
   // https://stackoverflow.com/questions/26665152/compiler-does-not-deduce-template-parameters-map-stdvector-stdvector
   std::function<void(const Eigen::Vector2d& x, Eigen::Vector3d*)> calc_fun =
       [&A, &b](const Eigen::Matrix<double, 2, 1>& x,
-               Eigen::Matrix<double, 3, 1>* y) -> void { *y = A * x + b; };
+               Eigen::Matrix<double, 3, 1>* y) -> void {
+    *y = A * x + b;
+  };
 
   auto check_gradient = [&A, &calc_fun](const Eigen::Vector2d& x) {
     // forward difference
@@ -231,9 +233,10 @@ GTEST_TEST(ComputeNumericalGradientTest, TestEvaluator) {
   ToyEvaluator evaluator;
   std::function<void(const Eigen::Ref<const Eigen::VectorXd>&,
                      Eigen::VectorXd*)>
-      evaluator_eval =
-          [&evaluator](const Eigen::Ref<const Eigen::VectorXd>& x,
-                       Eigen::VectorXd* y) { return evaluator.Eval(x, y); };
+      evaluator_eval = [&evaluator](const Eigen::Ref<const Eigen::VectorXd>& x,
+                                    Eigen::VectorXd* y) {
+        return evaluator.Eval(x, y);
+      };
   Eigen::Vector3d x(0, 1, 2);
   const auto J = ComputeNumericalGradient(evaluator_eval, x);
   AutoDiffVecXd y_autodiff;
