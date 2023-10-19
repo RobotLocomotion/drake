@@ -45,6 +45,8 @@ VectorX<bool> MaxCliqueSolverViaMIP::SolveMaxClique(
   // Therefore, we need exactly num_zero_in_adjacency triplets.
   A_constraint_triplets.reserve(num_zero_in_adjacency);
   int count = 0;
+  // TODO(Alexandre.Amice) if performance becomes an issue for large graphs,
+  // consider doing step in parallel.
   for (int i = 0; i < n; ++i) {
     for (int j = i + 1; j < n; ++j) {
       if (!adjacency_matrix.coeff(i, j)) {
