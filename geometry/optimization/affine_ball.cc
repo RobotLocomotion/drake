@@ -7,6 +7,8 @@
 #include "drake/geometry/optimization/hyperellipsoid.h"
 #include "drake/geometry/optimization/vpolytope.h"
 #include "drake/solvers/solve.h"
+#include "drake/solvers/scs_solver.h"
+#include "drake/solvers/mosek_solver.h"
 
 namespace drake {
 namespace geometry {
@@ -21,6 +23,8 @@ using solvers::VectorXDecisionVariable;
 using std::sqrt;
 using symbolic::Expression;
 using symbolic::Variable;
+using solvers::ScsSolver;
+using solvers::MosekSolver;
 
 AffineBall::AffineBall() : AffineBall(MatrixXd(0, 0), VectorXd(0)) {}
 
@@ -118,7 +122,15 @@ AffineBall AffineBall::MinimumVolumeCircumscribedEllipsoid(
     prog.AddLorentzConeConstraint(v);
   }
 
-  solvers::MathematicalProgramResult result = Solve(prog);
+  solvers::MathematicalProgramResult result;
+  if (solvers::MosekSolver::is_available() &&
+      solvers::MosekSolver::is_enabled()) {
+    MosekSolver solver;
+    result = solver.Solve(prog);
+  } else {
+    ScsSolver solver;
+    result = solver.Solve(prog);
+  }
   if (!result.is_success()) {
     throw std::runtime_error(
         fmt::format("The MathematicalProgram was not solved successfully. The "

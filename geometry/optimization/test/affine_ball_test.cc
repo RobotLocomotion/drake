@@ -10,6 +10,7 @@
 #include "drake/geometry/optimization/affine_subspace.h"
 #include "drake/geometry/optimization/hyperellipsoid.h"
 #include "drake/geometry/optimization/test_utilities.h"
+#include "drake/solvers/mosek_solver.h"
 
 namespace drake {
 namespace geometry {
@@ -317,7 +318,16 @@ GTEST_TEST(AffineBallTest, MinimumVolumeCircumscribedEllipsoid) {
   // clang-format on
   AffineBall E_F = AffineBall::MinimumVolumeCircumscribedEllipsoid(p_FA);
 
-  const double kTol = 1e-4;
+  double kTol, eps;
+  if (solvers::MosekSolver::is_available() &&
+      solvers::MosekSolver::is_enabled()) {
+    kTol = 1e-8;
+    eps = 1e-6;
+  } else {
+    kTol = 1e-5;
+    eps = 1e-4;
+  }
+
   Vector3d center_expected = Vector3d::Zero();
   EXPECT_TRUE(CompareMatrices(E_F.center(), center_expected, kTol));
 
@@ -328,7 +338,6 @@ GTEST_TEST(AffineBallTest, MinimumVolumeCircumscribedEllipsoid) {
   //   std::cout << std::endl;
   // }
 
-  const double eps = 1e-2;
   for (int i = 0; i < p_FA.cols(); ++i) {
     EXPECT_TRUE(E_F.PointInSet(p_FA.col(i), kTol));
     EXPECT_FALSE(E_F.PointInSet(p_FA.col(i) * (1. + eps), kTol));
@@ -358,11 +367,19 @@ GTEST_TEST(AffineBallTest,
   // clang-format on
   AffineBall E_F = AffineBall::MinimumVolumeCircumscribedEllipsoid(p_FA);
 
-  const double kTol = 1e-4;
+  double kTol, eps;
+  if (solvers::MosekSolver::is_available() &&
+      solvers::MosekSolver::is_enabled()) {
+    kTol = 1e-8;
+    eps = 1e-6;
+  } else {
+    kTol = 1e-5;
+    eps = 1e-4;
+  }
+
   Vector3d center_expected = Vector3d::Zero();
   EXPECT_TRUE(CompareMatrices(E_F.center(), center_expected, kTol));
 
-  const double eps = 1e-2;
   for (int i = 0; i < p_FA.cols(); ++i) {
     EXPECT_TRUE(E_F.PointInSet(p_FA.col(i), kTol));
     EXPECT_FALSE(E_F.PointInSet(p_FA.col(i) * (1. + eps), kTol));
@@ -382,9 +399,8 @@ GTEST_TEST(AffineBallTest,
   center << 0.123, 0.435, 2.3, -0.2, 0.75;
   points.colwise() += center;
 
-  const double kTol2 = 1e-6;
   AffineBall E = AffineBall::MinimumVolumeCircumscribedEllipsoid(points);
-  EXPECT_TRUE(CompareMatrices(E.center(), center, kTol2));
+  EXPECT_TRUE(CompareMatrices(E.center(), center, kTol));
 }
 
 }  // namespace optimization
