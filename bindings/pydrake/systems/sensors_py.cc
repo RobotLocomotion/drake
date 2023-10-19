@@ -435,9 +435,11 @@ PYBIND11_MODULE(sensors, m) {
             "DeclareImageInputPort",
             [](Class& self, PixelType pixel_type, std::string port_name,
                 std::string file_name_format, double publish_period,
-                double start_time) {
-              self.DeclareImageInputPort(pixel_type, std::move(port_name),
-                  std::move(file_name_format), publish_period, start_time);
+                double start_time) -> const systems::InputPort<double>& {
+              const auto& input_port =
+                  self.DeclareImageInputPort(pixel_type, std::move(port_name),
+                      std::move(file_name_format), publish_period, start_time);
+              return input_port;
             },
             py::arg("pixel_type"), py::arg("port_name"),
             py::arg("file_name_format"), py::arg("publish_period"),
