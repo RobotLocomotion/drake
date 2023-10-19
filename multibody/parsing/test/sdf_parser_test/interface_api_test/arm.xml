@@ -1,0 +1,12 @@
+<mujoco model="arm">
+  <worldbody>
+    <body name="L1">
+      <geom type="sphere" size="0.4"/>
+      <freejoint name="freejoint"/>
+      <body name="L2" pos="1 2 3" euler="5.7295779513082321 11.459155902616466 17.188733853924695">
+        <geom type="sphere" size="0.4"/>
+        <joint name="J1" type="hinge" axis="1 0 0"/>
+      </body>
+    </body>
+  </worldbody>
+</mujoco>

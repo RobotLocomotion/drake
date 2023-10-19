@@ -22,6 +22,7 @@
 #include "drake/geometry/shape_specification.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/roll_pitch_yaw.h"
+#include "drake/multibody/parsing/detail_mujoco_parser.h"
 #include "drake/multibody/parsing/detail_path_utils.h"
 #include "drake/multibody/parsing/detail_urdf_parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
@@ -72,10 +73,18 @@ class SdfParserTest : public test::DiagnosticPolicyTestBase{
   }
 
   static ParserInterface& TestingSelect(const DiagnosticPolicy&,
-                                        const std::string&) {
+                                        const std::string& filename) {
     // TODO(rpoyner-tri): add more formats here, as tests use them.
     static never_destroyed<UrdfParserWrapper> urdf;
-    return urdf.access();
+    static never_destroyed<MujocoParserWrapper> mujoco;
+    if (EndsWithCaseInsensitive(filename, ".urdf")) {
+      return urdf.access();
+    }
+    if (EndsWithCaseInsensitive(filename, ".xml")) {
+      return mujoco.access();
+    }
+    throw std::runtime_error(fmt::format(
+        "Unsupported file format in unittest for file ({})", filename));
   }
 
 
@@ -2775,7 +2784,7 @@ TEST_F(SdfParserTest, FramesAsJointParentOrChild) {
 // API which bypasses the URDF->SDFormat conversion. This also verifies that
 // SDFormat files can be forced to be loaded via the Interface API by changing
 // their file extension and registering the appropriate custom parser.
-TEST_F(SdfParserTest, InterfaceAPI) {
+TEST_F(SdfParserTest, InterfaceApi) {
   AddSceneGraph();
   const std::string sdf_file_path = FindResourceOrThrow(
       "drake/multibody/parsing/test/sdf_parser_test/interface_api_test/"
@@ -3231,6 +3240,226 @@ TEST_F(SdfParserTest, TestSingleModelEnforcement) {
   ClearDiagnostics();
 }
 
+// Verify merge-include works with Interface API.
+TEST_F(SdfParserTest, BasicMergeIncludeInterfaceApi) {
+  AddSceneGraph();
+  const std::string full_name = FindResourceOrThrow(
+      "drake/multibody/parsing/test/sdf_parser_test/interface_api_test/"
+      "arm_with_gripper_merge_include.sdf");
+
+  // We start with the world and default model instances.
+  ASSERT_EQ(plant_.num_model_instances(), 2);
+  ASSERT_EQ(plant_.num_bodies(), 1);
+  ASSERT_EQ(plant_.num_joints(), 0);
+
+  package_map_.PopulateFromFolder(
+      std::filesystem::path(full_name).parent_path());
+  AddModelsFromSdfFile(full_name);
+  plant_.Finalize();
+
+  // We should have loaded *only* 1 more model.
+  EXPECT_EQ(plant_.num_model_instances(), 3);
+  EXPECT_EQ(plant_.num_bodies(), 4);
+  EXPECT_EQ(plant_.num_joints(), 3);
+
+  const char* model_name = "arm_with_gripper";
+  ASSERT_TRUE(plant_.HasModelInstanceNamed(model_name));
+  ModelInstanceIndex arm_model = plant_.GetModelInstanceByName(model_name);
+
+  // Check that the links and joints from arm.urdf are included in the model
+  // without introducing a nested scope, thus exercising the merge-include
+  // behavior through SDFormat's Interface API.
+  EXPECT_TRUE(plant_.HasBodyNamed("L1", arm_model));
+  EXPECT_TRUE(plant_.HasBodyNamed("L2", arm_model));
+  EXPECT_TRUE(plant_.HasJointNamed("J1", arm_model));
+
+  // Check gripper.sdf is included in the model without introducing a nested
+  // scope showing that both urdf and sdf files can be merge included into a
+  // single containing model.
+  EXPECT_TRUE(plant_.HasBodyNamed("gripper_link", arm_model));
+}
+
+void TestMergeIncludeWithInterfaceApi(const MultibodyPlant<double>& plant,
+                                      const SceneGraph<double>& scene_graph,
+                                      const std::string model_prefix) {
+  SCOPED_TRACE(model_prefix);
+  auto context = plant.CreateDefaultContext();
+  EXPECT_FALSE(
+      plant.HasModelInstanceNamed(sdf::JoinName(model_prefix, "arm::gripper")));
+  EXPECT_FALSE(plant.HasModelInstanceNamed(
+      sdf::JoinName(model_prefix, "arm_sdf::test_arm_sdf_name")));
+  EXPECT_FALSE(plant.HasModelInstanceNamed(
+      sdf::JoinName(model_prefix, "arm_urdf::test_arm_urdf_name")));
+
+  EXPECT_FALSE(plant.HasModelInstanceNamed(
+      sdf::JoinName(model_prefix, "arm_sdf_name_override::test_arm_sdf_name")));
+  EXPECT_FALSE(plant.HasModelInstanceNamed(sdf::JoinName(
+      model_prefix, "arm_urdf_name_override::test_arm_urdf_name")));
+
+  ASSERT_TRUE(
+      plant.HasModelInstanceNamed(sdf::JoinName(model_prefix, "arm_urdf")));
+  const auto arm_urdf_model_instance =
+      plant.GetModelInstanceByName(sdf::JoinName(model_prefix, "arm_urdf"));
+  EXPECT_TRUE(plant.HasFrameNamed(sdf::computeMergedModelProxyFrameName("arm"),
+                                  arm_urdf_model_instance));
+
+  const auto arm_urdf_name_override_model_instance =
+      plant.GetModelInstanceByName(
+          sdf::JoinName(model_prefix, "arm_urdf_name_override"));
+
+  EXPECT_TRUE(plant.HasFrameNamed(
+      sdf::computeMergedModelProxyFrameName("test_arm_urdf_name"),
+      arm_urdf_name_override_model_instance));
+
+  ASSERT_TRUE(
+      plant.HasModelInstanceNamed(sdf::JoinName(model_prefix, "arm_sdf")));
+  const auto arm_sdf_model_instance =
+      plant.GetModelInstanceByName(sdf::JoinName(model_prefix, "arm_sdf"));
+
+  ASSERT_TRUE(
+      plant.HasModelInstanceNamed(sdf::JoinName(model_prefix, "arm_mjcf")));
+  const auto arm_mjcf_model_instance =
+      plant.GetModelInstanceByName(sdf::JoinName(model_prefix, "arm_mjcf"));
+
+  // Pose of torso link
+  const RigidTransformd X_WT(RollPitchYawd(0, 0, 0), Vector3d(0, 0, 1));
+
+  {
+    // Frame G represents the frame of model top::arm_sdf::gripper_frame
+    const RigidTransformd X_WG_expected(RollPitchYawd(0.1, 0.2, 0.3),
+                                        Vector3d(1, 2, 4));
+    const auto& grasp_frame =
+        plant.GetFrameByName("grasp_frame", arm_sdf_model_instance);
+
+    const RigidTransformd X_WG = grasp_frame.CalcPoseInWorld(*context);
+    EXPECT_TRUE(CompareMatrices(X_WG_expected.GetAsMatrix4(),
+                                X_WG.GetAsMatrix4(), kEps));
+  }
+  {
+    // Frame A represents the model frame of model top::arm_sdf
+    const auto& arm_sdf_model_frame =
+        plant.GetFrameByName("__model__", arm_sdf_model_instance);
+    const RigidTransformd X_WA = arm_sdf_model_frame.CalcPoseInWorld(*context);
+    EXPECT_TRUE(
+        CompareMatrices(X_WT.GetAsMatrix4(), X_WA.GetAsMatrix4(), kEps));
+    const RigidTransformd X_WL1_expected(RollPitchYawd(0.0, 0.0, 0.0),
+                                         Vector3d(1, 0, 1));
+    const auto& arm_L1 = plant.GetFrameByName("L1", arm_sdf_model_instance);
+    const RigidTransformd X_WL1 = arm_L1.CalcPoseInWorld(*context);
+    EXPECT_TRUE(CompareMatrices(X_WL1_expected.GetAsMatrix4(),
+                                X_WL1.GetAsMatrix4(), kEps));
+  }
+
+  {
+    // Frame E represents the model frame of model top::arm_urdf
+    const auto& arm_urdf_model_frame =
+        plant.GetFrameByName("__model__", arm_urdf_model_instance);
+    const RigidTransformd X_WE = arm_urdf_model_frame.CalcPoseInWorld(*context);
+    EXPECT_TRUE(
+        CompareMatrices(X_WT.GetAsMatrix4(), X_WE.GetAsMatrix4(), kEps));
+
+    const RigidTransformd X_WL2_expected(RollPitchYawd(0.1, 0.2, 0.3),
+                                         Vector3d(1, 4, 4));
+    const auto& arm_L2 = plant.GetFrameByName("L2", arm_urdf_model_instance);
+    const RigidTransformd X_WL2 = arm_L2.CalcPoseInWorld(*context);
+    EXPECT_TRUE(CompareMatrices(X_WL2_expected.GetAsMatrix4(),
+                                X_WL2.GetAsMatrix4(), kEps));
+  }
+  {
+    // Frame F represents the model frame of model top::arm_sdf::flange
+    const RigidTransformd X_WF_expected(RollPitchYawd(0.0, 0.0, 0.0),
+                                        Vector3d(1, 2, 2));
+    const auto flange_model_instance = plant.GetModelInstanceByName(
+        sdf::JoinName(model_prefix, "arm_sdf::flange"));
+    const auto& flange_model_frame =
+        plant.GetFrameByName("__model__", flange_model_instance);
+    const RigidTransformd X_WF = flange_model_frame.CalcPoseInWorld(*context);
+    EXPECT_TRUE(CompareMatrices(X_WF_expected.GetAsMatrix4(),
+                                X_WF.GetAsMatrix4(), kEps));
+
+    // Frame M represents the frame of model top::arm::flange::gripper_mount
+    const RigidTransformd X_WM_expected(RollPitchYawd(0.1, 0.2, 0.3),
+                                        Vector3d(1, 2, 4));
+    const auto& gripper_mount_frame =
+        plant.GetFrameByName("gripper_mount", flange_model_instance);
+    const RigidTransformd X_WM = gripper_mount_frame.CalcPoseInWorld(*context);
+    EXPECT_TRUE(CompareMatrices(X_WM_expected.GetAsMatrix4(),
+                                X_WM.GetAsMatrix4(), kEps));
+  }
+  {
+    // Frame G represents the model frame of model top::arm_mjcf
+    const auto& arm_mjcf_model_frame =
+        plant.GetFrameByName("__model__", arm_mjcf_model_instance);
+    const RigidTransformd X_WG = arm_mjcf_model_frame.CalcPoseInWorld(*context);
+    EXPECT_TRUE(
+        CompareMatrices(X_WT.GetAsMatrix4(), X_WG.GetAsMatrix4(), kEps));
+
+    const RigidTransformd X_WL2_expected(RollPitchYawd(0.1, 0.2, 0.3),
+                                         Vector3d(11, 4, 4));
+    const auto& arm_L2 = plant.GetFrameByName("L2", arm_mjcf_model_instance);
+    const RigidTransformd X_WL2 = arm_L2.CalcPoseInWorld(*context);
+    EXPECT_TRUE(CompareMatrices(X_WL2_expected.GetAsMatrix4(),
+                                X_WL2.GetAsMatrix4(), kEps));
+  }
+}
+
+TEST_F(SdfParserTest, MergeIncludeInterfaceApi1) {
+  AddSceneGraph();
+  package_map_.AddPackageXml(FindResourceOrThrow(
+      "drake/multibody/parsing/test/sdf_parser_test/interface_api_test/"
+      "package.xml"));
+  const std::string sdf_file_path = FindResourceOrThrow(
+      "drake/multibody/parsing/test/sdf_parser_test/interface_api_test/"
+      "top_merge_include.sdf");
+
+  AddModelFromSdfFile(sdf_file_path, "");
+
+  plant_.Finalize();
+  SCOPED_TRACE("MergeIncludeInterfaceApi1");
+  TestMergeIncludeWithInterfaceApi(plant_, scene_graph_, "top");
+}
+
+TEST_F(SdfParserTest, MergeIncludeInterfaceApi2) {
+  AddSceneGraph();
+  package_map_.AddPackageXml(FindResourceOrThrow(
+      "drake/multibody/parsing/test/sdf_parser_test/interface_api_test/"
+      "package.xml"));
+  // Use AddModelsFromSdfFile (note the plural Models)
+  const std::string sdf_file_path = FindResourceOrThrow(
+      "drake/multibody/parsing/test/sdf_parser_test/interface_api_test/"
+      "top_merge_include_world.sdf");
+
+  AddModelsFromSdfFile(sdf_file_path);
+
+  plant_.Finalize();
+  SCOPED_TRACE("MergeIncludeInterfaceApi2");
+  TestMergeIncludeWithInterfaceApi(plant_, scene_graph_, "top");
+  TestMergeIncludeWithInterfaceApi(plant_, scene_graph_, "another_top");
+}
+
+TEST_F(SdfParserTest, MergeIncludeIntoWorld) {
+  AddSceneGraph();
+  package_map_.AddPackageXml(FindResourceOrThrow(
+      "drake/multibody/parsing/test/sdf_parser_test/interface_api_test/"
+      "package.xml"));
+  const std::string sdf_string = R"""(
+<sdf version='1.10'>
+  <world name='merge_into_world'>
+    <include merge="true">
+      <uri>
+        package://interface_api_test/top_merge_include_in_nested_model.sdf
+      </uri>
+    </include>
+  </world>
+</sdf>
+)""";
+
+  AddModelsFromSdfString(sdf_string);
+  plant_.Finalize();
+  SCOPED_TRACE("MergeIncludeIntoWorld");
+  TestMergeIncludeWithInterfaceApi(plant_, scene_graph_, "top");
+  TestMergeIncludeWithInterfaceApi(plant_, scene_graph_, "another_top");
+}
 }  // namespace
 }  // namespace internal
 }  // namespace multibody

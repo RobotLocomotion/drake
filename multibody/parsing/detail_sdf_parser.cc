@@ -61,6 +61,41 @@ using std::unique_ptr;
 // Unnamed namespace for free functions local to this file.
 namespace {
 
+// A short summary of parsing stages in libsdformat:
+//
+// When we load a model using `sdf::Root::Load`, the following happens:
+// * libsdformat parses the XML into `sdf::ElementPtr` objects. Included
+// SDFormat models are expanded during this process. If the included model is
+// not an SDFormat file type and there are custom parsers registered in the
+// passed in `ParserConfig`, the contents of the `<include>` tag are saved for
+// later processing
+// * DOM objects are created from `sdf::ElementPtr` objects. During the creation
+// of `sdf::World` and `sdf::Model`, custom parsers are called on the
+// non-SDFormat included files mentioned above. This is what's called the
+// Interface API.
+// * Drake's custom parser (eg. detail_urdf_parser) parses the files into a
+// MultibodyPlant.
+// * The frame bearing elements (Links, Joints, Frames, and Models) are read
+// back from the MultibodyPlant and returned to libsdformat via the Interface
+// API data structures.
+// * Once DOM object creation is complete, libsdformat constructs the frame and
+// pose graph for the entire model.
+// * `sdf::Root::Load` returns and Drake starts its parsing stage where it
+// populates the MultibodyPlant using the DOM objects created above (e.g.
+// AddModelsFromSpecification).
+
+// `ModelInstanceIndexRange` is a data structure to hold model instances that
+// were created during libsdformat's Interface API callback for handling merged
+// models. When handling merged models during libsdformat's Interface API
+// callback, we have to create model instances of parents of merged models since
+// the parent models are regular SDFormat elements and will only be handled at a
+// later stage of parsing. This data structure is used to store these parent
+// model instances so that when we're going through Drake's parsing stage (last
+// step in the parsing stage summary above), we are aware of these model
+// instances and not try to recreate them.
+using ModelInstanceIndexRange =
+    std::pair<ModelInstanceIndex, ModelInstanceIndex>;
+
 // Returns the model instance name for the given `instance`, unless it's the
 // world model instance in which case returns the empty string.
 std::string GetInstanceScopeNameIgnoringWorld(
@@ -1352,6 +1387,118 @@ void ParseCollisionFilterGroup(const SDFormatDiagnostic& diagnostic,
       get_string_attribute, get_bool_attribute, read_tag_string);
 }
 
+bool CanReuseModelInstance(
+    const ModelInstanceIndex& model_instance,
+    const ModelInstanceIndexRange reusable_model_instance_range) {
+  return model_instance >= reusable_model_instance_range.first &&
+         model_instance < reusable_model_instance_range.second;
+}
+
+ModelInstanceIndex AddModelInstanceIfReusable(
+    MultibodyPlant<double>* plant, const std::string& model_name,
+    const ModelInstanceIndexRange& reusable_model_instance_range) {
+  if (plant->HasModelInstanceNamed(model_name)) {
+    auto model_instance = plant->GetModelInstanceByName(model_name);
+    if (!CanReuseModelInstance(model_instance, reusable_model_instance_range)) {
+      throw std::logic_error(
+          "This model already contains a model instance named '" + model_name +
+          "'. Model instance names must be unique within a given model.");
+    }
+    return model_instance;
+  } else {
+    return plant->AddModelInstance(model_name);
+  }
+}
+
+// Helper class that does bookkeeping on the frame bearing elements of a given
+// model instance in a MultibodyPlant. This is used to keep track of newly
+// created elements after a custom parser is called so that we can create
+// Interface API data structures from just the newly created elements.
+// The Interface API step is necessary so that we can construct the appropriate
+// pose graph at higher levels of the hierarchy using libsdformat. Note: We
+// assume that Drake custom parsers do not support nested models.
+// TODO(azeey) If any of Drakes custom parsers start supporting nested models,
+// this needs to be updated to keep track of them.
+class InterfaceModelHelper {
+ public:
+  explicit InterfaceModelHelper(const MultibodyPlant<double>& pt)
+      : plant_(pt) {}
+
+  std::vector<ModelInstanceIndex> GetChildModelInstanceIndices() const {
+    std::vector<ModelInstanceIndex> output;
+
+    for (ModelInstanceIndex mi(model_instance_ + 1);
+         mi < plant_.num_model_instances(); ++mi) {
+      if (multibody::ScopedName::Parse(plant_.GetModelInstanceName(mi))
+              .get_element() == name_) {
+        output.push_back(mi);
+      }
+    }
+    return output;
+  }
+
+  // Take a snapshot of the current contents of a model instance so that we
+  // later on do a diff
+  void TakeSnapShot(ModelInstanceIndex model_instance_index) {
+    model_instance_ = model_instance_index;
+    name_ = plant_.GetModelInstanceName(model_instance_);
+    body_indices_ = plant_.GetBodyIndices(model_instance_);
+    frame_indices_ = plant_.GetFrameIndices(model_instance_);
+    joint_indices_ = plant_.GetJointIndices(model_instance_);
+    model_instance_indices_ = GetChildModelInstanceIndices();
+    have_snapshot = true;
+  }
+
+  template <typename T>
+  static std::vector<T> GetVectorDiff(const std::vector<T>& current,
+                                      const std::vector<T>& previous) {
+    std::vector<T> output;
+    std::set_difference(current.begin(), current.end(), previous.begin(),
+                        previous.end(), std::back_inserter(output));
+    return output;
+  }
+
+  // Compute the diff to determine the elements that were created after the
+  // snapshot.
+  void ComputeDiffFromSnapshot() {
+    DRAKE_DEMAND(have_snapshot);
+    body_indices_ =
+      GetVectorDiff(plant_.GetBodyIndices(model_instance_), body_indices_);
+    frame_indices_ =
+      GetVectorDiff(plant_.GetFrameIndices(model_instance_), frame_indices_);
+    joint_indices_ =
+      GetVectorDiff(plant_.GetJointIndices(model_instance_), joint_indices_);
+    model_instance_indices_ =
+      GetVectorDiff(GetChildModelInstanceIndices(), model_instance_indices_);
+  }
+
+  ModelInstanceIndex model_instance() const { return model_instance_; }
+
+  const std::vector<JointIndex>& joint_indices() const {
+    return joint_indices_;
+  }
+  const std::vector<FrameIndex>& frame_indices() const {
+    return frame_indices_;
+  }
+  const std::vector<BodyIndex>& body_indices() const { return body_indices_; }
+  const std::string& model_frame_name() const { return model_frame_name_; }
+  void set_model_frame_name(const std::string& model_frame_name) {
+    model_frame_name_ = model_frame_name;
+  }
+
+ private:
+  const MultibodyPlant<double>& plant_;
+  ModelInstanceIndex model_instance_;
+  std::string name_;
+  std::vector<BodyIndex> body_indices_;
+  std::vector<FrameIndex> frame_indices_;
+  std::vector<JointIndex> joint_indices_;
+  std::vector<ModelInstanceIndex> model_instance_indices_;
+  std::string model_frame_name_ = "__model__";
+
+  bool have_snapshot{false};
+};
+
 // Helper method to add a model to a MultibodyPlant given an sdf::Model
 // specification object.
 std::vector<ModelInstanceIndex> AddModelsFromSpecification(
@@ -1362,7 +1509,10 @@ std::vector<ModelInstanceIndex> AddModelsFromSpecification(
     MultibodyPlant<double>* plant,
     CollisionFilterGroupResolver* resolver,
     const PackageMap& package_map,
-    const std::string& root_dir) {
+    const std::string& root_dir,
+    const ModelInstanceIndexRange &reusable_model_instance_range) {
+  const ModelInstanceIndex model_instance = AddModelInstanceIfReusable(
+      plant, model_name, reusable_model_instance_range);
 
   const std::set<std::string> supported_model_elements{
     "drake:joint",
@@ -1379,9 +1529,6 @@ std::vector<ModelInstanceIndex> AddModelsFromSpecification(
   CheckSupportedElements(
       diagnostic, model.Element(), supported_model_elements);
 
-
-  const ModelInstanceIndex model_instance =
-    plant->AddModelInstance(model_name);
   std::vector <ModelInstanceIndex> added_model_instances{model_instance};
 
   // "P" is the parent frame. If the model is in a child of //world or //sdf,
@@ -1401,8 +1548,8 @@ std::vector<ModelInstanceIndex> AddModelsFromSpecification(
     std::vector<ModelInstanceIndex> nested_model_instances =
         AddModelsFromSpecification(
             diagnostic, nested_model,
-            sdf::JoinName(model_name, nested_model.Name()), X_WM,
-            plant, resolver, package_map, root_dir);
+            sdf::JoinName(model_name, nested_model.Name()), X_WM, plant,
+            resolver, package_map, root_dir, reusable_model_instance_range);
 
     added_model_instances.insert(added_model_instances.end(),
                                  nested_model_instances.begin(),
@@ -1555,14 +1702,13 @@ RigidTransformd GetDefaultFramePose(
 // For the libsdformat API, see:
 // http://sdformat.org/tutorials?tut=composition_proposal
 constexpr char kExtUrdf[] = ".urdf";
+constexpr char kExtXml[] = ".xml";
 
 void AddBodiesToInterfaceModel(const MultibodyPlant<double>& plant,
-                               ModelInstanceIndex model_instance,
-                               const sdf::InterfaceModelPtr& interface_model) {
-  const auto& model_frame = plant.GetFrameByName("__model__", model_instance);
-  const RigidTransformd X_MW =
-      GetDefaultFramePose(plant, model_frame).inverse();
-  for (auto index : plant.GetBodyIndices(model_instance)) {
+                               const sdf::InterfaceModelPtr& interface_model,
+                               const std::vector<BodyIndex>& body_indices,
+                               const RigidTransformd& X_MW) {
+  for (auto index : body_indices) {
     const auto& link = plant.get_body(index);
     RigidTransformd X_ML = X_MW * plant.GetDefaultFreeBodyPose(link);
     interface_model->AddLink({link.name(), ToIgnitionPose3d(X_ML)});
@@ -1571,19 +1717,21 @@ void AddBodiesToInterfaceModel(const MultibodyPlant<double>& plant,
 
 void AddFramesToInterfaceModel(const MultibodyPlant<double>& plant,
                                ModelInstanceIndex model_instance,
-                               const sdf::InterfaceModelPtr& interface_model) {
-  for (FrameIndex index(0); index < plant.num_frames(); ++index) {
+                               const sdf::InterfaceModelPtr& interface_model,
+                               const std::vector<FrameIndex>& frame_indices,
+                               const std::string& model_frame_name) {
+  for (auto index : frame_indices) {
     const auto& frame = plant.get_frame(index);
     if (frame.model_instance() != model_instance) {
       continue;
     }
-    if (frame.name() == "__model__" ||
+    if (frame.name().empty() || frame.name() == model_frame_name ||
         plant.HasBodyNamed(frame.name(), model_instance)) {
-      // Skip __model__ since it's already added.  Also skip frames with the
-      // same name as a link since those are frames added by Drake and are
-      // considered implicit by SDFormat. Sending such frames to SDFormat would
-      // imply that these frames are explicit (i.e., frames created using the
-      // <frame> tag).
+      // Skip unnamed frames, and __model__ since it's already added.  Also
+      // skip frames with the same name as a link since those are frames added
+      // by Drake and are considered implicit by SDFormat. Sending such frames
+      // to SDFormat would imply that these frames are explicit (i.e., frames
+      // created using the <frame> tag).
       continue;
     }
     interface_model->AddFrame(
@@ -1593,9 +1741,9 @@ void AddFramesToInterfaceModel(const MultibodyPlant<double>& plant,
 }
 
 void AddJointsToInterfaceModel(const MultibodyPlant<double>& plant,
-                               ModelInstanceIndex model_instance,
-                               const sdf::InterfaceModelPtr& interface_model) {
-  for (auto index : plant.GetJointIndices(model_instance)) {
+                               const sdf::InterfaceModelPtr& interface_model,
+                               const std::vector<JointIndex>& joint_indices) {
+  for (auto index : joint_indices) {
     const auto& joint = plant.get_joint(index);
     const std::string& child_name = joint.child_body().name();
     const RigidTransformd X_CJ =
@@ -1620,6 +1768,59 @@ sdf::Error MakeSdfError(sdf::ErrorCode code, const DiagnosticDetail& detail) {
   return result;
 }
 
+ModelInstanceIndex GetOrCreateModelInstanceByName(
+    MultibodyPlant<double>* plant, const std::string& model_name) {
+  if (plant->HasModelInstanceNamed(model_name)) {
+    return plant->GetModelInstanceByName(model_name);
+  }
+  return plant->AddModelInstance(model_name);
+}
+
+sdf::InterfaceModelPtr ConvertToInterfaceModel(
+    MultibodyPlant<double>* plant, std::string model_name,
+    const InterfaceModelHelper& interface_model_helper, sdf::Errors* errors,
+    RigidTransformd X_WP = RigidTransformd::Identity()) {
+  auto model_instance = interface_model_helper.model_instance();
+  sdf::RepostureFunction reposture_model =
+      [plant, model_instance,
+       errors](const sdf::InterfaceModelPoseGraph& graph) {
+        // N.B. This should also posture the model appropriately.
+        for (auto interface_link_ind : plant->GetBodyIndices(model_instance)) {
+          const auto& interface_link = plant->get_body(interface_link_ind);
+
+          gz::math::Pose3d X_WL;
+          sdf::Errors inner_errors =
+              graph.ResolveNestedFramePose(X_WL, interface_link.name());
+          PropagateErrors(std::move(inner_errors), errors);
+          plant->SetDefaultFreeBodyPose(interface_link, ToRigidTransform(X_WL));
+        }
+      };
+
+  const auto& model_frame = plant->GetFrameByName(
+      interface_model_helper.model_frame_name(), model_instance);
+  const std::string canonical_link_name =
+      GetRelativeBodyName(model_frame.body(), model_instance, *plant);
+  const RigidTransformd X_WM = GetDefaultFramePose(*plant, model_frame);
+  const RigidTransformd X_PM = X_WP.inverse() * X_WM;
+
+  auto interface_model = std::make_shared<sdf::InterfaceModel>(
+      model_name, reposture_model, false, canonical_link_name,
+      ToIgnitionPose3d(X_PM));
+
+  AddBodiesToInterfaceModel(*plant, interface_model,
+                            interface_model_helper.body_indices(),
+                            X_WM.inverse());
+
+  AddFramesToInterfaceModel(*plant, model_instance, interface_model,
+                            interface_model_helper.frame_indices(),
+                            interface_model_helper.model_frame_name());
+
+  AddJointsToInterfaceModel(*plant, interface_model,
+                            interface_model_helper.joint_indices());
+
+  return interface_model;
+}
+
 // This assumes that parent models will have their parsing start before child
 // models! This is a safe assumption because we only encounter nested models
 // when force testing SDFormat files and libsdformat parses models in a top-down
@@ -1633,11 +1834,10 @@ sdf::InterfaceModelPtr ParseNestedInterfaceModel(
          collision_resolver, parser_selector] = workspace;
   const std::string resolved_filename{include.ResolvedFileName()};
 
-  // Do not attempt to parse anything other than URDF files.
+  // Do not attempt to parse anything other than URDF and MuJoCo xml files.
   const bool is_urdf = EndsWithCaseInsensitive(resolved_filename, kExtUrdf);
-  if (!is_urdf) {
-    // TODO(rpoyner-tri): implement nesting of mujoco files; saved for another
-    // day since it requires some study of mujoco scene composition semantics.
+  const bool is_xml = EndsWithCaseInsensitive(resolved_filename, kExtXml);
+  if (!is_urdf && !is_xml) {
     return nullptr;
   }
 
@@ -1663,24 +1863,60 @@ sdf::InterfaceModelPtr ParseNestedInterfaceModel(
 
   ModelInstanceIndex main_model_instance;
   // New instances will have indices starting from cur_num_models
-  int cur_num_models = plant->num_model_instances();
+  const bool is_merge_include = include.IsMerge().value_or(false);
+
+  InterfaceModelHelper interface_model_helper(*plant);
   ParsingWorkspace subworkspace{options, package_map, subdiagnostic, plant,
     collision_resolver, parser_selector};
-  const std::optional<ModelInstanceIndex> maybe_model =
-      parser_selector(diagnostic, resolved_filename).
-      AddModel(data_source, include.LocalModelName().value_or(""),
-               include.AbsoluteParentName(), subworkspace);
-  if (maybe_model.has_value()) {
-    main_model_instance = *maybe_model;
+
+  std::string model_frame_name = "__model__";
+  std::string model_name;
+  if (is_merge_include) {
+    // Create the parent model instance if it hasn't been created already.
+    // This can happen if this is the first model to be merge-included.
+    const auto parent_model_instance =
+      GetOrCreateModelInstanceByName(plant, include.AbsoluteParentName());
+
+    interface_model_helper.TakeSnapShot(parent_model_instance);
+    auto& parser = parser_selector(diagnostic, resolved_filename);
+    model_name =
+        parser.MergeModel(data_source, include.LocalModelName().value_or(""),
+                          parent_model_instance, subworkspace);
+    interface_model_helper.ComputeDiffFromSnapshot();
+
+    model_frame_name = sdf::computeMergedModelProxyFrameName(model_name);
+    interface_model_helper.set_model_frame_name(model_frame_name);
+
+    main_model_instance = parent_model_instance;
   } else {
-    return nullptr;
+    const std::optional<ModelInstanceIndex> maybe_model =
+        parser_selector(diagnostic, resolved_filename).
+        AddModel(data_source, include.LocalModelName().value_or(""),
+                include.AbsoluteParentName(), subworkspace);
+    if (maybe_model.has_value()) {
+      main_model_instance = *maybe_model;
+    } else {
+      return nullptr;
+    }
+
+    model_name =
+        ScopedName::Parse(plant->GetModelInstanceName(main_model_instance))
+            .get_element();
+
+    // In the non-merge-include case, we don't need to compute the diff, but we
+    // still use the interface_model_helper to hold all the frame bearing
+    // elements of the newly created model instance so we can later convert
+    // this model instance to an Interface Model for libsdformat's Interface
+    // API.
+    interface_model_helper.TakeSnapShot(main_model_instance);
   }
+  DRAKE_DEMAND(!model_name.empty());
 
   // Add explicit model frame to first link.
   auto body_indices = workspace.plant->GetBodyIndices(main_model_instance);
   if (body_indices.empty()) {
     errors->emplace_back(sdf::ErrorCode::ELEMENT_INVALID,
-                         "URDF must have at least one link.");
+                         "Model must have at least one link.");
     return nullptr;
   }
   const auto& canonical_link = workspace.plant->get_body(body_indices[0]);
@@ -1689,7 +1925,7 @@ sdf::InterfaceModelPtr ParseNestedInterfaceModel(
       plant->GetFrameByName(canonical_link.name(), main_model_instance);
   plant->AddFrame(
       std::make_unique<FixedOffsetFrame<double>>(
-          "__model__", canonical_link_frame, RigidTransformd::Identity(),
+          model_frame_name, canonical_link_frame, RigidTransformd::Identity(),
           main_model_instance));
 
   // Now that the model is parsed, we create interface elements to send to
@@ -1697,72 +1933,9 @@ sdf::InterfaceModelPtr ParseNestedInterfaceModel(
 
   // This will be populated for the first model instance.
   sdf::InterfaceModelPtr main_interface_model;
-  // Record by name to remember model hierarchy since model instances do not
-  // encode hierarchical information.  Related to this comment:
-  // https://github.com/RobotLocomotion/drake/issues/12270#issuecomment-606757766
-  std::map<std::string, sdf::InterfaceModelPtr> interface_model_hierarchy;
-
-  // N.B. For hierarchy, this assumes that "parent" models are defined before
-  // their "child" models.
-  for (ModelInstanceIndex model_instance(cur_num_models);
-       model_instance < plant->num_model_instances(); ++model_instance) {
-    sdf::RepostureFunction reposture_model =
-        [plant = plant, model_instance, errors](
-            const sdf::InterfaceModelPoseGraph &graph) {
-      // N.B. This should also posture the model appropriately.
-      for (auto interface_link_ind : plant->GetBodyIndices(model_instance)) {
-        const auto& interface_link = plant->get_body(interface_link_ind);
-
-        gz::math::Pose3d X_WL;
-        sdf::Errors inner_errors = graph.ResolveNestedFramePose(
-            X_WL, interface_link.name());
-        PropagateErrors(std::move(inner_errors), errors);
-        plant->SetDefaultFreeBodyPose(interface_link, ToRigidTransform(X_WL));
-      }
-    };
-
-    const std::string absolute_name =
-        plant->GetModelInstanceName(model_instance);
-    const auto [absolute_parent_name, local_name] =
-        sdf::SplitName(absolute_name);
-
-    const auto& model_frame =
-        plant->GetFrameByName("__model__", model_instance);
-    std::string canonical_link_name =
-        GetRelativeBodyName(model_frame.body(), model_instance, *plant);
-    RigidTransformd X_PM = RigidTransformd::Identity();
-    // The pose of the main (non-nested) model will be updated by the reposture
-    // callback, so we can use identity as the pose. For the nested model,
-    // however, we use the pose of the model relative to the parent frame, which
-    // is the parent model's frame.
-    if (model_instance != main_model_instance) {
-      auto parent_model_instance =
-          plant->GetModelInstanceByName(absolute_parent_name);
-      const auto& parent_model_frame =
-          plant->GetFrameByName("__model__", parent_model_instance);
-      RigidTransformd X_WP = GetDefaultFramePose(*plant, parent_model_frame);
-      RigidTransformd X_WM = GetDefaultFramePose(*plant, model_frame);
-      X_PM = X_WP.inverse() * X_WM;
-    }
-
-    auto interface_model = std::make_shared<sdf::InterfaceModel>(
-        local_name, reposture_model, false, canonical_link_name,
-        ToIgnitionPose3d(X_PM));
-
-    AddBodiesToInterfaceModel(*plant, model_instance, interface_model);
-    AddFramesToInterfaceModel(*plant, model_instance, interface_model);
-    AddJointsToInterfaceModel(*plant, model_instance, interface_model);
-
-    if (!main_interface_model) {
-      main_interface_model = interface_model;
-      interface_model_hierarchy[absolute_name] = main_interface_model;
-    } else {
-      // Register with its parent model.
-      sdf::InterfaceModelPtr parent_interface_model =
-          interface_model_hierarchy.at(absolute_parent_name);
-      parent_interface_model->AddNestedModel(interface_model);
-    }
-  }
+  main_interface_model = ConvertToInterfaceModel(
+      plant, model_name, interface_model_helper, errors);
+  main_interface_model->SetParserSupportsMergeInclude(true);
 
   return main_interface_model;
 }
@@ -1836,11 +2009,18 @@ std::optional<ModelInstanceIndex> AddModelFromSdf(
 
   SDFormatDiagnostic diagnostic(&workspace.diagnostic, &data_source);
 
+  const auto model_index_begin =
+    static_cast<ModelInstanceIndex>(workspace.plant->num_model_instances());
   sdf::Errors errors = LoadSdf(
       diagnostic, &root, data_source, parser_config);
   if (diagnostic.PropagateErrors(errors)) {
     return std::nullopt;
   }
+  const auto model_index_end =
+      static_cast<ModelInstanceIndex>(workspace.plant->num_model_instances());
+
+  ModelInstanceIndexRange reusable_model_instance_range =
+      std::make_pair(model_index_begin, model_index_end);
 
   const sdf::Model* maybe_model = get_only_model(root);
   if (maybe_model == nullptr) {
@@ -1860,8 +2040,8 @@ std::optional<ModelInstanceIndex> AddModelFromSdf(
   std::vector<ModelInstanceIndex> added_model_instances =
       AddModelsFromSpecification(
           diagnostic, model, model_name, {}, workspace.plant,
-          workspace.collision_resolver,
-          workspace.package_map, data_source.GetRootDir());
+          workspace.collision_resolver, workspace.package_map,
+          data_source.GetRootDir(), reusable_model_instance_range);
 
   DRAKE_DEMAND(!added_model_instances.empty());
   return added_model_instances.front();
@@ -1879,11 +2059,20 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
 
   SDFormatDiagnostic diagnostic(&workspace.diagnostic, &data_source);
 
+  const auto model_index_begin =
+    static_cast<ModelInstanceIndex>(workspace.plant->num_model_instances());
   sdf::Errors errors = LoadSdf(
       diagnostic, &root, data_source, parser_config);
   if (diagnostic.PropagateErrors(errors)) {
     return {};
   }
+
+  const auto model_index_end =
+      static_cast<ModelInstanceIndex>(workspace.plant->num_model_instances());
+
+  // See comment on where the ModelInstanceIndexRange type is defined.
+  ModelInstanceIndexRange reusable_model_instance_range =
+      std::make_pair(model_index_begin, model_index_end);
 
   // There either must be exactly one model, or exactly one world.
 #pragma GCC diagnostic push
@@ -1916,7 +2105,7 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
         AddModelsFromSpecification(
             diagnostic, model, model_name, {}, workspace.plant,
             workspace.collision_resolver, workspace.package_map,
-            data_source.GetRootDir());
+            data_source.GetRootDir(), reusable_model_instance_range);
     model_instances.insert(model_instances.end(),
                            added_model_instances.begin(),
                            added_model_instances.end());
@@ -1948,7 +2137,7 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
           AddModelsFromSpecification(
               diagnostic, model, model_name, {}, workspace.plant,
               workspace.collision_resolver, workspace.package_map,
-              data_source.GetRootDir());
+              data_source.GetRootDir(), reusable_model_instance_range);
       model_instances.insert(model_instances.end(),
                              added_model_instances.begin(),
                              added_model_instances.end());

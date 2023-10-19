@@ -1,0 +1,67 @@
+<?xml version="1.0"?>
+<sdf version="1.9">
+  <model name="top">
+    <link name="torso">
+      <pose>0 0 1   0 0 0</pose>
+    </link>
+
+    <model name="tactile_sensor">
+      <pose relative_to="arm_sdf::grasp_frame"/>
+      <link name="sensor_link"/>
+    </model>
+
+    <joint name="arm_attach" type="fixed">
+      <parent>torso</parent>
+      <child>arm_sdf::mount</child>
+    </joint>
+
+    <model name="arm_sdf">
+      <pose relative_to="torso"/>
+      <include merge="true">
+        <pose>1 0 0 0 0 0</pose>
+        <uri>package://interface_api_test/arm_merge_include.sdf</uri>
+      </include>
+    </model>
+
+
+    <model name="arm_urdf">
+      <pose relative_to="arm_sdf"/>
+      <include merge="true">
+        <pose>0 2 0 0 0 0</pose>
+        <uri>package://interface_api_test/arm.urdf</uri>
+      </include>
+    </model>
+
+    <joint name="extra_arm_attach" type="fixed">
+      <parent>arm_sdf::L1</parent>
+      <child>arm_urdf::L1</child>
+    </joint>
+
+
+    <model name="arm_sdf_name_override">
+      <pose relative_to="torso"/>
+      <include merge="true">
+        <pose>1 0 0 0 0 0</pose>
+        <uri>package://interface_api_test/arm_merge_include.sdf</uri>
+        <name>test_arm_sdf_name</name>
+      </include>
+    </model>
+
+    <model name="arm_urdf_name_override">
+      <pose relative_to="arm_sdf"/>
+      <include merge="true">
+        <pose>0 2 0 0 0 0</pose>
+        <uri>package://interface_api_test/arm.urdf</uri>
+        <name>test_arm_urdf_name</name>
+      </include>
+    </model>
+
+    <model name="arm_mjcf">
+      <pose relative_to="arm_sdf"/>
+      <include merge="true">
+        <pose>10 2 0 0 0 0</pose>
+        <uri>package://interface_api_test/arm.xml</uri>
+      </include>
+    </model>
+  </model>
+</sdf>
