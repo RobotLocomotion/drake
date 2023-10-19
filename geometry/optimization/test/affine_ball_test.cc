@@ -361,7 +361,26 @@ GTEST_TEST(AffineBallTest,
   }
   EXPECT_FALSE(E_F.PointInSet(Vector3d{0, 0, eps}));
   EXPECT_FALSE(E_F.PointInSet(Vector3d{0, 0, -eps}));
+
+  MatrixXd points(5, 2);
+  // clang-format off
+  points << 0.1, -0.1,
+            0.2, -0.2,
+            0.3, -0.3,
+            0.4, -0.4,
+            0.5, -0.5;
+  // clang-format on
+  VectorXd center(5);
+  center << 0.123, 0.435, 2.3, -0.2, 0.75;
+  points.colwise() += center;
+
+  const double kTol2 = 1e-8;
+  AffineBall E = AffineBall::MinimumVolumeCircumscribedEllipsoid(points);
+  EXPECT_TRUE(CompareMatrices(E.center(), center, kTol2));
 }
+
+// Test a one-dimensional "ball" in a five-dimensional space
+GTEST_TEST(HyperellipsoidTest, MinimumVolumeCircumscribedEllipsoid3) {}
 
 }  // namespace optimization
 }  // namespace geometry

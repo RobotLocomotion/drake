@@ -1,6 +1,5 @@
 #include "drake/geometry/optimization/affine_ball.h"
 
-#include <iostream>
 #include <vector>
 
 #include "drake/geometry/optimization/affine_subspace.h"
@@ -74,24 +73,6 @@ AffineBall AffineBall::MinimumVolumeCircumscribedEllipsoid(
   const int rank = ah.AffineDimension();
   Eigen::MatrixXd points_local = ah.ToLocalCoordinates(points);
 
-  std::cout << std::endl;
-  for (int i = 0; i < points.rows(); ++i) {
-    for (int j = 0; j < points.cols(); ++j) {
-      std::cout << points(i, j) << " ";
-    }
-    std::cout << std::endl;
-  }
-  std::cout << std::endl;
-
-  std::cout << std::endl;
-  for (int i = 0; i < points_local.rows(); ++i) {
-    for (int j = 0; j < points_local.cols(); ++j) {
-      std::cout << points_local(i, j) << " ";
-    }
-    std::cout << std::endl;
-  }
-  std::cout << std::endl;
-
   // Compute circumscribed ellipsoid in local coordinates
   MathematicalProgram prog;
   solvers::MatrixXDecisionVariable A =
@@ -133,20 +114,6 @@ AffineBall AffineBall::MinimumVolumeCircumscribedEllipsoid(
   A_full.leftCols(rank) = ah.basis() * affineball_local.B();
   Eigen::VectorXd center_full =
       ah.ToGlobalCoordinates(affineball_local.center());
-
-  std::cout << std::endl;
-  for (int i = 0; i < ah.translation().size(); ++i) {
-    std::cout << ah.translation()[i] << " ";
-  }
-  std::cout << std::endl;
-  for (int i = 0; i < affineball_local.center().size(); ++i) {
-    std::cout << affineball_local.center()[i] << " ";
-  }
-  std::cout << std::endl;
-  for (int i = 0; i < center_full.size(); ++i) {
-    std::cout << center_full[i] << " ";
-  }
-  std::cout << std::endl << std::endl;
 
   return AffineBall(A_full, center_full);
 
