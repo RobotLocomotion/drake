@@ -362,6 +362,17 @@ class TestYamlTypedRead(unittest.TestCase,
         expected = np.array([1.0, 2.0])
         np.testing.assert_equal(actual, expected, verbose=True)
 
+        data = "value: !FloatStruct {}"
+        defaults = VariantStruct(FloatStruct(22.0))
+        if options["allow_schema_with_no_yaml"]:
+            x = yaml_load_typed(schema=VariantStruct, data=data,
+                                defaults=defaults, **options)
+            self.assertEqual(x, defaults)
+        else:
+            with self.assertRaisesRegex(RuntimeError, ".*missing.*"):
+                yaml_load_typed(schema=VariantStruct, data=data,
+                                defaults=defaults, **options)
+
     @run_with_multiple_values(_all_typed_read_options())
     def test_read_variant_missing(self, *, options):
         if options["allow_schema_with_no_yaml"]:

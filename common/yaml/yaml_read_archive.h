@@ -313,7 +313,8 @@ class YamlReadArchive final {
     // absent; otherwise, the tag must match one of the variant's types.
     if (((I == 0) && (tag.empty() || (tag == "?") || (tag == "!"))) ||
         IsTagMatch(drake::NiceTypeName::GetFromStorage<T>(), tag)) {
-      T& typed_storage = storage->template emplace<I>();
+      T& typed_storage = storage->index() == I ? std::get<I>(*storage)
+                                               : storage->template emplace<I>();
       this->Visit(drake::MakeNameValue(name, &typed_storage));
       return;
     }

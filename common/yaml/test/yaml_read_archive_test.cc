@@ -534,6 +534,23 @@ TEST_P(YamlReadArchiveTest, Variant) {
   test("doc:\n  value: !DoubleStruct { value: 1.0 }", DoubleStruct{1.0});
 }
 
+// When loading a variant, the default value should remain intact in cases where
+// the type tag is unchanged.
+TEST_P(YamlReadArchiveTest, VariantNestedDefaults) {
+  const LoadYamlOptions param = GetParam();
+  VariantStruct result{Variant4{DoubleStruct{.value = 22.0}}};
+  const std::string doc = "doc: { value: !DoubleStruct {} }";
+  auto parse = [&]() {
+    YamlReadArchive(Load(doc), param).Accept(&result);
+  };
+  if (param.allow_cpp_with_no_yaml) {
+    EXPECT_NO_THROW(parse());
+  } else {
+    EXPECT_THROW(parse(), std::exception);
+  }
+  EXPECT_EQ(std::get<DoubleStruct>(result.value).value, 22.0);
+}
+
 TEST_P(YamlReadArchiveTest, VariantMissing) {
   const auto& x = AcceptEmptyDoc<VariantStruct>();
   EXPECT_EQ(std::get<double>(x.value), kNominalDouble);
