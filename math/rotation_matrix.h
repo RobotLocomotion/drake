@@ -18,6 +18,7 @@
 #include "drake/common/never_destroyed.h"
 #include "drake/math/fast_pose_composition_functions.h"
 #include "drake/math/roll_pitch_yaw.h"
+#include "drake/math/unit_vector.h"
 
 namespace drake {
 namespace math {
@@ -256,10 +257,10 @@ class RotationMatrix {
   /// @param[in] axis_index The index ∈ {0, 1, 2} of the unit vector associated
   ///  with u_A, 0 means u_A is Bx, 1 means u_A is By, and 2 means u_A is Bz.
   /// @pre axis_index is 0 or 1 or 2.
-  /// @throws std::exception in Debug builds if u_A is not a unit vector, i.e.,
-  /// |u_A| is not within a tolerance of 4ε ≈ 8.88E-16 to 1.0.
-  /// @note This method is designed for maximum performance and does not verify
-  ///  u_A as a unit vector in Release builds.  Consider MakeFromOneVector().
+  /// @throws std::exception if u_A is not a unit vector, i.e., |u_A| is not
+  /// within a tolerance of 4ε ≈ 8.88E-16 to 1.0.
+  /// @note This method is designed for speed and does not normalize u_A to
+  ///  ensure it is a unit vector. Alternatively, consider MakeFromOneVector().
   /// @retval R_AB the rotation matrix whose properties are described in
   /// MakeFromOneVector().
   static RotationMatrix<T> MakeFromOneUnitVector(const Vector3<T>& u_A,
@@ -276,7 +277,7 @@ class RotationMatrix {
   /// @retval R_AB the rotation matrix with properties as described above.
   static RotationMatrix<T> MakeClosestRotationToIdentityFromUnitZ(
       const Vector3<T>& u_A) {
-    ThrowIfNotUnitLength(u_A, __func__);
+    math::internal::ThrowIfNotUnitVector(u_A, __func__);
     const Vector3<T>& Bz = u_A;
     const Vector3<T> Az = Vector3<T>(0, 0, 1);
     // The rotation axis of the Axis-Angle representation of the resulting
@@ -919,17 +920,6 @@ class RotationMatrix {
   // are infinity or NaN.
   static Matrix3<T> QuaternionToRotationMatrix(
       const Eigen::Quaternion<T>& quaternion, const T& two_over_norm_squared);
-
-  // Throws an exception if the vector v does not have a measurable magnitude
-  // within 4ε of 1 (where machine epsilon ε ≈ 2.22E-16).
-  // @param[in] v The vector to test.
-  // @param[in] function_name The name of the calling function; included in the
-  //   exception message.
-  // @throws std::exception if |v| cannot be verified to be within 4ε of 1.
-  //   An exception is thrown if v contains nonfinite numbers (NaN or infinity).
-  // @note no exception is thrown if v is a symbolic type.
-  static void ThrowIfNotUnitLength(const Vector3<T>& v,
-                                   const char* function_name);
 
   // Returns the unit vector in the direction of v or throws an exception if v
   // cannot be "safely" normalized.

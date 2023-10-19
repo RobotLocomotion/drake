@@ -1,95 +1,11 @@
 #include "drake/multibody/tree/unit_inertia.h"
 
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/fmt_eigen.h"
 #include "drake/common/text_logging.h"
+#include "drake/math/unit_vector.h"
 
 namespace drake {
 namespace multibody {
-
-namespace {
-
-// Throws unless ‖unit_vector‖ is within 1E-14 (≈ 5.5 bits) of 1.0.
-// Note: 1E-14 ≈ 2^5.5 * std::numeric_limits<double>::epsilon();
-// @retval ‖unit_vector‖² which is exactly 1.0 for a perfect unit_vector.
-// @note: When type T is symbolic::Expression, this function is a no-op that
-// returns 1.
-// @note Although this function uses a tolerance of 1E-14 for determining
-// whether unit_vector is acceptable, unit_vector can be normalized for more
-// accurate calculations (e.g., giving ‖unit_vector‖ to be within 1E-16 of 1.0).
-// Unless ‖unit_vector‖ is exactly 1 (common since coordinate axes are popular
-// directions), the calling function should consider normalizing unit_vector
-// even if unit_vector passes this test. Usually this is accomplished by handing
-// the unit_vector off to other function(s) that all eventually call down into
-// AxiallySymmetric() which does the normalization.
-template <typename T>
-T ThrowUnlessVectorIsMagnitudeOne(const Vector3<T>& unit_vector,
-                                  std::string_view function_name);
-
-// The implementation logic underlying ThrowUnlessVectorIsMagnitudeOne(), but
-// instead of throwing, returns the exception message as an extra return value.
-// When there are no errors, the error_message will be empty.
-// @retval {‖unit_vector‖², error_message} as a pair.
-template <typename T>
-std::pair<T, std::string> CheckVectorIsMagnitudeOne(
-    const Vector3<T>& unit_vector, std::string_view function_name) {
-  DRAKE_DEMAND(!function_name.empty());
-  if constexpr (scalar_predicate<T>::is_bool) {
-    using std::abs;
-    // A test that a unit vector's magnitude is within a very small ε of 1 is
-    // |√(𝐯⋅𝐯) − 1| ≤ ε. To avoid an unnecessary square-root, notice that this
-    // simple test is equivalent to  ±(√(𝐯⋅𝐯) - 1) ≤ ε  which means that both
-    // √(𝐯⋅𝐯) - 1 ≤ ε  and √(𝐯⋅𝐯) - 1 ≥ -ε,  or
-    // √(𝐯⋅𝐯) ≤ 1 + ε  and √(𝐯⋅𝐯) ≥ 1 - ε.  Squaring these two equations give
-    // 𝐯⋅𝐯 ≤ (1 + ε)²  and 𝐯⋅𝐯 ≥ (1 - ε)².  Distributing the square results in
-    // 𝐯⋅𝐯 ≤ 1 + 2 ε + ε²  and 𝐯⋅𝐯 ≥ 1 - 2 ε + ε². Since ε² ≪ 2 ε, this gives
-    // 𝐯⋅𝐯 - 1 ≤ 2 ε   and 𝐯⋅𝐯 - 1 ≥ -2 ε  or  |𝐯⋅𝐯 − 1| ≤ 2 ε
-    // -------------------------------------------------------------
-    // Hence the following simple test can be replaced by a more efficient one.
-    // constexpr double kTolerance = 1E-14;
-    // if (abs(unit_vector.norm() - 1) > kTolerance) {
-    // -------------------------------------------------------------
-    constexpr double kTolerance2 = 2E-14;
-    const T uvec_squared = unit_vector.squaredNorm();
-    if (abs(uvec_squared - 1) > kTolerance2) {
-      const std::string error_message =
-          fmt::format("{}(): The unit_vector argument {} is not a unit vector.",
-                      function_name, fmt_eigen(unit_vector.transpose()));
-      return {uvec_squared, error_message};
-    }
-    return {uvec_squared, {}};
-  }
-  return {1.0, {}};
-}
-
-template <typename T>
-T ThrowUnlessVectorIsMagnitudeOne(const Vector3<T>& unit_vector,
-                                  std::string_view function_name) {
-  DRAKE_DEMAND(!function_name.empty());
-  auto [result, error_message] =
-      CheckVectorIsMagnitudeOne(unit_vector, function_name);
-  if (!error_message.empty()) {
-    throw std::logic_error(error_message);
-  }
-  return result;
-}
-
-// Like ThrowUnlessVectorIsMagnitudeOne(), but warns (once per process) instead
-// of throwing.
-template <typename T>
-T WarnUnlessVectorIsMagnitudeOne(const Vector3<T>& unit_vector,
-                                 std::string_view function_name) {
-  DRAKE_DEMAND(!function_name.empty());
-  auto [result, error_message] =
-      CheckVectorIsMagnitudeOne(unit_vector, function_name);
-  if (!error_message.empty()) {
-    static const internal::WarnDeprecated warn_once(
-        "2023-12-01",
-        fmt::format("{} Implicit normalization is deprecated.", error_message));
-  }
-  return result;
-}
-}  // namespace
 
 template <typename T>
 UnitInertia<T>& UnitInertia<T>::SetFromRotationalInertia(
@@ -126,7 +42,7 @@ UnitInertia<T> UnitInertia<T>::SolidCylinder(
     const T& radius, const T& length, const Vector3<T>& unit_vector) {
   DRAKE_THROW_UNLESS(radius >= 0);
   DRAKE_THROW_UNLESS(length >= 0);
-  WarnUnlessVectorIsMagnitudeOne(unit_vector, __func__);
+  math::internal::WarnIfNotUnitVector(unit_vector, __func__);
   const T rsq = radius * radius;
   const T lsq = length * length;
   const T J = 0.5 * rsq;                // Axial moment of inertia J = ½ r².
@@ -139,7 +55,7 @@ UnitInertia<T> UnitInertia<T>::SolidCylinderAboutEnd(
     const T& radius, const T& length, const Vector3<T>& unit_vector) {
   DRAKE_THROW_UNLESS(radius >= 0);
   DRAKE_THROW_UNLESS(length >= 0);
-  ThrowUnlessVectorIsMagnitudeOne(unit_vector, __func__);
+  math::internal::ThrowIfNotUnitVector(unit_vector, __func__);
   const T rsq = radius * radius;
   const T lsq = length * length;
   const T J = 0.5 * rsq;                // Axial moment of inertia J = ½ r².
@@ -168,7 +84,8 @@ UnitInertia<T> UnitInertia<T>::AxiallySymmetric(const T& moment_parallel,
   // TODO(Mitiguy) consider a "trust_me" type of parameter that can skip
   //  normalizing the unit_vector (it frequently is perfect on entry).
   using std::sqrt;
-  const T mag_squared = WarnUnlessVectorIsMagnitudeOne(unit_vector, __func__);
+  const T mag_squared =
+      math::internal::WarnIfNotUnitVector(unit_vector, __func__);
   const Vector3<T> uvec =
       (mag_squared == 1.0) ? unit_vector : unit_vector / sqrt(mag_squared);
 
@@ -184,7 +101,7 @@ template <typename T>
 UnitInertia<T> UnitInertia<T>::StraightLine(const T& moment_perpendicular,
     const Vector3<T>& unit_vector) {
   DRAKE_THROW_UNLESS(moment_perpendicular > 0.0);
-  WarnUnlessVectorIsMagnitudeOne(unit_vector, __func__);
+  math::internal::WarnIfNotUnitVector(unit_vector, __func__);
   return AxiallySymmetric(0.0, moment_perpendicular, unit_vector);
 }
 
@@ -192,7 +109,7 @@ template <typename T>
 UnitInertia<T> UnitInertia<T>::ThinRod(const T& length,
     const Vector3<T>& unit_vector) {
   DRAKE_THROW_UNLESS(length > 0.0);
-  WarnUnlessVectorIsMagnitudeOne(unit_vector, __func__);
+  math::internal::WarnIfNotUnitVector(unit_vector, __func__);
   return StraightLine(length * length / 12.0, unit_vector);
 }
 
@@ -212,7 +129,7 @@ UnitInertia<T> UnitInertia<T>::SolidCapsule(const T& radius, const T& length,
     const Vector3<T>& unit_vector) {
   DRAKE_THROW_UNLESS(radius >= 0);
   DRAKE_THROW_UNLESS(length >= 0);
-  ThrowUnlessVectorIsMagnitudeOne(unit_vector, __func__);
+  math::internal::ThrowIfNotUnitVector(unit_vector, __func__);
 
   // A special case is required for radius = 0 because it creates a zero volume
   // capsule (and we divide by volume later on). No special case for length = 0

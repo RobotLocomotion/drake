@@ -239,6 +239,7 @@ drake_cc_library(
         "//common:default_scalars",
         "//common:essential",
         "//math:geometric_transform",
+        "//math:vector3_util",
     ],
 )
 

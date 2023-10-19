@@ -1241,66 +1241,63 @@ GTEST_TEST(RotationMatrixTest, MakeFromOneUnitVector) {
   }
 }
 
-// Verify that the "advanced" method MakeFromOneUnitVector() throws an exception
-// in Debug builds if its first argument is a vector with a non-finite element
-// (e.g., a NaN) or is a vector whose magnitude is not within ≈ 1.0.  Verify no
-// exception is thrown in Release builds (for faster runtime speed).
+// Verify that MakeFromOneUnitVector() throws an exception if its first argument
+// is a vector with a non-finite element (e.g., NaN or infinity) or is a vector
+// whose magnitude is not super close to 1.0.
 // Verify an exception is always thrown for a symbolic (non-numeric) type.
 GTEST_TEST(RotationMatrixTest, MakeFromOneUnitVectorExceptions) {
   constexpr int axis_index = 0;
-  if (kDrakeAssertIsArmed) {
-    // Verify vector with NaN throws an exception.
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        RotationMatrix<double>::MakeFromOneUnitVector(
-            Vector3<double>(NAN, 1, NAN), axis_index),
-        "RotationMatrix::MakeFromOneUnitVector.* requires a unit-length vector"
-        "[^]+ nan 1.* nan[^]+ is not less than or equal to .+");
+  // Verify vector with NaN throws an exception.
+  Vector3<double> test_vector(NAN, 1, NAN);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      RotationMatrix<double>::MakeFromOneUnitVector(test_vector, axis_index),
+      "MakeFromOneUnitVector.* The unit_vector argument .* "
+      "is not a unit vector.[^]*");
 
-    // Verify vector with infinity throws an exception.
-    constexpr double kInfinity = std::numeric_limits<double>::infinity();
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        RotationMatrix<double>::MakeFromOneUnitVector(
-            Vector3<double>(kInfinity, 1, 0), axis_index),
-        "RotationMatrix::MakeFromOneUnitVector.* requires a unit-length vector"
-        "[^]+ inf 1.* 0[^]+ is not less than or equal to .+");
+  // Verify vector with infinity throws an exception.
+  constexpr double kInfinity = std::numeric_limits<double>::infinity();
+  test_vector = Vector3<double>(kInfinity, 1, 0);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      RotationMatrix<double>::MakeFromOneUnitVector(test_vector, axis_index),
+      "MakeFromOneUnitVector.* The unit_vector argument .* "
+      "is not a unit vector.[^]*");
 
-    // Verify non-unit vector throws an exception.
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        RotationMatrix<double>::MakeFromOneUnitVector(Vector3<double>(1, 2, 3),
-                                                      axis_index),
-        "RotationMatrix::MakeFromOneUnitVector.* requires a unit-length vector"
-        "[^]+ 1.* 2.* 3.*[^]+ is not less than or equal to .+");
+  // Verify zero vector throws an exception as expected..
+  test_vector = Vector3<double>(0, 0, 0);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      RotationMatrix<double>::MakeFromOneUnitVector(test_vector, axis_index),
+      "MakeFromOneUnitVector.* The unit_vector argument .* "
+      "is not a unit vector.[^]*");
 
-    // Verify MakeFromOneUnitVector() throws an exception if the magnitude of
-    // its unit vector argument u differs from 1.0 by more than 4 * kEpsilon.
-    // The value below for tol_sqrt is motivated by a Taylor series
-    // |u| = √(1² + tol_sqrt²) ≈ 1 + 0.5*tol_sqrt² ... ≈ 1 + 0.5*tol.
-    // Setting 0.5 * tol = 4 * kEpsilon leads to tol = 8 * kEpsilon, which
-    // means tol_sqrt = √(tol) = √(8 * kEpsilon) = √(8) * √(kEpsilon).
-    // We conservatively make tol_sqrt = 8 * √(kEpsilon) to ensure it throws.
-    double tol_sqrt = 8 * std::sqrt(kEpsilon);  // Large enough to throw.
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        RotationMatrix<double>::MakeFromOneUnitVector(
-            Vector3<double>(1, 0, tol_sqrt), axis_index),
-        "RotationMatrix::MakeFromOneUnitVector.* requires a unit-length vector"
-        "[^]+ is not less than or equal to .+");
+  // Verify non-unit vector throws an exception.
+  test_vector = Vector3<double>(1, 2, 3);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      RotationMatrix<double>::MakeFromOneUnitVector(test_vector, axis_index),
+      "MakeFromOneUnitVector.* The unit_vector argument .* "
+      "is not a unit vector.[^]*");
 
-    // Verify MakeFromOneUnitVector() does not throw an exception if
-    // |u| < 4 * kEpsilon, which means tol_sqrt < √(8) * √(kEpsilon).
-    tol_sqrt = 2 * std::sqrt(kEpsilon);  // Small enough to not throw.
-    DRAKE_EXPECT_NO_THROW(RotationMatrix<double>::MakeFromOneUnitVector(
-        Vector3<double>(1, 0, tol_sqrt), axis_index));
-  } else {
-    EXPECT_FALSE(RotationMatrix<double>::MakeFromOneUnitVector(
-                     Vector3<double>::Zero(), axis_index)
-                     .IsValid());
-    EXPECT_FALSE(RotationMatrix<double>::MakeFromOneUnitVector(
-                     Vector3<double>(NAN, 1, NAN), axis_index)
-                     .IsValid());
-    EXPECT_FALSE(RotationMatrix<double>::MakeFromOneUnitVector(
-                     Vector3<double>(1, 2, 3), axis_index)
-                     .IsValid());
-  }
+  // Verify MakeFromOneUnitVector() throws an exception if the magnitude of
+  // its unit vector argument u differs from 1.0 by more than 4 * kEpsilon.
+  // The value below for tol_sqrt is motivated by a Taylor series
+  // |u| = √(1² + tol_sqrt²) ≈ 1 + 0.5*tol_sqrt² ... ≈ 1 + 0.5*tol.
+  // Setting 0.5 * tol = 4 * kEpsilon leads to tol = 8 * kEpsilon, which
+  // means tol_sqrt = √(tol) = √(8 * kEpsilon) = √(8) * √(kEpsilon).
+  // We conservatively make tol_sqrt = 8 * √(kEpsilon) to ensure it throws.
+  double tol_sqrt = 8 * std::sqrt(kEpsilon);  // Large enough to throw.
+  test_vector = Vector3<double>(1, 0, tol_sqrt);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      RotationMatrix<double>::MakeFromOneUnitVector(test_vector, axis_index),
+      "MakeFromOneUnitVector.* The unit_vector argument .* "
+      "is not a unit vector.[^]*");
+
+  // Verify MakeFromOneUnitVector() does not throw an exception if
+  // |u| < 4 * kEpsilon, which means tol_sqrt < √(8) * √(kEpsilon).
+  tol_sqrt = 2 * std::sqrt(kEpsilon);  // Small enough to not throw.
+  test_vector = Vector3<double>(1, 0, tol_sqrt);
+  RotationMatrix<double> R;
+  DRAKE_EXPECT_NO_THROW(R = RotationMatrix<double>::MakeFromOneUnitVector(
+                            test_vector, axis_index));
+  EXPECT_TRUE(R.IsValid());
 }
 
 // Verify that the "basic" method MakeFromOneVector() throws an exception in
@@ -1435,8 +1432,8 @@ GTEST_TEST(MakeClosestRotationToIdentityFromUnitZTest, ThrowCondition) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       RotationMatrix<double>::MakeClosestRotationToIdentityFromUnitZ(
           nonunit_vector),
-      "RotationMatrix::MakeClosestRotationToIdentityFromUnitZ.*requires.*unit-"
-      "length[^]+");
+      "MakeClosestRotationToIdentityFromUnitZ.* The unit_vector argument .* "
+      "is not a unit vector.[^]*");
 }
 
 }  // namespace

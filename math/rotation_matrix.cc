@@ -133,7 +133,11 @@ RotationMatrix<T> RotationMatrix<T>::MakeFromOneUnitVector(
     const Vector3<T>& u_A, int axis_index) {
   // In Debug builds, verify axis_index is 0 or 1 or 2 and u_A is unit length.
   DRAKE_ASSERT(axis_index >= 0 && axis_index <= 2);
-  DRAKE_ASSERT_VOID(ThrowIfNotUnitLength(u_A, __func__));
+
+  // The following value of kTolerance was determined empirically and
+  // seems to guarantee a valid RotationMatrix() (see IsValid()).
+  constexpr double kTolerance = 4 * std::numeric_limits<double>::epsilon();
+  math::internal::ThrowIfNotUnitVector(u_A, __func__, kTolerance);
 
   // This method forms a right-handed orthonormal basis with u_A and two
   // internally-constructed unit vectors v_A and w_A.
@@ -382,33 +386,6 @@ double ProjectMatToRotMatWithAxis(const Eigen::Matrix3d& M,
     }
   }
   return theta;
-}
-
-template <typename T>
-void RotationMatrix<T>::ThrowIfNotUnitLength(const Vector3<T>& v,
-                                             const char* function_name) {
-  if constexpr (scalar_predicate<T>::is_bool) {
-    // The value of kTolerance was determined empirically, is well within the
-    // tolerance achieved by normalizing a vast range of non-zero vectors, and
-    // seems to guarantee a valid RotationMatrix() (see IsValid()).
-    constexpr double kTolerance = 4 * std::numeric_limits<double>::epsilon();
-    const double norm = ExtractDoubleOrThrow(v.norm());
-    const double error = std::abs(1.0 - norm);
-    // Throw an exception if error is non-finite (NaN or infinity) or too big.
-    if (!std::isfinite(error) || error > kTolerance) {
-      const double vx = ExtractDoubleOrThrow(v.x());
-      const double vy = ExtractDoubleOrThrow(v.y());
-      const double vz = ExtractDoubleOrThrow(v.z());
-      throw std::logic_error(
-          fmt::format("RotationMatrix::{}() requires a unit-length vector.\n"
-                      "         v: {} {} {}\n"
-                      "       |v|: {}\n"
-                      " |1 - |v||: {} is not less than or equal to {}.",
-                      function_name, vx, vy, vz, norm, error, kTolerance));
-    }
-  } else {
-    unused(v, function_name);
-  }
 }
 
 template <typename T>
