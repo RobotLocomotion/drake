@@ -222,7 +222,7 @@ GTEST_TEST(ReplacePSDConstraintWithDDConstraint,
   auto psd_constraint1 = prog1.AddPositiveSemidefiniteConstraint(X1);
 
   MathematicalProgram prog2;
-  auto X2 = prog1.NewSymmetricContinuousVariables<3>();
+  auto X2 = prog2.NewSymmetricContinuousVariables<3>();
   auto psd_constraint2 = prog2.AddPositiveSemidefiniteConstraint(X2);
 
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -243,7 +243,7 @@ GTEST_TEST(ReplacePSDConstraintWithDDConstraint,
   EXPECT_EQ(ssize(prog.positive_semidefinite_constraints()), 0);
   // Still adds the DD constraint even though the constraint was not found in
   // the program.
-  EXPECT_EQ(ssize(prog.linear_constraints()), X.rows());
+  EXPECT_EQ(ssize(prog.linear_constraints()), X.rows() * X.rows());
 }
 
 }  // namespace solvers

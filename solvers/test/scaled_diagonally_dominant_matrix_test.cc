@@ -2,12 +2,12 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/ssize.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/symbolic_test_util.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/solve.h"
-#include "drake/common/ssize.h"
-
 
 using drake::symbolic::test::ExprEqual;
 
@@ -325,6 +325,37 @@ GTEST_TEST(ReplacePSDConstraintWithSDDConstraint,
   // 3 choose 2 rotated lorentz cone constraints for the constraint that X be
   // sdd and 4 choose 2 for the constraint that Y be sdd.
   EXPECT_EQ(ssize(prog.rotated_lorentz_cone_constraints()), 9);
+}
+
+GTEST_TEST(ReplacePSDConstraintWithSDDConstraint,
+           ReplacePsdConstraintNotInProgramVariableNotInProgram) {
+  MathematicalProgram prog1;
+  auto X1 = prog1.NewSymmetricContinuousVariables<3>();
+  auto psd_constraint1 = prog1.AddPositiveSemidefiniteConstraint(X1);
+
+  MathematicalProgram prog2;
+  auto X2 = prog2.NewSymmetricContinuousVariables<3>();
+  auto psd_constraint2 = prog2.AddPositiveSemidefiniteConstraint(X2);
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      prog1.TightenPSDConstraintToSDDConstraint(psd_constraint2),
+      ".*is not a decision variable.*");
+}
+
+GTEST_TEST(ReplacePSDConstraintWithSDDConstraint,
+           ReplacePsdConstraintNotInProgramVariableInProgram) {
+  MathematicalProgram prog;
+  auto X = prog.NewSymmetricContinuousVariables<3>();
+  // A constraint not in the program.
+  auto constraint = internal::CreateBinding(
+      std::make_shared<PositiveSemidefiniteConstraint>(X.rows()),
+      Eigen::Map<VectorXDecisionVariable>(X.data(), X.size()));
+  EXPECT_EQ(ssize(prog.positive_semidefinite_constraints()), 0);
+  prog.TightenPSDConstraintToSDDConstraint(constraint);
+  EXPECT_EQ(ssize(prog.positive_semidefinite_constraints()), 0);
+  // Still adds the DD constraint even though the constraint was not found in
+  // the program.
+  EXPECT_EQ(ssize(prog.rotated_lorentz_cone_constraints()), 3);
 }
 
 }  // namespace solvers
