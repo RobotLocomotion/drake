@@ -55,7 +55,8 @@ void SaveToPng(const ImageGrey8U& image, const std::string& file_path);
 
 //@}
 
-/** A system for periodically writing images to the file system. The system does
+/** A system for periodically writing images to the file system. The system also
+ provides asynchronous image writing via a forced publish event. The system does
  not have a fixed set of input ports; the system can have an arbitrary number of
  image input ports. Each input port is independently configured with respect to:
 
@@ -89,7 +90,13 @@ void SaveToPng(const ImageGrey8U& image, const std::string& file_path);
  that function's documentation for elaboration on how to configure image output.
  It is important to note, that every declared image input port _must_ be
  connected; otherwise, attempting to write an image from that port, will cause
- an error in the system.  */
+ an error in the system.
+
+ If the user intends to write images asynchronously instead of periodically,
+ e.g., when running this system outside of a simulator, a call to
+ `ForcedPublish(system_context)` will write all images from each input port
+ simultaneously to disk.
+ */
 class ImageWriter : public LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ImageWriter)
@@ -213,6 +220,9 @@ class ImageWriter : public LeafSystem<double> {
                                                  double publish_period,
                                                  double start_time);
 
+  // Resets the saved image count for all declared input ports to zero.
+  void ResetAllImageCounts() const;
+
  private:
 #ifndef DRAKE_DOXYGEN_CXX
   // Friend for facilitating unit testing.
@@ -222,6 +232,9 @@ class ImageWriter : public LeafSystem<double> {
   // Does the work of writing image indexed by `index` to the disk.
   template <PixelType kPixelType>
   void WriteImage(const Context<double>& context, int index) const;
+
+  // Writes an image for each configured input port.
+  EventStatus WriteAllImages(const Context<double>& context) const;
 
   // Creates a file name from the given format string and time.
   std::string MakeFileName(const std::string& format, PixelType pixel_type,
