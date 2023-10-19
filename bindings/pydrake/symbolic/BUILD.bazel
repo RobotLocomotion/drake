@@ -43,6 +43,7 @@ drake_pybind_library(
     ],
     py_srcs = [
         "_symbolic_extra.py",
+        "_symbolic_sympy.py",
     ],
 )
 
@@ -61,6 +62,17 @@ drake_py_unittest(
         "//bindings/pydrake/common/test_utilities",
         "//bindings/pydrake/common/test_utilities:numpy_compare_py",
         "//bindings/pydrake/math:algebra_test_util_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "sympy_test",
+    deps = [
+        ":symbolic",
+        # We'll run the unit test against the latest (pinned) version of SymPy,
+        # even if the host system has a different version installed already.
+        "@mpmath_py_internal//:mpmath_py",
+        "@sympy_py_internal//:sympy_py",
     ],
 )
 
