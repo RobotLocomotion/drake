@@ -229,7 +229,7 @@ drake_cc_googletest(
         ":convex_set",
         ":test_utilities",
         "//common/test_utilities:eigen_matrix_compare",
-        "//solvers:mosek_solver"
+        "//solvers:mosek_solver",
     ],
 )
 

@@ -1,7 +1,6 @@
 #include "drake/geometry/optimization/affine_ball.h"
 
 #include <limits>
-#include <iostream>
 
 #include <gtest/gtest.h>
 
@@ -330,13 +329,6 @@ GTEST_TEST(AffineBallTest, MinimumVolumeCircumscribedEllipsoid) {
 
   Vector3d center_expected = Vector3d::Zero();
   EXPECT_TRUE(CompareMatrices(E_F.center(), center_expected, kTol));
-
-  // for (int i=0; i<E_F.B().rows(); ++i) {
-  //   for (int j=0; j<E_F.B().cols(); ++j) {
-  //     std::cout << E_F.B()(i,j) << " ";
-  //   }
-  //   std::cout << std::endl;
-  // }
 
   for (int i = 0; i < p_FA.cols(); ++i) {
     EXPECT_TRUE(E_F.PointInSet(p_FA.col(i), kTol));
