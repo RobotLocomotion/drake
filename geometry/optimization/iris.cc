@@ -54,13 +54,18 @@ HPolyhedron Iris(const ConvexSets& obstacles, const Ref<const VectorXd>& sample,
       Hyperellipsoid::MakeHypersphere(kEpsilonEllipsoid, sample));
   HPolyhedron P = domain;
 
+  if (options.starting_polytope) {
+    DRAKE_DEMAND(options.starting_polytope->ContainedIn(domain));
+    P = options.starting_polytope;
+  }
+
   // On each iteration, we will build the collision-free polytope represented as
   // {x | A * x <= b}.  Here we pre-allocate matrices of the maximum size.
   Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> A(
-      domain.A().rows() + N, dim);
-  VectorXd b(domain.A().rows() + N);
-  A.topRows(domain.A().rows()) = domain.A();
-  b.head(domain.A().rows()) = domain.b();
+      P.A().rows() + N, dim);
+  VectorXd b(P.A().rows() + N);
+  A.topRows(P.A().rows()) = P.A();
+  b.head(P.A().rows()) = P.b();
   // Use pairs {scale, index}, so that I can back out the indices after a sort.
   std::vector<std::pair<double, int>> scaling(N);
   MatrixXd closest_points(dim, N);
@@ -464,6 +469,12 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
   HPolyhedron P = HPolyhedron::MakeBox(plant.GetPositionLowerLimits(),
                                        plant.GetPositionUpperLimits());
   DRAKE_DEMAND(P.A().rows() == 2 * nq);
+
+  if (options.starting_polytope) {
+    DRAKE_DEMAND(options.starting_polytope->ContainedIn(P));
+    P = options.starting_polytope;
+  }
+
   const double kEpsilonEllipsoid = 1e-2;
   Hyperellipsoid E = options.starting_ellipse.value_or(
       Hyperellipsoid::MakeHypersphere(kEpsilonEllipsoid, seed));
