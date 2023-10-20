@@ -40,7 +40,7 @@ class MaxCliqueSolverBase {
  * Solves the maximum clique problem to global optimality by solving a
  * mixed-integer program.
  *
- * Note: This solver leverage convex optimization solvers (e.g. Gurobi and/or
+ * Note: This solver leverages convex optimization solvers (e.g. Gurobi and/or
  * Mosek). We recommend enabling those solvers if possible
  * (https://drake.mit.edu/bazel.html#proprietary_solvers).
  */
@@ -76,9 +76,9 @@ struct MaxCliqueOptions {
  * within the graph. A clique is a collection of vertices in a graph such that
  * each pair of vertices is connected by an edge (i.e. a fully connected
  * subgraph). This problem is known to be NP-complete, and so the choice of
- * solvers in options determines whether the return of this function is the true
- * maximum clique in the subgraph (which may take very long to compute), or only
- * an approximate solution found via heuristics.
+ * solvers in @param options determines whether the return of this function is
+ * the true maximum clique in the subgraph (which may take very long to
+ * compute), or only an approximate solution found via heuristics.
  * @param adjacency_matrix a symmetric (0,1)-matrix encoding the edge
  * relationship
  * @param options options for solving the max-clique problem.
