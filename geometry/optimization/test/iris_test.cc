@@ -165,6 +165,35 @@ GTEST_TEST(IrisTest, StartingEllipse) {
   EXPECT_FALSE(region.PointInSet(Vector2d(-.99, 0.0)));
 }
 
+GTEST_TEST(IrisTest, StartingPolytope) {
+  ConvexSets obstacles;
+  obstacles.emplace_back(VPolytope::MakeBox(Vector2d(.1, .5), Vector2d(1, 1)));
+  obstacles.emplace_back(
+      VPolytope::MakeBox(Vector2d(-1, -1), Vector2d(-.1, -.5)));
+  obstacles.emplace_back(
+      HPolyhedron::MakeBox(Vector2d(.1, -1), Vector2d(1, -.5)));
+  obstacles.emplace_back(
+      HPolyhedron::MakeBox(Vector2d(-1, .5), Vector2d(-.1, 1)));
+  const HPolyhedron domain = HPolyhedron::MakeUnitBox(2);
+
+  const Vector2d sample{0, 0};  // center of the bounding box.
+  IrisOptions options;
+
+  // Use a starting_polytope that omits the obstacles entirely.
+  options.starting_polytope =
+      HPolyhedron::MakeBox(Vector2d(-0.25, -0.25), Vector2d(0.25, 0.25));
+  const HPolyhedron region = Iris(obstacles, sample, domain, options);
+  EXPECT_EQ(region.b().size(),
+            4);  // 4 from bbox (obstacles aren't considered since they're
+                 // outside the starting_polytope).
+
+  // The initial polytope eliminates all points outside a box of size 0.25.
+  EXPECT_TRUE(region.PointInSet(Vector2d(0.0, .24)));
+  EXPECT_TRUE(region.PointInSet(Vector2d(0.0, -.24)));
+  EXPECT_FALSE(region.PointInSet(Vector2d(.49, 0.0)));
+  EXPECT_FALSE(region.PointInSet(Vector2d(-.49, 0.0)));
+}
+
 GTEST_TEST(IrisTest, TerminationConditions) {
   ConvexSets obstacles;
   obstacles.emplace_back(VPolytope::MakeBox(Vector2d(.1, .5), Vector2d(1, 1)));

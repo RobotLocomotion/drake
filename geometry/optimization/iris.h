@@ -86,6 +86,11 @@ struct IrisOptions {
   centered at the given sample will be used. */
   std::optional<Hyperellipsoid> starting_ellipse{};
 
+  /** The initial polytope that IRIS will search within for collisions in
+  the first iteration. If no polytope is provided, Iris will use the input
+  domain, IrisInConfigurationSpace will use the joint limits of the plant */
+  std::optional<HPolyhedron> starting_polytope{};
+
   /** By default, IRIS in configuration space certifies regions for collision
   avoidance constraints and joint limits. This option can be used to pass
   additional constraints that should be satisfied by the IRIS region. We accept
