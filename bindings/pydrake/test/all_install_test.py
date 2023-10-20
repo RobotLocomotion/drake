@@ -34,7 +34,7 @@ class TestAllInstall(unittest.TestCase):
         self.assertTrue(
             os.path.exists(os.path.join(site_packages, 'pydrake', 'py.typed')))
         self.assertTrue(
-            os.path.exists(os.path.join(site_packages, 'pydrake', 'all.pyi')))
+            os.path.exists(os.path.join(site_packages, 'pydrake', 'lcm.pyi')))
 
 
 if __name__ == '__main__':
