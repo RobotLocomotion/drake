@@ -397,10 +397,11 @@ Vector3<T> RotationMatrix<T>::NormalizeOrThrow(const Vector3<T>& v,
     // an expected small physical dimensions in a robotic systems.  Numbers
     // smaller than this are probably user or developer errors.
     constexpr double kMinMagnitude = 1e-10;
-    const double norm = ExtractDoubleOrThrow(v.norm());
+    const T norm = v.norm();
+    const double norm_as_double = ExtractDoubleOrThrow(norm);
     // Normalize the vector v if norm is finite and sufficiently large.
     // Throw an exception if norm is non-finite (NaN or infinity) or too small.
-    if (std::isfinite(norm) && norm >= kMinMagnitude) {
+    if (std::isfinite(norm_as_double) && norm_as_double >= kMinMagnitude) {
       u = v / norm;
     } else {
       const double vx = ExtractDoubleOrThrow(v.x());
@@ -414,7 +415,7 @@ Vector3<T> RotationMatrix<T>::NormalizeOrThrow(const Vector3<T>& v,
           " magnitude of at least {} to automatically normalize. If"
           " you are confident that v's direction is meaningful, pass"
           " v.normalized() in place of v.",
-          function_name, vx, vy, vz, norm, kMinMagnitude));
+          function_name, vx, vy, vz, norm_as_double, kMinMagnitude));
     }
   } else {
     // Do not use u = v.normalized() with an underlying symbolic type since
