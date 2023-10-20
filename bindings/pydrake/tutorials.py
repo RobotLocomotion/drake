@@ -22,9 +22,21 @@ def __main():
     import sys
     import pydrake
     sys.argv = ["notebook", f"{pydrake.getDrakePath()}/tutorials/index.ipynb"]
+    imported = False
     try:
-        from notebook import notebookapp as app
+        # Try the Jupyter >= 7 spelling first.
+        from notebook import app
+        imported = True
     except ImportError:
+        pass
+    if not imported:
+        try:
+            # Try the Jupyter < 7 spelling as a fallback.
+            from notebook import notebookapp as app
+            imported = True
+        except ImportError:
+            pass
+    if not imported:
         print("ERROR: the Jupyter notebook runtime is not installed!")
         print()
         print(__doc__)
