@@ -481,6 +481,7 @@ class TestTrajectories(unittest.TestCase):
         pp1 = PiecewisePolynomial.FirstOrderHold([0.0, 1.0, 2.0], x)
         pp2 = PiecewisePolynomial.FirstOrderHold([2.0, 3.0, 4.0], x)
         traj = CompositeTrajectory(segments=[pp1, pp2])
+        self.assertEqual(traj.get_number_of_segments(), 2)
         self.assertEqual(traj.rows(), 1)
         self.assertEqual(traj.cols(), 1)
         numpy_compare.assert_float_equal(traj.start_time(), 0.0)

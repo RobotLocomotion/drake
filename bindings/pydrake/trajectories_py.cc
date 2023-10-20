@@ -554,7 +554,7 @@ struct Impl {
     {
       using Class = CompositeTrajectory<T>;
       constexpr auto& cls_doc = doc.CompositeTrajectory;
-      auto cls = DefineTemplateClassWithDefault<Class, Trajectory<T>>(
+      auto cls = DefineTemplateClassWithDefault<Class, PiecewiseTrajectory<T>>(
           m, "CompositeTrajectory", param, cls_doc.doc);
       cls  // BR
           .def(py::init([](std::vector<const Trajectory<T>*> py_segments) {
