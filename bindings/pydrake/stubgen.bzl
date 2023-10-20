@@ -1,13 +1,8 @@
 def _impl(ctx):
-    ruledir = ctx.genfiles_dir.path + "/" + ctx.label.package
     ctx.actions.run(
         mnemonic = "GenerateMypyStubs",
         executable = ctx.executable.tool,
-        arguments = [
-            "--quiet",
-            "--package=" + ctx.attr.package,
-            "--output=" + ruledir,
-        ],
+        arguments = [x.path for x in ctx.outputs.outs],
         outputs = ctx.outputs.outs,
     )
     return [DefaultInfo(
@@ -25,7 +20,6 @@ generate_python_stubs = rule(
             # pydrake binaries in order to populate the pyi stubs.
             cfg = "target",
         ),
-        "package": attr.string(mandatory = True),
         "outs": attr.output_list(mandatory = True),
     },
 )

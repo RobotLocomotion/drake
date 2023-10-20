@@ -13,6 +13,7 @@ def mypy_internal_repository(
         sha256 = "22894445313d989109498ea7a6b124034ab10cbb2b50f3878b81883eaa3290d2",  # noqa
         build_file = ":package.BUILD.bazel",
         patches = [
+            ":patches/no_retry.patch",
             ":patches/reject_double_colon.patch",
             ":patches/timeout.patch",
         ],
