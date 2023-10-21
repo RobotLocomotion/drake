@@ -137,6 +137,20 @@ void MinimalEllipsoidCoveringPoints(const SolverInterface& solver, double tol) {
       Eigen::MatrixXd::Zero(log_det_Z_sol.rows(), log_det_Z_sol.cols())));
   EXPECT_NEAR(-std::log(S_sol.determinant()), expected_cost, tol);
 }
+
+void MatrixLogDeterminantLower(const SolverInterface& solver, double tol) {
+  MathematicalProgram prog;
+  auto X = prog.NewSymmetricContinuousVariables<3>();
+  const double lower = 1;
+  prog.AddLogDeterminantLowerBound(X.cast<symbolic::Expression>(), lower);
+  if (solver.available()) {
+    MathematicalProgramResult result;
+    solver.Solve(prog, std::nullopt, std::nullopt, &result);
+    EXPECT_TRUE(result.is_success());
+    const auto X_sol = result.GetSolution(X);
+    EXPECT_GE(std::log(X_sol.determinant()), lower - tol);
+  }
+}
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

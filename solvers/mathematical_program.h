@@ -1210,24 +1210,22 @@ class MathematicalProgram {
   Binding<Cost> AddCost(const symbolic::Expression& e);
 
   /**
-   * Adds the cost to maximize the log determinant of symmetric matrix X.
-   * log(det(X)) is a concave function of X, so we can maximize it through
-   * convex optimization. In order to do that, we introduce slack variables t,
-   * and a lower triangular matrix Z, with the constraints
+   * @anchor log_determinant
+   * @name    Matrix log determinant
+   * Adds the cost to maximize the log determinant of symmetric matrix X,
+   * or imposes the constraint that the log determinant of X is lower-bounded.
+   * log(det(X)) is a concave function of X, so we can maximize it (or bound it
+   * from below) through convex optimization. In order to do that, we introduce
+   * slack variables t, and a lower triangular matrix Z, with the constraints
    *
    *     ⌈X         Z⌉ is positive semidifinite.
    *     ⌊Zᵀ  diag(Z)⌋
    *
    *     log(Z(i, i)) >= t(i)
    *
-   * and we will minimize -∑ᵢt(i).
-   * @param X A symmetric positive semidefinite matrix X, whose log(det(X)) will
-   * be maximized.
-   * @return (cost, t, Z) cost is -∑ᵢt(i), we also return the newly created
-   * slack variables t and the lower triangular matrix Z. Note that Z is not a
-   * matrix of symbolic::Variable but symbolic::Expression, because the
-   * upper-diagonal entries of Z are not variable, but expression 0.
-   * @pre X is a symmetric matrix.
+   * and we will minimize -∑ᵢt(i) if we maximize log(det(X)), or impose the
+   * constraint ∑ᵢt(i) >= lower if we impose the constraint log(det(X)) >=
+   * lower.
    * @note The constraint log(Z(i, i)) >= t(i) is imposed as an exponential cone
    * constraint. Please make sure your have a solver that supports exponential
    * cone constraint (currently SCS does).
@@ -1243,10 +1241,38 @@ class MathematicalProgram {
    * https://docs.mosek.com/modeling-cookbook/sdo.html#log-determinant for more
    * details.
    */
+  //@{
+  /**
+   * Maximize the log determinant. See @ref log_determinant for more details.
+   * @param X A symmetric positive semidefinite matrix X, whose log(det(X)) will
+   * be maximized.
+   * @return (cost, t, Z) cost is -∑ᵢt(i), we also return the newly created
+   * slack variables t and the lower triangular matrix Z. Note that Z is not a
+   * matrix of symbolic::Variable but symbolic::Expression, because the
+   * upper-diagonal entries of Z are not variable, but expression 0.
+   * @pre X is a symmetric matrix.
+   */
   std::tuple<Binding<LinearCost>, VectorX<symbolic::Variable>,
              MatrixX<symbolic::Expression>>
   AddMaximizeLogDeterminantCost(
       const Eigen::Ref<const MatrixX<symbolic::Expression>>& X);
+
+  /**
+   * Impose the constraint log(det(X)) >= lower. See @ref log_determinant for
+   * more details.
+   * @param X A symmetric positive semidefinite matrix X.
+   * @param lower The lower bound of log(det(X))
+   * @return (constraint, t, Z) constraint is ∑ᵢt(i) >= lower, we also return
+   * the newly created slack variables t and the lower triangular matrix Z. Note
+   * that Z is not a matrix of symbolic::Variable but symbolic::Expression,
+   * because the upper-diagonal entries of Z are not variable, but expression 0.
+   * @pre X is a symmetric matrix.
+   */
+  std::tuple<Binding<LinearConstraint>, VectorX<symbolic::Variable>,
+             MatrixX<symbolic::Expression>>
+  AddLogDeterminantLowerBound(
+      const Eigen::Ref<const MatrixX<symbolic::Expression>>& X, double lower);
+  //@}
 
   /**
    * @anchor maximize_geometric_mean
@@ -3053,7 +3079,9 @@ class MathematicalProgram {
   /**
    * Returns the solver options stored inside MathematicalProgram.
    */
-  const SolverOptions& solver_options() const { return solver_options_; }
+  const SolverOptions& solver_options() const {
+    return solver_options_;
+  }
 
   const std::unordered_map<std::string, double>& GetSolverOptionsDouble(
       const SolverId& solver_id) const {
@@ -3198,13 +3226,19 @@ class MathematicalProgram {
   [[nodiscard]] std::vector<Binding<Constraint>> GetAllConstraints() const;
 
   /** Getter for number of variables in the optimization program */
-  int num_vars() const { return decision_variables_.size(); }
+  int num_vars() const {
+    return decision_variables_.size();
+  }
 
   /** Gets the number of indeterminates in the optimization program */
-  int num_indeterminates() const { return indeterminates_.size(); }
+  int num_indeterminates() const {
+    return indeterminates_.size();
+  }
 
   /** Getter for the initial guess */
-  const Eigen::VectorXd& initial_guess() const { return x_initial_guess_; }
+  const Eigen::VectorXd& initial_guess() const {
+    return x_initial_guess_;
+  }
 
   /** Returns the index of the decision variable. Internally the solvers thinks
    * all variables are stored in an array, and it accesses each individual
@@ -3476,7 +3510,9 @@ class MathematicalProgram {
    *
    * See @ref variable_scaling "Variable scaling" for more information.
    */
-  void ClearVariableScaling() { var_scaling_map_.clear(); }
+  void ClearVariableScaling() {
+    var_scaling_map_.clear();
+  }
   //@}
 
   /**

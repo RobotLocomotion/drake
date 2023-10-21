@@ -4427,6 +4427,27 @@ GTEST_TEST(TestMathematicalProgram, RemoveConstraint) {
                        &(prog.linear_complementarity_constraints()),
                        ProgramAttribute::kLinearComplementarityConstraint);
 }
+
+GTEST_TEST(MathematicalProgramTest, AddLogDeterminantLowerBound) {
+  MathematicalProgram prog;
+  auto X = prog.NewSymmetricContinuousVariables<3>("X");
+  auto ret =
+      prog.AddLogDeterminantLowerBound(X.cast<symbolic::Expression>(), 1);
+  const auto& constraint = std::get<0>(ret);
+  const auto& t = std::get<1>(ret);
+  EXPECT_TRUE(CompareMatrices(constraint.evaluator()->GetDenseA(),
+                              Eigen::RowVector3d::Ones()));
+  EXPECT_TRUE(
+      CompareMatrices(constraint.evaluator()->lower_bound(), Vector1d(1)));
+  EXPECT_TRUE(
+      CompareMatrices(constraint.evaluator()->upper_bound(), Vector1d(kInf)));
+  EXPECT_EQ(constraint.variables().size(), 3);
+  for (int i = 0; i < 3; ++i) {
+    EXPECT_TRUE(constraint.variables()(i).equal_to(t(i)));
+  }
+  EXPECT_FALSE(prog.exponential_cone_constraints().empty());
+  EXPECT_FALSE(prog.positive_semidefinite_constraints().empty());
+}
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
