@@ -559,6 +559,7 @@ drake_cc_googletest(
         ":test_models",
         "//geometry:test_obj_files",
         "//geometry:test_stl_files",
+        "//geometry/render:test_models",
     ] + _DM_CONTROL_MUJOCO_FILES,
     deps = [
         ":detail_mujoco_parser",

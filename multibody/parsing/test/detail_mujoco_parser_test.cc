@@ -22,9 +22,9 @@ namespace {
 
 using ::testing::MatchesRegex;
 
+using drake::internal::DiagnosticPolicy;
 using Eigen::Vector3d;
 using Eigen::Vector4d;
-using drake::internal::DiagnosticPolicy;
 using geometry::FrameId;
 using geometry::GeometryId;
 using geometry::Role;
@@ -37,30 +37,26 @@ using math::RotationMatrixd;
 
 class MujocoParserTest : public test::DiagnosticPolicyTestBase {
  public:
-  MujocoParserTest() {
-    plant_.RegisterAsSourceForSceneGraph(&scene_graph_);
-  }
+  MujocoParserTest() { plant_.RegisterAsSourceForSceneGraph(&scene_graph_); }
 
   std::optional<ModelInstanceIndex> AddModelFromFile(
-      const std::string& file_name,
-      const std::string& model_name) {
+      const std::string& file_name, const std::string& model_name) {
     internal::CollisionFilterGroupResolver resolver{&plant_};
     ParsingWorkspace w{options_, package_map_, diagnostic_policy_,
-                       &plant_, &resolver, NoSelect};
-    auto result = wrapper_.AddModel(
-        {DataSource::kFilename, &file_name}, model_name, {}, w);
+                       &plant_,  &resolver,    NoSelect};
+    auto result = wrapper_.AddModel({DataSource::kFilename, &file_name},
+                                    model_name, {}, w);
     resolver.Resolve(diagnostic_policy_);
     return result;
   }
 
   std::optional<ModelInstanceIndex> AddModelFromString(
-      const std::string& file_contents,
-      const std::string& model_name) {
+      const std::string& file_contents, const std::string& model_name) {
     internal::CollisionFilterGroupResolver resolver{&plant_};
     ParsingWorkspace w{options_, package_map_, diagnostic_policy_,
-                       &plant_, &resolver, NoSelect};
-    auto result = wrapper_.AddModel(
-        {DataSource::kContents, &file_contents}, model_name, {}, w);
+                       &plant_,  &resolver,    NoSelect};
+    auto result = wrapper_.AddModel({DataSource::kContents, &file_contents},
+                                    model_name, {}, w);
     resolver.Resolve(diagnostic_policy_);
     return result;
   }
@@ -70,9 +66,9 @@ class MujocoParserTest : public test::DiagnosticPolicyTestBase {
       const std::optional<std::string>& parent_model_name) {
     internal::CollisionFilterGroupResolver resolver{&plant_};
     ParsingWorkspace w{options_, package_map_, diagnostic_policy_,
-                       &plant_, &resolver, NoSelect};
-    auto result = wrapper_.AddAllModels(
-        {DataSource::kFilename, &file_name}, parent_model_name, w);
+                       &plant_,  &resolver,    NoSelect};
+    auto result = wrapper_.AddAllModels({DataSource::kFilename, &file_name},
+                                        parent_model_name, w);
     resolver.Resolve(diagnostic_policy_);
     return result;
   }
@@ -82,16 +78,16 @@ class MujocoParserTest : public test::DiagnosticPolicyTestBase {
       const std::optional<std::string>& parent_model_name) {
     internal::CollisionFilterGroupResolver resolver{&plant_};
     ParsingWorkspace w{options_, package_map_, diagnostic_policy_,
-                       &plant_, &resolver, NoSelect};
-    auto result = wrapper_.AddAllModels(
-        {DataSource::kContents, &file_contents}, parent_model_name, w);
+                       &plant_,  &resolver,    NoSelect};
+    auto result = wrapper_.AddAllModels({DataSource::kContents, &file_contents},
+                                        parent_model_name, w);
     resolver.Resolve(diagnostic_policy_);
     return result;
   }
 
   // Mujoco cannot delegate to any other parsers.
-  static ParserInterface& NoSelect(
-      const drake::internal::DiagnosticPolicy&, const std::string&) {
+  static ParserInterface& NoSelect(const drake::internal::DiagnosticPolicy&,
+                                   const std::string&) {
     DRAKE_UNREACHABLE();
   }
 
@@ -104,8 +100,8 @@ class MujocoParserTest : public test::DiagnosticPolicyTestBase {
 
   std::string box_obj_{std::filesystem::canonical(FindResourceOrThrow(
       "drake/multibody/parsing/test/box_package/meshes/box.obj"))};
-  std::string non_convex_obj_{std::filesystem::canonical(FindResourceOrThrow(
-      "drake/geometry/test/non_convex_mesh.obj"))};
+  std::string non_convex_obj_{std::filesystem::canonical(
+      FindResourceOrThrow("drake/geometry/test/non_convex_mesh.obj"))};
   std::string box_urdf_{std::filesystem::canonical(FindResourceOrThrow(
       "drake/multibody/parsing/test/box_package/urdfs/box.urdf"))};
 };
@@ -128,9 +124,10 @@ TEST_P(GymModelTest, GymModel) {
 }
 
 const char* gym_models[] = {
-  "acrobot", "cartpole", "cheetah", "finger", "fish", "hopper",
-  "humanoid", "humanoid_CMU", "lqr", "manipulator", "pendulum",
-  "point_mass", "reacher", "stacker", "swimmer", "walker"};
+    "acrobot", "cartpole",    "cheetah",  "finger",
+    "fish",    "hopper",      "humanoid", "humanoid_CMU",
+    "lqr",     "manipulator", "pendulum", "point_mass",
+    "reacher", "stacker",     "swimmer",  "walker"};
 INSTANTIATE_TEST_SUITE_P(GymModels, GymModelTest,
                          testing::ValuesIn(gym_models));
 
@@ -365,10 +362,12 @@ TEST_F(MujocoParserTest, GeometryPoseErrors) {
 </mujoco>
 )""";
   AddModelFromString(xml, "test");
-  EXPECT_THAT(TakeError(), MatchesRegex(
-      ".*has more than one orientation attribute specified.*"));
-  EXPECT_THAT(TakeError(), MatchesRegex(
-      ".*has more than one orientation attribute specified.*"));
+  EXPECT_THAT(
+      TakeError(),
+      MatchesRegex(".*has more than one orientation attribute specified.*"));
+  EXPECT_THAT(
+      TakeError(),
+      MatchesRegex(".*has more than one orientation attribute specified.*"));
 }
 
 TEST_F(MujocoParserTest, GeometryProperties) {
@@ -398,7 +397,8 @@ TEST_F(MujocoParserTest, GeometryProperties) {
   const SceneGraphInspector<double>& inspector = scene_graph_.model_inspector();
 
   auto CheckProperties = [&inspector](const std::string& geometry_name,
-                                      double mu, const Vector4d& rgba) {
+                                      double mu,
+                                      const std::optional<Vector4d>& rgba) {
     GeometryId geom_id = inspector.GetGeometryIdByName(
         inspector.world_frame_id(), Role::kProximity, geometry_name);
     const geometry::ProximityProperties* proximity_prop =
@@ -415,21 +415,27 @@ TEST_F(MujocoParserTest, GeometryProperties) {
     const geometry::PerceptionProperties* perception_prop =
         inspector.GetPerceptionProperties(geom_id);
     EXPECT_TRUE(perception_prop);
-    EXPECT_TRUE(perception_prop->HasProperty("phong", "diffuse"));
-    EXPECT_TRUE(CompareMatrices(
-        perception_prop->GetProperty<Vector4d>("phong", "diffuse"), rgba));
+    EXPECT_EQ(perception_prop->HasProperty("phong", "diffuse"),
+              rgba.has_value());
+    if (rgba) {
+      EXPECT_TRUE(CompareMatrices(
+          perception_prop->GetProperty<Vector4d>("phong", "diffuse"), *rgba));
+    }
 
     geom_id = inspector.GetGeometryIdByName(inspector.world_frame_id(),
                                             Role::kIllustration, geometry_name);
     const geometry::IllustrationProperties* illustration_prop =
         inspector.GetIllustrationProperties(geom_id);
     EXPECT_TRUE(illustration_prop);
-    EXPECT_TRUE(illustration_prop->HasProperty("phong", "diffuse"));
-    EXPECT_TRUE(CompareMatrices(
-        illustration_prop->GetProperty<Vector4d>("phong", "diffuse"), rgba));
+    EXPECT_EQ(illustration_prop->HasProperty("phong", "diffuse"),
+              rgba.has_value());
+    if (rgba) {
+      EXPECT_TRUE(CompareMatrices(
+          illustration_prop->GetProperty<Vector4d>("phong", "diffuse"), *rgba));
+    }
   };
 
-  CheckProperties("default", 1.0, Vector4d{.5, .5, .5, 1});
+  CheckProperties("default", 1.0, std::nullopt);
   CheckProperties("default_rgba", 1.0, Vector4d{0, 1, 0, 1});
   CheckProperties("sphere", 0.9, Vector4d{1, 0, 0, 1});
   CheckProperties("orange", 1.0, Vector4d{1, 0.5, 0, 1});
@@ -437,43 +443,6 @@ TEST_F(MujocoParserTest, GeometryProperties) {
   CheckProperties("red", 1.0, Vector4d{1, 0, 0, 1});
   CheckProperties("green", 1.0, Vector4d{0, 1, 0, 1});
 }
-
-class BoxMeshTest : public MujocoParserTest {
- public:
-  // Load and evaluate a box mesh, specified in various ways by caller-supplied
-  // asset and compiler xml text.
-  //
-  // Note: This method can only be used once per test case, since it hard-codes
-  // the geometry name.
-  void TestBoxMesh(std::string expected_filename, std::string mesh_asset,
-                std::string compiler = "", double expected_scale = 1.0) {
-    std::string xml = fmt::format(
-        R"""(
-<mujoco model="test">
-  {}
-  <asset>
-    {}
-  </asset>
-  <worldbody>
-    <geom name="box_geom" type="mesh" mesh="box"/>
-  </worldbody>
-</mujoco>
-)""",
-        compiler, mesh_asset);
-
-    AddModelFromString(xml, "test");
-
-    const SceneGraphInspector<double>& inspector =
-        scene_graph_.model_inspector();
-    GeometryId geom_id = inspector.GetGeometryIdByName(
-        inspector.world_frame_id(), Role::kProximity, "box_geom");
-    auto* mesh =
-        dynamic_cast<const geometry::Mesh*>(&inspector.GetShape(geom_id));
-    EXPECT_NE(mesh, nullptr);
-    EXPECT_EQ(mesh->filename(), expected_filename);
-    EXPECT_EQ(mesh->scale(), expected_scale);
-  }
-};
 
 TEST_F(MujocoParserTest, GeometryPropertiesErrors) {
   std::string xml = R"""(
@@ -488,17 +457,87 @@ TEST_F(MujocoParserTest, GeometryPropertiesErrors) {
   EXPECT_THAT(TakeError(), MatchesRegex(".*Material.*must have a name.*"));
 }
 
-TEST_F(BoxMeshTest, MeshFileDirectNoName) {
-  // Absolute path referencing the obj with the default heuristic for `name`.
-  std::string mesh_asset = fmt::format(R"""(<mesh file="{}"/>)""", box_obj_);
-  TestBoxMesh(box_obj_, mesh_asset);
+class BoxMeshTest : public MujocoParserTest {
+ public:
+  // Load and evaluate a box mesh, specified in various ways by caller-supplied
+  // asset and compiler xml text.
+  //
+  // Note: This method can only be used once per test case, since it hard-codes
+  // the geometry name.
+  void TestBoxMesh(std::string expected_filename,
+                   std::string expected_texture = "",
+                   double expected_scale = 1.0) {
+    std::string xml = fmt::format(
+        R"""(
+<mujoco model="test">
+  {}
+  <asset>
+    {}
+  </asset>
+  <worldbody>
+    <geom name="box_geom" type="mesh" mesh="box" {}/>
+  </worldbody>
+</mujoco>
+)""",
+        compiler_, asset_, geom_attributes_);
+
+    AddModelFromString(xml, "test");
+
+    const SceneGraphInspector<double>& inspector =
+        scene_graph_.model_inspector();
+    GeometryId geom_id = inspector.GetGeometryIdByName(
+        inspector.world_frame_id(), Role::kProximity, "box_geom");
+    auto* mesh =
+        dynamic_cast<const geometry::Mesh*>(&inspector.GetShape(geom_id));
+    EXPECT_NE(mesh, nullptr);
+    EXPECT_EQ(mesh->filename(), expected_filename);
+    EXPECT_EQ(mesh->scale(), expected_scale);
+    if (!expected_texture.empty()) {
+      geom_id = inspector.GetGeometryIdByName(inspector.world_frame_id(),
+                                              Role::kIllustration, "box_geom");
+      const geometry::IllustrationProperties* illustration_prop =
+          inspector.GetIllustrationProperties(geom_id);
+      ASSERT_NE(illustration_prop, nullptr);
+      ASSERT_TRUE(illustration_prop->HasProperty("phong", "diffuse_map"));
+      EXPECT_EQ(
+          illustration_prop->GetProperty<std::string>("phong", "diffuse_map"),
+          expected_texture);
+    }
+  }
+
+ protected:
+  std::string box_obj_{std::filesystem::canonical(
+      FindResourceOrThrow("drake/geometry/render/test/meshes/box.obj"))};
+  std::string box_png_{std::filesystem::canonical(
+      FindResourceOrThrow("drake/geometry/render/test/meshes/box.png"))};
+
+  std::string asset_{};
+  std::string compiler_{};
+  std::string geom_attributes_{};
+};
+
+TEST_F(BoxMeshTest, FilesDirectNoName) {
+  // Absolute path referencing the obj and png with the default heuristic for
+  // `name`.
+  asset_ = fmt::format(R"""(
+    <mesh file="{}"/>
+    <texture file="{}"/>
+    <material name="my_material" texture="box"/>
+  )""", box_obj_, box_png_);
+  geom_attributes_ = "material=\"my_material\"";
+  TestBoxMesh(box_obj_, box_png_);
 }
 
-TEST_F(BoxMeshTest, MeshFileDirect) {
-  // Absolute path, referencing the obj directly and with a `name` attribute.
-  std::string mesh_asset =
-      fmt::format(R"""(<mesh name="box" file="{}"/>)""", box_obj_);
-  TestBoxMesh(box_obj_, mesh_asset);
+TEST_F(BoxMeshTest, FilesDirect) {
+  // Absolute path, referencing the obj and png directly and with a `name`
+  // attribute.
+  asset_ = fmt::format(R"""(
+    <mesh name="box" file="{}"/>
+    <texture name="my_texture" file="{}"/>
+    <material name="my_material" texture="my_texture"/>
+  )""", box_obj_, box_png_);
+  geom_attributes_ = "material=\"my_material\"";
+  TestBoxMesh(box_obj_, box_png_);
 }
 
 TEST_F(BoxMeshTest, MeshFileStlOrObj) {
@@ -507,42 +546,94 @@ TEST_F(BoxMeshTest, MeshFileStlOrObj) {
       FindResourceOrThrow("drake/geometry/test/quad_cube.stl");
   std::string quad_cube_obj = std::filesystem::canonical(
       FindResourceOrThrow("drake/geometry/test/quad_cube.obj"));
-  std::string mesh_asset =
+  asset_ =
       fmt::format(R"""(<mesh name="box" file="{}"/>)""", quad_cube_stl);
-  TestBoxMesh(quad_cube_obj, mesh_asset);
+  TestBoxMesh(quad_cube_obj);
 }
 
-TEST_F(BoxMeshTest, MeshFileRelativePath) {
+TEST_F(BoxMeshTest, FilesRelativePath) {
   // Relative path (from string, so path is relative to cwd).
-  std::string mesh_asset = R"""(
-<mesh name="box" file="multibody/parsing/test/box_package/meshes/box.obj"/>)""";
-  TestBoxMesh(box_obj_, mesh_asset);
+  asset_ = R"""(
+    <mesh name="box" file="geometry/render/test/meshes/box.obj"/>
+    <texture name="my_texture" file="geometry/render/test/meshes/box.png"/>
+    <material name="my_material" texture="my_texture"/>
+  )""";
+  geom_attributes_ = "material=\"my_material\"";
+  TestBoxMesh(box_obj_, box_png_);
 }
 
 TEST_F(BoxMeshTest, MeshFileAbsolutePathCompiler) {
-  // Absolute path in the meshdir compiler attribute.
-  std::string mesh_asset =
-      R"""(<mesh name="box" file="box.obj"/>)""";
-  std::string compiler =
-      fmt::format(R"""(<compiler meshdir="{}"/>)""",
-                  std::filesystem::path(box_obj_).parent_path().string());
-  TestBoxMesh(box_obj_, mesh_asset, compiler);
+  // Absolute path in the meshdir and texturedir compiler attributes.
+  asset_ = R"""(
+    <mesh name="box" file="box.obj"/>
+    <texture name="my_texture" file="box.png"/>
+    <material name="my_material" texture="my_texture"/>
+  )""";
+  std::string dir = std::filesystem::path(box_obj_).parent_path().string();
+  compiler_ =
+      fmt::format(R"""(<compiler meshdir="{}" texturedir="{}"/>)""", dir, dir);
+  geom_attributes_ = "material=\"my_material\"";
+  TestBoxMesh(box_obj_, box_png_);
 }
 
 TEST_F(BoxMeshTest, MeshFileRelativePathCompiler) {
+  // Relative path + meshdir/texturedir compiler attributes.
+  asset_ = R"""(
+    <mesh name="box" file="box.obj"/>
+    <texture name="my_texture" file="box.png"/>
+    <material name="my_material" texture="my_texture"/>
+  )""";
+  compiler_ = R"""(
+    <compiler meshdir="geometry/render/test/meshes" texturedir="geometry/render/test/meshes"/>
+  )""";
+  geom_attributes_ = "material=\"my_material\"";
+  TestBoxMesh(box_obj_, box_png_);
+}
+
+TEST_F(BoxMeshTest, AssetDirAbsolutePath) {
+  // Relative path + assetdir compiler attribute.
+  asset_ = R"""(
+    <mesh name="box" file="box.obj"/>
+    <texture name="my_texture" file="box.png"/>
+    <material name="my_material" texture="my_texture"/>
+  )""";
+  std::string assetdir = std::filesystem::path(box_obj_).parent_path().string();
+  compiler_ = fmt::format(R"""(<compiler assetdir="{}"/>)""", assetdir);
+  geom_attributes_ = "material=\"my_material\"";
+  TestBoxMesh(box_obj_, box_png_);
+}
+
+TEST_F(BoxMeshTest, AssetDirRelativePath) {
+  // Relative path + assetdir compiler attribute.
+  asset_ = R"""(
+    <mesh name="box" file="box.obj"/>
+    <texture name="my_texture" file="box.png"/>
+    <material name="my_material" texture="my_texture"/>
+  )""";
+  compiler_ =
+      R"""(<compiler assetdir="geometry/render/test/meshes"/>)""";
+  geom_attributes_ = "material=\"my_material\"";
+  TestBoxMesh(box_obj_);
+}
+
+TEST_F(BoxMeshTest, MeshAndTextureDirTrumpsAssetDir) {
   // Relative path + meshdir compiler attribute.
-  std::string mesh_asset =
-      R"""(<mesh name="box" file="box.obj"/>)""";
-  std::string compiler =
-      R"""(<compiler meshdir="multibody/parsing/test/box_package/meshes"/>)""";
-  TestBoxMesh(box_obj_, mesh_asset, compiler);
+  asset_ = R"""(
+    <mesh name="box" file="box.obj"/>
+    <texture name="my_texture" file="box.png"/>
+    <material name="my_material" texture="my_texture"/>
+  )""";
+  compiler_ =
+      R"""(<compiler assetdir="bad/path" meshdir="geometry/render/test/meshes" texturedir="geometry/render/test/meshes"/>)""";
+  geom_attributes_ = "material=\"my_material\"";
+  TestBoxMesh(box_obj_, box_png_);
 }
 
 TEST_F(BoxMeshTest, MeshFileScale) {
   // Test the scale attribute.
-  std::string mesh_asset =
-      fmt::format(R"""(<mesh name="box" file="{}" scale="2 2 2"/>)""", box_obj_);
-  TestBoxMesh(box_obj_, mesh_asset, "", 2.0);
+  asset_ = fmt::format(
+      R"""(<mesh name="box" file="{}" scale="2 2 2"/>)""", box_obj_);
+  TestBoxMesh(box_obj_, "", 2.0);
 }
 
 TEST_F(MujocoParserTest, MeshFileRelativePathFromFile) {
@@ -551,8 +642,7 @@ TEST_F(MujocoParserTest, MeshFileRelativePathFromFile) {
 
   AddModelFromFile(file, "test");
 
-  const SceneGraphInspector<double>& inspector =
-      scene_graph_.model_inspector();
+  const SceneGraphInspector<double>& inspector = scene_graph_.model_inspector();
   GeometryId geom_id = inspector.GetGeometryIdByName(
       inspector.world_frame_id(), Role::kProximity, "box_geom");
   auto* mesh =
@@ -707,9 +797,8 @@ TEST_F(MujocoParserTest, InertiaFromGeometry) {
 
   auto context = plant_.CreateDefaultContext();
 
-  auto check_body = [this, &context](
-                        const std::string& body_name,
-                        const UnitInertia<double>& unit_M_BBo_B) {
+  auto check_body = [this, &context](const std::string& body_name,
+                                     const UnitInertia<double>& unit_M_BBo_B) {
     SCOPED_TRACE(fmt::format("checking body {}", body_name));
     const Body<double>& body = plant_.GetBodyByName(body_name);
     EXPECT_TRUE(CompareMatrices(
@@ -737,10 +826,10 @@ TEST_F(MujocoParserTest, InertiaFromGeometry) {
   check_body("default", UnitInertia<double>::SolidSphere(0.1));
   check_body_spatial("sphere", inertia_from_inertial_tag);
   check_body("capsule",
-      UnitInertia<double>::SolidCapsule(0.1, 4.0, Vector3d::UnitZ()));
+             UnitInertia<double>::SolidCapsule(0.1, 4.0, Vector3d::UnitZ()));
   check_body("ellipsoid", UnitInertia<double>::SolidEllipsoid(0.1, 0.2, 0.3));
   check_body("cylinder",
-      UnitInertia<double>::SolidCylinder(0.1, 4.0, Vector3d::UnitZ()));
+             UnitInertia<double>::SolidCylinder(0.1, 4.0, Vector3d::UnitZ()));
   check_body("box", UnitInertia<double>::SolidBox(0.2, 4.0, 6.0));
   check_body("box_from_default", UnitInertia<double>::SolidBox(0.2, 0.4, 0.6));
   check_body("ellipsoid_from_default",
@@ -758,10 +847,9 @@ TEST_F(MujocoParserTest, InertiaFromGeometry) {
                           .04 + (16.0 / 3.0),  // 1/4 r^2+ 1/3 L^2)
                           .04 + (16.0 / 3.0)));
   check_body_spatial("offset_cylinder", M_BBo_B);
-  check_body_spatial(
-      "box_from_mesh",
-      SpatialInertia<double>::SolidCubeWithMass(1.0, 2.0),
-      1e-13);
+  check_body_spatial("box_from_mesh",
+                     SpatialInertia<double>::SolidCubeWithMass(1.0, 2.0),
+                     1e-13);
   // This unit inertia and center of mass were collected empirically from the
   // results of multibody::CalcSpatialInertia() on the non-convex mesh. The
   // important fact is that it differs from the result obtained by estimating
@@ -784,10 +872,9 @@ TEST_F(MujocoParserTest, InertiaFromGeometry) {
   check_body_spatial(
       "box_default_density",
       SpatialInertia<double>::SolidBoxWithDensity(1000, 0.8, 1.0, 1.2));
-  check_body_spatial(
-      "box_from_mesh_w_density",
-      SpatialInertia<double>::SolidCubeWithMass(8.0, 2.0),
-      1e-12);
+  check_body_spatial("box_from_mesh_w_density",
+                     SpatialInertia<double>::SolidCubeWithMass(8.0, 2.0),
+                     1e-12);
   check_body_spatial(
       "non_convex_body_w_density",
       SpatialInertia<double>{0.1, non_convex_com, non_convex_unit_inertia},
@@ -829,7 +916,8 @@ TEST_F(MujocoParserTest, AssetErrors) {
     <mesh name="no-file-name"/>
   </asset>
 </mujoco>
-)""", box_obj_, box_urdf_, box_urdf_);
+)""",
+                                box_obj_, box_urdf_, box_urdf_);
 
   AddModelFromString(xml, "test");
   EXPECT_THAT(TakeWarning(), MatchesRegex(".*only supports.*obj format.*"));
@@ -1026,14 +1114,11 @@ TEST_F(MujocoParserTest, JointErrors) {
 )""";
 
   AddModelFromString(xml, "test");
-  EXPECT_THAT(TakeWarning(), MatchesRegex(
-      ".*Damping.*not supported for free.*"));
-  EXPECT_THAT(TakeWarning(), MatchesRegex(
-      ".*range.*unsupported.*ignored.*"));
-  EXPECT_THAT(TakeError(), MatchesRegex(
-      ".*a free joint is defined.*"));
-  EXPECT_THAT(TakeError(), MatchesRegex(
-      ".*Unknown joint type.*"));
+  EXPECT_THAT(TakeWarning(),
+              MatchesRegex(".*Damping.*not supported for free.*"));
+  EXPECT_THAT(TakeWarning(), MatchesRegex(".*range.*unsupported.*ignored.*"));
+  EXPECT_THAT(TakeError(), MatchesRegex(".*a free joint is defined.*"));
+  EXPECT_THAT(TakeError(), MatchesRegex(".*Unknown joint type.*"));
 }
 
 TEST_F(MujocoParserTest, InertialErrors) {
@@ -1051,10 +1136,10 @@ TEST_F(MujocoParserTest, InertialErrors) {
 )""";
 
   AddModelFromString(xml, "test");
-  EXPECT_THAT(TakeError(), MatchesRegex(
-      ".*inertial.*must include.*mass.*"));
-  EXPECT_THAT(TakeError(), MatchesRegex(
-      ".*inertial.*must include.*diaginertia or fullinertia.*"));
+  EXPECT_THAT(TakeError(), MatchesRegex(".*inertial.*must include.*mass.*"));
+  EXPECT_THAT(
+      TakeError(),
+      MatchesRegex(".*inertial.*must include.*diaginertia or fullinertia.*"));
 }
 
 TEST_F(MujocoParserTest, GeomAutoName) {
@@ -1101,31 +1186,31 @@ TEST_F(MujocoParserTest, GeomErrors) {
 
   AddModelFromString(xml, "test");
 
-  EXPECT_THAT(TakeWarning(), MatchesRegex(
-      ".*fromto.*ellipsoid.*unsupported.*ignored.*"));
-  EXPECT_THAT(TakeWarning(), MatchesRegex(
-      ".*fromto.*box.*unsupported.*ignored.*"));
-  EXPECT_THAT(TakeWarning(), MatchesRegex(
-      ".*unknown mesh.*ignored.*"));
-  EXPECT_THAT(TakeWarning(), MatchesRegex(
-      ".*hfield.*unsupported.*ignored.*"));
+  EXPECT_THAT(TakeWarning(),
+              MatchesRegex(".*fromto.*ellipsoid.*unsupported.*ignored.*"));
+  EXPECT_THAT(TakeWarning(),
+              MatchesRegex(".*fromto.*box.*unsupported.*ignored.*"));
+  EXPECT_THAT(TakeWarning(), MatchesRegex(".*unknown mesh.*ignored.*"));
+  EXPECT_THAT(TakeWarning(), MatchesRegex(".*hfield.*unsupported.*ignored.*"));
 
-  EXPECT_THAT(TakeError(), MatchesRegex(
-      ".*size.*sphere.*must have.*element.*"));
-  EXPECT_THAT(TakeError(), MatchesRegex(
-      ".*size.*capsule.*must have.*two elements.*"));
-  EXPECT_THAT(TakeError(), MatchesRegex(
-      ".*size.*capsule.*fromto.*must have.*one element.*"));
-  EXPECT_THAT(TakeError(), MatchesRegex(
-      ".*size.*ellipsoid.*must have.*three elements.*"));
-  EXPECT_THAT(TakeError(), MatchesRegex(
-      ".*size.*cylinder.*must have.*two elements.*"));
-  EXPECT_THAT(TakeError(), MatchesRegex(
-      ".*size.*cylinder.*fromto.*must have.*one element.*"));
-  EXPECT_THAT(TakeError(), MatchesRegex(
-      ".*size.*box.*must have.*three elements.*"));
-  EXPECT_THAT(TakeError(), MatchesRegex(
-      ".*mesh.*did not set the mesh attribute.*"));
+  EXPECT_THAT(TakeError(),
+              MatchesRegex(".*size.*sphere.*must have.*element.*"));
+  EXPECT_THAT(TakeError(),
+              MatchesRegex(".*size.*capsule.*must have.*two elements.*"));
+  EXPECT_THAT(
+      TakeError(),
+      MatchesRegex(".*size.*capsule.*fromto.*must have.*one element.*"));
+  EXPECT_THAT(TakeError(),
+              MatchesRegex(".*size.*ellipsoid.*must have.*three elements.*"));
+  EXPECT_THAT(TakeError(),
+              MatchesRegex(".*size.*cylinder.*must have.*two elements.*"));
+  EXPECT_THAT(
+      TakeError(),
+      MatchesRegex(".*size.*cylinder.*fromto.*must have.*one element.*"));
+  EXPECT_THAT(TakeError(),
+              MatchesRegex(".*size.*box.*must have.*three elements.*"));
+  EXPECT_THAT(TakeError(),
+              MatchesRegex(".*mesh.*did not set the mesh attribute.*"));
 }
 
 TEST_F(MujocoParserTest, Motor) {
@@ -1270,9 +1355,8 @@ TEST_P(ContactTest, Contact) {
   }
 }
 
-INSTANTIATE_TEST_SUITE_P(
-    ContactTests, ContactTest,
-    testing::Combine(testing::Bool(), testing::Bool()));
+INSTANTIATE_TEST_SUITE_P(ContactTests, ContactTest,
+                         testing::Combine(testing::Bool(), testing::Bool()));
 
 TEST_F(MujocoParserTest, ContactWarnings) {
   std::string xml = R"""(
@@ -1306,16 +1390,16 @@ TEST_F(MujocoParserTest, ContactWarnings) {
 
   AddModelFromString(xml, "test");
 
-  EXPECT_THAT(TakeWarning(), MatchesRegex(
-      ".*pair.*not have.*geom1.*geom2.*ignored.*"));
-  EXPECT_THAT(TakeWarning(), MatchesRegex(
-      ".*pair.*not have.*geom1.*geom2.*ignored.*"));
+  EXPECT_THAT(TakeWarning(),
+              MatchesRegex(".*pair.*not have.*geom1.*geom2.*ignored.*"));
+  EXPECT_THAT(TakeWarning(),
+              MatchesRegex(".*pair.*not have.*geom1.*geom2.*ignored.*"));
   EXPECT_THAT(TakeWarning(), MatchesRegex(".*pair.*unknown geom1.*ignored.*"));
   EXPECT_THAT(TakeWarning(), MatchesRegex(".*pair.*unknown geom2.*ignored.*"));
-  EXPECT_THAT(TakeWarning(), MatchesRegex(
-      ".*exclude.*not have.*body1.*body2.*ignored.*"));
-  EXPECT_THAT(TakeWarning(), MatchesRegex(
-      ".*exclude.*not have.*body1.*body2.*ignored.*"));
+  EXPECT_THAT(TakeWarning(),
+              MatchesRegex(".*exclude.*not have.*body1.*body2.*ignored.*"));
+  EXPECT_THAT(TakeWarning(),
+              MatchesRegex(".*exclude.*not have.*body1.*body2.*ignored.*"));
 }
 
 // TODO(rpoyner-tri) consider how to convert these to diagnostics.

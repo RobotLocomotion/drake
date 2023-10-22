@@ -424,7 +424,8 @@ class MujocoParser {
     RigidTransformd X_BG{};
     std::string name{};
     std::unique_ptr<geometry::Shape> shape{};
-    Vector4d rgba{.5, .5, .5, 1};
+    std::optional<Vector4d> rgba{};
+    std::optional<std::filesystem::path> texture{};
     CoulombFriction<double> friction{1.0, 1.0};
     SpatialInertia<double> M_GBo_B{};
   };
@@ -640,7 +641,24 @@ class MujocoParser {
         // Note: there are many material attributes that we do not support yet,
         // nor perhaps ever. Consider warning about them here (currently, it
         // seems like too much noise).
-        ParseVectorAttribute(material_node, "rgba", &geom.rgba);
+        Vector4d rgba;
+        if (ParseVectorAttribute(material_node, "rgba", &rgba)) {
+          geom.rgba = rgba;
+        }
+
+        std::string texture;
+        if (ParseStringAttribute(material_node, "texture", &texture)) {
+          if (texture_.count(texture)) {
+            geom.texture = texture_.at(texture);
+          } else {
+            // Note: we do not support the "default" texture (which is
+            // specified by the empty string
+            Warning(*material_node,
+                    fmt::format("material {} specified an unknown texture={}. "
+                                "The texture attribute will be ignored.",
+                                material, texture));
+          }
+        }
       } else {
         Warning(*node,
                 fmt::format("geom {} specified an unrecognized material {}",
@@ -648,7 +666,10 @@ class MujocoParser {
       }
     }
     // rgba takes precedence over materials, so must be parsed after.
-    ParseVectorAttribute(node, "rgba", &geom.rgba);
+    Vector4d rgba;
+    if (ParseVectorAttribute(node, "rgba", &rgba)) {
+      geom.rgba = rgba;
+    }
 
     // Note: The documentation suggests that at least 3 friction parameters
     // should be specified.  But humanoid_CMU.xml in the DeepMind suite
@@ -761,8 +782,17 @@ class MujocoParser {
 
     if (plant_->geometry_source_is_registered()) {
       for (auto& geom : geometries) {
+        geometry::IllustrationProperties illustration_properties;
+        if (geom.rgba) {
+          illustration_properties =
+              geometry::MakePhongIllustrationProperties(*(geom.rgba));
+        }
+        if (geom.texture) {
+          illustration_properties.AddProperty("phong", "diffuse_map",
+                                              geom.texture->string());
+        }
         plant_->RegisterVisualGeometry(body, geom.X_BG, *geom.shape, geom.name,
-                                       geom.rgba);
+                                       illustration_properties);
         plant_->RegisterCollisionGeometry(body, geom.X_BG, *geom.shape,
                                           geom.name, geom.friction);
       }
@@ -836,8 +866,18 @@ class MujocoParser {
            link_node = link_node->NextSiblingElement("geom")) {
         auto geom = ParseGeometry(link_node, geometries.size(), false);
         if (!geom.shape) continue;
+        geometry::IllustrationProperties illustration_properties;
+        if (geom.rgba) {
+          illustration_properties =
+              geometry::MakePhongIllustrationProperties(*(geom.rgba));
+        }
+        if (geom.texture) {
+          illustration_properties.AddProperty("phong", "diffuse_map",
+                                              geom.texture->string());
+        }
         plant_->RegisterVisualGeometry(plant_->world_body(), geom.X_BG,
-                                       *geom.shape, geom.name, geom.rgba);
+                                       *geom.shape, geom.name,
+                                       illustration_properties);
         plant_->RegisterCollisionGeometry(plant_->world_body(), geom.X_BG,
                                           *geom.shape, geom.name,
                                           geom.friction);
@@ -1030,7 +1070,79 @@ class MujocoParser {
       }
     }
 
-    WarnUnsupportedElement(*node, "texture");
+    for (XMLElement* texture_node = node->FirstChildElement("texture");
+         texture_node;
+         texture_node = texture_node->NextSiblingElement("texture")) {
+      WarnUnsupportedAttribute(*texture_node, "content_type");
+      WarnUnsupportedAttribute(*texture_node, "gridsize");
+      WarnUnsupportedAttribute(*texture_node, "gridlayout");
+      WarnUnsupportedAttribute(*texture_node, "fileright");
+      WarnUnsupportedAttribute(*texture_node, "fileleft");
+      WarnUnsupportedAttribute(*texture_node, "fileup");
+      WarnUnsupportedAttribute(*texture_node, "filedown");
+      WarnUnsupportedAttribute(*texture_node, "filefront");
+      WarnUnsupportedAttribute(*texture_node, "filebackstring");
+      WarnUnsupportedAttribute(*texture_node, "builtin");
+      WarnUnsupportedAttribute(*texture_node, "rgb1");
+      WarnUnsupportedAttribute(*texture_node, "rgb2");
+      WarnUnsupportedAttribute(*texture_node, "mark");
+      WarnUnsupportedAttribute(*texture_node, "markrgb");
+      WarnUnsupportedAttribute(*texture_node, "random");
+      WarnUnsupportedAttribute(*texture_node, "width");
+      WarnUnsupportedAttribute(*texture_node, "height");
+      WarnUnsupportedAttribute(*texture_node, "hflip");
+      WarnUnsupportedAttribute(*texture_node, "vflip");
+
+      std::string file;
+      if (ParseStringAttribute(texture_node, "file", &file)) {
+        std::string name;
+        if (!ParseStringAttribute(texture_node, "name", &name)) {
+          // Per the mujoco docs, if the "name" attribute is omitted then the
+          // texture name equals the file name without the path and extension.
+          name = std::filesystem::path(file).stem();
+        }
+
+        std::filesystem::path filename(file);
+
+        /* Adapted from the mujoco docs: The full path to a file is determined
+        as follows. If the strippath compiler option is “true”, all path
+        information from the file name is removed. The following checks are
+        then applied in order: (1) if the file name contains an absolute path,
+        it is used without further changes; (2) if the compiler texturedir
+        attribute is set and contains an absolute path, the full path is the
+        texturedir appended with the file name; (3) the full path is the path
+        to the main MJCF model file, appended with the value of texturedir if
+        set, appended with the file name. */
+
+        // TODO(russt): Support strippath.
+        if (!filename.is_absolute()) {
+          if (texturedir_) {
+            if (texturedir_->is_absolute()) {
+              filename = *texturedir_ / filename;
+            } else {
+              filename = main_mjcf_path_ / *texturedir_ / filename;
+            }
+          } else {
+            filename = main_mjcf_path_ / filename;
+          }
+        }
+        filename = std::filesystem::weakly_canonical(filename);
+
+        if (std::filesystem::exists(filename)) {
+          texture_[name] = filename;
+        } else {
+          Warning(*node,
+                  fmt::format("The texture asset \"{}\" could not be found.",
+                              filename.string()));
+        }
+      } else {
+        std::string name{};
+        ParseStringAttribute(texture_node, "name", &name);
+        Warning(*node, fmt::format("The texture asset named {} did not specify "
+                                   "a 'file' attribute and so will be ignored.",
+                                   name));
+      }
+    }
     WarnUnsupportedElement(*node, "hfield");
     WarnUnsupportedElement(*node, "skin");
   }
@@ -1101,14 +1213,22 @@ class MujocoParser {
       }
     }
 
+    std::string assetdir;
+    if (ParseStringAttribute(node, "assetdir", &assetdir)) {
+      meshdir_ = assetdir;
+      texturedir_ = assetdir;
+    }
     std::string meshdir;
     if (ParseStringAttribute(node, "meshdir", &meshdir)) {
       meshdir_ = meshdir;
     }
+    std::string texturedir;
+    if (ParseStringAttribute(node, "texturedir", &texturedir)) {
+      texturedir_ = texturedir;
+    }
 
     WarnUnsupportedAttribute(*node, "fitaabb");
     WarnUnsupportedAttribute(*node, "eulerseq");
-    WarnUnsupportedAttribute(*node, "texturedir");
     WarnUnsupportedAttribute(*node, "discardvisual");
     WarnUnsupportedAttribute(*node, "convexhull");
     // Note: we intentionally (silently) ignore "usethread" attribute.
@@ -1403,9 +1523,11 @@ class MujocoParser {
   InertiaFromGeometry inertia_from_geom_{kAuto};
   std::map<std::string, XMLElement*> material_{};
   std::optional<std::filesystem::path> meshdir_{};
+  std::optional<std::filesystem::path> texturedir_{};
   std::map<std::string, std::unique_ptr<geometry::Mesh>> mesh_{};
   // Spatial inertia of mesh assets assuming density = 1.
   std::map<std::string, SpatialInertia<double>> mesh_inertia_;
+  std::map<std::string, std::filesystem::path> texture_{};
 };
 
 std::pair<std::optional<ModelInstanceIndex>, std::string>
