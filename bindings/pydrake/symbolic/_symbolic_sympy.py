@@ -7,6 +7,7 @@ import operator
 from typing import Dict, Union
 
 import sympy
+import numpy as np
 from sympy.printing.pycode import MpmathPrinter
 
 import pydrake.symbolic
@@ -112,6 +113,51 @@ def _var_to_sympy(drake_var: Variable, *, memo: Dict):
         memo[sympy_var] = drake_var
     return sympy_var
 
+def _to_sympy_ndarray(array : np.ndarray, memo: Dict=None, round_ints: bool = False):
+    # ensure correct dtype
+    array = array.astype(object)
+
+    # Create an iterator for the array
+    it = np.nditer(array, flags=['multi_index', 'refs_ok'], op_flags=['readwrite'])
+
+    bigmemo = dict()
+
+    while not it.finished:
+        element = array[it.multi_index]
+
+        if memo is None: memo = dict()
+        array[it.multi_index] = _to_sympy(element, memo=memo, round_ints=round_ints)
+
+        # Update big memo and remove duplicates:
+        # TODO: improve... expensive for a very big expression.
+        bigmemo.update({key: value for key, value in memo.items() if key not in bigmemo})
+
+        it.iternext()
+
+    return array, bigmemo
+
+def _from_sympy_ndarray(array : np.ndarray, memo: Dict=None, round_ints: bool = False):
+    # ensure correct dtype
+    array = array.astype(object)
+
+    # Create an iterator for the array
+    it = np.nditer(array, flags=['multi_index', 'refs_ok'], op_flags=['readwrite'])
+
+    bigmemo = dict()
+    while not it.finished:
+        element = array[it.multi_index]
+
+        if memo is None: memo = dict()
+        array[it.multi_index] = _from_sympy(element, memo=memo, round_ints=round_ints)
+
+        # Update big memo and remove duplicates:
+        # TODO: improve... expensive for a very big expression.
+        bigmemo.update({key: value for key, value in memo.items() if key not in bigmemo})
+
+        it.iternext()
+
+    return array, bigmemo
+
 
 def _var_from_sympy(sympy_var: sympy.Dummy, *, memo: Dict):
     """Converts a SymPy variable into a Drake Variable.
@@ -129,19 +175,32 @@ def _var_from_sympy(sympy_var: sympy.Dummy, *, memo: Dict):
 
 
 def _to_sympy(
-    x: Union[float, bool, Variable, Expression, Formula],
+    x: Union[float, int, bool, Variable, Expression, Formula],
     *,
-    memo: Dict = None
-) -> Union[float, bool, sympy.Expr]:
+    memo: Dict = None,
+    round_ints: bool = False
+) -> Union[float, int, bool, sympy.Expr]:
     """This is the private implementation of pydrake.symbolic.to_sympy().
     Refer to that module-level function for the full docstring.
 
     TODO(jwnimmer-tri) Also support Polynomial, Monomial, etc.
     """
-    if isinstance(x, (float, bool)):
+    if isinstance(x, bool):
         return x
-    if isinstance(x, Variable):
+    elif isinstance(x, int):
+        return sympy.Integer(x)
+    elif isinstance(x, float):
+        if round_ints and abs(x - round(x)) < 1e-16:
+            return sympy.Integer(x)
+        else:
+            return sympy.Float(x)
+    elif isinstance(x, Variable):
         return _var_to_sympy(drake_var=x, memo=memo)
+    elif isinstance(x, np.ndarray):
+        x, memo = _to_sympy_ndarray(x, memo=memo, round_ints=round_ints)
+        return x
+
+
     try:
         kind = x.get_kind()
     except AttributeError as e:
@@ -222,19 +281,28 @@ def _lambdify(*, expr, args):
 
 
 def _from_sympy(
-    x: Union[float, bool, sympy.Expr],
+    x: Union[float, int, bool, sympy.Expr],
     *,
-    memo: Dict = None
-) -> Union[float, bool, Variable, Expression, Formula]:
+    memo: Dict = None,
+    round_ints: bool = False
+) -> Union[float, int, bool, Variable, Expression, Formula]:
     """This is the private implementation of pydrake.symbolic.from_sympy().
     Refer to that module-level function for the full docstring.
     """
+
     # Return non-SymPy inputs as-is.
-    if isinstance(x, (float, bool)):
+    if isinstance(x, int):
+        return int(x)
+    elif isinstance(x, float):
+        if round_ints and abs(x - round(x)) < 1e-16:
+            return int(x)
+        else:
+            return float(x)
+    elif x==sympy.nan:
+        return np.nan
+    elif isinstance(x, bool):
         return x
-    # Return constants quickly.
-    if x.is_number:
-        return float(x.evalf())
+
     # Find the SymPy variables in `x` and look up the matching Drake variables.
     sympy_vars = []
     drake_vars = []
@@ -247,6 +315,10 @@ def _from_sympy(
             sympy_vars.append(item)
             drake_vars.append(_var_from_sympy(item, memo=memo))
             continue
+        if isinstance(x, np.ndarray):
+            x, memo = _from_sympy_ndarray(x, memo=memo, round_ints=round_ints)
+            return x
+
         raise NotImplementedError(f"Unsupported atom {item!r} ({type(item)})")
     # Convert the SymPy expression to a Python function of the variables.
     drake_func = _lambdify(expr=x, args=sympy_vars)
