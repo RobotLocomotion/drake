@@ -298,9 +298,12 @@ def _from_sympy(
             return int(x)
         else:
             return float(x)
-    elif x==sympy.nan:
-        return np.nan
+
     elif isinstance(x, bool):
+        return x
+
+    if isinstance(x, np.ndarray):
+        x, memo = _from_sympy_ndarray(x, memo=memo, round_ints=round_ints)
         return x
 
     # Find the SymPy variables in `x` and look up the matching Drake variables.
@@ -315,9 +318,6 @@ def _from_sympy(
             sympy_vars.append(item)
             drake_vars.append(_var_from_sympy(item, memo=memo))
             continue
-        if isinstance(x, np.ndarray):
-            x, memo = _from_sympy_ndarray(x, memo=memo, round_ints=round_ints)
-            return x
 
         raise NotImplementedError(f"Unsupported atom {item!r} ({type(item)})")
     # Convert the SymPy expression to a Python function of the variables.
