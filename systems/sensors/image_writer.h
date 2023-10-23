@@ -223,6 +223,15 @@ class ImageWriter : public LeafSystem<double> {
   template <PixelType kPixelType>
   void WriteImage(const Context<double>& context, int index) const;
 
+  // A version where PixelType is a runtime parameter.
+  void WriteImage(PixelType pixel_type, const Context<double>& context, int index) const;
+
+  // Writes an image for each stored input port.
+  EventStatus WriteAllImages(const Context<double>& context) const;
+
+  // Resets the saved image count for all declared input ports to zero.
+  EventStatus ResetAllImageCounts(const Context<double>&) const;
+
   // Creates a file name from the given format string and time.
   std::string MakeFileName(const std::string& format, PixelType pixel_type,
                            double time, const std::string& port_name,

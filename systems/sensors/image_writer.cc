@@ -111,6 +111,12 @@ ImageWriter::ImageWriter() {
   extensions_[PixelType::kDepth16U] = ".png";
   labels_[PixelType::kGrey8U] = "grey_scale";
   extensions_[PixelType::kGrey8U] = ".png";
+
+  DeclareInitializationPublishEvent(&ImageWriter::ResetAllImageCounts);
+
+  // Declares a forced publish event to accommodate non-periodic image saving,
+  // e.g., when running this outside of a simulation.
+  DeclareForcedPublishEvent(&ImageWriter::WriteAllImages);
 }
 
 template <PixelType kPixelType>
@@ -240,6 +246,57 @@ void ImageWriter::WriteImage(const Context<double>& context, int index) const {
   SaveToFileHelper(
       image, MakeFileName(data.format, data.pixel_type, context.get_time(),
                           port.get_name(), data.count++));
+}
+
+void ImageWriter::WriteImage(PixelType pixel_type,
+                             const Context<double>& context, int index) const {
+  switch(pixel_type) {
+    case PixelType::kRgb8U:
+      break;
+    case PixelType::kBgr8U:
+      break;
+    case PixelType::kRgba8U: {
+      return this->template WriteImage<PixelType::kRgba8U>(context, index);
+    }
+    case PixelType::kBgra8U:
+      break;
+    case PixelType::kDepth16U: {
+      return this->template WriteImage<PixelType::kDepth16U>(context, index);
+    }
+    case PixelType::kDepth32F: {
+      return this->template WriteImage<PixelType::kDepth32F>(context, index);
+    }
+    case PixelType::kLabel16I: {
+      return this->template WriteImage<PixelType::kLabel16I>(context, index);
+    }
+    case PixelType::kGrey8U: {
+      return this->template WriteImage<PixelType::kGrey8U>(context, index);
+    }
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    case PixelType::kExpr:
+      break;
+#pragma GCC diagnostic pop
+  }
+  throw std::logic_error(fmt::format(
+      "WriteImage::DeclareImageInputPort does not support pixel_type={}",
+      static_cast<int>(pixel_type)));
+}
+
+EventStatus ImageWriter::WriteAllImages(const Context<double> &context) const {
+  for (int port_index = 0; static_cast<size_t>(port_index) < port_info_.size();
+       ++port_index) {
+    const auto& port_info = port_info_.at(port_index);
+    WriteImage(port_info.pixel_type, context, port_index);
+  }
+  return EventStatus::Succeeded();
+}
+
+EventStatus ImageWriter::ResetAllImageCounts(const Context<double>&) const {
+  for (const auto& port_info : port_info_) {
+    port_info.count = 0;
+  }
+  return EventStatus::Succeeded();
 }
 
 std::string ImageWriter::MakeFileName(const std::string& format,
