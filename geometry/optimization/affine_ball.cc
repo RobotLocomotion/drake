@@ -94,15 +94,16 @@ AffineBall AffineBall::MinimumVolumeCircumscribedEllipsoid(
     prog.AddLorentzConeConstraint(v);
   }
 
-  solvers::MathematicalProgramResult result;
-  if (solvers::MosekSolver::is_available() &&
-      solvers::MosekSolver::is_enabled()) {
-    MosekSolver solver;
-    result = solver.Solve(prog);
-  } else {
-    ScsSolver solver;
-    result = solver.Solve(prog);
-  }
+  // solvers::MathematicalProgramResult result;
+  // if (solvers::MosekSolver::is_available() &&
+  //     solvers::MosekSolver::is_enabled()) {
+  //   MosekSolver solver;
+  //   result = solver.Solve(prog);
+  // } else {
+  //   ScsSolver solver;
+  //   result = solver.Solve(prog);
+  // }
+  solvers::MathematicalProgramResult result = Solve(prog);
   if (!result.is_success()) {
     throw std::runtime_error(
         fmt::format("The MathematicalProgram was not solved successfully. The "
