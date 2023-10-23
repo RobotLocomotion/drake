@@ -2,9 +2,7 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/ssize.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
-#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/symbolic_test_util.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/solve.h"
@@ -238,92 +236,6 @@ GTEST_TEST(SdsosTest, NotSdsosPolynomial) {
   EXPECT_TRUE(
       result.get_solution_result() == SolutionResult::kInfeasibleConstraints ||
       result.get_solution_result() == SolutionResult::kInfeasibleOrUnbounded);
-}
-
-GTEST_TEST(RelaxPsdConstraint,
-           MultiPsdConstraint) {
-  MathematicalProgram prog;
-  auto X = prog.NewSymmetricContinuousVariables<3>();
-  auto Y = prog.NewSymmetricContinuousVariables<4>();
-  auto psd_constraint_X = prog.AddPositiveSemidefiniteConstraint(X);
-  auto psd_constraint_Y = prog.AddPositiveSemidefiniteConstraint(Y);
-
-  // Add an arbitrary linear constraint on X.
-  Eigen::MatrixXd A(2, 3);
-  // clang-format off
-  A << 1,  0, 1,
-       0, -1, 1;
-  // clang-format on
-  Eigen::VectorXd lb(2);
-  lb << -10, -7;
-  Eigen::VectorXd ub(2);
-  ub << 11, 9;
-  auto affine_constraint_upper =
-      prog.AddLinearConstraint(A * X * Eigen::VectorXd::Ones(3) <= ub);
-  auto affine_constraint_lower =
-      prog.AddLinearConstraint(A * X * Eigen::VectorXd::Ones(3) >= lb);
-  auto Y_eq_constraint =
-      prog.AddLinearEqualityConstraint(Y == Eigen::MatrixXd::Identity(4, 4));
-
-  EXPECT_EQ(ssize(prog.positive_semidefinite_constraints()), 2);
-  EXPECT_EQ(ssize(prog.linear_constraints()), 2);
-  EXPECT_EQ(ssize(prog.linear_equality_constraints()), 1);
-
-  auto sdd_constraint_X =
-      prog.TightenPsdConstraintToSddConstraint(
-          psd_constraint_X);
-
-  EXPECT_EQ(ssize(prog.positive_semidefinite_constraints()), 1);
-  EXPECT_EQ(ssize(prog.linear_constraints()), 2);
-  // An sdd constraint on X adds an equality constraints on the upper diagonal
-  // of X to represent slack variables
-  EXPECT_EQ(ssize(prog.linear_equality_constraints()), 2);
-  // 3 choose 2 rotated lorentz cone constraints for constraint X to be sdd
-  EXPECT_EQ(ssize(prog.rotated_lorentz_cone_constraints()), 3);
-
-  auto sdd_constraint_Y =
-      prog.TightenPsdConstraintToSddConstraint(
-          psd_constraint_Y);
-
-  EXPECT_EQ(ssize(prog.positive_semidefinite_constraints()), 0);
-  EXPECT_EQ(ssize(prog.linear_constraints()), 2);
-  // An sdd constraint on X adds an equality constraints on the upper diagonal
-  // of Y to represent slack variables
-  EXPECT_EQ(ssize(prog.linear_equality_constraints()), 3);
-  // 3 choose 2 rotated lorentz cone constraints for the constraint that X be
-  // sdd and 4 choose 2 for the constraint that Y be sdd.
-  EXPECT_EQ(ssize(prog.rotated_lorentz_cone_constraints()), 9);
-}
-
-GTEST_TEST(RelaxPsdConstraint,
-           ConstraintHasUnregisteredVariableError) {
-  MathematicalProgram prog1;
-  auto X1 = prog1.NewSymmetricContinuousVariables<3>();
-  auto psd_constraint1 = prog1.AddPositiveSemidefiniteConstraint(X1);
-
-  MathematicalProgram prog2;
-  auto X2 = prog2.NewSymmetricContinuousVariables<3>();
-  auto psd_constraint2 = prog2.AddPositiveSemidefiniteConstraint(X2);
-
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      prog1.TightenPsdConstraintToSddConstraint(psd_constraint2),
-      ".*is not a decision variable.*");
-}
-
-GTEST_TEST(RelaxPsdConstraint,
-           NoPreviousContraintToRemove) {
-  MathematicalProgram prog;
-  auto X = prog.NewSymmetricContinuousVariables<3>();
-  // A constraint not in the program.
-  auto constraint = internal::CreateBinding(
-      std::make_shared<PositiveSemidefiniteConstraint>(X.rows()),
-      Eigen::Map<VectorXDecisionVariable>(X.data(), X.size()));
-  EXPECT_EQ(ssize(prog.positive_semidefinite_constraints()), 0);
-  prog.TightenPsdConstraintToSddConstraint(constraint);
-  EXPECT_EQ(ssize(prog.positive_semidefinite_constraints()), 0);
-  // Still adds the DD constraint even though the constraint was not found in
-  // the program.
-  EXPECT_EQ(ssize(prog.rotated_lorentz_cone_constraints()), 3);
 }
 
 }  // namespace

@@ -1760,7 +1760,6 @@ drake_cc_googletest(
         ":snopt_solver",
         ":solve",
         "//common/test_utilities:eigen_matrix_compare",
-        "//common/test_utilities:expect_throws_message",
     ],
 )
 
@@ -1771,7 +1770,6 @@ drake_cc_googletest(
         ":snopt_solver",
         ":solve",
         "//common/test_utilities:eigen_matrix_compare",
-        "//common/test_utilities:expect_throws_message",
     ],
 )
 
@@ -1782,7 +1780,6 @@ drake_cc_googletest(
         ":mathematical_program",
         ":solve",
         "//common/test_utilities:eigen_matrix_compare",
-        "//common/test_utilities:expect_throws_message",
         "//common/test_utilities:symbolic_test_util",
     ],
 )
@@ -1793,7 +1790,6 @@ drake_cc_googletest(
         ":mathematical_program",
         ":solve",
         "//common/test_utilities:eigen_matrix_compare",
-        "//common/test_utilities:expect_throws_message",
         "//common/test_utilities:symbolic_test_util",
     ],
 )

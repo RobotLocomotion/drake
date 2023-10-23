@@ -2616,7 +2616,7 @@ class MathematicalProgram {
   /**
    * 1. Tightens the positive semidefinite @p constraint with a positive
    * diagonally dominant constraint.
-   * 2. Add the positive diagonally dominant constraint into this
+   * 2. Adds the positive diagonally dominant constraint into this
    * MathematicalProgram.
    * 3. Removes the positive semidefinite @p constraint, if it had already been
    * registered in this MathematicalProgram.
@@ -2630,7 +2630,7 @@ class MathematicalProgram {
    * @return The return of AddPositiveDiagonallyDominantMatrixConstraint applied
    * to the variables in @p constraint.
    */
-  MatrixX<symbolic::Expression> TightenPsdConstraintToDdConstraint(
+  MatrixX<symbolic::Expression> TightenPsdConstraintToDd(
       const Binding<PositiveSemidefiniteConstraint>& constraint);
 
   /**
@@ -2686,7 +2686,7 @@ class MathematicalProgram {
   /**
    * 1. Relaxes the positive semidefinite @p constraint with a diagonally
    * dominant dual cone constraint.
-   * 2. Add the diagonally dominant dual cone constraint into this
+   * 2. Adds the diagonally dominant dual cone constraint into this
    * MathematicalProgram.
    * 3. Removes the positive semidefinite @p constraint, if it had already been
    * registered in this MathematicalProgram.
@@ -2700,7 +2700,7 @@ class MathematicalProgram {
    * @return The return of AddPositiveDiagonallyDominantDualConeMatrixConstraint
    * applied to the variables in @p constraint.
    */
-  Binding<LinearConstraint> RelaxPsdConstraintToDdDualConeConstraint(
+  Binding<LinearConstraint> RelaxPsdConstraintToDdDualCone(
       const Binding<PositiveSemidefiniteConstraint>& constraint);
 
   /**
@@ -2763,7 +2763,7 @@ class MathematicalProgram {
   /**
    * 1. Tightens the positive semidefinite @p constraint with a scaled
    * diagonally dominant constraint.
-   * 2. Add the scaled diagonally dominant constraint into this
+   * 2. Adds the scaled diagonally dominant constraint into this
    * MathematicalProgram.
    * 3. Removes the positive semidefinite @p constraint, if it had already been
    * registered in this MathematicalProgram.
@@ -2778,7 +2778,7 @@ class MathematicalProgram {
    * to the variables in @p constraint.
    */
   std::vector<std::vector<Matrix2<symbolic::Variable>>>
-  TightenPsdConstraintToSddConstraint(
+  TightenPsdConstraintToSdd(
       const Binding<PositiveSemidefiniteConstraint>& constraint);
 
   /**
@@ -2842,7 +2842,7 @@ class MathematicalProgram {
   /**
    * 1. Relaxes the positive semidefinite @p constraint with a scaled diagonally
    * dominant dual cone constraint.
-   * 2. Add the scaled diagonally dominant dual cone constraint into this
+   * 2. Adds the scaled diagonally dominant dual cone constraint into this
    * MathematicalProgram.
    * 3. Removes the positive semidefinite @p constraint, if it had already been
    * registered in this MathematicalProgram.
@@ -2857,7 +2857,7 @@ class MathematicalProgram {
    * applied to the variables in @p constraint.
    */
   std::vector<Binding<RotatedLorentzConeConstraint>>
-  RelaxPsdConstraintToSddDualConeConstraint(
+  RelaxPsdConstraintToSddDualCone(
       const Binding<PositiveSemidefiniteConstraint>& constraint);
 
   /**

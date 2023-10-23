@@ -562,10 +562,10 @@ class TestMathematicalProgram(unittest.TestCase):
     def test_replace_psd_methods(self):
         prog = mp.MathematicalProgram()
         replacement_methods = [
-            prog.TightenPsdConstraintToDdConstraint,
-            prog.TightenPsdConstraintToSddConstraint,
-            prog.RelaxPsdConstraintToDdDualConeConstraint,
-            prog.RelaxPsdConstraintToSddDualConeConstraint,
+            prog.TightenPsdConstraintToDd,
+            prog.TightenPsdConstraintToSdd,
+            prog.RelaxPsdConstraintToDdDualCone,
+            prog.RelaxPsdConstraintToSddDualCone,
         ]
         for method in replacement_methods:
             X = prog.NewSymmetricContinuousVariables(3)
