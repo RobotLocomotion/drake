@@ -49,6 +49,12 @@ const VectorX<T>& FemState<T>::GetAccelerations() const {
 }
 
 template <typename T>
+const std::vector<std::unique_ptr<ExternalForceField<T>>>&
+FemState<T>::GetExternalForces() const {
+  return external_forces_;
+}
+
+template <typename T>
 void FemState<T>::SetPositions(const Eigen::Ref<const VectorX<T>>& q) {
   get_mutable_context().SetDiscreteState(system_->fem_position_index(), q);
 }
@@ -67,6 +73,12 @@ void FemState<T>::SetVelocities(const Eigen::Ref<const VectorX<T>>& v) {
 template <typename T>
 void FemState<T>::SetAccelerations(const Eigen::Ref<const VectorX<T>>& a) {
   get_mutable_context().SetDiscreteState(system_->fem_acceleration_index(), a);
+}
+
+template <typename T>
+void FemState<T>::SetExternalForces(
+    std::vector<std::unique_ptr<ExternalForceField<T>>> f) {
+  external_forces_ = std::move(f);
 }
 
 template <typename T>

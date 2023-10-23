@@ -56,7 +56,6 @@ class FemSolver {
    @throws std::exception if the input `prev_state` is incompatible with the FEM
    model solved by this solver. */
   int AdvanceOneTimeStep(
-      const systems::Context<T>& context,
       const FemState<T>& prev_state,
       const std::unordered_set<int>& nonparticipating_vertices);
 
@@ -162,7 +161,6 @@ class FemSolver {
    @returns the number of iterations it takes for the solver to converge or -1
    if the solver fails to converge. */
   int SolveNonlinearModel(
-      const systems::Context<T>& context,
       const std::unordered_set<int>& nonparticipating_vertices);
 
   /* For a linear FEM model, solves for the equilibrium FEM state z such that
@@ -176,7 +174,6 @@ class FemSolver {
    @returns 0 if the `input` state is already at equilibrium, 1 otherwise.
    @pre the FEM model is linear. */
   int SolveLinearModel(
-      const systems::Context<T>& context,
       const std::unordered_set<int>& nonparticipating_vertices);
 
   /* The FEM model being solved by `this` solver. */

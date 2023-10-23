@@ -11,60 +11,91 @@
 namespace drake {
 namespace multibody {
 
+/** External force field only affects deformable bodies. */
 template <typename T>
 class ExternalForceField {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ExternalForceField)
-
   virtual ~ExternalForceField() = default;
 
   /** Evaluates the force density field at the given position in world, `p_WQ`.
    */
-  Vector3<T> EvaluateAt(const systems::Context<T>& context,
-                        const Vector3<T>& p_WQ) const {
-    return DoEvaluateAt(context, p_WQ);
+  Vector3<T> EvaluateAt(const Vector3<T>& p_WQ) const {
+    return DoEvaluateAt(tree_system_context(), p_WQ);
   }
 
-  /** Declares MultibodyTreeSystem cache entries at
-   MultibodyTreeSystem::Finalize() time. NVI to the virtual method
-   DoDeclareCacheEntries().
-   @param[in] tree_system A mutable copy of the parent MultibodyTreeSystem. */
+  virtual std::unique_ptr<ExternalForceField<T>> Clone() const {
+    return DoClone();
+  }
+
+  /** (Internal use only) Declares internal::MultibodyTreeSystem cache entries
+   at Finalize() time. NVI to the virtual method DoDeclareCacheEntries().
+   @param[in] tree_system A mutable pointer to the owning system. */
   void DeclareCacheEntries(internal::MultibodyTreeSystem<T>* tree_system) {
-    tree_system_ = tree_system;
+    if (tree_system_ != nullptr) {
+      DRAKE_DEMAND(tree_system_ == tree_system);
+    } else {
+      tree_system_ = tree_system;
+    }
     DoDeclareCacheEntries(tree_system);
   }
 
+  void DeclareInputPorts(internal::MultibodyTreeSystem<T>* tree_system) {
+    if (tree_system_ != nullptr) {
+      DRAKE_DEMAND(tree_system_ == tree_system);
+    } else {
+      tree_system_ = tree_system;
+    }
+    DoDeclareInputPorts(tree_system);
+  }
+
+  /** (Internal use only) Set the context to the owning system's context. */
+  void set_tree_system_context(const systems::Context<T>* context) {
+    tree_system_context_ = context;
+  }
+
  protected:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ExternalForceField)
+
   ExternalForceField() = default;
 
   virtual Vector3<T> DoEvaluateAt(const systems::Context<T>& context,
                                   const Vector3<T>& p_WQ) const = 0;
+  virtual std::unique_ptr<ExternalForceField<T>> DoClone() const = 0;
+  virtual void DoDeclareCacheEntries(internal::MultibodyTreeSystem<T>*) {}
+  virtual void DoDeclareInputPorts(internal::MultibodyTreeSystem<T>*) {}
 
   const internal::MultibodyTreeSystem<T>& tree_system() const {
+    DRAKE_DEMAND(tree_system_ != nullptr);
     return *tree_system_;
   }
 
-  /** Implementation of the NVI DeclareCacheEntries(). MultibodyElement-derived
-   objects may override to declare their specific cache entries. */
-  virtual void DoDeclareCacheEntries(internal::MultibodyTreeSystem<T>*) {}
+  const systems::Context<T>& tree_system_context() const {
+    DRAKE_DEMAND(tree_system_context_ != nullptr);
+    return *tree_system_context_;
+  }
 
-  systems::CacheEntry& DeclareCacheEntry(
+  static systems::CacheEntry& DeclareCacheEntry(
       internal::MultibodyTreeSystem<T>* tree_system, std::string description,
       systems::ValueProducer value_producer,
-      std::set<systems::DependencyTicket> prerequisites_of_calc) {
-    return internal::MultibodyTreeSystemElementAttorney<T>::DeclareCacheEntry(
-        tree_system, std::move(description), std::move(value_producer),
-        std::move(prerequisites_of_calc));
-  }
+      std::set<systems::DependencyTicket> prerequisites_of_calc);
+
+  static systems::InputPort<T>& DeclareAbstractInputPort(
+      internal::MultibodyTreeSystem<T>* tree_system, std::string name,
+      const AbstractValue& model_value);
+
+  static systems::InputPort<T>& DeclareVectorInputPort(
+      internal::MultibodyTreeSystem<T>* tree_system, std::string name,
+      const systems::BasicVector<T>& model_vector);
 
  private:
   const internal::MultibodyTreeSystem<T>* tree_system_{nullptr};
+  const systems::Context<T>* tree_system_context_{nullptr};
 };
 
 template <typename T>
-class ExplicitExternalForceField : public ExternalForceField<T> {
+class ExplicitExternalForceField final : public ExternalForceField<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ExplicitExternalForceField)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ExplicitExternalForceField)
 
   /* Constructs an explicit external force field that reports that value of an
    std::function. */
@@ -77,14 +108,17 @@ class ExplicitExternalForceField : public ExternalForceField<T> {
     return field_(p_WQ);
   };
 
- private:
+  std::unique_ptr<ExternalForceField<T>> DoClone() const final {
+    return std::make_unique<ExplicitExternalForceField<T>>(*this);
+  }
+
   std::function<Vector3<T>(const Vector3<T>&)> field_;
 };
 
 template <typename T>
 class GravityForceField : public ExternalForceField<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GravityForceField)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(GravityForceField)
 
   GravityForceField(const Vector3<T>& gravity_vector, const T& density)
       : force_density_(density * gravity_vector) {}
@@ -95,7 +129,10 @@ class GravityForceField : public ExternalForceField<T> {
     return force_density_;
   };
 
- private:
+  std::unique_ptr<ExternalForceField<T>> DoClone() const final {
+    return std::make_unique<GravityForceField<T>>(*this);
+  }
+
   Vector3<T> force_density_;
 };
 

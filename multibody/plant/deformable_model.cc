@@ -309,23 +309,22 @@ void DeformableModel<T>::DoDeclareSystemResources(MultibodyPlant<T>* plant) {
         deformable_id, this->DeclareDiscreteState(plant, model_state));
   }
 
-  /* Add external force fields to FEM models. */
+  /* Add gravity to all FEM models. */
   for (const auto& [deformable_id, fem_model] : fem_models_) {
-    for (const std::unique_ptr<ExternalForceField<T>>& external_force :
-         fem_external_forces_) {
-      fem_model->AddExternalForce(external_force.get());
-    }
     const T& density = body_id_to_density_prefinalize_[deformable_id];
     const Vector3<T>& gravity = plant->gravity_field().gravity_vector();
     fem_model->AddExternalForce(
         std::make_unique<GravityForceField<T>>(gravity, density));
   }
+  body_id_to_density_prefinalize_.clear();
+
+  /* Declare cache entries and input ports for external forces that need them.
+   */
   for (std::unique_ptr<ExternalForceField<T>>& external_force :
        fem_external_forces_) {
     external_force->DeclareCacheEntries(plant_);
+    external_force->DeclareInputPorts(plant_);
   }
-
-  body_id_to_density_prefinalize_.clear();
 
   /* Declare the vertex position output port. */
   vertex_positions_port_index_ =

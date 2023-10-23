@@ -144,6 +144,11 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
     fem_external_forces_.emplace_back(std::move(force_field));
   }
 
+  const std::vector<std::unique_ptr<ExternalForceField<T>>>& external_forces()
+      const {
+    return fem_external_forces_;
+  }
+
   /** Returns the FemModel for the body with `id`.
    @throws exception if no deformable body with `id` is registered with `this`
    %DeformableModel. */

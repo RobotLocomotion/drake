@@ -68,7 +68,6 @@ FemSolver<T>::~FemSolver() = default;
 
 template <typename T>
 int FemSolver<T>::AdvanceOneTimeStep(
-    const systems::Context<T>& context,
     const FemState<T>& prev_state,
     const std::unordered_set<int>& nonparticipating_vertices) {
   model_->ThrowIfModelStateIncompatible(__func__, prev_state);
@@ -78,11 +77,17 @@ int FemSolver<T>::AdvanceOneTimeStep(
   FemState<T>* next_state =
       next_state_and_schur_complement_.state.get_mutable();
   integrator_->AdvanceOneTimeStep(prev_state, unknown_variable, next_state);
+  // TODO(xuchenhan-tri): Remove this copy.
+  std::vector<std::unique_ptr<ExternalForceField<T>>> forces;
+  for (const auto& f : prev_state.GetExternalForces()) {
+    forces.emplace_back(f->Clone());
+  }
+  next_state->SetExternalForces(std::move(forces));
   if (model_->is_linear()) {
-    return SolveLinearModel(context, nonparticipating_vertices);
+    return SolveLinearModel(nonparticipating_vertices);
   }
   /* Run Newton-Raphson iterations. */
-  const int iterations = SolveNonlinearModel(context, nonparticipating_vertices);
+  const int iterations = SolveNonlinearModel(nonparticipating_vertices);
   if (iterations == -1) {
     throw std::runtime_error(
         "FemSolver::AdvanceOneTimeStep() failed to converge on a nonlinear FEM "
@@ -101,7 +106,6 @@ bool FemSolver<T>::solver_converged(const T& residual_norm,
 
 template <typename T>
 int FemSolver<T>::SolveLinearModel(
-  const systems::Context<T>& context,
     const std::unordered_set<int>& nonparticipating_vertices) {
   DRAKE_DEMAND(model_->is_linear());
   FemState<T>& state = *next_state_and_schur_complement_.state;
@@ -110,7 +114,7 @@ int FemSolver<T>::SolveLinearModel(
   Block3x3SparseSymmetricMatrix& tangent_matrix = *scratch_.tangent_matrix;
 
   model_->ApplyBoundaryCondition(&state);
-  model_->CalcResidual(context, state, &b);
+  model_->CalcResidual(state, &b);
   T residual_norm = b.norm();
   model_->CalcTangentMatrix(state, integrator_->GetWeights(), &tangent_matrix);
   next_state_and_schur_complement_.schur_complement =
@@ -126,7 +130,6 @@ int FemSolver<T>::SolveLinearModel(
 
 template <typename T>
 int FemSolver<T>::SolveNonlinearModel(
-  const systems::Context<T>& context,
     const std::unordered_set<int>& nonparticipating_vertices) {
   DRAKE_DEMAND(!model_->is_linear());
   VectorX<T>& b = scratch_.b;
@@ -136,7 +139,7 @@ int FemSolver<T>::SolveNonlinearModel(
   FemState<T>& state = *next_state_and_schur_complement_.state;
 
   model_->ApplyBoundaryCondition(&state);
-  model_->CalcResidual(context, state, &b);
+  model_->CalcResidual(state, &b);
   T residual_norm = b.norm();
   const T initial_residual_norm = residual_norm;
   int iter = 0;
@@ -162,7 +165,7 @@ int FemSolver<T>::SolveNonlinearModel(
     }
     dz = linear_solver.Solve(-b);
     integrator_->UpdateStateFromChangeInUnknowns(dz, &state);
-    model_->CalcResidual(context, state, &b);
+    model_->CalcResidual(state, &b);
     residual_norm = b.norm();
     ++iter;
   }

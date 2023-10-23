@@ -17,8 +17,8 @@
 #include "drake/multibody/fem/fem_model.h"
 #include "drake/multibody/fem/velocity_newmark_scheme.h"
 #include "drake/multibody/plant/contact_properties.h"
-#include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/plant/external_force_field.h"
+#include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/framework/context.h"
 
 using drake::geometry::GeometryId;
@@ -741,6 +741,22 @@ void DeformableDriver<T>::CalcFemState(const Context<T>& context,
   fem_state->SetPositions(q);
   fem_state->SetVelocities(qdot);
   fem_state->SetAccelerations(qddot);
+  /* Collect all external forces affecting this body. */
+  std::vector<std::unique_ptr<ExternalForceField<T>>> external_forces;
+  /* External forces shared by all bodies. */
+  for (const auto& f : deformable_model_->external_forces()) {
+    auto force = f->Clone();
+    force->set_tree_system_context(&context);
+    external_forces.emplace_back(std::move(force));
+  }
+  /* External forces specific to this body. */
+  const FemModel<T>& fem_model = deformable_model_->GetFemModel(id);
+  for (const auto& f : fem_model.external_forces()) {
+    auto force = f->Clone();
+    force->set_tree_system_context(&context);
+    external_forces.emplace_back(std::move(force));
+  }
+  fem_state->SetExternalForces(std::move(external_forces));
 }
 
 template <typename T>
@@ -768,7 +784,7 @@ void DeformableDriver<T>::CalcFreeMotionFemSolver(
       nonparticipating_vertices.insert(v);
     }
   }
-  fem_solver->AdvanceOneTimeStep(context, fem_state, nonparticipating_vertices);
+  fem_solver->AdvanceOneTimeStep(fem_state, nonparticipating_vertices);
 }
 
 template <typename T>

@@ -1,3 +1,4 @@
+#include <iostream>
 #include <memory>
 
 #include <gflags/gflags.h>
@@ -65,7 +66,7 @@ namespace {
 
 class PointSourceForceField : public ExternalForceField<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PointSourceForceField)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PointSourceForceField)
 
   /**
    * @brief Construct a new Point Source Force Field object
@@ -92,23 +93,31 @@ class PointSourceForceField : public ExternalForceField<double> {
         pick_time_(pick_time),
         drop_time_(drop_time) {}
 
+  const systems::InputPort<double>& get_scale_input_port() const {
+    return tree_system().get_input_port(scale_port_index_);
+  }
+
  private:
   Vector3<double> CalcPointSource(
       const systems::Context<double>& context) const {
-    return plant_->EvalBodyPoseInWorld(context, *body_).translation() + p_BC_;
+    return plant_->EvalBodyPoseInWorld(context, *body_) * p_BC_;
   }
 
   Vector3<double> DoEvaluateAt(const systems::Context<double>& context,
                                const Vector3<double>& p_WQ) const final {
-    if (!GetStatus(context)) return Vector3d::Zero();
     const Vector3<double>& p_WC = EvalPointSource(context);
     Vector3<double> p_QC = p_WC - p_WQ;
     const double dist = p_QC.norm();
     if (dist == 0 || dist > distance_) {
       return Vector3<double>::Zero();
     }
-    const double magnitude = (distance_ - dist) * max_value_ / distance_;
+    const double magnitude =
+        GetScale(context) * (distance_ - dist) * max_value_ / distance_;
     return magnitude * p_QC / p_QC.norm();
+  }
+
+  std::unique_ptr<ExternalForceField<double>> DoClone() const final {
+    return std::make_unique<PointSourceForceField>(*this);
   }
 
   /**
@@ -128,6 +137,13 @@ class PointSourceForceField : public ExternalForceField<double> {
             .cache_index();
   }
 
+  void DoDeclareInputPorts(MultibodyTreeSystem<double>* tree_system) final {
+    scale_port_index_ =
+        this->DeclareVectorInputPort(tree_system, "scaling for suction force",
+                                     drake::systems::BasicVector<double>(1))
+            .get_index();
+  }
+
   const Vector3<double>& EvalPointSource(
       const systems::Context<double>& context) const {
     return tree_system()
@@ -136,11 +152,10 @@ class PointSourceForceField : public ExternalForceField<double> {
   }
 
   /**
-   * Returns true iff the force field is activated.
+   * Returns the scale of suction force.
    */
-  bool GetStatus(const systems::Context<double>& context) const {
-    const double t = context.get_time();
-    return pick_time_ <= t && t <= drop_time_;
+  double GetScale(const systems::Context<double>& context) const {
+    return get_scale_input_port().Eval<BasicVector<double>>(context)[0];
   }
 
   const MultibodyPlant<double>* plant_;
@@ -151,6 +166,7 @@ class PointSourceForceField : public ExternalForceField<double> {
   double pick_time_{};
   double drop_time_{};
   systems::CacheIndex point_source_position_cache_index_;
+  systems::InputPortIndex scale_port_index_;
 };
 
 class SuctionCup : public systems::LeafSystem<double> {
@@ -185,10 +201,19 @@ class SuctionCup : public systems::LeafSystem<double> {
                                 drake::systems::BasicVector<double>(2),
                                 &SuctionCup::CalcDesiredState)
             .get_index();
+    scale_port_index_ =
+        DeclareVectorOutputPort("scaling of suction force",
+                                drake::systems::BasicVector<double>(1),
+                                &SuctionCup::CalcScale)
+            .get_index();
   };
 
-  const drake::systems::OutputPort<double>& desired_state_output_port() const {
+  const systems::OutputPort<double>& desired_state_output_port() const {
     return get_output_port(desired_state_port_index_);
+  }
+
+  const systems::OutputPort<double>& scale_output_port() const {
+    return get_output_port(scale_port_index_);
   }
 
  private:
@@ -216,6 +241,17 @@ class SuctionCup : public systems::LeafSystem<double> {
     }
   }
 
+  /* Turn the suction on and off based on time. */
+  void CalcScale(const systems::Context<double>& context,
+                 systems::BasicVector<double>* scale) const {
+    const double time = context.get_time();
+    if (time >= pick_time_ && time <= drop_time_) {
+      (*scale)[0] = 1.0;
+    } else {
+      (*scale)[0] = 0.0;
+    }
+  }
+
   DeformableBodyId body_id_;
   double initial_height_{};
   double pick_height_{};
@@ -227,6 +263,7 @@ class SuctionCup : public systems::LeafSystem<double> {
   double drop_time_{};
 
   int desired_state_port_index_{};
+  int scale_port_index_{};
 };
 
 int do_main() {
@@ -335,10 +372,11 @@ int do_main() {
   const double kPickUpTime = 6.0;  // Time to finish picking up the object.
   const double kDropTime = 9.0;    // Time to turn off suction.
 
-  owned_deformable_model->AddExternalForce(
-      std::make_unique<PointSourceForceField>(
-          plant, body, Vector3d(0, 0, -0.05), FLAGS_max_suction_force_density,
-          FLAGS_suction_radius, kStartSuctionTime, kDropTime));
+  auto suction_force = std::make_unique<PointSourceForceField>(
+      plant, body, Vector3d(0, 0, -0.05), FLAGS_max_suction_force_density,
+      FLAGS_suction_radius, kStartSuctionTime, kDropTime);
+  const PointSourceForceField* suction_force_ptr = suction_force.get();
+  owned_deformable_model->AddExternalForce(std::move(suction_force));
   plant.AddPhysicalModel(std::move(owned_deformable_model));
 
   /* All rigid and deformable models have been added. Finalize the plant. */
@@ -357,6 +395,8 @@ int do_main() {
   builder.Connect(
       deformable_model->vertex_positions_port(),
       scene_graph.get_source_configuration_port(plant.get_source_id().value()));
+  builder.Connect(suction.scale_output_port(),
+                  suction_force_ptr->get_scale_input_port());
 
   /* Add a visualizer that emits LCM messages for visualization. */
   geometry::DrakeVisualizerd::AddToBuilder(&builder, scene_graph);

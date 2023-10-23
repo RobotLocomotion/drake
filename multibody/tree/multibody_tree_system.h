@@ -588,6 +588,20 @@ class MultibodyTreeSystemElementAttorney {
                                           std::move(value_producer),
                                           std::move(prerequisites_of_calc));
   }
+
+  static systems::InputPort<T>& DeclareAbstractInputPort(
+      MultibodyTreeSystem<T>* tree_system, std::string name,
+      const AbstractValue& model_value) {
+    DRAKE_DEMAND(tree_system != nullptr);
+    return tree_system->DeclareAbstractInputPort(std::move(name), model_value);
+  }
+
+  static systems::InputPort<T>& DeclareVectorInputPort(
+      MultibodyTreeSystem<T>* tree_system, std::string name,
+      const systems::BasicVector<T>& model_value) {
+    DRAKE_DEMAND(tree_system != nullptr);
+    return tree_system->DeclareVectorInputPort(std::move(name), model_value);
+  }
 };
 }  // namespace internal
 }  // namespace multibody

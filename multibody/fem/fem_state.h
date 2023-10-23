@@ -6,6 +6,7 @@
 #include "drake/common/copyable_unique_ptr.h"
 #include "drake/multibody/fem/fem_indexes.h"
 #include "drake/multibody/fem/fem_state_system.h"
+#include "drake/multibody/plant/external_force_field.h"
 #include "drake/systems/framework/context.h"
 
 namespace drake {
@@ -68,10 +69,13 @@ class FemState {
   const VectorX<T>& GetPreviousStepPositions() const;
   const VectorX<T>& GetVelocities() const;
   const VectorX<T>& GetAccelerations() const;
+  const std::vector<std::unique_ptr<ExternalForceField<T>>>& GetExternalForces()
+      const;
   void SetPositions(const Eigen::Ref<const VectorX<T>>& q);
   void SetTimeStepPositions(const Eigen::Ref<const VectorX<T>>& q0);
   void SetVelocities(const Eigen::Ref<const VectorX<T>>& v);
   void SetAccelerations(const Eigen::Ref<const VectorX<T>>& a);
+  void SetExternalForces(std::vector<std::unique_ptr<ExternalForceField<T>>> f);
   /* @} */
 
   /** Returns the number of degrees of freedom in the FEM model and state. */
@@ -111,6 +115,7 @@ class FemState {
   copyable_unique_ptr<systems::Context<T>> owned_context_{nullptr};
   /* Referenced context that contains the FEM states and data. */
   const systems::Context<T>* context_{nullptr};
+  std::vector<std::unique_ptr<ExternalForceField<T>>> external_forces_;
 };
 
 }  // namespace fem
