@@ -1024,6 +1024,10 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "parallelism_test",
     num_threads = 2,
+    # Some of these tests take too long under valgrind for CI.
+    tags = [
+        "no_memcheck",
+    ],
     deps = [
         ":parallelism",
     ],
