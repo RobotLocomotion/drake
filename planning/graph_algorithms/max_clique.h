@@ -37,30 +37,52 @@ class MaxCliqueSolverBase {
 };
 
 /**
- * Solves the maximum clique problem to global optimality by solving a
- * mixed-integer program.
+ * Solves the maximum clique problem to global optimality by solving the
+ * mixed-integer program
  *
- * Note: This solver leverages convex optimization solvers (e.g. Gurobi and/or
- * Mosek). We recommend enabling those solvers if possible
- * (https://drake.mit.edu/bazel.html#proprietary_solvers).
+ * Maximize ∑ᵢ xᵢ subject to
+ * xᵢ + xⱼ ≤ 1 if (i,j) is not in the edge
+ * xᵢ ∈ {0,1}.
+ *
+ * Note: This solver requires the availability of a Mixed-Integer Linear
+ * Programming solver (e.g. Gurobi and/or Mosek). We recommend enabling those
+ * solvers if possible (https://drake.mit.edu/bazel.html#proprietary_solvers).
  */
 class MaxCliqueSolverViaMIP final : public MaxCliqueSolverBase {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MaxCliqueSolverViaMIP);
-  MaxCliqueSolverViaMIP(
-      const std::optional<solvers::SolverId> solver_id = std::nullopt,
-      const solvers::SolverOptions& options = solvers::SolverOptions());
+  MaxCliqueSolverViaMIP() = default;
+
+  MaxCliqueSolverViaMIP(solvers::SolverInterface* mip_solver,
+                        std::optional<Eigen::VectorXd> initial_guess,
+                        solvers::SolverOptions options);
 
   VectorX<bool> SolveMaxClique(
       const Eigen::SparseMatrix<bool>& adjacency_matrix);
 
-  std::optional<solvers::SolverId> solver_id() { return solver_id_; }
+  solvers::SolverInterface* mip_solver() { return mip_solver_; }
 
-  solvers::SolverOptions options() { return options_; }
+  solvers::SolverOptions solver_options() { return solver_options_; }
+
+  void set_initial_guess(
+      const Eigen::Ref<const Eigen::VectorXd>& initial_guess) {
+    initial_guess_ = initial_guess;
+  }
+
+  std::optional<Eigen::VectorXd> get_initial_guess() { return initial_guess_; }
 
  private:
-  std::optional<solvers::SolverId> solver_id_;
-  solvers::SolverOptions options_;
+  /** Optimizer to be used to solve the max clique MIP. If
+  not set, the best solver for the given problem is selected. Note that if the
+  solver cannot handle the type of optimization problem generated, the calling
+  solve method will throw. */
+  solvers::SolverInterface* mip_solver_{nullptr};
+
+  /** Initial guess to the MIP for solving max clique. */
+  std::optional<Eigen::VectorXd> initial_guess_{std::nullopt};
+
+  /** Options solved to the MIP solver used to solve max clique. */
+  solvers::SolverOptions solver_options_{};
 };
 
 struct MaxCliqueOptions {

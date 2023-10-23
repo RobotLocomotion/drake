@@ -1,5 +1,6 @@
 #include "drake/planning/graph_algorithms/max_clique.h"
 
+#include <memory>
 #include <optional>
 #include <utility>
 #include <vector>
@@ -14,9 +15,12 @@ namespace graph_algorithms {
 using Eigen::SparseMatrix;
 
 MaxCliqueSolverViaMIP::MaxCliqueSolverViaMIP(
-    const std::optional<solvers::SolverId> solver_id,
-    const solvers::SolverOptions& options)
-    : solver_id_(solver_id), options_(options) {}
+    solvers::SolverInterface* mip_solver,
+    std::optional<Eigen::VectorXd>& initial_guess,
+    solvers::SolverOptions& solver_options)
+    : mip_solver_{mip_solver},
+      initial_guess_{initial_guess},
+      solver_options_{solver_options} {}
 
 MaxCliqueOptions::MaxCliqueOptions(const MaxCliqueSolverBase* m_solver)
     : solver{const_cast<MaxCliqueSolverBase*>(std::move(m_solver))} {};
@@ -64,10 +68,31 @@ VectorX<bool> MaxCliqueSolverViaMIP::SolveMaxClique(
                            Eigen::VectorXd::Ones(A.rows()), x);
 
   solvers::MathematicalProgramResult result;
-  solvers::MakeSolver(solver_id_.value_or(solvers::ChooseBestSolver(prog)))
-      ->Solve(prog, std::nullopt, options_, &result);
+  if (mip_solver_) {
+    mip_solver_->Solve(prog, initial_guess_, solver_options_, &result);
+  } else {
+    std::unique_ptr<solvers::SolverInterface> solver{};
+    try {
+      solvers::SolverId solver_id = solvers::ChooseBestSolver(prog);
+      solver = solvers::MakeSolver(solver_id);
+    } catch (const std::exception&) {
+      // TODO(Alexandre.Amice) update the error message if other MaxClique
+      // solvers based become available.
+      throw std::runtime_error(
+          "MaxClique: There is no solver available that can solve the "
+          "mixed-integer version of maximum clique. Please check "
+          "https://drake.mit.edu/doxygen_cxx/group__solvers.html for more "
+          "details about supported mixed integer solvers and how to enable "
+          "them.");
+    }
+    solver->Solve(prog, initial_guess_, solver_options_, &result);
+  }
 
-  return result.GetSolution(x).cast<bool>();
+  // Manually cast the return to a boolean to avoid round off errors from chosen
+  // MIP solver
+  return result.GetSolution(x).unaryExpr([](double elt) {
+    return elt >= 0.5;
+  });
 }
 
 VectorX<bool> MaxClique(const Eigen::SparseMatrix<bool>& adjacency_matrix,
