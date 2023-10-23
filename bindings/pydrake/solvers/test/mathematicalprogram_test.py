@@ -559,13 +559,13 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertTrue(np.all(eigs >= -tol))
         self.assertTrue(S[0, 1] >= -tol)
 
-    def test_replace_sdp_methods(self):
+    def test_replace_psd_methods(self):
         prog = mp.MathematicalProgram()
         replacement_methods = [
-            prog.TightenPSDConstraintToDDConstraint,
-            prog.TightenPSDConstraintToSDDConstraint,
-            prog.RelaxPSDConstraintToDDDualConeConstraint,
-            prog.RelaxPSDConstraintToSDDDualConeConstraint,
+            prog.TightenPsdConstraintToDdConstraint,
+            prog.TightenPsdConstraintToSddConstraint,
+            prog.RelaxPsdConstraintToDdDualConeConstraint,
+            prog.RelaxPsdConstraintToSddDualConeConstraint,
         ]
         for method in replacement_methods:
             X = prog.NewSymmetricContinuousVariables(3)

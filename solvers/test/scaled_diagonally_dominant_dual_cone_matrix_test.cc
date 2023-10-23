@@ -42,7 +42,6 @@ int TestInDualConeByGenerators(const Eigen::MatrixXd& X) {
   }
   return -1;
 }
-}  // namespace
 
 GTEST_TEST(ScaledDiagonallyDominantMatrixDualConeConstraint, SizeOfReturnTest) {
   // Test the number of constraints added to the program. This should be n
@@ -290,40 +289,7 @@ GTEST_TEST(ScaledDiagonallyDominantMatrixDualConeConstraint,
   }
 }
 
-GTEST_TEST(ReplacePSDConstraintWithSDDDualConeConstraint,
-           SinglePsdConstraint) {
-  MathematicalProgram prog;
-  auto X = prog.NewSymmetricContinuousVariables<3>();
-  auto psd_constraint = prog.AddPositiveSemidefiniteConstraint(X);
-
-  // Add an arbitrary linear constraint on X.
-  Eigen::MatrixXd A(2, 3);
-  // clang-format off
-  A << 1, 0, 1,
-      0, -1, 1;
-  // clang-format on
-  Eigen::VectorXd lb(2);
-  lb << -10, -7;
-  Eigen::VectorXd ub(2);
-  ub << 11, 9;
-  auto affine_constraint_upper =
-      prog.AddLinearConstraint(A * X * Eigen::VectorXd::Ones(3) <= ub);
-  auto affine_constraint_lower =
-      prog.AddLinearConstraint(A * X * Eigen::VectorXd::Ones(3) >= lb);
-
-  EXPECT_EQ(ssize(prog.positive_semidefinite_constraints()), 1);
-  EXPECT_EQ(ssize(prog.linear_constraints()), 2);
-
-  auto sdd_dual_constraint =
-      prog.RelaxPSDConstraintToSDDDualConeConstraint(
-          psd_constraint);
-
-  EXPECT_EQ(ssize(prog.positive_semidefinite_constraints()), 0);
-  EXPECT_EQ(ssize(prog.linear_constraints()), 2);
-  EXPECT_EQ(ssize(prog.rotated_lorentz_cone_constraints()), 3);
-}
-
-GTEST_TEST(ReplacePSDConstraintWithSDDDualConeConstraint,
+GTEST_TEST(RelaxPsdConstraint,
            MultiPsdConstraint) {
   MathematicalProgram prog;
   auto X = prog.NewSymmetricContinuousVariables<3>();
@@ -334,8 +300,8 @@ GTEST_TEST(ReplacePSDConstraintWithSDDDualConeConstraint,
   // Add an arbitrary linear constraint on X.
   Eigen::MatrixXd A(2, 3);
   // clang-format off
-  A << 1, 0, 1,
-      0, -1, 1;
+  A << 1,  0, 1,
+       0, -1, 1;
   // clang-format on
   Eigen::VectorXd lb(2);
   lb << -10, -7;
@@ -353,7 +319,7 @@ GTEST_TEST(ReplacePSDConstraintWithSDDDualConeConstraint,
   EXPECT_EQ(ssize(prog.linear_equality_constraints()), 1);
 
   auto sdd_dual_constraint_X =
-      prog.RelaxPSDConstraintToSDDDualConeConstraint(
+      prog.RelaxPsdConstraintToSddDualConeConstraint(
           psd_constraint_X);
 
   EXPECT_EQ(ssize(prog.positive_semidefinite_constraints()), 1);
@@ -363,7 +329,7 @@ GTEST_TEST(ReplacePSDConstraintWithSDDDualConeConstraint,
   EXPECT_EQ(ssize(prog.rotated_lorentz_cone_constraints()), 3);
 
   auto sdd_dual_constraint_Y =
-      prog.RelaxPSDConstraintToSDDDualConeConstraint(
+      prog.RelaxPsdConstraintToSddDualConeConstraint(
           psd_constraint_Y);
 
   EXPECT_EQ(ssize(prog.positive_semidefinite_constraints()), 0);
@@ -375,8 +341,8 @@ GTEST_TEST(ReplacePSDConstraintWithSDDDualConeConstraint,
 }
 
 
-GTEST_TEST(ReplacePSDConstraintWithSDDDualConstraint,
-           ReplacePsdConstraintNotInProgramVariableNotInProgram) {
+GTEST_TEST(RelaxPsdConstraint,
+           ConstraintHasUnregisteredVariableError) {
   MathematicalProgram prog1;
   auto X1 = prog1.NewSymmetricContinuousVariables<3>();
   auto psd_constraint1 = prog1.AddPositiveSemidefiniteConstraint(X1);
@@ -386,12 +352,12 @@ GTEST_TEST(ReplacePSDConstraintWithSDDDualConstraint,
   auto psd_constraint2 = prog2.AddPositiveSemidefiniteConstraint(X2);
 
   DRAKE_EXPECT_THROWS_MESSAGE(
-      prog1.RelaxPSDConstraintToSDDDualConeConstraint(psd_constraint2),
+      prog1.RelaxPsdConstraintToSddDualConeConstraint(psd_constraint2),
       ".*is not a decision variable.*");
 }
 
-GTEST_TEST(ReplacePSDConstraintWithSDDDualConstraint,
-           ReplacePsdConstraintNotInProgramVariableInProgram) {
+GTEST_TEST(RelaxPsdConstraint,
+           NoPreviousContraintToRemove) {
   MathematicalProgram prog;
   auto X = prog.NewSymmetricContinuousVariables<3>();
   // A constraint not in the program.
@@ -399,13 +365,13 @@ GTEST_TEST(ReplacePSDConstraintWithSDDDualConstraint,
       std::make_shared<PositiveSemidefiniteConstraint>(X.rows()),
       Eigen::Map<VectorXDecisionVariable>(X.data(), X.size()));
   EXPECT_EQ(ssize(prog.positive_semidefinite_constraints()), 0);
-  prog.RelaxPSDConstraintToSDDDualConeConstraint(constraint);
+  prog.RelaxPsdConstraintToSddDualConeConstraint(constraint);
   EXPECT_EQ(ssize(prog.positive_semidefinite_constraints()), 0);
   // Still adds the DD constraint even though the constraint was not found in
   // the program.
   EXPECT_EQ(ssize(prog.rotated_lorentz_cone_constraints()), 3);
 }
 
-
+}  // namespace
 }  // namespace solvers
 }  // namespace drake

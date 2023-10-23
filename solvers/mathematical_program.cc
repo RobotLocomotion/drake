@@ -1189,7 +1189,7 @@ MathematicalProgram::AddPositiveDiagonallyDominantMatrixConstraint(
 }
 
 MatrixX<symbolic::Expression> MathematicalProgram::
-    TightenPSDConstraintToDDConstraint(
+    TightenPsdConstraintToDdConstraint(
         const Binding<PositiveSemidefiniteConstraint>& constraint) {
   RemoveConstraint(constraint);
   // Variables are flattened by the Flatten method, which flattens in
@@ -1303,7 +1303,7 @@ MathematicalProgram::AddPositiveDiagonallyDominantDualConeMatrixConstraint(
 }
 
 Binding<LinearConstraint> MathematicalProgram::
-    RelaxPSDConstraintToDDDualConeConstraint(
+    RelaxPsdConstraintToDdDualConeConstraint(
         const Binding<PositiveSemidefiniteConstraint>& constraint) {
   RemoveConstraint(constraint);
   // Variables are flattened by the Flatten method, which flattens in
@@ -1434,7 +1434,7 @@ MathematicalProgram::AddScaledDiagonallyDominantMatrixConstraint(
 }
 
 std::vector<std::vector<Matrix2<symbolic::Variable>>> MathematicalProgram::
-    TightenPSDConstraintToSDDConstraint(
+    TightenPsdConstraintToSddConstraint(
         const Binding<PositiveSemidefiniteConstraint>& constraint) {
   RemoveConstraint(constraint);
   // Variables are flattened by the Flatten method, which flattens in
@@ -1481,7 +1481,7 @@ MathematicalProgram::AddScaledDiagonallyDominantDualConeMatrixConstraint(
 }
 
 std::vector<Binding<RotatedLorentzConeConstraint>> MathematicalProgram::
-    RelaxPSDConstraintToSDDDualConeConstraint(
+    RelaxPsdConstraintToSddDualConeConstraint(
         const Binding<PositiveSemidefiniteConstraint>& constraint) {
   RemoveConstraint(constraint);
   // Variables are flattened by the Flatten method, which flattens in

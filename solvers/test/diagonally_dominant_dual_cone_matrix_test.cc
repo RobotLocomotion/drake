@@ -11,7 +11,6 @@
 namespace drake {
 namespace solvers {
 namespace {
-
 // Returns the first index of the extreme ray v for which vᵀXv < 0. If no such
 // index exists, returns -1 and X is in DD*.
 int TestIn2by2DiagonallyDominantDualCone(const Eigen::Matrix2d& X) {
@@ -46,7 +45,6 @@ int TestIn3by3DiagonallyDominantDualCone(const Eigen::Matrix3d& X) {
   }
   return -1;
 }
-}  // namespace
 
 GTEST_TEST(DiagonallyDominantMatrixDualConeConstraint,
            FeasibilityVariableCheck2by2) {
@@ -323,40 +321,7 @@ GTEST_TEST(DiagonallyDominantMatrixDualConeConstraint,
   solve_and_check(Eigen::Vector3d(-3, 1.5, 0.5), tol);
 }
 
-GTEST_TEST(ReplacePSDConstraintWithDDDualConeConstraint,
-           SinglePsdConstraint) {
-  MathematicalProgram prog;
-  auto X = prog.NewSymmetricContinuousVariables<3>();
-  auto psd_constraint = prog.AddPositiveSemidefiniteConstraint(X);
-
-  // Add an arbitrary linear constraint on X.
-  Eigen::MatrixXd A(2, 3);
-  // clang-format off
-  A << 1, 0, 1,
-      0, -1, 1;
-  // clang-format on
-  Eigen::VectorXd lb(2);
-  lb << -10, -7;
-  Eigen::VectorXd ub(2);
-  ub << 11, 9;
-  auto affine_constraint_upper =
-      prog.AddLinearConstraint(A * X * Eigen::VectorXd::Ones(3) <= ub);
-  auto affine_constraint_lower =
-      prog.AddLinearConstraint(A * X * Eigen::VectorXd::Ones(3) >= lb);
-
-  EXPECT_EQ(ssize(prog.positive_semidefinite_constraints()), 1);
-  EXPECT_EQ(ssize(prog.linear_constraints()), 2);
-
-  auto dd_constraint =
-      prog.RelaxPSDConstraintToDDDualConeConstraint(
-          psd_constraint);
-
-  EXPECT_EQ(ssize(prog.positive_semidefinite_constraints()), 0);
-  EXPECT_EQ(ssize(prog.linear_constraints()), 3);
-}
-
-GTEST_TEST(ReplacePSDConstraintWithDDDualConeConstraint,
-           MultiPsdConstraint) {
+GTEST_TEST(RelaxPsdConstraint, MultiPsdConstraint) {
   MathematicalProgram prog;
   auto X = prog.NewSymmetricContinuousVariables<3>();
   auto Y = prog.NewSymmetricContinuousVariables<3>();
@@ -366,8 +331,8 @@ GTEST_TEST(ReplacePSDConstraintWithDDDualConeConstraint,
   // Add an arbitrary linear constraint on X.
   Eigen::MatrixXd A(2, 3);
   // clang-format off
-  A << 1, 0, 1,
-      0, -1, 1;
+  A << 1,  0, 1,
+       0, -1, 1;
   // clang-format on
   Eigen::VectorXd lb(2);
   lb << -10, -7;
@@ -384,25 +349,21 @@ GTEST_TEST(ReplacePSDConstraintWithDDDualConeConstraint,
   EXPECT_EQ(ssize(prog.linear_equality_constraints()), 1);
 
   auto dd_constraint_X =
-      prog.RelaxPSDConstraintToDDDualConeConstraint(
-          psd_constraint_X);
+      prog.RelaxPsdConstraintToDdDualConeConstraint(psd_constraint_X);
 
   EXPECT_EQ(ssize(prog.positive_semidefinite_constraints()), 1);
   EXPECT_EQ(ssize(prog.linear_constraints()), 3);
   EXPECT_EQ(ssize(prog.linear_equality_constraints()), 1);
 
   auto dd_constraint_Y =
-      prog.RelaxPSDConstraintToDDDualConeConstraint(
-          psd_constraint_Y);
+      prog.RelaxPsdConstraintToDdDualConeConstraint(psd_constraint_Y);
 
   EXPECT_EQ(ssize(prog.positive_semidefinite_constraints()), 0);
   EXPECT_EQ(ssize(prog.linear_constraints()), 4);
   EXPECT_EQ(ssize(prog.linear_equality_constraints()), 1);
 }
 
-
-GTEST_TEST(ReplacePSDConstraintWithDDDualConeConstraint,
-           ReplacePsdConstraintNotInProgramVariableNotInProgram) {
+GTEST_TEST(RelaxPsdConstraint, ConstraintHasUnregisteredVariableError) {
   MathematicalProgram prog1;
   auto X1 = prog1.NewSymmetricContinuousVariables<3>();
   auto psd_constraint1 = prog1.AddPositiveSemidefiniteConstraint(X1);
@@ -412,12 +373,11 @@ GTEST_TEST(ReplacePSDConstraintWithDDDualConeConstraint,
   auto psd_constraint2 = prog2.AddPositiveSemidefiniteConstraint(X2);
 
   DRAKE_EXPECT_THROWS_MESSAGE(
-      prog1.RelaxPSDConstraintToDDDualConeConstraint(psd_constraint2),
+      prog1.RelaxPsdConstraintToDdDualConeConstraint(psd_constraint2),
       ".*is not a decision variable.*");
 }
 
-GTEST_TEST(ReplacePSDConstraintWithDDDualConeConstraint,
-           ReplacePsdConstraintNotInProgramVariableInProgram) {
+GTEST_TEST(RelaxPsdConstraint, NoPreviousContraintToRemove) {
   MathematicalProgram prog;
   auto X = prog.NewSymmetricContinuousVariables<3>();
   // A constraint not in the program.
@@ -425,13 +385,13 @@ GTEST_TEST(ReplacePSDConstraintWithDDDualConeConstraint,
       std::make_shared<PositiveSemidefiniteConstraint>(X.rows()),
       Eigen::Map<VectorXDecisionVariable>(X.data(), X.size()));
   EXPECT_EQ(ssize(prog.positive_semidefinite_constraints()), 0);
-  prog.RelaxPSDConstraintToDDDualConeConstraint(constraint);
+  prog.RelaxPsdConstraintToDdDualConeConstraint(constraint);
   EXPECT_EQ(ssize(prog.positive_semidefinite_constraints()), 0);
   // Still adds the DD constraint even though the constraint was not found in
   // the program.
   EXPECT_EQ(ssize(prog.linear_constraints()), 1);
 }
 
-
+}  // namespace
 }  // namespace solvers
 }  // namespace drake
