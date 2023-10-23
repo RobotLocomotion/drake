@@ -91,6 +91,8 @@ cc_test(
     tags = [
         "cpu:2",
         "no_kcov",
+        # Some of these tests take too long under valgrind for CI.
+        "no_memcheck",
     ],
     timeout = "moderate",
     deps = [
