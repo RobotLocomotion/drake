@@ -394,7 +394,6 @@ Vector3<T> RotationMatrix<T>::NormalizeOrThrow(const Vector3<T>& v,
                                                const char* function_name) {
   DRAKE_DEMAND(function_name != nullptr);
   const T norm = v.norm();
-  // Throw an exception if norm is non-finite (NaN or infinity) or too small.
   if constexpr (scalar_predicate<T>::is_bool) {
     // Throw an exception if norm is non-finite (NaN or infinity) or too small.
     // The threshold for "too small" is a heuristic (rule of thumb) guided by an
