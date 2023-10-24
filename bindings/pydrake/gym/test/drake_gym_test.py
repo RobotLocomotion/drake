@@ -7,7 +7,7 @@ import stable_baselines3.common.env_checker
 
 class DrakeGymTest(unittest.TestCase):
     """
-    Test that an DrakeGymEnv satisfies the OpenAI Gym Env specifications as to
+    Test that a DrakeGymEnv satisfies the OpenAI Gym Env specifications as to
     * API https://www.gymlibrary.ml/content/api/#standard-methods, and
     * semantics https://www.gymlibrary.ml/content/environment_creation/
 
