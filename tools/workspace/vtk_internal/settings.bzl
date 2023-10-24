@@ -529,10 +529,7 @@ MODULE_SETTINGS = {
             "ThirdParty/jpeg/vtkjpeg/**",
         ],
         "deps_extra": [
-            # TODO(jwnimmer-tri) VTK is the only user of this library.
-            # We should write our own WORKSPACE rule to build it sensibly,
-            # or switch to VTK's vendored version.
-            "@libjpeg",
+            "@libjpeg_turbo_internal//:jpeg",
         ],
     },
     "VTK::nlohmannjson": {

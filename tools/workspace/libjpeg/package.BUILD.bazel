@@ -15,4 +15,5 @@ cc_library(
         "-ljpeg",
     ],
     visibility = ["//visibility:public"],
+    deprecation = "The @libjpeg external is deprecated in Drake's WORKSPACE and will be removed on or after 2024-02-01.",  # noqa
 )
