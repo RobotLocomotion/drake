@@ -81,7 +81,7 @@ For the record, the rounded average acceleration limits:
 
 ### Rotor Inertias and Gear Ratios for IIWA 7
 The rotor inertias and gear ratios for the IIWA 7 are assumed to be the same as the DLR LWR II (with a payload of 7kg).
-The values for the rotor inertias are obtained from [Ott 2008].
+The values for the rotor inertias are obtained from Table A.2 on page 188 in [Ott 2008].
 
 [Ott 2008] Ott, Christian. Cartesian impedance control of redundant and flexible-joint robots. Springer, 2008.
 
