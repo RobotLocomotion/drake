@@ -11,7 +11,16 @@ namespace drake {
 namespace manipulation {
 namespace {
 
-// Read the canonical plant from main SDFormat model
+// Read the canonical plant for IIWA7 from main SDFormat model
+multibody::ModelInstanceIndex LoadIiwa7CanonicalModel(
+    multibody::MultibodyPlant<double>* plant) {
+  const std::string canonical_model_file(
+      FindResourceOrThrow("drake/manipulation/models/iiwa_description/iiwa7/"
+                          "iiwa7_no_collision.sdf"));
+  multibody::Parser parser(plant);
+  return parser.AddModels(canonical_model_file).at(0);
+}
+// Read the canonical plant for IIWA14 from main SDFormat model
 multibody::ModelInstanceIndex LoadIiwa14CanonicalModel(
     multibody::MultibodyPlant<double>* plant) {
   const std::string canonical_model_file(
@@ -21,8 +30,8 @@ multibody::ModelInstanceIndex LoadIiwa14CanonicalModel(
   return parser.AddModels(canonical_model_file).at(0);
 }
 
-// Read the common robot model files
-const std::vector<std::string> GetCommonIiwaModelFiles() {
+// Read the common robot model files for IIWA7
+const std::vector<std::string> GetCommonIiwa14ModelFiles() {
   const std::vector<std::string> model_files = {
       "drake/manipulation/models/iiwa_description/sdf/"
       "iiwa14_polytope_collision.sdf",
@@ -38,6 +47,14 @@ const std::vector<std::string> GetCommonIiwaModelFiles() {
       "iiwa14_spheres_dense_collision.urdf",
       "drake/manipulation/models/iiwa_description/urdf/"
       "iiwa14_spheres_dense_elbow_collision.urdf"};
+  return model_files;
+}
+
+// Read the common robot model files for IIWA7
+const std::vector<std::string> GetCommonIiwa7ModelFiles() {
+  const std::vector<std::string> model_files = {
+      "drake/manipulation/models/iiwa_description/iiwa7/"
+      "iiwa7_with_box_collision.sdf"};
   return model_files;
 }
 
@@ -86,6 +103,75 @@ void CompareRotationalInertias(const multibody::Body<double>& canonical_body,
       robot_body.default_rotational_inertia().get_products()));
 }
 
+// Tests that KUKA LBR iiwa7 models have consistent joint limits.
+// It takes iiwa7_no_collision.sdf as the canonical model.
+// It assumes all joints are declared in the same order.
+GTEST_TEST(JointLimitsIiwa7, TestEffortVelocityPositionValues) {
+  multibody::MultibodyPlant<double> canonical_plant(0.0);
+  multibody::ModelInstanceIndex canonical_model_instance =
+      LoadIiwa7CanonicalModel(&canonical_plant);
+  canonical_plant.Finalize();
+
+  const std::vector<multibody::JointIndex> joint_canonical_indices =
+      canonical_plant.GetJointIndices(canonical_model_instance);
+
+  std::vector<std::string> model_files = GetCommonIiwa7ModelFiles();
+
+  for (auto& model_file : model_files) {
+    multibody::MultibodyPlant<double> plant(0.0);
+    multibody::Parser parser(&plant);
+    parser.AddModels(FindResourceOrThrow(model_file));
+    plant.Finalize();
+
+    for (int i = 0; i < canonical_plant.num_actuators(); ++i) {
+      const multibody::JointActuator<double>& canonical_joint_actuator =
+          canonical_plant.get_joint_actuator(
+              drake::multibody::JointActuatorIndex(i));
+      const multibody::JointActuator<double>& joint_actuator =
+          plant.get_joint_actuator(drake::multibody::JointActuatorIndex(i));
+
+      CompareActuatorLimits(canonical_joint_actuator, joint_actuator);
+    }
+  }
+}
+
+// Tests that KUKA LBR iiwa7 models have consistent inertias.
+// It takes iiwa7_no_collision.sdf as the canonical model.
+// It assumes all links are declared in the same order.
+// It checks values directly on urdf files, generated from xacro.
+GTEST_TEST(InertiasIiwa7, TestInertiaValues) {
+  multibody::MultibodyPlant<double> canonical_plant(0.0);
+  multibody::ModelInstanceIndex canonical_model_instance =
+      LoadIiwa7CanonicalModel(&canonical_plant);
+  canonical_plant.Finalize();
+
+  const std::vector<multibody::BodyIndex> body_canonical_indices =
+      canonical_plant.GetBodyIndices(canonical_model_instance);
+
+  std::vector<std::string> model_files = GetCommonIiwa7ModelFiles();
+
+  std::vector<std::string> link_names = {
+      "iiwa_link_0", "iiwa_link_1", "iiwa_link_2", "iiwa_link_3",
+      "iiwa_link_4", "iiwa_link_5", "iiwa_link_6", "iiwa_link_7"};
+
+  for (auto& model_file : model_files) {
+    SCOPED_TRACE(fmt::format("model file: {}", model_file));
+    multibody::MultibodyPlant<double> plant(0.0);
+    multibody::Parser parser(&plant);
+    parser.AddModels(FindResourceOrThrow(model_file));
+    plant.Finalize();
+    std::filesystem::path model_path(model_file);
+    for (size_t i = 0; i < link_names.size(); ++i) {
+      SCOPED_TRACE(fmt::format("Link: {}", link_names[i]));
+      const multibody::Body<double>& canonical_body =
+          canonical_plant.GetBodyByName(link_names[i]);
+      const multibody::Body<double>& robot_body =
+          plant.GetBodyByName(link_names[i]);
+      CompareRotationalInertias(canonical_body, robot_body);
+    }
+  }
+}
+
 // Tests that KUKA LBR iiwa14 models have consistent joint limits.
 // It takes iiwa14_no_collisions.sdf as the canonical model.
 // It assumes all joints are declared in the same order.
@@ -102,7 +188,7 @@ GTEST_TEST(JointLimitsIiwa14, TestEffortVelocityPositionValues) {
   const std::vector<multibody::JointIndex> joint_canonical_indices =
       canonical_plant.GetJointIndices(canonical_model_instance);
 
-  std::vector<std::string> model_files = GetCommonIiwaModelFiles();
+  std::vector<std::string> model_files = GetCommonIiwa14ModelFiles();
   model_files.push_back(GetDualIiwaModelFile());
 
   for (auto& model_file : model_files) {
@@ -179,7 +265,7 @@ GTEST_TEST(InertiasIiwa14, TestInertiaValues) {
   const std::vector<multibody::BodyIndex> body_canonical_indices =
       canonical_plant.GetBodyIndices(canonical_model_instance);
 
-  std::vector<std::string> model_files = GetCommonIiwaModelFiles();
+  std::vector<std::string> model_files = GetCommonIiwa14ModelFiles();
   model_files.push_back(GetDualIiwaModelFile());
   model_files.push_back(GetPlanarIiwaModelFile());
 
