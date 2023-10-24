@@ -382,6 +382,12 @@ void TamsiDriver<T>::CalcDiscreteUpdateMultibodyForces(
                                                    &Fapplied_Bo_W_array);
 }
 
+template <typename T>
+void TamsiDriver<T>::CalcActuation(const systems::Context<T>& context,
+                                   VectorX<T>* actuation) const {
+  *actuation = manager_->AssembleActuationInput(context);
+}
+
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake

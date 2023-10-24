@@ -271,6 +271,10 @@ class SapContactProblem {
       const VectorX<T>& gamma, VectorX<T>* generalized_forces,
       std::vector<SpatialForce<T>>* spatial_forces) const;
 
+  void CalcConstraintGeneralizedForces(const VectorX<T>& gamma,
+                                       int constraint_start, int constraint_end,
+                                       VectorX<T>* generalized_forces) const;
+
  private:
   int nv_{0};           // Total number of generalized velocities.
   T time_step_{0.0};    // Discrete time step.

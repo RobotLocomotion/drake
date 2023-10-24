@@ -55,6 +55,9 @@ class TamsiDriver {
   void CalcDiscreteUpdateMultibodyForces(const systems::Context<T>& context,
                                          MultibodyForces<T>* forces) const;
 
+  void CalcActuation(const systems::Context<T>& context,
+                     VectorX<T>* actuation) const;
+
  private:
   // Returns a reference to the manager provided at construction.
   const CompliantContactManager<T>& manager() const { return *manager_; }

@@ -446,6 +446,25 @@ TEST_F(ActuatedIiiwaArmTest,
   const double kTolerance = 1.0e-12;
   EXPECT_TRUE(CompareMatrices(x_actuation, x_tau, kTolerance,
                               MatrixCompareType::relative));
+
+  // Reported actuation values are indexed by JointActuatorIndex. That is, in
+  // the order actuators were added to the model. For this test, recall that the
+  // acrobot elbow is added last programmatically.
+  const int nu = plant_->num_actuated_dofs();
+  // clang-format off
+  const VectorXd expected_u =
+      (VectorXd(nu) <<
+        arm_u,
+        0.0, /* Acrobot shoulder */
+        gripper_u,
+        0.0 /* Acrobot elbow */).finished();
+  // clang-format on
+
+  // Verify the actuation values reported by the plant.
+  const VectorXd actuation_output =
+      plant_->get_actuation_output_port().Eval(*context_);
+  EXPECT_TRUE(CompareMatrices(actuation_output, expected_u, kTolerance,
+                              MatrixCompareType::relative));
 }
 
 // We verify that the PD controlled actuators exert effort limits.
@@ -512,8 +531,27 @@ TEST_F(ActuatedIiiwaArmTest,
   // N.B. Generalized forces inputs and actuation inputs feed into the result in
   // very different ways. Actuation input goes through the SAP solver and
   // therefore the accuracy of the solution is affected by solver tolerances.
-  const double kTolerance = 1.0e-12;
+  const double kTolerance = 1.0e-10;
   EXPECT_TRUE(CompareMatrices(x_actuation, x_tau, kTolerance,
+                              MatrixCompareType::relative));
+
+  // Reported actuation values are indexed by JointActuatorIndex. That is, in
+  // the order actuators were added to the model. For this test, recall that the
+  // acrobot elbow is added last programmatically.
+  const int nu = plant_->num_actuated_dofs();
+  // clang-format off
+  const VectorXd expected_u =
+      (VectorXd(nu) <<
+        arm_u_clamped,
+        0.0, /* Acrobot shoulder */
+        gripper_u,
+        0.0 /* Acrobot elbow */).finished();
+  // clang-format on
+
+  // Verify the actuation values reported by the plant.
+  const VectorXd actuation_output =
+      plant_->get_actuation_output_port().Eval(*context_);
+  EXPECT_TRUE(CompareMatrices(actuation_output, expected_u, kTolerance,
                               MatrixCompareType::relative));
 }
 
