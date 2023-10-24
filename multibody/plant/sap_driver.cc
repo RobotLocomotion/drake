@@ -696,30 +696,35 @@ void SapDriver<T>::AddPdControllerConstraints(
         plant().get_joint_actuator(actuator_index);
     if (actuator.has_controller()) {
       const Joint<T>& joint = actuator.joint();
-      const double effort_limit = actuator.effort_limit();
-      const T& qd = desired_state[actuator.index()];
-      const T& vd = desired_state[num_actuators + actuator.index()];
-      const T& u0 = feed_forward_actuation[actuator.index()];
+      // There is no point in modeling PD controllers if the joint is locked.
+      // Therefore we do not add these constraints and actuation due to PD
+      // controllers on locked joints is considered to be zero.
+      if (!joint.is_locked(context)) {
+        const double effort_limit = actuator.effort_limit();
+        const T& qd = desired_state[actuator.index()];
+        const T& vd = desired_state[num_actuators + actuator.index()];
+        const T& u0 = feed_forward_actuation[actuator.index()];
 
-      const T& q0 = joint.GetOnePosition(context);
-      const int dof = joint.velocity_start();
-      const TreeIndex tree = tree_topology().velocity_to_tree_index(dof);
-      const int tree_dof =
-          dof - tree_topology().tree_velocities_start_in_v(tree);
-      const int tree_nv = tree_topology().num_tree_velocities(tree);
+        const T& q0 = joint.GetOnePosition(context);
+        const int dof = joint.velocity_start();
+        const TreeIndex tree = tree_topology().velocity_to_tree_index(dof);
+        const int tree_dof =
+            dof - tree_topology().tree_velocities_start_in_v(tree);
+        const int tree_nv = tree_topology().num_tree_velocities(tree);
 
-      // Controller gains.
-      const PdControllerGains& gains = actuator.get_controller_gains();
-      const T& Kp = gains.p;
-      const T& Kd = gains.d;
+        // Controller gains.
+        const PdControllerGains& gains = actuator.get_controller_gains();
+        const T& Kp = gains.p;
+        const T& Kd = gains.d;
 
-      typename SapPdControllerConstraint<T>::Parameters parameters{
-          Kp, Kd, effort_limit};
-      typename SapPdControllerConstraint<T>::Configuration configuration{
-          tree, tree_dof, tree_nv, q0, qd, vd, u0};
+        typename SapPdControllerConstraint<T>::Parameters parameters{
+            Kp, Kd, effort_limit};
+        typename SapPdControllerConstraint<T>::Configuration configuration{
+            tree, tree_dof, tree_nv, q0, qd, vd, u0};
 
-      problem->AddConstraint(std::make_unique<SapPdControllerConstraint<T>>(
-          std::move(configuration), std::move(parameters)));
+        problem->AddConstraint(std::make_unique<SapPdControllerConstraint<T>>(
+            std::move(configuration), std::move(parameters)));
+      }
     }
   }
 }
@@ -769,7 +774,12 @@ void SapDriver<T>::CalcContactProblemCache(
   // Do not change this order here!
   cache->R_WC = AddContactConstraints(context, &problem);
   AddLimitConstraints(context, problem.v_star(), &problem);
+
+  cache->pd_controller_constraints_start = problem.num_constraints();
   AddPdControllerConstraints(context, &problem);
+  cache->num_pd_controller_constraints =
+      problem.num_constraints() - cache->pd_controller_constraints_start;
+
   AddCouplerConstraints(context, &problem);
   AddDistanceConstraints(context, &problem);
   AddBallConstraints(context, &problem);
@@ -1027,6 +1037,58 @@ void SapDriver<T>::CalcDiscreteUpdateMultibodyForces(
     const BodyNodeIndex node_index = plant().get_body(b).node_index();
     spatial_forces[node_index] += constraint_spatial_forces[b];
   }
+}
+
+template <typename T>
+void SapDriver<T>::CalcActuation(const systems::Context<T>& context,
+                                 VectorX<T>* actuation) const {
+  // By default, models with no controllers feed through the output.
+  // PD controlled actuation values are overwritten below with values computed
+  // by the SAP solver, which includes these terms implicitly and enforces
+  // effort limits.
+  *actuation = manager().AssembleActuationInput(context);
+
+  // Add contribution from PD controllers.
+  const ContactProblemCache<T>& contact_problem_cache =
+      EvalContactProblemCache(context);
+
+  const int start = contact_problem_cache.pd_controller_constraints_start;
+  const int num_pd_constraints =
+      contact_problem_cache.num_pd_controller_constraints;
+  if (num_pd_constraints == 0) return;
+  const int end = start + num_pd_constraints - 1;
+
+  const SapSolverResults<T>& sap_results = EvalSapSolverResults(context);
+  const VectorX<T>& gamma = sap_results.gamma;
+  VectorX<T> tau_pd = VectorX<T>::Zero(plant().num_velocities());
+  const SapContactProblem<T>& sap_problem = *contact_problem_cache.sap_problem;
+  sap_problem.CalcConstraintGeneralizedForces(gamma, start, end, &tau_pd);
+
+  // Map generalized forces to actuation indexing.
+  int constraint_index = start;
+  for (JointActuatorIndex actuator_index(0);
+       actuator_index < plant().num_actuators(); ++actuator_index) {
+    const JointActuator<T>& actuator =
+        plant().get_joint_actuator(actuator_index);
+    const Joint<T>& joint = actuator.joint();
+    // PD constraints are not even added to the problem when joints are locked.
+    // PD actuation is considered to be zero and only the input actuation is
+    // reported.
+    if (actuator.has_controller() && !joint.is_locked(context)) {
+      const SapConstraint<T>& c =
+          sap_problem.get_constraint(constraint_index++);
+      const int dof = joint.velocity_start();
+
+      // We know that PD controllers constraints are one equation each.
+      DRAKE_DEMAND(c.num_constraint_equations() == 1);
+
+      // Each actuator defines a single PD controller.
+      actuation->coeffRef(actuator_index) = tau_pd(dof);
+    }
+  }
+  // Sanity check consistency with the code that added the constraints,
+  // AddPdControllerConstraints().
+  DRAKE_DEMAND(constraint_index - 1 == end);
 }
 
 }  // namespace internal

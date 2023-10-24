@@ -1721,6 +1721,7 @@ GTEST_TEST(MultibodyPlantTest, ReversedWeldError) {
 bool VerifyFeedthroughPorts(const MultibodyPlant<double>& plant) {
   // Create a set of the indices of all ports that can be feedthrough.
   std::set<int> ok_to_feedthrough;
+  ok_to_feedthrough.insert(plant.get_net_actuation_output_port().get_index());
   ok_to_feedthrough.insert(plant.get_reaction_forces_output_port().get_index());
   ok_to_feedthrough.insert(
       plant.get_generalized_acceleration_output_port().get_index());
