@@ -79,7 +79,13 @@ For the record, the rounded average acceleration limits:
 |Axis 6 (A6)|900.66   |15.72    |
 |Axis 7 (A7)|900.69   |15.72    |
 
-### Rotor Inertia and Gear Ratio
+### Rotor Inertias and Gear Ratios for IIWA 7
+The rotor inertias and gear ratios for the IIWA 7 are assumed to be the same as the DLR LWR II (with a payload of 7kg).
+The values for the rotor inertias are obtained from Table A.2 on page 188 in [Ott 2008].
+
+[Ott 2008] Ott, Christian. Cartesian impedance control of redundant and flexible-joint robots. Springer, 2008.
+
+### Rotor Inertia and Gear Ratios for IIWA 14
 The rotor inertias and gear ratios are estimated based on the specifications of a similar robot, i.e. DLR LWR III (link
 below). The motors and gears are assumed to be the RoboDrive ILM series and Harmonic Drive CSG series. These values are
 being validated experimentally.
