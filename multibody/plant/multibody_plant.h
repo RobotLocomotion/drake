@@ -206,6 +206,7 @@ output_ports:
 - body_spatial_velocities
 - body_spatial_accelerations
 - generalized_acceleration
+- actuation_output
 - reaction_forces
 - contact_results
 - <em style="color:gray">model_instance_name[i]</em>_state
@@ -837,6 +838,16 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @pre Finalize() was already called on `this` plant.
   /// @throws std::exception if called before Finalize().
   const systems::InputPort<T>& get_actuation_input_port() const;
+
+  /// Returns a constant reference to the output port that reports actuation
+  /// values applied through joint actuators. This output port is a vector
+  /// valued port indexed by @ref JointActuatorIndex, see
+  /// JointActuator::index(). Models that include PD controllers will include
+  /// their contribution in this port, refer to @ref mbp_actuation "Actuation"
+  /// for further details.
+  /// @pre Finalize() was already called on `this` plant.
+  /// @throws std::exception if called before Finalize().
+  const systems::OutputPort<T>& get_actuation_output_port() const;
 
   /// Returns a constant reference to the input port for external actuation for
   /// a specific model instance. This is a vector valued port with entries
@@ -5136,6 +5147,14 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // ports. The return value is indexed by JointActuatorIndex.
   VectorX<T> AssembleActuationInput(const systems::Context<T>& context) const;
 
+  // Computes the total applied actuation through actuators. For continuous
+  // models (thus far) this only inludes values coming from the
+  // actuation_input_port. For discrete models, it includes actuator
+  // controllers, see @ref mbp_actuation. Similarly to AssembleActuationInput(),
+  // this function assembles actuation values indexed by JointActuatorIndex.
+  void CalcActuationOutput(const systems::Context<T>& context,
+                           systems::BasicVector<T>* actuation) const;
+
   // For models with joint actuators with PD control, this method helps to
   // assemble desired states for the full model from the input ports for
   // individual model instances.
@@ -5626,6 +5645,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   // The actuation port for all actuated dofs.
   systems::InputPortIndex actuation_port_;
+
+  // Actuation values applied through actuators.
+  systems::OutputPortIndex actuation_output_port_;
 
   std::vector<systems::InputPortIndex> instance_desired_state_ports_;
 
