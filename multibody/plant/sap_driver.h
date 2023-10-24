@@ -49,6 +49,9 @@ struct ContactProblemCache {
   }
   copyable_unique_ptr<contact_solvers::internal::SapContactProblem<T>>
       sap_problem;
+  // Start/end constraint index for PD controller constraints in sap_problem.
+  int pd_controller_constraints_start{0};
+  int num_pd_controller_constraints{0};
 
   copyable_unique_ptr<contact_solvers::internal::SapContactProblem<T>>
       sap_problem_locked;
@@ -103,6 +106,12 @@ class SapDriver {
   // forces.
   void CalcDiscreteUpdateMultibodyForces(const systems::Context<T>& context,
                                          MultibodyForces<T>* forces) const;
+
+  // Computes the actuation applied to the multibody system when stepping the
+  // discrete dynamics from the state stored in `context`. This includes the
+  // actuation from implicit PD controllers.
+  void CalcActuation(const systems::Context<T>& context,
+                     VectorX<T>* actuation) const;
 
  private:
   // Provide private access for unit testing only.
