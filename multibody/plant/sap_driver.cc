@@ -764,9 +764,13 @@ void SapDriver<T>::CalcContactProblemCache(
   // types. This driver assumes this ordering of the constraints in order to
   // extract contact impulses for reporting contact results.
   // Do not change this order here!
-  cache->R_WC = AddContactConstraints(context, &problem);
+  // cache->R_WC = AddContactConstraints(context, &problem);
   AddLimitConstraints(context, problem.v_star(), &problem);
+
+  cache->pd_controller_constraints_start = problem.num_constraints();
   AddPdControllerConstraints(context, &problem);
+  cache->pd_controller_constraints_end = problem.num_constraints();
+
   AddCouplerConstraints(context, &problem);
   AddDistanceConstraints(context, &problem);
   AddBallConstraints(context, &problem);
@@ -1023,6 +1027,48 @@ void SapDriver<T>::CalcDiscreteUpdateMultibodyForces(
     // MultibodyForce indexes spatial body forces by BodyNodeIndex.
     const BodyNodeIndex node_index = plant().get_body(b).node_index();
     spatial_forces[node_index] += constraint_spatial_forces[b];
+  }
+}
+
+template <typename T>
+void SapDriver<T>::CalcActuation(const systems::Context<T>& context,
+                                 VectorX<T>* actuation) const {
+  actuation->setZero();
+
+  // Add contribution from PD controllers.
+  const SapSolverResults<T>& sap_results = EvalSapSolverResults(context);
+  const ContactProblemCache<T>& contact_problem_cache =
+      EvalContactProblemCache(context);
+  const SapContactProblem<T>& sap_problem = *contact_problem_cache.sap_problem;
+
+  const VectorX<T>& gamma = sap_results.gamma;
+  VectorX<T> tau_pd = VectorX<T>::Zero(plant().num_velocities());
+
+  // TODO(amcastro-tri): consider locked problems.
+  DRAKE_DEMAND(contact_problem_cache.sap_problem_locked == nullptr);
+
+  const int start = contact_problem_cache.pd_controller_constraints_start;
+  const int end = contact_problem_cache.pd_controller_constraints_end;
+  sap_problem.CalcConstraintGeneralizedForces(gamma, start, end, &tau_pd);
+
+  // Map generalized forces to actuation indexing.
+  int constraint_index = start;
+  for (JointActuatorIndex actuator_index(0);
+       actuator_index < plant().num_actuators(); ++actuator_index) {
+    const JointActuator<T>& actuator =
+        plant().get_joint_actuator(actuator_index);
+    if (actuator.has_controller()) {
+      const SapConstraint<T>& c =
+          sap_problem.get_constraint(constraint_index++);
+      const Joint<T>& joint = actuator.joint();
+      const int dof = joint.velocity_start();
+
+      // We know that PD controllers constraints are one equation each.
+      DRAKE_DEMAND(c.num_constraint_equations() == 1);
+
+      // Each actuator defines a single PD controller.
+      actuation->coeffRef(actuator_index) = tau_pd(dof);
+    }
   }
 }
 
