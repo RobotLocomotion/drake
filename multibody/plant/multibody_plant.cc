@@ -369,6 +369,7 @@ MultibodyPlant<T>::MultibodyPlant(const MultibodyPlant<U>& other)
     // in FinalizePlantOnly():
     //   -instance_actuation_ports_
     //   -actuation_port_
+    //   -net_actuation_port_
     //   -applied_generalized_force_input_port_
     //   -applied_spatial_force_input_port_
     //   -body_poses_port_
@@ -2349,6 +2350,18 @@ VectorX<T> MultibodyPlant<T>::AssembleActuationInput(
 }
 
 template <typename T>
+void MultibodyPlant<T>::CalcActuationOutput(const systems::Context<T>& context,
+                                            BasicVector<T>* actuation) const {
+  DRAKE_DEMAND(actuation != nullptr);
+  DRAKE_DEMAND(actuation->size() == num_actuated_dofs());
+  if (is_discrete()) {
+    actuation->SetFromVector(discrete_update_manager_->EvalActuation(context));
+  } else {
+    actuation->SetFromVector(AssembleActuationInput(context));
+  }
+}
+
+template <typename T>
 VectorX<T> MultibodyPlant<T>::AssembleDesiredStateInput(
     const systems::Context<T>& context) const {
   this->ValidateContext(context);
@@ -2738,6 +2751,10 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
   DeclareCacheEntries();
   DeclareParameters();
 
+  // State ticket.
+  const systems::DependencyTicket state_ticket =
+      is_discrete() ? this->xd_ticket() : this->kinematics_ticket();
+
   // Declare per model instance actuation ports.
   instance_actuation_ports_.resize(num_model_instances());
   for (ModelInstanceIndex model_instance_index(0);
@@ -2752,6 +2769,17 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
   actuation_port_ =
       this->DeclareVectorInputPort("actuation", num_actuated_dofs())
           .get_index();
+
+  // Total applied actuation. For discrete models it can contain constraint
+  // terms.
+  // N.B. We intentionally declare a dependency on kinematics in the continuous
+  // mode in anticipation for adding PD support in continuous mode.
+  net_actuation_port_ = this->DeclareVectorOutputPort(
+                                "net_actuation", num_actuated_dofs(),
+                                &MultibodyPlant::CalcActuationOutput,
+                                {state_ticket, this->all_input_ports_ticket(),
+                                 this->all_parameters_ticket()})
+                            .get_index();
 
   // Declare per model instance desired states input ports.
   instance_desired_state_ports_.resize(num_model_instances());
@@ -2940,8 +2968,6 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
           .get_index();
 
   // Contact results output port.
-  const systems::DependencyTicket state_ticket =
-      is_discrete() ? this->xd_ticket() : this->kinematics_ticket();
   std::set<systems::DependencyTicket> contact_results_prerequisites = {
       state_ticket};
   if (is_discrete()) {
@@ -3143,6 +3169,13 @@ const systems::InputPort<T>& MultibodyPlant<T>::get_actuation_input_port()
     const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   return systems::System<T>::get_input_port(actuation_port_);
+}
+
+template <typename T>
+const systems::OutputPort<T>& MultibodyPlant<T>::get_net_actuation_output_port()
+    const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  return systems::System<T>::get_output_port(net_actuation_port_);
 }
 
 template <typename T>

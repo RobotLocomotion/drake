@@ -433,6 +433,8 @@ class TestPlant(unittest.TestCase):
         self.assertIsInstance(
             plant.get_actuation_input_port(), InputPort)
         self.assertIsInstance(
+            plant.get_net_actuation_output_port(), OutputPort)
+        self.assertIsInstance(
             plant.get_state_output_port(), OutputPort)
         self.assertIsInstance(
             plant.get_generalized_acceleration_output_port(), OutputPort)

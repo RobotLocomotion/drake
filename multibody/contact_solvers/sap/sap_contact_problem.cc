@@ -245,6 +245,39 @@ int SapContactProblem<T>::AddConstraint(std::unique_ptr<SapConstraint<T>> c) {
 }
 
 template <typename T>
+void SapContactProblem<T>::CalcConstraintGeneralizedForces(
+    const VectorX<T>& gamma, int constraint_start, int constraint_end,
+    VectorX<T>* generalized_forces) const {
+  DRAKE_THROW_UNLESS(0 <= constraint_start &&
+                     constraint_start < num_constraints());
+  DRAKE_THROW_UNLESS(0 <= constraint_end && constraint_end < num_constraints());
+  DRAKE_THROW_UNLESS(constraint_start <= constraint_end);
+  DRAKE_THROW_UNLESS(gamma.size() == num_constraint_equations());
+  DRAKE_THROW_UNLESS(generalized_forces != nullptr);
+  DRAKE_THROW_UNLESS(generalized_forces->size() == num_velocities());
+
+  generalized_forces->setZero();
+  for (int i = constraint_start; i <= constraint_end; ++i) {
+    const SapConstraint<T>& constraint = get_constraint(i);
+    const int equation_start = constraint_equations_start(i);
+    const int ne = constraint.num_constraint_equations();
+    const auto constraint_gamma = gamma.segment(equation_start, ne);
+
+    // Compute generalized forces per clique.
+    for (int c = 0; c < constraint.num_cliques(); ++c) {
+      const int clique = constraint.clique(c);
+      auto clique_forces = generalized_forces->segment(velocities_start(clique),
+                                                       num_velocities(clique));
+      constraint.AccumulateGeneralizedImpulses(c, constraint_gamma,
+                                               &clique_forces);
+    }
+  }
+
+  // Conversion of impulses into forces.
+  (*generalized_forces) /= time_step();
+}
+
+template <typename T>
 void SapContactProblem<T>::CalcConstraintMultibodyForces(
     const VectorX<T>& gamma, VectorX<T>* generalized_forces,
     std::vector<SpatialForce<T>>* spatial_forces) const {

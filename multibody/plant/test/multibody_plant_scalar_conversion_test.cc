@@ -191,6 +191,8 @@ class DoubleOnlyDiscreteUpdateManager final
   void DoCalcDiscreteUpdateMultibodyForces(
       const systems::Context<T>& context,
       MultibodyForces<T>* forces) const final {}
+
+  void DoCalcActuation(const systems::Context<T>&, VectorX<T>*) const final {}
 };
 
 // This test verifies that adding external components that do not support some
