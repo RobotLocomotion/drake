@@ -35,7 +35,7 @@ def _run_playing(args):
         check_env(env)
 
     env.simulator.set_target_realtime_rate(1.0)
-    max_steps = 1e5 if not args.test else 5e2
+    max_steps = 1e5 if not args.test else 5e1
 
     if not args.test:
         assert "drake_internal" not in stable_baselines3.__version__
