@@ -136,15 +136,6 @@ class MultibodyElement {
       internal::MultibodyTreeSystem<T>* tree_system,
       const AbstractValue& model_value);
 
-  systems::CacheEntry& DeclareCacheEntry(
-      internal::MultibodyTreeSystem<T>* tree_system,
-      std::string description, systems::ValueProducer value_producer,
-      std::set<systems::DependencyTicket> prerequisites_of_calc) {
-    return internal::MultibodyTreeSystemElementAttorney<T>::DeclareCacheEntry(
-        tree_system, std::move(description),
-        std::move(value_producer), std::move(prerequisites_of_calc));
-  }
-
  private:
   // MultibodyTree<T> is a natural friend of MultibodyElement objects and
   // therefore it can set the owning parent tree and unique index in that tree.

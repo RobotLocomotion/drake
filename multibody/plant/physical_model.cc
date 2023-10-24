@@ -69,14 +69,6 @@ systems::LeafOutputPort<T>& PhysicalModel<T>::DeclareAbstractOutputPort(
 }
 
 template <typename T>
-systems::InputPort<T>& PhysicalModel<T>::DeclareAbstractInputPort(
-    MultibodyPlant<T>* plant, std::string name,
-    const AbstractValue& model_value) {
-  return internal::MultibodyPlantModelAttorney<T>::DeclareAbstractInputPort(
-      plant, std::move(name), model_value);
-}
-
-template <typename T>
 systems::LeafOutputPort<T>& PhysicalModel<T>::DeclareVectorOutputPort(
     MultibodyPlant<T>* plant, std::string name,
     const systems::BasicVector<T>& model_vector,
