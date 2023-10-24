@@ -234,7 +234,7 @@ TEST_F(BuildIiwaControlTest, PositionAndTorque) {
 
   /* Same position command with a non-zero feedforward torque. The extra torque
    should take effect and move the Iiwa arm from its commanded position. */
-  VectorXd nonzero_feedforward_command = VectorXd::Constant(N, 5.0);
+  VectorXd nonzero_feedforward_command = VectorXd::Constant(N, 10.0);
   torque_input_source
       ->get_mutable_source_value(
           &torque_input_source->GetMyMutableContextFromRoot(&diagram_context))
