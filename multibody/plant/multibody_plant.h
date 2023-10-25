@@ -3592,7 +3592,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// Computes the generalized forces result of a set of MultibodyForces applied
   /// to this model.
   ///
-  /// MultibodyForces stores applied forces as both generalized forces τₐₚₚ and
+  /// MultibodyForces stores applied forces as both generalized forces τ and
   /// spatial forces F on each body, refer to documentation in MultibodyForces
   /// for details. Users of MultibodyForces will use
   /// MultibodyForces::mutable_generalized_forces() to mutate the stored
@@ -3603,7 +3603,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// compute the total generalized forces on this model. More precisely, if
   /// J_WBo is the Jacobian (with respect to velocities) for this model,
   /// including all bodies, then this method computes: <pre>
-  ///   τ = τₐₚₚ + J_WBo⋅F
+  ///   τᵣₑₛᵤₗₜ = τ + J_WBo⋅F
   /// </pre>
   ///
   /// @param[in] context Context that stores the state of the model.

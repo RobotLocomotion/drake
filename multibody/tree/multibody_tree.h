@@ -1563,12 +1563,6 @@ class MultibodyTree {
   //
   // @param[in] context
   //   The context containing the state of the %MultibodyTree model.
-  // @param[in] pc
-  //   A position kinematics cache object already updated to be in sync with
-  //   `context`.
-  // @param[in] vc
-  //   A velocity kinematics cache object already updated to be in sync with
-  //   `context`.
   // @param[in] known_vdot
   //   A vector with the known generalized accelerations `vdot` for the full
   //   %MultibodyTree model. Use Mobilizer::get_accelerations_from_array() to
@@ -1637,11 +1631,6 @@ class MultibodyTree {
   // allocations. However the information in `Fapplied_Bo_W_array`
   // (`tau_applied_array`) would be overwritten through `F_BMo_W_array`
   // (`tau_array`). Make a copy if data must be preserved.
-  //
-  // @pre The position kinematics `pc` must have been previously updated with a
-  // call to CalcPositionKinematicsCache().
-  // @pre The velocity kinematics `vc` must have been previously updated with a
-  // call to CalcVelocityKinematicsCache().
   void CalcInverseDynamics(
       const systems::Context<T>& context, const VectorX<T>& known_vdot,
       const std::vector<SpatialForce<T>>& Fapplied_Bo_W_array,
