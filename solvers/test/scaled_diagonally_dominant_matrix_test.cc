@@ -11,6 +11,7 @@ using drake::symbolic::test::ExprEqual;
 
 namespace drake {
 namespace solvers {
+namespace {
 bool is_zero(const symbolic::Variable& v) {
   return v.is_dummy();
 }
@@ -236,5 +237,7 @@ GTEST_TEST(SdsosTest, NotSdsosPolynomial) {
       result.get_solution_result() == SolutionResult::kInfeasibleConstraints ||
       result.get_solution_result() == SolutionResult::kInfeasibleOrUnbounded);
 }
+
+}  // namespace
 }  // namespace solvers
 }  // namespace drake

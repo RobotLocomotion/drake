@@ -559,6 +559,21 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertTrue(np.all(eigs >= -tol))
         self.assertTrue(S[0, 1] >= -tol)
 
+    def test_replace_psd_methods(self):
+        prog = mp.MathematicalProgram()
+        replacement_methods = [
+            prog.TightenPsdConstraintToDd,
+            prog.TightenPsdConstraintToSdd,
+            prog.RelaxPsdConstraintToDdDualCone,
+            prog.RelaxPsdConstraintToSddDualCone,
+        ]
+        for method in replacement_methods:
+            X = prog.NewSymmetricContinuousVariables(3)
+            psd_constraint = prog.AddPositiveSemidefiniteConstraint(X)
+            self.assertEqual(len(prog.positive_semidefinite_constraints()), 1)
+            method(constraint=psd_constraint)
+            self.assertEqual(len(prog.positive_semidefinite_constraints()), 0)
+
     def test_sos_polynomial(self):
         # Only check if the API works.
         prog = mp.MathematicalProgram()

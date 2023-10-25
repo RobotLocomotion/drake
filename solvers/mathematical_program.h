@@ -2614,6 +2614,26 @@ class MathematicalProgram {
       const Eigen::Ref<const MatrixX<symbolic::Expression>>& X);
 
   /**
+   * 1. Tightens the positive semidefinite @p constraint with a positive
+   * diagonally dominant constraint.
+   * 2. Adds the positive diagonally dominant constraint into this
+   * MathematicalProgram.
+   * 3. Removes the positive semidefinite @p constraint, if it had already been
+   * registered in this MathematicalProgram.
+   *
+   * This provides a polyhedral (i.e. linear) sufficient, but not
+   * necessary, condition for the variables in @p constraint to be positive
+   * semidefinite.
+   *
+   * @pre The decision variables contained in constraint have been registered
+   * with this MathematicalProgram.
+   * @return The return of AddPositiveDiagonallyDominantMatrixConstraint applied
+   * to the variables in @p constraint.
+   */
+  MatrixX<symbolic::Expression> TightenPsdConstraintToDd(
+      const Binding<PositiveSemidefiniteConstraint>& constraint);
+
+  /**
    * @anchor add_dd_dual
    * @name Diagonally dominant dual cone constraint
    * Adds the constraint that a symmetric matrix is in the dual cone of the
@@ -2662,6 +2682,26 @@ class MathematicalProgram {
   AddPositiveDiagonallyDominantDualConeMatrixConstraint(
       const Eigen::Ref<const MatrixX<symbolic::Variable>>& X);
   //@}
+
+  /**
+   * 1. Relaxes the positive semidefinite @p constraint with a diagonally
+   * dominant dual cone constraint.
+   * 2. Adds the diagonally dominant dual cone constraint into this
+   * MathematicalProgram.
+   * 3. Removes the positive semidefinite @p constraint, if it had already been
+   * registered in this MathematicalProgram.
+   *
+   * This provides a polyhedral (i.e. linear) necessary, but not
+   * sufficient, condition for the variables in @p constraint to be positive
+   * semidefinite.
+   *
+   * @pre The decision variables contained in constraint have been registered
+   * with this MathematicalProgram.
+   * @return The return of AddPositiveDiagonallyDominantDualConeMatrixConstraint
+   * applied to the variables in @p constraint.
+   */
+  Binding<LinearConstraint> RelaxPsdConstraintToDdDualCone(
+      const Binding<PositiveSemidefiniteConstraint>& constraint);
 
   /**
    * @anchor addsdd
@@ -2721,6 +2761,27 @@ class MathematicalProgram {
   //@}
 
   /**
+   * 1. Tightens the positive semidefinite @p constraint with a scaled
+   * diagonally dominant constraint.
+   * 2. Adds the scaled diagonally dominant constraint into this
+   * MathematicalProgram.
+   * 3. Removes the positive semidefinite @p constraint, if it had already been
+   * registered in this MathematicalProgram.
+   *
+   * This provides a second-order cone sufficient, but not
+   * necessary, condition for the variables in @p constraint to be positive
+   * semidefinite.
+   *
+   * @pre The decision variables contained in constraint have been registered
+   * with this MathematicalProgram.
+   * @return The return of AddScaledDiagonallyDominantMatrixConstraint applied
+   * to the variables in @p constraint.
+   */
+  std::vector<std::vector<Matrix2<symbolic::Variable>>>
+  TightenPsdConstraintToSdd(
+      const Binding<PositiveSemidefiniteConstraint>& constraint);
+
+  /**
    * @anchor add_sdd_dual
    * @name Scaled diagonally dominant dual cone constraint
    * Adds the constraint that a symmetric matrix is in the dual cone of the
@@ -2777,6 +2838,27 @@ class MathematicalProgram {
   AddScaledDiagonallyDominantDualConeMatrixConstraint(
       const Eigen::Ref<const MatrixX<symbolic::Variable>>& X);
   //@}
+
+  /**
+   * 1. Relaxes the positive semidefinite @p constraint with a scaled diagonally
+   * dominant dual cone constraint.
+   * 2. Adds the scaled diagonally dominant dual cone constraint into this
+   * MathematicalProgram.
+   * 3. Removes the positive semidefinite @p constraint, if it had already been
+   * registered in this MathematicalProgram.
+   *
+   * This provides a second-order cone necessary, but not
+   * sufficient, condition for the variables in @p constraint to be positive
+   * semidefinite.
+   *
+   * @pre The decision variables contained in constraint have been registered
+   * with this MathematicalProgram.
+   * @return The return of AddScaledDiagonallyDominantDualConeMatrixConstraint
+   * applied to the variables in @p constraint.
+   */
+  std::vector<Binding<RotatedLorentzConeConstraint>>
+  RelaxPsdConstraintToSddDualCone(
+      const Binding<PositiveSemidefiniteConstraint>& constraint);
 
   /**
    * Adds constraints that a given polynomial @p p is a sums-of-squares (SOS),

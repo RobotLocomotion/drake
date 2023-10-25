@@ -41,7 +41,6 @@ int TestInDualConeByGenerators(const Eigen::MatrixXd& X) {
   }
   return -1;
 }
-}  // namespace
 
 GTEST_TEST(ScaledDiagonallyDominantMatrixDualConeConstraint, SizeOfReturnTest) {
   // Test the number of constraints added to the program. This should be n
@@ -289,5 +288,6 @@ GTEST_TEST(ScaledDiagonallyDominantMatrixDualConeConstraint,
   }
 }
 
+}  // namespace
 }  // namespace solvers
 }  // namespace drake
