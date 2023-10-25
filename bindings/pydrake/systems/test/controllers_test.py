@@ -232,7 +232,8 @@ class TestControllers(unittest.TestCase):
 
         # Set the plant's context.
         plant_context = plant.CreateDefaultContext()
-        x_plant = plant.GetMutablePositionsAndVelocities(plant_context)
+        with catch_drake_warnings(expected_count=1) as w:
+            x_plant = plant.GetMutablePositionsAndVelocities(plant_context)
         x_plant[:] = x
 
         # Compute the expected value of the generalized forces using
