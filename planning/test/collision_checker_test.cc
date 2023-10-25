@@ -1556,11 +1556,13 @@ GTEST_TEST(EdgeCheckTest, DefaultInterpolation) {
 
   // Given a pose of the free body and the angle theta between bodies b0 and b1,
   // returns the plant's q.
-  auto get_q = [&plant, &context](const RigidTransformd& X_B0, double theta) {
+  auto get_q = [&plant](const RigidTransformd& X_B0, double theta) {
     const Body<double>& body0 = plant.GetBodyByName("b0");
-    plant.SetFreeBodyPose(context.get(), body0, X_B0);
-    plant.GetMutablePositions(context.get())[7] = theta;
-    return plant.GetPositions(*context);
+    auto plant_context = plant.CreateDefaultContext();
+    plant.SetFreeBodyPose(plant_context.get(), body0, X_B0);
+    VectorXd positions = plant.GetPositions(*plant_context);
+    positions[7] = theta;
+    return positions;
   };
 
   const VectorXd q_init = get_q(X_WB0_init, j12_init);

@@ -53,8 +53,7 @@ TEST_F(IiwaKinematicConstraintTest, GazeTargetConstraint) {
   AutoDiffVecXd y_autodiff;
   constraint.Eval(q_autodiff, &y_autodiff);
 
-  plant_autodiff_->GetMutablePositions(plant_context_autodiff_.get()) =
-      q_autodiff;
+  plant_autodiff_->SetPositions(plant_context_autodiff_.get(), q_autodiff);
   Vector2<AutoDiffXd> y_autodiff_expected = EvalGazeTargetConstraintAutoDiff(
       *plant_autodiff_,
       plant_autodiff_->GetFrameByName(frameA.name()), p_AS, n_A,
@@ -64,8 +63,7 @@ TEST_F(IiwaKinematicConstraintTest, GazeTargetConstraint) {
 
   // Test with non-identity gradient for q_autodiff.
   q_autodiff = math::InitializeAutoDiff(q, MatrixX<double>::Ones(q.size(), 2));
-  plant_autodiff_->GetMutablePositions(plant_context_autodiff_.get()) =
-      q_autodiff;
+  plant_autodiff_->SetPositions(plant_context_autodiff_.get(), q_autodiff);
   constraint.Eval(q_autodiff, &y_autodiff);
   y_autodiff_expected = EvalGazeTargetConstraintAutoDiff(
       *plant_autodiff_,

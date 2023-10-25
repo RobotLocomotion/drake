@@ -74,7 +74,7 @@ void TestComInPolyhedronConstraint(
   EXPECT_TRUE(CompareMatrices(y, math::ExtractValue(y_autodiff), tol));
   // Now compare the autodiff computed from Eval versus the autodiff computed
   // from EvalComInPolyhedronConstraintAutoDiff.
-  plant_autodiff->GetMutablePositions(plant_context_autodiff) = q_autodiff;
+  plant_autodiff->SetPositions(plant_context_autodiff, q_autodiff);
   std::vector<ModelInstanceIndex> model_instances_val;
   if (model_instances.has_value()) {
     model_instances_val = model_instances.value();
@@ -99,7 +99,7 @@ void TestComInPolyhedronConstraint(
     q_grad(i, 1) = -0.2 * i - 0.5;
   }
   q_autodiff = math::InitializeAutoDiff(q_val, q_grad);
-  plant_autodiff->GetMutablePositions(plant_context_autodiff) = q_autodiff;
+  plant_autodiff->SetPositions(plant_context_autodiff, q_autodiff);
   constraint.Eval(q_autodiff, &y_autodiff);
   y_autodiff_expected = EvalComInPolyhedronConstraintAutoDiff(
       *plant_context_autodiff, *plant_autodiff, model_instances_val,
@@ -160,10 +160,10 @@ GTEST_TEST(DualIiwaTest, ComInPolyhedronConstraintModelInstance) {
       plant_autodiff.get(), plant_autodiff.get(), model_instances,
       plant_autodiff->world_frame().index(), plant_context_autodiff.get(),
       plant_context_autodiff.get(), A, lb, ub, q);
-  TestComInPolyhedronConstraint(
-      plant.get(), plant_autodiff.get(), model_instances,
-      plant->world_frame().index(), plant_context.get(),
-      plant_context_autodiff.get(), A, lb, ub, q);
+  TestComInPolyhedronConstraint(plant.get(), plant_autodiff.get(),
+                                model_instances, plant->world_frame().index(),
+                                plant_context.get(),
+                                plant_context_autodiff.get(), A, lb, ub, q);
   // Test model_instances being an empty vector.
   model_instances.clear();
   DRAKE_EXPECT_THROWS_MESSAGE(
