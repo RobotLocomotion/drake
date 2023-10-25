@@ -51,7 +51,7 @@ void CalcJacobianViaPartialDerivativesOfPositionWithRespectToQ(
   // and set q's values to match this system's generalized coordinate values.
   VectorX<AutoDiffXd> q(num_positions);
   math::InitializeAutoDiff(q_double, &q);
-  plant.GetMutablePositions(context) = q;
+  plant.SetPositions(context, q);
 
   // Reserve space and then for each point Ei, calculate Ei's position from
   // Wo (World origin), expressed in world W.
@@ -769,8 +769,8 @@ TEST_F(KukaIiwaModelTests, CalcBiasSpatialAcceleration) {
   // Set the context for AutoDiffXd computations.
   VectorX<AutoDiffXd> x_autodiff(num_states);
   x_autodiff << q_autodiff, v_autodiff;
-  plant_autodiff_->GetMutablePositionsAndVelocities(context_autodiff_.get()) =
-      x_autodiff;
+  plant_autodiff_->SetPositionsAndVelocities(context_autodiff_.get(),
+                                             x_autodiff);
 
   // Point Ep is affixed/welded to the end-effector E.
   const Vector3<double> p_EEp(0.1, -0.05, 0.02);
@@ -842,8 +842,8 @@ TEST_F(KukaIiwaModelTests, CalcBiasTranslationalAcceleration) {
   // Set the context for AutoDiffXd computations.
   VectorX<AutoDiffXd> x_autodiff(plant_->num_multibody_states());
   x_autodiff << q_autodiff, v_autodiff;
-  plant_autodiff_->GetMutablePositionsAndVelocities(context_autodiff_.get()) =
-      x_autodiff;
+  plant_autodiff_->SetPositionsAndVelocities(context_autodiff_.get(),
+                                             x_autodiff);
 
   // Points Ei (i = 0, 1) are affixed/welded to the end-effector E.
   // Designate Ei's positions from origin Eo, expressed in frame E.

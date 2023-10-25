@@ -72,8 +72,8 @@ void TestComPositionConstraint(
   AutoDiffVecXd x_autodiff = math::InitializeAutoDiff(x);
   AutoDiffVecXd y_autodiff;
   constraint.Eval(x_autodiff, &y_autodiff);
-  plant_autodiff->GetMutablePositions(plant_context_autodiff) =
-      x_autodiff.head(plant->num_positions());
+  plant_autodiff->SetPositions(plant_context_autodiff,
+                               x_autodiff.head(plant->num_positions()));
   std::vector<ModelInstanceIndex> model_instances_val;
   if (model_instances.has_value()) {
     model_instances_val = model_instances.value();
@@ -96,8 +96,8 @@ void TestComPositionConstraint(
     x_grad(i, 1) = -0.2 * i - 0.5;
   }
   x_autodiff = math::InitializeAutoDiff(x, x_grad);
-  plant_autodiff->GetMutablePositions(plant_context_autodiff) =
-      x_autodiff.head(plant->num_positions());
+  plant_autodiff->SetPositions(plant_context_autodiff,
+                               x_autodiff.head(plant->num_positions()));
   constraint.Eval(x_autodiff, &y_autodiff);
   y_autodiff_expected = EvalComPositionConstraintAutoDiff(
       *plant_context_autodiff, *plant_autodiff, model_instances_val,
