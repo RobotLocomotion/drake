@@ -64,7 +64,9 @@ T WarnIfNotUnitVector(const Vector3<T>& unit_vector,
 // exception message (if an exception is thrown).
 // @throws std::exception if v contains nonfinite numbers (NaN or infinity)
 // or ‖v‖ < 1E-10.
-// @note no exception is thrown if v is a symbolic type.
+// @note: No exception is thrown when type T is symbolic::Expression.
+// TODO(Mitiguy) Consider evolving towards a consistent policy of ‖v‖ ≈ 1.0
+//  instead of ‖v‖ ≥ 1E-10, somewhat similar to ThrowIfNotUnitVector().
 template <typename T>
 Vector3<T> NormalizeOrThrow(const Vector3<T>& v,
                             std::string_view function_name);

@@ -92,6 +92,7 @@ std::string ErrorMessageNotUnitVector(const Vector3<T>& bad_unit_vector,
 
 }  // namespace
 
+
 template <typename T>
 Vector3<T> NormalizeOrThrow(const Vector3<T>& v,
                             std::string_view function_name) {
@@ -106,12 +107,12 @@ Vector3<T> NormalizeOrThrow(const Vector3<T>& v,
     using std::isfinite;
     if (!(isfinite(norm) && norm >= kMinMagnitude)) {
       throw std::logic_error(fmt::format(
-          "RotationMatrix::{}() cannot normalize the given vector.\n"
-          "   v: {}\n"
-          " |v|: {}\n"
+          "{}() cannot normalize the given vector v.\n"
+          "   v = {}\n"
+          " |v| = {}\n"
           " The measures must be finite and the vector must have a magnitude of"
           " at least {} to normalize. If you are confident that v's direction"
-          " is meaningful, pass v.normalized() in place of v.",
+          " is meaningful, pass v.normalized() instead of v.",
           function_name, fmt_eigen(DiscardGradient(v).transpose()),
           ExtractDoubleOrThrow(norm), kMinMagnitude));
     }
