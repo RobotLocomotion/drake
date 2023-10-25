@@ -27,7 +27,7 @@ class MaxCliqueSolverBase {
   virtual ~MaxCliqueSolverBase() {}
 
   virtual VectorX<bool> SolveMaxClique(
-      const Eigen::SparseMatrix<bool>& adjacency_matrix) = 0;
+      const Eigen::SparseMatrix<bool>& adjacency_matrix) const = 0;
 
  protected:
   // We put the copy/move/assignment constructors as protected to avoid copy
@@ -47,37 +47,34 @@ class MaxCliqueSolverBase {
  * Note: This solver requires the availability of a Mixed-Integer Linear
  * Programming solver (e.g. Gurobi and/or Mosek). We recommend enabling those
  * solvers if possible (https://drake.mit.edu/bazel.html#proprietary_solvers).
+ *
+ * @throws This solver throws if no Mixed-Integer Linear Programming solver is
+ * available.
  */
-class MaxCliqueSolverViaMIP final : public MaxCliqueSolverBase {
+class MaxCliqueSolverViaMip final : public MaxCliqueSolverBase {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MaxCliqueSolverViaMIP);
-  MaxCliqueSolverViaMIP() = default;
-
-  MaxCliqueSolverViaMIP(solvers::SolverInterface* mip_solver,
-                        std::optional<Eigen::VectorXd> initial_guess,
-                        solvers::SolverOptions options);
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MaxCliqueSolverViaMip);
+  MaxCliqueSolverViaMip() = default;
+  MaxCliqueSolverViaMip(const std::optional<Eigen::VectorXd>& initial_guess,
+                        const solvers::SolverOptions& solver_options);
 
   VectorX<bool> SolveMaxClique(
-      const Eigen::SparseMatrix<bool>& adjacency_matrix);
+      const Eigen::SparseMatrix<bool>& adjacency_matrix) const;
 
-  solvers::SolverInterface* mip_solver() { return mip_solver_; }
-
-  solvers::SolverOptions solver_options() { return solver_options_; }
+  solvers::SolverOptions solver_options() const { return solver_options_; }
 
   void set_initial_guess(
       const Eigen::Ref<const Eigen::VectorXd>& initial_guess) {
     initial_guess_ = initial_guess;
   }
 
-  std::optional<Eigen::VectorXd> get_initial_guess() { return initial_guess_; }
+  std::optional<Eigen::VectorXd> get_initial_guess() const {
+    return initial_guess_;
+  }
+
+  solvers::SolverOptions* get_solver_options() { return &solver_options_; }
 
  private:
-  /** Optimizer to be used to solve the max clique MIP. If
-  not set, the best solver for the given problem is selected. Note that if the
-  solver cannot handle the type of optimization problem generated, the calling
-  solve method will throw. */
-  solvers::SolverInterface* mip_solver_{nullptr};
-
   /** Initial guess to the MIP for solving max clique. */
   std::optional<Eigen::VectorXd> initial_guess_{std::nullopt};
 
@@ -88,7 +85,7 @@ class MaxCliqueSolverViaMIP final : public MaxCliqueSolverBase {
 struct MaxCliqueOptions {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MaxCliqueOptions)
   MaxCliqueOptions(
-      const MaxCliqueSolverBase* m_solver = new MaxCliqueSolverViaMIP());
+      const MaxCliqueSolverBase* m_solver = new MaxCliqueSolverViaMip());
   ~MaxCliqueOptions() = default;
   MaxCliqueSolverBase* solver;
 };
@@ -106,6 +103,7 @@ struct MaxCliqueOptions {
  * @param options options for solving the max-clique problem.
  * @return A binary vector with the same indexing as the adjacency matrix, with
  * 1 indicating membership in the clique.
+ * @throws based on the preconditions of the solver contained in @param options.
  */
 VectorX<bool> MaxClique(const Eigen::SparseMatrix<bool>& adjacency_matrix,
                         const MaxCliqueOptions& options);

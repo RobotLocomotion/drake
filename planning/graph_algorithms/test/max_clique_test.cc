@@ -1,7 +1,11 @@
 #include "drake/planning/graph_algorithms/max_clique.h"
 
+#include <optional>
+
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/planning/graph_algorithms/test/common_graphs.h"
 
 namespace drake {
@@ -16,44 +20,48 @@ void TestMaxCliqueViaMIP(
     const Eigen::Ref<const Eigen::SparseMatrix<bool>>& adjacency_matrix,
     const int expected_size,
     const std::vector<VectorX<bool>>& possible_solutions) {
-  MaxCliqueSolverViaMIP solver;
+  MaxCliqueSolverViaMip solver{};
   MaxCliqueOptions options(&solver);
-  VectorX<bool> max_clique_inds = MaxClique(adjacency_matrix, options);
-  EXPECT_EQ(max_clique_inds.cast<int>().sum(), expected_size);
-  bool solution_match_found = false;
-  for (const auto& possible_solution : possible_solutions) {
-    bool all_equal = true;
-    for (int i = 0; i < max_clique_inds.rows(); ++i) {
-      if (max_clique_inds(i) != possible_solution(i)) {
-        all_equal = false;
+
+  // If mixed integer solver is available, find the max clique.
+  if ((solvers::MosekSolver::is_available() &&
+       solvers::MosekSolver::is_enabled()) ||
+      (solvers::GurobiSolver::is_available() &&
+       solvers::GurobiSolver::is_enabled())) {
+    VectorX<bool> max_clique_inds = MaxClique(adjacency_matrix, options);
+    EXPECT_EQ(max_clique_inds.cast<int>().sum(), expected_size);
+    bool solution_match_found = false;
+    for (const auto& possible_solution : possible_solutions) {
+      if (CompareMatrices(max_clique_inds, possible_solution)) {
+        solution_match_found = true;
         break;
       }
     }
-    if (all_equal) {
-      solution_match_found = true;
-      break;
-    }
+    EXPECT_TRUE(solution_match_found);
+  } else {
+    DRAKE_EXPECT_THROWS_MESSAGE(MaxClique(adjacency_matrix, options),
+                                ".*There is no solver available.*");
   }
-  EXPECT_TRUE(solution_match_found);
 }
 
-GTEST_TEST(MaxCliqueSolverViaMIPTest, TestConstructor) {
+GTEST_TEST(MaxCliqueSolverViaMipTest, TestConstructor) {
   // Test the default constructor.
-  MaxCliqueSolverViaMIP solver1;
-  EXPECT_EQ(solver1.solver_id(), std::nullopt);
+  MaxCliqueSolverViaMip solver1{};
+  EXPECT_EQ(solver1.get_initial_guess(), std::nullopt);
+  EXPECT_EQ(solver1.solver_options(), solvers::SolverOptions());
 
   // Test the constructor with only the solver id passed
-  MaxCliqueSolverViaMIP solver2{solvers::GurobiSolver::id()};
-  EXPECT_EQ(solver2.solver_id(), solvers::GurobiSolver::id());
-
-  // Test the constructor with the solver id and some options passed
+  const Eigen::Vector2d initial_guess = Eigen::Vector2d::Zero();
   solvers::SolverOptions options;
   options.SetOption(solvers::CommonSolverOption::kPrintToConsole, 1);
-  MaxCliqueSolverViaMIP solver3{solvers::GurobiSolver::id(), options};
-  EXPECT_EQ(solver3.solver_id(), solvers::GurobiSolver::id());
+  MaxCliqueSolverViaMip solver2{initial_guess, options};
+  EXPECT_TRUE(solver2.get_initial_guess().has_value());
+  EXPECT_TRUE(
+      CompareMatrices(solver2.get_initial_guess().value(), initial_guess));
+  EXPECT_TRUE(solver2.get_solver_options()->get_print_to_console());
 }
 
-GTEST_TEST(MaxCliquMaxCliqueSolverViaMIPTesteTest, CompleteGraph) {
+GTEST_TEST(MaxCliqueSolverViaMipTest, CompleteGraph) {
   for (const auto n : {3, 8}) {
     // The entire graph forms a clique
     std::vector<VectorX<bool>> possible_solutions{
@@ -63,7 +71,7 @@ GTEST_TEST(MaxCliquMaxCliqueSolverViaMIPTesteTest, CompleteGraph) {
   }
 }
 
-GTEST_TEST(MaxCliqueSolverViaMIPTest, BullGraph) {
+GTEST_TEST(MaxCliqueSolverViaMipTest, BullGraph) {
   VectorX<bool> solution(5);
   // The largest clique is (1,2,3)
   solution << false, true, true, true, false;
@@ -71,7 +79,7 @@ GTEST_TEST(MaxCliqueSolverViaMIPTest, BullGraph) {
   TestMaxCliqueViaMIP(BullGraph(), 3, possible_solutions);
 }
 
-GTEST_TEST(MaxCliqueSolverViaMIPTest, ButterflyGraph) {
+GTEST_TEST(MaxCliqueSolverViaMipTest, ButterflyGraph) {
   VectorX<bool> solution1(5);
   VectorX<bool> solution2(5);
   // The largest cliques are (0,1,2) and (2,3,4)
@@ -82,7 +90,7 @@ GTEST_TEST(MaxCliqueSolverViaMIPTest, ButterflyGraph) {
   TestMaxCliqueViaMIP(ButterflyGraph(), 3, possible_solutions);
 }
 
-GTEST_TEST(MaxCliqueSolverViaMIPTest, PetersenGraph) {
+GTEST_TEST(MaxCliqueSolverViaMipTest, PetersenGraph) {
   // The petersen graph has a clique number of size 2, so all edges are possible
   // solutions.
   Eigen::SparseMatrix<bool> graph = PetersenGraph();
