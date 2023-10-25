@@ -251,20 +251,36 @@ class MujocoParser {
 
   void ParseJoint(XMLElement* node, const RigidBody<double>& parent,
                   const RigidBody<double>& child, const RigidTransformd& X_WC,
-                  const RigidTransformd& X_PC) {
+                  const RigidTransformd& X_PC,
+                  const std::string& child_class = "") {
     std::string name;
     if (!ParseStringAttribute(node, "name", &name)) {
       // Use "parent-body" as the default joint name.
       name = fmt::format("{}-{}", parent.name(), child.name());
     }
 
+    std::string class_name;
+    if (!ParseStringAttribute(node, "class", &class_name)) {
+      class_name = child_class.empty() ? "main" : child_class;
+    }
+    if (default_joint_.count(class_name) > 0) {
+      ApplyDefaultAttributes(*default_joint_.at(class_name), node);
+    }
+
     Vector3d pos = Vector3d::Zero();
     ParseVectorAttribute(node, "pos", &pos);
-    const RigidTransformd X_PJ(pos);
-    const RigidTransformd X_CJ = X_PC.InvertAndCompose(X_PJ);
+    // Drake wants the joint position in the parent frame, but MuJoCo specifies
+    // it in the child body frame.
+    const RigidTransformd X_CJ(pos);
+    const RigidTransformd X_PJ = X_PC * X_CJ;
 
     Vector3d axis = Vector3d::UnitZ();
     ParseVectorAttribute(node, "axis", &axis);
+    // Drake wants the axis in the parent frame, but MuJoCo specifies it in the
+    // child body frame. But, by definition, these are always the same for
+    // revolute(hinge) joint and prismatic(slide) joint because the axis is the
+    // constraint that defines the joint.  For ball joint and free joint, the
+    // axis attribute is ignored.
 
     double damping{0.0};
     ParseScalarAttribute(node, "damping", &damping);
@@ -321,7 +337,6 @@ class MujocoParser {
       return;
     }
 
-    WarnUnsupportedAttribute(*node, "class");
     WarnUnsupportedAttribute(*node, "group");
     WarnUnsupportedAttribute(*node, "springdamper");
     WarnUnsupportedAttribute(*node, "solreflimit");
@@ -784,10 +799,10 @@ class MujocoParser {
               fmt::format("{}{}", body_name, dummy_bodies++), model_instance_,
               SpatialInertia<double>(0, {0, 0, 0}, {0, 0, 0}));
           ParseJoint(joint_node, *last_body, dummy_body, X_WP,
-                     RigidTransformd());
+                     RigidTransformd(), child_class);
           last_body = &dummy_body;
         } else {
-          ParseJoint(joint_node, *last_body, body, X_WB, X_PB);
+          ParseJoint(joint_node, *last_body, body, X_WB, X_PB, child_class);
         }
 
         std::string type;
@@ -878,6 +893,17 @@ class MujocoParser {
           default_geometry_.count(parent_default) > 0) {
         ApplyDefaultAttributes(*default_geometry_.at(parent_default),
                                geom_node);
+      }
+    }
+
+    // Parse default joints.
+    for (XMLElement* joint_node = node->FirstChildElement("joint"); joint_node;
+         joint_node = joint_node->NextSiblingElement("joint")) {
+      default_joint_[class_name] = joint_node;
+      if (!parent_default.empty() &&
+          default_joint_.count(parent_default) > 0) {
+        ApplyDefaultAttributes(*default_joint_.at(parent_default),
+                               joint_node);
       }
     }
 
@@ -1399,6 +1425,7 @@ class MujocoParser {
   enum Angle { kRadian, kDegree };
   Angle angle_{kDegree};
   std::map<std::string, XMLElement*> default_geometry_{};
+  std::map<std::string, XMLElement*> default_joint_{};
   enum InertiaFromGeometry { kFalse, kTrue, kAuto };
   InertiaFromGeometry inertia_from_geom_{kAuto};
   std::map<std::string, XMLElement*> material_{};
