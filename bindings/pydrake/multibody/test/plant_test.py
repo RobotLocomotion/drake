@@ -1286,7 +1286,8 @@ class TestPlant(unittest.TestCase):
         if T == float:
             # Can reference matrices. Use `x_ref`.
             # Write into a mutable reference to the state vector.
-            x_ref = plant.GetMutablePositionsAndVelocities(context)
+            with catch_drake_warnings(expected_count=1) as w:
+                x_ref = plant.GetMutablePositionsAndVelocities(context)
             x_ref[:] = x0
 
             def set_zero():
@@ -1761,7 +1762,8 @@ class TestPlant(unittest.TestCase):
         x_desired[nq+7:nq+nv] = v_gripper_desired
 
         if T == float:
-            x = plant.GetMutablePositionsAndVelocities(context=context)
+            with catch_drake_warnings(expected_count=1) as w:
+                x = plant.GetMutablePositionsAndVelocities(context=context)
             x[:] = x_desired
         else:
             plant.SetPositionsAndVelocities(context, x_desired)
@@ -1772,7 +1774,8 @@ class TestPlant(unittest.TestCase):
         # Get state from context.
         x = plant.GetPositionsAndVelocities(context=context)
         if T == float:
-            x_tmp = plant.GetMutablePositionsAndVelocities(context=context)
+            with catch_drake_warnings(expected_count=1) as w:
+                x_tmp = plant.GetMutablePositionsAndVelocities(context=context)
             self.assertTrue(np.allclose(x_desired, x_tmp))
 
         # Get positions and velocities of specific model instances

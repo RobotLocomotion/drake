@@ -1,5 +1,6 @@
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_geometry_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_pybind.h"
 #include "drake/bindings/pydrake/common/identifier_pybind.h"
@@ -1035,36 +1036,42 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.get_contact_penalty_method_time_scale.doc)
         .def("set_stiction_tolerance", &Class::set_stiction_tolerance,
             py::arg("v_stiction") = 0.001, cls_doc.set_stiction_tolerance.doc);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     // Position and velocity accessors and mutators.
     cls  // BR
-        .def(
-            "GetMutablePositionsAndVelocities",
-            [](const MultibodyPlant<T>* self,
-                Context<T>* context) -> Eigen::Ref<VectorX<T>> {
-              return self->GetMutablePositionsAndVelocities(context);
-            },
+        .def("GetMutablePositionsAndVelocities",
+            WrapDeprecated(
+                cls_doc.GetMutablePositionsAndVelocities.doc_deprecated,
+                [](const MultibodyPlant<T>* self,
+                    Context<T>* context) -> Eigen::Ref<VectorX<T>> {
+                  return self->GetMutablePositionsAndVelocities(context);
+                }),
             py_rvp::reference, py::arg("context"),
             // Keep alive, ownership: `return` keeps `context` alive.
             py::keep_alive<0, 2>(),
-            cls_doc.GetMutablePositionsAndVelocities.doc)
-        .def(
-            "GetMutablePositions",
-            [](const MultibodyPlant<T>* self,
-                Context<T>* context) -> Eigen::Ref<VectorX<T>> {
-              return self->GetMutablePositions(context);
-            },
+            cls_doc.GetMutablePositionsAndVelocities.doc_deprecated)
+        .def("GetMutablePositions",
+            WrapDeprecated(cls_doc.GetMutablePositions.doc_deprecated,
+                [](const MultibodyPlant<T>* self,
+                    Context<T>* context) -> Eigen::Ref<VectorX<T>> {
+                  return self->GetMutablePositions(context);
+                }),
             py_rvp::reference, py::arg("context"),
             // Keep alive, ownership: `return` keeps `context` alive.
-            py::keep_alive<0, 2>(), cls_doc.GetMutablePositions.doc_1args)
-        .def(
-            "GetMutableVelocities",
-            [](const MultibodyPlant<T>* self,
-                Context<T>* context) -> Eigen::Ref<VectorX<T>> {
-              return self->GetMutableVelocities(context);
-            },
+            py::keep_alive<0, 2>(), cls_doc.GetMutablePositions.doc_deprecated)
+        .def("GetMutableVelocities",
+            WrapDeprecated(cls_doc.GetMutableVelocities.doc_deprecated_1args,
+                [](const MultibodyPlant<T>* self,
+                    Context<T>* context) -> Eigen::Ref<VectorX<T>> {
+                  return self->GetMutableVelocities(context);
+                }),
             py_rvp::reference, py::arg("context"),
             // Keep alive, ownership: `return` keeps `context` alive.
-            py::keep_alive<0, 2>(), cls_doc.GetMutableVelocities.doc_1args)
+            py::keep_alive<0, 2>(),
+            cls_doc.GetMutableVelocities.doc_deprecated_1args);
+#pragma GCC diagnostic pop
+    cls  // BR
         .def(
             "GetPositions",
             [](const MultibodyPlant<T>* self, const Context<T>& context)
