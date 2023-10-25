@@ -36,6 +36,12 @@ void MinimizeKLDivergence(const SolverInterface& solver, double tol);
  */
 void MinimalEllipsoidCoveringPoints(const SolverInterface& solver, double tol);
 
+/* Impose the constraint log(det(X)) >= 1
+ * Note that this requires both exponential cone and positive semidefinite
+ * constraint.
+ */
+void MatrixLogDeterminantLower(const SolverInterface& solver, double tol);
+
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

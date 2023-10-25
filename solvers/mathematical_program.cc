@@ -571,42 +571,64 @@ Binding<Cost> MathematicalProgram::AddCost(const Expression& e) {
   return AddCost(internal::ParseCost(e));
 }
 
-std::tuple<Binding<LinearCost>, VectorX<symbolic::Variable>,
-           MatrixX<symbolic::Expression>>
-MathematicalProgram::AddMaximizeLogDeterminantCost(
-    const Eigen::Ref<const MatrixX<symbolic::Expression>>& X) {
+namespace {
+void CreateLogDetermiant(
+    MathematicalProgram* prog,
+    const Eigen::Ref<const MatrixX<symbolic::Expression>>& X,
+    VectorX<symbolic::Variable>* t, MatrixX<symbolic::Expression>* Z) {
   DRAKE_DEMAND(X.rows() == X.cols());
   const int X_rows = X.rows();
-  auto Z_lower = NewContinuousVariables(X_rows * (X_rows + 1) / 2);
-  MatrixX<symbolic::Expression> Z(X_rows, X_rows);
-  Z.setZero();
+  auto Z_lower = prog->NewContinuousVariables(X_rows * (X_rows + 1) / 2);
+  Z->resize(X_rows, X_rows);
+  Z->setZero();
   // diag_Z is the diagonal matrix that only contains the diagonal entries of Z.
   MatrixX<symbolic::Expression> diag_Z(X_rows, X_rows);
   diag_Z.setZero();
   int Z_lower_index = 0;
   for (int j = 0; j < X_rows; ++j) {
     for (int i = j; i < X_rows; ++i) {
-      Z(i, j) = Z_lower(Z_lower_index++);
+      (*Z)(i, j) = Z_lower(Z_lower_index++);
     }
-    diag_Z(j, j) = Z(j, j);
+    diag_Z(j, j) = (*Z)(j, j);
   }
 
   MatrixX<symbolic::Expression> psd_mat(2 * X_rows, 2 * X_rows);
   // clang-format off
-  psd_mat << X,             Z,
-             Z.transpose(), diag_Z;
+  psd_mat << X,             *Z,
+             Z->transpose(), diag_Z;
   // clang-format on
-  AddPositiveSemidefiniteConstraint(psd_mat);
+  prog->AddPositiveSemidefiniteConstraint(psd_mat);
   // Now introduce the slack variable t.
-  auto t = NewContinuousVariables(X_rows);
+  *t = prog->NewContinuousVariables(X_rows);
   // Introduce the constraint log(Z(i, i)) >= t(i).
   for (int i = 0; i < X_rows; ++i) {
-    AddExponentialConeConstraint(
-        Vector3<symbolic::Expression>(Z(i, i), 1, t(i)));
+    prog->AddExponentialConeConstraint(
+        Vector3<symbolic::Expression>((*Z)(i, i), 1, (*t)(i)));
   }
+}
+}  // namespace
+std::tuple<Binding<LinearCost>, VectorX<symbolic::Variable>,
+           MatrixX<symbolic::Expression>>
+MathematicalProgram::AddMaximizeLogDeterminantCost(
+    const Eigen::Ref<const MatrixX<symbolic::Expression>>& X) {
+  VectorX<symbolic::Variable> t;
+  MatrixX<symbolic::Expression> Z;
+  CreateLogDetermiant(this, X, &t, &Z);
 
   const auto cost = AddLinearCost(-Eigen::VectorXd::Ones(t.rows()), t);
   return std::make_tuple(cost, std::move(t), std::move(Z));
+}
+
+std::tuple<Binding<LinearConstraint>, VectorX<symbolic::Variable>,
+           MatrixX<symbolic::Expression>>
+MathematicalProgram::AddLogDeterminantLowerBoundConstraint(
+    const Eigen::Ref<const MatrixX<symbolic::Expression>>& X, double lower) {
+  VectorX<symbolic::Variable> t;
+  MatrixX<symbolic::Expression> Z;
+  CreateLogDetermiant(this, X, &t, &Z);
+  const auto constraint =
+      AddLinearConstraint(Eigen::RowVectorXd::Ones(t.rows()), lower, kInf, t);
+  return std::make_tuple(constraint, std::move(t), std::move(Z));
 }
 
 Binding<LinearCost> MathematicalProgram::AddMaximizeGeometricMeanCost(
