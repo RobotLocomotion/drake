@@ -81,6 +81,18 @@ Thus:
 - `top_level::my_model::my_frame`: The model instance is
   `top_level::my_model`, the frame is `my_frame`.
 
+Every use of `add_directives` with a `model_namespace` will append that
+namespace to the model instance name while parsing the referenced `file`.  All
+element names will be automatically prefixed with that model namespace, with
+the exception of `add_frame` names without a model instance.
+
+When `add_frame` has a model instance scope in its name, `add_frame` will
+use that as the prefix all element names like any other directive would; if
+no model instance is present, however, `add_frame` will check the associated
+`X_PF.base_frame` for a model instance prefix and, if it is present, use it
+as the prefix for the `name` element.
+
+
 ## Units
 
 We use SI units plus radians for all physical quantities.
