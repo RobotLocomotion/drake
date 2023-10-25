@@ -4443,8 +4443,8 @@ class ApproximatePSDConstraint : public ::testing::Test {
     // Add an arbitrary linear constraint on X.
     Eigen::MatrixXd A(2, 3);
     // clang-format off
-  A << 1,  0, 1,
-       0, -1, 1;
+    A << 1,  0, 1,
+         0, -1, 1;
     // clang-format on
     Eigen::VectorXd lb(2);
     lb << -10, -7;
@@ -4469,15 +4469,13 @@ TEST_F(ApproximatePSDConstraint, TightenPsdConstraintToDd) {
   EXPECT_EQ(ssize(prog_.linear_constraints()), 2);
   EXPECT_EQ(ssize(prog_.linear_equality_constraints()), 1);
 
-  auto dd_constraint_X =
-      prog_.TightenPsdConstraintToDd(psd_constraint_X_);
+  auto dd_constraint_X = prog_.TightenPsdConstraintToDd(psd_constraint_X_);
 
   EXPECT_EQ(ssize(prog_.positive_semidefinite_constraints()), 1);
   EXPECT_EQ(ssize(prog_.linear_constraints()), X_.rows() * X_.rows() + 2);
   EXPECT_EQ(ssize(prog_.linear_equality_constraints()), 1);
 
-  auto dd_constraint_Y =
-      prog_.TightenPsdConstraintToDd(psd_constraint_Y_);
+  auto dd_constraint_Y = prog_.TightenPsdConstraintToDd(psd_constraint_Y_);
 
   EXPECT_EQ(ssize(prog_.positive_semidefinite_constraints()), 0);
   EXPECT_EQ(ssize(prog_.linear_constraints()),
@@ -4485,8 +4483,7 @@ TEST_F(ApproximatePSDConstraint, TightenPsdConstraintToDd) {
   EXPECT_EQ(ssize(prog_.linear_equality_constraints()), 1);
 }
 
-GTEST_TEST(ApproximatePSDConstraintHasUnregisteredVariableError,
-           TightenPsdConstraintToDd) {
+GTEST_TEST(TightenPsdConstraintToDd, UnregisteredVariableError) {
   MathematicalProgram prog1;
   auto X1 = prog1.NewSymmetricContinuousVariables<3>();
   auto psd_constraint1 = prog1.AddPositiveSemidefiniteConstraint(X1);
@@ -4495,13 +4492,11 @@ GTEST_TEST(ApproximatePSDConstraintHasUnregisteredVariableError,
   auto X2 = prog2.NewSymmetricContinuousVariables<3>();
   auto psd_constraint2 = prog2.AddPositiveSemidefiniteConstraint(X2);
 
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      prog1.TightenPsdConstraintToDd(psd_constraint2),
-      ".*is not a decision variable.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(prog1.TightenPsdConstraintToDd(psd_constraint2),
+                              ".*is not a decision variable.*");
 }
 
-GTEST_TEST(ApproximatePSDConstraintNoPreviousConstraint,
-           TightenPsdConstraintToDd) {
+GTEST_TEST(TightenPsdConstraintToDd, NoConstraintToReplace) {
   MathematicalProgram prog;
   auto X = prog.NewSymmetricContinuousVariables<3>();
   // A constraint not in the program.
@@ -4541,8 +4536,7 @@ TEST_F(ApproximatePSDConstraint, TightenPsdConstraintToSdd) {
   EXPECT_EQ(ssize(prog_.rotated_lorentz_cone_constraints()), 9);
 }
 
-GTEST_TEST(ApproximatePSDConstraintHasUnregisteredVariableError,
-           TightenPsdConstraintToSdd) {
+GTEST_TEST(TightenPsdConstraintToSdd, UnregisteredVariableError) {
   MathematicalProgram prog1;
   auto X1 = prog1.NewSymmetricContinuousVariables<3>();
   auto psd_constraint1 = prog1.AddPositiveSemidefiniteConstraint(X1);
@@ -4551,13 +4545,11 @@ GTEST_TEST(ApproximatePSDConstraintHasUnregisteredVariableError,
   auto X2 = prog2.NewSymmetricContinuousVariables<3>();
   auto psd_constraint2 = prog2.AddPositiveSemidefiniteConstraint(X2);
 
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      prog1.TightenPsdConstraintToDd(psd_constraint2),
-      ".*is not a decision variable.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(prog1.TightenPsdConstraintToDd(psd_constraint2),
+                              ".*is not a decision variable.*");
 }
 
-GTEST_TEST(ApproximatePSDConstraintNoPreviousContraintToRemove,
-           TightenPsdConstraintToSdd) {
+GTEST_TEST(TightenPsdConstraintToSdd, NoConstraintToReplace) {
   MathematicalProgram prog;
   auto X = prog.NewSymmetricContinuousVariables<3>();
   // A constraint not in the program.
@@ -4590,9 +4582,7 @@ TEST_F(ApproximatePSDConstraint, RelaxPsdConstraintToDdDualCone) {
   EXPECT_EQ(ssize(prog_.linear_equality_constraints()), 1);
 }
 
-GTEST_TEST(
-    ApproximatePSDConstraintHasUnregisteredVariableError,
-    RelaxPsdConstraintToDdDualCone) {
+GTEST_TEST(RelaxPsdConstraintToDdDualCone, UnregisteredVariableError) {
   MathematicalProgram prog1;
   auto X1 = prog1.NewSymmetricContinuousVariables<3>();
   auto psd_constraint1 = prog1.AddPositiveSemidefiniteConstraint(X1);
@@ -4606,9 +4596,7 @@ GTEST_TEST(
       ".*is not a decision variable.*");
 }
 
-GTEST_TEST(
-    ApproximatePSDConstraintNoPreviousContraintToRemove,
-    RelaxPsdConstraintToDdDualCone) {
+GTEST_TEST(RelaxPsdConstraintToDdDualCone, NoConstraintToReplace) {
   MathematicalProgram prog;
   auto X = prog.NewSymmetricContinuousVariables<3>();
   // A constraint not in the program.
@@ -4646,9 +4634,7 @@ TEST_F(ApproximatePSDConstraint, RelaxPsdConstraintToSddDualCone) {
   EXPECT_EQ(ssize(prog_.rotated_lorentz_cone_constraints()), 9);
 }
 
-GTEST_TEST(
-    ApproximatePSDConstraintHasUnregisteredVariableError,
-    RelaxPsdConstraintToSddDualCone) {
+GTEST_TEST(RelaxPsdConstraintToSddDualCone, UnregisteredVariableError) {
   MathematicalProgram prog1;
   auto X1 = prog1.NewSymmetricContinuousVariables<3>();
   auto psd_constraint1 = prog1.AddPositiveSemidefiniteConstraint(X1);
@@ -4662,9 +4648,7 @@ GTEST_TEST(
       ".*is not a decision variable.*");
 }
 
-GTEST_TEST(
-    ApproximatePSDConstraintNoPreviousContraintToRemove,
-    RelaxPsdConstraintToSddDualCone) {
+GTEST_TEST(RelaxPsdConstraintToSddDualCone, NoConstraintToReplace) {
   MathematicalProgram prog;
   auto X = prog.NewSymmetricContinuousVariables<3>();
   // A constraint not in the program.
