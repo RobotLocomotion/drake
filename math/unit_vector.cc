@@ -92,7 +92,6 @@ std::string ErrorMessageNotUnitVector(const Vector3<T>& bad_unit_vector,
 
 }  // namespace
 
-
 template <typename T>
 Vector3<T> NormalizeOrThrow(const Vector3<T>& v,
                             std::string_view function_name) {
