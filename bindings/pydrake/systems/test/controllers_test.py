@@ -232,8 +232,7 @@ class TestControllers(unittest.TestCase):
 
         # Set the plant's context.
         plant_context = plant.CreateDefaultContext()
-        x_plant = plant.GetMutablePositionsAndVelocities(plant_context)
-        x_plant[:] = x
+        plant.SetPositionsAndVelocities(plant_context, x)
 
         # Compute the expected value of the generalized forces using
         # inverse dynamics.

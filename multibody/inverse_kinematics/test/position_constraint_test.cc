@@ -63,8 +63,8 @@ TEST_F(IiwaKinematicConstraintTest, PositionConstraint) {
     VectorX<AutoDiffXd> q_autodiff = math::InitializeAutoDiff(q);
     AutoDiffVecXd y_autodiff;
     dut.Eval(q_autodiff, &y_autodiff);
-    this->plant_autodiff_->GetMutablePositions(
-        this->plant_context_autodiff_.get()) = q_autodiff;
+    this->plant_autodiff_->SetPositions(
+        this->plant_context_autodiff_.get(), q_autodiff);
     Vector3<AutoDiffXd> y_autodiff_expected = EvalPositionConstraintAutoDiff(
         *(this->plant_context_autodiff_), *(this->plant_autodiff_),
         this->plant_autodiff_->GetFrameByName(frameAbar.name()), X_AAbar_val,
@@ -74,8 +74,8 @@ TEST_F(IiwaKinematicConstraintTest, PositionConstraint) {
     // Test with non-identity gradient for q_autodiff.
     q_autodiff =
         math::InitializeAutoDiff(q, MatrixX<double>::Ones(q.size(), 2));
-    this->plant_autodiff_->GetMutablePositions(
-        this->plant_context_autodiff_.get()) = q_autodiff;
+    this->plant_autodiff_->SetPositions(
+        this->plant_context_autodiff_.get(), q_autodiff);
     dut.Eval(q_autodiff, &y_autodiff);
     y_autodiff_expected = EvalPositionConstraintAutoDiff(
         *(this->plant_context_autodiff_), *(this->plant_autodiff_),
@@ -146,7 +146,7 @@ TEST_F(TwoFreeBodiesConstraintTest, PositionConstraint) {
   Eigen::Matrix<double, 14, 1> q;
   q << QuaternionToVectorWxyz(body1_quaternion), body1_position,
       QuaternionToVectorWxyz(body2_quaternion), body2_position;
-  plant_->GetMutablePositions(plant_context_) = q;
+  plant_->SetPositions(plant_context_, q);
   const Eigen::Vector3d p_BQ(0.2, 0.3, 0.4);
   Eigen::Vector3d p_AQ;
   plant_->CalcPointsPositions(

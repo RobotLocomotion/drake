@@ -42,8 +42,7 @@ TEST_F(IiwaKinematicConstraintTest, AngleBetweenVectorsConstraint) {
   Eigen::VectorXd q(plant_autodiff_->num_positions());
   q << 0.2, -0.5, 0.1, 0.25, -0.4, 0.35, 0.24;
   AutoDiffVecXd q_autodiff = math::InitializeAutoDiff(q);
-  plant_autodiff_->GetMutablePositions(plant_context_autodiff_.get()) =
-      q_autodiff;
+  plant_autodiff_->SetPositions(plant_context_autodiff_.get(), q_autodiff);
   AutoDiffVecXd y_autodiff;
   constraint.Eval(q_autodiff, &y_autodiff);
 
@@ -55,8 +54,7 @@ TEST_F(IiwaKinematicConstraintTest, AngleBetweenVectorsConstraint) {
 
   // Test with non-identity gradient for q_autodiff.
   q_autodiff = math::InitializeAutoDiff(q, MatrixX<double>::Ones(q.size(), 2));
-  plant_autodiff_->GetMutablePositions(plant_context_autodiff_.get()) =
-      q_autodiff;
+  plant_autodiff_->SetPositions(plant_context_autodiff_.get(), q_autodiff);
   constraint.Eval(q_autodiff, &y_autodiff);
   y_autodiff_expected = EvalAngleBetweenVectorsConstraint(
       *plant_context_autodiff_, *plant_autodiff_,

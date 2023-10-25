@@ -55,8 +55,7 @@ SpatialAcceleration<double> CalcSpatialAccelerationViaAutomaticDifferentiation(
   // Set the context for AutoDiffXd computations.
   VectorX<AutoDiffXd> x_autodiff(plant.num_multibody_states());
   x_autodiff << q_autodiff, v_autodiff;
-  plant_autodiff->GetMutablePositionsAndVelocities(context_autodiff.get()) =
-      x_autodiff;
+  plant_autodiff->SetPositionsAndVelocities(context_autodiff.get(), x_autodiff);
 
   // Using AutoDiff, compute V_AB_A (frame B's spatial velocity in frame_A,
   // expressed in frame_A), and its time derivative which is A_AB_A
