@@ -57,6 +57,18 @@ template <typename T>
 T WarnIfNotUnitVector(const Vector3<T>& unit_vector,
                       std::string_view function_name);
 
+// Returns the unit vector in the direction of v or throws an exception if v
+// cannot be "safely" normalized.
+// @param[in] v The vector to normalize.
+// @param[in] function_name name of the function that is to appear in the
+// exception message (if an exception is thrown).
+// @throws std::exception if v contains nonfinite numbers (NaN or infinity)
+// or ‖v‖ < 1E-10.
+// @note no exception is thrown if v is a symbolic type.
+template <typename T>
+Vector3<T> NormalizeOrThrow(const Vector3<T>& v,
+                            std::string_view function_name);
+
 }  // namespace internal
 }  // namespace math
 }  // namespace drake
