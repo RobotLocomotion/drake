@@ -464,10 +464,10 @@ class TreeTopologyTests : public ::testing::Test {
     EXPECT_EQ(topology.num_tree_velocities(TreeIndex(1)), 2);
     EXPECT_EQ(topology.num_tree_velocities(TreeIndex(2)), 0);
     EXPECT_EQ(topology.num_tree_velocities(TreeIndex(3)), 4);
-    EXPECT_EQ(topology.tree_velocities_start(TreeIndex(0)), 0);
-    EXPECT_EQ(topology.tree_velocities_start(TreeIndex(1)), 1);
-    EXPECT_EQ(topology.tree_velocities_start(TreeIndex(2)), 3);
-    EXPECT_EQ(topology.tree_velocities_start(TreeIndex(3)), 3);
+    EXPECT_EQ(topology.tree_velocities_start_in_v(TreeIndex(0)), 0);
+    EXPECT_EQ(topology.tree_velocities_start_in_v(TreeIndex(1)), 1);
+    EXPECT_EQ(topology.tree_velocities_start_in_v(TreeIndex(2)), 3);
+    EXPECT_EQ(topology.tree_velocities_start_in_v(TreeIndex(3)), 3);
     // The world body does not belong to a tree. Therefore the returned index is
     // invalid.
     EXPECT_FALSE(topology.body_to_tree_index(world_index()).is_valid());
@@ -557,8 +557,8 @@ TEST_F(TreeTopologyTests, SizesAndIndexing) {
     // Verify positions and velocity indexes.
     EXPECT_EQ(positions_index, node.mobilizer_positions_start);
     EXPECT_EQ(positions_index, mobilizer_topology.positions_start);
-    EXPECT_EQ(velocities_index, node.mobilizer_velocities_start);
-    EXPECT_EQ(velocities_index, mobilizer_topology.velocities_start);
+    EXPECT_EQ(velocities_index, node.mobilizer_velocities_start_in_state);
+    EXPECT_EQ(velocities_index, mobilizer_topology.velocities_start_in_state);
 
     // Mobilizers 5 and 8 are weld joints, with no velocities. All other
     // mobilizers introduce one position and one velocity.

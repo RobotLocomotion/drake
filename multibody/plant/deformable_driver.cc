@@ -382,9 +382,10 @@ void DeformableDriver<T>::AppendContactKinematics(
             context, JacobianWrtVariable::kV, rigid_body.body_frame(), frame_W,
             p_WC, frame_W, frame_W, &Jv_v_WBc_W);
         Matrix3X<T> J =
-            R_CW.matrix() * Jv_v_WBc_W.middleCols(
-                                tree_topology.tree_velocities_start(tree_index),
-                                tree_topology.num_tree_velocities(tree_index));
+            R_CW.matrix() *
+            Jv_v_WBc_W.middleCols(
+                tree_topology.tree_velocities_start_in_v(tree_index),
+                tree_topology.num_tree_velocities(tree_index));
         jacobian_blocks.emplace_back(tree_index, MatrixBlock<T>(std::move(J)));
       }
 
@@ -530,9 +531,9 @@ void DeformableDriver<T>::AppendDeformableRigidFixedConstraintKinematics(
             context, JacobianWrtVariable::kV, rigid_body.body_frame(), frame_W,
             Eigen::Map<const Matrix3X<T>>(p_WQs.data(), 3, p_WQs.size() / 3),
             frame_W, frame_W, &Jv_v_WBq);
-        MatrixBlock<T> jacobian_block_B(
-            Jv_v_WBq.middleCols(tree_topology.tree_velocities_start(tree_index),
-                                tree_topology.num_tree_velocities(tree_index)));
+        MatrixBlock<T> jacobian_block_B(Jv_v_WBq.middleCols(
+            tree_topology.tree_velocities_start_in_v(tree_index),
+            tree_topology.num_tree_velocities(tree_index)));
         SapConstraintJacobian<T> J(clique_index_A, std::move(jacobian_block_A),
                                    clique_index_B, std::move(jacobian_block_B));
         result->emplace_back(object_A, std::move(p_WPs), object_B,

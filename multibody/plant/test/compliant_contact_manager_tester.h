@@ -86,7 +86,7 @@ class CompliantContactManagerTester {
         // If added to the Jacobian, it must have a valid index.
         EXPECT_TRUE(tree_jacobian.tree.is_valid());
         const int col_offset =
-            topology.tree_velocities_start(tree_jacobian.tree);
+            topology.tree_velocities_start_in_v(tree_jacobian.tree);
         const int tree_nv = topology.num_tree_velocities(tree_jacobian.tree);
         J_AcBc_C.block(row_offset, col_offset, 3, tree_nv) =
             tree_jacobian.J.MakeDenseMatrix();
