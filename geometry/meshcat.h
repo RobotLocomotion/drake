@@ -505,6 +505,32 @@ class Meshcat {
   void SetCameraPose(const Eigen::Vector3d& camera_in_world,
                      const Eigen::Vector3d& target_in_world);
 
+  /** If camera tracking is enabled, the %Meshcat instance will track the
+   position and orientation of the in-browser camera and make it available
+   from GetTrackedCameraPose().
+
+   This comes with some caveats:
+
+     - If there are multiple browsers connected to the same meshcat server,
+       they will fight each other; the last client to move its camera will
+       be the reported pose. If tracking the camera, it is best to use only a
+       single browser window.
+     - This setting is *not* persisted in a static html version of the session.
+     - It will only work with perspective cameras; if the camera is
+       orthographic, GetTrackedCameraPose() will persist in broadcasting the
+       last known perspective camera's transform.
+  */
+  void SetCameraTracking(bool on);
+
+  /** Returns the most recent tracked camera position. The identity transform is
+   returned if:
+
+     - SetCameraTracking() has been disabled, or
+     - SetCameraTracking() has been enabled, but we haven't received pose
+       information from meshcat yet.
+   */
+  math::RigidTransformd GetTrackedCameraPose() const;
+
   // TODO(SeanCurtis-TRI): Consider the API:
   //  void SetCameraPose(const RigidTransformd& X_WC, bool target_distance = 1);
   // We'll have to confirm that picking arbitrary rotations R_WC doesn't
