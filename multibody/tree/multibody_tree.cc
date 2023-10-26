@@ -1089,12 +1089,6 @@ void MultibodyTree<T>::CalcPositionKinematicsCache(
     PositionKinematicsCache<T>* pc) const {
   DRAKE_DEMAND(pc != nullptr);
 
-  // TODO(amcastro-tri): Loop over bodies to update their position dependent
-  // kinematics. This gives the chance to flexible bodies to update the pose
-  // X_BQ(qb_B) of each frame Q that is attached to the body.
-  // Notice this loop can be performed in any order and each X_BQ(qf_B) is
-  // independent of all others. This could even be performed in parallel.
-
   // With the kinematics information across mobilizer's and the kinematics
   // information for each body, we are now in position to perform a base-to-tip
   // recursion to update world positions and parent to child body transforms.
@@ -1118,9 +1112,6 @@ void MultibodyTree<T>::CalcVelocityKinematicsCache(
     const PositionKinematicsCache<T>& pc,
     VelocityKinematicsCache<T>* vc) const {
   DRAKE_DEMAND(vc != nullptr);
-
-  // TODO(amcastro-tri): Loop over bodies to compute velocity kinematics updates
-  // corresponding to flexible bodies.
 
   // If the model has zero dofs we simply set all spatial velocities to zero and
   // return since there is no work to be done.
@@ -1167,7 +1158,7 @@ void MultibodyTree<T>::CalcSpatialInertiasInWorld(
 
   // Skip the world.
   // TODO(joemasterjohn): Consider an optimization to avoid calculating spatial
-  // inertias for locked floating bodies.
+  //  inertias for locked floating bodies.
   for (BodyIndex body_index(1); body_index < num_bodies(); ++body_index) {
     const Body<T>& body = get_body(body_index);
     const RigidTransform<T>& X_WB = pc.get_X_WB(body.node_index());
@@ -1240,7 +1231,7 @@ void MultibodyTree<T>::CalcSpatialAccelerationBias(
   // an accidental usage (most likely indicating unnecessary math) in code would
   // immediately trigger a trail of NaNs that we can track to the source.
   // TODO(joemasterjohn): Consider an optimization where we avoid computing
-  // `Ab_WB` for locked floating bodies.
+  //  `Ab_WB` for locked floating bodies.
   (*Ab_WB_all)[world_index()].SetNaN();
   for (BodyNodeIndex body_node_index(1); body_node_index < num_bodies();
        ++body_node_index) {
@@ -1265,7 +1256,7 @@ void MultibodyTree<T>::CalcArticulatedBodyForceBias(
   // an accidental usage (most likely indicating unnecessary math) in code would
   // immediately trigger a trail of NaNs that we can track to the source.
   // TODO(joemasterjohn): Consider an optimization to avoid computing `Zb_Bo_W`
-  // for locked floating bodies.
+  //  for locked floating bodies.
   (*Zb_Bo_W_all)[world_index()].SetNaN();
   for (BodyNodeIndex body_node_index(1); body_node_index < num_bodies();
        ++body_node_index) {
@@ -1351,9 +1342,6 @@ void MultibodyTree<T>::CalcSpatialAccelerationsFromVdot(
   const VelocityKinematicsCache<T>* vc =
       ignore_velocities ? nullptr : &EvalVelocityKinematics(context);
 
-  // TODO(amcastro-tri): Loop over bodies to compute acceleration kinematics
-  // updates corresponding to flexible bodies.
-
   // The world's spatial acceleration is always zero.
   A_WB_array->at(world_index()) = SpatialAcceleration<T>::Zero();
 
@@ -1382,9 +1370,6 @@ void MultibodyTree<T>::CalcAccelerationKinematicsCache(
     AccelerationKinematicsCache<T>* ac) const {
   DRAKE_DEMAND(ac != nullptr);
   DRAKE_DEMAND(known_vdot.size() == topology_.num_velocities());
-
-  // TODO(amcastro-tri): Loop over bodies to compute velocity kinematics updates
-  // corresponding to flexible bodies.
 
   std::vector<SpatialAcceleration<T>>& A_WB_array = ac->get_mutable_A_WB_pool();
 
@@ -1531,7 +1516,7 @@ void MultibodyTree<T>::CalcForceElementsContribution(
   }
 
   // TODO(amcastro-tri): Remove this call once damping is implemented in terms
-  // of force elements.
+  //  of force elements.
   AddJointDampingForces(context, forces);
 }
 
@@ -1606,10 +1591,10 @@ Eigen::SparseMatrix<T> MultibodyTree<T>::MakeVelocityToQDotMap(
   }
 
   // TODO(russt): Consider updating Mobilizer::CalcNMatrix to populate the
-  // SparseMatrix directly. But SparseMatrix does not support block writing
-  // operations, so we will likely need to pass the entire matrix, and each
-  // mobilizer will need to populate according to position_start_in_q() and
-  // velocity_start_in_v().
+  //  SparseMatrix directly. But SparseMatrix does not support block writing
+  //  operations, so we will likely need to pass the entire matrix, and each
+  //  mobilizer will need to populate according to position_start_in_q() and
+  //  velocity_start_in_v().
   std::vector<Eigen::Triplet<T>> triplet_list;
   // Note: We don't reserve storage for the triplet_list, because we don't have
   // a useful estimate of the size in general.

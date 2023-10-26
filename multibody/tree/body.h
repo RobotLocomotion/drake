@@ -32,11 +32,8 @@ template<typename T> class Body;
 /// A %BodyFrame is a material Frame that serves as the unique reference frame
 /// for a Body.
 ///
-/// Each Body B, regardless of whether it represents a rigid body or a
-/// flexible body, has a unique body frame for which we use the same symbol B
-/// (with meaning clear from context). The body frame is also referred to as
-/// a _reference frame_ in the literature for flexible body mechanics modeling
-/// using the Finite Element Method. All properties of a body are defined with
+/// Each Body B, has a unique body frame for which we use the same symbol B
+/// (with meaning clear from context). All properties of a body are defined with
 /// respect to its body frame, including its mass properties and attachment
 /// locations for joints, constraints, actuators, geometry and so on. Run time
 /// motion of the body is defined with respect to the motion of its body frame.
@@ -46,12 +43,6 @@ template<typename T> class Body;
 /// Note that the %BodyFrame associated with a body does not necessarily need to
 /// be located at its center of mass nor does it need to be aligned with the
 /// body's principal axes, although, in practice, it frequently is.
-/// For flexible bodies, %BodyFrame provides a representation for the body's
-/// reference frame. The flexible degrees of freedom associated with a flexible
-/// body describe the body's deformation in this frame. Therefore, the motion of
-/// a flexible body is defined by the motion of its %BodyFrame, or reference
-/// frame, plus the motion of the material points on the body with respect to
-/// its %BodyFrame.
 ///
 /// A %BodyFrame and Body are tightly coupled concepts; neither makes sense
 /// without the other. Therefore, a %BodyFrame instance is constructed in
@@ -193,16 +184,6 @@ class Body : public MultibodyElement<T> {
   /// Returns scoped name of this frame. Neither of the two pieces of the name
   /// will be empty (the scope name and the element name).
   ScopedName scoped_name() const;
-
-  /// (Not implemented) Returns the number of generalized positions q describing
-  /// flexible deformations for this body. A rigid body will therefore return
-  /// zero.
-  virtual int get_num_flexible_positions() const = 0;
-
-  /// (Not implemented) Returns the number of generalized velocities v
-  /// describing flexible deformations for this body. A rigid body will
-  /// therefore return zero.
-  virtual int get_num_flexible_velocities() const = 0;
 
   /// Returns a const reference to the associated BodyFrame.
   const BodyFrame<T>& body_frame() const {
@@ -370,12 +351,8 @@ class Body : public MultibodyElement<T> {
 
   /// (Advanced) Computes the SpatialInertia `I_BBo_B` of `this` body about its
   /// frame origin `Bo` (not necessarily its center of mass) and expressed in
-  /// its body frame `B`.
-  /// In general, the spatial inertia of a body is a function of state.
-  /// Consider for instance the case of a flexible body for which its spatial
-  /// inertia in the body frame depends on the generalized coordinates
-  /// describing its state of deformation. As a particular case, the spatial
-  /// inertia of a RigidBody in its body frame is constant.
+  /// its body frame `B`. The spatial inertia of a RigidBody in its body frame
+  /// is constant, but may need to be calculated from Parameters.
   virtual SpatialInertia<T> CalcSpatialInertiaInBodyFrame(
       const systems::Context<T>& context) const = 0;
 
