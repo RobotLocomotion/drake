@@ -251,6 +251,10 @@ class TestGeometryVisualizers(unittest.TestCase):
                                             property="visible")
         self.assertGreater(len(packed), 0)
 
+        # Camera tracking.
+        meshcat.SetCameraTracking(on=False)
+        self.assertIsInstance(meshcat.GetTrackedCameraPose(), RigidTransform)
+
     def test_meshcat_animation(self):
         animation = mut.MeshcatAnimation(frames_per_second=64)
         self.assertEqual(animation.frames_per_second(), 64)
