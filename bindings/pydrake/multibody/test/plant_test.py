@@ -515,8 +515,6 @@ class TestPlant(unittest.TestCase):
         self._test_multibody_tree_element_mixin(T, body)
         self.assertIsInstance(body.name(), str)
         self.assertIsInstance(body.scoped_name(), ScopedName)
-        self.assertIsInstance(body.get_num_flexible_positions(), int)
-        self.assertIsInstance(body.get_num_flexible_velocities(), int)
         self.assertIsInstance(body.is_floating(), bool)
         self.assertIsInstance(body.has_quaternion_dofs(), bool)
         self.assertIsInstance(body.default_mass(), float)

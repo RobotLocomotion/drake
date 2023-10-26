@@ -128,10 +128,6 @@ GTEST_TEST(MultibodyTree, BasicAPIToAddBodiesAndJoints) {
   EXPECT_EQ(model->get_body(BodyIndex(1)).index(), pendulum.index());
   EXPECT_EQ(model->get_body(BodyIndex(2)).index(), pendulum2.index());
 
-  // Rigid bodies have no generalized coordinates.
-  EXPECT_EQ(pendulum.get_num_flexible_positions(), 0);
-  EXPECT_EQ(pendulum.get_num_flexible_velocities(), 0);
-
   // Verifies that an exception is throw if a call to Finalize() is attempted to
   // an already finalized MultibodyTree.
   EXPECT_THROW(model->Finalize(), std::exception);

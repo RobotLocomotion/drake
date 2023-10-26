@@ -381,14 +381,8 @@ struct BodyNodeTopology {
       return false;
     if (mobilizer_velocities_start != other.mobilizer_velocities_start)
       return false;
-
-    if (num_flexible_positions != other.num_flexible_positions)
-      return false;
-    if (flexible_positions_start != other.flexible_positions_start)
-      return false;
-    if (num_flexible_velocities != other.num_flexible_velocities)
-      return false;
-    if (flexible_velocities_start != other.flexible_velocities_start)
+    if (mobilizer_velocities_start_in_v !=
+        other.mobilizer_velocities_start_in_v)
       return false;
 
     return true;
@@ -425,12 +419,6 @@ struct BodyNodeTopology {
   // It is also a valid index into a vector of generalized accelerations (which
   // are the time derivatives of the generalized velocities).
   int mobilizer_velocities_start_in_v{0};
-
-  // Start and number of dofs for this node's body (flexible dofs).
-  int num_flexible_positions{0};
-  int flexible_positions_start{0};
-  int num_flexible_velocities{0};
-  int flexible_velocities_start{0};
 };
 
 // Data structure to store the topological information associated with an
@@ -870,8 +858,6 @@ class MultibodyTreeTopology {
     // Compile information regarding the size of the system:
     // - Number of degrees of freedom (generalized positions and velocities).
     // - Start/end indexes for each node.
-    //
-    // TODO(amcastro-tri): count body dofs (i.e. for flexible dofs).
     //
     // Base-to-Tip loop in DFT order, skipping the world (node = 0).
 
