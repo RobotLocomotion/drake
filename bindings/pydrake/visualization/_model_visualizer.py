@@ -20,6 +20,11 @@ from pydrake.geometry import (
 )
 from pydrake.math import RigidTransform, RotationMatrix
 from pydrake.multibody.meshcat import JointSliders
+from pydrake.multibody.tree import (
+    FixedOffsetFrame,
+    SpatialInertia,
+    default_model_instance,
+)
 from pydrake.planning import RobotDiagramBuilder
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.planar_scenegraph_visualizer import (
@@ -125,6 +130,9 @@ class ModelVisualizer:
         self._diagram = None  # This will be a planning.RobotDiagram.
         self._sliders = None
         self._context = None
+
+        # State necessary for self._render_if_necessary().
+        self._last_camera_time = time.time()
 
     def _check_rep(self, *, finalized):
         """
@@ -276,21 +284,21 @@ class ModelVisualizer:
                     opacity=self._triad_opacity,
                 )
 
-        # Add a model that will provide rgbd pose sliders automatically when we
-        # add JointSliders later on.
+        # Add a model to provide a pose-able anchor for the camera.
         if self._show_rgbd_sensor:
-            camera_sliders, = self._builder.parser().AddModels(url=(
-                "package://drake/bindings/pydrake/visualization/"
-                "_rgbd_camera_sliders.dmd.yaml"))
-            # Remove the perception role from the new geometry; we don't want
-            # the RgbdSensor to render it. TODO(#13689) The file should itself
-            # opt-out of the perception role, so we don't need to mop up here.
-            inspect = self._builder.scene_graph().model_inspector()
-            for frame_id in inspect.GetAllFrameIds():
-                if inspect.GetFrameGroup(frame_id) == camera_sliders:
-                    self._builder.scene_graph().RemoveRole(
-                        role=Role.kPerception, frame_id=frame_id,
-                        source_id=self._builder.plant().get_source_id())
+            sensor_offset_frame = self._builder.plant().AddFrame(
+                FixedOffsetFrame(
+                    name="$rgbd_sensor_offset",
+                    P=self._builder.plant().world_frame(),
+                    X_PF=RigidTransform.Identity(),
+                    model_instance=default_model_instance()))
+            sensor_body = self._builder.plant().AddRigidBody(
+                name="$rgbd_sensor_body",
+                model_instance=default_model_instance(),
+                M_BBo_B=SpatialInertia())
+            self._builder.plant().WeldFrames(
+                frame_on_parent_F=sensor_offset_frame,
+                frame_on_child_M=sensor_body.body_frame())
 
         self._builder.plant().Finalize()
 
@@ -320,11 +328,13 @@ class ModelVisualizer:
             builder=self._builder.builder(),
             meshcat=self._meshcat)
 
-        # Add a render camera so we can show role=perception images.
+        # Add a render camera so we can show role=perception images. The
+        # sensor is affixed to the world frame and we'll modify that pose
+        # below.
         if self._show_rgbd_sensor:
             camera_config = CameraConfig(width=1440, height=1080)
             camera_config.name = "preview"
-            camera_config.X_PB.base_frame = "_rgbd_camera_sliders::pinhole"
+            camera_config.X_PB.base_frame = "$rgbd_sensor_body"
             camera_config.z_far = 3  # Show 3m of frustum.
             camera_config.fps = 1.0  # Ignored -- we're not simulating.
             is_unit_test = "TEST_SRCDIR" in os.environ
@@ -383,18 +393,6 @@ class ModelVisualizer:
         Simulator(self._diagram).Initialize()
         # Publish draw messages with current state.
         self._diagram.ForcedPublish(self._context)
-
-        # Visualize the camera frustum.
-        if self._show_rgbd_sensor:
-            camera_path = "/drake/illustration/_rgbd_camera_sliders/pinhole"
-            frustum_path = f"{camera_path}/frustum"
-            (vertices, faces) = self._camera_config_to_frustum(camera_config)
-            self._meshcat.SetTriangleMesh(
-                path=frustum_path, vertices=vertices, faces=faces,
-                rgba=Rgba(1.0, 0.33, 0, 0.2))
-            self._meshcat.SetTriangleMesh(
-                path=f"{frustum_path}/wire", vertices=vertices, faces=faces,
-                rgba=Rgba(0.5, 0.5, 0.5), wireframe=True)
 
         self._check_rep(finalized=True)
 
@@ -460,6 +458,27 @@ class ModelVisualizer:
         # Finalize the rest of the systems and widgets.
         self.Finalize()
 
+    def _render_if_necessary(self, *, loop_once):
+        """This evaluates the state of the camera and plant and possibly
+        triggers a rendering (up to a maximum hard-coded rate).
+        """
+        if not self._show_rgbd_sensor:
+            return
+        # When we only have a loop once, we should get one rendering.
+        if not loop_once and time.time() < (self._last_camera_time + 0.0625):
+            return
+
+        self._last_camera_time = time.time()
+        X_WC = self._meshcat.GetTrackedCameraPose()
+        if X_WC is None:
+            return
+
+        frame = self._diagram.plant().GetFrameByName("$rgbd_sensor_offset")
+        frame.SetPoseInParentFrame(
+            context=self._diagram.plant().GetMyContextFromRoot(self._context),
+            X_PF=X_WC)
+        self._diagram.GetOutputPort("preview_image").Eval(self._context)
+
     def Run(self, position=None, loop_once=False):
         """
         Runs the model. If Finalize() hasn't already been explicitly called
@@ -492,8 +511,17 @@ class ModelVisualizer:
         # more sense as an argument to Run() vs an argument to our constructor.
         if self._browser_new:
             self._browser_new = False
-            url = self._meshcat.web_url()
+            url_params = ""
+            if self._show_rgbd_sensor:
+                url_params = "?tracked_camera=on"
+            url = self._meshcat.web_url() + url_params
             _webbrowser_open(url=url, new=True)
+        elif self._show_rgbd_sensor:
+            logging.getLogger("drake").info(
+                "You've requested to show the RGBD Sensor. To control the "
+                "sensor position, make sure you open one browser to the "
+                "following url:\n\n"
+                f"\t{self._meshcat.web_url()}?tracked_camera=on\n")
 
         # Wait for the user to cancel us.
         stop_button_name = "Stop Running"
@@ -501,7 +529,6 @@ class ModelVisualizer:
             logging.getLogger("drake").info(
                 f"Click '{stop_button_name}' or press Esc to quit")
 
-        last_camera_time = 0
         try:
             self._meshcat.AddButton(stop_button_name, "Escape")
 
@@ -511,13 +538,7 @@ class ModelVisualizer:
                 return self._meshcat.GetButtonClicks(button_name) > 0
 
             while True:
-                # Refresh the relatively expensive preview camera at a slower
-                # rate (2 Hz) than everything else (32 Hz).
-                if self._show_rgbd_sensor:
-                    if time.time() > (last_camera_time + 0.5):
-                        last_camera_time = time.time()
-                        self._diagram.GetOutputPort("preview_image").Eval(
-                            self._context)
+                self._render_if_necessary(loop_once=loop_once)
                 time.sleep(1 / 32.0)
                 if has_clicks(self._reload_button_name):
                     self._meshcat.DeleteButton(stop_button_name)
