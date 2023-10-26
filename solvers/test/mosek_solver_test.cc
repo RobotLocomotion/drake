@@ -233,6 +233,13 @@ GTEST_TEST(TestExponentialConeProgram, MinimalEllipsoidConveringPoints) {
   }
 }
 
+GTEST_TEST(TestExponentialConeProgram, MatrixLogDeterminantLower) {
+  MosekSolver mosek_solver;
+  if (mosek_solver.available()) {
+    MatrixLogDeterminantLower(mosek_solver, 1E-6);
+  }
+}
+
 GTEST_TEST(MosekTest, TestLogging) {
   // Test if we can print the logging info to a log file.
   MathematicalProgram prog;

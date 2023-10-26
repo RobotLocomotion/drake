@@ -4663,6 +4663,26 @@ GTEST_TEST(RelaxPsdConstraintToSddDualCone, NoConstraintToReplace) {
   EXPECT_EQ(ssize(prog.rotated_lorentz_cone_constraints()), 3);
 }
 
+GTEST_TEST(MathematicalProgramTest, AddLogDeterminantLowerBoundConstraint) {
+  MathematicalProgram prog;
+  auto X = prog.NewSymmetricContinuousVariables<3>("X");
+  auto ret = prog.AddLogDeterminantLowerBoundConstraint(
+      X.cast<symbolic::Expression>(), 1);
+  const auto& constraint = std::get<0>(ret);
+  const auto& t = std::get<1>(ret);
+  EXPECT_TRUE(CompareMatrices(constraint.evaluator()->GetDenseA(),
+                              Eigen::RowVector3d::Ones()));
+  EXPECT_TRUE(
+      CompareMatrices(constraint.evaluator()->lower_bound(), Vector1d(1)));
+  EXPECT_TRUE(
+      CompareMatrices(constraint.evaluator()->upper_bound(), Vector1d(kInf)));
+  EXPECT_EQ(constraint.variables().size(), 3);
+  for (int i = 0; i < 3; ++i) {
+    EXPECT_TRUE(constraint.variables()(i).equal_to(t(i)));
+  }
+  EXPECT_EQ(prog.exponential_cone_constraints().size(), 3);
+  EXPECT_EQ(prog.positive_semidefinite_constraints().size(), 1);
+}
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
