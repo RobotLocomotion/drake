@@ -57,8 +57,7 @@ class DummyBody : public Body<double> {
     // We need a body index for the body node test to be happy.
     MultibodyElementTester::set_index(this, index);
   }
-  int get_num_flexible_positions() const override { return 0; }
-  int get_num_flexible_velocities() const override { return 0; }
+
   double default_mass() const override { return 0; }
   RotationalInertia<double> default_rotational_inertia() const override {
     return {};

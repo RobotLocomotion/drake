@@ -327,10 +327,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
     cls  // BR
         .def("name", &Class::name, cls_doc.name.doc)
         .def("scoped_name", &Class::scoped_name, cls_doc.scoped_name.doc)
-        .def("get_num_flexible_positions", &Class::get_num_flexible_positions,
-            cls_doc.get_num_flexible_positions.doc)
-        .def("get_num_flexible_velocities", &Class::get_num_flexible_velocities,
-            cls_doc.get_num_flexible_velocities.doc)
         .def("body_frame", &Class::body_frame, py_rvp::reference_internal,
             cls_doc.body_frame.doc)
         .def("is_floating", &Class::is_floating, cls_doc.is_floating.doc)

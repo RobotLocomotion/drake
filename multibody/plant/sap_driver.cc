@@ -630,8 +630,8 @@ void SapDriver<T>::AddWeldConstraints(
       const bool treeB_has_dofs = tree_topology().tree_has_dofs(treeB_index);
 
       // TODO(joemasterjohn): Move this exception up to the plant level so
-      // that it fails as fast as possible. Currently, the earliest this can
-      // happen is in MbP::Finalize() after the topology has been finalized.
+      //  that it fails as fast as possible. Currently, the earliest this can
+      //  happen is in MbP::Finalize() after the topology has been finalized.
       if (!treeA_has_dofs && !treeB_has_dofs) {
         const std::string msg = fmt::format(
             "Creating a weld constraint between bodies '{}' and '{}' where "
