@@ -200,7 +200,7 @@ class MobilizerImpl : public Mobilizer<T> {
   Eigen::VectorBlock<const VectorX<T>, kNv> get_velocities(
       const systems::Context<T>& context) const {
     return this->get_parent_tree().template get_state_segment<kNv>(context,
-        this->get_velocities_start());
+        this->get_velocities_start_in_state());
   }
 
   // Helper to return a mutable fixed-size Eigen::VectorBlock referencing the
@@ -210,7 +210,7 @@ class MobilizerImpl : public Mobilizer<T> {
   Eigen::VectorBlock<VectorX<T>, kNv> GetMutableVelocities(
       systems::Context<T>* context) const {
     return this->get_parent_tree().template GetMutableStateSegment<kNv>(
-        context, this->get_velocities_start());
+        context, this->get_velocities_start_in_state());
   }
 
   // Helper variant to return a const fixed-size Eigen::VectorBlock referencing
@@ -220,23 +220,23 @@ class MobilizerImpl : public Mobilizer<T> {
   Eigen::VectorBlock<VectorX<T>, kNv> get_mutable_velocities(
       systems::State<T>* state) const {
     return this->get_parent_tree().template get_mutable_state_segment<kNv>(
-        state, this->get_velocities_start());
+        state, this->get_velocities_start_in_state());
   }
   //@}
 
  private:
-  // Returns the index in the global array of generalized coordinates in the
-  // MultibodyTree model to the first component of the generalized coordinates
-  // vector that corresponds to this mobilizer.
+  // Returns the index in the global array of generalized coordinates and
+  // velocities [q v] in the MultibodyTree model to the first component of the
+  // generalized coordinates vector that corresponds to this mobilizer.
   int get_positions_start() const {
     return this->get_topology().positions_start;
   }
 
-  // Returns the index in the global array of generalized velocities in the
-  // MultibodyTree model to the first component of the generalized velocities
-  // vector that corresponds to this mobilizer.
-  int get_velocities_start() const {
-    return this->get_topology().velocities_start;
+  // Returns the index in the global array of generalized coordinates and
+  // velocities [q v] in the MultibodyTree model to the first component of the
+  // generalized velocities vector that corresponds to this mobilizer.
+  int get_velocities_start_in_state() const {
+    return this->get_topology().velocities_start_in_state;
   }
 
   std::optional<Vector<double, kNq>> default_position_{};

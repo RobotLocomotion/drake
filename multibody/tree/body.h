@@ -285,7 +285,7 @@ class Body : public MultibodyElement<T> {
   int floating_velocities_start() const {
     DRAKE_BODY_THROW_IF_NOT_FINALIZED();
     DRAKE_DEMAND(is_floating());
-    return topology_.floating_velocities_start;
+    return topology_.floating_velocities_start_in_state;
   }
 
   /// Returns a string suffix (e.g. to be appended to the name()) to identify

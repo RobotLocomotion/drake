@@ -166,7 +166,7 @@ class BodyNode : public MultibodyElement<T> {
   // Returns the index to the first generalized velocity for this node
   // within the vector v of generalized velocities for the full multibody
   // system.
-  int velocity_start() const {
+  int velocity_start_in_v() const {
     return topology_.mobilizer_velocities_start_in_v;
   }
   //@}
@@ -1025,7 +1025,8 @@ class BodyNode : public MultibodyElement<T> {
 
       // Include the effect of additional diagonal inertias. See @ref
       // additional_diagonal_inertias.
-      D_B.diagonal() += diagonal_inertias.segment(this->velocity_start(), nv);
+      D_B.diagonal() +=
+          diagonal_inertias.segment(this->velocity_start_in_v(), nv);
 
       // Compute the LLT factorization of D_B as llt_D_B.
       math::LinearSolver<Eigen::LLT, MatrixUpTo6<T>>& llt_D_B =
@@ -1407,7 +1408,7 @@ class BodyNode : public MultibodyElement<T> {
   Eigen::VectorBlock<const VectorX<T>> get_mobilizer_velocities(
       const systems::Context<T>& context) const {
     return this->get_parent_tree().get_state_segment(context,
-        topology_.mobilizer_velocities_start,
+        topology_.mobilizer_velocities_start_in_state,
         topology_.num_mobilizer_velocities);
   }
 

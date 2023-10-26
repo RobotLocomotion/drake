@@ -1185,7 +1185,8 @@ void MultibodyTree<T>::CalcReflectedInertia(
   // See JointActuator::reflected_inertia().
   *reflected_inertia = VectorX<double>::Zero(num_velocities());
   for (const auto& actuator : owned_actuators_) {
-    const int joint_velocity_index = actuator->joint().velocity_start();
+    const int joint_velocity_index =
+        actuator->joint().velocity_start();  // within v
     (*reflected_inertia)(joint_velocity_index) =
         actuator->calc_reflected_inertia(context);
   }
@@ -1753,10 +1754,10 @@ void MultibodyTree<T>::CalcMassMatrix(const systems::Context<T>& context,
       // Since the system is at rest, we have Fb_C_W = 0 and thus:
       const Matrix6xUpTo6<T> Fm_CCo_W = Mc_C_W * A_WC;  // 6 x cnv.
 
-      const int composite_start = composite_node.velocity_start();
+      const int composite_start_in_v = composite_node.velocity_start_in_v();
 
       // Diagonal block corresponding to current node (composite_node_index).
-      M->block(composite_start, composite_start, cnv, cnv) +=
+      M->block(composite_start_in_v, composite_start_in_v, cnv, cnv) +=
           H_CpC_W.transpose() * Fm_CCo_W;
 
       // We recurse the tree inwards from C all the way to the root. We define
@@ -1788,11 +1789,12 @@ void MultibodyTree<T>::CalcMassMatrix(const systems::Context<T>& context,
 
           // Compute the corresponding bnv x cnv block.
           const MatrixUpTo6<T> HtFm = H_PB_W.transpose() * Fm_CBo_W;
-          const int body_start = body_node->velocity_start();
-          M->block(body_start, composite_start, bnv, cnv) += HtFm;
+          const int body_start_in_v = body_node->velocity_start_in_v();
+          M->block(body_start_in_v, composite_start_in_v, bnv, cnv) += HtFm;
 
           // And copy to its symmetric block.
-          M->block(composite_start, body_start, cnv, bnv) += HtFm.transpose();
+          M->block(composite_start_in_v, body_start_in_v, cnv, bnv) +=
+              HtFm.transpose();
         }
 
         child_node = body_node;                      // Update child node Bc.
@@ -3462,7 +3464,7 @@ MatrixX<double> MultibodyTree<T>::MakeStateSelectorMatrix(
 
     const int pos_start = joint.position_start();
     const int num_pos = joint.num_positions();
-    const int vel_start = joint.velocity_start();
+    const int vel_start = joint.velocity_start();  // within v
     const int num_vel = joint.num_velocities();
 
     Sx.block(selected_positions_index, pos_start, num_pos, num_pos) =
