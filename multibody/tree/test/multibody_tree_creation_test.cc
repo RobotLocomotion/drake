@@ -559,24 +559,15 @@ TEST_F(TreeTopologyTests, SizesAndIndexing) {
     }
 
     // Verify positions and velocity indexes.
-    if (mobilizer_topology.num_velocities == 0) {
-      // MultibodyTreeTopology sets start indexes to zero when there are no
-      // mobilities associated to a node.
-      EXPECT_EQ(node.mobilizer_positions_start, 0);
-      EXPECT_EQ(mobilizer_topology.positions_start, 0);
-      EXPECT_EQ(node.mobilizer_velocities_start, 0);
-      EXPECT_EQ(mobilizer_topology.velocities_start, 0);
-    } else {
-      EXPECT_EQ(positions_index, node.mobilizer_positions_start);
-      EXPECT_EQ(positions_index, mobilizer_topology.positions_start);
-      EXPECT_EQ(velocities_index, node.mobilizer_velocities_start);
-      EXPECT_EQ(velocities_index, mobilizer_topology.velocities_start);
+    EXPECT_EQ(positions_index, node.mobilizer_positions_start);
+    EXPECT_EQ(positions_index, mobilizer_topology.positions_start);
+    EXPECT_EQ(velocities_index, node.mobilizer_velocities_start);
+    EXPECT_EQ(velocities_index, mobilizer_topology.velocities_start);
 
-      // Mobilizers 5 and 8 are weld joints, with no velocities. All other
-      // mobilizers introduce one position and one velocity.
-      positions_index += 1;
-      velocities_index += 1;
-    }
+    // Mobilizers 5 and 8 are weld joints, with no velocities. All other
+    // mobilizers introduce one position and one velocity.
+    positions_index += mobilizer_topology.num_positions;
+    velocities_index += mobilizer_topology.num_velocities;
   }
   EXPECT_EQ(positions_index, topology.num_positions());
   EXPECT_EQ(velocities_index, topology.num_states());

@@ -893,22 +893,13 @@ class MultibodyTreeTopology {
       BodyNodeTopology& node = body_nodes_[node_index];
       MobilizerTopology& mobilizer = mobilizers_[node.mobilizer];
 
-      if (mobilizer.num_velocities == 0) {  // A weld mobilizer.
-        // For weld mobilizers start indexes are not important since the number
-        // of dofs is zero. However, we do allow accessing Eigen segments with
-        // zero size and for that case Eigen enforces start >= zero.
-        // Therefore, these start indexes are set to zero to allow zero sized
-        // indexes without having to itroduce any special logic for weld
-        // mobilizers.
-        mobilizer.positions_start = 0;
-        mobilizer.velocities_start = 0;
-        mobilizer.velocities_start_in_v = 0;
-      } else {
-        mobilizer.positions_start = position_index;
-        mobilizer.velocities_start = velocity_index;
-        mobilizer.velocities_start_in_v = velocity_index - num_positions_;
-        DRAKE_DEMAND(0 <= mobilizer.velocities_start_in_v);
-      }
+      // Note that a Weld mobilizer claims it starts at the next available
+      // slot but has zero positions and velocities. That means the next
+      // mobilizer will start at the same place.
+      mobilizer.positions_start = position_index;
+      mobilizer.velocities_start = velocity_index;
+      mobilizer.velocities_start_in_v = velocity_index - num_positions_;
+      DRAKE_DEMAND(0 <= mobilizer.velocities_start_in_v);
 
       position_index += mobilizer.num_positions;
       velocity_index += mobilizer.num_velocities;
@@ -920,14 +911,10 @@ class MultibodyTreeTopology {
 
       // Start index in a vector containing only generalized velocities.
       node.mobilizer_velocities_start_in_v = mobilizer.velocities_start_in_v;
-      // Demand indexes to be positive only for mobilizers with a non-zero
-      // number of dofs.
-      DRAKE_DEMAND(0 <= node.mobilizer_velocities_start_in_v ||
-          node.num_mobilizer_velocities == 0);
-      // This test would not pass for a model with all weld joints. Therefore
-      // the check for num_velocities_ == 0.
-      DRAKE_DEMAND(node.mobilizer_velocities_start_in_v < num_velocities_ ||
-          num_velocities_ == 0);
+      DRAKE_DEMAND(0 <= node.mobilizer_velocities_start_in_v);
+      // If the last mobilizer is a Weld, it's "start" location will be
+      // where it _would_ put velocities if it had any.
+      DRAKE_DEMAND(node.mobilizer_velocities_start_in_v <= num_velocities_);
     }
     DRAKE_DEMAND(position_index == num_positions_);
     DRAKE_DEMAND(velocity_index == num_states_);
