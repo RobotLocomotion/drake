@@ -833,10 +833,11 @@ void DiscreteUpdateManager<T>::AppendContactKinematics(
 
     // Tree A contribution to contact Jacobian Jv_W_AcBc_C.
     if (treeA_has_dofs) {
-      Matrix3X<T> J = R_WC.matrix().transpose() *
-                      Jv_AcBc_W.middleCols(
-                          tree_topology().tree_velocities_start(treeA_index),
-                          tree_topology().num_tree_velocities(treeA_index));
+      Matrix3X<T> J =
+          R_WC.matrix().transpose() *
+          Jv_AcBc_W.middleCols(
+              tree_topology().tree_velocities_start_in_v(treeA_index),
+              tree_topology().num_tree_velocities(treeA_index));
       jacobian_blocks.emplace_back(treeA_index, MatrixBlock<T>(std::move(J)));
     }
 
@@ -844,10 +845,11 @@ void DiscreteUpdateManager<T>::AppendContactKinematics(
     // This contribution must be added only if B is different from A.
     if ((treeB_has_dofs && !treeA_has_dofs) ||
         (treeB_has_dofs && treeB_index != treeA_index)) {
-      Matrix3X<T> J = R_WC.matrix().transpose() *
-                      Jv_AcBc_W.middleCols(
-                          tree_topology().tree_velocities_start(treeB_index),
-                          tree_topology().num_tree_velocities(treeB_index));
+      Matrix3X<T> J =
+          R_WC.matrix().transpose() *
+          Jv_AcBc_W.middleCols(
+              tree_topology().tree_velocities_start_in_v(treeB_index),
+              tree_topology().num_tree_velocities(treeB_index));
       jacobian_blocks.emplace_back(treeB_index, MatrixBlock<T>(std::move(J)));
     }
 

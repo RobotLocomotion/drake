@@ -565,7 +565,8 @@ class Joint : public MultibodyElement<T> {
   };
 
   /// Implementation of the NVI velocity_start(), see velocity_start() for
-  /// details.
+  /// details. Note that this must be the offset within just the velocity
+  /// vector, _not_ within the composite state vector.
   /// @note Implementations must meet the styleguide requirements for snake_case
   /// accessor methods.
   virtual int do_get_velocity_start() const = 0;
