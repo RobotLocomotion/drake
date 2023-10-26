@@ -125,6 +125,7 @@ class ModelVisualizer:
         self._diagram = None  # This will be a planning.RobotDiagram.
         self._sliders = None
         self._context = None
+        self._camera_body = None
 
     def _check_rep(self, *, finalized):
         """
@@ -279,18 +280,9 @@ class ModelVisualizer:
         # Add a model that will provide rgbd pose sliders automatically when we
         # add JointSliders later on.
         if self._show_rgbd_sensor:
-            camera_sliders, = self._builder.parser().AddModels(url=(
+            self._builder.parser().AddModels(url=(
                 "package://drake/bindings/pydrake/visualization/"
-                "_rgbd_camera_sliders.dmd.yaml"))
-            # Remove the perception role from the new geometry; we don't want
-            # the RgbdSensor to render it. TODO(#13689) The file should itself
-            # opt-out of the perception role, so we don't need to mop up here.
-            inspect = self._builder.scene_graph().model_inspector()
-            for frame_id in inspect.GetAllFrameIds():
-                if inspect.GetFrameGroup(frame_id) == camera_sliders:
-                    self._builder.scene_graph().RemoveRole(
-                        role=Role.kPerception, frame_id=frame_id,
-                        source_id=self._builder.plant().get_source_id())
+                "_camera_rig.sdf"))
 
         self._builder.plant().Finalize()
 
@@ -322,9 +314,10 @@ class ModelVisualizer:
 
         # Add a render camera so we can show role=perception images.
         if self._show_rgbd_sensor:
+            self._meshcat.SetCameraTracking(on=True)
             camera_config = CameraConfig(width=1440, height=1080)
             camera_config.name = "preview"
-            camera_config.X_PB.base_frame = "_rgbd_camera_sliders::pinhole"
+            camera_config.X_PB.base_frame = "_camera_rig::_floating_camera"
             camera_config.z_far = 3  # Show 3m of frustum.
             camera_config.fps = 1.0  # Ignored -- we're not simulating.
             is_unit_test = "TEST_SRCDIR" in os.environ
@@ -369,6 +362,10 @@ class ModelVisualizer:
         self._builder = None
         self._context = self._diagram.CreateDefaultContext()
 
+        if self._show_rgbd_sensor:
+            self._camera_body = (self._diagram.plant().
+                                 GetBodyByName("_floating_camera"))
+
         # We don't just test 'position' because NumPy does weird things with
         # the truth values of arrays.
         if position is not None and len(position) > 0:
@@ -383,18 +380,6 @@ class ModelVisualizer:
         Simulator(self._diagram).Initialize()
         # Publish draw messages with current state.
         self._diagram.ForcedPublish(self._context)
-
-        # Visualize the camera frustum.
-        if self._show_rgbd_sensor:
-            camera_path = "/drake/illustration/_rgbd_camera_sliders/pinhole"
-            frustum_path = f"{camera_path}/frustum"
-            (vertices, faces) = self._camera_config_to_frustum(camera_config)
-            self._meshcat.SetTriangleMesh(
-                path=frustum_path, vertices=vertices, faces=faces,
-                rgba=Rgba(1.0, 0.33, 0, 0.2))
-            self._meshcat.SetTriangleMesh(
-                path=f"{frustum_path}/wire", vertices=vertices, faces=faces,
-                rgba=Rgba(0.5, 0.5, 0.5), wireframe=True)
 
         self._check_rep(finalized=True)
 
@@ -502,6 +487,7 @@ class ModelVisualizer:
                 f"Click '{stop_button_name}' or press Esc to quit")
 
         last_camera_time = 0
+        last_q = None
         try:
             self._meshcat.AddButton(stop_button_name, "Escape")
 
@@ -511,13 +497,28 @@ class ModelVisualizer:
                 return self._meshcat.GetButtonClicks(button_name) > 0
 
             while True:
-                # Refresh the relatively expensive preview camera at a slower
-                # rate (2 Hz) than everything else (32 Hz).
+                # Set the *maximum* render rate to a slower 16 Hz, in contrast
+                # to the more general 32 Hz. However, even then, we'll only
+                # render if the plant's state has changed since we last
+                # rendered.
                 if self._show_rgbd_sensor:
-                    if time.time() > (last_camera_time + 0.5):
-                        last_camera_time = time.time()
-                        self._diagram.GetOutputPort("preview_image").Eval(
+                    if time.time() > (last_camera_time + 0.0625):
+                        plant = self._diagram.plant()
+                        plant_context = plant.GetMyContextFromRoot(
                             self._context)
+                        last_camera_time = time.time()
+                        # The sliders for _floating_camera are going to fight
+                        # us. So, *always* grab the current camera position
+                        # and set it in the state before pulling q.
+                        X_WC = self._meshcat.GetTrackedCameraPose()
+                        self._diagram.plant().SetFreeBodyPose(
+                            plant_context, self._camera_body, X_WC)
+                        # Now only render if the plant's state has changed.
+                        curr_q = plant.GetPositions(plant_context)
+                        if last_q is None or (curr_q != last_q).any():
+                            self._diagram.GetOutputPort("preview_image").Eval(
+                                self._context)
+                            last_q = curr_q
                 time.sleep(1 / 32.0)
                 if has_clicks(self._reload_button_name):
                     self._meshcat.DeleteButton(stop_button_name)
@@ -527,6 +528,8 @@ class ModelVisualizer:
                     self._meshcat.AddButton(stop_button_name, "Escape")
                 q = self._sliders.get_output_port().Eval(
                     self._sliders.GetMyContextFromRoot(self._context))
+                # May be we call _reload(); we have to get the plant and its
+                # context from the source.
                 self._diagram.plant().SetPositions(
                     self._diagram.plant().GetMyContextFromRoot(self._context),
                     q)
