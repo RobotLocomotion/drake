@@ -43,8 +43,7 @@ drake_pybind_library(
     ],
     package_info = PACKAGE_INFO,
     py_data = [
-        "_rgbd_camera_sliders.dmd.yaml",
-        "_rgbd_camera_sliders.sdf",
+        "_camera_rig.sdf",
     ],
     py_deps = [
         "//bindings/pydrake/multibody",
@@ -131,8 +130,7 @@ install_files(
     name = "install_models",
     dest = "share/drake/bindings/pydrake/visualization",
     files = [
-        "_rgbd_camera_sliders.dmd.yaml",
-        "_rgbd_camera_sliders.sdf",
+        "_camera_rig.sdf",
     ],
 )
 
