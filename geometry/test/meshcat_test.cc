@@ -21,6 +21,7 @@ namespace {
 
 using Eigen::Vector3d;
 using math::RigidTransformd;
+using math::RollPitchYawd;
 using math::RotationMatrixd;
 using testing::ElementsAre;
 using ::testing::HasSubstr;
@@ -464,7 +465,7 @@ GTEST_TEST(MeshcatTest, SetTransform) {
   Meshcat meshcat;
   EXPECT_FALSE(meshcat.HasPath("frame"));
   EXPECT_TRUE(meshcat.GetPackedTransform("frame").empty());
-  const RigidTransformd X_ParentPath{math::RollPitchYawd(0.5, 0.26, -3),
+  const RigidTransformd X_ParentPath{RollPitchYawd(0.5, 0.26, -3),
                                      Vector3d{0.9, -2.0, 0.12}};
   meshcat.SetTransform("frame", X_ParentPath);
 
@@ -1030,7 +1031,7 @@ GTEST_TEST(MeshcatTest, Recording) {
   DRAKE_EXPECT_THROWS_MESSAGE(meshcat.get_mutable_recording(),
                               ".*You must create a recording.*");
 
-  const RigidTransformd X_ParentPath{math::RollPitchYawd(0.5, 0.26, -3),
+  const RigidTransformd X_ParentPath{RollPitchYawd(0.5, 0.26, -3),
                                      Vector3d{0.9, -2.0, 0.12}};
   meshcat.SetTransform("frame", X_ParentPath, 0);
   meshcat.StartRecording();
@@ -1106,9 +1107,9 @@ GTEST_TEST(MeshcatTest, Recording) {
 GTEST_TEST(MeshcatTest, RecordingWithoutSetTransform) {
   Meshcat meshcat;
 
-  const RigidTransformd X_0{math::RollPitchYawd(0.5, 0.26, -3),
+  const RigidTransformd X_0{RollPitchYawd(0.5, 0.26, -3),
                             Vector3d{0.9, -2.0, 0.12}};
-  const RigidTransformd X_1{math::RollPitchYawd(0.75, 0.21, 2.4),
+  const RigidTransformd X_1{RollPitchYawd(0.75, 0.21, 2.4),
                             Vector3d{6.9, -2.2, 1.12}};
 
   const double kFrameRate = 64.0;
@@ -1216,6 +1217,67 @@ GTEST_TEST(MeshcatTest, SetCameraPose) {
     EXPECT_EQ(data.property, "position");
     EXPECT_EQ(data.value, std::vector({1.0, 3.0, -2.0}));
   }
+}
+
+GTEST_TEST(MeshcatTest, CameraTracking) {
+  Meshcat meshcat;
+
+  auto inject = [&meshcat](const auto& message) {
+    std::stringstream message_stream;
+    msgpack::pack(message_stream, message);
+    meshcat.InjectWebsocketMessage(message_stream.str());
+  };
+
+  // When no message has been received, no pose is available.
+  EXPECT_EQ(meshcat.GetTrackedCameraPose(), std::nullopt);
+
+  // A message with a valid transform (16 floats and is perspective is True).
+  internal::UserInterfaceEvent valid_pose_message;
+  valid_pose_message.type = "camera_pose";
+  valid_pose_message.camera_pose = {1, 0, 0, 0,
+                                    0, 1, 0, 0,
+                                    0, 0, 1, 0,
+                                    1, 2, 3, 1};
+  valid_pose_message.is_perspective = true;
+
+  // Transform y-up to z-up, and from facing in the +z direction to the -z
+  // direction (with concomitant flip of the y-axis).
+  const RigidTransformd X_WC_expected(
+      RotationMatrixd(RollPitchYawd(M_PI / 2, M_PI, M_PI)), {1.0, -3.0, 2.0});
+
+  // The message sent when the camera has an orthographic projection.
+  internal::UserInterfaceEvent invalid_pose_message = valid_pose_message;
+  invalid_pose_message.is_perspective = false;
+
+  // Send valid meshcat pose - pose is available.
+  inject(valid_pose_message);
+  std::optional<RigidTransformd> X_WC = meshcat.GetTrackedCameraPose();
+  ASSERT_TRUE(X_WC.has_value());
+
+  // The pose has been transformed.
+  EXPECT_TRUE(CompareMatrices(X_WC->GetAsMatrix34(),
+                              X_WC_expected.GetAsMatrix34(), 1e-15));
+
+  // Send invalid meshcat pose - pose is cleared.
+  inject(invalid_pose_message);
+  X_WC = meshcat.GetTrackedCameraPose();
+  EXPECT_FALSE(X_WC.has_value());
+}
+
+// The tracked camera pose is discarded when the websocket disconnects.
+GTEST_TEST(MeshcatTest, CameraTrackingDisconnect) {
+  Meshcat meshcat;
+  CheckWebsocketCommand(meshcat, R"""({
+      "type": "camera_pose",
+      "camera_pose": [
+        1, 0, 0, 0,
+        0, 1, 0, 0,
+        0, 0, 1, 0,
+        0, 0, 0, 0
+      ],
+      "is_perspective": true
+    })""", {}, {});
+  EXPECT_FALSE(meshcat.GetTrackedCameraPose().has_value());
 }
 
 GTEST_TEST(MeshcatTest, StaticHtml) {
