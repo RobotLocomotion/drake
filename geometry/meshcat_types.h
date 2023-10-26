@@ -386,6 +386,12 @@ struct SetCameraTargetData {
   MSGPACK_DEFINE_MAP(type, value);
 };
 
+struct SetCameraPoseCallback {
+  std::string type{"set_render_callback"};
+  std::string callback;
+  MSGPACK_DEFINE_MAP(type, callback);
+};
+
 struct SetTransformData {
   std::string type{"set_transform"};
   std::string path;
@@ -481,7 +487,8 @@ struct UserInterfaceEvent {
   std::string name;
   std::optional<double> value;
   std::optional<internal::Gamepad> gamepad;
-  MSGPACK_DEFINE_MAP(type, name, value, gamepad);
+  std::vector<double> camera_pose;
+  MSGPACK_DEFINE_MAP(type, name, value, gamepad, camera_pose);
 };
 
 }  // namespace internal
