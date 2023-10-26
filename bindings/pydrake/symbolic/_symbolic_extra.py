@@ -30,11 +30,10 @@ _symbolic_sympy_defer = None
 
 
 def to_sympy(
-    x: typing.Union[float, int, bool, Variable, Expression, Formula],
+    x: typing.Union[float, bool, Variable, Expression, Formula],
     *,
-    memo: typing.Dict = None,
-    round_ints: bool = False
-) -> typing.Union[float, int, bool, "sympy.Expr"]:
+    memo: typing.Dict = None
+) -> typing.Union[float, bool, "sympy.Expr"]:
     """Converts a pydrake object to the corresponding SymPy Expr.
 
     Certain expressions are not supported and will raise NotImplementedError.
@@ -60,15 +59,14 @@ def to_sympy(
         from pydrake.symbolic import _symbolic_sympy as _symbolic_sympy_defer
     if memo is None:
         memo = dict()
-    return _symbolic_sympy_defer._to_sympy(x, memo=memo, round_ints=round_ints)
+    return _symbolic_sympy_defer._to_sympy(x, memo=memo)
 
 
 def from_sympy(
-    x: typing.Union[float, int, bool, "sympy.Expr"],
+    x: typing.Union[float, bool, "sympy.Expr"],
     *,
-    memo: typing.Dict = None,
-    round_ints: bool = False
-) -> typing.Union[float, int, bool, Variable, Expression, Formula]:
+    memo: typing.Dict = None
+) -> typing.Union[float, bool, Variable, Expression, Formula]:
     """Converts a SymPy Expr to the corresponding pydrake object.
 
     Certain expressions are not supported and will raise NotImplementedError.
@@ -93,4 +91,4 @@ def from_sympy(
         from pydrake.symbolic import _symbolic_sympy as _symbolic_sympy_defer
     if memo is None:
         memo = dict()
-    return _symbolic_sympy_defer._from_sympy(x, memo=memo, round_ints=round_ints)
+    return _symbolic_sympy_defer._from_sympy(x, memo=memo)
