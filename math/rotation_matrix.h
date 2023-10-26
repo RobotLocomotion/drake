@@ -246,7 +246,7 @@ class RotationMatrix {
   /// @retval R_AB the rotation matrix with properties as described above.
   static RotationMatrix<T> MakeFromOneVector(const Vector3<T>& b_A,
                                              int axis_index) {
-    const Vector3<T> u_A = NormalizeOrThrow(b_A, __func__);
+    const Vector3<T> u_A = math::internal::NormalizeOrThrow(b_A, __func__);
     return MakeFromOneUnitVector(u_A, axis_index);
   }
 
@@ -920,17 +920,6 @@ class RotationMatrix {
   // are infinity or NaN.
   static Matrix3<T> QuaternionToRotationMatrix(
       const Eigen::Quaternion<T>& quaternion, const T& two_over_norm_squared);
-
-  // Returns the unit vector in the direction of v or throws an exception if v
-  // cannot be "safely" normalized.
-  // @param[in] v The vector to normalize.
-  // @param[in] function_name The name of the calling function; included in the
-  //   exception message.
-  // @throws std::exception if v contains nonfinite numbers (NaN or infinity)
-  //   or |v| < 1E-10.
-  // @note no exception is thrown if v is a symbolic type.
-  static Vector3<T> NormalizeOrThrow(const Vector3<T>& v,
-                                     const char* function_name);
 
   // Stores the underlying rotation matrix relating two frames (e.g. A and B).
   // For speed, `R_AB_` is uninitialized (public constructors set its value).
