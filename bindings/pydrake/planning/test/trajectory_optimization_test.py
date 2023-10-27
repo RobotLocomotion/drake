@@ -279,6 +279,26 @@ class TestTrajectoryOptimization(unittest.TestCase):
         np.testing.assert_allclose(traj_start, start, atol=1e-6)
         np.testing.assert_allclose(traj_end, end, atol=1e-6)
 
+        # Since each segment of the normalized trajectory is one second long,
+        # we expect the duration of the normalized trajectory to match the
+        # number of segments.
+        normalized_traj = GcsTrajectoryOptimization.NormalizeSegmentTimes(
+                            trajectory=traj)
+        self.assertEqual(traj.start_time(), normalized_traj.start_time())
+        self.assertEqual(traj.get_number_of_segments(),
+                         normalized_traj.get_number_of_segments())
+        self.assertEqual(normalized_traj.get_number_of_segments(),
+                         normalized_traj.end_time()
+                         - normalized_traj.start_time())
+
+        # The start and goal should be not altered.
+        normalized_traj_start = normalized_traj.value(
+            normalized_traj.start_time()).squeeze()
+        normalized_traj_end = normalized_traj.value(
+            normalized_traj.end_time()).squeeze()
+        np.testing.assert_allclose(normalized_traj_start, start, atol=1e-6)
+        np.testing.assert_allclose(normalized_traj_end, end, atol=1e-6)
+
     def test_gcs_trajectory_optimization_2d(self):
         """The following 2D environment has been presented in the GCS paper.
 
@@ -362,13 +382,17 @@ class TestTrajectoryOptimization(unittest.TestCase):
         # Add velocity bounds to the entire graph.
         gcs.AddVelocityBounds(lb=-max_vel, ub=max_vel)
 
+        # Add a velocity and acceleration continuity to the entire graph.
+        gcs.AddPathContinuityConstraints(1)
+        gcs.AddPathContinuityConstraints(2)
+
         # Add two subgraphs with different orders.
         main1 = gcs.AddRegions(
             regions=[HPolyhedron(VPolytope(v)) for v in vertices],
-            order=1,
+            order=4,
             name="main1")
         self.assertIsInstance(main1, GcsTrajectoryOptimization.Subgraph)
-        self.assertEqual(main1.order(), 1)
+        self.assertEqual(main1.order(), 4)
         self.assertEqual(main1.name(), "main1")
         self.assertEqual(main1.size(), len(vertices))
         self.assertIsInstance(main1.regions(), list)
@@ -385,11 +409,11 @@ class TestTrajectoryOptimization(unittest.TestCase):
                                    (6, 4), (5, 7), (7, 5), (6, 9), (9, 6),
                                    (7, 8), (8, 7), (8, 9), (9, 8), (9, 10),
                                    (10, 9), (10, 11), (11, 10)],
-            order=3,
+            order=6,
             name="main2")
 
         self.assertIsInstance(main2, GcsTrajectoryOptimization.Subgraph)
-        self.assertEqual(main2.order(), 3)
+        self.assertEqual(main2.order(), 6)
         self.assertEqual(main2.name(), "main2")
         self.assertEqual(main2.size(), len(vertices))
         self.assertIsInstance(main2.regions(), list)
@@ -469,6 +493,12 @@ class TestTrajectoryOptimization(unittest.TestCase):
         # Add the cost again, which is unnecessary for the optimization
         # but useful to check the binding with the default values.
         main2.AddTimeCost()
+
+        # Adding this constraint checks the python binding. It won't
+        # contribute to the solution since we already added the continuity
+        # constraints to the whole graph.
+        main2.AddPathContinuityConstraints(1)
+        main1_to_main2_region.AddPathContinuityConstraints(1)
 
         # Add tighter velocity bounds to the main2 subgraph.
         main2.AddVelocityBounds(lb=-0.5*max_vel, ub=0.5*max_vel)
