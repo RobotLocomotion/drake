@@ -12,6 +12,7 @@ from pydrake.planning import (
     DirectCollocationConstraint,
     DirectTranscription,
     GcsTrajectoryOptimization,
+    DescaleGcsTrajectory,
     KinematicTrajectoryOptimization,
 )
 from pydrake.geometry.optimization import (
@@ -279,6 +280,24 @@ class TestTrajectoryOptimization(unittest.TestCase):
         np.testing.assert_allclose(traj_start, start, atol=1e-6)
         np.testing.assert_allclose(traj_end, end, atol=1e-6)
 
+        # Since each segment of the descaled trajectory is one second long,
+        # we expect the duration of the descaled trajectory to match the
+        # number of segments.
+        descaled_traj = DescaleGcsTrajectory(traj)
+        self.assertEqual(traj.start_time(), descaled_traj.start_time())
+        self.assertEqual(traj.get_number_of_segments(),
+                         descaled_traj.get_number_of_segments())
+        self.assertEqual(descaled_traj.get_number_of_segments(),
+                         descaled_traj.end_time() - descaled_traj.start_time())
+
+        # The start and goal should be not altered.
+        descaled_traj_start = descaled_traj.value(
+            descaled_traj.start_time()).squeeze()
+        descaled_traj_end = descaled_traj.value(
+            descaled_traj.end_time()).squeeze()
+        np.testing.assert_allclose(descaled_traj_start, start, atol=1e-6)
+        np.testing.assert_allclose(descaled_traj_end, end, atol=1e-6)
+
     def test_gcs_trajectory_optimization_2d(self):
         """The following 2D environment has been presented in the GCS paper.
 
@@ -361,6 +380,10 @@ class TestTrajectoryOptimization(unittest.TestCase):
 
         # Add velocity bounds to the entire graph.
         gcs.AddVelocityBounds(lb=-max_vel, ub=max_vel)
+
+        # Add a velocity and acceleration continuity to the entire graph.
+        gcs.AddContinuityConstraints(1)
+        gcs.AddContinuityConstraints(2)
 
         # Add two subgraphs with different orders.
         main1 = gcs.AddRegions(
@@ -469,6 +492,12 @@ class TestTrajectoryOptimization(unittest.TestCase):
         # Add the cost again, which is unnecessary for the optimization
         # but useful to check the binding with the default values.
         main2.AddTimeCost()
+
+        # Adding this constraint checks the python binding. It won't
+        # contribute to the solution since we already added the continuity
+        # constraints to the whole graph.
+        gcs.AddContinuityConstraints(1)
+        main1_to_main2_region.AddContinuityConstraints(1)
 
         # Add tighter velocity bounds to the main2 subgraph.
         main2.AddVelocityBounds(lb=-0.5*max_vel, ub=0.5*max_vel)
