@@ -373,7 +373,11 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
             py::arg("weight") = 1.0,
             subgraph_doc.AddPathLengthCost.doc_1args_weight)
         .def("AddVelocityBounds", &Class::Subgraph::AddVelocityBounds,
-            py::arg("lb"), py::arg("ub"), subgraph_doc.AddVelocityBounds.doc);
+            py::arg("lb"), py::arg("ub"), subgraph_doc.AddVelocityBounds.doc)
+        .def("AddPathContinuityConstraints",
+            &Class::Subgraph::AddPathContinuityConstraints,
+            py::arg("continuity_order"),
+            subgraph_doc.AddPathContinuityConstraints.doc);
 
     // EdgesBetweenSubgraphs
     const auto& subgraph_edges_doc =
@@ -382,7 +386,11 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
         gcs_traj_opt, "EdgesBetweenSubgraphs", subgraph_edges_doc.doc)
         .def("AddVelocityBounds",
             &Class::EdgesBetweenSubgraphs::AddVelocityBounds, py::arg("lb"),
-            py::arg("ub"), subgraph_edges_doc.AddVelocityBounds.doc);
+            py::arg("ub"), subgraph_edges_doc.AddVelocityBounds.doc)
+        .def("AddPathContinuityConstraints",
+            &Class::EdgesBetweenSubgraphs::AddPathContinuityConstraints,
+            py::arg("continuity_order"),
+            subgraph_edges_doc.AddPathContinuityConstraints.doc);
 
     gcs_traj_opt  // BR
         .def(py::init<int>(), py::arg("num_positions"), cls_doc.ctor.doc)
@@ -432,6 +440,9 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
             py::arg("weight") = 1.0, cls_doc.AddPathLengthCost.doc_1args_weight)
         .def("AddVelocityBounds", &Class::AddVelocityBounds, py::arg("lb"),
             py::arg("ub"), cls_doc.AddVelocityBounds.doc)
+        .def("AddPathContinuityConstraints",
+            &Class::AddPathContinuityConstraints, py::arg("continuity_order"),
+            cls_doc.AddPathContinuityConstraints.doc)
         .def("SolvePath", &Class::SolvePath, py::arg("source"),
             py::arg("target"),
             py::arg("options") =
@@ -440,6 +451,8 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
         .def("graph_of_convex_sets", &Class::graph_of_convex_sets,
             py_rvp::reference_internal, cls_doc.graph_of_convex_sets.doc);
   }
+  m.def("ReconstructGcsPathTrajectory", &ReconstructGcsPathTrajectory,
+      py::arg("gcs_trajectory"), doc.ReconstructGcsPathTrajectory.doc);
 }
 
 }  // namespace internal

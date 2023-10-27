@@ -28,9 +28,10 @@ Instead of using the full time-scaling curve, this problem uses a single
 time-scaling variable for each region. This formulation yields continuous
 trajectories, which are not differentiable at the transition times between the
 regions since non-convex continuity constraints are not supported yet. However,
-it supports continuity on the path for arbitrary degree. The resulting
-trajectories can be post-processed with e.g. Toppra in order to smooth out the
-timing rescaling.
+it supports continuity on the path r(s) for arbitrary degree. The path
+trajectory r(t) can be reconstructed from the gcs solution q(t) with @see
+`planning::trajectory_optimization::ReconstructGcsPathTrajectory()` and
+post-processed with e.g. Toppra to enforce acceleration bounds.
 
 The ith piece of the composite trajectory is defined as q(t) = r((t - tᵢ) /
 hᵢ). r : [0, 1] → ℝⁿ is a the path, parametrized as a Bézier curve with order
@@ -124,6 +125,24 @@ class GcsTrajectoryOptimization final {
     void AddVelocityBounds(const Eigen::Ref<const Eigen::VectorXd>& lb,
                            const Eigen::Ref<const Eigen::VectorXd>& ub);
 
+    /** Enforces derivative continuity constraints on the subgraph.
+     @param continuity_order is the order of the continuity constraint.
+
+    Note that the constraints are on the control points of the
+    derivatives of r(s) and not q(t). This may result in discontinuities of the
+    trajectory return by @see
+    `planning::trajectory_optimization::GcsTrajectoryOptimization::SolvePath()`
+    since the r(s) will get rescaled by the duration h to yield q(t). @see
+    `planning::trajectory_optimization::ReconstructGcsPathTrajectory()` will
+    return r(t) with valid continuity.
+
+    @throws std::exception if the continuity order is not equal or less than
+        the order the subgraphs.
+    @throws std::exception if the continuity order is less than one since path
+    continuity is enforced by default.
+    */
+    void AddPathContinuityConstraints(int continuity_order);
+
    private:
     /* Constructs a new subgraph and copies the regions. */
     Subgraph(const geometry::optimization::ConvexSets& regions,
@@ -185,6 +204,25 @@ class GcsTrajectoryOptimization final {
     */
     void AddVelocityBounds(const Eigen::Ref<const Eigen::VectorXd>& lb,
                            const Eigen::Ref<const Eigen::VectorXd>& ub);
+
+    /** Enforces derivative continuity constraints on the edges between the
+    subgraphs.
+     @param continuity_order is the order of the continuity constraint.
+
+    Note that the constraints are on the control points of the
+    derivatives of r(s) and not q(t). This may result in discontinuities of the
+    trajectory return by @see
+    `planning::trajectory_optimization::GcsTrajectoryOptimization::SolvePath()`
+    since the r(s) will get rescaled by the duration h to yield q(t). @see
+    `planning::trajectory_optimization::ReconstructGcsPathTrajectory()` will
+    return r(t) with valid continuity.
+
+    @throws std::exception if the continuity order is not equal or less than
+        the order of both subgraphs.
+    @throws std::exception if the continuity order is less than one since path
+    continuity is enforced by default.
+    */
+    void AddPathContinuityConstraints(int continuity_order);
 
    private:
     EdgesBetweenSubgraphs(const Subgraph& from_subgraph,
@@ -369,6 +407,22 @@ class GcsTrajectoryOptimization final {
   void AddVelocityBounds(const Eigen::Ref<const Eigen::VectorXd>& lb,
                          const Eigen::Ref<const Eigen::VectorXd>& ub);
 
+  /** Enforces derivative continuity constraints on the entire graph.
+  @param continuity_order is the order of the continuity constraint.
+
+  Note that the constraints are on the control points of the
+  derivatives of r(s) and not q(t). This may result in discontinuities of the
+  trajectory return by @see
+  `planning::trajectory_optimization::GcsTrajectoryOptimization::SolvePath()`
+  since the r(s) will get rescaled by the duration h to yield q(t). @see
+  `planning::trajectory_optimization::ReconstructGcsPathTrajectory()` will
+  return r(t) with valid continuity.
+
+  @throws std::exception if the continuity order is less than one since path
+  continuity is enforced by default.
+  */
+  void AddPathContinuityConstraints(int continuity_order);
+
   /** Formulates and solves the mixed-integer convex formulation of the
   shortest path problem on the whole graph. @see
   `geometry::optimization::GraphOfConvexSets::SolveShortestPath()` for further
@@ -433,7 +487,20 @@ class GcsTrajectoryOptimization final {
   std::vector<Eigen::MatrixXd> global_path_length_costs_;
   std::vector<std::pair<Eigen::VectorXd, Eigen::VectorXd>>
       global_velocity_bounds_{};
+  std::vector<int> global_continuity_constraints_{};
 };
+
+/** Reconstructs the path trajectory r(t) from the solution trajectory q(t) of
+GcsTrajectoryOptimization. s.t. each Each segment of the resulting trajectory
+will be one second long. The start time will match the original start time.
+@param gcs_trajectory The solution trajectory of @see
+`planning::trajectory_optimization::GcsTrajectoryOptimization::SolvePath()`
+
+@throws std::exception if not all trajectory segments of the CompositeTrajectory
+are of type BezierCurve<double>
+*/
+trajectories::CompositeTrajectory<double> ReconstructGcsPathTrajectory(
+    const trajectories::CompositeTrajectory<double>& gcs_trajectory);
 
 }  // namespace trajectory_optimization
 }  // namespace planning
