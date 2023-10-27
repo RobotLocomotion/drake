@@ -109,11 +109,24 @@
     requestAnimationFrame( animate );
     // Set background to match the legacy ``drake_visualizer`` application of
     // days past.
-    viewer.set_property(['Background'], "top_color", [.95, .95, 1.0])
-    viewer.set_property(['Background'], "bottom_color", [.32, .32, .35])
+    viewer.set_property(['Background', '<object>'], "top_color", [.95, .95, 1.0])
+    viewer.set_property(['Background', '<object>'], "bottom_color", [.32, .32, .35])
     // Set the initial view looking up the y-axis.
     viewer.set_property(['Cameras', 'default', 'rotated', '<object>'],
                         "position", [0.0, 1.0, 3.0])
+
+    // With meshcat's upgrade of three.js, the default lighting conditions are
+    // no longer appropriate. Meshcat has boosted them slightly to account for
+    // a hidden change in three.js's lighting math, but it's not enough. The
+    // ambient and directional lights don't decay with distance, but point and
+    // spotlight do. The default lighting is now dominated by the non-decaying
+    // light sources. So, we're going to significantly bump the decaying sources
+    // to give them illuminating power and increase image contrast.
+    viewer.set_property(["Lights", "SpotLight", "<object>"], "intensity", 30);
+    viewer.set_property(["Lights", "PointLightNegativeX", "<object>"], "intensity", 25);
+    viewer.set_property(["Lights", "PointLightPositiveX", "<object>"], "intensity", 25);
+    viewer.set_property(["Lights", "AmbientLight", "<object>"], "intensity", 0.3);
+    viewer.set_property(["Lights", "FillLight", "<object>"], "intensity", 0.5);
 
     <!-- CONNECTION BLOCK BEGIN -->
     // The lifespan of the server may be much shorter than this visualizer
