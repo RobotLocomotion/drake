@@ -54,10 +54,13 @@ HPolyhedron Iris(const ConvexSets& obstacles, const Ref<const VectorXd>& sample,
       Hyperellipsoid::MakeHypersphere(kEpsilonEllipsoid, sample));
   HPolyhedron P = domain;
 
-  if (options.starting_polytope) {
-    DRAKE_DEMAND(options.starting_polytope->ContainedIn(domain));
-    P = options.starting_polytope;
+  if (options.domain) {
+    DRAKE_DEMAND(options.domain->ambient_dimension() == dim);
+    P = P.Intersection(*options.domain);
+    return P;
   }
+
+  const int initial_constraints = P.A().rows();
 
   // On each iteration, we will build the collision-free polytope represented as
   // {x | A * x <= b}.  Here we pre-allocate matrices of the maximum size.
@@ -85,7 +88,7 @@ HPolyhedron Iris(const ConvexSets& obstacles, const Ref<const VectorXd>& sample,
     }
     std::sort(scaling.begin(), scaling.end());
 
-    int num_constraints = domain.A().rows();
+    int num_constraints = initial_constraints;
     tangent_matrix = 2.0 * E.A().transpose() * E.A();
     for (int i = 0; i < N; ++i) {
       // Only add a constraint if this obstacle still has overlap with the set
@@ -470,9 +473,9 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
                                        plant.GetPositionUpperLimits());
   DRAKE_DEMAND(P.A().rows() == 2 * nq);
 
-  if (options.starting_polytope) {
-    DRAKE_DEMAND(options.starting_polytope->ContainedIn(P));
-    P = options.starting_polytope;
+  if (options.domain) {
+    DRAKE_DEMAND(options.domain->ambient_dimension() == nq);
+    P = P.Intersection(*options.domain);
   }
 
   const double kEpsilonEllipsoid = 1e-2;
