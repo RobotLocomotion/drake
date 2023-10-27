@@ -451,8 +451,8 @@ void DefineGeometryOptimization(py::module m) {
             cls_doc.configuration_obstacles.doc)
         .def_readwrite("starting_ellipse", &IrisOptions::starting_ellipse,
             cls_doc.starting_ellipse.doc)
-        .def_readwrite("starting_polytope", &IrisOptions::starting_polytope,
-            cls_doc.starting_polytope.doc)
+        .def_readwrite("domain", &IrisOptions::domain,
+            cls_doc.domain.doc)
         .def_readwrite("num_additional_constraint_infeasible_samples",
             &IrisOptions::num_additional_constraint_infeasible_samples,
             cls_doc.num_additional_constraint_infeasible_samples.doc)

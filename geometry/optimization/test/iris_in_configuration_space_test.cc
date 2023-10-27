@@ -366,7 +366,7 @@ GTEST_TEST(IrisInConfigurationSpaceTest, StartingEllipse) {
               1e-6);
 }
 
-GTEST_TEST(IrisInConfigurationSpaceTest, StartingPolytope) {
+GTEST_TEST(IrisInConfigurationSpaceTest, Domain) {
   const Vector2d sample{0.0, 0.0};
   IrisOptions options;
   options.iteration_limit = 1;
@@ -377,25 +377,24 @@ GTEST_TEST(IrisInConfigurationSpaceTest, StartingPolytope) {
   HPolyhedron region = IrisFromUrdf(boxes_in_2d_urdf, sample, options);
 
   // Add a starting polytope that halves the plant's joint limits.
-  options.starting_polytope =
-      HPolyhedron::MakeBox(Vector2d(-1, -0.5), Vector2d(1, 0.5));
-  HPolyhedron region_w_polytope =
-      IrisFromUrdf(boxes_in_2d_urdf, sample, options);
+  options.domain = HPolyhedron::MakeBox(Vector2d(-1, -0.5), Vector2d(1, 0.5));
+  HPolyhedron region_w_domain = IrisFromUrdf(boxes_in_2d_urdf, sample, options);
 
-  // Regions should have only one additional half space beyond the inital
-  // polytope.
+  // `region` should have only one additional half space beyond the initial
+  // polytope. `region_w_domain` should have a further four half spaces since
+  // its domain will have been intersected with `options.domain`.
   EXPECT_EQ(region.b().size(), 5);
-  EXPECT_EQ(region_w_polytope.b().size(), 5);
+  EXPECT_EQ(region_w_domain.b().size(), 9);
 
   // The point (-1.5, -0.5) is within the plant's joint limits but outside the
-  // starting_polytope. It should be contained region but not in
-  // region_w_polytope.
+  // domain. It should be contained in region but not in
+  // region_w_domain.
   EXPECT_TRUE(region.PointInSet(Vector2d(-1.5, -0.5)));
-  EXPECT_FALSE(region_w_polytope.PointInSet(Vector2d(-1.5, -0.5)));
+  EXPECT_FALSE(region_w_domain.PointInSet(Vector2d(-1.5, -0.5)));
 
   // A point closer to the origin should be in both regions.
   EXPECT_TRUE(region.PointInSet(Vector2d(-0.5, -0.25)));
-  EXPECT_TRUE(region_w_polytope.PointInSet(Vector2d(-0.5, -0.25)));
+  EXPECT_TRUE(region_w_domain.PointInSet(Vector2d(-0.5, -0.25)));
 }
 
 // Three spheres.  Two on the outside are fixed.  One in the middle on a
