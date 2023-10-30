@@ -57,13 +57,14 @@ struct BodyTopology {
   // members of `other`.
   bool operator==(const BodyTopology& other) const {
     if (index != other.index) return false;
-    if (inboard_mobilizer.is_valid() !=
-        other.inboard_mobilizer.is_valid()) return false;
+    if (inboard_mobilizer.is_valid() != other.inboard_mobilizer.is_valid())
+      return false;
     if (inboard_mobilizer.is_valid() &&
-        inboard_mobilizer != other.inboard_mobilizer) return false;
+        inboard_mobilizer != other.inboard_mobilizer)
+      return false;
     if (parent_body.is_valid() != other.parent_body.is_valid()) return false;
-    if (parent_body.is_valid() &&
-        parent_body != other.parent_body) return false;
+    if (parent_body.is_valid() && parent_body != other.parent_body)
+      return false;
     if (child_bodies != other.child_bodies) return false;
     if (body_frame != other.body_frame) return false;
     if (level != other.level) return false;
@@ -72,8 +73,7 @@ struct BodyTopology {
     if (has_quaternion_dofs != other.has_quaternion_dofs) return false;
     if (floating_positions_start != other.floating_positions_start)
       return false;
-    if (floating_velocities_start_in_state !=
-        other.floating_velocities_start_in_state)
+    if (floating_velocities_start_in_v != other.floating_velocities_start_in_v)
       return false;
     return true;
   }
@@ -119,7 +119,7 @@ struct BodyTopology {
   bool has_quaternion_dofs{false};
 
   int floating_positions_start{-1};
-  int floating_velocities_start_in_state{-1};
+  int floating_velocities_start_in_v{-1};
 };
 
 // Data structure to store the topological information associated with a
@@ -923,8 +923,8 @@ class MultibodyTreeTopology {
         const MobilizerTopology& mobilizer =
             get_mobilizer(body.inboard_mobilizer);
         body.floating_positions_start = mobilizer.positions_start;
-        body.floating_velocities_start_in_state =
-            mobilizer.velocities_start_in_state;
+        body.floating_velocities_start_in_v =
+            mobilizer.velocities_start_in_v;
       }
     }
 

@@ -259,12 +259,12 @@ class Body : public MultibodyElement<T> {
   }
 
   /// (Advanced) For floating bodies (see is_floating()) this method returns the
-  /// index of the first generalized position in the state vector for a
-  /// MultibodyPlant model.
-  /// Positions for this body are then contiguous starting at this index.
-  /// When a floating body is modeled with a quaternion mobilizer (see
+  /// index of this %Body's first generalized position in the vector q of
+  /// generalized position coordinates for a MultibodyPlant model.
+  /// Positions q for this %Body are then contiguous starting at this index.
+  /// When a floating %Body is modeled with quaternion coordinates (see
   /// has_quaternion_dofs()), the four consecutive entries in the state starting
-  /// at this index correspond to the quaternion that parametrizes this body's
+  /// at this index correspond to the quaternion that parametrizes this %Body's
   /// orientation.
   /// @throws std::exception if called pre-finalize
   /// @pre `this` is a floating body
@@ -275,17 +275,36 @@ class Body : public MultibodyElement<T> {
     return topology_.floating_positions_start;
   }
 
-  /// (Advanced) For floating bodies (see is_floating()) this method returns the
-  /// index of the first generalized velocity in the state vector for a
-  /// MultibodyPlant model.
+  /// (Advanced, Deprecated) For floating bodies (see is_floating()) this
+  /// method returns the index of this %Body's first generalized velocity in the
+  /// _full state vector_ for a MultibodyPlant model, under the dubious
+  /// assumption that the state consists of [q v] concatenated.
   /// Velocities for this body are then contiguous starting at this index.
   /// @throws std::exception if called pre-finalize
   /// @pre `this` is a floating body
-  /// @see is_floating(), MultibodyPlant::Finalize()
+  /// @see floating_velocities_start_in_v()
+  DRAKE_DEPRECATED("2024-02-01",
+                   "Convert to floating_velocities_start_in_v(). In a state "
+                   "with [q v] concatenated, offset by num_positions() to "
+                   "get to the start of v.")
   int floating_velocities_start() const {
     DRAKE_BODY_THROW_IF_NOT_FINALIZED();
     DRAKE_DEMAND(is_floating());
-    return topology_.floating_velocities_start_in_state;
+    return this->get_parent_tree().num_positions() +
+           topology_.floating_velocities_start_in_v;
+  }
+
+  /// (Advanced) For floating bodies (see is_floating()) this method returns the
+  /// index of this %Body's first generalized velocity in the vector v of
+  /// generalized velocities for a MultibodyPlant model.
+  /// Velocities v for this %Body are then contiguous starting at this index.
+  /// @throws std::exception if called pre-finalize
+  /// @pre `this` is a floating body
+  /// @see is_floating(), MultibodyPlant::Finalize()
+  int floating_velocities_start_in_v() const {
+    DRAKE_BODY_THROW_IF_NOT_FINALIZED();
+    DRAKE_DEMAND(is_floating());
+    return topology_.floating_velocities_start_in_v;
   }
 
   /// Returns a string suffix (e.g. to be appended to the name()) to identify
