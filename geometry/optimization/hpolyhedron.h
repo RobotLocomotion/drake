@@ -107,6 +107,18 @@ class HPolyhedron final : public ConvexSet {
   negative tol means it is less likely to remote a constraint.  */
   [[nodiscard]] HPolyhedron ReduceInequalities(double tol = 1E-9) const;
 
+//   /** TODO rhjiang write*/
+//   [[nodiscard]] HPolyhedron Simplify(double min_v_ratio = 0.5, int max_loops = 5, 
+//         const std::pair<Eigen::VectorXd, std::vector<HPolyhedron>>& intersections = std::make_pair(Eigen::VectorXd(), std::vector<HPolyhedron>()), 
+//         double intersection_pad = 1e-4, bool conservative_intersections = false, const Eigen::MatrixXd& points_to_contain = Eigen::MatrixXd(),
+//         bool do_affine_transform = true) const;
+
+  /** TODO rhjiang write*/
+//   TODO rhjiang make private
+  [[nodiscard]] HPolyhedron ShuffleHyperplanes(std::vector<double>& d, std::vector<bool>& moved_in) const;
+
+  [[nodiscard]] bool IsTrue(double tol) const;
+
   /** Solves a semi-definite program to compute the inscribed ellipsoid. This is
   also known as the inner Löwner-John ellipsoid. From Section 8.4.2 in Boyd and
   Vandenberghe, 2004, we solve
