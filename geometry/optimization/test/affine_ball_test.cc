@@ -132,7 +132,6 @@ GTEST_TEST(AffineBallTest, MakeUnitBallTest) {
   AffineBall ab = AffineBall::MakeUnitBall(4);
   EXPECT_TRUE(CompareMatrices(ab.B(), MatrixXd::Identity(4, 4)));
   EXPECT_TRUE(CompareMatrices(ab.center(), VectorXd::Zero(4)));
-
   EXPECT_EQ(ab.CalcVolume(), 0.5 * std::pow(M_PI, 2));
 
   EXPECT_NO_THROW(AffineBall::MakeUnitBall(0));
@@ -308,7 +307,7 @@ GTEST_TEST(AffineBallTest, MinimumVolumeCircumscribedEllipsoidPreconditions) {
                std::exception);
 }
 
-GTEST_TEST(AffineBallTest, MinimumVolumeCircumscribedEllipsoid) {
+GTEST_TEST(AffineBallTest, MinimumVolumeCircumscribedEllipsoidFullDimensional) {
   Eigen::Matrix3Xd p_FA(3, 6);
   // clang-format off
   p_FA << 1, 0, 0, -1,  0,  0,
@@ -393,6 +392,13 @@ GTEST_TEST(AffineBallTest,
 
   AffineBall E = AffineBall::MinimumVolumeCircumscribedEllipsoid(points);
   EXPECT_TRUE(CompareMatrices(E.center(), center, kTol));
+
+  for (int i = 0; i < points.cols(); ++i) {
+    EXPECT_TRUE(E.PointInSet(points.col(i), kTol));
+    Eigen::Vector3d point_outside =
+        points.col(i) + (points.col(i) - center) * (1. + eps);
+    EXPECT_FALSE(E_F.PointInSet(point_outside, kTol));
+  }
 }
 
 }  // namespace optimization

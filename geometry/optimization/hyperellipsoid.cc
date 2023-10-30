@@ -203,7 +203,7 @@ Hyperellipsoid Hyperellipsoid::MinimumVolumeCircumscribedEllipsoid(
       throw std::runtime_error(
           "The numerical rank of the points appears to be less than the "
           "ambient dimension. The smallest singular value is {}, which is "
-          "below rank_tol = {}. Decrease rank_tol "
+          "below rank_tol = {}. Decrease rank_tol or consider using "
           "AffineBall::MinimumVolumeCircumscribedEllipsoid instead.");
     }
   }
