@@ -79,20 +79,19 @@ class AffineBall final : public ConvexSet {
   points. This is commonly referred to as the outer Löwner-John ellipsoid.
 
   If all of the points lie along a proper affine subspace, this method
-  instead computes the minimum-n-volume ellipsoid, where n is the affine
+  instead computes the minimum-k-volume ellipsoid, where k is the affine
   dimension of the convex hull of `points`.
 
   @param points is a d-by-n matrix, where d is the ambient dimension and each
   column represents one point.
-  @param rank_tol the singular values of the data matrix will be considered
-  non-zero if they are strictly greater than `rank_tol` * `max_singular_value`.
-  The default is 1e-6 to be compatible with common solver tolerances. This is
-  used to detect if the data lies on a lower-dimensional affine space than the
-  ambient dimension of the ellipsoid.
-  @throws std::exception if the MathematicalProgram fails to solve. If this
-  were to happen (due to numerical issues), then increasing `rank_tol` should
-  provide a mitigation.
-  @throw std::exception if points includes NaNs or infinite values.
+  @param rank_tol the tolerance used to detect if the data lies in an affine
+  subspace. The affine ball is computed in the subspace spanned by the left
+  singular vectors of the data matrix whose associated singular values are
+  larger than `rank_tol` * `max_singular_value`. The default is 1e-6 to be
+  compatible with common solver tolerances.
+  @throws std::exception if the MathematicalProgram fails to solve. This can
+  happen due to numerical issues caused by `rank_tol` being set too low.
+  @throws std::exception if points includes NaNs or infinite values.
   @pre points.rows() >= 1.
   @pre points.cols() >= 1. */
   static AffineBall MinimumVolumeCircumscribedEllipsoid(
