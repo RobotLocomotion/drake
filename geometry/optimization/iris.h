@@ -86,12 +86,13 @@ struct IrisOptions {
   centered at the given sample will be used. */
   std::optional<Hyperellipsoid> starting_ellipse{};
 
-  /** Optionally allows the caller to override the default domain used by IRIS;
-  which is defined as the `domain` argument in the case of `Iris` or the joint
-  limits  of the input `plant` in the case of `IrisInConfigurationSpace`. If
-  specified, the effective domain used by IRIS will be the intersection of its
-  default domain and `options.domain`. */
-  std::optional<HPolyhedron> domain{};
+  /** Optionally allows the caller to restrict the space within which IRIS
+  regions are allowed to grow. By default, IRIS regions are bounded by the
+  `domain` argument in the case of `Iris` or the joint limits of the input
+  `plant` in the case of `IrisInConfigurationSpace`. If this option is
+  specified, IRIS regions will be confined to the intersection between the
+  domain and `boundary_region` */
+  std::optional<HPolyhedron> bounding_region{};
 
   /** By default, IRIS in configuration space certifies regions for collision
   avoidance constraints and joint limits. This option can be used to pass
