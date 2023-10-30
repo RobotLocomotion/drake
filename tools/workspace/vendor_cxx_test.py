@@ -9,11 +9,6 @@ class TestVendorCxx(unittest.TestCase):
         # Display all test output.
         self.maxDiff = None
 
-        # These are the include paths that we want to rewrite.
-        self._edit_include = {
-            'somelib/': 'drake_vendor/somelib/',
-        }
-
         # These are the boilerplate lines that vendor_cxx injects.
         self._open = 'inline namespace drake_vendor __attribute__ ((visibility ("hidden"))) {'  # noqa
         self._close = '}  /* inline namespace drake_vendor */'
@@ -21,9 +16,9 @@ class TestVendorCxx(unittest.TestCase):
     def _check(self, old_lines, expected_new_lines, inline_namespace=True):
         """Tests one call to _rewrite_one_text for expected output."""
         old_text = '\n'.join(old_lines) + '\n'
-        new_text = _rewrite_one_text(
-            text=old_text, edit_include=self._edit_include.items(),
-            inline_namespace=inline_namespace)
+        new_text = _rewrite_one_text(text=old_text,
+                                     inline_namespace=inline_namespace)
+
         expected_new_text = '\n'.join(expected_new_lines) + '\n'
         self.assertMultiLineEqual(expected_new_text, new_text)
 
@@ -118,38 +113,16 @@ class TestVendorCxx(unittest.TestCase):
             self._close,
         ])
 
-    def test_edit_include(self):
-        self._check([
-            '#include "somelib/somefile.h"',
-            '#  include <somelib/otherfile.h>',
-            '#include <unrelated/thing.h>',
-            'int foo();',
-        ], [
-            '#include "drake_vendor/somelib/somefile.h"',
-            '#  include <drake_vendor/somelib/otherfile.h>',
-            '#include <unrelated/thing.h>',
-            self._open,
-            'int foo();',
-            self._close,
-        ])
-
     def test_extern_c(self):
-        self._check([
+        """No namespaces are added for 'extern C' files."""
+        content = [
             '#include "somelib/somefile.h"',
             '#include <unrelated/thing.h>',
             'extern "C" {',
             'int foo();',
             '}  // extern C',
-        ], [
-            # The include paths are still changed.
-            '#include "drake_vendor/somelib/somefile.h"',
-            '#include <unrelated/thing.h>',
-
-            # No namespaces are added.
-            'extern "C" {',
-            'int foo();',
-            '}  // extern C',
-        ])
+        ]
+        self._check(content, content)
 
 
 assert __name__ == '__main__'
