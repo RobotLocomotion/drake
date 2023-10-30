@@ -6,6 +6,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/optimization/affine_subspace.h"
 #include "drake/geometry/optimization/hyperellipsoid.h"
 #include "drake/geometry/optimization/test_utilities.h"
@@ -132,7 +133,6 @@ GTEST_TEST(AffineBallTest, MakeUnitBallTest) {
   AffineBall ab = AffineBall::MakeUnitBall(4);
   EXPECT_TRUE(CompareMatrices(ab.B(), MatrixXd::Identity(4, 4)));
   EXPECT_TRUE(CompareMatrices(ab.center(), VectorXd::Zero(4)));
-
   EXPECT_EQ(ab.CalcVolume(), 0.5 * std::pow(M_PI, 2));
 
   EXPECT_NO_THROW(AffineBall::MakeUnitBall(0));
@@ -298,17 +298,22 @@ GTEST_TEST(AffineBallTest, MinimumVolumeCircumscribedEllipsoidPreconditions) {
   Eigen::MatrixXd inf_entry(1, 1);
   inf_entry << std::numeric_limits<double>::infinity();
 
-  EXPECT_THROW(AffineBall::MinimumVolumeCircumscribedEllipsoid(zero_rows),
-               std::exception);
-  EXPECT_THROW(AffineBall::MinimumVolumeCircumscribedEllipsoid(zero_cols),
-               std::exception);
-  EXPECT_THROW(AffineBall::MinimumVolumeCircumscribedEllipsoid(nan_entry),
-               std::exception);
-  EXPECT_THROW(AffineBall::MinimumVolumeCircumscribedEllipsoid(inf_entry),
-               std::exception);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      AffineBall::MinimumVolumeCircumscribedEllipsoid(zero_rows),
+      ".*points.*rows.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      AffineBall::MinimumVolumeCircumscribedEllipsoid(zero_cols),
+      ".*points.*cols.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      AffineBall::MinimumVolumeCircumscribedEllipsoid(nan_entry),
+      ".*points.*hasNaN.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      AffineBall::MinimumVolumeCircumscribedEllipsoid(inf_entry),
+      ".*points.*allFinite.*");
 }
 
-GTEST_TEST(AffineBallTest, MinimumVolumeCircumscribedEllipsoid) {
+GTEST_TEST(AffineBallTest, MinimumVolumeCircumscribedEllipsoidFullDimensional) {
+  // Axis-aligned example
   Eigen::Matrix3Xd p_FA(3, 6);
   // clang-format off
   p_FA << 1, 0, 0, -1,  0,  0,
@@ -335,6 +340,7 @@ GTEST_TEST(AffineBallTest, MinimumVolumeCircumscribedEllipsoid) {
     EXPECT_FALSE(E_F.PointInSet(p_FA.col(i) * (1. + eps), kTol));
   }
 
+  // Non-axis-aligned example
   const Vector3d translation(0.5, 0.87, 0.1);
   const RigidTransformd X_GF{RollPitchYawd(0.1, 0.2, 3), translation};
   Eigen::Matrix3Xd p_GA = X_GF * p_FA;
@@ -351,6 +357,7 @@ GTEST_TEST(AffineBallTest, MinimumVolumeCircumscribedEllipsoid) {
 
 GTEST_TEST(AffineBallTest,
            MinimumVolumeCircumscribedEllipsoidLowerDimensional) {
+  // Axis-aligned example
   Eigen::Matrix3Xd p_FA(3, 4);
   // clang-format off
   p_FA << 1, 0, -1,  0,
@@ -379,6 +386,7 @@ GTEST_TEST(AffineBallTest,
   EXPECT_FALSE(E_F.PointInSet(Vector3d{0, 0, eps}));
   EXPECT_FALSE(E_F.PointInSet(Vector3d{0, 0, -eps}));
 
+  // Non-axis-aligned example
   MatrixXd points(5, 2);
   // clang-format off
   points << 0.1, -0.1,
@@ -393,6 +401,13 @@ GTEST_TEST(AffineBallTest,
 
   AffineBall E = AffineBall::MinimumVolumeCircumscribedEllipsoid(points);
   EXPECT_TRUE(CompareMatrices(E.center(), center, kTol));
+
+  for (int i = 0; i < points.cols(); ++i) {
+    EXPECT_TRUE(E.PointInSet(points.col(i), kTol));
+    Eigen::VectorXd point_outside =
+        points.col(i) + (points.col(i) - center) * (1. + eps);
+    EXPECT_FALSE(E.PointInSet(point_outside, kTol));
+  }
 }
 
 }  // namespace optimization

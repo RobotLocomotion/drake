@@ -5,8 +5,6 @@
 #include "drake/geometry/optimization/affine_subspace.h"
 #include "drake/geometry/optimization/hyperellipsoid.h"
 #include "drake/geometry/optimization/vpolytope.h"
-#include "drake/solvers/mosek_solver.h"
-#include "drake/solvers/scs_solver.h"
 #include "drake/solvers/solve.h"
 
 namespace drake {
@@ -18,8 +16,6 @@ using Eigen::VectorXd;
 using solvers::Binding;
 using solvers::Constraint;
 using solvers::MathematicalProgram;
-using solvers::MosekSolver;
-using solvers::ScsSolver;
 using solvers::VectorXDecisionVariable;
 using std::sqrt;
 using symbolic::Expression;
@@ -67,62 +63,24 @@ double volume_of_unit_sphere(int dim) {
 
 AffineBall AffineBall::MinimumVolumeCircumscribedEllipsoid(
     const Eigen::Ref<const Eigen::MatrixXd>& points, double rank_tol) {
+  DRAKE_THROW_UNLESS(!points.hasNaN());
   DRAKE_THROW_UNLESS(points.allFinite());
   DRAKE_THROW_UNLESS(points.rows() >= 1);
   DRAKE_THROW_UNLESS(points.cols() >= 1);
   const int dim = points.rows();
-  const int n = points.cols();
 
   AffineSubspace ah(VPolytope(points), rank_tol);
   const int rank = ah.AffineDimension();
   Eigen::MatrixXd points_local = ah.ToLocalCoordinates(points);
 
   // Compute circumscribed ellipsoid in local coordinates
-  MathematicalProgram prog;
-  solvers::MatrixXDecisionVariable A =
-      prog.NewSymmetricContinuousVariables(rank, "A");
-  prog.AddMaximizeLogDeterminantCost(A.cast<Expression>());
-  solvers::VectorXDecisionVariable b = prog.NewContinuousVariables(rank, "b");
-  // TODO(russt): Avoid the symbolic computation here and write A_lorentz
-  // directly, s.t. v = A_lorentz * vars + b_lorentz, where A=Aᵀ and b are the
-  // vars.
-  VectorX<Expression> v(rank + 1);
-  v[0] = 1;
-  for (int i = 0; i < n; ++i) {
-    // |Ax + b|₂ <= 1, written as a Lorentz cone with v = [1; A * x + b].
-    v.tail(rank) = A * points_local.col(i) + b;
-    prog.AddLorentzConeConstraint(v);
-  }
-
-  // solvers::MathematicalProgramResult result;
-  // if (solvers::MosekSolver::is_available() &&
-  //     solvers::MosekSolver::is_enabled()) {
-  //   MosekSolver solver;
-  //   result = solver.Solve(prog);
-  // } else {
-  //   ScsSolver solver;
-  //   result = solver.Solve(prog);
-  // }
-  solvers::MathematicalProgramResult result = Solve(prog);
-  if (!result.is_success()) {
-    throw std::runtime_error(
-        fmt::format("The MathematicalProgram was not solved successfully. The "
-                    "ambient dimension is {} and the data rank is {}, computed "
-                    "using rank_tol={}. Consider adjusting rank_tol.",
-                    dim, rank, rank_tol));
-  }
-
-  // Ax + b => A(x-c) = Ax - Ac => c = -A^{-1}b
-  const MatrixXd A_sol = result.GetSolution(A);
-  const VectorXd b_sol = result.GetSolution(b);
-  // Note: We can use llt() because know that A will be positive definite;
-  // there is a PSD constraint, but we are maximizing the eigenvalues of A and
-  // the convex hull of the points is guaranteed to be bounded.
-  const VectorXd c = A_sol.llt().solve(-b_sol);
-  const Hyperellipsoid hyperellipsoid_local(A_sol, c);
+  const Hyperellipsoid hyperellipsoid_local =
+      Hyperellipsoid::MinimumVolumeCircumscribedEllipsoid(points_local,
+                                                          rank_tol);
   const AffineBall affineball_local(hyperellipsoid_local);
 
-  // Lift the ellipsoid to the original coordinate system
+  // Lift the ellipsoid {Bu+center| |u|₂ ≤ 1} to the original coordinate system
+  // i.e. the set {ABu + (Ac+t) | |u|₂ ≤ 1}
   Eigen::MatrixXd A_full = Eigen::MatrixXd::Zero(dim, dim);
   A_full.leftCols(rank) = ah.basis() * affineball_local.B();
   Eigen::VectorXd center_full =
