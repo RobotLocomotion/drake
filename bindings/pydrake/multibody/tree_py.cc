@@ -334,8 +334,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.has_quaternion_dofs.doc)
         .def("floating_positions_start", &Class::floating_positions_start,
             cls_doc.floating_positions_start.doc)
-        .def("floating_velocities_start", &Class::floating_velocities_start,
-            cls_doc.floating_velocities_start.doc)
+        .def("floating_velocities_start_in_v",
+            &Class::floating_velocities_start_in_v,
+            cls_doc.floating_velocities_start_in_v.doc)
         .def("floating_position_suffix", &Class::floating_position_suffix,
             cls_doc.floating_position_suffix.doc)
         .def("floating_velocity_suffix", &Class::floating_velocity_suffix,
@@ -366,6 +367,16 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("Unlock", &Class::Unlock, py::arg("context"), cls_doc.Unlock.doc)
         .def("is_locked", &Class::is_locked, py::arg("context"),
             cls_doc.is_locked.doc);
+
+// TODO(sherm1) Remove as of 2024-02-01.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls  // BR
+        .def("floating_velocities_start",
+            WrapDeprecated(cls_doc.floating_velocities_start.doc_deprecated,
+                &Class::floating_velocities_start),
+            cls_doc.floating_velocities_start.doc_deprecated);
+#pragma GCC diagnostic pop
   }
 
   {
