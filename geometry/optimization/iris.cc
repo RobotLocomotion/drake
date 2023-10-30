@@ -54,9 +54,9 @@ HPolyhedron Iris(const ConvexSets& obstacles, const Ref<const VectorXd>& sample,
       Hyperellipsoid::MakeHypersphere(kEpsilonEllipsoid, sample));
   HPolyhedron P = domain;
 
-  if (options.domain) {
-    DRAKE_DEMAND(options.domain->ambient_dimension() == dim);
-    P = P.Intersection(*options.domain);
+  if (options.bounding_region) {
+    DRAKE_DEMAND(options.bounding_region->ambient_dimension() == dim);
+    P = P.Intersection(*options.bounding_region);
     return P;
   }
 
@@ -473,9 +473,9 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
                                        plant.GetPositionUpperLimits());
   DRAKE_DEMAND(P.A().rows() == 2 * nq);
 
-  if (options.domain) {
-    DRAKE_DEMAND(options.domain->ambient_dimension() == nq);
-    P = P.Intersection(*options.domain);
+  if (options.bounding_region) {
+    DRAKE_DEMAND(options.bounding_region->ambient_dimension() == nq);
+    P = P.Intersection(*options.bounding_region);
   }
 
   const double kEpsilonEllipsoid = 1e-2;

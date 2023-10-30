@@ -180,14 +180,15 @@ GTEST_TEST(IrisTest, Domain) {
   IrisOptions options;
 
   // Use a domain that omits the obstacles entirely.
-  options.domain =
+  options.bounding_region =
       HPolyhedron::MakeBox(Vector2d(-0.25, -0.25), Vector2d(0.25, 0.25));
   const HPolyhedron region = Iris(obstacles, sample, domain, options);
-  EXPECT_EQ(region.b().size(),
-            8);  // 4 from `domain`, 4 more from `options.domain` (obstacles
-                 // aren't considered since they're outside the domain).
+  EXPECT_EQ(
+      region.b().size(),
+      8);  // 4 from `domain`, 4 more from `options.bounding_region` (obstacles
+           // aren't considered since they're outside the bounding_region).
 
-  // The initial polytope eliminates all points outside a box of size 0.25.
+  // The bounding region eliminates all points outside a box of size 0.25.
   EXPECT_TRUE(region.PointInSet(Vector2d(0.0, .24)));
   EXPECT_TRUE(region.PointInSet(Vector2d(0.0, -.24)));
   EXPECT_FALSE(region.PointInSet(Vector2d(.49, 0.0)));
