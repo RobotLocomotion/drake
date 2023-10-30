@@ -742,21 +742,17 @@ void DeformableDriver<T>::CalcFemState(const Context<T>& context,
   fem_state->SetVelocities(qdot);
   fem_state->SetAccelerations(qddot);
   /* Collect all external forces affecting this body. */
-  std::vector<std::unique_ptr<ExternalForceField<T>>> external_forces;
+  std::vector<ForceDensityEvaluator<T>> force_density_evaluators;
   /* External forces shared by all bodies. */
   for (const auto& f : deformable_model_->external_forces()) {
-    auto force = f->Clone();
-    force->set_tree_system_context(&context);
-    external_forces.emplace_back(std::move(force));
+    force_density_evaluators.emplace_back(f.get(), &context);
   }
   /* External forces specific to this body. */
   const FemModel<T>& fem_model = deformable_model_->GetFemModel(id);
   for (const auto& f : fem_model.external_forces()) {
-    auto force = f->Clone();
-    force->set_tree_system_context(&context);
-    external_forces.emplace_back(std::move(force));
+    force_density_evaluators.emplace_back(f.get(), &context);
   }
-  fem_state->SetExternalForces(std::move(external_forces));
+  fem_state->SetExternalForces(std::move(force_density_evaluators));
 }
 
 template <typename T>

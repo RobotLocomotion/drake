@@ -220,8 +220,10 @@ class FemModel {
   void ThrowIfModelStateIncompatible(const char* func,
                                      const FemState<T>& fem_state) const;
 
-  void AddExternalForce(std::unique_ptr<ExternalForceField<T>> f) {
-    external_forces_.emplace_back(std::move(f));
+  /** Registers an external force density field that applies external force to
+   `this` FEM model. */
+  void AddExternalForce(std::unique_ptr<ExternalForceField<T>> external_force) {
+    external_forces_.emplace_back(std::move(external_force));
   }
 
   const std::vector<std::unique_ptr<ExternalForceField<T>>>& external_forces()

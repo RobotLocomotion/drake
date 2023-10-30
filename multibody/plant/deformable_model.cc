@@ -177,6 +177,12 @@ systems::DiscreteStateIndex DeformableModel<T>::GetDiscreteStateIndex(
 }
 
 template <typename T>
+void DeformableModel<T>::AddExternalForce(
+    std::unique_ptr<ExternalForceField<T>> external_force) {
+  external_forces_.emplace_back(std::move(external_force));
+}
+
+template <typename T>
 const fem::FemModel<T>& DeformableModel<T>::GetFemModel(
     DeformableBodyId id) const {
   ThrowUnlessRegistered(__func__, id);
@@ -321,9 +327,8 @@ void DeformableModel<T>::DoDeclareSystemResources(MultibodyPlant<T>* plant) {
   /* Declare cache entries and input ports for external forces that need them.
    */
   for (std::unique_ptr<ExternalForceField<T>>& external_force :
-       fem_external_forces_) {
-    external_force->DeclareCacheEntries(plant_);
-    external_force->DeclareInputPorts(plant_);
+       external_forces_) {
+    external_force->DeclareSystemResources(plant_);
   }
 
   /* Declare the vertex position output port. */

@@ -151,9 +151,9 @@ class DummyElement final : public FemElement<DummyElement<is_linear>> {
   /* Implements FemElement::AddScaledExternalForce(). */
   void DoAddScaledExternalForce(
       const Data&, const T& scale,
-      const std::function<Vector3<T>(const Vector3<T>)>& force_density_field,
+      const multibody::internal::ForceDensityEvaluator<T>& force_density,
       EigenPtr<Vector<T, kNumDofs>> result) const {
-    result->head(3) += scale * force_density_field(Vector3<T>::Zero());
+    result->head(3) += scale * force_density.EvaluateAt(Vector3<T>::Zero());
   }
 };
 

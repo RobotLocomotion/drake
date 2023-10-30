@@ -28,6 +28,7 @@ drake_cc_package_library(
         ":external_force_field",
         ":externally_applied_spatial_force",
         ":externally_applied_spatial_force_multiplexer",
+        ":force_density_evaluator",
         ":hydroelastic_contact_info",
         ":hydroelastic_quadrature_point_data",
         ":hydroelastic_traction",
@@ -311,6 +312,22 @@ drake_cc_library(
         "//common:default_scalars",
         "//common:essential",
         "//multibody/tree",
+        "//systems/framework:context",
+    ],
+)
+
+drake_cc_library(
+    name = "force_density_evaluator",
+    srcs = [
+        "force_density_evaluator.cc",
+    ],
+    hdrs = [
+        "force_density_evaluator.h",
+    ],
+    deps = [
+        ":external_force_field",
+        "//common:default_scalars",
+        "//common:essential",
         "//systems/framework:context",
     ],
 )

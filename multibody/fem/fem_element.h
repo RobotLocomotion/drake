@@ -201,11 +201,11 @@ class FemElement {
    @pre external_force != nullptr */
   void AddScaledExternalForce(
       const Data& data, const T& scale,
-      const ExternalForceField<T>& force_field,
+      const multibody::internal::ForceDensityEvaluator<T>& force_density,
       EigenPtr<Vector<T, num_dofs>> external_force) const {
     DRAKE_ASSERT(external_force != nullptr);
     static_cast<const DerivedElement*>(this)->DoAddScaledExternalForce(
-        data, scale, force_field, external_force);
+        data, scale, force_density, external_force);
   }
 
   /* Extracts the dofs corresponding to the nodes given by `node_indices` from
@@ -312,9 +312,10 @@ class FemElement {
    derived class does not have to test for this.
    @throw std::exception if `DerivedElement` does not provide an implementation
    for `DoAddScaledExternalForce()`. */
-  void DoAddScaledExternalForce(const Data&, const T&,
-                                const ExternalForceField<T>&,
-                                EigenPtr<Vector<T, num_dofs>>) const {
+  void DoAddScaledExternalForce(
+      const Data&, const T&,
+      const multibody::internal::ForceDensityEvaluator<T>&,
+      EigenPtr<Vector<T, num_dofs>>) const {
     ThrowIfNotImplemented(__func__);
   }
 

@@ -267,7 +267,7 @@ drake_cc_library(
         ":fem_indexes",
         ":fem_state_system",
         "//common:essential",
-        "//multibody/plant:external_force_field",
+        "//multibody/plant:force_density_evaluator",
         "//systems/framework:context",
     ],
 )

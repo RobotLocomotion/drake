@@ -77,12 +77,9 @@ int FemSolver<T>::AdvanceOneTimeStep(
   FemState<T>* next_state =
       next_state_and_schur_complement_.state.get_mutable();
   integrator_->AdvanceOneTimeStep(prev_state, unknown_variable, next_state);
-  // TODO(xuchenhan-tri): Remove this copy.
-  std::vector<std::unique_ptr<ExternalForceField<T>>> forces;
-  for (const auto& f : prev_state.GetExternalForces()) {
-    forces.emplace_back(f->Clone());
-  }
-  next_state->SetExternalForces(std::move(forces));
+  /* External forces are always evaluated explicitly at the previous time step
+   regardless of the time integration scheme. */
+  next_state->SetExternalForces(prev_state.GetExternalForces());
   if (model_->is_linear()) {
     return SolveLinearModel(nonparticipating_vertices);
   }

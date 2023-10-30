@@ -140,13 +140,13 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
    model. */
   systems::DiscreteStateIndex GetDiscreteStateIndex(DeformableBodyId id) const;
 
-  void AddExternalForce(std::unique_ptr<ExternalForceField<T>> force_field) {
-    fem_external_forces_.emplace_back(std::move(force_field));
-  }
+  /** Registers an external force density field that applies external force to
+   all deformable bodies. */
+  void AddExternalForce(std::unique_ptr<ExternalForceField<T>> external_force);
 
   const std::vector<std::unique_ptr<ExternalForceField<T>>>& external_forces()
       const {
-    return fem_external_forces_;
+    return external_forces_;
   }
 
   /** Returns the FemModel for the body with `id`.
@@ -269,7 +269,7 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
       geometry_id_to_body_id_;
   std::unordered_map<DeformableBodyId, std::unique_ptr<fem::FemModel<T>>>
       fem_models_;
-  std::vector<std::unique_ptr<ExternalForceField<T>>> fem_external_forces_;
+  std::vector<std::unique_ptr<ExternalForceField<T>>> external_forces_;
   std::unordered_map<DeformableBodyId, std::vector<MultibodyConstraintId>>
       body_id_to_constraint_ids_;
   std::unordered_map<DeformableBodyId, T> body_id_to_density_prefinalize_;

@@ -1,5 +1,7 @@
 #include "drake/multibody/fem/fem_state.h"
 
+#include <utility>
+
 namespace drake {
 namespace multibody {
 namespace fem {
@@ -49,12 +51,6 @@ const VectorX<T>& FemState<T>::GetAccelerations() const {
 }
 
 template <typename T>
-const std::vector<std::unique_ptr<ExternalForceField<T>>>&
-FemState<T>::GetExternalForces() const {
-  return external_forces_;
-}
-
-template <typename T>
 void FemState<T>::SetPositions(const Eigen::Ref<const VectorX<T>>& q) {
   get_mutable_context().SetDiscreteState(system_->fem_position_index(), q);
 }
@@ -76,9 +72,16 @@ void FemState<T>::SetAccelerations(const Eigen::Ref<const VectorX<T>>& a) {
 }
 
 template <typename T>
+const std::vector<multibody::internal::ForceDensityEvaluator<T>>&
+FemState<T>::GetExternalForces() const {
+  return external_forces_;
+}
+
+template <typename T>
 void FemState<T>::SetExternalForces(
-    std::vector<std::unique_ptr<ExternalForceField<T>>> f) {
-  external_forces_ = std::move(f);
+    std::vector<multibody::internal::ForceDensityEvaluator<T>>
+        external_forces) {
+  external_forces_ = std::move(external_forces);
 }
 
 template <typename T>
