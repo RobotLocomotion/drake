@@ -14,6 +14,9 @@
 namespace drake {
 namespace multibody {
 
+template <typename T>
+class MultibodyPlant;
+
 /** The %ExternalForceField class is an abstract base class that represents a
  force density field affecting deformable bodies in a MultibodyPlant. The
  force field is described by the member function `EvaluateAt` which takes as
@@ -26,8 +29,8 @@ class ExternalForceField {
  public:
   virtual ~ExternalForceField() = default;
 
-  /** Evaluates the force density [N/m³] with the given `context` at the given
-   position in world, `p_WQ`. */
+  /** Evaluates the force density [N/m³] with the given `context` of the
+   owning MultibodyPlant and a position in world, `p_WQ`. */
   Vector3<T> EvaluateAt(const systems::Context<T>& context,
                         const Vector3<T>& p_WQ) const {
     return DoEvaluateAt(context, p_WQ);
@@ -36,13 +39,12 @@ class ExternalForceField {
   /** Returns an identical copy of `this` ExternalForceField. */
   std::unique_ptr<ExternalForceField<T>> Clone() const { return DoClone(); }
 
-  /** Returns true iff `this` external force is owned by a MultibodyTreeSystem.
-   */
+  /** Returns true iff `this` external force is owned by a MultibodyPlant. */
   bool has_parent_system() const { return tree_system_ != nullptr; }
 
-  /** Returns the owning MultibodyTreeSystem. If none exists (i.e.
+  /** Returns the owning %MultibodyPlant %LeafSystem. If none exists (i.e.
    has_parent_system() returns false), throws an std::exception. */
-  const internal::MultibodyTreeSystem<T>& tree_system_or_throw() const {
+  const systems::LeafSystem<T>& parent_system_or_throw() const {
     DRAKE_THROW_UNLESS(tree_system_ != nullptr);
     return *tree_system_;
   }
@@ -56,16 +58,28 @@ class ExternalForceField {
    MultibodyTreeSystem to receive the signal. This class holds on to a pointer
    to the given `tree_system` and thus `tree_system` must outlive `this` object.
    @param[in] tree_system A mutable pointer to the owning system.
+   @throws std::exception if the `tree_system` does not belong to a
+                          MultibodyPlant.
+   @note You can only invoke this function if you have a definition of
+         MultibodyPlant available. That is, you must include
+        `drake/multibody/plant/multibody_plant.h` in the translation unit that
+         invokes this function; external_force_field.h cannot do that for you.
    @pre tree_system != nullptr. */
+  template <typename MultibodyPlantDeferred = MultibodyPlant<T>>
   void DeclareSystemResources(internal::MultibodyTreeSystem<T>* tree_system) {
     DRAKE_DEMAND(tree_system != nullptr);
     /* `this` force field isn't already associated with a system. */
     DRAKE_DEMAND(tree_system_ == nullptr);
     tree_system_ = tree_system;
+    auto plant = dynamic_cast<MultibodyPlantDeferred*>(tree_system);
+    if (plant == nullptr) {
+      throw std::logic_error(
+          "The given MultibodyTreeSystem does not belong to a MultibodyPlant.");
+    }
     /* Only cache entries and input ports are supported for now. More system
      resources (e.g. parameters) can be declared if needed in the future. */
-    DeclareCacheEntries(tree_system);
-    DeclareInputPorts(tree_system);
+    DeclareCacheEntries(plant);
+    DeclareInputPorts(plant);
   }
 #endif
 
@@ -87,38 +101,39 @@ class ExternalForceField {
    Derived classes should override the default implementation if the external
    force field is Context-dependent.
    @{ */
-  virtual void DoDeclareCacheEntries(internal::MultibodyTreeSystem<T>*) {}
-  virtual void DoDeclareInputPorts(internal::MultibodyTreeSystem<T>*) {}
+  virtual void DoDeclareCacheEntries(MultibodyPlant<T>*) {}
+  virtual void DoDeclareInputPorts(MultibodyPlant<T>*) {}
   /** }@ */
 
   /** Protected LeafSystem methods exposed to declare system resources in a
-   MultibodyTreeSystem. */
+   MultibodyPlant. DoDeclareCacheEntries() and DoDeclareInputPorts() can use
+   these to declare cache entries and input ports. */
   static systems::CacheEntry& DeclareCacheEntry(
-      internal::MultibodyTreeSystem<T>* tree_system, std::string description,
+      internal::MultibodyTreeSystem<T>* plant, std::string description,
       systems::ValueProducer value_producer,
       std::set<systems::DependencyTicket> prerequisites_of_calc);
   static systems::InputPort<T>& DeclareAbstractInputPort(
-      internal::MultibodyTreeSystem<T>* tree_system, std::string name,
+      internal::MultibodyTreeSystem<T>* plant, std::string name,
       const AbstractValue& model_value);
   static systems::InputPort<T>& DeclareVectorInputPort(
-      internal::MultibodyTreeSystem<T>* tree_system, std::string name,
+      internal::MultibodyTreeSystem<T>* plant, std::string name,
       const systems::BasicVector<T>& model_vector);
 
  private:
-  /* Declares MultibodyTreeSystem cache entries at Finalize() time. NVI to the
+  /* Declares MultibodyPlant cache entries at Finalize() time. NVI to the
    virtual method DoDeclareCacheEntries().
    @param[in] tree_system A mutable pointer to the owning system. */
-  void DeclareCacheEntries(internal::MultibodyTreeSystem<T>* tree_system) {
-    DRAKE_DEMAND(tree_system != nullptr);
-    DoDeclareCacheEntries(tree_system);
+  void DeclareCacheEntries(MultibodyPlant<T>* plant) {
+    DRAKE_DEMAND(plant != nullptr);
+    DoDeclareCacheEntries(plant);
   }
 
-  /* Declares MultibodyTreeSystem input ports at Finalize() time. NVI to the
+  /* Declares MultibodyPlant input ports at Finalize() time. NVI to the
    virtual method DoDeclareInputPorts().
    @param[in] tree_system A mutable pointer to the owning system. */
-  void DeclareInputPorts(internal::MultibodyTreeSystem<T>* tree_system) {
-    DRAKE_DEMAND(tree_system != nullptr);
-    DoDeclareInputPorts(tree_system);
+  void DeclareInputPorts(MultibodyPlant<T>* plant) {
+    DRAKE_DEMAND(plant != nullptr);
+    DoDeclareInputPorts(plant);
   }
 
   const internal::MultibodyTreeSystem<T>* tree_system_{nullptr};
@@ -126,13 +141,13 @@ class ExternalForceField {
 
 /** A constant external force field that has an explicit functional form. */
 template <typename T>
-class ExplicitExternalForceField final : public ExternalForceField<T> {
+class ExplicitForceField final : public ExternalForceField<T> {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ExplicitExternalForceField)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ExplicitForceField)
 
   /** Constructs an explicit external force field that has an explicit
    functional form described by the given input `field` */
-  explicit ExplicitExternalForceField(
+  explicit ExplicitForceField(
       std::function<Vector3<T>(const Vector3<T>&)> field)
       : field_(std::move(field)) {}
 
@@ -143,7 +158,7 @@ class ExplicitExternalForceField final : public ExternalForceField<T> {
   };
 
   std::unique_ptr<ExternalForceField<T>> DoClone() const final {
-    return std::make_unique<ExplicitExternalForceField<T>>(*this);
+    return std::make_unique<ExplicitForceField<T>>(*this);
   }
 
   std::function<Vector3<T>(const Vector3<T>&)> field_;

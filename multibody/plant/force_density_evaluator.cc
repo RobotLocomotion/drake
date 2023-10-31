@@ -12,7 +12,7 @@ ForceDensityEvaluator<T>::ForceDensityEvaluator(
   DRAKE_DEMAND(force_field_ != nullptr);
   DRAKE_DEMAND(plant_context_ != nullptr);
   if (force_field->has_parent_system()) {
-    force_field_->tree_system_or_throw().ValidateContext(*plant_context);
+    force_field_->parent_system_or_throw().ValidateContext(*plant_context);
   }
 }
 
