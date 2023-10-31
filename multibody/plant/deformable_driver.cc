@@ -741,16 +741,12 @@ void DeformableDriver<T>::CalcFemState(const Context<T>& context,
   fem_state->SetPositions(q);
   fem_state->SetVelocities(qdot);
   fem_state->SetAccelerations(qddot);
-  /* Collect all external forces affecting this body. */
+  /* Collect all external forces affecting this body and store them into its FEM
+   state. */
   std::vector<ForceDensityEvaluator<T>> force_density_evaluators;
-  /* External forces shared by all bodies. */
-  for (const auto& f : deformable_model_->external_forces()) {
-    force_density_evaluators.emplace_back(f.get(), &context);
-  }
-  /* External forces specific to this body. */
-  const FemModel<T>& fem_model = deformable_model_->GetFemModel(id);
-  for (const auto& f : fem_model.external_forces()) {
-    force_density_evaluators.emplace_back(f.get(), &context);
+  for (const ExternalForceField<T>* f :
+       deformable_model_->GetExternalForces(id)) {
+    force_density_evaluators.emplace_back(f, &context);
   }
   fem_state->SetExternalForces(std::move(force_density_evaluators));
 }

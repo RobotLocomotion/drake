@@ -89,12 +89,15 @@ std::unique_ptr<FemState<T>> FemState<T>::Clone() const {
   if (owned_context_ != nullptr) {
     auto clone = std::make_unique<FemState<T>>(this->system_);
     clone->owned_context_->SetTimeStateAndParametersFrom(*this->owned_context_);
+    clone->SetExternalForces(this->GetExternalForces());
     return clone;
   }
   DRAKE_DEMAND(context_ != nullptr);
   // Note that this creates a "shared context" clone. See the class
   // documentation for cautionary notes.
-  return std::make_unique<FemState<T>>(this->system_, this->context_);
+  auto clone = std::make_unique<FemState<T>>(this->system_, this->context_);
+  clone->SetExternalForces(this->GetExternalForces());
+  return clone;
 }
 
 }  // namespace fem

@@ -230,20 +230,6 @@ class FemElement {
     return ExtractElementDofs(this->node_indices(), state_dofs);
   }
 
-  /* Adds the gravity force acting on each node in the element scaled by
-   `scale` into `force`. Derived elements may choose to override this method
-   to provide a more efficient implementation for specific elements. */
-  void AddScaledGravityForce(const Data& data, const T& scale,
-                             const Vector3<T>& gravity_vector,
-                             EigenPtr<Vector<T, num_dofs>> force) const {
-    Eigen::Matrix<T, num_dofs, num_dofs> mass_matrix =
-        Eigen::Matrix<T, num_dofs, num_dofs>::Zero();
-    AddScaledMassMatrix(data, 1.0, &mass_matrix);
-    const Vector<T, num_dofs> stacked_gravity =
-        gravity_vector.template replicate<num_nodes, 1>();
-    *force += scale * mass_matrix * stacked_gravity;
-  }
-
  protected:
   /* Constructs a new FEM element. The constructor is made protected because
    FemElement should not be constructed directly. Use the constructor of the

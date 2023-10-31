@@ -10,6 +10,7 @@
 #include "drake/multibody/fem/test/dummy_model.h"
 #include "drake/multibody/fem/volumetric_element.h"
 #include "drake/multibody/fem/volumetric_model.h"
+#include "drake/multibody/plant/multibody_plant.h"
 
 namespace drake {
 namespace multibody {
@@ -57,6 +58,47 @@ GTEST_TEST(FemModelTest, CalcResidual) {
   /* The residual for each element is set to a dummy value if all states are
    zero (see DummyElement::CalcResidual). */
   EXPECT_EQ(residual, expected_residual);
+}
+
+GTEST_TEST(FemModelTest, CalcResidualWithExternalForce) {
+  LinearDummyModel model;
+  LinearDummyModel::DummyBuilder builder(&model);
+  /* Add a few elements that don't share nodes. The non-overlapping elements
+   simplifies the computation for easier testing. */
+  builder.AddElementWithDistinctNodes();
+  builder.AddElementWithDistinctNodes();
+  builder.Build();
+  unique_ptr<FemState<double>> fem_state = model.MakeFemState();
+
+  const double mass_density = 2.7;
+  Vector3d gravity_vector(0, 0, -9.81);
+  GravityForceField<double> gravity_field(gravity_vector, mass_density);
+  /* The gravity force field doesn't depend on Context, but a Context is needed
+   for a ForceDensityEvaluator. So we create a dummy Context that's unused. */
+  MultibodyPlant<double> plant(0.01);
+  plant.Finalize();
+  auto context = plant.CreateDefaultContext();
+  std::vector<multibody::internal::ForceDensityEvaluator<double>> evaluators;
+  evaluators.emplace_back(&gravity_field, context.get());
+  fem_state->SetExternalForces(std::move(evaluators));
+
+  VectorXd residual(model.num_dofs());
+  model.CalcResidual(*fem_state, &residual);
+
+  /* Since DummyElement adds the external force density directly to the
+   residual (see DummyElement::DoAddScaledExternalForce for detail), we expect
+   the difference between inverse dynamics force and the residual to be equal
+   to the gravity force density. */
+  VectorXd expected_residual = VectorXd::Zero(model.num_dofs());
+  expected_residual.head<LinearDummyElement::kNumDofs>() +=
+      LinearDummyElement::inverse_dynamics_force();
+  expected_residual.tail<LinearDummyElement::kNumDofs>() +=
+      LinearDummyElement::inverse_dynamics_force();
+  for (int i = 0; i < model.num_nodes(); ++i) {
+    expected_residual.segment<3>(3 * i) -= gravity_vector * mass_density;
+  }
+
+  EXPECT_TRUE(CompareMatrices(expected_residual, residual));
 }
 
 GTEST_TEST(FemModelTest, CalcTangentMatrix) {
@@ -181,13 +223,6 @@ GTEST_TEST(FemModelTest, MultipleBuilders) {
   /* Reusing builder throws an exception. */
   DRAKE_EXPECT_THROWS_MESSAGE(builder0.AddElementWithDistinctNodes(),
                               "Build.* has been called.*");
-}
-
-GTEST_TEST(FemModelTest, Gravity) {
-  LinearDummyModel model;
-  EXPECT_EQ(model.gravity_vector(), Vector3<double>(0, 0, -9.81));
-  model.set_gravity_vector(Vector3<double>(1, 2, 3));
-  EXPECT_EQ(model.gravity_vector(), Vector3<double>(1, 2, 3));
 }
 
 /* Verifies we can add a Dirichlet boundary condition to FEM models, and it is

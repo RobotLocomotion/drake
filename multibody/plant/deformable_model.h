@@ -141,13 +141,18 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
   systems::DiscreteStateIndex GetDiscreteStateIndex(DeformableBodyId id) const;
 
   /** Registers an external force density field that applies external force to
-   all deformable bodies. */
+   all deformable bodies.
+   @throws std::exception if Finalize() has been called on the multibody plant
+           owning this deformable model. */
   void AddExternalForce(std::unique_ptr<ExternalForceField<T>> external_force);
 
-  const std::vector<std::unique_ptr<ExternalForceField<T>>>& external_forces()
-      const {
-    return external_forces_;
-  }
+  /** Returns the external forces acting on the deformable body with the given
+   `id`.
+   @throws std::exception if MultibodyPlant::Finalize() has not been called yet.
+   or if no deformable body with the given `id` has been registered in this
+   model. */
+  const std::vector<const ExternalForceField<T>*>& GetExternalForces(
+      DeformableBodyId id) const;
 
   /** Returns the FemModel for the body with `id`.
    @throws exception if no deformable body with `id` is registered with `this`
@@ -269,9 +274,14 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
       geometry_id_to_body_id_;
   std::unordered_map<DeformableBodyId, std::unique_ptr<fem::FemModel<T>>>
       fem_models_;
+  /*The collection all external forces, indexed by
+   `body_index_to_external_forces_`. */
   std::vector<std::unique_ptr<ExternalForceField<T>>> external_forces_;
+  std::vector<std::vector<const ExternalForceField<T>*>>
+      body_index_to_external_forces_;
   std::unordered_map<DeformableBodyId, std::vector<MultibodyConstraintId>>
       body_id_to_constraint_ids_;
+  /* Only used pre-finalize. Empty post-finalize. */
   std::unordered_map<DeformableBodyId, T> body_id_to_density_prefinalize_;
   std::unordered_map<DeformableBodyId, DeformableBodyIndex> body_id_to_index_;
   std::vector<DeformableBodyId> body_ids_;

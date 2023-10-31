@@ -234,7 +234,6 @@ class VolumetricElement
       dSdX_transpose_[q] = dSdX[q].transpose();
     }
     mass_matrix_ = PrecomputeMassMatrix();
-    lumped_mass_ = mass_matrix_.rowwise().sum().eval();
   }
 
   /* Calculates the elastic potential energy (in joules) stored in this element
@@ -245,21 +244,6 @@ class VolumetricElement
       elastic_energy += reference_volume_[q] * data.Psi[q];
     }
     return elastic_energy;
-  }
-
-  /* Computes the scaled gravity force on each node in the element using the
-   pre-calculated mass matrix with the given `gravity_vector`. */
-  void AddScaledGravityForce(const Data&, const T& scale,
-                             const Vector3<T>& gravity_vector,
-                             EigenPtr<Vector<T, num_dofs>> force) const {
-    constexpr int kDim = 3;
-    for (int a = 0; a < num_nodes; ++a) {
-      /* The following computation is equivalent to performing the matrix-vector
-       multiplication of the mass matrix and the stacked gravity vector. */
-      force->template segment<kDim>(kDim * a) +=
-          scale * lumped_mass_.template segment<kDim>(kDim * a).cwiseProduct(
-                      gravity_vector);
-    }
   }
 
  private:
@@ -541,9 +525,6 @@ class VolumetricElement
   T density_;
   /* Precomputed mass matrix. */
   Eigen::Matrix<T, num_dofs, num_dofs> mass_matrix_;
-  /* The diagonal of the lumped mass matrix (sum over each row). Only used for
-   calculating gravity forces at the moment. */
-  Vector<T, num_dofs> lumped_mass_;
 };
 
 }  // namespace internal
