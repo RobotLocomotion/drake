@@ -13,7 +13,6 @@
 #include "drake/multibody/contact_solvers/block_sparse_lower_triangular_or_symmetric_matrix.h"
 #include "drake/multibody/fem/dirichlet_boundary_condition.h"
 #include "drake/multibody/fem/fem_state.h"
-#include "drake/multibody/plant/external_force_field.h"
 
 namespace drake {
 namespace multibody {
@@ -45,10 +44,9 @@ namespace fem {
      R(X,t)J(X,t) = R(X,0),
      R(X,0)A(X,t) = fᵢₙₜ(X,t) + fₑₓₜ(X,t),
 
- where R is mass density, fᵢₙₜ and fₑₓₜ are internal and external force (only
- gravity for now) densities respectively, and J is the determinant of the
- deformation gradient. Using finite element method to discretize in space, one
- gets
+ where R is mass density, fᵢₙₜ and fₑₓₜ are internal and external force
+ densities respectively, and J is the determinant of the deformation gradient.
+ Using finite element method to discretize in space, one gets
 
      ϕ(X,t) = ∑ᵢ xᵢ(t)Nᵢ(X)
      V(X,t) = ∑ᵢ vᵢ(t)Nᵢ(X)
@@ -179,12 +177,6 @@ class FemModel {
   std::unique_ptr<contact_solvers::internal::Block3x3SparseSymmetricMatrix>
   MakeTangentMatrix() const;
 
-  /** Sets the gravity vector for all elements in this model. */
-  void set_gravity_vector(const Vector3<T>& gravity) { gravity_ = gravity; }
-
-  /** Returns the gravity vector for all elements in this model. */
-  const Vector3<T>& gravity_vector() const { return gravity_; }
-
   /** Applies boundary condition set for this %FemModel to the input `state`.
    No-op if no boundary condition is set.
    @pre fem_state != nullptr.
@@ -219,17 +211,6 @@ class FemModel {
   the FEM model and state that were passed to API method `func`. */
   void ThrowIfModelStateIncompatible(const char* func,
                                      const FemState<T>& fem_state) const;
-
-  /** Registers an external force density field that applies external force to
-   `this` FEM model. */
-  void AddExternalForce(std::unique_ptr<ExternalForceField<T>> external_force) {
-    external_forces_.emplace_back(std::move(external_force));
-  }
-
-  const std::vector<std::unique_ptr<ExternalForceField<T>>>& external_forces()
-      const {
-    return external_forces_;
-  }
 
  protected:
   /** Constructs an empty FEM model. */
@@ -284,10 +265,8 @@ class FemModel {
   /* The system that manages the states and cache entries of this FEM model.
    */
   std::unique_ptr<internal::FemStateSystem<T>> fem_state_system_;
-  Vector3<T> gravity_{0, 0, -9.81};
   /* The Dirichlet boundary condition that the model is subject to. */
   internal::DirichletBoundaryCondition<T> dirichlet_bc_;
-  std::vector<std::unique_ptr<ExternalForceField<T>>> external_forces_;
 };
 
 }  // namespace fem

@@ -5,28 +5,28 @@ namespace multibody {
 
 template <typename T>
 systems::CacheEntry& ExternalForceField<T>::DeclareCacheEntry(
-    internal::MultibodyTreeSystem<T>* tree_system, std::string description,
+    internal::MultibodyTreeSystem<T>* plant, std::string description,
     systems::ValueProducer value_producer,
     std::set<systems::DependencyTicket> prerequisites_of_calc) {
   return internal::MultibodyTreeSystemElementAttorney<T>::DeclareCacheEntry(
-      tree_system, std::move(description), std::move(value_producer),
+      plant, std::move(description), std::move(value_producer),
       std::move(prerequisites_of_calc));
 }
 
 template <typename T>
 systems::InputPort<T>& ExternalForceField<T>::DeclareAbstractInputPort(
-    internal::MultibodyTreeSystem<T>* tree_system, std::string name,
+    internal::MultibodyTreeSystem<T>* plant, std::string name,
     const AbstractValue& model_value) {
   return internal::MultibodyTreeSystemElementAttorney<
-      T>::DeclareAbstractInputPort(tree_system, std::move(name), model_value);
+      T>::DeclareAbstractInputPort(plant, std::move(name), model_value);
 }
 
 template <typename T>
 systems::InputPort<T>& ExternalForceField<T>::DeclareVectorInputPort(
-    internal::MultibodyTreeSystem<T>* tree_system, std::string name,
+    internal::MultibodyTreeSystem<T>* plant, std::string name,
     const systems::BasicVector<T>& model_vector) {
   return internal::MultibodyTreeSystemElementAttorney<
-      T>::DeclareVectorInputPort(tree_system, std::move(name), model_vector);
+      T>::DeclareVectorInputPort(plant, std::move(name), model_vector);
 }
 
 }  // namespace multibody

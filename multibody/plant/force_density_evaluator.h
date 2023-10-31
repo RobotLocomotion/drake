@@ -33,10 +33,22 @@ class ForceDensityEvaluator {
     return force_field_->EvaluateAt(*plant_context_, p_WQ);
   }
 
+  /* Compares two evaluators for equality. */
+  template <typename U>
+  friend bool operator==(const ForceDensityEvaluator<U>& lhs,
+                         const ForceDensityEvaluator<U>& rhs);
+
  private:
   const ExternalForceField<T>* force_field_{nullptr};
   const systems::Context<T>* plant_context_{nullptr};
 };
+
+template <typename T>
+bool operator==(const ForceDensityEvaluator<T>& lhs,
+                const ForceDensityEvaluator<T>& rhs) {
+  return lhs.force_field_ == rhs.force_field_ &&
+         lhs.plant_context_ == rhs.plant_context_;
+}
 
 }  // namespace internal
 }  // namespace multibody
