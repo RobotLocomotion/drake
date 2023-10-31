@@ -631,10 +631,6 @@ std::set<int> HPolyhedron::FindRedundant(double tol) const {
   return redundant_indices;
 }
 
-bool HPolyhedron::IsTrue(double tol) const {
-  return tol>1;
-}
-
 // HPolyhedron HPolyhedron::Simplify(double min_v_ratio, int max_loops, 
 //         const std::pair<Eigen::VectorXd, std::vector<HPolyhedron>>& intersections, 
 //         double intersection_pad, bool conservative_intersections, const Eigen::MatrixXd& points_to_contain,
@@ -646,6 +642,10 @@ HPolyhedron HPolyhedron::ShuffleHyperplanes(std::vector<double>& d, std::vector<
   // std::vector<int> ind2(moved_in.size());
   std::iota(ind.begin(),ind.end(),0);
   std::cout << moved_in[0] << '\n';
+  for (size_t i = 0; i < ind.size(); ++i){
+    log()->info("{}",ind[i]);
+  }
+  
   // std::cout << ind << '\n';
   return HPolyhedron(A_,b_);
 }

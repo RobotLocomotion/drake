@@ -117,8 +117,6 @@ class HPolyhedron final : public ConvexSet {
 //   TODO rhjiang make private
   [[nodiscard]] HPolyhedron ShuffleHyperplanes(std::vector<double>& d, std::vector<bool>& moved_in) const;
 
-  [[nodiscard]] bool IsTrue(double tol) const;
-
   /** Solves a semi-definite program to compute the inscribed ellipsoid. This is
   also known as the inner Löwner-John ellipsoid. From Section 8.4.2 in Boyd and
   Vandenberghe, 2004, we solve
