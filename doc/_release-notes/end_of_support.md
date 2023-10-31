@@ -7,17 +7,64 @@ Due to limited resources, we cannot offer indefinite support
 for older operating systems or third-party libraries.
 If you need to use these, you can use an old release of Drake.
 
+## Python 3.10 (Wheel)
+
+The last version with support for Python 3.10 wheels was
+[v1.12.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.12.0)
+on macOS. (On Linux, Drake still supports Python 3.10 wheels.)
+
+## Python 3.9 (Wheel)
+
+The last version with support for Python 3.9 wheels was
+[v1.5.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.5.0)
+on macOS. (On Linux, Drake still supports Python 3.9 wheels.)
+
+## Python 3.7 (Wheel)
+
+The last version with support for Python 3.7 wheels was
+[v1.1.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.1.0)
+on Linux. (On macOS, Drake never supported Python 3.7 wheels.)
+
+## Python 3.6 (Wheel)
+
+The last version with support for Python 3.6 wheels was
+[v1.1.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.1.0)
+on Linux. (On macOS, Drake never supported Python 3.6 wheels.)
+
 ## Ubuntu 18.04 (Bionic)
 
-The last version with support for Ubuntu 18.04 is v1.1.0:
-
-* <https://github.com/RobotLocomotion/drake/releases/tag/v1.1.0>
+The last version with support for Ubuntu 18.04 was
+[v1.1.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.1.0).
 
 ## Ubuntu 16.04 (Xenial)
 
-The last version with support for Ubuntu 16.04 is v0.11.0:
+The last version with support for Ubuntu 16.04 was
+[v0.11.0](https://github.com/RobotLocomotion/drake/releases/tag/v0.11.0).
 
-* <https://github.com/RobotLocomotion/drake/releases/tag/v0.11.0>
+## macOS 12 (Monterey)
+
+The last version with support for macOS 12 was
+[v1.22.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.22.0).
+
+## macOS 11 (Big Sur)
+
+The last version with support for macOS 11 was
+[v1.9.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.9.0).
+
+## macOS 10.15 (Catalina)
+
+The last version with support for macOS 10.15 was
+[v0.35.0](https://github.com/RobotLocomotion/drake/releases/tag/v0.35.0).
+
+## macOS 10.14 (Mojave)
+
+The last version with support for macOS 10.14 was
+[v0.24.0](https://github.com/RobotLocomotion/drake/releases/tag/v0.24.0).
+
+## macOS 10.13 (High Sierra)
+
+The last version with support for macOS 10.13 was
+[v0.11.0](https://github.com/RobotLocomotion/drake/releases/tag/v0.11.0).
 
 ## MATLAB 2015
 
