@@ -330,6 +330,54 @@ TEST_F(DeformableModelTest, AddFixedConstraint) {
                std::exception);
 }
 
+TEST_F(DeformableModelTest, ExternalForces) {
+  auto force_field = [](const Vector3d& x) {
+    return 3.14 * x;
+  };
+  deformable_model_ptr_->AddExternalForce(
+      std::make_unique<ExplicitForceField<double>>(force_field));
+  constexpr double kRezHint = 0.5;
+  DeformableBodyId body_id = RegisterSphere(kRezHint);
+  /* Pre-finalize calls to GetExternalForces are not allowed. */
+  DRAKE_EXPECT_THROWS_MESSAGE(deformable_model_ptr_->GetExternalForces(body_id),
+                              ".*before system resources.*declared.*");
+  /* We modify the gravity to deviate from the default to verify that it is
+   reflected in the external gravity applied to the deformable body. */
+  const Vector3d gravity_vector(0.0, 0.0, -10.0);
+  plant_->mutable_gravity_field().set_gravity_vector(gravity_vector);
+  plant_->Finalize();
+  auto plant_context = plant_->CreateDefaultContext();
+
+  /* Post-finalize calls to AddExternalForce are not allowed. */
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      deformable_model_ptr_->AddExternalForce(
+          std::make_unique<ExplicitForceField<double>>(force_field)),
+      ".*AddExternalForce.*after system resources have been declared.*");
+
+  DeformableBodyId fake_id;
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      deformable_model_ptr_->GetExternalForces(fake_id),
+      fmt::format(".*No.*id.*{}.*registered.*", fake_id));
+
+  const std::vector<const ExternalForceField<double>*>& external_forces =
+      deformable_model_ptr_->GetExternalForces(body_id);
+  for (const auto* force : external_forces) {
+    const auto* g = dynamic_cast<const GravityForceField<double>*>(force);
+    const auto* f = dynamic_cast<const ExplicitForceField<double>*>(force);
+    /* We know two external forces are added to the deformable body, one is
+     gravity (added automatically), the other is the explicit force defined
+     above. */
+    ASSERT_TRUE((g != nullptr) ^ (f != nullptr));
+    const Vector3d p_WQ(1, 2, 3);
+    if (g != nullptr) {
+      EXPECT_EQ(force->EvaluateAt(*plant_context, p_WQ),
+                gravity_vector * default_body_config_.mass_density());
+    } else {
+      EXPECT_EQ(force->EvaluateAt(*plant_context, p_WQ), 3.14 * p_WQ);
+    }
+  }
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace multibody

@@ -144,10 +144,13 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
    all deformable bodies. */
   void AddExternalForce(std::unique_ptr<ExternalForceField<T>> external_force);
 
-  const std::vector<std::unique_ptr<ExternalForceField<T>>>& external_forces()
-      const {
-    return external_forces_;
-  }
+  /** Returns the external forces acting on the deformable body with the given
+   `id`.
+   @throws std::exception if MultibodyPlant::Finalize() has not been called yet.
+   or if no deformable body with the given `id` has been registered in this
+   model. */
+  const std::vector<const ExternalForceField<T>*>& GetExternalForces(
+      DeformableBodyId id) const;
 
   /** Returns the FemModel for the body with `id`.
    @throws exception if no deformable body with `id` is registered with `this`
@@ -274,6 +277,8 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
       body_id_to_constraint_ids_;
   std::unordered_map<DeformableBodyId, T> body_id_to_density_prefinalize_;
   std::unordered_map<DeformableBodyId, DeformableBodyIndex> body_id_to_index_;
+  std::vector<std::vector<const ExternalForceField<T>*>>
+      body_index_to_external_forces_;
   std::vector<DeformableBodyId> body_ids_;
   std::map<MultibodyConstraintId, internal::DeformableRigidFixedConstraintSpec>
       fixed_constraint_specs_;

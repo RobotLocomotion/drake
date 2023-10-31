@@ -94,11 +94,13 @@ class PointSourceForceField : public ExternalForceField<double> {
         drop_time_(drop_time) {}
 
   const systems::InputPort<double>& get_scale_input_port() const {
-    return tree_system().get_input_port(scale_port_index_);
+    return parent_system_or_throw().get_input_port(scale_port_index_);
   }
 
  private:
-  Vector3<double> CalcPointSource(
+  /* Computes the world frame position of the center of the point source force
+   field. */
+  Vector3<double> CalcPointSourceLocation(
       const systems::Context<double>& context) const {
     return plant_->EvalBodyPoseInWorld(context, *body_) * p_BC_;
   }
@@ -106,14 +108,14 @@ class PointSourceForceField : public ExternalForceField<double> {
   Vector3<double> DoEvaluateAt(const systems::Context<double>& context,
                                const Vector3<double>& p_WQ) const final {
     const Vector3<double>& p_WC = EvalPointSource(context);
-    Vector3<double> p_QC = p_WC - p_WQ;
-    const double dist = p_QC.norm();
+    Vector3<double> p_QC_W = p_WC - p_WQ;
+    const double dist = p_QC_W.norm();
     if (dist == 0 || dist > distance_) {
       return Vector3<double>::Zero();
     }
     const double magnitude =
         GetScale(context) * (distance_ - dist) * max_value_ / distance_;
-    return magnitude * p_QC / p_QC.norm();
+    return magnitude * p_QC_W / p_QC_W.norm();
   }
 
   std::unique_ptr<ExternalForceField<double>> DoClone() const final {
@@ -127,17 +129,17 @@ class PointSourceForceField : public ExternalForceField<double> {
    * @param tree_system The system underlying the plant that owns the cache
    * entry.
    */
-  void DoDeclareCacheEntries(MultibodyTreeSystem<double>* tree_system) final {
+  void DoDeclareCacheEntries(MultibodyPlant<double>* tree_system) final {
     point_source_position_cache_index_ =
         this->DeclareCacheEntry(
                 tree_system, "point source of the force field",
-                systems::ValueProducer(this,
-                                       &PointSourceForceField::CalcPointSource),
+                systems::ValueProducer(
+                    this, &PointSourceForceField::CalcPointSourceLocation),
                 {systems::System<double>::xd_ticket()})
             .cache_index();
   }
 
-  void DoDeclareInputPorts(MultibodyTreeSystem<double>* tree_system) final {
+  void DoDeclareInputPorts(MultibodyPlant<double>* tree_system) final {
     scale_port_index_ =
         this->DeclareVectorInputPort(tree_system, "scaling for suction force",
                                      drake::systems::BasicVector<double>(1))
@@ -146,7 +148,7 @@ class PointSourceForceField : public ExternalForceField<double> {
 
   const Vector3<double>& EvalPointSource(
       const systems::Context<double>& context) const {
-    return tree_system()
+    return parent_system_or_throw()
         .get_cache_entry(point_source_position_cache_index_)
         .template Eval<Vector3<double>>(context);
   }
@@ -169,11 +171,11 @@ class PointSourceForceField : public ExternalForceField<double> {
   systems::InputPortIndex scale_port_index_;
 };
 
-class SuctionCup : public systems::LeafSystem<double> {
+class SuctionCupController : public systems::LeafSystem<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SuctionCup);
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SuctionCupController);
 
-  /* Constructs a SuctionCup system with the given parameters.
+  /* Constructs a SuctionCupController system with the given parameters.
    @param[in] initial_height Initial height of the gripper.
    @param[in] pick_height    The height at suction turns on.
    @param[in] source_pressure  The pressure of the vacuum source.
@@ -183,12 +185,11 @@ class SuctionCup : public systems::LeafSystem<double> {
                                the initial height to the pick height.
    @param[in] lift_time        The time at which to start raising the gripper.
    @param[in] drop_time        The time at which to turn off the suction. */
-  SuctionCup(DeformableBodyId body_id, double initial_height,
+  SuctionCupController(double initial_height,
              double pick_height, double source_pressure,
              double max_suction_dist, double pick_time, double travel_time,
              double lift_time, double drop_time)
-      : body_id_(body_id),
-        initial_height_(initial_height),
+      : initial_height_(initial_height),
         pick_height_(pick_height),
         source_pressure_(source_pressure),
         max_suction_dist_(max_suction_dist),
@@ -199,14 +200,14 @@ class SuctionCup : public systems::LeafSystem<double> {
     desired_state_port_index_ =
         DeclareVectorOutputPort("desired state",
                                 drake::systems::BasicVector<double>(2),
-                                &SuctionCup::CalcDesiredState)
+                                &SuctionCupController::CalcDesiredState)
             .get_index();
     scale_port_index_ =
         DeclareVectorOutputPort("scaling of suction force",
                                 drake::systems::BasicVector<double>(1),
-                                &SuctionCup::CalcScale)
+                                &SuctionCupController::CalcScale)
             .get_index();
-  };
+  }
 
   const systems::OutputPort<double>& desired_state_output_port() const {
     return get_output_port(desired_state_port_index_);
@@ -252,7 +253,6 @@ class SuctionCup : public systems::LeafSystem<double> {
     }
   }
 
-  DeformableBodyId body_id_;
   double initial_height_{};
   double pick_height_{};
   double source_pressure_{};
@@ -358,7 +358,7 @@ int do_main() {
   // is positive. Remove the requirement of a resolution hint for meshed
   // shapes.
   const double unused_resolution_hint = 1.0;
-  DeformableBodyId body_id = owned_deformable_model->RegisterDeformableBody(
+  owned_deformable_model->RegisterDeformableBody(
       std::move(torus_instance), deformable_config, unused_resolution_hint);
   const DeformableModel<double>* deformable_model =
       owned_deformable_model.get();
@@ -382,10 +382,9 @@ int do_main() {
   /* All rigid and deformable models have been added. Finalize the plant. */
   plant.Finalize();
 
-  const auto& suction = *builder.AddSystem<SuctionCup>(
-      body_id, kInitialHeight, kStartSuctionHeight,
-      FLAGS_max_suction_force_density, FLAGS_suction_radius, kWaitTime,
-      kTravelTime, kPickUpTime, kDropTime);
+  const auto& suction = *builder.AddSystem<SuctionCupController>(
+      kInitialHeight, kStartSuctionHeight, FLAGS_max_suction_force_density,
+      FLAGS_suction_radius, kWaitTime, kTravelTime, kPickUpTime, kDropTime);
   builder.Connect(suction.desired_state_output_port(),
                   plant.get_desired_state_input_port(model_instance));
 
