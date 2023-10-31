@@ -1,0 +1,170 @@
+[vtk] Throw exceptions rather than abort() in vtkXOpenGLRenderWindow.cxx
+
+This patch is being added to drake to bypass inconsistent error reporting
+mechanisms in VTK that result in jupyter kernels restarting without any output
+to the user as to what went wrong (e.g., DISPLAY is not set but they are trying
+to use graphics functions).  See drake issue 18445 for more information.
+
+TODO(#20455) VTK cannot accept patches with exceptions, so we intend to upstream
+a different patch that makes the error mechanisms consistent and install a
+signal handler for drake to catch the abort() statements and error slightly
+more gracefully.
+
+
+--- Rendering/OpenGL2/vtkXOpenGLRenderWindow.cxx
++++ Rendering/OpenGL2/vtkXOpenGLRenderWindow.cxx
+@@ -61,6 +61,8 @@ typedef ptrdiff_t GLsizeiptr;
+ #include "vtkRendererCollection.h"
+ #include "vtkStringOutputWindow.h"
+
++#include <exception>
++#include <string>
+ #include <sstream>
+
+ #include <X11/Xatom.h>
+@@ -77,6 +79,14 @@ typedef ptrdiff_t GLsizeiptr;
+  * it populates the global namespace.
+  */
+ VTK_ABI_NAMESPACE_BEGIN
++
++namespace {
++std::string SummarizeDisplayEnv() {
++  const char* const display = vtksys::SystemTools::GetEnv("DISPLAY");
++  return display == nullptr ? std::string("DISPLAY is not set") : std::string("DISPLAY=") + display;
++}
++}  // namespace
++
+ struct vtkXVisualInfo : public XVisualInfo
+ {
+ };
+@@ -251,9 +261,9 @@ vtkXVisualInfo* vtkXOpenGLRenderWindow::GetDesiredVisualInfo()
+
+     if (this->DisplayId == nullptr)
+     {
+-      vtkErrorMacro(<< "bad X server connection. DISPLAY=" << vtksys::SystemTools::GetEnv("DISPLAY")
+-                    << ". Aborting.\n");
+-      abort();
++      throw std::runtime_error(
++        "VTK OpenGL2 error: bad X server connection. DISPLAY=" +
++        SummarizeDisplayEnv() + ".");
+     }
+
+     this->OwnDisplay = 1;
+@@ -264,14 +274,16 @@ vtkXVisualInfo* vtkXOpenGLRenderWindow::GetDesiredVisualInfo()
+
+   if (!this->Internal->FBConfig)
+   {
+-    vtkErrorMacro(<< "Could not find a decent config\n");
++    throw std::runtime_error(
++      "VTK OpenGL2 error: could not obtain GLX frame buffer configurations.");
+   }
+   else
+   {
+     v = glXGetVisualFromFBConfig(this->DisplayId, this->Internal->FBConfig);
+     if (!v)
+     {
+-      vtkErrorMacro(<< "Could not find a decent visual\n");
++      throw std::runtime_error(
++        "VTK OpenGL2 error: could not obtain GLX XVisualInfo.");
+     }
+   }
+   return reinterpret_cast<vtkXVisualInfo*>(v);
+@@ -462,9 +474,9 @@ void vtkXOpenGLRenderWindow::CreateAWindow()
+     this->DisplayId = XOpenDisplay(static_cast<char*>(nullptr));
+     if (this->DisplayId == nullptr)
+     {
+-      vtkErrorMacro(<< "bad X server connection. DISPLAY=" << vtksys::SystemTools::GetEnv("DISPLAY")
+-                    << ". Aborting.\n");
+-      abort();
++      throw std::runtime_error(
++        "VTK OpenGL2 error: bad X server connection. DISPLAY=" +
++        SummarizeDisplayEnv() + ".");
+     }
+     this->OwnDisplay = 1;
+   }
+@@ -482,8 +494,8 @@ void vtkXOpenGLRenderWindow::CreateAWindow()
+     v = this->GetDesiredVisualInfo();
+     if (!v)
+     {
+-      vtkErrorMacro(<< "Could not find a decent visual\n");
+-      abort();
++      throw std::runtime_error(
++        "VTK OpenGL2 error: could not obtain GLX XVisualInfo.");
+     }
+     this->ColorMap = XCreateColormap(
+       this->DisplayId, XRootWindow(this->DisplayId, v->screen), v->visual, AllocNone);
+@@ -555,16 +567,7 @@ void vtkXOpenGLRenderWindow::CreateAWindow()
+   // is GLX extension is supported?
+   if (!glXQueryExtension(this->DisplayId, nullptr, nullptr))
+   {
+-    vtkErrorMacro("GLX not found.  Aborting.");
+-    if (this->HasObserver(vtkCommand::ExitEvent))
+-    {
+-      this->InvokeEvent(vtkCommand::ExitEvent, nullptr);
+-      return;
+-    }
+-    else
+-    {
+-      abort();
+-    }
++    throw std::runtime_error("VTK OpenGL2 error: GLX not found.");
+   }
+
+   // try for 32 context
+@@ -649,16 +652,7 @@ void vtkXOpenGLRenderWindow::CreateAWindow()
+
+   if (!this->Internal->ContextId)
+   {
+-    vtkErrorMacro("Cannot create GLX context.  Aborting.");
+-    if (this->HasObserver(vtkCommand::ExitEvent))
+-    {
+-      this->InvokeEvent(vtkCommand::ExitEvent, nullptr);
+-      return;
+-    }
+-    else
+-    {
+-      abort();
+-    }
++    throw std::runtime_error("VTK OpenGL2 error: cannot create GLX context.");
+   }
+
+   if (this->OwnWindow && this->ShowWindow)
+@@ -1215,9 +1209,9 @@ int* vtkXOpenGLRenderWindow::GetScreenSize()
+     this->DisplayId = XOpenDisplay(static_cast<char*>(nullptr));
+     if (this->DisplayId == nullptr)
+     {
+-      vtkErrorMacro(<< "bad X server connection. DISPLAY=" << vtksys::SystemTools::GetEnv("DISPLAY")
+-                    << ". Aborting.\n");
+-      abort();
++      throw std::runtime_error(
++        "VTK OpenGL2 error: bad X server connection. DISPLAY=" +
++        SummarizeDisplayEnv() + ".");
+     }
+     else
+     {
+@@ -1335,9 +1329,9 @@ void vtkXOpenGLRenderWindow::SetWindowInfo(const char* info)
+     this->DisplayId = XOpenDisplay(static_cast<char*>(nullptr));
+     if (this->DisplayId == nullptr)
+     {
+-      vtkErrorMacro(<< "bad X server connection. DISPLAY=" << vtksys::SystemTools::GetEnv("DISPLAY")
+-                    << ". Aborting.\n");
+-      abort();
++      throw std::runtime_error(
++        "VTK OpenGL2 error: bad X server connection. DISPLAY=" +
++        SummarizeDisplayEnv() + ".");
+     }
+     else
+     {
+@@ -1370,9 +1364,9 @@ void vtkXOpenGLRenderWindow::SetParentInfo(const char* info)
+     this->DisplayId = XOpenDisplay(static_cast<char*>(nullptr));
+     if (this->DisplayId == nullptr)
+     {
+-      vtkErrorMacro(<< "bad X server connection. DISPLAY=" << vtksys::SystemTools::GetEnv("DISPLAY")
+-                    << ". Aborting.\n");
+-      abort();
++      throw std::runtime_error(
++        "VTK OpenGL2 error: bad X server connection. DISPLAY=" +
++        SummarizeDisplayEnv() + ".");
+     }
+     else
+     {
