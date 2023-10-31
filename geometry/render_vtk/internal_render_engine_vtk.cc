@@ -39,6 +39,7 @@
 #include "drake/geometry/render_vtk/internal_vtk_util.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/systems/sensors/color_palette.h"
+#include "drake/systems/sensors/vtk_diagnostic_event_observer.h"
 
 namespace drake {
 namespace geometry {
@@ -69,6 +70,7 @@ using systems::sensors::ImageLabel16I;
 using systems::sensors::ImageRgba8U;
 using systems::sensors::ImageTraits;
 using systems::sensors::PixelType;
+using systems::sensors::internal::VtkDiagnosticEventObserver;
 
 namespace {
 
@@ -643,6 +645,19 @@ void RenderEngineVtk::InitializePipelines() {
 
   // Generic configuration of pipelines.
   for (auto& pipeline : pipelines_) {
+    // When VTK experiences a warning, send it to drake::log()->warn().
+    // When VTK experiences an error, throw it as an exception.
+    vtkNew<VtkDiagnosticEventObserver> observer;
+    observer->set_diagnostic(&diagnostic_);
+    auto observe = [&observer](const auto& vtk_object) {
+      vtk_object->AddObserver(vtkCommand::ErrorEvent, observer);
+      vtk_object->AddObserver(vtkCommand::WarningEvent, observer);
+    };
+    observe(pipeline->renderer);
+    observe(pipeline->window);
+    observe(pipeline->filter);
+    observe(pipeline->exporter);
+
     // Multisampling disabled by design for label and depth. It's turned off for
     // color because of a bug which affects on-screen rendering with NVidia
     // drivers on Ubuntu 16.04. In certain very specific

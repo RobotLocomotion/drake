@@ -369,7 +369,9 @@ drake_cc_library(
     srcs = ["vtk_diagnostic_event_observer.cc"],
     hdrs = ["vtk_diagnostic_event_observer.h"],
     internal = True,
-    visibility = ["//visibility:private"],
+    visibility = [
+        "//geometry/render_vtk:__pkg__",
+    ],
     deps = [
         "//common:diagnostic_policy",
         "//common:drake_export",
