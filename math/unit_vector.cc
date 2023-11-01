@@ -48,7 +48,8 @@ std::pair<T, bool> IsUnitVector(const Vector3<T>& unit_vector,
     // calculate derivatives for the quantity returned to the calling function.
     const T uvec_squared = unit_vector.squaredNorm();
     const double uvec_squared_double = ExtractDoubleOrThrow(uvec_squared);
-    const bool is_ok_unit_vector = isfinite(uvec_squared_double) &&
+    const bool is_ok_unit_vector =
+        isfinite(uvec_squared_double) &&
         std::abs(uvec_squared_double - 1.0) <= tolerance2;
     return {uvec_squared, is_ok_unit_vector};
   } else {
