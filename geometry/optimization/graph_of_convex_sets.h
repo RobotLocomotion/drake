@@ -10,7 +10,6 @@
 #include <utility>
 #include <vector>
 
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/symbolic/expression.h"
 #include "drake/geometry/optimization/convex_set.h"
@@ -429,37 +428,17 @@ class GraphOfConvexSets {
   // TODO(russt): Provide helper methods to add multiple vertices which share
   // the same ConvexSet.
 
-  /** Adds an edge to the graph from VertexId @p u_id to VertexId @p v_id.  The
-  ids must refer to valid vertices in this graph. If @p name is empty then a
-  default name will be provided.
-  */
-  DRAKE_DEPRECATED("2023-11-01", "Use the overload that takes Vertex* instead.")
-  Edge* AddEdge(VertexId u_id, VertexId v_id, std::string name = "");
-
   /** Adds an edge to the graph from Vertex @p u to Vertex @p v.  The
   vertex references must refer to valid vertices in this graph. If @p name is
   empty then a default name will be provided.
   */
   Edge* AddEdge(Vertex* u, Vertex* v, std::string name = "");
 
-  /** Removes vertex @p vertex_id from the graph as well as any edges from or to
-  the vertex. Runtime is O(nₑ) where nₑ is the number of edges in the graph.
-  @pre The vertex must be part of the graph.
-  */
-  DRAKE_DEPRECATED("2023-11-01", "Use the overload that takes Vertex* instead.")
-  void RemoveVertex(VertexId vertex_id);
-
   /** Removes vertex @p vertex from the graph as well as any edges from or to
   the vertex. Runtime is O(nₑ) where nₑ is the number of edges in the graph.
   @pre The vertex must be part of the graph.
   */
   void RemoveVertex(Vertex* vertex);
-
-  /** Removes edge @p edge_id from the graph.
-  @pre The edge must be part of the graph.
-  */
-  DRAKE_DEPRECATED("2023-11-01", "Use the overload that takes Vertex* instead.")
-  void RemoveEdge(EdgeId edge_id);
 
   /** Removes edge @p edge from the graph.
   @pre The edge must be part of the graph.
@@ -523,12 +502,6 @@ class GraphOfConvexSets {
   */
   solvers::MathematicalProgramResult SolveShortestPath(
       const Vertex& source, const Vertex& target,
-      const GraphOfConvexSetsOptions& options =
-          GraphOfConvexSetsOptions()) const;
-
-  DRAKE_DEPRECATED("2023-11-01", "Use the overload that takes Vertex& instead.")
-  solvers::MathematicalProgramResult SolveShortestPath(
-      VertexId source_id, VertexId target_id,
       const GraphOfConvexSetsOptions& options =
           GraphOfConvexSetsOptions()) const;
 

@@ -325,7 +325,6 @@ drake_java_binary(
     visibility = ["//visibility:private"],
     runtime_deps = [
         ":lcmtypes_drake_java",
-        "@optitrack_driver//lcmtypes:lcmtypes_optitrack",
     ],
 )
 
@@ -372,12 +371,10 @@ install(
         "@commons_io//jar",
         "@lcm//:lcm-java",
         "@net_sf_jchart2d//jar",
-        "@optitrack_driver//lcmtypes:lcmtypes_optitrack",
         "@org_apache_xmlgraphics_commons//jar",
     ],
     deps = [
         ":install_drake_cc_headers",
-        "//tools/workspace/optitrack_driver:install",
         "@lcm//:install",
     ],
 )

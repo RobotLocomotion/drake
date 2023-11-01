@@ -223,7 +223,6 @@ cc_library(
         "//lcmtypes:lcmtypes_drake_cc",
         "@eigen",
         "@fmt",
-        "@optitrack_driver//lcmtypes:optitrack_lcmtypes",
     ],
 )
 
