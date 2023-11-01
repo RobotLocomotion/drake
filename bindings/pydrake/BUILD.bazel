@@ -421,6 +421,7 @@ drake_py_binary(
 # out of date.
 PYI_FILES = [
     "pydrake/autodiffutils.pyi",
+    "pydrake/common/_module_py.pyi",
     "pydrake/common/eigen_geometry.pyi",
     "pydrake/common/schema.pyi",
     "pydrake/common/value.pyi",
