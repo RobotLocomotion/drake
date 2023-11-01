@@ -2,7 +2,6 @@ load("//tools/install:install.bzl", "install")
 load(
     "//tools/skylark:drake_py.bzl",
     "drake_py_binary",
-    "drake_py_library",
     "drake_py_unittest",
 )
 load(
@@ -91,22 +90,6 @@ drake_py_unittest(
         ":math",
         "//bindings/pydrake/common/test_utilities:meta_py",
         "//bindings/pydrake/common/test_utilities:numpy_compare_py",
-    ],
-)
-
-drake_py_library(
-    name = "algebra_test_util_py",
-    testonly = 1,
-    srcs = [
-        "test/__init__.py",
-        "test/algebra_test_util.py",
-    ],
-    visibility = [
-        "//bindings/pydrake/autodiffutils:__pkg__",
-        "//bindings/pydrake/symbolic:__pkg__",
-    ],
-    deps = [
-        ":math",
     ],
 )
 
