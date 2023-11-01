@@ -398,6 +398,68 @@ GTEST_TEST(ProcessModelDirectivesTest, DeepNestedChildFrameWelds) {
         R"(.*Failure at .* in AddWeld\(\): condition 'found' failed.*)");
 }
 
+// Test that flattening is idempotent and semantically a no-op.
+GTEST_TEST(ProcessModelDirectivesTest, Flatten) {
+  std::vector<ModelInstanceInfo> deep_models;
+  {
+    const ModelDirectives directives = LoadModelDirectives(FindResourceOrThrow(
+        std::string(kTestDir) + "/add_scoped_top.dmd.yaml"));
+    MultibodyPlant<double> plant(0.0);
+    std::unique_ptr<Parser> parser = make_parser(&plant);
+    deep_models = ProcessModelDirectives(directives, make_parser(&plant).get());
+  }
+
+  std::vector<ModelInstanceInfo> flat_models;
+  {
+    const ModelDirectives directives = LoadModelDirectives(FindResourceOrThrow(
+        std::string(kTestDir) + "/add_scoped_top.dmd.yaml"));
+    MultibodyPlant<double> plant(0.0);
+    std::unique_ptr<Parser> parser = make_parser(&plant);
+    ModelDirectives flat_directives;
+    FlattenModelDirectives(directives, parser->package_map(), &flat_directives);
+    flat_models = ProcessModelDirectives(flat_directives, parser.get());
+  }
+
+  std::vector<ModelInstanceInfo> reflattened_models;
+  {
+    const ModelDirectives directives = LoadModelDirectives(FindResourceOrThrow(
+        std::string(kTestDir) + "/add_scoped_top.dmd.yaml"));
+    MultibodyPlant<double> plant(0.0);
+    std::unique_ptr<Parser> parser = make_parser(&plant);
+    ModelDirectives flat_directives;
+    ModelDirectives reflattened_directives;  // To test idempotency.
+    FlattenModelDirectives(directives, parser->package_map(), &flat_directives);
+    FlattenModelDirectives(flat_directives, parser->package_map(),
+                           &reflattened_directives);
+    reflattened_models =
+        ProcessModelDirectives(reflattened_directives, parser.get());
+  }
+
+  // If there were inconsistencies in the scoped names between directives,
+  // e.g. frame names referring to nonexistent model scopes, then the
+  // `ProcessModelDirectives` call above would have failed.  So we only need
+  // to ensure that the models are present with identical names and we can be
+  // reasonably sure the other named elements must have been correct.
+
+  // Models from flattened directives have the same names as the originals.
+  std::set<std::string> deep_names;
+  for (const auto& info : deep_models) {
+    deep_names.insert(info.model_name);
+  }
+  std::set<std::string> flat_names;
+  for (const auto& info : flat_models) {
+    flat_names.insert(info.model_name);
+  }
+  EXPECT_EQ(deep_names, flat_names);
+
+  // Repeated flattening makes no difference (idempotency).
+  std::set<std::string> reflattened_names;
+  for (const auto& info : reflattened_models) {
+    reflattened_names.insert(info.model_name);
+  }
+  EXPECT_EQ(flat_names, reflattened_names);
+}
+
 }  // namespace
 }  // namespace parsing
 }  // namespace multibody

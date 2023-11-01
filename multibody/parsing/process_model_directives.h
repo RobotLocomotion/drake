@@ -27,7 +27,19 @@ std::string ResolveModelDirectiveUri(
     const std::string& uri,
     const drake::multibody::PackageMap& package_map);
 
-/// Flatten model directives.
+/// Flatten model directives into a single object.
+///
+/// This function removes all AddDirectives directives from the given
+/// `directives`, locating the file via the given `package_map`, parsing it,
+/// and updating the names of its items to add any namespace prefix
+/// requested by the `model_namespace` of the directive.  The resulting
+/// directives are appended to `out`.
+///
+/// The results of FlattenModelDirectives are semantically identical to
+/// `directives`.  FlattenModelDirectives is therefore also idempotent.
+///
+/// This flattening is intended to assist with creating reproducible
+/// simulation scenarios and with hashing; it can also be useful in debugging.
 void FlattenModelDirectives(const ModelDirectives& directives,
                             const drake::multibody::PackageMap& package_map,
                             ModelDirectives* out);

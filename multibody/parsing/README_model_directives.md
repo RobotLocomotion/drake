@@ -81,6 +81,17 @@ Thus:
 - `top_level::my_model::my_frame`: The model instance is
   `top_level::my_model`, the frame is `my_frame`.
 
+All element names will be automatically prefixed with that model
+namespace, with the exception of `add_frame` names without a
+model instance.
+
+In the case of a model instance being present, an invocation of
+`add_frame` will use it as the prefix all element names. If
+no model instance is present, `add_frame` will check the
+associated `X_PF.base_frame` for a model instance prefix,
+and should one exist, use it as the prefix for the `name` element.
+
+
 ## Units
 
 We use SI units plus radians for all physical quantities.
