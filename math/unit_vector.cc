@@ -41,16 +41,14 @@ std::pair<T, bool> IsUnitVector(const Vector3<T>& unit_vector,
     // is_ok_unit_vector =
     //     (abs(unit_vector.norm() - 1) <=  tolerance_unit_vector_norm;
     // -------------------------------------------------------------
-    using std::abs;
     using std::isfinite;
     const double tolerance2 = 2 * tolerance_unit_vector_norm;
 
-    // In calculating ‖unit_vector‖² for AutoDiff type <T>, there is no need to
-    // calculate derivatives. Use DiscardGradient() to skip that calculation.
-    const double uvec_squared = DiscardGradient(unit_vector).squaredNorm();
-    const bool is_ok_unit_vector =
-        isfinite(uvec_squared) && abs(uvec_squared - 1) <= tolerance2;
-
+    // In calculating ‖unit_vector‖² for AutoDiff type <T>, there may be a need
+    // to calculate derivatives for the value returned to the calling function.
+    const T uvec_squared = unit_vector.squaredNorm();
+    const bool is_ok_unit_vector = isfinite(uvec_squared) &&
+        std::abs(ExtractDoubleOrThrow(uvec_squared) - 1.0) <= tolerance2;
     return {uvec_squared, is_ok_unit_vector};
   } else {
     unused(unit_vector, tolerance_unit_vector_norm);
