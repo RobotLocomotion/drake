@@ -5,7 +5,6 @@
 #include <utility>
 #include <vector>
 
-#include "drake/common/drake_deprecated.h"
 #include "drake/solvers/binding.h"
 #include "drake/solvers/constraint.h"
 #include "drake/solvers/cost.h"
@@ -93,14 +92,6 @@ void AggregateDuplicateVariables(const Eigen::SparseMatrix<double>& A,
                                  const VectorX<symbolic::Variable>& vars,
                                  Eigen::SparseMatrix<double>* A_new,
                                  VectorX<symbolic::Variable>* vars_new);
-
-/**
- * Returns the first non-convex quadratic cost among @p quadratic_costs. If all
- * quadratic costs are convex, then return a nullptr.
- */
-DRAKE_DEPRECATED("2023-11-01", "This function is no longer public.")
-[[nodiscard]] const Binding<QuadraticCost>* FindNonconvexQuadraticCost(
-    const std::vector<Binding<QuadraticCost>>& quadratic_costs);
 
 namespace internal {
 // Returns the first non-convex quadratic cost among @p quadratic_costs. If all

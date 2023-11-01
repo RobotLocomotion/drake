@@ -191,12 +191,6 @@ class DRAKE_DEPRECATED(
 
   ~MinimumDistanceConstraint() override {}
 
-  /** Getter for the minimum distance. */
-  DRAKE_DEPRECATED("2023-11-01", "Use minimum_distance_lower() instead.")
-  double minimum_distance() const {
-    return minimum_value_constraint_->minimum_value_lower();
-  }
-
   /** Getter for the lower bound of the minimum distance. */
   double minimum_distance_lower() const {
     return minimum_value_constraint_->minimum_value_lower();

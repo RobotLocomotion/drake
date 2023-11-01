@@ -156,10 +156,6 @@ class DRAKE_DEPRECATED(
 
   ~MinimumValueConstraint() override {}
 
-  /** Getter for the minimum value. */
-  DRAKE_DEPRECATED("2023-11-01", "Use minimum_value_lower() instead.")
-  double minimum_value() const { return minimum_value_lower_; }
-
   /** Getter for the lower bound on the minimum value. */
   double minimum_value_lower() const { return minimum_value_lower_; }
 
