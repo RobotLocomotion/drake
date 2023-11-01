@@ -190,6 +190,23 @@
     make_connection(url, reconnect_ms);
     <!-- CONNECTION BLOCK END -->
 
+    const webxrMode = urlParams.get('webxr');
+    if (webxrMode) {
+        viewer.handle_command({
+          type: "enable_webxr",
+          mode: webxrMode
+        });
+    }
+
+    const controllerMode = urlParams.get('controller');
+    if (controllerMode === "on") {
+      viewer.handle_command({
+        type: "visualize_vr_controller"
+      });
+    }
+
+
+
   </script>
 
   <style>
