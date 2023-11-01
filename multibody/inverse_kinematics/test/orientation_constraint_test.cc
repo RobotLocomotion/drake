@@ -59,8 +59,7 @@ TEST_F(IiwaKinematicConstraintTest, OrientationConstraint) {
   AutoDiffVecXd y_autodiff;
   constraint->Eval(q_autodiff, &y_autodiff);
 
-  plant_autodiff_->GetMutablePositions(plant_context_autodiff_.get()) =
-      q_autodiff;
+  plant_autodiff_->SetPositions(plant_context_autodiff_.get(), q_autodiff);
   AutoDiffVecXd y_autodiff_expected = EvalOrientationConstraintAutoDiff(
       *plant_context_autodiff_, *plant_autodiff_,
       plant_autodiff_->GetFrameByName(frameAbar.name()), R_AbarA,
@@ -69,8 +68,7 @@ TEST_F(IiwaKinematicConstraintTest, OrientationConstraint) {
 
   // Test with non-identity gradient for q_autodiff.
   q_autodiff = math::InitializeAutoDiff(q, MatrixX<double>::Ones(q.size(), 2));
-  plant_autodiff_->GetMutablePositions(plant_context_autodiff_.get()) =
-      q_autodiff;
+  plant_autodiff_->SetPositions(plant_context_autodiff_.get(), q_autodiff);
   constraint->Eval(q_autodiff, &y_autodiff);
   y_autodiff_expected = EvalOrientationConstraintAutoDiff(
       *plant_context_autodiff_, *plant_autodiff_,

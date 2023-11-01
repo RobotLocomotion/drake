@@ -2352,6 +2352,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///          @ref dangerous_get_mutable).
   /// @throws std::exception if `context` is nullptr or if it does not
   /// correspond to the context for a multibody model.
+  DRAKE_DEPRECATED(
+      "2024-02-01",
+      "Use GetPositionsAndVelocities() for constant access and "
+      "SetPositionsAndVelocities() to set the positions and velocities.")
   Eigen::VectorBlock<VectorX<T>> GetMutablePositionsAndVelocities(
       systems::Context<T>* context) const {
     this->ValidateContext(context);
@@ -2437,6 +2441,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///          @ref dangerous_get_mutable).
   /// @throws std::exception if the `context` is nullptr or if it does not
   /// correspond to the Context for a multibody model.
+  DRAKE_DEPRECATED("2024-02-01",
+                   "Use GetPositions() for constant access and SetPositions() "
+                   "to set positions.")
   Eigen::VectorBlock<VectorX<T>> GetMutablePositions(
       systems::Context<T>* context) const {
     this->ValidateContext(context);
@@ -2451,6 +2458,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if the `state` is nullptr or if `context` does
   ///         not correspond to the Context for a multibody model.
   /// @pre `state` comes from this multibody model.
+  DRAKE_DEPRECATED("2024-02-01",
+                   "Use GetPositions() for constant access and SetPositions() "
+                   "to set positions.")
   Eigen::VectorBlock<VectorX<T>> GetMutablePositions(
       const systems::Context<T>& context, systems::State<T>* state) const {
     this->ValidateContext(context);
@@ -2467,7 +2477,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
                     const Eigen::Ref<const VectorX<T>>& q) const {
     this->ValidateContext(context);
     DRAKE_THROW_UNLESS(q.size() == num_positions());
-    GetMutablePositions(context) = q;
+    internal_tree().GetMutablePositions(context) = q;
   }
 
   /// Sets the generalized positions q for a particular model instance in a
@@ -2481,7 +2491,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
                     const Eigen::Ref<const VectorX<T>>& q_instance) const {
     this->ValidateContext(context);
     DRAKE_THROW_UNLESS(q_instance.size() == num_positions(model_instance));
-    Eigen::VectorBlock<VectorX<T>> q = GetMutablePositions(context);
+    Eigen::VectorBlock<VectorX<T>> q =
+        internal_tree().GetMutablePositions(context);
     internal_tree().SetPositionsInArray(model_instance, q_instance, &q);
   }
 
@@ -2499,7 +2510,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     this->ValidateContext(context);
     this->ValidateCreatedForThisSystem(state);
     DRAKE_THROW_UNLESS(q_instance.size() == num_positions(model_instance));
-    Eigen::VectorBlock<VectorX<T>> q = GetMutablePositions(context, state);
+    Eigen::VectorBlock<VectorX<T>> q =
+        internal_tree().get_mutable_positions(state);
     internal_tree().SetPositionsInArray(model_instance, q_instance, &q);
   }
 
@@ -2582,6 +2594,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///          @ref dangerous_get_mutable).
   /// @throws std::exception if the `context` is nullptr or if it does not
   /// correspond to the Context for a multibody model.
+  DRAKE_DEPRECATED("2024-02-01",
+                   "Use GetVelocities() for constant access and "
+                   "SetVelocities() to set velocities.")
   Eigen::VectorBlock<VectorX<T>> GetMutableVelocities(
       systems::Context<T>* context) const {
     this->ValidateContext(context);
@@ -2596,6 +2611,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if the `state` is nullptr or if `context` does
   ///         not correspond to the Context for a multibody model.
   /// @pre `state` comes from this multibody model.
+  DRAKE_DEPRECATED("2024-02-01",
+                   "Use GetVelocities() for constant access and "
+                   "SetVelocities() to set velocities.")
   Eigen::VectorBlock<VectorX<T>> GetMutableVelocities(
       const systems::Context<T>& context, systems::State<T>* state) const {
     this->ValidateContext(context);
@@ -2612,7 +2630,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
                      const Eigen::Ref<const VectorX<T>>& v) const {
     this->ValidateContext(context);
     DRAKE_THROW_UNLESS(v.size() == num_velocities());
-    GetMutableVelocities(context) = v;
+    internal_tree().GetMutableVelocities(context) = v;
   }
 
   /// Sets the generalized velocities v for a particular model instance in a
@@ -2626,7 +2644,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
                      const Eigen::Ref<const VectorX<T>>& v_instance) const {
     this->ValidateContext(context);
     DRAKE_THROW_UNLESS(v_instance.size() == num_velocities(model_instance));
-    Eigen::VectorBlock<VectorX<T>> v = GetMutableVelocities(context);
+    Eigen::VectorBlock<VectorX<T>> v =
+        internal_tree().GetMutableVelocities(context);
     internal_tree().SetVelocitiesInArray(model_instance, v_instance, &v);
   }
 
@@ -2645,7 +2664,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     this->ValidateContext(context);
     this->ValidateCreatedForThisSystem(state);
     DRAKE_THROW_UNLESS(v_instance.size() == num_velocities(model_instance));
-    Eigen::VectorBlock<VectorX<T>> v = GetMutableVelocities(context, state);
+    Eigen::VectorBlock<VectorX<T>> v =
+        internal_tree().get_mutable_velocities(state);
     internal_tree().SetVelocitiesInArray(model_instance, v_instance, &v);
   }
 
