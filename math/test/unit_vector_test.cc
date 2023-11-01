@@ -139,7 +139,7 @@ GTEST_TEST(UnitVectorTest, AutoDiffTestForUnitVector) {
 
   // Compare calculations from ThrowIfNotUnitVector() with by-hand calculations.
   const Eigen::AutoDiffScalar mag_squared =
-      math::internal::ThrowIfNotUnitVector(v, "AutoDiffTestForUnitVector");
+      math::internal::ThrowIfNotUnitVector(vec, "AutoDiffTestForUnitVector");
   EXPECT_NEAR(ExtractDoubleOrThrow(y),
               ExtractDoubleOrThrow(mag_squared), kTolerance);
   const Eigen::MatrixXd mag_squared_partials = mag_squared.derivatives();
