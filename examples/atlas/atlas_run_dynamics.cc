@@ -88,9 +88,8 @@ int do_main() {
   // lie first in the state vector.
   DRAKE_DEMAND(pelvis.floating_positions_start() == 0);
   // Similarly for velocities. The velocities for this floating pelvis are the
-  // first set of velocities after all model positions, since the state vector
-  // is stacked as x = [q; v].
-  DRAKE_DEMAND(pelvis.floating_velocities_start() == plant.num_positions());
+  // first set of velocities and should start at the beginning of v.
+  DRAKE_DEMAND(pelvis.floating_velocities_start_in_v() == 0);
 
   visualization::AddDefaultVisualization(&builder);
 

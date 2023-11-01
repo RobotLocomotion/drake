@@ -2939,8 +2939,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// free (floating) or not with Body::is_floating().
   /// For many applications, a user might need to work with indexes in the
   /// multibody state vector. For such applications,
-  /// Body::floating_positions_start() and Body::floating_velocities_start()
-  /// offer the additional level of introspection needed.
+  /// Body::floating_positions_start() and
+  /// Body::floating_velocities_start_in_v() offer the additional level of
+  /// introspection needed.
   ///
   /// It is sometimes convenient for users to perform operations on Bodies
   /// ubiquitously through the APIs of the Joint class. For that reason we

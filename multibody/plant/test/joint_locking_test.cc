@@ -126,8 +126,7 @@ TEST_P(JointLockingTest, JointLockingIndicesTest) {
   RevoluteJoint<double>& body3_body4 =
       plant_->GetMutableJointByName<RevoluteJoint>("body3_body4");
 
-  const int body1_velocity_start =
-      body1.floating_velocities_start() - plant_->num_positions();
+  const int body1_velocity_start = body1.floating_velocities_start_in_v();
 
   // No joints/bodies are locked, all joint/body velocity indices should exist.
   {

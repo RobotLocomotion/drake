@@ -1861,7 +1861,9 @@ class TestPlant(unittest.TestCase):
             plant.GetFreeBodyPose(context, link0).translation(),
             [0.4, 0.5, 0.6])
         self.assertNotEqual(link0.floating_positions_start(), -1)
-        self.assertNotEqual(link0.floating_velocities_start(), -1)
+        self.assertNotEqual(link0.floating_velocities_start_in_v(), -1)
+        with catch_drake_warnings(expected_count=1):
+            self.assertNotEqual(link0.floating_velocities_start(), -1)
         self.assertFalse(plant.IsVelocityEqualToQDot())
         v_expected = np.linspace(start=-1.0, stop=-nv, num=nv)
         qdot = plant.MapVelocityToQDot(context, v_expected)
