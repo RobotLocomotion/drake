@@ -20,6 +20,7 @@
 #include <vtkSmartPointer.h>         // vtkCommonCore
 #include <vtkWindowToImageFilter.h>  // vtkRenderingCore
 
+#include "drake/common/diagnostic_policy.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_export.h"
 #include "drake/common/reset_on_copy.h"
@@ -295,6 +296,9 @@ class DRAKE_NO_EXPORT RenderEngineVtk : public render::RenderEngine,
 
   // The engine's configuration parameters.
   const RenderEngineVtkParams parameters_;
+
+  // VTK error and/or warning messages end up here.
+  drake::internal::DiagnosticPolicy diagnostic_;
 
   std::array<std::unique_ptr<RenderingPipeline>, kNumPipelines> pipelines_;
 
