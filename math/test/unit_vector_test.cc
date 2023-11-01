@@ -133,15 +133,15 @@ GTEST_TEST(UnitVectorTest, AutoDiffTestForUnitVector) {
   partials_expected(2, 0) = 2 * value2;  // ∂y/∂v2 = 2 * v2  (by-hand).
 
   // Compare calculations from Eigen's AutoDiff with by-hand calculations.
-  constexpr double kTolerance =  4 * std::numeric_limits<double>::epsilon();
+  constexpr double kTolerance = 4 * std::numeric_limits<double>::epsilon();
   EXPECT_TRUE(CompareMatrices(y_partials, partials_expected, kTolerance,
                               MatrixCompareType::absolute));
 
   // Compare calculations from ThrowIfNotUnitVector() with by-hand calculations.
   const Eigen::AutoDiffScalar mag_squared =
       math::internal::ThrowIfNotUnitVector(vec, "AutoDiffTestForUnitVector");
-  EXPECT_NEAR(ExtractDoubleOrThrow(y),
-              ExtractDoubleOrThrow(mag_squared), kTolerance);
+  EXPECT_NEAR(ExtractDoubleOrThrow(y), ExtractDoubleOrThrow(mag_squared),
+              kTolerance);
   const Eigen::MatrixXd mag_squared_partials = mag_squared.derivatives();
   EXPECT_TRUE(CompareMatrices(mag_squared_partials, partials_expected,
                               kTolerance, MatrixCompareType::absolute));
