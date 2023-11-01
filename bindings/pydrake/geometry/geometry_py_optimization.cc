@@ -779,37 +779,6 @@ void DefineGeometryOptimization(py::module m) {
             &GraphOfConvexSets::SolveConvexRestriction, py::arg("active_edges"),
             py::arg("options") = GraphOfConvexSetsOptions(),
             cls_doc.SolveConvexRestriction.doc);
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    graph_of_convex_sets
-        .def("AddEdge",
-            WrapDeprecated(cls_doc.AddEdge.doc_deprecated,
-                py::overload_cast<GraphOfConvexSets::VertexId,
-                    GraphOfConvexSets::VertexId, std::string>(
-                    &GraphOfConvexSets::AddEdge)),
-            py::arg("u_id"), py::arg("v_id"), py::arg("name") = "",
-            py_rvp::reference_internal, cls_doc.AddEdge.doc_deprecated)
-        .def("RemoveVertex",
-            WrapDeprecated(cls_doc.RemoveVertex.doc_deprecated,
-                py::overload_cast<GraphOfConvexSets::VertexId>(
-                    &GraphOfConvexSets::RemoveVertex)),
-            py::arg("vertex_id"), cls_doc.RemoveVertex.doc_deprecated)
-        .def("RemoveEdge",
-            WrapDeprecated(cls_doc.RemoveEdge.doc_deprecated,
-                py::overload_cast<GraphOfConvexSets::EdgeId>(
-                    &GraphOfConvexSets::RemoveEdge)),
-            py::arg("edge_id"), cls_doc.RemoveEdge.doc_deprecated)
-        .def("SolveShortestPath",
-            WrapDeprecated(cls_doc.SolveShortestPath.doc_deprecated,
-                overload_cast_explicit<solvers::MathematicalProgramResult,
-                    GraphOfConvexSets::VertexId, GraphOfConvexSets::VertexId,
-                    const GraphOfConvexSetsOptions&>(
-                    &GraphOfConvexSets::SolveShortestPath)),
-            py::arg("source_id"), py::arg("target_id"),
-            py::arg("options") = GraphOfConvexSetsOptions(),
-            cls_doc.SolveShortestPath.doc_deprecated);
-#pragma GCC diagnostic pop
   }
   {
     // Definitions for c_iris_collision_geometry.h/cc

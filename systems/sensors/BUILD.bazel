@@ -37,8 +37,6 @@ drake_cc_package_library(
         ":image_writer",
         ":lcm_image_array_to_images",
         ":lcm_image_traits",
-        ":optitrack_receiver",
-        ":optitrack_sender",
         ":rgbd_sensor",
         ":rgbd_sensor_async",
         ":rotary_encoders",
@@ -308,28 +306,6 @@ drake_cc_library(
     deps = [
         "//common:unused",
         "//systems/framework",
-    ],
-)
-
-drake_cc_library(
-    name = "optitrack_receiver",
-    srcs = ["optitrack_receiver.cc"],
-    hdrs = ["optitrack_receiver.h"],
-    deps = [
-        "//math:geometric_transform",
-        "//systems/framework:leaf_system",
-        "@optitrack_driver//lcmtypes:optitrack_lcmtypes",
-    ],
-)
-
-drake_cc_library(
-    name = "optitrack_sender",
-    srcs = ["optitrack_sender.cc"],
-    hdrs = ["optitrack_sender.h"],
-    deps = [
-        "//geometry:kinematics_vector",
-        "//systems/framework:leaf_system",
-        "@optitrack_driver//lcmtypes:optitrack_lcmtypes",
     ],
 )
 
@@ -613,26 +589,6 @@ drake_cc_googletest(
         ":lcm_image_array_to_images",
         "//common:find_resource",
         "//lcmtypes:image_array",
-    ],
-)
-
-drake_cc_googletest(
-    name = "optitrack_receiver_test",
-    copts = ["-Wno-deprecated-declarations"],
-    deps = [
-        ":optitrack_receiver",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//common/test_utilities:expect_throws_message",
-        "@optitrack_driver//lcmtypes:optitrack_lcmtypes",
-    ],
-)
-
-drake_cc_googletest(
-    name = "optitrack_sender_test",
-    copts = ["-Wno-deprecated-declarations"],
-    deps = [
-        ":optitrack_sender",
-        "@optitrack_driver//lcmtypes:optitrack_lcmtypes",
     ],
 )
 
