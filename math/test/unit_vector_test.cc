@@ -17,7 +17,7 @@ GTEST_TEST(UnitVectorTest, ThrowOrWarnIfNotUnitVector) {
   DRAKE_EXPECT_NO_THROW(
       ThrowIfNotUnitVector(unit_vector, "UnusedFunctionName"));
 
-  // Verify WarnIfNotUnitVector() does not warn for a perfect unit vector.
+  // Verify WarnIfNotUnitVector() returns false for a perfect unit vector.
   bool is_bad_unit_vector =
       WarnIfNotUnitVector(unit_vector, "UnusedFunctionName");
   EXPECT_FALSE(is_bad_unit_vector);
@@ -27,7 +27,7 @@ GTEST_TEST(UnitVectorTest, ThrowOrWarnIfNotUnitVector) {
   DRAKE_EXPECT_NO_THROW(
       ThrowIfNotUnitVector(unit_vector, "UnusedFunctionName"));
 
-  // Verify that no exception is thrown when |unit_vector| is nearly 1.0.
+  // Verify that no exception is thrown when ‖unit_vector‖ is nearly 1.0.
   constexpr double kepsilon = std::numeric_limits<double>::epsilon();
   unit_vector = Vector3<double>(1 + kepsilon, 0, 0);
   DRAKE_EXPECT_NO_THROW(
@@ -49,11 +49,11 @@ GTEST_TEST(UnitVectorTest, ThrowOrWarnIfNotUnitVector) {
       ThrowIfNotUnitVector(not_unit_vector, "SomeFunctionName"),
       expected_message);
 
-  // Verify WarnIfNotUnitVector() returns true for near valid unit vector.
+  // Verify WarnIfNotUnitVector() returns true for a near valid unit vector.
   is_bad_unit_vector = WarnIfNotUnitVector(unit_vector, "TestFunctionName");
   EXPECT_FALSE(is_bad_unit_vector);
 
-  // Verify WarnIfNotUnitVector() returns false for invalid unit vector.
+  // Verify WarnIfNotUnitVector() returns false for an invalid unit vector.
   // Not checked: A message should have be written to the log file.
   is_bad_unit_vector =
       WarnIfNotUnitVector(not_unit_vector, "SomeFunctionName");

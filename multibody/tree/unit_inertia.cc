@@ -81,8 +81,12 @@ UnitInertia<T> UnitInertia<T>::AxiallySymmetric(const T& moment_parallel,
       2.0 + 32 * std::numeric_limits<double>::epsilon();
   DRAKE_THROW_UNLESS(moment_parallel <= two_plus_tiny * moment_perpendicular);
 
-  // TODO(Mitiguy) consider new UnitVector class that guarantees the argument
-  //  to this function is already normalized by the calling function..
+  // TODO(Mitiguy) Consider a new UnitVector class to ensure the unit_vector
+  //  argument to this function is either already normalized by the calling
+  //  function (so a const reference to a UnitVector is passed) or if the
+  //  calling function passes a Vector3, the Vector3 is automatrically converted
+  //  to a UnitVector (throwing an exception if the Vector3 contains NaN or
+  //  infinite elements or its magnitude is increduluously small).
   const bool is_bad_unit_vector =
       math::internal::WarnIfNotUnitVector(unit_vector, __func__);
   const Vector3<T> uvec = is_bad_unit_vector ?
