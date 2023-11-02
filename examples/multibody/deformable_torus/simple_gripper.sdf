@@ -4,51 +4,23 @@
        deformable_torus.cc and therefore these files must be kept in sync.
 
        This file defines the model for a simple gripper having two fingers on
-       prismatic joints. Only the left finger is actuated. The modeler will want
-       to add a coupler constraint between the fingers (if the selected solver
-       supports it) or simply lock the right finger in place.
+       prismatic joints. Only the left finger is actuated and the right finger
+       coupler constrained to the left finger.
 
        The frame of the gripper, G, has its x-axis pointing to the right
        of the gripper, its y-axis pointing "forward" (towards the fingers
        side) and, the z-axis pointing upwards. This file only defines visual
        geometry but not contact geometry.
-
-       TODO(xuchenhan-tri): The simple_gripper.sdf should not hard-code a weld
-       joint to the world. We should be loading the gripper file using a
-       dmd.yaml file (or more likely, inline string) that postures the weld as
-       part of the example program itself.
   -->
   <model name="simple_gripper">
-    <!-- Pose X_WG of the gripper model frame G in the world frame W. -->
-    <pose>0.0 0.06 0.08 -1.57 0 1.57</pose>
-    <joint name="weld_base" type="fixed">
-      <parent>world</parent>
-      <child>y_translate_link</child>
-    </joint>
-    <link name="y_translate_link">
-      <inertial>
-        <mass>0.0001</mass>
-        <inertia>
-          <ixx>0.0001</ixx>
-          <ixy>0</ixy>
-          <ixz>0</ixz>
-          <iyy>0.0001</iyy>
-          <iyz>0</iyz>
-          <izz>0.0001</izz>
-        </inertia>
-      </inertial>
-    </link>
+    <pose>0 0.06 0.08 -1.57 0 1.57</pose>
     <joint name="translate_joint" type="prismatic">
-      <parent>y_translate_link</parent>
+      <parent>world</parent>
       <child>body</child>
       <axis>
         <xyz expressed_in="__model__">0 -1 0</xyz>
-        <!-- Drake attaches an actuator to all joints with a non-zero effort
-             limit. We do want an actuator for this joint. -->
-        <limit>
-          <effort>500</effort>
-        </limit>
       </axis>
+      <drake:controller_gains p='10000.0' d='1.0' />
     </joint>
     <link name="body">
       <pose>0 -0.049133 0 0 0 0</pose>
@@ -91,10 +63,12 @@
         </inertia>
       </inertial>
       <visual name="visual">
+        <pose>0 0.0 0.0 1.57 0 0</pose>
         <geometry>
-          <box>
-            <size>0.007 0.081 0.028</size>
-          </box>
+          <capsule>
+            <radius>0.01</radius>
+            <length>0.08</length>
+          </capsule>
         </geometry>
         <material>
           <diffuse>0.3 0.3 0.3 0.9</diffuse>
@@ -118,10 +92,12 @@
         </inertia>
       </inertial>
       <visual name="visual">
+        <pose>0 0.0 0.0 1.57 0 0</pose>
         <geometry>
-          <box>
-            <size>0.007 0.081 0.028</size>
-          </box>
+          <capsule>
+            <radius>0.01</radius>
+            <length>0.08</length>
+          </capsule>
         </geometry>
         <material>
           <diffuse>0.3 0.3 0.3 0.9</diffuse>
@@ -133,20 +109,18 @@
       <child>left_finger</child>
       <axis>
         <xyz>1 0 0</xyz>
-        <!-- Drake attaches an actuator to all joints with a non-zero effort
-             limit. We do want an actuator for this joint. -->
-        <limit>
-          <effort>500</effort>
-        </limit>
       </axis>
+      <drake:controller_gains p='10000.0' d='1.0' />
     </joint>
     <joint name="right_slider" type="prismatic">
       <parent>body</parent>
       <child>right_finger</child>
+      <drake:mimic joint='left_slider' multiplier='-1' offset='0.0'/>
       <axis>
         <xyz>1 0 0</xyz>
-        <!-- Drake attaches an actuator to all joints with a non-zero effort
-             limit. We do NOT want an actuator for this joint. -->
+        <!-- Drake attaches an actuator to all joints if the effort limit isn't
+        explicitly set to zero. We do NOT want an actuator for this joint due
+        to the existence of the mimic tag. -->
         <limit>
           <effort>0</effort>
         </limit>
