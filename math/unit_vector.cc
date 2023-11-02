@@ -40,15 +40,12 @@ bool IsUnitVector(const Vector3<T>& unit_vector,
     // is_ok_unit_vector =
     //     (abs(unit_vector.norm() - 1) <=  tolerance_unit_vector_norm;
     // -------------------------------------------------------------
-    using std::isfinite;
     const double tolerance2 = 2 * tolerance_unit_vector_norm;
 
-    // In calculating ‖unit_vector‖² for AutoDiff type, there may be a need to
-    // calculate derivatives for the quantity returned to the calling function.
     const T uvec_squared = unit_vector.squaredNorm();
     const double uvec_squared_double = ExtractDoubleOrThrow(uvec_squared);
     const bool is_ok_unit_vector =
-        isfinite(uvec_squared_double) &&
+        std::isfinite(uvec_squared_double) &&
         std::abs(uvec_squared_double - 1.0) <= tolerance2;
     return is_ok_unit_vector;
   } else {
