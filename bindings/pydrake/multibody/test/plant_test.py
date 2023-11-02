@@ -515,8 +515,6 @@ class TestPlant(unittest.TestCase):
         self._test_multibody_tree_element_mixin(T, body)
         self.assertIsInstance(body.name(), str)
         self.assertIsInstance(body.scoped_name(), ScopedName)
-        self.assertIsInstance(body.get_num_flexible_positions(), int)
-        self.assertIsInstance(body.get_num_flexible_velocities(), int)
         self.assertIsInstance(body.is_floating(), bool)
         self.assertIsInstance(body.has_quaternion_dofs(), bool)
         self.assertIsInstance(body.default_mass(), float)
@@ -1286,7 +1284,8 @@ class TestPlant(unittest.TestCase):
         if T == float:
             # Can reference matrices. Use `x_ref`.
             # Write into a mutable reference to the state vector.
-            x_ref = plant.GetMutablePositionsAndVelocities(context)
+            with catch_drake_warnings(expected_count=1) as w:
+                x_ref = plant.GetMutablePositionsAndVelocities(context)
             x_ref[:] = x0
 
             def set_zero():
@@ -1331,6 +1330,15 @@ class TestPlant(unittest.TestCase):
         plant.GetDefaultPositions()
         plant.SetDefaultPositions(model_instance=instance, q_instance=q0)
         plant.GetDefaultPositions(model_instance=instance)
+
+        if T == float:
+            # Test GetMutablePositions/Velocities
+            with catch_drake_warnings(expected_count=1) as w:
+                q_ref = plant.GetMutablePositions(context)
+            q_ref[:] = q0
+            with catch_drake_warnings(expected_count=1) as w:
+                v_ref = plant.GetMutableVelocities(context)
+            v_ref[:] = v0
 
         # Test existence of context resetting methods.
         plant.SetDefaultState(context, state=context.get_mutable_state())
@@ -1761,7 +1769,8 @@ class TestPlant(unittest.TestCase):
         x_desired[nq+7:nq+nv] = v_gripper_desired
 
         if T == float:
-            x = plant.GetMutablePositionsAndVelocities(context=context)
+            with catch_drake_warnings(expected_count=1) as w:
+                x = plant.GetMutablePositionsAndVelocities(context=context)
             x[:] = x_desired
         else:
             plant.SetPositionsAndVelocities(context, x_desired)
@@ -1772,7 +1781,8 @@ class TestPlant(unittest.TestCase):
         # Get state from context.
         x = plant.GetPositionsAndVelocities(context=context)
         if T == float:
-            x_tmp = plant.GetMutablePositionsAndVelocities(context=context)
+            with catch_drake_warnings(expected_count=1) as w:
+                x_tmp = plant.GetMutablePositionsAndVelocities(context=context)
             self.assertTrue(np.allclose(x_desired, x_tmp))
 
         # Get positions and velocities of specific model instances
@@ -1851,7 +1861,9 @@ class TestPlant(unittest.TestCase):
             plant.GetFreeBodyPose(context, link0).translation(),
             [0.4, 0.5, 0.6])
         self.assertNotEqual(link0.floating_positions_start(), -1)
-        self.assertNotEqual(link0.floating_velocities_start(), -1)
+        self.assertNotEqual(link0.floating_velocities_start_in_v(), -1)
+        with catch_drake_warnings(expected_count=1):
+            self.assertNotEqual(link0.floating_velocities_start(), -1)
         self.assertFalse(plant.IsVelocityEqualToQDot())
         v_expected = np.linspace(start=-1.0, stop=-nv, num=nv)
         qdot = plant.MapVelocityToQDot(context, v_expected)

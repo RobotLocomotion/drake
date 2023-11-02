@@ -1,0 +1,18 @@
+load("//tools/install:install.bzl", "install_files")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+install_files(
+    name = "install",
+    dest = "share/doc/libjpeg_turbo_internal",
+    files = [
+        "@libjpeg_turbo_internal//:LICENSE.md",
+    ],
+    allowed_externals = [
+        "@libjpeg_turbo_internal//:LICENSE.md",
+    ],
+    visibility = ["//tools/workspace:__pkg__"],
+)
+
+add_lint_tests(
+    python_lint_extra_srcs = ["upgrade.py"],
+)

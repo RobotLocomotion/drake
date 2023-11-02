@@ -402,6 +402,13 @@ GTEST_TEST(TestExponentialConeProgram, MinimalEllipsoidConveringPoints) {
   }
 }
 
+GTEST_TEST(TestExponentialConeProgram, MatrixLogDeterminantLower) {
+  ScsSolver scs_solver;
+  if (scs_solver.available()) {
+    MatrixLogDeterminantLower(scs_solver, kTol);
+  }
+}
+
 GTEST_TEST(TestScs, SetOptions) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>();

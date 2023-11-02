@@ -156,6 +156,7 @@ drake_cc_library(
     ],
     deps = [
         ":fast_pose_composition_functions",
+        ":vector3_util",
         "//common:default_scalars",
         "//common:drake_bool",
         "//common:essential",

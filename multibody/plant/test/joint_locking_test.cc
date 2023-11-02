@@ -7,6 +7,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/geometry/proximity_properties.h"
+#include "drake/geometry/query_results/penetration_as_point_pair.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/plant/multibody_plant_config_functions.h"
@@ -34,6 +35,12 @@ class MultibodyPlantTester {
   static const internal::JointLockingCacheData<double>& EvalJointLockingCache(
       const MultibodyPlant<double>& plant, const Context<double>& context) {
     return plant.EvalJointLockingCache(context);
+  }
+
+  template <typename T>
+  static BodyIndex FindBodyByGeometryId(const MultibodyPlant<T>& plant,
+                                        geometry::GeometryId id) {
+    return plant.FindBodyByGeometryId(id);
   }
 };
 
@@ -119,8 +126,7 @@ TEST_P(JointLockingTest, JointLockingIndicesTest) {
   RevoluteJoint<double>& body3_body4 =
       plant_->GetMutableJointByName<RevoluteJoint>("body3_body4");
 
-  const int body1_velocity_start =
-      body1.floating_velocities_start() - plant_->num_positions();
+  const int body1_velocity_start = body1.floating_velocities_start_in_v();
 
   // No joints/bodies are locked, all joint/body velocity indices should exist.
   {
@@ -469,7 +475,7 @@ std::ostream& operator<<(std::ostream& out,
              << internal::GetStringFromDiscreteContactSolver(c.solver);
 }
 
-// Utility testing class to construct a plant with two stacked spheres in
+// Utility testing class to construct a plant with three stacked spheres in
 // contact with the contact model specified in the parameter.
 class FilteredContactResultsTest
     : public ::testing::TestWithParam<FilteredContactResultsConfig> {
@@ -484,13 +490,17 @@ class FilteredContactResultsTest
 
     const RigidBody<double>& ball_A = AddBall("ball_A");
     const RigidBody<double>& ball_B = AddBall("ball_B");
+    const RigidBody<double>& ball_C = AddBall("ball_C");
 
     // Position ball B above ball A in z such that they are in contact.
+    // Position ball C above ball B in z such that they are in contact.
     const math::RigidTransformd X_WA{};
-    const math::RigidTransformd X_WB{Vector3d{0, 0, radius_}};
+    const math::RigidTransformd X_WB{Vector3d{0, 0, 1.95 * radius_}};
+    const math::RigidTransformd X_WC{Vector3d{0, 0, 3.9 * radius_}};
 
     plant_->SetDefaultFreeBodyPose(ball_A, X_WA);
     plant_->SetDefaultFreeBodyPose(ball_B, X_WB);
+    plant_->SetDefaultFreeBodyPose(ball_C, X_WC);
 
     plant_->Finalize();
     diagram_ = builder.Build();
@@ -512,7 +522,7 @@ class FilteredContactResultsTest
 
     // N.B. these properties go unused if the contact model is kPoint.
     geometry::AddCompliantHydroelasticProperties(
-        0.5 * radius_, hydroelastic_modulus_, &ball_props);
+        0.1 * radius_, hydroelastic_modulus_, &ball_props);
 
     plant_->RegisterCollisionGeometry(ball, X_BS, geometry::Sphere(radius_),
                                       "collision", std::move(ball_props));
@@ -534,7 +544,13 @@ class FilteredContactResultsTest
 
 // Test that contact results are properly reported. MultibodyPlant will not
 // report contact results between bodies that are either anchored or with all of
-// their dofs locked.
+// their dofs locked. However, geometry query data from SceneGraph (e.g
+// data from MbP::EvalPointPairPenetrations() and MbP::EvalContactSurfaces())
+// are not automatically filtered. Thus contact results must store a reference
+// of either the point pair or hydroelastic contact surface that corresponds to
+// that result. We verify that contact results for point contact contain correct
+// references to its PointPairPenetration by checking that they store the same
+// body indices, in the same order.
 TEST_P(FilteredContactResultsTest, VerifyLockedResults) {
   // Create a context for this system:
   std::unique_ptr<systems::Context<double>> diagram_context =
@@ -544,22 +560,36 @@ TEST_P(FilteredContactResultsTest, VerifyLockedResults) {
 
   FilteredContactResultsConfig config = GetParam();
 
-  // Both spheres unlocked, expect a single contact result.
+  // All spheres unlocked, expect two contact results.
   {
     const ContactResults<double>& results =
         plant_->get_contact_results_output_port().Eval<ContactResults<double>>(
             context);
 
     if (config.contact_model == ContactModel::kPoint) {
-      EXPECT_EQ(results.num_point_pair_contacts(), 1);
+      EXPECT_EQ(results.num_point_pair_contacts(), 2);
       EXPECT_EQ(results.num_hydroelastic_contacts(), 0);
+
+      // Check that the point contact result stores the correct corresponding
+      // `PenetrationAsPointPair` from geometry queries.
+      for (int i = 0; i < results.num_point_pair_contacts(); ++i) {
+        const PointPairContactInfo<double>& info =
+            results.point_pair_contact_info(i);
+        const BodyIndex body_A = MultibodyPlantTester::FindBodyByGeometryId(
+            *plant_, info.point_pair().id_A);
+        const BodyIndex body_B = MultibodyPlantTester::FindBodyByGeometryId(
+            *plant_, info.point_pair().id_B);
+        EXPECT_EQ(body_A, info.bodyA_index());
+        EXPECT_EQ(body_B, info.bodyB_index());
+      }
+
     } else {
       EXPECT_EQ(results.num_point_pair_contacts(), 0);
-      EXPECT_GT(results.num_hydroelastic_contacts(), 0);
+      EXPECT_EQ(results.num_hydroelastic_contacts(), 2);
     }
   }
 
-  // One body of the pair is locked, expect a single contact result.
+  // One body locked, still expect two contact results.
   {
     plant_->GetBodyByName("ball_A").Lock(&context);
     // Both spheres unlocked, should expect a single contact result.
@@ -568,15 +598,28 @@ TEST_P(FilteredContactResultsTest, VerifyLockedResults) {
             context);
 
     if (config.contact_model == ContactModel::kPoint) {
-      EXPECT_EQ(results.num_point_pair_contacts(), 1);
+      EXPECT_EQ(results.num_point_pair_contacts(), 2);
       EXPECT_EQ(results.num_hydroelastic_contacts(), 0);
+
+      // Check that the point contact result stores the correct corresponding
+      // `PenetrationAsPointPair` from geometry queries.
+      for (int i = 0; i < results.num_point_pair_contacts(); ++i) {
+        auto info = results.point_pair_contact_info(i);
+        const BodyIndex body_A = MultibodyPlantTester::FindBodyByGeometryId(
+            *plant_, info.point_pair().id_A);
+        const BodyIndex body_B = MultibodyPlantTester::FindBodyByGeometryId(
+            *plant_, info.point_pair().id_B);
+        EXPECT_EQ(body_A, info.bodyA_index());
+        EXPECT_EQ(body_B, info.bodyB_index());
+      }
+
     } else {
       EXPECT_EQ(results.num_point_pair_contacts(), 0);
-      EXPECT_GT(results.num_hydroelastic_contacts(), 0);
+      EXPECT_EQ(results.num_hydroelastic_contacts(), 2);
     }
   }
 
-  // Both spheres locked, expect no contact result for the pair.
+  // Two spheres locked, expect only one contact result.
   {
     plant_->GetBodyByName("ball_A").Lock(&context);
     plant_->GetBodyByName("ball_B").Lock(&context);
@@ -587,11 +630,24 @@ TEST_P(FilteredContactResultsTest, VerifyLockedResults) {
             context);
 
     if (config.contact_model == ContactModel::kPoint) {
-      EXPECT_EQ(results.num_point_pair_contacts(), 0);
+      EXPECT_EQ(results.num_point_pair_contacts(), 1);
       EXPECT_EQ(results.num_hydroelastic_contacts(), 0);
+
+      // Check that the point contact result stores the correct corresponding
+      // `PenetrationAsPointPair` from geometry queries.
+      for (int i = 0; i < results.num_point_pair_contacts(); ++i) {
+        auto info = results.point_pair_contact_info(i);
+        const BodyIndex body_A = MultibodyPlantTester::FindBodyByGeometryId(
+            *plant_, info.point_pair().id_A);
+        const BodyIndex body_B = MultibodyPlantTester::FindBodyByGeometryId(
+            *plant_, info.point_pair().id_B);
+        EXPECT_EQ(body_A, info.bodyA_index());
+        EXPECT_EQ(body_B, info.bodyB_index());
+      }
+
     } else {
       EXPECT_EQ(results.num_point_pair_contacts(), 0);
-      EXPECT_EQ(results.num_hydroelastic_contacts(), 0);
+      EXPECT_EQ(results.num_hydroelastic_contacts(), 1);
     }
   }
 }

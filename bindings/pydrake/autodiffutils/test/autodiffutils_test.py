@@ -15,16 +15,16 @@ import unittest
 import numpy as np
 import pydrake.math as drake_math
 
-from pydrake.math.test.algebra_test_util import (
+from pydrake.common.test_utilities import numpy_compare
+from pydrake.common.test_utilities.algebra_test_util import (
     ScalarAlgebra,
     VectorizedAlgebra,
 )
-from pydrake.autodiffutils.test.autodiffutils_test_util import (
+from pydrake.common.test_utilities.autodiffutils_test_util import (
     autodiff_scalar_pass_through,
     autodiff_vector_pass_through,
     autodiff_vector3_pass_through,
 )
-from pydrake.common.test_utilities import numpy_compare
 from pydrake.common.test_utilities.pickle_compare import assert_pickle
 
 # Use convenience abbreviation.

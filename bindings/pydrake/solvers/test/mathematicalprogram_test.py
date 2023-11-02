@@ -559,6 +559,21 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertTrue(np.all(eigs >= -tol))
         self.assertTrue(S[0, 1] >= -tol)
 
+    def test_replace_psd_methods(self):
+        prog = mp.MathematicalProgram()
+        replacement_methods = [
+            prog.TightenPsdConstraintToDd,
+            prog.TightenPsdConstraintToSdd,
+            prog.RelaxPsdConstraintToDdDualCone,
+            prog.RelaxPsdConstraintToSddDualCone,
+        ]
+        for method in replacement_methods:
+            X = prog.NewSymmetricContinuousVariables(3)
+            psd_constraint = prog.AddPositiveSemidefiniteConstraint(X)
+            self.assertEqual(len(prog.positive_semidefinite_constraints()), 1)
+            method(constraint=psd_constraint)
+            self.assertEqual(len(prog.positive_semidefinite_constraints()), 0)
+
     def test_sos_polynomial(self):
         # Only check if the API works.
         prog = mp.MathematicalProgram()
@@ -694,7 +709,7 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertAlmostEqual(a_val[0], 1)
         self.assertAlmostEqual(a_val[1], 2)
 
-    def test_log_determinant(self):
+    def test_log_determinant_cost(self):
         # Find the minimal ellipsoid that covers some given points.
         prog = mp.MathematicalProgram()
         X = prog.NewSymmetricContinuousVariables(2)
@@ -708,6 +723,14 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertEqual(log_det_Z.shape, (2, 2))
         result = mp.Solve(prog)
         self.assertTrue(result.is_success())
+
+    def test_log_determinant_lower(self):
+        prog = mp.MathematicalProgram()
+        X = prog.NewSymmetricContinuousVariables(2)
+        linear_constraint, t, Z = prog.AddLogDeterminantLowerBoundConstraint(
+            X=X, lower=1)
+        self.assertEqual(t.shape, (2,))
+        self.assertEqual(Z.shape, (2, 2))
 
     def test_maximize_geometric_mean(self):
         # Find the smallest axis-algined ellipsoid that covers some given

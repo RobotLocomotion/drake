@@ -37,6 +37,7 @@ drake_pybind_library(
     cc_srcs = [
         "visualization_py.cc",
         "visualization_py_config.cc",
+        "visualization_py_sliders.cc",
         "visualization_py.h",
     ],
     package_info = PACKAGE_INFO,

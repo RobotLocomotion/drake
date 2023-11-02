@@ -16,6 +16,13 @@ namespace internal {
  a point contact model or quadrature point pairs for a compliant surface model
  such a hydroelastics.
 
+ GeometryId order is preserved from the generating point contact or hydro
+ contact data. That is, if `point_pair` is the penetration pair referenced by
+ `point_pair_index`, then `id_A == point_pair.id_A` and `id_B ==
+ point_pair.id_B`. Likewise, if `surface` is the hydroelastic contact surface
+ referenced by `surface_index`, then `id_A == surface.id_M()` and `id_B ==
+ surface.id_N()`.
+
  @tparam T The underlying scalar type. Must be a valid Eigen scalar. */
 template <typename T>
 struct DiscreteContactPair {
@@ -53,6 +60,10 @@ struct DiscreteContactPair {
    * surface_index this discrete pair corresponds to. No value if the pair does
    * not correspond to mesh contact. */
   std::optional<int> face_index{};
+  /* For point contact, the index of the point pair collision data this discrete
+   * pair corresponds to. No value if the pair does not correspond to point
+   * contact. */
+  std::optional<int> point_pair_index{};
 };
 
 }  // namespace internal

@@ -137,6 +137,31 @@ void MinimalEllipsoidCoveringPoints(const SolverInterface& solver, double tol) {
       Eigen::MatrixXd::Zero(log_det_Z_sol.rows(), log_det_Z_sol.cols())));
   EXPECT_NEAR(-std::log(S_sol.determinant()), expected_cost, tol);
 }
+
+void MatrixLogDeterminantLower(const SolverInterface& solver, double tol) {
+  MathematicalProgram prog;
+  auto X = prog.NewSymmetricContinuousVariables<3>();
+  // Push log(det(X)) downward.
+  prog.AddLinearCost(X.cast<symbolic::Expression>().trace());
+  const double lower = 1;
+  const auto ret = prog.AddLogDeterminantLowerBoundConstraint(
+      X.cast<symbolic::Expression>(), lower);
+  if (solver.available()) {
+    MathematicalProgramResult result;
+    solver.Solve(prog, std::nullopt, std::nullopt, &result);
+    EXPECT_TRUE(result.is_success());
+    const auto X_sol = result.GetSolution(X);
+    EXPECT_GE(std::log(X_sol.determinant()), lower - tol);
+
+    // Now remove the returned constraint, solve the problem again with an X not
+    // satisfying log(det(X)) >= 1. The problem should be feasible.
+    prog.RemoveConstraint(std::get<0>(ret));
+    prog.AddBoundingBoxConstraint(0.01 * Eigen::Matrix3d::Identity(),
+                                  0.01 * Eigen::Matrix3d::Identity(), X);
+    solver.Solve(prog, std::nullopt, std::nullopt, &result);
+    EXPECT_TRUE(result.is_success());
+  }
+}
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

@@ -32,11 +32,8 @@ template<typename T> class Body;
 /// A %BodyFrame is a material Frame that serves as the unique reference frame
 /// for a Body.
 ///
-/// Each Body B, regardless of whether it represents a rigid body or a
-/// flexible body, has a unique body frame for which we use the same symbol B
-/// (with meaning clear from context). The body frame is also referred to as
-/// a _reference frame_ in the literature for flexible body mechanics modeling
-/// using the Finite Element Method. All properties of a body are defined with
+/// Each Body B, has a unique body frame for which we use the same symbol B
+/// (with meaning clear from context). All properties of a body are defined with
 /// respect to its body frame, including its mass properties and attachment
 /// locations for joints, constraints, actuators, geometry and so on. Run time
 /// motion of the body is defined with respect to the motion of its body frame.
@@ -46,12 +43,6 @@ template<typename T> class Body;
 /// Note that the %BodyFrame associated with a body does not necessarily need to
 /// be located at its center of mass nor does it need to be aligned with the
 /// body's principal axes, although, in practice, it frequently is.
-/// For flexible bodies, %BodyFrame provides a representation for the body's
-/// reference frame. The flexible degrees of freedom associated with a flexible
-/// body describe the body's deformation in this frame. Therefore, the motion of
-/// a flexible body is defined by the motion of its %BodyFrame, or reference
-/// frame, plus the motion of the material points on the body with respect to
-/// its %BodyFrame.
 ///
 /// A %BodyFrame and Body are tightly coupled concepts; neither makes sense
 /// without the other. Therefore, a %BodyFrame instance is constructed in
@@ -194,16 +185,6 @@ class Body : public MultibodyElement<T> {
   /// will be empty (the scope name and the element name).
   ScopedName scoped_name() const;
 
-  /// (Not implemented) Returns the number of generalized positions q describing
-  /// flexible deformations for this body. A rigid body will therefore return
-  /// zero.
-  virtual int get_num_flexible_positions() const = 0;
-
-  /// (Not implemented) Returns the number of generalized velocities v
-  /// describing flexible deformations for this body. A rigid body will
-  /// therefore return zero.
-  virtual int get_num_flexible_velocities() const = 0;
-
   /// Returns a const reference to the associated BodyFrame.
   const BodyFrame<T>& body_frame() const {
     return body_frame_;
@@ -278,12 +259,12 @@ class Body : public MultibodyElement<T> {
   }
 
   /// (Advanced) For floating bodies (see is_floating()) this method returns the
-  /// index of the first generalized position in the state vector for a
-  /// MultibodyPlant model.
-  /// Positions for this body are then contiguous starting at this index.
-  /// When a floating body is modeled with a quaternion mobilizer (see
+  /// index of this %Body's first generalized position in the vector q of
+  /// generalized position coordinates for a MultibodyPlant model.
+  /// Positions q for this %Body are then contiguous starting at this index.
+  /// When a floating %Body is modeled with quaternion coordinates (see
   /// has_quaternion_dofs()), the four consecutive entries in the state starting
-  /// at this index correspond to the quaternion that parametrizes this body's
+  /// at this index correspond to the quaternion that parametrizes this %Body's
   /// orientation.
   /// @throws std::exception if called pre-finalize
   /// @pre `this` is a floating body
@@ -294,17 +275,36 @@ class Body : public MultibodyElement<T> {
     return topology_.floating_positions_start;
   }
 
-  /// (Advanced) For floating bodies (see is_floating()) this method returns the
-  /// index of the first generalized velocity in the state vector for a
-  /// MultibodyPlant model.
+  /// (Advanced, Deprecated) For floating bodies (see is_floating()) this
+  /// method returns the index of this %Body's first generalized velocity in the
+  /// _full state vector_ for a MultibodyPlant model, under the dubious
+  /// assumption that the state consists of [q v] concatenated.
   /// Velocities for this body are then contiguous starting at this index.
   /// @throws std::exception if called pre-finalize
   /// @pre `this` is a floating body
-  /// @see is_floating(), MultibodyPlant::Finalize()
+  /// @see floating_velocities_start_in_v()
+  DRAKE_DEPRECATED("2024-02-01",
+                   "Convert to floating_velocities_start_in_v(). In a state "
+                   "with [q v] concatenated, offset by num_positions() to "
+                   "get to the start of v.")
   int floating_velocities_start() const {
     DRAKE_BODY_THROW_IF_NOT_FINALIZED();
     DRAKE_DEMAND(is_floating());
-    return topology_.floating_velocities_start;
+    return this->get_parent_tree().num_positions() +
+           topology_.floating_velocities_start_in_v;
+  }
+
+  /// (Advanced) For floating bodies (see is_floating()) this method returns the
+  /// index of this %Body's first generalized velocity in the vector v of
+  /// generalized velocities for a MultibodyPlant model.
+  /// Velocities v for this %Body are then contiguous starting at this index.
+  /// @throws std::exception if called pre-finalize
+  /// @pre `this` is a floating body
+  /// @see is_floating(), MultibodyPlant::Finalize()
+  int floating_velocities_start_in_v() const {
+    DRAKE_BODY_THROW_IF_NOT_FINALIZED();
+    DRAKE_DEMAND(is_floating());
+    return topology_.floating_velocities_start_in_v;
   }
 
   /// Returns a string suffix (e.g. to be appended to the name()) to identify
@@ -370,12 +370,8 @@ class Body : public MultibodyElement<T> {
 
   /// (Advanced) Computes the SpatialInertia `I_BBo_B` of `this` body about its
   /// frame origin `Bo` (not necessarily its center of mass) and expressed in
-  /// its body frame `B`.
-  /// In general, the spatial inertia of a body is a function of state.
-  /// Consider for instance the case of a flexible body for which its spatial
-  /// inertia in the body frame depends on the generalized coordinates
-  /// describing its state of deformation. As a particular case, the spatial
-  /// inertia of a RigidBody in its body frame is constant.
+  /// its body frame `B`. The spatial inertia of a RigidBody in its body frame
+  /// is constant, but may need to be calculated from Parameters.
   virtual SpatialInertia<T> CalcSpatialInertiaInBodyFrame(
       const systems::Context<T>& context) const = 0;
 

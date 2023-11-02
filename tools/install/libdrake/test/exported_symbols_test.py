@@ -88,8 +88,6 @@ _KNOWN_BAD_SYMBOLS_SUBSTR = [
     "wrapper",
     # This fix is pending a deprecation removal (#20115) 2024-01-01.
     "N3lcm",
-    # This fix is pending a deprecation removal (#19866) 2023-11-01.
-    "optitrack",
 ]
 
 

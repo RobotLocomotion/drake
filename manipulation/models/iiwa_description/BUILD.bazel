@@ -62,8 +62,8 @@ filegroup(
 # === test/ ===
 
 drake_cc_googletest(
-    name = "iiwa14_variants_parsing_test",
-    srcs = ["test/iiwa14_variants_parsing_test.cc"],
+    name = "iiwa_variants_parsing_test",
+    srcs = ["test/iiwa_variants_parsing_test.cc"],
     data = [":models"],
     deps = [
         "//common:find_resource",

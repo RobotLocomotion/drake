@@ -43,7 +43,6 @@ int TestIn3by3DiagonallyDominantDualCone(const Eigen::Matrix3d& X) {
   }
   return -1;
 }
-}  // namespace
 
 GTEST_TEST(DiagonallyDominantMatrixDualConeConstraint,
            FeasibilityVariableCheck2by2) {
@@ -320,5 +319,6 @@ GTEST_TEST(DiagonallyDominantMatrixDualConeConstraint,
   solve_and_check(Eigen::Vector3d(-3, 1.5, 0.5), tol);
 }
 
+}  // namespace
 }  // namespace solvers
 }  // namespace drake

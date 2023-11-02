@@ -20,6 +20,7 @@
 #include <vtkSmartPointer.h>         // vtkCommonCore
 #include <vtkWindowToImageFilter.h>  // vtkRenderingCore
 
+#include "drake/common/diagnostic_policy.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_export.h"
 #include "drake/common/reset_on_copy.h"
@@ -237,6 +238,18 @@ class DRAKE_NO_EXPORT RenderEngineVtk : public render::RenderEngine,
 
   void SetDefaultLightPosition(const Vector3<double>& p_DL) override;
 
+  // Configures the render engine to require all materials to use PBR
+  // interpolation. This can be mindlessly called repeatedly without harm.
+  // It should be invoked any time a necessary condition is encountered to
+  // ensure proper materials:
+  //
+  //   1) If any glTF model has been added.
+  //   2) If an environment map has been added.
+  //
+  // Note: this affects *all* objects, whether or not a model has been
+  // introduced that explicitly declares PBR materials.
+  void SetPbrMaterials();
+
   // A geometry is modeled with one or more "parts". A part maps to the actor
   // representing it in VTK and an optional transform mapping the actor's frame
   // A to the Drake geometry frame G. This mapping can include scaling terms.
@@ -276,12 +289,16 @@ class DRAKE_NO_EXPORT RenderEngineVtk : public render::RenderEngine,
     if (!parameters_.lights.empty()) {
       return parameters_.lights;
     }
-    DRAKE_DEMAND(!fallback_lights_.empty());
+    // fallback_lights_ may be empty if the user has specified an environment
+    // map.
     return fallback_lights_;
   }
 
   // The engine's configuration parameters.
   const RenderEngineVtkParams parameters_;
+
+  // VTK error and/or warning messages end up here.
+  drake::internal::DiagnosticPolicy diagnostic_;
 
   std::array<std::unique_ptr<RenderingPipeline>, kNumPipelines> pipelines_;
 
@@ -316,7 +333,14 @@ class DRAKE_NO_EXPORT RenderEngineVtk : public render::RenderEngine,
   // Note: We are initializing this vector with a *single* light by using the
   // LightParameter default constructor; it has been specifically designed to
   // serve as the default light.
-  std::vector<render::LightParameter> fallback_lights_{{}};
+  std::vector<render::LightParameter> fallback_lights_{};
+
+  // If true, all newly created objects use pbr materials. As an invariant,
+  // setting this to true should retroactively make all previously created
+  // objects also use PBR materials (see SetPbrMaterials).
+  // If false, the behavior is undefined -- the interpolation model is left to
+  // VTK's default value.
+  bool use_pbr_materials_{false};
 };
 
 }  // namespace internal

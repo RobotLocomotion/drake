@@ -1210,27 +1210,22 @@ class MathematicalProgram {
   Binding<Cost> AddCost(const symbolic::Expression& e);
 
   /**
-   * Adds the cost to maximize the log determinant of symmetric matrix X.
-   * log(det(X)) is a concave function of X, so we can maximize it through
-   * convex optimization. In order to do that, we introduce slack variables t,
-   * and a lower triangular matrix Z, with the constraints
+   * @anchor log_determinant
+   * @name Matrix log determinant
+   * Represents the log-determinant of `X` by introducing slack variables t, and
+   * a lower triangular matrix Z and imposing the constraints
    *
-   *     ⌈X         Z⌉ is positive semidifinite.
-   *     ⌊Zᵀ  diag(Z)⌋
+   *    ⌈X         Z⌉ is positive semidifinite.
+   *    ⌊Zᵀ  diag(Z)⌋
    *
-   *     log(Z(i, i)) >= t(i)
+   *    log(Z(i, i)) >= t(i)
    *
-   * and we will minimize -∑ᵢt(i).
-   * @param X A symmetric positive semidefinite matrix X, whose log(det(X)) will
-   * be maximized.
-   * @return (cost, t, Z) cost is -∑ᵢt(i), we also return the newly created
-   * slack variables t and the lower triangular matrix Z. Note that Z is not a
-   * matrix of symbolic::Variable but symbolic::Expression, because the
-   * upper-diagonal entries of Z are not variable, but expression 0.
-   * @pre X is a symmetric matrix.
+   * Since log(det(X)) is a concave function of X, we can either lower bound
+   * it's value by imposing the constraint `∑ᵢt(i) >= lower` or maximize its
+   * value by adding the cost -∑ᵢt(i) using convex optimization.
    * @note The constraint log(Z(i, i)) >= t(i) is imposed as an exponential cone
    * constraint. Please make sure your have a solver that supports exponential
-   * cone constraint (currently SCS does).
+   * cone constraint (currently SCS and Mosek do).
    * @note The constraint that
    *
    *     ⌈X         Z⌉ is positive semidifinite.
@@ -1243,10 +1238,42 @@ class MathematicalProgram {
    * https://docs.mosek.com/modeling-cookbook/sdo.html#log-determinant for more
    * details.
    */
+  //@{
+  /**
+   * Maximize the log determinant. See @ref log_determinant for more details.
+   * @param X A symmetric positive semidefinite matrix X, whose log(det(X)) will
+   * be maximized.
+   * @return (cost, t, Z) cost is -∑ᵢt(i), we also return the newly created
+   * slack variables t and the lower triangular matrix Z. Note that Z is not a
+   * matrix of symbolic::Variable but symbolic::Expression, because the
+   * upper-diagonal entries of Z are not variable, but expression 0.
+   * @pre X is a symmetric matrix.
+   */
+  // TODO(hongkai.dai): return the lower-triangular of Z as
+  // VectorX<symbolic::Variable>.
   std::tuple<Binding<LinearCost>, VectorX<symbolic::Variable>,
              MatrixX<symbolic::Expression>>
   AddMaximizeLogDeterminantCost(
       const Eigen::Ref<const MatrixX<symbolic::Expression>>& X);
+
+  /**
+   * Impose the constraint log(det(X)) >= lower. See @ref log_determinant for
+   * more details.
+   * @param X A symmetric positive semidefinite matrix X.
+   * @param lower The lower bound of log(det(X))
+   * @return (constraint, t, Z) constraint is ∑ᵢt(i) >= lower, we also return
+   * the newly created slack variables t and the lower triangular matrix Z. Note
+   * that Z is not a matrix of symbolic::Variable but symbolic::Expression,
+   * because the upper-diagonal entries of Z are not variable, but expression 0.
+   * @pre X is a symmetric matrix.
+   */
+  // TODO(hongkai.dai): return the lower-triangular of Z as
+  // VectorX<symbolic::Variable>.
+  std::tuple<Binding<LinearConstraint>, VectorX<symbolic::Variable>,
+             MatrixX<symbolic::Expression>>
+  AddLogDeterminantLowerBoundConstraint(
+      const Eigen::Ref<const MatrixX<symbolic::Expression>>& X, double lower);
+  //@}
 
   /**
    * @anchor maximize_geometric_mean
@@ -2614,6 +2641,26 @@ class MathematicalProgram {
       const Eigen::Ref<const MatrixX<symbolic::Expression>>& X);
 
   /**
+   * 1. Tightens the positive semidefinite @p constraint with a positive
+   * diagonally dominant constraint.
+   * 2. Adds the positive diagonally dominant constraint into this
+   * MathematicalProgram.
+   * 3. Removes the positive semidefinite @p constraint, if it had already been
+   * registered in this MathematicalProgram.
+   *
+   * This provides a polyhedral (i.e. linear) sufficient, but not
+   * necessary, condition for the variables in @p constraint to be positive
+   * semidefinite.
+   *
+   * @pre The decision variables contained in constraint have been registered
+   * with this MathematicalProgram.
+   * @return The return of AddPositiveDiagonallyDominantMatrixConstraint applied
+   * to the variables in @p constraint.
+   */
+  MatrixX<symbolic::Expression> TightenPsdConstraintToDd(
+      const Binding<PositiveSemidefiniteConstraint>& constraint);
+
+  /**
    * @anchor add_dd_dual
    * @name Diagonally dominant dual cone constraint
    * Adds the constraint that a symmetric matrix is in the dual cone of the
@@ -2662,6 +2709,26 @@ class MathematicalProgram {
   AddPositiveDiagonallyDominantDualConeMatrixConstraint(
       const Eigen::Ref<const MatrixX<symbolic::Variable>>& X);
   //@}
+
+  /**
+   * 1. Relaxes the positive semidefinite @p constraint with a diagonally
+   * dominant dual cone constraint.
+   * 2. Adds the diagonally dominant dual cone constraint into this
+   * MathematicalProgram.
+   * 3. Removes the positive semidefinite @p constraint, if it had already been
+   * registered in this MathematicalProgram.
+   *
+   * This provides a polyhedral (i.e. linear) necessary, but not
+   * sufficient, condition for the variables in @p constraint to be positive
+   * semidefinite.
+   *
+   * @pre The decision variables contained in constraint have been registered
+   * with this MathematicalProgram.
+   * @return The return of AddPositiveDiagonallyDominantDualConeMatrixConstraint
+   * applied to the variables in @p constraint.
+   */
+  Binding<LinearConstraint> RelaxPsdConstraintToDdDualCone(
+      const Binding<PositiveSemidefiniteConstraint>& constraint);
 
   /**
    * @anchor addsdd
@@ -2721,6 +2788,27 @@ class MathematicalProgram {
   //@}
 
   /**
+   * 1. Tightens the positive semidefinite @p constraint with a scaled
+   * diagonally dominant constraint.
+   * 2. Adds the scaled diagonally dominant constraint into this
+   * MathematicalProgram.
+   * 3. Removes the positive semidefinite @p constraint, if it had already been
+   * registered in this MathematicalProgram.
+   *
+   * This provides a second-order cone sufficient, but not
+   * necessary, condition for the variables in @p constraint to be positive
+   * semidefinite.
+   *
+   * @pre The decision variables contained in constraint have been registered
+   * with this MathematicalProgram.
+   * @return The return of AddScaledDiagonallyDominantMatrixConstraint applied
+   * to the variables in @p constraint.
+   */
+  std::vector<std::vector<Matrix2<symbolic::Variable>>>
+  TightenPsdConstraintToSdd(
+      const Binding<PositiveSemidefiniteConstraint>& constraint);
+
+  /**
    * @anchor add_sdd_dual
    * @name Scaled diagonally dominant dual cone constraint
    * Adds the constraint that a symmetric matrix is in the dual cone of the
@@ -2777,6 +2865,27 @@ class MathematicalProgram {
   AddScaledDiagonallyDominantDualConeMatrixConstraint(
       const Eigen::Ref<const MatrixX<symbolic::Variable>>& X);
   //@}
+
+  /**
+   * 1. Relaxes the positive semidefinite @p constraint with a scaled diagonally
+   * dominant dual cone constraint.
+   * 2. Adds the scaled diagonally dominant dual cone constraint into this
+   * MathematicalProgram.
+   * 3. Removes the positive semidefinite @p constraint, if it had already been
+   * registered in this MathematicalProgram.
+   *
+   * This provides a second-order cone necessary, but not
+   * sufficient, condition for the variables in @p constraint to be positive
+   * semidefinite.
+   *
+   * @pre The decision variables contained in constraint have been registered
+   * with this MathematicalProgram.
+   * @return The return of AddScaledDiagonallyDominantDualConeMatrixConstraint
+   * applied to the variables in @p constraint.
+   */
+  std::vector<Binding<RotatedLorentzConeConstraint>>
+  RelaxPsdConstraintToSddDualCone(
+      const Binding<PositiveSemidefiniteConstraint>& constraint);
 
   /**
    * Adds constraints that a given polynomial @p p is a sums-of-squares (SOS),

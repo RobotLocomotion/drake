@@ -287,9 +287,9 @@ TEST_F(SpheresStackTest, CalcLinearDynamicsMatrix) {
   const int nv = plant_->num_velocities();
   MatrixXd Adense = MatrixXd::Zero(nv, nv);
   for (TreeIndex t(0); t < topology().num_trees(); ++t) {
-    const int tree_start = topology().tree_velocities_start(t);
+    const int tree_start_in_v = topology().tree_velocities_start_in_v(t);
     const int tree_nv = topology().num_tree_velocities(t);
-    Adense.block(tree_start, tree_start, tree_nv, tree_nv) = A[t];
+    Adense.block(tree_start_in_v, tree_start_in_v, tree_nv, tree_nv) = A[t];
   }
   MatrixXd Aexpected(nv, nv);
   plant_->CalcMassMatrix(*plant_context_, &Aexpected);

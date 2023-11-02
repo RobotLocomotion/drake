@@ -9,12 +9,11 @@ import numpy as np
 
 import pydrake.symbolic as sym
 import pydrake.common
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
-import pydrake.math as drake_math
-from pydrake.math.test.algebra_test_util import (
+from pydrake.common.test_utilities.algebra_test_util import (
     ScalarAlgebra,
     VectorizedAlgebra,
 )
+import pydrake.math as drake_math
 from pydrake.common.containers import EqualToDict
 from pydrake.common.deprecation import install_numpy_warning_filters
 from pydrake.common.test_utilities import numpy_compare

@@ -32,12 +32,11 @@ drake_cc_package_library(
         ":gyroscope",
         ":image",
         ":image_file_format",
+        ":image_io",
         ":image_to_lcm_image_array_t",
         ":image_writer",
         ":lcm_image_array_to_images",
         ":lcm_image_traits",
-        ":optitrack_receiver",
-        ":optitrack_sender",
         ":rgbd_sensor",
         ":rgbd_sensor_async",
         ":rotary_encoders",
@@ -169,6 +168,28 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "image_io",
+    srcs = [
+        "image_io_internal.cc",
+    ],
+    hdrs = [
+        "image_io.h",
+        "image_io_internal.h",
+    ],
+    install_hdrs_exclude = [
+        "image_io_internal.h",
+    ],
+    interface_deps = [
+        ":image",
+        ":image_file_format",
+        "//common:essential",
+    ],
+    deps = [
+        "@vtk_internal//:vtkCommonCore",
+    ],
+)
+
+drake_cc_library(
     name = "lcm_image_traits",
     srcs = [
         "lcm_image_traits.cc",
@@ -289,28 +310,6 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "optitrack_receiver",
-    srcs = ["optitrack_receiver.cc"],
-    hdrs = ["optitrack_receiver.h"],
-    deps = [
-        "//math:geometric_transform",
-        "//systems/framework:leaf_system",
-        "@optitrack_driver//lcmtypes:optitrack_lcmtypes",
-    ],
-)
-
-drake_cc_library(
-    name = "optitrack_sender",
-    srcs = ["optitrack_sender.cc"],
-    hdrs = ["optitrack_sender.h"],
-    deps = [
-        "//geometry:kinematics_vector",
-        "//systems/framework:leaf_system",
-        "@optitrack_driver//lcmtypes:optitrack_lcmtypes",
-    ],
-)
-
-drake_cc_library(
     name = "image_writer",
     srcs = ["image_writer.cc"],
     hdrs = ["image_writer.h"],
@@ -338,6 +337,21 @@ drake_cc_library(
         "//multibody/plant",
         "//systems/framework:diagram_builder",
         "//systems/lcm:lcm_publisher_system",
+    ],
+)
+
+drake_cc_library(
+    name = "vtk_diagnostic_event_observer",
+    srcs = ["vtk_diagnostic_event_observer.cc"],
+    hdrs = ["vtk_diagnostic_event_observer.h"],
+    internal = True,
+    visibility = [
+        "//geometry/render_vtk:__pkg__",
+    ],
+    deps = [
+        "//common:diagnostic_policy",
+        "//common:drake_export",
+        "@vtk_internal//:vtkCommonCore",
     ],
 )
 
@@ -446,6 +460,20 @@ drake_cc_googletest(
     name = "image_test",
     deps = [
         ":image",
+    ],
+)
+
+drake_cc_googletest(
+    name = "image_io_internal_test",
+    data = [
+        "test/jpeg_test.jpg",
+        "test/png_color_test.png",
+        "test/tiff_32f_test.tif",
+    ],
+    deps = [
+        ":image_io",
+        "//common:find_resource",
+        "@vtk_internal//:vtkCommonCore",
     ],
 )
 
@@ -567,26 +595,6 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "optitrack_receiver_test",
-    copts = ["-Wno-deprecated-declarations"],
-    deps = [
-        ":optitrack_receiver",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//common/test_utilities:expect_throws_message",
-        "@optitrack_driver//lcmtypes:optitrack_lcmtypes",
-    ],
-)
-
-drake_cc_googletest(
-    name = "optitrack_sender_test",
-    copts = ["-Wno-deprecated-declarations"],
-    deps = [
-        ":optitrack_sender",
-        "@optitrack_driver//lcmtypes:optitrack_lcmtypes",
-    ],
-)
-
-drake_cc_googletest(
     name = "sim_rgbd_sensor_test",
     deps = [
         ":image_to_lcm_image_array_t",
@@ -598,6 +606,13 @@ drake_cc_googletest(
         "//systems/framework:diagram_builder",
         "//systems/lcm:lcm_publisher_system",
         "@fmt",
+    ],
+)
+
+drake_cc_googletest(
+    name = "vtk_diagnostic_event_observer_test",
+    deps = [
+        ":vtk_diagnostic_event_observer",
     ],
 )
 

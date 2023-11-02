@@ -22,6 +22,7 @@ namespace {
 
 using ::testing::MatchesRegex;
 
+using Eigen::Vector2d;
 using Eigen::Vector3d;
 using Eigen::Vector4d;
 using drake::internal::DiagnosticPolicy;
@@ -133,6 +134,60 @@ const char* gym_models[] = {
   "point_mass", "reacher", "stacker", "swimmer", "walker"};
 INSTANTIATE_TEST_SUITE_P(GymModels, GymModelTest,
                          testing::ValuesIn(gym_models));
+
+TEST_F(MujocoParserTest, CartPole) {
+  const std::string filename = FindResourceOrThrow(
+      "drake/multibody/parsing/dm_control/suite/cartpole.xml");
+  AddModelFromFile(filename, "cartpole");
+  // For this parse, ignore all warnings.
+  warning_records_.clear();
+
+  plant_.Finalize();
+  // Check the kinematics. Passing this test requires a correct parsing of
+  // joint defaults.
+  auto context = plant_.CreateDefaultContext();
+  const double x = 0.1;
+  const double theta = 0.2;
+  const double l = 1.0;
+  const double z_offset_from_model = 1.0;
+  plant_.SetPositions(context.get(), Vector2d(x, theta));
+  Vector3d p_WP;
+  plant_.CalcPointsPositions(*context, plant_.GetFrameByName("pole_1"),
+                             Vector3d{0, 0, l}, plant_.world_frame(),
+                             &p_WP);
+  EXPECT_TRUE(CompareMatrices(
+      p_WP,
+      Vector3d{x + l * sin(theta), 0, z_offset_from_model + l * cos(theta)},
+      1e-14));
+}
+
+TEST_F(MujocoParserTest, Acrobot) {
+  const std::string filename = FindResourceOrThrow(
+      "drake/multibody/parsing/dm_control/suite/acrobot.xml");
+  AddModelFromFile(filename, "acrobot");
+  // For this parse, ignore all warnings.
+  warning_records_.clear();
+
+  plant_.Finalize();
+  // Check the kinematics. Passing this test requires a correct parsing of the
+  // joint position being defined in the child body frame, not the parent
+  // body frame.
+  auto context = plant_.CreateDefaultContext();
+  const Vector2d q = {0.1, 0.2};
+  const double l1 = 1.0;
+  const double l2 = 0.5;
+  const double z_offset_from_model = 2.0;
+  plant_.SetPositions(context.get(), q);
+  Vector3d p_WP;
+  plant_.CalcPointsPositions(*context, plant_.GetFrameByName("lower_arm"),
+                             Vector3d{0, 0, l2}, plant_.world_frame(),
+                             &p_WP);
+  EXPECT_TRUE(CompareMatrices(
+      p_WP,
+      Vector3d{l1 * sin(q[0]) + l2 * sin(q[0] + q[1]), 0,
+               z_offset_from_model + l1 * cos(q[0]) + l2 * cos(q[0] + q[1])},
+      1e-14));
+}
 
 TEST_F(MujocoParserTest, Option) {
   std::string xml = R"""(
@@ -857,6 +912,10 @@ TEST_F(MujocoParserTest, Joint) {
 <mujoco model="test">
   <default>
     <geom type="sphere" size="1"/>
+    <default class="default_joint">
+      <joint type="hinge" damping="0.24" pos="-.1 -.2 -.3"
+             axis="1 0 0" limited="true" range="-30 60" />
+    </default>
   </default>
   <worldbody>
     <body name="freejoint" pos="1 2 3" euler="30 45 60">
@@ -875,6 +934,9 @@ TEST_F(MujocoParserTest, Joint) {
     <body name="hinge" pos="1 2 3" euler="30 45 60">
       <joint type="hinge" name="hinge" damping="0.3" pos=".1 .2 .3"
              axis="0 1 0" limited="true" range="-30 60"/>
+    </body>
+    <body name="hinge_w_joint_defaults" pos="1 2 3" euler="30 45 60">
+      <joint type="hinge" name="hinge_w_joint_defaults" class="default_joint" />
     </body>
     <body name="default" pos="1 2 3" euler="30 45 60">
       <!-- without the limited=true tag -->
@@ -923,7 +985,7 @@ TEST_F(MujocoParserTest, Joint) {
   const BallRpyJoint<double>& ball_joint =
       plant_.GetJointByName<BallRpyJoint>("ball");
   EXPECT_EQ(ball_joint.damping(), 0.1);
-  EXPECT_TRUE(ball_joint.frame_on_parent()
+  EXPECT_TRUE(ball_joint.frame_on_child()
                   .CalcPoseInBodyFrame(*context)
                   .IsNearlyEqualTo(RigidTransformd(pos), 1e-14));
   EXPECT_TRUE(
@@ -933,7 +995,7 @@ TEST_F(MujocoParserTest, Joint) {
   const PrismaticJoint<double>& slide_joint =
       plant_.GetJointByName<PrismaticJoint>("slide");
   EXPECT_EQ(slide_joint.damping(), 0.2);
-  EXPECT_TRUE(slide_joint.frame_on_parent()
+  EXPECT_TRUE(slide_joint.frame_on_child()
                   .CalcPoseInBodyFrame(*context)
                   .IsNearlyEqualTo(RigidTransformd(pos), 1e-14));
   EXPECT_TRUE(
@@ -949,7 +1011,7 @@ TEST_F(MujocoParserTest, Joint) {
   const RevoluteJoint<double>& hinge_joint =
       plant_.GetJointByName<RevoluteJoint>("hinge");
   EXPECT_EQ(hinge_joint.damping(), 0.3);
-  EXPECT_TRUE(hinge_joint.frame_on_parent()
+  EXPECT_TRUE(hinge_joint.frame_on_child()
                   .CalcPoseInBodyFrame(*context)
                   .IsNearlyEqualTo(RigidTransformd(pos), 1e-14));
   EXPECT_TRUE(CompareMatrices(hinge_joint.revolute_axis(), Vector3d{0, 1, 0}));
@@ -963,10 +1025,29 @@ TEST_F(MujocoParserTest, Joint) {
       CompareMatrices(plant_.GetJointByName("hinge").position_upper_limits(),
                       Vector1d{M_PI / 3.0}, 1e-14));
 
+  const RevoluteJoint<double>& hinge_w_joint_defaults_joint =
+      plant_.GetJointByName<RevoluteJoint>("hinge_w_joint_defaults");
+  EXPECT_EQ(hinge_w_joint_defaults_joint.damping(), 0.24);
+  EXPECT_TRUE(
+      hinge_w_joint_defaults_joint.frame_on_child()
+          .CalcPoseInBodyFrame(*context)
+          .IsNearlyEqualTo(RigidTransformd(Vector3d{-0.1, -0.2, -0.3}), 1e-14));
+  EXPECT_TRUE(CompareMatrices(hinge_w_joint_defaults_joint.revolute_axis(),
+                              Vector3d{1, 0, 0}));
+  EXPECT_TRUE(plant_.GetBodyByName("hinge_w_joint_defaults")
+                  .EvalPoseInWorld(*context)
+                  .IsNearlyEqualTo(X_WB, 1e-14));
+  EXPECT_TRUE(CompareMatrices(
+      plant_.GetJointByName("hinge_w_joint_defaults").position_lower_limits(),
+      Vector1d{-M_PI / 6.0}, 1e-14));
+  EXPECT_TRUE(CompareMatrices(
+      plant_.GetJointByName("hinge_w_joint_defaults").position_upper_limits(),
+      Vector1d{M_PI / 3.0}, 1e-14));
+
   const RevoluteJoint<double>& default_joint =
       plant_.GetJointByName<RevoluteJoint>("default");
   EXPECT_EQ(default_joint.damping(), 0.4);
-  EXPECT_TRUE(default_joint.frame_on_parent()
+  EXPECT_TRUE(default_joint.frame_on_child()
                   .CalcPoseInBodyFrame(*context)
                   .IsNearlyIdentity(1e-14));
   EXPECT_TRUE(
@@ -992,7 +1073,7 @@ TEST_F(MujocoParserTest, Joint) {
       plant_.GetJointByName<RevoluteJoint>("hinge2");
   EXPECT_EQ(hinge2_joint.damping(), 0.6);
   EXPECT_TRUE(CompareMatrices(hinge2_joint.revolute_axis(), Vector3d{0, 1, 0}));
-  EXPECT_TRUE(hinge2_joint.frame_on_parent()
+  EXPECT_TRUE(hinge2_joint.frame_on_child()
                   .CalcPoseInBodyFrame(*context)
                   .IsNearlyEqualTo(RigidTransformd(pos), 1e-14));
   EXPECT_TRUE(plant_.GetBodyByName("two_hinges")

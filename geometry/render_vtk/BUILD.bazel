@@ -61,6 +61,7 @@ drake_cc_library(
         "//geometry/render/shaders:depth_shaders",
         "//geometry/render_vtk:render_engine_vtk_params",
         "//systems/sensors:color_palette",
+        "//systems/sensors:vtk_diagnostic_event_observer",
         "@eigen",
         "@vtk_internal//:vtkCommonCore",
         "@vtk_internal//:vtkCommonExecutionModel",
@@ -114,6 +115,7 @@ drake_cc_library(
 
 drake_cc_googletest(
     name = "internal_render_engine_vtk_test",
+    timeout = "moderate",
     args = select({
         # Most test cases do not render correctly on macOS arm64 CI. Instead of
         # trying to select the few that randomly happen to pass, we'll skip all
@@ -124,6 +126,7 @@ drake_cc_googletest(
         "//conditions:default": [],
     }),
     data = [
+        "//geometry:environment_maps",
         "//geometry/render:test_models",
     ],
     tags = vtk_test_tags(),
@@ -137,6 +140,26 @@ drake_cc_googletest(
         "@vtk_internal//:vtkIOImage",
         "@vtk_internal//:vtkRenderingCore",
         "@vtk_internal//:vtkRenderingOpenGL2",
+    ],
+)
+
+config_setting(
+    name = "osx",
+    constraint_values = ["@platforms//os:osx"],
+)
+
+drake_cc_googletest(
+    name = "internal_render_engine_vtk_no_display_test",
+    args = select({
+        # This test only makes sense on Linux, because only Linux uses the
+        # DISPLAY environment variable to connect to the graphics system.
+        ":osx": ["--gtest_filter=-*"],
+        "//conditions:default": [],
+    }),
+    tags = vtk_test_tags(),
+    deps = [
+        ":factory",
+        "//common/test_utilities",
     ],
 )
 

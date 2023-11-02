@@ -823,6 +823,10 @@ void BindMathematicalProgram(py::module m) {
               &MathematicalProgram::AddMaximizeLogDeterminantCost),
           py::arg("X"),
           doc.MathematicalProgram.AddMaximizeLogDeterminantCost.doc)
+      .def("AddLogDeterminantLowerBoundConstraint",
+          &MathematicalProgram::AddLogDeterminantLowerBoundConstraint,
+          py::arg("X"), py::arg("lower"),
+          doc.MathematicalProgram.AddLogDeterminantLowerBoundConstraint.doc)
       .def("AddMaximizeGeometricMeanCost",
           overload_cast_explicit<Binding<LinearCost>,
               const Eigen::Ref<const Eigen::MatrixXd>&,
@@ -1132,6 +1136,9 @@ void BindMathematicalProgram(py::module m) {
           py::arg("X"),
           doc.MathematicalProgram.AddPositiveDiagonallyDominantMatrixConstraint
               .doc)
+      .def("TightenPsdConstraintToDd",
+          &MathematicalProgram::TightenPsdConstraintToDd, py::arg("constraint"),
+          doc.MathematicalProgram.TightenPsdConstraintToDd.doc)
       .def("AddPositiveDiagonallyDominantDualConeMatrixConstraint",
           static_cast<Binding<LinearConstraint> (MathematicalProgram::*)(
               const Eigen::Ref<const MatrixX<symbolic::Expression>>&)>(
@@ -1150,6 +1157,10 @@ void BindMathematicalProgram(py::module m) {
           doc.MathematicalProgram
               .AddPositiveDiagonallyDominantDualConeMatrixConstraint
               .doc_variable)
+      .def("RelaxPsdConstraintToDdDualCone",
+          &MathematicalProgram::RelaxPsdConstraintToDdDualCone,
+          py::arg("constraint"),
+          doc.MathematicalProgram.RelaxPsdConstraintToDdDualCone.doc)
       .def("AddScaledDiagonallyDominantMatrixConstraint",
           static_cast<std::vector<std::vector<Matrix2<symbolic::Expression>>> (
               MathematicalProgram::*)(
@@ -1168,6 +1179,10 @@ void BindMathematicalProgram(py::module m) {
           py::arg("X"),
           doc.MathematicalProgram.AddScaledDiagonallyDominantMatrixConstraint
               .doc_variable)
+      .def("TightenPsdConstraintToSdd",
+          &MathematicalProgram::TightenPsdConstraintToSdd,
+          py::arg("constraint"),
+          doc.MathematicalProgram.TightenPsdConstraintToSdd.doc)
       .def("AddScaledDiagonallyDominantDualConeMatrixConstraint",
           static_cast<std::vector<Binding<RotatedLorentzConeConstraint>> (
               MathematicalProgram::*)(
@@ -1187,6 +1202,10 @@ void BindMathematicalProgram(py::module m) {
           py::arg("X"),
           doc.MathematicalProgram
               .AddScaledDiagonallyDominantDualConeMatrixConstraint.doc_variable)
+      .def("RelaxPsdConstraintToSddDualCone",
+          &MathematicalProgram::RelaxPsdConstraintToSddDualCone,
+          py::arg("constraint"),
+          doc.MathematicalProgram.RelaxPsdConstraintToSddDualCone.doc)
       .def("AddSosConstraint",
           static_cast<MatrixXDecisionVariable (MathematicalProgram::*)(
               const Polynomial&, const Eigen::Ref<const VectorX<Monomial>>&,

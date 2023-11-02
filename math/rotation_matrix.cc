@@ -4,6 +4,7 @@
 
 #include <fmt/format.h>
 
+#include "drake/common/fmt_eigen.h"
 #include "drake/common/unused.h"
 #include "drake/math/autodiff.h"
 
@@ -386,43 +387,6 @@ double ProjectMatToRotMatWithAxis(const Eigen::Matrix3d& M,
     }
   }
   return theta;
-}
-
-template <typename T>
-Vector3<T> RotationMatrix<T>::NormalizeOrThrow(const Vector3<T>& v,
-                                               const char* function_name) {
-  Vector3<T> u;
-  if constexpr (scalar_predicate<T>::is_bool) {
-    // The number 1.0E-10 is a heuristic (rule of thumb) that is guided by
-    // an expected small physical dimensions in a robotic systems.  Numbers
-    // smaller than this are probably user or developer errors.
-    constexpr double kMinMagnitude = 1e-10;
-    const double norm = ExtractDoubleOrThrow(v.norm());
-    // Normalize the vector v if norm is finite and sufficiently large.
-    // Throw an exception if norm is non-finite (NaN or infinity) or too small.
-    if (std::isfinite(norm) && norm >= kMinMagnitude) {
-      u = v / norm;
-    } else {
-      const double vx = ExtractDoubleOrThrow(v.x());
-      const double vy = ExtractDoubleOrThrow(v.y());
-      const double vz = ExtractDoubleOrThrow(v.z());
-      throw std::logic_error(fmt::format(
-          "RotationMatrix::{}() cannot normalize the given vector.\n"
-          "   v: {} {} {}\n"
-          " |v|: {}\n"
-          " The measures must be finite and the vector must have a"
-          " magnitude of at least {} to automatically normalize. If"
-          " you are confident that v's direction is meaningful, pass"
-          " v.normalized() in place of v.",
-          function_name, vx, vy, vz, norm, kMinMagnitude));
-    }
-  } else {
-    // Do not use u = v.normalized() with an underlying symbolic type since
-    // normalized() is incompatible with symbolic::Expression.
-    u = v / v.norm();
-    unused(function_name);
-  }
-  return u;
 }
 
 template <typename T>

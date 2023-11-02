@@ -7,6 +7,10 @@ load(
     "drake_py_library",
     "drake_py_unittest",
 )
+load(
+    "//tools/skylark:pybind.bzl",
+    "drake_pybind_library",
+)
 load("//bindings/pydrake:pydrake.bzl", "add_lint_tests_pydrake")
 
 package(default_visibility = [
@@ -24,6 +28,32 @@ drake_py_library(
     deps = [
         "//bindings/pydrake/common:module_py",
     ],
+)
+
+drake_py_library(
+    name = "algebra_test_util_py",
+    testonly = True,
+    srcs = ["algebra_test_util.py"],
+    visibility = [
+        "//bindings/pydrake/autodiffutils:__pkg__",
+        "//bindings/pydrake/symbolic:__pkg__",
+    ],
+    deps = [
+        "//bindings/pydrake/math",
+    ],
+)
+
+drake_pybind_library(
+    name = "autodiffutils_test_util_py",
+    testonly = True,
+    add_install = False,
+    cc_deps = [
+        "//bindings/pydrake:autodiff_types_pybind",
+        "//bindings/pydrake:documentation_pybind",
+    ],
+    cc_so_name = "autodiffutils_test_util",
+    cc_srcs = ["autodiffutils_test_util_py.cc"],
+    package_info = PACKAGE_INFO,
 )
 
 drake_py_library(

@@ -146,14 +146,15 @@ GTEST_TEST(MultibodyPlantIntrospection, FloatingBodies) {
        mug.floating_positions_start()});
   EXPECT_EQ(floating_positions_start, expected_floating_positions_start);
 
-  const int nq = plant.num_positions();
   const int atlas_nv = plant.num_velocities(atlas_model1);
-  const std::unordered_set<int> expected_floating_velocities_start(
-      {nq, nq + atlas_nv, nq + 2 * atlas_nv});
-  const std::unordered_set<int> floating_velocities_start(
-      {pelvis1.floating_velocities_start(), pelvis2.floating_velocities_start(),
-       mug.floating_velocities_start()});
-  EXPECT_EQ(floating_velocities_start, expected_floating_velocities_start);
+  const std::unordered_set<int> expected_floating_velocities_start_in_v(
+      {0, atlas_nv, 2 * atlas_nv});
+  const std::unordered_set<int> floating_velocities_start_in_v(
+      {pelvis1.floating_velocities_start_in_v(),
+       pelvis2.floating_velocities_start_in_v(),
+       mug.floating_velocities_start_in_v()});
+  EXPECT_EQ(floating_velocities_start_in_v,
+            expected_floating_velocities_start_in_v);
 }
 
 GTEST_TEST(MultibodyPlantIntrospection, NonUniqueBaseBody) {

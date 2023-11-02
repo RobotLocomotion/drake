@@ -374,7 +374,9 @@ MODULE_SETTINGS = {
         # default srcs glob, and instead just specify what Drake needs.
         "srcs_glob_exclude": ["**"],
         "srcs_extra": [
+            "IO/Image/vtkHDRReader.cxx",
             "IO/Image/vtkImageExport.cxx",
+            "IO/Image/vtkImageReader.cxx",
             "IO/Image/vtkImageReader2.cxx",
             "IO/Image/vtkImageReader2Collection.cxx",
             "IO/Image/vtkImageReader2Factory.cxx",
@@ -529,10 +531,7 @@ MODULE_SETTINGS = {
             "ThirdParty/jpeg/vtkjpeg/**",
         ],
         "deps_extra": [
-            # TODO(jwnimmer-tri) VTK is the only user of this library.
-            # We should write our own WORKSPACE rule to build it sensibly,
-            # or switch to VTK's vendored version.
-            "@libjpeg",
+            "@libjpeg_turbo_internal//:jpeg",
         ],
     },
     "VTK::nlohmannjson": {

@@ -128,10 +128,6 @@ GTEST_TEST(MultibodyTree, BasicAPIToAddBodiesAndJoints) {
   EXPECT_EQ(model->get_body(BodyIndex(1)).index(), pendulum.index());
   EXPECT_EQ(model->get_body(BodyIndex(2)).index(), pendulum2.index());
 
-  // Rigid bodies have no generalized coordinates.
-  EXPECT_EQ(pendulum.get_num_flexible_positions(), 0);
-  EXPECT_EQ(pendulum.get_num_flexible_velocities(), 0);
-
   // Verifies that an exception is throw if a call to Finalize() is attempted to
   // an already finalized MultibodyTree.
   EXPECT_THROW(model->Finalize(), std::exception);
@@ -468,10 +464,10 @@ class TreeTopologyTests : public ::testing::Test {
     EXPECT_EQ(topology.num_tree_velocities(TreeIndex(1)), 2);
     EXPECT_EQ(topology.num_tree_velocities(TreeIndex(2)), 0);
     EXPECT_EQ(topology.num_tree_velocities(TreeIndex(3)), 4);
-    EXPECT_EQ(topology.tree_velocities_start(TreeIndex(0)), 0);
-    EXPECT_EQ(topology.tree_velocities_start(TreeIndex(1)), 1);
-    EXPECT_EQ(topology.tree_velocities_start(TreeIndex(2)), 3);
-    EXPECT_EQ(topology.tree_velocities_start(TreeIndex(3)), 3);
+    EXPECT_EQ(topology.tree_velocities_start_in_v(TreeIndex(0)), 0);
+    EXPECT_EQ(topology.tree_velocities_start_in_v(TreeIndex(1)), 1);
+    EXPECT_EQ(topology.tree_velocities_start_in_v(TreeIndex(2)), 3);
+    EXPECT_EQ(topology.tree_velocities_start_in_v(TreeIndex(3)), 3);
     // The world body does not belong to a tree. Therefore the returned index is
     // invalid.
     EXPECT_FALSE(topology.body_to_tree_index(world_index()).is_valid());
@@ -559,24 +555,15 @@ TEST_F(TreeTopologyTests, SizesAndIndexing) {
     }
 
     // Verify positions and velocity indexes.
-    if (mobilizer_topology.num_velocities == 0) {
-      // MultibodyTreeTopology sets start indexes to zero when there are no
-      // mobilities associated to a node.
-      EXPECT_EQ(node.mobilizer_positions_start, 0);
-      EXPECT_EQ(mobilizer_topology.positions_start, 0);
-      EXPECT_EQ(node.mobilizer_velocities_start, 0);
-      EXPECT_EQ(mobilizer_topology.velocities_start, 0);
-    } else {
-      EXPECT_EQ(positions_index, node.mobilizer_positions_start);
-      EXPECT_EQ(positions_index, mobilizer_topology.positions_start);
-      EXPECT_EQ(velocities_index, node.mobilizer_velocities_start);
-      EXPECT_EQ(velocities_index, mobilizer_topology.velocities_start);
+    EXPECT_EQ(positions_index, node.mobilizer_positions_start);
+    EXPECT_EQ(positions_index, mobilizer_topology.positions_start);
+    EXPECT_EQ(velocities_index, node.mobilizer_velocities_start_in_state);
+    EXPECT_EQ(velocities_index, mobilizer_topology.velocities_start_in_state);
 
-      // Mobilizers 5 and 8 are weld joints, with no velocities. All other
-      // mobilizers introduce one position and one velocity.
-      positions_index += 1;
-      velocities_index += 1;
-    }
+    // Mobilizers 5 and 8 are weld joints, with no velocities. All other
+    // mobilizers introduce one position and one velocity.
+    positions_index += mobilizer_topology.num_positions;
+    velocities_index += mobilizer_topology.num_velocities;
   }
   EXPECT_EQ(positions_index, topology.num_positions());
   EXPECT_EQ(velocities_index, topology.num_states());

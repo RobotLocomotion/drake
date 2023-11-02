@@ -1311,27 +1311,32 @@ GTEST_TEST(RotationMatrixTest, MakeFromOneVectorExceptions) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       RotationMatrix<double>::MakeFromOneVector(Vector3<double>(NAN, 1, NAN),
                                                 axis_index),
-      "RotationMatrix::MakeFromOneVector.* cannot normalize the given vector"
-      "[^]+ nan 1.* nan[^]+ If you are confident that v's direction is "
-      "meaningful, pass v.normalized.. in place of v.");
+      "MakeFromOneVector.* cannot normalize the given vector v."
+      "[^]+ nan[^]+ 1.* nan[^]+ |v|[^]+ nan[^]+ The measures must be finite "
+      "and the vector must have a magnitude of at least [^]+ to normalize. "
+      "If you are confident that v's direction is meaningful, "
+      "pass v.normalized..* instead of v.");
 
   // Verify vector with infinity throws an exception.
   constexpr double kInfinity = std::numeric_limits<double>::infinity();
   DRAKE_EXPECT_THROWS_MESSAGE(
       RotationMatrix<double>::MakeFromOneVector(
           Vector3<double>(kInfinity, 1, 0), axis_index),
-      "RotationMatrix::MakeFromOneVector.* cannot normalize the given vector"
-      "[^]+ inf 1.* 0[^]+ If you are confident that v's direction is "
-      "meaningful, pass v.normalized.. in place of v.");
+      "MakeFromOneVector.* cannot normalize the given vector v."
+      "[^]+ inf[^]+ 1.* 0[^]+ |v|[^]+ inf[^]+ The measures must be finite "
+      "and the vector must have a magnitude of at least [^]+ to normalize. "
+      "If you are confident that v's direction is meaningful, "
+      "pass v.normalized..* instead of v.");
 
   // Verify that a vector that is slightly too small throws.
   constexpr double kTolerance = 2 * std::numeric_limits<double>::epsilon();
   const Vector3<double> too_small_vector(1.0E-10 - kTolerance, 0, 0);
   DRAKE_EXPECT_THROWS_MESSAGE(
       RotationMatrix<double>::MakeFromOneVector(too_small_vector, axis_index),
-      "RotationMatrix::MakeFromOneVector.* cannot normalize the given vector"
-      "[^]+ If you are confident that v's direction is meaningful, pass "
-      "v.normalized.. in place of v.");
+      "MakeFromOneVector.* cannot normalize the given vector v."
+      "[^]+ 0[^]+ 0[^]+ The measures must be finite and the vector must have a "
+      "magnitude of at least [^]+ to normalize. If you are confident that v's "
+      "direction is meaningful, pass v.normalized..* instead of v.");
 
   // Verify a vector with a magnitude that is barely over tolerance works.
   const Vector3<double> ok_small_vector(1.0E-10 + kTolerance, 0, 0);

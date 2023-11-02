@@ -2510,13 +2510,13 @@ void MultibodyPlant<T>::CalcJointLockingCache(
 
   for (int dof : unlocked) {
     const internal::TreeIndex tree = topology.velocity_to_tree_index(dof);
-    const int tree_dof = dof - topology.tree_velocities_start(tree);
+    const int tree_dof = dof - topology.tree_velocities_start_in_v(tree);
     unlocked_per_tree[tree].push_back(tree_dof);
   }
 
   for (int dof : locked) {
     const internal::TreeIndex tree = topology.velocity_to_tree_index(dof);
-    const int tree_dof = dof - topology.tree_velocities_start(tree);
+    const int tree_dof = dof - topology.tree_velocities_start_in_v(tree);
     locked_per_tree[tree].push_back(tree_dof);
   }
 }

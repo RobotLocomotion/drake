@@ -351,7 +351,7 @@ TEST_F(KukaIiwaArmTests, CalcLinearDynamicsMatrix) {
   const MultibodyTreeTopology& topology =
       CompliantContactManagerTester::topology(*manager_);
   for (TreeIndex t(0); t < topology.num_trees(); ++t) {
-    const int tree_start = topology.tree_velocities_start(t);
+    const int tree_start = topology.tree_velocities_start_in_v(t);
     const int tree_nv = topology.num_tree_velocities(t);
     Adense.block(tree_start, tree_start, tree_nv, tree_nv) = A[t];
   }
