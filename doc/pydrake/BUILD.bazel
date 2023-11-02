@@ -17,8 +17,7 @@ drake_py_library(
     name = "pydrake_sphinx_extension_py",
     srcs = ["pydrake_sphinx_extension.py"],
     deps = [
-        "//bindings/pydrake/common:cpp_template_py",
-        "//bindings/pydrake/common:deprecation_py",
+        "//bindings/pydrake",
         "//doc/doxygen_cxx:system_doxygen",
     ],
 )

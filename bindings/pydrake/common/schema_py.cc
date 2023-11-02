@@ -14,16 +14,12 @@
 
 namespace drake {
 namespace pydrake {
+namespace internal {
 
-PYBIND11_MODULE(schema, m) {
+void DefineModuleSchema(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::schema;
   constexpr auto& doc = pydrake_doc.drake.schema;
-
-  m.doc() = "Bindings for the common.schema package.";
-
-  py::module::import("pydrake.common");
-  py::module::import("pydrake.math");
 
   // Bindings for stochastic.h.
 
@@ -395,5 +391,6 @@ PYBIND11_MODULE(schema, m) {
   }
 }
 
+}  // namespace internal
 }  // namespace pydrake
 }  // namespace drake

@@ -34,20 +34,21 @@ exports_files([
 # bindings.
 PACKAGE_INFO = get_pybind_package_info(base_package = "//bindings")
 
-# This provides `pydrake.__init__`, as well as `pydrake.common.__init__` (and
-# `.deprecation`). Downstream libraries should expect that these transitive
-# dependencies will be available, and thus do not need to explicitly depend on
-# these modules.
+# This target provides the following Python modules:
+# - pydrake
+# - pydrake.autodiffutils
+# - pydrake.common (and all of its sub-modules)
+# - pydrake.math
+# - pydrake.symbolic
+# Refer to bindings/pydrake/common/module_cycle.md for details.
 drake_py_library(
     name = "module_py",
     srcs = [
         "__init__.py",
     ],
     deps = [
-        # We use `common:_init_py` to avoid dependency cycles.
         "//bindings:bazel_workaround_4594_libdrake_py",
         "//bindings/pydrake/common:_init_py",
-        "//bindings/pydrake/common:deprecation_py",
     ],
 )
 
@@ -96,7 +97,7 @@ drake_py_library(
         "forwarddiff.py",
     ],
     deps = [
-        "//bindings/pydrake/autodiffutils",
+        ":module_py",
     ],
 )
 
@@ -132,7 +133,6 @@ drake_pybind_library(
     package_info = PACKAGE_INFO,
     py_deps = [
         ":module_py",
-        "//bindings/pydrake/common:value_py",
         "//bindings/pydrake/systems:sensors_py",
     ],
 )
@@ -156,9 +156,6 @@ drake_pybind_library(
     package_info = PACKAGE_INFO,
     py_deps = [
         ":module_py",
-        "//bindings/pydrake/autodiffutils",
-        "//bindings/pydrake/common:value_py",
-        "//bindings/pydrake/symbolic",
     ],
 )
 
@@ -186,9 +183,6 @@ drake_pybind_library(
     py_deps = [
         ":module_py",
         ":polynomial_py",
-        "//bindings/pydrake/autodiffutils",
-        "//bindings/pydrake/common:value_py",
-        "//bindings/pydrake/symbolic",
     ],
     py_srcs = [
         "_trajectories_extra.py",
@@ -210,7 +204,6 @@ PY_LIBRARIES_WITH_INSTALL = [
     ":perception_py",
     ":polynomial_py",
     ":trajectories_py",
-    "//bindings/pydrake/autodiffutils",
     "//bindings/pydrake/common",
     "//bindings/pydrake/examples",
     "//bindings/pydrake/examples/gym",
@@ -218,11 +211,9 @@ PY_LIBRARIES_WITH_INSTALL = [
     "//bindings/pydrake/geometry",
     "//bindings/pydrake/gym",
     "//bindings/pydrake/manipulation",
-    "//bindings/pydrake/math",
     "//bindings/pydrake/multibody",
     "//bindings/pydrake/planning",
     "//bindings/pydrake/solvers",
-    "//bindings/pydrake/symbolic",
     "//bindings/pydrake/systems",
     "//bindings/pydrake/visualization",
 ]
@@ -327,7 +318,7 @@ drake_py_unittest(
     name = "odr_test",
     deps = [
         ":odr_test_module_py",
-        "//bindings/pydrake/symbolic",
+        "//bindings/pydrake:module_py",
     ],
 )
 
@@ -350,9 +341,7 @@ drake_py_unittest(
     name = "forward_diff_test",
     deps = [
         ":forwarddiff_py",
-        "//bindings/pydrake/autodiffutils",
         "//bindings/pydrake/common/test_utilities",
-        "//bindings/pydrake/math",
     ],
 )
 
@@ -384,12 +373,9 @@ drake_py_unittest(
     name = "trajectories_test",
     deps = [
         ":trajectories_py",
-        "//bindings/pydrake/common:eigen_geometry_py",
-        "//bindings/pydrake/common:yaml_py",
         "//bindings/pydrake/common/test_utilities:numpy_compare_py",
         "//bindings/pydrake/common/test_utilities:pickle_compare_py",
         "//bindings/pydrake/common/test_utilities:scipy_stub_py",
-        "//bindings/pydrake/math",
     ],
 )
 
@@ -421,7 +407,7 @@ drake_py_binary(
 # out of date.
 PYI_FILES = [
     "pydrake/autodiffutils.pyi",
-    "pydrake/common/_module_py.pyi",
+    "pydrake/common/__init__.pyi",
     "pydrake/common/eigen_geometry.pyi",
     "pydrake/common/schema.pyi",
     "pydrake/common/value.pyi",
@@ -510,7 +496,13 @@ install(
     ],
     data_dest = "@PYTHON_SITE_PACKAGES@",
     visibility = ["//visibility:public"],
-    deps = get_drake_py_installs(PY_LIBRARIES_WITH_INSTALL),
+    deps = get_drake_py_installs(PY_LIBRARIES_WITH_INSTALL) + [
+        # These three modules are a special case.
+        # Refer to bindings/pydrake/common/module_cycle.md for details.
+        "//bindings/pydrake/autodiffutils:install",
+        "//bindings/pydrake/math:install",
+        "//bindings/pydrake/symbolic:install",
+    ],
 )
 
 add_lint_tests_pydrake(
