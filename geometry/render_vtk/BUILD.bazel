@@ -136,6 +136,7 @@ drake_cc_googletest(
         "//common/test_utilities",
         "//geometry/test_utilities:dummy_render_engine",
         "//math:geometric_transform",
+        "//systems/sensors:image_writer",
         "//systems/sensors/test_utilities:image_compare",
         "@vtk_internal//:vtkIOImage",
         "@vtk_internal//:vtkRenderingCore",

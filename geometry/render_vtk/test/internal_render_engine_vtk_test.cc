@@ -24,10 +24,12 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/common/never_destroyed.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/systems/sensors/image.h"
+#include "drake/systems/sensors/image_writer.h"
 #include "drake/systems/sensors/test_utilities/image_compare.h"
 
 /* Note: enabling this causes failures with two tests. Try running as:
@@ -222,6 +224,13 @@ bool IsColorNear(const RgbaColor& expected, const RgbaColor& tested,
          << " with tolerance: " << tolerance;
 }
 
+/* Returns the next unique-per-process integer that can uniquely identify a
+ temporary file to use in exporting rendered test images. */
+int64_t NextTempId() {
+  static drake::never_destroyed<std::atomic<int64_t>> global_temp_id;
+  return ++(global_temp_id.access());
+}
+
 // This test suite facilitates a test with a ground plane and floating shape.
 // The camera is positioned above the shape looking straight down. All
 // of the images produced from these tests should have the following properties:
@@ -251,6 +260,19 @@ class RenderEngineVtkTest : public ::testing::Test {
         geometry_id_(GeometryId::get_new_id()) {}
 
  protected:
+  std::string RenderFilePath(const std::string& image_type, int64_t unique_id) const {
+    DRAKE_DEMAND(image_type == "color" || image_type == "depth" || image_type == "label");
+    const std::string extension = (image_type == "depth") ? "tiff" : "png";
+    /* Create, e.g., `{test_name}_{0000000000000000XYZ}`
+      NOTE: the maximum number of digits in a int64_t is 19. */
+    return fmt::format("{0}/{1}_{2}_{3:0>19}.{4}",
+        std::getenv("TEST_UNDECLARED_OUTPUTS_DIR"),
+        ::testing::UnitTest::GetInstance()->current_test_info()->name(),
+        image_type,
+        unique_id,
+        extension);
+  }
+
   // Method to allow the normal case (render with the built-in renderer against
   // the default camera) to the member images with default window visibility.
   // This interface allows that to be completely reconfigured by the calling
@@ -269,8 +291,12 @@ class RenderEngineVtkTest : public ::testing::Test {
     ImageDepth32F* depth = depth_out ? depth_out : &depth_;
     ImageLabel16I* label = label_out ? label_out : &label_;
     EXPECT_NO_THROW(renderer->RenderDepthImage(depth_camera, depth));
+    SaveToPng(*color, RenderFilePath("color", NextTempId()));
     EXPECT_NO_THROW(renderer->RenderLabelImage(color_camera, label));
+    SaveToTiff(*depth, RenderFilePath("depth", NextTempId()));
     EXPECT_NO_THROW(renderer->RenderColorImage(color_camera, color));
+    SaveToPng(*label, RenderFilePath("label", NextTempId()));
+
     if (FLAGS_sleep > 0) sleep(FLAGS_sleep);
   }
 
