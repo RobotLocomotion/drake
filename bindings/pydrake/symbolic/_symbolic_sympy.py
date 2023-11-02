@@ -129,16 +129,16 @@ def _var_from_sympy(sympy_var: sympy.Dummy, *, memo: Dict):
 
 
 def _to_sympy(
-    x: Union[float, bool, Variable, Expression, Formula],
+    x: Union[float, int, bool, Variable, Expression, Formula],
     *,
     memo: Dict = None
-) -> Union[float, bool, sympy.Expr]:
+) -> Union[float, int, bool, sympy.Expr]:
     """This is the private implementation of pydrake.symbolic.to_sympy().
     Refer to that module-level function for the full docstring.
 
     TODO(jwnimmer-tri) Also support Polynomial, Monomial, etc.
     """
-    if isinstance(x, (float, bool)):
+    if isinstance(x, (float, int, bool)):
         return x
     if isinstance(x, Variable):
         return _var_to_sympy(drake_var=x, memo=memo)
@@ -222,15 +222,15 @@ def _lambdify(*, expr, args):
 
 
 def _from_sympy(
-    x: Union[float, bool, sympy.Expr],
+    x: Union[float, int, bool, sympy.Expr],
     *,
     memo: Dict = None
-) -> Union[float, bool, Variable, Expression, Formula]:
+) -> Union[float, int, bool, Variable, Expression, Formula]:
     """This is the private implementation of pydrake.symbolic.from_sympy().
     Refer to that module-level function for the full docstring.
     """
     # Return non-SymPy inputs as-is.
-    if isinstance(x, (float, bool)):
+    if isinstance(x, (float, int, bool)):
         return x
     # Return constants quickly.
     if x.is_number:

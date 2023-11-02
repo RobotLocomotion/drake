@@ -30,10 +30,10 @@ _symbolic_sympy_defer = None
 
 
 def to_sympy(
-    x: typing.Union[float, bool, Variable, Expression, Formula],
+    x: typing.Union[float, int, bool, Variable, Expression, Formula],
     *,
     memo: typing.Dict = None
-) -> typing.Union[float, bool, "sympy.Expr"]:
+) -> typing.Union[float, int, bool, "sympy.Expr"]:
     """Converts a pydrake object to the corresponding SymPy Expr.
 
     Certain expressions are not supported and will raise NotImplementedError.
@@ -63,10 +63,10 @@ def to_sympy(
 
 
 def from_sympy(
-    x: typing.Union[float, bool, "sympy.Expr"],
+    x: typing.Union[float, int, bool, "sympy.Expr"],
     *,
     memo: typing.Dict = None
-) -> typing.Union[float, bool, Variable, Expression, Formula]:
+) -> typing.Union[float, int, bool, Variable, Expression, Formula]:
     """Converts a SymPy Expr to the corresponding pydrake object.
 
     Certain expressions are not supported and will raise NotImplementedError.
