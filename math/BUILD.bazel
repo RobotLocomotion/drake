@@ -589,8 +589,6 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "unit_vector_test",
     deps = [
-        ":autodiff",
-        ":gradient",
         ":vector3_util",
         "//common/symbolic:expression",
         "//common/test_utilities:eigen_matrix_compare",
