@@ -91,10 +91,12 @@
         </inertia>
       </inertial>
       <visual name="visual">
+        <pose>0 0.0 0.0 1.57 0 0</pose>
         <geometry>
-          <box>
-            <size>0.007 0.081 0.028</size>
-          </box>
+          <capsule>
+            <radius>0.01</radius>
+            <length>0.08</length>
+          </capsule>
         </geometry>
         <material>
           <diffuse>0.3 0.3 0.3 0.9</diffuse>
@@ -118,10 +120,12 @@
         </inertia>
       </inertial>
       <visual name="visual">
+        <pose>0 0.0 0.0 1.57 0 0</pose>
         <geometry>
-          <box>
-            <size>0.007 0.081 0.028</size>
-          </box>
+          <capsule>
+            <radius>0.01</radius>
+            <length>0.08</length>
+          </capsule>
         </geometry>
         <material>
           <diffuse>0.3 0.3 0.3 0.9</diffuse>

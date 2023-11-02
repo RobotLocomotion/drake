@@ -2,8 +2,10 @@
 
 This is an example of simulation of deformable bodies in Drake.
 The example poses a deformable torus on the ground and uses a PD controlled
-gripper that follows a prescribed kinematics to pick up the torus, lift it up in
-the air, and then drop it back on the ground.
+gripper that follows a prescribed kinematics to pick up the torus, lift it up
+in the air, and then drop it back on the ground. One can toggle between a
+parallel gripper and a suction gripper with the `--gripper` flag.
+
 This demonstrates the dynamics of deformable bodies and showcases the SAP solver
 in handling contact between deformable and rigid bodies.
 
