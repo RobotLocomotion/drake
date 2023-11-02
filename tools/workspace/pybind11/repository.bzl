@@ -32,7 +32,7 @@ def generate_pybind11_version_py_file(name):
     )
     generate_file(
         name = name,
-        content = '''
+        content = '''# noqa: shebang
 """
 Provides information on the external fork of `pybind11` used by `pydrake`.
 """
