@@ -317,7 +317,8 @@ def _do_upgrade(temp_dir, gh, local_drake_checkout, workspace_name, metadata):
     print("Downloading new archive...")
     new_url = f"https://github.com/{repository}/archive/{new_commit}.tar.gz"
     hasher = hashlib.sha256()
-    with open(f"{temp_dir}/{new_commit}.tar.gz", "wb") as temp:
+    new_commit_filename = new_commit.replace("/", "_")
+    with open(f"{temp_dir}/{new_commit_filename}.tar.gz", "wb") as temp:
         with urllib.request.urlopen(new_url) as response:
             while True:
                 data = response.read(4096)

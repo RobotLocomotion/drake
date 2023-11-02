@@ -6,8 +6,8 @@ def coinutils_internal_repository(
     github_archive(
         name = name,
         repository = "coin-or/CoinUtils",
-        commit = "releases/2.11.9",
-        sha256 = "15d572ace4cd3b7c8ce117081b65a2bd5b5a4ebaba54fadc99c7a244160f88b8",  # noqa
+        commit = "releases/2.11.10",
+        sha256 = "80c7c215262df8d6bd2ba171617c5df844445871e9891ec6372df12ccbe5bcfd",  # noqa
         build_file = ":package.BUILD.bazel",
         mirrors = mirrors,
     )
