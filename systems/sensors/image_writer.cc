@@ -111,6 +111,10 @@ ImageWriter::ImageWriter() {
   extensions_[PixelType::kDepth16U] = ".png";
   labels_[PixelType::kGrey8U] = "grey_scale";
   extensions_[PixelType::kGrey8U] = ".png";
+
+  // Declares a forced publish event to accommodate non-periodic image saving,
+  // e.g., when saving images outside of Simulator::AdvanceTo.
+  DeclareForcedPublishEvent(&ImageWriter::WriteAllImages);
 }
 
 template <PixelType kPixelType>
@@ -232,6 +236,12 @@ const InputPort<double>& ImageWriter::DeclareImageInputPort(
       static_cast<int>(pixel_type)));
 }
 
+void ImageWriter::ResetAllImageCounts() const {
+  for (const auto& port_info : port_info_) {
+    port_info.count = 0;
+  }
+}
+
 template <PixelType kPixelType>
 void ImageWriter::WriteImage(const Context<double>& context, int index) const {
   const auto& port = get_input_port(index);
@@ -240,6 +250,12 @@ void ImageWriter::WriteImage(const Context<double>& context, int index) const {
   SaveToFileHelper(
       image, MakeFileName(data.format, data.pixel_type, context.get_time(),
                           port.get_name(), data.count++));
+}
+
+EventStatus ImageWriter::WriteAllImages(const Context<double>& context) const {
+  auto periodic_events = this->AllocateCompositeEventCollection();
+  this->GetPeriodicEvents(context, periodic_events.get());
+  return this->Publish(context, periodic_events->get_publish_events());
 }
 
 std::string ImageWriter::MakeFileName(const std::string& format,

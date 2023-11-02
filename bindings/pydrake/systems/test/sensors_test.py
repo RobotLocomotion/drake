@@ -500,9 +500,10 @@ class TestSensors(unittest.TestCase):
 
     def test_image_writer(self):
         writer = mut.ImageWriter()
-        writer.DeclareImageInputPort(
+        input_port = writer.DeclareImageInputPort(
             pixel_type=mut.PixelType.kRgba8U,
             port_name="color",
             file_name_format="/tmp/{port_name}-{time_usec}",
             publish_period=0.125,
             start_time=0.0)
+        self.assertIsNotNone(input_port)
