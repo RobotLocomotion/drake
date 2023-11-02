@@ -9,6 +9,7 @@
 
 namespace drake {
 namespace pydrake {
+namespace internal {
 
 namespace {
 
@@ -43,9 +44,7 @@ void AddPrimitiveValueInstantiations(py::module m) {
 
 }  // namespace
 
-PYBIND11_MODULE(value, m) {
-  PYDRAKE_PREVENT_PYTHON3_MODULE_REIMPORT(m);
-  m.doc() = "Bindings for //common:value";
+void DefineModuleValue(py::module m) {
   constexpr auto& doc = pydrake_doc.drake;
 
   // `AddValueInstantiation` will define methods specific to `T` for
@@ -81,5 +80,6 @@ PYBIND11_MODULE(value, m) {
   ExecuteExtraPythonCode(m);
 }
 
+}  // namespace internal
 }  // namespace pydrake
 }  // namespace drake
