@@ -41,11 +41,9 @@ bool IsUnitVector(const Vector3<T>& unit_vector,
     //     (abs(unit_vector.norm() - 1) <=  tolerance_unit_vector_norm;
     // -------------------------------------------------------------
     const double tolerance2 = 2 * tolerance_unit_vector_norm;
-    const T uvec_squared = unit_vector.squaredNorm();
-    const double uvec_squared_double = ExtractDoubleOrThrow(uvec_squared);
-    const bool is_ok_unit_vector =
-        std::isfinite(uvec_squared_double) &&
-        std::abs(uvec_squared_double - 1.0) <= tolerance2;
+    const double uvec_squared = DiscardGradient(unit_vector).squaredNorm();
+    const bool is_ok_unit_vector = std::isfinite(uvec_squared) &&
+                                   std::abs(uvec_squared - 1.0) <= tolerance2;
     return is_ok_unit_vector;
   } else {
     unused(unit_vector, tolerance_unit_vector_norm);
