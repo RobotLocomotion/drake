@@ -3,7 +3,6 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/symbolic/expression.h"
-#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 
@@ -19,9 +18,9 @@ GTEST_TEST(UnitVectorTest, ThrowOrWarnIfNotUnitVector) {
       ThrowIfNotUnitVector(unit_vector, "UnusedFunctionName"));
 
   // Verify WarnIfNotUnitVector() does not warn for a perfect unit vector.
-  bool is_poor_unit_vector =
+  bool is_bad_unit_vector =
       WarnIfNotUnitVector(unit_vector, "UnusedFunctionName");
-  EXPECT_FALSE(is_poor_unit_vector);
+  EXPECT_FALSE(is_bad_unit_vector);
 
   // Verify that no exception is thrown for a valid or near valid unit vector.
   unit_vector = Vector3<double>(4.321, M_PI, 97531.2468).normalized();
@@ -50,20 +49,20 @@ GTEST_TEST(UnitVectorTest, ThrowOrWarnIfNotUnitVector) {
       ThrowIfNotUnitVector(not_unit_vector, "SomeFunctionName"),
       expected_message);
 
-  // Verify WarnIfNotUnitVector() returns ≈ 1 for near valid unit vector.
-  is_poor_unit_vector = WarnIfNotUnitVector(unit_vector, "TestFunctionName");
-  EXPECT_FALSE(is_poor_unit_vector);
+  // Verify WarnIfNotUnitVector() returns true for near valid unit vector.
+  is_bad_unit_vector = WarnIfNotUnitVector(unit_vector, "TestFunctionName");
+  EXPECT_FALSE(is_bad_unit_vector);
 
-  // Verify return value from WarnIfNotUnitVector() ≠ 1 for invalid unit vector.
+  // Verify WarnIfNotUnitVector() returns false for invalid unit vector.
   // Not checked: A message should have be written to the log file.
-  is_poor_unit_vector =
+  is_bad_unit_vector =
       WarnIfNotUnitVector(not_unit_vector, "SomeFunctionName");
-  EXPECT_TRUE(is_poor_unit_vector);
+  EXPECT_TRUE(is_bad_unit_vector);
 
-  // Verify WarnIfNotUnitVector() returns true symbolic unit vector.
-  is_poor_unit_vector =
+  // Verify WarnIfNotUnitVector() returns true for a symbolic unit vector.
+  is_bad_unit_vector =
       WarnIfNotUnitVector(unit_vector_symbolic, "TestSymbolicFunctionName");
-  EXPECT_FALSE(is_poor_unit_vector);
+  EXPECT_FALSE(is_bad_unit_vector);
 
   // Verify an exception is thrown for a unit vector with NAN elements.
   not_unit_vector = Vector3<double>(NAN, NAN, NAN);

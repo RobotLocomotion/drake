@@ -41,7 +41,6 @@ bool IsUnitVector(const Vector3<T>& unit_vector,
     //     (abs(unit_vector.norm() - 1) <=  tolerance_unit_vector_norm;
     // -------------------------------------------------------------
     const double tolerance2 = 2 * tolerance_unit_vector_norm;
-
     const T uvec_squared = unit_vector.squaredNorm();
     const double uvec_squared_double = ExtractDoubleOrThrow(uvec_squared);
     const bool is_ok_unit_vector =
@@ -120,9 +119,7 @@ void ThrowIfNotUnitVector(const Vector3<T>& unit_vector,
                           std::string_view function_name,
                           const double tolerance_unit_vector_norm) {
   DRAKE_DEMAND(!function_name.empty());
-  const bool is_ok_unit_vector =
-      IsUnitVector(unit_vector, tolerance_unit_vector_norm);
-  if (!is_ok_unit_vector) {
+  if (!IsUnitVector(unit_vector, tolerance_unit_vector_norm)) {
     throw std::logic_error(ErrorMessageNotUnitVector(
         unit_vector, function_name, tolerance_unit_vector_norm));
   }
