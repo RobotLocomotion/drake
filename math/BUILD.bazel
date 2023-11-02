@@ -591,7 +591,6 @@ drake_cc_googletest(
     deps = [
         ":vector3_util",
         "//common/symbolic:expression",
-        "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
     ],
