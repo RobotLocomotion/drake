@@ -206,6 +206,7 @@ output_ports:
 - body_spatial_velocities
 - body_spatial_accelerations
 - generalized_acceleration
+- net_actuation
 - reaction_forces
 - contact_results
 - <em style="color:gray">model_instance_name[i]</em>_state
@@ -445,6 +446,15 @@ connected or not:
 ² This port is always declared, though it will be zero sized for model instances
   with no PD controllers.
 
+  #### Net actuation
+
+The total joint actuation applied via the actuation input port
+(get_actuation_input_port()) and applied by the PD controllers is reported by
+the net actuation port (get_net_actuation_output_port()). That is, the net
+actuation port reports the total actuation applied by a given actuator.
+
+@note PD controllers are ignored when a joint is locked (see Joint::Lock()), and
+thus they have no effect on the actuation output.
 
 @anchor sdf_loading
                  ### Loading models from SDFormat files
@@ -837,6 +847,18 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @pre Finalize() was already called on `this` plant.
   /// @throws std::exception if called before Finalize().
   const systems::InputPort<T>& get_actuation_input_port() const;
+
+  /// Returns a constant reference to the output port that reports actuation
+  /// values applied through joint actuators. This output port is a vector
+  /// valued port indexed by @ref JointActuatorIndex, see
+  /// JointActuator::index(). Models that include PD controllers will include
+  /// their contribution in this port, refer to @ref mbp_actuation "Actuation"
+  /// for further details.
+  /// @note PD controllers are not considered for actuators on locked joints,
+  /// see Joint::Lock(). Therefore they do not contribute to this port.
+  /// @pre Finalize() was already called on `this` plant.
+  /// @throws std::exception if called before Finalize().
+  const systems::OutputPort<T>& get_net_actuation_output_port() const;
 
   /// Returns a constant reference to the input port for external actuation for
   /// a specific model instance. This is a vector valued port with entries
@@ -5157,6 +5179,14 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // ports. The return value is indexed by JointActuatorIndex.
   VectorX<T> AssembleActuationInput(const systems::Context<T>& context) const;
 
+  // Computes the total applied actuation through actuators. For continuous
+  // models (thus far) this only inludes values coming from the
+  // actuation_input_port. For discrete models, it includes actuator
+  // controllers, see @ref mbp_actuation. Similarly to AssembleActuationInput(),
+  // this function assembles actuation values indexed by JointActuatorIndex.
+  void CalcActuationOutput(const systems::Context<T>& context,
+                           systems::BasicVector<T>* actuation) const;
+
   // For models with joint actuators with PD control, this method helps to
   // assemble desired states for the full model from the input ports for
   // individual model instances.
@@ -5645,8 +5675,11 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // if that instance has no actuators.
   std::vector<systems::InputPortIndex> instance_actuation_ports_;
 
-  // The actuation port for all actuated dofs.
+  // The actuation input port for all actuated dofs.
   systems::InputPortIndex actuation_port_;
+
+  // Net actuation applied through actuators.
+  systems::OutputPortIndex net_actuation_port_;
 
   std::vector<systems::InputPortIndex> instance_desired_state_ports_;
 

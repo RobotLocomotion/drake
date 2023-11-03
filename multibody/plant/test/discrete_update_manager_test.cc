@@ -161,6 +161,10 @@ class DummyDiscreteUpdateManager final : public DiscreteUpdateManager<T> {
     throw std::logic_error("Must implement if needed for these tests.");
   }
 
+  void DoCalcActuation(const systems::Context<T>&, VectorX<T>*) const final {
+    throw std::logic_error("Must implement if needed for these tests.");
+  }
+
  private:
   systems::DiscreteStateIndex additional_state_index_;
   systems::CacheIndex cache_index_;

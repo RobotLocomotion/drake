@@ -108,6 +108,14 @@ void DiscreteUpdateManager<T>::DeclareCacheEntries() {
   cache_indexes_.discrete_update_multibody_forces =
       multibody_forces_cache_entry.cache_index();
 
+  const auto& actuation_cache_entry = DeclareCacheEntry(
+      "Discrete update actuation",
+      systems::ValueProducer(this, VectorX<T>(plant().num_actuated_dofs()),
+                             &DiscreteUpdateManager<T>::CalcActuation),
+      {systems::System<T>::xd_ticket(),
+       systems::System<T>::all_parameters_ticket()});
+  cache_indexes_.actuation = actuation_cache_entry.cache_index();
+
   const auto& contact_results_cache_entry = DeclareCacheEntry(
       "Contact results (discrete)",
       systems::ValueProducer(this,
@@ -741,6 +749,15 @@ void DiscreteUpdateManager<T>::CalcDiscreteUpdateMultibodyForces(
 }
 
 template <typename T>
+void DiscreteUpdateManager<T>::CalcActuation(const systems::Context<T>& context,
+                                             VectorX<T>* actuation) const {
+  plant().ValidateContext(context);
+  DRAKE_DEMAND(actuation != nullptr);
+  DRAKE_DEMAND(actuation->size() == plant().num_actuated_dofs());
+  DoCalcActuation(context, actuation);
+}
+
+template <typename T>
 void DiscreteUpdateManager<T>::CalcContactKinematics(
     const systems::Context<T>& context,
     DiscreteContactData<ContactPairKinematics<T>>* result) const {
@@ -1225,6 +1242,14 @@ DiscreteUpdateManager<T>::EvalDiscreteUpdateMultibodyForces(
   return plant()
       .get_cache_entry(cache_indexes_.discrete_update_multibody_forces)
       .template Eval<MultibodyForces<T>>(context);
+}
+
+template <typename T>
+const VectorX<T>& DiscreteUpdateManager<T>::EvalActuation(
+    const systems::Context<T>& context) const {
+  return plant()
+      .get_cache_entry(cache_indexes_.actuation)
+      .template Eval<VectorX<T>>(context);
 }
 
 template <typename T>

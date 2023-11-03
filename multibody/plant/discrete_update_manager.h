@@ -194,6 +194,11 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   const MultibodyForces<T>& EvalDiscreteUpdateMultibodyForces(
       const systems::Context<T>& context) const;
 
+  /* Evaluate the actuation applied through actuators during the discrete
+   update. This will include actuation input as well as controller models.
+   The returned vector is indexed by JointActuatorIndex. */
+  const VectorX<T>& EvalActuation(const systems::Context<T>& context) const;
+
   /* Evaluates sparse kinematics information for each contact pair at
    the given configuration stored in `context`. */
   const DiscreteContactData<ContactPairKinematics<T>>& EvalContactKinematics(
@@ -354,6 +359,13 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   virtual void DoCalcDiscreteUpdateMultibodyForces(
       const systems::Context<T>& context, MultibodyForces<T>* forces) const = 0;
 
+  /* Concrete managers must implement this method to compute the total actuation
+   applied during a discrete update.
+   For instance, managers that implement implicit controllers must override this
+   method to include these terms. */
+  virtual void DoCalcActuation(const systems::Context<T>& context,
+                               VectorX<T>* actuation) const = 0;
+
   /* Performs discrete updates for rigid DoFs in the system. Defaults to
    symplectic Euler updates. Derived classes may choose to override the
    implemention to provide a different update scheme. */
@@ -399,6 +411,7 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
     systems::CacheIndex contact_kinematics;
     systems::CacheIndex discrete_contact_pairs;
     systems::CacheIndex hydroelastic_contact_info;
+    systems::CacheIndex actuation;
   };
 
   /* Exposes indices for the cache entries declared by this class for derived
@@ -441,6 +454,10 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
    DoCalcDiscreteUpdateMultibodyForces. */
   void CalcDiscreteUpdateMultibodyForces(const systems::Context<T>& context,
                                          MultibodyForces<T>* forces) const;
+
+  /* Calc version of EvalActuation, NVI to DoCalcActuation. */
+  void CalcActuation(const systems::Context<T>& context,
+                     VectorX<T>* forces) const;
 
   /* Calc version of EvalContactKinematics(). */
   void CalcContactKinematics(

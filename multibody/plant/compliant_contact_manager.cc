@@ -334,6 +334,32 @@ void CompliantContactManager<T>::DoCalcDiscreteUpdateMultibodyForces(
   }
 }
 
+template <typename T>
+void CompliantContactManager<T>::DoCalcActuation(
+    const systems::Context<T>& context, VectorX<T>* actuation) const {
+  // Thus far only TAMSI and SAP are supported. Verify this is true.
+  DRAKE_DEMAND(
+      plant().get_discrete_contact_solver() == DiscreteContactSolver::kSap ||
+      plant().get_discrete_contact_solver() == DiscreteContactSolver::kTamsi);
+
+  if (plant().get_discrete_contact_solver() == DiscreteContactSolver::kSap) {
+    if constexpr (std::is_same_v<T, symbolic::Expression>) {
+      throw std::logic_error(
+          "Discrete updates with the SAP solver are not supported for T = "
+          "symbolic::Expression");
+    } else {
+      DRAKE_DEMAND(sap_driver_ != nullptr);
+      sap_driver_->CalcActuation(context, actuation);
+    }
+  }
+
+  if (plant().get_discrete_contact_solver() == DiscreteContactSolver::kTamsi) {
+    DRAKE_DEMAND(tamsi_driver_ != nullptr);
+    // TAMSI does not model additional actuation terms as SAP does.
+    *actuation = this->AssembleActuationInput(context);
+  }
+}
+
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake
