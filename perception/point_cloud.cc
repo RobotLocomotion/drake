@@ -6,6 +6,8 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include <chrono>
+#include <iostream>
 
 #include <common_robotics_utilities/dynamic_spatial_hashed_voxel_grid.hpp>
 #include <common_robotics_utilities/voxel_grid.hpp>
@@ -486,15 +488,13 @@ PointCloud PointCloud::VoxelizedDownSample(
   DynamicSpatialHashedVoxelGrid<std::vector<int>> dynamic_voxel_grid(
       chunk_sizes, default_chunk_value, num_expected_chunks);
 
-  // grab the original xyzs first to avoid excessive calls to
-  // DRAKE_DEMAND(has_xyzs())
-  const auto& original_xyzs = xyzs();
+  const auto& my_xyzs = storage_->xyzs();
 
   // Add points into the voxel grid.
   for (int i = 0; i < size(); ++i) {
-    if (original_xyzs.col(i).array().isFinite().all()) {
+    if (my_xyzs.col(i).array().isFinite().all()) {
       auto chunk_query = dynamic_voxel_grid.GetLocationMutable3d(
-          original_xyzs.col(i).cast<double>());
+          my_xyzs.col(i).cast<double>());
       if (chunk_query) {
         // If the containing chunk has already been allocated, add the current
         // point index directly.
@@ -503,7 +503,7 @@ PointCloud PointCloud::VoxelizedDownSample(
         // If the containing chunk hasn't already been allocated, create a new
         // chunk containing the current point index.
         dynamic_voxel_grid.SetLocation3d(
-            original_xyzs.col(i).cast<double>(), DSHVGSetType::SET_CHUNK, {i});
+            my_xyzs.col(i).cast<double>(), DSHVGSetType::SET_CHUNK, {i});
       }
     }
   }
@@ -517,11 +517,11 @@ PointCloud PointCloud::VoxelizedDownSample(
   const bool this_has_rgbs = has_rgbs();
   const bool this_has_descriptors = has_descriptors();
 
-  auto downsampled_xyzs = down_sampled.mutable_xyzs();
-  // Helper lambda to process a single voxel cell.
+  auto down_sampled_xyzs = down_sampled.mutable_xyzs();
 
+  // Helper lambda to process a single voxel cell.
   const auto process_voxel =
-      [this, &down_sampled, &downsampled_xyzs, &original_xyzs, this_has_normals, this_has_rgbs, this_has_descriptors](
+      [this, &down_sampled_xyzs, &down_sampled, &my_xyzs, this_has_normals, this_has_rgbs, this_has_descriptors](
       int index_in_down_sampled, const std::vector<int>& indices_in_this) {
 
     // Use doubles instead of floats for accumulators to avoid round-off errors.
@@ -534,22 +534,22 @@ PointCloud PointCloud::VoxelizedDownSample(
     int num_descriptors{0};
 
     for (int index_in_this : indices_in_this) {
-      xyz += original_xyzs.col(index_in_this).cast<double>();
+      xyz += my_xyzs.col(index_in_this).cast<double>();
       if (this_has_normals &&
-          normals().col(index_in_this).array().isFinite().all()) {
-        normal += normals().col(index_in_this).cast<double>();
+          storage_->normals().col(index_in_this).array().isFinite().all()) {
+        normal += storage_->normals().col(index_in_this).cast<double>();
         ++num_normals;
       }
       if (this_has_rgbs) {
-        rgb += rgbs().col(index_in_this).cast<double>();
+        rgb += storage_->rgbs().col(index_in_this).cast<double>();
       }
       if (this_has_descriptors &&
-          descriptors().col(index_in_this).array().isFinite().all()) {
+          storage_->descriptors().col(index_in_this).array().isFinite().all()) {
         descriptor += descriptors().col(index_in_this).cast<double>();
         ++num_descriptors;
       }
     }
-    downsampled_xyzs.col(index_in_down_sampled) =
+    down_sampled_xyzs.col(index_in_down_sampled) =
         (xyz / indices_in_this.size()).cast<T>();
     if (this_has_normals) {
       down_sampled.mutable_normals().col(index_in_down_sampled) =
@@ -614,7 +614,7 @@ PointCloud PointCloud::VoxelizedDownSample(
       ++index_in_down_sampled;
     }
   }
-
+  
   return down_sampled;
 }
 
