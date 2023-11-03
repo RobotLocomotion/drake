@@ -225,8 +225,8 @@ the following:
   - As an example:
 
         # .../my_component.h
-        #include "drake/math/rigid_transform.h"
-        RigidTransformd MyMethod();
+        #include "drake/geometry/meshcat.h"
+        void MyMethod(std::shared_ptr<Meshcat> meshcat);
 
         # bindings/.../BUILD.bazel
         drake_pybind_library(
@@ -234,14 +234,14 @@ the following:
             ...
             py_deps = [
                 ...
-                "//bindings/pydrake/math",
+                "//bindings/pydrake/geometry",
             ],
             ...
         )
 
         # bindings/.../my_method_py.cc
         PYBIND_MODULE(my_method, m) {
-          py::module::import("pydrake.math");
+          py::module::import("pydrake.geometry");
           m.def("MyMethod", &MyMethod, ...);
         }
 

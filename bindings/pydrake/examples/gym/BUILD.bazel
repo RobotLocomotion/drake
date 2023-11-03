@@ -36,7 +36,6 @@ drake_py_library(
     srcs = ["named_view_helpers.py"],
     deps = [
         ":module_py",
-        "//bindings/pydrake/common",
         "//bindings/pydrake/multibody",
     ],
 )
@@ -58,7 +57,6 @@ drake_py_library(
     deps = [
         ":module_py",
         ":named_view_helpers_py",
-        "//bindings/pydrake/common",
         "//bindings/pydrake/geometry",
         "//bindings/pydrake/gym",
         "//bindings/pydrake/multibody",
