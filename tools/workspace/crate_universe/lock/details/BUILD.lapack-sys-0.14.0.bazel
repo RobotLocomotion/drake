@@ -6,17 +6,16 @@
 #     tools/workspace/crate_universe/upgrade.sh
 ###############################################################################
 
-load("@rules_rust//cargo:defs.bzl", "cargo_build_script")
 load("@rules_rust//rust:defs.bzl", "rust_library")
 
 package(default_visibility = ["//visibility:public"])
 
 # licenses([
-#     "TODO",  # MIT OR Apache-2.0
+#     "TODO",  # Apache-2.0/MIT
 # ])
 
 rust_library(
-    name = "num_traits",
+    name = "lapack_sys",
     srcs = glob(["**/*.rs"]),
     compile_data = glob(
         include = ["**"],
@@ -29,17 +28,12 @@ rust_library(
             "WORKSPACE.bazel",
         ],
     ),
-    crate_features = [
-        "default",
-        "i128",
-        "std",
-    ],
     crate_root = "src/lib.rs",
-    edition = "2018",
+    edition = "2015",
     rustc_flags = ["--cap-lints=allow"],
     tags = [
         "cargo-bazel",
-        "crate-name=num-traits",
+        "crate-name=lapack-sys",
         "manual",
         "noclippy",
         "norustfmt",
@@ -78,53 +72,8 @@ rust_library(
         "@rules_rust//rust/platform:x86_64-unknown-none": [],
         "//conditions:default": ["@platforms//:incompatible"],
     }),
-    version = "0.2.17",
+    version = "0.14.0",
     deps = [
-        "@crate__num-traits-0.2.17//:build_script_build",
+        "@crate__libc-0.2.149//:libc",
     ],
-)
-
-cargo_build_script(
-    name = "num-traits_build_script",
-    srcs = glob(["**/*.rs"]),
-    crate_features = [
-        "default",
-        "i128",
-        "std",
-    ],
-    crate_name = "build_script_build",
-    crate_root = "build.rs",
-    data = glob(
-        include = ["**"],
-        exclude = [
-            "**/* *",
-            ".tmp_git_root/**/*",
-            "BUILD",
-            "BUILD.bazel",
-            "WORKSPACE",
-            "WORKSPACE.bazel",
-        ],
-    ),
-    edition = "2018",
-    rustc_flags = [
-        "--cap-lints=allow",
-    ],
-    tags = [
-        "cargo-bazel",
-        "crate-name=num-traits",
-        "manual",
-        "noclippy",
-        "norustfmt",
-    ],
-    version = "0.2.17",
-    visibility = ["//visibility:private"],
-    deps = [
-        "@crate__autocfg-1.1.0//:autocfg",
-    ],
-)
-
-alias(
-    name = "build_script_build",
-    actual = "num-traits_build_script",
-    tags = ["manual"],
 )
