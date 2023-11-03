@@ -29,7 +29,6 @@ drake_py_library(
         "_drake_gym_env.py",
     ],
     deps = [
-        "//bindings/pydrake/common",
         "//bindings/pydrake/systems",
         "@gymnasium_py",
     ],

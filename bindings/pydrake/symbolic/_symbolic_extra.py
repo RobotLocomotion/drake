@@ -4,6 +4,7 @@
 import functools
 import operator
 import typing
+import sys
 
 
 def logical_and(*formulas):
@@ -92,3 +93,10 @@ def from_sympy(
     if memo is None:
         memo = dict()
     return _symbolic_sympy_defer._from_sympy(x, memo=memo)
+
+
+# We must be able to do `from pydrake.symbolic import _symbolic_sympy` so we
+# need `pydrake.symbolic` to be a Python package, not merely a module. (See
+# https://docs.python.org/3/tutorial/modules.html for details.) The way to
+# designate something as a package is to define its `__path__` attribute.
+__path__ = [sys.modules["pydrake"].__path__[0] + "/symbolic"]

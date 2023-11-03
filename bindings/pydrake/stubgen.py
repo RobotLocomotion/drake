@@ -111,14 +111,6 @@ def _actual_main():
         source = getattr(sys.modules[name], "__file__", "")
         if source.endswith(".py"):
             native_modules.remove(name)
-    native_modules.extend([
-        # The "pydrake.common" module is unique in that seems to be a pure
-        # Python module (with an __init__.py) but then tacks on some native
-        # code imported from a private helper (pydrake.common._module_py).
-        # To get those native classes into the type stubs, we must manually
-        # add one private module to the stubgen manifest.
-        "pydrake.common._module_py",
-    ])
 
     # Run stubgen. It writes junk in the current directory, so we need to run
     # it from a safe place.

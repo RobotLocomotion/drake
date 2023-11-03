@@ -14,6 +14,7 @@
 
 namespace drake {
 namespace pydrake {
+namespace internal {
 namespace {
 
 using std::abs;
@@ -410,16 +411,15 @@ void DoScalarDependentDefinitions(py::module m, T) {
 
 }  // namespace
 
-PYBIND11_MODULE(eigen_geometry, m) {
+void DefineModuleEigenGeometry(py::module m) {
   m.doc() = "Bindings for Eigen geometric types.";
 
-  py::module::import("pydrake.autodiffutils");
-  py::module::import("pydrake.symbolic");
   type_visit([m](auto dummy) { DoScalarDependentDefinitions(m, dummy); },
       CommonScalarPack{});
 
   ExecuteExtraPythonCode(m);
 }
 
+}  // namespace internal
 }  // namespace pydrake
 }  // namespace drake
