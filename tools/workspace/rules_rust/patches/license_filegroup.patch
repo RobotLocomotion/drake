@@ -1,0 +1,15 @@
+[rules_rust] Add crate_universe filegroup for licenses
+
+Drake's install rules must install the license files of its dependencies.
+As such, we need all creates to provide their licenses.
+
+--- crate_universe/src/rendering.rs
++++ crate_universe/src/rendering.rs
+@@ -290,6 +290,7 @@ impl Renderer {
+                 # licenses([
+                 #     "TODO",  # {license}
+                 # ])
++                filegroup(name = "license_glob", srcs = glob(["LICENSE*"], allow_empty = False))
+             "#}));
+         }
+ 

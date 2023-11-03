@@ -17,6 +17,8 @@ def rules_rust_repository(
         """,
         commit = "0.30.0",
         sha256 = "984def6785d76487c27087048b59639900f8e0ddba4fc9c265eb9134c50c0b50",  # noqa
-        patches = extra_patches,
+        patches = (extra_patches or []) + [
+            ":patches/license_filegroup.patch",
+        ],
         mirrors = mirrors,
     )
