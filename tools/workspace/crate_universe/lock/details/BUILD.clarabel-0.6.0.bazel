@@ -82,7 +82,7 @@ rust_library(
         "@crate__derive_builder-0.11.2//:derive_builder",
         "@crate__itertools-0.11.0//:itertools",
         "@crate__lazy_static-1.4.0//:lazy_static",
-        "@crate__num-traits-0.2.16//:num_traits",
-        "@crate__thiserror-1.0.48//:thiserror",
+        "@crate__num-traits-0.2.17//:num_traits",
+        "@crate__thiserror-1.0.50//:thiserror",
     ],
 )
