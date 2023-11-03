@@ -72,10 +72,10 @@ rust_proc_macro(
         "@rules_rust//rust/platform:x86_64-unknown-none": [],
         "//conditions:default": ["@platforms//:incompatible"],
     }),
-    version = "1.0.48",
+    version = "1.0.50",
     deps = [
-        "@crate__proc-macro2-1.0.67//:proc_macro2",
+        "@crate__proc-macro2-1.0.69//:proc_macro2",
         "@crate__quote-1.0.33//:quote",
-        "@crate__syn-2.0.37//:syn",
+        "@crate__syn-2.0.38//:syn",
     ],
 )
