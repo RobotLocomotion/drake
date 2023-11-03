@@ -916,6 +916,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
                 ModelInstanceIndex>(&Class::get_actuation_input_port),
             py::arg("model_instance"), py_rvp::reference_internal,
             cls_doc.get_actuation_input_port.doc_1args)
+        .def("get_net_actuation_output_port",
+            &Class::get_net_actuation_output_port, py_rvp::reference_internal,
+            cls_doc.get_net_actuation_output_port.doc)
         .def("get_desired_state_input_port",
             overload_cast_explicit<const systems::InputPort<T>&,
                 multibody::ModelInstanceIndex>(
