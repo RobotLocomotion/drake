@@ -115,7 +115,7 @@ drake_cc_googletest(
     ],
 )
 
-cc_binary(
+drake_cc_binary(
     name = "downsample_benchmark",
     srcs = ["test/downsample_benchmark.cc"],
     deps = [":point_cloud"],
