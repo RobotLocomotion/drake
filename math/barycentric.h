@@ -159,10 +159,27 @@ class BarycentricMesh {
   /// value matrix that should be used to approximate the function with this
   /// barycentric interpolation.
   ///
-  /// @code
+  /// @code{.cpp}
   ///   MatrixXd mesh_values = bary.MeshValuesFrom(
   ///     [](const auto& x) { return Vector1d(std::sin(x[0])); });
   /// @endcode
+  /// @python_details_begin
+  /// @code{.py}
+  /// # Create an input grid as a list of sets
+  /// x = np.linspace(0, 10, 11)
+  /// input_grid = [set([val]) for val in x]
+  /// 
+  /// # Create a BarycentricMesh
+  /// mesh = math.BarycentricMesh(input_grid)
+  /// 
+  /// # Define a function to compute mesh values
+  /// def mesh_value_function(x):
+  /// return np.sin(x)
+  /// 
+  /// # Compute mesh values using the defined function
+  /// mesh_values = mesh.MeshValuesFrom(mesh_value_function)
+  /// @endcode
+  /// @python_details_end
   MatrixX<T> MeshValuesFrom(
       const std::function<VectorX<T>(const Eigen::Ref<const VectorX<T>>&)>&
           vector_func) const;

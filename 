@@ -1,0 +1,1490 @@
+[33mcommit 1eab23996c665bd8c0d41d41440206798ad98f1d[m[33m ([m[1;36mHEAD -> [m[1;32mdoc_edits[m[33m, [m[1;31morigin/doc_edits[m[33m)[m
+Author: Drewbot <contact@drewhamilton.net>
+Date:   Wed Nov 1 21:56:58 2023 -0400
+
+    Update barycentric.h
+    
+    pycode added, changed old code tag to new cpp code tag
+
+[33mcommit 789d451ee891ae300aae1c0c505611fc0a4eeea2[m
+Merge: f9653a5324 707efc2db7
+Author: Drewbot <contact@drewhamilton.net>
+Date:   Wed Nov 1 20:52:38 2023 -0400
+
+    Merge branch 'RobotLocomotion:master' into doc_edits
+
+[33mcommit f9653a5324bfa885d8fbb03de2461862b4f9faf6[m
+Author: Drewbot <contact@drewhamilton.net>
+Date:   Wed Nov 1 20:42:33 2023 -0400
+
+    Update _symbolic_extra.py
+    
+    Now accepts ints (as in symbolic_sympy.py)
+
+[33mcommit 707efc2db7bfb67639b7ffe4f3a3d8a7e283e056[m
+Author: Jeremy Nimmer <jeremy.nimmer@tri.global>
+Date:   Wed Nov 1 14:54:09 2023 -0700
+
+    [py tools] Add back some missing pydrake.common stubgen output (#20466)
+
+[33mcommit d4b82b8aef3bdc80b104fb3f6b6dec2ef4665341[m
+Author: Jeremy Nimmer <jeremy.nimmer@tri.global>
+Date:   Wed Nov 1 13:26:30 2023 -0700
+
+    [py common] Centralize some test utilities (#20464)
+    
+    To aid in the solution to a pydrake dependency cycle, it's convenient
+    for pydrake.autodiffutils and pydrake.math to simply be Python modules,
+    not Python packages. (A package is a module that has sub-modules.)
+    
+    To that end, we ditch the `test` packages and move those modules into
+    the pydrake.common.test_utilities package, instead.
+
+[33mcommit 442fd82993dc0a38063218732912ec1e13168f91[m
+Author: Jeremy Nimmer <jeremy.nimmer@tri.global>
+Date:   Wed Nov 1 11:13:35 2023 -0700
+
+    [render] RenderEngineVtk throws on errors (#20461)
+    
+    Previously, it would print to stderr and then abort, which was
+    less-than-helpful for Jupyter sessions.
+
+[33mcommit 0a5f55399744332d546eb29cc1205b7d31c8374a[m
+Author: Jeremy Nimmer <jeremy.nimmer@tri.global>
+Date:   Wed Nov 1 11:13:16 2023 -0700
+
+    Remove deprecated code 2023-11 (#20463)
+
+[33mcommit 3aa8b52cdb7f655dba7d1296285798d4e849c53e[m
+Author: Michael Sherman <sherm1@gmail.com>
+Date:   Wed Nov 1 11:05:15 2023 -0700
+
+    Deprecate confusing floating_velocities_start() method (#20454)
+
+[33mcommit 1ab489843c251fa9d0911b4946d785051ad32bce[m
+Author: calderpg-tri <32444241+calderpg-tri@users.noreply.github.com>
+Date:   Wed Nov 1 13:12:37 2023 -0400
+
+    Bump CRU to fix visibility warning in test (#20459)
+
+[33mcommit e719d47b6ad9c5d635ff11e6605932e702cb3735[m
+Author: Watsche Khalatyan <117118744+WawasCode@users.noreply.github.com>
+Date:   Wed Nov 1 12:16:20 2023 -0400
+
+    Enable webxr with html argument. (#20430)
+
+[33mcommit 9fb0a3f547480fac8af0a6f128dbd691609ff70d[m
+Author: xuchenhan-tri <xuchen.han@tri.global>
+Date:   Wed Nov 1 06:56:56 2023 -0700
+
+    Deprecate get mutable state functions in MultibodyPlant (#20424)
+
+[33mcommit 995b1f6802c64fa0e6a68e8d31cad83332be7914[m
+Author: Jeremy Nimmer <jeremy.nimmer@tri.global>
+Date:   Tue Oct 31 13:03:40 2023 -0700
+
+    [sensors] Add internal helpers in anticipation of ImageIo support (#20448)
+
+[33mcommit ef00e3b24a2f35f47a7f1b16fc3d09a9f120f932[m
+Author: Matthew Woehlke <matthew.woehlke@kitware.com>
+Date:   Tue Oct 31 12:07:03 2023 -0400
+
+    [whee] Don't spuriously symlink patchelf (#20457)
+    
+    Remove symlink that was intended to make our build of patchelf visible
+    without munging PATH. This was overlooked in 6db087ccee2b when we
+    switched from building patchelf ourselves to obtaining it via PyPI. Our
+    Python virtual environment is in /usr/local, which means PyPI tries to
+    install /usr/local/bin/patchelf. This seems to have not caused breakage
+    until recently (either the binary overwrote the symlink, or wrote
+    through it to where the symlink pointed), but now it seems the installer
+    is unhappy about the symlink existing where it's trying to install the
+    patchelf binary.
+
+[33mcommit aa3c85caf4e4084b7803b550811db8ec2fa40845[m
+Author: Jeremy Nimmer <jeremy.nimmer@tri.global>
+Date:   Tue Oct 31 06:12:38 2023 -0700
+
+    [workspace] Clean up NLopt vendoring patches (#20453)
+    
+    Rename "vendoring.patch" to the more Drake-conventional "vendor.patch".
+    
+    Instead of patching "extern 'C'" into the external code, adjust the
+    BUILD file to distinguish between C++ code and C code and only run the
+    vendor_cxx tool on C++ code.
+
+[33mcommit 4972f631ce189a09e5272b5e2716201b3156d298[m
+Author: Jeremy Nimmer <jeremy.nimmer@tri.global>
+Date:   Mon Oct 30 17:39:33 2023 -0700
+
+    [vtk] Dispatch vtkPNGReader errors correctly (#20445)
+
+[33mcommit e53e101e1181adad2a16b1aeea49ebe41df6d7d2[m
+Author: Jeremy Nimmer <jeremy.nimmer@tri.global>
+Date:   Mon Oct 30 15:52:56 2023 -0700
+
+    [tools] Remove --edit-include feature for vendoring (#20452)
+    
+    We stopped using this feature a while ago. I left it available as
+    unit-tested-dead-code in case we ever wanted to start using it again,
+    but it seems like probably not, and it's getting in the way of
+    forthcoming revisions to this file.
+
+[33mcommit 99356ad9dc2cd2c8e4399dcdfbb2d488e7425ce8[m
+Author: Joe Masterjohn <joemasterjohn@gmail.com>
+Date:   Mon Oct 30 15:50:24 2023 -0400
+
+    [multibody] Fix point contact results store incorrect geometry data. (#20378)
+
+[33mcommit 40e116d44929301d261f15f4d79c0d29b1e8293f[m
+Author: Sean Curtis <sean.curtis@tri.global>
+Date:   Mon Oct 30 10:36:13 2023 -0700
+
+    Upgrade meshcat to latest commit (#20442)
+    
+    Note: This qualitatively changes the output renderings. Meshcat's rendered
+    result has moved from linear-srgb to srgb. Things are generally less
+    saturated now as part of three.js's move towards more realistic lighting.
+    
+    We've amended meshcat.html to accommodate some of the fundamental changes:
+      - Silence a console warning.
+      - Beef up the lighting so that it's more aesthetically pleasing.
+
+[33mcommit 26181b2229f352207108224e6f103655b7c25a67[m
+Author: Jeremy Nimmer <jeremy.nimmer@tri.global>
+Date:   Mon Oct 30 09:51:59 2023 -0700
+
+    [workspace] Build libjpeg_turbo_internal from source (#20343)
+    
+    Deprecate libjpeg from the host OS and remove it from setup prereqs.
+    
+    This relies on the recently-added `nasm` in install_prereqs.
+
+[33mcommit c7289e0c0c90bbde4b98aef13daed38f0f6bdb1a[m
+Author: Sean Curtis <sean.curtis@tri.global>
+Date:   Thu Oct 26 19:43:35 2023 -0700
+
+    Increase timeout for internal_render_engine_vtk_test (#20434)
+    
+    Although the tests are excluded from mac arm, this test now times out on
+    mac x86 monterey.
+
+[33mcommit 710fe1af2453027c39942de1466bf64bb1d8c748[m
+Author: Jeremy Nimmer <jeremy.nimmer@tri.global>
+Date:   Thu Oct 26 18:21:02 2023 -0700
+
+    [py doc] Set a policy that modules must always be factored (#20432)
+    
+    Even modules that start small end up growing too big, so from day one
+    we should always define modules in pieces.
+    
+    The dependency tree is not always simple. By defining the pieces of a
+    module one by one, it allows us to stagger imports vs definitions
+    and/or more carefully bind things in the right order.
+
+[33mcommit 6564805b25c65f7ae18b3840095323bc72cd6163[m
+Author: Stephen McDowell <svenevs@users.noreply.github.com>
+Date:   Thu Oct 26 18:32:24 2023 -0400
+
+    Upgrade to bazel 6.4.0 (#20410)
+
+[33mcommit 5165b07047753cf761ef334b2247153423002f19[m
+Author: Michael Sherman <sherm1@gmail.com>
+Date:   Thu Oct 26 14:43:20 2023 -0700
+
+    Disambiguate use of "velocity_start" in MultibodyTree (#20435)
+    
+    Previously the term was used variously to mean either "start within v" or "start within state qv".
+
+[33mcommit 7034422231d9f61f0aa131ada75d581fc357d2f6[m
+Author: Jeremy Nimmer <jeremy.nimmer@tri.global>
+Date:   Thu Oct 26 11:57:12 2023 -0700
+
+    [py visualization] Follow code layout conventions (#20431)
+    
+    Bindings should always be added in class-specific helper files, which
+    are then referred to by the overall module.
+
+[33mcommit f3e6496b01eb65b7580c2a3f357b14242dcaa000[m
+Author: Michael Sherman <sherm1@gmail.com>
+Date:   Thu Oct 26 11:51:07 2023 -0700
+
+    Eliminate mention of flexible body support from MultibodyTree (#20427)
+
+[33mcommit 5f5d6c2dc3b24270261b241b921bd07a068c219f[m
+Author: Hongkai Dai <daihongkai@gmail.com>
+Date:   Thu Oct 26 11:34:15 2023 -0700
+
+    Add log(det(X)) >= lower to MathematicalProgram. (#20411)
+    
+    MathematicalProgram.AddLogDeterminantLowerConstraint imposes log(det(X)) >= lower as convex constraints.
+
+[33mcommit 097606aa5194adad0c322275b4dd0683520a6adb[m
+Author: Michael Sherman <sherm1@gmail.com>
+Date:   Thu Oct 26 10:36:35 2023 -0700
+
+    Make coordinate numbering for Weld mobilizers consistent with others (#20428)
+
+[33mcommit aef8aae6fca64efbe86e7d4c1db32139a4788099[m
+Author: Damrong Guoy <42557859+DamrongGuoy@users.noreply.github.com>
+Date:   Thu Oct 26 10:23:13 2023 -0700
+
+    [examples/gym] Shorten running time of play_cart_pole_test (#20422)
+
+[33mcommit c4da79018787a7100137ee615f108d58b727a9ac[m
+Author: Sean Curtis <sean.curtis@tri.global>
+Date:   Thu Oct 26 08:43:08 2023 -0700
+
+    Use environment maps in RenderEngineVtk (#20385)
+    
+     - Extend Drake's VTK build to include artifacts necessary for reading
+       hdr images.
+       - This also corrected a defect in a patch that was previously
+         unused. We no longer attempt to delete image importers that
+         don't exist.
+     - Introduce EnvironmentMap and EquirectangularMap structs for configuring
+       RenderEngineVtk (add bindings).
+       - Add it to RenderEngineVtkParams
+     - New lighting semantics
+       - Specifying an environment map replaces the default lights in the
+         engine. Lights can be added back in explicitly.
+       - If a glTF is included or an environment map is included, all materials
+         get converted to PBR.
+         - In the future we may consider permanently making everything PBR.
+
+[33mcommit 816be5a400117bcbf8a6ed56a5cbe24a9b0af816[m
+Author: Drewbot <contact@drewhamilton.net>
+Date:   Wed Oct 25 21:17:58 2023 -0400
+
+    Update _symbolic_sympy.py
+    
+    Make ints work with conversion. Otherwise revert all changes.
+
+[33mcommit c393ccfcafe37adb6b3fce971ef13bf2c2a949df[m
+Author: Drewbot <contact@drewhamilton.net>
+Date:   Wed Oct 25 21:16:59 2023 -0400
+
+    Update _symbolic_extra.py
+    
+    Make to_sympy work with ints. Otherwise reverting previous changes.
+
+[33mcommit 8ed3a0264c521ffc1ea8861f5701b81dfb696af8[m
+Author: Mitiguy <mitiguy@users.noreply.github.com>
+Date:   Wed Oct 25 17:42:17 2023 -0700
+
+    Move internal static RotationMatrix::NormalizeOrThrow() to unit_vector.h and unit_vector.cc (#20423)
+    
+    Co-Authored-By: mitiguy <paul.mitiguy@tri.global>
+
+[33mcommit 759a70ea8d6afeb80295a03084bb312610db915d[m
+Author: xuchenhan-tri <xuchen.han@tri.global>
+Date:   Wed Oct 25 15:21:53 2023 -0700
+
+    Clarify MultibodyPlant::CalcGeneralizedForces() (#20426)
+    
+    Steer away from using tau_app because it sometimes is used to denote
+    externally applied forces excluding gravity.
+    
+    Also update the stale documentation of the related MbT function.
+
+[33mcommit a441b82b4a842b6d834e0afd7dbf1529a02f4163[m
+Author: Alexandre Amice <43739209+AlexandreAmice@users.noreply.github.com>
+Date:   Wed Oct 25 09:20:23 2023 -0400
+
+    Add tighten and relax PSD constraint via DD, SDD, and their duals (#20398)
+    
+    * Add tighten and relax PSD constraint via DD, SDD, and their duals
+    
+    * fix pycode whitespace
+    
+    * wip
+    
+    * wip test
+    
+    * add some tests with for when the constraint isn't in the program
+    
+    * update documentation
+    
+    * address review
+    
+    * move tests
+    
+    * ssize bug
+    
+    * address platform
+
+[33mcommit a8e06f39b819152e422b193250efa8b02e4db334[m
+Author: Russ Tedrake <russt@mit.edu>
+Date:   Tue Oct 24 21:16:00 2023 -0400
+
+    Fix mujoco parser joint kinematics. (#20414)
+    
+    Resolves #20367.
+    Also adds support for joint defaults.
+    
+    Together these support new tests confirming that the acrobot and
+    cartpole models from dm_control have the expected kinematics.
+    
+    The MuJoCo XML documentation specifies the position of a joint as
+    being "specified in the frame of the parent body". But this apparently
+    needs to be interpretted as the current body, not the parent of the
+    current body.
+
+[33mcommit 3f46bfe23932f2c27080084677f5618d66dd45bd[m
+Author: Mitiguy <mitiguy@users.noreply.github.com>
+Date:   Tue Oct 24 16:38:41 2023 -0700
+
+    Fix divide by norm bug in RotationMatrix::NormalizeOrThrow(). (#20406)
+    
+    Co-Authored-By: mitiguy <paul.mitiguy@tri.global>
+
+[33mcommit 5ad380e19f4e035c450ce41c57916c321eb0732a[m
+Author: Aditya Bhat <125924171+AdityaBhat-TRI@users.noreply.github.com>
+Date:   Tue Oct 24 16:19:29 2023 -0400
+
+    [iiwa7] Add rotor inertias, fix rotation of inertias for link 2 and link 4 (#20420)
+
+[33mcommit c3ded7f8727941f112e94998ec14d69c51cfcd5b[m
+Author: Russ Tedrake <russt@mit.edu>
+Date:   Tue Oct 24 12:11:33 2023 -0400
+
+    minor: fix a few typos in DrakeGym docs (#20416)
+
+[33mcommit d214ce56628ce7fc2d37e6aeafccac3375e91c18[m
+Author: xuchenhan-tri <xuchen.han@tri.global>
+Date:   Mon Oct 23 14:20:46 2023 -0700
+
+    Disable memcheck for parallelism tests (#20418)
+
+[33mcommit b0cbb1f8dbe28d605b1e32c6a48d747362d2d6a3[m
+Author: Jeremy Nimmer <jeremy.nimmer@tri.global>
+Date:   Mon Oct 23 07:37:54 2023 -0700
+
+    [py tutorials] Adjust launcher to accommodate Jupyter 6 and 7 (#20408)
+
+[33mcommit 8a260cee6dcaa4f5c7fbe956f94d1057fd44002b[m
+Author: Drewbot <contact@drewhamilton.net>
+Date:   Sun Oct 22 18:23:36 2023 -0400
+
+    Update _symbolic_sympy.py
+    
+    Fixed mistaken placement of check for ndarray input.
+
+[33mcommit 5e10d357d36a7e34994bef5d5fd47c83e472d1d6[m
+Author: Drewbot <contact@drewhamilton.net>
+Date:   Sun Oct 22 17:11:37 2023 -0400
+
+    Update _symbolic_extra.py
+    
+    float to integer rounding to clean up 16-decimal place floats with all zeros.
+
+[33mcommit 16faef4d9a827009bc578bb4013e56af0f26d1eb[m
+Author: Drewbot <contact@drewhamilton.net>
+Date:   Sun Oct 22 17:09:38 2023 -0400
+
+    Update _symbolic_sympy.py
+    
+    Integer inputs now work. Two functions for handling ndarrays of Expressions (matrices etc). Added an option for rounding floats that are ints to high precision to pure integer types.
+
+[33mcommit 348b3505944c080e78aee80eafdc6db82c08bc52[m
+Author: Jeremy Nimmer <jeremy.nimmer@tri.global>
+Date:   Fri Oct 20 15:33:55 2023 -0700
+
+    [py tools] Update test for new stubgen wrapper (#20409)
+
+[33mcommit eee16f0745a25380165720f89da73b5a68c59b11[m
+Author: Jeremy Nimmer <jeremy.nimmer@tri.global>
+Date:   Fri Oct 20 14:20:12 2023 -0700
+
+    [py tools] Vastly improve stubgen wrapper (#20403)
+    
+    This should help eliminate (or at least mitigate) build timeouts.
+    
+    Only generate typestubs for native modules. There is no benefit from
+    redistributing the automatically generated typestubs for pure python
+    modules -- it's the same as what mypy would calculate anyway. (When
+    shipping stubs for pure modules, you're supposed to go in by hand and
+    fix up the type annotations in the stub, and commit that to version
+    control.)
+    
+    Don't use stubgen "package search" mode (--package), rather list all
+    modules we want to generate typestubs for by hand (--module). It's
+    possible that the package search was finding way too many things,
+    slowing us down.
+    
+    Cross-check the hard-coded list of *.pyi output files vs reality.
+    
+    Centralize the list of "all modules for real no fooling" and use that
+    for the docs build as well.
+    
+    Use a wrapper process to silence the console spam.
+    
+    Use a tempdir to prevent mypy from writing its cache dir into our
+    runfiles.
+    
+    Remove some TODOs and dead code leftover from some prior __init__.py
+    confusions.
+
+[33mcommit 45a2e6e309853dd76a5483f750e4535237c5bebc[m
+Author: Russ Tedrake <russt@mit.edu>
+Date:   Fri Oct 20 09:24:01 2023 -0400
+
+    CompositeTrajectory binding isa PiecewiseTrajectory (#20407)
+    
+    CompositeTrajectory's binding should have derived from
+    PiecewiseTrajectory, not Trajectory. Now we have access to methods
+    like `get_number_of_segments()`.
+
+[33mcommit 869567af9bffc5a7dfffd06f0f1a6bdc8941966c[m
+Author: Hongkai Dai <daihongkai@gmail.com>
+Date:   Thu Oct 19 19:04:45 2023 -0700
+
+    Add ClarabelSolver. (#20375)
+    
+    ClarabelSolver supports quadratic/linear costs and
+    linear/second-order/exponential-cone constraints.
+    It doesn't support PSD cone yet, and ChooseBestSolver doesn't select
+    ClarabelSolver yet.
+
+[33mcommit 1a5a77194224b936fa92699d347f7a2ab22397fb[m
+Author: Jeremy Nimmer <jeremy.nimmer@tri.global>
+Date:   Thu Oct 19 11:21:38 2023 -0700
+
+    [py autodiff,math,symbolic] Hotfix wheel build for subdirs (#20400)
+    
+    Amends 84e8fd12405f4f49ff44a6951e3f2166372d4ae4.
+
+[33mcommit 3e83e36007c6e7daa7fa6bcf147ad74933e8ca28[m
+Author: Addisu Z. Taddese <addisu@openrobotics.org>
+Date:   Thu Oct 19 12:34:22 2023 -0500
+
+    [parsing] Add support for using merge-includes with custom parsed models (#16727)
+    
+    SDFormat models can now merge-include URDF and MJCF models using `<include merge="true"/>`
+
+[33mcommit 830c3a865d2059738915911d0810ee9b1eecd81e[m
+Author: Mitiguy <mitiguy@users.noreply.github.com>
+Date:   Thu Oct 19 09:39:53 2023 -0700
+
+    Consolidate code that checks unit vector reasonableness (#20313)
+    
+    Co-authored-by: mitiguy <paul.mitiguy@tri.global>
+    Co-authored-by: Jeremy Nimmer <jeremy.nimmer@tri.global>
+
+[33mcommit 67671ab0c97be45434a8b6f9609901f685c55462[m
+Author: Jeremy Nimmer <jeremy.nimmer@tri.global>
+Date:   Thu Oct 19 08:04:04 2023 -0700
+
+    [pydrake] Add conversion to/from SymPy (#20117)
+    
+    This provides most of the basic conversions users might need. We
+    invite users of Drake+SymPy to contribute further improvements.
+
+[33mcommit ba98a3d4f8597368e3a0d650c298e07668b6aaac[m
+Author: Jeremy Nimmer <jeremy.nimmer@tri.global>
+Date:   Thu Oct 19 06:58:25 2023 -0700
+
+    [math] Clang-format the tests (#20392)
+
+[33mcommit 6edaeea76042e258c94530468b847137b9430ecb[m
+Author: Jeremy Nimmer <jeremy.nimmer@tri.global>
+Date:   Thu Oct 19 06:44:59 2023 -0700
+
+    [yaml] Retain default values when parsing a variant (#20391)
+
+[33mcommit 739fc772f9297d5c8717f9a5e6cd19e6d6021572[m
+Author: Michael Sherman <sherm1@gmail.com>
+Date:   Wed Oct 18 13:38:02 2023 -0700
+
+    Allow zero-dof trees in the multibody forest (#20386)
+    
+    This internal-only change brings the definition of a "tree" in line with the upcoming SpanningForest, and with standard graph terminology.
+
+[33mcommit cb2f1ee0babe405582b2789e339cc80cdc18ae7a[m
+Author: Alexandre Amice <43739209+AlexandreAmice@users.noreply.github.com>
+Date:   Wed Oct 18 16:04:37 2023 -0400
+
+    Update dd and sdd dual cone constraints to use sparse matrices (#20379)
+    
+    * Update dd and sdd dual cone constraints to use sparse matrices
+
+[33mcommit 4e3874df1cd8c1ce0ee253b73a1cd555da9e4784[m
+Author: Jeremy Nimmer <jeremy.nimmer@tri.global>
+Date:   Wed Oct 18 13:03:29 2023 -0700
+
+    [py common] Reorganize BUILD file (#20393)
+    
+    There are no functional changes here, there is only moving text around
+    and changing some style things like "0" vs "False".
+
+[33mcommit 696f61e65f158c2184c7a87e5f73071ee8ea4fe4[m
+Author: Jeremy Nimmer <jeremy.nimmer@tri.global>
+Date:   Wed Oct 18 12:15:24 2023 -0700
+
+    [lint] Identify mismatched clang-format-{on,off} comments (#20396)
+
+[33mcommit 4d895b52d64e67d221134b1e02c9e251a7bc7964[m
+Author: Thomas Cohn <cohnt@umich.edu>
+Date:   Wed Oct 18 15:04:34 2023 -0400
+
+    Convert between Hyperellipsoid and AffineBall (#20040)
+    
+    (If the underlying set is bounded and positive-dimensional.)
+
+[33mcommit a91cf3653caf8db1463b45fd8faa106615d4a53d[m
+Author: Jeremy Nimmer <jeremy.nimmer@tri.global>
+Date:   Wed Oct 18 11:03:02 2023 -0700
+
+    [math] Clang-format the non-test files (#20389)
+
+[33mcommit 84e8fd12405f4f49ff44a6951e3f2166372d4ae4[m
+Author: Jeremy Nimmer <jeremy.nimmer@tri.global>
+Date:   Wed Oct 18 09:46:31 2023 -0700
+
+    [py autodiff,math,symbolic] Move into subdirs and start to split (#20384)
+
+[33mcommit 9d10d318743e0fbc644b8ec6783a50980bc3cc57[m
+Author: xuchenhan-tri <xuchen.han@tri.global>
+Date:   Wed Oct 18 09:45:41 2023 -0700
+
+    ContactResults report deformable contact results (#20274)
+    
+    The contact result computation is also moved from
+    CompliantContactManager to DiscreteUpdateManager
+
+[33mcommit bdcd24b433fc0c3855c4d30b0ba331d1622a5404[m
+Author: calderpg-tri <32444241+calderpg-tri@users.noreply.github.com>
+Date:   Wed Oct 18 12:01:41 2023 -0400
+
+    Disable kcov on CRU and VGT tests (#20390)
+
+[33mcommit 8b8daced00e3ebd51bd1bb6932765aede7a1063b[m
+Author: Rick Poyner (rico) <rick.poyner@tri.global>
+Date:   Wed Oct 18 10:16:19 2023 -0400
+
+    [parsing] Support drake:joint involving links in nested models (#20381)
+
+[33mcommit 6035a4544ab1e7dcdf4bcef09317b6906a08db60[m
+Author: calderpg-tri <32444241+calderpg-tri@users.noreply.github.com>
+Date:   Wed Oct 18 00:18:08 2023 -0400
+
+    [workspace] Bump VGT to support hidden visibility (#20387)
+
+[33mcommit 33a0da39fe4f14b7ab9ab454e729d3497eb9370d[m
+Author: Jeremy Nimmer <jeremy.nimmer@tri.global>
+Date:   Tue Oct 17 15:12:14 2023 -0700
+
+    [pydrake] Remove misleadingly long spellings in BUILD files (#20382)
+    
+    Using a fully-qualified name implies that the dependency is coming
+    from elsewhere, not the local package.
+
+[33mcommit f109eb3f77495a896b9c64d964ff3cd295d4eed5[m
+Author: Alexandre Amice <43739209+AlexandreAmice@users.noreply.github.com>
+Date:   Tue Oct 17 14:28:46 2023 -0400
+
+    Sparse add linear constraint (#20361)
+    
+    Adds support for adding linear constraints and linear equality constraints using sparse matrices.
+
+[33mcommit ac0505b7ecba66a51f6fb6f995b1921166c1918d[m
+Author: calderpg-tri <32444241+calderpg-tri@users.noreply.github.com>
+Date:   Tue Oct 17 12:51:16 2023 -0400
+
+    [workspace] Upgrade CRU and VGT to latest commit (#20374)
+
+[33mcommit e8e8a32374c6eda19af3885b83284fb945482c5f[m
+Author: Rick Poyner (rico) <rick.poyner@tri.global>
+Date:   Mon Oct 16 19:03:06 2023 -0400
+
+    [geometry] Allow some sub-optimal uses for vtk volume mesh files (#20278)
+    
+    Accept vtk volume mesh files in some cases where only the surface mesh
+    or its convex hull might actually be used. This is intended to ease
+    step-wise refinement of models to optimize them for use with
+    hydroelastic contact.
+    
+    Also, make some improvements to error messages in a few places.
+
+[33mcommit 9540a5b612aecabd14af6cbb3db2ce9809ad9cb6[m
+Author: Alejandro Castro <alejandro.castro@tri.global>
+Date:   Mon Oct 16 18:42:27 2023 -0400
+
+    Bug fix to actuation input ordering (#20212)
+    
+      Bug fix: Before this fix, it was assumed that joint actuators were added to a plant one model instance at a time.
+      This is true when we add model using our parsers. In this case the resulting actuation input for the full model is
+      ordered by model instance. This is no longer true if, for instance, a users adds actuators programatically in an
+      arbitrary order. This could lead to an actuation input vector that is no longer ordered by model instance.
+      This PR no longer assumes this order, but rather that the full actuation input is ordered by joint actuator index.
+      Unit tests are added to verify this assumption.
+    
+      Co-authored-by: Jeremy Nimmer <jeremy.nimmer@tri.global>
+
+[33mcommit b60708dc6d64f2a238d3c2e9a716b6b7d87d9731[m
+Author: Jeremy Nimmer <jeremy.nimmer@tri.global>
+Date:   Mon Oct 16 12:32:18 2023 -0700
+
+    [common] Add WarnDeprecated sugar for console deprecation logs (#20365)
+    
+    Using purpose-built code means that the messages will be more uniform,
+    and also allows our tests to elevate the warnings to errors.
+
+[33mcommit ba387f0235d86d777290f2936ea35b31353c922a[m
+Author: Hongkai Dai <daihongkai@gmail.com>
+Date:   Mon Oct 16 11:53:12 2023 -0700
+
+    refactor scs_solver.cc (#20370)
+    
+    Move the functions that convert MathematicalProgram costs/constraints to
+    SCS format to aggregate_costs_constraints.h/cc, as these functions will
+    be re-used for Clarabel.
+
+[33mcommit 9bd39b0728b15cfe17c8e6d3663af02fe40aa96e[m
+Author: Thomas Cohn <cohnt@umich.edu>
+Date:   Mon Oct 16 14:51:53 2023 -0400
+
+    Implement AffineBall subclass of ConvexSet, to represent bounded ellipsoidal convex sets that may not be full-dimensional. (#20038)
+
+[33mcommit be48829d20f07827d7645ad542b25a6bd4a25bce[m
+Author: Jeremy Nimmer <jeremy.nimmer@tri.global>
+Date:   Mon Oct 16 11:10:15 2023 -0700
+
+    [doc] Add release notes v1.22.0 (#20326)
+
+[33mcommit 025de747b2da1639e5756faed3ec29edc3a55684[m
+Author: Alexandre Amice <43739209+AlexandreAmice@users.noreply.github.com>
+Date:   Mon Oct 16 10:39:08 2023 -0400
+
+    Add tolerances to recently added diagnoally dominant tests (#20369)
+
+[33mcommit da969f5c8f97e661c6ca9450d0cff0b52a240619[m
+Author: Jeremy Nimmer <jeremy.nimmer@tri.global>
+Date:   Sat Oct 14 14:35:25 2023 -0700
+
+    [workspace] Install Qhull patches and required testimonials (#20371)
+    
+    Refactor the vendor_cxx patch generator tooling for reuse.
+    
+    Remove problematic dead code from the ipopt rules.
+
+[33mcommit 1ef8286ee6b6ed6bb38f2f76ffff19f2286015e9[m
+Author: Alexandre Amice <43739209+AlexandreAmice@users.noreply.github.com>
+Date:   Thu Oct 12 20:20:17 2023 -0400
+
+    Add Functions for adding DD and SDD dual cone constraints (#20317)
+
+[33mcommit 4422bb54f8a18269f937990665bb6ab2ac16f3c5[m
+Author: Jeremy Nimmer <jeremy.nimmer@tri.global>
+Date:   Thu Oct 12 16:07:48 2023 -0700
+
+    [schunk_wsg] Opt-in to clang-format lint (#20329)
+
+[33mcommit 2f8f941a72f6ad09b7825864e567ec6e4e8966d2[m
+Author: Jeremy Nimmer <jeremy.nimmer@tri.global>
+Date:   Thu Oct 12 14:53:31 2023 -0700
+
+    [workspace] Fix leaky symbol in abseill_cpp (#20359)
+
+[33mcommit baebfc8b67581fd3173e2a99e7af4fe609cc40b4[m
+Author: Jeremy Nimmer <jeremy.nimmer@tri.global>
+Date:   Thu Oct 12 13:56:32 2023 -0700
+
+    [workspace] Cull some unwanted ClpSolver code (#20358)
+
+[33mcommit 0220c721be3b87e69098fc237a788f654dc534a0[m
+Author: Thomas Cohn <cohnt@umich.edu>
+Date:   Thu Oct 12 15:40:13 2023 -0400
+
+    Tests for AffineSubspace::CalcVolume. (#20342)
+
+[33mcommit f916b187afac0c5c9283a0f0a42218911e48073b[m
+Author: Jeremy Nimmer <jeremy.nimmer@tri.global>
+Date:   Thu Oct 12 10:14:38 2023 -0700
+
+    [setup] Remove dependency on bzip2 (#20352)
+    
+    We added this in e3bc3d04 to work around an Ubuntu 16.04 bug in its
+    pkg-config files. That's no longer necessary.
+
+[33mcommit 1318ca915864cef1a3e856476b2a783c4b582383[m
+Author: Thomas Cohn <cohnt@umich.edu>
+Date:   Thu Oct 12 13:13:05 2023 -0400
+
+    Add python binding for AffineSubspace::OrthogonalComplementBasis. (#20341)
+
+[33mcommit 5aef236194555d1136f266cef855a4c3fb21e5fe[m
+Author: xuchenhan-tri <xuchen.han@tri.global>
+Date:   Thu Oct 12 10:09:59 2023 -0700
+
+    Avoid unnecessary re-computation of deformable sdf (#20347)
+
+[33mcommit 905fc397d442334d5626bbc7493f493c722b5f22[m
+Author: Jeremy Nimmer <jeremy.nimmer@tri.global>
+Date:   Thu Oct 12 06:40:20 2023 -0700
+
+    [workspace] Use hidden symbols for tinyobjloader (#20357)
+
+[33mcommit d10676151fe679d83243c0d2c52454fc3ccd88f1[m
+Author: Hongkai Dai <daihongkai@gmail.com>
+Date:   Thu Oct 12 06:34:47 2023 -0700
+
+    SceneGraph modifies/access renderer in the context. (#20355)
+    
+    Previously we only provide API to modify/query the renderer in the SceneGraph
+     model. Now we provide API to modify/query the renderer in the context.
+
+[33mcommit ed41647bb0ca30729be42bb1efa9779ee9ef40dc[m
+Author: xuchenhan-tri <xuchen.han@tri.global>
+Date:   Wed Oct 11 17:59:43 2023 -0700
+
+    DiscreteUpdateManager computes contact kinematics (#20273)
+    
+    The computation of DiscreteContactPair data and ContactKinematics data
+    is moved from CompliantContactManager to the base class
+    DiscreteUpdateManager. This is in line with computation of
+    ContactResults and ContactSolverResults. This allows objects with only
+    a pointer to the base class to access these information.
+
+[33mcommit 3cfe0b0710866715c243094c24d0d41adff0bbdf[m
+Author: Jeremy Nimmer <jeremy.nimmer@tri.global>
+Date:   Wed Oct 11 14:38:00 2023 -0700
+
+    [workspace] Deprecate the expat external (#20351)
+    
+    As of df39f120, Drake no longer needs this at all.
+
+[33mcommit 078455f849df841f9979a826e4c8ccb06becd84d[m
+Author: Jeremy Nimmer <jeremy.nimmer@tri.global>
+Date:   Wed Oct 11 13:54:40 2023 -0700
+
+    [workspace] Build VTK-vendored third-party code with hidden symbols (#20346)
+    
+    - vtkdoubleconversion
+    - vtkglew
+    - vtkpugixml
+    
+    Instead of patching vtkutf8 to be hidden, remove it from the build
+    entirely. As it turns out, we never actually needed it.
+
+[33mcommit db481f2e8c40b382803e3a376b70696f1b23e7e8[m
+Author: Jeremy Nimmer <jeremy.nimmer@tri.global>
+Date:   Wed Oct 11 13:24:24 2023 -0700
+
+    [framework] Deprecate LeafSystem update dispatcher overrides (#20094)
+    
+    Publish events, discrete update events, and unrestricted update events
+    must be declared with handler callbacks; overriding the dispatcher to
+    handle events is no longer supported and will be removed after the
+    deprecation window.
+
+[33mcommit d48c72f4872244bd4c11416534c9e80428b95eeb[m
+Author: xuchenhan-tri <xuchen.han@tri.global>
+Date:   Wed Oct 11 13:12:49 2023 -0700
+
+    Make multibody/plant clang-format compliant (#20349)
+
+[33mcommit c0911c66278d4fc974d16280a6b54ea8f91b4f93[m
+Author: Jeremy Nimmer <jeremy.nimmer@tri.global>
+Date:   Wed Oct 11 12:13:49 2023 -0700
+
+    [setup] Add nasm to source prereqs (#20353)
+    
+    This will be required to build libjpeg-turbo from source.
+
+[33mcommit 44546f1dc69b605eecd632715fa6e5a89a68901a[m
+Author: Jeremy Nimmer <jeremy.nimmer@tri.global>
+Date:   Wed Oct 11 10:59:26 2023 -0700
+
+    [workspace] Add rust_toolchain externals (#20325)
+
+[33mcommit 7cb258caea9f9f941a9fe0c2b86e51bd1b2160a1[m
+Author: Rick Poyner (rico) <rick.poyner@tri.global>
+Date:   Wed Oct 11 13:03:31 2023 -0400
+
+    [geometry] Add zero_simplex_manual_test (#20323)
+    
+    This is a developer convenience for quick evaluation of volume meshes.
+
+[33mcommit 47cd611a79e91ea4a0d3cf01a2b0d7d51aeb5167[m
+Author: xuchenhan-tri <xuchen.han@tri.global>
+Date:   Tue Oct 10 15:48:49 2023 -0700
+
+    Add DeformableContactInfo to ContactResults (#20301)
+
+[33mcommit c64093e8e02234efae139bc7e02572412a53b119[m
+Author: Jeremy Nimmer <jeremy.nimmer@tri.global>
+Date:   Tue Oct 10 13:17:21 2023 -0700
+
+    Port more event-handling code to modern API (#20338)
+    
+    Overriding event handler dispatchers will soon be deprecated.
+
+[33mcommit dfdc551f75f99ca640854f004313f4eabfd33e79[m
+Author: Jeremy Nimmer <jeremy.nimmer@tri.global>
+Date:   Tue Oct 10 11:43:21 2023 -0700
+
+    [workspace] Build libtiff_internal from source (#20331)
+    
+    Deprecate libtiff from the host OS and remove it from setup prereqs.
+
+[33mcommit 3968c1c049d84390b4cba2223962a6e153c1ca76[m
+Author: Jeremy Nimmer <jeremy.nimmer@tri.global>
+Date:   Tue Oct 10 10:26:39 2023 -0700
+
+    [snopt] Nerf gfortran argument-mismatch errors into warnings (#20330)
+    
+    SNOPT 7.6 has broken code that gfortran previously accepted without
+    complaint but is now an error as of gfortran 10 or newer. Since the
+    code apparently works anyway, nerf the error down to a warning so that
+    users can still build with SNOPT 7.6.
+    
+    (Drake does not officially support building with 7.6, but since the
+    code for 7.4 is so much more difficult to obtain than 7.6 we try to
+    accommodate 7.6 on a best-effort basis.)
+
+[33mcommit 8ebb3ef2d5e25272a23fabe54021530f35ae08de[m
+Author: Jeremy Nimmer <jeremy.nimmer@tri.global>
+Date:   Tue Oct 10 07:19:00 2023 -0700
+
+    [py visualization] Split out flaky visualizer reload test (#20337)
+
+[33mcommit 5f26d0e2ff7c71055af957d43ef386588a931227[m
+Author: Rick Poyner (rico) <rick.poyner@tri.global>
+Date:   Tue Oct 10 10:09:53 2023 -0400
+
+    [tools] Handle unusual `readelf` output in exported_symbols_test (#20334)
+
+[33mcommit b74ed44482d59c5c710f28a80306c946475433fa[m
+Author: Jeremy Nimmer <jeremy.nimmer@tri.global>
+Date:   Tue Oct 10 06:57:23 2023 -0700
+
+    [vtk] Remove dead code (#20335)
+    
+    Cull a dozen more files from vtksys.
+
+[33mcommit eb4a10b89e501da7aa17f173cc01c6b6feed46cc[m
+Author: Jeremy Nimmer <jeremy.nimmer@tri.global>
+Date:   Mon Oct 9 11:27:48 2023 -0700
+
+    [geometry] Fix clang warning in render_mesh (#20332)
+    
+    error: loop variable '[full_index, part_index]' creates a copy from type 'std::pair<const int, unsigned int> const' [-Werror,-Wrange-loop-construct]
+
+[33mcommit ca3465d19dfcc4907607af5934984ccbfa2703b6[m
+Author: Jeremy Nimmer <jeremy.nimmer@tri.global>
+Date:   Mon Oct 9 11:27:38 2023 -0700
+
+    [systems/lcm] Indicate LCM connections in System graphviz output (#20310)
+    
+    Now that the lcm_url appears in the Graphviz details, we can remove
+    that detail from the System name for simplicity.
+
+[33mcommit 64b8b8fd7774f4a833788f6ea1175bd1963887d1[m
+Author: Betsy McPhail <betsy.mcphail@kitware.com>
+Date:   Mon Oct 9 14:03:16 2023 -0400
+
+    Work around test error in coverage builds (kcov 339) (#20328)
+    
+    Add a dummy inline namespace to perturb the elf header.
+
+[33mcommit 875b7859b74afebfd64fbeb088119bc8c8ead671[m
+Author: Hongkai Dai <daihongkai@gmail.com>
+Date:   Fri Oct 6 20:19:16 2023 -0600
+
+    Add SceneGraph::RemoveRenderer(). (#20319)
+    
+    Remove a renderer from SceneGraph.
+
+[33mcommit 880f15056f03109e72817d55660743ffc0161d9c[m
+Author: xuchenhan-tri <xuchen.han@tri.global>
+Date:   Thu Oct 5 15:23:27 2023 -0700
+
+    Make non-test multibody/plant clang-format compliant (#20306)
+
+[33mcommit bdc38553f4f834d7810a56fd5a02e44ac656e593[m
+Author: Jeremy Nimmer <jeremy.nimmer@tri.global>
+Date:   Thu Oct 5 15:16:33 2023 -0700
+
+    [tools] Improve single point of control for Python interpreter (#20311)
+    
+    Lean into the @python repository rule to be the single point of
+    control for which Python interpreter we should be using, defining
+    the py_toolchain in terms of that rule's output.
+    
+    Remove various other work-arounds for not having a single point.
+
+[33mcommit dbb96532eef03fd5f8217c3db39c90cd5dd72df0[m
+Author: Jeremy Nimmer <jeremy.nimmer@tri.global>
+Date:   Thu Oct 5 14:37:08 2023 -0700
+
+    [tools] Nerf the symbol visibility test when Clarabel is enabled (#20318)
+
+[33mcommit 4a5c0b38788744a35217ad2c43f8c8c32ca28bdb[m
+Author: Sean Curtis <sean.curtis@tri.global>
+Date:   Thu Oct 5 13:44:37 2023 -0700
+
+    [render] RenderEngineVtk supports multiple meshes from OBJ (#20235)
+    
+    * RenderEngineVtk supports multiple meshes from OBJ
+    
+    RenderEngineVtk uses the new LoadRenderMeshesFromObj() functionality. The
+    distinct meshes get mapped to the same prop/part infrastructure as the
+    glTF.
+    
+    The description of obj support in the file format module is updated to
+    reflect the current capability.
+    
+    Finally, it kills the transitory stub function introduced while
+    transition RenderEngineGl and Vtk to multi-part OBJs.
+
+[33mcommit 3981211b7c534f5e356501412b65ded80bc95943[m
+Author: Joe Masterjohn <joemasterjohn@gmail.com>
+Date:   Thu Oct 5 14:24:33 2023 -0400
+
+    [multibody] Implements MultibodyTreeSystem::SetDefaultParameters (#20307)
+    
+    Sets up a framework within MultibodyTree/MultibodyPlant to have
+    all MultibodyElements fill in their default model parameter values
+    upon default context creation. This change means that model default
+    values can now change post-Finalize, and those changes will be
+    reflected in new default contexts.
+
+[33mcommit 1dfe161c3f4118af4a4908ed9d432476197d910d[m
+Author: Jeremy Nimmer <jeremy.nimmer@tri.global>
+Date:   Thu Oct 5 10:56:07 2023 -0700
+
+    [wheel] Save time by not compressing drake-src (#20315)
+    
+    It wastes about 15 seconds to compress the source tree every time, but
+    the compression cannot be reused from one run to the next. Iterative
+    local testing is much more pleasant without compressing, and there's
+    no downside even for Jenkins builds.
+
+[33mcommit 1fdde3e453938e2c7757edd4edc7a725d3fb0d74[m
+Author: xuchenhan-tri <xuchen.han@tri.global>
+Date:   Thu Oct 5 10:54:43 2023 -0700
+
+    Extend MatrixBlock::LeftMultiplyByBlockDiagonal() (#20312)
+    
+    When the MatrixBlock is Block3x3SparseMatrix, we now allow the blocks in
+    the block diagonal to be of size 3n-by-3n instead of restricted to be
+    3x3.
+
+[33mcommit d61e871ec552575736ad540c0fb8b288ce7b2009[m
+Author: Michael Sherman <sherm1@gmail.com>
+Date:   Thu Oct 5 10:46:39 2023 -0700
+
+    Remove the unused provision for a Joint to be modeled with multiple Mobilizers. (#20309)
+
+[33mcommit 79b2df83452e18287fd32b75d4af77d0172a9c87[m
+Author: Jeremy Nimmer <jeremy.nimmer@tri.global>
+Date:   Wed Oct 4 13:22:02 2023 -0700
+
+    [systems/lcm] Add protocol for opting out of LCM messaging (#20247)
+    
+    Update IiwaDriver to implement the protocol.
+    
+    To take advantage of this capability, a scenario should wrap its
+    DrakeLcmParams in Optional, e.g.:
+    
+    ```
+      # A map of {bus_name: lcm_params} for LCM transceivers to be used by
+      # a drivers, sensors, etc. Setting the `lcm_params` to `None`
+      # indicates that LCM should not be used for that `bus_name`.
+      lcm_buses: typing.Mapping[str, typing.Optional[DrakeLcmParams]] = dc.field(
+          default_factory=lambda: dict(default=DrakeLcmParams()))
+    ```
+
+[33mcommit 62a8c7fc1ac4c0b3e9dcedf063c85bbc30d72a22[m
+Author: Jeremy Nimmer <jeremy.nimmer@tri.global>
+Date:   Wed Oct 4 12:42:50 2023 -0700
+
+    [lcm] Remove spurious deps from library code (#20308)
+    
+    This requires adding missing deps to some application code.
+
+[33mcommit e67a1309a738d5e711a708e3ac183b85886a90f7[m
+Author: zachfang <zach.fang@tri.global>
+Date:   Wed Oct 4 15:38:26 2023 -0400
+
+    [examples] Actuate the robot in the hardware_sim example (#20283)
+    
+    Co-authored-by: Jeremy Nimmer <jeremy.nimmer@tri.global>
+    
+    Co-Authored-By: Jeremy Nimmer <jeremy.nimmer@tri.global>
+
+[33mcommit 73ae3123d10866015ed4b2683a71a23948c9a390[m
+Author: Jeremy Nimmer <jeremy.nimmer@tri.global>
+Date:   Wed Oct 4 11:34:14 2023 -0700
+
+    [tools] Add test to flag hazardous exported symbols (#20279)
+
+[33mcommit e34663ec78c8c48e6bfbf2d3a41c7fe493ba28cc[m
+Author: Matthew Woehlke <matthew.woehlke@kitware.com>
+Date:   Wed Oct 4 13:07:07 2023 -0400
+
+    [workspace] Upgrade curl_internal to latest release curl-8_3_0 (#20302)
+    
+    Co-Authored-By: Jeremy Nimmer <jeremy.nimmer@tri.global>
+
+[33mcommit ef2c51d7cf9fcf425c73b3f356eb8cc1c4751ec6[m
+Author: Hongkai Dai <daihongkai@gmail.com>
+Date:   Tue Oct 3 16:04:37 2023 -0700
+
+    Deprecate MinimumDistanceConstraint. (#20282)
+    
+    Replace it with MinimumDistanceLowerBoundConstraint and MinimumDistanceUpperBoundConstraint.
+    Also add the python binding for these two new constraints.
+
+[33mcommit 80582d39ff4df577b3f115e6f08abfb906a28e5b[m
+Author: Jeremy Nimmer <jeremy.nimmer@tri.global>
+Date:   Tue Oct 3 14:15:55 2023 -0700
+
+    [math] Clarify implementation of fast pose composition functions (#20289)
+    
+    Add more overview comments, adjusting all four functions to use a more
+    uniform explanatory style. In particular, introduce a vector lane
+    notation (explaining our assumption of low-to-high lane order) and the
+    idea of a "don't care" lane. Purge all comments that explain what
+    results are being computed in the don't care lanes. They were a lot of
+    clutter with no upside.
+    
+    Rename the element names of the outputs (R_AC and X_AC) avoid the "ran
+    out of letters" problem and ensuing confusion with primes and multi-
+    character names. (We actually do have enough letters, if we sacrifice
+    one-letter names for the "<XYZ_> - <xyz_>" intermediate term in XinvX.)
+    
+    For the broadcast (aka "four") coefficients, load the individual
+    doubles from memory instead of trying to broadcast one lane from a
+    prior 4-lane load.  Broadcasting from one lane of a vector (i.e.,
+    lane-crossing) is slow; Clang ends up respelling it to use a direct
+    memory access anyway, but GCC doesn't always find that peephole. We
+    might as well use the simpler spelling in the source code, especially
+    since it's what we want to happen, and gets GCC on board with the
+    faster instruction choices.
+    
+    Reorder the code to do all loading first and all storing last. This is
+    better for readability and is what the compiler does anyway (better
+    for pipelining).
+    
+    Reorder the code to keep each conceptual group (of dot products) in
+    one place, for clarity. The compiler reorders the machine code to be
+    optimally interleaved.
+    
+    Reorder the XX and XinvX to start calculating the new translation
+    vector <stu_> first. This output has the deepest pipeline in terms of
+    flops, so it's important to get it started right away. Clang does this
+    automatically, but GCC chooses worse instruction sequences unless we
+    help it along.
+    
+    According to llvm-mca with -cpu=skylake as the processor model, the
+    total cycles for these functions change to the following:
+    
+             Using Using
+             GCC   Clang
+             11.4  14.0
+    R@R
+      master 34    28
+      branch 29    28
+    R⁻¹@R
+      master 34    30
+      branch 30    30
+    X@X
+      master 34    32
+      branch 33    32
+    X⁻¹@X
+      master 38    33
+      branch 34    33
+    
+    Notice how Clang is still the same, but GCC works better now.
+
+[33mcommit 11f215cf68af4d6b390c801376f08e452a4289b5[m
+Author: xuchenhan-tri <xuchen.han@tri.global>
+Date:   Tue Oct 3 13:56:39 2023 -0700
+
+    Bug fix for deformable fixed constraints (#20297)
+
+[33mcommit 26ef26a908ee58ee7930e91c09496271aa34d2bd[m
+Author: Sean Curtis <sean.curtis@tri.global>
+Date:   Tue Oct 3 13:11:08 2023 -0700
+
+    RenderEngineGl supports multiple meshes from OBJ (#20272)
+    
+    - RenderEngineGl modified to support the multiple RenderMeshes
+      - It introduces the same notion as Prop and Part as found in
+        RenderEnginveVtk.
+      - Mesh handling maps multiple possible RenderMeshes to multiple parts.
+      - Tests updated.
+        - Introduce the .obj equivalent of rainbox_box.gltf.
+
+[33mcommit df4d0add031403c66e3f74be66b8a898a0aa4267[m
+Author: Jeremy Nimmer <jeremy.nimmer@tri.global>
+Date:   Tue Oct 3 12:53:23 2023 -0700
+
+    [wheel] Add Python 3.12 manylinux support (#20299)
+
+[33mcommit 4d3e1c6e36fea12ce09d48a85925a07d11112267[m
+Author: Matthew Woehlke <matthew.woehlke@kitware.com>
+Date:   Tue Oct 3 14:59:50 2023 -0400
+
+    [workspace] Upgrade sdformat_internal, gz_utils_internal to latest (#20303)
+    
+    - Upgrade sdformat_internal to latest release sdformat14_14.0.0
+    - Upgrade gz_utils_internal to latest release gz-utils2_2.1.0
+    
+    Co-authored-by: Rick Poyner <rick.poyner@tri.global>
+
+[33mcommit 2e5d95cdaf6f884cc27a0a43cf804d6b67d7734b[m
+Merge: 31a04d3838 678de22aae
+Author: Jeremy Nimmer <jeremy.nimmer@tri.global>
+Date:   Tue Oct 3 11:50:17 2023 -0700
+
+    Merge pull request #20304 from mwoehlke-kitware/upgrades
+    
+    Upgrade Externals October 2023
+
+[33mcommit 678de22aae52fb36735ddfac5ccd57fa2834fa8f[m
+Author: Matthew Woehlke <matthew.woehlke@kitware.com>
+Date:   Tue Oct 3 11:49:31 2023 -0400
+
+    [workspace] Upgrade yaml_cpp_internal to latest release 0.8.0
+
+[33mcommit f8555485f4f1a8c83331a2ae49596a074251c153[m
+Author: Matthew Woehlke <matthew.woehlke@kitware.com>
+Date:   Tue Oct 3 11:48:42 2023 -0400
+
+    [workspace] Upgrade typing_extensions_internal to latest release 4.8.0
+
+[33mcommit a2e769e8ba127749530dc3ccbc3e7b6f9d6d9af7[m
+Author: Matthew Woehlke <matthew.woehlke@kitware.com>
+Date:   Tue Oct 3 11:46:44 2023 -0400
+
+    [workspace] Upgrade suitesparse_internal to latest release v7.2.0
+
+[33mcommit 9e7072aac92f40802d4b1cfb6d244d6390b040de[m
+Author: Matthew Woehlke <matthew.woehlke@kitware.com>
+Date:   Tue Oct 3 11:45:15 2023 -0400
+
+    [workspace] Upgrade rules_rust to latest release 0.28.0
+
+[33mcommit 29d02031c8945ba2e3f04757c34a71197a41827d[m
+Author: Matthew Woehlke <matthew.woehlke@kitware.com>
+Date:   Tue Oct 3 11:26:13 2023 -0400
+
+    [workspace] Upgrade dm_control_internal to latest commit
+
+[33mcommit 6eb31b8f8d78fd98808fee101f556e268486e77a[m
+Author: Matthew Woehlke <matthew.woehlke@kitware.com>
+Date:   Mon Oct 2 16:51:31 2023 -0400
+
+    [workspace] Upgrade build_bazel_apple_support to latest release 1.10.1
+
+[33mcommit 31a04d3838e3b53fb44c8d1be26b9227b2573ffa[m
+Author: Sean Curtis <sean.curtis@tri.global>
+Date:   Tue Oct 3 10:42:02 2023 -0700
+
+    [sensors] RgbdSensor now passes the correct camera pose (#20305)
+    
+    QueryObject documents that it expected the pose of the camera *body*
+    relative to a parent frame. RgbdSensor was passing the pose of the
+    camera sensor relative to the parent frame. There can be a non-identity
+    transform between the camera body and the camera sensor. The tests used
+    the identity transform so this mistake slipped through the cracks.
+
+[33mcommit 595e3360acfe8c60f0442c8aa9913a9a514531f0[m
+Author: Michael Sherman <sherm1@gmail.com>
+Date:   Mon Oct 2 17:56:37 2023 -0700
+
+    Propagate EventStatus through the API (#20035)
+    
+    Breaking changes:
+    - If user code overrides a dispatcher (e.g. DoPublish()) but also invokes the base class
+      default implementation, execution of the default dispatch code is now deferred until
+      the user's DoPublish() returns; previously it was executed immediately at the invocation
+      point.
+    - We now officially disallow user extension of class System; the only direct descendants
+      possible are LeafSystem and Diagram. Users must derive from those classes rather
+      than directly from System. Likely this won't affect anyone.
+
+[33mcommit f4a5b853edf634bc98ca97ddf0f5e9cbb264b92f[m
+Author: Jeremy Nimmer <jeremy.nimmer@tri.global>
+Date:   Mon Oct 2 13:24:18 2023 -0700
+
+    [geometry] Indicate Meshcat connections in System graphviz output (#20270)
+
+[33mcommit 7e8245cf06a5edba91176193278f74e689476dc3[m
+Author: Jeremy Nimmer <jeremy.nimmer@tri.global>
+Date:   Mon Oct 2 13:23:14 2023 -0700
+
+    [workspace] Build libpng_internal from source (#20276)
+    
+    Deprecate libpng from the host OS and remove it from setup prereqs.
+
+[33mcommit 5676b11360ad09c6e018a1e24c6bc12905073446[m
+Author: Jeremy Nimmer <jeremy.nimmer@tri.global>
+Date:   Mon Oct 2 13:08:04 2023 -0700
+
+    [workspace] Nerf new_release for rust crates (#20292)
+
+[33mcommit 869d88224e6561812f9b19e6f89736fc2eabc149[m
+Author: Betsy McPhail <betsy.mcphail@kitware.com>
+Date:   Mon Oct 2 16:06:36 2023 -0400
+
+    [doc] Add links to experimental Jenkins bot commands (#20293)
+
+[33mcommit 6aec94cab83ff9add432812904d1c7250e3b143d[m
+Author: Michael Sherman <sherm1@gmail.com>
+Date:   Mon Oct 2 11:16:01 2023 -0700
+
+    Remove $world_ prefix from automatically-added floating joint names (#20253)
+    
+    GetJointByName() strips the old prefix as partial compatibility support during deprecation period.
+
+[33mcommit 19632447460e8f951792ff944a11ee26e087b925[m
+Author: Jeremy Nimmer <jeremy.nimmer@tri.global>
+Date:   Mon Oct 2 08:00:14 2023 -0700
+
+    [optimization] Remove deprecated code 2023-10 (#20291)
+
+[33mcommit 6d460b47331c4b75a82f01a15ff6a13ad51958dd[m
+Author: Sean Curtis <sean.curtis@tri.global>
+Date:   Mon Oct 2 05:59:29 2023 -0700
+
+    [render] Parsing an .obj file can produce multiple RenderMesh instances (#20285)
+    
+    * Parsing an .obj file can produce multiple RenderMesh instances (#20250)
+    
+    Obj files have several mechanisms that would conceptually lead to creating
+    disjoint "meshes" (i.e., putting them in different groups, different
+    objects, or assigning different materials). For the purpose of rendering,
+    the only important distinction is material. Because we render the whole
+    mesh as a rigid object, we just need to partition based on the material
+    assigned to a triangle. LoadRenderMeshesFromObj can now return multiple
+    RenderMeshes.
+    
+    We've introduced a shim for the old API (LoadRenderMeshFromObj()). This
+    allows us to update RenderEngineVtk and RenderEngineGl in a follow up PR.
+    The shim is *mostly* the same as the old. It has two differences which are
+    acceptable for a short horizon.
+    
+      - The debug message no longer prints out the material names.
+      - The resultant RenderMesh can easily have an increased number of vertex
+        data (as shown in the legacy test). This increase is representative of
+        how things will work for the foreseeable future.
+
+[33mcommit 6a8f832017bf62447c825eebbb6e11901f829c2a[m
+Author: Jeremy Nimmer <jeremy.nimmer@tri.global>
+Date:   Sat Sep 30 15:26:09 2023 -0700
+
+    [doc] Bump Bazel minimum version to 5.1 (#20263)
+    
+    This was already true in practice; our docs just missed it.
+
+[33mcommit 5aaa0a02099d84f839210e08ccbceba2f3d51571[m
+Author: Rick Poyner (rico) <rick.poyner@tri.global>
+Date:   Fri Sep 29 17:34:44 2023 -0400
+
+    [vtk_internal] Patch to work around memcheck false positives (#20286)
+
+[33mcommit 01f47c76332c8bcf54537dabce99a27dfc28cdb9[m
+Author: Ali Adeeb Abbas <abbas.a@northeastern.edu>
+Date:   Fri Sep 29 15:53:19 2023 -0400
+
+    Refactor MGChaoticBabyboot methods to use explicit array sizes. (#20287)
+    
+    Addresses #20258
+
+[33mcommit bb1fbe40864e4246739138edaf21daa2eb3158a2[m
+Author: Sean Curtis <sean.curtis@tri.global>
+Date:   Thu Sep 28 15:28:01 2023 -0700
+
+    Revert "Parsing an .obj file can produce multiple RenderMesh instances" (#20281)
+    
+    This reverts commit a8b8bb8c57dcbf80af8a1ccd2d4adf758b78c222.
+
+[33mcommit b4e5263fa2bb0e7a4ea12882cd52f907335932da[m
+Author: Jeremy Nimmer <jeremy.nimmer@tri.global>
+Date:   Thu Sep 28 15:08:07 2023 -0700
+
+    [workspace] Add clarabel_cpp_internal as an opt-in dependency (#20246)
+    
+    This is sufficient to start writing unit tests, but there are several
+    blockers before we can enable it by default:
+    
+    - Collect and install license files.
+    - Investigate symbol visibility.
+    - Provide rust toolchains macro(s) for drake_bazel_external users.
+    - Improved workspace version upgrade tooling.
+    
+    To test Clarabel.cpp on a sample program, use this command line:
+    bazel test --define=WITH_CLARABEL=ON //tools/workspace/clarabel_cpp_internal/...
+    
+    Enhance mirrors.bzl to allow for control over crate_universe URLs.
+    
+    Enhance gitattributes to ignore most generated files.
+    
+    New externals:
+    - build_bazel_apple_support
+    - clarabel_cpp_internal
+    - crate_universe
+      - crate__amd-0.2.2
+      - crate__autocfg-1.1.0
+      - crate__cfg-if-1.0.0
+      - crate__clarabel-0.6.0
+      - crate__darling-0.14.4
+      - crate__darling_core-0.14.4
+      - crate__darling_macro-0.14.4
+      - crate__derive_builder-0.11.2
+      - crate__derive_builder_core-0.11.2
+      - crate__derive_builder_macro-0.11.2
+      - crate__either-1.9.0
+      - crate__enum_dispatch-0.3.12
+      - crate__fnv-1.0.7
+      - crate__ident_case-1.0.1
+      - crate__itertools-0.11.0
+      - crate__lazy_static-1.4.0
+      - crate__num-traits-0.2.16
+      - crate__once_cell-1.18.0
+      - crate__proc-macro2-1.0.67
+      - crate__quote-1.0.33
+      - crate__strsim-0.10.0
+      - crate__syn-1.0.109
+      - crate__syn-2.0.37
+      - crate__thiserror-1.0.48
+      - crate__thiserror-impl-1.0.48
+      - crate__unicode-ident-1.0.12
+    - rules_rust
+    - rules_rust_tinyjson
+
+[33mcommit 6c8b2af93567e4d332b58e3bcb9c755ce897f5a1[m
+Author: zachfang <zach.fang@tri.global>
+Date:   Thu Sep 28 17:23:12 2023 -0400
+
+    [visualization] ColorizeDepthImage takes 32F and 16U depth as input (#20254)
+
+[33mcommit 09840ad52aad3afb0965e0e614a69c1eda446139[m
+Author: Rick Poyner (rico) <rick.poyner@tri.global>
+Date:   Thu Sep 28 16:54:42 2023 -0400
+
+    [hotfix] Crafted vtk file caused UB inside VTK (#20280)
+    
+    Detected by ASAN. As a remedy, withdraw the test.
+
+[33mcommit d5a97d7ba3bc1bb77c88d44d5d66b88546e05983[m
+Author: Jeremy Nimmer <jeremy.nimmer@tri.global>
+Date:   Thu Sep 28 11:46:41 2023 -0700
+
+    [tools] Fix mis-detection of linux platform (#20277)
+    
+    https://docs.python.org/3/whatsnew/3.3.html#porting-python-code
+
+[33mcommit a8aa717271446124b51e0ede1f5a03df5bb20c3e[m
+Author: Hongkai Dai <daihongkai@gmail.com>
+Date:   Thu Sep 28 11:32:49 2023 -0700
+
+    Split MinimumDistanceConstraint. (#20266)
+    
+    Split MinimumDistanceConstraint.
+    
+    Create MinimumDistanceLowerBoundConstraint and MinimumDistanceUpperBoundConstraint. They should use different influence_distance.
+
+[33mcommit 7038449535768b0e965e64c2d65df2d77dae204d[m
+Author: Rick Poyner (rico) <rick.poyner@tri.global>
+Date:   Thu Sep 28 12:16:24 2023 -0400
+
+    [geometry] Strengthen VTK to volume mesh error cases (#20240)
+    
+    Add some slightly more adversarial VTK files to the test suite, and improve
+    error reporting for VTK parse failures.
+
+[33mcommit ed56c0234da58e81e51f7a024645a66c4b97d927[m
+Author: Jeremy Nimmer <jeremy.nimmer@tri.global>
+Date:   Thu Sep 28 09:01:02 2023 -0700
+
+    [workspace] Fix deprecation notations in pkg-config (#20275)
+
+[33mcommit d2bcf2d0f58abb4a755a01307095495b695a7c03[m
+Author: xuchenhan-tri <xuchen.han@tri.global>
+Date:   Wed Sep 27 17:02:40 2023 -0700
+
+    Add DiscreteContactData (#20209)
+    
+    We have three types of contact: point, hydroelastic, and deformable
+    that share similar contact data like  DiscreteContactPair and
+    ContactPairKinematics. Currently, we store them all in a std::vector
+    with an ordering convention that is inconsistent across various classes
+    that produce and consume these data.
+    
+    We introduce DiscreteContactData to help enforce ordering conventions
+    across the board and ensure the correct contact data is retrieved.
+
+[33mcommit 38a51d06caa4b4c3cc6919024c8c7347f5a0802c[m
+Author: Jeremy Nimmer <jeremy.nimmer@tri.global>
+Date:   Wed Sep 27 15:57:18 2023 -0700
+
+    [meldis] Offer --browser selection on the command line (#20257)
+    
+    This is ever so slightly easier to use than the $BROWSER env var.
+
+[33mcommit a8b8bb8c57dcbf80af8a1ccd2d4adf758b78c222[m
+Author: Sean Curtis <sean.curtis@tri.global>
+Date:   Wed Sep 27 15:39:06 2023 -0700
+
+    Parsing an .obj file can produce multiple RenderMesh instances (#20250)
+    
+    Obj files have several mechanisms that would conceptually lead to creating
+    disjoint "meshes" (i.e., putting them in different groups, different
+    objects, or assigning different materials). For the purpose of rendering,
+    the only important distinction is material. Because we render the whole
+    mesh as a rigid object, we just need to partition based on the material
+    assigned to a triangle. LoadRenderMeshesFromObj can now return multiple
+    RenderMeshes.
+    
+    We've introduced a shim for the old API (LoadRenderMeshFromObj()). This
+    allows us to update RenderEngineVtk and RenderEngineGl in a follow up PR.
+    The shim is *mostly* the same as the old. It has two differences which are
+    acceptable for a short horizon.
+    
+      - The debug message no longer prints out the material names.
+      - The resultant RenderMesh can easily have an increased number of vertex
+        data (as shown in the legacy test). This increase is representative of
+        how things will work for the foreseeable future.
+
+[33mcommit 251bd6982d48343cbd727d0a46d887461b2d13cc[m
+Author: Alejandro Castro <alejandro.castro@tri.global>
+Date:   Wed Sep 27 17:44:45 2023 -0400
+
+    Implement APIs to disable gravity at a model instance level (#20264)
+
+[33mcommit 8fb0455e1aa3024500e32a15db400c299b296959[m
+Author: Alejandro Castro <alejandro.castro@tri.global>
+Date:   Wed Sep 27 15:35:29 2023 -0400
+
+    Removes duplicated account of actuation when using PD controllers (#20259)
+    
+    There are two types of force contributions: continuous forces (such as Coriolis, damping and force elements) and constraints. SAP incorporates continuous forces in the "free motion velocities" computation.
+    
+    Implicit PD controllers implemented in #20111 move actuation from a continuous contribution to a constraint contribution. However, #20111 failed to remove the contribution from the free motion velocities computation, and therefore this contribution is erroneously accounted for twice.
+    
+    This PR removes actuation from the free motion velocities computation.
+
+[33mcommit 7aef8ac79dc34021067ca376edceb7291b8dd501[m
+Author: Jeremy Nimmer <jeremy.nimmer@tri.global>
+Date:   Wed Sep 27 08:16:37 2023 -0700
+
+    [workspace] Patch clang.cindex vs Clang 15 (#20261)
+
+[33mcommit 0364bc1774cce2febbc76530845eba1a245c8def[m
+Author: Jeremy Nimmer <jeremy.nimmer@tri.global>
+Date:   Wed Sep 27 07:51:18 2023 -0700
+
+    [planning] Export ports from RobotDiagram by default (#20238)
+
+[33mcommit f80343377d6548739582dc351eef7f1162e65eb1[m
+Author: Sean Curtis <sean.curtis@tri.global>
+Date:   Wed Sep 27 06:46:53 2023 -0700
+
+    [hotfix] Mac fmt::format chokes on enum (#20269)
+
+[33mcommit fc6d4e217fc7adc7a4d49344
