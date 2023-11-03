@@ -552,15 +552,15 @@ PointCloud PointCloud::VoxelizedDownSample(
     down_sampled_xyzs.col(index_in_down_sampled) =
         (xyz / indices_in_this.size()).cast<T>();
     if (this_has_normals) {
-      down_sampled.mutable_normals().col(index_in_down_sampled) =
+      down_sampled.storage_->normals().col(index_in_down_sampled) =
           (normal / num_normals).normalized().cast<T>();
     }
     if (this_has_rgbs) {
-      down_sampled.mutable_rgbs().col(index_in_down_sampled) =
+      down_sampled.storage_->rgbs().col(index_in_down_sampled) =
           (rgb / indices_in_this.size()).cast<C>();
     }
     if (this_has_descriptors) {
-      down_sampled.mutable_descriptors().col(index_in_down_sampled) =
+      down_sampled.storage_->descriptors().col(index_in_down_sampled) =
           (descriptor / num_descriptors).cast<D>();
     }
   };
