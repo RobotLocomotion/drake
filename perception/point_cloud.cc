@@ -6,8 +6,6 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
-#include <chrono>
-#include <iostream>
 
 #include <common_robotics_utilities/dynamic_spatial_hashed_voxel_grid.hpp>
 #include <common_robotics_utilities/voxel_grid.hpp>
@@ -521,9 +519,9 @@ PointCloud PointCloud::VoxelizedDownSample(
 
   // Helper lambda to process a single voxel cell.
   const auto process_voxel =
-      [this, &down_sampled_xyzs, &down_sampled, &my_xyzs, this_has_normals, this_has_rgbs, this_has_descriptors](
-      int index_in_down_sampled, const std::vector<int>& indices_in_this) {
-
+      [this, &down_sampled_xyzs, &down_sampled, &my_xyzs, this_has_normals,
+       this_has_rgbs, this_has_descriptors](
+           int index_in_down_sampled, const std::vector<int>& indices_in_this) {
     // Use doubles instead of floats for accumulators to avoid round-off errors.
     Eigen::Vector3d xyz{Eigen::Vector3d::Zero()};
     Eigen::Vector3d normal{Eigen::Vector3d::Zero()};
@@ -614,7 +612,6 @@ PointCloud PointCloud::VoxelizedDownSample(
       ++index_in_down_sampled;
     }
   }
-  
   return down_sampled;
 }
 

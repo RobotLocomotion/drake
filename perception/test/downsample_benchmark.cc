@@ -1,5 +1,6 @@
 #include <chrono>
 #include <iostream>
+
 #include "drake/perception/point_cloud.h"
 
 namespace drake {
@@ -27,19 +28,17 @@ int DoMain() {
   auto post_max = std::chrono::high_resolution_clock::now();
 
   double duration_xyz = static_cast<std::chrono::duration<double>>(
-      post_xyz - start
-  ).count();
+      post_xyz - start).count();
   double duration_max = static_cast<std::chrono::duration<double>>(
-      post_max - start
-  ).count();
+      post_max - start).count();
 
   std::cout << "xyz only time " << duration_xyz << std::endl
             << "maximal fields time " << duration_max << std::endl;
   return 0;
 }
-}
-}
-}
+}  // namespace
+}  // namespace perception
+}  // namespace drake
 
 int main(int argc, char *argv[]) {
   drake::perception::DoMain();
