@@ -27,6 +27,7 @@ def _actually_find_packages():
     result = find_packages()
     result.extend([
         'pydrake.autodiffutils',
+        'pydrake.common',
         'pydrake.examples',
         'pydrake.geometry',
         'pydrake.manipulation',
