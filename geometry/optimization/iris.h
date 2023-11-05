@@ -91,7 +91,7 @@ struct IrisOptions {
   `domain` argument in the case of `Iris` or the joint limits of the input
   `plant` in the case of `IrisInConfigurationSpace`. If this option is
   specified, IRIS regions will be confined to the intersection between the
-  domain and `boundary_region` */
+  domain and `bounding_region` */
   std::optional<HPolyhedron> bounding_region{};
 
   /** By default, IRIS in configuration space certifies regions for collision
