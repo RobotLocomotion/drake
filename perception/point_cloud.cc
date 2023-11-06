@@ -526,8 +526,8 @@ PointCloud PointCloud::VoxelizedDownSample(
     Eigen::Vector3d xyz{Eigen::Vector3d::Zero()};
     Eigen::Vector3d normal{Eigen::Vector3d::Zero()};
     Eigen::Vector3d rgb{Eigen::Vector3d::Zero()};
-    Eigen::VectorXd descriptor{
-        Eigen::VectorXd::Zero(this_has_descriptors ? descriptors().rows() : 0)};
+    Eigen::VectorXd descriptor{Eigen::VectorXd::Zero(
+        this_has_descriptors ? storage_->descriptors().rows() : 0)};
     int num_normals{0};
     int num_descriptors{0};
 
@@ -543,7 +543,7 @@ PointCloud PointCloud::VoxelizedDownSample(
       }
       if (this_has_descriptors &&
           storage_->descriptors().col(index_in_this).array().isFinite().all()) {
-        descriptor += descriptors().col(index_in_this).cast<double>();
+        descriptor += storage_->descriptors().col(index_in_this).cast<double>();
         ++num_descriptors;
       }
     }
