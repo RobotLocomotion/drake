@@ -38,6 +38,7 @@ rust_library(
     ),
     crate_features = [
         "default",
+        "i128",
         "std",
     ],
     crate_root = "src/lib.rs",
@@ -95,6 +96,7 @@ cargo_build_script(
     srcs = glob(["**/*.rs"]),
     crate_features = [
         "default",
+        "i128",
         "std",
     ],
     crate_name = "build_script_build",

@@ -11,7 +11,7 @@ load("@rules_rust//rust:defs.bzl", "rust_library")
 package(default_visibility = ["//visibility:public"])
 
 # licenses([
-#     "TODO",  # Apache-2.0
+#     "TODO",  # Apache-2.0/MIT
 # ])
 filegroup(
     name = "license_glob",
@@ -22,7 +22,7 @@ filegroup(
 )
 
 rust_library(
-    name = "clarabel",
+    name = "lapack",
     srcs = glob(["**/*.rs"]),
     compile_data = glob(
         include = ["**"],
@@ -35,20 +35,12 @@ rust_library(
             "WORKSPACE.bazel",
         ],
     ),
-    crate_features = [
-        "blas",
-        "lapack",
-        "sdp",
-    ],
     crate_root = "src/lib.rs",
-    edition = "2021",
-    proc_macro_deps = [
-        "@crate__enum_dispatch-0.3.12//:enum_dispatch",
-    ],
+    edition = "2015",
     rustc_flags = ["--cap-lints=allow"],
     tags = [
         "cargo-bazel",
-        "crate-name=clarabel",
+        "crate-name=lapack",
         "manual",
         "noclippy",
         "norustfmt",
@@ -87,16 +79,10 @@ rust_library(
         "@rules_rust//rust/platform:x86_64-unknown-none": [],
         "//conditions:default": ["@platforms//:incompatible"],
     }),
-    version = "0.6.0",
+    version = "0.19.0",
     deps = [
-        "@crate__amd-0.2.2//:amd",
-        "@crate__blas-0.22.0//:blas",
-        "@crate__cfg-if-1.0.0//:cfg_if",
-        "@crate__derive_builder-0.11.2//:derive_builder",
-        "@crate__itertools-0.11.0//:itertools",
-        "@crate__lapack-0.19.0//:lapack",
-        "@crate__lazy_static-1.4.0//:lazy_static",
-        "@crate__num-traits-0.2.17//:num_traits",
-        "@crate__thiserror-1.0.50//:thiserror",
+        "@crate__lapack-sys-0.14.0//:lapack_sys",
+        "@crate__libc-0.2.149//:libc",
+        "@crate__num-complex-0.4.4//:num_complex",
     ],
 )

@@ -24,6 +24,7 @@ rust_static_library(
     name = "clarabel_cpp_rust_wrapper",
     edition = "2021",
     srcs = glob(["rust_wrapper/src/**/*.rs"], allow_empty = False),
+    crate_features = ["sdp"],
     deps = all_crate_deps(),
 )
 
@@ -31,10 +32,15 @@ rust_static_library(
 cc_library(
     name = "clarabel_cpp",
     linkstatic = True,
+    defines = [
+        "FEATURE_SDP",
+    ],
     deps = [
         ":hdrs",
         ":clarabel_cpp_rust_wrapper",
+        "@blas",
         "@eigen",
+        "@lapack",
     ],
     visibility = ["//visibility:public"],
 )
