@@ -41,10 +41,10 @@ void SetCylinderOptions(vtkCylinderSource* vtk_cylinder, double height,
                         double radius);
 
 // Transforms a vtk cylinder that is y-axis aligned to be z-axis aligned, which
-// is what Drake uses.
-void TransformToDrakeCylinder(vtkTransform* transform,
-                              vtkTransformPolyDataFilter* transform_filter,
-                              vtkCylinderSource* vtk_cylinder);
+// is what Drake uses. It does a further orientation so that the longitudinal
+// texture seam aligns with the seam on the sphere.
+vtkSmartPointer<vtkPolyDataAlgorithm> TransformToDrakeCylinder(
+    vtkCylinderSource* vtk_cylinder);
 
 }  // namespace internal
 }  // namespace render_vtk

@@ -209,12 +209,8 @@ void RenderEngineVtk::ImplementGeometry(const Box& box, void* user_data) {
 void RenderEngineVtk::ImplementGeometry(const Capsule& capsule,
                                         void* user_data) {
   const RegistrationData& data = *static_cast<RegistrationData*>(user_data);
-  // TODO(18296): When the capsule has texture coordinates, remove the UvState
-  // and let it default to UvState::kFull.
   ImplementPolyData(CreateVtkCapsule(capsule).GetPointer(),
-                    DefineMaterial(data.properties, default_diffuse_, {},
-                                   geometry::internal::UvState::kNone),
-                    data);
+                    DefineMaterial(data.properties, default_diffuse_), data);
 }
 
 void RenderEngineVtk::ImplementGeometry(const Convex& convex, void* user_data) {
@@ -225,15 +221,8 @@ void RenderEngineVtk::ImplementGeometry(const Cylinder& cylinder,
                                         void* user_data) {
   vtkNew<vtkCylinderSource> vtk_cylinder;
   SetCylinderOptions(vtk_cylinder, cylinder.length(), cylinder.radius());
-
-  // Since the cylinder in vtkCylinderSource is y-axis aligned, we need
-  // to rotate it to be z-axis aligned because that is what Drake uses.
-  vtkNew<vtkTransform> transform;
-  vtkNew<vtkTransformPolyDataFilter> transform_filter;
-  TransformToDrakeCylinder(transform, transform_filter, vtk_cylinder);
-
   const RegistrationData& data = *static_cast<RegistrationData*>(user_data);
-  ImplementPolyData(transform_filter.GetPointer(),
+  ImplementPolyData(TransformToDrakeCylinder(vtk_cylinder),
                     DefineMaterial(data.properties, default_diffuse_), data);
 }
 
