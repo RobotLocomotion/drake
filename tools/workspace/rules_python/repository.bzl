@@ -1,4 +1,8 @@
 load("//tools/workspace:github.bzl", "github_archive")
+load(
+    "//third_party:com_github_bazelbuild_rules_python/internal_config_repo.bzl",  # noqa
+    "internal_config_repo",
+)
 
 # Note that we do NOT install a LICENSE file as part of the Drake install
 # because this repository is required only when building and testing with
@@ -19,3 +23,4 @@ def rules_python_repository(
         sha256 = "9d04041ac92a0985e344235f5d946f71ac543f1b1565f2cdbc9a2aaee8adf55b",  # noqa
         mirrors = mirrors,
     )
+    internal_config_repo(name = name + "_internal")
