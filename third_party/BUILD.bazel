@@ -2,7 +2,10 @@ load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
-exports_files(glob(["com_github_bazelbuild_bazelisk/**"]))
+exports_files(glob([
+    "com_github_bazelbuild_bazelisk/**",
+    "com_github_bazelbuild_rules_python/**",
+]))
 
 add_lint_tests(
     bazel_lint_extra_srcs = [
