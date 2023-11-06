@@ -324,22 +324,13 @@ class DrakeObjSource : public vtkPolyDataAlgorithm {
 }  // namespace
 
 vtkSmartPointer<vtkPolyDataAlgorithm> CreateVtkCapsule(const Capsule& capsule) {
-  vtkNew<vtkCapsuleSource> vtk_capsule;
-  vtk_capsule->SetCylinderLength(capsule.length());
-  vtk_capsule->SetRadius(capsule.radius());
-  // TODO(SeanCurtis-TRI): Provide control for smoothness/tessellation.
-  vtk_capsule->SetThetaResolution(50);
-  vtk_capsule->SetPhiResolution(50);
-  // Since the cylinder in vtkCylinderSource is y-axis aligned, we need
-  // to rotate it to be z-axis aligned because that is what Drake uses.
-  vtkNew<vtkTransform> transform;
-  transform->RotateX(90);
-  vtkSmartPointer<vtkTransformPolyDataFilter> transform_filter =
-      vtkSmartPointer<vtkTransformPolyDataFilter>::New();
-  transform_filter->SetInputConnection(vtk_capsule->GetOutputPort());
-  transform_filter->SetTransform(transform);
-  transform_filter->Update();
-  return transform_filter;
+  // Note: VTK uses cylinder sources as capsules by turning on the caps and
+  // making them spherical.
+  vtkNew<vtkCylinderSource> vtk_capsule;
+  vtk_capsule->CappingOn();
+  vtk_capsule->CapsuleCapOn();
+  SetCylinderOptions(vtk_capsule, capsule.length(), capsule.radius());
+  return TransformToDrakeCylinder(vtk_capsule);
 }
 
 vtkSmartPointer<vtkPolyDataAlgorithm> CreateVtkBox(
@@ -395,13 +386,23 @@ void SetCylinderOptions(vtkCylinderSource* vtk_cylinder, double height,
   vtk_cylinder->SetResolution(50);
 }
 
-void TransformToDrakeCylinder(vtkTransform* transform,
-                              vtkTransformPolyDataFilter* transform_filter,
-                              vtkCylinderSource* vtk_cylinder) {
-  transform->RotateX(90);
+vtkSmartPointer<vtkPolyDataAlgorithm> TransformToDrakeCylinder(
+    vtkCylinderSource* vtk_cylinder) {
+  // We rotate around the x-axis to get the cylinder to be vertical along the
+  // z-axis.
+  vtkNew<vtkTransform> rotate;
+  rotate->RotateX(-90);
+  // The "prime meridian" on the cylinder is 90 degrees off of the sphere's. So,
+  // we'll rotate once more so that they have the same sense of "front".
+  vtkNew<vtkTransform> rotate_around_Z;
+  rotate_around_Z->RotateY(90);
+  rotate->Concatenate(rotate_around_Z);
+
+  vtkNew<vtkTransformPolyDataFilter> transform_filter;
   transform_filter->SetInputConnection(vtk_cylinder->GetOutputPort());
-  transform_filter->SetTransform(transform);
+  transform_filter->SetTransform(rotate);
   transform_filter->Update();
+  return transform_filter;
 }
 
 }  // namespace internal
