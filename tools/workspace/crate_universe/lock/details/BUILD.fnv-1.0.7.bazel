@@ -13,6 +13,13 @@ package(default_visibility = ["//visibility:public"])
 # licenses([
 #     "TODO",  # Apache-2.0 / MIT
 # ])
+filegroup(
+    name = "license_glob",
+    srcs = glob(
+        ["LICENSE*"],
+        allow_empty = False,
+    ),
+)
 
 rust_library(
     name = "fnv",

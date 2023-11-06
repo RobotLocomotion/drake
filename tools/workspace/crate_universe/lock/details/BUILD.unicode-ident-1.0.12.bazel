@@ -13,6 +13,13 @@ package(default_visibility = ["//visibility:public"])
 # licenses([
 #     "TODO",  # (MIT OR Apache-2.0) AND Unicode-DFS-2016
 # ])
+filegroup(
+    name = "license_glob",
+    srcs = glob(
+        ["LICENSE*"],
+        allow_empty = False,
+    ),
+)
 
 rust_library(
     name = "unicode_ident",

@@ -1,5 +1,6 @@
 # -*- bazel -*-
 
+load("@drake//tools/install:install.bzl", "install")
 load("@drake//tools/skylark:cc.bzl", "cc_library")
 load("@drake//tools/workspace/crate_universe:defs.bzl", "all_crate_deps")
 load("@rules_rust//rust:defs.bzl", "rust_static_library")
@@ -38,8 +39,11 @@ cc_library(
     visibility = ["//visibility:public"],
 )
 
-# TODO(jwnimmer-tri) Prior to using Clarabel as part of libdrake.so, we'll need
-# to add the license-install rule here.
+install(
+    name = "install",
+    docs = ["LICENSE.md"],
+    visibility = ["//visibility:public"],
+)
 
 # TODO(jwnimmer-tri) Prior to using Clarabel as part of libdrake.so, we'll need
 # to un-nerf exported_symbols_test when Clarabel is enabled (and figure out how
