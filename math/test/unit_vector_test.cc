@@ -49,16 +49,16 @@ GTEST_TEST(UnitVectorTest, ThrowOrWarnIfNotUnitVector) {
       ThrowIfNotUnitVector(not_unit_vector, "SomeFunctionName"),
       expected_message);
 
-  // Verify WarnIfNotUnitVector() returns true for a near valid unit vector.
+  // Verify WarnIfNotUnitVector() returns false for a near valid unit vector.
   is_bad_unit_vector = WarnIfNotUnitVector(unit_vector, "TestFunctionName");
   EXPECT_FALSE(is_bad_unit_vector);
 
-  // Verify WarnIfNotUnitVector() returns false for an invalid unit vector.
+  // Verify WarnIfNotUnitVector() returns true for an invalid unit vector.
   // Not checked: A message should have be written to the log file.
   is_bad_unit_vector = WarnIfNotUnitVector(not_unit_vector, "SomeFunctionName");
   EXPECT_TRUE(is_bad_unit_vector);
 
-  // Verify WarnIfNotUnitVector() returns true for a symbolic unit vector.
+  // Verify WarnIfNotUnitVector() returns false for a symbolic unit vector.
   is_bad_unit_vector =
       WarnIfNotUnitVector(unit_vector_symbolic, "TestSymbolicFunctionName");
   EXPECT_FALSE(is_bad_unit_vector);

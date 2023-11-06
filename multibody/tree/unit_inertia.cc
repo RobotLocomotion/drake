@@ -84,7 +84,7 @@ UnitInertia<T> UnitInertia<T>::AxiallySymmetric(const T& moment_parallel,
   // TODO(Mitiguy) Consider a new UnitVector class to ensure the unit_vector
   //  argument to this function is either already normalized by the calling
   //  function (so a const reference to a UnitVector is passed) or if the
-  //  calling function passes a Vector3, the Vector3 is automatrically converted
+  //  calling function passes a Vector3, the Vector3 is automatically converted
   //  to a UnitVector (throwing an exception if the Vector3 contains NaN or
   //  infinite elements or its magnitude is increduluously small).
   const bool is_bad_unit_vector =
