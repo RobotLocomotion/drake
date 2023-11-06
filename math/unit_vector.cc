@@ -19,6 +19,8 @@ namespace {
 
 // Checks if ‖unit_vector‖ is within tolerance_unit_vector_norm of 1.0.
 // @param[in] unit_vector a vector which is allegedly a unit vector.
+// @param[in] tolerance_unit_vector_norm small positive real number that
+// specifies the allowable tolerance for ‖unit_vector‖ from 1.0.
 // @retval true if ‖unit_vector‖ is OK, otherwise false.
 // @note: When type T is symbolic::Expression, this function is a no-op that
 // returns true.
