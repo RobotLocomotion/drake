@@ -1,0 +1,25 @@
+[clarabel] Opt-out of Rust linking for BLAS/LAPACK
+
+The blas_src and lapack_src crates are the Rust ecosystem's solution
+for inversion of control when linking the BLAS and LAPACK libraries.
+Library code refers to those crates and then the top-level Cargo file
+of the ultimate application binary turns on a feature flag of those
+crates that adds the right lines to the linker (and can also rebuild
+BLAS and LAPACK from source, if necessary).
+
+However, since Drake's ultimate "application" is to ship our own
+shared library, we must not allow Rust to govern which libraries to
+link. Thus, we need to delete the lines that perform the linking.
+
+--- src/algebra/dense/blas.rs
++++ src/algebra/dense/blas.rs
+@@ -8,8 +8,6 @@ cfg_if::cfg_if! {
+     }
+         else {   
+-        // standard imports via blas-lapack-rs crates 
+-        extern crate blas_src;
+-        extern crate lapack_src;
++        // Use whatever shared libraries Drake provided.
+         use lapack::*;
+         use blas::*;
+     }
