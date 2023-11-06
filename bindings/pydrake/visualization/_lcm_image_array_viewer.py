@@ -80,8 +80,8 @@ class LcmImageArrayViewer:
         self._lcm.Subscribe(channel=channel, handler=self._update_message)
 
         # Helpers to convert images to aid visualization.
-        self._colorized_label = ColorizeLabelImage()
-        self._colorized_depth = ColorizeDepthImage()
+        self._colorize_label = ColorizeLabelImage()
+        self._colorize_depth = ColorizeDepthImage()
 
         # Instantiate an `_ImageServer` and run it. If `unit_test` is True, the
         # server will not be launched.
@@ -147,7 +147,7 @@ class LcmImageArrayViewer:
             elif image.pixel_format == lcmt_image.PIXEL_FORMAT_LABEL:
                 label = ImageLabel16I(w, h)
                 label.mutable_data[:] = np_image_data.reshape(h, w, 1)
-                self._colorized_label._colorize_label_image(label, rgba)
+                self._colorize_label.Calc(label, rgba)
             elif image.pixel_format == lcmt_image.PIXEL_FORMAT_DEPTH:
                 if image.channel_type == lcmt_image.CHANNEL_TYPE_UINT16:
                     depth = ImageDepth16U(w, h)
@@ -158,7 +158,7 @@ class LcmImageArrayViewer:
                         f"Unsupported depth pixel format: {image.pixel_format}"
                     )
                 depth.mutable_data[:] = np_image_data.reshape(h, w, 1)
-                self._colorized_depth._colorize_depth_image(depth, rgba)
+                self._colorize_depth.Calc(depth, rgba)
             rgba_images.append(rgba)
 
         # Stack the images horizontally.
