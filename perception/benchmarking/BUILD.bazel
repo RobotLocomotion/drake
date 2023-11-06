@@ -10,8 +10,10 @@ drake_cc_binary(
     name = "downsample_benchmark",
     srcs = ["downsample_benchmark.cc"],
     add_test_rule = True,
+    test_rule_args = ["--size=10"],
     deps = [
         "//perception:point_cloud",
+        "@gflags",
     ],
 )
 
