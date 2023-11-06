@@ -40,6 +40,6 @@ int DoMain() {
 }  // namespace perception
 }  // namespace drake
 
-int main(int argc, char *argv[]) {
-  drake::perception::DoMain();
+int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
+  return drake::perception::DoMain();
 }
