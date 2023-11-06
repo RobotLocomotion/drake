@@ -1,0 +1,12 @@
+[rules_python] Mark internal_config_repo.bzl as public
+
+Our linter needs to read this file in order to compare it to our vendored copy.
+
+--- python/private/BUILD.bazel
++++ python/private/BUILD.bazel
+@@ -80,4 +80,5 @@
+     srcs = ["internal_config_repo.bzl"],
+     deps = [":bzlmod_enabled_bzl"],
++    visibility = ["//visibility:public"],
+ )
+ 
