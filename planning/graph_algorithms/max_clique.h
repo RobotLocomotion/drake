@@ -103,10 +103,11 @@ struct MaxCliqueOptions {
  * @param options options for solving the max-clique problem.
  * @return A binary vector with the same indexing as the adjacency matrix, with
  * 1 indicating membership in the clique.
+ * @throws if the adjacency matrix is not symmetric.
  * @throws based on the preconditions of the solver contained in @param options.
  */
-VectorX<bool> MaxClique(const Eigen::SparseMatrix<bool>& adjacency_matrix,
-                        const MaxCliqueOptions& options);
+VectorX<bool> CalcMaxClique(const Eigen::SparseMatrix<bool>& adjacency_matrix,
+                            const MaxCliqueOptions& options);
 
 }  // namespace graph_algorithms
 }  // namespace planning

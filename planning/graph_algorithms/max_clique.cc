@@ -26,8 +26,6 @@ MaxCliqueOptions::MaxCliqueOptions(const MaxCliqueSolverBase* m_solver)
 
 VectorX<bool> MaxCliqueSolverViaMip::SolveMaxClique(
     const SparseMatrix<bool>& adjacency_matrix) const {
-  DRAKE_DEMAND(adjacency_matrix.isApprox(adjacency_matrix.transpose()));
-  DRAKE_DEMAND(adjacency_matrix.rows() == adjacency_matrix.cols());
   const int n = adjacency_matrix.rows();
 
   solvers::MathematicalProgram prog;
@@ -72,10 +70,10 @@ VectorX<bool> MaxCliqueSolverViaMip::SolveMaxClique(
     solvers::SolverId solver_id = solvers::ChooseBestSolver(prog);
     solver = solvers::MakeSolver(solver_id);
   } catch (const std::exception&) {
-    // TODO(Alexandre.Amice) update the error message if other MaxClique
+    // TODO(Alexandre.Amice) update the error message if other CalcMaxClique
     // solvers based become available.
     throw std::runtime_error(
-        "MaxClique: There is no solver available that can solve the "
+        "CalcMaxClique: There is no solver available that can solve the "
         "mixed-integer version of maximum clique. Please check "
         "https://drake.mit.edu/doxygen_cxx/group__solvers.html for more "
         "details about supported mixed integer solvers and how to enable "
@@ -90,8 +88,10 @@ VectorX<bool> MaxCliqueSolverViaMip::SolveMaxClique(
   });
 }
 
-VectorX<bool> MaxClique(const Eigen::SparseMatrix<bool>& adjacency_matrix,
-                        const MaxCliqueOptions& options) {
+VectorX<bool> CalcMaxClique(const Eigen::SparseMatrix<bool>& adjacency_matrix,
+                            const MaxCliqueOptions& options) {
+  DRAKE_DEMAND(adjacency_matrix.isApprox(adjacency_matrix.transpose()));
+  DRAKE_DEMAND(adjacency_matrix.rows() == adjacency_matrix.cols());
   return options.solver->SolveMaxClique(adjacency_matrix);
 }
 
