@@ -1,4 +1,6 @@
-TBD
+[rules_python] Mark internal_config_repo.bzl as public
+
+Our linter needs to read this file in order to compare it to our vendored copy.
 
 --- python/private/BUILD.bazel
 +++ python/private/BUILD.bazel
