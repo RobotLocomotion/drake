@@ -59,7 +59,7 @@ HPolyhedron Iris(const ConvexSets& obstacles, const Ref<const VectorXd>& sample,
     P = P.Intersection(*options.bounding_region);
   }
 
-  const int initial_constraints = P.A().rows();
+  const int num_initial_constraints = P.A().rows();
 
   // On each iteration, we will build the collision-free polytope represented as
   // {x | A * x <= b}.  Here we pre-allocate matrices of the maximum size.
@@ -87,7 +87,7 @@ HPolyhedron Iris(const ConvexSets& obstacles, const Ref<const VectorXd>& sample,
     }
     std::sort(scaling.begin(), scaling.end());
 
-    int num_constraints = initial_constraints;
+    int num_constraints = num_initial_constraints;
     tangent_matrix = 2.0 * E.A().transpose() * E.A();
     for (int i = 0; i < N; ++i) {
       // Only add a constraint if this obstacle still has overlap with the set

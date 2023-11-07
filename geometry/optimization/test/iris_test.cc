@@ -165,15 +165,16 @@ GTEST_TEST(IrisTest, StartingEllipse) {
   EXPECT_FALSE(region.PointInSet(Vector2d(-.99, 0.0)));
 }
 
-GTEST_TEST(IrisTest, Domain) {
+GTEST_TEST(IrisTest, BoundingRegion) {
   ConvexSets obstacles;
-  obstacles.emplace_back(VPolytope::MakeBox(Vector2d(.1, .5), Vector2d(1, 1)));
   obstacles.emplace_back(
-      VPolytope::MakeBox(Vector2d(-1, -1), Vector2d(-.1, -.5)));
+      VPolytope::MakeBox(Vector2d(0.1, 0.5), Vector2d(1, 1)));
   obstacles.emplace_back(
-      HPolyhedron::MakeBox(Vector2d(.1, -1), Vector2d(1, -.5)));
+      VPolytope::MakeBox(Vector2d(-1, -1), Vector2d(-0.1, -0.5)));
   obstacles.emplace_back(
-      HPolyhedron::MakeBox(Vector2d(-1, .5), Vector2d(-.1, 1)));
+      HPolyhedron::MakeBox(Vector2d(.1, -1), Vector2d(1, -0.5)));
+  obstacles.emplace_back(
+      HPolyhedron::MakeBox(Vector2d(-1, 0.5), Vector2d(-0.1, 1)));
   const HPolyhedron domain = HPolyhedron::MakeUnitBox(2);
 
   const Vector2d sample{0, 0};  // center of the bounding box.
@@ -204,8 +205,8 @@ GTEST_TEST(IrisTest, Domain) {
   EXPECT_TRUE(region_w_bounding.PointInSet(Vector2d(0.99, 0)));
 
   // Points inside obstacles should be excluded from both regions.
-  EXPECT_FALSE(region.PointInSet(Vector2d(.1, 0.5)));
-  EXPECT_FALSE(region_w_bounding.PointInSet(Vector2d(.1, 0.5)));
+  EXPECT_FALSE(region.PointInSet(Vector2d(0.1, 0.5)));
+  EXPECT_FALSE(region_w_bounding.PointInSet(Vector2d(0.1, 0.5)));
 }
 
 GTEST_TEST(IrisTest, TerminationConditions) {
