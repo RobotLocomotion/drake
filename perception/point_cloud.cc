@@ -515,54 +515,53 @@ PointCloud PointCloud::VoxelizedDownSample(
   const bool this_has_rgbs = has_rgbs();
   const bool this_has_descriptors = has_descriptors();
 
-  auto down_sampled_xyzs = down_sampled.mutable_xyzs();
-
+  Storage& storage = *storage_;
+  Storage& down_sampled_storage = *down_sampled.storage_;
   // Helper lambda to process a single voxel cell.
   const auto process_voxel =
-      [this, &down_sampled_xyzs, &down_sampled, &my_xyzs, this_has_normals,
-       this_has_rgbs, this_has_descriptors](
+      [&storage, &down_sampled_storage, this_has_normals, this_has_rgbs,
+       this_has_descriptors](
            int index_in_down_sampled, const std::vector<int>& indices_in_this) {
     // Use doubles instead of floats for accumulators to avoid round-off errors.
     Eigen::Vector3d xyz{Eigen::Vector3d::Zero()};
     Eigen::Vector3d normal{Eigen::Vector3d::Zero()};
     Eigen::Vector3d rgb{Eigen::Vector3d::Zero()};
     Eigen::VectorXd descriptor{Eigen::VectorXd::Zero(
-        this_has_descriptors ? storage_->descriptors().rows() : 0)};
+        this_has_descriptors ? storage.descriptors().rows() : 0)};
     int num_normals{0};
     int num_descriptors{0};
 
     for (int index_in_this : indices_in_this) {
-      xyz += my_xyzs.col(index_in_this).cast<double>();
+      xyz += storage.xyzs().col(index_in_this).cast<double>();
       if (this_has_normals &&
-          storage_->normals().col(index_in_this).array().isFinite().all()) {
-        normal += storage_->normals().col(index_in_this).cast<double>();
+          storage.normals().col(index_in_this).array().isFinite().all()) {
+        normal += storage.normals().col(index_in_this).cast<double>();
         ++num_normals;
       }
       if (this_has_rgbs) {
-        rgb += storage_->rgbs().col(index_in_this).cast<double>();
+        rgb += storage.rgbs().col(index_in_this).cast<double>();
       }
       if (this_has_descriptors &&
-          storage_->descriptors().col(index_in_this).array().isFinite().all()) {
-        descriptor += storage_->descriptors().col(index_in_this).cast<double>();
+          storage.descriptors().col(index_in_this).array().isFinite().all()) {
+        descriptor += storage.descriptors().col(index_in_this).cast<double>();
         ++num_descriptors;
       }
     }
-    down_sampled_xyzs.col(index_in_down_sampled) =
+    down_sampled_storage.xyzs().col(index_in_down_sampled) =
         (xyz / indices_in_this.size()).cast<T>();
     if (this_has_normals) {
-      down_sampled.storage_->normals().col(index_in_down_sampled) =
+      down_sampled_storage.normals().col(index_in_down_sampled) =
           (normal / num_normals).normalized().cast<T>();
     }
     if (this_has_rgbs) {
-      down_sampled.storage_->rgbs().col(index_in_down_sampled) =
+      down_sampled_storage.rgbs().col(index_in_down_sampled) =
           (rgb / indices_in_this.size()).cast<C>();
     }
     if (this_has_descriptors) {
-      down_sampled.storage_->descriptors().col(index_in_down_sampled) =
+      down_sampled_storage.descriptors().col(index_in_down_sampled) =
           (descriptor / num_descriptors).cast<D>();
     }
   };
-
 
   // Since the parallel form imposes additional overhead, only use it when
   // we are supposed to parallelize.

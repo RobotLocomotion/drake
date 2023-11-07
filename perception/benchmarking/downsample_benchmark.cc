@@ -21,8 +21,8 @@ int DoMain() {
                                                pc_flags::kNormals |
                                                pc_flags::kDescriptorCurvature);
 
-  // make the spatial coordinates the same to avoid time differences due to
-  // spatial hashing
+  // Make the spatial coordinates the same to avoid time differences due to
+  // spatial hashing.
   pc_maximal.mutable_xyzs() = pc_xyz.xyzs();
   pc_maximal.mutable_rgbs().setRandom();
   pc_maximal.mutable_normals().setRandom();
