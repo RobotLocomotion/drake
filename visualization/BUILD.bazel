@@ -12,10 +12,57 @@ drake_cc_package_library(
     name = "visualization",
     visibility = ["//visibility:public"],
     deps = [
+        ":colorize_depth_image",
+        ":colorize_label_image",
+        ":concatenate_images",
         ":inertia_visualizer",
         ":meshcat_pose_sliders",
         ":visualization_config",
         ":visualization_config_functions",
+    ],
+)
+
+drake_cc_library(
+    name = "colorize_depth_image",
+    srcs = ["colorize_depth_image.cc"],
+    hdrs = ["colorize_depth_image.h"],
+    deps = [
+        "//geometry:rgba",
+        "//systems/framework",
+        "//systems/sensors:image",
+    ],
+)
+
+drake_cc_library(
+    name = "colorize_label_image",
+    srcs = ["colorize_label_image.cc"],
+    hdrs = ["colorize_label_image.h"],
+    deps = [
+        "//geometry:rgba",
+        "//geometry/render",
+        "//systems/framework",
+        "//systems/sensors:image",
+    ],
+)
+
+drake_cc_library(
+    name = "concatenate_images",
+    srcs = ["concatenate_images.cc"],
+    hdrs = ["concatenate_images.h"],
+    deps = [
+        "//systems/framework",
+        "//systems/sensors:image",
+    ],
+)
+
+drake_cc_library(
+    name = "inertia_visualizer",
+    srcs = ["inertia_visualizer.cc"],
+    hdrs = ["inertia_visualizer.h"],
+    deps = [
+        "//multibody/plant",
+        "//systems/framework:diagram_builder",
+        "//systems/framework:leaf_system",
     ],
 )
 
@@ -28,17 +75,6 @@ drake_cc_library(
         "//geometry:meshcat",
         "//geometry:meshcat_graphviz",
         "//systems/framework",
-    ],
-)
-
-drake_cc_library(
-    name = "inertia_visualizer",
-    srcs = ["inertia_visualizer.cc"],
-    hdrs = ["inertia_visualizer.h"],
-    deps = [
-        "//multibody/plant",
-        "//systems/framework:diagram_builder",
-        "//systems/framework:leaf_system",
     ],
 )
 
@@ -80,6 +116,47 @@ drake_cc_library(
 )
 
 drake_cc_googletest(
+    name = "colorize_depth_image_test",
+    deps = [
+        ":colorize_depth_image",
+        "//common/test_utilities:expect_throws_message",
+        "//systems/sensors/test_utilities:image_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "colorize_label_image_test",
+    deps = [
+        ":colorize_label_image",
+        "//systems/sensors/test_utilities:image_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "concatenate_images_test",
+    deps = [
+        ":concatenate_images",
+        "//systems/sensors/test_utilities:image_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "inertia_visualizer_test",
+    data = [
+        "//geometry/render:test_models",
+        "//multibody/benchmarks/acrobot:models",
+    ],
+    deps = [
+        ":inertia_visualizer",
+        ":visualization_config_functions",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//geometry:meshcat",
+        "//geometry/test_utilities:meshcat_environment",
+        "//multibody/parsing",
+    ],
+)
+
+drake_cc_googletest(
     name = "meshcat_pose_sliders_test",
     deps = [
         ":meshcat_pose_sliders",
@@ -100,22 +177,6 @@ drake_cc_googletest(
         "//common/test_utilities:expect_throws_message",
         "//lcm:drake_lcm",
         "//systems/analysis:simulator",
-    ],
-)
-
-drake_cc_googletest(
-    name = "inertia_visualizer_test",
-    data = [
-        "//geometry/render:test_models",
-        "//multibody/benchmarks/acrobot:models",
-    ],
-    deps = [
-        ":inertia_visualizer",
-        ":visualization_config_functions",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//geometry:meshcat",
-        "//geometry/test_utilities:meshcat_environment",
-        "//multibody/parsing",
     ],
 )
 

@@ -15,6 +15,9 @@ namespace internal {
 /* Defines bindings per visualization_py_config.cc. */
 void DefineVisualizationConfig(py::module m);
 
+/* Defines bindings per visualization_py_image_systems.cc. */
+void DefineVisualizationImageSystems(py::module m);
+
 /* Defines bindings per visualization_py_sliders.cc. */
 void DefineVisualizationSliders(py::module m);
 

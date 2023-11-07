@@ -37,6 +37,7 @@ drake_pybind_library(
     cc_srcs = [
         "visualization_py.cc",
         "visualization_py_config.cc",
+        "visualization_py_image_systems.cc",
         "visualization_py_sliders.cc",
         "visualization_py.h",
     ],
@@ -156,6 +157,14 @@ drake_py_unittest(
     name = "config_test",
     deps = [
         ":visualization",
+    ],
+)
+
+drake_py_unittest(
+    name = "image_systems_test",
+    deps = [
+        ":visualization",
+        "//bindings/pydrake/common/test_utilities:numpy_compare_py",
     ],
 )
 

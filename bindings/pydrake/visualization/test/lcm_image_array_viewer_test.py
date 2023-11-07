@@ -47,7 +47,7 @@ class TestLcmImageArrayViewer(unittest.TestCase):
         image_message.row_stride = 6
         image_message.size = 12
 
-        image_data = np.array([[31, 41, 51], [61, 71, 81]], dtype=np.int16)
+        image_data = np.array([[1, 2, 3], [4, 5, 6]], dtype=np.int16)
         image_message.data = image_data.tobytes()
         return image_message
 
