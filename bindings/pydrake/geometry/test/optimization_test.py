@@ -92,6 +92,12 @@ class TestGeometryOptimization(unittest.TestCase):
 
         mut.AffineBall(ellipsoid=mut.Hyperellipsoid.MakeUnitBall(dim=1))
 
+        points = np.array([[1, 0], [-1, 0], [0, 2], [0, -2]]).T
+        e_lowner_john = mut.AffineBall.MinimumVolumeCircumscribedEllipsoid(
+            points=points, rank_tol=1e-2)
+        e_lowner_john = mut.AffineBall.MinimumVolumeCircumscribedEllipsoid(
+            points=points)
+
     def test_affine_subspace(self):
         dut = mut.AffineSubspace()
 

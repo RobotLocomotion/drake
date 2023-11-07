@@ -146,6 +146,10 @@ void DefineGeometryOptimization(py::module m) {
         .def("B", &AffineBall::B, py_rvp::reference_internal, cls_doc.B.doc)
         .def("center", &AffineBall::center, py_rvp::reference_internal,
             cls_doc.center.doc)
+        .def_static("MinimumVolumeCircumscribedEllipsoid",
+            &AffineBall::MinimumVolumeCircumscribedEllipsoid, py::arg("points"),
+            py::arg("rank_tol") = 1e-6,
+            cls_doc.MinimumVolumeCircumscribedEllipsoid.doc)
         .def_static("MakeAxisAligned", &AffineBall::MakeAxisAligned,
             py::arg("radius"), py::arg("center"), cls_doc.MakeAxisAligned.doc)
         .def_static("MakeHypersphere", &AffineBall::MakeHypersphere,
