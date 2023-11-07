@@ -91,8 +91,8 @@ VectorX<bool> MaxCliqueSolverViaMip::SolveMaxClique(
 
 VectorX<bool> CalcMaxClique(const Eigen::SparseMatrix<bool>& adjacency_matrix,
                             const MaxCliqueOptions& options) {
-  DRAKE_THROW_UNLESS(adjacency_matrix.isApprox(adjacency_matrix.transpose()));
   DRAKE_THROW_UNLESS(adjacency_matrix.rows() == adjacency_matrix.cols());
+  DRAKE_THROW_UNLESS(adjacency_matrix.isApprox(adjacency_matrix.transpose()));
   return options.solver->SolveMaxClique(adjacency_matrix);
 }
 
