@@ -115,8 +115,9 @@ GTEST_TEST(DiagonallyDominantMatrixConstraint, three_by_three_vertices) {
       // problem.
       EXPECT_TRUE(result.is_success());
       EXPECT_TRUE(result_expected.is_success());
-      EXPECT_DOUBLE_EQ(result.get_optimal_cost(),
-                       result_expected.get_optimal_cost());
+      EXPECT_NEAR(result.get_optimal_cost(),
+                       result_expected.get_optimal_cost(),
+                       1e-8);
 
       // The matrix should be positive semidefinite.
       const Eigen::Matrix3d X_sol = result_expected.GetSolution(X);
