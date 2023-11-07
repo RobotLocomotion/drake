@@ -12,6 +12,7 @@ drake_cc_package_library(
     name = "planning",
     visibility = ["//visibility:public"],
     deps = [
+        ":approximate_convex_cover_builder_base",
         ":body_shape_description",
         ":collision_avoidance",
         ":collision_checker",
@@ -210,6 +211,17 @@ drake_cc_library(
     deps = [
         "@common_robotics_utilities",
     ],
+)
+
+drake_cc_library(
+    name = "approximate_convex_cover_builder_base",
+    srcs = ["approximate_convex_cover_builder_base.cc"],
+    hdrs = ["approximate_convex_cover_builder_base.h"],
+    interface_deps = [
+        "//geometry/optimization:convex_set",
+        ":visibility_graph"
+    ]
+
 )
 
 drake_cc_googletest(
