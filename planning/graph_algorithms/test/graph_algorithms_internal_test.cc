@@ -53,9 +53,9 @@ GTEST_TEST(SymmetrizeTripletList, TestSymmetrization) {
   EXPECT_TRUE(check_all_elts_in_v1_are_in_v2(entries_expected, entries));
 }
 
-GTEST_TEST(ComplemenatryGraph, Kn) {
+GTEST_TEST(ComplemenatryGraph, CompleteGraph) {
   for (const int n : {3, 8}) {
-    Eigen::SparseMatrix<bool> graph = Kn(n);
+    Eigen::SparseMatrix<bool> graph = internal::MakeCompleteGraph(n);
     Eigen::SparseMatrix<bool> complement_graph =
         internal::ComplementaryAdjacencyMatrix(graph);
     Eigen::SparseMatrix<bool> complement_graph_expected(n, n);
@@ -67,7 +67,7 @@ GTEST_TEST(ComplemenatryGraph, Kn) {
 }
 
 GTEST_TEST(ComplemenatryGraph, BullGraph) {
-  Eigen::SparseMatrix<bool> graph = BullGraph();
+  Eigen::SparseMatrix<bool> graph = internal::BullGraph();
   Eigen::SparseMatrix<bool> complement_graph =
       internal::ComplementaryAdjacencyMatrix(graph);
 
@@ -90,7 +90,7 @@ GTEST_TEST(ComplemenatryGraph, BullGraph) {
 }
 
 GTEST_TEST(ComplemenatryGraph, ButterflyGraph) {
-  Eigen::SparseMatrix<bool> graph = ButterflyGraph();
+  Eigen::SparseMatrix<bool> graph = internal::ButterflyGraph();
   Eigen::SparseMatrix<bool> complement_graph =
       internal::ComplementaryAdjacencyMatrix(graph);
 
@@ -111,7 +111,7 @@ GTEST_TEST(ComplemenatryGraph, ButterflyGraph) {
 }
 
 GTEST_TEST(ComplemenatryGraph, PetersenGraph) {
-  Eigen::SparseMatrix<bool> graph = PetersenGraph();
+  Eigen::SparseMatrix<bool> graph = internal::PetersenGraph();
   Eigen::SparseMatrix<bool> complement_graph =
       internal::ComplementaryAdjacencyMatrix(graph);
 
