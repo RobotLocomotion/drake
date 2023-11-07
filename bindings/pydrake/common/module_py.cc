@@ -285,6 +285,8 @@ discussion), use e.g.
   // Define `math` top-level module.
   py::module math = pydrake_top.def_submodule("math");
   // N.B. Docstring contained in `_math_extra.py`.
+  internal::DefineMathOperators(math);
+  internal::DefineMathMatmul(math);
   internal::DefineMathMonolith(math);
   ExecuteExtraPythonCode(math, true);
 
