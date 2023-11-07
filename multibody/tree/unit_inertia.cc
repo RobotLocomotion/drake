@@ -86,7 +86,7 @@ UnitInertia<T> UnitInertia<T>::AxiallySymmetric(const T& moment_parallel,
   //  function (so a const reference to a UnitVector is passed) or if the
   //  calling function passes a Vector3, the Vector3 is automatically converted
   //  to a UnitVector (throwing an exception if the Vector3 contains NaN or
-  //  infinite elements or its magnitude is increduluously small).
+  //  infinite elements or its magnitude is incredulously small).
   const bool is_bad_unit_vector =
       math::internal::WarnIfNotUnitVector(unit_vector, __func__);
   const Vector3<T> uvec = is_bad_unit_vector ?
