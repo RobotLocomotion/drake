@@ -19,21 +19,10 @@ constexpr double kToleranceUnitVectorNorm = 1.0E-14;
 // @param[in] tolerance_unit_vector_norm allowable tolerance for ‖unit_vector‖
 // from 1.0. The default value is kToleranceUnitVectorNorm.
 // @throws std::exception if ‖unit_vector‖ is not within tolerance of 1.0.
-// @retval ‖unit_vector‖² which is exactly 1.0 for a perfect unit_vector.
 // @note: When type T is symbolic::Expression, this function is a no-op that
-// does not throw an exception and returns 1.0.
-// @note Frequently ‖unit_vector‖ is exactly 1.0 (e.g., when unit_vector is an
-// x or y or z axis direction). If the retval ‖unit_vector‖² is not exactly 1.0,
-// the calling function should consider normalizing unit_vector even when it
-// passes this test so ‖unit_vector‖ is within ε ≈ 2.22E-16 of 1.0, e.g., as
-// @code{.cpp}
-//  using std::sqrt;
-//  const T mag_squared =
-//      math::internal::ThrowIfNotUnitVector(unit_vector, __func__);
-//  if (mag_squared != 1.0) unit_vector /= sqrt(mag_squared);
-// @endcode
+// does not throw an exception.
 template <typename T>
-T ThrowIfNotUnitVector(
+void ThrowIfNotUnitVector(
     const Vector3<T>& unit_vector, std::string_view function_name,
     double tolerance_unit_vector_norm = kToleranceUnitVectorNorm);
 
@@ -42,6 +31,7 @@ T ThrowIfNotUnitVector(
 // @param[in] unit_vector a vector which is allegedly a unit vector.
 // @param[in] function_name name of the function that appears in the message
 // written to the log file (if a warning message needs to be written).
+// @returns true if a warning is written to the log.
 // @note: This function is similar to ThrowIfNotUnitVector(), except all calls
 // to WarnIfNotUnitVector() use the default tolerance kToleranceUnitVectorNorm.
 // See ThrowIfNotUnitVector() for more information.
@@ -54,8 +44,8 @@ T ThrowIfNotUnitVector(
 //  per function. Once per process is not sufficient to give users enough
 //  feedback when they have non-unit vectors reaching multiple points of entry."
 template <typename T>
-T WarnIfNotUnitVector(const Vector3<T>& unit_vector,
-                      std::string_view function_name);
+bool WarnIfNotUnitVector(const Vector3<T>& unit_vector,
+                         std::string_view function_name);
 
 // Returns the unit vector in the direction of v or throws an exception if v
 // cannot be "safely" normalized.
