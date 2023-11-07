@@ -213,6 +213,13 @@ drake_py_unittest(
 )
 
 drake_py_unittest(
+    name = "sliders_test",
+    deps = [
+        ":visualization",
+    ],
+)
+
+drake_py_unittest(
     name = "triad_test",
     data = [
         "//multibody/benchmarks/acrobot:models",
@@ -228,13 +235,6 @@ drake_py_unittest(
     deps = [
         ":visualization",
         "//bindings/pydrake/common/test_utilities:numpy_compare_py",
-    ],
-)
-
-drake_py_unittest(
-    name = "visualization_test",
-    deps = [
-        ":visualization",
     ],
 )
 
