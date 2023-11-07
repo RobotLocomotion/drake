@@ -57,7 +57,6 @@ HPolyhedron Iris(const ConvexSets& obstacles, const Ref<const VectorXd>& sample,
   if (options.bounding_region) {
     DRAKE_DEMAND(options.bounding_region->ambient_dimension() == dim);
     P = P.Intersection(*options.bounding_region);
-    return P;
   }
 
   const int initial_constraints = P.A().rows();
