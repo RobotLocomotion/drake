@@ -96,18 +96,30 @@ GTEST_TEST(DiagonallyDominantMatrixConstraint, three_by_three_vertices) {
   auto solve_and_check = [&prog, &X](const Eigen::Vector3d& sol_expected,
                                      double tol) {
     const auto result = Solve(prog);
+    auto prog_expected = prog.Clone();
+    prog_expected->AddLinearEqualityConstraint(X(0, 1), sol_expected(0));
+    prog_expected->AddLinearEqualityConstraint(X(0, 2), sol_expected(1));
+    prog_expected->AddLinearEqualityConstraint(X(1, 2), sol_expected(2));
+    const auto result_expected = Solve(*prog_expected);
+
     if (result.get_solver_id() != SnoptSolver::id()) {
       // Do not check when we use SNOPT. It is known that our SnoptSolver
       // wrapper doesn't solve this problem correctly, see
       // https://github.com/RobotLocomotion/drake/pull/9382
       // TODO(hongkai.dai): fix the problem in SnoptSolver wrapper and enable
       // this test with Snopt.
+
+      // Check that expected solution is feasible and achieves the same cost as
+      // the optimal solution. This avoids the issue of the expected solution
+      // potentially being one of many possible solutions to the optimization
+      // problem.
       EXPECT_TRUE(result.is_success());
-      EXPECT_TRUE(CompareMatrices(result.GetSolution(VectorDecisionVariable<3>(
-                                      X(0, 1), X(0, 2), X(1, 2))),
-                                  sol_expected, tol));
+      EXPECT_TRUE(result_expected.is_success());
+      EXPECT_DOUBLE_EQ(result.get_optimal_cost(),
+                       result_expected.get_optimal_cost());
+
       // The matrix should be positive semidefinite.
-      const Eigen::Matrix3d X_sol = result.GetSolution(X);
+      const Eigen::Matrix3d X_sol = result_expected.GetSolution(X);
       Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> eigen_solver(X_sol);
       EXPECT_TRUE((eigen_solver.eigenvalues().array() >= -tol).all());
     }
