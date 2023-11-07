@@ -4,9 +4,10 @@
 namespace drake {
 namespace planning {
 namespace graph_algorithms {
+namespace internal {
 
 // Complete graph on n vertices
-Eigen::SparseMatrix<bool> Kn(const int n);
+Eigen::SparseMatrix<bool> MakeCompleteGraph(const int n);
 
 // Construct the bull graph
 // 0         4
@@ -30,6 +31,7 @@ Eigen::SparseMatrix<bool> ButterflyGraph();
 // labeled 5-9, with the top of the pentagon labelled 5 and the nodes labelled
 // counter-clockwise.
 Eigen::SparseMatrix<bool> PetersenGraph();
+}  // namespace internal
 }  // namespace graph_algorithms
 }  // namespace planning
 }  // namespace drake

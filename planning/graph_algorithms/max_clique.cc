@@ -70,7 +70,7 @@ VectorX<bool> MaxCliqueSolverViaMip::SolveMaxClique(
     solvers::SolverId solver_id = solvers::ChooseBestSolver(prog);
     solver = solvers::MakeSolver(solver_id);
   } catch (const std::exception&) {
-    // TODO(Alexandre.Amice) update the error message if other CalcMaxClique
+    // TODO(Alexandre.Amice) update the error message if other max clique
     // solvers based become available.
     throw std::runtime_error(
         "CalcMaxClique: There is no solver available that can solve the "
@@ -80,6 +80,7 @@ VectorX<bool> MaxCliqueSolverViaMip::SolveMaxClique(
         "them.");
   }
   solver->Solve(prog, initial_guess_, solver_options_, &result);
+  DRAKE_ASSERT(result.is_success());
 
   // Manually cast the return to a boolean to avoid round off errors from the
   // MIP solver
@@ -90,8 +91,8 @@ VectorX<bool> MaxCliqueSolverViaMip::SolveMaxClique(
 
 VectorX<bool> CalcMaxClique(const Eigen::SparseMatrix<bool>& adjacency_matrix,
                             const MaxCliqueOptions& options) {
-  DRAKE_DEMAND(adjacency_matrix.isApprox(adjacency_matrix.transpose()));
-  DRAKE_DEMAND(adjacency_matrix.rows() == adjacency_matrix.cols());
+  DRAKE_THROW_UNLESS(adjacency_matrix.isApprox(adjacency_matrix.transpose()));
+  DRAKE_THROW_UNLESS(adjacency_matrix.rows() == adjacency_matrix.cols());
   return options.solver->SolveMaxClique(adjacency_matrix);
 }
 

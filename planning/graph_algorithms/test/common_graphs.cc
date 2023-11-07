@@ -9,12 +9,13 @@
 namespace drake {
 namespace planning {
 namespace graph_algorithms {
+namespace internal {
 
 using Eigen::Dynamic;
 using Eigen::SparseMatrix;
 using Eigen::Triplet;
 
-Eigen::SparseMatrix<bool> Kn(const int n) {
+Eigen::SparseMatrix<bool> MakeCompleteGraph(const int n) {
   return (Eigen::MatrixXd::Ones(n, n) - Eigen::MatrixXd::Identity(n, n))
       .cast<bool>()
       .sparseView();
@@ -76,6 +77,7 @@ Eigen::SparseMatrix<bool> PetersenGraph() {
   return ret;
 }
 
+}  // namespace internal
 }  // namespace graph_algorithms
 }  // namespace planning
 }  // namespace drake
