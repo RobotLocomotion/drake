@@ -2,6 +2,7 @@ import pydrake.systems.sensors as mut
 
 import copy
 import gc
+import tempfile
 import unittest
 
 import numpy as np
@@ -100,6 +101,12 @@ class TestSensors(unittest.TestCase):
             self.assertGreaterEqual(t.kNumChannels, 1)
             self.assertIsNotNone(t.ChannelType)
             self.assertIn(t.kPixelFormat, mut.PixelFormat.__members__.values())
+
+        # Smoke test the pixel scalars.
+        mut.PixelScalar.k8U
+        mut.PixelScalar.k16I
+        mut.PixelScalar.k16U
+        mut.PixelScalar.k32F
 
     def test_image_types(self):
         # Test instantiations of Image<>.
@@ -516,6 +523,52 @@ class TestSensors(unittest.TestCase):
         dut.label_image_output_port()
         dut.body_pose_in_world_output_port()
         dut.image_time_output_port()
+
+    def test_image_file_format(self):
+        mut.ImageFileFormat.kJpeg
+        mut.ImageFileFormat.kPng
+        mut.ImageFileFormat.kTiff
+
+    def test_image_io_metadata(self):
+        dut = mut.ImageIo.Metadata(width=640)
+        self.assertEqual(dut.width, 640)
+        self.assertIn("width=640", repr(dut))
+
+    def test_image_io_get_set(self):
+        dut = mut.ImageIo()
+        self.assertEqual(dut.GetFileFormat(), None)
+        png = mut.ImageFileFormat.kPng
+        dut.SetFileFormat(png)
+        self.assertEqual(dut.GetFileFormat(), png)
+
+    def test_image_io_using_buffer(self):
+        orig_image = mut.ImageRgba8U(6, 4)
+
+        format = mut.ImageFileFormat.kPng
+        dut = mut.ImageIo(format=format)
+        data = dut.Save(image=orig_image)
+        self.assertGreater(len(data), 0)
+
+        meta = dut.LoadMetadata(buffer=data)
+        self.assertEqual((meta.width, meta.height), (6, 4))
+
+        new_image = dut.Load(buffer=data)
+        self.assertEqual((new_image.width(), new_image.height()), (6, 4))
+
+    def test_image_io_using_file(self):
+        orig_image = mut.ImageRgba8U(6, 4)
+
+        with tempfile.TemporaryDirectory() as temp:
+            path = f"{temp}/test_image_io_using_file.png"
+
+            dut = mut.ImageIo()
+            dut.Save(image=orig_image, path=path)
+
+            meta = dut.LoadMetadata(path=path)
+            self.assertEqual((meta.width, meta.height), (6, 4))
+
+            new_image = dut.Load(path=path)
+            self.assertEqual((new_image.width(), new_image.height()), (6, 4))
 
     def test_image_writer(self):
         writer = mut.ImageWriter()

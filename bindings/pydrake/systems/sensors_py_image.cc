@@ -30,6 +30,12 @@ void DefineSensorsImage(py::module m) {
       .value("kDepth", PixelFormat::kDepth)
       .value("kLabel", PixelFormat::kLabel);
 
+  py::enum_<PixelScalar>(m, "PixelScalar")
+      .value("k8U", PixelScalar::k8U)
+      .value("k16I", PixelScalar::k16I)
+      .value("k16U", PixelScalar::k16U)
+      .value("k32F", PixelScalar::k32F);
+
   {
     // Expose image types and their traits.
     py::enum_<PixelType> pixel_type(m, "PixelType");
