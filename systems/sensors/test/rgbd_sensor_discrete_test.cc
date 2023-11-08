@@ -11,13 +11,40 @@ namespace sensors {
 namespace {
 
 using geometry::SceneGraph;
+using geometry::render::ColorRenderCamera;
 using geometry::render::DepthRenderCamera;
 using math::RigidTransformd;
 using std::make_unique;
 using std::vector;
 
 // Tests that the discrete sensor is properly constructed.
-GTEST_TEST(RgbdSensorDiscrete, Construction) {
+GTEST_TEST(RgbdSensorDiscrete, Constructor) {
+  const ColorRenderCamera color_camera(
+      {"render", {640, 480, M_PI / 4}, {0.1, 10.0}, {}});
+  const DepthRenderCamera depth_camera(
+      {"render", {640, 480, M_PI / 4}, {0.1, 10.0}, {}}, {0.1, 10});
+  const double fps = 10;
+  const double capture_offset = 0.001;
+  const bool render_label_image = true;
+
+  const RgbdSensorDiscrete sensor(
+      SceneGraph<double>::world_frame_id(), RigidTransformd::Identity(), fps,
+      capture_offset, color_camera, depth_camera, render_label_image);
+  EXPECT_EQ(sensor.query_object_input_port().get_name(), "geometry_query");
+  EXPECT_EQ(sensor.color_image_output_port().get_name(), "color_image");
+  EXPECT_EQ(sensor.depth_image_32F_output_port().get_name(), "depth_image_32f");
+  EXPECT_EQ(sensor.depth_image_16U_output_port().get_name(), "depth_image_16u");
+  EXPECT_EQ(sensor.label_image_output_port().get_name(), "label_image");
+  EXPECT_EQ(sensor.body_pose_in_world_output_port().get_name(),
+            "body_pose_in_world");
+  EXPECT_EQ(sensor.fps(), fps);
+  EXPECT_EQ(sensor.capture_offset(), capture_offset);
+  EXPECT_NEAR(sensor.period(), 1.0 / fps, 1e-12);
+}
+
+// Tests that the discrete sensor is properly constructed, using the old
+// constructor that uses an RgbdSensor.
+GTEST_TEST(RgbdSensorDiscrete, OldConstructor) {
   const DepthRenderCamera depth_camera(
       {"render", {640, 480, M_PI / 4}, {0.1, 10.0}, {}}, {0.1, 10});
   const double kPeriod = 0.1;
@@ -41,6 +68,7 @@ GTEST_TEST(RgbdSensorDiscrete, Construction) {
   // Confirm that the period was passed into the ZOH correctly. If the ZOH
   // reports the expected period, we rely on it to do the right thing.
   EXPECT_EQ(sensor.period(), kPeriod);
+  EXPECT_NEAR(sensor.fps(), 1.0 / kPeriod, 1e-12);
 }
 
 // Test that the diagram's internal architecture is correct and, likewise,
