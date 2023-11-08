@@ -473,6 +473,34 @@ void AddJointActuatorFromSpecification(
           .set_default_gear_ratio(
               joint_spec.Element()->Get<double>("drake:gear_ratio"));
     }
+
+    // Parse and add the optional drake:controller_gains parameter.
+    if (joint_spec.Element()->HasElement("drake:controller_gains")) {
+      sdf::ElementPtr controller_gains =
+          joint_spec.Element()->GetElement("drake:controller_gains");
+
+      const bool has_p = controller_gains->HasAttribute("p");
+      const bool has_d = controller_gains->HasAttribute("d");
+
+      if (!has_p) {
+        std::string message =
+            "<drake:controller_gains>: Unable to find the 'p' attribute.";
+        diagnostic.Error(controller_gains, std::move(message));
+      }
+      if (!has_d) {
+        std::string message =
+            "<drake:controller_gains>: Unable to find the 'd' attribute.";
+        diagnostic.Error(controller_gains, std::move(message));
+      }
+
+      if (has_p && has_d) {
+        const double p = controller_gains->Get<double>("p");
+        const double d = controller_gains->Get<double>("d");
+
+        plant->get_mutable_joint_actuator(actuator.index())
+            .set_controller_gains({p, d});
+      }
+    }
   }
   if (joint_spec.Axis(1) != nullptr) {
     std::string message = fmt::format(
@@ -646,6 +674,7 @@ bool AddJointFromSpecification(
     "child",
     "drake:rotor_inertia",
     "drake:gear_ratio",
+    "drake:controller_gains",
     "parent",
     "pose",
     "screw_thread_pitch"};
