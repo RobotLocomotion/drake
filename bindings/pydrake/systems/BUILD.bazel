@@ -156,7 +156,15 @@ drake_pybind_library(
         "//bindings/pydrake/common:type_pack",
         "//bindings/pydrake/common:value_pybind",
     ],
-    cc_srcs = ["sensors_py.cc"],
+    cc_srcs = [
+        "sensors_py.h",
+        "sensors_py.cc",
+        "sensors_py_camera_config.cc",
+        "sensors_py_image.cc",
+        "sensors_py_image_io.cc",
+        "sensors_py_lcm.cc",
+        "sensors_py_rgbd.cc",
+    ],
     package_info = PACKAGE_INFO,
     py_deps = [
         ":framework_py",
