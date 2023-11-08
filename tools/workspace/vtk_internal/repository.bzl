@@ -144,6 +144,7 @@ vtk_internal_repository = repository_rule(
         "patches": attr.label_list(
             default = [
                 "@drake//tools/workspace/vtk_internal:patches/common_core_noutf8.patch",  # noqa
+                "@drake//tools/workspace/vtk_internal:patches/common_core_strstream_freeze.patch",  # noqa
                 "@drake//tools/workspace/vtk_internal:patches/common_core_version.patch",  # noqa
                 "@drake//tools/workspace/vtk_internal:patches/common_core_vs_data_model_cycle.patch",  # noqa
                 "@drake//tools/workspace/vtk_internal:patches/common_core_warnings.patch",  # noqa

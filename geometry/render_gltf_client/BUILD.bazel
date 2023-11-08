@@ -98,11 +98,8 @@ drake_cc_library(
         "//geometry/render:render_camera",
         "//geometry/render:render_engine",
         "//systems/sensors:image",
-        "//systems/sensors:vtk_image_reader_writer",
+        "//systems/sensors:image_io",
         "@picosha2_internal//:picosha2",
-        "@vtk_internal//:vtkCommonCore",
-        "@vtk_internal//:vtkCommonDataModel",
-        "@vtk_internal//:vtkIOImage",
     ],
 )
 

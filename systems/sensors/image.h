@@ -2,6 +2,7 @@
 
 #include <limits>
 #include <utility>
+#include <variant>
 #include <vector>
 
 #include "drake/common/drake_assert.h"
@@ -57,6 +58,20 @@ using ImageExpr DRAKE_DEPRECATED(
     "ImageExpr is deprecated because kExpr is no longer a supported PixelType."
     "There is no direct replacement available, but Eigen::Array<Expression> "
     "might be a suitable alternative.") = Image<kInternalPixelTypeExpr>;
+
+/// A sum type of all built-in images types.
+using ImageAny = std::variant<
+    // Keep this list alpha-sorted:
+    // clang-format off
+    ImageBgr8U,
+    ImageBgra8U,
+    ImageDepth16U,
+    ImageDepth32F,
+    ImageGrey8U,
+    ImageRgb8U,
+    ImageRgba8U,
+    ImageLabel16I>;
+// clang-format on
 
 /// Simple data format for Image. For the complex calculation with the image,
 /// consider converting this to other libaries' Matrix data format, i.e.,
