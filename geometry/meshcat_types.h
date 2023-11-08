@@ -386,12 +386,6 @@ struct SetCameraTargetData {
   MSGPACK_DEFINE_MAP(type, value);
 };
 
-struct SetCameraPoseCallback {
-  std::string type{"set_render_callback"};
-  std::string callback;
-  MSGPACK_DEFINE_MAP(type, callback);
-};
-
 struct SetTransformData {
   std::string type{"set_transform"};
   std::string path;
@@ -482,13 +476,55 @@ struct Gamepad {
   MSGPACK_DEFINE_MAP(index, button_values, axes);
 };
 
+// This serves as a poor man's union. Drake uses the ability to specify meshcat
+// callbacks to dispatch bespoke json objects which get deserialized into
+// this struct. We support the following message purpose:
+//
+//   - Button clicks
+//     - Fields
+//       - type = "button"
+//       - name = name of the button.
+//     - Semantics
+//       - If the name is unrecognized, no action is taken.
+//       - See Meshcat::AddButton()
+//   - Slider changes
+//     - Fields
+//       - type = "slider"
+//       - name = name of slider
+//       - value = value of slider
+//     - Semantics
+//       - If the name is unrecognized or there is no value, no action is taken.
+//         - If the value is missing, a warning is to the log.
+//       - See Meshcat::AddSlider().
+//   - Gamepad operations
+//     - Fields
+//       - type = "gamepad"
+//       - gamepad = the state of the gamepad
+//     - Semantics
+//       - if the gamepad data isn't provided, no action is taken and a warning
+//         is written to the log.
+//       - See documentation on Gamepad for source of the message.
+//    - Tracking meshcat camera pose
+//      - Fields
+//        - type = "camera_pose"
+//        - camera_pose = A flattened, column-major homogeneous transform
+//                        matrix.
+//        - is_perspective = true if the camera_pose comes from a perspective
+//                           projection.
+//     - Semantics
+//       - If camera_pose hasn't defined 16 values or there is no value given
+//         for is_perspective, no action is taken and a warning is logged.
+//       - If the flattened array doesn't have a valid rotation matrix in its
+//         unflattened upper-left 3x3 sub-matrix, it throws.
+//       - See Drake's meshcat.html for the source of the message.
 struct UserInterfaceEvent {
   std::string type;
   std::string name;
   std::optional<double> value;
   std::optional<internal::Gamepad> gamepad;
   std::vector<double> camera_pose;
-  MSGPACK_DEFINE_MAP(type, name, value, gamepad, camera_pose);
+  std::optional<bool> is_perspective{};
+  MSGPACK_DEFINE_MAP(type, name, value, gamepad, camera_pose, is_perspective);
 };
 
 }  // namespace internal

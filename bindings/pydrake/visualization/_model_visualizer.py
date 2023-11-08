@@ -125,7 +125,11 @@ class ModelVisualizer:
         self._diagram = None  # This will be a planning.RobotDiagram.
         self._sliders = None
         self._context = None
-        self._camera_body = None
+
+        # State necessary for self._render_if_necessary().
+        self.last_camera_time = time.time()
+        self.last_X_WC = None
+        self.last_q = None
 
     def _check_rep(self, *, finalized):
         """
@@ -277,13 +281,6 @@ class ModelVisualizer:
                     opacity=self._triad_opacity,
                 )
 
-        # Add a model that will provide rgbd pose sliders automatically when we
-        # add JointSliders later on.
-        if self._show_rgbd_sensor:
-            self._builder.parser().AddModels(url=(
-                "package://drake/bindings/pydrake/visualization/"
-                "_camera_rig.sdf"))
-
         self._builder.plant().Finalize()
 
         # (Re-)initialize the meshcat instance, creating one if needed.
@@ -312,12 +309,12 @@ class ModelVisualizer:
             builder=self._builder.builder(),
             meshcat=self._meshcat)
 
-        # Add a render camera so we can show role=perception images.
+        # Add a render camera so we can show role=perception images. The
+        # sensor is affixed to the world frame and we'll modify that pose
+        # below.
         if self._show_rgbd_sensor:
-            self._meshcat.SetCameraTracking(on=True)
             camera_config = CameraConfig(width=1440, height=1080)
             camera_config.name = "preview"
-            camera_config.X_PB.base_frame = "_camera_rig::_floating_camera"
             camera_config.z_far = 3  # Show 3m of frustum.
             camera_config.fps = 1.0  # Ignored -- we're not simulating.
             is_unit_test = "TEST_SRCDIR" in os.environ
@@ -325,13 +322,14 @@ class ModelVisualizer:
             ApplyCameraConfig(
                 config=camera_config,
                 builder=self._builder.builder())
-            camera_sensor = self._builder.builder().GetSubsystemByName(
+            self._camera_sensor = self._builder.builder().GetSubsystemByName(
                 "rgbd_sensor_preview")
             camera_publisher = self._builder.builder().GetSubsystemByName(
                 "LcmPublisherSystem(DRAKE_RGBD_CAMERA_IMAGES_preview)")
             # Export the preview camera image output port for later use.
             self._builder.builder().ExportOutput(
-                camera_sensor.GetOutputPort("color_image"), "preview_image")
+                self._camera_sensor.GetOutputPort("color_image"),
+                "preview_image")
             # Disable LCM image transmission. It has a non-trivial cost, and
             # at the moment Meldis can't display LCM images anyway.
             self._builder.builder().RemoveSystem(camera_publisher)
@@ -361,10 +359,6 @@ class ModelVisualizer:
         self._diagram = self._builder.Build()
         self._builder = None
         self._context = self._diagram.CreateDefaultContext()
-
-        if self._show_rgbd_sensor:
-            self._camera_body = (self._diagram.plant().
-                                 GetBodyByName("_floating_camera"))
 
         # We don't just test 'position' because NumPy does weird things with
         # the truth values of arrays.
@@ -445,6 +439,41 @@ class ModelVisualizer:
         # Finalize the rest of the systems and widgets.
         self.Finalize()
 
+    def _render_if_necessary(self):
+        """This evaluates the state of the camera and plant and possibly
+        triggers a rendering.
+        Updates the rendering as fast as it can (up to a 16 Hz limit) based
+        on the need to render.
+        """
+        if time.time() > (self.last_camera_time + 0.0625):
+            self.last_camera_time = time.time()
+            X_WC = self._meshcat.GetTrackedCameraPose()
+            need_render = False
+            if X_WC is not None:
+                # Rendering is only possible if we have *some*
+                # transform from meshcat.
+                if (self.last_X_WC is None
+                        or not self.last_X_WC.IsExactlyEqualTo(X_WC)):
+                    # Camera pose change can trigger render.
+                    self._camera_sensor.SetPoseInParent(
+                        self._camera_sensor
+                            .GetMyContextFromRoot(self._context),
+                        X_WC)
+                    need_render = True
+                if not need_render:
+                    # Plant state change can trigger render.
+                    curr_q = (self._diagram
+                                  .plant()
+                                  .GetPositions(
+                                      self._diagram.plant()
+                                      .GetMyContextFromRoot(self._context)))
+                    need_render = (self.last_q is None
+                                   or (curr_q != self.last_q).any())
+                    self.last_q = curr_q
+                if need_render:
+                    (self._diagram.GetOutputPort("preview_image")
+                         .Eval(self._context))
+
     def Run(self, position=None, loop_once=False):
         """
         Runs the model. If Finalize() hasn't already been explicitly called
@@ -486,8 +515,6 @@ class ModelVisualizer:
             logging.getLogger("drake").info(
                 f"Click '{stop_button_name}' or press Esc to quit")
 
-        last_camera_time = 0
-        last_q = None
         try:
             self._meshcat.AddButton(stop_button_name, "Escape")
 
@@ -497,28 +524,8 @@ class ModelVisualizer:
                 return self._meshcat.GetButtonClicks(button_name) > 0
 
             while True:
-                # Set the *maximum* render rate to a slower 16 Hz, in contrast
-                # to the more general 32 Hz. However, even then, we'll only
-                # render if the plant's state has changed since we last
-                # rendered.
                 if self._show_rgbd_sensor:
-                    if time.time() > (last_camera_time + 0.0625):
-                        plant = self._diagram.plant()
-                        plant_context = plant.GetMyContextFromRoot(
-                            self._context)
-                        last_camera_time = time.time()
-                        # The sliders for _floating_camera are going to fight
-                        # us. So, *always* grab the current camera position
-                        # and set it in the state before pulling q.
-                        X_WC = self._meshcat.GetTrackedCameraPose()
-                        self._diagram.plant().SetFreeBodyPose(
-                            plant_context, self._camera_body, X_WC)
-                        # Now only render if the plant's state has changed.
-                        curr_q = plant.GetPositions(plant_context)
-                        if last_q is None or (curr_q != last_q).any():
-                            self._diagram.GetOutputPort("preview_image").Eval(
-                                self._context)
-                            last_q = curr_q
+                    self._render_if_necessary()
                 time.sleep(1 / 32.0)
                 if has_clicks(self._reload_button_name):
                     self._meshcat.DeleteButton(stop_button_name)
@@ -528,8 +535,6 @@ class ModelVisualizer:
                     self._meshcat.AddButton(stop_button_name, "Escape")
                 q = self._sliders.get_output_port().Eval(
                     self._sliders.GetMyContextFromRoot(self._context))
-                # May be we call _reload(); we have to get the plant and its
-                # context from the source.
                 self._diagram.plant().SetPositions(
                     self._diagram.plant().GetMyContextFromRoot(self._context),
                     q)

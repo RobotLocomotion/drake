@@ -182,6 +182,20 @@
       status_dom.textContent = "No connection to server. Attempting to reconnect...";
     }
 
+    const broadcast_camera = urlParams.get('broadcast_camera');
+    if (broadcast_camera) {
+      viewer.set_render_callback(
+        `(viewer) => {
+          if (viewer.connection.readyState == 1 /* OPEN */) {
+            viewer.connection.send(msgpack.encode({
+              'type': 'camera_pose',
+              'camera_pose': viewer.camera.matrixWorld.elements,
+              'is_perspective': viewer.is_perspective()
+            }));
+          }
+        }`);
+    }
+
     url = location.toString();
     url = url.replace("http://", "ws://")
     url = url.replace("https://", "wss://")

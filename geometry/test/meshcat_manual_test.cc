@@ -554,6 +554,38 @@ Open up your browser to the URL above.
 
   MaybePauseForUser();
 
+  // NOTE: This test bails out of the program early if any of the stages fail.
+
+  std::cout << "\nNow we'll track camera broadcasting. The default URL should "
+            << "mean no camera positions are broadcast. Confirming now...";
+  if (meshcat->GetTrackedCameraPose() != std::nullopt) {
+    std::cout << "\n\n   !!! ERROR !!! Tracked camera pose reported!\n";
+    return 1;
+  }
+  std::cout << "confirmed!\n\n";
+  std::cout << "Now open a new browser window and paste the following URL:\n"
+            << "    " << meshcat->web_url() << "?broadcast_camera=on\n"
+            << "After it's loaded ";
+
+  MaybePauseForUser();
+
+  if (meshcat->GetTrackedCameraPose() == std::nullopt) {
+    std::cout << "\n   !!! ERROR !!! No camera positions has been reported\n";
+    return 1;
+  }
+  std::cout << "The new session has successfully broadcast its camera position "
+            << "to Drake.\n"
+            << "Finally, close the broadcasting window. We should no longer "
+            << "have any tracked camera pose. Close the windows and ";
+
+  MaybePauseForUser();
+
+  if (meshcat->GetTrackedCameraPose() != std::nullopt) {
+    std::cout << "   !!! ERROR !!! Tracked camera pose reported!\n";
+    return 1;
+  }
+  std::cout << "   Confirmed!\n\n";
+
   std::cout << "Exiting..." << std::endl;
   return 0;
 }
