@@ -33,6 +33,8 @@ namespace sensors {
  have done so.  */
 //@{
 
+// TODO(jwnimmer-tri) Deprecate these in favor of the full-fledged ImageIo.
+
 /** Writes the color (8-bit, RGBA) image data to disk.  */
 void SaveToPng(const ImageRgba8U& image, const std::string& file_path);
 

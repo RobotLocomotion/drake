@@ -1,0 +1,121 @@
+[vtk] Stop using exception-unsafe strstream::freeze semantics
+
+We should work to upstream this patch.
+
+--- Common/Core/Testing/Cxx/TestOStreamWrapper.cxx
++++ Common/Core/Testing/Cxx/TestOStreamWrapper.cxx
+@@ -28,8 +28,7 @@ int TestOStreamWrapper(int, char*[])
+   std::string s = "hello, world";
+   vtkOStrStreamWrapper vtkmsg;
+   vtkmsg << s << ": " << 1;
+-  actual = vtkmsg.str();
+-  vtkmsg.rdbuf()->freeze(0);
++  actual = vtkmsg.c_str();
+   if (actual != expect)
+   {
+     fprintf(stderr, "Expected '%s' but got '%s'\n", expect.c_str(), actual.c_str());
+
+--- Common/Core/vtkLogger.h
++++ Common/Core/vtkLogger.h
+@@ -470,8 +470,7 @@ private:
+     vtkOStrStreamWrapper::UseEndl(endl);                                                           \
+     vtkOStrStreamWrapper vtkmsg;                                                                   \
+     vtkmsg << "" x;                                                                                \
+-    vtkLogger::Log(level, __FILE__, __LINE__, vtkmsg.str());                                       \
+-    vtkmsg.rdbuf()->freeze(0);                                                                     \
++    vtkLogger::Log(level, __FILE__, __LINE__, vtkmsg.c_str());                                     \
+   }
+ #define vtkLog(verbosity_name, x) vtkVLog(vtkLogger::VERBOSITY_##verbosity_name, x)
+ ///@}
+@@ -504,8 +503,7 @@ private:
+     vtkOStrStreamWrapper::UseEndl(endl);                                                           \
+     vtkOStrStreamWrapper vtkmsg;                                                                   \
+     vtkmsg << "" x;                                                                                \
+-    vtkLogger::Log(level, __FILE__, __LINE__, vtkmsg.str());                                       \
+-    vtkmsg.rdbuf()->freeze(0);                                                                     \
++    vtkLogger::Log(level, __FILE__, __LINE__, vtkmsg.c_str());                                     \
+   }
+ #define vtkLogIf(verbosity_name, cond, x) vtkVLogIf(vtkLogger::VERBOSITY_##verbosity_name, cond, x)
+ ///@}
+
+--- Common/Core/vtkOStrStreamWrapper.cxx
++++ Common/Core/vtkOStrStreamWrapper.cxx
+@@ -53,6 +53,18 @@ char* vtkOStrStreamWrapper::str()
+   return this->Result;
+ }
+ 
++//------------------------------------------------------------------------------
++char* vtkOStrStreamWrapper::c_str()
++{
++  if (!this->Result)
++  {
++    std::string s = static_cast<ostringstream*>(&this->ostr)->str();
++    this->Result = new char[s.length() + 1];
++    strcpy(this->Result, s.c_str());
++  }
++  return this->Result;
++}
++
+ //------------------------------------------------------------------------------
+ vtkOStrStreamWrapper* vtkOStrStreamWrapper::rdbuf()
+ {
+
+--- Common/Core/vtkOStrStreamWrapper.h
++++ Common/Core/vtkOStrStreamWrapper.h
+@@ -54,6 +54,13 @@ public:
+    */
+   char* str();
+ 
++  /**
++   * Get the string that has been written.  This call does NOT transfer
++   * ownership of the returned memory to the caller. (This is a VTK-specific
++   * addition to the strstream API; this was NOT part of C++98.)
++   */
++  char* c_str();
++
+   /**
+    * Returns a pointer to this class.  This is a hack so that the old
+    * ostrstream's s.rdbuf()->freeze(0) can work.
+
+--- Common/Core/vtkSetGet.h
++++ Common/Core/vtkSetGet.h
+@@ -792,8 +792,7 @@ VTK_ABI_NAMESPACE_END
+       vtkOStrStreamWrapper vtkmsg;                                                                 \
+       vtkmsg << "" x;                                                                              \
+       std::string _filename = vtksys::SystemTools::GetFilenameName(__FILE__);                      \
+-      vtkOutputWindowDisplayGenericWarningText(_filename.c_str(), __LINE__, vtkmsg.str());         \
+-      vtkmsg.rdbuf()->freeze(0);                                                                   \
++      vtkOutputWindowDisplayGenericWarningText(_filename.c_str(), __LINE__, vtkmsg.c_str());       \
+     }                                                                                              \
+   } while (false)
+ 
+@@ -841,8 +840,7 @@ VTK_ABI_NAMESPACE_END
+       }                                                                                            \
+       vtkmsg << "" x;                                                                              \
+       std::string _filename = vtksys::SystemTools::GetFilenameName(__FILE__);                      \
+-      vtkOutputWindowDisplayErrorText(_filename.c_str(), __LINE__, vtkmsg.str(), _object);         \
+-      vtkmsg.rdbuf()->freeze(0);                                                                   \
++      vtkOutputWindowDisplayErrorText(_filename.c_str(), __LINE__, vtkmsg.c_str(), _object);       \
+       vtkObject::BreakOnError();                                                                   \
+     }                                                                                              \
+   } while (false)
+@@ -873,8 +871,7 @@ VTK_ABI_NAMESPACE_END
+       }                                                                                            \
+       vtkmsg << "" x;                                                                              \
+       std::string _filename = vtksys::SystemTools::GetFilenameName(__FILE__);                      \
+-      vtkOutputWindowDisplayWarningText(_filename.c_str(), __LINE__, vtkmsg.str(), _object);       \
+-      vtkmsg.rdbuf()->freeze(0);                                                                   \
++      vtkOutputWindowDisplayWarningText(_filename.c_str(), __LINE__, vtkmsg.c_str(), _object);     \
+     }                                                                                              \
+   } while (false)
+ 
+@@ -910,8 +907,7 @@ VTK_ABI_NAMESPACE_END
+       }                                                                                            \
+       vtkmsg << "" x;                                                                              \
+       std::string _filename = vtksys::SystemTools::GetFilenameName(__FILE__);                      \
+-      vtkOutputWindowDisplayDebugText(_filename.c_str(), __LINE__, vtkmsg.str(), _object);         \
+-      vtkmsg.rdbuf()->freeze(0);                                                                   \
++      vtkOutputWindowDisplayDebugText(_filename.c_str(), __LINE__, vtkmsg.c_str(), _object);       \
+     }                                                                                              \
+   } while (false)
+ #endif
