@@ -252,8 +252,8 @@ class TestGeometryVisualizers(unittest.TestCase):
         self.assertGreater(len(packed), 0)
 
         # Camera tracking.
-        meshcat.SetCameraTracking(on=False)
-        self.assertIsInstance(meshcat.GetTrackedCameraPose(), RigidTransform)
+        # The pose is None because no meshcat session has broadcast its pose.
+        self.assertIsNone(meshcat.GetTrackedCameraPose())
 
     def test_meshcat_animation(self):
         animation = mut.MeshcatAnimation(frames_per_second=64)

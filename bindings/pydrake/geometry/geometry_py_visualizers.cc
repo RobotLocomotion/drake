@@ -274,8 +274,6 @@ void DoScalarIndependentDefinitions(py::module m) {
             py::arg("target_in_world"), cls_doc.SetCameraTarget.doc)
         .def("SetCameraPose", &Class::SetCameraPose, py::arg("camera_in_world"),
             py::arg("target_in_world"), cls_doc.SetCameraPose.doc)
-        .def("SetCameraTracking", &Class::SetCameraTracking, py::arg("on"),
-            cls_doc.SetCameraTracking.doc)
         .def("GetTrackedCameraPose", &Class::GetTrackedCameraPose,
             cls_doc.GetTrackedCameraPose.doc)
         .def("SetTransform",

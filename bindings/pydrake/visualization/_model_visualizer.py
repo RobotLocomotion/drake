@@ -314,7 +314,6 @@ class ModelVisualizer:
 
         # Add a render camera so we can show role=perception images.
         if self._show_rgbd_sensor:
-            self._meshcat.SetCameraTracking(on=True)
             camera_config = CameraConfig(width=1440, height=1080)
             camera_config.name = "preview"
             camera_config.X_PB.base_frame = "_camera_rig::_floating_camera"
@@ -511,14 +510,15 @@ class ModelVisualizer:
                         # us. So, *always* grab the current camera position
                         # and set it in the state before pulling q.
                         X_WC = self._meshcat.GetTrackedCameraPose()
-                        self._diagram.plant().SetFreeBodyPose(
-                            plant_context, self._camera_body, X_WC)
-                        # Now only render if the plant's state has changed.
-                        curr_q = plant.GetPositions(plant_context)
-                        if last_q is None or (curr_q != last_q).any():
-                            self._diagram.GetOutputPort("preview_image").Eval(
-                                self._context)
-                            last_q = curr_q
+                        if X_WC is not None:
+                            self._diagram.plant().SetFreeBodyPose(
+                                plant_context, self._camera_body, X_WC)
+                            # Now only render if the plant's state has changed.
+                            curr_q = plant.GetPositions(plant_context)
+                            if last_q is None or (curr_q != last_q).any():
+                                self._diagram.GetOutputPort("preview_image").Eval(
+                                    self._context)
+                                last_q = curr_q
                 time.sleep(1 / 32.0)
                 if has_clicks(self._reload_button_name):
                     self._meshcat.DeleteButton(stop_button_name)

@@ -386,12 +386,6 @@ struct SetCameraTargetData {
   MSGPACK_DEFINE_MAP(type, value);
 };
 
-struct SetCameraPoseCallback {
-  std::string type{"set_render_callback"};
-  std::string callback;
-  MSGPACK_DEFINE_MAP(type, callback);
-};
-
 struct SetTransformData {
   std::string type{"set_transform"};
   std::string path;
@@ -487,8 +481,10 @@ struct UserInterfaceEvent {
   std::string name;
   std::optional<double> value;
   std::optional<internal::Gamepad> gamepad;
+  // The camera-pose variant is defined in meshcat.html in the render callback.
   std::vector<double> camera_pose;
-  MSGPACK_DEFINE_MAP(type, name, value, gamepad, camera_pose);
+  bool is_perspective{};
+  MSGPACK_DEFINE_MAP(type, name, value, gamepad, camera_pose, is_perspective);
 };
 
 }  // namespace internal
