@@ -1214,40 +1214,21 @@ GTEST_TEST(MeshcatTest, SetCameraPose) {
   }
 }
 
-/* This combines tests for turning camera tracking on and off as well as getting
- the tracked camera position. */
 GTEST_TEST(MeshcatTest, CameraTracking) {
   Meshcat meshcat;
 
-  // With configuration off, it should return identity.
-  EXPECT_TRUE(meshcat.GetTrackedCameraPose().IsExactlyIdentity());
+  // No message received means no pose.
+  EXPECT_EQ(meshcat.GetTrackedCameraPose(), std::nullopt);
 
-  // Turning configuration on.
-  meshcat.SetCameraTracking(true);
-  // Note: we're not attempting to test the actual content of the sent message;
-  // we're just confirming a message gets sent.
-  // The message contains a callback in a string and the multiple layers of
-  // strings confounds the pass-as-command-line-argument method of the testing
-  // infrastructure. Ultimately, whether the message works should be determined
-  // by calling model_visualizer with --show_rgbd_sensor.
-  CheckWebsocketCommand(meshcat, {}, 1, {});
-
-  // With configuration on, but no pose data received, it should still return
-  // the identity.
-  EXPECT_TRUE(meshcat.GetTrackedCameraPose().IsExactlyIdentity());
-
-  // Now we send meshcat the message.
-  const char* const message = R"""({
-    "type": "camera_pose",
-    "camera_pose": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1, 2, 3, 1]
-  })""";
-  CheckWebsocketCommand(meshcat, message, {}, {});
-
-  // Enough of a test to show that the sent message is affecting the output.
-  // The correctness of the conversion from array to RigidTransform is easily
-  // observable by running model_visualizer with --show_rgbd_sensor.
-  EXPECT_TRUE(CompareMatrices(meshcat.GetTrackedCameraPose().translation(),
-                              Vector3d(1, -3, 2)));
+  // TODO(SeanCurtis-TRI): There is more to test:
+  //  1. A valid message (is_perspective=true) defines the camera pose.
+  //  2. An invalid message (is_perspective=false) reverts the pose to nullopt.
+  //  3. Disconnecting the port that is defining values resets the pose to
+  //     nullopt.
+  // The problem is that the CheckWebsocketCommand() creates the websocket
+  // connection and disconnects it upon returning. So, I can't really test
+  // those cases. We need a persistent connection that only disconnects when
+  // we ask it to (to test number three).
 }
 
 GTEST_TEST(MeshcatTest, StaticHtml) {

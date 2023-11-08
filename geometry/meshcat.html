@@ -182,6 +182,39 @@
       status_dom.textContent = "No connection to server. Attempting to reconnect...";
     }
 
+    const tracked_camera = urlParams.get('tracked_camera');
+    if (tracked_camera) {
+      viewer.set_render_callback(
+        `(function() {
+            var matrix = null;
+            var perspective_state = null;
+            return function() {
+              if (this.connection.readyState == 1 /* OPEN */) {
+                let need_message = false;
+                if (perspective_state !== this.is_perspective()) {
+                    // Changes in projection matrix require a message.
+                    need_message = true;
+                    perspective_state = this.is_perspective();
+                }
+                var new_matrix = Array.from(this.camera.matrixWorld.elements);
+                if (matrix === null || !(new_matrix.length === matrix.length &&
+                    new_matrix.every((x, i) => x === matrix[i]))) {
+                    // First matrix, or different matrix requires a message.
+                    need_message = true;
+                }
+                if (need_message) {
+                  matrix = new_matrix;
+                  this.connection.send(msgpack.encode({
+                    'type': 'camera_pose',
+                    'camera_pose': matrix,
+                    'is_perspective': this.is_perspective()
+                  }));
+                }
+              }
+            }
+         })()`);
+    }
+
     url = location.toString();
     url = url.replace("http://", "ws://")
     url = url.replace("https://", "wss://")
