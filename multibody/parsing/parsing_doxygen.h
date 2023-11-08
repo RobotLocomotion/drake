@@ -179,6 +179,7 @@ Here is the full list of custom elements:
 - @ref tag_drake_linear_bushing_rpy
 - @ref tag_drake_member
 - @ref tag_drake_mesh_resolution_hint
+- @ref tag_drake_mimic
 - @ref tag_drake_mu_dynamic
 - @ref tag_drake_mu_static
 - @ref tag_drake_parent
@@ -676,6 +677,21 @@ limits, smaller values will select shorter edge lengths and a finer mesh, larger
 values will select longer edge lengths and a coarser mesh.
 
 @see @ref tag_drake_proximity_properties, @ref hug_properties
+
+@subsection tag_drake_mimic drake:mimic
+
+- SDFormat path: `//model/joint/drake:mimic`
+- URDF path: unsupported
+- Syntax: Attributes `joint` (string), `multiplier` (double) and `offset` (double)
+
+@subsubsection tag_drake_mimic_semantics Semantics
+
+This tag has equivalent semantics to those of the native URDF <mimic> tag. If
+`q0` is the position of the `<joint>` and `q1` the position of the joint
+specified by the `joint` attribute, the two joints are constrained to enforce
+the relation: `q0 = multiplier * q1 + offset`. The units of `multiplier` and
+`offset` depend on the type of joints specified. This tag only supports single
+degree of freedom joints that exist in the same model instance.
 
 @subsection tag_drake_mu_dynamic drake:mu_dynamic
 

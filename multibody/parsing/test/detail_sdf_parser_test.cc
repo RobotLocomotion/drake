@@ -990,6 +990,282 @@ TEST_F(SdfParserTest, DrakeJointNestedChildBad) {
       " 'good'.* does not exist.*"));
 }
 
+TEST_F(SdfParserTest, MimicSuccessfulParsing) {
+  plant_.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  ParseTestString(R"""(
+    <model name='a'>
+      <link name='A'/>
+      <link name='B'/>
+      <link name='C'/>
+      <joint name='joint_AB' type='revolute'>
+        <parent>A</parent>
+        <child>B</child>
+        <axis>
+          <xyz>0 0 1</xyz>
+        </axis>
+      </joint>
+      <joint name='joint_AC' type='revolute'>
+        <parent>A</parent>
+        <child>C</child>
+        <drake:mimic joint='joint_AB' multiplier='1' offset='0.5' />
+        <axis>
+          <xyz>0 0 1</xyz>
+        </axis>
+      </joint>
+    </model>)""");;
+  // Revolute joint with mimic
+  DRAKE_EXPECT_NO_THROW(plant_.GetJointByName("joint_AC"));
+  DRAKE_EXPECT_NO_THROW(plant_.GetJointByName("joint_AB"));
+  const Joint<double>& joint_with_mimic = plant_.GetJointByName("joint_AC");
+  const Joint<double>& joint_to_mimic = plant_.GetJointByName("joint_AB");
+
+  EXPECT_EQ(plant_.num_constraints(), 1);
+  EXPECT_EQ(plant_.num_coupler_constraints(), 1);
+  const internal::CouplerConstraintSpec& spec =
+      plant_.get_coupler_constraint_specs().begin()->second;
+  EXPECT_EQ(spec.joint0_index, joint_with_mimic.index());
+  EXPECT_EQ(spec.joint1_index, joint_to_mimic.index());
+  // These must be kept in sync with the values in joint_parsing_test.urdf.
+  EXPECT_EQ(spec.gear_ratio, 1);
+  EXPECT_EQ(spec.offset, 0.5);
+}
+
+TEST_F(SdfParserTest, MimicSuccessfulParsingForwardReference) {
+  plant_.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  ParseTestString(R"""(
+    <model name='a'>
+      <link name='A'/>
+      <link name='B'/>
+      <link name='C'/>
+      <joint name='joint_AB' type='revolute'>
+        <parent>A</parent>
+        <child>B</child>
+        <drake:mimic joint='joint_AC' multiplier='1' offset='0.5' />
+        <axis>
+          <xyz>0 0 1</xyz>
+        </axis>
+      </joint>
+      <joint name='joint_AC' type='revolute'>
+        <parent>A</parent>
+        <child>C</child>
+        <axis>
+          <xyz>0 0 1</xyz>
+        </axis>
+      </joint>
+    </model>)""");;
+  // Revolute joint with mimic
+  DRAKE_EXPECT_NO_THROW(plant_.GetJointByName("joint_AB"));
+  DRAKE_EXPECT_NO_THROW(plant_.GetJointByName("joint_AC"));
+  const Joint<double>& joint_with_mimic = plant_.GetJointByName("joint_AB");
+  const Joint<double>& joint_to_mimic = plant_.GetJointByName("joint_AC");
+
+  EXPECT_EQ(plant_.num_constraints(), 1);
+  EXPECT_EQ(plant_.num_coupler_constraints(), 1);
+  const internal::CouplerConstraintSpec& spec =
+      plant_.get_coupler_constraint_specs().begin()->second;
+  EXPECT_EQ(spec.joint0_index, joint_with_mimic.index());
+  EXPECT_EQ(spec.joint1_index, joint_to_mimic.index());
+  // These must be kept in sync with the values in joint_parsing_test.urdf.
+  EXPECT_EQ(spec.gear_ratio, 1);
+  EXPECT_EQ(spec.offset, 0.5);
+}
+
+TEST_F(SdfParserTest, MimicNoSap) {
+  plant_.set_discrete_contact_solver(DiscreteContactSolver::kTamsi);
+  ParseTestString(R"""(
+    <model name='a'>
+      <link name='A'/>
+      <link name='B'/>
+      <link name='C'/>
+      <joint name='joint_AB' type='revolute'>
+        <parent>A</parent>
+        <child>B</child>
+        <axis>
+          <xyz>0 0 1</xyz>
+        </axis>
+      </joint>
+      <joint name='joint_AC' type='revolute'>
+        <parent>A</parent>
+        <child>C</child>
+        <axis>
+          <xyz>0 0 1</xyz>
+        </axis>
+        <drake:mimic joint='joint_AB' multiplier='1' offset='0.5' />
+      </joint>
+    </model>)""");
+
+  EXPECT_THAT(
+      TakeWarning(),
+      MatchesRegex(
+          ".*Mimic elements are currently only supported by MultibodyPlant "
+          "with a discrete time step and using DiscreteContactSolver::kSap."));
+}
+
+TEST_F(SdfParserTest, MimicNoJoint) {
+  plant_.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  ParseTestString(R"""(
+    <model name='a'>
+      <link name='A'/>
+      <link name='B'/>
+      <link name='C'/>
+      <joint name='joint_AB' type='revolute'>
+        <parent>A</parent>
+        <child>B</child>
+        <axis>
+          <xyz>0 0 1</xyz>
+        </axis>
+      </joint>
+      <joint name='joint_AC' type='revolute'>
+        <parent>A</parent>
+        <child>C</child>
+        <axis>
+          <xyz>0 0 1</xyz>
+        </axis>
+        <drake:mimic multiplier='1' offset='0.5' />
+      </joint>
+    </model>)""");
+  EXPECT_THAT(
+      TakeError(),
+      MatchesRegex(".*Joint 'joint_AC' drake:mimic element is missing the "
+                   "required 'joint' attribute."));
+}
+
+TEST_F(SdfParserTest, MimicBadJoint) {
+  plant_.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  ParseTestString(R"""(
+    <model name='a'>
+      <link name='A'/>
+      <link name='B'/>
+      <link name='C'/>
+      <joint name='joint_AB' type='revolute'>
+        <parent>A</parent>
+        <child>B</child>
+        <axis>
+          <xyz>0 0 1</xyz>
+        </axis>
+      </joint>
+      <joint name='joint_AC' type='revolute'>
+        <parent>A</parent>
+        <child>C</child>
+        <axis>
+          <xyz>0 0 1</xyz>
+        </axis>
+        <drake:mimic joint='nonexistent' multiplier='1' offset='0.5' />
+      </joint>
+    </model>)""");
+  EXPECT_THAT(
+      TakeError(),
+      MatchesRegex(".*Joint 'joint_AC' drake:mimic element specifies joint "
+                   "'nonexistent' which does not exist."));
+}
+
+TEST_F(SdfParserTest, MimicSameJoint) {
+  plant_.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  ParseTestString(R"""(
+    <model name='a'>
+      <link name='A'/>
+      <link name='B'/>
+      <joint name='joint_AB' type='revolute'>
+        <parent>A</parent>
+        <child>B</child>
+        <drake:mimic joint='joint_AB' multiplier='1' offset='0.5' />
+        <axis>
+          <xyz>0 0 1</xyz>
+        </axis>
+      </joint>
+    </model>)""");
+  EXPECT_THAT(
+      TakeError(),
+      MatchesRegex(".*Joint 'joint_AB' drake:mimic element specifies joint "
+                   "'joint_AB'. Joints cannot mimic themselves."));
+}
+
+TEST_F(SdfParserTest, MimicNoMultiplier) {
+  plant_.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  ParseTestString(R"""(
+    <model name='a'>
+      <link name='A'/>
+      <link name='B'/>
+      <link name='C'/>
+      <joint name='joint_AB' type='revolute'>
+        <parent>A</parent>
+        <child>B</child>
+        <axis>
+          <xyz>0 0 1</xyz>
+        </axis>
+      </joint>
+      <joint name='joint_AC' type='revolute'>
+        <parent>A</parent>
+        <child>C</child>
+        <axis>
+          <xyz>0 0 1</xyz>
+        </axis>
+        <drake:mimic joint='joint_AB' offset='0.5' />
+      </joint>
+    </model>)""");
+  EXPECT_THAT(
+      TakeError(),
+      MatchesRegex(".*Joint 'joint_AC' drake:mimic element is missing the "
+                   "required 'multiplier' attribute."));
+}
+
+TEST_F(SdfParserTest, MimicNoOffset) {
+  plant_.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  ParseTestString(R"""(
+    <model name='a'>
+      <link name='A'/>
+      <link name='B'/>
+      <link name='C'/>
+      <joint name='joint_AB' type='revolute'>
+        <parent>A</parent>
+        <child>B</child>
+        <axis>
+          <xyz>0 0 1</xyz>
+        </axis>
+      </joint>
+      <joint name='joint_AC' type='revolute'>
+        <parent>A</parent>
+        <child>C</child>
+        <axis>
+          <xyz>0 0 1</xyz>
+        </axis>
+        <drake:mimic joint='joint_AB' multiplier='1' />
+      </joint>
+    </model>)""");
+  EXPECT_THAT(
+      TakeError(),
+      MatchesRegex(".*Joint 'joint_AC' drake:mimic element is missing the "
+                   "required 'offset' attribute."));
+}
+
+TEST_F(SdfParserTest, MimicOnlyOneDOFJoint) {
+  plant_.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  ParseTestString(R"""(
+    <model name='a'>
+      <link name='A'/>
+      <link name='B'/>
+      <link name='C'/>
+      <joint name='joint_AB' type='fixed'>
+        <parent>A</parent>
+        <child>B</child>
+        <axis>
+          <xyz>0 0 1</xyz>
+        </axis>
+      </joint>
+      <joint name='joint_AC' type='fixed'>
+        <parent>A</parent>
+        <child>C</child>
+        <axis>
+          <xyz>0 0 1</xyz>
+        </axis>
+        <drake:mimic joint='joint_AB' multiplier='1' offset='0.5' />
+      </joint>
+    </model>)""");
+  EXPECT_THAT(TakeWarning(),
+              MatchesRegex(".*Drake only supports the drake:mimic element for "
+                           "single-dof joints.*"));
+}
+
 // Verify error when no model is found.
 TEST_F(SdfParserTest, AddModelFromSdfNoModelError) {
   const std::string sdf_string = R"""(
