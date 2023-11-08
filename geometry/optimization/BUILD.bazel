@@ -230,6 +230,7 @@ drake_cc_googletest(
         ":test_utilities",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
+        "//solvers:gurobi_solver",
         "//solvers:mosek_solver",
     ],
 )

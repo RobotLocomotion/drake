@@ -10,6 +10,7 @@
 #include "drake/geometry/optimization/affine_subspace.h"
 #include "drake/geometry/optimization/hyperellipsoid.h"
 #include "drake/geometry/optimization/test_utilities.h"
+#include "drake/solvers/gurobi_solver.h"
 #include "drake/solvers/mosek_solver.h"
 
 namespace drake {
@@ -322,22 +323,26 @@ GTEST_TEST(AffineBallTest, MinimumVolumeCircumscribedEllipsoidFullDimensional) {
   // clang-format on
   AffineBall E_F = AffineBall::MinimumVolumeCircumscribedEllipsoid(p_FA);
 
-  double kTol, eps;
+  double tol, eps;
   if (solvers::MosekSolver::is_available() &&
       solvers::MosekSolver::is_enabled()) {
-    kTol = 1e-8;
+    tol = 1e-8;
     eps = 1e-6;
+  } else if (solvers::GurobiSolver::is_available() &&
+             solvers::GurobiSolver::is_enabled()) {
+    tol = 1e-4;
+    eps = 1e-3;
   } else {
-    kTol = 1e-5;
+    tol = 1e-5;
     eps = 1e-4;
   }
 
   Vector3d center_expected = Vector3d::Zero();
-  EXPECT_TRUE(CompareMatrices(E_F.center(), center_expected, kTol));
+  EXPECT_TRUE(CompareMatrices(E_F.center(), center_expected, tol));
 
   for (int i = 0; i < p_FA.cols(); ++i) {
-    EXPECT_TRUE(E_F.PointInSet(p_FA.col(i), kTol));
-    EXPECT_FALSE(E_F.PointInSet(p_FA.col(i) * (1. + eps), kTol));
+    EXPECT_TRUE(E_F.PointInSet(p_FA.col(i), tol));
+    EXPECT_FALSE(E_F.PointInSet(p_FA.col(i) * (1. + eps), tol));
   }
 
   // Non-axis-aligned example
@@ -348,10 +353,10 @@ GTEST_TEST(AffineBallTest, MinimumVolumeCircumscribedEllipsoidFullDimensional) {
   AffineBall E_G = AffineBall::MinimumVolumeCircumscribedEllipsoid(p_GA);
 
   for (int i = 0; i < p_FA.cols(); ++i) {
-    EXPECT_TRUE(E_F.PointInSet(p_FA.col(i), kTol));
+    EXPECT_TRUE(E_F.PointInSet(p_FA.col(i), tol));
     Eigen::Vector3d point_outside =
         p_FA.col(i) + (p_FA.col(i) - translation) * (1. + eps);
-    EXPECT_FALSE(E_F.PointInSet(point_outside, kTol));
+    EXPECT_FALSE(E_F.PointInSet(point_outside, tol));
   }
 }
 
@@ -366,22 +371,22 @@ GTEST_TEST(AffineBallTest,
   // clang-format on
   AffineBall E_F = AffineBall::MinimumVolumeCircumscribedEllipsoid(p_FA);
 
-  double kTol, eps;
+  double tol, eps;
   if (solvers::MosekSolver::is_available() &&
       solvers::MosekSolver::is_enabled()) {
-    kTol = 1e-8;
+    tol = 1e-8;
     eps = 1e-6;
   } else {
-    kTol = 1e-5;
+    tol = 1e-5;
     eps = 1e-4;
   }
 
   Vector3d center_expected = Vector3d::Zero();
-  EXPECT_TRUE(CompareMatrices(E_F.center(), center_expected, kTol));
+  EXPECT_TRUE(CompareMatrices(E_F.center(), center_expected, tol));
 
   for (int i = 0; i < p_FA.cols(); ++i) {
-    EXPECT_TRUE(E_F.PointInSet(p_FA.col(i), kTol));
-    EXPECT_FALSE(E_F.PointInSet(p_FA.col(i) * (1. + eps), kTol));
+    EXPECT_TRUE(E_F.PointInSet(p_FA.col(i), tol));
+    EXPECT_FALSE(E_F.PointInSet(p_FA.col(i) * (1. + eps), tol));
   }
   EXPECT_FALSE(E_F.PointInSet(Vector3d{0, 0, eps}));
   EXPECT_FALSE(E_F.PointInSet(Vector3d{0, 0, -eps}));
@@ -400,13 +405,13 @@ GTEST_TEST(AffineBallTest,
   points.colwise() += center;
 
   AffineBall E = AffineBall::MinimumVolumeCircumscribedEllipsoid(points);
-  EXPECT_TRUE(CompareMatrices(E.center(), center, kTol));
+  EXPECT_TRUE(CompareMatrices(E.center(), center, tol));
 
   for (int i = 0; i < points.cols(); ++i) {
-    EXPECT_TRUE(E.PointInSet(points.col(i), kTol));
+    EXPECT_TRUE(E.PointInSet(points.col(i), tol));
     Eigen::VectorXd point_outside =
         points.col(i) + (points.col(i) - center) * (1. + eps);
-    EXPECT_FALSE(E.PointInSet(point_outside, kTol));
+    EXPECT_FALSE(E.PointInSet(point_outside, tol));
   }
 }
 
