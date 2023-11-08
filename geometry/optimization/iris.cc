@@ -54,13 +54,20 @@ HPolyhedron Iris(const ConvexSets& obstacles, const Ref<const VectorXd>& sample,
       Hyperellipsoid::MakeHypersphere(kEpsilonEllipsoid, sample));
   HPolyhedron P = domain;
 
+  if (options.bounding_region) {
+    DRAKE_DEMAND(options.bounding_region->ambient_dimension() == dim);
+    P = P.Intersection(*options.bounding_region);
+  }
+
+  const int num_initial_constraints = P.A().rows();
+
   // On each iteration, we will build the collision-free polytope represented as
   // {x | A * x <= b}.  Here we pre-allocate matrices of the maximum size.
   Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> A(
-      domain.A().rows() + N, dim);
-  VectorXd b(domain.A().rows() + N);
-  A.topRows(domain.A().rows()) = domain.A();
-  b.head(domain.A().rows()) = domain.b();
+      P.A().rows() + N, dim);
+  VectorXd b(P.A().rows() + N);
+  A.topRows(P.A().rows()) = P.A();
+  b.head(P.A().rows()) = P.b();
   // Use pairs {scale, index}, so that I can back out the indices after a sort.
   std::vector<std::pair<double, int>> scaling(N);
   MatrixXd closest_points(dim, N);
@@ -80,7 +87,7 @@ HPolyhedron Iris(const ConvexSets& obstacles, const Ref<const VectorXd>& sample,
     }
     std::sort(scaling.begin(), scaling.end());
 
-    int num_constraints = domain.A().rows();
+    int num_constraints = num_initial_constraints;
     tangent_matrix = 2.0 * E.A().transpose() * E.A();
     for (int i = 0; i < N; ++i) {
       // Only add a constraint if this obstacle still has overlap with the set
@@ -464,6 +471,12 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
   HPolyhedron P = HPolyhedron::MakeBox(plant.GetPositionLowerLimits(),
                                        plant.GetPositionUpperLimits());
   DRAKE_DEMAND(P.A().rows() == 2 * nq);
+
+  if (options.bounding_region) {
+    DRAKE_DEMAND(options.bounding_region->ambient_dimension() == nq);
+    P = P.Intersection(*options.bounding_region);
+  }
+
   const double kEpsilonEllipsoid = 1e-2;
   Hyperellipsoid E = options.starting_ellipse.value_or(
       Hyperellipsoid::MakeHypersphere(kEpsilonEllipsoid, seed));
