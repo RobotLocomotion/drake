@@ -15,6 +15,7 @@ namespace optimization {
 namespace {
 
 using Eigen::Matrix;
+using Eigen::RowVector2d;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
 using Eigen::Vector4d;
@@ -183,16 +184,15 @@ GTEST_TEST(IrisTest, BoundingRegion) {
   const HPolyhedron region = Iris(obstacles, sample, domain, options);
 
   // Use a bounding_region that omits the obstacles to the left of the x-axis.
-  options.bounding_region =
-      HPolyhedron::MakeBox(Vector2d(-0.05, -1), Vector2d(1, 1));
+  options.bounding_region = HPolyhedron(RowVector2d(-1, 0), Vector1d(0.05));
 
   const HPolyhedron region_w_bounding =
       Iris(obstacles, sample, domain, options);
 
   EXPECT_EQ(region.b().size(), 8);  // 4 from `domain` and 1 from each obstacle.
   EXPECT_EQ(region_w_bounding.b().size(),
-            10);  // 4 from `domain`, 4 from `options.bounding_region` and 2
-                  // more from the right obstacles.
+            7);  // 4 from `domain`, 1 from `options.bounding_region` and 2
+                 // more from the right obstacles.
 
   // `region_w_bounding` should not contain points of y ≤ -0.05 since they're
   // outside its bounding region.
@@ -206,7 +206,7 @@ GTEST_TEST(IrisTest, BoundingRegion) {
 
   // Points inside obstacles should be excluded from both regions.
   EXPECT_FALSE(region.PointInSet(Vector2d(0.1, 0.5)));
-  EXPECT_FALSE(region_w_bounding.PointInSet(Vector2d(0.1, 0.5)));
+  EXPECT_FALSE(region_w_bounding.PointInSet(Vector2d(0.11, 0.51)));
 }
 
 GTEST_TEST(IrisTest, TerminationConditions) {
