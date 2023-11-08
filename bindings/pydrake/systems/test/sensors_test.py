@@ -44,17 +44,25 @@ pf = mut.PixelFormat
 # Available image / pixel types.
 pixel_types = [
     pt.kRgba8U,
+    pt.kRgb8U,
+    pt.kBgra8U,
+    pt.kBgr8U,
     pt.kDepth16U,
     pt.kDepth32F,
     pt.kLabel16I,
+    pt.kGrey8U,
 ]
 
 # Convenience aliases.
 image_type_aliases = [
     mut.ImageRgba8U,
+    mut.ImageRgb8U,
+    mut.ImageBgra8U,
+    mut.ImageBgr8U,
     mut.ImageDepth16U,
     mut.ImageDepth32F,
     mut.ImageLabel16I,
+    mut.ImageGrey8U,
 ]
 
 
@@ -335,9 +343,13 @@ class TestSensors(unittest.TestCase):
                 self.assertEqual(image.height, 1)
                 expected_format = {
                     pt.kRgba8U: lcmt_image.PIXEL_FORMAT_RGBA,
+                    pt.kRgb8U: lcmt_image.PIXEL_FORMAT_RGB,
+                    pt.kBgra8U: lcmt_image.PIXEL_FORMAT_BGRA,
+                    pt.kBgr8U: lcmt_image.PIXEL_FORMAT_BGR,
                     pt.kDepth16U: lcmt_image.PIXEL_FORMAT_DEPTH,
                     pt.kDepth32F: lcmt_image.PIXEL_FORMAT_DEPTH,
                     pt.kLabel16I: lcmt_image.PIXEL_FORMAT_LABEL,
+                    pt.kGrey8U: lcmt_image.PIXEL_FORMAT_GRAY,
                 }[pixel_type]
                 self.assertEqual(image.pixel_format, expected_format)
 

@@ -27,21 +27,12 @@ void DefineSensorsImage(py::module m) {
       .value("kDepth", PixelFormat::kDepth)
       .value("kLabel", PixelFormat::kLabel);
 
-  // This list should match PixelTypeList from sensors_py.h.
-  const std::vector<std::string> pixel_type_names = {
-      "kRgba8U",
-      "kDepth16U",
-      "kDepth32F",
-      "kLabel16I",
-  };
-
   {
     // Expose image types and their traits.
     py::enum_<PixelType> pixel_type(m, "PixelType");
 
     // This uses the `type_visit` pattern for looping. See `type_pack_test.cc`
     // for more information on the pattern.
-    int pixel_type_index = 0;
     auto instantiation_visitor = [&](auto param) {
       // Extract information from inferred parameter.
       constexpr PixelType kPixelType =
@@ -49,10 +40,7 @@ void DefineSensorsImage(py::module m) {
       using ImageT = Image<kPixelType>;
       using ImageTraitsT = ImageTraits<kPixelType>;
       using T = typename ImageTraitsT::ChannelType;
-
-      // Get associated properties, and iterate.
-      const std::string pixel_type_name = pixel_type_names[pixel_type_index];
-      ++pixel_type_index;
+      const std::string pixel_type_name = "k" + to_string(kPixelType);
 
       // Add definition to enum, before requesting the Python parameter.
       pixel_type.value(pixel_type_name.c_str(), kPixelType);
