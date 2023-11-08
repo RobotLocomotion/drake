@@ -1565,29 +1565,10 @@ class Meshcat::Impl {
   }
 
   // This function is public via the PIMPL.
+  // This function can be safely called by "websocket_thread_id_" and by
+  // "main_thread_id_".
   std::string StaticHtml() {
-    DRAKE_DEMAND(IsThread(main_thread_id_));
     std::string html = GetUrlContent("/");
-
-    std::promise<std::string> p;
-    std::future<std::string> f = p.get_future();
-    Defer([this, p = std::move(p)]() mutable {
-      DRAKE_DEMAND(IsThread(websocket_thread_id_));
-      std::string commands = scene_tree_root_.CreateCommands();
-      if (!animation_.empty()) {
-        commands += CreateCommand(animation_);
-      }
-      if (!camera_target_message_.empty()) {
-        commands += CreateCommand(camera_target_message_);
-      }
-      p.set_value(std::move(commands));
-    });
-
-    // Replace the javascript code in the original html file which connects via
-    // websockets with the static javascript commands.
-    std::regex block_re(
-        "<!-- CONNECTION BLOCK BEGIN [^]+ CONNECTION BLOCK END -->\n");
-    html = std::regex_replace(html, block_re, f.get());
 
     // Insert the javascript directly into the html.
     std::vector<std::pair<std::string, std::string>> js_paths{
@@ -1601,6 +1582,36 @@ class Meshcat::Impl {
       html.erase(js_pos, src_link.size());
       html.insert(js_pos+1, GetUrlContent(url));
     }
+
+    auto get_commands = [this]() {
+      DRAKE_DEMAND(IsThread(websocket_thread_id_));
+      std::string commands = scene_tree_root_.CreateCommands();
+      if (!animation_.empty()) {
+        commands += CreateCommand(animation_);
+      }
+      if (!camera_target_message_.empty()) {
+        commands += CreateCommand(camera_target_message_);
+      }
+      return commands;
+    };
+
+    std::string processed_commands;
+    if (IsThread(main_thread_id_)) {
+      std::promise<std::string> p;
+      std::future<std::string> f = p.get_future();
+      Defer([this, p = std::move(p), get_commands]() mutable {
+        p.set_value(get_commands());
+      });
+      processed_commands = f.get();
+    } else {
+      processed_commands += get_commands();
+    }
+
+    // Replace the javascript code in the original html file which connects via
+    // websockets with the static javascript commands.
+    std::regex block_re(
+        "<!-- CONNECTION BLOCK BEGIN [^]+ CONNECTION BLOCK END -->\n");
+    html = std::regex_replace(html, block_re, processed_commands);
 
     return html;
   }
@@ -1792,6 +1803,16 @@ class Meshcat::Impl {
 
     uWS::App app =
         uWS::App()
+            .get("/download",
+                 [&](uWS::HttpResponse<kSsl>* res, uWS::HttpRequest*) {
+                   DRAKE_DEMAND(IsThread(websocket_thread_id_));
+                   const std::string output = StaticHtml();
+                   res->writeHeader("Content-Type", "text/html; charset=utf-8");
+                   res->writeHeader("Content-Encoding", "none");
+                   res->writeHeader("Content-Disposition",
+                                    "attachment; filename=\"staticHtml.html\"");
+                   res->end(output);
+                 })
             .get("/*",
                  [&](uWS::HttpResponse<kSsl>* res, uWS::HttpRequest* req) {
                    DRAKE_DEMAND(IsThread(websocket_thread_id_));
