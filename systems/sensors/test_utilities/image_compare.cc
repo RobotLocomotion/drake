@@ -2,6 +2,8 @@
 
 #include <string>
 
+#include "drake/systems/sensors/image_writer.h"
+
 // To ease build system upkeep, we annotate VTK includes with their deps.
 #include <vtkImageExport.h>   // vtkIOImage
 #include <vtkNew.h>           // vtkCommonCore
@@ -90,7 +92,42 @@ AssertionResult LoadImage(const fs::path& filename, Image<kPixelType>* image) {
   return AssertionSuccess();
 }
 
-// Explicit template instantiations.
+// Everything saves to PNG except for 32bit depth images, which save to TIFF.
+template <PixelType kPixelType>
+struct SaveUndeclaredOutputImageHelper {
+  static void apply(const Image<kPixelType>& image,
+                    const std::filesystem::path& filename) {
+    SaveToPng(image, filename.string());
+  }
+};
+
+template <>
+struct SaveUndeclaredOutputImageHelper<PixelType::kDepth32F> {
+  static void apply(const Image<PixelType::kDepth32F>& image,
+                    const std::filesystem::path& filename) {
+    SaveToTiff(image, filename.string());
+  }
+};
+
+template <PixelType kPixelType>
+void SaveUndeclaredOutputImage(const Image<kPixelType>& image,
+                               const std::filesystem::path& filename) {
+  const std::filesystem::path destination_path =
+      std::filesystem::path(::getenv("$TEST_UNDECLARED_OUTPUTS_DIR")) /
+      filename;
+  // TODO(svenevs): or instead of `void` and `exception` we could have a
+  // different interface using `AssertionFailure()` like `LoadImage`?
+  // NOTE: other operations here may throw (e.g., file does not exist but
+  // image writing fails for some reason).
+  if (fs::exists(destination_path)) {
+    throw std::runtime_error(
+        fmt::format("SaveUndeclaredOutputImage refuses to overwrite {}.",
+                    destination_path.string()));
+  }
+  SaveUndeclaredOutputImageHelper<kPixelType>::apply(image,
+                                                     destination_path.string());
+}
+
 // clang-format off
 static constexpr auto kInstantiations __attribute__((used)) = std::make_tuple(
   &PrintTo<PixelType::kRgb8U>,
@@ -108,7 +145,15 @@ static constexpr auto kInstantiations __attribute__((used)) = std::make_tuple(
   &LoadImage<PixelType::kGrey8U>,
   &LoadImage<PixelType::kDepth16U>,
   &LoadImage<PixelType::kDepth32F>,
-  &LoadImage<PixelType::kLabel16I>
+  &LoadImage<PixelType::kLabel16I>,
+  &SaveUndeclaredOutputImage<PixelType::kRgb8U>
+  // &SaveUndeclaredOutputImage<PixelType::kBgr8U>,
+  // &SaveUndeclaredOutputImage<PixelType::kRgba8U>,
+  // &SaveUndeclaredOutputImage<PixelType::kBgra8U>,
+  // &SaveUndeclaredOutputImage<PixelType::kGrey8U>,
+  // &SaveUndeclaredOutputImage<PixelType::kDepth16U>,
+  // &SaveUndeclaredOutputImage<PixelType::kDepth32F>,
+  // &SaveUndeclaredOutputImage<PixelType::kLabel16I>
 );
 // clang-format on
 

@@ -23,6 +23,7 @@ drake_cc_library(
     hdrs = ["image_compare.h"],
     deps = [
         "//systems/sensors:image",
+        "//systems/sensors:image_writer",
         "@gtest//:without_main",
         "@vtk_internal//:vtkCommonCore",
         "@vtk_internal//:vtkIOImage",

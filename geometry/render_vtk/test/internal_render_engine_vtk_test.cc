@@ -24,7 +24,6 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
-#include "drake/common/never_destroyed.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
@@ -224,13 +223,6 @@ bool IsColorNear(const RgbaColor& expected, const RgbaColor& tested,
          << " with tolerance: " << tolerance;
 }
 
-/* Returns the next unique-per-process integer that can uniquely identify a
- temporary file to use in exporting rendered test images. */
-int64_t NextTempId() {
-  static drake::never_destroyed<std::atomic<int64_t>> global_temp_id;
-  return ++(global_temp_id.access());
-}
-
 // This test suite facilitates a test with a ground plane and floating shape.
 // The camera is positioned above the shape looking straight down. All
 // of the images produced from these tests should have the following properties:
@@ -260,16 +252,24 @@ class RenderEngineVtkTest : public ::testing::Test {
         geometry_id_(GeometryId::get_new_id()) {}
 
  protected:
-  std::string RenderFilePath(const std::string& image_type, int64_t unique_id) const {
+  // Return the absolute path underneath TEST_UNDECLARED_OUTPUTS_DIR to save an
+  // image file of the specified type.  All depth images in this test file are
+  // using Depth32F, so depth is always exported to .tiff.  Color and label are
+  // exported to .png.  The `save_counter_` variable is used directly, but it
+  // is assumed that it gets increased outside this method (via Render() or
+  // IncreaseSaveCounter().
+  std::string RenderFilePath(const std::string& image_type) const {
     DRAKE_DEMAND(image_type == "color" || image_type == "depth" || image_type == "label");
     const std::string extension = (image_type == "depth") ? "tiff" : "png";
-    /* Create, e.g., `{test_name}_{0000000000000000XYZ}`
-      NOTE: the maximum number of digits in a int64_t is 19. */
-    return fmt::format("{0}/{1}_{2}_{3:0>19}.{4}",
+    /* Create:
+       {TEST_UNDECLARED_OUTPUTS_DIR}/{test_name}_{image_type}_{XYZW}.{extension}
+      NOTE: save_counter_ is reset for every test case, {3:0>4} says to zero-pad
+      to four digits, `4` total digits should be more than enough. */
+    return fmt::format("{0}/{1}_{2}_{3:0>4}.{4}",
         std::getenv("TEST_UNDECLARED_OUTPUTS_DIR"),
         ::testing::UnitTest::GetInstance()->current_test_info()->name(),
         image_type,
-        unique_id,
+        save_counter_,
         extension);
   }
 
@@ -291,11 +291,13 @@ class RenderEngineVtkTest : public ::testing::Test {
     ImageDepth32F* depth = depth_out ? depth_out : &depth_;
     ImageLabel16I* label = label_out ? label_out : &label_;
     EXPECT_NO_THROW(renderer->RenderDepthImage(depth_camera, depth));
-    SaveToPng(*color, RenderFilePath("color", NextTempId()));
+    SaveToPng(*color, RenderFilePath("color"));
     EXPECT_NO_THROW(renderer->RenderLabelImage(color_camera, label));
-    SaveToTiff(*depth, RenderFilePath("depth", NextTempId()));
+    SaveToTiff(*depth, RenderFilePath("depth"));
     EXPECT_NO_THROW(renderer->RenderColorImage(color_camera, color));
-    SaveToPng(*label, RenderFilePath("label", NextTempId()));
+    SaveToPng(*label, RenderFilePath("label"));
+
+    IncreaseSaveCounter();
 
     if (FLAGS_sleep > 0) sleep(FLAGS_sleep);
   }
@@ -547,6 +549,15 @@ class RenderEngineVtkTest : public ::testing::Test {
         << "Label at: " << inlier << " for test: " << name;
   }
 
+  // Most tests use Render() directly, which also calls this method.  For tests
+  // that manually control rendering, they should call this method in between
+  // different image renderings (where applicable).  Render() will export the
+  // color, depth, and label images with the same `save_counter_` value, and
+  // increase it once at the end of the method -- manual tests should obey the
+  // same pattern of exporting each (color, depth, label) frame with the same
+  // `save_counter_`.
+  void IncreaseSaveCounter() { ++save_counter_; }
+
   RgbaColor expected_color_{kDefaultVisualColor, 255};
   RgbaColor expected_outlier_color_{kDefaultVisualColor, 255};
   float expected_outlier_depth_{3.f};
@@ -567,6 +578,11 @@ class RenderEngineVtkTest : public ::testing::Test {
   ImageLabel16I label_;
   RigidTransformd X_WC_;
   GeometryId geometry_id_;
+
+  // Used to create unique identifiers per-test to save test renders to
+  // TEST_UNDECLARED_OUTPUTS_DIRECTORY.
+  // See also: Render() and IncreaseSaveCounter().
+  int save_counter_{0};
 
   // The pose of the sphere created in PopulateSphereTest().
   unordered_map<GeometryId, RigidTransformd> X_WV_;
