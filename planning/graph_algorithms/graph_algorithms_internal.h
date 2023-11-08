@@ -15,7 +15,7 @@ namespace internal {
 // an edge in H if and only if they do not form an edge in G. Note that we
 // always exclude self-loops i.e. the diagonal of the returned matrix is always
 // false.
-Eigen::SparseMatrix<bool> ComplementaryAdjacencyMatrix(
+Eigen::SparseMatrix<bool> ComplementAdjacencyMatrix(
     const Eigen::Ref<const Eigen ::SparseMatrix<bool>>& adjacency_matrix);
 
 // Given a list of triplets, add the symmetric component to the triplet list.

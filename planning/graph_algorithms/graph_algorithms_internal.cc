@@ -6,7 +6,7 @@ namespace planning {
 namespace graph_algorithms {
 namespace internal {
 
-Eigen::SparseMatrix<bool> ComplementaryAdjacencyMatrix(
+Eigen::SparseMatrix<bool> ComplementAdjacencyMatrix(
     const Eigen::Ref<const Eigen::SparseMatrix<bool>>& adjacency_matrix) {
   const int n = adjacency_matrix.rows();
   DRAKE_DEMAND(adjacency_matrix.cols() == n);

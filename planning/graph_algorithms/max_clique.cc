@@ -83,7 +83,7 @@ VectorX<bool> MaxCliqueSolverViaMip::SolveMaxClique(
   DRAKE_ASSERT(result.is_success());
 
   // Manually cast the return to a boolean to avoid round off errors from the
-  // MIP solver
+  // MIP solver.
   return result.GetSolution(x).unaryExpr([](double elt) {
     return elt >= 0.5;
   });

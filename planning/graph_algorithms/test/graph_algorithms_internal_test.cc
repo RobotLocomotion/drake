@@ -48,16 +48,16 @@ GTEST_TEST(SymmetrizeTripletList, TestSymmetrization) {
         }
         return true;
       };
-  // Check if every element in entries appears in entries_expected
+  // Check if every element in entries appears in entries_expected.
   EXPECT_TRUE(check_all_elts_in_v1_are_in_v2(entries, entries_expected));
   EXPECT_TRUE(check_all_elts_in_v1_are_in_v2(entries_expected, entries));
 }
 
-GTEST_TEST(ComplemenatryGraph, CompleteGraph) {
+GTEST_TEST(ComplementGraph, CompleteGraph) {
   for (const int n : {3, 8}) {
     Eigen::SparseMatrix<bool> graph = internal::MakeCompleteGraph(n);
     Eigen::SparseMatrix<bool> complement_graph =
-        internal::ComplementaryAdjacencyMatrix(graph);
+        internal::ComplementAdjacencyMatrix(graph);
     Eigen::SparseMatrix<bool> complement_graph_expected(n, n);
     complement_graph.finalize();
     EXPECT_TRUE(
@@ -66,10 +66,10 @@ GTEST_TEST(ComplemenatryGraph, CompleteGraph) {
   }
 }
 
-GTEST_TEST(ComplemenatryGraph, BullGraph) {
+GTEST_TEST(ComplementGraph, BullGraph) {
   Eigen::SparseMatrix<bool> graph = internal::BullGraph();
   Eigen::SparseMatrix<bool> complement_graph =
-      internal::ComplementaryAdjacencyMatrix(graph);
+      internal::ComplementAdjacencyMatrix(graph);
 
   std::vector<Eigen::Triplet<bool>> expected_entries;
   expected_entries.emplace_back(0, 2, 1);
@@ -89,10 +89,10 @@ GTEST_TEST(ComplemenatryGraph, BullGraph) {
                       complement_graph_expected.toDense().cast<double>()));
 }
 
-GTEST_TEST(ComplemenatryGraph, ButterflyGraph) {
+GTEST_TEST(ComplementGraph, ButterflyGraph) {
   Eigen::SparseMatrix<bool> graph = internal::ButterflyGraph();
   Eigen::SparseMatrix<bool> complement_graph =
-      internal::ComplementaryAdjacencyMatrix(graph);
+      internal::ComplementAdjacencyMatrix(graph);
 
   std::vector<Eigen::Triplet<bool>> expected_entries;
   expected_entries.emplace_back(0, 3, 1);
@@ -110,10 +110,10 @@ GTEST_TEST(ComplemenatryGraph, ButterflyGraph) {
                       complement_graph_expected.toDense().cast<double>()));
 }
 
-GTEST_TEST(ComplemenatryGraph, PetersenGraph) {
+GTEST_TEST(ComplementGraph, PetersenGraph) {
   Eigen::SparseMatrix<bool> graph = internal::PetersenGraph();
   Eigen::SparseMatrix<bool> complement_graph =
-      internal::ComplementaryAdjacencyMatrix(graph);
+      internal::ComplementAdjacencyMatrix(graph);
 
   std::vector<Eigen::Triplet<bool>> expected_entries;
   expected_entries.emplace_back(0, 1, 1);

@@ -16,10 +16,10 @@ namespace {
 
 using Eigen::Triplet;
 
-// Test maximum clique solved via mip. Compare against the expected size of
+// Test maximum clique solved via MIP. Compare against the expected size of
 // the solution and ensure that the result is one of the true maximum cliques in
 // the graph.
-void TestMaxCliqueViaMIP(
+void TestMaxCliqueViaMip(
     const Eigen::Ref<const Eigen::SparseMatrix<bool>>& adjacency_matrix,
     const int expected_size,
     const std::vector<VectorX<bool>>& possible_solutions) {
@@ -35,7 +35,8 @@ void TestMaxCliqueViaMIP(
     EXPECT_EQ(max_clique_inds.cast<int>().sum(), expected_size);
     bool solution_match_found = false;
     for (const auto& possible_solution : possible_solutions) {
-      if (CompareMatrices(max_clique_inds, possible_solution)) {
+      if (CompareMatrices(max_clique_inds.cast<int>(),
+                          possible_solution.cast<int>())) {
         solution_match_found = true;
         break;
       }
@@ -53,7 +54,7 @@ GTEST_TEST(MaxCliqueSolverViaMipTest, TestConstructor) {
   EXPECT_EQ(solver1.get_initial_guess(), std::nullopt);
   EXPECT_EQ(solver1.solver_options(), solvers::SolverOptions());
 
-  // Test the constructor with only the solver id passed
+  // Test the constructor with only the solver id passed.
   const Eigen::Vector2d initial_guess = Eigen::Vector2d::Zero();
   solvers::SolverOptions options;
   options.SetOption(solvers::CommonSolverOption::kPrintToConsole, 1);
@@ -66,35 +67,35 @@ GTEST_TEST(MaxCliqueSolverViaMipTest, TestConstructor) {
 
 GTEST_TEST(MaxCliqueSolverViaMipTest, CompleteGraph) {
   for (const auto n : {3, 8}) {
-    // The entire graph forms a clique
+    // The entire graph forms a clique.
     std::vector<VectorX<bool>> possible_solutions{
         VectorX<bool>::Constant(n, true)};
     Eigen::SparseMatrix<bool> graph = internal::MakeCompleteGraph(n);
-    TestMaxCliqueViaMIP(graph, n, possible_solutions);
+    TestMaxCliqueViaMip(graph, n, possible_solutions);
   }
 }
 
 GTEST_TEST(MaxCliqueSolverViaMipTest, BullGraph) {
   VectorX<bool> solution(5);
-  // The largest clique is (1,2,3)
+  // The largest clique is (1,2,3).
   solution << false, true, true, true, false;
   std::vector<VectorX<bool>> possible_solutions{solution};
-  TestMaxCliqueViaMIP(internal::BullGraph(), 3, possible_solutions);
+  TestMaxCliqueViaMip(internal::BullGraph(), 3, possible_solutions);
 }
 
 GTEST_TEST(MaxCliqueSolverViaMipTest, ButterflyGraph) {
   VectorX<bool> solution1(5);
   VectorX<bool> solution2(5);
-  // The largest cliques are (0,1,2) and (2,3,4)
+  // The largest cliques are (0,1,2) and (2,3,4).
   solution1 << true, true, true, false, false;
   solution2 << false, false, true, true, true;
 
   std::vector<VectorX<bool>> possible_solutions{solution1, solution2};
-  TestMaxCliqueViaMIP(internal::ButterflyGraph(), 3, possible_solutions);
+  TestMaxCliqueViaMip(internal::ButterflyGraph(), 3, possible_solutions);
 }
 
 GTEST_TEST(MaxCliqueSolverViaMipTest, PetersenGraph) {
-  // The petersen graph has a clique number of size 2, so all edges are possible
+  // The Petersen graph has a clique number of size 2, so all edges are possible
   // solutions.
   Eigen::SparseMatrix<bool> graph = internal::PetersenGraph();
   std::vector<VectorX<bool>> possible_solutions;
@@ -107,7 +108,7 @@ GTEST_TEST(MaxCliqueSolverViaMipTest, PetersenGraph) {
       possible_solutions.push_back(solution);
     }
   }
-  TestMaxCliqueViaMIP(graph, 2, possible_solutions);
+  TestMaxCliqueViaMip(graph, 2, possible_solutions);
 }
 
 GTEST_TEST(MaxCliqueSolverViaMipTest, AdjacencyNotSquare) {
