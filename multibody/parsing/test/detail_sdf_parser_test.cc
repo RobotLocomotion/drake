@@ -2239,6 +2239,58 @@ TEST_F(SdfParserTest, ReflectedInertiaParametersParsing) {
   }
 }
 
+TEST_F(SdfParserTest, ControllerGainsParsing) {
+  AddSceneGraph();
+  // Common SDF string with format options for the custom tag.
+  constexpr const char* test_string = R"""(
+    <model name='ControllerGainsModel_{1}'>
+      <link name='A'/>
+      <link name='B'/>
+      <joint name='revolute_AB' type='revolute'>
+        <child>A</child>
+        <parent>B</parent>
+        <axis>
+          <xyz>0 0 1</xyz>
+          <limit>
+            <effort>-1</effort>
+          </limit>
+        </axis>
+        {0}
+      </joint>
+    </model>)""";
+
+  // Test successful parsing of both attributes.
+  {
+    ParseTestString(fmt::format(
+        test_string, "<drake:controller_gains p='10000.0' d='100.0' />",
+        "specify_both"));
+
+    const ModelInstanceIndex model =
+        plant_.GetModelInstanceByName("ControllerGainsModel_specify_both");
+    const JointActuator<double>& actuator =
+        plant_.GetJointActuatorByName("revolute_AB", model);
+
+    EXPECT_EQ(actuator.get_controller_gains().p, 10000.0);
+    EXPECT_EQ(actuator.get_controller_gains().d, 100.0);
+  }
+  // Test missing 'p' attribute.
+  {
+    const std::string expected_message =
+        ".*Unable to find the 'p' attribute.*";
+    ParseTestString(fmt::format(
+        test_string, "<drake:controller_gains d='100.0' />", "missing_p"));
+    EXPECT_THAT(TakeError(), ::testing::MatchesRegex(expected_message));
+  }
+  // Test missing 'd' attribute.
+  {
+    const std::string expected_message =
+        ".*Unable to find the 'd' attribute.*";
+    ParseTestString(fmt::format(
+        test_string, "<drake:controller_gains p='10000.0'/>", "missing_d"));
+    EXPECT_THAT(TakeError(), ::testing::MatchesRegex(expected_message));
+  }
+}
+
 // Verifies that the SDFormat loader can add directly nested models to a
 // multibody plant. For reference, the files test/integration/model_dom.cc and
 // test/integration/nested_model.cc in the libsdformat source code (tag

@@ -842,6 +842,32 @@ void UrdfParser::ParseTransmission(
     plant->get_mutable_joint_actuator(actuator.index())
         .set_default_gear_ratio(gear_ratio);
   }
+
+  // Parse and add the optional drake:controller_gains parameter.
+  XMLElement* controller_gains_node =
+      actuator_node->FirstChildElement("drake:controller_gains");
+  if (controller_gains_node) {
+    double p = 0.0;
+    if (!ParseScalarAttribute(controller_gains_node, "p", &p)) {
+      Error(*controller_gains_node,
+            fmt::format(
+                "joint actuator {}'s drake:controller_gains does not have a"
+                " \'p\' attribute!",
+                actuator_name));
+      return;
+    }
+    double d = 0.0;
+    if (!ParseScalarAttribute(controller_gains_node, "d", &d)) {
+      Error(*controller_gains_node,
+            fmt::format(
+                "joint actuator {}'s drake:controller_gains does not have a"
+                " \'d\' attribute!",
+                actuator_name));
+      return;
+    }
+    plant->get_mutable_joint_actuator(actuator.index())
+        .set_controller_gains({p, d});
+  }
 }
 
 void UrdfParser::ParseFrame(XMLElement* node) {

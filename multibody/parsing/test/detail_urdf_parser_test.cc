@@ -1600,6 +1600,83 @@ TEST_F(ReflectedInertiaTest, GearRatioManyValues) {
                ".*Expected single value.*value.*");
 }
 
+class ControllerGainsTest : public UrdfParserTest {
+ public:
+  void VerifyParameters(const std::string& controller_gains_text,
+                        double expected_p, double expected_d) {
+    std::string text = fmt::format(kTestString, controller_gains_text);
+    EXPECT_NE(AddModelFromUrdfString(text, ""), std::nullopt);
+
+    const JointActuator<double>& actuator =
+        plant_.GetJointActuatorByName("revolute_AB");
+
+    EXPECT_EQ(actuator.get_controller_gains().p, expected_p);
+    EXPECT_EQ(actuator.get_controller_gains().d, expected_d);
+  }
+
+  void ProvokeError(const std::string& controller_gains_text,
+                    const std::string& error_pattern) {
+    std::string text = fmt::format(kTestString, controller_gains_text);
+    EXPECT_NE(AddModelFromUrdfString(text, ""), std::nullopt);
+    EXPECT_THAT(TakeError(), MatchesRegex(error_pattern));
+  }
+
+ protected:
+  // Common URDF string with format options for the custom tag with two
+  // attributes.
+  static constexpr const char* kTestString = R"""(
+    <robot name='reflected_inertia_test'>
+      <link name='A'/>
+      <link name='B'/>
+      <joint name='revolute_AB' type='revolute'>
+        <axis xyz='0 0 1'/>
+        <parent link='A'/>
+        <child link='B'/>
+        <origin rpy='0 0 0' xyz='0 0 0'/>
+        <limit effort='100' lower='-1' upper='2' velocity='100'/>
+        <dynamics damping='0.1'/>
+      </joint>
+      <transmission>
+        <type>transmission_interface/SimpleTransmission</type>
+        <joint name='revolute_AB'>
+          <hardwareInterface>PositionJointInterface</hardwareInterface>
+        </joint>
+        <actuator name='revolute_AB'>
+          {0}
+        </actuator>
+      </transmission>
+    </robot>)""";
+};
+
+TEST_F(ControllerGainsTest, Both) {
+  // Test successful parsing of both parameters.
+  VerifyParameters("<drake:controller_gains p='10000' d='100'/>", 10000, 100);
+}
+
+TEST_F(ControllerGainsTest, MissingP) {
+  ProvokeError(
+      "<drake:controller_gains d='100'/>",
+      ".*joint actuator revolute_AB's drake:controller_gains does not have a"
+      " \'p\' attribute!");
+}
+
+TEST_F(ControllerGainsTest, MissingD) {
+  ProvokeError(
+      "<drake:controller_gains p='10000'/>",
+      ".*joint actuator revolute_AB's drake:controller_gains does not have a"
+      " \'d\' attribute!");
+}
+
+TEST_F(ControllerGainsTest, PTooManyValues) {
+  ProvokeError("<drake:controller_gains p='1 2 3' d='100'/>",
+               ".*Expected single value for attribute 'p'.*");
+}
+
+TEST_F(ControllerGainsTest, DTooManyValues) {
+  ProvokeError("<drake:controller_gains p='10000' d='1 2 3'/>",
+               ".*Expected single value for attribute 'd'.*");
+}
+
 // TODO(SeanCurtis-TRI) The logic testing for collision filter group parsing
 // belongs in detail_common_test.cc. Urdf and Sdf parsing just need enough
 // testing to indicate that the method is being invoked correctly.
