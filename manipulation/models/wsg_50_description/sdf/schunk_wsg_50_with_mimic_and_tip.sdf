@@ -309,6 +309,8 @@
     <joint name="left_finger_sliding_joint" type="prismatic">
       <parent>body</parent>
       <child>left_finger</child>
+      <!-- Use MultibodyPlant's PD controller interface. -->
+      <drake:controller_gains p="100000" d="1000" />
       <axis>
         <xyz>-1 0 0</xyz>
         <!-- Drake attaches an actuator to all and only joints with a nonzero
@@ -330,14 +332,15 @@
     <joint name="right_finger_sliding_joint" type="prismatic">
       <parent>body</parent>
       <child>right_finger</child>
+      <!-- Folow the left finger joint position. -->
+      <drake:mimic joint="left_finger_sliding_joint" multiplier="-1" offset="0" />
       <axis>
         <xyz>1 0 0</xyz>
-        <!-- Drake attaches an actuator to all and only joints with a nonzero
-             effort limit. -->
+        <!-- Set effort limit to 0 so no actuator is created for this joint. -->
         <limit>
           <lower>0</lower>
           <upper>0.055</upper>
-          <effort>80</effort>
+          <effort>0</effort>
           <stiffness>15000</stiffness>
         </limit>
         <dynamics>

@@ -241,6 +241,7 @@ filegroup(
     testonly = True,
     srcs = [
         ":test/iiwa7_wsg.dmd.yaml",
+        ":test/iiwa7_wsg_with_mimic.dmd.yaml",
     ],
 )
 

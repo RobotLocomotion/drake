@@ -26,13 +26,11 @@ using systems::DiagramBuilder;
 using systems::Simulator;
 using systems::lcm::LcmBuses;
 
-/* A smoke test to apply simulated wsg driver with default driver config. */
-GTEST_TEST(SchunkWsgDriverFunctionsTest, ApplyDriverConfig) {
+void ApplyDriverConfigHelper(std::string model_file) {
   DiagramBuilder<double> builder;
-  MultibodyPlant<double>& plant =
-      AddMultibodyPlant(MultibodyPlantConfig{}, &builder);
-  const std::string filename = FindResourceOrThrow(
-      "drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50.sdf");
+  MultibodyPlant<double>& plant = AddMultibodyPlant(
+      MultibodyPlantConfig{.discrete_contact_solver = "sap"}, &builder);
+  const std::string filename = FindResourceOrThrow(model_file);
   const ModelInstanceIndex schunk_wsg =
       Parser(&plant).AddModels(filename).at(0);
   plant.WeldFrames(plant.world_frame(),
@@ -52,8 +50,17 @@ GTEST_TEST(SchunkWsgDriverFunctionsTest, ApplyDriverConfig) {
   // Prove that simulation does not crash.
   Simulator<double> simulator(builder.Build());
   simulator.AdvanceTo(0.1);
-}
+}  // namespace
 
+/* A smoke test to apply simulated wsg driver with default driver config. */
+GTEST_TEST(SchunkWsgDriverFunctionsTest, ApplyDriverConfig) {
+  // Test both Schunk models.
+  ApplyDriverConfigHelper(
+      "drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50.sdf");
+  ApplyDriverConfigHelper(
+      "drake/manipulation/models/wsg_50_description/sdf/"
+      "schunk_wsg_50_with_mimic_and_tip.sdf");
+}
 }  // namespace
 }  // namespace schunk_wsg
 }  // namespace manipulation

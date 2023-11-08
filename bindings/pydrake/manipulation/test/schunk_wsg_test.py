@@ -13,6 +13,7 @@ from pydrake.multibody.parsing import (
     ProcessModelDirectives,
 )
 from pydrake.multibody.plant import MultibodyPlant
+from pydrake.multibody.plant import DiscreteContactSolver
 from pydrake.systems.framework import (
     DiagramBuilder,
     InputPort,
@@ -48,6 +49,13 @@ class TestSchunkWsg(unittest.TestCase):
             controller.GetInputPort("command_message"), InputPort)
         self.assertIsInstance(controller.GetInputPort("state"), InputPort)
         self.assertIsInstance(controller.GetOutputPort("force"), OutputPort)
+
+        controller = mut.SchunkWsgDesiredStateController()
+        self.assertIsInstance(
+            controller.GetInputPort("command_message"), InputPort)
+        self.assertIsInstance(controller.GetInputPort("state"), InputPort)
+        self.assertIsInstance(
+            controller.GetOutputPort("desired_state"), OutputPort)
 
     def test_schunk_wsg_lcm(self):
         command_rec = mut.SchunkWsgCommandReceiver(initial_position=0.01,
@@ -97,6 +105,23 @@ class TestSchunkWsg(unittest.TestCase):
             lcm=DrakeLcm(), builder=builder, pid_gains=[2., 3., 4.])
         self.assertEqual(len(builder.GetSystems()), 7)
 
+    def test_schunk_wsg_build_control_desired_state(self):
+        builder = DiagramBuilder()
+        plant = builder.AddSystem(MultibodyPlant(1.))
+        plant.set_discrete_contact_solver(DiscreteContactSolver.kSap)
+        parser = Parser(plant)
+        directives = LoadModelDirectives(FindResourceOrThrow(
+            "drake/manipulation/util/test/iiwa7_wsg_with_mimic.dmd.yaml"))
+        models_from_directives = ProcessModelDirectives(directives, parser)
+        plant.Finalize()
+
+        self.assertEqual(len(builder.GetSystems()), 1)
+        mut.BuildSchunkWsgControl(
+            plant=plant,
+            wsg_instance=plant.GetModelInstanceByName("schunk_wsg"),
+            lcm=DrakeLcm(), builder=builder)
+        self.assertEqual(len(builder.GetSystems()), 7)
+
     def test_schunk_wsg_driver(self):
         dut = mut.SchunkWsgDriver()
         dut.pid_gains = np.array([1., 2., 3.])
@@ -108,6 +133,31 @@ class TestSchunkWsg(unittest.TestCase):
         parser = Parser(plant)
         directives = LoadModelDirectives(FindResourceOrThrow(
             "drake/manipulation/util/test/iiwa7_wsg.dmd.yaml"))
+        models_from_directives = ProcessModelDirectives(directives, parser)
+        plant.Finalize()
+        model_dict = dict()
+        for model in models_from_directives:
+            model_dict[model.model_name] = model
+        lcm_bus = LcmBuses()
+        lcm_bus.Add("test", DrakeLcm())
+
+        self.assertEqual(len(builder.GetSystems()), 1)
+        mut.ApplyDriverConfig(
+            driver_config=dut, model_instance_name="schunk_wsg",
+            sim_plant=plant, models_from_directives=model_dict, lcms=lcm_bus,
+            builder=builder)
+        self.assertEqual(len(builder.GetSystems()), 7)
+
+    def test_schunk_wsg_driver_desired_state(self):
+        dut = mut.SchunkWsgDriver()
+        dut.lcm_bus = "test"
+        self.assertIn("lcm_bus", repr(dut))
+
+        builder = DiagramBuilder()
+        plant = builder.AddSystem(MultibodyPlant(1.))
+        parser = Parser(plant)
+        directives = LoadModelDirectives(FindResourceOrThrow(
+            "drake/manipulation/util/test/iiwa7_wsg_with_mimic.dmd.yaml"))
         models_from_directives = ProcessModelDirectives(directives, parser)
         plant.Finalize()
         model_dict = dict()

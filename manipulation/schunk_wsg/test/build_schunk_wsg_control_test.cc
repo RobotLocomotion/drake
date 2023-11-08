@@ -23,18 +23,33 @@ using multibody::ModelInstanceIndex;
 using multibody::MultibodyPlant;
 using multibody::Parser;
 
-constexpr double kTolerance = 1e-3;
+struct BuildSchunkWsgControlTestConfig {
+  double tolerance;
+  std::string gripper_model_path;
+};
 
-class BuildSchunkWsgControlTest : public ::testing::Test {
+std::ostream& operator<<(std::ostream& out,
+                         const BuildSchunkWsgControlTestConfig& c) {
+  out << "\nBuildSchunkWsgControlTestConfig:";
+  out << "\n  tolerance: " << c.tolerance;
+  out << "\n  gripper_model_path: " << c.gripper_model_path;
+  return out;
+}
+
+class BuildSchunkWsgControlTest
+    : public ::testing::TestWithParam<BuildSchunkWsgControlTestConfig> {
  public:
   BuildSchunkWsgControlTest() = default;
 
  protected:
   void SetUp() {
+    auto config = GetParam();
+
     sim_plant_ = builder_.AddSystem<MultibodyPlant<double>>(0.001);
+    sim_plant_->set_discrete_contact_solver(
+        drake::multibody::DiscreteContactSolver::kSap);
     Parser parser{sim_plant_};
-    const std::string wsg_file = FindResourceOrThrow(
-        "drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50.sdf");
+    const std::string wsg_file = FindResourceOrThrow(config.gripper_model_path);
     wsg_instance_ = parser.AddModels(wsg_file).at(0);
 
     // Weld the gripper to the world frame.
@@ -50,7 +65,9 @@ class BuildSchunkWsgControlTest : public ::testing::Test {
   ModelInstanceIndex wsg_instance_;
 };
 
-TEST_F(BuildSchunkWsgControlTest, BuildSchunkWsgControl) {
+TEST_P(BuildSchunkWsgControlTest, BuildSchunkWsgControl) {
+  auto config = GetParam();
+
   BuildSchunkWsgControl(*sim_plant_, wsg_instance_, &lcm_, &builder_);
   const auto diagram = builder_.Build();
   systems::Simulator<double> simulator(*diagram);
@@ -66,15 +83,28 @@ TEST_F(BuildSchunkWsgControlTest, BuildSchunkWsgControl) {
   lcm_.HandleSubscriptions(0);
   simulator.AdvanceTo(1.0);
   lcm_.HandleSubscriptions(0);
-  EXPECT_NEAR(sub.message().actual_position_mm, 100.0, kTolerance);
+  EXPECT_NEAR(sub.message().actual_position_mm, 100.0, config.tolerance);
 
   command.target_position_mm = 0.0;
   Publish(&lcm_, "SCHUNK_WSG_COMMAND", command);
   lcm_.HandleSubscriptions(0);
   simulator.AdvanceTo(2.0);
   lcm_.HandleSubscriptions(0);
-  EXPECT_NEAR(sub.message().actual_position_mm, 0.0, kTolerance);
+  EXPECT_NEAR(sub.message().actual_position_mm, 0.0, config.tolerance);
 }
+
+std::vector<BuildSchunkWsgControlTestConfig> MakeTestCases() {
+  return std::vector<BuildSchunkWsgControlTestConfig>{
+      {.tolerance = 1e-3,
+       .gripper_model_path = "drake/manipulation/models/wsg_50_description/"
+                             "sdf/schunk_wsg_50.sdf"},
+      {.tolerance = 1e-3,
+       .gripper_model_path = "drake/manipulation/models/wsg_50_description/"
+                             "sdf/schunk_wsg_50_with_mimic_and_tip.sdf"}};
+}
+
+INSTANTIATE_TEST_SUITE_P(BuildSchunkWsgControl, BuildSchunkWsgControlTest,
+                         testing::ValuesIn(MakeTestCases()));
 
 }  // namespace
 }  // namespace schunk_wsg
