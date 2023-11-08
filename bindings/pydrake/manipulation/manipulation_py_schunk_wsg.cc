@@ -53,6 +53,14 @@ void DefineManipulationSchunkWsg(py::module m) {
   }
 
   {
+    using Class = manipulation::schunk_wsg::SchunkWsgDesiredStateController;
+    constexpr auto& cls_doc = doc.SchunkWsgDesiredStateController;
+    py::class_<Class, Diagram<double>>(
+        m, "SchunkWsgDesiredStateController", cls_doc.doc)
+        .def(py::init(), cls_doc.ctor.doc);
+  }
+
+  {
     using Class = manipulation::schunk_wsg::SchunkWsgCommandReceiver;
     constexpr auto& cls_doc = doc.SchunkWsgCommandReceiver;
     py::class_<Class, LeafSystem<double>>(

@@ -16,14 +16,14 @@ LCM_URL = "udpm://239.241.129.92:20185?ttl=0"
 
 # The initial positions of the robot. This should be kept in sync with the
 # scenario file's "Demo" example.
-IIWA_Q0 = np.array([-0.2, 0.79, 0.32, -1.76, -0.36, 0.64, -0.73])
-WSG_Q0 = 0.02  # In meters.
+IIWA_Q0 = np.array([-0.2, 1.05, 0.32, -1.76, -0.36, 0.64, -0.73])
+WSG_Q0 = 0.04  # In meters.
 
 # The maximum deflection from IIWA and WSG's initial position, i.e., each joint
 # will move between +/- MAX_DEFLECTION. The numbers are selected to avoid
 # collisions within the scene.
-IIWA_MAX_DEFLECTION = 0.4
-WSG_MAX_DEFLECTION = 0.02
+IIWA_MAX_DEFLECTION = 0.0
+WSG_MAX_DEFLECTION = 0.04
 
 # The rate to send the robot commands.
 COMMAND_HZ = 20
