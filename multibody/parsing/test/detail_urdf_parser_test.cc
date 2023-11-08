@@ -396,6 +396,23 @@ TEST_F(UrdfParserTest, MimicBadJoint) {
                            "'nonexistent' which does not exist."));
 }
 
+TEST_F(UrdfParserTest, MimicSameJoint) {
+  plant_.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  EXPECT_NE(AddModelFromUrdfString(R"""(
+    <robot name='a'>
+      <link name='parent'/>
+      <link name='child'/>
+      <joint name='joint' type='revolute'>
+        <parent link='parent'/>
+        <child link='child'/>
+        <mimic joint='joint'/>
+      </joint>
+    </robot>)""", ""), std::nullopt);
+  EXPECT_THAT(TakeError(),
+              MatchesRegex(".*Joint 'joint' mimic element specifies joint "
+                           "'joint'. Joints cannot mimic themselves."));
+}
+
 TEST_F(UrdfParserTest, MimicMismatchedJoint) {
   plant_.set_discrete_contact_solver(DiscreteContactSolver::kSap);
   EXPECT_NE(AddModelFromUrdfString(R"""(
@@ -907,9 +924,21 @@ TEST_F(UrdfParserTest, JointParsingTest) {
 
   // Revolute joint with mimic
   DRAKE_EXPECT_NO_THROW(plant_.GetJointByName("revolute_joint_with_mimic"));
-  // TODO(russt): Test coupler constraint properties once constraint getters are
-  // provided by MultibodyPlant (currently a TODO in multibody_plant.h).
+  DRAKE_EXPECT_NO_THROW(plant_.GetJointByName("revolute_joint_to_mimic"));
+  const Joint<double>& joint_with_mimic =
+      plant_.GetJointByName("revolute_joint_with_mimic");
+  const Joint<double>& joint_to_mimic =
+      plant_.GetJointByName("revolute_joint_to_mimic");
+
   EXPECT_EQ(plant_.num_constraints(), 1);
+  EXPECT_EQ(plant_.num_coupler_constraints(), 1);
+  const internal::CouplerConstraintSpec& spec =
+      plant_.get_coupler_constraint_specs().begin()->second;
+  EXPECT_EQ(spec.joint0_index, joint_with_mimic.index());
+  EXPECT_EQ(spec.joint1_index, joint_to_mimic.index());
+  // These must be kept in sync with the values in joint_parsing_test.urdf.
+  EXPECT_EQ(spec.gear_ratio, 1.23);
+  EXPECT_EQ(spec.offset, 4.56);
 }
 
 // Custom planar joints were not necessary, but long supported. See #18730.
