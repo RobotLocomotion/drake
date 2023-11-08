@@ -11,6 +11,7 @@ import unittest
 from pydrake.common import FindResourceOrThrow
 from pydrake.multibody.parsing import Parser
 from pydrake.multibody.plant import AddMultibodyPlantSceneGraph
+from pydrake.multibody.plant import DiscreteContactSolver
 from pydrake.systems.framework import DiagramBuilder
 
 
@@ -24,7 +25,8 @@ def parse_model_and_create_context(file):
     """Tests a model by loading parsing it with a SceneGraph connected,
     building the relevant diagram, and allocating its default context."""
     builder = DiagramBuilder()
-    plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
+    plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.1)
+    plant.set_discrete_contact_solver(DiscreteContactSolver.kSap)
     Parser(plant).AddModels(file)
     plant.Finalize()
     diagram = builder.Build()

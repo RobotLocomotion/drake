@@ -3,6 +3,9 @@
 
 # This demo simulation shows an IIWA arm with an attached WSG gripper.
 Demo:
+  plant_config:
+    time_step: 1e-2
+    discrete_contact_solver: sap
   directives:
   - add_model:
       name: amazon_table
@@ -32,7 +35,7 @@ Demo:
       child: iiwa::base
   - add_model:
       name: wsg
-      file: package://drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50_with_tip.sdf
+      file: package://drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50_with_mimic_and_tip.sdf
       default_joint_positions:
         left_finger_sliding_joint: [-0.02]
         right_finger_sliding_joint: [0.02]

@@ -1,5 +1,7 @@
 #include "drake/manipulation/schunk_wsg/build_schunk_wsg_control.h"
 
+#include <vector>
+
 #include "drake/lcmt_schunk_wsg_command.hpp"
 #include "drake/lcmt_schunk_wsg_status.hpp"
 #include "drake/manipulation/schunk_wsg/schunk_wsg_constants.h"
@@ -29,14 +31,39 @@ void BuildSchunkWsgControl(const MultibodyPlant<double>& plant,
           "SCHUNK_WSG_COMMAND", lcm));
   wsg_command_sub->set_name(plant.GetModelInstanceName(wsg_instance) +
                             "_wsg_command_subscriber");
-  Eigen::Vector3d desired_pid_gains =
-      pid_gains.value_or(Eigen::Vector3d(7200.0, 0.0, 5.0));
-  auto wsg_controller = builder->AddSystem<SchunkWsgController>(
-      desired_pid_gains(0), desired_pid_gains(1), desired_pid_gains(2));
-  builder->Connect(wsg_command_sub->get_output_port(),
-                   wsg_controller->GetInputPort("command_message"));
-  builder->Connect(wsg_controller->GetOutputPort("force"),
-                   plant.get_actuation_input_port(wsg_instance));
+
+  std::vector<drake::multibody::JointActuatorIndex> actuator_indices =
+      plant.GetJointActuatorIndices(wsg_instance);
+
+  // Model with two actuators that uses an explicit PD controller.
+  if (actuator_indices.size() == 2) {
+    Eigen::Vector3d desired_pid_gains =
+        pid_gains.value_or(Eigen::Vector3d(7200.0, 0.0, 5.0));
+    auto wsg_controller = builder->AddSystem<SchunkWsgController>(
+        desired_pid_gains(0), desired_pid_gains(1), desired_pid_gains(2));
+    builder->Connect(wsg_command_sub->get_output_port(),
+                     wsg_controller->GetInputPort("command_message"));
+    builder->Connect(wsg_controller->GetOutputPort("force"),
+                     plant.get_actuation_input_port(wsg_instance));
+    builder->Connect(plant.get_state_output_port(wsg_instance),
+                     wsg_controller->GetInputPort("state"));
+  } else {
+    // Model with single actuator that uses MultibodyPlant's desired state
+    // input port for position control and a coupler constraint for the
+    // unactuated DoF.
+    DRAKE_DEMAND(actuator_indices.size() == 1);
+    DRAKE_DEMAND(
+        plant.get_joint_actuator(actuator_indices[0]).has_controller());
+
+    auto wsg_controller = builder->AddSystem<
+        drake::manipulation::schunk_wsg::SchunkWsgDesiredStateController>();
+    builder->Connect(plant.get_state_output_port(wsg_instance),
+                     wsg_controller->GetInputPort("state"));
+    builder->Connect(wsg_command_sub->get_output_port(),
+                     wsg_controller->GetInputPort("command_message"));
+    builder->Connect(wsg_controller->GetOutputPort("desired_state"),
+                     plant.get_desired_state_input_port(wsg_instance));
+  }
 
   // Create gripper status publisher.
   auto wsg_status_pub =
@@ -63,8 +90,6 @@ void BuildSchunkWsgControl(const MultibodyPlant<double>& plant,
       mbp_force_to_wsg_force->get_input_port());
   builder->Connect(mbp_force_to_wsg_force->get_output_port(),
                    wsg_status_sender->get_force_input_port());
-  builder->Connect(plant.get_state_output_port(wsg_instance),
-                   wsg_controller->GetInputPort("state"));
 }
 
 }  // namespace schunk_wsg
