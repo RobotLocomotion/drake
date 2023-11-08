@@ -396,6 +396,23 @@ TEST_F(UrdfParserTest, MimicBadJoint) {
                            "'nonexistent' which does not exist."));
 }
 
+TEST_F(UrdfParserTest, MimicSameJoint) {
+  plant_.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  EXPECT_NE(AddModelFromUrdfString(R"""(
+    <robot name='a'>
+      <link name='parent'/>
+      <link name='child'/>
+      <joint name='joint' type='revolute'>
+        <parent link='parent'/>
+        <child link='child'/>
+        <mimic joint='joint'/>
+      </joint>
+    </robot>)""", ""), std::nullopt);
+  EXPECT_THAT(TakeError(),
+              MatchesRegex(".*Joint 'joint' mimic element specifies joint "
+                           "'joint'. Joints cannot mimic themselves."));
+}
+
 TEST_F(UrdfParserTest, MimicMismatchedJoint) {
   plant_.set_discrete_contact_solver(DiscreteContactSolver::kSap);
   EXPECT_NE(AddModelFromUrdfString(R"""(
@@ -906,10 +923,44 @@ TEST_F(UrdfParserTest, JointParsingTest) {
       CompareMatrices(screw_joint.acceleration_upper_limits(), inf));
 
   // Revolute joint with mimic
-  DRAKE_EXPECT_NO_THROW(plant_.GetJointByName("revolute_joint_with_mimic"));
-  // TODO(russt): Test coupler constraint properties once constraint getters are
-  // provided by MultibodyPlant (currently a TODO in multibody_plant.h).
-  EXPECT_EQ(plant_.num_constraints(), 1);
+  DRAKE_EXPECT_NO_THROW(
+      plant_.GetJointByName("revolute_joint_with_mimic_forward_reference"));
+  DRAKE_EXPECT_NO_THROW(
+      plant_.GetJointByName("revolute_joint_with_mimic_backward_reference"));
+  DRAKE_EXPECT_NO_THROW(plant_.GetJointByName("revolute_joint_to_mimic"));
+
+  const Joint<double>& joint_with_mimic_forward_reference =
+      plant_.GetJointByName("revolute_joint_with_mimic_forward_reference");
+  const Joint<double>& joint_with_mimic_backward_reference =
+      plant_.GetJointByName("revolute_joint_with_mimic_backward_reference");
+  const Joint<double>& joint_to_mimic =
+      plant_.GetJointByName("revolute_joint_to_mimic");
+
+  EXPECT_EQ(plant_.num_constraints(), 2);
+  EXPECT_EQ(plant_.num_coupler_constraints(), 2);
+
+  // Use the fact that we know the order the <mimic> tags are parsed and there
+  // for the order the constraints are created to check the correct constraint.
+  std::vector<internal::CouplerConstraintSpec> specs;
+  for (const auto& item : plant_.get_coupler_constraint_specs()) {
+    specs.push_back(item.second);
+  }
+  std::sort(specs.begin(), specs.end(),
+            [](const auto& specA, const auto& specB) {
+              return specA.id < specB.id;
+            });
+
+  EXPECT_EQ(specs[0].joint0_index, joint_with_mimic_forward_reference.index());
+  EXPECT_EQ(specs[0].joint1_index, joint_to_mimic.index());
+  // These must be kept in sync with the values in joint_parsing_test.urdf.
+  EXPECT_EQ(specs[0].gear_ratio, 1.23);
+  EXPECT_EQ(specs[0].offset, 4.56);
+
+  EXPECT_EQ(specs[1].joint0_index, joint_with_mimic_backward_reference.index());
+  EXPECT_EQ(specs[1].joint1_index, joint_to_mimic.index());
+  // These must be kept in sync with the values in joint_parsing_test.urdf.
+  EXPECT_EQ(specs[1].gear_ratio, 6.54);
+  EXPECT_EQ(specs[1].offset, 3.21);
 }
 
 // Custom planar joints were not necessary, but long supported. See #18730.
